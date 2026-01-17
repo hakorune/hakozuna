@@ -1,0 +1,15 @@
+out_*/
+bench_burst_idle*
+*.o
+*.d
+*.a
+*.so
+*.dll
+*.exe
+*.obj
+*.lib
+*.pdb
+*.ilk
+perf.data*
+*.log
+dump.rdb
