@@ -13,3 +13,6 @@ bench_burst_idle*
 perf.data*
 *.log
 dump.rdb
+
+# Private development docs (not for public)
+/private/
