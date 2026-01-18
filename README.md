@@ -15,7 +15,7 @@ Part of the [hakorune](https://github.com/hakorune) project.
 
 ## Architecture
 
-![hz3 Architecture](docs/images/combined.png)
+![hz3 Architecture](docs/images/combined.png?v=2)
 
 ## Paper
 
