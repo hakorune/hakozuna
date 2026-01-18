@@ -15,7 +15,7 @@ Part of the [hakorune](https://github.com/hakorune) project.
 
 ## Architecture
 
-![hz3 Architecture](docs/images/architecture_overview.png)
+![hakozuna Architecture](docs/images/architecture_overview.png)
 
 ## Paper
 
@@ -68,7 +68,7 @@ RUNS=10 ITERS=20000000 WS=400 ./scripts/run_bench_hz3_ssot.sh
 
 ### Larson (ops/sec, higher is better)
 
-| Threads | hz3 | mimalloc | tcmalloc | system |
+| Threads | hakozuna | mimalloc | tcmalloc | system |
 |---------|-----|----------|----------|--------|
 | T=1 | 31.74M | 27.00M | 31.19M | 22.40M |
 | T=4 | 109.04M | 95.17M | 104.29M | 80.56M |
@@ -77,7 +77,7 @@ RUNS=10 ITERS=20000000 WS=400 ./scripts/run_bench_hz3_ssot.sh
 
 ### memcached (ops/sec, higher is better)
 
-| Threads | hz3 | mimalloc | tcmalloc |
+| Threads | hakozuna | mimalloc | tcmalloc |
 |---------|-----|----------|----------|
 | T=1 | 278,109 | 283,697 | 280,453 |
 | T=4 | **816,008** | 741,478 | 809,366 |
@@ -86,7 +86,7 @@ RUNS=10 ITERS=20000000 WS=400 ./scripts/run_bench_hz3_ssot.sh
 
 ### MT Remote-Free (ops/sec, higher is better)
 
-| Condition | hz3 | mimalloc | tcmalloc |
+| Condition | hakozuna | mimalloc | tcmalloc |
 |-----------|-----|----------|----------|
 | T=8 R=90% | **172.5M** | 134.6M | 140.9M |
 | T=16 R=50% | **240.7M** | 188.8M | 196.2M |
@@ -97,11 +97,11 @@ RUNS=10 ITERS=20000000 WS=400 ./scripts/run_bench_hz3_ssot.sh
 | Allocator | Throughput |
 |-----------|------------|
 | tcmalloc | 134.6M |
-| hz3 | 132.6M |
+| hakozuna | 132.6M |
 | mimalloc | 130.2M |
 | system | 108.5M |
 
-**Summary**: hz3 wins in most multi-threaded workloads, especially remote-free heavy scenarios (+28%). At extreme thread counts (T=32 R=90%), mimalloc currently leads.
+**Summary**: hakozuna wins in most multi-threaded workloads, especially remote-free heavy scenarios (+28%). At extreme thread counts (T=32 R=90%), mimalloc currently leads.
 
 ## Documentation
 
