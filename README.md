@@ -15,18 +15,7 @@ Part of the [hakorune](https://github.com/hakorune) project.
 
 ## Architecture
 
-<table>
-<tr>
-<td width="50%" align="center">
-<strong>Three-Layer Design</strong><br/>
-<img src="docs/images/architecture.png" alt="hz3 Architecture" width="100%"/>
-</td>
-<td width="50%" align="center">
-<strong>PTAG32 Free Fast Path</strong><br/>
-<img src="docs/images/ptag32_free.png" alt="PTAG32 Free Path" width="100%"/>
-</td>
-</tr>
-</table>
+![hz3 Architecture](docs/images/combined.png)
 
 ## Paper
 
