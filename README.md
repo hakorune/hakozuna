@@ -66,14 +66,42 @@ Run the SSOT benchmark suite:
 RUNS=10 ITERS=20000000 WS=400 ./scripts/run_bench_hz3_ssot.sh
 ```
 
-### Results Summary (vs mimalloc)
+### Larson (ops/sec, higher is better)
 
-| Benchmark | Condition | Result |
-|-----------|-----------|--------|
-| Larson | T=8-16 | **+15%** |
-| memcached | T=4 | **+10%** |
-| MT remote | T=8 R=90% | **+28%** |
-| random_mixed | - | comparable |
+| Threads | hz3 | mimalloc | tcmalloc | system |
+|---------|-----|----------|----------|--------|
+| T=1 | 31.74M | 27.00M | 31.19M | 22.40M |
+| T=4 | 109.04M | 95.17M | 104.29M | 80.56M |
+| T=8 | **196.16M** | 169.83M | 170.35M | 137.81M |
+| T=16 | **296.51M** | 257.57M | 246.06M | 204.25M |
+
+### memcached (ops/sec, higher is better)
+
+| Threads | hz3 | mimalloc | tcmalloc |
+|---------|-----|----------|----------|
+| T=1 | 278,109 | 283,697 | 280,453 |
+| T=4 | **816,008** | 741,478 | 809,366 |
+| T=8 | 1,298,515 | 1,301,294 | 1,304,450 |
+| T=16 | **1,487,819** | 1,471,710 | 1,374,252 |
+
+### MT Remote-Free (ops/sec, higher is better)
+
+| Condition | hz3 | mimalloc | tcmalloc |
+|-----------|-----|----------|----------|
+| T=8 R=90% | **172.5M** | 134.6M | 140.9M |
+| T=16 R=50% | **240.7M** | 188.8M | 196.2M |
+| T=32 R=90% | 144.7M | **181.1M** | 106.1M |
+
+### random_mixed (ops/sec, higher is better)
+
+| Allocator | Throughput |
+|-----------|------------|
+| tcmalloc | 134.6M |
+| hz3 | 132.6M |
+| mimalloc | 130.2M |
+| system | 108.5M |
+
+**Summary**: hz3 wins in most multi-threaded workloads, especially remote-free heavy scenarios (+28%). At extreme thread counts (T=32 R=90%), mimalloc currently leads.
 
 ## Documentation
 
