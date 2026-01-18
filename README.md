@@ -13,6 +13,16 @@ Part of the [hakorune](https://github.com/hakorune) project.
 - **Box Theory design**: Boundary-focused architecture with reversible optimizations
 - **Two lanes**: `fast` (low latency) and `scale` (high parallelism)
 
+## Architecture
+
+### Three-Layer Design
+
+![hz3 Architecture](docs/images/architecture.png)
+
+### PTAG32 Free Fast Path
+
+![PTAG32 Free Path](docs/images/ptag32_free.png)
+
 ## Paper
 
 - [ACE-Alloc Paper (English)](docs/paper/main_en.pdf)
