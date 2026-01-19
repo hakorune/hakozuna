@@ -72,10 +72,14 @@ RUNS=10 ITERS=20000000 WS=400 ./scripts/run_bench_hz3_ssot.sh
 
 | Threads | hakozuna | mimalloc | tcmalloc | system |
 |---------|-----|----------|----------|--------|
-| T=1 | 31.74M | 27.00M | 31.19M | 22.40M |
-| T=4 | 109.04M | 95.17M | 104.29M | 80.56M |
-| T=8 | **196.16M** | 169.83M | 170.35M | 137.81M |
-| T=16 | **296.51M** | 257.57M | 246.06M | 204.25M |
+| T=1 | 30.32M | 20.97M | 31.19M | 7.07M |
+| T=4 | 108.65M | 75.52M | 104.29M | 21.67M |
+| T=8 | **191.96M** | 135.67M | 170.35M | 37.14M |
+| T=16 | **297.82M** | 216.72M | 246.06M | 59.31M |
+
+Note: WSL2/9950X medians; tcmalloc column uses prior stable run due to variance. Full logs in `docs/paper/RESULTS_20260118.md`.
+
+Summary: hakozuna wins most multi-threaded workloads, especially remote-free heavy cases (e.g. T=8 R=90 at +46%). At T=32 R=90, hz3 and mimalloc are very close; in WSL2 the median slightly favors hz3, but variance is large.
 
 ### memcached (ops/sec, higher is better)
 
