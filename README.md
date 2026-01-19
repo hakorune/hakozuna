@@ -90,9 +90,9 @@ RUNS=10 ITERS=20000000 WS=400 ./scripts/run_bench_hz3_ssot.sh
 
 | Condition | hakozuna | mimalloc | tcmalloc |
 |-----------|-----|----------|----------|
-| T=8 R=90% | **172.5M** | 134.6M | 140.9M |
-| T=16 R=50% | **240.7M** | 188.8M | 196.2M |
-| T=32 R=90% | 144.7M | **181.1M** | 106.1M |
+| T=8 R=90% | **193.1M** | 132.3M | 153.0M |
+| T=16 R=50% | **270.6M** | 208.6M | 226.5M |
+| T=32 R=90% | **198.8M** | 196.5M | 147.6M |
 
 ### random_mixed (ops/sec, higher is better)
 
