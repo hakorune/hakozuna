@@ -16,3 +16,4 @@ dump.rdb
 
 # Private development docs (not for public)
 /private/
+/docs/paper/ACE-Alloc/
