@@ -277,6 +277,9 @@ $(LDPRELOAD_FAST_LIB): $(OUT_LDPRELOAD_FAST_DIR) $(HZ3_LDPRELOAD_FAST_OBJS)
 # NOTE: `HZ3_ARENA_SIZE` is defined in this lane; override via `HZ3_SCALE_ARENA_SIZE=...` (avoid -D redefinition Werror).
 HZ3_SCALE_ARENA_SIZE ?= 0x1000000000ULL
 
+# S52: Large bestfit range (default 4 for scale lane)
+HZ3_SCALE_S52_BESTFIT_RANGE ?= 4
+
 # Default shard count for scale lane.
 # Note: collision fail-fast counts ALL threads that touch the allocator (including main thread),
 # so shards should have some slack vs "worker thread count".
@@ -321,7 +324,7 @@ HZ3_SCALE_DEFS := -DHZ3_REMOTE_STASH_SPARSE=1 \
 	-DHZ3_S50_LARGE_SCACHE_EVICT=1 \
 	-DHZ3_S51_LARGE_MADVISE=$(HZ3_SCALE_S51_LARGE_MADVISE) \
 	-DHZ3_S52_LARGE_BESTFIT=1 \
-	-DHZ3_S52_BESTFIT_RANGE=4 \
+	-DHZ3_S52_BESTFIT_RANGE=$(HZ3_SCALE_S52_BESTFIT_RANGE) \
 	-DHZ3_LARGE_CACHE_MAX_BYTES='(8192ULL << 20)' \
 	-DHZ3_ARENA_PRESSURE_BOX=$(HZ3_SCALE_ARENA_PRESSURE_BOX) \
 	-DHZ3_S47_SEGMENT_QUARANTINE=1 \

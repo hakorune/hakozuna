@@ -4,6 +4,7 @@
 #define _GNU_SOURCE
 
 #include "hz3_tcache_internal.h"
+#include "hz3_eco_mode.h"
 #include "hz3_segment.h"
 #include "hz3_segmap.h"
 #include "hz3_inbox.h"
@@ -817,13 +818,21 @@ void* hz3_alloc_slow(int sc) {
     // Fallback: normal batch allocation
     obj = NULL;
 #if HZ3_S74_LANE_BATCH
+    // S202: Eco Mode adaptive burst sizing
+#if HZ3_ECO_MODE
+    const int refill_burst = hz3_eco_refill_burst();
+#define HZ3_TCACHE_BURST_ARRAY_SIZE HZ3_ECO_REFILL_BURST_ARRAY_SIZE
+#else
+    const int refill_burst = HZ3_S74_REFILL_BURST;
+#define HZ3_TCACHE_BURST_ARRAY_SIZE HZ3_S74_REFILL_BURST
+#endif
     int remaining = want;
     while (remaining > 0) {
         int burst = remaining;
-        if (burst > HZ3_S74_REFILL_BURST) {
-            burst = HZ3_S74_REFILL_BURST;
+        if (burst > refill_burst) {
+            burst = refill_burst;
         }
-        void* burst_batch[HZ3_S74_REFILL_BURST];
+        void* burst_batch[HZ3_TCACHE_BURST_ARRAY_SIZE];
         int got = hz3_s74_alloc_from_segment_burst(sc, burst_batch, burst);
         if (got <= 0) {
             break;
@@ -846,6 +855,7 @@ void* hz3_alloc_slow(int sc) {
             break;
         }
     }
+#undef HZ3_TCACHE_BURST_ARRAY_SIZE
 #endif
     if (!obj) {
         for (int i = 0; i < want; i++) {

@@ -1,0 +1,18 @@
+#if HZ3_S121_H_BUDGET_DRAIN
+        // S121-H: Pop pages one at a time up to budget (avoid requeue cycling)
+        // This has more CAS contention but prevents requeue explosion
+
+        // Requeue list for pages that need to go back
+        Hz3S121PageHdr* requeue_head = NULL;
+        Hz3S121PageHdr* requeue_tail = NULL;
+
+        int pages_processed = 0;
+        while (pages_processed < HZ3_S121_H_MAX_PAGES && got < want) {
+            Hz3S121PageHdr* page = (Hz3S121PageHdr*)hz3_pageq_pop(owner, (uint8_t)sc);
+            if (!page) break;  // No more pages in queue
+
+            pages_processed++;
+
+#if HZ3_S121_H_BUDGET_DRAIN
+            // S121-H: Loop continues via pageq_pop, not linked list traversal
+        }  // end while (pages_processed < budget && got < want)

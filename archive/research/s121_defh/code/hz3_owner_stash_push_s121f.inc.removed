@@ -1,0 +1,40 @@
+#if HZ3_S121_F_STATS
+        int rem_attempts = 0;
+#endif
+        do {
+            old_head = atomic_load_explicit(&page->remote_head, memory_order_relaxed);
+            hz3_obj_set_next(cur, old_head);
+#if HZ3_S121_F_STATS
+            rem_attempts++;
+#endif
+        } while (!atomic_compare_exchange_weak_explicit(
+            &page->remote_head, &old_head, cur,
+            memory_order_release, memory_order_relaxed));
+
+#if HZ3_S121_F_STATS
+        S121F_STAT_REGISTER();
+        S121F_STAT_INC(g_s121f_remote_push_success);
+        if (rem_attempts > 1) {
+            S121F_STAT_INC(g_s121f_remote_push_contended);
+        }
+#endif
+#if HZ3_S121_F_STATS
+    int rem_attempts = 0;
+#endif
+    do {
+        old_head = atomic_load_explicit(&page->remote_head, memory_order_relaxed);
+        hz3_obj_set_next(obj, old_head);
+#if HZ3_S121_F_STATS
+        rem_attempts++;
+#endif
+    } while (!atomic_compare_exchange_weak_explicit(
+        &page->remote_head, &old_head, obj,
+        memory_order_release, memory_order_relaxed));
+
+#if HZ3_S121_F_STATS
+    S121F_STAT_REGISTER();
+    S121F_STAT_INC(g_s121f_remote_push_success);
+    if (rem_attempts > 1) {
+        S121F_STAT_INC(g_s121f_remote_push_contended);
+    }
+#endif

@@ -1,6 +1,7 @@
 #include "hz3_small_v2.h"
 
 #include "hz3_arena.h"
+#include "hz3_eco_mode.h"
 #include "hz3_central_bin.h"
 #include "hz3_config.h"
 #include "hz3_dtor_stats.h"

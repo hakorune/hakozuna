@@ -1,6 +1,16 @@
 // hz3_small_v2_refill.inc - Slow path allocation (refill from central/stash/page)
 // Part of hz3_small_v2.c (single TU split)
 
+// S202: Eco Mode adaptive batch sizing
+// When HZ3_ECO_MODE=1, use dynamic batch size based on allocation rate
+#if HZ3_ECO_MODE
+#define HZ3_SMALL_V2_REFILL_ARRAY_SIZE  HZ3_ECO_REFILL_BATCH_ARRAY_SIZE
+#define HZ3_SMALL_V2_REFILL_REQUEST     hz3_eco_refill_batch()
+#else
+#define HZ3_SMALL_V2_REFILL_ARRAY_SIZE  HZ3_SMALL_V2_REFILL_BATCH
+#define HZ3_SMALL_V2_REFILL_REQUEST     HZ3_SMALL_V2_REFILL_BATCH
+#endif
+
 	void* hz3_small_v2_alloc_slow(int sc) {
 #if !HZ3_SMALL_V2_ENABLE || !HZ3_SEG_SELF_DESC_ENABLE
 	    (void)sc;
@@ -44,10 +54,12 @@
 #endif
 	    hz3_small_v2_central_init();
 
-	    void* batch[HZ3_SMALL_V2_REFILL_BATCH];
+	    // S202: Eco Mode - use dynamic batch size (evaluated once per slow-path call)
+	    const int refill_batch = HZ3_SMALL_V2_REFILL_REQUEST;
+	    void* batch[HZ3_SMALL_V2_REFILL_ARRAY_SIZE];
 #if HZ3_S42_SMALL_XFER && !HZ3_S42_SMALL_XFER_DISABLE
 	    // S42: Try transfer cache first
-	    int got_xfer = hz3_small_xfer_pop_batch(t_hz3_cache.my_shard, sc, batch, HZ3_SMALL_V2_REFILL_BATCH);
+	    int got_xfer = hz3_small_xfer_pop_batch(t_hz3_cache.my_shard, sc, batch, refill_batch);
 #else
 	    int got_xfer = 0;
 #endif
@@ -57,21 +69,21 @@
 
 #if HZ3_S44_OWNER_STASH_POP && !HZ3_S44_OWNER_STASH_DISABLE
 	    // S44: Try owner stash (after xfer, before central - mutex avoidance)
-	    if (got < HZ3_SMALL_V2_REFILL_BATCH) {
+	    if (got < refill_batch) {
 	        got_stash = hz3_owner_stash_pop_batch(t_hz3_cache.my_shard, sc,
-	                                              batch + got, HZ3_SMALL_V2_REFILL_BATCH - got);
+	                                              batch + got, refill_batch - got);
 	        got += got_stash;
 	    }
 #endif
 
 	    // Central fallback (with S145 TLS cache layer if enabled)
-	    if (got < HZ3_SMALL_V2_REFILL_BATCH) {
+	    if (got < refill_batch) {
 #if HZ3_S145_CENTRAL_LOCAL_CACHE
 	        got_central = hz3_s145_central_cache_pop(t_hz3_cache.my_shard, sc,
-	                                                  batch + got, HZ3_SMALL_V2_REFILL_BATCH - got);
+	                                                  batch + got, refill_batch - got);
 #else
 	        got_central = hz3_small_v2_central_pop_batch(t_hz3_cache.my_shard, sc,
-	                                                     batch + got, HZ3_SMALL_V2_REFILL_BATCH - got);
+	                                                     batch + got, refill_batch - got);
 #endif
 	        got += got_central;
 	    }
@@ -119,17 +131,17 @@
     got = 0;
 
 #if HZ3_S44_OWNER_STASH_POP && !HZ3_S44_OWNER_STASH_DISABLE
-    got_stash = hz3_owner_stash_pop_batch(t_hz3_cache.my_shard, sc, batch, HZ3_SMALL_V2_REFILL_BATCH);
+    got_stash = hz3_owner_stash_pop_batch(t_hz3_cache.my_shard, sc, batch, refill_batch);
     got = got_stash;
 #endif
 
-    if (got < HZ3_SMALL_V2_REFILL_BATCH) {
+    if (got < refill_batch) {
 #if HZ3_S145_CENTRAL_LOCAL_CACHE
         got_central = hz3_s145_central_cache_pop(t_hz3_cache.my_shard, sc,
-                                                  batch + got, HZ3_SMALL_V2_REFILL_BATCH - got);
+                                                  batch + got, refill_batch - got);
 #else
         got_central = hz3_small_v2_central_pop_batch(t_hz3_cache.my_shard, sc,
-                                                     batch + got, HZ3_SMALL_V2_REFILL_BATCH - got);
+                                                     batch + got, refill_batch - got);
 #endif
         got += got_central;
     }
@@ -210,3 +222,6 @@
 #endif
 #endif
 }
+
+#undef HZ3_SMALL_V2_REFILL_ARRAY_SIZE
+#undef HZ3_SMALL_V2_REFILL_REQUEST

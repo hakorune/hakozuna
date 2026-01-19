@@ -1,0 +1,123 @@
+#if HZ3_S121_D_PAGE_PACKET
+
+// S121-D stats
+#if HZ3_S121_D_STATS
+static _Atomic uint64_t g_s121d_packet_flushes = 0;
+static _Atomic uint64_t g_s121d_packet_pages_flushed = 0;
+static _Atomic uint64_t g_s121d_packet_add_calls = 0;
+static _Atomic uint64_t g_s121d_slot_reuse = 0;
+static _Atomic uint64_t g_s121d_slot_evict = 0;
+
+#define S121D_STAT_INC(var) atomic_fetch_add_explicit(&(var), 1, memory_order_relaxed)
+#define S121D_STAT_ADD(var, n) atomic_fetch_add_explicit(&(var), (n), memory_order_relaxed)
+#else
+#define S121D_STAT_INC(var) ((void)0)
+#define S121D_STAT_ADD(var, n) ((void)0)
+#endif
+
+// Flush a single packet slot to pageq
+static inline void hz3_s121d_packet_flush_slot(Hz3PagePacketSlot* slot) {
+    if (slot->count == 0 || !slot->head) {
+        slot->count = 0;
+        slot->head = slot->tail = NULL;
+        return;
+    }
+    // Push the accumulated pages as a linked list
+    hz3_pageq_push_list(slot->owner, slot->sc, slot->head, slot->tail);
+    S121D_STAT_INC(g_s121d_packet_flushes);
+    S121D_STAT_ADD(g_s121d_packet_pages_flushed, slot->count);
+    // Clear slot (keep owner/sc for potential reuse)
+    slot->count = 0;
+    slot->head = slot->tail = NULL;
+}
+
+// Flush all packet slots for this thread (called on thread exit)
+static inline void hz3_s121d_packet_flush_all(void) {
+    for (int i = 0; i < HZ3_S121_D_N_SLOTS; i++) {
+        Hz3PagePacketSlot* slot = &t_hz3_cache.s121d_packet[i];
+        if (slot->count > 0) {
+            hz3_s121d_packet_flush_slot(slot);
+        }
+    }
+}
+
+// Add page to packet, flush when full
+// Called on empty→non-empty transition (instead of direct hz3_pageq_push)
+static inline void hz3_s121d_packet_add_page(uint8_t owner, uint8_t sc, void* page) {
+    S121D_STAT_INC(g_s121d_packet_add_calls);
+
+    // Search for existing slot with matching (owner, sc) or empty slot
+    Hz3PagePacketSlot* slot = NULL;
+    Hz3PagePacketSlot* empty_slot = NULL;
+
+    for (int i = 0; i < HZ3_S121_D_N_SLOTS; i++) {
+        Hz3PagePacketSlot* s = &t_hz3_cache.s121d_packet[i];
+        if (s->count > 0 && s->owner == owner && s->sc == sc) {
+            slot = s;
+            S121D_STAT_INC(g_s121d_slot_reuse);
+            break;
+        }
+        if (s->count == 0 && !empty_slot) {
+            empty_slot = s;
+        }
+    }
+
+    // If no matching slot found, use empty slot or evict first slot
+    if (!slot) {
+        if (empty_slot) {
+            slot = empty_slot;
+        } else {
+            // Evict first slot (FIFO eviction policy)
+            S121D_STAT_INC(g_s121d_slot_evict);
+            slot = &t_hz3_cache.s121d_packet[0];
+            hz3_s121d_packet_flush_slot(slot);
+        }
+        slot->owner = owner;
+        slot->sc = sc;
+        slot->head = slot->tail = NULL;
+        slot->count = 0;
+    }
+
+    // Add page to slot (link via page_qnext)
+    Hz3S121PageHdr* hdr = (Hz3S121PageHdr*)page;
+    hdr->page_qnext = NULL;
+
+    if (!slot->head) {
+        slot->head = slot->tail = page;
+    } else {
+        ((Hz3S121PageHdr*)slot->tail)->page_qnext = page;
+        slot->tail = page;
+    }
+    slot->count++;
+
+    // If slot is full, flush to pageq
+    if (slot->count >= HZ3_S121_D_PACKET_K) {
+        hz3_s121d_packet_flush_slot(slot);
+    }
+}
+
+#if HZ3_S121_D_STATS
+static _Atomic int g_s121d_stats_registered = 0;
+
+static void hz3_s121d_stats_dump(void) {
+    fprintf(stderr,
+        "[S121-D stats] packet_flushes=%lu pages_flushed=%lu add_calls=%lu "
+        "slot_reuse=%lu slot_evict=%lu\n",
+        (unsigned long)atomic_load(&g_s121d_packet_flushes),
+        (unsigned long)atomic_load(&g_s121d_packet_pages_flushed),
+        (unsigned long)atomic_load(&g_s121d_packet_add_calls),
+        (unsigned long)atomic_load(&g_s121d_slot_reuse),
+        (unsigned long)atomic_load(&g_s121d_slot_evict));
+}
+
+static void hz3_s121d_stats_register_atexit(void) {
+    if (atomic_exchange(&g_s121d_stats_registered, 1) == 0) {
+        atexit(hz3_s121d_stats_dump);
+    }
+}
+#define S121D_STAT_REGISTER() hz3_s121d_stats_register_atexit()
+#else
+#define S121D_STAT_REGISTER() ((void)0)
+#endif
+
+#endif  // HZ3_S121_D_PAGE_PACKET

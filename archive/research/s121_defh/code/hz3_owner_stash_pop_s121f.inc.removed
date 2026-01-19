@@ -1,0 +1,66 @@
+#if HZ3_S121_F_PAGEQ_SHARD
+        // S121-F v3: Merge-once approach
+        // Phase 1: Drain all subshards and merge into single list
+        Hz3S121PageHdr* merged_page_list = NULL;
+        for (int subshard_idx = 0; subshard_idx < HZ3_S121_F_NUM_SUBSHARDS; subshard_idx++) {
+            Hz3S121PageHdr* shard_list = (Hz3S121PageHdr*)hz3_pageq_drain_subshard(owner, (uint8_t)sc, subshard_idx);
+            // Prepend merge: O(n) but same as processing anyway
+            while (shard_list) {
+                Hz3S121PageHdr* next = (Hz3S121PageHdr*)shard_list->page_qnext;
+                shard_list->page_qnext = merged_page_list;
+                merged_page_list = shard_list;
+                shard_list = next;
+            }
+        }
+        // Phase 2: Process merged list (same as S121-C)
+        Hz3S121PageHdr* page_list = merged_page_list;
+#else
+        Hz3S121PageHdr* page_list = (Hz3S121PageHdr*)hz3_pageq_drain_all(owner, (uint8_t)sc);
+#endif
+
+                    memory_order_acq_rel, memory_order_relaxed)) {
+                // Successfully transitioned to IDLE, page is done
+                S121_STAT_INC(g_s121_page_state_1to0);
+            } else {
+                // CAS failed: concurrent push arrived (ptr != NULL) or state changed
+                // Requeue the page for next drain cycle
+                page->page_qnext = NULL;
+                if (!requeue_head) {
+                    requeue_head = requeue_tail = page;
+                } else {
+                    requeue_tail->page_qnext = page;
+                    requeue_tail = page;
+
+#elif HZ3_S121_F_COOLING_STATE
+            if (atomic_load_explicit(&page->remote_head, memory_order_acquire) == NULL) {
+                // S121-F: Use COOLING state to reduce re-notification
+                // States: 0=NORMAL, 1=PENDING, 2=COOLING
+                // If COOLING (2nd visit empty), transition to NORMAL and don't requeue
+                // If PENDING (1st visit empty), transition to COOLING and requeue
+                uint8_t cur_state = atomic_load_explicit(&page->remote_state, memory_order_acquire);
+
+                    // Always requeue cooling pages for next cycle
+                    page->page_qnext = NULL;
+                    if (!requeue_head) {
+                        requeue_head = requeue_tail = page;
+                    } else {
+                        requeue_tail->page_qnext = page;
+                        requeue_tail = page;
+                    }
+                    S121_STAT_INC(g_s121_page_requeue);
+                }
+            } else {
+                // Page still has items (concurrent push during drain), add to requeue list
+                page->page_qnext = NULL;
+                if (!requeue_head) {
+                    requeue_head = requeue_tail = page;
+                } else {
+                    requeue_tail->page_qnext = page;
+                    requeue_tail = page;
+
+#if HZ3_S121_F_PAGEQ_SHARD
+            // v3: single requeue push to subshard 0
+            hz3_pageq_push_list_to_subshard(owner, (uint8_t)sc, 0, requeue_head, requeue_tail);
+#else
+            hz3_pageq_push_list(owner, (uint8_t)sc, requeue_head, requeue_tail);
+#endif

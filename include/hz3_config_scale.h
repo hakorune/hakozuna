@@ -119,8 +119,9 @@
 
 // S44-PF distance: how many nodes ahead to prefetch
 // 1 = prefetch next only, 2 = also prefetch next->next (A/B required)
+// GO (S153): DIST=2 +5.0% on xmalloc-test, 10/10 wins (2026-01-19)
 #ifndef HZ3_S44_PREFETCH_DIST
-#define HZ3_S44_PREFETCH_DIST 1
+#define HZ3_S44_PREFETCH_DIST 2  // was 1
 #endif
 
 // S44-4: MicroOptBox candidates for hz3_owner_stash_pop_batch() (compile-time only)
@@ -908,4 +909,26 @@
 #ifndef HZ3_S142_XFER_LOCKFREE
 // Default OFF at header level; scale/p32 lanes enable via Makefile.
 #define HZ3_S142_XFER_LOCKFREE 0
+#endif
+
+// ============================================================================
+// S154: Spill Overflow Prefetch (owner_stash_pop_batch optimization)
+// ============================================================================
+//
+// Motivation:
+// - Spill overflow walk (lines 43-49, 289-294) has pointer chasing
+// - Prefetch next pointer to hide memory latency
+// - Expected: +0.5-1.5% on xmalloc-test (remote-heavy workloads)
+//
+// Design:
+// - Add __builtin_prefetch(hz3_obj_get_next(ov), 0, 3) in spill_overflow loop
+// - Distance 1 fixed (simple optimization, low risk)
+//
+// Results (2026-01-19):
+// - xmalloc-test: +7.06% (1.925s → 1.789s)
+// - SSOT: small -2.00%, medium +4.00%, mixed +0.30% (all pass -3% threshold)
+// - GO: Enable by default
+//
+#ifndef HZ3_S154_SPILL_PREFETCH
+#define HZ3_S154_SPILL_PREFETCH 1  // GO (2026-01-19): +7.06% on xmalloc-test
 #endif

@@ -1,0 +1,392 @@
+make: ディレクトリ '/mnt/workdisk/public_share/hakmem/hakozuna'　に入ります
+make: 'bench_malloc_args' に対して行うべき事はありません.
+make: 'bench_malloc_dist' に対して行うべき事はありません.
+make: ディレクトリ '/mnt/workdisk/public_share/hakmem/hakozuna' から出ます
+make: ディレクトリ '/mnt/workdisk/public_share/hakmem/hakozuna/hz3'　に入ります
+make: ディレクトリ '/mnt/workdisk/public_share/hakmem/hakozuna/hz3' から出ます
+make: ディレクトリ '/mnt/workdisk/public_share/hakmem/hakozuna/hz3'　に入ります
+cc -O3 -fPIC -Wall -Wextra -Werror -std=c11 -ftls-model=initial-exec -fno-plt -DHZ3_ENABLE=1 -DHZ3_SHIM_FORWARD_ONLY=0 -DHZ3_SMALL_V2_ENABLE=1 -DHZ3_SEG_SELF_DESC_ENABLE=1 -DHZ3_SMALL_V2_PTAG_ENABLE=1 -DHZ3_PTAG_V1_ENABLE=1 -DHZ3_PTAG_DSTBIN_ENABLE=1 -DHZ3_PTAG_DSTBIN_FASTLOOKUP=1 -DHZ3_PTAG32_NOINRANGE=1 -DHZ3_BIN_COUNT_POLICY=1 -DHZ3_REALLOC_PTAG32=1 -DHZ3_USABLE_SIZE_PTAG32=1 -DHZ3_LOCAL_BINS_SPLIT=1 -DHZ3_TCACHE_INIT_ON_MISS=1 -DHZ3_FREE_REMOTE_COLDIFY=0 -I/mnt/workdisk/public_share/hakmem/hakozuna/hz3/include -c /mnt/workdisk/public_share/hakmem/hakozuna/hz3/src/hz3_arena.c -o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_arena.o
+cc -O3 -fPIC -Wall -Wextra -Werror -std=c11 -ftls-model=initial-exec -fno-plt -DHZ3_ENABLE=1 -DHZ3_SHIM_FORWARD_ONLY=0 -DHZ3_SMALL_V2_ENABLE=1 -DHZ3_SEG_SELF_DESC_ENABLE=1 -DHZ3_SMALL_V2_PTAG_ENABLE=1 -DHZ3_PTAG_V1_ENABLE=1 -DHZ3_PTAG_DSTBIN_ENABLE=1 -DHZ3_PTAG_DSTBIN_FASTLOOKUP=1 -DHZ3_PTAG32_NOINRANGE=1 -DHZ3_BIN_COUNT_POLICY=1 -DHZ3_REALLOC_PTAG32=1 -DHZ3_USABLE_SIZE_PTAG32=1 -DHZ3_LOCAL_BINS_SPLIT=1 -DHZ3_TCACHE_INIT_ON_MISS=1 -DHZ3_FREE_REMOTE_COLDIFY=0 -I/mnt/workdisk/public_share/hakmem/hakozuna/hz3/include -c /mnt/workdisk/public_share/hakmem/hakozuna/hz3/src/hz3_central.c -o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_central.o
+cc -O3 -fPIC -Wall -Wextra -Werror -std=c11 -ftls-model=initial-exec -fno-plt -DHZ3_ENABLE=1 -DHZ3_SHIM_FORWARD_ONLY=0 -DHZ3_SMALL_V2_ENABLE=1 -DHZ3_SEG_SELF_DESC_ENABLE=1 -DHZ3_SMALL_V2_PTAG_ENABLE=1 -DHZ3_PTAG_V1_ENABLE=1 -DHZ3_PTAG_DSTBIN_ENABLE=1 -DHZ3_PTAG_DSTBIN_FASTLOOKUP=1 -DHZ3_PTAG32_NOINRANGE=1 -DHZ3_BIN_COUNT_POLICY=1 -DHZ3_REALLOC_PTAG32=1 -DHZ3_USABLE_SIZE_PTAG32=1 -DHZ3_LOCAL_BINS_SPLIT=1 -DHZ3_TCACHE_INIT_ON_MISS=1 -DHZ3_FREE_REMOTE_COLDIFY=0 -I/mnt/workdisk/public_share/hakmem/hakozuna/hz3/include -c /mnt/workdisk/public_share/hakmem/hakozuna/hz3/src/hz3_epoch.c -o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_epoch.o
+cc -O3 -fPIC -Wall -Wextra -Werror -std=c11 -ftls-model=initial-exec -fno-plt -DHZ3_ENABLE=1 -DHZ3_SHIM_FORWARD_ONLY=0 -DHZ3_SMALL_V2_ENABLE=1 -DHZ3_SEG_SELF_DESC_ENABLE=1 -DHZ3_SMALL_V2_PTAG_ENABLE=1 -DHZ3_PTAG_V1_ENABLE=1 -DHZ3_PTAG_DSTBIN_ENABLE=1 -DHZ3_PTAG_DSTBIN_FASTLOOKUP=1 -DHZ3_PTAG32_NOINRANGE=1 -DHZ3_BIN_COUNT_POLICY=1 -DHZ3_REALLOC_PTAG32=1 -DHZ3_USABLE_SIZE_PTAG32=1 -DHZ3_LOCAL_BINS_SPLIT=1 -DHZ3_TCACHE_INIT_ON_MISS=1 -DHZ3_FREE_REMOTE_COLDIFY=0 -I/mnt/workdisk/public_share/hakmem/hakozuna/hz3/include -c /mnt/workdisk/public_share/hakmem/hakozuna/hz3/src/hz3_hot.c -o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_hot.o
+cc -O3 -fPIC -Wall -Wextra -Werror -std=c11 -ftls-model=initial-exec -fno-plt -DHZ3_ENABLE=1 -DHZ3_SHIM_FORWARD_ONLY=0 -DHZ3_SMALL_V2_ENABLE=1 -DHZ3_SEG_SELF_DESC_ENABLE=1 -DHZ3_SMALL_V2_PTAG_ENABLE=1 -DHZ3_PTAG_V1_ENABLE=1 -DHZ3_PTAG_DSTBIN_ENABLE=1 -DHZ3_PTAG_DSTBIN_FASTLOOKUP=1 -DHZ3_PTAG32_NOINRANGE=1 -DHZ3_BIN_COUNT_POLICY=1 -DHZ3_REALLOC_PTAG32=1 -DHZ3_USABLE_SIZE_PTAG32=1 -DHZ3_LOCAL_BINS_SPLIT=1 -DHZ3_TCACHE_INIT_ON_MISS=1 -DHZ3_FREE_REMOTE_COLDIFY=0 -I/mnt/workdisk/public_share/hakmem/hakozuna/hz3/include -c /mnt/workdisk/public_share/hakmem/hakozuna/hz3/src/hz3_inbox.c -o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_inbox.o
+cc -O3 -fPIC -Wall -Wextra -Werror -std=c11 -ftls-model=initial-exec -fno-plt -DHZ3_ENABLE=1 -DHZ3_SHIM_FORWARD_ONLY=0 -DHZ3_SMALL_V2_ENABLE=1 -DHZ3_SEG_SELF_DESC_ENABLE=1 -DHZ3_SMALL_V2_PTAG_ENABLE=1 -DHZ3_PTAG_V1_ENABLE=1 -DHZ3_PTAG_DSTBIN_ENABLE=1 -DHZ3_PTAG_DSTBIN_FASTLOOKUP=1 -DHZ3_PTAG32_NOINRANGE=1 -DHZ3_BIN_COUNT_POLICY=1 -DHZ3_REALLOC_PTAG32=1 -DHZ3_USABLE_SIZE_PTAG32=1 -DHZ3_LOCAL_BINS_SPLIT=1 -DHZ3_TCACHE_INIT_ON_MISS=1 -DHZ3_FREE_REMOTE_COLDIFY=0 -I/mnt/workdisk/public_share/hakmem/hakozuna/hz3/include -c /mnt/workdisk/public_share/hakmem/hakozuna/hz3/src/hz3_knobs.c -o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_knobs.o
+cc -O3 -fPIC -Wall -Wextra -Werror -std=c11 -ftls-model=initial-exec -fno-plt -DHZ3_ENABLE=1 -DHZ3_SHIM_FORWARD_ONLY=0 -DHZ3_SMALL_V2_ENABLE=1 -DHZ3_SEG_SELF_DESC_ENABLE=1 -DHZ3_SMALL_V2_PTAG_ENABLE=1 -DHZ3_PTAG_V1_ENABLE=1 -DHZ3_PTAG_DSTBIN_ENABLE=1 -DHZ3_PTAG_DSTBIN_FASTLOOKUP=1 -DHZ3_PTAG32_NOINRANGE=1 -DHZ3_BIN_COUNT_POLICY=1 -DHZ3_REALLOC_PTAG32=1 -DHZ3_USABLE_SIZE_PTAG32=1 -DHZ3_LOCAL_BINS_SPLIT=1 -DHZ3_TCACHE_INIT_ON_MISS=1 -DHZ3_FREE_REMOTE_COLDIFY=0 -I/mnt/workdisk/public_share/hakmem/hakozuna/hz3/include -c /mnt/workdisk/public_share/hakmem/hakozuna/hz3/src/hz3_large.c -o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_large.o
+cc -O3 -fPIC -Wall -Wextra -Werror -std=c11 -ftls-model=initial-exec -fno-plt -DHZ3_ENABLE=1 -DHZ3_SHIM_FORWARD_ONLY=0 -DHZ3_SMALL_V2_ENABLE=1 -DHZ3_SEG_SELF_DESC_ENABLE=1 -DHZ3_SMALL_V2_PTAG_ENABLE=1 -DHZ3_PTAG_V1_ENABLE=1 -DHZ3_PTAG_DSTBIN_ENABLE=1 -DHZ3_PTAG_DSTBIN_FASTLOOKUP=1 -DHZ3_PTAG32_NOINRANGE=1 -DHZ3_BIN_COUNT_POLICY=1 -DHZ3_REALLOC_PTAG32=1 -DHZ3_USABLE_SIZE_PTAG32=1 -DHZ3_LOCAL_BINS_SPLIT=1 -DHZ3_TCACHE_INIT_ON_MISS=1 -DHZ3_FREE_REMOTE_COLDIFY=0 -I/mnt/workdisk/public_share/hakmem/hakozuna/hz3/include -c /mnt/workdisk/public_share/hakmem/hakozuna/hz3/src/hz3_learn.c -o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_learn.o
+cc -O3 -fPIC -Wall -Wextra -Werror -std=c11 -ftls-model=initial-exec -fno-plt -DHZ3_ENABLE=1 -DHZ3_SHIM_FORWARD_ONLY=0 -DHZ3_SMALL_V2_ENABLE=1 -DHZ3_SEG_SELF_DESC_ENABLE=1 -DHZ3_SMALL_V2_PTAG_ENABLE=1 -DHZ3_PTAG_V1_ENABLE=1 -DHZ3_PTAG_DSTBIN_ENABLE=1 -DHZ3_PTAG_DSTBIN_FASTLOOKUP=1 -DHZ3_PTAG32_NOINRANGE=1 -DHZ3_BIN_COUNT_POLICY=1 -DHZ3_REALLOC_PTAG32=1 -DHZ3_USABLE_SIZE_PTAG32=1 -DHZ3_LOCAL_BINS_SPLIT=1 -DHZ3_TCACHE_INIT_ON_MISS=1 -DHZ3_FREE_REMOTE_COLDIFY=0 -I/mnt/workdisk/public_share/hakmem/hakozuna/hz3/include -c /mnt/workdisk/public_share/hakmem/hakozuna/hz3/src/hz3_seg_hdr.c -o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_seg_hdr.o
+cc -O3 -fPIC -Wall -Wextra -Werror -std=c11 -ftls-model=initial-exec -fno-plt -DHZ3_ENABLE=1 -DHZ3_SHIM_FORWARD_ONLY=0 -DHZ3_SMALL_V2_ENABLE=1 -DHZ3_SEG_SELF_DESC_ENABLE=1 -DHZ3_SMALL_V2_PTAG_ENABLE=1 -DHZ3_PTAG_V1_ENABLE=1 -DHZ3_PTAG_DSTBIN_ENABLE=1 -DHZ3_PTAG_DSTBIN_FASTLOOKUP=1 -DHZ3_PTAG32_NOINRANGE=1 -DHZ3_BIN_COUNT_POLICY=1 -DHZ3_REALLOC_PTAG32=1 -DHZ3_USABLE_SIZE_PTAG32=1 -DHZ3_LOCAL_BINS_SPLIT=1 -DHZ3_TCACHE_INIT_ON_MISS=1 -DHZ3_FREE_REMOTE_COLDIFY=0 -I/mnt/workdisk/public_share/hakmem/hakozuna/hz3/include -c /mnt/workdisk/public_share/hakmem/hakozuna/hz3/src/hz3_segmap.c -o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_segmap.o
+cc -O3 -fPIC -Wall -Wextra -Werror -std=c11 -ftls-model=initial-exec -fno-plt -DHZ3_ENABLE=1 -DHZ3_SHIM_FORWARD_ONLY=0 -DHZ3_SMALL_V2_ENABLE=1 -DHZ3_SEG_SELF_DESC_ENABLE=1 -DHZ3_SMALL_V2_PTAG_ENABLE=1 -DHZ3_PTAG_V1_ENABLE=1 -DHZ3_PTAG_DSTBIN_ENABLE=1 -DHZ3_PTAG_DSTBIN_FASTLOOKUP=1 -DHZ3_PTAG32_NOINRANGE=1 -DHZ3_BIN_COUNT_POLICY=1 -DHZ3_REALLOC_PTAG32=1 -DHZ3_USABLE_SIZE_PTAG32=1 -DHZ3_LOCAL_BINS_SPLIT=1 -DHZ3_TCACHE_INIT_ON_MISS=1 -DHZ3_FREE_REMOTE_COLDIFY=0 -I/mnt/workdisk/public_share/hakmem/hakozuna/hz3/include -c /mnt/workdisk/public_share/hakmem/hakozuna/hz3/src/hz3_segment.c -o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_segment.o
+cc -O3 -fPIC -Wall -Wextra -Werror -std=c11 -ftls-model=initial-exec -fno-plt -DHZ3_ENABLE=1 -DHZ3_SHIM_FORWARD_ONLY=0 -DHZ3_SMALL_V2_ENABLE=1 -DHZ3_SEG_SELF_DESC_ENABLE=1 -DHZ3_SMALL_V2_PTAG_ENABLE=1 -DHZ3_PTAG_V1_ENABLE=1 -DHZ3_PTAG_DSTBIN_ENABLE=1 -DHZ3_PTAG_DSTBIN_FASTLOOKUP=1 -DHZ3_PTAG32_NOINRANGE=1 -DHZ3_BIN_COUNT_POLICY=1 -DHZ3_REALLOC_PTAG32=1 -DHZ3_USABLE_SIZE_PTAG32=1 -DHZ3_LOCAL_BINS_SPLIT=1 -DHZ3_TCACHE_INIT_ON_MISS=1 -DHZ3_FREE_REMOTE_COLDIFY=0 -I/mnt/workdisk/public_share/hakmem/hakozuna/hz3/include -c /mnt/workdisk/public_share/hakmem/hakozuna/hz3/src/hz3_shim.c -o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_shim.o
+cc -O3 -fPIC -Wall -Wextra -Werror -std=c11 -ftls-model=initial-exec -fno-plt -DHZ3_ENABLE=1 -DHZ3_SHIM_FORWARD_ONLY=0 -DHZ3_SMALL_V2_ENABLE=1 -DHZ3_SEG_SELF_DESC_ENABLE=1 -DHZ3_SMALL_V2_PTAG_ENABLE=1 -DHZ3_PTAG_V1_ENABLE=1 -DHZ3_PTAG_DSTBIN_ENABLE=1 -DHZ3_PTAG_DSTBIN_FASTLOOKUP=1 -DHZ3_PTAG32_NOINRANGE=1 -DHZ3_BIN_COUNT_POLICY=1 -DHZ3_REALLOC_PTAG32=1 -DHZ3_USABLE_SIZE_PTAG32=1 -DHZ3_LOCAL_BINS_SPLIT=1 -DHZ3_TCACHE_INIT_ON_MISS=1 -DHZ3_FREE_REMOTE_COLDIFY=0 -I/mnt/workdisk/public_share/hakmem/hakozuna/hz3/include -c /mnt/workdisk/public_share/hakmem/hakozuna/hz3/src/hz3_small.c -o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_small.o
+cc -O3 -fPIC -Wall -Wextra -Werror -std=c11 -ftls-model=initial-exec -fno-plt -DHZ3_ENABLE=1 -DHZ3_SHIM_FORWARD_ONLY=0 -DHZ3_SMALL_V2_ENABLE=1 -DHZ3_SEG_SELF_DESC_ENABLE=1 -DHZ3_SMALL_V2_PTAG_ENABLE=1 -DHZ3_PTAG_V1_ENABLE=1 -DHZ3_PTAG_DSTBIN_ENABLE=1 -DHZ3_PTAG_DSTBIN_FASTLOOKUP=1 -DHZ3_PTAG32_NOINRANGE=1 -DHZ3_BIN_COUNT_POLICY=1 -DHZ3_REALLOC_PTAG32=1 -DHZ3_USABLE_SIZE_PTAG32=1 -DHZ3_LOCAL_BINS_SPLIT=1 -DHZ3_TCACHE_INIT_ON_MISS=1 -DHZ3_FREE_REMOTE_COLDIFY=0 -I/mnt/workdisk/public_share/hakmem/hakozuna/hz3/include -c /mnt/workdisk/public_share/hakmem/hakozuna/hz3/src/hz3_small_v2.c -o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_small_v2.o
+cc -O3 -fPIC -Wall -Wextra -Werror -std=c11 -ftls-model=initial-exec -fno-plt -DHZ3_ENABLE=1 -DHZ3_SHIM_FORWARD_ONLY=0 -DHZ3_SMALL_V2_ENABLE=1 -DHZ3_SEG_SELF_DESC_ENABLE=1 -DHZ3_SMALL_V2_PTAG_ENABLE=1 -DHZ3_PTAG_V1_ENABLE=1 -DHZ3_PTAG_DSTBIN_ENABLE=1 -DHZ3_PTAG_DSTBIN_FASTLOOKUP=1 -DHZ3_PTAG32_NOINRANGE=1 -DHZ3_BIN_COUNT_POLICY=1 -DHZ3_REALLOC_PTAG32=1 -DHZ3_USABLE_SIZE_PTAG32=1 -DHZ3_LOCAL_BINS_SPLIT=1 -DHZ3_TCACHE_INIT_ON_MISS=1 -DHZ3_FREE_REMOTE_COLDIFY=0 -I/mnt/workdisk/public_share/hakmem/hakozuna/hz3/include -c /mnt/workdisk/public_share/hakmem/hakozuna/hz3/src/hz3_sub4k.c -o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_sub4k.o
+cc -O3 -fPIC -Wall -Wextra -Werror -std=c11 -ftls-model=initial-exec -fno-plt -DHZ3_ENABLE=1 -DHZ3_SHIM_FORWARD_ONLY=0 -DHZ3_SMALL_V2_ENABLE=1 -DHZ3_SEG_SELF_DESC_ENABLE=1 -DHZ3_SMALL_V2_PTAG_ENABLE=1 -DHZ3_PTAG_V1_ENABLE=1 -DHZ3_PTAG_DSTBIN_ENABLE=1 -DHZ3_PTAG_DSTBIN_FASTLOOKUP=1 -DHZ3_PTAG32_NOINRANGE=1 -DHZ3_BIN_COUNT_POLICY=1 -DHZ3_REALLOC_PTAG32=1 -DHZ3_USABLE_SIZE_PTAG32=1 -DHZ3_LOCAL_BINS_SPLIT=1 -DHZ3_TCACHE_INIT_ON_MISS=1 -DHZ3_FREE_REMOTE_COLDIFY=0 -I/mnt/workdisk/public_share/hakmem/hakozuna/hz3/include -c /mnt/workdisk/public_share/hakmem/hakozuna/hz3/src/hz3_tcache.c -o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_tcache.o
+cc -shared -o /mnt/workdisk/public_share/hakmem/libhakozuna_hz3_ldpreload.so /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_arena.o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_central.o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_epoch.o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_hot.o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_inbox.o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_knobs.o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_large.o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_learn.o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_seg_hdr.o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_segmap.o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_segment.o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_shim.o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_small.o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_small_v2.o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_sub4k.o /mnt/workdisk/public_share/hakmem/hakozuna/hz3/out_ldpreload/hz3_tcache.o   -Wl,-Bsymbolic-functions -pthread -ldl 
+make: ディレクトリ '/mnt/workdisk/public_share/hakmem/hakozuna/hz3' から出ます
+[BENCH-HEADER] hz3 ssot
+git=90219bb16 runs=30 iters=20000000 ws=400
+bench=/mnt/workdisk/public_share/hakmem/hakozuna/out/bench_random_mixed_malloc_args hz3_so=/mnt/workdisk/public_share/hakmem/libhakozuna_hz3_ldpreload.so
+hz3_ldpreload_defs=default
+hz3_ldpreload_defs_extra=-DHZ3_FREE_REMOTE_COLDIFY=0
+hz3_make_args=none
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.611161 ops/s=32724928.04
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.625508 ops/s=31974324.62
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.616389 ops/s=32447356.85
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.610558 ops/s=32757276.46
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.607583 ops/s=32917652.25
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.629305 ops/s=31781409.69
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.615064 ops/s=32517291.98
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.705272 ops/s=28358144.72
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.672809 ops/s=29726433.01
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.608982 ops/s=32842003.47
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.611911 ops/s=32684838.75
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.632334 ops/s=31629153.48
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.622132 ops/s=32147828.66
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.599135 ops/s=33381817.37
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.606711 ops/s=32964936.29
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.588427 ops/s=33989291.53
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.604544 ops/s=33083124.74
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.611502 ops/s=32706691.72
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.621527 ops/s=32179127.69
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.618880 ops/s=32316778.03
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.638892 ops/s=31304512.88
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.617731 ops/s=32376895.13
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.662145 ops/s=30205175.41
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.629158 ops/s=31788842.86
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.627494 ops/s=31873129.11
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.604287 ops/s=33097217.22
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.631280 ops/s=31681968.89
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.638949 ops/s=31301720.72
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.649588 ops/s=30789053.89
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.606339 ops/s=32985210.53
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.184636 ops/s=108322324.74
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.184819 ops/s=108215233.66
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.201682 ops/s=99167177.74
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.195927 ops/s=102080052.27
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.201329 ops/s=99341099.56
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.198345 ops/s=100835642.16
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.210614 ops/s=94961639.85
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.202969 ops/s=98538117.69
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.203710 ops/s=98179890.54
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.197845 ops/s=101090311.58
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.199152 ops/s=100426958.35
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.215021 ops/s=93015109.50
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.206187 ops/s=97000206.57
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.203467 ops/s=98296897.31
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.187871 ops/s=106456976.67
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.194003 ops/s=103092351.37
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.197196 ops/s=101422905.23
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.204694 ops/s=97707748.79
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.207963 ops/s=96171975.59
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.192068 ops/s=104130825.64
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.189477 ops/s=105555055.20
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.190517 ops/s=104978320.91
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.195241 ops/s=102438592.93
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.189654 ops/s=105456115.64
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.196786 ops/s=101634235.93
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.203139 ops/s=98455953.19
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.210559 ops/s=94986003.60
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.196056 ops/s=102012470.79
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.191930 ops/s=104205875.03
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=2048 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.192139 ops/s=104092275.82
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.696849 ops/s=11786670.06
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.642186 ops/s=12179009.70
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.694896 ops/s=11800254.72
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.704737 ops/s=11732135.01
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.554125 ops/s=12869111.90
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.866802 ops/s=10713618.20
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.717079 ops/s=11647803.27
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.628324 ops/s=12282691.04
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.691308 ops/s=11825284.74
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.698121 ops/s=11777846.22
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.676376 ops/s=11930618.44
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.709222 ops/s=11701348.20
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.740526 ops/s=11490895.96
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.674063 ops/s=11947105.06
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.654831 ops/s=12085947.53
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.694748 ops/s=11801281.86
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.841397 ops/s=10861431.30
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.702885 ops/s=11744897.49
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.674301 ops/s=11945401.74
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.659690 ops/s=12050565.83
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.579373 ops/s=12663386.12
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.614976 ops/s=12384211.46
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.691389 ops/s=11824719.48
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.688101 ops/s=11847750.10
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.753316 ops/s=11407071.77
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.724712 ops/s=11596255.93
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.685939 ops/s=11862948.14
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.686423 ops/s=11859543.12
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.695567 ops/s=11795584.12
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.715413 ops/s=11659120.41
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.198639 ops/s=100686374.02
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.192460 ops/s=103918580.58
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.193222 ops/s=103508756.84
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.213373 ops/s=93733728.43
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.199012 ops/s=100497383.11
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.199610 ops/s=100196259.93
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.194422 ops/s=102870112.71
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.208914 ops/s=95734035.33
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.209414 ops/s=95505723.65
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.199797 ops/s=100102644.71
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.238722 ops/s=83780399.14
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.241016 ops/s=82983014.77
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.196853 ops/s=101599871.78
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.201783 ops/s=99117392.41
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.207801 ops/s=96246847.24
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.188953 ops/s=105847641.50
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.191357 ops/s=104517913.71
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.200754 ops/s=99625203.84
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.214029 ops/s=93446116.91
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.190037 ops/s=105243501.93
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.199456 ops/s=100273540.42
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.191695 ops/s=104333237.00
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.201398 ops/s=99306689.47
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.199502 ops/s=100250506.42
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.204489 ops/s=97805807.77
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.181519 ops/s=110182174.06
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.189025 ops/s=105807333.38
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.182103 ops/s=109828936.64
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.190629 ops/s=104917006.54
+[BENCH_ARGS] iters=20000000 ws=400 min=4096 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.183383 ops/s=109062449.04
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.427365 ops/s=14011978.01
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.454852 ops/s=13747242.69
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.487030 ops/s=13449763.19
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.541377 ops/s=12975544.85
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.632282 ops/s=12252909.23
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.461080 ops/s=13688648.39
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.437766 ops/s=13910606.90
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.504932 ops/s=13289775.39
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.419558 ops/s=14089033.72
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.458795 ops/s=13710087.79
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.453338 ops/s=13761567.89
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.537904 ops/s=13004846.57
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.468520 ops/s=13619294.91
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.512317 ops/s=13224878.85
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.578305 ops/s=12671949.36
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.451901 ops/s=13775184.95
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.449252 ops/s=13800358.69
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.450707 ops/s=13786522.88
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.457994 ops/s=13717617.43
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.462602 ops/s=13674402.87
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.494728 ops/s=13380494.26
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.471325 ops/s=13593324.39
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.465579 ops/s=13646625.21
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.465504 ops/s=13647323.62
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.463357 ops/s=13667344.08
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.485888 ops/s=13460098.45
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.588616 ops/s=12589700.85
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.696952 ops/s=11785957.40
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.499821 ops/s=13335064.85
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=1.437846 ops/s=13909834.90
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.224610 ops/s=89043950.02
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.189356 ops/s=105622008.90
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.200505 ops/s=99749015.09
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.218779 ops/s=91417489.97
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.203851 ops/s=98112039.95
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.209031 ops/s=95680406.67
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.193466 ops/s=103378573.75
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.195042 ops/s=102543282.81
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.221610 ops/s=90249498.92
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.205570 ops/s=97291267.51
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.202500 ops/s=98766477.06
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.213548 ops/s=93656905.84
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.212411 ops/s=94157870.23
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.206126 ops/s=97029182.07
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.218722 ops/s=91441298.36
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.236653 ops/s=84512815.61
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.210075 ops/s=95205106.55
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.205618 ops/s=97268741.54
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.200865 ops/s=99570324.58
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.198797 ops/s=100606162.04
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.208033 ops/s=96139616.99
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.203012 ops/s=98517316.70
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.212934 ops/s=93926748.53
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.194549 ops/s=102803094.65
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.207297 ops/s=96480697.44
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.189386 ops/s=105605278.27
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.192074 ops/s=104127681.77
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.210548 ops/s=94991313.94
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.205392 ops/s=97375966.01
+[BENCH_ARGS] iters=20000000 ws=400 min=16 max=32768 seed=305419896
+bench_random_mixed_malloc_args: ops=20000204 time=0.200386 ops/s=99808239.39
+logs: /tmp/hz3_ssot_90219bb16_20260103_093144

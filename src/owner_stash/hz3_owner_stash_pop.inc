@@ -44,7 +44,13 @@ int hz3_owner_stash_pop_batch(uint8_t owner, int sc, void** out, int want) {
         void* ov = tc->spill_overflow[sc];
         while (ov && got < want) {
             out[got++] = ov;
-            ov = hz3_obj_get_next(ov);
+            void* next_ov = hz3_obj_get_next(ov);
+#if HZ3_S154_SPILL_PREFETCH && (defined(__GNUC__) || defined(__clang__))
+            if (next_ov) {
+                __builtin_prefetch(next_ov, 0, 3);
+            }
+#endif
+            ov = next_ov;
         }
         tc->spill_overflow[sc] = ov;
         if (got >= want) {
@@ -289,7 +295,13 @@ int hz3_owner_stash_pop_batch(uint8_t owner, int sc, void** out, int want) {
         void* ov = tc->spill_overflow[sc];
         while (ov && got < want) {
             out[got++] = ov;
-            ov = hz3_obj_get_next(ov);
+            void* next_ov = hz3_obj_get_next(ov);
+#if HZ3_S154_SPILL_PREFETCH && (defined(__GNUC__) || defined(__clang__))
+            if (next_ov) {
+                __builtin_prefetch(next_ov, 0, 3);
+            }
+#endif
+            ov = next_ov;
         }
         tc->spill_overflow[sc] = ov;
         if (got >= want) {
@@ -480,7 +492,13 @@ int hz3_owner_stash_pop_batch(uint8_t owner, int sc, void** out, int want) {
             uint32_t got_before = (uint32_t)got;
             while (cur && got < want) {
                 out[got++] = cur;
-                cur = hz3_obj_get_next(cur);
+                void* next_cur = hz3_obj_get_next(cur);
+#if HZ3_S154_SPILL_PREFETCH && (defined(__GNUC__) || defined(__clang__))
+                if (next_cur) {
+                    __builtin_prefetch(next_cur, 0, 3);
+                }
+#endif
+                cur = next_cur;
             }
             tc->s94_spill_overflow[sc] = cur;
             S94_STAT_ADD(g_s94_overflow_take_total, (uint32_t)(got - got_before));
@@ -525,7 +543,13 @@ int hz3_owner_stash_pop_batch(uint8_t owner, int sc, void** out, int want) {
         void* cur = overflow;
         while (cur && got < want) {
             out[got++] = cur;
-            cur = hz3_obj_get_next(cur);
+            void* next_cur = hz3_obj_get_next(cur);
+#if HZ3_S154_SPILL_PREFETCH && (defined(__GNUC__) || defined(__clang__))
+            if (next_cur) {
+                __builtin_prefetch(next_cur, 0, 3);
+            }
+#endif
+            cur = next_cur;
         }
 #if HZ3_S67_STATS
         S67_STAT_ADD(g_s67_spill_overflow_take_total, (uint32_t)(got - got_before));

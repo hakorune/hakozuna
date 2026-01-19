@@ -280,8 +280,9 @@ hybrid（研究箱）:
   - S41: remote stash を “dense bank” ではなく “sparse ring” にする（TLSをshards非依存にする）
   - `1`: `Hz3RemoteStashRing`（`HZ3_REMOTE_STASH_RING_SIZE`）を使う（scale lane で採用）
   - `0`: 従来の `bank[dst][bin]` / dstbin flush を使う（fast lane）
-- `HZ3_REMOTE_STASH_RING_SIZE=256`（power-of-two）
-  - S41: sparse ring のサイズ（compile-time）。1エントリ=16B → 256で約4KiB
+- `HZ3_REMOTE_STASH_RING_SIZE=1024`（power-of-two）
+  - S41: sparse ring のサイズ（compile-time）。1エントリ=16B → 1024で約16KiB
+  - S149: 256→1024 に拡大（T=32/R=90 **+55%**、overflow **-86%**、R=0 **+4.2%**）
 - `HZ3_S84_REMOTE_STASH_BATCH=0/1`（NO-GO / archived gate）
   - S84: sparse ring drain を `(dst,bin)` 連続 run でまとめて dispatch する（`hz3_small_v2_push_remote_list(..., n=1)` の呼び出し回数削減）。
   - r90_pf2 の A/B では **NO-GO**（`hz3_owner_stash_push_list` の増加で相殺）。
@@ -409,7 +410,7 @@ hybrid（研究箱）:
 - `HZ3_S44_PREFETCH=0/1`
   - S44: `hz3_owner_stash_pop_batch()` の pointer chase を prefetch で隠蔽（perf 本丸）。scale lane 既定は `1`（GO）。
 - `HZ3_S44_PREFETCH_DIST=1/2`
-  - S44: prefetch 距離の A/B（`2` は r90 で GO / r50 で NO-GO のため既定は `1`）。
+  - S44: prefetch 距離の A/B（`2` は xmalloc-test +5.0% かつ SSOT 退行なしで GO、scale lane 既定は `2`）。
 - `HZ3_S44_4_SKIP_QUICK_EMPTY_CHECK=0/1`
   - S44-4: spill check 後の quick empty check（relaxed load）をスキップし、drain 側の `NULL` で空を検出する。
   - 目的: `fastpop_miss_pct≈0%` の workload で `1 load/call` を削る。
@@ -426,7 +427,10 @@ hybrid（研究箱）:
   - S44-4: `hz3_owner_stash_pop_batch()` の spill check 前に stash head を投機 prefetch する（latency 隠蔽）。
   - **GO**（2026-01-13）: r90 **+9.2%** / r50 **+2.1%** → scale lane 既定は `1`。
 - `HZ3_S44_4_EARLY_PREFETCH_DIST=1/2`
-  - S44-4: early prefetch の距離。`2` は next も投機 prefetch（研究用）。
+  - S44-4: early prefetch の距離。`2` は **NO-GO**（r90/r50 **-6〜7%**、キャッシュ汚染）。
+- `HZ3_S154_SPILL_PREFETCH=0/1`
+  - S154: spill overflow walk の prefetch（`hz3_owner_stash_pop_batch()` 内）。
+  - **GO**（2026-01-19）: xmalloc-test **+7.06%**、SSOT 退行なし → scale lane 既定は `1`。
 - `HZ3_S44_4_STATS=0/1`
   - S44-4: atexit で `[HZ3_S44_4]` を 1 回だけ出す（shape 観測用）。
 - `HZ3_S44_4_WALK_NOPREV=0/1`
@@ -998,6 +1002,24 @@ BENCH_EXTRA_ARGS="app" \
 
 triage（dist/app mixed の詰め方）:
 - `hakozuna/hz3/docs/PHASE_HZ3_S22_DIST_APP_MIXED_TRIAGE_WORK_ORDER.md`
+
+## 3.x) Eco Mode（S202, research opt-in）
+
+目的: CPU効率（ops/s per CPU%）を改善するための **adaptive batch**。既定は OFF。
+
+- compile-time: `HZ3_ECO_MODE=0/1`（default: `0`）
+  - 有効化した場合のみ eco code を含める（hot path の分岐増加を避けるため）。
+- runtime: `HZ3_ECO_ENABLED=0/1`（default: `0`）
+- threshold: `HZ3_ECO_RATE_THRESH`（default: `10000000` ops/sec）
+
+動作:
+- alloc_rate が閾値以上 → LARGE（`S74_REFILL_BURST=16`, `S118_REFILL_BATCH=64`）
+- alloc_rate が閾値未満 → SMALL（`S74_REFILL_BURST=8`, `S118_REFILL_BATCH=32`）
+- 判定は refill slow-path でのみ実施（1秒 or 1M ops のどちらか早い方）。
+
+注意:
+- 短時間ベンチでは warm-up が足りず SMALL のままになることがある。
+- 詳細と結果: `hakozuna/hz3/docs/PHASE_HZ3_S202_ECO_MODE_ADAPTIVE_BATCH.md`
 
 ---
 

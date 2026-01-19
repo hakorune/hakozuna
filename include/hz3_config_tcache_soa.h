@@ -168,7 +168,8 @@
 #endif
 
 #ifndef HZ3_REMOTE_STASH_RING_SIZE
-#define HZ3_REMOTE_STASH_RING_SIZE 256
+// S149: ring=1024 GO (+16.3% on R=90, no R=0 regression, -72% overflow)
+#define HZ3_REMOTE_STASH_RING_SIZE 1024
 #endif
 
 #if HZ3_REMOTE_STASH_SPARSE

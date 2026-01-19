@@ -1,0 +1,30 @@
+#if HZ3_S121_F_STATS
+HZ3_DTOR_STATS_BEGIN(S121_F);
+HZ3_DTOR_STAT(g_s121f_pageq_push_success);      // pageq push success count
+HZ3_DTOR_STAT(g_s121f_pageq_push_contended);    // pageq push with CAS retry
+HZ3_DTOR_STAT(g_s121f_remote_push_success);     // remote push success count
+HZ3_DTOR_STAT(g_s121f_remote_push_contended);   // remote push with CAS retry
+HZ3_DTOR_ATEXIT_FLAG(g_s121f);
+
+static void hz3_s121f_atexit_dump(void) {
+    uint64_t pq_success = HZ3_DTOR_STAT_LOAD(g_s121f_pageq_push_success);
+    uint64_t pq_contend = HZ3_DTOR_STAT_LOAD(g_s121f_pageq_push_contended);
+    uint64_t rem_success = HZ3_DTOR_STAT_LOAD(g_s121f_remote_push_success);
+    uint64_t rem_contend = HZ3_DTOR_STAT_LOAD(g_s121f_remote_push_contended);
+
+    double pq_rate = (pq_success > 0) ? 100.0 * pq_contend / pq_success : 0.0;
+    double rem_rate = (rem_success > 0) ? 100.0 * rem_contend / rem_success : 0.0;
+
+    fprintf(stderr,
+            "[HZ3_S121_F] pageq_push: success=%lu contended=%lu (%.2f%%) "
+            "remote_push: success=%lu contended=%lu (%.2f%%)\n",
+            (unsigned long)pq_success, (unsigned long)pq_contend, pq_rate,
+            (unsigned long)rem_success, (unsigned long)rem_contend, rem_rate);
+}
+
+#define S121F_STAT_INC(name) HZ3_DTOR_STAT_INC(name)
+#define S121F_STAT_REGISTER() HZ3_DTOR_ATEXIT_REGISTER_ONCE(g_s121f, hz3_s121f_atexit_dump)
+#else
+#define S121F_STAT_INC(name) ((void)0)
+#define S121F_STAT_REGISTER() ((void)0)
+#endif  // HZ3_S121_F_STATS

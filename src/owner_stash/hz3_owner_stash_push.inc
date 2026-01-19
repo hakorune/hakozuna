@@ -654,13 +654,41 @@ g2_push_one_done:
     }
 #endif
 
+#if HZ3_S96_OWNER_STASH_PUSH_STATS
+    S96_STAT_REGISTER();
+    S96_STAT_INC(g_s96_push_calls);
+    S96_STAT_ADD(g_s96_push_objs_total, 1);
+    S96_STAT_INC(g_s96_push_n1_calls);
+    S96_STAT_INC(g_s96_push_hist_1);
+    if (sc < 32) {
+        S96_STAT_ADD(g_s96_push_sc_lt32_objs, 1);
+    } else {
+        S96_STAT_ADD(g_s96_push_sc_ge32_objs, 1);
+    }
+#endif
+
     // MPSC push: CAS loop to prepend single object
     void* old_head = atomic_load_explicit(&bin->head, memory_order_relaxed);
+#if HZ3_S96_OWNER_STASH_PUSH_STATS
+    uint32_t cas_retry = 0;
+    do {
+        hz3_obj_set_next(obj, old_head);
+    } while (!atomic_compare_exchange_weak_explicit(
+        &bin->head, &old_head, obj,
+        memory_order_release, memory_order_relaxed) && ++cas_retry);
+
+    if (cas_retry > 0) {
+        S96_STAT_INC(g_s96_cas_retry_gt0_calls);
+        S96_STAT_ADD(g_s96_cas_retry_total, cas_retry);
+    }
+    S96_STAT_MAX(g_s96_cas_retry_max, cas_retry);
+#else
     do {
         hz3_obj_set_next(obj, old_head);
     } while (!atomic_compare_exchange_weak_explicit(
         &bin->head, &old_head, obj,
         memory_order_release, memory_order_relaxed));
+#endif
 
 #if HZ3_S44_OWNER_STASH_COUNT
     atomic_fetch_add_explicit(&bin->count, 1, memory_order_relaxed);

@@ -1,0 +1,45 @@
+#if HZ3_S121_E_CADENCE_COLLECT
+    // S121-E: Cadence Collect - budget-limited scan of per-owner page list
+    // Push path has NO notification; owner discovers remote objects via scan
+    {
+        S121E_STAT_REGISTER();
+
+        int got = 0;
+        Hz3TCache* tc = &t_hz3_cache;
+
+        // Step 0a: Drain TLS spill_array first (O(1) memcpy)
+        uint8_t cnt = tc->spill_count[sc];
+        if (cnt > 0) {
+            int take = (cnt > (uint8_t)want) ? want : (int)cnt;
+            memcpy(out, &tc->spill_array[sc][cnt - take], (size_t)take * sizeof(void*));
+            tc->spill_count[sc] = (uint8_t)(cnt - take);
+            got = take;
+            if (got >= want) {
+                S121E_STAT_ADD(g_s121e_pop_objs, got);
+                return got;
+            }
+        }
+
+        // Step 0b: Drain TLS spill_overflow
+        void* ov = tc->spill_overflow[sc];
+        while (ov && got < want) {
+            out[got++] = ov;
+            ov = hz3_obj_get_next(ov);
+        }
+        tc->spill_overflow[sc] = ov;
+        if (got >= want) {
+            S121E_STAT_ADD(g_s121e_pop_objs, got);
+            return got;
+        }
+
+        // Step 1: Budget-limited scan of GLOBAL owner_pages (not TLS)
+        // Key fix: owner_pages must be global so all threads can find pages
+        // with remote objects, even if they were allocated by other threads.
+        int budget = HZ3_S121_E_SCAN_BUDGET;
+        int collected = hz3_owner_pages_collect(owner, (uint32_t)sc, budget,
+                                                out + got, want - got);
+        got += collected;
+
+        S121E_STAT_ADD(g_s121e_pop_objs, got);
+        return got;
+    }

@@ -1,0 +1,172 @@
+#if HZ3_S121_F_PAGEQ_SHARD
+
+// Single sub-shard (cache-line aligned to avoid false sharing)
+typedef struct {
+    _Atomic(void*) head;  // page header pointer (intrusive via page_qnext)
+    char _pad[64 - sizeof(_Atomic(void*))];  // pad to 64 bytes
+} Hz3PageSubshard __attribute__((aligned(64)));
+
+_Static_assert(sizeof(Hz3PageSubshard) == 64, "Hz3PageSubshard must be 64 bytes");
+_Static_assert(_Alignof(Hz3PageSubshard) == 64, "Hz3PageSubshard must be 64-byte aligned");
+
+// Full pageq with N sub-shards
+typedef struct {
+    Hz3PageSubshard shards[HZ3_S121_F_NUM_SUBSHARDS];
+} Hz3PageWorklist;
+
+_Static_assert(sizeof(Hz3PageWorklist) == 64 * HZ3_S121_F_NUM_SUBSHARDS,
+               "Hz3PageWorklist must be NUM_SUBSHARDS * 64 bytes");
+
+#else  // !HZ3_S121_F_PAGEQ_SHARD
+
+typedef struct {
+    _Atomic(void*) head;  // page header pointer (intrusive via page_qnext)
+} Hz3PageWorklist;
+
+#endif  // HZ3_S121_F_PAGEQ_SHARD
+
+#if HZ3_S121_F_PAGEQ_SHARD
+    // S121-F: Hash thread ID for sub-shard selection (avoid bias with my_shard)
+    uint32_t x = t_hz3_cache.my_tid_hash;
+    uint8_t subshard = (x ^ (x >> 7) ^ (x >> 13)) & (HZ3_S121_F_NUM_SUBSHARDS - 1);
+    _Atomic(void*)* headp = &q->shards[subshard].head;
+#else
+    _Atomic(void*)* headp = &q->head;
+#endif
+
+    void* old_head;
+#if HZ3_S121_F_STATS
+    int attempts = 0;
+#endif
+    do {
+        old_head = atomic_load_explicit(headp, memory_order_relaxed);
+        hdr->page_qnext = old_head;
+#if HZ3_S121_F_STATS
+        attempts++;
+#endif
+    } while (!atomic_compare_exchange_weak_explicit(
+        headp, &old_head, page,
+        memory_order_release, memory_order_relaxed));
+
+#if HZ3_S121_F_STATS
+    S121F_STAT_REGISTER();
+    S121F_STAT_INC(g_s121f_pageq_push_success);
+    if (attempts > 1) {
+        S121F_STAT_INC(g_s121f_pageq_push_contended);
+    }
+#endif
+#if HZ3_S121_STATS
+    atomic_fetch_add_explicit(&g_s121_pageq_enq, 1, memory_order_relaxed);
+#endif
+}
+
+// pageq_pop: Single consumer (owner thread only)
+// Uses CAS loop for correctness (MPSC: producers may push during pop)
+// S121-F: Iterates through sub-shards to find a page
+static inline void* hz3_pageq_pop(uint8_t owner, uint8_t sc) {
+    Hz3PageWorklist* q = &g_owner_pageq[owner][sc];
+
+#if HZ3_S121_F_PAGEQ_SHARD
+    // S121-F: Try each sub-shard in order
+    for (int ss = 0; ss < HZ3_S121_F_NUM_SUBSHARDS; ss++) {
+        _Atomic(void*)* headp = &q->shards[ss].head;
+        void* page;
+        do {
+            page = atomic_load_explicit(headp, memory_order_acquire);
+            if (!page) break;  // Try next sub-shard
+            Hz3S121PageHdr* hdr = (Hz3S121PageHdr*)page;
+            void* next = hdr->page_qnext;
+            if (atomic_compare_exchange_weak_explicit(
+                    headp, &page, next,
+                    memory_order_acq_rel, memory_order_relaxed)) {
+                return page;
+            }
+        } while (1);
+    }
+    return NULL;  // All sub-shards empty
+#else
+    void* page;
+    do {
+        page = atomic_load_explicit(&q->head, memory_order_acquire);
+        if (!page) return NULL;
+        Hz3S121PageHdr* hdr = (Hz3S121PageHdr*)page;
+        void* next = hdr->page_qnext;
+        if (atomic_compare_exchange_weak_explicit(
+                &q->head, &page, next,
+                memory_order_acq_rel, memory_order_relaxed)) {
+            return page;
+        }
+    } while (1);
+#endif
+}
+
+// S121-C: pageq_drain_all: Atomically take entire list (no CAS retry)
+// Returns linked list of pages via page_qnext, or NULL if empty
+#if HZ3_S121_F_PAGEQ_SHARD
+// S121-F: Drain one sub-shard at a time (call in loop 0..NUM_SUBSHARDS-1)
+static inline void* hz3_pageq_drain_subshard(uint8_t owner, uint8_t sc, int subshard_idx) {
+    Hz3PageWorklist* q = &g_owner_pageq[owner][sc];
+    // v2: avoid an RMW when the shard is empty (best-effort).
+    // If a producer pushes right after this load, we pick it up on the next drain.
+    if (atomic_load_explicit(&q->shards[subshard_idx].head, memory_order_acquire) == NULL) {
+        return NULL;
+    }
+    return atomic_exchange_explicit(&q->shards[subshard_idx].head, NULL, memory_order_acq_rel);
+}
+#endif
+
+static inline void* hz3_pageq_drain_all(uint8_t owner, uint8_t sc) {
+    Hz3PageWorklist* q = &g_owner_pageq[owner][sc];
+#if HZ3_S121_F_PAGEQ_SHARD
+    // S121-F: Drain sub-shard 0 only (for compatibility)
+    // Caller should use drain_subshard loop for full drain
+    return atomic_exchange_explicit(&q->shards[0].head, NULL, memory_order_acq_rel);
+#else
+    return atomic_exchange_explicit(&q->head, NULL, memory_order_acq_rel);
+#endif
+}
+
+// S121-C: pageq_push_list: Push a linked list of pages (batch requeue)
+// list_head/list_tail are linked via page_qnext
+// S121-F: Uses sub-shard based on caller's tid_hash
+static inline void hz3_pageq_push_list(uint8_t owner, uint8_t sc,
+                                        void* list_head, void* list_tail) {
+    if (!list_head) return;
+    Hz3PageWorklist* q = &g_owner_pageq[owner][sc];
+    Hz3S121PageHdr* tail_hdr = (Hz3S121PageHdr*)list_tail;
+
+#if HZ3_S121_F_PAGEQ_SHARD
+    uint32_t x = t_hz3_cache.my_tid_hash;
+    uint8_t subshard = (x ^ (x >> 7) ^ (x >> 13)) & (HZ3_S121_F_NUM_SUBSHARDS - 1);
+    _Atomic(void*)* headp = &q->shards[subshard].head;
+#else
+    _Atomic(void*)* headp = &q->head;
+#endif
+
+    void* old_head;
+    do {
+        old_head = atomic_load_explicit(headp, memory_order_relaxed);
+        tail_hdr->page_qnext = old_head;
+    } while (!atomic_compare_exchange_weak_explicit(
+        headp, &old_head, list_head,
+        memory_order_release, memory_order_relaxed));
+}
+
+#if HZ3_S121_F_PAGEQ_SHARD
+// S121-F v2: Push a linked list to a specific sub-shard (used for requeue-to-origin-shard)
+static inline void hz3_pageq_push_list_to_subshard(uint8_t owner, uint8_t sc, int subshard_idx,
+                                                   void* list_head, void* list_tail) {
+    if (!list_head) return;
+    Hz3PageWorklist* q = &g_owner_pageq[owner][sc];
+    Hz3S121PageHdr* tail_hdr = (Hz3S121PageHdr*)list_tail;
+    _Atomic(void*)* headp = &q->shards[subshard_idx].head;
+
+    void* old_head;
+    do {
+        old_head = atomic_load_explicit(headp, memory_order_relaxed);
+        tail_hdr->page_qnext = old_head;
+    } while (!atomic_compare_exchange_weak_explicit(
+        headp, &old_head, list_head,
+        memory_order_release, memory_order_relaxed));
+}
+#endif

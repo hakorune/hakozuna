@@ -272,6 +272,71 @@
   - 指示書: `hakozuna/hz3/docs/PHASE_HZ3_S144_OWNER_STASH_INSTANCE_BOX_WORK_ORDER.md`
   - 復活条件: Runtime configurable 化、または R=50% 専用 lane split
 
+- S146-B OverflowBatchBox（NO-GO, perf目的）:
+  - 目的: ring overflow 経由の `push_one` を TLS バッファでまとめ、CAS回数を削減
+  - 結果（RUNS=10, T=32/R=90, ring_slots=262144）: N=8 **-9%**, N=16 **-38%**（baseline ~226M → 205M/141M）
+  - 主因: list 構築と owner guard の固定費が CAS 削減効果を上回る
+  - 運用: archived（既定OFF）`hakozuna/hz3/archive/research/s146_overflow_batch_box/README.md`
+
+- S147 ReverseMailboxBox（NO-GO, perf目的）:
+  - 目的: Push型（CAS per object）を Pull型（TLS outbox + owner poll）に変更し、atomic 頻度を削減
+  - 結果:
+    - S147-0: T=32/R=90 **-50%**（O(threads) scan + notify race）
+    - S147-2: T=4/R=90 **-10.8%**、T=32/R=90 **-50%+**（2-buffer + pending bitset）
+  - 主因:
+    - **Rate mismatch**: Producer fill rate >> Owner drain rate
+    - **Fallback率 47%**: 両buffer満杯で `owner_stash_push_one` へ fallback
+    - **Scan cost**: T=32 で pending bitset scan overhead が支配
+  - 運用: archived（既定OFF）`hakozuna/hz3/archive/research/s147_reverse_mailbox/README.md`
+
+- S148 RemoteStashGroupingObserveBox（NO-GO, perf目的）:
+  - 目的: bucket=2（direct-map + stamp）でグループ化してCAS回数削減
+  - 結果: T=32/R=90 **-48%**（bucket=0: 20.3M → bucket=2: 10.5M ops/s）
+  - 発見: グループ化余地あり（nmax=7, saved_calls=11%）だが、bucketize overhead + overflow倍増が致命的
+  - 運用: bucket=0 を維持（グルーピング無効）
+
+- S150 S112 Prefetch（NO-GO, perf目的）:
+  - 目的: S112 (full drain exchange) の list walk に prefetch を追加
+  - 結果: T=32/R=90 **-19.5%** 退行（R=0 **+3.3%**）
+  - 主因: prefetch 固定費が上回る／S112 は既に hot で効果が薄い
+  - 運用: 変更リバート（prefetch追加なし）
+
+- S152 Batch=64（NO-GO, perf目的）:
+  - 目的: pop 側の batch を 64 に拡大し、取り回しを改善
+  - 結果: T=32/R=90 **-18.2%** 退行
+  - 主因: 長い list walk によるキャッシュ汚染の疑い
+
+- S155 EarlyPrefetchDist=2（NO-GO, perf目的）:
+  - 目的: `HZ3_S44_4_EARLY_PREFETCH_DIST=2` で early prefetch の距離を拡大
+  - 結果: r90 **-6.92%**, r50 **-6.45%**（T=8/16）で一貫退行
+  - 主因: 過剰 prefetch によるキャッシュ汚染
+  - 運用: dist=1 を既定維持（dist=2はNO-GO）
+
+- S156 WalkUnrollDist3（NO-GO, perf目的）:
+  - 目的: pop_batch walk を 2x unroll + prefetch dist=3 で高速化
+  - 結果: xmalloc-test **+0.17%**（ノイズ内）
+  - 主因: 追加命令の固定費が効果を相殺
+  - 運用: 既定OFF（採用せず）
+
+- S157 LazySpillInit（SKIPPED, perf目的）:
+  - 目的: TLS 初期化時の spill_array memset を省略して cache-thrash を改善
+  - 調査結果:
+    - spill_array は既に明示的 memset が無い（spill_count/spill_overflow のみ初期化）
+    - cache-thrash T=32 で hz3 が mimalloc に **+5.7%**（0.157s vs 0.166s）
+  - 判定: 対象の問題が存在しないため実装せず
+
+- S158 PGO（NO-GO, perf目的）:
+  - 目的: Profile-Guided Optimization で T=1 分岐ミスを低減
+  - 結果: **+0.97%**（133.8M → 135.1M、ノイズ範囲）
+  - 主因: tag==0 のデータ依存分岐は PGO では改善しにくい
+  - 運用: 既定OFF（採用せず）
+
+- S160 BestfitRange=8（NO-GO, perf目的）:
+  - 目的: `HZ3_S52_BESTFIT_RANGE=8` で malloc-large を改善
+  - 結果: SSOT small **-2.12%**（基準外）、medium **-1.16%**、mixed **-0.07%**
+  - 備考: malloc-large は **-3.2%** 改善するが、汎用 SSOT を退行させる
+  - 運用: range=4 を既定維持（range=8はNO-GO）
+
 ## Conditional KEEP（特定目的では採用）
 
 ※ここは「tinyだけ」を主目的にすると NO-GO だが、SSOT の別レンジで有意な改善があるため、
