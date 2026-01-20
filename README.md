@@ -107,7 +107,7 @@ Summary: hakozuna wins most multi-threaded workloads, especially remote-free hea
 | mimalloc | 130.2M |
 | system | 108.5M |
 
-**Summary**: hakozuna wins in most multi-threaded workloads, especially remote-free heavy scenarios (+28%). At extreme thread counts (T=32 R=90%), mimalloc currently leads.
+**Summary**: hakozuna wins in most multi-threaded workloads, especially remote-free heavy cases (e.g. T=8 R=90 at +46%). At T=32 R=90, hz3 and mimalloc are very close; in WSL2 the median slightly favors hz3, but variance is large.
 
 ## Documentation
 
