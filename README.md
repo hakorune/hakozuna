@@ -81,6 +81,16 @@ Note: WSL2/9950X medians; tcmalloc column uses prior stable run due to variance.
 
 Summary: hakozuna wins most multi-threaded workloads, especially remote-free heavy cases (e.g. T=8 R=90 at +46%). At T=32 R=90, hz3 and mimalloc are very close; in WSL2 the median slightly favors hz3, but variance is large.
 
+### RSS snapshot (WSL2, ru_maxrss, lower is better)
+
+| Benchmark | hz3 | mimalloc | tcmalloc | system |
+|-----------|-----|----------|----------|--------|
+| random_mixed | 3.0 MB | 2.1 MB | 7.8 MB | 2.0 MB |
+| alloc-test | 28.9 MB | 72.4 MB | 20.8 MB | 19.6 MB |
+| espresso | 6.2 MB | 7.6 MB | 10.7 MB | 2.6 MB |
+
+Note: RSS varies by workload; see `docs/paper/RESULTS_20260118.md` for full context.
+
 ### memcached (ops/sec, higher is better)
 
 | Threads | hakozuna | mimalloc | tcmalloc |
