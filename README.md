@@ -1,83 +1,81 @@
-# hakozuna (hz3)
+# hakozuna (hz3) / hakozuna-mt (hz4)
 
 [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.18357813-blue)](https://doi.org/10.5281/zenodo.18357813)
 
-**A high-performance memory allocator competitive with mimalloc and tcmalloc**
+**High-performance memory allocators competitive with mimalloc and tcmalloc**
 
 Part of the [hakorune](https://github.com/hakorune) project.
 
 ---
 
-## Highlights
+## Variants
 
-- **Performance**: Matches or exceeds mimalloc/tcmalloc in multi-threaded workloads
-- **Remote-free optimization**: +28% over mimalloc at 50%+ remote-free ratio
-- **Box Theory design**: Boundary-focused architecture with reversible optimizations
-- **Two lanes**: `fast` (low latency) and `scale` (high parallelism)
-
-## Architecture
-
-![hakozuna Architecture](docs/images/architecture_overview.png)
-
-## Paper
-
-- [ACE-Alloc Paper (English)](docs/paper/main_en.pdf)
-- [ACE-Alloc Paper (日本語)](docs/paper/main_ja.pdf)
+- **hz3 (hakozuna)**: Local-heavy performance + minimal RSS footprint. Default for most workloads.
+- **hz4 (hakozuna-mt)**: Message-passing, remote-heavy scaling (best at high thread counts).
 
 ## Quick Start
 
 ```bash
-# Build (scale lane, default)
+# hz3 (scale lane, default)
+cd hakozuna/hz3
 make clean all_ldpreload_scale
-
-# Smoke test
-LD_PRELOAD=./libhakozuna_hz3_scale.so /bin/true
-
-# Run with your application
 LD_PRELOAD=./libhakozuna_hz3_scale.so ./your_app
+
+# hz4 (standalone allocator)
+cd ../hz4
+make clean all
+LD_PRELOAD=./libhakozuna_hz4.so ./your_app
 ```
 
-## Build Options
+## Paper / Artifacts
 
-| Target | Output | Use case |
-|--------|--------|----------|
-| `all_ldpreload_scale` | `libhakozuna_hz3_scale.so` | Default, 32 shards, high parallelism |
-| `all_ldpreload_fast` | `libhakozuna_hz3_fast.so` | 8 shards, low latency |
-| `all_ldpreload_scale_tolerant` | - | Collision-tolerant for very high thread counts |
+- [ACE-Alloc Paper (English)](docs/paper/main_en.pdf)
+- [ACE-Alloc Paper (日本語)](docs/paper/main_ja.pdf)
+- DOI: https://doi.org/10.5281/zenodo.18357813
 
-### Preset Variants
+## Benchmark Snapshot (2026-01-24, Ubuntu native, 16 cores)
 
-```bash
-# Remote-heavy optimized (r50 = 50% remote ratio target)
-make all_ldpreload_scale_r50
-make all_ldpreload_scale_r50_s97_1   # S97-1 remote bucketize
-make all_ldpreload_scale_r50_s97_8   # S97-8 sort+group (stack-only)
+**SSOT T=16 / R=90 (median of 10):**
 
-# High remote ratio (r90 = 90% remote ratio target)
-make all_ldpreload_scale_r90
-make all_ldpreload_scale_r90_pf2
-make all_ldpreload_scale_r90_pf2_s97_2   # Direct-map (best at T>=16)
-make all_ldpreload_scale_r90_pf2_s97_8_t8 # Sort+group (best at T=8)
-```
+| Allocator | ops/s |
+|-----------|-------|
+| hz4 | 81.7M |
+| tcmalloc | 77.8M |
+| mimalloc | 72.2M |
+| hz3 | 71.6M |
 
-## Benchmarks
+**R sweep (T=16):**
 
-Run the SSOT benchmark suite:
+| R | hz3 | hz4 | mimalloc | tcmalloc |
+|---|-----|-----|---------|----------|
+| 0% | **359.6M** | 249.6M | 300.5M | 357.0M |
+| 50% | 94.4M | 97.4M | 84.6M | 103.3M |
+| 90% | 75.3M | **97.3M** | 75.1M | 74.9M |
 
-```bash
-RUNS=10 ITERS=20000000 WS=400 ./scripts/run_bench_hz3_ssot.sh
-```
+**ST dist_app (16–65536):**
 
-### Larson (ops/sec, higher is better)
+| Allocator | ops/s |
+|-----------|-------|
+| tcmalloc | 80.2M |
+| hz3 | 75.2M |
+| mimalloc | 73.4M |
+| hz4 | 51.6M |
 
-| Threads | hakozuna | mimalloc | tcmalloc | system |
-|---------|-----|----------|----------|--------|
-| T=1 | 30.32M | 20.97M | 31.19M | 7.07M |
-| T=4 | 108.65M | 75.52M | 104.29M | 21.67M |
-| T=8 | **191.96M** | 135.67M | 170.35M | 37.14M |
-| T=16 | **297.82M** | 216.72M | 246.06M | 59.31M |
+**RSS MT remote (T=16/R=90):**
 
-Note: WSL2/9950X medians; tcmalloc column uses prior stable run due to variance. Full logs in `docs/paper/RESULTS_20260118.md`.
+| Allocator | Max RSS (GB) |
+|-----------|--------------|
+| **hz3** | **1.36 GB** |
+| mimalloc | 1.52 GB |
+| hz4 | 2.04 GB |
+| tcmalloc | 2.34 GB |
+
+Full results and commands: `docs/benchmarks/2026-01-24_PAPER_BENCH_RESULTS.md`
+
+## Notes
+
+- hz3 stability for paper runs: `S62_RETIRE=0, S62_PURGE=0`.
+- hz3 has two lanes: `fast` (low latency) and `scale` (high parallelism).
 
 Summary: hakozuna wins most multi-threaded workloads, especially remote-free heavy cases (e.g. T=8 R=90 at +46%). At T=32 R=90, hz3 and mimalloc are very close; in WSL2 the median slightly favors hz3, but variance is large.
 
