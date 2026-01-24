@@ -1,6 +1,6 @@
 # hakozuna (hz3)
 
-[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.18305953-blue)](https://doi.org/10.5281/zenodo.18305953)
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.18357813-blue)](https://doi.org/10.5281/zenodo.18357813)
 
 **A high-performance memory allocator competitive with mimalloc and tcmalloc**
 
