@@ -136,14 +136,26 @@ typedef struct {
 
 
 // Day 5: Refill batch size per size class (compile-time constant)
-// Larger batches for smaller objects to amortize slow path overhead
-// S26-1: sc=5,6,7 raised from 2 to 3 for 16KB–32KB supply efficiency
-// S26-1B (batch=4) was NO-GO: regression on S25-D and dist=app
+// Larger batches for smaller objects to amortize slow path overhead.
+// S188 opt-in can override sc=5..7 for medium-path A/B.
+#if HZ3_S188_MEDIUM_REFILL_TUNE
+#define HZ3_REFILL_SC5 HZ3_S188_REFILL_SC5
+#define HZ3_REFILL_SC6 HZ3_S188_REFILL_SC6
+#define HZ3_REFILL_SC7 HZ3_S188_REFILL_SC7
+#else
+#define HZ3_REFILL_SC5 3
+#define HZ3_REFILL_SC6 3
+#define HZ3_REFILL_SC7 3
+#endif
+
 // S-OOM: Extended to 16 classes (sc=8..15 for 36KB-64KB)
 static const uint8_t HZ3_REFILL_BATCH[16] = {
-    12, 8, 4, 4, 4, 3, 3, 3,  // sc=0..7 (4KB-32KB)
-    3,  3, 2, 2, 2, 2, 2, 2   // sc=8..15 (36KB-64KB)
+    12, 8, 4, 4, 4, HZ3_REFILL_SC5, HZ3_REFILL_SC6, HZ3_REFILL_SC7,  // sc=0..7
+    3,  3, 2, 2, 2, 2, 2, 2                                            // sc=8..15
 };
+#undef HZ3_REFILL_SC5
+#undef HZ3_REFILL_SC6
+#undef HZ3_REFILL_SC7
 
 // Day 4: Outbox for remote free
 #define HZ3_OUTBOX_SIZE     32
@@ -158,7 +170,12 @@ typedef struct {
 typedef struct {
     uint8_t  dst;
     uint8_t  bin;
+#if HZ3_RBUF_KEY
+    uint16_t key;   // (dst<<8)|bin cached at push boundary
+    uint8_t  _pad[4];
+#else
     uint8_t  _pad[6];
+#endif
     void*    ptr;
 } Hz3RemoteStashEntry;  // 16 bytes
 
@@ -269,6 +286,7 @@ typedef struct {
     uint8_t  remote_dst_cursor;
     uint16_t remote_bin_cursor;
     uint8_t  remote_hint;           // "remote bin may exist" flag
+    uint16_t remote_flush_credit;   // S173: sparse remote flush demand credit
 #if HZ3_PTAG_DSTBIN_TLS
     void*   arena_base;            // TLS snapshot of arena base
     _Atomic(uint32_t)* page_tag32;  // TLS snapshot of PTAG32 base

@@ -1,0 +1,137 @@
+# hz4 Makefile
+# Box Theory: 最小構成でテスト可能に
+
+CC ?= gcc
+CFLAGS = -O2 -g -fno-omit-frame-pointer -g -fno-omit-frame-pointer -Wall -Wextra -Werror -std=c11
+CFLAGS_DEBUG = -O0 -g -Wall -Wextra -Werror -std=c11 -DHZ4_FAILFAST=1
+TLS_CFLAGS =
+HZ4_TLS_INITIAL_EXEC ?= 1
+HZ4_DEFS_EXTRA ?=
+
+ifeq ($(HZ4_TLS_INITIAL_EXEC),1)
+TLS_CFLAGS += -ftls-model=initial-exec
+endif
+
+CORE_DIR = core
+INC_DIR = include
+SRC_DIR = src
+TEST_DIR = tests
+OUT_DIR = out
+
+LIB_TARGET = libhakozuna_hz4.so
+
+CORE_HEADERS = \
+	$(CORE_DIR)/hz4_config.h \
+	$(CORE_DIR)/hz4_types.h \
+	$(CORE_DIR)/hz4_page.h \
+	$(CORE_DIR)/hz4_seg.h \
+	$(CORE_DIR)/hz4_tls.h \
+	$(CORE_DIR)/hz4_pagetag.h
+
+CORE_INCS = \
+	$(CORE_DIR)/hz4_segq.inc \
+	$(CORE_DIR)/hz4_remote_flush.inc \
+	$(CORE_DIR)/hz4_collect.inc \
+	$(CORE_DIR)/hz4_inbox.inc
+
+INC_HEADERS = \
+	$(INC_DIR)/hz4_sizeclass.h \
+	$(INC_DIR)/hz4_os.h \
+	$(INC_DIR)/hz4_segment.h \
+	$(INC_DIR)/hz4_tls_init.h \
+	$(INC_DIR)/hz4_tcache.h \
+	$(INC_DIR)/hz4_mid.h \
+	$(INC_DIR)/hz4_large.h
+
+.PHONY: all clean test test_debug bench
+
+# ベンチ用（統計 ON、最適化 ON）
+CFLAGS_BENCH = -O2 -Wall -Wextra -Werror -std=c11 -DHZ4_STATS=1
+
+all: $(LIB_TARGET) $(OUT_DIR)/hz4_segq_test $(OUT_DIR)/hz4_basic_test $(OUT_DIR)/hz4_route_smoke $(OUT_DIR)/hz4_route_edges
+
+$(OUT_DIR):
+	mkdir -p $(OUT_DIR)
+
+# ============================================================================
+# Unit Tests
+# ============================================================================
+$(OUT_DIR)/hz4_segq_test: $(TEST_DIR)/hz4_segq_test.c $(CORE_HEADERS) $(CORE_INCS) | $(OUT_DIR)
+	$(CC) $(CFLAGS_DEBUG) $(HZ4_DEFS_EXTRA) -I$(CORE_DIR) -I$(INC_DIR) -o $@ $< -lpthread
+
+$(OUT_DIR)/hz4_basic_test: $(TEST_DIR)/hz4_basic_test.c $(CORE_HEADERS) $(CORE_INCS) | $(OUT_DIR)
+	$(CC) $(CFLAGS_DEBUG) $(HZ4_DEFS_EXTRA) -I$(CORE_DIR) -I$(INC_DIR) -o $@ $< -lpthread
+
+$(OUT_DIR)/hz4_route_smoke: $(TEST_DIR)/hz4_route_smoke.c $(LIB_SRCS) $(CORE_HEADERS) $(CORE_INCS) $(INC_HEADERS) | $(OUT_DIR)
+	$(CC) $(CFLAGS_DEBUG) $(HZ4_DEFS_EXTRA) -I$(CORE_DIR) -I$(INC_DIR) -o $@ $(TEST_DIR)/hz4_route_smoke.c \
+		$(SRC_DIR)/hz4_os.c $(SRC_DIR)/hz4_segment.c $(SRC_DIR)/hz4_tls_init.c \
+		$(SRC_DIR)/hz4_tcache.c $(SRC_DIR)/hz4_mid.c $(SRC_DIR)/hz4_large.c $(SRC_DIR)/hz4_inbox.c $(SRC_DIR)/hz4_pagetag.c -lpthread
+
+$(OUT_DIR)/hz4_route_edges: $(TEST_DIR)/hz4_route_edges.c $(LIB_SRCS) $(CORE_HEADERS) $(CORE_INCS) $(INC_HEADERS) | $(OUT_DIR)
+	$(CC) $(CFLAGS_DEBUG) $(HZ4_DEFS_EXTRA) -I$(CORE_DIR) -I$(INC_DIR) -o $@ $(TEST_DIR)/hz4_route_edges.c \
+		$(SRC_DIR)/hz4_os.c $(SRC_DIR)/hz4_segment.c $(SRC_DIR)/hz4_tls_init.c \
+		$(SRC_DIR)/hz4_tcache.c $(SRC_DIR)/hz4_mid.c $(SRC_DIR)/hz4_large.c $(SRC_DIR)/hz4_shim.c $(SRC_DIR)/hz4_inbox.c $(SRC_DIR)/hz4_pagetag.c -lpthread
+
+# ============================================================================
+# Run Tests
+# ============================================================================
+test: $(OUT_DIR)/hz4_segq_test $(OUT_DIR)/hz4_basic_test $(OUT_DIR)/hz4_route_smoke $(OUT_DIR)/hz4_route_edges
+	@echo "=== Running hz4_segq_test ==="
+	./$(OUT_DIR)/hz4_segq_test
+	@echo ""
+	@echo "=== Running hz4_basic_test ==="
+	./$(OUT_DIR)/hz4_basic_test
+	@echo ""
+	@echo "=== Running hz4_route_smoke ==="
+	./$(OUT_DIR)/hz4_route_smoke
+	@echo ""
+	@echo "=== Running hz4_route_edges ==="
+	./$(OUT_DIR)/hz4_route_edges
+	@echo ""
+	@echo "All tests passed!"
+
+test_debug: $(OUT_DIR)/hz4_segq_test $(OUT_DIR)/hz4_basic_test $(OUT_DIR)/hz4_route_smoke $(OUT_DIR)/hz4_route_edges
+	@echo "=== Running hz4_segq_test (debug) ==="
+	./$(OUT_DIR)/hz4_segq_test
+	@echo ""
+	@echo "=== Running hz4_basic_test (debug) ==="
+	./$(OUT_DIR)/hz4_basic_test
+	@echo ""
+	@echo "=== Running hz4_route_smoke (debug) ==="
+	./$(OUT_DIR)/hz4_route_smoke
+	@echo ""
+	@echo "=== Running hz4_route_edges (debug) ==="
+	./$(OUT_DIR)/hz4_route_edges
+
+# ============================================================================
+# Benchmark
+# ============================================================================
+$(OUT_DIR)/bench_hz4: $(TEST_DIR)/hz4_bench.c $(CORE_HEADERS) $(CORE_INCS) | $(OUT_DIR)
+	$(CC) $(CFLAGS_BENCH) $(HZ4_DEFS_EXTRA) -I$(CORE_DIR) -I$(INC_DIR) -o $@ $< -lpthread
+
+# ============================================================================
+# Shared Library (LD_PRELOAD)
+# ============================================================================
+LIB_SRCS = \
+	$(SRC_DIR)/hz4_os.c \
+	$(SRC_DIR)/hz4_segment.c \
+	$(SRC_DIR)/hz4_tls_init.c \
+	$(SRC_DIR)/hz4_tcache.c \
+	$(SRC_DIR)/hz4_mid.c \
+	$(SRC_DIR)/hz4_large.c \
+	$(SRC_DIR)/hz4_shim.c \
+	$(SRC_DIR)/hz4_inbox.c \
+	$(SRC_DIR)/hz4_pagetag.c
+
+$(LIB_TARGET): $(LIB_SRCS) $(CORE_HEADERS) $(CORE_INCS) $(INC_HEADERS)
+	$(CC) $(CFLAGS) $(TLS_CFLAGS) $(HZ4_DEFS_EXTRA) -fPIC -I$(CORE_DIR) -I$(INC_DIR) -shared -o $@ $(LIB_SRCS) -lpthread
+
+bench: $(OUT_DIR)/bench_hz4
+	@echo "=== Running hz4 bench ==="
+	./$(OUT_DIR)/bench_hz4 4 1000000 90 64
+
+# ============================================================================
+# Clean
+# ============================================================================
+clean:
+	rm -rf $(OUT_DIR) $(LIB_TARGET)

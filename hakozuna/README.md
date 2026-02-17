@@ -42,6 +42,9 @@ Bench entrypoint (SSOT lane triage):
 ## Flags / Docs
 
 - Build flags index: `hakozuna/hz3/docs/BUILD_FLAGS_INDEX.md`
+- GO台帳（運用の正）: `hakozuna/hz3/docs/HZ3_GO_BOXES.md`
+- NO-GO台帳（#errorの正）: `hakozuna/hz3/docs/HZ3_ARCHIVED_BOXES.md`
+- NO-GO台帳（研究箱アーカイブ）: `hakozuna/hz3/docs/NO_GO_SUMMARY.md`
 - Paper notes (draft): `hakozuna/hz3/docs/HAKMEM_HZ3_PAPER_NOTES.md`
 
 ## Safety notes

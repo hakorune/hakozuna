@@ -99,3 +99,18 @@
   - 2026-01-07: S56-1A（Pack Best-Fit K=2）は “bounded実装ミス” で SSOT が大きく退行 → S56-1B（K候補で即終了）へ修正。
     - S56-1B（暫定）: small/medium は改善〜同等、mixed は +9.8% 退行が残る。
     - RSS は同一ワークロードでの A/B を揃えて再測定が必要（baseline/treatment でベンチが分裂したため）。
+
+## hz3 large 次キュー（hz4 lock 後）
+
+- S238: LargeDirectHeaderLookupBox（planned）
+  - 目的: `hz3_large_take()` の hash bucket 走査コストを減らし、large free の固定費を下げる。
+  - 境界: `hz3_large_take()` を唯一の変換点にする（Box理論の境界1箇所）。
+  - 安全条件:
+    - direct path は `magic` と `user_ptr` の一致を必須にする。
+    - `hz3_large_aligned_alloc` 由来の pointer は固定 offset 直引きに乗せない（必ず fallback 可）。
+    - fallback の hash map 経路を維持し、判定失敗時は即座に戻す。
+  - 成功条件（screen）:
+    - `cross128` または `malloc-large` で改善（RUNS 固定の median 比較）
+    - `guard/main` で明確な退行なし
+  - 指示書:
+    - `hakozuna/hz3/docs/PHASE_HZ3_S238_LARGE_DIRECT_HEADER_LOOKUP_WORK_ORDER.md`

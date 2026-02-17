@@ -13,4 +13,10 @@ typedef struct {
 // Global inbox instance: owner x sc
 hz4_inbox_head_t g_hz4_inbox[HZ4_NUM_SHARDS][HZ4_SC_MAX];
 
+#if HZ4_INBOX_LITE
+// Stage5-1b: Inbox-lite epoch hint (per owner shard).
+// Zero-initialized.
+_Alignas(64) _Atomic(uint32_t) g_hz4_inbox_epoch[HZ4_NUM_SHARDS];
+#endif
+
 #endif  // HZ4_REMOTE_INBOX

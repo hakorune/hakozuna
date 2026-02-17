@@ -14,13 +14,88 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/mman.h>
+#if HZ3_S182_LARGE_CACHE_SPINLOCK
+#if !defined(_WIN32)
+#include <sched.h>
+#endif
+#endif
 
 #define HZ3_LARGE_MAGIC 0x485a334c41524745ULL  // "HZ3LARGE"
 #define HZ3_LARGE_HASH_BITS 10
 #define HZ3_LARGE_HASH_SIZE (1u << HZ3_LARGE_HASH_BITS)
 
-static hz3_lock_t g_hz3_large_lock = HZ3_LOCK_INITIALIZER;
+static inline size_t hz3_large_user_offset(void);
+
 static Hz3LargeHdr* g_hz3_large_buckets[HZ3_LARGE_HASH_SIZE];
+static hz3_lock_t g_hz3_large_map_locks[HZ3_S181_LARGE_MAP_LOCK_STRIPES] = {
+    [0 ... HZ3_S181_LARGE_MAP_LOCK_STRIPES - 1] = HZ3_LOCK_INITIALIZER
+};
+
+#if HZ3_S182_LARGE_CACHE_SPINLOCK
+static atomic_flag g_hz3_large_cache_spin = ATOMIC_FLAG_INIT;
+
+static inline void hz3_large_spin_pause_hint(void) {
+#if defined(__x86_64__) || defined(__i386__)
+    __builtin_ia32_pause();
+#elif defined(__aarch64__) || defined(__arm__)
+    __asm__ __volatile__("yield");
+#else
+    atomic_signal_fence(memory_order_seq_cst);
+#endif
+}
+
+static inline void hz3_large_spin_thread_yield(void) {
+#if defined(_WIN32)
+    SwitchToThread();
+#else
+    sched_yield();
+#endif
+}
+
+static inline void hz3_large_cache_lock_acquire(void) {
+    uint32_t spins = 0;
+#if HZ3_S182_SPIN_ADAPTIVE_YIELD
+    uint32_t next_yield_at = HZ3_S182_SPIN_YIELD_START;
+    uint32_t stage = 0;
+#endif
+    while (atomic_flag_test_and_set_explicit(&g_hz3_large_cache_spin, memory_order_acquire)) {
+        ++spins;
+#if HZ3_S182_SPIN_PAUSE_INTERVAL > 0
+        if ((spins % HZ3_S182_SPIN_PAUSE_INTERVAL) == 0u) {
+            hz3_large_spin_pause_hint();
+        }
+#endif
+#if HZ3_S182_SPIN_ADAPTIVE_YIELD
+        if (spins >= next_yield_at) {
+            hz3_large_spin_thread_yield();
+            if (stage < HZ3_S182_SPIN_ADAPTIVE_MAX_STAGE) {
+                ++stage;
+            }
+            next_yield_at += (HZ3_S182_SPIN_YIELD_INTERVAL << stage);
+        }
+#else
+        if (spins >= HZ3_S182_SPIN_YIELD_START &&
+            ((spins - HZ3_S182_SPIN_YIELD_START) % HZ3_S182_SPIN_YIELD_INTERVAL) == 0u) {
+            hz3_large_spin_thread_yield();
+        }
+#endif
+    }
+}
+
+static inline void hz3_large_cache_lock_release(void) {
+    atomic_flag_clear_explicit(&g_hz3_large_cache_spin, memory_order_release);
+}
+#else
+static hz3_lock_t g_hz3_large_lock = HZ3_LOCK_INITIALIZER;
+
+static inline void hz3_large_cache_lock_acquire(void) {
+    hz3_lock_acquire(&g_hz3_large_lock);
+}
+
+static inline void hz3_large_cache_lock_release(void) {
+    hz3_lock_release(&g_hz3_large_lock);
+}
+#endif
 
 #if HZ3_LARGE_CACHE_ENABLE
 #if HZ3_S50_LARGE_SCACHE
@@ -28,7 +103,21 @@ static Hz3LargeHdr* g_hz3_large_buckets[HZ3_LARGE_HASH_SIZE];
 static Hz3LargeHdr* g_sc_head[HZ3_LARGE_SC_COUNT];
 static size_t g_sc_bytes[HZ3_LARGE_SC_COUNT];
 static uint32_t g_sc_nodes[HZ3_LARGE_SC_COUNT];
+#if HZ3_S183_LARGE_CLASS_LOCK_SPLIT
+static hz3_lock_t g_sc_locks[HZ3_LARGE_SC_COUNT] = {
+    [0 ... HZ3_LARGE_SC_COUNT - 1] = HZ3_LOCK_INITIALIZER
+};
+static _Atomic size_t g_total_cached_bytes = 0;  // 全体の cached bytes
+#else
 static size_t g_total_cached_bytes = 0;  // 全体の cached bytes
+#endif
+#if HZ3_S184_LARGE_FREE_PRECHECK
+// Relaxed hint for free-path precheck (S184). Real admission is still checked under lock.
+static _Atomic size_t g_total_cached_bytes_hint = 0;
+#endif
+#if HZ3_S207_TARGETED_REUSE
+static _Atomic uint16_t g_sc_reuse_credit[HZ3_LARGE_SC_COUNT];
+#endif
 #else
 // Legacy: single LIFO
 static Hz3LargeHdr* g_hz3_large_free_head = NULL;
@@ -37,159 +126,251 @@ static size_t g_hz3_large_cached_nodes = 0;
 #endif
 #endif
 
-// S53: LargeCacheBudgetBox statistics (one-shot)
-#if HZ3_LARGE_CACHE_STATS
-static _Atomic size_t g_budget_soft_hits = 0;
-static _Atomic size_t g_budget_hard_evicts = 0;
-static _Atomic size_t g_budget_madvise_bytes = 0;
-// S53-2: Throttle stats
-static _Atomic size_t g_throttle_skips = 0;
-static _Atomic size_t g_throttle_fires = 0;
-
-static void hz3_large_cache_stats_dump(void) {
-    static _Atomic int g_stats_dumped = 0;
-    if (atomic_exchange(&g_stats_dumped, 1) == 0) {
 #if HZ3_LARGE_CACHE_ENABLE && HZ3_S50_LARGE_SCACHE
-        fprintf(stderr, "[HZ3_LARGE_CACHE_BUDGET] cached=%zu soft_hits=%zu hard_evicts=%zu "
-                "madvise_bytes=%zu throttle_skips=%zu throttle_fires=%zu\n",
-                g_total_cached_bytes,
-                atomic_load(&g_budget_soft_hits),
-                atomic_load(&g_budget_hard_evicts),
-                atomic_load(&g_budget_madvise_bytes),
-                atomic_load(&g_throttle_skips),
-                atomic_load(&g_throttle_fires));
+static inline size_t hz3_large_total_cached_load(void) {
+#if HZ3_S183_LARGE_CLASS_LOCK_SPLIT
+    return atomic_load_explicit(&g_total_cached_bytes, memory_order_relaxed);
+#else
+    return g_total_cached_bytes;
 #endif
+}
+
+static inline void hz3_large_total_cached_add(size_t bytes) {
+#if HZ3_S183_LARGE_CLASS_LOCK_SPLIT
+    atomic_fetch_add_explicit(&g_total_cached_bytes, bytes, memory_order_relaxed);
+#else
+    g_total_cached_bytes += bytes;
+#endif
+#if HZ3_S184_LARGE_FREE_PRECHECK
+    atomic_fetch_add_explicit(&g_total_cached_bytes_hint, bytes, memory_order_relaxed);
+#endif
+}
+
+static inline void hz3_large_total_cached_sub(size_t bytes) {
+#if HZ3_S183_LARGE_CLASS_LOCK_SPLIT
+    atomic_fetch_sub_explicit(&g_total_cached_bytes, bytes, memory_order_relaxed);
+#else
+    g_total_cached_bytes -= bytes;
+#endif
+#if HZ3_S184_LARGE_FREE_PRECHECK
+    atomic_fetch_sub_explicit(&g_total_cached_bytes_hint, bytes, memory_order_relaxed);
+#endif
+}
+
+#if HZ3_S184_LARGE_FREE_PRECHECK
+static inline size_t hz3_large_total_cached_hint_load(void) {
+    return atomic_load_explicit(&g_total_cached_bytes_hint, memory_order_relaxed);
+}
+#endif
+
+static inline void hz3_large_sc_lock_acquire(int sc) {
+#if HZ3_S183_LARGE_CLASS_LOCK_SPLIT
+    hz3_lock_acquire(&g_sc_locks[sc]);
+#else
+    (void)sc;
+#endif
+}
+
+static inline void hz3_large_sc_lock_release(int sc) {
+#if HZ3_S183_LARGE_CLASS_LOCK_SPLIT
+    hz3_lock_release(&g_sc_locks[sc]);
+#else
+    (void)sc;
+#endif
+}
+
+static inline Hz3LargeHdr* hz3_large_sc_try_pop_locked(int sc, size_t need, int exact_fit) {
+    Hz3LargeHdr* hdr = g_sc_head[sc];
+    if (!hdr || hdr->magic != HZ3_LARGE_MAGIC) {
+        return NULL;
     }
-}
-#endif
-
-// S53-2: ThrottleBox state
-#if HZ3_LARGE_CACHE_BUDGET && HZ3_S53_THROTTLE
-static _Atomic int64_t g_hz3_s53_scavenge_counter_pages = HZ3_S53_MADVISE_RATE_PAGES;
-static _Atomic uint32_t g_hz3_s53_free_counter = 0;
-#endif
-
-static inline uint32_t hz3_large_hash_ptr(const void* ptr) {
-    uintptr_t v = (uintptr_t)ptr;
-    v >>= 4;
-    v ^= v >> 33;
-    v ^= v >> 11;
-    return (uint32_t)v & (HZ3_LARGE_HASH_SIZE - 1u);
-}
-
-static inline size_t hz3_large_user_offset(void) {
-    return (sizeof(Hz3LargeHdr) + (HZ3_LARGE_ALIGN - 1u)) & ~(HZ3_LARGE_ALIGN - 1u);
-}
-
-// S50: Page alignment helper
-static inline size_t hz3_page_align(size_t n) {
-    return (n + 4095) & ~(size_t)4095;
-}
-
-#if HZ3_S50_LARGE_SCACHE
-// S50: size → class index
-// 32KB〜64MB を 8 分割/倍（97 classes）
-static inline int hz3_large_sc(size_t size) {
-    if (size <= HZ3_LARGE_SC_MIN) return 0;
-    if (size > HZ3_LARGE_SC_MAX) return HZ3_LARGE_SC_COUNT - 1;
-    // ceil(log2) で bits を取得
-    int bits = 64 - __builtin_clzl((uint64_t)(size - 1));
-    // 32KB〜64KB (bits=16) が class 0..7 になるよう bits-16
-    int base = (bits - 16) * 8;
-    if (base < 0) return 0;  // safety clamp
-    size_t range_min = 1UL << (bits - 1);
-    int sub = (int)((size - range_min) * 8 / range_min);
-    if (sub < 0) sub = 0;  // safety clamp
-    if (sub > 7) sub = 7;  // クランプ
-    int sc = base + sub;
-    if (sc < 0) return 0;
-    if (sc >= HZ3_LARGE_SC_COUNT) return HZ3_LARGE_SC_COUNT - 1;
-    return sc;
-}
-
-// S50: class index → size (for mmap allocation)
-// Returns the UPPER bound of the class (maximum size that fits in this class)
-static inline size_t hz3_large_sc_size(int sc) {
-    if (sc < 0) sc = 0;
-    if (sc >= HZ3_LARGE_SC_COUNT - 1) return 0;  // >64MB: キャッシュ対象外
-    int range = sc / 8;
-    int sub = sc % 8;
-    size_t base_size = 1UL << (15 + range);  // 32KB * 2^range
-    // Upper bound: base + base * (sub + 1) / 8
-    return base_size + base_size * (sub + 1) / 8;
-}
-#endif
-
-static void hz3_large_insert(Hz3LargeHdr* hdr) {
-    uint32_t idx = hz3_large_hash_ptr(hdr->user_ptr);
-    hz3_lock_acquire(&g_hz3_large_lock);
-    hdr->next = g_hz3_large_buckets[idx];
-    g_hz3_large_buckets[idx] = hdr;
-    hz3_large_debug_on_bucket_insert_locked(hdr);
-    hz3_lock_release(&g_hz3_large_lock);
-}
-
-static Hz3LargeHdr* hz3_large_take(const void* ptr) {
-    uint32_t idx = hz3_large_hash_ptr(ptr);
-    hz3_lock_acquire(&g_hz3_large_lock);
-    Hz3LargeHdr* prev = NULL;
-    Hz3LargeHdr* cur = g_hz3_large_buckets[idx];
-    while (cur) {
-        // Debug: basic header sanity (one-shot) before deref-heavy checks.
-        hz3_large_debug_check_bucket_node_locked(cur);
-        if (cur->magic != HZ3_LARGE_MAGIC ||
-            cur->map_base == NULL ||
-            cur->map_size == 0 ||
-            cur->user_ptr == NULL) {
-            hz3_large_debug_bad_hdr_locked(cur);
-        }
-        hz3_large_debug_bad_size_locked(cur);
-        if (cur->user_ptr == ptr && cur->magic == HZ3_LARGE_MAGIC) {
-#if HZ3_LARGE_CANARY_ENABLE
-            hz3_large_debug_check_canary_free(cur);
-#endif
-#if HZ3_LARGE_CACHE_ENABLE
-            // in_use==1 のみ許可（double-free 検出）
-            if (cur->in_use != 1) {
-                hz3_large_debug_bad_inuse(cur);
-                hz3_lock_release(&g_hz3_large_lock);
-                return NULL;
-            }
-#endif
-            if (prev) {
-                prev->next = cur->next;
-            } else {
-                g_hz3_large_buckets[idx] = cur->next;
-            }
-            cur->next = NULL;  // bucket list から切断
-            hz3_large_debug_on_bucket_remove_locked(cur);
-            hz3_lock_release(&g_hz3_large_lock);
-            return cur;
-        }
-        prev = cur;
-        cur = cur->next;
+    if (exact_fit ? (hdr->map_size != need) : (hdr->map_size < need)) {
+        return NULL;
     }
-    hz3_lock_release(&g_hz3_large_lock);
-    return NULL;
+    g_sc_head[sc] = hdr->next_free;
+    g_sc_bytes[sc] -= hdr->map_size;
+    g_sc_nodes[sc]--;
+    hz3_large_total_cached_sub(hdr->map_size);
+    hz3_large_debug_on_cache_remove_locked(hdr);
+    return hdr;
 }
 
-static int hz3_large_find_size(const void* ptr, size_t* size_out) {
-    uint32_t idx = hz3_large_hash_ptr(ptr);
-    hz3_lock_acquire(&g_hz3_large_lock);
-    Hz3LargeHdr* cur = g_hz3_large_buckets[idx];
-    while (cur) {
-        if (cur->user_ptr == ptr && cur->magic == HZ3_LARGE_MAGIC) {
-            *size_out = cur->req_size;
-            hz3_lock_release(&g_hz3_large_lock);
-            return 1;
-        }
-        cur = cur->next;
+static inline Hz3LargeHdr* hz3_large_sc_pop_head(int sc) {
+    hz3_large_sc_lock_acquire(sc);
+    Hz3LargeHdr* hdr = g_sc_head[sc];
+    if (hdr) {
+        g_sc_head[sc] = hdr->next_free;
+        g_sc_bytes[sc] -= hdr->map_size;
+        g_sc_nodes[sc]--;
+        hz3_large_total_cached_sub(hdr->map_size);
+        hz3_large_debug_on_cache_remove_locked(hdr);
     }
-    hz3_lock_release(&g_hz3_large_lock);
+    hz3_large_sc_lock_release(sc);
+    return hdr;
+}
+
+static inline void hz3_large_sc_push_head(int sc, Hz3LargeHdr* hdr) {
+    hz3_large_sc_lock_acquire(sc);
+    hdr->next_free = g_sc_head[sc];
+    g_sc_head[sc] = hdr;
+    g_sc_bytes[sc] += hdr->map_size;
+    g_sc_nodes[sc]++;
+    hz3_large_total_cached_add(hdr->map_size);
+    hz3_large_debug_on_cache_insert_locked(hdr);
+    hz3_large_sc_lock_release(sc);
+}
+#endif
+
+#include "hz3_large_cache_policy.inc"
+
+#include "hz3_large_map_ops.inc"
+
+#if HZ3_LARGE_CACHE_ENABLE && HZ3_S50_LARGE_SCACHE
+static inline int hz3_large_s218_c1_batch_enabled_for_sc(int sc) {
+#if HZ3_S218_C1_LARGE_BATCH_MMAP
+    return (sc >= HZ3_S218_C1_SC_MIN &&
+            sc <= HZ3_S218_C1_SC_MAX &&
+            sc < (HZ3_LARGE_SC_COUNT - 1));
+#else
+    (void)sc;
     return 0;
+#endif
 }
+
+static inline size_t hz3_large_s218_c1_seed_req_size(size_t class_size, size_t offset) {
+    size_t reserve = offset;
+#if HZ3_LARGE_CANARY_ENABLE
+    reserve += HZ3_LARGE_CANARY_SIZE;
+#endif
+    if (class_size <= reserve) {
+        return 1;
+    }
+    return class_size - reserve;
+}
+
+static Hz3LargeHdr* hz3_large_s218_c1_batch_mmap_alloc(size_t req_size,
+                                                       size_t class_size,
+                                                       size_t offset,
+                                                       int sc,
+                                                       size_t align_pad,
+                                                       int aligned_alloc) {
+#if HZ3_S218_C1_LARGE_BATCH_MMAP
+    const size_t blocks = (size_t)HZ3_S218_C1_BATCH_BLOCKS;
+    const size_t max_cache_per_batch = (size_t)HZ3_S218_C1_MAX_CACHE_PER_BATCH;
+    if (!hz3_large_s218_c1_batch_enabled_for_sc(sc) || blocks < 2 || class_size == 0) {
+        return NULL;
+    }
+    if (class_size > (SIZE_MAX / blocks)) {
+        return NULL;
+    }
+    if (max_cache_per_batch == 0) {
+        return NULL;
+    }
+
+    size_t hard_cap = hz3_large_hard_cap_for_sc(sc);
+    const size_t seed_cap = (size_t)HZ3_S218_C1_SEED_CAP_BYTES;
+    if (seed_cap > 0 && hard_cap > seed_cap) {
+        hard_cap = seed_cap;
+    }
+    if (hard_cap < class_size) {
+        return NULL;
+    }
+    // Require room for at least one seeded block; otherwise fallback to normal mmap.
+    if ((hz3_large_total_cached_load() + class_size) > hard_cap) {
+        return NULL;
+    }
+
+    const size_t total = class_size * blocks;
+    void* region = hz3_large_os_mmap(total);
+    if (region == MAP_FAILED) {
+        return NULL;
+    }
+
+    uintptr_t user = (uintptr_t)region + offset;
+    if (aligned_alloc && align_pad > 0) {
+        user = (user + align_pad) & ~(uintptr_t)align_pad;
+    }
+
+    Hz3LargeHdr* hdr = (Hz3LargeHdr*)region;
+    hdr->magic = HZ3_LARGE_MAGIC;
+    hdr->req_size = req_size;
+    hdr->map_base = region;
+    hdr->map_size = class_size;
+    hdr->user_ptr = (void*)user;
+    hdr->next = NULL;
+    hdr->in_use = 1;
+    hdr->next_free = NULL;
+#if HZ3_LARGE_CANARY_ENABLE
+    hz3_large_debug_write_canary(hdr);
+#endif
+
+    size_t cached_blocks = 0;
+    size_t dropped_blocks = 0;
+    size_t seed_req = hz3_large_s218_c1_seed_req_size(class_size, offset);
+    void* dropped_bases[(HZ3_S218_C1_BATCH_BLOCKS > 1) ? (HZ3_S218_C1_BATCH_BLOCKS - 1) : 1];
+    size_t dropped_count = 0;
+
+#if !HZ3_S183_LARGE_CLASS_LOCK_SPLIT
+    hz3_large_cache_lock_acquire();
+#endif
+
+    for (size_t index = 1; index < blocks; index++) {
+        void* extra_base = (void*)((char*)region + (index * class_size));
+        Hz3LargeHdr* extra = (Hz3LargeHdr*)extra_base;
+        extra->magic = HZ3_LARGE_MAGIC;
+        extra->req_size = seed_req;
+        extra->map_base = extra_base;
+        extra->map_size = class_size;
+        extra->user_ptr = (char*)extra_base + offset;
+        extra->next = NULL;
+        extra->in_use = 0;
+        extra->next_free = NULL;
+#if HZ3_LARGE_CANARY_ENABLE
+        hz3_large_debug_write_canary(extra);
+#endif
+
+        int can_cache = (cached_blocks < max_cache_per_batch);
+        if (can_cache) {
+            can_cache = (hz3_large_total_cached_load() + class_size <= hard_cap);
+        }
+        if (can_cache) {
+            can_cache = hz3_large_reuse_try_admit_locked(sc);
+        }
+        if (can_cache) {
+            hz3_large_sc_push_head(sc, extra);
+            cached_blocks++;
+        } else {
+            dropped_bases[dropped_count++] = extra_base;
+            dropped_blocks++;
+        }
+    }
+
+#if !HZ3_S183_LARGE_CLASS_LOCK_SPLIT
+    hz3_large_cache_lock_release();
+#endif
+
+    for (size_t index = 0; index < dropped_count; index++) {
+        hz3_large_os_munmap(dropped_bases[index], class_size);
+    }
+
+    hz3_large_stats_on_s218_c1_batch(cached_blocks, dropped_blocks);
+    return hdr;
+#else
+    (void)req_size;
+    (void)class_size;
+    (void)offset;
+    (void)sc;
+    (void)align_pad;
+    (void)aligned_alloc;
+    return NULL;
+#endif
+}
+#endif
 
 void* hz3_large_alloc(size_t size) {
+    hz3_large_cache_stats_dump();
+    hz3_large_stats_on_alloc_call();
+
     if (size == 0) {
         size = 1;
     }
@@ -225,42 +406,54 @@ void* hz3_large_alloc(size_t size) {
 
     // Cache lookup: O(1) pop (sc < HZ3_LARGE_SC_COUNT-1 のみ)
     if (sc >= 0 && sc < HZ3_LARGE_SC_COUNT - 1) {
-        hz3_lock_acquire(&g_hz3_large_lock);
+        int try_sc = sc;
+        Hz3LargeHdr* hdr = NULL;
 
+#if HZ3_S183_LARGE_CLASS_LOCK_SPLIT
 #if HZ3_S52_LARGE_BESTFIT
         // S52: best-fit fallback (sc → sc+1 → sc+2)
-        int try_sc = sc;
         int try_limit = sc + HZ3_S52_BESTFIT_RANGE;
         if (try_limit >= HZ3_LARGE_SC_COUNT - 1) {
             try_limit = HZ3_LARGE_SC_COUNT - 2;
         }
-        Hz3LargeHdr* hdr = NULL;
         for (; try_sc <= try_limit; try_sc++) {
-            hdr = g_sc_head[try_sc];
-            if (hdr && hdr->magic == HZ3_LARGE_MAGIC && hdr->map_size >= class_size) {
+            hz3_large_sc_lock_acquire(try_sc);
+            hdr = hz3_large_sc_try_pop_locked(try_sc, class_size, 0);
+            hz3_large_sc_lock_release(try_sc);
+            if (hdr) {
                 break;
             }
-            hdr = NULL;
         }
 #else
-        int try_sc = sc;
-        Hz3LargeHdr* hdr = g_sc_head[sc];
-        if (!(hdr && hdr->magic == HZ3_LARGE_MAGIC && hdr->map_size == class_size)) {
-            hdr = NULL;
+        hz3_large_sc_lock_acquire(sc);
+        hdr = hz3_large_sc_try_pop_locked(sc, class_size, 1);
+        hz3_large_sc_lock_release(sc);
+#endif
+#else
+        hz3_large_cache_lock_acquire();
+#if HZ3_S52_LARGE_BESTFIT
+        int try_limit = sc + HZ3_S52_BESTFIT_RANGE;
+        if (try_limit >= HZ3_LARGE_SC_COUNT - 1) {
+            try_limit = HZ3_LARGE_SC_COUNT - 2;
         }
+        for (; try_sc <= try_limit; try_sc++) {
+            hdr = hz3_large_sc_try_pop_locked(try_sc, class_size, 0);
+            if (hdr) {
+                break;
+            }
+        }
+#else
+        hdr = hz3_large_sc_try_pop_locked(sc, class_size, 1);
+#endif
+        hz3_large_cache_lock_release();
 #endif
 
         if (hdr) {
-            g_sc_head[try_sc] = hdr->next_free;
-            g_sc_bytes[try_sc] -= hdr->map_size;
-            g_sc_nodes[try_sc]--;
-            g_total_cached_bytes -= hdr->map_size;
-            hz3_large_debug_on_cache_remove_locked(hdr);
+            hz3_large_stats_on_alloc_cache_hit();
 #if HZ3_LARGE_CANARY_ENABLE
             if (!hz3_large_debug_check_canary_cache(hdr, 0)) {
                 hz3_large_debug_on_munmap_locked(hdr);
-                hz3_lock_release(&g_hz3_large_lock);
-                munmap(hdr->map_base, hdr->map_size);
+                hz3_large_os_munmap(hdr->map_base, hdr->map_size);
                 goto cache_miss_alloc;
             }
 #endif
@@ -268,7 +461,6 @@ void* hz3_large_alloc(size_t size) {
             hdr->in_use = 1;
             hdr->req_size = size;
             hdr->next_free = NULL;
-            hz3_lock_release(&g_hz3_large_lock);
 #if HZ3_LARGE_CANARY_ENABLE
             hz3_large_debug_write_canary(hdr);
 #endif
@@ -278,17 +470,24 @@ void* hz3_large_alloc(size_t size) {
 #endif
             return hdr->user_ptr;
         }
-        hz3_lock_release(&g_hz3_large_lock);
     }
 
 #if HZ3_LARGE_CANARY_ENABLE && !HZ3_LARGE_FAILFAST
 cache_miss_alloc:
 #endif
+    hz3_large_stats_on_alloc_cache_miss();
+    hz3_large_reuse_note_alloc_miss(sc);
+#if HZ3_LARGE_CACHE_ENABLE && HZ3_S50_LARGE_SCACHE && HZ3_S212_LARGE_UNMAP_DEFER_PLUS
+    hz3_large_unmap_defer_drain_on_alloc_miss();
+#endif
     // Cache miss: mmap with class_size
     need = class_size;
+#if HZ3_S193_DEMAND_SCAVENGE
+    hz3_large_scavenge_on_mmap_miss(sc);
+#endif
 #else
     // Legacy: Cache から探す（first-fit）
-    hz3_lock_acquire(&g_hz3_large_lock);
+    hz3_large_cache_lock_acquire();
     Hz3LargeHdr* prev = NULL;
     Hz3LargeHdr* cur = g_hz3_large_free_head;
     while (cur) {
@@ -304,7 +503,7 @@ cache_miss_alloc:
             cur->in_use = 1;
             cur->req_size = size;
             cur->next_free = NULL;
-            hz3_lock_release(&g_hz3_large_lock);
+            hz3_large_cache_lock_release();
 
             // bucket に再挿入（usable_size 等で参照される）
 #if HZ3_LARGE_CANARY_ENABLE
@@ -319,29 +518,32 @@ cache_miss_alloc:
         prev = cur;
         cur = cur->next_free;
     }
-    hz3_lock_release(&g_hz3_large_lock);
+    hz3_large_cache_lock_release();
 #endif
 #endif
 
-    // Cache miss: mmap
-    void* base = mmap(NULL, need, PROT_READ | PROT_WRITE,
-                      MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (base == MAP_FAILED) {
-        hz3_oom_note("large_mmap", need, 0);
-        return NULL;
-    }
-
-    Hz3LargeHdr* hdr = (Hz3LargeHdr*)base;
-    hdr->magic = HZ3_LARGE_MAGIC;
-    hdr->req_size = size;
-    hdr->map_base = base;
-    hdr->map_size = need;
-    hdr->user_ptr = (char*)base + offset;
-    hdr->next = NULL;
+    Hz3LargeHdr* hdr = NULL;
+#if HZ3_LARGE_CACHE_ENABLE && HZ3_S50_LARGE_SCACHE
+    hdr = hz3_large_s218_c1_batch_mmap_alloc(size, need, offset, sc, 0, 0);
+#endif
+    if (!hdr) {
+        void* base = hz3_large_os_mmap(need);
+        if (base == MAP_FAILED) {
+            hz3_oom_note("large_mmap", need, 0);
+            return NULL;
+        }
+        hdr = (Hz3LargeHdr*)base;
+        hdr->magic = HZ3_LARGE_MAGIC;
+        hdr->req_size = size;
+        hdr->map_base = base;
+        hdr->map_size = need;
+        hdr->user_ptr = (char*)base + offset;
+        hdr->next = NULL;
 #if HZ3_LARGE_CACHE_ENABLE
-    hdr->in_use = 1;
-    hdr->next_free = NULL;
+        hdr->in_use = 1;
+        hdr->next_free = NULL;
 #endif
+    }
 
 #if HZ3_LARGE_CANARY_ENABLE
     hz3_large_debug_write_canary(hdr);
@@ -354,6 +556,9 @@ cache_miss_alloc:
 }
 
 void* hz3_large_aligned_alloc(size_t alignment, size_t size) {
+    hz3_large_cache_stats_dump();
+    hz3_large_stats_on_alloc_call();
+
     if (alignment == 0 || (alignment & (alignment - 1u)) != 0) {
         return NULL;
     }
@@ -397,42 +602,54 @@ void* hz3_large_aligned_alloc(size_t alignment, size_t size) {
 
     // Cache lookup: O(1) pop (sc < HZ3_LARGE_SC_COUNT-1 のみ)
     if (sc >= 0 && sc < HZ3_LARGE_SC_COUNT - 1) {
-        hz3_lock_acquire(&g_hz3_large_lock);
+        int try_sc = sc;
+        Hz3LargeHdr* hdr = NULL;
 
+#if HZ3_S183_LARGE_CLASS_LOCK_SPLIT
 #if HZ3_S52_LARGE_BESTFIT
         // S52: best-fit fallback (sc → sc+1 → ...), aligned_alloc でも同じ方針
-        int try_sc = sc;
         int try_limit = sc + HZ3_S52_BESTFIT_RANGE;
         if (try_limit >= HZ3_LARGE_SC_COUNT - 1) {
             try_limit = HZ3_LARGE_SC_COUNT - 2;
         }
-        Hz3LargeHdr* hdr = NULL;
         for (; try_sc <= try_limit; try_sc++) {
-            hdr = g_sc_head[try_sc];
-            if (hdr && hdr->magic == HZ3_LARGE_MAGIC && hdr->map_size >= class_size) {
+            hz3_large_sc_lock_acquire(try_sc);
+            hdr = hz3_large_sc_try_pop_locked(try_sc, class_size, 0);
+            hz3_large_sc_lock_release(try_sc);
+            if (hdr) {
                 break;
             }
-            hdr = NULL;
         }
 #else
-        int try_sc = sc;
-        Hz3LargeHdr* hdr = g_sc_head[sc];
-        if (!(hdr && hdr->magic == HZ3_LARGE_MAGIC && hdr->map_size == class_size)) {
-            hdr = NULL;
+        hz3_large_sc_lock_acquire(sc);
+        hdr = hz3_large_sc_try_pop_locked(sc, class_size, 1);
+        hz3_large_sc_lock_release(sc);
+#endif
+#else
+        hz3_large_cache_lock_acquire();
+#if HZ3_S52_LARGE_BESTFIT
+        int try_limit = sc + HZ3_S52_BESTFIT_RANGE;
+        if (try_limit >= HZ3_LARGE_SC_COUNT - 1) {
+            try_limit = HZ3_LARGE_SC_COUNT - 2;
         }
+        for (; try_sc <= try_limit; try_sc++) {
+            hdr = hz3_large_sc_try_pop_locked(try_sc, class_size, 0);
+            if (hdr) {
+                break;
+            }
+        }
+#else
+        hdr = hz3_large_sc_try_pop_locked(sc, class_size, 1);
+#endif
+        hz3_large_cache_lock_release();
 #endif
 
         if (hdr) {
-            g_sc_head[try_sc] = hdr->next_free;
-            g_sc_bytes[try_sc] -= hdr->map_size;
-            g_sc_nodes[try_sc]--;
-            g_total_cached_bytes -= hdr->map_size;
-            hz3_large_debug_on_cache_remove_locked(hdr);
+            hz3_large_stats_on_alloc_cache_hit();
 #if HZ3_LARGE_CANARY_ENABLE
             if (!hz3_large_debug_check_canary_cache(hdr, 1)) {
                 hz3_large_debug_on_munmap_locked(hdr);
-                hz3_lock_release(&g_hz3_large_lock);
-                munmap(hdr->map_base, hdr->map_size);
+                hz3_large_os_munmap(hdr->map_base, hdr->map_size);
                 goto cache_miss_aligned;
             }
 #endif
@@ -443,7 +660,6 @@ void* hz3_large_aligned_alloc(size_t alignment, size_t size) {
             hdr->req_size = size;
             hdr->user_ptr = (void*)user;
             hdr->next_free = NULL;
-            hz3_lock_release(&g_hz3_large_lock);
 #if HZ3_LARGE_CANARY_ENABLE
             hz3_large_debug_write_canary(hdr);
 #endif
@@ -453,37 +669,49 @@ void* hz3_large_aligned_alloc(size_t alignment, size_t size) {
 #endif
             return hdr->user_ptr;
         }
-        hz3_lock_release(&g_hz3_large_lock);
     }
 
 #if HZ3_LARGE_CANARY_ENABLE && !HZ3_LARGE_FAILFAST
 cache_miss_aligned:
 #endif
+    hz3_large_stats_on_alloc_cache_miss();
+    hz3_large_reuse_note_alloc_miss(sc);
+#if HZ3_LARGE_CACHE_ENABLE && HZ3_S50_LARGE_SCACHE && HZ3_S212_LARGE_UNMAP_DEFER_PLUS
+    hz3_large_unmap_defer_drain_on_alloc_miss();
+#endif
     // Cache miss: mmap with class_size
     need = class_size;
+#if HZ3_S193_DEMAND_SCAVENGE
+    hz3_large_scavenge_on_mmap_miss(sc);
+#endif
 #endif
 
-    void* base = mmap(NULL, need, PROT_READ | PROT_WRITE,
-                      MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (base == MAP_FAILED) {
-        hz3_oom_note("large_mmap", need, 0);
-        return NULL;
-    }
+    Hz3LargeHdr* hdr = NULL;
+#if HZ3_LARGE_CACHE_ENABLE && HZ3_S50_LARGE_SCACHE
+    hdr = hz3_large_s218_c1_batch_mmap_alloc(size, need, offset, sc, pad, 1);
+#endif
+    if (!hdr) {
+        void* base = hz3_large_os_mmap(need);
+        if (base == MAP_FAILED) {
+            hz3_oom_note("large_mmap", need, 0);
+            return NULL;
+        }
 
-    uintptr_t start = (uintptr_t)base + offset;
-    uintptr_t user = (start + pad) & ~(uintptr_t)pad;
+        uintptr_t start = (uintptr_t)base + offset;
+        uintptr_t user = (start + pad) & ~(uintptr_t)pad;
 
-    Hz3LargeHdr* hdr = (Hz3LargeHdr*)base;
-    hdr->magic = HZ3_LARGE_MAGIC;
-    hdr->req_size = size;
-    hdr->map_base = base;
-    hdr->map_size = need;
-    hdr->user_ptr = (void*)user;
-    hdr->next = NULL;
+        hdr = (Hz3LargeHdr*)base;
+        hdr->magic = HZ3_LARGE_MAGIC;
+        hdr->req_size = size;
+        hdr->map_base = base;
+        hdr->map_size = need;
+        hdr->user_ptr = (void*)user;
+        hdr->next = NULL;
 #if HZ3_LARGE_CACHE_ENABLE
-    hdr->in_use = 1;
-    hdr->next_free = NULL;
+        hdr->in_use = 1;
+        hdr->next_free = NULL;
 #endif
+    }
 
 #if HZ3_LARGE_CANARY_ENABLE
     hz3_large_debug_write_canary(hdr);
@@ -504,8 +732,13 @@ int hz3_large_free(void* ptr) {
     if (!hdr) {
         return 0;
     }
+    hz3_large_cache_stats_dump();
+    hz3_large_stats_on_free_call();
 #if HZ3_WATCH_PTR_BOX
     hz3_watch_ptr_on_free("large_free", ptr, -1, -1);
+#endif
+#if HZ3_LARGE_CACHE_ENABLE && HZ3_S50_LARGE_SCACHE && (HZ3_S186_LARGE_UNMAP_DEFER || HZ3_S212_LARGE_UNMAP_DEFER_PLUS)
+    hz3_large_unmap_defer_drain_budget();
 #endif
 
 #if HZ3_LARGE_CACHE_ENABLE
@@ -531,76 +764,152 @@ int hz3_large_free(void* ptr) {
     //   1) decide evict/can_cache + madvise range under lock
     //   2) unlock + (maybe) madvise
     //   3) lock again and insert into cache (evict again if needed)
-    hz3_lock_acquire(&g_hz3_large_lock);
+    // S53/S207-1: hard cap (optionally widened for high-band classes).
+    size_t hard_cap = hz3_large_hard_cap_for_sc(sc);
+    size_t insert_cap = hz3_large_insert_cap_for_sc(sc, hard_cap);
+    size_t evict_budget_left = hz3_large_evict_budget_for_sc(sc);
+    int evict_budget_exhausted = 0;
 
-    // S53: hard cap の決定（MAX_BYTES との整合）
-#if HZ3_LARGE_CACHE_BUDGET
-    size_t hard_cap = HZ3_LARGE_CACHE_HARD_BYTES;
-    if (hard_cap < HZ3_LARGE_CACHE_MAX_BYTES) {
-        hard_cap = HZ3_LARGE_CACHE_MAX_BYTES;  // 安全側に倒す
-    }
-#else
-    size_t hard_cap = HZ3_LARGE_CACHE_MAX_BYTES;
+    int can_cache = 0;
+#if HZ3_S184_LARGE_FREE_PRECHECK
+    int force_lock_admission = hz3_large_reuse_trackable_sc(sc);
 #endif
-
-#if HZ3_S50_LARGE_SCACHE_EVICT
-    // Cap 超過時: evict してスペースを作る
-    // S51: 同一 class から先に evict（キャッシュ hit 率向上）
-    while (g_total_cached_bytes + hdr->map_size > hard_cap) {
-        Hz3LargeHdr* victim = NULL;
-        int victim_sc = -1;
-        // First: try same class
-        if (g_sc_head[sc]) {
-            victim = g_sc_head[sc];
-            victim_sc = sc;
-        } else {
-            // Fallback: largest class
-            for (int i = HZ3_LARGE_SC_COUNT - 2; i >= 0; i--) {
-                if (g_sc_head[i]) {
-                    victim = g_sc_head[i];
-                    victim_sc = i;
-                    break;
-                }
-            }
-        }
-        if (!victim) break;  // evict 対象なし → munmap へ
-        g_sc_head[victim_sc] = victim->next_free;
-        g_sc_bytes[victim_sc] -= victim->map_size;
-        g_sc_nodes[victim_sc]--;
-        g_total_cached_bytes -= victim->map_size;
-#if HZ3_LARGE_CACHE_STATS
-        atomic_fetch_add(&g_budget_hard_evicts, 1);
-        hz3_large_cache_stats_dump();  // hard 発火時のみ出力
-#endif
-        hz3_large_debug_on_munmap_locked(victim);
-        hz3_lock_release(&g_hz3_large_lock);
-        victim->magic = 0;
-        munmap(victim->map_base, victim->map_size);
-        hz3_lock_acquire(&g_hz3_large_lock);
-    }
-#endif
-
-    int can_cache = (g_total_cached_bytes + hdr->map_size <= hard_cap);
 
     // S53: soft 判定と madvise 範囲は lock 内で計算してローカルへ退避
 #if HZ3_LARGE_CACHE_BUDGET
     int do_madvise = 0;
     uintptr_t madvise_start = 0;
     size_t madvise_size = 0;
-    if (can_cache) {
-        do_madvise = ((g_total_cached_bytes + hdr->map_size) > HZ3_LARGE_CACHE_SOFT_BYTES);
-        if (do_madvise) {
-            uintptr_t start = (uintptr_t)hdr->map_base + hz3_large_user_offset();
-            madvise_start = (start + 4095) & ~(uintptr_t)4095;
-            uintptr_t end = (uintptr_t)hdr->map_base + hdr->map_size;
-            if (madvise_start < end) {
-                madvise_size = (end - madvise_start) & ~(size_t)4095;
+#endif
+
+#if HZ3_S184_LARGE_FREE_PRECHECK
+    // S184: lock前に relaxed hint で fast admit を先読み。
+    // 最終判定は後段の lock 再取得時に必ず行う。
+    if (!force_lock_admission) {
+        size_t total_hint = hz3_large_total_cached_hint_load();
+        size_t projected_hint = total_hint + hdr->map_size;
+        if (projected_hint >= total_hint && projected_hint <= hard_cap) {
+            can_cache = 1;
+#if HZ3_LARGE_CACHE_BUDGET
+            do_madvise = (projected_hint > HZ3_LARGE_CACHE_SOFT_BYTES);
+            if (do_madvise) {
+                uintptr_t start = (uintptr_t)hdr->map_base + hz3_large_user_offset();
+                madvise_start = (start + 4095) & ~(uintptr_t)4095;
+                uintptr_t end = (uintptr_t)hdr->map_base + hdr->map_size;
+                if (madvise_start < end) {
+                    madvise_size = (end - madvise_start) & ~(size_t)4095;
+                }
             }
+#endif
         }
     }
 #endif
 
-    hz3_lock_release(&g_hz3_large_lock);
+    if (!can_cache) {
+        hz3_large_cache_lock_acquire();
+
+#if HZ3_S50_LARGE_SCACHE_EVICT
+#if HZ3_S185_LARGE_EVICT_MUNMAP_BATCH
+        // Cap 超過時: evict してスペースを作る
+        // S51: 同一 class を優先しつつ、victim をまとめて lock 外 munmap。
+        for (;;) {
+            Hz3LargeHdr* victims[HZ3_S185_EVICT_BATCH_MAX];
+            size_t vcount = hz3_large_collect_evict_victims_locked(
+                sc, hdr->map_size, hard_cap, victims, HZ3_S185_EVICT_BATCH_MAX, &evict_budget_left);
+            if (vcount == 0) {
+                break;
+            }
+            hz3_large_cache_lock_release();
+            hz3_large_munmap_victims_unlocked(victims, vcount);
+            hz3_large_cache_lock_acquire();
+        }
+        if (!evict_budget_exhausted &&
+            hz3_large_total_cached_load() + hdr->map_size > hard_cap &&
+            evict_budget_left == 0) {
+            evict_budget_exhausted = 1;
+#if HZ3_LARGE_CACHE_STATS && HZ3_S237_HIBAND_RETAIN_TUNE
+            hz3_large_stat_inc(&g_s237_budget_exhausted);
+#endif
+        }
+#else
+        // Cap 超過時: evict してスペースを作る
+        // S51: 同一 class から先に evict（キャッシュ hit 率向上）
+        while (hz3_large_total_cached_load() + hdr->map_size > hard_cap &&
+               evict_budget_left > 0) {
+            Hz3LargeHdr* victim = NULL;
+            // First: try same class
+            victim = hz3_large_sc_pop_head(sc);
+            if (!victim) {
+                // Fallback: largest class
+                for (int i = HZ3_LARGE_SC_COUNT - 2; i >= 0; i--) {
+                    victim = hz3_large_sc_pop_head(i);
+                    if (victim) {
+                        break;
+                    }
+                }
+            }
+            if (!victim) break;  // evict 対象なし → munmap へ
+#if HZ3_LARGE_CACHE_STATS
+            atomic_fetch_add(&g_budget_hard_evicts, 1);
+            hz3_large_cache_stats_dump();  // hard 発火時のみ出力
+#endif
+            hz3_large_debug_on_munmap_locked(victim);
+            hz3_large_cache_lock_release();
+            hz3_large_dispose_victim_unlocked(victim);
+            hz3_large_cache_lock_acquire();
+            evict_budget_left--;
+        }
+        if (!evict_budget_exhausted &&
+            hz3_large_total_cached_load() + hdr->map_size > hard_cap &&
+            evict_budget_left == 0) {
+            evict_budget_exhausted = 1;
+#if HZ3_LARGE_CACHE_STATS && HZ3_S237_HIBAND_RETAIN_TUNE
+            hz3_large_stat_inc(&g_s237_budget_exhausted);
+#endif
+        }
+#endif
+#endif
+
+        can_cache = (hz3_large_total_cached_load() + hdr->map_size <= insert_cap);
+#if HZ3_LARGE_CACHE_BUDGET
+        if (can_cache && !do_madvise) {
+            do_madvise = ((hz3_large_total_cached_load() + hdr->map_size) > HZ3_LARGE_CACHE_SOFT_BYTES);
+            if (do_madvise) {
+                uintptr_t start = (uintptr_t)hdr->map_base + hz3_large_user_offset();
+                madvise_start = (start + 4095) & ~(uintptr_t)4095;
+                uintptr_t end = (uintptr_t)hdr->map_base + hdr->map_size;
+                if (madvise_start < end) {
+                    madvise_size = (end - madvise_start) & ~(size_t)4095;
+                }
+            }
+        }
+#endif
+
+#if HZ3_S191_LARGE_FREE_FAST_INSERT && !HZ3_S207_TARGETED_REUSE
+        // S191: If no madvise work is needed, keep the first lock and insert directly.
+        if (can_cache) {
+            int needs_unlock_for_madvise = 0;
+#if HZ3_LARGE_CACHE_BUDGET
+            needs_unlock_for_madvise = (do_madvise && madvise_size > 0);
+#elif HZ3_S51_LARGE_MADVISE
+            needs_unlock_for_madvise = 1;
+#endif
+            if (!needs_unlock_for_madvise) {
+                if (hz3_large_total_cached_load() + hdr->map_size <= insert_cap) {
+                    hdr->in_use = 0;
+                    hdr->next = NULL;
+                    hz3_large_sc_push_head(sc, hdr);
+                    hz3_large_stats_on_free_cached();
+                    hz3_large_cache_lock_release();
+                    return 1;
+                }
+                can_cache = 0;
+            }
+        }
+#endif
+
+        hz3_large_cache_lock_release();
+    }
 
     if (can_cache) {
         // S53: madvise は “cacheに入れる前” に実行する（reuse race 回避）
@@ -608,7 +917,12 @@ int hz3_large_free(void* ptr) {
 
         // S53: madvise は lock 外で実行
 #if HZ3_LARGE_CACHE_BUDGET
-        if (do_madvise && madvise_size > 0) {
+#if HZ3_S193_DEMAND_SCAVENGE
+        const int run_free_side_purge = 0;
+#else
+        const int run_free_side_purge = 1;
+#endif
+        if (run_free_side_purge && do_madvise && madvise_size > 0) {
 #if HZ3_S53_THROTTLE
             // S53-2: Throttle check
             int do_actual_madvise = 1;
@@ -638,7 +952,7 @@ int hz3_large_free(void* ptr) {
 #endif
 s53_done:
             if (do_actual_madvise) {
-                madvise((void*)madvise_start, madvise_size, MADV_DONTNEED);
+                hz3_large_soft_purge((void*)madvise_start, madvise_size);
 #if HZ3_LARGE_CACHE_STATS
                 atomic_fetch_add(&g_budget_madvise_bytes, madvise_size);
                 atomic_fetch_add(&g_budget_soft_hits, 1);
@@ -649,7 +963,7 @@ s53_done:
 #endif
 #else
             // THROTTLE=0: 従来通り毎回 madvise
-            madvise((void*)madvise_start, madvise_size, MADV_DONTNEED);
+            hz3_large_soft_purge((void*)madvise_start, madvise_size);
 #if HZ3_LARGE_CACHE_STATS
             atomic_fetch_add(&g_budget_madvise_bytes, madvise_size);
             atomic_fetch_add(&g_budget_soft_hits, 1);
@@ -658,6 +972,7 @@ s53_done:
 #endif
         }
 #elif HZ3_S51_LARGE_MADVISE
+#if !HZ3_S193_DEMAND_SCAVENGE
         // S51: 既存の常時 madvise（BUDGET 無効時のみ）
         {
             uintptr_t start = (uintptr_t)hdr->map_base + hz3_large_user_offset();
@@ -666,79 +981,102 @@ s53_done:
             if (aligned_start < end) {
                 size_t aligned_size = (end - aligned_start) & ~(size_t)4095;  // page truncate
                 if (aligned_size > 0) {
-                    madvise((void*)aligned_start, aligned_size, MADV_DONTNEED);
+                    hz3_large_soft_purge((void*)aligned_start, aligned_size);
                 }
             }
         }
 #endif
+#endif
         // Finally: insert into cache (under lock). If we can no longer fit,
         // fall back to munmap (safe, but may lose caching benefits).
-        hz3_lock_acquire(&g_hz3_large_lock);
+        hz3_large_cache_lock_acquire();
 
         // Recompute hard cap under lock (another thread may have changed totals)
-#if HZ3_LARGE_CACHE_BUDGET
-        hard_cap = HZ3_LARGE_CACHE_HARD_BYTES;
-        if (hard_cap < HZ3_LARGE_CACHE_MAX_BYTES) {
-            hard_cap = HZ3_LARGE_CACHE_MAX_BYTES;
-        }
-#else
-        hard_cap = HZ3_LARGE_CACHE_MAX_BYTES;
-#endif
+        hard_cap = hz3_large_hard_cap_for_sc(sc);
+        insert_cap = hz3_large_insert_cap_for_sc(sc, hard_cap);
 
 #if HZ3_S50_LARGE_SCACHE_EVICT
-        while (g_total_cached_bytes + hdr->map_size > hard_cap) {
+#if HZ3_S185_LARGE_EVICT_MUNMAP_BATCH
+        for (;;) {
+            Hz3LargeHdr* victims[HZ3_S185_EVICT_BATCH_MAX];
+            size_t vcount = hz3_large_collect_evict_victims_locked(
+                sc, hdr->map_size, hard_cap, victims, HZ3_S185_EVICT_BATCH_MAX, &evict_budget_left);
+            if (vcount == 0) {
+                break;
+            }
+            hz3_large_cache_lock_release();
+            hz3_large_munmap_victims_unlocked(victims, vcount);
+            hz3_large_cache_lock_acquire();
+        }
+        if (!evict_budget_exhausted &&
+            hz3_large_total_cached_load() + hdr->map_size > hard_cap &&
+            evict_budget_left == 0) {
+            evict_budget_exhausted = 1;
+#if HZ3_LARGE_CACHE_STATS && HZ3_S237_HIBAND_RETAIN_TUNE
+            hz3_large_stat_inc(&g_s237_budget_exhausted);
+#endif
+        }
+#else
+        while (hz3_large_total_cached_load() + hdr->map_size > hard_cap &&
+               evict_budget_left > 0) {
             Hz3LargeHdr* victim = NULL;
-            int victim_sc = -1;
-            if (g_sc_head[sc]) {
-                victim = g_sc_head[sc];
-                victim_sc = sc;
-            } else {
+            victim = hz3_large_sc_pop_head(sc);
+            if (!victim) {
                 for (int i = HZ3_LARGE_SC_COUNT - 2; i >= 0; i--) {
-                    if (g_sc_head[i]) {
-                        victim = g_sc_head[i];
-                        victim_sc = i;
+                    victim = hz3_large_sc_pop_head(i);
+                    if (victim) {
                         break;
                     }
                 }
             }
             if (!victim) break;
-            g_sc_head[victim_sc] = victim->next_free;
-            g_sc_bytes[victim_sc] -= victim->map_size;
-            g_sc_nodes[victim_sc]--;
-            g_total_cached_bytes -= victim->map_size;
 #if HZ3_LARGE_CACHE_STATS
             atomic_fetch_add(&g_budget_hard_evicts, 1);
             hz3_large_cache_stats_dump();
 #endif
             hz3_large_debug_on_munmap_locked(victim);
-            hz3_lock_release(&g_hz3_large_lock);
-            victim->magic = 0;
-            munmap(victim->map_base, victim->map_size);
-            hz3_lock_acquire(&g_hz3_large_lock);
+            hz3_large_cache_lock_release();
+            hz3_large_dispose_victim_unlocked(victim);
+            hz3_large_cache_lock_acquire();
+            evict_budget_left--;
+        }
+        if (!evict_budget_exhausted &&
+            hz3_large_total_cached_load() + hdr->map_size > hard_cap &&
+            evict_budget_left == 0) {
+            evict_budget_exhausted = 1;
+#if HZ3_LARGE_CACHE_STATS && HZ3_S237_HIBAND_RETAIN_TUNE
+            hz3_large_stat_inc(&g_s237_budget_exhausted);
+#endif
         }
 #endif
+#endif
 
-        if (g_total_cached_bytes + hdr->map_size <= hard_cap) {
+        if (hz3_large_total_cached_load() + hdr->map_size <= insert_cap) {
+#if HZ3_LARGE_CACHE_STATS && HZ3_S237_HIBAND_RETAIN_TUNE
+            if (hz3_large_total_cached_load() + hdr->map_size > hard_cap) {
+                hz3_large_stat_inc(&g_s237_slack_admit_hits);
+            }
+#endif
+            if (!hz3_large_reuse_try_admit_locked(sc)) {
+                hz3_large_cache_lock_release();
+                goto do_munmap;
+            }
             hdr->in_use = 0;
             hdr->next = NULL;
-            hdr->next_free = g_sc_head[sc];
-            g_sc_head[sc] = hdr;
-            g_sc_bytes[sc] += hdr->map_size;
-            g_sc_nodes[sc]++;
-            g_total_cached_bytes += hdr->map_size;
-            hz3_large_debug_on_cache_insert_locked(hdr);
-            hz3_lock_release(&g_hz3_large_lock);
+            hz3_large_sc_push_head(sc, hdr);
+            hz3_large_stats_on_free_cached();
+            hz3_large_cache_lock_release();
             return 1;
         }
 
-        hz3_lock_release(&g_hz3_large_lock);
+        hz3_large_cache_lock_release();
         goto do_munmap;
     }
 
     // Cache できない（cap超過など）: munmap へ
 #else
     // Legacy: 上限チェック
-    hz3_lock_acquire(&g_hz3_large_lock);
+    hz3_large_cache_lock_acquire();
     if (g_hz3_large_cached_bytes + hdr->map_size <= HZ3_LARGE_CACHE_MAX_BYTES &&
         g_hz3_large_cached_nodes < HZ3_LARGE_CACHE_MAX_NODES) {
         // Cache に追加
@@ -748,10 +1086,11 @@ s53_done:
         g_hz3_large_free_head = hdr;
         g_hz3_large_cached_bytes += hdr->map_size;
         g_hz3_large_cached_nodes++;
-        hz3_lock_release(&g_hz3_large_lock);
+        hz3_large_stats_on_free_cached();
+        hz3_large_cache_lock_release();
         return 1;
     }
-    hz3_lock_release(&g_hz3_large_lock);
+    hz3_large_cache_lock_release();
 #endif
 #endif
 
@@ -759,11 +1098,17 @@ s53_done:
 do_munmap:
 #endif
     // Cache full または無効: munmap
+    hz3_large_stats_on_free_munmap();
     hdr->magic = 0;
-    hz3_lock_acquire(&g_hz3_large_lock);
+#if HZ3_LARGE_CACHE_ENABLE && HZ3_S50_LARGE_SCACHE && HZ3_S212_LARGE_UNMAP_DEFER_PLUS
+    if (hz3_large_try_defer_direct_unmap(hdr)) {
+        return 1;
+    }
+#endif
+    hz3_large_cache_lock_acquire();
     hz3_large_debug_on_munmap_locked(hdr);
-    hz3_lock_release(&g_hz3_large_lock);
-    munmap(hdr->map_base, hdr->map_size);
+    hz3_large_cache_lock_release();
+    hz3_large_os_munmap(hdr->map_base, hdr->map_size);
     return 1;
 }
 

@@ -148,6 +148,46 @@ static inline void hz4_segq_notify_seg(hz4_seg_t* seg) {
 
 #if HZ4_PAGEQ_ENABLE
 static inline void hz4_pageq_notify(hz4_page_t* page) {
+#if HZ4_PAGE_META_SEPARATE
+    hz4_page_meta_t* meta = hz4_page_meta(page);
+#if HZ4_CENTRAL_PAGEHEAP
+    // PageQ is a segment-local remote-notify mechanism; it must not track pages managed by CPH.
+    if (atomic_load_explicit(&meta->cph_queued, memory_order_acquire) != 0) {
+#if HZ4_FAILFAST
+        HZ4_FAIL("pageq_notify: page is in central pageheap");
+#endif
+        return;
+    }
+#endif
+    if (atomic_exchange_explicit(&meta->queued, 1, memory_order_acq_rel) == 0) {
+        hz4_seg_t* seg = hz4_seg_from_page(page);
+
+        // Fail-Fast: sc out of range
+#if HZ4_FAILFAST
+        if (meta->sc >= HZ4_SC_MAX) {
+            HZ4_FAIL("pageq_notify: sc out of range");
+        }
+#endif
+
+        // Select bucket based on size class
+        uint32_t bucket = meta->sc >> HZ4_PAGEQ_BUCKET_SHIFT;
+
+        // Fail-Fast: bucket out of range
+#if HZ4_FAILFAST
+        if (bucket >= HZ4_PAGEQ_BUCKETS) {
+            HZ4_FAIL("pageq_notify: bucket out of range");
+        }
+#endif
+
+        hz4_page_t* old = atomic_load_explicit(&seg->pageq_head[bucket], memory_order_acquire);
+        do {
+            meta->qnext = old;
+        } while (!atomic_compare_exchange_weak_explicit(
+            &seg->pageq_head[bucket], &old, page,
+            memory_order_release, memory_order_acquire));
+        hz4_segq_notify_seg(seg);
+    }
+#else
     if (atomic_exchange_explicit(&page->queued, 1, memory_order_acq_rel) == 0) {
         hz4_seg_t* seg = hz4_seg_from_page(page);
 
@@ -176,6 +216,7 @@ static inline void hz4_pageq_notify(hz4_page_t* page) {
             memory_order_release, memory_order_acquire));
         hz4_segq_notify_seg(seg);
     }
+#endif
 }
 #else
 static inline void hz4_pageq_notify(hz4_page_t* page) {

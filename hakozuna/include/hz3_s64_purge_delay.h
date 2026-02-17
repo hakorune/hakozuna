@@ -22,6 +22,9 @@ typedef struct {
     uint16_t page_idx;       // page index in segment
     uint16_t pages;          // consecutive pages (1 for small)
     uint32_t retire_epoch;   // epoch when retired
+#if HZ3_S64_PURGE_DELAY_MS > 0
+    uint64_t deadline_ms;    // ms deadline (monotonic)
+#endif
 } Hz3S64PurgeEntry;
 
 // Ring buffer for delayed purge

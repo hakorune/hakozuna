@@ -412,6 +412,40 @@
 #define HZ3_DSTBIN_REMOTE_HINT_ENABLE 1
 #endif
 
+// S173: Demand-gated remote flush (opt-in, sparse remote stash only)
+// Flush budgeted remote stash only after enough remote push activity.
+#ifndef HZ3_S173_DSTBIN_DEMAND_GATE
+#define HZ3_S173_DSTBIN_DEMAND_GATE 0
+#endif
+
+#ifndef HZ3_S173_DSTBIN_DEMAND_MIN_CREDIT
+#define HZ3_S173_DSTBIN_DEMAND_MIN_CREDIT 4
+#endif
+
+#ifndef HZ3_S173_DSTBIN_DEMAND_CREDIT_CAP
+#define HZ3_S173_DSTBIN_DEMAND_CREDIT_CAP 64
+#endif
+
+#ifndef HZ3_S173_DSTBIN_DEMAND_CREDIT_CONSUME
+#define HZ3_S173_DSTBIN_DEMAND_CREDIT_CONSUME HZ3_DSTBIN_FLUSH_BUDGET_BINS
+#endif
+
+#if HZ3_S173_DSTBIN_DEMAND_GATE && !HZ3_REMOTE_STASH_SPARSE
+#error "HZ3_S173_DSTBIN_DEMAND_GATE requires HZ3_REMOTE_STASH_SPARSE=1"
+#endif
+
+#if HZ3_S173_DSTBIN_DEMAND_MIN_CREDIT < 1
+#error "HZ3_S173_DSTBIN_DEMAND_MIN_CREDIT must be >= 1"
+#endif
+
+#if HZ3_S173_DSTBIN_DEMAND_CREDIT_CAP < HZ3_S173_DSTBIN_DEMAND_MIN_CREDIT
+#error "HZ3_S173_DSTBIN_DEMAND_CREDIT_CAP must be >= HZ3_S173_DSTBIN_DEMAND_MIN_CREDIT"
+#endif
+
+#if HZ3_S173_DSTBIN_DEMAND_CREDIT_CONSUME < 1
+#error "HZ3_S173_DSTBIN_DEMAND_CREDIT_CONSUME must be >= 1"
+#endif
+
 // ============================================================================
 // Large allocation cache (S14)
 // ============================================================================

@@ -126,6 +126,7 @@
   - **フラグ**: `HZ3_S169_S112_BOUNDED_DRAIN=1` / `HZ3_S170_S112_BOUNDED_STATS=1`
   - **目的**: S112 exchange を bounded drain に変更し、メモリ消費削減（remote-heavy small 専用）
   - **A/B結果**: RUNS=10 で改善傾向だが、RUNS=20/mixed/R=50 で r90 -2.67% / time +8.24% の tail 退行。既定は OFF、opt-in 余地のみ残す
+  - 追補（2026-02-07）: `S169` 単独は長尺 R90 で再崩壊、`S164` 単独も長尺 R90 で退行。`S169+S164` 合成（S180）でのみ R50/R90 の同時正側を確認。
   - **アーカイブ済み補助フラグ**: S171 (BOUNDED_PREBUF) / S172 (BOUNDED_PREFILL) は NO-GO 判定により archive 済み。詳細: `hakozuna/hz3/archive/research/s16x_owner_stash_microopt/README.md`
 - S111（remote push n==1 leaf）:
   - 指示書: `hakozuna/hz3/docs/PHASE_HZ3_S111_REMOTE_PUSH_N1_LEAF_BOX_WORK_ORDER.md`
@@ -280,7 +281,7 @@ hybrid（研究箱）:
   - 上限: `HZ3_NUM_SHARDS<=255`（8bit owner）。
 - `HZ3_ARENA_SIZE=...`
   - arena の仮想サイズ（既定 4GB）。`HZ3_PTAG32_NOINRANGE` では 4GB のときだけ fast range check を使う。
-  - scale lane は `HZ3_NUM_SHARDS=32` × `HZ3_BIN_TOTAL=140` の segment 枯渇を避けるため **64GB** を採用（`hakozuna/hz3/Makefile` で上書き）。
+  - scale lane は `HZ3_NUM_SHARDS=63`（`HZ3_SCALE_NUM_SHARDS` 既定）で segment 枯渇を避けるため **64GB** を採用（`hakozuna/hz3/Makefile` で上書き）。
   - A/B で一時的に縮めたい場合は `-D` 再定義ではなく `make ... HZ3_SCALE_ARENA_SIZE=...` を使う（`-Werror` 回避）。
 - `HZ3_REMOTE_STASH_SPARSE=0/1`
   - S41: remote stash を “dense bank” ではなく “sparse ring” にする（TLSをshards非依存にする）
@@ -370,6 +371,15 @@ hybrid（研究箱）:
   - S24-1: `hz3_alloc_slow()` の remote bank flush を “全走査” から “budgeted scan” に変える（event-only）。既定 `32`。
 - `HZ3_DSTBIN_REMOTE_HINT_ENABLE=0/1`
   - S24-2: ST（remote=0）で flush 呼び出し自体をスキップして固定費を削る（event-only）。既定 `1`。
+- `HZ3_S173_DSTBIN_DEMAND_GATE=0/1`
+  - S173: sparse remote stash の budget flush を credit 条件で間引く（opt-in、既定 `0`）。
+  - 前提: `HZ3_REMOTE_STASH_SPARSE=1`。
+- `HZ3_S173_DSTBIN_DEMAND_MIN_CREDIT=...`
+  - S173: `remote_flush_credit >= MIN_CREDIT` のときだけ `hz3_alloc_slow()` 入口で budget flush 実行。
+- `HZ3_S173_DSTBIN_DEMAND_CREDIT_CAP=...`
+  - S173: push 側で積む credit の上限（既定 `64`）。
+- `HZ3_S173_DSTBIN_DEMAND_CREDIT_CONSUME=...`
+  - S173: 1回 flush 後に減算する credit 量（既定 `HZ3_DSTBIN_FLUSH_BUDGET_BINS`）。
 - `HZ3_S42_SMALL_XFER=0/1`
   - S42: small の central を transfer cache に置換する（event-only）。
   - fast lane には入れず、scale lane のみ A/B する前提。
@@ -531,6 +541,33 @@ hybrid（研究箱）:
 - `HZ3_S97_REMOTE_STASH_FLUSH_STATS=0/1`
   - S97: scale lane（sparse ring）の `hz3_remote_stash_flush_budget_impl()` で、dispatch形状（groups/distinct/カテゴリ/nmax）を atexit で1回だけ出す。
   - `potential_merge_calls` が大きいほど、flush 内 bucket 化（同一(dst,bin)の合流）で “呼び出し回数削減” の余地がある。
+- `HZ3_REMOTE_FLUSH_UNROLL=0/1`（archived / NO-GO）
+  - hz4 逆輸入 Phase1 の 4-way unroll は、ABBA長尺と perf-stat paired で結果が安定せず、
+    最終判定で default/opt-in とも見送り。
+  - 現在は `hakozuna/hz3/include/hz3_config_archive.h` 側で **有効化すると `#error`**。
+  - 参照: `hakozuna/hz3/archive/research/s170_remote_flush_unroll/README.md`
+- `HZ3_RBUF_KEY=0/1`（archived / NO-GO）
+  - hz4 逆輸入 Phase1 の key事前保持 (`Hz3RemoteStashEntry.key`) は、最終再確認で `R=50` 側の下振れが大きく default/opt-in 継続の価値が低いと判断。
+  - 現在は `hakozuna/hz3/include/hz3_config_archive.h` 側で **有効化すると `#error`**。
+  - 参照: `hakozuna/hz3/archive/research/s170_rbuf_key/README.md`
+- `HZ3_S161_REMOTE_STASH_N1_DIRECT=0/1`
+  - sparse ring flush で `n==1` のとき owner stash push へ直送する最適化（既定 `1`）。
+  - A/B で無効化して list dispatch 経路と比較できる。
+- `HZ3_S178_N1_DIRECT_RING_GUARD=0/1`
+  - S178: `HZ3_S161_REMOTE_STASH_N1_DIRECT` を ring 残量でガードする（既定 `0`）。
+  - `1` のとき `remaining_entries <= HZ3_S178_N1_DIRECT_MAX_RING` でのみ n==1直送を許可。
+- `HZ3_S178_N1_DIRECT_MAX_RING=...`
+  - S178: n==1直送を許可する ring 残量上限（既定 `8`）。
+- `HZ3_S179_OWNER_STASH_PREFETCH_NEED_GATE=0/1`
+  - S179: `hz3_owner_stash_pop_batch()` で `dist=2` prefetch（`next->next`）を残needでゲートする（既定 `0`）。
+  - `dist=1` prefetch は維持し、spill後の小need時だけ `next->next` を抑える。
+- `HZ3_S179_OWNER_STASH_PREFETCH_DIST2_MIN_NEED=...`
+  - S179: `HZ3_S179_OWNER_STASH_PREFETCH_NEED_GATE=1` 時に `dist=2` を有効化する最小need（既定 `8`）。
+- `HZ3_S180_S112_BOUNDED_COMBO=0/1`
+  - S180: owner stash pop の S112 系で `S169 bounded drain` と `S164 spill-hit quick-empty skip` をセットで有効化する合成箱（既定 `1`）。
+  - 目的: 単独投入で崩れやすい2箱をペア化し、R50/R90 の split を抑えつつ固定費を削減する。
+  - ON 時の展開: `HZ3_S169_S112_BOUNDED_DRAIN=1` と `HZ3_S164_SKIP_QUICK_EMPTY_IF_GOT=1` を自動有効化（明示指定がない場合）。
+  - OFF へ戻す場合: `-DHZ3_S180_S112_BOUNDED_COMBO=0`。
 - `HZ3_S97_REMOTE_STASH_BUCKET=0/1/2/6`
   - S97: flush_budget の 1window 内で `(dst,bin)` ごとに bucketize して list を作り、`push_list(n>1)` に寄せて dispatch 呼び出し回数を削減する。
   - `0`: OFF（baseline）

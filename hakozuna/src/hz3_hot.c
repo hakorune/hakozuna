@@ -147,6 +147,36 @@ void* hz3_malloc(size_t size) {
         return obj;
     }
 
+#if HZ3_S236_MEDIUM_MAILBOX
+    if (sc >= HZ3_S236_SC_MIN && sc <= HZ3_S236_SC_MAX) {
+        void* mailbox_obj = hz3_s236_medium_mailbox_try_pop(sc);
+        if (mailbox_obj) {
+#if HZ3_S72_MEDIUM_DEBUG
+            hz3_medium_boundary_check_ptr("medium_alloc_mailbox", mailbox_obj, sc, t_hz3_cache.my_shard);
+#endif
+#if HZ3_WATCH_PTR_BOX
+            hz3_watch_ptr_on_alloc("medium_alloc_mailbox", mailbox_obj, sc, t_hz3_cache.my_shard);
+#endif
+            return mailbox_obj;
+        }
+    }
+#endif
+
+#if HZ3_S236_MINIREFILL
+    if (sc >= HZ3_S236_SC_MIN && sc <= HZ3_S236_SC_MAX) {
+        void* mini_obj = hz3_s236_minirefill_try(sc);
+        if (mini_obj) {
+#if HZ3_S72_MEDIUM_DEBUG
+            hz3_medium_boundary_check_ptr("medium_alloc_minirefill", mini_obj, sc, t_hz3_cache.my_shard);
+#endif
+#if HZ3_WATCH_PTR_BOX
+            hz3_watch_ptr_on_alloc("medium_alloc_minirefill", mini_obj, sc, t_hz3_cache.my_shard);
+#endif
+            return mini_obj;
+        }
+    }
+#endif
+
     // Slow path: allocate new
     return hz3_alloc_slow(sc);
 #endif

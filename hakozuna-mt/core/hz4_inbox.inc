@@ -16,6 +16,7 @@
 
 #include "hz4_types.h"
 #include "hz4_tls.h"
+#include "hz4_os.h"
 
 // ============================================================================
 // Inbox Head (per owner x sc)
@@ -28,13 +29,19 @@ typedef struct {
 // グローバル inbox: extern 宣言 (実体は hz4_inbox.c)
 extern hz4_inbox_head_t g_hz4_inbox[HZ4_NUM_SHARDS][HZ4_SC_MAX];
 
+#if HZ4_INBOX_LITE
+// Stage5-1b: Inbox-lite epoch hint (per owner shard).
+// Incremented by producers after a successful push; read by the owner consumer.
+extern _Atomic(uint32_t) g_hz4_inbox_epoch[HZ4_NUM_SHARDS];
+#endif
+
 // ============================================================================
 // Push List (MPSC - any thread)
 // ============================================================================
 // head..tail のリストを owner の inbox に追加
 // 毎 iteration で tail.next を再設定 (CAS retry 対策)
-static inline void hz4_inbox_push_list(uint8_t owner, uint8_t sc,
-                                       void* head, void* tail) {
+static inline void hz4_inbox_push_list_raw(uint8_t owner, uint8_t sc,
+                                           void* head, void* tail) {
 #if HZ4_FAILFAST
     if (owner >= HZ4_NUM_SHARDS) {
         HZ4_FAIL("inbox_push_list: owner out of range");
@@ -52,14 +59,47 @@ static inline void hz4_inbox_push_list(uint8_t owner, uint8_t sc,
         if (atomic_compare_exchange_weak_explicit(
                 slot, &old, head,
                 memory_order_release, memory_order_acquire)) {
+#if HZ4_INBOX_LITE
+#if HZ4_INBOX_LITE_V2A
+            // v2-A: Only bump epoch on empty→non-empty transition
+            // This dramatically reduces epoch churn (shortcut rate improves from <1% to near 100%)
+            if (old == NULL) {
+                atomic_fetch_add_explicit(&g_hz4_inbox_epoch[owner], 1, memory_order_release);
+            }
+#else
+            // Original v1: bump epoch on every push (causes excessive scan overhead)
+            atomic_fetch_add_explicit(&g_hz4_inbox_epoch[owner], 1, memory_order_release);
+#endif
+#endif
             break;
         }
     }
 }
 
+static inline void hz4_inbox_push_list(hz4_tls_t* tls, uint8_t owner, uint8_t sc,
+                                       void* head, void* tail) {
+    (void)tls;
+#if HZ4_OS_STATS
+#if HZ4_OS_STATS_FAST
+    tls->stats_tls.inbox_push_list_calls++;
+#else
+    hz4_os_stats_inbox_push_list();
+#endif
+#endif
+    hz4_inbox_push_list_raw(owner, sc, head, tail);
+}
+
 // Push single object
-static inline void hz4_inbox_push_one(uint8_t owner, uint8_t sc, void* obj) {
-    hz4_inbox_push_list(owner, sc, obj, obj);
+static inline void hz4_inbox_push_one(hz4_tls_t* tls, uint8_t owner, uint8_t sc, void* obj) {
+    (void)tls;
+#if HZ4_OS_STATS
+#if HZ4_OS_STATS_FAST
+    tls->stats_tls.inbox_push_one_calls++;
+#else
+    hz4_os_stats_inbox_push_one();
+#endif
+#endif
+    hz4_inbox_push_list_raw(owner, sc, obj, obj);
 }
 
 // ============================================================================
@@ -101,6 +141,13 @@ static inline uint32_t hz4_inbox_consume(hz4_tls_t* tls, uint8_t sc,
     }
 #endif
 
+#if HZ4_OS_STATS
+#if HZ4_OS_STATS_FAST
+    tls->stats_tls.inbox_consume_calls++;
+#else
+    hz4_os_stats_inbox_consume_call();
+#endif
+#endif
     uint8_t owner = (uint8_t)hz4_owner_shard(tls->tid);
 
     // First try TLS stash
@@ -129,6 +176,15 @@ static inline uint32_t hz4_inbox_consume(hz4_tls_t* tls, uint8_t sc,
     // 余りは stash へ (pushback しない)
     if (cur) {
         tls->inbox_stash[sc] = cur;
+#if HZ4_OS_STATS
+        uint32_t stash_len = 0;
+        void* tmp = cur;
+        while (tmp) {
+            stash_len++;
+            tmp = hz4_obj_get_next(tmp);
+        }
+        hz4_os_stats_inbox_stash_len(stash_len);
+#endif
     }
 
     return got;
@@ -137,13 +193,13 @@ static inline uint32_t hz4_inbox_consume(hz4_tls_t* tls, uint8_t sc,
 #else  // !HZ4_REMOTE_INBOX
 
 // Stubs when disabled
-static inline void hz4_inbox_push_list(uint8_t owner, uint8_t sc,
+static inline void hz4_inbox_push_list(hz4_tls_t* tls, uint8_t owner, uint8_t sc,
                                        void* head, void* tail) {
-    (void)owner; (void)sc; (void)head; (void)tail;
+    (void)tls; (void)owner; (void)sc; (void)head; (void)tail;
 }
 
-static inline void hz4_inbox_push_one(uint8_t owner, uint8_t sc, void* obj) {
-    (void)owner; (void)sc; (void)obj;
+static inline void hz4_inbox_push_one(hz4_tls_t* tls, uint8_t owner, uint8_t sc, void* obj) {
+    (void)tls; (void)owner; (void)sc; (void)obj;
 }
 
 static inline void* hz4_inbox_pop_all(uint8_t owner, uint8_t sc) {

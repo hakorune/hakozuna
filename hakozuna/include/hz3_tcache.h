@@ -730,6 +730,8 @@ static inline Hz3Bin* hz3_tcache_get_small_bin(int sc) {
 
 // Allocate from slow path (called when bin is empty)
 void* hz3_alloc_slow(int sc);
+void* hz3_s236_medium_mailbox_try_pop(int sc);
+void* hz3_s236_minirefill_try(int sc);
 
 // S46: Global Pressure Box - pressure check and flush handler
 #if HZ3_ARENA_PRESSURE_BOX
@@ -751,6 +753,7 @@ void hz3_outbox_flush(uint8_t owner, int sc);
 #if HZ3_PTAG_DSTBIN_ENABLE
 // S24-1: Forward declarations for inline functions
 void hz3_dstbin_flush_remote_budget(uint32_t budget_bins);
+void hz3_dstbin_flush_remote_sc_budget(uint32_t sc, uint32_t budget_bins);
 void hz3_dstbin_flush_remote_all(void);
 #endif
 

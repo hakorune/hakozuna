@@ -18,6 +18,9 @@
 #endif
 #if HZ3_S64_TCACHE_DUMP
 #include "hz3_s64_tcache_dump.h"
+#if HZ3_S64_TCACHE_DUMP_PRESSURE_ONLY
+#include "hz3_segment_packing.h"
+#endif
 #endif
 #if HZ3_S64_RETIRE_SCAN
 #include "hz3_s64_retire_scan.h"
@@ -313,8 +316,15 @@ void hz3_epoch_force(void) {
 #endif
 
 #if HZ3_S64_TCACHE_DUMP
-    // S64-1: Dump tcache local bins to central (supply for retire)
+#if HZ3_S64_TCACHE_DUMP_PRESSURE_ONLY
+    // S64-P3: Fixed pressure-only mode
+    if (hz3_pack_pressure_active()) {
+        hz3_s64_tcache_dump_tick();
+    }
+#else
+    // Default: Always dump
     hz3_s64_tcache_dump_tick();
+#endif
 #endif
 
 #if HZ3_S64_RETIRE_SCAN

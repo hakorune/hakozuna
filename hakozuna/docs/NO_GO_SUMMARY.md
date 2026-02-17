@@ -4,6 +4,10 @@
 - “試したが負けた/戻した” を再発防止のために SSOT ログ付きで固定する。
 - 研究コードは本線（`hakozuna/hz3/src`）に残さず、`hakozuna/hz3/archive/research/` へ退避する。
 
+補足（禁止の正）:
+- `#error` で固定OFF（hard-archived）になっている knob の一覧は `hakozuna/hz3/docs/HZ3_ARCHIVED_BOXES.md` を正とする
+- 実装上の enforcing は `hakozuna/hz3/include/hz3_config_archive.h`
+
 運用:
 - **1 experiment = 1 folder**
 - 必須: `README.md`（目的/変更/GO条件/結果/ログ/復活条件）
@@ -97,6 +101,275 @@
   - push CAS 競合がボトルネックではなく、stripe の固定費が勝って `owner_stash_push_list` が肥大化。
 - S91 OwnerStash Spill PrefetchBox（NO-GO, perf目的）: `hakozuna/hz3/archive/research/s91_owner_stash_spill_prefetch/README.md`
   - spill walk の prefetch は r90 で逆効果（dist=1/2 とも退行）。
+- S170-B RbufKeyBox（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s170_rbuf_key/README.md`
+  - 最終再確認（perf stat + 順序ランダム化）で R=50 側の下振れが大きく、single default も opt-in 継続も見送り。
+- S170-A RemoteFlushUnrollBox（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s170_remote_flush_unroll/README.md`
+  - ABBA長尺では R=90 がほぼニュートラル、perf-stat paired では R50/R90 とも負側で、結果が安定しないため archive。
+- S183 LargeCacheClassLockSplitBox（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s183_large_cache_class_lock_split/README.md`
+  - T4 long は正側だが、T8/mixed/dist が負側（例: T8 median `-0.890%`, dist `-1.345%`）で default 不適。
+- S186 LargeUnmapDeferralQueueBox（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s186_large_unmap_deferral_queue/README.md`
+  - larson long T4 が明確に負側（mean `-3.404%`, median `-5.020%`）で default 不適。
+- S189 MediumTransferCacheBox（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s189_medium_transfer_cache/README.md`
+  - RUNS=21 で main/guard/Larson が負側（例: main `-5.243%`, guard `-9.051%`, Larson `-2.141%`）。
+- S195 MediumInboxShardBox（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s195_medium_inbox_shard/README.md`
+  - `shards=2/4` は guard が大幅退行（例: `-7.513%`, `-3.142%`）、`shards=8` は main 改善があるが guard が閾値近傍で single default 化に不適。
+- S201 OwnerSideSpliceBatchBox（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s201_owner_side_splice_batch/README.md`
+  - RUNS=21 interleaved で `main +1.147%` だが `guard -1.578%`（ゲート割れ）で default 不採用。
+- S202 MediumRemoteDirectCentralBox（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s202_medium_remote_direct_central/README.md`
+  - RUNS=21 interleaved で `main -0.735%`, `guard -2.225%`, `larson -0.402%` と全体負側。
+- S205 OwnerSleepRescueBox（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s205_owner_sleep_rescue/README.md`
+  - RUNS=21 interleaved で `main -2.344%`（`16..32768 r90`）と明確な退行。`guard` は正側でも single default 条件を満たせず archive。
+- S206B MediumDstMixedBatchBox（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s206b_medium_dst_mixed_batch/README.md`
+  - 目的: medium remote dispatch を `dst-only mixed queue` へバッチ化し、pushのatomic回数を削減。
+  - 結果: `main (16..32768 r90)` が大幅退行（例: `23.29M -> 13.98M`, `-39.98%`）。
+  - S203計測（`/tmp/s206b_s203_diag_20260209_180157`）:
+    - `inbox_push_calls` は減少（`13.17M -> 1.39M`）したが、
+    - `alloc_slow from_segment` が増加（`96,653 -> 289,934`）し再利用効率が悪化。
+  - perf（`/tmp/s206b_perf_20260209_180238`）:
+    - `page-faults +31%`, `cache-misses +194%`, `dTLB-load-misses +403%`, IPC低下。
+  - 判定: main lane/メモリ効率ともに悪化が大きく default/opt-in 継続の価値なし。
+- S208 MediumCentralFloorReserveBox（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s208_medium_central_floor_reserve/README.md`
+  - 目的: medium central-miss 時に segment fallback を reserve して central を底上げし、`from_segment` を下げる。
+  - 結果:
+    - 初期 RUNS=21: main `-0.887%`, guard `-5.588%`（gate fail）
+    - v3 (`MISS_STREAK_MIN=2`) でも RUNS=21 の符号が再現不安定、guard が再度 gate fail する replay あり（同一 SO hash 確認済み）。
+  - 判定: single-default の安定昇格点なし。`HZ3_S208_MEDIUM_CENTRAL_RESERVE` を hard-archive。
+- S211 MediumSegmentReserveLiteBox（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s211_medium_segment_reserve_lite/README.md`
+  - 目的: S208より低固定費で medium `from_segment` を減らす（central-miss境界の疎な reserve publish）。
+  - S211-2 retune（`MISS_STRIDE=4`, `LOCAL_KEEP_MIN=4`, `RESERVE_MAX_OBJS=4`）の短尺は符号維持したが、
+    `RUNS=21` 本判定 main で `-1.536%`（`22.523M -> 22.177M`）に落ち、RSS も悪化。
+  - ログ: `/tmp/s211_t2_ab_main_runs21_20260209`, `/tmp/s211_t2_main_r7_20260209`,
+    `/tmp/s211_t2_guard_r7_20260209`, `/tmp/s211_t2_larson_r7_20260209`
+  - 判定: single-default の安定昇格点を作れず archive。
+- S220 CPURemoteRecycleQueueBox（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s220_cpu_rrq/README.md`
+  - 目的: remote medium dispatch を owner/inbox 経路から外し、CPU-local queue で再利用して publish/drain 固定費を削減。
+  - 結果:
+    - v1 (`RUNS=10`): main `-25.15%`, larson `-91.95%`
+    - v2 (`RUNS=10`, pop-batch): main `-10.43%`, larson `-85.51%`
+    - counter-off でも main `-12.96%`, larson `-85.33%`
+  - 根因: inbox batch recycle を迂回して slowpath 回数が増幅（`alloc_slow_calls` 急増）、larson で顕著。
+  - 判定: `HZ3_S220_CPU_RRQ` を hard-archive（`hz3_config_archive.h` で `#error` 固定）。
+- S223 Medium alloc_slow Dynamic Want（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s223_medium_dynamic_want/README.md`
+  - 目的: central-miss streak 時のみ `want` を増やし、`sc=5..7` の segment fallback 連鎖を減らす。
+  - 結果 (`RUNS=10` recheck):
+    - main (`16..32768 r90`): `28.35M -> 28.20M` (`-0.53%`)
+    - guard (`16..2048 r90`): `109.55M -> 108.04M` (`-1.38%`, gate fail)
+  - 判定: stable positive を作れず、guard gate (`>= -1.0%`) も未達で hard-archive。
+- S224 Medium Remote local n==1 Pair-Batch（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s224_medium_n1_pair_batch/README.md`
+  - 目的: medium remote の `n==1` 支配パターンで publish 固定費を下げる（同一 `(dst,sc)` 2件を pair publish）。
+  - 結果 (`RUNS=10` screen):
+    - main (`16..32768 r90`): `28.853M -> 28.308M` (`-1.889%`)
+    - guard (`16..2048 r90`): `112.221M -> 110.523M` (`-1.513%`, gate fail)
+    - larson (`4KB-32KB`): `153.517M -> 159.099M` (`+3.636%`)
+  - 判定: main 負側 + guard gate 未達で hard-archive（`HZ3_S224_MEDIUM_N1_PAIR_BATCH` を `#error` 固定）。
+- S225 Medium Remote n==1 Last-Key Pair-Batch（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s225_medium_n1_lastkey_pair_batch/README.md`
+  - 目的: S224よりTLSフットプリントを下げ、`(dst,sc)` の最終キー1スロットだけで n==1 の pair化を狙う。
+  - 結果 (`RUNS=10` screen):
+    - main (`16..32768 r90`): `28.7487M -> 28.4573M` (`-1.014%`)
+    - guard (`16..2048 r90`): `105.2528M -> 106.9842M` (`+1.645%`)
+    - larson (`4KB-32KB`): `152.1339M -> 157.3767M` (`+3.446%`)
+  - 判定: guard/larsonは正側だが main が負側で昇格条件未達。`HZ3_S225_MEDIUM_N1_LASTKEY_BATCH` を hard-archive（`#error` 固定）。
+- S226 Medium flush-scope bucket3（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s226_medium_flush_bucket3/README.md`
+  - 目的: flush-window 内だけ `(dst,sc=5..7)` でローカル集約して medium remote publish の固定費を削減。
+  - 結果 (`RUNS=10` screen):
+    - main (`16..32768 r90`): `29.273M -> 29.410M` (`+0.466%`) (`/tmp/s226_ab_main_r10_20260212_exec`)
+    - guard (`16..2048 r90`): `114.262M -> 111.488M` (`-2.428%`) (`/tmp/s226_ab_guard_r10_20260212_exec`)
+    - larson (`4KB-32KB`): `154.738M -> 158.470M` (`+2.412%`) (`/tmp/s226_ab_larson_r10_20260212_exec`)
+  - 判定: main 上振れが小さく guard gate（`>= -1.0%`）を再現割れ。single-default 昇格点なしで hard-archive。
+- S228 Central Fast local remainder cache（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s228_central_fast_local_remainder/README.md`
+  - 目的: `S222` fast-pop 余剰の repush 固定費を、`live_count==1` の shard で TLS remainder に吸収して削減。
+  - 結果 (`RUNS=10` interleaved):
+    - main (`16..32768 r90`): `28.577M -> 25.423M` (`-11.04%`)
+    - guard (`16..2048 r90`): `110.910M -> 110.657M` (`-0.23%`)
+    - larson (`4KB-32KB`): `157.421M -> 155.554M` (`-1.19%`, gate fail)
+  - メカ:
+    - `S222 pop_repush/pop_hits` は `0.997 -> 0.000` に改善したが、
+      `from_central/from_segment` 増で全体 throughput は悪化。
+  - 判定: `main <= 0` かつ `larson < -1.0%` のため hard-archive
+    （`HZ3_S228_CENTRAL_FAST_LOCAL_REMAINDER` を `#error` 固定）。
+- S229 Medium alloc_slow central-first（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s229_central_first/README.md`
+  - 目的: `sc=5..7` の alloc_slow で inbox より central-fast を先に試し、medium lane の固定費を削減する。
+  - 結果 (`RUNS=10`, CPU pin `0-15`):
+    - main (`16..32768 r90`): `28.58M -> 15.20M` (`-46.81%`)
+      (`/tmp/s229_ab_main_r10_20260212_exec`)
+    - guard (`16..2048 r90`): `107.98M -> 114.11M` (`+5.68%`)
+      (`/tmp/s229_ab_guard_r10_20260212_exec`)
+  - メカ:
+    - central-first は確実に発火したが、source mix が central-heavy に崩れた。
+    - `alloc_slow_calls`: `1,671,751 -> 2,831,485`
+    - `from_central`: `525,746 -> 2,263,349`
+    - `from_inbox`: `1,078,116 -> 493,192`
+    - 結果として slowpath 増幅が main lane を崩壊させた。
+  - 判定: lane 破壊レベルの退行で hard-archive
+    （`HZ3_S229_CENTRAL_FIRST` を `#error` 固定）。
+- S230 Medium `n==1` -> central-fast direct（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s230_medium_n1_to_central_fast/README.md`
+  - 目的: medium remote dispatch の `n==1` 支配を前提に、`sc=5..7` だけ inbox publish を bypass して S222 central-fast へ直行する。
+  - 結果 (`RUNS=10`, CPU pin `0-15`):
+    - main (`16..32768 r90`): `28.3476M -> 11.3566M` (`-59.94%`)
+    - guard (`16..2048 r90`): `112.9243M -> 111.7734M` (`-1.02%`)
+    - larson (`4KB-32KB`): `157.9458M -> 155.9492M` (`-1.26%`)
+  - メカ:
+    - `to_central_s230` は `0 -> 5.11M` で強く発火したが、
+      `from_central` と `alloc_slow_calls` が増え（`from_inbox` 減）、slowpath 増幅で throughput が崩壊。
+  - 判定: mechanism は動作するが lane 性能を壊すため hard-archive
+    （`HZ3_S230_MEDIUM_N1_TO_CENTRAL_FAST` を `#error` 固定）。
+
+- S231 Medium inbox fast MPSC（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s231_medium_inbox_fast_mpsc/README.md`
+  - 目的: medium inbox 固定費削減のため、`sc=5..7` を `lane=0` 固定 + push-seq更新を省略する。
+  - 結果:
+    - `main` (`16..32768 r90`): `28.9769M -> 28.8995M` (`-0.267%`)
+    - `guard` (`16..2048 r90`): `111.7882M -> 109.0609M` (`-2.440%`)
+    - `larson` (`4KB-32KB`): `154.2026M -> 158.4121M` (`+2.730%`)
+  - メカ:
+    - `medium_dispatch n==1` は不変（支配継続）。
+    - `to_central` は依然ほぼゼロ、`S222 pop_repush/pop_hits` もほぼ不変。
+    - `HZ3_S195_MEDIUM_INBOX_SHARDS=1` 固定のため lane=0 強制の実効差が薄い。
+  - 判定: 主ボトルネックに当たらず guard replay gate も不安定。hard-archive（`HZ3_S231_INBOX_FAST_MPSC` を `#error` 固定）。
+- S232 Large aggressive retain preset（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s232_large_aggressive/README.md`
+  - 目的: large-path（`65537..131072`）で retain budget を積極化し、`mmap/munmap/page-fault` の churn を下げる。
+  - 結果 (`RUNS=10`, CPU pin `0-15`, skip RSS):
+    - large-only (`65537..131072 r90`): `1.903M -> 1.470M` (`-22.73%`)
+      (`/tmp/s232_ab_short_20260212_071450/large`)
+    - main (`16..32768 r90`): `28.865M -> 29.824M` (`+3.32%`)
+      (`/tmp/s232_ab_short_20260212_071450/main`)
+    - guard (`16..2048 r90`): `111.136M -> 111.925M` (`+0.71%`)
+      (`/tmp/s232_ab_short_20260212_071450/guard`)
+  - メカ:
+    - one-shot counter lock (`HZ3_LARGE_CACHE_STATS=1`) で
+      `alloc_cache_misses: 590270 -> 700030`, `free_munmap: 588718 -> 698478` に悪化。
+  - 判定: large-only 目的に対して再現性を持って負側。`HZ3_S232_LARGE_AGGRESSIVE` を hard-archive（`#error` 固定）。
+- S234 Central fast partial-pop CAS（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s234_central_fast_partial_pop/README.md`
+  - 目的: `S222` の `exchange+repush` 固定費を減らすため、`want` 個だけを CAS partial-pop する。
+  - 結果 (`RUNS=10`):
+    - main (`16..32768 r90`): `29.44M -> 24.52M` (`-16.7%`)
+      (`/tmp/s234_ab_main_20260212/summary.txt`)
+    - guard (`16..2048 r90`): `118.48M -> 104.53M` (`-11.8%`)
+      (`/tmp/s234_ab_guard_20260212/summary.txt`)
+  - メカ:
+    - `pop_repush=0`, `s234_hits/s234_objs` は大きく、`s234_retry=0`, `s234_fallback=0` で機構は成立。
+  - 判定: 機構は動作するが throughput は replay-stable に大幅退行。`HZ3_S234_CENTRAL_FAST_PARTIAL_POP` を hard-archive（`#error` 固定）。
+- S236-C Pressure-aware BatchIt-lite（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s236c_medium_batchit_lite/README.md`
+  - 目的: medium remote publish (`n==1` 支配) を producer側で圧力連動バッチ化し、publish 固定費を削減する。
+  - 結果 (`RUNS=10`, pinned `0-15`):
+    - main (`16..32768 r90`): `40.1838M -> 39.8070M` (`-0.938%`)
+    - guard (`16..2048 r90`): `111.7796M -> 106.6718M` (`-4.569%`)
+    - larson (`4KB-32KB`): `156.5234M -> 151.1744M` (`-3.417%`)
+  - 判定: カウンタ発火は確認したが throughput gate 未達。hard-archive。
+- S236-D Medium mailbox multi-slot（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s236d_medium_mailbox_multislot/README.md`
+  - 目的: `S236-A/B` を維持したまま mailbox overflow fallback を減らす（slots=`1 -> 2`）。
+  - 結果 (`RUNS=10`, pinned `0-15`):
+    - main (`16..32768 r90`): `39.7744M -> 39.8117M` (`+0.094%`)
+    - guard (`16..2048 r90`): `109.2343M -> 112.0795M` (`+2.605%`)
+    - larson (`4KB-32KB`): `157.1846M -> 157.7083M` (`+0.333%`)
+  - メカ:
+    - `mb_push_full_fallbacks`: `4,821,600 -> 4,343,330` (`-9.92%`)
+    - `mb_push_hits`: `529,846 -> 1,009,660` (`+90.56%`)
+  - 判定: mechanism は成立したが main の screen gate (`>= +2.0%`) 未達で hard-archive。
+- S236-E mini central retry（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s236e_mini_central_retry/README.md`
+  - 目的: mini-refill の central miss 後に bounded retry を1回追加して供給取り逃しを減らす。
+  - 結果 (`RUNS=10`, pinned `0-15`):
+    - main (`16..32768 r90`): `40.623M -> 38.448M` (`-5.35%`)
+    - guard (`16..2048 r90`): `100.411M -> 113.125M` (`+12.66%`)
+    - larson (`4KB-32KB`): `120.868M -> 121.695M` (`+0.68%`)
+  - メカ: `retry_calls > 0` だが `retry_hits=0`（`retry_skipped_no_supply == retry_calls`）。
+  - 判定: 供給捕捉に失敗し main が replay-negative。hard-archive。
+- S236-F streak-gated mini central retry（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s236f_mini_central_retry_streak/README.md`
+  - 目的: S236-E の固定費を miss-streak gate で抑えつつ retry を活かす。
+  - 結果 (`RUNS=10`, pinned `0-15`):
+    - main (`16..32768 r90`): `39.150M -> 38.336M` (`-2.08%`)
+    - guard (`16..2048 r90`): `111.709M -> 113.913M` (`+1.97%`)
+    - larson (`4KB-32KB`): `121.272M -> 121.636M` (`+0.30%`)
+  - メカ: `retry_calls > 0` でも `retry_hits=0` が継続。
+  - 判定: main の再現改善なしで hard-archive。
+- S236-G mini central hint gate（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s236g_mini_central_hint_gate/README.md`
+  - 目的: `hz3_central_has_supply()` で空 pop を間引き、mini-refill 中央試行の固定費を削減。
+  - 結果 (`RUNS=10`, pinned `0-15`):
+    - main (`16..32768 r90`): `39.552M -> 39.275M` (`-0.70%`)
+    - guard (`16..2048 r90`): `109.553M -> 109.615M` (`+0.06%`)
+    - larson (`4KB-32KB`): `121.400M -> 120.138M` (`-1.04%`)
+  - メカ: `hint_checks/hint_positive/hint_empty_skips` は非ゼロで発火確認済み。
+  - 判定: throughput 改善なし、larson gate 割れで hard-archive。
+- S236-H mini-refill K tune（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s236h_mini_refill_k_tune/README.md`
+  - 目的: producer 経路を変えず `HZ3_S236_MINIREFILL_K` のみ最適化。
+  - main sweep (`RUNS=10`): `K=4/-2.98%`, `K=6/-0.60%`, `K=10/+0.53%`, `K=12/+1.73%`
+    - logs: `/tmp/s236h_k_sweep_main_r10_20260212_234214/k{4,6,10,12}`
+  - top recheck (`K=10/12`, `RUNS=10`):
+    - guard: `-1.35%` / `-5.72%`（いずれも gate fail）
+    - larson: `-0.45%` / `-0.50%`
+    - logs: `/tmp/s236h_k_guard_larson_r10_20260212_234502/`
+  - 判定: main uplift が小さく guard gate 未達。既定 `K=8` 維持で hard-archive。
+- S236-I mini inbox second-chance（NO-GO / hard-archive）: `hakozuna/hz3/archive/research/s236i_mini_inbox_second_chance/README.md`
+  - 目的: `S236-A/B` は維持したまま、mini-refill miss時に inbox を 1 回だけ再試行して取り逃しを補足する。
+  - 結果 (`RUNS=10`, pinned `0-15`):
+    - main (`16..32768 r90`): `40.209M -> 40.726M` (`+1.285%`)
+    - guard (`16..2048 r90`): `111.188M -> 108.622M` (`-2.308%`)
+    - larson (`4KB-32KB`): `38.222M -> 37.571M` (`-1.703%`)
+    - logs:
+      - `/tmp/s236i_ab_main_r10_20260213_000505`
+      - `/tmp/s236i_ab_guard_r10_20260213_000700`
+      - `/tmp/s236i_ab_larson_r10_20260213_000727`
+  - メカ:
+    - `second_inbox_calls/hits` は median 0（ほぼ未発火）
+    - main 合算でも `calls=3, hits=3` と適用範囲が極小
+  - 判定: guard/larson gate 未達かつ mechanism 不発で hard-archive。
+- S236-J mailbox-hit preload（NO-GO / hard-archive）: `hakozuna/archive/research/s236j_mailbox_hit_preload/README.md`
+  - 目的: mailbox-hit 時に inbox 1件 preload を追加して main を押し上げる。
+  - 結果 (`RUNS=10` screen):
+    - main (`16..32768 r90`): `36.86M -> 35.63M` (`-3.3%`)
+    - guard (`16..2048 r90`): `+9.0%`（medium path外のため直接因果は弱い）
+    - larson (`4KB-32KB`): `+1.1%`
+  - 判定: target lane の `main` が明確に負側。hard-archive。
+- S236-K sc-range/source split sweep（NO-GO / hard-archive）: `hakozuna/archive/research/s236k_sc_range_source_split/README.md`
+  - 目的: 新規コードなしで `SC range` と `inbox/central` source split を探索。
+  - 結果 (`RUNS=10` interleaved): `v1..v4` はすべて `main` が負側（`-7.29%` ～ `-21.14%`）。
+  - 補足: `v5_central_only` は current tree で build-fail（`-Werror` unused variable）。
+  - 判定: default shape（`SC 5..7`, inbox+central-fast ON）維持。hard-archive。
+- S236-L mini-refill K retune（NO-GO / hard-archive）: `hakozuna/archive/research/s236l_mini_refill_k_tune/README.md`
+  - 目的: `HZ3_S236_MINIREFILL_K` のみを掃引して lane-wide pass 点を探す。
+  - 結果 (`RUNS=10` interleaved):
+    - best main は `K=12` の `+2.90%`（gate `+3.0%` 未達）
+    - 他点は `main` 負側または `guard` gate fail。
+  - 判定: `K=8` 維持、S236 micro-tuning line を凍結。
+- S236-O Medium Slow Refill List Prepend（NO-GO / hard-archive）:
+  - 目的: `hz3_alloc_slow` 内の inbox refill を list prepend で batch 化し、`inbox_push_list` 呼び出し頻度を削減。
+  - 結果 (`RUNS=10` screen):
+    - main (`16..32768 r90`): **-1.73%**（gate `>= +2.5%` 未達）
+    - perf: `hz3_alloc_slow` は全実行の ~2% と小さく、最適化余地が限定的。
+  - 判定: alloc_slow の batch prepend は固定費が効果を上回る。hard-archive。
+- S236-P Inbox Producer Batch（NO-GO / hard-archive）:
+  - 目的: `hz3_medium_dispatch_push` で n==1 を TLS pending slot に batch 積みし、`inbox_push_list` 呼び出し頻度を削減。
+  - 結果 (`RUNS=10` interleaved, corrected):
+    - main (`16..32768 r90`): `+1.03%`（gate `>= +2.5%` 未達）
+    - guard (`16..2048 r90`): **-8.52%**（gate `>= -3.0%` fail）
+    - larson (`4KB-32KB`): `+1.21%`（PASS）
+  - メカ:
+    - 64% reduction in `inbox_push_calls`（mechanism confirmed active）
+    - `push_batch_flush_calls` = 4.6M, `push_batch_flush_objs` = 12.8M
+  - 判定: mechanism は動作するが guard 大幅退行で single default 不可。hard-archive。
+  - 記録: `hakozuna/hz3/docs/PHASE_S236P_INBOX_PUSH_BATCH_WORK_ORDER_20260217.md`
+- S236-Q Inbox Drain Empty Backoff（NO-GO / hard-archive）:
+  - 目的: inbox drain が空のときに backoff し、無駄な drain call を削減（consumer-side 最適化）。
+  - Stage A 観測: `empty_ratio >= 38.8%`, `from_inbox >= 64.99%`, `from_central >= 29.31%` で条件満たし Stage B 進行。
+  - 結果 (`RUNS=10` interleaved):
+    - main (`16..32768 r90`): `-0.32%`（gate `>= +2.5%` 未達）
+    - guard (`16..2048 r90`): **-5.41%**（gate `>= -3.0%` fail）
+    - larson (`4KB-32KB`): `+2.01%`（PASS）
+  - hard-kill: `from_central +10.11% > +10%`（inbox skip で central fallback 増加）
+  - メカ: `backoff_skip=185,566`（動作確認）
+  - 判定: inbox drain skip で central pop が増加し、lock contention が悪化。hard-archive。
+  - 記録: `hakozuna/hz3/docs/PHASE_S236Q_INBOX_DRAIN_EMPTY_BACKOFF_WORK_ORDER.md`
+- S236-M mini-refill source arbiter（NO-GO, Stage A fail）:
+  - 目的: mini-refill 内で inbox/central の順序を per-SC で適応切替し、`main (16..32768 r90)` を押し上げる。
+  - Stage A 観測（コード変更なし, `HZ3_S203_COUNTERS=1`）:
+    - `mini_miss / mini_calls`: `3.31% - 4.38%`（条件 `>= 10%` を未達）
+    - `from_inbox / alloc_slow`: `61.3% - 64.6%`（PASS）
+    - `from_central / alloc_slow`: `30.4% - 32.5%`（PASS）
+  - 判定: miss率が低く、arbiter 実装の期待効果が小さいため Stage B 非着手で NO-GO。
+  - 記録:
+    - `hakozuna/hz3/docs/PHASE_S236M_SOURCE_ARBITER_WORK_ORDER_20260217.md`
+    - `hakozuna/hz3/archive/research/s236m_minirefill_source_arbiter/README.md`
+- S190 TargetedFlush + Budget tuning（NO-GO / archive）: `hakozuna/hz3/archive/research/s190_targeted_flush_budget_tuning/README.md`
+  - targeted flush は RUNS=21 で中央値負側。budget最適化も `24` は Larson 退行、`12` は改善幅不足で default不採用。
 - S136/S137 HotSC decay boxes（NO-GO, RSS目的）: `hakozuna/hz3/archive/research/s137_small_decay_box/README.md`
   - hot sc の bin_target/trim を試したが RSS が動かず、epoch 強制でも効果不明のため archive。
 - S42-1 XferPop Prefetch（NO-GO, perf目的）:
@@ -104,6 +377,22 @@
   - r90 **-2.0%** / r50 **-5.5%** / R=0 **-1.0%** → **NO-GO**
   - 原因推測: xfer は mutex 保護下で object がやや温かく、prefetch の固定費が勝った
   - 指示書: `hakozuna/hz3/docs/PHASE_HZ3_S42_SMALL_TRANSFER_CACHE_WORK_ORDER.md`
+- S42-2 SmallTransferCache slots sweep（NO-GO, perf目的）:
+  - 目的: `HZ3_S42_SMALL_XFER=1` の `SLOTS=32/64/128` を no-code sweep し、main lane の再改善点を探索
+  - 結果 (`RUNS=10` interleaved):
+    - `SLOTS=64`: main `-0.50%`, guard `-1.63%`, larson_proxy `-0.24%`
+    - `SLOTS=32`: main `+0.95%`, guard `+2.26%`, larson_proxy `-0.33%`
+    - `SLOTS=128`: main `+1.11%`, guard `-1.77%`, larson_proxy `+0.41%`
+  - 判定: best main が `+1.11%` で gate（`>= +3.0%`）未達。lane-wide pass を作れず NO-GO。
+  - 記録: `hakozuna/hz3/docs/PHASE_S42_2_SMALL_XFER_SWEEP_NO_GO_20260217.md`
+- S44-2 OwnerSharedStash parameter sweep（NO-GO, perf目的）:
+  - 目的: `HZ3_S44_DRAIN_LIMIT` と `HZ3_S44_BOUNDED_DRAIN/EXTRA` の調整で main lane を押し上げる。
+  - 結果 (`RUNS=10` interleaved): 全 6 variant で `main` gate（`>= +3.0%`）未達。
+    - best: `v4_bd32` でも main `+0.75%`
+  - 判定: S44 tuning line では lane-wide pass を作れず NO-GO。
+  - 記録:
+    - `hakozuna/hz3/docs/PHASE_S44_2_OWNERSHARED_STASH_TUNE_WORK_ORDER_20260217.md`
+    - `hakozuna/hz3/scripts/run_s44_2_knob_sweep_safe.sh`
 - S44-4 OwnerStash WALK_NOPREV（NO-GO, perf目的）:
   - walk loop で `prev` 変数を廃止し `out[got-1]` から tail を取得する最適化
   - **r90: -14% 退行（NO-GO）、r50: +1.5%**
@@ -158,6 +447,25 @@
 ## In-tree NO-GO（flagged, not archived）
 
 ※「結果はNO-GOだが、将来のGuard/観測や別レーン再評価のためにコードは本線に残す」もの。
+
+- S184 LargeFreeBudgetPrecheckBox（NO-GO, perf目的）:
+  - 目的: `hz3_large_free()` の budget precheck を lock 前に移し、free hot path の lock 区間を短縮。
+  - 結果: `larson long T4` が負側（mean **-0.84%**, median **-1.20%**）で default 目標を満たさず。
+  - 補足: T8/mixed/dist は正側もあるが、large MT 主戦場で勝てないため採用見送り。
+  - 運用: `HZ3_S184_LARGE_FREE_PRECHECK=0` を既定維持（opt-in再評価のみ）。
+
+- S185 LargeEvictMunmapBatchBox（NO-GO, perf目的）:
+  - 目的: hard-cap evict の `unlock -> munmap -> relock` を batch 化し、lock往復固定費を削減。
+  - 結果: `larson long T4` が負側（mean **-2.20%**, median **-1.45%**）で default 目標を満たさず。
+  - 補足: T8/dist は微正側があるが、T4主戦場での悪化が大きく採用不可。
+  - 運用: `HZ3_S185_LARGE_EVICT_MUNMAP_BATCH=0` を既定維持（opt-in再評価のみ）。
+
+- S190-v3 TargetedFlush / Budget tuning（NO-GO, perf目的）:
+  - 目的: S190 miss flush を `sc` 狙い撃ち化し、budget を詰めて MT を伸ばす。
+  - 結果: targeted flush は RUNS=21 で中央値負側（MT **-0.780%**）。
+  - 追加結果: budget `24` は Larson **-0.729%**、budget `12` は安全だが MT **+0.360%**で閾値未達。
+  - 運用: `HZ3_S190_TARGETED_FLUSH=0` / `HZ3_S190_FLUSH_BUDGET_BINS=32` を既定維持。
+  - 記録: `hakozuna/hz3/archive/research/s190_targeted_flush_budget_tuning/README.md`
 
 - S97-5 RemoteStashFlatSlotBucketBox（NO-GO, perf目的）:
   - 目的: S97-2 の `stamp[u32] + idx[u16]` を 1 テーブル（`slot=(epoch<<16)|(idx+1)`）に統合し、TLS load を 1 本減らす。

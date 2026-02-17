@@ -5,6 +5,22 @@
 
 #include <pthread.h>
 
+#if HZ3_S188_MEDIUM_REFILL_TUNE
+#define HZ3_KNOB_REFILL_SC5 HZ3_S188_REFILL_SC5
+#define HZ3_KNOB_REFILL_SC6 HZ3_S188_REFILL_SC6
+#define HZ3_KNOB_REFILL_SC7 HZ3_S188_REFILL_SC7
+#define HZ3_KNOB_BIN_TARGET_SC5 HZ3_S188_BIN_TARGET_SC5
+#define HZ3_KNOB_BIN_TARGET_SC6 HZ3_S188_BIN_TARGET_SC6
+#define HZ3_KNOB_BIN_TARGET_SC7 HZ3_S188_BIN_TARGET_SC7
+#else
+#define HZ3_KNOB_REFILL_SC5 3
+#define HZ3_KNOB_REFILL_SC6 3
+#define HZ3_KNOB_REFILL_SC7 3
+#define HZ3_KNOB_BIN_TARGET_SC5 16
+#define HZ3_KNOB_BIN_TARGET_SC6 16
+#define HZ3_KNOB_BIN_TARGET_SC7 16
+#endif
+
 // ============================================================================
 // Day 6: Global knobs with Day 5 default values
 // Initialized statically to match Day 5 behavior exactly when LEARN_ENABLE=0
@@ -14,8 +30,8 @@
 // S15-1: sc=0 uses HZ3_BIN_CAP_SC0 (32) for thicker bin
 // S-OOM: Extended to 16 size classes (4KB-64KB)
 Hz3Knobs g_hz3_knobs = {
-    .refill_batch = {12, 8, 4, 4, 4, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2},  // sc=0..15
-    .bin_target = {HZ3_BIN_CAP_SC0, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16},
+    .refill_batch = {12, 8, 4, 4, 4, HZ3_KNOB_REFILL_SC5, HZ3_KNOB_REFILL_SC6, HZ3_KNOB_REFILL_SC7, 3, 3, 2, 2, 2, 2, 2, 2},  // sc=0..15
+    .bin_target = {HZ3_BIN_CAP_SC0, 16, 16, 16, 16, HZ3_KNOB_BIN_TARGET_SC5, HZ3_KNOB_BIN_TARGET_SC6, HZ3_KNOB_BIN_TARGET_SC7, 16, 16, 16, 16, 16, 16, 16, 16},
     .outbox_flush_n = 0,  // unused v0
     // S64: Epoch-based retire/purge defaults
     .s64_retire_budget_objs = HZ3_S64_RETIRE_BUDGET_OBJS,
@@ -38,3 +54,10 @@ static void hz3_knobs_do_init(void) {
 void hz3_knobs_init(void) {
     pthread_once(&g_hz3_knobs_once, hz3_knobs_do_init);
 }
+
+#undef HZ3_KNOB_REFILL_SC5
+#undef HZ3_KNOB_REFILL_SC6
+#undef HZ3_KNOB_REFILL_SC7
+#undef HZ3_KNOB_BIN_TARGET_SC5
+#undef HZ3_KNOB_BIN_TARGET_SC6
+#undef HZ3_KNOB_BIN_TARGET_SC7

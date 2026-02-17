@@ -40,3 +40,16 @@ void hz3_central_push_list(int shard, int sc, void* head, void* tail, uint32_t n
 
 // Pop up to 'want' objects into out array (returns actual count)
 int hz3_central_pop_batch(int shard, int sc, void** out, int want);
+
+// Snapshot current central count for (shard,sc).
+uint32_t hz3_central_count_snapshot(int shard, int sc);
+
+// Hint-only check for whether central may have supply for (shard,sc).
+// Returns 1 if likely non-empty, 0 if empty/invalid.
+int hz3_central_has_supply(int shard, int sc);
+
+#if HZ3_S189_MEDIUM_TRANSFERCACHE
+// S189: transfer cache API (sc-limited by config)
+int hz3_central_xfer_pop_batch(int shard, int sc, void** out, int want);
+int hz3_central_xfer_push_array(int shard, int sc, void** arr, int n);
+#endif

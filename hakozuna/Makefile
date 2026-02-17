@@ -141,7 +141,7 @@ HZ3_LDPRELOAD_P32_OBJS := $(patsubst $(HZ3_DIR)/src/%.c,$(OUT_LDPRELOAD_P32_DIR)
 # fast lane (current behavior)
 all_ldpreload_fast: $(LDPRELOAD_FAST_LIB)
 
-# scale lane (32 shards + sparse)
+# scale lane (default 63 shards + sparse)
 all_ldpreload_scale: $(LDPRELOAD_SCALE_LIB)
 
 # PTAG32-only lane (p32)
@@ -316,7 +316,12 @@ HZ3_SCALE_ARENA_PRESSURE_BOX ?= 0
 # S51: Large madvise policy (enable via make var for A/B testing)
 HZ3_SCALE_S51_LARGE_MADVISE ?= 0
 
-HZ3_SCALE_DEFS := -DHZ3_REMOTE_STASH_SPARSE=1 \
+# S65: Medium Reclaim controls (enable via make var for A/B testing)
+HZ3_SCALE_S65_RELEASE_BOUNDARY ?= 1
+HZ3_SCALE_S65_RELEASE_LEDGER ?= 1
+HZ3_SCALE_S65_MEDIUM_RECLAIM ?= 1
+
+HZ3_SCALE_DEFS = -DHZ3_REMOTE_STASH_SPARSE=1 \
 	-DHZ3_SHARD_COLLISION_FAILFAST=$(HZ3_SCALE_COLLISION_FAILFAST) \
 	-DHZ3_SHARD_COLLISION_SHOT=$(HZ3_SCALE_COLLISION_SHOT) \
 	-DHZ3_ARENA_SIZE=$(HZ3_SCALE_ARENA_SIZE) \
@@ -339,9 +344,9 @@ HZ3_SCALE_DEFS := -DHZ3_REMOTE_STASH_SPARSE=1 \
 	-DHZ3_S49_SEGMENT_PACKING=1 \
 	-DHZ3_S62_RETIRE=0 \
 	-DHZ3_S62_PURGE=0 \
-	-DHZ3_S65_RELEASE_BOUNDARY=1 \
-	-DHZ3_S65_RELEASE_LEDGER=1 \
-	-DHZ3_S65_MEDIUM_RECLAIM=1 \
+	-DHZ3_S65_RELEASE_BOUNDARY=$(HZ3_SCALE_S65_RELEASE_BOUNDARY) \
+	-DHZ3_S65_RELEASE_LEDGER=$(HZ3_SCALE_S65_RELEASE_LEDGER) \
+	-DHZ3_S65_MEDIUM_RECLAIM=$(HZ3_SCALE_S65_MEDIUM_RECLAIM) \
 	-DHZ3_S65_IDLE_GATE=1 \
 	-DHZ3_S74_LANE_BATCH=$(HZ3_SCALE_S74_LANE_BATCH) \
 	-DHZ3_S74_REFILL_BURST=$(HZ3_SCALE_S74_REFILL_BURST) \
@@ -414,6 +419,81 @@ HZ3_LDPRELOAD_MEM_LARGE_OBJS := $(patsubst $(HZ3_DIR)/src/%.c,$(OUT_LDPRELOAD_ME
 all_ldpreload_scale_mem_mstress: $(LDPRELOAD_MEM_MSTRESS_LIB)
 all_ldpreload_scale_mem_large: $(LDPRELOAD_MEM_LARGE_LIB)
 
+# S64 purge0 lane (RSS-focused, opt-in)
+.PHONY: all_ldpreload_scale_s64_purge0 rebuild_ldpreload_scale_s64_purge0
+.NOTPARALLEL: rebuild_ldpreload_scale_s64_purge0
+
+OUT_LDPRELOAD_S64_PURGE0_DIR := $(HZ3_DIR)/out_ldpreload_s64_purge0
+LDPRELOAD_S64_PURGE0_LIB := $(ROOT)/libhakozuna_hz3_scale_s64_purge0.so
+HZ3_LDPRELOAD_S64_PURGE0_OBJS := $(patsubst $(HZ3_DIR)/src/%.c,$(OUT_LDPRELOAD_S64_PURGE0_DIR)/%.o,$(HZ3_SRCS))
+
+# Purpose: make "mimalloc purge delay=0" style experiments easy:
+# - S65 forced OFF so S64 PurgeDelayBox is the active purge path.
+# - S64 purge uses epoch-based delay=0 (no ms delay gate).
+# - Budgets are intentionally large (RSS-focused research lane).
+HZ3_S64_PURGE0_DEFS := \
+	-DHZ3_S64_RETIRE_SCAN=1 \
+	-DHZ3_S64_PURGE_DELAY=1 \
+	-DHZ3_S64_PURGE_DELAY_MS=0 \
+	-DHZ3_S64_PURGE_DELAY_EPOCHS=0 \
+	-DHZ3_S64_PURGE_BUDGET_PAGES=4096 \
+	-DHZ3_S64_PURGE_MAX_CALLS=256 \
+	-DHZ3_S64_STATS=1 \
+	-DHZ3_OS_PURGE_STATS=1
+
+all_ldpreload_scale_s64_purge0: $(LDPRELOAD_S64_PURGE0_LIB)
+
+rebuild_ldpreload_scale_s64_purge0:
+	@$(MAKE) clean
+	@$(MAKE) all_ldpreload_scale_s64_purge0
+
+# S64 P5b lane (RSS-focused research, opt-in)
+.PHONY: all_ldpreload_scale_s64_p5b rebuild_ldpreload_scale_s64_p5b
+.NOTPARALLEL: rebuild_ldpreload_scale_s64_p5b
+
+OUT_LDPRELOAD_S64_P5B_DIR := $(HZ3_DIR)/out_ldpreload_s64_p5b
+LDPRELOAD_S64_P5B_LIB := $(ROOT)/libhakozuna_hz3_scale_s64_p5b.so
+HZ3_LDPRELOAD_S64_P5B_OBJS := $(patsubst $(HZ3_DIR)/src/%.c,$(OUT_LDPRELOAD_S64_P5B_DIR)/%.o,$(HZ3_SRCS))
+
+# Purpose: explore RSS wins from S64 retire_scan "drain pending + defer scan" (P5b).
+# S65 forced OFF so S64 RetireScanBox/PurgeDelayBox is the active reclaim path.
+HZ3_S64_P5B_DEFS := \
+	-DHZ3_S64_RETIRE_SCAN=1 \
+	-DHZ3_S64_PURGE_DELAY=1 \
+	-DHZ3_S64_STATS=1 \
+	-DHZ3_S64_RETIRE_DRAIN_PENDING=1 \
+	-DHZ3_S64_RETIRE_DRAIN_DEFER=1 \
+	-DHZ3_S64_RETIRE_DRAIN_MAX_SC_PER_TICK=1
+
+all_ldpreload_scale_s64_p5b: $(LDPRELOAD_S64_P5B_LIB)
+
+rebuild_ldpreload_scale_s64_p5b:
+	@$(MAKE) clean
+	@$(MAKE) all_ldpreload_scale_s64_p5b
+
+# S65 purge0 lane (RSS-focused, opt-in)
+.PHONY: all_ldpreload_scale_s65_purge0 rebuild_ldpreload_scale_s65_purge0
+.NOTPARALLEL: rebuild_ldpreload_scale_s65_purge0
+
+OUT_LDPRELOAD_S65_PURGE0_DIR := $(HZ3_DIR)/out_ldpreload_s65_purge0
+LDPRELOAD_S65_PURGE0_LIB := $(ROOT)/libhakozuna_hz3_scale_s65_purge0.so
+HZ3_LDPRELOAD_S65_PURGE0_OBJS := $(patsubst $(HZ3_DIR)/src/%.c,$(OUT_LDPRELOAD_S65_PURGE0_DIR)/%.o,$(HZ3_SRCS))
+
+# Purpose: mimic "purge delay=0" style RSS tuning using S65 ledger (scale default path).
+# Keep S65 enabled (boundary + ledger + medium reclaim), but purge aggressively.
+HZ3_S65_PURGE0_DEFS := \
+	-DHZ3_S65_DELAY_EPOCHS_BUSY=0 \
+	-DHZ3_S65_PURGE_BUDGET_PAGES=65536 \
+	-DHZ3_S65_PURGE_MAX_CALLS=1024 \
+	-DHZ3_S65_STATS=1 \
+	-DHZ3_OS_PURGE_STATS=1
+
+all_ldpreload_scale_s65_purge0: $(LDPRELOAD_S65_PURGE0_LIB)
+
+rebuild_ldpreload_scale_s65_purge0:
+	@$(MAKE) clean
+	@$(MAKE) all_ldpreload_scale_s65_purge0
+
 # NOTE: Do not run `make -j clean <build-target>` (clean may race with compile).
 rebuild_ldpreload_scale:
 	@$(MAKE) clean
@@ -433,6 +513,15 @@ $(OUT_LDPRELOAD_MEM_MSTRESS_DIR):
 $(OUT_LDPRELOAD_MEM_LARGE_DIR):
 	@mkdir -p $(OUT_LDPRELOAD_MEM_LARGE_DIR)
 
+$(OUT_LDPRELOAD_S64_PURGE0_DIR):
+	@mkdir -p $(OUT_LDPRELOAD_S64_PURGE0_DIR)
+
+$(OUT_LDPRELOAD_S64_P5B_DIR):
+	@mkdir -p $(OUT_LDPRELOAD_S64_P5B_DIR)
+
+$(OUT_LDPRELOAD_S65_PURGE0_DIR):
+	@mkdir -p $(OUT_LDPRELOAD_S65_PURGE0_DIR)
+
 $(OUT_LDPRELOAD_MEM_MSTRESS_DIR)/%.o: $(HZ3_DIR)/src/%.c | $(OUT_LDPRELOAD_MEM_MSTRESS_DIR)
 	$(CC) $(CFLAGS_LDPRELOAD) $(HZ3_LDPRELOAD_DEFS) $(HZ3_LDPRELOAD_DEFS_EXTRA) \
 	    $(HZ3_SCALE_DEFS) $(HZ3_MEM_MSTRESS_DEFS) $(INC) -c $< -o $@
@@ -441,11 +530,47 @@ $(OUT_LDPRELOAD_MEM_LARGE_DIR)/%.o: $(HZ3_DIR)/src/%.c | $(OUT_LDPRELOAD_MEM_LAR
 	$(CC) $(CFLAGS_LDPRELOAD) $(HZ3_LDPRELOAD_DEFS) $(HZ3_LDPRELOAD_DEFS_EXTRA) \
 	    $(HZ3_SCALE_DEFS) $(HZ3_MEM_LARGE_DEFS) $(INC) -c $< -o $@
 
+$(OUT_LDPRELOAD_S64_PURGE0_DIR)/%.o: $(HZ3_DIR)/src/%.c | $(OUT_LDPRELOAD_S64_PURGE0_DIR)
+	$(CC) $(CFLAGS_LDPRELOAD) $(HZ3_LDPRELOAD_DEFS) $(HZ3_LDPRELOAD_DEFS_EXTRA) \
+	    $(HZ3_SCALE_SHARDS_DEF) $(HZ3_SCALE_DEFS) $(HZ3_S64_PURGE0_DEFS) $(INC) -c $< -o $@
+
+# S65 forced OFF for this lane (avoid -D redefinition warnings under -Werror)
+$(OUT_LDPRELOAD_S64_PURGE0_DIR)/%.o: HZ3_SCALE_S65_RELEASE_BOUNDARY=0
+$(OUT_LDPRELOAD_S64_PURGE0_DIR)/%.o: HZ3_SCALE_S65_RELEASE_LEDGER=0
+$(OUT_LDPRELOAD_S64_PURGE0_DIR)/%.o: HZ3_SCALE_S65_MEDIUM_RECLAIM=0
+
+$(OUT_LDPRELOAD_S64_P5B_DIR)/%.o: $(HZ3_DIR)/src/%.c | $(OUT_LDPRELOAD_S64_P5B_DIR)
+	$(CC) $(CFLAGS_LDPRELOAD) $(HZ3_LDPRELOAD_DEFS) $(HZ3_LDPRELOAD_DEFS_EXTRA) \
+	    $(HZ3_SCALE_SHARDS_DEF) $(HZ3_SCALE_DEFS) $(HZ3_S64_P5B_DEFS) $(INC) -c $< -o $@
+
+# S65 forced OFF for this lane (avoid -D redefinition warnings under -Werror)
+$(OUT_LDPRELOAD_S64_P5B_DIR)/%.o: HZ3_SCALE_S65_RELEASE_BOUNDARY=0
+$(OUT_LDPRELOAD_S64_P5B_DIR)/%.o: HZ3_SCALE_S65_RELEASE_LEDGER=0
+$(OUT_LDPRELOAD_S64_P5B_DIR)/%.o: HZ3_SCALE_S65_MEDIUM_RECLAIM=0
+
+$(OUT_LDPRELOAD_S65_PURGE0_DIR)/%.o: $(HZ3_DIR)/src/%.c | $(OUT_LDPRELOAD_S65_PURGE0_DIR)
+	$(CC) $(CFLAGS_LDPRELOAD) $(HZ3_LDPRELOAD_DEFS) $(HZ3_LDPRELOAD_DEFS_EXTRA) \
+	    $(HZ3_SCALE_SHARDS_DEF) $(HZ3_SCALE_DEFS) $(HZ3_S65_PURGE0_DEFS) $(INC) -c $< -o $@
+
+# Force S65 ON for this lane (defaults are ON, but make it robust to caller overrides)
+$(OUT_LDPRELOAD_S65_PURGE0_DIR)/%.o: HZ3_SCALE_S65_RELEASE_BOUNDARY=1
+$(OUT_LDPRELOAD_S65_PURGE0_DIR)/%.o: HZ3_SCALE_S65_RELEASE_LEDGER=1
+$(OUT_LDPRELOAD_S65_PURGE0_DIR)/%.o: HZ3_SCALE_S65_MEDIUM_RECLAIM=1
+
 $(LDPRELOAD_MEM_MSTRESS_LIB): $(OUT_LDPRELOAD_MEM_MSTRESS_DIR) $(HZ3_LDPRELOAD_MEM_MSTRESS_OBJS)
 	$(CC) -shared -o $@ $(HZ3_LDPRELOAD_MEM_MSTRESS_OBJS) $(LDFLAGS_LDPRELOAD) $(LDLIBS_LDPRELOAD)
 
 $(LDPRELOAD_MEM_LARGE_LIB): $(OUT_LDPRELOAD_MEM_LARGE_DIR) $(HZ3_LDPRELOAD_MEM_LARGE_OBJS)
 	$(CC) -shared -o $@ $(HZ3_LDPRELOAD_MEM_LARGE_OBJS) $(LDFLAGS_LDPRELOAD) $(LDLIBS_LDPRELOAD)
+
+$(LDPRELOAD_S64_PURGE0_LIB): $(OUT_LDPRELOAD_S64_PURGE0_DIR) $(HZ3_LDPRELOAD_S64_PURGE0_OBJS)
+	$(CC) -shared -o $@ $(HZ3_LDPRELOAD_S64_PURGE0_OBJS) $(LDFLAGS_LDPRELOAD) $(LDLIBS_LDPRELOAD)
+
+$(LDPRELOAD_S64_P5B_LIB): $(OUT_LDPRELOAD_S64_P5B_DIR) $(HZ3_LDPRELOAD_S64_P5B_OBJS)
+	$(CC) -shared -o $@ $(HZ3_LDPRELOAD_S64_P5B_OBJS) $(LDFLAGS_LDPRELOAD) $(LDLIBS_LDPRELOAD)
+
+$(LDPRELOAD_S65_PURGE0_LIB): $(OUT_LDPRELOAD_S65_PURGE0_DIR) $(HZ3_LDPRELOAD_S65_PURGE0_OBJS)
+	$(CC) -shared -o $@ $(HZ3_LDPRELOAD_S65_PURGE0_OBJS) $(LDFLAGS_LDPRELOAD) $(LDLIBS_LDPRELOAD)
 
 $(OUT_DIR)/%.o: $(HZ3_DIR)/src/%.c | $(OUT_DIR)
 	$(CC) $(CFLAGS) $(INC) -c $< -o $@
@@ -460,8 +585,12 @@ clean:
 	@rm -rf $(OUT_DIR) $(OUT_LDPRELOAD_DIR) $(OUT_HYBRID_DIR) \
 	        $(OUT_LDPRELOAD_FAST_DIR) $(OUT_LDPRELOAD_SCALE_DIR) \
 	        $(OUT_LDPRELOAD_MEM_MSTRESS_DIR) $(OUT_LDPRELOAD_MEM_LARGE_DIR) \
+	        $(OUT_LDPRELOAD_S64_PURGE0_DIR) \
+	        $(OUT_LDPRELOAD_S65_PURGE0_DIR) \
 	        $(LDPRELOAD_LIB) $(LDPRELOAD_FAST_LIB) $(LDPRELOAD_SCALE_LIB) \
-	        $(LDPRELOAD_MEM_MSTRESS_LIB) $(LDPRELOAD_MEM_LARGE_LIB)
+	        $(LDPRELOAD_MEM_MSTRESS_LIB) $(LDPRELOAD_MEM_LARGE_LIB) \
+	        $(LDPRELOAD_S64_PURGE0_LIB) \
+	        $(LDPRELOAD_S65_PURGE0_LIB)
 
 # ============================================================================
 # Day 8: Hybrid LD_PRELOAD (hz3 + hakozuna)

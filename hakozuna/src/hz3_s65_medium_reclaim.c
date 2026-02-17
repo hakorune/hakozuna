@@ -112,24 +112,13 @@ static inline int hz3_s80_medium_reclaim_is_enabled(void) {
 // Main tick function
 // ============================================================================
 
-void hz3_s65_medium_reclaim_tick(void) {
-    if (!t_hz3_cache.initialized) {
+static void hz3_s65_medium_reclaim_run(uint32_t budget) {
+    if (budget == 0) {
         return;
     }
-#if HZ3_S80_MEDIUM_RECLAIM_GATE
-    if (!hz3_s80_medium_reclaim_is_enabled()) {
-        return;
-    }
-#endif
-
-#if HZ3_S65_STATS
-    s65_medium_stats_register_atexit();
-#endif
-
     uint8_t my_shard = t_hz3_cache.my_shard;
-    uint32_t budget = HZ3_S65_MEDIUM_RECLAIM_BUDGET_RUNS;
 
-    // Stats for this tick
+    // Stats for this run
     uint32_t reclaim_runs = 0;
     uint32_t reclaim_pages = 0;
     uint32_t boundary_calls = 0;
@@ -259,6 +248,70 @@ void hz3_s65_medium_reclaim_tick(void) {
     if (boundary_calls > 0) {
         atomic_fetch_add_explicit(&g_s65_medium_reclaim_boundary_calls, boundary_calls, memory_order_relaxed);
     }
+#endif
+}
+
+void hz3_s65_medium_reclaim_tick(void) {
+    if (!t_hz3_cache.initialized) {
+        return;
+    }
+#if HZ3_S80_MEDIUM_RECLAIM_GATE
+    if (!hz3_s80_medium_reclaim_is_enabled()) {
+        return;
+    }
+#endif
+#if HZ3_S65_STATS
+    s65_medium_stats_register_atexit();
+#endif
+    hz3_s65_medium_reclaim_run(HZ3_S65_MEDIUM_RECLAIM_BUDGET_RUNS);
+}
+
+void hz3_s65_medium_reclaim_on_demand(int sc, int want, uint32_t reason) {
+    (void)reason;
+#if !HZ3_S65_MEDIUM_RECLAIM_DEMAND
+    (void)sc;
+    (void)want;
+    return;
+#else
+    if (!t_hz3_cache.initialized) {
+        return;
+    }
+#if HZ3_S80_MEDIUM_RECLAIM_GATE
+    if (!hz3_s80_medium_reclaim_is_enabled()) {
+        return;
+    }
+#endif
+#if HZ3_S65_MEDIUM_RECLAIM_DEMAND_SKIP_REMOTE_HINT
+    if (t_hz3_cache.remote_hint) {
+        return;
+    }
+#endif
+    if (sc < HZ3_S65_MEDIUM_RECLAIM_DEMAND_SC_MIN ||
+        sc > HZ3_S65_MEDIUM_RECLAIM_DEMAND_SC_MAX) {
+        return;
+    }
+    uint32_t stride = (uint32_t)HZ3_S65_MEDIUM_RECLAIM_DEMAND_MISS_STRIDE;
+    if (stride > 1) {
+        uint32_t miss = t_hz3_cache.stats.central_pop_miss[sc];
+        if ((miss % stride) != 0) {
+            return;
+        }
+    }
+#if HZ3_S65_STATS
+    s65_medium_stats_register_atexit();
+#endif
+    uint32_t budget = (uint32_t)HZ3_S65_MEDIUM_RECLAIM_DEMAND_BUDGET_RUNS;
+#if HZ3_S65_MEDIUM_RECLAIM_DEMAND_BUDGET_SCALE > 0
+    if (want > 0) {
+        uint32_t scaled = (uint32_t)want * (uint32_t)HZ3_S65_MEDIUM_RECLAIM_DEMAND_BUDGET_SCALE;
+        if (scaled > budget) {
+            budget = scaled;
+        }
+    }
+#else
+    (void)want;
+#endif
+    hz3_s65_medium_reclaim_run(budget);
 #endif
 }
 

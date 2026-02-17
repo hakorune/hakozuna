@@ -159,6 +159,368 @@ static void hz3_s97_atexit_dump(void) {
 #endif  // HZ3_S97_REMOTE_STASH_FLUSH_STATS
 
 // =============================================================================
+// S196: RemoteDispatchPathStatsBox (atexit one-shot, observe-only)
+// =============================================================================
+#if HZ3_S196_REMOTE_DISPATCH_STATS
+HZ3_DTOR_STATS_BEGIN(S196);
+HZ3_DTOR_STAT(g_s196_dispatch_small_calls);
+HZ3_DTOR_STAT(g_s196_dispatch_small_objs);
+HZ3_DTOR_STAT(g_s196_dispatch_sub4k_calls);
+HZ3_DTOR_STAT(g_s196_dispatch_sub4k_objs);
+HZ3_DTOR_STAT(g_s196_dispatch_medium_calls);
+HZ3_DTOR_STAT(g_s196_dispatch_medium_objs);
+HZ3_DTOR_STAT(g_s196_direct_n1_small_calls);
+static _Atomic(uint32_t) g_s196_medium_sc_calls[HZ3_NUM_SC];
+static _Atomic(uint32_t) g_s196_medium_sc_objs[HZ3_NUM_SC];
+HZ3_DTOR_ATEXIT_FLAG(g_s196);
+
+static void hz3_s196_atexit_dump(void) {
+    uint32_t small_calls = HZ3_DTOR_STAT_LOAD(g_s196_dispatch_small_calls);
+    uint32_t small_objs = HZ3_DTOR_STAT_LOAD(g_s196_dispatch_small_objs);
+    uint32_t sub4k_calls = HZ3_DTOR_STAT_LOAD(g_s196_dispatch_sub4k_calls);
+    uint32_t sub4k_objs = HZ3_DTOR_STAT_LOAD(g_s196_dispatch_sub4k_objs);
+    uint32_t medium_calls = HZ3_DTOR_STAT_LOAD(g_s196_dispatch_medium_calls);
+    uint32_t medium_objs = HZ3_DTOR_STAT_LOAD(g_s196_dispatch_medium_objs);
+    uint32_t direct_small = HZ3_DTOR_STAT_LOAD(g_s196_direct_n1_small_calls);
+
+    fprintf(stderr,
+            "[HZ3_S196_REMOTE_DISPATCH] small_calls=%u small_objs=%u "
+            "sub4k_calls=%u sub4k_objs=%u medium_calls=%u medium_objs=%u "
+            "direct_n1_small_calls=%u\n",
+            small_calls, small_objs, sub4k_calls, sub4k_objs,
+            medium_calls, medium_objs, direct_small);
+
+    for (uint32_t sc = 0; sc < (uint32_t)HZ3_NUM_SC; sc++) {
+        uint32_t sc_calls =
+            atomic_load_explicit(&g_s196_medium_sc_calls[sc], memory_order_relaxed);
+        uint32_t sc_objs =
+            atomic_load_explicit(&g_s196_medium_sc_objs[sc], memory_order_relaxed);
+        if (sc_calls == 0 && sc_objs == 0) {
+            continue;
+        }
+        fprintf(stderr, "[HZ3_S196_REMOTE_DISPATCH_SC] sc=%u calls=%u objs=%u\n",
+                sc, sc_calls, sc_objs);
+    }
+}
+
+#define S196_STAT_REGISTER() HZ3_DTOR_ATEXIT_REGISTER_ONCE(g_s196, hz3_s196_atexit_dump)
+#define S196_STAT_INC(name) HZ3_DTOR_STAT_INC(name)
+#define S196_STAT_ADD(name, val) HZ3_DTOR_STAT_ADD(name, (uint32_t)(val))
+#define S196_MEDIUM_SC_ADD(sc, n) do { \
+    uint32_t s196_sc = (uint32_t)(sc); \
+    if (s196_sc < (uint32_t)HZ3_NUM_SC) { \
+        atomic_fetch_add_explicit(&g_s196_medium_sc_calls[s196_sc], 1, memory_order_relaxed); \
+        atomic_fetch_add_explicit(&g_s196_medium_sc_objs[s196_sc], (uint32_t)(n), memory_order_relaxed); \
+    } \
+} while (0)
+#else
+#define S196_STAT_REGISTER() ((void)0)
+#define S196_STAT_INC(name) ((void)0)
+#define S196_STAT_ADD(name, val) ((void)0)
+#define S196_MEDIUM_SC_ADD(sc, n) ((void)0)
+#endif  // HZ3_S196_REMOTE_DISPATCH_STATS
+
+// =============================================================================
+// S203: Medium Remote Counters (A/B measurement)
+// =============================================================================
+// =============================================================================
+// S203: Medium Remote Counters (A/B measurement) - TLS Version
+// =============================================================================
+#if HZ3_S203_COUNTERS
+HZ3_DTOR_STATS_BEGIN(S203);
+// Thread-local counters (no atomic overhead)
+static _Thread_local uint64_t t_s203_medium_dispatch_calls = 0;
+static _Thread_local uint64_t t_s203_medium_dispatch_objs = 0;
+static _Thread_local uint64_t t_s203_medium_dispatch_to_inbox_calls = 0;
+static _Thread_local uint64_t t_s203_medium_dispatch_to_inbox_objs = 0;
+static _Thread_local uint64_t t_s203_medium_dispatch_to_central_calls = 0;
+static _Thread_local uint64_t t_s203_medium_dispatch_to_central_objs = 0;
+static _Thread_local uint64_t t_s203_medium_dispatch_to_central_s209_calls = 0;
+static _Thread_local uint64_t t_s203_medium_dispatch_to_central_s209_objs = 0;
+static _Thread_local uint64_t t_s203_medium_dispatch_to_central_s210_calls = 0;
+static _Thread_local uint64_t t_s203_medium_dispatch_to_central_s210_objs = 0;
+static _Thread_local uint64_t t_s203_medium_dispatch_to_central_s230_calls = 0;
+static _Thread_local uint64_t t_s203_medium_dispatch_to_central_s230_objs = 0;
+static _Thread_local uint64_t t_s203_medium_dispatch_to_mailbox_calls = 0;
+static _Thread_local uint64_t t_s203_medium_dispatch_to_mailbox_objs = 0;
+static _Thread_local uint64_t t_s203_s236_mb_push_attempts = 0;
+static _Thread_local uint64_t t_s203_s236_mb_push_hits = 0;
+static _Thread_local uint64_t t_s203_s236_mb_push_full_fallbacks = 0;
+static _Thread_local uint64_t t_s203_s236_mb_pop_attempts = 0;
+static _Thread_local uint64_t t_s203_s236_mb_pop_hits = 0;
+static _Thread_local uint64_t t_s203_s236c_batch_push_attempts = 0;
+static _Thread_local uint64_t t_s203_s236c_batch_cache_hits = 0;
+static _Thread_local uint64_t t_s203_s236c_batch_cache_misses = 0;
+static _Thread_local uint64_t t_s203_s236c_batch_flush_msgs = 0;
+static _Thread_local uint64_t t_s203_s236c_batch_flush_objs = 0;
+static _Thread_local uint64_t t_s203_s236c_pressure_bypass = 0;
+// Hist: 1, 2-3, 4-7, 8-15, 16+
+static _Thread_local uint64_t t_s203_medium_dispatch_n_hist_1 = 0;
+static _Thread_local uint64_t t_s203_medium_dispatch_n_hist_2_3 = 0;
+static _Thread_local uint64_t t_s203_medium_dispatch_n_hist_4_7 = 0;
+static _Thread_local uint64_t t_s203_medium_dispatch_n_hist_8_15 = 0;
+static _Thread_local uint64_t t_s203_medium_dispatch_n_hist_16_plus = 0;
+static _Thread_local uint64_t t_s203_medium_dispatch_sc_calls[HZ3_NUM_SC];
+static _Thread_local uint64_t t_s203_medium_dispatch_sc_objs[HZ3_NUM_SC];
+
+#if HZ3_S204_LARSON_DIAG
+static _Thread_local uint64_t t_s204_medium_dispatch_shard_calls[HZ3_NUM_SHARDS];
+static _Atomic uint64_t g_s204_medium_dispatch_shard_calls[HZ3_NUM_SHARDS];
+#endif
+
+// Global aggregators (atomic)
+HZ3_DTOR_STAT(g_s203_medium_dispatch_calls);
+HZ3_DTOR_STAT(g_s203_medium_dispatch_objs);
+HZ3_DTOR_STAT(g_s203_medium_dispatch_to_inbox_calls);
+HZ3_DTOR_STAT(g_s203_medium_dispatch_to_inbox_objs);
+HZ3_DTOR_STAT(g_s203_medium_dispatch_to_central_calls);
+HZ3_DTOR_STAT(g_s203_medium_dispatch_to_central_objs);
+HZ3_DTOR_STAT(g_s203_medium_dispatch_to_central_s209_calls);
+HZ3_DTOR_STAT(g_s203_medium_dispatch_to_central_s209_objs);
+HZ3_DTOR_STAT(g_s203_medium_dispatch_to_central_s210_calls);
+HZ3_DTOR_STAT(g_s203_medium_dispatch_to_central_s210_objs);
+HZ3_DTOR_STAT(g_s203_medium_dispatch_to_central_s230_calls);
+HZ3_DTOR_STAT(g_s203_medium_dispatch_to_central_s230_objs);
+HZ3_DTOR_STAT(g_s203_medium_dispatch_to_mailbox_calls);
+HZ3_DTOR_STAT(g_s203_medium_dispatch_to_mailbox_objs);
+HZ3_DTOR_STAT(g_s203_s236_mb_push_attempts);
+HZ3_DTOR_STAT(g_s203_s236_mb_push_hits);
+HZ3_DTOR_STAT(g_s203_s236_mb_push_full_fallbacks);
+HZ3_DTOR_STAT(g_s203_s236_mb_pop_attempts);
+HZ3_DTOR_STAT(g_s203_s236_mb_pop_hits);
+HZ3_DTOR_STAT(g_s203_s236c_batch_push_attempts);
+HZ3_DTOR_STAT(g_s203_s236c_batch_cache_hits);
+HZ3_DTOR_STAT(g_s203_s236c_batch_cache_misses);
+HZ3_DTOR_STAT(g_s203_s236c_batch_flush_msgs);
+HZ3_DTOR_STAT(g_s203_s236c_batch_flush_objs);
+HZ3_DTOR_STAT(g_s203_s236c_pressure_bypass);
+
+HZ3_DTOR_STAT(g_s203_medium_dispatch_n_hist_1);
+HZ3_DTOR_STAT(g_s203_medium_dispatch_n_hist_2_3);
+HZ3_DTOR_STAT(g_s203_medium_dispatch_n_hist_4_7);
+HZ3_DTOR_STAT(g_s203_medium_dispatch_n_hist_8_15);
+HZ3_DTOR_STAT(g_s203_medium_dispatch_n_hist_16_plus); 
+static _Atomic uint64_t g_s203_medium_dispatch_sc_calls[HZ3_NUM_SC];
+static _Atomic uint64_t g_s203_medium_dispatch_sc_objs[HZ3_NUM_SC];
+
+HZ3_DTOR_ATEXIT_FLAG(g_s203);
+
+// Flush TLS to Global (called from thread dtor)
+void hz3_s203_remote_flush_tls(void) {
+    HZ3_DTOR_STAT_ADD(g_s203_medium_dispatch_calls, t_s203_medium_dispatch_calls);
+    HZ3_DTOR_STAT_ADD(g_s203_medium_dispatch_objs, t_s203_medium_dispatch_objs);
+    HZ3_DTOR_STAT_ADD(g_s203_medium_dispatch_to_inbox_calls, t_s203_medium_dispatch_to_inbox_calls);
+    HZ3_DTOR_STAT_ADD(g_s203_medium_dispatch_to_inbox_objs, t_s203_medium_dispatch_to_inbox_objs);
+    HZ3_DTOR_STAT_ADD(g_s203_medium_dispatch_to_central_calls, t_s203_medium_dispatch_to_central_calls);
+    HZ3_DTOR_STAT_ADD(g_s203_medium_dispatch_to_central_objs, t_s203_medium_dispatch_to_central_objs);
+    HZ3_DTOR_STAT_ADD(g_s203_medium_dispatch_to_central_s209_calls, t_s203_medium_dispatch_to_central_s209_calls);
+    HZ3_DTOR_STAT_ADD(g_s203_medium_dispatch_to_central_s209_objs, t_s203_medium_dispatch_to_central_s209_objs);
+    HZ3_DTOR_STAT_ADD(g_s203_medium_dispatch_to_central_s210_calls, t_s203_medium_dispatch_to_central_s210_calls);
+    HZ3_DTOR_STAT_ADD(g_s203_medium_dispatch_to_central_s210_objs, t_s203_medium_dispatch_to_central_s210_objs);
+    HZ3_DTOR_STAT_ADD(g_s203_medium_dispatch_to_central_s230_calls, t_s203_medium_dispatch_to_central_s230_calls);
+    HZ3_DTOR_STAT_ADD(g_s203_medium_dispatch_to_central_s230_objs, t_s203_medium_dispatch_to_central_s230_objs);
+    HZ3_DTOR_STAT_ADD(g_s203_medium_dispatch_to_mailbox_calls, t_s203_medium_dispatch_to_mailbox_calls);
+    HZ3_DTOR_STAT_ADD(g_s203_medium_dispatch_to_mailbox_objs, t_s203_medium_dispatch_to_mailbox_objs);
+    HZ3_DTOR_STAT_ADD(g_s203_s236_mb_push_attempts, t_s203_s236_mb_push_attempts);
+    HZ3_DTOR_STAT_ADD(g_s203_s236_mb_push_hits, t_s203_s236_mb_push_hits);
+    HZ3_DTOR_STAT_ADD(g_s203_s236_mb_push_full_fallbacks, t_s203_s236_mb_push_full_fallbacks);
+    HZ3_DTOR_STAT_ADD(g_s203_s236_mb_pop_attempts, t_s203_s236_mb_pop_attempts);
+    HZ3_DTOR_STAT_ADD(g_s203_s236_mb_pop_hits, t_s203_s236_mb_pop_hits);
+    HZ3_DTOR_STAT_ADD(g_s203_s236c_batch_push_attempts, t_s203_s236c_batch_push_attempts);
+    HZ3_DTOR_STAT_ADD(g_s203_s236c_batch_cache_hits, t_s203_s236c_batch_cache_hits);
+    HZ3_DTOR_STAT_ADD(g_s203_s236c_batch_cache_misses, t_s203_s236c_batch_cache_misses);
+    HZ3_DTOR_STAT_ADD(g_s203_s236c_batch_flush_msgs, t_s203_s236c_batch_flush_msgs);
+    HZ3_DTOR_STAT_ADD(g_s203_s236c_batch_flush_objs, t_s203_s236c_batch_flush_objs);
+    HZ3_DTOR_STAT_ADD(g_s203_s236c_pressure_bypass, t_s203_s236c_pressure_bypass);
+    
+    HZ3_DTOR_STAT_ADD(g_s203_medium_dispatch_n_hist_1, t_s203_medium_dispatch_n_hist_1);
+    HZ3_DTOR_STAT_ADD(g_s203_medium_dispatch_n_hist_2_3, t_s203_medium_dispatch_n_hist_2_3);
+    HZ3_DTOR_STAT_ADD(g_s203_medium_dispatch_n_hist_4_7, t_s203_medium_dispatch_n_hist_4_7);
+    HZ3_DTOR_STAT_ADD(g_s203_medium_dispatch_n_hist_8_15, t_s203_medium_dispatch_n_hist_8_15);
+    HZ3_DTOR_STAT_ADD(g_s203_medium_dispatch_n_hist_16_plus, t_s203_medium_dispatch_n_hist_16_plus);
+    for (uint32_t sc = 0; sc < (uint32_t)HZ3_NUM_SC; sc++) {
+        atomic_fetch_add_explicit(&g_s203_medium_dispatch_sc_calls[sc],
+                                  t_s203_medium_dispatch_sc_calls[sc],
+                                  memory_order_relaxed);
+        atomic_fetch_add_explicit(&g_s203_medium_dispatch_sc_objs[sc],
+                                  t_s203_medium_dispatch_sc_objs[sc],
+                                  memory_order_relaxed);
+    }
+#if HZ3_S204_LARSON_DIAG
+    for (uint32_t i = 0; i < HZ3_NUM_SHARDS; i++) {
+        atomic_fetch_add_explicit(&g_s204_medium_dispatch_shard_calls[i],
+                                  t_s204_medium_dispatch_shard_calls[i],
+                                  memory_order_relaxed);
+    }
+#endif
+}
+
+static void hz3_s203_atexit_dump(void) {
+    fprintf(stderr, "[HZ3_S203] medium_dispatch_calls=%u medium_dispatch_objs=%u "
+            "to_inbox_calls=%u to_inbox_objs=%u to_central_calls=%u to_central_objs=%u "
+            "to_mailbox_calls=%u to_mailbox_objs=%u "
+            "to_central_s209_calls=%u to_central_s209_objs=%u "
+            "to_central_s210_calls=%u to_central_s210_objs=%u "
+            "to_central_s230_calls=%u to_central_s230_objs=%u\n",
+            HZ3_DTOR_STAT_LOAD(g_s203_medium_dispatch_calls),
+            HZ3_DTOR_STAT_LOAD(g_s203_medium_dispatch_objs),
+            HZ3_DTOR_STAT_LOAD(g_s203_medium_dispatch_to_inbox_calls),
+            HZ3_DTOR_STAT_LOAD(g_s203_medium_dispatch_to_inbox_objs),
+            HZ3_DTOR_STAT_LOAD(g_s203_medium_dispatch_to_central_calls),
+            HZ3_DTOR_STAT_LOAD(g_s203_medium_dispatch_to_central_objs),
+            HZ3_DTOR_STAT_LOAD(g_s203_medium_dispatch_to_mailbox_calls),
+            HZ3_DTOR_STAT_LOAD(g_s203_medium_dispatch_to_mailbox_objs),
+            HZ3_DTOR_STAT_LOAD(g_s203_medium_dispatch_to_central_s209_calls),
+            HZ3_DTOR_STAT_LOAD(g_s203_medium_dispatch_to_central_s209_objs),
+            HZ3_DTOR_STAT_LOAD(g_s203_medium_dispatch_to_central_s210_calls),
+            HZ3_DTOR_STAT_LOAD(g_s203_medium_dispatch_to_central_s210_objs),
+            HZ3_DTOR_STAT_LOAD(g_s203_medium_dispatch_to_central_s230_calls),
+            HZ3_DTOR_STAT_LOAD(g_s203_medium_dispatch_to_central_s230_objs));
+
+    if (HZ3_DTOR_STAT_LOAD(g_s203_s236_mb_push_attempts) > 0 ||
+        HZ3_DTOR_STAT_LOAD(g_s203_s236_mb_pop_attempts) > 0) {
+        fprintf(stderr,
+                "[HZ3_S203_S236] mb_push_attempts=%u mb_push_hits=%u "
+                "mb_push_full_fallbacks=%u mb_pop_attempts=%u mb_pop_hits=%u\n",
+                HZ3_DTOR_STAT_LOAD(g_s203_s236_mb_push_attempts),
+                HZ3_DTOR_STAT_LOAD(g_s203_s236_mb_push_hits),
+                HZ3_DTOR_STAT_LOAD(g_s203_s236_mb_push_full_fallbacks),
+                HZ3_DTOR_STAT_LOAD(g_s203_s236_mb_pop_attempts),
+                HZ3_DTOR_STAT_LOAD(g_s203_s236_mb_pop_hits));
+    }
+    if (HZ3_DTOR_STAT_LOAD(g_s203_s236c_batch_push_attempts) > 0) {
+        fprintf(stderr,
+                "[HZ3_S203_S236C] batch_push_attempts=%u cache_hits=%u "
+                "cache_misses=%u flush_msgs=%u flush_objs=%u pressure_bypass=%u\n",
+                HZ3_DTOR_STAT_LOAD(g_s203_s236c_batch_push_attempts),
+                HZ3_DTOR_STAT_LOAD(g_s203_s236c_batch_cache_hits),
+                HZ3_DTOR_STAT_LOAD(g_s203_s236c_batch_cache_misses),
+                HZ3_DTOR_STAT_LOAD(g_s203_s236c_batch_flush_msgs),
+                HZ3_DTOR_STAT_LOAD(g_s203_s236c_batch_flush_objs),
+                HZ3_DTOR_STAT_LOAD(g_s203_s236c_pressure_bypass));
+    }
+            
+    fprintf(stderr, "[HZ3_S203] medium_dispatch_n_hist: 1=%u 2..3=%u 4..7=%u 8..15=%u 16+=%u\n",
+            HZ3_DTOR_STAT_LOAD(g_s203_medium_dispatch_n_hist_1),
+            HZ3_DTOR_STAT_LOAD(g_s203_medium_dispatch_n_hist_2_3),
+            HZ3_DTOR_STAT_LOAD(g_s203_medium_dispatch_n_hist_4_7),
+            HZ3_DTOR_STAT_LOAD(g_s203_medium_dispatch_n_hist_8_15),
+            HZ3_DTOR_STAT_LOAD(g_s203_medium_dispatch_n_hist_16_plus));
+    for (uint32_t sc = 0; sc < (uint32_t)HZ3_NUM_SC; sc++) {
+        uint64_t calls =
+            atomic_load_explicit(&g_s203_medium_dispatch_sc_calls[sc], memory_order_relaxed);
+        uint64_t objs =
+            atomic_load_explicit(&g_s203_medium_dispatch_sc_objs[sc], memory_order_relaxed);
+        if (calls == 0 && objs == 0) {
+            continue;
+        }
+        fprintf(stderr, "[HZ3_S203_REMOTE_SC] sc=%u calls=%llu objs=%llu\n",
+                sc, (unsigned long long)calls, (unsigned long long)objs);
+    }
+#if HZ3_S204_LARSON_DIAG
+    fprintf(stderr, "[HZ3_S204_SHARD_DIST] ");
+    for (uint32_t i = 0; i < HZ3_NUM_SHARDS; i++) {
+        uint64_t c = atomic_load_explicit(&g_s204_medium_dispatch_shard_calls[i], memory_order_relaxed);
+        if (c > 0) fprintf(stderr, "%u=%llu ", i, (unsigned long long)c);
+    }
+    fprintf(stderr, "\n");
+#endif
+}
+
+#define S203_STAT_REGISTER() HZ3_DTOR_ATEXIT_REGISTER_ONCE(g_s203, hz3_s203_atexit_dump)
+#define S203_STAT_INC(name) (t_s203_##name++)
+#define S203_STAT_ADD(name, val) (t_s203_##name += (val))
+// Deprecated hist macro
+#define S203_HIST_INC(n) ((void)0)
+#if HZ3_S204_LARSON_DIAG
+#define S204_SHARD_INC(shard) do { \
+    if ((shard) < HZ3_NUM_SHARDS) { \
+        t_s204_medium_dispatch_shard_calls[(shard)]++; \
+    } \
+} while(0)
+#else
+#define S204_SHARD_INC(shard) ((void)0)
+#endif
+void hz3_s203_remote_register_once(void) { S203_STAT_REGISTER(); }
+#else
+#define S203_STAT_REGISTER() ((void)0)
+#define S203_STAT_INC(name) ((void)0)
+#define S203_STAT_ADD(name, val) ((void)0)
+void hz3_s203_remote_register_once(void) {}
+#endif
+
+// ============================================================================
+// S236-A: Medium mailbox (singleton remote publish -> alloc-fast pop)
+// ============================================================================
+#if HZ3_S236_MEDIUM_MAILBOX
+static _Atomic(void*) g_s236_medium_mailbox[HZ3_NUM_SHARDS][HZ3_NUM_SC][HZ3_S236_MAILBOX_SLOTS];
+#endif
+
+int hz3_s236_medium_mailbox_try_push(uint8_t dst, int sc, void* obj) {
+#if !HZ3_S236_MEDIUM_MAILBOX
+    (void)dst;
+    (void)sc;
+    (void)obj;
+    return 0;
+#else
+    if (!obj) {
+        return 0;
+    }
+    if (dst >= HZ3_NUM_SHARDS) {
+        return 0;
+    }
+    if (sc < HZ3_S236_SC_MIN || sc > HZ3_S236_SC_MAX) {
+        return 0;
+    }
+    if ((uint32_t)sc >= (uint32_t)HZ3_NUM_SC) {
+        return 0;
+    }
+
+    S203_STAT_INC(s236_mb_push_attempts);
+    for (uint32_t slot = 0; slot < (uint32_t)HZ3_S236_MAILBOX_SLOTS; slot++) {
+        void* expected = NULL;
+        if (atomic_compare_exchange_strong_explicit(
+                &g_s236_medium_mailbox[dst][sc][slot], &expected, obj,
+                memory_order_release, memory_order_relaxed)) {
+            S203_STAT_INC(s236_mb_push_hits);
+            return 1;
+        }
+    }
+    S203_STAT_INC(s236_mb_push_full_fallbacks);
+    return 0;
+#endif
+}
+
+void* hz3_s236_medium_mailbox_try_pop(int sc) {
+#if !HZ3_S236_MEDIUM_MAILBOX
+    (void)sc;
+    return NULL;
+#else
+    if (sc < HZ3_S236_SC_MIN || sc > HZ3_S236_SC_MAX) {
+        return NULL;
+    }
+    if ((uint32_t)sc >= (uint32_t)HZ3_NUM_SC) {
+        return NULL;
+    }
+    uint8_t my = t_hz3_cache.my_shard;
+    if (my >= HZ3_NUM_SHARDS) {
+        return NULL;
+    }
+
+    S203_STAT_INC(s236_mb_pop_attempts);
+    for (uint32_t slot = 0; slot < (uint32_t)HZ3_S236_MAILBOX_SLOTS; slot++) {
+        void* obj = atomic_exchange_explicit(&g_s236_medium_mailbox[my][sc][slot], NULL,
+                                             memory_order_acq_rel);
+        if (obj) {
+            S203_STAT_INC(s236_mb_pop_hits);
+            return obj;
+        }
+    }
+    return NULL;
+#endif
+}
+
+// =============================================================================
 // S128: RemoteStash Defer-MinRun (ARCHIVED / NO-GO)
 // =============================================================================
 // The full implementation was removed from this file to keep the hot boundary
@@ -200,797 +562,7 @@ void hz3_outbox_push(uint8_t owner, int sc, void* obj) {
 }
 #endif  // !HZ3_REMOTE_STASH_SPARSE
 
-// ============================================================================
-// S41: Sparse RemoteStash implementation (scale lane)
-// ============================================================================
-
-#if HZ3_REMOTE_STASH_SPARSE
-// Forward declarations for dispatcher
-extern void hz3_small_v2_push_remote_list(uint8_t owner, int sc, void* head, void* tail, uint32_t n);
-#if HZ3_LANE_T16_R90_PAGE_REMOTE
-extern void hz3_lane16_push_remote_list_small(uint8_t owner, int sc, void* head, void* tail, uint32_t n);
-#endif
-#if HZ3_HZ4_BRIDGE
-extern void hz3_hz4_bridge_push_remote_list_small(uint8_t owner, int sc,
-                                                  void* head, void* tail, uint32_t n);
-#endif
-extern void hz3_sub4k_push_remote_list(uint8_t dst, int sc, void* head, void* tail, uint32_t n);
-extern void hz3_inbox_push_list(uint8_t dst, int sc, void* head, void* tail, uint32_t n);
-
-static inline void hz3_remote_stash_dispatch_list(uint8_t dst, uint32_t bin,
-                                                 void* head, void* tail, uint32_t n) {
-    if (!head || !tail || n == 0) {
-        return;
-    }
-
-    if (bin < HZ3_SMALL_NUM_SC) {
-#if HZ3_HZ4_BRIDGE
-        hz3_hz4_bridge_push_remote_list_small(dst, (int)bin, head, tail, n);
-#elif HZ3_LANE_T16_R90_PAGE_REMOTE
-        hz3_lane16_push_remote_list_small(dst, (int)bin, head, tail, n);
-#else
-        hz3_small_v2_push_remote_list(dst, (int)bin, head, tail, n);
-#endif
-    } else if (bin < HZ3_MEDIUM_BIN_BASE) {
-        int sc = (int)bin - HZ3_SUB4K_BIN_BASE;
-        hz3_sub4k_push_remote_list(dst, sc, head, tail, n);
-    } else {
-        int sc = (int)bin - HZ3_MEDIUM_BIN_BASE;
-        hz3_inbox_push_list(dst, sc, head, tail, n);
-    }
-}
-
-static inline int hz3_remote_stash_try_direct_n1(uint8_t dst, uint32_t bin, void* ptr) {
-#if HZ3_HZ4_BRIDGE
-    if (bin < HZ3_SMALL_NUM_SC) {
-        hz3_hz4_bridge_push_remote_list_small(dst, (int)bin, ptr, ptr, 1);
-        return 1;
-    }
-#elif HZ3_LANE_T16_R90_PAGE_REMOTE
-    if (bin < HZ3_SMALL_NUM_SC) {
-        hz3_lane16_push_remote_list_small(dst, (int)bin, ptr, ptr, 1);
-        return 1;
-    }
-#endif
-#if HZ3_S161_REMOTE_STASH_N1_DIRECT && HZ3_S44_OWNER_STASH_PUSH && !HZ3_S44_OWNER_STASH_DISABLE
-    if (bin < HZ3_SMALL_NUM_SC) {
-        if (hz3_owner_stash_push_one(dst, (int)bin, ptr)) {
-            return 1;
-        }
-    }
-#else
-    (void)dst;
-    (void)bin;
-    (void)ptr;
-#endif
-    return 0;
-}
-
-void hz3_remote_stash_push(uint8_t dst, uint32_t bin, void* ptr) {
-#if HZ3_S82_STASH_GUARD
-    hz3_s82_stash_guard_one("remote_stash_push", ptr, bin);
-#endif
-    Hz3RemoteStashRing* ring = &t_hz3_cache.remote_stash;
-    uint16_t h = ring->head;
-    uint16_t next_h = (h + 1) & (HZ3_REMOTE_STASH_RING_SIZE - 1);
-
-    // Check for overflow BEFORE writing (prevent overwriting old entry)
-    if (__builtin_expect(next_h == ring->tail, 0)) {
-        // Ring full → emergency flush
-        hz3_dstbin_flush_remote_budget(HZ3_DSTBIN_FLUSH_BUDGET_BINS);
-    }
-
-#if HZ3_REMOTE_STASH_DUP_FAILFAST
-    // Debug: detect duplicate ptr already queued in this ring.
-    uint16_t scan = ring->tail;
-    while (scan != ring->head) {
-        if (ring->ring[scan].ptr == ptr) {
-            fprintf(stderr,
-                    "[HZ3_REMOTE_STASH_DUP_FAILFAST] where=push dst=%u bin=%u ptr=%p\n",
-                    (unsigned)dst, (unsigned)bin, ptr);
-            abort();
-        }
-        scan = (scan + 1) & (HZ3_REMOTE_STASH_RING_SIZE - 1);
-    }
-#endif
-
-    // Now safe to write
-    ring->ring[h].dst = dst;
-    ring->ring[h].bin = (uint8_t)bin;
-    ring->ring[h].ptr = ptr;
-
-    ring->head = next_h;
-    // Mark remote activity to trigger budget flush on next slow path.
-    t_hz3_cache.remote_hint = 1;
-}
-
-// S41: budget_entries = number of ring entries to drain (not bin count)
-void hz3_remote_stash_flush_budget_impl(uint32_t budget_entries) {
-    S97_STAT_REGISTER();
-    S97_STAT_INC(g_s97_flush_budget_calls);
-
-    Hz3RemoteStashRing* ring = &t_hz3_cache.remote_stash;
-    uint16_t t = ring->tail;
-    uint16_t h = ring->head;
-    uint32_t drained = 0;
-
-#if HZ3_REMOTE_STASH_DUP_FAILFAST
-    uintptr_t seen_table[HZ3_REMOTE_STASH_DUP_TABLE_SIZE];
-    hz3_remote_stash_dup_init(seen_table);
-#endif
-
-#if HZ3_S97_REMOTE_STASH_FLUSH_STATS
-    uint16_t seen_keys[512];
-    memset(seen_keys, 0xFF, sizeof(seen_keys));
-    uint32_t local_groups = 0;  // dispatch calls
-    uint32_t local_distinct = 0;
-    uint32_t local_n_max = 0;
-    uint32_t local_n_gt1_calls = 0;
-    uint32_t local_n_gt1_entries = 0;
-    uint32_t local_small_groups = 0;
-    uint32_t local_sub4k_groups = 0;
-    uint32_t local_medium_groups = 0;
-    uint32_t local_selfdst_groups = 0;
-
-    #define S97_LOC_GROUPS_INC() do { local_groups++; } while (0)
-    #define S97_LOC_NMAX(n_) do { \
-        uint32_t s97_n = (uint32_t)(n_); \
-        if (s97_n > local_n_max) local_n_max = s97_n; \
-    } while (0)
-    #define S97_LOC_NGT1(n_) do { \
-        uint32_t s97_n = (uint32_t)(n_); \
-        if (s97_n > 1) { local_n_gt1_calls++; local_n_gt1_entries += s97_n; } \
-    } while (0)
-    #define S97_LOC_SEEN(dst_, bin_) do { \
-        uint16_t s97_key = (uint16_t)(((uint16_t)(dst_) << 8) | (uint16_t)(bin_)); \
-        if (hz3_s97_seen_insert(seen_keys, s97_key)) { local_distinct++; } \
-    } while (0)
-    #define S97_LOC_CAT(bin_) do { \
-        uint32_t s97_bin32 = (uint32_t)(bin_); \
-        if (s97_bin32 < HZ3_SMALL_NUM_SC) local_small_groups++; \
-        else if (s97_bin32 < HZ3_MEDIUM_BIN_BASE) local_sub4k_groups++; \
-        else local_medium_groups++; \
-    } while (0)
-    #define S97_LOC_SELFDST(dst_) do { if ((uint8_t)(dst_) == (uint8_t)t_hz3_cache.my_shard) local_selfdst_groups++; } while (0)
-#endif
-
-#if !HZ3_S97_REMOTE_STASH_FLUSH_STATS
-    #define S97_LOC_GROUPS_INC() ((void)0)
-    #define S97_LOC_NMAX(n_) ((void)(n_))
-    #define S97_LOC_NGT1(n_) ((void)(n_))
-    #define S97_LOC_SEEN(dst_, bin_) do { (void)(dst_); (void)(bin_); } while (0)
-    #define S97_LOC_CAT(bin_) ((void)(bin_))
-    #define S97_LOC_SELFDST(dst_) ((void)(dst_))
-#endif
-
-#if HZ3_S97_REMOTE_STASH_BUCKET
-#if HZ3_S97_REMOTE_STASH_BUCKET == 2
-    // ==========================================================================
-    // S97-2: Direct-map + stamp (probe-less bucketize)
-    // ==========================================================================
-    // Key insight: flat = dst * HZ3_BIN_TOTAL + bin has bounded range, so we can
-    // use direct indexing instead of hash + open addressing. Reset via epoch++.
-
-    typedef struct {
-        uint8_t dst;
-        uint8_t bin;
-        uint8_t tail_null_set;
-        uint8_t _pad;
-        void* head;
-        void* tail;
-        uint32_t n;
-    } Hz3S97Bucket;
-
-    enum { S97_FLAT_TOTAL = HZ3_NUM_SHARDS * HZ3_BIN_TOTAL };
-    _Static_assert(S97_FLAT_TOTAL <= 65535, "S97_FLAT_TOTAL must fit in uint16_t");
-
-    // TLS direct-map tables (stamp + bucket index)
-    static HZ3_TLS uint32_t s97_stamp[S97_FLAT_TOTAL];
-    static HZ3_TLS uint16_t s97_bucket_idx[S97_FLAT_TOTAL];
-    static HZ3_TLS uint32_t s97_epoch = 0;
-
-    // Local bucket array (stack allocated, reused per flush)
-    Hz3S97Bucket buckets[HZ3_S97_REMOTE_STASH_BUCKET_MAX_KEYS];
-    uint32_t nb = 0;
-
-    // First call initialization: set epoch to 1
-    if (s97_epoch == 0) {
-        s97_epoch = 1;
-    }
-
-    // Dispatch macro (same as S97-1)
-    #define S97_BUCKET_FLUSH_ROUND() do { \
-        for (uint32_t _i = 0; _i < nb; _i++) { \
-            Hz3S97Bucket* _b = &buckets[_i]; \
-            void* _head = _b->head; \
-            void* _tail = _b->tail; \
-            uint32_t _n = _b->n; \
-            if (_n == 0) continue; \
-            if (_n > 1) { \
-                if (!_b->tail_null_set) { \
-                    hz3_obj_set_next(_tail, NULL); \
-                    _b->tail_null_set = 1; \
-                } \
-            } else { \
-                if (!HZ3_S97_REMOTE_STASH_SKIP_TAIL_NULL) { \
-                    hz3_obj_set_next(_tail, NULL); \
-                } \
-            } \
-            S97_LOC_GROUPS_INC(); \
-            S97_LOC_NMAX(_n); \
-            S97_LOC_NGT1(_n); \
-            S97_LOC_SEEN(_b->dst, _b->bin); \
-            S97_LOC_CAT(_b->bin); \
-            S97_LOC_SELFDST(_b->dst); \
-            hz3_remote_stash_dispatch_list(_b->dst, (uint32_t)_b->bin, _head, _tail, _n); \
-        } \
-        nb = 0; \
-    } while (0)
-
-    while (t != h && drained < budget_entries) {
-        Hz3RemoteStashEntry* entry0 = &ring->ring[t];
-        uint8_t dst = entry0->dst;
-        uint8_t bin = entry0->bin;
-        void* ptr = entry0->ptr;
-#if HZ3_REMOTE_STASH_DUP_FAILFAST
-        hz3_remote_stash_dup_check(seen_table, ptr, dst, bin, "budget:s97-2");
-        entry0->ptr = NULL;
-        entry0->dst = 0;
-        entry0->bin = 0;
-#endif
-
-        t = (t + 1) & (HZ3_REMOTE_STASH_RING_SIZE - 1);
-        drained++;
-
-        // Direct-map lookup: flat index = dst * BIN_TOTAL + bin
-        uint32_t flat = (uint32_t)dst * (uint32_t)HZ3_BIN_TOTAL + (uint32_t)bin;
-
-        if (s97_stamp[flat] == s97_epoch) {
-            // Hit: append to existing bucket
-            uint16_t idx = s97_bucket_idx[flat];
-            Hz3S97Bucket* b = &buckets[idx];
-            // First time we see a 2nd entry, null-terminate original tail
-            if (!b->tail_null_set) {
-                hz3_obj_set_next(b->tail, NULL);
-                b->tail_null_set = 1;
-            }
-            hz3_obj_set_next(ptr, b->head);
-            b->head = ptr;
-            b->n++;
-        } else {
-            // Miss: allocate new bucket
-            if (nb >= (uint32_t)HZ3_S97_REMOTE_STASH_BUCKET_MAX_KEYS) {
-                // Too many distinct keys: flush and reset epoch
-                S97_BUCKET_FLUSH_ROUND();
-                s97_epoch++;
-                if (s97_epoch == 0) {
-                    // Wrap around: clear stamp array
-                    memset(s97_stamp, 0, sizeof(s97_stamp));
-                    s97_epoch = 1;
-                }
-            }
-            s97_stamp[flat] = s97_epoch;
-            s97_bucket_idx[flat] = (uint16_t)nb;
-            Hz3S97Bucket* b = &buckets[nb++];
-            b->dst = dst;
-            b->bin = bin;
-            b->tail_null_set = 0;
-            b->head = ptr;
-            b->tail = ptr;
-            b->n = 1;
-        }
-    }
-
-    S97_BUCKET_FLUSH_ROUND();
-    #undef S97_BUCKET_FLUSH_ROUND
-
-    // End of flush: increment epoch for next round (O(1) reset)
-    s97_epoch++;
-    if (s97_epoch == 0) {
-        memset(s97_stamp, 0, sizeof(s97_stamp));
-        s97_epoch = 1;
-    }
-
-    ring->tail = t;
-    t_hz3_cache.remote_hint = (ring->tail != ring->head);
-
-#if HZ3_S97_REMOTE_STASH_FLUSH_STATS
-    S97_STAT_ADD(g_s97_flush_budget_entries_total, drained);
-    S97_STAT_ADD(g_s97_flush_budget_groups_total, local_groups);
-    S97_STAT_ADD(g_s97_flush_budget_distinct_keys_total, local_distinct);
-    if (local_groups > local_distinct) {
-        S97_STAT_ADD(g_s97_flush_budget_potential_merge_calls_total, (local_groups - local_distinct));
-    }
-    if (drained > local_groups) {
-        S97_STAT_ADD(g_s97_flush_budget_saved_calls_total, (drained - local_groups));
-    }
-    S97_STAT_MAX(g_s97_flush_budget_n_max, local_n_max);
-    S97_STAT_ADD(g_s97_flush_budget_n_gt1_calls_total, local_n_gt1_calls);
-    S97_STAT_ADD(g_s97_flush_budget_n_gt1_entries_total, local_n_gt1_entries);
-    S97_STAT_ADD(g_s97_flush_budget_small_groups, local_small_groups);
-    S97_STAT_ADD(g_s97_flush_budget_sub4k_groups, local_sub4k_groups);
-    S97_STAT_ADD(g_s97_flush_budget_medium_groups, local_medium_groups);
-    S97_STAT_ADD(g_s97_flush_budget_selfdst_groups, local_selfdst_groups);
-#endif
-    return;
-
-#elif HZ3_S97_REMOTE_STASH_BUCKET == 6
-    // ==========================================================================
-    // S97-8: Table-less radix sort + group (stack-only, no TLS tables)
-    // ==========================================================================
-    // Motivation:
-    // - Avoid TLS table pressure (direct-map variants) and avoid hash probe branch-miss.
-    // - budget_entries is typically small (e.g., 32), so stack-local sort+group may win.
-    //
-    // Approach:
-    // 1) Drain up to `budget_entries` entries into local arrays (key, ptr).
-    // 2) Radix sort (2 passes, 8-bit digits) by 16-bit key = (dst<<8)|bin.
-    // 3) Group consecutive identical keys and build a list by prepending.
-
-    enum { S97_SORT_MAX = 256 };
-
-    // Local buffers (stack): use small fixed max and chunk if budget is larger.
-    uint16_t keys0[S97_SORT_MAX];
-    void* ptrs0[S97_SORT_MAX];
-    uint16_t keys1[S97_SORT_MAX];
-    void* ptrs1[S97_SORT_MAX];
-
-    // Radix counts: bin is guaranteed < HZ3_BIN_TOTAL and dst < HZ3_NUM_SHARDS.
-    // Keep loops bounded to these ranges (avoid fixed 256 cost on every flush).
-    _Static_assert(HZ3_BIN_TOTAL <= 255, "S97-8 requires HZ3_BIN_TOTAL <= 255");
-    _Static_assert(HZ3_NUM_SHARDS <= 255, "S97-8 requires HZ3_NUM_SHARDS <= 255");
-
-    uint16_t cnt_lo[HZ3_BIN_TOTAL];
-    uint16_t pos_lo[HZ3_BIN_TOTAL];
-    uint16_t cnt_hi[HZ3_NUM_SHARDS];
-    uint16_t pos_hi[HZ3_NUM_SHARDS];
-
-    while (t != h && drained < budget_entries) {
-        uint32_t m = 0;
-        while (t != h && drained < budget_entries && m < (uint32_t)S97_SORT_MAX) {
-            Hz3RemoteStashEntry* entry0 = &ring->ring[t];
-            uint8_t dst = entry0->dst;
-            uint8_t bin = entry0->bin;
-            void* ptr = entry0->ptr;
-#if HZ3_REMOTE_STASH_DUP_FAILFAST
-            hz3_remote_stash_dup_check(seen_table, ptr, dst, bin, "budget:s97-6");
-            entry0->ptr = NULL;
-            entry0->dst = 0;
-            entry0->bin = 0;
-#endif
-
-            t = (t + 1) & (HZ3_REMOTE_STASH_RING_SIZE - 1);
-            drained++;
-
-            keys0[m] = (uint16_t)(((uint16_t)dst << 8) | (uint16_t)bin);
-            ptrs0[m] = ptr;
-            m++;
-        }
-
-        if (m == 0) {
-            break;
-        }
-
-        // Pass 0: low byte
-        memset(cnt_lo, 0, sizeof(cnt_lo));
-        for (uint32_t i = 0; i < m; i++) {
-            uint8_t bin = (uint8_t)(keys0[i] & 0xFFu);
-            cnt_lo[bin]++;
-        }
-        uint16_t sum = 0;
-        for (uint32_t b = 0; b < (uint32_t)HZ3_BIN_TOTAL; b++) {
-            uint16_t c = cnt_lo[b];
-            pos_lo[b] = sum;
-            sum = (uint16_t)(sum + c);
-        }
-        for (uint32_t i = 0; i < m; i++) {
-            uint8_t bin = (uint8_t)(keys0[i] & 0xFFu);
-            uint16_t p = pos_lo[bin]++;
-            keys1[p] = keys0[i];
-            ptrs1[p] = ptrs0[i];
-        }
-
-        // Pass 1: high byte
-        memset(cnt_hi, 0, sizeof(cnt_hi));
-        for (uint32_t i = 0; i < m; i++) {
-            uint8_t dst = (uint8_t)(keys1[i] >> 8);
-            cnt_hi[dst]++;
-        }
-        sum = 0;
-        for (uint32_t b = 0; b < (uint32_t)HZ3_NUM_SHARDS; b++) {
-            uint16_t c = cnt_hi[b];
-            pos_hi[b] = sum;
-            sum = (uint16_t)(sum + c);
-        }
-        for (uint32_t i = 0; i < m; i++) {
-            uint8_t dst = (uint8_t)(keys1[i] >> 8);
-            uint16_t p = pos_hi[dst]++;
-            keys0[p] = keys1[i];
-            ptrs0[p] = ptrs1[i];
-        }
-
-        // Group + dispatch
-        uint32_t i = 0;
-        while (i < m) {
-            uint16_t key = keys0[i];
-            uint8_t dst = (uint8_t)(key >> 8);
-            uint8_t bin = (uint8_t)(key & 0xFFu);
-
-            void* head = ptrs0[i];
-            void* tail = head;
-            uint32_t n = 1;
-            i++;
-
-            while (i < m && keys0[i] == key) {
-                void* obj = ptrs0[i];
-                hz3_obj_set_next(obj, head);
-                head = obj;
-                n++;
-                i++;
-            }
-
-            if (n > 1) {
-                hz3_obj_set_next(tail, NULL);
-            } else {
-#if !HZ3_S97_REMOTE_STASH_SKIP_TAIL_NULL
-                hz3_obj_set_next(tail, NULL);
-#endif
-            }
-
-            S97_LOC_GROUPS_INC();
-            S97_LOC_NMAX(n);
-            S97_LOC_NGT1(n);
-            S97_LOC_SEEN(dst, bin);
-            S97_LOC_CAT(bin);
-            S97_LOC_SELFDST(dst);
-            hz3_remote_stash_dispatch_list(dst, (uint32_t)bin, head, tail, n);
-        }
-    }
-
-    ring->tail = t;
-    t_hz3_cache.remote_hint = (ring->tail != ring->head);
-
-#if HZ3_S97_REMOTE_STASH_FLUSH_STATS
-    S97_STAT_ADD(g_s97_flush_budget_entries_total, drained);
-    S97_STAT_ADD(g_s97_flush_budget_groups_total, local_groups);
-    S97_STAT_ADD(g_s97_flush_budget_distinct_keys_total, local_distinct);
-    if (local_groups > local_distinct) {
-        S97_STAT_ADD(g_s97_flush_budget_potential_merge_calls_total, (local_groups - local_distinct));
-    }
-    if (drained > local_groups) {
-        S97_STAT_ADD(g_s97_flush_budget_saved_calls_total, (drained - local_groups));
-    }
-    S97_STAT_MAX(g_s97_flush_budget_n_max, local_n_max);
-    S97_STAT_ADD(g_s97_flush_budget_n_gt1_calls_total, local_n_gt1_calls);
-    S97_STAT_ADD(g_s97_flush_budget_n_gt1_entries_total, local_n_gt1_entries);
-    S97_STAT_ADD(g_s97_flush_budget_small_groups, local_small_groups);
-    S97_STAT_ADD(g_s97_flush_budget_sub4k_groups, local_sub4k_groups);
-    S97_STAT_ADD(g_s97_flush_budget_medium_groups, local_medium_groups);
-    S97_STAT_ADD(g_s97_flush_budget_selfdst_groups, local_selfdst_groups);
-#endif
-    return;
-
-#else  // HZ3_S97_REMOTE_STASH_BUCKET == 1
-    // ==========================================================================
-    // S97-1: Hash + open addressing bucketize
-    // ==========================================================================
-    // Bucketize by (dst,bin) within this flush_budget window.
-    // Goal: reduce dispatch calls (push_list) when n=1 dominates but keys repeat.
-    typedef struct {
-        uint16_t key;  // (dst<<8)|bin
-        uint8_t dst;
-        uint8_t bin;
-        uint8_t tail_null_set;
-        uint8_t _pad;
-        void* head;
-        void* tail;
-        uint32_t n;
-    } Hz3S97Bucket;
-
-    enum { S97_HASH_SIZE = 256 };  // must be power-of-two
-    enum { S97_HASH_MASK = S97_HASH_SIZE - 1 };
-
-#if HZ3_S97_REMOTE_STASH_BUCKET_MAX_KEYS <= 0 || HZ3_S97_REMOTE_STASH_BUCKET_MAX_KEYS > 256
-#error "HZ3_S97_REMOTE_STASH_BUCKET_MAX_KEYS must be in [1..256]"
-#endif
-
-    uint16_t map[S97_HASH_SIZE];
-    Hz3S97Bucket buckets[S97_HASH_SIZE];
-    uint32_t nb = 0;
-    memset(map, 0xFF, sizeof(map));
-
-    // Dispatch current buckets and reset map.
-    // Note: does not touch ring indices; only uses accumulated buckets.
-    #define S97_BUCKET_FLUSH_ROUND() do { \
-        for (uint32_t _i = 0; _i < nb; _i++) { \
-            Hz3S97Bucket* _b = &buckets[_i]; \
-            void* _head = _b->head; \
-            void* _tail = _b->tail; \
-            uint32_t _n = _b->n; \
-            if (_n == 0) continue; \
-            if (_n > 1) { \
-                if (!_b->tail_null_set) { \
-                    hz3_obj_set_next(_tail, NULL); \
-                    _b->tail_null_set = 1; \
-                } \
-            } else { \
-                /* n==1: only null-terminate if requested */ \
-                if (!HZ3_S97_REMOTE_STASH_SKIP_TAIL_NULL) { \
-                    hz3_obj_set_next(_tail, NULL); \
-                } \
-            } \
-            S97_LOC_GROUPS_INC(); \
-            S97_LOC_NMAX(_n); \
-            S97_LOC_NGT1(_n); \
-            S97_LOC_SEEN(_b->dst, _b->bin); \
-            S97_LOC_CAT(_b->bin); \
-            S97_LOC_SELFDST(_b->dst); \
-            hz3_remote_stash_dispatch_list(_b->dst, (uint32_t)_b->bin, _head, _tail, _n); \
-        } \
-        nb = 0; \
-        memset(map, 0xFF, sizeof(map)); \
-    } while (0)
-
-    while (t != h && drained < budget_entries) {
-        Hz3RemoteStashEntry* entry0 = &ring->ring[t];
-        uint8_t dst = entry0->dst;
-        uint8_t bin = entry0->bin;
-        void* ptr = entry0->ptr;
-#if HZ3_REMOTE_STASH_DUP_FAILFAST
-        hz3_remote_stash_dup_check(seen_table, ptr, dst, bin, "budget:s97-1");
-        entry0->ptr = NULL;
-        entry0->dst = 0;
-        entry0->bin = 0;
-#endif
-
-        t = (t + 1) & (HZ3_REMOTE_STASH_RING_SIZE - 1);
-        drained++;
-
-        uint16_t key = (uint16_t)(((uint16_t)dst << 8) | (uint16_t)bin);
-        uint32_t idx = ((uint32_t)key * 2654435761u) & (uint32_t)S97_HASH_MASK;
-
-        for (uint32_t probe = 0; probe < (uint32_t)S97_HASH_SIZE; probe++) {
-            uint16_t mi = map[idx];
-            if (mi == 0xFFFFu) {
-                if (nb >= (uint32_t)HZ3_S97_REMOTE_STASH_BUCKET_MAX_KEYS) {
-                    S97_BUCKET_FLUSH_ROUND();
-                }
-                map[idx] = (uint16_t)nb;
-                Hz3S97Bucket* b = &buckets[nb++];
-                b->key = key;
-                b->dst = dst;
-                b->bin = bin;
-                b->tail_null_set = 0;
-                b->head = ptr;
-                b->tail = ptr;
-                b->n = 1;
-                break;
-            }
-
-            Hz3S97Bucket* b = &buckets[mi];
-            if (b->key == key) {
-                // First time we see a 2nd entry for this key, we must null-terminate
-                // the current tail (which is the first element) before linking.
-                if (!b->tail_null_set) {
-                    hz3_obj_set_next(b->tail, NULL);
-                    b->tail_null_set = 1;
-                }
-                hz3_obj_set_next(ptr, b->head);
-                b->head = ptr;
-                b->n++;
-                break;
-            }
-
-            idx = (idx + 1u) & (uint32_t)S97_HASH_MASK;
-        }
-    }
-
-    S97_BUCKET_FLUSH_ROUND();
-    #undef S97_BUCKET_FLUSH_ROUND
-
-    ring->tail = t;
-    t_hz3_cache.remote_hint = (ring->tail != ring->head);
-
-#if HZ3_S97_REMOTE_STASH_FLUSH_STATS
-    S97_STAT_ADD(g_s97_flush_budget_entries_total, drained);
-    S97_STAT_ADD(g_s97_flush_budget_groups_total, local_groups);
-    S97_STAT_ADD(g_s97_flush_budget_distinct_keys_total, local_distinct);
-    if (local_groups > local_distinct) {
-        S97_STAT_ADD(g_s97_flush_budget_potential_merge_calls_total, (local_groups - local_distinct));
-    }
-    if (drained > local_groups) {
-        S97_STAT_ADD(g_s97_flush_budget_saved_calls_total, (drained - local_groups));
-    }
-    S97_STAT_MAX(g_s97_flush_budget_n_max, local_n_max);
-    S97_STAT_ADD(g_s97_flush_budget_n_gt1_calls_total, local_n_gt1_calls);
-    S97_STAT_ADD(g_s97_flush_budget_n_gt1_entries_total, local_n_gt1_entries);
-    S97_STAT_ADD(g_s97_flush_budget_small_groups, local_small_groups);
-    S97_STAT_ADD(g_s97_flush_budget_sub4k_groups, local_sub4k_groups);
-    S97_STAT_ADD(g_s97_flush_budget_medium_groups, local_medium_groups);
-    S97_STAT_ADD(g_s97_flush_budget_selfdst_groups, local_selfdst_groups);
-#endif
-    return;
-#endif  // HZ3_S97_REMOTE_STASH_BUCKET == 1/2/6
-#endif  // HZ3_S97_REMOTE_STASH_BUCKET
-
-    while (t != h && drained < budget_entries) {
-        Hz3RemoteStashEntry* entry0 = &ring->ring[t];
-        uint8_t dst = entry0->dst;
-        uint32_t bin = entry0->bin;
-        void* tail = entry0->ptr;
-#if HZ3_REMOTE_STASH_DUP_FAILFAST
-        hz3_remote_stash_dup_check(seen_table, tail, dst, bin, "budget:s97-1");
-        entry0->ptr = NULL;
-        entry0->dst = 0;
-        entry0->bin = 0;
-#endif
-
-#if HZ3_S161_REMOTE_STASH_N1_DIRECT
-        if (hz3_remote_stash_try_direct_n1(dst, bin, tail)) {
-            t = (t + 1) & (HZ3_REMOTE_STASH_RING_SIZE - 1);
-            drained++;
-#if HZ3_S97_REMOTE_STASH_FLUSH_STATS
-            S97_LOC_GROUPS_INC();
-            S97_LOC_NMAX(1);
-            S97_LOC_NGT1(1);
-            S97_LOC_SEEN(dst, bin);
-            S97_LOC_CAT(bin);
-            S97_LOC_SELFDST(dst);
-#endif
-            continue;
-        }
-#endif
-
-        void* head = tail;
-#if !HZ3_S97_REMOTE_STASH_SKIP_TAIL_NULL
-        hz3_obj_set_next(tail, NULL);
-#endif
-        uint32_t n = 1;
-
-        t = (t + 1) & (HZ3_REMOTE_STASH_RING_SIZE - 1);
-        drained++;
-
-#if HZ3_S84_REMOTE_STASH_BATCH
-        while (t != h && drained < budget_entries && n < (uint32_t)HZ3_S84_REMOTE_STASH_BATCH_MAX) {
-            Hz3RemoteStashEntry* entry = &ring->ring[t];
-            if (entry->dst != dst || entry->bin != bin) {
-                break;
-            }
-            void* ptr = entry->ptr;
-#if HZ3_REMOTE_STASH_DUP_FAILFAST
-            hz3_remote_stash_dup_check(seen_table, ptr, dst, bin, "budget:s84");
-            entry->ptr = NULL;
-            entry->dst = 0;
-            entry->bin = 0;
-#endif
-            hz3_obj_set_next(ptr, head);  // LIFO build
-            head = ptr;
-            n++;
-            t = (t + 1) & (HZ3_REMOTE_STASH_RING_SIZE - 1);
-            drained++;
-        }
-#endif
-
-#if HZ3_S97_REMOTE_STASH_FLUSH_STATS
-        S97_LOC_GROUPS_INC();
-        S97_LOC_NMAX(n);
-        S97_LOC_NGT1(n);
-        S97_LOC_SEEN(dst, bin);
-        S97_LOC_CAT(bin);
-        S97_LOC_SELFDST(dst);
-#endif
-
-        hz3_remote_stash_dispatch_list(dst, bin, head, tail, n);
-    }
-
-    ring->tail = t;
-    // It is safe to clear remote_hint iff the ring is now empty.
-    t_hz3_cache.remote_hint = (ring->tail != ring->head);
-
-#if HZ3_S97_REMOTE_STASH_FLUSH_STATS
-    S97_STAT_ADD(g_s97_flush_budget_entries_total, drained);
-    S97_STAT_ADD(g_s97_flush_budget_groups_total, local_groups);
-    S97_STAT_ADD(g_s97_flush_budget_distinct_keys_total, local_distinct);
-    if (local_groups > local_distinct) {
-        S97_STAT_ADD(g_s97_flush_budget_potential_merge_calls_total, (local_groups - local_distinct));
-    }
-    if (drained > local_groups) {
-        S97_STAT_ADD(g_s97_flush_budget_saved_calls_total, (drained - local_groups));
-    }
-    S97_STAT_MAX(g_s97_flush_budget_n_max, local_n_max);
-    S97_STAT_ADD(g_s97_flush_budget_n_gt1_calls_total, local_n_gt1_calls);
-    S97_STAT_ADD(g_s97_flush_budget_n_gt1_entries_total, local_n_gt1_entries);
-    S97_STAT_ADD(g_s97_flush_budget_small_groups, local_small_groups);
-    S97_STAT_ADD(g_s97_flush_budget_sub4k_groups, local_sub4k_groups);
-    S97_STAT_ADD(g_s97_flush_budget_medium_groups, local_medium_groups);
-    S97_STAT_ADD(g_s97_flush_budget_selfdst_groups, local_selfdst_groups);
-#endif
-}
-
-#undef S97_LOC_GROUPS_INC
-#undef S97_LOC_NMAX
-#undef S97_LOC_NGT1
-#undef S97_LOC_SEEN
-#undef S97_LOC_CAT
-#undef S97_LOC_SELFDST
-
-void hz3_remote_stash_flush_all_impl(void) {
-    Hz3RemoteStashRing* ring = &t_hz3_cache.remote_stash;
-    uint16_t t = ring->tail;
-    uint16_t h = ring->head;
-
-#if HZ3_REMOTE_STASH_DUP_FAILFAST
-    uintptr_t seen_table[HZ3_REMOTE_STASH_DUP_TABLE_SIZE];
-    hz3_remote_stash_dup_init(seen_table);
-#endif
-
-    while (t != h) {
-        Hz3RemoteStashEntry* entry0 = &ring->ring[t];
-        uint8_t dst = entry0->dst;
-        uint32_t bin = entry0->bin;
-        void* tail = entry0->ptr;
-#if HZ3_REMOTE_STASH_DUP_FAILFAST
-        hz3_remote_stash_dup_check(seen_table, tail, dst, bin, "flush_all");
-        entry0->ptr = NULL;
-        entry0->dst = 0;
-        entry0->bin = 0;
-#endif
-
-#if HZ3_S161_REMOTE_STASH_N1_DIRECT
-        if (hz3_remote_stash_try_direct_n1(dst, bin, tail)) {
-            t = (t + 1) & (HZ3_REMOTE_STASH_RING_SIZE - 1);
-            continue;
-        }
-#endif
-
-        void* head = tail;
-#if !HZ3_S97_REMOTE_STASH_SKIP_TAIL_NULL
-        hz3_obj_set_next(tail, NULL);
-#endif
-        uint32_t n = 1;
-
-        t = (t + 1) & (HZ3_REMOTE_STASH_RING_SIZE - 1);
-
-#if HZ3_S84_REMOTE_STASH_BATCH
-        while (t != h && n < (uint32_t)HZ3_S84_REMOTE_STASH_BATCH_MAX) {
-            Hz3RemoteStashEntry* entry = &ring->ring[t];
-            if (entry->dst != dst || entry->bin != bin) {
-                break;
-            }
-            void* ptr = entry->ptr;
-#if HZ3_REMOTE_STASH_DUP_FAILFAST
-            hz3_remote_stash_dup_check(seen_table, ptr, dst, bin, "flush_all:s84");
-            entry->ptr = NULL;
-            entry->dst = 0;
-            entry->bin = 0;
-#endif
-            hz3_obj_set_next(ptr, head);  // LIFO build
-            head = ptr;
-            n++;
-            t = (t + 1) & (HZ3_REMOTE_STASH_RING_SIZE - 1);
-        }
-#endif
-
-        hz3_remote_stash_dispatch_list(dst, bin, head, tail, n);
-    }
-
-    ring->tail = t;
-    t_hz3_cache.remote_hint = 0;  // safe, guaranteed empty
-}
-
-// Outbox stubs for sparse mode (not used but may be referenced)
-void hz3_outbox_flush(uint8_t owner, int sc) {
-    (void)owner;
-    (void)sc;
-}
-
-void hz3_outbox_push(uint8_t owner, int sc, void* obj) {
-    (void)owner;
-    (void)sc;
-    (void)obj;
-}
-#endif  // HZ3_REMOTE_STASH_SPARSE
-
+#include "hz3_tcache_remote_stash.inc"
 // ============================================================================
 // S17: dst/bin direct remote bank flush (event-only, dense bank only)
 // ============================================================================
@@ -1099,12 +671,92 @@ void hz3_dstbin_flush_one(uint8_t dst, int bin) {
 // ============================================================================
 
 #if HZ3_PTAG_DSTBIN_ENABLE
+// S190-v3: targeted remote flush by medium size-class.
+void hz3_dstbin_flush_remote_sc_budget(uint32_t sc, uint32_t budget_bins) {
+    if (budget_bins == 0) return;
+
+    uint32_t target_bin32 = (uint32_t)HZ3_MEDIUM_BIN_BASE + sc;
+    if (target_bin32 >= (uint32_t)HZ3_BIN_TOTAL) {
+        hz3_dstbin_flush_remote_budget(budget_bins);
+        return;
+    }
+
+    uint8_t target_bin = (uint8_t)target_bin32;
+#if HZ3_REMOTE_STASH_SPARSE
+    // Sparse mode keeps a ring; only fire budget flush when target bin is observed.
+    Hz3RemoteStashRing* ring = &t_hz3_cache.remote_stash;
+    uint16_t t = ring->tail;
+    uint16_t h = ring->head;
+    uint32_t scanned = 0;
+    int found_target = 0;
+    while (t != h && scanned < budget_bins) {
+        if (ring->ring[t].bin == target_bin) {
+            found_target = 1;
+            break;
+        }
+        t = (t + 1) & (HZ3_REMOTE_STASH_RING_SIZE - 1);
+        scanned++;
+    }
+    if (!found_target) {
+        return;
+    }
+    hz3_remote_stash_flush_budget_impl(budget_bins);
+#if HZ3_S173_DSTBIN_DEMAND_GATE
+    uint16_t remaining = (uint16_t)((ring->head - ring->tail) & (HZ3_REMOTE_STASH_RING_SIZE - 1));
+    if (remaining > (uint16_t)HZ3_S173_DSTBIN_DEMAND_CREDIT_CAP) {
+        remaining = (uint16_t)HZ3_S173_DSTBIN_DEMAND_CREDIT_CAP;
+    }
+    t_hz3_cache.remote_flush_credit = remaining;
+#endif
+#else
+    // Dense mode: scan only owner shards for the selected bin.
+    uint8_t my_shard = t_hz3_cache.my_shard;
+    uint8_t dst = t_hz3_cache.remote_dst_cursor;
+    uint8_t start_dst = dst;
+    uint32_t scanned = 0;
+    int wrapped = 0;
+
+    while (scanned < budget_bins && !wrapped) {
+        if (dst == my_shard) {
+            dst = (dst + 1) % HZ3_NUM_SHARDS;
+            if (dst == start_dst) break;
+            continue;
+        }
+
+#if HZ3_TCACHE_SOA_BANK
+        void* head = t_hz3_cache.bank_head[dst][target_bin];
+#else
+        Hz3Bin* b = hz3_tcache_get_bank_bin(dst, (int)target_bin);
+        void* head = b->head;
+#endif
+        scanned++;
+        if (head) {
+            hz3_dstbin_flush_one(dst, (int)target_bin);
+            t_hz3_cache.remote_hint = 1;
+        }
+
+        dst = (dst + 1) % HZ3_NUM_SHARDS;
+        if (dst == start_dst) wrapped = 1;
+    }
+
+    t_hz3_cache.remote_dst_cursor = dst;
+#endif
+}
+
 // S24-1: Budgeted flush with round-robin cursor
 void hz3_dstbin_flush_remote_budget(uint32_t budget_bins) {
 #if HZ3_REMOTE_STASH_SPARSE
     // S41: For sparse ring, budget_bins means "number of ring entries"
     //      (not "number of bins to scan" as in dense bank)
     hz3_remote_stash_flush_budget_impl(budget_bins);
+#if HZ3_S173_DSTBIN_DEMAND_GATE
+    Hz3RemoteStashRing* ring = &t_hz3_cache.remote_stash;
+    uint16_t remaining = (uint16_t)((ring->head - ring->tail) & (HZ3_REMOTE_STASH_RING_SIZE - 1));
+    if (remaining > (uint16_t)HZ3_S173_DSTBIN_DEMAND_CREDIT_CAP) {
+        remaining = (uint16_t)HZ3_S173_DSTBIN_DEMAND_CREDIT_CAP;
+    }
+    t_hz3_cache.remote_flush_credit = remaining;
+#endif
 #else
     // Dense bank implementation
     uint8_t my_shard = t_hz3_cache.my_shard;
@@ -1156,6 +808,14 @@ void hz3_dstbin_flush_remote_budget(uint32_t budget_bins) {
 void hz3_dstbin_flush_remote_all(void) {
 #if HZ3_REMOTE_STASH_SPARSE
     hz3_remote_stash_flush_all_impl();
+#if HZ3_S173_DSTBIN_DEMAND_GATE
+    Hz3RemoteStashRing* ring = &t_hz3_cache.remote_stash;
+    uint16_t remaining = (uint16_t)((ring->head - ring->tail) & (HZ3_REMOTE_STASH_RING_SIZE - 1));
+    if (remaining > (uint16_t)HZ3_S173_DSTBIN_DEMAND_CREDIT_CAP) {
+        remaining = (uint16_t)HZ3_S173_DSTBIN_DEMAND_CREDIT_CAP;
+    }
+    t_hz3_cache.remote_flush_credit = remaining;
+#endif
 #else
     // Dense bank implementation
     uint8_t my_shard = t_hz3_cache.my_shard;

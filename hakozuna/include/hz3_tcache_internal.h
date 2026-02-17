@@ -47,6 +47,17 @@ void hz3_s12_v2_stats_register_atexit(void);
 void hz3_s12_v2_stats_aggregate_thread(void);
 #endif
 
+#if HZ3_MEDIUM_PATH_STATS && !HZ3_SHIM_FORWARD_ONLY
+extern pthread_once_t g_medium_path_stats_atexit_once;
+void hz3_medium_path_stats_register_atexit(void);
+void hz3_medium_path_stats_on_slow_enter(int sc);
+void hz3_medium_path_stats_on_inbox_hit(int sc);
+void hz3_medium_path_stats_on_central_hit(int sc, int got);
+void hz3_medium_path_stats_on_central_miss(int sc);
+void hz3_medium_path_stats_on_segment_hit(int sc, int got);
+void hz3_medium_path_stats_on_segment_fail(int sc);
+#endif
+
 
 #if HZ3_SEG_SCAVENGE_OBSERVE && !HZ3_SHIM_FORWARD_ONLY
 extern pthread_once_t g_scavenge_obs_atexit_once;
@@ -80,9 +91,19 @@ void hz3_remote_stash_flush_budget_impl(uint32_t budget_entries);
 void hz3_remote_stash_flush_all_impl(void);
 #endif
 
+int hz3_s220_cpu_rrq_try_push(int sc, void* obj);
+void* hz3_s220_cpu_rrq_try_pop(int sc);
+int hz3_s220_cpu_rrq_pop_batch(int sc, void** out, int max_n);
+void hz3_s220_rrq_flush_tls(void);
+void hz3_s220_rrq_register_once(void);
+
 #if HZ3_PTAG_DSTBIN_ENABLE && !HZ3_REMOTE_STASH_SPARSE
 void hz3_dstbin_flush_one(uint8_t dst, int bin);
 #endif
+
+// S209: medium central-miss sequence helpers (alloc side -> remote dispatch gate)
+uint32_t hz3_s209_medium_miss_seq_load(uint8_t shard, int sc);
+void hz3_s209_medium_miss_seq_note(uint8_t shard, int sc, uint32_t miss_count);
 
 // ============================================================================
 // Alloc Functions (defined in hz3_tcache_alloc.c)

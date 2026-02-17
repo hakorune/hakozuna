@@ -2,15 +2,23 @@
 #ifndef HZ4_PAGE_H
 #define HZ4_PAGE_H
 
+#include "hz4_config.h"
 #include "hz4_types.h"
+
+// Forward declaration for page meta (defined in hz4_seg.h)
+#if HZ4_PAGE_META_SEPARATE
+typedef struct hz4_page_meta hz4_page_meta_t;
+#endif
 
 // ============================================================================
 // Page Header
 // ============================================================================
 // Box Theory: page は small allocation の単位
-// - free / local_free は owner のみがアクセス
+// - free / local_free は owner のみがアクセス（page 側に残す、decommit 後 rebuild）
 // - remote_head[] は MPSC (multiple producer, single consumer)
+//   → meta 分離時は meta 側へ移動（decommit 中もアクセス可能）
 struct hz4_page {
+#if !HZ4_PAGE_META_SEPARATE
     // ---- Owner-only fields ----
     void* free;           // current free list head (owner only)
     void* local_free;     // local free list (owner only, not yet merged)
@@ -34,6 +42,17 @@ struct hz4_page {
     // ---- Page Queue (MPSC) ----
     _Atomic(uint8_t) queued;  // 0=idle, 1=queued
     hz4_page_t* qnext;        // intrusive link (queued only)
+
+#else
+    // ---- Thin structure for decommitted pages ----
+    // free/local_free は page 側に残す（decommit 後に rebuild で復元）
+    void* free;           // current free list head (owner only)
+    void* local_free;     // local free list (owner only, not yet merged)
+
+    // ---- Validation ----
+    uint32_t magic;       // HZ4_PAGE_MAGIC
+    uint32_t _reserved;   // padding/future use
+#endif
 };
 
 // ============================================================================
@@ -51,6 +70,15 @@ static inline bool hz4_page_valid(hz4_page_t* page) {
 // ============================================================================
 // Remote head operations
 // ============================================================================
+// Note: When HZ4_PAGE_META_SEPARATE is enabled, these functions are
+//       implemented in hz4_seg.h (included at end) to access hz4_page_meta_t.
+
+#if !HZ4_PAGE_META_SEPARATE
+// PTAG32-lite accessors (non-meta)
+static inline uint32_t hz4_page_tag_load(hz4_page_t* page) {
+    return hz4_page_tag_load_from_fields(&page->owner_tid);
+}
+
 // Drain: atomic_exchange で全取得 (owner のみ)
 static inline void* hz4_page_drain_remote(hz4_page_t* page, uint32_t shard) {
     return atomic_exchange_explicit(&page->remote_head[shard], NULL,
@@ -145,5 +173,9 @@ static inline void hz4_page_push_remote_list_tid(hz4_page_t* page,
     }
     hz4_page_mark_remote(page, hz4_select_shard_salted(page, tid));
 }
+#endif // !HZ4_PAGE_META_SEPARATE
+
+// When HZ4_PAGE_META_SEPARATE is enabled, source files must also include hz4_seg.h
+// to get the meta-separated versions of these functions.
 
 #endif // HZ4_PAGE_H

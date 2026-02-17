@@ -33,89 +33,37 @@ LD_PRELOAD=./libhakozuna_hz4.so ./your_app
 - [ACE-Alloc Paper (日本語)](docs/paper/main_ja.pdf)
 - DOI: https://doi.org/10.5281/zenodo.18357813
 
-## Benchmark Snapshot (2026-01-24, Ubuntu native, 16 cores)
+## Benchmark Snapshot (2026-02-18, Ubuntu native)
 
-**SSOT T=16 / R=90 (median of 10):**
+Latest matrix (`RUNS=7`, MT lane x remote%) and redis-like (`RUNS=5`, memtier 15s) show a clear split:
 
-| Allocator | ops/s |
-|-----------|-------|
-| hz4 | 81.7M |
-| tcmalloc | 77.8M |
-| mimalloc | 72.2M |
-| hz3 | 71.6M |
+- `hz3`: strongest in local-heavy and redis-like workloads.
+- `hz4`: strongest in remote-heavy and high-thread cross workloads.
 
-**R sweep (T=16):**
+### MT lane x remote% (median ops/s)
 
-| R | hz3 | hz4 | mimalloc | tcmalloc |
-|---|-----|-----|---------|----------|
-| 0% | **359.6M** | 249.6M | 300.5M | 357.0M |
-| 50% | 94.4M | 97.4M | 84.6M | 103.3M |
-| 90% | 75.3M | **97.3M** | 75.1M | 74.9M |
+| Lane | hz3 | hz4 | mimalloc | tcmalloc |
+|------|-----|-----|----------|----------|
+| `main_r0` | **352.9M** | 136.6M | 224.4M | 230.1M |
+| `main_r50` | 55.0M | 75.5M | 18.6M | **83.9M** |
+| `main_r90` | 41.3M | **67.8M** | 16.1M | 56.2M |
+| `guard_r0` | **387.1M** | 265.9M | 311.6M | 370.7M |
+| `cross128_r90` | 4.21M | **50.97M** | 9.20M | 7.50M |
 
-**ST dist_app (16–65536):**
+### Redis-like (median ops/s, RUNS=5)
 
 | Allocator | ops/s |
 |-----------|-------|
-| tcmalloc | 80.2M |
-| hz3 | 75.2M |
-| mimalloc | 73.4M |
-| hz4 | 51.6M |
+| **hz3** | **568,071** |
+| mimalloc | 566,827 |
+| tcmalloc | 565,494 |
+| hz4 | 559,514 |
 
-**RSS MT remote (T=16/R=90):**
+### Practical profile guidance
 
-| Allocator | Max RSS (GB) |
-|-----------|--------------|
-| **hz3** | **1.36 GB** |
-| mimalloc | 1.52 GB |
-| hz4 | 2.04 GB |
-| tcmalloc | 2.34 GB |
-
-Full results and commands: `docs/benchmarks/2026-01-24_PAPER_BENCH_RESULTS.md`
-
-## Notes
-
-- hz3 stability for paper runs: `S62_RETIRE=0, S62_PURGE=0`.
-- hz3 has two lanes: `fast` (low latency) and `scale` (high parallelism).
-
-Summary: hakozuna wins most multi-threaded workloads, especially remote-free heavy cases (e.g. T=8 R=90 at +46%). At T=32 R=90, hz3 and mimalloc are very close; in WSL2 the median slightly favors hz3, but variance is large.
-
-### RSS snapshot (WSL2, ru_maxrss, lower is better)
-
-| Benchmark | hz3 | mimalloc | tcmalloc | system |
-|-----------|-----|----------|----------|--------|
-| random_mixed | 3.0 MB | 2.1 MB | 7.8 MB | 2.0 MB |
-| alloc-test | 28.9 MB | 72.4 MB | 20.8 MB | 19.6 MB |
-| espresso | 6.2 MB | 7.6 MB | 10.7 MB | 2.6 MB |
-
-Note: RSS varies by workload; see `docs/paper/RESULTS_20260118.md` for full context.
-
-### memcached (ops/sec, higher is better)
-
-| Threads | hakozuna | mimalloc | tcmalloc |
-|---------|-----|----------|----------|
-| T=1 | 278,109 | 283,697 | 280,453 |
-| T=4 | **816,008** | 741,478 | 809,366 |
-| T=8 | 1,298,515 | 1,301,294 | 1,304,450 |
-| T=16 | **1,487,819** | 1,471,710 | 1,374,252 |
-
-### MT Remote-Free (ops/sec, higher is better)
-
-| Condition | hakozuna | mimalloc | tcmalloc |
-|-----------|-----|----------|----------|
-| T=8 R=90% | **193.1M** | 132.3M | 153.0M |
-| T=16 R=50% | **270.6M** | 208.6M | 226.5M |
-| T=32 R=90% | **198.8M** | 196.5M | 147.6M |
-
-### random_mixed (ops/sec, higher is better)
-
-| Allocator | Throughput |
-|-----------|------------|
-| tcmalloc | 134.6M |
-| hakozuna | 132.6M |
-| mimalloc | 130.2M |
-| system | 108.5M |
-
-**Summary**: hakozuna wins in most multi-threaded workloads, especially remote-free heavy cases (e.g. T=8 R=90 at +46%). At T=32 R=90, hz3 and mimalloc are very close; in WSL2 the median slightly favors hz3, but variance is large.
+- Default profile: `hz3` (`scale` lane).
+- Remote-heavy / high-thread profile: `hz4`.
+- `hz4` redis preload crash (`rc=139`) was fixed via `malloc_usable_size` interpose; redis-like rerun is now stable (`n_ok=5`).
 
 ## Documentation
 

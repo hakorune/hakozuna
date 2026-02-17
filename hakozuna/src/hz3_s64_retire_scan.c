@@ -243,6 +243,9 @@ void hz3_s64_retire_scan_tick(void) {
     uint32_t total_processed = 0;
     uint32_t pages_retired = 0;
     uint32_t budget_remaining = HZ3_S64_RETIRE_BUDGET_OBJS;
+#if HZ3_S64_RETIRE_DRAIN_PENDING
+    uint32_t drained_sc = 0;  // P5b: track how many SC we drained in this tick
+#endif
 
     // Stack-local buffers (no static/global to avoid race with concurrent ticks)
     void* batch_buf[S64R_BATCH_SIZE];
@@ -256,6 +259,61 @@ void hz3_s64_retire_scan_tick(void) {
     for (int sc = 0; sc < HZ3_SMALL_NUM_SC && budget_remaining > 0; sc++) {
         // S71: Skip if xfer/stash has pending objects for this SC
         // Objects in transit haven't reached central yet, so count==capacity is unreliable
+#if HZ3_S64_RETIRE_DRAIN_PENDING
+        // P5b: Skip drain entirely if we already hit MAX_SC_PER_TICK
+        if (drained_sc >= HZ3_S64_RETIRE_DRAIN_MAX_SC_PER_TICK) {
+            goto pending_check;  // Use original pending skip logic
+        }
+
+        // S64-P5b: Drain pending with defer logic (xfer OR stash, not both)
+        int did_drain = 0;
+
+        // Try xfer first
+#if HZ3_S42_SMALL_XFER
+        if (hz3_small_xfer_has_pending(my_shard, sc)) {
+            void* out[HZ3_S64_RETIRE_DRAIN_XFER_BUDGET];
+            int got = hz3_small_xfer_pop_batch(my_shard, sc, out, HZ3_S64_RETIRE_DRAIN_XFER_BUDGET);
+            if (got > 0) {
+                void* head = out[0];
+                void* tail = out[got - 1];
+                for (int i = 0; i < got - 1; i++) {
+                    hz3_obj_set_next(out[i], out[i + 1]);
+                }
+                hz3_obj_set_next(tail, NULL);
+                hz3_small_v2_central_push_list(my_shard, sc, head, tail, (uint32_t)got);
+                did_drain = 1;
+            }
+        }
+        else
+#endif
+#if HZ3_S44_OWNER_STASH
+        // Try stash only if xfer didn't drain (avoid double drain in same SC)
+        if (hz3_owner_stash_has_pending(my_shard, sc)) {
+            void* out[HZ3_S64_RETIRE_DRAIN_STASH_BUDGET];
+            int got = hz3_owner_stash_pop_batch(my_shard, sc, out, HZ3_S64_RETIRE_DRAIN_STASH_BUDGET);
+            if (got > 0) {
+                void* head = out[0];
+                void* tail = out[got - 1];
+                for (int i = 0; i < got - 1; i++) {
+                    hz3_obj_set_next(out[i], out[i + 1]);
+                }
+                hz3_obj_set_next(tail, NULL);
+                hz3_small_v2_central_push_list(my_shard, sc, head, tail, (uint32_t)got);
+                did_drain = 1;
+            }
+        }
+#endif
+
+        // P5b: Defer retire scan if we drained anything
+        if (did_drain) {
+            drained_sc++;
+#if HZ3_S64_RETIRE_DRAIN_DEFER
+            continue;  // Defer retire scan for this SC in this tick
+#endif
+        }
+
+pending_check:
+        // Re-check pending; if still pending, skip this SC
 #if HZ3_S42_SMALL_XFER
         if (hz3_small_xfer_has_pending(my_shard, sc)) {
             continue;
@@ -265,6 +323,19 @@ void hz3_s64_retire_scan_tick(void) {
         if (hz3_owner_stash_has_pending(my_shard, sc)) {
             continue;
         }
+#endif
+#else  // !HZ3_S64_RETIRE_DRAIN_PENDING
+        // Original pending skip logic (unchanged)
+#if HZ3_S42_SMALL_XFER
+        if (hz3_small_xfer_has_pending(my_shard, sc)) {
+            continue;
+        }
+#endif
+#if HZ3_S44_OWNER_STASH
+        if (hz3_owner_stash_has_pending(my_shard, sc)) {
+            continue;
+        }
+#endif
 #endif
 
         // Initialize page table for this size class

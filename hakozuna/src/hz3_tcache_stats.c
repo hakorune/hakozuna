@@ -37,6 +37,126 @@ void hz3_medium_oom_dump(int sc) {
 #endif
 
 // ============================================================================
+// S187: Medium Path Stats (alloc_slow triage)
+// ============================================================================
+#if HZ3_MEDIUM_PATH_STATS && !HZ3_SHIM_FORWARD_ONLY
+static _Atomic uint64_t g_medium_slow_calls[HZ3_NUM_SC] = {0};
+static _Atomic uint64_t g_medium_inbox_hits[HZ3_NUM_SC] = {0};
+static _Atomic uint64_t g_medium_central_hits[HZ3_NUM_SC] = {0};
+static _Atomic uint64_t g_medium_central_misses[HZ3_NUM_SC] = {0};
+static _Atomic uint64_t g_medium_central_objs[HZ3_NUM_SC] = {0};
+static _Atomic uint64_t g_medium_segment_hits[HZ3_NUM_SC] = {0};
+static _Atomic uint64_t g_medium_segment_objs[HZ3_NUM_SC] = {0};
+static _Atomic uint64_t g_medium_segment_fails[HZ3_NUM_SC] = {0};
+pthread_once_t g_medium_path_stats_atexit_once = PTHREAD_ONCE_INIT;
+
+static inline int hz3_medium_stats_sc_ok(int sc) {
+    return sc >= 0 && sc < HZ3_NUM_SC;
+}
+
+void hz3_medium_path_stats_on_slow_enter(int sc) {
+    if (!hz3_medium_stats_sc_ok(sc)) return;
+    atomic_fetch_add_explicit(&g_medium_slow_calls[sc], 1, memory_order_relaxed);
+}
+
+void hz3_medium_path_stats_on_inbox_hit(int sc) {
+    if (!hz3_medium_stats_sc_ok(sc)) return;
+    atomic_fetch_add_explicit(&g_medium_inbox_hits[sc], 1, memory_order_relaxed);
+}
+
+void hz3_medium_path_stats_on_central_hit(int sc, int got) {
+    if (!hz3_medium_stats_sc_ok(sc)) return;
+    atomic_fetch_add_explicit(&g_medium_central_hits[sc], 1, memory_order_relaxed);
+    if (got > 0) {
+        atomic_fetch_add_explicit(&g_medium_central_objs[sc], (uint64_t)got, memory_order_relaxed);
+    }
+}
+
+void hz3_medium_path_stats_on_central_miss(int sc) {
+    if (!hz3_medium_stats_sc_ok(sc)) return;
+    atomic_fetch_add_explicit(&g_medium_central_misses[sc], 1, memory_order_relaxed);
+}
+
+void hz3_medium_path_stats_on_segment_hit(int sc, int got) {
+    if (!hz3_medium_stats_sc_ok(sc)) return;
+    atomic_fetch_add_explicit(&g_medium_segment_hits[sc], 1, memory_order_relaxed);
+    if (got > 0) {
+        atomic_fetch_add_explicit(&g_medium_segment_objs[sc], (uint64_t)got, memory_order_relaxed);
+    }
+}
+
+void hz3_medium_path_stats_on_segment_fail(int sc) {
+    if (!hz3_medium_stats_sc_ok(sc)) return;
+    atomic_fetch_add_explicit(&g_medium_segment_fails[sc], 1, memory_order_relaxed);
+}
+
+static void hz3_medium_path_stats_dump(void) {
+    uint64_t total_slow = 0;
+    uint64_t total_inbox = 0;
+    uint64_t total_central_hit = 0;
+    uint64_t total_central_miss = 0;
+    uint64_t total_central_objs = 0;
+    uint64_t total_segment_hit = 0;
+    uint64_t total_segment_objs = 0;
+    uint64_t total_segment_fail = 0;
+
+    for (int sc = 0; sc < HZ3_NUM_SC; sc++) {
+        total_slow += atomic_load_explicit(&g_medium_slow_calls[sc], memory_order_relaxed);
+        total_inbox += atomic_load_explicit(&g_medium_inbox_hits[sc], memory_order_relaxed);
+        total_central_hit += atomic_load_explicit(&g_medium_central_hits[sc], memory_order_relaxed);
+        total_central_miss += atomic_load_explicit(&g_medium_central_misses[sc], memory_order_relaxed);
+        total_central_objs += atomic_load_explicit(&g_medium_central_objs[sc], memory_order_relaxed);
+        total_segment_hit += atomic_load_explicit(&g_medium_segment_hits[sc], memory_order_relaxed);
+        total_segment_objs += atomic_load_explicit(&g_medium_segment_objs[sc], memory_order_relaxed);
+        total_segment_fail += atomic_load_explicit(&g_medium_segment_fails[sc], memory_order_relaxed);
+    }
+
+    fprintf(stderr,
+            "[HZ3_MEDIUM_PATH] slow=%lu inbox_hit=%lu central_hit=%lu central_miss=%lu "
+            "central_objs=%lu segment_hit=%lu segment_objs=%lu segment_fail=%lu\n",
+            (unsigned long)total_slow,
+            (unsigned long)total_inbox,
+            (unsigned long)total_central_hit,
+            (unsigned long)total_central_miss,
+            (unsigned long)total_central_objs,
+            (unsigned long)total_segment_hit,
+            (unsigned long)total_segment_objs,
+            (unsigned long)total_segment_fail);
+
+    fprintf(stderr, "[HZ3_MEDIUM_PATH_SC]");
+    for (int sc = 0; sc < HZ3_NUM_SC; sc++) {
+        uint64_t slow = atomic_load_explicit(&g_medium_slow_calls[sc], memory_order_relaxed);
+        uint64_t inbox = atomic_load_explicit(&g_medium_inbox_hits[sc], memory_order_relaxed);
+        uint64_t ch = atomic_load_explicit(&g_medium_central_hits[sc], memory_order_relaxed);
+        uint64_t cm = atomic_load_explicit(&g_medium_central_misses[sc], memory_order_relaxed);
+        uint64_t co = atomic_load_explicit(&g_medium_central_objs[sc], memory_order_relaxed);
+        uint64_t sh = atomic_load_explicit(&g_medium_segment_hits[sc], memory_order_relaxed);
+        uint64_t so = atomic_load_explicit(&g_medium_segment_objs[sc], memory_order_relaxed);
+        uint64_t sf = atomic_load_explicit(&g_medium_segment_fails[sc], memory_order_relaxed);
+        if ((slow | inbox | ch | cm | co | sh | so | sf) == 0) {
+            continue;
+        }
+        fprintf(stderr,
+                " sc%d(s=%lu i=%lu ch=%lu cm=%lu co=%lu sh=%lu so=%lu sf=%lu)",
+                sc,
+                (unsigned long)slow,
+                (unsigned long)inbox,
+                (unsigned long)ch,
+                (unsigned long)cm,
+                (unsigned long)co,
+                (unsigned long)sh,
+                (unsigned long)so,
+                (unsigned long)sf);
+    }
+    fprintf(stderr, "\n");
+}
+
+void hz3_medium_path_stats_register_atexit(void) {
+    atexit(hz3_medium_path_stats_dump);
+}
+#endif
+
+// ============================================================================
 // S15: Stats Dump
 // ============================================================================
 #if HZ3_STATS_DUMP && !HZ3_SHIM_FORWARD_ONLY

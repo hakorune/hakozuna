@@ -69,4 +69,22 @@ static inline uint32_t hz4_owner_shard(uint16_t tid) {
     return (uint32_t)(tid & HZ4_SHARD_MASK);
 }
 
+// ============================================================================
+// Page tag (PTAG32-lite): load owner_tid+sc as one 32-bit value
+// Layout: lower 16 bits = owner_tid, upper 16 bits = sc
+// ============================================================================
+static inline uint32_t hz4_page_tag_load_from_fields(const void* p) {
+    uint32_t tag;
+    __builtin_memcpy(&tag, p, sizeof(tag));
+    return tag;
+}
+
+static inline uint16_t hz4_page_tag_owner(uint32_t tag) {
+    return (uint16_t)(tag & 0xFFFFu);
+}
+
+static inline uint8_t hz4_page_tag_sc(uint32_t tag) {
+    return (uint8_t)((tag >> 16) & 0xFFu);
+}
+
 #endif // HZ4_TYPES_H

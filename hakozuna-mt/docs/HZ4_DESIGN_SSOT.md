@@ -9,9 +9,36 @@
 - hz3 本線の既定経路を置き換えない
 - S121 PageQ を復活させない
 
+関連:
+- GO台帳: `hakozuna/hz4/docs/HZ4_GO_BOXES.md`
+- NO-GO台帳: `hakozuna/hz4/docs/HZ4_ARCHIVED_BOXES.md`
+- Debugカウンター運用: `hakozuna/hz4/docs/HZ4_DEBUG_COUNTER_POLICY.md`
+
 ---
 
 ## 1) Box 構成（SSOT）
+
+## Lanes（SSOT: 取り違え防止）
+
+- stable lane（既定・テスト込み）: `make -C hakozuna/hz4 all_stable`
+- perf lane（研究用・libのみ）: `make -C hakozuna/hz4 all_perf`
+- larson-stable lane（研究用・libのみ）: `make -C hakozuna/hz4 all_rss_larson_stable_lib`
+- Stage5 実験（R=90専用）: Remote-lite v1a2 は **既定laneに入れず**、R=90専用 build/lane でのみ扱う（指示書: `HZ4_STAGE5_REMOTE_LITE_V1A_R90_LANE_POLICY.md`）
+
+bench lane（`run_bench_suite_compare.sh` の公式入口）:
+- `HZ4_LANE=mt_default`（MT 既定）
+- `HZ4_LANE=st_base`（ST 基準）
+- `HZ4_LANE=st_fast`（ST 高速 / Phase16）
+- 一括実行: `scripts/run_hz4_three_lanes_dev.sh`
+
+注意:
+- `all_perf` は `hz4_cph_disjoint_test` の固定定義と衝突するため **lib-only** 運用に固定する。
+- `all_rss` / `all_rss_larson*` は互換のため残している deprecated ターゲット（新規運用では使わない）。
+
+RSS lane の既定パラメータ（Phase 15B 確定）:
+- `HZ4_RSSRETURN_THRESH_PAGES=32`
+- `HZ4_RSSRETURN_BATCH_PAGES=8`
+- `HZ4_RSSRETURN_SAFETY_PERIOD=256`
 
 ```
 FREE fast
@@ -198,6 +225,28 @@ P3: Budget 固定（collect が支配しない）
 ### page_idx の範囲
 - 無効: 0
 - 有効: 1 .. HZ4_PAGES_PER_SEG-1 (= 1..15)
+
+---
+
+## 11) RSS / Decommit (2026-01-25)
+
+Phase 1 で分かったこと（要点）:
+- `madvise(DONTNEED)` は **tcache の intrusive list (`obj->next`) を破壊**するため、
+  「空ページ検出 → 即 decommit」は unsafe になり得る。
+- `used_count==0` は「アプリ live が 0」を表すべきで、**tcache 上の free obj の参照が残っている限り decommit してはいけない**。
+
+実装方針（Box）:
+- PageMetaBox（page meta 分離）で「decommit しても復元できる」前提を作る。
+- Decommit 前に **tcache purge/unlink** で参照を断つ（安全化）。
+- さらに **delay/hysteresis + budget**（DecommitQueueBox）でスラッシングを抑止する。
+
+入口（作業指示）:
+- Phase 1 results: `docs/benchmarks/2026-01-25_HZ4_RSS_PHASE1_RESULTS.md`
+
+### QuarantineBox + PressureGateBox（2026-02-01）
+- QuarantineBox は empty page を短時間だけ隔離し、通常ワークロードでも decommit の “候補成熟” を作る（default OFF / opt-in）。
+- PressureGateBox は QuarantineBox を **圧がある時だけ**有効化して、`seg_acq` と `ru_maxrss` の分散を抑える（default OFF / opt-in）。
+- GO 判定と A/B ログの正: `hakozuna/hz4/results/PRESSUREGATEBOX_RESULTS.md`
 
 ### メモリレイアウト
 ```
