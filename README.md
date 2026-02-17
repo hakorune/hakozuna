@@ -35,35 +35,36 @@ LD_PRELOAD=./libhakozuna_hz4.so ./your_app
 
 ## Benchmark Snapshot (2026-02-18, Ubuntu native)
 
-Latest matrix (`RUNS=7`, MT lane x remote%) and redis-like (`RUNS=5`, memtier 15s) show a clear split:
+Latest matrix (`RUNS=10`, MT lane x remote%) and redis-like (`RUNS=10`, memtier 15s) show a clear split:
 
 - `hz3`: strongest in local-heavy and redis-like workloads.
 - `hz4`: strongest in remote-heavy and high-thread cross workloads.
+- Full benchmark log: `docs/benchmarks/2026-02-18_PAPER_BENCH_RESULTS.md`
 
 ### MT lane x remote% (median ops/s)
 
 | Lane | hz3 | hz4 | mimalloc | tcmalloc |
 |------|-----|-----|----------|----------|
-| `main_r0` | **352.9M** | 136.6M | 224.4M | 230.1M |
-| `main_r50` | 55.0M | 75.5M | 18.6M | **83.9M** |
-| `main_r90` | 41.3M | **67.8M** | 16.1M | 56.2M |
-| `guard_r0` | **387.1M** | 265.9M | 311.6M | 370.7M |
-| `cross128_r90` | 4.21M | **50.97M** | 9.20M | 7.50M |
+| `main_r0` | **375.4M** | 137.4M | 224.2M | 232.7M |
+| `main_r50` | 66.5M | 78.1M | 17.9M | **84.3M** |
+| `main_r90` | 62.6M | **67.6M** | 13.0M | 54.9M |
+| `guard_r0` | **376.4M** | 266.7M | 310.0M | 372.0M |
+| `cross128_r90` | 1.80M | **50.65M** | 10.94M | 7.50M |
 
-### Redis-like (median ops/s, RUNS=5)
+### Redis-like (median ops/s, RUNS=10)
 
 | Allocator | ops/s |
 |-----------|-------|
-| **hz3** | **568,071** |
-| mimalloc | 566,827 |
-| tcmalloc | 565,494 |
-| hz4 | 559,514 |
+| **hz3** | **571,199** |
+| mimalloc | 568,740 |
+| tcmalloc | 568,052 |
+| hz4 | 560,576 |
 
 ### Practical profile guidance
 
 - Default profile: `hz3` (`scale` lane).
 - Remote-heavy / high-thread profile: `hz4`.
-- `hz4` redis preload crash (`rc=139`) was fixed via `malloc_usable_size` interpose; redis-like rerun is now stable (`n_ok=5`).
+- `hz4` redis preload crash (`rc=139`) was fixed via `malloc_usable_size` interpose; redis-like rerun is now stable (`n_ok=10`).
 
 ## Documentation
 
@@ -88,4 +89,4 @@ Apache License 2.0
 
 ---
 
-Version: 2026.01.18
+Version: 2026.02.18
