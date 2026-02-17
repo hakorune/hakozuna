@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: "If you use Hakozuna, please cite this software and paper archive."
+title: "Hakozuna (hz3/hz4): allocator source and paper artifacts"
+type: software
+version: "v3.0"
+date-released: 2026-02-17
+doi: 10.5281/zenodo.18674502
+url: https://zenodo.org/records/18674502
+repository-code: https://github.com/hakorune/hakozuna
+license: Apache-2.0
+authors:
+  - family-names: Kurata
+    given-names: Tomoaki
+    alias: CharmNexusCore

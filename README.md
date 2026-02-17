@@ -1,6 +1,6 @@
 # hakozuna (hz3) / hakozuna-mt (hz4)
 
-[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.18357813-blue)](https://doi.org/10.5281/zenodo.18357813)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18674502.svg)](https://doi.org/10.5281/zenodo.18674502)
 
 **High-performance memory allocators competitive with mimalloc and tcmalloc**
 
@@ -12,6 +12,7 @@ Part of the [hakorune](https://github.com/hakorune) project.
 
 - **hz3 (hakozuna)**: Local-heavy performance + minimal RSS footprint. Default for most workloads.
 - **hz4 (hakozuna-mt)**: Message-passing, remote-heavy scaling (best at high thread counts).
+- Profile selection guide: `PROFILE_GUIDE.md`
 
 ## Quick Start
 
@@ -31,7 +32,10 @@ LD_PRELOAD=./libhakozuna_hz4.so ./your_app
 
 - [ACE-Alloc Paper (English)](docs/paper/main_en.pdf)
 - [ACE-Alloc Paper (日本語)](docs/paper/main_ja.pdf)
-- DOI: https://doi.org/10.5281/zenodo.18357813
+- Zenodo Record (v3.0): https://zenodo.org/records/18674502
+- DOI: https://doi.org/10.5281/zenodo.18674502
+- Citation metadata: `CITATION.cff`
+- GitHub Release body template: `docs/releases/GITHUB_RELEASE_v3.0.md`
 
 ## Benchmark Snapshot (2026-02-18, Ubuntu native)
 
@@ -70,6 +74,7 @@ Latest matrix (`RUNS=10`, MT lane x remote%) and redis-like (`RUNS=10`, memtier 
 
 - [Build Flags Index](docs/BUILD_FLAGS_INDEX.md)
 - [Paper Notes](docs/HAKMEM_HZ3_PAPER_NOTES.md)
+- [Profile Guide](PROFILE_GUIDE.md)
 
 ## Design Principles (Box Theory)
 
