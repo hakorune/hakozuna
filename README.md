@@ -34,7 +34,9 @@ LD_PRELOAD=./libhakozuna_hz4.so ./your_app
 - [ACE-Alloc Paper (日本語)](docs/paper/main_ja.pdf)
 - Zenodo Record (v3.0): https://zenodo.org/records/18674502
 - DOI: https://doi.org/10.5281/zenodo.18674502
+- GitHub Release (v3.0.0): https://github.com/hakorune/hakozuna/releases/tag/v3.0.0
 - Citation metadata: `CITATION.cff`
+- Changelog: `CHANGELOG.md` (BREAKING changes are explicitly listed per release)
 - GitHub Release body template: `docs/releases/GITHUB_RELEASE_v3.0.md`
 
 ## Benchmark Snapshot (2026-02-18, Ubuntu native)
@@ -75,6 +77,8 @@ Latest matrix (`RUNS=10`, MT lane x remote%) and redis-like (`RUNS=10`, memtier 
 - [Build Flags Index](docs/BUILD_FLAGS_INDEX.md)
 - [Paper Notes](docs/HAKMEM_HZ3_PAPER_NOTES.md)
 - [Profile Guide](PROFILE_GUIDE.md)
+- [Safe Defaults](docs/SAFE_DEFAULTS.md)
+- [Compatibility Notes](docs/COMPATIBILITY.md)
 
 ## Design Principles (Box Theory)
 
@@ -94,4 +98,4 @@ Apache License 2.0
 
 ---
 
-Version: 2026.02.18
+Version: 2026.02.18 (release anchor: v3.0.0)

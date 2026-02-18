@@ -1,0 +1,81 @@
+name: ci-minimal
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  linux-build-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential make
+
+      - name: Prepare hz3 path compatibility
+        run: |
+          set -euxo pipefail
+          mkdir -p "${GITHUB_WORKSPACE}/../hakozuna"
+          rm -rf "${GITHUB_WORKSPACE}/../hakozuna/hz3"
+          ln -s "${GITHUB_WORKSPACE}/hakozuna" "${GITHUB_WORKSPACE}/../hakozuna/hz3"
+
+      - name: Build hz3 scale library
+        run: |
+          set -euxo pipefail
+          make -C hakozuna clean all_ldpreload_scale
+          test -s "${GITHUB_WORKSPACE}/../libhakozuna_hz3_scale.so"
+          nm -D "${GITHUB_WORKSPACE}/../libhakozuna_hz3_scale.so" | grep -E ' hz3_malloc$| hz3_free$'
+
+      - name: Build hz4 perf library
+        run: |
+          set -euxo pipefail
+          make -C hakozuna-mt clean all_perf_lib
+          test -s "${GITHUB_WORKSPACE}/hakozuna-mt/libhakozuna_hz4.so"
+
+      - name: Smoke preload (hz3/hz4)
+        run: |
+          set -euxo pipefail
+          cat > /tmp/preload_smoke.c <<'EOF'
+          #include <stdlib.h>
+          #include <string.h>
+          int main(void) {
+            for (int i = 0; i < 20000; i++) {
+              size_t n = (size_t)(16 + (i % 512));
+              void* p = malloc(n);
+              if (!p) return 2;
+              memset(p, 0xA5, n);
+              free(p);
+            }
+            return 0;
+          }
+          EOF
+          cc -O2 /tmp/preload_smoke.c -o /tmp/preload_smoke
+          LD_PRELOAD="${GITHUB_WORKSPACE}/../libhakozuna_hz3_scale.so" /tmp/preload_smoke
+          LD_PRELOAD="${GITHUB_WORKSPACE}/hakozuna-mt/libhakozuna_hz4.so" /tmp/preload_smoke
+
+      - name: Bench startup smoke (hz3 bench_minimal)
+        run: |
+          set -euxo pipefail
+          cc -O2 -pthread -Ihakozuna/include hakozuna/bench/bench_minimal.c \
+             -L"${GITHUB_WORKSPACE}/.." -lhakozuna_hz3_scale \
+             -Wl,-rpath,"${GITHUB_WORKSPACE}/.." \
+             -o /tmp/bench_minimal_hz3
+          timeout 10 /tmp/bench_minimal_hz3 1 20000 16 64
+
+      - name: Optional hz4 unit tests (if present)
+        run: |
+          set -euxo pipefail
+          if [ -d hakozuna-mt/tests ]; then
+            make -C hakozuna-mt test
+          else
+            echo "hakozuna-mt/tests is not present in this snapshot; skipping unit-test target."
+          fi
