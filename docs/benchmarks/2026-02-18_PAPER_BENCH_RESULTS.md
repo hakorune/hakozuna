@@ -59,6 +59,13 @@ Artifacts:
 | `cross128_r50` | 4.67M | **52.56M** | 14.09M | 10.20M |
 | `cross128_r90` | 1.80M | **50.65M** | 10.94M | 7.50M |
 
+Lane legend:
+
+- `r0` / `r50` / `r90`: target remote-free ratio of `0%`, `50%`, and `90%`
+- `guard_*`: small-only guard lane at `T=16`, size range `16..2048`
+- `main_*`: standard MT `random_mixed` lane at `T=16`, size range `16..32768`
+- `cross128_*`: harsher cross-thread lane at `T=16`, size range `16..131072`
+
 ### redis-like (median ops/s, RUNS=10)
 
 | Allocator | ops/s |

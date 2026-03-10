@@ -52,6 +52,13 @@ Latest matrix (`RUNS=10`, MT lane x remote%) and redis-like (`RUNS=10`, memtier 
 | `guard_r0` | **376.4M** | 266.7M | 310.0M | 372.0M |
 | `cross128_r90` | 1.80M | **50.65M** | 10.94M | 7.50M |
 
+Lane legend:
+
+- `r0` / `r50` / `r90`: target remote-free ratio of `0%`, `50%`, and `90%`
+- `main_*`: standard MT `random_mixed` lane at `T=16`, size range `16..32768`
+- `guard_*`: small-only guard lane at `T=16`, size range `16..2048`, used to isolate small-object fixed cost
+- `cross128_*`: harsher cross-thread lane at `T=16`, size range `16..131072`, used to stress mixed large-path and cross-thread behavior
+
 ### Redis-like (median ops/s, RUNS=10)
 
 | Allocator | ops/s |
