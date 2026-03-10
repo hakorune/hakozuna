@@ -17,24 +17,19 @@ Part of the [hakorune](https://github.com/hakorune) project.
 ## Quick Start
 
 ```bash
-# hz3 (scale lane, default)
-cd hakozuna/hz3
-make clean all_ldpreload_scale
-LD_PRELOAD=./libhakozuna_hz3_scale.so ./your_app
-
-# hz4 (standalone allocator)
-cd ../hz4
-make clean all
-LD_PRELOAD=./libhakozuna_hz4.so ./your_app
+./linux/build_linux_release_lane.sh
+./linux/run_linux_preload_smoke.sh hz3 /bin/true
+./linux/run_linux_preload_smoke.sh hz4 /bin/true
 ```
 
 ## Paper / Artifacts
 
-- [ACE-Alloc Paper (English)](docs/paper/main_en.pdf)
-- [ACE-Alloc Paper (日本語)](docs/paper/main_ja.pdf)
+- ACE-Alloc Paper (English): `docs/paper/main_en.pdf`
+- ACE-Alloc Paper (Japanese): `docs/paper/main_ja.pdf`
+- Local paper workspace: `private/paper/`
 - Zenodo Record (v3.0): https://zenodo.org/records/18674502
 - DOI: https://doi.org/10.5281/zenodo.18674502
-- GitHub Release (v3.0.0): https://github.com/hakorune/hakozuna/releases/tag/v3.0.0
+- GitHub Release (3.0): https://github.com/hakorune/hakozuna/releases/tag/3.0
 - Citation metadata: `CITATION.cff`
 - Changelog: `CHANGELOG.md` (BREAKING changes are explicitly listed per release)
 - GitHub Release body template: `docs/releases/GITHUB_RELEASE_v3.0.md`
@@ -74,6 +69,14 @@ Latest matrix (`RUNS=10`, MT lane x remote%) and redis-like (`RUNS=10`, memtier 
 
 ## Documentation
 
+- [Linux Entrypoints](linux/README.md)
+- [Repo Structure](docs/REPO_STRUCTURE.md)
+- [Windows Redis Matrix](docs/WINDOWS_REDIS_MATRIX.md)
+- [Windows Memcached Recovery](docs/WINDOWS_MEMCACHED_RECOVERY.md)
+- [Windows Memcached libevent](docs/WINDOWS_MEMCACHED_LIBEVENT.md)
+- [Windows Memcached Native MSVC Plan](docs/WINDOWS_MEMCACHED_MSVC_PLAN.md)
+- [Windows Memcached Shim](docs/WINDOWS_MEMCACHED_SHIM.md)
+- [Windows Memcached Minimal Main](docs/WINDOWS_MEMCACHED_MIN_MAIN.md)
 - [Build Flags Index](docs/BUILD_FLAGS_INDEX.md)
 - [Paper Notes](docs/HAKMEM_HZ3_PAPER_NOTES.md)
 - [Profile Guide](PROFILE_GUIDE.md)
@@ -98,4 +101,4 @@ Apache License 2.0
 
 ---
 
-Version: 2026.02.18 (release anchor: v3.0.0)
+Version: 2026.02.18 (release anchor: 3.0)
