@@ -1,6 +1,8 @@
 param(
     [switch]$Minimal,
     [switch]$MmanStats,
+    [string[]]$ExtraDefines,
+    [string]$OutDirName,
     [switch]$TlsDeclspec,
     [switch]$TlsEmulated,
     [switch]$TlsInitLog,
@@ -13,8 +15,11 @@ param(
 $ErrorActionPreference = "Stop"
 
 $Hz3Dir = Split-Path -Parent $PSScriptRoot
-$OutDirName = if ($Minimal) { "out_win_min" } else { "out_win" }
-$OutDir = Join-Path $Hz3Dir $OutDirName
+$ResolvedOutDirName = $OutDirName
+if (-not $ResolvedOutDirName) {
+    $ResolvedOutDirName = if ($Minimal) { "out_win_min" } else { "out_win" }
+}
+$OutDir = Join-Path $Hz3Dir $ResolvedOutDirName
 $ObjDir = Join-Path $OutDir "obj"
 
 New-Item -ItemType Directory -Force $ObjDir | Out-Null
@@ -62,6 +67,7 @@ if ($Minimal) {
         "HZ3_SEG_SELF_DESC_ENABLE=1",
         "HZ3_SMALL_V2_PTAG_ENABLE=1",
         "HZ3_PTAG_V1_ENABLE=1",
+        "HZ3_TCACHE_SOA=1",
         "HZ3_PTAG_DSTBIN_ENABLE=1",
         "HZ3_PTAG_DSTBIN_FASTLOOKUP=1",
         "HZ3_PTAG32_NOINRANGE=1",
@@ -71,8 +77,28 @@ if ($Minimal) {
         "HZ3_LOCAL_BINS_SPLIT=1",
         "HZ3_TCACHE_INIT_ON_MISS=1",
         "HZ3_BIN_PAD_LOG2=8",
+        "HZ3_NUM_SHARDS=63",
+        "HZ3_REMOTE_STASH_SPARSE=1",
+        "HZ3_SHARD_COLLISION_FAILFAST=1",
+        "HZ3_SHARD_COLLISION_SHOT=1",
+        "HZ3_ARENA_SIZE=0x1000000000ULL",
+        "HZ3_S42_SMALL_XFER=1",
+        "HZ3_S44_OWNER_STASH=1",
+        "HZ3_S44_OWNER_STASH_FASTPOP=1",
+        "HZ3_S44_OWNER_STASH_COUNT=0",
+        "HZ3_S51_LARGE_MADVISE=0",
+        "HZ3_S52_BESTFIT_RANGE=4",
+        "HZ3_ARENA_PRESSURE_BOX=0",
+        "HZ3_S65_RELEASE_BOUNDARY=1",
+        "HZ3_S65_RELEASE_LEDGER=1",
+        "HZ3_S65_MEDIUM_RECLAIM=1",
+        "HZ3_S74_LANE_BATCH=1",
+        "HZ3_S74_REFILL_BURST=8",
+        "HZ3_S74_FLUSH_BATCH=64",
+        "HZ3_S74_STATS=0",
         "HZ3_OWNER_EXCL_ENABLE=0",
-        "HZ3_S142_CENTRAL_LOCKFREE=1"
+        "HZ3_S142_CENTRAL_LOCKFREE=1",
+        "HZ3_S142_XFER_LOCKFREE=1"
     )
 }
 
@@ -98,6 +124,9 @@ if ($ArenaFailShot) {
 }
 if ($OomShot) {
     $Defines += "HZ3_OOM_SHOT=1"
+}
+if ($ExtraDefines) {
+    $Defines += $ExtraDefines
 }
 
 $DefFlags = $Defines | ForEach-Object { "/D$_" }

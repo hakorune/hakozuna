@@ -20,6 +20,21 @@ atomic_uint_fast64_t g_hz4_os_segs_acquired_always = ATOMIC_VAR_INIT(0);
 
 #include "hz4_os_seg_registry.inc"
 
+#if defined(_WIN32)
+typedef struct hz4_win_map_hdr {
+    uint64_t magic;
+    uintptr_t raw_base;
+    size_t reserve_len;
+    size_t requested_len;
+} hz4_win_map_hdr_t;
+
+#define HZ4_WIN_MAP_HDR_MAGIC UINT64_C(0x48345a34574d4150)
+
+static inline hz4_win_map_hdr_t* hz4_win_map_hdr_from_aligned(const void* aligned) {
+    return (hz4_win_map_hdr_t*)((uintptr_t)aligned - sizeof(hz4_win_map_hdr_t));
+}
+#endif
+
 int hz4_os_is_seg_ptr(const void* ptr) {
     return hz4_os_seg_registry_contains_ptr(ptr);
 }
@@ -608,6 +623,23 @@ static inline void hz4_os_stats_init_once(void) {
 #endif
 
 static void* hz4_os_mmap_aligned(size_t size, size_t align, int extra_flags) {
+#if defined(_WIN32)
+    size_t len = size + align + sizeof(hz4_win_map_hdr_t);
+    void* raw = mmap(NULL, len, PROT_READ | PROT_WRITE,
+                     MAP_PRIVATE | MAP_ANONYMOUS | extra_flags, -1, 0);
+    if (raw == MAP_FAILED) {
+        return NULL;
+    }
+
+    uintptr_t start = (uintptr_t)raw + sizeof(hz4_win_map_hdr_t);
+    uintptr_t aligned = (start + (align - 1)) & ~(align - 1);
+    hz4_win_map_hdr_t* hdr = hz4_win_map_hdr_from_aligned((const void*)aligned);
+    hdr->magic = HZ4_WIN_MAP_HDR_MAGIC;
+    hdr->raw_base = (uintptr_t)raw;
+    hdr->reserve_len = len;
+    hdr->requested_len = size;
+    return (void*)aligned;
+#else
     size_t len = size + align;
     void* base = mmap(NULL, len, PROT_READ | PROT_WRITE,
                       MAP_PRIVATE | MAP_ANONYMOUS | extra_flags, -1, 0);
@@ -629,6 +661,20 @@ static void* hz4_os_mmap_aligned(size_t size, size_t align, int extra_flags) {
     }
 
     return (void*)aligned;
+#endif
+}
+
+static int hz4_os_munmap_aligned(void* aligned, size_t size) {
+#if defined(_WIN32)
+    if (!aligned) {
+        return 0;
+    }
+    hz4_win_map_hdr_t* hdr = hz4_win_map_hdr_from_aligned(aligned);
+    if (hdr->magic == HZ4_WIN_MAP_HDR_MAGIC && hdr->raw_base != 0) {
+        return munmap((void*)hdr->raw_base, hdr->reserve_len);
+    }
+#endif
+    return munmap(aligned, size);
 }
 
 void* hz4_os_seg_acquire(void) {
@@ -674,7 +720,7 @@ void hz4_os_seg_release(void* seg_base) {
 #if HZ4_OS_STATS
     atomic_fetch_add_explicit(&g_hz4_os_segs_released, 1, memory_order_relaxed);
 #endif
-    munmap(seg_base, (size_t)HZ4_SEG_SIZE);
+    hz4_os_munmap_aligned(seg_base, (size_t)HZ4_SEG_SIZE);
 }
 
 void* hz4_os_page_acquire(void) {
@@ -698,7 +744,7 @@ void hz4_os_page_release(void* page_base) {
 #if HZ4_OS_STATS
     atomic_fetch_add_explicit(&g_hz4_os_pages_released, 1, memory_order_relaxed);
 #endif
-    munmap(page_base, (size_t)HZ4_PAGE_SIZE);
+    hz4_os_munmap_aligned(page_base, (size_t)HZ4_PAGE_SIZE);
 }
 
 void hz4_os_page_decommit(void* page_base) {
@@ -754,5 +800,5 @@ void hz4_os_large_release(void* base, size_t size) {
 #if HZ4_OS_STATS
     atomic_fetch_add_explicit(&g_hz4_os_large_released, (uint64_t)size, memory_order_relaxed);
 #endif
-    munmap(base, size);
+    hz4_os_munmap_aligned(base, size);
 }
