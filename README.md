@@ -1,6 +1,6 @@
 # hakozuna (hz3) / hakozuna-mt (hz4)
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18674502.svg)](https://doi.org/10.5281/zenodo.18674502)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18939227.svg)](https://doi.org/10.5281/zenodo.18939227)
 
 **High-performance memory allocators competitive with mimalloc and tcmalloc**
 
@@ -27,9 +27,9 @@ Part of the [hakorune](https://github.com/hakorune) project.
 - ACE-Alloc Paper (English): `docs/paper/main_en.pdf`
 - ACE-Alloc Paper (Japanese): `docs/paper/main_ja.pdf`
 - Local paper workspace: `private/paper/`
-- Zenodo Record (v3.0): https://zenodo.org/records/18674502
-- DOI: https://doi.org/10.5281/zenodo.18674502
-- GitHub Release (3.0): https://github.com/hakorune/hakozuna/releases/tag/3.0
+- Zenodo Record (v3.1): https://zenodo.org/records/18939227
+- DOI: https://doi.org/10.5281/zenodo.18939227
+- GitHub Release (3.1): https://github.com/hakorune/hakozuna/releases/tag/3.1
 - Citation metadata: `CITATION.cff`
 - Changelog: `CHANGELOG.md` (BREAKING changes are explicitly listed per release)
 - GitHub Release body template: `docs/releases/GITHUB_RELEASE_v3.0.md`

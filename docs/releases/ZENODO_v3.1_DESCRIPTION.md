@@ -36,3 +36,8 @@ Release shape:
 - source-only release
 - no prebuilt binaries
 - public paper PDFs are tracked in `docs/paper/`
+
+Archive references:
+
+- Zenodo record: https://zenodo.org/records/18939227
+- DOI: https://doi.org/10.5281/zenodo.18939227

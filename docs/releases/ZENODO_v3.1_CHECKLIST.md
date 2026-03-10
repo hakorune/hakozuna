@@ -42,3 +42,6 @@ Post-mint follow-up
    - `README_en.txt`
    - `README_ja.txt`
    - release notes
+5. Done for this version:
+   - record: `18939227`
+   - DOI: `10.5281/zenodo.18939227`
