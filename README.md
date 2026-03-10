@@ -4,6 +4,8 @@
 
 **High-performance memory allocators competitive with mimalloc and tcmalloc**
 
+Public source release with both Ubuntu/Linux and Windows-native build and benchmark entrypoints.
+
 Part of the [hakorune](https://github.com/hakorune) project.
 
 ---
@@ -14,13 +16,32 @@ Part of the [hakorune](https://github.com/hakorune) project.
 - **hz4 (hakozuna-mt)**: Message-passing, remote-heavy scaling (best at high thread counts).
 - Profile selection guide: `PROFILE_GUIDE.md`
 
+## Platform Support
+
+- **Ubuntu/Linux**: public build and preload entrypoints under `linux/`
+- **Windows native**: public build and benchmark entrypoints under `win/`
+- Windows guide: `docs/WINDOWS_BUILD.md`
+- Windows public summaries: `docs/benchmarks/windows/`
+
 ## Quick Start
+
+### Ubuntu/Linux
 
 ```bash
 ./linux/build_linux_release_lane.sh
 ./linux/run_linux_preload_smoke.sh hz3 /bin/true
 ./linux/run_linux_preload_smoke.sh hz4 /bin/true
 ```
+
+### Windows native
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\win\check_windows_env.ps1
+powershell -ExecutionPolicy Bypass -File .\win\build_win_allocator_suite.ps1
+powershell -ExecutionPolicy Bypass -File .\win\run_win_allocator_matrix.ps1
+```
+
+This repository already includes public Windows-native allocator comparisons and paper-aligned benchmark lanes.
 
 ## Paper / Artifacts
 
@@ -77,6 +98,7 @@ Lane legend:
 ## Documentation
 
 - [Linux Entrypoints](linux/README.md)
+- [Windows Build](docs/WINDOWS_BUILD.md)
 - [Repo Structure](docs/REPO_STRUCTURE.md)
 - [Windows Redis Matrix](docs/WINDOWS_REDIS_MATRIX.md)
 - [Windows Memcached Recovery](docs/WINDOWS_MEMCACHED_RECOVERY.md)

@@ -6,6 +6,13 @@ This public repository contains two allocator implementations:
 - hakozuna/     : hz3 (optimized for local-heavy workloads)
 - hakozuna-mt/  : hz4 (optimized for remote-heavy, high-thread workloads)
 
+Platform support
+----------------
+
+- Ubuntu/Linux public entrypoints: linux/
+- Windows-native public entrypoints: win/
+- Windows build and benchmark guide: docs/WINDOWS_BUILD.md
+
 Recommended profile selection
 -----------------------------
 

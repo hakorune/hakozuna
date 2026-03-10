@@ -11,7 +11,8 @@ Use this before adding new benchmark lanes, release assets, or third-party trees
 ## Current Release Stance
 
 - Ubuntu/Linux already has a published GitHub release lane.
-- Windows is still a bring-up lane and should be developed without mixing private assets into public release contents.
+- Windows-native build and benchmark entrypoints are now public and documented under [`win`](/C:/git/hakozuna-win/win) and [`docs/WINDOWS_BUILD.md`](/C:/git/hakozuna-win/docs/WINDOWS_BUILD.md).
+- Windows benchmark summaries may be published under [`docs/benchmarks/windows`](/C:/git/hakozuna-win/docs/benchmarks/windows), while private raw assets and third-party recovery trees still stay outside git.
 - Public docs may describe Windows bring-up status, but private benchmark assets and raw local traces must stay outside git.
 
 ## Separation Rules
@@ -102,9 +103,9 @@ For this repo today:
 
 ### Windows
 
-- keep Windows as a bring-up and release-prep lane until public assets are clean
+- treat Windows-native source, scripts, and summary-grade benchmark docs as public repo content
 - do not upload private benchmark trees, private vendor sources, or raw local result bundles
-- when Windows is ready, prepare a separate Windows release lane instead of mixing it into private bring-up state
+- keep Windows release assets source-only unless a binary lane is explicitly prepared and documented
 
 ## Practical Git Policy
 
@@ -130,5 +131,5 @@ Do not commit:
 2. Add a `linux/` entrypoint layer when Ubuntu-side repo runners are organized
 3. Keep private source recovery and third-party assets below [`private`](/C:/git/hakozuna-win/private)
 4. Only publish summary-grade benchmark outputs under [`docs/benchmarks`](/C:/git/hakozuna-win/docs/benchmarks)
-5. Treat Windows release preparation as a separate box from current Windows bring-up
+5. Treat Windows release preparation as a separate box from private raw-asset handling
 6. Keep real app-bench source trees and raw logs under `private/bench-assets` and `private/raw-results`, even when the runner script itself is public

@@ -1,5 +1,8 @@
 # Windows Build
 
+This repository includes public Windows-native build and benchmark entrypoints under the repo-level [`win`](C:\git\hakozuna-win\win) box.
+Windows-native comparisons and paper-aligned lanes are now part of the public source release.
+
 Windows bring-up for `hz3` lives under the repo-level [`win`](C:\git\hakozuna-win\win) entrypoints.
 Those scripts forward to the maintained implementation under [`hakozuna\win`](C:\git\hakozuna-win\hakozuna\win),
 so you can always start from the repository root.

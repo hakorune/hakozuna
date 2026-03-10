@@ -6,6 +6,13 @@ Hakozuna 公開リポジトリ案内 (日本語)
 - hakozuna/     : hz3 (local-heavy 向け)
 - hakozuna-mt/  : hz4 (remote-heavy / 高スレッド向け)
 
+対応プラットフォーム
+--------------------
+
+- Ubuntu/Linux の公開エントリポイント: linux/
+- Windows native の公開エントリポイント: win/
+- Windows の build / bench ガイド: docs/WINDOWS_BUILD.md
+
 推奨プロファイル選択
 --------------------
 
