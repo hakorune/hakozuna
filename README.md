@@ -43,6 +43,13 @@ powershell -ExecutionPolicy Bypass -File .\win\run_win_allocator_matrix.ps1
 
 This repository already includes public Windows-native allocator comparisons and paper-aligned benchmark lanes.
 
+## Feedback / Repro Reports
+
+- GitHub Issues are welcome for bugs, performance regressions, and compatibility trouble.
+- Issue templates are available from the `New issue` page.
+- For benchmark or integration reports, start from `docs/REPRO_REPORT_TEMPLATE.md`.
+- Please include allocator, platform, commit or release, workload or lane, exact command, and median result when possible.
+
 ## Paper / Artifacts
 
 - ACE-Alloc Paper (English): `docs/paper/main_en.pdf`
@@ -108,6 +115,7 @@ Lane legend:
 - [Windows Memcached Minimal Main](docs/WINDOWS_MEMCACHED_MIN_MAIN.md)
 - [Build Flags Index](docs/BUILD_FLAGS_INDEX.md)
 - [Paper Notes](docs/HAKMEM_HZ3_PAPER_NOTES.md)
+- [Repro Report Template](docs/REPRO_REPORT_TEMPLATE.md)
 - [Profile Guide](PROFILE_GUIDE.md)
 - [Safe Defaults](docs/SAFE_DEFAULTS.md)
 - [Compatibility Notes](docs/COMPATIBILITY.md)
