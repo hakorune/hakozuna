@@ -1,4 +1,4 @@
-# Hakozuna v3.1
+# Zenodo v3.1 Description
 
 This release contains v3.1 of the Hakozuna allocator paper and artifacts.
 
