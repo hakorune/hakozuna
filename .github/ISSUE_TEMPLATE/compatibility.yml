@@ -1,0 +1,77 @@
+name: Compatibility / preload trouble
+description: Report symbol resolution, preload, build, or app integration problems.
+title: "[compat] "
+labels:
+  - compatibility
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for LD_PRELOAD, malloc symbol resolution, Windows build glue, or application integration issues.
+  - type: input
+    id: summary
+    attributes:
+      label: Short summary
+      placeholder: malloc_usable_size mismatch when preloading hz4 into Redis
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Ubuntu/Linux
+        - Windows native
+        - WSL
+        - other
+    validations:
+      required: true
+  - type: input
+    id: app
+    attributes:
+      label: Application or target
+      placeholder: redis-server 7.4.2 / memcached / custom app
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: Ubuntu 24.04, glibc 2.39, clang 18
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: Commit or release
+      placeholder: 4f7ee5d or 3.1
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Build / launch command
+      description: Include preload order, env vars, and any wrappers used.
+      render: bash
+    validations:
+      required: true
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Quick checks
+      options:
+        - label: I checked the relevant platform guide and compatibility notes.
+        - label: I confirmed only one allocator is preloaded or injected at a time.
+        - label: I captured the exact error output or failure mode.
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      placeholder: unresolved symbol, startup crash, build failure, wrong allocator selected
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Extra notes
+      description: Add logs, `ldd` or symbol output, screenshots, or links if useful.

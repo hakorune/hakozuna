@@ -1,0 +1,89 @@
+name: Bug report
+description: Report a crash, invariant failure, or incorrect allocator behavior.
+title: "[bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please include enough detail to reproduce the issue on your machine.
+  - type: input
+    id: summary
+    attributes:
+      label: Short summary
+      description: One-line description of the bug.
+      placeholder: hz3 crashes during Redis preload startup on Ubuntu 24.04
+    validations:
+      required: true
+  - type: dropdown
+    id: allocator
+    attributes:
+      label: Allocator / profile
+      options:
+        - hz3
+        - hz4
+        - hz3 scale
+        - hz3 guard
+        - other / unsure
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Ubuntu/Linux
+        - Windows native
+        - WSL
+        - other
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: CPU, OS version, compiler, glibc or MSVC if relevant.
+      placeholder: Ryzen 7950X, Ubuntu 24.04, clang 18, glibc 2.39
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: Commit or release
+      description: Git commit hash or release tag.
+      placeholder: 4f7ee5d or 3.1
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      description: Include commands, preload settings, build flags, and workload name.
+      placeholder: |
+        1. Build with ...
+        2. Run with ...
+        3. Observe crash when ...
+      render: bash
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: Process should start and complete benchmark without aborting.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Error text, crash signature, assert, stack trace, or wrong output.
+      placeholder: SIGSEGV during malloc_usable_size interpose path
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Extra notes
+      description: Add logs, screenshots, or links to artifacts if useful.

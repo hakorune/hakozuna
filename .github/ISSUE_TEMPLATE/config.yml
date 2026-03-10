@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Benchmark and build docs
+    url: https://github.com/hakorune/hakozuna/blob/main/README.md
+    about: Start from the public README and linked Linux or Windows guides before filing.
+  - name: Windows native guide
+    url: https://github.com/hakorune/hakozuna/blob/main/docs/WINDOWS_BUILD.md
+    about: Check Windows build, benchmark, and paper-lane entrypoints.

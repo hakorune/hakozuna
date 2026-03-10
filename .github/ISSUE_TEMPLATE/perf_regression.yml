@@ -1,0 +1,79 @@
+name: Performance regression
+description: Report a slowdown, throughput drop, or RSS regression with a reproducible lane.
+title: "[perf] "
+labels:
+  - performance
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please report median-based results when possible and include the exact lane or workload.
+  - type: input
+    id: summary
+    attributes:
+      label: Short summary
+      placeholder: hz4 regressed on cross128_r90 after commit 1234abcd
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Ubuntu/Linux
+        - Windows native
+        - WSL
+        - other
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: CPU, OS version, compiler, glibc or MSVC if relevant.
+      placeholder: Xeon Gold 6430, Windows 11, clang-cl 18, MSVC 19.43
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: Commit or release
+      placeholder: 4f7ee5d or 3.1
+    validations:
+      required: true
+  - type: input
+    id: lane
+    attributes:
+      label: Workload / lane
+      description: Example: main_r90, Redis balanced, memcached ext-client, Larson T16.
+      placeholder: cross128_r90
+    validations:
+      required: true
+  - type: input
+    id: command
+    attributes:
+      label: Command
+      description: Exact command or script used.
+      placeholder: powershell -ExecutionPolicy Bypass -File .\win\run_win_allocator_matrix.ps1
+    validations:
+      required: true
+  - type: input
+    id: baseline
+    attributes:
+      label: Baseline result
+      description: Median ops/s, RSS, latency, or whichever metric regressed.
+      placeholder: 67.6M ops/s
+    validations:
+      required: true
+  - type: input
+    id: current
+    attributes:
+      label: Current result
+      placeholder: 58.1M ops/s
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Include RUNS, allocator variant, working set, and any notable variance.
