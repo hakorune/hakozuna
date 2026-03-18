@@ -1,4 +1,5 @@
 out_*/
+mac/out/
 bench_burst_idle*
 *.o
 *.d

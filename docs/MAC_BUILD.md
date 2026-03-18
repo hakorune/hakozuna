@@ -75,6 +75,28 @@ Typical invocations:
 
 This benchmark keeps the workload on CRT malloc/free; allocator comparison is done by `DYLD_INSERT_LIBRARIES` in the runner.
 
+## MT Remote Benchmark (malloc/free)
+
+The Mac wrapper compiles the shared MT-remote source with `HZ_BENCH_USE_HAKOZUNA=0`
+and uses preload to compare allocators:
+
+```bash
+./mac/run_mac_mt_remote_compare.sh --build-only
+ALLOCATORS=system ./mac/run_mac_mt_remote_compare.sh 4 200000 400 16 2048 50 65536
+ALLOCATORS=mimalloc ./mac/run_mac_mt_remote_compare.sh 4 200000 400 16 2048 50 65536
+ALLOCATORS=tcmalloc ./mac/run_mac_mt_remote_compare.sh 4 200000 400 16 2048 50 65536
+```
+
+## mimalloc-bench Subset (Mac)
+
+This wrapper targets the paper subset (`cache-thrash`, `cache-scratch`, `malloc-large`)
+using the shared mimalloc-bench source directory.
+
+```bash
+./mac/run_mac_mimalloc_bench_subset.sh --runs 3
+ALLOCATORS=system,hz3,hz4,mimalloc,tcmalloc ./mac/run_mac_mimalloc_bench_subset.sh --runs 3
+```
+
 ## Current hz4 Limitation
 
 `hakozuna-mt/Makefile` includes an `all_stable` lane that tries to build unit tests, but this checkout does not contain a `tests/` directory under `hakozuna-mt/`.

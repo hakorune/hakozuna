@@ -58,6 +58,15 @@ Why last:
 - it is broad and useful, but it is not the quickest way to get the Mac baseline moving
 - it makes more sense after the core Mac allocator comparison path is stable
 
+Current subset target:
+- `cache-thrash`
+- `cache-scratch`
+- `malloc-large`
+
+Deferred to a later box:
+- `larson-sized`
+- `mstress`
+
 ## Evidence From Existing Notes
 
 - [Paper benchmark results](/Users/tomoaki/git/hakozuna/docs/benchmarks/2026-02-18_PAPER_BENCH_RESULTS.md)

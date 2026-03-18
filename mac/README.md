@@ -16,6 +16,8 @@ Use it to keep Mac build and smoke commands in one place without mixing:
 - [`run_mac_preload_smoke.sh`](run_mac_preload_smoke.sh): minimal `DYLD_INSERT_LIBRARIES` smoke runner
 - [`run_bench_compare.sh`](run_bench_compare.sh): thin macOS frontend for the shared allocator compare runner
 - [`run_mac_larson_compare.sh`](run_mac_larson_compare.sh): macOS Larson-style allocator comparison runner
+- [`run_mac_mt_remote_compare.sh`](run_mac_mt_remote_compare.sh): macOS MT remote (malloc/free) compare runner
+- [`run_mac_mimalloc_bench_subset.sh`](run_mac_mimalloc_bench_subset.sh): macOS mimalloc-bench subset runner
 - [`bench_redis_workload_compare.c`](bench_redis_workload_compare.c): macOS Redis-style workload benchmark
 - [`run_mac_redis_compare.sh`](run_mac_redis_compare.sh): build-and-run wrapper for the Redis-like Mac benchmark
 
@@ -66,6 +68,21 @@ Larson-style Mac benchmark:
 ALLOCATORS=system ./mac/run_mac_larson_compare.sh 1 8 64 100 1 12345 2
 ALLOCATORS=mimalloc ./mac/run_mac_larson_compare.sh 1 8 64 100 1 12345 2
 ALLOCATORS=tcmalloc ./mac/run_mac_larson_compare.sh 1 8 64 100 1 12345 2
+```
+
+MT remote (malloc/free) Mac benchmark:
+
+```bash
+ALLOCATORS=system ./mac/run_mac_mt_remote_compare.sh 4 200000 400 16 2048 50 65536
+ALLOCATORS=mimalloc ./mac/run_mac_mt_remote_compare.sh 4 200000 400 16 2048 50 65536
+ALLOCATORS=tcmalloc ./mac/run_mac_mt_remote_compare.sh 4 200000 400 16 2048 50 65536
+```
+
+mimalloc-bench subset (Mac):
+
+```bash
+./mac/run_mac_mimalloc_bench_subset.sh --runs 3
+ALLOCATORS=system,hz3,hz4,mimalloc,tcmalloc ./mac/run_mac_mimalloc_bench_subset.sh --runs 3
 ```
 
 ## Notes
