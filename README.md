@@ -20,6 +20,7 @@ Part of the [hakorune](https://github.com/hakorune) project.
 
 - **Ubuntu/Linux**: public build and preload entrypoints under `linux/`
 - **Windows native**: public build and benchmark entrypoints under `win/`
+- **macOS**: public build and preload entrypoints under `mac/` (bring-up in progress)
 - Windows guide: `docs/WINDOWS_BUILD.md`
 - Windows public summaries: `docs/benchmarks/windows/`
 
@@ -31,6 +32,14 @@ Part of the [hakorune](https://github.com/hakorune) project.
 ./linux/build_linux_release_lane.sh
 ./linux/run_linux_preload_smoke.sh hz3 /bin/true
 ./linux/run_linux_preload_smoke.sh hz4 /bin/true
+```
+
+### macOS
+
+```bash
+./mac/check_mac_env.sh
+./mac/build_mac_release_lane.sh
+./mac/run_mac_preload_smoke.sh hz3 /usr/bin/env true
 ```
 
 ### Windows native
@@ -106,6 +115,8 @@ Lane legend:
 
 - [Linux Entrypoints](linux/README.md)
 - [Windows Build](docs/WINDOWS_BUILD.md)
+- [Mac Build](docs/MAC_BUILD.md)
+- [Mac Entrypoints](mac/README.md)
 - [Repo Structure](docs/REPO_STRUCTURE.md)
 - [Windows Redis Matrix](docs/WINDOWS_REDIS_MATRIX.md)
 - [Windows Memcached Recovery](docs/WINDOWS_MEMCACHED_RECOVERY.md)

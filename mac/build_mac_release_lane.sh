@@ -3,18 +3,18 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 HZ3_TARGET="all_ldpreload_scale"
-HZ4_TARGET="all_stable"
+HZ4_TARGET="all_perf_lib"
 BUILD_HZ3=1
 BUILD_HZ4=1
 
 usage() {
   cat <<'EOF'
 Usage:
-  ./linux/build_linux_release_lane.sh [options]
+  ./mac/build_mac_release_lane.sh [options]
 
 Options:
   --hz3-target <target>  hz3 make target (default: all_ldpreload_scale)
-  --hz4-target <target>  hz4 make target (default: all_stable)
+  --hz4-target <target>  hz4 make target (default: all_perf_lib)
   --skip-hz3             skip hz3 build
   --skip-hz4             skip hz4 build
   --help                 show this message
@@ -53,21 +53,18 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-command -v make >/dev/null 2>&1 || {
-  echo "make not found in PATH" >&2
-  exit 1
-}
+"$ROOT_DIR/mac/check_mac_env.sh"
 
 if [[ "$BUILD_HZ3" -eq 1 ]]; then
-  echo "[linux] building hz3 target: $HZ3_TARGET"
-  make -C "$ROOT_DIR/hakozuna" clean "$HZ3_TARGET"
-  echo "[linux] hz3 output: $ROOT_DIR/libhakozuna_hz3_scale.so"
+  echo "[mac] building hz3 target: $HZ3_TARGET"
+  gmake -C "$ROOT_DIR/hakozuna" clean "$HZ3_TARGET"
+  echo "[mac] hz3 build lane complete"
 fi
 
 if [[ "$BUILD_HZ4" -eq 1 ]]; then
-  echo "[linux] building hz4 target: $HZ4_TARGET"
-  make -C "$ROOT_DIR/hakozuna-mt" clean "$HZ4_TARGET"
-  echo "[linux] hz4 output: $ROOT_DIR/hakozuna-mt/libhakozuna_hz4.so"
+  echo "[mac] building hz4 target: $HZ4_TARGET"
+  gmake -C "$ROOT_DIR/hakozuna-mt" clean "$HZ4_TARGET"
+  echo "[mac] hz4 build lane complete"
 fi
 
-echo "[linux] done"
+echo "[mac] done"

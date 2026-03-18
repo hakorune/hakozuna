@@ -12,6 +12,7 @@ Use it to keep Linux build and smoke commands in one place without mixing:
 
 - [build_linux_release_lane.sh](/C:/git/hakozuna-win/linux/build_linux_release_lane.sh): public build wrapper for the current Ubuntu release lane
 - [run_linux_preload_smoke.sh](/C:/git/hakozuna-win/linux/run_linux_preload_smoke.sh): minimal `LD_PRELOAD` smoke runner for `hz3` and `hz4`
+- [run_bench_compare.sh](/Users/tomoaki/git/hakozuna/linux/run_bench_compare.sh): thin Linux frontend for the shared allocator compare runner
 
 ## Quick Start
 
@@ -52,6 +53,7 @@ Current public references:
 - [README.md](/C:/git/hakozuna-win/README.md)
 - [docs/benchmarks/2026-02-18_PAPER_BENCH_RESULTS.md](/C:/git/hakozuna-win/docs/benchmarks/2026-02-18_PAPER_BENCH_RESULTS.md)
 - [docs/benchmarks/linux/README.md](/C:/git/hakozuna-win/docs/benchmarks/linux/README.md)
+- [bench/README.md](/Users/tomoaki/git/hakozuna/bench/README.md)
 
 ## Historical Notes
 

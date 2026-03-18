@@ -5,30 +5,42 @@ CC ?= gcc
 CFLAGS ?= -O3 -fPIC -Wall -Wextra -Werror -std=c11
 LDFLAGS ?=
 LDLIBS ?=
+UNAME_S := $(shell uname -s)
+
+ifeq ($(UNAME_S),Darwin)
+CFLAGS += -Wno-unused-function -Wno-unused-but-set-variable
+LDLIBS += -pthread
+SHLIB_LDFLAG := -dynamiclib
+else
 LDLIBS += -pthread -ldl
+SHLIB_LDFLAG := -shared
+endif
 
-ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/../..)
+ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
-HZ3_DIR := $(ROOT)/hakozuna/hz3
+HZ3_DIR := $(ROOT)/hakozuna
 HZ3_HYBRID_DIR := $(HZ3_DIR)/hybrid
 OUT_DIR := $(HZ3_DIR)/out
 OUT_LDPRELOAD_DIR := $(HZ3_DIR)/out_ldpreload
 
-INC := -I$(ROOT)/hakozuna/hz3/include
+INC := -I$(HZ3_DIR)/include
 
 LDPRELOAD_CFLAGS_EXTRA ?= -ftls-model=initial-exec -fno-plt
 LDPRELOAD_LDFLAGS_EXTRA ?=
 LDPRELOAD_LDLIBS_EXTRA ?=
 LDPRELOAD_BSYMBOLIC ?= 1
+ifeq ($(UNAME_S),Darwin)
+LDPRELOAD_BSYMBOLIC := 0
+endif
 
 # S122: Bin Count Policy (0=u16, 1=u32, 2=lazy, 3=nocount+u16, 4=nocount+u32, 5=split)
-# Usage: make -C hakozuna/hz3 clean all_ldpreload_scale HZ3_BIN_COUNT_POLICY=5
+# Usage: make -C hakozuna clean all_ldpreload_scale HZ3_BIN_COUNT_POLICY=5
 HZ3_BIN_COUNT_POLICY ?= 1
 
 # S28-4: LTO A/B (build-only, no behavior change)
 # Usage:
-#   make -C hakozuna/hz3 clean all_ldpreload HZ3_LTO=0
-#   make -C hakozuna/hz3 clean all_ldpreload HZ3_LTO=1
+#   make -C hakozuna clean all_ldpreload HZ3_LTO=0
+#   make -C hakozuna clean all_ldpreload HZ3_LTO=1
 HZ3_LTO ?= 0
 ifeq ($(HZ3_LTO),1)
 LDPRELOAD_CFLAGS_EXTRA += -flto
@@ -44,7 +56,7 @@ endif
 # - PTAG dst/bin direct (free hot path shortest)
 #
 # Override example (back to minimal enable/forward-only off):
-#   make -C hakozuna/hz3 all_ldpreload \
+#   make -C hakozuna all_ldpreload \
 #     HZ3_LDPRELOAD_DEFS='-DHZ3_ENABLE=1 -DHZ3_SHIM_FORWARD_ONLY=0'
 HZ3_LDPRELOAD_DEFS_BASE ?= -DHZ3_ENABLE=1 -DHZ3_SHIM_FORWARD_ONLY=0 \
   -DHZ3_SMALL_V2_ENABLE=1 -DHZ3_SEG_SELF_DESC_ENABLE=1 \
@@ -261,7 +273,7 @@ $(OUT_LDPRELOAD_FAST_DIR)/%.o: $(HZ3_DIR)/src/%.c | $(OUT_LDPRELOAD_FAST_DIR)
 	$(CC) $(CFLAGS_LDPRELOAD) $(HZ3_LDPRELOAD_DEFS_FAST) $(HZ3_LDPRELOAD_DEFS_EXTRA) $(INC) -c $< -o $@
 
 $(LDPRELOAD_FAST_LIB): $(OUT_LDPRELOAD_FAST_DIR) $(HZ3_LDPRELOAD_FAST_OBJS)
-	$(CC) -shared -o $@ $(HZ3_LDPRELOAD_FAST_OBJS) $(LDFLAGS_LDPRELOAD) $(LDLIBS_LDPRELOAD)
+	$(CC) $(SHLIB_LDFLAG) -o $@ $(HZ3_LDPRELOAD_FAST_OBJS) $(LDFLAGS_LDPRELOAD) $(LDLIBS_LDPRELOAD)
 
 # S41: scale lane build
 # NOTE: Scale lane raises arena size to avoid shard*class segment exhaustion.
@@ -377,7 +389,7 @@ $(OUT_LDPRELOAD_SCALE_DIR)/%.o: $(HZ3_DIR)/src/%.c | $(OUT_LDPRELOAD_SCALE_DIR)
 	    $(HZ3_SCALE_SHARDS_DEF) $(HZ3_SCALE_DEFS) $(INC) -c $< -o $@
 
 $(LDPRELOAD_SCALE_LIB): $(OUT_LDPRELOAD_SCALE_DIR) $(HZ3_LDPRELOAD_SCALE_OBJS)
-	$(CC) -shared -o $@ $(HZ3_LDPRELOAD_SCALE_OBJS) $(LDFLAGS_LDPRELOAD) $(LDLIBS_LDPRELOAD)
+	$(CC) $(SHLIB_LDFLAG) -o $@ $(HZ3_LDPRELOAD_SCALE_OBJS) $(LDFLAGS_LDPRELOAD) $(LDLIBS_LDPRELOAD)
 
 $(OUT_LDPRELOAD_P32_DIR):
 	@mkdir -p $(OUT_LDPRELOAD_P32_DIR)
@@ -387,7 +399,7 @@ $(OUT_LDPRELOAD_P32_DIR)/%.o: $(HZ3_DIR)/src/%.c | $(OUT_LDPRELOAD_P32_DIR)
 	    $(HZ3_P32_SHARDS_DEF) $(HZ3_SCALE_DEFS) $(INC) -c $< -o $@
 
 $(LDPRELOAD_SCALE_P32_LIB): $(OUT_LDPRELOAD_P32_DIR) $(HZ3_LDPRELOAD_P32_OBJS)
-	$(CC) -shared -o $@ $(HZ3_LDPRELOAD_P32_OBJS) $(LDFLAGS_LDPRELOAD) $(LDLIBS_LDPRELOAD)
+	$(CC) $(SHLIB_LDFLAG) -o $@ $(HZ3_LDPRELOAD_P32_OBJS) $(LDFLAGS_LDPRELOAD) $(LDLIBS_LDPRELOAD)
 
 # S53-2 mem lanes (copy of scale lane with different DEFS)
 .PHONY: all_ldpreload_scale_mem_mstress all_ldpreload_scale_mem_large
@@ -434,10 +446,10 @@ $(OUT_LDPRELOAD_MEM_LARGE_DIR)/%.o: $(HZ3_DIR)/src/%.c | $(OUT_LDPRELOAD_MEM_LAR
 	    $(HZ3_SCALE_DEFS) $(HZ3_MEM_LARGE_DEFS) $(INC) -c $< -o $@
 
 $(LDPRELOAD_MEM_MSTRESS_LIB): $(OUT_LDPRELOAD_MEM_MSTRESS_DIR) $(HZ3_LDPRELOAD_MEM_MSTRESS_OBJS)
-	$(CC) -shared -o $@ $(HZ3_LDPRELOAD_MEM_MSTRESS_OBJS) $(LDFLAGS_LDPRELOAD) $(LDLIBS_LDPRELOAD)
+	$(CC) $(SHLIB_LDFLAG) -o $@ $(HZ3_LDPRELOAD_MEM_MSTRESS_OBJS) $(LDFLAGS_LDPRELOAD) $(LDLIBS_LDPRELOAD)
 
 $(LDPRELOAD_MEM_LARGE_LIB): $(OUT_LDPRELOAD_MEM_LARGE_DIR) $(HZ3_LDPRELOAD_MEM_LARGE_OBJS)
-	$(CC) -shared -o $@ $(HZ3_LDPRELOAD_MEM_LARGE_OBJS) $(LDFLAGS_LDPRELOAD) $(LDLIBS_LDPRELOAD)
+	$(CC) $(SHLIB_LDFLAG) -o $@ $(HZ3_LDPRELOAD_MEM_LARGE_OBJS) $(LDFLAGS_LDPRELOAD) $(LDLIBS_LDPRELOAD)
 
 $(OUT_DIR)/%.o: $(HZ3_DIR)/src/%.c | $(OUT_DIR)
 	$(CC) $(CFLAGS) $(INC) -c $< -o $@
@@ -446,7 +458,7 @@ $(OUT_LDPRELOAD_DIR)/%.o: $(HZ3_DIR)/src/%.c | $(OUT_LDPRELOAD_DIR)
 	$(CC) $(CFLAGS_LDPRELOAD) $(HZ3_LDPRELOAD_DEFS) $(HZ3_LDPRELOAD_DEFS_EXTRA) $(INC) -c $< -o $@
 
 $(LDPRELOAD_LIB): $(OUT_LDPRELOAD_DIR) $(HZ3_LDPRELOAD_OBJS)
-	$(CC) -shared -o $@ $(HZ3_LDPRELOAD_OBJS) $(LDFLAGS_LDPRELOAD) $(LDLIBS_LDPRELOAD)
+	$(CC) $(SHLIB_LDFLAG) -o $@ $(HZ3_LDPRELOAD_OBJS) $(LDFLAGS_LDPRELOAD) $(LDLIBS_LDPRELOAD)
 
 clean:
 	@rm -rf $(OUT_DIR) $(OUT_LDPRELOAD_DIR) $(OUT_HYBRID_DIR) \
@@ -524,7 +536,7 @@ hakozuna_ldpreload_objs:
 
 # Build hybrid library
 $(HYBRID_LDPRELOAD_LIB): hakozuna_ldpreload_objs $(HZ3_HYBRID_OBJS) $(HYBRID_SHIM_OBJ)
-	$(CC) -shared -o $@ $(HZ3_HYBRID_OBJS) $(HYBRID_SHIM_OBJ) $(HZ_HYBRID_OBJS) \
+	$(CC) $(SHLIB_LDFLAG) -o $@ $(HZ3_HYBRID_OBJS) $(HYBRID_SHIM_OBJ) $(HZ_HYBRID_OBJS) \
 	    $(LDFLAGS_LDPRELOAD) $(LDLIBS_LDPRELOAD)
 
 .PHONY: all_hybrid_ldpreload

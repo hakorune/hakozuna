@@ -6,6 +6,15 @@ CFLAGS = -O2 -Wall -Wextra -Werror -std=c11
 CFLAGS_DEBUG = -O0 -g -Wall -Wextra -Werror -std=c11 -DHZ4_FAILFAST=1
 TLS_CFLAGS =
 HZ4_TLS_INITIAL_EXEC ?= 1
+UNAME_S := $(shell uname -s)
+
+ifeq ($(UNAME_S),Darwin)
+CFLAGS += -Wno-unused-function -Wno-unused-but-set-variable
+CFLAGS_DEBUG += -Wno-unused-function -Wno-unused-but-set-variable
+SHLIB_LDFLAG := -dynamiclib
+else
+SHLIB_LDFLAG := -shared
+endif
 
 ifeq ($(HZ4_TLS_INITIAL_EXEC),1)
 TLS_CFLAGS += -ftls-model=initial-exec
@@ -248,7 +257,7 @@ LIB_SRCS = \
 	$(SRC_DIR)/hz4_tcbox.c
 
 $(LIB_TARGET): $(LIB_SRCS) $(CORE_HEADERS) $(CORE_INCS) $(INC_HEADERS) $(MID_INCS)
-	$(CC) $(CFLAGS) $(TLS_CFLAGS) -fPIC -I$(CORE_DIR) -I$(INC_DIR) -shared -o $@ $(LIB_SRCS) -lpthread
+	$(CC) $(CFLAGS) $(TLS_CFLAGS) -fPIC -I$(CORE_DIR) -I$(INC_DIR) $(SHLIB_LDFLAG) -o $@ $(LIB_SRCS) -lpthread
 
 bench: $(OUT_DIR)/bench_hz4
 	@echo "=== Running hz4 bench ==="
