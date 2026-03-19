@@ -1,8 +1,16 @@
 # Mac Bench Prep Order
 
 This repo now has a Mac smoke path and allocator preload support.
+The current Mac benchmark notes were gathered on an Apple Silicon M1 machine.
 The next step is to widen coverage in the same order the paper and
 Windows notes emphasize, while keeping the first runs cheap.
+
+Before implementing any new Mac box, write the workload and platform
+conditions first in:
+
+- [Cross-platform benchmark conditions](/Users/tomoaki/git/hakozuna/docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md)
+- [GO / NO-GO ledger](/Users/tomoaki/git/hakozuna/docs/benchmarks/GO_NO_GO_LEDGER.md)
+- [Mac profiling recipe](/Users/tomoaki/git/hakozuna/docs/MAC_PROFILING.md)
 
 ## Current Status
 
@@ -17,6 +25,68 @@ Windows notes emphasize, while keeping the first runs cheap.
   - redis-like workload
   - larson
   - mimalloc-bench subset
+
+## Current Mac Facts
+
+These are the conclusions from the first M1 Mac pass:
+
+- `bench_mixed_ws` is only a smoke check; do not use it as the final ranking.
+- `bench_random_mixed_mt_remote_malloc` needs `ring_slots=262144` on this machine shape to avoid fallback noise.
+- MT remote gives us useful counters in the log:
+  - `allocated`
+  - `local_freed`
+  - `remote_sent`
+  - `remote_received`
+  - `ring_full_fallback`
+  - `overflow_sent`
+  - `overflow_received`
+  - `[EFFECTIVE_REMOTE]` with actual and fallback rate
+- Mac `hz3` observe builds also emit `[HZ3_MACOS_MALLOC_SIZE]` so we can tell whether `malloc_size` stayed inside hz3 or had to fall back to the system zone lookup.
+- `system_fallback` is for foreign pointers only; `arena_unknown` is the allocator-side bug signal if a hz3-range pointer was not recognized.
+- `larson` should be rerun in the canonical hygienic SSOT shape before we compare it with Ubuntu or Windows.
+- The current Mac larson wrapper only exposes workload shape and wrapper-level counts, so it is a smoke lane rather than an allocator-internal counter lane.
+- Use `./mac/build_mac_observe_lane.sh` before adding new counters; the first box is to enable the existing `hz3` / `hz4` stats libraries in `mac/out/observe/` and switch runners with `HZ3_SO` / `HZ4_SO`.
+- `mimalloc-bench` subset should start with `cache-thrash`, `cache-scratch`, and `malloc-large`.
+- `larson-sized` and `mstress` stay deferred until the core three subset benches are stable.
+
+## Current Mac Design Box
+
+The current Mac-specific tuning box is:
+
+- `HZ4_MID_FREE_BATCH_CONSUME_MIN=2`
+
+Use [`mac/build_mac_mid_candidate_lane.sh`](/Users/tomoaki/git/hakozuna/mac/build_mac_mid_candidate_lane.sh)
+to build it, then compare it on:
+
+- canonical Larson
+- canonical MT remote
+- the relevant segment-registry lane
+
+For the segment-registry follow-up lane, use
+[`mac/build_mac_mid_candidate_lane_segreg.sh`](/Users/tomoaki/git/hakozuna/mac/build_mac_mid_candidate_lane_segreg.sh)
+so the lane-specific free-route box stays explicit.
+
+Do not promote it to the shared default yet; the 50% remote spot-check still
+needs to be reconciled.
+
+The current paper-suite follow-up boxes are narrower than the full mid search:
+
+- `hz4` `malloc-large` large-path
+- segment-registry high-remote fallback / bench pressure
+
+For `malloc-large`, keep the existing `run_mac_mimalloc_bench_subset.sh`
+wrapper and isolate the workload with `DO_CACHE_THRASH=0`
+`DO_CACHE_SCRATCH=0` `DO_MALLOC_LARGE=1 RUNS=5`.
+The current treatment A/B is the large extent cache band/cap:
+`HZ4_LARGE_EXTENT_CACHE_MAX_PAGES=400` and
+`HZ4_LARGE_EXTENT_CACHE_MAX_BYTES=1GiB`.
+
+For the segment-registry follow-up, keep the slot A/B explicit by using
+`build_mac_mid_candidate_lane_segreg.sh --slots 32768` and
+`--slots 65536`.
+
+Keep those separate from the mid candidate so the next pass can answer whether
+the gap is allocator cost or measurement pressure.
 
 ## Recommended Order
 
@@ -52,6 +122,10 @@ Why after the simpler workloads:
 - it is more sensitive to lane / ring / remote-fraction tuning
 - it is best approached once the simpler Mac ports are stable
 
+Current Mac tuning:
+- use `ring_slots=262144` for the first M1 Mac comparison pass
+- keep `65536` as the shared default unless another platform shows the same ring pressure
+
 ### 5) Add mimalloc-bench subset
 
 Why last:
@@ -62,6 +136,8 @@ Current subset target:
 - `cache-thrash`
 - `cache-scratch`
 - `malloc-large`
+- For the current follow-up, run `malloc-large` alone before widening the subset
+- If `malloc-large` stays slow, keep the research on the large extent cache band/cap
 
 Deferred to a later box:
 - `larson-sized`
@@ -89,4 +165,6 @@ DYLD_INSERT_LIBRARIES=/Users/tomoaki/git/hakozuna/hakozuna-mt/libhakozuna_hz4.so
 
 - Do not treat the smoke result as the final ranking.
 - Do not optimize `hz3` / `hz4` from a single quick run.
+- Write the platform conditions first, then implement the box.
 - Expand benchmark breadth first, then tighten run counts and medians.
+- When comparing against Ubuntu or Windows, prefer the canonical workload shape for each benchmark before drawing cross-platform conclusions.

@@ -27,8 +27,8 @@ Latest benchmark and paper
 - Public paper PDF (English): docs/paper/main_en.pdf
 - Public paper PDF (Japanese): docs/paper/main_ja.pdf
 - Local paper workspace: private/paper/
-- Zenodo v3.1: https://zenodo.org/records/18939227
-- DOI: https://doi.org/10.5281/zenodo.18939227
+- Zenodo v3.2: https://zenodo.org/records/19120414
+- DOI: https://doi.org/10.5281/zenodo.19120414
 
 Minimal usage examples
 ----------------------

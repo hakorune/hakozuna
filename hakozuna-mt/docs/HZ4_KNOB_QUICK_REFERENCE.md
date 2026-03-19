@@ -22,7 +22,7 @@
 | Knob | Default | Purpose | Source |
 |---|---:|---|---|
 | `HZ4_MID_PAGE_SUPPLY_RESV_BOX` | `1` | B70: page create 時の seg lock 取得をページ予約で償却 | `hakozuna/hz4/core/hz4_config_collect.h` |
-| `HZ4_MID_PAGE_SUPPLY_RESV_CHUNK_PAGES` | `8` | B70: lock 1回あたりの予約ページ数 | `hakozuna/hz4/core/hz4_config_collect.h` |
+| `HZ4_MID_PAGE_SUPPLY_RESV_CHUNK_PAGES` | `16` | B70: lock 1回あたりの予約ページ数 | `hakozuna/hz4/core/hz4_config_collect.h` |
 | `HZ4_MID_OWNER_REMOTE_QUEUE_BOX` | `0` | owner remote queue（mid owner-path）を有効化 | `hakozuna/hz4/core/hz4_config_collect.h` |
 | `HZ4_MID_OWNER_LOCAL_STACK_BOX` | `0` | owner-local stack（B57 系）を有効化 | `hakozuna/hz4/core/hz4_config_collect.h` |
 | `HZ4_MID_OWNER_LOCAL_STACK_SLOTS` | `16` | owner-local stack の depth | `hakozuna/hz4/core/hz4_config_collect.h` |

@@ -61,12 +61,15 @@
 
 | Lane | Build | Output | 目的 |
 |---|---|---|---|
-| p32 | `make -C hakozuna/hz3 all_ldpreload_scale_p32` | `./libhakozuna_hz3_scale_p32.so` | PTAG32-only（`HZ3_NUM_SHARDS>63` の検証） |
+| p32 | `make -C hakozuna/hz3 all_ldpreload_scale_p32_96 / _128 / _255` | `./libhakozuna_hz3_scale_p32_{96,128,255}.so` | PTAG32-only（clean preset で `HZ3_P32_NUM_SHARDS` を固定） |
 | mem_mstress | `make -C hakozuna/hz3 all_ldpreload_scale_mem_mstress` | `./libhakozuna_hz3_scale_mem_mstress.so` | RSS重視メモリレーン |
 | mem_large | `make -C hakozuna/hz3 all_ldpreload_scale_mem_large` | `./libhakozuna_hz3_scale_mem_large.so` | malloc-large 速度重視レーン |
 | s64_purge0 | `make -C hakozuna/hz3 all_ldpreload_scale_s64_purge0` | `./libhakozuna_hz3_scale_s64_purge0.so` | S64 purge delay=0 研究レーン |
 | s64_p5b | `make -C hakozuna/hz3 all_ldpreload_scale_s64_p5b` | `./libhakozuna_hz3_scale_s64_p5b.so` | S64 P5b（RSS研究） |
 | s65_purge0 | `make -C hakozuna/hz3 all_ldpreload_scale_s65_purge0` | `./libhakozuna_hz3_scale_s65_purge0.so` | S65 aggressive purge 研究レーン |
+
+注記:
+- raw `all_ldpreload_scale_p32` も残しているが、`HZ3_P32_NUM_SHARDS` を変える A/B は clean preset 版のほうが安全。
 
 ---
 

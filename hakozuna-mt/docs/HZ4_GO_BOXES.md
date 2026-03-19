@@ -9,7 +9,7 @@
 - フラグ詳細（索引）: `hakozuna/docs/BUILD_FLAGS_INDEX.md`
 - 実務向け knob 早見表: `hakozuna/hz4/docs/HZ4_KNOB_QUICK_REFERENCE.md`
 
-最終同期: 2026-02-16（B70 default反映, `CURRENT_TASK.md` 準拠）
+最終同期: 2026-03-19（B70 chunk16 default反映, `CURRENT_TASK.md` 準拠）
 
 ## 2026-02-14 Baseline Lock（fullbench safe）
 
@@ -64,7 +64,7 @@
 | `HZ4_TLS_DIRECT` | `1` | `hz4_tls_get()` を direct TLS inline 経路で実行 | `hakozuna/hz4/core/hz4_config_core.h` |
 | `HZ4_ST_FREE_USEDDEC_RELAXED` | `1` | small local free の useddec 固定費を削減（B33） | `hakozuna/hz4/core/hz4_config_collect.h` |
 | `HZ4_MID_PAGE_SUPPLY_RESV_BOX` | `1` | mid page create の seg lock をページ予約で償却（B70） | `hakozuna/hz4/core/hz4_config_collect.h` |
-| `HZ4_MID_PAGE_SUPPLY_RESV_CHUNK_PAGES` | `8` | B70 の予約ページ数（lock取得あたり） | `hakozuna/hz4/core/hz4_config_collect.h` |
+| `HZ4_MID_PAGE_SUPPLY_RESV_CHUNK_PAGES` | `16` | B70 の予約ページ数（lock取得あたり） | `hakozuna/hz4/core/hz4_config_collect.h` |
 | `HZ4_REMOTE_PAGE_RBUF_GATE_FAST_LOCAL_BOX` | `auto(1/0)` | gate-offかつremote未発生時のlocal free counter更新を間引き（B40） | `hakozuna/hz4/core/hz4_config_remote.h` |
 | `HZ4_REMOTE_PAGE_RBUF_GATE_FAST_LOCAL_SHIFT` | `6` | B40のサンプリング間隔（1/64） | `hakozuna/hz4/core/hz4_config_remote.h` |
 

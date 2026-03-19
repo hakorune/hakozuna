@@ -58,6 +58,64 @@ static inline void hz3_tcache_current_seg_set(Hz3SegMeta* meta, int collision_ac
 // Day 3: Slow path with segment reuse
 // ============================================================================
 
+static inline void* hz3_medium_run_commit(Hz3SegMeta* meta, int sc,
+                                          int start_page, size_t pages) {
+#if HZ3_S49_SEGMENT_PACKING
+    hz3_pack_on_alloc(t_hz3_cache.my_shard, meta);
+#endif
+
+    const uint16_t tag = hz3_tag_make_large(sc);
+#if HZ3_PTAG16_DISPATCH_ENABLE || HZ3_PTAG_DSTBIN_ENABLE || HZ3_S110_META_ENABLE
+    const int bin = hz3_bin_index_medium(sc);
+#endif
+#if HZ3_S110_META_ENABLE
+    const uint16_t bin_plus1 = (uint16_t)(bin + 1);
+#endif
+
+    for (size_t i = 0; i < pages; i++) {
+        meta->sc_tag[start_page + i] = tag;
+    }
+
+    void* run_base = (char*)meta->seg_base + ((size_t)start_page << HZ3_PAGE_SHIFT);
+
+#if HZ3_PTAG16_DISPATCH_ENABLE || HZ3_PTAG_DSTBIN_ENABLE
+    uint32_t base_page_idx;
+    if (hz3_arena_page_index_fast(run_base, &base_page_idx)) {
+#if HZ3_PTAG16_DISPATCH_ENABLE
+        const uint16_t ptag = hz3_pagetag_encode_v1(sc, t_hz3_cache.my_shard);
+        for (size_t i = 0; i < pages; i++) {
+            hz3_pagetag_store(base_page_idx + (uint32_t)i, ptag);
+        }
+#endif
+#if HZ3_PTAG_DSTBIN_ENABLE
+        _Atomic(uint32_t)* page_tag32 = g_hz3_page_tag32;
+        if (page_tag32) {
+            const uint32_t ptag32 = hz3_pagetag32_encode(bin, t_hz3_cache.my_shard);
+            for (size_t i = 0; i < pages; i++) {
+                hz3_pagetag32_store(base_page_idx + (uint32_t)i, ptag32);
+            }
+        }
+#endif
+    }
+#endif
+
+#if HZ3_S110_META_ENABLE
+    // S113: Store bin+1 in segment header per-page metadata for Medium allocations.
+    {
+        Hz3SegHdr* hdr = (Hz3SegHdr*)meta->seg_base;
+        for (size_t i = 0; i < pages; i++) {
+            atomic_store_explicit(&hdr->page_bin_plus1[start_page + i],
+                                  bin_plus1, memory_order_release);
+        }
+    }
+#endif
+
+#if HZ3_OOM_SHOT
+    atomic_fetch_add_explicit(&g_medium_page_alloc_sc[sc], 1, memory_order_relaxed);
+#endif
+    return run_base;
+}
+
 // Allocate from current segment (or new segment if needed)
 static void* hz3_slow_alloc_from_segment_locked(int sc, int collision_active) {
     // Tokens acquired by caller (OwnerLease/OwnerExcl).
@@ -114,6 +172,17 @@ static void* hz3_slow_alloc_from_segment_locked(int sc, int collision_active) {
     }
 #endif
 
+    // Shared-core fast path for the common refill case:
+    // if the selected current segment already has enough pages, allocate from it
+    // directly and skip the colder pack / retention / new-segment branches.
+    if (meta && meta->free_pages >= pages) {
+        int start_page = hz3_segment_alloc_run(meta, pages);
+        if (start_page >= 0) {
+            result = hz3_medium_run_commit(meta, sc, start_page, pages);
+            goto cleanup;
+        }
+    }
+
 #if HZ3_S49_SEGMENT_PACKING
     // S49-2: Pack pool with retry loop
     int pack_retries = HZ3_S49_PACK_RETRIES;
@@ -140,52 +209,7 @@ static void* hz3_slow_alloc_from_segment_locked(int sc, int collision_active) {
                     t_hz3_cache.active_seg1 = prev;
                 }
 #endif
-                hz3_pack_on_alloc(t_hz3_cache.my_shard, meta);
-
-                uint16_t tag = hz3_tag_make_large(sc);
-                for (size_t i = 0; i < pages; i++) {
-                    meta->sc_tag[pack_start_page + i] = tag;
-                }
-
-                void* run_base = (char*)meta->seg_base + ((size_t)pack_start_page << HZ3_PAGE_SHIFT);
-
-#if HZ3_PTAG16_DISPATCH_ENABLE || HZ3_PTAG_DSTBIN_ENABLE
-                uint32_t base_page_idx;
-                if (hz3_arena_page_index_fast(run_base, &base_page_idx)) {
-#if HZ3_PTAG16_DISPATCH_ENABLE
-                    uint16_t ptag = hz3_pagetag_encode_v1(sc, t_hz3_cache.my_shard);
-                    for (size_t i = 0; i < pages; i++) {
-                        hz3_pagetag_store(base_page_idx + (uint32_t)i, ptag);
-                    }
-#endif
-#if HZ3_PTAG_DSTBIN_ENABLE
-                    int bin = hz3_bin_index_medium(sc);
-                    if (g_hz3_page_tag32) {
-                        uint32_t tag32 = hz3_pagetag32_encode(bin, t_hz3_cache.my_shard);
-                        for (size_t i = 0; i < pages; i++) {
-                            hz3_pagetag32_store(base_page_idx + (uint32_t)i, tag32);
-                        }
-                    }
-#endif
-                }
-#endif
-
-#if HZ3_S110_META_ENABLE
-                // S113: Store bin+1 in segment header for Medium (pack path)
-                {
-                    Hz3SegHdr* hdr = (Hz3SegHdr*)meta->seg_base;
-                    int bin = hz3_bin_index_medium(sc);
-                    for (size_t i = 0; i < pages; i++) {
-                        atomic_store_explicit(&hdr->page_bin_plus1[pack_start_page + i],
-                                              (uint16_t)(bin + 1), memory_order_release);
-                    }
-                }
-#endif
-
-#if HZ3_OOM_SHOT
-                atomic_fetch_add_explicit(&g_medium_page_alloc_sc[sc], 1, memory_order_relaxed);
-#endif
-                result = run_base;
+                result = hz3_medium_run_commit(meta, sc, pack_start_page, pages);
                 goto cleanup;
             }
 
@@ -289,54 +313,9 @@ static void* hz3_slow_alloc_from_segment_locked(int sc, int collision_active) {
     }
 
 #if HZ3_S49_SEGMENT_PACKING
-    hz3_pack_on_alloc(t_hz3_cache.my_shard, meta);
+    // handled by hz3_medium_run_commit()
 #endif
-
-    uint16_t tag = hz3_tag_make_large(sc);
-    for (size_t i = 0; i < pages; i++) {
-        meta->sc_tag[start_page + i] = tag;
-    }
-
-    void* run_base = (char*)meta->seg_base + ((size_t)start_page << HZ3_PAGE_SHIFT);
-
-#if HZ3_PTAG16_DISPATCH_ENABLE || HZ3_PTAG_DSTBIN_ENABLE
-    uint32_t base_page_idx;
-    if (hz3_arena_page_index_fast(run_base, &base_page_idx)) {
-#if HZ3_PTAG16_DISPATCH_ENABLE
-        uint16_t ptag = hz3_pagetag_encode_v1(sc, t_hz3_cache.my_shard);
-        for (size_t i = 0; i < pages; i++) {
-            hz3_pagetag_store(base_page_idx + (uint32_t)i, ptag);
-        }
-#endif
-#if HZ3_PTAG_DSTBIN_ENABLE
-        int bin = hz3_bin_index_medium(sc);
-        if (g_hz3_page_tag32) {
-            uint32_t ptag32 = hz3_pagetag32_encode(bin, t_hz3_cache.my_shard);
-            for (size_t i = 0; i < pages; i++) {
-                hz3_pagetag32_store(base_page_idx + (uint32_t)i, ptag32);
-            }
-        }
-#endif
-    }
-#endif
-
-#if HZ3_S110_META_ENABLE
-    // S113: Store bin+1 in segment header per-page metadata for Medium allocations.
-    // This enables S113 fast free dispatch (seg_math + page_bin_plus1).
-    {
-        Hz3SegHdr* hdr = (Hz3SegHdr*)meta->seg_base;
-        int bin = hz3_bin_index_medium(sc);
-        for (size_t i = 0; i < pages; i++) {
-            atomic_store_explicit(&hdr->page_bin_plus1[start_page + i],
-                                  (uint16_t)(bin + 1), memory_order_release);
-        }
-    }
-#endif
-
-#if HZ3_OOM_SHOT
-    atomic_fetch_add_explicit(&g_medium_page_alloc_sc[sc], 1, memory_order_relaxed);
-#endif
-    result = run_base;
+    result = hz3_medium_run_commit(meta, sc, start_page, pages);
 
 cleanup:
     return result;

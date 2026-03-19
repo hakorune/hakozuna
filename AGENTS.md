@@ -34,6 +34,7 @@ Split changes into small boxes, keep boundaries explicit, and make every path ea
 - Start with [docs/BUILD_FLAGS_INDEX.md](/C:/git/hakozuna-win/docs/BUILD_FLAGS_INDEX.md)
 - Repo layout and public/private policy live in [docs/REPO_STRUCTURE.md](/C:/git/hakozuna-win/docs/REPO_STRUCTURE.md)
 - Public benchmark results are indexed in [docs/benchmarks/INDEX.md](/Users/tomoaki/git/hakozuna/docs/benchmarks/INDEX.md)
+- Public paper workspace root lives in [paper/README.md](/Volumes/PublicShare/hakozuna_paper/paper/README.md)
 - Private day notes live under [private/journal/README.md](/Users/tomoaki/git/hakozuna/private/journal/README.md)
 - Public Ubuntu/Linux entrypoints live in [linux/README.md](/C:/git/hakozuna-win/linux/README.md)
 - Windows real Redis matrix layout lives in [docs/WINDOWS_REDIS_MATRIX.md](/C:/git/hakozuna-win/docs/WINDOWS_REDIS_MATRIX.md)

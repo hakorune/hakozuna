@@ -9,8 +9,8 @@ Current public PDFs:
 
 Release/archive references:
 
-- GitHub release tag: `3.1`
-- Zenodo record: `18939227`
-- DOI: `10.5281/zenodo.18939227`
+- GitHub release tag: `3.2`
+- Zenodo record: `19120414`
+- DOI: `10.5281/zenodo.19120414`
 
 Working drafts, local build logs, and unpublished notes stay under `private/paper/`.

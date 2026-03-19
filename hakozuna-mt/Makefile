@@ -256,6 +256,10 @@ LIB_SRCS = \
 	$(SRC_DIR)/hz4_xfer.c \
 	$(SRC_DIR)/hz4_tcbox.c
 
+ifeq ($(UNAME_S),Darwin)
+LIB_SRCS += $(SRC_DIR)/hz4_macos_interpose.c
+endif
+
 $(LIB_TARGET): $(LIB_SRCS) $(CORE_HEADERS) $(CORE_INCS) $(INC_HEADERS) $(MID_INCS)
 	$(CC) $(CFLAGS) $(TLS_CFLAGS) -fPIC -I$(CORE_DIR) -I$(INC_DIR) $(SHLIB_LDFLAG) -o $@ $(LIB_SRCS) -lpthread
 

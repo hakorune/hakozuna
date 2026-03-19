@@ -6,6 +6,7 @@ static __thread uintptr_t g_hz4_mid_owner_token_anchor;
 static __thread int g_hz4_mid_owner_tls_registered;
 static pthread_key_t g_hz4_mid_owner_tls_key;
 static pthread_once_t g_hz4_mid_owner_tls_once = PTHREAD_ONCE_INIT;
+static _Atomic int g_hz4_mid_owner_tls_ready = 0;
 
 static inline uintptr_t hz4_mid_owner_token(void) {
     return (uintptr_t)&g_hz4_mid_owner_token_anchor;
@@ -136,13 +137,21 @@ static void hz4_mid_owner_tls_destructor(void* value) {
 
 static void hz4_mid_owner_tls_init(void) {
     (void)pthread_key_create(&g_hz4_mid_owner_tls_key, hz4_mid_owner_tls_destructor);
+    atomic_store_explicit(&g_hz4_mid_owner_tls_ready, 1, memory_order_release);
+}
+
+static inline void hz4_mid_owner_tls_ensure_init(void) {
+    if (atomic_load_explicit(&g_hz4_mid_owner_tls_ready, memory_order_acquire)) {
+        return;
+    }
+    pthread_once(&g_hz4_mid_owner_tls_once, hz4_mid_owner_tls_init);
 }
 
 static inline void hz4_mid_owner_tls_register_once(void) {
     if (g_hz4_mid_owner_tls_registered) {
         return;
     }
-    pthread_once(&g_hz4_mid_owner_tls_once, hz4_mid_owner_tls_init);
+    hz4_mid_owner_tls_ensure_init();
     (void)pthread_setspecific(g_hz4_mid_owner_tls_key, (void*)1);
     g_hz4_mid_owner_tls_registered = 1;
 }

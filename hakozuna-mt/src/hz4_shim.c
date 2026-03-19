@@ -52,7 +52,7 @@ static inline int hz4_aligned_decode(void* ptr, void** raw_out, size_t* req_out)
     return 1;
 }
 
-static size_t hz4_usable_size(void* ptr) {
+size_t hz4_usable_size(void* ptr) {
     if (!ptr) {
         return 0;
     }
@@ -86,6 +86,7 @@ static size_t hz4_usable_size(void* ptr) {
     abort();
 }
 
+#if !defined(__APPLE__)
 void* malloc(size_t size) {
     if (size == 0) {
         size = HZ4_SIZE_MIN;
@@ -223,3 +224,4 @@ void* pvalloc(size_t size) {
     size = (size + page_sz - 1) & ~(page_sz - 1);
     return valloc(size);
 }
+#endif  // !defined(__APPLE__)

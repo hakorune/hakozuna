@@ -1,6 +1,7 @@
 // hz4_mid.c - HZ4 Mid Box (2KB..~64KB, 1 page)
 #define _GNU_SOURCE
 #include <pthread.h>
+#include <stdatomic.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,12 +36,21 @@ static inline void hz4_mid_seg_lock_release(void) {}
 static pthread_spinlock_t g_hz4_mid_sc_locks[HZ4_MID_LOCK_SHARDS];
 static pthread_spinlock_t g_hz4_mid_seg_lock;
 static pthread_once_t g_hz4_mid_lock_once = PTHREAD_ONCE_INIT;
+static _Atomic int g_hz4_mid_lock_ready = 0;
 
 static void hz4_mid_lock_init(void) {
     for (uint32_t i = 0; i < HZ4_MID_LOCK_SHARDS; i++) {
         pthread_spin_init(&g_hz4_mid_sc_locks[i], PTHREAD_PROCESS_PRIVATE);
     }
     pthread_spin_init(&g_hz4_mid_seg_lock, PTHREAD_PROCESS_PRIVATE);
+    atomic_store_explicit(&g_hz4_mid_lock_ready, 1, memory_order_release);
+}
+
+static inline void hz4_mid_lock_ensure_init(void) {
+    if (atomic_load_explicit(&g_hz4_mid_lock_ready, memory_order_acquire)) {
+        return;
+    }
+    pthread_once(&g_hz4_mid_lock_once, hz4_mid_lock_init);
 }
 
 static inline pthread_spinlock_t* hz4_mid_sc_lock_for(uint16_t sc) {
@@ -48,7 +58,7 @@ static inline pthread_spinlock_t* hz4_mid_sc_lock_for(uint16_t sc) {
 }
 
 static inline void hz4_mid_sc_lock_acquire(uint16_t sc) {
-    pthread_once(&g_hz4_mid_lock_once, hz4_mid_lock_init);
+    hz4_mid_lock_ensure_init();
     pthread_spin_lock(hz4_mid_sc_lock_for(sc));
 }
 
@@ -57,7 +67,7 @@ static inline void hz4_mid_sc_lock_release(uint16_t sc) {
 }
 
 static inline void hz4_mid_seg_lock_acquire(void) {
-    pthread_once(&g_hz4_mid_lock_once, hz4_mid_lock_init);
+    hz4_mid_lock_ensure_init();
     pthread_spin_lock(&g_hz4_mid_seg_lock);
 }
 
@@ -68,12 +78,21 @@ static inline void hz4_mid_seg_lock_release(void) {
 static pthread_mutex_t g_hz4_mid_sc_locks[HZ4_MID_LOCK_SHARDS];
 static pthread_mutex_t g_hz4_mid_seg_lock;
 static pthread_once_t g_hz4_mid_lock_once = PTHREAD_ONCE_INIT;
+static _Atomic int g_hz4_mid_lock_ready = 0;
 
 static void hz4_mid_lock_init(void) {
     for (uint32_t i = 0; i < HZ4_MID_LOCK_SHARDS; i++) {
         pthread_mutex_init(&g_hz4_mid_sc_locks[i], NULL);
     }
     pthread_mutex_init(&g_hz4_mid_seg_lock, NULL);
+    atomic_store_explicit(&g_hz4_mid_lock_ready, 1, memory_order_release);
+}
+
+static inline void hz4_mid_lock_ensure_init(void) {
+    if (atomic_load_explicit(&g_hz4_mid_lock_ready, memory_order_acquire)) {
+        return;
+    }
+    pthread_once(&g_hz4_mid_lock_once, hz4_mid_lock_init);
 }
 
 static inline pthread_mutex_t* hz4_mid_sc_lock_for(uint16_t sc) {
@@ -81,7 +100,7 @@ static inline pthread_mutex_t* hz4_mid_sc_lock_for(uint16_t sc) {
 }
 
 static inline void hz4_mid_sc_lock_acquire(uint16_t sc) {
-    pthread_once(&g_hz4_mid_lock_once, hz4_mid_lock_init);
+    hz4_mid_lock_ensure_init();
     pthread_mutex_lock(hz4_mid_sc_lock_for(sc));
 }
 
@@ -90,7 +109,7 @@ static inline void hz4_mid_sc_lock_release(uint16_t sc) {
 }
 
 static inline void hz4_mid_seg_lock_acquire(void) {
-    pthread_once(&g_hz4_mid_lock_once, hz4_mid_lock_init);
+    hz4_mid_lock_ensure_init();
     pthread_mutex_lock(&g_hz4_mid_seg_lock);
 }
 
@@ -213,6 +232,7 @@ static inline int hz4_mid_st_local_stack_push(uint16_t sc, void* obj) {
 #if HZ4_MID_OWNER_LOCAL_STACK_BOX && HZ4_MID_OWNER_REMOTE_QUEUE_BOX
 static pthread_key_t g_hz4_mid_owner_local_stack_tls_key;
 static pthread_once_t g_hz4_mid_owner_local_stack_tls_once = PTHREAD_ONCE_INIT;
+static _Atomic int g_hz4_mid_owner_local_stack_tls_ready = 0;
 #endif
 
 #if HZ4_MID_OBJ_CACHE_EFF
@@ -359,13 +379,21 @@ static void hz4_mid_owner_local_stack_tls_destructor(void* value) {
 static void hz4_mid_owner_local_stack_tls_init(void) {
     (void)pthread_key_create(&g_hz4_mid_owner_local_stack_tls_key,
                              hz4_mid_owner_local_stack_tls_destructor);
+    atomic_store_explicit(&g_hz4_mid_owner_local_stack_tls_ready, 1, memory_order_release);
+}
+
+static inline void hz4_mid_owner_local_stack_tls_ensure_init(void) {
+    if (atomic_load_explicit(&g_hz4_mid_owner_local_stack_tls_ready, memory_order_acquire)) {
+        return;
+    }
+    pthread_once(&g_hz4_mid_owner_local_stack_tls_once, hz4_mid_owner_local_stack_tls_init);
 }
 
 static inline void hz4_mid_owner_local_stack_tls_register_once(void) {
     if (g_hz4_mid_owner_local_stack_tls_registered) {
         return;
     }
-    pthread_once(&g_hz4_mid_owner_local_stack_tls_once, hz4_mid_owner_local_stack_tls_init);
+    hz4_mid_owner_local_stack_tls_ensure_init();
     (void)pthread_setspecific(g_hz4_mid_owner_local_stack_tls_key, (void*)1);
     g_hz4_mid_owner_local_stack_tls_registered = 1;
 }

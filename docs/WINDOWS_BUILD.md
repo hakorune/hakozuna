@@ -1,9 +1,15 @@
 # Windows Build
 
-This repository includes public Windows-native build and benchmark entrypoints under the repo-level [`win`](C:\git\hakozuna-win\win) box.
-Windows-native comparisons and paper-aligned lanes are now part of the public source release.
+This is the detailed Windows build and benchmark guide.
 
-Windows bring-up for `hz3` lives under the repo-level [`win`](C:\git\hakozuna-win\win) entrypoints.
+Start here:
+
+- [`win/README.md`](/Users/tomoaki/git/hakozuna/win/README.md): first-stop Windows entrypoint map
+- [`docs/WINDOWS_PROFILE_BOUNDARIES.md`](/Users/tomoaki/git/hakozuna/docs/WINDOWS_PROFILE_BOUNDARIES.md): shared profile vs Windows-only knob boundary
+
+Windows-native comparisons and paper-aligned lanes are part of the public source release.
+
+Windows bring-up for `hz3` and `hz4` lives under the repo-level [`win`](C:\git\hakozuna-win\win) entrypoints.
 Those scripts forward to the maintained implementation under [`hakozuna\win`](C:\git\hakozuna-win\hakozuna\win),
 so you can always start from the repository root.
 
@@ -26,6 +32,13 @@ Expected package install if needed:
 ```powershell
 C:\vcpkg\vcpkg.exe install mimalloc:x64-windows gperftools:x64-windows
 ```
+
+## Quick Entry Map
+
+- build and launch basics: [win/README.md](/Users/tomoaki/git/hakozuna/win/README.md)
+- Windows profile boundaries: [docs/WINDOWS_PROFILE_BOUNDARIES.md](/Users/tomoaki/git/hakozuna/docs/WINDOWS_PROFILE_BOUNDARIES.md)
+- public repo structure: [docs/REPO_STRUCTURE.md](/Users/tomoaki/git/hakozuna/docs/REPO_STRUCTURE.md)
+- benchmark summary layout: [docs/benchmarks/windows](/Users/tomoaki/git/hakozuna/docs/benchmarks/windows)
 
 ## Minimal hz3 build
 
@@ -656,4 +669,3 @@ Hook environment variables:
 - Windows compatibility shims live in `hakozuna\win\include`.
 - This path is static-link first; Linux `LD_PRELOAD` workflow does not apply directly on Windows.
 - If you already have an older local Windows setup, prefer the repo-level `win` scripts above because they track the current source layout.
-

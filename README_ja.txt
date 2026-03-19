@@ -27,8 +27,8 @@ Hakozuna 公開リポジトリ案内 (日本語)
 - 公開PDF（英語）: docs/paper/main_en.pdf
 - 公開PDF（日本語）: docs/paper/main_ja.pdf
 - ローカル論文ワークスペース: private/paper/
-- Zenodo v3.1: https://zenodo.org/records/18939227
-- DOI: https://doi.org/10.5281/zenodo.18939227
+- Zenodo v3.2: https://zenodo.org/records/19120414
+- DOI: https://doi.org/10.5281/zenodo.19120414
 
 最小実行例
 ----------

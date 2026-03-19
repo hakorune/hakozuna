@@ -150,7 +150,9 @@ bench_run_with_allocator() {
     return $?
   fi
 
-  local preload_var
-  preload_var="$(bench_preload_var)"
-  env "${preload_var}=${lib_path}" "$@"
+  if bench_is_macos; then
+    DYLD_INSERT_LIBRARIES="${lib_path}" "$@"
+  else
+    env LD_PRELOAD="${lib_path}" "$@"
+  fi
 }

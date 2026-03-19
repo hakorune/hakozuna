@@ -35,11 +35,10 @@ Next optimization steps, in order:
 1. B70 chunk-pages on the segment-registry lane set.
    - Current live default: `HZ4_MID_PAGE_SUPPLY_RESV_CHUNK_PAGES=16`
    - `main_r50` keeps a tiny throughput edge at `chunk4`, but `cross64_r90` and the lock/refill counters prefer `chunk16`
-2. Finish validating the last live Larson mid candidate: `HZ4_MID_FREE_BATCH_CONSUME_MIN=2`.
-   - Canonical Larson and canonical MT remote moved up on the Mac pass and the release confirmation
-     still shows a positive delta there
-   - The high-remote segment-registry lane regresses in release form, so keep this as a candidate until
-     a separate segment-registry fix or candidate is found
+2. Research the Mac paper-suite outliers:
+   - `hz4` `malloc-large` large-path box (large extent cache band/cap A/B)
+   - segment-registry high-remote fallback box (slot-count A/B at `32768` vs `65536`)
+   - Keep `HZ4_MID_FREE_BATCH_CONSUME_MIN=2` parked until those two boxes are understood
 3. Use `docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md` as the shared condition ledger before adding new OS-specific runs
 4. Use `docs/MAC_DESIGN_BOXES.md` for Mac-only tuning boxes before promoting anything to a shared default
 
@@ -55,9 +54,9 @@ Next optimization steps, in order:
 - `HZ4_MID_PAGE_SUPPLY_RESV_CHUNK_PAGES=16` is the current B70 live default for the segment-registry lane set; `main_r50` keeps a tiny throughput edge at `chunk4`, but `cross64_r90` and the lock/refill counters both prefer `chunk16`.
 - Fresh reruns after the B70 promotion moved `hz4` ahead of `mimalloc` and `tcmalloc` on canonical Larson and MT remote; the direct B37 rerun on the live `chunk16` default was far slower, so B37 is historical on the new baseline.
 - `HZ4_MID_PREFETCHED_BIN_HEAD_BOX=1` was the promising pre-B70 Mac Larson mid candidate and the canonical MT small-path candidate; keep its small-path story separate from the segment-registry free-route box, and do not treat it as the next Larson mid default on top of `chunk16`.
-- `HZ4_MID_FREE_BATCH_CONSUME_MIN=2` is the last live mid candidate. It helps canonical Larson, canonical MT remote, and the high-remote segment-registry lane, but it should stay under lane-specific validation until the lower-remote spot-check is reconciled.
+- `HZ4_MID_FREE_BATCH_CONSUME_MIN=2` is still a live mid candidate, but it is now parked behind the two paper-suite outlier boxes: `hz4 malloc-large` and the segment-registry high-remote fallback lane.
 - The current-tree B37 sweep shows `PREV_SCAN_MAX=2` is a cross/high-remote specialist on the live `chunk16` baseline, while `PREV_SCAN_MAX=1` is no-go. Keep B37 separate from both the live `chunk16` default and the `FREE_BATCH_CONSUME_MIN=2` lane-specific candidate.
-- `mimalloc-bench` subset should start with `cache-thrash`, `cache-scratch`, and `malloc-large`.
+- `mimalloc-bench` subset should start with `cache-thrash`, `cache-scratch`, and `malloc-large`; the `malloc-large` follow-up is now an extent-cache band/cap A/B, not a new runner.
 
 ## Mac-Specific Knobs
 

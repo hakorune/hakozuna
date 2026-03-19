@@ -170,3 +170,7 @@ Stability:
   - keep `HZ4_MID_PAGE_SUPPLY_RESV_CHUNK_PAGES=8`
 - Next:
   - proceed to `B71 lite` work order (upper-mid only spanization).
+
+Historical note:
+- The live repository default was later promoted to `HZ4_MID_PAGE_SUPPLY_RESV_CHUNK_PAGES=16` after the Mac segment-registry sweep on 2026-03-19.
+- Keep the `8` above as the original 2026-02-16 work-order decision.

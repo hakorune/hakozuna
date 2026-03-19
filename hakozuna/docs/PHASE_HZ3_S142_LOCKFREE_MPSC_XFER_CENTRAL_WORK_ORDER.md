@@ -177,4 +177,5 @@ GO/NO-GO:
 
 補足（p32 lane, r90）:
 - T=64: S142 ON **+4.6%**（median 93.5M vs 89.4M）
-- T=128: shard collision failfast が発生し `shards=96` と表示される問題あり（`HZ3_P32_NUM_SHARDS=255` が反映されていない疑い）。要調査。
+- T=128: shard collision failfast が発生し `shards=96` と表示される問題あり。
+  - raw `all_ldpreload_scale_p32` の default は 96 なので、`255` A/B は `all_ldpreload_scale_p32_255` を使うか、`clean` 後に `HZ3_P32_NUM_SHARDS=255` を明示して再ビルドする。

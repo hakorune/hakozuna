@@ -3,7 +3,7 @@
 This document is the SSOT for how this repository should separate:
 
 - public vs private materials
-- Ubuntu/Linux vs Windows entrypoints
+- Ubuntu/Linux, macOS, and Windows entrypoints
 - source vs generated artifacts vs benchmark assets
 
 Use this before adding new benchmark lanes, release assets, or third-party trees.
@@ -11,9 +11,13 @@ Use this before adding new benchmark lanes, release assets, or third-party trees
 ## Current Release Stance
 
 - Ubuntu/Linux already has a published GitHub release lane.
-- Windows-native build and benchmark entrypoints are now public and documented under [`win`](/C:/git/hakozuna-win/win) and [`docs/WINDOWS_BUILD.md`](/C:/git/hakozuna-win/docs/WINDOWS_BUILD.md).
+- macOS now has public development and benchmark entrypoints under `mac/`, but it is still treated as a development lane rather than a published release lane.
+- The current GO / NO-GO snapshot for benchmark and lane status is recorded in [`docs/benchmarks/GO_NO_GO_LEDGER.md`](/Users/tomoaki/git/hakozuna/docs/benchmarks/GO_NO_GO_LEDGER.md), and shared workload conditions live in [`docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md`](/Users/tomoaki/git/hakozuna/docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md).
+- Mac-specific tuning boxes are documented in [`docs/MAC_DESIGN_BOXES.md`](/Users/tomoaki/git/hakozuna/docs/MAC_DESIGN_BOXES.md).
+- Windows-native build and benchmark entrypoints are now public and documented under [`win/README.md`](/Users/tomoaki/git/hakozuna/win/README.md) and [`docs/WINDOWS_BUILD.md`](/C:/git/hakozuna-win/docs/WINDOWS_BUILD.md).
 - Windows benchmark summaries may be published under [`docs/benchmarks/windows`](/C:/git/hakozuna-win/docs/benchmarks/windows), while private raw assets and third-party recovery trees still stay outside git.
 - Public docs may describe Windows bring-up status, but private benchmark assets and raw local traces must stay outside git.
+- The first-stop platform entry docs are [`linux/README.md`](/Users/tomoaki/git/hakozuna/linux/README.md), [`mac/README.md`](/Users/tomoaki/git/hakozuna/mac/README.md), and [`win/README.md`](/Users/tomoaki/git/hakozuna/win/README.md).
 
 ## Separation Rules
 
@@ -58,8 +62,9 @@ Platform separation should happen at the build and runner layer first.
 
 Recommended split:
 
-- [`win`](/C:/git/hakozuna-win/win): Windows build, run, hook, and bench entrypoints
+- `win/`: Windows build, run, hook, and bench entrypoints
 - `linux/`: Ubuntu/Linux build and run entrypoints
+- `mac/`: macOS build and run entrypoints
 - allocator core stays shared under [`hakozuna`](/C:/git/hakozuna-win/hakozuna) and [`hakozuna-mt`](/C:/git/hakozuna-win/hakozuna-mt)
 
 Rules:
@@ -68,6 +73,17 @@ Rules:
 - keep OS-specific shims and launch paths near the platform entrypoints
 - keep platform differences concentrated in build flags, wrappers, and compatibility layers
 - avoid scattering `#ifdef _WIN32` decisions across hot allocator logic
+
+## Profile Layout
+
+Platform wrappers should own toolchain and launcher details. Profile and lane presets should own workload shape and allocator boxes.
+
+Rules:
+
+- keep workload names aligned where possible across OSes
+- keep OS-specific allocator knobs inside OS wrappers or named lane presets
+- use `hakozuna-mt/Makefile` lane presets and `docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md` for the profile ledger
+- avoid mixing launcher decisions with lane decisions
 
 ## Benchmark Layout
 
@@ -79,6 +95,7 @@ Recommended split:
 - `bench/configs/`: public benchmark parameter sets
 - `docs/benchmarks/windows/`: public Windows summaries
 - `docs/benchmarks/linux/`: public Ubuntu/Linux summaries
+- `docs/benchmarks/macos/`: public macOS summaries once that lane is promoted
 - `private/bench-assets/windows/`: private Windows third-party assets
 - `private/bench-assets/linux/`: private Ubuntu/Linux third-party assets
 - `private/raw-results/windows/`: raw Windows logs

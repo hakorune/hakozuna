@@ -127,6 +127,9 @@ OUT_LDPRELOAD_P32_DIR := $(HZ3_DIR)/out_ldpreload_p32
 LDPRELOAD_FAST_LIB := $(ROOT)/libhakozuna_hz3_fast.so
 LDPRELOAD_SCALE_LIB := $(ROOT)/libhakozuna_hz3_scale.so
 LDPRELOAD_SCALE_P32_LIB := $(ROOT)/libhakozuna_hz3_scale_p32.so
+LDPRELOAD_SCALE_P32_96_LIB := $(ROOT)/libhakozuna_hz3_scale_p32_96.so
+LDPRELOAD_SCALE_P32_128_LIB := $(ROOT)/libhakozuna_hz3_scale_p32_128.so
+LDPRELOAD_SCALE_P32_255_LIB := $(ROOT)/libhakozuna_hz3_scale_p32_255.so
 LDPRELOAD_SCALE_R50_LIB := $(ROOT)/libhakozuna_hz3_scale_r50.so
 LDPRELOAD_SCALE_R50_S94_LIB := $(ROOT)/libhakozuna_hz3_scale_r50_s94.so
 LDPRELOAD_SCALE_R50_S97_1_LIB := $(ROOT)/libhakozuna_hz3_scale_r50_s97_1.so
@@ -157,6 +160,25 @@ all_ldpreload_scale: $(LDPRELOAD_SCALE_LIB)
 
 # PTAG32-only lane (p32)
 all_ldpreload_scale_p32: $(LDPRELOAD_SCALE_P32_LIB)
+
+.PHONY: all_ldpreload_scale_p32_96 all_ldpreload_scale_p32_128 all_ldpreload_scale_p32_255
+
+# p32 preset targets do a clean rebuild so changing HZ3_P32_NUM_SHARDS cannot
+# silently reuse stale out_ldpreload_p32 objects.
+all_ldpreload_scale_p32_96:
+	@$(MAKE) clean
+	@$(MAKE) all_ldpreload_scale_p32 HZ3_P32_NUM_SHARDS=96
+	@cp -f $(LDPRELOAD_SCALE_P32_LIB) $(LDPRELOAD_SCALE_P32_96_LIB)
+
+all_ldpreload_scale_p32_128:
+	@$(MAKE) clean
+	@$(MAKE) all_ldpreload_scale_p32 HZ3_P32_NUM_SHARDS=128
+	@cp -f $(LDPRELOAD_SCALE_P32_LIB) $(LDPRELOAD_SCALE_P32_128_LIB)
+
+all_ldpreload_scale_p32_255:
+	@$(MAKE) clean
+	@$(MAKE) all_ldpreload_scale_p32 HZ3_P32_NUM_SHARDS=255
+	@cp -f $(LDPRELOAD_SCALE_P32_LIB) $(LDPRELOAD_SCALE_P32_255_LIB)
 
 # Default: scale lane + symlink
 all_ldpreload: all_ldpreload_scale
@@ -462,9 +484,11 @@ $(LDPRELOAD_LIB): $(OUT_LDPRELOAD_DIR) $(HZ3_LDPRELOAD_OBJS)
 
 clean:
 	@rm -rf $(OUT_DIR) $(OUT_LDPRELOAD_DIR) $(OUT_HYBRID_DIR) \
-	        $(OUT_LDPRELOAD_FAST_DIR) $(OUT_LDPRELOAD_SCALE_DIR) \
+	        $(OUT_LDPRELOAD_FAST_DIR) $(OUT_LDPRELOAD_SCALE_DIR) $(OUT_LDPRELOAD_P32_DIR) \
 	        $(OUT_LDPRELOAD_MEM_MSTRESS_DIR) $(OUT_LDPRELOAD_MEM_LARGE_DIR) \
 	        $(LDPRELOAD_LIB) $(LDPRELOAD_FAST_LIB) $(LDPRELOAD_SCALE_LIB) \
+	        $(LDPRELOAD_SCALE_P32_LIB) $(LDPRELOAD_SCALE_P32_96_LIB) \
+	        $(LDPRELOAD_SCALE_P32_128_LIB) $(LDPRELOAD_SCALE_P32_255_LIB) \
 	        $(LDPRELOAD_MEM_MSTRESS_LIB) $(LDPRELOAD_MEM_LARGE_LIB)
 
 # ============================================================================

@@ -1,6 +1,6 @@
 # HZ4 Status Short
 
-最終更新: 2026-02-16
+最終更新: 2026-03-19
 
 このファイルは `hz4` の現況を短く確認するための入口です。  
 詳細は SSOT と各 phase ドキュメントを参照してください。
@@ -15,7 +15,7 @@
 ## Key Defaults (high impact)
 
 - `HZ4_MID_PAGE_SUPPLY_RESV_BOX=1`（B70）
-- `HZ4_MID_PAGE_SUPPLY_RESV_CHUNK_PAGES=8`（B70）
+- `HZ4_MID_PAGE_SUPPLY_RESV_CHUNK_PAGES=16`（B70）
 - `HZ4_ST_FREE_USEDDEC_RELAXED=1`（B33）
 - `HZ4_REMOTE_PAGE_RBUF_GATE_FAST_LOCAL_BOX=auto`（B40）
 

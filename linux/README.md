@@ -44,6 +44,12 @@ Examples:
 - `all_ldpreload_scale_r90`
 - `all_ldpreload_scale_r90_pf2_s97_2`
 
+## GO / NO-GO And Conditions
+
+- Quick GO / NO-GO status: [docs/benchmarks/GO_NO_GO_LEDGER.md](/Users/tomoaki/git/hakozuna/docs/benchmarks/GO_NO_GO_LEDGER.md)
+- Shared workload conditions: [docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md](/Users/tomoaki/git/hakozuna/docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md)
+- macOS is tracked as a separate Apple Silicon M1 development lane; see [mac/README.md](/Users/tomoaki/git/hakozuna/mac/README.md) and [docs/MAC_BENCH_PREP.md](/Users/tomoaki/git/hakozuna/docs/MAC_BENCH_PREP.md)
+
 ## Published Ubuntu Lane
 
 Ubuntu/Linux is the already-published public release lane for this repository.
@@ -65,3 +71,9 @@ In this repo snapshot:
 - `hz4` builds are driven from [hakozuna-mt/Makefile](/C:/git/hakozuna-win/hakozuna-mt/Makefile)
 - public Linux summaries should collect under [docs/benchmarks/linux](/C:/git/hakozuna-win/docs/benchmarks/linux)
 - private raw logs and vendor trees should stay under [private](/C:/git/hakozuna-win/private)
+
+## See Also
+
+- [mac/README.md](/Users/tomoaki/git/hakozuna/mac/README.md)
+- [win/README.md](/Users/tomoaki/git/hakozuna/win/README.md)
+- [docs/REPO_STRUCTURE.md](/Users/tomoaki/git/hakozuna/docs/REPO_STRUCTURE.md)

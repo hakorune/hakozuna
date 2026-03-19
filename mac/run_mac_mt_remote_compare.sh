@@ -94,7 +94,6 @@ if [[ ! -x "${BIN}" || "${SRC}" -nt "${BIN}" ]]; then
     -O2 \
     -std=c11 \
     -pthread \
-    -DMAP_ANONYMOUS=MAP_ANON \
     -DHZ_BENCH_USE_HAKOZUNA=0 \
     -Wall \
     -Wextra \

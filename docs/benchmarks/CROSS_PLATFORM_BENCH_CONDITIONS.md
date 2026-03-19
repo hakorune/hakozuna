@@ -1,0 +1,108 @@
+# Cross-Platform Benchmark Conditions
+
+Write the conditions before implementing a new benchmark lane or a tuning box.
+
+## Rule
+
+- Freeze the workload shape first.
+- Record OS-specific launcher and preload details separately from the allocator question.
+- If a result only holds on one platform, mark it as a platform tuning value instead of a shared default.
+- Prefer median-based results whenever the run-to-run variance is non-trivial.
+
+## Common Baseline
+
+Before implementation, make these items explicit:
+
+| Item | What to pin down |
+|---|---|
+| Benchmark name | Which bench is being changed |
+| Allocator list | Which allocators are compared |
+| Shape | Threads, iters, working set, size range, remote ratio, ring size |
+| Repeat rule | Single sweep, 3-run median, 5-run median, etc. |
+| Metric | ops/s, requests/sec, RSS, or latency |
+| Counter plan | Which existing counters explain the result |
+| Result location | Which dated results doc receives the numbers |
+
+## Platform Matrix
+
+| Platform | Launcher | Preload / injection | Timing | Notes |
+|---|---|---|---|---|
+| macOS | `./mac/*.sh` | `DYLD_INSERT_LIBRARIES` | shell timing / `time.time_ns()` wrappers | Keep Mac-only tuning values separate until Linux/Windows confirm them |
+| Ubuntu/Linux | `./linux/*.sh` or `gmake` | `LD_PRELOAD` | `/usr/bin/time -v` or `perf` when available | Use Linux canonical shapes before comparing against Mac or Windows |
+| Windows | `./win/*.ps1` | native allocator EXEs / DLL path injection | PowerShell-native timing and Windows RSS metrics | Do not assume `LD_PRELOAD` semantics carry over |
+
+## Benchmark-Specific Conditions
+
+### Larson
+
+- Canonical SSOT shape: `5 4096 32768 1000 1000 0 {T}`
+- Compare `system`, `hz3`, `hz4`, `mimalloc`, and `tcmalloc`
+- On macOS, use `T=1,4,8` with 5 repeats and median
+- Keep smoke shapes separate from ranking shapes
+- If the run is slow, start with mid-path counters before adding new instrumentation
+
+### MT Remote
+
+- Canonical shape: `threads iters ws min max remote_pct ring_slots`
+- On the current M1 Mac pass, `ring_slots=262144` is the platform tuning value
+- Record `actual` and `fallback_rate` together with throughput
+- Treat `ring_full_fallback` as a benchmark-pressure signal, not an allocator-internal metric
+- Only promote a larger ring value to a shared default if other OSes show the same pressure pattern
+- Keep `HZ4_FREE_ROUTE_SEGMENT_REGISTRY_BOX=1` separate from `HZ4_MID_PREFETCHED_BIN_HEAD_BOX=1`: the former is the free-route box for the `guard` / `main` / `cross64` lane set, while the latter is the canonical MT small-path box for Larson and MT remote
+- For the high-remote diagnostic lane, keep the shape fixed at
+  `16 2000000 400 16 2048 90 262144` and treat any fallback above noise as
+  pressure-bound until proven otherwise
+- For the segment-registry follow-up, compare `HZ4_FREE_ROUTE_SEGMENT_REGISTRY_SLOTS=32768`
+  against `65536` before promoting anything; keep `ring_slots=262144` fixed
+  while you read the slot sensitivity
+
+### Redis-like
+
+- Keep the key mix and allocator list stable before comparing results
+- Record median requests/sec once the first pass is green
+- Compare the same command shape across OSes before drawing conclusions
+
+### mimalloc-bench Subset
+
+- Keep the subset fixed to `cache-thrash`, `cache-scratch`, and `malloc-large`
+- Compare `system`, `hz3`, `hz4`, `mimalloc`, and `tcmalloc`
+- Use a median of 3 runs for Mac paper-suite spot checks
+- Treat `malloc-large` as the large-path research box; do not fold it into the
+  Redis or Larson conclusions
+- For the current Mac follow-up, run `malloc-large` in isolation with
+  `DO_CACHE_THRASH=0 DO_CACHE_SCRATCH=0 DO_MALLOC_LARGE=1 RUNS=5`
+- For `malloc-large`, read `HZ4_OS_STATS_B16.ext_acq_hit`, `ext_acq_miss`,
+  `ext_rel_hit`, `ext_rel_miss`, `ext_rel_drop_cap`, `ext_bytes_peak`, plus
+  `large_validate_calls` and `large_validate_hits` first
+- Treat `HZ4_LARGE_EXTENT_CACHE_MAX_PAGES=400` and
+  `HZ4_LARGE_EXTENT_CACHE_MAX_BYTES=1GiB` as the live treatment candidate
+- If `hz4` remains a clear outlier, keep it as a dedicated large-path box
+  instead of trying to explain it away as a mid-path effect
+
+### Mid Fixed-Cost Boxes
+
+- For `hz4`, prefer existing `HZ4_MID_STATS_B1` and `HZ4_MID_LOCK_STATS` before adding new counters
+- For `HZ4_MID_PREFETCHED_BIN_HEAD_BOX`, compare the canonical Larson SSOT shape and the MT remote shape with `ring_slots=262144`, and record `prefetched_hint_probe`, `prefetched_hint_hit`, `prefetched_hint_miss`, and `malloc_lock_path` on both lanes before promoting it
+- `HZ4_MID_FREE_BATCH_CONSUME_MIN=2` is the last live mid candidate on the Mac pass; compare it on canonical Larson, canonical MT remote, and the relevant segment-registry lane before treating it as a shared default
+- If MT remote is sparse in mid counters, add `HZ4_SMALL_STATS_B19` and watch `malloc_refill_calls`, `malloc_refill_hit`, `malloc_refill_miss`, `small_free_remote`, `small_tcache_push`, `small_remote_keyed`, `small_remote_plain`, and `small_alloc_page_init_lite_*`
+- Do not read `HZ4_FREE_ROUTE_SEGMENT_REGISTRY_BOX=1` through the same small-path lens; on the MT lane set it is a free-route box whose first evidence is `large_validate_calls`, `malloc_page_create`, and lock timing
+- Read `malloc_lock_path`, `malloc_owner_fast`, `malloc_page_create`, `free_owner_local`, `free_owner_remote`, and lock timing first
+- If `HZ4_OS_STATS` is near zero, the bottleneck is probably not the OS / large path
+
+## Implementation Gate
+
+Do not implement a new box until the following are written down:
+
+- workload shape
+- allocator list
+- repeat rule
+- OS-specific launcher / preload differences
+- counters to read first
+- success criterion
+
+## Where To Record Results
+
+- Mac results: [docs/benchmarks/2026-03-19_MAC_BENCH_RESULTS.md](/Users/tomoaki/git/hakozuna/docs/benchmarks/2026-03-19_MAC_BENCH_RESULTS.md)
+- Mac prep: [docs/MAC_BENCH_PREP.md](/Users/tomoaki/git/hakozuna/docs/MAC_BENCH_PREP.md)
+- Windows bench notes: [docs/benchmarks/windows/](/Users/tomoaki/git/hakozuna/docs/benchmarks/windows)
+- Linux and allocator work orders: [`hakozuna-mt/docs/`](/Users/tomoaki/git/hakozuna/hakozuna-mt/docs)

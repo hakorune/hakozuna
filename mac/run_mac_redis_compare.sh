@@ -60,7 +60,7 @@ esac
 
 if [[ -n "${PRELOAD}" ]]; then
   echo "[mac] DYLD_INSERT_LIBRARIES=${PRELOAD}"
-  exec env DYLD_INSERT_LIBRARIES="${PRELOAD}" "${BIN}" "$@"
+  DYLD_INSERT_LIBRARIES="${PRELOAD}" exec "${BIN}" "$@"
 fi
 
 echo "[mac] CRT/system allocator"

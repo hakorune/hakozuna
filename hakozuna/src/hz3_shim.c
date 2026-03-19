@@ -62,6 +62,7 @@ static inline void hz3_shim_null_return_guard(const char* where, void* ptr, size
 }
 #endif  // HZ3_SHIM_NULL_RETURN_GUARD
 
+#if !defined(__APPLE__)
 void* malloc(size_t size) {
     void* p = hz3_malloc(size);
 #if HZ3_SHIM_NULL_RETURN_GUARD
@@ -157,3 +158,4 @@ void* memalign(size_t alignment, size_t size) {
     }
     return p;
 }
+#endif  // !defined(__APPLE__)

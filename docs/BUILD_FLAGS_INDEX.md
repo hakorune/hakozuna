@@ -150,7 +150,8 @@ S41 fast/scale lane:
 - `make -C hakozuna/hz3 all_ldpreload_scale`
   - 出力: `./libhakozuna_hz3_scale.so`（`HZ3_NUM_SHARDS=63`, sparse, `HZ3_ARENA_SIZE=64GB`, `HZ3_SEG_SIZE=1MB`）
  - `make -C hakozuna/hz3 all_ldpreload_scale_p32`
-   - 出力: `./libhakozuna_hz3_scale_p32.so`（PTAG32-only lane, `HZ3_NUM_SHARDS>63` を想定）
+   - 出力: `./libhakozuna_hz3_scale_p32.so`（raw target, PTAG32-only lane, `HZ3_NUM_SHARDS>63` を想定）
+   - clean preset: `all_ldpreload_scale_p32_96/128/255`（`HZ3_P32_NUM_SHARDS` を固定して clean rebuild）
    - 既定: `HZ3_P32_NUM_SHARDS=96`（A/B: 128/255）
    - 注意: `HZ3_PTAG32_ONLY=1` で PTAG16 owner は無効化される（`HZ3_NUM_SHARDS<=255`）
   - プリセット（scale variants）:
@@ -271,6 +272,7 @@ hybrid（研究箱）:
   - 注意: shards を増やすと TLS（bank/outbox）が膨らむため、hot が速くても overall が悪化し得る
 - `HZ3_P32_NUM_SHARDS=96/128/255`（compile-time, p32 lane）
   - PTAG32-only lane の shard 数（`HZ3_PTAG32_ONLY=1` 時のみ有効）。
+  - p32 lane は object dir が共通なので、A/B は `all_ldpreload_scale_p32_96/128/255` の clean preset を使うと stale object を避けやすい。
   - 上限: `HZ3_NUM_SHARDS<=255`（8bit owner）。
 - `HZ3_ARENA_SIZE=...`
   - arena の仮想サイズ（既定 4GB）。`HZ3_PTAG32_NOINRANGE` では 4GB のときだけ fast range check を使う。

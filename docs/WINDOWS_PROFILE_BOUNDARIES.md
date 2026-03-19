@@ -5,6 +5,11 @@ stay Windows-specific when we profile allocator behavior on Windows.
 
 Use this as the SSOT before adding more Windows tuning boxes.
 
+Start here:
+
+- [win/README.md](/Users/tomoaki/git/hakozuna/win/README.md): first-stop Windows entrypoint map
+- [docs/WINDOWS_BUILD.md](/Users/tomoaki/git/hakozuna/docs/WINDOWS_BUILD.md): Windows build and lane guide
+
 ## Goal
 
 Keep app-bench profile names comparable across OSes without forcing allocator

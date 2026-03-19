@@ -5,7 +5,8 @@ This directory holds the shared benchmark compare core.
 The layout is intentionally split into:
 
 - common compare logic in `bench/`
-- thin OS-specific frontends in `linux/` and `mac/`
+- thin Unix-specific frontends in `linux/` and `mac/`
+- Windows suite entrypoints in `win/`
 
 That keeps allocator comparison logic in one place while letting each platform
 own its preload and toolchain details.
@@ -16,12 +17,15 @@ own its preload and toolchain details.
 - resolve allocator libraries from environment variables first
 - fall back to platform-specific discovery when possible
 - use `LD_PRELOAD` on Linux and `DYLD_INSERT_LIBRARIES` on macOS
+- use Windows suite build/run scripts for DLL wiring and allocator bundles
 
 ## Entry Points
 
 - [`run_compare.sh`](run_compare.sh): shared runner
 - [`../linux/run_bench_compare.sh`](../linux/run_bench_compare.sh): Linux frontend
 - [`../mac/run_bench_compare.sh`](../mac/run_bench_compare.sh): macOS frontend
+- [`../win/run_win_allocator_suite.ps1`](../win/run_win_allocator_suite.ps1): Windows allocator suite runner
+- [`../win/run_win_allocator_matrix.ps1`](../win/run_win_allocator_matrix.ps1): Windows profile matrix runner
 
 ## Usage
 
@@ -32,6 +36,12 @@ Examples:
 ```bash
 ./linux/run_bench_compare.sh --help
 ./mac/run_bench_compare.sh --help
+```
+
+Windows example:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\win\run_win_allocator_suite.ps1
 ```
 
 Typical environment overrides:
