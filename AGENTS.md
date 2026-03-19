@@ -33,6 +33,8 @@ Split changes into small boxes, keep boundaries explicit, and make every path ea
 
 - Start with [docs/BUILD_FLAGS_INDEX.md](/C:/git/hakozuna-win/docs/BUILD_FLAGS_INDEX.md)
 - Repo layout and public/private policy live in [docs/REPO_STRUCTURE.md](/C:/git/hakozuna-win/docs/REPO_STRUCTURE.md)
+- Public benchmark results are indexed in [docs/benchmarks/INDEX.md](/Users/tomoaki/git/hakozuna/docs/benchmarks/INDEX.md)
+- Private day notes live under [private/journal/README.md](/Users/tomoaki/git/hakozuna/private/journal/README.md)
 - Public Ubuntu/Linux entrypoints live in [linux/README.md](/C:/git/hakozuna-win/linux/README.md)
 - Windows real Redis matrix layout lives in [docs/WINDOWS_REDIS_MATRIX.md](/C:/git/hakozuna-win/docs/WINDOWS_REDIS_MATRIX.md)
 - Windows memcached recovery layout lives in [docs/WINDOWS_MEMCACHED_RECOVERY.md](/C:/git/hakozuna-win/docs/WINDOWS_MEMCACHED_RECOVERY.md)
@@ -49,6 +51,14 @@ Split changes into small boxes, keep boundaries explicit, and make every path ea
 - Active box direction lives in [hakozuna/docs/HZ3_GO_BOXES.md](/C:/git/hakozuna-win/hakozuna/docs/HZ3_GO_BOXES.md)
 - Archived and no-go context lives in [hakozuna/docs/HZ3_ARCHIVED_BOXES.md](/C:/git/hakozuna-win/hakozuna/docs/HZ3_ARCHIVED_BOXES.md) and [hakozuna/docs/NO_GO_SUMMARY.md](/C:/git/hakozuna-win/hakozuna/docs/NO_GO_SUMMARY.md)
 
+## Doc Flow
+
+- Keep [private/current_task.md](/Users/tomoaki/git/hakozuna/private/current_task.md) as the restart surface only.
+- Put detailed working history in [private/journal/README.md](/Users/tomoaki/git/hakozuna/private/journal/README.md) and the dated journal file for the day.
+- Keep public summary results in `docs/benchmarks/` and register them in `docs/benchmarks/INDEX.md`.
+- Keep decisions in `docs/benchmarks/GO_NO_GO_LEDGER.md` and workload conditions in `docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md`.
+- When `current_task` starts to grow, move the history into a journal entry and leave a short pointer behind.
+
 ## Perf Discipline
 
 - Do not optimize hot paths without before/after bench evidence.
@@ -56,6 +66,10 @@ Split changes into small boxes, keep boundaries explicit, and make every path ea
 - Prefer median-based runs when variance is non-trivial.
 
 ## Bench Management Rules
+
+- For the current Mac/public benchmark workflow, treat `docs/benchmarks/INDEX.md`
+  as the public summary index and `private/journal/YYYY-MM-DD.md` as the rolling
+  private note trail; the older `hakozuna/hz3/results/` tree is legacy history.
 
 ### Results Location
 
@@ -100,3 +114,9 @@ hakozuna/hz3/results/
 ├── 20260121_s113_full_wsl/
 └── 20260121_paper_bench_wsl/
 ```
+
+## Daily Doc Rule
+
+- Keep `private/current_task.md` short enough to scan quickly.
+- Use `private/journal/YYYY-MM-DD.md` for private carry-over notes and history.
+- Use `docs/benchmarks/INDEX.md` for the public summary list.

@@ -1,0 +1,74 @@
+# Benchmarks
+
+This directory collects benchmark results and the notes needed to reproduce
+them.
+
+## Start Here
+
+- [GO / NO-GO ledger](/Users/tomoaki/git/hakozuna/docs/benchmarks/GO_NO_GO_LEDGER.md)
+- [Cross-platform benchmark conditions](/Users/tomoaki/git/hakozuna/docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md)
+- [Benchmark results index](/Users/tomoaki/git/hakozuna/docs/benchmarks/INDEX.md)
+- [Mac design boxes](/Users/tomoaki/git/hakozuna/docs/MAC_DESIGN_BOXES.md)
+- [Mac build notes](/Users/tomoaki/git/hakozuna/docs/MAC_BUILD.md)
+- [Mac benchmark prep order](/Users/tomoaki/git/hakozuna/docs/MAC_BENCH_PREP.md)
+- [Mac benchmark results, 2026-03-19](/Users/tomoaki/git/hakozuna/docs/benchmarks/2026-03-19_MAC_BENCH_RESULTS.md)
+
+## Platform Entrypoints
+
+Use the platform entry docs when you need the build/run front door for a
+specific lane:
+
+- [Linux entrypoints](/Users/tomoaki/git/hakozuna/linux/README.md)
+- [macOS entrypoints](/Users/tomoaki/git/hakozuna/mac/README.md)
+- [Windows entrypoints](/Users/tomoaki/git/hakozuna/win/README.md)
+
+## Before You Implement
+
+- Write the conditions first, then implement.
+- Freeze the workload shape before changing allocator code.
+- Keep OS-specific launch details in the platform matrix, not inside the hot path.
+
+## Optimization Queue
+
+Next optimization steps, in order:
+
+1. B70 chunk-pages on the segment-registry lane set.
+   - Current live default: `HZ4_MID_PAGE_SUPPLY_RESV_CHUNK_PAGES=16`
+   - `main_r50` keeps a tiny throughput edge at `chunk4`, but `cross64_r90` and the lock/refill counters prefer `chunk16`
+2. Finish validating the last live Larson mid candidate: `HZ4_MID_FREE_BATCH_CONSUME_MIN=2`.
+   - Canonical Larson and canonical MT remote moved up on the Mac pass and the release confirmation
+     still shows a positive delta there
+   - The high-remote segment-registry lane regresses in release form, so keep this as a candidate until
+     a separate segment-registry fix or candidate is found
+3. Use `docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md` as the shared condition ledger before adding new OS-specific runs
+4. Use `docs/MAC_DESIGN_BOXES.md` for Mac-only tuning boxes before promoting anything to a shared default
+
+## Current Mac Benchmark Takeaways
+
+- `bench_mixed_ws` is smoke-only.
+- `redis-like` is a good first allocator comparison once smoke is green, and its median rerun is now captured in the Mac results doc.
+- The first Mac `larson` pass is still a smoke shape; use the canonical SSOT shape before concluding anything.
+- The canonical larson rerun is the one to trust for cross-platform comparison.
+- `bench_random_mixed_mt_remote_malloc` uses `ring_slots=262144` as the current M1 Mac tuning value to avoid fallback noise.
+- MT remote logs are especially useful because they expose `ring_full_fallback`, `overflow_sent`, `overflow_received`, and `[EFFECTIVE_REMOTE]`.
+- `HZ4_FREE_ROUTE_SEGMENT_REGISTRY_BOX=1` is the current promising MT A/B for the segment-registry lane set; on `guard_r0`, `main_r50`, and `cross64_r90` it collapses `large_validate_calls`, with the biggest win on `cross64_r90`.
+- `HZ4_MID_PAGE_SUPPLY_RESV_CHUNK_PAGES=16` is the current B70 live default for the segment-registry lane set; `main_r50` keeps a tiny throughput edge at `chunk4`, but `cross64_r90` and the lock/refill counters both prefer `chunk16`.
+- Fresh reruns after the B70 promotion moved `hz4` ahead of `mimalloc` and `tcmalloc` on canonical Larson and MT remote; the direct B37 rerun on the live `chunk16` default was far slower, so B37 is historical on the new baseline.
+- `HZ4_MID_PREFETCHED_BIN_HEAD_BOX=1` was the promising pre-B70 Mac Larson mid candidate and the canonical MT small-path candidate; keep its small-path story separate from the segment-registry free-route box, and do not treat it as the next Larson mid default on top of `chunk16`.
+- `HZ4_MID_FREE_BATCH_CONSUME_MIN=2` is the last live mid candidate. It helps canonical Larson, canonical MT remote, and the high-remote segment-registry lane, but it should stay under lane-specific validation until the lower-remote spot-check is reconciled.
+- The current-tree B37 sweep shows `PREV_SCAN_MAX=2` is a cross/high-remote specialist on the live `chunk16` baseline, while `PREV_SCAN_MAX=1` is no-go. Keep B37 separate from both the live `chunk16` default and the `FREE_BATCH_CONSUME_MIN=2` lane-specific candidate.
+- `mimalloc-bench` subset should start with `cache-thrash`, `cache-scratch`, and `malloc-large`.
+
+## Mac-Specific Knobs
+
+- MT remote: use `ring_slots=262144` for the current M1 Mac tuning pass.
+- Allocator switching: use `DYLD_INSERT_LIBRARIES`.
+- Timing on macOS: prefer `python3` + `time.time_ns()` in shell wrappers.
+
+## Where New Results Go
+
+- Add new platform-wide summaries here when they matter for allocator comparisons.
+- Add per-run artifacts under a dated file in this directory.
+- Update [Benchmark results index](/Users/tomoaki/git/hakozuna/docs/benchmarks/INDEX.md) when a new dated summary lands.
+- Put lane status and keep/freeze/reject calls in [GO / NO-GO ledger](/Users/tomoaki/git/hakozuna/docs/benchmarks/GO_NO_GO_LEDGER.md).
+- Keep platform tuning notes in `docs/MAC_BUILD.md` and `docs/MAC_BENCH_PREP.md`.
