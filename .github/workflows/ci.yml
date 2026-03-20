@@ -32,8 +32,8 @@ jobs:
         run: |
           set -euxo pipefail
           make -C hakozuna clean all_ldpreload_scale
-          test -s "${GITHUB_WORKSPACE}/../libhakozuna_hz3_scale.so"
-          nm -D "${GITHUB_WORKSPACE}/../libhakozuna_hz3_scale.so" | grep -E ' hz3_malloc$| hz3_free$'
+          test -s "${GITHUB_WORKSPACE}/libhakozuna_hz3_scale.so"
+          nm -D "${GITHUB_WORKSPACE}/libhakozuna_hz3_scale.so" | grep -E ' hz3_malloc$| hz3_free$'
 
       - name: Build hz4 perf library
         run: |
@@ -59,15 +59,15 @@ jobs:
           }
           EOF
           cc -O2 /tmp/preload_smoke.c -o /tmp/preload_smoke
-          LD_PRELOAD="${GITHUB_WORKSPACE}/../libhakozuna_hz3_scale.so" /tmp/preload_smoke
+          LD_PRELOAD="${GITHUB_WORKSPACE}/libhakozuna_hz3_scale.so" /tmp/preload_smoke
           LD_PRELOAD="${GITHUB_WORKSPACE}/hakozuna-mt/libhakozuna_hz4.so" /tmp/preload_smoke
 
       - name: Bench startup smoke (hz3 bench_minimal)
         run: |
           set -euxo pipefail
           cc -O2 -pthread -Ihakozuna/include hakozuna/bench/bench_minimal.c \
-             -L"${GITHUB_WORKSPACE}/.." -lhakozuna_hz3_scale \
-             -Wl,-rpath,"${GITHUB_WORKSPACE}/.." \
+             -L"${GITHUB_WORKSPACE}" -lhakozuna_hz3_scale \
+             -Wl,-rpath,"${GITHUB_WORKSPACE}" \
              -o /tmp/bench_minimal_hz3
           timeout 10 /tmp/bench_minimal_hz3 1 20000 16 64
 
