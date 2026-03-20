@@ -194,20 +194,23 @@ using the shared mimalloc-bench source directory.
 ALLOCATORS=system,hz3,hz4,mimalloc,tcmalloc ./mac/run_mac_mimalloc_bench_subset.sh --runs 3
 ```
 
-For the current `malloc-large` research box, keep the existing wrapper and
-isolate the workload:
+For the current `malloc-large` research box, use the thin capture alias so the
+allocator stderr stays in the logs while the subset runner remains the
+implementation box. The wrapper also builds a stats-enabled `hz4` observe lib
+by default so the first-read counters are visible:
 
 ```bash
-DO_CACHE_THRASH=0 DO_CACHE_SCRATCH=0 DO_MALLOC_LARGE=1 RUNS=5 \
-  ALLOCATORS=system,hz3,hz4,mimalloc,tcmalloc \
-  ./mac/run_mac_mimalloc_bench_subset.sh
+./mac/run_mac_malloc_large_research.sh --runs 5
 ```
 
-The live treatment A/B is the large extent cache band/cap:
+The first treatment A/B was the large extent cache band/cap, and it is now a
+no-go:
 
 - current build
 - `HZ4_LARGE_EXTENT_CACHE_MAX_PAGES=400`
 - `HZ4_LARGE_EXTENT_CACHE_MAX_BYTES=1GiB`
+
+The next `malloc-large` hypothesis needs to be narrower and more local.
 
 ## Current hz4 Limitation
 

@@ -85,12 +85,18 @@ The current paper-suite follow-up boxes are narrower than the full mid search:
 - `hz4` `malloc-large` large-path
 - segment-registry high-remote fallback / bench pressure
 
-For `malloc-large`, keep the existing `run_mac_mimalloc_bench_subset.sh`
-wrapper and isolate the workload with `DO_CACHE_THRASH=0`
-`DO_CACHE_SCRATCH=0` `DO_MALLOC_LARGE=1 RUNS=5`.
-The current treatment A/B is the large extent cache band/cap:
+For `malloc-large`, use
+[`mac/run_mac_malloc_large_research.sh`](/Users/tomoaki/git/hakozuna/mac/run_mac_malloc_large_research.sh)
+as the thin alias around the existing subset runner. It isolates the workload
+with `DO_CACHE_THRASH=0`, `DO_CACHE_SCRATCH=0`, `DO_MALLOC_LARGE=1`, builds a
+stats-enabled `hz4` observe lib, and captures allocator stderr so the
+first-read counters stay visible in the logs.
+The first treatment A/B was the large extent cache band/cap, and it is now a
+no-go:
 `HZ4_LARGE_EXTENT_CACHE_MAX_PAGES=400` and
 `HZ4_LARGE_EXTENT_CACHE_MAX_BYTES=1GiB`.
+
+Keep the next `malloc-large` hypothesis narrower and more local.
 
 For the segment-registry follow-up, keep the slot A/B explicit by using
 `build_mac_mid_candidate_lane_segreg.sh --slots 32768` and
@@ -148,7 +154,7 @@ Current subset target:
 - `cache-scratch`
 - `malloc-large`
 - For the current follow-up, run `malloc-large` alone before widening the subset
-- If `malloc-large` stays slow, keep the research on the large extent cache band/cap
+- If `malloc-large` stays slow, keep the research on a narrower large-path hypothesis
 
 Deferred to a later box:
 - `larson-sized`

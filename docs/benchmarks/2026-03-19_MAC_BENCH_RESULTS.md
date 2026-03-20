@@ -1537,3 +1537,81 @@ Takeaway:
 - the stale `shards=96` display is gone on both runs
 - if a collision still happens, the log now reflects the actual p32 preset
   shard count instead of the raw default
+
+### 2026-03-21 `malloc-large` Research Capture
+
+The new `mac/run_mac_malloc_large_research.sh` wrapper builds a stats-enabled
+`hz4` observe lib and captures allocator stderr so the first-read counters stay
+visible in the logs. The `RUNS=5` isolated pass kept `hz4` as the clear
+outlier:
+
+| Allocator | median time (ns) | median time (s) |
+|---|---:|---:|
+| system | 796,408,000 | 0.796 |
+| hz3 | 805,145,000 | 0.805 |
+| hz4 | 2,698,075,000 | 2.698 |
+| mimalloc | 875,469,000 | 0.875 |
+| tcmalloc | 913,846,000 | 0.914 |
+
+Captured `hz4` counters on the same run:
+
+| Counter | Median |
+|---|---:|
+| `HZ4_OS_STATS_B16.ext_acq_hit` | 172 |
+| `HZ4_OS_STATS_B16.ext_acq_miss` | 939 |
+| `HZ4_OS_STATS_B16.ext_rel_hit` | 203 |
+| `HZ4_OS_STATS_B16.ext_rel_miss` | 908 |
+| `HZ4_OS_STATS_B16.ext_rel_drop_cap` | 908 |
+| `HZ4_OS_STATS_B16.ext_bytes_peak` | 268,435,456 |
+| `HZ4_FREE_ROUTE_STATS_B26.free_calls` | 2,014 |
+| `HZ4_FREE_ROUTE_STATS_B26.large_validate_calls` | 2,014 |
+| `HZ4_FREE_ROUTE_STATS_B26.large_validate_hits` | 2,000 |
+
+Interpretation:
+
+- the new box is observable now, but `hz4` is still the broad slow outlier on
+  `malloc-large`
+- `ext_bytes_peak` plateaued at 256 MiB, so the next hypothesis should be
+  narrower than the first band/cap treatment
+- the free route still pays one `large_validate` per large candidate, so the
+  remaining cost is not just the OS cache band
+
+### 2026-03-21 Segment-Registry High-Remote A/B
+
+The same capture-enabled workflow was then used on the high-remote segment-
+registry lane set with `ring_slots=262144` fixed.
+
+Commands:
+
+```bash
+HZ4_SO=/Users/tomoaki/git/hakozuna/mac/out/observe/libhakozuna_hz4_mid_free_batch2_segreg_slots32768.so \
+  ALLOCATORS=hz4 ./mac/run_mac_mt_remote_compare.sh --out-dir /Users/tomoaki/git/hakozuna/mac/out/research_mt_segreg_32768 \
+  16 2000000 400 16 2048 90 262144
+
+HZ4_SO=/Users/tomoaki/git/hakozuna/mac/out/observe/libhakozuna_hz4_mid_free_batch2_segreg_slots65536.so \
+  ALLOCATORS=hz4 ./mac/run_mac_mt_remote_compare.sh --out-dir /Users/tomoaki/git/hakozuna/mac/out/research_mt_segreg_65536 \
+  16 2000000 400 16 2048 90 262144
+```
+
+Throughput summary:
+
+| Slots | ops/s | actual remote | fallback rate | ring_full_fallback |
+|---|---:|---:|---:|---:|
+| 32768 | 12,923,089.54 | 57.8% | 32.19% | 5,150,023 |
+| 65536 | 11,761,185.37 | 54.8% | 35.21% | 5,632,292 |
+
+Counter read:
+
+| Counter | 32768 | 65536 |
+|---|---:|---:|
+| `HZ4_FREE_ROUTE_STATS_B26.large_validate_calls` | 16 | 16 |
+| `HZ4_MID_STATS_B1.malloc_lock_path` | 97 | 97 |
+| `HZ4_ST_STATS_B1.free_fallback_path` | 16,001,636 | 16,001,636 |
+| `HZ4_ST_STATS_B1.refill_to_slow` | 187,334 | 165,096 |
+
+Interpretation:
+
+- `32768` remains the better reference on the pressure-bound 90% lane
+- `65536` worsens actual remote utilization and increases fallback pressure
+- the remaining gap looks like bench pressure rather than allocator cost on
+  this shape

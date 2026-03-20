@@ -22,6 +22,7 @@ Use it to keep Mac build and smoke commands in one place without mixing:
 - [`run_bench_compare.sh`](run_bench_compare.sh): thin macOS frontend for the shared allocator compare runner
 - [`run_mac_larson_compare.sh`](run_mac_larson_compare.sh): macOS Larson-style allocator comparison runner
 - [`run_mac_mt_remote_compare.sh`](run_mac_mt_remote_compare.sh): macOS MT remote (malloc/free) compare runner
+- [`run_mac_malloc_large_research.sh`](run_mac_malloc_large_research.sh): thin alias for the isolated `malloc-large` research box with captured allocator stderr and a stats-enabled `hz4` observe lib
 - [`run_mac_mimalloc_bench_subset.sh`](run_mac_mimalloc_bench_subset.sh): macOS mimalloc-bench subset runner
 - [`bench_redis_workload_compare.c`](bench_redis_workload_compare.c): macOS Redis-style workload benchmark
 - [`run_mac_redis_compare.sh`](run_mac_redis_compare.sh): build-and-run wrapper for the Redis-like Mac benchmark
@@ -72,8 +73,10 @@ Current Mac design box:
 - use [`build_mac_mid_candidate_lane.sh`](build_mac_mid_candidate_lane.sh) to build it
 - use [`build_mac_mid_candidate_lane_segreg.sh`](build_mac_mid_candidate_lane_segreg.sh)
   for the segment-registry follow-up lane
-- the `malloc-large` research box stays on the existing subset runner; isolate
-  it with `DO_CACHE_THRASH=0 DO_CACHE_SCRATCH=0 DO_MALLOC_LARGE=1 RUNS=5`
+- use [`run_mac_malloc_large_research.sh`](run_mac_malloc_large_research.sh)
+  to isolate `malloc-large`, capture allocator stderr, and build the
+  stats-enabled `hz4` observe lib; the subset runner stays the underlying
+  implementation
 - keep it separate from the shared default until the remaining lower-remote spot-check is reconciled
 
 Observe lane for slow-path diagnosis:
@@ -116,6 +119,7 @@ mimalloc-bench subset (Mac):
 ```bash
 ./mac/run_mac_mimalloc_bench_subset.sh --runs 3
 ALLOCATORS=system,hz3,hz4,mimalloc,tcmalloc ./mac/run_mac_mimalloc_bench_subset.sh --runs 3
+./mac/run_mac_malloc_large_research.sh --runs 5
 ```
 
 Paper benchmark bundle:

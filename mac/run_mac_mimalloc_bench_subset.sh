@@ -7,6 +7,7 @@ source "${ROOT_DIR}/bench/lib/bench_common.sh"
 RUNS="${RUNS:-3}"
 SKIP_BUILD="${SKIP_BUILD:-0}"
 ALLOCATORS="${ALLOCATORS:-system,hz3,hz4,mimalloc,tcmalloc}"
+CAPTURE_ALLOCATOR_OUTPUT="${CAPTURE_ALLOCATOR_OUTPUT:-0}"
 
 PROCS="${PROCS:-}"
 if [[ -z "${PROCS}" ]]; then
@@ -48,6 +49,8 @@ Options:
   --bench-src-dir DIR mimalloc-bench/bench path
   --build-dir DIR     Build output directory
   --out-dir DIR       Copy logs to DIR after run
+  --capture-allocator-output
+                      Save allocator stdout/stderr for each run
   --skip-build        Skip bench compilation
   --help              Show this message
 EOF
@@ -79,6 +82,10 @@ while [[ $# -gt 0 ]]; do
       [[ $# -ge 2 ]] || { echo "missing value for --out-dir" >&2; exit 1; }
       OUTDIR="$2"
       shift 2
+      ;;
+    --capture-allocator-output)
+      CAPTURE_ALLOCATOR_OUTPUT=1
+      shift
       ;;
     --skip-build)
       SKIP_BUILD=1
@@ -129,6 +136,7 @@ write_readme() {
     echo "[BENCH-HEADER] mimalloc-bench subset (mac)"
     echo "ts=${TS} runs=${RUNS} procs=${PROCS} skip_build=${SKIP_BUILD}"
     echo "allocators=${ALLOCATORS}"
+    echo "capture_allocator_output=${CAPTURE_ALLOCATOR_OUTPUT}"
     echo "build_dir=${BUILD_DIR} bench_src_dir=${BENCH_SRC_DIR}"
     echo "do_cache_thrash=${DO_CACHE_THRASH} do_cache_scratch=${DO_CACHE_SCRATCH} do_malloc_large=${DO_MALLOC_LARGE}"
     echo "cache_threads_list=${CACHE_THREADS_LIST}"
@@ -156,7 +164,8 @@ build_benches() {
 run_one_timed() {
   local label="$1"
   local alloc="$2"
-  shift 2
+  local capture_log="${3:-}"
+  shift 3
   local bin="$1"
   shift 1
 
@@ -170,11 +179,26 @@ run_one_timed() {
   fi
 
   local start end dt_ns
+  if [[ "${CAPTURE_ALLOCATOR_OUTPUT}" == "1" ]]; then
+    if [[ -z "${capture_log}" ]]; then
+      echo "[ERROR] capture log path missing for ${label}" >&2
+      exit 1
+    fi
+    : > "${capture_log}"
+  fi
   start="$(ns_now)"
   if [[ "${alloc}" == "system" ]]; then
-    "${bin}" "$@" >/dev/null 2>&1
+    if [[ "${CAPTURE_ALLOCATOR_OUTPUT}" == "1" ]]; then
+      "${bin}" "$@" > "${capture_log}" 2>&1
+    else
+      "${bin}" "$@" >/dev/null 2>&1
+    fi
   else
-    bench_run_with_allocator "${alloc}" "${lib_path}" "${bin}" "$@" >/dev/null 2>&1
+    if [[ "${CAPTURE_ALLOCATOR_OUTPUT}" == "1" ]]; then
+      bench_run_with_allocator "${alloc}" "${lib_path}" "${bin}" "$@" > "${capture_log}" 2>&1
+    else
+      bench_run_with_allocator "${alloc}" "${lib_path}" "${bin}" "$@" >/dev/null 2>&1
+    fi
   fi
   end="$(ns_now)"
   dt_ns="$((end - start))"
@@ -183,6 +207,13 @@ label="${label}"
 dt_ns=${dt_ns}
 print(f"[BENCH] {label} time_ns={dt_ns}")
 PY
+  if [[ "${CAPTURE_ALLOCATOR_OUTPUT}" == "1" ]]; then
+    {
+      echo "[BENCH-OUTPUT] ${label} file=${capture_log}"
+      sed 's/^/[BENCH-OUTPUT] /' "${capture_log}"
+      echo "[BENCH-OUTPUT] ${label} end"
+    } >> "${log}"
+  fi
 }
 
 run_cache_bench() {
@@ -194,6 +225,11 @@ run_cache_bench() {
   fi
 
   local log="${LOG_DIR}/${bench_name}.log"
+  local capture_dir=""
+  if [[ "${CAPTURE_ALLOCATOR_OUTPUT}" == "1" ]]; then
+    capture_dir="${LOG_DIR}/captures/${bench_name}"
+    mkdir -p "${capture_dir}"
+  fi
   {
     echo "[BENCH-HEADER] bench=${bench_name} runs=${RUNS}"
     echo "[BENCH-ARGS] iters=${CACHE_ITERS} obj_size=${CACHE_OBJSIZE} reps=${CACHE_REPS} concurrency=${CACHE_CONCURRENCY} threads_list=${CACHE_THREADS_LIST}"
@@ -207,7 +243,11 @@ run_cache_bench() {
         continue
       fi
       for i in $(seq 1 "${RUNS}"); do
-        run_one_timed "name=${name} bench=${bench_name} threads=${t} run=${i}/${RUNS}" "${name}" "${bin}" \
+        local capture_log=""
+        if [[ "${CAPTURE_ALLOCATOR_OUTPUT}" == "1" ]]; then
+          capture_log="${capture_dir}/${name}_threads${t}_run${i}.log"
+        fi
+        run_one_timed "name=${name} bench=${bench_name} threads=${t} run=${i}/${RUNS}" "${name}" "${capture_log}" "${bin}" \
           "${t}" "${CACHE_ITERS}" "${CACHE_OBJSIZE}" "${CACHE_REPS}" "${CACHE_CONCURRENCY}" \
           >> "${log}"
       done
@@ -224,6 +264,11 @@ run_malloc_large() {
   fi
 
   local log="${LOG_DIR}/${bench_name}.log"
+  local capture_dir=""
+  if [[ "${CAPTURE_ALLOCATOR_OUTPUT}" == "1" ]]; then
+    capture_dir="${LOG_DIR}/captures/${bench_name}"
+    mkdir -p "${capture_dir}"
+  fi
   {
     echo "[BENCH-HEADER] bench=${bench_name} runs=${RUNS}"
     echo ""
@@ -235,7 +280,11 @@ run_malloc_large() {
       continue
     fi
     for i in $(seq 1 "${RUNS}"); do
-      run_one_timed "name=${name} bench=${bench_name} run=${i}/${RUNS}" "${name}" "${bin}" \
+      local capture_log=""
+      if [[ "${CAPTURE_ALLOCATOR_OUTPUT}" == "1" ]]; then
+        capture_log="${capture_dir}/${name}_run${i}.log"
+      fi
+      run_one_timed "name=${name} bench=${bench_name} run=${i}/${RUNS}" "${name}" "${capture_log}" "${bin}" \
         >> "${log}"
     done
   done
@@ -260,4 +309,3 @@ fi
 copy_dir_to_outdir "${LOG_DIR}"
 
 echo "logs: ${LOG_DIR}"
-copy_dir_to_outdir "${LOG_DIR}"

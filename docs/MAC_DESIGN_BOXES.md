@@ -254,17 +254,18 @@ The current Mac paper-suite follow-up has narrowed to two boxes:
   `malloc-large`.
 - Boundary: keep this separate from canonical Larson, canonical MT remote, and
   the segment-registry free-route lane.
-- Live knob: the current evidence points at the large extent cache band / cap,
-  not a new runner.
+- Historic knob: the first extent-cache band / cap treatment is a no-go, so
+  the next `malloc-large` box needs to be narrower and more local.
 - Read first: `HZ4_OS_STATS_B16.ext_acq_hit`, `ext_acq_miss`,
   `ext_rel_hit`, `ext_rel_miss`, `ext_rel_drop_cap`, `ext_bytes_peak`,
   plus `HZ4_FREE_ROUTE_STATS_B26.large_validate_calls` and
   `large_validate_hits`.
-- Run shape: use the existing `run_mac_mimalloc_bench_subset.sh` with
-  `DO_CACHE_THRASH=0 DO_CACHE_SCRATCH=0 DO_MALLOC_LARGE=1 RUNS=5`.
-- Treatment candidate: compare the current build against
-  `HZ4_LARGE_EXTENT_CACHE_MAX_PAGES=400` and
+- Run shape: use `run_mac_malloc_large_research.sh` as the thin capture alias
+  around the subset runner, with `DO_CACHE_THRASH=0`, `DO_CACHE_SCRATCH=0`,
+  `DO_MALLOC_LARGE=1`, `RUNS=5`, and the stats-enabled `hz4` observe lib.
+- Rejected treatment: `HZ4_LARGE_EXTENT_CACHE_MAX_PAGES=400` and
   `HZ4_LARGE_EXTENT_CACHE_MAX_BYTES=1GiB`.
+- Next hypothesis: keep it narrower and more local than the band/cap combo.
 - Success criterion: close the gap materially without regressing the canonical
   Mac compare lanes.
 

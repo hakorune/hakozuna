@@ -76,8 +76,11 @@ Before implementation, make these items explicit:
 - For `malloc-large`, read `HZ4_OS_STATS_B16.ext_acq_hit`, `ext_acq_miss`,
   `ext_rel_hit`, `ext_rel_miss`, `ext_rel_drop_cap`, `ext_bytes_peak`, plus
   `large_validate_calls` and `large_validate_hits` first
+- Use `mac/run_mac_malloc_large_research.sh` as the capture alias around the
+  subset runner so the stats-enabled `hz4` observe lib stays visible in logs
 - Treat `HZ4_LARGE_EXTENT_CACHE_MAX_PAGES=400` and
-  `HZ4_LARGE_EXTENT_CACHE_MAX_BYTES=1GiB` as the live treatment candidate
+  `HZ4_LARGE_EXTENT_CACHE_MAX_BYTES=1GiB` as a no-go combo for now; the next
+  hypothesis needs to be narrower and more local
 - If `hz4` remains a clear outlier, keep it as a dedicated large-path box
   instead of trying to explain it away as a mid-path effect
 

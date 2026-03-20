@@ -71,7 +71,7 @@ Next optimization steps, in order:
 - `HZ4_MID_PREFETCHED_BIN_HEAD_BOX=1` was the promising pre-B70 Mac Larson mid candidate and the canonical MT small-path candidate; keep its small-path story separate from the segment-registry free-route box, and do not treat it as the next Larson mid default on top of `chunk16`.
 - `HZ4_MID_FREE_BATCH_CONSUME_MIN=2` is still a live mid candidate, but it is now parked behind the two paper-suite outlier boxes: `hz4 malloc-large` and the segment-registry high-remote fallback lane.
 - The current-tree B37 sweep shows `PREV_SCAN_MAX=2` is a cross/high-remote specialist on the live `chunk16` baseline, while `PREV_SCAN_MAX=1` is no-go. Keep B37 separate from both the live `chunk16` default and the `FREE_BATCH_CONSUME_MIN=2` lane-specific candidate.
-- `mimalloc-bench` subset should start with `cache-thrash`, `cache-scratch`, and `malloc-large`; the `malloc-large` follow-up is now an extent-cache band/cap A/B, not a new runner.
+- `mimalloc-bench` subset should start with `cache-thrash`, `cache-scratch`, and `malloc-large`; the `malloc-large` follow-up now uses the thin `run_mac_malloc_large_research.sh` alias so allocator stderr and the stats-enabled `hz4` observe lib stay visible while the subset runner stays the implementation box.
 
 ## Mac-Specific Knobs
 
