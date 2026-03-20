@@ -27,8 +27,11 @@ Latest benchmark and paper
 - Public paper PDF (English): docs/paper/main_en.pdf
 - Public paper PDF (Japanese): docs/paper/main_ja.pdf
 - Local paper workspace: private/paper/
-- Zenodo v3.2: https://zenodo.org/records/19120414
-- DOI: https://doi.org/10.5281/zenodo.19120414
+- The public paper PDFs currently match the v3.2 paper revision.
+- v3.3 is a source/artifact release centered on Linux arm64 coverage and
+  ownership-routing bug fixes.
+- Latest archived Zenodo record (v3.2): https://zenodo.org/records/19120414
+- DOI (v3.2): https://doi.org/10.5281/zenodo.19120414
 
 Minimal usage examples
 ----------------------

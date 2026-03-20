@@ -3,6 +3,13 @@
 This release contains v3.3 of the Hakozuna allocator source, paper PDFs, and
 public benchmark artifacts.
 
+Paper note:
+
+- the public paper PDFs in `docs/paper/` are unchanged from the v3.2 paper
+  revision
+- v3.3 is mainly a source / artifact release for Linux arm64 coverage,
+  ownership-routing fixes, and cross-platform follow-up lanes
+
 Highlights since v3.2:
 
 - Linux arm64 benchmark and profiling lanes are now public

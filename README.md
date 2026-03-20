@@ -72,12 +72,15 @@ This repository already includes public Windows-native allocator comparisons and
 - ACE-Alloc Paper (English): `docs/paper/main_en.pdf`
 - ACE-Alloc Paper (Japanese): `docs/paper/main_ja.pdf`
 - Local paper workspace: `private/paper/`
-- Zenodo Record (v3.2): https://zenodo.org/records/19120414
-- DOI: https://doi.org/10.5281/zenodo.19120414
+- Public paper PDFs currently match the `v3.2` paper revision; `v3.3` is a
+  source/artifact release focused on Linux arm64 coverage and ownership-routing
+  bug fixes
+- Latest archived Zenodo record (v3.2): https://zenodo.org/records/19120414
+- DOI (v3.2): https://doi.org/10.5281/zenodo.19120414
 - GitHub Releases: https://github.com/hakorune/hakozuna/releases
 - Citation metadata: `CITATION.cff`
 - Changelog: `CHANGELOG.md` (BREAKING changes are explicitly listed per release)
-- GitHub Release body template: `docs/releases/GITHUB_RELEASE_v3.2.md`
+- GitHub Release body template: `docs/releases/GITHUB_RELEASE_v3.3.md`
 
 ## Benchmark Snapshot (2026-02-18, Ubuntu native)
 
