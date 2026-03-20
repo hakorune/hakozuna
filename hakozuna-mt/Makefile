@@ -58,7 +58,8 @@ INC_HEADERS = \
 	$(INC_DIR)/hz4_tls_init.h \
 	$(INC_DIR)/hz4_tcache.h \
 	$(INC_DIR)/hz4_mid.h \
-	$(INC_DIR)/hz4_large.h
+	$(INC_DIR)/hz4_large.h \
+	$(INC_DIR)/hz4_macos_foreign.h
 
 MID_INCS = \
 	$(SRC_DIR)/hz4_mid_stats.inc \
@@ -86,7 +87,7 @@ endif
 # Lane presets (SSOT: avoid mixing flags)
 # ============================================================================
 HZ4_DEFS_PERF_LANE ?= -DHZ4_PAGE_META_SEPARATE=0 -DHZ4_PAGE_DECOMMIT=0
-HZ4_DEFS_PERF_LANE_EXTRA ?=
+HZ4_DEFS_PERF_LANE_EXTRA ?= -DHZ4_MACOS_FOREIGN_SAFE=1
 HZ4_DEFS_PERF_LANE_COMBINED := $(strip $(HZ4_DEFS_PERF_LANE) $(HZ4_DEFS_PERF_LANE_EXTRA))
 HZ4_DEFS_RSS_LANE ?= -DHZ4_PAGE_META_SEPARATE=1 -DHZ4_PAGE_DECOMMIT=1 -DHZ4_DECOMMIT_DELAY_QUEUE=1 -DHZ4_TCACHE_PURGE_BEFORE_DECOMMIT=1
 HZ4_DEFS_RSS_LARSON_LANE ?= \
@@ -259,6 +260,7 @@ LIB_SRCS = \
 	$(SRC_DIR)/hz4_tcbox.c
 
 ifeq ($(UNAME_S),Darwin)
+LIB_SRCS += $(SRC_DIR)/hz4_macos_foreign.c
 LIB_SRCS += $(SRC_DIR)/hz4_macos_interpose.c
 endif
 

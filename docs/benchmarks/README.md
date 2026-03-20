@@ -42,12 +42,17 @@ Next optimization steps, in order:
 1. B70 chunk-pages on the segment-registry lane set.
    - Current live default: `HZ4_MID_PAGE_SUPPLY_RESV_CHUNK_PAGES=16`
    - `main_r50` keeps a tiny throughput edge at `chunk4`, but `cross64_r90` and the lock/refill counters prefer `chunk16`
-2. Research the Mac paper-suite outliers:
+2. Research the Mac correctness box first:
+   - foreign-pointer safety for `free` / `realloc` / `malloc_size`
+   - helper module split: `hakozuna-mt/src/hz4_macos_foreign.[ch]`
+   - lane wrapper: `mac/build_mac_foreign_safe_lane.sh` as a compatibility alias
+   - keep the helper boundary in the default Mac lanes while the alias exists
+3. Then research the Mac paper-suite outliers:
    - `hz4` `malloc-large` large-path box (large extent cache band/cap A/B)
    - segment-registry high-remote fallback box (slot-count A/B at `32768` vs `65536`)
    - Keep `HZ4_MID_FREE_BATCH_CONSUME_MIN=2` parked until those two boxes are understood
-3. Use `docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md` as the shared condition ledger before adding new OS-specific runs
-4. Use `docs/MAC_DESIGN_BOXES.md` for Mac-only tuning boxes before promoting anything to a shared default
+4. Use `docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md` as the shared condition ledger before adding new OS-specific runs
+5. Use `docs/MAC_DESIGN_BOXES.md` for Mac-only tuning boxes before promoting anything to a shared default
 
 ## Current Mac Benchmark Takeaways
 
@@ -55,6 +60,9 @@ Next optimization steps, in order:
 - `redis-like` is a good first allocator comparison once smoke is green, and its median rerun is now captured in the Mac results doc.
 - The first Mac `larson` pass is still a smoke shape; use the canonical SSOT shape before concluding anything.
 - The canonical larson rerun is the one to trust for cross-platform comparison.
+- The Mac foreign-pointer safety box now lives in the default Mac lanes; keep
+  it separate from the paper-suite outliers and use the compatibility wrapper
+  only when you need an explicit alias.
 - `bench_random_mixed_mt_remote_malloc` uses `ring_slots=262144` as the current M1 Mac tuning value to avoid fallback noise.
 - MT remote logs are especially useful because they expose `ring_full_fallback`, `overflow_sent`, `overflow_received`, and `[EFFECTIVE_REMOTE]`.
 - `HZ4_FREE_ROUTE_SEGMENT_REGISTRY_BOX=1` is the current promising MT A/B for the segment-registry lane set; on `guard_r0`, `main_r50`, and `cross64_r90` it collapses `large_validate_calls`, with the biggest win on `cross64_r90`.

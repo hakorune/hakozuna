@@ -42,6 +42,8 @@ This runs:
 - `hz3`: `gmake -C hakozuna clean all_ldpreload_scale`
 - `hz4`: `gmake -C hakozuna-mt clean all_perf_lib`
 
+The `hz4` default lane now includes `HZ4_MACOS_FOREIGN_SAFE=1`, so the foreign-pointer helper boundary is part of the normal Mac release path.
+
 ## Observe Build
 
 For stats-enabled allocator libraries without touching the release lane, use:
@@ -84,6 +86,26 @@ current Mac investigation, build the observe lane with:
 
 This keeps the release lane unchanged and turns on `HZ3_SCALE_S74_STATS=1`
 cleanly, without fighting the scale preset defaults in the Makefile.
+
+## Foreign-Pointer Safety Lane
+
+The foreign-pointer helper is now in the default Mac release and observe lanes.
+If you still want an explicit compatibility build, use the dedicated wrapper:
+
+```bash
+./mac/build_mac_foreign_safe_lane.sh
+```
+
+This lane:
+
+- keeps the Mac interpose file thin
+- moves the foreign-pointer boundary into `hz4_macos_foreign.[ch]`
+- enables `HZ4_MACOS_FOREIGN_SAFE=1`
+- mirrors the default helper boundary while leaving a dedicated alias in place
+- emits a separate `hz4` observe library under `mac/out/observe/`
+
+Use the resulting `HZ4_SO` together with an existing `HZ3_SO` from the normal
+observe lane or from the release lane when you run the Mac compare scripts.
 
 ## Current Mac Design Box
 

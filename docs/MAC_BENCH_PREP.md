@@ -51,6 +51,17 @@ These are the conclusions from the first M1 Mac pass:
 
 ## Current Mac Design Box
 
+The first Mac correctness box is the foreign-pointer safety box, and it is now
+part of the default Mac `hz4` lanes:
+
+- `HZ4_MACOS_FOREIGN_SAFE=1`
+- helper module: `hakozuna-mt/src/hz4_macos_foreign.[ch]`
+- thin interpose shell: `hakozuna-mt/src/hz4_macos_interpose.c`
+- lane wrapper: `mac/build_mac_foreign_safe_lane.sh` (compatibility alias)
+- run order: smoke -> compare -> observe
+- keep the helper boundary around while the compatibility wrapper remains
+  available
+
 The current Mac-specific tuning box is:
 
 - `HZ4_MID_FREE_BATCH_CONSUME_MIN=2`

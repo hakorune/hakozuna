@@ -57,4 +57,4 @@ esac
 }
 
 echo "[mac] DYLD_INSERT_LIBRARIES=$LIB_PATH"
-exec DYLD_INSERT_LIBRARIES="$LIB_PATH" "$@"
+exec /usr/bin/env DYLD_INSERT_LIBRARIES="$LIB_PATH" "$@"

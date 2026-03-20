@@ -15,6 +15,7 @@ Use it to keep Mac build and smoke commands in one place without mixing:
 - [`check_mac_env.sh`](check_mac_env.sh): quick environment check for the local Mac toolchain
 - [`build_mac_release_lane.sh`](build_mac_release_lane.sh): public build wrapper for the current Mac release lane
 - [`build_mac_observe_lane.sh`](build_mac_observe_lane.sh): separate stats-enabled build wrapper for diagnosis
+- [`build_mac_foreign_safe_lane.sh`](build_mac_foreign_safe_lane.sh): compatibility wrapper for the `hz4` foreign-pointer safety build
 - [`build_mac_mid_candidate_lane.sh`](build_mac_mid_candidate_lane.sh): current Mac mid candidate wrapper for `HZ4_MID_FREE_BATCH_CONSUME_MIN=2`
 - [`build_mac_mid_candidate_lane_segreg.sh`](build_mac_mid_candidate_lane_segreg.sh): segment-registry follow-up wrapper for the same mid candidate, with `--slots 65536` for the slot A/B
 - [`run_mac_preload_smoke.sh`](run_mac_preload_smoke.sh): minimal `DYLD_INSERT_LIBRARIES` smoke runner
@@ -59,10 +60,14 @@ See also:
 Default Mac build lane:
 
 - `hz3`: `all_ldpreload_scale`
-- `hz4`: `all_perf_lib` for now, until the hz4 test lane is Mac-ready
+- `hz4`: `all_perf_lib` with the foreign-pointer safety helper baked in
 
 Current Mac design box:
 
+- the Mac foreign-pointer safety box is now the first correctness box and is
+  part of the default Mac `hz4` lanes
+- use [`build_mac_foreign_safe_lane.sh`](build_mac_foreign_safe_lane.sh) only
+  if you want the explicit compatibility wrapper for rollback or A/B
 - `HZ4_MID_FREE_BATCH_CONSUME_MIN=2` is the lane-specific live candidate
 - use [`build_mac_mid_candidate_lane.sh`](build_mac_mid_candidate_lane.sh) to build it
 - use [`build_mac_mid_candidate_lane_segreg.sh`](build_mac_mid_candidate_lane_segreg.sh)

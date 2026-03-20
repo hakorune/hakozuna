@@ -218,7 +218,24 @@ Use the shared cross-platform ledger for the conditions:
 
 ## Current Mac Recommendation
 
-The only live Mac mid candidate that still deserves an implementation box is:
+Before any further tuning, the foreign-pointer safety box is now baked into
+the default Mac path, and the helper owns the whole routing boundary:
+
+- module boundary: `hakozuna-mt/src/hz4_macos_foreign.[ch]`
+- thin shell: `hakozuna-mt/src/hz4_macos_interpose.c`
+- lane wrapper: `mac/build_mac_foreign_safe_lane.sh`
+- flag: `HZ4_MACOS_FOREIGN_SAFE=1`
+- scope: `free` / `realloc` / `malloc_size` plus the aligned wrappers
+- helper duty: owned-vs-foreign classification, aligned decode/encode, and
+  system-zone fallback
+- interpose duty: exports, stats, and traces only
+- run order: smoke -> compare -> observe
+- rollback rule: keep the helper boundary while the compatibility wrapper
+  remains available
+- Windows bench compare stays out of this box
+
+The only live Mac mid candidate that still deserves an implementation box
+after the safety fix is:
 
 - `HZ4_MID_FREE_BATCH_CONSUME_MIN=2`
 
