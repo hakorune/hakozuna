@@ -30,8 +30,8 @@ Latest benchmark and paper
 - The public paper PDFs currently match the v3.2 paper revision.
 - v3.3 is a source/artifact release centered on Linux arm64 coverage and
   ownership-routing bug fixes.
-- Latest archived Zenodo record (v3.2): https://zenodo.org/records/19120414
-- DOI (v3.2): https://doi.org/10.5281/zenodo.19120414
+- Latest archived Zenodo record (v3.3): https://zenodo.org/records/19139939
+- DOI (v3.3): https://doi.org/10.5281/zenodo.19139939
 
 Minimal usage examples
 ----------------------

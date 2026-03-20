@@ -1,6 +1,6 @@
 # hakozuna (hz3) / hakozuna-mt (hz4)
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19120414.svg)](https://doi.org/10.5281/zenodo.19120414)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19139939.svg)](https://doi.org/10.5281/zenodo.19139939)
 
 **High-performance memory allocators competitive with mimalloc and tcmalloc**
 
@@ -75,8 +75,8 @@ This repository already includes public Windows-native allocator comparisons and
 - Public paper PDFs currently match the `v3.2` paper revision; `v3.3` is a
   source/artifact release focused on Linux arm64 coverage and ownership-routing
   bug fixes
-- Latest archived Zenodo record (v3.2): https://zenodo.org/records/19120414
-- DOI (v3.2): https://doi.org/10.5281/zenodo.19120414
+- Latest archived Zenodo record (v3.3): https://zenodo.org/records/19139939
+- DOI (v3.3): https://doi.org/10.5281/zenodo.19139939
 - GitHub Releases: https://github.com/hakorune/hakozuna/releases
 - Citation metadata: `CITATION.cff`
 - Changelog: `CHANGELOG.md` (BREAKING changes are explicitly listed per release)

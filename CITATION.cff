@@ -2,10 +2,10 @@ cff-version: 1.2.0
 message: "If you use Hakozuna, please cite this software and paper archive."
 title: "Hakozuna (hz3/hz4): allocator source and paper artifacts"
 type: software
-version: "3.2"
-date-released: 2026-03-20
-doi: 10.5281/zenodo.19120414
-url: https://zenodo.org/records/19120414
+version: "3.3"
+date-released: 2026-03-21
+doi: 10.5281/zenodo.19139939
+url: https://zenodo.org/records/19139939
 repository-code: https://github.com/hakorune/hakozuna
 license: Apache-2.0
 authors:

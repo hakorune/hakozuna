@@ -33,8 +33,8 @@ Hakozuna 公開リポジトリ案内 (日本語)
 - 公開PDFは現在も v3.2 時点の論文改訂を指します
 - v3.3 は Linux arm64 対応と ownership-routing バグ修正を中心にした
   source / artifact release です
-- 最新の Zenodo アーカイブ（v3.2）: https://zenodo.org/records/19120414
-- DOI（v3.2）: https://doi.org/10.5281/zenodo.19120414
+- 最新の Zenodo アーカイブ（v3.3）: https://zenodo.org/records/19139939
+- DOI（v3.3）: https://doi.org/10.5281/zenodo.19139939
 
 最小実行例
 ----------
