@@ -10,24 +10,24 @@ them.
 - [Linux arm64 free-route order gate follow-up, 2026-03-20](./2026-03-20_LINUX_ARM64_FREE_ROUTE_ORDER_GATE_RESULTS.md)
 - [Linux arm64 lane map](./linux/ARM64_LANE_MAP.md)
 - [Linux arm64 profiling guide](./linux/ARM64_PROFILING.md)
-- [GO / NO-GO ledger](/Users/tomoaki/git/hakozuna/docs/benchmarks/GO_NO_GO_LEDGER.md)
-- [Cross-platform benchmark conditions](/Users/tomoaki/git/hakozuna/docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md)
-- [Benchmark results index](/Users/tomoaki/git/hakozuna/docs/benchmarks/INDEX.md)
-- [Mac design boxes](/Users/tomoaki/git/hakozuna/docs/MAC_DESIGN_BOXES.md)
-- [Mac build notes](/Users/tomoaki/git/hakozuna/docs/MAC_BUILD.md)
-- [Mac benchmark prep order](/Users/tomoaki/git/hakozuna/docs/MAC_BENCH_PREP.md)
-- [Mac benchmark results, 2026-03-19](/Users/tomoaki/git/hakozuna/docs/benchmarks/2026-03-19_MAC_BENCH_RESULTS.md)
+- [GO / NO-GO ledger](./GO_NO_GO_LEDGER.md)
+- [Cross-platform benchmark conditions](./CROSS_PLATFORM_BENCH_CONDITIONS.md)
+- [Benchmark results index](./INDEX.md)
+- [Mac design boxes](../MAC_DESIGN_BOXES.md)
+- [Mac build notes](../MAC_BUILD.md)
+- [Mac benchmark prep order](../MAC_BENCH_PREP.md)
+- [Mac benchmark results, 2026-03-19](./2026-03-19_MAC_BENCH_RESULTS.md)
 
 ## Platform Entrypoints
 
 Use the platform entry docs when you need the build/run front door for a
 specific lane:
 
-- [Linux entrypoints](/Users/tomoaki/git/hakozuna/linux/README.md)
+- [Linux entrypoints](../../linux/README.md)
 - [Linux arm64 lane map](./linux/ARM64_LANE_MAP.md)
 - [Linux arm64 profiling guide](./linux/ARM64_PROFILING.md)
-- [macOS entrypoints](/Users/tomoaki/git/hakozuna/mac/README.md)
-- [Windows entrypoints](/Users/tomoaki/git/hakozuna/win/README.md)
+- [macOS entrypoints](../../mac/README.md)
+- [Windows entrypoints](../../win/README.md)
 
 ## Before You Implement
 
@@ -75,8 +75,8 @@ Next optimization steps, in order:
 
 - Add new platform-wide summaries here when they matter for allocator comparisons.
 - Add per-run artifacts under a dated file in this directory.
-- Update [Benchmark results index](/Users/tomoaki/git/hakozuna/docs/benchmarks/INDEX.md) when a new dated summary lands.
-- Put lane status and keep/freeze/reject calls in [GO / NO-GO ledger](/Users/tomoaki/git/hakozuna/docs/benchmarks/GO_NO_GO_LEDGER.md).
+- Update [Benchmark results index](./INDEX.md) when a new dated summary lands.
+- Put lane status and keep/freeze/reject calls in [GO / NO-GO ledger](./GO_NO_GO_LEDGER.md).
 - Keep platform tuning notes in `docs/MAC_BUILD.md` and `docs/MAC_BENCH_PREP.md`.
 
 ## Current Linux arm64 Note

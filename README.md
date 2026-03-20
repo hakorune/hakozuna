@@ -4,7 +4,7 @@
 
 **High-performance memory allocators competitive with mimalloc and tcmalloc**
 
-Public source release with both Ubuntu/Linux and Windows-native build and benchmark entrypoints.
+Public source release with Ubuntu/Linux, macOS, and Windows-native build and benchmark entrypoints.
 
 Part of the [hakorune](https://github.com/hakorune) project.
 
@@ -20,7 +20,7 @@ Part of the [hakorune](https://github.com/hakorune) project.
 
 - **Ubuntu/Linux**: public build and preload entrypoints under `linux/` (x86_64 and arm64 lanes)
 - **Windows native**: public build and benchmark entrypoints under `win/`
-- **macOS**: public build and preload entrypoints under `mac/` (bring-up in progress)
+- **macOS**: public build and preload entrypoints under `mac/` (separate Apple Silicon development lane)
 - Windows guide: `docs/WINDOWS_BUILD.md`
 - Windows public summaries: `docs/benchmarks/windows/`
 

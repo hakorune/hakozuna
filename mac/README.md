@@ -36,7 +36,7 @@ cd /path/to/hakozuna
 
 ## Current Direction
 
-Mac bring-up is being added as a separate box from the existing Linux and Windows lanes.
+Mac entrypoints are now established as a separate box from the existing Linux and Windows lanes.
 
 Keep the repository roles separate:
 
@@ -50,11 +50,11 @@ The Mac entry layer is intentionally thin. The next step is to normalize the bui
 
 See also:
 
-- [`docs/MAC_DESIGN_BOXES.md`](/Users/tomoaki/git/hakozuna/docs/MAC_DESIGN_BOXES.md)
-- [`docs/MAC_BUILD.md`](/Users/tomoaki/git/hakozuna/docs/MAC_BUILD.md)
-- [`docs/benchmarks/GO_NO_GO_LEDGER.md`](/Users/tomoaki/git/hakozuna/docs/benchmarks/GO_NO_GO_LEDGER.md)
-- [`bench/README.md`](/Users/tomoaki/git/hakozuna/bench/README.md)
-- [`mac/bench_larson_compare.c`](/Users/tomoaki/git/hakozuna/mac/bench_larson_compare.c)
+- [`docs/MAC_DESIGN_BOXES.md`](../docs/MAC_DESIGN_BOXES.md)
+- [`docs/MAC_BUILD.md`](../docs/MAC_BUILD.md)
+- [`docs/benchmarks/GO_NO_GO_LEDGER.md`](../docs/benchmarks/GO_NO_GO_LEDGER.md)
+- [`bench/README.md`](../bench/README.md)
+- [`mac/bench_larson_compare.c`](bench_larson_compare.c)
 
 Default Mac build lane:
 
@@ -75,8 +75,8 @@ Observe lane for slow-path diagnosis:
 
 ```bash
 ./mac/build_mac_observe_lane.sh
-HZ3_SO=/Users/tomoaki/git/hakozuna/libhakozuna_hz3_obs.so \
-HZ4_SO=/Users/tomoaki/git/hakozuna/hakozuna-mt/libhakozuna_hz4_obs.so \
+HZ3_SO=libhakozuna_hz3_obs.so \
+HZ4_SO=hakozuna-mt/libhakozuna_hz4_obs.so \
   ./mac/run_mac_larson_compare.sh 5 4096 32768 1000 1000 0 4
 ```
 
@@ -128,6 +128,6 @@ Paper benchmark bundle:
 
 ## See Also
 
-- [linux/README.md](/Users/tomoaki/git/hakozuna/linux/README.md)
-- [win/README.md](/Users/tomoaki/git/hakozuna/win/README.md)
-- [docs/REPO_STRUCTURE.md](/Users/tomoaki/git/hakozuna/docs/REPO_STRUCTURE.md)
+- [linux/README.md](../linux/README.md)
+- [win/README.md](../win/README.md)
+- [docs/REPO_STRUCTURE.md](../docs/REPO_STRUCTURE.md)

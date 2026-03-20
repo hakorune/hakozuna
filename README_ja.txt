@@ -10,7 +10,9 @@ Hakozuna 公開リポジトリ案内 (日本語)
 --------------------
 
 - Ubuntu/Linux の公開エントリポイント: linux/
+- Ubuntu/Linux arm64 の明示的な入口: linux/build_linux_arm64_release_lane.sh
 - Windows native の公開エントリポイント: win/
+- macOS の公開エントリポイント: mac/
 - Windows の build / bench ガイド: docs/WINDOWS_BUILD.md
 
 推奨プロファイル選択
@@ -24,6 +26,7 @@ Hakozuna 公開リポジトリ案内 (日本語)
 ------------------
 
 - ベンチ結果: docs/benchmarks/2026-02-18_PAPER_BENCH_RESULTS.md
+- Ubuntu/Linux arm64 の結果: docs/benchmarks/2026-03-21_LINUX_ARM64_PRELOAD_OWNERSHIP_FIX_RESULTS.md
 - 公開PDF（英語）: docs/paper/main_en.pdf
 - 公開PDF（日本語）: docs/paper/main_ja.pdf
 - ローカル論文ワークスペース: private/paper/
@@ -50,3 +53,5 @@ LD_PRELOAD=./libhakozuna_hz4.so ./your_app
 
 - プロファイル切替の詳細は PROFILE_GUIDE.md を参照
 - 公開情報の起点は README.md
+- Linux の arm64 は x86_64 と分けて扱う
+- macOS は別レーンとして扱う

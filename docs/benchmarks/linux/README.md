@@ -10,8 +10,8 @@ Use it for:
 
 Keep these elsewhere:
 
-- private raw logs: [private](/C:/git/hakozuna-win/private)
-- vendor/source recovery trees: [private](/C:/git/hakozuna-win/private)
+- private raw logs: [private](../../../private)
+- vendor/source recovery trees: [private](../../../private)
 - generated local outputs: ignored `out_*` and temporary files
 
 ## Ubuntu Linux Lanes
@@ -67,6 +67,6 @@ For the current arm64 profiling read, start with:
 
 The published Ubuntu snapshot currently lives in:
 
-- [docs/benchmarks/2026-02-18_PAPER_BENCH_RESULTS.md](/C:/git/hakozuna-win/docs/benchmarks/2026-02-18_PAPER_BENCH_RESULTS.md)
+- [docs/benchmarks/2026-02-18_PAPER_BENCH_RESULTS.md](../2026-02-18_PAPER_BENCH_RESULTS.md)
 
 Add future public Ubuntu/Linux summaries here instead of mixing them into Windows-only folders.

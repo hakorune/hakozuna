@@ -7,8 +7,8 @@ This page is the public pointer list for dated benchmark summaries.
 - [Linux arm64 preload ownership fix results, 2026-03-21](./2026-03-21_LINUX_ARM64_PRELOAD_OWNERSHIP_FIX_RESULTS.md)
 - [Linux arm64 compare results, 2026-03-20](./2026-03-20_LINUX_ARM64_COMPARE_RESULTS.md)
 - [Linux arm64 free-route order gate follow-up, 2026-03-20](./2026-03-20_LINUX_ARM64_FREE_ROUTE_ORDER_GATE_RESULTS.md)
-- [Mac benchmark results, 2026-03-19](/Users/tomoaki/git/hakozuna/docs/benchmarks/2026-03-19_MAC_BENCH_RESULTS.md)
-- [Paper benchmark results, 2026-02-18](/Users/tomoaki/git/hakozuna/docs/benchmarks/2026-02-18_PAPER_BENCH_RESULTS.md)
+- [Mac benchmark results, 2026-03-19](./2026-03-19_MAC_BENCH_RESULTS.md)
+- [Paper benchmark results, 2026-02-18](./2026-02-18_PAPER_BENCH_RESULTS.md)
 
 ## Usage
 
@@ -20,6 +20,6 @@ This page is the public pointer list for dated benchmark summaries.
 
 ## Related Docs
 
-- [GO / NO-GO ledger](/Users/tomoaki/git/hakozuna/docs/benchmarks/GO_NO_GO_LEDGER.md)
-- [Cross-platform benchmark conditions](/Users/tomoaki/git/hakozuna/docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md)
-- [Mac benchmark prep order](/Users/tomoaki/git/hakozuna/docs/MAC_BENCH_PREP.md)
+- [GO / NO-GO ledger](./GO_NO_GO_LEDGER.md)
+- [Cross-platform benchmark conditions](./CROSS_PLATFORM_BENCH_CONDITIONS.md)
+- [Mac benchmark prep order](../MAC_BENCH_PREP.md)

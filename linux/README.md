@@ -10,17 +10,17 @@ Use it to keep Linux build and smoke commands in one place without mixing:
 
 ## What Lives Here
 
-- [build_linux_release_lane.sh](/C:/git/hakozuna-win/linux/build_linux_release_lane.sh): public build wrapper for the current Ubuntu release lane
-- [build_linux_arm64_release_lane.sh](/C:/git/hakozuna-win/linux/build_linux_arm64_release_lane.sh): explicit Ubuntu arm64 build wrapper
-- [build_linux_bench_compare.sh](/C:/git/hakozuna-win/linux/build_linux_bench_compare.sh): build the Linux benchmark compare binary
-- [build_linux_arm64_bench_compare.sh](/C:/git/hakozuna-win/linux/build_linux_arm64_bench_compare.sh): explicit Ubuntu arm64 benchmark build wrapper
-- [build_linux_arm64_order_gate_release_lane.sh](/C:/git/hakozuna-win/linux/build_linux_arm64_order_gate_release_lane.sh): explicit Ubuntu arm64 order-gate build wrapper for experimental tuning
-- [run_linux_preload_smoke.sh](/C:/git/hakozuna-win/linux/run_linux_preload_smoke.sh): minimal `LD_PRELOAD` smoke runner for `hz3` and `hz4`
-- [run_linux_bench_compare.sh](/C:/git/hakozuna-win/linux/run_linux_bench_compare.sh): build, prepare allocators, and run the Linux benchmark compare lane
-- [run_linux_arm64_bench_compare.sh](/C:/git/hakozuna-win/linux/run_linux_arm64_bench_compare.sh): explicit Ubuntu arm64 benchmark compare wrapper
-- [run_linux_arm64_order_gate_compare.sh](/C:/git/hakozuna-win/linux/run_linux_arm64_order_gate_compare.sh): explicit Ubuntu arm64 order-gate compare wrapper for experimental tuning
-- [prepare_linux_bench_allocators.sh](/C:/git/hakozuna-win/linux/prepare_linux_bench_allocators.sh): local `mimalloc` / `tcmalloc` cache prep for benchmark runs
-- [run_bench_compare.sh](/Users/tomoaki/git/hakozuna/linux/run_bench_compare.sh): thin Linux frontend for the shared allocator compare runner
+- [build_linux_release_lane.sh](build_linux_release_lane.sh): public build wrapper for the current Ubuntu release lane
+- [build_linux_arm64_release_lane.sh](build_linux_arm64_release_lane.sh): explicit Ubuntu arm64 build wrapper
+- [build_linux_bench_compare.sh](build_linux_bench_compare.sh): build the Linux benchmark compare binary
+- [build_linux_arm64_bench_compare.sh](build_linux_arm64_bench_compare.sh): explicit Ubuntu arm64 benchmark build wrapper
+- [build_linux_arm64_order_gate_release_lane.sh](build_linux_arm64_order_gate_release_lane.sh): explicit Ubuntu arm64 order-gate build wrapper for experimental tuning
+- [run_linux_preload_smoke.sh](run_linux_preload_smoke.sh): minimal `LD_PRELOAD` smoke runner for `hz3` and `hz4`
+- [run_linux_bench_compare.sh](run_linux_bench_compare.sh): build, prepare allocators, and run the Linux benchmark compare lane
+- [run_linux_arm64_bench_compare.sh](run_linux_arm64_bench_compare.sh): explicit Ubuntu arm64 benchmark compare wrapper
+- [run_linux_arm64_order_gate_compare.sh](run_linux_arm64_order_gate_compare.sh): explicit Ubuntu arm64 order-gate compare wrapper for experimental tuning
+- [prepare_linux_bench_allocators.sh](prepare_linux_bench_allocators.sh): local `mimalloc` / `tcmalloc` cache prep for benchmark runs
+- [run_bench_compare.sh](run_bench_compare.sh): thin Linux frontend for the shared allocator compare runner
 
 ## Quick Start
 
@@ -88,12 +88,12 @@ Examples:
 
 ## GO / NO-GO And Conditions
 
-- Quick GO / NO-GO status: [docs/benchmarks/GO_NO_GO_LEDGER.md](/Users/tomoaki/git/hakozuna/docs/benchmarks/GO_NO_GO_LEDGER.md)
-- Shared workload conditions: [docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md](/Users/tomoaki/git/hakozuna/docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md)
-- Linux arm64 preload ownership fix results: [docs/benchmarks/2026-03-21_LINUX_ARM64_PRELOAD_OWNERSHIP_FIX_RESULTS.md](/home/tomoaki/hakozuna/docs/benchmarks/2026-03-21_LINUX_ARM64_PRELOAD_OWNERSHIP_FIX_RESULTS.md)
-- Linux arm64 lane map: [docs/benchmarks/linux/ARM64_LANE_MAP.md](/Users/tomoaki/git/hakozuna/docs/benchmarks/linux/ARM64_LANE_MAP.md)
-- Linux arm64 profiling guide: [docs/benchmarks/linux/ARM64_PROFILING.md](/Users/tomoaki/git/hakozuna/docs/benchmarks/linux/ARM64_PROFILING.md)
-- macOS is tracked as a separate Apple Silicon M1 development lane; see [mac/README.md](/Users/tomoaki/git/hakozuna/mac/README.md) and [docs/MAC_BENCH_PREP.md](/Users/tomoaki/git/hakozuna/docs/MAC_BENCH_PREP.md)
+- Quick GO / NO-GO status: [docs/benchmarks/GO_NO_GO_LEDGER.md](../docs/benchmarks/GO_NO_GO_LEDGER.md)
+- Shared workload conditions: [docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md](../docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md)
+- Linux arm64 preload ownership fix results: [docs/benchmarks/2026-03-21_LINUX_ARM64_PRELOAD_OWNERSHIP_FIX_RESULTS.md](../docs/benchmarks/2026-03-21_LINUX_ARM64_PRELOAD_OWNERSHIP_FIX_RESULTS.md)
+- Linux arm64 lane map: [docs/benchmarks/linux/ARM64_LANE_MAP.md](../docs/benchmarks/linux/ARM64_LANE_MAP.md)
+- Linux arm64 profiling guide: [docs/benchmarks/linux/ARM64_PROFILING.md](../docs/benchmarks/linux/ARM64_PROFILING.md)
+- macOS is tracked as a separate Apple Silicon M1 development lane; see [mac/README.md](../mac/README.md) and [docs/MAC_BENCH_PREP.md](../docs/MAC_BENCH_PREP.md)
 
 ## Published Ubuntu Lane
 
@@ -101,10 +101,10 @@ Ubuntu/Linux is the already-published public release lane for this repository.
 
 Current public references:
 
-- [README.md](/C:/git/hakozuna-win/README.md)
-- [docs/benchmarks/2026-02-18_PAPER_BENCH_RESULTS.md](/C:/git/hakozuna-win/docs/benchmarks/2026-02-18_PAPER_BENCH_RESULTS.md)
-- [docs/benchmarks/linux/README.md](/C:/git/hakozuna-win/docs/benchmarks/linux/README.md)
-- [bench/README.md](/Users/tomoaki/git/hakozuna/bench/README.md)
+- [README.md](../README.md)
+- [docs/benchmarks/2026-02-18_PAPER_BENCH_RESULTS.md](../docs/benchmarks/2026-02-18_PAPER_BENCH_RESULTS.md)
+- [docs/benchmarks/linux/README.md](../docs/benchmarks/linux/README.md)
+- [bench/README.md](../bench/README.md)
 
 ## Historical Notes
 
@@ -112,13 +112,13 @@ Some older docs still mention paths such as `hakozuna/hz3` or runner scripts und
 
 In this repo snapshot:
 
-- `hz3` builds are driven from [hakozuna/Makefile](/C:/git/hakozuna-win/hakozuna/Makefile)
-- `hz4` builds are driven from [hakozuna-mt/Makefile](/C:/git/hakozuna-win/hakozuna-mt/Makefile)
-- public Linux summaries should collect under [docs/benchmarks/linux](/C:/git/hakozuna-win/docs/benchmarks/linux)
-- private raw logs and vendor trees should stay under [private](/C:/git/hakozuna-win/private)
+- `hz3` builds are driven from [hakozuna/Makefile](../hakozuna/Makefile)
+- `hz4` builds are driven from [hakozuna-mt/Makefile](../hakozuna-mt/Makefile)
+- public Linux summaries should collect under [docs/benchmarks/linux](../docs/benchmarks/linux)
+- private raw logs and vendor trees should stay under [private](../private)
 
 ## See Also
 
-- [mac/README.md](/Users/tomoaki/git/hakozuna/mac/README.md)
-- [win/README.md](/Users/tomoaki/git/hakozuna/win/README.md)
-- [docs/REPO_STRUCTURE.md](/Users/tomoaki/git/hakozuna/docs/REPO_STRUCTURE.md)
+- [mac/README.md](../mac/README.md)
+- [win/README.md](../win/README.md)
+- [docs/REPO_STRUCTURE.md](../docs/REPO_STRUCTURE.md)

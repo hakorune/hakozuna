@@ -11,13 +11,13 @@ Use this before adding new benchmark lanes, release assets, or third-party trees
 ## Current Release Stance
 
 - Ubuntu/Linux already has a published GitHub release lane.
-- macOS now has public development and benchmark entrypoints under `mac/`, but it is still treated as a development lane rather than a published release lane.
-- The current GO / NO-GO snapshot for benchmark and lane status is recorded in [`docs/benchmarks/GO_NO_GO_LEDGER.md`](/Users/tomoaki/git/hakozuna/docs/benchmarks/GO_NO_GO_LEDGER.md), and shared workload conditions live in [`docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md`](/Users/tomoaki/git/hakozuna/docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md).
-- Mac-specific tuning boxes are documented in [`docs/MAC_DESIGN_BOXES.md`](/Users/tomoaki/git/hakozuna/docs/MAC_DESIGN_BOXES.md).
-- Windows-native build and benchmark entrypoints are now public and documented under [`win/README.md`](/Users/tomoaki/git/hakozuna/win/README.md) and [`docs/WINDOWS_BUILD.md`](/C:/git/hakozuna-win/docs/WINDOWS_BUILD.md).
-- Windows benchmark summaries may be published under [`docs/benchmarks/windows`](/C:/git/hakozuna-win/docs/benchmarks/windows), while private raw assets and third-party recovery trees still stay outside git.
+- macOS has public development and benchmark entrypoints under `mac/`, and it is treated as a live development lane rather than a published release lane.
+- The current GO / NO-GO snapshot for benchmark and lane status is recorded in [`docs/benchmarks/GO_NO_GO_LEDGER.md`](benchmarks/GO_NO_GO_LEDGER.md), and shared workload conditions live in [`docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md`](benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md).
+- Mac-specific tuning boxes are documented in [`docs/MAC_DESIGN_BOXES.md`](MAC_DESIGN_BOXES.md).
+- Windows-native build and benchmark entrypoints are public and documented under [`win/README.md`](../win/README.md) and [`docs/WINDOWS_BUILD.md`](WINDOWS_BUILD.md).
+- Windows benchmark summaries may be published under [`docs/benchmarks/windows`](benchmarks/windows), while private raw assets and third-party recovery trees still stay outside git.
 - Public docs may describe Windows bring-up status, but private benchmark assets and raw local traces must stay outside git.
-- The first-stop platform entry docs are [`linux/README.md`](/Users/tomoaki/git/hakozuna/linux/README.md), [`mac/README.md`](/Users/tomoaki/git/hakozuna/mac/README.md), and [`win/README.md`](/Users/tomoaki/git/hakozuna/win/README.md).
+- The first-stop platform entry docs are [`linux/README.md`](../linux/README.md), [`mac/README.md`](../mac/README.md), and [`win/README.md`](../win/README.md).
 
 ## Separation Rules
 
@@ -70,7 +70,7 @@ Recommended split:
 - `win/`: Windows build, run, hook, and bench entrypoints
 - `linux/`: Ubuntu/Linux build and run entrypoints (x86_64 and arm64 lanes)
 - `mac/`: macOS build and run entrypoints
-- allocator core stays shared under [`hakozuna`](/C:/git/hakozuna-win/hakozuna) and [`hakozuna-mt`](/C:/git/hakozuna-win/hakozuna-mt)
+- allocator core stays shared under [`hakozuna`](../hakozuna) and [`hakozuna-mt`](../hakozuna-mt)
 
 Rules:
 
@@ -110,9 +110,9 @@ Recommended split:
 
 For this repo today:
 
-- Windows public runners already live under [`win`](/C:/git/hakozuna-win/win)
-- Windows public summaries already live under [`docs/benchmarks/windows`](/C:/git/hakozuna-win/docs/benchmarks/windows)
-- local-only assets already belong under [`private`](/C:/git/hakozuna-win/private)
+- Windows public runners already live under [`win`](../win)
+- Windows public summaries already live under [`docs/benchmarks/windows`](benchmarks/windows)
+- local-only assets already belong under [`private`](../private)
 - Windows Redis and future memcached assets should migrate toward:
   - `private/bench-assets/windows/redis/...`
   - `private/raw-results/windows/redis/...`
@@ -151,9 +151,9 @@ Do not commit:
 
 ## Immediate Direction
 
-1. Keep Windows build and benchmark entrypoints under [`win`](/C:/git/hakozuna-win/win)
+1. Keep Windows build and benchmark entrypoints under [`win`](../win)
 2. Add a `linux/` entrypoint layer when Ubuntu-side repo runners are organized
-3. Keep private source recovery and third-party assets below [`private`](/C:/git/hakozuna-win/private)
-4. Only publish summary-grade benchmark outputs under [`docs/benchmarks`](/C:/git/hakozuna-win/docs/benchmarks)
+3. Keep private source recovery and third-party assets below [`private`](../private)
+4. Only publish summary-grade benchmark outputs under [`docs/benchmarks`](benchmarks)
 5. Treat Windows release preparation as a separate box from private raw-asset handling
 6. Keep real app-bench source trees and raw logs under `private/bench-assets` and `private/raw-results`, even when the runner script itself is public

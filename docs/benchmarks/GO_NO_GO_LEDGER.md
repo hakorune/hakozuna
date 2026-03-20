@@ -45,10 +45,10 @@ Legend:
 - Linux `perf` is not the Mac primary path here; use the Mac observe lane and counters instead.
 - `mimalloc` and `tcmalloc` staying strong on Mac is now treated as a code-shape question, not a Mac-only build-flags question.
 - The current working tree now has a fresh `hz3` rerun that lines back up with the paper-era intuition: `hz3` is broad and strong on Mac too, so stale library paths and mismatched artifacts are now a more likely explanation for the old weak Mac read.
-- Keep Mac-specific setup in [`docs/MAC_BUILD.md`](/Users/tomoaki/git/hakozuna/docs/MAC_BUILD.md), [`docs/MAC_BENCH_PREP.md`](/Users/tomoaki/git/hakozuna/docs/MAC_BENCH_PREP.md), and [`mac/README.md`](/Users/tomoaki/git/hakozuna/mac/README.md).
+- Keep Mac-specific setup in [`docs/MAC_BUILD.md`](../MAC_BUILD.md), [`docs/MAC_BENCH_PREP.md`](../MAC_BENCH_PREP.md), and [`mac/README.md`](../../mac/README.md).
 
 ## Pointers
 
-- [Benchmark README](/Users/tomoaki/git/hakozuna/docs/benchmarks/README.md)
-- [Cross-platform conditions](/Users/tomoaki/git/hakozuna/docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md)
-- [Mac benchmark results, 2026-03-19](/Users/tomoaki/git/hakozuna/docs/benchmarks/2026-03-19_MAC_BENCH_RESULTS.md)
+- [Benchmark README](./README.md)
+- [Cross-platform conditions](./CROSS_PLATFORM_BENCH_CONDITIONS.md)
+- [Mac benchmark results, 2026-03-19](./2026-03-19_MAC_BENCH_RESULTS.md)
