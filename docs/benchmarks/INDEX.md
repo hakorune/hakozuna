@@ -8,6 +8,10 @@ This page is the public pointer list for dated benchmark summaries.
 - [Linux arm64 compare results, 2026-03-20](./2026-03-20_LINUX_ARM64_COMPARE_RESULTS.md)
 - [Linux arm64 free-route order gate follow-up, 2026-03-20](./2026-03-20_LINUX_ARM64_FREE_ROUTE_ORDER_GATE_RESULTS.md)
 - [Mac benchmark results, 2026-03-19](./2026-03-19_MAC_BENCH_RESULTS.md)
+- [Windows HZ4 foreign-pointer smoke, 2026-03-21](./windows/apps/20260321_hz4_foreign_probe.md)
+- [Windows HZ4 one-shot ownership box, 2026-03-21](./windows/apps/20260321_hz4_win_one_shot_ownership.md)
+- [Windows paper-aligned bench, 2026-03-21](./windows/paper/20260321_044818_paper_windows.md)
+- [Windows Redis profile matrix, 2026-03-21](./windows/apps/20260321_044828_redis_real_windows_profile_matrix.md)
 - [Paper benchmark results, 2026-02-18](./2026-02-18_PAPER_BENCH_RESULTS.md)
 
 ## Usage

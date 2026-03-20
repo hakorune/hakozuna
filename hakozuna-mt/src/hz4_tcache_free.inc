@@ -551,6 +551,43 @@ static inline uint8_t hz4_free_try_small_page_route(hz4_tls_t* tls, void* ptr, u
     return 1;
 }
 
+HZ4_ALWAYS_INLINE
+static inline uint8_t hz4_free_try_known_seg_route(hz4_tls_t* tls, void* ptr) {
+    uintptr_t base = (uintptr_t)ptr & ~(HZ4_PAGE_SIZE - 1u);
+    uint32_t head_magic = *(uint32_t*)base;
+    if (head_magic == HZ4_MID_MAGIC) {
+        hz4_free_route_mid(ptr);
+        return 1;
+    }
+    if (head_magic == HZ4_LARGE_MAGIC) {
+        hz4_free_route_large_magic(ptr);
+        return 1;
+    }
+    return hz4_free_try_small_page_route(tls, ptr, base);
+}
+
+HZ4_ALWAYS_INLINE
+static inline void hz4_free_unknown_abort(void* ptr) {
+    hz4_free_b27_note_route(0);
+    hz4_small_stats_b19_free_route_unknown_inc();
+    hz4_free_stats_b26_unknown_hit_inc();
+#if HZ4_FAILFAST
+    {
+        uintptr_t base = (uintptr_t)ptr & ~(HZ4_PAGE_SIZE - 1u);
+        uintptr_t haddr = (uintptr_t)ptr - (uintptr_t)HZ4_LARGE_HEADER_BYTES;
+        hz4_page_t* page = (hz4_page_t*)base;
+        uint32_t head_magic = *(uint32_t*)base;
+        uint32_t haddr_magic = *(uint32_t*)haddr;
+        fprintf(stderr,
+                "[HZ4_FREE_UNKNOWN] ptr=%p base=%p haddr=%p head_magic=0x%08x page_magic=0x%08x haddr_magic=0x%08x large_first=%u\n",
+                ptr, (void*)base, (void*)haddr, head_magic, page->magic, haddr_magic,
+                (unsigned)hz4_free_b27_mode_large_first());
+    }
+#endif
+    HZ4_FAIL("hz4_free: unknown pointer");
+    abort();
+}
+
 #if HZ4_FREE_ROUTE_SUPERFAST_SMALL_LOCAL_BOX
 HZ4_ALWAYS_INLINE
 static inline uint8_t hz4_free_try_superfast_local_small(hz4_tls_t* tls, void* ptr) {
@@ -583,6 +620,20 @@ static inline uint8_t hz4_free_try_superfast_local_small(hz4_tls_t* tls, void* p
     return 0;
 }
 #endif
+
+HZ4_ALWAYS_INLINE_EXTERN
+void hz4_free_known_seg_owned(void* ptr) {
+    if (!ptr) {
+        return;
+    }
+    hz4_small_stats_b19_free_calls_inc();
+    hz4_free_stats_b26_calls_inc();
+    hz4_tls_t* tls = hz4_tls_get();
+    if (hz4_free_try_known_seg_route(tls, ptr)) {
+        return;
+    }
+    hz4_free_unknown_abort(ptr);
+}
 
 HZ4_ALWAYS_INLINE_EXTERN
 void hz4_free(void* ptr) {
@@ -660,20 +711,7 @@ void hz4_free(void* ptr) {
             return;
         }
 #endif
-        uintptr_t base = (uintptr_t)ptr & ~(HZ4_PAGE_SIZE - 1);
-        uint32_t head_magic = *(uint32_t*)base;
-        if (head_magic == HZ4_MID_MAGIC) {
-            hz4_free_route_mid(ptr);
-            return;
-        }
-        if (head_magic == HZ4_LARGE_MAGIC) {
-            hz4_free_route_large_magic(ptr);
-            return;
-        }
-
-        hz4_page_t* page = (hz4_page_t*)base;
-        if (hz4_page_valid(page)) {
-            hz4_free_route_small(tls, ptr, page);
+        if (hz4_free_try_known_seg_route(tls, ptr)) {
             return;
         }
     } else {
@@ -730,44 +768,13 @@ void hz4_free(void* ptr) {
         return;
     }
 #endif
-    uintptr_t base = (uintptr_t)ptr & ~(HZ4_PAGE_SIZE - 1);
-    uint32_t head_magic = *(uint32_t*)base;
-    if (head_magic == HZ4_MID_MAGIC) {
-        hz4_free_route_mid(ptr);
-        return;
-    }
-    if (head_magic == HZ4_LARGE_MAGIC) {
-        hz4_free_route_large_magic(ptr);
-        return;
-    }
-
-    // base はすでに計算済みなので page として再利用（二重計算削減）
-    hz4_page_t* page = (hz4_page_t*)base;
-    if (hz4_page_valid(page)) {
-        hz4_free_route_small(tls, ptr, page);
+    if (hz4_free_try_known_seg_route(tls, ptr)) {
         return;
     }
 #endif
 
 #endif
-    hz4_free_b27_note_route(0);
-    hz4_small_stats_b19_free_route_unknown_inc();
-    hz4_free_stats_b26_unknown_hit_inc();
-#if HZ4_FAILFAST
-    {
-        uintptr_t base = (uintptr_t)ptr & ~(HZ4_PAGE_SIZE - 1u);
-        uintptr_t haddr = (uintptr_t)ptr - (uintptr_t)HZ4_LARGE_HEADER_BYTES;
-        hz4_page_t* page = (hz4_page_t*)base;
-        uint32_t head_magic = *(uint32_t*)base;
-        uint32_t haddr_magic = *(uint32_t*)haddr;
-        fprintf(stderr,
-                "[HZ4_FREE_UNKNOWN] ptr=%p base=%p haddr=%p head_magic=0x%08x page_magic=0x%08x haddr_magic=0x%08x large_first=%u\n",
-                ptr, (void*)base, (void*)haddr, head_magic, page->magic, haddr_magic,
-                (unsigned)hz4_free_b27_mode_large_first());
-    }
-#endif
-    HZ4_FAIL("hz4_free: unknown pointer");
-    abort();
+    hz4_free_unknown_abort(ptr);
 }
 
 

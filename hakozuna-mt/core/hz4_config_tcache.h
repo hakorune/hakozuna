@@ -159,6 +159,17 @@
 #error "HZ4_FREE_ROUTE_SEGMENT_REGISTRY_PROBE must be >=1"
 #endif
 
+// B71: Windows one-shot ownership boundary.
+// When the Windows wrapper already proves a pointer is segment-owned, route it
+// directly through the segment-owned free path instead of asking the same
+// segment-registry question again in core free.
+#ifndef HZ4_WIN_ONE_SHOT_OWNERSHIP_BOX
+#define HZ4_WIN_ONE_SHOT_OWNERSHIP_BOX 0
+#endif
+#if HZ4_WIN_ONE_SHOT_OWNERSHIP_BOX && !HZ4_FREE_ROUTE_SEGMENT_REGISTRY_BOX
+#error "HZ4_WIN_ONE_SHOT_OWNERSHIP_BOX requires HZ4_FREE_ROUTE_SEGMENT_REGISTRY_BOX=1"
+#endif
+
 // B26: free-route observability box (one-shot counters at process exit).
 #ifndef HZ4_FREE_ROUTE_STATS_B26
 #define HZ4_FREE_ROUTE_STATS_B26 0

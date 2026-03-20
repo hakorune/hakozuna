@@ -246,7 +246,9 @@ function Build-Hz4HelperObject {
         "HZ4_TLS_DIRECT=0",
         "HZ4_PAGE_META_SEPARATE=0",
         "HZ4_RSSRETURN=0",
-        "HZ4_MID_PAGE_SUPPLY_RESV_BOX=0"
+        "HZ4_MID_PAGE_SUPPLY_RESV_BOX=0",
+        "HZ4_FREE_ROUTE_SEGMENT_REGISTRY_BOX=1",
+        "HZ4_WIN_ONE_SHOT_OWNERSHIP_BOX=1"
     )
     $mergedDefines = Merge-Defines -BaseDefines $hz4BaseDefines -OverrideDefines $ExtraDefines
 
@@ -335,7 +337,9 @@ function Update-RedisAllocator {
             "HZ4_TLS_DIRECT=0",
             "HZ4_PAGE_META_SEPARATE=0",
             "HZ4_RSSRETURN=0",
-            "HZ4_MID_PAGE_SUPPLY_RESV_BOX=0"
+            "HZ4_MID_PAGE_SUPPLY_RESV_BOX=0",
+            "HZ4_FREE_ROUTE_SEGMENT_REGISTRY_BOX=1",
+            "HZ4_WIN_ONE_SHOT_OWNERSHIP_BOX=1"
         )
         $allocExtraDefines = Merge-Defines -BaseDefines $hz4BaseDefines -OverrideDefines $Hz4ExtraDefines
         $managedDefineNames = $hz4BaseDefines | ForEach-Object { Get-DefineName -Define $_ }

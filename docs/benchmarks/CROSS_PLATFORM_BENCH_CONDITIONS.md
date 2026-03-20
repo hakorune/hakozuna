@@ -33,6 +33,18 @@ Before implementation, make these items explicit:
 | Ubuntu/Linux (arm64) | `./linux/*.sh` or `gmake` | `LD_PRELOAD` | `/usr/bin/time -v` or `perf` when available | Record CPU arch + kernel in summaries; do not mix results with x86_64; use the explicit arm64 wrappers for the lane when you want a named entrypoint; keep any win lane-specific until Windows x64 confirms it |
 | Windows | `./win/*.ps1` | native allocator EXEs / DLL path injection | PowerShell-native timing and Windows RSS metrics | Do not assume `LD_PRELOAD` semantics carry over; an arm64 Linux gain may still regress Windows x64 |
 
+- For HZ4 Windows builds, keep `HZ4_FREE_ROUTE_SEGMENT_REGISTRY_BOX=1` as the default safety boundary. Use `-ExtraDefines HZ4_FREE_ROUTE_SEGMENT_REGISTRY_BOX=0` only for perf-only rollback / A-B replay.
+- The Windows safety boundary cost lands on the free route of small-free-heavy
+  lanes first: the diagnostic HZ4 probe showed `seg_checks=free_calls` on the
+  default-on path, while the rollback path shifted those calls back to the
+  normal large-validate precheck. Use this as the SSOT explanation for the
+  Windows `hz4` mixed-lane slowdown.
+- For the Windows follow-up, keep `HZ4_WIN_ONE_SHOT_OWNERSHIP_BOX=1` with the
+  safety boundary: the wrapper now proves `foreign / seg-owned / large-owned`
+  once and the core no longer repeats the same `seg_check` on seg-owned frees.
+  Use `-ExtraDefines HZ4_WIN_ONE_SHOT_OWNERSHIP_BOX=0` only for rollback /
+  bisect.
+
 ## Benchmark-Specific Conditions
 
 ### Larson

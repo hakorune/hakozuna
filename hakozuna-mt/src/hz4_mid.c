@@ -218,11 +218,11 @@ static inline int hz4_mid_st_local_stack_push(uint16_t sc, void* obj) {
     return 1;
 }
 #else
-static inline void* hz4_mid_st_local_stack_pop(uint16_t sc) {
+static inline __attribute__((unused)) void* hz4_mid_st_local_stack_pop(uint16_t sc) {
     (void)sc;
     return NULL;
 }
-static inline int hz4_mid_st_local_stack_push(uint16_t sc, void* obj) {
+static inline __attribute__((unused)) int hz4_mid_st_local_stack_push(uint16_t sc, void* obj) {
     (void)sc;
     (void)obj;
     return 0;
@@ -526,14 +526,14 @@ static inline void hz4_mid_owner_local_stack_flush_sc_locked(uint16_t sc, uintpt
     g_mid_owner_local_stack_n[sc] = 0;
 }
 #else
-static inline int hz4_mid_owner_local_stack_push(uint16_t sc, hz4_mid_page_t* page, void* obj) {
+static inline __attribute__((unused)) int hz4_mid_owner_local_stack_push(uint16_t sc, hz4_mid_page_t* page, void* obj) {
     (void)sc;
     (void)page;
     (void)obj;
     return 0;
 }
 
-static inline void* hz4_mid_owner_local_stack_pop(uint16_t sc) {
+static inline __attribute__((unused)) void* hz4_mid_owner_local_stack_pop(uint16_t sc) {
     (void)sc;
     return NULL;
 }

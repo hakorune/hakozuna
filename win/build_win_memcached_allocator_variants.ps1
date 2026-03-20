@@ -218,7 +218,9 @@ $Hz4CompileArgs = $BaseCompileArgs + @(
     "/DHZ4_TLS_DIRECT=0",
     "/DHZ4_PAGE_META_SEPARATE=0",
     "/DHZ4_RSSRETURN=0",
-    "/DHZ4_MID_PAGE_SUPPLY_RESV_BOX=0"
+    "/DHZ4_MID_PAGE_SUPPLY_RESV_BOX=0",
+    "/DHZ4_FREE_ROUTE_SEGMENT_REGISTRY_BOX=1",
+    "/DHZ4_WIN_ONE_SHOT_OWNERSHIP_BOX=1"
 )
 $Variants += Invoke-VariantBuild `
     -Name "hz4" `

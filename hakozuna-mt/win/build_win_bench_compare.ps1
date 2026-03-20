@@ -104,7 +104,9 @@ $Hz4BaseDefines = @(
     "HZ4_TLS_DIRECT=0",
     "HZ4_PAGE_META_SEPARATE=0",
     "HZ4_RSSRETURN=0",
-    "HZ4_MID_PAGE_SUPPLY_RESV_BOX=0"
+    "HZ4_MID_PAGE_SUPPLY_RESV_BOX=0",
+    "HZ4_FREE_ROUTE_SEGMENT_REGISTRY_BOX=1",
+    "HZ4_WIN_ONE_SHOT_OWNERSHIP_BOX=1"
 )
 $MergedDefines = Merge-Defines -BaseDefines $Hz4BaseDefines -OverrideDefines $ExtraDefines
 $BaseFlags += ($MergedDefines | ForEach-Object { "/D$_" })

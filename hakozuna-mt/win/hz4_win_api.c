@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "hz4_tcache.h"
+#include "hz4_os.h"
 #include "hz4_mid.h"
 #include "hz4_large.h"
 #include "hz4_sizeclass.h"
@@ -20,8 +21,98 @@ typedef struct hz4_win_aligned_hdr {
     size_t requested;
 } hz4_win_aligned_hdr_t;
 
+typedef enum hz4_win_owned_kind {
+    HZ4_WIN_OWNED_FOREIGN = 0,
+    HZ4_WIN_OWNED_SEG = 1,
+    HZ4_WIN_OWNED_LARGE = 2
+} hz4_win_owned_kind_t;
+
 #define HZ4_WIN_ALIGNED_HDR_MAGIC UINT64_C(0x483457494e484452)
 #define HZ4_WIN_ALIGNED_HDR_COOKIE UINT64_C(0x9e3779b97f4a7c15)
+
+#if HZ4_FREE_ROUTE_SEGMENT_REGISTRY_BOX
+static inline hz4_win_owned_kind_t hz4_win_probe_owned_kind(void* ptr) {
+    if (!ptr) {
+        return HZ4_WIN_OWNED_FOREIGN;
+    }
+    if (hz4_os_is_seg_ptr(ptr)) {
+        return HZ4_WIN_OWNED_SEG;
+    }
+    if (hz4_large_header_valid(ptr)) {
+        return HZ4_WIN_OWNED_LARGE;
+    }
+    return HZ4_WIN_OWNED_FOREIGN;
+}
+#else
+static inline hz4_win_owned_kind_t hz4_win_probe_owned_kind(void* ptr) {
+    if (!ptr) {
+        return HZ4_WIN_OWNED_FOREIGN;
+    }
+    if (hz4_large_header_valid(ptr)) {
+        return HZ4_WIN_OWNED_LARGE;
+    }
+    return HZ4_WIN_OWNED_FOREIGN;
+}
+#endif
+
+static inline size_t hz4_win_usable_size_known_kind(void* ptr, hz4_win_owned_kind_t kind) {
+    if (!ptr) {
+        return 0;
+    }
+    if (kind == HZ4_WIN_OWNED_LARGE) {
+        return hz4_large_usable_size(ptr);
+    }
+#if HZ4_FREE_ROUTE_SEGMENT_REGISTRY_BOX
+    if (kind != HZ4_WIN_OWNED_SEG) {
+        return 0;
+    }
+#endif
+
+    {
+        uintptr_t base = (uintptr_t)ptr & ~(HZ4_PAGE_SIZE - 1);
+        uint32_t head_magic = *(uint32_t*)base;
+        if (head_magic == HZ4_MID_MAGIC) {
+            return hz4_mid_usable_size(ptr);
+        }
+        if (head_magic == HZ4_LARGE_MAGIC) {
+            return hz4_large_usable_size(ptr);
+        }
+    }
+
+    {
+        hz4_page_t* page = hz4_page_from_ptr(ptr);
+        if (hz4_page_valid(page)) {
+            return hz4_small_usable_size(ptr);
+        }
+    }
+
+    HZ4_FAIL("hz4_win_usable_size: unknown pointer");
+    abort();
+}
+
+static inline void hz4_win_free_known_kind(void* ptr, hz4_win_owned_kind_t kind) {
+    if (!ptr) {
+        return;
+    }
+#if HZ4_FREE_ROUTE_SEGMENT_REGISTRY_BOX
+    if (kind == HZ4_WIN_OWNED_FOREIGN) {
+        return;
+    }
+#endif
+    if (kind == HZ4_WIN_OWNED_LARGE) {
+#if HZ4_WIN_ONE_SHOT_OWNERSHIP_BOX
+        hz4_large_free(ptr);
+#else
+        hz4_free(ptr);
+#endif
+        return;
+    }
+#if HZ4_WIN_ONE_SHOT_OWNERSHIP_BOX
+    hz4_free_known_seg_owned(ptr);
+#else
+    hz4_free(ptr);
+#endif
+}
 
 static inline hz4_win_aligned_hdr_t* hz4_win_aligned_hdr_from_ptr(void* ptr) {
     return (hz4_win_aligned_hdr_t*)((uintptr_t)ptr - sizeof(hz4_win_aligned_hdr_t));
@@ -63,31 +154,7 @@ size_t hz4_win_usable_size(void* ptr) {
             return requested;
         }
     }
-
-    if (hz4_large_header_valid(ptr)) {
-        return hz4_large_usable_size(ptr);
-    }
-
-    {
-        uintptr_t base = (uintptr_t)ptr & ~(HZ4_PAGE_SIZE - 1);
-        uint32_t head_magic = *(uint32_t*)base;
-        if (head_magic == HZ4_MID_MAGIC) {
-            return hz4_mid_usable_size(ptr);
-        }
-        if (head_magic == HZ4_LARGE_MAGIC) {
-            return hz4_large_usable_size(ptr);
-        }
-    }
-
-    {
-        hz4_page_t* page = hz4_page_from_ptr(ptr);
-        if (hz4_page_valid(page)) {
-            return hz4_small_usable_size(ptr);
-        }
-    }
-
-    HZ4_FAIL("hz4_win_usable_size: unknown pointer");
-    abort();
+    return hz4_win_usable_size_known_kind(ptr, hz4_win_probe_owned_kind(ptr));
 }
 
 void* hz4_win_malloc(size_t size) {
@@ -103,20 +170,27 @@ void hz4_win_free(void* ptr) {
         hz4_free(raw);
         return;
     }
-    hz4_free(ptr);
+    hz4_win_free_known_kind(ptr, hz4_win_probe_owned_kind(ptr));
 }
 
 void* hz4_win_realloc(void* ptr, size_t size) {
+    hz4_win_owned_kind_t kind;
     if (!ptr) {
         return hz4_win_malloc(size);
     }
+    kind = hz4_win_probe_owned_kind(ptr);
+#if HZ4_FREE_ROUTE_SEGMENT_REGISTRY_BOX
+    if (kind == HZ4_WIN_OWNED_FOREIGN) {
+        return NULL;
+    }
+#endif
     if (size == 0) {
-        hz4_win_free(ptr);
+        hz4_win_free_known_kind(ptr, kind);
         return NULL;
     }
 
     {
-        size_t old_size = hz4_win_usable_size(ptr);
+        size_t old_size = hz4_win_usable_size_known_kind(ptr, kind);
         void* next = hz4_win_malloc(size);
         if (!next) {
             return NULL;
@@ -128,7 +202,7 @@ void* hz4_win_realloc(void* ptr, size_t size) {
                 memcpy(next, ptr, copy);
             }
         }
-        hz4_win_free(ptr);
+        hz4_win_free_known_kind(ptr, kind);
         return next;
     }
 }

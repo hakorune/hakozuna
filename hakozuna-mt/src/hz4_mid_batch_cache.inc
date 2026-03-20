@@ -260,6 +260,8 @@ static inline void hz4_mid_alloc_run_refill_from_page_locked(uint16_t sc, hz4_mi
         hz4_mid_stats_inc(&g_hz4_mid_stats_malloc_alloc_cache_refill);
         hz4_mid_stats_add(&g_hz4_mid_stats_malloc_alloc_cache_refill_objs, added);
     }
+#else
+    (void)added;
 #endif
 }
 

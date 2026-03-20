@@ -27,6 +27,12 @@
 #define HZ4_ALWAYS_INLINE_EXTERN
 #endif
 
+#if defined(__clang__) || defined(__GNUC__)
+#define HZ4_UNUSED_FN __attribute__((unused))
+#else
+#define HZ4_UNUSED_FN
+#endif
+
 #if HZ4_TLS_SINGLE && (HZ4_ST_TCACHE_PREFETCH_LOCALITY >= 0)
 #define HZ4_TCACHE_PREFETCH_LOCALITY_EFF HZ4_ST_TCACHE_PREFETCH_LOCALITY
 #else
@@ -88,11 +94,11 @@ static void hz4_st_stats_b1_register_atexit(void) {
     atexit(hz4_st_stats_b1_dump);
 }
 #else
-static inline void hz4_st_stats_b1_free_fast_inc(void) {}
-static inline void hz4_st_stats_b1_free_fallback_inc(void) {}
-static inline void hz4_st_stats_b1_refill_direct_calls_inc(void) {}
-static inline void hz4_st_stats_b1_refill_direct_hit_inc(void) {}
-static inline void hz4_st_stats_b1_refill_to_slow_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_st_stats_b1_free_fast_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_st_stats_b1_free_fallback_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_st_stats_b1_refill_direct_calls_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_st_stats_b1_refill_direct_hit_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_st_stats_b1_refill_to_slow_inc(void) {}
 #endif
 
 #if HZ4_SMALL_STATS_B19
@@ -315,33 +321,33 @@ static void hz4_small_stats_b19_register_atexit(void) {
     atexit(hz4_small_stats_b19_dump);
 }
 #else
-static inline void hz4_small_stats_b19_malloc_calls_inc(void) {}
-static inline void hz4_small_stats_b19_malloc_route_small_inc(void) {}
-static inline void hz4_small_stats_b19_malloc_route_mid_inc(void) {}
-static inline void hz4_small_stats_b19_malloc_route_large_inc(void) {}
-static inline void hz4_small_stats_b19_malloc_bin_hit_inc(void) {}
-static inline void hz4_small_stats_b19_malloc_bin_miss_inc(void) {}
-static inline void hz4_small_stats_b19_malloc_refill_calls_inc(void) {}
-static inline void hz4_small_stats_b19_malloc_refill_hit_inc(void) {}
-static inline void hz4_small_stats_b19_malloc_refill_miss_inc(void) {}
-static inline void hz4_small_stats_b19_free_calls_inc(void) {}
-static inline void hz4_small_stats_b19_free_route_small_inc(void) {}
-static inline void hz4_small_stats_b19_free_route_mid_inc(void) {}
-static inline void hz4_small_stats_b19_free_route_large_inc(void) {}
-static inline void hz4_small_stats_b19_free_route_unknown_inc(void) {}
-static inline void hz4_small_stats_b19_free_pagetag_hit_inc(void) {}
-static inline void hz4_small_stats_b19_free_pagetag_miss_inc(void) {}
-static inline void hz4_small_stats_b19_small_free_local_inc(void) {}
-static inline void hz4_small_stats_b19_small_free_remote_inc(void) {}
-static inline void hz4_small_stats_b19_small_tcache_first_inc(void) {}
-static inline void hz4_small_stats_b19_small_bump_meta_inc(void) {}
-static inline void hz4_small_stats_b19_small_tcache_push_inc(void) {}
-static inline void hz4_small_stats_b19_small_remote_keyed_inc(void) {}
-static inline void hz4_small_stats_b19_small_remote_plain_inc(void) {}
-static inline void hz4_small_stats_b19_small_alloc_page_calls_inc(void) {}
-static inline void hz4_small_stats_b19_small_alloc_page_init_lite_taken_inc(void) {}
-static inline void hz4_small_stats_b19_small_alloc_page_init_lite_fallback_full_inc(void) {}
-static inline void hz4_small_stats_b19_small_alloc_page_init_lite_verify_fail_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_malloc_calls_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_malloc_route_small_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_malloc_route_mid_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_malloc_route_large_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_malloc_bin_hit_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_malloc_bin_miss_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_malloc_refill_calls_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_malloc_refill_hit_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_malloc_refill_miss_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_free_calls_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_free_route_small_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_free_route_mid_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_free_route_large_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_free_route_unknown_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_free_pagetag_hit_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_free_pagetag_miss_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_small_free_local_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_small_free_remote_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_small_tcache_first_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_small_bump_meta_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_small_tcache_push_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_small_remote_keyed_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_small_remote_plain_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_small_alloc_page_calls_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_small_alloc_page_init_lite_taken_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_small_alloc_page_init_lite_fallback_full_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_small_stats_b19_small_alloc_page_init_lite_verify_fail_inc(void) {}
 #endif
 
 #if HZ4_FREE_ROUTE_STATS_B26 || HZ4_FREE_ROUTE_ORDER_GATE_STATS_B27
@@ -428,16 +434,16 @@ static void hz4_free_stats_b26_register_atexit(void) {
     atexit(hz4_free_stats_b26_dump);
 }
 #else
-static inline void hz4_free_stats_b26_calls_inc(void) {}
-static inline void hz4_free_stats_b26_seg_check_inc(void) {}
-static inline void hz4_free_stats_b26_seg_hit_inc(void) {}
-static inline void hz4_free_stats_b26_seg_miss_inc(void) {}
-static inline void hz4_free_stats_b26_large_validate_call_inc(void) {}
-static inline void hz4_free_stats_b26_large_validate_hit_inc(void) {}
-static inline void hz4_free_stats_b26_mid_magic_hit_inc(void) {}
-static inline void hz4_free_stats_b26_large_magic_hit_inc(void) {}
-static inline void hz4_free_stats_b26_small_page_valid_hit_inc(void) {}
-static inline void hz4_free_stats_b26_unknown_hit_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_free_stats_b26_calls_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_free_stats_b26_seg_check_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_free_stats_b26_seg_hit_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_free_stats_b26_seg_miss_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_free_stats_b26_large_validate_call_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_free_stats_b26_large_validate_hit_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_free_stats_b26_mid_magic_hit_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_free_stats_b26_large_magic_hit_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_free_stats_b26_small_page_valid_hit_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_free_stats_b26_unknown_hit_inc(void) {}
 #endif
 
 #if HZ4_FREE_ROUTE_ORDER_GATE_STATS_B27
@@ -494,12 +500,12 @@ static void hz4_free_stats_b27_register_atexit(void) {
     atexit(hz4_free_stats_b27_dump);
 }
 #else
-static inline void hz4_free_stats_b27_window_large_first_inc(void) {}
-static inline void hz4_free_stats_b27_window_small_first_inc(void) {}
-static inline void hz4_free_stats_b27_switch_to_large_first_inc(void) {}
-static inline void hz4_free_stats_b27_switch_to_small_first_inc(void) {}
-static inline void hz4_free_stats_b27_freeze_large_first_inc(void) {}
-static inline void hz4_free_stats_b27_freeze_small_first_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_free_stats_b27_window_large_first_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_free_stats_b27_window_small_first_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_free_stats_b27_switch_to_large_first_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_free_stats_b27_switch_to_small_first_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_free_stats_b27_freeze_large_first_inc(void) {}
+static inline HZ4_UNUSED_FN void hz4_free_stats_b27_freeze_small_first_inc(void) {}
 #endif
 
 // Include-order boundary:
