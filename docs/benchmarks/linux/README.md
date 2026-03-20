@@ -44,6 +44,7 @@ Profiling guide:
 
 Saved result:
 
+- [2026-03-21_LINUX_ARM64_PRELOAD_OWNERSHIP_FIX_RESULTS.md](../2026-03-21_LINUX_ARM64_PRELOAD_OWNERSHIP_FIX_RESULTS.md)
 - [2026-03-20_LINUX_ARM64_COMPARE_RESULTS.md](../2026-03-20_LINUX_ARM64_COMPARE_RESULTS.md)
 - [2026-03-20_LINUX_ARM64_FREE_ROUTE_ORDER_GATE_RESULTS.md](../2026-03-20_LINUX_ARM64_FREE_ROUTE_ORDER_GATE_RESULTS.md)
 
@@ -52,8 +53,9 @@ For the experimental arm64 free-route order-gate tuning preset, use:
 - `linux/build_linux_arm64_order_gate_release_lane.sh`
 - `linux/run_linux_arm64_order_gate_compare.sh`
 
-Keep this preset private and separate from the shared arm64 default until
-repeated no-stats runs stay stable.
+Keep this preset private and separate from the shared arm64 default.
+The 2026-03-21 follow-up made it stable again on Linux arm64, but the rebuilt
+default lane still won on median throughput for the current compare workload.
 
 For the current arm64 profiling read, start with:
 

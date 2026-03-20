@@ -14,6 +14,14 @@ lane is winning or losing.
 - Allocator list: `system,hz3,hz4,mimalloc,tcmalloc`
 - Raw logs: `private/raw-results/linux/`
 
+Current status:
+
+- The Linux preload ownership crash is already fixed in the default Linux arm64
+  path by the registry-backed ownership check documented in
+  [2026-03-21_LINUX_ARM64_PRELOAD_OWNERSHIP_FIX_RESULTS.md](../2026-03-21_LINUX_ARM64_PRELOAD_OWNERSHIP_FIX_RESULTS.md).
+- `HZ4_FREE_ROUTE_ORDER_GATEBOX=1` is stable again on this lane, but it is not
+  the current promotion target for the mixed compare workload.
+
 ## Workflow
 
 1. Freeze the workload shape in `docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md`.

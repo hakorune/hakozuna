@@ -68,8 +68,9 @@ For the experimental arm64 free-route order-gate tuning preset, use:
 ./linux/run_linux_arm64_order_gate_compare.sh
 ```
 
-Keep this preset separate from the shared arm64 default until repeated no-stats
-runs are stable.
+Keep this preset separate from the shared arm64 default.
+The Linux arm64 follow-up on 2026-03-21 made it stable again, but the rebuilt
+default lane still won on median throughput for the current compare workload.
 
 You can select a different public `hz3` lane by passing a make target:
 
@@ -89,6 +90,7 @@ Examples:
 
 - Quick GO / NO-GO status: [docs/benchmarks/GO_NO_GO_LEDGER.md](/Users/tomoaki/git/hakozuna/docs/benchmarks/GO_NO_GO_LEDGER.md)
 - Shared workload conditions: [docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md](/Users/tomoaki/git/hakozuna/docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md)
+- Linux arm64 preload ownership fix results: [docs/benchmarks/2026-03-21_LINUX_ARM64_PRELOAD_OWNERSHIP_FIX_RESULTS.md](/home/tomoaki/hakozuna/docs/benchmarks/2026-03-21_LINUX_ARM64_PRELOAD_OWNERSHIP_FIX_RESULTS.md)
 - Linux arm64 lane map: [docs/benchmarks/linux/ARM64_LANE_MAP.md](/Users/tomoaki/git/hakozuna/docs/benchmarks/linux/ARM64_LANE_MAP.md)
 - Linux arm64 profiling guide: [docs/benchmarks/linux/ARM64_PROFILING.md](/Users/tomoaki/git/hakozuna/docs/benchmarks/linux/ARM64_PROFILING.md)
 - macOS is tracked as a separate Apple Silicon M1 development lane; see [mac/README.md](/Users/tomoaki/git/hakozuna/mac/README.md) and [docs/MAC_BENCH_PREP.md](/Users/tomoaki/git/hakozuna/docs/MAC_BENCH_PREP.md)

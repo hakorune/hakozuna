@@ -687,7 +687,7 @@ void* hz4_os_seg_acquire(void) {
         abort();
     }
 
-#if HZ4_FREE_ROUTE_SEGMENT_REGISTRY_BOX
+#if HZ4_OS_SEG_REGISTRY_ACTIVE
     hz4_seg_registry_insert((uintptr_t)mem);
 #endif
 
@@ -714,7 +714,7 @@ void hz4_os_seg_release(void* seg_base) {
     if (!seg_base) {
         return;
     }
-#if HZ4_FREE_ROUTE_SEGMENT_REGISTRY_BOX
+#if HZ4_OS_SEG_REGISTRY_ACTIVE
     hz4_seg_registry_remove((uintptr_t)seg_base);
 #endif
 #if HZ4_OS_STATS

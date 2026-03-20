@@ -2,6 +2,9 @@
 
 Date: 2026-03-20
 
+Status: historical screening result, superseded by
+[2026-03-21_LINUX_ARM64_PRELOAD_OWNERSHIP_FIX_RESULTS.md](./2026-03-21_LINUX_ARM64_PRELOAD_OWNERSHIP_FIX_RESULTS.md)
+
 This is an arm64-only follow-up to
 [2026-03-20_LINUX_ARM64_COMPARE_RESULTS.md](./2026-03-20_LINUX_ARM64_COMPARE_RESULTS.md).
 Do not promote it to Windows x64 or macOS without rerunning those lanes.
@@ -32,11 +35,13 @@ Do not promote it to Windows x64 or macOS without rerunning those lanes.
 
 ## Interpretation
 
-- The order gate reduced the expensive `large_validate` branch without the
-  overhead of a registry lookup.
-- The segment registry collapsed `large_validate_calls`, but it lost overall
-  throughput on this arm64 compare workload.
-- The order gate is therefore the current arm64 compare candidate for `hz4`.
+- This screening pass was useful because it exposed the live free-route boxes
+  on the original arm64 compare shape.
+- Later Linux preload ownership work changed the conclusion:
+  the registry-backed Linux fix became the defaultable change, and the rebuilt
+  `order-gate` lane no longer beat the rebuilt default lane.
+- Treat the table above as historical screening evidence, not as the current
+  promotion target.
 
 ## Raw Logs
 
@@ -53,3 +58,7 @@ Do not promote it to Windows x64 or macOS without rerunning those lanes.
 - A later no-stats rerun of the arm64 order-gate wrapper was flaky and did not
   justify promotion to the shared arm64 default, so keep the wrapper as an
   experimental tuning preset for now.
+- The newer Linux arm64 follow-up then fixed the preload ownership crash and
+  stabilized `order-gate`, but the rebuilt default lane still won on median
+  throughput. See
+  [2026-03-21_LINUX_ARM64_PRELOAD_OWNERSHIP_FIX_RESULTS.md](./2026-03-21_LINUX_ARM64_PRELOAD_OWNERSHIP_FIX_RESULTS.md).

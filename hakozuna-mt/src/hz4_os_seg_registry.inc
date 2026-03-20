@@ -2,7 +2,13 @@
 #ifndef HZ4_OS_SEG_REGISTRY_INC
 #define HZ4_OS_SEG_REGISTRY_INC
 
-#if HZ4_FREE_ROUTE_SEGMENT_REGISTRY_BOX
+#if HZ4_FREE_ROUTE_SEGMENT_REGISTRY_BOX || (defined(__linux__) && !defined(__APPLE__))
+#define HZ4_OS_SEG_REGISTRY_ACTIVE 1
+#else
+#define HZ4_OS_SEG_REGISTRY_ACTIVE 0
+#endif
+
+#if HZ4_OS_SEG_REGISTRY_ACTIVE
 #define HZ4_SEGREG_EMPTY ((uintptr_t)0)
 #define HZ4_SEGREG_TOMB  ((uintptr_t)1)
 static _Atomic(uintptr_t)
@@ -57,7 +63,7 @@ static inline void hz4_seg_registry_remove(uintptr_t seg_base) {
 #endif
 
 static inline int hz4_os_seg_registry_contains_ptr(const void* ptr) {
-#if HZ4_FREE_ROUTE_SEGMENT_REGISTRY_BOX
+#if HZ4_OS_SEG_REGISTRY_ACTIVE
     if (!ptr) {
         return 0;
     }

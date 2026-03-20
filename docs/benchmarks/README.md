@@ -5,6 +5,7 @@ them.
 
 ## Start Here
 
+- [Linux arm64 preload ownership fix results, 2026-03-21](./2026-03-21_LINUX_ARM64_PRELOAD_OWNERSHIP_FIX_RESULTS.md)
 - [Linux arm64 compare results, 2026-03-20](./2026-03-20_LINUX_ARM64_COMPARE_RESULTS.md)
 - [Linux arm64 free-route order gate follow-up, 2026-03-20](./2026-03-20_LINUX_ARM64_FREE_ROUTE_ORDER_GATE_RESULTS.md)
 - [Linux arm64 lane map](./linux/ARM64_LANE_MAP.md)
@@ -77,3 +78,11 @@ Next optimization steps, in order:
 - Update [Benchmark results index](/Users/tomoaki/git/hakozuna/docs/benchmarks/INDEX.md) when a new dated summary lands.
 - Put lane status and keep/freeze/reject calls in [GO / NO-GO ledger](/Users/tomoaki/git/hakozuna/docs/benchmarks/GO_NO_GO_LEDGER.md).
 - Keep platform tuning notes in `docs/MAC_BUILD.md` and `docs/MAC_BENCH_PREP.md`.
+
+## Current Linux arm64 Note
+
+- The Linux arm64 default path now carries the registry-backed preload
+  ownership fix documented in
+  [2026-03-21_LINUX_ARM64_PRELOAD_OWNERSHIP_FIX_RESULTS.md](./2026-03-21_LINUX_ARM64_PRELOAD_OWNERSHIP_FIX_RESULTS.md).
+- The arm64 `order-gate` lane is stable again, but it is not the current
+  promotion target for the mixed compare workload.

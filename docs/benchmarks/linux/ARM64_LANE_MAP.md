@@ -47,6 +47,11 @@ The current mixed lane therefore reads as:
 
 `tcmalloc` > `mimalloc` > `hz3` > `hz4` > `system`
 
+This table is the saved 2026-03-20 cross-allocator compare snapshot.
+The 2026-03-21 Linux preload ownership fix raised the rebuilt default `hz4`
+median on the same shape, but the full five-allocator compare table has not
+been rerun yet, so keep the mixed rank table above tied to the dated snapshot.
+
 ## What The Map Means
 
 - `hz3` stays the local-heavy default profile.
@@ -54,9 +59,13 @@ The current mixed lane therefore reads as:
 - Mixed arm64 workload shapes currently favor `tcmalloc` and `mimalloc`.
 - The current arm64 `hz4` bottleneck is still the free-path / segment-provision
   side, not a lane-wide collapse.
+- The Linux preload ownership fix is now part of the arm64 default path.
+- `hz4` order-gate is no longer the current promotion target for the mixed
+  compare lane.
 
 ## Evidence Used
 
+- [Linux arm64 preload ownership fix results, 2026-03-21](../2026-03-21_LINUX_ARM64_PRELOAD_OWNERSHIP_FIX_RESULTS.md)
 - [Linux arm64 compare results, 2026-03-20](../2026-03-20_LINUX_ARM64_COMPARE_RESULTS.md)
 - [Linux arm64 free-route order gate follow-up, 2026-03-20](../2026-03-20_LINUX_ARM64_FREE_ROUTE_ORDER_GATE_RESULTS.md)
 - [Linux arm64 profiling guide](./ARM64_PROFILING.md)
@@ -69,6 +78,6 @@ The current mixed lane therefore reads as:
 
 - Do not promote an arm64 win to Windows x64 or macOS without rerunning those
   lanes.
-- Keep `hz4` order-gate tuning private until repeated no-stats runs stay stable.
+- Keep `hz4` order-gate tuning private; after the 2026-03-21 Linux follow-up it
+  is stable again, but still below the rebuilt default lane on this workload.
 - Keep lane-specific wins in the lane where they were measured.
-

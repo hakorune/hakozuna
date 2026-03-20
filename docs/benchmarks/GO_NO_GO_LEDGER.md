@@ -16,6 +16,8 @@ Legend:
 | Area | Status | Evidence | Note |
 |---|---|---|---|
 | `hz4` mid line | `FROZEN` | B70 promoted `HZ4_MID_PAGE_SUPPLY_RESV_CHUNK_PAGES=16`; the remaining live knob `HZ4_MID_FREE_BATCH_CONSUME_MIN=2` is still under validation | Mid-line tuning is mostly exhausted; keep the current default as the reference point until the last live candidate is reconciled |
+| Linux arm64 preload ownership fix | `GO/default` | The 2026-03-21 Linux arm64 follow-up fixed the foreign-free crash reproducer and restored the rebuilt default lane to an 8-run median of `268.0M ops/s` | Keep this as the Linux default preload safety fix; it is a Linux overlay change, not a Windows/macOS promotion |
+| Linux arm64 `hz4` order-gate on mixed compare | `NO-GO` | The same 2026-03-21 follow-up made the lane stable again, but its 8-run median (`218.8M ops/s`) stayed well below the rebuilt default lane (`268.0M ops/s`) | Keep it experimental and opt-in; if work continues, treat it as a throughput-only line |
 | `B70 chunk16` | `GO/default` | Canonical Larson and MT remote reruns on the live `chunk16` default | Current live default for the segment-registry lane set |
 | `S142 lock-free MPSC` | `GO` | S142 work order marked GO; MT remote results improved materially with collision-failfast discipline | Keep `S86` shadow off when using the lock-free lane |
 | `S56 active segment set` | `NO-GO` | `S56-1B` and `S56-2` results did not move RSS enough and/or regressed mixed | Keep it opt-in only if the research direction changes |

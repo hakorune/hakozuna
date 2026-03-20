@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdint.h>
 
+#include "hz4_os.h"
 #include "hz4_tcache.h"
 #include "hz4_mid.h"
 #include "hz4_large.h"
@@ -21,6 +22,11 @@ typedef struct hz4_aligned_hdr {
 
 #define HZ4_ALIGNED_HDR_MAGIC UINT64_C(0x48345a414c4e4844) /* "H4ZALNHD" */
 #define HZ4_ALIGNED_HDR_COOKIE UINT64_C(0x9e3779b97f4a7c15)
+
+#if defined(__GLIBC__) && !defined(__APPLE__)
+extern void __libc_free(void* ptr);
+extern void* __libc_realloc(void* ptr, size_t size);
+#endif
 
 static inline hz4_aligned_hdr_t* hz4_aligned_hdr_from_ptr(void* ptr) {
     return (hz4_aligned_hdr_t*)((uintptr_t)ptr - sizeof(hz4_aligned_hdr_t));
@@ -50,6 +56,30 @@ static inline int hz4_aligned_decode(void* ptr, void** raw_out, size_t* req_out)
         *req_out = hdr->requested;
     }
     return 1;
+}
+
+static inline int hz4_shim_owned_page_magic(void* ptr) {
+    if (!ptr) {
+        return 0;
+    }
+    hz4_page_t* page = hz4_page_from_ptr(ptr);
+    return page && page->magic == HZ4_PAGE_MAGIC;
+}
+
+static inline int hz4_shim_owned_ptr(void* ptr) {
+    if (!ptr) {
+        return 0;
+    }
+    if (hz4_os_is_seg_ptr(ptr)) {
+        uintptr_t base = (uintptr_t)ptr & ~(HZ4_PAGE_SIZE - 1u);
+        uint32_t head_magic = *(uint32_t*)base;
+        if (head_magic == HZ4_MID_MAGIC || head_magic == HZ4_LARGE_MAGIC) {
+            return 1;
+        }
+        return hz4_shim_owned_page_magic(ptr);
+    }
+
+    return hz4_large_header_valid(ptr);
 }
 
 size_t hz4_usable_size(void* ptr) {
@@ -100,6 +130,12 @@ void free(void* ptr) {
         hz4_free(raw);
         return;
     }
+    if (ptr && !hz4_shim_owned_ptr(ptr)) {
+#if defined(__GLIBC__)
+        __libc_free(ptr);
+        return;
+#endif
+    }
     hz4_free(ptr);
 }
 
@@ -123,8 +159,19 @@ void* realloc(void* ptr, size_t size) {
         return hz4_malloc(size);
     }
     if (size == 0) {
+#if defined(__GLIBC__)
+        if (!hz4_shim_owned_ptr(ptr)) {
+            __libc_free(ptr);
+            return NULL;
+        }
+#endif
         hz4_free(ptr);
         return NULL;
+    }
+    if (!hz4_shim_owned_ptr(ptr)) {
+#if defined(__GLIBC__)
+        return __libc_realloc(ptr, size);
+#endif
     }
 
     size_t old_size = hz4_usable_size(ptr);
