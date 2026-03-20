@@ -568,6 +568,7 @@ static inline uint8_t hz4_free_try_known_seg_route(hz4_tls_t* tls, void* ptr) {
 
 HZ4_ALWAYS_INLINE
 static inline void hz4_free_unknown_abort(void* ptr) {
+    (void)ptr;
     hz4_free_b27_note_route(0);
     hz4_small_stats_b19_free_route_unknown_inc();
     hz4_free_stats_b26_unknown_hit_inc();
