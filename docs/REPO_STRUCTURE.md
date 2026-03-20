@@ -42,6 +42,11 @@ Keep these out of git:
 - failure history, dumps, local traces, and working notes
 - unpublished paper scratch material
 - local paper workspace under `private/paper/`
+- local allocator caches and package extracts under `private/bench-assets/linux/allocators/`
+- local source package extracts under `private/bench-assets/linux/source-packages/`
+- current task memo under `private/current_task.md`
+- agent roster and handoff notes under `private/agents.md`
+- private journal history under `private/journal/`
 
 ### 3. Generated artifacts stay disposable
 
@@ -63,7 +68,7 @@ Platform separation should happen at the build and runner layer first.
 Recommended split:
 
 - `win/`: Windows build, run, hook, and bench entrypoints
-- `linux/`: Ubuntu/Linux build and run entrypoints
+- `linux/`: Ubuntu/Linux build and run entrypoints (x86_64 and arm64 lanes)
 - `mac/`: macOS build and run entrypoints
 - allocator core stays shared under [`hakozuna`](/C:/git/hakozuna-win/hakozuna) and [`hakozuna-mt`](/C:/git/hakozuna-win/hakozuna-mt)
 
@@ -83,6 +88,8 @@ Rules:
 - keep workload names aligned where possible across OSes
 - keep OS-specific allocator knobs inside OS wrappers or named lane presets
 - use `hakozuna-mt/Makefile` lane presets and `docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md` for the profile ledger
+- treat a lane win as lane-specific until Linux x86_64, Windows x64, and macOS are rechecked where relevant
+- do not promote an arm64 optimization to a shared default without a deliberate regression check on the other target lanes
 - avoid mixing launcher decisions with lane decisions
 
 ## Benchmark Layout

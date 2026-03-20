@@ -35,6 +35,8 @@ Split changes into small boxes, keep boundaries explicit, and make every path ea
 - Repo layout and public/private policy live in [docs/REPO_STRUCTURE.md](/C:/git/hakozuna-win/docs/REPO_STRUCTURE.md)
 - Public benchmark results are indexed in [docs/benchmarks/INDEX.md](/Users/tomoaki/git/hakozuna/docs/benchmarks/INDEX.md)
 - Public paper workspace root lives in [paper/README.md](/Volumes/PublicShare/hakozuna_paper/paper/README.md)
+- Current private task memo lives in [private/current_task.md](/Users/tomoaki/git/hakozuna/private/current_task.md)
+- Private agent roster lives in [private/agents.md](/Users/tomoaki/git/hakozuna/private/agents.md)
 - Private day notes live under [private/journal/README.md](/Users/tomoaki/git/hakozuna/private/journal/README.md)
 - Public Ubuntu/Linux entrypoints live in [linux/README.md](/C:/git/hakozuna-win/linux/README.md)
 - Windows real Redis matrix layout lives in [docs/WINDOWS_REDIS_MATRIX.md](/C:/git/hakozuna-win/docs/WINDOWS_REDIS_MATRIX.md)
@@ -55,6 +57,7 @@ Split changes into small boxes, keep boundaries explicit, and make every path ea
 ## Doc Flow
 
 - Keep [private/current_task.md](/Users/tomoaki/git/hakozuna/private/current_task.md) as the restart surface only.
+- Keep [private/agents.md](/Users/tomoaki/git/hakozuna/private/agents.md) as the active agent roster and handoff log.
 - Put detailed working history in [private/journal/README.md](/Users/tomoaki/git/hakozuna/private/journal/README.md) and the dated journal file for the day.
 - Keep public summary results in `docs/benchmarks/` and register them in `docs/benchmarks/INDEX.md`.
 - Keep decisions in `docs/benchmarks/GO_NO_GO_LEDGER.md` and workload conditions in `docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md`.
@@ -65,6 +68,7 @@ Split changes into small boxes, keep boundaries explicit, and make every path ea
 - Do not optimize hot paths without before/after bench evidence.
 - When a change touches allocator routing, metadata lookup, refill, free, or remote paths, capture an A/B result before stacking the next box.
 - Prefer median-based runs when variance is non-trivial.
+- Treat an arm64 win as provisional until Linux x86_64, Windows x64, and macOS are checked where the change could matter.
 
 ## Bench Management Rules
 
@@ -119,5 +123,6 @@ hakozuna/hz3/results/
 ## Daily Doc Rule
 
 - Keep `private/current_task.md` short enough to scan quickly.
+- Keep `private/agents.md` up to date when you spawn or retire a worker.
 - Use `private/journal/YYYY-MM-DD.md` for private carry-over notes and history.
 - Use `docs/benchmarks/INDEX.md` for the public summary list.

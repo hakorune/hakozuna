@@ -51,6 +51,16 @@ bench_find_from_brew_prefix() {
   fi
 }
 
+bench_find_private_linux_library() {
+  local allocator="$1"
+  local pattern="$2"
+  local cache_root="${ROOT_DIR}/private/bench-assets/linux/allocators"
+
+  if [[ -d "${cache_root}" ]]; then
+    find "${cache_root}" -type f -path "*/${allocator}/*" -name "${pattern}" 2>/dev/null | sort | head -n 1
+  fi
+}
+
 bench_find_mimalloc_library() {
   if bench_is_macos; then
     bench_find_first_existing \
@@ -63,7 +73,8 @@ bench_find_mimalloc_library() {
 
   bench_find_first_existing \
     "${MIMALLOC_SO:-}" \
-    "$(bench_find_from_ldconfig 'libmimalloc\\.so' || true)"
+    "$(bench_find_from_ldconfig 'libmimalloc\\.so' || true)" \
+    "$(bench_find_private_linux_library libmimalloc2.0 'libmimalloc.so*' || true)"
 }
 
 bench_find_tcmalloc_library() {
@@ -81,7 +92,9 @@ bench_find_tcmalloc_library() {
   bench_find_first_existing \
     "${TCMALLOC_SO:-}" \
     "$(bench_find_from_ldconfig 'libtcmalloc_minimal\\.so' || true)" \
-    "$(bench_find_from_ldconfig 'libtcmalloc\\.so' || true)"
+    "$(bench_find_from_ldconfig 'libtcmalloc\\.so' || true)" \
+    "$(bench_find_private_linux_library libtcmalloc-minimal4t64 'libtcmalloc_minimal.so*' || true)" \
+    "$(bench_find_private_linux_library libgoogle-perftools4t64 'libtcmalloc.so*' || true)"
 }
 
 bench_find_allocator_library() {
@@ -121,14 +134,14 @@ bench_print_allocator_hints() {
       if bench_is_macos; then
         echo "hint: install with 'brew install mimalloc' or set MIMALLOC_SO" >&2
       else
-        echo "hint: install the distro mimalloc package or set MIMALLOC_SO" >&2
+        echo "hint: install the distro mimalloc package, run './linux/prepare_linux_bench_allocators.sh', or set MIMALLOC_SO" >&2
       fi
       ;;
     tcmalloc)
       if bench_is_macos; then
         echo "hint: install with 'brew install gperftools' or set TCMALLOC_SO" >&2
       else
-        echo "hint: install the distro gperftools / tcmalloc package or set TCMALLOC_SO" >&2
+        echo "hint: install the distro gperftools / tcmalloc package, run './linux/prepare_linux_bench_allocators.sh', or set TCMALLOC_SO" >&2
       fi
       ;;
     hz3)

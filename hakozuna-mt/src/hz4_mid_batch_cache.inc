@@ -322,8 +322,12 @@ static inline uint16_t hz4_mid_alloc_run_refill_burst_locked(uint16_t sc, hz4_mi
 
 #if HZ4_MID_FREE_BATCH_BOX && HZ4_MID_FREE_BATCH_CONSUME_BOX
 static inline int hz4_mid_free_batch_consume_enabled_sc(uint16_t sc) {
+#if HZ4_MID_FREE_BATCH_CONSUME_SC_MIN > 0
     return sc >= (uint16_t)HZ4_MID_FREE_BATCH_CONSUME_SC_MIN &&
            sc <= (uint16_t)HZ4_MID_FREE_BATCH_CONSUME_SC_MAX;
+#else
+    return sc <= (uint16_t)HZ4_MID_FREE_BATCH_CONSUME_SC_MAX;
+#endif
 }
 
 static inline uint16_t hz4_mid_alloc_run_refill_from_free_batch(uint16_t sc) {

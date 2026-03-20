@@ -86,6 +86,8 @@ endif
 # Lane presets (SSOT: avoid mixing flags)
 # ============================================================================
 HZ4_DEFS_PERF_LANE ?= -DHZ4_PAGE_META_SEPARATE=0 -DHZ4_PAGE_DECOMMIT=0
+HZ4_DEFS_PERF_LANE_EXTRA ?=
+HZ4_DEFS_PERF_LANE_COMBINED := $(strip $(HZ4_DEFS_PERF_LANE) $(HZ4_DEFS_PERF_LANE_EXTRA))
 HZ4_DEFS_RSS_LANE ?= -DHZ4_PAGE_META_SEPARATE=1 -DHZ4_PAGE_DECOMMIT=1 -DHZ4_DECOMMIT_DELAY_QUEUE=1 -DHZ4_TCACHE_PURGE_BEFORE_DECOMMIT=1
 HZ4_DEFS_RSS_LARSON_LANE ?= \
 	-DHZ4_OS_STATS=1 \
@@ -134,7 +136,7 @@ all_perf:
 	$(MAKE) clean all_perf_lib
 
 all_perf_lib:
-	$(MAKE) $(LIB_TARGET) HZ4_DEFS_EXTRA='$(HZ4_DEFS_PERF_LANE)'
+	$(MAKE) $(LIB_TARGET) HZ4_DEFS_EXTRA='$(HZ4_DEFS_PERF_LANE_COMBINED)'
 
 all_rss:
 	@echo "[DEPRECATED] all_rss is kept for compatibility; prefer all_stable or all_rss_larson_stable_lib." >&2

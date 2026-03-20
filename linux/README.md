@@ -11,7 +11,15 @@ Use it to keep Linux build and smoke commands in one place without mixing:
 ## What Lives Here
 
 - [build_linux_release_lane.sh](/C:/git/hakozuna-win/linux/build_linux_release_lane.sh): public build wrapper for the current Ubuntu release lane
+- [build_linux_arm64_release_lane.sh](/C:/git/hakozuna-win/linux/build_linux_arm64_release_lane.sh): explicit Ubuntu arm64 build wrapper
+- [build_linux_bench_compare.sh](/C:/git/hakozuna-win/linux/build_linux_bench_compare.sh): build the Linux benchmark compare binary
+- [build_linux_arm64_bench_compare.sh](/C:/git/hakozuna-win/linux/build_linux_arm64_bench_compare.sh): explicit Ubuntu arm64 benchmark build wrapper
+- [build_linux_arm64_order_gate_release_lane.sh](/C:/git/hakozuna-win/linux/build_linux_arm64_order_gate_release_lane.sh): explicit Ubuntu arm64 order-gate build wrapper for experimental tuning
 - [run_linux_preload_smoke.sh](/C:/git/hakozuna-win/linux/run_linux_preload_smoke.sh): minimal `LD_PRELOAD` smoke runner for `hz3` and `hz4`
+- [run_linux_bench_compare.sh](/C:/git/hakozuna-win/linux/run_linux_bench_compare.sh): build, prepare allocators, and run the Linux benchmark compare lane
+- [run_linux_arm64_bench_compare.sh](/C:/git/hakozuna-win/linux/run_linux_arm64_bench_compare.sh): explicit Ubuntu arm64 benchmark compare wrapper
+- [run_linux_arm64_order_gate_compare.sh](/C:/git/hakozuna-win/linux/run_linux_arm64_order_gate_compare.sh): explicit Ubuntu arm64 order-gate compare wrapper for experimental tuning
+- [prepare_linux_bench_allocators.sh](/C:/git/hakozuna-win/linux/prepare_linux_bench_allocators.sh): local `mimalloc` / `tcmalloc` cache prep for benchmark runs
 - [run_bench_compare.sh](/Users/tomoaki/git/hakozuna/linux/run_bench_compare.sh): thin Linux frontend for the shared allocator compare runner
 
 ## Quick Start
@@ -19,9 +27,21 @@ Use it to keep Linux build and smoke commands in one place without mixing:
 ```bash
 cd /path/to/hakozuna-win
 ./linux/build_linux_release_lane.sh
+./linux/build_linux_arm64_release_lane.sh
 ./linux/run_linux_preload_smoke.sh hz3 /bin/true
 ./linux/run_linux_preload_smoke.sh hz4 /bin/true
+./linux/run_linux_bench_compare.sh
 ```
+
+## Ubuntu Lane Split
+
+Ubuntu/Linux is one entrypoint layer with two CPU lanes:
+
+- `x86_64` (published reference lane)
+- `arm64` (Ubuntu on ARM64, including Apple Silicon Linux VMs)
+
+The same scripts are used for both lanes. Always record the CPU architecture in
+benchmark summaries and keep Linux `arm64` results separate from Linux `x86_64`.
 
 ## Build Boxes
 
@@ -29,6 +49,27 @@ Default behavior:
 
 - `hz3`: `make -C hakozuna clean all_ldpreload_scale`
 - `hz4`: `make -C hakozuna-mt clean all_stable`
+
+For the explicit arm64 lane, use:
+
+```bash
+./linux/build_linux_arm64_release_lane.sh
+```
+
+For benchmark compare runs on arm64, use:
+
+```bash
+./linux/run_linux_arm64_bench_compare.sh
+```
+
+For the experimental arm64 free-route order-gate tuning preset, use:
+
+```bash
+./linux/run_linux_arm64_order_gate_compare.sh
+```
+
+Keep this preset separate from the shared arm64 default until repeated no-stats
+runs are stable.
 
 You can select a different public `hz3` lane by passing a make target:
 
@@ -48,6 +89,8 @@ Examples:
 
 - Quick GO / NO-GO status: [docs/benchmarks/GO_NO_GO_LEDGER.md](/Users/tomoaki/git/hakozuna/docs/benchmarks/GO_NO_GO_LEDGER.md)
 - Shared workload conditions: [docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md](/Users/tomoaki/git/hakozuna/docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md)
+- Linux arm64 lane map: [docs/benchmarks/linux/ARM64_LANE_MAP.md](/Users/tomoaki/git/hakozuna/docs/benchmarks/linux/ARM64_LANE_MAP.md)
+- Linux arm64 profiling guide: [docs/benchmarks/linux/ARM64_PROFILING.md](/Users/tomoaki/git/hakozuna/docs/benchmarks/linux/ARM64_PROFILING.md)
 - macOS is tracked as a separate Apple Silicon M1 development lane; see [mac/README.md](/Users/tomoaki/git/hakozuna/mac/README.md) and [docs/MAC_BENCH_PREP.md](/Users/tomoaki/git/hakozuna/docs/MAC_BENCH_PREP.md)
 
 ## Published Ubuntu Lane

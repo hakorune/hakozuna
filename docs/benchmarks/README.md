@@ -5,6 +5,10 @@ them.
 
 ## Start Here
 
+- [Linux arm64 compare results, 2026-03-20](./2026-03-20_LINUX_ARM64_COMPARE_RESULTS.md)
+- [Linux arm64 free-route order gate follow-up, 2026-03-20](./2026-03-20_LINUX_ARM64_FREE_ROUTE_ORDER_GATE_RESULTS.md)
+- [Linux arm64 lane map](./linux/ARM64_LANE_MAP.md)
+- [Linux arm64 profiling guide](./linux/ARM64_PROFILING.md)
 - [GO / NO-GO ledger](/Users/tomoaki/git/hakozuna/docs/benchmarks/GO_NO_GO_LEDGER.md)
 - [Cross-platform benchmark conditions](/Users/tomoaki/git/hakozuna/docs/benchmarks/CROSS_PLATFORM_BENCH_CONDITIONS.md)
 - [Benchmark results index](/Users/tomoaki/git/hakozuna/docs/benchmarks/INDEX.md)
@@ -19,6 +23,8 @@ Use the platform entry docs when you need the build/run front door for a
 specific lane:
 
 - [Linux entrypoints](/Users/tomoaki/git/hakozuna/linux/README.md)
+- [Linux arm64 lane map](./linux/ARM64_LANE_MAP.md)
+- [Linux arm64 profiling guide](./linux/ARM64_PROFILING.md)
 - [macOS entrypoints](/Users/tomoaki/git/hakozuna/mac/README.md)
 - [Windows entrypoints](/Users/tomoaki/git/hakozuna/win/README.md)
 

@@ -6,7 +6,8 @@ Write the conditions before implementing a new benchmark lane or a tuning box.
 
 - Freeze the workload shape first.
 - Record OS-specific launcher and preload details separately from the allocator question.
-- If a result only holds on one platform, mark it as a platform tuning value instead of a shared default.
+- If a result only holds on one platform or architecture, mark it as a platform tuning value instead of a shared default.
+- Do not promote an arm64 win to Windows x64 or macOS without rerunning those lanes; cross-lane regressions are expected until proven otherwise.
 - Prefer median-based results whenever the run-to-run variance is non-trivial.
 
 ## Common Baseline
@@ -27,9 +28,10 @@ Before implementation, make these items explicit:
 
 | Platform | Launcher | Preload / injection | Timing | Notes |
 |---|---|---|---|---|
-| macOS | `./mac/*.sh` | `DYLD_INSERT_LIBRARIES` | shell timing / `time.time_ns()` wrappers | Keep Mac-only tuning values separate until Linux/Windows confirm them |
-| Ubuntu/Linux | `./linux/*.sh` or `gmake` | `LD_PRELOAD` | `/usr/bin/time -v` or `perf` when available | Use Linux canonical shapes before comparing against Mac or Windows |
-| Windows | `./win/*.ps1` | native allocator EXEs / DLL path injection | PowerShell-native timing and Windows RSS metrics | Do not assume `LD_PRELOAD` semantics carry over |
+| macOS | `./mac/*.sh` | `DYLD_INSERT_LIBRARIES` | shell timing / `time.time_ns()` wrappers | Keep Mac-only tuning values separate until Linux/Windows confirm them; do not assume an arm64 Linux win is a Mac win |
+| Ubuntu/Linux (x86_64) | `./linux/*.sh` or `gmake` | `LD_PRELOAD` | `/usr/bin/time -v` or `perf` when available | Use Linux canonical shapes before comparing against Mac or Windows; benchmark compare runs can prepare local `mimalloc` / `tcmalloc` caches via `linux/run_linux_bench_compare.sh`; revalidate any arm64-specific idea before promoting it here |
+| Ubuntu/Linux (arm64) | `./linux/*.sh` or `gmake` | `LD_PRELOAD` | `/usr/bin/time -v` or `perf` when available | Record CPU arch + kernel in summaries; do not mix results with x86_64; use the explicit arm64 wrappers for the lane when you want a named entrypoint; keep any win lane-specific until Windows x64 confirms it |
+| Windows | `./win/*.ps1` | native allocator EXEs / DLL path injection | PowerShell-native timing and Windows RSS metrics | Do not assume `LD_PRELOAD` semantics carry over; an arm64 Linux gain may still regress Windows x64 |
 
 ## Benchmark-Specific Conditions
 
@@ -102,6 +104,7 @@ Do not implement a new box until the following are written down:
 
 ## Where To Record Results
 
+- Linux arm64 compare results: [docs/benchmarks/2026-03-20_LINUX_ARM64_COMPARE_RESULTS.md](./2026-03-20_LINUX_ARM64_COMPARE_RESULTS.md)
 - Mac results: [docs/benchmarks/2026-03-19_MAC_BENCH_RESULTS.md](/Users/tomoaki/git/hakozuna/docs/benchmarks/2026-03-19_MAC_BENCH_RESULTS.md)
 - Mac prep: [docs/MAC_BENCH_PREP.md](/Users/tomoaki/git/hakozuna/docs/MAC_BENCH_PREP.md)
 - Windows bench notes: [docs/benchmarks/windows/](/Users/tomoaki/git/hakozuna/docs/benchmarks/windows)

@@ -14,11 +14,11 @@ Part of the [hakorune](https://github.com/hakorune) project.
 
 - **hz3 (hakozuna)**: Local-heavy performance + minimal RSS footprint. Default for most workloads.
 - **hz4 (hakozuna-mt)**: Message-passing, remote-heavy scaling (best at high thread counts).
-- Profile selection guide: `PROFILE_GUIDE.md`
+- Profile selection guide: [PROFILE_GUIDE.md](PROFILE_GUIDE.md)
 
 ## Platform Support
 
-- **Ubuntu/Linux**: public build and preload entrypoints under `linux/`
+- **Ubuntu/Linux**: public build and preload entrypoints under `linux/` (x86_64 and arm64 lanes)
 - **Windows native**: public build and benchmark entrypoints under `win/`
 - **macOS**: public build and preload entrypoints under `mac/` (bring-up in progress)
 - Windows guide: `docs/WINDOWS_BUILD.md`
@@ -32,7 +32,15 @@ Part of the [hakorune](https://github.com/hakorune) project.
 ./linux/build_linux_release_lane.sh
 ./linux/run_linux_preload_smoke.sh hz3 /bin/true
 ./linux/run_linux_preload_smoke.sh hz4 /bin/true
+./linux/run_linux_bench_compare.sh
 ```
+
+Notes:
+
+- Ubuntu/Linux uses a single entrypoint layer for both `x86_64` and `arm64`.
+- On Ubuntu arm64, use `./linux/build_linux_arm64_release_lane.sh` for the explicit lane wrapper.
+- For benchmark compare runs, `./linux/run_linux_bench_compare.sh` prepares local `mimalloc` / `tcmalloc` caches and uses the CRT smoke binary.
+- Record the CPU architecture in Linux benchmark summaries to keep lanes separate.
 
 ### macOS
 

@@ -14,6 +14,53 @@ Keep these elsewhere:
 - vendor/source recovery trees: [private](/C:/git/hakozuna-win/private)
 - generated local outputs: ignored `out_*` and temporary files
 
+## Ubuntu Linux Lanes
+
+Linux benchmarks are published for two CPU lanes:
+
+- `x86_64` (published reference lane)
+- `arm64` (Ubuntu on ARM64)
+
+Always label Linux summaries with the CPU architecture and keep arm64 results
+separate from x86_64 in tables and comparisons.
+
+For local preparation and compare runs, use the Linux entrypoints:
+
+- `linux/prepare_linux_bench_allocators.sh`
+- `linux/build_linux_bench_compare.sh`
+- `linux/run_linux_bench_compare.sh`
+
+Template:
+
+- [TEMPLATE_ARM64_COMPARE.md](./TEMPLATE_ARM64_COMPARE.md)
+
+Lane map:
+
+- [ARM64_LANE_MAP.md](./ARM64_LANE_MAP.md)
+
+Profiling guide:
+
+- [ARM64_PROFILING.md](./ARM64_PROFILING.md)
+
+Saved result:
+
+- [2026-03-20_LINUX_ARM64_COMPARE_RESULTS.md](../2026-03-20_LINUX_ARM64_COMPARE_RESULTS.md)
+- [2026-03-20_LINUX_ARM64_FREE_ROUTE_ORDER_GATE_RESULTS.md](../2026-03-20_LINUX_ARM64_FREE_ROUTE_ORDER_GATE_RESULTS.md)
+
+For the experimental arm64 free-route order-gate tuning preset, use:
+
+- `linux/build_linux_arm64_order_gate_release_lane.sh`
+- `linux/run_linux_arm64_order_gate_compare.sh`
+
+Keep this preset private and separate from the shared arm64 default until
+repeated no-stats runs stay stable.
+
+For the current arm64 profiling read, start with:
+
+- `hz4_free`
+- `hz4_large_header_valid`
+- `hz4_os_seg_acquire`
+
 ## Current Public Ubuntu Reference
 
 The published Ubuntu snapshot currently lives in:
