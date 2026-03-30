@@ -32,6 +32,22 @@ if ($Expected | Where-Object { -not (Test-Path $_) }) {
     }
 }
 
+function Invoke-BenchProcess {
+    param(
+        [string]$Path,
+        [string[]]$Args
+    )
+
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        & $Path @Args
+        return $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $prevEap
+    }
+}
+
 $Runs = @(
     @{ Name = "crt"; Path = (Join-Path $OutDir "bench_mixed_ws_crt.exe") },
     @{ Name = "hz3"; Path = (Join-Path $OutDir "bench_mixed_ws_hz3.exe") },
@@ -43,10 +59,16 @@ $Runs = @(
 $Failures = @()
 foreach ($run in $Runs) {
     Write-Host "=== $($run.Name) ==="
-    & $run.Path $Threads $ItersPerThread $WorkingSet $MinSize $MaxSize
-    if ($LASTEXITCODE -ne 0) {
-        $Failures += "$($run.Name): rc=$LASTEXITCODE"
-        Write-Warning "$($run.Name) failed with exit code $LASTEXITCODE"
+    $rc = Invoke-BenchProcess -Path $run.Path -Args @(
+        [string]$Threads,
+        [string]$ItersPerThread,
+        [string]$WorkingSet,
+        [string]$MinSize,
+        [string]$MaxSize
+    )
+    if ($rc -ne 0) {
+        $Failures += "$($run.Name): rc=$rc"
+        Write-Warning "$($run.Name) failed with exit code $rc"
     }
 }
 

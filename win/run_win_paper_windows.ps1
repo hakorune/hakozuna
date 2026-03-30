@@ -30,6 +30,26 @@ if ($Executables | Where-Object { -not (Test-Path $_.Path) }) {
     }
 }
 
+function Invoke-BenchProcess {
+    param(
+        [string]$Path,
+        [string[]]$Args
+    )
+
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $output = & $Path @Args 2>&1
+        $rc = $LASTEXITCODE
+        return [pscustomobject]@{
+            Output    = $output
+            ExitCode  = $rc
+        }
+    } finally {
+        $ErrorActionPreference = $prevEap
+    }
+}
+
 function Get-Median {
     param([double[]]$Values)
     if (-not $Values -or $Values.Count -eq 0) {
@@ -82,19 +102,18 @@ foreach ($exe in $Executables) {
             [string]$MinSize,
             [string]$MaxSize
         )
-        $output = & $exe.Path @args 2>&1
-        $rc = $LASTEXITCODE
-        $raw = (($output | ForEach-Object { $_.ToString().Trim() }) -join " ").Trim()
+        $result = Invoke-BenchProcess -Path $exe.Path -Args $args
+        $raw = (($result.Output | ForEach-Object { $_.ToString().Trim() }) -join " ").Trim()
         if (-not $raw) {
             $raw = "(no output)"
         }
         $RawLines.Add("=== " + $exe.Name + " run " + $run + " ===")
         $RawLines.Add("cmd: " + $exe.Path + " " + ($args -join " "))
-        $RawLines.Add("rc: " + $rc)
+        $RawLines.Add("rc: " + $result.ExitCode)
         $RawLines.Add($raw)
         $RawLines.Add("")
-        if ($rc -ne 0) {
-            throw "Paper runner allocator $($exe.Name) failed with exit code $rc"
+        if ($result.ExitCode -ne 0) {
+            throw "Paper runner allocator $($exe.Name) failed with exit code $($result.ExitCode)"
         }
         if ($raw -notmatch "ops/s=([0-9.]+)") {
             throw "Could not parse ops/s for allocator $($exe.Name)"

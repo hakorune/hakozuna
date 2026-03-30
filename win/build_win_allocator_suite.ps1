@@ -29,15 +29,18 @@ if ($LASTEXITCODE -ne 0) {
     throw "hz4 build script failed with exit code $LASTEXITCODE"
 }
 
+$Hz3OutDir = Join-Path $RepoRoot "hakozuna\out_win_bench"
+$Hz4OutDir = Join-Path $RepoRoot "hakozuna-mt\out_win_bench"
+
 $Artifacts = @(
-    "C:\git\hakozuna-win\hakozuna\out_win_bench\bench_mixed_ws_crt.exe",
-    "C:\git\hakozuna-win\hakozuna\out_win_bench\bench_mixed_ws_hz3.exe",
-    "C:\git\hakozuna-win\hakozuna-mt\out_win_bench\bench_mixed_ws_hz4.exe",
-    "C:\git\hakozuna-win\hakozuna\out_win_bench\bench_mixed_ws_mimalloc.exe",
-    "C:\git\hakozuna-win\hakozuna\out_win_bench\bench_mixed_ws_tcmalloc.exe",
-    "C:\git\hakozuna-win\hakozuna\out_win_bench\mimalloc.dll",
-    "C:\git\hakozuna-win\hakozuna\out_win_bench\mimalloc-redirect.dll",
-    "C:\git\hakozuna-win\hakozuna\out_win_bench\tcmalloc_minimal.dll"
+    (Join-Path $Hz3OutDir "bench_mixed_ws_crt.exe"),
+    (Join-Path $Hz3OutDir "bench_mixed_ws_hz3.exe"),
+    (Join-Path $Hz4OutDir "bench_mixed_ws_hz4.exe"),
+    (Join-Path $Hz3OutDir "bench_mixed_ws_mimalloc.exe"),
+    (Join-Path $Hz3OutDir "bench_mixed_ws_tcmalloc.exe"),
+    (Join-Path $Hz3OutDir "mimalloc.dll"),
+    (Join-Path $Hz3OutDir "mimalloc-redirect.dll"),
+    (Join-Path $Hz3OutDir "tcmalloc_minimal.dll")
 )
 
 foreach ($artifact in $Artifacts) {

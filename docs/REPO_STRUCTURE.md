@@ -100,6 +100,7 @@ Recommended split:
 
 - `bench/src/`: public benchmark source
 - `bench/configs/`: public benchmark parameter sets
+- `bench/bench_mixed_ws.c`: canonical shared mixed working-set compare source
 - `docs/benchmarks/windows/`: public Windows summaries
 - `docs/benchmarks/linux/`: public Ubuntu/Linux summaries
 - `docs/benchmarks/macos/`: public macOS summaries once that lane is promoted

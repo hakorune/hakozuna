@@ -9,6 +9,8 @@ RUNS=3
 OUTDIR="${ROOT_DIR}/private/raw-results/linux/compare_$(date +%Y%m%d_%H%M%S)"
 SKIP_BUILD=0
 SKIP_PREPARE_ALLOCATORS=0
+ENV_FILE="$(mktemp)"
+trap 'rm -f "$ENV_FILE"' EXIT
 
 usage() {
   cat <<'EOF'
@@ -94,7 +96,9 @@ echo "[linux] runs: $RUNS"
 echo "[linux] outdir: $OUTDIR"
 
 if [[ "$SKIP_PREPARE_ALLOCATORS" -ne 1 ]]; then
-  eval "$("${ROOT_DIR}/linux/prepare_linux_bench_allocators.sh" --arch "$ARCH")"
+  "${ROOT_DIR}/linux/prepare_linux_bench_allocators.sh" --arch "$ARCH" > "$ENV_FILE"
+  # shellcheck disable=SC1090
+  source "$ENV_FILE"
 fi
 
 if [[ "$SKIP_BUILD" -ne 1 ]]; then

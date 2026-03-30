@@ -30,6 +30,26 @@ if ($Executables | Where-Object { -not (Test-Path $_.Path) }) {
     }
 }
 
+function Invoke-BenchProcess {
+    param(
+        [string]$Path,
+        [string[]]$Args
+    )
+
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $output = & $Path @Args 2>&1
+        $rc = $LASTEXITCODE
+        return [pscustomobject]@{
+            Output    = $output
+            ExitCode  = $rc
+        }
+    } finally {
+        $ErrorActionPreference = $prevEap
+    }
+}
+
 $AllProfiles = @(
     @{ Name = "smoke"; Threads = 2; ItersPerThread = 10000; WorkingSet = 256; MinSize = 16; MaxSize = 128; Note = "quick sanity and regression check" },
     @{ Name = "balanced"; Threads = 8; ItersPerThread = 250000; WorkingSet = 4096; MinSize = 16; MaxSize = 2048; Note = "larger mixed run for first Windows compare" },
@@ -51,6 +71,7 @@ if ($Profiles -and $Profiles.Count -gt 0) {
     $Selected = $AllProfiles
 }
 
+$ArtifactsPath = Join-Path $RepoRoot "out_win_suite"
 $Stamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $SummaryPath = Join-Path $OutputDir ($Stamp + "_allocator_matrix.md")
 $Summary = New-Object System.Collections.Generic.List[string]
@@ -58,7 +79,7 @@ $Summary.Add("# Windows Allocator Matrix")
 $Summary.Add("")
 $Summary.Add("Generated: " + (Get-Date -Format "yyyy-MM-dd HH:mm:ss zzz"))
 $Summary.Add("")
-$Summary.Add("Artifacts: [out_win_suite](/C:/git/hakozuna-win/out_win_suite)")
+$Summary.Add("Artifacts: [out_win_suite]($ArtifactsPath)")
 $Summary.Add("")
 
 foreach ($profile in $Selected) {
@@ -81,19 +102,18 @@ foreach ($profile in $Selected) {
             [string]$profile.MinSize,
             [string]$profile.MaxSize
         )
-        $output = & $exe.Path @args 2>&1
-        $rc = $LASTEXITCODE
-        $raw = (($output | ForEach-Object { $_.ToString().Trim() }) -join " ").Trim()
+        $result = Invoke-BenchProcess -Path $exe.Path -Args $args
+        $raw = (($result.Output | ForEach-Object { $_.ToString().Trim() }) -join " ").Trim()
         if (-not $raw) {
             $raw = "(no output)"
         }
         $LogLines.Add("=== " + $profile.Name + " / " + $exe.Name + " ===")
         $LogLines.Add("cmd: " + $exe.Path + " " + ($args -join " "))
-        $LogLines.Add("rc: " + $rc)
+        $LogLines.Add("rc: " + $result.ExitCode)
         $LogLines.Add($raw)
         $LogLines.Add("")
-        if ($rc -ne 0) {
-            throw "Profile $($profile.Name) allocator $($exe.Name) failed with exit code $rc"
+        if ($result.ExitCode -ne 0) {
+            throw "Profile $($profile.Name) allocator $($exe.Name) failed with exit code $($result.ExitCode)"
         }
 
         $ops = ""

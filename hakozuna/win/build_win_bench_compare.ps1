@@ -14,6 +14,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $Hz3Dir = Split-Path -Parent $PSScriptRoot
+$RepoRoot = Split-Path -Parent $Hz3Dir
 $OutDir = Join-Path $Hz3Dir "out_win_bench"
 $ObjDir = Join-Path $OutDir "obj"
 
@@ -57,7 +58,7 @@ $BaseFlags = @(
     "/I$Hz3Dir\\win\\include"
 )
 
-$BenchSrc = Join-Path $Hz3Dir "bench\\bench_mixed_ws.c"
+$BenchSrc = Join-Path $RepoRoot "bench\\bench_mixed_ws.c"
 
 Write-Host "Building: bench_mixed_ws (CRT baseline)"
 $BenchCrtOut = Join-Path $OutDir "bench_mixed_ws_crt.exe"

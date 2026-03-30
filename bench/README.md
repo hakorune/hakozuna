@@ -18,6 +18,7 @@ own its preload and toolchain details.
 - fall back to platform-specific discovery when possible
 - use `LD_PRELOAD` on Linux and `DYLD_INSERT_LIBRARIES` on macOS
 - use Windows suite build/run scripts for DLL wiring and allocator bundles
+- the shared mixed working-set source is `bench/bench_mixed_ws.c`
 
 ## Entry Points
 
@@ -56,3 +57,4 @@ Typical environment overrides:
 
 - Keep workload definitions and reporting in the shared core.
 - Keep installation and preload mechanics in the OS-specific wrappers.
+- Keep `bench/bench_mixed_ws.c` as the SSOT for the shared mixed compare lane.

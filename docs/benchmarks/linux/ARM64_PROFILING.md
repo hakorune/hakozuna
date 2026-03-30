@@ -39,11 +39,15 @@ Current status:
 
 ```bash
 ./linux/build_linux_arm64_bench_compare.sh
-eval "$(./linux/prepare_linux_bench_allocators.sh --arch arm64)"
+ENV_FILE="$(mktemp)"
+./linux/prepare_linux_bench_allocators.sh --arch arm64 > "$ENV_FILE"
+# shellcheck disable=SC1090
+source "$ENV_FILE"
+rm -f "$ENV_FILE"
 ```
 
-The prepare step populates `MIMALLOC_SO` and `TCMALLOC_SO` from the local
-private cache.
+The prepare step writes `MIMALLOC_SO` and `TCMALLOC_SO` to a small env file
+from the local private cache, then the runner sources it.
 
 Resolve the live `hz3` / `hz4` libraries the same way the compare runner does:
 

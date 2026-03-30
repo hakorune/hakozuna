@@ -5,6 +5,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $Hz3Dir = Split-Path -Parent $PSScriptRoot
+$RepoRoot = Split-Path -Parent $Hz3Dir
 $OutDir = Join-Path $Hz3Dir "out_win_inject"
 $ObjDir = Join-Path $OutDir "obj"
 
@@ -108,7 +109,7 @@ $BenchDefs = @("/DHZ3_BENCH_USE_CRT=1")
 $BenchFlags = $CFlags + @("/MD", "-fno-builtin-malloc", "-fno-builtin-realloc")
 Invoke-Checked $Cc ($BenchFlags + $BenchDefs + @($BenchSrc, "/link", "/out:$BenchOut"))
 
-$BenchMixedSrc = Join-Path $Hz3Dir "bench\\bench_mixed_ws.c"
+$BenchMixedSrc = Join-Path $RepoRoot "bench\\bench_mixed_ws.c"
 $BenchMixedOut = Join-Path $OutDir "bench_mixed_ws_inject.exe"
 Invoke-Checked $Cc ($BenchFlags + $BenchDefs + @($BenchMixedSrc, "/link", "/out:$BenchMixedOut"))
 
