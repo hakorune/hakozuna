@@ -23,7 +23,7 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 
 if (-not $OutputDir) {
-    $OutputDir = Join-Path $RepoRoot "docs\benchmarks\windows\apps"
+    $OutputDir = Join-Path $RepoRoot "private\raw-results\windows\memcached\external_client\summaries"
 }
 if (-not $RawOutputDir) {
     $RawOutputDir = Join-Path $RepoRoot "private\raw-results\windows\memcached\external_client"
@@ -89,10 +89,10 @@ try {
     $summary.Add("Generated: " + (Get-Date -Format "yyyy-MM-dd HH:mm:ss zzz"))
     $summary.Add("")
     $summary.Add("References:")
-    $summary.Add("- [win/build_win_memcached_min_main.ps1](/C:/git/hakozuna-win/win/build_win_memcached_min_main.ps1)")
-    $summary.Add("- [win/build_win_memtier_benchmark.ps1](/C:/git/hakozuna-win/win/build_win_memtier_benchmark.ps1)")
-    $summary.Add("- [win/run_win_memcached_external_client.ps1](/C:/git/hakozuna-win/win/run_win_memcached_external_client.ps1)")
-    $summary.Add("- [docs/WINDOWS_MEMCACHED_MIN_MAIN.md](/C:/git/hakozuna-win/docs/WINDOWS_MEMCACHED_MIN_MAIN.md)")
+    $summary.Add('- `win/build_win_memcached_min_main.ps1`')
+    $summary.Add('- `win/build_win_memtier_benchmark.ps1`')
+    $summary.Add('- `win/run_win_memcached_external_client.ps1`')
+    $summary.Add('- `docs/WINDOWS_MEMCACHED_MIN_MAIN.md`')
     $summary.Add("")
     $summary.Add("Config:")
     $summary.Add(('- server exe: `{0}`' -f $ExePath))

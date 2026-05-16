@@ -15,7 +15,7 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 
 if (-not $OutputDir) {
-    $OutputDir = Join-Path $RepoRoot "docs\benchmarks\windows\apps"
+    $OutputDir = Join-Path $RepoRoot "private\raw-results\windows\memcached\smoke\summaries"
 }
 if (-not $RawOutputDir) {
     $RawOutputDir = Join-Path $RepoRoot "private\raw-results\windows\memcached\smoke"
@@ -92,7 +92,7 @@ try {
         "-m", [string]$MemMb
     )
     $server = Start-Process -FilePath $ExePath -ArgumentList $serverArgs `
-        -RedirectStandardOutput $StdoutPath -RedirectStandardError $StderrPath -PassThru
+        -RedirectStandardOutput $StdoutPath -RedirectStandardError $StderrPath -PassThru -WindowStyle Hidden
     Start-Sleep -Seconds 1
 
     $versionResponse = Send-MemcachedCommand -TargetHost $Listen -TargetPort $Port -Payload "version`r`n"
@@ -115,9 +115,9 @@ try {
     $summary.Add("Generated: " + (Get-Date -Format "yyyy-MM-dd HH:mm:ss zzz"))
     $summary.Add("")
     $summary.Add("References:")
-    $summary.Add("- [win/build_win_memcached_min_main.ps1](/C:/git/hakozuna-win/win/build_win_memcached_min_main.ps1)")
-    $summary.Add("- [win/run_win_memcached_min_smoke.ps1](/C:/git/hakozuna-win/win/run_win_memcached_min_smoke.ps1)")
-    $summary.Add("- [docs/WINDOWS_MEMCACHED_MIN_MAIN.md](/C:/git/hakozuna-win/docs/WINDOWS_MEMCACHED_MIN_MAIN.md)")
+    $summary.Add('- `win/build_win_memcached_min_main.ps1`')
+    $summary.Add('- `win/run_win_memcached_min_smoke.ps1`')
+    $summary.Add('- `docs/WINDOWS_MEMCACHED_MIN_MAIN.md`')
     $summary.Add("")
     $summary.Add("| check | result |")
     $summary.Add("| --- | --- |")

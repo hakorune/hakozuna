@@ -4,6 +4,8 @@ param(
     [string]$RawOutputDir,
     [string]$ExeDir,
     [string]$ClientExePath,
+    [string[]]$ProfileName,
+    [string[]]$AllocatorName,
     [int]$ServerThreads = 4,
     [int]$MemMb = 64,
     [int]$ServerVerbose = 1,
@@ -36,12 +38,33 @@ foreach ($path in @($OutputDir, $RawOutputDir)) {
         New-Item -ItemType Directory -Force -Path $path | Out-Null
     }
 }
+$RunSummaryRoot = Join-Path $RawOutputDir "summaries"
+if (-not (Test-Path $RunSummaryRoot)) {
+    New-Item -ItemType Directory -Force -Path $RunSummaryRoot | Out-Null
+}
 
 if (-not $SkipBuild) {
     & (Join-Path $RepoRoot "win\build_win_memcached_allocator_variants.ps1") | Out-Null
 }
 
 $Runner = Join-Path $RepoRoot "win\run_win_memcached_external_client.ps1"
+
+function Normalize-NameFilter {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$Values
+    )
+
+    $normalized = New-Object System.Collections.Generic.List[string]
+    foreach ($value in @($Values)) {
+        foreach ($part in (($value -split '\s*,\s*') | Where-Object { $_ -and $_.Trim() })) {
+            $normalized.Add($part.Trim())
+        }
+    }
+
+    return @($normalized | Select-Object -Unique)
+}
+
 $Allocators = @(
     @{ Name = "crt"; Exe = (Join-Path $ExeDir "memcached_win_min_main_crt.exe") },
     @{ Name = "hz3"; Exe = (Join-Path $ExeDir "memcached_win_min_main_hz3.exe") },
@@ -56,9 +79,27 @@ $Profiles = @(
     @{ Name = "read_heavy_4x16"; Port = 11475; ClientThreads = 4; ClientConnections = 16; Ratio = "1:9"; DataSize = 64; TestTime = 3; KeyMaximum = 10000 },
     @{ Name = "write_heavy_4x16"; Port = 11480; ClientThreads = 4; ClientConnections = 16; Ratio = "4:1"; DataSize = 64; TestTime = 3; KeyMaximum = 10000 },
     @{ Name = "larger_payload_4x16"; Port = 11482; ClientThreads = 4; ClientConnections = 16; Ratio = "1:1"; DataSize = 256; TestTime = 3; KeyMaximum = 8000 },
+    @{ Name = "larger_payload_r90_4x16"; Port = 11483; ClientThreads = 4; ClientConnections = 16; Ratio = "1:9"; DataSize = 256; TestTime = 3; KeyMaximum = 8000 },
     @{ Name = "long_balanced_4x16"; Port = 11485; ClientThreads = 4; ClientConnections = 16; Ratio = "1:1"; DataSize = 64; TestTime = 10; KeyMaximum = 10000 },
     @{ Name = "scale_8x16"; Port = 11490; ClientThreads = 8; ClientConnections = 16; Ratio = "1:1"; DataSize = 64; TestTime = 5; KeyMaximum = 20000 }
 )
+
+if ($ProfileName -and $ProfileName.Count -gt 0) {
+    $ProfileName = Normalize-NameFilter -Values $ProfileName
+    $selectedProfiles = @($Profiles | Where-Object { $ProfileName -contains $_.Name })
+    if ($selectedProfiles.Count -eq 0) {
+        throw "no profiles matched ProfileName: $($ProfileName -join ', ')"
+    }
+    $Profiles = $selectedProfiles
+}
+if ($AllocatorName -and $AllocatorName.Count -gt 0) {
+    $AllocatorName = Normalize-NameFilter -Values $AllocatorName
+    $selectedAllocators = @($Allocators | Where-Object { $AllocatorName -contains $_.Name })
+    if ($selectedAllocators.Count -eq 0) {
+        throw "no allocators matched AllocatorName: $($AllocatorName -join ', ')"
+    }
+    $Allocators = $selectedAllocators
+}
 
 $Stamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $SummaryPath = Join-Path $OutputDir ($Stamp + "_memcached_external_client_allocator_matrix.md")
@@ -66,6 +107,18 @@ $RawLogPath = Join-Path $RawOutputDir ($Stamp + "_memcached_external_client_allo
 $summary = New-Object System.Collections.Generic.List[string]
 $raw = New-Object System.Collections.Generic.List[string]
 $details = New-Object System.Collections.Generic.List[string]
+
+function ConvertTo-RepoRelativePath {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $fullPath = [System.IO.Path]::GetFullPath($Path)
+    $rootPath = [System.IO.Path]::GetFullPath($RepoRoot)
+    if ($fullPath.StartsWith($rootPath, [System.StringComparison]::OrdinalIgnoreCase)) {
+        $relativePath = $fullPath.Substring($rootPath.Length).TrimStart([char[]]@('\', '/'))
+        return ($relativePath -replace "\\", "/")
+    }
+    return $Path
+}
 
 function Get-MedianValue {
     param(
@@ -91,9 +144,9 @@ $summary.Add("Generated: " + (Get-Date -Format "yyyy-MM-dd HH:mm:ss zzz"))
 $summary.Add("Runs per profile/allocator: $Runs")
 $summary.Add("")
 $summary.Add("References:")
-$summary.Add("- [win/build_win_memcached_allocator_variants.ps1](/C:/git/hakozuna-win/win/build_win_memcached_allocator_variants.ps1)")
-$summary.Add("- [win/run_win_memcached_external_client.ps1](/C:/git/hakozuna-win/win/run_win_memcached_external_client.ps1)")
-$summary.Add("- [win/run_win_memcached_external_client_allocator_matrix.ps1](/C:/git/hakozuna-win/win/run_win_memcached_external_client_allocator_matrix.ps1)")
+$summary.Add('- `win/build_win_memcached_allocator_variants.ps1`')
+$summary.Add('- `win/run_win_memcached_external_client.ps1`')
+$summary.Add('- `win/run_win_memcached_external_client_allocator_matrix.ps1`')
 $summary.Add("")
 $summary.Add("| profile | allocator | ops/sec median | drop median | slot median | size | secs | runs |")
 $summary.Add("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |")
@@ -104,7 +157,7 @@ foreach ($profile in $Profiles) {
             throw "allocator exe not found: $($allocator.Exe)"
         }
 
-        $profileOutputDir = Join-Path $OutputDir ("external_client_alloc_" + $profile.Name + "_" + $allocator.Name)
+        $profileOutputDir = Join-Path $RunSummaryRoot ("external_client_alloc_" + $profile.Name + "_" + $allocator.Name)
         $profileRawDir = Join-Path $RawOutputDir ("external_client_alloc_" + $profile.Name + "_" + $allocator.Name)
         $port = $profile.Port
         switch ($allocator.Name) {
@@ -222,7 +275,7 @@ foreach ($line in $details) {
     $summary.Add($line)
 }
 $summary.Add("")
-$summary.Add(('Raw log: `{0}`' -f $RawLogPath))
+$summary.Add(('Raw log archive: `{0}`' -f (ConvertTo-RepoRelativePath -Path $RawLogPath)))
 
 Set-Content -Path $SummaryPath -Value $summary -Encoding UTF8
 Set-Content -Path $RawLogPath -Value $raw -Encoding UTF8

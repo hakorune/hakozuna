@@ -114,6 +114,8 @@ For this repo today:
 - Windows public runners already live under [`win`](../win)
 - Windows public summaries already live under [`docs/benchmarks/windows`](benchmarks/windows)
 - local-only assets already belong under [`private`](../private)
+- single-run Windows app summaries should default to `private/raw-results/windows/.../summaries`
+- matrix runners may publish only their aggregate comparison tables under `docs/benchmarks/windows/apps`
 - Windows Redis and future memcached assets should migrate toward:
   - `private/bench-assets/windows/redis/...`
   - `private/raw-results/windows/redis/...`

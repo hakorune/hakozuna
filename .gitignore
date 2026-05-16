@@ -15,6 +15,11 @@ bench_burst_idle*
 *.ilk
 perf.data*
 *.log
+*.dmp
+*.mdmp
+*.minidump
+*.etl
+*.trace
 dump.rdb
 
 # Private development docs (not for public)

@@ -12,6 +12,8 @@ This page is the public pointer list for dated benchmark summaries.
 - [Windows HZ4 one-shot ownership box, 2026-03-21](./windows/apps/20260321_hz4_win_one_shot_ownership.md)
 - [Windows paper-aligned bench, 2026-03-21](./windows/paper/20260321_044818_paper_windows.md)
 - [Windows Redis profile matrix, 2026-03-21](./windows/apps/20260321_044828_redis_real_windows_profile_matrix.md)
+- [Windows large-payload R90 allocator compare, 2026-05-12](./windows/apps/20260512_larger_payload_r90_allocator_compare.md)
+- [Windows HZ3 vs HZ4 large-payload R90 repeat-5, 2026-05-12](./windows/apps/20260512_hz3_hz4_large_payload_r90_repeat5.md)
 - [Paper benchmark results, 2026-02-18](./2026-02-18_PAPER_BENCH_RESULTS.md)
 
 ## Usage

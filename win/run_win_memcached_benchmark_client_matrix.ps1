@@ -27,6 +27,10 @@ foreach ($path in @($OutputDir, $RawOutputDir)) {
         New-Item -ItemType Directory -Force -Path $path | Out-Null
     }
 }
+$RunSummaryRoot = Join-Path $RawOutputDir "summaries"
+if (-not (Test-Path $RunSummaryRoot)) {
+    New-Item -ItemType Directory -Force -Path $RunSummaryRoot | Out-Null
+}
 
 $Runner = Join-Path $RepoRoot "win\run_win_memcached_benchmark_client.ps1"
 $Profiles = @(
@@ -74,21 +78,33 @@ $RawLogPath = Join-Path $RawOutputDir ($Stamp + "_memcached_benchmark_client_mat
 $summary = New-Object System.Collections.Generic.List[string]
 $raw = New-Object System.Collections.Generic.List[string]
 
+function ConvertTo-RepoRelativePath {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $fullPath = [System.IO.Path]::GetFullPath($Path)
+    $rootPath = [System.IO.Path]::GetFullPath($RepoRoot)
+    if ($fullPath.StartsWith($rootPath, [System.StringComparison]::OrdinalIgnoreCase)) {
+        $relativePath = $fullPath.Substring($rootPath.Length).TrimStart([char[]]@('\', '/'))
+        return ($relativePath -replace "\\", "/")
+    }
+    return $Path
+}
+
 $summary.Add("# Windows Memcached Benchmark Client Matrix")
 $summary.Add("")
 $summary.Add("Generated: " + (Get-Date -Format "yyyy-MM-dd HH:mm:ss zzz"))
 $summary.Add("")
 $summary.Add("References:")
-$summary.Add("- [win/run_win_memcached_benchmark_client.ps1](/C:/git/hakozuna-win/win/run_win_memcached_benchmark_client.ps1)")
-$summary.Add("- [win/run_win_memcached_benchmark_client_matrix.ps1](/C:/git/hakozuna-win/win/run_win_memcached_benchmark_client_matrix.ps1)")
-$summary.Add("- [docs/WINDOWS_MEMCACHED_MIN_MAIN.md](/C:/git/hakozuna-win/docs/WINDOWS_MEMCACHED_MIN_MAIN.md)")
+$summary.Add('- `win/run_win_memcached_benchmark_client.ps1`')
+$summary.Add('- `win/run_win_memcached_benchmark_client_matrix.ps1`')
+$summary.Add('- `docs/WINDOWS_MEMCACHED_MIN_MAIN.md`')
 $summary.Add("")
 $summary.Add("| profile | total ops | get ops | set ops | ops/sec | clients | req/client | payload | get % |")
 $summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 
 $builtOnce = $false
 foreach ($profile in $Profiles) {
-    $profileOutputDir = Join-Path $OutputDir ("benchmark_client_" + $profile.Name)
+    $profileOutputDir = Join-Path $RunSummaryRoot ("benchmark_client_" + $profile.Name)
     $profileRawDir = Join-Path $RawOutputDir ("benchmark_client_" + $profile.Name)
 
     $args = @(
@@ -157,7 +173,7 @@ foreach ($profile in $Profiles) {
 }
 
 $summary.Add("")
-$summary.Add(('Raw log: `{0}`' -f $RawLogPath))
+$summary.Add(('Raw log archive: `{0}`' -f (ConvertTo-RepoRelativePath -Path $RawLogPath)))
 
 Set-Content -Path $SummaryPath -Value $summary -Encoding UTF8
 Set-Content -Path $RawLogPath -Value $raw -Encoding UTF8
