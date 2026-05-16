@@ -5,6 +5,7 @@
 #include "hz3_hook_link.h"
 #include "hz3.h"
 #include "hz3_large.h"
+#include "hz3_sc.h"
 #include "hz3_types.h"
 
 #ifndef WIN32_LEAN_AND_MEAN
@@ -26,6 +27,7 @@ static INIT_ONCE g_hz3_hook_once = INIT_ONCE_STATIC_INIT;
 static int g_hz3_hook_enabled = 1;
 static int g_hz3_hook_failfast = 1;
 static int g_hz3_hook_log_shot = 0;
+static int g_hz3_hook_page_medium_aligned = 0;
 static __declspec(thread) int g_hz3_hook_depth = 0;
 
 static HMODULE g_hz3_crt = NULL;
@@ -77,6 +79,7 @@ static BOOL CALLBACK hz3_hook_init_cb(PINIT_ONCE once, PVOID param, PVOID* conte
     g_hz3_hook_enabled = hz3_win_env_flag("HZ3_HOOK_ENABLE", 1);
     g_hz3_hook_failfast = hz3_win_env_flag("HZ3_HOOK_FAILFAST", 1);
     g_hz3_hook_log_shot = hz3_win_env_flag("HZ3_HOOK_LOG_SHOT", 0);
+    g_hz3_hook_page_medium_aligned = hz3_win_env_flag("HZ3_PAGE_MEDIUM_ALIGNED", 0);
 
     hz3_hook_resolve_crt();
 
@@ -90,6 +93,8 @@ static BOOL CALLBACK hz3_hook_init_cb(PINIT_ONCE once, PVOID param, PVOID* conte
                 g_hz3_hook_enabled,
                 g_hz3_hook_failfast,
                 g_hz3_crt ? "ok" : "missing");
+        fprintf(stderr, "[HZ3_HOOK] page_medium_aligned=%d\n",
+                g_hz3_hook_page_medium_aligned);
     }
     return TRUE;
 }
@@ -114,6 +119,23 @@ static inline void hz3_hook_guard_leave(void) {
 
 static inline int hz3_is_pow2(size_t x) {
     return x && ((x & (x - 1u)) == 0);
+}
+
+static inline int hz3_hook_medium_can_satisfy_alignment(size_t alignment, size_t size) {
+    return size >= HZ3_SC_MIN_SIZE &&
+           size <= HZ3_SC_MAX_SIZE &&
+           alignment <= HZ3_PAGE_SIZE;
+}
+
+static inline void* hz3_hook_alloc_aligned_policy(size_t alignment, size_t size) {
+    if (alignment <= HZ3_SMALL_ALIGN) {
+        return hz3_malloc(size);
+    }
+    if (g_hz3_hook_page_medium_aligned &&
+        hz3_hook_medium_can_satisfy_alignment(alignment, size)) {
+        return hz3_malloc(size);
+    }
+    return hz3_large_aligned_alloc(alignment, size);
 }
 
 void* hz3_hook_malloc(size_t size) {
@@ -231,8 +253,7 @@ int hz3_hook_posix_memalign(void** memptr, size_t alignment, size_t size) {
         return ENOMEM;
     }
 
-    void* p = (alignment <= HZ3_SMALL_ALIGN) ? hz3_malloc(size)
-                                             : hz3_large_aligned_alloc(alignment, size);
+    void* p = hz3_hook_alloc_aligned_policy(alignment, size);
     if (!p) {
         hz3_hook_guard_leave();
         return ENOMEM;
@@ -265,12 +286,7 @@ void* hz3_hook_aligned_alloc(size_t alignment, size_t size) {
         return NULL;
     }
 
-    if (alignment <= HZ3_SMALL_ALIGN) {
-        void* out = hz3_malloc(size);
-        hz3_hook_guard_leave();
-        return out;
-    }
-    void* p = hz3_large_aligned_alloc(alignment, size);
+    void* p = hz3_hook_alloc_aligned_policy(alignment, size);
     if (!p) {
         errno = ENOMEM;
     }
