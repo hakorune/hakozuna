@@ -46,8 +46,17 @@ Bench entrypoint (SSOT lane triage):
 - NO-GO台帳（#errorの正）: `hakozuna/hz3/docs/HZ3_ARCHIVED_BOXES.md`
 - NO-GO台帳（研究箱アーカイブ）: `hakozuna/hz3/docs/NO_GO_SUMMARY.md`
 - Paper notes (draft): `hakozuna/hz3/docs/HAKMEM_HZ3_PAPER_NOTES.md`
+- Windows medium fast path / page-alignment note:
+  `hakozuna/hz3/docs/PHASE_HZ3_WINDOWS_MEDIUM_FASTPATH_20260517.md`
 
 ## Safety notes
 
 - Some perf flags intentionally disable debug list invariants. Example:
   - `HZ3_S97_REMOTE_STASH_SKIP_TAIL_NULL=1` is incompatible with list-debug checkers (`HZ3_LIST_FAILFAST`, `HZ3_CENTRAL_DEBUG`, `HZ3_XFER_DEBUG`).
+- On Windows, the `madvise(MADV_DONTNEED/FREE)` shim must use `MEM_RESET`
+  rather than `MEM_DECOMMIT` for purge-only paths that keep HZ3 metadata
+  reachable. `MEM_DECOMMIT` can make later intrusive-list writes fault.
+- Ordinary aligned requests (`alignment <= 16`) should stay on `hz3_malloc`.
+  Page-aligned medium routing (`4096 <= size <= 65536 && alignment <= 4096`)
+  is still a research lane because it trades large throughput wins for higher
+  RSS on current measurements.

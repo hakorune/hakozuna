@@ -88,7 +88,9 @@ static inline int madvise(void* addr, size_t len, int advice) {
     switch (advice) {
         case MADV_DONTNEED:
         case MADV_FREE:
-            if (VirtualFree(addr, len, MEM_DECOMMIT)) {
+            // Linux MADV_DONTNEED keeps the virtual range valid and writable.
+            // MEM_DECOMMIT would make later intrusive-list writes fault on Windows.
+            if (VirtualAlloc(addr, len, MEM_RESET, PAGE_READWRITE)) {
 #if HZ3_WIN_MMAN_STATS
                 hz3_win_mman_stats_madvise(len);
 #endif
