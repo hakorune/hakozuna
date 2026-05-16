@@ -3,7 +3,15 @@
 #include "hz3.h"
 #include "hz3_config.h"
 #include "hz3_large.h"
+#include "hz3_sc.h"
 #include "hz3_types.h"
+
+#if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#endif
 
 #include <errno.h>
 #include <stddef.h>
@@ -18,6 +26,46 @@
 
 static inline int hz3_is_pow2(size_t x) {
     return x && ((x & (x - 1u)) == 0);
+}
+
+static _Atomic int g_hz3_shim_page_medium_aligned = ATOMIC_VAR_INIT(-1);
+
+static inline int hz3_shim_medium_can_satisfy_alignment(size_t alignment, size_t size) {
+    return size >= HZ3_SC_MIN_SIZE &&
+           size <= HZ3_SC_MAX_SIZE &&
+           alignment <= HZ3_PAGE_SIZE;
+}
+
+static inline int hz3_shim_page_medium_aligned_enabled(void) {
+#if defined(_WIN32)
+    int cached = atomic_load_explicit(&g_hz3_shim_page_medium_aligned, memory_order_acquire);
+    if (cached >= 0) {
+        return cached;
+    }
+    char buf[32];
+    DWORD n = GetEnvironmentVariableA("HZ3_PAGE_MEDIUM_ALIGNED", buf, (DWORD)sizeof(buf));
+    int enabled = (n != 0 && n < sizeof(buf) && buf[0] != '0') ? 1 : 0;
+    int expected = -1;
+    atomic_compare_exchange_strong_explicit(&g_hz3_shim_page_medium_aligned,
+                                            &expected,
+                                            enabled,
+                                            memory_order_release,
+                                            memory_order_relaxed);
+    return atomic_load_explicit(&g_hz3_shim_page_medium_aligned, memory_order_acquire);
+#else
+    return 0;
+#endif
+}
+
+static inline void* hz3_shim_alloc_aligned_policy(size_t alignment, size_t size) {
+    if (alignment <= HZ3_SMALL_ALIGN) {
+        return hz3_malloc(size);
+    }
+    if (hz3_shim_page_medium_aligned_enabled() &&
+        hz3_shim_medium_can_satisfy_alignment(alignment, size)) {
+        return hz3_malloc(size);
+    }
+    return hz3_large_aligned_alloc(alignment, size);
 }
 
 // ShimNullReturnGuardBox (debug-only)
@@ -114,8 +162,7 @@ int posix_memalign(void** memptr, size_t alignment, size_t size) {
         return EINVAL;
     }
 
-    void* p = (alignment <= HZ3_SMALL_ALIGN) ? hz3_malloc(size)
-                                             : hz3_large_aligned_alloc(alignment, size);
+    void* p = hz3_shim_alloc_aligned_policy(alignment, size);
     if (!p) {
         return ENOMEM;
     }
@@ -133,10 +180,7 @@ void* aligned_alloc(size_t alignment, size_t size) {
         return NULL;
     }
 
-    if (alignment <= HZ3_SMALL_ALIGN) {
-        return hz3_malloc(size);
-    }
-    void* p = hz3_large_aligned_alloc(alignment, size);
+    void* p = hz3_shim_alloc_aligned_policy(alignment, size);
     if (!p) {
         errno = ENOMEM;
     }
@@ -149,10 +193,7 @@ void* memalign(size_t alignment, size_t size) {
         return NULL;
     }
 
-    if (alignment <= HZ3_SMALL_ALIGN) {
-        return hz3_malloc(size);
-    }
-    void* p = hz3_large_aligned_alloc(alignment, size);
+    void* p = hz3_shim_alloc_aligned_policy(alignment, size);
     if (!p) {
         errno = ENOMEM;
     }
