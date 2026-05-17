@@ -285,6 +285,9 @@ static Hz3LargeHdr* hz3_large_s218_c1_batch_mmap_alloc(size_t req_size,
     if (region == MAP_FAILED) {
         return NULL;
     }
+    if (aligned_alloc) {
+        hz3_large_aligned_obs_on_aligned_batch_mmap(total);
+    }
 
     uintptr_t user = (uintptr_t)region + offset;
     if (aligned_alloc && align_pad > 0) {
@@ -374,6 +377,7 @@ void* hz3_large_alloc(size_t size) {
     if (size == 0) {
         size = 1;
     }
+    hz3_large_aligned_obs_on_normal_alloc(size);
 
     size_t offset = hz3_large_user_offset();
     if (size > (SIZE_MAX - offset)) {
@@ -560,6 +564,7 @@ void* hz3_large_aligned_alloc(size_t alignment, size_t size) {
     hz3_large_stats_on_alloc_call();
 
     if (alignment == 0 || (alignment & (alignment - 1u)) != 0) {
+        hz3_large_aligned_obs_on_invalid(size, alignment);
         return NULL;
     }
     if (alignment < HZ3_LARGE_ALIGN) {
@@ -568,6 +573,7 @@ void* hz3_large_aligned_alloc(size_t alignment, size_t size) {
     if (size == 0) {
         size = 1;
     }
+    hz3_large_aligned_obs_on_aligned_alloc(size, alignment);
 
     size_t offset = hz3_large_user_offset();
     if (size > (SIZE_MAX - offset)) {
@@ -646,6 +652,7 @@ void* hz3_large_aligned_alloc(size_t alignment, size_t size) {
 
         if (hdr) {
             hz3_large_stats_on_alloc_cache_hit();
+            hz3_large_aligned_obs_on_aligned_cache_hit();
 #if HZ3_LARGE_CANARY_ENABLE
             if (!hz3_large_debug_check_canary_cache(hdr, 1)) {
                 hz3_large_debug_on_munmap_locked(hdr);
@@ -675,6 +682,7 @@ void* hz3_large_aligned_alloc(size_t alignment, size_t size) {
 cache_miss_aligned:
 #endif
     hz3_large_stats_on_alloc_cache_miss();
+    hz3_large_aligned_obs_on_aligned_cache_miss();
     hz3_large_reuse_note_alloc_miss(sc);
 #if HZ3_LARGE_CACHE_ENABLE && HZ3_S50_LARGE_SCACHE && HZ3_S212_LARGE_UNMAP_DEFER_PLUS
     hz3_large_unmap_defer_drain_on_alloc_miss();
@@ -696,6 +704,7 @@ cache_miss_aligned:
             hz3_oom_note("large_mmap", need, 0);
             return NULL;
         }
+        hz3_large_aligned_obs_on_aligned_mmap(need);
 
         uintptr_t start = (uintptr_t)base + offset;
         uintptr_t user = (start + pad) & ~(uintptr_t)pad;
@@ -732,6 +741,7 @@ int hz3_large_free(void* ptr) {
     if (!hdr) {
         return 0;
     }
+    hz3_large_aligned_obs_on_free(hdr);
     hz3_large_cache_stats_dump();
     hz3_large_stats_on_free_call();
 #if HZ3_WATCH_PTR_BOX
@@ -745,6 +755,7 @@ int hz3_large_free(void* ptr) {
 #if HZ3_S50_LARGE_SCACHE
     // Safety: validate hdr before accessing map_size
     if (hdr->magic != HZ3_LARGE_MAGIC || hdr->map_size == 0) {
+        hz3_large_aligned_obs_on_admit_invalid();
         goto do_munmap;
     }
 
@@ -752,6 +763,7 @@ int hz3_large_free(void* ptr) {
 
     // >64MB はキャッシュ対象外（巨大ブロックで cap を食い潰すのを防ぐ）
     if (sc < 0 || sc >= HZ3_LARGE_SC_COUNT - 1) {
+        hz3_large_aligned_obs_on_admit_oversize();
         goto do_munmap;
     }
 
@@ -790,6 +802,7 @@ int hz3_large_free(void* ptr) {
         size_t projected_hint = total_hint + hdr->map_size;
         if (projected_hint >= total_hint && projected_hint <= hard_cap) {
             can_cache = 1;
+            hz3_large_aligned_obs_on_admit_precheck_yes();
 #if HZ3_LARGE_CACHE_BUDGET
             do_madvise = (projected_hint > HZ3_LARGE_CACHE_SOFT_BYTES);
             if (do_madvise) {
@@ -871,6 +884,7 @@ int hz3_large_free(void* ptr) {
 #endif
 
         can_cache = (hz3_large_total_cached_load() + hdr->map_size <= insert_cap);
+        hz3_large_aligned_obs_on_admit_lock_decision(can_cache);
 #if HZ3_LARGE_CACHE_BUDGET
         if (can_cache && !do_madvise) {
             do_madvise = ((hz3_large_total_cached_load() + hdr->map_size) > HZ3_LARGE_CACHE_SOFT_BYTES);
@@ -900,9 +914,11 @@ int hz3_large_free(void* ptr) {
                     hdr->next = NULL;
                     hz3_large_sc_push_head(sc, hdr);
                     hz3_large_stats_on_free_cached();
+                    hz3_large_aligned_obs_on_admit_cache_insert();
                     hz3_large_cache_lock_release();
                     return 1;
                 }
+                hz3_large_aligned_obs_on_admit_final_fit_fail();
                 can_cache = 0;
             }
         }
@@ -1058,6 +1074,7 @@ s53_done:
             }
 #endif
             if (!hz3_large_reuse_try_admit_locked(sc)) {
+                hz3_large_aligned_obs_on_admit_reuse_skip();
                 hz3_large_cache_lock_release();
                 goto do_munmap;
             }
@@ -1065,11 +1082,13 @@ s53_done:
             hdr->next = NULL;
             hz3_large_sc_push_head(sc, hdr);
             hz3_large_stats_on_free_cached();
+            hz3_large_aligned_obs_on_admit_cache_insert();
             hz3_large_cache_lock_release();
             return 1;
         }
 
         hz3_large_cache_lock_release();
+        hz3_large_aligned_obs_on_admit_final_fit_fail();
         goto do_munmap;
     }
 
@@ -1087,6 +1106,7 @@ s53_done:
         g_hz3_large_cached_bytes += hdr->map_size;
         g_hz3_large_cached_nodes++;
         hz3_large_stats_on_free_cached();
+        hz3_large_aligned_obs_on_admit_cache_insert();
         hz3_large_cache_lock_release();
         return 1;
     }
@@ -1098,10 +1118,12 @@ s53_done:
 do_munmap:
 #endif
     // Cache full または無効: munmap
+    hz3_large_aligned_obs_on_admit_do_munmap();
     hz3_large_stats_on_free_munmap();
     hdr->magic = 0;
 #if HZ3_LARGE_CACHE_ENABLE && HZ3_S50_LARGE_SCACHE && HZ3_S212_LARGE_UNMAP_DEFER_PLUS
     if (hz3_large_try_defer_direct_unmap(hdr)) {
+        hz3_large_aligned_obs_on_admit_defer_munmap();
         return 1;
     }
 #endif

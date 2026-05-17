@@ -76,6 +76,7 @@ static inline int hz3_large_take_match_locked(Hz3LargeHdr* cur, const void* ptr)
 static Hz3LargeHdr* hz3_large_take(const void* ptr) {
     uint32_t idx = hz3_large_hash_ptr(ptr);
     hz3_lock_t* map_lock = hz3_large_map_lock_for_idx(idx);
+    size_t obs_steps = 0;
 #if HZ3_S238_LARGE_DIRECT_LOOKUP
     Hz3LargeHdr* cand = NULL;
     size_t offset = hz3_large_user_offset();
@@ -94,10 +95,16 @@ static Hz3LargeHdr* hz3_large_take(const void* ptr) {
         Hz3LargeHdr* prev = NULL;
         Hz3LargeHdr* cur = g_hz3_large_buckets[idx];
         while (cur && cur != cand) {
+#if HZ3_LARGE_ALIGNED_OBS
+            obs_steps++;
+#endif
             prev = cur;
             cur = cur->next;
         }
         if (cur == cand) {
+#if HZ3_LARGE_ALIGNED_OBS
+            obs_steps++;
+#endif
             if (cur->magic != HZ3_LARGE_MAGIC) {
                 HZ3_S238_INC(g_hz3_s238_direct_miss_magic);
             } else if (cur->user_ptr != ptr) {
@@ -118,6 +125,7 @@ static Hz3LargeHdr* hz3_large_take(const void* ptr) {
                     hz3_large_debug_on_bucket_remove_locked(cur);
                     HZ3_S238_INC(g_hz3_s238_direct_hit);
                     hz3_lock_release(map_lock);
+                    hz3_large_aligned_obs_on_take_hit(obs_steps);
                     return cur;
                 }
                 HZ3_S238_INC(g_hz3_s238_direct_miss_userptr);
@@ -133,9 +141,13 @@ static Hz3LargeHdr* hz3_large_take(const void* ptr) {
     Hz3LargeHdr* prev = NULL;
     Hz3LargeHdr* cur = g_hz3_large_buckets[idx];
     while (cur) {
+#if HZ3_LARGE_ALIGNED_OBS
+        obs_steps++;
+#endif
         int matched = hz3_large_take_match_locked(cur, ptr);
         if (matched < 0) {
             hz3_lock_release(map_lock);
+            hz3_large_aligned_obs_on_take_miss(obs_steps);
             return NULL;
         }
         if (matched > 0) {
@@ -150,6 +162,7 @@ static Hz3LargeHdr* hz3_large_take(const void* ptr) {
             HZ3_S238_INC(g_hz3_s238_fallback_hash_hit);
 #endif
             hz3_lock_release(map_lock);
+            hz3_large_aligned_obs_on_take_hit(obs_steps);
             return cur;
         }
         prev = cur;
@@ -159,6 +172,7 @@ static Hz3LargeHdr* hz3_large_take(const void* ptr) {
     HZ3_S238_INC(g_hz3_s238_fallback_hash_miss);
 #endif
     hz3_lock_release(map_lock);
+    hz3_large_aligned_obs_on_take_miss(obs_steps);
     return NULL;
 }
 

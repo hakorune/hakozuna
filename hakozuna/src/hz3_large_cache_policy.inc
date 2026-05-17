@@ -1,3 +1,7 @@
+#ifndef HZ3_LARGE_ALIGNED_OBS
+#define HZ3_LARGE_ALIGNED_OBS 0
+#endif
+
 // S53: LargeCacheBudgetBox statistics (one-shot)
 #if HZ3_LARGE_CACHE_STATS
 static _Atomic size_t g_budget_soft_hits = 0;
@@ -219,6 +223,277 @@ static inline void hz3_large_stats_on_s218_c1_batch(size_t cached_blocks, size_t
     (void)dropped_blocks;
 #endif
 }
+
+#if HZ3_LARGE_ALIGNED_OBS
+static _Atomic size_t g_hz3_large_obs_normal_calls = 0;
+static _Atomic size_t g_hz3_large_obs_aligned_calls = 0;
+static _Atomic size_t g_hz3_large_obs_aligned_invalid = 0;
+static _Atomic size_t g_hz3_large_obs_size_lt4k = 0;
+static _Atomic size_t g_hz3_large_obs_size_4k_64k = 0;
+static _Atomic size_t g_hz3_large_obs_size_64k_1m = 0;
+static _Atomic size_t g_hz3_large_obs_size_gt1m = 0;
+static _Atomic size_t g_hz3_large_obs_align_le16 = 0;
+static _Atomic size_t g_hz3_large_obs_align_le4096 = 0;
+static _Atomic size_t g_hz3_large_obs_align_le8192 = 0;
+static _Atomic size_t g_hz3_large_obs_align_gt8192 = 0;
+static _Atomic size_t g_hz3_large_obs_medium_candidate = 0;
+static _Atomic size_t g_hz3_large_obs_small_overaligned = 0;
+static _Atomic size_t g_hz3_large_obs_large_over64k = 0;
+static _Atomic size_t g_hz3_large_obs_over_page_aligned = 0;
+static _Atomic size_t g_hz3_large_obs_aligned_cache_hits = 0;
+static _Atomic size_t g_hz3_large_obs_aligned_cache_misses = 0;
+static _Atomic size_t g_hz3_large_obs_aligned_mmap_calls = 0;
+static _Atomic size_t g_hz3_large_obs_aligned_mmap_bytes = 0;
+static _Atomic size_t g_hz3_large_obs_aligned_batch_mmap_calls = 0;
+static _Atomic size_t g_hz3_large_obs_aligned_batch_mmap_bytes = 0;
+static _Atomic size_t g_hz3_large_obs_free_calls = 0;
+static _Atomic size_t g_hz3_large_obs_free_shifted = 0;
+static _Atomic size_t g_hz3_large_obs_free_unshifted = 0;
+static _Atomic size_t g_hz3_large_obs_take_hits = 0;
+static _Atomic size_t g_hz3_large_obs_take_misses = 0;
+static _Atomic size_t g_hz3_large_obs_take_scan_steps = 0;
+static _Atomic size_t g_hz3_large_obs_admit_invalid = 0;
+static _Atomic size_t g_hz3_large_obs_admit_oversize = 0;
+static _Atomic size_t g_hz3_large_obs_admit_precheck_yes = 0;
+static _Atomic size_t g_hz3_large_obs_admit_lock_yes = 0;
+static _Atomic size_t g_hz3_large_obs_admit_lock_no = 0;
+static _Atomic size_t g_hz3_large_obs_admit_reuse_skip = 0;
+static _Atomic size_t g_hz3_large_obs_admit_final_fit_fail = 0;
+static _Atomic size_t g_hz3_large_obs_admit_cache_insert = 0;
+static _Atomic size_t g_hz3_large_obs_admit_do_munmap = 0;
+static _Atomic size_t g_hz3_large_obs_admit_defer_munmap = 0;
+
+static inline void hz3_large_aligned_obs_inc(_Atomic size_t* p) {
+    atomic_fetch_add_explicit(p, 1, memory_order_relaxed);
+}
+
+static inline void hz3_large_aligned_obs_add(_Atomic size_t* p, size_t v) {
+    atomic_fetch_add_explicit(p, v, memory_order_relaxed);
+}
+
+static void hz3_large_aligned_obs_dump_final(void) {
+    fprintf(stderr,
+            "[HZ3_LARGE_ALIGNED_OBS_CALLS] normal=%zu aligned=%zu invalid=%zu "
+            "size_lt4k=%zu size_4k_64k=%zu size_64k_1m=%zu size_gt1m=%zu "
+            "align_le16=%zu align_le4096=%zu align_le8192=%zu align_gt8192=%zu "
+            "medium_candidate=%zu small_overaligned=%zu large_over64k=%zu "
+            "over_page_aligned=%zu\n",
+            atomic_load_explicit(&g_hz3_large_obs_normal_calls, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_aligned_calls, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_aligned_invalid, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_size_lt4k, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_size_4k_64k, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_size_64k_1m, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_size_gt1m, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_align_le16, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_align_le4096, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_align_le8192, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_align_gt8192, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_medium_candidate, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_small_overaligned, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_large_over64k, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_over_page_aligned, memory_order_relaxed));
+    fprintf(stderr,
+            "[HZ3_LARGE_ALIGNED_OBS_PATH] aligned_cache_hits=%zu "
+            "aligned_cache_misses=%zu aligned_mmap_calls=%zu "
+            "aligned_mmap_bytes=%zu aligned_batch_mmap_calls=%zu "
+            "aligned_batch_mmap_bytes=%zu free_calls=%zu free_shifted=%zu "
+            "free_unshifted=%zu take_hits=%zu take_misses=%zu "
+            "take_scan_steps=%zu\n",
+            atomic_load_explicit(&g_hz3_large_obs_aligned_cache_hits, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_aligned_cache_misses, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_aligned_mmap_calls, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_aligned_mmap_bytes, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_aligned_batch_mmap_calls, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_aligned_batch_mmap_bytes, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_free_calls, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_free_shifted, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_free_unshifted, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_take_hits, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_take_misses, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_take_scan_steps, memory_order_relaxed));
+    fprintf(stderr,
+            "[HZ3_LARGE_ALIGNED_OBS_ADMIT] invalid=%zu oversize=%zu "
+            "precheck_yes=%zu lock_yes=%zu lock_no=%zu reuse_skip=%zu "
+            "final_fit_fail=%zu cache_insert=%zu do_munmap=%zu "
+            "defer_munmap=%zu\n",
+            atomic_load_explicit(&g_hz3_large_obs_admit_invalid, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_admit_oversize, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_admit_precheck_yes, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_admit_lock_yes, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_admit_lock_no, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_admit_reuse_skip, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_admit_final_fit_fail, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_admit_cache_insert, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_admit_do_munmap, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_large_obs_admit_defer_munmap, memory_order_relaxed));
+}
+
+static inline void hz3_large_aligned_obs_register_once(void) {
+    static _Atomic int registered = 0;
+    if (atomic_exchange_explicit(&registered, 1, memory_order_relaxed) == 0) {
+        atexit(hz3_large_aligned_obs_dump_final);
+    }
+}
+
+static inline void hz3_large_aligned_obs_on_normal_alloc(size_t size) {
+    (void)size;
+    hz3_large_aligned_obs_register_once();
+    hz3_large_aligned_obs_inc(&g_hz3_large_obs_normal_calls);
+}
+
+static inline void hz3_large_aligned_obs_on_invalid(size_t size, size_t alignment) {
+    (void)size;
+    (void)alignment;
+    hz3_large_aligned_obs_register_once();
+    hz3_large_aligned_obs_inc(&g_hz3_large_obs_aligned_invalid);
+}
+
+static inline void hz3_large_aligned_obs_on_aligned_alloc(size_t size, size_t alignment) {
+    hz3_large_aligned_obs_register_once();
+    hz3_large_aligned_obs_inc(&g_hz3_large_obs_aligned_calls);
+
+    if (size < 4096u) {
+        hz3_large_aligned_obs_inc(&g_hz3_large_obs_size_lt4k);
+    } else if (size <= 65536u) {
+        hz3_large_aligned_obs_inc(&g_hz3_large_obs_size_4k_64k);
+    } else if (size <= 1048576u) {
+        hz3_large_aligned_obs_inc(&g_hz3_large_obs_size_64k_1m);
+    } else {
+        hz3_large_aligned_obs_inc(&g_hz3_large_obs_size_gt1m);
+    }
+
+    if (alignment <= 16u) {
+        hz3_large_aligned_obs_inc(&g_hz3_large_obs_align_le16);
+    } else if (alignment <= 4096u) {
+        hz3_large_aligned_obs_inc(&g_hz3_large_obs_align_le4096);
+    } else if (alignment <= 8192u) {
+        hz3_large_aligned_obs_inc(&g_hz3_large_obs_align_le8192);
+    } else {
+        hz3_large_aligned_obs_inc(&g_hz3_large_obs_align_gt8192);
+    }
+
+    if (size >= 4096u && size <= 65536u && alignment <= 4096u) {
+        hz3_large_aligned_obs_inc(&g_hz3_large_obs_medium_candidate);
+    }
+    if (size < 4096u && alignment > 16u) {
+        hz3_large_aligned_obs_inc(&g_hz3_large_obs_small_overaligned);
+    }
+    if (size > 65536u) {
+        hz3_large_aligned_obs_inc(&g_hz3_large_obs_large_over64k);
+    }
+    if (alignment > 4096u) {
+        hz3_large_aligned_obs_inc(&g_hz3_large_obs_over_page_aligned);
+    }
+}
+
+static inline void hz3_large_aligned_obs_on_aligned_cache_hit(void) {
+    hz3_large_aligned_obs_inc(&g_hz3_large_obs_aligned_cache_hits);
+}
+
+static inline void hz3_large_aligned_obs_on_aligned_cache_miss(void) {
+    hz3_large_aligned_obs_inc(&g_hz3_large_obs_aligned_cache_misses);
+}
+
+static inline void hz3_large_aligned_obs_on_aligned_mmap(size_t bytes) {
+    hz3_large_aligned_obs_inc(&g_hz3_large_obs_aligned_mmap_calls);
+    hz3_large_aligned_obs_add(&g_hz3_large_obs_aligned_mmap_bytes, bytes);
+}
+
+static inline void hz3_large_aligned_obs_on_aligned_batch_mmap(size_t bytes) {
+    hz3_large_aligned_obs_inc(&g_hz3_large_obs_aligned_batch_mmap_calls);
+    hz3_large_aligned_obs_add(&g_hz3_large_obs_aligned_batch_mmap_bytes, bytes);
+}
+
+static inline void hz3_large_aligned_obs_on_free(const Hz3LargeHdr* hdr) {
+    hz3_large_aligned_obs_inc(&g_hz3_large_obs_free_calls);
+    uintptr_t expected = (uintptr_t)hdr->map_base + hz3_large_user_offset();
+    if ((uintptr_t)hdr->user_ptr == expected) {
+        hz3_large_aligned_obs_inc(&g_hz3_large_obs_free_unshifted);
+    } else {
+        hz3_large_aligned_obs_inc(&g_hz3_large_obs_free_shifted);
+    }
+}
+
+static inline void hz3_large_aligned_obs_on_take_hit(size_t scan_steps) {
+    hz3_large_aligned_obs_inc(&g_hz3_large_obs_take_hits);
+    hz3_large_aligned_obs_add(&g_hz3_large_obs_take_scan_steps, scan_steps);
+}
+
+static inline void hz3_large_aligned_obs_on_take_miss(size_t scan_steps) {
+    hz3_large_aligned_obs_inc(&g_hz3_large_obs_take_misses);
+    hz3_large_aligned_obs_add(&g_hz3_large_obs_take_scan_steps, scan_steps);
+}
+static inline void hz3_large_aligned_obs_on_admit_invalid(void) {
+    hz3_large_aligned_obs_inc(&g_hz3_large_obs_admit_invalid);
+}
+static inline void hz3_large_aligned_obs_on_admit_oversize(void) {
+    hz3_large_aligned_obs_inc(&g_hz3_large_obs_admit_oversize);
+}
+static inline void hz3_large_aligned_obs_on_admit_precheck_yes(void) {
+    hz3_large_aligned_obs_inc(&g_hz3_large_obs_admit_precheck_yes);
+}
+static inline void hz3_large_aligned_obs_on_admit_lock_decision(int can_cache) {
+    hz3_large_aligned_obs_inc(can_cache ?
+        &g_hz3_large_obs_admit_lock_yes :
+        &g_hz3_large_obs_admit_lock_no);
+}
+static inline void hz3_large_aligned_obs_on_admit_reuse_skip(void) {
+    hz3_large_aligned_obs_inc(&g_hz3_large_obs_admit_reuse_skip);
+}
+static inline void hz3_large_aligned_obs_on_admit_final_fit_fail(void) {
+    hz3_large_aligned_obs_inc(&g_hz3_large_obs_admit_final_fit_fail);
+}
+static inline void hz3_large_aligned_obs_on_admit_cache_insert(void) {
+    hz3_large_aligned_obs_inc(&g_hz3_large_obs_admit_cache_insert);
+}
+static inline void hz3_large_aligned_obs_on_admit_do_munmap(void) {
+    hz3_large_aligned_obs_inc(&g_hz3_large_obs_admit_do_munmap);
+}
+static inline void hz3_large_aligned_obs_on_admit_defer_munmap(void) {
+    hz3_large_aligned_obs_inc(&g_hz3_large_obs_admit_defer_munmap);
+}
+#else
+static inline void hz3_large_aligned_obs_on_normal_alloc(size_t size) {
+    (void)size;
+}
+static inline void hz3_large_aligned_obs_on_invalid(size_t size, size_t alignment) {
+    (void)size;
+    (void)alignment;
+}
+static inline void hz3_large_aligned_obs_on_aligned_alloc(size_t size, size_t alignment) {
+    (void)size;
+    (void)alignment;
+}
+static inline void hz3_large_aligned_obs_on_aligned_cache_hit(void) {}
+static inline void hz3_large_aligned_obs_on_aligned_cache_miss(void) {}
+static inline void hz3_large_aligned_obs_on_aligned_mmap(size_t bytes) {
+    (void)bytes;
+}
+static inline void hz3_large_aligned_obs_on_aligned_batch_mmap(size_t bytes) {
+    (void)bytes;
+}
+static inline void hz3_large_aligned_obs_on_free(const Hz3LargeHdr* hdr) {
+    (void)hdr;
+}
+static inline void hz3_large_aligned_obs_on_take_hit(size_t scan_steps) {
+    (void)scan_steps;
+}
+static inline void hz3_large_aligned_obs_on_take_miss(size_t scan_steps) {
+    (void)scan_steps;
+}
+static inline void hz3_large_aligned_obs_on_admit_invalid(void) {}
+static inline void hz3_large_aligned_obs_on_admit_oversize(void) {}
+static inline void hz3_large_aligned_obs_on_admit_precheck_yes(void) {}
+static inline void hz3_large_aligned_obs_on_admit_lock_decision(int can_cache) {
+    (void)can_cache;
+}
+static inline void hz3_large_aligned_obs_on_admit_reuse_skip(void) {}
+static inline void hz3_large_aligned_obs_on_admit_final_fit_fail(void) {}
+static inline void hz3_large_aligned_obs_on_admit_cache_insert(void) {}
+static inline void hz3_large_aligned_obs_on_admit_do_munmap(void) {}
+static inline void hz3_large_aligned_obs_on_admit_defer_munmap(void) {}
+#endif
 
 static inline int hz3_large_soft_purge_advice(void) {
 #if HZ3_S192_SOFT_PURGE_MODE == 1
@@ -502,13 +777,28 @@ static inline size_t hz3_page_align(size_t n) {
 }
 
 #if HZ3_S50_LARGE_SCACHE
+static inline int hz3_large_size_bits(size_t size) {
+    uint64_t v = (uint64_t)(size - 1u);
+#if defined(__GNUC__) || defined(__clang__)
+    // Windows is LLP64: `long` is 32-bit even on x64, so use clzll here.
+    return 64 - __builtin_clzll((unsigned long long)v);
+#else
+    int bits = 0;
+    while (v != 0) {
+        bits++;
+        v >>= 1;
+    }
+    return bits;
+#endif
+}
+
 // S50: size → class index
 // 32KB〜64MB を 8 分割/倍（97 classes）
 static inline int hz3_large_sc(size_t size) {
     if (size <= HZ3_LARGE_SC_MIN) return 0;
     if (size > HZ3_LARGE_SC_MAX) return HZ3_LARGE_SC_COUNT - 1;
     // ceil(log2) で bits を取得
-    int bits = 64 - __builtin_clzl((uint64_t)(size - 1));
+    int bits = hz3_large_size_bits(size);
     // 32KB〜64KB (bits=16) が class 0..7 になるよう bits-16
     int base = (bits - 16) * 8;
     if (base < 0) return 0;  // safety clamp
