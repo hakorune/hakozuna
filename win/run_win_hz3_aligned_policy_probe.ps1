@@ -6,6 +6,7 @@ param(
     [int]$RemotePct = 90,
     [int]$WorkingSet = 256,
     [int]$RingSlots = 65536,
+    [switch]$LargeAlignedObs,
     [switch]$SkipBuild
 )
 
@@ -13,10 +14,12 @@ $ErrorActionPreference = "Stop"
 
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $Hz3Root = Join-Path $RepoRoot "hakozuna"
-$OutDir = Join-Path $RepoRoot "out_win_hz3_aligned_policy"
+$ProbeOutDirName = if ($LargeAlignedObs) { "out_win_hz3_aligned_policy_obs" } else { "out_win_hz3_aligned_policy" }
+$Hz3OutDirName = if ($LargeAlignedObs) { "out_win_large_aligned_obs" } else { "out_win_page_medium_research" }
+$OutDir = Join-Path $RepoRoot $ProbeOutDirName
 $ObjDir = Join-Path $OutDir "obj"
 $ExePath = Join-Path $OutDir "bench_hz3_aligned_policy_probe.exe"
-$Hz3Lib = Join-Path $Hz3Root "out_win_page_medium_research\hz3_win.lib"
+$Hz3Lib = Join-Path $Hz3Root ($Hz3OutDirName + "\hz3_win.lib")
 $ProbeSrc = Join-Path $PSScriptRoot "bench_hz3_aligned_policy_probe.c"
 $ShimSrc = Join-Path $Hz3Root "src\hz3_shim.c"
 
@@ -42,8 +45,17 @@ function Invoke-CheckedBuild {
 }
 
 if (-not $SkipBuild) {
-    if (-not (Test-Path $Hz3Lib)) {
-        & (Join-Path $Hz3Root "win\build_win_min.ps1") -OutDirName "out_win_page_medium_research" | Out-Null
+    if ($LargeAlignedObs -or -not (Test-Path $Hz3Lib)) {
+        $BuildParams = @{
+            OutDirName = $Hz3OutDirName
+        }
+        if ($LargeAlignedObs) {
+            $BuildParams["ExtraDefines"] = @(
+                "HZ3_LARGE_ALIGNED_OBS=1",
+                "HZ3_LARGE_CACHE_STATS=1"
+            )
+        }
+        & (Join-Path $Hz3Root "win\build_win_min.ps1") @BuildParams | Out-Null
         if ($LASTEXITCODE -ne 0) {
             throw "build_win_min.ps1 failed with exit code $LASTEXITCODE"
         }
@@ -210,6 +222,7 @@ $Summary.Add(('- threads: `{0}`' -f $Threads))
 $Summary.Add(('- remote pct: `{0}`' -f $RemotePct))
 $Summary.Add(('- working set: `{0}`' -f $WorkingSet))
 $Summary.Add(('- ring slots: `{0}`' -f $RingSlots))
+$Summary.Add(('- large aligned observation build: `{0}`' -f ([bool]$LargeAlignedObs)))
 $Summary.Add('- page-medium lane env: `HZ3_PAGE_MEDIUM_ALIGNED=1`')
 $Summary.Add("")
 $Summary.Add('| case | lane | size | align | median ops/s | median peak RSS KB | runs ops/s |')
