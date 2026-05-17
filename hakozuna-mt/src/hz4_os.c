@@ -7,6 +7,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if defined(_WIN32)
+#include <windows.h>
+#endif
+
 #include "hz4_config.h"
 #include "hz4_os.h"
 #if HZ4_PAGE_TAG_TABLE
@@ -32,6 +36,48 @@ typedef struct hz4_win_map_hdr {
 
 static inline hz4_win_map_hdr_t* hz4_win_map_hdr_from_aligned(const void* aligned) {
     return (hz4_win_map_hdr_t*)((uintptr_t)aligned - sizeof(hz4_win_map_hdr_t));
+}
+
+static inline int hz4_win_map_hdr_readable(const void* aligned) {
+    uintptr_t addr = (uintptr_t)aligned;
+    size_t hdr_size = sizeof(hz4_win_map_hdr_t);
+    if (addr < hdr_size) {
+        return 0;
+    }
+
+    /*
+     * Some normal large blocks start exactly on a page boundary. In that case
+     * aligned-hdr lives in the previous page, which may be only reserved.
+     */
+    if ((addr & ((uintptr_t)HZ4_PAGE_SIZE - 1u)) < hdr_size) {
+        uintptr_t hdr_addr = addr - hdr_size;
+        MEMORY_BASIC_INFORMATION mbi;
+        uintptr_t region_start;
+        uintptr_t region_end;
+        uintptr_t hdr_end;
+
+        if (VirtualQuery((const void*)hdr_addr, &mbi, sizeof(mbi)) == 0) {
+            return 0;
+        }
+        if (mbi.State != MEM_COMMIT) {
+            return 0;
+        }
+        if ((mbi.Protect & (PAGE_NOACCESS | PAGE_GUARD)) != 0) {
+            return 0;
+        }
+
+        region_start = (uintptr_t)mbi.BaseAddress;
+        region_end = region_start + (uintptr_t)mbi.RegionSize;
+        hdr_end = hdr_addr + hdr_size;
+        if (region_end < region_start || hdr_end < hdr_addr) {
+            return 0;
+        }
+        if (hdr_addr < region_start || hdr_end > region_end) {
+            return 0;
+        }
+    }
+
+    return 1;
 }
 #endif
 
@@ -669,9 +715,11 @@ static int hz4_os_munmap_aligned(void* aligned, size_t size) {
     if (!aligned) {
         return 0;
     }
-    hz4_win_map_hdr_t* hdr = hz4_win_map_hdr_from_aligned(aligned);
-    if (hdr->magic == HZ4_WIN_MAP_HDR_MAGIC && hdr->raw_base != 0) {
-        return munmap((void*)hdr->raw_base, hdr->reserve_len);
+    if (hz4_win_map_hdr_readable(aligned)) {
+        hz4_win_map_hdr_t* hdr = hz4_win_map_hdr_from_aligned(aligned);
+        if (hdr->magic == HZ4_WIN_MAP_HDR_MAGIC && hdr->raw_base != 0) {
+            return munmap((void*)hdr->raw_base, hdr->reserve_len);
+        }
     }
 #endif
     return munmap(aligned, size);
