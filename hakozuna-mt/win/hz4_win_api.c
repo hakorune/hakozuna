@@ -4,6 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if defined(_WIN32)
+#include <windows.h>
+#endif
+
 #include "hz4_tcache.h"
 #include "hz4_os.h"
 #include "hz4_mid.h"
@@ -118,12 +122,59 @@ static inline hz4_win_aligned_hdr_t* hz4_win_aligned_hdr_from_ptr(void* ptr) {
     return (hz4_win_aligned_hdr_t*)((uintptr_t)ptr - sizeof(hz4_win_aligned_hdr_t));
 }
 
+static inline int hz4_win_aligned_hdr_readable(void* ptr) {
+    uintptr_t addr = (uintptr_t)ptr;
+    size_t hdr_size = sizeof(hz4_win_aligned_hdr_t);
+    if (addr < hdr_size) {
+        return 0;
+    }
+
+#if defined(_WIN32)
+    /*
+     * Page-aligned non-wrapper pointers can put ptr-hdr in a previous page.
+     * Probe that boundary case before touching the synthetic aligned header.
+     */
+    if ((addr & ((uintptr_t)HZ4_PAGE_SIZE - 1u)) < hdr_size) {
+        uintptr_t hdr_addr = addr - hdr_size;
+        MEMORY_BASIC_INFORMATION mbi;
+        uintptr_t region_start;
+        uintptr_t region_end;
+        uintptr_t hdr_end;
+
+        if (VirtualQuery((const void*)hdr_addr, &mbi, sizeof(mbi)) == 0) {
+            return 0;
+        }
+        if (mbi.State != MEM_COMMIT) {
+            return 0;
+        }
+        if ((mbi.Protect & (PAGE_NOACCESS | PAGE_GUARD)) != 0) {
+            return 0;
+        }
+
+        region_start = (uintptr_t)mbi.BaseAddress;
+        region_end = region_start + (uintptr_t)mbi.RegionSize;
+        hdr_end = hdr_addr + hdr_size;
+        if (region_end < region_start || hdr_end < hdr_addr) {
+            return 0;
+        }
+        if (hdr_addr < region_start || hdr_end > region_end) {
+            return 0;
+        }
+    }
+#endif
+
+    return 1;
+}
+
 static inline uintptr_t hz4_win_aligned_cookie(uintptr_t raw, uintptr_t aligned) {
     return raw ^ aligned ^ (uintptr_t)HZ4_WIN_ALIGNED_HDR_COOKIE;
 }
 
 static inline int hz4_win_aligned_decode(void* ptr, void** raw_out, size_t* req_out) {
     if (!ptr) {
+        return 0;
+    }
+    if (!hz4_win_aligned_hdr_readable(ptr)) {
         return 0;
     }
     hz4_win_aligned_hdr_t* hdr = hz4_win_aligned_hdr_from_ptr(ptr);

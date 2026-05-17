@@ -1,6 +1,6 @@
 # HZ4 Status Short
 
-最終更新: 2026-03-19
+最終更新: 2026-05-17
 
 このファイルは `hz4` の現況を短く確認するための入口です。  
 詳細は SSOT と各 phase ドキュメントを参照してください。
@@ -11,6 +11,7 @@
 - GO 一覧: `hakozuna/hz4/docs/HZ4_GO_BOXES.md`
 - Archived 一覧: `hakozuna/hz4/docs/HZ4_ARCHIVED_BOXES.md`
 - knob 早見表: `hakozuna/hz4/docs/HZ4_KNOB_QUICK_REFERENCE.md`
+- Windows aligned/large release 修理: `docs/HZ4_WINDOWS_ALIGNED_RELEASE_FIX_20260517.md`
 
 ## Key Defaults (high impact)
 
