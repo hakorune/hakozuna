@@ -113,8 +113,14 @@ Hakozuna allocator repo has the same promotion/no-go memory as BenchLab.
     `S275 -> S276R`.
   - S275 is observation only: split activation/direct-map fixed costs without
     changing allocator behavior.
-  - S276R is the planned speed candidate: retain direct side-map slots across
-    front/inbox cached large states and fast-activate stable user pointers.
+  - S276R front+inbox is now implemented as a research candidate: retain direct
+    side-map slots across front/inbox cached large states and fast-activate
+    stable user pointers.
+  - First focused repeat-3 in BenchLab (`20260519_063253_283`) improved
+    `4K/8K/64K a8192 R90` versus S246 speed by about `+10%/+23%/+14%` and
+    lowered steady RSS by about `8 MiB`.
+  - Keep it as candidate, not default, until repeat-5/10, R99, a4096 guards,
+    and HZ4/mimalloc/tcmalloc comparison pass.
 - S183 large cache class-lock split（still hard-archived）:
   - Status: archived NO-GO.
   - Reason: class-lock split is not the next large path fix; avoid reviving it

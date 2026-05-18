@@ -272,6 +272,40 @@
 #error "HZ3_S275_LARGE_ACTIVATION_OBS requires HZ3_S240_LARGE_OWNER_FRONT"
 #endif
 
+// S276R step 1: retain the S242 direct side-map slot while an object sits in
+// the same-owner TLS front cache. This avoids direct remove/reinsert on the
+// front-cache hot loop. Remote owner inbox retain is a later, separate lane.
+#ifndef HZ3_S276_LARGE_DIRECT_RETAIN_FRONT
+#define HZ3_S276_LARGE_DIRECT_RETAIN_FRONT 0
+#endif
+
+#ifndef HZ3_S276_LARGE_DIRECT_RETAIN_INBOX
+#define HZ3_S276_LARGE_DIRECT_RETAIN_INBOX 0
+#endif
+
+#ifndef HZ3_S276_LARGE_DIRECT_RETAIN_STATS
+#define HZ3_S276_LARGE_DIRECT_RETAIN_STATS \
+    (HZ3_S276_LARGE_DIRECT_RETAIN_FRONT || HZ3_S276_LARGE_DIRECT_RETAIN_INBOX)
+#endif
+
+#if (HZ3_S276_LARGE_DIRECT_RETAIN_FRONT || HZ3_S276_LARGE_DIRECT_RETAIN_INBOX) && \
+    !HZ3_S242_DIRECT_MAPLESS
+#error "HZ3_S276_LARGE_DIRECT_RETAIN requires HZ3_S242_DIRECT_MAPLESS"
+#endif
+
+#if HZ3_S276_LARGE_DIRECT_RETAIN_FRONT && !HZ3_S240_LARGE_FRONT_CACHE
+#error "HZ3_S276_LARGE_DIRECT_RETAIN_FRONT requires HZ3_S240_LARGE_FRONT_CACHE"
+#endif
+
+#if HZ3_S276_LARGE_DIRECT_RETAIN_INBOX && !HZ3_S240_LARGE_OWNER_INBOX
+#error "HZ3_S276_LARGE_DIRECT_RETAIN_INBOX requires HZ3_S240_LARGE_OWNER_INBOX"
+#endif
+
+#if (HZ3_S276_LARGE_DIRECT_RETAIN_FRONT || HZ3_S276_LARGE_DIRECT_RETAIN_INBOX) && \
+    !HZ3_S240_LARGE_OWNER_FRONT
+#error "HZ3_S276_LARGE_DIRECT_RETAIN requires HZ3_S240_LARGE_OWNER_FRONT"
+#endif
+
 // S251: large owner-front container safety probe.
 // Observation/debug lane for S250 high-band work.  It validates the durable
 // container state transitions around ACTIVE/FREEING/FRONT/REMOTE/GLOBAL.

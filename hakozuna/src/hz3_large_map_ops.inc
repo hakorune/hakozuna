@@ -496,6 +496,131 @@ static inline Hz3LargeHdr* hz3_s242_direct_take(const void* ptr) {
     return NULL;
 }
 
+#if HZ3_S276_LARGE_DIRECT_RETAIN_FRONT || HZ3_S276_LARGE_DIRECT_RETAIN_INBOX
+static inline Hz3LargeHdr* hz3_s276_direct_try_retain_front(const void* ptr,
+                                                            int* stop_fallback) {
+    if (stop_fallback) {
+        *stop_fallback = 0;
+    }
+    hz3_large_s276_note_front_take_try();
+
+    uintptr_t key = (uintptr_t)ptr;
+    uint32_t set = hz3_s242_direct_hash(ptr);
+
+    for (uint32_t attempt = 0; attempt <= (uint32_t)HZ3_S242_DIRECT_TAKE_BUSY_RETRIES; attempt++) {
+        int saw_busy = 0;
+        for (uint32_t way = 0; way < (uint32_t)HZ3_S242_DIRECT_WAYS; way++) {
+            Hz3LargeDirectSlot* slot = &g_hz3_s242_direct[set][way];
+            uintptr_t observed = atomic_load_explicit(&slot->key, memory_order_acquire);
+            if (observed == HZ3_S242_DIRECT_KEY_BUSY) {
+                saw_busy = 1;
+                continue;
+            }
+            if (observed != key) {
+                continue;
+            }
+
+            Hz3LargeHdr* hdr = atomic_load_explicit(&slot->hdr, memory_order_acquire);
+            if (!hdr ||
+                hdr->magic != HZ3_LARGE_MAGIC ||
+                hdr->user_ptr != ptr ||
+                hdr->map_base == NULL ||
+                hdr->map_size == 0 ||
+                hdr->direct_slot != hz3_s242_direct_slot_id(set, way) ||
+                (hdr->flags & HZ3_LARGE_F_DIRECT_MAPLESS) == 0) {
+                hz3_large_s276_note_front_take_not_eligible();
+                return NULL;
+            }
+
+            uint32_t state = atomic_load_explicit(&hdr->state, memory_order_acquire);
+            if (state != HZ3_LARGE_STATE_ACTIVE) {
+                hz3_large_s276_note_front_take_nonactive();
+                if (stop_fallback) {
+                    *stop_fallback = 1;
+                }
+                return NULL;
+            }
+#if HZ3_LARGE_CACHE_ENABLE
+            if (hdr->in_use != 1) {
+                hz3_large_s276_note_front_take_not_eligible();
+                return NULL;
+            }
+#endif
+            uint8_t cur = hz3_large_s240_current_owner();
+            int sc = hz3_large_sc(hdr->map_size);
+            int retain_for_front =
+                cur != UINT8_MAX &&
+                hdr->owner_shard != UINT8_MAX &&
+                hdr->owner_shard == cur &&
+                hz3_large_s240_front_eligible(sc, hdr->map_size);
+            int retain_for_inbox = 0;
+#if HZ3_S276_LARGE_DIRECT_RETAIN_INBOX
+            retain_for_inbox =
+                cur != UINT8_MAX &&
+                hdr->owner_shard != UINT8_MAX &&
+                hdr->owner_shard != cur &&
+                hz3_large_s240_inbox_eligible(sc, hdr->map_size);
+#endif
+            if (!retain_for_front && !retain_for_inbox) {
+                if (cur != UINT8_MAX && hdr->owner_shard != UINT8_MAX &&
+                    hdr->owner_shard == cur) {
+                    hz3_large_s276_note_front_take_not_eligible();
+                } else {
+                    hz3_large_s276_note_front_take_not_owner();
+                }
+                return NULL;
+            }
+
+            if (retain_for_front && !HZ3_S276_LARGE_DIRECT_RETAIN_FRONT) {
+                hz3_large_s276_note_front_take_not_owner();
+                return NULL;
+            }
+
+            uint32_t expected = HZ3_LARGE_STATE_ACTIVE;
+            if (!atomic_compare_exchange_strong_explicit(&hdr->state,
+                                                         &expected,
+                                                         HZ3_LARGE_STATE_FREEING,
+                                                         memory_order_acq_rel,
+                                                         memory_order_acquire)) {
+                if (expected != HZ3_LARGE_STATE_ACTIVE && stop_fallback) {
+                    *stop_fallback = 1;
+                }
+                hz3_large_s276_note_front_take_state_cas_fail();
+                return NULL;
+            }
+
+            hdr->flags |= HZ3_LARGE_F_DIRECT_RETAINED;
+            if (retain_for_inbox) {
+                hz3_large_s276_note_inbox_take_hit();
+            } else {
+                hz3_large_s276_note_front_take_hit();
+            }
+            return hdr;
+        }
+
+        if (!saw_busy) {
+            break;
+        }
+        atomic_signal_fence(memory_order_seq_cst);
+    }
+
+    return NULL;
+}
+
+static inline void hz3_s276_direct_clear_retained(Hz3LargeHdr* hdr) {
+    if (!hdr || (hdr->flags & HZ3_LARGE_F_DIRECT_RETAINED) == 0) {
+        return;
+    }
+    if (hdr->direct_slot != HZ3_S242_DIRECT_SLOT_NONE && hdr->user_ptr != NULL) {
+        hz3_s242_direct_remove(hdr->user_ptr, hdr);
+    } else {
+        hdr->direct_slot = HZ3_S242_DIRECT_SLOT_NONE;
+    }
+    hdr->flags &= (uint16_t)~(HZ3_LARGE_F_DIRECT_RETAINED | HZ3_LARGE_F_DIRECT_MAPLESS);
+    hz3_large_s276_note_direct_clear();
+}
+#endif
+
 static inline Hz3LargeHdr* hz3_s242_direct_peek(const void* ptr) {
     uintptr_t key = (uintptr_t)ptr;
     uint32_t set = hz3_s242_direct_hash(ptr);
@@ -658,6 +783,22 @@ static inline int hz3_large_take_match_locked(Hz3LargeHdr* cur, const void* ptr)
 static Hz3LargeHdr* hz3_large_take(const void* ptr) {
 #if HZ3_S242_DIRECT_MAPLESS
     if (hz3_s242_direct_has_entries()) {
+#if HZ3_S276_LARGE_DIRECT_RETAIN_FRONT || HZ3_S276_LARGE_DIRECT_RETAIN_INBOX
+        size_t s276_direct_take_start_ns = hz3_s275_activation_timing_start();
+        int s276_stop_fallback = 0;
+        Hz3LargeHdr* s276_retained_hdr =
+            hz3_s276_direct_try_retain_front(ptr, &s276_stop_fallback);
+        if (s276_retained_hdr || s276_stop_fallback) {
+            hz3_s275_on_direct_take_elapsed(
+                s276_direct_take_start_ns, s276_retained_hdr != NULL);
+            if (s276_retained_hdr) {
+                hz3_large_aligned_obs_on_take_hit(0);
+            } else {
+                hz3_large_aligned_obs_on_take_miss(0);
+            }
+            return s276_retained_hdr;
+        }
+#endif
         size_t s275_direct_take_start_ns = hz3_s275_activation_timing_start();
         Hz3LargeHdr* s242_mapless_hdr = hz3_s242_direct_take(ptr);
         hz3_s275_on_direct_take_elapsed(

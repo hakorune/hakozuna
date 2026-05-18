@@ -321,6 +321,23 @@ static _Atomic size_t g_s251_global_pop_state_fail = 0;
 static _Atomic size_t g_s251_front_push_state_fail = 0;
 static _Atomic size_t g_s251_inbox_push_state_fail = 0;
 #endif
+#if HZ3_S276_LARGE_DIRECT_RETAIN_STATS
+static _Atomic size_t g_s276_front_take_try = 0;
+static _Atomic size_t g_s276_front_take_hit = 0;
+static _Atomic size_t g_s276_front_take_not_owner = 0;
+static _Atomic size_t g_s276_front_take_not_eligible = 0;
+static _Atomic size_t g_s276_front_take_nonactive = 0;
+static _Atomic size_t g_s276_front_take_state_cas_fail = 0;
+static _Atomic size_t g_s276_front_push_retained = 0;
+static _Atomic size_t g_s276_front_push_reject_clear = 0;
+static _Atomic size_t g_s276_front_activate_fast = 0;
+static _Atomic size_t g_s276_front_activate_rekey = 0;
+static _Atomic size_t g_s276_inbox_take_hit = 0;
+static _Atomic size_t g_s276_inbox_push_retained = 0;
+static _Atomic size_t g_s276_inbox_push_reject_clear = 0;
+static _Atomic size_t g_s276_inbox_activate_fast = 0;
+static _Atomic size_t g_s276_direct_clear = 0;
+#endif
 #if HZ3_S240_LARGE_FLUSH_VALIDATE
 static _Atomic size_t g_s240_flush_validate_calls = 0;
 static _Atomic size_t g_s240_flush_validate_failures = 0;
@@ -471,6 +488,32 @@ static void hz3_large_s240_dump_final(void) {
             atomic_load_explicit(&g_s251_front_push_state_fail, memory_order_relaxed),
             atomic_load_explicit(&g_s251_inbox_push_state_fail, memory_order_relaxed),
             HZ3_S251_LARGE_OWNER_FRONT_FAILFAST);
+#endif
+#if HZ3_S276_LARGE_DIRECT_RETAIN_STATS
+    fprintf(stderr,
+            "[HZ3_LARGE_S276_DIRECT_RETAIN] front_take_try=%zu "
+            "front_take_hit=%zu front_take_not_owner=%zu "
+            "front_take_not_eligible=%zu front_take_nonactive=%zu "
+            "front_take_state_cas_fail=%zu front_push_retained=%zu "
+            "front_push_reject_clear=%zu front_activate_fast=%zu "
+            "front_activate_rekey=%zu inbox_take_hit=%zu "
+            "inbox_push_retained=%zu inbox_push_reject_clear=%zu "
+            "inbox_activate_fast=%zu direct_clear=%zu\n",
+            atomic_load_explicit(&g_s276_front_take_try, memory_order_relaxed),
+            atomic_load_explicit(&g_s276_front_take_hit, memory_order_relaxed),
+            atomic_load_explicit(&g_s276_front_take_not_owner, memory_order_relaxed),
+            atomic_load_explicit(&g_s276_front_take_not_eligible, memory_order_relaxed),
+            atomic_load_explicit(&g_s276_front_take_nonactive, memory_order_relaxed),
+            atomic_load_explicit(&g_s276_front_take_state_cas_fail, memory_order_relaxed),
+            atomic_load_explicit(&g_s276_front_push_retained, memory_order_relaxed),
+            atomic_load_explicit(&g_s276_front_push_reject_clear, memory_order_relaxed),
+            atomic_load_explicit(&g_s276_front_activate_fast, memory_order_relaxed),
+            atomic_load_explicit(&g_s276_front_activate_rekey, memory_order_relaxed),
+            atomic_load_explicit(&g_s276_inbox_take_hit, memory_order_relaxed),
+            atomic_load_explicit(&g_s276_inbox_push_retained, memory_order_relaxed),
+            atomic_load_explicit(&g_s276_inbox_push_reject_clear, memory_order_relaxed),
+            atomic_load_explicit(&g_s276_inbox_activate_fast, memory_order_relaxed),
+            atomic_load_explicit(&g_s276_direct_clear, memory_order_relaxed));
 #endif
 #if HZ3_S240_LARGE_FLUSH_VALIDATE
     fprintf(stderr,
@@ -880,6 +923,165 @@ static inline void hz3_large_s240_on_activate(Hz3LargeHdr* hdr, int sc, int from
 #endif
 }
 
+#if HZ3_S276_LARGE_DIRECT_RETAIN_FRONT || HZ3_S276_LARGE_DIRECT_RETAIN_INBOX
+static inline void hz3_large_s276_note_front_take_try(void) {
+#if HZ3_S276_LARGE_DIRECT_RETAIN_STATS
+    hz3_large_s240_inc(&g_s276_front_take_try);
+#endif
+}
+
+static inline void hz3_large_s276_note_front_take_hit(void) {
+#if HZ3_S276_LARGE_DIRECT_RETAIN_STATS
+    hz3_large_s240_inc(&g_s276_front_take_hit);
+#endif
+}
+
+static inline void hz3_large_s276_note_front_take_not_owner(void) {
+#if HZ3_S276_LARGE_DIRECT_RETAIN_STATS
+    hz3_large_s240_inc(&g_s276_front_take_not_owner);
+#endif
+}
+
+static inline void hz3_large_s276_note_front_take_not_eligible(void) {
+#if HZ3_S276_LARGE_DIRECT_RETAIN_STATS
+    hz3_large_s240_inc(&g_s276_front_take_not_eligible);
+#endif
+}
+
+static inline void hz3_large_s276_note_front_take_nonactive(void) {
+#if HZ3_S276_LARGE_DIRECT_RETAIN_STATS
+    hz3_large_s240_inc(&g_s276_front_take_nonactive);
+#endif
+}
+
+static inline void hz3_large_s276_note_front_take_state_cas_fail(void) {
+#if HZ3_S276_LARGE_DIRECT_RETAIN_STATS
+    hz3_large_s240_inc(&g_s276_front_take_state_cas_fail);
+#endif
+}
+
+static inline void hz3_large_s276_note_front_push_retained(void) {
+#if HZ3_S276_LARGE_DIRECT_RETAIN_STATS
+    hz3_large_s240_inc(&g_s276_front_push_retained);
+#endif
+}
+
+static inline void hz3_large_s276_note_front_push_reject_clear(void) {
+#if HZ3_S276_LARGE_DIRECT_RETAIN_STATS
+    hz3_large_s240_inc(&g_s276_front_push_reject_clear);
+#endif
+}
+
+static inline void hz3_large_s276_note_front_activate_fast(void) {
+#if HZ3_S276_LARGE_DIRECT_RETAIN_STATS
+    hz3_large_s240_inc(&g_s276_front_activate_fast);
+#endif
+}
+
+static inline void hz3_large_s276_note_front_activate_rekey(void) {
+#if HZ3_S276_LARGE_DIRECT_RETAIN_STATS
+    hz3_large_s240_inc(&g_s276_front_activate_rekey);
+#endif
+}
+
+static inline void hz3_large_s276_note_inbox_take_hit(void) {
+#if HZ3_S276_LARGE_DIRECT_RETAIN_STATS
+    hz3_large_s240_inc(&g_s276_inbox_take_hit);
+#endif
+}
+
+static inline void hz3_large_s276_note_inbox_push_retained(void) {
+#if HZ3_S276_LARGE_DIRECT_RETAIN_STATS
+    hz3_large_s240_inc(&g_s276_inbox_push_retained);
+#endif
+}
+
+static inline void hz3_large_s276_note_inbox_push_reject_clear(void) {
+#if HZ3_S276_LARGE_DIRECT_RETAIN_STATS
+    hz3_large_s240_inc(&g_s276_inbox_push_reject_clear);
+#endif
+}
+
+static inline void hz3_large_s276_note_inbox_activate_fast(void) {
+#if HZ3_S276_LARGE_DIRECT_RETAIN_STATS
+    hz3_large_s240_inc(&g_s276_inbox_activate_fast);
+#endif
+}
+
+static inline void hz3_large_s276_note_direct_clear(void) {
+#if HZ3_S276_LARGE_DIRECT_RETAIN_STATS
+    hz3_large_s240_inc(&g_s276_direct_clear);
+#endif
+}
+
+static inline int hz3_large_s276_can_activate_retained(Hz3LargeHdr* hdr,
+                                                       size_t size,
+                                                       size_t alignment,
+                                                       int sc) {
+    if (!hdr ||
+        hdr->magic != HZ3_LARGE_MAGIC ||
+        hdr->map_base == NULL ||
+        hdr->map_size == 0 ||
+        hdr->user_ptr == NULL ||
+        hdr->direct_slot == UINT32_MAX ||
+        (hdr->flags & HZ3_LARGE_F_DIRECT_MAPLESS) == 0 ||
+        (hdr->flags & HZ3_LARGE_F_DIRECT_RETAINED) == 0) {
+        return 0;
+    }
+
+    uint8_t observed_sc = hz3_large_s240_normalize_sc(sc);
+    if (hdr->sc != observed_sc) {
+        return 0;
+    }
+    if (alignment == 0 || (alignment & (alignment - 1u)) != 0) {
+        return 0;
+    }
+    uintptr_t user = (uintptr_t)hdr->user_ptr;
+    if ((user & (uintptr_t)(alignment - 1u)) != 0) {
+        return 0;
+    }
+    if (size > SIZE_MAX - HZ3_LARGE_CANARY_SIZE) {
+        return 0;
+    }
+    uintptr_t base = (uintptr_t)hdr->map_base;
+    uintptr_t end = base + hdr->map_size;
+    if (end < base || user < base || user > end) {
+        return 0;
+    }
+#if HZ3_LARGE_CANARY_ENABLE
+    size_t required = size + HZ3_LARGE_CANARY_SIZE;
+#else
+    size_t required = size;
+#endif
+    if (required > (size_t)(end - user)) {
+        return 0;
+    }
+    return 1;
+}
+
+static inline void hz3_large_s276_on_activate_retained(Hz3LargeHdr* hdr,
+                                                       int sc,
+                                                       int from_cache) {
+    hz3_large_s240_register_once();
+    uint8_t owner = hz3_large_s240_current_owner();
+    hdr->owner_shard = owner;
+    hdr->sc = hz3_large_s240_normalize_sc(sc);
+    hdr->flags = (uint16_t)(HZ3_LARGE_F_DIRECT_MAPLESS | HZ3_LARGE_F_DIRECT_RETAINED);
+    atomic_store_explicit(&hdr->state, HZ3_LARGE_STATE_ACTIVE, memory_order_release);
+#if HZ3_S240_LARGE_OWNER_FRONT_STATS
+    hz3_large_s240_inc(&g_s240_activate);
+    if (from_cache) {
+        hz3_large_s240_inc(&g_s240_activate_cache);
+    } else {
+        hz3_large_s240_inc(&g_s240_activate_mmap);
+    }
+    if (owner == UINT8_MAX) {
+        hz3_large_s240_inc(&g_s240_owner_unknown_activate);
+    }
+#endif
+}
+#endif
+
 static inline void hz3_large_s240_on_cache_seed(Hz3LargeHdr* hdr, int sc) {
 #if HZ3_S240_LARGE_OWNER_FRONT
     hz3_large_s240_register_once();
@@ -929,16 +1131,31 @@ static inline void hz3_large_s240_on_free_take(Hz3LargeHdr* hdr, int sc) {
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
     hz3_large_s240_inc(&g_s240_free_seen);
 #endif
+    int s276_already_freeing = 0;
+#if HZ3_S276_LARGE_DIRECT_RETAIN_FRONT || HZ3_S276_LARGE_DIRECT_RETAIN_INBOX
+    if (hdr &&
+        (hdr->flags & HZ3_LARGE_F_DIRECT_RETAINED) != 0 &&
+        atomic_load_explicit(&hdr->state, memory_order_acquire) ==
+            HZ3_LARGE_STATE_FREEING) {
+        s276_already_freeing = 1;
+    }
+#endif
 #if HZ3_S251_LARGE_OWNER_FRONT_SAFETY
-    hz3_large_s251_transition(hdr,
-                              HZ3_LARGE_STATE_ACTIVE,
-                              HZ3_LARGE_STATE_FREEING,
-                              "free_take",
-                              &g_s251_free_take_to_freeing,
-                              &g_s251_free_take_state_fail);
+    if (s276_already_freeing) {
+        hz3_large_s240_inc(&g_s251_free_take_to_freeing);
+    } else {
+        hz3_large_s251_transition(hdr,
+                                  HZ3_LARGE_STATE_ACTIVE,
+                                  HZ3_LARGE_STATE_FREEING,
+                                  "free_take",
+                                  &g_s251_free_take_to_freeing,
+                                  &g_s251_free_take_state_fail);
+    }
     uint32_t state = HZ3_LARGE_STATE_ACTIVE;
 #else
-    uint32_t state = atomic_load_explicit(&hdr->state, memory_order_acquire);
+    uint32_t state = s276_already_freeing
+        ? HZ3_LARGE_STATE_ACTIVE
+        : atomic_load_explicit(&hdr->state, memory_order_acquire);
 #endif
     if (state == HZ3_LARGE_STATE_ACTIVE) {
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
@@ -1091,6 +1308,9 @@ static inline size_t hz3_large_s240_flush_dispose_node(Hz3LargeHdr* hdr,
     hz3_large_s240_flush_validate_node(hdr, sc, expected_state, where, node_counter);
     size_t bytes = hdr->map_size;
     void* base = hdr->map_base;
+#if HZ3_S276_LARGE_DIRECT_RETAIN_FRONT || HZ3_S276_LARGE_DIRECT_RETAIN_INBOX
+    hz3_s276_direct_clear_retained(hdr);
+#endif
     hz3_large_s240_on_munmap_store(hdr);
 #if HZ3_LARGE_DEBUG
     hz3_large_cache_lock_acquire();
@@ -2637,6 +2857,46 @@ static inline void hz3_s243_residual_on_free_fallback_global_elapsed(size_t star
 static inline void hz3_s243_residual_on_free_total_elapsed(size_t start_ns) {
     (void)start_ns;
 }
+static inline size_t hz3_s275_activation_timing_start(void) { return 0; }
+static inline void hz3_s275_on_userptr_front_elapsed(size_t start_ns) {
+    (void)start_ns;
+}
+static inline void hz3_s275_on_userptr_inbox_elapsed(size_t start_ns) {
+    (void)start_ns;
+}
+static inline void hz3_s275_on_userptr_global_elapsed(size_t start_ns) {
+    (void)start_ns;
+}
+static inline void hz3_s275_on_userptr_mmap_elapsed(size_t start_ns) {
+    (void)start_ns;
+}
+static inline void hz3_s275_on_meta_front_elapsed(size_t start_ns) {
+    (void)start_ns;
+}
+static inline void hz3_s275_on_meta_inbox_elapsed(size_t start_ns) {
+    (void)start_ns;
+}
+static inline void hz3_s275_on_meta_global_elapsed(size_t start_ns) {
+    (void)start_ns;
+}
+static inline void hz3_s275_on_meta_mmap_elapsed(size_t start_ns) {
+    (void)start_ns;
+}
+static inline void hz3_s275_on_insert_direct_mapless_elapsed(size_t start_ns,
+                                                             int hit) {
+    (void)start_ns;
+    (void)hit;
+}
+static inline void hz3_s275_on_insert_active_map_elapsed(size_t start_ns) {
+    (void)start_ns;
+}
+static inline void hz3_s275_on_insert_direct_shadow_elapsed(size_t start_ns) {
+    (void)start_ns;
+}
+static inline void hz3_s275_on_direct_take_elapsed(size_t start_ns, int hit) {
+    (void)start_ns;
+    (void)hit;
+}
 static inline void hz3_large_aligned_obs_on_normal_alloc(size_t size) {
     (void)size;
 }
@@ -2888,6 +3148,9 @@ static inline int hz3_large_try_defer_direct_unmap(Hz3LargeHdr* hdr) {
 
 static inline void hz3_large_dispose_victim_unlocked(Hz3LargeHdr* victim) {
     hz3_large_stats_on_evict_dispose();
+#if HZ3_S276_LARGE_DIRECT_RETAIN_FRONT || HZ3_S276_LARGE_DIRECT_RETAIN_INBOX
+    hz3_s276_direct_clear_retained(victim);
+#endif
     hz3_large_s240_on_munmap_store(victim);
     victim->magic = 0;
 #if HZ3_S186_LARGE_UNMAP_DEFER || HZ3_S212_LARGE_UNMAP_DEFER_PLUS
