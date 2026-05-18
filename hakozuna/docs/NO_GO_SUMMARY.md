@@ -105,6 +105,16 @@ Hakozuna allocator repo has the same promotion/no-go memory as BenchLab.
       `results/synthetic-sweep/20260519_043251_788`
     - S273 drain4 repeat-3:
       `results/synthetic-sweep/20260519_043441_329`
+- Post-S273 large aligned speed direction:
+  - Keep S246 take-first as the speed baseline.
+  - Keep S273 as an RSS-shape reference lane because the `~8 MiB` steady RSS
+    win is real.
+  - Do not promote global batch-detach for speed; the next speed branch is
+    `S275 -> S276R`.
+  - S275 is observation only: split activation/direct-map fixed costs without
+    changing allocator behavior.
+  - S276R is the planned speed candidate: retain direct side-map slots across
+    front/inbox cached large states and fast-activate stable user pointers.
 - S183 large cache class-lock split（still hard-archived）:
   - Status: archived NO-GO.
   - Reason: class-lock split is not the next large path fix; avoid reviving it

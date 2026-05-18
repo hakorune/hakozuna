@@ -257,6 +257,21 @@
 #error "HZ3_S243_LARGE_RESIDUAL_OBS requires HZ3_LARGE_ALIGNED_OBS"
 #endif
 
+// S275: activation/direct-map split counters for the large aligned path.
+// Observation-only. This keeps allocator behavior unchanged and only splits the
+// cached activation cost before S276R direct-retain experiments.
+#ifndef HZ3_S275_LARGE_ACTIVATION_OBS
+#define HZ3_S275_LARGE_ACTIVATION_OBS 0
+#endif
+
+#if HZ3_S275_LARGE_ACTIVATION_OBS && !HZ3_LARGE_ALIGNED_OBS
+#error "HZ3_S275_LARGE_ACTIVATION_OBS requires HZ3_LARGE_ALIGNED_OBS"
+#endif
+
+#if HZ3_S275_LARGE_ACTIVATION_OBS && !HZ3_S240_LARGE_OWNER_FRONT
+#error "HZ3_S275_LARGE_ACTIVATION_OBS requires HZ3_S240_LARGE_OWNER_FRONT"
+#endif
+
 // S251: large owner-front container safety probe.
 // Observation/debug lane for S250 high-band work.  It validates the durable
 // container state transitions around ACTIVE/FREEING/FRONT/REMOTE/GLOBAL.

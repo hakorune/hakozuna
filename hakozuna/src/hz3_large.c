@@ -1566,13 +1566,17 @@ void* hz3_large_aligned_alloc(size_t alignment, size_t size) {
             }
 #endif
             size_t s243_activate_start_ns = hz3_s243_residual_timing_start();
+            size_t s275_userptr_start_ns = hz3_s275_activation_timing_start();
             uintptr_t start = (uintptr_t)hdr->map_base + offset;
             uintptr_t user = (start + pad) & ~(uintptr_t)pad;
+            hz3_s275_on_userptr_front_elapsed(s275_userptr_start_ns);
+            size_t s275_meta_start_ns = hz3_s275_activation_timing_start();
             hdr->in_use = 1;
             hdr->req_size = size;
             hdr->user_ptr = (void*)user;
             hdr->next_free = NULL;
             hz3_large_s240_on_activate(hdr, sc, 1);
+            hz3_s275_on_meta_front_elapsed(s275_meta_start_ns);
 #if HZ3_LARGE_CANARY_ENABLE
             hz3_large_debug_write_canary(hdr);
 #endif
@@ -1605,13 +1609,17 @@ void* hz3_large_aligned_alloc(size_t alignment, size_t size) {
             }
 #endif
             size_t s243_activate_start_ns = hz3_s243_residual_timing_start();
+            size_t s275_userptr_start_ns = hz3_s275_activation_timing_start();
             uintptr_t start = (uintptr_t)hdr->map_base + offset;
             uintptr_t user = (start + pad) & ~(uintptr_t)pad;
+            hz3_s275_on_userptr_inbox_elapsed(s275_userptr_start_ns);
+            size_t s275_meta_start_ns = hz3_s275_activation_timing_start();
             hdr->in_use = 1;
             hdr->req_size = size;
             hdr->user_ptr = (void*)user;
             hdr->next_free = NULL;
             hz3_large_s240_on_activate(hdr, sc, 1);
+            hz3_s275_on_meta_inbox_elapsed(s275_meta_start_ns);
 #if HZ3_LARGE_CANARY_ENABLE
             hz3_large_debug_write_canary(hdr);
 #endif
@@ -1642,13 +1650,17 @@ void* hz3_large_aligned_alloc(size_t alignment, size_t size) {
             }
 #endif
             size_t s243_activate_start_ns = hz3_s243_residual_timing_start();
+            size_t s275_userptr_start_ns = hz3_s275_activation_timing_start();
             uintptr_t start = (uintptr_t)hdr->map_base + offset;
             uintptr_t user = (start + pad) & ~(uintptr_t)pad;
+            hz3_s275_on_userptr_inbox_elapsed(s275_userptr_start_ns);
+            size_t s275_meta_start_ns = hz3_s275_activation_timing_start();
             hdr->in_use = 1;
             hdr->req_size = size;
             hdr->user_ptr = (void*)user;
             hdr->next_free = NULL;
             hz3_large_s240_on_activate(hdr, sc, 1);
+            hz3_s275_on_meta_inbox_elapsed(s275_meta_start_ns);
 #if HZ3_LARGE_CANARY_ENABLE
             hz3_large_debug_write_canary(hdr);
 #endif
@@ -1718,13 +1730,17 @@ void* hz3_large_aligned_alloc(size_t alignment, size_t size) {
 #endif
             size_t s243_activate_start_ns = hz3_s243_residual_timing_start();
             // recalculate user_ptr for new alignment
+            size_t s275_userptr_start_ns = hz3_s275_activation_timing_start();
             uintptr_t start = (uintptr_t)hdr->map_base + offset;
             uintptr_t user = (start + pad) & ~(uintptr_t)pad;
+            hz3_s275_on_userptr_global_elapsed(s275_userptr_start_ns);
+            size_t s275_meta_start_ns = hz3_s275_activation_timing_start();
             hdr->in_use = 1;
             hdr->req_size = size;
             hdr->user_ptr = (void*)user;
             hdr->next_free = NULL;
             hz3_large_s240_on_activate(hdr, try_sc, 1);
+            hz3_s275_on_meta_global_elapsed(s275_meta_start_ns);
 #if HZ3_LARGE_CANARY_ENABLE
             hz3_large_debug_write_canary(hdr);
 #endif
@@ -1765,9 +1781,12 @@ cache_miss_aligned:
         }
         hz3_large_aligned_obs_on_aligned_mmap(need);
 
+        size_t s275_userptr_start_ns = hz3_s275_activation_timing_start();
         uintptr_t start = (uintptr_t)base + offset;
         uintptr_t user = (start + pad) & ~(uintptr_t)pad;
+        hz3_s275_on_userptr_mmap_elapsed(s275_userptr_start_ns);
 
+        size_t s275_meta_start_ns = hz3_s275_activation_timing_start();
         hdr = (Hz3LargeHdr*)base;
         hdr->magic = HZ3_LARGE_MAGIC;
         hdr->req_size = size;
@@ -1780,6 +1799,7 @@ cache_miss_aligned:
         hdr->next_free = NULL;
 #endif
         hz3_large_s240_on_activate(hdr, sc, 0);
+        hz3_s275_on_meta_mmap_elapsed(s275_meta_start_ns);
     }
 
     size_t s243_mmap_activate_start_ns = hz3_s243_residual_timing_start();

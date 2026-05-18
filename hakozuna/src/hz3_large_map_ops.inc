@@ -560,13 +560,20 @@ static inline void hz3_s242_direct_shadow_compare(Hz3LargeHdr* direct_hdr,
 
 static void hz3_large_insert(Hz3LargeHdr* hdr) {
 #if HZ3_S242_DIRECT_MAPLESS
-    if (hz3_s242_direct_mapless_eligible(hdr) && hz3_s242_direct_insert(hdr)) {
-        hdr->flags |= HZ3_LARGE_F_DIRECT_MAPLESS;
-        hz3_s242_stats_inc(&g_hz3_s242_mapless_active);
-        return;
+    if (hz3_s242_direct_mapless_eligible(hdr)) {
+        size_t s275_direct_insert_start_ns = hz3_s275_activation_timing_start();
+        int s242_direct_inserted = hz3_s242_direct_insert(hdr);
+        hz3_s275_on_insert_direct_mapless_elapsed(
+            s275_direct_insert_start_ns, s242_direct_inserted);
+        if (s242_direct_inserted) {
+            hdr->flags |= HZ3_LARGE_F_DIRECT_MAPLESS;
+            hz3_s242_stats_inc(&g_hz3_s242_mapless_active);
+            return;
+        }
     }
 #endif
     size_t obs_start_ns = hz3_large_aligned_obs_timing_start();
+    size_t s275_active_map_start_ns = hz3_s275_activation_timing_start();
     uint32_t idx = hz3_large_hash_ptr(hdr->user_ptr);
     hz3_lock_t* map_lock = hz3_large_map_lock_for_idx(idx);
     hz3_lock_acquire(map_lock);
@@ -575,9 +582,12 @@ static void hz3_large_insert(Hz3LargeHdr* hdr) {
     hz3_large_debug_on_bucket_insert_locked(hdr);
     hz3_lock_release(map_lock);
 #if !HZ3_S242_DIRECT_MAPLESS
+    size_t s275_direct_shadow_start_ns = hz3_s275_activation_timing_start();
     hz3_s242_direct_insert(hdr);
+    hz3_s275_on_insert_direct_shadow_elapsed(s275_direct_shadow_start_ns);
 #endif
     hz3_large_aligned_obs_on_map_insert_elapsed(obs_start_ns);
+    hz3_s275_on_insert_active_map_elapsed(s275_active_map_start_ns);
 }
 
 #if HZ3_S238_STATS
@@ -648,7 +658,10 @@ static inline int hz3_large_take_match_locked(Hz3LargeHdr* cur, const void* ptr)
 static Hz3LargeHdr* hz3_large_take(const void* ptr) {
 #if HZ3_S242_DIRECT_MAPLESS
     if (hz3_s242_direct_has_entries()) {
+        size_t s275_direct_take_start_ns = hz3_s275_activation_timing_start();
         Hz3LargeHdr* s242_mapless_hdr = hz3_s242_direct_take(ptr);
+        hz3_s275_on_direct_take_elapsed(
+            s275_direct_take_start_ns, s242_mapless_hdr != NULL);
         if (s242_mapless_hdr) {
             hz3_large_aligned_obs_on_take_hit(0);
             return s242_mapless_hdr;
