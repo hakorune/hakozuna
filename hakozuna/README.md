@@ -33,6 +33,10 @@ Windows HZ3 build profiles:
   - S261 RSS-first reference profile.
 - `powershell -NoProfile -ExecutionPolicy Bypass -File hakozuna/win/build_win_min.ps1 -Profile rss-experimental`
   - S262 stride-based RSS probe.
+- `powershell -NoProfile -ExecutionPolicy Bypass -File hakozuna/win/build_win_min.ps1 -Profile rss-mru`
+  - RSS-first MRU ready / LRU decommit probe. Use this to compare against
+    S261 when investigating whether cold-run ordering and lock-outside
+    decommit reduce phase-churn cost.
 - `powershell -NoProfile -ExecutionPolicy Bypass -File hakozuna/win/build_win_min.ps1 -Profile unsafe-repro-s260`
   - S260 crash/repro profile only; do not use for fair comparison.
 
