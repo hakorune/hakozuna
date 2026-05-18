@@ -103,6 +103,10 @@ function Get-Hz3ProfileDefines {
         "HZ3_S203_S65_COLD_SC=1"
     )
 
+    $speedDefaultQuiet = @($speedDefault + @(
+        "HZ3_S80_MEDIUM_RECLAIM_LOG=0"
+    ))
+
     $targetedReclaim = @($mediumCounters + @(
         "HZ3_S65_MEDIUM_RECLAIM_BUDGET_RUNS=4096",
         "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM=1",
@@ -114,7 +118,7 @@ function Get-Hz3ProfileDefines {
     switch ($Name) {
         "legacy" { return @() }
         "custom" { return @() }
-        "speed-default" { return $speedDefault }
+        "speed-default" { return $speedDefaultQuiet }
         "unsafe-repro-s260" { return @($speedDefault + $targetedReclaim) }
         "rss-first" {
             return @($speedDefault + $targetedReclaim + @(

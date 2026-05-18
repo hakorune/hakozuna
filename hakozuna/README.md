@@ -77,6 +77,7 @@ Bench entrypoint (SSOT lane triage):
 - On the Windows `speed-default` profile, page-aligned medium routing
   (`4096 <= size <= 65536 && alignment <= 4096`) is also enabled by default.
   This profile keeps S203/S65 diagnostic counters off so it can be used for
-  fair speed comparisons.
+  fair speed comparisons. It also disables the S80/S65 medium-reclaim startup
+  banner so fair benchmark stderr stays free of HZ3 diagnostic lines.
   Keep RSS-first targeted reclaim as an explicit profile rather than silently
   mixing it into fair speed comparisons.
