@@ -37,6 +37,10 @@ Windows HZ3 build profiles:
   - RSS-first MRU ready / LRU decommit probe. Use this to compare against
     S261 when investigating whether cold-run ordering and lock-outside
     decommit reduce phase-churn cost.
+- `powershell -NoProfile -ExecutionPolicy Bypass -File hakozuna/win/build_win_min.ps1 -Profile rss-batch64`
+  - RSS-first batched targeted-reclaim probe. It accumulates 64 eligible
+    dead-owner inbox-to-central events before reclaiming, preserving reclaim
+    volume while reducing reclaim/decommit entry frequency.
 - `powershell -NoProfile -ExecutionPolicy Bypass -File hakozuna/win/build_win_min.ps1 -Profile unsafe-repro-s260`
   - S260 crash/repro profile only; do not use for fair comparison.
 

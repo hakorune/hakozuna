@@ -341,6 +341,13 @@
 #define HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_STRIDE 1
 #endif
 
+// Accumulate eligible dead-owner inbox-to-central events and reclaim them as a
+// larger batch. Unlike STRIDE, this preserves the amount of work while reducing
+// how often the reclaim/decommit path is entered.
+#ifndef HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_BATCH_RUNS
+#define HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_BATCH_RUNS 1
+#endif
+
 #if HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_SCALE < 1
 #error "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_SCALE must be >= 1"
 #endif
@@ -359,6 +366,10 @@
 
 #if HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_STRIDE < 1
 #error "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_STRIDE must be >= 1"
+#endif
+
+#if HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_BATCH_RUNS < 1
+#error "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_BATCH_RUNS must be >= 1"
 #endif
 
 // Experimental ready-cache policy for cold medium runs. The old reserve policy

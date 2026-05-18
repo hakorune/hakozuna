@@ -20,6 +20,14 @@
 Hz3Inbox g_hz3_inbox[HZ3_NUM_SHARDS][HZ3_NUM_SC];
 Hz3InboxMixed g_hz3_inbox_medium_mixed[HZ3_NUM_SHARDS];
 
+#if HZ3_S65_INBOX_TO_CENTRAL_RECLAIM && HZ3_S65_MEDIUM_RECLAIM && \
+    HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_BATCH_RUNS > 1
+static _Atomic(uint64_t) g_s65_inbox_to_central_reclaim_pending[HZ3_NUM_SHARDS][HZ3_NUM_SC];
+static _Atomic(uint64_t) g_s65_inbox_to_central_reclaim_batch_flushes;
+static _Atomic(uint64_t) g_s65_inbox_to_central_reclaim_batch_budget;
+static _Atomic(uint64_t) g_s65_inbox_to_central_reclaim_batch_pending_peak;
+#endif
+
 #if HZ3_S65_STATS
 static _Atomic(uint64_t) g_s65_inbox_push_objs[HZ3_NUM_SC];
 static _Atomic(uint64_t) g_s65_inbox_push_live_owner_objs[HZ3_NUM_SC];
@@ -352,6 +360,28 @@ static void hz3_s65_inbox_dump(void) {
             fprintf(stderr, " none");
         }
         fprintf(stderr, "\n");
+
+#if HZ3_S65_INBOX_TO_CENTRAL_RECLAIM && HZ3_S65_MEDIUM_RECLAIM
+        fprintf(stderr,
+                "[HZ3_S65_INBOX_RECLAIM_POLICY] scale=%u max_runs=%u stride=%u batch_runs=%u",
+                (unsigned)HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_SCALE,
+                (unsigned)HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_MAX_RUNS,
+                (unsigned)HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_STRIDE,
+                (unsigned)HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_BATCH_RUNS);
+#if HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_BATCH_RUNS > 1
+        fprintf(stderr,
+                " batch_flushes=%" PRIu64
+                " batch_budget=%" PRIu64
+                " batch_pending_peak=%" PRIu64,
+                atomic_load_explicit(&g_s65_inbox_to_central_reclaim_batch_flushes,
+                                     memory_order_relaxed),
+                atomic_load_explicit(&g_s65_inbox_to_central_reclaim_batch_budget,
+                                     memory_order_relaxed),
+                atomic_load_explicit(&g_s65_inbox_to_central_reclaim_batch_pending_peak,
+                                     memory_order_relaxed));
+#endif
+        fprintf(stderr, "\n");
+#endif
     }
 
     if (snapshot_total_current > 0 || mixed_snapshot_objs > 0) {
@@ -433,6 +463,63 @@ static void hz3_s65_inbox_register_once(void) {
 static _Atomic(uint64_t) g_s65_inbox_to_central_reclaim_stride_ticket;
 #endif
 
+#if HZ3_S65_INBOX_TO_CENTRAL_RECLAIM && HZ3_S65_MEDIUM_RECLAIM && \
+    HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_BATCH_RUNS > 1
+static inline void hz3_s65_inbox_reclaim_batch_note_pending(uint64_t pending) {
+    uint64_t old =
+        atomic_load_explicit(&g_s65_inbox_to_central_reclaim_batch_pending_peak,
+                             memory_order_relaxed);
+    while (old < pending &&
+           !atomic_compare_exchange_weak_explicit(
+               &g_s65_inbox_to_central_reclaim_batch_pending_peak,
+               &old,
+               pending,
+               memory_order_relaxed,
+               memory_order_relaxed)) {
+    }
+}
+
+static inline uint64_t hz3_s65_inbox_reclaim_batch_take(uint8_t owner,
+                                                        int sc,
+                                                        uint64_t add) {
+    _Atomic(uint64_t)* pending =
+        &g_s65_inbox_to_central_reclaim_pending[owner][sc];
+    uint64_t after =
+        atomic_fetch_add_explicit(pending, add, memory_order_relaxed) + add;
+    hz3_s65_inbox_reclaim_batch_note_pending(after);
+    if (after < (uint64_t)HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_BATCH_RUNS) {
+        return 0;
+    }
+
+    uint64_t old = atomic_load_explicit(pending, memory_order_relaxed);
+    while (old >= (uint64_t)HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_BATCH_RUNS) {
+        uint64_t take = old;
+        if (take > (uint64_t)HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_MAX_RUNS) {
+            take = (uint64_t)HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_MAX_RUNS;
+        }
+        uint64_t desired = old - take;
+        if (atomic_compare_exchange_weak_explicit(pending,
+                                                  &old,
+                                                  desired,
+                                                  memory_order_acq_rel,
+                                                  memory_order_relaxed)) {
+            atomic_fetch_add_explicit(
+                &g_s65_inbox_to_central_reclaim_batch_flushes,
+                1,
+                memory_order_relaxed);
+            atomic_fetch_add_explicit(
+                &g_s65_inbox_to_central_reclaim_batch_budget,
+                take,
+                memory_order_relaxed);
+            hz3_s65_inbox_reclaim_batch_note_pending(desired);
+            return take;
+        }
+    }
+
+    return 0;
+}
+#endif
+
 static inline void hz3_s65_inbox_reclaim_after_to_central(uint8_t owner,
                                                           int sc,
                                                           uint32_t n,
@@ -458,6 +545,13 @@ static inline void hz3_s65_inbox_reclaim_after_to_central(uint8_t owner,
         return;
     }
 
+#if HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_BATCH_RUNS > 1
+    uint64_t add = (uint64_t)n * (uint64_t)HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_SCALE;
+    uint64_t budget = hz3_s65_inbox_reclaim_batch_take(owner, sc, add);
+    if (budget == 0) {
+        return;
+    }
+#else
 #if HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_STRIDE > 1
     uint64_t ticket = atomic_fetch_add_explicit(
                           &g_s65_inbox_to_central_reclaim_stride_ticket,
@@ -473,6 +567,7 @@ static inline void hz3_s65_inbox_reclaim_after_to_central(uint8_t owner,
     if (budget > (uint64_t)HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_MAX_RUNS) {
         budget = (uint64_t)HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_MAX_RUNS;
     }
+#endif
     hz3_s65_medium_reclaim_shard_sc(owner,
                                     sc,
                                     (uint32_t)budget,
