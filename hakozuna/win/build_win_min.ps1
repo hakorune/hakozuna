@@ -49,6 +49,8 @@ $KnownProfiles = @(
     "rss-experimental",
     "rss-mru",
     "rss-batch64",
+    "rss-coalesce-obs",
+    "rss-coalesce-decommit",
     "unsafe-repro-s260",
     "custom"
 )
@@ -63,7 +65,7 @@ if ($KnownProfiles -notcontains $ResolvedProfile) {
 
 $ResolvedArenaSize = $ArenaSize
 if (-not $ResolvedArenaSize) {
-    $ResolvedArenaSize = if ($ResolvedProfile -in @("speed-default", "rss-first", "rss-experimental", "rss-mru", "rss-batch64", "unsafe-repro-s260")) {
+    $ResolvedArenaSize = if ($ResolvedProfile -in @("speed-default", "rss-first", "rss-experimental", "rss-mru", "rss-batch64", "rss-coalesce-obs", "rss-coalesce-decommit", "unsafe-repro-s260")) {
         "0x200000000ULL"
     } else {
         "0x1000000000ULL"
@@ -158,6 +160,28 @@ function Get-Hz3ProfileDefines {
                 "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_PAGE_MASK=0x00000006u",
                 "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_BATCH_RUNS=64",
                 "HZ3_S65_CENTRAL_COLD_READY_MRU_ENABLE=1"
+            ))
+        }
+        "rss-coalesce-obs" {
+            return @($speedDefault + $targetedReclaim + @(
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_MIN_PAGES=1",
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_MAX_PAGES=2",
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_PAGE_MASK=0x00000006u",
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_BATCH_RUNS=64",
+                "HZ3_S65_CENTRAL_COLD_READY_MRU_ENABLE=1",
+                "HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_OBSERVE=1",
+                "HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_OBSERVE_BATCH_RUNS=64"
+            ))
+        }
+        "rss-coalesce-decommit" {
+            return @($speedDefault + $targetedReclaim + @(
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_MIN_PAGES=1",
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_MAX_PAGES=2",
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_PAGE_MASK=0x00000006u",
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_BATCH_RUNS=64",
+                "HZ3_S65_CENTRAL_COLD_READY_MRU_ENABLE=1",
+                "HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_ENABLE=1",
+                "HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_BATCH_RUNS=64"
             ))
         }
     }

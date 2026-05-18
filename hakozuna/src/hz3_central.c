@@ -113,6 +113,11 @@ static _Atomic(uint64_t) g_s65_cold_coalesce_input_nodes;
 static _Atomic(uint64_t) g_s65_cold_coalesce_ranges;
 static _Atomic(uint64_t) g_s65_cold_coalesce_saved_syscalls;
 static _Atomic(uint64_t) g_s65_cold_coalesce_max_range_bytes;
+static _Atomic(uint64_t) g_s65_cold_decommit_coalesce_batches;
+static _Atomic(uint64_t) g_s65_cold_decommit_coalesce_input_nodes;
+static _Atomic(uint64_t) g_s65_cold_decommit_coalesce_ranges;
+static _Atomic(uint64_t) g_s65_cold_decommit_coalesce_saved_syscalls;
+static _Atomic(uint64_t) g_s65_cold_decommit_coalesce_max_range_bytes;
 static _Atomic(uint64_t) g_s65_cold_committed_push_objs[HZ3_NUM_SC];
 static _Atomic(uint64_t) g_s65_cold_committed_pop_objs[HZ3_NUM_SC];
 static _Atomic(uint64_t) g_s65_cold_committed_current_objs[HZ3_NUM_SC];
@@ -271,6 +276,32 @@ static void hz3_s65_cold_note_recommit_coalesce(uint64_t input_nodes,
                               saved_syscalls,
                               memory_order_relaxed);
     hz3_s65_stats_update_peak(&g_s65_cold_coalesce_max_range_bytes,
+                              max_range_bytes);
+}
+#endif
+
+#if HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_OBSERVE || \
+    HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_ENABLE
+static void hz3_s65_cold_note_decommit_coalesce_observe(uint64_t input_nodes,
+                                                        uint64_t ranges,
+                                                        uint64_t saved_syscalls,
+                                                        uint64_t max_range_bytes) {
+    if (input_nodes == 0) {
+        return;
+    }
+    atomic_fetch_add_explicit(&g_s65_cold_decommit_coalesce_batches,
+                              1,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&g_s65_cold_decommit_coalesce_input_nodes,
+                              input_nodes,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&g_s65_cold_decommit_coalesce_ranges,
+                              ranges,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&g_s65_cold_decommit_coalesce_saved_syscalls,
+                              saved_syscalls,
+                              memory_order_relaxed);
+    hz3_s65_stats_update_peak(&g_s65_cold_decommit_coalesce_max_range_bytes,
                               max_range_bytes);
 }
 #endif
@@ -653,6 +684,38 @@ static void hz3_s65_central_retention_dump(void) {
             atomic_load_explicit(&g_s65_cold_coalesce_max_range_bytes,
                                  memory_order_relaxed),
             coalesce_ranges ? (coalesce_input * 100) / coalesce_ranges : 0);
+    uint64_t decommit_coalesce_input =
+        atomic_load_explicit(&g_s65_cold_decommit_coalesce_input_nodes,
+                             memory_order_relaxed);
+    uint64_t decommit_coalesce_ranges =
+        atomic_load_explicit(&g_s65_cold_decommit_coalesce_ranges,
+                             memory_order_relaxed);
+    fprintf(stderr,
+            "[HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE] enabled=%d"
+            " observe=%d"
+            " batch_runs=%d"
+            " observe_batch_runs=%d"
+            " batches=%" PRIu64
+            " input_nodes=%" PRIu64
+            " ranges=%" PRIu64
+            " saved_syscalls=%" PRIu64
+            " max_range_bytes=%" PRIu64
+            " avg_nodes_per_range_x100=%" PRIu64 "\n",
+            HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_ENABLE,
+            HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_OBSERVE,
+            HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_BATCH_RUNS,
+            HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_OBSERVE_BATCH_RUNS,
+            atomic_load_explicit(&g_s65_cold_decommit_coalesce_batches,
+                                 memory_order_relaxed),
+            decommit_coalesce_input,
+            decommit_coalesce_ranges,
+            atomic_load_explicit(&g_s65_cold_decommit_coalesce_saved_syscalls,
+                                 memory_order_relaxed),
+            atomic_load_explicit(&g_s65_cold_decommit_coalesce_max_range_bytes,
+                                 memory_order_relaxed),
+            decommit_coalesce_ranges
+                ? (decommit_coalesce_input * 100) / decommit_coalesce_ranges
+                : 0);
     fprintf(stderr,
             "[HZ3_S65_CENTRAL_COLD_STATE] inflight_decommitting_current=%" PRIu64
             " inflight_decommitting_peak=%" PRIu64
@@ -707,6 +770,7 @@ static void hz3_s65_central_retention_register_once(void) {
 #define hz3_s65_cold_note_recommit(ok, bytes, elapsed_ns) do { (void)(ok); (void)(bytes); (void)(elapsed_ns); } while (0)
 #define hz3_s65_cold_note_rewarm(n) do { (void)(n); } while (0)
 #define hz3_s65_cold_note_unlock_recommit(n) do { (void)(n); } while (0)
+#define hz3_s65_cold_note_decommit_coalesce_observe(input_nodes, ranges, saved_syscalls, max_range_bytes) do { (void)(input_nodes); (void)(ranges); (void)(saved_syscalls); (void)(max_range_bytes); } while (0)
 #define hz3_s65_cold_note_committed_push(sc, n) do { (void)(sc); (void)(n); } while (0)
 #define hz3_s65_cold_note_committed_pop(sc, n) do { (void)(sc); (void)(n); } while (0)
 #define hz3_s65_cold_note_decommitted_push(sc, n) do { (void)(sc); (void)(n); } while (0)
@@ -853,6 +917,214 @@ static int hz3_central_cold_recommit_run(void* run, size_t bytes) {
     return 0;
 #endif
 }
+
+#if HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_OBSERVE
+typedef struct Hz3CentralColdDecommitObserveBatch {
+    Hz3CentralColdNode* nodes[HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_OBSERVE_BATCH_RUNS];
+    uint32_t count;
+} Hz3CentralColdDecommitObserveBatch;
+
+static void hz3_central_cold_decommit_observe_sort(Hz3CentralColdNode** nodes,
+                                                   uint32_t n) {
+    for (uint32_t i = 1; i < n; i++) {
+        Hz3CentralColdNode* cur = nodes[i];
+        uintptr_t cur_addr = (uintptr_t)cur->run;
+        uint32_t j = i;
+        while (j > 0 && (uintptr_t)nodes[j - 1]->run > cur_addr) {
+            nodes[j] = nodes[j - 1];
+            j--;
+        }
+        nodes[j] = cur;
+    }
+}
+
+static void hz3_central_cold_decommit_observe_flush(
+    Hz3CentralColdDecommitObserveBatch* batch,
+    int sc) {
+    if (!batch || batch->count == 0) {
+        return;
+    }
+
+    Hz3CentralColdNode* sorted[HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_OBSERVE_BATCH_RUNS];
+    uint32_t n = batch->count;
+    for (uint32_t i = 0; i < n; i++) {
+        sorted[i] = batch->nodes[i];
+    }
+    batch->count = 0;
+
+    hz3_central_cold_decommit_observe_sort(sorted, n);
+
+    size_t run_bytes = hz3_central_cold_run_bytes(sc);
+    uint64_t ranges = 0;
+    uint64_t saved_syscalls = 0;
+    size_t max_range_bytes = 0;
+    uint32_t i = 0;
+    while (i < n) {
+        uintptr_t base = (uintptr_t)sorted[i]->run;
+        uintptr_t end = base + run_bytes;
+        uint32_t range_nodes = 1;
+        i++;
+        while (i < n && (uintptr_t)sorted[i]->run == end) {
+            end += run_bytes;
+            range_nodes++;
+            i++;
+        }
+
+        size_t range_bytes = (size_t)(end - base);
+        if (range_bytes > max_range_bytes) {
+            max_range_bytes = range_bytes;
+        }
+        ranges++;
+        saved_syscalls += (uint64_t)(range_nodes - 1);
+    }
+
+    hz3_s65_cold_note_decommit_coalesce_observe(n,
+                                                ranges,
+                                                saved_syscalls,
+                                                (uint64_t)max_range_bytes);
+}
+
+static void hz3_central_cold_decommit_observe_note(
+    Hz3CentralColdDecommitObserveBatch* batch,
+    Hz3CentralColdNode* node,
+    int sc) {
+    if (!batch || !node || !node->run) {
+        return;
+    }
+    batch->nodes[batch->count++] = node;
+    if (batch->count >= HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_OBSERVE_BATCH_RUNS) {
+        hz3_central_cold_decommit_observe_flush(batch, sc);
+    }
+}
+#define HZ3_COLD_DECOMMIT_OBS_DECL(name) \
+    Hz3CentralColdDecommitObserveBatch name = { { 0 }, 0 }
+#define HZ3_COLD_DECOMMIT_OBS_NOTE(name, node, sc) \
+    hz3_central_cold_decommit_observe_note(&(name), (node), (sc))
+#define HZ3_COLD_DECOMMIT_OBS_FLUSH(name, sc) \
+    hz3_central_cold_decommit_observe_flush(&(name), (sc))
+#else
+#define HZ3_COLD_DECOMMIT_OBS_DECL(name) do { } while (0)
+#define HZ3_COLD_DECOMMIT_OBS_NOTE(name, node, sc) do { (void)(node); } while (0)
+#define HZ3_COLD_DECOMMIT_OBS_FLUSH(name, sc) do { } while (0)
+#endif
+
+#if HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_ENABLE
+static int hz3_central_cold_decommit_range(void* base, size_t bytes) {
+    if (!base || bytes == 0) {
+        return -1;
+    }
+    uint64_t start_ns = hz3_central_cold_now_ns();
+#if defined(_WIN32)
+    int ok = VirtualFree(base, bytes, MEM_DECOMMIT) ? 1 : 0;
+    uint64_t end_ns = hz3_central_cold_now_ns();
+    hz3_s65_cold_note_decommit(ok,
+                                bytes,
+                                end_ns >= start_ns ? end_ns - start_ns : 0);
+    return ok ? 0 : -1;
+#else
+    hz3_s65_cold_note_decommit(1, bytes, 0);
+    return 0;
+#endif
+}
+
+static void hz3_central_cold_decommit_sort_nodes(Hz3CentralColdNode** nodes,
+                                                 uint32_t n) {
+    for (uint32_t i = 1; i < n; i++) {
+        Hz3CentralColdNode* cur = nodes[i];
+        uintptr_t cur_addr = (uintptr_t)cur->run;
+        uint32_t j = i;
+        while (j > 0 && (uintptr_t)nodes[j - 1]->run > cur_addr) {
+            nodes[j] = nodes[j - 1];
+            j--;
+        }
+        nodes[j] = cur;
+    }
+}
+
+static void hz3_central_cold_mark_node_decommit_ok(Hz3CentralColdNode** nodes,
+                                                   uint8_t* decommit_ok,
+                                                   uint32_t n,
+                                                   Hz3CentralColdNode* target,
+                                                   int ok) {
+    for (uint32_t i = 0; i < n; i++) {
+        if (nodes[i] == target) {
+            decommit_ok[i] = (uint8_t)ok;
+            return;
+        }
+    }
+}
+
+static void hz3_central_cold_decommit_nodes_coalesced(Hz3CentralColdNode** nodes,
+                                                      uint8_t* decommit_ok,
+                                                      uint32_t n,
+                                                      int sc) {
+    if (n == 0) {
+        return;
+    }
+
+    Hz3CentralColdNode* sorted[HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_BATCH_RUNS];
+    for (uint32_t i = 0; i < n; i++) {
+        sorted[i] = nodes[i];
+        decommit_ok[i] = 0;
+    }
+    hz3_central_cold_decommit_sort_nodes(sorted, n);
+
+    size_t run_bytes = hz3_central_cold_run_bytes(sc);
+    uint32_t ranges = 0;
+    uint64_t saved_syscalls = 0;
+    size_t max_range_bytes = 0;
+    uint32_t i = 0;
+
+    while (i < n) {
+        uint32_t start = i;
+        uintptr_t base = (uintptr_t)sorted[i]->run;
+        uintptr_t end = base + run_bytes;
+        i++;
+
+        while (i < n && (uintptr_t)sorted[i]->run == end) {
+            end += run_bytes;
+            i++;
+        }
+
+        size_t range_bytes = (size_t)(end - base);
+        if (range_bytes > max_range_bytes) {
+            max_range_bytes = range_bytes;
+        }
+        ranges++;
+
+        int ok = hz3_central_cold_decommit_range((void*)base, range_bytes) == 0;
+        if (ok) {
+            for (uint32_t j = start; j < i; j++) {
+                hz3_central_cold_mark_node_decommit_ok(nodes,
+                                                       decommit_ok,
+                                                       n,
+                                                       sorted[j],
+                                                       1);
+            }
+            saved_syscalls += (uint64_t)((i - start) - 1);
+            continue;
+        }
+
+        // A range may cross a reservation boundary. Fall back to individual
+        // decommit so the experiment stays conservative and rollbackable.
+        for (uint32_t j = start; j < i; j++) {
+            Hz3CentralColdNode* node = sorted[j];
+            int single_ok =
+                hz3_central_cold_decommit_run(node->run, run_bytes) == 0;
+            hz3_central_cold_mark_node_decommit_ok(nodes,
+                                                   decommit_ok,
+                                                   n,
+                                                   node,
+                                                   single_ok);
+        }
+    }
+
+    hz3_s65_cold_note_decommit_coalesce_observe(n,
+                                                ranges,
+                                                saved_syscalls,
+                                                (uint64_t)max_range_bytes);
+}
+#endif
 
 #if HZ3_S65_CENTRAL_COLD_RECOMMIT_COALESCE_ENABLE
 static int hz3_central_cold_recommit_range(void* base, size_t bytes) {
@@ -1959,6 +2231,13 @@ void hz3_central_cold_push_list(int shard, int sc, void* head, void* tail, uint3
     uint32_t decommitted_pushed = 0;
 #endif
     void* cur = head;
+    HZ3_COLD_DECOMMIT_OBS_DECL(decommit_obs);
+#if HZ3_S65_CENTRAL_COLD_DECOMMIT_ENABLE && \
+    HZ3_S65_CENTRAL_COLD_READY_MRU_ENABLE && \
+    HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_ENABLE
+    Hz3CentralColdNode* decommit_nodes[HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_BATCH_RUNS];
+    uint8_t decommit_ok[HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_BATCH_RUNS];
+#endif
 
     hz3_lock_acquire(&bin->lock);
     while (pushed < n && cur) {
@@ -1975,6 +2254,7 @@ void hz3_central_cold_push_list(int shard, int sc, void* head, void* tail, uint3
         bin->count++;
         pushed++;
 
+#if !HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_ENABLE
         uint32_t target = hz3_central_cold_ready_target_runs(sc);
         while (bin->ready_count > target) {
             Hz3CentralColdNode* evict = hz3_central_cold_ready_pop_tail_locked(bin);
@@ -1985,6 +2265,7 @@ void hz3_central_cold_push_list(int shard, int sc, void* head, void* tail, uint3
             evict->state = HZ3_CENTRAL_COLD_STATE_DECOMMITTING;
             bin->inflight_decommitting++;
             hz3_s65_cold_note_inflight_decommitting_add(1);
+            HZ3_COLD_DECOMMIT_OBS_NOTE(decommit_obs, evict, sc);
 
             hz3_lock_release(&bin->lock);
             int decommit_ok =
@@ -2003,6 +2284,7 @@ void hz3_central_cold_push_list(int shard, int sc, void* head, void* tail, uint3
                 ready_pushed++;
             }
         }
+#endif
 #else
         int did_decommit = 0;
         if (hz3_central_cold_should_decommit_locked(bin, sc)) {
@@ -2012,6 +2294,7 @@ void hz3_central_cold_push_list(int shard, int sc, void* head, void* tail, uint3
             }
         }
         if (did_decommit) {
+            HZ3_COLD_DECOMMIT_OBS_NOTE(decommit_obs, node, sc);
             hz3_central_cold_decommitted_push_head_locked(bin, node);
             decommitted_pushed++;
         } else {
@@ -2035,7 +2318,62 @@ void hz3_central_cold_push_list(int shard, int sc, void* head, void* tail, uint3
 #endif
         cur = next;
     }
+#if HZ3_S65_CENTRAL_COLD_DECOMMIT_ENABLE && \
+    HZ3_S65_CENTRAL_COLD_READY_MRU_ENABLE && \
+    HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_ENABLE
+    uint32_t target = hz3_central_cold_ready_target_runs(sc);
+    int stop_after_failure = 0;
+    while (bin->ready_count > target && !stop_after_failure) {
+        uint32_t detached = 0;
+        while (detached < HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_BATCH_RUNS &&
+               bin->ready_count > target) {
+            Hz3CentralColdNode* evict = hz3_central_cold_ready_pop_tail_locked(bin);
+            if (!evict) {
+                break;
+            }
+            ready_popped++;
+            evict->state = HZ3_CENTRAL_COLD_STATE_DECOMMITTING;
+            decommit_nodes[detached++] = evict;
+        }
+        if (detached == 0) {
+            break;
+        }
+
+        bin->inflight_decommitting += detached;
+        hz3_s65_cold_note_inflight_decommitting_add(detached);
+
+        hz3_lock_release(&bin->lock);
+        hz3_central_cold_decommit_nodes_coalesced(decommit_nodes,
+                                                  decommit_ok,
+                                                  detached,
+                                                  sc);
+        hz3_lock_acquire(&bin->lock);
+
+        if (bin->inflight_decommitting >= detached) {
+            bin->inflight_decommitting -= detached;
+        } else {
+            bin->inflight_decommitting = 0;
+        }
+        hz3_s65_cold_note_inflight_decommitting_sub(detached);
+
+        uint32_t failed = 0;
+        for (uint32_t i = 0; i < detached; i++) {
+            if (decommit_ok[i]) {
+                hz3_central_cold_decommitted_push_head_locked(bin, decommit_nodes[i]);
+                decommitted_pushed++;
+            } else {
+                hz3_central_cold_ready_push_head_locked(bin, decommit_nodes[i]);
+                ready_pushed++;
+                failed++;
+            }
+        }
+        if (failed > 0) {
+            stop_after_failure = 1;
+        }
+    }
+#endif
     hz3_lock_release(&bin->lock);
+    HZ3_COLD_DECOMMIT_OBS_FLUSH(decommit_obs, sc);
 
     if (pushed > 0) {
         hz3_s65_cold_note_push(sc, pushed);

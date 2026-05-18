@@ -41,6 +41,13 @@ Windows HZ3 build profiles:
   - RSS-first batched targeted-reclaim probe. It accumulates 64 eligible
     dead-owner inbox-to-central events before reclaiming, preserving reclaim
     volume while reducing reclaim/decommit entry frequency.
+- `powershell -NoProfile -ExecutionPolicy Bypass -File hakozuna/win/build_win_min.ps1 -Profile rss-coalesce-obs`
+  - Observation-only RSS probe for future coalesced `MEM_DECOMMIT`. It keeps
+    the current per-run decommit behavior and reports how many VM syscalls
+    could be saved by sorted range decommit.
+- `powershell -NoProfile -ExecutionPolicy Bypass -File hakozuna/win/build_win_min.ps1 -Profile rss-coalesce-decommit`
+  - Actual coalesced `MEM_DECOMMIT` probe. It batches old cold-ready runs,
+    sorts them by address, and decommits adjacent runs as ranges.
 - `powershell -NoProfile -ExecutionPolicy Bypass -File hakozuna/win/build_win_min.ps1 -Profile unsafe-repro-s260`
   - S260 crash/repro profile only; do not use for fair comparison.
 
