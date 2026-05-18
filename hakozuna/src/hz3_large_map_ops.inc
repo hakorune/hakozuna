@@ -1,4 +1,426 @@
+#if HZ3_S242_LARGE_DIRECT_SIDE_MAP
+#define HZ3_S242_DIRECT_SET_COUNT (1u << HZ3_S242_DIRECT_SET_BITS)
+#define HZ3_S242_DIRECT_SLOT_NONE UINT32_MAX
+
+typedef struct Hz3LargeDirectSlot {
+    _Atomic uintptr_t key;
+    _Atomic(Hz3LargeHdr*) hdr;
+} Hz3LargeDirectSlot;
+
+static Hz3LargeDirectSlot g_hz3_s242_direct[HZ3_S242_DIRECT_SET_COUNT][HZ3_S242_DIRECT_WAYS];
+
+static _Atomic size_t g_hz3_s242_insert_try = 0;
+static _Atomic size_t g_hz3_s242_insert_ok = 0;
+static _Atomic size_t g_hz3_s242_insert_collision = 0;
+static _Atomic size_t g_hz3_s242_lookup_try = 0;
+static _Atomic size_t g_hz3_s242_lookup_hit = 0;
+static _Atomic size_t g_hz3_s242_lookup_miss_empty = 0;
+static _Atomic size_t g_hz3_s242_lookup_miss_key = 0;
+static _Atomic size_t g_hz3_s242_lookup_miss_validate = 0;
+static _Atomic size_t g_hz3_s242_remove_try = 0;
+static _Atomic size_t g_hz3_s242_remove_ok = 0;
+static _Atomic size_t g_hz3_s242_remove_miss = 0;
+static _Atomic size_t g_hz3_s242_shadow_match = 0;
+static _Atomic size_t g_hz3_s242_shadow_mismatch = 0;
+static _Atomic size_t g_hz3_s242_shadow_direct_only = 0;
+static _Atomic size_t g_hz3_s242_shadow_map_only = 0;
+static _Atomic size_t g_hz3_s242_mapless_active = 0;
+static _Atomic size_t g_hz3_s242_entries_current = 0;
+static _Atomic size_t g_hz3_s242_entries_peak = 0;
+static _Atomic size_t g_hz3_s242_take_try = 0;
+static _Atomic size_t g_hz3_s242_take_skip_empty = 0;
+static _Atomic size_t g_hz3_s242_take_ok = 0;
+static _Atomic size_t g_hz3_s242_take_miss = 0;
+static _Atomic size_t g_hz3_s242_take_validate_fail = 0;
+
+static inline void hz3_s242_stats_inc(_Atomic size_t* p) {
+#if HZ3_S242_DIRECT_STATS
+    atomic_fetch_add_explicit(p, 1, memory_order_relaxed);
+#else
+    (void)p;
+#endif
+}
+
+static inline void hz3_s242_stats_update_peak(_Atomic size_t* peak, size_t value) {
+#if HZ3_S242_DIRECT_STATS
+    size_t old = atomic_load_explicit(peak, memory_order_relaxed);
+    while (old < value &&
+           !atomic_compare_exchange_weak_explicit(peak,
+                                                  &old,
+                                                  value,
+                                                  memory_order_relaxed,
+                                                  memory_order_relaxed)) {
+    }
+#else
+    (void)peak;
+    (void)value;
+#endif
+}
+
+static inline void hz3_s242_direct_note_entry_add(void) {
+#if HZ3_S242_DIRECT_ENTRY_COUNT
+    size_t now = atomic_fetch_add_explicit(&g_hz3_s242_entries_current,
+                                           1,
+                                           memory_order_release) + 1;
+    hz3_s242_stats_update_peak(&g_hz3_s242_entries_peak, now);
+#endif
+}
+
+static inline void hz3_s242_direct_note_entry_remove(void) {
+#if HZ3_S242_DIRECT_ENTRY_COUNT
+    size_t old = atomic_load_explicit(&g_hz3_s242_entries_current,
+                                      memory_order_acquire);
+    while (old > 0) {
+        if (atomic_compare_exchange_weak_explicit(&g_hz3_s242_entries_current,
+                                                  &old,
+                                                  old - 1,
+                                                  memory_order_acq_rel,
+                                                  memory_order_acquire)) {
+            return;
+        }
+    }
+#endif
+}
+
+static inline int hz3_s242_direct_has_entries(void) {
+#if HZ3_S242_DIRECT_ENTRY_COUNT
+    return atomic_load_explicit(&g_hz3_s242_entries_current,
+                                memory_order_acquire) != 0;
+#else
+    return 1;
+#endif
+}
+
+static void hz3_s242_stats_dump_final(void) {
+#if HZ3_S242_DIRECT_STATS
+    fprintf(stderr,
+            "[HZ3_S242_DIRECT] insert_try=%zu insert_ok=%zu "
+            "insert_collision=%zu lookup_try=%zu lookup_hit=%zu "
+            "lookup_miss_empty=%zu lookup_miss_key=%zu "
+            "lookup_miss_validate=%zu remove_try=%zu remove_ok=%zu "
+            "remove_miss=%zu shadow_match=%zu shadow_mismatch=%zu "
+            "shadow_direct_only=%zu shadow_map_only=%zu mapless_active=%zu "
+            "entries_current=%zu entries_peak=%zu take_try=%zu "
+            "take_skip_empty=%zu take_ok=%zu take_miss=%zu "
+            "take_validate_fail=%zu\n",
+            atomic_load_explicit(&g_hz3_s242_insert_try, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_insert_ok, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_insert_collision, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_lookup_try, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_lookup_hit, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_lookup_miss_empty, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_lookup_miss_key, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_lookup_miss_validate, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_remove_try, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_remove_ok, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_remove_miss, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_shadow_match, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_shadow_mismatch, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_shadow_direct_only, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_shadow_map_only, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_mapless_active, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_entries_current, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_entries_peak, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_take_try, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_take_skip_empty, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_take_ok, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_take_miss, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_take_validate_fail, memory_order_relaxed));
+#endif
+}
+
+static inline void hz3_s242_stats_register_once(void) {
+#if HZ3_S242_DIRECT_STATS
+    static _Atomic int registered = 0;
+    if (atomic_exchange_explicit(&registered, 1, memory_order_relaxed) == 0) {
+        atexit(hz3_s242_stats_dump_final);
+    }
+#endif
+}
+
+static inline uint32_t hz3_s242_direct_hash(const void* ptr) {
+    uint64_t v = (uint64_t)(uintptr_t)ptr;
+    v >>= 4;
+    v ^= v >> 33;
+    v *= UINT64_C(0xff51afd7ed558ccd);
+    v ^= v >> 33;
+    v *= UINT64_C(0xc4ceb9fe1a85ec53);
+    v ^= v >> 33;
+    return (uint32_t)v & (HZ3_S242_DIRECT_SET_COUNT - 1u);
+}
+
+static inline uint32_t hz3_s242_direct_slot_id(uint32_t set, uint32_t way) {
+    return set * (uint32_t)HZ3_S242_DIRECT_WAYS + way;
+}
+
+static inline int hz3_s242_direct_mapless_eligible(const Hz3LargeHdr* hdr) {
+#if HZ3_S242_DIRECT_MAPLESS
+    return hdr &&
+           hdr->map_size > 0 &&
+           hdr->map_size <= (size_t)HZ3_S242_DIRECT_MAPLESS_MAX_CLASS_BYTES;
+#else
+    (void)hdr;
+    return 0;
+#endif
+}
+
+static inline int hz3_s242_direct_insert(Hz3LargeHdr* hdr) {
+    hz3_s242_stats_register_once();
+    hz3_s242_stats_inc(&g_hz3_s242_insert_try);
+
+    if (!hdr || !hdr->user_ptr) {
+        hz3_s242_stats_inc(&g_hz3_s242_insert_collision);
+        return 0;
+    }
+
+    uintptr_t key = (uintptr_t)hdr->user_ptr;
+    uint32_t set = hz3_s242_direct_hash(hdr->user_ptr);
+    for (uint32_t way = 0; way < (uint32_t)HZ3_S242_DIRECT_WAYS; way++) {
+        Hz3LargeDirectSlot* slot = &g_hz3_s242_direct[set][way];
+        uintptr_t old = atomic_load_explicit(&slot->key, memory_order_acquire);
+        if (old == key) {
+            atomic_store_explicit(&slot->hdr, hdr, memory_order_release);
+            hdr->direct_slot = hz3_s242_direct_slot_id(set, way);
+            hz3_s242_stats_inc(&g_hz3_s242_insert_ok);
+            return 1;
+        }
+        if (old == 0) {
+            uintptr_t empty = 0;
+            if (atomic_compare_exchange_strong_explicit(&slot->key,
+                                                        &empty,
+                                                        key,
+                                                        memory_order_acq_rel,
+                                                        memory_order_acquire)) {
+                atomic_store_explicit(&slot->hdr, hdr, memory_order_release);
+                hdr->direct_slot = hz3_s242_direct_slot_id(set, way);
+                hz3_s242_direct_note_entry_add();
+                hz3_s242_stats_inc(&g_hz3_s242_insert_ok);
+                return 1;
+            }
+        }
+    }
+
+    hdr->direct_slot = HZ3_S242_DIRECT_SLOT_NONE;
+    hz3_s242_stats_inc(&g_hz3_s242_insert_collision);
+    return 0;
+}
+
+static inline Hz3LargeHdr* hz3_s242_direct_lookup(const void* ptr) {
+    hz3_s242_stats_register_once();
+    hz3_s242_stats_inc(&g_hz3_s242_lookup_try);
+
+    uintptr_t key = (uintptr_t)ptr;
+    uint32_t set = hz3_s242_direct_hash(ptr);
+    int saw_empty = 0;
+    int saw_other_key = 0;
+
+    for (uint32_t way = 0; way < (uint32_t)HZ3_S242_DIRECT_WAYS; way++) {
+        Hz3LargeDirectSlot* slot = &g_hz3_s242_direct[set][way];
+        uintptr_t observed = atomic_load_explicit(&slot->key, memory_order_acquire);
+        if (observed == key) {
+            Hz3LargeHdr* hdr = atomic_load_explicit(&slot->hdr, memory_order_acquire);
+            if (hdr) {
+                hz3_s242_stats_inc(&g_hz3_s242_lookup_hit);
+                return hdr;
+            }
+            hz3_s242_stats_inc(&g_hz3_s242_lookup_miss_validate);
+            return NULL;
+        }
+        if (observed == 0) {
+            saw_empty = 1;
+        } else {
+            saw_other_key = 1;
+        }
+    }
+
+    if (saw_other_key) {
+        hz3_s242_stats_inc(&g_hz3_s242_lookup_miss_key);
+    } else if (saw_empty) {
+        hz3_s242_stats_inc(&g_hz3_s242_lookup_miss_empty);
+    } else {
+        hz3_s242_stats_inc(&g_hz3_s242_lookup_miss_key);
+    }
+    return NULL;
+}
+
+static inline void hz3_s242_direct_remove(const void* ptr, Hz3LargeHdr* hdr) {
+    hz3_s242_stats_register_once();
+    hz3_s242_stats_inc(&g_hz3_s242_remove_try);
+
+    uintptr_t key = (uintptr_t)ptr;
+    uint32_t set = hz3_s242_direct_hash(ptr);
+    uint32_t first_way = 0;
+    uint32_t ways = (uint32_t)HZ3_S242_DIRECT_WAYS;
+
+    if (hdr && hdr->direct_slot != HZ3_S242_DIRECT_SLOT_NONE) {
+        uint32_t slot_set = hdr->direct_slot / (uint32_t)HZ3_S242_DIRECT_WAYS;
+        uint32_t slot_way = hdr->direct_slot % (uint32_t)HZ3_S242_DIRECT_WAYS;
+        if (slot_set == set && slot_way < ways) {
+            first_way = slot_way;
+        }
+    }
+
+    for (uint32_t pass = 0; pass < 2; pass++) {
+        uint32_t begin = (pass == 0) ? first_way : 0;
+        uint32_t end = (pass == 0) ? (first_way + 1u) : ways;
+        for (uint32_t way = begin; way < end; way++) {
+            if (pass == 1 && way == first_way) {
+                continue;
+            }
+            Hz3LargeDirectSlot* slot = &g_hz3_s242_direct[set][way];
+            uintptr_t observed = atomic_load_explicit(&slot->key, memory_order_acquire);
+            if (observed != key) {
+                continue;
+            }
+            Hz3LargeHdr* slot_hdr = atomic_load_explicit(&slot->hdr, memory_order_acquire);
+            if (hdr && slot_hdr != hdr) {
+                continue;
+            }
+            atomic_store_explicit(&slot->hdr, NULL, memory_order_release);
+            atomic_store_explicit(&slot->key, 0, memory_order_release);
+            if (hdr) {
+                hdr->direct_slot = HZ3_S242_DIRECT_SLOT_NONE;
+            }
+            hz3_s242_direct_note_entry_remove();
+            hz3_s242_stats_inc(&g_hz3_s242_remove_ok);
+            return;
+        }
+    }
+
+    if (hdr) {
+        hdr->direct_slot = HZ3_S242_DIRECT_SLOT_NONE;
+    }
+    hz3_s242_stats_inc(&g_hz3_s242_remove_miss);
+}
+
+static inline int hz3_s242_direct_validate_active(const void* ptr, Hz3LargeHdr* hdr) {
+    if (!hdr ||
+        hdr->magic != HZ3_LARGE_MAGIC ||
+        hdr->user_ptr != ptr ||
+        hdr->map_base == NULL ||
+        hdr->map_size == 0) {
+        return 0;
+    }
+#if HZ3_LARGE_CACHE_ENABLE
+    if (hdr->in_use != 1) {
+        return 0;
+    }
+#endif
+    return atomic_load_explicit(&hdr->state, memory_order_acquire) == HZ3_LARGE_STATE_ACTIVE;
+}
+
+static inline Hz3LargeHdr* hz3_s242_direct_take(const void* ptr) {
+    hz3_s242_stats_register_once();
+    hz3_s242_stats_inc(&g_hz3_s242_take_try);
+
+    uintptr_t key = (uintptr_t)ptr;
+    uint32_t set = hz3_s242_direct_hash(ptr);
+
+    for (uint32_t way = 0; way < (uint32_t)HZ3_S242_DIRECT_WAYS; way++) {
+        Hz3LargeDirectSlot* slot = &g_hz3_s242_direct[set][way];
+        uintptr_t observed = atomic_load_explicit(&slot->key, memory_order_acquire);
+        if (observed != key) {
+            continue;
+        }
+
+        Hz3LargeHdr* hdr = atomic_load_explicit(&slot->hdr, memory_order_acquire);
+        if (!hz3_s242_direct_validate_active(ptr, hdr)) {
+            hz3_s242_stats_inc(&g_hz3_s242_take_validate_fail);
+            return NULL;
+        }
+
+        uintptr_t expected = key;
+        if (!atomic_compare_exchange_strong_explicit(&slot->key,
+                                                     &expected,
+                                                     0,
+                                                     memory_order_acq_rel,
+                                                     memory_order_acquire)) {
+            hz3_s242_stats_inc(&g_hz3_s242_take_miss);
+            return NULL;
+        }
+        atomic_store_explicit(&slot->hdr, NULL, memory_order_release);
+        hdr->direct_slot = HZ3_S242_DIRECT_SLOT_NONE;
+        hdr->flags &= (uint16_t)~HZ3_LARGE_F_DIRECT_MAPLESS;
+        hz3_s242_direct_note_entry_remove();
+        hz3_s242_stats_inc(&g_hz3_s242_take_ok);
+        return hdr;
+    }
+
+    hz3_s242_stats_inc(&g_hz3_s242_take_miss);
+    return NULL;
+}
+
+static inline Hz3LargeHdr* hz3_s242_direct_peek(const void* ptr) {
+    uintptr_t key = (uintptr_t)ptr;
+    uint32_t set = hz3_s242_direct_hash(ptr);
+    for (uint32_t way = 0; way < (uint32_t)HZ3_S242_DIRECT_WAYS; way++) {
+        Hz3LargeDirectSlot* slot = &g_hz3_s242_direct[set][way];
+        uintptr_t observed = atomic_load_explicit(&slot->key, memory_order_acquire);
+        if (observed != key) {
+            continue;
+        }
+        Hz3LargeHdr* hdr = atomic_load_explicit(&slot->hdr, memory_order_acquire);
+        return hz3_s242_direct_validate_active(ptr, hdr) ? hdr : NULL;
+    }
+    return NULL;
+}
+
+static inline void hz3_s242_direct_shadow_compare(Hz3LargeHdr* direct_hdr,
+                                                  Hz3LargeHdr* map_hdr) {
+    if (direct_hdr && map_hdr) {
+        if (direct_hdr == map_hdr) {
+            hz3_s242_stats_inc(&g_hz3_s242_shadow_match);
+        } else {
+            hz3_s242_stats_inc(&g_hz3_s242_shadow_mismatch);
+        }
+    } else if (direct_hdr) {
+        hz3_s242_stats_inc(&g_hz3_s242_shadow_direct_only);
+    } else if (map_hdr) {
+        hz3_s242_stats_inc(&g_hz3_s242_shadow_map_only);
+    }
+}
+#else
+static inline int hz3_s242_direct_insert(Hz3LargeHdr* hdr) {
+    (void)hdr;
+    return 0;
+}
+
+static inline Hz3LargeHdr* hz3_s242_direct_lookup(const void* ptr) {
+    (void)ptr;
+    return NULL;
+}
+
+static inline void hz3_s242_direct_remove(const void* ptr, Hz3LargeHdr* hdr) {
+    (void)ptr;
+    (void)hdr;
+}
+
+static inline Hz3LargeHdr* hz3_s242_direct_take(const void* ptr) {
+    (void)ptr;
+    return NULL;
+}
+
+static inline Hz3LargeHdr* hz3_s242_direct_peek(const void* ptr) {
+    (void)ptr;
+    return NULL;
+}
+
+static inline void hz3_s242_direct_shadow_compare(Hz3LargeHdr* direct_hdr,
+                                                  Hz3LargeHdr* map_hdr) {
+    (void)direct_hdr;
+    (void)map_hdr;
+}
+#endif
+
 static void hz3_large_insert(Hz3LargeHdr* hdr) {
+#if HZ3_S242_DIRECT_MAPLESS
+    if (hz3_s242_direct_mapless_eligible(hdr) && hz3_s242_direct_insert(hdr)) {
+        hdr->flags |= HZ3_LARGE_F_DIRECT_MAPLESS;
+        hz3_s242_stats_inc(&g_hz3_s242_mapless_active);
+        return;
+    }
+#endif
+    size_t obs_start_ns = hz3_large_aligned_obs_timing_start();
     uint32_t idx = hz3_large_hash_ptr(hdr->user_ptr);
     hz3_lock_t* map_lock = hz3_large_map_lock_for_idx(idx);
     hz3_lock_acquire(map_lock);
@@ -6,6 +428,10 @@ static void hz3_large_insert(Hz3LargeHdr* hdr) {
     g_hz3_large_buckets[idx] = hdr;
     hz3_large_debug_on_bucket_insert_locked(hdr);
     hz3_lock_release(map_lock);
+#if !HZ3_S242_DIRECT_MAPLESS
+    hz3_s242_direct_insert(hdr);
+#endif
+    hz3_large_aligned_obs_on_map_insert_elapsed(obs_start_ns);
 }
 
 #if HZ3_S238_STATS
@@ -74,9 +500,25 @@ static inline int hz3_large_take_match_locked(Hz3LargeHdr* cur, const void* ptr)
 }
 
 static Hz3LargeHdr* hz3_large_take(const void* ptr) {
+#if HZ3_S242_DIRECT_MAPLESS
+    if (hz3_s242_direct_has_entries()) {
+        Hz3LargeHdr* s242_mapless_hdr = hz3_s242_direct_take(ptr);
+        if (s242_mapless_hdr) {
+            hz3_large_aligned_obs_on_take_hit(0);
+            return s242_mapless_hdr;
+        }
+    } else {
+        hz3_s242_stats_register_once();
+        hz3_s242_stats_inc(&g_hz3_s242_take_skip_empty);
+    }
+#endif
+    size_t obs_start_ns = hz3_large_aligned_obs_timing_start();
     uint32_t idx = hz3_large_hash_ptr(ptr);
     hz3_lock_t* map_lock = hz3_large_map_lock_for_idx(idx);
     size_t obs_steps = 0;
+#if HZ3_S242_DIRECT_SHADOW && !HZ3_S242_DIRECT_MAPLESS
+    Hz3LargeHdr* s242_direct_hdr = hz3_s242_direct_lookup(ptr);
+#endif
 #if HZ3_S238_LARGE_DIRECT_LOOKUP
     Hz3LargeHdr* cand = NULL;
     size_t offset = hz3_large_user_offset();
@@ -125,6 +567,11 @@ static Hz3LargeHdr* hz3_large_take(const void* ptr) {
                     hz3_large_debug_on_bucket_remove_locked(cur);
                     HZ3_S238_INC(g_hz3_s238_direct_hit);
                     hz3_lock_release(map_lock);
+#if HZ3_S242_DIRECT_SHADOW && !HZ3_S242_DIRECT_MAPLESS
+                    hz3_s242_direct_shadow_compare(s242_direct_hdr, cur);
+                    hz3_s242_direct_remove(ptr, cur);
+#endif
+                    hz3_large_aligned_obs_on_map_take_elapsed(obs_start_ns);
                     hz3_large_aligned_obs_on_take_hit(obs_steps);
                     return cur;
                 }
@@ -147,6 +594,10 @@ static Hz3LargeHdr* hz3_large_take(const void* ptr) {
         int matched = hz3_large_take_match_locked(cur, ptr);
         if (matched < 0) {
             hz3_lock_release(map_lock);
+#if HZ3_S242_DIRECT_SHADOW && !HZ3_S242_DIRECT_MAPLESS
+            hz3_s242_direct_shadow_compare(s242_direct_hdr, NULL);
+#endif
+            hz3_large_aligned_obs_on_map_take_elapsed(obs_start_ns);
             hz3_large_aligned_obs_on_take_miss(obs_steps);
             return NULL;
         }
@@ -162,6 +613,11 @@ static Hz3LargeHdr* hz3_large_take(const void* ptr) {
             HZ3_S238_INC(g_hz3_s238_fallback_hash_hit);
 #endif
             hz3_lock_release(map_lock);
+#if HZ3_S242_DIRECT_SHADOW && !HZ3_S242_DIRECT_MAPLESS
+            hz3_s242_direct_shadow_compare(s242_direct_hdr, cur);
+            hz3_s242_direct_remove(ptr, cur);
+#endif
+            hz3_large_aligned_obs_on_map_take_elapsed(obs_start_ns);
             hz3_large_aligned_obs_on_take_hit(obs_steps);
             return cur;
         }
@@ -172,11 +628,22 @@ static Hz3LargeHdr* hz3_large_take(const void* ptr) {
     HZ3_S238_INC(g_hz3_s238_fallback_hash_miss);
 #endif
     hz3_lock_release(map_lock);
+#if HZ3_S242_DIRECT_SHADOW && !HZ3_S242_DIRECT_MAPLESS
+    hz3_s242_direct_shadow_compare(s242_direct_hdr, NULL);
+#endif
+    hz3_large_aligned_obs_on_map_take_elapsed(obs_start_ns);
     hz3_large_aligned_obs_on_take_miss(obs_steps);
     return NULL;
 }
 
 static int hz3_large_find_size(const void* ptr, size_t* size_out) {
+#if HZ3_S242_DIRECT_MAPLESS
+    Hz3LargeHdr* direct_hdr = hz3_s242_direct_peek(ptr);
+    if (direct_hdr) {
+        *size_out = direct_hdr->req_size;
+        return 1;
+    }
+#endif
     uint32_t idx = hz3_large_hash_ptr(ptr);
     hz3_lock_t* map_lock = hz3_large_map_lock_for_idx(idx);
     hz3_lock_acquire(map_lock);

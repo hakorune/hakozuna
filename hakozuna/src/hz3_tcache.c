@@ -18,6 +18,7 @@
 #include "hz3_watch_ptr.h"
 #include "hz3_owner_lease.h"
 #include "hz3_owner_stash.h"
+#include "hz3_large.h"
 #if HZ3_LANE_SPLIT
 #include "hz3_lane.h"
 #endif
@@ -56,7 +57,174 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <inttypes.h>
 #include "hz3_dtor_stats.h"
+
+#ifndef HZ3_S65_DTOR_DRAIN_INBOX_TO_CENTRAL
+#define HZ3_S65_DTOR_DRAIN_INBOX_TO_CENTRAL 0
+#endif
+#ifndef HZ3_S65_DTOR_RECLAIM_AFTER_INBOX_DRAIN
+#define HZ3_S65_DTOR_RECLAIM_AFTER_INBOX_DRAIN 0
+#endif
+
+#if HZ3_S65_STATS || HZ3_S65_DTOR_DRAIN_INBOX_TO_CENTRAL
+#if HZ3_S65_STATS
+static _Atomic(uint64_t) g_s65_dtor_inbox_calls;
+static _Atomic(uint64_t) g_s65_dtor_inbox_nonempty_calls;
+static _Atomic(uint64_t) g_s65_dtor_inbox_before_objs[HZ3_NUM_SC];
+static _Atomic(uint64_t) g_s65_dtor_inbox_drained_objs[HZ3_NUM_SC];
+static _Atomic(uint64_t) g_s65_dtor_inbox_after_objs[HZ3_NUM_SC];
+static _Atomic(uint64_t) g_s65_dtor_inbox_max_before_objs;
+static _Atomic(uint64_t) g_s65_dtor_inbox_max_after_objs;
+static pthread_once_t g_s65_dtor_inbox_once = PTHREAD_ONCE_INIT;
+
+static void hz3_s65_dtor_inbox_update_max(_Atomic(uint64_t)* max_value, uint64_t value) {
+    uint64_t old = atomic_load_explicit(max_value, memory_order_relaxed);
+    while (old < value &&
+           !atomic_compare_exchange_weak_explicit(max_value, &old, value,
+                                                  memory_order_relaxed,
+                                                  memory_order_relaxed)) {
+    }
+}
+
+static uint64_t hz3_s65_dtor_inbox_sc_bytes(int sc, uint64_t objs) {
+    return objs * (uint64_t)hz3_sc_to_size(sc);
+}
+
+static void hz3_s65_dtor_inbox_dump(void) {
+    uint64_t calls = atomic_load_explicit(&g_s65_dtor_inbox_calls, memory_order_relaxed);
+    uint64_t nonempty_calls =
+        atomic_load_explicit(&g_s65_dtor_inbox_nonempty_calls, memory_order_relaxed);
+    uint64_t total_before = 0;
+    uint64_t total_drained = 0;
+    uint64_t total_after = 0;
+    uint64_t total_before_bytes = 0;
+    uint64_t total_drained_bytes = 0;
+    uint64_t total_after_bytes = 0;
+
+    for (int sc = 0; sc < HZ3_NUM_SC; sc++) {
+        uint64_t before =
+            atomic_load_explicit(&g_s65_dtor_inbox_before_objs[sc], memory_order_relaxed);
+        uint64_t drained =
+            atomic_load_explicit(&g_s65_dtor_inbox_drained_objs[sc], memory_order_relaxed);
+        uint64_t after =
+            atomic_load_explicit(&g_s65_dtor_inbox_after_objs[sc], memory_order_relaxed);
+        total_before += before;
+        total_drained += drained;
+        total_after += after;
+        total_before_bytes += hz3_s65_dtor_inbox_sc_bytes(sc, before);
+        total_drained_bytes += hz3_s65_dtor_inbox_sc_bytes(sc, drained);
+        total_after_bytes += hz3_s65_dtor_inbox_sc_bytes(sc, after);
+    }
+
+    if (calls == 0 && total_before == 0 && total_drained == 0 && total_after == 0) {
+        return;
+    }
+
+    fprintf(stderr,
+            "[HZ3_S65_DTOR_INBOX] calls=%" PRIu64 " nonempty_calls=%" PRIu64
+            " before=%" PRIu64 " before_bytes=%" PRIu64
+            " drained=%" PRIu64 " drained_bytes=%" PRIu64
+            " after=%" PRIu64 " after_bytes=%" PRIu64
+            " max_before=%" PRIu64 " max_after=%" PRIu64
+            " drain_to_central=%d reclaim_after_drain=%d\n",
+            calls,
+            nonempty_calls,
+            total_before,
+            total_before_bytes,
+            total_drained,
+            total_drained_bytes,
+            total_after,
+            total_after_bytes,
+            atomic_load_explicit(&g_s65_dtor_inbox_max_before_objs, memory_order_relaxed),
+            atomic_load_explicit(&g_s65_dtor_inbox_max_after_objs, memory_order_relaxed),
+            HZ3_S65_DTOR_DRAIN_INBOX_TO_CENTRAL,
+            HZ3_S65_DTOR_RECLAIM_AFTER_INBOX_DRAIN);
+
+    fprintf(stderr, "  by_sc:");
+    int printed = 0;
+    for (int sc = 0; sc < HZ3_NUM_SC; sc++) {
+        uint64_t before =
+            atomic_load_explicit(&g_s65_dtor_inbox_before_objs[sc], memory_order_relaxed);
+        uint64_t drained =
+            atomic_load_explicit(&g_s65_dtor_inbox_drained_objs[sc], memory_order_relaxed);
+        uint64_t after =
+            atomic_load_explicit(&g_s65_dtor_inbox_after_objs[sc], memory_order_relaxed);
+        if (before > 0 || drained > 0 || after > 0) {
+            fprintf(stderr,
+                    " sc%d=%" PRIu64 "b/%" PRIu64 "d/%" PRIu64 "a",
+                    sc,
+                    before,
+                    drained,
+                    after);
+            printed = 1;
+        }
+    }
+    if (!printed) {
+        fprintf(stderr, " none");
+    }
+    fprintf(stderr, "\n");
+}
+
+static void hz3_s65_dtor_inbox_register_once(void) {
+    atexit(hz3_s65_dtor_inbox_dump);
+}
+#endif  // HZ3_S65_STATS
+
+static void hz3_s65_dtor_inbox_probe(uint8_t shard) {
+    if (shard >= HZ3_NUM_SHARDS) {
+        return;
+    }
+
+#if HZ3_S65_STATS
+    pthread_once(&g_s65_dtor_inbox_once, hz3_s65_dtor_inbox_register_once);
+    atomic_fetch_add_explicit(&g_s65_dtor_inbox_calls, 1, memory_order_relaxed);
+#endif
+
+    uint64_t call_before = 0;
+    uint64_t call_after = 0;
+    for (int sc = 0; sc < HZ3_NUM_SC; sc++) {
+        uint32_t before = hz3_inbox_count_approx(shard, sc);
+        uint32_t drained = 0;
+#if HZ3_S65_DTOR_DRAIN_INBOX_TO_CENTRAL
+        if (before > 0) {
+            drained = hz3_inbox_drain_to_central(shard, sc);
+        }
+#endif
+        uint32_t after = hz3_inbox_count_approx(shard, sc);
+
+        call_before += before;
+        call_after += after;
+#if HZ3_S65_STATS
+        if (before > 0) {
+            atomic_fetch_add_explicit(&g_s65_dtor_inbox_before_objs[sc],
+                                      (uint64_t)before,
+                                      memory_order_relaxed);
+        }
+        if (drained > 0) {
+            atomic_fetch_add_explicit(&g_s65_dtor_inbox_drained_objs[sc],
+                                      (uint64_t)drained,
+                                      memory_order_relaxed);
+        }
+        if (after > 0) {
+            atomic_fetch_add_explicit(&g_s65_dtor_inbox_after_objs[sc],
+                                      (uint64_t)after,
+                                      memory_order_relaxed);
+        }
+#else
+        (void)drained;
+#endif
+    }
+
+#if HZ3_S65_STATS
+    if (call_before > 0) {
+        atomic_fetch_add_explicit(&g_s65_dtor_inbox_nonempty_calls, 1, memory_order_relaxed);
+    }
+    hz3_s65_dtor_inbox_update_max(&g_s65_dtor_inbox_max_before_objs, call_before);
+    hz3_s65_dtor_inbox_update_max(&g_s65_dtor_inbox_max_after_objs, call_after);
+#endif
+}
+#endif  // HZ3_S65_STATS || HZ3_S65_DTOR_DRAIN_INBOX_TO_CENTRAL
 
 // ============================================================================
 // S203: Alloc Slow Counters (Medium) - TLS Version
@@ -94,9 +262,17 @@ static _Thread_local uint64_t t_s203_s236n_bulk_calls = 0;
 static _Thread_local uint64_t t_s203_s236n_bulk_inbox_extra_objs = 0;
 static _Thread_local uint64_t t_s203_s236n_bulk_central_extra_objs = 0;
 static _Thread_local uint64_t t_s203_s236n_bulk_zero_extra = 0;
+static _Thread_local uint64_t t_s203_s65_cold_calls = 0;
+static _Thread_local uint64_t t_s203_s65_cold_hits = 0;
+static _Thread_local uint64_t t_s203_s65_cold_misses = 0;
+static _Thread_local uint64_t t_s203_s65_cold_miss_to_segment = 0;
 static _Thread_local uint64_t t_s203_alloc_slow_from_inbox_sc[HZ3_NUM_SC];
 static _Thread_local uint64_t t_s203_alloc_slow_from_central_sc[HZ3_NUM_SC];
 static _Thread_local uint64_t t_s203_alloc_slow_from_segment_sc[HZ3_NUM_SC];
+static _Thread_local uint64_t t_s203_s65_cold_calls_sc[HZ3_NUM_SC];
+static _Thread_local uint64_t t_s203_s65_cold_hits_sc[HZ3_NUM_SC];
+static _Thread_local uint64_t t_s203_s65_cold_misses_sc[HZ3_NUM_SC];
+static _Thread_local uint64_t t_s203_s65_cold_miss_to_segment_sc[HZ3_NUM_SC];
 
 HZ3_DTOR_STAT(g_s203_alloc_slow_calls);
 HZ3_DTOR_STAT(g_s203_alloc_slow_from_inbox);
@@ -129,9 +305,17 @@ HZ3_DTOR_STAT(g_s203_s236n_bulk_calls);
 HZ3_DTOR_STAT(g_s203_s236n_bulk_inbox_extra_objs);
 HZ3_DTOR_STAT(g_s203_s236n_bulk_central_extra_objs);
 HZ3_DTOR_STAT(g_s203_s236n_bulk_zero_extra);
+HZ3_DTOR_STAT(g_s203_s65_cold_calls);
+HZ3_DTOR_STAT(g_s203_s65_cold_hits);
+HZ3_DTOR_STAT(g_s203_s65_cold_misses);
+HZ3_DTOR_STAT(g_s203_s65_cold_miss_to_segment);
 static _Atomic uint64_t g_s203_alloc_slow_from_inbox_sc[HZ3_NUM_SC];
 static _Atomic uint64_t g_s203_alloc_slow_from_central_sc[HZ3_NUM_SC];
 static _Atomic uint64_t g_s203_alloc_slow_from_segment_sc[HZ3_NUM_SC];
+static _Atomic uint64_t g_s203_s65_cold_calls_sc[HZ3_NUM_SC];
+static _Atomic uint64_t g_s203_s65_cold_hits_sc[HZ3_NUM_SC];
+static _Atomic uint64_t g_s203_s65_cold_misses_sc[HZ3_NUM_SC];
+static _Atomic uint64_t g_s203_s65_cold_miss_to_segment_sc[HZ3_NUM_SC];
 HZ3_DTOR_ATEXIT_FLAG(g_s203_alloc);
 
 // Extern flush functions from other modules
@@ -198,6 +382,14 @@ void hz3_s203_flush_tls(void) {
                       t_s203_s236n_bulk_central_extra_objs);
     HZ3_DTOR_STAT_ADD(g_s203_s236n_bulk_zero_extra,
                       t_s203_s236n_bulk_zero_extra);
+    HZ3_DTOR_STAT_ADD(g_s203_s65_cold_calls,
+                      t_s203_s65_cold_calls);
+    HZ3_DTOR_STAT_ADD(g_s203_s65_cold_hits,
+                      t_s203_s65_cold_hits);
+    HZ3_DTOR_STAT_ADD(g_s203_s65_cold_misses,
+                      t_s203_s65_cold_misses);
+    HZ3_DTOR_STAT_ADD(g_s203_s65_cold_miss_to_segment,
+                      t_s203_s65_cold_miss_to_segment);
     for (uint32_t sc = 0; sc < (uint32_t)HZ3_NUM_SC; sc++) {
         atomic_fetch_add_explicit(&g_s203_alloc_slow_from_inbox_sc[sc],
                                   t_s203_alloc_slow_from_inbox_sc[sc],
@@ -207,6 +399,18 @@ void hz3_s203_flush_tls(void) {
                                   memory_order_relaxed);
         atomic_fetch_add_explicit(&g_s203_alloc_slow_from_segment_sc[sc],
                                   t_s203_alloc_slow_from_segment_sc[sc],
+                                  memory_order_relaxed);
+        atomic_fetch_add_explicit(&g_s203_s65_cold_calls_sc[sc],
+                                  t_s203_s65_cold_calls_sc[sc],
+                                  memory_order_relaxed);
+        atomic_fetch_add_explicit(&g_s203_s65_cold_hits_sc[sc],
+                                  t_s203_s65_cold_hits_sc[sc],
+                                  memory_order_relaxed);
+        atomic_fetch_add_explicit(&g_s203_s65_cold_misses_sc[sc],
+                                  t_s203_s65_cold_misses_sc[sc],
+                                  memory_order_relaxed);
+        atomic_fetch_add_explicit(&g_s203_s65_cold_miss_to_segment_sc[sc],
+                                  t_s203_s65_cold_miss_to_segment_sc[sc],
                                   memory_order_relaxed);
     }
     
@@ -300,6 +504,14 @@ static void hz3_s203_alloc_atexit_dump(void) {
                 HZ3_DTOR_STAT_LOAD(g_s203_s236n_bulk_central_extra_objs),
                 HZ3_DTOR_STAT_LOAD(g_s203_s236n_bulk_zero_extra));
     }
+    if (HZ3_DTOR_STAT_LOAD(g_s203_s65_cold_calls) > 0) {
+        fprintf(stderr,
+                "[HZ3_S203_S65_COLD] calls=%u hits=%u misses=%u miss_to_segment=%u\n",
+                HZ3_DTOR_STAT_LOAD(g_s203_s65_cold_calls),
+                HZ3_DTOR_STAT_LOAD(g_s203_s65_cold_hits),
+                HZ3_DTOR_STAT_LOAD(g_s203_s65_cold_misses),
+                HZ3_DTOR_STAT_LOAD(g_s203_s65_cold_miss_to_segment));
+    }
     for (uint32_t sc = 0; sc < (uint32_t)HZ3_NUM_SC; sc++) {
         uint64_t from_inbox =
             atomic_load_explicit(&g_s203_alloc_slow_from_inbox_sc[sc], memory_order_relaxed);
@@ -329,6 +541,29 @@ static void hz3_s203_alloc_atexit_dump(void) {
                 (unsigned long long)from_central,
                 (unsigned long long)from_segment);
     }
+    for (uint32_t sc = 0; sc < (uint32_t)HZ3_NUM_SC; sc++) {
+        uint64_t cold_calls =
+            atomic_load_explicit(&g_s203_s65_cold_calls_sc[sc], memory_order_relaxed);
+        uint64_t cold_hits =
+            atomic_load_explicit(&g_s203_s65_cold_hits_sc[sc], memory_order_relaxed);
+        uint64_t cold_misses =
+            atomic_load_explicit(&g_s203_s65_cold_misses_sc[sc], memory_order_relaxed);
+        uint64_t cold_miss_to_segment =
+            atomic_load_explicit(&g_s203_s65_cold_miss_to_segment_sc[sc], memory_order_relaxed);
+        if (cold_calls == 0 &&
+            cold_hits == 0 &&
+            cold_misses == 0 &&
+            cold_miss_to_segment == 0) {
+            continue;
+        }
+        fprintf(stderr,
+                "[HZ3_S203_S65_COLD_SC] sc=%u calls=%llu hits=%llu misses=%llu miss_to_segment=%llu\n",
+                sc,
+                (unsigned long long)cold_calls,
+                (unsigned long long)cold_hits,
+                (unsigned long long)cold_misses,
+                (unsigned long long)cold_miss_to_segment);
+    }
     for (int b = 0; b < 4; b++) {
         if (inbox_band[b] == 0 && central_band[b] == 0 && segment_band[b] == 0) {
             continue;
@@ -345,12 +580,44 @@ static void hz3_s203_alloc_atexit_dump(void) {
 #define S203_ALLOC_INC(name) (t_s203_##name++)
 #define S203_ALLOC_ADD(name, value) (t_s203_##name += (uint64_t)(value))
 #define S203_ALLOC_INC_SC(src, sc) (t_s203_alloc_slow_from_##src##_sc[(sc)]++)
+#define S203_ALLOC_S65_COLD_CALL(sc) do {                     \
+    uint32_t s203_sc_ = (uint32_t)(sc);                       \
+    t_s203_s65_cold_calls++;                                  \
+    if (s203_sc_ < (uint32_t)HZ3_NUM_SC) {                    \
+        t_s203_s65_cold_calls_sc[s203_sc_]++;                 \
+    }                                                         \
+} while (0)
+#define S203_ALLOC_S65_COLD_HIT(sc) do {                      \
+    uint32_t s203_sc_ = (uint32_t)(sc);                       \
+    t_s203_s65_cold_hits++;                                   \
+    if (s203_sc_ < (uint32_t)HZ3_NUM_SC) {                    \
+        t_s203_s65_cold_hits_sc[s203_sc_]++;                  \
+    }                                                         \
+} while (0)
+#define S203_ALLOC_S65_COLD_MISS(sc) do {                     \
+    uint32_t s203_sc_ = (uint32_t)(sc);                       \
+    t_s203_s65_cold_misses++;                                 \
+    if (s203_sc_ < (uint32_t)HZ3_NUM_SC) {                    \
+        t_s203_s65_cold_misses_sc[s203_sc_]++;                \
+    }                                                         \
+} while (0)
+#define S203_ALLOC_S65_COLD_MISS_TO_SEGMENT(sc) do {          \
+    uint32_t s203_sc_ = (uint32_t)(sc);                       \
+    t_s203_s65_cold_miss_to_segment++;                        \
+    if (s203_sc_ < (uint32_t)HZ3_NUM_SC) {                    \
+        t_s203_s65_cold_miss_to_segment_sc[s203_sc_]++;       \
+    }                                                         \
+} while (0)
 // Hook for thread dtor (need to find where hz3_tcache_fini is defined/used)
 #else
 #define S203_ALLOC_REGISTER() ((void)0)
 #define S203_ALLOC_INC(name) ((void)0)
 #define S203_ALLOC_ADD(name, value) ((void)0)
 #define S203_ALLOC_INC_SC(src, sc) ((void)0)
+#define S203_ALLOC_S65_COLD_CALL(sc) ((void)0)
+#define S203_ALLOC_S65_COLD_HIT(sc) ((void)0)
+#define S203_ALLOC_S65_COLD_MISS(sc) ((void)0)
+#define S203_ALLOC_S65_COLD_MISS_TO_SEGMENT(sc) ((void)0)
 void hz3_s203_flush_tls(void) {}
 #endif
 
@@ -454,9 +721,17 @@ _Atomic uint32_t g_shard_counter = 0;
 // Detect shard collisions (multiple threads concurrently assigned same shard id).
 static _Atomic int g_shard_collision_detected = 0;
 static _Atomic uint32_t g_shard_live_count[HZ3_NUM_SHARDS] = {0};
+static _Atomic uint8_t g_shard_exiting[HZ3_NUM_SHARDS] = {0};
 #if HZ3_SHARD_COLLISION_SHOT
 _Atomic int g_shard_collision_shot_fired = 0;
 #endif
+
+static inline void hz3_shard_exiting_store(uint8_t shard, uint8_t value) {
+    if (shard >= HZ3_NUM_SHARDS) {
+        return;
+    }
+    atomic_store_explicit(&g_shard_exiting[shard], value, memory_order_release);
+}
 
 // Day 5: Thread exit cleanup via pthread_key
 pthread_key_t g_hz3_tcache_key;
@@ -586,6 +861,10 @@ static void hz3_tcache_destructor(void* arg) {
     if (!arg) return;
     if (!t_hz3_cache.initialized) return;
 
+#if HZ3_S65_EXITING_INBOX_TO_CENTRAL && HZ3_S65_EXITING_MARK_AT_DTOR_START
+    hz3_shard_exiting_store(t_hz3_cache.my_shard, 1);
+#endif
+
 #if HZ3_S204_LARSON_DIAG
     t_s204_in_dtor = true;
 #endif
@@ -603,6 +882,9 @@ static void hz3_tcache_destructor(void* arg) {
 #endif
 #if HZ3_S220_CPU_RRQ && HZ3_S220_CPU_RRQ_STATS
     hz3_s220_rrq_flush_tls();
+#endif
+#if HZ3_S240_LARGE_FRONT_CACHE
+    hz3_large_s240_tls_flush();
 #endif
 
 // Remote path detection for S65/S62 guard
@@ -757,6 +1039,16 @@ static void hz3_tcache_destructor(void* arg) {
     }
 #endif
 
+#if HZ3_S65_STATS || HZ3_S65_DTOR_DRAIN_INBOX_TO_CENTRAL
+    hz3_s65_dtor_inbox_probe((uint8_t)t_hz3_cache.my_shard);
+#endif
+#if HZ3_S65_DTOR_RECLAIM_AFTER_INBOX_DRAIN && HZ3_S65_MEDIUM_RECLAIM
+    hz3_s65_medium_reclaim_tick();
+#endif
+#if HZ3_S65_EXITING_INBOX_TO_CENTRAL && !HZ3_S65_EXITING_MARK_AT_DTOR_START
+    hz3_shard_exiting_store(t_hz3_cache.my_shard, 1);
+#endif
+
     // =========================================================================
     // S62 Remote Guard: Skip S62 when remote paths (xfer/stash) are enabled
     // =========================================================================
@@ -827,6 +1119,16 @@ static void hz3_tcache_destructor(void* arg) {
             hz3_lane_free(t_hz3_cache.lane);
         }
         t_hz3_cache.lane = NULL;
+    }
+#endif
+
+#if (HZ3_S65_STATS || HZ3_S65_DTOR_DRAIN_INBOX_TO_CENTRAL) && \
+    HZ3_S65_DTOR_FINAL_INBOX_DRAIN_ROUNDS > 0
+    for (int round = 0; round < HZ3_S65_DTOR_FINAL_INBOX_DRAIN_ROUNDS; round++) {
+        hz3_s65_dtor_inbox_probe((uint8_t)t_hz3_cache.my_shard);
+#if HZ3_S65_DTOR_FINAL_RECLAIM_AFTER_DRAIN && HZ3_S65_MEDIUM_RECLAIM
+        hz3_s65_medium_reclaim_tick();
+#endif
     }
 #endif
 
@@ -922,6 +1224,9 @@ void hz3_tcache_ensure_init_slow(void) {
     }
 
     t_hz3_cache.my_shard = shard;
+    if (prev_live == 0) {
+        hz3_shard_exiting_store(shard, 0);
+    }
 #if HZ3_TLS_INIT_LOG || HZ3_TLS_INIT_FAILFAST
     {
         static _Atomic(uint32_t) g_tls_init_count = 0;
@@ -1134,6 +1439,13 @@ uint32_t hz3_shard_live_count(uint8_t shard) {
         return 0;
     }
     return atomic_load_explicit(&g_shard_live_count[shard], memory_order_acquire);
+}
+
+int hz3_shard_is_exiting(uint8_t shard) {
+    if (shard >= HZ3_NUM_SHARDS) {
+        return 0;
+    }
+    return atomic_load_explicit(&g_shard_exiting[shard], memory_order_acquire) != 0;
 }
 
 #if HZ3_S209_MEDIUM_OWNER_RESCUE_STRONG || HZ3_S210_MEDIUM_OWNER_RESCUE_LITE

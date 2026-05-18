@@ -4,6 +4,7 @@
 
 #include "hz3_hook_link.h"
 #include "hz3.h"
+#include "hz3_config.h"
 #include "hz3_large.h"
 #include "hz3_sc.h"
 #include "hz3_types.h"
@@ -79,7 +80,8 @@ static BOOL CALLBACK hz3_hook_init_cb(PINIT_ONCE once, PVOID param, PVOID* conte
     g_hz3_hook_enabled = hz3_win_env_flag("HZ3_HOOK_ENABLE", 1);
     g_hz3_hook_failfast = hz3_win_env_flag("HZ3_HOOK_FAILFAST", 1);
     g_hz3_hook_log_shot = hz3_win_env_flag("HZ3_HOOK_LOG_SHOT", 0);
-    g_hz3_hook_page_medium_aligned = hz3_win_env_flag("HZ3_PAGE_MEDIUM_ALIGNED", 0);
+    g_hz3_hook_page_medium_aligned =
+        hz3_win_env_flag("HZ3_PAGE_MEDIUM_ALIGNED", HZ3_PAGE_MEDIUM_ALIGNED_DEFAULT ? 1 : 0);
 
     hz3_hook_resolve_crt();
 

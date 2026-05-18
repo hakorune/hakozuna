@@ -572,6 +572,7 @@ static inline void hz3_tcache_ensure_init(void) {
 // Shard collision indicator (threads > shards)
 int hz3_shard_collision_detected(void);
 uint32_t hz3_shard_live_count(uint8_t shard);
+int hz3_shard_is_exiting(uint8_t shard);
 
 // Get bin for size class (assumes initialized)
 #if HZ3_PTAG_DSTBIN_ENABLE

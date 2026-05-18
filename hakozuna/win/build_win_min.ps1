@@ -9,7 +9,9 @@ param(
     [switch]$TlsInitFailfast,
     [switch]$SmallSlowStats,
     [switch]$ArenaFailShot,
-    [switch]$OomShot
+    [switch]$OomShot,
+    [string]$Profile = "",
+    [string]$ArenaSize = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -37,6 +39,98 @@ function Invoke-Checked {
     & $Exe @ArgList | Out-Null
     if ($LASTEXITCODE -ne 0) {
         throw "$Exe failed with exit code $LASTEXITCODE"
+    }
+}
+
+$KnownProfiles = @(
+    "legacy",
+    "speed-default",
+    "rss-first",
+    "rss-experimental",
+    "unsafe-repro-s260",
+    "custom"
+)
+
+$ResolvedProfile = $Profile
+if (-not $ResolvedProfile) {
+    $ResolvedProfile = if ($Minimal) { "legacy" } else { "speed-default" }
+}
+if ($KnownProfiles -notcontains $ResolvedProfile) {
+    throw "Unknown HZ3 profile '$ResolvedProfile'. Expected one of: $($KnownProfiles -join ', ')"
+}
+
+$ResolvedArenaSize = $ArenaSize
+if (-not $ResolvedArenaSize) {
+    $ResolvedArenaSize = if ($ResolvedProfile -in @("speed-default", "rss-first", "rss-experimental", "unsafe-repro-s260")) {
+        "0x200000000ULL"
+    } else {
+        "0x1000000000ULL"
+    }
+}
+
+function Get-Hz3ProfileDefines {
+    param([string]$Name)
+
+    $speedDefault = @(
+        "HZ3_PAGE_MEDIUM_ALIGNED_DEFAULT=1",
+        "HZ3_S65_CENTRAL_COLD_ENABLE=1",
+        "HZ3_S65_CENTRAL_COLD_EXTERNAL_LIST_ENABLE=1",
+        "HZ3_S65_CENTRAL_COLD_DECOMMIT_ENABLE=1",
+        "HZ3_S65_CENTRAL_COLD_DECOMMIT_COMMITTED_RESERVE_RUNS=64",
+        "HZ3_S65_DTOR_DRAIN_INBOX_TO_CENTRAL=1",
+        "HZ3_S65_DTOR_RECLAIM_AFTER_INBOX_DRAIN=1",
+        "HZ3_S65_DTOR_FINAL_INBOX_DRAIN_ROUNDS=2",
+        "HZ3_S65_DTOR_FINAL_RECLAIM_AFTER_DRAIN=1",
+        "HZ3_S65_EXITING_INBOX_TO_CENTRAL=1",
+        "HZ3_S65_EXITING_MARK_AT_DTOR_START=1",
+        "HZ3_S240_LARGE_OWNER_FRONT=1",
+        "HZ3_S240_LARGE_OWNER_FRONT_STATS=0",
+        "HZ3_S240_LARGE_FRONT_CACHE=1",
+        "HZ3_S240_LARGE_OWNER_INBOX=1",
+        "HZ3_S240_LARGE_FRONT_MAX_CLASS_BYTES=1048576",
+        "HZ3_S242_LARGE_DIRECT_SIDE_MAP=1",
+        "HZ3_S242_DIRECT_MAPLESS=1",
+        "HZ3_S242_DIRECT_MAPLESS_MAX_CLASS_BYTES=1048576",
+        "HZ3_S242_DIRECT_STATS=0",
+        "HZ3_S242_DIRECT_ENTRY_COUNT=0",
+        "HZ3_S246_LARGE_INBOX_TAKE_FIRST=1"
+    )
+
+    $mediumCounters = @(
+        "HZ3_S203_COUNTERS=1",
+        "HZ3_S203_ALLOC_SC=1",
+        "HZ3_S203_S65_COLD=1",
+        "HZ3_S203_S65_COLD_SC=1"
+    )
+
+    $targetedReclaim = @($mediumCounters + @(
+        "HZ3_S65_MEDIUM_RECLAIM_BUDGET_RUNS=4096",
+        "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM=1",
+        "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_SCALE=1",
+        "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_MAX_RUNS=4096",
+        "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_ALLOW_LIVE_EXITING=0"
+    ))
+
+    switch ($Name) {
+        "legacy" { return @() }
+        "custom" { return @() }
+        "speed-default" { return $speedDefault }
+        "unsafe-repro-s260" { return @($speedDefault + $targetedReclaim) }
+        "rss-first" {
+            return @($speedDefault + $targetedReclaim + @(
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_MIN_PAGES=1",
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_MAX_PAGES=2",
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_PAGE_MASK=0x00000006u"
+            ))
+        }
+        "rss-experimental" {
+            return @($speedDefault + $targetedReclaim + @(
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_MIN_PAGES=1",
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_MAX_PAGES=2",
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_PAGE_MASK=0x00000006u",
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_STRIDE=8"
+            ))
+        }
     }
 }
 
@@ -81,7 +175,7 @@ if ($Minimal) {
         "HZ3_REMOTE_STASH_SPARSE=1",
         "HZ3_SHARD_COLLISION_FAILFAST=1",
         "HZ3_SHARD_COLLISION_SHOT=1",
-        "HZ3_ARENA_SIZE=0x1000000000ULL",
+        "HZ3_ARENA_SIZE=$ResolvedArenaSize",
         "HZ3_S42_SMALL_XFER=1",
         "HZ3_S44_OWNER_STASH=1",
         "HZ3_S44_OWNER_STASH_FASTPOP=1",
@@ -101,6 +195,8 @@ if ($Minimal) {
         "HZ3_S142_XFER_LOCKFREE=1"
     )
 }
+
+$Defines += Get-Hz3ProfileDefines -Name $ResolvedProfile
 
 if ($MmanStats) {
     $Defines += "HZ3_WIN_MMAN_STATS=1"
@@ -176,3 +272,6 @@ $BenchOut = Join-Path $OutDir "bench_minimal.exe"
 Invoke-Checked $Cc ($CFlags + @($BenchSrc, $LibOut, "/link", "/out:$BenchOut"))
 
 Write-Host "Built: $BenchOut"
+Write-Host "Built: $LibOut"
+Write-Host "Profile: $ResolvedProfile"
+Write-Host "ArenaSize: $ResolvedArenaSize"

@@ -68,6 +68,186 @@
 #define HZ3_S184_LARGE_FREE_PRECHECK 0
 #endif
 
+// S240: LargeOwnerFront research lane.
+// Patch 1 is metadata/counter only: owner shard, large state, and size-class
+// observations are recorded without changing cache behavior.
+#ifndef HZ3_S240_LARGE_OWNER_FRONT
+#define HZ3_S240_LARGE_OWNER_FRONT 0
+#endif
+
+#ifndef HZ3_S240_LARGE_OWNER_FRONT_STATS
+#define HZ3_S240_LARGE_OWNER_FRONT_STATS HZ3_S240_LARGE_OWNER_FRONT
+#endif
+
+// S240 Patch 2: per-thread large front cache for owner-local reuse.
+// Remote owner inbox remains a later stage.
+#ifndef HZ3_S240_LARGE_FRONT_CACHE
+#define HZ3_S240_LARGE_FRONT_CACHE 0
+#endif
+
+#ifndef HZ3_S240_LARGE_FRONT_MAX_NODES_PER_SC
+#define HZ3_S240_LARGE_FRONT_MAX_NODES_PER_SC 8
+#endif
+
+#ifndef HZ3_S240_LARGE_FRONT_MAX_BYTES_PER_THREAD
+#define HZ3_S240_LARGE_FRONT_MAX_BYTES_PER_THREAD (2ULL << 20)
+#endif
+
+#ifndef HZ3_S240_LARGE_FRONT_MAX_CLASS_BYTES
+#define HZ3_S240_LARGE_FRONT_MAX_CLASS_BYTES (128ULL << 10)
+#endif
+
+// S240 Patch 3: owner-shard large remote-free inbox.
+// Remote frees can hand cached large blocks back to the allocation owner.
+// The owner drains a small batch into the TLS front cache before touching the
+// global large cache.  This is research-only and disabled by default.
+#ifndef HZ3_S240_LARGE_OWNER_INBOX
+#define HZ3_S240_LARGE_OWNER_INBOX 0
+#endif
+
+#ifndef HZ3_S240_LARGE_INBOX_DRAIN_BATCH
+#define HZ3_S240_LARGE_INBOX_DRAIN_BATCH 8
+#endif
+
+#ifndef HZ3_S240_LARGE_INBOX_MAX_NODES_PER_SC
+#define HZ3_S240_LARGE_INBOX_MAX_NODES_PER_SC 64
+#endif
+
+#ifndef HZ3_S240_LARGE_INBOX_MAX_BYTES_PER_SC
+#define HZ3_S240_LARGE_INBOX_MAX_BYTES_PER_SC (8ULL << 20)
+#endif
+
+#ifndef HZ3_S240_LARGE_INBOX_DTOR_SPIN_LIMIT
+#define HZ3_S240_LARGE_INBOX_DTOR_SPIN_LIMIT 100000
+#endif
+
+// S245: bounded batch pop for owner large inbox drain.
+// This keeps the same drain limit and caps as S240, but detaches up to N inbox
+// nodes with one CAS instead of one CAS per object.
+#ifndef HZ3_S245_LARGE_INBOX_BATCH_POP
+#define HZ3_S245_LARGE_INBOX_BATCH_POP 0
+#endif
+
+#if HZ3_S245_LARGE_INBOX_BATCH_POP && !HZ3_S240_LARGE_OWNER_INBOX
+#error "HZ3_S245_LARGE_INBOX_BATCH_POP requires HZ3_S240_LARGE_OWNER_INBOX"
+#endif
+
+// S246: return the first owner-inbox drain object directly to allocation.
+// Extra drained nodes still refill the TLS front cache.
+#ifndef HZ3_S246_LARGE_INBOX_TAKE_FIRST
+#define HZ3_S246_LARGE_INBOX_TAKE_FIRST 0
+#endif
+
+#if HZ3_S246_LARGE_INBOX_TAKE_FIRST && !HZ3_S240_LARGE_OWNER_INBOX
+#error "HZ3_S246_LARGE_INBOX_TAKE_FIRST requires HZ3_S240_LARGE_OWNER_INBOX"
+#endif
+
+#if HZ3_S246_LARGE_INBOX_TAKE_FIRST && HZ3_S245_LARGE_INBOX_BATCH_POP
+#error "HZ3_S246_LARGE_INBOX_TAKE_FIRST and HZ3_S245_LARGE_INBOX_BATCH_POP are separate probes"
+#endif
+
+// S242: shifted-pointer-safe large direct side-map prototype.
+// Shadow mode keeps the existing active hash map authoritative.  The side-map
+// is populated and checked only to measure hit rate and mismatch risk before
+// any future mapless fast path.
+#ifndef HZ3_S242_LARGE_DIRECT_SIDE_MAP
+#define HZ3_S242_LARGE_DIRECT_SIDE_MAP 0
+#endif
+
+#ifndef HZ3_S242_DIRECT_SHADOW
+#define HZ3_S242_DIRECT_SHADOW HZ3_S242_LARGE_DIRECT_SIDE_MAP
+#endif
+
+#ifndef HZ3_S242_DIRECT_MAPLESS
+#define HZ3_S242_DIRECT_MAPLESS 0
+#endif
+
+#ifndef HZ3_S242_DIRECT_MAPLESS_MAX_CLASS_BYTES
+#define HZ3_S242_DIRECT_MAPLESS_MAX_CLASS_BYTES HZ3_S240_LARGE_FRONT_MAX_CLASS_BYTES
+#endif
+
+#ifndef HZ3_S242_DIRECT_STATS
+#define HZ3_S242_DIRECT_STATS HZ3_S242_LARGE_DIRECT_SIDE_MAP
+#endif
+
+#ifndef HZ3_S242_DIRECT_ENTRY_COUNT
+#define HZ3_S242_DIRECT_ENTRY_COUNT HZ3_S242_DIRECT_STATS
+#endif
+
+#ifndef HZ3_S242_DIRECT_SET_BITS
+#define HZ3_S242_DIRECT_SET_BITS 14
+#endif
+
+#ifndef HZ3_S242_DIRECT_WAYS
+#define HZ3_S242_DIRECT_WAYS 4
+#endif
+
+#if HZ3_S242_LARGE_DIRECT_SIDE_MAP && !HZ3_S240_LARGE_OWNER_FRONT
+#error "HZ3_S242_LARGE_DIRECT_SIDE_MAP requires HZ3_S240_LARGE_OWNER_FRONT metadata"
+#endif
+
+#if HZ3_S242_DIRECT_MAPLESS && !HZ3_S242_LARGE_DIRECT_SIDE_MAP
+#error "HZ3_S242_DIRECT_MAPLESS requires HZ3_S242_LARGE_DIRECT_SIDE_MAP"
+#endif
+
+#if HZ3_S242_LARGE_DIRECT_SIDE_MAP && (HZ3_S242_DIRECT_SET_BITS < 4 || HZ3_S242_DIRECT_SET_BITS > 20)
+#error "HZ3_S242_DIRECT_SET_BITS must be between 4 and 20"
+#endif
+
+#if HZ3_S242_LARGE_DIRECT_SIDE_MAP && (HZ3_S242_DIRECT_WAYS < 1 || HZ3_S242_DIRECT_WAYS > 16)
+#error "HZ3_S242_DIRECT_WAYS must be between 1 and 16"
+#endif
+
+// S243: residual large fast-path cost probe.
+// Observation-only lane used after S240/S242 to split the remaining fixed cost
+// into front pop, owner inbox drain/push, activation, and global fallback.
+#ifndef HZ3_S243_LARGE_RESIDUAL_OBS
+#define HZ3_S243_LARGE_RESIDUAL_OBS 0
+#endif
+
+#if HZ3_S243_LARGE_RESIDUAL_OBS && !HZ3_LARGE_ALIGNED_OBS
+#error "HZ3_S243_LARGE_RESIDUAL_OBS requires HZ3_LARGE_ALIGNED_OBS"
+#endif
+
+// S251: large owner-front container safety probe.
+// Observation/debug lane for S250 high-band work.  It validates the durable
+// container state transitions around ACTIVE/FREEING/FRONT/REMOTE/GLOBAL.
+#ifndef HZ3_S251_LARGE_OWNER_FRONT_SAFETY
+#define HZ3_S251_LARGE_OWNER_FRONT_SAFETY 0
+#endif
+
+#ifndef HZ3_S251_LARGE_OWNER_FRONT_FAILFAST
+#define HZ3_S251_LARGE_OWNER_FRONT_FAILFAST 0
+#endif
+
+#if HZ3_S251_LARGE_OWNER_FRONT_SAFETY && !HZ3_S240_LARGE_OWNER_FRONT
+#error "HZ3_S251_LARGE_OWNER_FRONT_SAFETY requires HZ3_S240_LARGE_OWNER_FRONT"
+#endif
+
+#if HZ3_S251_LARGE_OWNER_FRONT_SAFETY && !HZ3_S240_LARGE_OWNER_FRONT_STATS
+#error "HZ3_S251_LARGE_OWNER_FRONT_SAFETY requires HZ3_S240_LARGE_OWNER_FRONT_STATS"
+#endif
+
+// S253: RSS retention observation lane for S252 high-band owner-front policy.
+//
+// This is diagnostic-only. It mirrors the S252 speed lane but emits retained
+// byte inventory for front cache, owner inbox, global large scache, and caps.
+#ifndef HZ3_S253_LARGE_RSS_RETENTION_OBS
+#define HZ3_S253_LARGE_RSS_RETENTION_OBS 0
+#endif
+
+#if HZ3_S253_LARGE_RSS_RETENTION_OBS && !HZ3_S240_LARGE_OWNER_FRONT_STATS
+#error "HZ3_S253_LARGE_RSS_RETENTION_OBS requires HZ3_S240_LARGE_OWNER_FRONT_STATS"
+#endif
+
+#if HZ3_S253_LARGE_RSS_RETENTION_OBS && !HZ3_S240_LARGE_FRONT_CACHE
+#error "HZ3_S253_LARGE_RSS_RETENTION_OBS requires HZ3_S240_LARGE_FRONT_CACHE"
+#endif
+
+#if HZ3_S253_LARGE_RSS_RETENTION_OBS && !HZ3_S240_LARGE_OWNER_INBOX
+#error "HZ3_S253_LARGE_RSS_RETENTION_OBS requires HZ3_S240_LARGE_OWNER_INBOX"
+#endif
+
 // S185: batch munmap on large-cache eviction path.
 // 0=legacy per-victim unlock/munmap/relock, 1=batch victims then munmap outside lock.
 #ifndef HZ3_S185_LARGE_EVICT_MUNMAP_BATCH

@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 #include <stdatomic.h>
+#include <inttypes.h>
 
 #if HZ3_S65_RELEASE_BOUNDARY
 
@@ -274,10 +275,10 @@ void hz3_s65_release_boundary_dump_stats(void) {
     uint64_t reason_sub4k = atomic_load_explicit(&g_s65_boundary_reason_sub4k, memory_order_relaxed);
     uint64_t reason_medium = atomic_load_explicit(&g_s65_boundary_reason_medium, memory_order_relaxed);
 
-    fprintf(stderr, "[HZ3_S65_BOUNDARY] calls=%lu pages=%lu\n", calls, pages);
-    fprintf(stderr, "  fail: page0=%lu magic=%lu kind=%lu range=%lu\n",
+    fprintf(stderr, "[HZ3_S65_BOUNDARY] calls=%" PRIu64 " pages=%" PRIu64 "\n", calls, pages);
+    fprintf(stderr, "  fail: page0=%" PRIu64 " magic=%" PRIu64 " kind=%" PRIu64 " range=%" PRIu64 "\n",
             fail_page0, fail_magic, fail_kind, fail_range);
-    fprintf(stderr, "  reason: small=%lu sub4k=%lu medium=%lu\n",
+    fprintf(stderr, "  reason: small=%" PRIu64 " sub4k=%" PRIu64 " medium=%" PRIu64 "\n",
             reason_small, reason_sub4k, reason_medium);
 #endif
 }

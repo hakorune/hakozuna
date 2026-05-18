@@ -48,6 +48,36 @@ uint32_t hz3_central_count_snapshot(int shard, int sc);
 // Returns 1 if likely non-empty, 0 if empty/invalid.
 int hz3_central_has_supply(int shard, int sc);
 
+#if HZ3_S65_CENTRAL_COLD_ENABLE
+// Cold central is an opt-in S65 research quarantine for already-purged medium
+// runs. It is only consumed after hot central misses.
+void hz3_central_cold_push_list(int shard, int sc, void* head, void* tail, uint32_t n);
+int hz3_central_cold_pop_batch(int shard, int sc, void** out, int want);
+uint32_t hz3_central_cold_count_snapshot(int shard, int sc);
+#else
+static inline void hz3_central_cold_push_list(int shard, int sc, void* head, void* tail, uint32_t n) {
+    (void)shard;
+    (void)sc;
+    (void)head;
+    (void)tail;
+    (void)n;
+}
+
+static inline int hz3_central_cold_pop_batch(int shard, int sc, void** out, int want) {
+    (void)shard;
+    (void)sc;
+    (void)out;
+    (void)want;
+    return 0;
+}
+
+static inline uint32_t hz3_central_cold_count_snapshot(int shard, int sc) {
+    (void)shard;
+    (void)sc;
+    return 0;
+}
+#endif
+
 #if HZ3_S189_MEDIUM_TRANSFERCACHE
 // S189: transfer cache API (sc-limited by config)
 int hz3_central_xfer_pop_batch(int shard, int sc, void** out, int want);

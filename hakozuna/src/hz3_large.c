@@ -7,6 +7,7 @@
 #include "hz3_oom.h"
 #include "hz3_watch_ptr.h"
 #include "hz3_platform.h"
+#include "hz3_tcache.h"
 
 #include <stdatomic.h>
 #include <stdio.h>
@@ -25,6 +26,7 @@
 #define HZ3_LARGE_HASH_SIZE (1u << HZ3_LARGE_HASH_BITS)
 
 static inline size_t hz3_large_user_offset(void);
+static inline int hz3_large_os_munmap(void* base, size_t bytes);
 
 static Hz3LargeHdr* g_hz3_large_buckets[HZ3_LARGE_HASH_SIZE];
 static hz3_lock_t g_hz3_large_map_locks[HZ3_S181_LARGE_MAP_LOCK_STRIPES] = {
@@ -115,6 +117,24 @@ static size_t g_total_cached_bytes = 0;  // 全体の cached bytes
 // Relaxed hint for free-path precheck (S184). Real admission is still checked under lock.
 static _Atomic size_t g_total_cached_bytes_hint = 0;
 #endif
+#if HZ3_S253_LARGE_RSS_RETENTION_OBS
+static _Atomic size_t g_s253_global_cached_bytes_peak = 0;
+
+static inline void hz3_s253_update_global_cached_peak(size_t value) {
+    size_t cur = atomic_load_explicit(&g_s253_global_cached_bytes_peak,
+                                      memory_order_relaxed);
+    while (value > cur) {
+        if (atomic_compare_exchange_weak_explicit(
+                &g_s253_global_cached_bytes_peak,
+                &cur,
+                value,
+                memory_order_relaxed,
+                memory_order_relaxed)) {
+            break;
+        }
+    }
+}
+#endif
 #if HZ3_S207_TARGETED_REUSE
 static _Atomic uint16_t g_sc_reuse_credit[HZ3_LARGE_SC_COUNT];
 #endif
@@ -136,10 +156,17 @@ static inline size_t hz3_large_total_cached_load(void) {
 }
 
 static inline void hz3_large_total_cached_add(size_t bytes) {
+    size_t current;
 #if HZ3_S183_LARGE_CLASS_LOCK_SPLIT
-    atomic_fetch_add_explicit(&g_total_cached_bytes, bytes, memory_order_relaxed);
+    current = atomic_fetch_add_explicit(&g_total_cached_bytes,
+                                        bytes,
+                                        memory_order_relaxed) + bytes;
 #else
     g_total_cached_bytes += bytes;
+    current = g_total_cached_bytes;
+#endif
+#if HZ3_S253_LARGE_RSS_RETENTION_OBS
+    hz3_s253_update_global_cached_peak(current);
 #endif
 #if HZ3_S184_LARGE_FREE_PRECHECK
     atomic_fetch_add_explicit(&g_total_cached_bytes_hint, bytes, memory_order_relaxed);
@@ -303,6 +330,7 @@ static Hz3LargeHdr* hz3_large_s218_c1_batch_mmap_alloc(size_t req_size,
     hdr->next = NULL;
     hdr->in_use = 1;
     hdr->next_free = NULL;
+    hz3_large_s240_on_activate(hdr, sc, 0);
 #if HZ3_LARGE_CANARY_ENABLE
     hz3_large_debug_write_canary(hdr);
 #endif
@@ -328,6 +356,7 @@ static Hz3LargeHdr* hz3_large_s218_c1_batch_mmap_alloc(size_t req_size,
         extra->next = NULL;
         extra->in_use = 0;
         extra->next_free = NULL;
+        hz3_large_s240_on_cache_seed(extra, sc);
 #if HZ3_LARGE_CANARY_ENABLE
         hz3_large_debug_write_canary(extra);
 #endif
@@ -340,6 +369,7 @@ static Hz3LargeHdr* hz3_large_s218_c1_batch_mmap_alloc(size_t req_size,
             can_cache = hz3_large_reuse_try_admit_locked(sc);
         }
         if (can_cache) {
+            hz3_large_s240_on_cache_store(extra, sc);
             hz3_large_sc_push_head(sc, extra);
             cached_blocks++;
         } else {
@@ -413,6 +443,91 @@ void* hz3_large_alloc(size_t size) {
         int try_sc = sc;
         Hz3LargeHdr* hdr = NULL;
 
+#if HZ3_S240_LARGE_FRONT_CACHE
+        hdr = hz3_large_s240_front_pop(sc, class_size);
+        if (hdr) {
+            hz3_large_stats_on_alloc_cache_hit();
+#if HZ3_LARGE_CANARY_ENABLE
+            if (!hz3_large_debug_check_canary_cache(hdr, 0)) {
+                hz3_large_debug_on_munmap_locked(hdr);
+                hz3_large_os_munmap(hdr->map_base, hdr->map_size);
+                goto cache_miss_alloc;
+            }
+#endif
+            hdr->user_ptr = (char*)hdr->map_base + offset;
+            hdr->in_use = 1;
+            hdr->req_size = size;
+            hdr->next_free = NULL;
+            hz3_large_s240_on_activate(hdr, sc, 1);
+#if HZ3_LARGE_CANARY_ENABLE
+            hz3_large_debug_write_canary(hdr);
+#endif
+            hz3_large_insert(hdr);
+#if HZ3_WATCH_PTR_BOX
+            hz3_watch_ptr_on_alloc("large_alloc_front", hdr->user_ptr, -1, -1);
+#endif
+            return hdr->user_ptr;
+        }
+#if HZ3_S240_LARGE_OWNER_INBOX
+#if HZ3_S246_LARGE_INBOX_TAKE_FIRST
+        hdr = hz3_large_s246_inbox_drain_current_take_first_to_front(
+            sc, (int)HZ3_S240_LARGE_INBOX_DRAIN_BATCH, NULL);
+        if (hdr) {
+            hz3_large_stats_on_alloc_cache_hit();
+#if HZ3_LARGE_CANARY_ENABLE
+            if (!hz3_large_debug_check_canary_cache(hdr, 0)) {
+                hz3_large_debug_on_munmap_locked(hdr);
+                hz3_large_os_munmap(hdr->map_base, hdr->map_size);
+                goto cache_miss_alloc;
+            }
+#endif
+            hdr->user_ptr = (char*)hdr->map_base + offset;
+            hdr->in_use = 1;
+            hdr->req_size = size;
+            hdr->next_free = NULL;
+            hz3_large_s240_on_activate(hdr, sc, 1);
+#if HZ3_LARGE_CANARY_ENABLE
+            hz3_large_debug_write_canary(hdr);
+#endif
+            hz3_large_insert(hdr);
+#if HZ3_WATCH_PTR_BOX
+            hz3_watch_ptr_on_alloc("large_alloc_inbox_take_first", hdr->user_ptr, -1, -1);
+#endif
+            return hdr->user_ptr;
+        }
+#else
+        hz3_large_s240_inbox_drain_current_to_front(
+            sc, (int)HZ3_S240_LARGE_INBOX_DRAIN_BATCH);
+        hdr = hz3_large_s240_front_pop(sc, class_size);
+        if (hdr) {
+            hz3_large_stats_on_alloc_cache_hit();
+#if HZ3_LARGE_CANARY_ENABLE
+            if (!hz3_large_debug_check_canary_cache(hdr, 0)) {
+                hz3_large_debug_on_munmap_locked(hdr);
+                hz3_large_os_munmap(hdr->map_base, hdr->map_size);
+                goto cache_miss_alloc;
+            }
+#endif
+            hdr->user_ptr = (char*)hdr->map_base + offset;
+            hdr->in_use = 1;
+            hdr->req_size = size;
+            hdr->next_free = NULL;
+            hz3_large_s240_on_activate(hdr, sc, 1);
+#if HZ3_LARGE_CANARY_ENABLE
+            hz3_large_debug_write_canary(hdr);
+#endif
+            hz3_large_insert(hdr);
+#if HZ3_WATCH_PTR_BOX
+            hz3_watch_ptr_on_alloc("large_alloc_inbox_front", hdr->user_ptr, -1, -1);
+#endif
+            return hdr->user_ptr;
+        }
+#endif
+#endif
+#endif
+
+        size_t obs_cache_pop_start_ns = hz3_large_aligned_obs_timing_start();
+
 #if HZ3_S183_LARGE_CLASS_LOCK_SPLIT
 #if HZ3_S52_LARGE_BESTFIT
         // S52: best-fit fallback (sc → sc+1 → sc+2)
@@ -451,9 +566,11 @@ void* hz3_large_alloc(size_t size) {
 #endif
         hz3_large_cache_lock_release();
 #endif
+        hz3_large_aligned_obs_on_alloc_cache_pop_elapsed(obs_cache_pop_start_ns);
 
         if (hdr) {
             hz3_large_stats_on_alloc_cache_hit();
+            hz3_large_s251_on_global_pop(hdr);
 #if HZ3_LARGE_CANARY_ENABLE
             if (!hz3_large_debug_check_canary_cache(hdr, 0)) {
                 hz3_large_debug_on_munmap_locked(hdr);
@@ -465,6 +582,7 @@ void* hz3_large_alloc(size_t size) {
             hdr->in_use = 1;
             hdr->req_size = size;
             hdr->next_free = NULL;
+            hz3_large_s240_on_activate(hdr, try_sc, 1);
 #if HZ3_LARGE_CANARY_ENABLE
             hz3_large_debug_write_canary(hdr);
 #endif
@@ -504,9 +622,11 @@ cache_miss_alloc:
             }
             g_hz3_large_cached_bytes -= cur->map_size;
             g_hz3_large_cached_nodes--;
+            hz3_large_s251_on_global_pop(cur);
             cur->in_use = 1;
             cur->req_size = size;
             cur->next_free = NULL;
+            hz3_large_s240_on_activate(cur, hz3_large_sc(cur->map_size), 1);
             hz3_large_cache_lock_release();
 
             // bucket に再挿入（usable_size 等で参照される）
@@ -547,6 +667,7 @@ cache_miss_alloc:
         hdr->in_use = 1;
         hdr->next_free = NULL;
 #endif
+        hz3_large_s240_on_activate(hdr, sc, 0);
     }
 
 #if HZ3_LARGE_CANARY_ENABLE
@@ -611,6 +732,121 @@ void* hz3_large_aligned_alloc(size_t alignment, size_t size) {
         int try_sc = sc;
         Hz3LargeHdr* hdr = NULL;
 
+#if HZ3_S240_LARGE_FRONT_CACHE
+        size_t s243_front_first_start_ns = hz3_s243_residual_timing_start();
+        hdr = hz3_large_s240_front_pop(sc, class_size);
+        hz3_s243_residual_on_alloc_front_first_elapsed(
+            s243_front_first_start_ns, hdr != NULL);
+        if (hdr) {
+            hz3_large_stats_on_alloc_cache_hit();
+            hz3_large_aligned_obs_on_aligned_cache_hit();
+#if HZ3_LARGE_CANARY_ENABLE
+            if (!hz3_large_debug_check_canary_cache(hdr, 1)) {
+                hz3_large_debug_on_munmap_locked(hdr);
+                hz3_large_os_munmap(hdr->map_base, hdr->map_size);
+                goto cache_miss_aligned;
+            }
+#endif
+            size_t s243_activate_start_ns = hz3_s243_residual_timing_start();
+            uintptr_t start = (uintptr_t)hdr->map_base + offset;
+            uintptr_t user = (start + pad) & ~(uintptr_t)pad;
+            hdr->in_use = 1;
+            hdr->req_size = size;
+            hdr->user_ptr = (void*)user;
+            hdr->next_free = NULL;
+            hz3_large_s240_on_activate(hdr, sc, 1);
+#if HZ3_LARGE_CANARY_ENABLE
+            hz3_large_debug_write_canary(hdr);
+#endif
+            hz3_large_insert(hdr);
+            hz3_s243_residual_on_alloc_activate_front_elapsed(s243_activate_start_ns);
+#if HZ3_WATCH_PTR_BOX
+            hz3_watch_ptr_on_alloc("large_aligned_front", hdr->user_ptr, -1, -1);
+#endif
+            return hdr->user_ptr;
+        }
+#if HZ3_S240_LARGE_OWNER_INBOX
+        size_t s243_drain_start_ns = hz3_s243_residual_timing_start();
+#if HZ3_S246_LARGE_INBOX_TAKE_FIRST
+        int s243_drained = 0;
+        hdr = hz3_large_s246_inbox_drain_current_take_first_to_front(
+            sc, (int)HZ3_S240_LARGE_INBOX_DRAIN_BATCH, &s243_drained);
+        hz3_s243_residual_on_alloc_inbox_drain_elapsed(
+            s243_drain_start_ns, s243_drained);
+        size_t s243_front_after_drain_start_ns = hz3_s243_residual_timing_start();
+        hz3_s243_residual_on_alloc_front_after_drain_elapsed(
+            s243_front_after_drain_start_ns, hdr != NULL);
+        if (hdr) {
+            hz3_large_stats_on_alloc_cache_hit();
+            hz3_large_aligned_obs_on_aligned_cache_hit();
+#if HZ3_LARGE_CANARY_ENABLE
+            if (!hz3_large_debug_check_canary_cache(hdr, 1)) {
+                hz3_large_debug_on_munmap_locked(hdr);
+                hz3_large_os_munmap(hdr->map_base, hdr->map_size);
+                goto cache_miss_aligned;
+            }
+#endif
+            size_t s243_activate_start_ns = hz3_s243_residual_timing_start();
+            uintptr_t start = (uintptr_t)hdr->map_base + offset;
+            uintptr_t user = (start + pad) & ~(uintptr_t)pad;
+            hdr->in_use = 1;
+            hdr->req_size = size;
+            hdr->user_ptr = (void*)user;
+            hdr->next_free = NULL;
+            hz3_large_s240_on_activate(hdr, sc, 1);
+#if HZ3_LARGE_CANARY_ENABLE
+            hz3_large_debug_write_canary(hdr);
+#endif
+            hz3_large_insert(hdr);
+            hz3_s243_residual_on_alloc_activate_inbox_front_elapsed(s243_activate_start_ns);
+#if HZ3_WATCH_PTR_BOX
+            hz3_watch_ptr_on_alloc("large_aligned_inbox_take_first", hdr->user_ptr, -1, -1);
+#endif
+            return hdr->user_ptr;
+        }
+#else
+        int s243_drained = hz3_large_s240_inbox_drain_current_to_front(
+            sc, (int)HZ3_S240_LARGE_INBOX_DRAIN_BATCH);
+        hz3_s243_residual_on_alloc_inbox_drain_elapsed(
+            s243_drain_start_ns, s243_drained);
+        size_t s243_front_after_drain_start_ns = hz3_s243_residual_timing_start();
+        hdr = hz3_large_s240_front_pop(sc, class_size);
+        hz3_s243_residual_on_alloc_front_after_drain_elapsed(
+            s243_front_after_drain_start_ns, hdr != NULL);
+        if (hdr) {
+            hz3_large_stats_on_alloc_cache_hit();
+            hz3_large_aligned_obs_on_aligned_cache_hit();
+#if HZ3_LARGE_CANARY_ENABLE
+            if (!hz3_large_debug_check_canary_cache(hdr, 1)) {
+                hz3_large_debug_on_munmap_locked(hdr);
+                hz3_large_os_munmap(hdr->map_base, hdr->map_size);
+                goto cache_miss_aligned;
+            }
+#endif
+            size_t s243_activate_start_ns = hz3_s243_residual_timing_start();
+            uintptr_t start = (uintptr_t)hdr->map_base + offset;
+            uintptr_t user = (start + pad) & ~(uintptr_t)pad;
+            hdr->in_use = 1;
+            hdr->req_size = size;
+            hdr->user_ptr = (void*)user;
+            hdr->next_free = NULL;
+            hz3_large_s240_on_activate(hdr, sc, 1);
+#if HZ3_LARGE_CANARY_ENABLE
+            hz3_large_debug_write_canary(hdr);
+#endif
+            hz3_large_insert(hdr);
+            hz3_s243_residual_on_alloc_activate_inbox_front_elapsed(s243_activate_start_ns);
+#if HZ3_WATCH_PTR_BOX
+            hz3_watch_ptr_on_alloc("large_aligned_inbox_front", hdr->user_ptr, -1, -1);
+#endif
+            return hdr->user_ptr;
+        }
+#endif
+#endif
+#endif
+
+        size_t obs_cache_pop_start_ns = hz3_large_aligned_obs_timing_start();
+
 #if HZ3_S183_LARGE_CLASS_LOCK_SPLIT
 #if HZ3_S52_LARGE_BESTFIT
         // S52: best-fit fallback (sc → sc+1 → ...), aligned_alloc でも同じ方針
@@ -649,10 +885,12 @@ void* hz3_large_aligned_alloc(size_t alignment, size_t size) {
 #endif
         hz3_large_cache_lock_release();
 #endif
+        hz3_large_aligned_obs_on_alloc_cache_pop_elapsed(obs_cache_pop_start_ns);
 
         if (hdr) {
             hz3_large_stats_on_alloc_cache_hit();
             hz3_large_aligned_obs_on_aligned_cache_hit();
+            hz3_large_s251_on_global_pop(hdr);
 #if HZ3_LARGE_CANARY_ENABLE
             if (!hz3_large_debug_check_canary_cache(hdr, 1)) {
                 hz3_large_debug_on_munmap_locked(hdr);
@@ -660,6 +898,7 @@ void* hz3_large_aligned_alloc(size_t alignment, size_t size) {
                 goto cache_miss_aligned;
             }
 #endif
+            size_t s243_activate_start_ns = hz3_s243_residual_timing_start();
             // recalculate user_ptr for new alignment
             uintptr_t start = (uintptr_t)hdr->map_base + offset;
             uintptr_t user = (start + pad) & ~(uintptr_t)pad;
@@ -667,10 +906,12 @@ void* hz3_large_aligned_alloc(size_t alignment, size_t size) {
             hdr->req_size = size;
             hdr->user_ptr = (void*)user;
             hdr->next_free = NULL;
+            hz3_large_s240_on_activate(hdr, try_sc, 1);
 #if HZ3_LARGE_CANARY_ENABLE
             hz3_large_debug_write_canary(hdr);
 #endif
             hz3_large_insert(hdr);
+            hz3_s243_residual_on_alloc_global_cache_hit_elapsed(s243_activate_start_ns);
 #if HZ3_WATCH_PTR_BOX
             hz3_watch_ptr_on_alloc("large_aligned_cache", hdr->user_ptr, -1, -1);
 #endif
@@ -720,12 +961,15 @@ cache_miss_aligned:
         hdr->in_use = 1;
         hdr->next_free = NULL;
 #endif
+        hz3_large_s240_on_activate(hdr, sc, 0);
     }
 
+    size_t s243_mmap_activate_start_ns = hz3_s243_residual_timing_start();
 #if HZ3_LARGE_CANARY_ENABLE
     hz3_large_debug_write_canary(hdr);
 #endif
     hz3_large_insert(hdr);
+    hz3_s243_residual_on_alloc_mmap_activate_elapsed(s243_mmap_activate_start_ns);
 #if HZ3_WATCH_PTR_BOX
     hz3_watch_ptr_on_alloc("large_aligned_mmap", hdr->user_ptr, -1, -1);
 #endif
@@ -737,13 +981,20 @@ int hz3_large_free(void* ptr) {
         return 0;
     }
 
+    size_t s243_free_total_start_ns = hz3_s243_residual_timing_start();
+    size_t s243_free_take_start_ns = hz3_s243_residual_timing_start();
     Hz3LargeHdr* hdr = hz3_large_take(ptr);
+    hz3_s243_residual_on_free_take_elapsed(s243_free_take_start_ns, hdr != NULL);
     if (!hdr) {
+        hz3_s243_residual_on_free_total_elapsed(s243_free_total_start_ns);
         return 0;
     }
     hz3_large_aligned_obs_on_free(hdr);
     hz3_large_cache_stats_dump();
     hz3_large_stats_on_free_call();
+    size_t obs_free_admit_start_ns = hz3_large_aligned_obs_timing_start();
+    size_t s243_free_fallback_start_ns = 0;
+    int s243_free_fallback_active = 0;
 #if HZ3_WATCH_PTR_BOX
     hz3_watch_ptr_on_free("large_free", ptr, -1, -1);
 #endif
@@ -756,15 +1007,65 @@ int hz3_large_free(void* ptr) {
     // Safety: validate hdr before accessing map_size
     if (hdr->magic != HZ3_LARGE_MAGIC || hdr->map_size == 0) {
         hz3_large_aligned_obs_on_admit_invalid();
+        if (!s243_free_fallback_active) {
+            s243_free_fallback_start_ns = hz3_s243_residual_timing_start();
+            s243_free_fallback_active = 1;
+        }
         goto do_munmap;
     }
 
     int sc = hz3_large_sc(hdr->map_size);
+    size_t s243_free_meta_start_ns = hz3_s243_residual_timing_start();
+    hz3_large_s240_on_free_take(hdr, sc);
+    hz3_s243_residual_on_free_s240_meta_elapsed(s243_free_meta_start_ns);
 
     // >64MB はキャッシュ対象外（巨大ブロックで cap を食い潰すのを防ぐ）
     if (sc < 0 || sc >= HZ3_LARGE_SC_COUNT - 1) {
         hz3_large_aligned_obs_on_admit_oversize();
+        if (!s243_free_fallback_active) {
+            s243_free_fallback_start_ns = hz3_s243_residual_timing_start();
+            s243_free_fallback_active = 1;
+        }
         goto do_munmap;
+    }
+
+#if HZ3_S240_LARGE_FRONT_CACHE
+    uint8_t s240_cur_owner = hz3_large_s240_current_owner();
+    if (hdr->owner_shard != UINT8_MAX && hdr->owner_shard == s240_cur_owner) {
+        hdr->in_use = 0;
+        hdr->next = NULL;
+        size_t s243_front_push_start_ns = hz3_s243_residual_timing_start();
+        int s243_front_pushed = hz3_large_s240_front_push(sc, hdr);
+        hz3_s243_residual_on_free_front_push_elapsed(
+            s243_front_push_start_ns, s243_front_pushed);
+        if (s243_front_pushed) {
+            hz3_large_stats_on_free_cached();
+            hz3_large_aligned_obs_on_admit_cache_insert();
+            hz3_large_aligned_obs_on_free_admit_elapsed(obs_free_admit_start_ns);
+            hz3_s243_residual_on_free_total_elapsed(s243_free_total_start_ns);
+            return 1;
+        }
+    }
+#if HZ3_S240_LARGE_OWNER_INBOX
+    if (hdr->owner_shard != UINT8_MAX && hdr->owner_shard != s240_cur_owner) {
+        size_t s243_inbox_push_start_ns = hz3_s243_residual_timing_start();
+        int s243_inbox_pushed = hz3_large_s240_inbox_push_remote(sc, hdr, s240_cur_owner);
+        hz3_s243_residual_on_free_inbox_push_elapsed(
+            s243_inbox_push_start_ns, s243_inbox_pushed);
+        if (s243_inbox_pushed) {
+            hz3_large_stats_on_free_cached();
+            hz3_large_aligned_obs_on_admit_cache_insert();
+            hz3_large_aligned_obs_on_free_admit_elapsed(obs_free_admit_start_ns);
+            hz3_s243_residual_on_free_total_elapsed(s243_free_total_start_ns);
+            return 1;
+        }
+    }
+#endif
+#endif
+
+    if (!s243_free_fallback_active) {
+        s243_free_fallback_start_ns = hz3_s243_residual_timing_start();
+        s243_free_fallback_active = 1;
     }
 
     // NOTE: If we apply madvise(MADV_DONTNEED) for the freed mapping, we MUST
@@ -912,10 +1213,14 @@ int hz3_large_free(void* ptr) {
                 if (hz3_large_total_cached_load() + hdr->map_size <= insert_cap) {
                     hdr->in_use = 0;
                     hdr->next = NULL;
+                    hz3_large_s240_on_cache_store(hdr, sc);
                     hz3_large_sc_push_head(sc, hdr);
                     hz3_large_stats_on_free_cached();
                     hz3_large_aligned_obs_on_admit_cache_insert();
                     hz3_large_cache_lock_release();
+                    hz3_large_aligned_obs_on_free_admit_elapsed(obs_free_admit_start_ns);
+                    hz3_s243_residual_on_free_fallback_global_elapsed(s243_free_fallback_start_ns);
+                    hz3_s243_residual_on_free_total_elapsed(s243_free_total_start_ns);
                     return 1;
                 }
                 hz3_large_aligned_obs_on_admit_final_fit_fail();
@@ -1080,10 +1385,14 @@ s53_done:
             }
             hdr->in_use = 0;
             hdr->next = NULL;
+            hz3_large_s240_on_cache_store(hdr, sc);
             hz3_large_sc_push_head(sc, hdr);
             hz3_large_stats_on_free_cached();
             hz3_large_aligned_obs_on_admit_cache_insert();
             hz3_large_cache_lock_release();
+            hz3_large_aligned_obs_on_free_admit_elapsed(obs_free_admit_start_ns);
+            hz3_s243_residual_on_free_fallback_global_elapsed(s243_free_fallback_start_ns);
+            hz3_s243_residual_on_free_total_elapsed(s243_free_total_start_ns);
             return 1;
         }
 
@@ -1101,6 +1410,7 @@ s53_done:
         // Cache に追加
         hdr->in_use = 0;
         hdr->next = NULL;           // bucket list から切断済み
+        hz3_large_s240_on_cache_store(hdr, hz3_large_sc(hdr->map_size));
         hdr->next_free = g_hz3_large_free_head;
         g_hz3_large_free_head = hdr;
         g_hz3_large_cached_bytes += hdr->map_size;
@@ -1108,6 +1418,9 @@ s53_done:
         hz3_large_stats_on_free_cached();
         hz3_large_aligned_obs_on_admit_cache_insert();
         hz3_large_cache_lock_release();
+        hz3_large_aligned_obs_on_free_admit_elapsed(obs_free_admit_start_ns);
+        hz3_s243_residual_on_free_fallback_global_elapsed(s243_free_fallback_start_ns);
+        hz3_s243_residual_on_free_total_elapsed(s243_free_total_start_ns);
         return 1;
     }
     hz3_large_cache_lock_release();
@@ -1117,13 +1430,21 @@ s53_done:
 #if HZ3_S50_LARGE_SCACHE && HZ3_LARGE_CACHE_ENABLE
 do_munmap:
 #endif
+    if (!s243_free_fallback_active) {
+        s243_free_fallback_start_ns = hz3_s243_residual_timing_start();
+        s243_free_fallback_active = 1;
+    }
     // Cache full または無効: munmap
     hz3_large_aligned_obs_on_admit_do_munmap();
     hz3_large_stats_on_free_munmap();
+    hz3_large_s240_on_munmap_store(hdr);
     hdr->magic = 0;
 #if HZ3_LARGE_CACHE_ENABLE && HZ3_S50_LARGE_SCACHE && HZ3_S212_LARGE_UNMAP_DEFER_PLUS
     if (hz3_large_try_defer_direct_unmap(hdr)) {
         hz3_large_aligned_obs_on_admit_defer_munmap();
+        hz3_large_aligned_obs_on_free_admit_elapsed(obs_free_admit_start_ns);
+        hz3_s243_residual_on_free_fallback_global_elapsed(s243_free_fallback_start_ns);
+        hz3_s243_residual_on_free_total_elapsed(s243_free_total_start_ns);
         return 1;
     }
 #endif
@@ -1131,6 +1452,9 @@ do_munmap:
     hz3_large_debug_on_munmap_locked(hdr);
     hz3_large_cache_lock_release();
     hz3_large_os_munmap(hdr->map_base, hdr->map_size);
+    hz3_large_aligned_obs_on_free_admit_elapsed(obs_free_admit_start_ns);
+    hz3_s243_residual_on_free_fallback_global_elapsed(s243_free_fallback_start_ns);
+    hz3_s243_residual_on_free_total_elapsed(s243_free_total_start_ns);
     return 1;
 }
 

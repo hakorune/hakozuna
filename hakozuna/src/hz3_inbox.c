@@ -7,15 +7,483 @@
 #include "hz3_arena.h"
 #include "hz3_segmap.h"
 #include "hz3_tag.h"
+#include "hz3_sc.h"
+#include "hz3_s65_medium_reclaim.h"
 
 #include <string.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <inttypes.h>
 
 // Global inbox pool (zero-initialized)
 Hz3Inbox g_hz3_inbox[HZ3_NUM_SHARDS][HZ3_NUM_SC];
 Hz3InboxMixed g_hz3_inbox_medium_mixed[HZ3_NUM_SHARDS];
+
+#if HZ3_S65_STATS
+static _Atomic(uint64_t) g_s65_inbox_push_objs[HZ3_NUM_SC];
+static _Atomic(uint64_t) g_s65_inbox_push_live_owner_objs[HZ3_NUM_SC];
+static _Atomic(uint64_t) g_s65_inbox_push_orphan_owner_objs[HZ3_NUM_SC];
+static _Atomic(uint64_t) g_s65_inbox_orphan_to_central_objs[HZ3_NUM_SC];
+static _Atomic(uint64_t) g_s65_inbox_live_to_central_objs[HZ3_NUM_SC];
+static _Atomic(uint64_t) g_s65_inbox_exiting_to_central_objs[HZ3_NUM_SC];
+static _Atomic(uint64_t) g_s65_inbox_drain_objs[HZ3_NUM_SC];
+static _Atomic(uint64_t) g_s65_inbox_current_objs[HZ3_NUM_SC];
+static _Atomic(uint64_t) g_s65_inbox_peak_objs[HZ3_NUM_SC];
+static pthread_once_t g_s65_inbox_stats_once = PTHREAD_ONCE_INIT;
+
+static void hz3_s65_inbox_update_peak(_Atomic(uint64_t)* peak, uint64_t value) {
+    uint64_t old = atomic_load_explicit(peak, memory_order_relaxed);
+    while (old < value &&
+           !atomic_compare_exchange_weak_explicit(peak, &old, value,
+                                                  memory_order_relaxed,
+                                                  memory_order_relaxed)) {
+    }
+}
+
+static void hz3_s65_inbox_add_current(int sc, uint64_t n) {
+    if (sc < 0 || sc >= HZ3_NUM_SC || n == 0) {
+        return;
+    }
+    uint64_t after = atomic_fetch_add_explicit(&g_s65_inbox_current_objs[sc], n, memory_order_relaxed) + n;
+    hz3_s65_inbox_update_peak(&g_s65_inbox_peak_objs[sc], after);
+}
+
+static void hz3_s65_inbox_sub_current(int sc, uint64_t n) {
+    if (sc < 0 || sc >= HZ3_NUM_SC || n == 0) {
+        return;
+    }
+    uint64_t old = atomic_load_explicit(&g_s65_inbox_current_objs[sc], memory_order_relaxed);
+    for (;;) {
+        uint64_t next = old > n ? old - n : 0;
+        if (atomic_compare_exchange_weak_explicit(&g_s65_inbox_current_objs[sc], &old, next,
+                                                  memory_order_relaxed,
+                                                  memory_order_relaxed)) {
+            return;
+        }
+    }
+}
+
+static void hz3_s65_inbox_note_push(int sc, uint64_t n) {
+    if (sc < 0 || sc >= HZ3_NUM_SC || n == 0) {
+        return;
+    }
+    atomic_fetch_add_explicit(&g_s65_inbox_push_objs[sc], n, memory_order_relaxed);
+    hz3_s65_inbox_add_current(sc, n);
+}
+
+static void hz3_s65_inbox_note_push_owner(uint8_t owner, int sc, uint64_t n) {
+    if (owner >= HZ3_NUM_SHARDS || sc < 0 || sc >= HZ3_NUM_SC || n == 0) {
+        return;
+    }
+    _Atomic(uint64_t)* counter = hz3_shard_live_count(owner) > 0
+        ? &g_s65_inbox_push_live_owner_objs[sc]
+        : &g_s65_inbox_push_orphan_owner_objs[sc];
+    atomic_fetch_add_explicit(counter, n, memory_order_relaxed);
+}
+
+static void hz3_s65_inbox_note_orphan_to_central(int sc, uint64_t n) {
+    if (sc < 0 || sc >= HZ3_NUM_SC || n == 0) {
+        return;
+    }
+    atomic_fetch_add_explicit(&g_s65_inbox_orphan_to_central_objs[sc],
+                              n,
+                              memory_order_relaxed);
+}
+
+static void hz3_s65_inbox_note_live_to_central(int sc, uint64_t n) {
+    if (sc < 0 || sc >= HZ3_NUM_SC || n == 0) {
+        return;
+    }
+    atomic_fetch_add_explicit(&g_s65_inbox_live_to_central_objs[sc],
+                              n,
+                              memory_order_relaxed);
+}
+
+static void hz3_s65_inbox_note_exiting_to_central(int sc, uint64_t n) {
+    if (sc < 0 || sc >= HZ3_NUM_SC || n == 0) {
+        return;
+    }
+    atomic_fetch_add_explicit(&g_s65_inbox_exiting_to_central_objs[sc],
+                              n,
+                              memory_order_relaxed);
+}
+
+static void hz3_s65_inbox_note_drain(int sc, uint64_t n) {
+    if (sc < 0 || sc >= HZ3_NUM_SC || n == 0) {
+        return;
+    }
+    atomic_fetch_add_explicit(&g_s65_inbox_drain_objs[sc], n, memory_order_relaxed);
+    hz3_s65_inbox_sub_current(sc, n);
+}
+
+static uint64_t hz3_s65_inbox_sc_bytes(int sc, uint64_t objs) {
+    return objs * (uint64_t)hz3_sc_to_size(sc);
+}
+
+static void hz3_s65_inbox_dump(void) {
+    uint64_t total_push = 0;
+    uint64_t total_drain = 0;
+    uint64_t total_current = 0;
+    uint64_t total_peak = 0;
+    uint64_t total_current_bytes = 0;
+    uint64_t total_peak_bytes = 0;
+    uint64_t total_push_live_owner = 0;
+    uint64_t total_push_orphan_owner = 0;
+    uint64_t total_orphan_to_central = 0;
+    uint64_t total_live_to_central = 0;
+    uint64_t total_exiting_to_central = 0;
+    uint64_t snapshot_current[HZ3_NUM_SC] = {0};
+    uint64_t live_snapshot_current[HZ3_NUM_SC] = {0};
+    uint64_t orphan_snapshot_current[HZ3_NUM_SC] = {0};
+    uint64_t snapshot_total_current = 0;
+    uint64_t snapshot_total_bytes = 0;
+    uint64_t live_snapshot_total_current = 0;
+    uint64_t live_snapshot_total_bytes = 0;
+    uint64_t orphan_snapshot_total_current = 0;
+    uint64_t orphan_snapshot_total_bytes = 0;
+    uint64_t mixed_snapshot_objs = 0;
+    uint64_t mixed_live_snapshot_objs = 0;
+    uint64_t mixed_orphan_snapshot_objs = 0;
+    uint64_t live_shards = 0;
+    uint64_t live_nonempty_shards = 0;
+    uint64_t orphan_nonempty_shards = 0;
+    uint8_t shard_live[HZ3_NUM_SHARDS] = {0};
+    uint8_t live_shard_nonempty[HZ3_NUM_SHARDS] = {0};
+    uint8_t orphan_shard_nonempty[HZ3_NUM_SHARDS] = {0};
+
+    for (int shard = 0; shard < HZ3_NUM_SHARDS; shard++) {
+        if (hz3_shard_live_count((uint8_t)shard) > 0) {
+            shard_live[shard] = 1;
+            live_shards++;
+        }
+    }
+
+    for (int sc = 0; sc < HZ3_NUM_SC; sc++) {
+        uint64_t push = atomic_load_explicit(&g_s65_inbox_push_objs[sc], memory_order_relaxed);
+        uint64_t live_push =
+            atomic_load_explicit(&g_s65_inbox_push_live_owner_objs[sc], memory_order_relaxed);
+        uint64_t orphan_push =
+            atomic_load_explicit(&g_s65_inbox_push_orphan_owner_objs[sc], memory_order_relaxed);
+        uint64_t orphan_to_central =
+            atomic_load_explicit(&g_s65_inbox_orphan_to_central_objs[sc], memory_order_relaxed);
+        uint64_t live_to_central =
+            atomic_load_explicit(&g_s65_inbox_live_to_central_objs[sc], memory_order_relaxed);
+        uint64_t exiting_to_central =
+            atomic_load_explicit(&g_s65_inbox_exiting_to_central_objs[sc], memory_order_relaxed);
+        uint64_t drain = atomic_load_explicit(&g_s65_inbox_drain_objs[sc], memory_order_relaxed);
+        uint64_t cur = atomic_load_explicit(&g_s65_inbox_current_objs[sc], memory_order_relaxed);
+        uint64_t peak = atomic_load_explicit(&g_s65_inbox_peak_objs[sc], memory_order_relaxed);
+        total_push += push;
+        total_push_live_owner += live_push;
+        total_push_orphan_owner += orphan_push;
+        total_orphan_to_central += orphan_to_central;
+        total_live_to_central += live_to_central;
+        total_exiting_to_central += exiting_to_central;
+        total_drain += drain;
+        total_current += cur;
+        total_peak += peak;
+        total_current_bytes += hz3_s65_inbox_sc_bytes(sc, cur);
+        total_peak_bytes += hz3_s65_inbox_sc_bytes(sc, peak);
+        for (int shard = 0; shard < HZ3_NUM_SHARDS; shard++) {
+            for (uint32_t lane = 0; lane < (uint32_t)HZ3_S195_MEDIUM_INBOX_SHARDS; lane++) {
+                uint64_t count =
+                    atomic_load_explicit(&g_hz3_inbox[shard][sc].count[lane], memory_order_relaxed);
+                snapshot_current[sc] += count;
+                if (count > 0) {
+                    if (shard_live[shard]) {
+                        live_snapshot_current[sc] += count;
+                        live_shard_nonempty[shard] = 1;
+                    } else {
+                        orphan_snapshot_current[sc] += count;
+                        orphan_shard_nonempty[shard] = 1;
+                    }
+                }
+            }
+        }
+        snapshot_total_current += snapshot_current[sc];
+        snapshot_total_bytes += hz3_s65_inbox_sc_bytes(sc, snapshot_current[sc]);
+        live_snapshot_total_current += live_snapshot_current[sc];
+        live_snapshot_total_bytes += hz3_s65_inbox_sc_bytes(sc, live_snapshot_current[sc]);
+        orphan_snapshot_total_current += orphan_snapshot_current[sc];
+        orphan_snapshot_total_bytes += hz3_s65_inbox_sc_bytes(sc, orphan_snapshot_current[sc]);
+    }
+
+    for (int shard = 0; shard < HZ3_NUM_SHARDS; shard++) {
+        for (uint32_t lane = 0; lane < (uint32_t)HZ3_S195_MEDIUM_INBOX_SHARDS; lane++) {
+            uint64_t count =
+                atomic_load_explicit(&g_hz3_inbox_medium_mixed[shard].count[lane],
+                                     memory_order_relaxed);
+            mixed_snapshot_objs += count;
+            if (count > 0) {
+                if (shard_live[shard]) {
+                    mixed_live_snapshot_objs += count;
+                    live_shard_nonempty[shard] = 1;
+                } else {
+                    mixed_orphan_snapshot_objs += count;
+                    orphan_shard_nonempty[shard] = 1;
+                }
+            }
+        }
+    }
+
+    for (int shard = 0; shard < HZ3_NUM_SHARDS; shard++) {
+        if (live_shard_nonempty[shard]) {
+            live_nonempty_shards++;
+        }
+        if (orphan_shard_nonempty[shard]) {
+            orphan_nonempty_shards++;
+        }
+    }
+
+    if (total_push == 0 && total_drain == 0 && total_current == 0 && total_peak == 0 &&
+        snapshot_total_current == 0 && mixed_snapshot_objs == 0 &&
+        total_orphan_to_central == 0 && total_live_to_central == 0 &&
+        total_exiting_to_central == 0) {
+        return;
+    }
+
+    fprintf(stderr,
+            "[HZ3_S65_INBOX] push=%" PRIu64 " drain=%" PRIu64
+            " current=%" PRIu64 " peak=%" PRIu64
+            " current_bytes=%" PRIu64 " peak_bytes=%" PRIu64
+            " snapshot_current=%" PRIu64 " snapshot_bytes=%" PRIu64
+            " mixed_snapshot=%" PRIu64 "\n",
+            total_push,
+            total_drain,
+            total_current,
+            total_peak,
+            total_current_bytes,
+            total_peak_bytes,
+            snapshot_total_current,
+            snapshot_total_bytes,
+            mixed_snapshot_objs);
+    fprintf(stderr, "  by_sc:");
+    int printed = 0;
+    for (int sc = 0; sc < HZ3_NUM_SC; sc++) {
+        uint64_t push = atomic_load_explicit(&g_s65_inbox_push_objs[sc], memory_order_relaxed);
+        uint64_t drain = atomic_load_explicit(&g_s65_inbox_drain_objs[sc], memory_order_relaxed);
+        uint64_t cur = atomic_load_explicit(&g_s65_inbox_current_objs[sc], memory_order_relaxed);
+        uint64_t peak = atomic_load_explicit(&g_s65_inbox_peak_objs[sc], memory_order_relaxed);
+        uint64_t snap = snapshot_current[sc];
+        if (push > 0 || drain > 0 || cur > 0 || peak > 0 || snap > 0) {
+            fprintf(stderr,
+                    " sc%d=%" PRIu64 "p/%" PRIu64 "d/%" PRIu64 "c/%" PRIu64 "k/%" PRIu64 "s",
+                    sc,
+                    push,
+                    drain,
+                    cur,
+                    peak,
+                    snap);
+            printed = 1;
+        }
+    }
+    if (!printed) {
+        fprintf(stderr, " none");
+    }
+    fprintf(stderr, "\n");
+
+    fprintf(stderr, "  bytes_by_sc:");
+    printed = 0;
+    for (int sc = 0; sc < HZ3_NUM_SC; sc++) {
+        uint64_t cur = atomic_load_explicit(&g_s65_inbox_current_objs[sc], memory_order_relaxed);
+        uint64_t peak = atomic_load_explicit(&g_s65_inbox_peak_objs[sc], memory_order_relaxed);
+        uint64_t snap = snapshot_current[sc];
+        if (cur > 0 || peak > 0 || snap > 0) {
+            fprintf(stderr,
+                    " sc%d=%" PRIu64 "cb/%" PRIu64 "kb/%" PRIu64 "sb",
+                    sc,
+                    hz3_s65_inbox_sc_bytes(sc, cur),
+                    hz3_s65_inbox_sc_bytes(sc, peak),
+                    hz3_s65_inbox_sc_bytes(sc, snap));
+            printed = 1;
+        }
+    }
+    if (!printed) {
+        fprintf(stderr, " none");
+    }
+    fprintf(stderr, "\n");
+
+    if (total_push_live_owner > 0 || total_push_orphan_owner > 0 ||
+        total_orphan_to_central > 0 || total_live_to_central > 0 ||
+        total_exiting_to_central > 0) {
+        fprintf(stderr,
+                "[HZ3_S65_INBOX_OWNER_PUSH] live_owner_push=%" PRIu64
+                " orphan_owner_push=%" PRIu64
+                " orphan_to_central=%" PRIu64
+                " live_to_central=%" PRIu64
+                " exiting_to_central=%" PRIu64 "\n",
+                total_push_live_owner,
+                total_push_orphan_owner,
+                total_orphan_to_central,
+                total_live_to_central,
+                total_exiting_to_central);
+        fprintf(stderr, "  owner_push_by_sc:");
+        printed = 0;
+        for (int sc = 0; sc < HZ3_NUM_SC; sc++) {
+            uint64_t live_push =
+                atomic_load_explicit(&g_s65_inbox_push_live_owner_objs[sc], memory_order_relaxed);
+            uint64_t orphan_push =
+                atomic_load_explicit(&g_s65_inbox_push_orphan_owner_objs[sc], memory_order_relaxed);
+            uint64_t orphan_to_central =
+                atomic_load_explicit(&g_s65_inbox_orphan_to_central_objs[sc],
+                                     memory_order_relaxed);
+            uint64_t live_to_central =
+                atomic_load_explicit(&g_s65_inbox_live_to_central_objs[sc],
+                                     memory_order_relaxed);
+            uint64_t exiting_to_central =
+                atomic_load_explicit(&g_s65_inbox_exiting_to_central_objs[sc],
+                                     memory_order_relaxed);
+            if (live_push > 0 || orphan_push > 0 || orphan_to_central > 0 ||
+                live_to_central > 0 || exiting_to_central > 0) {
+                fprintf(stderr,
+                        " sc%d=%" PRIu64 "live/%" PRIu64 "orphan/%" PRIu64
+                        "central/%" PRIu64 "live_central/%" PRIu64 "exiting_central",
+                        sc,
+                        live_push,
+                        orphan_push,
+                        orphan_to_central,
+                        live_to_central,
+                        exiting_to_central);
+                printed = 1;
+            }
+        }
+        if (!printed) {
+            fprintf(stderr, " none");
+        }
+        fprintf(stderr, "\n");
+    }
+
+    if (snapshot_total_current > 0 || mixed_snapshot_objs > 0) {
+        fprintf(stderr,
+                "[HZ3_S65_INBOX_OWNER_SNAPSHOT] live_shards=%" PRIu64
+                " live_nonempty_shards=%" PRIu64
+                " orphan_nonempty_shards=%" PRIu64
+                " live_objs=%" PRIu64 " live_bytes=%" PRIu64
+                " orphan_objs=%" PRIu64 " orphan_bytes=%" PRIu64
+                " mixed_live=%" PRIu64 " mixed_orphan=%" PRIu64 "\n",
+                live_shards,
+                live_nonempty_shards,
+                orphan_nonempty_shards,
+                live_snapshot_total_current,
+                live_snapshot_total_bytes,
+                orphan_snapshot_total_current,
+                orphan_snapshot_total_bytes,
+                mixed_live_snapshot_objs,
+                mixed_orphan_snapshot_objs);
+        fprintf(stderr, "  live_by_sc:");
+        printed = 0;
+        for (int sc = 0; sc < HZ3_NUM_SC; sc++) {
+            if (live_snapshot_current[sc] > 0) {
+                fprintf(stderr, " sc%d=%" PRIu64, sc, live_snapshot_current[sc]);
+                printed = 1;
+            }
+        }
+        if (!printed) {
+            fprintf(stderr, " none");
+        }
+        fprintf(stderr, "\n");
+
+        fprintf(stderr, "  orphan_by_sc:");
+        printed = 0;
+        for (int sc = 0; sc < HZ3_NUM_SC; sc++) {
+            if (orphan_snapshot_current[sc] > 0) {
+                fprintf(stderr, " sc%d=%" PRIu64, sc, orphan_snapshot_current[sc]);
+                printed = 1;
+            }
+        }
+        if (!printed) {
+            fprintf(stderr, " none");
+        }
+        fprintf(stderr, "\n");
+
+        fprintf(stderr, "  owner_bytes_by_sc:");
+        printed = 0;
+        for (int sc = 0; sc < HZ3_NUM_SC; sc++) {
+            if (live_snapshot_current[sc] > 0 || orphan_snapshot_current[sc] > 0) {
+                fprintf(stderr,
+                        " sc%d=%" PRIu64 "liveb/%" PRIu64 "orphanb",
+                        sc,
+                        hz3_s65_inbox_sc_bytes(sc, live_snapshot_current[sc]),
+                        hz3_s65_inbox_sc_bytes(sc, orphan_snapshot_current[sc]));
+                printed = 1;
+            }
+        }
+        if (!printed) {
+            fprintf(stderr, " none");
+        }
+        fprintf(stderr, "\n");
+    }
+}
+
+static void hz3_s65_inbox_register_once(void) {
+    atexit(hz3_s65_inbox_dump);
+}
+#else
+#define hz3_s65_inbox_note_push(sc, n) do { (void)(sc); (void)(n); } while (0)
+#define hz3_s65_inbox_note_push_owner(owner, sc, n) do { (void)(owner); (void)(sc); (void)(n); } while (0)
+#define hz3_s65_inbox_note_orphan_to_central(sc, n) do { (void)(sc); (void)(n); } while (0)
+#define hz3_s65_inbox_note_live_to_central(sc, n) do { (void)(sc); (void)(n); } while (0)
+#define hz3_s65_inbox_note_exiting_to_central(sc, n) do { (void)(sc); (void)(n); } while (0)
+#define hz3_s65_inbox_note_drain(sc, n) do { (void)(sc); (void)(n); } while (0)
+#endif
+
+#if HZ3_S65_INBOX_TO_CENTRAL_RECLAIM && HZ3_S65_MEDIUM_RECLAIM && \
+    HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_STRIDE > 1
+static _Atomic(uint64_t) g_s65_inbox_to_central_reclaim_stride_ticket;
+#endif
+
+static inline void hz3_s65_inbox_reclaim_after_to_central(uint8_t owner,
+                                                          int sc,
+                                                          uint32_t n,
+                                                          uint32_t owner_live_count) {
+#if HZ3_S65_INBOX_TO_CENTRAL_RECLAIM && HZ3_S65_MEDIUM_RECLAIM
+    if (owner >= HZ3_NUM_SHARDS || sc < 0 || sc >= HZ3_NUM_SC || n == 0) {
+        return;
+    }
+#if !HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_ALLOW_LIVE_EXITING
+    if (owner_live_count > 0) {
+        return;
+    }
+#else
+    (void)owner_live_count;
+#endif
+
+    size_t sc_pages = hz3_sc_to_pages(sc);
+    uint32_t sc_page_bit =
+        sc_pages < 32 ? (uint32_t)(1u << (uint32_t)sc_pages) : 0u;
+    if (sc_pages < (size_t)HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_MIN_PAGES ||
+        sc_pages > (size_t)HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_MAX_PAGES ||
+        (sc_page_bit & (uint32_t)HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_PAGE_MASK) == 0) {
+        return;
+    }
+
+#if HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_STRIDE > 1
+    uint64_t ticket = atomic_fetch_add_explicit(
+                          &g_s65_inbox_to_central_reclaim_stride_ticket,
+                          1,
+                          memory_order_relaxed) +
+                      1u;
+    if ((ticket % (uint64_t)HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_STRIDE) != 0) {
+        return;
+    }
+#endif
+
+    uint64_t budget = (uint64_t)n * (uint64_t)HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_SCALE;
+    if (budget > (uint64_t)HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_MAX_RUNS) {
+        budget = (uint64_t)HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_MAX_RUNS;
+    }
+    hz3_s65_medium_reclaim_shard_sc(owner,
+                                    sc,
+                                    (uint32_t)budget,
+                                    HZ3_S65_RECLAIM_REASON_INBOX_TO_CENTRAL);
+#else
+    (void)owner;
+    (void)sc;
+    (void)n;
+    (void)owner_live_count;
+#endif
+}
 
 static inline int hz3_s231_fast_sc_enabled(int sc) {
 #if HZ3_S231_INBOX_FAST_MPSC
@@ -407,6 +875,9 @@ static void hz3_inbox_do_init(void) {
 
 void hz3_inbox_init(void) {
     pthread_once(&g_hz3_inbox_once, hz3_inbox_do_init);
+#if HZ3_S65_STATS
+    pthread_once(&g_s65_inbox_stats_once, hz3_s65_inbox_register_once);
+#endif
 #if HZ3_S195_MEDIUM_INBOX_STATS
     pthread_once(&g_s195_stats_once, hz3_s195_stats_register);
 #endif
@@ -425,6 +896,53 @@ void hz3_inbox_push_list(uint8_t owner, int sc, void* head, void* tail, uint32_t
         uint32_t expect_bin = (uint32_t)hz3_bin_index_medium(sc);
         hz3_s82_stash_guard_list("inbox_push_list", head, expect_bin, HZ3_S82_STASH_GUARD_MAX_WALK);
     }
+#endif
+
+#if HZ3_S65_INBOX_TO_CENTRAL_MAX_LIVE_COUNT >= 0
+    {
+        uint32_t owner_live_count = hz3_shard_live_count(owner);
+        if (owner_live_count <= (uint32_t)HZ3_S65_INBOX_TO_CENTRAL_MAX_LIVE_COUNT) {
+            hz3_obj_set_next(tail, NULL);
+            if (owner_live_count == 0) {
+                hz3_s65_inbox_note_orphan_to_central(sc, (uint64_t)n);
+            } else {
+                hz3_s65_inbox_note_live_to_central(sc, (uint64_t)n);
+            }
+            hz3_central_push_list(owner, sc, head, tail, n);
+            hz3_s65_inbox_reclaim_after_to_central(owner, sc, n, owner_live_count);
+            return;
+        }
+    }
+#else
+    uint32_t owner_live_count = hz3_shard_live_count(owner);
+#if HZ3_S65_EXITING_INBOX_TO_CENTRAL
+    size_t owner_sc_pages = hz3_sc_to_pages(sc);
+    uint32_t owner_sc_page_bit =
+        owner_sc_pages < 32 ? (uint32_t)(1u << (uint32_t)owner_sc_pages) : 0u;
+    if (hz3_shard_is_exiting(owner) &&
+        owner_sc_pages >= (size_t)HZ3_S65_EXITING_INBOX_TO_CENTRAL_MIN_PAGES &&
+        owner_sc_pages <= (size_t)HZ3_S65_EXITING_INBOX_TO_CENTRAL_MAX_PAGES &&
+        (owner_sc_page_bit & (uint32_t)HZ3_S65_EXITING_INBOX_TO_CENTRAL_PAGE_MASK) != 0) {
+        hz3_obj_set_next(tail, NULL);
+        if (owner_live_count == 0) {
+            hz3_s65_inbox_note_orphan_to_central(sc, (uint64_t)n);
+        } else {
+            hz3_s65_inbox_note_exiting_to_central(sc, (uint64_t)n);
+        }
+        hz3_central_push_list(owner, sc, head, tail, n);
+        hz3_s65_inbox_reclaim_after_to_central(owner, sc, n, owner_live_count);
+        return;
+    }
+#endif
+#if HZ3_S65_ORPHAN_INBOX_TO_CENTRAL
+    if (owner_live_count == 0) {
+        hz3_obj_set_next(tail, NULL);
+        hz3_s65_inbox_note_orphan_to_central(sc, (uint64_t)n);
+        hz3_central_push_list(owner, sc, head, tail, n);
+        hz3_s65_inbox_reclaim_after_to_central(owner, sc, n, owner_live_count);
+        return;
+    }
+#endif
 #endif
 
     Hz3Inbox* inbox = &g_hz3_inbox[owner][sc];
@@ -468,6 +986,8 @@ void hz3_inbox_push_list(uint8_t owner, int sc, void* head, void* tail, uint32_t
 
 
     atomic_fetch_add_explicit(&inbox->count[lane], n, memory_order_relaxed);
+    hz3_s65_inbox_note_push(sc, (uint64_t)n);
+    hz3_s65_inbox_note_push_owner(owner, sc, (uint64_t)n);
 #if !(HZ3_S231_INBOX_FAST_MPSC && HZ3_S231_SKIP_PUSH_SEQ)
     atomic_fetch_add_explicit(&inbox->seq, 1, memory_order_release);
 #else
@@ -759,6 +1279,7 @@ void* hz3_inbox_drain(uint8_t shard, int sc, Hz3Bin* bin) {
     t_s203_inbox_drain_objs += drained_objs;
     t_s203_inbox_drain_sc_objs[sc] += drained_objs;
 #endif
+    hz3_s65_inbox_note_drain(sc, drained_objs);
     atomic_fetch_add_explicit(&inbox->drain_seq, 1, memory_order_release);
     hz3_s197_stats_on_drain(sc, drained_objs, 1);
 
@@ -770,6 +1291,7 @@ void* hz3_inbox_drain(uint8_t shard, int sc, Hz3Bin* bin) {
 }
 
 static inline int hz3_inbox_medium_sc_from_obj(void* obj, int* sc_out) {
+#if HZ3_PTAG_DSTBIN_ENABLE
     uint32_t page_idx = 0;
     if (hz3_arena_page_index_fast(obj, &page_idx)) {
         uint32_t tag32 = hz3_pagetag32_load(page_idx);
@@ -782,6 +1304,7 @@ static inline int hz3_inbox_medium_sc_from_obj(void* obj, int* sc_out) {
             }
         }
     }
+#endif
 
     Hz3SegMeta* meta = hz3_segmap_get(obj);
     if (!meta) {
@@ -948,5 +1471,6 @@ uint32_t hz3_inbox_drain_to_central(uint8_t shard, int sc) {
         total_n += n;
     }
 
+    hz3_s65_inbox_note_drain(sc, (uint64_t)total_n);
     return total_n;
 }

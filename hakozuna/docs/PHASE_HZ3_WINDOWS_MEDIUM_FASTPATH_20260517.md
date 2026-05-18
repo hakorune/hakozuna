@@ -95,17 +95,29 @@ Guard lanes behaved as intended:
 The tradeoff is RSS. For example, `pc-r90-4k-a4096-t4` reached about `84 MiB`
 final RSS on page-medium HZ3, compared with about `37 MiB` on HZ4.
 
-## Decision
+## Decision Update: 2026-05-18
 
 GO:
 
 - Keep Windows `madvise(MADV_DONTNEED/FREE)` as `MEM_RESET`.
 - Treat `alignment <= 16` as ordinary malloc alignment and route it to
   `hz3_malloc`.
+- Promote page-medium aligned routing to the Windows `speed-default` build
+  profile:
+  - `4096 <= size <= 65536 && alignment <= 4096` routes to `hz3_malloc`.
+  - `size < 4096`, `size > 65536`, or `alignment > 4096` stays on the large
+    aligned path.
+  - runtime escape hatch: `HZ3_PAGE_MEDIUM_ALIGNED=0`.
+
+PROFILE SPLIT:
+
+- `speed-default`: body-side counter-free fair Windows speed baseline.
+- `rss-first`: S261, explicit RSS-first reference.
+- `rss-experimental`: S262, stride-based RSS probe.
+- `unsafe-repro-s260`: S260 crash/repro only.
 
 HOLD:
 
-- Do not promote page-medium aligned requests to the production default yet.
-- Continue researching RSS mitigation and the 64K gap versus HZ4 before making
-  `alignment <= 4096` medium routing the default.
-
+- Do not silently mix targeted reclaim into the speed default.
+- Continue researching RSS mitigation and the 64K gap versus HZ4 in explicit
+  RSS profiles.

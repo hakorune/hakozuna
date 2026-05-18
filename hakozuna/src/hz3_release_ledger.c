@@ -17,6 +17,7 @@
 
 #include <stdio.h>
 #include <stdatomic.h>
+#include <inttypes.h>
 
 // ============================================================================
 // TLS Data
@@ -56,8 +57,8 @@ static void s65_ledger_atexit_dump(void) {
 
     if (enq > 0 || purged > 0) {
         fprintf(stderr,
-                "[HZ3_S65] enq=%lu coalesce=%lu purged_pages=%lu madvise_calls=%lu\n"
-                "  idle_ticks=%lu busy_ticks=%lu drop=%lu skip_used=%lu\n",
+                "[HZ3_S65] enq=%" PRIu64 " coalesce=%" PRIu64 " purged_pages=%" PRIu64 " madvise_calls=%" PRIu64 "\n"
+                "  idle_ticks=%" PRIu64 " busy_ticks=%" PRIu64 " drop=%" PRIu64 " skip_used=%" PRIu64 "\n",
                 enq, coal, purged, calls, idle, busy, dropped, skip_used);
     }
 }
@@ -279,8 +280,10 @@ void hz3_s65_ledger_purge_tick(uint32_t delay_epochs, uint32_t budget_pages) {
 
     uint32_t current_epoch = t_hz3_cache.epoch_counter;
     uint32_t budget_calls = HZ3_S65_PURGE_MAX_CALLS;
+#if HZ3_S65_STATS
     uint32_t pages_purged = 0;
     uint32_t madvise_calls = 0;
+#endif
 
     // Process queue: dequeue entries that have aged past delay
     while (!s65_ledger_is_empty(l) && budget_pages > 0 && budget_calls > 0) {
@@ -313,10 +316,14 @@ void hz3_s65_ledger_purge_tick(uint32_t delay_epochs, uint32_t budget_pages) {
 
         int ret = hz3_os_madvise_dontneed_checked(page_addr, purge_size);
         if (ret == 0) {
+#if HZ3_S65_STATS
             pages_purged += ent->pages;
+#endif
             l->purged_pages += ent->pages;
         }
+#if HZ3_S65_STATS
         madvise_calls++;
+#endif
         l->madvise_calls++;
 
         // Decrement page budget
@@ -386,8 +393,10 @@ void hz3_s65_ledger_flush_all(void) {
     s65_stats_register_atexit();
 #endif
 
+#if HZ3_S65_STATS
     uint32_t pages_purged = 0;
     uint32_t madvise_calls = 0;
+#endif
 
     // Drain ALL entries regardless of delay
     while (!s65_ledger_is_empty(l)) {
@@ -413,10 +422,14 @@ void hz3_s65_ledger_flush_all(void) {
 
         int ret = hz3_os_madvise_dontneed_checked(page_addr, purge_size);
         if (ret == 0) {
+#if HZ3_S65_STATS
             pages_purged += ent->pages;
+#endif
             l->purged_pages += ent->pages;
         }
+#if HZ3_S65_STATS
         madvise_calls++;
+#endif
         l->madvise_calls++;
     }
 

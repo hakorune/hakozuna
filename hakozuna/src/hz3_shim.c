@@ -44,7 +44,10 @@ static inline int hz3_shim_page_medium_aligned_enabled(void) {
     }
     char buf[32];
     DWORD n = GetEnvironmentVariableA("HZ3_PAGE_MEDIUM_ALIGNED", buf, (DWORD)sizeof(buf));
-    int enabled = (n != 0 && n < sizeof(buf) && buf[0] != '0') ? 1 : 0;
+    int enabled = HZ3_PAGE_MEDIUM_ALIGNED_DEFAULT ? 1 : 0;
+    if (n != 0 && n < sizeof(buf)) {
+        enabled = (buf[0] != '0') ? 1 : 0;
+    }
     int expected = -1;
     atomic_compare_exchange_strong_explicit(&g_hz3_shim_page_medium_aligned,
                                             &expected,

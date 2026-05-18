@@ -65,6 +65,14 @@
 #define HZ3_ARENA_ALLOC_FAIL_MAX 4
 #endif
 
+// Windows aligned allocation policy default.
+// Header default stays conservative; Windows build profiles can promote the
+// page-medium fast path while still allowing HZ3_PAGE_MEDIUM_ALIGNED=0 at run
+// time to disable it.
+#ifndef HZ3_PAGE_MEDIUM_ALIGNED_DEFAULT
+#define HZ3_PAGE_MEDIUM_ALIGNED_DEFAULT 0
+#endif
+
 // ============================================================================
 // S85: small_v2 slow path breakdown stats (event-only, atexit one-shot)
 // ============================================================================

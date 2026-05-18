@@ -20,12 +20,89 @@
 #include <stdlib.h>
 #include <stdatomic.h>
 #include <errno.h>
+#include <inttypes.h>
 
 // ============================================================================
 // TLS Data
 // ============================================================================
 
 extern HZ3_TLS Hz3TCache t_hz3_cache;
+
+#if HZ3_S65_STATS
+static _Atomic(uint64_t) g_s65_medium_purged_route_hot_runs = 0;
+static _Atomic(uint64_t) g_s65_medium_purged_route_cold_runs = 0;
+static _Atomic(uint64_t) g_s65_medium_purged_route_split_batches = 0;
+
+static inline void s65_note_purged_route(uint32_t hot_n, uint32_t cold_n) {
+    if (hot_n > 0) {
+        atomic_fetch_add_explicit(&g_s65_medium_purged_route_hot_runs,
+                                  hot_n,
+                                  memory_order_relaxed);
+    }
+    if (cold_n > 0) {
+        atomic_fetch_add_explicit(&g_s65_medium_purged_route_cold_runs,
+                                  cold_n,
+                                  memory_order_relaxed);
+    }
+    if (hot_n > 0 && cold_n > 0) {
+        atomic_fetch_add_explicit(&g_s65_medium_purged_route_split_batches,
+                                  1,
+                                  memory_order_relaxed);
+    }
+}
+#else
+#define s65_note_purged_route(hot_n, cold_n) do { (void)(hot_n); (void)(cold_n); } while (0)
+#endif
+
+static void s65_push_purged_hold_list(int shard,
+                                      int sc,
+                                      void* head,
+                                      void* tail,
+                                      uint32_t n) {
+    if (!head || !tail || n == 0) {
+        return;
+    }
+
+#if HZ3_S65_CENTRAL_COLD_ENABLE && HZ3_S65_CENTRAL_COLD_PARK_PURGED
+    uint32_t hot_n = 0;
+
+#if HZ3_S65_CENTRAL_COLD_HOT_RESERVE_RUNS > 0
+    uint32_t hot_count = hz3_central_count_snapshot(shard, sc);
+    if (hot_count < (uint32_t)HZ3_S65_CENTRAL_COLD_HOT_RESERVE_RUNS) {
+        uint32_t need = (uint32_t)HZ3_S65_CENTRAL_COLD_HOT_RESERVE_RUNS - hot_count;
+        hot_n = (need < n) ? need : n;
+    }
+#endif
+
+    if (hot_n == 0) {
+        s65_note_purged_route(0, n);
+        hz3_central_cold_push_list(shard, sc, head, tail, n);
+        return;
+    }
+
+    if (hot_n >= n) {
+        s65_note_purged_route(n, 0);
+        hz3_central_push_list(shard, sc, head, tail, n);
+        return;
+    }
+
+    void* hot_head = head;
+    void* hot_tail = head;
+    for (uint32_t i = 1; i < hot_n; i++) {
+        hot_tail = hz3_obj_get_next(hot_tail);
+    }
+
+    void* cold_head = hz3_obj_get_next(hot_tail);
+    hz3_obj_set_next(hot_tail, NULL);
+
+    s65_note_purged_route(hot_n, n - hot_n);
+    hz3_central_push_list(shard, sc, hot_head, hot_tail, hot_n);
+    hz3_central_cold_push_list(shard, sc, cold_head, tail, n - hot_n);
+#else
+    s65_note_purged_route(n, 0);
+    hz3_central_push_list(shard, sc, head, tail, n);
+#endif
+}
 
 // ============================================================================
 // Stats (global atomics)
@@ -35,6 +112,12 @@ extern HZ3_TLS Hz3TCache t_hz3_cache;
 static _Atomic(uint64_t) g_s65_medium_reclaim_runs = 0;
 static _Atomic(uint64_t) g_s65_medium_reclaim_pages = 0;
 static _Atomic(uint64_t) g_s65_medium_reclaim_boundary_calls = 0;
+static _Atomic(uint64_t) g_s65_medium_purge_attempt_runs = 0;
+static _Atomic(uint64_t) g_s65_medium_purge_attempt_pages = 0;
+static _Atomic(uint64_t) g_s65_medium_purge_madvise_calls = 0;
+static _Atomic(uint64_t) g_s65_medium_purge_madvise_fail = 0;
+static _Atomic(uint64_t) g_s65_medium_purge_sc_runs[HZ3_NUM_SC];
+static _Atomic(uint64_t) g_s65_medium_purge_sc_pages[HZ3_NUM_SC];
 static _Atomic(uint64_t) g_s65_medium_reclaim_skip_null_meta = 0;
 static _Atomic(uint64_t) g_s65_medium_reclaim_skip_bounds = 0;
 static _Atomic(uint64_t) g_s65_medium_reclaim_skip_collision = 0;
@@ -45,15 +128,46 @@ static void s65_medium_atexit_dump(void) {
     uint64_t runs = atomic_load_explicit(&g_s65_medium_reclaim_runs, memory_order_relaxed);
     uint64_t pages = atomic_load_explicit(&g_s65_medium_reclaim_pages, memory_order_relaxed);
     uint64_t bcalls = atomic_load_explicit(&g_s65_medium_reclaim_boundary_calls, memory_order_relaxed);
+    uint64_t purge_runs = atomic_load_explicit(&g_s65_medium_purge_attempt_runs, memory_order_relaxed);
+    uint64_t purge_pages = atomic_load_explicit(&g_s65_medium_purge_attempt_pages, memory_order_relaxed);
+    uint64_t purge_calls = atomic_load_explicit(&g_s65_medium_purge_madvise_calls, memory_order_relaxed);
+    uint64_t purge_fail = atomic_load_explicit(&g_s65_medium_purge_madvise_fail, memory_order_relaxed);
     uint64_t skip_meta = atomic_load_explicit(&g_s65_medium_reclaim_skip_null_meta, memory_order_relaxed);
     uint64_t skip_bounds = atomic_load_explicit(&g_s65_medium_reclaim_skip_bounds, memory_order_relaxed);
     uint64_t skip_collision = atomic_load_explicit(&g_s65_medium_reclaim_skip_collision, memory_order_relaxed);
+    uint64_t route_hot = atomic_load_explicit(&g_s65_medium_purged_route_hot_runs, memory_order_relaxed);
+    uint64_t route_cold = atomic_load_explicit(&g_s65_medium_purged_route_cold_runs, memory_order_relaxed);
+    uint64_t route_split = atomic_load_explicit(&g_s65_medium_purged_route_split_batches, memory_order_relaxed);
 
-    if (runs > 0 || pages > 0) {
+    if (runs > 0 || pages > 0 || purge_runs > 0 || purge_pages > 0 ||
+        purge_calls > 0 || purge_fail > 0 || skip_meta > 0 ||
+        skip_bounds > 0 || skip_collision > 0 || route_hot > 0 ||
+        route_cold > 0 || route_split > 0) {
         fprintf(stderr,
-                "[HZ3_S65_MEDIUM] reclaim_runs=%lu reclaim_pages=%lu boundary_calls=%lu\n"
-                "  skip_null_meta=%lu skip_bounds=%lu skip_collision=%lu\n",
-                runs, pages, bcalls, skip_meta, skip_bounds, skip_collision);
+                "[HZ3_S65_MEDIUM] release_runs=%" PRIu64 " release_pages=%" PRIu64 " boundary_calls=%" PRIu64 "\n"
+                "  purge_attempt_runs=%" PRIu64 " purge_attempt_pages=%" PRIu64 " madvise_calls=%" PRIu64 " madvise_fail=%" PRIu64 "\n"
+                "  skip_null_meta=%" PRIu64 " skip_bounds=%" PRIu64 " skip_collision=%" PRIu64 "\n"
+                "  purged_route_hot=%" PRIu64 " purged_route_cold=%" PRIu64 " purged_route_split_batches=%" PRIu64
+                " hot_reserve_runs=%d\n",
+                runs, pages, bcalls,
+                purge_runs, purge_pages, purge_calls, purge_fail,
+                skip_meta, skip_bounds, skip_collision,
+                route_hot, route_cold, route_split,
+                HZ3_S65_CENTRAL_COLD_HOT_RESERVE_RUNS);
+        fprintf(stderr, "  purge_by_sc:");
+        int printed = 0;
+        for (int sc = 0; sc < HZ3_NUM_SC; sc++) {
+            uint64_t sc_runs = atomic_load_explicit(&g_s65_medium_purge_sc_runs[sc], memory_order_relaxed);
+            uint64_t sc_pages = atomic_load_explicit(&g_s65_medium_purge_sc_pages[sc], memory_order_relaxed);
+            if (sc_runs > 0 || sc_pages > 0) {
+                fprintf(stderr, " sc%d=%" PRIu64 "r/%" PRIu64 "p", sc, sc_runs, sc_pages);
+                printed = 1;
+            }
+        }
+        if (!printed) {
+            fprintf(stderr, " none");
+        }
+        fprintf(stderr, "\n");
     }
 }
 
@@ -112,16 +226,29 @@ static inline int hz3_s80_medium_reclaim_is_enabled(void) {
 // Main tick function
 // ============================================================================
 
-static void hz3_s65_medium_reclaim_run(uint32_t budget) {
+static void hz3_s65_medium_reclaim_run_for_shard(uint8_t target_shard, int only_sc, uint32_t budget) {
     if (budget == 0) {
         return;
     }
-    uint8_t my_shard = t_hz3_cache.my_shard;
+    if (target_shard >= HZ3_NUM_SHARDS) {
+        return;
+    }
+    if (only_sc >= HZ3_NUM_SC) {
+        return;
+    }
 
-    // Stats for this run
+#if HZ3_S65_STATS
+    // Stats for this run.
     uint32_t reclaim_runs = 0;
     uint32_t reclaim_pages = 0;
     uint32_t boundary_calls = 0;
+    uint32_t purge_attempt_runs = 0;
+    uint32_t purge_attempt_pages = 0;
+    uint32_t purge_madvise_calls = 0;
+    uint32_t purge_madvise_fail = 0;
+    uint32_t purge_sc_runs[HZ3_NUM_SC] = {0};
+    uint32_t purge_sc_pages[HZ3_NUM_SC] = {0};
+#endif
 
     enum { HZ3_S65_MEDIUM_RECLAIM_ACTION_RELEASE = 1, HZ3_S65_MEDIUM_RECLAIM_ACTION_PURGE_ONLY = 2 };
     int action = HZ3_S65_MEDIUM_RECLAIM_MODE;
@@ -132,14 +259,14 @@ static void hz3_s65_medium_reclaim_run(uint32_t budget) {
 
 #if HZ3_S65_MEDIUM_RECLAIM_COLLISION_GUARD
     if (action == HZ3_S65_MEDIUM_RECLAIM_ACTION_RELEASE &&
-        hz3_shard_live_count(t_hz3_cache.my_shard) > 1) {
+        hz3_shard_live_count(target_shard) > 1) {
         static _Atomic int g_s65_collision_shot = 0;
         if (!HZ3_S65_MEDIUM_RECLAIM_COLLISION_SHOT ||
             atomic_exchange_explicit(&g_s65_collision_shot, 1, memory_order_acq_rel) == 0) {
             fprintf(stderr,
                     "[HZ3_S65_MEDIUM_RECLAIM] collision_guard=1 action=release->purge_only shard=%u live=%u\n",
-                    (unsigned)t_hz3_cache.my_shard,
-                    (unsigned)hz3_shard_live_count(t_hz3_cache.my_shard));
+                    (unsigned)target_shard,
+                    (unsigned)hz3_shard_live_count(target_shard));
         }
         if (HZ3_S65_MEDIUM_RECLAIM_COLLISION_FAILFAST) {
             abort();
@@ -160,15 +287,18 @@ static void hz3_s65_medium_reclaim_run(uint32_t budget) {
     }
 #endif
 
-    // Drain central bins: sc=7→0 (large to small) for better syscall efficiency
-    for (int sc = HZ3_NUM_SC - 1; sc >= 0 && budget > 0; sc--) {
+    // Drain central bins: sc=7→0 (large to small) for better syscall efficiency.
+    // Targeted owner cleanup can restrict this to one size class.
+    int sc_start = (only_sc >= 0) ? only_sc : (HZ3_NUM_SC - 1);
+    int sc_end = (only_sc >= 0) ? only_sc : 0;
+    for (int sc = sc_start; sc >= sc_end && budget > 0; sc--) {
         // purge_only mode: keep runs in central, but move via a local list to avoid re-popping the same nodes.
         void* hold_head = NULL;
         void* hold_tail = NULL;
         uint32_t hold_n = 0;
 
         void* obj;
-        while (budget > 0 && (obj = hz3_central_pop(my_shard, sc)) != NULL) {
+        while (budget > 0 && (obj = hz3_central_pop(target_shard, sc)) != NULL) {
 
             // 1. Object -> Segment base (2MB-aligned)
             uintptr_t ptr = (uintptr_t)obj;
@@ -202,17 +332,33 @@ static void hz3_s65_medium_reclaim_run(uint32_t budget) {
                 int ret = hz3_release_range_definitely_free_meta(
                     meta, page_idx, pages, HZ3_RELEASE_MEDIUM_RUN_RECLAIM);
 
+#if HZ3_S65_STATS
                 if (ret == 0) {
                     reclaim_runs++;
                     reclaim_pages += pages;
                     boundary_calls++;
                 }
+#else
+                (void)ret;
+#endif
             } else {
                 // purge_only: keep (tag/bin/owner) intact and return to central.
                 // This avoids handing out a run whose pages were reclassified while stale copies exist.
                 void* run_addr = (void*)(seg_base + ((uintptr_t)page_idx << HZ3_PAGE_SHIFT));
                 size_t run_size = (size_t)pages << HZ3_PAGE_SHIFT;
-                (void)hz3_os_madvise_dontneed_checked(run_addr, run_size);
+                int ret = hz3_os_madvise_dontneed_checked(run_addr, run_size);
+#if HZ3_S65_STATS
+                purge_attempt_runs++;
+                purge_attempt_pages += pages;
+                purge_madvise_calls++;
+                purge_sc_runs[sc]++;
+                purge_sc_pages[sc] += pages;
+                if (ret != 0) {
+                    purge_madvise_fail++;
+                }
+#else
+                (void)ret;
+#endif
 
                 hz3_obj_set_next(obj, NULL);
                 if (!hold_head) {
@@ -226,14 +372,14 @@ static void hz3_s65_medium_reclaim_run(uint32_t budget) {
 
             // 5. Update pack pool (keep pack pool consistent)
 #if HZ3_S49_SEGMENT_PACKING
-            hz3_pack_on_free(my_shard, meta);
+            hz3_pack_on_free(target_shard, meta);
 #endif
 
             budget--;
         }
 
         if (action == HZ3_S65_MEDIUM_RECLAIM_ACTION_PURGE_ONLY && hold_head) {
-            hz3_central_push_list(my_shard, sc, hold_head, hold_tail, hold_n);
+            s65_push_purged_hold_list(target_shard, sc, hold_head, hold_tail, hold_n);
         }
     }
 
@@ -248,7 +394,31 @@ static void hz3_s65_medium_reclaim_run(uint32_t budget) {
     if (boundary_calls > 0) {
         atomic_fetch_add_explicit(&g_s65_medium_reclaim_boundary_calls, boundary_calls, memory_order_relaxed);
     }
+    if (purge_attempt_runs > 0) {
+        atomic_fetch_add_explicit(&g_s65_medium_purge_attempt_runs, purge_attempt_runs, memory_order_relaxed);
+    }
+    if (purge_attempt_pages > 0) {
+        atomic_fetch_add_explicit(&g_s65_medium_purge_attempt_pages, purge_attempt_pages, memory_order_relaxed);
+    }
+    if (purge_madvise_calls > 0) {
+        atomic_fetch_add_explicit(&g_s65_medium_purge_madvise_calls, purge_madvise_calls, memory_order_relaxed);
+    }
+    if (purge_madvise_fail > 0) {
+        atomic_fetch_add_explicit(&g_s65_medium_purge_madvise_fail, purge_madvise_fail, memory_order_relaxed);
+    }
+    for (int sc = 0; sc < HZ3_NUM_SC; sc++) {
+        if (purge_sc_runs[sc] > 0) {
+            atomic_fetch_add_explicit(&g_s65_medium_purge_sc_runs[sc], purge_sc_runs[sc], memory_order_relaxed);
+        }
+        if (purge_sc_pages[sc] > 0) {
+            atomic_fetch_add_explicit(&g_s65_medium_purge_sc_pages[sc], purge_sc_pages[sc], memory_order_relaxed);
+        }
+    }
 #endif
+}
+
+static void hz3_s65_medium_reclaim_run(uint32_t budget) {
+    hz3_s65_medium_reclaim_run_for_shard(t_hz3_cache.my_shard, -1, budget);
 }
 
 void hz3_s65_medium_reclaim_tick(void) {
@@ -313,6 +483,22 @@ void hz3_s65_medium_reclaim_on_demand(int sc, int want, uint32_t reason) {
 #endif
     hz3_s65_medium_reclaim_run(budget);
 #endif
+}
+
+void hz3_s65_medium_reclaim_shard_sc(uint8_t shard, int sc, uint32_t budget, uint32_t reason) {
+    (void)reason;
+    if (sc < 0 || sc >= HZ3_NUM_SC) {
+        return;
+    }
+#if HZ3_S80_MEDIUM_RECLAIM_GATE
+    if (!hz3_s80_medium_reclaim_is_enabled()) {
+        return;
+    }
+#endif
+#if HZ3_S65_STATS
+    s65_medium_stats_register_atexit();
+#endif
+    hz3_s65_medium_reclaim_run_for_shard(shard, sc, budget);
 }
 
 #endif  // HZ3_S65_MEDIUM_RECLAIM

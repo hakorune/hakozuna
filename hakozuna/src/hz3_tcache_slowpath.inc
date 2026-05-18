@@ -534,6 +534,9 @@ void* hz3_alloc_slow(int sc) {
     void* s189_extra[32];
     int s189_extra_n = 0;
 #endif
+#if HZ3_S65_CENTRAL_COLD_ENABLE && HZ3_S65_CENTRAL_COLD_POP_ON_MISS
+    int s65_cold_miss_pending = 0;
+#endif
 
     // Day 6: Update stats
     t_hz3_cache.stats.refill_calls[sc]++;
@@ -774,6 +777,37 @@ void* hz3_alloc_slow(int sc) {
         hz3_epoch_maybe();  // Day 6: epoch check
         return batch[0];
     }
+
+#if HZ3_S65_CENTRAL_COLD_ENABLE && HZ3_S65_CENTRAL_COLD_POP_ON_MISS
+    S203_ALLOC_S65_COLD_CALL(sc);
+    got = hz3_central_cold_pop_batch(t_hz3_cache.my_shard, sc, batch, want);
+    if (got > 0) {
+        S203_ALLOC_S65_COLD_HIT(sc);
+        HZ3_S208_RESET_STATE(sc);
+        S203_ALLOC_INC(alloc_slow_from_central);
+        S203_ALLOC_INC_SC(central, sc);
+        for (int i = 1; i < got; i++) {
+            HZ3_S72_MEDIUM_CHECK("medium_alloc_cold_central_fill", batch[i]);
+#if HZ3_TCACHE_SOA_LOCAL
+            hz3_binref_push(binref, batch[i]);
+#else
+            hz3_bin_push(bin, batch[i]);
+#endif
+        }
+        t_hz3_cache.stats.central_pop_hit[sc]++;
+#if HZ3_MEDIUM_PATH_STATS && !HZ3_SHIM_FORWARD_ONLY
+        hz3_medium_path_stats_on_central_hit(sc, got);
+#endif
+        HZ3_S72_MEDIUM_CHECK("medium_alloc_cold_central", batch[0]);
+        HZ3_WATCH_PTR_MEDIUM("medium_alloc_cold_central", batch[0]);
+        HZ3_S223_RESET_STREAK(sc);
+        hz3_epoch_maybe();
+        return batch[0];
+    }
+    S203_ALLOC_S65_COLD_MISS(sc);
+    s65_cold_miss_pending = 1;
+#endif
+
     // Day 6: Update stats
     t_hz3_cache.stats.central_pop_miss[sc]++;
     HZ3_S223_NOTE_CENTRAL_MISS(sc);
@@ -1127,6 +1161,11 @@ s211_skip_reserve_scalar:
     }
 #endif
     if (obj) {
+#if HZ3_S65_CENTRAL_COLD_ENABLE && HZ3_S65_CENTRAL_COLD_POP_ON_MISS
+        if (s65_cold_miss_pending) {
+            S203_ALLOC_S65_COLD_MISS_TO_SEGMENT(sc);
+        }
+#endif
         S203_ALLOC_INC(alloc_slow_from_segment);
         S203_ALLOC_INC_SC(segment, sc);
     }

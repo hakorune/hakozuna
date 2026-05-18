@@ -19,6 +19,23 @@ Fast lane:
 - `make -C hakozuna/hz3 clean all_ldpreload_fast`
   - Output: `./libhakozuna_hz3_fast.so`
 
+Windows HZ3 build profiles:
+- `powershell -NoProfile -ExecutionPolicy Bypass -File hakozuna/win/build_win_min.ps1`
+  - Default profile: `speed-default`
+  - Arena: `8GiB`
+  - Enables page-medium aligned routing by default:
+    `4096 <= size <= 65536 && alignment <= 4096` uses `hz3_malloc`.
+  - Runtime override: set `HZ3_PAGE_MEDIUM_ALIGNED=0` to send page-aligned
+    medium requests back to `hz3_large_aligned_alloc`.
+- `powershell -NoProfile -ExecutionPolicy Bypass -File hakozuna/win/build_win_min.ps1 -Profile legacy`
+  - Legacy Windows build shape.
+- `powershell -NoProfile -ExecutionPolicy Bypass -File hakozuna/win/build_win_min.ps1 -Profile rss-first`
+  - S261 RSS-first reference profile.
+- `powershell -NoProfile -ExecutionPolicy Bypass -File hakozuna/win/build_win_min.ps1 -Profile rss-experimental`
+  - S262 stride-based RSS probe.
+- `powershell -NoProfile -ExecutionPolicy Bypass -File hakozuna/win/build_win_min.ps1 -Profile unsafe-repro-s260`
+  - S260 crash/repro profile only; do not use for fair comparison.
+
 Preset variants (opt-in, lane split):
 - `make -C hakozuna/hz3 all_ldpreload_scale_r50`
 - `make -C hakozuna/hz3 all_ldpreload_scale_r50_s97_1` (r50 opt-in: S97-1 remote bucketize)
@@ -56,7 +73,10 @@ Bench entrypoint (SSOT lane triage):
 - On Windows, the `madvise(MADV_DONTNEED/FREE)` shim must use `MEM_RESET`
   rather than `MEM_DECOMMIT` for purge-only paths that keep HZ3 metadata
   reachable. `MEM_DECOMMIT` can make later intrusive-list writes fault.
-- Ordinary aligned requests (`alignment <= 16`) should stay on `hz3_malloc`.
-  Page-aligned medium routing (`4096 <= size <= 65536 && alignment <= 4096`)
-  is still a research lane because it trades large throughput wins for higher
-  RSS on current measurements.
+- Ordinary aligned requests (`alignment <= 16`) stay on `hz3_malloc`.
+- On the Windows `speed-default` profile, page-aligned medium routing
+  (`4096 <= size <= 65536 && alignment <= 4096`) is also enabled by default.
+  This profile keeps S203/S65 diagnostic counters off so it can be used for
+  fair speed comparisons.
+  Keep RSS-first targeted reclaim as an explicit profile rather than silently
+  mixing it into fair speed comparisons.

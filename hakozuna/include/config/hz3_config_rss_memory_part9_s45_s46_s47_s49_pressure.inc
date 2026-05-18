@@ -103,6 +103,18 @@
 #endif
 
 // ============================================================================
+// S256: Wide RSS/VA observation (diagnostic-only)
+// ============================================================================
+
+#ifndef HZ3_S256_WIDE_RSS_OBS
+#define HZ3_S256_WIDE_RSS_OBS 0
+#endif
+
+#ifndef HZ3_S257_PROCESS_MEMORY_OBS
+#define HZ3_S257_PROCESS_MEMORY_OBS 0
+#endif
+
+// ============================================================================
 // S49: Segment Packing (existing segment priority)
 // ============================================================================
 

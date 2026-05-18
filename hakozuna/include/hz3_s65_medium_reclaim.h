@@ -24,10 +24,16 @@ void hz3_s65_medium_reclaim_tick(void);
 
 // Reason code for on-demand reclaim trigger.
 #define HZ3_S65_RECLAIM_REASON_CENTRAL_MISS 1u
+#define HZ3_S65_RECLAIM_REASON_INBOX_TO_CENTRAL 2u
 
 // On-demand reclaim trigger at alloc slow-path boundary.
 // Intended callsite: after confirmed central miss, before segment fallback.
 void hz3_s65_medium_reclaim_on_demand(int sc, int want, uint32_t reason);
+
+// Targeted reclaim for owner-shard cleanup paths. This avoids relying on the
+// current thread's shard when dead/exiting owner inbox entries are routed to
+// central by a different thread.
+void hz3_s65_medium_reclaim_shard_sc(uint8_t shard, int sc, uint32_t budget, uint32_t reason);
 
 #else
 
@@ -36,6 +42,15 @@ static inline void hz3_s65_medium_reclaim_tick(void) {}
 static inline void hz3_s65_medium_reclaim_on_demand(int sc, int want, uint32_t reason) {
     (void)sc;
     (void)want;
+    (void)reason;
+}
+static inline void hz3_s65_medium_reclaim_shard_sc(uint8_t shard,
+                                                   int sc,
+                                                   uint32_t budget,
+                                                   uint32_t reason) {
+    (void)shard;
+    (void)sc;
+    (void)budget;
     (void)reason;
 }
 
