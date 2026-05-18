@@ -179,6 +179,17 @@
 #define HZ3_S65_CENTRAL_COLD_EXTERNAL_NODE_CAP 262144
 #endif
 
+// Allocate external cold-list node metadata on demand instead of placing the
+// whole node cap in .bss. This reduces fixed RSS for RSS-first research lanes
+// where only a small fraction of the cap is needed in typical workloads.
+#ifndef HZ3_S65_CENTRAL_COLD_EXTERNAL_NODE_POOL_LAZY
+#define HZ3_S65_CENTRAL_COLD_EXTERNAL_NODE_POOL_LAZY 1
+#endif
+
+#ifndef HZ3_S65_CENTRAL_COLD_EXTERNAL_NODE_CHUNK
+#define HZ3_S65_CENTRAL_COLD_EXTERNAL_NODE_CHUNK 1024
+#endif
+
 // Narrow Windows RSS experiment: decommit only cold-central runs whose list
 // metadata lives outside the run. Recommit happens before the run is returned
 // from cold central. This must never be enabled with the intrusive cold list.
@@ -450,6 +461,17 @@
 #define HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_BATCH_RUNS 64
 #endif
 
+// Size gate for actual coalesced MEM_DECOMMIT. The default keeps the existing
+// all-size experiment behavior; research profiles can narrow this to small
+// runs, for example 1-2 pages, to avoid large 64K plateau regressions.
+#ifndef HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_MIN_PAGES
+#define HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_MIN_PAGES 1
+#endif
+
+#ifndef HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_MAX_PAGES
+#define HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_MAX_PAGES 65535
+#endif
+
 #if HZ3_S65_CENTRAL_COLD_DECOMMIT_ENABLE && !HZ3_S65_CENTRAL_COLD_EXTERNAL_LIST_ENABLE
 #error "HZ3_S65_CENTRAL_COLD_DECOMMIT_ENABLE requires HZ3_S65_CENTRAL_COLD_EXTERNAL_LIST_ENABLE"
 #endif
@@ -544,6 +566,26 @@
 
 #if HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_BATCH_RUNS > 256
 #error "HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_BATCH_RUNS must be <= 256"
+#endif
+
+#if HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_MIN_PAGES < 1
+#error "HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_MIN_PAGES must be >= 1"
+#endif
+
+#if HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_MAX_PAGES < 1
+#error "HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_MAX_PAGES must be >= 1"
+#endif
+
+#if HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_MAX_PAGES < HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_MIN_PAGES
+#error "HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_MAX_PAGES must be >= HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_MIN_PAGES"
+#endif
+
+#if HZ3_S65_CENTRAL_COLD_EXTERNAL_NODE_CAP < 1
+#error "HZ3_S65_CENTRAL_COLD_EXTERNAL_NODE_CAP must be >= 1"
+#endif
+
+#if HZ3_S65_CENTRAL_COLD_EXTERNAL_NODE_CHUNK < 1
+#error "HZ3_S65_CENTRAL_COLD_EXTERNAL_NODE_CHUNK must be >= 1"
 #endif
 
 // S80: Medium reclaim runtime gate (env: HZ3_S80_MEDIUM_RECLAIM=0/1)

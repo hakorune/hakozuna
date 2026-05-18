@@ -15,6 +15,107 @@
 
 ---
 
+## Windows / BenchLab recent lane triage (2026-05-18)
+
+These entries are Windows BenchLab lane decisions. They are kept here so the
+Hakozuna allocator repo has the same promotion/no-go memory as BenchLab.
+
+- S250 high-band-wide owner-front lane（unsafe / no promotion）:
+  - Status: unsafe historical repro lane.
+  - Reason: high-band-wide shape had stability risk and is blocked by BenchLab
+    policy unless explicitly allowed.
+  - Revisit only with a focused crash/repro branch and container-state safety
+    counters enabled.
+- S260 smallarena targeted reclaim（unsafe / no promotion）:
+  - Status: unsafe.
+  - Reason: targeted reclaim after dead-owner inbox routing reproduced worker
+    failure / heap-corruption signal during repeat sweeps.
+  - Keep only as `unsafe-repro-s260`.
+- S262 targeted reclaim stride8（NO-GO for promotion）:
+  - Status: diagnostic/no-go for default.
+  - Reason: throttling immediate targeted reclaim reduced cost versus S261, but
+    did not produce a clean speed/RSS promotion point.
+- S266 PTAG16 lazy inline fast path（NO-GO for promotion）:
+  - Status: useful experiment, no-go right now.
+  - Reason: partially recovered one 4K boundary regression, but worsened
+    `pc-r90-64k-a4096-t4` and private usage in repeat-5.
+  - Revisit only with narrower helper-call/codegen counters.
+- S238 direct header lookup（NO-GO for shifted-aligned main path）:
+  - Status: diagnostic/no-go.
+  - Reason: shifted aligned pointers need exact-user-pointer metadata; prefer
+    S242 side-map/mapless strategy over header-at-user-offset lookup.
+- S242 direct side-map mapless pre-BUSY publish order（unsafe historical）:
+  - Status: pre-fix mapless is unsafe; post-fix mapless is watch/validate, not
+    promoted yet.
+  - Reason: Windows BenchLab S272 mixed-soak crash isolation on 2026-05-19
+    pointed at mapless mode. S272 validate with mapless on reproduced
+    `0xc0000374`; S240 flush quarantine and S270 victim quarantine did not
+    remove the failure; the same S272 lane with `HZ3_S242_DIRECT_MAPLESS=0`
+    and side-map shadow validation enabled passed mixed-soak repeat-40.
+    A later S242 failfast lane caught `empty-key-nonnull-hdr`, showing that
+    direct insert/take needed an explicit BUSY slot state. The post-fix path
+    also adds bounded BUSY retry on take so transient slot ownership does not
+    become a mapless miss.
+  - Evidence:
+    - mapless-on fail after inbox accounting fix:
+      `results/synthetic-sweep/20260519_020858_144`
+    - S240 flush quarantine still fail:
+      `results/synthetic-sweep/20260519_021203_875`
+    - S270 victim quarantine still fail:
+      `results/synthetic-sweep/20260519_021917_809`
+    - mapless-off shadow pass:
+      `results/synthetic-sweep/20260519_022411_197`
+    - pre-fix S242 validation caught `empty-key-nonnull-hdr`:
+      `results/synthetic-sweep/20260519_023637_298`
+    - post-fix BUSY-slot S242 validation pass:
+      `results/synthetic-sweep/20260519_024131_713`
+    - post-fix BUSY-slot + bounded retry validate pass:
+      `results/synthetic-sweep/20260519_025245_270`
+    - post-fix BUSY-slot + bounded retry counter-free pass:
+      `results/synthetic-sweep/20260519_025443_563`
+    - post-fix BUSY-slot + bounded retry validate repeat-80 pass:
+      `results/synthetic-sweep/20260519_025950_021`
+    - post-fix BUSY-slot + bounded retry wider counter-free repeat-10 pass:
+      `results/synthetic-sweep/20260519_031748_252`
+  - Fix direction: direct insert claims empty slots as
+    `0 -> BUSY -> hdr/direct_slot/entry_count -> key`; direct take claims live
+    slots as `key -> BUSY -> hdr=NULL -> key=0`, with a small bounded retry
+    when take observes `BUSY`.
+  - Wider repeat-10 passed, so the remaining blocker is no longer the original
+    crash signature. Promotion is still deferred because HZ4/mimalloc/tcmalloc
+    remain much faster on `align=8192` rows and the 256K plateau RSS is not a
+    win.
+- S273 large owner-inbox batch take-first（diagnostic / no speed promotion）:
+  - Status: diagnostic/reference, not default.
+  - Reason: S273 reuses the S245-style batch detach helper inside the S246
+    take-first owner-inbox path. It consistently lowers focused Windows
+    `align=8192` steady RSS by about `8 MiB`, but repeat-10 throughput regressed
+    versus S246 speed on `4K/8K/64K a8192` by about `3%/3%/11%`.
+  - Residual timing shows the tradeoff: fallback/cache pressure improves, but
+    `alloc_inbox_drain_ns_avg` worsens from about `466 ns` to about `607 ns`.
+  - Drain batch 4 is also not a clean promotion: it recovers the 8K row in a
+    repeat-3 focused sweep, but hurts 4K and 64K. Future work should use
+    size-class-specific owner-inbox policy rather than one global batch size.
+  - Evidence:
+    - S273 repeat-10:
+      `results/synthetic-sweep/20260519_042548_866`
+    - S273 safety observation:
+      `results/synthetic-sweep/20260519_042537_073`
+    - S273 residual timing:
+      `results/synthetic-sweep/20260519_043251_788`
+    - S273 drain4 repeat-3:
+      `results/synthetic-sweep/20260519_043441_329`
+- S183 large cache class-lock split（still hard-archived）:
+  - Status: archived NO-GO.
+  - Reason: class-lock split is not the next large path fix; avoid reviving it
+    for RSS plateau or large aligned work.
+
+Positive-but-not-default reminders:
+- S265 PTAG16 lazy commit is not NO-GO. It remains a Windows RSS/private-commit
+  candidate, but not speed-default until boundary regressions are resolved.
+- S267 large RSS plateau observation is diagnostic-only. It showed the 256K
+  plateau is not primarily S212 deferred-unmap backlog.
+
 ## Current NO-GO / Defer List
 
 - xfer transfer cache（NO-GO）: `hakozuna/hz3/archive/research/xfer_transfer_cache/README.md`

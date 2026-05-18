@@ -5,6 +5,7 @@
 
 __attribute__((noinline))
 static void hz3_free_slow(void* ptr) {
+    hz3_s263_note_slow_call();
 
 #if HZ3_S110_STATS
     // S110-0: Observe segment-local metadata hit rate (no behavior change, PTAG fallback below)
@@ -145,6 +146,11 @@ static void hz3_free_slow(void* ptr) {
             abort();
         }
 #endif
+        {
+            uint32_t s263_bin = flat % HZ3_BIN_TOTAL;
+            uint8_t s263_dst = (uint8_t)(flat / HZ3_BIN_TOTAL);
+            hz3_s263_note_slow_ptag32_hit(s263_bin, s263_dst);
+        }
 #if HZ3_S78_PTAG32_GUARD
         {
             uint32_t bin = flat % HZ3_BIN_TOTAL;
@@ -198,6 +204,7 @@ static void hz3_free_slow(void* ptr) {
 #else
         uint32_t bin = hz3_pagetag32_bin(tag32);
         uint8_t dst = hz3_pagetag32_dst(tag32);
+        hz3_s263_note_slow_ptag32_hit(bin, dst);
 #if HZ3_PTAG_FAILFAST
         if (bin >= HZ3_BIN_TOTAL || dst >= HZ3_NUM_SHARDS) {
             abort();
@@ -263,6 +270,8 @@ static void hz3_free_slow(void* ptr) {
         return;
     }
 
+    hz3_s263_note_slow_ptag32_miss();
+
 #if HZ3_S99_PTAG32_MISS_GUARD
     {
         static _Atomic int g_s99_shot_noinrange = 0;
@@ -308,6 +317,7 @@ static void hz3_free_slow(void* ptr) {
     // S28-5: miss path - separate range check (miss is rare)
     if (!hz3_arena_page_index_fast(ptr, NULL)) {
         // Arena external -> large/fallback
+        hz3_s263_note_slow_ptag32_external();
         if (hz3_large_free(ptr)) {
             return;
         }
@@ -315,6 +325,7 @@ static void hz3_free_slow(void* ptr) {
         return;
     }
     // Arena internal, tag==0: existing failfast/no-op behavior
+    hz3_s263_note_slow_ptag32_internal_zero();
 #if HZ3_PTAG_FAILFAST
     abort();  // Debug mode: fail fast
 #else
@@ -671,6 +682,7 @@ static void hz3_free_slow(void* ptr) {
     // Step 2: tag load (1 load)
     uint16_t tag = hz3_pagetag_load(page_idx);
     if (tag == 0) {
+        hz3_s263_note_slow_ptag16_zero();
         // S12-5C: Arena-internal but tag==0 means unallocated/freed
         // Don't pass to hz3_next_free() - that hides mixed allocation bugs
 #if HZ3_PTAG_FAILFAST
@@ -683,6 +695,7 @@ static void hz3_free_slow(void* ptr) {
     // Step 3: dispatch by kind
 #if HZ3_FREE_FASTPATH_SPLIT
     int kind = tag >> 14;
+    hz3_s263_note_slow_ptag16_hit(kind);
     if (kind == PTAG_KIND_V2) {
         hz3_free_v2_impl(ptr, tag);
         return;
@@ -694,6 +707,7 @@ static void hz3_free_slow(void* ptr) {
 #else
     int sc, owner, kind;
     hz3_pagetag_decode_with_kind(tag, &sc, &owner, &kind);
+    hz3_s263_note_slow_ptag16_hit(kind);
 
     switch (kind) {
         case PTAG_KIND_V2:
@@ -725,6 +739,7 @@ static void hz3_free_slow(void* ptr) {
         // Step 2: tag load (1 load - miss side ends here!)
         uint16_t tag = hz3_pagetag_load(page_idx);
         if (tag != 0) {
+            hz3_s263_note_slow_ptag16_hit(PTAG_KIND_V2);
             // Step 3: decode & process (no page_hdr read)
             int sc, owner;
             hz3_pagetag_decode(tag, &sc, &owner);
@@ -735,6 +750,7 @@ static void hz3_free_slow(void* ptr) {
 #endif
             return;
         }
+        hz3_s263_note_slow_ptag16_zero();
         // tag == 0: not a small v2 page, fall through to v1 path
     }
 #endif  // HZ3_PTAG16_DISPATCH_ENABLE || HZ3_SMALL_V2_PTAG_ENABLE
@@ -768,6 +784,7 @@ static void hz3_free_slow(void* ptr) {
     // Look up segment metadata (lock-free)
     Hz3SegMeta* meta = hz3_segmap_get(ptr);
     if (!meta) {
+        hz3_s263_note_slow_segmap_miss();
         if (hz3_large_free(ptr)) {
             return;
         }
@@ -775,6 +792,7 @@ static void hz3_free_slow(void* ptr) {
         hz3_next_free(ptr);
         return;
     }
+    hz3_s263_note_slow_segmap_hit();
 
     // Get page index within segment (v1 path)
     void* seg_base = hz3_ptr_to_seg_base(ptr);
@@ -783,6 +801,7 @@ static void hz3_free_slow(void* ptr) {
     // Read tag (hot path: read-only)
     uint16_t tag = meta->sc_tag[seg_page_idx];
     if (tag == 0) {
+        hz3_s263_note_slow_segmap_tag_zero();
         // Not cached / unknown, fallback
         hz3_next_free(ptr);
         return;
@@ -804,6 +823,7 @@ static void hz3_free_slow(void* ptr) {
 
     // Day 4: Local vs Remote free
     uint8_t owner = meta->owner;
+    hz3_s263_note_slow_segmap_dispatch(owner);
     if (owner == t_hz3_cache.my_shard) {
         // Local: push to bin (fast path)
 #if HZ3_TCACHE_SOA_LOCAL

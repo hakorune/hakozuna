@@ -1,6 +1,7 @@
 #if HZ3_S242_LARGE_DIRECT_SIDE_MAP
 #define HZ3_S242_DIRECT_SET_COUNT (1u << HZ3_S242_DIRECT_SET_BITS)
 #define HZ3_S242_DIRECT_SLOT_NONE UINT32_MAX
+#define HZ3_S242_DIRECT_KEY_BUSY UINTPTR_MAX
 
 typedef struct Hz3LargeDirectSlot {
     _Atomic uintptr_t key;
@@ -32,6 +33,14 @@ static _Atomic size_t g_hz3_s242_take_skip_empty = 0;
 static _Atomic size_t g_hz3_s242_take_ok = 0;
 static _Atomic size_t g_hz3_s242_take_miss = 0;
 static _Atomic size_t g_hz3_s242_take_validate_fail = 0;
+static _Atomic size_t g_hz3_s242_insert_existing_same = 0;
+static _Atomic size_t g_hz3_s242_insert_existing_mismatch = 0;
+static _Atomic size_t g_hz3_s242_insert_existing_null_hdr = 0;
+static _Atomic size_t g_hz3_s242_insert_empty_key_nonnull_hdr = 0;
+static _Atomic size_t g_hz3_s242_take_busy = 0;
+static _Atomic size_t g_hz3_s242_take_slot_mismatch = 0;
+static _Atomic size_t g_hz3_s242_take_missing_mapless_flag = 0;
+static _Atomic size_t g_hz3_s242_entry_underflow = 0;
 
 static inline void hz3_s242_stats_inc(_Atomic size_t* p) {
 #if HZ3_S242_DIRECT_STATS
@@ -79,6 +88,11 @@ static inline void hz3_s242_direct_note_entry_remove(void) {
             return;
         }
     }
+    hz3_s242_stats_inc(&g_hz3_s242_entry_underflow);
+#if HZ3_S242_DIRECT_FAILFAST
+    fprintf(stderr, "[HZ3_S242_DIRECT_FAIL] where=entry-remove reason=underflow\n");
+    abort();
+#endif
 #endif
 }
 
@@ -102,7 +116,11 @@ static void hz3_s242_stats_dump_final(void) {
             "shadow_direct_only=%zu shadow_map_only=%zu mapless_active=%zu "
             "entries_current=%zu entries_peak=%zu take_try=%zu "
             "take_skip_empty=%zu take_ok=%zu take_miss=%zu "
-            "take_validate_fail=%zu\n",
+            "take_validate_fail=%zu insert_existing_same=%zu "
+            "insert_existing_mismatch=%zu insert_existing_null_hdr=%zu "
+            "insert_empty_key_nonnull_hdr=%zu take_busy=%zu "
+            "take_slot_mismatch=%zu take_missing_mapless_flag=%zu "
+            "entry_underflow=%zu\n",
             atomic_load_explicit(&g_hz3_s242_insert_try, memory_order_relaxed),
             atomic_load_explicit(&g_hz3_s242_insert_ok, memory_order_relaxed),
             atomic_load_explicit(&g_hz3_s242_insert_collision, memory_order_relaxed),
@@ -125,7 +143,15 @@ static void hz3_s242_stats_dump_final(void) {
             atomic_load_explicit(&g_hz3_s242_take_skip_empty, memory_order_relaxed),
             atomic_load_explicit(&g_hz3_s242_take_ok, memory_order_relaxed),
             atomic_load_explicit(&g_hz3_s242_take_miss, memory_order_relaxed),
-            atomic_load_explicit(&g_hz3_s242_take_validate_fail, memory_order_relaxed));
+            atomic_load_explicit(&g_hz3_s242_take_validate_fail, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_insert_existing_same, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_insert_existing_mismatch, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_insert_existing_null_hdr, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_insert_empty_key_nonnull_hdr, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_take_busy, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_take_slot_mismatch, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_take_missing_mapless_flag, memory_order_relaxed),
+            atomic_load_explicit(&g_hz3_s242_entry_underflow, memory_order_relaxed));
 #endif
 }
 
@@ -135,6 +161,43 @@ static inline void hz3_s242_stats_register_once(void) {
     if (atomic_exchange_explicit(&registered, 1, memory_order_relaxed) == 0) {
         atexit(hz3_s242_stats_dump_final);
     }
+#endif
+}
+
+static inline void hz3_s242_direct_fail(const char* where,
+                                        const char* reason,
+                                        const void* ptr,
+                                        const Hz3LargeHdr* hdr,
+                                        uint32_t set,
+                                        uint32_t way) {
+#if HZ3_S242_DIRECT_VALIDATE
+    fprintf(stderr,
+            "[HZ3_S242_DIRECT_FAIL] where=%s reason=%s ptr=%p hdr=%p "
+            "set=%u way=%u slot=%u hdr_slot=%u flags=0x%x state=%u "
+            "user_ptr=%p map_base=%p map_size=%zu\n",
+            where,
+            reason,
+            ptr,
+            (const void*)hdr,
+            set,
+            way,
+            set * (uint32_t)HZ3_S242_DIRECT_WAYS + way,
+            hdr ? hdr->direct_slot : HZ3_S242_DIRECT_SLOT_NONE,
+            hdr ? (unsigned)hdr->flags : 0u,
+            hdr ? atomic_load_explicit(&hdr->state, memory_order_acquire) : 0u,
+            hdr ? hdr->user_ptr : NULL,
+            hdr ? hdr->map_base : NULL,
+            hdr ? hdr->map_size : 0u);
+#if HZ3_S242_DIRECT_FAILFAST
+    abort();
+#endif
+#else
+    (void)where;
+    (void)reason;
+    (void)ptr;
+    (void)hdr;
+    (void)set;
+    (void)way;
 #endif
 }
 
@@ -178,7 +241,31 @@ static inline int hz3_s242_direct_insert(Hz3LargeHdr* hdr) {
     for (uint32_t way = 0; way < (uint32_t)HZ3_S242_DIRECT_WAYS; way++) {
         Hz3LargeDirectSlot* slot = &g_hz3_s242_direct[set][way];
         uintptr_t old = atomic_load_explicit(&slot->key, memory_order_acquire);
+        if (old == HZ3_S242_DIRECT_KEY_BUSY) {
+            continue;
+        }
         if (old == key) {
+            Hz3LargeHdr* old_hdr = atomic_load_explicit(&slot->hdr, memory_order_acquire);
+            if (old_hdr == hdr) {
+                hz3_s242_stats_inc(&g_hz3_s242_insert_existing_same);
+            } else if (old_hdr == NULL) {
+                hz3_s242_stats_inc(&g_hz3_s242_insert_existing_null_hdr);
+                hz3_s242_direct_fail("insert",
+                                     "existing-key-null-hdr",
+                                     hdr->user_ptr,
+                                     hdr,
+                                     set,
+                                     way);
+            } else {
+                hz3_s242_stats_inc(&g_hz3_s242_insert_existing_mismatch);
+                hz3_s242_direct_fail("insert",
+                                     "existing-key-hdr-mismatch",
+                                     hdr->user_ptr,
+                                     old_hdr,
+                                     set,
+                                     way);
+                return 0;
+            }
             atomic_store_explicit(&slot->hdr, hdr, memory_order_release);
             hdr->direct_slot = hz3_s242_direct_slot_id(set, way);
             hz3_s242_stats_inc(&g_hz3_s242_insert_ok);
@@ -186,17 +273,31 @@ static inline int hz3_s242_direct_insert(Hz3LargeHdr* hdr) {
         }
         if (old == 0) {
             uintptr_t empty = 0;
-            if (atomic_compare_exchange_strong_explicit(&slot->key,
-                                                        &empty,
-                                                        key,
-                                                        memory_order_acq_rel,
-                                                        memory_order_acquire)) {
-                atomic_store_explicit(&slot->hdr, hdr, memory_order_release);
-                hdr->direct_slot = hz3_s242_direct_slot_id(set, way);
-                hz3_s242_direct_note_entry_add();
-                hz3_s242_stats_inc(&g_hz3_s242_insert_ok);
-                return 1;
+            if (!atomic_compare_exchange_strong_explicit(&slot->key,
+                                                         &empty,
+                                                         HZ3_S242_DIRECT_KEY_BUSY,
+                                                         memory_order_acq_rel,
+                                                         memory_order_acquire)) {
+                continue;
             }
+            Hz3LargeHdr* old_hdr = atomic_load_explicit(&slot->hdr, memory_order_acquire);
+            if (old_hdr != NULL) {
+                hz3_s242_stats_inc(&g_hz3_s242_insert_empty_key_nonnull_hdr);
+                hz3_s242_direct_fail("insert",
+                                     "empty-key-nonnull-hdr",
+                                     hdr->user_ptr,
+                                     old_hdr,
+                                     set,
+                                     way);
+                atomic_store_explicit(&slot->key, 0, memory_order_release);
+                continue;
+            }
+            atomic_store_explicit(&slot->hdr, hdr, memory_order_release);
+            hdr->direct_slot = hz3_s242_direct_slot_id(set, way);
+            hz3_s242_direct_note_entry_add();
+            hz3_s242_stats_inc(&g_hz3_s242_insert_ok);
+            atomic_store_explicit(&slot->key, key, memory_order_release);
+            return 1;
         }
     }
 
@@ -316,34 +417,79 @@ static inline Hz3LargeHdr* hz3_s242_direct_take(const void* ptr) {
     uintptr_t key = (uintptr_t)ptr;
     uint32_t set = hz3_s242_direct_hash(ptr);
 
-    for (uint32_t way = 0; way < (uint32_t)HZ3_S242_DIRECT_WAYS; way++) {
-        Hz3LargeDirectSlot* slot = &g_hz3_s242_direct[set][way];
-        uintptr_t observed = atomic_load_explicit(&slot->key, memory_order_acquire);
-        if (observed != key) {
-            continue;
+    for (uint32_t attempt = 0; attempt <= (uint32_t)HZ3_S242_DIRECT_TAKE_BUSY_RETRIES; attempt++) {
+        int saw_busy = 0;
+        for (uint32_t way = 0; way < (uint32_t)HZ3_S242_DIRECT_WAYS; way++) {
+            Hz3LargeDirectSlot* slot = &g_hz3_s242_direct[set][way];
+            uintptr_t observed = atomic_load_explicit(&slot->key, memory_order_acquire);
+            if (observed == HZ3_S242_DIRECT_KEY_BUSY) {
+                saw_busy = 1;
+                hz3_s242_stats_inc(&g_hz3_s242_take_busy);
+                continue;
+            }
+            if (observed != key) {
+                continue;
+            }
+
+            Hz3LargeHdr* hdr = atomic_load_explicit(&slot->hdr, memory_order_acquire);
+            if (!hz3_s242_direct_validate_active(ptr, hdr)) {
+                hz3_s242_stats_inc(&g_hz3_s242_take_validate_fail);
+                hz3_s242_direct_fail("take",
+                                     "validate-active-failed",
+                                     ptr,
+                                     hdr,
+                                     set,
+                                     way);
+                return NULL;
+            }
+            if (hdr->direct_slot != hz3_s242_direct_slot_id(set, way)) {
+                hz3_s242_stats_inc(&g_hz3_s242_take_slot_mismatch);
+                hz3_s242_direct_fail("take",
+                                     "direct-slot-mismatch",
+                                     ptr,
+                                     hdr,
+                                     set,
+                                     way);
+                return NULL;
+            }
+            if ((hdr->flags & HZ3_LARGE_F_DIRECT_MAPLESS) == 0) {
+                hz3_s242_stats_inc(&g_hz3_s242_take_missing_mapless_flag);
+                hz3_s242_direct_fail("take",
+                                     "missing-mapless-flag",
+                                     ptr,
+                                     hdr,
+                                     set,
+                                     way);
+                return NULL;
+            }
+
+            uintptr_t expected = key;
+            if (!atomic_compare_exchange_strong_explicit(&slot->key,
+                                                         &expected,
+                                                         HZ3_S242_DIRECT_KEY_BUSY,
+                                                         memory_order_acq_rel,
+                                                         memory_order_acquire)) {
+                if (expected == HZ3_S242_DIRECT_KEY_BUSY) {
+                    saw_busy = 1;
+                    hz3_s242_stats_inc(&g_hz3_s242_take_busy);
+                    continue;
+                }
+                hz3_s242_stats_inc(&g_hz3_s242_take_miss);
+                return NULL;
+            }
+            atomic_store_explicit(&slot->hdr, NULL, memory_order_release);
+            atomic_store_explicit(&slot->key, 0, memory_order_release);
+            hdr->direct_slot = HZ3_S242_DIRECT_SLOT_NONE;
+            hdr->flags &= (uint16_t)~HZ3_LARGE_F_DIRECT_MAPLESS;
+            hz3_s242_direct_note_entry_remove();
+            hz3_s242_stats_inc(&g_hz3_s242_take_ok);
+            return hdr;
         }
 
-        Hz3LargeHdr* hdr = atomic_load_explicit(&slot->hdr, memory_order_acquire);
-        if (!hz3_s242_direct_validate_active(ptr, hdr)) {
-            hz3_s242_stats_inc(&g_hz3_s242_take_validate_fail);
-            return NULL;
+        if (!saw_busy) {
+            break;
         }
-
-        uintptr_t expected = key;
-        if (!atomic_compare_exchange_strong_explicit(&slot->key,
-                                                     &expected,
-                                                     0,
-                                                     memory_order_acq_rel,
-                                                     memory_order_acquire)) {
-            hz3_s242_stats_inc(&g_hz3_s242_take_miss);
-            return NULL;
-        }
-        atomic_store_explicit(&slot->hdr, NULL, memory_order_release);
-        hdr->direct_slot = HZ3_S242_DIRECT_SLOT_NONE;
-        hdr->flags &= (uint16_t)~HZ3_LARGE_F_DIRECT_MAPLESS;
-        hz3_s242_direct_note_entry_remove();
-        hz3_s242_stats_inc(&g_hz3_s242_take_ok);
-        return hdr;
+        atomic_signal_fence(memory_order_seq_cst);
     }
 
     hz3_s242_stats_inc(&g_hz3_s242_take_miss);

@@ -40,6 +40,80 @@ extern _Atomic(uint32_t)* g_hz3_page_tag32;
 // Slow init: calls pthread_once, use in alloc/segment creation path only
 void hz3_arena_init_slow(void);
 
+#if HZ3_S264_PTAG_STORE_OBS
+void hz3_s264_ptag_note_store16(void);
+void hz3_s264_ptag_note_clear16(void);
+void hz3_s264_ptag_note_store32(void);
+void hz3_s264_ptag_note_clear32(void);
+#else
+#define hz3_s264_ptag_note_store16() do { } while (0)
+#define hz3_s264_ptag_note_clear16() do { } while (0)
+#define hz3_s264_ptag_note_store32() do { } while (0)
+#define hz3_s264_ptag_note_clear32() do { } while (0)
+#endif
+
+#if HZ3_S265_PTAG16_LAZY_COMMIT
+#define HZ3_S265_PTAG16_META_UNCOMMITTED 0u
+#define HZ3_S265_PTAG16_META_COMMITTING 1u
+#define HZ3_S265_PTAG16_META_COMMITTED 2u
+#if HZ3_S266_PTAG16_LAZY_INLINE_FAST
+extern _Atomic(uint8_t)* g_hz3_s265_ptag16_commit_state;
+extern uint32_t g_hz3_s265_ptag16_commit_pages;
+int hz3_pagetag16_lazy_ensure_committed_slow(uint32_t page_idx);
+int hz3_pagetag16_lazy_is_committed_slow(uint32_t page_idx);
+
+static inline uint32_t hz3_pagetag16_lazy_meta_page_inline(uint32_t page_idx) {
+    return (uint32_t)(((size_t)page_idx * sizeof(_Atomic(uint16_t))) >>
+                      HZ3_ARENA_PAGE_SHIFT);
+}
+
+static inline int hz3_pagetag16_lazy_is_committed(uint32_t page_idx) {
+    _Atomic(uint8_t)* state = g_hz3_s265_ptag16_commit_state;
+    if (__builtin_expect(!state, 0)) {
+        return 1;
+    }
+
+    uint32_t meta_page = hz3_pagetag16_lazy_meta_page_inline(page_idx);
+    if (__builtin_expect(meta_page >= g_hz3_s265_ptag16_commit_pages, 0)) {
+        return hz3_pagetag16_lazy_is_committed_slow(page_idx);
+    }
+
+    return atomic_load_explicit(&state[meta_page], memory_order_acquire) ==
+           HZ3_S265_PTAG16_META_COMMITTED;
+}
+
+static inline int hz3_pagetag16_lazy_ensure_committed(uint32_t page_idx) {
+    _Atomic(uint8_t)* state = g_hz3_s265_ptag16_commit_state;
+    if (__builtin_expect(!state, 0)) {
+        return 1;
+    }
+
+    uint32_t meta_page = hz3_pagetag16_lazy_meta_page_inline(page_idx);
+    if (__builtin_expect(meta_page < g_hz3_s265_ptag16_commit_pages, 1) &&
+        __builtin_expect(atomic_load_explicit(&state[meta_page],
+                                              memory_order_acquire) ==
+                             HZ3_S265_PTAG16_META_COMMITTED,
+                         1)) {
+        return 1;
+    }
+
+    return hz3_pagetag16_lazy_ensure_committed_slow(page_idx);
+}
+#else
+int hz3_pagetag16_lazy_ensure_committed(uint32_t page_idx);
+int hz3_pagetag16_lazy_is_committed(uint32_t page_idx);
+#endif
+#else
+static inline int hz3_pagetag16_lazy_ensure_committed(uint32_t page_idx) {
+    (void)page_idx;
+    return 1;
+}
+static inline int hz3_pagetag16_lazy_is_committed(uint32_t page_idx) {
+    (void)page_idx;
+    return 1;
+}
+#endif
+
 // Legacy alias for compatibility
 static inline void hz3_arena_init(void) { hz3_arena_init_slow(); }
 
@@ -211,22 +285,37 @@ static inline void hz3_pagetag_decode_with_kind(uint16_t tag, int* sc, int* owne
 
 // Fast tag load for hot path (relaxed, no fence needed for read-only)
 static inline uint16_t hz3_pagetag_load(uint32_t page_idx) {
+    if (!hz3_pagetag16_lazy_is_committed(page_idx)) {
+        return 0;
+    }
     return atomic_load_explicit(&g_hz3_page_tag[page_idx], memory_order_relaxed);
 }
 
 // Event-only tag set (relaxed store) - for v2 (uses hz3_pagetag_encode)
 static inline void hz3_pagetag_set(uint32_t page_idx, int sc, int owner) {
     uint16_t tag = hz3_pagetag_encode(sc, owner);
+    if (!hz3_pagetag16_lazy_ensure_committed(page_idx)) {
+        return;
+    }
+    hz3_s264_ptag_note_store16();
     atomic_store_explicit(&g_hz3_page_tag[page_idx], tag, memory_order_relaxed);
 }
 
 // S12-5B: Direct tag store (relaxed) - for pre-encoded tags
 static inline void hz3_pagetag_store(uint32_t page_idx, uint16_t tag) {
+    if (!hz3_pagetag16_lazy_ensure_committed(page_idx)) {
+        return;
+    }
+    hz3_s264_ptag_note_store16();
     atomic_store_explicit(&g_hz3_page_tag[page_idx], tag, memory_order_relaxed);
 }
 
 // Event-only tag clear (relaxed store)
 static inline void hz3_pagetag_clear(uint32_t page_idx) {
+    if (!hz3_pagetag16_lazy_is_committed(page_idx)) {
+        return;
+    }
+    hz3_s264_ptag_note_clear16();
     atomic_store_explicit(&g_hz3_page_tag[page_idx], 0, memory_order_relaxed);
 }
 #endif // HZ3_SMALL_V2_PTAG_ENABLE
@@ -323,6 +412,7 @@ int hz3_ptag32_clear_map_lookup(uint32_t page_idx,
 #endif
 
 static inline void hz3_pagetag32_store(uint32_t page_idx, uint32_t tag) {
+    hz3_s264_ptag_note_store32();
 #if HZ3_S79_PTAG32_STORE_TRACE && HZ3_S79_PTAG32_STORE_EXCHANGE
     uint32_t old_tag = atomic_exchange_explicit(&g_hz3_page_tag32[page_idx], tag, memory_order_relaxed);
 #if HZ3_S92_PTAG32_STORE_LAST
@@ -350,6 +440,7 @@ static inline void hz3_pagetag32_store(uint32_t page_idx, uint32_t tag) {
 }
 
 static inline void hz3_pagetag32_clear(uint32_t page_idx) {
+    hz3_s264_ptag_note_clear32();
 #if HZ3_S88_PTAG32_CLEAR_TRACE
     uint32_t old_tag = atomic_exchange_explicit(&g_hz3_page_tag32[page_idx], 0, memory_order_relaxed);
     if (old_tag != 0) {

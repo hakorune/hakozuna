@@ -48,6 +48,17 @@ Windows HZ3 build profiles:
 - `powershell -NoProfile -ExecutionPolicy Bypass -File hakozuna/win/build_win_min.ps1 -Profile rss-coalesce-decommit`
   - Actual coalesced `MEM_DECOMMIT` probe. It batches old cold-ready runs,
     sorts them by address, and decommits adjacent runs as ranges.
+- `powershell -NoProfile -ExecutionPolicy Bypass -File hakozuna/win/build_win_min.ps1 -Profile rss-coalesce-small`
+  - Adaptive coalesced `MEM_DECOMMIT` probe. It keeps the `rss-coalesce-decommit`
+    batching path but limits range decommit to 1-2 page medium runs so 64K
+    plateau workloads fall back to the per-run decommit path.
+- `powershell -NoProfile -ExecutionPolicy Bypass -File hakozuna/win/build_win_min.ps1 -Profile rss-coalesce-small-large0`
+  - 64K plateau probe. It keeps the small-run coalesced decommit policy but
+    sets the large cold-ready target to zero so 16-page medium runs are not
+    kept committed in the cold-ready cache.
+  - The cold-central external node pool is lazy by default: metadata nodes are
+    committed in chunks instead of precommitting the full node cap into fixed
+    process RSS.
 - `powershell -NoProfile -ExecutionPolicy Bypass -File hakozuna/win/build_win_min.ps1 -Profile unsafe-repro-s260`
   - S260 crash/repro profile only; do not use for fair comparison.
 
@@ -96,3 +107,7 @@ Bench entrypoint (SSOT lane triage):
   banner so fair benchmark stderr stays free of HZ3 diagnostic lines.
   Keep RSS-first targeted reclaim as an explicit profile rather than silently
   mixing it into fair speed comparisons.
+- Keep large aligned path probes, such as S240/S242/S246/S273, as explicit
+  research lanes until they pass both speed and RSS gates. S273 is currently a
+  diagnostic/reference lane: it lowers focused Windows `align=8192` RSS, but is
+  not a speed-default promotion.

@@ -195,6 +195,8 @@ void hz3_free(void* ptr) {
         return;
     }
 
+    hz3_s263_note_free_entry();
+
 #if HZ3_S113_STATS
     // S113-0: Observe seg math potential at hz3_free entry point (before PTAG leaf)
     // This shows what percentage of ALL frees could use seg_math + page_bin_plus1

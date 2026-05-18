@@ -125,11 +125,221 @@ static inline int hz3_free_try_s113_segmath(void* ptr) {
 #endif
 #endif
 
+#if HZ3_S263_PTAG_DISPATCH_OBS
+#define HZ3_S263_PTAG_KIND_V2 1
+#define HZ3_S263_PTAG_KIND_V1_MEDIUM 2
+
+static _Atomic(uint64_t) g_s263_free_entry = 0;
+static _Atomic(uint64_t) g_s263_leaf_call = 0;
+static _Atomic(uint64_t) g_s263_leaf_hit = 0;
+static _Atomic(uint64_t) g_s263_leaf_miss = 0;
+static _Atomic(uint64_t) g_s263_leaf_local = 0;
+static _Atomic(uint64_t) g_s263_leaf_remote = 0;
+static _Atomic(uint64_t) g_s263_leaf_small = 0;
+static _Atomic(uint64_t) g_s263_leaf_sub4k = 0;
+static _Atomic(uint64_t) g_s263_leaf_medium = 0;
+static _Atomic(uint64_t) g_s263_slow_call = 0;
+static _Atomic(uint64_t) g_s263_slow_ptag32_hit = 0;
+static _Atomic(uint64_t) g_s263_slow_ptag32_miss = 0;
+static _Atomic(uint64_t) g_s263_slow_ptag32_external = 0;
+static _Atomic(uint64_t) g_s263_slow_ptag32_internal_zero = 0;
+static _Atomic(uint64_t) g_s263_slow_ptag32_local = 0;
+static _Atomic(uint64_t) g_s263_slow_ptag32_remote = 0;
+static _Atomic(uint64_t) g_s263_slow_ptag32_small = 0;
+static _Atomic(uint64_t) g_s263_slow_ptag32_sub4k = 0;
+static _Atomic(uint64_t) g_s263_slow_ptag32_medium = 0;
+static _Atomic(uint64_t) g_s263_slow_ptag16_hit = 0;
+static _Atomic(uint64_t) g_s263_slow_ptag16_zero = 0;
+static _Atomic(uint64_t) g_s263_slow_ptag16_small = 0;
+static _Atomic(uint64_t) g_s263_slow_ptag16_medium = 0;
+static _Atomic(uint64_t) g_s263_slow_segmap_hit = 0;
+static _Atomic(uint64_t) g_s263_slow_segmap_miss = 0;
+static _Atomic(uint64_t) g_s263_slow_segmap_tag_zero = 0;
+static _Atomic(uint64_t) g_s263_slow_segmap_local = 0;
+static _Atomic(uint64_t) g_s263_slow_segmap_remote = 0;
+static _Atomic(int) g_s263_atexit_registered = 0;
+
+static void hz3_s263_atexit_dump(void) {
+    fprintf(stderr,
+            "[HZ3_S263_PTAG_DISPATCH] "
+            "free_entry=%llu "
+            "leaf_call=%llu leaf_hit=%llu leaf_miss=%llu "
+            "leaf_local=%llu leaf_remote=%llu "
+            "leaf_small=%llu leaf_sub4k=%llu leaf_medium=%llu "
+            "slow_call=%llu "
+            "slow_ptag32_hit=%llu slow_ptag32_miss=%llu "
+            "slow_ptag32_external=%llu slow_ptag32_internal_zero=%llu "
+            "slow_ptag32_local=%llu slow_ptag32_remote=%llu "
+            "slow_ptag32_small=%llu slow_ptag32_sub4k=%llu slow_ptag32_medium=%llu "
+            "slow_ptag16_hit=%llu slow_ptag16_zero=%llu "
+            "slow_ptag16_small=%llu slow_ptag16_medium=%llu "
+            "slow_segmap_hit=%llu slow_segmap_miss=%llu slow_segmap_tag_zero=%llu "
+            "slow_segmap_local=%llu slow_segmap_remote=%llu\n",
+            (unsigned long long)atomic_load_explicit(&g_s263_free_entry, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_leaf_call, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_leaf_hit, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_leaf_miss, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_leaf_local, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_leaf_remote, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_leaf_small, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_leaf_sub4k, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_leaf_medium, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_slow_call, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_slow_ptag32_hit, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_slow_ptag32_miss, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_slow_ptag32_external, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_slow_ptag32_internal_zero, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_slow_ptag32_local, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_slow_ptag32_remote, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_slow_ptag32_small, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_slow_ptag32_sub4k, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_slow_ptag32_medium, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_slow_ptag16_hit, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_slow_ptag16_zero, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_slow_ptag16_small, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_slow_ptag16_medium, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_slow_segmap_hit, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_slow_segmap_miss, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_slow_segmap_tag_zero, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_slow_segmap_local, memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(&g_s263_slow_segmap_remote, memory_order_relaxed));
+}
+
+static inline void hz3_s263_register_once(void) {
+    if (atomic_exchange_explicit(&g_s263_atexit_registered, 1, memory_order_relaxed) == 0) {
+        atexit(hz3_s263_atexit_dump);
+    }
+}
+
+static inline void hz3_s263_inc(_Atomic(uint64_t)* counter) {
+    atomic_fetch_add_explicit(counter, 1, memory_order_relaxed);
+}
+
+static inline void hz3_s263_note_bin_band(uint32_t bin,
+                                          _Atomic(uint64_t)* small,
+                                          _Atomic(uint64_t)* sub4k,
+                                          _Atomic(uint64_t)* medium) {
+    if (bin < HZ3_SUB4K_BIN_BASE) {
+        hz3_s263_inc(small);
+    } else if (bin < HZ3_MEDIUM_BIN_BASE) {
+        hz3_s263_inc(sub4k);
+    } else if (bin < HZ3_BIN_TOTAL) {
+        hz3_s263_inc(medium);
+    }
+}
+
+static inline void hz3_s263_note_free_entry(void) {
+    hz3_s263_register_once();
+    hz3_s263_inc(&g_s263_free_entry);
+}
+
+static inline void hz3_s263_note_leaf_call(void) {
+    hz3_s263_inc(&g_s263_leaf_call);
+}
+
+static inline void hz3_s263_note_leaf_miss(void) {
+    hz3_s263_inc(&g_s263_leaf_miss);
+}
+
+static inline void hz3_s263_note_leaf_hit(uint32_t bin, uint8_t dst) {
+    hz3_s263_inc(&g_s263_leaf_hit);
+    hz3_s263_note_bin_band(bin,
+                           &g_s263_leaf_small,
+                           &g_s263_leaf_sub4k,
+                           &g_s263_leaf_medium);
+    if (dst == t_hz3_cache.my_shard) {
+        hz3_s263_inc(&g_s263_leaf_local);
+    } else {
+        hz3_s263_inc(&g_s263_leaf_remote);
+    }
+}
+
+static inline void hz3_s263_note_slow_call(void) {
+    hz3_s263_inc(&g_s263_slow_call);
+}
+
+static inline void hz3_s263_note_slow_ptag32_miss(void) {
+    hz3_s263_inc(&g_s263_slow_ptag32_miss);
+}
+
+static inline void hz3_s263_note_slow_ptag32_external(void) {
+    hz3_s263_inc(&g_s263_slow_ptag32_external);
+}
+
+static inline void hz3_s263_note_slow_ptag32_internal_zero(void) {
+    hz3_s263_inc(&g_s263_slow_ptag32_internal_zero);
+}
+
+static inline void hz3_s263_note_slow_ptag32_hit(uint32_t bin, uint8_t dst) {
+    hz3_s263_inc(&g_s263_slow_ptag32_hit);
+    hz3_s263_note_bin_band(bin,
+                           &g_s263_slow_ptag32_small,
+                           &g_s263_slow_ptag32_sub4k,
+                           &g_s263_slow_ptag32_medium);
+    if (dst == t_hz3_cache.my_shard) {
+        hz3_s263_inc(&g_s263_slow_ptag32_local);
+    } else {
+        hz3_s263_inc(&g_s263_slow_ptag32_remote);
+    }
+}
+
+static inline void hz3_s263_note_slow_ptag16_zero(void) {
+    hz3_s263_inc(&g_s263_slow_ptag16_zero);
+}
+
+static inline void hz3_s263_note_slow_ptag16_hit(int kind) {
+    hz3_s263_inc(&g_s263_slow_ptag16_hit);
+    if (kind == HZ3_S263_PTAG_KIND_V2) {
+        hz3_s263_inc(&g_s263_slow_ptag16_small);
+    } else if (kind == HZ3_S263_PTAG_KIND_V1_MEDIUM) {
+        hz3_s263_inc(&g_s263_slow_ptag16_medium);
+    }
+}
+
+static inline void hz3_s263_note_slow_segmap_hit(void) {
+    hz3_s263_inc(&g_s263_slow_segmap_hit);
+}
+
+static inline void hz3_s263_note_slow_segmap_miss(void) {
+    hz3_s263_inc(&g_s263_slow_segmap_miss);
+}
+
+static inline void hz3_s263_note_slow_segmap_tag_zero(void) {
+    hz3_s263_inc(&g_s263_slow_segmap_tag_zero);
+}
+
+static inline void hz3_s263_note_slow_segmap_dispatch(uint8_t owner) {
+    if (owner == t_hz3_cache.my_shard) {
+        hz3_s263_inc(&g_s263_slow_segmap_local);
+    } else {
+        hz3_s263_inc(&g_s263_slow_segmap_remote);
+    }
+}
+#else
+#define hz3_s263_note_free_entry() do { } while (0)
+#define hz3_s263_note_leaf_call() do { } while (0)
+#define hz3_s263_note_leaf_miss() do { } while (0)
+#define hz3_s263_note_leaf_hit(bin, dst) do { (void)(bin); (void)(dst); } while (0)
+#define hz3_s263_note_slow_call() do { } while (0)
+#define hz3_s263_note_slow_ptag32_miss() do { } while (0)
+#define hz3_s263_note_slow_ptag32_external() do { } while (0)
+#define hz3_s263_note_slow_ptag32_internal_zero() do { } while (0)
+#define hz3_s263_note_slow_ptag32_hit(bin, dst) do { (void)(bin); (void)(dst); } while (0)
+#define hz3_s263_note_slow_ptag16_zero() do { } while (0)
+#define hz3_s263_note_slow_ptag16_hit(kind) do { (void)(kind); } while (0)
+#define hz3_s263_note_slow_segmap_hit() do { } while (0)
+#define hz3_s263_note_slow_segmap_miss() do { } while (0)
+#define hz3_s263_note_slow_segmap_tag_zero() do { } while (0)
+#define hz3_s263_note_slow_segmap_dispatch(owner) do { (void)(owner); } while (0)
+#endif
+
 #if HZ3_FREE_LEAF_ENABLE
 // Returns 1 if handled (PTAG32 hit), 0 otherwise
 static inline int hz3_free_try_ptag32_leaf(void* ptr) {
+    hz3_s263_note_leaf_call();
     uint32_t tag32 = 0;
     if (!hz3_pagetag32_lookup_hit_fast(ptr, &tag32)) {
+        hz3_s263_note_leaf_miss();
         return 0;  // Miss - let slow path handle
     }
     hz3_tcache_ensure_init();
@@ -144,6 +354,7 @@ static inline int hz3_free_try_ptag32_leaf(void* ptr) {
 
     uint32_t bin = hz3_pagetag32_bin(tag32);
     uint8_t dst = hz3_pagetag32_dst(tag32);
+    hz3_s263_note_leaf_hit(bin, dst);
 
 #if HZ3_LOCAL_BINS_SPLIT
     if (__builtin_expect(dst == t_hz3_cache.my_shard, 1)) {

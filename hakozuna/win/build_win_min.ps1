@@ -10,6 +10,7 @@ param(
     [switch]$SmallSlowStats,
     [switch]$ArenaFailShot,
     [switch]$OomShot,
+    [switch]$DebugSymbols,
     [string]$Profile = "",
     [string]$ArenaSize = ""
 )
@@ -42,6 +43,52 @@ function Invoke-Checked {
     }
 }
 
+function Get-Hz3DefineName {
+    param([Parameter(Mandatory = $true)][string]$Define)
+
+    $Text = $Define.Trim()
+    if ($Text.StartsWith("/D") -or $Text.StartsWith("-D")) {
+        $Text = $Text.Substring(2)
+    }
+
+    $EqualsAt = $Text.IndexOf("=")
+    if ($EqualsAt -ge 0) {
+        return $Text.Substring(0, $EqualsAt).Trim()
+    }
+
+    return $Text.Trim()
+}
+
+function Resolve-Hz3DefinesLastWins {
+    param([string[]]$Defines)
+
+    # Profiles and ExtraDefines intentionally layer settings. Collapse duplicate
+    # macro names here so clang sees one unambiguous /D value per HZ3_* flag.
+    $Resolved = [ordered]@{}
+    foreach ($Define in $Defines) {
+        if (-not $Define) {
+            continue
+        }
+
+        $Text = $Define.Trim()
+        if (-not $Text) {
+            continue
+        }
+
+        $Name = Get-Hz3DefineName -Define $Text
+        if (-not $Name) {
+            continue
+        }
+
+        if ($Resolved.Contains($Name)) {
+            $Resolved.Remove($Name)
+        }
+        $Resolved[$Name] = $Text
+    }
+
+    return @($Resolved.Values)
+}
+
 $KnownProfiles = @(
     "legacy",
     "speed-default",
@@ -51,6 +98,10 @@ $KnownProfiles = @(
     "rss-batch64",
     "rss-coalesce-obs",
     "rss-coalesce-decommit",
+    "rss-coalesce-small",
+    "rss-coalesce-small-large0",
+    "rss-coalesce-small-large0-s253",
+    "rss-coalesce-small-large0-s257",
     "unsafe-repro-s260",
     "custom"
 )
@@ -65,7 +116,7 @@ if ($KnownProfiles -notcontains $ResolvedProfile) {
 
 $ResolvedArenaSize = $ArenaSize
 if (-not $ResolvedArenaSize) {
-    $ResolvedArenaSize = if ($ResolvedProfile -in @("speed-default", "rss-first", "rss-experimental", "rss-mru", "rss-batch64", "rss-coalesce-obs", "rss-coalesce-decommit", "unsafe-repro-s260")) {
+    $ResolvedArenaSize = if ($ResolvedProfile -in @("speed-default", "rss-first", "rss-experimental", "rss-mru", "rss-batch64", "rss-coalesce-obs", "rss-coalesce-decommit", "rss-coalesce-small", "rss-coalesce-small-large0", "rss-coalesce-small-large0-s253", "rss-coalesce-small-large0-s257", "unsafe-repro-s260")) {
         "0x200000000ULL"
     } else {
         "0x1000000000ULL"
@@ -110,6 +161,18 @@ function Get-Hz3ProfileDefines {
     $speedDefaultQuiet = @($speedDefault + @(
         "HZ3_S80_MEDIUM_RECLAIM_LOG=0"
     ))
+
+    $speedDefaultLargeStats = @(
+        $speedDefault | Where-Object {
+            ($_ -notlike "HZ3_S240_LARGE_OWNER_FRONT_STATS=*") -and
+            ($_ -notlike "HZ3_S242_DIRECT_STATS=*") -and
+            ($_ -notlike "HZ3_S242_DIRECT_ENTRY_COUNT=*")
+        }
+    ) + @(
+        "HZ3_S240_LARGE_OWNER_FRONT_STATS=1",
+        "HZ3_S242_DIRECT_STATS=1",
+        "HZ3_S242_DIRECT_ENTRY_COUNT=1"
+    )
 
     $targetedReclaim = @($mediumCounters + @(
         "HZ3_S65_MEDIUM_RECLAIM_MODE=2",
@@ -182,6 +245,65 @@ function Get-Hz3ProfileDefines {
                 "HZ3_S65_CENTRAL_COLD_READY_MRU_ENABLE=1",
                 "HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_ENABLE=1",
                 "HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_BATCH_RUNS=64"
+            ))
+        }
+        "rss-coalesce-small" {
+            return @($speedDefault + $targetedReclaim + @(
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_MIN_PAGES=1",
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_MAX_PAGES=2",
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_PAGE_MASK=0x00000006u",
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_BATCH_RUNS=64",
+                "HZ3_S65_CENTRAL_COLD_READY_MRU_ENABLE=1",
+                "HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_ENABLE=1",
+                "HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_BATCH_RUNS=64",
+                "HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_MIN_PAGES=1",
+                "HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_MAX_PAGES=2"
+            ))
+        }
+        "rss-coalesce-small-large0" {
+            return @($speedDefault + $targetedReclaim + @(
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_MIN_PAGES=1",
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_MAX_PAGES=2",
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_PAGE_MASK=0x00000006u",
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_BATCH_RUNS=64",
+                "HZ3_S65_CENTRAL_COLD_READY_MRU_ENABLE=1",
+                "HZ3_S65_CENTRAL_COLD_LARGE_READY_TARGET_RUNS=0",
+                "HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_ENABLE=1",
+                "HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_BATCH_RUNS=64",
+                "HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_MIN_PAGES=1",
+                "HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_MAX_PAGES=2"
+            ))
+        }
+        "rss-coalesce-small-large0-s253" {
+            return @($speedDefaultLargeStats + $targetedReclaim + @(
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_MIN_PAGES=1",
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_MAX_PAGES=2",
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_PAGE_MASK=0x00000006u",
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_BATCH_RUNS=64",
+                "HZ3_S65_CENTRAL_COLD_READY_MRU_ENABLE=1",
+                "HZ3_S65_CENTRAL_COLD_LARGE_READY_TARGET_RUNS=0",
+                "HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_ENABLE=1",
+                "HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_BATCH_RUNS=64",
+                "HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_MIN_PAGES=1",
+                "HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_MAX_PAGES=2",
+                "HZ3_S253_LARGE_RSS_RETENTION_OBS=1"
+            ))
+        }
+        "rss-coalesce-small-large0-s257" {
+            return @($speedDefault + $targetedReclaim + @(
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_MIN_PAGES=1",
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_MAX_PAGES=2",
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_PAGE_MASK=0x00000006u",
+                "HZ3_S65_INBOX_TO_CENTRAL_RECLAIM_BATCH_RUNS=64",
+                "HZ3_S65_CENTRAL_COLD_READY_MRU_ENABLE=1",
+                "HZ3_S65_CENTRAL_COLD_LARGE_READY_TARGET_RUNS=0",
+                "HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_ENABLE=1",
+                "HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_BATCH_RUNS=64",
+                "HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_MIN_PAGES=1",
+                "HZ3_S65_CENTRAL_COLD_DECOMMIT_COALESCE_MAX_PAGES=2",
+                "HZ3_S256_WIDE_RSS_OBS=1",
+                "HZ3_S257_PROCESS_MEMORY_OBS=1",
+                "HZ3_WIN_MMAN_STATS=1"
             ))
         }
     }
@@ -278,6 +400,7 @@ if ($ExtraDefines) {
     $Defines += $ExtraDefines
 }
 
+$Defines = Resolve-Hz3DefinesLastWins -Defines $Defines
 $DefFlags = $Defines | ForEach-Object { "/D$_" }
 $IncFlags = @(
     "/I$Hz3Dir\\include",
@@ -290,6 +413,9 @@ $CFlags = @(
     "/std:c11",
     "/W3"
 ) + $DefFlags + $IncFlags
+if ($DebugSymbols) {
+    $CFlags += "/Z7"
+}
 
 $SrcFiles = Get-ChildItem (Join-Path $Hz3Dir "src") -Filter "*.c" | Where-Object {
     $_.Name -ne "hz3_shim.c"

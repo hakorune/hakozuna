@@ -294,6 +294,43 @@
 #define HZ3_PTAG32_ONLY 0
 #endif
 
+// S263: PTAG free-dispatch observation.
+// Diagnostic-only counters to compare the normal PTAG16+PTAG32 lane with
+// PTAG32-only without changing dispatch behavior.
+#ifndef HZ3_S263_PTAG_DISPATCH_OBS
+#define HZ3_S263_PTAG_DISPATCH_OBS 0
+#endif
+
+// S264: PTAG store/clear observation.
+// Diagnostic-only counters to measure allocation/setup-side page-tag work.
+#ifndef HZ3_S264_PTAG_STORE_OBS
+#define HZ3_S264_PTAG_STORE_OBS 0
+#endif
+
+// S265: Lazily commit PTAG16 metadata pages on Windows.
+// Keeps PTAG16 dispatch semantics while avoiding the full fixed commit/RSS
+// floor from eagerly committing the whole PTAG16 array.
+#ifndef HZ3_S265_PTAG16_LAZY_COMMIT
+#define HZ3_S265_PTAG16_LAZY_COMMIT 0
+#endif
+
+// Diagnostic counters for S265. Keep separate from the feature flag so
+// measurement lanes can enable lazy commit without hot-path counter noise.
+#ifndef HZ3_S265_PTAG16_LAZY_STATS
+#define HZ3_S265_PTAG16_LAZY_STATS 0
+#endif
+
+// S266: Inline the already-committed PTAG16 lazy fast path.
+// This keeps S265 semantics, but avoids a helper call on the common committed
+// metadata-page case. The slow path still owns first-commit and diagnostics.
+#ifndef HZ3_S266_PTAG16_LAZY_INLINE_FAST
+#define HZ3_S266_PTAG16_LAZY_INLINE_FAST 0
+#endif
+
+#if HZ3_S265_PTAG16_LAZY_COMMIT && !defined(_WIN32)
+#error "HZ3_S265_PTAG16_LAZY_COMMIT is currently Windows-only"
+#endif
+
 // Small v2 PageTagMap (arena page-level tag for O(1) ptr→(sc,owner) lookup)
 #ifndef HZ3_SMALL_V2_PTAG_ENABLE
 #define HZ3_SMALL_V2_PTAG_ENABLE 0
@@ -323,6 +360,18 @@
 #if !HZ3_PTAG_DSTBIN_ENABLE
 #error "HZ3_PTAG32_ONLY requires HZ3_PTAG_DSTBIN_ENABLE=1"
 #endif
+#endif
+
+#if HZ3_S265_PTAG16_LAZY_COMMIT && !HZ3_SMALL_V2_PTAG_ENABLE
+#error "HZ3_S265_PTAG16_LAZY_COMMIT requires HZ3_SMALL_V2_PTAG_ENABLE=1"
+#endif
+
+#if HZ3_S266_PTAG16_LAZY_INLINE_FAST && !HZ3_S265_PTAG16_LAZY_COMMIT
+#error "HZ3_S266_PTAG16_LAZY_INLINE_FAST requires HZ3_S265_PTAG16_LAZY_COMMIT=1"
+#endif
+
+#if HZ3_S266_PTAG16_LAZY_INLINE_FAST && HZ3_S265_PTAG16_LAZY_STATS
+#error "HZ3_S266_PTAG16_LAZY_INLINE_FAST should not be combined with HZ3_S265_PTAG16_LAZY_STATS"
 #endif
 
 // PTAG dispatch helpers (compile-time)

@@ -40,6 +40,10 @@ static _Atomic size_t g_s218_floor_boost_hits = 0;
 static _Atomic size_t g_s237_budget_exhausted = 0;
 static _Atomic size_t g_s237_slack_admit_hits = 0;
 #endif
+#if HZ3_S268_LARGE_SCACHE_RSS_CAP
+static _Atomic size_t g_s268_admit_cap_skips = 0;
+static _Atomic size_t g_s268_floor_clamps = 0;
+#endif
 #if HZ3_S218_C1_LARGE_BATCH_MMAP
 static _Atomic size_t g_s218_c1_batch_runs = 0;
 static _Atomic size_t g_s218_c1_batch_cached_blocks = 0;
@@ -88,6 +92,9 @@ static void hz3_large_cache_stats_dump_final(void) {
 #if HZ3_S237_HIBAND_RETAIN_TUNE
             " s237_budget_exhausted=%zu s237_slack_admit_hits=%zu"
 #endif
+#if HZ3_S268_LARGE_SCACHE_RSS_CAP
+            " s268_admit_cap_skips=%zu s268_floor_clamps=%zu"
+#endif
 #if HZ3_S193_DEMAND_SCAVENGE
             " s193_miss=%zu s193_runs=%zu s193_pages=%zu"
 #endif
@@ -126,12 +133,25 @@ static void hz3_large_cache_stats_dump_final(void) {
             , atomic_load_explicit(&g_s237_budget_exhausted, memory_order_relaxed),
             atomic_load_explicit(&g_s237_slack_admit_hits, memory_order_relaxed)
 #endif
+#if HZ3_S268_LARGE_SCACHE_RSS_CAP
+            , atomic_load_explicit(&g_s268_admit_cap_skips, memory_order_relaxed),
+            atomic_load_explicit(&g_s268_floor_clamps, memory_order_relaxed)
+#endif
 #if HZ3_S193_DEMAND_SCAVENGE
             , atomic_load_explicit(&g_hz3_s193_mmap_miss_calls, memory_order_relaxed),
             atomic_load_explicit(&g_hz3_s193_scavenge_runs, memory_order_relaxed),
             atomic_load_explicit(&g_hz3_s193_scavenge_pages, memory_order_relaxed)
 #endif
             );
+#if HZ3_S268_LARGE_SCACHE_RSS_CAP
+    fprintf(stderr,
+            "[HZ3_S268_LARGE_SCACHE_RSS_CAP] enabled=1 sc_min=%d "
+            "max_nodes_per_sc=%u admit_cap_skips=%zu floor_clamps=%zu\n",
+            HZ3_S268_SC_MIN,
+            (unsigned)HZ3_S268_MAX_NODES_PER_SC,
+            atomic_load_explicit(&g_s268_admit_cap_skips, memory_order_relaxed),
+            atomic_load_explicit(&g_s268_floor_clamps, memory_order_relaxed));
+#endif
 }
 
 static void hz3_large_cache_stats_dump(void) {
@@ -273,7 +293,7 @@ static _Atomic size_t g_s240_inbox_bytes_current = 0;
 static _Atomic size_t g_s240_inbox_bytes_peak = 0;
 static _Atomic size_t g_s240_inbox_pushers_peak = 0;
 static _Atomic size_t g_s240_inbox_flush_wait_spins = 0;
-#if HZ3_S245_LARGE_INBOX_BATCH_POP
+#if HZ3_S245_LARGE_INBOX_BATCH_POP || HZ3_S273_LARGE_INBOX_TAKE_FIRST_BATCH
 static _Atomic size_t g_s245_batch_pop_calls = 0;
 static _Atomic size_t g_s245_batch_pop_nonempty = 0;
 static _Atomic size_t g_s245_batch_pop_objs = 0;
@@ -300,6 +320,24 @@ static _Atomic size_t g_s251_global_pop_to_freeing = 0;
 static _Atomic size_t g_s251_global_pop_state_fail = 0;
 static _Atomic size_t g_s251_front_push_state_fail = 0;
 static _Atomic size_t g_s251_inbox_push_state_fail = 0;
+#endif
+#if HZ3_S240_LARGE_FLUSH_VALIDATE
+static _Atomic size_t g_s240_flush_validate_calls = 0;
+static _Atomic size_t g_s240_flush_validate_failures = 0;
+static _Atomic size_t g_s240_flush_front_node_fail = 0;
+static _Atomic size_t g_s240_flush_inbox_node_fail = 0;
+static _Atomic size_t g_s240_flush_drain_node_fail = 0;
+static _Atomic size_t g_s240_flush_null_node_fail = 0;
+static _Atomic size_t g_s240_flush_bad_state = 0;
+static _Atomic size_t g_s240_flush_bad_header = 0;
+static _Atomic size_t g_s240_flush_bad_link = 0;
+static _Atomic size_t g_s240_flush_sc_mismatch = 0;
+static _Atomic size_t g_s240_flush_inbox_count_underflow = 0;
+static _Atomic size_t g_s240_flush_inbox_bytes_underflow = 0;
+#endif
+#if HZ3_S240_LARGE_FLUSH_QUARANTINE
+static _Atomic size_t g_s240_flush_quarantine_objs = 0;
+static _Atomic size_t g_s240_flush_quarantine_bytes = 0;
 #endif
 
 static inline void hz3_large_s240_inc(_Atomic size_t* p) {
@@ -392,7 +430,7 @@ static void hz3_large_s240_dump_final(void) {
             atomic_load_explicit(&g_s240_inbox_bytes_peak, memory_order_relaxed),
             atomic_load_explicit(&g_s240_inbox_pushers_peak, memory_order_relaxed),
             atomic_load_explicit(&g_s240_inbox_flush_wait_spins, memory_order_relaxed));
-#if HZ3_S245_LARGE_INBOX_BATCH_POP
+#if HZ3_S245_LARGE_INBOX_BATCH_POP || HZ3_S273_LARGE_INBOX_TAKE_FIRST_BATCH
     fprintf(stderr,
             "[HZ3_LARGE_S245_INBOX_BATCH] pop_calls=%zu pop_nonempty=%zu "
             "pop_objs=%zu pop_cas_retries=%zu pop_max_objs=%zu\n",
@@ -433,6 +471,35 @@ static void hz3_large_s240_dump_final(void) {
             atomic_load_explicit(&g_s251_front_push_state_fail, memory_order_relaxed),
             atomic_load_explicit(&g_s251_inbox_push_state_fail, memory_order_relaxed),
             HZ3_S251_LARGE_OWNER_FRONT_FAILFAST);
+#endif
+#if HZ3_S240_LARGE_FLUSH_VALIDATE
+    fprintf(stderr,
+            "[HZ3_LARGE_S240_FLUSH_VALIDATE] enabled=1 failfast=%d "
+            "calls=%zu failures=%zu front_node_fail=%zu inbox_node_fail=%zu "
+            "drain_node_fail=%zu null_node_fail=%zu bad_state=%zu "
+            "bad_header=%zu bad_link=%zu sc_mismatch=%zu "
+            "inbox_count_underflow=%zu inbox_bytes_underflow=%zu\n",
+            HZ3_S240_LARGE_FLUSH_FAILFAST,
+            atomic_load_explicit(&g_s240_flush_validate_calls, memory_order_relaxed),
+            atomic_load_explicit(&g_s240_flush_validate_failures, memory_order_relaxed),
+            atomic_load_explicit(&g_s240_flush_front_node_fail, memory_order_relaxed),
+            atomic_load_explicit(&g_s240_flush_inbox_node_fail, memory_order_relaxed),
+            atomic_load_explicit(&g_s240_flush_drain_node_fail, memory_order_relaxed),
+            atomic_load_explicit(&g_s240_flush_null_node_fail, memory_order_relaxed),
+            atomic_load_explicit(&g_s240_flush_bad_state, memory_order_relaxed),
+            atomic_load_explicit(&g_s240_flush_bad_header, memory_order_relaxed),
+            atomic_load_explicit(&g_s240_flush_bad_link, memory_order_relaxed),
+            atomic_load_explicit(&g_s240_flush_sc_mismatch, memory_order_relaxed),
+            atomic_load_explicit(&g_s240_flush_inbox_count_underflow,
+                                  memory_order_relaxed),
+            atomic_load_explicit(&g_s240_flush_inbox_bytes_underflow,
+                                  memory_order_relaxed));
+#endif
+#if HZ3_S240_LARGE_FLUSH_QUARANTINE
+    fprintf(stderr,
+            "[HZ3_LARGE_S240_FLUSH_QUARANTINE] enabled=1 objs=%zu bytes=%zu\n",
+            atomic_load_explicit(&g_s240_flush_quarantine_objs, memory_order_relaxed),
+            atomic_load_explicit(&g_s240_flush_quarantine_bytes, memory_order_relaxed));
 #endif
 #if HZ3_S253_LARGE_RSS_RETENTION_OBS
     size_t global_cached_bytes = 0;
@@ -628,6 +695,162 @@ static inline void hz3_large_s251_on_global_pop(Hz3LargeHdr* hdr) {
 static inline void hz3_large_s251_on_global_pop(Hz3LargeHdr* hdr) {
     (void)hdr;
 }
+#endif
+
+#if HZ3_S240_LARGE_FLUSH_VALIDATE
+static void hz3_large_s240_flush_debug_fail(const char* where,
+                                            Hz3LargeHdr* hdr,
+                                            const char* reason,
+                                            size_t actual,
+                                            size_t expected,
+                                            _Atomic size_t* counter) {
+    hz3_large_s240_register_once();
+    hz3_large_s240_inc(&g_s240_flush_validate_failures);
+    if (counter) {
+        hz3_large_s240_inc(counter);
+    }
+    fprintf(stderr,
+            "[HZ3_LARGE_S240_FLUSH_FAIL] where=%s reason=%s hdr=%p "
+            "actual=%zu expected=%zu map_base=%p map_size=%zu user_ptr=%p "
+            "in_use=%u next=%p next_free=%p state=%u owner=%u sc=%u flags=0x%x\n",
+            where,
+            reason,
+            (void*)hdr,
+            actual,
+            expected,
+            hdr ? hdr->map_base : NULL,
+            hdr ? hdr->map_size : 0,
+            hdr ? hdr->user_ptr : NULL,
+            hdr ? (unsigned)hdr->in_use : 0u,
+            hdr ? (void*)hdr->next : NULL,
+            hdr ? (void*)hdr->next_free : NULL,
+            hdr ? atomic_load_explicit(&hdr->state, memory_order_acquire) : 0u,
+            hdr ? (unsigned)hdr->owner_shard : 255u,
+            hdr ? (unsigned)hdr->sc : 255u,
+            hdr ? (unsigned)hdr->flags : 0u);
+#if HZ3_S240_LARGE_FLUSH_FAILFAST
+    abort();
+#endif
+}
+
+static int hz3_large_s240_flush_validate_node(Hz3LargeHdr* hdr,
+                                              int sc,
+                                              uint32_t expected_state,
+                                              const char* where,
+                                              _Atomic size_t* node_counter) {
+    hz3_large_s240_register_once();
+    hz3_large_s240_inc(&g_s240_flush_validate_calls);
+    if (!hdr) {
+        hz3_large_s240_flush_debug_fail(where,
+                                        hdr,
+                                        "null-node",
+                                        0,
+                                        1,
+                                        &g_s240_flush_null_node_fail);
+        if (node_counter) {
+            hz3_large_s240_inc(node_counter);
+        }
+        return 0;
+    }
+    if (hdr->magic != HZ3_LARGE_MAGIC || hdr->map_base != (void*)hdr ||
+        hdr->map_size == 0) {
+        hz3_large_s240_flush_debug_fail(where,
+                                        hdr,
+                                        "bad-header",
+                                        hdr->map_size,
+                                        1,
+                                        &g_s240_flush_bad_header);
+        if (node_counter) {
+            hz3_large_s240_inc(node_counter);
+        }
+        return 0;
+    }
+    if (hdr->in_use != 0) {
+        hz3_large_s240_flush_debug_fail(where,
+                                        hdr,
+                                        "in-use",
+                                        hdr->in_use,
+                                        0,
+                                        &g_s240_flush_bad_header);
+        if (node_counter) {
+            hz3_large_s240_inc(node_counter);
+        }
+        return 0;
+    }
+    if (hdr->next != NULL || hdr->next_free != NULL) {
+        hz3_large_s240_flush_debug_fail(where,
+                                        hdr,
+                                        "linked-node",
+                                        (size_t)(uintptr_t)(hdr->next ? hdr->next
+                                                                      : hdr->next_free),
+                                        0,
+                                        &g_s240_flush_bad_link);
+        if (node_counter) {
+            hz3_large_s240_inc(node_counter);
+        }
+        return 0;
+    }
+    uint32_t state = atomic_load_explicit(&hdr->state, memory_order_acquire);
+    if (expected_state != 0 && state != expected_state) {
+        hz3_large_s240_flush_debug_fail(where,
+                                        hdr,
+                                        "bad-state",
+                                        state,
+                                        expected_state,
+                                        &g_s240_flush_bad_state);
+        if (node_counter) {
+            hz3_large_s240_inc(node_counter);
+        }
+        return 0;
+    }
+    if (sc >= 0 && sc < HZ3_LARGE_SC_COUNT && hdr->sc != UINT8_MAX &&
+        hdr->sc != (uint8_t)sc) {
+        hz3_large_s240_flush_debug_fail(where,
+                                        hdr,
+                                        "sc-mismatch",
+                                        hdr->sc,
+                                        (uint8_t)sc,
+                                        &g_s240_flush_sc_mismatch);
+        if (node_counter) {
+            hz3_large_s240_inc(node_counter);
+        }
+        return 0;
+    }
+    return 1;
+}
+
+static void hz3_large_s240_inbox_account_underflow(const char* where,
+                                                   const char* reason,
+                                                   size_t actual,
+                                                   size_t expected,
+                                                   _Atomic size_t* counter) {
+    hz3_large_s240_flush_debug_fail(where, NULL, reason, actual, expected, counter);
+}
+#define HZ3_S240_FLUSH_FRONT_COUNTER (&g_s240_flush_front_node_fail)
+#define HZ3_S240_FLUSH_INBOX_COUNTER (&g_s240_flush_inbox_node_fail)
+#define HZ3_S240_FLUSH_DRAIN_COUNTER (&g_s240_flush_drain_node_fail)
+#else
+static inline int hz3_large_s240_flush_validate_node(Hz3LargeHdr* hdr,
+                                                     int sc,
+                                                     uint32_t expected_state,
+                                                     const char* where,
+                                                     _Atomic size_t* node_counter) {
+    (void)hdr;
+    (void)sc;
+    (void)expected_state;
+    (void)where;
+    (void)node_counter;
+    return 1;
+}
+#define HZ3_S240_FLUSH_FRONT_COUNTER NULL
+#define HZ3_S240_FLUSH_INBOX_COUNTER NULL
+#define HZ3_S240_FLUSH_DRAIN_COUNTER NULL
+#endif
+
+#if HZ3_S251_LARGE_OWNER_FRONT_SAFETY
+#define HZ3_S240_FLUSH_INBOX_POPPED_STATE HZ3_LARGE_STATE_FREEING
+#else
+#define HZ3_S240_FLUSH_INBOX_POPPED_STATE HZ3_LARGE_STATE_REMOTE
 #endif
 
 static inline void hz3_large_s240_on_activate(Hz3LargeHdr* hdr, int sc, int from_cache) {
@@ -853,6 +1076,37 @@ static inline int hz3_large_s240_front_push(int sc, Hz3LargeHdr* hdr) {
 #endif
     return 1;
 }
+
+static inline size_t hz3_large_s240_flush_dispose_node(Hz3LargeHdr* hdr,
+                                                       int sc,
+                                                       uint32_t expected_state,
+                                                       const char* where,
+                                                       _Atomic size_t* node_counter) {
+    if (!hdr) {
+        hz3_large_s240_flush_validate_node(hdr, sc, expected_state, where, node_counter);
+        return 0;
+    }
+    hdr->next = NULL;
+    hdr->next_free = NULL;
+    hz3_large_s240_flush_validate_node(hdr, sc, expected_state, where, node_counter);
+    size_t bytes = hdr->map_size;
+    void* base = hdr->map_base;
+    hz3_large_s240_on_munmap_store(hdr);
+#if HZ3_LARGE_DEBUG
+    hz3_large_cache_lock_acquire();
+    hz3_large_debug_on_munmap_locked(hdr);
+    hz3_large_cache_lock_release();
+#endif
+    hdr->magic = 0;
+#if HZ3_S240_LARGE_FLUSH_QUARANTINE
+    hz3_large_s240_inc(&g_s240_flush_quarantine_objs);
+    hz3_large_s240_add(&g_s240_flush_quarantine_bytes, bytes);
+    (void)base;
+#else
+    hz3_large_os_munmap(base, bytes);
+#endif
+    return bytes;
+}
 #endif
 
 #if HZ3_S240_LARGE_OWNER_INBOX && HZ3_S240_LARGE_FRONT_CACHE
@@ -884,6 +1138,56 @@ static inline void hz3_large_s240_inbox_note_sub(size_t bytes) {
     hz3_large_s240_sub(&g_s240_inbox_bytes_current, bytes);
 #else
     (void)bytes;
+#endif
+}
+
+static inline void hz3_large_s240_inbox_account_pop(Hz3LargeInbox* inbox,
+                                                    uint32_t count,
+                                                    size_t bytes,
+                                                    const char* where) {
+#if HZ3_S240_LARGE_FLUSH_VALIDATE
+    uint32_t old_count = atomic_load_explicit(&inbox->count, memory_order_acquire);
+    for (;;) {
+        if (old_count < count) {
+            hz3_large_s240_inbox_account_underflow(where,
+                                                   "inbox-count-underflow",
+                                                   old_count,
+                                                   count,
+                                                   &g_s240_flush_inbox_count_underflow);
+            atomic_store_explicit(&inbox->count, 0, memory_order_release);
+            break;
+        }
+        if (atomic_compare_exchange_weak_explicit(&inbox->count,
+                                                  &old_count,
+                                                  old_count - count,
+                                                  memory_order_acq_rel,
+                                                  memory_order_acquire)) {
+            break;
+        }
+    }
+
+    size_t old_bytes = atomic_load_explicit(&inbox->bytes, memory_order_acquire);
+    for (;;) {
+        if (old_bytes < bytes) {
+            hz3_large_s240_inbox_account_underflow(where,
+                                                   "inbox-bytes-underflow",
+                                                   old_bytes,
+                                                   bytes,
+                                                   &g_s240_flush_inbox_bytes_underflow);
+            atomic_store_explicit(&inbox->bytes, 0, memory_order_release);
+            break;
+        }
+        if (atomic_compare_exchange_weak_explicit(&inbox->bytes,
+                                                  &old_bytes,
+                                                  old_bytes - bytes,
+                                                  memory_order_acq_rel,
+                                                  memory_order_acquire)) {
+            break;
+        }
+    }
+#else
+    atomic_fetch_sub_explicit(&inbox->count, count, memory_order_relaxed);
+    atomic_fetch_sub_explicit(&inbox->bytes, bytes, memory_order_relaxed);
 #endif
 }
 
@@ -967,6 +1271,12 @@ static inline int hz3_large_s240_inbox_push_remote(int sc, Hz3LargeHdr* hdr, uin
 #endif
     atomic_store_explicit(&hdr->state, HZ3_LARGE_STATE_REMOTE, memory_order_release);
 
+    // Publish accounting before the stack head. The owner can drain immediately
+    // after seeing `head`, so count/bytes must already describe the node.
+    atomic_fetch_add_explicit(&inbox->count, 1, memory_order_acq_rel);
+    atomic_fetch_add_explicit(&inbox->bytes, hdr->map_size, memory_order_acq_rel);
+    hz3_large_s240_inbox_note_add(hdr->map_size);
+
     Hz3LargeHdr* old = atomic_load_explicit(&inbox->head, memory_order_relaxed);
     for (;;) {
         hdr->next_free = old;
@@ -981,9 +1291,6 @@ static inline int hz3_large_s240_inbox_push_remote(int sc, Hz3LargeHdr* hdr, uin
         hz3_large_s240_inc(&g_s240_inbox_cas_retries);
 #endif
     }
-    atomic_fetch_add_explicit(&inbox->count, 1, memory_order_relaxed);
-    atomic_fetch_add_explicit(&inbox->bytes, hdr->map_size, memory_order_relaxed);
-    hz3_large_s240_inbox_note_add(hdr->map_size);
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
     hz3_large_s240_inc(&g_s240_inbox_remote_push);
 #endif
@@ -1006,8 +1313,10 @@ static inline Hz3LargeHdr* hz3_large_s240_inbox_pop_one(uint8_t owner, int sc) {
                                                   memory_order_acquire,
                                                   memory_order_relaxed)) {
             head->next_free = NULL;
-            atomic_fetch_sub_explicit(&inbox->count, 1, memory_order_relaxed);
-            atomic_fetch_sub_explicit(&inbox->bytes, head->map_size, memory_order_relaxed);
+            hz3_large_s240_inbox_account_pop(inbox,
+                                             1,
+                                             head->map_size,
+                                             "inbox-pop-one");
             hz3_large_s240_inbox_note_sub(head->map_size);
 #if HZ3_S251_LARGE_OWNER_FRONT_SAFETY
             hz3_large_s251_transition(head,
@@ -1026,7 +1335,7 @@ static inline Hz3LargeHdr* hz3_large_s240_inbox_pop_one(uint8_t owner, int sc) {
     return NULL;
 }
 
-#if HZ3_S245_LARGE_INBOX_BATCH_POP
+#if HZ3_S245_LARGE_INBOX_BATCH_POP || HZ3_S273_LARGE_INBOX_TAKE_FIRST_BATCH
 static inline Hz3LargeHdr* hz3_large_s245_inbox_pop_batch(uint8_t owner,
                                                           int sc,
                                                           int max_nodes,
@@ -1060,11 +1369,20 @@ static inline Hz3LargeHdr* hz3_large_s245_inbox_pop_batch(uint8_t owner,
                                                   memory_order_acquire,
                                                   memory_order_relaxed)) {
             tail->next_free = NULL;
-            atomic_fetch_sub_explicit(&inbox->count, (uint32_t)count,
-                                      memory_order_relaxed);
-            atomic_fetch_sub_explicit(&inbox->bytes, bytes, memory_order_relaxed);
+            hz3_large_s240_inbox_account_pop(inbox,
+                                             (uint32_t)count,
+                                             bytes,
+                                             "inbox-pop-batch");
             for (Hz3LargeHdr* cur = head; cur; cur = cur->next_free) {
                 hz3_large_s240_inbox_note_sub(cur->map_size);
+#if HZ3_S251_LARGE_OWNER_FRONT_SAFETY
+                hz3_large_s251_transition(cur,
+                                          HZ3_LARGE_STATE_REMOTE,
+                                          HZ3_LARGE_STATE_FREEING,
+                                          "inbox_pop_batch",
+                                          &g_s251_inbox_pop_to_freeing,
+                                          &g_s251_inbox_pop_state_fail);
+#endif
             }
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
             hz3_large_s240_inc(&g_s245_batch_pop_nonempty);
@@ -1116,10 +1434,11 @@ static inline int hz3_large_s240_inbox_drain_current_to_front(int sc, int max_no
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
         hz3_large_s240_inc(&g_s240_inbox_drain_front_reject);
 #endif
-        size_t bytes = hdr->map_size;
-        hz3_large_s240_on_munmap_store(hdr);
-        hdr->magic = 0;
-        hz3_large_os_munmap(hdr->map_base, bytes);
+        (void)hz3_large_s240_flush_dispose_node(hdr,
+                                                sc,
+                                                HZ3_S240_FLUSH_INBOX_POPPED_STATE,
+                                                "inbox-drain-front-reject",
+                                                HZ3_S240_FLUSH_DRAIN_COUNTER);
     }
 #else
     for (int i = 0; i < max_nodes; i++) {
@@ -1136,10 +1455,11 @@ static inline int hz3_large_s240_inbox_drain_current_to_front(int sc, int max_no
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
         hz3_large_s240_inc(&g_s240_inbox_drain_front_reject);
 #endif
-        size_t bytes = hdr->map_size;
-        hz3_large_s240_on_munmap_store(hdr);
-        hdr->magic = 0;
-        hz3_large_os_munmap(hdr->map_base, bytes);
+        (void)hz3_large_s240_flush_dispose_node(hdr,
+                                                sc,
+                                                HZ3_S240_FLUSH_INBOX_POPPED_STATE,
+                                                "inbox-drain-front-reject",
+                                                HZ3_S240_FLUSH_DRAIN_COUNTER);
     }
 #endif
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
@@ -1173,7 +1493,13 @@ static inline Hz3LargeHdr* hz3_large_s246_inbox_drain_current_take_first_to_fron
     hz3_large_s240_inc(&g_s246_take_first_calls);
 #endif
 
-    Hz3LargeHdr* first = hz3_large_s240_inbox_pop_one(owner, sc);
+    Hz3LargeHdr* first = NULL;
+#if HZ3_S273_LARGE_INBOX_TAKE_FIRST_BATCH
+    int batch_count = 0;
+    first = hz3_large_s245_inbox_pop_batch(owner, sc, max_nodes, &batch_count);
+#else
+    first = hz3_large_s240_inbox_pop_one(owner, sc);
+#endif
     if (!first) {
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
         hz3_large_s240_inc(&g_s246_take_first_misses);
@@ -1182,6 +1508,7 @@ static inline Hz3LargeHdr* hz3_large_s246_inbox_drain_current_take_first_to_fron
     }
 
     int drained = 1;
+    Hz3LargeHdr* extras = first->next_free;
     first->next_free = NULL;
     first->in_use = 0;
     first->next = NULL;
@@ -1190,6 +1517,33 @@ static inline Hz3LargeHdr* hz3_large_s246_inbox_drain_current_take_first_to_fron
     hz3_large_s240_inc(&g_s246_take_first_direct);
 #endif
 
+#if HZ3_S273_LARGE_INBOX_TAKE_FIRST_BATCH
+    (void)batch_count;
+    Hz3LargeHdr* pending = extras;
+    while (pending) {
+        Hz3LargeHdr* hdr = pending;
+        pending = hdr->next_free;
+        hdr->next_free = NULL;
+        hdr->in_use = 0;
+        hdr->next = NULL;
+        if (hz3_large_s240_front_push(sc, hdr)) {
+            drained++;
+#if HZ3_S240_LARGE_OWNER_FRONT_STATS
+            hz3_large_s240_inc(&g_s246_take_first_extra_fronted);
+#endif
+            continue;
+        }
+#if HZ3_S240_LARGE_OWNER_FRONT_STATS
+        hz3_large_s240_inc(&g_s240_inbox_drain_front_reject);
+        hz3_large_s240_inc(&g_s246_take_first_extra_munmap);
+#endif
+        (void)hz3_large_s240_flush_dispose_node(hdr,
+                                                sc,
+                                                HZ3_S240_FLUSH_INBOX_POPPED_STATE,
+                                                "inbox-take-first-batch-extra-munmap",
+                                                HZ3_S240_FLUSH_DRAIN_COUNTER);
+    }
+#else
     for (int i = 1; i < max_nodes; i++) {
         Hz3LargeHdr* hdr = hz3_large_s240_inbox_pop_one(owner, sc);
         if (!hdr) {
@@ -1208,11 +1562,13 @@ static inline Hz3LargeHdr* hz3_large_s246_inbox_drain_current_take_first_to_fron
         hz3_large_s240_inc(&g_s240_inbox_drain_front_reject);
         hz3_large_s240_inc(&g_s246_take_first_extra_munmap);
 #endif
-        size_t bytes = hdr->map_size;
-        hz3_large_s240_on_munmap_store(hdr);
-        hdr->magic = 0;
-        hz3_large_os_munmap(hdr->map_base, bytes);
+        (void)hz3_large_s240_flush_dispose_node(hdr,
+                                                sc,
+                                                HZ3_S240_FLUSH_INBOX_POPPED_STATE,
+                                                "inbox-take-first-extra-munmap",
+                                                HZ3_S240_FLUSH_DRAIN_COUNTER);
     }
+#endif
 
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
     hz3_large_s240_inc(&g_s240_inbox_drain_nonempty);
@@ -1249,14 +1605,17 @@ static inline void hz3_large_s240_inbox_flush_owner(uint8_t owner) {
             if (!hdr) {
                 break;
             }
-            size_t bytes = hdr->map_size;
-            hdr->next = NULL;
-            hz3_large_s240_on_munmap_store(hdr);
-            hdr->magic = 0;
-            hz3_large_os_munmap(hdr->map_base, bytes);
+            size_t bytes = hz3_large_s240_flush_dispose_node(
+                hdr,
+                sc,
+                HZ3_S240_FLUSH_INBOX_POPPED_STATE,
+                "inbox-flush-owner",
+                HZ3_S240_FLUSH_INBOX_COUNTER);
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
             hz3_large_s240_inc(&g_s240_inbox_flush_objs);
             hz3_large_s240_add(&g_s240_inbox_flush_bytes, bytes);
+#else
+            (void)bytes;
 #endif
         }
     }
@@ -1297,12 +1656,12 @@ void hz3_large_s240_tls_flush(void) {
         t_hz3_large_front.count[sc] = 0;
         while (hdr) {
             Hz3LargeHdr* next = hdr->next_free;
-            hdr->next_free = NULL;
-            hdr->next = NULL;
-            size_t bytes = hdr->map_size;
-            hz3_large_s240_on_munmap_store(hdr);
-            hdr->magic = 0;
-            hz3_large_os_munmap(hdr->map_base, bytes);
+            size_t bytes = hz3_large_s240_flush_dispose_node(
+                hdr,
+                sc,
+                HZ3_LARGE_STATE_FRONT,
+                "tls-front-flush",
+                HZ3_S240_FLUSH_FRONT_COUNTER);
             hz3_large_s240_front_note_sub(bytes);
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
             hz3_large_s240_inc(&g_s240_front_flush_objs);
@@ -2218,7 +2577,10 @@ static int hz3_large_unmap_defer_try_push(Hz3LargeHdr* victim) {
         victim->next_free = g_hz3_large_unmap_defer_head;
         g_hz3_large_unmap_defer_head = victim;
         g_hz3_large_unmap_defer_bytes += victim->map_size;
+        hz3_s267_on_defer_push(victim->map_size, g_hz3_large_unmap_defer_bytes);
         queued = 1;
+    } else {
+        hz3_s267_on_defer_reject(victim->map_size, g_hz3_large_unmap_defer_bytes);
     }
     hz3_lock_release(&g_hz3_large_unmap_defer_lock);
     return queued;
@@ -2240,6 +2602,7 @@ static void hz3_large_unmap_defer_drain_n(unsigned budget) {
             victim = g_hz3_large_unmap_defer_head;
             g_hz3_large_unmap_defer_head = victim->next_free;
             g_hz3_large_unmap_defer_bytes -= victim->map_size;
+            hz3_s267_on_defer_pop(victim->map_size, g_hz3_large_unmap_defer_bytes);
         }
         hz3_lock_release(&g_hz3_large_unmap_defer_lock);
         if (!victim) {
@@ -2523,6 +2886,62 @@ static inline int hz3_large_reuse_trackable_sc(int sc) {
 #endif
 }
 
+static inline int hz3_large_s268_cap_sc(int sc) {
+#if HZ3_S268_LARGE_SCACHE_RSS_CAP
+    return (sc >= HZ3_S268_SC_MIN && sc < (HZ3_LARGE_SC_COUNT - 1));
+#else
+    (void)sc;
+    return 0;
+#endif
+}
+
+static inline uint32_t hz3_large_s268_max_nodes_for_sc(int sc) {
+#if HZ3_S268_LARGE_SCACHE_RSS_CAP
+    if (hz3_large_s268_cap_sc(sc)) {
+        return (uint32_t)HZ3_S268_MAX_NODES_PER_SC;
+    }
+#else
+    (void)sc;
+#endif
+    return UINT32_MAX;
+}
+
+static inline uint32_t hz3_large_s268_clamp_floor_nodes(int sc, uint32_t floor_nodes) {
+#if HZ3_S268_LARGE_SCACHE_RSS_CAP
+    uint32_t cap_nodes = hz3_large_s268_max_nodes_for_sc(sc);
+    if (cap_nodes != UINT32_MAX && floor_nodes > cap_nodes) {
+#if HZ3_LARGE_CACHE_STATS
+        hz3_large_stat_inc(&g_s268_floor_clamps);
+#endif
+        return cap_nodes;
+    }
+#else
+    (void)sc;
+#endif
+    return floor_nodes;
+}
+
+static inline int hz3_large_s268_admit_under_cap_locked(int sc) {
+#if HZ3_S268_LARGE_SCACHE_RSS_CAP
+    uint32_t cap_nodes = hz3_large_s268_max_nodes_for_sc(sc);
+    if (cap_nodes == UINT32_MAX) {
+        return 1;
+    }
+    hz3_large_sc_lock_acquire(sc);
+    uint32_t nodes = g_sc_nodes[sc];
+    hz3_large_sc_lock_release(sc);
+    if (nodes >= cap_nodes) {
+#if HZ3_LARGE_CACHE_STATS
+        hz3_large_stat_inc(&g_s268_admit_cap_skips);
+#endif
+        return 0;
+    }
+#else
+    (void)sc;
+#endif
+    return 1;
+}
+
 static inline int hz3_s233_hotband_force_sc(int sc) {
 #if HZ3_S207_TARGETED_REUSE && HZ3_S233_HOTBAND_ALWAYS_ADMIT
     return (sc >= HZ3_S233_SC_MIN && sc <= HZ3_S233_SC_MAX &&
@@ -2607,7 +3026,11 @@ static inline int hz3_large_reuse_try_admit_locked(int sc) {
     if (!hz3_large_reuse_trackable_sc(sc)) {
         return 1;
     }
+    if (!hz3_large_s268_admit_under_cap_locked(sc)) {
+        return 0;
+    }
     uint32_t floor_nodes = hz3_large_reuse_floor_nodes_for_sc(sc);
+    floor_nodes = hz3_large_s268_clamp_floor_nodes(sc, floor_nodes);
     if (floor_nodes > 0) {
         uint32_t nodes;
         hz3_large_sc_lock_acquire(sc);

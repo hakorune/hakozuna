@@ -146,6 +146,22 @@
 #error "HZ3_S246_LARGE_INBOX_TAKE_FIRST and HZ3_S245_LARGE_INBOX_BATCH_POP are separate probes"
 #endif
 
+// S273: use the S245-style batch detach inside the S246 take-first path.
+// The first detached node is returned directly to allocation; the remaining
+// detached nodes refill the TLS front cache. This keeps S246 semantics while
+// reducing repeated owner-inbox CAS work.
+#ifndef HZ3_S273_LARGE_INBOX_TAKE_FIRST_BATCH
+#define HZ3_S273_LARGE_INBOX_TAKE_FIRST_BATCH 0
+#endif
+
+#if HZ3_S273_LARGE_INBOX_TAKE_FIRST_BATCH && !HZ3_S246_LARGE_INBOX_TAKE_FIRST
+#error "HZ3_S273_LARGE_INBOX_TAKE_FIRST_BATCH requires HZ3_S246_LARGE_INBOX_TAKE_FIRST"
+#endif
+
+#if HZ3_S273_LARGE_INBOX_TAKE_FIRST_BATCH && HZ3_S245_LARGE_INBOX_BATCH_POP
+#error "HZ3_S273_LARGE_INBOX_TAKE_FIRST_BATCH uses the S245 batch helper; keep HZ3_S245_LARGE_INBOX_BATCH_POP disabled"
+#endif
+
 // S242: shifted-pointer-safe large direct side-map prototype.
 // Shadow mode keeps the existing active hash map authoritative.  The side-map
 // is populated and checked only to measure hit rate and mismatch risk before
@@ -174,6 +190,18 @@
 #define HZ3_S242_DIRECT_ENTRY_COUNT HZ3_S242_DIRECT_STATS
 #endif
 
+#ifndef HZ3_S242_DIRECT_VALIDATE
+#define HZ3_S242_DIRECT_VALIDATE 0
+#endif
+
+#ifndef HZ3_S242_DIRECT_FAILFAST
+#define HZ3_S242_DIRECT_FAILFAST HZ3_S242_DIRECT_VALIDATE
+#endif
+
+#ifndef HZ3_S242_DIRECT_TAKE_BUSY_RETRIES
+#define HZ3_S242_DIRECT_TAKE_BUSY_RETRIES 8u
+#endif
+
 #ifndef HZ3_S242_DIRECT_SET_BITS
 #define HZ3_S242_DIRECT_SET_BITS 14
 #endif
@@ -196,6 +224,26 @@
 
 #if HZ3_S242_LARGE_DIRECT_SIDE_MAP && (HZ3_S242_DIRECT_WAYS < 1 || HZ3_S242_DIRECT_WAYS > 16)
 #error "HZ3_S242_DIRECT_WAYS must be between 1 and 16"
+#endif
+
+#if HZ3_S242_DIRECT_VALIDATE && !HZ3_S242_LARGE_DIRECT_SIDE_MAP
+#error "HZ3_S242_DIRECT_VALIDATE requires HZ3_S242_LARGE_DIRECT_SIDE_MAP"
+#endif
+
+#if HZ3_S242_DIRECT_VALIDATE && !HZ3_S242_DIRECT_STATS
+#error "HZ3_S242_DIRECT_VALIDATE requires HZ3_S242_DIRECT_STATS"
+#endif
+
+#if HZ3_S242_DIRECT_VALIDATE < 0 || HZ3_S242_DIRECT_VALIDATE > 1
+#error "HZ3_S242_DIRECT_VALIDATE must be 0 or 1"
+#endif
+
+#if HZ3_S242_DIRECT_FAILFAST < 0 || HZ3_S242_DIRECT_FAILFAST > 1
+#error "HZ3_S242_DIRECT_FAILFAST must be 0 or 1"
+#endif
+
+#if HZ3_S242_DIRECT_TAKE_BUSY_RETRIES > 1024u
+#error "HZ3_S242_DIRECT_TAKE_BUSY_RETRIES must be <= 1024"
 #endif
 
 // S243: residual large fast-path cost probe.
@@ -228,6 +276,58 @@
 #error "HZ3_S251_LARGE_OWNER_FRONT_SAFETY requires HZ3_S240_LARGE_OWNER_FRONT_STATS"
 #endif
 
+// S240 flush/debug validation.
+//
+// Diagnostic-only guard for rare teardown/flush corruption. It validates large
+// owner-front and owner-inbox nodes immediately before S240-controlled munmap
+// paths, and checks inbox accounting before subtracting pop counts/bytes.
+#ifndef HZ3_S240_LARGE_FLUSH_VALIDATE
+#define HZ3_S240_LARGE_FLUSH_VALIDATE 0
+#endif
+
+#ifndef HZ3_S240_LARGE_FLUSH_FAILFAST
+#define HZ3_S240_LARGE_FLUSH_FAILFAST HZ3_S240_LARGE_FLUSH_VALIDATE
+#endif
+
+// Debug-only quarantine. When enabled, S240 flush/drain fallback paths mark
+// nodes as retired but intentionally skip munmap. This leaks memory by design
+// and is only for isolating invalid/double munmap crashes.
+#ifndef HZ3_S240_LARGE_FLUSH_QUARANTINE
+#define HZ3_S240_LARGE_FLUSH_QUARANTINE 0
+#endif
+
+#if HZ3_S240_LARGE_FLUSH_VALIDATE && !HZ3_S240_LARGE_OWNER_FRONT
+#error "HZ3_S240_LARGE_FLUSH_VALIDATE requires HZ3_S240_LARGE_OWNER_FRONT"
+#endif
+
+#if HZ3_S240_LARGE_FLUSH_VALIDATE && !HZ3_S240_LARGE_OWNER_FRONT_STATS
+#error "HZ3_S240_LARGE_FLUSH_VALIDATE requires HZ3_S240_LARGE_OWNER_FRONT_STATS"
+#endif
+
+#if HZ3_S240_LARGE_FLUSH_VALIDATE && !HZ3_S240_LARGE_FRONT_CACHE
+#error "HZ3_S240_LARGE_FLUSH_VALIDATE requires HZ3_S240_LARGE_FRONT_CACHE"
+#endif
+
+#if HZ3_S240_LARGE_FLUSH_QUARANTINE && !HZ3_S240_LARGE_FRONT_CACHE
+#error "HZ3_S240_LARGE_FLUSH_QUARANTINE requires HZ3_S240_LARGE_FRONT_CACHE"
+#endif
+
+#if HZ3_S240_LARGE_FLUSH_QUARANTINE && !HZ3_S240_LARGE_OWNER_FRONT_STATS
+#error "HZ3_S240_LARGE_FLUSH_QUARANTINE requires HZ3_S240_LARGE_OWNER_FRONT_STATS"
+#endif
+
+#if HZ3_S240_LARGE_FLUSH_VALIDATE < 0 || HZ3_S240_LARGE_FLUSH_VALIDATE > 1
+#error "HZ3_S240_LARGE_FLUSH_VALIDATE must be 0 or 1"
+#endif
+
+#if HZ3_S240_LARGE_FLUSH_FAILFAST < 0 || HZ3_S240_LARGE_FLUSH_FAILFAST > 1
+#error "HZ3_S240_LARGE_FLUSH_FAILFAST must be 0 or 1"
+#endif
+
+#if HZ3_S240_LARGE_FLUSH_QUARANTINE < 0 || HZ3_S240_LARGE_FLUSH_QUARANTINE > 1
+#error "HZ3_S240_LARGE_FLUSH_QUARANTINE must be 0 or 1"
+#endif
+
 // S253: RSS retention observation lane for S252 high-band owner-front policy.
 //
 // This is diagnostic-only. It mirrors the S252 speed lane but emits retained
@@ -246,6 +346,15 @@
 
 #if HZ3_S253_LARGE_RSS_RETENTION_OBS && !HZ3_S240_LARGE_OWNER_INBOX
 #error "HZ3_S253_LARGE_RSS_RETENTION_OBS requires HZ3_S240_LARGE_OWNER_INBOX"
+#endif
+
+// S267: large RSS plateau observation lane.
+//
+// Diagnostic-only. It keeps allocator behavior unchanged and emits per-class
+// large scache peaks plus deferred-unmap inventory so RSS plateau rows can be
+// explained without enabling S240 owner-front machinery.
+#ifndef HZ3_S267_LARGE_RSS_PLATEAU_OBS
+#define HZ3_S267_LARGE_RSS_PLATEAU_OBS 0
 #endif
 
 // S185: batch munmap on large-cache eviction path.

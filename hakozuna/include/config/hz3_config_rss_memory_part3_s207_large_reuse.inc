@@ -123,6 +123,131 @@
 #error "HZ3_S237_EVICT_BUDGET must be >= 1"
 #endif
 
+// S268: large scache RSS cap.
+//
+// Diagnostic/RSS policy probe for plateau-like large objects. It bounds
+// per-class cache admission for high large-cache classes while leaving the
+// hot 64K/page-medium rows unchanged by default.
+#ifndef HZ3_S268_LARGE_SCACHE_RSS_CAP
+#define HZ3_S268_LARGE_SCACHE_RSS_CAP 0
+#endif
+
+#ifndef HZ3_S268_SC_MIN
+#define HZ3_S268_SC_MIN 24
+#endif
+
+#ifndef HZ3_S268_MAX_NODES_PER_SC
+#define HZ3_S268_MAX_NODES_PER_SC 8
+#endif
+
+#if HZ3_S268_SC_MIN < 0
+#error "HZ3_S268_SC_MIN must be >= 0"
+#endif
+
+#if HZ3_S268_MAX_NODES_PER_SC < 1
+#error "HZ3_S268_MAX_NODES_PER_SC must be >= 1"
+#endif
+
+// S270: large scache idle trim.
+//
+// Diagnostic/RSS policy probe for plateau-like high-band large objects.
+// Unlike S268's hard admission cap, this keeps admitting during active phases
+// and trims old cache-tail entries only after a push-only burst suggests that
+// the class has gone idle.
+#ifndef HZ3_S270_LARGE_SCACHE_IDLE_TRIM
+#define HZ3_S270_LARGE_SCACHE_IDLE_TRIM 0
+#endif
+
+#ifndef HZ3_S270_SC_MIN
+#define HZ3_S270_SC_MIN 24
+#endif
+
+#ifndef HZ3_S270_TARGET_NODES_PER_SC
+#define HZ3_S270_TARGET_NODES_PER_SC 8
+#endif
+
+#ifndef HZ3_S270_TRIGGER_NODES_PER_SC
+#define HZ3_S270_TRIGGER_NODES_PER_SC 24
+#endif
+
+#ifndef HZ3_S270_IDLE_PUSHES_PER_SC
+#define HZ3_S270_IDLE_PUSHES_PER_SC 16
+#endif
+
+#ifndef HZ3_S270_TRIM_BATCH_MAX
+#define HZ3_S270_TRIM_BATCH_MAX 16
+#endif
+
+#ifndef HZ3_S270_REARM_AFTER_TRIM
+#define HZ3_S270_REARM_AFTER_TRIM 0
+#endif
+
+#ifndef HZ3_S270_LARGE_SCACHE_IDLE_TRIM_STATS
+#define HZ3_S270_LARGE_SCACHE_IDLE_TRIM_STATS HZ3_S270_LARGE_SCACHE_IDLE_TRIM
+#endif
+
+// S270 debug-only list and victim validation.
+// This is intentionally separate from STATS so production/research timing lanes
+// can keep counters without the heavy list walk/failfast checks.
+#ifndef HZ3_S270_DEBUG_VALIDATE
+#define HZ3_S270_DEBUG_VALIDATE 0
+#endif
+
+#ifndef HZ3_S270_DEBUG_FAILFAST
+#define HZ3_S270_DEBUG_FAILFAST HZ3_S270_DEBUG_VALIDATE
+#endif
+
+// Debug-only S270 victim quarantine. Detached trim victims are retired but not
+// unmapped/deferred. This intentionally leaks memory and exists only to isolate
+// S270 trim-dispose side effects from list-detach policy.
+#ifndef HZ3_S270_DEBUG_QUARANTINE_VICTIMS
+#define HZ3_S270_DEBUG_QUARANTINE_VICTIMS 0
+#endif
+
+#if HZ3_S270_SC_MIN < 0
+#error "HZ3_S270_SC_MIN must be >= 0"
+#endif
+
+#if HZ3_S270_TARGET_NODES_PER_SC < 1
+#error "HZ3_S270_TARGET_NODES_PER_SC must be >= 1"
+#endif
+
+#if HZ3_S270_TRIGGER_NODES_PER_SC < HZ3_S270_TARGET_NODES_PER_SC
+#error "HZ3_S270_TRIGGER_NODES_PER_SC must be >= HZ3_S270_TARGET_NODES_PER_SC"
+#endif
+
+#if HZ3_S270_IDLE_PUSHES_PER_SC < 1
+#error "HZ3_S270_IDLE_PUSHES_PER_SC must be >= 1"
+#endif
+
+#if HZ3_S270_TRIM_BATCH_MAX < 1
+#error "HZ3_S270_TRIM_BATCH_MAX must be >= 1"
+#endif
+
+#if HZ3_S270_REARM_AFTER_TRIM < 0 || HZ3_S270_REARM_AFTER_TRIM > 1
+#error "HZ3_S270_REARM_AFTER_TRIM must be 0 or 1"
+#endif
+
+#if HZ3_S270_LARGE_SCACHE_IDLE_TRIM_STATS < 0 || HZ3_S270_LARGE_SCACHE_IDLE_TRIM_STATS > 1
+#error "HZ3_S270_LARGE_SCACHE_IDLE_TRIM_STATS must be 0 or 1"
+#endif
+
+#if HZ3_S270_DEBUG_VALIDATE < 0 || HZ3_S270_DEBUG_VALIDATE > 1
+#error "HZ3_S270_DEBUG_VALIDATE must be 0 or 1"
+#endif
+
+#if HZ3_S270_DEBUG_FAILFAST < 0 || HZ3_S270_DEBUG_FAILFAST > 1
+#error "HZ3_S270_DEBUG_FAILFAST must be 0 or 1"
+#endif
+
+#if HZ3_S270_DEBUG_QUARANTINE_VICTIMS < 0 || HZ3_S270_DEBUG_QUARANTINE_VICTIMS > 1
+#error "HZ3_S270_DEBUG_QUARANTINE_VICTIMS must be 0 or 1"
+#endif
+
+#if HZ3_S270_DEBUG_QUARANTINE_VICTIMS && !HZ3_S270_LARGE_SCACHE_IDLE_TRIM_STATS
+#error "HZ3_S270_DEBUG_QUARANTINE_VICTIMS requires HZ3_S270_LARGE_SCACHE_IDLE_TRIM_STATS"
+#endif
+
 // S218-A: large supply floor boost.
 // Raise per-class floor for high-band classes after enough alloc misses.
 // Purpose: reduce mmap/munmap churn when S207 admission becomes too strict.
