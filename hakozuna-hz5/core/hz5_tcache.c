@@ -141,9 +141,10 @@ size_t hz5_tcache_release_all(void) {
             if (page >= HZ5_SEG_PAGES) {
                 continue;
             }
+            uint32_t pages = seg->page[page].run_pages;
             hz5_p1_segment_free_run(seg, page);
-            hz5_stats_inc_pages(HZ5_STAT_TCACHE_DESTRUCTOR_RELEASE,
-                                 seg->page[page].run_pages);
+            hz5_stats_inc_pages(HZ5_STAT_TCACHE_DESTRUCTOR_RELEASE, pages);
+            (void)pages;
             ++released;
         }
     }

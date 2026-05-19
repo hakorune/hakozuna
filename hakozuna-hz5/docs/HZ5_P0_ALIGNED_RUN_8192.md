@@ -608,3 +608,43 @@ Updated decision:
 - Keep P12 exact and diagnostic.
 - P13 should add RSS/segment accounting and release hardening before route
   widening or default discussion.
+
+P13 segment accounting / run16 hint:
+
+- Added diagnostic segment snapshot lines:
+  - `[HZ5_P13_SEGMENTS.before_cleanup]`
+  - `[HZ5_P13_SEGMENTS.after_cleanup]`
+- Added per-segment `run16_a8192_hint_page` so 16-page aligned run allocation
+  starts near the last useful region and wraps on miss.
+- Fixed `tcache_destructor_release` page bucket accounting.
+
+Repeat-3:
+
+```text
+results/synthetic-sweep/20260520_065306_764
+```
+
+Result:
+
+```text
+4K/a8192:  P12-cap1 9.39M, P13 diagnostic 6.28M
+8K/a8192:  P12-cap1 9.79M, P13 diagnostic 5.79M
+64K/a8192: P12-cap1 3.57M, P13 diagnostic 3.11M
+```
+
+64K/a8192 diagnostic signal:
+
+```text
+segment_alloc_scan_step median: 308,613
+segments before cleanup median: 2
+empty_segments before cleanup median: 2
+remote_pending: 0
+live_pages after cleanup: 0
+```
+
+Decision:
+
+- P13 accounting is working.
+- The run16 hint is a keep because it reduces 64K page scan work sharply.
+- Empty segment release should be the next RSS hardening step, but only after a
+  safe segment-table retire design.

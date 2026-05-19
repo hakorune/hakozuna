@@ -54,12 +54,30 @@ static void hz5_p1_segment_init(Hz5Seg* seg) {
     memset(seg, 0, sizeof(*seg));
     seg->magic = HZ5_SEG_MAGIC;
     seg->version = HZ5_SEG_VERSION;
+    seg->run16_a8192_hint_page = HZ5_FIRST_DATA_PAGE;
 
     for (uint32_t page = HZ5_FIRST_DATA_PAGE; page < HZ5_SEG_PAGES; ++page) {
         hz5_p1_bit_set(seg, page);
         seg->page[page].kind = HZ5_PAGE_FREE;
         seg->page[page].decommit_state = HZ5_COMMITTED;
     }
+}
+
+static int hz5_p1_is_run16_a8192(uint32_t pages,
+                                 uint32_t align_pages,
+                                 uint8_t align_log2) {
+    return pages == 16u && align_pages == 2u && align_log2 == 13u;
+}
+
+static uint32_t hz5_p1_align_page_up(uint32_t page, uint32_t align_pages) {
+    if (align_pages <= 1u) {
+        return page;
+    }
+    uint32_t rem = page % align_pages;
+    if (rem == 0) {
+        return page;
+    }
+    return page + (align_pages - rem);
 }
 
 static Hz5Seg* hz5_p1_segment_alloc(void) {
@@ -177,32 +195,56 @@ void* hz5_p1_segment_alloc_run_aligned(Hz5Seg* seg,
         align_pages = 1;
     }
 
-    hz5_p1_lock();
-    for (uint32_t page = HZ5_FIRST_DATA_PAGE; page + pages <= HZ5_SEG_PAGES; ++page) {
-        hz5_stats_inc_pages(HZ5_STAT_SEGMENT_ALLOC_SCAN_STEP, pages);
-        if ((page % align_pages) != 0) {
-            continue;
-        }
-        if (!hz5_p1_run_is_free(seg, page, pages)) {
-            continue;
-        }
+    int use_run16_hint = hz5_p1_is_run16_a8192(pages, align_pages, align_log2);
 
-        for (uint32_t i = 0; i < pages; ++i) {
-            uint32_t p = page + i;
-            hz5_p1_bit_clear(seg, p);
-            seg->page[p].kind = (i == 0) ? HZ5_PAGE_RUN_START : HZ5_PAGE_RUN_CONT;
-            seg->page[p].sc = (uint16_t)pages;
-            seg->page[p].run_pages = (uint16_t)pages;
-            seg->page[p].run_start_page = (uint16_t)page;
-            seg->page[p].align_log2 = align_log2;
-            seg->page[p].decommit_state = HZ5_COMMITTED;
-            seg->page[p].owner = owner;
-            atomic_store_explicit(&seg->page[p].remote_head, NULL, memory_order_relaxed);
-            atomic_store_explicit(&seg->page[p].remote_count_hint, 0, memory_order_relaxed);
+    hz5_p1_lock();
+    uint32_t first_page = HZ5_FIRST_DATA_PAGE;
+    uint32_t hint_page = 0;
+    if (use_run16_hint &&
+        seg->run16_a8192_hint_page >= HZ5_FIRST_DATA_PAGE &&
+        seg->run16_a8192_hint_page + pages <= HZ5_SEG_PAGES) {
+        hint_page = hz5_p1_align_page_up(seg->run16_a8192_hint_page, align_pages);
+        first_page = hint_page;
+    }
+
+    for (uint32_t pass = 0; pass < (use_run16_hint ? 2u : 1u); ++pass) {
+        uint32_t start = (pass == 0) ? first_page : HZ5_FIRST_DATA_PAGE;
+        uint32_t end = (pass == 0 || hint_page == 0) ? HZ5_SEG_PAGES : hint_page;
+        for (uint32_t page = start; page + pages <= end; ++page) {
+            hz5_stats_inc_pages(HZ5_STAT_SEGMENT_ALLOC_SCAN_STEP, pages);
+            if ((page % align_pages) != 0) {
+                continue;
+            }
+            if (!hz5_p1_run_is_free(seg, page, pages)) {
+                continue;
+            }
+
+            for (uint32_t i = 0; i < pages; ++i) {
+                uint32_t p = page + i;
+                hz5_p1_bit_clear(seg, p);
+                seg->page[p].kind = (i == 0) ? HZ5_PAGE_RUN_START : HZ5_PAGE_RUN_CONT;
+                seg->page[p].sc = (uint16_t)pages;
+                seg->page[p].run_pages = (uint16_t)pages;
+                seg->page[p].run_start_page = (uint16_t)page;
+                seg->page[p].align_log2 = align_log2;
+                seg->page[p].decommit_state = HZ5_COMMITTED;
+                seg->page[p].owner = owner;
+                atomic_store_explicit(&seg->page[p].remote_head,
+                                      NULL,
+                                      memory_order_relaxed);
+                atomic_store_explicit(&seg->page[p].remote_count_hint,
+                                      0,
+                                      memory_order_relaxed);
+            }
+            seg->live_pages += pages;
+            if (use_run16_hint) {
+                uint32_t next = page + pages;
+                seg->run16_a8192_hint_page =
+                    next + pages <= HZ5_SEG_PAGES ? next : HZ5_FIRST_DATA_PAGE;
+            }
+            hz5_p1_unlock();
+            return (void*)((uintptr_t)seg + ((uintptr_t)page * HZ5_PAGE_SIZE));
         }
-        seg->live_pages += pages;
-        hz5_p1_unlock();
-        return (void*)((uintptr_t)seg + ((uintptr_t)page * HZ5_PAGE_SIZE));
     }
     hz5_p1_unlock();
     return NULL;
@@ -253,6 +295,7 @@ void hz5_p1_segment_free_run(Hz5Seg* seg, uint32_t page_idx) {
     }
 
     uint32_t pages = meta->run_pages;
+    uint8_t align_log2 = meta->align_log2;
     void* remote = atomic_load_explicit(&meta->remote_head, memory_order_acquire);
     if (remote) {
         hz5_p1_unlock();
@@ -269,6 +312,11 @@ void hz5_p1_segment_free_run(Hz5Seg* seg, uint32_t page_idx) {
         seg->live_pages -= pages;
     } else {
         seg->live_pages = 0;
+    }
+    if (pages == 16u && align_log2 == 13u &&
+        (seg->run16_a8192_hint_page < HZ5_FIRST_DATA_PAGE ||
+         page_idx < seg->run16_a8192_hint_page)) {
+        seg->run16_a8192_hint_page = page_idx;
     }
     hz5_p1_unlock();
 }

@@ -114,11 +114,89 @@ static void hz5_stats_print_bucket(const char* label, _Atomic(uint64_t)* bucket)
 #endif
 }
 
+#if HZ5_DIAGNOSTIC_STATS
+static uint32_t hz5_stats_count_free_pages(const Hz5Seg* seg) {
+    uint32_t free_pages = 0;
+    for (uint32_t page = HZ5_FIRST_DATA_PAGE; page < HZ5_SEG_PAGES; ++page) {
+        if ((seg->free_bitmap[page >> 6u] & (1ULL << (page & 63u))) != 0) {
+            ++free_pages;
+        }
+    }
+    return free_pages;
+}
+
+static void hz5_stats_print_segment_snapshot(const char* label) {
+    uint32_t segments = hz5_p1_segment_count();
+    uint64_t live_pages = 0;
+    uint64_t free_pages = 0;
+    uint64_t run_starts = 0;
+    uint64_t run1 = 0;
+    uint64_t run2 = 0;
+    uint64_t run16 = 0;
+    uint64_t remote_pending = 0;
+    uint64_t empty_segments = 0;
+
+    for (uint32_t seg_idx = 0; seg_idx < segments; ++seg_idx) {
+        Hz5Seg* seg = hz5_p1_segment_at(seg_idx);
+        if (!seg) {
+            continue;
+        }
+        live_pages += seg->live_pages;
+        free_pages += hz5_stats_count_free_pages(seg);
+        if (seg->live_pages == 0) {
+            ++empty_segments;
+        }
+        for (uint32_t page = HZ5_FIRST_DATA_PAGE; page < HZ5_SEG_PAGES; ++page) {
+            Hz5PageMeta* meta = &seg->page[page];
+            if (meta->kind != HZ5_PAGE_RUN_START) {
+                continue;
+            }
+            ++run_starts;
+            if (meta->run_pages <= 1u) {
+                ++run1;
+            } else if (meta->run_pages <= 2u) {
+                ++run2;
+            } else if (meta->run_pages <= 16u) {
+                ++run16;
+            }
+            remote_pending += atomic_load_explicit(&meta->remote_count_hint,
+                                                   memory_order_relaxed);
+        }
+    }
+
+    uint64_t reserved_bytes = (uint64_t)segments * (uint64_t)HZ5_SEG_SIZE;
+    uint64_t live_bytes = live_pages * (uint64_t)HZ5_PAGE_SIZE;
+    uint64_t free_bytes = free_pages * (uint64_t)HZ5_PAGE_SIZE;
+    fprintf(stderr,
+            "[HZ5_P13_SEGMENTS.%s] segments=%u empty_segments=%llu "
+            "live_pages=%llu free_pages=%llu run_starts=%llu "
+            "run1=%llu run2=%llu run16=%llu remote_pending=%llu "
+            "reserved_bytes=%llu live_bytes=%llu free_bytes=%llu\n",
+            label,
+            segments,
+            (unsigned long long)empty_segments,
+            (unsigned long long)live_pages,
+            (unsigned long long)free_pages,
+            (unsigned long long)run_starts,
+            (unsigned long long)run1,
+            (unsigned long long)run2,
+            (unsigned long long)run16,
+            (unsigned long long)remote_pending,
+            (unsigned long long)reserved_bytes,
+            (unsigned long long)live_bytes,
+            (unsigned long long)free_bytes);
+}
+#endif
+
 void hz5_stats_print_once(void) {
     if (atomic_flag_test_and_set_explicit(&g_hz5_stats_printed,
                                           memory_order_acq_rel)) {
         return;
     }
+
+#if HZ5_DIAGNOSTIC_STATS
+    hz5_stats_print_segment_snapshot("before_cleanup");
+#endif
 
     Hz5OwnerToken owner = hz5_owner_current_if_initialized();
     Hz5RemoteBuffer* buffer = hz5_remote_tls_buffer();
@@ -137,6 +215,8 @@ void hz5_stats_print_once(void) {
     hz5_stats_print_bucket("pages16", g_hz5_stats_16p);
 
 #if HZ5_DIAGNOSTIC_STATS
+    hz5_stats_print_segment_snapshot("after_cleanup");
+
     uint64_t remote_pending = 0;
     uint64_t run_starts = 0;
     uint32_t segments = hz5_p1_segment_count();

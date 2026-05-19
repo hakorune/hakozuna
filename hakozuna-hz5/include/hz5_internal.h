@@ -42,7 +42,7 @@ typedef struct Hz5Seg {
     uint32_t version;
     uint32_t flags;
     uint32_t live_pages;
-    uint32_t reserved0;
+    uint32_t run16_a8192_hint_page;
     uint64_t free_bitmap[HZ5_SEG_PAGES / 64u];
     Hz5PageMeta page[HZ5_SEG_PAGES];
 } Hz5Seg;
