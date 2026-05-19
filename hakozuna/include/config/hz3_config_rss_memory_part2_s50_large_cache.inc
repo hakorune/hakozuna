@@ -452,6 +452,30 @@
 #error "HZ3_S282_LARGE_OWNER_INBOX_OBS requires S276 direct-retain stats"
 #endif
 
+// S285: S276 fixed-cost observation.
+// Diagnostic-only. Splits the remaining S276 direct-retain cost into direct
+// slot scan/state reasons, retained activation rejection reasons, and
+// take-first drain/refill shape. This is a counter lane, not a behavior change.
+#ifndef HZ3_S285_LARGE_FIXED_COST_OBS
+#define HZ3_S285_LARGE_FIXED_COST_OBS 0
+#endif
+
+#if HZ3_S285_LARGE_FIXED_COST_OBS && !HZ3_LARGE_ALIGNED_OBS
+#error "HZ3_S285_LARGE_FIXED_COST_OBS requires HZ3_LARGE_ALIGNED_OBS"
+#endif
+
+#if HZ3_S285_LARGE_FIXED_COST_OBS && !HZ3_S276_LARGE_DIRECT_RETAIN_INBOX
+#error "HZ3_S285_LARGE_FIXED_COST_OBS requires S276 front+inbox direct retain"
+#endif
+
+#if HZ3_S285_LARGE_FIXED_COST_OBS && !HZ3_S246_LARGE_INBOX_TAKE_FIRST
+#error "HZ3_S285_LARGE_FIXED_COST_OBS requires S246 take-first"
+#endif
+
+#if HZ3_S285_LARGE_FIXED_COST_OBS && !HZ3_S240_LARGE_OWNER_FRONT_STATS
+#error "HZ3_S285_LARGE_FIXED_COST_OBS requires S240 owner-front stats"
+#endif
+
 // S251: large owner-front container safety probe.
 // Observation/debug lane for S250 high-band work.  It validates the durable
 // container state transitions around ACTIVE/FREEING/FRONT/REMOTE/GLOBAL.

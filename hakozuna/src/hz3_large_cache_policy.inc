@@ -377,6 +377,42 @@ static _Atomic size_t g_s276_inbox_push_reject_clear = 0;
 static _Atomic size_t g_s276_inbox_activate_fast = 0;
 static _Atomic size_t g_s276_direct_clear = 0;
 #endif
+#if HZ3_S285_LARGE_FIXED_COST_OBS
+static _Atomic size_t g_s285_direct_way_loads = 0;
+static _Atomic size_t g_s285_direct_key_busy = 0;
+static _Atomic size_t g_s285_direct_key_miss = 0;
+static _Atomic size_t g_s285_direct_key_match = 0;
+static _Atomic size_t g_s285_direct_invalid_hdr = 0;
+static _Atomic size_t g_s285_direct_state_nonactive = 0;
+static _Atomic size_t g_s285_direct_inuse_bad = 0;
+static _Atomic size_t g_s285_direct_not_retainable_same_owner = 0;
+static _Atomic size_t g_s285_direct_not_retainable_remote = 0;
+static _Atomic size_t g_s285_direct_cas_attempt = 0;
+static _Atomic size_t g_s285_direct_cas_fail = 0;
+static _Atomic size_t g_s285_direct_hit_front = 0;
+static _Atomic size_t g_s285_direct_hit_inbox = 0;
+static _Atomic size_t g_s285_activate_check = 0;
+static _Atomic size_t g_s285_activate_fail_header = 0;
+static _Atomic size_t g_s285_activate_fail_slot = 0;
+static _Atomic size_t g_s285_activate_fail_flag = 0;
+static _Atomic size_t g_s285_activate_fail_sc = 0;
+static _Atomic size_t g_s285_activate_fail_alignment = 0;
+static _Atomic size_t g_s285_activate_fail_user_alignment = 0;
+static _Atomic size_t g_s285_activate_fail_range = 0;
+static _Atomic size_t g_s285_activate_fail_size = 0;
+static _Atomic size_t g_s285_activate_success_front = 0;
+static _Atomic size_t g_s285_activate_success_inbox = 0;
+static _Atomic size_t g_s285_take_first_return_first = 0;
+static _Atomic size_t g_s285_take_first_extra_pop_attempt = 0;
+static _Atomic size_t g_s285_take_first_extra_pop_hit = 0;
+static _Atomic size_t g_s285_take_first_extra_pop_empty = 0;
+static _Atomic size_t g_s285_take_first_extra_front_ok = 0;
+static _Atomic size_t g_s285_take_first_extra_front_reject = 0;
+static _Atomic size_t g_s285_take_first_drain_nodes_1 = 0;
+static _Atomic size_t g_s285_take_first_drain_nodes_2_3 = 0;
+static _Atomic size_t g_s285_take_first_drain_nodes_4_7 = 0;
+static _Atomic size_t g_s285_take_first_drain_nodes_8_plus = 0;
+#endif
 #if HZ3_S240_LARGE_FLUSH_VALIDATE
 static _Atomic size_t g_s240_flush_validate_calls = 0;
 static _Atomic size_t g_s240_flush_validate_failures = 0;
@@ -614,6 +650,71 @@ static void hz3_large_s240_dump_final(void) {
             atomic_load_explicit(&g_s276_inbox_push_reject_clear, memory_order_relaxed),
             atomic_load_explicit(&g_s276_inbox_activate_fast, memory_order_relaxed),
             atomic_load_explicit(&g_s276_direct_clear, memory_order_relaxed));
+#endif
+#if HZ3_S285_LARGE_FIXED_COST_OBS
+    fprintf(stderr,
+            "[HZ3_S285_FIXED_COST_DIRECT] way_loads=%zu key_busy=%zu "
+            "key_miss=%zu key_match=%zu invalid_hdr=%zu state_nonactive=%zu "
+            "inuse_bad=%zu not_retainable_same_owner=%zu "
+            "not_retainable_remote=%zu cas_attempt=%zu cas_fail=%zu "
+            "hit_front=%zu hit_inbox=%zu\n",
+            atomic_load_explicit(&g_s285_direct_way_loads, memory_order_relaxed),
+            atomic_load_explicit(&g_s285_direct_key_busy, memory_order_relaxed),
+            atomic_load_explicit(&g_s285_direct_key_miss, memory_order_relaxed),
+            atomic_load_explicit(&g_s285_direct_key_match, memory_order_relaxed),
+            atomic_load_explicit(&g_s285_direct_invalid_hdr, memory_order_relaxed),
+            atomic_load_explicit(&g_s285_direct_state_nonactive, memory_order_relaxed),
+            atomic_load_explicit(&g_s285_direct_inuse_bad, memory_order_relaxed),
+            atomic_load_explicit(&g_s285_direct_not_retainable_same_owner,
+                                 memory_order_relaxed),
+            atomic_load_explicit(&g_s285_direct_not_retainable_remote,
+                                 memory_order_relaxed),
+            atomic_load_explicit(&g_s285_direct_cas_attempt, memory_order_relaxed),
+            atomic_load_explicit(&g_s285_direct_cas_fail, memory_order_relaxed),
+            atomic_load_explicit(&g_s285_direct_hit_front, memory_order_relaxed),
+            atomic_load_explicit(&g_s285_direct_hit_inbox, memory_order_relaxed));
+    fprintf(stderr,
+            "[HZ3_S285_FIXED_COST_ACTIVATE] checks=%zu fail_header=%zu "
+            "fail_slot=%zu fail_flag=%zu fail_sc=%zu fail_alignment=%zu "
+            "fail_user_alignment=%zu fail_range=%zu fail_size=%zu "
+            "success_front=%zu success_inbox=%zu\n",
+            atomic_load_explicit(&g_s285_activate_check, memory_order_relaxed),
+            atomic_load_explicit(&g_s285_activate_fail_header, memory_order_relaxed),
+            atomic_load_explicit(&g_s285_activate_fail_slot, memory_order_relaxed),
+            atomic_load_explicit(&g_s285_activate_fail_flag, memory_order_relaxed),
+            atomic_load_explicit(&g_s285_activate_fail_sc, memory_order_relaxed),
+            atomic_load_explicit(&g_s285_activate_fail_alignment, memory_order_relaxed),
+            atomic_load_explicit(&g_s285_activate_fail_user_alignment,
+                                 memory_order_relaxed),
+            atomic_load_explicit(&g_s285_activate_fail_range, memory_order_relaxed),
+            atomic_load_explicit(&g_s285_activate_fail_size, memory_order_relaxed),
+            atomic_load_explicit(&g_s285_activate_success_front, memory_order_relaxed),
+            atomic_load_explicit(&g_s285_activate_success_inbox, memory_order_relaxed));
+    fprintf(stderr,
+            "[HZ3_S285_FIXED_COST_DRAIN] return_first=%zu "
+            "extra_pop_attempt=%zu extra_pop_hit=%zu extra_pop_empty=%zu "
+            "extra_front_ok=%zu extra_front_reject=%zu drain_nodes_1=%zu "
+            "drain_nodes_2_3=%zu drain_nodes_4_7=%zu drain_nodes_8_plus=%zu\n",
+            atomic_load_explicit(&g_s285_take_first_return_first,
+                                 memory_order_relaxed),
+            atomic_load_explicit(&g_s285_take_first_extra_pop_attempt,
+                                 memory_order_relaxed),
+            atomic_load_explicit(&g_s285_take_first_extra_pop_hit,
+                                 memory_order_relaxed),
+            atomic_load_explicit(&g_s285_take_first_extra_pop_empty,
+                                 memory_order_relaxed),
+            atomic_load_explicit(&g_s285_take_first_extra_front_ok,
+                                 memory_order_relaxed),
+            atomic_load_explicit(&g_s285_take_first_extra_front_reject,
+                                 memory_order_relaxed),
+            atomic_load_explicit(&g_s285_take_first_drain_nodes_1,
+                                 memory_order_relaxed),
+            atomic_load_explicit(&g_s285_take_first_drain_nodes_2_3,
+                                 memory_order_relaxed),
+            atomic_load_explicit(&g_s285_take_first_drain_nodes_4_7,
+                                 memory_order_relaxed),
+            atomic_load_explicit(&g_s285_take_first_drain_nodes_8_plus,
+                                 memory_order_relaxed));
 #endif
 #if HZ3_S240_LARGE_FLUSH_VALIDATE
     fprintf(stderr,
@@ -928,6 +1029,169 @@ static inline void hz3_s282_owner_inbox_on_drain_nodes(size_t nodes) {
 }
 static inline void hz3_s282_owner_inbox_on_extra_fronted(void) {}
 static inline void hz3_s282_owner_inbox_on_extra_munmap(void) {}
+#endif
+
+#if HZ3_S285_LARGE_FIXED_COST_OBS
+static inline void hz3_s285_inc(_Atomic size_t* p) {
+    hz3_large_s240_inc(p);
+}
+
+static inline void hz3_s285_on_direct_way_load(void) {
+    hz3_s285_inc(&g_s285_direct_way_loads);
+}
+
+static inline void hz3_s285_on_direct_key_busy(void) {
+    hz3_s285_inc(&g_s285_direct_key_busy);
+}
+
+static inline void hz3_s285_on_direct_key_miss(void) {
+    hz3_s285_inc(&g_s285_direct_key_miss);
+}
+
+static inline void hz3_s285_on_direct_key_match(void) {
+    hz3_s285_inc(&g_s285_direct_key_match);
+}
+
+static inline void hz3_s285_on_direct_invalid_hdr(void) {
+    hz3_s285_inc(&g_s285_direct_invalid_hdr);
+}
+
+static inline void hz3_s285_on_direct_state_nonactive(void) {
+    hz3_s285_inc(&g_s285_direct_state_nonactive);
+}
+
+static inline void hz3_s285_on_direct_inuse_bad(void) {
+    hz3_s285_inc(&g_s285_direct_inuse_bad);
+}
+
+static inline void hz3_s285_on_direct_not_retainable(int same_owner) {
+    hz3_s285_inc(same_owner ? &g_s285_direct_not_retainable_same_owner :
+                              &g_s285_direct_not_retainable_remote);
+}
+
+static inline void hz3_s285_on_direct_cas_attempt(void) {
+    hz3_s285_inc(&g_s285_direct_cas_attempt);
+}
+
+static inline void hz3_s285_on_direct_cas_fail(void) {
+    hz3_s285_inc(&g_s285_direct_cas_fail);
+}
+
+static inline void hz3_s285_on_direct_hit(int inbox) {
+    hz3_s285_inc(inbox ? &g_s285_direct_hit_inbox : &g_s285_direct_hit_front);
+}
+
+static inline void hz3_s285_on_activate_check(void) {
+    hz3_s285_inc(&g_s285_activate_check);
+}
+
+static inline void hz3_s285_on_activate_fail_header(void) {
+    hz3_s285_inc(&g_s285_activate_fail_header);
+}
+
+static inline void hz3_s285_on_activate_fail_slot(void) {
+    hz3_s285_inc(&g_s285_activate_fail_slot);
+}
+
+static inline void hz3_s285_on_activate_fail_flag(void) {
+    hz3_s285_inc(&g_s285_activate_fail_flag);
+}
+
+static inline void hz3_s285_on_activate_fail_sc(void) {
+    hz3_s285_inc(&g_s285_activate_fail_sc);
+}
+
+static inline void hz3_s285_on_activate_fail_alignment(void) {
+    hz3_s285_inc(&g_s285_activate_fail_alignment);
+}
+
+static inline void hz3_s285_on_activate_fail_user_alignment(void) {
+    hz3_s285_inc(&g_s285_activate_fail_user_alignment);
+}
+
+static inline void hz3_s285_on_activate_fail_range(void) {
+    hz3_s285_inc(&g_s285_activate_fail_range);
+}
+
+static inline void hz3_s285_on_activate_fail_size(void) {
+    hz3_s285_inc(&g_s285_activate_fail_size);
+}
+
+static inline void hz3_s285_on_activate_success(int inbox) {
+    hz3_s285_inc(inbox ? &g_s285_activate_success_inbox :
+                         &g_s285_activate_success_front);
+}
+
+static inline void hz3_s285_on_take_first_return_first(void) {
+    hz3_s285_inc(&g_s285_take_first_return_first);
+}
+
+static inline void hz3_s285_on_take_first_extra_pop_attempt(void) {
+    hz3_s285_inc(&g_s285_take_first_extra_pop_attempt);
+}
+
+static inline void hz3_s285_on_take_first_extra_pop_hit(void) {
+    hz3_s285_inc(&g_s285_take_first_extra_pop_hit);
+}
+
+static inline void hz3_s285_on_take_first_extra_pop_empty(void) {
+    hz3_s285_inc(&g_s285_take_first_extra_pop_empty);
+}
+
+static inline void hz3_s285_on_take_first_extra_front_result(int ok) {
+    hz3_s285_inc(ok ? &g_s285_take_first_extra_front_ok :
+                     &g_s285_take_first_extra_front_reject);
+}
+
+static inline void hz3_s285_on_take_first_drain_nodes(int drained) {
+    if (drained <= 1) {
+        hz3_s285_inc(&g_s285_take_first_drain_nodes_1);
+    } else if (drained <= 3) {
+        hz3_s285_inc(&g_s285_take_first_drain_nodes_2_3);
+    } else if (drained <= 7) {
+        hz3_s285_inc(&g_s285_take_first_drain_nodes_4_7);
+    } else {
+        hz3_s285_inc(&g_s285_take_first_drain_nodes_8_plus);
+    }
+}
+#else
+static inline void hz3_s285_on_direct_way_load(void) {}
+static inline void hz3_s285_on_direct_key_busy(void) {}
+static inline void hz3_s285_on_direct_key_miss(void) {}
+static inline void hz3_s285_on_direct_key_match(void) {}
+static inline void hz3_s285_on_direct_invalid_hdr(void) {}
+static inline void hz3_s285_on_direct_state_nonactive(void) {}
+static inline void hz3_s285_on_direct_inuse_bad(void) {}
+static inline void hz3_s285_on_direct_not_retainable(int same_owner) {
+    (void)same_owner;
+}
+static inline void hz3_s285_on_direct_cas_attempt(void) {}
+static inline void hz3_s285_on_direct_cas_fail(void) {}
+static inline void hz3_s285_on_direct_hit(int inbox) {
+    (void)inbox;
+}
+static inline void hz3_s285_on_activate_check(void) {}
+static inline void hz3_s285_on_activate_fail_header(void) {}
+static inline void hz3_s285_on_activate_fail_slot(void) {}
+static inline void hz3_s285_on_activate_fail_flag(void) {}
+static inline void hz3_s285_on_activate_fail_sc(void) {}
+static inline void hz3_s285_on_activate_fail_alignment(void) {}
+static inline void hz3_s285_on_activate_fail_user_alignment(void) {}
+static inline void hz3_s285_on_activate_fail_range(void) {}
+static inline void hz3_s285_on_activate_fail_size(void) {}
+static inline void hz3_s285_on_activate_success(int inbox) {
+    (void)inbox;
+}
+static inline void hz3_s285_on_take_first_return_first(void) {}
+static inline void hz3_s285_on_take_first_extra_pop_attempt(void) {}
+static inline void hz3_s285_on_take_first_extra_pop_hit(void) {}
+static inline void hz3_s285_on_take_first_extra_pop_empty(void) {}
+static inline void hz3_s285_on_take_first_extra_front_result(int ok) {
+    (void)ok;
+}
+static inline void hz3_s285_on_take_first_drain_nodes(int drained) {
+    (void)drained;
+}
 #endif
 
 #if HZ3_S251_LARGE_OWNER_FRONT_SAFETY
@@ -1285,34 +1549,47 @@ static inline int hz3_large_s276_can_activate_retained(Hz3LargeHdr* hdr,
                                                        size_t size,
                                                        size_t alignment,
                                                        int sc) {
+    hz3_s285_on_activate_check();
     if (!hdr ||
         hdr->magic != HZ3_LARGE_MAGIC ||
         hdr->map_base == NULL ||
         hdr->map_size == 0 ||
-        hdr->user_ptr == NULL ||
-        hdr->direct_slot == UINT32_MAX ||
-        (hdr->flags & HZ3_LARGE_F_DIRECT_MAPLESS) == 0 ||
+        hdr->user_ptr == NULL) {
+        hz3_s285_on_activate_fail_header();
+        return 0;
+    }
+    if (hdr->direct_slot == UINT32_MAX) {
+        hz3_s285_on_activate_fail_slot();
+        return 0;
+    }
+    if ((hdr->flags & HZ3_LARGE_F_DIRECT_MAPLESS) == 0 ||
         (hdr->flags & HZ3_LARGE_F_DIRECT_RETAINED) == 0) {
+        hz3_s285_on_activate_fail_flag();
         return 0;
     }
 
     uint8_t observed_sc = hz3_large_s240_normalize_sc(sc);
     if (hdr->sc != observed_sc) {
+        hz3_s285_on_activate_fail_sc();
         return 0;
     }
     if (alignment == 0 || (alignment & (alignment - 1u)) != 0) {
+        hz3_s285_on_activate_fail_alignment();
         return 0;
     }
     uintptr_t user = (uintptr_t)hdr->user_ptr;
     if ((user & (uintptr_t)(alignment - 1u)) != 0) {
+        hz3_s285_on_activate_fail_user_alignment();
         return 0;
     }
     if (size > SIZE_MAX - HZ3_LARGE_CANARY_SIZE) {
+        hz3_s285_on_activate_fail_size();
         return 0;
     }
     uintptr_t base = (uintptr_t)hdr->map_base;
     uintptr_t end = base + hdr->map_size;
     if (end < base || user < base || user > end) {
+        hz3_s285_on_activate_fail_range();
         return 0;
     }
 #if HZ3_LARGE_CANARY_ENABLE
@@ -1321,6 +1598,7 @@ static inline int hz3_large_s276_can_activate_retained(Hz3LargeHdr* hdr,
     size_t required = size;
 #endif
     if (required > (size_t)(end - user)) {
+        hz3_s285_on_activate_fail_size();
         return 0;
     }
     return 1;
@@ -2064,6 +2342,7 @@ static inline Hz3LargeHdr* hz3_large_s246_inbox_drain_current_take_first_to_fron
     first->next_free = NULL;
     first->in_use = 0;
     first->next = NULL;
+    hz3_s285_on_take_first_return_first();
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
     hz3_large_s240_inc(&g_s246_take_first_hits);
     hz3_large_s240_inc(&g_s246_take_first_direct);
@@ -2102,13 +2381,18 @@ static inline Hz3LargeHdr* hz3_large_s246_inbox_drain_current_take_first_to_fron
     } else {
         (void)extras;
         for (int i = 1; i < max_nodes; i++) {
+            hz3_s285_on_take_first_extra_pop_attempt();
             Hz3LargeHdr* hdr = hz3_large_s240_inbox_pop_one(owner, sc);
             if (!hdr) {
+                hz3_s285_on_take_first_extra_pop_empty();
                 break;
             }
+            hz3_s285_on_take_first_extra_pop_hit();
             hdr->in_use = 0;
             hdr->next = NULL;
-            if (hz3_large_s240_front_push(sc, hdr)) {
+            int s285_front_ok = hz3_large_s240_front_push(sc, hdr);
+            hz3_s285_on_take_first_extra_front_result(s285_front_ok);
+            if (s285_front_ok) {
                 drained++;
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
                 hz3_large_s240_inc(&g_s246_take_first_extra_fronted);
@@ -2131,13 +2415,18 @@ static inline Hz3LargeHdr* hz3_large_s246_inbox_drain_current_take_first_to_fron
 #else
     (void)extras;
     for (int i = 1; i < max_nodes; i++) {
+        hz3_s285_on_take_first_extra_pop_attempt();
         Hz3LargeHdr* hdr = hz3_large_s240_inbox_pop_one(owner, sc);
         if (!hdr) {
+            hz3_s285_on_take_first_extra_pop_empty();
             break;
         }
+        hz3_s285_on_take_first_extra_pop_hit();
         hdr->in_use = 0;
         hdr->next = NULL;
-        if (hz3_large_s240_front_push(sc, hdr)) {
+        int s285_front_ok = hz3_large_s240_front_push(sc, hdr);
+        hz3_s285_on_take_first_extra_front_result(s285_front_ok);
+        if (s285_front_ok) {
             drained++;
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
             hz3_large_s240_inc(&g_s246_take_first_extra_fronted);
@@ -2162,6 +2451,7 @@ static inline Hz3LargeHdr* hz3_large_s246_inbox_drain_current_take_first_to_fron
     hz3_large_s240_inc(&g_s240_inbox_drain_nonempty);
     hz3_large_s240_add(&g_s240_inbox_drain_objs, (size_t)drained);
 #endif
+    hz3_s285_on_take_first_drain_nodes(drained);
     hz3_s282_owner_inbox_on_drain_nodes((size_t)drained);
     if (out_drained) {
         *out_drained = drained;

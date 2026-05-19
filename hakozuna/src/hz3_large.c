@@ -1037,6 +1037,7 @@ static inline int hz3_s276_try_activate_retained_from_cache(Hz3LargeHdr* hdr,
     if (!hz3_large_s276_can_activate_retained(hdr, size, alignment, sc)) {
         return 0;
     }
+    hz3_s285_on_activate_success(from_inbox);
     hdr->in_use = 1;
     hdr->req_size = size;
     hdr->next_free = NULL;
