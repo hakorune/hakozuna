@@ -58,16 +58,16 @@ static inline void hz3_tcache_current_seg_set(Hz3SegMeta* meta, int collision_ac
 // Day 3: Slow path with segment reuse
 // ============================================================================
 
-static inline void* hz3_medium_run_commit(Hz3SegMeta* meta, int sc,
-                                          int start_page, size_t pages) {
+static inline void* hz3_medium_run_commit_with_bin(Hz3SegMeta* meta,
+                                                   int sc,
+                                                   int start_page,
+                                                   size_t pages,
+                                                   uint32_t bin,
+                                                   uint16_t tag) {
 #if HZ3_S49_SEGMENT_PACKING
     hz3_pack_on_alloc(t_hz3_cache.my_shard, meta);
 #endif
 
-    const uint16_t tag = hz3_tag_make_large(sc);
-#if HZ3_PTAG16_DISPATCH_ENABLE || HZ3_PTAG_DSTBIN_ENABLE || HZ3_S110_META_ENABLE
-    const int bin = hz3_bin_index_medium(sc);
-#endif
 #if HZ3_S110_META_ENABLE
     const uint16_t bin_plus1 = (uint16_t)(bin + 1);
 #endif
@@ -115,6 +115,29 @@ static inline void* hz3_medium_run_commit(Hz3SegMeta* meta, int sc,
 #endif
     return run_base;
 }
+
+static inline void* hz3_medium_run_commit(Hz3SegMeta* meta, int sc,
+                                          int start_page, size_t pages) {
+    return hz3_medium_run_commit_with_bin(meta,
+                                          sc,
+                                          start_page,
+                                          pages,
+                                          (uint32_t)hz3_bin_index_medium(sc),
+                                          hz3_tag_make_large(sc));
+}
+
+#if HZ3_S300_OVERALIGNED_MEDIUM_RUNS
+static inline void* __attribute__((unused))
+hz3_medium_aligned_run_commit(Hz3SegMeta* meta, int sc,
+                              int start_page, size_t pages) {
+    return hz3_medium_run_commit_with_bin(meta,
+                                          sc,
+                                          start_page,
+                                          pages,
+                                          hz3_bin_index_medium_aligned(sc),
+                                          hz3_tag_make_medium_aligned(sc));
+}
+#endif
 
 // Allocate from current segment (or new segment if needed)
 static void* hz3_slow_alloc_from_segment_locked(int sc, int collision_active) {

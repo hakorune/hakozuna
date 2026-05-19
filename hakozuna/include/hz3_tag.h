@@ -5,6 +5,7 @@
 #define HZ3_TAG_KIND_NONE  0u
 #define HZ3_TAG_KIND_SMALL 1u
 #define HZ3_TAG_KIND_LARGE 2u
+#define HZ3_TAG_KIND_MEDIUM_ALIGNED 3u
 
 static inline uint16_t hz3_tag_make(uint8_t kind, uint16_t sc) {
     return (uint16_t)(((uint16_t)kind << 8) | (uint16_t)(sc + 1u));
@@ -25,4 +26,8 @@ static inline uint16_t hz3_tag_make_small(int sc) {
 
 static inline uint16_t hz3_tag_make_large(int sc) {
     return hz3_tag_make(HZ3_TAG_KIND_LARGE, (uint16_t)sc);
+}
+
+static inline uint16_t hz3_tag_make_medium_aligned(int sc) {
+    return hz3_tag_make(HZ3_TAG_KIND_MEDIUM_ALIGNED, (uint16_t)sc);
 }

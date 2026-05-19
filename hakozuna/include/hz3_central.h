@@ -48,6 +48,39 @@ uint32_t hz3_central_count_snapshot(int shard, int sc);
 // Returns 1 if likely non-empty, 0 if empty/invalid.
 int hz3_central_has_supply(int shard, int sc);
 
+#if HZ3_S300_OVERALIGNED_MEDIUM_RUNS
+void hz3_central_aligned_push(int shard, int sc, void* run);
+void* hz3_central_aligned_pop(int shard, int sc);
+int hz3_central_aligned_pop_batch(int shard, int sc, void** out, int want);
+uint32_t hz3_central_aligned_count_snapshot(int shard, int sc);
+#else
+static inline void hz3_central_aligned_push(int shard, int sc, void* run) {
+    (void)shard;
+    (void)sc;
+    (void)run;
+}
+
+static inline void* hz3_central_aligned_pop(int shard, int sc) {
+    (void)shard;
+    (void)sc;
+    return NULL;
+}
+
+static inline int hz3_central_aligned_pop_batch(int shard, int sc, void** out, int want) {
+    (void)shard;
+    (void)sc;
+    (void)out;
+    (void)want;
+    return 0;
+}
+
+static inline uint32_t hz3_central_aligned_count_snapshot(int shard, int sc) {
+    (void)shard;
+    (void)sc;
+    return 0;
+}
+#endif
+
 #if HZ3_S65_CENTRAL_COLD_ENABLE
 // Cold central is an opt-in S65 research quarantine for already-purged medium
 // runs. It is only consumed after hot central misses.

@@ -23,6 +23,9 @@
 
 // Global central pool (zero-initialized)
 Hz3CentralBin g_hz3_central[HZ3_NUM_SHARDS][HZ3_NUM_SC];
+#if HZ3_S300_OVERALIGNED_MEDIUM_RUNS
+static Hz3CentralBin g_hz3_central_aligned[HZ3_NUM_SHARDS][HZ3_NUM_SC];
+#endif
 #if HZ3_S65_CENTRAL_COLD_ENABLE
 #if HZ3_S65_CENTRAL_COLD_EXTERNAL_LIST_ENABLE
 typedef enum Hz3CentralColdState {
@@ -1844,6 +1847,14 @@ static void hz3_central_do_init(void) {
             hz3_lock_init(&bin->lock);
             bin->head = NULL;
             bin->count = 0;
+#if HZ3_S300_OVERALIGNED_MEDIUM_RUNS
+            {
+                Hz3CentralBin* aligned = &g_hz3_central_aligned[shard][sc];
+                hz3_lock_init(&aligned->lock);
+                aligned->head = NULL;
+                aligned->count = 0;
+            }
+#endif
 #if HZ3_S222_CENTRAL_ATOMIC_FAST
             if (hz3_s222_sc_ok(sc)) {
                 atomic_store_explicit(&g_hz3_central_fast[shard][sc].head, NULL, memory_order_relaxed);
@@ -1971,6 +1982,65 @@ void hz3_central_push(int shard, int sc, void* run) {
 #endif
     hz3_lock_release(&bin->lock);
 }
+
+#if HZ3_S300_OVERALIGNED_MEDIUM_RUNS
+void hz3_central_aligned_push(int shard, int sc, void* run) {
+    if (shard < 0 || shard >= HZ3_NUM_SHARDS) return;
+    if (sc < 0 || sc >= HZ3_NUM_SC) return;
+    if (!run) return;
+
+    Hz3CentralBin* bin = &g_hz3_central_aligned[shard][sc];
+    hz3_lock_acquire(&bin->lock);
+    hz3_obj_set_next(run, bin->head);
+    bin->head = run;
+    bin->count++;
+    hz3_lock_release(&bin->lock);
+}
+
+void* hz3_central_aligned_pop(int shard, int sc) {
+    if (shard < 0 || shard >= HZ3_NUM_SHARDS) return NULL;
+    if (sc < 0 || sc >= HZ3_NUM_SC) return NULL;
+
+    Hz3CentralBin* bin = &g_hz3_central_aligned[shard][sc];
+    hz3_lock_acquire(&bin->lock);
+    void* run = bin->head;
+    if (run) {
+        bin->head = hz3_obj_get_next(run);
+        bin->count--;
+    }
+    hz3_lock_release(&bin->lock);
+    return run;
+}
+
+int hz3_central_aligned_pop_batch(int shard, int sc, void** out, int want) {
+    if (shard < 0 || shard >= HZ3_NUM_SHARDS) return 0;
+    if (sc < 0 || sc >= HZ3_NUM_SC) return 0;
+    if (!out || want <= 0) return 0;
+
+    Hz3CentralBin* bin = &g_hz3_central_aligned[shard][sc];
+    hz3_lock_acquire(&bin->lock);
+    int got = 0;
+    while (got < want && bin->head) {
+        void* run = bin->head;
+        bin->head = hz3_obj_get_next(run);
+        bin->count--;
+        out[got++] = run;
+    }
+    hz3_lock_release(&bin->lock);
+    return got;
+}
+
+uint32_t hz3_central_aligned_count_snapshot(int shard, int sc) {
+    if (shard < 0 || shard >= HZ3_NUM_SHARDS) return 0;
+    if (sc < 0 || sc >= HZ3_NUM_SC) return 0;
+
+    Hz3CentralBin* bin = &g_hz3_central_aligned[shard][sc];
+    hz3_lock_acquire(&bin->lock);
+    uint32_t count = bin->count;
+    hz3_lock_release(&bin->lock);
+    return count;
+}
+#endif
 
 void* hz3_central_pop(int shard, int sc) {
     if (shard < 0 || shard >= HZ3_NUM_SHARDS) return NULL;
