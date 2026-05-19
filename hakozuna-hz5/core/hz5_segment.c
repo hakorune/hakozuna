@@ -122,6 +122,34 @@ static void hz5_p1_publish_segment_range(Hz5Seg* seg) {
     }
 }
 
+static int hz5_p1_segment_is_empty_for_release(Hz5Seg* seg) {
+    if (!seg || seg->magic != HZ5_SEG_MAGIC || seg->live_pages != 0) {
+        return 0;
+    }
+    for (uint32_t page = HZ5_FIRST_DATA_PAGE; page < HZ5_SEG_PAGES; ++page) {
+        Hz5PageMeta* meta = &seg->page[page];
+        if (meta->kind != HZ5_PAGE_FREE) {
+            return 0;
+        }
+        if (atomic_load_explicit(&meta->remote_head, memory_order_acquire) != NULL ||
+            atomic_load_explicit(&meta->remote_count_hint, memory_order_relaxed) != 0) {
+            return 0;
+        }
+        if (!hz5_p1_bit_is_set(seg, page)) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+static void hz5_p1_segment_free_memory(Hz5Seg* seg) {
+#if defined(_WIN32)
+    _aligned_free(seg);
+#else
+    free(seg);
+#endif
+}
+
 Hz5Seg* hz5_p1_segment_get(void) {
     hz5_p1_lock();
     uint32_t count = atomic_load_explicit(&g_hz5_p1_seg_count,
@@ -158,6 +186,40 @@ Hz5Seg* hz5_p1_segment_at(uint32_t index) {
         return NULL;
     }
     return atomic_load_explicit(&g_hz5_p1_segs[index], memory_order_acquire);
+}
+
+uint32_t hz5_p1_segment_release_empty_for_shutdown(void) {
+    uint32_t released = 0;
+    hz5_p1_lock();
+    uint32_t count = atomic_load_explicit(&g_hz5_p1_seg_count,
+                                          memory_order_acquire);
+    for (uint32_t i = 0; i < count; ++i) {
+        Hz5Seg* seg = atomic_load_explicit(&g_hz5_p1_segs[i],
+                                           memory_order_acquire);
+        if (!hz5_p1_segment_is_empty_for_release(seg)) {
+            continue;
+        }
+        atomic_store_explicit(&g_hz5_p1_segs[i], NULL, memory_order_release);
+        hz5_p1_segment_free_memory(seg);
+        ++released;
+    }
+
+    uint32_t new_count = count;
+    while (new_count != 0) {
+        Hz5Seg* seg = atomic_load_explicit(&g_hz5_p1_segs[new_count - 1u],
+                                           memory_order_acquire);
+        if (seg) {
+            break;
+        }
+        --new_count;
+    }
+    atomic_store_explicit(&g_hz5_p1_seg_count, new_count, memory_order_release);
+    if (new_count == 0) {
+        atomic_store_explicit(&g_hz5_p1_seg_min_base, 0, memory_order_release);
+        atomic_store_explicit(&g_hz5_p1_seg_max_end, 0, memory_order_release);
+    }
+    hz5_p1_unlock();
+    return released;
 }
 
 static Hz5Seg* hz5_p1_segment_append(void) {

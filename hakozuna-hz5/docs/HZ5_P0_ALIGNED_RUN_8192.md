@@ -670,3 +670,16 @@ results/synthetic-sweep/20260520_070554_083
 - `hz5_remote_release_owner()` and `hz5_remote_release_all_pending()` now capture
   `run_pages` before freeing the run so pages16 destructor/final-release counters
   are bucketed correctly.
+
+P13 shutdown-only empty segment release:
+
+```text
+results/synthetic-sweep/20260520_070816_774
+```
+
+- `after_cleanup`: `segments=2`, `empty_segments=2`, `live_pages=0`,
+  `remote_pending=0`
+- `shutdown_release`: `released_segments=2`
+- `after_release`: `segments=0`, `live_pages=0`, `remote_pending=0`
+- This validates shutdown cleanup only. Runtime segment release remains blocked
+  on a safe concurrent segment-table retire design.

@@ -216,6 +216,11 @@ void hz5_stats_print_once(void) {
 
 #if HZ5_DIAGNOSTIC_STATS
     hz5_stats_print_segment_snapshot("after_cleanup");
+    uint32_t released_segments = hz5_p1_segment_release_empty_for_shutdown();
+    fprintf(stderr,
+            "[HZ5_P13_SEGMENTS.shutdown_release] released_segments=%u\n",
+            released_segments);
+    hz5_stats_print_segment_snapshot("after_release");
 
     uint64_t remote_pending = 0;
     uint64_t run_starts = 0;

@@ -116,6 +116,7 @@ _Static_assert(sizeof(Hz5Seg) <= HZ5_SEG_HEADER_PAGES * HZ5_PAGE_SIZE,
 Hz5Seg* hz5_p1_segment_get(void);
 uint32_t hz5_p1_segment_count(void);
 Hz5Seg* hz5_p1_segment_at(uint32_t index);
+uint32_t hz5_p1_segment_release_empty_for_shutdown(void);
 void* hz5_p1_segment_alloc_run_aligned(Hz5Seg* seg,
                                        uint32_t pages,
                                        uint32_t align_pages,
