@@ -218,9 +218,18 @@ static inline uint32_t hz3_s242_direct_slot_id(uint32_t set, uint32_t way) {
 
 static inline int hz3_s242_direct_mapless_eligible(const Hz3LargeHdr* hdr) {
 #if HZ3_S242_DIRECT_MAPLESS
-    return hdr &&
-           hdr->map_size > 0 &&
-           hdr->map_size <= (size_t)HZ3_S242_DIRECT_MAPLESS_MAX_CLASS_BYTES;
+    if (!hdr || hdr->map_size == 0) {
+        return 0;
+    }
+    if (hdr->map_size <= (size_t)HZ3_S242_DIRECT_MAPLESS_MAX_CLASS_BYTES) {
+        return 1;
+    }
+#if HZ3_S291_HIGHBAND_OWNER_WINDOW
+    if (hz3_s291_highband_req_eligible(hdr->req_size)) {
+        return 1;
+    }
+#endif
+    return 0;
 #else
     (void)hdr;
     return 0;
@@ -559,14 +568,14 @@ static inline Hz3LargeHdr* hz3_s276_direct_try_retain_front(const void* ptr,
                 cur != UINT8_MAX &&
                 hdr->owner_shard != UINT8_MAX &&
                 hdr->owner_shard == cur &&
-                hz3_large_s240_front_eligible(sc, hdr->map_size);
+                hz3_large_s240_front_eligible_for_req(sc, hdr->map_size, hdr->req_size);
             int retain_for_inbox = 0;
 #if HZ3_S276_LARGE_DIRECT_RETAIN_INBOX
             retain_for_inbox =
                 cur != UINT8_MAX &&
                 hdr->owner_shard != UINT8_MAX &&
                 hdr->owner_shard != cur &&
-                hz3_large_s240_inbox_eligible(sc, hdr->map_size);
+                hz3_large_s240_inbox_eligible(sc, hdr->map_size, hdr->req_size);
 #endif
             if (!retain_for_front && !retain_for_inbox) {
                 if (cur != UINT8_MAX && hdr->owner_shard != UINT8_MAX &&

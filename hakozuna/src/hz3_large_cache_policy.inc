@@ -1777,11 +1777,30 @@ typedef struct Hz3LargeFront {
 
 static HZ3_TLS Hz3LargeFront t_hz3_large_front;
 
+static inline int hz3_s291_highband_req_eligible(size_t req_size) {
+#if HZ3_S291_HIGHBAND_OWNER_WINDOW
+    return req_size > (size_t)HZ3_S291_HIGHBAND_MIN_CLASS_BYTES &&
+           req_size <= (size_t)HZ3_S291_HIGHBAND_MAX_CLASS_BYTES;
+#else
+    (void)req_size;
+    return 0;
+#endif
+}
+
 static inline int hz3_large_s240_front_eligible(int sc, size_t map_size) {
-    return sc >= 0 &&
-           sc < (HZ3_LARGE_SC_COUNT - 1) &&
-           map_size > 0 &&
-           map_size <= (size_t)HZ3_S240_LARGE_FRONT_MAX_CLASS_BYTES;
+    if (sc < 0 || sc >= (HZ3_LARGE_SC_COUNT - 1) || map_size == 0) {
+        return 0;
+    }
+    return map_size <= (size_t)HZ3_S240_LARGE_FRONT_MAX_CLASS_BYTES;
+}
+
+static inline int hz3_large_s240_front_eligible_for_req(int sc,
+                                                        size_t map_size,
+                                                        size_t req_size) {
+    if (hz3_large_s240_front_eligible(sc, map_size)) {
+        return 1;
+    }
+    return hz3_s291_highband_req_eligible(req_size);
 }
 
 static inline void hz3_large_s240_front_note_add(size_t bytes) {
@@ -1806,9 +1825,9 @@ static inline void hz3_large_s240_front_note_sub(size_t bytes) {
 #endif
 }
 
-static inline Hz3LargeHdr* hz3_large_s240_front_pop(int sc, size_t need) {
+static inline Hz3LargeHdr* hz3_large_s240_front_pop(int sc, size_t need, size_t req_size) {
     hz3_large_s240_register_once();
-    if (!hz3_large_s240_front_eligible(sc, need)) {
+    if (!hz3_large_s240_front_eligible_for_req(sc, need, req_size)) {
         return NULL;
     }
     Hz3LargeHdr* hdr = t_hz3_large_front.head[sc];
@@ -1845,7 +1864,7 @@ static inline Hz3LargeHdr* hz3_large_s240_front_pop(int sc, size_t need) {
 
 static inline int hz3_large_s240_front_push(int sc, Hz3LargeHdr* hdr) {
     hz3_large_s240_register_once();
-    if (!hz3_large_s240_front_eligible(sc, hdr->map_size)) {
+    if (!hz3_large_s240_front_eligible_for_req(sc, hdr->map_size, hdr->req_size)) {
         return 0;
     }
     if (t_hz3_large_front.count[sc] >= (uint16_t)HZ3_S240_LARGE_FRONT_MAX_NODES_PER_SC ||
@@ -1991,8 +2010,8 @@ static inline void hz3_large_s240_inbox_account_pop(Hz3LargeInbox* inbox,
 #endif
 }
 
-static inline int hz3_large_s240_inbox_eligible(int sc, size_t map_size) {
-    return hz3_large_s240_front_eligible(sc, map_size);
+static inline int hz3_large_s240_inbox_eligible(int sc, size_t map_size, size_t req_size) {
+    return hz3_large_s240_front_eligible_for_req(sc, map_size, req_size);
 }
 
 static inline int hz3_large_s240_owner_accepts_remote(uint8_t owner, uint8_t cur) {
@@ -2031,7 +2050,7 @@ static inline int hz3_large_s240_owner_accepts_remote(uint8_t owner, uint8_t cur
 static inline int hz3_large_s240_inbox_push_remote(int sc, Hz3LargeHdr* hdr, uint8_t cur) {
     hz3_large_s240_register_once();
     hz3_s282_owner_inbox_on_push_attempt();
-    if (!hdr || !hz3_large_s240_inbox_eligible(sc, hdr->map_size)) {
+    if (!hdr || !hz3_large_s240_inbox_eligible(sc, hdr->map_size, hdr->req_size)) {
         hz3_s282_owner_inbox_on_push_reject_invalid();
         return 0;
     }

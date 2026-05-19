@@ -121,6 +121,33 @@
 #define HZ3_S240_LARGE_INBOX_DTOR_SPIN_LIMIT 100000
 #endif
 
+// S291: narrow high-band owner-front window.
+//
+// S252 proved that broad high-band owner handoff can recover the 256K/a4096
+// row, but it also touches 65537 and wider high-band rows. S291 keeps the
+// default S276 <=128KiB band, then adds a separate opt-in window so research
+// lanes can target 128KiB<size<=256KiB without promoting a broad 1MiB policy.
+#ifndef HZ3_S291_HIGHBAND_OWNER_WINDOW
+#define HZ3_S291_HIGHBAND_OWNER_WINDOW 0
+#endif
+
+#ifndef HZ3_S291_HIGHBAND_MIN_CLASS_BYTES
+#define HZ3_S291_HIGHBAND_MIN_CLASS_BYTES (128ULL << 10)
+#endif
+
+#ifndef HZ3_S291_HIGHBAND_MAX_CLASS_BYTES
+#define HZ3_S291_HIGHBAND_MAX_CLASS_BYTES (256ULL << 10)
+#endif
+
+#if HZ3_S291_HIGHBAND_OWNER_WINDOW && !HZ3_S240_LARGE_OWNER_FRONT
+#error "HZ3_S291_HIGHBAND_OWNER_WINDOW requires HZ3_S240_LARGE_OWNER_FRONT"
+#endif
+
+#if HZ3_S291_HIGHBAND_OWNER_WINDOW && \
+    HZ3_S291_HIGHBAND_MIN_CLASS_BYTES >= HZ3_S291_HIGHBAND_MAX_CLASS_BYTES
+#error "HZ3_S291_HIGHBAND_MIN_CLASS_BYTES must be smaller than MAX"
+#endif
+
 // S245: bounded batch pop for owner large inbox drain.
 // This keeps the same drain limit and caps as S240, but detaches up to N inbox
 // nodes with one CAS instead of one CAS per object.
@@ -263,6 +290,10 @@
 
 #ifndef HZ3_S242_DIRECT_MAPLESS_MAX_CLASS_BYTES
 #define HZ3_S242_DIRECT_MAPLESS_MAX_CLASS_BYTES HZ3_S240_LARGE_FRONT_MAX_CLASS_BYTES
+#endif
+
+#if HZ3_S291_HIGHBAND_OWNER_WINDOW && !HZ3_S242_DIRECT_MAPLESS
+#error "HZ3_S291_HIGHBAND_OWNER_WINDOW requires HZ3_S242_DIRECT_MAPLESS"
 #endif
 
 #ifndef HZ3_S242_DIRECT_STATS
