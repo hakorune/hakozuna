@@ -309,6 +309,44 @@ static _Atomic size_t g_s246_take_first_direct = 0;
 static _Atomic size_t g_s246_take_first_extra_fronted = 0;
 static _Atomic size_t g_s246_take_first_extra_munmap = 0;
 #endif
+#if HZ3_S282_LARGE_OWNER_INBOX_OBS
+static _Atomic size_t g_s282_push_attempt = 0;
+static _Atomic size_t g_s282_push_ok = 0;
+static _Atomic size_t g_s282_push_reject_invalid = 0;
+static _Atomic size_t g_s282_push_reject_owner_dead = 0;
+static _Atomic size_t g_s282_push_reject_owner_exiting = 0;
+static _Atomic size_t g_s282_push_reject_shard_collision = 0;
+static _Atomic size_t g_s282_push_reject_budget = 0;
+static _Atomic size_t g_s282_push_cas_attempts = 0;
+static _Atomic size_t g_s282_push_cas_failures = 0;
+static _Atomic size_t g_s282_push_cas_failure_max_per_push = 0;
+static _Atomic size_t g_s282_push_depth_0 = 0;
+static _Atomic size_t g_s282_push_depth_1 = 0;
+static _Atomic size_t g_s282_push_depth_2_3 = 0;
+static _Atomic size_t g_s282_push_depth_4_7 = 0;
+static _Atomic size_t g_s282_push_depth_8_15 = 0;
+static _Atomic size_t g_s282_push_depth_16_plus = 0;
+static _Atomic size_t g_s282_pop_cas_attempts = 0;
+static _Atomic size_t g_s282_pop_cas_failures = 0;
+static _Atomic size_t g_s282_pop_cas_failure_max_per_pop = 0;
+static _Atomic size_t g_s282_pop_success = 0;
+static _Atomic size_t g_s282_pop_empty = 0;
+static _Atomic size_t g_s282_pop_race_empty = 0;
+static _Atomic size_t g_s282_take_first_calls = 0;
+static _Atomic size_t g_s282_take_first_hit = 0;
+static _Atomic size_t g_s282_take_first_miss_empty = 0;
+static _Atomic size_t g_s282_take_first_miss_race = 0;
+static _Atomic size_t g_s282_take_depth_0 = 0;
+static _Atomic size_t g_s282_take_depth_1 = 0;
+static _Atomic size_t g_s282_take_depth_2_3 = 0;
+static _Atomic size_t g_s282_take_depth_4_7 = 0;
+static _Atomic size_t g_s282_take_depth_8_15 = 0;
+static _Atomic size_t g_s282_take_depth_16_plus = 0;
+static _Atomic size_t g_s282_drain_nodes = 0;
+static _Atomic size_t g_s282_drain_return_first_nodes = 0;
+static _Atomic size_t g_s282_drain_to_front_nodes = 0;
+static _Atomic size_t g_s282_drain_to_munmap_nodes = 0;
+#endif
 #endif
 #if HZ3_S251_LARGE_OWNER_FRONT_SAFETY
 static _Atomic size_t g_s251_free_take_to_freeing = 0;
@@ -469,6 +507,66 @@ static void hz3_large_s240_dump_final(void) {
             atomic_load_explicit(&g_s246_take_first_direct, memory_order_relaxed),
             atomic_load_explicit(&g_s246_take_first_extra_fronted, memory_order_relaxed),
             atomic_load_explicit(&g_s246_take_first_extra_munmap, memory_order_relaxed));
+#endif
+#if HZ3_S282_LARGE_OWNER_INBOX_OBS
+    fprintf(stderr,
+            "[HZ3_S282_OWNER_INBOX] push_attempt=%zu push_ok=%zu "
+            "push_reject_invalid=%zu push_reject_owner_dead=%zu "
+            "push_reject_owner_exiting=%zu push_reject_shard_collision=%zu "
+            "push_reject_budget=%zu push_cas_attempts=%zu "
+            "push_cas_failures=%zu push_cas_failure_max_per_push=%zu "
+            "push_depth_0=%zu push_depth_1=%zu push_depth_2_3=%zu "
+            "push_depth_4_7=%zu push_depth_8_15=%zu "
+            "push_depth_16_plus=%zu pop_cas_attempts=%zu "
+            "pop_cas_failures=%zu pop_cas_failure_max_per_pop=%zu "
+            "pop_success=%zu pop_empty=%zu pop_race_empty=%zu "
+            "take_first_calls=%zu take_first_hit=%zu "
+            "take_first_miss_empty=%zu take_first_miss_race=%zu "
+            "take_depth_0=%zu take_depth_1=%zu take_depth_2_3=%zu "
+            "take_depth_4_7=%zu take_depth_8_15=%zu "
+            "take_depth_16_plus=%zu drain_nodes=%zu "
+            "drain_return_first_nodes=%zu drain_to_front_nodes=%zu "
+            "drain_to_munmap_nodes=%zu\n",
+            atomic_load_explicit(&g_s282_push_attempt, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_push_ok, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_push_reject_invalid, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_push_reject_owner_dead, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_push_reject_owner_exiting, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_push_reject_shard_collision,
+                                 memory_order_relaxed),
+            atomic_load_explicit(&g_s282_push_reject_budget, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_push_cas_attempts, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_push_cas_failures, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_push_cas_failure_max_per_push,
+                                 memory_order_relaxed),
+            atomic_load_explicit(&g_s282_push_depth_0, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_push_depth_1, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_push_depth_2_3, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_push_depth_4_7, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_push_depth_8_15, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_push_depth_16_plus, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_pop_cas_attempts, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_pop_cas_failures, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_pop_cas_failure_max_per_pop,
+                                 memory_order_relaxed),
+            atomic_load_explicit(&g_s282_pop_success, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_pop_empty, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_pop_race_empty, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_take_first_calls, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_take_first_hit, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_take_first_miss_empty, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_take_first_miss_race, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_take_depth_0, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_take_depth_1, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_take_depth_2_3, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_take_depth_4_7, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_take_depth_8_15, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_take_depth_16_plus, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_drain_nodes, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_drain_return_first_nodes,
+                                 memory_order_relaxed),
+            atomic_load_explicit(&g_s282_drain_to_front_nodes, memory_order_relaxed),
+            atomic_load_explicit(&g_s282_drain_to_munmap_nodes, memory_order_relaxed));
 #endif
 #endif
 #if HZ3_S251_LARGE_OWNER_FRONT_SAFETY
@@ -663,6 +761,173 @@ static inline uint8_t hz3_large_s240_current_owner(void) {
 static inline uint8_t hz3_large_s240_normalize_sc(int sc) {
     return (sc >= 0 && sc < HZ3_LARGE_SC_COUNT) ? (uint8_t)sc : UINT8_MAX;
 }
+#endif
+
+#if HZ3_S282_LARGE_OWNER_INBOX_OBS
+static inline void hz3_s282_owner_inbox_inc(_Atomic size_t* p) {
+    hz3_large_s240_inc(p);
+}
+
+static inline void hz3_s282_owner_inbox_add(_Atomic size_t* p, size_t v) {
+    hz3_large_s240_add(p, v);
+}
+
+static inline void hz3_s282_owner_inbox_depth_bucket(size_t depth,
+                                                     _Atomic size_t* depth_0,
+                                                     _Atomic size_t* depth_1,
+                                                     _Atomic size_t* depth_2_3,
+                                                     _Atomic size_t* depth_4_7,
+                                                     _Atomic size_t* depth_8_15,
+                                                     _Atomic size_t* depth_16_plus) {
+    if (depth == 0) {
+        hz3_s282_owner_inbox_inc(depth_0);
+    } else if (depth == 1) {
+        hz3_s282_owner_inbox_inc(depth_1);
+    } else if (depth <= 3) {
+        hz3_s282_owner_inbox_inc(depth_2_3);
+    } else if (depth <= 7) {
+        hz3_s282_owner_inbox_inc(depth_4_7);
+    } else if (depth <= 15) {
+        hz3_s282_owner_inbox_inc(depth_8_15);
+    } else {
+        hz3_s282_owner_inbox_inc(depth_16_plus);
+    }
+}
+
+static inline void hz3_s282_owner_inbox_on_push_attempt(void) {
+    hz3_s282_owner_inbox_inc(&g_s282_push_attempt);
+}
+
+static inline void hz3_s282_owner_inbox_on_push_ok(size_t cas_failures) {
+    hz3_s282_owner_inbox_inc(&g_s282_push_ok);
+    hz3_large_s240_update_max(&g_s282_push_cas_failure_max_per_push,
+                              cas_failures);
+}
+
+static inline void hz3_s282_owner_inbox_on_push_reject_invalid(void) {
+    hz3_s282_owner_inbox_inc(&g_s282_push_reject_invalid);
+}
+
+static inline void hz3_s282_owner_inbox_on_push_reject_owner_dead(void) {
+    hz3_s282_owner_inbox_inc(&g_s282_push_reject_owner_dead);
+}
+
+static inline void hz3_s282_owner_inbox_on_push_reject_owner_exiting(void) {
+    hz3_s282_owner_inbox_inc(&g_s282_push_reject_owner_exiting);
+}
+
+static inline void hz3_s282_owner_inbox_on_push_reject_shard_collision(void) {
+    hz3_s282_owner_inbox_inc(&g_s282_push_reject_shard_collision);
+}
+
+static inline void hz3_s282_owner_inbox_on_push_reject_budget(void) {
+    hz3_s282_owner_inbox_inc(&g_s282_push_reject_budget);
+}
+
+static inline void hz3_s282_owner_inbox_on_push_depth(size_t depth) {
+    hz3_s282_owner_inbox_depth_bucket(depth,
+                                      &g_s282_push_depth_0,
+                                      &g_s282_push_depth_1,
+                                      &g_s282_push_depth_2_3,
+                                      &g_s282_push_depth_4_7,
+                                      &g_s282_push_depth_8_15,
+                                      &g_s282_push_depth_16_plus);
+}
+
+static inline void hz3_s282_owner_inbox_on_push_cas_attempt(void) {
+    hz3_s282_owner_inbox_inc(&g_s282_push_cas_attempts);
+}
+
+static inline void hz3_s282_owner_inbox_on_push_cas_failure(void) {
+    hz3_s282_owner_inbox_inc(&g_s282_push_cas_failures);
+}
+
+static inline void hz3_s282_owner_inbox_on_pop_cas_attempt(void) {
+    hz3_s282_owner_inbox_inc(&g_s282_pop_cas_attempts);
+}
+
+static inline void hz3_s282_owner_inbox_on_pop_cas_failure(void) {
+    hz3_s282_owner_inbox_inc(&g_s282_pop_cas_failures);
+}
+
+static inline void hz3_s282_owner_inbox_on_pop_success(size_t cas_failures) {
+    hz3_s282_owner_inbox_inc(&g_s282_pop_success);
+    hz3_large_s240_update_max(&g_s282_pop_cas_failure_max_per_pop,
+                              cas_failures);
+}
+
+static inline void hz3_s282_owner_inbox_on_pop_empty(int saw_head) {
+    hz3_s282_owner_inbox_inc(saw_head ? &g_s282_pop_race_empty :
+                                        &g_s282_pop_empty);
+}
+
+static inline void hz3_s282_owner_inbox_on_take_first_call(size_t depth) {
+    hz3_s282_owner_inbox_inc(&g_s282_take_first_calls);
+    hz3_s282_owner_inbox_depth_bucket(depth,
+                                      &g_s282_take_depth_0,
+                                      &g_s282_take_depth_1,
+                                      &g_s282_take_depth_2_3,
+                                      &g_s282_take_depth_4_7,
+                                      &g_s282_take_depth_8_15,
+                                      &g_s282_take_depth_16_plus);
+}
+
+static inline void hz3_s282_owner_inbox_on_take_first_hit(void) {
+    hz3_s282_owner_inbox_inc(&g_s282_take_first_hit);
+    hz3_s282_owner_inbox_inc(&g_s282_drain_return_first_nodes);
+}
+
+static inline void hz3_s282_owner_inbox_on_take_first_miss(size_t depth) {
+    hz3_s282_owner_inbox_inc(depth == 0 ? &g_s282_take_first_miss_empty :
+                                          &g_s282_take_first_miss_race);
+}
+
+static inline void hz3_s282_owner_inbox_on_drain_nodes(size_t nodes) {
+    hz3_s282_owner_inbox_add(&g_s282_drain_nodes, nodes);
+}
+
+static inline void hz3_s282_owner_inbox_on_extra_fronted(void) {
+    hz3_s282_owner_inbox_inc(&g_s282_drain_to_front_nodes);
+}
+
+static inline void hz3_s282_owner_inbox_on_extra_munmap(void) {
+    hz3_s282_owner_inbox_inc(&g_s282_drain_to_munmap_nodes);
+}
+#else
+static inline void hz3_s282_owner_inbox_on_push_attempt(void) {}
+static inline void hz3_s282_owner_inbox_on_push_ok(size_t cas_failures) {
+    (void)cas_failures;
+}
+static inline void hz3_s282_owner_inbox_on_push_reject_invalid(void) {}
+static inline void hz3_s282_owner_inbox_on_push_reject_owner_dead(void) {}
+static inline void hz3_s282_owner_inbox_on_push_reject_owner_exiting(void) {}
+static inline void hz3_s282_owner_inbox_on_push_reject_shard_collision(void) {}
+static inline void hz3_s282_owner_inbox_on_push_reject_budget(void) {}
+static inline void hz3_s282_owner_inbox_on_push_depth(size_t depth) {
+    (void)depth;
+}
+static inline void hz3_s282_owner_inbox_on_push_cas_attempt(void) {}
+static inline void hz3_s282_owner_inbox_on_push_cas_failure(void) {}
+static inline void hz3_s282_owner_inbox_on_pop_cas_attempt(void) {}
+static inline void hz3_s282_owner_inbox_on_pop_cas_failure(void) {}
+static inline void hz3_s282_owner_inbox_on_pop_success(size_t cas_failures) {
+    (void)cas_failures;
+}
+static inline void hz3_s282_owner_inbox_on_pop_empty(int saw_head) {
+    (void)saw_head;
+}
+static inline void hz3_s282_owner_inbox_on_take_first_call(size_t depth) {
+    (void)depth;
+}
+static inline void hz3_s282_owner_inbox_on_take_first_hit(void) {}
+static inline void hz3_s282_owner_inbox_on_take_first_miss(size_t depth) {
+    (void)depth;
+}
+static inline void hz3_s282_owner_inbox_on_drain_nodes(size_t nodes) {
+    (void)nodes;
+}
+static inline void hz3_s282_owner_inbox_on_extra_fronted(void) {}
+static inline void hz3_s282_owner_inbox_on_extra_munmap(void) {}
 #endif
 
 #if HZ3_S251_LARGE_OWNER_FRONT_SAFETY
@@ -1422,6 +1687,7 @@ static inline int hz3_large_s240_owner_accepts_remote(uint8_t owner, uint8_t cur
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
         hz3_large_s240_inc(&g_s240_inbox_reject_owner_dead);
 #endif
+        hz3_s282_owner_inbox_on_push_reject_owner_dead();
         return 0;
     }
     uint32_t live = hz3_shard_live_count(owner);
@@ -1429,18 +1695,21 @@ static inline int hz3_large_s240_owner_accepts_remote(uint8_t owner, uint8_t cur
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
         hz3_large_s240_inc(&g_s240_inbox_reject_owner_dead);
 #endif
+        hz3_s282_owner_inbox_on_push_reject_owner_dead();
         return 0;
     }
     if (hz3_shard_is_exiting(owner)) {
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
         hz3_large_s240_inc(&g_s240_inbox_reject_owner_exiting);
 #endif
+        hz3_s282_owner_inbox_on_push_reject_owner_exiting();
         return 0;
     }
     if (live > 1) {
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
         hz3_large_s240_inc(&g_s240_inbox_reject_shard_collision);
 #endif
+        hz3_s282_owner_inbox_on_push_reject_shard_collision();
         return 0;
     }
     return 1;
@@ -1448,7 +1717,9 @@ static inline int hz3_large_s240_owner_accepts_remote(uint8_t owner, uint8_t cur
 
 static inline int hz3_large_s240_inbox_push_remote(int sc, Hz3LargeHdr* hdr, uint8_t cur) {
     hz3_large_s240_register_once();
+    hz3_s282_owner_inbox_on_push_attempt();
     if (!hdr || !hz3_large_s240_inbox_eligible(sc, hdr->map_size)) {
+        hz3_s282_owner_inbox_on_push_reject_invalid();
         return 0;
     }
     uint8_t owner = hdr->owner_shard;
@@ -1472,12 +1743,14 @@ static inline int hz3_large_s240_inbox_push_remote(int sc, Hz3LargeHdr* hdr, uin
     Hz3LargeInbox* inbox = &g_s240_large_inbox[owner][sc];
     uint32_t count = atomic_load_explicit(&inbox->count, memory_order_relaxed);
     size_t bytes = atomic_load_explicit(&inbox->bytes, memory_order_relaxed);
+    hz3_s282_owner_inbox_on_push_depth((size_t)count);
     if (count >= (uint32_t)HZ3_S240_LARGE_INBOX_MAX_NODES_PER_SC ||
         bytes + hdr->map_size < bytes ||
         bytes + hdr->map_size > (size_t)HZ3_S240_LARGE_INBOX_MAX_BYTES_PER_SC) {
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
         hz3_large_s240_inc(&g_s240_inbox_reject_budget);
 #endif
+        hz3_s282_owner_inbox_on_push_reject_budget();
         atomic_fetch_sub_explicit(&g_s240_large_inbox_pushers[owner], 1,
                                   memory_order_acq_rel);
         return 0;
@@ -1500,8 +1773,10 @@ static inline int hz3_large_s240_inbox_push_remote(int sc, Hz3LargeHdr* hdr, uin
     hz3_large_s240_inbox_note_add(hdr->map_size);
 
     Hz3LargeHdr* old = atomic_load_explicit(&inbox->head, memory_order_relaxed);
+    size_t s282_push_cas_failures = 0;
     for (;;) {
         hdr->next_free = old;
+        hz3_s282_owner_inbox_on_push_cas_attempt();
         if (atomic_compare_exchange_weak_explicit(&inbox->head,
                                                   &old,
                                                   hdr,
@@ -1509,6 +1784,8 @@ static inline int hz3_large_s240_inbox_push_remote(int sc, Hz3LargeHdr* hdr, uin
                                                   memory_order_relaxed)) {
             break;
         }
+        s282_push_cas_failures++;
+        hz3_s282_owner_inbox_on_push_cas_failure();
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
         hz3_large_s240_inc(&g_s240_inbox_cas_retries);
 #endif
@@ -1516,6 +1793,7 @@ static inline int hz3_large_s240_inbox_push_remote(int sc, Hz3LargeHdr* hdr, uin
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
     hz3_large_s240_inc(&g_s240_inbox_remote_push);
 #endif
+    hz3_s282_owner_inbox_on_push_ok(s282_push_cas_failures);
     atomic_fetch_sub_explicit(&g_s240_large_inbox_pushers[owner], 1,
                               memory_order_acq_rel);
     return 1;
@@ -1527,13 +1805,17 @@ static inline Hz3LargeHdr* hz3_large_s240_inbox_pop_one(uint8_t owner, int sc) {
     }
     Hz3LargeInbox* inbox = &g_s240_large_inbox[owner][sc];
     Hz3LargeHdr* head = atomic_load_explicit(&inbox->head, memory_order_acquire);
+    int s282_saw_head = head != NULL;
+    size_t s282_pop_cas_failures = 0;
     while (head) {
         Hz3LargeHdr* next = head->next_free;
+        hz3_s282_owner_inbox_on_pop_cas_attempt();
         if (atomic_compare_exchange_weak_explicit(&inbox->head,
                                                   &head,
                                                   next,
                                                   memory_order_acquire,
                                                   memory_order_relaxed)) {
+            hz3_s282_owner_inbox_on_pop_success(s282_pop_cas_failures);
             head->next_free = NULL;
             hz3_large_s240_inbox_account_pop(inbox,
                                              1,
@@ -1550,10 +1832,14 @@ static inline Hz3LargeHdr* hz3_large_s240_inbox_pop_one(uint8_t owner, int sc) {
 #endif
             return head;
         }
+        s282_saw_head = 1;
+        s282_pop_cas_failures++;
+        hz3_s282_owner_inbox_on_pop_cas_failure();
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
         hz3_large_s240_inc(&g_s240_inbox_cas_retries);
 #endif
     }
+    hz3_s282_owner_inbox_on_pop_empty(s282_saw_head);
     return NULL;
 }
 
@@ -1737,6 +2023,9 @@ static inline Hz3LargeHdr* hz3_large_s246_inbox_drain_current_take_first_to_fron
         sc < 0 || sc >= HZ3_LARGE_SC_COUNT) {
         return NULL;
     }
+    size_t s282_take_depth = (size_t)atomic_load_explicit(
+        &g_s240_large_inbox[owner][sc].count, memory_order_relaxed);
+    hz3_s282_owner_inbox_on_take_first_call(s282_take_depth);
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
     hz3_large_s240_inc(&g_s240_inbox_drain_calls);
     hz3_large_s240_inc(&g_s246_take_first_calls);
@@ -1766,6 +2055,7 @@ static inline Hz3LargeHdr* hz3_large_s246_inbox_drain_current_take_first_to_fron
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
         hz3_large_s240_inc(&g_s246_take_first_misses);
 #endif
+        hz3_s282_owner_inbox_on_take_first_miss(s282_take_depth);
         return NULL;
     }
 
@@ -1778,6 +2068,7 @@ static inline Hz3LargeHdr* hz3_large_s246_inbox_drain_current_take_first_to_fron
     hz3_large_s240_inc(&g_s246_take_first_hits);
     hz3_large_s240_inc(&g_s246_take_first_direct);
 #endif
+    hz3_s282_owner_inbox_on_take_first_hit();
 
 #if HZ3_S273_LARGE_INBOX_TAKE_FIRST_BATCH || HZ3_S274_LARGE_INBOX_SIZE_DRAIN
     (void)batch_count;
@@ -1794,12 +2085,14 @@ static inline Hz3LargeHdr* hz3_large_s246_inbox_drain_current_take_first_to_fron
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
                 hz3_large_s240_inc(&g_s246_take_first_extra_fronted);
 #endif
+                hz3_s282_owner_inbox_on_extra_fronted();
                 continue;
             }
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
             hz3_large_s240_inc(&g_s240_inbox_drain_front_reject);
             hz3_large_s240_inc(&g_s246_take_first_extra_munmap);
 #endif
+            hz3_s282_owner_inbox_on_extra_munmap();
             (void)hz3_large_s240_flush_dispose_node(hdr,
                                                     sc,
                                                     HZ3_S240_FLUSH_INBOX_POPPED_STATE,
@@ -1820,12 +2113,14 @@ static inline Hz3LargeHdr* hz3_large_s246_inbox_drain_current_take_first_to_fron
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
                 hz3_large_s240_inc(&g_s246_take_first_extra_fronted);
 #endif
+                hz3_s282_owner_inbox_on_extra_fronted();
                 continue;
             }
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
             hz3_large_s240_inc(&g_s240_inbox_drain_front_reject);
             hz3_large_s240_inc(&g_s246_take_first_extra_munmap);
 #endif
+            hz3_s282_owner_inbox_on_extra_munmap();
             (void)hz3_large_s240_flush_dispose_node(hdr,
                                                     sc,
                                                     HZ3_S240_FLUSH_INBOX_POPPED_STATE,
@@ -1847,12 +2142,14 @@ static inline Hz3LargeHdr* hz3_large_s246_inbox_drain_current_take_first_to_fron
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
             hz3_large_s240_inc(&g_s246_take_first_extra_fronted);
 #endif
+            hz3_s282_owner_inbox_on_extra_fronted();
             continue;
         }
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
         hz3_large_s240_inc(&g_s240_inbox_drain_front_reject);
         hz3_large_s240_inc(&g_s246_take_first_extra_munmap);
 #endif
+        hz3_s282_owner_inbox_on_extra_munmap();
         (void)hz3_large_s240_flush_dispose_node(hdr,
                                                 sc,
                                                 HZ3_S240_FLUSH_INBOX_POPPED_STATE,
@@ -1865,6 +2162,7 @@ static inline Hz3LargeHdr* hz3_large_s246_inbox_drain_current_take_first_to_fron
     hz3_large_s240_inc(&g_s240_inbox_drain_nonempty);
     hz3_large_s240_add(&g_s240_inbox_drain_objs, (size_t)drained);
 #endif
+    hz3_s282_owner_inbox_on_drain_nodes((size_t)drained);
     if (out_drained) {
         *out_drained = drained;
     }

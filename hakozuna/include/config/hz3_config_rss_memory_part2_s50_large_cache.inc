@@ -428,6 +428,30 @@
 #error "HZ3_S281_LARGE_RETAINED_FREE_ROUTE_FAST is speed-only and requires S251 safety disabled"
 #endif
 
+// S282: owner-inbox preflight observation for S278X.
+// Diagnostic-only. Adds owner-inbox CAS/depth/hit-shape counters on top of the
+// current S276 front+inbox direct-retain speed baseline without changing queue
+// behavior.
+#ifndef HZ3_S282_LARGE_OWNER_INBOX_OBS
+#define HZ3_S282_LARGE_OWNER_INBOX_OBS 0
+#endif
+
+#if HZ3_S282_LARGE_OWNER_INBOX_OBS && !HZ3_S246_LARGE_INBOX_TAKE_FIRST
+#error "HZ3_S282_LARGE_OWNER_INBOX_OBS requires S246 take-first"
+#endif
+
+#if HZ3_S282_LARGE_OWNER_INBOX_OBS && !HZ3_S276_LARGE_DIRECT_RETAIN_INBOX
+#error "HZ3_S282_LARGE_OWNER_INBOX_OBS requires S276 front+inbox direct retain"
+#endif
+
+#if HZ3_S282_LARGE_OWNER_INBOX_OBS && !HZ3_S240_LARGE_OWNER_FRONT_STATS
+#error "HZ3_S282_LARGE_OWNER_INBOX_OBS requires S240 owner-front stats"
+#endif
+
+#if HZ3_S282_LARGE_OWNER_INBOX_OBS && !HZ3_S276_LARGE_DIRECT_RETAIN_STATS
+#error "HZ3_S282_LARGE_OWNER_INBOX_OBS requires S276 direct-retain stats"
+#endif
+
 // S251: large owner-front container safety probe.
 // Observation/debug lane for S250 high-band work.  It validates the durable
 // container state transitions around ACTIVE/FREEING/FRONT/REMOTE/GLOBAL.
