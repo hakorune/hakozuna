@@ -1964,6 +1964,9 @@ int hz3_large_free(void* ptr) {
     size_t obs_free_admit_start_ns = hz3_large_aligned_obs_timing_start();
     size_t s243_free_fallback_start_ns = 0;
     int s243_free_fallback_active = 0;
+    int s280_had_fast_route = 0;
+    int s280_front_reject = 0;
+    int s280_inbox_reject = 0;
 #if HZ3_WATCH_PTR_BOX
     hz3_watch_ptr_on_free("large_free", ptr, -1, -1);
 #endif
@@ -1976,6 +1979,7 @@ int hz3_large_free(void* ptr) {
     // Safety: validate hdr before accessing map_size
     if (hdr->magic != HZ3_LARGE_MAGIC || hdr->map_size == 0) {
         hz3_large_aligned_obs_on_admit_invalid();
+        hz3_s280_free_route_on_sc_invalid();
         if (!s243_free_fallback_active) {
             s243_free_fallback_start_ns = hz3_s243_residual_timing_start();
             s243_free_fallback_active = 1;
@@ -1984,6 +1988,7 @@ int hz3_large_free(void* ptr) {
     }
 
     int sc = hz3_large_sc(hdr->map_size);
+    hz3_s280_free_route_on_taken(hdr);
 #if HZ3_S270_LARGE_SCACHE_IDLE_TRIM
     Hz3LargeHdr* s270_victims[HZ3_S270_TRIM_BATCH_MAX];
     size_t s270_victim_count = 0;
@@ -2001,6 +2006,7 @@ int hz3_large_free(void* ptr) {
     // >64MB はキャッシュ対象外（巨大ブロックで cap を食い潰すのを防ぐ）
     if (sc < 0 || sc >= HZ3_LARGE_SC_COUNT - 1) {
         hz3_large_aligned_obs_on_admit_oversize();
+        hz3_s280_free_route_on_sc_oversize();
         if (!s243_free_fallback_active) {
             s243_free_fallback_start_ns = hz3_s243_residual_timing_start();
             s243_free_fallback_active = 1;
@@ -2011,10 +2017,15 @@ int hz3_large_free(void* ptr) {
 #if HZ3_S240_LARGE_FRONT_CACHE
     uint8_t s240_cur_owner = hz3_large_s240_current_owner();
     if (hdr->owner_shard != UINT8_MAX && hdr->owner_shard == s240_cur_owner) {
+        int s280_retained_route = (hdr->flags & HZ3_LARGE_F_DIRECT_RETAINED) != 0;
+        s280_had_fast_route = 1;
+        hz3_s280_free_route_on_same_owner();
         hdr->in_use = 0;
         hdr->next = NULL;
         size_t s243_front_push_start_ns = hz3_s243_residual_timing_start();
         int s243_front_pushed = hz3_large_s240_front_push(sc, hdr);
+        hz3_s280_free_route_on_front_result(s280_retained_route,
+                                            s243_front_pushed);
         hz3_s243_residual_on_free_front_push_elapsed(
             s243_front_push_start_ns, s243_front_pushed);
         if (s243_front_pushed) {
@@ -2029,6 +2040,7 @@ int hz3_large_free(void* ptr) {
             hz3_s243_residual_on_free_total_elapsed(s243_free_total_start_ns);
             return 1;
         }
+        s280_front_reject = 1;
 #if HZ3_S276_LARGE_DIRECT_RETAIN_FRONT || HZ3_S276_LARGE_DIRECT_RETAIN_INBOX
         if ((hdr->flags & HZ3_LARGE_F_DIRECT_RETAINED) != 0) {
             hz3_large_s276_note_front_push_reject_clear();
@@ -2038,16 +2050,22 @@ int hz3_large_free(void* ptr) {
     }
 #if HZ3_S240_LARGE_OWNER_INBOX
     if (hdr->owner_shard != UINT8_MAX && hdr->owner_shard != s240_cur_owner) {
+        int s280_inbox_retained_route = 0;
+        s280_had_fast_route = 1;
+        hz3_s280_free_route_on_remote_owner();
 #if HZ3_S276_LARGE_DIRECT_RETAIN_FRONT || HZ3_S276_LARGE_DIRECT_RETAIN_INBOX
         int s276_try_inbox_retain =
             (hdr->flags & HZ3_LARGE_F_DIRECT_RETAINED) != 0 &&
             HZ3_S276_LARGE_DIRECT_RETAIN_INBOX;
+        s280_inbox_retained_route = s276_try_inbox_retain;
         if (!s276_try_inbox_retain) {
             hz3_s276_direct_clear_retained(hdr);
         }
 #endif
         size_t s243_inbox_push_start_ns = hz3_s243_residual_timing_start();
         int s243_inbox_pushed = hz3_large_s240_inbox_push_remote(sc, hdr, s240_cur_owner);
+        hz3_s280_free_route_on_inbox_result(s280_inbox_retained_route,
+                                            s243_inbox_pushed);
         hz3_s243_residual_on_free_inbox_push_elapsed(
             s243_inbox_push_start_ns, s243_inbox_pushed);
         if (s243_inbox_pushed) {
@@ -2062,6 +2080,7 @@ int hz3_large_free(void* ptr) {
             hz3_s243_residual_on_free_total_elapsed(s243_free_total_start_ns);
             return 1;
         }
+        s280_inbox_reject = 1;
 #if HZ3_S276_LARGE_DIRECT_RETAIN_FRONT || HZ3_S276_LARGE_DIRECT_RETAIN_INBOX
         if (s276_try_inbox_retain) {
             hz3_large_s276_note_inbox_push_reject_clear();
@@ -2071,8 +2090,16 @@ int hz3_large_free(void* ptr) {
     }
 #endif
 #endif
+#if HZ3_S240_LARGE_OWNER_FRONT
+    if (hdr->owner_shard == UINT8_MAX) {
+        hz3_s280_free_route_on_unknown_owner();
+    }
+#endif
 
     if (!s243_free_fallback_active) {
+        hz3_s280_free_route_on_global_fallback(s280_had_fast_route,
+                                               s280_front_reject,
+                                               s280_inbox_reject);
         s243_free_fallback_start_ns = hz3_s243_residual_timing_start();
         s243_free_fallback_active = 1;
     }
@@ -2477,6 +2504,7 @@ do_munmap:
     }
     // Cache full または無効: munmap
     hz3_large_aligned_obs_on_admit_do_munmap();
+    hz3_s280_free_route_on_munmap();
     hz3_large_stats_on_free_munmap();
 #if HZ3_S276_LARGE_DIRECT_RETAIN_FRONT || HZ3_S276_LARGE_DIRECT_RETAIN_INBOX
     hz3_s276_direct_clear_retained(hdr);

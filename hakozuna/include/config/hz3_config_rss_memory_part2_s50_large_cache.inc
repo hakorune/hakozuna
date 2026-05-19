@@ -327,6 +327,28 @@
 #error "HZ3_S279_LARGE_DIRECT_RETAIN_SKIP_FREE_META is speed-only and requires S251 safety disabled"
 #endif
 
+// S280: retained-direct free-route observation.
+// Observation-only.  S276 made direct-retained large objects move through
+// FRONT/REMOTE cached states, but the broad free_admit timer is too coarse to
+// tell which route still costs us.  This splits retained free routing into
+// same-owner front, remote owner inbox, and global/munmap fallback counters.
+#ifndef HZ3_S280_LARGE_RETAINED_FREE_ROUTE_OBS
+#define HZ3_S280_LARGE_RETAINED_FREE_ROUTE_OBS 0
+#endif
+
+#if HZ3_S280_LARGE_RETAINED_FREE_ROUTE_OBS && !HZ3_LARGE_ALIGNED_OBS
+#error "HZ3_S280_LARGE_RETAINED_FREE_ROUTE_OBS requires HZ3_LARGE_ALIGNED_OBS"
+#endif
+
+#if HZ3_S280_LARGE_RETAINED_FREE_ROUTE_OBS && \
+    !(HZ3_S276_LARGE_DIRECT_RETAIN_FRONT || HZ3_S276_LARGE_DIRECT_RETAIN_INBOX)
+#error "HZ3_S280_LARGE_RETAINED_FREE_ROUTE_OBS requires S276 direct retain"
+#endif
+
+#if HZ3_S280_LARGE_RETAINED_FREE_ROUTE_OBS && !HZ3_S240_LARGE_OWNER_FRONT
+#error "HZ3_S280_LARGE_RETAINED_FREE_ROUTE_OBS requires S240 owner-front"
+#endif
+
 // S251: large owner-front container safety probe.
 // Observation/debug lane for S250 high-band work.  It validates the durable
 // container state transitions around ACTIVE/FREEING/FRONT/REMOTE/GLOBAL.

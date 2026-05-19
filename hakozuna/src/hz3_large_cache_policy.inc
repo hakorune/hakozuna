@@ -2572,6 +2572,177 @@ static inline void hz3_s275_on_direct_take_elapsed(size_t start_ns, int hit) {
 static inline void hz3_s275_activation_dump_final(void) {}
 #endif
 
+#if HZ3_S280_LARGE_RETAINED_FREE_ROUTE_OBS
+static _Atomic size_t g_s280_free_taken_retained = 0;
+static _Atomic size_t g_s280_free_taken_nonretained = 0;
+static _Atomic size_t g_s280_free_sc_invalid = 0;
+static _Atomic size_t g_s280_free_sc_oversize = 0;
+static _Atomic size_t g_s280_free_route_same_owner = 0;
+static _Atomic size_t g_s280_free_route_remote_owner = 0;
+static _Atomic size_t g_s280_free_route_unknown_owner = 0;
+static _Atomic size_t g_s280_front_try = 0;
+static _Atomic size_t g_s280_front_success = 0;
+static _Atomic size_t g_s280_front_reject = 0;
+static _Atomic size_t g_s280_front_retained_success = 0;
+static _Atomic size_t g_s280_front_retained_clear = 0;
+static _Atomic size_t g_s280_inbox_try = 0;
+static _Atomic size_t g_s280_inbox_success = 0;
+static _Atomic size_t g_s280_inbox_reject = 0;
+static _Atomic size_t g_s280_inbox_retained_success = 0;
+static _Atomic size_t g_s280_inbox_retained_clear = 0;
+static _Atomic size_t g_s280_global_fallback = 0;
+static _Atomic size_t g_s280_global_fallback_after_front = 0;
+static _Atomic size_t g_s280_global_fallback_after_inbox = 0;
+static _Atomic size_t g_s280_global_fallback_no_fast_route = 0;
+static _Atomic size_t g_s280_munmap_path = 0;
+
+static inline void hz3_s280_free_route_inc(_Atomic size_t* p) {
+    atomic_fetch_add_explicit(p, 1, memory_order_relaxed);
+}
+
+static inline void hz3_s280_free_route_on_taken(const Hz3LargeHdr* hdr) {
+    if (hdr && (hdr->flags & HZ3_LARGE_F_DIRECT_RETAINED) != 0) {
+        hz3_s280_free_route_inc(&g_s280_free_taken_retained);
+    } else {
+        hz3_s280_free_route_inc(&g_s280_free_taken_nonretained);
+    }
+}
+
+static inline void hz3_s280_free_route_on_sc_invalid(void) {
+    hz3_s280_free_route_inc(&g_s280_free_sc_invalid);
+}
+
+static inline void hz3_s280_free_route_on_sc_oversize(void) {
+    hz3_s280_free_route_inc(&g_s280_free_sc_oversize);
+}
+
+static inline void hz3_s280_free_route_on_same_owner(void) {
+    hz3_s280_free_route_inc(&g_s280_free_route_same_owner);
+}
+
+static inline void hz3_s280_free_route_on_remote_owner(void) {
+    hz3_s280_free_route_inc(&g_s280_free_route_remote_owner);
+}
+
+static inline void hz3_s280_free_route_on_unknown_owner(void) {
+    hz3_s280_free_route_inc(&g_s280_free_route_unknown_owner);
+}
+
+static inline void hz3_s280_free_route_on_front_result(int retained,
+                                                       int success) {
+    hz3_s280_free_route_inc(&g_s280_front_try);
+    if (success) {
+        hz3_s280_free_route_inc(&g_s280_front_success);
+        if (retained) {
+            hz3_s280_free_route_inc(&g_s280_front_retained_success);
+        }
+        return;
+    }
+    hz3_s280_free_route_inc(&g_s280_front_reject);
+    if (retained) {
+        hz3_s280_free_route_inc(&g_s280_front_retained_clear);
+    }
+}
+
+static inline void hz3_s280_free_route_on_inbox_result(int retained,
+                                                       int success) {
+    hz3_s280_free_route_inc(&g_s280_inbox_try);
+    if (success) {
+        hz3_s280_free_route_inc(&g_s280_inbox_success);
+        if (retained) {
+            hz3_s280_free_route_inc(&g_s280_inbox_retained_success);
+        }
+        return;
+    }
+    hz3_s280_free_route_inc(&g_s280_inbox_reject);
+    if (retained) {
+        hz3_s280_free_route_inc(&g_s280_inbox_retained_clear);
+    }
+}
+
+static inline void hz3_s280_free_route_on_global_fallback(int had_fast_route,
+                                                          int front_reject,
+                                                          int inbox_reject) {
+    hz3_s280_free_route_inc(&g_s280_global_fallback);
+    if (!had_fast_route) {
+        hz3_s280_free_route_inc(&g_s280_global_fallback_no_fast_route);
+    }
+    if (front_reject) {
+        hz3_s280_free_route_inc(&g_s280_global_fallback_after_front);
+    }
+    if (inbox_reject) {
+        hz3_s280_free_route_inc(&g_s280_global_fallback_after_inbox);
+    }
+}
+
+static inline void hz3_s280_free_route_on_munmap(void) {
+    hz3_s280_free_route_inc(&g_s280_munmap_path);
+}
+
+static void hz3_s280_free_route_dump_final(void) {
+    fprintf(stderr,
+            "[HZ3_S280_FREE_ROUTE] "
+            "taken_retained=%zu taken_nonretained=%zu sc_invalid=%zu "
+            "sc_oversize=%zu same_owner=%zu remote_owner=%zu "
+            "unknown_owner=%zu front_try=%zu front_success=%zu "
+            "front_reject=%zu front_retained_success=%zu "
+            "front_retained_clear=%zu inbox_try=%zu inbox_success=%zu "
+            "inbox_reject=%zu inbox_retained_success=%zu "
+            "inbox_retained_clear=%zu global_fallback=%zu "
+            "global_fallback_after_front=%zu "
+            "global_fallback_after_inbox=%zu "
+            "global_fallback_no_fast_route=%zu munmap_path=%zu\n",
+            atomic_load_explicit(&g_s280_free_taken_retained, memory_order_relaxed),
+            atomic_load_explicit(&g_s280_free_taken_nonretained, memory_order_relaxed),
+            atomic_load_explicit(&g_s280_free_sc_invalid, memory_order_relaxed),
+            atomic_load_explicit(&g_s280_free_sc_oversize, memory_order_relaxed),
+            atomic_load_explicit(&g_s280_free_route_same_owner, memory_order_relaxed),
+            atomic_load_explicit(&g_s280_free_route_remote_owner, memory_order_relaxed),
+            atomic_load_explicit(&g_s280_free_route_unknown_owner, memory_order_relaxed),
+            atomic_load_explicit(&g_s280_front_try, memory_order_relaxed),
+            atomic_load_explicit(&g_s280_front_success, memory_order_relaxed),
+            atomic_load_explicit(&g_s280_front_reject, memory_order_relaxed),
+            atomic_load_explicit(&g_s280_front_retained_success, memory_order_relaxed),
+            atomic_load_explicit(&g_s280_front_retained_clear, memory_order_relaxed),
+            atomic_load_explicit(&g_s280_inbox_try, memory_order_relaxed),
+            atomic_load_explicit(&g_s280_inbox_success, memory_order_relaxed),
+            atomic_load_explicit(&g_s280_inbox_reject, memory_order_relaxed),
+            atomic_load_explicit(&g_s280_inbox_retained_success, memory_order_relaxed),
+            atomic_load_explicit(&g_s280_inbox_retained_clear, memory_order_relaxed),
+            atomic_load_explicit(&g_s280_global_fallback, memory_order_relaxed),
+            atomic_load_explicit(&g_s280_global_fallback_after_front, memory_order_relaxed),
+            atomic_load_explicit(&g_s280_global_fallback_after_inbox, memory_order_relaxed),
+            atomic_load_explicit(&g_s280_global_fallback_no_fast_route, memory_order_relaxed),
+            atomic_load_explicit(&g_s280_munmap_path, memory_order_relaxed));
+}
+#else
+static inline void hz3_s280_free_route_on_taken(const Hz3LargeHdr* hdr) {
+    (void)hdr;
+}
+static inline void hz3_s280_free_route_on_sc_invalid(void) {}
+static inline void hz3_s280_free_route_on_sc_oversize(void) {}
+static inline void hz3_s280_free_route_on_same_owner(void) {}
+static inline void hz3_s280_free_route_on_remote_owner(void) {}
+static inline void hz3_s280_free_route_on_unknown_owner(void) {}
+static inline void hz3_s280_free_route_on_front_result(int retained, int success) {
+    (void)retained;
+    (void)success;
+}
+static inline void hz3_s280_free_route_on_inbox_result(int retained, int success) {
+    (void)retained;
+    (void)success;
+}
+static inline void hz3_s280_free_route_on_global_fallback(int had_fast_route,
+                                                          int front_reject,
+                                                          int inbox_reject) {
+    (void)had_fast_route;
+    (void)front_reject;
+    (void)inbox_reject;
+}
+static inline void hz3_s280_free_route_on_munmap(void) {}
+static inline void hz3_s280_free_route_dump_final(void) {}
+#endif
+
 static void hz3_large_aligned_obs_dump_final(void) {
     fprintf(stderr,
             "[HZ3_LARGE_ALIGNED_OBS_CALLS] normal=%zu aligned=%zu invalid=%zu "
@@ -2670,6 +2841,7 @@ static void hz3_large_aligned_obs_dump_final(void) {
             atomic_load_explicit(&g_hz3_large_obs_free_admit_ns_max, memory_order_relaxed));
     hz3_s243_residual_dump_final();
     hz3_s275_activation_dump_final();
+    hz3_s280_free_route_dump_final();
 }
 
 static inline void hz3_large_aligned_obs_register_once(void) {
@@ -2897,6 +3069,30 @@ static inline void hz3_s275_on_direct_take_elapsed(size_t start_ns, int hit) {
     (void)start_ns;
     (void)hit;
 }
+static inline void hz3_s280_free_route_on_taken(const Hz3LargeHdr* hdr) {
+    (void)hdr;
+}
+static inline void hz3_s280_free_route_on_sc_invalid(void) {}
+static inline void hz3_s280_free_route_on_sc_oversize(void) {}
+static inline void hz3_s280_free_route_on_same_owner(void) {}
+static inline void hz3_s280_free_route_on_remote_owner(void) {}
+static inline void hz3_s280_free_route_on_unknown_owner(void) {}
+static inline void hz3_s280_free_route_on_front_result(int retained, int success) {
+    (void)retained;
+    (void)success;
+}
+static inline void hz3_s280_free_route_on_inbox_result(int retained, int success) {
+    (void)retained;
+    (void)success;
+}
+static inline void hz3_s280_free_route_on_global_fallback(int had_fast_route,
+                                                          int front_reject,
+                                                          int inbox_reject) {
+    (void)had_fast_route;
+    (void)front_reject;
+    (void)inbox_reject;
+}
+static inline void hz3_s280_free_route_on_munmap(void) {}
 static inline void hz3_large_aligned_obs_on_normal_alloc(size_t size) {
     (void)size;
 }
