@@ -142,6 +142,10 @@ static int hz5_p1_segment_is_empty_for_release(Hz5Seg* seg) {
     return 1;
 }
 
+static int hz5_p1_segment_is_retired(const Hz5Seg* seg) {
+    return seg && (seg->flags & HZ5_SEG_FLAG_RETIRED) != 0;
+}
+
 static void hz5_p1_segment_free_memory(Hz5Seg* seg) {
 #if defined(_WIN32)
     _aligned_free(seg);
@@ -167,10 +171,15 @@ Hz5Seg* hz5_p1_segment_get(void) {
             count = 1u;
         }
     }
-    Hz5Seg* seg = count != 0
-                      ? atomic_load_explicit(&g_hz5_p1_segs[0],
-                                             memory_order_acquire)
-                      : NULL;
+    Hz5Seg* seg = NULL;
+    for (uint32_t i = 0; i < count; ++i) {
+        Hz5Seg* candidate = atomic_load_explicit(&g_hz5_p1_segs[i],
+                                                 memory_order_acquire);
+        if (!hz5_p1_segment_is_retired(candidate)) {
+            seg = candidate;
+            break;
+        }
+    }
     hz5_p1_unlock();
     return seg;
 }
@@ -186,6 +195,27 @@ Hz5Seg* hz5_p1_segment_at(uint32_t index) {
         return NULL;
     }
     return atomic_load_explicit(&g_hz5_p1_segs[index], memory_order_acquire);
+}
+
+uint32_t hz5_p1_segment_retire_empty_quarantine(void) {
+    uint32_t retired = 0;
+#if HZ5_P14_RETIRED_QUARANTINE
+    hz5_p1_lock();
+    uint32_t count = atomic_load_explicit(&g_hz5_p1_seg_count,
+                                          memory_order_acquire);
+    for (uint32_t i = 0; i < count; ++i) {
+        Hz5Seg* seg = atomic_load_explicit(&g_hz5_p1_segs[i],
+                                           memory_order_acquire);
+        if (hz5_p1_segment_is_retired(seg) ||
+            !hz5_p1_segment_is_empty_for_release(seg)) {
+            continue;
+        }
+        seg->flags |= HZ5_SEG_FLAG_RETIRED;
+        ++retired;
+    }
+    hz5_p1_unlock();
+#endif
+    return retired;
 }
 
 uint32_t hz5_p1_segment_release_empty_for_shutdown(void) {
@@ -323,6 +353,9 @@ void* hz5_p1_segment_alloc_any_run_aligned(uint32_t pages,
     uint32_t count = hz5_p1_segment_count();
     for (uint32_t i = 0; i < count; ++i) {
         Hz5Seg* seg = hz5_p1_segment_at(i);
+        if (hz5_p1_segment_is_retired(seg)) {
+            continue;
+        }
         void* ptr = hz5_p1_segment_alloc_run_aligned(seg,
                                                      pages,
                                                      align_pages,

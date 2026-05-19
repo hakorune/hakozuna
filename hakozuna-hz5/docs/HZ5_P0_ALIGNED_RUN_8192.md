@@ -683,3 +683,67 @@ results/synthetic-sweep/20260520_070816_774
 - `after_release`: `segments=0`, `live_pages=0`, `remote_pending=0`
 - This validates shutdown cleanup only. Runtime segment release remains blocked
   on a safe concurrent segment-table retire design.
+
+## P14 Runtime Segment Retire Design
+
+Goal:
+
+```text
+Runtime empty-segment retirement without touching P11/P12 speed lanes.
+```
+
+Current hazard:
+
+```text
+hz5_p1_seg_from_ptr()
+  scans atomic segment slots without taking the segment lock.
+```
+
+Because of that, runtime code must not remove a segment and immediately
+`_aligned_free` it. A racing classifier could have already loaded the segment
+pointer.
+
+Candidate order:
+
+1. P14b retired quarantine:
+   - mark empty segment retired;
+   - keep memory and segment-table slot valid;
+   - allocation skips retired segments;
+   - snapshots report retired segments/bytes.
+2. P14c diagnostic lock-protected release:
+   - only for diagnostic lane;
+   - proves real `_aligned_free` but intentionally pays lookup locking cost.
+3. P14d epoch/hazard or tombstone release:
+   - production-grade runtime release candidate;
+   - defer until P14b shows the retire state is useful.
+
+Recommendation:
+
+```text
+Implement P14b first. Do not runtime-free segment memory yet.
+```
+
+P14b does not return RSS, but it proves the state transition and keeps
+classification safe. P11/P12 counter-free lanes remain unchanged.
+
+P14b first diagnostic result:
+
+```text
+results/synthetic-sweep/20260520_071306_240
+```
+
+- `after_cleanup`: `segments=3`, `empty_segments=3`, `retired_segments=0`,
+  `live_pages=0`, `remote_pending=0`
+- `P14_RETIRED_QUARANTINE`: `retired_segments=3`
+- `after_retire`: `segments=3`, `retired_segments=3`, `live_pages=0`,
+  `remote_pending=0`
+- `shutdown_release`: `released_segments=3`
+- `after_release`: `segments=0`, `retired_segments=0`, `live_pages=0`,
+  `remote_pending=0`
+
+Implementation note:
+
+- `hz5_p1_segment_get()` now scans for the first non-retired segment instead of
+  assuming slot 0 is reusable.
+- This matters for later runtime-quarantine diagnostics where slot 0 may be
+  retired while other segments remain active.

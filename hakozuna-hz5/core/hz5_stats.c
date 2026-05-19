@@ -135,11 +135,15 @@ static void hz5_stats_print_segment_snapshot(const char* label) {
     uint64_t run16 = 0;
     uint64_t remote_pending = 0;
     uint64_t empty_segments = 0;
+    uint64_t retired_segments = 0;
 
     for (uint32_t seg_idx = 0; seg_idx < segments; ++seg_idx) {
         Hz5Seg* seg = hz5_p1_segment_at(seg_idx);
         if (!seg) {
             continue;
+        }
+        if ((seg->flags & HZ5_SEG_FLAG_RETIRED) != 0) {
+            ++retired_segments;
         }
         live_pages += seg->live_pages;
         free_pages += hz5_stats_count_free_pages(seg);
@@ -165,16 +169,18 @@ static void hz5_stats_print_segment_snapshot(const char* label) {
     }
 
     uint64_t reserved_bytes = (uint64_t)segments * (uint64_t)HZ5_SEG_SIZE;
+    uint64_t retired_bytes = retired_segments * (uint64_t)HZ5_SEG_SIZE;
     uint64_t live_bytes = live_pages * (uint64_t)HZ5_PAGE_SIZE;
     uint64_t free_bytes = free_pages * (uint64_t)HZ5_PAGE_SIZE;
     fprintf(stderr,
             "[HZ5_P13_SEGMENTS.%s] segments=%u empty_segments=%llu "
-            "live_pages=%llu free_pages=%llu run_starts=%llu "
+            "retired_segments=%llu live_pages=%llu free_pages=%llu run_starts=%llu "
             "run1=%llu run2=%llu run16=%llu remote_pending=%llu "
-            "reserved_bytes=%llu live_bytes=%llu free_bytes=%llu\n",
+            "reserved_bytes=%llu retired_bytes=%llu live_bytes=%llu free_bytes=%llu\n",
             label,
             segments,
             (unsigned long long)empty_segments,
+            (unsigned long long)retired_segments,
             (unsigned long long)live_pages,
             (unsigned long long)free_pages,
             (unsigned long long)run_starts,
@@ -183,6 +189,7 @@ static void hz5_stats_print_segment_snapshot(const char* label) {
             (unsigned long long)run16,
             (unsigned long long)remote_pending,
             (unsigned long long)reserved_bytes,
+            (unsigned long long)retired_bytes,
             (unsigned long long)live_bytes,
             (unsigned long long)free_bytes);
 }
@@ -216,6 +223,11 @@ void hz5_stats_print_once(void) {
 
 #if HZ5_DIAGNOSTIC_STATS
     hz5_stats_print_segment_snapshot("after_cleanup");
+    uint32_t retired_segments = hz5_p1_segment_retire_empty_quarantine();
+    fprintf(stderr,
+            "[HZ5_P14_RETIRED_QUARANTINE] retired_segments=%u\n",
+            retired_segments);
+    hz5_stats_print_segment_snapshot("after_retire");
     uint32_t released_segments = hz5_p1_segment_release_empty_for_shutdown();
     fprintf(stderr,
             "[HZ5_P13_SEGMENTS.shutdown_release] released_segments=%u\n",
