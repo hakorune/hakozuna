@@ -747,3 +747,30 @@ Implementation note:
   assuming slot 0 is reusable.
 - This matters for later runtime-quarantine diagnostics where slot 0 may be
   retired while other segments remain active.
+
+P14.1 retire pressure counters:
+
+```text
+results/synthetic-sweep/20260520_073550_680
+```
+
+On `hz5-64k-a8192`:
+
+```text
+after_cleanup segments=3 empty_segments=3 live_pages=0 remote_pending=0
+after_retire retired_segments=3 retired_bytes=6291456
+p14_empty_transition=25
+p14_empty_transition_bytes=52428800
+p14_retire_candidate_segment=3
+p14_retire_candidate_bytes=6291456
+p14_retire_ok=3
+p14_retire_ok_bytes=6291456
+```
+
+Interpretation:
+
+- The 64K workload creates empty-segment churn, but only about `6MiB` remains as
+  final retire pressure in this run.
+- Keep P14b. Do not add production lookup locks, epochs, or hazards yet.
+- P14c locked runtime release should wait for a workload that shows larger
+  retained retired bytes or a clear RSS target.

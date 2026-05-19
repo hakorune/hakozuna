@@ -146,6 +146,22 @@ static int hz5_p1_segment_is_retired(const Hz5Seg* seg) {
     return seg && (seg->flags & HZ5_SEG_FLAG_RETIRED) != 0;
 }
 
+#if HZ5_P14_RETIRED_QUARANTINE
+static int hz5_p1_segment_has_remote_pending(Hz5Seg* seg) {
+    if (!seg || seg->magic != HZ5_SEG_MAGIC) {
+        return 0;
+    }
+    for (uint32_t page = HZ5_FIRST_DATA_PAGE; page < HZ5_SEG_PAGES; ++page) {
+        Hz5PageMeta* meta = &seg->page[page];
+        if (atomic_load_explicit(&meta->remote_head, memory_order_acquire) != NULL ||
+            atomic_load_explicit(&meta->remote_count_hint, memory_order_relaxed) != 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+#endif
+
 static void hz5_p1_segment_free_memory(Hz5Seg* seg) {
 #if defined(_WIN32)
     _aligned_free(seg);
@@ -200,17 +216,34 @@ Hz5Seg* hz5_p1_segment_at(uint32_t index) {
 uint32_t hz5_p1_segment_retire_empty_quarantine(void) {
     uint32_t retired = 0;
 #if HZ5_P14_RETIRED_QUARANTINE
+    hz5_stats_inc(HZ5_STAT_P14_RETIRE_SCAN_CALL);
     hz5_p1_lock();
     uint32_t count = atomic_load_explicit(&g_hz5_p1_seg_count,
                                           memory_order_acquire);
     for (uint32_t i = 0; i < count; ++i) {
         Hz5Seg* seg = atomic_load_explicit(&g_hz5_p1_segs[i],
                                            memory_order_acquire);
-        if (hz5_p1_segment_is_retired(seg) ||
-            !hz5_p1_segment_is_empty_for_release(seg)) {
+        if (hz5_p1_segment_is_retired(seg)) {
+            hz5_stats_inc(HZ5_STAT_P14_RETIRE_REJECT_STATE);
             continue;
         }
+        if (!seg || seg->magic != HZ5_SEG_MAGIC || seg->live_pages != 0) {
+            hz5_stats_inc(HZ5_STAT_P14_RETIRE_REJECT_LIVE);
+            continue;
+        }
+        if (hz5_p1_segment_has_remote_pending(seg)) {
+            hz5_stats_inc(HZ5_STAT_P14_RETIRE_REJECT_REMOTE);
+            continue;
+        }
+        if (!hz5_p1_segment_is_empty_for_release(seg)) {
+            hz5_stats_inc(HZ5_STAT_P14_RETIRE_REJECT_STATE);
+            continue;
+        }
+        hz5_stats_inc(HZ5_STAT_P14_RETIRE_CANDIDATE_SEGMENT);
+        hz5_stats_add(HZ5_STAT_P14_RETIRE_CANDIDATE_BYTES, HZ5_SEG_SIZE);
         seg->flags |= HZ5_SEG_FLAG_RETIRED;
+        hz5_stats_inc(HZ5_STAT_P14_RETIRE_OK);
+        hz5_stats_add(HZ5_STAT_P14_RETIRE_OK_BYTES, HZ5_SEG_SIZE);
         ++retired;
     }
     hz5_p1_unlock();
@@ -403,10 +436,15 @@ void hz5_p1_segment_free_run(Hz5Seg* seg, uint32_t page_idx) {
         seg->page[p].decommit_state = HZ5_COMMITTED;
         hz5_p1_bit_set(seg, p);
     }
-    if (seg->live_pages >= pages) {
-        seg->live_pages -= pages;
+    uint32_t old_live_pages = seg->live_pages;
+    if (old_live_pages >= pages) {
+        seg->live_pages = old_live_pages - pages;
     } else {
         seg->live_pages = 0;
+    }
+    if (old_live_pages != 0 && seg->live_pages == 0) {
+        hz5_stats_inc(HZ5_STAT_P14_EMPTY_TRANSITION);
+        hz5_stats_add(HZ5_STAT_P14_EMPTY_TRANSITION_BYTES, HZ5_SEG_SIZE);
     }
     if (pages == 16u && align_log2 == 13u &&
         (seg->run16_a8192_hint_page < HZ5_FIRST_DATA_PAGE ||

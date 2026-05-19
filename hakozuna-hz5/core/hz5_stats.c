@@ -65,6 +65,26 @@ static const char* hz5_stats_name(Hz5StatId id) {
         return "tcache_destructor_release";
     case HZ5_STAT_FINAL_PENDING_RELEASE:
         return "final_pending_release";
+    case HZ5_STAT_P14_EMPTY_TRANSITION:
+        return "p14_empty_transition";
+    case HZ5_STAT_P14_EMPTY_TRANSITION_BYTES:
+        return "p14_empty_transition_bytes";
+    case HZ5_STAT_P14_RETIRE_SCAN_CALL:
+        return "p14_retire_scan_call";
+    case HZ5_STAT_P14_RETIRE_CANDIDATE_SEGMENT:
+        return "p14_retire_candidate_segment";
+    case HZ5_STAT_P14_RETIRE_CANDIDATE_BYTES:
+        return "p14_retire_candidate_bytes";
+    case HZ5_STAT_P14_RETIRE_OK:
+        return "p14_retire_ok";
+    case HZ5_STAT_P14_RETIRE_OK_BYTES:
+        return "p14_retire_ok_bytes";
+    case HZ5_STAT_P14_RETIRE_REJECT_LIVE:
+        return "p14_retire_reject_live";
+    case HZ5_STAT_P14_RETIRE_REJECT_REMOTE:
+        return "p14_retire_reject_remote";
+    case HZ5_STAT_P14_RETIRE_REJECT_STATE:
+        return "p14_retire_reject_state";
     default:
         return "unknown";
     }
@@ -216,11 +236,6 @@ void hz5_stats_print_once(void) {
     hz5_tcache_release_all();
     hz5_remote_release_all_pending();
 
-    hz5_stats_print_bucket("total", g_hz5_stats);
-    hz5_stats_print_bucket("pages1", g_hz5_stats_1p);
-    hz5_stats_print_bucket("pages2", g_hz5_stats_2p);
-    hz5_stats_print_bucket("pages16", g_hz5_stats_16p);
-
 #if HZ5_DIAGNOSTIC_STATS
     hz5_stats_print_segment_snapshot("after_cleanup");
     uint32_t retired_segments = hz5_p1_segment_retire_empty_quarantine();
@@ -228,6 +243,14 @@ void hz5_stats_print_once(void) {
             "[HZ5_P14_RETIRED_QUARANTINE] retired_segments=%u\n",
             retired_segments);
     hz5_stats_print_segment_snapshot("after_retire");
+#endif
+
+    hz5_stats_print_bucket("total", g_hz5_stats);
+    hz5_stats_print_bucket("pages1", g_hz5_stats_1p);
+    hz5_stats_print_bucket("pages2", g_hz5_stats_2p);
+    hz5_stats_print_bucket("pages16", g_hz5_stats_16p);
+
+#if HZ5_DIAGNOSTIC_STATS
     uint32_t released_segments = hz5_p1_segment_release_empty_for_shutdown();
     fprintf(stderr,
             "[HZ5_P13_SEGMENTS.shutdown_release] released_segments=%u\n",
