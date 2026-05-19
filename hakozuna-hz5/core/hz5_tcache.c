@@ -5,6 +5,50 @@
 
 static _Thread_local Hz5RunCache t_hz5_run_cache;
 
+static const Hz5RunClassPolicy g_hz5_default_policy = {
+    0u,
+    0u,
+    HZ5_RUNBAND_UNKNOWN,
+    HZ5_RUN_CACHE_CAP,
+    0u,
+    HZ5_REMOTE_BUF_CAP,
+    0u,
+    0u,
+};
+
+static const Hz5RunClassPolicy g_hz5_policy_4k_a8192 = {
+    1u,
+    13u,
+    HZ5_RUNBAND_SMALL_OVA,
+    HZ5_RUN_CACHE_CAP,
+    0u,
+    HZ5_REMOTE_BUF_CAP,
+    0u,
+    0u,
+};
+
+static const Hz5RunClassPolicy g_hz5_policy_8k_a8192 = {
+    2u,
+    13u,
+    HZ5_RUNBAND_SMALL_OVA,
+    HZ5_RUN_CACHE_CAP,
+    0u,
+    HZ5_REMOTE_BUF_CAP,
+    0u,
+    0u,
+};
+
+static const Hz5RunClassPolicy g_hz5_policy_64k_a8192 = {
+    16u,
+    13u,
+    HZ5_RUNBAND_LARGE16,
+    HZ5_P12_RUN16_OWNER_CACHE_CAP,
+    0u,
+    HZ5_P12_RUN16_REMOTE_FLUSH_CAP,
+    0u,
+    0u,
+};
+
 uint32_t hz5_run_class_index(uint32_t pages, uint8_t align_log2) {
     uint32_t align_bucket = align_log2 > 12u ? (uint32_t)(align_log2 - 12u) : 0u;
     if (align_bucket > 3u) {
@@ -22,6 +66,21 @@ uint32_t hz5_run_class_index(uint32_t pages, uint8_t align_log2) {
         page_bucket = 3u;
     }
     return (page_bucket * 4u) + align_bucket;
+}
+
+const Hz5RunClassPolicy* hz5_run_policy_for(uint32_t pages, uint8_t align_log2) {
+    if (align_log2 == 13u) {
+        if (pages == 1u) {
+            return &g_hz5_policy_4k_a8192;
+        }
+        if (pages == 2u) {
+            return &g_hz5_policy_8k_a8192;
+        }
+        if (pages == 16u) {
+            return &g_hz5_policy_64k_a8192;
+        }
+    }
+    return &g_hz5_default_policy;
 }
 
 void* hz5_tcache_pop(uint32_t pages, uint8_t align_log2) {
@@ -55,7 +114,13 @@ int hz5_tcache_push(void* ptr) {
         return 0;
     }
     Hz5RunCacheClass* cls = &t_hz5_run_cache.cls[idx];
-    if (cls->count >= HZ5_RUN_CACHE_CAP) {
+    const Hz5RunClassPolicy* policy =
+        hz5_run_policy_for(meta->run_pages, meta->align_log2);
+    uint16_t owner_cache_cap = policy->owner_cache_cap;
+    if (owner_cache_cap > HZ5_RUN_CACHE_CAP) {
+        owner_cache_cap = HZ5_RUN_CACHE_CAP;
+    }
+    if (cls->count >= owner_cache_cap) {
         return 0;
     }
     cls->slots[cls->count++] = ptr;

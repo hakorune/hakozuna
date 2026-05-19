@@ -21,4 +21,12 @@
 #define HZ5_DIAGNOSTIC_STATS 1
 #endif
 
+#ifndef HZ5_P12_RUN16_OWNER_CACHE_CAP
+#define HZ5_P12_RUN16_OWNER_CACHE_CAP 0u
+#endif
+
+#ifndef HZ5_P12_RUN16_REMOTE_FLUSH_CAP
+#define HZ5_P12_RUN16_REMOTE_FLUSH_CAP 2u
+#endif
+
 #endif

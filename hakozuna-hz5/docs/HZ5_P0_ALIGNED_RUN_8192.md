@@ -461,3 +461,150 @@ Decision:
 - `64K/a4096` guard recovered in the focused check.
 - `64K/a8192` remains fallback-only and should not be routed to HZ5 until a
   dedicated 64K design exists.
+
+P12.1/P12.2 run16 preflight:
+
+- Added `Hz5RunClassPolicy`.
+- Kept 4K/8K P11 owner cache caps unchanged.
+- Classified exact 64K/a8192 as `HZ5_RUNBAND_LARGE16` with initial
+  `owner_cache_cap=0`.
+- Added `hz5-p12-route-shadow` diagnostic lane.
+- 64K/a8192 remains HZ3 fallback in this lane.
+
+P12.1/P12.2 repeat-3:
+
+```text
+results/synthetic-sweep/20260520_063131_446
+```
+
+Result:
+
+```text
+4K/a8192:  P11 10.01M, P12-shadow 10.45M
+8K/a8192:  P11 10.98M, P12-shadow 10.11M
+64K/a8192: P11  2.69M, P12-shadow  2.82M
+```
+
+Route-shadow counters:
+
+```text
+64K/a8192:
+  candidate_64k_a8192=52000
+  would_route_64k_a8192=52000
+  fallback_64k_a8192=52000
+
+64K/a4096:
+  guard_64k_a4096=52000
+  candidate_64k_a8192=0
+
+65537/a16 and 65537/a4096:
+  reject_65537=52000
+  candidate_64k_a8192=0
+```
+
+Decision:
+
+- P12.1/P12.2 are GO.
+- Exact 64K/a8192 route scope is clean.
+- Next step is P12.3 cap0 behavior lane for exact 64K/a8192 only.
+
+P12.3/P12.4 run16 behavior:
+
+- Added `hz5-p12-run16-cap0`.
+  - exact 64K/a8192 routes to HZ5 run16.
+  - `owner_cache_cap=0`.
+  - diagnostic raw-cost lane.
+- Added `hz5-p12-run16-cap1`.
+  - exact 64K/a8192 routes to HZ5 run16.
+  - `owner_cache_cap=1`.
+  - minimal reuse lane.
+- P11 4K/8K route remains unchanged in both lanes.
+
+Target repeat-5:
+
+```text
+results/synthetic-sweep/20260520_063609_046
+```
+
+Result:
+
+```text
+4K/a8192:  HZ3 2.50M, P11 10.84M, P12-cap0 10.96M, P12-cap1 10.87M, HZ4 5.67M
+8K/a8192:  HZ3 3.48M, P11  9.90M, P12-cap0 10.27M, P12-cap1 11.04M, HZ4 8.50M
+64K/a8192: HZ3 2.37M, P11  2.41M, P12-cap0  2.48M, P12-cap1  3.46M, HZ4 2.69M
+```
+
+Guard repeat-5:
+
+```text
+results/synthetic-sweep/20260520_063938_898
+```
+
+Result:
+
+```text
+4K/a4096:      HZ3 4.65M, P11 5.33M, P12-cap1 5.06M
+4K/a4096 r99:  HZ3 3.93M, P11 4.08M, P12-cap1 3.93M
+8K/a4096:      HZ3 5.24M, P11 4.44M, P12-cap1 3.99M
+64K/a4096:     HZ3 3.75M, P11 2.93M, P12-cap1 3.16M
+```
+
+Over-64K fallback guard repeat-3:
+
+```text
+results/synthetic-sweep/20260520_063938_959
+```
+
+Result:
+
+```text
+65537/a16:    HZ3 3.24M, P11 3.16M, P12-cap1 6.72M
+65537/a4096:  HZ3 3.29M, P11 5.58M, P12-cap1 4.20M
+256K/a4096:   HZ3 4.94M, P11 5.21M, P12-cap1 5.20M
+```
+
+Decision:
+
+- P12-cap1 is a strong keep candidate for exact 64K/a8192.
+- P12-cap0 is diagnostic only.
+- P11's 4K/8K seed route is preserved.
+- P12-cap1 is not promotion-ready: fallback-only a4096 guards remain noisy and
+  uneven.
+- Next step is P13 RSS/segment-release hardening plus longer focused safety for
+  P12-cap1.
+
+P12-cap1 mixed safety/RSS:
+
+```text
+mixed-soak: results/synthetic-sweep/20260520_064330_910
+carryover:  results/synthetic-sweep/20260520_064330_932
+```
+
+Mixed-soak repeat-5 result:
+
+```text
+4K/a8192:        HZ3 2.66M, P11 10.81M, P12-cap1  9.74M
+8K/a8192:        HZ3 2.53M, P11 11.30M, P12-cap1  9.01M
+64K/a8192:       HZ3 2.53M, P11  2.83M, P12-cap1  3.11M
+256K/a4096:      HZ3 2.40M, P11  3.22M, P12-cap1  2.42M
+rss64 idle150:   HZ3 621.65, P11 617.21, P12-cap1 670.04
+rss256 idle250:  HZ3 297.20, P11 316.00, P12-cap1 320.95
+```
+
+Carryover repeat-3 result:
+
+```text
+4K/a8192:               HZ3 3.40M, P11 8.31M, P12-cap1  8.28M
+8K/a8192:               HZ3 2.83M, P11 6.94M, P12-cap1 10.83M
+64K/a8192:              HZ3 2.44M, P11 2.70M, P12-cap1  3.30M
+8K/a4096 after a8192:   HZ3 4.44M, P11 4.69M, P12-cap1  4.32M
+64K/a4096 after a8192:  HZ3 2.86M, P11 3.64M, P12-cap1  3.13M
+```
+
+Updated decision:
+
+- P12-cap1 remains a strong HZ5 run16 seed.
+- No mixed/carryover crash or one-shot safety counter failure was observed.
+- Keep P12 exact and diagnostic.
+- P13 should add RSS/segment accounting and release hardening before route
+  widening or default discussion.

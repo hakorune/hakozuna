@@ -68,6 +68,24 @@ typedef struct Hz5RunCache {
     Hz5RunCacheClass cls[HZ5_RUN_CACHE_CLASS_COUNT];
 } Hz5RunCache;
 
+typedef enum Hz5RunBand {
+    HZ5_RUNBAND_UNKNOWN = 0,
+    HZ5_RUNBAND_SMALL_OVA = 1,
+    HZ5_RUNBAND_LARGE16 = 2,
+    HZ5_RUNBAND_HIGH = 3
+} Hz5RunBand;
+
+typedef struct Hz5RunClassPolicy {
+    uint16_t pages;
+    uint8_t align_log2;
+    uint8_t band;
+    uint16_t owner_cache_cap;
+    uint16_t central_cache_cap;
+    uint16_t remote_flush_cap;
+    uint32_t central_byte_cap;
+    uint32_t flags;
+} Hz5RunClassPolicy;
+
 typedef enum Hz5StatId {
     HZ5_STAT_ALLOC_CALL = 0,
     HZ5_STAT_ALLOC_TCACHE_HIT,
@@ -131,6 +149,7 @@ void hz5_remote_push_group(Hz5Seg* seg,
                            uint32_t count);
 
 uint32_t hz5_run_class_index(uint32_t pages, uint8_t align_log2);
+const Hz5RunClassPolicy* hz5_run_policy_for(uint32_t pages, uint8_t align_log2);
 void* hz5_tcache_pop(uint32_t pages, uint8_t align_log2);
 int hz5_tcache_push(void* ptr);
 size_t hz5_tcache_release_all(void);
