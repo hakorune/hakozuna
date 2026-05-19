@@ -349,6 +349,44 @@
 #error "HZ3_S280_LARGE_RETAINED_FREE_ROUTE_OBS requires S240 owner-front"
 #endif
 
+// S281: retained-direct free route specialization.
+// Speed-only. S276 direct-retain already validates the direct slot and moves a
+// retained large object from ACTIVE to FREEING inside hz3_large_take(). S281
+// lets those retained frees try same-owner front or remote owner-inbox routing
+// before the broad diagnostic/free metadata path.
+#ifndef HZ3_S281_LARGE_RETAINED_FREE_ROUTE_FAST
+#define HZ3_S281_LARGE_RETAINED_FREE_ROUTE_FAST 0
+#endif
+
+#if HZ3_S281_LARGE_RETAINED_FREE_ROUTE_FAST && \
+    !(HZ3_S276_LARGE_DIRECT_RETAIN_FRONT || HZ3_S276_LARGE_DIRECT_RETAIN_INBOX)
+#error "HZ3_S281_LARGE_RETAINED_FREE_ROUTE_FAST requires S276 direct retain"
+#endif
+
+#if HZ3_S281_LARGE_RETAINED_FREE_ROUTE_FAST && !HZ3_S240_LARGE_OWNER_FRONT
+#error "HZ3_S281_LARGE_RETAINED_FREE_ROUTE_FAST requires S240 owner-front"
+#endif
+
+#if HZ3_S281_LARGE_RETAINED_FREE_ROUTE_FAST && HZ3_S240_LARGE_OWNER_FRONT_STATS
+#error "HZ3_S281_LARGE_RETAINED_FREE_ROUTE_FAST is speed-only and requires S240 stats disabled"
+#endif
+
+#if HZ3_S281_LARGE_RETAINED_FREE_ROUTE_FAST && HZ3_S276_LARGE_DIRECT_RETAIN_STATS
+#error "HZ3_S281_LARGE_RETAINED_FREE_ROUTE_FAST is speed-only and requires S276 stats disabled"
+#endif
+
+#if HZ3_S281_LARGE_RETAINED_FREE_ROUTE_FAST && HZ3_LARGE_CACHE_STATS
+#error "HZ3_S281_LARGE_RETAINED_FREE_ROUTE_FAST is speed-only and requires large cache stats disabled"
+#endif
+
+#if HZ3_S281_LARGE_RETAINED_FREE_ROUTE_FAST && HZ3_LARGE_ALIGNED_OBS
+#error "HZ3_S281_LARGE_RETAINED_FREE_ROUTE_FAST is speed-only and requires aligned observation disabled"
+#endif
+
+#if HZ3_S281_LARGE_RETAINED_FREE_ROUTE_FAST && HZ3_S251_LARGE_OWNER_FRONT_SAFETY
+#error "HZ3_S281_LARGE_RETAINED_FREE_ROUTE_FAST is speed-only and requires S251 safety disabled"
+#endif
+
 // S251: large owner-front container safety probe.
 // Observation/debug lane for S250 high-band work.  It validates the durable
 // container state transitions around ACTIVE/FREEING/FRONT/REMOTE/GLOBAL.
