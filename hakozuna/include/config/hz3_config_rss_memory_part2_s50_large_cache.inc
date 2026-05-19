@@ -548,6 +548,18 @@
 #error "HZ3_S300_OVERALIGNED_MEDIUM_ROUTE_OBS requires HZ3_LARGE_ALIGNED_OBS"
 #endif
 
+// HZ5-P0: route-shadow preflight for the HZ5 sidecar.
+// This is diagnostic-only and must not change allocation behavior. It records
+// the exact 4K/8K/64K align=8192 rows that a future HZ5 page/run allocator may
+// route away from HZ3 large retained-direct handling.
+#ifndef HZ5_P0_ROUTE_SHADOW
+#define HZ5_P0_ROUTE_SHADOW 0
+#endif
+
+#if HZ5_P0_ROUTE_SHADOW && !HZ3_LARGE_ALIGNED_OBS
+#error "HZ5_P0_ROUTE_SHADOW requires HZ3_LARGE_ALIGNED_OBS"
+#endif
+
 // S300: behavior-changing over-aligned medium/run prototype.
 // Default off. When enabled, this may extend medium bin namespace/layout for
 // aligned-medium runs, so keep it in dedicated research lanes until validated.

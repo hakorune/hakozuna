@@ -3239,6 +3239,18 @@ static _Atomic size_t g_s300_route_medium_candidate = 0;
 static _Atomic size_t g_s300_route_noncandidate = 0;
 #endif
 
+#if HZ5_P0_ROUTE_SHADOW
+static _Atomic size_t g_hz5_p0_route_candidate_4k_a8192 = 0;
+static _Atomic size_t g_hz5_p0_route_candidate_8k_a8192 = 0;
+static _Atomic size_t g_hz5_p0_route_candidate_64k_a8192 = 0;
+static _Atomic size_t g_hz5_p0_route_candidate_total = 0;
+static _Atomic size_t g_hz5_p0_route_taken = 0;
+static _Atomic size_t g_hz5_p0_route_fallback_hz3 = 0;
+static _Atomic size_t g_hz5_p0_true_large_fallback = 0;
+static _Atomic size_t g_hz5_p0_route_reject_a4096_guard = 0;
+static _Atomic size_t g_hz5_p0_route_reject_other = 0;
+#endif
+
 #if defined(_WIN32)
 static hz3_once_t g_hz3_large_obs_qpc_once = HZ3_ONCE_INIT;
 static int64_t g_hz3_large_obs_qpc_freq = 0;
@@ -3289,6 +3301,45 @@ static inline void hz3_s300_route_obs_on_aligned_alloc(size_t size, size_t align
         hz3_large_aligned_obs_inc(&g_s300_route_eligible_8k_a8192);
     } else if (size == 65536u) {
         hz3_large_aligned_obs_inc(&g_s300_route_eligible_64k_a8192);
+    }
+#else
+    (void)size;
+    (void)alignment;
+#endif
+}
+
+static inline int hz5_p0_route_candidate(size_t size, size_t alignment) {
+#if HZ5_P0_ROUTE_SHADOW
+    return alignment == 8192u &&
+           (size == 4096u || size == 8192u || size == 65536u);
+#else
+    (void)size;
+    (void)alignment;
+    return 0;
+#endif
+}
+
+static inline void hz5_p0_route_shadow_on_aligned_alloc(size_t size, size_t alignment) {
+#if HZ5_P0_ROUTE_SHADOW
+    if (hz5_p0_route_candidate(size, alignment)) {
+        hz3_large_aligned_obs_inc(&g_hz5_p0_route_candidate_total);
+        if (size == 4096u) {
+            hz3_large_aligned_obs_inc(&g_hz5_p0_route_candidate_4k_a8192);
+        } else if (size == 8192u) {
+            hz3_large_aligned_obs_inc(&g_hz5_p0_route_candidate_8k_a8192);
+        } else {
+            hz3_large_aligned_obs_inc(&g_hz5_p0_route_candidate_64k_a8192);
+        }
+    } else if (alignment == 4096u && size >= 4096u && size <= 65536u) {
+        hz3_large_aligned_obs_inc(&g_hz5_p0_route_reject_a4096_guard);
+    } else {
+        hz3_large_aligned_obs_inc(&g_hz5_p0_route_reject_other);
+    }
+
+    // P0 is route-shadow only: every allocation still falls back to HZ3.
+    hz3_large_aligned_obs_inc(&g_hz5_p0_route_fallback_hz3);
+    if (size > (512u << 10) || alignment > (64u << 10)) {
+        hz3_large_aligned_obs_inc(&g_hz5_p0_true_large_fallback);
     }
 #else
     (void)size;
@@ -4184,6 +4235,31 @@ static void hz3_large_aligned_obs_dump_final(void) {
             atomic_load_explicit(&g_s300_route_medium_candidate, memory_order_relaxed),
             atomic_load_explicit(&g_s300_route_noncandidate, memory_order_relaxed));
 #endif
+#if HZ5_P0_ROUTE_SHADOW
+    fprintf(stderr,
+            "[HZ5_P0_ROUTE_SHADOW] candidate_4k_a8192=%zu "
+            "candidate_8k_a8192=%zu candidate_64k_a8192=%zu "
+            "candidate_total=%zu route_taken=%zu route_fallback_hz3=%zu "
+            "true_large_fallback=%zu route_reject_a4096_guard=%zu "
+            "route_reject_other=%zu\n",
+            atomic_load_explicit(&g_hz5_p0_route_candidate_4k_a8192,
+                                 memory_order_relaxed),
+            atomic_load_explicit(&g_hz5_p0_route_candidate_8k_a8192,
+                                 memory_order_relaxed),
+            atomic_load_explicit(&g_hz5_p0_route_candidate_64k_a8192,
+                                 memory_order_relaxed),
+            atomic_load_explicit(&g_hz5_p0_route_candidate_total,
+                                 memory_order_relaxed),
+            atomic_load_explicit(&g_hz5_p0_route_taken, memory_order_relaxed),
+            atomic_load_explicit(&g_hz5_p0_route_fallback_hz3,
+                                 memory_order_relaxed),
+            atomic_load_explicit(&g_hz5_p0_true_large_fallback,
+                                 memory_order_relaxed),
+            atomic_load_explicit(&g_hz5_p0_route_reject_a4096_guard,
+                                 memory_order_relaxed),
+            atomic_load_explicit(&g_hz5_p0_route_reject_other,
+                                 memory_order_relaxed));
+#endif
     hz3_s243_residual_dump_final();
     hz3_s275_activation_dump_final();
     hz3_s280_free_route_dump_final();
@@ -4213,6 +4289,7 @@ static inline void hz3_large_aligned_obs_on_aligned_alloc(size_t size, size_t al
     hz3_large_aligned_obs_register_once();
     hz3_large_aligned_obs_inc(&g_hz3_large_obs_aligned_calls);
     hz3_s300_route_obs_on_aligned_alloc(size, alignment);
+    hz5_p0_route_shadow_on_aligned_alloc(size, alignment);
 
     if (size < 4096u) {
         hz3_large_aligned_obs_inc(&g_hz3_large_obs_size_lt4k);

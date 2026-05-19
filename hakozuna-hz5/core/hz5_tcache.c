@@ -1,0 +1,86 @@
+#include "hz5_internal.h"
+
+#include <stddef.h>
+#include <stdint.h>
+
+static _Thread_local Hz5RunCache t_hz5_run_cache;
+
+uint32_t hz5_run_class_index(uint32_t pages, uint8_t align_log2) {
+    uint32_t align_bucket = align_log2 > 12u ? (uint32_t)(align_log2 - 12u) : 0u;
+    if (align_bucket > 3u) {
+        align_bucket = 3u;
+    }
+
+    uint32_t page_bucket;
+    if (pages <= 1u) {
+        page_bucket = 0u;
+    } else if (pages <= 2u) {
+        page_bucket = 1u;
+    } else if (pages <= 16u) {
+        page_bucket = 2u;
+    } else {
+        page_bucket = 3u;
+    }
+    return (page_bucket * 4u) + align_bucket;
+}
+
+void* hz5_tcache_pop(uint32_t pages, uint8_t align_log2) {
+    uint32_t idx = hz5_run_class_index(pages, align_log2);
+    if (idx >= HZ5_RUN_CACHE_CLASS_COUNT) {
+        return NULL;
+    }
+    Hz5RunCacheClass* cls = &t_hz5_run_cache.cls[idx];
+    if (cls->count == 0) {
+        return NULL;
+    }
+    return cls->slots[--cls->count];
+}
+
+int hz5_tcache_push(void* ptr) {
+    Hz5Seg* seg = hz5_p1_seg_from_ptr(ptr);
+    if (!seg) {
+        return 0;
+    }
+    uint32_t page = hz5_p1_page_index(seg, ptr);
+    if (page >= HZ5_SEG_PAGES) {
+        return 0;
+    }
+    Hz5PageMeta* meta = &seg->page[page];
+    if (meta->kind != HZ5_PAGE_RUN_START || meta->run_pages == 0) {
+        return 0;
+    }
+
+    uint32_t idx = hz5_run_class_index(meta->run_pages, meta->align_log2);
+    if (idx >= HZ5_RUN_CACHE_CLASS_COUNT) {
+        return 0;
+    }
+    Hz5RunCacheClass* cls = &t_hz5_run_cache.cls[idx];
+    if (cls->count >= HZ5_RUN_CACHE_CAP) {
+        return 0;
+    }
+    cls->slots[cls->count++] = ptr;
+    return 1;
+}
+
+size_t hz5_tcache_release_all(void) {
+    size_t released = 0;
+    for (uint32_t idx = 0; idx < HZ5_RUN_CACHE_CLASS_COUNT; ++idx) {
+        Hz5RunCacheClass* cls = &t_hz5_run_cache.cls[idx];
+        while (cls->count != 0) {
+            void* ptr = cls->slots[--cls->count];
+            Hz5Seg* seg = hz5_p1_seg_from_ptr(ptr);
+            if (!seg) {
+                continue;
+            }
+            uint32_t page = hz5_p1_page_index(seg, ptr);
+            if (page >= HZ5_SEG_PAGES) {
+                continue;
+            }
+            hz5_p1_segment_free_run(seg, page);
+            hz5_stats_inc_pages(HZ5_STAT_TCACHE_DESTRUCTOR_RELEASE,
+                                 seg->page[page].run_pages);
+            ++released;
+        }
+    }
+    return released;
+}

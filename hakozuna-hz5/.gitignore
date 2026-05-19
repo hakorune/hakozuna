@@ -1,0 +1,6 @@
+out_*/
+*.obj
+*.exe
+*.dll
+*.lib
+*.pdb
