@@ -203,6 +203,48 @@
 #error "HZ3_S274_LARGE_INBOX_MIN_REQUEST_BYTES must be <= HZ3_S274_LARGE_INBOX_MAX_REQUEST_BYTES"
 #endif
 
+// S286: focused take-first refill cap probe.
+// Unlike S283, keep the global S240 drain batch at 8 and only cap the
+// successful S246 take-first path's extra owner-inbox refill work.
+#ifndef HZ3_S286_LARGE_TAKE_FIRST_REFILL_CAP
+#define HZ3_S286_LARGE_TAKE_FIRST_REFILL_CAP 0
+#endif
+
+#ifndef HZ3_S286_LARGE_TAKE_FIRST_MAX_DRAIN_NODES
+#define HZ3_S286_LARGE_TAKE_FIRST_MAX_DRAIN_NODES 6
+#endif
+
+#ifndef HZ3_S286_LARGE_TAKE_FIRST_MIN_REQUEST_BYTES
+#define HZ3_S286_LARGE_TAKE_FIRST_MIN_REQUEST_BYTES 0
+#endif
+
+#ifndef HZ3_S286_LARGE_TAKE_FIRST_MAX_REQUEST_BYTES
+#define HZ3_S286_LARGE_TAKE_FIRST_MAX_REQUEST_BYTES 18446744073709551615ULL
+#endif
+
+#if HZ3_S286_LARGE_TAKE_FIRST_REFILL_CAP && !HZ3_S246_LARGE_INBOX_TAKE_FIRST
+#error "HZ3_S286_LARGE_TAKE_FIRST_REFILL_CAP requires S246 take-first"
+#endif
+
+#if HZ3_S286_LARGE_TAKE_FIRST_REFILL_CAP && HZ3_S273_LARGE_INBOX_TAKE_FIRST_BATCH
+#error "HZ3_S286_LARGE_TAKE_FIRST_REFILL_CAP and S273 batch take-first are separate probes"
+#endif
+
+#if HZ3_S286_LARGE_TAKE_FIRST_REFILL_CAP && HZ3_S274_LARGE_INBOX_SIZE_DRAIN
+#error "HZ3_S286_LARGE_TAKE_FIRST_REFILL_CAP and S274 size drain are separate probes"
+#endif
+
+#if HZ3_S286_LARGE_TAKE_FIRST_REFILL_CAP && \
+    HZ3_S286_LARGE_TAKE_FIRST_MAX_DRAIN_NODES < 1
+#error "HZ3_S286_LARGE_TAKE_FIRST_MAX_DRAIN_NODES must be >= 1"
+#endif
+
+#if HZ3_S286_LARGE_TAKE_FIRST_REFILL_CAP && \
+    HZ3_S286_LARGE_TAKE_FIRST_MIN_REQUEST_BYTES > \
+        HZ3_S286_LARGE_TAKE_FIRST_MAX_REQUEST_BYTES
+#error "HZ3_S286_LARGE_TAKE_FIRST_MIN_REQUEST_BYTES must be <= max request bytes"
+#endif
+
 // S242: shifted-pointer-safe large direct side-map prototype.
 // Shadow mode keeps the existing active hash map authoritative.  The side-map
 // is populated and checked only to measure hit rate and mismatch risk before

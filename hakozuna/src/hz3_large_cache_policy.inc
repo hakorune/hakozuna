@@ -2348,6 +2348,14 @@ static inline Hz3LargeHdr* hz3_large_s246_inbox_drain_current_take_first_to_fron
     hz3_large_s240_inc(&g_s246_take_first_direct);
 #endif
     hz3_s282_owner_inbox_on_take_first_hit();
+    int refill_limit = max_nodes;
+#if HZ3_S286_LARGE_TAKE_FIRST_REFILL_CAP
+    if (req_size >= (size_t)HZ3_S286_LARGE_TAKE_FIRST_MIN_REQUEST_BYTES &&
+        req_size <= (size_t)HZ3_S286_LARGE_TAKE_FIRST_MAX_REQUEST_BYTES &&
+        refill_limit > (int)HZ3_S286_LARGE_TAKE_FIRST_MAX_DRAIN_NODES) {
+        refill_limit = (int)HZ3_S286_LARGE_TAKE_FIRST_MAX_DRAIN_NODES;
+    }
+#endif
 
 #if HZ3_S273_LARGE_INBOX_TAKE_FIRST_BATCH || HZ3_S274_LARGE_INBOX_SIZE_DRAIN
     (void)batch_count;
@@ -2380,7 +2388,7 @@ static inline Hz3LargeHdr* hz3_large_s246_inbox_drain_current_take_first_to_fron
         }
     } else {
         (void)extras;
-        for (int i = 1; i < max_nodes; i++) {
+        for (int i = 1; i < refill_limit; i++) {
             hz3_s285_on_take_first_extra_pop_attempt();
             Hz3LargeHdr* hdr = hz3_large_s240_inbox_pop_one(owner, sc);
             if (!hdr) {
@@ -2414,7 +2422,7 @@ static inline Hz3LargeHdr* hz3_large_s246_inbox_drain_current_take_first_to_fron
     }
 #else
     (void)extras;
-    for (int i = 1; i < max_nodes; i++) {
+    for (int i = 1; i < refill_limit; i++) {
         hz3_s285_on_take_first_extra_pop_attempt();
         Hz3LargeHdr* hdr = hz3_large_s240_inbox_pop_one(owner, sc);
         if (!hdr) {
