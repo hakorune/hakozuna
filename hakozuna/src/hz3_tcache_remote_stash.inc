@@ -15,6 +15,9 @@ extern void hz3_hz4_bridge_push_remote_list_small(uint8_t owner, int sc,
 extern void hz3_sub4k_push_remote_list(uint8_t dst, int sc, void* head, void* tail, uint32_t n);
 extern void hz3_inbox_push_list(uint8_t dst, int sc, void* head, void* tail, uint32_t n);
 extern void hz3_inbox_medium_mixed_push_list(uint8_t owner, void* head, void* tail, uint32_t n);
+#if HZ3_S300_OVERALIGNED_MEDIUM_RUNS
+extern void hz3_inbox_aligned_push_list(uint8_t owner, int sc, void* head, void* tail, uint32_t n);
+#endif
 
 #if HZ3_S199_MEDIUM_DISPATCH_MICROBATCH
 typedef struct {
@@ -841,7 +844,7 @@ static inline void hz3_remote_stash_dispatch_list(uint8_t dst, uint32_t bin,
 #if HZ3_S300_OVERALIGNED_MEDIUM_RUNS
     } else if (hz3_bin_is_medium_aligned(bin)) {
         int sc = hz3_bin_medium_aligned_sc(bin);
-        hz3_central_aligned_push_list(dst, sc, head, tail, n);
+        hz3_inbox_aligned_push_list(dst, sc, head, tail, n);
 #endif
     } else {
         int sc = (int)bin - HZ3_MEDIUM_BIN_BASE;

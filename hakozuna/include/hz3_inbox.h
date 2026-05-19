@@ -27,6 +27,11 @@ typedef struct {
 extern Hz3Inbox g_hz3_inbox[HZ3_NUM_SHARDS][HZ3_NUM_SC];
 // Global mixed inbox pool: [owner_shard]
 extern Hz3InboxMixed g_hz3_inbox_medium_mixed[HZ3_NUM_SHARDS];
+#if HZ3_S300_OVERALIGNED_MEDIUM_RUNS
+// S300: separate owner inbox for over-aligned medium runs. Do not mix with
+// normal medium, otherwise aligned alloc could pop an unaligned normal run.
+extern Hz3Inbox g_hz3_inbox_medium_aligned[HZ3_NUM_SHARDS][HZ3_NUM_SC];
+#endif
 
 // ============================================================================
 // Inbox API
@@ -35,6 +40,10 @@ extern Hz3InboxMixed g_hz3_inbox_medium_mixed[HZ3_NUM_SHARDS];
 // Push a linked list to inbox (thread-safe, CAS-based)
 // head→tail in FIFO order, n = number of objects
 void hz3_inbox_push_list(uint8_t owner, int sc, void* head, void* tail, uint32_t n);
+#if HZ3_S300_OVERALIGNED_MEDIUM_RUNS
+void hz3_inbox_aligned_push_list(uint8_t owner, int sc, void* head, void* tail, uint32_t n);
+void* hz3_inbox_aligned_drain_if_nonempty(uint8_t shard, int sc, Hz3Bin* bin);
+#endif
 
 // Drain inbox to local bin (called by owner thread)
 // Returns first object (for immediate use), remaining pushed to bin

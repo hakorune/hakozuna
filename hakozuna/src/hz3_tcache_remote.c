@@ -614,7 +614,7 @@ void hz3_dstbin_flush_one(uint8_t dst, int bin) {
 #if HZ3_S300_OVERALIGNED_MEDIUM_RUNS
     } else if (hz3_bin_is_medium_aligned((uint32_t)bin)) {
         int sc = hz3_bin_medium_aligned_sc((uint32_t)bin);
-        hz3_central_aligned_push_list(dst, sc, head, tail, n);
+        hz3_inbox_aligned_push_list(dst, sc, head, tail, n);
 #endif
     } else {
         int sc = bin - HZ3_MEDIUM_BIN_BASE;
@@ -665,7 +665,7 @@ void hz3_dstbin_flush_one(uint8_t dst, int bin) {
 #if HZ3_S300_OVERALIGNED_MEDIUM_RUNS
     } else if (hz3_bin_is_medium_aligned((uint32_t)bin)) {
         int sc = hz3_bin_medium_aligned_sc((uint32_t)bin);
-        hz3_central_aligned_push_list(dst, sc, head, tail, n);
+        hz3_inbox_aligned_push_list(dst, sc, head, tail, n);
 #endif
     } else {
         int sc = bin - HZ3_MEDIUM_BIN_BASE;

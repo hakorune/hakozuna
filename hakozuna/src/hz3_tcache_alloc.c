@@ -5,6 +5,7 @@
 #include "hz3_tcache_internal.h"
 #include "hz3_segment.h"
 #include "hz3_segmap.h"
+#include "hz3_inbox.h"
 #include "hz3_tag.h"
 #include "hz3_arena.h"
 #include "hz3_owner_excl.h"
@@ -430,6 +431,39 @@ void* hz3_medium_aligned_alloc(size_t size, size_t alignment) {
     void* obj = hz3_bin_pop(hz3_tcache_get_local_bin_from_bin_index(bin));
 #else
     void* obj = NULL;
+#endif
+    if (obj) {
+        return obj;
+    }
+
+#if HZ3_PTAG_DSTBIN_ENABLE && !HZ3_REMOTE_STASH_SPARSE
+    hz3_dstbin_flush_one(t_hz3_cache.my_shard, (int)bin);
+#endif
+
+#if HZ3_TCACHE_SOA_LOCAL
+    {
+        Hz3BinRef binref = hz3_tcache_get_local_binref(bin);
+#if HZ3_BIN_SPLIT_COUNT
+        Hz3Bin tmp_bin = { .head = hz3_split_ptr(*binref.head), .count = *binref.count };
+        obj = hz3_inbox_aligned_drain_if_nonempty(t_hz3_cache.my_shard, sc, &tmp_bin);
+        uint32_t total_count = ((uint32_t)tmp_bin.count << HZ3_SPLIT_CNT_SHIFT);
+        uint32_t new_low = total_count & (uint32_t)HZ3_SPLIT_CNT_MASK;
+        *binref.count = (Hz3BinCount)(total_count >> HZ3_SPLIT_CNT_SHIFT);
+        *binref.head = hz3_split_pack(tmp_bin.head, new_low);
+#else
+        Hz3Bin tmp_bin = { .head = *binref.head, .count = *binref.count };
+        obj = hz3_inbox_aligned_drain_if_nonempty(t_hz3_cache.my_shard, sc, &tmp_bin);
+        *binref.head = tmp_bin.head;
+#if !HZ3_BIN_LAZY_COUNT
+        *binref.count = tmp_bin.count;
+#endif
+#endif
+    }
+#elif HZ3_LOCAL_BINS_SPLIT
+    obj = hz3_inbox_aligned_drain_if_nonempty(t_hz3_cache.my_shard, sc,
+                                             hz3_tcache_get_local_bin_from_bin_index(bin));
+#else
+    obj = NULL;
 #endif
     if (obj) {
         return obj;
