@@ -1034,7 +1034,8 @@ static inline int hz3_s276_try_activate_retained_from_cache(Hz3LargeHdr* hdr,
                                                             size_t alignment,
                                                             int sc,
                                                             int from_inbox) {
-    if (!hz3_large_s276_can_activate_retained(hdr, size, alignment, sc)) {
+    if (!hz3_large_s287_can_activate_retained_exact_fast(hdr, size, alignment, sc) &&
+        !hz3_large_s276_can_activate_retained(hdr, size, alignment, sc)) {
         return 0;
     }
     hz3_s285_on_activate_success(from_inbox);

@@ -389,6 +389,45 @@
 #error "HZ3_S276_LARGE_DIRECT_RETAIN requires HZ3_S240_LARGE_OWNER_FRONT"
 #endif
 
+// S287: speed-only exact-retained activation fast path.
+// If a cached direct-retained object is reused with the same request size and
+// compatible alignment, skip the broader retained-activation validation. Any
+// non-exact case falls back to the S276 full validation path.
+#ifndef HZ3_S287_LARGE_RETAINED_ACTIVATE_EXACT_FAST
+#define HZ3_S287_LARGE_RETAINED_ACTIVATE_EXACT_FAST 0
+#endif
+
+#ifndef HZ3_S287_LARGE_RETAINED_ACTIVATE_MIN_REQUEST_BYTES
+#define HZ3_S287_LARGE_RETAINED_ACTIVATE_MIN_REQUEST_BYTES 0
+#endif
+
+#ifndef HZ3_S287_LARGE_RETAINED_ACTIVATE_MAX_REQUEST_BYTES
+#define HZ3_S287_LARGE_RETAINED_ACTIVATE_MAX_REQUEST_BYTES 18446744073709551615ULL
+#endif
+
+#if HZ3_S287_LARGE_RETAINED_ACTIVATE_EXACT_FAST && \
+    !(HZ3_S276_LARGE_DIRECT_RETAIN_FRONT || HZ3_S276_LARGE_DIRECT_RETAIN_INBOX)
+#error "HZ3_S287_LARGE_RETAINED_ACTIVATE_EXACT_FAST requires S276 direct retain"
+#endif
+
+#if HZ3_S287_LARGE_RETAINED_ACTIVATE_EXACT_FAST && HZ3_S240_LARGE_OWNER_FRONT_STATS
+#error "HZ3_S287_LARGE_RETAINED_ACTIVATE_EXACT_FAST is speed-only and requires S240 stats disabled"
+#endif
+
+#if HZ3_S287_LARGE_RETAINED_ACTIVATE_EXACT_FAST && HZ3_S276_LARGE_DIRECT_RETAIN_STATS
+#error "HZ3_S287_LARGE_RETAINED_ACTIVATE_EXACT_FAST is speed-only and requires S276 stats disabled"
+#endif
+
+#if HZ3_S287_LARGE_RETAINED_ACTIVATE_EXACT_FAST && HZ3_S285_LARGE_FIXED_COST_OBS
+#error "HZ3_S287_LARGE_RETAINED_ACTIVATE_EXACT_FAST is separate from S285 observation"
+#endif
+
+#if HZ3_S287_LARGE_RETAINED_ACTIVATE_EXACT_FAST && \
+    HZ3_S287_LARGE_RETAINED_ACTIVATE_MIN_REQUEST_BYTES > \
+        HZ3_S287_LARGE_RETAINED_ACTIVATE_MAX_REQUEST_BYTES
+#error "HZ3_S287_LARGE_RETAINED_ACTIVATE_MIN_REQUEST_BYTES must be <= max request bytes"
+#endif
+
 // S279: speed-only retained-direct free fast path.
 // S276 direct-retain already validates the direct slot and transitions ACTIVE
 // to FREEING in hz3_large_take(). In counter-free/safety-free speed lanes, the

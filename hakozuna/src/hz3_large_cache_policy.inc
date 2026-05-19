@@ -1604,6 +1604,41 @@ static inline int hz3_large_s276_can_activate_retained(Hz3LargeHdr* hdr,
     return 1;
 }
 
+static inline int hz3_large_s287_can_activate_retained_exact_fast(Hz3LargeHdr* hdr,
+                                                                 size_t size,
+                                                                 size_t alignment,
+                                                                 int sc) {
+#if HZ3_S287_LARGE_RETAINED_ACTIVATE_EXACT_FAST
+    if (size < (size_t)HZ3_S287_LARGE_RETAINED_ACTIVATE_MIN_REQUEST_BYTES ||
+        size > (size_t)HZ3_S287_LARGE_RETAINED_ACTIVATE_MAX_REQUEST_BYTES) {
+        return 0;
+    }
+    if (!hdr ||
+        hdr->magic != HZ3_LARGE_MAGIC ||
+        hdr->map_base == NULL ||
+        hdr->map_size == 0 ||
+        hdr->user_ptr == NULL ||
+        hdr->direct_slot == UINT32_MAX ||
+        (hdr->flags & HZ3_LARGE_F_DIRECT_MAPLESS) == 0 ||
+        (hdr->flags & HZ3_LARGE_F_DIRECT_RETAINED) == 0) {
+        return 0;
+    }
+    if (hdr->sc != hz3_large_s240_normalize_sc(sc) || hdr->req_size != size) {
+        return 0;
+    }
+    if (alignment == 0 || (alignment & (alignment - 1u)) != 0) {
+        return 0;
+    }
+    return (((uintptr_t)hdr->user_ptr & (uintptr_t)(alignment - 1u)) == 0);
+#else
+    (void)hdr;
+    (void)size;
+    (void)alignment;
+    (void)sc;
+    return 0;
+#endif
+}
+
 static inline void hz3_large_s276_on_activate_retained(Hz3LargeHdr* hdr,
                                                        int sc,
                                                        int from_cache) {
