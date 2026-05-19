@@ -428,6 +428,17 @@
 #error "HZ3_S287_LARGE_RETAINED_ACTIVATE_MIN_REQUEST_BYTES must be <= max request bytes"
 #endif
 
+// S300: route-only shadow observation for an over-aligned medium/run path.
+// This does not change allocation behavior. It only records how much of the
+// current large aligned route would be eligible for a future medium-run route.
+#ifndef HZ3_S300_OVERALIGNED_MEDIUM_ROUTE_OBS
+#define HZ3_S300_OVERALIGNED_MEDIUM_ROUTE_OBS 0
+#endif
+
+#if HZ3_S300_OVERALIGNED_MEDIUM_ROUTE_OBS && !HZ3_LARGE_ALIGNED_OBS
+#error "HZ3_S300_OVERALIGNED_MEDIUM_ROUTE_OBS requires HZ3_LARGE_ALIGNED_OBS"
+#endif
+
 // S279: speed-only retained-direct free fast path.
 // S276 direct-retain already validates the direct slot and transitions ACTIVE
 // to FREEING in hz3_large_take(). In counter-free/safety-free speed lanes, the

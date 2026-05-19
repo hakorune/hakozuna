@@ -2648,6 +2648,18 @@ static _Atomic size_t g_hz3_large_obs_free_admit_calls = 0;
 static _Atomic size_t g_hz3_large_obs_free_admit_ns_total = 0;
 static _Atomic size_t g_hz3_large_obs_free_admit_ns_max = 0;
 
+#if HZ3_S300_OVERALIGNED_MEDIUM_ROUTE_OBS
+static _Atomic size_t g_s300_route_aligned_calls = 0;
+static _Atomic size_t g_s300_route_align8192_calls = 0;
+static _Atomic size_t g_s300_route_eligible_total = 0;
+static _Atomic size_t g_s300_route_eligible_4k_a8192 = 0;
+static _Atomic size_t g_s300_route_eligible_8k_a8192 = 0;
+static _Atomic size_t g_s300_route_eligible_64k_a8192 = 0;
+static _Atomic size_t g_s300_route_large_current = 0;
+static _Atomic size_t g_s300_route_medium_candidate = 0;
+static _Atomic size_t g_s300_route_noncandidate = 0;
+#endif
+
 #if defined(_WIN32)
 static hz3_once_t g_hz3_large_obs_qpc_once = HZ3_ONCE_INIT;
 static int64_t g_hz3_large_obs_qpc_freq = 0;
@@ -2666,6 +2678,43 @@ static inline void hz3_large_aligned_obs_inc(_Atomic size_t* p) {
 
 static inline void hz3_large_aligned_obs_add(_Atomic size_t* p, size_t v) {
     atomic_fetch_add_explicit(p, v, memory_order_relaxed);
+}
+
+static inline int hz3_s300_route_eligible(size_t size, size_t alignment) {
+#if HZ3_S300_OVERALIGNED_MEDIUM_ROUTE_OBS
+    return alignment == 8192u && size >= 4096u && size <= 65536u;
+#else
+    (void)size;
+    (void)alignment;
+    return 0;
+#endif
+}
+
+static inline void hz3_s300_route_obs_on_aligned_alloc(size_t size, size_t alignment) {
+#if HZ3_S300_OVERALIGNED_MEDIUM_ROUTE_OBS
+    hz3_large_aligned_obs_inc(&g_s300_route_aligned_calls);
+    if (alignment == 8192u) {
+        hz3_large_aligned_obs_inc(&g_s300_route_align8192_calls);
+    }
+    if (!hz3_s300_route_eligible(size, alignment)) {
+        hz3_large_aligned_obs_inc(&g_s300_route_noncandidate);
+        return;
+    }
+
+    hz3_large_aligned_obs_inc(&g_s300_route_eligible_total);
+    hz3_large_aligned_obs_inc(&g_s300_route_large_current);
+    hz3_large_aligned_obs_inc(&g_s300_route_medium_candidate);
+    if (size == 4096u) {
+        hz3_large_aligned_obs_inc(&g_s300_route_eligible_4k_a8192);
+    } else if (size == 8192u) {
+        hz3_large_aligned_obs_inc(&g_s300_route_eligible_8k_a8192);
+    } else if (size == 65536u) {
+        hz3_large_aligned_obs_inc(&g_s300_route_eligible_64k_a8192);
+    }
+#else
+    (void)size;
+    (void)alignment;
+#endif
 }
 
 static inline size_t hz3_large_aligned_obs_now_ns(void) {
@@ -3540,6 +3589,22 @@ static void hz3_large_aligned_obs_dump_final(void) {
             free_admit_total,
             free_admit_calls ? (free_admit_total / free_admit_calls) : 0,
             atomic_load_explicit(&g_hz3_large_obs_free_admit_ns_max, memory_order_relaxed));
+#if HZ3_S300_OVERALIGNED_MEDIUM_ROUTE_OBS
+    fprintf(stderr,
+            "[HZ3_S300_ROUTE_OBS] aligned_calls=%zu align8192_calls=%zu "
+            "eligible_total=%zu eligible_4k_a8192=%zu eligible_8k_a8192=%zu "
+            "eligible_64k_a8192=%zu route_large_current=%zu "
+            "route_medium_candidate=%zu noncandidate=%zu\n",
+            atomic_load_explicit(&g_s300_route_aligned_calls, memory_order_relaxed),
+            atomic_load_explicit(&g_s300_route_align8192_calls, memory_order_relaxed),
+            atomic_load_explicit(&g_s300_route_eligible_total, memory_order_relaxed),
+            atomic_load_explicit(&g_s300_route_eligible_4k_a8192, memory_order_relaxed),
+            atomic_load_explicit(&g_s300_route_eligible_8k_a8192, memory_order_relaxed),
+            atomic_load_explicit(&g_s300_route_eligible_64k_a8192, memory_order_relaxed),
+            atomic_load_explicit(&g_s300_route_large_current, memory_order_relaxed),
+            atomic_load_explicit(&g_s300_route_medium_candidate, memory_order_relaxed),
+            atomic_load_explicit(&g_s300_route_noncandidate, memory_order_relaxed));
+#endif
     hz3_s243_residual_dump_final();
     hz3_s275_activation_dump_final();
     hz3_s280_free_route_dump_final();
@@ -3568,6 +3633,7 @@ static inline void hz3_large_aligned_obs_on_invalid(size_t size, size_t alignmen
 static inline void hz3_large_aligned_obs_on_aligned_alloc(size_t size, size_t alignment) {
     hz3_large_aligned_obs_register_once();
     hz3_large_aligned_obs_inc(&g_hz3_large_obs_aligned_calls);
+    hz3_s300_route_obs_on_aligned_alloc(size, alignment);
 
     if (size < 4096u) {
         hz3_large_aligned_obs_inc(&g_hz3_large_obs_size_lt4k);
