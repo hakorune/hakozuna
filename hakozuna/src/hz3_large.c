@@ -1209,6 +1209,9 @@ static Hz3LargeHdr* hz3_large_s218_c1_batch_mmap_alloc(size_t req_size,
             can_cache = hz3_large_reuse_try_admit_locked(sc);
         }
         if (can_cache) {
+            can_cache = hz3_s293_global_admit_under_cap_locked(sc, extra);
+        }
+        if (can_cache) {
             hz3_large_s240_on_cache_store(extra, sc);
             hz3_large_sc_push_head(sc, extra);
             cached_blocks++;
@@ -2311,7 +2314,8 @@ int hz3_large_free(void* ptr) {
             needs_unlock_for_madvise = 1;
 #endif
             if (!needs_unlock_for_madvise) {
-                if (hz3_large_total_cached_load() + hdr->map_size <= insert_cap) {
+                if (hz3_large_total_cached_load() + hdr->map_size <= insert_cap &&
+                    hz3_s293_global_admit_under_cap_locked(sc, hdr)) {
                     hdr->in_use = 0;
                     hdr->next = NULL;
 #if HZ3_S276_LARGE_DIRECT_RETAIN_FRONT || HZ3_S276_LARGE_DIRECT_RETAIN_INBOX
@@ -2490,7 +2494,8 @@ s53_done:
 #endif
 #endif
 
-        if (hz3_large_total_cached_load() + hdr->map_size <= insert_cap) {
+        if (hz3_large_total_cached_load() + hdr->map_size <= insert_cap &&
+            hz3_s293_global_admit_under_cap_locked(sc, hdr)) {
 #if HZ3_LARGE_CACHE_STATS && HZ3_S237_HIBAND_RETAIN_TUNE
             if (hz3_large_total_cached_load() + hdr->map_size > hard_cap) {
                 hz3_large_stat_inc(&g_s237_slack_admit_hits);

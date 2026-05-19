@@ -408,6 +408,12 @@ static _Atomic size_t g_s292_global_fallback = 0;
 static _Atomic size_t g_s292_global_cache_store = 0;
 static _Atomic size_t g_s292_global_munmap = 0;
 #endif
+#if HZ3_S293_HIGHBAND_GLOBAL_SCACHE_CAP
+static _Atomic size_t g_s293_global_admit_try = 0;
+static _Atomic size_t g_s293_global_admit_ok = 0;
+static _Atomic size_t g_s293_global_reject_cap = 0;
+static _Atomic size_t g_s293_global_reject_nonwindow = 0;
+#endif
 #if HZ3_S285_LARGE_FIXED_COST_OBS
 static _Atomic size_t g_s285_direct_way_loads = 0;
 static _Atomic size_t g_s285_direct_key_busy = 0;
@@ -719,6 +725,39 @@ static inline void hz3_s292_on_global_munmap(const Hz3LargeHdr* hdr) {
 }
 #endif
 
+#if HZ3_S293_HIGHBAND_GLOBAL_SCACHE_CAP
+static inline int hz3_s293_highband_global_req(const Hz3LargeHdr* hdr) {
+    return hdr &&
+           hdr->req_size > (size_t)HZ3_S291_HIGHBAND_MIN_CLASS_BYTES &&
+           hdr->req_size <= (size_t)HZ3_S291_HIGHBAND_MAX_CLASS_BYTES;
+}
+
+static inline int hz3_s293_global_admit_under_cap_locked(int sc,
+                                                         const Hz3LargeHdr* hdr) {
+    if (!hz3_s293_highband_global_req(hdr)) {
+        hz3_large_s240_inc(&g_s293_global_reject_nonwindow);
+        return 1;
+    }
+    hz3_large_s240_inc(&g_s293_global_admit_try);
+    hz3_large_sc_lock_acquire(sc);
+    uint32_t nodes = g_sc_nodes[sc];
+    hz3_large_sc_lock_release(sc);
+    if (nodes >= (uint32_t)HZ3_S293_HIGHBAND_GLOBAL_MAX_NODES_PER_SC) {
+        hz3_large_s240_inc(&g_s293_global_reject_cap);
+        return 0;
+    }
+    hz3_large_s240_inc(&g_s293_global_admit_ok);
+    return 1;
+}
+#else
+static inline int hz3_s293_global_admit_under_cap_locked(int sc,
+                                                         const Hz3LargeHdr* hdr) {
+    (void)sc;
+    (void)hdr;
+    return 1;
+}
+#endif
+
 static void hz3_large_s240_dump_final(void) {
     fprintf(stderr,
             "[HZ3_LARGE_S240_META] activate=%zu activate_cache=%zu "
@@ -961,6 +1000,17 @@ static void hz3_large_s240_dump_final(void) {
             atomic_load_explicit(&g_s292_inbox_bytes_current, memory_order_relaxed),
             atomic_load_explicit(&g_s292_inbox_bytes_peak, memory_order_relaxed));
 #endif
+#if HZ3_S293_HIGHBAND_GLOBAL_SCACHE_CAP
+    fprintf(stderr,
+            "[HZ3_S293_HIGHBAND_GLOBAL_SCACHE_CAP] max_nodes_per_sc=%u "
+            "admit_try=%zu admit_ok=%zu reject_cap=%zu "
+            "reject_nonwindow=%zu\n",
+            (unsigned)HZ3_S293_HIGHBAND_GLOBAL_MAX_NODES_PER_SC,
+            atomic_load_explicit(&g_s293_global_admit_try, memory_order_relaxed),
+            atomic_load_explicit(&g_s293_global_admit_ok, memory_order_relaxed),
+            atomic_load_explicit(&g_s293_global_reject_cap, memory_order_relaxed),
+            atomic_load_explicit(&g_s293_global_reject_nonwindow, memory_order_relaxed));
+#endif
 #if HZ3_S285_LARGE_FIXED_COST_OBS
     fprintf(stderr,
             "[HZ3_S285_FIXED_COST_DIRECT] way_loads=%zu key_busy=%zu "
@@ -1172,6 +1222,79 @@ static inline uint8_t hz3_large_s240_current_owner(void) {
 static inline uint8_t hz3_large_s240_normalize_sc(int sc) {
     return (sc >= 0 && sc < HZ3_LARGE_SC_COUNT) ? (uint8_t)sc : UINT8_MAX;
 }
+#endif
+
+#if !HZ3_S240_LARGE_OWNER_FRONT_STATS
+static inline void hz3_s292_on_alloc_req(size_t req_size) {
+    (void)req_size;
+}
+static inline void hz3_s292_on_free_hdr(const Hz3LargeHdr* hdr) {
+    (void)hdr;
+}
+static inline void hz3_s292_on_front_pop(size_t req_size, int hit, size_t bytes) {
+    (void)req_size;
+    (void)hit;
+    (void)bytes;
+}
+static inline void hz3_s292_on_front_push_result(const Hz3LargeHdr* hdr, int success) {
+    (void)hdr;
+    (void)success;
+}
+static inline void hz3_s292_on_front_flush_node(const Hz3LargeHdr* hdr) {
+    (void)hdr;
+}
+static inline void hz3_s292_on_inbox_push_attempt(const Hz3LargeHdr* hdr) {
+    (void)hdr;
+}
+static inline void hz3_s292_on_inbox_push_result(const Hz3LargeHdr* hdr,
+                                                 int ok,
+                                                 int reject_owner,
+                                                 int reject_budget,
+                                                 int reject_invalid) {
+    (void)hdr;
+    (void)ok;
+    (void)reject_owner;
+    (void)reject_budget;
+    (void)reject_invalid;
+}
+static inline void hz3_s292_on_inbox_pop(const Hz3LargeHdr* hdr, int from_flush) {
+    (void)hdr;
+    (void)from_flush;
+}
+static inline void hz3_s292_on_inbox_flush_seen(const Hz3LargeHdr* hdr) {
+    (void)hdr;
+}
+static inline void hz3_s292_on_global_fallback(const Hz3LargeHdr* hdr) {
+    (void)hdr;
+}
+static inline void hz3_s292_on_global_store(const Hz3LargeHdr* hdr) {
+    (void)hdr;
+}
+static inline void hz3_s292_on_global_munmap(const Hz3LargeHdr* hdr) {
+    (void)hdr;
+}
+
+#if HZ3_S293_HIGHBAND_GLOBAL_SCACHE_CAP
+static inline int hz3_s293_global_admit_under_cap_locked(int sc,
+                                                         const Hz3LargeHdr* hdr) {
+    if (!hdr ||
+        hdr->req_size <= (size_t)HZ3_S291_HIGHBAND_MIN_CLASS_BYTES ||
+        hdr->req_size > (size_t)HZ3_S291_HIGHBAND_MAX_CLASS_BYTES) {
+        return 1;
+    }
+    hz3_large_sc_lock_acquire(sc);
+    uint32_t nodes = g_sc_nodes[sc];
+    hz3_large_sc_lock_release(sc);
+    return nodes < (uint32_t)HZ3_S293_HIGHBAND_GLOBAL_MAX_NODES_PER_SC;
+}
+#else
+static inline int hz3_s293_global_admit_under_cap_locked(int sc,
+                                                         const Hz3LargeHdr* hdr) {
+    (void)sc;
+    (void)hdr;
+    return 1;
+}
+#endif
 #endif
 
 #if HZ3_S282_LARGE_OWNER_INBOX_OBS

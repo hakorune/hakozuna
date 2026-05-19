@@ -163,6 +163,27 @@
 #error "HZ3_S292_HIGHBAND_RETENTION_OBS requires S240 owner-front stats"
 #endif
 
+// S293: cap S291-window objects admitted to the global large scache.
+//
+// This leaves owner-front and owner-inbox reuse untouched. It only rejects the
+// final global-scache fallback once the request-size window already has enough
+// retained nodes in that large-cache class.
+#ifndef HZ3_S293_HIGHBAND_GLOBAL_SCACHE_CAP
+#define HZ3_S293_HIGHBAND_GLOBAL_SCACHE_CAP 0
+#endif
+
+#ifndef HZ3_S293_HIGHBAND_GLOBAL_MAX_NODES_PER_SC
+#define HZ3_S293_HIGHBAND_GLOBAL_MAX_NODES_PER_SC 8
+#endif
+
+#if HZ3_S293_HIGHBAND_GLOBAL_SCACHE_CAP && !HZ3_S291_HIGHBAND_OWNER_WINDOW
+#error "HZ3_S293_HIGHBAND_GLOBAL_SCACHE_CAP requires S291 high-band owner window"
+#endif
+
+#if HZ3_S293_HIGHBAND_GLOBAL_MAX_NODES_PER_SC < 1
+#error "HZ3_S293_HIGHBAND_GLOBAL_MAX_NODES_PER_SC must be >= 1"
+#endif
+
 // S245: bounded batch pop for owner large inbox drain.
 // This keeps the same drain limit and caps as S240, but detaches up to N inbox
 // nodes with one CAS instead of one CAS per object.
