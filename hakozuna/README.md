@@ -25,6 +25,9 @@ Windows HZ3 build profiles:
   - Arena: `8GiB`
   - Enables page-medium aligned routing by default:
     `4096 <= size <= 65536 && alignment <= 4096` uses `hz3_malloc`.
+  - Enables large retained-direct activation by default:
+    S276 keeps S242 direct side-map slots across same-owner front cache and
+    remote owner-inbox handoff, with S276 diagnostic counters disabled.
   - Runtime override: set `HZ3_PAGE_MEDIUM_ALIGNED=0` to send page-aligned
     medium requests back to `hz3_large_aligned_alloc`.
 - `powershell -NoProfile -ExecutionPolicy Bypass -File hakozuna/win/build_win_min.ps1 -Profile legacy`
@@ -102,12 +105,14 @@ Bench entrypoint (SSOT lane triage):
 - Ordinary aligned requests (`alignment <= 16`) stay on `hz3_malloc`.
 - On the Windows `speed-default` profile, page-aligned medium routing
   (`4096 <= size <= 65536 && alignment <= 4096`) is also enabled by default.
-  This profile keeps S203/S65 diagnostic counters off so it can be used for
-  fair speed comparisons. It also disables the S80/S65 medium-reclaim startup
-  banner so fair benchmark stderr stays free of HZ3 diagnostic lines.
+  The same profile also enables S276 retained-direct large activation for the
+  S240/S242/S246 owner-front path. This profile keeps S203/S65/S240/S242/S276
+  diagnostic counters off so it can be used for fair speed comparisons. It also
+  disables the S80/S65 medium-reclaim startup banner so fair benchmark stderr
+  stays free of HZ3 diagnostic lines.
   Keep RSS-first targeted reclaim as an explicit profile rather than silently
   mixing it into fair speed comparisons.
-- Keep large aligned path probes, such as S240/S242/S246/S273, as explicit
+- Keep future large aligned path probes, such as S273/S274/S278, as explicit
   research lanes until they pass both speed and RSS gates. S273 is currently a
   diagnostic/reference lane: it lowers focused Windows `align=8192` RSS, but is
   not a speed-default promotion.

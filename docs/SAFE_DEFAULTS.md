@@ -19,6 +19,8 @@ This page defines stable, recommended configurations for everyday use.
   - `speed-default`
   - `HZ3_ARENA_SIZE=8GiB`
   - `HZ3_PAGE_MEDIUM_ALIGNED_DEFAULT=1`
+  - S240/S242/S246 large owner-front is enabled.
+  - S276 retained-direct activation is enabled.
   - S203/S65 diagnostic counters are not enabled in this profile.
 - Runtime escape hatch:
   - `HZ3_PAGE_MEDIUM_ALIGNED=0`
