@@ -1989,7 +1989,13 @@ int hz3_large_free(void* ptr) {
     size_t s270_victim_count = 0;
 #endif
     size_t s243_free_meta_start_ns = hz3_s243_residual_timing_start();
+#if HZ3_S279_LARGE_DIRECT_RETAIN_SKIP_FREE_META
+    if ((hdr->flags & HZ3_LARGE_F_DIRECT_RETAINED) == 0) {
+        hz3_large_s240_on_free_take(hdr, sc);
+    }
+#else
     hz3_large_s240_on_free_take(hdr, sc);
+#endif
     hz3_s243_residual_on_free_s240_meta_elapsed(s243_free_meta_start_ns);
 
     // >64MB はキャッシュ対象外（巨大ブロックで cap を食い潰すのを防ぐ）

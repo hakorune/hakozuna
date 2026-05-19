@@ -306,6 +306,27 @@
 #error "HZ3_S276_LARGE_DIRECT_RETAIN requires HZ3_S240_LARGE_OWNER_FRONT"
 #endif
 
+// S279: speed-only retained-direct free fast path.
+// S276 direct-retain already validates the direct slot and transitions ACTIVE
+// to FREEING in hz3_large_take(). In counter-free/safety-free speed lanes, the
+// following S240 free-take metadata check is redundant for retained objects.
+#ifndef HZ3_S279_LARGE_DIRECT_RETAIN_SKIP_FREE_META
+#define HZ3_S279_LARGE_DIRECT_RETAIN_SKIP_FREE_META 0
+#endif
+
+#if HZ3_S279_LARGE_DIRECT_RETAIN_SKIP_FREE_META && \
+    !(HZ3_S276_LARGE_DIRECT_RETAIN_FRONT || HZ3_S276_LARGE_DIRECT_RETAIN_INBOX)
+#error "HZ3_S279_LARGE_DIRECT_RETAIN_SKIP_FREE_META requires S276 direct retain"
+#endif
+
+#if HZ3_S279_LARGE_DIRECT_RETAIN_SKIP_FREE_META && HZ3_S240_LARGE_OWNER_FRONT_STATS
+#error "HZ3_S279_LARGE_DIRECT_RETAIN_SKIP_FREE_META is speed-only and requires S240 stats disabled"
+#endif
+
+#if HZ3_S279_LARGE_DIRECT_RETAIN_SKIP_FREE_META && HZ3_S251_LARGE_OWNER_FRONT_SAFETY
+#error "HZ3_S279_LARGE_DIRECT_RETAIN_SKIP_FREE_META is speed-only and requires S251 safety disabled"
+#endif
+
 // S251: large owner-front container safety probe.
 // Observation/debug lane for S250 high-band work.  It validates the durable
 // container state transitions around ACTIVE/FREEING/FRONT/REMOTE/GLOBAL.
