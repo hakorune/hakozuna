@@ -36,6 +36,18 @@ static inline int hz3_shim_medium_can_satisfy_alignment(size_t alignment, size_t
            alignment <= HZ3_PAGE_SIZE;
 }
 
+static inline int hz3_shim_s300_medium_can_satisfy_alignment(size_t alignment, size_t size) {
+#if HZ3_S300_OVERALIGNED_MEDIUM_RUNS
+    return size >= HZ3_SC_MIN_SIZE &&
+           size <= HZ3_S300_OVERALIGNED_MEDIUM_MAX_SIZE &&
+           alignment == 8192u;
+#else
+    (void)alignment;
+    (void)size;
+    return 0;
+#endif
+}
+
 static inline int hz3_shim_page_medium_aligned_enabled(void) {
 #if defined(_WIN32)
     int cached = atomic_load_explicit(&g_hz3_shim_page_medium_aligned, memory_order_acquire);
@@ -68,6 +80,16 @@ static inline void* hz3_shim_alloc_aligned_policy(size_t alignment, size_t size)
         hz3_shim_medium_can_satisfy_alignment(alignment, size)) {
         return hz3_malloc(size);
     }
+#if HZ3_S300_OVERALIGNED_MEDIUM_RUNS
+    if (hz3_shim_s300_medium_can_satisfy_alignment(alignment, size)) {
+        void* p = hz3_medium_aligned_alloc(size, alignment);
+        if (p) {
+            return p;
+        }
+    }
+#else
+    (void)hz3_shim_s300_medium_can_satisfy_alignment;
+#endif
     return hz3_large_aligned_alloc(alignment, size);
 }
 

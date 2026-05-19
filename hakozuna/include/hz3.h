@@ -7,6 +7,9 @@ void* hz3_malloc(size_t size);
 void  hz3_free(void* ptr);
 void* hz3_calloc(size_t nmemb, size_t size);
 void* hz3_realloc(void* ptr, size_t size);
+#if HZ3_S300_OVERALIGNED_MEDIUM_RUNS
+void* hz3_medium_aligned_alloc(size_t size, size_t alignment);
+#endif
 
 // Get usable size of hz3-allocated pointer (Day 8: hybrid shim support)
 size_t hz3_usable_size(void* ptr);

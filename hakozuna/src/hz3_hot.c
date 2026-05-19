@@ -3,6 +3,7 @@
 #include "hz3.h"
 #include "hz3_config.h"
 #include "hz3_tcache.h"
+#include "hz3_central.h"
 #include "hz3_large.h"
 #include "hz3_segmap.h"
 #include "hz3_seg_hdr.h"
@@ -432,7 +433,11 @@ void* hz3_realloc(void* ptr, size_t size) {
     size_t old_size = 0;
     if (kind == HZ3_TAG_KIND_SMALL) {
         old_size = hz3_small_sc_to_size(old_sc);
-    } else if (kind == HZ3_TAG_KIND_LARGE) {
+    } else if (kind == HZ3_TAG_KIND_LARGE
+#if HZ3_S300_OVERALIGNED_MEDIUM_RUNS
+               || kind == HZ3_TAG_KIND_MEDIUM_ALIGNED
+#endif
+               ) {
         old_size = hz3_sc_to_size(old_sc);
     } else {
         return hz3_next_realloc(ptr, size);
@@ -544,7 +549,11 @@ size_t hz3_usable_size(void* ptr) {
     if (kind == HZ3_TAG_KIND_SMALL) {
         return hz3_small_sc_to_size(sc);
     }
-    if (kind == HZ3_TAG_KIND_LARGE) {
+    if (kind == HZ3_TAG_KIND_LARGE
+#if HZ3_S300_OVERALIGNED_MEDIUM_RUNS
+        || kind == HZ3_TAG_KIND_MEDIUM_ALIGNED
+#endif
+        ) {
         return hz3_sc_to_size(sc);
     }
     return 0;

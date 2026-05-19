@@ -110,6 +110,9 @@ void hz3_s209_medium_miss_seq_note(uint8_t shard, int sc, uint32_t miss_count);
 // ============================================================================
 
 void* hz3_slow_alloc_from_segment(int sc);
+#if HZ3_S300_OVERALIGNED_MEDIUM_RUNS
+void* hz3_medium_aligned_alloc(size_t size, size_t alignment);
+#endif
 #if HZ3_S74_LANE_BATCH
 int hz3_s74_alloc_from_segment_burst(int sc, void** out, int want);
 #endif

@@ -355,6 +355,101 @@ void* hz3_slow_alloc_from_segment(int sc) {
     return result;
 }
 
+#if HZ3_S300_OVERALIGNED_MEDIUM_RUNS
+static void* hz3_medium_aligned_alloc_from_segment_locked(int sc,
+                                                          size_t alignment,
+                                                          int collision_active) {
+    void* result = NULL;
+    const size_t pages = hz3_sc_to_pages(sc);
+    const size_t align_pages = alignment >> HZ3_PAGE_SHIFT;
+    Hz3SegMeta* meta = hz3_tcache_current_seg_get(collision_active);
+
+#if HZ3_S47_SEGMENT_QUARANTINE
+    if (meta && hz3_s47_is_draining(t_hz3_cache.my_shard, meta->seg_base)) {
+        meta = NULL;
+        hz3_tcache_current_seg_set(NULL, collision_active);
+    }
+#endif
+
+    if (meta && meta->free_pages >= pages) {
+        int start_page = hz3_segment_alloc_run_aligned(meta, pages, align_pages);
+        if (start_page >= 0) {
+            return hz3_medium_aligned_run_commit(meta, sc, start_page, pages);
+        }
+    }
+
+    meta = hz3_new_segment(t_hz3_cache.my_shard);
+    if (!meta) {
+#if HZ3_S47_SEGMENT_QUARANTINE
+        for (int retry = 0; retry < 4 && !meta; retry++) {
+            hz3_s47_compact_hard(t_hz3_cache.my_shard);
+            meta = hz3_new_segment(t_hz3_cache.my_shard);
+        }
+#endif
+        if (!meta) {
+#if HZ3_OOM_SHOT
+            hz3_medium_oom_dump(sc);
+#endif
+            return NULL;
+        }
+    }
+    hz3_tcache_current_seg_set(meta, collision_active);
+#if HZ3_S49_SEGMENT_PACKING
+    hz3_pack_on_new(t_hz3_cache.my_shard, meta);
+#endif
+
+    int start_page = hz3_segment_alloc_run_aligned(meta, pages, align_pages);
+    if (start_page >= 0) {
+        result = hz3_medium_aligned_run_commit(meta, sc, start_page, pages);
+    }
+#if HZ3_OOM_SHOT
+    else {
+        hz3_medium_oom_dump(sc);
+    }
+#endif
+    return result;
+}
+
+void* hz3_medium_aligned_alloc(size_t size, size_t alignment) {
+    if (alignment != 8192u ||
+        size < HZ3_SC_MIN_SIZE ||
+        size > HZ3_S300_OVERALIGNED_MEDIUM_MAX_SIZE) {
+        return NULL;
+    }
+
+    hz3_tcache_ensure_init();
+    int sc = hz3_sc_from_size(size);
+    if (sc < 0 || sc >= HZ3_NUM_SC) {
+        return NULL;
+    }
+
+    uint32_t bin = hz3_bin_index_medium_aligned(sc);
+#if HZ3_TCACHE_SOA_LOCAL
+    void* obj = hz3_binref_pop(hz3_tcache_get_local_binref(bin));
+#elif HZ3_LOCAL_BINS_SPLIT
+    void* obj = hz3_bin_pop(hz3_tcache_get_local_bin_from_bin_index(bin));
+#else
+    void* obj = NULL;
+#endif
+    if (obj) {
+        return obj;
+    }
+
+    obj = hz3_central_aligned_pop(t_hz3_cache.my_shard, sc);
+    if (obj) {
+        return obj;
+    }
+
+    Hz3OwnerLeaseToken lease_token = hz3_owner_lease_acquire(t_hz3_cache.my_shard);
+    Hz3OwnerExclToken excl_token = hz3_owner_excl_acquire(t_hz3_cache.my_shard);
+    int collision_active = hz3_tcache_collision_active();
+    obj = hz3_medium_aligned_alloc_from_segment_locked(sc, alignment, collision_active);
+    hz3_owner_excl_release(excl_token);
+    hz3_owner_lease_release(lease_token);
+    return obj;
+}
+#endif
+
 #if HZ3_S74_LANE_BATCH
 int hz3_s74_alloc_from_segment_burst(int sc, void** out, int want) {
     if (want <= 0) {

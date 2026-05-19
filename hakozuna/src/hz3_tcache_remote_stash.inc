@@ -838,6 +838,11 @@ static inline void hz3_remote_stash_dispatch_list(uint8_t dst, uint32_t bin,
         S196_STAT_ADD(g_s196_dispatch_sub4k_objs, n);
         int sc = (int)bin - HZ3_SUB4K_BIN_BASE;
         hz3_sub4k_push_remote_list(dst, sc, head, tail, n);
+#if HZ3_S300_OVERALIGNED_MEDIUM_RUNS
+    } else if (hz3_bin_is_medium_aligned(bin)) {
+        int sc = hz3_bin_medium_aligned_sc(bin);
+        hz3_central_aligned_push_list(dst, sc, head, tail, n);
+#endif
     } else {
         int sc = (int)bin - HZ3_MEDIUM_BIN_BASE;
         int to_central = 0;

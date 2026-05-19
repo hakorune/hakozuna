@@ -446,6 +446,16 @@
 #define HZ3_S300_OVERALIGNED_MEDIUM_RUNS 0
 #endif
 
+#ifndef HZ3_S300_OVERALIGNED_MEDIUM_MAX_SIZE
+#define HZ3_S300_OVERALIGNED_MEDIUM_MAX_SIZE 65536
+#endif
+
+#if HZ3_S300_OVERALIGNED_MEDIUM_RUNS && \
+    (HZ3_S300_OVERALIGNED_MEDIUM_MAX_SIZE < 4096 || \
+     HZ3_S300_OVERALIGNED_MEDIUM_MAX_SIZE > 65536)
+#error "HZ3_S300_OVERALIGNED_MEDIUM_MAX_SIZE must stay within medium size classes"
+#endif
+
 // S279: speed-only retained-direct free fast path.
 // S276 direct-retain already validates the direct slot and transitions ACTIVE
 // to FREEING in hz3_large_take(). In counter-free/safety-free speed lanes, the

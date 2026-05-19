@@ -50,6 +50,7 @@ int hz3_central_has_supply(int shard, int sc);
 
 #if HZ3_S300_OVERALIGNED_MEDIUM_RUNS
 void hz3_central_aligned_push(int shard, int sc, void* run);
+void hz3_central_aligned_push_list(int shard, int sc, void* head, void* tail, uint32_t n);
 void* hz3_central_aligned_pop(int shard, int sc);
 int hz3_central_aligned_pop_batch(int shard, int sc, void** out, int want);
 uint32_t hz3_central_aligned_count_snapshot(int shard, int sc);
@@ -58,6 +59,14 @@ static inline void hz3_central_aligned_push(int shard, int sc, void* run) {
     (void)shard;
     (void)sc;
     (void)run;
+}
+
+static inline void hz3_central_aligned_push_list(int shard, int sc, void* head, void* tail, uint32_t n) {
+    (void)shard;
+    (void)sc;
+    (void)head;
+    (void)tail;
+    (void)n;
 }
 
 static inline void* hz3_central_aligned_pop(int shard, int sc) {

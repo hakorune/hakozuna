@@ -1997,6 +1997,19 @@ void hz3_central_aligned_push(int shard, int sc, void* run) {
     hz3_lock_release(&bin->lock);
 }
 
+void hz3_central_aligned_push_list(int shard, int sc, void* head, void* tail, uint32_t n) {
+    if (shard < 0 || shard >= HZ3_NUM_SHARDS) return;
+    if (sc < 0 || sc >= HZ3_NUM_SC) return;
+    if (!head || !tail || n == 0) return;
+
+    Hz3CentralBin* bin = &g_hz3_central_aligned[shard][sc];
+    hz3_lock_acquire(&bin->lock);
+    hz3_obj_set_next(tail, bin->head);
+    bin->head = head;
+    bin->count += n;
+    hz3_lock_release(&bin->lock);
+}
+
 void* hz3_central_aligned_pop(int shard, int sc) {
     if (shard < 0 || shard >= HZ3_NUM_SHARDS) return NULL;
     if (sc < 0 || sc >= HZ3_NUM_SC) return NULL;
