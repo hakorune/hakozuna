@@ -184,6 +184,48 @@
 #error "HZ3_S293_HIGHBAND_GLOBAL_MAX_NODES_PER_SC must be >= 1"
 #endif
 
+// S293d: soft/adaptive S291-window global scache admission.
+//
+// The hard S293 cap8 saved RSS but cost too much target-row speed, while cap16
+// was a better speed/RSS balance. S293d keeps a small hot floor, then admits
+// only a sampled fraction above the soft cap until the hard cap is reached.
+#ifndef HZ3_S293D_HIGHBAND_GLOBAL_SOFT_CAP
+#define HZ3_S293D_HIGHBAND_GLOBAL_SOFT_CAP 0
+#endif
+
+#ifndef HZ3_S293D_HIGHBAND_GLOBAL_SOFT_NODES_PER_SC
+#define HZ3_S293D_HIGHBAND_GLOBAL_SOFT_NODES_PER_SC 8
+#endif
+
+#ifndef HZ3_S293D_HIGHBAND_GLOBAL_HARD_NODES_PER_SC
+#define HZ3_S293D_HIGHBAND_GLOBAL_HARD_NODES_PER_SC 16
+#endif
+
+#ifndef HZ3_S293D_HIGHBAND_GLOBAL_ADMIT_STRIDE
+#define HZ3_S293D_HIGHBAND_GLOBAL_ADMIT_STRIDE 4
+#endif
+
+#if HZ3_S293D_HIGHBAND_GLOBAL_SOFT_CAP && !HZ3_S291_HIGHBAND_OWNER_WINDOW
+#error "HZ3_S293D_HIGHBAND_GLOBAL_SOFT_CAP requires S291 high-band owner window"
+#endif
+
+#if HZ3_S293D_HIGHBAND_GLOBAL_SOFT_CAP && HZ3_S293_HIGHBAND_GLOBAL_SCACHE_CAP
+#error "S293d soft cap is mutually exclusive with S293 hard cap"
+#endif
+
+#if HZ3_S293D_HIGHBAND_GLOBAL_SOFT_NODES_PER_SC < 1
+#error "HZ3_S293D_HIGHBAND_GLOBAL_SOFT_NODES_PER_SC must be >= 1"
+#endif
+
+#if HZ3_S293D_HIGHBAND_GLOBAL_HARD_NODES_PER_SC < \
+    HZ3_S293D_HIGHBAND_GLOBAL_SOFT_NODES_PER_SC
+#error "HZ3_S293D hard nodes must be >= soft nodes"
+#endif
+
+#if HZ3_S293D_HIGHBAND_GLOBAL_ADMIT_STRIDE < 1
+#error "HZ3_S293D_HIGHBAND_GLOBAL_ADMIT_STRIDE must be >= 1"
+#endif
+
 // S245: bounded batch pop for owner large inbox drain.
 // This keeps the same drain limit and caps as S240, but detaches up to N inbox
 // nodes with one CAS instead of one CAS per object.

@@ -2,6 +2,10 @@
 #define HZ3_LARGE_ALIGNED_OBS 0
 #endif
 
+#if HZ3_S293D_HIGHBAND_GLOBAL_SOFT_CAP
+static _Atomic uint32_t g_s293d_global_admit_epoch[HZ3_LARGE_SC_COUNT];
+#endif
+
 // S53: LargeCacheBudgetBox statistics (one-shot)
 #if HZ3_LARGE_CACHE_STATS
 static _Atomic size_t g_budget_soft_hits = 0;
@@ -414,6 +418,14 @@ static _Atomic size_t g_s293_global_admit_ok = 0;
 static _Atomic size_t g_s293_global_reject_cap = 0;
 static _Atomic size_t g_s293_global_reject_nonwindow = 0;
 #endif
+#if HZ3_S293D_HIGHBAND_GLOBAL_SOFT_CAP
+static _Atomic size_t g_s293d_global_admit_try = 0;
+static _Atomic size_t g_s293d_global_admit_ok = 0;
+static _Atomic size_t g_s293d_global_admit_soft = 0;
+static _Atomic size_t g_s293d_global_reject_soft = 0;
+static _Atomic size_t g_s293d_global_reject_hard = 0;
+static _Atomic size_t g_s293d_global_reject_nonwindow = 0;
+#endif
 #if HZ3_S285_LARGE_FIXED_COST_OBS
 static _Atomic size_t g_s285_direct_way_loads = 0;
 static _Atomic size_t g_s285_direct_key_busy = 0;
@@ -758,6 +770,54 @@ static inline int hz3_s293_global_admit_under_cap_locked(int sc,
 }
 #endif
 
+#if HZ3_S293D_HIGHBAND_GLOBAL_SOFT_CAP
+static inline int hz3_s293d_highband_global_req(const Hz3LargeHdr* hdr) {
+    return hdr &&
+           hdr->req_size > (size_t)HZ3_S291_HIGHBAND_MIN_CLASS_BYTES &&
+           hdr->req_size <= (size_t)HZ3_S291_HIGHBAND_MAX_CLASS_BYTES;
+}
+
+static inline int hz3_s293d_global_admit_under_soft_cap_locked(
+    int sc,
+    const Hz3LargeHdr* hdr) {
+    if (!hz3_s293d_highband_global_req(hdr)) {
+        hz3_large_s240_inc(&g_s293d_global_reject_nonwindow);
+        return 1;
+    }
+    hz3_large_s240_inc(&g_s293d_global_admit_try);
+    hz3_large_sc_lock_acquire(sc);
+    uint32_t nodes = g_sc_nodes[sc];
+    hz3_large_sc_lock_release(sc);
+    if (nodes < (uint32_t)HZ3_S293D_HIGHBAND_GLOBAL_SOFT_NODES_PER_SC) {
+        hz3_large_s240_inc(&g_s293d_global_admit_ok);
+        return 1;
+    }
+    if (nodes >= (uint32_t)HZ3_S293D_HIGHBAND_GLOBAL_HARD_NODES_PER_SC) {
+        hz3_large_s240_inc(&g_s293d_global_reject_hard);
+        return 0;
+    }
+    uint32_t epoch = atomic_fetch_add_explicit(
+        &g_s293d_global_admit_epoch[sc],
+        1,
+        memory_order_relaxed);
+    if ((epoch % (uint32_t)HZ3_S293D_HIGHBAND_GLOBAL_ADMIT_STRIDE) == 0) {
+        hz3_large_s240_inc(&g_s293d_global_admit_ok);
+        hz3_large_s240_inc(&g_s293d_global_admit_soft);
+        return 1;
+    }
+    hz3_large_s240_inc(&g_s293d_global_reject_soft);
+    return 0;
+}
+#else
+static inline int hz3_s293d_global_admit_under_soft_cap_locked(
+    int sc,
+    const Hz3LargeHdr* hdr) {
+    (void)sc;
+    (void)hdr;
+    return 1;
+}
+#endif
+
 static void hz3_large_s240_dump_final(void) {
     fprintf(stderr,
             "[HZ3_LARGE_S240_META] activate=%zu activate_cache=%zu "
@@ -1010,6 +1070,23 @@ static void hz3_large_s240_dump_final(void) {
             atomic_load_explicit(&g_s293_global_admit_ok, memory_order_relaxed),
             atomic_load_explicit(&g_s293_global_reject_cap, memory_order_relaxed),
             atomic_load_explicit(&g_s293_global_reject_nonwindow, memory_order_relaxed));
+#endif
+#if HZ3_S293D_HIGHBAND_GLOBAL_SOFT_CAP
+    fprintf(stderr,
+            "[HZ3_S293D_HIGHBAND_GLOBAL_SOFT_CAP] soft_nodes_per_sc=%u "
+            "hard_nodes_per_sc=%u admit_stride=%u admit_try=%zu admit_ok=%zu "
+            "admit_soft=%zu reject_soft=%zu reject_hard=%zu "
+            "reject_nonwindow=%zu\n",
+            (unsigned)HZ3_S293D_HIGHBAND_GLOBAL_SOFT_NODES_PER_SC,
+            (unsigned)HZ3_S293D_HIGHBAND_GLOBAL_HARD_NODES_PER_SC,
+            (unsigned)HZ3_S293D_HIGHBAND_GLOBAL_ADMIT_STRIDE,
+            atomic_load_explicit(&g_s293d_global_admit_try, memory_order_relaxed),
+            atomic_load_explicit(&g_s293d_global_admit_ok, memory_order_relaxed),
+            atomic_load_explicit(&g_s293d_global_admit_soft, memory_order_relaxed),
+            atomic_load_explicit(&g_s293d_global_reject_soft, memory_order_relaxed),
+            atomic_load_explicit(&g_s293d_global_reject_hard, memory_order_relaxed),
+            atomic_load_explicit(&g_s293d_global_reject_nonwindow,
+                                 memory_order_relaxed));
 #endif
 #if HZ3_S285_LARGE_FIXED_COST_OBS
     fprintf(stderr,
@@ -1290,6 +1367,40 @@ static inline int hz3_s293_global_admit_under_cap_locked(int sc,
 #else
 static inline int hz3_s293_global_admit_under_cap_locked(int sc,
                                                          const Hz3LargeHdr* hdr) {
+    (void)sc;
+    (void)hdr;
+    return 1;
+}
+#endif
+
+#if HZ3_S293D_HIGHBAND_GLOBAL_SOFT_CAP
+static inline int hz3_s293d_global_admit_under_soft_cap_locked(
+    int sc,
+    const Hz3LargeHdr* hdr) {
+    if (!hdr ||
+        hdr->req_size <= (size_t)HZ3_S291_HIGHBAND_MIN_CLASS_BYTES ||
+        hdr->req_size > (size_t)HZ3_S291_HIGHBAND_MAX_CLASS_BYTES) {
+        return 1;
+    }
+    hz3_large_sc_lock_acquire(sc);
+    uint32_t nodes = g_sc_nodes[sc];
+    hz3_large_sc_lock_release(sc);
+    if (nodes < (uint32_t)HZ3_S293D_HIGHBAND_GLOBAL_SOFT_NODES_PER_SC) {
+        return 1;
+    }
+    if (nodes >= (uint32_t)HZ3_S293D_HIGHBAND_GLOBAL_HARD_NODES_PER_SC) {
+        return 0;
+    }
+    uint32_t epoch = atomic_fetch_add_explicit(
+        &g_s293d_global_admit_epoch[sc],
+        1,
+        memory_order_relaxed);
+    return ((epoch % (uint32_t)HZ3_S293D_HIGHBAND_GLOBAL_ADMIT_STRIDE) == 0);
+}
+#else
+static inline int hz3_s293d_global_admit_under_soft_cap_locked(
+    int sc,
+    const Hz3LargeHdr* hdr) {
     (void)sc;
     (void)hdr;
     return 1;
