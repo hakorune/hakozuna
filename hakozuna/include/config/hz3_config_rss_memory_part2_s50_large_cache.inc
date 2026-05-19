@@ -439,6 +439,13 @@
 #error "HZ3_S300_OVERALIGNED_MEDIUM_ROUTE_OBS requires HZ3_LARGE_ALIGNED_OBS"
 #endif
 
+// S300: behavior-changing over-aligned medium/run prototype.
+// Default off. When enabled, this may extend medium bin namespace/layout for
+// aligned-medium runs, so keep it in dedicated research lanes until validated.
+#ifndef HZ3_S300_OVERALIGNED_MEDIUM_RUNS
+#define HZ3_S300_OVERALIGNED_MEDIUM_RUNS 0
+#endif
+
 // S279: speed-only retained-direct free fast path.
 // S276 direct-retain already validates the direct slot and transitions ACTIVE
 // to FREEING in hz3_large_take(). In counter-free/safety-free speed lanes, the

@@ -547,9 +547,14 @@ static inline size_t hz3_bin_to_usable_size(uint32_t bin) {
         return hz3_sub4k_sc_to_size((int)(bin - HZ3_SUB4K_BIN_BASE));
     }
 #endif
-    if (bin < HZ3_BIN_TOTAL) {
+    if (bin < HZ3_MEDIUM_BIN_LIMIT) {
         return hz3_sc_to_size((int)(bin - HZ3_MEDIUM_BIN_BASE));
     }
+#if HZ3_S300_OVERALIGNED_MEDIUM_RUNS
+    if (bin < HZ3_MEDIUM_ALIGNED_BIN_LIMIT) {
+        return hz3_sc_to_size((int)(bin - HZ3_MEDIUM_ALIGNED_BIN_BASE));
+    }
+#endif
     return 0;
 }
 
@@ -588,6 +593,23 @@ static inline int hz3_bin_index_sub4k(int sc) {
 
 static inline int hz3_bin_index_medium(int sc) {
     return HZ3_MEDIUM_BIN_BASE + sc;
+}
+
+static inline uint32_t hz3_bin_index_medium_aligned(int sc) {
+    return HZ3_MEDIUM_ALIGNED_BIN_BASE + (uint32_t)sc;
+}
+
+static inline int hz3_bin_is_medium_aligned(uint32_t bin) {
+#if HZ3_S300_OVERALIGNED_MEDIUM_RUNS
+    return bin >= HZ3_MEDIUM_ALIGNED_BIN_BASE && bin < HZ3_MEDIUM_ALIGNED_BIN_LIMIT;
+#else
+    (void)bin;
+    return 0;
+#endif
+}
+
+static inline int hz3_bin_medium_aligned_sc(uint32_t bin) {
+    return (int)(bin - HZ3_MEDIUM_ALIGNED_BIN_BASE);
 }
 
 // S40-2: LOCAL SoA accessor (only when HZ3_TCACHE_SOA_LOCAL=1)
