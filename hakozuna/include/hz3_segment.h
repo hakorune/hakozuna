@@ -42,6 +42,36 @@ static inline int hz3_bitmap_find_free(const uint64_t* bits, size_t pages) {
     return -1;
 }
 
+// Find contiguous free pages whose start page satisfies page alignment.
+// `align_pages` is relative to the 2MB segment base, which is page-aligned and
+// segment-aligned, so page_idx % align_pages is enough for power-of-two page
+// alignments such as 8192, 16384, and 65536.
+static inline int hz3_bitmap_find_free_aligned(const uint64_t* bits,
+                                               size_t pages,
+                                               size_t align_pages) {
+    if (align_pages == 0) {
+        align_pages = 1;
+    }
+    for (size_t i = 0; i + pages <= HZ3_PAGES_PER_SEG; i++) {
+        if ((i % align_pages) != 0) {
+            continue;
+        }
+        int found = 1;
+        for (size_t j = 0; j < pages && found; j++) {
+            size_t idx = i + j;
+            size_t word = idx / 64;
+            size_t bit = idx % 64;
+            if (!(bits[word] & (1ULL << bit))) {
+                found = 0;
+            }
+        }
+        if (found) {
+            return (int)i;
+        }
+    }
+    return -1;
+}
+
 // Mark pages as used (clear bits)
 static inline void hz3_bitmap_mark_used(uint64_t* bits, size_t start, size_t pages) {
     for (size_t i = 0; i < pages; i++) {
@@ -69,6 +99,10 @@ static inline void hz3_bitmap_mark_free(uint64_t* bits, size_t start, size_t pag
 // Allocate a run of pages from segment
 // Returns start page index, or -1 if not enough space
 int hz3_segment_alloc_run(Hz3SegMeta* meta, size_t pages);
+
+// Allocate a run of pages from segment with an aligned start page.
+// Returns start page index, or -1 if not enough aligned contiguous space.
+int hz3_segment_alloc_run_aligned(Hz3SegMeta* meta, size_t pages, size_t align_pages);
 
 // Free a run of pages back to segment
 void hz3_segment_free_run(Hz3SegMeta* meta, size_t start_page, size_t pages);

@@ -302,6 +302,41 @@ cleanup:
     return ret;
 }
 
+int hz3_segment_alloc_run_aligned(Hz3SegMeta* meta, size_t pages, size_t align_pages) {
+    // S300: aligned medium/run primitive. Keep the same safety envelope as the
+    // normal medium allocator; behavior-changing routing is layered separately.
+    if (!meta || pages == 0 || pages > 16 ||
+        align_pages == 0 || align_pages > HZ3_PAGES_PER_SEG) {
+        return -1;
+    }
+    if (meta->free_pages < pages) {
+        return -1;
+    }
+
+    Hz3OwnerLeaseToken lease_token = hz3_owner_lease_acquire(meta->owner);
+    int ret = -1;
+
+    int start = hz3_bitmap_find_free_aligned(meta->free_bits, pages, align_pages);
+    if (start < 0) {
+#if HZ3_S49_PACK_STATS
+        atomic_fetch_add_explicit(&g_alloc_run_fail_total, 1, memory_order_relaxed);
+        if (pages <= HZ3_S49_PACK_MAX_PAGES) {
+            atomic_fetch_add_explicit(&g_alloc_run_fail_by_pages[pages], 1, memory_order_relaxed);
+        }
+#endif
+        goto cleanup;
+    }
+
+    hz3_bitmap_mark_used(meta->free_bits, (size_t)start, pages);
+    meta->free_pages -= (uint16_t)pages;
+
+    ret = start;
+
+cleanup:
+    hz3_owner_lease_release(lease_token);
+    return ret;
+}
+
 void hz3_segment_free_run(Hz3SegMeta* meta, size_t start_page, size_t pages) {
     // S-OOM: Support up to 16 pages (64KB) for extended size classes
     if (!meta || pages == 0 || pages > 16) {
