@@ -22,21 +22,24 @@ Remote free is page-oriented.
 RSS policy is designed in from day one.
 ```
 
-## Initial Scope
+## Current Status
 
-The first prototype is `HZ5-P0 AlignedRun8192`:
+HZ5 has moved past the initial P0/P3 route proof. The current split is:
 
-- Route shadow only, no behavior change.
-- Candidate rows:
-  - `size == 4096 && align == 8192`
-  - `size == 8192 && align == 8192`
-  - `size == 65536 && align == 8192`
-- Everything else remains HZ3 S276 fallback.
+- `P11/P9`: current HZ5 seed speed lane. Exact `4K/8K align=8192` route to the
+  HZ5 page/run sidecar; exact `64K align=8192` stays on HZ3 fallback.
+- `P12 cap1`: watch lane for exact `64K align=8192` as a separate 16-page
+  run family with `owner_cache_cap=1`.
+- `P13`: diagnostic segment accounting and shutdown-only release snapshots.
+- `P14b`: diagnostic retired quarantine. Empty segments are retired and skipped
+  for allocation, but memory remains valid until shutdown release.
 
-P1/P2 should only start after P0 route counters prove the target rows and guard
-rows are classified exactly as expected.
+P13/P14 are not speed lanes. P11/P9 and P12 cap1 should stay counter-free when
+used for throughput measurements.
 
-## P1 Status
+## Bootstrap Milestones
+
+### P1
 
 `HZ5-P1` adds a local aligned-run allocator:
 
@@ -58,7 +61,7 @@ Expected output:
 HZ5-P1/P2 aligned-run smoke passed
 ```
 
-## P2 Status
+### P2
 
 `HZ5-P2` adds the first owner/remote core:
 
@@ -69,18 +72,29 @@ HZ5-P1/P2 aligned-run smoke passed
 P2 is still not a BenchLab behavior lane. It proves the owner-token and
 page-oriented remote-free lifecycle before HZ5 starts routing target workloads.
 
-## P3 Status
+### P3
 
-`HZ5-P3` adds the first BenchLab behavior adapter:
+`HZ5-P3` added the first BenchLab behavior adapter:
 
 ```text
 win/hakozuna_hz5_adapter.c
 ```
 
 It routes only exact `4K/8K/64K align=8192` to HZ5 and leaves every other row on
-HZ3 S276 fallback. Initial smoke passed, but this is still a diagnostic
-prototype. The next core feature should be owner-local run reuse after remote
-drain.
+HZ3 S276 fallback. It is now superseded by the narrower P11/P9 seed and the P12
+run16 follow-up.
+
+## Documentation
+
+- BenchLab-facing status, lane policy, and result timeline:
+  `allocator-bench-lab/docs/hakozuna-hz5-sidecar-design.md`
+- BenchLab HZ5 lane registry:
+  `allocator-bench-lab/docs/hakozuna-hz5-lane-registry.md`
+- Private implementation work log:
+  `hakozuna-hz5/docs/HZ5_P0_ALIGNED_RUN_8192.md`
+
+The private work-log filename is historical. It started as the P0 work order
+and now records the implementation lifecycle through P14.
 
 ## Planned Layout
 
@@ -88,7 +102,11 @@ drain.
 hakozuna-hz5/
   include/   public and internal HZ5 headers
   core/      segment, pageheap, run, owner, and remote-free core
-  src/       route, counters, fallback bridge, and shim glue
+  src/       reserved for future repo-local shims; currently intentionally empty
   win/       Windows research build/link scripts
   docs/      HZ5 work orders and result notes
 ```
+
+BenchLab owns the current adapter glue in
+`allocator-bench-lab/win/hakozuna_hz5_adapter.c`; the sidecar core stays in this
+directory so HZ5 can remain modular next to HZ3 and HZ4.

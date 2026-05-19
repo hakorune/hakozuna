@@ -1,4 +1,12 @@
-# HZ5-P0 AlignedRun8192 Work Order
+# HZ5 Implementation Lifecycle Log
+
+This file keeps the private HZ5 implementation work log. The filename is
+historical: it began as the P0 aligned-run work order, but now records the HZ5
+lifecycle through P14. BenchLab-facing lane policy and measurement triage live
+in `allocator-bench-lab/docs/hakozuna-hz5-lane-registry.md` and
+`allocator-bench-lab/docs/hakozuna-hz5-sidecar-design.md`.
+
+## Original P0 Work Order
 
 Date: 2026-05-20
 
