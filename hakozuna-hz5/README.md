@@ -28,14 +28,16 @@ HZ5 has moved past the initial P0/P3 route proof. The current split is:
 
 - `P11/P9`: current HZ5 seed speed lane. Exact `4K/8K align=8192` route to the
   HZ5 page/run sidecar; exact `64K align=8192` stays on HZ3 fallback.
-- `P12 cap1`: watch lane for exact `64K align=8192` as a separate 16-page
-  run family with `owner_cache_cap=1`.
+- `P12 cap1`: diagnostic/no-go evidence lane for exact `64K align=8192` as a
+  separate 16-page run family with `owner_cache_cap=1`; repeat-5/repeat-10
+  follow-up showed it below P11 fallback and HZ3 speed-default.
 - `P13`: diagnostic segment accounting and shutdown-only release snapshots.
 - `P14b`: diagnostic retired quarantine. Empty segments are retired and skipped
   for allocation, but memory remains valid until shutdown release.
 
-P13/P14 are not speed lanes. P11/P9 and P12 cap1 should stay counter-free when
-used for throughput measurements.
+P13/P14 are not speed lanes. P11/P9 should stay counter-free when used for
+throughput measurements; P12 cap1 should now be included only when comparing
+negative run16 evidence.
 
 ## Bootstrap Milestones
 
