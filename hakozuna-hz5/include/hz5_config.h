@@ -34,4 +34,8 @@
 #define HZ5_P14_RETIRED_QUARANTINE 0u
 #endif
 
+#ifndef HZ5_P14_LOCKED_LOOKUP_RELEASE
+#define HZ5_P14_LOCKED_LOOKUP_RELEASE 0u
+#endif
+
 #endif

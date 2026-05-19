@@ -85,6 +85,16 @@ static const char* hz5_stats_name(Hz5StatId id) {
         return "p14_retire_reject_remote";
     case HZ5_STAT_P14_RETIRE_REJECT_STATE:
         return "p14_retire_reject_state";
+    case HZ5_STAT_P14_LOCKED_LOOKUP_CALL:
+        return "p14_locked_lookup_call";
+    case HZ5_STAT_P14_LOCKED_LOOKUP_HIT:
+        return "p14_locked_lookup_hit";
+    case HZ5_STAT_P14_LOCKED_LOOKUP_MISS_RANGE:
+        return "p14_locked_lookup_miss_range";
+    case HZ5_STAT_P14_LOCKED_LOOKUP_MISS_TABLE:
+        return "p14_locked_lookup_miss_table";
+    case HZ5_STAT_P14_LOCKED_LOOKUP_BAD_MAGIC:
+        return "p14_locked_lookup_bad_magic";
     default:
         return "unknown";
     }

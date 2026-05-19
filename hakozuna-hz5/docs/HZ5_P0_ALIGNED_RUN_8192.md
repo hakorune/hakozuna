@@ -831,3 +831,43 @@ Decision:
 - P14c is still not production runtime release.
 - A correct locked release lane must protect the whole classify/use/free scope,
   not just return a raw `Hz5Seg*` from a locked table lookup.
+
+P14.2 locked-lookup footing:
+
+```text
+results/synthetic-sweep/20260520_082119_813
+```
+
+Implemented:
+
+- `HZ5_P14_LOCKED_LOOKUP_RELEASE=1`
+- `hz5_p1_seg_from_ptr()` takes the segment lock while scanning table slots.
+- Added lookup counters:
+  - `p14_locked_lookup_call`
+  - `p14_locked_lookup_hit`
+  - `p14_locked_lookup_miss_range`
+  - `p14_locked_lookup_miss_table`
+  - `p14_locked_lookup_bad_magic`
+- Added BenchLab manifest `hakozuna-hz5-p14-locked-lookup.toml`.
+
+Repeat-1 pressure result:
+
+```text
+p14_locked_lookup_call=1086484
+p14_locked_lookup_hit=1086484
+miss_range=0
+miss_table=0
+bad_magic=0
+retired_segments=46
+retired_bytes=96.47MiB
+remote_pending=0
+remote_buffer_pending=0
+tcache_refs=0
+```
+
+Interpretation:
+
+- P14.2 confirms the locked table lookup footing can run the pressure profile.
+- It visibly slows throughput, so it is diagnostic-only.
+- Runtime segment free still needs a scoped lifetime or descriptor/tombstone
+  design; this patch deliberately does not free segment memory at runtime.

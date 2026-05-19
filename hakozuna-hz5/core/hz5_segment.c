@@ -472,15 +472,24 @@ Hz5Seg* hz5_p1_seg_from_ptr(void* ptr) {
     if (!ptr) {
         return NULL;
     }
+#if HZ5_P14_LOCKED_LOOKUP_RELEASE
+    hz5_stats_inc(HZ5_STAT_P14_LOCKED_LOOKUP_CALL);
+#endif
     uintptr_t raw = (uintptr_t)ptr;
     uintptr_t min_base = atomic_load_explicit(&g_hz5_p1_seg_min_base,
                                               memory_order_acquire);
     uintptr_t max_end = atomic_load_explicit(&g_hz5_p1_seg_max_end,
                                              memory_order_acquire);
     if (min_base == 0 || raw < min_base || raw >= max_end) {
+#if HZ5_P14_LOCKED_LOOKUP_RELEASE
+        hz5_stats_inc(HZ5_STAT_P14_LOCKED_LOOKUP_MISS_RANGE);
+#endif
         return NULL;
     }
 
+#if HZ5_P14_LOCKED_LOOKUP_RELEASE
+    hz5_p1_lock();
+#endif
     uint32_t count = atomic_load_explicit(&g_hz5_p1_seg_count,
                                           memory_order_acquire);
     for (uint32_t i = 0; i < count; ++i) {
@@ -488,11 +497,23 @@ Hz5Seg* hz5_p1_seg_from_ptr(void* ptr) {
                                            memory_order_acquire);
         if (seg && raw >= (uintptr_t)seg && raw < (uintptr_t)seg + HZ5_SEG_SIZE) {
             if (seg->magic != HZ5_SEG_MAGIC || seg->version != HZ5_SEG_VERSION) {
+#if HZ5_P14_LOCKED_LOOKUP_RELEASE
+                hz5_stats_inc(HZ5_STAT_P14_LOCKED_LOOKUP_BAD_MAGIC);
+                hz5_p1_unlock();
+#endif
                 return NULL;
             }
+#if HZ5_P14_LOCKED_LOOKUP_RELEASE
+            hz5_stats_inc(HZ5_STAT_P14_LOCKED_LOOKUP_HIT);
+            hz5_p1_unlock();
+#endif
             return seg;
         }
     }
+#if HZ5_P14_LOCKED_LOOKUP_RELEASE
+    hz5_stats_inc(HZ5_STAT_P14_LOCKED_LOOKUP_MISS_TABLE);
+    hz5_p1_unlock();
+#endif
     return NULL;
 }
 
