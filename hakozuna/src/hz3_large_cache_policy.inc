@@ -377,6 +377,37 @@ static _Atomic size_t g_s276_inbox_push_reject_clear = 0;
 static _Atomic size_t g_s276_inbox_activate_fast = 0;
 static _Atomic size_t g_s276_direct_clear = 0;
 #endif
+#if HZ3_S292_HIGHBAND_RETENTION_OBS
+static _Atomic size_t g_s292_alloc_highband = 0;
+static _Atomic size_t g_s292_alloc_65537 = 0;
+static _Atomic size_t g_s292_alloc_lte128k = 0;
+static _Atomic size_t g_s292_alloc_gt256k = 0;
+static _Atomic size_t g_s292_free_highband = 0;
+static _Atomic size_t g_s292_free_65537 = 0;
+static _Atomic size_t g_s292_front_pop_calls = 0;
+static _Atomic size_t g_s292_front_pop_hit = 0;
+static _Atomic size_t g_s292_front_pop_miss = 0;
+static _Atomic size_t g_s292_front_push = 0;
+static _Atomic size_t g_s292_front_reject = 0;
+static _Atomic size_t g_s292_front_nodes_current = 0;
+static _Atomic size_t g_s292_front_nodes_peak = 0;
+static _Atomic size_t g_s292_front_bytes_current = 0;
+static _Atomic size_t g_s292_front_bytes_peak = 0;
+static _Atomic size_t g_s292_inbox_push_attempt = 0;
+static _Atomic size_t g_s292_inbox_push_ok = 0;
+static _Atomic size_t g_s292_inbox_reject_invalid = 0;
+static _Atomic size_t g_s292_inbox_reject_owner = 0;
+static _Atomic size_t g_s292_inbox_reject_budget = 0;
+static _Atomic size_t g_s292_inbox_pop = 0;
+static _Atomic size_t g_s292_inbox_flush = 0;
+static _Atomic size_t g_s292_inbox_nodes_current = 0;
+static _Atomic size_t g_s292_inbox_nodes_peak = 0;
+static _Atomic size_t g_s292_inbox_bytes_current = 0;
+static _Atomic size_t g_s292_inbox_bytes_peak = 0;
+static _Atomic size_t g_s292_global_fallback = 0;
+static _Atomic size_t g_s292_global_cache_store = 0;
+static _Atomic size_t g_s292_global_munmap = 0;
+#endif
 #if HZ3_S285_LARGE_FIXED_COST_OBS
 static _Atomic size_t g_s285_direct_way_loads = 0;
 static _Atomic size_t g_s285_direct_key_busy = 0;
@@ -453,6 +484,240 @@ static inline void hz3_large_s240_update_max(_Atomic size_t* p, size_t value) {
         }
     }
 }
+
+#if HZ3_S292_HIGHBAND_RETENTION_OBS
+static inline void hz3_s292_update_bytes(_Atomic size_t* current,
+                                         _Atomic size_t* peak,
+                                         size_t bytes,
+                                         int add) {
+    if (add) {
+        size_t total = atomic_fetch_add_explicit(current,
+                                                 bytes,
+                                                 memory_order_relaxed) + bytes;
+        hz3_large_s240_update_max(peak, total);
+    } else {
+        hz3_large_s240_sub(current, bytes);
+    }
+}
+
+static inline void hz3_s292_update_nodes(_Atomic size_t* current,
+                                         _Atomic size_t* peak,
+                                         int add) {
+    if (add) {
+        size_t total = atomic_fetch_add_explicit(current,
+                                                 1,
+                                                 memory_order_relaxed) + 1;
+        hz3_large_s240_update_max(peak, total);
+    } else {
+        hz3_large_s240_sub(current, 1);
+    }
+}
+
+static inline int hz3_s292_is_highband_req(size_t req_size) {
+    return req_size > (size_t)HZ3_S291_HIGHBAND_MIN_CLASS_BYTES &&
+           req_size <= (size_t)HZ3_S291_HIGHBAND_MAX_CLASS_BYTES;
+}
+
+static inline void hz3_s292_on_alloc_req(size_t req_size) {
+    if (hz3_s292_is_highband_req(req_size)) {
+        hz3_large_s240_inc(&g_s292_alloc_highband);
+    } else if (req_size == 65537u) {
+        hz3_large_s240_inc(&g_s292_alloc_65537);
+    } else if (req_size <= (size_t)HZ3_S291_HIGHBAND_MIN_CLASS_BYTES) {
+        hz3_large_s240_inc(&g_s292_alloc_lte128k);
+    } else if (req_size > (size_t)HZ3_S291_HIGHBAND_MAX_CLASS_BYTES) {
+        hz3_large_s240_inc(&g_s292_alloc_gt256k);
+    }
+}
+
+static inline void hz3_s292_on_free_hdr(const Hz3LargeHdr* hdr) {
+    if (!hdr) {
+        return;
+    }
+    if (hz3_s292_is_highband_req(hdr->req_size)) {
+        hz3_large_s240_inc(&g_s292_free_highband);
+    } else if (hdr->req_size == 65537u) {
+        hz3_large_s240_inc(&g_s292_free_65537);
+    }
+}
+
+static inline void hz3_s292_on_front_pop(size_t req_size, int hit, size_t bytes) {
+    if (!hz3_s292_is_highband_req(req_size)) {
+        return;
+    }
+    hz3_large_s240_inc(&g_s292_front_pop_calls);
+    if (hit) {
+        hz3_large_s240_inc(&g_s292_front_pop_hit);
+        hz3_s292_update_nodes(&g_s292_front_nodes_current,
+                              &g_s292_front_nodes_peak,
+                              0);
+        hz3_s292_update_bytes(&g_s292_front_bytes_current,
+                              &g_s292_front_bytes_peak,
+                              bytes,
+                              0);
+    } else {
+        hz3_large_s240_inc(&g_s292_front_pop_miss);
+    }
+}
+
+static inline void hz3_s292_on_front_push_result(const Hz3LargeHdr* hdr, int success) {
+    if (!hdr || !hz3_s292_is_highband_req(hdr->req_size)) {
+        return;
+    }
+    if (!success) {
+        hz3_large_s240_inc(&g_s292_front_reject);
+        return;
+    }
+    hz3_large_s240_inc(&g_s292_front_push);
+    hz3_s292_update_nodes(&g_s292_front_nodes_current,
+                          &g_s292_front_nodes_peak,
+                          1);
+    hz3_s292_update_bytes(&g_s292_front_bytes_current,
+                          &g_s292_front_bytes_peak,
+                          hdr->map_size,
+                          1);
+}
+
+static inline void hz3_s292_on_front_flush_node(const Hz3LargeHdr* hdr) {
+    if (!hdr || !hz3_s292_is_highband_req(hdr->req_size)) {
+        return;
+    }
+    hz3_s292_update_nodes(&g_s292_front_nodes_current,
+                          &g_s292_front_nodes_peak,
+                          0);
+    hz3_s292_update_bytes(&g_s292_front_bytes_current,
+                          &g_s292_front_bytes_peak,
+                          hdr->map_size,
+                          0);
+}
+
+static inline void hz3_s292_on_inbox_push_attempt(const Hz3LargeHdr* hdr) {
+    if (hdr && hz3_s292_is_highband_req(hdr->req_size)) {
+        hz3_large_s240_inc(&g_s292_inbox_push_attempt);
+    }
+}
+
+static inline void hz3_s292_on_inbox_push_result(const Hz3LargeHdr* hdr,
+                                                 int ok,
+                                                 int reject_owner,
+                                                 int reject_budget,
+                                                 int reject_invalid) {
+    if (!hdr || !hz3_s292_is_highband_req(hdr->req_size)) {
+        return;
+    }
+    if (ok) {
+        hz3_large_s240_inc(&g_s292_inbox_push_ok);
+        hz3_s292_update_nodes(&g_s292_inbox_nodes_current,
+                              &g_s292_inbox_nodes_peak,
+                              1);
+        hz3_s292_update_bytes(&g_s292_inbox_bytes_current,
+                              &g_s292_inbox_bytes_peak,
+                              hdr->map_size,
+                              1);
+        return;
+    }
+    if (reject_owner) {
+        hz3_large_s240_inc(&g_s292_inbox_reject_owner);
+    }
+    if (reject_budget) {
+        hz3_large_s240_inc(&g_s292_inbox_reject_budget);
+    }
+    if (reject_invalid) {
+        hz3_large_s240_inc(&g_s292_inbox_reject_invalid);
+    }
+}
+
+static inline void hz3_s292_on_inbox_pop(const Hz3LargeHdr* hdr, int from_flush) {
+    if (!hdr || !hz3_s292_is_highband_req(hdr->req_size)) {
+        return;
+    }
+    if (from_flush) {
+        hz3_large_s240_inc(&g_s292_inbox_flush);
+    } else {
+        hz3_large_s240_inc(&g_s292_inbox_pop);
+    }
+    hz3_s292_update_nodes(&g_s292_inbox_nodes_current,
+                          &g_s292_inbox_nodes_peak,
+                          0);
+    hz3_s292_update_bytes(&g_s292_inbox_bytes_current,
+                          &g_s292_inbox_bytes_peak,
+                          hdr->map_size,
+                          0);
+}
+
+static inline void hz3_s292_on_inbox_flush_seen(const Hz3LargeHdr* hdr) {
+    if (hdr && hz3_s292_is_highband_req(hdr->req_size)) {
+        hz3_large_s240_inc(&g_s292_inbox_flush);
+    }
+}
+
+static inline void hz3_s292_on_global_fallback(const Hz3LargeHdr* hdr) {
+    if (hdr && hz3_s292_is_highband_req(hdr->req_size)) {
+        hz3_large_s240_inc(&g_s292_global_fallback);
+    }
+}
+
+static inline void hz3_s292_on_global_store(const Hz3LargeHdr* hdr) {
+    if (hdr && hz3_s292_is_highband_req(hdr->req_size)) {
+        hz3_large_s240_inc(&g_s292_global_cache_store);
+    }
+}
+
+static inline void hz3_s292_on_global_munmap(const Hz3LargeHdr* hdr) {
+    if (hdr && hz3_s292_is_highband_req(hdr->req_size)) {
+        hz3_large_s240_inc(&g_s292_global_munmap);
+    }
+}
+#else
+static inline void hz3_s292_on_alloc_req(size_t req_size) {
+    (void)req_size;
+}
+static inline void hz3_s292_on_free_hdr(const Hz3LargeHdr* hdr) {
+    (void)hdr;
+}
+static inline void hz3_s292_on_front_pop(size_t req_size, int hit, size_t bytes) {
+    (void)req_size;
+    (void)hit;
+    (void)bytes;
+}
+static inline void hz3_s292_on_front_push_result(const Hz3LargeHdr* hdr, int success) {
+    (void)hdr;
+    (void)success;
+}
+static inline void hz3_s292_on_front_flush_node(const Hz3LargeHdr* hdr) {
+    (void)hdr;
+}
+static inline void hz3_s292_on_inbox_push_attempt(const Hz3LargeHdr* hdr) {
+    (void)hdr;
+}
+static inline void hz3_s292_on_inbox_push_result(const Hz3LargeHdr* hdr,
+                                                 int ok,
+                                                 int reject_owner,
+                                                 int reject_budget,
+                                                 int reject_invalid) {
+    (void)hdr;
+    (void)ok;
+    (void)reject_owner;
+    (void)reject_budget;
+    (void)reject_invalid;
+}
+static inline void hz3_s292_on_inbox_pop(const Hz3LargeHdr* hdr, int from_flush) {
+    (void)hdr;
+    (void)from_flush;
+}
+static inline void hz3_s292_on_inbox_flush_seen(const Hz3LargeHdr* hdr) {
+    (void)hdr;
+}
+static inline void hz3_s292_on_global_fallback(const Hz3LargeHdr* hdr) {
+    (void)hdr;
+}
+static inline void hz3_s292_on_global_store(const Hz3LargeHdr* hdr) {
+    (void)hdr;
+}
+static inline void hz3_s292_on_global_munmap(const Hz3LargeHdr* hdr) {
+    (void)hdr;
+}
+#endif
 
 static void hz3_large_s240_dump_final(void) {
     fprintf(stderr,
@@ -650,6 +915,51 @@ static void hz3_large_s240_dump_final(void) {
             atomic_load_explicit(&g_s276_inbox_push_reject_clear, memory_order_relaxed),
             atomic_load_explicit(&g_s276_inbox_activate_fast, memory_order_relaxed),
             atomic_load_explicit(&g_s276_direct_clear, memory_order_relaxed));
+#endif
+#if HZ3_S292_HIGHBAND_RETENTION_OBS
+    fprintf(stderr,
+            "[HZ3_S292_HIGHBAND_ROUTE] alloc_highband=%zu alloc_65537=%zu "
+            "alloc_lte128k=%zu alloc_gt256k=%zu free_highband=%zu "
+            "free_65537=%zu global_fallback=%zu global_cache_store=%zu "
+            "global_munmap=%zu\n",
+            atomic_load_explicit(&g_s292_alloc_highband, memory_order_relaxed),
+            atomic_load_explicit(&g_s292_alloc_65537, memory_order_relaxed),
+            atomic_load_explicit(&g_s292_alloc_lte128k, memory_order_relaxed),
+            atomic_load_explicit(&g_s292_alloc_gt256k, memory_order_relaxed),
+            atomic_load_explicit(&g_s292_free_highband, memory_order_relaxed),
+            atomic_load_explicit(&g_s292_free_65537, memory_order_relaxed),
+            atomic_load_explicit(&g_s292_global_fallback, memory_order_relaxed),
+            atomic_load_explicit(&g_s292_global_cache_store, memory_order_relaxed),
+            atomic_load_explicit(&g_s292_global_munmap, memory_order_relaxed));
+    fprintf(stderr,
+            "[HZ3_S292_HIGHBAND_FRONT] pop_calls=%zu pop_hit=%zu "
+            "pop_miss=%zu push=%zu reject=%zu nodes_current=%zu "
+            "nodes_peak=%zu bytes_current=%zu bytes_peak=%zu\n",
+            atomic_load_explicit(&g_s292_front_pop_calls, memory_order_relaxed),
+            atomic_load_explicit(&g_s292_front_pop_hit, memory_order_relaxed),
+            atomic_load_explicit(&g_s292_front_pop_miss, memory_order_relaxed),
+            atomic_load_explicit(&g_s292_front_push, memory_order_relaxed),
+            atomic_load_explicit(&g_s292_front_reject, memory_order_relaxed),
+            atomic_load_explicit(&g_s292_front_nodes_current, memory_order_relaxed),
+            atomic_load_explicit(&g_s292_front_nodes_peak, memory_order_relaxed),
+            atomic_load_explicit(&g_s292_front_bytes_current, memory_order_relaxed),
+            atomic_load_explicit(&g_s292_front_bytes_peak, memory_order_relaxed));
+    fprintf(stderr,
+            "[HZ3_S292_HIGHBAND_INBOX] push_attempt=%zu push_ok=%zu "
+            "reject_invalid=%zu reject_owner=%zu reject_budget=%zu pop=%zu "
+            "flush=%zu nodes_current=%zu nodes_peak=%zu bytes_current=%zu "
+            "bytes_peak=%zu\n",
+            atomic_load_explicit(&g_s292_inbox_push_attempt, memory_order_relaxed),
+            atomic_load_explicit(&g_s292_inbox_push_ok, memory_order_relaxed),
+            atomic_load_explicit(&g_s292_inbox_reject_invalid, memory_order_relaxed),
+            atomic_load_explicit(&g_s292_inbox_reject_owner, memory_order_relaxed),
+            atomic_load_explicit(&g_s292_inbox_reject_budget, memory_order_relaxed),
+            atomic_load_explicit(&g_s292_inbox_pop, memory_order_relaxed),
+            atomic_load_explicit(&g_s292_inbox_flush, memory_order_relaxed),
+            atomic_load_explicit(&g_s292_inbox_nodes_current, memory_order_relaxed),
+            atomic_load_explicit(&g_s292_inbox_nodes_peak, memory_order_relaxed),
+            atomic_load_explicit(&g_s292_inbox_bytes_current, memory_order_relaxed),
+            atomic_load_explicit(&g_s292_inbox_bytes_peak, memory_order_relaxed));
 #endif
 #if HZ3_S285_LARGE_FIXED_COST_OBS
     fprintf(stderr,
@@ -1828,6 +2138,7 @@ static inline void hz3_large_s240_front_note_sub(size_t bytes) {
 static inline Hz3LargeHdr* hz3_large_s240_front_pop(int sc, size_t need, size_t req_size) {
     hz3_large_s240_register_once();
     if (!hz3_large_s240_front_eligible_for_req(sc, need, req_size)) {
+        hz3_s292_on_front_pop(req_size, 0, 0);
         return NULL;
     }
     Hz3LargeHdr* hdr = t_hz3_large_front.head[sc];
@@ -1835,6 +2146,7 @@ static inline Hz3LargeHdr* hz3_large_s240_front_pop(int sc, size_t need, size_t 
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
         hz3_large_s240_inc(&g_s240_front_pop_miss);
 #endif
+        hz3_s292_on_front_pop(req_size, 0, 0);
         return NULL;
     }
     t_hz3_large_front.head[sc] = hdr->next_free;
@@ -1859,12 +2171,14 @@ static inline Hz3LargeHdr* hz3_large_s240_front_pop(int sc, size_t need, size_t 
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
     hz3_large_s240_inc(&g_s240_front_pop_hit);
 #endif
+    hz3_s292_on_front_pop(req_size, 1, hdr->map_size);
     return hdr;
 }
 
 static inline int hz3_large_s240_front_push(int sc, Hz3LargeHdr* hdr) {
     hz3_large_s240_register_once();
     if (!hz3_large_s240_front_eligible_for_req(sc, hdr->map_size, hdr->req_size)) {
+        hz3_s292_on_front_push_result(hdr, 0);
         return 0;
     }
     if (t_hz3_large_front.count[sc] >= (uint16_t)HZ3_S240_LARGE_FRONT_MAX_NODES_PER_SC ||
@@ -1872,6 +2186,7 @@ static inline int hz3_large_s240_front_push(int sc, Hz3LargeHdr* hdr) {
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
         hz3_large_s240_inc(&g_s240_front_reject_limit);
 #endif
+        hz3_s292_on_front_push_result(hdr, 0);
         return 0;
     }
     hdr->next = NULL;
@@ -1890,6 +2205,7 @@ static inline int hz3_large_s240_front_push(int sc, Hz3LargeHdr* hdr) {
 #if HZ3_S240_LARGE_OWNER_FRONT_STATS
     hz3_large_s240_inc(&g_s240_front_push);
 #endif
+    hz3_s292_on_front_push_result(hdr, 1);
     return 1;
 }
 
@@ -2050,12 +2366,15 @@ static inline int hz3_large_s240_owner_accepts_remote(uint8_t owner, uint8_t cur
 static inline int hz3_large_s240_inbox_push_remote(int sc, Hz3LargeHdr* hdr, uint8_t cur) {
     hz3_large_s240_register_once();
     hz3_s282_owner_inbox_on_push_attempt();
+    hz3_s292_on_inbox_push_attempt(hdr);
     if (!hdr || !hz3_large_s240_inbox_eligible(sc, hdr->map_size, hdr->req_size)) {
         hz3_s282_owner_inbox_on_push_reject_invalid();
+        hz3_s292_on_inbox_push_result(hdr, 0, 0, 0, 1);
         return 0;
     }
     uint8_t owner = hdr->owner_shard;
     if (!hz3_large_s240_owner_accepts_remote(owner, cur)) {
+        hz3_s292_on_inbox_push_result(hdr, 0, 1, 0, 0);
         return 0;
     }
 
@@ -2069,6 +2388,7 @@ static inline int hz3_large_s240_inbox_push_remote(int sc, Hz3LargeHdr* hdr, uin
     if (!hz3_large_s240_owner_accepts_remote(owner, cur)) {
         atomic_fetch_sub_explicit(&g_s240_large_inbox_pushers[owner], 1,
                                   memory_order_acq_rel);
+        hz3_s292_on_inbox_push_result(hdr, 0, 1, 0, 0);
         return 0;
     }
 
@@ -2085,6 +2405,7 @@ static inline int hz3_large_s240_inbox_push_remote(int sc, Hz3LargeHdr* hdr, uin
         hz3_s282_owner_inbox_on_push_reject_budget();
         atomic_fetch_sub_explicit(&g_s240_large_inbox_pushers[owner], 1,
                                   memory_order_acq_rel);
+        hz3_s292_on_inbox_push_result(hdr, 0, 0, 1, 0);
         return 0;
     }
 
@@ -2126,6 +2447,7 @@ static inline int hz3_large_s240_inbox_push_remote(int sc, Hz3LargeHdr* hdr, uin
     hz3_large_s240_inc(&g_s240_inbox_remote_push);
 #endif
     hz3_s282_owner_inbox_on_push_ok(s282_push_cas_failures);
+    hz3_s292_on_inbox_push_result(hdr, 1, 0, 0, 0);
     atomic_fetch_sub_explicit(&g_s240_large_inbox_pushers[owner], 1,
                               memory_order_acq_rel);
     return 1;
@@ -2154,6 +2476,7 @@ static inline Hz3LargeHdr* hz3_large_s240_inbox_pop_one(uint8_t owner, int sc) {
                                              head->map_size,
                                              "inbox-pop-one");
             hz3_large_s240_inbox_note_sub(head->map_size);
+            hz3_s292_on_inbox_pop(head, 0);
 #if HZ3_S251_LARGE_OWNER_FRONT_SAFETY
             hz3_large_s251_transition(head,
                                       HZ3_LARGE_STATE_REMOTE,
@@ -2216,6 +2539,7 @@ static inline Hz3LargeHdr* hz3_large_s245_inbox_pop_batch(uint8_t owner,
                                              "inbox-pop-batch");
             for (Hz3LargeHdr* cur = head; cur; cur = cur->next_free) {
                 hz3_large_s240_inbox_note_sub(cur->map_size);
+                hz3_s292_on_inbox_pop(cur, 0);
 #if HZ3_S251_LARGE_OWNER_FRONT_SAFETY
                 hz3_large_s251_transition(cur,
                                           HZ3_LARGE_STATE_REMOTE,
@@ -2546,6 +2870,7 @@ static inline void hz3_large_s240_inbox_flush_owner(uint8_t owner) {
             if (!hdr) {
                 break;
             }
+            hz3_s292_on_inbox_flush_seen(hdr);
             size_t bytes = hz3_large_s240_flush_dispose_node(
                 hdr,
                 sc,
@@ -2597,6 +2922,7 @@ void hz3_large_s240_tls_flush(void) {
         t_hz3_large_front.count[sc] = 0;
         while (hdr) {
             Hz3LargeHdr* next = hdr->next_free;
+            hz3_s292_on_front_flush_node(hdr);
             size_t bytes = hz3_large_s240_flush_dispose_node(
                 hdr,
                 sc,

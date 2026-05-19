@@ -1259,6 +1259,7 @@ void* hz3_large_alloc(size_t size) {
     if (size == 0) {
         size = 1;
     }
+    hz3_s292_on_alloc_req(size);
     hz3_large_aligned_obs_on_normal_alloc(size);
 
     size_t offset = hz3_large_user_offset();
@@ -1591,6 +1592,7 @@ void* hz3_large_aligned_alloc(size_t alignment, size_t size) {
     if (size == 0) {
         size = 1;
     }
+    hz3_s292_on_alloc_req(size);
     hz3_large_aligned_obs_on_aligned_alloc(size, alignment);
 
     size_t offset = hz3_large_user_offset();
@@ -2014,6 +2016,7 @@ int hz3_large_free(void* ptr) {
         return 0;
     }
     hz3_large_aligned_obs_on_free(hdr);
+    hz3_s292_on_free_hdr(hdr);
     hz3_large_cache_stats_dump();
     hz3_large_stats_on_free_call();
     size_t obs_free_admit_start_ns = hz3_large_aligned_obs_timing_start();
@@ -2161,6 +2164,7 @@ int hz3_large_free(void* ptr) {
         hz3_s280_free_route_on_global_fallback(s280_had_fast_route,
                                                s280_front_reject,
                                                s280_inbox_reject);
+        hz3_s292_on_global_fallback(hdr);
         s243_free_fallback_start_ns = hz3_s243_residual_timing_start();
         s243_free_fallback_active = 1;
     }
@@ -2314,6 +2318,7 @@ int hz3_large_free(void* ptr) {
                     hz3_s276_direct_clear_retained(hdr);
 #endif
                     hz3_large_s240_on_cache_store(hdr, sc);
+                    hz3_s292_on_global_store(hdr);
                     hz3_large_sc_push_head(sc, hdr);
 #if HZ3_S270_LARGE_SCACHE_IDLE_TRIM
                     s270_victim_count =
@@ -2502,6 +2507,7 @@ s53_done:
             hz3_s276_direct_clear_retained(hdr);
 #endif
             hz3_large_s240_on_cache_store(hdr, sc);
+            hz3_s292_on_global_store(hdr);
             hz3_large_sc_push_head(sc, hdr);
 #if HZ3_S270_LARGE_SCACHE_IDLE_TRIM
             s270_victim_count =
@@ -2540,6 +2546,7 @@ s53_done:
         hz3_s276_direct_clear_retained(hdr);
 #endif
         hz3_large_s240_on_cache_store(hdr, hz3_large_sc(hdr->map_size));
+        hz3_s292_on_global_store(hdr);
         hdr->next_free = g_hz3_large_free_head;
         g_hz3_large_free_head = hdr;
         g_hz3_large_cached_bytes += hdr->map_size;
@@ -2571,6 +2578,7 @@ do_munmap:
     hz3_s276_direct_clear_retained(hdr);
 #endif
     hz3_large_s240_on_munmap_store(hdr);
+    hz3_s292_on_global_munmap(hdr);
     hdr->magic = 0;
 #if HZ3_LARGE_CACHE_ENABLE && HZ3_S50_LARGE_SCACHE && HZ3_S212_LARGE_UNMAP_DEFER_PLUS
     if (hz3_large_try_defer_direct_unmap(hdr)) {

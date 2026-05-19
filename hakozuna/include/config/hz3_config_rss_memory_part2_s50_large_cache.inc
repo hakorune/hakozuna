@@ -148,6 +148,21 @@
 #error "HZ3_S291_HIGHBAND_MIN_CLASS_BYTES must be smaller than MAX"
 #endif
 
+// S292: high-band S291 RSS/route observation.
+// Diagnostic-only. Keeps S291 behavior unchanged and records where the
+// 128KiB<size<=256KiB retained objects accumulate before designing a cap.
+#ifndef HZ3_S292_HIGHBAND_RETENTION_OBS
+#define HZ3_S292_HIGHBAND_RETENTION_OBS 0
+#endif
+
+#if HZ3_S292_HIGHBAND_RETENTION_OBS && !HZ3_S291_HIGHBAND_OWNER_WINDOW
+#error "HZ3_S292_HIGHBAND_RETENTION_OBS requires S291 high-band owner window"
+#endif
+
+#if HZ3_S292_HIGHBAND_RETENTION_OBS && !HZ3_S240_LARGE_OWNER_FRONT_STATS
+#error "HZ3_S292_HIGHBAND_RETENTION_OBS requires S240 owner-front stats"
+#endif
+
 // S245: bounded batch pop for owner large inbox drain.
 // This keeps the same drain limit and caps as S240, but detaches up to N inbox
 // nodes with one CAS instead of one CAS per object.
