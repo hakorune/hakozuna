@@ -774,3 +774,52 @@ Interpretation:
 - Keep P14b. Do not add production lookup locks, epochs, or hazards yet.
 - P14c locked runtime release should wait for a workload that shows larger
   retained retired bytes or a clear RSS target.
+
+P14 pressure profile:
+
+```text
+results/synthetic-sweep/20260520_073829_128
+results/synthetic-sweep/20260520_074105_378
+```
+
+The BenchLab profile `hz5-p14-segment-pressure` creates stronger empty segment
+pressure with existing workload kinds.
+
+P14b results:
+
+```text
+p14-rss-64k-a8192-burst512:
+  retired_segments=17
+  retired_bytes=35.65MiB
+  p14_empty_transition_bytes=192.94MiB
+  remote_buffer_pending=0
+  tcache_refs=0
+
+p14-phase-64k-a8192-release:
+  retired_segments=46
+  retired_bytes=96.47MiB
+  p14_empty_transition_bytes=503.32MiB
+  remote_buffer_pending=0
+  tcache_refs=0
+
+p14-mixed-a8192-8k64k:
+  retired_segments=44
+  retired_bytes=92.27MiB
+  p14_empty_transition_bytes=96.47MiB
+  remote_buffer_pending=0
+  tcache_refs=0
+```
+
+P14 predicate hardening:
+
+- Added segment `tcache_refs`.
+- Added segment `remote_buffer_pending_hint`.
+- P14 retire rejects non-zero cache/buffer refs.
+- Snapshots now report both fields.
+
+Decision:
+
+- P14c is justified as a diagnostic RSS-proof experiment for pressure workloads.
+- P14c is still not production runtime release.
+- A correct locked release lane must protect the whole classify/use/free scope,
+  not just return a raw `Hz5Seg*` from a locked table lookup.

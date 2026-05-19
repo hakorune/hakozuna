@@ -156,6 +156,8 @@ static void hz5_stats_print_segment_snapshot(const char* label) {
     uint64_t remote_pending = 0;
     uint64_t empty_segments = 0;
     uint64_t retired_segments = 0;
+    uint64_t tcache_refs = 0;
+    uint64_t remote_buffer_pending = 0;
 
     for (uint32_t seg_idx = 0; seg_idx < segments; ++seg_idx) {
         Hz5Seg* seg = hz5_p1_segment_at(seg_idx);
@@ -165,6 +167,10 @@ static void hz5_stats_print_segment_snapshot(const char* label) {
         if ((seg->flags & HZ5_SEG_FLAG_RETIRED) != 0) {
             ++retired_segments;
         }
+        tcache_refs += atomic_load_explicit(&seg->tcache_refs, memory_order_relaxed);
+        remote_buffer_pending +=
+            atomic_load_explicit(&seg->remote_buffer_pending_hint,
+                                 memory_order_relaxed);
         live_pages += seg->live_pages;
         free_pages += hz5_stats_count_free_pages(seg);
         if (seg->live_pages == 0) {
@@ -196,6 +202,7 @@ static void hz5_stats_print_segment_snapshot(const char* label) {
             "[HZ5_P13_SEGMENTS.%s] segments=%u empty_segments=%llu "
             "retired_segments=%llu live_pages=%llu free_pages=%llu run_starts=%llu "
             "run1=%llu run2=%llu run16=%llu remote_pending=%llu "
+            "remote_buffer_pending=%llu tcache_refs=%llu "
             "reserved_bytes=%llu retired_bytes=%llu live_bytes=%llu free_bytes=%llu\n",
             label,
             segments,
@@ -208,6 +215,8 @@ static void hz5_stats_print_segment_snapshot(const char* label) {
             (unsigned long long)run2,
             (unsigned long long)run16,
             (unsigned long long)remote_pending,
+            (unsigned long long)remote_buffer_pending,
+            (unsigned long long)tcache_refs,
             (unsigned long long)reserved_bytes,
             (unsigned long long)retired_bytes,
             (unsigned long long)live_bytes,

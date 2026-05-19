@@ -126,6 +126,11 @@ static int hz5_p1_segment_is_empty_for_release(Hz5Seg* seg) {
     if (!seg || seg->magic != HZ5_SEG_MAGIC || seg->live_pages != 0) {
         return 0;
     }
+    if (atomic_load_explicit(&seg->tcache_refs, memory_order_relaxed) != 0 ||
+        atomic_load_explicit(&seg->remote_buffer_pending_hint,
+                             memory_order_relaxed) != 0) {
+        return 0;
+    }
     for (uint32_t page = HZ5_FIRST_DATA_PAGE; page < HZ5_SEG_PAGES; ++page) {
         Hz5PageMeta* meta = &seg->page[page];
         if (meta->kind != HZ5_PAGE_FREE) {
@@ -229,6 +234,15 @@ uint32_t hz5_p1_segment_retire_empty_quarantine(void) {
         }
         if (!seg || seg->magic != HZ5_SEG_MAGIC || seg->live_pages != 0) {
             hz5_stats_inc(HZ5_STAT_P14_RETIRE_REJECT_LIVE);
+            continue;
+        }
+        if (atomic_load_explicit(&seg->tcache_refs, memory_order_relaxed) != 0) {
+            hz5_stats_inc(HZ5_STAT_P14_RETIRE_REJECT_STATE);
+            continue;
+        }
+        if (atomic_load_explicit(&seg->remote_buffer_pending_hint,
+                                 memory_order_relaxed) != 0) {
+            hz5_stats_inc(HZ5_STAT_P14_RETIRE_REJECT_REMOTE);
             continue;
         }
         if (hz5_p1_segment_has_remote_pending(seg)) {
