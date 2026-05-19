@@ -1336,7 +1336,7 @@ void* hz3_large_alloc(size_t size) {
 #if HZ3_S240_LARGE_OWNER_INBOX
 #if HZ3_S246_LARGE_INBOX_TAKE_FIRST
         hdr = hz3_large_s246_inbox_drain_current_take_first_to_front(
-            sc, (int)HZ3_S240_LARGE_INBOX_DRAIN_BATCH, NULL);
+            sc, (int)HZ3_S240_LARGE_INBOX_DRAIN_BATCH, size, NULL);
         if (hdr) {
             hz3_large_stats_on_alloc_cache_hit();
 #if HZ3_LARGE_CANARY_ENABLE
@@ -1687,7 +1687,7 @@ void* hz3_large_aligned_alloc(size_t alignment, size_t size) {
 #if HZ3_S246_LARGE_INBOX_TAKE_FIRST
         int s243_drained = 0;
         hdr = hz3_large_s246_inbox_drain_current_take_first_to_front(
-            sc, (int)HZ3_S240_LARGE_INBOX_DRAIN_BATCH, &s243_drained);
+            sc, (int)HZ3_S240_LARGE_INBOX_DRAIN_BATCH, size, &s243_drained);
         hz3_s243_residual_on_alloc_inbox_drain_elapsed(
             s243_drain_start_ns, s243_drained);
         size_t s243_front_after_drain_start_ns = hz3_s243_residual_timing_start();

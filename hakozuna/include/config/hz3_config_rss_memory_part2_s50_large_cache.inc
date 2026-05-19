@@ -162,6 +162,47 @@
 #error "HZ3_S273_LARGE_INBOX_TAKE_FIRST_BATCH uses the S245 batch helper; keep HZ3_S245_LARGE_INBOX_BATCH_POP disabled"
 #endif
 
+// S274: size-specific RSS drain/refill probe.
+// Keep S246 take-first as the default shape, but use the S245/S273 batch detach
+// only for a bounded request-size band. This is off by default and is intended
+// for RSS-shape research lanes, not speed-default.
+#ifndef HZ3_S274_LARGE_INBOX_SIZE_DRAIN
+#define HZ3_S274_LARGE_INBOX_SIZE_DRAIN 0
+#endif
+
+#ifndef HZ3_S274_LARGE_INBOX_DRAIN_BATCH
+#define HZ3_S274_LARGE_INBOX_DRAIN_BATCH 4
+#endif
+
+#ifndef HZ3_S274_LARGE_INBOX_MIN_REQUEST_BYTES
+#define HZ3_S274_LARGE_INBOX_MIN_REQUEST_BYTES 8192
+#endif
+
+#ifndef HZ3_S274_LARGE_INBOX_MAX_REQUEST_BYTES
+#define HZ3_S274_LARGE_INBOX_MAX_REQUEST_BYTES 8192
+#endif
+
+#if HZ3_S274_LARGE_INBOX_SIZE_DRAIN && !HZ3_S246_LARGE_INBOX_TAKE_FIRST
+#error "HZ3_S274_LARGE_INBOX_SIZE_DRAIN requires HZ3_S246_LARGE_INBOX_TAKE_FIRST"
+#endif
+
+#if HZ3_S274_LARGE_INBOX_SIZE_DRAIN && HZ3_S245_LARGE_INBOX_BATCH_POP
+#error "HZ3_S274_LARGE_INBOX_SIZE_DRAIN uses the S245 batch helper; keep HZ3_S245_LARGE_INBOX_BATCH_POP disabled"
+#endif
+
+#if HZ3_S274_LARGE_INBOX_SIZE_DRAIN && HZ3_S273_LARGE_INBOX_TAKE_FIRST_BATCH
+#error "HZ3_S274_LARGE_INBOX_SIZE_DRAIN and HZ3_S273_LARGE_INBOX_TAKE_FIRST_BATCH are separate probes"
+#endif
+
+#if HZ3_S274_LARGE_INBOX_SIZE_DRAIN && HZ3_S274_LARGE_INBOX_DRAIN_BATCH < 1
+#error "HZ3_S274_LARGE_INBOX_DRAIN_BATCH must be >= 1"
+#endif
+
+#if HZ3_S274_LARGE_INBOX_SIZE_DRAIN && \
+    HZ3_S274_LARGE_INBOX_MIN_REQUEST_BYTES > HZ3_S274_LARGE_INBOX_MAX_REQUEST_BYTES
+#error "HZ3_S274_LARGE_INBOX_MIN_REQUEST_BYTES must be <= HZ3_S274_LARGE_INBOX_MAX_REQUEST_BYTES"
+#endif
+
 // S242: shifted-pointer-safe large direct side-map prototype.
 // Shadow mode keeps the existing active hash map authoritative.  The side-map
 // is populated and checked only to measure hit rate and mismatch risk before

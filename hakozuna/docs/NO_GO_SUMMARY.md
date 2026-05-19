@@ -105,6 +105,16 @@ Hakozuna allocator repo has the same promotion/no-go memory as BenchLab.
       `results/synthetic-sweep/20260519_043251_788`
     - S273 drain4 repeat-3:
       `results/synthetic-sweep/20260519_043441_329`
+- S274 request-size-specific owner-inbox batch drain/refill:
+  - Status: diagnostic/NO-GO, not default.
+  - Reason: S274 keeps S246/S276 take-first behavior for non-target requests
+    and applies the S245/S273 batch detach helper only to `8192` byte requests
+    with batch size 4. The focused repeat-3 did not keep the intended RSS win:
+    `8K a8192` throughput improved slightly, but steady RSS worsened, while
+    `4K/64K a8192` throughput regressed.
+  - Evidence:
+    - S274 repeat-3:
+      `results/synthetic-sweep/20260519_155208_495`
 - Post-S273 large aligned speed direction:
   - Keep S246 take-first as the speed baseline.
   - Keep S273 as an RSS-shape reference lane because the `~8 MiB` steady RSS
