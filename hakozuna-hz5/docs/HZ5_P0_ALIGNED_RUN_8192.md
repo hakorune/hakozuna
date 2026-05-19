@@ -648,3 +648,25 @@ Decision:
 - The run16 hint is a keep because it reduces 64K page scan work sharply.
 - Empty segment release should be the next RSS hardening step, but only after a
   safe segment-table retire design.
+
+P13 64K-only follow-up:
+
+```text
+results/synthetic-sweep/20260520_070231_091
+results/synthetic-sweep/20260520_070528_872
+results/synthetic-sweep/20260520_070554_083
+```
+
+- A dedicated `hz5-64k-a8192` workload profile isolates the exact P12 target.
+- Isolated repeat-10 keeps P12 cap1 ahead on 64K/a8192:
+  - HZ3 speed-default: `2.38M`
+  - HZ5-P11/P9 fallback: `2.73M`
+  - HZ5-P12 cap1: `3.42M`
+  - HZ4: `2.52M`
+- The earlier broad-sweep `1.91M` P12 result is treated as volatility/watch, not
+  proof that the run16 path is broken.
+- P13 diagnostic counters still show `remote_pending=0` and final
+  `live_pages=0`.
+- `hz5_remote_release_owner()` and `hz5_remote_release_all_pending()` now capture
+  `run_pages` before freeing the run so pages16 destructor/final-release counters
+  are bucketed correctly.

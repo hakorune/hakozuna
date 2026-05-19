@@ -158,9 +158,10 @@ size_t hz5_remote_release_owner(Hz5OwnerToken owner) {
 
             while (list) {
                 void* next = *(void**)list;
-                hz5_stats_inc_pages(HZ5_STAT_OWNER_DESTRUCTOR_DRAIN, meta->run_pages);
+                uint32_t pages = meta->run_pages;
+                hz5_stats_inc_pages(HZ5_STAT_OWNER_DESTRUCTOR_DRAIN, pages);
                 hz5_p1_segment_free_run(seg, page);
-                hz5_stats_inc_pages(HZ5_STAT_OWNER_DESTRUCTOR_RELEASE, meta->run_pages);
+                hz5_stats_inc_pages(HZ5_STAT_OWNER_DESTRUCTOR_RELEASE, pages);
                 list = next;
                 ++released;
             }
@@ -193,8 +194,9 @@ size_t hz5_remote_release_all_pending(void) {
 
             while (list) {
                 void* next = *(void**)list;
+                uint32_t pages = meta->run_pages;
                 hz5_p1_segment_free_run(seg, page);
-                hz5_stats_inc_pages(HZ5_STAT_FINAL_PENDING_RELEASE, meta->run_pages);
+                hz5_stats_inc_pages(HZ5_STAT_FINAL_PENDING_RELEASE, pages);
                 list = next;
                 ++released;
             }
