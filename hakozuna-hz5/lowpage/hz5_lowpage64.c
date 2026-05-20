@@ -60,6 +60,47 @@
 #endif
 #endif
 
+#ifndef HZ5_LOWPAGE64_P37_HOT_CAP
+#ifdef BENCHLAB_HZ5_P37_HOT_CAP
+#define HZ5_LOWPAGE64_P37_HOT_CAP BENCHLAB_HZ5_P37_HOT_CAP
+#else
+#define HZ5_LOWPAGE64_P37_HOT_CAP 128u
+#endif
+#endif
+
+#ifndef HZ5_LOWPAGE64_P37_OVERFLOW_CAP
+#ifdef BENCHLAB_HZ5_P37_OVERFLOW_CAP
+#define HZ5_LOWPAGE64_P37_OVERFLOW_CAP BENCHLAB_HZ5_P37_OVERFLOW_CAP
+#else
+#define HZ5_LOWPAGE64_P37_OVERFLOW_CAP 0u
+#endif
+#endif
+
+#ifndef HZ5_LOWPAGE64_P37_OVERFLOW_LIFETIME
+#ifdef BENCHLAB_HZ5_P37_OVERFLOW_LIFETIME
+#define HZ5_LOWPAGE64_P37_OVERFLOW_LIFETIME \
+  BENCHLAB_HZ5_P37_OVERFLOW_LIFETIME
+#else
+#define HZ5_LOWPAGE64_P37_OVERFLOW_LIFETIME 1u
+#endif
+#endif
+
+#ifndef HZ5_LOWPAGE64_P37_HIGH_STREAK
+#ifdef BENCHLAB_HZ5_P37_HIGH_STREAK
+#define HZ5_LOWPAGE64_P37_HIGH_STREAK BENCHLAB_HZ5_P37_HIGH_STREAK
+#else
+#define HZ5_LOWPAGE64_P37_HIGH_STREAK 0u
+#endif
+#endif
+
+#ifndef HZ5_LOWPAGE64_P37_HIGH_WATER
+#ifdef BENCHLAB_HZ5_P37_HIGH_WATER
+#define HZ5_LOWPAGE64_P37_HIGH_WATER BENCHLAB_HZ5_P37_HIGH_WATER
+#else
+#define HZ5_LOWPAGE64_P37_HIGH_WATER HZ5_LOWPAGE64_P37_OVERFLOW_CAP
+#endif
+#endif
+
 #ifndef HZ5_LOWPAGE64_SPAN_CACHE
 #ifdef BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192
 #define HZ5_LOWPAGE64_SPAN_CACHE BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192
@@ -135,6 +176,13 @@ static _Atomic size_t g_hz5_lowpage64_stash_nodes_le64;
 static _Atomic size_t g_hz5_lowpage64_stash_nodes_le128;
 static _Atomic size_t g_hz5_lowpage64_stash_nodes_le192;
 static _Atomic size_t g_hz5_lowpage64_stash_nodes_gt192;
+static _Atomic size_t g_hz5_lowpage64_p37_overflow_hits;
+static _Atomic size_t g_hz5_lowpage64_p37_overflow_set_nodes_total;
+static _Atomic size_t g_hz5_lowpage64_p37_overflow_set_nodes_max;
+static _Atomic size_t g_hz5_lowpage64_p37_overflow_release_calls;
+static _Atomic size_t g_hz5_lowpage64_p37_overflow_release_nodes;
+static _Atomic size_t g_hz5_lowpage64_p37_high_event_releases;
+static _Atomic size_t g_hz5_lowpage64_p37_lifetime_releases;
 #endif
 
 #if HZ5_LOWPAGE64_SPAN_CACHE
@@ -143,6 +191,13 @@ __declspec(thread) static size_t g_hz5_lowpage64_span_count;
 #endif
 __declspec(thread) static void* g_hz5_lowpage64_stash_head;
 __declspec(thread) static size_t g_hz5_lowpage64_stash_count;
+#if HZ5_LOWPAGE64_P37_OVERFLOW_CAP > 0
+__declspec(thread) static void* g_hz5_lowpage64_overflow_head;
+__declspec(thread) static size_t g_hz5_lowpage64_overflow_count;
+__declspec(thread) static uint32_t g_hz5_lowpage64_epoch;
+__declspec(thread) static uint32_t g_hz5_lowpage64_overflow_epoch;
+__declspec(thread) static uint8_t g_hz5_lowpage64_high_event_streak;
+#endif
 __declspec(thread) static void* g_hz5_lowpage64_relbuf_head;
 __declspec(thread) static void* g_hz5_lowpage64_relbuf_tail;
 __declspec(thread) static size_t g_hz5_lowpage64_relbuf_count;
@@ -155,6 +210,7 @@ static void* hz5_lowpage64_link_next_load(void* raw) {
   return *(void**)raw;
 }
 
+#if HZ5_LOWPAGE64_P37_OVERFLOW_CAP == 0
 static size_t hz5_lowpage64_list_count(void* head) {
   size_t count = 0;
   while (head) {
@@ -163,6 +219,7 @@ static size_t hz5_lowpage64_list_count(void* head) {
   }
   return count;
 }
+#endif
 
 size_t hz5_lowpage64_round_raw_bytes(size_t size,
                                      size_t alignment,
@@ -214,6 +271,76 @@ static size_t hz5_lowpage64_free_list(void* head) {
   return freed;
 }
 
+static void hz5_lowpage64_count_trim(size_t freed) {
+  if (freed > 0) {
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_trim_calls, 1);
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_trim_freed_nodes, freed);
+  }
+}
+
+#if HZ5_LOWPAGE64_P37_OVERFLOW_CAP > 0
+static void hz5_lowpage64_p37_release_overflow(int high_event) {
+  void* head = g_hz5_lowpage64_overflow_head;
+  size_t count = g_hz5_lowpage64_overflow_count;
+  g_hz5_lowpage64_overflow_head = NULL;
+  g_hz5_lowpage64_overflow_count = 0;
+  g_hz5_lowpage64_high_event_streak = 0;
+  if (!head) {
+    return;
+  }
+
+  size_t freed = hz5_lowpage64_free_list(head);
+  HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p37_overflow_release_calls, 1);
+  HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p37_overflow_release_nodes,
+                          freed);
+  HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_trim_calls, 1);
+  HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_trim_freed_nodes, freed);
+  if (high_event) {
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p37_high_event_releases, 1);
+  } else {
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p37_lifetime_releases, 1);
+  }
+  (void)freed;
+  (void)count;
+}
+
+static void hz5_lowpage64_p37_checkpoint(void) {
+  g_hz5_lowpage64_epoch++;
+  if (g_hz5_lowpage64_overflow_count == 0) {
+    g_hz5_lowpage64_high_event_streak = 0;
+    return;
+  }
+
+#if HZ5_LOWPAGE64_P37_OVERFLOW_LIFETIME > 0
+  if (g_hz5_lowpage64_epoch >
+      g_hz5_lowpage64_overflow_epoch +
+          (uint32_t)HZ5_LOWPAGE64_P37_OVERFLOW_LIFETIME) {
+    hz5_lowpage64_p37_release_overflow(0);
+    return;
+  }
+#endif
+
+#if HZ5_LOWPAGE64_P37_HIGH_STREAK > 0
+  if (g_hz5_lowpage64_stash_count >= HZ5_LOWPAGE64_P37_HOT_CAP &&
+      g_hz5_lowpage64_overflow_count >= HZ5_LOWPAGE64_P37_HIGH_WATER) {
+    if (g_hz5_lowpage64_high_event_streak < UINT8_MAX) {
+      g_hz5_lowpage64_high_event_streak++;
+    }
+    if (g_hz5_lowpage64_high_event_streak >=
+        HZ5_LOWPAGE64_P37_HIGH_STREAK) {
+      hz5_lowpage64_p37_release_overflow(1);
+      return;
+    }
+  } else {
+    g_hz5_lowpage64_high_event_streak = 0;
+  }
+#endif
+}
+#else
+#define hz5_lowpage64_p37_checkpoint() ((void)0)
+#endif
+
+#if HZ5_LOWPAGE64_P37_OVERFLOW_CAP == 0
 static size_t hz5_lowpage64_stash_cap_for_batch(size_t acquired_count) {
 #if HZ5_LOWPAGE64_STASH_CAP > 0
   (void)acquired_count;
@@ -229,6 +356,7 @@ static size_t hz5_lowpage64_stash_cap_for_batch(size_t acquired_count) {
   return 0;
 #endif
 }
+#endif
 
 #if HZ5_LOWPAGE64_STATS
 static void hz5_lowpage64_count_acquired_bucket(size_t count) {
@@ -261,6 +389,55 @@ static void hz5_lowpage64_count_stash_bucket(size_t count) {
 
 static void hz5_lowpage64_set_stash_from_list(void* head,
                                               size_t acquired_count) {
+#if HZ5_LOWPAGE64_P37_OVERFLOW_CAP > 0
+  (void)acquired_count;
+  HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_stash_set_calls, 1);
+
+  void* hot_head = head;
+  void* hot_tail = NULL;
+  size_t hot_kept = 0;
+  void* node = head;
+  while (node && hot_kept < HZ5_LOWPAGE64_P37_HOT_CAP) {
+    hot_tail = node;
+    node = hz5_lowpage64_link_next_load(node);
+    hot_kept++;
+  }
+  if (hot_tail) {
+    hz5_lowpage64_link_next(hot_tail, NULL);
+  }
+
+  void* overflow_head = node;
+  void* overflow_tail = NULL;
+  size_t overflow_kept = 0;
+  while (node && overflow_kept < HZ5_LOWPAGE64_P37_OVERFLOW_CAP) {
+    overflow_tail = node;
+    node = hz5_lowpage64_link_next_load(node);
+    overflow_kept++;
+  }
+  if (overflow_tail) {
+    hz5_lowpage64_link_next(overflow_tail, NULL);
+  }
+
+  g_hz5_lowpage64_stash_head = hot_head;
+  g_hz5_lowpage64_stash_count = hot_kept;
+  g_hz5_lowpage64_overflow_head = overflow_head;
+  g_hz5_lowpage64_overflow_count = overflow_kept;
+  if (overflow_kept > 0) {
+    g_hz5_lowpage64_overflow_epoch = g_hz5_lowpage64_epoch;
+  }
+
+  HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_stash_set_nodes_total,
+                          hot_kept);
+  HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_stash_set_nodes_max, hot_kept);
+  hz5_lowpage64_count_stash_bucket(hot_kept);
+  HZ5_LOWPAGE64_COUNT_ADD(
+      g_hz5_lowpage64_p37_overflow_set_nodes_total, overflow_kept);
+  HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p37_overflow_set_nodes_max,
+                          overflow_kept);
+
+  hz5_lowpage64_count_trim(hz5_lowpage64_free_list(node));
+  return;
+#else
   size_t cap = hz5_lowpage64_stash_cap_for_batch(acquired_count);
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_stash_set_calls, 1);
   if (cap > 0) {
@@ -281,11 +458,7 @@ static void hz5_lowpage64_set_stash_from_list(void* head,
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_stash_set_nodes_total, kept);
     HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_stash_set_nodes_max, kept);
     hz5_lowpage64_count_stash_bucket(kept);
-    size_t freed = hz5_lowpage64_free_list(node);
-    if (freed > 0) {
-      HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_trim_calls, 1);
-      HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_trim_freed_nodes, freed);
-    }
+    hz5_lowpage64_count_trim(hz5_lowpage64_free_list(node));
     return;
   }
 
@@ -296,6 +469,7 @@ static void hz5_lowpage64_set_stash_from_list(void* head,
   HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_stash_set_nodes_max,
                           g_hz5_lowpage64_stash_count);
   hz5_lowpage64_count_stash_bucket(g_hz5_lowpage64_stash_count);
+#endif
 }
 
 static void hz5_lowpage64_publish_relbuf(void) {
@@ -357,6 +531,19 @@ void* hz5_lowpage64_acquire(size_t raw_bytes) {
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_stash_hits, 1);
     return raw;
   }
+
+#if HZ5_LOWPAGE64_P37_OVERFLOW_CAP > 0
+  if (g_hz5_lowpage64_overflow_head) {
+    void* raw = g_hz5_lowpage64_overflow_head;
+    g_hz5_lowpage64_overflow_head = hz5_lowpage64_link_next_load(raw);
+    g_hz5_lowpage64_overflow_count--;
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_stash_hits, 1);
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p37_overflow_hits, 1);
+    return raw;
+  }
+#endif
+
+  hz5_lowpage64_p37_checkpoint();
 
   void* global =
       (void*)atomic_exchange_explicit(&g_hz5_lowpage64_global_batch_head, 0,
@@ -435,7 +622,12 @@ static void hz5_lowpage64_print_once(void) {
           "adaptive_trigger_calls=%zu acquired_le64=%zu "
           "acquired_le128=%zu acquired_le192=%zu acquired_gt192=%zu "
           "stash_nodes_le64=%zu stash_nodes_le128=%zu "
-          "stash_nodes_le192=%zu stash_nodes_gt192=%zu\n",
+          "stash_nodes_le192=%zu stash_nodes_gt192=%zu "
+          "p37_overflow_hits=%zu p37_overflow_set_nodes_total=%zu "
+          "p37_overflow_set_nodes_max=%zu "
+          "p37_overflow_release_calls=%zu "
+          "p37_overflow_release_nodes=%zu "
+          "p37_high_event_releases=%zu p37_lifetime_releases=%zu\n",
           atomic_load_explicit(&g_hz5_lowpage64_alloc_calls,
                                memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_span_hits,
@@ -499,6 +691,21 @@ static void hz5_lowpage64_print_once(void) {
           atomic_load_explicit(&g_hz5_lowpage64_stash_nodes_le192,
                                memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_stash_nodes_gt192,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p37_overflow_hits,
+                               memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p37_overflow_set_nodes_total,
+              memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p37_overflow_set_nodes_max,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p37_overflow_release_calls,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p37_overflow_release_nodes,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p37_high_event_releases,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p37_lifetime_releases,
                                memory_order_relaxed));
 }
 #endif
