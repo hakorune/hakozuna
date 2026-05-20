@@ -26,6 +26,9 @@ RSS policy is designed in from day one.
 
 HZ5 has moved past the initial P0/P3 route proof. The current split is:
 
+- `contract`: SpeedLane descriptor ABI, feature mask, forbidden mask, and
+  compile-time purity checks now live in `contract/`. BenchLab still exports
+  the required symbol, but descriptor contents are HZ5-owned.
 - `P11/P9`: current HZ5 seed speed lane. Exact `4K/8K align=8192` route to the
   HZ5 page/run sidecar; exact `64K align=8192` stays on HZ3 fallback.
 - `P12 cap1`: diagnostic/no-go evidence lane for exact `64K align=8192` as a
@@ -118,6 +121,7 @@ and now records the implementation lifecycle through P14.
 
 ```text
 hakozuna-hz5/
+  contract/ SpeedLane descriptor ABI and purity contract
   include/   public and internal HZ5 headers
   core/      segment, pageheap, run, owner, and remote-free core
   fallback/  P20 lazy HZ3 fallback loader/state/counter module
@@ -132,5 +136,5 @@ hakozuna-hz5/
 
 BenchLab owns the current adapter glue in
 `allocator-bench-lab/win/hakozuna_hz5_adapter.c`; the sidecar core and reusable
-fallback/low-page/policy/route/wrapper mechanisms stay in this directory so HZ5
-can remain modular next to HZ3 and HZ4.
+contract/fallback/low-page/policy/route/wrapper mechanisms stay in this
+directory so HZ5 can remain modular next to HZ3 and HZ4.
