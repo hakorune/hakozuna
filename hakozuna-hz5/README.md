@@ -34,6 +34,9 @@ HZ5 has moved past the initial P0/P3 route proof. The current split is:
 - `P13`: diagnostic segment accounting and shutdown-only release snapshots.
 - `P14b`: diagnostic retired quarantine. Empty segments are retired and skipped
   for allocation, but memory remains valid until shutdown release.
+- `P25/P27/P28`: exact `64K align=8192` low-page raw cache experiments. The
+  low-page cache body now lives in `lowpage/` so BenchLab adapters can stay
+  thin while HZ5 keeps the HZ4-inspired mechanism inside the sidecar tree.
 
 P13/P14 are not speed lanes. P11/P9 should stay counter-free when used for
 throughput measurements; P12 cap1 should now be included only when comparing
@@ -104,11 +107,13 @@ and now records the implementation lifecycle through P14.
 hakozuna-hz5/
   include/   public and internal HZ5 headers
   core/      segment, pageheap, run, owner, and remote-free core
+  lowpage/   P25/P27/P28 low-page 64K raw cache modules
   src/       reserved for future repo-local shims; currently intentionally empty
   win/       Windows research build/link scripts
   docs/      HZ5 work orders and result notes
 ```
 
 BenchLab owns the current adapter glue in
-`allocator-bench-lab/win/hakozuna_hz5_adapter.c`; the sidecar core stays in this
-directory so HZ5 can remain modular next to HZ3 and HZ4.
+`allocator-bench-lab/win/hakozuna_hz5_adapter.c`; the sidecar core and reusable
+low-page mechanisms stay in this directory so HZ5 can remain modular next to
+HZ3 and HZ4.
