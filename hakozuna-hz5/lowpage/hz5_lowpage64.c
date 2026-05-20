@@ -183,6 +183,16 @@ static _Atomic size_t g_hz5_lowpage64_p37_overflow_release_calls;
 static _Atomic size_t g_hz5_lowpage64_p37_overflow_release_nodes;
 static _Atomic size_t g_hz5_lowpage64_p37_high_event_releases;
 static _Atomic size_t g_hz5_lowpage64_p37_lifetime_releases;
+static _Atomic size_t g_hz5_lowpage64_p38_hot_hits;
+static _Atomic size_t g_hz5_lowpage64_p38_global_first_hits;
+static _Atomic size_t g_hz5_lowpage64_p38_set_hot_nodes_total;
+static _Atomic size_t g_hz5_lowpage64_p38_set_hot_nodes_max;
+static _Atomic size_t g_hz5_lowpage64_p38_global_cap_release_calls;
+static _Atomic size_t g_hz5_lowpage64_p38_global_cap_release_nodes;
+static _Atomic size_t g_hz5_lowpage64_p38_stash_trim_release_calls;
+static _Atomic size_t g_hz5_lowpage64_p38_stash_trim_release_nodes;
+static _Atomic size_t g_hz5_lowpage64_p38_p37_release_calls;
+static _Atomic size_t g_hz5_lowpage64_p38_p37_release_nodes;
 #endif
 
 #if HZ5_LOWPAGE64_SPAN_CACHE
@@ -271,6 +281,26 @@ static size_t hz5_lowpage64_free_list(void* head) {
   return freed;
 }
 
+static size_t hz5_lowpage64_free_list_global_cap(void* head) {
+  size_t freed = hz5_lowpage64_free_list(head);
+  if (freed > 0) {
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p38_global_cap_release_calls, 1);
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p38_global_cap_release_nodes,
+                            freed);
+  }
+  return freed;
+}
+
+static size_t hz5_lowpage64_free_list_stash_trim(void* head) {
+  size_t freed = hz5_lowpage64_free_list(head);
+  if (freed > 0) {
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p38_stash_trim_release_calls, 1);
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p38_stash_trim_release_nodes,
+                            freed);
+  }
+  return freed;
+}
+
 static void hz5_lowpage64_count_trim(size_t freed) {
   if (freed > 0) {
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_trim_calls, 1);
@@ -279,6 +309,15 @@ static void hz5_lowpage64_count_trim(size_t freed) {
 }
 
 #if HZ5_LOWPAGE64_P37_OVERFLOW_CAP > 0
+static size_t hz5_lowpage64_free_list_p37_overflow(void* head) {
+  size_t freed = hz5_lowpage64_free_list(head);
+  if (freed > 0) {
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p38_p37_release_calls, 1);
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p38_p37_release_nodes, freed);
+  }
+  return freed;
+}
+
 static void hz5_lowpage64_p37_release_overflow(int high_event) {
   void* head = g_hz5_lowpage64_overflow_head;
   size_t count = g_hz5_lowpage64_overflow_count;
@@ -289,7 +328,7 @@ static void hz5_lowpage64_p37_release_overflow(int high_event) {
     return;
   }
 
-  size_t freed = hz5_lowpage64_free_list(head);
+  size_t freed = hz5_lowpage64_free_list_p37_overflow(head);
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p37_overflow_release_calls, 1);
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p37_overflow_release_nodes,
                           freed);
@@ -429,13 +468,16 @@ static void hz5_lowpage64_set_stash_from_list(void* head,
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_stash_set_nodes_total,
                           hot_kept);
   HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_stash_set_nodes_max, hot_kept);
+  HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p38_set_hot_nodes_total,
+                          hot_kept);
+  HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p38_set_hot_nodes_max, hot_kept);
   hz5_lowpage64_count_stash_bucket(hot_kept);
   HZ5_LOWPAGE64_COUNT_ADD(
       g_hz5_lowpage64_p37_overflow_set_nodes_total, overflow_kept);
   HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p37_overflow_set_nodes_max,
                           overflow_kept);
 
-  hz5_lowpage64_count_trim(hz5_lowpage64_free_list(node));
+  hz5_lowpage64_count_trim(hz5_lowpage64_free_list_stash_trim(node));
   return;
 #else
   size_t cap = hz5_lowpage64_stash_cap_for_batch(acquired_count);
@@ -457,8 +499,10 @@ static void hz5_lowpage64_set_stash_from_list(void* head,
     g_hz5_lowpage64_stash_count = kept;
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_stash_set_nodes_total, kept);
     HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_stash_set_nodes_max, kept);
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p38_set_hot_nodes_total, kept);
+    HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p38_set_hot_nodes_max, kept);
     hz5_lowpage64_count_stash_bucket(kept);
-    hz5_lowpage64_count_trim(hz5_lowpage64_free_list(node));
+    hz5_lowpage64_count_trim(hz5_lowpage64_free_list_stash_trim(node));
     return;
   }
 
@@ -467,6 +511,10 @@ static void hz5_lowpage64_set_stash_from_list(void* head,
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_stash_set_nodes_total,
                           g_hz5_lowpage64_stash_count);
   HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_stash_set_nodes_max,
+                          g_hz5_lowpage64_stash_count);
+  HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p38_set_hot_nodes_total,
+                          g_hz5_lowpage64_stash_count);
+  HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p38_set_hot_nodes_max,
                           g_hz5_lowpage64_stash_count);
   hz5_lowpage64_count_stash_bucket(g_hz5_lowpage64_stash_count);
 #endif
@@ -491,7 +539,7 @@ static void hz5_lowpage64_publish_relbuf(void) {
   HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_global_count_before_max,
                           global_count);
   if (global_count + count > HZ5_LOWPAGE64_GLOBAL_CAP) {
-    (void)hz5_lowpage64_free_list(head);
+    (void)hz5_lowpage64_free_list_global_cap(head);
     return;
   }
 
@@ -529,6 +577,7 @@ void* hz5_lowpage64_acquire(size_t raw_bytes) {
     g_hz5_lowpage64_stash_head = hz5_lowpage64_link_next_load(raw);
     g_hz5_lowpage64_stash_count--;
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_stash_hits, 1);
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p38_hot_hits, 1);
     return raw;
   }
 
@@ -561,6 +610,7 @@ void* hz5_lowpage64_acquire(size_t raw_bytes) {
     hz5_lowpage64_link_next(raw, NULL);
     hz5_lowpage64_set_stash_from_list(stash, acquired_count);
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_global_batch_hits, 1);
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p38_global_first_hits, 1);
     return raw;
   }
 
@@ -627,7 +677,14 @@ static void hz5_lowpage64_print_once(void) {
           "p37_overflow_set_nodes_max=%zu "
           "p37_overflow_release_calls=%zu "
           "p37_overflow_release_nodes=%zu "
-          "p37_high_event_releases=%zu p37_lifetime_releases=%zu\n",
+          "p37_high_event_releases=%zu p37_lifetime_releases=%zu "
+          "p38_hot_hits=%zu p38_global_first_hits=%zu "
+          "p38_set_hot_nodes_total=%zu p38_set_hot_nodes_max=%zu "
+          "p38_global_cap_release_calls=%zu "
+          "p38_global_cap_release_nodes=%zu "
+          "p38_stash_trim_release_calls=%zu "
+          "p38_stash_trim_release_nodes=%zu "
+          "p38_p37_release_calls=%zu p38_p37_release_nodes=%zu\n",
           atomic_load_explicit(&g_hz5_lowpage64_alloc_calls,
                                memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_span_hits,
@@ -706,6 +763,26 @@ static void hz5_lowpage64_print_once(void) {
           atomic_load_explicit(&g_hz5_lowpage64_p37_high_event_releases,
                                memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_p37_lifetime_releases,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p38_hot_hits,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p38_global_first_hits,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p38_set_hot_nodes_total,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p38_set_hot_nodes_max,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p38_global_cap_release_calls,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p38_global_cap_release_nodes,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p38_stash_trim_release_calls,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p38_stash_trim_release_nodes,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p38_p37_release_calls,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p38_p37_release_nodes,
                                memory_order_relaxed));
 }
 #endif
