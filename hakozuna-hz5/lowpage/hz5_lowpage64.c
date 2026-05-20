@@ -180,6 +180,24 @@
 #endif
 #endif
 
+#ifndef HZ5_LOWPAGE64_P42_DECOMMIT_COLD
+#ifdef BENCHLAB_HZ5_P42_DECOMMIT_COLD
+#define HZ5_LOWPAGE64_P42_DECOMMIT_COLD \
+  BENCHLAB_HZ5_P42_DECOMMIT_COLD
+#else
+#define HZ5_LOWPAGE64_P42_DECOMMIT_COLD 0
+#endif
+#endif
+
+#ifndef HZ5_LOWPAGE64_P42_RECOMMIT_BATCH
+#ifdef BENCHLAB_HZ5_P42_RECOMMIT_BATCH
+#define HZ5_LOWPAGE64_P42_RECOMMIT_BATCH \
+  BENCHLAB_HZ5_P42_RECOMMIT_BATCH
+#else
+#define HZ5_LOWPAGE64_P42_RECOMMIT_BATCH 1u
+#endif
+#endif
+
 #ifndef HZ5_LOWPAGE64_SPAN_CACHE
 #ifdef BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192
 #define HZ5_LOWPAGE64_SPAN_CACHE BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192
@@ -224,6 +242,16 @@ static _Atomic(uintptr_t) g_hz5_lowpage64_raw_min;
 static _Atomic(uintptr_t) g_hz5_lowpage64_raw_max;
 #if HZ5_LOWPAGE64_P40_GLOBAL_SOFT_CAP > 0
 static _Atomic uint32_t g_hz5_lowpage64_p40_global_epoch;
+#endif
+#if HZ5_LOWPAGE64_P42_VA_SOURCE && HZ5_LOWPAGE64_P42_DECOMMIT_COLD
+typedef struct Hz5Lowpage64ColdNode {
+  void* raw;
+  size_t bytes;
+  struct Hz5Lowpage64ColdNode* next;
+} Hz5Lowpage64ColdNode;
+
+static _Atomic(uintptr_t) g_hz5_lowpage64_p42_cold_head;
+static _Atomic size_t g_hz5_lowpage64_p42_cold_count;
 #endif
 
 #if HZ5_LOWPAGE64_STATS
@@ -291,6 +319,12 @@ static _Atomic size_t g_hz5_lowpage64_p40_keep_nodes;
 static _Atomic size_t g_hz5_lowpage64_p42_va_allocs;
 static _Atomic size_t g_hz5_lowpage64_p42_va_alloc_failures;
 static _Atomic size_t g_hz5_lowpage64_p42_va_releases;
+static _Atomic size_t g_hz5_lowpage64_p42_decommit_calls;
+static _Atomic size_t g_hz5_lowpage64_p42_decommit_failures;
+static _Atomic size_t g_hz5_lowpage64_p42_recommit_calls;
+static _Atomic size_t g_hz5_lowpage64_p42_recommit_failures;
+static _Atomic size_t g_hz5_lowpage64_p42_cold_hits;
+static _Atomic size_t g_hz5_lowpage64_p42_cold_count_max;
 #endif
 
 #if HZ5_LOWPAGE64_SPAN_CACHE
@@ -324,6 +358,72 @@ static void* hz5_lowpage64_link_next_load(void* raw) {
   return *(void**)raw;
 }
 
+#if HZ5_LOWPAGE64_P42_VA_SOURCE && HZ5_LOWPAGE64_P42_DECOMMIT_COLD
+static size_t hz5_lowpage64_p42_raw_bytes(void) {
+  return HZ5_LOWPAGE64_RAW_PAGE_SIZE * (size_t)2u;
+}
+
+static void hz5_lowpage64_p42_cold_push(Hz5Lowpage64ColdNode* node) {
+  uintptr_t old_head = atomic_load_explicit(
+      &g_hz5_lowpage64_p42_cold_head, memory_order_acquire);
+  do {
+    node->next = (Hz5Lowpage64ColdNode*)old_head;
+  } while (!atomic_compare_exchange_weak_explicit(
+      &g_hz5_lowpage64_p42_cold_head, &old_head, (uintptr_t)node,
+      memory_order_acq_rel, memory_order_acquire));
+  size_t count = atomic_fetch_add_explicit(
+                     &g_hz5_lowpage64_p42_cold_count, 1,
+                     memory_order_relaxed) +
+                 1u;
+  HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p42_cold_count_max, count);
+  (void)count;
+}
+
+static Hz5Lowpage64ColdNode* hz5_lowpage64_p42_cold_pop(void) {
+  uintptr_t old_head = atomic_load_explicit(
+      &g_hz5_lowpage64_p42_cold_head, memory_order_acquire);
+  while (old_head) {
+    Hz5Lowpage64ColdNode* node = (Hz5Lowpage64ColdNode*)old_head;
+    uintptr_t next = (uintptr_t)node->next;
+    if (atomic_compare_exchange_weak_explicit(
+            &g_hz5_lowpage64_p42_cold_head, &old_head, next,
+            memory_order_acq_rel, memory_order_acquire)) {
+      atomic_fetch_sub_explicit(&g_hz5_lowpage64_p42_cold_count, 1,
+                                memory_order_relaxed);
+      node->next = NULL;
+      return node;
+    }
+  }
+  return NULL;
+}
+
+static void* hz5_lowpage64_p42_try_recommit(size_t raw_bytes) {
+#if defined(_WIN32)
+  for (size_t i = 0; i < HZ5_LOWPAGE64_P42_RECOMMIT_BATCH; i++) {
+    Hz5Lowpage64ColdNode* node = hz5_lowpage64_p42_cold_pop();
+    if (!node) {
+      return NULL;
+    }
+    void* raw = VirtualAlloc(node->raw, node->bytes, MEM_COMMIT,
+                             PAGE_READWRITE);
+    if (raw) {
+      HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p42_recommit_calls, 1);
+      HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p42_cold_hits, 1);
+      free(node);
+      (void)raw_bytes;
+      return raw;
+    }
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p42_recommit_failures, 1);
+    VirtualFree(node->raw, 0, MEM_RELEASE);
+    free(node);
+  }
+#else
+  (void)raw_bytes;
+#endif
+  return NULL;
+}
+#endif
+
 static void* hz5_lowpage64_raw_os_alloc(size_t raw_bytes) {
 #if HZ5_LOWPAGE64_P42_VA_SOURCE
 #if defined(_WIN32)
@@ -347,6 +447,21 @@ static void hz5_lowpage64_raw_os_release(void* raw) {
 #if HZ5_LOWPAGE64_P42_VA_SOURCE
 #if defined(_WIN32)
   if (raw) {
+#if HZ5_LOWPAGE64_P42_DECOMMIT_COLD
+    Hz5Lowpage64ColdNode* node =
+        (Hz5Lowpage64ColdNode*)malloc(sizeof(Hz5Lowpage64ColdNode));
+    if (node && VirtualFree(raw, hz5_lowpage64_p42_raw_bytes(),
+                            MEM_DECOMMIT)) {
+      node->raw = raw;
+      node->bytes = hz5_lowpage64_p42_raw_bytes();
+      node->next = NULL;
+      HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p42_decommit_calls, 1);
+      hz5_lowpage64_p42_cold_push(node);
+      return;
+    }
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p42_decommit_failures, 1);
+    free(node);
+#endif
     VirtualFree(raw, 0, MEM_RELEASE);
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p42_va_releases, 1);
   }
@@ -1027,6 +1142,13 @@ void* hz5_lowpage64_acquire(size_t raw_bytes) {
   }
 #endif
 
+#if HZ5_LOWPAGE64_P42_VA_SOURCE && HZ5_LOWPAGE64_P42_DECOMMIT_COLD
+  void* cold = hz5_lowpage64_p42_try_recommit(raw_bytes);
+  if (cold) {
+    return cold;
+  }
+#endif
+
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_os_allocs, 1);
   return hz5_lowpage64_raw_os_alloc(raw_bytes);
 }
@@ -1109,7 +1231,10 @@ static void hz5_lowpage64_print_once(void) {
           "p40_release_nodes=%zu p40_release_age_nodes=%zu "
           "p40_release_hard_nodes=%zu p40_keep_nodes=%zu "
           "p42_va_allocs=%zu p42_va_alloc_failures=%zu "
-          "p42_va_releases=%zu\n",
+          "p42_va_releases=%zu p42_decommit_calls=%zu "
+          "p42_decommit_failures=%zu p42_recommit_calls=%zu "
+          "p42_recommit_failures=%zu p42_cold_hits=%zu "
+          "p42_cold_count=%zu p42_cold_count_max=%zu\n",
           atomic_load_explicit(&g_hz5_lowpage64_alloc_calls,
                                memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_span_hits,
@@ -1243,6 +1368,20 @@ static void hz5_lowpage64_print_once(void) {
           atomic_load_explicit(&g_hz5_lowpage64_p42_va_alloc_failures,
                                memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_p42_va_releases,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p42_decommit_calls,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p42_decommit_failures,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p42_recommit_calls,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p42_recommit_failures,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p42_cold_hits,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p42_cold_count,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p42_cold_count_max,
                                memory_order_relaxed));
 }
 #endif

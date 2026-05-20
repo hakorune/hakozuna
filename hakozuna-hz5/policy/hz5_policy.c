@@ -307,6 +307,12 @@ void hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
 #endif
     return;
   }
+#if (BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || \
+     BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192) && BENCHLAB_HZ5_LAZY_HZ3_FALLBACK
+  if (hz5_lowpage64_may_own(ptr)) {
+    return;
+  }
+#endif
 #endif
 
 #if BENCHLAB_HZ5_NO_HZ3_FALLBACK
