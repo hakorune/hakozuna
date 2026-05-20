@@ -6,6 +6,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#if defined(_WIN32)
+#include <windows.h>
+#endif
+
 #ifndef HZ5_LOWPAGE64_RAW_PAGE_SIZE
 #define HZ5_LOWPAGE64_RAW_PAGE_SIZE ((size_t)65536)
 #endif
@@ -168,6 +172,14 @@
 #endif
 #endif
 
+#ifndef HZ5_LOWPAGE64_P42_VA_SOURCE
+#ifdef BENCHLAB_HZ5_P42_VA_SOURCE
+#define HZ5_LOWPAGE64_P42_VA_SOURCE BENCHLAB_HZ5_P42_VA_SOURCE
+#else
+#define HZ5_LOWPAGE64_P42_VA_SOURCE 0
+#endif
+#endif
+
 #ifndef HZ5_LOWPAGE64_SPAN_CACHE
 #ifdef BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192
 #define HZ5_LOWPAGE64_SPAN_CACHE BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192
@@ -276,6 +288,9 @@ static _Atomic size_t g_hz5_lowpage64_p40_release_nodes;
 static _Atomic size_t g_hz5_lowpage64_p40_release_age_nodes;
 static _Atomic size_t g_hz5_lowpage64_p40_release_hard_nodes;
 static _Atomic size_t g_hz5_lowpage64_p40_keep_nodes;
+static _Atomic size_t g_hz5_lowpage64_p42_va_allocs;
+static _Atomic size_t g_hz5_lowpage64_p42_va_alloc_failures;
+static _Atomic size_t g_hz5_lowpage64_p42_va_releases;
 #endif
 
 #if HZ5_LOWPAGE64_SPAN_CACHE
@@ -307,6 +322,40 @@ static void hz5_lowpage64_link_next(void* raw, void* next) {
 
 static void* hz5_lowpage64_link_next_load(void* raw) {
   return *(void**)raw;
+}
+
+static void* hz5_lowpage64_raw_os_alloc(size_t raw_bytes) {
+#if HZ5_LOWPAGE64_P42_VA_SOURCE
+#if defined(_WIN32)
+  void* raw = VirtualAlloc(NULL, raw_bytes, MEM_RESERVE | MEM_COMMIT,
+                           PAGE_READWRITE);
+  if (!raw) {
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p42_va_alloc_failures, 1);
+    return NULL;
+  }
+  HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p42_va_allocs, 1);
+  return raw;
+#else
+  return NULL;
+#endif
+#else
+  return _aligned_malloc(raw_bytes, HZ5_LOWPAGE64_RAW_PAGE_SIZE);
+#endif
+}
+
+static void hz5_lowpage64_raw_os_release(void* raw) {
+#if HZ5_LOWPAGE64_P42_VA_SOURCE
+#if defined(_WIN32)
+  if (raw) {
+    VirtualFree(raw, 0, MEM_RELEASE);
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p42_va_releases, 1);
+  }
+#else
+  (void)raw;
+#endif
+#else
+  _aligned_free(raw);
+#endif
 }
 
 #if HZ5_LOWPAGE64_P40_GLOBAL_SOFT_CAP > 0
@@ -380,7 +429,7 @@ static size_t hz5_lowpage64_free_list(void* head) {
   size_t freed = 0;
   while (head) {
     void* next = hz5_lowpage64_link_next_load(head);
-    _aligned_free(head);
+    hz5_lowpage64_raw_os_release(head);
     freed++;
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_global_overflow_frees, 1);
     head = next;
@@ -979,7 +1028,7 @@ void* hz5_lowpage64_acquire(size_t raw_bytes) {
 #endif
 
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_os_allocs, 1);
-  return _aligned_malloc(raw_bytes, HZ5_LOWPAGE64_RAW_PAGE_SIZE);
+  return hz5_lowpage64_raw_os_alloc(raw_bytes);
 }
 
 void hz5_lowpage64_release(void* raw) {
@@ -1058,7 +1107,9 @@ static void hz5_lowpage64_print_once(void) {
           "p39_probation_replace_releases=%zu "
           "p40_checkpoint_calls=%zu p40_release_calls=%zu "
           "p40_release_nodes=%zu p40_release_age_nodes=%zu "
-          "p40_release_hard_nodes=%zu p40_keep_nodes=%zu\n",
+          "p40_release_hard_nodes=%zu p40_keep_nodes=%zu "
+          "p42_va_allocs=%zu p42_va_alloc_failures=%zu "
+          "p42_va_releases=%zu\n",
           atomic_load_explicit(&g_hz5_lowpage64_alloc_calls,
                                memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_span_hits,
@@ -1186,6 +1237,12 @@ static void hz5_lowpage64_print_once(void) {
           atomic_load_explicit(&g_hz5_lowpage64_p40_release_hard_nodes,
                                memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_p40_keep_nodes,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p42_va_allocs,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p42_va_alloc_failures,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p42_va_releases,
                                memory_order_relaxed));
 }
 #endif
