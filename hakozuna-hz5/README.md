@@ -29,6 +29,9 @@ HZ5 has moved past the initial P0/P3 route proof. The current split is:
 - `contract`: SpeedLane descriptor ABI, feature mask, forbidden mask, and
   compile-time purity checks now live in `contract/`. BenchLab still exports
   the required symbol, but descriptor contents are HZ5-owned.
+- `legacy`: historical P17/P24 raw-cache diagnostic lanes now live in
+  `legacy/`. They are still available through `Hz5PolicyHooks`, but are no
+  longer part of the main adapter body.
 - `P11/P9`: current HZ5 seed speed lane. Exact `4K/8K align=8192` route to the
   HZ5 page/run sidecar; exact `64K align=8192` stays on HZ3 fallback.
 - `P12 cap1`: diagnostic/no-go evidence lane for exact `64K align=8192` as a
@@ -125,6 +128,7 @@ hakozuna-hz5/
   include/   public and internal HZ5 headers
   core/      segment, pageheap, run, owner, and remote-free core
   fallback/  P20 lazy HZ3 fallback loader/state/counter module
+  legacy/   historical P17/P24 diagnostic raw-cache modules
   lowpage/   P25/P27/P28 low-page 64K raw cache modules
   policy/    HZ5-native alloc/free policy API and dispatch ordering
   route/     exact a8192 route policy and P12 route-shadow observation
@@ -136,5 +140,5 @@ hakozuna-hz5/
 
 BenchLab owns the current adapter glue in
 `allocator-bench-lab/win/hakozuna_hz5_adapter.c`; the sidecar core and reusable
-contract/fallback/low-page/policy/route/wrapper mechanisms stay in this
+contract/fallback/legacy/low-page/policy/route/wrapper mechanisms stay in this
 directory so HZ5 can remain modular next to HZ3 and HZ4.
