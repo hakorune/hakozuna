@@ -71,9 +71,11 @@ size_t hz5_remote_flush_buffer(Hz5RemoteBuffer* buffer) {
         }
         hz5_remote_set_next(tail, NULL);
         hz5_remote_push_group(seg, page, head, tail, count);
+#if !HZ5_P11_SPEED_CORE
         atomic_fetch_sub_explicit(&seg->remote_buffer_pending_hint,
                                   count,
                                   memory_order_relaxed);
+#endif
         flushed += count;
     }
 
@@ -94,9 +96,11 @@ void hz5_remote_buffer_add(Hz5Seg* seg,
     buffer->entries[idx].page_idx = page_idx;
     buffer->entries[idx].ptr = ptr;
     buffer->entries[idx].owner = owner;
+#if !HZ5_P11_SPEED_CORE
     atomic_fetch_add_explicit(&seg->remote_buffer_pending_hint,
                               1u,
                               memory_order_relaxed);
+#endif
 }
 
 size_t hz5_remote_drain_owner(Hz5OwnerToken owner) {

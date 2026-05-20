@@ -30,6 +30,10 @@
 #define HZ5_P12_RUN16_REMOTE_FLUSH_CAP 2u
 #endif
 
+#ifndef HZ5_P11_SPEED_CORE
+#define HZ5_P11_SPEED_CORE 0u
+#endif
+
 #ifndef HZ5_P14_RETIRED_QUARANTINE
 #define HZ5_P14_RETIRED_QUARANTINE 0u
 #endif

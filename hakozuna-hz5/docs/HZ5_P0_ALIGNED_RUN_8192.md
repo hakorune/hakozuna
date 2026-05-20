@@ -871,3 +871,58 @@ Interpretation:
 - It visibly slows throughput, so it is diagnostic-only.
 - Runtime segment free still needs a scoped lifetime or descriptor/tombstone
   design; this patch deliberately does not free segment memory at runtime.
+
+## P11 speed-core separation
+
+Current-source rebuilds of the P11/P9 lane regressed after P13/P14 segment
+retire diagnostics had been added. The old high-speed P11 artifact was still
+fast, so the issue was not the page/run idea itself; it was the speed lane
+carrying later diagnostic layout and bookkeeping.
+
+Added `HZ5_P11_SPEED_CORE=1` as an explicit clean speed-core switch:
+
+- restores the initial P11 segment layout shape by compiling out
+  `run16_a8192_hint_page`, `tcache_refs`, and `remote_buffer_pending_hint`;
+- disables retired/quarantine/shutdown-release behavior for speed lanes;
+- uses the original simple segment scan/allocation path instead of the run16
+  hint path;
+- leaves P13/P14 diagnostics available when the switch is off.
+
+BenchLab added `-P11SpeedCore` to the HZ5 behavior-lane build script.
+
+Evidence:
+
+```text
+results/synthetic-sweep/20260520_195050_075
+results/synthetic-sweep/20260520_195105_673
+results/synthetic-sweep/20260520_195122_014
+```
+
+Key medians:
+
+```text
+P9 rebuilt with -P11SpeedCore:
+  pc-r90-4k-a8192-t4: 14.63M
+  pc-r90-8k-a8192-t4: 13.32M
+
+P20 lazy fallback rebuilt with -P11SpeedCore:
+  pc-r90-4k-a8192-t4: 14.37M
+  pc-r90-8k-a8192-t4: 13.57M
+  exact-route fallback load_count: 0
+  steady VA: ~4.20-4.23 GiB
+  steady RSS: ~28-31 MiB
+
+P20 64K/a8192 fallback-trigger:
+  load_count: 1
+  median throughput: 5.12M vs HZ3 6.22M
+```
+
+Decision:
+
+- P11/P20 exact `4K/8K align=8192` speed lanes should use
+  `HZ5_P11_SPEED_CORE=1`.
+- P13/P14 remain diagnostic-only and must not contaminate speed profiles.
+- P20 + P11 speed core is the current route-strict candidate/watch lane because
+  it combines restored P11 speed with low VA/RSS lazy fallback behavior.
+- `64K/a8192` remains a separate native-route problem; P20 fallback is safe but
+  not a 64K speed solution.

@@ -177,10 +177,12 @@ static void hz5_stats_print_segment_snapshot(const char* label) {
         if ((seg->flags & HZ5_SEG_FLAG_RETIRED) != 0) {
             ++retired_segments;
         }
+#if !HZ5_P11_SPEED_CORE
         tcache_refs += atomic_load_explicit(&seg->tcache_refs, memory_order_relaxed);
         remote_buffer_pending +=
             atomic_load_explicit(&seg->remote_buffer_pending_hint,
                                  memory_order_relaxed);
+#endif
         live_pages += seg->live_pages;
         free_pages += hz5_stats_count_free_pages(seg);
         if (seg->live_pages == 0) {
