@@ -198,6 +198,7 @@ size_t hz5_tcache_release_all(void) {
             hz5_p1_segment_free_run(seg, page);
             hz5_stats_inc_run(HZ5_STAT_TCACHE_DESTRUCTOR_RELEASE, pages, sc);
             (void)pages;
+            (void)sc;
             ++released;
         }
     }
