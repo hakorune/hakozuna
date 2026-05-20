@@ -43,6 +43,9 @@ HZ5 has moved past the initial P0/P3 route proof. The current split is:
 - `route`: exact a8192 route policy, HZ3 medium fallback eligibility, and P12
   route-shadow counters now live in `route/`, so BenchLab adapters call into
   HZ5 for route decisions instead of owning the policy locally.
+- `wrapper`: wrapper header layout, cookie generation, initialization, and
+  guarded decode now live in `wrapper/`, while the BenchLab adapter keeps only
+  source-specific dispatch to the current free paths.
 
 P13/P14 are not speed lanes. P11/P9 should stay counter-free when used for
 throughput measurements; P12 cap1 should now be included only when comparing
@@ -116,6 +119,7 @@ hakozuna-hz5/
   fallback/  P20 lazy HZ3 fallback loader/state/counter module
   lowpage/   P25/P27/P28 low-page 64K raw cache modules
   route/     exact a8192 route policy and P12 route-shadow observation
+  wrapper/   HZ5 wrapper header/cookie/decode helpers
   src/       reserved for future repo-local shims; currently intentionally empty
   win/       Windows research build/link scripts
   docs/      HZ5 work orders and result notes
@@ -123,5 +127,5 @@ hakozuna-hz5/
 
 BenchLab owns the current adapter glue in
 `allocator-bench-lab/win/hakozuna_hz5_adapter.c`; the sidecar core and reusable
-fallback/low-page/route mechanisms stay in this directory so HZ5 can remain
-modular next to HZ3 and HZ4.
+fallback/low-page/route/wrapper mechanisms stay in this directory so HZ5 can
+remain modular next to HZ3 and HZ4.
