@@ -37,6 +37,7 @@ void* hz5_p1_alloc_aligned(size_t size, size_t alignment) {
                                             pages,
                                             align_pages,
                                             hz5_p1_log2_size(alignment),
+                                            (uint16_t)pages,
                                             (Hz5OwnerToken){0, 0});
 }
 
@@ -97,8 +98,9 @@ void* hz5_p2_alloc_aligned(size_t size, size_t alignment) {
     uint32_t align_pages = (uint32_t)((alignment + HZ5_PAGE_SIZE - 1u) /
                                       HZ5_PAGE_SIZE);
     uint8_t align_log2 = hz5_p1_log2_size(alignment);
+    uint16_t sc = hz5_run_sc_for_size(size, pages);
     hz5_stats_inc_pages(HZ5_STAT_ALLOC_CALL, pages);
-    void* cached = hz5_tcache_pop(pages, align_log2);
+    void* cached = hz5_tcache_pop(pages, align_log2, sc);
     if (cached) {
         hz5_stats_inc_pages(HZ5_STAT_ALLOC_TCACHE_HIT, pages);
         return cached;
@@ -109,7 +111,7 @@ void* hz5_p2_alloc_aligned(size_t size, size_t alignment) {
     if (drained != 0) {
         hz5_stats_inc_pages(HZ5_STAT_ALLOC_DRAIN_HIT, pages);
     }
-    cached = hz5_tcache_pop(pages, align_log2);
+    cached = hz5_tcache_pop(pages, align_log2, sc);
     if (cached) {
         hz5_stats_inc_pages(HZ5_STAT_ALLOC_TCACHE_HIT, pages);
         return cached;
@@ -118,6 +120,7 @@ void* hz5_p2_alloc_aligned(size_t size, size_t alignment) {
     void* ptr = hz5_p1_segment_alloc_any_run_aligned(pages,
                                                      align_pages,
                                                      align_log2,
+                                                     sc,
                                                      hz5_owner_current());
     if (ptr) {
         hz5_stats_inc_pages(HZ5_STAT_ALLOC_SEGMENT, pages);

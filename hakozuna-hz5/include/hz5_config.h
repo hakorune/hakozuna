@@ -42,4 +42,8 @@
 #define HZ5_P14_LOCKED_LOOKUP_RELEASE 0u
 #endif
 
+#ifndef HZ5_P22_SPLIT_1P_SIZE_CLASS
+#define HZ5_P22_SPLIT_1P_SIZE_CLASS 0u
+#endif
+
 #endif

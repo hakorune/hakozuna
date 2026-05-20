@@ -27,6 +27,19 @@ static const Hz5RunClassPolicy g_hz5_policy_4k_a8192 = {
     0u,
 };
 
+#if HZ5_P22_SPLIT_1P_SIZE_CLASS
+static const Hz5RunClassPolicy g_hz5_policy_2k_a8192 = {
+    1u,
+    13u,
+    HZ5_RUNBAND_SMALL_OVA,
+    HZ5_RUN_CACHE_CAP,
+    0u,
+    HZ5_REMOTE_BUF_CAP,
+    0u,
+    0u,
+};
+#endif
+
 static const Hz5RunClassPolicy g_hz5_policy_8k_a8192 = {
     2u,
     13u,
@@ -49,7 +62,21 @@ static const Hz5RunClassPolicy g_hz5_policy_64k_a8192 = {
     0u,
 };
 
-uint32_t hz5_run_class_index(uint32_t pages, uint8_t align_log2) {
+uint16_t hz5_run_sc_for_size(size_t size, uint32_t pages) {
+#if HZ5_P22_SPLIT_1P_SIZE_CLASS
+    if (pages <= 1u) {
+        return size <= 2048u ? 2048u : 4096u;
+    }
+#endif
+    return (uint16_t)pages;
+}
+
+uint32_t hz5_run_class_index(uint32_t pages, uint8_t align_log2, uint16_t sc) {
+#if HZ5_P22_SPLIT_1P_SIZE_CLASS
+    if (pages <= 1u && align_log2 == 13u && sc <= 2048u) {
+        return 0u;
+    }
+#endif
     uint32_t align_bucket = align_log2 > 12u ? (uint32_t)(align_log2 - 12u) : 0u;
     if (align_bucket > 3u) {
         align_bucket = 3u;
@@ -68,9 +95,18 @@ uint32_t hz5_run_class_index(uint32_t pages, uint8_t align_log2) {
     return (page_bucket * 4u) + align_bucket;
 }
 
-const Hz5RunClassPolicy* hz5_run_policy_for(uint32_t pages, uint8_t align_log2) {
+const Hz5RunClassPolicy* hz5_run_policy_for(uint32_t pages,
+                                            uint8_t align_log2,
+                                            uint16_t sc) {
     if (align_log2 == 13u) {
         if (pages == 1u) {
+#if HZ5_P22_SPLIT_1P_SIZE_CLASS
+            if (sc <= 2048u) {
+                return &g_hz5_policy_2k_a8192;
+            }
+#else
+            (void)sc;
+#endif
             return &g_hz5_policy_4k_a8192;
         }
         if (pages == 2u) {
@@ -83,8 +119,8 @@ const Hz5RunClassPolicy* hz5_run_policy_for(uint32_t pages, uint8_t align_log2) 
     return &g_hz5_default_policy;
 }
 
-void* hz5_tcache_pop(uint32_t pages, uint8_t align_log2) {
-    uint32_t idx = hz5_run_class_index(pages, align_log2);
+void* hz5_tcache_pop(uint32_t pages, uint8_t align_log2, uint16_t sc) {
+    uint32_t idx = hz5_run_class_index(pages, align_log2, sc);
     if (idx >= HZ5_RUN_CACHE_CLASS_COUNT) {
         return NULL;
     }
@@ -118,13 +154,14 @@ int hz5_tcache_push(void* ptr) {
         return 0;
     }
 
-    uint32_t idx = hz5_run_class_index(meta->run_pages, meta->align_log2);
+    uint32_t idx = hz5_run_class_index(meta->run_pages, meta->align_log2,
+                                       meta->sc);
     if (idx >= HZ5_RUN_CACHE_CLASS_COUNT) {
         return 0;
     }
     Hz5RunCacheClass* cls = &t_hz5_run_cache.cls[idx];
     const Hz5RunClassPolicy* policy =
-        hz5_run_policy_for(meta->run_pages, meta->align_log2);
+        hz5_run_policy_for(meta->run_pages, meta->align_log2, meta->sc);
     uint16_t owner_cache_cap = policy->owner_cache_cap;
     if (owner_cache_cap > HZ5_RUN_CACHE_CAP) {
         owner_cache_cap = HZ5_RUN_CACHE_CAP;

@@ -143,10 +143,12 @@ void* hz5_p1_segment_alloc_run_aligned(Hz5Seg* seg,
                                        uint32_t pages,
                                        uint32_t align_pages,
                                        uint8_t align_log2,
+                                       uint16_t sc,
                                        Hz5OwnerToken owner);
 void* hz5_p1_segment_alloc_any_run_aligned(uint32_t pages,
                                            uint32_t align_pages,
                                            uint8_t align_log2,
+                                           uint16_t sc,
                                            Hz5OwnerToken owner);
 void hz5_p1_segment_free_run(Hz5Seg* seg, uint32_t page_idx);
 Hz5Seg* hz5_p1_seg_from_ptr(void* ptr);
@@ -171,9 +173,12 @@ void hz5_remote_push_group(Hz5Seg* seg,
                            void* tail,
                            uint32_t count);
 
-uint32_t hz5_run_class_index(uint32_t pages, uint8_t align_log2);
-const Hz5RunClassPolicy* hz5_run_policy_for(uint32_t pages, uint8_t align_log2);
-void* hz5_tcache_pop(uint32_t pages, uint8_t align_log2);
+uint16_t hz5_run_sc_for_size(size_t size, uint32_t pages);
+uint32_t hz5_run_class_index(uint32_t pages, uint8_t align_log2, uint16_t sc);
+const Hz5RunClassPolicy* hz5_run_policy_for(uint32_t pages,
+                                            uint8_t align_log2,
+                                            uint16_t sc);
+void* hz5_tcache_pop(uint32_t pages, uint8_t align_log2, uint16_t sc);
 int hz5_tcache_push(void* ptr);
 size_t hz5_tcache_release_all(void);
 

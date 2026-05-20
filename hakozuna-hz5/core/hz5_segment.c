@@ -345,6 +345,7 @@ void* hz5_p1_segment_alloc_run_aligned(Hz5Seg* seg,
                                        uint32_t pages,
                                        uint32_t align_pages,
                                        uint8_t align_log2,
+                                       uint16_t sc,
                                        Hz5OwnerToken owner) {
     if (!seg || seg->magic != HZ5_SEG_MAGIC || pages == 0) {
         return NULL;
@@ -368,7 +369,7 @@ void* hz5_p1_segment_alloc_run_aligned(Hz5Seg* seg,
             uint32_t p = page + i;
             hz5_p1_bit_clear(seg, p);
             seg->page[p].kind = (i == 0) ? HZ5_PAGE_RUN_START : HZ5_PAGE_RUN_CONT;
-            seg->page[p].sc = (uint16_t)pages;
+            seg->page[p].sc = sc;
             seg->page[p].run_pages = (uint16_t)pages;
             seg->page[p].run_start_page = (uint16_t)page;
             seg->page[p].align_log2 = align_log2;
@@ -412,7 +413,7 @@ void* hz5_p1_segment_alloc_run_aligned(Hz5Seg* seg,
                 uint32_t p = page + i;
                 hz5_p1_bit_clear(seg, p);
                 seg->page[p].kind = (i == 0) ? HZ5_PAGE_RUN_START : HZ5_PAGE_RUN_CONT;
-                seg->page[p].sc = (uint16_t)pages;
+                seg->page[p].sc = sc;
                 seg->page[p].run_pages = (uint16_t)pages;
                 seg->page[p].run_start_page = (uint16_t)page;
                 seg->page[p].align_log2 = align_log2;
@@ -443,6 +444,7 @@ void* hz5_p1_segment_alloc_run_aligned(Hz5Seg* seg,
 void* hz5_p1_segment_alloc_any_run_aligned(uint32_t pages,
                                            uint32_t align_pages,
                                            uint8_t align_log2,
+                                           uint16_t sc,
                                            Hz5OwnerToken owner) {
     if (!hz5_p1_segment_get()) {
         return NULL;
@@ -460,6 +462,7 @@ void* hz5_p1_segment_alloc_any_run_aligned(uint32_t pages,
                                                      pages,
                                                      align_pages,
                                                      align_log2,
+                                                     sc,
                                                      owner);
         if (ptr) {
             return ptr;
@@ -474,6 +477,7 @@ void* hz5_p1_segment_alloc_any_run_aligned(uint32_t pages,
                                             pages,
                                             align_pages,
                                             align_log2,
+                                            sc,
                                             owner);
 }
 
