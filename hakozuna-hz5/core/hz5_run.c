@@ -99,21 +99,21 @@ void* hz5_p2_alloc_aligned(size_t size, size_t alignment) {
                                       HZ5_PAGE_SIZE);
     uint8_t align_log2 = hz5_p1_log2_size(alignment);
     uint16_t sc = hz5_run_sc_for_size(size, pages);
-    hz5_stats_inc_pages(HZ5_STAT_ALLOC_CALL, pages);
+    hz5_stats_inc_run(HZ5_STAT_ALLOC_CALL, pages, sc);
     void* cached = hz5_tcache_pop(pages, align_log2, sc);
     if (cached) {
-        hz5_stats_inc_pages(HZ5_STAT_ALLOC_TCACHE_HIT, pages);
+        hz5_stats_inc_run(HZ5_STAT_ALLOC_TCACHE_HIT, pages, sc);
         return cached;
     }
 
-    hz5_stats_inc_pages(HZ5_STAT_ALLOC_DRAIN_CALL, pages);
+    hz5_stats_inc_run(HZ5_STAT_ALLOC_DRAIN_CALL, pages, sc);
     size_t drained = hz5_p2_drain_current_owner();
     if (drained != 0) {
-        hz5_stats_inc_pages(HZ5_STAT_ALLOC_DRAIN_HIT, pages);
+        hz5_stats_inc_run(HZ5_STAT_ALLOC_DRAIN_HIT, pages, sc);
     }
     cached = hz5_tcache_pop(pages, align_log2, sc);
     if (cached) {
-        hz5_stats_inc_pages(HZ5_STAT_ALLOC_TCACHE_HIT, pages);
+        hz5_stats_inc_run(HZ5_STAT_ALLOC_TCACHE_HIT, pages, sc);
         return cached;
     }
 
@@ -123,7 +123,7 @@ void* hz5_p2_alloc_aligned(size_t size, size_t alignment) {
                                                      sc,
                                                      hz5_owner_current());
     if (ptr) {
-        hz5_stats_inc_pages(HZ5_STAT_ALLOC_SEGMENT, pages);
+        hz5_stats_inc_run(HZ5_STAT_ALLOC_SEGMENT, pages, sc);
     }
     return ptr;
 }
@@ -149,21 +149,29 @@ void hz5_p2_free(void* ptr) {
     Hz5OwnerToken current = hz5_owner_current();
     if (hz5_owner_equal(meta->owner, current)) {
         if (!hz5_tcache_push(ptr)) {
-            hz5_stats_inc_pages(HZ5_STAT_FREE_LOCAL_RELEASE, meta->run_pages);
+            hz5_stats_inc_run(HZ5_STAT_FREE_LOCAL_RELEASE,
+                              meta->run_pages,
+                              meta->sc);
             hz5_p1_segment_free_run(seg, page);
         } else {
-            hz5_stats_inc_pages(HZ5_STAT_FREE_LOCAL_CACHE, meta->run_pages);
+            hz5_stats_inc_run(HZ5_STAT_FREE_LOCAL_CACHE,
+                              meta->run_pages,
+                              meta->sc);
         }
         return;
     }
 
     if (!hz5_owner_is_alive(meta->owner)) {
-        hz5_stats_inc_pages(HZ5_STAT_OWNER_DESTRUCTOR_RELEASE, meta->run_pages);
+        hz5_stats_inc_run(HZ5_STAT_OWNER_DESTRUCTOR_RELEASE,
+                          meta->run_pages,
+                          meta->sc);
         hz5_p1_segment_free_run(seg, page);
         return;
     }
 
-    hz5_stats_inc_pages(HZ5_STAT_FREE_REMOTE_BUFFERED, meta->run_pages);
+    hz5_stats_inc_run(HZ5_STAT_FREE_REMOTE_BUFFERED,
+                      meta->run_pages,
+                      meta->sc);
     hz5_remote_buffer_add(seg, page, ptr, meta->owner);
 }
 

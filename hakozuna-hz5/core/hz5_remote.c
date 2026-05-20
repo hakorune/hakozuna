@@ -128,12 +128,18 @@ size_t hz5_remote_drain_owner(Hz5OwnerToken owner) {
 
             while (list) {
                 void* next = *(void**)list;
-                hz5_stats_inc_pages(HZ5_STAT_REMOTE_DRAIN_NODE, meta->run_pages);
+                hz5_stats_inc_run(HZ5_STAT_REMOTE_DRAIN_NODE,
+                                  meta->run_pages,
+                                  meta->sc);
                 if (!hz5_tcache_push(list)) {
-                    hz5_stats_inc_pages(HZ5_STAT_REMOTE_DRAIN_RELEASE, meta->run_pages);
+                    hz5_stats_inc_run(HZ5_STAT_REMOTE_DRAIN_RELEASE,
+                                      meta->run_pages,
+                                      meta->sc);
                     hz5_p1_segment_free_run(seg, page);
                 } else {
-                    hz5_stats_inc_pages(HZ5_STAT_REMOTE_DRAIN_CACHE, meta->run_pages);
+                    hz5_stats_inc_run(HZ5_STAT_REMOTE_DRAIN_CACHE,
+                                      meta->run_pages,
+                                      meta->sc);
                 }
                 list = next;
                 ++drained;
@@ -169,9 +175,13 @@ size_t hz5_remote_release_owner(Hz5OwnerToken owner) {
             while (list) {
                 void* next = *(void**)list;
                 uint32_t pages = meta->run_pages;
-                hz5_stats_inc_pages(HZ5_STAT_OWNER_DESTRUCTOR_DRAIN, pages);
+                hz5_stats_inc_run(HZ5_STAT_OWNER_DESTRUCTOR_DRAIN,
+                                  pages,
+                                  meta->sc);
                 hz5_p1_segment_free_run(seg, page);
-                hz5_stats_inc_pages(HZ5_STAT_OWNER_DESTRUCTOR_RELEASE, pages);
+                hz5_stats_inc_run(HZ5_STAT_OWNER_DESTRUCTOR_RELEASE,
+                                  pages,
+                                  meta->sc);
                 (void)pages;
                 list = next;
                 ++released;
@@ -207,7 +217,9 @@ size_t hz5_remote_release_all_pending(void) {
                 void* next = *(void**)list;
                 uint32_t pages = meta->run_pages;
                 hz5_p1_segment_free_run(seg, page);
-                hz5_stats_inc_pages(HZ5_STAT_FINAL_PENDING_RELEASE, pages);
+                hz5_stats_inc_run(HZ5_STAT_FINAL_PENDING_RELEASE,
+                                  pages,
+                                  meta->sc);
                 (void)pages;
                 list = next;
                 ++released;

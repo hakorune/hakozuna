@@ -7,6 +7,10 @@ static _Atomic(uint64_t) g_hz5_stats[HZ5_STAT_COUNT];
 static _Atomic(uint64_t) g_hz5_stats_1p[HZ5_STAT_COUNT];
 static _Atomic(uint64_t) g_hz5_stats_2p[HZ5_STAT_COUNT];
 static _Atomic(uint64_t) g_hz5_stats_16p[HZ5_STAT_COUNT];
+#if HZ5_P23_1P_SC_STATS
+static _Atomic(uint64_t) g_hz5_stats_1p_2k[HZ5_STAT_COUNT];
+static _Atomic(uint64_t) g_hz5_stats_1p_4k[HZ5_STAT_COUNT];
+#endif
 static atomic_flag g_hz5_stats_printed = ATOMIC_FLAG_INIT;
 
 static _Atomic(uint64_t)* hz5_stats_bucket(uint32_t pages) {
@@ -125,6 +129,33 @@ void hz5_stats_add_pages(Hz5StatId id, uint32_t pages, uint64_t value) {
     if (bucket) {
         atomic_fetch_add_explicit(&bucket[id], value, memory_order_relaxed);
     }
+}
+
+void hz5_stats_inc_run(Hz5StatId id, uint32_t pages, uint16_t sc) {
+    hz5_stats_add_run(id, pages, sc, 1u);
+}
+
+void hz5_stats_add_run(Hz5StatId id,
+                       uint32_t pages,
+                       uint16_t sc,
+                       uint64_t value) {
+    hz5_stats_add_pages(id, pages, value);
+#if HZ5_P23_1P_SC_STATS
+    if (id >= HZ5_STAT_COUNT || pages > 1u) {
+        return;
+    }
+    if (sc <= 2048u) {
+        atomic_fetch_add_explicit(&g_hz5_stats_1p_2k[id],
+                                  value,
+                                  memory_order_relaxed);
+    } else {
+        atomic_fetch_add_explicit(&g_hz5_stats_1p_4k[id],
+                                  value,
+                                  memory_order_relaxed);
+    }
+#else
+    (void)sc;
+#endif
 }
 
 static void hz5_stats_print_bucket(const char* label, _Atomic(uint64_t)* bucket) {
@@ -268,6 +299,10 @@ void hz5_stats_print_once(void) {
 
     hz5_stats_print_bucket("total", g_hz5_stats);
     hz5_stats_print_bucket("pages1", g_hz5_stats_1p);
+#if HZ5_P23_1P_SC_STATS
+    hz5_stats_print_bucket("pages1_2k", g_hz5_stats_1p_2k);
+    hz5_stats_print_bucket("pages1_4k", g_hz5_stats_1p_4k);
+#endif
     hz5_stats_print_bucket("pages2", g_hz5_stats_2p);
     hz5_stats_print_bucket("pages16", g_hz5_stats_16p);
 

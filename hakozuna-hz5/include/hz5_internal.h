@@ -189,11 +189,18 @@ void hz5_stats_inc(Hz5StatId id);
 void hz5_stats_add(Hz5StatId id, uint64_t value);
 void hz5_stats_inc_pages(Hz5StatId id, uint32_t pages);
 void hz5_stats_add_pages(Hz5StatId id, uint32_t pages, uint64_t value);
+void hz5_stats_inc_run(Hz5StatId id, uint32_t pages, uint16_t sc);
+void hz5_stats_add_run(Hz5StatId id,
+                       uint32_t pages,
+                       uint16_t sc,
+                       uint64_t value);
 #else
 #define hz5_stats_inc(id) ((void)0)
 #define hz5_stats_add(id, value) ((void)0)
 #define hz5_stats_inc_pages(id, pages) ((void)0)
 #define hz5_stats_add_pages(id, pages, value) ((void)0)
+#define hz5_stats_inc_run(id, pages, sc) ((void)0)
+#define hz5_stats_add_run(id, pages, sc, value) ((void)0)
 #endif
 
 #endif

@@ -191,11 +191,12 @@ size_t hz5_tcache_release_all(void) {
                 continue;
             }
             uint32_t pages = seg->page[page].run_pages;
+            uint16_t sc = seg->page[page].sc;
 #if !HZ5_P11_SPEED_CORE
             atomic_fetch_sub_explicit(&seg->tcache_refs, 1u, memory_order_relaxed);
 #endif
             hz5_p1_segment_free_run(seg, page);
-            hz5_stats_inc_pages(HZ5_STAT_TCACHE_DESTRUCTOR_RELEASE, pages);
+            hz5_stats_inc_run(HZ5_STAT_TCACHE_DESTRUCTOR_RELEASE, pages, sc);
             (void)pages;
             ++released;
         }

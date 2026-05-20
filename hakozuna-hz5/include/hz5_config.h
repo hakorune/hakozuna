@@ -46,4 +46,8 @@
 #define HZ5_P22_SPLIT_1P_SIZE_CLASS 0u
 #endif
 
+#ifndef HZ5_P23_1P_SC_STATS
+#define HZ5_P23_1P_SC_STATS 0u
+#endif
+
 #endif
