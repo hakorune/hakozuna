@@ -13,6 +13,10 @@ enum {
   HZ5_WRAPPER_SOURCE_P17_PAGEBIN = 2,
   HZ5_WRAPPER_SOURCE_P20_CRT_BYPASS = 3,
   HZ5_WRAPPER_SOURCE_P24_RAW64K = 4,
+  /*
+   * Historical name: this tag means the HZ5 P25 lowpage64 route owns the raw
+   * block. It is HZ4-inspired, but it is not an HZ4 or HZ3 fallback path.
+   */
   HZ5_WRAPPER_SOURCE_P25_HZ4LOWPAGE = 5
 };
 

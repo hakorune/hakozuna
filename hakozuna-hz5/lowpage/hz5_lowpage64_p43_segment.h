@@ -38,6 +38,9 @@ typedef struct Hz5Lowpage64FreeCtx Hz5Lowpage64FreeCtx;
  * - SlotDecommit/PageNoAccess are safety/RSS probes and must keep metadata out
  *   of inactive data pages.
  * - FastLookup/LocklessLookup only probe pointer-to-slot lookup overhead.
+ * - PreparedBridge keeps the P25 lowpage64 relbuf/global batching path.
+ * - DirectPreparedRelease and ReleaseBuffer are RSS lower-bound controls that
+ *   bypass or replace that P25 bridge; current measurements keep them no-go.
  */
 #ifndef HZ5_LOWPAGE64_P43_SLOT_DECOMMIT
 #ifdef BENCHLAB_HZ5_P43_SLOT_DECOMMIT
