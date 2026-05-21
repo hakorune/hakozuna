@@ -1975,3 +1975,88 @@ Decision:
   strongest-result control.
 - Next step is Pro review plus focused safety repeats before considering
   promotion.
+
+## P43i2 locked writer masks cost probe
+
+P43i2 is the single contract-preserving cost probe requested before long safety
+runs. It keeps P43i's lockless contract and atomic readers, but changes
+writer-side mask updates from atomic RMW operations to lock-held load plus
+release-store.
+
+New lane:
+
+- lane: `hakozuna-hz5-p43i2-locked-writer-masks`
+- aliases: `hz5-p43i2-locked-writer-masks`, `hz5-locked-writer-masks`
+- build switch: `-P43LockedWriterMasks`
+- required build shape: P43i `-P43LocklessContract`
+- forbidden: same as P43i (`MEM_DECOMMIT`, `PAGE_NOACCESS`, runtime segment
+  release)
+
+P43i2 repeat-5:
+
+```text
+results/synthetic-sweep/20260521_210134_848
+
+pc-r90-64k-a8192-t4:
+  P43i2:  9.91M
+  P43i:  12.64M
+  P43h1:  9.75M
+  P25a:  13.34M
+  P33:    9.36M
+  HZ4:   10.84M
+
+pc-r99-64k-a8192-t4:
+  P43i2: 13.05M
+  P43i:  11.71M
+  P43h1: 14.12M
+  P25a:  13.32M
+  P33:   10.70M
+  HZ4:   11.16M
+
+rss-plateau steady RSS:
+  P43i2: 58.85 MiB
+  P43i:  57.03 MiB
+  P43h1: 57.80 MiB
+  P25a:  73.46 MiB
+  P33:   72.41 MiB
+  HZ4:   61.36 MiB
+
+fallback load_count:
+  0
+```
+
+P43i2 exact a8192 guard repeat-5:
+
+```text
+results/synthetic-sweep/20260521_210323_236
+
+pc-r90-4k-a8192-t4:
+  P43i2: 15.78M
+
+pc-r99-4k-a8192-t4:
+  P43i2: 15.18M
+
+pc-r90-8k-a8192-t4:
+  P43i2: 15.86M
+
+pc-r99-8k-a8192-t4:
+  P43i2: 15.35M
+
+pc-r90-64k-a8192-t4:
+  P43i2: 13.54M
+
+pc-r99-64k-a8192-t4:
+  P43i2: 13.35M
+
+fallback load_count:
+  0
+```
+
+Decision:
+
+- P43i2 is evidence/watch, not the selected safety lane yet.
+- It improves `64K/r99` versus P43i in the lowpage64 RSS-bounded profile, but
+  regresses `64K/r90` and slightly increases plateau RSS.
+- Treat this as evidence that writer-side atomic RMW cost contributes to r99,
+  but do not replace P43i for long safety repeats unless the next design review
+  explicitly chooses r99 recovery over P43i's more balanced profile.

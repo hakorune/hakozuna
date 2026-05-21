@@ -175,12 +175,22 @@ static void hz5_lowpage64_p43_mask_store(_Atomic uint32_t* mask,
 
 static void hz5_lowpage64_p43_mask_or(_Atomic uint32_t* mask,
                                       uint32_t value) {
+#if HZ5_LOWPAGE64_P43_LOCKED_WRITER_MASKS
+  uint32_t current = atomic_load_explicit(mask, memory_order_relaxed);
+  atomic_store_explicit(mask, current | value, memory_order_release);
+#else
   atomic_fetch_or_explicit(mask, value, memory_order_acq_rel);
+#endif
 }
 
 static void hz5_lowpage64_p43_mask_and(_Atomic uint32_t* mask,
                                        uint32_t value) {
+#if HZ5_LOWPAGE64_P43_LOCKED_WRITER_MASKS
+  uint32_t current = atomic_load_explicit(mask, memory_order_relaxed);
+  atomic_store_explicit(mask, current & value, memory_order_release);
+#else
   atomic_fetch_and_explicit(mask, value, memory_order_acq_rel);
+#endif
 }
 
 static int hz5_lowpage64_p43_slot_lookup_result(
