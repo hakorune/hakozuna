@@ -173,6 +173,15 @@
 #endif
 #endif
 
+#ifndef HZ5_LOWPAGE64_P40_SKIP_WHEN_P43_FREE_CAP
+#ifdef BENCHLAB_HZ5_P40_SKIP_WHEN_P43_FREE_CAP
+#define HZ5_LOWPAGE64_P40_SKIP_WHEN_P43_FREE_CAP \
+  BENCHLAB_HZ5_P40_SKIP_WHEN_P43_FREE_CAP
+#else
+#define HZ5_LOWPAGE64_P40_SKIP_WHEN_P43_FREE_CAP 0u
+#endif
+#endif
+
 #ifndef HZ5_LOWPAGE64_P44_BRIDGE_TRIM_DRYRUN
 #ifdef BENCHLAB_HZ5_P44_BRIDGE_TRIM_DRYRUN
 #define HZ5_LOWPAGE64_P44_BRIDGE_TRIM_DRYRUN \
@@ -377,6 +386,12 @@ static _Atomic size_t g_hz5_lowpage64_p40_release_nodes;
 static _Atomic size_t g_hz5_lowpage64_p40_release_age_nodes;
 static _Atomic size_t g_hz5_lowpage64_p40_release_hard_nodes;
 static _Atomic size_t g_hz5_lowpage64_p40_keep_nodes;
+static _Atomic size_t g_hz5_lowpage64_p40_p43_free_before_total;
+static _Atomic size_t g_hz5_lowpage64_p40_p43_free_before_max;
+static _Atomic size_t g_hz5_lowpage64_p40_p43_committed_before_total;
+static _Atomic size_t g_hz5_lowpage64_p40_p43_committed_before_max;
+static _Atomic size_t g_hz5_lowpage64_p40_skip_p43_free_calls;
+static _Atomic size_t g_hz5_lowpage64_p40_skip_p43_free_nodes;
 static _Atomic size_t g_hz5_lowpage64_p42_va_allocs;
 static _Atomic size_t g_hz5_lowpage64_p42_va_alloc_failures;
 static _Atomic size_t g_hz5_lowpage64_p42_va_releases;
@@ -400,22 +415,32 @@ static _Atomic size_t g_hz5_lowpage64_p44_reason_publish;
 static _Atomic size_t g_hz5_lowpage64_p44_reason_acquire_miss;
 static _Atomic size_t g_hz5_lowpage64_p44_reason_p40;
 static _Atomic size_t g_hz5_lowpage64_p44_reason_snapshot;
+#if HZ5_LOWPAGE64_P44_BRIDGE_TRIM_DRYRUN
 static _Atomic size_t g_hz5_lowpage64_p44_global_observed_total;
+#endif
 static _Atomic size_t g_hz5_lowpage64_p44_global_observed_max;
 static _Atomic size_t g_hz5_lowpage64_p44_global_candidate_total;
+#if HZ5_LOWPAGE64_P44_BRIDGE_TRIM_DRYRUN
 static _Atomic size_t g_hz5_lowpage64_p44_global_candidate_max;
 static _Atomic size_t g_hz5_lowpage64_p44_stash_observed_total;
+#endif
 static _Atomic size_t g_hz5_lowpage64_p44_stash_observed_max;
 static _Atomic size_t g_hz5_lowpage64_p44_stash_candidate_total;
+#if HZ5_LOWPAGE64_P44_BRIDGE_TRIM_DRYRUN
 static _Atomic size_t g_hz5_lowpage64_p44_stash_candidate_max;
 static _Atomic size_t g_hz5_lowpage64_p44_relbuf_observed_total;
+#endif
 static _Atomic size_t g_hz5_lowpage64_p44_relbuf_observed_max;
 static _Atomic size_t g_hz5_lowpage64_p44_relbuf_candidate_total;
+#if HZ5_LOWPAGE64_P44_BRIDGE_TRIM_DRYRUN
 static _Atomic size_t g_hz5_lowpage64_p44_relbuf_candidate_max;
 static _Atomic size_t g_hz5_lowpage64_p44_p43_free_observed_total;
+#endif
 static _Atomic size_t g_hz5_lowpage64_p44_p43_free_observed_max;
 static _Atomic size_t g_hz5_lowpage64_p44_p43_free_candidate_total;
+#if HZ5_LOWPAGE64_P44_BRIDGE_TRIM_DRYRUN
 static _Atomic size_t g_hz5_lowpage64_p44_p43_free_candidate_max;
+#endif
 static _Atomic size_t g_hz5_lowpage64_p44_candidate_total;
 static _Atomic size_t g_hz5_lowpage64_p44_candidate_max;
 #endif
@@ -520,6 +545,8 @@ static void* hz5_lowpage64_p42_try_recommit(size_t raw_bytes) {
 static void* hz5_lowpage64_raw_os_alloc(size_t raw_bytes) {
 #if HZ5_LOWPAGE64_P43_SEGMENT_SLOTS
 #if defined(_WIN32)
+  // P43 is the lower raw source for P43i/P44. The hot P25 bridge still lives
+  // above this function in acquire/release_common.
   void* raw = hz5_lowpage64_p43_alloc_slot(raw_bytes);
   return raw;
 #else
@@ -547,6 +574,8 @@ static void* hz5_lowpage64_raw_os_alloc(size_t raw_bytes) {
 static void hz5_lowpage64_raw_os_release(void* raw) {
 #if HZ5_LOWPAGE64_P43_SEGMENT_SLOTS
 #if defined(_WIN32)
+  // Only direct descriptor-release controls should commonly reach this P43
+  // release path. P43i/P44 balanced lanes normally preserve release_common().
   (void)hz5_lowpage64_p43_release_slot(raw);
   return;
 #endif
@@ -730,6 +759,7 @@ void hz5_lowpage64_p43g_note_prepared_path(void) {
 #endif
 }
 
+#if HZ5_LOWPAGE64_STATS || HZ5_LOWPAGE64_P44_BRIDGE_TRIM_DRYRUN
 static size_t hz5_lowpage64_p44_candidate_value(size_t observed,
                                                 size_t soft_cap) {
   if (observed <= soft_cap) {
@@ -741,6 +771,7 @@ static size_t hz5_lowpage64_p44_candidate_value(size_t observed,
   }
   return candidate;
 }
+#endif
 
 #if HZ5_LOWPAGE64_P44_BRIDGE_TRIM_DRYRUN
 typedef enum Hz5Lowpage64P44Reason {
@@ -904,6 +935,8 @@ static size_t hz5_lowpage64_free_list_p40_global(void* head,
 }
 
 static void hz5_lowpage64_p40_checkpoint(void) {
+  // P44 observes candidate state at slow/checkpoint boundaries only. It must
+  // not turn this P40 checkpoint into an actual trim policy by accident.
   hz5_lowpage64_p44_note(HZ5_LOWPAGE64_P44_REASON_P40);
 
   size_t observed = atomic_load_explicit(&g_hz5_lowpage64_global_batch_count,
@@ -913,6 +946,25 @@ static void hz5_lowpage64_p40_checkpoint(void) {
   }
 
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p40_checkpoint_calls, 1);
+  Hz5Lowpage64P43StatsSnapshot p43_stats = {0};
+  hz5_lowpage64_p43_stats_snapshot(&p43_stats);
+  HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p40_p43_free_before_total,
+                          p43_stats.slots_committed_free_current);
+  HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p40_p43_free_before_max,
+                          p43_stats.slots_committed_free_current);
+  HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p40_p43_committed_before_total,
+                          p43_stats.slots_committed_current);
+  HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p40_p43_committed_before_max,
+                          p43_stats.slots_committed_current);
+#if HZ5_LOWPAGE64_P40_SKIP_WHEN_P43_FREE_CAP > 0
+  if (p43_stats.slots_committed_free_current >=
+      HZ5_LOWPAGE64_P40_SKIP_WHEN_P43_FREE_CAP) {
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p40_skip_p43_free_calls, 1);
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p40_skip_p43_free_nodes,
+                            p43_stats.slots_committed_free_current);
+    return;
+  }
+#endif
   uint32_t epoch = atomic_fetch_add_explicit(
                        &g_hz5_lowpage64_p40_global_epoch, 1,
                        memory_order_relaxed) +
@@ -1470,6 +1522,8 @@ static void hz5_lowpage64_release_common(void* raw) {
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_span_full, 1);
 #endif
 
+  // This relbuf -> global batch -> acquired stash path is the "P25 bridge" used
+  // by P25a/P33 and intentionally preserved by P43i/P44 balanced lanes.
   hz5_lowpage64_link_next(raw, NULL);
   if (!g_hz5_lowpage64_relbuf_head) {
     g_hz5_lowpage64_relbuf_head = raw;
@@ -1509,6 +1563,8 @@ int hz5_lowpage64_release_prepared(const Hz5Lowpage64FreeCtx* ctx,
   hz5_lowpage64_raw_os_release(raw);
   return 1;
 #else
+  // PreparedBridge spends the active lookup result, then deliberately returns
+  // to release_common() so P43i keeps the P25 hot batching topology.
   hz5_lowpage64_release_common(raw);
   return 1;
 #endif
@@ -1563,10 +1619,19 @@ void hz5_lowpage64_print_snapshot(const char* label) {
           "p43_segments_reserved=%zu p43_segments_released=%zu "
           "p43_slot_commits=%zu p43_slot_decommits=%zu "
           "p43_tls_hits=%zu p43_global_hits=%zu "
-          "p43_free_slot_hits=%zu p43_lookup_calls=%zu "
+          "p43_free_slot_hits=%zu p43_source_alloc_calls=%zu "
+          "p43_source_cold_segment_scans_total=%zu "
+          "p43_source_cold_segment_scans_max=%zu "
+          "p43_source_free_segment_scans_total=%zu "
+          "p43_source_free_segment_scans_max=%zu "
+          "p43_source_new_segment_scan_total=%zu "
+          "p43_source_new_segment_scan_max=%zu p43_lookup_calls=%zu "
           "p43_lookup_active=%zu p43_lookup_nonactive=%zu "
           "p43_lookup_miss=%zu p43_lookup_lockless_hits=%zu "
           "p43_lookup_lockless_misses=%zu "
+          "p40_p43_free_before_max=%zu "
+          "p40_skip_p43_free_calls=%zu "
+          "p40_skip_p43_free_nodes=%zu "
           "p44_checkpoint_calls=%zu p44_candidate_total=%zu "
           "p44_candidate_max=%zu p44_global_candidate_total=%zu "
           "p44_stash_candidate_total=%zu "
@@ -1628,12 +1693,25 @@ void hz5_lowpage64_print_snapshot(const char* label) {
           p43_stats.tls_hits,
           p43_stats.global_hits,
           p43_stats.free_slot_hits,
+          p43_stats.source_alloc_calls,
+          p43_stats.source_cold_segment_scans_total,
+          p43_stats.source_cold_segment_scans_max,
+          p43_stats.source_free_segment_scans_total,
+          p43_stats.source_free_segment_scans_max,
+          p43_stats.source_new_segment_scan_total,
+          p43_stats.source_new_segment_scan_max,
           p43_stats.lookup_calls,
           p43_stats.lookup_active,
           p43_stats.lookup_nonactive,
           p43_stats.lookup_miss,
           p43_stats.lookup_lockless_hits,
           p43_stats.lookup_lockless_misses,
+          atomic_load_explicit(&g_hz5_lowpage64_p40_p43_free_before_max,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p40_skip_p43_free_calls,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p40_skip_p43_free_nodes,
+                               memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_p44_checkpoint_calls,
                                memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_p44_candidate_total,
@@ -1732,6 +1810,10 @@ static void hz5_lowpage64_print_once(void) {
           "p40_checkpoint_calls=%zu p40_release_calls=%zu "
           "p40_release_nodes=%zu p40_release_age_nodes=%zu "
           "p40_release_hard_nodes=%zu p40_keep_nodes=%zu "
+          "p40_p43_free_before_total=%zu p40_p43_free_before_max=%zu "
+          "p40_p43_committed_before_total=%zu "
+          "p40_p43_committed_before_max=%zu "
+          "p40_skip_p43_free_calls=%zu p40_skip_p43_free_nodes=%zu "
           "p42_va_allocs=%zu p42_va_alloc_failures=%zu "
           "p42_va_releases=%zu p42_decommit_calls=%zu "
           "p42_decommit_failures=%zu p42_recommit_calls=%zu "
@@ -1743,7 +1825,13 @@ static void hz5_lowpage64_print_once(void) {
           "p43_tls_hits=%zu p43_tls_pushes=%zu "
           "p43_tls_overflow_pushes=%zu p43_global_hits=%zu "
           "p43_global_pushes=%zu p43_cold_hits=%zu "
-          "p43_free_slot_hits=%zu p43_lookup_calls=%zu "
+          "p43_free_slot_hits=%zu p43_source_alloc_calls=%zu "
+          "p43_source_cold_segment_scans_total=%zu "
+          "p43_source_cold_segment_scans_max=%zu "
+          "p43_source_free_segment_scans_total=%zu "
+          "p43_source_free_segment_scans_max=%zu "
+          "p43_source_new_segment_scan_total=%zu "
+          "p43_source_new_segment_scan_max=%zu p43_lookup_calls=%zu "
           "p43_lookup_active=%zu p43_lookup_nonactive=%zu "
           "p43_lookup_miss=%zu "
           "p43_lookup_segments_scanned_total=%zu "
@@ -1904,6 +1992,20 @@ static void hz5_lowpage64_print_once(void) {
                                memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_p40_keep_nodes,
                                memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p40_p43_free_before_total,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p40_p43_free_before_max,
+                               memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p40_p43_committed_before_total,
+              memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p40_p43_committed_before_max,
+              memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p40_skip_p43_free_calls,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p40_skip_p43_free_nodes,
+                               memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_p42_va_allocs,
                                memory_order_relaxed) +
               p43_stats.va_allocs,
@@ -1940,6 +2042,13 @@ static void hz5_lowpage64_print_once(void) {
           p43_stats.global_pushes,
           p43_stats.cold_hits,
           p43_stats.free_slot_hits,
+          p43_stats.source_alloc_calls,
+          p43_stats.source_cold_segment_scans_total,
+          p43_stats.source_cold_segment_scans_max,
+          p43_stats.source_free_segment_scans_total,
+          p43_stats.source_free_segment_scans_max,
+          p43_stats.source_new_segment_scan_total,
+          p43_stats.source_new_segment_scan_max,
           p43_stats.lookup_calls,
           p43_stats.lookup_active,
           p43_stats.lookup_nonactive,

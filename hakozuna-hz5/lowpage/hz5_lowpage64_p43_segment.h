@@ -288,6 +288,13 @@ typedef struct Hz5Lowpage64P43StatsSnapshot {
   size_t global_pushes;
   size_t cold_hits;
   size_t free_slot_hits;
+  size_t source_alloc_calls;
+  size_t source_cold_segment_scans_total;
+  size_t source_cold_segment_scans_max;
+  size_t source_free_segment_scans_total;
+  size_t source_free_segment_scans_max;
+  size_t source_new_segment_scan_total;
+  size_t source_new_segment_scan_max;
   size_t lookup_calls;
   size_t lookup_active;
   size_t lookup_nonactive;
