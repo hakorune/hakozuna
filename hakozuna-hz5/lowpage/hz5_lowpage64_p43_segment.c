@@ -1,3 +1,4 @@
+#include "hz5_lowpage64.h"
 #include "hz5_lowpage64_p43_segment.h"
 
 #include <stdatomic.h>
@@ -194,6 +195,33 @@ static void hz5_lowpage64_p43_count_lookup_result(int result,
   (void)scanned;
 }
 
+static void hz5_lowpage64_p43_fill_free_ctx(Hz5Lowpage64FreeCtx* ctx,
+                                            int result,
+                                            Hz5Lowpage64Segment* seg,
+                                            uint32_t slot) {
+  if (!ctx) {
+    return;
+  }
+  ctx->lookup_kind = result;
+  ctx->segment_token = NULL;
+  ctx->slot_base = NULL;
+  ctx->slot_size = 0;
+  ctx->slot_index = 0;
+  ctx->flags = 0;
+
+  if (result == HZ5_LOWPAGE64_LOOKUP_MISS || !seg ||
+      slot >= (uint32_t)HZ5_LOWPAGE64_P43_SLOT_COUNT) {
+    return;
+  }
+
+  ctx->segment_token = seg;
+  ctx->slot_base = (void*)((uintptr_t)seg->base +
+                           (uintptr_t)slot *
+                               HZ5_LOWPAGE64_P43_SLOT_SIZE);
+  ctx->slot_size = HZ5_LOWPAGE64_P43_SLOT_SIZE;
+  ctx->slot_index = slot;
+}
+
 #if HZ5_LOWPAGE64_P43_FAST_LOOKUP
 static uint32_t hz5_lowpage64_p43_fast_lookup_index(uintptr_t p) {
   return (uint32_t)((p >> 16) &
@@ -227,8 +255,11 @@ static void hz5_lowpage64_p43_unpublish_fast_lookup_locked(
 }
 
 #if HZ5_LOWPAGE64_P43_LOCKLESS_LOOKUP
-static int hz5_lowpage64_p43_lookup_fast_lockless(uintptr_t p,
-                                                  size_t* scanned_out) {
+static int hz5_lowpage64_p43_lookup_fast_lockless(
+    uintptr_t p,
+    size_t* scanned_out,
+    Hz5Lowpage64Segment** seg_out,
+    uint32_t* slot_out) {
   Hz5Lowpage64Segment* hint =
       atomic_load_explicit(
           &g_hz5_lowpage64_p43_fast_lookup[
@@ -242,6 +273,12 @@ static int hz5_lowpage64_p43_lookup_fast_lockless(uintptr_t p,
 
   if (scanned_out) {
     *scanned_out = 1;
+  }
+  if (seg_out) {
+    *seg_out = hint;
+  }
+  if (slot_out) {
+    *slot_out = slot;
   }
   HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_lookup_lockless_hits, 1);
   return hz5_lowpage64_p43_slot_lookup_result(hint, slot);
@@ -501,14 +538,18 @@ int hz5_lowpage64_p43_active_owns(void* ptr) {
 #endif
 }
 
-int hz5_lowpage64_p43_lookup(void* ptr) {
+static int hz5_lowpage64_p43_lookup_impl(void* ptr,
+                                         Hz5Lowpage64FreeCtx* ctx) {
 #if HZ5_LOWPAGE64_P43_SEGMENT_SLOTS
   int result = HZ5_LOWPAGE64_LOOKUP_MISS;
   uintptr_t p = (uintptr_t)ptr;
   size_t scanned = 0;
+  Hz5Lowpage64Segment* found_seg = NULL;
+  uint32_t found_slot = 0;
   HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_lookup_calls, 1);
 #if HZ5_LOWPAGE64_P43_FAST_LOOKUP && HZ5_LOWPAGE64_P43_LOCKLESS_LOOKUP
-  result = hz5_lowpage64_p43_lookup_fast_lockless(p, &scanned);
+  result = hz5_lowpage64_p43_lookup_fast_lockless(p, &scanned, &found_seg,
+                                                  &found_slot);
   if (result != HZ5_LOWPAGE64_LOOKUP_MISS) {
     goto hz5_p43_lookup_count_result;
   }
@@ -524,6 +565,8 @@ int hz5_lowpage64_p43_lookup(void* ptr) {
             memory_order_acquire);
     if (hz5_lowpage64_p43_segment_contains(hint, p, &slot)) {
       result = hz5_lowpage64_p43_slot_lookup_result(hint, slot);
+      found_seg = hint;
+      found_slot = slot;
       scanned = 1;
       HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_lookup_fast_hits, 1);
       goto hz5_p43_lookup_done;
@@ -539,6 +582,8 @@ int hz5_lowpage64_p43_lookup(void* ptr) {
       continue;
     }
     result = hz5_lowpage64_p43_slot_lookup_result(seg, slot);
+    found_seg = seg;
+    found_slot = slot;
     break;
   }
 #if HZ5_LOWPAGE64_P43_FAST_LOOKUP
@@ -548,12 +593,25 @@ hz5_p43_lookup_done:
 #if HZ5_LOWPAGE64_P43_FAST_LOOKUP && HZ5_LOWPAGE64_P43_LOCKLESS_LOOKUP
 hz5_p43_lookup_count_result:
 #endif
+  hz5_lowpage64_p43_fill_free_ctx(ctx, result, found_seg, found_slot);
   hz5_lowpage64_p43_count_lookup_result(result, scanned);
   return result;
 #else
   (void)ptr;
+  if (ctx) {
+    ctx->lookup_kind = HZ5_LOWPAGE64_LOOKUP_MISS;
+  }
   return HZ5_LOWPAGE64_LOOKUP_MISS;
 #endif
+}
+
+int hz5_lowpage64_p43_lookup(void* ptr) {
+  return hz5_lowpage64_p43_lookup_impl(ptr, NULL);
+}
+
+int hz5_lowpage64_p43_prepare_free_user(void* ptr,
+                                        Hz5Lowpage64FreeCtx* ctx) {
+  return hz5_lowpage64_p43_lookup_impl(ptr, ctx);
 }
 
 void* hz5_lowpage64_p43_alloc_slot(size_t raw_bytes) {

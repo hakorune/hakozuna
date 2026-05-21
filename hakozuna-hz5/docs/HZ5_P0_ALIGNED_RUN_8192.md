@@ -1496,3 +1496,58 @@ Decision:
   direction should be descriptor-safe P25-level cache ownership or a combined
   active-lookup/release path that avoids per-free gate overhead while preserving
   the ACTIVE-only data-page-read invariant.
+
+## P43g.0 prepared release context
+
+P43g.0 starts the combined active-lookup/release track as a counter-only
+consistency probe.
+
+New knob:
+
+- build switch: `-P43PreparedRelease`
+- macro: `BENCHLAB_HZ5_P43_PREPARED_RELEASE`
+- lane: `hakozuna-hz5-p43g0-prepared-release`
+
+Constraints:
+
+- requires `-P43SegmentSlots`;
+- rejected by `-SpeedLane`;
+- cannot be combined with `-P43SlotDecommit` or `-P43PageNoAccess`;
+- diagnostic/evidence only.
+
+Mechanism:
+
+- policy free calls `hz5_lowpage64_prepare_free_user()` before wrapper decode;
+- P43 fills a `Hz5Lowpage64FreeCtx` with the active lookup result and slot base;
+- wrapper decode still happens only after an ACTIVE result;
+- the old P25 raw release path is intentionally kept;
+- counters verify source/raw consistency before a later no-second-lookup bridge.
+
+P43g.0 smoke:
+
+```text
+results/synthetic-sweep/20260521_190302_149
+
+p43g_prepare_calls: 104001
+p43g_prepare_active: 104000
+p43g_prepare_nonactive: 0
+p43g_prepare_miss: 1
+p43g_source_p25: 104000
+p43g_source_other: 1
+p43g_raw_mismatch: 0
+p43g_release_old_path_calls: 104000
+p43g_release_prepared_calls: 0
+
+fallback load_count:
+  0
+```
+
+Decision:
+
+- P43g.0 proves the prepared context is coherent: all exact P25 lowpage frees
+  matched the prepared slot base, and fallback stayed unloaded.
+- Do not read speed from this lane. The added per-free diagnostic counters are
+  intentionally hot and make it slower than P43f.1.
+- Next P43g/P43h work should either:
+  - add a no-second-lookup release bridge that can preserve P25 batching, or
+  - move a small P25 hot-cache layer to SlotRef ownership.
