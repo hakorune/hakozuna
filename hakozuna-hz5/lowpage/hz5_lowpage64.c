@@ -191,6 +191,15 @@
 #endif
 #endif
 
+#ifndef HZ5_LOWPAGE64_P43O_ADMISSION_GATE
+#ifdef BENCHLAB_HZ5_P43O_ADMISSION_GATE
+#define HZ5_LOWPAGE64_P43O_ADMISSION_GATE \
+  BENCHLAB_HZ5_P43O_ADMISSION_GATE
+#else
+#define HZ5_LOWPAGE64_P43O_ADMISSION_GATE 0
+#endif
+#endif
+
 #ifndef HZ5_LOWPAGE64_P43O_LOW_WATER
 #ifdef BENCHLAB_HZ5_P43O_LOW_WATER
 #define HZ5_LOWPAGE64_P43O_LOW_WATER BENCHLAB_HZ5_P43O_LOW_WATER
@@ -222,6 +231,12 @@
 #else
 #define HZ5_LOWPAGE64_P43O_COOLDOWN_EPOCHS 2u
 #endif
+#endif
+
+#ifndef HZ5_LOWPAGE64_P43O_ANY
+#define HZ5_LOWPAGE64_P43O_ANY \
+  (HZ5_LOWPAGE64_P43O_ADMISSION_DRYRUN || \
+   HZ5_LOWPAGE64_P43O_ADMISSION_GATE)
 #endif
 
 #ifndef HZ5_LOWPAGE64_P44_BRIDGE_TRIM_DRYRUN
@@ -360,6 +375,8 @@ static _Atomic size_t g_hz5_lowpage64_p42_cold_count;
 #if HZ5_LOWPAGE64_P40_GLOBAL_SOFT_CAP > 0
 static _Atomic uint32_t g_hz5_lowpage64_p40_global_epoch;
 #endif
+static _Atomic size_t g_hz5_lowpage64_p43o_runtime_state;
+static _Atomic size_t g_hz5_lowpage64_p43o_runtime_cooldown;
 #if HZ5_LOWPAGE64_P42_VA_SOURCE && HZ5_LOWPAGE64_P42_DECOMMIT_COLD
 typedef struct Hz5Lowpage64ColdNode {
   void* raw;
@@ -439,8 +456,6 @@ static _Atomic size_t g_hz5_lowpage64_p40_p43_committed_before_max;
 static _Atomic size_t g_hz5_lowpage64_p40_skip_p43_free_calls;
 static _Atomic size_t g_hz5_lowpage64_p40_skip_p43_free_nodes;
 static _Atomic size_t g_hz5_lowpage64_p43o_epoch;
-static _Atomic size_t g_hz5_lowpage64_p43o_state_current;
-static _Atomic size_t g_hz5_lowpage64_p43o_cooldown_current;
 static _Atomic size_t g_hz5_lowpage64_p43o_state_open;
 static _Atomic size_t g_hz5_lowpage64_p43o_state_drain;
 static _Atomic size_t g_hz5_lowpage64_p43o_state_closed;
@@ -839,7 +854,7 @@ static size_t hz5_lowpage64_p44_candidate_value(size_t observed,
 }
 #endif
 
-#if HZ5_LOWPAGE64_P43O_ADMISSION_DRYRUN
+#if HZ5_LOWPAGE64_P43O_ANY
 typedef enum Hz5Lowpage64P43oReason {
   HZ5_LOWPAGE64_P43O_REASON_ACQUIRE_MISS = 1,
   HZ5_LOWPAGE64_P43O_REASON_P40 = 2,
@@ -852,6 +867,7 @@ typedef enum Hz5Lowpage64P43oState {
   HZ5_LOWPAGE64_P43O_STATE_CLOSED = 2,
 } Hz5Lowpage64P43oState;
 
+#if HZ5_LOWPAGE64_P43O_ADMISSION_DRYRUN
 static void hz5_lowpage64_p43o_bucket_free(size_t free_current,
                                            size_t* hot,
                                            size_t* warm,
@@ -868,18 +884,25 @@ static void hz5_lowpage64_p43o_bucket_free(size_t free_current,
   }
   *cold = free_current > high ? free_current - high : 0;
 }
+#else
+#define hz5_lowpage64_p43o_bucket_free(free_current, hot, warm, cold) \
+  do {                                                               \
+    *(hot) = 0;                                                      \
+    *(warm) = 0;                                                     \
+    *(cold) = 0;                                                     \
+  } while (0)
+#endif
 
 static size_t hz5_lowpage64_p43o_choose_state(size_t old_state,
-                                              size_t free_current) {
+                                              size_t free_current,
+                                              _Atomic size_t* cooldown_ptr) {
   if (free_current >= HZ5_LOWPAGE64_P43O_HARD_WATER) {
-    atomic_store_explicit(&g_hz5_lowpage64_p43o_cooldown_current,
-                          HZ5_LOWPAGE64_P43O_COOLDOWN_EPOCHS,
+    atomic_store_explicit(cooldown_ptr, HZ5_LOWPAGE64_P43O_COOLDOWN_EPOCHS,
                           memory_order_relaxed);
     return HZ5_LOWPAGE64_P43O_STATE_CLOSED;
   }
   if (free_current >= HZ5_LOWPAGE64_P43O_HIGH_WATER) {
-    atomic_store_explicit(&g_hz5_lowpage64_p43o_cooldown_current,
-                          HZ5_LOWPAGE64_P43O_COOLDOWN_EPOCHS,
+    atomic_store_explicit(cooldown_ptr, HZ5_LOWPAGE64_P43O_COOLDOWN_EPOCHS,
                           memory_order_relaxed);
     return HZ5_LOWPAGE64_P43O_STATE_DRAIN;
   }
@@ -889,16 +912,33 @@ static size_t hz5_lowpage64_p43o_choose_state(size_t old_state,
   if (old_state == HZ5_LOWPAGE64_P43O_STATE_OPEN) {
     return HZ5_LOWPAGE64_P43O_STATE_OPEN;
   }
-  size_t cooldown = atomic_load_explicit(
-      &g_hz5_lowpage64_p43o_cooldown_current, memory_order_relaxed);
+  size_t cooldown =
+      atomic_load_explicit(cooldown_ptr, memory_order_relaxed);
   if (cooldown > 0) {
-    atomic_store_explicit(&g_hz5_lowpage64_p43o_cooldown_current,
-                          cooldown - 1, memory_order_relaxed);
+    atomic_store_explicit(cooldown_ptr, cooldown - 1,
+                          memory_order_relaxed);
     return old_state;
   }
   return HZ5_LOWPAGE64_P43O_STATE_OPEN;
 }
 
+#if HZ5_LOWPAGE64_P43O_ADMISSION_GATE
+static int hz5_lowpage64_p43o_source_admission_open(
+    const Hz5Lowpage64P43StatsSnapshot* stats) {
+  size_t old_state = atomic_load_explicit(
+      &g_hz5_lowpage64_p43o_runtime_state, memory_order_relaxed);
+  size_t new_state = hz5_lowpage64_p43o_choose_state(
+      old_state, stats ? stats->slots_committed_free_current : 0,
+      &g_hz5_lowpage64_p43o_runtime_cooldown);
+  atomic_store_explicit(&g_hz5_lowpage64_p43o_runtime_state, new_state,
+                        memory_order_relaxed);
+  return new_state == HZ5_LOWPAGE64_P43O_STATE_OPEN;
+}
+#else
+#define hz5_lowpage64_p43o_source_admission_open(stats) (1)
+#endif
+
+#if HZ5_LOWPAGE64_P43O_ADMISSION_DRYRUN
 static void hz5_lowpage64_p43o_note(
     Hz5Lowpage64P43oReason reason,
     size_t observed_global,
@@ -912,13 +952,13 @@ static void hz5_lowpage64_p43o_note(
 
   size_t free_current = stats->slots_committed_free_current;
   size_t old_state = atomic_load_explicit(
-      &g_hz5_lowpage64_p43o_state_current, memory_order_relaxed);
-  size_t new_state =
-      hz5_lowpage64_p43o_choose_state(old_state, free_current);
+      &g_hz5_lowpage64_p43o_runtime_state, memory_order_relaxed);
+  size_t new_state = hz5_lowpage64_p43o_choose_state(
+      old_state, free_current, &g_hz5_lowpage64_p43o_runtime_cooldown);
   if (new_state != old_state) {
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43o_admission_flips, 1);
   }
-  atomic_store_explicit(&g_hz5_lowpage64_p43o_state_current, new_state,
+  atomic_store_explicit(&g_hz5_lowpage64_p43o_runtime_state, new_state,
                         memory_order_relaxed);
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43o_epoch, 1);
   switch (new_state) {
@@ -979,6 +1019,16 @@ static void hz5_lowpage64_p43o_note(
   }
 }
 #else
+#define hz5_lowpage64_p43o_note(reason, observed_global, stats) ((void)0)
+#endif
+#else
+#define hz5_lowpage64_p43o_bucket_free(free_current, hot, warm, cold) \
+  do {                                                               \
+    *(hot) = 0;                                                      \
+    *(warm) = 0;                                                     \
+    *(cold) = 0;                                                     \
+  } while (0)
+#define hz5_lowpage64_p43o_source_admission_open(stats) (1)
 #define hz5_lowpage64_p43o_note(reason, observed_global, stats) ((void)0)
 #endif
 
@@ -1167,6 +1217,14 @@ static void hz5_lowpage64_p40_checkpoint(void) {
                           p43_stats.slots_committed_current);
   hz5_lowpage64_p43o_note(HZ5_LOWPAGE64_P43O_REASON_P40, observed,
                           &p43_stats);
+#if HZ5_LOWPAGE64_P43O_ADMISSION_GATE
+  if (!hz5_lowpage64_p43o_source_admission_open(&p43_stats)) {
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p40_skip_p43_free_calls, 1);
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p40_skip_p43_free_nodes,
+                            p43_stats.slots_committed_free_current);
+    return;
+  }
+#endif
 #if HZ5_LOWPAGE64_P40_SKIP_WHEN_P43_FREE_CAP > 0
   if (p43_stats.slots_committed_free_current >=
       HZ5_LOWPAGE64_P40_SKIP_WHEN_P43_FREE_CAP) {
@@ -1995,9 +2053,9 @@ void hz5_lowpage64_print_snapshot(const char* label) {
           p44_p43_free_current,
           atomic_load_explicit(&g_hz5_lowpage64_p43o_epoch,
                                memory_order_relaxed),
-          atomic_load_explicit(&g_hz5_lowpage64_p43o_state_current,
+          atomic_load_explicit(&g_hz5_lowpage64_p43o_runtime_state,
                                memory_order_relaxed),
-          atomic_load_explicit(&g_hz5_lowpage64_p43o_cooldown_current,
+          atomic_load_explicit(&g_hz5_lowpage64_p43o_runtime_cooldown,
                                memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_p43o_state_open,
                                memory_order_relaxed),
@@ -2443,9 +2501,9 @@ static void hz5_lowpage64_print_once(void) {
           p44_p43_free_current,
           atomic_load_explicit(&g_hz5_lowpage64_p43o_epoch,
                                memory_order_relaxed),
-          atomic_load_explicit(&g_hz5_lowpage64_p43o_state_current,
+          atomic_load_explicit(&g_hz5_lowpage64_p43o_runtime_state,
                                memory_order_relaxed),
-          atomic_load_explicit(&g_hz5_lowpage64_p43o_cooldown_current,
+          atomic_load_explicit(&g_hz5_lowpage64_p43o_runtime_cooldown,
                                memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_p43o_state_open,
                                memory_order_relaxed),
