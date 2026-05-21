@@ -998,6 +998,55 @@ int hz5_lowpage64_p43_release_slot(void* raw) {
 #endif
 }
 
+int hz5_lowpage64_p43_release_prepared_slot(
+    const Hz5Lowpage64FreeCtx* ctx) {
+#if HZ5_LOWPAGE64_P43_SEGMENT_SLOTS && defined(_WIN32)
+  if (!ctx || ctx->lookup_kind != HZ5_LOWPAGE64_LOOKUP_OWNED_ACTIVE ||
+      !ctx->segment_token ||
+      ctx->slot_index >= (uint32_t)HZ5_LOWPAGE64_P43_SLOT_COUNT) {
+    return 0;
+  }
+
+  Hz5Lowpage64Segment* seg =
+      (Hz5Lowpage64Segment*)ctx->segment_token;
+  uint32_t slot = ctx->slot_index;
+  uint32_t bit = (uint32_t)1u << slot;
+  void* expected =
+      (void*)((uintptr_t)seg->base +
+              (uintptr_t)slot * HZ5_LOWPAGE64_P43_SLOT_SIZE);
+  if (ctx->slot_base && ctx->slot_base != expected) {
+    return 0;
+  }
+
+  hz5_lowpage64_p43_lock_enter();
+  if ((hz5_lowpage64_p43_mask_load(&seg->allocated_mask) & bit) == 0u) {
+    hz5_lowpage64_p43_lock_leave();
+    return 0;
+  }
+#if HZ5_LOWPAGE64_P43_TLS_CACHE_CAP > 0u && \
+    !HZ5_LOWPAGE64_P43_PAGE_NOACCESS
+  if ((hz5_lowpage64_p43_mask_load(&seg->committed_mask) & bit) != 0u &&
+      (hz5_lowpage64_p43_mask_load(&seg->cold_mask) & bit) == 0u) {
+    hz5_lowpage64_p43_mask_and(&seg->allocated_mask, ~bit);
+    if (hz5_lowpage64_p43_tls_push(seg, slot)) {
+      hz5_lowpage64_p43_lock_leave();
+      return 1;
+    }
+    HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_tls_overflow_pushes, 1);
+    hz5_lowpage64_p43_committed_push_locked(seg, slot);
+    hz5_lowpage64_p43_lock_leave();
+    return 1;
+  }
+#endif
+  hz5_lowpage64_p43_mask_and(&seg->allocated_mask, ~bit);
+  hz5_lowpage64_p43_lock_leave();
+  return 1;
+#else
+  (void)ctx;
+  return 0;
+#endif
+}
+
 void hz5_lowpage64_p43_stats_snapshot(
     Hz5Lowpage64P43StatsSnapshot* snapshot) {
   if (!snapshot) {

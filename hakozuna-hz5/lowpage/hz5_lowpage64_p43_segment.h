@@ -305,6 +305,8 @@ enum {
 
 void* hz5_lowpage64_p43_alloc_slot(size_t raw_bytes);
 int hz5_lowpage64_p43_release_slot(void* raw);
+int hz5_lowpage64_p43_release_prepared_slot(
+    const Hz5Lowpage64FreeCtx* ctx);
 int hz5_lowpage64_p43_lookup(void* ptr);
 int hz5_lowpage64_p43_prepare_free_user(void* ptr,
                                         Hz5Lowpage64FreeCtx* ctx);

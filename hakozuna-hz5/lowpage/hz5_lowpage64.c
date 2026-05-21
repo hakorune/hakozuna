@@ -1320,6 +1320,9 @@ int hz5_lowpage64_release_prepared(const Hz5Lowpage64FreeCtx* ctx,
   hz5_lowpage64_p43g_note_prepared_path();
 #if HZ5_LOWPAGE64_P43_DIRECT_PREPARED_RELEASE
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_free_calls, 1);
+  if (hz5_lowpage64_p43_release_prepared_slot(ctx)) {
+    return 1;
+  }
   hz5_lowpage64_raw_os_release(raw);
   return 1;
 #else
