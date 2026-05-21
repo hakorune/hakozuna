@@ -163,6 +163,37 @@ static int hz5_lowpage64_p43_segment_contains(Hz5Lowpage64Segment* seg,
   return 1;
 }
 
+static int hz5_lowpage64_p43_slot_lookup_result(
+    Hz5Lowpage64Segment* seg,
+    uint32_t slot) {
+  if (!seg || slot >= (uint32_t)HZ5_LOWPAGE64_P43_SLOT_COUNT) {
+    return HZ5_LOWPAGE64_LOOKUP_MISS;
+  }
+
+  uint32_t bit = (uint32_t)1u << slot;
+  int active = ((seg->allocated_mask & bit) != 0u) &&
+               ((seg->committed_mask & bit) != 0u) &&
+               ((seg->cold_mask & bit) == 0u);
+  return active ? HZ5_LOWPAGE64_LOOKUP_OWNED_ACTIVE
+                : HZ5_LOWPAGE64_LOOKUP_OWNED_NONACTIVE;
+}
+
+static void hz5_lowpage64_p43_count_lookup_result(int result,
+                                                  size_t scanned) {
+  HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_lookup_segments_scanned_total,
+                    scanned);
+  HZ5_P43_COUNT_MAX(g_hz5_lowpage64_p43_lookup_segments_scanned_max,
+                    scanned);
+  if (result == HZ5_LOWPAGE64_LOOKUP_OWNED_ACTIVE) {
+    HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_lookup_active, 1);
+  } else if (result == HZ5_LOWPAGE64_LOOKUP_OWNED_NONACTIVE) {
+    HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_lookup_nonactive, 1);
+  } else {
+    HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_lookup_miss, 1);
+  }
+  (void)scanned;
+}
+
 #if HZ5_LOWPAGE64_P43_FAST_LOOKUP
 static uint32_t hz5_lowpage64_p43_fast_lookup_index(uintptr_t p) {
   return (uint32_t)((p >> 16) &
@@ -209,16 +240,11 @@ static int hz5_lowpage64_p43_lookup_fast_lockless(uintptr_t p,
     return HZ5_LOWPAGE64_LOOKUP_MISS;
   }
 
-  uint32_t bit = (uint32_t)1u << slot;
-  int active = ((hint->allocated_mask & bit) != 0u) &&
-               ((hint->committed_mask & bit) != 0u) &&
-               ((hint->cold_mask & bit) == 0u);
   if (scanned_out) {
     *scanned_out = 1;
   }
   HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_lookup_lockless_hits, 1);
-  return active ? HZ5_LOWPAGE64_LOOKUP_OWNED_ACTIVE
-                : HZ5_LOWPAGE64_LOOKUP_OWNED_NONACTIVE;
+  return hz5_lowpage64_p43_slot_lookup_result(hint, slot);
 }
 #endif
 #endif
@@ -497,12 +523,7 @@ int hz5_lowpage64_p43_lookup(void* ptr) {
                 hz5_lowpage64_p43_fast_lookup_index(p)],
             memory_order_acquire);
     if (hz5_lowpage64_p43_segment_contains(hint, p, &slot)) {
-      uint32_t bit = (uint32_t)1u << slot;
-      int active = ((hint->allocated_mask & bit) != 0u) &&
-                   ((hint->committed_mask & bit) != 0u) &&
-                   ((hint->cold_mask & bit) == 0u);
-      result = active ? HZ5_LOWPAGE64_LOOKUP_OWNED_ACTIVE
-                      : HZ5_LOWPAGE64_LOOKUP_OWNED_NONACTIVE;
+      result = hz5_lowpage64_p43_slot_lookup_result(hint, slot);
       scanned = 1;
       HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_lookup_fast_hits, 1);
       goto hz5_p43_lookup_done;
@@ -517,12 +538,7 @@ int hz5_lowpage64_p43_lookup(void* ptr) {
     if (!hz5_lowpage64_p43_segment_contains(seg, p, &slot)) {
       continue;
     }
-    uint32_t bit = (uint32_t)1u << slot;
-    int active = ((seg->allocated_mask & bit) != 0u) &&
-                 ((seg->committed_mask & bit) != 0u) &&
-                 ((seg->cold_mask & bit) == 0u);
-    result = active ? HZ5_LOWPAGE64_LOOKUP_OWNED_ACTIVE
-                    : HZ5_LOWPAGE64_LOOKUP_OWNED_NONACTIVE;
+    result = hz5_lowpage64_p43_slot_lookup_result(seg, slot);
     break;
   }
 #if HZ5_LOWPAGE64_P43_FAST_LOOKUP
@@ -532,18 +548,7 @@ hz5_p43_lookup_done:
 #if HZ5_LOWPAGE64_P43_FAST_LOOKUP && HZ5_LOWPAGE64_P43_LOCKLESS_LOOKUP
 hz5_p43_lookup_count_result:
 #endif
-  HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_lookup_segments_scanned_total,
-                    scanned);
-  HZ5_P43_COUNT_MAX(g_hz5_lowpage64_p43_lookup_segments_scanned_max,
-                    scanned);
-  if (result == HZ5_LOWPAGE64_LOOKUP_OWNED_ACTIVE) {
-    HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_lookup_active, 1);
-  } else if (result == HZ5_LOWPAGE64_LOOKUP_OWNED_NONACTIVE) {
-    HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_lookup_nonactive, 1);
-  } else {
-    HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_lookup_miss, 1);
-  }
-  (void)scanned;
+  hz5_lowpage64_p43_count_lookup_result(result, scanned);
   return result;
 #else
   (void)ptr;

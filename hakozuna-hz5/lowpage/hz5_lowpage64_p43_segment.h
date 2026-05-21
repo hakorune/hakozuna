@@ -29,6 +29,14 @@ extern "C" {
   (HZ5_LOWPAGE64_P43_SEGMENT_SIZE / HZ5_LOWPAGE64_P43_SLOT_SIZE)
 #endif
 
+/*
+ * P43 is split into small research knobs so safety and speed questions do not
+ * blur together:
+ * - SegmentSlots changes the raw allocation source to 2MiB segment slots.
+ * - SlotDecommit/PageNoAccess are safety/RSS probes and must keep metadata out
+ *   of inactive data pages.
+ * - FastLookup/LocklessLookup only probe pointer-to-slot lookup overhead.
+ */
 #ifndef HZ5_LOWPAGE64_P43_SLOT_DECOMMIT
 #ifdef BENCHLAB_HZ5_P43_SLOT_DECOMMIT
 #define HZ5_LOWPAGE64_P43_SLOT_DECOMMIT \
@@ -108,6 +116,19 @@ extern "C" {
 #else
 #define HZ5_LOWPAGE64_P43_LOCKLESS_LOOKUP 0
 #endif
+#endif
+
+#if HZ5_LOWPAGE64_P43_SLOT_DECOMMIT && HZ5_LOWPAGE64_P43_PAGE_NOACCESS
+#error "P43 SlotDecommit and PageNoAccess are mutually exclusive"
+#endif
+
+#if HZ5_LOWPAGE64_P43_LOCKLESS_LOOKUP && !HZ5_LOWPAGE64_P43_FAST_LOOKUP
+#error "P43 LocklessLookup requires FastLookup"
+#endif
+
+#if HZ5_LOWPAGE64_P43_LOCKLESS_LOOKUP && \
+    (HZ5_LOWPAGE64_P43_SLOT_DECOMMIT || HZ5_LOWPAGE64_P43_PAGE_NOACCESS)
+#error "P43 LocklessLookup is diagnostic-only and cannot run with slot decommit/PageNoAccess"
 #endif
 
 typedef struct Hz5Lowpage64P43StatsSnapshot {
