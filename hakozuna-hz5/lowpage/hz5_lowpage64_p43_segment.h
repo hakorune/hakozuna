@@ -74,6 +74,15 @@ extern "C" {
 #endif
 #endif
 
+#ifndef HZ5_LOWPAGE64_P43_TLS_CACHE_CAP
+#ifdef BENCHLAB_HZ5_P43_TLS_CACHE_CAP
+#define HZ5_LOWPAGE64_P43_TLS_CACHE_CAP \
+  BENCHLAB_HZ5_P43_TLS_CACHE_CAP
+#else
+#define HZ5_LOWPAGE64_P43_TLS_CACHE_CAP 0u
+#endif
+#endif
+
 typedef struct Hz5Lowpage64P43StatsSnapshot {
   size_t segments_reserved;
   size_t segments_released;

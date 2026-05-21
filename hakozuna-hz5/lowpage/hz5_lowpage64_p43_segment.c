@@ -32,6 +32,11 @@
 #error "P43 segment slot bitmap currently supports up to 32 slots"
 #endif
 
+#define HZ5_LOWPAGE64_P43_COMMITTED_LISTS \
+  (HZ5_LOWPAGE64_P43_DESCRIPTOR_LISTS || \
+   HZ5_LOWPAGE64_P43_COMMITTED_RETAIN_CAP > 0u || \
+   HZ5_LOWPAGE64_P43_TLS_CACHE_CAP > 0u)
+
 typedef struct Hz5Lowpage64Segment Hz5Lowpage64Segment;
 
 typedef struct Hz5Lowpage64P43SlotRef {
@@ -44,8 +49,7 @@ struct Hz5Lowpage64Segment {
   uint32_t allocated_mask;
   uint32_t committed_mask;
   uint32_t cold_mask;
-#if HZ5_LOWPAGE64_P43_DESCRIPTOR_LISTS || \
-    HZ5_LOWPAGE64_P43_COMMITTED_RETAIN_CAP > 0u
+#if HZ5_LOWPAGE64_P43_COMMITTED_LISTS
   Hz5Lowpage64P43SlotRef free_next[HZ5_LOWPAGE64_P43_SLOT_COUNT];
 #endif
   Hz5Lowpage64Segment* next;
@@ -54,11 +58,18 @@ struct Hz5Lowpage64Segment {
 static INIT_ONCE g_hz5_lowpage64_p43_lock_once = INIT_ONCE_STATIC_INIT;
 static CRITICAL_SECTION g_hz5_lowpage64_p43_lock;
 static Hz5Lowpage64Segment* g_hz5_lowpage64_p43_segments;
-#if (HZ5_LOWPAGE64_P43_DESCRIPTOR_LISTS || \
-     HZ5_LOWPAGE64_P43_COMMITTED_RETAIN_CAP > 0u) && \
-    !HZ5_LOWPAGE64_P43_PAGE_NOACCESS
+#if HZ5_LOWPAGE64_P43_COMMITTED_LISTS && !HZ5_LOWPAGE64_P43_PAGE_NOACCESS
 static Hz5Lowpage64P43SlotRef g_hz5_lowpage64_p43_committed_head;
 static size_t g_hz5_lowpage64_p43_committed_count;
+#endif
+#if HZ5_LOWPAGE64_P43_TLS_CACHE_CAP > 0u
+typedef struct Hz5Lowpage64P43TlsCache {
+  Hz5Lowpage64P43SlotRef refs[HZ5_LOWPAGE64_P43_TLS_CACHE_CAP];
+  uint32_t count;
+} Hz5Lowpage64P43TlsCache;
+
+__declspec(thread) static Hz5Lowpage64P43TlsCache
+    g_hz5_lowpage64_p43_tls_cache;
 #endif
 #endif
 
@@ -196,8 +207,7 @@ static void hz5_lowpage64_p43_rewarm_segment_neighbors(
 }
 #endif
 
-#if HZ5_LOWPAGE64_P43_DESCRIPTOR_LISTS || \
-    HZ5_LOWPAGE64_P43_COMMITTED_RETAIN_CAP > 0u
+#if HZ5_LOWPAGE64_P43_COMMITTED_LISTS
 static void hz5_lowpage64_p43_ref_clear(Hz5Lowpage64P43SlotRef* ref) {
   ref->seg = NULL;
   ref->slot = 0u;
@@ -262,6 +272,51 @@ static int hz5_lowpage64_p43_committed_pop_locked(
 }
 #endif
 #endif
+
+#if HZ5_LOWPAGE64_P43_TLS_CACHE_CAP > 0u && \
+    !HZ5_LOWPAGE64_P43_PAGE_NOACCESS
+static int hz5_lowpage64_p43_tls_push(Hz5Lowpage64Segment* seg,
+                                      uint32_t slot) {
+  if (!seg || slot >= (uint32_t)HZ5_LOWPAGE64_P43_SLOT_COUNT) {
+    return 0;
+  }
+  if (g_hz5_lowpage64_p43_tls_cache.count >=
+      (uint32_t)HZ5_LOWPAGE64_P43_TLS_CACHE_CAP) {
+    return 0;
+  }
+  Hz5Lowpage64P43SlotRef* ref =
+      &g_hz5_lowpage64_p43_tls_cache
+           .refs[g_hz5_lowpage64_p43_tls_cache.count++];
+  ref->seg = seg;
+  ref->slot = slot;
+  return 1;
+}
+
+static int hz5_lowpage64_p43_tls_pop_locked(Hz5Lowpage64P43SlotRef* out) {
+  while (g_hz5_lowpage64_p43_tls_cache.count > 0u) {
+    Hz5Lowpage64P43SlotRef ref =
+        g_hz5_lowpage64_p43_tls_cache
+            .refs[--g_hz5_lowpage64_p43_tls_cache.count];
+    if (!ref.seg || ref.slot >= (uint32_t)HZ5_LOWPAGE64_P43_SLOT_COUNT) {
+      continue;
+    }
+    uint32_t bit = (uint32_t)1u << ref.slot;
+    if ((ref.seg->allocated_mask & bit) != 0u) {
+      continue;
+    }
+    if ((ref.seg->committed_mask & bit) == 0u) {
+      continue;
+    }
+    if ((ref.seg->cold_mask & bit) != 0u) {
+      continue;
+    }
+    ref.seg->allocated_mask |= bit;
+    *out = ref;
+    return 1;
+  }
+  return 0;
+}
+#endif
 #endif
 
 int hz5_lowpage64_p43_may_own(void* ptr) {
@@ -322,9 +377,20 @@ void* hz5_lowpage64_p43_alloc_slot(size_t raw_bytes) {
   }
 
   hz5_lowpage64_p43_lock_enter();
-#if (HZ5_LOWPAGE64_P43_DESCRIPTOR_LISTS || \
-     HZ5_LOWPAGE64_P43_COMMITTED_RETAIN_CAP > 0u) && \
+#if HZ5_LOWPAGE64_P43_TLS_CACHE_CAP > 0u && \
     !HZ5_LOWPAGE64_P43_PAGE_NOACCESS
+  {
+    Hz5Lowpage64P43SlotRef ref = {0};
+    if (hz5_lowpage64_p43_tls_pop_locked(&ref)) {
+      void* raw = (void*)((uintptr_t)ref.seg->base +
+                          (uintptr_t)ref.slot *
+                              HZ5_LOWPAGE64_P43_SLOT_SIZE);
+      hz5_lowpage64_p43_lock_leave();
+      return raw;
+    }
+  }
+#endif
+#if HZ5_LOWPAGE64_P43_COMMITTED_LISTS && !HZ5_LOWPAGE64_P43_PAGE_NOACCESS
   {
     Hz5Lowpage64P43SlotRef ref = {0};
     if (hz5_lowpage64_p43_committed_pop_locked(&ref)) {
@@ -454,8 +520,7 @@ void* hz5_lowpage64_p43_alloc_slot(size_t raw_bytes) {
   seg->allocated_mask = 1u;
   seg->committed_mask = 1u;
   seg->cold_mask = 0u;
-#if HZ5_LOWPAGE64_P43_DESCRIPTOR_LISTS || \
-    HZ5_LOWPAGE64_P43_COMMITTED_RETAIN_CAP > 0u
+#if HZ5_LOWPAGE64_P43_COMMITTED_LISTS
   for (uint32_t i = 0; i < (uint32_t)HZ5_LOWPAGE64_P43_SLOT_COUNT; i++) {
     hz5_lowpage64_p43_ref_clear(&seg->free_next[i]);
   }
@@ -485,6 +550,20 @@ int hz5_lowpage64_p43_release_slot(void* raw) {
     hz5_lowpage64_p43_lock_leave();
     return 0;
   }
+#if HZ5_LOWPAGE64_P43_TLS_CACHE_CAP > 0u && \
+    !HZ5_LOWPAGE64_P43_PAGE_NOACCESS
+  if ((seg->committed_mask & ((uint32_t)1u << slot)) != 0u &&
+      (seg->cold_mask & ((uint32_t)1u << slot)) == 0u) {
+    seg->allocated_mask &= ~((uint32_t)1u << slot);
+    if (hz5_lowpage64_p43_tls_push(seg, slot)) {
+      hz5_lowpage64_p43_lock_leave();
+      return 1;
+    }
+    hz5_lowpage64_p43_committed_push_locked(seg, slot);
+    hz5_lowpage64_p43_lock_leave();
+    return 1;
+  }
+#endif
 #if HZ5_LOWPAGE64_P43_SLOT_DECOMMIT
 #if HZ5_LOWPAGE64_P43_COMMITTED_RETAIN_CAP > 0u
   if (g_hz5_lowpage64_p43_committed_count <

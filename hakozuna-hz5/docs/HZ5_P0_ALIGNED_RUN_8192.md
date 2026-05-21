@@ -1218,3 +1218,60 @@ Decision:
 - Further fixed-cap sweep is low ROI unless paired with a fuller
   descriptor-owned hot/global lifecycle that removes the global lock/scan and
   old raw-pointer cache topology from the hot path.
+
+## P43e TLS SlotRef cache
+
+P43e tested whether the remaining P43 speed loss is mostly caused by the global
+descriptor list/segment scan rather than VM calls. It adds a thread-local
+descriptor-owned SlotRef cache and leaves real slot decommit disabled.
+
+New knob:
+
+- build switch: `-P43TlsCacheCap <N>`
+- macro: `BENCHLAB_HZ5_P43_TLS_CACHE_CAP`
+- first lane: `P43TlsCacheCap=64`
+- manifest: `manifests/hakozuna-hz5-p43e-tls-slotref64.toml`
+
+Mechanism:
+
+- allocation checks TLS SlotRef cache before the global committed descriptor
+  list;
+- free returns committed P43 segment slots to the TLS SlotRef cache while there
+  is room;
+- overflow goes to the global descriptor list;
+- `MEM_DECOMMIT` is not enabled in this lane.
+
+P43e tls-slotref64 repeat-3:
+
+```text
+results/synthetic-sweep/20260521_171938_312
+
+pc-r90-64k-a8192-t4:
+  median 2.03M ops/s
+  steady RSS: 32.04-33.56 MiB
+  steady VA: 4.23-4.25 GiB
+
+pc-r99-64k-a8192-t4:
+  median 1.66M ops/s
+  steady RSS: 34.36-35.98 MiB
+  steady VA: 4.26-4.27 GiB
+
+rss-plateau-64k-a8192-idle150:
+  median steady RSS: 60.85 MiB
+  steady VA: 4.27-4.30 GiB
+
+p43_slot_decommits:
+  0
+
+fallback load_count:
+  0
+```
+
+Decision:
+
+- P43e is no-go / evidence.
+- Removing slot decommit and adding a simple TLS SlotRef source cache is not
+  enough to recover P43 speed.
+- The remaining issue is likely in the higher-level P25/P43 source topology,
+  raw-source call frequency, or global/source path cost rather than the slot VM
+  operation alone.
