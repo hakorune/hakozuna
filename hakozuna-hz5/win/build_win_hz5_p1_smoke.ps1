@@ -18,7 +18,7 @@ function Invoke-Checked {
         [string]$Exe,
         [string[]]$ArgList
     )
-    & $Exe @ArgList | Out-Null
+    & $Exe @ArgList
     if ($LASTEXITCODE -ne 0) {
         throw "$Exe failed with exit code $LASTEXITCODE"
     }
@@ -40,19 +40,12 @@ $SrcFiles = @(
     (Join-Path $Hz5Dir "core\hz5_owner.c"),
     (Join-Path $Hz5Dir "core\hz5_remote.c"),
     (Join-Path $Hz5Dir "core\hz5_tcache.c"),
-    (Join-Path $Hz5Dir "core\hz5_stats.c")
+    (Join-Path $Hz5Dir "core\hz5_stats.c"),
+    (Join-Path $Hz5Dir "win\hz5_p1_smoke.c")
 )
 
-$Objs = @()
-foreach ($src in $SrcFiles) {
-    $obj = Join-Path $ObjDir ((Split-Path $src -LeafBase) + ".obj")
-    Invoke-Checked $Cc ($BaseFlags + @("/c", $src, "/Fo$obj"))
-    $Objs += $obj
-}
-
 $Exe = Join-Path $OutDir "hz5_p1_smoke.exe"
-$SmokeSrc = Join-Path $Hz5Dir "win\hz5_p1_smoke.c"
-Invoke-Checked $Cc ($BaseFlags + @($SmokeSrc) + $Objs + @("/link", "/out:$Exe"))
+Invoke-Checked $Cc ($BaseFlags + $SrcFiles + @("/Fo$ObjDir\", "/link", "/out:$Exe"))
 
 Write-Host "Built: $Exe"
 & $Exe

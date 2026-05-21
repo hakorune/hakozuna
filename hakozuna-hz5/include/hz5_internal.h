@@ -6,6 +6,11 @@
 #include <stdatomic.h>
 #include <stdint.h>
 
+#define HZ5_BITMAP_INDEX(page) ((page) >> 6u)
+#define HZ5_BITMAP_MASK(page) (1ULL << ((page) & 63u))
+#define HZ5_ALIGN_8K_LOG2 13u
+#define HZ5_RUN_16P_PAGES 16u
+
 typedef enum Hz5PageKind {
     HZ5_PAGE_FREE = 0,
     HZ5_PAGE_RUN_START = 1,

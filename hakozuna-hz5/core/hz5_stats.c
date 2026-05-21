@@ -179,7 +179,7 @@ static void hz5_stats_print_bucket(const char* label, _Atomic(uint64_t)* bucket)
 static uint32_t hz5_stats_count_free_pages(const Hz5Seg* seg) {
     uint32_t free_pages = 0;
     for (uint32_t page = HZ5_FIRST_DATA_PAGE; page < HZ5_SEG_PAGES; ++page) {
-        if ((seg->free_bitmap[page >> 6u] & (1ULL << (page & 63u))) != 0) {
+        if ((seg->free_bitmap[HZ5_BITMAP_INDEX(page)] & HZ5_BITMAP_MASK(page)) != 0) {
             ++free_pages;
         }
     }

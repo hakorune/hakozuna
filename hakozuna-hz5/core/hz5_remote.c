@@ -5,8 +5,16 @@
 
 static _Thread_local Hz5RemoteBuffer t_hz5_remote_buffer;
 
+typedef struct Hz5RemoteNode {
+    struct Hz5RemoteNode* next;
+} Hz5RemoteNode;
+
 static void hz5_remote_set_next(void* ptr, void* next) {
-    *(void**)ptr = next;
+    ((Hz5RemoteNode*)ptr)->next = (Hz5RemoteNode*)next;
+}
+
+static void* hz5_remote_get_next(void* ptr) {
+    return ((Hz5RemoteNode*)ptr)->next;
 }
 
 Hz5RemoteBuffer* hz5_remote_tls_buffer(void) {
@@ -127,7 +135,7 @@ size_t hz5_remote_drain_owner(Hz5OwnerToken owner) {
             atomic_store_explicit(&meta->remote_count_hint, 0, memory_order_relaxed);
 
             while (list) {
-                void* next = *(void**)list;
+                void* next = hz5_remote_get_next(list);
                 hz5_stats_inc_run(HZ5_STAT_REMOTE_DRAIN_NODE,
                                   meta->run_pages,
                                   meta->sc);
@@ -173,7 +181,7 @@ size_t hz5_remote_release_owner(Hz5OwnerToken owner) {
             atomic_store_explicit(&meta->remote_count_hint, 0, memory_order_relaxed);
 
             while (list) {
-                void* next = *(void**)list;
+                void* next = hz5_remote_get_next(list);
                 uint32_t pages = meta->run_pages;
                 hz5_stats_inc_run(HZ5_STAT_OWNER_DESTRUCTOR_DRAIN,
                                   pages,
@@ -214,7 +222,7 @@ size_t hz5_remote_release_all_pending(void) {
             atomic_store_explicit(&meta->remote_count_hint, 0, memory_order_relaxed);
 
             while (list) {
-                void* next = *(void**)list;
+                void* next = hz5_remote_get_next(list);
                 uint32_t pages = meta->run_pages;
                 hz5_p1_segment_free_run(seg, page);
                 hz5_stats_inc_run(HZ5_STAT_FINAL_PENDING_RELEASE,

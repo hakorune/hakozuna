@@ -18,7 +18,7 @@ static const Hz5RunClassPolicy g_hz5_default_policy = {
 
 static const Hz5RunClassPolicy g_hz5_policy_4k_a8192 = {
     1u,
-    13u,
+    HZ5_ALIGN_8K_LOG2,
     HZ5_RUNBAND_SMALL_OVA,
     HZ5_RUN_CACHE_CAP,
     0u,
@@ -30,7 +30,7 @@ static const Hz5RunClassPolicy g_hz5_policy_4k_a8192 = {
 #if HZ5_P22_SPLIT_1P_SIZE_CLASS
 static const Hz5RunClassPolicy g_hz5_policy_2k_a8192 = {
     1u,
-    13u,
+    HZ5_ALIGN_8K_LOG2,
     HZ5_RUNBAND_SMALL_OVA,
     HZ5_RUN_CACHE_CAP,
     0u,
@@ -42,7 +42,7 @@ static const Hz5RunClassPolicy g_hz5_policy_2k_a8192 = {
 
 static const Hz5RunClassPolicy g_hz5_policy_8k_a8192 = {
     2u,
-    13u,
+    HZ5_ALIGN_8K_LOG2,
     HZ5_RUNBAND_SMALL_OVA,
     HZ5_RUN_CACHE_CAP,
     0u,
@@ -52,8 +52,8 @@ static const Hz5RunClassPolicy g_hz5_policy_8k_a8192 = {
 };
 
 static const Hz5RunClassPolicy g_hz5_policy_64k_a8192 = {
-    16u,
-    13u,
+    HZ5_RUN_16P_PAGES,
+    HZ5_ALIGN_8K_LOG2,
     HZ5_RUNBAND_LARGE16,
     HZ5_P12_RUN16_OWNER_CACHE_CAP,
     0u,
@@ -73,7 +73,7 @@ uint16_t hz5_run_sc_for_size(size_t size, uint32_t pages) {
 
 uint32_t hz5_run_class_index(uint32_t pages, uint8_t align_log2, uint16_t sc) {
 #if HZ5_P22_SPLIT_1P_SIZE_CLASS
-    if (pages <= 1u && align_log2 == 13u && sc <= 2048u) {
+    if (pages <= 1u && align_log2 == HZ5_ALIGN_8K_LOG2 && sc <= 2048u) {
         return 0u;
     }
 #endif
@@ -87,7 +87,7 @@ uint32_t hz5_run_class_index(uint32_t pages, uint8_t align_log2, uint16_t sc) {
         page_bucket = 0u;
     } else if (pages <= 2u) {
         page_bucket = 1u;
-    } else if (pages <= 16u) {
+    } else if (pages <= HZ5_RUN_16P_PAGES) {
         page_bucket = 2u;
     } else {
         page_bucket = 3u;
@@ -98,7 +98,7 @@ uint32_t hz5_run_class_index(uint32_t pages, uint8_t align_log2, uint16_t sc) {
 const Hz5RunClassPolicy* hz5_run_policy_for(uint32_t pages,
                                             uint8_t align_log2,
                                             uint16_t sc) {
-    if (align_log2 == 13u) {
+    if (align_log2 == HZ5_ALIGN_8K_LOG2) {
         if (pages == 1u) {
 #if HZ5_P22_SPLIT_1P_SIZE_CLASS
             if (sc <= 2048u) {
@@ -112,7 +112,7 @@ const Hz5RunClassPolicy* hz5_run_policy_for(uint32_t pages,
         if (pages == 2u) {
             return &g_hz5_policy_8k_a8192;
         }
-        if (pages == 16u) {
+        if (pages == HZ5_RUN_16P_PAGES) {
             return &g_hz5_policy_64k_a8192;
         }
     }

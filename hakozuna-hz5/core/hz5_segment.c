@@ -27,15 +27,15 @@ static void hz5_p1_unlock(void) {
 }
 
 static int hz5_p1_bit_is_set(const Hz5Seg* seg, uint32_t page) {
-    return (seg->free_bitmap[page >> 6u] & (1ULL << (page & 63u))) != 0;
+    return (seg->free_bitmap[HZ5_BITMAP_INDEX(page)] & HZ5_BITMAP_MASK(page)) != 0;
 }
 
 static void hz5_p1_bit_set(Hz5Seg* seg, uint32_t page) {
-    seg->free_bitmap[page >> 6u] |= (1ULL << (page & 63u));
+    seg->free_bitmap[HZ5_BITMAP_INDEX(page)] |= HZ5_BITMAP_MASK(page);
 }
 
 static void hz5_p1_bit_clear(Hz5Seg* seg, uint32_t page) {
-    seg->free_bitmap[page >> 6u] &= ~(1ULL << (page & 63u));
+    seg->free_bitmap[HZ5_BITMAP_INDEX(page)] &= ~HZ5_BITMAP_MASK(page);
 }
 
 static int hz5_p1_run_is_free(const Hz5Seg* seg, uint32_t start, uint32_t pages) {
@@ -69,7 +69,7 @@ static void hz5_p1_segment_init(Hz5Seg* seg) {
 static int hz5_p1_is_run16_a8192(uint32_t pages,
                                  uint32_t align_pages,
                                  uint8_t align_log2) {
-    return pages == 16u && align_pages == 2u && align_log2 == 13u;
+    return pages == HZ5_RUN_16P_PAGES && align_pages == 2u && align_log2 == HZ5_ALIGN_8K_LOG2;
 }
 
 static uint32_t hz5_p1_align_page_up(uint32_t page, uint32_t align_pages) {
@@ -520,7 +520,7 @@ void hz5_p1_segment_free_run(Hz5Seg* seg, uint32_t page_idx) {
         hz5_stats_add(HZ5_STAT_P14_EMPTY_TRANSITION_BYTES, HZ5_SEG_SIZE);
     }
 #if !HZ5_P11_SPEED_CORE
-    if (pages == 16u && align_log2 == 13u &&
+    if (pages == HZ5_RUN_16P_PAGES && align_log2 == HZ5_ALIGN_8K_LOG2 &&
         (seg->run16_a8192_hint_page < HZ5_FIRST_DATA_PAGE ||
          page_idx < seg->run16_a8192_hint_page)) {
         seg->run16_a8192_hint_page = page_idx;
