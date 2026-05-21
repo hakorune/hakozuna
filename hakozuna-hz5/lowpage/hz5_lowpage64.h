@@ -26,6 +26,19 @@ enum {
 #endif
 #endif
 
+#ifndef HZ5_LOWPAGE64_P43_PREPARED_BRIDGE
+#ifdef BENCHLAB_HZ5_P43_PREPARED_BRIDGE
+#define HZ5_LOWPAGE64_P43_PREPARED_BRIDGE \
+  BENCHLAB_HZ5_P43_PREPARED_BRIDGE
+#else
+#define HZ5_LOWPAGE64_P43_PREPARED_BRIDGE 0
+#endif
+#endif
+
+#define HZ5_LOWPAGE64_P43_PREPARED_ANY \
+  (HZ5_LOWPAGE64_P43_PREPARED_RELEASE || \
+   HZ5_LOWPAGE64_P43_PREPARED_BRIDGE)
+
 typedef struct Hz5Lowpage64FreeCtx {
   int lookup_kind;
   void* segment_token;

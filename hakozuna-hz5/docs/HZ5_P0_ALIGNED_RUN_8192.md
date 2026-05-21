@@ -1592,3 +1592,47 @@ Decision:
   readout.
 - Next choices are a counter-free prepared bridge or a small P43h SlotRef
   migration for the P25 hot cache layer.
+
+## P43h.0 counter-free prepared bridge
+
+P43h.0 separates the useful prepared bridge from the P43g diagnostic counters.
+
+New knob:
+
+- build switch: `-P43PreparedBridge`
+- macro: `BENCHLAB_HZ5_P43_PREPARED_BRIDGE`
+- lane: `hakozuna-hz5-p43h0-prepared-bridge`
+
+Mechanism:
+
+- policy still prepares a `Hz5Lowpage64FreeCtx` before wrapper decode;
+- matching P25 lowpage frees use `hz5_lowpage64_release_prepared()`;
+- the P25 relbuf/batch topology is preserved;
+- P43g source/raw/prepared counters stay disabled;
+- slot decommit and PAGE_NOACCESS remain disabled.
+
+P43h.0 repeat-3:
+
+```text
+results/synthetic-sweep/20260521_191742_908
+
+median 64K/r90:
+  P43f1 lockless lookup:  4.52M
+  P43h0 prepared bridge:  5.42M
+
+median 64K/r99:
+  P43f1 lockless lookup:  4.19M
+  P43h0 prepared bridge:  8.82M
+
+P43h0:
+  p43g_* counters: 0
+  fallback load_count: 0
+  steady VA: 4.25 GiB class
+```
+
+Decision:
+
+- This is the first strong speed signal after P43f.1.
+- The active-lookup/release boundary was a real cost, especially for r99.
+- Keep P43h.0 as candidate-watch and run repeat-10 plus guards before promotion
+  talk.

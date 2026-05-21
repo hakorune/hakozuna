@@ -1309,7 +1309,7 @@ void hz5_lowpage64_release(void* raw) {
 
 int hz5_lowpage64_release_prepared(const Hz5Lowpage64FreeCtx* ctx,
                                    void* raw) {
-#if HZ5_LOWPAGE64_P43_PREPARED_RELEASE
+#if HZ5_LOWPAGE64_P43_PREPARED_ANY
   if (!ctx || ctx->lookup_kind != HZ5_LOWPAGE64_LOOKUP_OWNED_ACTIVE ||
       !raw) {
     return 0;

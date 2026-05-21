@@ -46,6 +46,14 @@
 #define BENCHLAB_HZ5_P43_PREPARED_RELEASE 0
 #endif
 
+#ifndef BENCHLAB_HZ5_P43_PREPARED_BRIDGE
+#define BENCHLAB_HZ5_P43_PREPARED_BRIDGE 0
+#endif
+
+#define HZ5_POLICY_P43_PREPARED_ANY \
+  (BENCHLAB_HZ5_P43_PREPARED_RELEASE || \
+   BENCHLAB_HZ5_P43_PREPARED_BRIDGE)
+
 #ifndef BENCHLAB_HZ5_NO_HZ3_FALLBACK
 #define BENCHLAB_HZ5_NO_HZ3_FALLBACK 0
 #endif
@@ -106,7 +114,7 @@ static int hz5_policy_prepare_p25_lowpage_free(
   return 0;
 #else
   uint32_t fb_state = hz5_hz3_fallback_state();
-#if BENCHLAB_HZ5_P43_PREPARED_RELEASE
+#if HZ5_POLICY_P43_PREPARED_ANY
   int lowpage_lookup = hz5_lowpage64_prepare_free_user(ptr, lowpage_ctx);
 #else
   int lowpage_lookup = hz5_lowpage64_lookup(ptr);
@@ -128,6 +136,7 @@ static int hz5_policy_prepare_p25_lowpage_free(
 #endif
 }
 
+#if BENCHLAB_HZ5_P43_PREPARED_RELEASE
 static int hz5_policy_p25_raw_matches_lowpage_ctx(
     const Hz5Lowpage64FreeCtx* lowpage_ctx,
     uintptr_t raw) {
@@ -138,6 +147,7 @@ static int hz5_policy_p25_raw_matches_lowpage_ctx(
   }
   return (uintptr_t)lowpage_ctx->slot_base == raw;
 }
+#endif
 #endif
 
 #if BENCHLAB_HZ5_P16_WRAPPER_64K_A8192
@@ -366,12 +376,14 @@ void hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
 #endif
 #if BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192
     if (wrapped->source == HZ5_WRAPPER_SOURCE_P25_HZ4LOWPAGE) {
-#if BENCHLAB_HZ5_P43_PREPARED_RELEASE
+#if HZ5_POLICY_P43_PREPARED_ANY
       if (hz5_lowpage64_release_prepared(&p25_lowpage_ctx,
                                          (void*)wrapped->raw)) {
         return;
       }
+#if BENCHLAB_HZ5_P43_PREPARED_RELEASE
       hz5_lowpage64_p43g_note_old_path();
+#endif
 #endif
       hz5_lowpage64_release((void*)wrapped->raw);
       return;

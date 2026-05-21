@@ -129,6 +129,19 @@ typedef struct Hz5Lowpage64FreeCtx Hz5Lowpage64FreeCtx;
 #endif
 #endif
 
+#ifndef HZ5_LOWPAGE64_P43_PREPARED_BRIDGE
+#ifdef BENCHLAB_HZ5_P43_PREPARED_BRIDGE
+#define HZ5_LOWPAGE64_P43_PREPARED_BRIDGE \
+  BENCHLAB_HZ5_P43_PREPARED_BRIDGE
+#else
+#define HZ5_LOWPAGE64_P43_PREPARED_BRIDGE 0
+#endif
+#endif
+
+#define HZ5_LOWPAGE64_P43_PREPARED_ANY \
+  (HZ5_LOWPAGE64_P43_PREPARED_RELEASE || \
+   HZ5_LOWPAGE64_P43_PREPARED_BRIDGE)
+
 #if HZ5_LOWPAGE64_P43_SLOT_DECOMMIT && HZ5_LOWPAGE64_P43_PAGE_NOACCESS
 #error "P43 SlotDecommit and PageNoAccess are mutually exclusive"
 #endif
@@ -145,6 +158,11 @@ typedef struct Hz5Lowpage64FreeCtx Hz5Lowpage64FreeCtx;
 #if HZ5_LOWPAGE64_P43_PREPARED_RELEASE && \
     (HZ5_LOWPAGE64_P43_SLOT_DECOMMIT || HZ5_LOWPAGE64_P43_PAGE_NOACCESS)
 #error "P43 PreparedRelease is diagnostic-only and cannot run with slot decommit/PageNoAccess"
+#endif
+
+#if HZ5_LOWPAGE64_P43_PREPARED_BRIDGE && \
+    (HZ5_LOWPAGE64_P43_SLOT_DECOMMIT || HZ5_LOWPAGE64_P43_PAGE_NOACCESS)
+#error "P43 PreparedBridge cannot run with slot decommit/PageNoAccess"
 #endif
 
 typedef struct Hz5Lowpage64P43StatsSnapshot {
