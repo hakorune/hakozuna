@@ -1370,3 +1370,62 @@ Decision:
 - Next P43 work should be C-lite: fast raw-to-ref / descriptor lookup table,
   removing global lock + linked-list segment scan from the free hot path before
   attempting a full P25-level SlotRef cache rewrite.
+
+## P43f.0 fast lookup table
+
+P43f.0 is the first C-lite implementation after P43x:
+
+- build switch: `-P43FastLookup`
+- macro: `BENCHLAB_HZ5_P43_FAST_LOOKUP`
+- lane: `hakozuna-hz5-p43f0-fast-lookup`
+
+Mechanism:
+
+- publish each 2MiB P43 segment into a 64KiB-granularity fast hint table;
+- lookup uses the hint table first and falls back to the linked segment list on
+  miss;
+- release-side raw pointer find uses the same hint table;
+- the existing P43 critical-section lock is intentionally kept, so this probes
+  scan cost separately from lock cost.
+
+P43f.0 repeat-3:
+
+```text
+results/synthetic-sweep/20260521_180029_043
+
+pc-r90-64k-a8192-t4:
+  median 2.23M ops/s
+
+pc-r99-64k-a8192-t4:
+  median 1.52M ops/s
+
+rss-plateau-64k-a8192-idle150:
+  median steady RSS: 60.93 MiB
+  steady VA: 4.28-4.29 GiB
+
+P43 lookup counters:
+  p43_lookup_calls: 105577 median
+  p43_lookup_fast_hits: 105576 median
+  p43_lookup_fast_misses: 1
+  p43_lookup_segments_scanned_total: 105576 median
+  p43_lookup_segments_scanned_max: 1
+
+P43 release-find counters:
+  p43_find_fast_hits: 1240 median
+  p43_find_segments_scanned_total: 1240 median
+  p43_find_segments_scanned_max: 1
+
+fallback load_count:
+  0
+```
+
+Decision:
+
+- P43f.0 is evidence/no-go for promotion.
+- The fast table eliminates nearly all linked-list scan cost, but speed only
+  recovers modestly versus P43e.
+- Combined with P43x, this points to the remaining P43 cost being the
+  lock/free-gate topology itself rather than segment scan alone.
+- Next P43 C-lite option should target a stable descriptor lookup that avoids
+  the per-free global lock or combines active lookup and release ownership,
+  before attempting the full P25-level SlotRef cache migration.

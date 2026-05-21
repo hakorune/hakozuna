@@ -1287,7 +1287,11 @@ static void hz5_lowpage64_print_once(void) {
           "p43_lookup_active=%zu p43_lookup_nonactive=%zu "
           "p43_lookup_miss=%zu "
           "p43_lookup_segments_scanned_total=%zu "
-          "p43_lookup_segments_scanned_max=%zu\n",
+          "p43_lookup_segments_scanned_max=%zu "
+          "p43_lookup_fast_hits=%zu p43_lookup_fast_misses=%zu "
+          "p43_find_fast_hits=%zu "
+          "p43_find_segments_scanned_total=%zu "
+          "p43_find_segments_scanned_max=%zu\n",
           atomic_load_explicit(&g_hz5_lowpage64_alloc_calls,
                                memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_span_hits,
@@ -1457,7 +1461,12 @@ static void hz5_lowpage64_print_once(void) {
           p43_stats.lookup_nonactive,
           p43_stats.lookup_miss,
           p43_stats.lookup_segments_scanned_total,
-          p43_stats.lookup_segments_scanned_max);
+          p43_stats.lookup_segments_scanned_max,
+          p43_stats.lookup_fast_hits,
+          p43_stats.lookup_fast_misses,
+          p43_stats.find_fast_hits,
+          p43_stats.find_segments_scanned_total,
+          p43_stats.find_segments_scanned_max);
 }
 #endif
 

@@ -83,6 +83,24 @@ extern "C" {
 #endif
 #endif
 
+#ifndef HZ5_LOWPAGE64_P43_FAST_LOOKUP
+#ifdef BENCHLAB_HZ5_P43_FAST_LOOKUP
+#define HZ5_LOWPAGE64_P43_FAST_LOOKUP \
+  BENCHLAB_HZ5_P43_FAST_LOOKUP
+#else
+#define HZ5_LOWPAGE64_P43_FAST_LOOKUP 0
+#endif
+#endif
+
+#ifndef HZ5_LOWPAGE64_P43_FAST_LOOKUP_BITS
+#define HZ5_LOWPAGE64_P43_FAST_LOOKUP_BITS 12u
+#endif
+
+#ifndef HZ5_LOWPAGE64_P43_FAST_LOOKUP_CAP
+#define HZ5_LOWPAGE64_P43_FAST_LOOKUP_CAP \
+  (1u << HZ5_LOWPAGE64_P43_FAST_LOOKUP_BITS)
+#endif
+
 typedef struct Hz5Lowpage64P43StatsSnapshot {
   size_t segments_reserved;
   size_t segments_released;
@@ -103,6 +121,11 @@ typedef struct Hz5Lowpage64P43StatsSnapshot {
   size_t lookup_miss;
   size_t lookup_segments_scanned_total;
   size_t lookup_segments_scanned_max;
+  size_t lookup_fast_hits;
+  size_t lookup_fast_misses;
+  size_t find_fast_hits;
+  size_t find_segments_scanned_total;
+  size_t find_segments_scanned_max;
   size_t va_allocs;
   size_t va_alloc_failures;
   size_t va_releases;
