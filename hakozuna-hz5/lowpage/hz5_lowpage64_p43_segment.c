@@ -169,10 +169,13 @@ static uint32_t hz5_lowpage64_p43_mask_load(_Atomic uint32_t* mask) {
 }
 
 static void hz5_lowpage64_p43_mask_store(_Atomic uint32_t* mask,
-                                         uint32_t value) {
+                                          uint32_t value) {
   atomic_store_explicit(mask, value, memory_order_release);
 }
 
+/* The P43i2 writer-store variant is only valid at call sites that already
+ * hold the P43 segment lock. Lockless readers still observe these masks with
+ * acquire loads, so keep all mask updates behind these helpers. */
 static void hz5_lowpage64_p43_mask_or(_Atomic uint32_t* mask,
                                       uint32_t value) {
 #if HZ5_LOWPAGE64_P43_LOCKED_WRITER_MASKS
