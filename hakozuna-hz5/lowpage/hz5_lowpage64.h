@@ -63,6 +63,7 @@ int hz5_lowpage64_release_prepared(const Hz5Lowpage64FreeCtx* ctx,
 void hz5_lowpage64_p43g_note_wrapper(int is_p25_source, int raw_match);
 void hz5_lowpage64_p43g_note_old_path(void);
 void hz5_lowpage64_p43g_note_prepared_path(void);
+void hz5_lowpage64_print_snapshot(const char* label);
 void hz5_lowpage64_register_stats_once(void);
 
 #ifdef __cplusplus

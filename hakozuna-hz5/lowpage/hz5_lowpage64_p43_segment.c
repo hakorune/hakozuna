@@ -197,6 +197,15 @@ static void hz5_lowpage64_p43_mask_and(_Atomic uint32_t* mask,
 #endif
 }
 
+static size_t hz5_lowpage64_p43_popcount32(uint32_t value) {
+  size_t count = 0;
+  while (value) {
+    count += (size_t)(value & 1u);
+    value >>= 1;
+  }
+  return count;
+}
+
 static int hz5_lowpage64_p43_slot_lookup_result(
     Hz5Lowpage64Segment* seg,
     uint32_t slot) {
@@ -1086,5 +1095,66 @@ void hz5_lowpage64_p43_stats_snapshot(
   snapshot->va_allocs = 0;
   snapshot->va_alloc_failures = 0;
   snapshot->va_releases = 0;
+#endif
+#if HZ5_LOWPAGE64_P43_SEGMENT_SLOTS
+  snapshot->contract_lockless_enabled =
+      (uint32_t)HZ5_LOWPAGE64_P43_LOCKLESS_CONTRACT;
+  snapshot->lockless_lookup_enabled =
+      (uint32_t)HZ5_LOWPAGE64_P43_LOCKLESS_LOOKUP;
+  snapshot->slot_decommit_enabled =
+      (uint32_t)HZ5_LOWPAGE64_P43_SLOT_DECOMMIT;
+  snapshot->page_noaccess_enabled =
+      (uint32_t)HZ5_LOWPAGE64_P43_PAGE_NOACCESS;
+  snapshot->runtime_segment_release_enabled = 0;
+  hz5_lowpage64_p43_lock_enter();
+  for (Hz5Lowpage64Segment* seg = g_hz5_lowpage64_p43_segments; seg;
+       seg = seg->next) {
+    uint32_t allocated = hz5_lowpage64_p43_mask_load(&seg->allocated_mask);
+    uint32_t committed = hz5_lowpage64_p43_mask_load(&seg->committed_mask);
+    uint32_t cold = hz5_lowpage64_p43_mask_load(&seg->cold_mask);
+    uint32_t active = allocated & committed & ~cold;
+    uint32_t committed_free = committed & ~allocated & ~cold;
+
+    snapshot->segments_current++;
+    snapshot->slots_total_current += HZ5_LOWPAGE64_P43_SLOT_COUNT;
+    snapshot->slots_active_current +=
+        hz5_lowpage64_p43_popcount32(active);
+    snapshot->slots_committed_current +=
+        hz5_lowpage64_p43_popcount32(committed);
+    snapshot->slots_committed_free_current +=
+        hz5_lowpage64_p43_popcount32(committed_free);
+    snapshot->slots_cold_current += hz5_lowpage64_p43_popcount32(cold);
+    if (HZ5_LOWPAGE64_P43_SLOT_COUNT >=
+        hz5_lowpage64_p43_popcount32(committed)) {
+      snapshot->slots_uncommitted_current +=
+          HZ5_LOWPAGE64_P43_SLOT_COUNT -
+          hz5_lowpage64_p43_popcount32(committed);
+    }
+  }
+#if HZ5_LOWPAGE64_P43_COMMITTED_LISTS && !HZ5_LOWPAGE64_P43_PAGE_NOACCESS
+  snapshot->slots_global_retained_current =
+      g_hz5_lowpage64_p43_committed_count;
+#endif
+  hz5_lowpage64_p43_lock_leave();
+#if HZ5_LOWPAGE64_P43_TLS_CACHE_CAP > 0u && \
+    !HZ5_LOWPAGE64_P43_PAGE_NOACCESS
+  snapshot->slots_tls_retained_current =
+      g_hz5_lowpage64_p43_tls_cache.count;
+#endif
+#else
+  snapshot->segments_current = 0;
+  snapshot->slots_total_current = 0;
+  snapshot->slots_active_current = 0;
+  snapshot->slots_committed_current = 0;
+  snapshot->slots_committed_free_current = 0;
+  snapshot->slots_global_retained_current = 0;
+  snapshot->slots_tls_retained_current = 0;
+  snapshot->slots_cold_current = 0;
+  snapshot->slots_uncommitted_current = 0;
+  snapshot->contract_lockless_enabled = 0;
+  snapshot->lockless_lookup_enabled = 0;
+  snapshot->slot_decommit_enabled = 0;
+  snapshot->page_noaccess_enabled = 0;
+  snapshot->runtime_segment_release_enabled = 0;
 #endif
 }

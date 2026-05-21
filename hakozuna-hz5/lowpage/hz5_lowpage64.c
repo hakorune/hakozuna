@@ -1328,6 +1328,101 @@ int hz5_lowpage64_release_prepared(const Hz5Lowpage64FreeCtx* ctx,
 }
 
 #if HZ5_LOWPAGE64_STATS
+void hz5_lowpage64_print_snapshot(const char* label) {
+  Hz5Lowpage64P43StatsSnapshot p43_stats = {0};
+  hz5_lowpage64_p43_stats_snapshot(&p43_stats);
+
+  fprintf(stderr,
+          "[HZ5_LOWPAGE64_SNAPSHOT] label=%s "
+          "tls_stash_count=%zu relbuf_count=%zu "
+          "global_batch_count=%zu acquired_count_max=%zu "
+          "stash_set_nodes_max=%zu p43_segments_current=%zu "
+          "p43_slots_total_current=%zu p43_slots_active_current=%zu "
+          "p43_slots_committed_current=%zu "
+          "p43_slots_committed_free_current=%zu "
+          "p43_slots_global_retained_current=%zu "
+          "p43_slots_tls_retained_current=%zu "
+          "p43_slots_cold_current=%zu "
+          "p43_slots_uncommitted_current=%zu "
+          "p43_contract_lockless=%u p43_lockless_lookup=%u "
+          "p43_slot_decommit=%u "
+          "p43_page_noaccess=%u p43_runtime_segment_release=%u "
+          "p43g_prepare_calls=%zu p43g_prepare_active=%zu "
+          "p43g_prepare_nonactive=%zu p43g_prepare_miss=%zu "
+          "p43g_source_p25=%zu p43g_source_other=%zu "
+          "p43g_raw_mismatch=%zu "
+          "p43g_release_old_path_calls=%zu "
+          "p43g_release_prepared_calls=%zu "
+          "p43_segments_reserved=%zu p43_segments_released=%zu "
+          "p43_slot_commits=%zu p43_slot_decommits=%zu "
+          "p43_tls_hits=%zu p43_global_hits=%zu "
+          "p43_free_slot_hits=%zu p43_lookup_calls=%zu "
+          "p43_lookup_active=%zu p43_lookup_nonactive=%zu "
+          "p43_lookup_miss=%zu p43_lookup_lockless_hits=%zu "
+          "p43_lookup_lockless_misses=%zu\n",
+          label ? label : "",
+          g_hz5_lowpage64_stash_count,
+          g_hz5_lowpage64_relbuf_count,
+          atomic_load_explicit(&g_hz5_lowpage64_global_batch_count,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_acquired_count_max,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_stash_set_nodes_max,
+                               memory_order_relaxed),
+          p43_stats.segments_current,
+          p43_stats.slots_total_current,
+          p43_stats.slots_active_current,
+          p43_stats.slots_committed_current,
+          p43_stats.slots_committed_free_current,
+          p43_stats.slots_global_retained_current,
+          p43_stats.slots_tls_retained_current,
+          p43_stats.slots_cold_current,
+          p43_stats.slots_uncommitted_current,
+          p43_stats.contract_lockless_enabled,
+          p43_stats.lockless_lookup_enabled,
+          p43_stats.slot_decommit_enabled,
+          p43_stats.page_noaccess_enabled,
+          p43_stats.runtime_segment_release_enabled,
+          atomic_load_explicit(&g_hz5_lowpage64_p43g_prepare_calls,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p43g_prepare_active,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p43g_prepare_nonactive,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p43g_prepare_miss,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p43g_source_p25,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p43g_source_other,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p43g_raw_mismatch,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p43g_release_old_path_calls,
+                               memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p43g_release_prepared_calls,
+              memory_order_relaxed),
+          p43_stats.segments_reserved,
+          p43_stats.segments_released,
+          p43_stats.slot_commits,
+          p43_stats.slot_decommits,
+          p43_stats.tls_hits,
+          p43_stats.global_hits,
+          p43_stats.free_slot_hits,
+          p43_stats.lookup_calls,
+          p43_stats.lookup_active,
+          p43_stats.lookup_nonactive,
+          p43_stats.lookup_miss,
+          p43_stats.lookup_lockless_hits,
+          p43_stats.lookup_lockless_misses);
+}
+#else
+void hz5_lowpage64_print_snapshot(const char* label) {
+  (void)label;
+}
+#endif
+
+#if HZ5_LOWPAGE64_STATS
 static void hz5_lowpage64_print_once(void) {
   static atomic_flag printed = ATOMIC_FLAG_INIT;
   if (atomic_flag_test_and_set_explicit(&printed, memory_order_acq_rel)) {
