@@ -1866,3 +1866,112 @@ Decision:
 - The next design question is whether P43h.1's lockless lookup shape can be
   covered by a speed-clean contract when slot decommit and PAGE_NOACCESS are
   disabled, not whether P43 should run without lockless lookup.
+
+## P43i lockless prepared speed-clean contract
+
+P43i turns the P43h.1 lockless prepared-bridge shape into an explicit
+speed-clean contract rather than leaving it as a diagnostic exception.
+
+New lane:
+
+- lane: `hakozuna-hz5-p43i-lockless-prepared-speedclean`
+- aliases: `hz5-p43i-lockless-prepared-speedclean`,
+  `hz5-lockless-prepared-speedclean`
+- build switch: `-P43LocklessContract`
+- required build shape: `-SpeedLane`, `-P43FastLookup`,
+  `-P43PreparedBridge`, lockless lookup, CounterFree / diagnostic stats off
+- forbidden: slot `MEM_DECOMMIT`, `PAGE_NOACCESS`, runtime segment release
+
+Implementation hardening:
+
+- P43 slot masks are now atomic so the lockless reader has an explicit
+  acquire/release footing.
+- The build script rejects the contract unless it is paired with the
+  speed-clean prepared-bridge shape.
+- `-P43LocklessLookup` remains diagnostic and rejected by `-SpeedLane`; the
+  contract switch is the only speed-clean way to enable the lockless lookup
+  shape.
+- Runtime empty-segment release is disabled under the contract so the lockless
+  reader never observes a descriptor that can be removed and freed.
+
+P43i repeat-10:
+
+```text
+results/synthetic-sweep/20260521_204108_614
+
+pc-r90-64k-a8192-t4:
+  P43i: 11.44M
+  P43h1: 11.74M
+  P25a: 14.99M
+  P33:   9.94M
+  HZ4:  14.12M
+
+pc-r99-64k-a8192-t4:
+  P43i: 11.15M
+  P43h1: 13.43M
+  P25a: 13.68M
+  P33:  11.32M
+  HZ4:  14.80M
+
+rss-plateau steady RSS:
+  P43i: 55.79 MiB
+  P43h1: 58.00 MiB
+  P25a: 67.32 MiB
+  P33:  72.81 MiB
+  HZ4:  60.51 MiB
+
+fallback load_count:
+  0
+```
+
+P43i exact a8192 guard repeat-5:
+
+```text
+results/synthetic-sweep/20260521_204449_201
+
+pc-r90-4k-a8192-t4:
+  P43i: 15.88M
+
+pc-r99-4k-a8192-t4:
+  P43i: 15.31M
+
+pc-r90-8k-a8192-t4:
+  P43i: 14.94M
+
+pc-r99-8k-a8192-t4:
+  P43i: 14.13M
+
+pc-r90-64k-a8192-t4:
+  P43i: 13.31M
+
+pc-r99-64k-a8192-t4:
+  P43i: 13.06M
+
+fallback load_count:
+  0
+```
+
+Fallback guard repeat-3:
+
+```text
+results/synthetic-sweep/20260521_204530_046
+
+Profile includes fallback rows:
+  4K/8K/64K a4096
+  65537/a16
+  65537/a4096
+  256K/a4096
+
+fallback load_count:
+  1
+```
+
+Decision:
+
+- P43i is candidate-watch, not default promotion.
+- It keeps P25/P33-class `64K/a8192` speed while preserving the lower
+  P43/HZ4-like plateau RSS shape.
+- It is the contract-hardened follow-up to P43h.1; P43h.1 remains the raw
+  strongest-result control.
+- Next step is Pro review plus focused safety repeats before considering
+  promotion.
