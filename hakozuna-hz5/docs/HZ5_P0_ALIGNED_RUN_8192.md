@@ -1636,3 +1636,81 @@ Decision:
 - The active-lookup/release boundary was a real cost, especially for r99.
 - Keep P43h.0 as candidate-watch and run repeat-10 plus guards before promotion
   talk.
+
+## P43h.0 repeat-10 / guard readout
+
+P43h.0 repeat-10:
+
+```text
+results/synthetic-sweep/20260521_192404_799
+
+pc-r90-64k-a8192-t4:
+  P25a:  14.45M
+  P33:   11.19M
+  P43h0:  5.16M
+  HZ4:   13.27M
+
+pc-r99-64k-a8192-t4:
+  P25a:  13.51M
+  P33:   11.65M
+  P43h0:  6.00M
+  HZ4:   10.95M
+
+rss-plateau-64k-a8192-idle150 steady RSS:
+  P25a:  73.91 MiB
+  P33:   70.25 MiB
+  P43h0: 57.32 MiB
+  HZ4:   61.55 MiB
+```
+
+P43h.0 compact guard repeat-5:
+
+```text
+results/synthetic-sweep/20260521_192754_513
+
+pc-r90-4k-a8192-t4:
+  P43h0: 7.15M
+
+pc-r90-8k-a8192-t4:
+  P43h0: 7.02M
+
+pc-r90-64k-a8192-t4:
+  P43h0: 4.87M
+
+pc-r99-64k-a8192-t4:
+  P43h0: 6.27M
+
+fallback load_count:
+  0
+```
+
+Follow-up unsafe lookup control:
+
+```text
+results/synthetic-sweep/20260521_192920_525
+
+pc-r90-64k-a8192-t4:
+  P43h0: 5.29M
+  P43x unsafe-no-lookup: 5.75M
+
+pc-r99-64k-a8192-t4:
+  P43h0: 7.50M
+  P43x unsafe-no-lookup: 6.33M
+
+rss-plateau steady RSS:
+  P43h0: 58.07 MiB
+  P43x unsafe-no-lookup: 57.03 MiB
+```
+
+Decision:
+
+- P43h.0 is useful RSS/architecture evidence: it improves plateau RSS versus
+  P33 and HZ4 while keeping exact-route fallback unloaded.
+- P43h.0 is not speed promotion material. Producer/consumer 64K throughput is
+  still far below P25a/P33/HZ4.
+- The latest unsafe-no-lookup control shows the remaining gap is no longer
+  primarily the active lookup gate. Removing the gate does not recover P25/P33
+  speed.
+- Next P43 work should target source/cache topology: either a small
+  descriptor-safe P25 hot-cache SlotRef bridge or a clearer HZ4-like segment
+  cache shape. Avoid more lookup-only knobs.
