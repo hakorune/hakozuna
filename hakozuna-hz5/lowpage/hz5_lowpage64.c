@@ -586,7 +586,7 @@ static void hz5_lowpage64_prepare_ctx_clear(Hz5Lowpage64FreeCtx* ctx) {
 }
 
 static void hz5_lowpage64_p43g_count_prepare(int lookup_kind) {
-#if HZ5_LOWPAGE64_P43_PREPARED_RELEASE
+#if HZ5_LOWPAGE64_P43_PREPARED_ANY
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43g_prepare_calls, 1);
   if (lookup_kind == HZ5_LOWPAGE64_LOOKUP_OWNED_ACTIVE) {
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43g_prepare_active, 1);
@@ -623,7 +623,7 @@ int hz5_lowpage64_active_owns(void* ptr) {
 }
 
 void hz5_lowpage64_p43g_note_wrapper(int is_p25_source, int raw_match) {
-#if HZ5_LOWPAGE64_P43_PREPARED_RELEASE
+#if HZ5_LOWPAGE64_P43_PREPARED_ANY
   if (is_p25_source) {
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43g_source_p25, 1);
   } else {
@@ -639,13 +639,13 @@ void hz5_lowpage64_p43g_note_wrapper(int is_p25_source, int raw_match) {
 }
 
 void hz5_lowpage64_p43g_note_old_path(void) {
-#if HZ5_LOWPAGE64_P43_PREPARED_RELEASE
+#if HZ5_LOWPAGE64_P43_PREPARED_ANY
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43g_release_old_path_calls, 1);
 #endif
 }
 
 void hz5_lowpage64_p43g_note_prepared_path(void) {
-#if HZ5_LOWPAGE64_P43_PREPARED_RELEASE
+#if HZ5_LOWPAGE64_P43_PREPARED_ANY
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43g_release_prepared_calls, 1);
 #endif
 }

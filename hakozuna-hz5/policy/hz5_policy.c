@@ -136,7 +136,7 @@ static int hz5_policy_prepare_p25_lowpage_free(
 #endif
 }
 
-#if BENCHLAB_HZ5_P43_PREPARED_RELEASE
+#if HZ5_POLICY_P43_PREPARED_ANY
 static int hz5_policy_p25_raw_matches_lowpage_ctx(
     const Hz5Lowpage64FreeCtx* lowpage_ctx,
     uintptr_t raw) {
@@ -366,7 +366,7 @@ void hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
 #endif
   Hz5WrapperHdr* wrapped = NULL;
   if (hz5_wrapper_decode(ptr, &wrapped)) {
-#if BENCHLAB_HZ5_P43_PREPARED_RELEASE && \
+#if HZ5_POLICY_P43_PREPARED_ANY && \
     (BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || \
      BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192)
     hz5_lowpage64_p43g_note_wrapper(
@@ -381,7 +381,7 @@ void hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
                                          (void*)wrapped->raw)) {
         return;
       }
-#if BENCHLAB_HZ5_P43_PREPARED_RELEASE
+#if HZ5_POLICY_P43_PREPARED_ANY
       hz5_lowpage64_p43g_note_old_path();
 #endif
 #endif

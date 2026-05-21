@@ -156,6 +156,15 @@ typedef struct Hz5Lowpage64FreeCtx Hz5Lowpage64FreeCtx;
 #endif
 #endif
 
+#ifndef HZ5_LOWPAGE64_P43_PREPARED_PAGE_NOACCESS
+#ifdef BENCHLAB_HZ5_P43_PREPARED_PAGE_NOACCESS
+#define HZ5_LOWPAGE64_P43_PREPARED_PAGE_NOACCESS \
+  BENCHLAB_HZ5_P43_PREPARED_PAGE_NOACCESS
+#else
+#define HZ5_LOWPAGE64_P43_PREPARED_PAGE_NOACCESS 0
+#endif
+#endif
+
 #define HZ5_LOWPAGE64_P43_PREPARED_ANY \
   (HZ5_LOWPAGE64_P43_PREPARED_RELEASE || \
    HZ5_LOWPAGE64_P43_PREPARED_BRIDGE)
@@ -196,14 +205,35 @@ typedef struct Hz5Lowpage64FreeCtx Hz5Lowpage64FreeCtx;
 #error "P43 LocklessLookup is diagnostic-only and cannot run with slot decommit/PageNoAccess"
 #endif
 
+#if HZ5_LOWPAGE64_P43_PREPARED_PAGE_NOACCESS && \
+    !HZ5_LOWPAGE64_P43_PREPARED_BRIDGE
+#error "P43 PreparedPageNoAccess requires PreparedBridge"
+#endif
+
+#if HZ5_LOWPAGE64_P43_PREPARED_PAGE_NOACCESS && \
+    !HZ5_LOWPAGE64_P43_PAGE_NOACCESS
+#error "P43 PreparedPageNoAccess requires PageNoAccess"
+#endif
+
+#if HZ5_LOWPAGE64_P43_PREPARED_PAGE_NOACCESS && \
+    HZ5_LOWPAGE64_P43_LOCKLESS_LOOKUP
+#error "P43 PreparedPageNoAccess is diagnostic-only and cannot run with LocklessLookup"
+#endif
+
 #if HZ5_LOWPAGE64_P43_PREPARED_RELEASE && \
     (HZ5_LOWPAGE64_P43_SLOT_DECOMMIT || HZ5_LOWPAGE64_P43_PAGE_NOACCESS)
 #error "P43 PreparedRelease is diagnostic-only and cannot run with slot decommit/PageNoAccess"
 #endif
 
 #if HZ5_LOWPAGE64_P43_PREPARED_BRIDGE && \
-    (HZ5_LOWPAGE64_P43_SLOT_DECOMMIT || HZ5_LOWPAGE64_P43_PAGE_NOACCESS)
-#error "P43 PreparedBridge cannot run with slot decommit/PageNoAccess"
+    HZ5_LOWPAGE64_P43_SLOT_DECOMMIT
+#error "P43 PreparedBridge cannot run with slot decommit"
+#endif
+
+#if HZ5_LOWPAGE64_P43_PREPARED_BRIDGE && \
+    HZ5_LOWPAGE64_P43_PAGE_NOACCESS && \
+    !HZ5_LOWPAGE64_P43_PREPARED_PAGE_NOACCESS
+#error "P43 PreparedBridge cannot run with PageNoAccess without PreparedPageNoAccess"
 #endif
 
 typedef struct Hz5Lowpage64P43StatsSnapshot {

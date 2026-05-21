@@ -78,7 +78,8 @@ static _Atomic(Hz5Lowpage64Segment*)
 static Hz5Lowpage64P43SlotRef g_hz5_lowpage64_p43_committed_head;
 static size_t g_hz5_lowpage64_p43_committed_count;
 #endif
-#if HZ5_LOWPAGE64_P43_TLS_CACHE_CAP > 0u
+#if HZ5_LOWPAGE64_P43_TLS_CACHE_CAP > 0u && \
+    !HZ5_LOWPAGE64_P43_PAGE_NOACCESS
 typedef struct Hz5Lowpage64P43TlsCache {
   Hz5Lowpage64P43SlotRef refs[HZ5_LOWPAGE64_P43_TLS_CACHE_CAP];
   uint32_t count;
