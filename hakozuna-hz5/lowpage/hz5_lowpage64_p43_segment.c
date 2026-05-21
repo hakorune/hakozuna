@@ -23,8 +23,19 @@
 #if HZ5_LOWPAGE64_STATS
 #define HZ5_P43_COUNT_ADD(counter, value) \
   atomic_fetch_add_explicit(&(counter), (value), memory_order_relaxed)
+static void hz5_p43_count_max(_Atomic size_t* counter, size_t value) {
+  size_t current = atomic_load_explicit(counter, memory_order_relaxed);
+  while (current < value &&
+         !atomic_compare_exchange_weak_explicit(
+             counter, &current, value, memory_order_relaxed,
+             memory_order_relaxed)) {
+  }
+}
+#define HZ5_P43_COUNT_MAX(counter, value) \
+  hz5_p43_count_max(&(counter), (value))
 #else
 #define HZ5_P43_COUNT_ADD(counter, value) ((void)0)
+#define HZ5_P43_COUNT_MAX(counter, value) ((void)0)
 #endif
 
 #if HZ5_LOWPAGE64_P43_SEGMENT_SLOTS
@@ -87,6 +98,12 @@ static _Atomic size_t g_hz5_lowpage64_p43_global_hits;
 static _Atomic size_t g_hz5_lowpage64_p43_global_pushes;
 static _Atomic size_t g_hz5_lowpage64_p43_cold_hits;
 static _Atomic size_t g_hz5_lowpage64_p43_free_slot_hits;
+static _Atomic size_t g_hz5_lowpage64_p43_lookup_calls;
+static _Atomic size_t g_hz5_lowpage64_p43_lookup_active;
+static _Atomic size_t g_hz5_lowpage64_p43_lookup_nonactive;
+static _Atomic size_t g_hz5_lowpage64_p43_lookup_miss;
+static _Atomic size_t g_hz5_lowpage64_p43_lookup_segments_scanned_total;
+static _Atomic size_t g_hz5_lowpage64_p43_lookup_segments_scanned_max;
 static _Atomic size_t g_hz5_lowpage64_p43_va_allocs;
 static _Atomic size_t g_hz5_lowpage64_p43_va_alloc_failures;
 static _Atomic size_t g_hz5_lowpage64_p43_va_releases;
@@ -353,9 +370,12 @@ int hz5_lowpage64_p43_lookup(void* ptr) {
 #if HZ5_LOWPAGE64_P43_SEGMENT_SLOTS
   int result = HZ5_LOWPAGE64_LOOKUP_MISS;
   uintptr_t p = (uintptr_t)ptr;
+  size_t scanned = 0;
+  HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_lookup_calls, 1);
   hz5_lowpage64_p43_lock_enter();
   for (Hz5Lowpage64Segment* seg = g_hz5_lowpage64_p43_segments; seg;
        seg = seg->next) {
+    scanned++;
     uintptr_t base = (uintptr_t)seg->base;
     uintptr_t end = base + HZ5_LOWPAGE64_P43_SEGMENT_SIZE;
     if (p < base || p >= end) {
@@ -374,6 +394,18 @@ int hz5_lowpage64_p43_lookup(void* ptr) {
     break;
   }
   hz5_lowpage64_p43_lock_leave();
+  HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_lookup_segments_scanned_total,
+                    scanned);
+  HZ5_P43_COUNT_MAX(g_hz5_lowpage64_p43_lookup_segments_scanned_max,
+                    scanned);
+  if (result == HZ5_LOWPAGE64_LOOKUP_OWNED_ACTIVE) {
+    HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_lookup_active, 1);
+  } else if (result == HZ5_LOWPAGE64_LOOKUP_OWNED_NONACTIVE) {
+    HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_lookup_nonactive, 1);
+  } else {
+    HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_lookup_miss, 1);
+  }
+  (void)scanned;
   return result;
 #else
   (void)ptr;
@@ -706,6 +738,20 @@ void hz5_lowpage64_p43_stats_snapshot(
       &g_hz5_lowpage64_p43_cold_hits, memory_order_relaxed);
   snapshot->free_slot_hits = atomic_load_explicit(
       &g_hz5_lowpage64_p43_free_slot_hits, memory_order_relaxed);
+  snapshot->lookup_calls = atomic_load_explicit(
+      &g_hz5_lowpage64_p43_lookup_calls, memory_order_relaxed);
+  snapshot->lookup_active = atomic_load_explicit(
+      &g_hz5_lowpage64_p43_lookup_active, memory_order_relaxed);
+  snapshot->lookup_nonactive = atomic_load_explicit(
+      &g_hz5_lowpage64_p43_lookup_nonactive, memory_order_relaxed);
+  snapshot->lookup_miss = atomic_load_explicit(
+      &g_hz5_lowpage64_p43_lookup_miss, memory_order_relaxed);
+  snapshot->lookup_segments_scanned_total = atomic_load_explicit(
+      &g_hz5_lowpage64_p43_lookup_segments_scanned_total,
+      memory_order_relaxed);
+  snapshot->lookup_segments_scanned_max = atomic_load_explicit(
+      &g_hz5_lowpage64_p43_lookup_segments_scanned_max,
+      memory_order_relaxed);
   snapshot->va_allocs = atomic_load_explicit(
       &g_hz5_lowpage64_p43_va_allocs, memory_order_relaxed);
   snapshot->va_alloc_failures = atomic_load_explicit(
@@ -726,6 +772,12 @@ void hz5_lowpage64_p43_stats_snapshot(
   snapshot->global_pushes = 0;
   snapshot->cold_hits = 0;
   snapshot->free_slot_hits = 0;
+  snapshot->lookup_calls = 0;
+  snapshot->lookup_active = 0;
+  snapshot->lookup_nonactive = 0;
+  snapshot->lookup_miss = 0;
+  snapshot->lookup_segments_scanned_total = 0;
+  snapshot->lookup_segments_scanned_max = 0;
   snapshot->va_allocs = 0;
   snapshot->va_alloc_failures = 0;
   snapshot->va_releases = 0;

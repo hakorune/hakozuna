@@ -38,6 +38,10 @@
 #define BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192 0
 #endif
 
+#ifndef BENCHLAB_HZ5_P43_UNSAFE_NO_LOOKUP
+#define BENCHLAB_HZ5_P43_UNSAFE_NO_LOOKUP 0
+#endif
+
 #ifndef BENCHLAB_HZ5_NO_HZ3_FALLBACK
 #define BENCHLAB_HZ5_NO_HZ3_FALLBACK 0
 #endif
@@ -262,6 +266,9 @@ void hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
 #if BENCHLAB_HZ5_LAZY_HZ3_FALLBACK && \
     (BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || \
      BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192)
+#if BENCHLAB_HZ5_P43_UNSAFE_NO_LOOKUP
+  int p25_lowpage_lookup = HZ5_LOWPAGE64_LOOKUP_OWNED_ACTIVE;
+#else
   uint32_t p25_fb_state = hz5_hz3_fallback_state();
   int p25_lowpage_lookup = hz5_lowpage64_lookup(ptr);
   if ((p25_fb_state == HZ5_HZ3_FALLBACK_READY ||
@@ -270,6 +277,7 @@ void hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
     hz5_hz3_fallback_free(ptr);
     return;
   }
+#endif
 #else
   int p25_lowpage_lookup = HZ5_LOWPAGE64_LOOKUP_MISS;
 #endif

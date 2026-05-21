@@ -1290,3 +1290,83 @@ Decision:
   not enough to recover P43 speed.
 - A real P43 speed follow-up would need descriptor-owned P25-level caches, not
   another source-only cache knob.
+
+## P43x lookup/free-gate diagnostic
+
+P43x tests whether the remaining P43e speed loss is caused by the free-path
+P43 active lookup gate:
+
+- build switch: `-P43UnsafeNoLookup`
+- macro: `BENCHLAB_HZ5_P43_UNSAFE_NO_LOOKUP`
+- lane: `hakozuna-hz5-p43x-unsafe-no-lookup`
+- constraints:
+  - diagnostic only;
+  - requires `-P43SegmentSlots`;
+  - rejected by `-SpeedLane`;
+  - cannot be combined with `-P43SlotDecommit` or `-P43PageNoAccess`.
+
+Mechanism:
+
+- P43e keeps the normal free safety gate:
+  `hz5_lowpage64_lookup(ptr)` before wrapper decode;
+- P43x skips that lookup gate and treats the pointer as HZ5-owned for the
+  wrapper decode path;
+- this is intentionally unsafe and only valid for exact-route controlled
+  probes with fallback unloaded and slot decommit disabled.
+
+P43e rerun with lookup counters:
+
+```text
+results/synthetic-sweep/20260521_175114_025
+
+pc-r90-64k-a8192-t4:
+  median 2.07M ops/s
+
+pc-r99-64k-a8192-t4:
+  median 1.46M ops/s
+
+P43 lookup counters:
+  p43_lookup_calls: 105577 median
+  p43_lookup_active: 105576 median
+  p43_lookup_nonactive: 0
+  p43_lookup_miss: 1
+  p43_lookup_segments_scanned_total: 933842 median
+  p43_lookup_segments_scanned_max: 25 median
+
+fallback load_count:
+  0
+```
+
+P43x unsafe-no-lookup repeat-3:
+
+```text
+results/synthetic-sweep/20260521_175129_049
+
+pc-r90-64k-a8192-t4:
+  median 2.32M ops/s
+
+pc-r99-64k-a8192-t4:
+  median 1.88M ops/s
+
+rss-plateau-64k-a8192-idle150:
+  median steady RSS: 62.45 MiB
+  steady VA: 4.27-4.29 GiB
+
+P43 lookup counters:
+  all 0 by construction
+
+fallback load_count:
+  0
+```
+
+Decision:
+
+- P43x is diagnostic-only and must not be promoted.
+- The lookup/free gate is a real P43 speed tax:
+  - `64K/r90`: about `+12%` versus P43e;
+  - `64K/r99`: about `+28%` versus P43e.
+- The improvement is not enough to recover P25/P33-class speed, so lookup is
+  significant but not the only issue.
+- Next P43 work should be C-lite: fast raw-to-ref / descriptor lookup table,
+  removing global lock + linked-list segment scan from the free hot path before
+  attempting a full P25-level SlotRef cache rewrite.

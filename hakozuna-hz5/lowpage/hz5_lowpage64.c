@@ -1283,7 +1283,11 @@ static void hz5_lowpage64_print_once(void) {
           "p43_tls_hits=%zu p43_tls_pushes=%zu "
           "p43_tls_overflow_pushes=%zu p43_global_hits=%zu "
           "p43_global_pushes=%zu p43_cold_hits=%zu "
-          "p43_free_slot_hits=%zu\n",
+          "p43_free_slot_hits=%zu p43_lookup_calls=%zu "
+          "p43_lookup_active=%zu p43_lookup_nonactive=%zu "
+          "p43_lookup_miss=%zu "
+          "p43_lookup_segments_scanned_total=%zu "
+          "p43_lookup_segments_scanned_max=%zu\n",
           atomic_load_explicit(&g_hz5_lowpage64_alloc_calls,
                                memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_span_hits,
@@ -1447,7 +1451,13 @@ static void hz5_lowpage64_print_once(void) {
           p43_stats.global_hits,
           p43_stats.global_pushes,
           p43_stats.cold_hits,
-          p43_stats.free_slot_hits);
+          p43_stats.free_slot_hits,
+          p43_stats.lookup_calls,
+          p43_stats.lookup_active,
+          p43_stats.lookup_nonactive,
+          p43_stats.lookup_miss,
+          p43_stats.lookup_segments_scanned_total,
+          p43_stats.lookup_segments_scanned_max);
 }
 #endif
 
