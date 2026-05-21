@@ -11,6 +11,8 @@ extern "C" {
 #ifndef HZ5_LOWPAGE64_LOOKUP_ENUM
 #define HZ5_LOWPAGE64_LOOKUP_ENUM
 enum {
+  /* MISS may be handed to fallback policy. OWNED_NONACTIVE is still an HZ5
+     range and must not be forwarded to HZ3 fallback free. */
   HZ5_LOWPAGE64_LOOKUP_MISS = 0,
   HZ5_LOWPAGE64_LOOKUP_OWNED_ACTIVE = 1,
   HZ5_LOWPAGE64_LOOKUP_OWNED_NONACTIVE = 2
@@ -70,6 +72,8 @@ int hz5_lowpage64_may_own(void* ptr);
 int hz5_lowpage64_active_owns(void* ptr);
 void* hz5_lowpage64_acquire(size_t raw_bytes);
 void hz5_lowpage64_release(void* raw);
+/* Prepared release preserves the P25 lowpage64 relbuf/global/acquired bridge
+   when ctx matches raw. Direct P43 descriptor release is a separate control. */
 int hz5_lowpage64_release_prepared(const Hz5Lowpage64FreeCtx* ctx,
                                    void* raw);
 void hz5_lowpage64_p43g_note_wrapper(int is_p25_source, int raw_match);
