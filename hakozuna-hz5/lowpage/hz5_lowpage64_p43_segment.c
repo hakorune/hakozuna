@@ -70,7 +70,7 @@ static INIT_ONCE g_hz5_lowpage64_p43_lock_once = INIT_ONCE_STATIC_INIT;
 static CRITICAL_SECTION g_hz5_lowpage64_p43_lock;
 static Hz5Lowpage64Segment* g_hz5_lowpage64_p43_segments;
 #if HZ5_LOWPAGE64_P43_FAST_LOOKUP
-static Hz5Lowpage64Segment*
+static _Atomic(Hz5Lowpage64Segment*)
     g_hz5_lowpage64_p43_fast_lookup[HZ5_LOWPAGE64_P43_FAST_LOOKUP_CAP];
 #endif
 #if HZ5_LOWPAGE64_P43_COMMITTED_LISTS && !HZ5_LOWPAGE64_P43_PAGE_NOACCESS
@@ -110,6 +110,8 @@ static _Atomic size_t g_hz5_lowpage64_p43_lookup_segments_scanned_total;
 static _Atomic size_t g_hz5_lowpage64_p43_lookup_segments_scanned_max;
 static _Atomic size_t g_hz5_lowpage64_p43_lookup_fast_hits;
 static _Atomic size_t g_hz5_lowpage64_p43_lookup_fast_misses;
+static _Atomic size_t g_hz5_lowpage64_p43_lookup_lockless_hits;
+static _Atomic size_t g_hz5_lowpage64_p43_lookup_lockless_misses;
 static _Atomic size_t g_hz5_lowpage64_p43_find_fast_hits;
 static _Atomic size_t g_hz5_lowpage64_p43_find_segments_scanned_total;
 static _Atomic size_t g_hz5_lowpage64_p43_find_segments_scanned_max;
@@ -173,7 +175,8 @@ static void hz5_lowpage64_p43_publish_fast_lookup_locked(
   for (uint32_t i = 0; i < HZ5_LOWPAGE64_P43_SEGMENT_SIZE / 65536u; i++) {
     uint32_t idx =
         hz5_lowpage64_p43_fast_lookup_index(base + (uintptr_t)i * 65536u);
-    g_hz5_lowpage64_p43_fast_lookup[idx] = seg;
+    atomic_store_explicit(&g_hz5_lowpage64_p43_fast_lookup[idx], seg,
+                          memory_order_release);
   }
 }
 
@@ -183,11 +186,41 @@ static void hz5_lowpage64_p43_unpublish_fast_lookup_locked(
   for (uint32_t i = 0; i < HZ5_LOWPAGE64_P43_SEGMENT_SIZE / 65536u; i++) {
     uint32_t idx =
         hz5_lowpage64_p43_fast_lookup_index(base + (uintptr_t)i * 65536u);
-    if (g_hz5_lowpage64_p43_fast_lookup[idx] == seg) {
-      g_hz5_lowpage64_p43_fast_lookup[idx] = NULL;
+    Hz5Lowpage64Segment* cur = atomic_load_explicit(
+        &g_hz5_lowpage64_p43_fast_lookup[idx], memory_order_acquire);
+    if (cur == seg) {
+      atomic_store_explicit(&g_hz5_lowpage64_p43_fast_lookup[idx], NULL,
+                            memory_order_release);
     }
   }
 }
+
+#if HZ5_LOWPAGE64_P43_LOCKLESS_LOOKUP
+static int hz5_lowpage64_p43_lookup_fast_lockless(uintptr_t p,
+                                                  size_t* scanned_out) {
+  Hz5Lowpage64Segment* hint =
+      atomic_load_explicit(
+          &g_hz5_lowpage64_p43_fast_lookup[
+              hz5_lowpage64_p43_fast_lookup_index(p)],
+          memory_order_acquire);
+  uint32_t slot = 0;
+  if (!hz5_lowpage64_p43_segment_contains(hint, p, &slot)) {
+    HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_lookup_lockless_misses, 1);
+    return HZ5_LOWPAGE64_LOOKUP_MISS;
+  }
+
+  uint32_t bit = (uint32_t)1u << slot;
+  int active = ((hint->allocated_mask & bit) != 0u) &&
+               ((hint->committed_mask & bit) != 0u) &&
+               ((hint->cold_mask & bit) == 0u);
+  if (scanned_out) {
+    *scanned_out = 1;
+  }
+  HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_lookup_lockless_hits, 1);
+  return active ? HZ5_LOWPAGE64_LOOKUP_OWNED_ACTIVE
+                : HZ5_LOWPAGE64_LOOKUP_OWNED_NONACTIVE;
+}
+#endif
 #endif
 
 static Hz5Lowpage64Segment* hz5_lowpage64_p43_find_segment_locked(
@@ -197,8 +230,10 @@ static Hz5Lowpage64Segment* hz5_lowpage64_p43_find_segment_locked(
 #if HZ5_LOWPAGE64_P43_FAST_LOOKUP
   {
     Hz5Lowpage64Segment* hint =
-        g_hz5_lowpage64_p43_fast_lookup[
-            hz5_lowpage64_p43_fast_lookup_index(p)];
+        atomic_load_explicit(
+            &g_hz5_lowpage64_p43_fast_lookup[
+                hz5_lowpage64_p43_fast_lookup_index(p)],
+            memory_order_acquire);
     if (hz5_lowpage64_p43_segment_contains(hint, p, slot_out)) {
       HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_find_fast_hits, 1);
       HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_find_segments_scanned_total, 1);
@@ -446,13 +481,21 @@ int hz5_lowpage64_p43_lookup(void* ptr) {
   uintptr_t p = (uintptr_t)ptr;
   size_t scanned = 0;
   HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_lookup_calls, 1);
+#if HZ5_LOWPAGE64_P43_FAST_LOOKUP && HZ5_LOWPAGE64_P43_LOCKLESS_LOOKUP
+  result = hz5_lowpage64_p43_lookup_fast_lockless(p, &scanned);
+  if (result != HZ5_LOWPAGE64_LOOKUP_MISS) {
+    goto hz5_p43_lookup_count_result;
+  }
+#endif
   hz5_lowpage64_p43_lock_enter();
 #if HZ5_LOWPAGE64_P43_FAST_LOOKUP
   {
     uint32_t slot = 0;
     Hz5Lowpage64Segment* hint =
-        g_hz5_lowpage64_p43_fast_lookup[
-            hz5_lowpage64_p43_fast_lookup_index(p)];
+        atomic_load_explicit(
+            &g_hz5_lowpage64_p43_fast_lookup[
+                hz5_lowpage64_p43_fast_lookup_index(p)],
+            memory_order_acquire);
     if (hz5_lowpage64_p43_segment_contains(hint, p, &slot)) {
       uint32_t bit = (uint32_t)1u << slot;
       int active = ((hint->allocated_mask & bit) != 0u) &&
@@ -486,6 +529,9 @@ int hz5_lowpage64_p43_lookup(void* ptr) {
 hz5_p43_lookup_done:
 #endif
   hz5_lowpage64_p43_lock_leave();
+#if HZ5_LOWPAGE64_P43_FAST_LOOKUP && HZ5_LOWPAGE64_P43_LOCKLESS_LOOKUP
+hz5_p43_lookup_count_result:
+#endif
   HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_lookup_segments_scanned_total,
                     scanned);
   HZ5_P43_COUNT_MAX(g_hz5_lowpage64_p43_lookup_segments_scanned_max,
@@ -851,6 +897,10 @@ void hz5_lowpage64_p43_stats_snapshot(
       &g_hz5_lowpage64_p43_lookup_fast_hits, memory_order_relaxed);
   snapshot->lookup_fast_misses = atomic_load_explicit(
       &g_hz5_lowpage64_p43_lookup_fast_misses, memory_order_relaxed);
+  snapshot->lookup_lockless_hits = atomic_load_explicit(
+      &g_hz5_lowpage64_p43_lookup_lockless_hits, memory_order_relaxed);
+  snapshot->lookup_lockless_misses = atomic_load_explicit(
+      &g_hz5_lowpage64_p43_lookup_lockless_misses, memory_order_relaxed);
   snapshot->find_fast_hits = atomic_load_explicit(
       &g_hz5_lowpage64_p43_find_fast_hits, memory_order_relaxed);
   snapshot->find_segments_scanned_total = atomic_load_explicit(
@@ -886,6 +936,8 @@ void hz5_lowpage64_p43_stats_snapshot(
   snapshot->lookup_segments_scanned_max = 0;
   snapshot->lookup_fast_hits = 0;
   snapshot->lookup_fast_misses = 0;
+  snapshot->lookup_lockless_hits = 0;
+  snapshot->lookup_lockless_misses = 0;
   snapshot->find_fast_hits = 0;
   snapshot->find_segments_scanned_total = 0;
   snapshot->find_segments_scanned_max = 0;

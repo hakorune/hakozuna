@@ -1429,3 +1429,70 @@ Decision:
 - Next P43 C-lite option should target a stable descriptor lookup that avoids
   the per-free global lock or combines active lookup and release ownership,
   before attempting the full P25-level SlotRef cache migration.
+
+## P43f.1 lockless lookup diagnostic
+
+P43f.1 tests the part P43f.0 intentionally left in place: the global lock in
+the free-path active lookup.
+
+New knob:
+
+- build switch: `-P43LocklessLookup`
+- macro: `BENCHLAB_HZ5_P43_LOCKLESS_LOOKUP`
+- lane: `hakozuna-hz5-p43f1-lockless-lookup`
+
+Constraints:
+
+- requires `-P43FastLookup`;
+- rejected by `-SpeedLane`;
+- cannot be combined with `-P43SlotDecommit` or `-P43PageNoAccess`;
+- diagnostic/evidence only.
+
+Mechanism:
+
+- active lookup first reads the P43 fast segment table without taking the P43
+  critical-section lock;
+- if the fast table does not contain the pointer, lookup falls back to the
+  locked path;
+- release-side raw find still uses the locked fast table path;
+- slot decommit remains disabled.
+
+P43f.1 repeat-3:
+
+```text
+results/synthetic-sweep/20260521_180821_922
+
+pc-r90-64k-a8192-t4:
+  median 2.19M ops/s
+
+pc-r99-64k-a8192-t4:
+  median 1.78M ops/s
+
+rss-plateau-64k-a8192-idle150:
+  median steady RSS: 62.34 MiB
+  steady VA: 4.28-4.29 GiB
+
+P43 lookup counters:
+  p43_lookup_calls: 105577 median
+  p43_lookup_lockless_hits: 105576 median
+  p43_lookup_lockless_misses: 1
+  p43_lookup_segments_scanned_total: 105576 median
+  p43_lookup_segments_scanned_max: 1
+
+fallback load_count:
+  0
+```
+
+Decision:
+
+- P43f.1 is diagnostic/evidence only.
+- Removing the lookup lock moves r99 close to unsafe-no-lookup:
+  - P43e: `1.46M`
+  - P43f0: `1.52M`
+  - P43f1: `1.78M`
+  - P43x unsafe-no-lookup: `1.88M`
+- The lock/free-gate tax is real, especially in r99.
+- The remaining gap to P25/P33 means lookup-only work is not enough. Next real
+  direction should be descriptor-safe P25-level cache ownership or a combined
+  active-lookup/release path that avoids per-free gate overhead while preserving
+  the ACTIVE-only data-page-read invariant.

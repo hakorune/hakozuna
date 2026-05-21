@@ -1289,6 +1289,8 @@ static void hz5_lowpage64_print_once(void) {
           "p43_lookup_segments_scanned_total=%zu "
           "p43_lookup_segments_scanned_max=%zu "
           "p43_lookup_fast_hits=%zu p43_lookup_fast_misses=%zu "
+          "p43_lookup_lockless_hits=%zu "
+          "p43_lookup_lockless_misses=%zu "
           "p43_find_fast_hits=%zu "
           "p43_find_segments_scanned_total=%zu "
           "p43_find_segments_scanned_max=%zu\n",
@@ -1464,6 +1466,8 @@ static void hz5_lowpage64_print_once(void) {
           p43_stats.lookup_segments_scanned_max,
           p43_stats.lookup_fast_hits,
           p43_stats.lookup_fast_misses,
+          p43_stats.lookup_lockless_hits,
+          p43_stats.lookup_lockless_misses,
           p43_stats.find_fast_hits,
           p43_stats.find_segments_scanned_total,
           p43_stats.find_segments_scanned_max);
