@@ -1162,3 +1162,59 @@ Decision:
 - The remaining speed issue is likely above the VM call itself: P43 slot
   decommit still interacts with the older lowpage global/stash lifecycle rather
   than a fully descriptor-owned hot/global reuse policy.
+
+## P43d committed-retain64
+
+P43d tested whether P43b/P43c speed loss is mostly caused by excessive
+`MEM_DECOMMIT` frequency.
+
+New knob:
+
+- build switch: `-P43CommittedRetainCap <N>`
+- macro: `BENCHLAB_HZ5_P43_COMMITTED_RETAIN_CAP`
+- first lane: `P43CommittedRetainCap=64`
+- manifest: `manifests/hakozuna-hz5-p43d-committed-retain64.toml`
+
+Mechanism:
+
+- when a P43 slot is freed under slot-decommit mode, keep it committed in the
+  descriptor-owned SlotRef cache while retained count is below the cap;
+- only overflow falls through to slot `MEM_DECOMMIT`;
+- TLS SlotRef cache is not enabled yet.
+
+P43d committed-retain64 repeat-3:
+
+```text
+results/synthetic-sweep/20260521_170134_180
+
+pc-r90-64k-a8192-t4:
+  1.85M-2.15M ops/s
+  steady RSS: 31.53-32.46 MiB
+  steady VA: 4.23-4.25 GiB
+
+pc-r99-64k-a8192-t4:
+  1.36M-1.59M ops/s
+  steady RSS: 33.16-35.44 MiB
+  steady VA: 4.26 GiB
+
+rss-plateau-64k-a8192-idle150:
+  steady RSS: 58.55-60.21 MiB
+  steady VA: 4.26-4.29 GiB
+
+p43_slot_decommits:
+  69-196
+
+fallback load_count:
+  0
+```
+
+Decision:
+
+- The cap works: slot decommits dropped by roughly an order of magnitude versus
+  P43b/P43c.
+- Speed did not recover enough.
+- Plateau RSS regressed toward P43a/P33 territory.
+- P43d cap64 is no-go / evidence.
+- Further fixed-cap sweep is low ROI unless paired with a fuller
+  descriptor-owned hot/global lifecycle that removes the global lock/scan and
+  old raw-pointer cache topology from the hot path.

@@ -65,6 +65,15 @@ extern "C" {
 #endif
 #endif
 
+#ifndef HZ5_LOWPAGE64_P43_COMMITTED_RETAIN_CAP
+#ifdef BENCHLAB_HZ5_P43_COMMITTED_RETAIN_CAP
+#define HZ5_LOWPAGE64_P43_COMMITTED_RETAIN_CAP \
+  BENCHLAB_HZ5_P43_COMMITTED_RETAIN_CAP
+#else
+#define HZ5_LOWPAGE64_P43_COMMITTED_RETAIN_CAP 0u
+#endif
+#endif
+
 typedef struct Hz5Lowpage64P43StatsSnapshot {
   size_t segments_reserved;
   size_t segments_released;
