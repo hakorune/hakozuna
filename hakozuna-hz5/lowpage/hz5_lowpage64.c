@@ -205,7 +205,7 @@
 #define HZ5_LOWPAGE64_P44_RELBUF_SOFT_CAP \
   BENCHLAB_HZ5_P44_RELBUF_SOFT_CAP
 #else
-#define HZ5_LOWPAGE64_P44_RELBUF_SOFT_CAP 0u
+#define HZ5_LOWPAGE64_P44_RELBUF_SOFT_CAP HZ5_LOWPAGE64_BATCH_FLUSH_N
 #endif
 #endif
 
@@ -730,16 +730,8 @@ void hz5_lowpage64_p43g_note_prepared_path(void) {
 #endif
 }
 
-#if HZ5_LOWPAGE64_P44_BRIDGE_TRIM_DRYRUN
-typedef enum Hz5Lowpage64P44Reason {
-  HZ5_LOWPAGE64_P44_REASON_PUBLISH = 1,
-  HZ5_LOWPAGE64_P44_REASON_ACQUIRE_MISS = 2,
-  HZ5_LOWPAGE64_P44_REASON_P40 = 3,
-  HZ5_LOWPAGE64_P44_REASON_SNAPSHOT = 4,
-} Hz5Lowpage64P44Reason;
-
-static size_t hz5_lowpage64_p44_candidate(size_t observed,
-                                          size_t soft_cap) {
+static size_t hz5_lowpage64_p44_candidate_value(size_t observed,
+                                                size_t soft_cap) {
   if (observed <= soft_cap) {
     return 0;
   }
@@ -749,6 +741,14 @@ static size_t hz5_lowpage64_p44_candidate(size_t observed,
   }
   return candidate;
 }
+
+#if HZ5_LOWPAGE64_P44_BRIDGE_TRIM_DRYRUN
+typedef enum Hz5Lowpage64P44Reason {
+  HZ5_LOWPAGE64_P44_REASON_PUBLISH = 1,
+  HZ5_LOWPAGE64_P44_REASON_ACQUIRE_MISS = 2,
+  HZ5_LOWPAGE64_P44_REASON_P40 = 3,
+  HZ5_LOWPAGE64_P44_REASON_SNAPSHOT = 4,
+} Hz5Lowpage64P44Reason;
 
 static void hz5_lowpage64_p44_count_pair(_Atomic size_t* observed_total,
                                          _Atomic size_t* observed_max,
@@ -772,13 +772,13 @@ static void hz5_lowpage64_p44_note(Hz5Lowpage64P44Reason reason) {
   size_t relbuf = g_hz5_lowpage64_relbuf_count;
   size_t p43_free = p43_stats.slots_committed_free_current;
 
-  size_t global_candidate = hz5_lowpage64_p44_candidate(
+  size_t global_candidate = hz5_lowpage64_p44_candidate_value(
       global, HZ5_LOWPAGE64_P44_GLOBAL_SOFT_CAP);
-  size_t stash_candidate = hz5_lowpage64_p44_candidate(
+  size_t stash_candidate = hz5_lowpage64_p44_candidate_value(
       stash, HZ5_LOWPAGE64_P44_STASH_SOFT_CAP);
-  size_t relbuf_candidate = hz5_lowpage64_p44_candidate(
+  size_t relbuf_candidate = hz5_lowpage64_p44_candidate_value(
       relbuf, HZ5_LOWPAGE64_P44_RELBUF_SOFT_CAP);
-  size_t p43_candidate = hz5_lowpage64_p44_candidate(
+  size_t p43_candidate = hz5_lowpage64_p44_candidate_value(
       p43_free, HZ5_LOWPAGE64_P44_P43_COMMITTED_FREE_SOFT_CAP);
   size_t total_candidate = global_candidate + stash_candidate +
                            relbuf_candidate + p43_candidate;
@@ -1525,6 +1525,19 @@ void hz5_lowpage64_print_snapshot(const char* label) {
 
   Hz5Lowpage64P43StatsSnapshot p43_stats = {0};
   hz5_lowpage64_p43_stats_snapshot(&p43_stats);
+  size_t p44_global_current = hz5_lowpage64_p44_candidate_value(
+      atomic_load_explicit(&g_hz5_lowpage64_global_batch_count,
+                           memory_order_relaxed),
+      HZ5_LOWPAGE64_P44_GLOBAL_SOFT_CAP);
+  size_t p44_stash_current = hz5_lowpage64_p44_candidate_value(
+      g_hz5_lowpage64_stash_count, HZ5_LOWPAGE64_P44_STASH_SOFT_CAP);
+  size_t p44_relbuf_current = hz5_lowpage64_p44_candidate_value(
+      g_hz5_lowpage64_relbuf_count, HZ5_LOWPAGE64_P44_RELBUF_SOFT_CAP);
+  size_t p44_p43_free_current = hz5_lowpage64_p44_candidate_value(
+      p43_stats.slots_committed_free_current,
+      HZ5_LOWPAGE64_P44_P43_COMMITTED_FREE_SOFT_CAP);
+  size_t p44_current_total = p44_global_current + p44_stash_current +
+                             p44_relbuf_current + p44_p43_free_current;
 
   fprintf(stderr,
           "[HZ5_LOWPAGE64_SNAPSHOT] label=%s "
@@ -1560,7 +1573,12 @@ void hz5_lowpage64_print_snapshot(const char* label) {
           "p44_relbuf_candidate_total=%zu "
           "p44_p43_free_candidate_total=%zu "
           "p44_reason_publish=%zu p44_reason_acquire_miss=%zu "
-          "p44_reason_p40=%zu p44_reason_snapshot=%zu\n",
+          "p44_reason_p40=%zu p44_reason_snapshot=%zu "
+          "p44_candidate_current=%zu "
+          "p44_global_candidate_current=%zu "
+          "p44_stash_candidate_current=%zu "
+          "p44_relbuf_candidate_current=%zu "
+          "p44_p43_free_candidate_current=%zu\n",
           label ? label : "",
           g_hz5_lowpage64_stash_count,
           g_hz5_lowpage64_relbuf_count,
@@ -1641,7 +1659,12 @@ void hz5_lowpage64_print_snapshot(const char* label) {
           atomic_load_explicit(&g_hz5_lowpage64_p44_reason_p40,
                                memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_p44_reason_snapshot,
-                               memory_order_relaxed));
+                               memory_order_relaxed),
+          p44_current_total,
+          p44_global_current,
+          p44_stash_current,
+          p44_relbuf_current,
+          p44_p43_free_current);
 }
 #else
 void hz5_lowpage64_print_snapshot(const char* label) {
@@ -1658,6 +1681,19 @@ static void hz5_lowpage64_print_once(void) {
 
   Hz5Lowpage64P43StatsSnapshot p43_stats = {0};
   hz5_lowpage64_p43_stats_snapshot(&p43_stats);
+  size_t p44_global_current = hz5_lowpage64_p44_candidate_value(
+      atomic_load_explicit(&g_hz5_lowpage64_global_batch_count,
+                           memory_order_relaxed),
+      HZ5_LOWPAGE64_P44_GLOBAL_SOFT_CAP);
+  size_t p44_stash_current = hz5_lowpage64_p44_candidate_value(
+      g_hz5_lowpage64_stash_count, HZ5_LOWPAGE64_P44_STASH_SOFT_CAP);
+  size_t p44_relbuf_current = hz5_lowpage64_p44_candidate_value(
+      g_hz5_lowpage64_relbuf_count, HZ5_LOWPAGE64_P44_RELBUF_SOFT_CAP);
+  size_t p44_p43_free_current = hz5_lowpage64_p44_candidate_value(
+      p43_stats.slots_committed_free_current,
+      HZ5_LOWPAGE64_P44_P43_COMMITTED_FREE_SOFT_CAP);
+  size_t p44_current_total = p44_global_current + p44_stash_current +
+                             p44_relbuf_current + p44_p43_free_current;
 
   fprintf(stderr,
           "[HZ5_LOWPAGE64] alloc_calls=%zu span_hits=%zu "
@@ -1734,7 +1770,12 @@ static void hz5_lowpage64_print_once(void) {
           "p44_p43_free_observed_max=%zu "
           "p44_p43_free_candidate_total=%zu "
           "p44_reason_publish=%zu p44_reason_acquire_miss=%zu "
-          "p44_reason_p40=%zu p44_reason_snapshot=%zu\n",
+          "p44_reason_p40=%zu p44_reason_snapshot=%zu "
+          "p44_candidate_current=%zu "
+          "p44_global_candidate_current=%zu "
+          "p44_stash_candidate_current=%zu "
+          "p44_relbuf_candidate_current=%zu "
+          "p44_p43_free_candidate_current=%zu\n",
           atomic_load_explicit(&g_hz5_lowpage64_alloc_calls,
                                memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_span_hits,
@@ -1964,7 +2005,12 @@ static void hz5_lowpage64_print_once(void) {
           atomic_load_explicit(&g_hz5_lowpage64_p44_reason_p40,
                                memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_p44_reason_snapshot,
-                               memory_order_relaxed));
+                               memory_order_relaxed),
+          p44_current_total,
+          p44_global_current,
+          p44_stash_current,
+          p44_relbuf_current,
+          p44_p43_free_current);
 }
 #endif
 
