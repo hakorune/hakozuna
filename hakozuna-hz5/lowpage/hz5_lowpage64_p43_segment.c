@@ -47,7 +47,8 @@ static void hz5_p43_count_max(_Atomic size_t* counter, size_t value) {
 #define HZ5_LOWPAGE64_P43_COMMITTED_LISTS \
   (HZ5_LOWPAGE64_P43_DESCRIPTOR_LISTS || \
    HZ5_LOWPAGE64_P43_COMMITTED_RETAIN_CAP > 0u || \
-   HZ5_LOWPAGE64_P43_TLS_CACHE_CAP > 0u)
+   HZ5_LOWPAGE64_P43_TLS_CACHE_CAP > 0u || \
+   HZ5_LOWPAGE64_P43_RELEASE_BUFFER_CAP > 0u)
 
 typedef struct Hz5Lowpage64Segment Hz5Lowpage64Segment;
 
@@ -61,6 +62,9 @@ struct Hz5Lowpage64Segment {
   _Atomic uint32_t allocated_mask;
   _Atomic uint32_t committed_mask;
   _Atomic uint32_t cold_mask;
+#if HZ5_LOWPAGE64_P43_RELEASE_BUFFER_CAP > 0u
+  _Atomic uint32_t pending_free_mask;
+#endif
 #if HZ5_LOWPAGE64_P43_COMMITTED_LISTS
   Hz5Lowpage64P43SlotRef free_next[HZ5_LOWPAGE64_P43_SLOT_COUNT];
 #endif
@@ -87,6 +91,16 @@ typedef struct Hz5Lowpage64P43TlsCache {
 
 __declspec(thread) static Hz5Lowpage64P43TlsCache
     g_hz5_lowpage64_p43_tls_cache;
+#endif
+#if HZ5_LOWPAGE64_P43_RELEASE_BUFFER_CAP > 0u && \
+    !HZ5_LOWPAGE64_P43_PAGE_NOACCESS
+typedef struct Hz5Lowpage64P43ReleaseBuffer {
+  Hz5Lowpage64P43SlotRef refs[HZ5_LOWPAGE64_P43_RELEASE_BUFFER_CAP];
+  uint32_t count;
+} Hz5Lowpage64P43ReleaseBuffer;
+
+__declspec(thread) static Hz5Lowpage64P43ReleaseBuffer
+    g_hz5_lowpage64_p43_release_buffer;
 #endif
 #endif
 
@@ -219,8 +233,15 @@ static int hz5_lowpage64_p43_slot_lookup_result(
   uint32_t committed =
       hz5_lowpage64_p43_mask_load(&seg->committed_mask);
   uint32_t cold = hz5_lowpage64_p43_mask_load(&seg->cold_mask);
+#if HZ5_LOWPAGE64_P43_RELEASE_BUFFER_CAP > 0u
+  uint32_t pending =
+      hz5_lowpage64_p43_mask_load(&seg->pending_free_mask);
+#else
+  uint32_t pending = 0u;
+#endif
   int active = ((allocated & bit) != 0u) &&
-               ((committed & bit) != 0u) && ((cold & bit) == 0u);
+               ((committed & bit) != 0u) && ((cold & bit) == 0u) &&
+               ((pending & bit) == 0u);
   return active ? HZ5_LOWPAGE64_LOOKUP_OWNED_ACTIVE
                 : HZ5_LOWPAGE64_LOOKUP_OWNED_NONACTIVE;
 }
@@ -458,6 +479,11 @@ static void hz5_lowpage64_p43_ref_clear(Hz5Lowpage64P43SlotRef* ref) {
 }
 
 #if !HZ5_LOWPAGE64_P43_PAGE_NOACCESS
+#if HZ5_LOWPAGE64_P43_TLS_CACHE_CAP > 0u
+static int hz5_lowpage64_p43_tls_push(Hz5Lowpage64Segment* seg,
+                                      uint32_t slot);
+#endif
+
 static int hz5_lowpage64_p43_ref_valid(Hz5Lowpage64P43SlotRef ref) {
   return ref.seg != NULL;
 }
@@ -482,6 +508,74 @@ static void hz5_lowpage64_p43_committed_push_locked(Hz5Lowpage64Segment* seg,
   g_hz5_lowpage64_p43_committed_count++;
   HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_global_pushes, 1);
 }
+
+static void hz5_lowpage64_p43_release_ref_locked(
+    Hz5Lowpage64P43SlotRef ref) {
+  if (!ref.seg || ref.slot >= (uint32_t)HZ5_LOWPAGE64_P43_SLOT_COUNT) {
+    return;
+  }
+  uint32_t bit = (uint32_t)1u << ref.slot;
+#if HZ5_LOWPAGE64_P43_RELEASE_BUFFER_CAP > 0u
+  if ((hz5_lowpage64_p43_mask_load(&ref.seg->pending_free_mask) & bit) ==
+      0u) {
+    return;
+  }
+  hz5_lowpage64_p43_mask_and(&ref.seg->pending_free_mask, ~bit);
+#endif
+  if ((hz5_lowpage64_p43_mask_load(&ref.seg->allocated_mask) & bit) == 0u) {
+    return;
+  }
+  hz5_lowpage64_p43_mask_and(&ref.seg->allocated_mask, ~bit);
+#if HZ5_LOWPAGE64_P43_TLS_CACHE_CAP > 0u && \
+    !HZ5_LOWPAGE64_P43_PAGE_NOACCESS
+  if ((hz5_lowpage64_p43_mask_load(&ref.seg->committed_mask) & bit) != 0u &&
+      (hz5_lowpage64_p43_mask_load(&ref.seg->cold_mask) & bit) == 0u &&
+      hz5_lowpage64_p43_tls_push(ref.seg, ref.slot)) {
+    return;
+  }
+  HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_tls_overflow_pushes, 1);
+#endif
+  if ((hz5_lowpage64_p43_mask_load(&ref.seg->committed_mask) & bit) != 0u &&
+      (hz5_lowpage64_p43_mask_load(&ref.seg->cold_mask) & bit) == 0u) {
+    hz5_lowpage64_p43_committed_push_locked(ref.seg, ref.slot);
+  }
+}
+
+#if HZ5_LOWPAGE64_P43_RELEASE_BUFFER_CAP > 0u && \
+    !HZ5_LOWPAGE64_P43_PAGE_NOACCESS
+static void hz5_lowpage64_p43_release_buffer_flush_locked(void) {
+  uint32_t count = g_hz5_lowpage64_p43_release_buffer.count;
+  for (uint32_t i = 0u; i < count; i++) {
+    hz5_lowpage64_p43_release_ref_locked(
+        g_hz5_lowpage64_p43_release_buffer.refs[i]);
+    hz5_lowpage64_p43_ref_clear(
+        &g_hz5_lowpage64_p43_release_buffer.refs[i]);
+  }
+  g_hz5_lowpage64_p43_release_buffer.count = 0u;
+}
+
+static int hz5_lowpage64_p43_release_buffer_push_locked(
+    Hz5Lowpage64Segment* seg,
+    uint32_t slot) {
+  if (!seg || slot >= (uint32_t)HZ5_LOWPAGE64_P43_SLOT_COUNT) {
+    return 0;
+  }
+  if (g_hz5_lowpage64_p43_release_buffer.count >=
+      (uint32_t)HZ5_LOWPAGE64_P43_RELEASE_BUFFER_CAP) {
+    hz5_lowpage64_p43_release_buffer_flush_locked();
+  }
+  if (g_hz5_lowpage64_p43_release_buffer.count >=
+      (uint32_t)HZ5_LOWPAGE64_P43_RELEASE_BUFFER_CAP) {
+    return 0;
+  }
+  Hz5Lowpage64P43SlotRef* ref =
+      &g_hz5_lowpage64_p43_release_buffer
+           .refs[g_hz5_lowpage64_p43_release_buffer.count++];
+  ref->seg = seg;
+  ref->slot = slot;
+  return 1;
+}
+#endif
 
 static int hz5_lowpage64_p43_committed_pop_locked(
     Hz5Lowpage64P43SlotRef* out) {
@@ -698,6 +792,36 @@ void* hz5_lowpage64_p43_alloc_slot(size_t raw_bytes) {
     }
   }
 #endif
+#if HZ5_LOWPAGE64_P43_RELEASE_BUFFER_CAP > 0u && \
+    !HZ5_LOWPAGE64_P43_PAGE_NOACCESS
+  if (g_hz5_lowpage64_p43_release_buffer.count > 0u) {
+    hz5_lowpage64_p43_release_buffer_flush_locked();
+#if HZ5_LOWPAGE64_P43_TLS_CACHE_CAP > 0u
+    {
+      Hz5Lowpage64P43SlotRef ref = {0};
+      if (hz5_lowpage64_p43_tls_pop_locked(&ref)) {
+        void* raw = (void*)((uintptr_t)ref.seg->base +
+                            (uintptr_t)ref.slot *
+                                HZ5_LOWPAGE64_P43_SLOT_SIZE);
+        hz5_lowpage64_p43_lock_leave();
+        return raw;
+      }
+    }
+#endif
+#if HZ5_LOWPAGE64_P43_COMMITTED_LISTS
+    {
+      Hz5Lowpage64P43SlotRef ref = {0};
+      if (hz5_lowpage64_p43_committed_pop_locked(&ref)) {
+        void* raw = (void*)((uintptr_t)ref.seg->base +
+                            (uintptr_t)ref.slot *
+                                HZ5_LOWPAGE64_P43_SLOT_SIZE);
+        hz5_lowpage64_p43_lock_leave();
+        return raw;
+      }
+    }
+#endif
+  }
+#endif
 #if HZ5_LOWPAGE64_P43_SLOT_DECOMMIT || HZ5_LOWPAGE64_P43_PAGE_NOACCESS
   for (Hz5Lowpage64Segment* seg = g_hz5_lowpage64_p43_segments; seg;
        seg = seg->next) {
@@ -832,6 +956,9 @@ void* hz5_lowpage64_p43_alloc_slot(size_t raw_bytes) {
   hz5_lowpage64_p43_mask_store(&seg->allocated_mask, 1u);
   hz5_lowpage64_p43_mask_store(&seg->committed_mask, 1u);
   hz5_lowpage64_p43_mask_store(&seg->cold_mask, 0u);
+#if HZ5_LOWPAGE64_P43_RELEASE_BUFFER_CAP > 0u
+  hz5_lowpage64_p43_mask_store(&seg->pending_free_mask, 0u);
+#endif
 #if HZ5_LOWPAGE64_P43_COMMITTED_LISTS
   for (uint32_t i = 0; i < (uint32_t)HZ5_LOWPAGE64_P43_SLOT_COUNT; i++) {
     hz5_lowpage64_p43_ref_clear(&seg->free_next[i]);
@@ -1023,6 +1150,22 @@ int hz5_lowpage64_p43_release_prepared_slot(
     hz5_lowpage64_p43_lock_leave();
     return 0;
   }
+#if HZ5_LOWPAGE64_P43_RELEASE_BUFFER_CAP > 0u && \
+    !HZ5_LOWPAGE64_P43_PAGE_NOACCESS
+  if ((hz5_lowpage64_p43_mask_load(&seg->pending_free_mask) & bit) != 0u) {
+    hz5_lowpage64_p43_lock_leave();
+    return 0;
+  }
+  if ((hz5_lowpage64_p43_mask_load(&seg->committed_mask) & bit) != 0u &&
+      (hz5_lowpage64_p43_mask_load(&seg->cold_mask) & bit) == 0u) {
+    hz5_lowpage64_p43_mask_or(&seg->pending_free_mask, bit);
+    if (hz5_lowpage64_p43_release_buffer_push_locked(seg, slot)) {
+      hz5_lowpage64_p43_lock_leave();
+      return 1;
+    }
+    hz5_lowpage64_p43_mask_and(&seg->pending_free_mask, ~bit);
+  }
+#endif
 #if HZ5_LOWPAGE64_P43_TLS_CACHE_CAP > 0u && \
     !HZ5_LOWPAGE64_P43_PAGE_NOACCESS
   if ((hz5_lowpage64_p43_mask_load(&seg->committed_mask) & bit) != 0u &&
