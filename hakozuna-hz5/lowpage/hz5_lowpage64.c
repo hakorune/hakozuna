@@ -1279,7 +1279,11 @@ static void hz5_lowpage64_print_once(void) {
           "p42_cold_count=%zu p42_cold_count_max=%zu "
           "p43_segments_reserved=%zu p43_segments_released=%zu "
           "p43_slot_commits=%zu p43_slot_commit_failures=%zu "
-          "p43_slot_decommits=%zu p43_slot_decommit_failures=%zu\n",
+          "p43_slot_decommits=%zu p43_slot_decommit_failures=%zu "
+          "p43_tls_hits=%zu p43_tls_pushes=%zu "
+          "p43_tls_overflow_pushes=%zu p43_global_hits=%zu "
+          "p43_global_pushes=%zu p43_cold_hits=%zu "
+          "p43_free_slot_hits=%zu\n",
           atomic_load_explicit(&g_hz5_lowpage64_alloc_calls,
                                memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_span_hits,
@@ -1436,7 +1440,14 @@ static void hz5_lowpage64_print_once(void) {
           p43_stats.slot_commits,
           p43_stats.slot_commit_failures,
           p43_stats.slot_decommits,
-          p43_stats.slot_decommit_failures);
+          p43_stats.slot_decommit_failures,
+          p43_stats.tls_hits,
+          p43_stats.tls_pushes,
+          p43_stats.tls_overflow_pushes,
+          p43_stats.global_hits,
+          p43_stats.global_pushes,
+          p43_stats.cold_hits,
+          p43_stats.free_slot_hits);
 }
 #endif
 

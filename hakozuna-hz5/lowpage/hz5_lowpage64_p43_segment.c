@@ -80,6 +80,13 @@ static _Atomic size_t g_hz5_lowpage64_p43_slot_commits;
 static _Atomic size_t g_hz5_lowpage64_p43_slot_commit_failures;
 static _Atomic size_t g_hz5_lowpage64_p43_slot_decommits;
 static _Atomic size_t g_hz5_lowpage64_p43_slot_decommit_failures;
+static _Atomic size_t g_hz5_lowpage64_p43_tls_hits;
+static _Atomic size_t g_hz5_lowpage64_p43_tls_pushes;
+static _Atomic size_t g_hz5_lowpage64_p43_tls_overflow_pushes;
+static _Atomic size_t g_hz5_lowpage64_p43_global_hits;
+static _Atomic size_t g_hz5_lowpage64_p43_global_pushes;
+static _Atomic size_t g_hz5_lowpage64_p43_cold_hits;
+static _Atomic size_t g_hz5_lowpage64_p43_free_slot_hits;
 static _Atomic size_t g_hz5_lowpage64_p43_va_allocs;
 static _Atomic size_t g_hz5_lowpage64_p43_va_alloc_failures;
 static _Atomic size_t g_hz5_lowpage64_p43_va_releases;
@@ -236,6 +243,7 @@ static void hz5_lowpage64_p43_committed_push_locked(Hz5Lowpage64Segment* seg,
   g_hz5_lowpage64_p43_committed_head.seg = seg;
   g_hz5_lowpage64_p43_committed_head.slot = slot;
   g_hz5_lowpage64_p43_committed_count++;
+  HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_global_pushes, 1);
 }
 
 static int hz5_lowpage64_p43_committed_pop_locked(
@@ -264,6 +272,7 @@ static int hz5_lowpage64_p43_committed_pop_locked(
     ref.seg->allocated_mask |= bit;
     hz5_lowpage64_p43_ref_clear(&ref.seg->free_next[ref.slot]);
     *out = ref;
+    HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_global_hits, 1);
     return 1;
   }
   hz5_lowpage64_p43_ref_clear(&g_hz5_lowpage64_p43_committed_head);
@@ -289,6 +298,7 @@ static int hz5_lowpage64_p43_tls_push(Hz5Lowpage64Segment* seg,
            .refs[g_hz5_lowpage64_p43_tls_cache.count++];
   ref->seg = seg;
   ref->slot = slot;
+  HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_tls_pushes, 1);
   return 1;
 }
 
@@ -312,6 +322,7 @@ static int hz5_lowpage64_p43_tls_pop_locked(Hz5Lowpage64P43SlotRef* out) {
     }
     ref.seg->allocated_mask |= bit;
     *out = ref;
+    HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_tls_hits, 1);
     return 1;
   }
   return 0;
@@ -444,6 +455,7 @@ void* hz5_lowpage64_p43_alloc_slot(size_t raw_bytes) {
     }
 #endif
     hz5_lowpage64_p43_lock_enter();
+    HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_cold_hits, 1);
     seg->cold_mask &= ~((uint32_t)1u << slot);
     seg->committed_mask |= ((uint32_t)1u << slot);
 #if HZ5_LOWPAGE64_P43_REWARM_BATCH > 1u
@@ -488,6 +500,7 @@ void* hz5_lowpage64_p43_alloc_slot(size_t raw_bytes) {
       hz5_lowpage64_p43_lock_leave();
       HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_slot_commits, 1);
     }
+    HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_free_slot_hits, 1);
     return raw;
   }
   hz5_lowpage64_p43_lock_leave();
@@ -559,6 +572,7 @@ int hz5_lowpage64_p43_release_slot(void* raw) {
       hz5_lowpage64_p43_lock_leave();
       return 1;
     }
+    HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_tls_overflow_pushes, 1);
     hz5_lowpage64_p43_committed_push_locked(seg, slot);
     hz5_lowpage64_p43_lock_leave();
     return 1;
@@ -678,6 +692,20 @@ void hz5_lowpage64_p43_stats_snapshot(
       &g_hz5_lowpage64_p43_slot_decommits, memory_order_relaxed);
   snapshot->slot_decommit_failures = atomic_load_explicit(
       &g_hz5_lowpage64_p43_slot_decommit_failures, memory_order_relaxed);
+  snapshot->tls_hits = atomic_load_explicit(
+      &g_hz5_lowpage64_p43_tls_hits, memory_order_relaxed);
+  snapshot->tls_pushes = atomic_load_explicit(
+      &g_hz5_lowpage64_p43_tls_pushes, memory_order_relaxed);
+  snapshot->tls_overflow_pushes = atomic_load_explicit(
+      &g_hz5_lowpage64_p43_tls_overflow_pushes, memory_order_relaxed);
+  snapshot->global_hits = atomic_load_explicit(
+      &g_hz5_lowpage64_p43_global_hits, memory_order_relaxed);
+  snapshot->global_pushes = atomic_load_explicit(
+      &g_hz5_lowpage64_p43_global_pushes, memory_order_relaxed);
+  snapshot->cold_hits = atomic_load_explicit(
+      &g_hz5_lowpage64_p43_cold_hits, memory_order_relaxed);
+  snapshot->free_slot_hits = atomic_load_explicit(
+      &g_hz5_lowpage64_p43_free_slot_hits, memory_order_relaxed);
   snapshot->va_allocs = atomic_load_explicit(
       &g_hz5_lowpage64_p43_va_allocs, memory_order_relaxed);
   snapshot->va_alloc_failures = atomic_load_explicit(
@@ -691,6 +719,13 @@ void hz5_lowpage64_p43_stats_snapshot(
   snapshot->slot_commit_failures = 0;
   snapshot->slot_decommits = 0;
   snapshot->slot_decommit_failures = 0;
+  snapshot->tls_hits = 0;
+  snapshot->tls_pushes = 0;
+  snapshot->tls_overflow_pushes = 0;
+  snapshot->global_hits = 0;
+  snapshot->global_pushes = 0;
+  snapshot->cold_hits = 0;
+  snapshot->free_slot_hits = 0;
   snapshot->va_allocs = 0;
   snapshot->va_alloc_failures = 0;
   snapshot->va_releases = 0;

@@ -90,6 +90,13 @@ typedef struct Hz5Lowpage64P43StatsSnapshot {
   size_t slot_commit_failures;
   size_t slot_decommits;
   size_t slot_decommit_failures;
+  size_t tls_hits;
+  size_t tls_pushes;
+  size_t tls_overflow_pushes;
+  size_t global_hits;
+  size_t global_pushes;
+  size_t cold_hits;
+  size_t free_slot_hits;
   size_t va_allocs;
   size_t va_alloc_failures;
   size_t va_releases;

@@ -1244,21 +1244,35 @@ Mechanism:
 P43e tls-slotref64 repeat-3:
 
 ```text
-results/synthetic-sweep/20260521_171938_312
+results/synthetic-sweep/20260521_173151_706
 
 pc-r90-64k-a8192-t4:
-  median 2.03M ops/s
-  steady RSS: 32.04-33.56 MiB
+  median 2.00M ops/s
+  steady RSS: 32.09-32.75 MiB
   steady VA: 4.23-4.25 GiB
 
 pc-r99-64k-a8192-t4:
-  median 1.66M ops/s
-  steady RSS: 34.36-35.98 MiB
+  median 1.37M ops/s
+  steady RSS: 34.50-35.26 MiB
   steady VA: 4.26-4.27 GiB
 
 rss-plateau-64k-a8192-idle150:
-  median steady RSS: 60.85 MiB
+  median steady RSS: 60.46 MiB
   steady VA: 4.27-4.30 GiB
+
+P25-level counters:
+  stash_hits: 99490 median
+  global_batch_hits: 4686 median
+  os_allocs: 1404 median
+
+P43 source-level counters:
+  p43_tls_hits: 224 median
+  p43_tls_pushes: 440 median
+  p43_tls_overflow_pushes: 680 median
+  p43_global_hits: 615 median
+  p43_global_pushes: 680 median
+  p43_free_slot_hits: 536 median
+  p43_cold_hits: 0
 
 p43_slot_decommits:
   0
@@ -1270,8 +1284,9 @@ fallback load_count:
 Decision:
 
 - P43e is no-go / evidence.
-- Removing slot decommit and adding a simple TLS SlotRef source cache is not
-  enough to recover P43 speed.
-- The remaining issue is likely in the higher-level P25/P43 source topology,
-  raw-source call frequency, or global/source path cost rather than the slot VM
-  operation alone.
+- The TLS SlotRef cache works mechanically, but it sits below the hot P25
+  stash/relbuf/global-batch layer and is reached only on source/refill misses.
+- Removing slot decommit and adding a simple source-level TLS SlotRef cache is
+  not enough to recover P43 speed.
+- A real P43 speed follow-up would need descriptor-owned P25-level caches, not
+  another source-only cache knob.
