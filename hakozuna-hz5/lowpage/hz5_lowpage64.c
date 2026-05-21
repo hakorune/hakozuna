@@ -375,8 +375,11 @@ static _Atomic size_t g_hz5_lowpage64_p42_cold_count;
 #if HZ5_LOWPAGE64_P40_GLOBAL_SOFT_CAP > 0
 static _Atomic uint32_t g_hz5_lowpage64_p40_global_epoch;
 #endif
+#if HZ5_LOWPAGE64_STATS || HZ5_LOWPAGE64_P43O_ADMISSION_DRYRUN || \
+    HZ5_LOWPAGE64_P43O_ADMISSION_GATE
 static _Atomic size_t g_hz5_lowpage64_p43o_runtime_state;
 static _Atomic size_t g_hz5_lowpage64_p43o_runtime_cooldown;
+#endif
 #if HZ5_LOWPAGE64_P42_VA_SOURCE && HZ5_LOWPAGE64_P42_DECOMMIT_COLD
 typedef struct Hz5Lowpage64ColdNode {
   void* raw;

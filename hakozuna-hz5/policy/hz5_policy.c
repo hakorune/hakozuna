@@ -86,6 +86,7 @@ static void hz5_policy_register_stats_once(void) {
 
 #if BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || \
     BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192
+#if BENCHLAB_HZ5_LAZY_HZ3_FALLBACK || HZ5_POLICY_P43_PREPARED_ANY
 static int hz5_policy_prepare_p25_lowpage_free(
     void* ptr,
     int* lookup_out,
@@ -102,7 +103,6 @@ static int hz5_policy_prepare_p25_lowpage_free(
     lowpage_ctx->flags = 0;
   }
 
-#if BENCHLAB_HZ5_LAZY_HZ3_FALLBACK
 #if BENCHLAB_HZ5_P43_UNSAFE_NO_LOOKUP
   if (lookup_out) {
     *lookup_out = HZ5_LOWPAGE64_LOOKUP_OWNED_ACTIVE;
@@ -113,28 +113,30 @@ static int hz5_policy_prepare_p25_lowpage_free(
   (void)ptr;
   return 0;
 #else
-  uint32_t fb_state = hz5_hz3_fallback_state();
 #if HZ5_POLICY_P43_PREPARED_ANY
   int lowpage_lookup = hz5_lowpage64_prepare_free_user(ptr, lowpage_ctx);
-#else
+#elif BENCHLAB_HZ5_LAZY_HZ3_FALLBACK
   int lowpage_lookup = hz5_lowpage64_lookup(ptr);
+#else
+  int lowpage_lookup = HZ5_LOWPAGE64_LOOKUP_MISS;
+  (void)ptr;
 #endif
   if (lookup_out) {
     *lookup_out = lowpage_lookup;
   }
+#if BENCHLAB_HZ5_LAZY_HZ3_FALLBACK
+  uint32_t fb_state = hz5_hz3_fallback_state();
   if ((fb_state == HZ5_HZ3_FALLBACK_READY ||
        fb_state == HZ5_HZ3_FALLBACK_LOADING) &&
       lowpage_lookup == HZ5_LOWPAGE64_LOOKUP_MISS) {
     hz5_hz3_fallback_free(ptr);
     return 1;
   }
-  return 0;
 #endif
-#else
-  (void)ptr;
   return 0;
 #endif
 }
+#endif
 
 #if HZ5_POLICY_P43_PREPARED_ANY
 static int hz5_policy_p25_raw_matches_lowpage_ctx(
@@ -370,7 +372,7 @@ void hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
   }
 #endif
 
-#if BENCHLAB_HZ5_LAZY_HZ3_FALLBACK && \
+#if (BENCHLAB_HZ5_LAZY_HZ3_FALLBACK || HZ5_POLICY_P43_PREPARED_ANY) && \
     (BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || \
      BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192)
   int p25_lowpage_lookup = HZ5_LOWPAGE64_LOOKUP_MISS;
