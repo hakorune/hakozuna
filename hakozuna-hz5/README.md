@@ -47,6 +47,10 @@ HZ5 has moved past the initial P0/P3 route proof. The current split is:
 - `P25/P27/P28`: exact `64K align=8192` low-page raw cache experiments. The
   low-page cache body now lives in `lowpage/` so BenchLab adapters can stay
   thin while HZ5 keeps the HZ4-inspired mechanism inside the sidecar tree.
+- `P43`: segment-backed lowpage64 slot source. The P43 segment allocator now
+  lives in `lowpage/hz5_lowpage64_p43_segment.c` with its own config header and
+  stats snapshot API, keeping the monolithic lowpage cache body ready for the
+  next full SlotRef / descriptor-owned list pass.
 - `P20`: lazy HZ3 fallback. The LoadLibrary/GetProcAddress fallback loader,
   fallback state machine, and one-shot counters now live in `fallback/`, so the
   BenchLab adapter only keeps pointer-origin wrapper dispatch.
@@ -124,6 +128,17 @@ run16 follow-up.
 The private work-log filename is historical. It started as the P0 work order
 and now records the implementation lifecycle through P14.
 
+Current P43 lowpage64 status:
+
+- `lowpage/hz5_lowpage64_p43_segment.c` owns the 2 MiB segment / 128 KiB slot
+  raw-source experiments.
+- P43b.1 descriptor-owned SlotRef dry run removes committed-list traversal from
+  data-page intrusive metadata.
+- P43b.2 PAGE_NOACCESS is diagnostic-only and verifies inactive slots are not
+  read through data-page wrapper/header/list state before real slot decommit.
+- Real slot MEM_DECOMMIT is currently safety/RSS evidence only; speed recovery
+  should come from descriptor-owned segment-local reuse before any promotion.
+
 ## Planned Layout
 
 ```text
@@ -134,7 +149,7 @@ hakozuna-hz5/
   core/      segment, pageheap, run, owner, and remote-free core
   fallback/  P20 lazy HZ3 fallback loader/state/counter module
   legacy/   historical P17/P24 diagnostic raw-cache modules
-  lowpage/   P25/P27/P28 low-page 64K raw cache modules
+  lowpage/   P25/P27/P28/P43 low-page 64K raw cache and segment-slot modules
   policy/    HZ5-native alloc/free policy API and dispatch ordering
   route/     exact a8192 route policy and P12 route-shadow observation
   wrapper/   HZ5 wrapper header/cookie/decode helpers

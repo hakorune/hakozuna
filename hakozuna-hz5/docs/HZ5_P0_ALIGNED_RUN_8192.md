@@ -926,3 +926,239 @@ Decision:
   it combines restored P11 speed with low VA/RSS lazy fallback behavior.
 - `64K/a8192` remains a separate native-route problem; P20 fallback is safe but
   not a 64K speed solution.
+
+## P43 lowpage64 segment-slot modularization
+
+P43b.1 descriptor-list dry run proved the safety direction:
+
+- no real `MEM_DECOMMIT` yet;
+- exact `64K/a8192` stays HZ5-owned with lazy HZ3 fallback load count `0`;
+- data-page intrusive ownership is being phased out before real slot decommit.
+
+Cleanup before the next P43b step:
+
+- Split the P43 segment-slot source out of `lowpage/hz5_lowpage64.c`.
+- Added `lowpage/hz5_lowpage64_p43_segment.h`.
+- Added `lowpage/hz5_lowpage64_p43_segment.c`.
+- Moved P43 segment reservation, slot commit/decommit, may-own lookup, and P43
+  counters into the new module.
+- Kept `hz5_lowpage64.c` as the lowpage policy/cache body that calls the raw
+  source module.
+- Updated the BenchLab HZ5 behavior-lane build script to compile the new P43
+  module.
+
+Smoke after split:
+
+```text
+results/synthetic-sweep/20260521_083405_558
+
+pc-r90-64k-a8192-t4:
+  1.95M-2.13M ops/s
+  steady RSS: 31.32-31.74 MiB
+  steady VA: 4.22-4.24 GiB
+
+pc-r99-64k-a8192-t4:
+  1.26M-1.37M ops/s
+  steady RSS: 32.40-32.70 MiB
+  steady VA: 4.24-4.25 GiB
+
+rss-plateau-64k-a8192-idle150:
+  steady RSS: 50.39-51.70 MiB
+  steady VA: 4.26 GiB
+```
+
+Decision:
+
+- The split is behavior-preserving enough for P43b.1 development.
+- P43b minimal slot-decommit remains RSS evidence / crash no-go.
+- P43b.1 descriptor-owned dry run remains the current safe baseline.
+- Next implementation should continue with full SlotRef / descriptor-owned list
+  cleanup before enabling real slot `MEM_DECOMMIT` again.
+
+## P43b descriptor SlotRef and ACTIVE-only gate
+
+P43b follow-up implemented the next safety footing:
+
+- P43 descriptor-owned committed SlotRef stack:
+  - freed committed slots are linked through descriptor metadata;
+  - list traversal no longer uses data-page intrusive `next`;
+  - links can cross segment boundaries via `{segment, slot}` references.
+- P43 lowpage lookup now returns:
+  - `MISS`
+  - `OWNED_ACTIVE`
+  - `OWNED_NONACTIVE`
+- HZ5 policy now checks the lowpage lookup before wrapper decode:
+  - `OWNED_ACTIVE` can proceed to wrapper/header decode;
+  - `OWNED_NONACTIVE` is treated as stale/double/free inactive and is not sent
+    to HZ3 fallback;
+  - `MISS` can still use fallback only if fallback is already loaded.
+
+Smoke after SlotRef + ACTIVE gate:
+
+```text
+results/synthetic-sweep/20260521_120921_997
+results/synthetic-sweep/20260521_121225_344
+
+fallback load_count:
+  0 on exact HZ5 route
+
+plateau steady VA:
+  4.24-4.26 GiB class
+
+plateau steady RSS:
+  mostly 50-53 MiB class in repeat-3 smoke
+```
+
+Interpretation:
+
+- Safety direction is cleaner: P43 can now distinguish active vs non-active
+  lowpage slots before any data-page header read.
+- Speed did not recover; the descriptor-owned direct-release path is still
+  lock-heavy and remains below the old P43a/P25 speed lanes.
+- This is acceptable as P43b.2 safety groundwork, not a promotion candidate.
+
+Next:
+
+- Add PAGE_NOACCESS diagnostic lane before real `MEM_DECOMMIT`.
+- Real slot `MEM_DECOMMIT` should only be re-enabled after PAGE_NOACCESS repeat
+  is clean.
+- Speed recovery should be addressed later with segment-local rewarm/batching,
+  not before the decommit safety proof.
+
+## P43b PAGE_NOACCESS and slot-decommit retry
+
+P43b.2 added a diagnostic PAGE_NOACCESS lane to verify that inactive slot data
+pages are no longer used as allocator metadata:
+
+- build switch: `-P43PageNoAccess`
+- manifest: `manifests/hakozuna-hz5-p43b2-page-noaccess.toml`
+- aliases: `hz5-p43b2-page-noaccess`, `hz5-page-noaccess`
+- diagnostic-only; the build script rejects it with `-SpeedLane`
+
+The implementation also tightened the transient state around cold slots:
+
+- freed slots become descriptor-non-active before the VM operation;
+- cold slots are excluded from allocation while PAGE_NOACCESS or MEM_DECOMMIT
+  is in progress;
+- active lookup is restored only after the page protection/commit operation
+  succeeds.
+
+PAGE_NOACCESS repeat-3:
+
+```text
+results/synthetic-sweep/20260521_161937_302
+
+pc-r90-64k-a8192-t4:
+  0.20M-0.22M ops/s
+  steady RSS: 31.57-32.04 MiB
+  steady VA: 4.22-4.24 GiB
+
+pc-r99-64k-a8192-t4:
+  0.20M-0.22M ops/s
+  steady RSS: 31.71-32.84 MiB
+  steady VA: 4.24 GiB
+
+rss-plateau-64k-a8192-idle150:
+  steady RSS: 42.86-43.06 MiB
+  steady VA: 4.26 GiB
+
+fallback load_count:
+  0
+```
+
+Decision:
+
+- PAGE_NOACCESS is clean in repeat-3.
+- The lane is intentionally slow because every reuse goes through
+  `VirtualProtect`.
+- Treat it as a safety proof that inactive slot data-page reads are no longer
+  present in these profiles, not as a performance lane.
+
+The same transient-state fix was then applied to the real slot MEM_DECOMMIT
+observation lane.
+
+Real slot-decommit observation repeat-3:
+
+```text
+results/synthetic-sweep/20260521_162014_981
+
+pc-r90-64k-a8192-t4:
+  1.95M-2.11M ops/s
+  steady RSS: 31.91-32.35 MiB
+  steady VA: 4.25 GiB
+
+pc-r99-64k-a8192-t4:
+  1.19M-1.43M ops/s
+  steady RSS: 33.74-34.77 MiB
+  steady VA: 4.26 GiB
+
+rss-plateau-64k-a8192-idle150:
+  steady RSS: 51.56-53.67 MiB
+  steady VA: 4.27-4.29 GiB
+
+P43 counters:
+  p43_slot_decommits: 936-976
+  p43_slot_decommit_failures: 0
+
+fallback load_count:
+  0
+```
+
+Decision:
+
+- The old intermittent crash did not reproduce in this repeat-3 after the
+  transient cold-slot fix.
+- The RSS/VA signal remains useful.
+- Throughput is still far below the P25/P33 speed lanes, so this is not a
+  promotion candidate.
+- Next work should recover speed with descriptor-owned segment-local reuse,
+  not by reintroducing data-page intrusive metadata or direct free-to-decommit
+  shortcuts.
+
+## P43c segment-local rewarm4
+
+P43c added a narrow rewarm knob for the P43 segment-slot raw source:
+
+- build switch: `-P43RewarmBatch <N>`
+- macro: `BENCHLAB_HZ5_P43_REWARM_BATCH`
+- first lane: `P43RewarmBatch=4`
+- manifest: `manifests/hakozuna-hz5-p43c-segment-rewarm4.toml`
+
+The mechanism is deliberately local:
+
+- after a cold slot is recommitted for the current allocation, P43c tries to
+  recommit up to `N-1` additional cold slots from the same 2 MiB segment;
+- the extra slots are left committed and free in descriptor state;
+- no global broad refill is performed.
+
+P43c rewarm4 repeat-3:
+
+```text
+results/synthetic-sweep/20260521_162654_916
+
+pc-r90-64k-a8192-t4:
+  2.05M-2.20M ops/s
+  steady RSS: 31.66-32.44 MiB
+  steady VA: 4.23-4.25 GiB
+
+pc-r99-64k-a8192-t4:
+  1.25M-1.36M ops/s
+  steady RSS: 33.72-34.35 MiB
+  steady VA: 4.26-4.27 GiB
+
+rss-plateau-64k-a8192-idle150:
+  steady RSS: 51.78-52.44 MiB
+  steady VA: 4.28-4.30 GiB
+
+fallback load_count:
+  0
+```
+
+Decision:
+
+- P43c rewarm4 preserves the P43b RSS/VA shape.
+- It does not materially recover r99 speed.
+- Keep as diagnostic evidence, not promotion.
+- The remaining speed issue is likely above the VM call itself: P43 slot
+  decommit still interacts with the older lowpage global/stash lifecycle rather
+  than a fully descriptor-owned hot/global reuse policy.

@@ -263,18 +263,27 @@ void hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
     (BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || \
      BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192)
   uint32_t p25_fb_state = hz5_hz3_fallback_state();
+  int p25_lowpage_lookup = hz5_lowpage64_lookup(ptr);
   if ((p25_fb_state == HZ5_HZ3_FALLBACK_READY ||
        p25_fb_state == HZ5_HZ3_FALLBACK_LOADING) &&
-      !hz5_lowpage64_may_own(ptr)) {
+      p25_lowpage_lookup == HZ5_LOWPAGE64_LOOKUP_MISS) {
     hz5_hz3_fallback_free(ptr);
     return;
   }
+#else
+  int p25_lowpage_lookup = HZ5_LOWPAGE64_LOOKUP_MISS;
 #endif
 
 #if BENCHLAB_HZ5_P16_WRAPPER_64K_A8192 || BENCHLAB_HZ5_P17_PAGEBIN_64K_A8192 || \
     BENCHLAB_HZ5_P24_RAW64K_A8192 || BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || \
     BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192 || \
     BENCHLAB_HZ5_LAZY_HZ3_FALLBACK
+#if BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || \
+    BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192
+  if (p25_lowpage_lookup == HZ5_LOWPAGE64_LOOKUP_OWNED_NONACTIVE) {
+    return;
+  }
+#endif
   Hz5WrapperHdr* wrapped = NULL;
   if (hz5_wrapper_decode(ptr, &wrapped)) {
 #if BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192
@@ -309,7 +318,7 @@ void hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
   }
 #if (BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || \
      BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192) && BENCHLAB_HZ5_LAZY_HZ3_FALLBACK
-  if (hz5_lowpage64_may_own(ptr)) {
+  if (p25_lowpage_lookup != HZ5_LOWPAGE64_LOOKUP_MISS) {
     return;
   }
 #endif
