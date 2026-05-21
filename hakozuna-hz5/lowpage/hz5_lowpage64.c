@@ -173,6 +173,59 @@
 #endif
 #endif
 
+#ifndef HZ5_LOWPAGE64_P44_BRIDGE_TRIM_DRYRUN
+#ifdef BENCHLAB_HZ5_P44_BRIDGE_TRIM_DRYRUN
+#define HZ5_LOWPAGE64_P44_BRIDGE_TRIM_DRYRUN \
+  BENCHLAB_HZ5_P44_BRIDGE_TRIM_DRYRUN
+#else
+#define HZ5_LOWPAGE64_P44_BRIDGE_TRIM_DRYRUN 0
+#endif
+#endif
+
+#ifndef HZ5_LOWPAGE64_P44_GLOBAL_SOFT_CAP
+#ifdef BENCHLAB_HZ5_P44_GLOBAL_SOFT_CAP
+#define HZ5_LOWPAGE64_P44_GLOBAL_SOFT_CAP \
+  BENCHLAB_HZ5_P44_GLOBAL_SOFT_CAP
+#else
+#define HZ5_LOWPAGE64_P44_GLOBAL_SOFT_CAP 64u
+#endif
+#endif
+
+#ifndef HZ5_LOWPAGE64_P44_STASH_SOFT_CAP
+#ifdef BENCHLAB_HZ5_P44_STASH_SOFT_CAP
+#define HZ5_LOWPAGE64_P44_STASH_SOFT_CAP \
+  BENCHLAB_HZ5_P44_STASH_SOFT_CAP
+#else
+#define HZ5_LOWPAGE64_P44_STASH_SOFT_CAP 96u
+#endif
+#endif
+
+#ifndef HZ5_LOWPAGE64_P44_RELBUF_SOFT_CAP
+#ifdef BENCHLAB_HZ5_P44_RELBUF_SOFT_CAP
+#define HZ5_LOWPAGE64_P44_RELBUF_SOFT_CAP \
+  BENCHLAB_HZ5_P44_RELBUF_SOFT_CAP
+#else
+#define HZ5_LOWPAGE64_P44_RELBUF_SOFT_CAP 0u
+#endif
+#endif
+
+#ifndef HZ5_LOWPAGE64_P44_P43_COMMITTED_FREE_SOFT_CAP
+#ifdef BENCHLAB_HZ5_P44_P43_COMMITTED_FREE_SOFT_CAP
+#define HZ5_LOWPAGE64_P44_P43_COMMITTED_FREE_SOFT_CAP \
+  BENCHLAB_HZ5_P44_P43_COMMITTED_FREE_SOFT_CAP
+#else
+#define HZ5_LOWPAGE64_P44_P43_COMMITTED_FREE_SOFT_CAP 64u
+#endif
+#endif
+
+#ifndef HZ5_LOWPAGE64_P44_TRIM_BATCH
+#ifdef BENCHLAB_HZ5_P44_TRIM_BATCH
+#define HZ5_LOWPAGE64_P44_TRIM_BATCH BENCHLAB_HZ5_P44_TRIM_BATCH
+#else
+#define HZ5_LOWPAGE64_P44_TRIM_BATCH 16u
+#endif
+#endif
+
 #ifndef HZ5_LOWPAGE64_P42_VA_SOURCE
 #ifdef BENCHLAB_HZ5_P42_VA_SOURCE
 #define HZ5_LOWPAGE64_P42_VA_SOURCE BENCHLAB_HZ5_P42_VA_SOURCE
@@ -235,6 +288,10 @@ static void hz5_lowpage64_count_max(_Atomic size_t* counter, size_t value) {
 #else
 #define HZ5_LOWPAGE64_COUNT_ADD(counter, value) ((void)0)
 #define HZ5_LOWPAGE64_COUNT_MAX(counter, value) ((void)0)
+#endif
+
+#if HZ5_LOWPAGE64_P44_BRIDGE_TRIM_DRYRUN && !HZ5_LOWPAGE64_STATS
+#error "P44 BridgeTrimDryRun requires lowpage64 diagnostic stats"
 #endif
 
 static _Atomic(uintptr_t) g_hz5_lowpage64_global_batch_head;
@@ -338,6 +395,29 @@ static _Atomic size_t g_hz5_lowpage64_p43g_source_other;
 static _Atomic size_t g_hz5_lowpage64_p43g_raw_mismatch;
 static _Atomic size_t g_hz5_lowpage64_p43g_release_old_path_calls;
 static _Atomic size_t g_hz5_lowpage64_p43g_release_prepared_calls;
+static _Atomic size_t g_hz5_lowpage64_p44_checkpoint_calls;
+static _Atomic size_t g_hz5_lowpage64_p44_reason_publish;
+static _Atomic size_t g_hz5_lowpage64_p44_reason_acquire_miss;
+static _Atomic size_t g_hz5_lowpage64_p44_reason_p40;
+static _Atomic size_t g_hz5_lowpage64_p44_reason_snapshot;
+static _Atomic size_t g_hz5_lowpage64_p44_global_observed_total;
+static _Atomic size_t g_hz5_lowpage64_p44_global_observed_max;
+static _Atomic size_t g_hz5_lowpage64_p44_global_candidate_total;
+static _Atomic size_t g_hz5_lowpage64_p44_global_candidate_max;
+static _Atomic size_t g_hz5_lowpage64_p44_stash_observed_total;
+static _Atomic size_t g_hz5_lowpage64_p44_stash_observed_max;
+static _Atomic size_t g_hz5_lowpage64_p44_stash_candidate_total;
+static _Atomic size_t g_hz5_lowpage64_p44_stash_candidate_max;
+static _Atomic size_t g_hz5_lowpage64_p44_relbuf_observed_total;
+static _Atomic size_t g_hz5_lowpage64_p44_relbuf_observed_max;
+static _Atomic size_t g_hz5_lowpage64_p44_relbuf_candidate_total;
+static _Atomic size_t g_hz5_lowpage64_p44_relbuf_candidate_max;
+static _Atomic size_t g_hz5_lowpage64_p44_p43_free_observed_total;
+static _Atomic size_t g_hz5_lowpage64_p44_p43_free_observed_max;
+static _Atomic size_t g_hz5_lowpage64_p44_p43_free_candidate_total;
+static _Atomic size_t g_hz5_lowpage64_p44_p43_free_candidate_max;
+static _Atomic size_t g_hz5_lowpage64_p44_candidate_total;
+static _Atomic size_t g_hz5_lowpage64_p44_candidate_max;
 #endif
 
 #if HZ5_LOWPAGE64_SPAN_CACHE
@@ -650,6 +730,105 @@ void hz5_lowpage64_p43g_note_prepared_path(void) {
 #endif
 }
 
+#if HZ5_LOWPAGE64_P44_BRIDGE_TRIM_DRYRUN
+typedef enum Hz5Lowpage64P44Reason {
+  HZ5_LOWPAGE64_P44_REASON_PUBLISH = 1,
+  HZ5_LOWPAGE64_P44_REASON_ACQUIRE_MISS = 2,
+  HZ5_LOWPAGE64_P44_REASON_P40 = 3,
+  HZ5_LOWPAGE64_P44_REASON_SNAPSHOT = 4,
+} Hz5Lowpage64P44Reason;
+
+static size_t hz5_lowpage64_p44_candidate(size_t observed,
+                                          size_t soft_cap) {
+  if (observed <= soft_cap) {
+    return 0;
+  }
+  size_t candidate = observed - soft_cap;
+  if (candidate > HZ5_LOWPAGE64_P44_TRIM_BATCH) {
+    candidate = HZ5_LOWPAGE64_P44_TRIM_BATCH;
+  }
+  return candidate;
+}
+
+static void hz5_lowpage64_p44_count_pair(_Atomic size_t* observed_total,
+                                         _Atomic size_t* observed_max,
+                                         _Atomic size_t* candidate_total,
+                                         _Atomic size_t* candidate_max,
+                                         size_t observed,
+                                         size_t candidate) {
+  HZ5_LOWPAGE64_COUNT_ADD(*observed_total, observed);
+  HZ5_LOWPAGE64_COUNT_MAX(*observed_max, observed);
+  HZ5_LOWPAGE64_COUNT_ADD(*candidate_total, candidate);
+  HZ5_LOWPAGE64_COUNT_MAX(*candidate_max, candidate);
+}
+
+static void hz5_lowpage64_p44_note(Hz5Lowpage64P44Reason reason) {
+  Hz5Lowpage64P43StatsSnapshot p43_stats = {0};
+  hz5_lowpage64_p43_stats_snapshot(&p43_stats);
+
+  size_t global = atomic_load_explicit(&g_hz5_lowpage64_global_batch_count,
+                                       memory_order_acquire);
+  size_t stash = g_hz5_lowpage64_stash_count;
+  size_t relbuf = g_hz5_lowpage64_relbuf_count;
+  size_t p43_free = p43_stats.slots_committed_free_current;
+
+  size_t global_candidate = hz5_lowpage64_p44_candidate(
+      global, HZ5_LOWPAGE64_P44_GLOBAL_SOFT_CAP);
+  size_t stash_candidate = hz5_lowpage64_p44_candidate(
+      stash, HZ5_LOWPAGE64_P44_STASH_SOFT_CAP);
+  size_t relbuf_candidate = hz5_lowpage64_p44_candidate(
+      relbuf, HZ5_LOWPAGE64_P44_RELBUF_SOFT_CAP);
+  size_t p43_candidate = hz5_lowpage64_p44_candidate(
+      p43_free, HZ5_LOWPAGE64_P44_P43_COMMITTED_FREE_SOFT_CAP);
+  size_t total_candidate = global_candidate + stash_candidate +
+                           relbuf_candidate + p43_candidate;
+
+  HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p44_checkpoint_calls, 1);
+  switch (reason) {
+    case HZ5_LOWPAGE64_P44_REASON_PUBLISH:
+      HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p44_reason_publish, 1);
+      break;
+    case HZ5_LOWPAGE64_P44_REASON_ACQUIRE_MISS:
+      HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p44_reason_acquire_miss, 1);
+      break;
+    case HZ5_LOWPAGE64_P44_REASON_P40:
+      HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p44_reason_p40, 1);
+      break;
+    case HZ5_LOWPAGE64_P44_REASON_SNAPSHOT:
+      HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p44_reason_snapshot, 1);
+      break;
+  }
+
+  hz5_lowpage64_p44_count_pair(
+      &g_hz5_lowpage64_p44_global_observed_total,
+      &g_hz5_lowpage64_p44_global_observed_max,
+      &g_hz5_lowpage64_p44_global_candidate_total,
+      &g_hz5_lowpage64_p44_global_candidate_max, global, global_candidate);
+  hz5_lowpage64_p44_count_pair(
+      &g_hz5_lowpage64_p44_stash_observed_total,
+      &g_hz5_lowpage64_p44_stash_observed_max,
+      &g_hz5_lowpage64_p44_stash_candidate_total,
+      &g_hz5_lowpage64_p44_stash_candidate_max, stash, stash_candidate);
+  hz5_lowpage64_p44_count_pair(
+      &g_hz5_lowpage64_p44_relbuf_observed_total,
+      &g_hz5_lowpage64_p44_relbuf_observed_max,
+      &g_hz5_lowpage64_p44_relbuf_candidate_total,
+      &g_hz5_lowpage64_p44_relbuf_candidate_max, relbuf, relbuf_candidate);
+  hz5_lowpage64_p44_count_pair(
+      &g_hz5_lowpage64_p44_p43_free_observed_total,
+      &g_hz5_lowpage64_p44_p43_free_observed_max,
+      &g_hz5_lowpage64_p44_p43_free_candidate_total,
+      &g_hz5_lowpage64_p44_p43_free_candidate_max, p43_free,
+      p43_candidate);
+  HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p44_candidate_total,
+                          total_candidate);
+  HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p44_candidate_max,
+                          total_candidate);
+}
+#else
+#define hz5_lowpage64_p44_note(reason) ((void)0)
+#endif
+
 static size_t hz5_lowpage64_free_list(void* head) {
   size_t freed = 0;
   while (head) {
@@ -725,6 +904,8 @@ static size_t hz5_lowpage64_free_list_p40_global(void* head,
 }
 
 static void hz5_lowpage64_p40_checkpoint(void) {
+  hz5_lowpage64_p44_note(HZ5_LOWPAGE64_P44_REASON_P40);
+
   size_t observed = atomic_load_explicit(&g_hz5_lowpage64_global_batch_count,
                                          memory_order_acquire);
   if (observed <= HZ5_LOWPAGE64_P40_GLOBAL_SOFT_CAP) {
@@ -1186,6 +1367,7 @@ static void hz5_lowpage64_publish_relbuf(void) {
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_batch_publishes, 1);
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_batch_publish_nodes, count);
   (void)publish_epoch;
+  hz5_lowpage64_p44_note(HZ5_LOWPAGE64_P44_REASON_PUBLISH);
   hz5_lowpage64_p40_checkpoint();
 }
 
@@ -1259,6 +1441,7 @@ void* hz5_lowpage64_acquire(size_t raw_bytes) {
   }
 #endif
 
+  hz5_lowpage64_p44_note(HZ5_LOWPAGE64_P44_REASON_ACQUIRE_MISS);
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_os_allocs, 1);
   return hz5_lowpage64_raw_os_alloc(raw_bytes);
 }
@@ -1338,6 +1521,8 @@ int hz5_lowpage64_release_prepared(const Hz5Lowpage64FreeCtx* ctx,
 
 #if HZ5_LOWPAGE64_STATS
 void hz5_lowpage64_print_snapshot(const char* label) {
+  hz5_lowpage64_p44_note(HZ5_LOWPAGE64_P44_REASON_SNAPSHOT);
+
   Hz5Lowpage64P43StatsSnapshot p43_stats = {0};
   hz5_lowpage64_p43_stats_snapshot(&p43_stats);
 
@@ -1368,7 +1553,14 @@ void hz5_lowpage64_print_snapshot(const char* label) {
           "p43_free_slot_hits=%zu p43_lookup_calls=%zu "
           "p43_lookup_active=%zu p43_lookup_nonactive=%zu "
           "p43_lookup_miss=%zu p43_lookup_lockless_hits=%zu "
-          "p43_lookup_lockless_misses=%zu\n",
+          "p43_lookup_lockless_misses=%zu "
+          "p44_checkpoint_calls=%zu p44_candidate_total=%zu "
+          "p44_candidate_max=%zu p44_global_candidate_total=%zu "
+          "p44_stash_candidate_total=%zu "
+          "p44_relbuf_candidate_total=%zu "
+          "p44_p43_free_candidate_total=%zu "
+          "p44_reason_publish=%zu p44_reason_acquire_miss=%zu "
+          "p44_reason_p40=%zu p44_reason_snapshot=%zu\n",
           label ? label : "",
           g_hz5_lowpage64_stash_count,
           g_hz5_lowpage64_relbuf_count,
@@ -1423,7 +1615,33 @@ void hz5_lowpage64_print_snapshot(const char* label) {
           p43_stats.lookup_nonactive,
           p43_stats.lookup_miss,
           p43_stats.lookup_lockless_hits,
-          p43_stats.lookup_lockless_misses);
+          p43_stats.lookup_lockless_misses,
+          atomic_load_explicit(&g_hz5_lowpage64_p44_checkpoint_calls,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p44_candidate_total,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p44_candidate_max,
+                               memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p44_global_candidate_total,
+              memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p44_stash_candidate_total,
+              memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p44_relbuf_candidate_total,
+              memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p44_p43_free_candidate_total,
+              memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p44_reason_publish,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p44_reason_acquire_miss,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p44_reason_p40,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p44_reason_snapshot,
+                               memory_order_relaxed));
 }
 #else
 void hz5_lowpage64_print_snapshot(const char* label) {
@@ -1505,7 +1723,18 @@ static void hz5_lowpage64_print_once(void) {
           "p43g_source_p25=%zu p43g_source_other=%zu "
           "p43g_raw_mismatch=%zu "
           "p43g_release_old_path_calls=%zu "
-          "p43g_release_prepared_calls=%zu\n",
+          "p43g_release_prepared_calls=%zu "
+          "p44_checkpoint_calls=%zu p44_candidate_total=%zu "
+          "p44_candidate_max=%zu p44_global_observed_max=%zu "
+          "p44_global_candidate_total=%zu "
+          "p44_stash_observed_max=%zu "
+          "p44_stash_candidate_total=%zu "
+          "p44_relbuf_observed_max=%zu "
+          "p44_relbuf_candidate_total=%zu "
+          "p44_p43_free_observed_max=%zu "
+          "p44_p43_free_candidate_total=%zu "
+          "p44_reason_publish=%zu p44_reason_acquire_miss=%zu "
+          "p44_reason_p40=%zu p44_reason_snapshot=%zu\n",
           atomic_load_explicit(&g_hz5_lowpage64_alloc_calls,
                                memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_span_hits,
@@ -1701,7 +1930,41 @@ static void hz5_lowpage64_print_once(void) {
                                memory_order_relaxed),
           atomic_load_explicit(
               &g_hz5_lowpage64_p43g_release_prepared_calls,
-              memory_order_relaxed));
+              memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p44_checkpoint_calls,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p44_candidate_total,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p44_candidate_max,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p44_global_observed_max,
+                               memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p44_global_candidate_total,
+              memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p44_stash_observed_max,
+                               memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p44_stash_candidate_total,
+              memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p44_relbuf_observed_max,
+                               memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p44_relbuf_candidate_total,
+              memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p44_p43_free_observed_max,
+                               memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p44_p43_free_candidate_total,
+              memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p44_reason_publish,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p44_reason_acquire_miss,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p44_reason_p40,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p44_reason_snapshot,
+                               memory_order_relaxed));
 }
 #endif
 
