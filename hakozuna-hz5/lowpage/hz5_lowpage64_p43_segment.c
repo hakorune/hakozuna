@@ -21,7 +21,7 @@
 #endif
 #endif
 
-#if HZ5_LOWPAGE64_STATS
+#if HZ5_LOWPAGE64_STATS && HZ5_LOWPAGE64_P43_SEGMENT_SLOTS
 #define HZ5_P43_COUNT_ADD(counter, value) \
   atomic_fetch_add_explicit(&(counter), (value), memory_order_relaxed)
 static void hz5_p43_count_max(_Atomic size_t* counter, size_t value) {
