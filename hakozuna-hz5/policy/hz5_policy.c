@@ -367,6 +367,10 @@ void hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
 #if BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192
     if (wrapped->source == HZ5_WRAPPER_SOURCE_P25_HZ4LOWPAGE) {
 #if BENCHLAB_HZ5_P43_PREPARED_RELEASE
+      if (hz5_lowpage64_release_prepared(&p25_lowpage_ctx,
+                                         (void*)wrapped->raw)) {
+        return;
+      }
       hz5_lowpage64_p43g_note_old_path();
 #endif
       hz5_lowpage64_release((void*)wrapped->raw);

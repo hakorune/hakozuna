@@ -1263,7 +1263,7 @@ void* hz5_lowpage64_acquire(size_t raw_bytes) {
   return hz5_lowpage64_raw_os_alloc(raw_bytes);
 }
 
-void hz5_lowpage64_release(void* raw) {
+static void hz5_lowpage64_release_common(void* raw) {
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_free_calls, 1);
   if (!raw) {
     return;
@@ -1301,6 +1301,30 @@ void hz5_lowpage64_release(void* raw) {
   if (g_hz5_lowpage64_relbuf_count >= HZ5_LOWPAGE64_BATCH_FLUSH_N) {
     hz5_lowpage64_publish_relbuf();
   }
+}
+
+void hz5_lowpage64_release(void* raw) {
+  hz5_lowpage64_release_common(raw);
+}
+
+int hz5_lowpage64_release_prepared(const Hz5Lowpage64FreeCtx* ctx,
+                                   void* raw) {
+#if HZ5_LOWPAGE64_P43_PREPARED_RELEASE
+  if (!ctx || ctx->lookup_kind != HZ5_LOWPAGE64_LOOKUP_OWNED_ACTIVE ||
+      !raw) {
+    return 0;
+  }
+  if (ctx->slot_base && ctx->slot_base != raw) {
+    return 0;
+  }
+  hz5_lowpage64_p43g_note_prepared_path();
+  hz5_lowpage64_release_common(raw);
+  return 1;
+#else
+  (void)ctx;
+  (void)raw;
+  return 0;
+#endif
 }
 
 #if HZ5_LOWPAGE64_STATS

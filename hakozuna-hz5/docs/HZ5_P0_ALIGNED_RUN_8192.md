@@ -1551,3 +1551,44 @@ Decision:
 - Next P43g/P43h work should either:
   - add a no-second-lookup release bridge that can preserve P25 batching, or
   - move a small P25 hot-cache layer to SlotRef ownership.
+
+## P43g.1 prepared release bridge
+
+P43g.1 keeps the P43g.0 active lookup context but routes matching P25 lowpage
+frees through `hz5_lowpage64_release_prepared()`.
+
+Important boundary:
+
+- it still preserves the P25 relbuf/batch topology;
+- it does not re-enable slot decommit or PAGE_NOACCESS;
+- it only takes the prepared path when `ctx.slot_base` matches the decoded raw
+  pointer;
+- fallback remains unloaded for exact HZ5 routes.
+
+P43g.1 repeat-3:
+
+```text
+results/synthetic-sweep/20260521_191201_931
+
+p43g_prepare_calls: 104001
+p43g_prepare_active: 104000
+p43g_prepare_nonactive: 0
+p43g_prepare_miss: 1
+p43g_source_p25: 104000
+p43g_source_other: 1
+p43g_raw_mismatch: 0
+p43g_release_old_path_calls: 0
+p43g_release_prepared_calls: 104000
+
+fallback load_count:
+  0
+```
+
+Decision:
+
+- P43g.1 proves the active lookup context can survive wrapper decode and reach
+  release without changing P25 ownership semantics.
+- It is still diagnostic/counter-hot, so do not use throughput as a promotion
+  readout.
+- Next choices are a counter-free prepared bridge or a small P43h SlotRef
+  migration for the P25 hot cache layer.

@@ -45,6 +45,8 @@ int hz5_lowpage64_may_own(void* ptr);
 int hz5_lowpage64_active_owns(void* ptr);
 void* hz5_lowpage64_acquire(size_t raw_bytes);
 void hz5_lowpage64_release(void* raw);
+int hz5_lowpage64_release_prepared(const Hz5Lowpage64FreeCtx* ctx,
+                                   void* raw);
 void hz5_lowpage64_p43g_note_wrapper(int is_p25_source, int raw_match);
 void hz5_lowpage64_p43g_note_old_path(void);
 void hz5_lowpage64_p43g_note_prepared_path(void);
