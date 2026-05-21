@@ -1714,3 +1714,105 @@ Decision:
 - Next P43 work should target source/cache topology: either a small
   descriptor-safe P25 hot-cache SlotRef bridge or a clearer HZ4-like segment
   cache shape. Avoid more lookup-only knobs.
+
+## P43h.1 prepared bridge counter-free control
+
+P43h.1 was added after noticing that P43h.0 had P43g prepared-release counters
+disabled, but was still not fully lowpage64 counter-free. P43h.0 emitted
+`[HZ5_LOWPAGE64]` one-shot stats, so its producer/consumer speed read was
+polluted by hot diagnostic counter cost.
+
+New lane:
+
+- lane: `hakozuna-hz5-p43h1-prepared-bridge-counterfree`
+- aliases: `hz5-p43h1-prepared-bridge-counterfree`,
+  `hz5-prepared-bridge-counterfree`
+- build shape: P43h prepared bridge plus `-CounterFree`
+- slot decommit and PAGE_NOACCESS remain disabled
+
+P43h.1 repeat-3 compare:
+
+```text
+results/synthetic-sweep/20260521_193342_751
+
+pc-r90-64k-a8192-t4:
+  P43h0:  5.18M
+  P43h1: 14.97M
+  P25a:  15.21M
+  P33:   14.69M
+
+pc-r99-64k-a8192-t4:
+  P43h0:  6.73M
+  P43h1: 10.15M
+  P25a:  13.78M
+  P33:   13.47M
+
+rss-plateau steady RSS:
+  P43h0: 58.12 MiB
+  P43h1: 57.35 MiB
+  P25a:  75.13 MiB
+  P33:   74.28 MiB
+```
+
+P43h.1 repeat-10:
+
+```text
+results/synthetic-sweep/20260521_193538_420
+
+pc-r90-64k-a8192-t4:
+  P43h1: 11.43M
+  P25a:  11.47M
+  P33:    9.76M
+  HZ4:   12.81M
+  mimalloc: 14.63M
+
+pc-r99-64k-a8192-t4:
+  P43h1: 12.45M
+  P25a:  11.82M
+  P33:   10.11M
+  HZ4:   10.65M
+  mimalloc: 13.72M
+
+rss-plateau steady RSS:
+  P43h1: 57.83 MiB
+  P25a:  74.73 MiB
+  P33:   72.74 MiB
+  HZ4:   61.00 MiB
+  mimalloc: 49.28 MiB
+
+fallback load_count:
+  0
+```
+
+P43h.1 compact guard repeat-5:
+
+```text
+results/synthetic-sweep/20260521_193838_653
+
+pc-r90-4k-a8192-t4:
+  P43h1: 15.50M
+
+pc-r90-8k-a8192-t4:
+  P43h1: 15.07M
+
+pc-r90-64k-a8192-t4:
+  P43h1: 13.72M
+
+pc-r99-64k-a8192-t4:
+  P43h1: 14.24M
+
+fallback load_count:
+  0
+```
+
+Decision:
+
+- P43h.1 is the current P43 prepared-bridge candidate-watch lane.
+- P43h.0 should be demoted to superseded evidence: its speed loss was mostly a
+  measurement-purity/counter pollution artifact.
+- P43h.1 reaches P25/P33-class 64K producer/consumer speed while preserving the
+  P43/HZ4-like plateau RSS shape.
+- It is not default-promoted yet because its manifest is still a research /
+  diagnostic lane due to the P43 lockless lookup contract. The next step is to
+  either harden a speed-clean contract for this shape or run one more focused
+  safety pass before promotion discussion.
