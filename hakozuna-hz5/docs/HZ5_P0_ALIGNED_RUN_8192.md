@@ -1816,3 +1816,53 @@ Decision:
   diagnostic lane due to the P43 lockless lookup contract. The next step is to
   either harden a speed-clean contract for this shape or run one more focused
   safety pass before promotion discussion.
+
+## P43h.2 speed-clean no-lockless control
+
+P43h.2 tested whether P43h.1 could be made speed-clean by simply removing
+`-P43LocklessLookup` and building the prepared bridge under `-SpeedLane`.
+
+New lane:
+
+- lane: `hakozuna-hz5-p43h2-prepared-bridge-speedclean`
+- aliases: `hz5-p43h2-prepared-bridge-speedclean`,
+  `hz5-prepared-bridge-speedclean`
+- build shape: `-SpeedLane`, `-P43FastLookup`, `-P43PreparedBridge`
+- no `-P43LocklessLookup`
+- slot decommit and PAGE_NOACCESS remain disabled
+
+P43h.2 repeat-3:
+
+```text
+results/synthetic-sweep/20260521_194229_337
+
+pc-r90-64k-a8192-t4:
+  P43h2:  8.73M
+  P43h1: 10.51M
+  P25a:  11.30M
+  P33:   14.41M
+
+pc-r99-64k-a8192-t4:
+  P43h2:  8.27M
+  P43h1:  9.91M
+  P25a:  12.61M
+  P33:   13.49M
+
+rss-plateau steady RSS:
+  P43h2: 56.28 MiB
+  P43h1: 56.57 MiB
+  P25a:  71.70 MiB
+  P33:   62.36 MiB
+
+fallback load_count:
+  0
+```
+
+Decision:
+
+- P43h.2 is no-go / evidence.
+- The RSS shape is good, but removing lockless active lookup gives up too much
+  producer/consumer speed.
+- The next design question is whether P43h.1's lockless lookup shape can be
+  covered by a speed-clean contract when slot decommit and PAGE_NOACCESS are
+  disabled, not whether P43 should run without lockless lookup.
