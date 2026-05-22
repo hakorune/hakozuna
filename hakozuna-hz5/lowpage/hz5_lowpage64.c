@@ -3035,6 +3035,15 @@ static Hz5Lowpage64P43oFreeBuckets hz5_lowpage64_p43o_current_buckets(
   return buckets;
 }
 
+static size_t hz5_lowpage64_stage1_current_for_stats(void) {
+#if HZ5_LOWPAGE64_STAGE1_ENABLED
+  return atomic_load_explicit(&g_hz5_lowpage64_p43p_stage1_count,
+                              memory_order_relaxed);
+#else
+  return 0;
+#endif
+}
+
 void hz5_lowpage64_print_snapshot(const char* label) {
   hz5_lowpage64_p44_note(HZ5_LOWPAGE64_P44_REASON_SNAPSHOT);
 
@@ -3060,6 +3069,7 @@ void hz5_lowpage64_print_snapshot(const char* label) {
       hz5_lowpage64_p44_current_candidates(&p43_stats);
   Hz5Lowpage64P43oFreeBuckets p43o_current =
       hz5_lowpage64_p43o_current_buckets(&p43_stats);
+  size_t stage1_current = hz5_lowpage64_stage1_current_for_stats();
 
   fprintf(stderr,
           "[HZ5_LOWPAGE64_SNAPSHOT] label=%s "
@@ -3429,12 +3439,7 @@ void hz5_lowpage64_print_snapshot(const char* label) {
           atomic_load_explicit(
               &g_hz5_lowpage64_p43p_p43_committed_free_max,
               memory_order_relaxed),
-#if HZ5_LOWPAGE64_P43P_BRIDGE_COLD_STAGE1
-          atomic_load_explicit(&g_hz5_lowpage64_p43p_stage1_count,
-                               memory_order_relaxed),
-#else
-          (size_t)0,
-#endif
+          stage1_current,
           atomic_load_explicit(
               &g_hz5_lowpage64_p43p_stage1_enqueue_calls,
               memory_order_relaxed),
@@ -3581,12 +3586,7 @@ void hz5_lowpage64_print_snapshot(const char* label) {
               memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_p45rg_stage1_overlap,
                                memory_order_relaxed),
-#if HZ5_LOWPAGE64_STAGE1_ENABLED
-          atomic_load_explicit(&g_hz5_lowpage64_p43p_stage1_count,
-                               memory_order_relaxed),
-#else
-          (size_t)0,
-#endif
+          stage1_current,
           atomic_load_explicit(&g_hz5_lowpage64_p45rg_stage1_enqueue_calls,
                                memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_p45rg_stage1_enqueue_nodes,
@@ -3690,6 +3690,7 @@ static void hz5_lowpage64_print_once(void) {
       hz5_lowpage64_p44_current_candidates(&p43_stats);
   Hz5Lowpage64P43oFreeBuckets p43o_current =
       hz5_lowpage64_p43o_current_buckets(&p43_stats);
+  size_t stage1_current = hz5_lowpage64_stage1_current_for_stats();
 
   fprintf(stderr,
           "[HZ5_LOWPAGE64] alloc_calls=%zu span_hits=%zu "
@@ -4187,12 +4188,7 @@ static void hz5_lowpage64_print_once(void) {
           atomic_load_explicit(
               &g_hz5_lowpage64_p43p_p43_committed_free_max,
               memory_order_relaxed),
-#if HZ5_LOWPAGE64_P43P_BRIDGE_COLD_STAGE1
-          atomic_load_explicit(&g_hz5_lowpage64_p43p_stage1_count,
-                               memory_order_relaxed),
-#else
-          (size_t)0,
-#endif
+          stage1_current,
           atomic_load_explicit(
               &g_hz5_lowpage64_p43p_stage1_enqueue_calls,
               memory_order_relaxed),
