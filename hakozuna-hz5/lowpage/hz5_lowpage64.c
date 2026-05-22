@@ -1711,6 +1711,11 @@ static Hz5Lowpage64P45Decision hz5_lowpage64_p45_decide(
   return decision;
 }
 
+static int hz5_lowpage64_p45_decision_stage1(
+    const Hz5Lowpage64P45Decision* decision) {
+  return decision->state_blocks || decision->bridge_excess_blocks;
+}
+
 static void hz5_lowpage64_p45_note(
     Hz5Lowpage64P45Reason reason,
     size_t observed_global,
@@ -1809,7 +1814,7 @@ static void hz5_lowpage64_p45_note(
                               decision.demote_intent);
     }
     if (decision.demote_intent > 0 &&
-        (decision.state_blocks || decision.bridge_excess_blocks)) {
+        hz5_lowpage64_p45_decision_stage1(&decision)) {
       HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45_would_stage1_refined_any,
                               decision.demote_intent);
     }
@@ -2271,8 +2276,7 @@ static int hz5_lowpage64_p45_should_stage1_demote_intent(
       &g_hz5_lowpage64_p45_runtime_state, memory_order_relaxed);
   Hz5Lowpage64P45Decision p45_decision =
       hz5_lowpage64_p45_decide(observed, p45_state);
-  int p45_stage1 =
-      p45_decision.state_blocks || p45_decision.bridge_excess_blocks;
+  int p45_stage1 = hz5_lowpage64_p45_decision_stage1(&p45_decision);
   if (demote_count > 0) {
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45rg_demote_intent,
                             demote_count);
