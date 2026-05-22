@@ -1248,16 +1248,16 @@ static size_t hz5_lowpage64_p40_demote_intent_count(
 #if HZ5_LOWPAGE64_P43O_PROJECTED_DRYRUN || \
     HZ5_LOWPAGE64_P43O_PROJECTED_GATE
 static size_t hz5_lowpage64_p43o_projected_release_batch(
-    size_t release_candidates) {
-  return release_candidates < HZ5_LOWPAGE64_P40_RELEASE_BATCH
-             ? release_candidates
+    size_t demote_intent) {
+  return demote_intent < HZ5_LOWPAGE64_P40_RELEASE_BATCH
+             ? demote_intent
              : HZ5_LOWPAGE64_P40_RELEASE_BATCH;
 }
 
 static int hz5_lowpage64_p43o_projected_blocks(size_t free_current,
-                                               size_t release_candidates) {
+                                               size_t demote_intent) {
   size_t projected_batch =
-      hz5_lowpage64_p43o_projected_release_batch(release_candidates);
+      hz5_lowpage64_p43o_projected_release_batch(demote_intent);
   if (projected_batch == 0) {
     return 0;
   }
@@ -1281,10 +1281,10 @@ static int hz5_lowpage64_p43o_source_admission_open(
 #if HZ5_LOWPAGE64_P43O_PROJECTED_GATE
 static int hz5_lowpage64_p43o_projected_source_admission_open(
     const Hz5Lowpage64P43StatsSnapshot* stats,
-    size_t release_candidates) {
+    size_t demote_intent) {
   size_t free_current = stats ? stats->slots_committed_free_current : 0;
   return !hz5_lowpage64_p43o_projected_blocks(free_current,
-                                              release_candidates);
+                                              demote_intent);
 }
 #else
 #define hz5_lowpage64_p43o_projected_source_admission_open(stats, candidates) \
@@ -1346,50 +1346,49 @@ static void hz5_lowpage64_p43o_note(
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43o_p43_free_warm_total, warm);
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43o_p43_free_cold_total, cold);
 
-  size_t release_candidates = 0;
+  size_t demote_intent = 0;
   if (reason == HZ5_LOWPAGE64_P43O_REASON_P40) {
-    release_candidates =
-        hz5_lowpage64_p40_demote_intent_count(observed_global);
+    demote_intent = hz5_lowpage64_p40_demote_intent_count(observed_global);
   }
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43o_p40_release_candidates,
-                          release_candidates);
-  if (release_candidates > 0) {
+                          demote_intent);
+  if (demote_intent > 0) {
     if (step.new_state == HZ5_LOWPAGE64_P43O_STATE_OPEN) {
       HZ5_LOWPAGE64_COUNT_ADD(
           g_hz5_lowpage64_p43o_p40_would_demote_to_source,
-          release_candidates);
+          demote_intent);
     } else {
       HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43o_p40_would_stage1,
-                              release_candidates);
+                              demote_intent);
       HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43o_p40_would_keep_bridge,
-                              release_candidates);
+                              demote_intent);
     }
   }
 
 #if HZ5_LOWPAGE64_P43O_PROJECTED_DRYRUN
-  if (release_candidates > 0) {
+  if (demote_intent > 0) {
     size_t projected_batch =
-        hz5_lowpage64_p43o_projected_release_batch(release_candidates);
+        hz5_lowpage64_p43o_projected_release_batch(demote_intent);
     size_t projected_free = free_current + projected_batch;
     int projected_blocks = hz5_lowpage64_p43o_projected_blocks(
-        free_current, release_candidates);
+        free_current, demote_intent);
     HZ5_LOWPAGE64_COUNT_ADD(
         g_hz5_lowpage64_p43o_projected_p40_candidates,
-        release_candidates);
+        demote_intent);
     HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p43o_projected_free_max,
                             projected_free);
     if (projected_blocks) {
       HZ5_LOWPAGE64_COUNT_ADD(
           g_hz5_lowpage64_p43o_projected_would_stage1,
-          release_candidates);
+          demote_intent);
       HZ5_LOWPAGE64_COUNT_ADD(
           g_hz5_lowpage64_p43o_projected_would_keep_bridge,
-          release_candidates);
+          demote_intent);
       HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43o_projected_blocks, 1);
     } else {
       HZ5_LOWPAGE64_COUNT_ADD(
           g_hz5_lowpage64_p43o_projected_would_demote_to_source,
-          release_candidates);
+          demote_intent);
     }
   }
 #endif
@@ -1418,7 +1417,7 @@ typedef enum Hz5Lowpage64P43pReason {
 
 #if HZ5_LOWPAGE64_P43P_AGE_STAGE1_DRYRUN
 static void hz5_lowpage64_p43p_age_note(size_t admission_state,
-                                        size_t release_candidates) {
+                                        size_t demote_intent) {
   size_t b0 = atomic_exchange_explicit(
       &g_hz5_lowpage64_p43p_age_bucket0, 0, memory_order_relaxed);
   size_t b1 = atomic_exchange_explicit(
@@ -1437,11 +1436,11 @@ static void hz5_lowpage64_p43p_age_note(size_t admission_state,
   b3 = b2;
   b2 = b1;
   b1 = b0;
-  b0 = release_candidates;
+  b0 = demote_intent;
 
   HZ5_LOWPAGE64_COUNT_ADD(
       g_hz5_lowpage64_p43p_age_stage1_items_total,
-      release_candidates);
+      demote_intent);
 
   size_t demote_old = 0;
   if (admission_state == HZ5_LOWPAGE64_P43O_STATE_OPEN) {
@@ -1500,7 +1499,7 @@ static void hz5_lowpage64_p43p_age_note(size_t admission_state,
                         old, memory_order_relaxed);
 }
 #else
-#define hz5_lowpage64_p43p_age_note(admission_state, release_candidates) \
+#define hz5_lowpage64_p43p_age_note(admission_state, demote_intent) \
   ((void)0)
 #endif
 
@@ -1549,19 +1548,19 @@ static void hz5_lowpage64_p43p_note(
   }
 
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43p_reason_p40, 1);
-  size_t release_candidates =
+  size_t demote_intent =
       hz5_lowpage64_p40_demote_intent_count(observed_global);
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43p_p40_release_candidates,
-                          release_candidates);
-  hz5_lowpage64_p43p_age_note(step.new_state, release_candidates);
-  if (release_candidates == 0) {
+                          demote_intent);
+  hz5_lowpage64_p43p_age_note(step.new_state, demote_intent);
+  if (demote_intent == 0) {
     return;
   }
 
   size_t old_bridge_cold = atomic_load_explicit(
       &g_hz5_lowpage64_p43p_bridge_cold_projected_current,
       memory_order_relaxed);
-  size_t bridge_cold = old_bridge_cold + release_candidates;
+  size_t bridge_cold = old_bridge_cold + demote_intent;
   size_t demote = 0;
   if (step.new_state == HZ5_LOWPAGE64_P43O_STATE_OPEN) {
     demote = bridge_cold < HZ5_LOWPAGE64_P43P_DEMOTE_BATCH
@@ -1573,13 +1572,13 @@ static void hz5_lowpage64_p43p_note(
   size_t demote_from_new =
       demote > old_bridge_cold ? demote - old_bridge_cold : 0;
   size_t keep_from_new =
-      release_candidates > demote_from_new
-          ? release_candidates - demote_from_new
+      demote_intent > demote_from_new
+          ? demote_intent - demote_from_new
           : 0;
 
   HZ5_LOWPAGE64_COUNT_ADD(
       g_hz5_lowpage64_p43p_would_stage1_bridge_cold,
-      release_candidates);
+      demote_intent);
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43p_would_demote_to_source,
                           demote);
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43p_would_keep_bridge,
