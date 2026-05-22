@@ -4,6 +4,16 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ARCH="auto"
 OUT_DIR=""
+ENABLE_LINUX_P43=0
+LINUX_P43_PREPARED_BRIDGE=1
+LINUX_P43_UNSAFE_NO_LOOKUP=0
+LINUX_P43_TRUST_FAST_LOOKUP=0
+LINUX_P43_TRUST_WRAPPER_SOURCE=0
+LINUX_P43_DECODED_RAW_LOOKUP=0
+LINUX_P43_RAW_FAST_LOOKUP_ONLY=0
+LINUX_P43_RAW_ALLOCATED_LOOKUP_ONLY=0
+LINUX_P43_WRAPPER_TOKEN=0
+LINUX_P43_WRAPPER_TOKEN_BRIDGE=0
 
 usage() {
   cat <<'EOF'
@@ -13,6 +23,24 @@ Usage:
 Options:
   --arch <arch>      override detected arch (default: auto)
   --out-dir DIR      output directory (default: hakozuna-hz5/out/linux/<arch>)
+  --linux-p43        enable Linux P43 segment-slot source candidate lane
+  --linux-p43-no-prepared-bridge
+                     disable P43 PreparedBridge for source-only A/B
+  --linux-p43-unsafe-no-lookup
+                     bypass P43 free lookup for lookup-cost A/B
+  --linux-p43-trust-fast-lookup
+                     trust P43 fast lookup hits as active for candidate A/B
+  --linux-p43-trust-wrapper-source
+                     trust decoded P25 wrapper source and skip P43 lookup
+  --linux-p43-decoded-raw-lookup
+                     decode wrapper first, then validate raw through P43 lookup
+  --linux-p43-decoded-raw-fastlookup
+                     decoded raw lookup uses only P43 fast table and masks
+  --linux-p43-decoded-raw-allocated
+                     decoded raw lookup uses fast table and allocated bit only
+  --linux-p43-token  store P43 segment/slot token in the HZ5 wrapper
+  --linux-p43-token-bridge
+                     validate wrapper token, then release through P25 bridge
   --help             show this message
 EOF
 }
@@ -28,6 +56,59 @@ while [[ $# -gt 0 ]]; do
       [[ $# -ge 2 ]] || { echo "missing value for --out-dir" >&2; exit 1; }
       OUT_DIR="$2"
       shift 2
+      ;;
+    --linux-p43)
+      ENABLE_LINUX_P43=1
+      shift
+      ;;
+    --linux-p43-no-prepared-bridge)
+      ENABLE_LINUX_P43=1
+      LINUX_P43_PREPARED_BRIDGE=0
+      shift
+      ;;
+    --linux-p43-unsafe-no-lookup)
+      ENABLE_LINUX_P43=1
+      LINUX_P43_UNSAFE_NO_LOOKUP=1
+      shift
+      ;;
+    --linux-p43-trust-fast-lookup)
+      ENABLE_LINUX_P43=1
+      LINUX_P43_TRUST_FAST_LOOKUP=1
+      shift
+      ;;
+    --linux-p43-trust-wrapper-source)
+      ENABLE_LINUX_P43=1
+      LINUX_P43_TRUST_WRAPPER_SOURCE=1
+      shift
+      ;;
+    --linux-p43-decoded-raw-lookup)
+      ENABLE_LINUX_P43=1
+      LINUX_P43_DECODED_RAW_LOOKUP=1
+      shift
+      ;;
+    --linux-p43-decoded-raw-fastlookup)
+      ENABLE_LINUX_P43=1
+      LINUX_P43_DECODED_RAW_LOOKUP=1
+      LINUX_P43_RAW_FAST_LOOKUP_ONLY=1
+      shift
+      ;;
+    --linux-p43-decoded-raw-allocated)
+      ENABLE_LINUX_P43=1
+      LINUX_P43_DECODED_RAW_LOOKUP=1
+      LINUX_P43_RAW_FAST_LOOKUP_ONLY=1
+      LINUX_P43_RAW_ALLOCATED_LOOKUP_ONLY=1
+      shift
+      ;;
+    --linux-p43-token)
+      ENABLE_LINUX_P43=1
+      LINUX_P43_WRAPPER_TOKEN=1
+      shift
+      ;;
+    --linux-p43-token-bridge)
+      ENABLE_LINUX_P43=1
+      LINUX_P43_WRAPPER_TOKEN=1
+      LINUX_P43_WRAPPER_TOKEN_BRIDGE=1
+      shift
       ;;
     --help|-h)
       usage
@@ -82,6 +163,47 @@ COMMON_FLAGS=(
   -I"${HZ5_DIR}/lowpage"
   -I"${HZ5_DIR}/fallback"
 )
+
+if [[ "$ENABLE_LINUX_P43" -eq 1 ]]; then
+  COMMON_FLAGS+=(
+    -DBENCHLAB_HZ5_LINUX_P43_PORT=1
+    -DBENCHLAB_HZ5_P43_SEGMENT_SLOTS=1
+    -DBENCHLAB_HZ5_P43_FAST_LOOKUP=1
+    -DBENCHLAB_HZ5_P43_LOCKLESS_LOOKUP=1
+    -DBENCHLAB_HZ5_P43_SLOT_DECOMMIT=0
+    -DBENCHLAB_HZ5_P43_PAGE_NOACCESS=0
+  )
+  if [[ "$LINUX_P43_PREPARED_BRIDGE" -eq 1 ]]; then
+    COMMON_FLAGS+=(
+      -DBENCHLAB_HZ5_P43_PREPARED_BRIDGE=1
+      -DBENCHLAB_HZ5_P43_LOCKLESS_CONTRACT=1
+    )
+  fi
+  if [[ "$LINUX_P43_UNSAFE_NO_LOOKUP" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_P43_UNSAFE_NO_LOOKUP=1)
+  fi
+  if [[ "$LINUX_P43_TRUST_FAST_LOOKUP" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_P43_TRUST_FAST_LOOKUP=1)
+  fi
+  if [[ "$LINUX_P43_TRUST_WRAPPER_SOURCE" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_P43_TRUST_WRAPPER_SOURCE=1)
+  fi
+  if [[ "$LINUX_P43_DECODED_RAW_LOOKUP" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_P43_DECODED_RAW_LOOKUP=1)
+  fi
+  if [[ "$LINUX_P43_RAW_FAST_LOOKUP_ONLY" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_P43_RAW_FAST_LOOKUP_ONLY=1)
+  fi
+  if [[ "$LINUX_P43_RAW_ALLOCATED_LOOKUP_ONLY" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_P43_RAW_ALLOCATED_LOOKUP_ONLY=1)
+  fi
+  if [[ "$LINUX_P43_WRAPPER_TOKEN" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_P43_WRAPPER_TOKEN=1)
+  fi
+  if [[ "$LINUX_P43_WRAPPER_TOKEN_BRIDGE" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_P43_WRAPPER_TOKEN_BRIDGE=1)
+  fi
+fi
 
 HZ5_SRCS=(
   "${HZ5_DIR}/api/hz5_api.c"

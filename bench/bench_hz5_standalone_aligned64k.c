@@ -11,6 +11,7 @@ typedef struct WorkerArgs {
   size_t size;
   size_t align;
   uint64_t ops;
+  int status;
 } WorkerArgs;
 
 static double now_sec(void) {
@@ -26,17 +27,21 @@ static void* worker_main(void* arg) {
     if (!ptr) {
       fprintf(stderr, "hz5_aligned_alloc failed iter=%llu size=%zu align=%zu\n",
               (unsigned long long)i, args->size, args->align);
-      abort();
+      args->status = 5;
+      return NULL;
     }
     if (((uintptr_t)ptr & (uintptr_t)(args->align - 1u)) != 0) {
       fprintf(stderr, "alignment failed ptr=%p align=%zu\n", ptr, args->align);
-      abort();
+      hz5_free(ptr);
+      args->status = 6;
+      return NULL;
     }
     ((volatile unsigned char*)ptr)[0] = (unsigned char)i;
     ((volatile unsigned char*)ptr)[args->size - 1u] = (unsigned char)(i >> 8);
     if (hz5_free(ptr) == HZ5_FREE_INVALID) {
       fprintf(stderr, "hz5_free rejected ptr=%p\n", ptr);
-      abort();
+      args->status = 7;
+      return NULL;
     }
     args->ops += 2u;
   }
@@ -72,9 +77,18 @@ int main(int argc, char** argv) {
     }
   }
   uint64_t ops = 0;
+  int status = 0;
   for (int i = 0; i < threads; ++i) {
     pthread_join(tids[i], NULL);
     ops += args[i].ops;
+    if (status == 0 && args[i].status != 0) {
+      status = args[i].status;
+    }
+  }
+  if (status != 0) {
+    free(args);
+    free(tids);
+    return status;
   }
   double elapsed = now_sec() - start;
   printf("allocator=hz5-standalone threads=%d iters=%llu size=%zu align=%zu "

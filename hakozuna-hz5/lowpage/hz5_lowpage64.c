@@ -912,14 +912,10 @@ static void* hz5_lowpage64_p42_try_recommit(size_t raw_bytes) {
 
 static void* hz5_lowpage64_raw_os_alloc(size_t raw_bytes) {
 #if HZ5_LOWPAGE64_P43_SEGMENT_SLOTS
-#if defined(_WIN32)
   // P43 is the lower raw source for P43i/P44. The hot P25 bridge still lives
   // above this function in acquire/release_common.
   void* raw = hz5_lowpage64_p43_alloc_slot(raw_bytes);
   return raw;
-#else
-  return NULL;
-#endif
 #endif
 #if HZ5_LOWPAGE64_P42_VA_SOURCE
 #if defined(_WIN32)
@@ -941,12 +937,10 @@ static void* hz5_lowpage64_raw_os_alloc(size_t raw_bytes) {
 
 static void hz5_lowpage64_raw_os_release(void* raw) {
 #if HZ5_LOWPAGE64_P43_SEGMENT_SLOTS
-#if defined(_WIN32)
   // Only direct descriptor-release controls should commonly reach this P43
   // release path. P43i/P44 balanced lanes normally preserve release_common().
   (void)hz5_lowpage64_p43_release_slot(raw);
   return;
-#endif
 #endif
 #if HZ5_LOWPAGE64_P42_VA_SOURCE
 #if defined(_WIN32)
@@ -1089,6 +1083,36 @@ int hz5_lowpage64_prepare_free_user(void* ptr, Hz5Lowpage64FreeCtx* ctx) {
 #endif
   hz5_lowpage64_p43g_count_prepare(lookup_kind);
   return lookup_kind;
+}
+
+int hz5_lowpage64_prepare_free_raw(void* raw, Hz5Lowpage64FreeCtx* ctx) {
+  hz5_lowpage64_prepare_ctx_clear(ctx);
+#if HZ5_LOWPAGE64_P43_SEGMENT_SLOTS
+  int lookup_kind = hz5_lowpage64_p43_prepare_free_raw(raw, ctx);
+#else
+  int lookup_kind = hz5_lowpage64_lookup(raw);
+  if (ctx) {
+    ctx->lookup_kind = lookup_kind;
+  }
+#endif
+  hz5_lowpage64_p43g_count_prepare(lookup_kind);
+  return lookup_kind;
+}
+
+int hz5_lowpage64_release_p43_token(void* segment_token,
+                                    uint32_t slot_index,
+                                    void* raw) {
+#if HZ5_LOWPAGE64_P43_SEGMENT_SLOTS
+  if (!segment_token || !raw) {
+    return 0;
+  }
+  return hz5_lowpage64_p43_release_token(segment_token, slot_index, raw);
+#else
+  (void)segment_token;
+  (void)slot_index;
+  (void)raw;
+  return 0;
+#endif
 }
 
 int hz5_lowpage64_may_own(void* ptr) {
@@ -2958,6 +2982,24 @@ void* hz5_lowpage64_acquire(size_t raw_bytes) {
   hz5_lowpage64_p45dr_note(HZ5_LOWPAGE64_P45_REASON_ACQUIRE_MISS);
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_os_allocs, 1);
   return hz5_lowpage64_raw_os_alloc(raw_bytes);
+}
+
+void* hz5_lowpage64_acquire_p43_token(size_t raw_bytes,
+                                      Hz5Lowpage64FreeCtx* ctx) {
+  hz5_lowpage64_prepare_ctx_clear(ctx);
+#if HZ5_LOWPAGE64_P43_SEGMENT_SLOTS
+  void* raw = hz5_lowpage64_p43_alloc_slot_prepared(raw_bytes, ctx);
+  if (raw) {
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_os_allocs, 1);
+  }
+  return raw;
+#else
+  void* raw = hz5_lowpage64_acquire(raw_bytes);
+  if (raw) {
+    (void)hz5_lowpage64_prepare_free_raw(raw, ctx);
+  }
+  return raw;
+#endif
 }
 
 static void hz5_lowpage64_release_common(void* raw) {

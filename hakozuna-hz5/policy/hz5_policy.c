@@ -47,6 +47,22 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_P43_UNSAFE_NO_LOOKUP 0
 #endif
 
+#ifndef BENCHLAB_HZ5_P43_TRUST_WRAPPER_SOURCE
+#define BENCHLAB_HZ5_P43_TRUST_WRAPPER_SOURCE 0
+#endif
+
+#ifndef BENCHLAB_HZ5_P43_DECODED_RAW_LOOKUP
+#define BENCHLAB_HZ5_P43_DECODED_RAW_LOOKUP 0
+#endif
+
+#ifndef BENCHLAB_HZ5_P43_WRAPPER_TOKEN
+#define BENCHLAB_HZ5_P43_WRAPPER_TOKEN 0
+#endif
+
+#ifndef BENCHLAB_HZ5_P43_WRAPPER_TOKEN_BRIDGE
+#define BENCHLAB_HZ5_P43_WRAPPER_TOKEN_BRIDGE 0
+#endif
+
 #ifndef BENCHLAB_HZ5_P43_PREPARED_RELEASE
 #define BENCHLAB_HZ5_P43_PREPARED_RELEASE 0
 #endif
@@ -175,6 +191,65 @@ static void hz5_policy_free_p25_lowpage_raw(
 }
 #endif
 
+#if BENCHLAB_HZ5_P43_WRAPPER_TOKEN
+static uint32_t hz5_policy_p43_token_cookie(uintptr_t raw,
+                                            uintptr_t aligned,
+                                            uintptr_t segment_token,
+                                            uint32_t slot_index) {
+  uintptr_t mixed = raw ^ aligned ^ segment_token ^
+                    ((uintptr_t)slot_index * UINT64_C(0x9e3779b97f4a7c15)) ^
+                    UINT64_C(0x43a8192d5);
+  mixed ^= mixed >> 33;
+  mixed *= UINT64_C(0xff51afd7ed558ccd);
+  mixed ^= mixed >> 33;
+  return (uint32_t)(mixed ^ (mixed >> 32));
+}
+
+static int hz5_policy_p43_store_wrapper_token(Hz5WrapperHdr* header,
+                                              uintptr_t aligned,
+                                              const Hz5Lowpage64FreeCtx* ctx) {
+  Hz5Lowpage64FreeCtx fallback_ctx = {0};
+  const Hz5Lowpage64FreeCtx* token_ctx = ctx;
+  if (!token_ctx ||
+      token_ctx->lookup_kind != HZ5_LOWPAGE64_LOOKUP_OWNED_ACTIVE) {
+    int lookup =
+        hz5_lowpage64_prepare_free_raw((void*)header->raw, &fallback_ctx);
+    if (lookup != HZ5_LOWPAGE64_LOOKUP_OWNED_ACTIVE) {
+      return 0;
+    }
+    token_ctx = &fallback_ctx;
+  }
+  if (token_ctx->slot_base != (void*)header->raw ||
+      !token_ctx->segment_token) {
+    return 0;
+  }
+  header->p43_segment_token = (uintptr_t)token_ctx->segment_token;
+  header->p43_slot_index = token_ctx->slot_index;
+  header->p43_token_cookie = hz5_policy_p43_token_cookie(
+      header->raw, aligned, header->p43_segment_token,
+      header->p43_slot_index);
+  return 1;
+}
+
+static int hz5_policy_p43_release_wrapper_token(Hz5WrapperHdr* header,
+                                                uintptr_t aligned) {
+  if (!header->p43_segment_token ||
+      header->p43_token_cookie != hz5_policy_p43_token_cookie(
+                                      header->raw, aligned,
+                                      header->p43_segment_token,
+                                      header->p43_slot_index)) {
+    return 0;
+  }
+  if (!BENCHLAB_HZ5_P43_WRAPPER_TOKEN_BRIDGE) {
+    return hz5_lowpage64_release_p43_token(
+        (void*)header->p43_segment_token, header->p43_slot_index,
+        (void*)header->raw);
+  }
+  hz5_lowpage64_release((void*)header->raw);
+  return 1;
+}
+#endif
+
 #if BENCHLAB_HZ5_P16_WRAPPER_64K_A8192 || BENCHLAB_HZ5_P17_PAGEBIN_64K_A8192 || \
     BENCHLAB_HZ5_P24_RAW64K_A8192 || BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || \
     BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192 || \
@@ -221,7 +296,12 @@ static void* hz5_policy_p25_wrapper_alloc(size_t size, size_t align) {
 
   size_t raw_bytes =
       hz5_lowpage64_round_raw_bytes(size, align, sizeof(Hz5WrapperHdr));
+#if BENCHLAB_HZ5_P43_WRAPPER_TOKEN
+  Hz5Lowpage64FreeCtx token_ctx = {0};
+  void* raw_ptr = hz5_lowpage64_acquire_p43_token(raw_bytes, &token_ctx);
+#else
   void* raw_ptr = hz5_lowpage64_acquire(raw_bytes);
+#endif
   if (!raw_ptr) {
     return NULL;
   }
@@ -235,11 +315,17 @@ static void* hz5_policy_p25_wrapper_alloc(size_t size, size_t align) {
     return NULL;
   }
 
-  Hz5WrapperHdr* header = (Hz5WrapperHdr*)(aligned - sizeof(Hz5WrapperHdr));
-  hz5_wrapper_init(header, raw, aligned, size, raw_bytes,
-                   HZ5_WRAPPER_SOURCE_P25_HZ4LOWPAGE);
-  return (void*)aligned;
-}
+	  Hz5WrapperHdr* header = (Hz5WrapperHdr*)(aligned - sizeof(Hz5WrapperHdr));
+	  hz5_wrapper_init(header, raw, aligned, size, raw_bytes,
+	                   HZ5_WRAPPER_SOURCE_P25_HZ4LOWPAGE);
+#if BENCHLAB_HZ5_P43_WRAPPER_TOKEN
+  if (!hz5_policy_p43_store_wrapper_token(header, aligned, &token_ctx)) {
+    hz5_lowpage64_release(raw_ptr);
+    return NULL;
+  }
+#endif
+	  return (void*)aligned;
+	}
 #endif
 
 #if BENCHLAB_HZ5_NO_HZ3_FALLBACK || BENCHLAB_HZ5_LAZY_HZ3_FALLBACK
@@ -376,10 +462,22 @@ void hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
      BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192)
   int p25_lowpage_lookup = HZ5_LOWPAGE64_LOOKUP_MISS;
   Hz5Lowpage64FreeCtx p25_lowpage_ctx = {0};
+#if BENCHLAB_HZ5_P43_TRUST_WRAPPER_SOURCE || \
+    BENCHLAB_HZ5_P43_DECODED_RAW_LOOKUP || \
+    BENCHLAB_HZ5_P43_WRAPPER_TOKEN
+#if BENCHLAB_HZ5_P43_TRUST_WRAPPER_SOURCE
+  (void)p25_lowpage_lookup;
+  (void)p25_lowpage_ctx;
+#elif BENCHLAB_HZ5_P43_WRAPPER_TOKEN
+  (void)p25_lowpage_lookup;
+  (void)p25_lowpage_ctx;
+#endif
+#else
   if (hz5_policy_prepare_p25_lowpage_free(ptr, &p25_lowpage_lookup,
                                           &p25_lowpage_ctx)) {
     return;
   }
+#endif
 #else
   int p25_lowpage_lookup = HZ5_LOWPAGE64_LOOKUP_MISS;
 #if BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || \
@@ -403,16 +501,41 @@ void hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
   Hz5WrapperHdr* wrapped = NULL;
   if (hz5_wrapper_decode(ptr, &wrapped)) {
 #if HZ5_POLICY_P43_PREPARED_ANY && \
+    BENCHLAB_HZ5_P43_DECODED_RAW_LOOKUP && \
     (BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || \
      BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192)
+    if (wrapped->source == HZ5_WRAPPER_SOURCE_P25_HZ4LOWPAGE) {
+      p25_lowpage_lookup =
+          hz5_lowpage64_prepare_free_raw((void*)wrapped->raw,
+                                         &p25_lowpage_ctx);
+    }
+#endif
+#if HZ5_POLICY_P43_PREPARED_ANY && \
+    (BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || \
+     BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192)
+#if BENCHLAB_HZ5_P43_TRUST_WRAPPER_SOURCE
+    hz5_lowpage64_p43g_note_wrapper(
+        wrapped->source == HZ5_WRAPPER_SOURCE_P25_HZ4LOWPAGE, 1);
+#else
     hz5_lowpage64_p43g_note_wrapper(
         wrapped->source == HZ5_WRAPPER_SOURCE_P25_HZ4LOWPAGE,
         hz5_policy_p25_raw_matches_lowpage_ctx(&p25_lowpage_ctx,
                                                wrapped->raw));
 #endif
+#endif
 #if BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192
-    if (wrapped->source == HZ5_WRAPPER_SOURCE_P25_HZ4LOWPAGE) {
+	    if (wrapped->source == HZ5_WRAPPER_SOURCE_P25_HZ4LOWPAGE) {
+#if BENCHLAB_HZ5_P43_TRUST_WRAPPER_SOURCE
+      hz5_lowpage64_release((void*)wrapped->raw);
+#elif BENCHLAB_HZ5_P43_WRAPPER_TOKEN
+      (void)hz5_policy_p43_release_wrapper_token(wrapped, (uintptr_t)ptr);
+#elif BENCHLAB_HZ5_P43_DECODED_RAW_LOOKUP
+      if (p25_lowpage_lookup == HZ5_LOWPAGE64_LOOKUP_OWNED_ACTIVE) {
+        hz5_policy_free_p25_lowpage_raw(&p25_lowpage_ctx, wrapped->raw);
+      }
+#else
       hz5_policy_free_p25_lowpage_raw(&p25_lowpage_ctx, wrapped->raw);
+#endif
       return;
     }
 #endif

@@ -20,6 +20,11 @@ void hz5_wrapper_init(Hz5WrapperHdr* header, uintptr_t raw, uintptr_t aligned,
   header->raw_bytes = raw_bytes;
   header->source = source;
   header->reserved = 0;
+#if BENCHLAB_HZ5_P43_WRAPPER_TOKEN
+  header->p43_segment_token = 0;
+  header->p43_slot_index = 0;
+  header->p43_token_cookie = 0;
+#endif
 }
 
 int hz5_wrapper_decode(void* ptr, Hz5WrapperHdr** header_out) {

@@ -2,6 +2,7 @@
 #define HZ5_LOWPAGE64_P43_SEGMENT_H
 
 #include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -141,6 +142,33 @@ typedef struct Hz5Lowpage64FreeCtx Hz5Lowpage64FreeCtx;
 #endif
 #endif
 
+#ifndef HZ5_LOWPAGE64_P43_TRUST_FAST_LOOKUP
+#ifdef BENCHLAB_HZ5_P43_TRUST_FAST_LOOKUP
+#define HZ5_LOWPAGE64_P43_TRUST_FAST_LOOKUP \
+  BENCHLAB_HZ5_P43_TRUST_FAST_LOOKUP
+#else
+#define HZ5_LOWPAGE64_P43_TRUST_FAST_LOOKUP 0
+#endif
+#endif
+
+#ifndef HZ5_LOWPAGE64_P43_RAW_FAST_LOOKUP_ONLY
+#ifdef BENCHLAB_HZ5_P43_RAW_FAST_LOOKUP_ONLY
+#define HZ5_LOWPAGE64_P43_RAW_FAST_LOOKUP_ONLY \
+  BENCHLAB_HZ5_P43_RAW_FAST_LOOKUP_ONLY
+#else
+#define HZ5_LOWPAGE64_P43_RAW_FAST_LOOKUP_ONLY 0
+#endif
+#endif
+
+#ifndef HZ5_LOWPAGE64_P43_RAW_ALLOCATED_LOOKUP_ONLY
+#ifdef BENCHLAB_HZ5_P43_RAW_ALLOCATED_LOOKUP_ONLY
+#define HZ5_LOWPAGE64_P43_RAW_ALLOCATED_LOOKUP_ONLY \
+  BENCHLAB_HZ5_P43_RAW_ALLOCATED_LOOKUP_ONLY
+#else
+#define HZ5_LOWPAGE64_P43_RAW_ALLOCATED_LOOKUP_ONLY 0
+#endif
+#endif
+
 #ifndef HZ5_LOWPAGE64_P43_LOCKED_WRITER_MASKS
 #ifdef BENCHLAB_HZ5_P43_LOCKED_WRITER_MASKS
 #define HZ5_LOWPAGE64_P43_LOCKED_WRITER_MASKS \
@@ -204,6 +232,11 @@ typedef struct Hz5Lowpage64FreeCtx Hz5Lowpage64FreeCtx;
 #if HZ5_LOWPAGE64_P43_LOCKLESS_CONTRACT && \
     !HZ5_LOWPAGE64_P43_LOCKLESS_LOOKUP
 #error "P43 LocklessContract requires LocklessLookup"
+#endif
+
+#if HZ5_LOWPAGE64_P43_TRUST_FAST_LOOKUP && \
+    !HZ5_LOWPAGE64_P43_LOCKLESS_CONTRACT
+#error "P43 TrustFastLookup requires LocklessContract"
 #endif
 
 #if HZ5_LOWPAGE64_P43_LOCKLESS_CONTRACT && \
@@ -323,12 +356,19 @@ enum {
 #endif
 
 void* hz5_lowpage64_p43_alloc_slot(size_t raw_bytes);
+void* hz5_lowpage64_p43_alloc_slot_prepared(size_t raw_bytes,
+                                            Hz5Lowpage64FreeCtx* ctx);
 int hz5_lowpage64_p43_release_slot(void* raw);
 int hz5_lowpage64_p43_release_prepared_slot(
     const Hz5Lowpage64FreeCtx* ctx);
 int hz5_lowpage64_p43_lookup(void* ptr);
 int hz5_lowpage64_p43_prepare_free_user(void* ptr,
                                         Hz5Lowpage64FreeCtx* ctx);
+int hz5_lowpage64_p43_prepare_free_raw(void* raw,
+                                       Hz5Lowpage64FreeCtx* ctx);
+int hz5_lowpage64_p43_release_token(void* segment_token,
+                                    uint32_t slot_index,
+                                    void* raw);
 int hz5_lowpage64_p43_may_own(void* ptr);
 int hz5_lowpage64_p43_active_owns(void* ptr);
 void hz5_lowpage64_p43_stats_snapshot(

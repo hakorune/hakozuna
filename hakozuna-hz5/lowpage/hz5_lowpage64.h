@@ -68,9 +68,15 @@ size_t hz5_lowpage64_round_raw_bytes(size_t size,
 void hz5_lowpage64_note_raw_range(void* raw_ptr, size_t raw_bytes);
 int hz5_lowpage64_lookup(void* ptr);
 int hz5_lowpage64_prepare_free_user(void* ptr, Hz5Lowpage64FreeCtx* ctx);
+int hz5_lowpage64_prepare_free_raw(void* raw, Hz5Lowpage64FreeCtx* ctx);
+int hz5_lowpage64_release_p43_token(void* segment_token,
+                                    uint32_t slot_index,
+                                    void* raw);
 int hz5_lowpage64_may_own(void* ptr);
 int hz5_lowpage64_active_owns(void* ptr);
 void* hz5_lowpage64_acquire(size_t raw_bytes);
+void* hz5_lowpage64_acquire_p43_token(size_t raw_bytes,
+                                      Hz5Lowpage64FreeCtx* ctx);
 void hz5_lowpage64_release(void* raw);
 /* Prepared release preserves the P25 lowpage64 relbuf/global/acquired bridge
    when ctx matches raw. Direct P43 descriptor release is a separate control. */
