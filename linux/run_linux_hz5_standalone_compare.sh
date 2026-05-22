@@ -9,10 +9,11 @@ ITERS=1000000
 SIZE=""
 ALIGN=""
 CASES="4096:8192,8192:8192,65536:8192"
-ALLOCATORS="hz5,system,mimalloc,tcmalloc"
+ALLOCATORS="hz5,system,hz3,hz4,mimalloc,tcmalloc"
 OUTDIR="${ROOT_DIR}/private/raw-results/linux/hz5_standalone_$(date +%Y%m%d_%H%M%S)"
 SKIP_BUILD=0
 SKIP_PREPARE_ALLOCATORS=0
+BUILD_HZ3_HZ4=0
 
 usage() {
   cat <<'EOF'
@@ -29,10 +30,11 @@ Options:
   --size N                   single allocation size; requires --align
   --align N                  single allocation alignment; requires --size
   --allocators LIST          comma-separated allocator list
-                             (default: hz5,system,mimalloc,tcmalloc)
+                             (default: hz5,system,hz3,hz4,mimalloc,tcmalloc)
   --outdir DIR               output directory
   --skip-build               skip HZ5 standalone build
   --skip-prepare-allocators  skip mimalloc/tcmalloc cache prep
+  --build-hz3-hz4            rebuild HZ3/HZ4 preload libraries before running
   --help                     show this message
 EOF
 }
@@ -50,6 +52,7 @@ while [[ $# -gt 0 ]]; do
     --outdir) OUTDIR="$2"; shift 2 ;;
     --skip-build) SKIP_BUILD=1; shift ;;
     --skip-prepare-allocators) SKIP_PREPARE_ALLOCATORS=1; shift ;;
+    --build-hz3-hz4) BUILD_HZ3_HZ4=1; shift ;;
     --help|-h) usage; exit 0 ;;
     *) echo "unknown option: $1" >&2; usage >&2; exit 1 ;;
   esac
@@ -78,6 +81,10 @@ if [[ "$SKIP_BUILD" -ne 1 ]]; then
   "${ROOT_DIR}/linux/build_linux_bench_compare.sh" --arch "$ARCH"
 fi
 
+if [[ "$BUILD_HZ3_HZ4" -eq 1 ]]; then
+  "${ROOT_DIR}/linux/build_linux_release_lane.sh" --arch "$ARCH"
+fi
+
 if [[ "$SKIP_PREPARE_ALLOCATORS" -ne 1 ]]; then
   env_file="$(mktemp)"
   trap 'rm -f "$env_file"' EXIT
@@ -91,8 +98,23 @@ GENERIC_BENCH="${ROOT_DIR}/bench/out/linux/${ARCH}/bench_aligned64k"
 HZ5_LIB="${ROOT_DIR}/hakozuna-hz5/out/linux/${ARCH}/libhakozuna_hz5_standalone.so"
 HZ3_SO="${HZ3_SO:-${ROOT_DIR}/libhakozuna_hz3_scale.so}"
 HZ4_SO="${HZ4_SO:-${ROOT_DIR}/hakozuna-mt/libhakozuna_hz4.so}"
-MIMALLOC_SO="${MIMALLOC_SO:-$(find "${ROOT_DIR}/private/bench-assets/linux/allocators/${ARCH}/libmimalloc2.0" -type f -name 'libmimalloc.so*' 2>/dev/null | sort | head -n 1)}"
-TCMALLOC_SO="${TCMALLOC_SO:-$(find "${ROOT_DIR}/private/bench-assets/linux/allocators/${ARCH}/libtcmalloc-minimal4t64" -type f -name 'libtcmalloc_minimal.so*' 2>/dev/null | sort | head -n 1)}"
+find_first_allocator_so() {
+  local pattern="$1"
+  shift
+  local dir
+  for dir in "$@"; do
+    [[ -d "$dir" ]] || continue
+    find "$dir" -type f -name "$pattern" 2>/dev/null | sort | head -n 1
+  done | head -n 1
+}
+
+MIMALLOC_SO="${MIMALLOC_SO:-$(find_first_allocator_so 'libmimalloc.so*' \
+  "${ROOT_DIR}/private/bench-assets/linux/allocators/${ARCH}/libmimalloc2.0")}"
+TCMALLOC_SO="${TCMALLOC_SO:-$(find_first_allocator_so 'libtcmalloc_minimal.so*' \
+  "${ROOT_DIR}/private/bench-assets/linux/allocators/${ARCH}/libtcmalloc-minimal4" \
+  "${ROOT_DIR}/private/bench-assets/linux/allocators/${ARCH}/libtcmalloc-minimal4t64" \
+  "${ROOT_DIR}/private/bench-assets/linux/allocators/${ARCH}/libgoogle-perftools4" \
+  "${ROOT_DIR}/private/bench-assets/linux/allocators/${ARCH}/libgoogle-perftools4t64")}"
 
 require_file() {
   local label="$1"
@@ -126,6 +148,7 @@ done
   echo "iters=${ITERS}"
   echo "cases=${CASES}"
   echo "allocators=${ALLOCATORS}"
+  echo "build_hz3_hz4=${BUILD_HZ3_HZ4}"
   echo "hz5_lib=${HZ5_LIB}"
   echo "hz5_bench=${HZ5_BENCH}"
   echo "generic_bench=${GENERIC_BENCH}"
@@ -136,7 +159,7 @@ done
   echo ""
 } | tee "${OUTDIR}/README.log"
 
-printf 'case\talloc\trun\tthreads\titers\tsize\talign\tops_s\tlog\n' > "${OUTDIR}/results.tsv"
+printf 'case\talloc\trun\tstatus\tthreads\titers\tsize\talign\tops_s\tru_maxrss_kb\tlog\n' > "${OUTDIR}/results.tsv"
 
 run_case() {
   local alloc="$1"
@@ -145,6 +168,8 @@ run_case() {
   local align="$4"
   local case_name="s${size}_a${align}"
   local log="${OUTDIR}/${case_name}_${run}_${alloc}.log"
+  local timefile="${OUTDIR}/${case_name}_${run}_${alloc}.time"
+  local status=0
   {
     echo "[CASE] alloc=${alloc}"
     echo "[CASE] run=${run}"
@@ -153,32 +178,50 @@ run_case() {
   } | tee "$log"
   case "$alloc" in
     hz5)
-      "$HZ5_BENCH" "$THREADS" "$ITERS" "$size" "$align" 2>&1 | tee -a "$log"
+      /usr/bin/time -f 'ru_maxrss_kb=%M' -o "$timefile" \
+        "$HZ5_BENCH" "$THREADS" "$ITERS" "$size" "$align" \
+        >> "$log" 2>&1 || status=$?
       ;;
     system)
-      "$GENERIC_BENCH" "$THREADS" "$ITERS" "$size" "$align" 2>&1 | tee -a "$log"
+      /usr/bin/time -f 'ru_maxrss_kb=%M' -o "$timefile" \
+        "$GENERIC_BENCH" "$THREADS" "$ITERS" "$size" "$align" \
+        >> "$log" 2>&1 || status=$?
       ;;
     hz3)
-      env LD_PRELOAD="$HZ3_SO" "$GENERIC_BENCH" "$THREADS" "$ITERS" "$size" "$align" 2>&1 | tee -a "$log"
+      /usr/bin/time -f 'ru_maxrss_kb=%M' -o "$timefile" \
+        env LD_PRELOAD="$HZ3_SO" \
+        "$GENERIC_BENCH" "$THREADS" "$ITERS" "$size" "$align" \
+        >> "$log" 2>&1 || status=$?
       ;;
     hz4)
-      env LD_PRELOAD="$HZ4_SO" "$GENERIC_BENCH" "$THREADS" "$ITERS" "$size" "$align" 2>&1 | tee -a "$log"
+      /usr/bin/time -f 'ru_maxrss_kb=%M' -o "$timefile" \
+        env LD_PRELOAD="$HZ4_SO" \
+        "$GENERIC_BENCH" "$THREADS" "$ITERS" "$size" "$align" \
+        >> "$log" 2>&1 || status=$?
       ;;
     mimalloc)
-      env LD_PRELOAD="$MIMALLOC_SO" "$GENERIC_BENCH" "$THREADS" "$ITERS" "$size" "$align" 2>&1 | tee -a "$log"
+      /usr/bin/time -f 'ru_maxrss_kb=%M' -o "$timefile" \
+        env LD_PRELOAD="$MIMALLOC_SO" \
+        "$GENERIC_BENCH" "$THREADS" "$ITERS" "$size" "$align" \
+        >> "$log" 2>&1 || status=$?
       ;;
     tcmalloc)
-      env LD_PRELOAD="$TCMALLOC_SO" "$GENERIC_BENCH" "$THREADS" "$ITERS" "$size" "$align" 2>&1 | tee -a "$log"
+      /usr/bin/time -f 'ru_maxrss_kb=%M' -o "$timefile" \
+        env LD_PRELOAD="$TCMALLOC_SO" \
+        "$GENERIC_BENCH" "$THREADS" "$ITERS" "$size" "$align" \
+        >> "$log" 2>&1 || status=$?
       ;;
     *)
       echo "unknown alloc: $alloc" >&2
       return 2
       ;;
   esac
-  local ops_s
+  local ops_s rss
   ops_s="$(awk -F'ops/s=' '/ops\/s=/{value=$2} END{gsub(/[[:space:]].*/, "", value); print value}' "$log")"
-  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-    "$case_name" "$alloc" "$run" "$THREADS" "$ITERS" "$size" "$align" "${ops_s:-NA}" "$log" \
+  rss="$(awk -F= '/ru_maxrss_kb=/{print $2}' "$timefile" 2>/dev/null | tail -n 1)"
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+    "$case_name" "$alloc" "$run" "$status" "$THREADS" "$ITERS" "$size" \
+    "$align" "${ops_s:-NA}" "${rss:-NA}" "$log" \
     >> "${OUTDIR}/results.tsv"
 }
 
@@ -198,17 +241,19 @@ done
 
 awk -F'\t' '
   NR == 1 { next }
-  $8 == "NA" || $8 == "" { next }
+  $4 != 0 || $9 == "NA" || $9 == "" { next }
   {
-    key = $1 "\t" $2 "\t" $4 "\t" $5 "\t" $6 "\t" $7
-    values[key, ++count[key]] = $8 + 0
+    key = $1 "\t" $2 "\t" $5 "\t" $6 "\t" $7 "\t" $8
+    values[key, ++count[key]] = $9 + 0
+    rss_values[key, count[key]] = $10 + 0
   }
   END {
-    print "case\talloc\tthreads\titers\tsize\talign\truns\tmedian_ops_s"
+    print "case\talloc\tthreads\titers\tsize\talign\truns\tmedian_ops_s\tmedian_ru_maxrss_kb"
     for (key in count) {
       n = count[key]
       for (i = 1; i <= n; ++i) {
         sorted[i] = values[key, i]
+        rss_sorted[i] = rss_values[key, i]
       }
       for (i = 1; i <= n; ++i) {
         for (j = i + 1; j <= n; ++j) {
@@ -217,20 +262,33 @@ awk -F'\t' '
             sorted[i] = sorted[j]
             sorted[j] = tmp
           }
+          if (rss_sorted[j] < rss_sorted[i]) {
+            tmp = rss_sorted[i]
+            rss_sorted[i] = rss_sorted[j]
+            rss_sorted[j] = tmp
+          }
         }
       }
       if (n % 2 == 1) {
         median = sorted[(n + 1) / 2]
+        rss_median = rss_sorted[(n + 1) / 2]
       } else {
         median = (sorted[n / 2] + sorted[n / 2 + 1]) / 2
+        rss_median = (rss_sorted[n / 2] + rss_sorted[n / 2 + 1]) / 2
       }
-      print key "\t" n "\t" median
+      print key "\t" n "\t" median "\t" rss_median
       for (i = 1; i <= n; ++i) {
         delete sorted[i]
+        delete rss_sorted[i]
       }
     }
   }
-' "${OUTDIR}/results.tsv" | sort > "${OUTDIR}/summary.tsv"
+' "${OUTDIR}/results.tsv" > "${OUTDIR}/summary.unsorted.tsv"
+
+{
+  head -n 1 "${OUTDIR}/summary.unsorted.tsv"
+  tail -n +2 "${OUTDIR}/summary.unsorted.tsv" | sort
+} > "${OUTDIR}/summary.tsv"
 
 echo "[SUMMARY] ${OUTDIR}/summary.tsv"
 echo "[DONE] logs saved to ${OUTDIR}"

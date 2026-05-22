@@ -28,7 +28,9 @@ static inline int hz3_is_pow2(size_t x) {
     return x && ((x & (x - 1u)) == 0);
 }
 
+#if defined(_WIN32)
 static _Atomic int g_hz3_shim_page_medium_aligned = ATOMIC_VAR_INIT(-1);
+#endif
 
 static inline int hz3_shim_medium_can_satisfy_alignment(size_t alignment, size_t size) {
     return size >= HZ3_SC_MIN_SIZE &&

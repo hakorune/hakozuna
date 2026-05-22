@@ -994,6 +994,77 @@ Measurement conclusion before the next development pass:
   source layer for a separate RSS lane, but direct token lanes are not
   competitive throughput lanes yet.
 
+### HZ3/HZ4/Tcmalloc Comparison Checkpoint
+
+Reason:
+
+- Before developing specifically against tcmalloc, compare the same
+  `64K/a8192` local-only row against HZ3 and HZ4 too.
+- This avoids optimizing HZ5 against a target already explained by an existing
+  HZ4 Linux path.
+
+Runner cleanup:
+
+- `linux/run_linux_hz5_standalone_compare.sh`
+  - default allocator list now includes `hz3` and `hz4`
+  - records per-run `status`
+  - records `ru_maxrss_kb` through `/usr/bin/time`
+  - writes `summary.unsorted.tsv` plus stable header-first `summary.tsv`
+  - finds both `libtcmalloc-minimal4` and `libtcmalloc-minimal4t64` package
+    layouts
+  - supports `--build-hz3-hz4` to rebuild preload libraries before measuring
+
+Build cleanup needed by `--build-hz3-hz4`:
+
+- `hakozuna/src/hz3_inbox.c`
+  - marks `owner_live_count` used in feature combinations where it is otherwise
+    compiled but not consumed
+- `hakozuna/src/hz3_shim.c`
+  - limits the Windows-only page-medium-aligned cache variable to `_WIN32`
+
+Measurement command:
+
+```bash
+MIMALLOC_SO=private/bench-assets/linux/allocators/x86_64/libmimalloc2.0/usr/lib/x86_64-linux-gnu/libmimalloc.so.2 \
+TCMALLOC_SO=private/bench-assets/linux/allocators/x86_64/libtcmalloc-minimal4/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4 \
+./linux/run_linux_hz5_standalone_compare.sh --arch x86_64 --runs 10 \
+  --threads 1 --iters 1000000 --cases 65536:8192 \
+  --allocators hz5,system,hz3,hz4,mimalloc,tcmalloc \
+  --skip-build --skip-prepare-allocators
+```
+
+Raw result folder:
+
+```bash
+private/raw-results/linux/hz5_standalone_20260523_053752
+```
+
+Summary:
+
+```text
+case          alloc     runs  median_ops_s  median_ru_maxrss_kb
+s65536_a8192  tcmalloc  10    2.54533e+08   7296
+s65536_a8192  hz4       10    1.30350e+08   2176
+s65536_a8192  hz5       10    6.68287e+07   2048
+s65536_a8192  system    10    4.94237e+07   1664
+s65536_a8192  hz3       10    3.98182e+07   3200
+s65536_a8192  mimalloc  10    1.38729e+06   2176
+```
+
+All allocator runs exited `status=0`.
+
+Interpretation:
+
+- HZ4 is the current in-tree Linux reference for this local-only row:
+  about `130M ops/s`, roughly `1.95x` slower than tcmalloc but `1.95x` faster
+  than HZ5.
+- HZ5 should not try to beat tcmalloc from the current P25 attr shape alone.
+  The first internal target is to explain and recover the HZ4 gap.
+- tcmalloc remains the external target. Its local `posix_memalign(64K, 8192)`
+  path is still about `3.8x` faster than current HZ5.
+- mimalloc remains pathologically slow on this exact Linux aligned path and is
+  not the useful optimization target for this row.
+
 Earlier next attack, now superseded by the decoded raw lookup results:
 
 - test producer/consumer remote-free before deciding whether local-only

@@ -1123,6 +1123,7 @@ void hz3_inbox_push_list(uint8_t owner, int sc, void* head, void* tail, uint32_t
     }
 #else
     uint32_t owner_live_count = hz3_shard_live_count(owner);
+    (void)owner_live_count;
 #if HZ3_S65_EXITING_INBOX_TO_CENTRAL
     size_t owner_sc_pages = hz3_sc_to_pages(sc);
     uint32_t owner_sc_page_bit =
