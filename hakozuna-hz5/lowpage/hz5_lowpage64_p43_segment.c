@@ -237,6 +237,16 @@ static size_t hz5_lowpage64_p43_popcount32(uint32_t value) {
   return count;
 }
 
+static uint32_t hz5_lowpage64_p43_slot_bit(uint32_t slot) {
+  return (uint32_t)1u << slot;
+}
+
+static uint32_t hz5_lowpage64_p43_slot_full_mask(void) {
+  return hz5_lowpage64_p43_slot_bit(
+             (uint32_t)HZ5_LOWPAGE64_P43_SLOT_COUNT) -
+         1u;
+}
+
 static int hz5_lowpage64_p43_slot_lookup_result(
     Hz5Lowpage64Segment* seg,
     uint32_t slot) {
@@ -244,7 +254,7 @@ static int hz5_lowpage64_p43_slot_lookup_result(
     return HZ5_LOWPAGE64_LOOKUP_MISS;
   }
 
-  uint32_t bit = (uint32_t)1u << slot;
+  uint32_t bit = hz5_lowpage64_p43_slot_bit(slot);
   uint32_t allocated =
       hz5_lowpage64_p43_mask_load(&seg->allocated_mask);
   uint32_t committed =
@@ -438,7 +448,7 @@ static uint32_t hz5_lowpage64_p43_first_set_bit(uint32_t mask) {
 
 static int hz5_lowpage64_p43_rewarm_slot(Hz5Lowpage64Segment* seg,
                                          uint32_t slot) {
-  uint32_t bit = (uint32_t)1u << slot;
+  uint32_t bit = hz5_lowpage64_p43_slot_bit(slot);
   void* raw = (void*)((uintptr_t)seg->base +
                       (uintptr_t)slot * HZ5_LOWPAGE64_P43_SLOT_SIZE);
   hz5_lowpage64_p43_mask_or(&seg->allocated_mask, bit);
@@ -475,7 +485,7 @@ static void hz5_lowpage64_p43_rewarm_segment_neighbors(
     uint32_t candidates =
         hz5_lowpage64_p43_mask_load(&seg->cold_mask) &
         ~hz5_lowpage64_p43_mask_load(&seg->allocated_mask);
-    candidates &= ~((uint32_t)1u << already_allocated_slot);
+    candidates &= ~hz5_lowpage64_p43_slot_bit(already_allocated_slot);
     if (!candidates) {
       return;
     }
@@ -533,7 +543,7 @@ static void hz5_lowpage64_p43_release_ref_locked(
   if (!ref.seg || ref.slot >= (uint32_t)HZ5_LOWPAGE64_P43_SLOT_COUNT) {
     return;
   }
-  uint32_t bit = (uint32_t)1u << ref.slot;
+  uint32_t bit = hz5_lowpage64_p43_slot_bit(ref.slot);
 #if HZ5_LOWPAGE64_P43_RELEASE_BUFFER_CAP > 0u
   if ((hz5_lowpage64_p43_mask_load(&ref.seg->pending_free_mask) & bit) ==
       0u) {
@@ -607,7 +617,7 @@ static int hz5_lowpage64_p43_committed_pop_locked(
       g_hz5_lowpage64_p43_committed_count--;
     }
 
-    uint32_t bit = (uint32_t)1u << ref.slot;
+    uint32_t bit = hz5_lowpage64_p43_slot_bit(ref.slot);
     if (!ref.seg || ref.slot >= (uint32_t)HZ5_LOWPAGE64_P43_SLOT_COUNT) {
       continue;
     }
@@ -663,7 +673,7 @@ static int hz5_lowpage64_p43_tls_pop_locked(Hz5Lowpage64P43SlotRef* out) {
     if (!ref.seg || ref.slot >= (uint32_t)HZ5_LOWPAGE64_P43_SLOT_COUNT) {
       continue;
     }
-    uint32_t bit = (uint32_t)1u << ref.slot;
+    uint32_t bit = hz5_lowpage64_p43_slot_bit(ref.slot);
     if ((hz5_lowpage64_p43_mask_load(&ref.seg->allocated_mask) & bit) !=
         0u) {
       continue;
@@ -869,8 +879,8 @@ void* hz5_lowpage64_p43_alloc_slot(size_t raw_bytes) {
 #endif
     void* raw = (void*)((uintptr_t)seg->base +
                         (uintptr_t)slot * HZ5_LOWPAGE64_P43_SLOT_SIZE);
-    hz5_lowpage64_p43_mask_or(&seg->allocated_mask,
-                              ((uint32_t)1u << slot));
+    uint32_t bit = hz5_lowpage64_p43_slot_bit(slot);
+    hz5_lowpage64_p43_mask_or(&seg->allocated_mask, bit);
     hz5_lowpage64_p43_lock_leave();
 
 #if HZ5_LOWPAGE64_P43_PAGE_NOACCESS
@@ -878,8 +888,7 @@ void* hz5_lowpage64_p43_alloc_slot(size_t raw_bytes) {
     if (!VirtualProtect(raw, HZ5_LOWPAGE64_P43_SLOT_SIZE, PAGE_READWRITE,
                         &old_protect)) {
       hz5_lowpage64_p43_lock_enter();
-      hz5_lowpage64_p43_mask_and(&seg->allocated_mask,
-                                 ~((uint32_t)1u << slot));
+      hz5_lowpage64_p43_mask_and(&seg->allocated_mask, ~bit);
       hz5_lowpage64_p43_lock_leave();
       HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_slot_commit_failures, 1);
       return NULL;
@@ -888,8 +897,7 @@ void* hz5_lowpage64_p43_alloc_slot(size_t raw_bytes) {
     if (!VirtualAlloc(raw, HZ5_LOWPAGE64_P43_SLOT_SIZE, MEM_COMMIT,
                       PAGE_READWRITE)) {
       hz5_lowpage64_p43_lock_enter();
-      hz5_lowpage64_p43_mask_and(&seg->allocated_mask,
-                                 ~((uint32_t)1u << slot));
+      hz5_lowpage64_p43_mask_and(&seg->allocated_mask, ~bit);
       hz5_lowpage64_p43_lock_leave();
       HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_slot_commit_failures, 1);
       return NULL;
@@ -904,10 +912,8 @@ void* hz5_lowpage64_p43_alloc_slot(size_t raw_bytes) {
     HZ5_P43_COUNT_MAX(g_hz5_lowpage64_p43_source_cold_segment_scans_max,
                       cold_segments_scanned);
 #endif
-    hz5_lowpage64_p43_mask_and(&seg->cold_mask,
-                               ~((uint32_t)1u << slot));
-    hz5_lowpage64_p43_mask_or(&seg->committed_mask,
-                              ((uint32_t)1u << slot));
+    hz5_lowpage64_p43_mask_and(&seg->cold_mask, ~bit);
+    hz5_lowpage64_p43_mask_or(&seg->committed_mask, bit);
 #if HZ5_LOWPAGE64_P43_REWARM_BATCH > 1u
     hz5_lowpage64_p43_rewarm_segment_neighbors(seg, slot);
 #endif
@@ -930,8 +936,7 @@ void* hz5_lowpage64_p43_alloc_slot(size_t raw_bytes) {
 #if HZ5_LOWPAGE64_STATS
     free_segments_scanned++;
 #endif
-    uint32_t full_mask =
-        ((uint32_t)1u << (uint32_t)HZ5_LOWPAGE64_P43_SLOT_COUNT) - 1u;
+    uint32_t full_mask = hz5_lowpage64_p43_slot_full_mask();
     uint32_t free_mask =
         (~(hz5_lowpage64_p43_mask_load(&seg->allocated_mask) |
            hz5_lowpage64_p43_mask_load(&seg->cold_mask))) &
@@ -945,27 +950,25 @@ void* hz5_lowpage64_p43_alloc_slot(size_t raw_bytes) {
     }
     void* raw = (void*)((uintptr_t)seg->base +
                         (uintptr_t)slot * HZ5_LOWPAGE64_P43_SLOT_SIZE);
+    uint32_t bit = hz5_lowpage64_p43_slot_bit(slot);
     int already_committed =
         ((hz5_lowpage64_p43_mask_load(&seg->committed_mask) >> slot) &
          (uint32_t)1u) != 0u;
-    hz5_lowpage64_p43_mask_or(&seg->allocated_mask,
-                              ((uint32_t)1u << slot));
+    hz5_lowpage64_p43_mask_or(&seg->allocated_mask, bit);
     hz5_lowpage64_p43_lock_leave();
 
     if (!already_committed &&
         !VirtualAlloc(raw, HZ5_LOWPAGE64_P43_SLOT_SIZE, MEM_COMMIT,
                       PAGE_READWRITE)) {
       hz5_lowpage64_p43_lock_enter();
-      hz5_lowpage64_p43_mask_and(&seg->allocated_mask,
-                                 ~((uint32_t)1u << slot));
+      hz5_lowpage64_p43_mask_and(&seg->allocated_mask, ~bit);
       hz5_lowpage64_p43_lock_leave();
       HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_slot_commit_failures, 1);
       return NULL;
     }
     if (!already_committed) {
       hz5_lowpage64_p43_lock_enter();
-      hz5_lowpage64_p43_mask_or(&seg->committed_mask,
-                                ((uint32_t)1u << slot));
+      hz5_lowpage64_p43_mask_or(&seg->committed_mask, bit);
       hz5_lowpage64_p43_lock_leave();
       HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_slot_commits, 1);
     }
@@ -1052,14 +1055,12 @@ int hz5_lowpage64_p43_release_slot(void* raw) {
     hz5_lowpage64_p43_lock_leave();
     return 0;
   }
+  uint32_t bit = hz5_lowpage64_p43_slot_bit(slot);
 #if HZ5_LOWPAGE64_P43_TLS_CACHE_CAP > 0u && \
     !HZ5_LOWPAGE64_P43_PAGE_NOACCESS
-  if ((hz5_lowpage64_p43_mask_load(&seg->committed_mask) &
-       ((uint32_t)1u << slot)) != 0u &&
-      (hz5_lowpage64_p43_mask_load(&seg->cold_mask) &
-       ((uint32_t)1u << slot)) == 0u) {
-    hz5_lowpage64_p43_mask_and(&seg->allocated_mask,
-                               ~((uint32_t)1u << slot));
+  if ((hz5_lowpage64_p43_mask_load(&seg->committed_mask) & bit) != 0u &&
+      (hz5_lowpage64_p43_mask_load(&seg->cold_mask) & bit) == 0u) {
+    hz5_lowpage64_p43_mask_and(&seg->allocated_mask, ~bit);
     if (hz5_lowpage64_p43_tls_push(seg, slot)) {
       hz5_lowpage64_p43_lock_leave();
       return 1;
@@ -1074,33 +1075,27 @@ int hz5_lowpage64_p43_release_slot(void* raw) {
 #if HZ5_LOWPAGE64_P43_COMMITTED_RETAIN_CAP > 0u
   if (g_hz5_lowpage64_p43_committed_count <
           (size_t)HZ5_LOWPAGE64_P43_COMMITTED_RETAIN_CAP &&
-      (hz5_lowpage64_p43_mask_load(&seg->committed_mask) &
-       ((uint32_t)1u << slot)) != 0u &&
-      (hz5_lowpage64_p43_mask_load(&seg->cold_mask) &
-       ((uint32_t)1u << slot)) == 0u) {
-    hz5_lowpage64_p43_mask_and(&seg->allocated_mask,
-                               ~((uint32_t)1u << slot));
+      (hz5_lowpage64_p43_mask_load(&seg->committed_mask) & bit) != 0u &&
+      (hz5_lowpage64_p43_mask_load(&seg->cold_mask) & bit) == 0u) {
+    hz5_lowpage64_p43_mask_and(&seg->allocated_mask, ~bit);
     hz5_lowpage64_p43_committed_push_locked(seg, slot);
     hz5_lowpage64_p43_lock_leave();
     return 1;
   }
 #endif
-  hz5_lowpage64_p43_mask_or(&seg->cold_mask, ((uint32_t)1u << slot));
+  hz5_lowpage64_p43_mask_or(&seg->cold_mask, bit);
   int release_segment = 0;
 #elif HZ5_LOWPAGE64_P43_PAGE_NOACCESS
-  hz5_lowpage64_p43_mask_or(&seg->cold_mask, ((uint32_t)1u << slot));
+  hz5_lowpage64_p43_mask_or(&seg->cold_mask, bit);
   int release_segment = 0;
 #elif HZ5_LOWPAGE64_P43_DESCRIPTOR_LISTS
-  hz5_lowpage64_p43_mask_and(&seg->allocated_mask,
-                             ~((uint32_t)1u << slot));
-  if ((hz5_lowpage64_p43_mask_load(&seg->committed_mask) &
-       ((uint32_t)1u << slot)) != 0u) {
+  hz5_lowpage64_p43_mask_and(&seg->allocated_mask, ~bit);
+  if ((hz5_lowpage64_p43_mask_load(&seg->committed_mask) & bit) != 0u) {
     hz5_lowpage64_p43_committed_push_locked(seg, slot);
   }
   int release_segment = 0;
 #else
-  hz5_lowpage64_p43_mask_and(&seg->allocated_mask,
-                             ~((uint32_t)1u << slot));
+  hz5_lowpage64_p43_mask_and(&seg->allocated_mask, ~bit);
 #if HZ5_LOWPAGE64_P43_LOCKLESS_CONTRACT
   int release_segment = 0;
 #else
@@ -1127,10 +1122,8 @@ int hz5_lowpage64_p43_release_slot(void* raw) {
     Hz5Lowpage64Segment* cold =
         hz5_lowpage64_p43_find_segment_locked(raw, &slot);
     if (cold) {
-      hz5_lowpage64_p43_mask_and(&cold->committed_mask,
-                                 ~((uint32_t)1u << slot));
-      hz5_lowpage64_p43_mask_and(&cold->allocated_mask,
-                                 ~((uint32_t)1u << slot));
+      hz5_lowpage64_p43_mask_and(&cold->committed_mask, ~bit);
+      hz5_lowpage64_p43_mask_and(&cold->allocated_mask, ~bit);
     }
     hz5_lowpage64_p43_lock_leave();
     HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_slot_decommits, 1);
@@ -1139,10 +1132,8 @@ int hz5_lowpage64_p43_release_slot(void* raw) {
     Hz5Lowpage64Segment* restore =
         hz5_lowpage64_p43_find_segment_locked(raw, &slot);
     if (restore) {
-      hz5_lowpage64_p43_mask_and(&restore->cold_mask,
-                                 ~((uint32_t)1u << slot));
-      hz5_lowpage64_p43_mask_or(&restore->allocated_mask,
-                                ((uint32_t)1u << slot));
+      hz5_lowpage64_p43_mask_and(&restore->cold_mask, ~bit);
+      hz5_lowpage64_p43_mask_or(&restore->allocated_mask, bit);
     }
     hz5_lowpage64_p43_lock_leave();
     HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_slot_decommit_failures, 1);
@@ -1156,8 +1147,7 @@ int hz5_lowpage64_p43_release_slot(void* raw) {
       Hz5Lowpage64Segment* cold =
           hz5_lowpage64_p43_find_segment_locked(raw, &slot);
       if (cold) {
-        hz5_lowpage64_p43_mask_and(&cold->allocated_mask,
-                                   ~((uint32_t)1u << slot));
+        hz5_lowpage64_p43_mask_and(&cold->allocated_mask, ~bit);
       }
       hz5_lowpage64_p43_lock_leave();
       HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_slot_decommits, 1);
@@ -1166,8 +1156,7 @@ int hz5_lowpage64_p43_release_slot(void* raw) {
       Hz5Lowpage64Segment* restore =
           hz5_lowpage64_p43_find_segment_locked(raw, &slot);
       if (restore) {
-        hz5_lowpage64_p43_mask_and(&restore->cold_mask,
-                                   ~((uint32_t)1u << slot));
+        hz5_lowpage64_p43_mask_and(&restore->cold_mask, ~bit);
       }
       hz5_lowpage64_p43_lock_leave();
       HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_slot_decommit_failures, 1);
@@ -1195,7 +1184,7 @@ int hz5_lowpage64_p43_release_prepared_slot(
   Hz5Lowpage64Segment* seg =
       (Hz5Lowpage64Segment*)ctx->segment_token;
   uint32_t slot = ctx->slot_index;
-  uint32_t bit = (uint32_t)1u << slot;
+  uint32_t bit = hz5_lowpage64_p43_slot_bit(slot);
   void* expected =
       (void*)((uintptr_t)seg->base +
               (uintptr_t)slot * HZ5_LOWPAGE64_P43_SLOT_SIZE);
