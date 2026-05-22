@@ -847,9 +847,9 @@ The smoke build metadata recorded `dirty=0`.
 
 Remaining source cleanup items:
 
-- Linux wrapper decode: `hz5_wrapper_decode()` reads
-  `ptr - sizeof(Hz5WrapperHdr)` without a Linux fault guard. Do not use it as a
-  general foreign-pointer safety boundary until that contract is explicit.
+- Linux wrapper decode is now documented as a trusted primitive, but it is not a
+  general foreign-pointer safety boundary. A real boundary would need a separate
+  ownership/span proof before `ptr - sizeof(Hz5WrapperHdr)` is attempted.
 - Public header split: `hz5.h` exposes P1/P2 internals beside the public HZ5 ABI.
   Move internals behind a private header before treating the ABI as clean.
 - Contract descriptor: descriptor output does not yet expose p25attr,
@@ -858,7 +858,7 @@ Remaining source cleanup items:
 - Macro mode exclusivity: p25attr, trustwrap, rawlookup, and token are intended
   as separate lanes. Build script should enforce incompatible combinations.
 - Wrapper layout: `Hz5WrapperHdr` changes with compile flags and has no layout
-  version/size field.
+  version/size field. The code now documents that explicitly.
 - Lowpage split target: `hz5_lowpage64.c` combines P25 bridge, P40 controls,
   P43g counters, P44/P45 diagnostics, and release policy. Split acquire/release
   core from diagnostics before adding more Linux lanes.

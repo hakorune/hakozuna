@@ -35,6 +35,12 @@ void hz5_wrapper_init(Hz5WrapperHdr* header, uintptr_t raw, uintptr_t aligned,
 }
 
 int hz5_wrapper_decode(void* ptr, Hz5WrapperHdr** header_out) {
+  /*
+   * Trusted decode primitive.
+   * Callers must already have narrowed ptr to an HZ5-owned candidate.
+   * This validates only the inline wrapper header and cookie; it is not a
+   * foreign-pointer safety boundary.
+   */
   if (!ptr) {
     return 0;
   }

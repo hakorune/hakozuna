@@ -31,6 +31,11 @@ enum {
 };
 #endif
 
+/*
+ * Wrapper headers are flag-tail-extended.
+ * The prefix fields are shared by all builds, but the total layout is not
+ * size-stable across feature flags.
+ */
 typedef struct Hz5WrapperHdr {
   uint64_t magic;
   uintptr_t raw;

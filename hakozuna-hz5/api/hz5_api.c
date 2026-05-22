@@ -24,6 +24,8 @@ Hz5FreeResult hz5_free(void* ptr) {
 }
 
 int hz5_owns(void* ptr) {
+  /* Best-effort ownership probe for HZ5-managed pointers, not a foreign
+     pointer safety boundary. */
   Hz5WrapperHdr* wrapped = NULL;
   if (hz5_wrapper_decode(ptr, &wrapped)) {
     return 1;
