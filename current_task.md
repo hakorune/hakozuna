@@ -547,17 +547,14 @@ Double-free / foreign smoke:
 [HZ5_TRACE] alloc_p25_bridge=1 free_p25_bridge_attr=1 free_fallback_or_invalid=2 wrapper_decode_ok=2 wrapper_decode_miss=1 bridge_attr_valid=1 bridge_attr_cas_fail=1
 ```
 
-Safety smoke caveat:
+Safety smoke note:
 
-- The public `hz5_free()` API currently returns `HZ5_FREE_OK_HZ5` after
-  dispatching to policy free.
-- That means invalid/double-free attempts are not visible through the public
-  return code yet.
-- For now, safety smoke results must be judged by trace counters:
+- The public `hz5_free()` API now returns the real `Hz5FreeResult`.
+- Local double-free smoke on the cleaned build reported `first=1` and
+  `second=3`.
+- Trace counters are still useful for route attribution:
   `free_fallback_or_invalid`, `bridge_attr_valid`, and
   `bridge_attr_cas_fail`.
-- Cleanup target: decide whether `hz5_policy_free()` should return a status to
-  `hz5_free()`, or whether invalid-free visibility should remain diagnostic-only.
 
 Latest A/B:
 
@@ -842,18 +839,14 @@ Smoke after harness cleanup:
 Raw result folder:
 
 ```bash
-private/raw-results/linux/hz5_p25attr_focus_20260523_045443
+private/raw-results/linux/hz5_p25attr_focus_20260523_045924
 ```
 
 All 36 cleanup-smoke sub-runs exited status `0`.
 The smoke build metadata recorded `dirty=0`.
 
-Open source cleanup items:
+Remaining source cleanup items:
 
-- Public free contract: `hz5_free()` exposes `HZ5_FREE_INVALID`, but currently
-  always returns `HZ5_FREE_OK_HZ5` after `hz5_policy_free()`. Decide whether
-  policy free should return `Hz5FreeResult`, or whether invalid-free visibility
-  stays diagnostic-only.
 - Linux wrapper decode: `hz5_wrapper_decode()` reads
   `ptr - sizeof(Hz5WrapperHdr)` without a Linux fault guard. Do not use it as a
   general foreign-pointer safety boundary until that contract is explicit.

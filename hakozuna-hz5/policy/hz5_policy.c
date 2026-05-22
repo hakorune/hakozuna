@@ -201,13 +201,13 @@ static int hz5_policy_p25_raw_matches_lowpage_ctx(
 }
 #endif
 
-static void hz5_policy_free_p25_lowpage_raw(
+static Hz5FreeResult hz5_policy_free_p25_lowpage_raw(
     const Hz5Lowpage64FreeCtx* lowpage_ctx,
     uintptr_t raw) {
 #if HZ5_POLICY_P43_PREPARED_ANY
   if (hz5_lowpage64_release_prepared(lowpage_ctx, (void*)raw)) {
     hz5_trace_inc(HZ5_TRACE_FREE_P43_LOOKUP_PREPARED);
-    return;
+    return HZ5_FREE_OK_HZ5;
   }
   hz5_lowpage64_p43g_note_old_path();
 #else
@@ -215,6 +215,7 @@ static void hz5_policy_free_p25_lowpage_raw(
 #endif
   hz5_trace_inc(HZ5_TRACE_FREE_P25_BRIDGE);
   hz5_lowpage64_release((void*)raw);
+  return HZ5_FREE_OK_HZ5;
 }
 #endif
 
@@ -348,26 +349,29 @@ static int hz5_policy_p43_store_wrapper_token(Hz5WrapperHdr* header,
   return 1;
 }
 
-static int hz5_policy_p43_release_wrapper_token(Hz5WrapperHdr* header,
-                                                uintptr_t aligned) {
+static Hz5FreeResult hz5_policy_p43_release_wrapper_token(Hz5WrapperHdr* header,
+                                                          uintptr_t aligned) {
   if (!header->p43_segment_token ||
       header->p43_token_cookie != hz5_policy_p43_token_cookie(
                                       header->raw, aligned,
                                       header->p43_segment_token,
                                       header->p43_slot_index)) {
     hz5_trace_inc(HZ5_TRACE_WRAPPER_TOKEN_INVALID);
-    return 0;
+    return HZ5_FREE_INVALID;
   }
   hz5_trace_inc(HZ5_TRACE_WRAPPER_TOKEN_VALID);
   if (!BENCHLAB_HZ5_P43_WRAPPER_TOKEN_BRIDGE) {
     hz5_trace_inc(HZ5_TRACE_FREE_P43_TOKEN_DIRECT);
-    return hz5_lowpage64_release_p43_token(
-        (void*)header->p43_segment_token, header->p43_slot_index,
-        (void*)header->raw);
+    if (!hz5_lowpage64_release_p43_token((void*)header->p43_segment_token,
+                                         header->p43_slot_index,
+                                         (void*)header->raw)) {
+      return HZ5_FREE_INVALID;
+    }
+    return HZ5_FREE_OK_HZ5;
   }
   hz5_trace_inc(HZ5_TRACE_FREE_P43_TOKEN_BRIDGE);
   hz5_lowpage64_release((void*)header->raw);
-  return 1;
+  return HZ5_FREE_OK_HZ5;
 }
 #endif
 
@@ -375,7 +379,7 @@ static int hz5_policy_p43_release_wrapper_token(Hz5WrapperHdr* header,
     BENCHLAB_HZ5_P24_RAW64K_A8192 || BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || \
     BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192 || \
     BENCHLAB_HZ5_LAZY_HZ3_FALLBACK
-static void hz5_policy_free_decoded_fallback_raw(void* raw) {
+static Hz5FreeResult hz5_policy_free_decoded_fallback_raw(void* raw) {
 #if BENCHLAB_HZ5_NO_HZ3_FALLBACK
   _aligned_free(raw);
 #elif BENCHLAB_HZ5_LAZY_HZ3_FALLBACK
@@ -383,6 +387,7 @@ static void hz5_policy_free_decoded_fallback_raw(void* raw) {
 #else
   hz3_free(raw);
 #endif
+  return HZ5_FREE_OK_FALLBACK;
 }
 #endif
 
@@ -567,12 +572,12 @@ void* hz5_policy_alloc_aligned(size_t size, size_t align,
 #endif
 }
 
-void hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
+Hz5FreeResult hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
   if (atomic_load_explicit(&g_hz5_policy_seen_allocation,
                            memory_order_relaxed) &&
       hz5_p1_owns(ptr)) {
     hz5_p2_free(ptr);
-    return;
+    return HZ5_FREE_OK_HZ5;
   }
 
 #if BENCHLAB_HZ5_LAZY_HZ3_FALLBACK && !BENCHLAB_HZ5_P16_WRAPPER_64K_A8192 && \
@@ -583,7 +588,7 @@ void hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
   if (p20_fb_state == HZ5_HZ3_FALLBACK_READY ||
       p20_fb_state == HZ5_HZ3_FALLBACK_LOADING) {
     hz5_hz3_fallback_free(ptr);
-    return;
+    return HZ5_FREE_OK_FALLBACK;
   }
 #endif
 
@@ -609,7 +614,7 @@ void hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
 #else
   if (hz5_policy_prepare_p25_lowpage_free(ptr, &p25_lowpage_lookup,
                                           &p25_lowpage_ctx)) {
-    return;
+    return HZ5_FREE_OK_FALLBACK;
   }
 #endif
 #else
@@ -629,7 +634,7 @@ void hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
   if (p25_lowpage_lookup == HZ5_LOWPAGE64_LOOKUP_OWNED_NONACTIVE) {
     /* HZ5 owns this range, but it is not an active allocation. Do not let a
        stale/nonactive HZ5 pointer fall through to HZ3 fallback free. */
-    return;
+    return HZ5_FREE_INVALID;
   }
 #endif
   Hz5WrapperHdr* wrapped = NULL;
@@ -665,25 +670,32 @@ void hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
                                                       (uintptr_t)ptr)) {
         hz5_trace_inc(HZ5_TRACE_FREE_P25_BRIDGE_ATTR);
         hz5_lowpage64_release((void*)wrapped->raw);
+        return HZ5_FREE_OK_HZ5;
       } else {
         hz5_trace_inc(HZ5_TRACE_FREE_FALLBACK_OR_INVALID);
+        return HZ5_FREE_INVALID;
       }
 #elif BENCHLAB_HZ5_P43_TRUST_WRAPPER_SOURCE
       hz5_trace_inc(HZ5_TRACE_FREE_TRUSTWRAP);
       hz5_lowpage64_release((void*)wrapped->raw);
+      return HZ5_FREE_OK_HZ5;
 #elif BENCHLAB_HZ5_P43_WRAPPER_TOKEN
-      if (!hz5_policy_p43_release_wrapper_token(wrapped, (uintptr_t)ptr)) {
+      if (hz5_policy_p43_release_wrapper_token(wrapped, (uintptr_t)ptr) !=
+          HZ5_FREE_OK_HZ5) {
         hz5_trace_inc(HZ5_TRACE_FREE_FALLBACK_OR_INVALID);
+        return HZ5_FREE_INVALID;
       }
+      return HZ5_FREE_OK_HZ5;
 #elif BENCHLAB_HZ5_P43_DECODED_RAW_LOOKUP
       hz5_trace_inc(HZ5_TRACE_FREE_RAWLOOKUP);
       if (p25_lowpage_lookup == HZ5_LOWPAGE64_LOOKUP_OWNED_ACTIVE) {
-        hz5_policy_free_p25_lowpage_raw(&p25_lowpage_ctx, wrapped->raw);
+        return hz5_policy_free_p25_lowpage_raw(&p25_lowpage_ctx, wrapped->raw);
       }
+      hz5_trace_inc(HZ5_TRACE_FREE_FALLBACK_OR_INVALID);
+      return HZ5_FREE_INVALID;
 #else
-      hz5_policy_free_p25_lowpage_raw(&p25_lowpage_ctx, wrapped->raw);
+      return hz5_policy_free_p25_lowpage_raw(&p25_lowpage_ctx, wrapped->raw);
 #endif
-      return;
     }
 #endif
 #if BENCHLAB_HZ5_P17_PAGEBIN_64K_A8192 || BENCHLAB_HZ5_P24_RAW64K_A8192
@@ -691,7 +703,7 @@ void hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
          wrapped->source == HZ5_WRAPPER_SOURCE_P24_RAW64K) &&
         hooks && hooks->p17_raw_release) {
       hooks->p17_raw_release((void*)wrapped->raw);
-      return;
+      return HZ5_FREE_OK_HZ5;
     }
 #endif
     if (wrapped->source == HZ5_WRAPPER_SOURCE_P20_CRT_BYPASS) {
@@ -699,16 +711,15 @@ void hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
       hz5_hz3_fallback_note_crt_bypass_free();
 #endif
       _aligned_free((void*)wrapped->raw);
-      return;
+      return HZ5_FREE_OK_FALLBACK;
     }
-    hz5_policy_free_decoded_fallback_raw((void*)wrapped->raw);
-    return;
+    return hz5_policy_free_decoded_fallback_raw((void*)wrapped->raw);
   }
   hz5_trace_inc(HZ5_TRACE_WRAPPER_DECODE_MISS);
 #if (BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || \
      BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192) && BENCHLAB_HZ5_LAZY_HZ3_FALLBACK
   if (p25_lowpage_lookup != HZ5_LOWPAGE64_LOOKUP_MISS) {
-    return;
+    return HZ5_FREE_INVALID;
   }
 #endif
 #endif
@@ -718,11 +729,15 @@ void hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
      here means the pointer was not produced by this allocator. */
   (void)ptr;
   hz5_trace_inc(HZ5_TRACE_FREE_FALLBACK_OR_INVALID);
+  return HZ5_FREE_INVALID;
 #elif BENCHLAB_HZ5_STANDALONE_EXACT_ONLY
   (void)ptr;
+  return HZ5_FREE_INVALID;
 #elif BENCHLAB_HZ5_LAZY_HZ3_FALLBACK
   hz5_hz3_fallback_free(ptr);
+  return HZ5_FREE_OK_FALLBACK;
 #else
   hz3_free(ptr);
+  return HZ5_FREE_OK_FALLBACK;
 #endif
 }

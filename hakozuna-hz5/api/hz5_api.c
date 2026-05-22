@@ -20,8 +20,7 @@ Hz5FreeResult hz5_free(void* ptr) {
   if (!ptr) {
     return HZ5_FREE_OK_HZ5;
   }
-  hz5_policy_free(ptr, &hooks);
-  return HZ5_FREE_OK_HZ5;
+  return hz5_policy_free(ptr, &hooks);
 }
 
 int hz5_owns(void* ptr) {
