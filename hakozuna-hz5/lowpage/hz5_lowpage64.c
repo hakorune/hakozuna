@@ -9,6 +9,11 @@
 
 #if defined(_WIN32)
 #include <windows.h>
+#define HZ5_TLS_STATIC __declspec(thread) static
+#else
+#define HZ5_TLS_STATIC static __thread
+void* _aligned_malloc(size_t size, size_t alignment);
+void _aligned_free(void* ptr);
 #endif
 
 #ifndef HZ5_LOWPAGE64_RAW_PAGE_SIZE
@@ -812,8 +817,8 @@ static _Atomic size_t g_hz5_lowpage64_p45dr_balance_mismatch_max;
 __declspec(thread) static void* g_hz5_lowpage64_span_head;
 __declspec(thread) static size_t g_hz5_lowpage64_span_count;
 #endif
-__declspec(thread) static void* g_hz5_lowpage64_stash_head;
-__declspec(thread) static size_t g_hz5_lowpage64_stash_count;
+HZ5_TLS_STATIC void* g_hz5_lowpage64_stash_head;
+HZ5_TLS_STATIC size_t g_hz5_lowpage64_stash_count;
 #if HZ5_LOWPAGE64_P37_OVERFLOW_CAP > 0
 __declspec(thread) static void* g_hz5_lowpage64_overflow_head;
 __declspec(thread) static size_t g_hz5_lowpage64_overflow_count;
@@ -827,9 +832,9 @@ __declspec(thread) static size_t g_hz5_lowpage64_probation_count;
 __declspec(thread) static uint32_t g_hz5_lowpage64_p39_epoch;
 __declspec(thread) static uint32_t g_hz5_lowpage64_probation_epoch;
 #endif
-__declspec(thread) static void* g_hz5_lowpage64_relbuf_head;
-__declspec(thread) static void* g_hz5_lowpage64_relbuf_tail;
-__declspec(thread) static size_t g_hz5_lowpage64_relbuf_count;
+HZ5_TLS_STATIC void* g_hz5_lowpage64_relbuf_head;
+HZ5_TLS_STATIC void* g_hz5_lowpage64_relbuf_tail;
+HZ5_TLS_STATIC size_t g_hz5_lowpage64_relbuf_count;
 
 static void hz5_lowpage64_link_next(void* raw, void* next) {
   *(void**)raw = next;

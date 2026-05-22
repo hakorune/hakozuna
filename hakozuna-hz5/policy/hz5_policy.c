@@ -10,6 +10,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#if !defined(_WIN32)
+void* _aligned_malloc(size_t size, size_t alignment);
+void _aligned_free(void* ptr);
+#endif
+
 #ifndef HZ5_POLICY_PAGE_SIZE
 #define HZ5_POLICY_PAGE_SIZE ((size_t)4096)
 #endif
@@ -60,6 +65,10 @@
 
 #ifndef BENCHLAB_HZ5_LAZY_HZ3_FALLBACK
 #define BENCHLAB_HZ5_LAZY_HZ3_FALLBACK 0
+#endif
+
+#ifndef BENCHLAB_HZ5_STANDALONE_EXACT_ONLY
+#define BENCHLAB_HZ5_STANDALONE_EXACT_ONLY 0
 #endif
 
 #ifndef BENCHLAB_HZ5_P12_ROUTE_SHADOW
@@ -312,6 +321,10 @@ void* hz5_policy_alloc_aligned(size_t size, size_t align,
     }
   }
 
+#if BENCHLAB_HZ5_STANDALONE_EXACT_ONLY
+  return NULL;
+#endif
+
   if (align <= HZ5_POLICY_MIN_ALIGN ||
       hz5_route_hz3_medium_can_satisfy(size, align)) {
 #if BENCHLAB_HZ5_NO_HZ3_FALLBACK
@@ -432,6 +445,8 @@ void hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
 #if BENCHLAB_HZ5_NO_HZ3_FALLBACK
   /* No-HZ3 control fallback allocations are wrapper-tagged above. Reaching
      here means the pointer was not produced by this allocator. */
+  (void)ptr;
+#elif BENCHLAB_HZ5_STANDALONE_EXACT_ONLY
   (void)ptr;
 #elif BENCHLAB_HZ5_LAZY_HZ3_FALLBACK
   hz5_hz3_fallback_free(ptr);
