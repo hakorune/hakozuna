@@ -1024,3 +1024,96 @@ Next should be a dry-run that determines whether plateau stage1_current=48 is
 natural bounded bridge-cold retention or backlog that needs a checkpoint/drain
 rule.
 ```
+
+## P45dr Stage1 Drain/Checkpoint Dry-Run
+
+Implemented after the P45r1 review as a diagnostic-only lane.
+
+```text
+P45dr:
+  behavior unchanged from P45r1
+  diagnostic stats required
+  no acquire-limit change
+  no actual drain / trim
+  no slot decommit
+  no PAGE_NOACCESS
+  no runtime segment release
+  no direct prepared release
+  no descriptor relbuf
+```
+
+The lane adds counters for:
+
+```text
+checkpoint/acquire-miss/snapshot stage1 current
+stage1 age buckets
+would_drain_to_bridge
+would_keep_cold
+would_demote_open
+would_block_drain_closed
+would_block_bridge_excess
+bridge hot / cold / total pressure max
+stage1 balance expected / actual / mismatch
+```
+
+First smoke:
+
+```text
+results/synthetic-sweep/20260522_170425_097
+
+rss-bounded plateau:
+  p45rg_stage1_current = 48
+  p45rg_stage1_current_max = 48
+  p45dr_stage1_age_bucket0 = 188
+  p45dr_stage1_age_bucket1 = 116
+  p45dr_stage1_age_bucket2_4 = 224
+  p45dr_stage1_age_old = 16
+  p45dr_stage1_old_current_max = 8
+  p45dr_stage1_oldest_age_max = 5
+  p45dr_would_drain_to_bridge = 32
+  p45dr_would_keep_cold = 512
+  p45dr_would_demote_open = 0
+  p45dr_would_block_drain_closed = 472
+  p45dr_would_block_bridge_excess = 40
+  p45dr_bridge_current_hot_max = 84
+  p45dr_bridge_cold_current_max = 48
+  p45dr_bridge_total_with_cold_max = 112
+  p45dr_balance_expected = 544
+  p45dr_balance_actual = 544
+  p45dr_balance_mismatch = 0
+```
+
+Guard smoke:
+
+```text
+results/synthetic-sweep/20260522_170549_404
+
+a4096 / 65537 guard rows:
+  p45rg_demote_intent = 0
+  p45rg_stage1_any = 0
+  p45rg_stage1_current = 0
+  p45dr_stage1_current_at_checkpoint = 0
+  p45dr_stage1_age_* = 0
+  p45dr_balance_mismatch = 0
+```
+
+Current interpretation:
+
+```text
+P45dr confirms that the drain diagnostic is wired correctly.
+Stage1 accounting balances in the smoke.
+Plateau stage1_current=48 has only small old exposure.
+Most keep/block projection comes from DRAIN/CLOSED state.
+The guard rows do not enter the P45 refined stage1 path.
+```
+
+Review question:
+
+```text
+Is this enough to keep P45dr as the stage1-retention diagnostic and avoid new
+behavior knobs for now?
+
+If continuing, should the next observation be repeat-3/5 P45dr on rss-bounded
+and mixed-prelude, or is the current evidence enough to return to the broader
+HZ5 control-plane design review?
+```

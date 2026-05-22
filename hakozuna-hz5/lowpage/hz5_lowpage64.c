@@ -314,6 +314,15 @@
 #endif
 #endif
 
+#ifndef HZ5_LOWPAGE64_P45_STAGE1_DRAIN_DRYRUN
+#ifdef BENCHLAB_HZ5_P45_STAGE1_DRAIN_DRYRUN
+#define HZ5_LOWPAGE64_P45_STAGE1_DRAIN_DRYRUN \
+  BENCHLAB_HZ5_P45_STAGE1_DRAIN_DRYRUN
+#else
+#define HZ5_LOWPAGE64_P45_STAGE1_DRAIN_DRYRUN 0
+#endif
+#endif
+
 #ifndef HZ5_LOWPAGE64_P45_STAGE1_ACQUIRE_LIMIT
 #ifdef BENCHLAB_HZ5_P45_STAGE1_ACQUIRE_LIMIT
 #define HZ5_LOWPAGE64_P45_STAGE1_ACQUIRE_LIMIT \
@@ -327,7 +336,9 @@
   (HZ5_LOWPAGE64_P43P_BRIDGE_COLD_STAGE1 || HZ5_LOWPAGE64_P45_REFINED_GATE)
 
 #define HZ5_LOWPAGE64_P45_ENABLED \
-  (HZ5_LOWPAGE64_P45_CONTROL_PLANE_DRYRUN || HZ5_LOWPAGE64_P45_REFINED_GATE)
+  (HZ5_LOWPAGE64_P45_CONTROL_PLANE_DRYRUN || \
+   HZ5_LOWPAGE64_P45_REFINED_GATE || \
+   HZ5_LOWPAGE64_P45_STAGE1_DRAIN_DRYRUN)
 
 #ifndef HZ5_LOWPAGE64_P43O_ANY
 #define HZ5_LOWPAGE64_P43O_ANY \
@@ -475,6 +486,11 @@ static void hz5_lowpage64_count_max(_Atomic size_t* counter, size_t value) {
 
 #if HZ5_LOWPAGE64_P45_ENABLED && !HZ5_LOWPAGE64_STATS
 #error "P45 control-plane lanes require lowpage64 diagnostic stats"
+#endif
+
+#if HZ5_LOWPAGE64_P45_STAGE1_DRAIN_DRYRUN && \
+    !HZ5_LOWPAGE64_P45_REFINED_GATE
+#error "P45 Stage1DrainDryRun requires P45 RefinedGate"
 #endif
 
 #if HZ5_LOWPAGE64_P43P_AGE_STAGE1_DRYRUN && \
@@ -744,6 +760,34 @@ static _Atomic size_t g_hz5_lowpage64_p45rg_stage1_requeue_nodes;
 static _Atomic size_t g_hz5_lowpage64_p45rg_stage1_current_max;
 static _Atomic size_t g_hz5_lowpage64_p45rg_bridge_residual_max;
 static _Atomic size_t g_hz5_lowpage64_p45rg_bridge_residual_total;
+static _Atomic size_t g_hz5_lowpage64_p45dr_checkpoint_calls;
+static _Atomic size_t g_hz5_lowpage64_p45dr_reason_p40;
+static _Atomic size_t g_hz5_lowpage64_p45dr_reason_acquire_miss;
+static _Atomic size_t g_hz5_lowpage64_p45dr_reason_snapshot;
+static _Atomic size_t g_hz5_lowpage64_p45dr_stage1_current_at_checkpoint;
+static _Atomic size_t g_hz5_lowpage64_p45dr_stage1_current_at_checkpoint_max;
+static _Atomic size_t g_hz5_lowpage64_p45dr_stage1_current_at_acquire_miss;
+static _Atomic size_t g_hz5_lowpage64_p45dr_stage1_current_at_acquire_miss_max;
+static _Atomic size_t g_hz5_lowpage64_p45dr_stage1_current_at_snapshot;
+static _Atomic size_t g_hz5_lowpage64_p45dr_stage1_current_at_snapshot_max;
+static _Atomic size_t g_hz5_lowpage64_p45dr_stage1_age_bucket0;
+static _Atomic size_t g_hz5_lowpage64_p45dr_stage1_age_bucket1;
+static _Atomic size_t g_hz5_lowpage64_p45dr_stage1_age_bucket2_4;
+static _Atomic size_t g_hz5_lowpage64_p45dr_stage1_age_old;
+static _Atomic size_t g_hz5_lowpage64_p45dr_stage1_old_current_max;
+static _Atomic size_t g_hz5_lowpage64_p45dr_stage1_oldest_age_max;
+static _Atomic size_t g_hz5_lowpage64_p45dr_would_drain_to_bridge;
+static _Atomic size_t g_hz5_lowpage64_p45dr_would_keep_cold;
+static _Atomic size_t g_hz5_lowpage64_p45dr_would_demote_open;
+static _Atomic size_t g_hz5_lowpage64_p45dr_would_block_drain_closed;
+static _Atomic size_t g_hz5_lowpage64_p45dr_would_block_bridge_excess;
+static _Atomic size_t g_hz5_lowpage64_p45dr_bridge_current_hot_max;
+static _Atomic size_t g_hz5_lowpage64_p45dr_bridge_cold_current_max;
+static _Atomic size_t g_hz5_lowpage64_p45dr_bridge_total_with_cold_max;
+static _Atomic size_t g_hz5_lowpage64_p45dr_balance_expected;
+static _Atomic size_t g_hz5_lowpage64_p45dr_balance_actual;
+static _Atomic size_t g_hz5_lowpage64_p45dr_balance_mismatch;
+static _Atomic size_t g_hz5_lowpage64_p45dr_balance_mismatch_max;
 #endif
 
 #if HZ5_LOWPAGE64_SPAN_CACHE
@@ -1778,6 +1822,152 @@ static void hz5_lowpage64_p45_note(
 #define hz5_lowpage64_p45_note(reason, observed_global, stats) ((void)0)
 #endif
 
+#if HZ5_LOWPAGE64_P45_STAGE1_DRAIN_DRYRUN
+static void hz5_lowpage64_p45dr_scan_stage1(size_t* bucket0,
+                                            size_t* bucket1,
+                                            size_t* bucket2_4,
+                                            size_t* bucket_old,
+                                            size_t* oldest_age) {
+  *bucket0 = 0;
+  *bucket1 = 0;
+  *bucket2_4 = 0;
+  *bucket_old = 0;
+  *oldest_age = 0;
+#if HZ5_LOWPAGE64_P40_GLOBAL_SOFT_CAP > 0
+  uint32_t current_epoch = atomic_load_explicit(
+      &g_hz5_lowpage64_p40_global_epoch, memory_order_relaxed);
+  void* node = (void*)atomic_load_explicit(
+      &g_hz5_lowpage64_p43p_stage1_head, memory_order_acquire);
+  while (node) {
+    uint32_t node_epoch = hz5_lowpage64_node_epoch_load(node);
+    size_t age = current_epoch >= node_epoch
+                     ? (size_t)(current_epoch - node_epoch)
+                     : 0;
+    if (age == 0) {
+      (*bucket0)++;
+    } else if (age == 1) {
+      (*bucket1)++;
+    } else if (age <= 4u) {
+      (*bucket2_4)++;
+    } else {
+      (*bucket_old)++;
+    }
+    if (age > *oldest_age) {
+      *oldest_age = age;
+    }
+    node = hz5_lowpage64_link_next_load(node);
+  }
+#endif
+}
+
+static void hz5_lowpage64_p45dr_note(Hz5Lowpage64P45Reason reason) {
+  size_t current = atomic_load_explicit(
+      &g_hz5_lowpage64_p43p_stage1_count, memory_order_acquire);
+  size_t hot_bridge = hz5_lowpage64_p45_bridge_current(
+      atomic_load_explicit(&g_hz5_lowpage64_global_batch_count,
+                           memory_order_acquire));
+  size_t total_bridge = hot_bridge + current;
+  size_t state = atomic_load_explicit(&g_hz5_lowpage64_p45_runtime_state,
+                                      memory_order_relaxed);
+
+  HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45dr_checkpoint_calls, 1);
+  switch (reason) {
+    case HZ5_LOWPAGE64_P45_REASON_P40:
+      HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45dr_reason_p40, 1);
+      HZ5_LOWPAGE64_COUNT_ADD(
+          g_hz5_lowpage64_p45dr_stage1_current_at_checkpoint, current);
+      HZ5_LOWPAGE64_COUNT_MAX(
+          g_hz5_lowpage64_p45dr_stage1_current_at_checkpoint_max, current);
+      break;
+    case HZ5_LOWPAGE64_P45_REASON_ACQUIRE_MISS:
+      HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45dr_reason_acquire_miss, 1);
+      HZ5_LOWPAGE64_COUNT_ADD(
+          g_hz5_lowpage64_p45dr_stage1_current_at_acquire_miss, current);
+      HZ5_LOWPAGE64_COUNT_MAX(
+          g_hz5_lowpage64_p45dr_stage1_current_at_acquire_miss_max, current);
+      break;
+    case HZ5_LOWPAGE64_P45_REASON_SNAPSHOT:
+      HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45dr_reason_snapshot, 1);
+      HZ5_LOWPAGE64_COUNT_ADD(
+          g_hz5_lowpage64_p45dr_stage1_current_at_snapshot, current);
+      HZ5_LOWPAGE64_COUNT_MAX(
+          g_hz5_lowpage64_p45dr_stage1_current_at_snapshot_max, current);
+      break;
+    case HZ5_LOWPAGE64_P45_REASON_PUBLISH:
+      break;
+  }
+
+  size_t b0 = 0;
+  size_t b1 = 0;
+  size_t b2_4 = 0;
+  size_t old = 0;
+  size_t oldest = 0;
+  hz5_lowpage64_p45dr_scan_stage1(&b0, &b1, &b2_4, &old, &oldest);
+  HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45dr_stage1_age_bucket0, b0);
+  HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45dr_stage1_age_bucket1, b1);
+  HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45dr_stage1_age_bucket2_4,
+                          b2_4);
+  HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45dr_stage1_age_old, old);
+  HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p45dr_stage1_old_current_max,
+                          old);
+  HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p45dr_stage1_oldest_age_max,
+                          oldest);
+
+  size_t drain_to_bridge = 0;
+  size_t keep_cold = current;
+  size_t demote_open = 0;
+  size_t block_state = 0;
+  size_t block_bridge = 0;
+  if (state != HZ5_LOWPAGE64_P43O_STATE_OPEN) {
+    block_state = current;
+  } else if (hot_bridge < HZ5_LOWPAGE64_P40_GLOBAL_SOFT_CAP) {
+    size_t bridge_capacity = HZ5_LOWPAGE64_P40_GLOBAL_SOFT_CAP - hot_bridge;
+    drain_to_bridge = current < bridge_capacity ? current : bridge_capacity;
+    size_t remaining = current - drain_to_bridge;
+    demote_open = old < remaining ? old : remaining;
+    keep_cold = remaining - demote_open;
+  } else {
+    block_bridge = current;
+  }
+  HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45dr_would_drain_to_bridge,
+                          drain_to_bridge);
+  HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45dr_would_keep_cold,
+                          keep_cold);
+  HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45dr_would_demote_open,
+                          demote_open);
+  HZ5_LOWPAGE64_COUNT_ADD(
+      g_hz5_lowpage64_p45dr_would_block_drain_closed, block_state);
+  HZ5_LOWPAGE64_COUNT_ADD(
+      g_hz5_lowpage64_p45dr_would_block_bridge_excess, block_bridge);
+  HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p45dr_bridge_current_hot_max,
+                          hot_bridge);
+  HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p45dr_bridge_cold_current_max,
+                          current);
+  HZ5_LOWPAGE64_COUNT_MAX(
+      g_hz5_lowpage64_p45dr_bridge_total_with_cold_max, total_bridge);
+
+  size_t enqueue_nodes = atomic_load_explicit(
+      &g_hz5_lowpage64_p45rg_stage1_enqueue_nodes, memory_order_relaxed);
+  size_t acquire_nodes = atomic_load_explicit(
+      &g_hz5_lowpage64_p45rg_stage1_acquire_nodes, memory_order_relaxed);
+  size_t expected = enqueue_nodes > acquire_nodes
+                        ? enqueue_nodes - acquire_nodes
+                        : 0;
+  size_t mismatch = expected > current ? expected - current : current - expected;
+  HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45dr_balance_expected,
+                          expected);
+  HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45dr_balance_actual,
+                          current);
+  if (mismatch > 0) {
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45dr_balance_mismatch, 1);
+    HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p45dr_balance_mismatch_max,
+                            mismatch);
+  }
+}
+#else
+#define hz5_lowpage64_p45dr_note(reason) ((void)0)
+#endif
+
 static size_t hz5_lowpage64_free_list(void* head) {
   size_t freed = 0;
   while (head) {
@@ -1845,6 +2035,15 @@ static void hz5_lowpage64_p43p_stage1_push_list_impl(void* head,
   if (!head || !tail || count == 0) {
     return;
   }
+
+#if HZ5_LOWPAGE64_P45_STAGE1_DRAIN_DRYRUN && \
+    HZ5_LOWPAGE64_P40_GLOBAL_SOFT_CAP > 0
+  if (count_enqueue) {
+    uint32_t stage1_epoch = atomic_load_explicit(
+        &g_hz5_lowpage64_p40_global_epoch, memory_order_relaxed);
+    hz5_lowpage64_mark_list_epoch(head, stage1_epoch);
+  }
+#endif
 
   uintptr_t old_head = atomic_load_explicit(
       &g_hz5_lowpage64_p43p_stage1_head, memory_order_acquire);
@@ -2131,6 +2330,7 @@ static void hz5_lowpage64_p40_checkpoint(void) {
       hz5_lowpage64_free_list_p40_global(release_head, age_nodes,
                                          hard_nodes));
 #endif
+  hz5_lowpage64_p45dr_note(HZ5_LOWPAGE64_P45_REASON_P40);
 }
 #else
 #define hz5_lowpage64_p40_checkpoint() ((void)0)
@@ -2601,6 +2801,7 @@ void* hz5_lowpage64_acquire(size_t raw_bytes) {
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45rg_stage1_acquire_nodes,
                             bridge_cold_count);
 #endif
+    hz5_lowpage64_p45dr_note(HZ5_LOWPAGE64_P45_REASON_ACQUIRE_MISS);
     return raw;
   }
 #endif
@@ -2630,6 +2831,7 @@ void* hz5_lowpage64_acquire(size_t raw_bytes) {
       atomic_load_explicit(&g_hz5_lowpage64_global_batch_count,
                            memory_order_acquire),
       NULL);
+  hz5_lowpage64_p45dr_note(HZ5_LOWPAGE64_P45_REASON_ACQUIRE_MISS);
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_os_allocs, 1);
   return hz5_lowpage64_raw_os_alloc(raw_bytes);
 }
@@ -2732,6 +2934,7 @@ void hz5_lowpage64_print_snapshot(const char* label) {
       atomic_load_explicit(&g_hz5_lowpage64_global_batch_count,
                            memory_order_acquire),
       &p43_stats);
+  hz5_lowpage64_p45dr_note(HZ5_LOWPAGE64_P45_REASON_SNAPSHOT);
   size_t p44_global_current = hz5_lowpage64_p44_candidate_value(
       atomic_load_explicit(&g_hz5_lowpage64_global_batch_count,
                            memory_order_relaxed),
@@ -2904,7 +3107,35 @@ void hz5_lowpage64_print_snapshot(const char* label) {
           "p45rg_stage1_requeue_nodes=%zu "
           "p45rg_stage1_current_max=%zu "
           "p45rg_bridge_residual_max=%zu "
-          "p45rg_bridge_residual_total=%zu\n",
+          "p45rg_bridge_residual_total=%zu "
+          "p45dr_checkpoint_calls=%zu "
+          "p45dr_reason_p40=%zu "
+          "p45dr_reason_acquire_miss=%zu "
+          "p45dr_reason_snapshot=%zu "
+          "p45dr_stage1_current_at_checkpoint=%zu "
+          "p45dr_stage1_current_at_checkpoint_max=%zu "
+          "p45dr_stage1_current_at_acquire_miss=%zu "
+          "p45dr_stage1_current_at_acquire_miss_max=%zu "
+          "p45dr_stage1_current_at_snapshot=%zu "
+          "p45dr_stage1_current_at_snapshot_max=%zu "
+          "p45dr_stage1_age_bucket0=%zu "
+          "p45dr_stage1_age_bucket1=%zu "
+          "p45dr_stage1_age_bucket2_4=%zu "
+          "p45dr_stage1_age_old=%zu "
+          "p45dr_stage1_old_current_max=%zu "
+          "p45dr_stage1_oldest_age_max=%zu "
+          "p45dr_would_drain_to_bridge=%zu "
+          "p45dr_would_keep_cold=%zu "
+          "p45dr_would_demote_open=%zu "
+          "p45dr_would_block_drain_closed=%zu "
+          "p45dr_would_block_bridge_excess=%zu "
+          "p45dr_bridge_current_hot_max=%zu "
+          "p45dr_bridge_cold_current_max=%zu "
+          "p45dr_bridge_total_with_cold_max=%zu "
+          "p45dr_balance_expected=%zu "
+          "p45dr_balance_actual=%zu "
+          "p45dr_balance_mismatch=%zu "
+          "p45dr_balance_mismatch_max=%zu\n",
           label ? label : "",
           g_hz5_lowpage64_stash_count,
           g_hz5_lowpage64_relbuf_count,
@@ -3274,6 +3505,71 @@ void hz5_lowpage64_print_snapshot(const char* label) {
           atomic_load_explicit(&g_hz5_lowpage64_p45rg_bridge_residual_max,
                                memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_p45rg_bridge_residual_total,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45dr_checkpoint_calls,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45dr_reason_p40,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45dr_reason_acquire_miss,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45dr_reason_snapshot,
+                               memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p45dr_stage1_current_at_checkpoint,
+              memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p45dr_stage1_current_at_checkpoint_max,
+              memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p45dr_stage1_current_at_acquire_miss,
+              memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p45dr_stage1_current_at_acquire_miss_max,
+              memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p45dr_stage1_current_at_snapshot,
+              memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p45dr_stage1_current_at_snapshot_max,
+              memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45dr_stage1_age_bucket0,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45dr_stage1_age_bucket1,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45dr_stage1_age_bucket2_4,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45dr_stage1_age_old,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45dr_stage1_old_current_max,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45dr_stage1_oldest_age_max,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45dr_would_drain_to_bridge,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45dr_would_keep_cold,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45dr_would_demote_open,
+                               memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p45dr_would_block_drain_closed,
+              memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p45dr_would_block_bridge_excess,
+              memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45dr_bridge_current_hot_max,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45dr_bridge_cold_current_max,
+                               memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p45dr_bridge_total_with_cold_max,
+              memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45dr_balance_expected,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45dr_balance_actual,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45dr_balance_mismatch,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45dr_balance_mismatch_max,
                                memory_order_relaxed));
 }
 #else
