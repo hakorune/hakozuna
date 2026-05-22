@@ -1,5 +1,6 @@
 #include "hz5_lowpage64.h"
 #include "hz5_lowpage64_p43_segment.h"
+#include "hz5_trace.h"
 
 #include <stdatomic.h>
 #include <stdint.h>
@@ -952,6 +953,7 @@ static void* hz5_lowpage64_p43_alloc_slot_impl(size_t raw_bytes,
 	    if (hz5_lowpage64_p43_tls_pop_locked(&ref)) {
 	      void* raw = hz5_lowpage64_p43_slot_base(ref.seg, ref.slot);
 	      hz5_lowpage64_p43_fill_alloc_ctx(alloc_ctx, ref.seg, ref.slot);
+	      hz5_trace_inc(HZ5_TRACE_ALLOC_P43_SOURCE_TLS);
 	      hz5_lowpage64_p43_lock_leave();
 	      return raw;
 	    }
@@ -963,6 +965,7 @@ static void* hz5_lowpage64_p43_alloc_slot_impl(size_t raw_bytes,
 	    if (hz5_lowpage64_p43_committed_pop_locked(&ref)) {
 	      void* raw = hz5_lowpage64_p43_slot_base(ref.seg, ref.slot);
 	      hz5_lowpage64_p43_fill_alloc_ctx(alloc_ctx, ref.seg, ref.slot);
+	      hz5_trace_inc(HZ5_TRACE_ALLOC_P43_SOURCE_COMMITTED);
 	      hz5_lowpage64_p43_lock_leave();
 	      return raw;
 	    }
@@ -978,6 +981,8 @@ static void* hz5_lowpage64_p43_alloc_slot_impl(size_t raw_bytes,
 	      if (hz5_lowpage64_p43_tls_pop_locked(&ref)) {
 	        void* raw = hz5_lowpage64_p43_slot_base(ref.seg, ref.slot);
 	        hz5_lowpage64_p43_fill_alloc_ctx(alloc_ctx, ref.seg, ref.slot);
+	        hz5_trace_inc(HZ5_TRACE_ALLOC_P43_SOURCE_RELEASE_BUFFER);
+	        hz5_trace_inc(HZ5_TRACE_ALLOC_P43_SOURCE_TLS);
 	        hz5_lowpage64_p43_lock_leave();
 	        return raw;
 	      }
@@ -989,6 +994,8 @@ static void* hz5_lowpage64_p43_alloc_slot_impl(size_t raw_bytes,
 	      if (hz5_lowpage64_p43_committed_pop_locked(&ref)) {
 	        void* raw = hz5_lowpage64_p43_slot_base(ref.seg, ref.slot);
 	        hz5_lowpage64_p43_fill_alloc_ctx(alloc_ctx, ref.seg, ref.slot);
+	        hz5_trace_inc(HZ5_TRACE_ALLOC_P43_SOURCE_RELEASE_BUFFER);
+	        hz5_trace_inc(HZ5_TRACE_ALLOC_P43_SOURCE_COMMITTED);
 	        hz5_lowpage64_p43_lock_leave();
 	        return raw;
 	      }
@@ -1061,6 +1068,7 @@ static void* hz5_lowpage64_p43_alloc_slot_impl(size_t raw_bytes,
 	    hz5_lowpage64_p43_lock_leave();
 	    HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_slot_commits, 1);
 	    hz5_lowpage64_p43_fill_alloc_ctx(alloc_ctx, seg, slot);
+	    hz5_trace_inc(HZ5_TRACE_ALLOC_P43_SOURCE_COLD);
 	    return raw;
 	  }
 #if HZ5_LOWPAGE64_STATS
@@ -1120,6 +1128,7 @@ static void* hz5_lowpage64_p43_alloc_slot_impl(size_t raw_bytes,
                       free_segments_scanned);
 #endif
 	    hz5_lowpage64_p43_fill_alloc_ctx(alloc_ctx, seg, slot);
+	    hz5_trace_inc(HZ5_TRACE_ALLOC_P43_SOURCE_FREE_SLOT);
 	    return raw;
 	  }
   hz5_lowpage64_p43_lock_leave();
@@ -1176,6 +1185,7 @@ static void* hz5_lowpage64_p43_alloc_slot_impl(size_t raw_bytes,
 	  HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_segments_reserved, 1);
 	  HZ5_P43_COUNT_ADD(g_hz5_lowpage64_p43_slot_commits, 1);
 	  hz5_lowpage64_p43_fill_alloc_ctx(alloc_ctx, seg, 0);
+	  hz5_trace_inc(HZ5_TRACE_ALLOC_P43_SOURCE_NEW_SEGMENT);
 	  return raw;
 #else
 	  (void)raw_bytes;

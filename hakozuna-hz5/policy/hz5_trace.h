@@ -1,0 +1,58 @@
+#ifndef HZ5_TRACE_H
+#define HZ5_TRACE_H
+
+#include <stdint.h>
+
+#ifndef BENCHLAB_HZ5_TRACE_LANE
+#define BENCHLAB_HZ5_TRACE_LANE 0
+#endif
+
+#ifndef BENCHLAB_HZ5_SPEED_LANE
+#define BENCHLAB_HZ5_SPEED_LANE 0
+#endif
+
+#if BENCHLAB_HZ5_TRACE_LANE && BENCHLAB_HZ5_SPEED_LANE
+#error "BENCHLAB_HZ5_TRACE_LANE must not be enabled in SPEED_LANE builds"
+#endif
+
+typedef enum Hz5TraceCounter {
+  HZ5_TRACE_ALLOC_P25_BRIDGE = 0,
+  HZ5_TRACE_ALLOC_P43_SOURCE_TLS,
+  HZ5_TRACE_ALLOC_P43_SOURCE_COMMITTED,
+  HZ5_TRACE_ALLOC_P43_SOURCE_RELEASE_BUFFER,
+  HZ5_TRACE_ALLOC_P43_SOURCE_COLD,
+  HZ5_TRACE_ALLOC_P43_SOURCE_FREE_SLOT,
+  HZ5_TRACE_ALLOC_P43_SOURCE_NEW_SEGMENT,
+  HZ5_TRACE_ALLOC_P43_TOKEN,
+  HZ5_TRACE_FREE_P25_BRIDGE,
+  HZ5_TRACE_FREE_P43_LOOKUP_PREPARED,
+  HZ5_TRACE_FREE_P43_TOKEN_DIRECT,
+  HZ5_TRACE_FREE_P43_TOKEN_BRIDGE,
+  HZ5_TRACE_FREE_TRUSTWRAP,
+  HZ5_TRACE_FREE_RAWLOOKUP,
+  HZ5_TRACE_FREE_FALLBACK_OR_INVALID,
+  HZ5_TRACE_WRAPPER_DECODE_OK,
+  HZ5_TRACE_WRAPPER_DECODE_MISS,
+  HZ5_TRACE_WRAPPER_TOKEN_VALID,
+  HZ5_TRACE_WRAPPER_TOKEN_INVALID,
+  HZ5_TRACE_COUNT
+} Hz5TraceCounter;
+
+#if BENCHLAB_HZ5_TRACE_LANE
+void hz5_trace_register_once(void);
+void hz5_trace_inc(Hz5TraceCounter counter);
+void hz5_trace_add(Hz5TraceCounter counter, uint64_t value);
+void hz5_trace_print_once(void);
+#else
+static inline void hz5_trace_register_once(void) {}
+static inline void hz5_trace_inc(Hz5TraceCounter counter) {
+  (void)counter;
+}
+static inline void hz5_trace_add(Hz5TraceCounter counter, uint64_t value) {
+  (void)counter;
+  (void)value;
+}
+static inline void hz5_trace_print_once(void) {}
+#endif
+
+#endif

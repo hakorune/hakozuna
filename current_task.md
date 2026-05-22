@@ -386,6 +386,83 @@ Updated interpretation:
   bridge nodes, or a separate remote-free/RSS-focused lane where direct P43
   release has a reason to exist.
 
+### Trace Lane Instrumentation
+
+Added an explicit trace-only observation lane:
+
+- macro: `BENCHLAB_HZ5_TRACE_LANE=1`
+- build option: `./linux/build_linux_hz5_standalone.sh --trace-lane`
+- trace builds force `BENCHLAB_HZ5_SPEED_LANE=0`
+- `BENCHLAB_HZ5_TRACE_LANE && BENCHLAB_HZ5_SPEED_LANE` is a compile error
+- normal speed builds keep `BENCHLAB_HZ5_TRACE_LANE=0`, so real benchmark lanes
+  do not include trace counters or trace output
+
+Trace output is one atexit line on stderr:
+
+```text
+[HZ5_TRACE] key=value ...
+```
+
+Counters currently include:
+
+- `alloc_p25_bridge`
+- `alloc_p43_source_tls`
+- `alloc_p43_source_committed`
+- `alloc_p43_source_release_buffer`
+- `alloc_p43_source_cold`
+- `alloc_p43_source_free_slot`
+- `alloc_p43_source_new_segment`
+- `alloc_p43_token`
+- `free_p25_bridge`
+- `free_p43_lookup_prepared`
+- `free_p43_token_direct`
+- `free_p43_token_bridge`
+- `free_trustwrap`
+- `free_rawlookup`
+- `free_fallback_or_invalid`
+- `wrapper_decode_ok`
+- `wrapper_decode_miss`
+- `wrapper_token_valid`
+- `wrapper_token_invalid`
+
+Smoke examples:
+
+```bash
+./linux/build_linux_hz5_standalone.sh --trace-lane \
+  --out-dir hakozuna-hz5/out/linux/test-trace-p25
+./hakozuna-hz5/out/linux/test-trace-p25/bench_hz5_standalone_aligned64k \
+  1 1000 65536 8192
+```
+
+```text
+[HZ5_TRACE] alloc_p25_bridge=1000 free_p25_bridge=1000 wrapper_decode_ok=1000
+```
+
+```bash
+./linux/build_linux_hz5_standalone.sh --linux-p43-trust-wrapper-source \
+  --trace-lane --out-dir hakozuna-hz5/out/linux/test-trace-trustwrap
+./hakozuna-hz5/out/linux/test-trace-trustwrap/bench_hz5_standalone_aligned64k \
+  1 1000 65536 8192
+```
+
+```text
+[HZ5_TRACE] alloc_p25_bridge=1000 alloc_p43_source_free_slot=7 \
+alloc_p43_source_new_segment=1 free_trustwrap=1000 wrapper_decode_ok=1000
+```
+
+```bash
+./linux/build_linux_hz5_standalone.sh --linux-p43-token --trace-lane \
+  --out-dir hakozuna-hz5/out/linux/test-trace-token
+./hakozuna-hz5/out/linux/test-trace-token/bench_hz5_standalone_aligned64k \
+  1 1000 65536 8192
+```
+
+```text
+[HZ5_TRACE] alloc_p25_bridge=1000 alloc_p43_source_free_slot=999 \
+alloc_p43_source_new_segment=1 alloc_p43_token=1000 \
+free_p43_token_direct=1000 wrapper_decode_ok=1000 wrapper_token_valid=1000
+```
+
 Earlier next attack, now superseded by the decoded raw lookup results:
 
 - test producer/consumer remote-free before deciding whether local-only

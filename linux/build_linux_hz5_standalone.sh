@@ -14,6 +14,7 @@ LINUX_P43_RAW_FAST_LOOKUP_ONLY=0
 LINUX_P43_RAW_ALLOCATED_LOOKUP_ONLY=0
 LINUX_P43_WRAPPER_TOKEN=0
 LINUX_P43_WRAPPER_TOKEN_BRIDGE=0
+TRACE_LANE=0
 
 usage() {
   cat <<'EOF'
@@ -41,6 +42,7 @@ Options:
   --linux-p43-token  store P43 segment/slot token in the HZ5 wrapper
   --linux-p43-token-bridge
                      validate wrapper token, then release through P25 bridge
+  --trace-lane       enable route/reuse counters; disables SPEED_LANE
   --help             show this message
 EOF
 }
@@ -110,6 +112,10 @@ while [[ $# -gt 0 ]]; do
       LINUX_P43_WRAPPER_TOKEN_BRIDGE=1
       shift
       ;;
+    --trace-lane)
+      TRACE_LANE=1
+      shift
+      ;;
     --help|-h)
       usage
       exit 0
@@ -135,6 +141,10 @@ OUT_DIR="${OUT_DIR:-${HZ5_DIR}/out/linux/${ARCH}}"
 LIB="${OUT_DIR}/libhakozuna_hz5_standalone.so"
 BENCH="${OUT_DIR}/bench_hz5_standalone_aligned64k"
 GENERIC_BENCH="${ROOT_DIR}/bench/out/linux/${ARCH}/bench_aligned64k"
+SPEED_LANE=1
+if [[ "$TRACE_LANE" -eq 1 ]]; then
+  SPEED_LANE=0
+fi
 
 mkdir -p "$OUT_DIR"
 
@@ -150,7 +160,8 @@ COMMON_FLAGS=(
   -D_GNU_SOURCE
   -DNDEBUG
   -DHZ5_DIAGNOSTIC_STATS=0
-  -DBENCHLAB_HZ5_SPEED_LANE=1
+  -DBENCHLAB_HZ5_SPEED_LANE="${SPEED_LANE}"
+  -DBENCHLAB_HZ5_TRACE_LANE="${TRACE_LANE}"
   -DBENCHLAB_HZ5_NO_HZ3_FALLBACK=1
   -DBENCHLAB_HZ5_STANDALONE_EXACT_ONLY=1
   -DBENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192=1
@@ -215,6 +226,7 @@ HZ5_SRCS=(
   "${HZ5_DIR}/core/hz5_tcache.c"
   "${HZ5_DIR}/core/hz5_stats.c"
   "${HZ5_DIR}/policy/hz5_policy.c"
+  "${HZ5_DIR}/policy/hz5_trace.c"
   "${HZ5_DIR}/route/hz5_route.c"
   "${HZ5_DIR}/wrapper/hz5_wrapper.c"
   "${HZ5_DIR}/lowpage/hz5_lowpage64.c"
