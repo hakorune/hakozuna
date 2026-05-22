@@ -6,6 +6,9 @@ ARCH="auto"
 OUT_DIR=""
 ENABLE_LINUX_P43=0
 LINUX_P25_BRIDGE_ATTR=0
+LINUX_P25_BRIDGE_ATTR_NO_CAS=0
+LINUX_P25_BRIDGE_ATTR_NO_COOKIE=0
+LINUX_P25_BRIDGE_ATTR_READONLY_STATE=0
 LINUX_P43_PREPARED_BRIDGE=1
 LINUX_P43_UNSAFE_NO_LOOKUP=0
 LINUX_P43_TRUST_FAST_LOOKUP=0
@@ -27,6 +30,12 @@ Options:
   --out-dir DIR      output directory (default: hakozuna-hz5/out/linux/<arch>)
   --linux-p25-bridge-attr
                      preserve P25 bridge topology with wrapper attr CAS guard
+  --linux-p25-bridge-attr-no-cas
+                     diagnostic only: validate bridge attr with load/store, no CAS
+  --linux-p25-bridge-attr-no-cookie
+                     diagnostic only: bridge attr CAS without cookie recompute
+  --linux-p25-bridge-attr-readonly-state
+                     diagnostic only: validate state but do not mark it freed
   --linux-p43        enable Linux P43 segment-slot source candidate lane
   --linux-p43-no-prepared-bridge
                      disable P43 PreparedBridge for source-only A/B
@@ -64,6 +73,21 @@ while [[ $# -gt 0 ]]; do
       ;;
     --linux-p25-bridge-attr)
       LINUX_P25_BRIDGE_ATTR=1
+      shift
+      ;;
+    --linux-p25-bridge-attr-no-cas)
+      LINUX_P25_BRIDGE_ATTR=1
+      LINUX_P25_BRIDGE_ATTR_NO_CAS=1
+      shift
+      ;;
+    --linux-p25-bridge-attr-no-cookie)
+      LINUX_P25_BRIDGE_ATTR=1
+      LINUX_P25_BRIDGE_ATTR_NO_COOKIE=1
+      shift
+      ;;
+    --linux-p25-bridge-attr-readonly-state)
+      LINUX_P25_BRIDGE_ATTR=1
+      LINUX_P25_BRIDGE_ATTR_READONLY_STATE=1
       shift
       ;;
     --linux-p43)
@@ -147,6 +171,9 @@ HZ5_DIR="${ROOT_DIR}/hakozuna-hz5"
 OUT_DIR="${OUT_DIR:-${HZ5_DIR}/out/linux/${ARCH}}"
 LIB="${OUT_DIR}/libhakozuna_hz5_standalone.so"
 BENCH="${OUT_DIR}/bench_hz5_standalone_aligned64k"
+REMOTE_BENCH="${OUT_DIR}/bench_hz5_standalone_remote64k"
+RSS_BENCH="${OUT_DIR}/bench_hz5_standalone_rss_plateau"
+MIXED_BENCH="${OUT_DIR}/bench_hz5_standalone_mixed_prelude"
 GENERIC_BENCH="${ROOT_DIR}/bench/out/linux/${ARCH}/bench_aligned64k"
 SPEED_LANE=1
 if [[ "$TRACE_LANE" -eq 1 ]]; then
@@ -184,6 +211,15 @@ COMMON_FLAGS=(
 
 if [[ "$LINUX_P25_BRIDGE_ATTR" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR=1)
+  if [[ "$LINUX_P25_BRIDGE_ATTR_NO_CAS" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS=1)
+  fi
+  if [[ "$LINUX_P25_BRIDGE_ATTR_NO_COOKIE" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_COOKIE=1)
+  fi
+  if [[ "$LINUX_P25_BRIDGE_ATTR_READONLY_STATE" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_READONLY_STATE=1)
+  fi
 fi
 
 if [[ "$ENABLE_LINUX_P43" -eq 1 ]]; then
@@ -255,6 +291,27 @@ gcc -O3 -Wall -Wextra -Werror -std=c11 -D_POSIX_C_SOURCE=200809L \
   "${ROOT_DIR}/bench/bench_hz5_standalone_aligned64k.c" \
   -L"${OUT_DIR}" -Wl,-rpath,"${OUT_DIR}" -lhakozuna_hz5_standalone \
   -pthread -o "$BENCH"
+
+echo "[linux][hz5] building remote benchmark: ${REMOTE_BENCH}"
+gcc -O3 -Wall -Wextra -Werror -std=c11 -D_POSIX_C_SOURCE=200809L \
+  -I"${HZ5_DIR}/include" \
+  "${ROOT_DIR}/bench/bench_hz5_standalone_remote64k.c" \
+  -L"${OUT_DIR}" -Wl,-rpath,"${OUT_DIR}" -lhakozuna_hz5_standalone \
+  -pthread -o "$REMOTE_BENCH"
+
+echo "[linux][hz5] building RSS plateau benchmark: ${RSS_BENCH}"
+gcc -O3 -Wall -Wextra -Werror -std=c11 -D_POSIX_C_SOURCE=200809L \
+  -I"${HZ5_DIR}/include" \
+  "${ROOT_DIR}/bench/bench_hz5_standalone_rss_plateau.c" \
+  -L"${OUT_DIR}" -Wl,-rpath,"${OUT_DIR}" -lhakozuna_hz5_standalone \
+  -pthread -o "$RSS_BENCH"
+
+echo "[linux][hz5] building mixed prelude benchmark: ${MIXED_BENCH}"
+gcc -O3 -Wall -Wextra -Werror -std=c11 -D_POSIX_C_SOURCE=200809L \
+  -I"${HZ5_DIR}/include" \
+  "${ROOT_DIR}/bench/bench_hz5_standalone_mixed_prelude.c" \
+  -L"${OUT_DIR}" -Wl,-rpath,"${OUT_DIR}" -lhakozuna_hz5_standalone \
+  -pthread -o "$MIXED_BENCH"
 
 mkdir -p "$(dirname "$GENERIC_BENCH")"
 echo "[linux][hz5] building generic aligned benchmark: ${GENERIC_BENCH}"

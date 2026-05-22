@@ -68,6 +68,18 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS
+#define BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS 0
+#endif
+
+#ifndef BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_COOKIE
+#define BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_COOKIE 0
+#endif
+
+#ifndef BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_READONLY_STATE
+#define BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_READONLY_STATE 0
+#endif
+
 #ifndef BENCHLAB_HZ5_P43_PREPARED_RELEASE
 #define BENCHLAB_HZ5_P43_PREPARED_RELEASE 0
 #endif
@@ -250,15 +262,38 @@ static int hz5_policy_bridge_attr_verify_and_mark_free(
     uintptr_t aligned) {
   if (!header ||
       header->source != HZ5_WRAPPER_SOURCE_P25_HZ4LOWPAGE ||
-      header->raw_bytes < header->requested ||
-      header->bridge_cookie != hz5_policy_bridge_attr_cookie(
+      header->raw_bytes < header->requested) {
+    hz5_trace_inc(HZ5_TRACE_BRIDGE_ATTR_INVALID);
+    return 0;
+  }
+
+#if !BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_COOKIE
+  if (header->bridge_cookie != hz5_policy_bridge_attr_cookie(
                                    header->raw, aligned, header->raw_bytes,
                                    header->source,
                                    header->bridge_generation)) {
     hz5_trace_inc(HZ5_TRACE_BRIDGE_ATTR_INVALID);
     return 0;
   }
+#endif
 
+#if BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_READONLY_STATE
+  uint32_t state =
+      atomic_load_explicit(&header->bridge_state, memory_order_acquire);
+  if (state != HZ5_BRIDGE_ATTR_STATE_ACTIVE) {
+    hz5_trace_inc(HZ5_TRACE_BRIDGE_ATTR_CAS_FAIL);
+    return 0;
+  }
+#elif BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS
+  uint32_t state =
+      atomic_load_explicit(&header->bridge_state, memory_order_acquire);
+  if (state != HZ5_BRIDGE_ATTR_STATE_ACTIVE) {
+    hz5_trace_inc(HZ5_TRACE_BRIDGE_ATTR_CAS_FAIL);
+    return 0;
+  }
+  atomic_store_explicit(&header->bridge_state, HZ5_BRIDGE_ATTR_STATE_FREED,
+                        memory_order_release);
+#else
   uint32_t expected = HZ5_BRIDGE_ATTR_STATE_ACTIVE;
   if (!atomic_compare_exchange_strong_explicit(
           &header->bridge_state, &expected, HZ5_BRIDGE_ATTR_STATE_FREED,
@@ -266,6 +301,7 @@ static int hz5_policy_bridge_attr_verify_and_mark_free(
     hz5_trace_inc(HZ5_TRACE_BRIDGE_ATTR_CAS_FAIL);
     return 0;
   }
+#endif
 
   hz5_trace_inc(HZ5_TRACE_BRIDGE_ATTR_VALID);
   return 1;
