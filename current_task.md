@@ -24,7 +24,7 @@ codex/hz5-linux-p43-port
 Current reference commit:
 
 ```bash
-2dc1dc6 Refine HZ5 ABI and lane identity
+f27f484 Split lowpage OS path and version wrapper layout
 ```
 
 Parent branch:
