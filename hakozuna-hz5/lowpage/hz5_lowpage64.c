@@ -1147,6 +1147,12 @@ typedef enum Hz5Lowpage64P43oState {
   HZ5_LOWPAGE64_P43O_STATE_CLOSED = 2,
 } Hz5Lowpage64P43oState;
 
+typedef enum Hz5Lowpage64AdmissionState {
+  HZ5_LOWPAGE64_ADMISSION_OPEN = HZ5_LOWPAGE64_P43O_STATE_OPEN,
+  HZ5_LOWPAGE64_ADMISSION_DRAIN = HZ5_LOWPAGE64_P43O_STATE_DRAIN,
+  HZ5_LOWPAGE64_ADMISSION_CLOSED = HZ5_LOWPAGE64_P43O_STATE_CLOSED,
+} Hz5Lowpage64AdmissionState;
+
 #if HZ5_LOWPAGE64_P43O_ADMISSION_DRYRUN || \
     HZ5_LOWPAGE64_P43O_PROJECTED_DRYRUN
 static void hz5_lowpage64_p43o_bucket_free(size_t free_current,
@@ -1186,18 +1192,18 @@ static size_t hz5_lowpage64_admission_choose_state(
   if (source_free_current >= HZ5_LOWPAGE64_P43O_HARD_WATER) {
     atomic_store_explicit(cooldown_ptr, HZ5_LOWPAGE64_P43O_COOLDOWN_EPOCHS,
                           memory_order_relaxed);
-    return HZ5_LOWPAGE64_P43O_STATE_CLOSED;
+    return HZ5_LOWPAGE64_ADMISSION_CLOSED;
   }
   if (source_free_current >= HZ5_LOWPAGE64_P43O_HIGH_WATER) {
     atomic_store_explicit(cooldown_ptr, HZ5_LOWPAGE64_P43O_COOLDOWN_EPOCHS,
                           memory_order_relaxed);
-    return HZ5_LOWPAGE64_P43O_STATE_DRAIN;
+    return HZ5_LOWPAGE64_ADMISSION_DRAIN;
   }
   if (source_free_current > HZ5_LOWPAGE64_P43O_LOW_WATER) {
     return old_state;
   }
-  if (old_state == HZ5_LOWPAGE64_P43O_STATE_OPEN) {
-    return HZ5_LOWPAGE64_P43O_STATE_OPEN;
+  if (old_state == HZ5_LOWPAGE64_ADMISSION_OPEN) {
+    return HZ5_LOWPAGE64_ADMISSION_OPEN;
   }
   size_t cooldown =
       atomic_load_explicit(cooldown_ptr, memory_order_relaxed);
@@ -1206,12 +1212,12 @@ static size_t hz5_lowpage64_admission_choose_state(
                           memory_order_relaxed);
     return old_state;
   }
-  return HZ5_LOWPAGE64_P43O_STATE_OPEN;
+  return HZ5_LOWPAGE64_ADMISSION_OPEN;
 }
 
 typedef struct Hz5Lowpage64AdmissionStep {
-  size_t old_state;
-  size_t new_state;
+  Hz5Lowpage64AdmissionState old_state;
+  Hz5Lowpage64AdmissionState new_state;
   int flipped;
 } Hz5Lowpage64AdmissionStep;
 
@@ -1220,9 +1226,11 @@ static Hz5Lowpage64AdmissionStep hz5_lowpage64_admission_advance(
     _Atomic size_t* cooldown_ptr,
     size_t source_free_current) {
   Hz5Lowpage64AdmissionStep step;
-  step.old_state = atomic_load_explicit(state_ptr, memory_order_relaxed);
-  step.new_state = hz5_lowpage64_admission_choose_state(
-      step.old_state, source_free_current, cooldown_ptr);
+  step.old_state = (Hz5Lowpage64AdmissionState)atomic_load_explicit(
+      state_ptr, memory_order_relaxed);
+  step.new_state =
+      (Hz5Lowpage64AdmissionState)hz5_lowpage64_admission_choose_state(
+          step.old_state, source_free_current, cooldown_ptr);
   step.flipped = step.new_state != step.old_state;
   atomic_store_explicit(state_ptr, step.new_state, memory_order_relaxed);
   return step;
