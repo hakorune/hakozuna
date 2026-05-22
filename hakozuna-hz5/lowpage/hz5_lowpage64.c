@@ -1207,6 +1207,25 @@ static size_t hz5_lowpage64_p43o_choose_state(size_t old_state,
   }
   return HZ5_LOWPAGE64_P43O_STATE_OPEN;
 }
+
+typedef struct Hz5Lowpage64AdmissionStep {
+  size_t old_state;
+  size_t new_state;
+  int flipped;
+} Hz5Lowpage64AdmissionStep;
+
+static Hz5Lowpage64AdmissionStep hz5_lowpage64_admission_advance(
+    _Atomic size_t* state_ptr,
+    _Atomic size_t* cooldown_ptr,
+    size_t source_free_current) {
+  Hz5Lowpage64AdmissionStep step;
+  step.old_state = atomic_load_explicit(state_ptr, memory_order_relaxed);
+  step.new_state = hz5_lowpage64_p43o_choose_state(
+      step.old_state, source_free_current, cooldown_ptr);
+  step.flipped = step.new_state != step.old_state;
+  atomic_store_explicit(state_ptr, step.new_state, memory_order_relaxed);
+  return step;
+}
 #endif
 
 static size_t hz5_lowpage64_p43o_release_candidates(size_t observed_global) {
@@ -1239,14 +1258,11 @@ static int hz5_lowpage64_p43o_projected_blocks(size_t free_current,
 #if HZ5_LOWPAGE64_P43O_ADMISSION_GATE
 static int hz5_lowpage64_p43o_source_admission_open(
     const Hz5Lowpage64P43StatsSnapshot* stats) {
-  size_t old_state = atomic_load_explicit(
-      &g_hz5_lowpage64_p43o_runtime_state, memory_order_relaxed);
-  size_t new_state = hz5_lowpage64_p43o_choose_state(
-      old_state, stats ? stats->slots_committed_free_current : 0,
-      &g_hz5_lowpage64_p43o_runtime_cooldown);
-  atomic_store_explicit(&g_hz5_lowpage64_p43o_runtime_state, new_state,
-                        memory_order_relaxed);
-  return new_state == HZ5_LOWPAGE64_P43O_STATE_OPEN;
+  Hz5Lowpage64AdmissionStep step = hz5_lowpage64_admission_advance(
+      &g_hz5_lowpage64_p43o_runtime_state,
+      &g_hz5_lowpage64_p43o_runtime_cooldown,
+      stats ? stats->slots_committed_free_current : 0);
+  return step.new_state == HZ5_LOWPAGE64_P43O_STATE_OPEN;
 }
 #else
 #define hz5_lowpage64_p43o_source_admission_open(stats) (1)
@@ -1279,17 +1295,14 @@ static void hz5_lowpage64_p43o_note(
   }
 
   size_t free_current = stats->slots_committed_free_current;
-  size_t old_state = atomic_load_explicit(
-      &g_hz5_lowpage64_p43o_runtime_state, memory_order_relaxed);
-  size_t new_state = hz5_lowpage64_p43o_choose_state(
-      old_state, free_current, &g_hz5_lowpage64_p43o_runtime_cooldown);
-  if (new_state != old_state) {
+  Hz5Lowpage64AdmissionStep step = hz5_lowpage64_admission_advance(
+      &g_hz5_lowpage64_p43o_runtime_state,
+      &g_hz5_lowpage64_p43o_runtime_cooldown, free_current);
+  if (step.flipped) {
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43o_admission_flips, 1);
   }
-  atomic_store_explicit(&g_hz5_lowpage64_p43o_runtime_state, new_state,
-                        memory_order_relaxed);
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43o_epoch, 1);
-  switch (new_state) {
+  switch (step.new_state) {
     case HZ5_LOWPAGE64_P43O_STATE_OPEN:
       HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43o_state_open, 1);
       break;
@@ -1331,7 +1344,7 @@ static void hz5_lowpage64_p43o_note(
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43o_p40_release_candidates,
                           release_candidates);
   if (release_candidates > 0) {
-    if (new_state == HZ5_LOWPAGE64_P43O_STATE_OPEN) {
+    if (step.new_state == HZ5_LOWPAGE64_P43O_STATE_OPEN) {
       HZ5_LOWPAGE64_COUNT_ADD(
           g_hz5_lowpage64_p43o_p40_would_demote_to_source,
           release_candidates);
@@ -1498,19 +1511,16 @@ static void hz5_lowpage64_p43p_note(
   HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p43p_p43_committed_free_max,
                           free_current);
 
-  size_t old_state = atomic_load_explicit(
-      &g_hz5_lowpage64_p43o_runtime_state, memory_order_relaxed);
-  size_t new_state = hz5_lowpage64_p43o_choose_state(
-      old_state, free_current, &g_hz5_lowpage64_p43o_runtime_cooldown);
-  if (new_state != old_state) {
+  Hz5Lowpage64AdmissionStep step = hz5_lowpage64_admission_advance(
+      &g_hz5_lowpage64_p43o_runtime_state,
+      &g_hz5_lowpage64_p43o_runtime_cooldown, free_current);
+  if (step.flipped) {
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43p_admission_flips, 1);
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43p_age_admission_flips, 1);
   }
-  atomic_store_explicit(&g_hz5_lowpage64_p43o_runtime_state, new_state,
-                        memory_order_relaxed);
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43p_epoch, 1);
 
-  switch (new_state) {
+  switch (step.new_state) {
     case HZ5_LOWPAGE64_P43O_STATE_OPEN:
       HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43p_state_open, 1);
       break;
@@ -1523,7 +1533,7 @@ static void hz5_lowpage64_p43p_note(
   }
 
   if (reason == HZ5_LOWPAGE64_P43P_REASON_SNAPSHOT) {
-    hz5_lowpage64_p43p_age_note(new_state, 0);
+    hz5_lowpage64_p43p_age_note(step.new_state, 0);
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43p_reason_snapshot, 1);
     return;
   }
@@ -1533,7 +1543,7 @@ static void hz5_lowpage64_p43p_note(
       hz5_lowpage64_p43o_release_candidates(observed_global);
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43p_p40_release_candidates,
                           release_candidates);
-  hz5_lowpage64_p43p_age_note(new_state, release_candidates);
+  hz5_lowpage64_p43p_age_note(step.new_state, release_candidates);
   if (release_candidates == 0) {
     return;
   }
@@ -1543,7 +1553,7 @@ static void hz5_lowpage64_p43p_note(
       memory_order_relaxed);
   size_t bridge_cold = old_bridge_cold + release_candidates;
   size_t demote = 0;
-  if (new_state == HZ5_LOWPAGE64_P43O_STATE_OPEN) {
+  if (step.new_state == HZ5_LOWPAGE64_P43O_STATE_OPEN) {
     demote = bridge_cold < HZ5_LOWPAGE64_P43P_DEMOTE_BATCH
                  ? bridge_cold
                  : HZ5_LOWPAGE64_P43P_DEMOTE_BATCH;
@@ -1729,18 +1739,15 @@ static void hz5_lowpage64_p45_note(
 
   size_t source_free = stats->slots_committed_free_current;
   size_t source_committed = stats->slots_committed_current;
-  size_t old_state = atomic_load_explicit(
-      &g_hz5_lowpage64_p45_runtime_state, memory_order_relaxed);
-  size_t new_state = hz5_lowpage64_p43o_choose_state(
-      old_state, source_free, &g_hz5_lowpage64_p45_runtime_cooldown);
-  if (new_state != old_state) {
+  Hz5Lowpage64AdmissionStep step = hz5_lowpage64_admission_advance(
+      &g_hz5_lowpage64_p45_runtime_state,
+      &g_hz5_lowpage64_p45_runtime_cooldown, source_free);
+  if (step.flipped) {
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45_admission_flips, 1);
   }
-  atomic_store_explicit(&g_hz5_lowpage64_p45_runtime_state, new_state,
-                        memory_order_relaxed);
 
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45_epoch, 1);
-  switch (new_state) {
+  switch (step.new_state) {
     case HZ5_LOWPAGE64_P43O_STATE_OPEN:
       HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45_state_open, 1);
       break;
@@ -1769,7 +1776,7 @@ static void hz5_lowpage64_p45_note(
   }
 
   Hz5Lowpage64P45Decision decision =
-      hz5_lowpage64_p45_decide(observed_global, new_state);
+      hz5_lowpage64_p45_decide(observed_global, step.new_state);
 
   HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p45_bridge_current_max,
                           decision.bridge_hot_current);
