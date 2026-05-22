@@ -305,6 +305,30 @@
 #endif
 #endif
 
+#ifndef HZ5_LOWPAGE64_P45_REFINED_GATE
+#ifdef BENCHLAB_HZ5_P45_REFINED_GATE
+#define HZ5_LOWPAGE64_P45_REFINED_GATE \
+  BENCHLAB_HZ5_P45_REFINED_GATE
+#else
+#define HZ5_LOWPAGE64_P45_REFINED_GATE 0
+#endif
+#endif
+
+#ifndef HZ5_LOWPAGE64_P45_STAGE1_ACQUIRE_LIMIT
+#ifdef BENCHLAB_HZ5_P45_STAGE1_ACQUIRE_LIMIT
+#define HZ5_LOWPAGE64_P45_STAGE1_ACQUIRE_LIMIT \
+  BENCHLAB_HZ5_P45_STAGE1_ACQUIRE_LIMIT
+#else
+#define HZ5_LOWPAGE64_P45_STAGE1_ACQUIRE_LIMIT 4u
+#endif
+#endif
+
+#define HZ5_LOWPAGE64_STAGE1_ENABLED \
+  (HZ5_LOWPAGE64_P43P_BRIDGE_COLD_STAGE1 || HZ5_LOWPAGE64_P45_REFINED_GATE)
+
+#define HZ5_LOWPAGE64_P45_ENABLED \
+  (HZ5_LOWPAGE64_P45_CONTROL_PLANE_DRYRUN || HZ5_LOWPAGE64_P45_REFINED_GATE)
+
 #ifndef HZ5_LOWPAGE64_P43O_ANY
 #define HZ5_LOWPAGE64_P43O_ANY \
   (HZ5_LOWPAGE64_P43O_ADMISSION_DRYRUN || \
@@ -313,7 +337,7 @@
    HZ5_LOWPAGE64_P43O_PROJECTED_GATE || \
    HZ5_LOWPAGE64_P43P_BRIDGE_COLD_DRYRUN || \
    HZ5_LOWPAGE64_P43P_AGE_STAGE1_DRYRUN || \
-   HZ5_LOWPAGE64_P45_CONTROL_PLANE_DRYRUN)
+   HZ5_LOWPAGE64_P45_ENABLED)
 #endif
 
 #ifndef HZ5_LOWPAGE64_P44_BRIDGE_TRIM_DRYRUN
@@ -449,8 +473,8 @@ static void hz5_lowpage64_count_max(_Atomic size_t* counter, size_t value) {
 #error "P43p BridgeColdDryRun requires lowpage64 diagnostic stats"
 #endif
 
-#if HZ5_LOWPAGE64_P45_CONTROL_PLANE_DRYRUN && !HZ5_LOWPAGE64_STATS
-#error "P45 ControlPlaneDryRun requires lowpage64 diagnostic stats"
+#if HZ5_LOWPAGE64_P45_ENABLED && !HZ5_LOWPAGE64_STATS
+#error "P45 control-plane lanes require lowpage64 diagnostic stats"
 #endif
 
 #if HZ5_LOWPAGE64_P43P_AGE_STAGE1_DRYRUN && \
@@ -462,7 +486,7 @@ static _Atomic(uintptr_t) g_hz5_lowpage64_global_batch_head;
 static _Atomic size_t g_hz5_lowpage64_global_batch_count;
 static _Atomic(uintptr_t) g_hz5_lowpage64_raw_min;
 static _Atomic(uintptr_t) g_hz5_lowpage64_raw_max;
-#if HZ5_LOWPAGE64_P43P_BRIDGE_COLD_STAGE1
+#if HZ5_LOWPAGE64_STAGE1_ENABLED
 static _Atomic(uintptr_t) g_hz5_lowpage64_p43p_stage1_head;
 static _Atomic size_t g_hz5_lowpage64_p43p_stage1_count;
 #endif
@@ -705,6 +729,21 @@ static _Atomic size_t g_hz5_lowpage64_p45_would_demote_open_bridge_soft;
 static _Atomic size_t g_hz5_lowpage64_p45_would_stage1_bridge_excess;
 static _Atomic size_t g_hz5_lowpage64_p45_would_stage1_refined_any;
 static _Atomic size_t g_hz5_lowpage64_p45_source_miss;
+static _Atomic size_t g_hz5_lowpage64_p45rg_demote_intent;
+static _Atomic size_t g_hz5_lowpage64_p45rg_allowed_open_bridge_soft;
+static _Atomic size_t g_hz5_lowpage64_p45rg_stage1_any;
+static _Atomic size_t g_hz5_lowpage64_p45rg_stage1_state;
+static _Atomic size_t g_hz5_lowpage64_p45rg_stage1_bridge_excess;
+static _Atomic size_t g_hz5_lowpage64_p45rg_stage1_overlap;
+static _Atomic size_t g_hz5_lowpage64_p45rg_stage1_enqueue_calls;
+static _Atomic size_t g_hz5_lowpage64_p45rg_stage1_enqueue_nodes;
+static _Atomic size_t g_hz5_lowpage64_p45rg_stage1_acquire_hits;
+static _Atomic size_t g_hz5_lowpage64_p45rg_stage1_acquire_nodes;
+static _Atomic size_t g_hz5_lowpage64_p45rg_stage1_requeue_calls;
+static _Atomic size_t g_hz5_lowpage64_p45rg_stage1_requeue_nodes;
+static _Atomic size_t g_hz5_lowpage64_p45rg_stage1_current_max;
+static _Atomic size_t g_hz5_lowpage64_p45rg_bridge_residual_max;
+static _Atomic size_t g_hz5_lowpage64_p45rg_bridge_residual_total;
 #endif
 
 #if HZ5_LOWPAGE64_SPAN_CACHE
@@ -1079,7 +1118,7 @@ static void hz5_lowpage64_p43o_bucket_free(size_t free_current,
     HZ5_LOWPAGE64_P43O_ADMISSION_GATE || \
     HZ5_LOWPAGE64_P43O_PROJECTED_DRYRUN || \
     HZ5_LOWPAGE64_P43P_BRIDGE_COLD_DRYRUN || \
-    HZ5_LOWPAGE64_P45_CONTROL_PLANE_DRYRUN
+    HZ5_LOWPAGE64_P45_ENABLED
 static size_t hz5_lowpage64_p43o_choose_state(size_t old_state,
                                               size_t free_current,
                                               _Atomic size_t* cooldown_ptr) {
@@ -1563,13 +1602,48 @@ static void hz5_lowpage64_p44_note(Hz5Lowpage64P44Reason reason) {
 #define hz5_lowpage64_p44_note(reason) ((void)0)
 #endif
 
-#if HZ5_LOWPAGE64_P45_CONTROL_PLANE_DRYRUN
+#if HZ5_LOWPAGE64_P45_ENABLED
 typedef enum Hz5Lowpage64P45Reason {
   HZ5_LOWPAGE64_P45_REASON_PUBLISH = 1,
   HZ5_LOWPAGE64_P45_REASON_ACQUIRE_MISS = 2,
   HZ5_LOWPAGE64_P45_REASON_P40 = 3,
   HZ5_LOWPAGE64_P45_REASON_SNAPSHOT = 4,
 } Hz5Lowpage64P45Reason;
+
+typedef struct Hz5Lowpage64P45Decision {
+  size_t demote_intent;
+  size_t bridge_current;
+  size_t bridge_residual;
+  int state_blocks;
+  int bridge_blocks;
+  int bridge_excess_blocks;
+  size_t state;
+} Hz5Lowpage64P45Decision;
+
+static size_t hz5_lowpage64_p45_bridge_current(size_t observed_global) {
+  return observed_global + g_hz5_lowpage64_stash_count +
+         g_hz5_lowpage64_relbuf_count;
+}
+
+static Hz5Lowpage64P45Decision hz5_lowpage64_p45_decide(
+    size_t observed_global,
+    size_t state) {
+  Hz5Lowpage64P45Decision decision;
+  decision.demote_intent =
+      hz5_lowpage64_p43o_release_candidates(observed_global);
+  decision.bridge_current =
+      hz5_lowpage64_p45_bridge_current(observed_global);
+  decision.bridge_residual =
+      decision.bridge_current > decision.demote_intent
+          ? decision.bridge_current - decision.demote_intent
+          : 0;
+  decision.state_blocks = state != HZ5_LOWPAGE64_P43O_STATE_OPEN;
+  decision.bridge_blocks = decision.bridge_current > 0;
+  decision.bridge_excess_blocks =
+      decision.bridge_residual > HZ5_LOWPAGE64_P40_GLOBAL_SOFT_CAP;
+  decision.state = state;
+  return decision;
+}
 
 static void hz5_lowpage64_p45_note(
     Hz5Lowpage64P45Reason reason,
@@ -1584,8 +1658,6 @@ static void hz5_lowpage64_p45_note(
 
   size_t source_free = stats->slots_committed_free_current;
   size_t source_committed = stats->slots_committed_current;
-  size_t bridge_current = observed_global + g_hz5_lowpage64_stash_count +
-                          g_hz5_lowpage64_relbuf_count;
   size_t old_state = atomic_load_explicit(
       &g_hz5_lowpage64_p45_runtime_state, memory_order_relaxed);
   size_t new_state = hz5_lowpage64_p43o_choose_state(
@@ -1625,10 +1697,13 @@ static void hz5_lowpage64_p45_note(
       break;
   }
 
+  Hz5Lowpage64P45Decision decision =
+      hz5_lowpage64_p45_decide(observed_global, new_state);
+
   HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p45_bridge_current_max,
-                          bridge_current);
+                          decision.bridge_current);
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45_bridge_pressure_total,
-                          bridge_current);
+                          decision.bridge_current);
   HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p45_source_free_current_max,
                           source_free);
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45_source_free_pressure_total,
@@ -1640,66 +1715,62 @@ static void hz5_lowpage64_p45_note(
       source_committed);
 
   if (reason == HZ5_LOWPAGE64_P45_REASON_P40) {
-    size_t demote_intent =
-        hz5_lowpage64_p43o_release_candidates(observed_global);
-    int state_blocks =
-        new_state != HZ5_LOWPAGE64_P43O_STATE_OPEN;
-    int bridge_blocks = bridge_current > 0;
-    size_t bridge_residual =
-        bridge_current > demote_intent ? bridge_current - demote_intent : 0;
-    int bridge_excess_blocks =
-        bridge_residual > HZ5_LOWPAGE64_P40_GLOBAL_SOFT_CAP;
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45_p40_demote_intent,
-                            demote_intent);
-    if (demote_intent > 0) {
+                            decision.demote_intent);
+    if (decision.demote_intent > 0) {
       HZ5_LOWPAGE64_COUNT_MAX(
           g_hz5_lowpage64_p45_bridge_residual_after_demote_max,
-          bridge_residual);
+          decision.bridge_residual);
       HZ5_LOWPAGE64_COUNT_ADD(
           g_hz5_lowpage64_p45_bridge_residual_after_demote_total,
-          bridge_residual);
+          decision.bridge_residual);
     }
-    if (demote_intent > 0 && !state_blocks && !bridge_blocks) {
+    if (decision.demote_intent > 0 && !decision.state_blocks &&
+        !decision.bridge_blocks) {
       HZ5_LOWPAGE64_COUNT_ADD(
           g_hz5_lowpage64_p45_would_demote_clean_open,
-          demote_intent);
+          decision.demote_intent);
     }
-    if (demote_intent > 0 && !state_blocks && !bridge_excess_blocks) {
+    if (decision.demote_intent > 0 && !decision.state_blocks &&
+        !decision.bridge_excess_blocks) {
       HZ5_LOWPAGE64_COUNT_ADD(
           g_hz5_lowpage64_p45_would_demote_open_bridge_soft,
-          demote_intent);
+          decision.demote_intent);
     }
-    if (demote_intent > 0 && (state_blocks || bridge_blocks)) {
+    if (decision.demote_intent > 0 &&
+        (decision.state_blocks || decision.bridge_blocks)) {
       HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45_would_stage1_any,
-                              demote_intent);
+                              decision.demote_intent);
     }
-    if (demote_intent > 0 && (state_blocks || bridge_excess_blocks)) {
+    if (decision.demote_intent > 0 &&
+        (decision.state_blocks || decision.bridge_excess_blocks)) {
       HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45_would_stage1_refined_any,
-                              demote_intent);
+                              decision.demote_intent);
     }
-    if (demote_intent > 0 && state_blocks) {
+    if (decision.demote_intent > 0 && decision.state_blocks) {
       HZ5_LOWPAGE64_COUNT_ADD(
           g_hz5_lowpage64_p45_p40_demote_while_drain_closed,
-          demote_intent);
+          decision.demote_intent);
       HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45_would_stage1_state,
-                              demote_intent);
+                              decision.demote_intent);
     }
-    if (demote_intent > 0 && bridge_excess_blocks) {
+    if (decision.demote_intent > 0 && decision.bridge_excess_blocks) {
       HZ5_LOWPAGE64_COUNT_ADD(
           g_hz5_lowpage64_p45_would_stage1_bridge_excess,
-          demote_intent);
+          decision.demote_intent);
     }
-    if (demote_intent > 0 && bridge_blocks) {
+    if (decision.demote_intent > 0 && decision.bridge_blocks) {
       HZ5_LOWPAGE64_COUNT_ADD(
           g_hz5_lowpage64_p45_p40_demote_while_bridge_nonempty,
-          demote_intent);
+          decision.demote_intent);
       HZ5_LOWPAGE64_COUNT_ADD(
           g_hz5_lowpage64_p45_would_stage1_bridge_nonempty,
-          demote_intent);
+          decision.demote_intent);
     }
-    if (demote_intent > 0 && state_blocks && bridge_blocks) {
+    if (decision.demote_intent > 0 && decision.state_blocks &&
+        decision.bridge_blocks) {
       HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45_would_stage1_overlap,
-                              demote_intent);
+                              decision.demote_intent);
     }
   }
 }
@@ -1766,7 +1837,7 @@ static void hz5_lowpage64_global_push_list(void* head,
                             memory_order_relaxed);
 }
 
-#if HZ5_LOWPAGE64_P43P_BRIDGE_COLD_STAGE1
+#if HZ5_LOWPAGE64_STAGE1_ENABLED
 static void hz5_lowpage64_p43p_stage1_push_list_impl(void* head,
                                                      void* tail,
                                                      size_t count,
@@ -1785,6 +1856,7 @@ static void hz5_lowpage64_p43p_stage1_push_list_impl(void* head,
 
   size_t previous = atomic_fetch_add_explicit(
       &g_hz5_lowpage64_p43p_stage1_count, count, memory_order_relaxed);
+#if HZ5_LOWPAGE64_P43P_BRIDGE_COLD_STAGE1
   if (count_enqueue) {
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43p_stage1_enqueue_calls, 1);
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43p_stage1_enqueue_nodes, count);
@@ -1794,6 +1866,20 @@ static void hz5_lowpage64_p43p_stage1_push_list_impl(void* head,
   }
   HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p43p_stage1_current_max,
                           previous + count);
+#endif
+#if HZ5_LOWPAGE64_P45_REFINED_GATE
+  if (count_enqueue) {
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45rg_stage1_enqueue_calls, 1);
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45rg_stage1_enqueue_nodes,
+                            count);
+  } else {
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45rg_stage1_requeue_calls, 1);
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45rg_stage1_requeue_nodes,
+                            count);
+  }
+  HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p45rg_stage1_current_max,
+                          previous + count);
+#endif
   (void)previous;
 }
 
@@ -1845,7 +1931,6 @@ static void* hz5_lowpage64_p43p_stage1_pop_batch(size_t limit,
 }
 #endif
 
-#if !HZ5_LOWPAGE64_P43P_BRIDGE_COLD_STAGE1
 static size_t hz5_lowpage64_free_list_p40_global(void* head,
                                                  size_t age_nodes,
                                                  size_t hard_nodes) {
@@ -1860,7 +1945,6 @@ static size_t hz5_lowpage64_free_list_p40_global(void* head,
   }
   return freed;
 }
-#endif
 
 static void hz5_lowpage64_p40_checkpoint(void) {
   // P44 observes candidate state at slow/checkpoint boundaries only. It must
@@ -1991,11 +2075,57 @@ static void hz5_lowpage64_p40_checkpoint(void) {
     hz5_lowpage64_global_push_list(keep_head, keep_tail, keep_count);
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p40_keep_nodes, keep_count);
   }
-#if HZ5_LOWPAGE64_P43P_BRIDGE_COLD_STAGE1
+#if HZ5_LOWPAGE64_STAGE1_ENABLED
+#if HZ5_LOWPAGE64_P45_REFINED_GATE
+  size_t p45_state = atomic_load_explicit(
+      &g_hz5_lowpage64_p45_runtime_state, memory_order_relaxed);
+  Hz5Lowpage64P45Decision p45_decision =
+      hz5_lowpage64_p45_decide(observed, p45_state);
+  int p45_stage1 =
+      p45_decision.state_blocks || p45_decision.bridge_excess_blocks;
+  if (release_count > 0) {
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45rg_demote_intent,
+                            release_count);
+    HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p45rg_bridge_residual_max,
+                            p45_decision.bridge_residual);
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45rg_bridge_residual_total,
+                            p45_decision.bridge_residual);
+    if (p45_stage1) {
+      HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45rg_stage1_any,
+                              release_count);
+      if (p45_decision.state_blocks) {
+        HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45rg_stage1_state,
+                                release_count);
+      }
+      if (p45_decision.bridge_excess_blocks) {
+        HZ5_LOWPAGE64_COUNT_ADD(
+            g_hz5_lowpage64_p45rg_stage1_bridge_excess, release_count);
+      }
+      if (p45_decision.state_blocks && p45_decision.bridge_excess_blocks) {
+        HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45rg_stage1_overlap,
+                                release_count);
+      }
+    } else {
+      HZ5_LOWPAGE64_COUNT_ADD(
+          g_hz5_lowpage64_p45rg_allowed_open_bridge_soft, release_count);
+    }
+  }
+  if (p45_stage1) {
+    hz5_lowpage64_p43p_stage1_push_list(release_head, release_tail,
+                                        release_count);
+    (void)age_nodes;
+    (void)hard_nodes;
+  } else {
+    hz5_lowpage64_count_trim(
+        hz5_lowpage64_free_list_p40_global(release_head, age_nodes,
+                                           hard_nodes));
+  }
+#else
   hz5_lowpage64_p43p_stage1_push_list(release_head, release_tail,
                                       release_count);
   (void)age_nodes;
   (void)hard_nodes;
+#endif
 #else
   hz5_lowpage64_count_trim(
       hz5_lowpage64_free_list_p40_global(release_head, age_nodes,
@@ -2441,11 +2571,16 @@ void* hz5_lowpage64_acquire(size_t raw_bytes) {
     return raw;
   }
 
-#if HZ5_LOWPAGE64_P43P_BRIDGE_COLD_STAGE1
+#if HZ5_LOWPAGE64_STAGE1_ENABLED
   size_t bridge_cold_count = 0;
+#if HZ5_LOWPAGE64_P45_REFINED_GATE
+  size_t stage1_limit = HZ5_LOWPAGE64_P45_STAGE1_ACQUIRE_LIMIT;
+#else
+  size_t stage1_limit = HZ5_LOWPAGE64_P43P_STAGE1_ACQUIRE_LIMIT;
+#endif
   void* bridge_cold =
-      hz5_lowpage64_p43p_stage1_pop_batch(
-          HZ5_LOWPAGE64_P43P_STAGE1_ACQUIRE_LIMIT, &bridge_cold_count);
+      hz5_lowpage64_p43p_stage1_pop_batch(stage1_limit,
+                                          &bridge_cold_count);
   if (bridge_cold) {
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_acquired_count_total,
                             bridge_cold_count);
@@ -2456,9 +2591,16 @@ void* hz5_lowpage64_acquire(size_t raw_bytes) {
     void* stash = hz5_lowpage64_link_next_load(raw);
     hz5_lowpage64_link_next(raw, NULL);
     hz5_lowpage64_set_stash_from_list(stash, bridge_cold_count);
+#if HZ5_LOWPAGE64_P43P_BRIDGE_COLD_STAGE1
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43p_stage1_acquire_hits, 1);
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43p_stage1_acquire_nodes,
                             bridge_cold_count);
+#endif
+#if HZ5_LOWPAGE64_P45_REFINED_GATE
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45rg_stage1_acquire_hits, 1);
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45rg_stage1_acquire_nodes,
+                            bridge_cold_count);
+#endif
     return raw;
   }
 #endif
@@ -2746,7 +2888,23 @@ void hz5_lowpage64_print_snapshot(const char* label) {
           "p45_would_demote_open_bridge_soft=%zu "
           "p45_would_stage1_bridge_excess=%zu "
           "p45_would_stage1_refined_any=%zu "
-          "p45_source_miss=%zu\n",
+          "p45_source_miss=%zu "
+          "p45rg_demote_intent=%zu "
+          "p45rg_allowed_open_bridge_soft=%zu "
+          "p45rg_stage1_any=%zu "
+          "p45rg_stage1_state=%zu "
+          "p45rg_stage1_bridge_excess=%zu "
+          "p45rg_stage1_overlap=%zu "
+          "p45rg_stage1_current=%zu "
+          "p45rg_stage1_enqueue_calls=%zu "
+          "p45rg_stage1_enqueue_nodes=%zu "
+          "p45rg_stage1_acquire_hits=%zu "
+          "p45rg_stage1_acquire_nodes=%zu "
+          "p45rg_stage1_requeue_calls=%zu "
+          "p45rg_stage1_requeue_nodes=%zu "
+          "p45rg_stage1_current_max=%zu "
+          "p45rg_bridge_residual_max=%zu "
+          "p45rg_bridge_residual_total=%zu\n",
           label ? label : "",
           g_hz5_lowpage64_stash_count,
           g_hz5_lowpage64_relbuf_count,
@@ -3078,6 +3236,44 @@ void hz5_lowpage64_print_snapshot(const char* label) {
           atomic_load_explicit(&g_hz5_lowpage64_p45_would_stage1_refined_any,
                                memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_p45_source_miss,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45rg_demote_intent,
+                               memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p45rg_allowed_open_bridge_soft,
+              memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45rg_stage1_any,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45rg_stage1_state,
+                               memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p45rg_stage1_bridge_excess,
+              memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45rg_stage1_overlap,
+                               memory_order_relaxed),
+#if HZ5_LOWPAGE64_STAGE1_ENABLED
+          atomic_load_explicit(&g_hz5_lowpage64_p43p_stage1_count,
+                               memory_order_relaxed),
+#else
+          (size_t)0,
+#endif
+          atomic_load_explicit(&g_hz5_lowpage64_p45rg_stage1_enqueue_calls,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45rg_stage1_enqueue_nodes,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45rg_stage1_acquire_hits,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45rg_stage1_acquire_nodes,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45rg_stage1_requeue_calls,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45rg_stage1_requeue_nodes,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45rg_stage1_current_max,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45rg_bridge_residual_max,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45rg_bridge_residual_total,
                                memory_order_relaxed));
 }
 #else
