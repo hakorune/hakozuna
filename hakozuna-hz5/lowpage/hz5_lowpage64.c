@@ -2198,6 +2198,19 @@ typedef struct Hz5Lowpage64P40Split {
   size_t hard_nodes;
 } Hz5Lowpage64P40Split;
 
+static void hz5_lowpage64_append_node(void** head,
+                                      void** tail,
+                                      size_t* count,
+                                      void* node) {
+  if (!*head) {
+    *head = node;
+  } else {
+    hz5_lowpage64_link_next(*tail, node);
+  }
+  *tail = node;
+  (*count)++;
+}
+
 static void hz5_lowpage64_p40_split_global_list(void* head,
                                                 uint32_t epoch,
                                                 size_t observed,
@@ -2225,26 +2238,16 @@ static void hz5_lowpage64_p40_split_global_list(void* head,
 
     hz5_lowpage64_link_next(node, NULL);
     if (should_demote) {
-      if (!out->demote_head) {
-        out->demote_head = node;
-      } else {
-        hz5_lowpage64_link_next(out->demote_tail, node);
-      }
-      out->demote_tail = node;
-      out->demote_count++;
+      hz5_lowpage64_append_node(&out->demote_head, &out->demote_tail,
+                                &out->demote_count, node);
       if (over_hard && !old_enough) {
         out->hard_nodes++;
       } else {
         out->age_nodes++;
       }
     } else {
-      if (!out->keep_head) {
-        out->keep_head = node;
-      } else {
-        hz5_lowpage64_link_next(out->keep_tail, node);
-      }
-      out->keep_tail = node;
-      out->keep_count++;
+      hz5_lowpage64_append_node(&out->keep_head, &out->keep_tail,
+                                &out->keep_count, node);
     }
 
     node = next;
