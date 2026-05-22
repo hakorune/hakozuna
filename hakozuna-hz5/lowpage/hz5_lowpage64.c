@@ -511,10 +511,13 @@ static _Atomic(uintptr_t) g_hz5_lowpage64_raw_min;
 static _Atomic(uintptr_t) g_hz5_lowpage64_raw_max;
 #if HZ5_LOWPAGE64_STAGE1_ENABLED
 /*
- * Shared BRIDGE_COLD/stage1 queue for P43p/P45 evidence lanes. The canonical
- * speed layer is still release_common() -> relbuf -> global batch -> acquired
- * stash; this queue only holds P40 source-demotion intents that the current
- * admission experiment has decided to keep bridge-side.
+ * Shared BRIDGE_COLD/stage1 queue for P43p/P45 evidence lanes. The storage
+ * names retain the P43p prefix for compatibility with existing diagnostics,
+ * but new code should treat this as HZ5 bridge-cold state.
+ *
+ * The canonical speed layer is still release_common() -> relbuf -> global
+ * batch -> acquired stash; this queue only holds P40 source-demotion intents
+ * that the current admission experiment has decided to keep bridge-side.
  */
 static _Atomic(uintptr_t) g_hz5_lowpage64_p43p_stage1_head;
 static _Atomic size_t g_hz5_lowpage64_p43p_stage1_count;
@@ -2106,6 +2109,12 @@ static void hz5_lowpage64_p43p_stage1_push_list(void* head,
   hz5_lowpage64_p43p_stage1_push_list_impl(head, tail, count, 1);
 }
 
+static void hz5_lowpage64_bridge_cold_push_list(void* head,
+                                                void* tail,
+                                                size_t count) {
+  hz5_lowpage64_p43p_stage1_push_list(head, tail, count);
+}
+
 static void* hz5_lowpage64_p43p_stage1_pop_batch(size_t limit,
                                                  size_t* out_count) {
   /*
@@ -2149,6 +2158,11 @@ static void* hz5_lowpage64_p43p_stage1_pop_batch(size_t limit,
     *out_count = batch_count;
   }
   return head;
+}
+
+static void* hz5_lowpage64_bridge_cold_pop_batch(size_t limit,
+                                                 size_t* out_count) {
+  return hz5_lowpage64_p43p_stage1_pop_batch(limit, out_count);
 }
 #endif
 
@@ -2288,13 +2302,13 @@ static void hz5_lowpage64_p40_apply_demote_intents(
 #if HZ5_LOWPAGE64_P45_REFINED_GATE
   if (hz5_lowpage64_p45_should_stage1_demote_intent(
           observed, split->demote_count)) {
-    hz5_lowpage64_p43p_stage1_push_list(split->demote_head,
+    hz5_lowpage64_bridge_cold_push_list(split->demote_head,
                                         split->demote_tail,
                                         split->demote_count);
     return;
   }
 #else
-  hz5_lowpage64_p43p_stage1_push_list(split->demote_head,
+  hz5_lowpage64_bridge_cold_push_list(split->demote_head,
                                       split->demote_tail,
                                       split->demote_count);
   (void)observed;
@@ -2853,7 +2867,7 @@ void* hz5_lowpage64_acquire(size_t raw_bytes) {
    * slot state. It is reuse, not drain-to-OS.
    */
   void* bridge_cold =
-      hz5_lowpage64_p43p_stage1_pop_batch(stage1_limit,
+      hz5_lowpage64_bridge_cold_pop_batch(stage1_limit,
                                           &bridge_cold_count);
   if (bridge_cold) {
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_acquired_count_total,
@@ -3035,7 +3049,7 @@ static Hz5Lowpage64P43oFreeBuckets hz5_lowpage64_p43o_current_buckets(
   return buckets;
 }
 
-static size_t hz5_lowpage64_stage1_current_for_stats(void) {
+static size_t hz5_lowpage64_bridge_cold_current_for_stats(void) {
 #if HZ5_LOWPAGE64_STAGE1_ENABLED
   return atomic_load_explicit(&g_hz5_lowpage64_p43p_stage1_count,
                               memory_order_relaxed);
@@ -3069,7 +3083,8 @@ void hz5_lowpage64_print_snapshot(const char* label) {
       hz5_lowpage64_p44_current_candidates(&p43_stats);
   Hz5Lowpage64P43oFreeBuckets p43o_current =
       hz5_lowpage64_p43o_current_buckets(&p43_stats);
-  size_t stage1_current = hz5_lowpage64_stage1_current_for_stats();
+  size_t bridge_cold_current =
+      hz5_lowpage64_bridge_cold_current_for_stats();
 
   fprintf(stderr,
           "[HZ5_LOWPAGE64_SNAPSHOT] label=%s "
@@ -3439,7 +3454,7 @@ void hz5_lowpage64_print_snapshot(const char* label) {
           atomic_load_explicit(
               &g_hz5_lowpage64_p43p_p43_committed_free_max,
               memory_order_relaxed),
-          stage1_current,
+          bridge_cold_current,
           atomic_load_explicit(
               &g_hz5_lowpage64_p43p_stage1_enqueue_calls,
               memory_order_relaxed),
@@ -3586,7 +3601,7 @@ void hz5_lowpage64_print_snapshot(const char* label) {
               memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_p45rg_stage1_overlap,
                                memory_order_relaxed),
-          stage1_current,
+          bridge_cold_current,
           atomic_load_explicit(&g_hz5_lowpage64_p45rg_stage1_enqueue_calls,
                                memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_p45rg_stage1_enqueue_nodes,
@@ -3690,7 +3705,8 @@ static void hz5_lowpage64_print_once(void) {
       hz5_lowpage64_p44_current_candidates(&p43_stats);
   Hz5Lowpage64P43oFreeBuckets p43o_current =
       hz5_lowpage64_p43o_current_buckets(&p43_stats);
-  size_t stage1_current = hz5_lowpage64_stage1_current_for_stats();
+  size_t bridge_cold_current =
+      hz5_lowpage64_bridge_cold_current_for_stats();
 
   fprintf(stderr,
           "[HZ5_LOWPAGE64] alloc_calls=%zu span_hits=%zu "
@@ -4188,7 +4204,7 @@ static void hz5_lowpage64_print_once(void) {
           atomic_load_explicit(
               &g_hz5_lowpage64_p43p_p43_committed_free_max,
               memory_order_relaxed),
-          stage1_current,
+          bridge_cold_current,
           atomic_load_explicit(
               &g_hz5_lowpage64_p43p_stage1_enqueue_calls,
               memory_order_relaxed),
