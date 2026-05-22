@@ -11,6 +11,9 @@
 extern "C" {
 #endif
 
+#define HZ5_WRAPPER_HDR_MAGIC UINT64_C(0x485a355752415036)
+#define HZ5_WRAPPER_HDR_COOKIE UINT64_C(0xd1b54a32d192ed03)
+
 enum {
   HZ5_WRAPPER_SOURCE_HZ3 = 1,
   HZ5_WRAPPER_SOURCE_P17_PAGEBIN = 2,
@@ -78,6 +81,22 @@ enum {
 };
 
 uintptr_t hz5_wrapper_cookie(uintptr_t raw, uintptr_t aligned);
+static inline void hz5_wrapper_init_prefix(Hz5WrapperHdr* header,
+                                           uintptr_t raw,
+                                           uintptr_t aligned,
+                                           size_t requested,
+                                           size_t raw_bytes,
+                                           uint32_t source) {
+  header->magic = HZ5_WRAPPER_HDR_MAGIC;
+  header->layout_version = HZ5_WRAPPER_LAYOUT_VERSION;
+  header->layout_size = (uint32_t)sizeof(Hz5WrapperHdr);
+  header->raw = raw;
+  header->cookie = hz5_wrapper_cookie(raw, aligned);
+  header->requested = requested;
+  header->raw_bytes = raw_bytes;
+  header->source = source;
+  header->reserved = 0;
+}
 void hz5_wrapper_init(Hz5WrapperHdr* header, uintptr_t raw, uintptr_t aligned,
                       size_t requested, size_t raw_bytes, uint32_t source);
 int hz5_wrapper_decode(void* ptr, Hz5WrapperHdr** header_out);

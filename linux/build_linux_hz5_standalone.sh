@@ -6,6 +6,10 @@ ARCH="auto"
 OUT_DIR=""
 ENABLE_LINUX_P43=0
 LINUX_LOCAL2P=0
+LINUX_LOCAL2P_TLS_PACKED=0
+LINUX_LOCAL2P_TLS_INITIAL_EXEC=0
+LINUX_LOCAL2P_DIRECT_ROUTE=0
+LINUX_LOCAL2P_DIRECT_INIT=0
 LINUX_P25_BRIDGE_ATTR=0
 LINUX_P25_BRIDGE_ATTR_NO_CAS=0
 LINUX_P25_BRIDGE_ATTR_NO_COOKIE=0
@@ -30,6 +34,16 @@ Options:
   --arch <arch>      override detected arch (default: auto)
   --out-dir DIR      output directory (default: hakozuna-hz5/out/linux/<arch>)
   --linux-local2p    enable Linux Local2P exact 64K/a8192 TLS span candidate
+  --linux-local2p-tls-packed
+                     pack Local2P TLS state into one TLS object
+  --linux-local2p-initial-exec
+                     build with -ftls-model=initial-exec for Local2P speed A/B
+  --linux-local2p-direct-route
+                     test Local2P exact 64K/a8192 before generic route helper
+  --linux-local2p-direct-init
+                     initialize Local2P wrapper prefix directly
+  --linux-local2p-fast
+                     enable packed TLS, initial-exec, direct route, direct init
   --linux-p25-bridge-attr
                      preserve P25 bridge topology with wrapper attr CAS guard
   --linux-p25-bridge-attr-no-cas
@@ -75,6 +89,34 @@ while [[ $# -gt 0 ]]; do
       ;;
     --linux-local2p)
       LINUX_LOCAL2P=1
+      shift
+      ;;
+    --linux-local2p-tls-packed)
+      LINUX_LOCAL2P=1
+      LINUX_LOCAL2P_TLS_PACKED=1
+      shift
+      ;;
+    --linux-local2p-initial-exec)
+      LINUX_LOCAL2P=1
+      LINUX_LOCAL2P_TLS_INITIAL_EXEC=1
+      shift
+      ;;
+    --linux-local2p-direct-route)
+      LINUX_LOCAL2P=1
+      LINUX_LOCAL2P_DIRECT_ROUTE=1
+      shift
+      ;;
+    --linux-local2p-direct-init)
+      LINUX_LOCAL2P=1
+      LINUX_LOCAL2P_DIRECT_INIT=1
+      shift
+      ;;
+    --linux-local2p-fast)
+      LINUX_LOCAL2P=1
+      LINUX_LOCAL2P_TLS_PACKED=1
+      LINUX_LOCAL2P_TLS_INITIAL_EXEC=1
+      LINUX_LOCAL2P_DIRECT_ROUTE=1
+      LINUX_LOCAL2P_DIRECT_INIT=1
       shift
       ;;
     --linux-p25-bridge-attr)
@@ -289,6 +331,19 @@ if [[ "$LINUX_LOCAL2P" -eq 1 ]]; then
     -DBENCHLAB_HZ5_LINUX_LOCAL2P=1
     -DBENCHLAB_HZ5_LINUX_LOCAL2P_TLS_CAP=1
   )
+  if [[ "$LINUX_LOCAL2P_TLS_PACKED" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED=1)
+  fi
+  if [[ "$LINUX_LOCAL2P_DIRECT_ROUTE" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LOCAL2P_DIRECT_ROUTE=1)
+  fi
+  if [[ "$LINUX_LOCAL2P_DIRECT_INIT" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LOCAL2P_DIRECT_INIT=1)
+  fi
+  if [[ "$LINUX_LOCAL2P_TLS_INITIAL_EXEC" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LOCAL2P_TLS_INITIAL_EXEC=1)
+    COMMON_FLAGS+=(-ftls-model=initial-exec)
+  fi
 fi
 
 if [[ "$ENABLE_LINUX_P43" -eq 1 ]]; then
@@ -343,6 +398,10 @@ fi
   echo "trace_lane=${TRACE_LANE}"
   echo "speed_lane=${SPEED_LANE}"
   echo "linux_local2p=${LINUX_LOCAL2P}"
+  echo "linux_local2p_tls_packed=${LINUX_LOCAL2P_TLS_PACKED}"
+  echo "linux_local2p_tls_initial_exec=${LINUX_LOCAL2P_TLS_INITIAL_EXEC}"
+  echo "linux_local2p_direct_route=${LINUX_LOCAL2P_DIRECT_ROUTE}"
+  echo "linux_local2p_direct_init=${LINUX_LOCAL2P_DIRECT_INIT}"
   echo "linux_p25_bridge_attr=${LINUX_P25_BRIDGE_ATTR}"
   echo "linux_p25_bridge_attr_no_cas=${LINUX_P25_BRIDGE_ATTR_NO_CAS}"
   echo "linux_p25_bridge_attr_no_cookie=${LINUX_P25_BRIDGE_ATTR_NO_COOKIE}"

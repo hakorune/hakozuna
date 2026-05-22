@@ -15,6 +15,7 @@ SKIP_BUILD=0
 SKIP_PREPARE_ALLOCATORS=0
 BUILD_HZ3_HZ4=0
 HZ5_LOCAL2P=0
+HZ5_LOCAL2P_FAST=0
 
 usage() {
   cat <<'EOF'
@@ -37,6 +38,7 @@ Options:
   --skip-prepare-allocators  skip mimalloc/tcmalloc cache prep
   --build-hz3-hz4            rebuild HZ3/HZ4 preload libraries before running
   --hz5-local2p              build HZ5 with --linux-local2p before comparing
+  --hz5-local2p-fast         build HZ5 with --linux-local2p-fast
   --help                     show this message
 EOF
 }
@@ -56,6 +58,7 @@ while [[ $# -gt 0 ]]; do
     --skip-prepare-allocators) SKIP_PREPARE_ALLOCATORS=1; shift ;;
     --build-hz3-hz4) BUILD_HZ3_HZ4=1; shift ;;
     --hz5-local2p) HZ5_LOCAL2P=1; shift ;;
+    --hz5-local2p-fast) HZ5_LOCAL2P=1; HZ5_LOCAL2P_FAST=1; shift ;;
     --help|-h) usage; exit 0 ;;
     *) echo "unknown option: $1" >&2; usage >&2; exit 1 ;;
   esac
@@ -81,7 +84,9 @@ mkdir -p "$OUTDIR"
 
 if [[ "$SKIP_BUILD" -ne 1 ]]; then
   hz5_build_args=(--arch "$ARCH")
-  if [[ "$HZ5_LOCAL2P" -eq 1 ]]; then
+  if [[ "$HZ5_LOCAL2P_FAST" -eq 1 ]]; then
+    hz5_build_args+=(--linux-local2p-fast)
+  elif [[ "$HZ5_LOCAL2P" -eq 1 ]]; then
     hz5_build_args+=(--linux-local2p)
   fi
   "${ROOT_DIR}/linux/build_linux_hz5_standalone.sh" "${hz5_build_args[@]}"
@@ -157,6 +162,7 @@ done
   echo "allocators=${ALLOCATORS}"
   echo "build_hz3_hz4=${BUILD_HZ3_HZ4}"
   echo "hz5_local2p=${HZ5_LOCAL2P}"
+  echo "hz5_local2p_fast=${HZ5_LOCAL2P_FAST}"
   echo "hz5_lib=${HZ5_LIB}"
   echo "hz5_bench=${HZ5_BENCH}"
   echo "generic_bench=${GENERIC_BENCH}"

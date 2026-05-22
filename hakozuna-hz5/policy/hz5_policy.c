@@ -73,6 +73,18 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_LOCAL2P 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
+#define BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED 0
+#endif
+
+#ifndef BENCHLAB_HZ5_LINUX_LOCAL2P_DIRECT_ROUTE
+#define BENCHLAB_HZ5_LINUX_LOCAL2P_DIRECT_ROUTE 0
+#endif
+
+#ifndef BENCHLAB_HZ5_LINUX_LOCAL2P_DIRECT_INIT
+#define BENCHLAB_HZ5_LINUX_LOCAL2P_DIRECT_INIT 0
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_LOCAL2P_RAW_BYTES
 #define BENCHLAB_HZ5_LINUX_LOCAL2P_RAW_BYTES ((size_t)131072)
 #endif
@@ -136,10 +148,20 @@ static uintptr_t g_hz5_policy_bridge_secret_anchor;
 #endif
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_LOCAL2P
 static uintptr_t g_hz5_policy_local2p_secret_anchor;
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
+typedef struct Hz5PolicyLocal2PTls {
+  void* head;
+  size_t count;
+  uintptr_t owner_token;
+  uint32_t generation;
+} Hz5PolicyLocal2PTls;
+static _Thread_local Hz5PolicyLocal2PTls g_hz5_policy_local2p_tls;
+#else
 static _Thread_local void* g_hz5_policy_local2p_head;
 static _Thread_local size_t g_hz5_policy_local2p_count;
 static _Thread_local uintptr_t g_hz5_policy_local2p_owner_token;
 static _Thread_local uint32_t g_hz5_policy_local2p_generation;
+#endif
 #endif
 
 static void hz5_policy_register_stats_once(void) {
@@ -333,12 +355,26 @@ typedef struct Hz5LinuxLocal2PNode {
   struct Hz5LinuxLocal2PNode* next;
 } Hz5LinuxLocal2PNode;
 
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
+static Hz5PolicyLocal2PTls* hz5_policy_local2p_tls(void) {
+  return &g_hz5_policy_local2p_tls;
+}
+#endif
+
 static uintptr_t hz5_policy_local2p_owner_token(void) {
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
+  Hz5PolicyLocal2PTls* tls = hz5_policy_local2p_tls();
+  if (!tls->owner_token) {
+    tls->owner_token = (uintptr_t)&tls->owner_token;
+  }
+  return tls->owner_token;
+#else
   if (!g_hz5_policy_local2p_owner_token) {
     g_hz5_policy_local2p_owner_token =
         (uintptr_t)&g_hz5_policy_local2p_owner_token;
   }
   return g_hz5_policy_local2p_owner_token;
+#endif
 }
 
 static uint64_t hz5_policy_local2p_cookie(uintptr_t raw,
@@ -362,27 +398,48 @@ static int hz5_policy_local2p_exact(size_t size, size_t align) {
 }
 
 static void* hz5_policy_local2p_pop(void) {
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
+  Hz5PolicyLocal2PTls* tls = hz5_policy_local2p_tls();
+  Hz5LinuxLocal2PNode* node = (Hz5LinuxLocal2PNode*)tls->head;
+#else
   Hz5LinuxLocal2PNode* node =
       (Hz5LinuxLocal2PNode*)g_hz5_policy_local2p_head;
+#endif
   if (!node) {
     return NULL;
   }
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
+  tls->head = node->next;
+  --tls->count;
+#else
   g_hz5_policy_local2p_head = node->next;
   --g_hz5_policy_local2p_count;
+#endif
   hz5_trace_inc(HZ5_TRACE_ALLOC_LOCAL2P_TLS_HIT);
   return (void*)node;
 }
 
 static int hz5_policy_local2p_push(void* raw_ptr) {
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
+  Hz5PolicyLocal2PTls* tls = hz5_policy_local2p_tls();
+  if (tls->count >= BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_CAP) {
+#else
   if (g_hz5_policy_local2p_count >= BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_CAP) {
+#endif
     hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_OVERFLOW);
     free(raw_ptr);
     return 0;
   }
   Hz5LinuxLocal2PNode* node = (Hz5LinuxLocal2PNode*)raw_ptr;
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
+  node->next = (Hz5LinuxLocal2PNode*)tls->head;
+  tls->head = node;
+  ++tls->count;
+#else
   node->next = (Hz5LinuxLocal2PNode*)g_hz5_policy_local2p_head;
   g_hz5_policy_local2p_head = node;
   ++g_hz5_policy_local2p_count;
+#endif
   hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_TLS);
   return 1;
 }
@@ -400,10 +457,18 @@ static void* hz5_policy_local2p_os_alloc(void) {
 
 static void hz5_policy_local2p_init_header(Hz5WrapperHdr* header,
                                            uintptr_t aligned) {
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
+  Hz5PolicyLocal2PTls* tls = hz5_policy_local2p_tls();
+  uint32_t generation = ++tls->generation;
+  if (generation == 0u) {
+    generation = ++tls->generation;
+  }
+#else
   uint32_t generation = ++g_hz5_policy_local2p_generation;
   if (generation == 0u) {
     generation = ++g_hz5_policy_local2p_generation;
   }
+#endif
   uintptr_t owner = hz5_policy_local2p_owner_token();
   header->local2p_owner = owner;
   header->local2p_generation = generation;
@@ -438,9 +503,15 @@ static void* hz5_policy_local2p_alloc(size_t size, size_t align) {
   }
 
   Hz5WrapperHdr* header = (Hz5WrapperHdr*)(aligned - sizeof(Hz5WrapperHdr));
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_DIRECT_INIT
+  hz5_wrapper_init_prefix(header, raw, aligned, size,
+                          BENCHLAB_HZ5_LINUX_LOCAL2P_RAW_BYTES,
+                          HZ5_WRAPPER_SOURCE_LINUX_LOCAL2P);
+#else
   hz5_wrapper_init(header, raw, aligned, size,
                    BENCHLAB_HZ5_LINUX_LOCAL2P_RAW_BYTES,
                    HZ5_WRAPPER_SOURCE_LINUX_LOCAL2P);
+#endif
   hz5_policy_local2p_init_header(header, aligned);
   return (void*)aligned;
 }
@@ -692,8 +763,19 @@ void* hz5_policy_alloc_aligned(size_t size, size_t align,
   hz5_route_p12_on_alloc(size, align);
 #endif
 
+#if defined(__linux__) && BENCHLAB_HZ5_LINUX_LOCAL2P && \
+    BENCHLAB_HZ5_LINUX_LOCAL2P_DIRECT_ROUTE
+  if (hz5_policy_local2p_exact(size, align)) {
+    void* wrapped = hz5_policy_local2p_alloc(size, align);
+    if (wrapped) {
+      return wrapped;
+    }
+  }
+#endif
+
   if (hz5_route_exact_a8192(size, align)) {
-#if defined(__linux__) && BENCHLAB_HZ5_LINUX_LOCAL2P
+#if defined(__linux__) && BENCHLAB_HZ5_LINUX_LOCAL2P && \
+    !BENCHLAB_HZ5_LINUX_LOCAL2P_DIRECT_ROUTE
     if (hz5_policy_local2p_exact(size, align)) {
       void* wrapped = hz5_policy_local2p_alloc(size, align);
       if (wrapped) {

@@ -1224,12 +1224,40 @@ Initial smoke results:
   private/raw-results/linux/local2p_quick_compare`.
   Result: HZ5 Local2P `69.5M`, HZ4 `113.2M`, tcmalloc `267.6M`.
 
+Fast safe A/B implementation:
+
+- Added safe A/B knobs:
+  `BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED`,
+  `BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_INITIAL_EXEC`,
+  `BENCHLAB_HZ5_LINUX_LOCAL2P_DIRECT_ROUTE`,
+  `BENCHLAB_HZ5_LINUX_LOCAL2P_DIRECT_INIT`.
+- Build helpers:
+  `--linux-local2p-tls-packed`, `--linux-local2p-initial-exec`,
+  `--linux-local2p-direct-route`, `--linux-local2p-direct-init`,
+  and combined `--linux-local2p-fast`.
+- Compare helper:
+  `./linux/run_linux_hz5_standalone_compare.sh --hz5-local2p-fast`.
+- Single-run A/B, `1 x 1000000 x 65536:8192`:
+  base `74.9M`, packed TLS `77.2M`, initial-exec `106.8M`,
+  direct-route `86.7M`, direct-init `86.9M`, combined fast `133.6M`.
+- Fast trace route for `1 x 100000 x 65536:8192`:
+  `alloc_local2p_os=1`, `alloc_local2p_tls_hit=99999`,
+  `free_local2p_tls=100000`, `wrapper_decode_ok=100000`.
+- Fast perf sample:
+  `257.9M instructions`, `51.4M branches`, `62.1M cycles`.
+- Fast compare, `runs=3`, `iters=100000`, `65536:8192`:
+  HZ5 Local2P fast median `116.6M`, HZ4 median `115.6M`,
+  tcmalloc median `206.5M`.
+- Guard smoke:
+  `2048:8192`, `65536:4096`, `65537:16`, and `262144:4096`
+  fail closed; `4096:8192` and `8192:8192` still use the existing exact
+  route and do not enter Local2P.
+
 Next implementation target:
 
-- Keep Local2P cap1 as the safety baseline.
-- Add clearly named diagnostic variants only after the baseline is committed:
-  no-cookie, no-state, and fixed-header fast variants to isolate the remaining
-  instruction cost.
+- Keep `--linux-local2p-fast` as the safe speed candidate.
+- Next isolate remaining tcmalloc gap with optional diagnostics:
+  no-local-cookie, no-state/CAS, no-owner-check, and inline decode upper-bound.
 
 Go/no-go:
 
