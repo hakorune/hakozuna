@@ -763,3 +763,33 @@ P40 release:
 Admission / temperature:
   core control-plane concern, not another P43p local knob
 ```
+
+## Lane Cleanup After P43p
+
+Use this framing for follow-up work:
+
+```text
+selected balanced lane:
+  P43i / hz5-p43-balanced-watch
+
+speed baseline:
+  P25a / hz5-speed-current
+
+RSS-bounded baseline:
+  P33 / hz5-rss-bounded-current
+
+closed evidence:
+  P43o/P43p source-admission controls
+  P43p.2 pop-all no-go
+  P43p.3a limited-acquire evidence
+  P43p.4 age/pollution diagnostic evidence
+
+next design:
+  P45 / HZ5 Control Plane / BridgeSourceControl
+```
+
+P43p should not receive more local popN / age-gated behavior knobs unless a new
+design review explicitly reopens it. The useful result is the algorithm lesson:
+P25 bridge is the speed layer, P43 segment slots are the source layer, and P40
+release under the P43i contract is source-demotion intent rather than OS
+memory return.
