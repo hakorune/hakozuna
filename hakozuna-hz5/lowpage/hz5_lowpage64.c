@@ -2167,6 +2167,149 @@ static size_t hz5_lowpage64_free_list_p40_global(void* head,
   return freed;
 }
 
+typedef struct Hz5Lowpage64P40Split {
+  void* keep_head;
+  void* keep_tail;
+  size_t keep_count;
+  void* demote_head;
+  void* demote_tail;
+  size_t demote_count;
+  size_t age_nodes;
+  size_t hard_nodes;
+} Hz5Lowpage64P40Split;
+
+static void hz5_lowpage64_p40_split_global_list(void* head,
+                                                uint32_t epoch,
+                                                size_t observed,
+                                                Hz5Lowpage64P40Split* out) {
+  /*
+   * Historical behavior split the global batch into keep vs release lists.
+   * The control-plane reading is keep vs source-demotion intent.
+   */
+  void* node = head;
+  while (node) {
+    void* next = hz5_lowpage64_link_next_load(node);
+    uint32_t node_epoch = hz5_lowpage64_node_epoch_load(node);
+    uint32_t age = epoch - node_epoch;
+    int over_hard =
+#if HZ5_LOWPAGE64_P40_GLOBAL_HARD_CAP > 0
+        observed > HZ5_LOWPAGE64_P40_GLOBAL_HARD_CAP;
+#else
+        0;
+#endif
+    int old_enough = age >= HZ5_LOWPAGE64_P40_TTL_EPOCHS;
+    int should_demote =
+        out->demote_count < HZ5_LOWPAGE64_P40_RELEASE_BATCH &&
+        observed - out->demote_count > HZ5_LOWPAGE64_P40_GLOBAL_SOFT_CAP &&
+        (old_enough || over_hard);
+
+    hz5_lowpage64_link_next(node, NULL);
+    if (should_demote) {
+      if (!out->demote_head) {
+        out->demote_head = node;
+      } else {
+        hz5_lowpage64_link_next(out->demote_tail, node);
+      }
+      out->demote_tail = node;
+      out->demote_count++;
+      if (over_hard && !old_enough) {
+        out->hard_nodes++;
+      } else {
+        out->age_nodes++;
+      }
+    } else {
+      if (!out->keep_head) {
+        out->keep_head = node;
+      } else {
+        hz5_lowpage64_link_next(out->keep_tail, node);
+      }
+      out->keep_tail = node;
+      out->keep_count++;
+    }
+
+    node = next;
+  }
+}
+
+#if HZ5_LOWPAGE64_STAGE1_ENABLED && HZ5_LOWPAGE64_P45_REFINED_GATE
+static int hz5_lowpage64_p45_should_stage1_demote_intent(
+    size_t observed,
+    size_t demote_count) {
+  /*
+   * P45 refined gate is the first control-plane behavior probe:
+   * - OPEN + bridge residual within soft cap: preserve the existing P40 path.
+   * - DRAIN/CLOSED or bridge residual excess: stage only this P40 demotion
+   *   intent as BRIDGE_COLD.
+   *
+   * This deliberately avoids P43p's blunt "all candidates become stage1"
+   * shape and does not trim/decommit/release memory.
+   */
+  size_t p45_state = atomic_load_explicit(
+      &g_hz5_lowpage64_p45_runtime_state, memory_order_relaxed);
+  Hz5Lowpage64P45Decision p45_decision =
+      hz5_lowpage64_p45_decide(observed, p45_state);
+  int p45_stage1 =
+      p45_decision.state_blocks || p45_decision.bridge_excess_blocks;
+  if (demote_count > 0) {
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45rg_demote_intent,
+                            demote_count);
+    HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p45rg_bridge_residual_max,
+                            p45_decision.bridge_residual);
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45rg_bridge_residual_total,
+                            p45_decision.bridge_residual);
+    if (p45_stage1) {
+      HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45rg_stage1_any,
+                              demote_count);
+      if (p45_decision.state_blocks) {
+        HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45rg_stage1_state,
+                                demote_count);
+      }
+      if (p45_decision.bridge_excess_blocks) {
+        HZ5_LOWPAGE64_COUNT_ADD(
+            g_hz5_lowpage64_p45rg_stage1_bridge_excess, demote_count);
+      }
+      if (p45_decision.state_blocks && p45_decision.bridge_excess_blocks) {
+        HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45rg_stage1_overlap,
+                                demote_count);
+      }
+    } else {
+      HZ5_LOWPAGE64_COUNT_ADD(
+          g_hz5_lowpage64_p45rg_allowed_open_bridge_soft, demote_count);
+    }
+  }
+  return p45_stage1;
+}
+#endif
+
+static void hz5_lowpage64_p40_apply_demote_intents(
+    const Hz5Lowpage64P40Split* split,
+    size_t observed) {
+#if HZ5_LOWPAGE64_STAGE1_ENABLED
+#if HZ5_LOWPAGE64_P45_REFINED_GATE
+  if (hz5_lowpage64_p45_should_stage1_demote_intent(
+          observed, split->demote_count)) {
+    hz5_lowpage64_p43p_stage1_push_list(split->demote_head,
+                                        split->demote_tail,
+                                        split->demote_count);
+    return;
+  }
+#else
+  hz5_lowpage64_p43p_stage1_push_list(split->demote_head,
+                                      split->demote_tail,
+                                      split->demote_count);
+  (void)observed;
+  return;
+#endif
+#else
+  (void)observed;
+#endif
+
+  hz5_lowpage64_count_trim(
+      hz5_lowpage64_free_list_p40_global(split->demote_head,
+                                         split->age_nodes,
+                                         split->hard_nodes));
+}
+
 static void hz5_lowpage64_p40_checkpoint(void) {
   // P44 observes candidate state at slow/checkpoint boundaries only. It must
   // not turn this P40 checkpoint into an actual trim policy by accident.
@@ -2238,137 +2381,24 @@ static void hz5_lowpage64_p40_checkpoint(void) {
     return;
   }
 
-  void* keep_head = NULL;
-  void* keep_tail = NULL;
-  size_t keep_count = 0;
-  void* release_head = NULL;
-  void* release_tail = NULL;
-  size_t release_count = 0;
-  size_t age_nodes = 0;
-  size_t hard_nodes = 0;
-
   /*
-   * Historical name: release_head.
+   * Historical name: release list.
    *
    * Under the P43i/P45 contract these nodes are better read as P40
    * source-demotion intents. If the lane has no bridge-cold control they may
    * still go to the old raw release path, but P45 can instead keep them
    * bridge-side as BRIDGE_COLD/stage1 without decommit/runtime release.
    */
-  void* node = head;
-  while (node) {
-    void* next = hz5_lowpage64_link_next_load(node);
-    uint32_t node_epoch = hz5_lowpage64_node_epoch_load(node);
-    uint32_t age = epoch - node_epoch;
-    int over_hard =
-#if HZ5_LOWPAGE64_P40_GLOBAL_HARD_CAP > 0
-        observed > HZ5_LOWPAGE64_P40_GLOBAL_HARD_CAP;
-#else
-        0;
-#endif
-    int old_enough = age >= HZ5_LOWPAGE64_P40_TTL_EPOCHS;
-    int should_release =
-        release_count < HZ5_LOWPAGE64_P40_RELEASE_BATCH &&
-        observed - release_count > HZ5_LOWPAGE64_P40_GLOBAL_SOFT_CAP &&
-        (old_enough || over_hard);
+  Hz5Lowpage64P40Split split = {0};
+  hz5_lowpage64_p40_split_global_list(head, epoch, observed, &split);
 
-    if (should_release) {
-      hz5_lowpage64_link_next(node, NULL);
-      if (!release_head) {
-        release_head = node;
-      } else {
-        hz5_lowpage64_link_next(release_tail, node);
-      }
-      release_tail = node;
-      release_count++;
-      if (over_hard && !old_enough) {
-        hard_nodes++;
-      } else {
-        age_nodes++;
-      }
-    } else {
-      hz5_lowpage64_link_next(node, NULL);
-      if (!keep_head) {
-        keep_head = node;
-      } else {
-        hz5_lowpage64_link_next(keep_tail, node);
-      }
-      keep_tail = node;
-      keep_count++;
-    }
-
-    node = next;
+  if (split.keep_head) {
+    hz5_lowpage64_global_push_list(split.keep_head, split.keep_tail,
+                                   split.keep_count);
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p40_keep_nodes,
+                            split.keep_count);
   }
-
-  if (keep_head) {
-    hz5_lowpage64_global_push_list(keep_head, keep_tail, keep_count);
-    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p40_keep_nodes, keep_count);
-  }
-#if HZ5_LOWPAGE64_STAGE1_ENABLED
-#if HZ5_LOWPAGE64_P45_REFINED_GATE
-  /*
-   * P45 refined gate is the first control-plane behavior probe:
-   * - OPEN + bridge residual within soft cap: preserve the existing P40 path.
-   * - DRAIN/CLOSED or bridge residual excess: stage only this P40 demotion
-   *   intent as BRIDGE_COLD.
-   *
-   * This deliberately avoids P43p's blunt "all candidates become stage1"
-   * shape and does not trim/decommit/release memory.
-   */
-  size_t p45_state = atomic_load_explicit(
-      &g_hz5_lowpage64_p45_runtime_state, memory_order_relaxed);
-  Hz5Lowpage64P45Decision p45_decision =
-      hz5_lowpage64_p45_decide(observed, p45_state);
-  int p45_stage1 =
-      p45_decision.state_blocks || p45_decision.bridge_excess_blocks;
-  if (release_count > 0) {
-    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45rg_demote_intent,
-                            release_count);
-    HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p45rg_bridge_residual_max,
-                            p45_decision.bridge_residual);
-    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45rg_bridge_residual_total,
-                            p45_decision.bridge_residual);
-    if (p45_stage1) {
-      HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45rg_stage1_any,
-                              release_count);
-      if (p45_decision.state_blocks) {
-        HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45rg_stage1_state,
-                                release_count);
-      }
-      if (p45_decision.bridge_excess_blocks) {
-        HZ5_LOWPAGE64_COUNT_ADD(
-            g_hz5_lowpage64_p45rg_stage1_bridge_excess, release_count);
-      }
-      if (p45_decision.state_blocks && p45_decision.bridge_excess_blocks) {
-        HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45rg_stage1_overlap,
-                                release_count);
-      }
-    } else {
-      HZ5_LOWPAGE64_COUNT_ADD(
-          g_hz5_lowpage64_p45rg_allowed_open_bridge_soft, release_count);
-    }
-  }
-  if (p45_stage1) {
-    hz5_lowpage64_p43p_stage1_push_list(release_head, release_tail,
-                                        release_count);
-    (void)age_nodes;
-    (void)hard_nodes;
-  } else {
-    hz5_lowpage64_count_trim(
-        hz5_lowpage64_free_list_p40_global(release_head, age_nodes,
-                                           hard_nodes));
-  }
-#else
-  hz5_lowpage64_p43p_stage1_push_list(release_head, release_tail,
-                                      release_count);
-  (void)age_nodes;
-  (void)hard_nodes;
-#endif
-#else
-  hz5_lowpage64_count_trim(
-      hz5_lowpage64_free_list_p40_global(release_head, age_nodes,
-                                         hard_nodes));
-#endif
+  hz5_lowpage64_p40_apply_demote_intents(&split, observed);
   hz5_lowpage64_p45dr_note(HZ5_LOWPAGE64_P45_REASON_P40);
 }
 #else
