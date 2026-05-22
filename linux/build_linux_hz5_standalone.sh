@@ -166,9 +166,9 @@ fi
 
 if [[ "$LINUX_P25_BRIDGE_ATTR" -eq 1 ]]; then
   p25attr_mode_count=0
-  [[ "$LINUX_P25_BRIDGE_ATTR_NO_CAS" -eq 1 ]] && ((p25attr_mode_count++))
-  [[ "$LINUX_P25_BRIDGE_ATTR_NO_COOKIE" -eq 1 ]] && ((p25attr_mode_count++))
-  [[ "$LINUX_P25_BRIDGE_ATTR_READONLY_STATE" -eq 1 ]] && ((p25attr_mode_count++))
+  [[ "$LINUX_P25_BRIDGE_ATTR_NO_CAS" -eq 1 ]] && ((p25attr_mode_count += 1))
+  [[ "$LINUX_P25_BRIDGE_ATTR_NO_COOKIE" -eq 1 ]] && ((p25attr_mode_count += 1))
+  [[ "$LINUX_P25_BRIDGE_ATTR_READONLY_STATE" -eq 1 ]] && ((p25attr_mode_count += 1))
   if [[ "$p25attr_mode_count" -gt 1 ]]; then
     echo "p25attr diagnostic variants are mutually exclusive" >&2
     exit 1
@@ -177,12 +177,12 @@ fi
 
 if [[ "$ENABLE_LINUX_P43" -eq 1 ]]; then
   p43_mode_count=0
-  [[ "$LINUX_P43_PREPARED_BRIDGE" -eq 0 ]] && ((p43_mode_count++))
-  [[ "$LINUX_P43_UNSAFE_NO_LOOKUP" -eq 1 ]] && ((p43_mode_count++))
-  [[ "$LINUX_P43_TRUST_FAST_LOOKUP" -eq 1 ]] && ((p43_mode_count++))
-  [[ "$LINUX_P43_TRUST_WRAPPER_SOURCE" -eq 1 ]] && ((p43_mode_count++))
-  [[ "$LINUX_P43_DECODED_RAW_LOOKUP" -eq 1 ]] && ((p43_mode_count++))
-  [[ "$LINUX_P43_WRAPPER_TOKEN" -eq 1 ]] && ((p43_mode_count++))
+  [[ "$LINUX_P43_PREPARED_BRIDGE" -eq 0 ]] && ((p43_mode_count += 1))
+  [[ "$LINUX_P43_UNSAFE_NO_LOOKUP" -eq 1 ]] && ((p43_mode_count += 1))
+  [[ "$LINUX_P43_TRUST_FAST_LOOKUP" -eq 1 ]] && ((p43_mode_count += 1))
+  [[ "$LINUX_P43_TRUST_WRAPPER_SOURCE" -eq 1 ]] && ((p43_mode_count += 1))
+  [[ "$LINUX_P43_DECODED_RAW_LOOKUP" -eq 1 ]] && ((p43_mode_count += 1))
+  [[ "$LINUX_P43_WRAPPER_TOKEN" -eq 1 ]] && ((p43_mode_count += 1))
   if [[ "$p43_mode_count" -gt 1 ]]; then
     echo "P43 lane selectors are mutually exclusive" >&2
     exit 1

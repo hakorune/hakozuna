@@ -856,6 +856,144 @@ Remaining source cleanup items:
   diagnostic/reporting half from the acquire/release core before adding more
   Linux lanes.
 
+### Measurement Checkpoint Before Next Development
+
+Environment:
+
+```text
+commit=42c5dad4505e6a19aa3c01161b727e6445aee2f3
+kernel=Linux 6.8.0-90-generic x86_64
+cpu=AMD Ryzen 7 5825U with Radeon Graphics, 8C/16T
+gcc=gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0
+glibc=ldd (Ubuntu GLIBC 2.35-0ubuntu3.13) 2.35
+```
+
+Local external allocator comparison after cleanup:
+
+```bash
+MIMALLOC_SO=private/bench-assets/linux/allocators/x86_64/libmimalloc2.0/usr/lib/x86_64-linux-gnu/libmimalloc.so.2 \
+TCMALLOC_SO=private/bench-assets/linux/allocators/x86_64/libtcmalloc-minimal4/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4 \
+./linux/run_linux_hz5_standalone_compare.sh --arch x86_64 --runs 10 \
+  --threads 1 --iters 1000000 --cases 65536:8192 --skip-prepare-allocators
+```
+
+Raw result folder:
+
+```bash
+private/raw-results/linux/hz5_standalone_20260523_052111
+```
+
+Summary:
+
+```text
+case          alloc     runs  median_ops_s
+s65536_a8192  hz5       10    6.64724e+07
+s65536_a8192  system    10    4.94777e+07
+s65536_a8192  mimalloc  10    1.38424e+06
+s65536_a8192  tcmalloc  10    2.60549e+08
+```
+
+Interpretation:
+
+- HZ5 is above system and this mimalloc `posix_memalign` path.
+- tcmalloc is still the local-only target to beat; its 64K/a8192 reuse/cache
+  path is about 3.9x the current HZ5 standalone lane.
+- mimalloc is not a meaningful top competitor on this exact Linux local-only
+  benchmark unless a separate mimalloc API/path proves otherwise.
+
+Focus runner fix before measurement:
+
+- `linux/build_linux_hz5_standalone.sh` used `((count++))` under
+  `set -euo pipefail`.
+- Bash returns status `1` when post-increment evaluates from zero, so the focus
+  runner exited immediately after the first diagnostic lane selector.
+- The mode counters now use `((count += 1))`, which keeps the mutual-exclusion
+  checks but does not abort valid single-selector builds.
+
+Post-fix smoke:
+
+```bash
+./linux/run_linux_hz5_p25attr_focus.sh --arch x86_64 --runs 1 \
+  --local-iters 10000 --remote-iters 1000 --rss-blocks 16 --rss-rounds 1 \
+  --mixed-blocks 16 --mixed-rounds 1 --mixed-iters 10000
+```
+
+Raw result folder:
+
+```bash
+private/raw-results/linux/hz5_p25attr_focus_20260523_053043
+```
+
+Full focus measurement:
+
+```bash
+./linux/run_linux_hz5_p25attr_focus.sh --arch x86_64 --runs 5
+```
+
+Raw result folder:
+
+```bash
+private/raw-results/linux/hz5_p25attr_focus_20260523_053057
+```
+
+Key medians:
+
+```text
+workload  lane              median_ops_s  median_pairs_s  rss_peak_kb  rss_final_kb  ru_maxrss_kb
+local     p25               6.60664e+07   NA              NA           NA            2048
+local     p25attr           6.18991e+07   NA              NA           NA            2048
+local     p25attr-nocookie  6.44440e+07   NA              NA           NA            2048
+local     p43-source        6.75595e+07   NA              NA           NA            2048
+local     p43-token         4.77805e+07   NA              NA           NA            1920
+local     p43-tokenbridge   4.24126e+07   NA              NA           NA            6016
+local     p43-trustwrap     6.40538e+07   NA              NA           NA            2048
+remote    p25               2.56398e+07   1.28199e+07     NA           NA            2944
+remote    p25attr           1.80581e+07   9.02904e+06     NA           NA            2688
+remote    p43-source        2.65844e+07   1.32922e+07     NA           NA            2816
+remote    p43-token         9.27008e+06   4.63504e+06     NA           NA            5248
+remote    p43-tokenbridge   1.02006e+07   5.10030e+06     NA           NA            8320
+remote    p43-trustwrap     2.54433e+07   1.27217e+07     NA           NA            2816
+rss       p25               61231.6       NA              76348        21096         76416
+rss       p25attr           61639.6       NA              76256        20964         76288
+rss       p43-source        79311.7       NA              72320        20096         72320
+rss       p43-token         358759        NA              71168        71168         71296
+rss       p43-tokenbridge   273347        NA              93696        93696         93824
+rss       p43-trustwrap     324923        NA              75264        75264         75392
+mixed     p25               5.75716e+07   2.87858e+07     76280        21052         76288
+mixed     p25attr           5.15415e+07   2.57708e+07     76388        21092         76416
+mixed     p43-source        6.00562e+07   3.00281e+07     72192        19968         72192
+mixed     p43-token         4.71513e+07   2.35756e+07     71168        71168         71424
+mixed     p43-tokenbridge   4.42704e+07   2.21352e+07     93568        93568         93824
+mixed     p43-trustwrap     5.68181e+07   2.84090e+07     75136        75136         75392
+```
+
+Boundary rows on `p25attr`:
+
+```text
+2048:8192    status=5 fail-closed
+4096:8192    status=0 supported existing exact route, 1M local ops/s=3.32758e+07
+8192:8192    status=0 supported existing exact route, 1M local ops/s=3.47630e+07
+65536:4096   status=5 fail-closed
+65537:16     status=5 fail-closed
+262144:4096  status=5 fail-closed
+```
+
+Measurement conclusion before the next development pass:
+
+- The current Linux local-throughput lane is already good enough to beat system
+  and mimalloc on this exact benchmark, but not tcmalloc.
+- `p25attr` is the current safe local candidate, but the attribution validation
+  cost is still visible: about `-6.3%` vs `p25` local and about `-29.6%` vs
+  `p25` remote pairs/s in this run.
+- `p25attr-nocookie` nearly recovers local speed, so cookie recompute/layout is
+  the first optimization target for local-only.
+- Remote-free does not recover with the current diagnostic variants; optimize
+  the producer-written / consumer-read metadata footprint before adding more
+  token or P43 direct-release work.
+- `p43-source` remains the strongest control for RSS/mixed and is the candidate
+  source layer for a separate RSS lane, but direct token lanes are not
+  competitive throughput lanes yet.
+
 Earlier next attack, now superseded by the decoded raw lookup results:
 
 - test producer/consumer remote-free before deciding whether local-only
