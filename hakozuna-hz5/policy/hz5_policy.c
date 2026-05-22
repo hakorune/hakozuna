@@ -659,7 +659,7 @@ void hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
 #endif
 #endif
 #if BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192
-	    if (wrapped->source == HZ5_WRAPPER_SOURCE_P25_HZ4LOWPAGE) {
+    if (wrapped->source == HZ5_WRAPPER_SOURCE_P25_HZ4LOWPAGE) {
 #if BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR
       if (hz5_policy_bridge_attr_verify_and_mark_free(wrapped,
                                                       (uintptr_t)ptr)) {

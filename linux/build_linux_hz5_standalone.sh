@@ -175,6 +175,7 @@ REMOTE_BENCH="${OUT_DIR}/bench_hz5_standalone_remote64k"
 RSS_BENCH="${OUT_DIR}/bench_hz5_standalone_rss_plateau"
 MIXED_BENCH="${OUT_DIR}/bench_hz5_standalone_mixed_prelude"
 GENERIC_BENCH="${ROOT_DIR}/bench/out/linux/${ARCH}/bench_aligned64k"
+BUILD_CONFIG="${OUT_DIR}/hz5_build_config.env"
 SPEED_LANE=1
 if [[ "$TRACE_LANE" -eq 1 ]]; then
   SPEED_LANE=0
@@ -262,6 +263,27 @@ if [[ "$ENABLE_LINUX_P43" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_P43_WRAPPER_TOKEN_BRIDGE=1)
   fi
 fi
+
+{
+  echo "commit=$(git -C "$ROOT_DIR" rev-parse HEAD)"
+  if [[ -n "$(git -C "$ROOT_DIR" status --porcelain --untracked-files=all)" ]]; then
+    echo "dirty=1"
+  else
+    echo "dirty=0"
+  fi
+  echo "arch=${ARCH}"
+  echo "trace_lane=${TRACE_LANE}"
+  echo "speed_lane=${SPEED_LANE}"
+  echo "linux_p25_bridge_attr=${LINUX_P25_BRIDGE_ATTR}"
+  echo "linux_p25_bridge_attr_no_cas=${LINUX_P25_BRIDGE_ATTR_NO_CAS}"
+  echo "linux_p25_bridge_attr_no_cookie=${LINUX_P25_BRIDGE_ATTR_NO_COOKIE}"
+  echo "linux_p25_bridge_attr_readonly_state=${LINUX_P25_BRIDGE_ATTR_READONLY_STATE}"
+  echo "enable_linux_p43=${ENABLE_LINUX_P43}"
+  echo "linux_p43_prepared_bridge=${LINUX_P43_PREPARED_BRIDGE}"
+  echo "linux_p43_trust_wrapper_source=${LINUX_P43_TRUST_WRAPPER_SOURCE}"
+  echo "linux_p43_wrapper_token=${LINUX_P43_WRAPPER_TOKEN}"
+  echo "linux_p43_wrapper_token_bridge=${LINUX_P43_WRAPPER_TOKEN_BRIDGE}"
+} > "$BUILD_CONFIG"
 
 HZ5_SRCS=(
   "${HZ5_DIR}/api/hz5_api.c"

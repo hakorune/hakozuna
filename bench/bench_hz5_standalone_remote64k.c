@@ -17,7 +17,8 @@ typedef struct SpscQueue {
   uint64_t iters;
   size_t size;
   size_t align;
-  uint64_t ops;
+  uint64_t producer_ops;
+  uint64_t consumer_ops;
 } SpscQueue;
 
 static double now_sec(void) {
@@ -52,12 +53,16 @@ static void* producer_main(void* arg) {
     ((volatile unsigned char*)ptr)[q->size - 1u] = (unsigned char)(i >> 8);
 
     for (;;) {
+      if (atomic_load_explicit(&q->status, memory_order_acquire) != 0) {
+        hz5_free(ptr);
+        return NULL;
+      }
       uint64_t head = atomic_load_explicit(&q->head, memory_order_relaxed);
       uint64_t tail = atomic_load_explicit(&q->tail, memory_order_acquire);
       if (head - tail <= q->mask) {
         q->slots[head & q->mask] = ptr;
         atomic_store_explicit(&q->head, head + 1u, memory_order_release);
-        q->ops++;
+        q->producer_ops++;
         break;
       }
       sched_yield();
@@ -88,7 +93,7 @@ static void* consumer_main(void* arg) {
       atomic_store_explicit(&q->status, 7, memory_order_release);
       return NULL;
     }
-    q->ops++;
+    q->consumer_ops++;
   }
   return NULL;
 }
@@ -119,8 +124,13 @@ int main(int argc, char** argv) {
   pthread_t producer;
   pthread_t consumer;
   double start = now_sec();
-  if (pthread_create(&consumer, NULL, consumer_main, &q) != 0 ||
-      pthread_create(&producer, NULL, producer_main, &q) != 0) {
+  if (pthread_create(&consumer, NULL, consumer_main, &q) != 0) {
+    free(q.slots);
+    return 4;
+  }
+  if (pthread_create(&producer, NULL, producer_main, &q) != 0) {
+    atomic_store_explicit(&q.status, 4, memory_order_release);
+    pthread_join(consumer, NULL);
     free(q.slots);
     return 4;
   }
@@ -134,10 +144,11 @@ int main(int argc, char** argv) {
     return status;
   }
 
+  uint64_t ops = q.producer_ops + q.consumer_ops;
   printf("allocator=hz5-standalone mode=producer-consumer iters=%llu "
          "size=%zu align=%zu queue=%llu time=%.6f ops/s=%.3f pairs/s=%.3f\n",
          (unsigned long long)iters, size, align,
-         (unsigned long long)queue_cap, elapsed, (double)q.ops / elapsed,
+         (unsigned long long)queue_cap, elapsed, (double)ops / elapsed,
          (double)iters / elapsed);
   free(q.slots);
   return 0;

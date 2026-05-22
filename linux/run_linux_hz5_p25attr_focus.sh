@@ -50,9 +50,9 @@ Options:
 Lanes:
   p25
   p25attr
-  p25attr-nocas
-  p25attr-nocookie
-  p25attr-readonly
+  p25attr-nocas      diagnostic only, not a safe lane
+  p25attr-nocookie   diagnostic only, not a safe lane
+  p25attr-readonly   diagnostic only, not a safe lane
   p43-trustwrap
   p43-token
   p43-tokenbridge
@@ -115,6 +115,48 @@ if [[ "$SKIP_BUILD" -ne 1 ]]; then
   build_lane p43-source --linux-p43-no-prepared-bridge
 fi
 
+require_lane_bins() {
+  local lane="$1"
+  local outdir="${ROOT_DIR}/hakozuna-hz5/out/linux/${ARCH}-${lane}"
+  local current_commit
+  current_commit="$(git -C "$ROOT_DIR" rev-parse HEAD)"
+  local config="${outdir}/hz5_build_config.env"
+  local built_commit=""
+  local built_dirty=""
+  for bin in \
+    "${outdir}/bench_hz5_standalone_aligned64k" \
+    "${outdir}/bench_hz5_standalone_remote64k" \
+    "${outdir}/bench_hz5_standalone_rss_plateau" \
+    "${outdir}/bench_hz5_standalone_mixed_prelude"; do
+    if [[ ! -x "$bin" ]]; then
+      echo "missing or non-executable ${lane} binary: ${bin}" >&2
+      echo "rerun without --skip-build" >&2
+      exit 3
+    fi
+  done
+  if [[ ! -f "$config" ]]; then
+    echo "missing ${lane} build metadata: ${config}" >&2
+    echo "rerun without --skip-build" >&2
+    exit 3
+  fi
+  built_commit="$(awk -F= '$1 == "commit"{print $2}' "$config")"
+  built_dirty="$(awk -F= '$1 == "dirty"{print $2}' "$config")"
+  if [[ "$built_commit" != "$current_commit" ]]; then
+    echo "stale ${lane} binary: built commit ${built_commit}, current ${current_commit}" >&2
+    echo "rerun without --skip-build" >&2
+    exit 3
+  fi
+  if [[ "$SKIP_BUILD" -eq 1 && "$built_dirty" != "0" ]]; then
+    echo "unreproducible ${lane} binary: build metadata dirty=${built_dirty:-missing}" >&2
+    echo "rerun without --skip-build from a clean tree" >&2
+    exit 3
+  fi
+}
+
+for lane in p25 p25attr p25attr-nocas p25attr-nocookie p25attr-readonly p43-trustwrap p43-token p43-tokenbridge p43-source; do
+  require_lane_bins "$lane"
+done
+
 {
   echo "commit=$(git -C "$ROOT_DIR" rev-parse HEAD)"
   echo "date=$(date -Is)"
@@ -137,7 +179,7 @@ fi
   echo "note=focus runner for Linux P25 bridge attr vs trustwrap/token lanes across local, producer-consumer remote-free, RSS plateau, and mixed-prelude robustness."
 } > "${OUTDIR}/README.log"
 
-printf 'workload\tlane\trun\tstatus\tops_s\tpairs_s\trss_peak_kb\trss_final_kb\tru_maxrss_kb\tlog\n' \
+printf 'workload\tlane\trun\tstatus\tops_s\tpairs_s\trss_peak_kb\trss_final_kb\tprobe_successes\tprobe_nulls\tru_maxrss_kb\tlog\n' \
   > "${OUTDIR}/results.tsv"
 
 run_one() {
@@ -180,16 +222,19 @@ run_one() {
       ;;
   esac
 
-  local ops_s pairs_s rss_peak rss_final rss
+  local ops_s pairs_s rss_peak rss_final probe_successes probe_nulls rss
   ops_s="$(awk -F'ops/s=' '/ops\/s=/{v=$2} END{gsub(/[[:space:]].*/, "", v); print v}' "$log")"
   pairs_s="$(awk -F'pairs/s=' '/pairs\/s=/{v=$2} END{gsub(/[[:space:]].*/, "", v); print v}' "$log")"
   rss_peak="$(awk -F'rss_peak_kb=' '/rss_peak_kb=/{v=$2} END{gsub(/[[:space:]].*/, "", v); print v}' "$log")"
   rss_final="$(awk -F'rss_final_kb=' '/rss_final_kb=/{v=$2} END{gsub(/[[:space:]].*/, "", v); print v}' "$log")"
+  probe_successes="$(awk -F'probe_successes=' '/probe_successes=/{v=$2} END{gsub(/[[:space:]].*/, "", v); print v}' "$log")"
+  probe_nulls="$(awk -F'probe_nulls=' '/probe_nulls=/{v=$2} END{gsub(/[[:space:]].*/, "", v); print v}' "$log")"
   rss="$(awk -F= '/ru_maxrss_kb=/{print $2}' "$timefile" 2>/dev/null | tail -n 1)"
 
-  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
     "$workload" "$lane" "$run" "$status" "${ops_s:-NA}" "${pairs_s:-NA}" \
-    "${rss_peak:-NA}" "${rss_final:-NA}" "${rss:-NA}" "$log" \
+    "${rss_peak:-NA}" "${rss_final:-NA}" "${probe_successes:-NA}" \
+    "${probe_nulls:-NA}" "${rss:-NA}" "$log" \
     >> "${OUTDIR}/results.tsv"
 }
 
@@ -209,7 +254,9 @@ awk -F'\t' '
     if ($6 != "NA") pairs[key, ++npairs[key]] = $6 + 0
     if ($7 != "NA") peak[key, ++npeak[key]] = $7 + 0
     if ($8 != "NA") final[key, ++nfinal[key]] = $8 + 0
-    if ($9 != "NA") maxrss[key, ++nmaxrss[key]] = $9 + 0
+    if ($9 != "NA") probes[key, ++nprobes[key]] = $9 + 0
+    if ($10 != "NA") probenulls[key, ++nprobenulls[key]] = $10 + 0
+    if ($11 != "NA") maxrss[key, ++nmaxrss[key]] = $11 + 0
   }
   function median(arr, count,   i, j, t, tmp) {
     if (count <= 0) return "NA"
@@ -222,7 +269,7 @@ awk -F'\t' '
     return tmp[int((count + 1) / 2)]
   }
   END {
-    print "workload\tlane\truns\tmedian_ops_s\tmedian_pairs_s\tmedian_rss_peak_kb\tmedian_rss_final_kb\tmedian_ru_maxrss_kb"
+    print "workload\tlane\truns\tmedian_ops_s\tmedian_pairs_s\tmedian_rss_peak_kb\tmedian_rss_final_kb\tmedian_probe_successes\tmedian_probe_nulls\tmedian_ru_maxrss_kb"
     for (key in runs) {
       split(key, parts, "\t")
       for (i = 1; i <= runs[key]; ++i) {
@@ -230,11 +277,13 @@ awk -F'\t' '
         p[i] = pairs[key, i]
         rp[i] = peak[key, i]
         rf[i] = final[key, i]
+        ps[i] = probes[key, i]
+        pn[i] = probenulls[key, i]
         rm[i] = maxrss[key, i]
       }
-      print parts[1] "\t" parts[2] "\t" runs[key] "\t" median(o, nops[key]) "\t" median(p, npairs[key]) "\t" median(rp, npeak[key]) "\t" median(rf, nfinal[key]) "\t" median(rm, nmaxrss[key])
+      print parts[1] "\t" parts[2] "\t" runs[key] "\t" median(o, nops[key]) "\t" median(p, npairs[key]) "\t" median(rp, npeak[key]) "\t" median(rf, nfinal[key]) "\t" median(ps, nprobes[key]) "\t" median(pn, nprobenulls[key]) "\t" median(rm, nmaxrss[key])
       for (i = 1; i <= runs[key]; ++i) {
-        delete o[i]; delete p[i]; delete rp[i]; delete rf[i]; delete rm[i]
+        delete o[i]; delete p[i]; delete rp[i]; delete rf[i]; delete ps[i]; delete pn[i]; delete rm[i]
       }
     }
   }

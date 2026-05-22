@@ -547,9 +547,17 @@ Double-free / foreign smoke:
 [HZ5_TRACE] alloc_p25_bridge=1 free_p25_bridge_attr=1 free_fallback_or_invalid=2 wrapper_decode_ok=2 wrapper_decode_miss=1 bridge_attr_valid=1 bridge_attr_cas_fail=1
 ```
 
-Note: current public `hz5_free()` returns `HZ5_FREE_OK_HZ5` after calling
-policy free, so the safety smoke is judged by trace counters, not the API return
-code.
+Safety smoke caveat:
+
+- The public `hz5_free()` API currently returns `HZ5_FREE_OK_HZ5` after
+  dispatching to policy free.
+- That means invalid/double-free attempts are not visible through the public
+  return code yet.
+- For now, safety smoke results must be judged by trace counters:
+  `free_fallback_or_invalid`, `bridge_attr_valid`, and
+  `bridge_attr_cas_fail`.
+- Cleanup target: decide whether `hz5_policy_free()` should return a status to
+  `hz5_free()`, or whether invalid-free visibility should remain diagnostic-only.
 
 Latest A/B:
 
@@ -781,6 +789,85 @@ Diagnostic interpretation:
 - A safe next Linux lane should not add more P43/token work to the local/remote
   hot path. If safety is required, optimize the attribution cookie/check layout
   first; if remote throughput is the goal, keep trustwrap/P25 as the control.
+
+### Cleanup Inventory And Harness Fixes
+
+Worker source inventory found two classes of issues: benchmark validity issues
+that should be fixed before interpreting Ubuntu results, and HZ5 API/source
+organization issues that should be handled in separate focused commits.
+
+Fixed immediately in the benchmark harness:
+
+- `bench_hz5_standalone_remote64k.c`
+  - replaced shared `q->ops++` with per-thread producer/consumer counters
+  - producer now observes `status` while waiting for queue space
+  - partial thread-create failure now signals the already-created thread before
+    joining
+- `bench_hz5_standalone_rss_plateau.c`
+  - changed RSS plateau touch from first/last byte to one byte per 4K page
+- `bench_hz5_standalone_mixed_prelude.c`
+  - changed prelude/probe plateau touch to one byte per 4K page
+  - kept final throughput phase edge-touch so it remains comparable to local
+    throughput
+- `linux/build_linux_hz5_standalone.sh`
+  - writes `hz5_build_config.env` with commit, dirty state, arch, and lane flags
+- `linux/run_linux_hz5_p25attr_focus.sh`
+  - `--skip-build` now rejects missing, stale, or dirty-build lane binaries
+  - summary now carries `median_probe_successes` and `median_probe_nulls`
+  - diagnostic lanes are marked as diagnostic in usage text
+
+Important consequence:
+
+- RSS medians recorded before this cleanup used first/last-byte touching only.
+  Treat those RSS rows as directional harness-development data, not final RSS
+  evidence for the paper.
+- Remote-free medians recorded before this cleanup had a benign-looking but real
+  data race in the `ops/s` counter. `pairs/s` was still based on `iters/time`,
+  but the harness itself should be rerun after this fix.
+
+Smoke after harness cleanup:
+
+```bash
+./linux/run_linux_hz5_p25attr_focus.sh --runs 1 \
+  --local-iters 10000 \
+  --remote-iters 10000 \
+  --rss-blocks 128 \
+  --rss-rounds 2 \
+  --mixed-blocks 128 \
+  --mixed-rounds 2 \
+  --mixed-iters 10000 \
+  --probe-attempts 32
+```
+
+Raw result folder:
+
+```bash
+private/raw-results/linux/hz5_p25attr_focus_20260523_045355
+```
+
+All 36 cleanup-smoke sub-runs exited status `0`.
+
+Open source cleanup items:
+
+- Public free contract: `hz5_free()` exposes `HZ5_FREE_INVALID`, but currently
+  always returns `HZ5_FREE_OK_HZ5` after `hz5_policy_free()`. Decide whether
+  policy free should return `Hz5FreeResult`, or whether invalid-free visibility
+  stays diagnostic-only.
+- Linux wrapper decode: `hz5_wrapper_decode()` reads
+  `ptr - sizeof(Hz5WrapperHdr)` without a Linux fault guard. Do not use it as a
+  general foreign-pointer safety boundary until that contract is explicit.
+- Public header split: `hz5.h` exposes P1/P2 internals beside the public HZ5 ABI.
+  Move internals behind a private header before treating the ABI as clean.
+- Contract descriptor: descriptor output does not yet expose p25attr,
+  diagnostic attr variants, trustwrap, or token mode; build identity is therefore
+  incomplete for bench artifacts.
+- Macro mode exclusivity: p25attr, trustwrap, rawlookup, and token are intended
+  as separate lanes. Build script should enforce incompatible combinations.
+- Wrapper layout: `Hz5WrapperHdr` changes with compile flags and has no layout
+  version/size field.
+- Lowpage split target: `hz5_lowpage64.c` combines P25 bridge, P40 controls,
+  P43g counters, P44/P45 diagnostics, and release policy. Split acquire/release
+  core from diagnostics before adding more Linux lanes.
 
 Earlier next attack, now superseded by the decoded raw lookup results:
 

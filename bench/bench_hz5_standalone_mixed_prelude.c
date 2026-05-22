@@ -39,9 +39,18 @@ static size_t current_rss_kb(void) {
   return rss;
 }
 
-static void touch_block(void* ptr, size_t size, uint64_t salt) {
+static void touch_edge_block(void* ptr, size_t size, uint64_t salt) {
   volatile unsigned char* bytes = (volatile unsigned char*)ptr;
   bytes[0] = (unsigned char)salt;
+  bytes[size - 1u] = (unsigned char)(salt >> 8);
+}
+
+static void touch_resident_block(void* ptr, size_t size, uint64_t salt) {
+  const size_t page = 4096u;
+  volatile unsigned char* bytes = (volatile unsigned char*)ptr;
+  for (size_t offset = 0; offset < size; offset += page) {
+    bytes[offset] = (unsigned char)(salt + offset);
+  }
   bytes[size - 1u] = (unsigned char)(salt >> 8);
 }
 
@@ -77,7 +86,7 @@ static int run_plateau(size_t blocks,
         free(ptrs);
         return 6;
       }
-      touch_block(ptr, size, (uint64_t)round * blocks + i);
+      touch_resident_block(ptr, size, (uint64_t)round * blocks + i);
       ptrs[i] = ptr;
       out->allocs++;
       out->ops++;
@@ -165,7 +174,7 @@ int main(int argc, char** argv) {
       hz5_free(ptr);
       return 9;
     }
-    touch_block(ptr, size, i);
+    touch_edge_block(ptr, size, i);
     if (hz5_free(ptr) == HZ5_FREE_INVALID) {
       fprintf(stderr, "measure hz5_free rejected ptr=%p\n", ptr);
       return 10;

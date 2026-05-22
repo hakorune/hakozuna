@@ -30,9 +30,12 @@ static size_t current_rss_kb(void) {
   return rss;
 }
 
-static void touch_block(void* ptr, size_t size, uint64_t salt) {
+static void touch_resident_block(void* ptr, size_t size, uint64_t salt) {
+  const size_t page = 4096u;
   volatile unsigned char* bytes = (volatile unsigned char*)ptr;
-  bytes[0] = (unsigned char)salt;
+  for (size_t offset = 0; offset < size; offset += page) {
+    bytes[offset] = (unsigned char)(salt + offset);
+  }
   bytes[size - 1u] = (unsigned char)(salt >> 8);
 }
 
@@ -78,7 +81,7 @@ int main(int argc, char** argv) {
         free(ptrs);
         return 6;
       }
-      touch_block(ptr, size, (uint64_t)round * blocks + i);
+      touch_resident_block(ptr, size, (uint64_t)round * blocks + i);
       ptrs[i] = ptr;
       ops++;
     }
