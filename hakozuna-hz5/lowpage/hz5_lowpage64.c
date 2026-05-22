@@ -1237,7 +1237,8 @@ static Hz5Lowpage64AdmissionStep hz5_lowpage64_admission_advance(
 }
 #endif
 
-static size_t hz5_lowpage64_p43o_release_candidates(size_t observed_global) {
+static size_t hz5_lowpage64_p40_demote_intent_count(
+    size_t observed_global) {
   if (observed_global <= HZ5_LOWPAGE64_P40_GLOBAL_SOFT_CAP) {
     return 0;
   }
@@ -1348,7 +1349,7 @@ static void hz5_lowpage64_p43o_note(
   size_t release_candidates = 0;
   if (reason == HZ5_LOWPAGE64_P43O_REASON_P40) {
     release_candidates =
-        hz5_lowpage64_p43o_release_candidates(observed_global);
+        hz5_lowpage64_p40_demote_intent_count(observed_global);
   }
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43o_p40_release_candidates,
                           release_candidates);
@@ -1549,7 +1550,7 @@ static void hz5_lowpage64_p43p_note(
 
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43p_reason_p40, 1);
   size_t release_candidates =
-      hz5_lowpage64_p43o_release_candidates(observed_global);
+      hz5_lowpage64_p40_demote_intent_count(observed_global);
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43p_p40_release_candidates,
                           release_candidates);
   hz5_lowpage64_p43p_age_note(step.new_state, release_candidates);
@@ -1715,7 +1716,7 @@ static Hz5Lowpage64P45Decision hz5_lowpage64_p45_decide(
     size_t state) {
   Hz5Lowpage64P45Decision decision;
   decision.demote_intent =
-      hz5_lowpage64_p43o_release_candidates(observed_global);
+      hz5_lowpage64_p40_demote_intent_count(observed_global);
   decision.bridge_hot_current =
       hz5_lowpage64_p45_bridge_hot_current(observed_global);
   decision.bridge_residual =
@@ -2382,10 +2383,10 @@ static void hz5_lowpage64_p40_checkpoint(void) {
   hz5_lowpage64_p45_note(HZ5_LOWPAGE64_P45_REASON_P40, observed,
                          &p43_stats);
 #if HZ5_LOWPAGE64_P43O_PROJECTED_GATE
-  size_t p43o_release_candidates =
-      hz5_lowpage64_p43o_release_candidates(observed);
+  size_t p40_demote_intent =
+      hz5_lowpage64_p40_demote_intent_count(observed);
   if (!hz5_lowpage64_p43o_projected_source_admission_open(
-          &p43_stats, p43o_release_candidates)) {
+          &p43_stats, p40_demote_intent)) {
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p40_skip_p43_free_calls, 1);
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p40_skip_p43_free_nodes,
                             p43_stats.slots_committed_free_current);
