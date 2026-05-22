@@ -581,3 +581,121 @@ If continuing P43p at all, do only B:
 If the review thinks the signal is already sufficient, choose A/D and stop
 adding P43p knobs.
 ```
+
+## P43p.4 Age-Gated Stage1 Dry-Run
+
+Implemented the one extra diagnostic requested above as:
+
+```text
+P43p.4 AgeStage1DryRun
+  behavior unchanged
+  extends P43p.1 bridge-cold dry-run
+  rejects SpeedLane
+  no stage1 queueing
+  no trim/decommit/PAGE_NOACCESS/runtime release
+  no direct descriptor release
+  no descriptor relbuf
+```
+
+It adds projected stage1 age buckets and counters:
+
+```text
+p43p_age_stage1_items_total
+p43p_age_young_current
+p43p_age_old_current
+p43p_age_would_reuse_young
+p43p_age_would_keep_old
+p43p_age_would_demote_old_open
+p43p_age_would_block_old_drain
+p43p_age_would_block_old_closed
+p43p_age_hot_reinject_avoided
+p43p_age_pop_all_pollution_projection
+p43p_age_admission_flips
+```
+
+Short readout:
+
+```text
+mixed-prelude repeat-3
+  run root:
+    results/synthetic-sweep/20260522_094523_883
+
+  final exact 64K row / HZ5_LOWPAGE64 medians:
+    p43p_age_stage1_items_total = 528
+    p43p_age_young_current = 8
+    p43p_age_old_current = 296
+    p43p_age_would_reuse_young = 252
+    p43p_age_would_demote_old_open = 196
+    p43p_age_would_block_old_drain = 1504
+    p43p_age_would_block_old_closed = 864
+    p43p_age_pop_all_pollution_projection = 9036
+
+rss-bounded repeat-3
+  run root:
+    results/synthetic-sweep/20260522_094542_911
+
+  final HZ5_LOWPAGE64 medians:
+    p43p_age_stage1_items_total = 1264
+    p43p_age_young_current = 8
+    p43p_age_old_current = 664
+    p43p_age_would_reuse_young = 632
+    p43p_age_would_demote_old_open = 584
+    p43p_age_would_block_old_drain = 5840
+    p43p_age_would_block_old_closed = 3088
+    p43p_age_pop_all_pollution_projection = 52644
+```
+
+### Updated Interpretation
+
+P43p.4 gives a clearer algorithm-level signal:
+
+```text
+age separation exists
+old stage1 projection is large
+pop-all pollution risk is plausible
+young stage1 current is small and stable
+admission state still flips under some profiles
+```
+
+This supports the idea that P43p.2/P43p.3a were not merely noisy knobs:
+the bridge-cold queue has a real temperature problem. However, P43p.4 is still
+diagnostic-only, and P43p.3a did not cleanly beat P43i on guard/balanced
+criteria.
+
+### Updated Question
+
+Given P43p.4's age projection, what should HZ5 do next?
+
+```text
+A. Stop P43p here.
+   Keep:
+     P43i = selected balanced candidate-watch
+     P43p.2 = pop-all no-go/control
+     P43p.3a = limited-acquire evidence
+     P43p.4 = age/pollution diagnostic evidence
+   Move to broader HZ5 core design.
+
+B. Implement one age-gated behavior prototype.
+   Only if the large old-stage1 projection is considered strong enough.
+   It would avoid hot-stash reinjection of old stage1 nodes and keep behavior
+   bridge-preserving.
+
+C. Do more P43p diagnostics.
+   My bias is NO: we likely have enough P43p evidence now.
+
+D. Reframe P43p into the HZ5 core design:
+   P25 bridge = speed layer
+   P43 segment source = source layer
+   P40 release = source-demotion intent
+   admission/temperature control = control plane
+```
+
+My current leaning after P43p.4:
+
+```text
+P43p has produced enough evidence.
+P43i remains the balanced candidate-watch.
+Do not promote P43p.
+Either stop P43p and move to HZ5 core design, or do exactly one age-gated
+behavior prototype if Pro thinks the old-stage1 projection is strong enough.
+```
