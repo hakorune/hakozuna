@@ -1259,6 +1259,76 @@ Next implementation target:
 - Next isolate remaining tcmalloc gap with optional diagnostics:
   no-local-cookie, no-state/CAS, no-owner-check, and inline decode upper-bound.
 
+### Linux Local2P Focus Measurements
+
+Measurement infrastructure:
+
+- Added generic LD_PRELOAD-compatible benchmarks:
+  `bench/bench_remote64k.c`, `bench/bench_rss_plateau.c`,
+  `bench/bench_mixed_prelude.c`.
+- `linux/build_linux_hz5_standalone.sh` now builds the generic local, remote,
+  RSS, and mixed-prelude benchmark set.
+- Added `linux/run_linux_hz5_local2p_focus.sh` to compare HZ5 direct lanes
+  against `system`, `hz4`, `mimalloc`, and `tcmalloc` with the same workload
+  shapes.
+
+RUNS=10 focus command:
+
+```bash
+./linux/run_linux_hz5_local2p_focus.sh \
+  --runs 10 \
+  --local-iters 1000000 \
+  --remote-iters 200000 \
+  --rss-blocks 1024 \
+  --rss-rounds 5 \
+  --mixed-blocks 1024 \
+  --mixed-rounds 3 \
+  --mixed-iters 1000000 \
+  --probe-attempts 256 \
+  --allocators hz5-local2p-fast,hz5-p25,hz4,tcmalloc,mimalloc,system \
+  --skip-prepare-allocators \
+  --outdir private/raw-results/linux/local2p_focus_runs10
+```
+
+RUNS=10 summary, median:
+
+- Local `64K/a8192`:
+  HZ5 Local2P fast `131.98M ops/s`, HZ4 `131.45M`, HZ5 P25 `67.59M`,
+  tcmalloc `254.38M`, system `48.69M`, mimalloc `1.39M`.
+- Mixed prelude final `64K/a8192`:
+  HZ5 Local2P fast `133.40M ops/s`, HZ4 `136.36M`, HZ5 P25 `57.33M`,
+  tcmalloc `269.64M`.
+- RSS plateau:
+  HZ5 Local2P fast `49.6K ops/s`, peak `77.3MB`, final `1.6MB`;
+  HZ4 `331.2K ops/s`, peak/final `75.5MB`;
+  tcmalloc `375.0K ops/s`, peak/final `73.3MB`.
+- Producer/consumer remote-free:
+  HZ5 Local2P fast `137K ops/s`, HZ5 P25 `24.5M`,
+  HZ4 `22.4M`, tcmalloc `4.69M`.
+
+Interpretation:
+
+- Local2P fast is now HZ4-class for local-only and mixed-prelude exact
+  `64K/a8192`.
+- Local2P fast is not a remote-free or RSS-throughput lane. cap1 + remote OS
+  release is intentionally conservative and very slow under producer/consumer.
+- HZ5 P25 remains the stronger Linux remote-free/control lane.
+- tcmalloc remains the local throughput ceiling for this Ubuntu microbench.
+- mimalloc remains anomalously weak on this aligned workload in this setup.
+
+Guard trace:
+
+```bash
+private/raw-results/linux/local2p_guard_trace/results.tsv
+```
+
+- `65536:8192`: Local2P trace active:
+  `alloc_local2p_os=1`, `alloc_local2p_tls_hit=999`,
+  `free_local2p_tls=1000`.
+- `2048:8192`, `65536:4096`, `65537:16`, `262144:4096`: fail closed.
+- `4096:8192`, `8192:8192`: succeed through existing exact route, with no
+  Local2P trace counters.
+
 Go/no-go:
 
 - Minimum: Local2P beats HZ5 P25 by at least 50% on local-only `64K/a8192`.

@@ -277,6 +277,9 @@ RSS_BENCH="${OUT_DIR}/bench_hz5_standalone_rss_plateau"
 MIXED_BENCH="${OUT_DIR}/bench_hz5_standalone_mixed_prelude"
 SAFETY_BENCH="${OUT_DIR}/bench_hz5_standalone_safety"
 GENERIC_BENCH="${ROOT_DIR}/bench/out/linux/${ARCH}/bench_aligned64k"
+GENERIC_REMOTE_BENCH="${ROOT_DIR}/bench/out/linux/${ARCH}/bench_remote64k"
+GENERIC_RSS_BENCH="${ROOT_DIR}/bench/out/linux/${ARCH}/bench_rss_plateau"
+GENERIC_MIXED_BENCH="${ROOT_DIR}/bench/out/linux/${ARCH}/bench_mixed_prelude"
 BUILD_CONFIG="${OUT_DIR}/hz5_build_config.env"
 SPEED_LANE=1
 if [[ "$TRACE_LANE" -eq 1 ]]; then
@@ -475,5 +478,20 @@ echo "[linux][hz5] building generic aligned benchmark: ${GENERIC_BENCH}"
 gcc -O3 -Wall -Wextra -Werror -std=c11 -D_POSIX_C_SOURCE=200809L \
   "${ROOT_DIR}/bench/bench_aligned64k.c" \
   -pthread -o "$GENERIC_BENCH"
+
+echo "[linux][hz5] building generic remote benchmark: ${GENERIC_REMOTE_BENCH}"
+gcc -O3 -Wall -Wextra -Werror -std=c11 -D_POSIX_C_SOURCE=200809L \
+  "${ROOT_DIR}/bench/bench_remote64k.c" \
+  -pthread -o "$GENERIC_REMOTE_BENCH"
+
+echo "[linux][hz5] building generic RSS plateau benchmark: ${GENERIC_RSS_BENCH}"
+gcc -O3 -Wall -Wextra -Werror -std=c11 -D_POSIX_C_SOURCE=200809L \
+  "${ROOT_DIR}/bench/bench_rss_plateau.c" \
+  -pthread -o "$GENERIC_RSS_BENCH"
+
+echo "[linux][hz5] building generic mixed prelude benchmark: ${GENERIC_MIXED_BENCH}"
+gcc -O3 -Wall -Wextra -Werror -std=c11 -D_POSIX_C_SOURCE=200809L \
+  "${ROOT_DIR}/bench/bench_mixed_prelude.c" \
+  -pthread -o "$GENERIC_MIXED_BENCH"
 
 echo "[linux][hz5] done"
