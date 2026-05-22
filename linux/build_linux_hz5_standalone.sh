@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ARCH="auto"
 OUT_DIR=""
 ENABLE_LINUX_P43=0
+LINUX_LOCAL2P=0
 LINUX_P25_BRIDGE_ATTR=0
 LINUX_P25_BRIDGE_ATTR_NO_CAS=0
 LINUX_P25_BRIDGE_ATTR_NO_COOKIE=0
@@ -28,6 +29,7 @@ Usage:
 Options:
   --arch <arch>      override detected arch (default: auto)
   --out-dir DIR      output directory (default: hakozuna-hz5/out/linux/<arch>)
+  --linux-local2p    enable Linux Local2P exact 64K/a8192 TLS span candidate
   --linux-p25-bridge-attr
                      preserve P25 bridge topology with wrapper attr CAS guard
   --linux-p25-bridge-attr-no-cas
@@ -70,6 +72,10 @@ while [[ $# -gt 0 ]]; do
       [[ $# -ge 2 ]] || { echo "missing value for --out-dir" >&2; exit 1; }
       OUT_DIR="$2"
       shift 2
+      ;;
+    --linux-local2p)
+      LINUX_LOCAL2P=1
+      shift
       ;;
     --linux-p25-bridge-attr)
       LINUX_P25_BRIDGE_ATTR=1
@@ -159,6 +165,12 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+if [[ "$LINUX_LOCAL2P" -eq 1 && \
+      ( "$LINUX_P25_BRIDGE_ATTR" -eq 1 || "$ENABLE_LINUX_P43" -eq 1 ) ]]; then
+  echo "local2p, p25attr, and p43 lanes are mutually exclusive" >&2
+  exit 1
+fi
+
 if [[ "$LINUX_P25_BRIDGE_ATTR" -eq 1 && "$ENABLE_LINUX_P43" -eq 1 ]]; then
   echo "p25attr and p43 lanes are mutually exclusive" >&2
   exit 1
@@ -221,6 +233,7 @@ BENCH="${OUT_DIR}/bench_hz5_standalone_aligned64k"
 REMOTE_BENCH="${OUT_DIR}/bench_hz5_standalone_remote64k"
 RSS_BENCH="${OUT_DIR}/bench_hz5_standalone_rss_plateau"
 MIXED_BENCH="${OUT_DIR}/bench_hz5_standalone_mixed_prelude"
+SAFETY_BENCH="${OUT_DIR}/bench_hz5_standalone_safety"
 GENERIC_BENCH="${ROOT_DIR}/bench/out/linux/${ARCH}/bench_aligned64k"
 BUILD_CONFIG="${OUT_DIR}/hz5_build_config.env"
 SPEED_LANE=1
@@ -269,6 +282,13 @@ if [[ "$LINUX_P25_BRIDGE_ATTR" -eq 1 ]]; then
   if [[ "$LINUX_P25_BRIDGE_ATTR_READONLY_STATE" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_READONLY_STATE=1)
   fi
+fi
+
+if [[ "$LINUX_LOCAL2P" -eq 1 ]]; then
+  COMMON_FLAGS+=(
+    -DBENCHLAB_HZ5_LINUX_LOCAL2P=1
+    -DBENCHLAB_HZ5_LINUX_LOCAL2P_TLS_CAP=1
+  )
 fi
 
 if [[ "$ENABLE_LINUX_P43" -eq 1 ]]; then
@@ -322,6 +342,7 @@ fi
   echo "arch=${ARCH}"
   echo "trace_lane=${TRACE_LANE}"
   echo "speed_lane=${SPEED_LANE}"
+  echo "linux_local2p=${LINUX_LOCAL2P}"
   echo "linux_p25_bridge_attr=${LINUX_P25_BRIDGE_ATTR}"
   echo "linux_p25_bridge_attr_no_cas=${LINUX_P25_BRIDGE_ATTR_NO_CAS}"
   echo "linux_p25_bridge_attr_no_cookie=${LINUX_P25_BRIDGE_ATTR_NO_COOKIE}"
@@ -383,6 +404,12 @@ gcc -O3 -Wall -Wextra -Werror -std=c11 -D_POSIX_C_SOURCE=200809L \
   "${ROOT_DIR}/bench/bench_hz5_standalone_mixed_prelude.c" \
   -L"${OUT_DIR}" -Wl,-rpath,"${OUT_DIR}" -lhakozuna_hz5_standalone \
   -pthread -o "$MIXED_BENCH"
+
+echo "[linux][hz5] building safety benchmark: ${SAFETY_BENCH}"
+gcc "${COMMON_FLAGS[@]}" -Werror -D_POSIX_C_SOURCE=200809L \
+  "${ROOT_DIR}/bench/bench_hz5_standalone_safety.c" \
+  -L"${OUT_DIR}" -Wl,-rpath,"${OUT_DIR}" -lhakozuna_hz5_standalone \
+  -pthread -o "$SAFETY_BENCH"
 
 mkdir -p "$(dirname "$GENERIC_BENCH")"
 echo "[linux][hz5] building generic aligned benchmark: ${GENERIC_BENCH}"

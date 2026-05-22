@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#if BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR
+#if BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR || BENCHLAB_HZ5_LINUX_LOCAL2P
 #include <stdatomic.h>
 #endif
 
@@ -20,7 +20,8 @@ enum {
    * Historical name: this tag means the HZ5 P25 lowpage64 route owns the raw
    * block. It is HZ4-inspired, but it is not an HZ4 or HZ3 fallback path.
    */
-  HZ5_WRAPPER_SOURCE_P25_HZ4LOWPAGE = 5
+  HZ5_WRAPPER_SOURCE_P25_HZ4LOWPAGE = 5,
+  HZ5_WRAPPER_SOURCE_LINUX_LOCAL2P = 6
 };
 
 #if BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR
@@ -28,6 +29,14 @@ enum {
   HZ5_BRIDGE_ATTR_STATE_INVALID = 0,
   HZ5_BRIDGE_ATTR_STATE_ACTIVE = 1,
   HZ5_BRIDGE_ATTR_STATE_FREED = 3
+};
+#endif
+
+#if BENCHLAB_HZ5_LINUX_LOCAL2P
+enum {
+  HZ5_LOCAL2P_STATE_INVALID = 0,
+  HZ5_LOCAL2P_STATE_ACTIVE = 1,
+  HZ5_LOCAL2P_STATE_FREED = 3
 };
 #endif
 
@@ -55,6 +64,12 @@ typedef struct Hz5WrapperHdr {
   uint64_t bridge_cookie;
   _Atomic uint32_t bridge_state;
   uint32_t bridge_generation;
+#endif
+#if BENCHLAB_HZ5_LINUX_LOCAL2P
+  uint64_t local2p_cookie;
+  _Atomic uint32_t local2p_state;
+  uint32_t local2p_generation;
+  uintptr_t local2p_owner;
 #endif
 } Hz5WrapperHdr;
 

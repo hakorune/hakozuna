@@ -69,6 +69,22 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LOCAL2P
+#define BENCHLAB_HZ5_LINUX_LOCAL2P 0
+#endif
+
+#ifndef BENCHLAB_HZ5_LINUX_LOCAL2P_RAW_BYTES
+#define BENCHLAB_HZ5_LINUX_LOCAL2P_RAW_BYTES ((size_t)131072)
+#endif
+
+#ifndef BENCHLAB_HZ5_LINUX_LOCAL2P_ALIGN
+#define BENCHLAB_HZ5_LINUX_LOCAL2P_ALIGN ((size_t)8192)
+#endif
+
+#ifndef BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_CAP
+#define BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_CAP ((size_t)1)
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS
 #define BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS 0
 #endif
@@ -117,6 +133,13 @@ static _Atomic int g_hz5_policy_seen_allocation;
 #if BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR
 static _Atomic uint32_t g_hz5_policy_bridge_generation;
 static uintptr_t g_hz5_policy_bridge_secret_anchor;
+#endif
+#if defined(__linux__) && BENCHLAB_HZ5_LINUX_LOCAL2P
+static uintptr_t g_hz5_policy_local2p_secret_anchor;
+static _Thread_local void* g_hz5_policy_local2p_head;
+static _Thread_local size_t g_hz5_policy_local2p_count;
+static _Thread_local uintptr_t g_hz5_policy_local2p_owner_token;
+static _Thread_local uint32_t g_hz5_policy_local2p_generation;
 #endif
 
 static void hz5_policy_register_stats_once(void) {
@@ -302,6 +325,172 @@ static int hz5_policy_bridge_attr_verify_and_mark_free(
 
   hz5_trace_inc(HZ5_TRACE_BRIDGE_ATTR_VALID);
   return 1;
+}
+#endif
+
+#if defined(__linux__) && BENCHLAB_HZ5_LINUX_LOCAL2P
+typedef struct Hz5LinuxLocal2PNode {
+  struct Hz5LinuxLocal2PNode* next;
+} Hz5LinuxLocal2PNode;
+
+static uintptr_t hz5_policy_local2p_owner_token(void) {
+  if (!g_hz5_policy_local2p_owner_token) {
+    g_hz5_policy_local2p_owner_token =
+        (uintptr_t)&g_hz5_policy_local2p_owner_token;
+  }
+  return g_hz5_policy_local2p_owner_token;
+}
+
+static uint64_t hz5_policy_local2p_cookie(uintptr_t raw,
+                                          uintptr_t aligned,
+                                          size_t raw_bytes,
+                                          uint32_t generation,
+                                          uintptr_t owner) {
+  uint64_t mixed = (uint64_t)raw ^ ((uint64_t)aligned << 13) ^
+                   ((uint64_t)raw_bytes << 29) ^
+                   ((uint64_t)generation << 32) ^ (uint64_t)owner ^
+                   (uint64_t)(uintptr_t)&g_hz5_policy_local2p_secret_anchor ^
+                   UINT64_C(0x2f125a8192c0ffee);
+  mixed ^= mixed >> 33;
+  mixed ^= mixed << 17;
+  mixed ^= mixed >> 11;
+  return mixed ? mixed : UINT64_C(0x2f12);
+}
+
+static int hz5_policy_local2p_exact(size_t size, size_t align) {
+  return size == 65536u && align == BENCHLAB_HZ5_LINUX_LOCAL2P_ALIGN;
+}
+
+static void* hz5_policy_local2p_pop(void) {
+  Hz5LinuxLocal2PNode* node =
+      (Hz5LinuxLocal2PNode*)g_hz5_policy_local2p_head;
+  if (!node) {
+    return NULL;
+  }
+  g_hz5_policy_local2p_head = node->next;
+  --g_hz5_policy_local2p_count;
+  hz5_trace_inc(HZ5_TRACE_ALLOC_LOCAL2P_TLS_HIT);
+  return (void*)node;
+}
+
+static int hz5_policy_local2p_push(void* raw_ptr) {
+  if (g_hz5_policy_local2p_count >= BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_CAP) {
+    hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_OVERFLOW);
+    free(raw_ptr);
+    return 0;
+  }
+  Hz5LinuxLocal2PNode* node = (Hz5LinuxLocal2PNode*)raw_ptr;
+  node->next = (Hz5LinuxLocal2PNode*)g_hz5_policy_local2p_head;
+  g_hz5_policy_local2p_head = node;
+  ++g_hz5_policy_local2p_count;
+  hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_TLS);
+  return 1;
+}
+
+static void* hz5_policy_local2p_os_alloc(void) {
+  void* raw_ptr = NULL;
+  int rc = posix_memalign(&raw_ptr, BENCHLAB_HZ5_LINUX_LOCAL2P_ALIGN,
+                          BENCHLAB_HZ5_LINUX_LOCAL2P_RAW_BYTES);
+  if (rc != 0) {
+    return NULL;
+  }
+  hz5_trace_inc(HZ5_TRACE_ALLOC_LOCAL2P_OS);
+  return raw_ptr;
+}
+
+static void hz5_policy_local2p_init_header(Hz5WrapperHdr* header,
+                                           uintptr_t aligned) {
+  uint32_t generation = ++g_hz5_policy_local2p_generation;
+  if (generation == 0u) {
+    generation = ++g_hz5_policy_local2p_generation;
+  }
+  uintptr_t owner = hz5_policy_local2p_owner_token();
+  header->local2p_owner = owner;
+  header->local2p_generation = generation;
+  header->local2p_cookie =
+      hz5_policy_local2p_cookie(header->raw, aligned, header->raw_bytes,
+                                generation, owner);
+  atomic_store_explicit(&header->local2p_state, HZ5_LOCAL2P_STATE_ACTIVE,
+                        memory_order_release);
+}
+
+static void* hz5_policy_local2p_alloc(size_t size, size_t align) {
+  if (!hz5_policy_local2p_exact(size, align)) {
+    hz5_trace_inc(HZ5_TRACE_ALLOC_LOCAL2P_ESCAPE);
+    return NULL;
+  }
+
+  void* raw_ptr = hz5_policy_local2p_pop();
+  if (!raw_ptr) {
+    raw_ptr = hz5_policy_local2p_os_alloc();
+  }
+  if (!raw_ptr) {
+    return NULL;
+  }
+
+  uintptr_t raw = (uintptr_t)raw_ptr;
+  uintptr_t aligned =
+      (raw + sizeof(Hz5WrapperHdr) + align - 1u) & ~(uintptr_t)(align - 1u);
+  if ((aligned & (align - 1u)) != 0 ||
+      aligned + size > raw + BENCHLAB_HZ5_LINUX_LOCAL2P_RAW_BYTES) {
+    free(raw_ptr);
+    return NULL;
+  }
+
+  Hz5WrapperHdr* header = (Hz5WrapperHdr*)(aligned - sizeof(Hz5WrapperHdr));
+  hz5_wrapper_init(header, raw, aligned, size,
+                   BENCHLAB_HZ5_LINUX_LOCAL2P_RAW_BYTES,
+                   HZ5_WRAPPER_SOURCE_LINUX_LOCAL2P);
+  hz5_policy_local2p_init_header(header, aligned);
+  return (void*)aligned;
+}
+
+static Hz5FreeResult hz5_policy_local2p_free(Hz5WrapperHdr* header,
+                                             uintptr_t aligned) {
+  if (!header ||
+      header->source != HZ5_WRAPPER_SOURCE_LINUX_LOCAL2P ||
+      header->requested != 65536u ||
+      header->raw_bytes != BENCHLAB_HZ5_LINUX_LOCAL2P_RAW_BYTES) {
+    hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INVALID_COOKIE);
+    return HZ5_FREE_INVALID;
+  }
+
+  uint64_t expected_cookie = hz5_policy_local2p_cookie(
+      header->raw, aligned, header->raw_bytes, header->local2p_generation,
+      header->local2p_owner);
+  if (header->local2p_cookie != expected_cookie) {
+    hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INVALID_COOKIE);
+    return HZ5_FREE_INVALID;
+  }
+
+  uint32_t expected_state = HZ5_LOCAL2P_STATE_ACTIVE;
+  if (!atomic_compare_exchange_strong_explicit(
+          &header->local2p_state, &expected_state, HZ5_LOCAL2P_STATE_FREED,
+          memory_order_acq_rel, memory_order_acquire)) {
+    hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INVALID_STATE);
+    return HZ5_FREE_INVALID;
+  }
+
+  if (header->local2p_owner != hz5_policy_local2p_owner_token()) {
+    hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_REMOTE);
+    free((void*)header->raw);
+    return HZ5_FREE_OK_HZ5;
+  }
+
+  (void)hz5_policy_local2p_push((void*)header->raw);
+  return HZ5_FREE_OK_HZ5;
+}
+
+static int hz5_policy_local2p_metadata_present(const Hz5WrapperHdr* header) {
+  if (!header) {
+    return 0;
+  }
+  return header->local2p_cookie != 0 ||
+         header->local2p_generation != 0 ||
+         header->local2p_owner != 0 ||
+         atomic_load_explicit(&header->local2p_state,
+                              memory_order_acquire) !=
+             HZ5_LOCAL2P_STATE_INVALID;
 }
 #endif
 
@@ -504,6 +693,14 @@ void* hz5_policy_alloc_aligned(size_t size, size_t align,
 #endif
 
   if (hz5_route_exact_a8192(size, align)) {
+#if defined(__linux__) && BENCHLAB_HZ5_LINUX_LOCAL2P
+    if (hz5_policy_local2p_exact(size, align)) {
+      void* wrapped = hz5_policy_local2p_alloc(size, align);
+      if (wrapped) {
+        return wrapped;
+      }
+    }
+#endif
 #if BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192
     if (size == 65536u && align == (HZ5_POLICY_PAGE_SIZE * (size_t)2)) {
       void* wrapped = hz5_policy_p25_wrapper_alloc(size, align);
@@ -658,6 +855,15 @@ Hz5FreeResult hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
         hz5_policy_p25_raw_matches_lowpage_ctx(&p25_lowpage_ctx,
                                                wrapped->raw));
 #endif
+#endif
+#if defined(__linux__) && BENCHLAB_HZ5_LINUX_LOCAL2P
+    if (wrapped->source == HZ5_WRAPPER_SOURCE_LINUX_LOCAL2P) {
+      return hz5_policy_local2p_free(wrapped, (uintptr_t)ptr);
+    }
+    if (hz5_policy_local2p_metadata_present(wrapped)) {
+      hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INVALID_COOKIE);
+      return HZ5_FREE_INVALID;
+    }
 #endif
 #if BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192
     if (wrapped->source == HZ5_WRAPPER_SOURCE_P25_HZ4LOWPAGE) {

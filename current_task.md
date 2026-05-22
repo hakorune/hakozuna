@@ -1181,14 +1181,55 @@ Decision:
 
 First implementation order:
 
-1. Add `BENCHLAB_HZ5_LINUX_LOCAL2P` build flag and lane descriptor.
-2. Add wrapper source tag and Local2P metadata behind the build flag.
-3. Add trace-only Local2P counters.
-4. Implement cap1 TLS raw 128K span stack.
-5. Wire only exact `65536:8192` alloc/free to Local2P under the flag.
+1. Add `BENCHLAB_HZ5_LINUX_LOCAL2P` build flag and lane descriptor. DONE.
+2. Add wrapper source tag and Local2P metadata behind the build flag. DONE.
+3. Add trace-only Local2P counters. DONE.
+4. Implement cap1 TLS raw 128K span stack. DONE.
+5. Wire only exact `65536:8192` alloc/free to Local2P under the flag. DONE.
 6. Add safety smokes for valid, double-free, mutated cookie/source, foreign
-   pointer, cross-thread free, and unsupported routes.
-7. Run local-only A/B against HZ5 P25, HZ4, and tcmalloc.
+   pointer, cross-thread free, and unsupported routes. DONE.
+7. Run local-only A/B against HZ5 P25, HZ4, and tcmalloc. PARTIAL.
+
+Initial implementation notes:
+
+- Build flag: `./linux/build_linux_hz5_standalone.sh --linux-local2p`.
+- Lane descriptor: `hz5-linux-local2p`.
+- Local2P source tag: `HZ5_WRAPPER_SOURCE_LINUX_LOCAL2P`.
+- Span source: `posix_memalign(8192, 131072)`.
+- Cache: thread-local raw span stack, cap1 by default.
+- Free policy: wrapper decode, Local2P cookie check, `ACTIVE -> FREED` CAS,
+  same-owner TLS push, cross-thread direct OS free for the initial lane.
+- Invalid Local2P-looking frees fail closed and do not fall through to P25,
+  P43, or HZ3 fallback.
+
+Initial smoke results:
+
+- Trace route for `1 x 100000 x 65536:8192`:
+  `alloc_local2p_os=1`, `alloc_local2p_tls_hit=99999`,
+  `free_local2p_tls=100000`, `wrapper_decode_ok=100000`.
+- Safety smoke: `bench_hz5_standalone_safety` passes for valid free,
+  double-free, mutated Local2P cookie, mutated source, foreign pointer,
+  cross-thread free, and unsupported guard rows.
+- Speed smoke, `1 x 1000000 x 65536:8192`:
+  Local2P observed around `74-80M ops/s` versus current P25 around
+  `57-70M ops/s` on this machine/run set.
+- Perf sample:
+  Local2P currently reduces cycles versus P25, but still has higher
+  instruction count than P25/HZ4 due to wrapper decode, cookie, and active
+  state safety checks.
+- Quick compare runner smoke:
+  `./linux/run_linux_hz5_standalone_compare.sh --hz5-local2p --runs 1
+  --iters 100000 --cases 65536:8192 --allocators hz5,hz4,tcmalloc
+  --skip-prepare-allocators --outdir
+  private/raw-results/linux/local2p_quick_compare`.
+  Result: HZ5 Local2P `69.5M`, HZ4 `113.2M`, tcmalloc `267.6M`.
+
+Next implementation target:
+
+- Keep Local2P cap1 as the safety baseline.
+- Add clearly named diagnostic variants only after the baseline is committed:
+  no-cookie, no-state, and fixed-header fast variants to isolate the remaining
+  instruction cost.
 
 Go/no-go:
 
