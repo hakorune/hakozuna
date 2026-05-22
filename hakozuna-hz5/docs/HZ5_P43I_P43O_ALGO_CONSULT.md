@@ -374,3 +374,210 @@ Is a hysteretic source-admission algorithm the right next experiment,
 or should P43i be frozen as candidate-watch and the project move to broader HZ5
 design review?
 ```
+
+## Update: P43p Bridge-Cold Stage1 Follow-Up
+
+After the P43o/P44 review, we tried the non-cap-sweep source-admission path.
+
+The design goal was:
+
+```text
+Do not trim.
+Do not decommit.
+Do not runtime-release segments.
+Do not bypass the P25 bridge.
+
+Instead:
+  treat P40 release as a bridge-cold / stage1 source-demotion intent.
+```
+
+### P43p.2 BridgeColdStage1
+
+P43p.2 changed P40 checkpoint release:
+
+```text
+before:
+  P40 release candidate -> source release / P43 committed-free
+
+after:
+  P40 release candidate -> bridge-cold stage1 queue
+  acquire miss -> pop_all stage1
+  return first node
+  put the rest back into the hot-ish stash topology
+```
+
+Observed counters showed the queue was live:
+
+```text
+p43p_stage1_enqueue_nodes = 1976
+p43p_stage1_acquire_nodes = 1920
+p43p_stage1_current       = 56
+```
+
+But the behavior was mixed/no-go:
+
+```text
+exact/rss-bounded:
+  improved some r99/RSS rows
+  regressed r90
+
+mixed-prelude:
+  final 64K regressed versus P43i
+```
+
+Interpretation:
+
+```text
+bridge-cold is a real control point,
+but putting all P40 release candidates into stage1 and then reinjecting them
+wholesale is too blunt.
+```
+
+### P43p.3a Stage1LimitedAcquire
+
+P43p.3a kept P43p.2 stage1 queueing but limited acquire-miss reinjection:
+
+```text
+stage1-pop1:
+  acquire at most 1 stage1 node per miss
+
+stage1-pop4:
+  acquire at most 4 stage1 nodes per miss
+
+remaining stage1 nodes:
+  requeued, not pop_all/stash-reinjected
+```
+
+This still preserves the P43i contract:
+
+```text
+no trim
+no slot decommit
+no PAGE_NOACCESS
+no runtime segment release
+no direct descriptor release
+no descriptor relbuf
+P25 bridge remains intact
+```
+
+### P43p.3a repeat-10 readout
+
+On `hz5-lowpage64-rss-bounded` repeat-10:
+
+```text
+P43i:
+  64K/r90 14.30M
+  64K/r99 11.85M
+  plateau steady RSS 61.52 MiB
+
+stage1-pop1:
+  64K/r90 14.38M
+  64K/r99 13.87M
+  plateau steady RSS 61.12 MiB
+
+stage1-pop4:
+  64K/r90 10.68M
+  64K/r99 11.26M
+  plateau steady RSS 61.39 MiB
+```
+
+On `hz5-p43-mixed-prelude-rss64-rss256-4k8k` repeat-10:
+
+```text
+P43i final exact 64K:
+  6.89M
+  final/steady RSS 92.10 MiB
+
+stage1-pop4 final exact 64K:
+  7.06M
+  final/steady RSS 92.72 MiB
+
+stage1-pop1 final exact 64K:
+  7.49M
+  final/steady RSS 91.32 MiB
+
+P43p.2 pop_all final exact 64K:
+  7.88M
+  final/steady RSS 93.17 MiB
+```
+
+On `hz5-a8192-guards` repeat-5:
+
+```text
+fallback state:
+  load_count = 1 as expected
+  load_failed = 0
+  free_miss_unloaded = 0
+
+stage1-pop4 guard concerns:
+  8K/a4096  5.67M vs P43i 8.28M
+  64K/a4096 6.59M vs P43i 7.58M
+
+stage1-pop4 guard positives:
+  2K/a8192   15.15M vs P43i 14.10M
+  256K/a4096 5.34M vs P43i 5.41M, similar
+```
+
+### Updated Interpretation
+
+The new read is:
+
+```text
+P43p.2 pop_all:
+  no-go/control
+  evidence that wholesale bridge-cold reinjection is blunt
+
+P43p.3a pop1:
+  exact/rss-bounded evidence
+  improves exact r99/r90 in this repeat-10
+
+P43p.3a pop4:
+  mixed-prelude evidence
+  modest final-64K improvement, but not enough
+  weak on some a4096 guard rows
+
+P43i:
+  remains the balanced candidate-watch
+```
+
+So P43p.3a supports the algorithmic point that reinjection granularity matters,
+but it does not cleanly beat P43i enough to become the next balanced lane.
+
+## Updated Review Question
+
+Given this P43p.3a evidence, which direction should HZ5 take next?
+
+```text
+A. Stop the P43p bridge-cold track here.
+   Keep:
+     P43i = balanced candidate-watch
+     P43p.2 = pop_all no-go/control
+     P43p.3a = limited acquire evidence
+
+B. Try exactly one age-gated stage1 dry-run.
+   Goal:
+     test whether young stage1 reuse and old stage1 retention/demotion would
+     avoid both pop_all pollution and pop4 guard regressions.
+
+C. Implement age-gated stage1 behavior directly.
+   This would add epoch/age to stage1 nodes and avoid hot-stash reinjection
+   of old stage1 nodes.
+
+D. Move to broader HZ5 core design.
+   Treat P43p as evidence that P25 bridge and P43 source need a cleaner
+   long-term admission/control-plane separation.
+```
+
+My current leaning after repeat-10:
+
+```text
+P43i should remain the selected balanced watch lane.
+
+P43p.3a is useful evidence but not a promotion path.
+
+If continuing P43p at all, do only B:
+  age-gated stage1 dry-run, not immediate behavior.
+
+If the review thinks the signal is already sufficient, choose A/D and stop
+adding P43p knobs.
+```
