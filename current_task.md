@@ -24,7 +24,7 @@ codex/hz5-linux-p43-port
 Current reference commit:
 
 ```bash
-931c63b Add HZ5 Linux standalone exact lane
+2dc1dc6 Refine HZ5 ABI and lane identity
 ```
 
 Parent branch:
