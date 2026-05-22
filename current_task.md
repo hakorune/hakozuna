@@ -1065,6 +1065,101 @@ Interpretation:
 - mimalloc remains pathologically slow on this exact Linux aligned path and is
   not the useful optimization target for this row.
 
+### HZ4/Tcmalloc/HZ5 Observation Pass
+
+Raw result folder:
+
+```bash
+private/raw-results/linux/hz5_hz4_tcmalloc_observe_20260523_054137
+```
+
+Perf stat, local-only `64K/a8192`, 1M iterations:
+
+```text
+allocator  ops/s     cycles      instructions  branches    cache-misses
+tcmalloc   249.5M     46.4M      147.5M        32.8M       153K
+hz4        131.5M     64.2M      270.2M        54.8M        44K
+hz5         68.7M    121.3M      337.6M        87.9M       133K
+```
+
+Perf report hot symbols:
+
+```text
+hz5:
+  hz5_policy_alloc_aligned
+  hz5_lowpage64_release
+  worker_main
+  hz5_wrapper_decode / hz5_wrapper_init / hz5_lowpage64_acquire
+
+hz4:
+  hz4_large_malloc
+  hz4_malloc
+  posix_memalign
+  hz4_large_free_header_checked
+
+tcmalloc:
+  aligned_alloc
+  operator delete[]
+  tc_posix_memalign
+```
+
+HZ4 source/path observation:
+
+- `posix_memalign(8192, 65536)` over-allocates by
+  `(8192 - 1) + sizeof(hz4_aligned_hdr_t)`, so it requests `73759` bytes from
+  `hz4_malloc`.
+- That routes to `hz4_large_malloc`; after the large header and 64K page round,
+  total allocation size is `131072` bytes, a 2-page large object.
+- The steady-state local-only path is the HZ4 large TLS span cache for 2-page
+  large allocations, not the shared pagebin/lock-shard/global fallback path.
+- HZ4 aligned free first decodes a tiny aligned header (`magic`, `raw`, `cookie`,
+  `requested`) and then frees the raw large object.
+
+HZ4 stats observation with `HZ4_OS_STATS=1`, 100k iterations:
+
+```text
+large_acq=131072
+large_rel=0
+pagebin_acq_miss=1
+b15_acq_call=1
+remote_free_seen=0
+```
+
+Interpretation:
+
+- HZ4 hits OS once for the first 2-page large allocation and then reuses it
+  entirely from local cache.
+- This row is not syscall-bound.
+
+Strace count, 10k iterations:
+
+```text
+hz5      mmap/munmap/brk total=18
+hz4      mmap/munmap/brk total=46
+tcmalloc mmap/munmap/brk total=59
+```
+
+HZ5 trace observation, 100k iterations:
+
+```text
+[HZ5_TRACE] alloc_p25_bridge=100000 free_p25_bridge=100000 wrapper_decode_ok=100000
+```
+
+Interpretation:
+
+- HZ5 has no fallback or P43 route contamination in the measured speed lane.
+- The HZ5 loss is pure P25 bridge hot-path cost, not an unsupported/fallback
+  artifact.
+- HZ5 spends more instructions and branches than HZ4 and far more than
+  tcmalloc.
+- The first HZ5 development target should be a HZ4-like local 2-page span cache
+  for `64K/a8192`, or an equivalent fast path before shared/global bridge work.
+- Candidate HZ5 costs to isolate next:
+  - `hz5_lowpage64_note_raw_range()` global raw min/max atomics
+  - wrapper init/decode cookie/layout validation
+  - P25 acquire/release stash/global path versus a tiny TLS 2-page span cache
+  - `g_hz5_policy_seen_allocation` atomic branch on free
+
 Earlier next attack, now superseded by the decoded raw lookup results:
 
 - test producer/consumer remote-free before deciding whether local-only
