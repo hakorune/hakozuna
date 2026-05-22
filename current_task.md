@@ -1329,6 +1329,62 @@ private/raw-results/linux/local2p_guard_trace/results.tsv
 - `4096:8192`, `8192:8192`: succeed through existing exact route, with no
   Local2P trace counters.
 
+### Paper Benchmark Suite Organization
+
+Problem:
+
+- Existing paper results are general allocator benchmarks using the same binary
+  plus LD_PRELOAD.
+- HZ5 Local2P results are direct-API exact `64K/a8192` measurements.
+- Mixing those in one main table would confuse general allocator claims with a
+  narrow exact-overaligned profile claim.
+
+Documentation:
+
+```bash
+hakozuna-hz5/docs/HZ5_PAPER_BENCH_SUITE.md
+```
+
+Tier split:
+
+- `paper-main`: existing paper/hakmem MT remote matrix and Redis-like app lane.
+  HZ5 is excluded until a general LD_PRELOAD-compatible HZ5 lane exists.
+- `appendix-hz5`: HZ5 exact-overaligned profile evaluation, including local,
+  remote, RSS, mixed prelude, and guard rows.
+- `diagnostic-hz5`: trace/perf/knob smoke results used only for development.
+
+Single entry point:
+
+```bash
+./linux/run_paper_allocator_suite.sh --tier paper-main
+./linux/run_paper_allocator_suite.sh --tier appendix-hz5
+./linux/run_paper_allocator_suite.sh --tier diagnostic-hz5
+```
+
+Smoke checks:
+
+```bash
+./linux/run_paper_allocator_suite.sh \
+  --tier diagnostic-hz5 \
+  --outdir private/raw-results/linux/paper_suite_diagnostic_smoke
+
+./linux/run_paper_allocator_suite.sh \
+  --tier appendix-hz5 \
+  --runs 1 \
+  --local-iters 10000 \
+  --remote-iters 1000 \
+  --rss-blocks 32 \
+  --rss-rounds 1 \
+  --mixed-blocks 32 \
+  --mixed-rounds 1 \
+  --mixed-iters 10000 \
+  --probe-attempts 8 \
+  --skip-prepare-allocators \
+  --outdir private/raw-results/linux/paper_suite_appendix_smoke
+```
+
+Both smoke tiers completed successfully.
+
 Go/no-go:
 
 - Minimum: Local2P beats HZ5 P25 by at least 50% on local-only `64K/a8192`.
