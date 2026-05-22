@@ -1160,6 +1160,42 @@ Interpretation:
   - P25 acquire/release stash/global path versus a tiny TLS 2-page span cache
   - `g_hz5_policy_seen_allocation` atomic branch on free
 
+### Linux Local2P Design Decision
+
+Design document:
+
+```bash
+hakozuna-hz5/docs/HZ5_LINUX_LOCAL2P_DESIGN.md
+```
+
+Decision:
+
+- Proceed with a Linux-only `hz5-linux-local2p` candidate/control lane.
+- Target only exact `64K/a8192` initially.
+- Store direct raw `131072` byte spans in a thread-local cache before entering
+  the P25 shared/global bridge path.
+- Start with TLS `cap1`, then test `cap8`.
+- Keep Windows P43i/P45 untouched.
+- Keep P43 direct token work out of the local-only speed lane.
+- Keep invalid and unsupported routes fail-closed.
+
+First implementation order:
+
+1. Add `BENCHLAB_HZ5_LINUX_LOCAL2P` build flag and lane descriptor.
+2. Add wrapper source tag and Local2P metadata behind the build flag.
+3. Add trace-only Local2P counters.
+4. Implement cap1 TLS raw 128K span stack.
+5. Wire only exact `65536:8192` alloc/free to Local2P under the flag.
+6. Add safety smokes for valid, double-free, mutated cookie/source, foreign
+   pointer, cross-thread free, and unsupported routes.
+7. Run local-only A/B against HZ5 P25, HZ4, and tcmalloc.
+
+Go/no-go:
+
+- Minimum: Local2P beats HZ5 P25 by at least 50% on local-only `64K/a8192`.
+- Strong: Local2P reaches at least HZ4 minus 10%.
+- Stretch: Local2P reduces instruction/branch count toward tcmalloc.
+
 Earlier next attack, now superseded by the decoded raw lookup results:
 
 - test producer/consumer remote-free before deciding whether local-only
