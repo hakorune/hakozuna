@@ -16,3 +16,7 @@
 * `core/hz5_remote.c`: リモートスレッドからの解放予約（Remote Free）のキューイングと、非同期な回収 (Drain) 処理。
 * `core/hz5_stats.c`: メモリアロケータ内部の各種診断用統計データ (Diagnostics) の集計・出力。
 * `win/hz5_p1_smoke.c`: スモークテスト用のテストランナー。
+
+## Design Notes
+
+* `docs/HZ5_CONTROL_PLANE_DESIGN.md`: P45dr 後の HZ5 control-plane 設計メモ。P25 bridge を speed layer、P43 segment source を source layer、P40 release を source-demotion intent、OPEN/DRAIN/CLOSED admission を control plane として扱う。
