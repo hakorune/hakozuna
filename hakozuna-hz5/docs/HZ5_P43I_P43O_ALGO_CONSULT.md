@@ -1117,3 +1117,92 @@ If continuing, should the next observation be repeat-3/5 P45dr on rss-bounded
 and mixed-prelude, or is the current evidence enough to return to the broader
 HZ5 control-plane design review?
 ```
+
+### Repeat-3 follow-up
+
+```text
+rss-bounded:
+  results/synthetic-sweep/20260522_171034_833
+
+mixed-prelude:
+  results/synthetic-sweep/20260522_171034_854
+
+guards:
+  results/synthetic-sweep/20260522_171034_884
+```
+
+Key readout:
+
+```text
+P45dr repeat-3 confirms the diagnostic shape, but not a promotion lane.
+
+rss-bounded plateau:
+  p45rg_demote_intent median = 1400
+  p45rg_stage1_any median = 376
+  p45rg_stage1_current median = 48
+  p45rg_stage1_current_max median = 56
+
+  p45dr_bridge_cold_current_max median = 56
+  p45dr_bridge_total_with_cold_max median = 120
+  p45dr_stage1_current_at_checkpoint_max median = 56
+  p45dr_stage1_current_at_snapshot_max median = 48
+  p45dr_stage1_age_old median = 492
+  p45dr_would_keep_cold median = 2316
+  p45dr_would_block_drain_closed median = 2272
+  p45dr_would_demote_open median = 0
+
+mixed-prelude final exact 64K:
+  p45rg_demote_intent median = 360
+  p45rg_stage1_any median = 64
+  p45rg_stage1_current median = 40
+  p45rg_stage1_current_max median = 40
+
+  p45dr_stage1_age_old median = 0
+  p45dr_would_keep_cold median = 192
+  p45dr_would_block_drain_closed median = 160
+  p45dr_would_demote_open median = 0
+
+guards:
+  p45rg_demote_intent = 0
+  p45rg_stage1_any = 0
+  p45rg_stage1_current = 0
+  p45dr_stage1_* = 0
+```
+
+Interpretation:
+
+```text
+P45dr supports P45r1 as a refined-gate mechanism:
+  refined stage1 is active only on 64K/a8192 pressure rows
+  guard/fallback rows do not enter the stage1 path
+  mixed-prelude final exact 64K has no old stage1 exposure
+
+The rss-bounded plateau still leaves bounded bridge-cold retention:
+  stage1_current around 48
+  old exposure appears only under repeated/rss-bounded pressure
+  keep/block projection is DRAIN/CLOSED dominated, not OPEN-demote dominated
+
+The balance mismatch counters are diagnostic-only:
+  they can be nonzero under concurrent sampling because enqueue/acquire/current
+  are read separately at snapshot boundaries
+  do not treat them as a safety failure unless they correlate with raw mismatch,
+  guard leakage, or unbounded current growth
+```
+
+Current decision:
+
+```text
+P45dr:
+  KEEP as stage1-retention diagnostic evidence
+
+P45r1:
+  KEEP as HZ5 control-plane prototype evidence
+
+Promotion:
+  NO
+
+Next:
+  If continuing locally, compare P45dr against P43i/P45r1 on a small fair matrix
+  or return to HZ5 core control-plane design review.
+  Do not add acquire-limit sweeps or actual drain yet.
+```
