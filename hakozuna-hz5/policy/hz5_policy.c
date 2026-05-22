@@ -233,24 +233,8 @@ static void* hz5_policy_p25_wrapper_alloc(size_t size, size_t align) {
 }
 #endif
 
-#if BENCHLAB_HZ5_NO_HZ3_FALLBACK
-static void* hz5_policy_control_fallback_alloc(size_t size, size_t align) {
-  if (size == 0) {
-    size = 1;
-  }
-  if (align < sizeof(void*)) {
-    align = sizeof(void*);
-  }
-  return _aligned_malloc(size, align);
-}
-
-static void hz5_policy_control_fallback_free(void* ptr) {
-  _aligned_free(ptr);
-}
-#endif
-
-#if BENCHLAB_HZ5_LAZY_HZ3_FALLBACK
-static void* hz5_policy_p20_crt_bypass_alloc(size_t size, size_t align) {
+#if BENCHLAB_HZ5_NO_HZ3_FALLBACK || BENCHLAB_HZ5_LAZY_HZ3_FALLBACK
+static void* hz5_policy_crt_wrapped_alloc(size_t size, size_t align) {
   if (align > SIZE_MAX - sizeof(Hz5WrapperHdr)) {
     return NULL;
   }
@@ -276,7 +260,9 @@ static void* hz5_policy_p20_crt_bypass_alloc(size_t size, size_t align) {
   Hz5WrapperHdr* header = (Hz5WrapperHdr*)(aligned - sizeof(Hz5WrapperHdr));
   hz5_wrapper_init(header, raw, aligned, size, raw_bytes,
                    HZ5_WRAPPER_SOURCE_P20_CRT_BYPASS);
+#if BENCHLAB_HZ5_LAZY_HZ3_FALLBACK
   hz5_hz3_fallback_note_crt_bypass_alloc();
+#endif
   return (void*)aligned;
 }
 #endif
@@ -329,10 +315,10 @@ void* hz5_policy_alloc_aligned(size_t size, size_t align,
   if (align <= HZ5_POLICY_MIN_ALIGN ||
       hz5_route_hz3_medium_can_satisfy(size, align)) {
 #if BENCHLAB_HZ5_NO_HZ3_FALLBACK
-    return hz5_policy_control_fallback_alloc(size, align);
+    return hz5_policy_crt_wrapped_alloc(size, align);
 #elif BENCHLAB_HZ5_LAZY_HZ3_FALLBACK
     if (size <= 16u && align <= HZ5_POLICY_MIN_ALIGN) {
-      void* bypass = hz5_policy_p20_crt_bypass_alloc(size, align);
+      void* bypass = hz5_policy_crt_wrapped_alloc(size, align);
       if (bypass) {
         return bypass;
       }
@@ -344,7 +330,7 @@ void* hz5_policy_alloc_aligned(size_t size, size_t align,
   }
 
 #if BENCHLAB_HZ5_NO_HZ3_FALLBACK
-  return hz5_policy_control_fallback_alloc(size, align);
+  return hz5_policy_crt_wrapped_alloc(size, align);
 #elif BENCHLAB_HZ5_LAZY_HZ3_FALLBACK
   return hz5_hz3_fallback_alloc(size, align);
 #else
@@ -425,13 +411,13 @@ void hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
       return;
     }
 #endif
-#if BENCHLAB_HZ5_LAZY_HZ3_FALLBACK
     if (wrapped->source == HZ5_WRAPPER_SOURCE_P20_CRT_BYPASS) {
+#if BENCHLAB_HZ5_LAZY_HZ3_FALLBACK
       hz5_hz3_fallback_note_crt_bypass_free();
+#endif
       _aligned_free((void*)wrapped->raw);
       return;
     }
-#endif
     hz5_policy_free_decoded_fallback_raw((void*)wrapped->raw);
     return;
   }
@@ -444,7 +430,9 @@ void hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
 #endif
 
 #if BENCHLAB_HZ5_NO_HZ3_FALLBACK
-  hz5_policy_control_fallback_free(ptr);
+  /* No-HZ3 control fallback allocations are wrapper-tagged above. Reaching
+     here means the pointer was not produced by this allocator. */
+  (void)ptr;
 #elif BENCHLAB_HZ5_LAZY_HZ3_FALLBACK
   hz5_hz3_fallback_free(ptr);
 #else
