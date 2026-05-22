@@ -842,10 +842,11 @@ Smoke after harness cleanup:
 Raw result folder:
 
 ```bash
-private/raw-results/linux/hz5_p25attr_focus_20260523_045355
+private/raw-results/linux/hz5_p25attr_focus_20260523_045443
 ```
 
 All 36 cleanup-smoke sub-runs exited status `0`.
+The smoke build metadata recorded `dirty=0`.
 
 Open source cleanup items:
 
