@@ -20,3 +20,4 @@
 ## Design Notes
 
 * `docs/HZ5_CONTROL_PLANE_DESIGN.md`: P45dr 後の HZ5 control-plane 設計メモ。P25 bridge を speed layer、P43 segment source を source layer、P40 release を source-demotion intent、OPEN/DRAIN/CLOSED admission を control plane として扱う。
+* `lowpage/hz5_lowpage64.c`: P45 closeout 後の code comments では、stage1 を BRIDGE_COLD evidence queue、P40 `release_head` を source-demotion intent、stage1 acquire を source miss 前の bridge-cold reuse として明示している。

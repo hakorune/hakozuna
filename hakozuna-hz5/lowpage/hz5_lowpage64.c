@@ -332,6 +332,13 @@
 #endif
 #endif
 
+/*
+ * Stage1 is the current experimental name for the HZ5 BRIDGE_COLD state.
+ * It is not an OS-return path: nodes remain committed and bridge-side. P43p
+ * used it as bridge-cold evidence, while P45 uses it as the refined-gate
+ * target for P40 source-demotion intents that should not enter the P43 source
+ * layer yet.
+ */
 #define HZ5_LOWPAGE64_STAGE1_ENABLED \
   (HZ5_LOWPAGE64_P43P_BRIDGE_COLD_STAGE1 || HZ5_LOWPAGE64_P45_REFINED_GATE)
 
@@ -503,6 +510,12 @@ static _Atomic size_t g_hz5_lowpage64_global_batch_count;
 static _Atomic(uintptr_t) g_hz5_lowpage64_raw_min;
 static _Atomic(uintptr_t) g_hz5_lowpage64_raw_max;
 #if HZ5_LOWPAGE64_STAGE1_ENABLED
+/*
+ * Shared BRIDGE_COLD/stage1 queue for P43p/P45 evidence lanes. The canonical
+ * speed layer is still release_common() -> relbuf -> global batch -> acquired
+ * stash; this queue only holds P40 source-demotion intents that the current
+ * admission experiment has decided to keep bridge-side.
+ */
 static _Atomic(uintptr_t) g_hz5_lowpage64_p43p_stage1_head;
 static _Atomic size_t g_hz5_lowpage64_p43p_stage1_count;
 #endif
@@ -2039,6 +2052,11 @@ static void hz5_lowpage64_p43p_stage1_push_list_impl(void* head,
 #if HZ5_LOWPAGE64_P45_STAGE1_DRAIN_DRYRUN && \
     HZ5_LOWPAGE64_P40_GLOBAL_SOFT_CAP > 0
   if (count_enqueue) {
+    /*
+     * Age for P45dr means "time since this list became BRIDGE_COLD", not the
+     * original allocation age. Requeues keep their existing epoch so the
+     * diagnostic can distinguish bounded retention from repeated reinjection.
+     */
     uint32_t stage1_epoch = atomic_load_explicit(
         &g_hz5_lowpage64_p40_global_epoch, memory_order_relaxed);
     hz5_lowpage64_mark_list_epoch(head, stage1_epoch);
@@ -2090,6 +2108,10 @@ static void hz5_lowpage64_p43p_stage1_push_list(void* head,
 
 static void* hz5_lowpage64_p43p_stage1_pop_batch(size_t limit,
                                                  size_t* out_count) {
+  /*
+   * Bounded BRIDGE_COLD acquire. P43p pop-all showed that wholesale reinjection
+   * can pollute the hot topology, so P45 keeps this intentionally small.
+   */
   void* head =
       (void*)atomic_exchange_explicit(&g_hz5_lowpage64_p43p_stage1_head, 0,
                                       memory_order_acq_rel);
@@ -2225,6 +2247,14 @@ static void hz5_lowpage64_p40_checkpoint(void) {
   size_t age_nodes = 0;
   size_t hard_nodes = 0;
 
+  /*
+   * Historical name: release_head.
+   *
+   * Under the P43i/P45 contract these nodes are better read as P40
+   * source-demotion intents. If the lane has no bridge-cold control they may
+   * still go to the old raw release path, but P45 can instead keep them
+   * bridge-side as BRIDGE_COLD/stage1 without decommit/runtime release.
+   */
   void* node = head;
   while (node) {
     void* next = hz5_lowpage64_link_next_load(node);
@@ -2276,6 +2306,15 @@ static void hz5_lowpage64_p40_checkpoint(void) {
   }
 #if HZ5_LOWPAGE64_STAGE1_ENABLED
 #if HZ5_LOWPAGE64_P45_REFINED_GATE
+  /*
+   * P45 refined gate is the first control-plane behavior probe:
+   * - OPEN + bridge residual within soft cap: preserve the existing P40 path.
+   * - DRAIN/CLOSED or bridge residual excess: stage only this P40 demotion
+   *   intent as BRIDGE_COLD.
+   *
+   * This deliberately avoids P43p's blunt "all candidates become stage1"
+   * shape and does not trim/decommit/release memory.
+   */
   size_t p45_state = atomic_load_explicit(
       &g_hz5_lowpage64_p45_runtime_state, memory_order_relaxed);
   Hz5Lowpage64P45Decision p45_decision =
@@ -2778,6 +2817,11 @@ void* hz5_lowpage64_acquire(size_t raw_bytes) {
 #else
   size_t stage1_limit = HZ5_LOWPAGE64_P43P_STAGE1_ACQUIRE_LIMIT;
 #endif
+  /*
+   * Source miss bridge-cold reuse. This runs after the normal P25 bridge
+   * global batch miss and before the P43 source layer allocates/commits new
+   * slot state. It is reuse, not drain-to-OS.
+   */
   void* bridge_cold =
       hz5_lowpage64_p43p_stage1_pop_batch(stage1_limit,
                                           &bridge_cold_count);
