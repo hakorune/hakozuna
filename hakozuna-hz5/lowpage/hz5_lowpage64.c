@@ -694,6 +694,16 @@ static _Atomic size_t g_hz5_lowpage64_p45_source_committed_pressure_total;
 static _Atomic size_t g_hz5_lowpage64_p45_p40_demote_intent;
 static _Atomic size_t g_hz5_lowpage64_p45_p40_demote_while_drain_closed;
 static _Atomic size_t g_hz5_lowpage64_p45_p40_demote_while_bridge_nonempty;
+static _Atomic size_t g_hz5_lowpage64_p45_would_demote_clean_open;
+static _Atomic size_t g_hz5_lowpage64_p45_would_stage1_any;
+static _Atomic size_t g_hz5_lowpage64_p45_would_stage1_state;
+static _Atomic size_t g_hz5_lowpage64_p45_would_stage1_bridge_nonempty;
+static _Atomic size_t g_hz5_lowpage64_p45_would_stage1_overlap;
+static _Atomic size_t g_hz5_lowpage64_p45_bridge_residual_after_demote_max;
+static _Atomic size_t g_hz5_lowpage64_p45_bridge_residual_after_demote_total;
+static _Atomic size_t g_hz5_lowpage64_p45_would_demote_open_bridge_soft;
+static _Atomic size_t g_hz5_lowpage64_p45_would_stage1_bridge_excess;
+static _Atomic size_t g_hz5_lowpage64_p45_would_stage1_refined_any;
 static _Atomic size_t g_hz5_lowpage64_p45_source_miss;
 #endif
 
@@ -1632,18 +1642,64 @@ static void hz5_lowpage64_p45_note(
   if (reason == HZ5_LOWPAGE64_P45_REASON_P40) {
     size_t demote_intent =
         hz5_lowpage64_p43o_release_candidates(observed_global);
+    int state_blocks =
+        new_state != HZ5_LOWPAGE64_P43O_STATE_OPEN;
+    int bridge_blocks = bridge_current > 0;
+    size_t bridge_residual =
+        bridge_current > demote_intent ? bridge_current - demote_intent : 0;
+    int bridge_excess_blocks =
+        bridge_residual > HZ5_LOWPAGE64_P40_GLOBAL_SOFT_CAP;
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45_p40_demote_intent,
                             demote_intent);
-    if (demote_intent > 0 &&
-        new_state != HZ5_LOWPAGE64_P43O_STATE_OPEN) {
+    if (demote_intent > 0) {
+      HZ5_LOWPAGE64_COUNT_MAX(
+          g_hz5_lowpage64_p45_bridge_residual_after_demote_max,
+          bridge_residual);
+      HZ5_LOWPAGE64_COUNT_ADD(
+          g_hz5_lowpage64_p45_bridge_residual_after_demote_total,
+          bridge_residual);
+    }
+    if (demote_intent > 0 && !state_blocks && !bridge_blocks) {
+      HZ5_LOWPAGE64_COUNT_ADD(
+          g_hz5_lowpage64_p45_would_demote_clean_open,
+          demote_intent);
+    }
+    if (demote_intent > 0 && !state_blocks && !bridge_excess_blocks) {
+      HZ5_LOWPAGE64_COUNT_ADD(
+          g_hz5_lowpage64_p45_would_demote_open_bridge_soft,
+          demote_intent);
+    }
+    if (demote_intent > 0 && (state_blocks || bridge_blocks)) {
+      HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45_would_stage1_any,
+                              demote_intent);
+    }
+    if (demote_intent > 0 && (state_blocks || bridge_excess_blocks)) {
+      HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45_would_stage1_refined_any,
+                              demote_intent);
+    }
+    if (demote_intent > 0 && state_blocks) {
       HZ5_LOWPAGE64_COUNT_ADD(
           g_hz5_lowpage64_p45_p40_demote_while_drain_closed,
           demote_intent);
+      HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45_would_stage1_state,
+                              demote_intent);
     }
-    if (demote_intent > 0 && bridge_current > 0) {
+    if (demote_intent > 0 && bridge_excess_blocks) {
+      HZ5_LOWPAGE64_COUNT_ADD(
+          g_hz5_lowpage64_p45_would_stage1_bridge_excess,
+          demote_intent);
+    }
+    if (demote_intent > 0 && bridge_blocks) {
       HZ5_LOWPAGE64_COUNT_ADD(
           g_hz5_lowpage64_p45_p40_demote_while_bridge_nonempty,
           demote_intent);
+      HZ5_LOWPAGE64_COUNT_ADD(
+          g_hz5_lowpage64_p45_would_stage1_bridge_nonempty,
+          demote_intent);
+    }
+    if (demote_intent > 0 && state_blocks && bridge_blocks) {
+      HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45_would_stage1_overlap,
+                              demote_intent);
     }
   }
 }
@@ -2680,6 +2736,16 @@ void hz5_lowpage64_print_snapshot(const char* label) {
           "p45_p40_demote_intent=%zu "
           "p45_p40_demote_while_drain_closed=%zu "
           "p45_p40_demote_while_bridge_nonempty=%zu "
+          "p45_would_demote_clean_open=%zu "
+          "p45_would_stage1_any=%zu "
+          "p45_would_stage1_state=%zu "
+          "p45_would_stage1_bridge_nonempty=%zu "
+          "p45_would_stage1_overlap=%zu "
+          "p45_bridge_residual_after_demote_max=%zu "
+          "p45_bridge_residual_after_demote_total=%zu "
+          "p45_would_demote_open_bridge_soft=%zu "
+          "p45_would_stage1_bridge_excess=%zu "
+          "p45_would_stage1_refined_any=%zu "
           "p45_source_miss=%zu\n",
           label ? label : "",
           g_hz5_lowpage64_stash_count,
@@ -2985,6 +3051,32 @@ void hz5_lowpage64_print_snapshot(const char* label) {
           atomic_load_explicit(
               &g_hz5_lowpage64_p45_p40_demote_while_bridge_nonempty,
               memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p45_would_demote_clean_open,
+              memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45_would_stage1_any,
+                               memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45_would_stage1_state,
+                               memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p45_would_stage1_bridge_nonempty,
+              memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45_would_stage1_overlap,
+                               memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p45_bridge_residual_after_demote_max,
+              memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p45_bridge_residual_after_demote_total,
+              memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p45_would_demote_open_bridge_soft,
+              memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p45_would_stage1_bridge_excess,
+              memory_order_relaxed),
+          atomic_load_explicit(&g_hz5_lowpage64_p45_would_stage1_refined_any,
+                               memory_order_relaxed),
           atomic_load_explicit(&g_hz5_lowpage64_p45_source_miss,
                                memory_order_relaxed));
 }
