@@ -519,7 +519,9 @@ static _Atomic(uintptr_t) g_hz5_lowpage64_raw_max;
  * batch -> acquired stash; this queue only holds P40 source-demotion intents
  * that the current admission experiment has decided to keep bridge-side.
  */
+#if HZ5_LOWPAGE64_P40_GLOBAL_SOFT_CAP > 0
 static _Atomic(uintptr_t) g_hz5_lowpage64_p43p_stage1_head;
+#endif
 static _Atomic size_t g_hz5_lowpage64_p43p_stage1_count;
 #endif
 #if (HZ5_LOWPAGE64_P42_VA_SOURCE && HZ5_LOWPAGE64_P42_DECOMMIT_COLD) || \
@@ -2070,7 +2072,7 @@ static void hz5_lowpage64_global_push_list(void* head,
                             memory_order_relaxed);
 }
 
-#if HZ5_LOWPAGE64_STAGE1_ENABLED
+#if HZ5_LOWPAGE64_STAGE1_ENABLED && HZ5_LOWPAGE64_P40_GLOBAL_SOFT_CAP > 0
 static void hz5_lowpage64_p43p_stage1_push_list_impl(void* head,
                                                      void* tail,
                                                      size_t count,
@@ -2883,7 +2885,7 @@ void* hz5_lowpage64_acquire(size_t raw_bytes) {
     return raw;
   }
 
-#if HZ5_LOWPAGE64_STAGE1_ENABLED
+#if HZ5_LOWPAGE64_STAGE1_ENABLED && HZ5_LOWPAGE64_P40_GLOBAL_SOFT_CAP > 0
   size_t bridge_cold_count = 0;
 #if HZ5_LOWPAGE64_P45_REFINED_GATE
   size_t stage1_limit = HZ5_LOWPAGE64_P45_STAGE1_ACQUIRE_LIMIT;
