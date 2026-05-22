@@ -278,6 +278,15 @@
 #endif
 #endif
 
+#ifndef HZ5_LOWPAGE64_P43P_STAGE1_ACQUIRE_LIMIT
+#ifdef BENCHLAB_HZ5_P43P_STAGE1_ACQUIRE_LIMIT
+#define HZ5_LOWPAGE64_P43P_STAGE1_ACQUIRE_LIMIT \
+  BENCHLAB_HZ5_P43P_STAGE1_ACQUIRE_LIMIT
+#else
+#define HZ5_LOWPAGE64_P43P_STAGE1_ACQUIRE_LIMIT 0u
+#endif
+#endif
+
 #ifndef HZ5_LOWPAGE64_P43O_ANY
 #define HZ5_LOWPAGE64_P43O_ANY \
   (HZ5_LOWPAGE64_P43O_ADMISSION_DRYRUN || \
@@ -561,6 +570,8 @@ static _Atomic size_t g_hz5_lowpage64_p43p_stage1_enqueue_calls;
 static _Atomic size_t g_hz5_lowpage64_p43p_stage1_enqueue_nodes;
 static _Atomic size_t g_hz5_lowpage64_p43p_stage1_acquire_hits;
 static _Atomic size_t g_hz5_lowpage64_p43p_stage1_acquire_nodes;
+static _Atomic size_t g_hz5_lowpage64_p43p_stage1_requeue_calls;
+static _Atomic size_t g_hz5_lowpage64_p43p_stage1_requeue_nodes;
 static _Atomic size_t g_hz5_lowpage64_p43p_stage1_current_max;
 static _Atomic size_t g_hz5_lowpage64_p42_va_allocs;
 static _Atomic size_t g_hz5_lowpage64_p42_va_alloc_failures;
@@ -1439,9 +1450,10 @@ static void hz5_lowpage64_global_push_list(void* head,
 }
 
 #if HZ5_LOWPAGE64_P43P_BRIDGE_COLD_STAGE1
-static void hz5_lowpage64_p43p_stage1_push_list(void* head,
-                                                void* tail,
-                                                size_t count) {
+static void hz5_lowpage64_p43p_stage1_push_list_impl(void* head,
+                                                     void* tail,
+                                                     size_t count,
+                                                     int count_enqueue) {
   if (!head || !tail || count == 0) {
     return;
   }
@@ -1456,14 +1468,26 @@ static void hz5_lowpage64_p43p_stage1_push_list(void* head,
 
   size_t previous = atomic_fetch_add_explicit(
       &g_hz5_lowpage64_p43p_stage1_count, count, memory_order_relaxed);
-  HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43p_stage1_enqueue_calls, 1);
-  HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43p_stage1_enqueue_nodes, count);
+  if (count_enqueue) {
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43p_stage1_enqueue_calls, 1);
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43p_stage1_enqueue_nodes, count);
+  } else {
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43p_stage1_requeue_calls, 1);
+    HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p43p_stage1_requeue_nodes, count);
+  }
   HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p43p_stage1_current_max,
                           previous + count);
   (void)previous;
 }
 
-static void* hz5_lowpage64_p43p_stage1_pop_all(size_t* out_count) {
+static void hz5_lowpage64_p43p_stage1_push_list(void* head,
+                                                void* tail,
+                                                size_t count) {
+  hz5_lowpage64_p43p_stage1_push_list_impl(head, tail, count, 1);
+}
+
+static void* hz5_lowpage64_p43p_stage1_pop_batch(size_t limit,
+                                                 size_t* out_count) {
   void* head =
       (void*)atomic_exchange_explicit(&g_hz5_lowpage64_p43p_stage1_head, 0,
                                       memory_order_acq_rel);
@@ -1474,6 +1498,31 @@ static void* hz5_lowpage64_p43p_stage1_pop_all(size_t* out_count) {
   }
   if (out_count) {
     *out_count = count;
+  }
+  if (!head || limit == 0 || count <= limit) {
+    return head;
+  }
+
+  void* batch_tail = head;
+  size_t batch_count = 1;
+  while (batch_count < limit && hz5_lowpage64_link_next_load(batch_tail)) {
+    batch_tail = hz5_lowpage64_link_next_load(batch_tail);
+    batch_count++;
+  }
+
+  void* rest_head = hz5_lowpage64_link_next_load(batch_tail);
+  hz5_lowpage64_link_next(batch_tail, NULL);
+  size_t rest_count = count - batch_count;
+  if (rest_head) {
+    void* rest_tail = rest_head;
+    while (hz5_lowpage64_link_next_load(rest_tail)) {
+      rest_tail = hz5_lowpage64_link_next_load(rest_tail);
+    }
+    hz5_lowpage64_p43p_stage1_push_list_impl(rest_head, rest_tail,
+                                             rest_count, 0);
+  }
+  if (out_count) {
+    *out_count = batch_count;
   }
   return head;
 }
@@ -2074,7 +2123,8 @@ void* hz5_lowpage64_acquire(size_t raw_bytes) {
 #if HZ5_LOWPAGE64_P43P_BRIDGE_COLD_STAGE1
   size_t bridge_cold_count = 0;
   void* bridge_cold =
-      hz5_lowpage64_p43p_stage1_pop_all(&bridge_cold_count);
+      hz5_lowpage64_p43p_stage1_pop_batch(
+          HZ5_LOWPAGE64_P43P_STAGE1_ACQUIRE_LIMIT, &bridge_cold_count);
   if (bridge_cold) {
     HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_acquired_count_total,
                             bridge_cold_count);
@@ -2325,6 +2375,8 @@ void hz5_lowpage64_print_snapshot(const char* label) {
           "p43p_stage1_enqueue_nodes=%zu "
           "p43p_stage1_acquire_hits=%zu "
           "p43p_stage1_acquire_nodes=%zu "
+          "p43p_stage1_requeue_calls=%zu "
+          "p43p_stage1_requeue_nodes=%zu "
           "p43p_stage1_current_max=%zu\n",
           label ? label : "",
           g_hz5_lowpage64_stash_count,
@@ -2539,6 +2591,12 @@ void hz5_lowpage64_print_snapshot(const char* label) {
               &g_hz5_lowpage64_p43p_stage1_acquire_nodes,
               memory_order_relaxed),
           atomic_load_explicit(
+              &g_hz5_lowpage64_p43p_stage1_requeue_calls,
+              memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p43p_stage1_requeue_nodes,
+              memory_order_relaxed),
+          atomic_load_explicit(
               &g_hz5_lowpage64_p43p_stage1_current_max,
               memory_order_relaxed));
 }
@@ -2715,6 +2773,8 @@ static void hz5_lowpage64_print_once(void) {
           "p43p_stage1_enqueue_nodes=%zu "
           "p43p_stage1_acquire_hits=%zu "
           "p43p_stage1_acquire_nodes=%zu "
+          "p43p_stage1_requeue_calls=%zu "
+          "p43p_stage1_requeue_nodes=%zu "
           "p43p_stage1_current_max=%zu\n",
           atomic_load_explicit(&g_hz5_lowpage64_alloc_calls,
                                memory_order_relaxed),
@@ -3084,6 +3144,12 @@ static void hz5_lowpage64_print_once(void) {
               memory_order_relaxed),
           atomic_load_explicit(
               &g_hz5_lowpage64_p43p_stage1_acquire_nodes,
+              memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p43p_stage1_requeue_calls,
+              memory_order_relaxed),
+          atomic_load_explicit(
+              &g_hz5_lowpage64_p43p_stage1_requeue_nodes,
               memory_order_relaxed),
           atomic_load_explicit(
               &g_hz5_lowpage64_p43p_stage1_current_max,
