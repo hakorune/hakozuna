@@ -463,6 +463,51 @@ alloc_p43_source_new_segment=1 alloc_p43_token=1000 \
 free_p43_token_direct=1000 wrapper_decode_ok=1000 wrapper_token_valid=1000
 ```
 
+Trace observation run:
+
+```bash
+OUTDIR=private/raw-results/linux/hz5_trace_observe_20260523_040820
+```
+
+Command shape:
+
+```bash
+./hakozuna-hz5/out/linux/trace-<lane>/bench_hz5_standalone_aligned64k \
+  1 100000 65536 8192
+```
+
+Summary:
+
+```text
+lane         status  ops_s         trace
+p25          0      40459549.525  alloc_p25_bridge=100000 free_p25_bridge=100000 wrapper_decode_ok=100000
+p43          0      41376776.190  alloc_p25_bridge=100000 alloc_p43_source_free_slot=7 alloc_p43_source_new_segment=1 free_p43_lookup_prepared=100000 wrapper_decode_ok=100000
+trustwrap    0      43237879.369  alloc_p25_bridge=100000 alloc_p43_source_free_slot=7 alloc_p43_source_new_segment=1 free_trustwrap=100000 wrapper_decode_ok=100000
+token        0      34408317.407  alloc_p25_bridge=100000 alloc_p43_source_free_slot=99999 alloc_p43_source_new_segment=1 alloc_p43_token=100000 free_p43_token_direct=100000 wrapper_decode_ok=100000 wrapper_token_valid=100000
+tokenbridge  0      23318854.157  alloc_p25_bridge=100000 alloc_p43_source_free_slot=99983 alloc_p43_source_new_segment=17 alloc_p43_token=100000 free_p43_token_bridge=100000 wrapper_decode_ok=100000 wrapper_token_valid=100000
+```
+
+Observation:
+
+- `p25` is the clean baseline: alloc and free stay in the P25 bridge.
+- `p43` and `trustwrap` still allocate through the P25 bridge on every op; P43
+  source is only touched during initial bridge filling.
+- `token` and `tokenbridge` allocate through the P43 source on almost every op.
+- Therefore the local-only loss is not just ownership lookup. The token lanes
+  also lose the P25 bridge reuse topology.
+- `tokenbridge` is worst because it allocates from P43 source while freeing into
+  the P25 bridge shape, causing topology mismatch.
+
+Current conclusion:
+
+- For local-only 64K/a8192, a competitive Linux lane must preserve P25 bridge
+  acquire/reuse behavior.
+- Direct P43 token release may still matter for remote-free/RSS workloads, but
+  it is not the local-only path.
+- Next useful experiment is not more direct-token tuning. It is either:
+  - bridge-compatible token metadata carried through P25 bridge nodes, or
+  - remote-free/RSS observation where direct P43 release has a workload reason.
+
 Earlier next attack, now superseded by the decoded raw lookup results:
 
 - test producer/consumer remote-free before deciding whether local-only
