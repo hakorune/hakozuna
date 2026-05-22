@@ -9,6 +9,16 @@
 #include <windows.h>
 #endif
 
+/*
+ * HZ5 P43 segment-slot source layer.
+ *
+ * P43i/P45 balanced lanes keep the P25 bridge as the speed layer and use this
+ * module only as the segment-slot source beneath it. Direct descriptor release,
+ * slot decommit, PAGE_NOACCESS, and runtime segment release are evidence or
+ * future RSS-return contracts, not part of the current lockless prepared-bridge
+ * speed contract.
+ */
+
 #ifndef HZ5_DIAGNOSTIC_STATS
 #define HZ5_DIAGNOSTIC_STATS 0
 #endif
