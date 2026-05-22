@@ -699,3 +699,67 @@ Do not promote P43p.
 Either stop P43p and move to HZ5 core design, or do exactly one age-gated
 behavior prototype if Pro thinks the old-stage1 projection is strong enough.
 ```
+
+## Post-Review Decision: Stop P43p
+
+After an extra guard dry-run:
+
+```text
+guard repeat-3
+  run root:
+    results/synthetic-sweep/20260522_095654_192
+
+  a4096 / 65537 guard rows:
+    p43p_age_* = 0
+    p43p_p40_release_candidates = 0
+```
+
+This changes the final read:
+
+```text
+P43p.4 explains:
+  mixed/rss-bounded old-stage1 exposure
+  pop-all pollution plausibility
+
+P43p.4 does not explain:
+  P43p.3a pop4 a4096 guard regression
+```
+
+Therefore P43p should stop here:
+
+```text
+P43i:
+  selected balanced candidate-watch
+
+P43p.2:
+  pop-all no-go/control
+
+P43p.3a:
+  limited-acquire evidence
+
+P43p.4:
+  age/pollution diagnostic evidence
+
+Do not:
+  implement age-gated behavior inside P43p
+  continue popN/age knob sweeps
+  promote P43p
+```
+
+Next design direction:
+
+```text
+HZ5 control plane / P45 BridgeSourceControl
+
+P25 bridge:
+  speed layer
+
+P43 segment source:
+  source layer
+
+P40 release:
+  source-demotion intent under P43i contract
+
+Admission / temperature:
+  core control-plane concern, not another P43p local knob
+```
