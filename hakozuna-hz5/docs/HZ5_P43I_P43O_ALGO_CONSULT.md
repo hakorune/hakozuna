@@ -793,3 +793,234 @@ design review explicitly reopens it. The useful result is the algorithm lesson:
 P25 bridge is the speed layer, P43 segment slots are the source layer, and P40
 release under the P43i contract is source-demotion intent rather than OS
 memory return.
+
+## P45 Refined-Gate Behavior Follow-Up
+
+P45r1 is now implemented as the first small behavior probe for the HZ5 control
+plane.
+
+Commit:
+
+```text
+db24098 Add P45 refined gate behavior
+```
+
+P45r1 keeps the P43i/P25 bridge topology:
+
+```text
+release_prepared
+  -> release_common
+  -> TLS relbuf
+  -> global batch
+  -> acquired stash
+```
+
+It also keeps the P43i restrictions:
+
+```text
+no slot decommit
+no PAGE_NOACCESS
+no runtime segment release
+no direct prepared release
+no descriptor relbuf
+```
+
+This is a diagnostic/control-plane prototype, not a SpeedLane promotion lane.
+
+### Behavior
+
+During P40 checkpoint, P45r1 stages only refined blockers.
+
+```text
+demote_intent =
+  p40 release candidates from observed global over soft cap
+
+bridge_current =
+  observed_global + stash_count + relbuf_count
+
+bridge_residual_after_demote =
+  max(bridge_current - demote_intent, 0)
+
+stage1 if:
+  admission state != OPEN
+  or bridge_residual_after_demote > P40 global soft cap
+
+allow existing P40 demotion if:
+  admission state == OPEN
+  and bridge_residual_after_demote <= P40 global soft cap
+```
+
+Important fix:
+
+```text
+stage1 backlog is not included in bridge_current.
+```
+
+The first implementation accidentally included stage1 backlog in bridge
+pressure, causing self-amplifying stage1 queueing. That was fixed before the
+readouts below. Stage1 backlog is now reported separately.
+
+### Smoke after the accounting fix
+
+Mixed-prelude smoke:
+
+```text
+results/synthetic-sweep/20260522_112206_535
+
+final exact 64K:
+  p45rg_demote_intent = 272
+  p45rg_allowed_open_bridge_soft = 256
+  p45rg_stage1_any = 16
+  p45rg_stage1_bridge_excess = 16
+  p45rg_stage1_enqueue_nodes = 16
+  p45rg_stage1_acquire_nodes = 16
+  p45rg_stage1_current = 0
+```
+
+RSS-bounded smoke:
+
+```text
+results/synthetic-sweep/20260522_112206_517
+
+plateau:
+  p45rg_demote_intent = 1104
+  p45rg_allowed_open_bridge_soft = 992
+  p45rg_stage1_any = 112
+  p45rg_stage1_state = 64
+  p45rg_stage1_bridge_excess = 48
+  p45rg_stage1_enqueue_nodes = 112
+  p45rg_stage1_acquire_nodes = 64
+  p45rg_stage1_current = 48
+```
+
+Initial interpretation:
+
+```text
+P45r1 is not all-stage1.
+Mixed-prelude drains stage1.
+RSS plateau can leave bounded stage1 backlog.
+```
+
+### Repeat-3 / guard follow-up
+
+RSS-bounded repeat-3:
+
+```text
+results/synthetic-sweep/20260522_163246_969
+
+P45r1 plateau median:
+  p45rg_demote_intent = 960
+  p45rg_allowed_open_bridge_soft = 848
+  p45rg_stage1_any = 104
+  p45rg_stage1_state = 88
+  p45rg_stage1_bridge_excess = 24
+  p45rg_stage1_enqueue_nodes = 104
+  p45rg_stage1_acquire_nodes = 56
+  p45rg_stage1_requeue_nodes = 188
+  p45rg_stage1_current = 48
+  p45rg_stage1_current_max = 48
+  p43g_raw_mismatch = 0
+```
+
+Mixed-prelude repeat-3:
+
+```text
+results/synthetic-sweep/20260522_163320_319
+
+final exact 64K median:
+  p45rg_demote_intent = 320
+  p45rg_allowed_open_bridge_soft = 272
+  p45rg_stage1_any = 48
+  p45rg_stage1_state = 24
+  p45rg_stage1_bridge_excess = 48
+  p45rg_stage1_enqueue_nodes = 48
+  p45rg_stage1_acquire_nodes = 48
+  p45rg_stage1_requeue_nodes = 88
+  p45rg_stage1_current = 8
+  p45rg_stage1_current_max = 24
+  max run stage1_current = 40
+  p43g_raw_mismatch = 0
+```
+
+Guard repeat-3:
+
+```text
+results/synthetic-sweep/20260522_163320_339
+
+All a8192 / a4096 / 65537 guard rows:
+  p45rg_demote_intent = 0
+  p45rg_stage1_any = 0
+  p45rg_stage1_current = 0
+  p45rg_stage1_current_max = 0
+  p45rg_enqueue_nodes = 0
+  p45rg_acquire_nodes = 0
+  p43g_raw_mismatch = 0
+
+Fallback-loaded rows:
+  load_count = 1 expected
+  load_failed = 0
+  free_miss_unloaded = 0
+```
+
+### Current interpretation
+
+```text
+P45r1:
+  KEEP as refined-gate mechanism evidence
+
+Promotion:
+  NO
+
+Stage1 current = 48 on plateau:
+  bounded watch item
+  not immediate no-go
+
+Guard/fallback:
+  clean in repeat-3
+  no refined stage1 leakage into a4096 / 65537 rows
+```
+
+P45r1 avoids the older P43p failure mode:
+
+```text
+not all P40 demotion intent becomes stage1
+stage1 backlog does not self-amplify in repeat-3
+guard rows do not enter the refined stage1 path
+```
+
+The remaining open question is the plateau backlog:
+
+```text
+rss-bounded plateau keeps stage1_current = 48
+mixed-prelude final exact drains to low current
+```
+
+### Next review question
+
+Should the next step be a diagnostic-only stage1 drain/checkpoint dry-run?
+
+Candidate counters:
+
+```text
+p45dr_stage1_current_at_checkpoint
+p45dr_stage1_age_bucket0
+p45dr_stage1_age_bucket1
+p45dr_stage1_age_old
+
+p45dr_would_drain_to_bridge
+p45dr_would_keep_cold
+p45dr_would_demote_open
+p45dr_would_block_drain_closed
+```
+
+My current leaning:
+
+```text
+P45r1 should be kept as HZ5 control-plane prototype evidence.
+Do not try acquire-limit 8 yet.
+Do not add a new speed knob.
+Do not add actual trim, decommit, PAGE_NOACCESS, or runtime segment release.
+Next should be a dry-run that determines whether plateau stage1_current=48 is
+natural bounded bridge-cold retention or backlog that needs a checkpoint/drain
+rule.
+```
