@@ -3045,6 +3045,13 @@ typedef struct Hz5Lowpage64P43oFreeBuckets {
   size_t cold;
 } Hz5Lowpage64P43oFreeBuckets;
 
+typedef struct Hz5Lowpage64PrintContext {
+  Hz5Lowpage64P43StatsSnapshot p43_stats;
+  Hz5Lowpage64P44Current p44_current;
+  Hz5Lowpage64P43oFreeBuckets p43o_current;
+  size_t bridge_cold_current;
+} Hz5Lowpage64PrintContext;
+
 static Hz5Lowpage64P44Current hz5_lowpage64_p44_current_candidates(
     const Hz5Lowpage64P43StatsSnapshot* p43_stats) {
   Hz5Lowpage64P44Current current = {0};
@@ -3087,11 +3094,28 @@ static size_t hz5_lowpage64_bridge_cold_current_for_stats(void) {
 #endif
 }
 
+static void hz5_lowpage64_collect_print_context(
+    Hz5Lowpage64PrintContext* ctx) {
+  *ctx = (Hz5Lowpage64PrintContext){0};
+  hz5_lowpage64_p43_stats_snapshot(&ctx->p43_stats);
+  ctx->p44_current =
+      hz5_lowpage64_p44_current_candidates(&ctx->p43_stats);
+  ctx->p43o_current =
+      hz5_lowpage64_p43o_current_buckets(&ctx->p43_stats);
+  ctx->bridge_cold_current =
+      hz5_lowpage64_bridge_cold_current_for_stats();
+}
+
 void hz5_lowpage64_print_snapshot(const char* label) {
   hz5_lowpage64_p44_note(HZ5_LOWPAGE64_P44_REASON_SNAPSHOT);
 
-  Hz5Lowpage64P43StatsSnapshot p43_stats = {0};
-  hz5_lowpage64_p43_stats_snapshot(&p43_stats);
+  Hz5Lowpage64PrintContext print_ctx;
+  hz5_lowpage64_collect_print_context(&print_ctx);
+  Hz5Lowpage64P43StatsSnapshot p43_stats = print_ctx.p43_stats;
+  Hz5Lowpage64P44Current p44_current = print_ctx.p44_current;
+  Hz5Lowpage64P43oFreeBuckets p43o_current =
+      print_ctx.p43o_current;
+  size_t bridge_cold_current = print_ctx.bridge_cold_current;
   hz5_lowpage64_p43o_note(
       HZ5_LOWPAGE64_P43O_REASON_SNAPSHOT,
       atomic_load_explicit(&g_hz5_lowpage64_global_batch_count,
@@ -3108,12 +3132,6 @@ void hz5_lowpage64_print_snapshot(const char* label) {
                            memory_order_acquire),
       &p43_stats);
   hz5_lowpage64_p45dr_note(HZ5_LOWPAGE64_P45_REASON_SNAPSHOT);
-  Hz5Lowpage64P44Current p44_current =
-      hz5_lowpage64_p44_current_candidates(&p43_stats);
-  Hz5Lowpage64P43oFreeBuckets p43o_current =
-      hz5_lowpage64_p43o_current_buckets(&p43_stats);
-  size_t bridge_cold_current =
-      hz5_lowpage64_bridge_cold_current_for_stats();
 
   fprintf(stderr,
           "[HZ5_LOWPAGE64_SNAPSHOT] label=%s "
@@ -3728,14 +3746,13 @@ static void hz5_lowpage64_print_once(void) {
     return;
   }
 
-  Hz5Lowpage64P43StatsSnapshot p43_stats = {0};
-  hz5_lowpage64_p43_stats_snapshot(&p43_stats);
-  Hz5Lowpage64P44Current p44_current =
-      hz5_lowpage64_p44_current_candidates(&p43_stats);
+  Hz5Lowpage64PrintContext print_ctx;
+  hz5_lowpage64_collect_print_context(&print_ctx);
+  Hz5Lowpage64P43StatsSnapshot p43_stats = print_ctx.p43_stats;
+  Hz5Lowpage64P44Current p44_current = print_ctx.p44_current;
   Hz5Lowpage64P43oFreeBuckets p43o_current =
-      hz5_lowpage64_p43o_current_buckets(&p43_stats);
-  size_t bridge_cold_current =
-      hz5_lowpage64_bridge_cold_current_for_stats();
+      print_ctx.p43o_current;
+  size_t bridge_cold_current = print_ctx.bridge_cold_current;
 
   fprintf(stderr,
           "[HZ5_LOWPAGE64] alloc_calls=%zu span_hits=%zu "
