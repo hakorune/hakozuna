@@ -1672,7 +1672,7 @@ typedef enum Hz5Lowpage64P45Reason {
 
 typedef struct Hz5Lowpage64P45Decision {
   size_t demote_intent;
-  size_t bridge_current;
+  size_t bridge_hot_current;
   size_t bridge_residual;
   int state_blocks;
   int bridge_blocks;
@@ -1680,7 +1680,13 @@ typedef struct Hz5Lowpage64P45Decision {
   size_t state;
 } Hz5Lowpage64P45Decision;
 
-static size_t hz5_lowpage64_p45_bridge_current(size_t observed_global) {
+static size_t hz5_lowpage64_p45_bridge_hot_current(size_t observed_global) {
+  /*
+   * Hot bridge pressure excludes BRIDGE_COLD/stage1 backlog on purpose. The
+   * refined gate decides whether the current P40 demotion intent should stay
+   * in the hot bridge path or become bridge-cold; letting existing bridge-cold
+   * count against itself would create a self-amplifying stage1 gate.
+   */
   return observed_global + g_hz5_lowpage64_stash_count +
          g_hz5_lowpage64_relbuf_count;
 }
@@ -1691,14 +1697,14 @@ static Hz5Lowpage64P45Decision hz5_lowpage64_p45_decide(
   Hz5Lowpage64P45Decision decision;
   decision.demote_intent =
       hz5_lowpage64_p43o_release_candidates(observed_global);
-  decision.bridge_current =
-      hz5_lowpage64_p45_bridge_current(observed_global);
+  decision.bridge_hot_current =
+      hz5_lowpage64_p45_bridge_hot_current(observed_global);
   decision.bridge_residual =
-      decision.bridge_current > decision.demote_intent
-          ? decision.bridge_current - decision.demote_intent
+      decision.bridge_hot_current > decision.demote_intent
+          ? decision.bridge_hot_current - decision.demote_intent
           : 0;
   decision.state_blocks = state != HZ5_LOWPAGE64_P43O_STATE_OPEN;
-  decision.bridge_blocks = decision.bridge_current > 0;
+  decision.bridge_blocks = decision.bridge_hot_current > 0;
   decision.bridge_excess_blocks =
       decision.bridge_residual > HZ5_LOWPAGE64_P40_GLOBAL_SOFT_CAP;
   decision.state = state;
@@ -1761,9 +1767,9 @@ static void hz5_lowpage64_p45_note(
       hz5_lowpage64_p45_decide(observed_global, new_state);
 
   HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p45_bridge_current_max,
-                          decision.bridge_current);
+                          decision.bridge_hot_current);
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45_bridge_pressure_total,
-                          decision.bridge_current);
+                          decision.bridge_hot_current);
   HZ5_LOWPAGE64_COUNT_MAX(g_hz5_lowpage64_p45_source_free_current_max,
                           source_free);
   HZ5_LOWPAGE64_COUNT_ADD(g_hz5_lowpage64_p45_source_free_pressure_total,
@@ -1879,7 +1885,7 @@ static void hz5_lowpage64_p45dr_scan_stage1(size_t* bucket0,
 static void hz5_lowpage64_p45dr_note(Hz5Lowpage64P45Reason reason) {
   size_t current = atomic_load_explicit(
       &g_hz5_lowpage64_p43p_stage1_count, memory_order_acquire);
-  size_t hot_bridge = hz5_lowpage64_p45_bridge_current(
+  size_t hot_bridge = hz5_lowpage64_p45_bridge_hot_current(
       atomic_load_explicit(&g_hz5_lowpage64_global_batch_count,
                            memory_order_acquire));
   size_t total_bridge = hot_bridge + current;
