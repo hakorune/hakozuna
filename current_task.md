@@ -850,11 +850,11 @@ Remaining source cleanup items:
 - Linux wrapper decode is now documented as a trusted primitive, but it is not a
   general foreign-pointer safety boundary. A real boundary would need a separate
   ownership/span proof before `ptr - sizeof(Hz5WrapperHdr)` is attempted.
-- Wrapper layout: `Hz5WrapperHdr` changes with compile flags and has no layout
-  version/size field. The code now documents that explicitly.
-- Lowpage split target: `hz5_lowpage64.c` combines P25 bridge, P40 controls,
-  P43g counters, P44/P45 diagnostics, and release policy. Split acquire/release
-  core from diagnostics before adding more Linux lanes.
+- Lowpage split target: the P42 OS/cold path is now split into
+  `hz5_lowpage64_os.c`, but `hz5_lowpage64.c` still combines P25 bridge, P40
+  controls, P43g counters, P44/P45 diagnostics, and release policy. Split the
+  diagnostic/reporting half from the acquire/release core before adding more
+  Linux lanes.
 
 Earlier next attack, now superseded by the decoded raw lookup results:
 
@@ -920,12 +920,16 @@ Start with:
 - `hakozuna-hz5/include/hz5.h`
   - now exposes only the public HZ5 ABI; P1/P2 entrypoints moved to
     `hz5_internal.h`
+- `hakozuna-hz5/wrapper/hz5_wrapper.h` / `hakozuna-hz5/wrapper/hz5_wrapper.c`
+  - wrapper headers now carry explicit layout version/size metadata
 - `hakozuna-hz5/contract/hz5_contract.c`
   - emits lane-specific descriptor names for `hz5-linux-*` variants
   - embeds the source commit in the descriptor payload
 - `linux/build_linux_hz5_standalone.sh`
   - rejects mixed `p25attr` / `p43` lane combinations
   - rejects incompatible P43 mode submodes
+- `hakozuna-hz5/lowpage/hz5_lowpage64_os.c`
+  - extracts the OS/cold-path raw alloc and release helpers from the lowpage core
 
 ## Verified On WSL2 Only
 

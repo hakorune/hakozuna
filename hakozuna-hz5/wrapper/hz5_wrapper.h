@@ -33,11 +33,13 @@ enum {
 
 /*
  * Wrapper headers are flag-tail-extended.
- * The prefix fields are shared by all builds, but the total layout is not
- * size-stable across feature flags.
+ * The prefix records the layout version and total size so decode can fail
+ * closed when feature flags change the tail.
  */
 typedef struct Hz5WrapperHdr {
   uint64_t magic;
+  uint32_t layout_version;
+  uint32_t layout_size;
   uintptr_t raw;
   uintptr_t cookie;
   size_t requested;
@@ -55,6 +57,10 @@ typedef struct Hz5WrapperHdr {
   uint32_t bridge_generation;
 #endif
 } Hz5WrapperHdr;
+
+enum {
+  HZ5_WRAPPER_LAYOUT_VERSION = 1
+};
 
 uintptr_t hz5_wrapper_cookie(uintptr_t raw, uintptr_t aligned);
 void hz5_wrapper_init(Hz5WrapperHdr* header, uintptr_t raw, uintptr_t aligned,

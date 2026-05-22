@@ -14,6 +14,8 @@ uintptr_t hz5_wrapper_cookie(uintptr_t raw, uintptr_t aligned) {
 void hz5_wrapper_init(Hz5WrapperHdr* header, uintptr_t raw, uintptr_t aligned,
                       size_t requested, size_t raw_bytes, uint32_t source) {
   header->magic = HZ5_WRAPPER_HDR_MAGIC;
+  header->layout_version = HZ5_WRAPPER_LAYOUT_VERSION;
+  header->layout_size = (uint32_t)sizeof(Hz5WrapperHdr);
   header->raw = raw;
   header->cookie = hz5_wrapper_cookie(raw, aligned);
   header->requested = requested;
@@ -57,6 +59,10 @@ int hz5_wrapper_decode(void* ptr, Hz5WrapperHdr** header_out) {
     if (header->magic != HZ5_WRAPPER_HDR_MAGIC) {
       return 0;
     }
+    if (header->layout_version != HZ5_WRAPPER_LAYOUT_VERSION ||
+        header->layout_size != sizeof(Hz5WrapperHdr)) {
+      return 0;
+    }
 
     uintptr_t raw = header->raw;
     if (raw == 0 || header->cookie != hz5_wrapper_cookie(raw, aligned)) {
@@ -67,6 +73,10 @@ int hz5_wrapper_decode(void* ptr, Hz5WrapperHdr** header_out) {
   }
 #else
   if (header->magic != HZ5_WRAPPER_HDR_MAGIC) {
+    return 0;
+  }
+  if (header->layout_version != HZ5_WRAPPER_LAYOUT_VERSION ||
+      header->layout_size != sizeof(Hz5WrapperHdr)) {
     return 0;
   }
 

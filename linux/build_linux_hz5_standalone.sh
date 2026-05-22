@@ -347,6 +347,7 @@ HZ5_SRCS=(
   "${HZ5_DIR}/route/hz5_route.c"
   "${HZ5_DIR}/wrapper/hz5_wrapper.c"
   "${HZ5_DIR}/lowpage/hz5_lowpage64.c"
+  "${HZ5_DIR}/lowpage/hz5_lowpage64_os.c"
   "${HZ5_DIR}/lowpage/hz5_lowpage64_p43_segment.c"
   "${HZ5_DIR}/linux/hz5_linux_compat.c"
 )
