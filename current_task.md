@@ -508,6 +508,82 @@ Current conclusion:
   - bridge-compatible token metadata carried through P25 bridge nodes, or
   - remote-free/RSS observation where direct P43 release has a workload reason.
 
+### Linux P25 Bridge Attr Candidate
+
+Implemented `BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR=1`.
+
+Build option:
+
+```bash
+./linux/build_linux_hz5_standalone.sh --linux-p25-bridge-attr
+```
+
+Design:
+
+- alloc remains `hz5_lowpage64_acquire()`
+- free remains `hz5_lowpage64_release()`
+- does not enter `hz5_lowpage64_acquire_p43_token()`
+- does not use P43 segment token / slot token
+- wrapper gets bridge attribution fields only in this candidate build:
+  - `bridge_cookie`
+  - `bridge_state`
+  - `bridge_generation`
+- free path validates:
+  - wrapper decode
+  - source is `HZ5_WRAPPER_SOURCE_P25_HZ4LOWPAGE`
+  - bridge cookie
+  - `bridge_state` CAS `ACTIVE -> FREED`
+- invalid/double-free cases do not call P25 release, P43 release, or fallback
+
+Trace smoke:
+
+```text
+[HZ5_TRACE] alloc_p25_bridge=1000 free_p25_bridge_attr=1000 wrapper_decode_ok=1000 bridge_attr_valid=1000
+```
+
+Double-free / foreign smoke:
+
+```text
+[HZ5_TRACE] alloc_p25_bridge=1 free_p25_bridge_attr=1 free_fallback_or_invalid=2 wrapper_decode_ok=2 wrapper_decode_miss=1 bridge_attr_valid=1 bridge_attr_cas_fail=1
+```
+
+Note: current public `hz5_free()` returns `HZ5_FREE_OK_HZ5` after calling
+policy free, so the safety smoke is judged by trace counters, not the API return
+code.
+
+Latest A/B:
+
+```text
+lane             runs  median_ops_s  median_ru_maxrss_kb
+p25              5     6.53799e+07   2048
+p25attr          5     6.17908e+07   2048
+p43              5     5.31132e+07   2048
+p43-nolookup     5     5.95992e+07   2048
+p43-rawalloc     5     5.45538e+07   2048
+p43-rawfast      5     5.36162e+07   2048
+p43-rawlookup    5     5.29635e+07   2048
+p43-source       5     6.44827e+07   2048
+p43-token        5     4.57138e+07   1920
+p43-tokenbridge  5     4.15979e+07   6144
+p43-trustfast    5     5.29963e+07   2048
+p43-trustwrap    5     6.41839e+07   2048
+```
+
+Latest raw result folder:
+
+```bash
+private/raw-results/linux/hz5_p43_ab_20260523_042633
+```
+
+Interpretation:
+
+- `p25attr` is within about 3.8% of `trustwrap` on this local-only run.
+- It keeps P25 bridge topology and adds a real double-free-before-reuse CAS
+  guard.
+- This is the current best Linux local-only candidate.
+- Next checks should be producer/consumer remote-free, RSS plateau, and mixed
+  prelude robustness.
+
 Earlier next attack, now superseded by the decoded raw lookup results:
 
 - test producer/consumer remote-free before deciding whether local-only

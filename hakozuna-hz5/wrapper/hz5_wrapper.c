@@ -25,6 +25,13 @@ void hz5_wrapper_init(Hz5WrapperHdr* header, uintptr_t raw, uintptr_t aligned,
   header->p43_slot_index = 0;
   header->p43_token_cookie = 0;
 #endif
+#if BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR
+  header->bridge_cookie = 0;
+  atomic_store_explicit(&header->bridge_state,
+                        HZ5_BRIDGE_ATTR_STATE_INVALID,
+                        memory_order_relaxed);
+  header->bridge_generation = 0;
+#endif
 }
 
 int hz5_wrapper_decode(void* ptr, Hz5WrapperHdr** header_out) {

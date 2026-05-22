@@ -64,6 +64,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_P43_WRAPPER_TOKEN_BRIDGE 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR
+#define BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR 0
+#endif
+
 #ifndef BENCHLAB_HZ5_P43_PREPARED_RELEASE
 #define BENCHLAB_HZ5_P43_PREPARED_RELEASE 0
 #endif
@@ -102,6 +106,10 @@ int hz5_p1_owns(void* ptr);
 void hz5_stats_print_once(void);
 
 static _Atomic int g_hz5_policy_seen_allocation;
+#if BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR
+static _Atomic uint32_t g_hz5_policy_bridge_generation;
+static uintptr_t g_hz5_policy_bridge_secret_anchor;
+#endif
 
 static void hz5_policy_register_stats_once(void) {
   static atomic_flag registered = ATOMIC_FLAG_INIT;
@@ -195,6 +203,72 @@ static void hz5_policy_free_p25_lowpage_raw(
 #endif
   hz5_trace_inc(HZ5_TRACE_FREE_P25_BRIDGE);
   hz5_lowpage64_release((void*)raw);
+}
+#endif
+
+#if BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR
+static uint64_t hz5_policy_bridge_attr_cookie(uintptr_t raw,
+                                              uintptr_t aligned,
+                                              size_t raw_bytes,
+                                              uint32_t source,
+                                              uint32_t generation) {
+  uint64_t mixed =
+      (uint64_t)raw ^ ((uint64_t)aligned << 7) ^ ((uint64_t)aligned >> 3) ^
+      ((uint64_t)raw_bytes * UINT64_C(0x9e3779b97f4a7c15)) ^
+      ((uint64_t)source << 32) ^ (uint64_t)generation ^
+      (uint64_t)(uintptr_t)&g_hz5_policy_bridge_secret_anchor ^
+      UINT64_C(0x25a8192b6d3f51c7);
+  mixed ^= mixed >> 30;
+  mixed *= UINT64_C(0xbf58476d1ce4e5b9);
+  mixed ^= mixed >> 27;
+  mixed *= UINT64_C(0x94d049bb133111eb);
+  mixed ^= mixed >> 31;
+  return mixed ? mixed : UINT64_C(0x25);
+}
+
+static void hz5_policy_bridge_attr_init(Hz5WrapperHdr* header,
+                                        uintptr_t aligned) {
+  uint32_t generation = atomic_fetch_add_explicit(
+                            &g_hz5_policy_bridge_generation, 1u,
+                            memory_order_relaxed) +
+                        1u;
+  if (generation == 0u) {
+    generation = atomic_fetch_add_explicit(
+                     &g_hz5_policy_bridge_generation, 1u,
+                     memory_order_relaxed) +
+                 1u;
+  }
+  header->bridge_generation = generation;
+  header->bridge_cookie = hz5_policy_bridge_attr_cookie(
+      header->raw, aligned, header->raw_bytes, header->source, generation);
+  atomic_store_explicit(&header->bridge_state,
+                        HZ5_BRIDGE_ATTR_STATE_ACTIVE, memory_order_release);
+}
+
+static int hz5_policy_bridge_attr_verify_and_mark_free(
+    Hz5WrapperHdr* header,
+    uintptr_t aligned) {
+  if (!header ||
+      header->source != HZ5_WRAPPER_SOURCE_P25_HZ4LOWPAGE ||
+      header->raw_bytes < header->requested ||
+      header->bridge_cookie != hz5_policy_bridge_attr_cookie(
+                                   header->raw, aligned, header->raw_bytes,
+                                   header->source,
+                                   header->bridge_generation)) {
+    hz5_trace_inc(HZ5_TRACE_BRIDGE_ATTR_INVALID);
+    return 0;
+  }
+
+  uint32_t expected = HZ5_BRIDGE_ATTR_STATE_ACTIVE;
+  if (!atomic_compare_exchange_strong_explicit(
+          &header->bridge_state, &expected, HZ5_BRIDGE_ATTR_STATE_FREED,
+          memory_order_acq_rel, memory_order_acquire)) {
+    hz5_trace_inc(HZ5_TRACE_BRIDGE_ATTR_CAS_FAIL);
+    return 0;
+  }
+
+  hz5_trace_inc(HZ5_TRACE_BRIDGE_ATTR_VALID);
+  return 1;
 }
 #endif
 
@@ -338,6 +412,8 @@ static void* hz5_policy_p25_wrapper_alloc(size_t size, size_t align) {
     hz5_lowpage64_release(raw_ptr);
     return NULL;
   }
+#elif BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR
+  hz5_policy_bridge_attr_init(header, aligned);
 #endif
   hz5_trace_inc(HZ5_TRACE_ALLOC_P25_BRIDGE);
   return (void*)aligned;
@@ -480,10 +556,14 @@ void hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
      BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192)
   int p25_lowpage_lookup = HZ5_LOWPAGE64_LOOKUP_MISS;
   Hz5Lowpage64FreeCtx p25_lowpage_ctx = {0};
-#if BENCHLAB_HZ5_P43_TRUST_WRAPPER_SOURCE || \
+#if BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR || \
+    BENCHLAB_HZ5_P43_TRUST_WRAPPER_SOURCE || \
     BENCHLAB_HZ5_P43_DECODED_RAW_LOOKUP || \
     BENCHLAB_HZ5_P43_WRAPPER_TOKEN
-#if BENCHLAB_HZ5_P43_TRUST_WRAPPER_SOURCE
+#if BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR
+  (void)p25_lowpage_lookup;
+  (void)p25_lowpage_ctx;
+#elif BENCHLAB_HZ5_P43_TRUST_WRAPPER_SOURCE
   (void)p25_lowpage_lookup;
   (void)p25_lowpage_ctx;
 #elif BENCHLAB_HZ5_P43_WRAPPER_TOKEN
@@ -544,7 +624,15 @@ void hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
 #endif
 #if BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192
 	    if (wrapped->source == HZ5_WRAPPER_SOURCE_P25_HZ4LOWPAGE) {
-#if BENCHLAB_HZ5_P43_TRUST_WRAPPER_SOURCE
+#if BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR
+      if (hz5_policy_bridge_attr_verify_and_mark_free(wrapped,
+                                                      (uintptr_t)ptr)) {
+        hz5_trace_inc(HZ5_TRACE_FREE_P25_BRIDGE_ATTR);
+        hz5_lowpage64_release((void*)wrapped->raw);
+      } else {
+        hz5_trace_inc(HZ5_TRACE_FREE_FALLBACK_OR_INVALID);
+      }
+#elif BENCHLAB_HZ5_P43_TRUST_WRAPPER_SOURCE
       hz5_trace_inc(HZ5_TRACE_FREE_TRUSTWRAP);
       hz5_lowpage64_release((void*)wrapped->raw);
 #elif BENCHLAB_HZ5_P43_WRAPPER_TOKEN

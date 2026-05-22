@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ARCH="auto"
 OUT_DIR=""
 ENABLE_LINUX_P43=0
+LINUX_P25_BRIDGE_ATTR=0
 LINUX_P43_PREPARED_BRIDGE=1
 LINUX_P43_UNSAFE_NO_LOOKUP=0
 LINUX_P43_TRUST_FAST_LOOKUP=0
@@ -24,6 +25,8 @@ Usage:
 Options:
   --arch <arch>      override detected arch (default: auto)
   --out-dir DIR      output directory (default: hakozuna-hz5/out/linux/<arch>)
+  --linux-p25-bridge-attr
+                     preserve P25 bridge topology with wrapper attr CAS guard
   --linux-p43        enable Linux P43 segment-slot source candidate lane
   --linux-p43-no-prepared-bridge
                      disable P43 PreparedBridge for source-only A/B
@@ -58,6 +61,10 @@ while [[ $# -gt 0 ]]; do
       [[ $# -ge 2 ]] || { echo "missing value for --out-dir" >&2; exit 1; }
       OUT_DIR="$2"
       shift 2
+      ;;
+    --linux-p25-bridge-attr)
+      LINUX_P25_BRIDGE_ATTR=1
+      shift
       ;;
     --linux-p43)
       ENABLE_LINUX_P43=1
@@ -174,6 +181,10 @@ COMMON_FLAGS=(
   -I"${HZ5_DIR}/lowpage"
   -I"${HZ5_DIR}/fallback"
 )
+
+if [[ "$LINUX_P25_BRIDGE_ATTR" -eq 1 ]]; then
+  COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR=1)
+fi
 
 if [[ "$ENABLE_LINUX_P43" -eq 1 ]]; then
   COMMON_FLAGS+=(

@@ -29,6 +29,7 @@ Options:
 
 Lanes:
   p25           baseline P25 lowpage64 speed lane
+  p25attr       P25 bridge topology with wrapper attr CAS guard
   p43           Linux P43 segment-slot source + PreparedBridge + lookup
   p43-trustfast same as p43, but fast lookup hits are trusted as active
   p43-trustwrap same as p43, but decoded P25 wrapper source skips lookup
@@ -71,6 +72,9 @@ if [[ "$SKIP_BUILD" -ne 1 ]]; then
   "${ROOT_DIR}/linux/build_linux_hz5_standalone.sh" \
     --arch "$ARCH" --out-dir "${ROOT_DIR}/hakozuna-hz5/out/linux/${ARCH}-p25"
   "${ROOT_DIR}/linux/build_linux_hz5_standalone.sh" \
+    --arch "$ARCH" --linux-p25-bridge-attr \
+    --out-dir "${ROOT_DIR}/hakozuna-hz5/out/linux/${ARCH}-p25attr"
+  "${ROOT_DIR}/linux/build_linux_hz5_standalone.sh" \
     --arch "$ARCH" --linux-p43 \
     --out-dir "${ROOT_DIR}/hakozuna-hz5/out/linux/${ARCH}-p43"
   "${ROOT_DIR}/linux/build_linux_hz5_standalone.sh" \
@@ -111,7 +115,7 @@ fi
   echo "iters=${ITERS}"
   echo "size=${SIZE}"
   echo "align=${ALIGN}"
-  echo "note=p43-trustfast isolates mask-load cost on fast hits; p43-trustwrap skips lookup after wrapper decode; p43-rawlookup validates decoded raw through P43 lookup; p43-rawfast validates decoded raw through fast table and masks only; p43-rawalloc validates decoded raw through fast table and allocated bit only; p43-token stores segment/slot in wrapper and direct-releases with allocated-bit guard; p43-tokenbridge validates wrapper token but preserves P25 bridge release topology; p43-nolookup isolates full free-lookup cost; p43-source isolates segment-source cost without PreparedBridge."
+  echo "note=p25attr preserves P25 bridge topology with wrapper attr CAS guard; p43-trustfast isolates mask-load cost on fast hits; p43-trustwrap skips lookup after wrapper decode; p43-rawlookup validates decoded raw through P43 lookup; p43-rawfast validates decoded raw through fast table and masks only; p43-rawalloc validates decoded raw through fast table and allocated bit only; p43-token stores segment/slot in wrapper and direct-releases with allocated-bit guard; p43-tokenbridge validates wrapper token but preserves P25 bridge release topology; p43-nolookup isolates full free-lookup cost; p43-source isolates segment-source cost without PreparedBridge."
 } > "${OUTDIR}/README.log"
 
 printf 'lane\trun\tstatus\tthreads\titers\tsize\talign\tops_s\tru_maxrss_kb\tlog\n' \
@@ -139,7 +143,7 @@ run_lane() {
 }
 
 for run in $(seq 1 "$RUNS"); do
-  for lane in p25 p43 p43-trustfast p43-trustwrap p43-rawlookup p43-rawfast p43-rawalloc p43-token p43-tokenbridge p43-nolookup p43-source; do
+  for lane in p25 p25attr p43 p43-trustfast p43-trustwrap p43-rawlookup p43-rawfast p43-rawalloc p43-token p43-tokenbridge p43-nolookup p43-source; do
     run_lane "$lane" "$run"
   done
 done

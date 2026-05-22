@@ -3,6 +3,9 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#if BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR
+#include <stdatomic.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,6 +23,14 @@ enum {
   HZ5_WRAPPER_SOURCE_P25_HZ4LOWPAGE = 5
 };
 
+#if BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR
+enum {
+  HZ5_BRIDGE_ATTR_STATE_INVALID = 0,
+  HZ5_BRIDGE_ATTR_STATE_ACTIVE = 1,
+  HZ5_BRIDGE_ATTR_STATE_FREED = 3
+};
+#endif
+
 typedef struct Hz5WrapperHdr {
   uint64_t magic;
   uintptr_t raw;
@@ -32,6 +43,11 @@ typedef struct Hz5WrapperHdr {
   uintptr_t p43_segment_token;
   uint32_t p43_slot_index;
   uint32_t p43_token_cookie;
+#endif
+#if BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR
+  uint64_t bridge_cookie;
+  _Atomic uint32_t bridge_state;
+  uint32_t bridge_generation;
 #endif
 } Hz5WrapperHdr;
 

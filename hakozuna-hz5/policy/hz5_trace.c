@@ -38,6 +38,8 @@ static const char* hz5_trace_name(Hz5TraceCounter counter) {
       return "free_p43_token_bridge";
     case HZ5_TRACE_FREE_TRUSTWRAP:
       return "free_trustwrap";
+    case HZ5_TRACE_FREE_P25_BRIDGE_ATTR:
+      return "free_p25_bridge_attr";
     case HZ5_TRACE_FREE_RAWLOOKUP:
       return "free_rawlookup";
     case HZ5_TRACE_FREE_FALLBACK_OR_INVALID:
@@ -50,6 +52,12 @@ static const char* hz5_trace_name(Hz5TraceCounter counter) {
       return "wrapper_token_valid";
     case HZ5_TRACE_WRAPPER_TOKEN_INVALID:
       return "wrapper_token_invalid";
+    case HZ5_TRACE_BRIDGE_ATTR_VALID:
+      return "bridge_attr_valid";
+    case HZ5_TRACE_BRIDGE_ATTR_INVALID:
+      return "bridge_attr_invalid";
+    case HZ5_TRACE_BRIDGE_ATTR_CAS_FAIL:
+      return "bridge_attr_cas_fail";
     case HZ5_TRACE_COUNT:
       break;
   }
