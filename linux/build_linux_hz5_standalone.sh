@@ -159,6 +159,52 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+if [[ "$LINUX_P25_BRIDGE_ATTR" -eq 1 && "$ENABLE_LINUX_P43" -eq 1 ]]; then
+  echo "p25attr and p43 lanes are mutually exclusive" >&2
+  exit 1
+fi
+
+if [[ "$LINUX_P25_BRIDGE_ATTR" -eq 1 ]]; then
+  p25attr_mode_count=0
+  [[ "$LINUX_P25_BRIDGE_ATTR_NO_CAS" -eq 1 ]] && ((p25attr_mode_count++))
+  [[ "$LINUX_P25_BRIDGE_ATTR_NO_COOKIE" -eq 1 ]] && ((p25attr_mode_count++))
+  [[ "$LINUX_P25_BRIDGE_ATTR_READONLY_STATE" -eq 1 ]] && ((p25attr_mode_count++))
+  if [[ "$p25attr_mode_count" -gt 1 ]]; then
+    echo "p25attr diagnostic variants are mutually exclusive" >&2
+    exit 1
+  fi
+fi
+
+if [[ "$ENABLE_LINUX_P43" -eq 1 ]]; then
+  p43_mode_count=0
+  [[ "$LINUX_P43_PREPARED_BRIDGE" -eq 0 ]] && ((p43_mode_count++))
+  [[ "$LINUX_P43_UNSAFE_NO_LOOKUP" -eq 1 ]] && ((p43_mode_count++))
+  [[ "$LINUX_P43_TRUST_FAST_LOOKUP" -eq 1 ]] && ((p43_mode_count++))
+  [[ "$LINUX_P43_TRUST_WRAPPER_SOURCE" -eq 1 ]] && ((p43_mode_count++))
+  [[ "$LINUX_P43_DECODED_RAW_LOOKUP" -eq 1 ]] && ((p43_mode_count++))
+  [[ "$LINUX_P43_WRAPPER_TOKEN" -eq 1 ]] && ((p43_mode_count++))
+  if [[ "$p43_mode_count" -gt 1 ]]; then
+    echo "P43 lane selectors are mutually exclusive" >&2
+    exit 1
+  fi
+  if [[ "$LINUX_P43_DECODED_RAW_LOOKUP" -eq 0 && \
+        ( "$LINUX_P43_RAW_FAST_LOOKUP_ONLY" -eq 1 || \
+          "$LINUX_P43_RAW_ALLOCATED_LOOKUP_ONLY" -eq 1 ) ]]; then
+    echo "rawlookup submodes require --linux-p43-decoded-raw-lookup" >&2
+    exit 1
+  fi
+  if [[ "$LINUX_P43_RAW_FAST_LOOKUP_ONLY" -eq 1 && \
+        "$LINUX_P43_RAW_ALLOCATED_LOOKUP_ONLY" -eq 1 ]]; then
+    echo "rawlookup fast/allocated submodes are mutually exclusive" >&2
+    exit 1
+  fi
+  if [[ "$LINUX_P43_WRAPPER_TOKEN_BRIDGE" -eq 1 && \
+        "$LINUX_P43_WRAPPER_TOKEN" -eq 0 ]]; then
+    echo "--linux-p43-token-bridge requires --linux-p43-token" >&2
+    exit 1
+  fi
+fi
+
 if [[ "$ARCH" == "auto" ]]; then
   case "$(uname -m)" in
     aarch64|arm64) ARCH="arm64" ;;
@@ -168,6 +214,7 @@ if [[ "$ARCH" == "auto" ]]; then
 fi
 
 HZ5_DIR="${ROOT_DIR}/hakozuna-hz5"
+SOURCE_COMMIT="$(git -C "$ROOT_DIR" rev-parse HEAD)"
 OUT_DIR="${OUT_DIR:-${HZ5_DIR}/out/linux/${ARCH}}"
 LIB="${OUT_DIR}/libhakozuna_hz5_standalone.so"
 BENCH="${OUT_DIR}/bench_hz5_standalone_aligned64k"
@@ -201,6 +248,7 @@ COMMON_FLAGS=(
   -DBENCHLAB_HZ5_STANDALONE_EXACT_ONLY=1
   -DBENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192=1
   -DBENCHLAB_HZ5_P25_STATS=0
+  -DHZ5_DESC_SOURCE_COMMIT=\"${SOURCE_COMMIT}\"
   -I"${HZ5_DIR}/include"
   -I"${HZ5_DIR}/contract"
   -I"${HZ5_DIR}/policy"
@@ -265,7 +313,7 @@ if [[ "$ENABLE_LINUX_P43" -eq 1 ]]; then
 fi
 
 {
-  echo "commit=$(git -C "$ROOT_DIR" rev-parse HEAD)"
+  echo "commit=${SOURCE_COMMIT}"
   if [[ -n "$(git -C "$ROOT_DIR" status --porcelain --untracked-files=all)" ]]; then
     echo "dirty=1"
   else

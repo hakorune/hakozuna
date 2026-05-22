@@ -850,13 +850,6 @@ Remaining source cleanup items:
 - Linux wrapper decode is now documented as a trusted primitive, but it is not a
   general foreign-pointer safety boundary. A real boundary would need a separate
   ownership/span proof before `ptr - sizeof(Hz5WrapperHdr)` is attempted.
-- Public header split: `hz5.h` exposes P1/P2 internals beside the public HZ5 ABI.
-  Move internals behind a private header before treating the ABI as clean.
-- Contract descriptor: descriptor output does not yet expose p25attr,
-  diagnostic attr variants, trustwrap, or token mode; build identity is therefore
-  incomplete for bench artifacts.
-- Macro mode exclusivity: p25attr, trustwrap, rawlookup, and token are intended
-  as separate lanes. Build script should enforce incompatible combinations.
 - Wrapper layout: `Hz5WrapperHdr` changes with compile flags and has no layout
   version/size field. The code now documents that explicitly.
 - Lowpage split target: `hz5_lowpage64.c` combines P25 bridge, P40 controls,
@@ -924,6 +917,15 @@ Start with:
 - `BENCHLAB_HZ5_STANDALONE_EXACT_ONLY`
   - makes unsupported HZ5 routes return `NULL`
   - prevents fallback to HZ3 or CRT allocation paths in standalone mode
+- `hakozuna-hz5/include/hz5.h`
+  - now exposes only the public HZ5 ABI; P1/P2 entrypoints moved to
+    `hz5_internal.h`
+- `hakozuna-hz5/contract/hz5_contract.c`
+  - emits lane-specific descriptor names for `hz5-linux-*` variants
+  - embeds the source commit in the descriptor payload
+- `linux/build_linux_hz5_standalone.sh`
+  - rejects mixed `p25attr` / `p43` lane combinations
+  - rejects incompatible P43 mode submodes
 
 ## Verified On WSL2 Only
 

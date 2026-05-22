@@ -2,6 +2,7 @@
 
 #include "hz5_hz3_fallback.h"
 #include "hz5_lowpage64.h"
+#include "hz5_internal.h"
 #include "hz5_route.h"
 #include "hz5_trace.h"
 #include "hz5_wrapper.h"
@@ -111,11 +112,6 @@ void _aligned_free(void* ptr);
 void* hz3_malloc(size_t size);
 void hz3_free(void* ptr);
 void* hz3_large_aligned_alloc(size_t alignment, size_t size);
-
-void* hz5_p2_alloc_aligned(size_t size, size_t alignment);
-void hz5_p2_free(void* ptr);
-int hz5_p1_owns(void* ptr);
-void hz5_stats_print_once(void);
 
 static _Atomic int g_hz5_policy_seen_allocation;
 #if BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR

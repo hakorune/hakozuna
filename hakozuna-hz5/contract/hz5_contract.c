@@ -42,6 +42,10 @@
 #define BENCHLAB_HZ5_P25_STATS HZ5_DIAGNOSTIC_STATS
 #endif
 
+#ifndef HZ5_DESC_SOURCE_COMMIT
+#define HZ5_DESC_SOURCE_COMMIT "unknown"
+#endif
+
 #if BENCHLAB_HZ5_SPEED_LANE && HZ5_DIAGNOSTIC_STATS
 #error "BENCHLAB_HZ5_SPEED_LANE requires HZ5_DIAGNOSTIC_STATS=0"
 #endif
@@ -107,12 +111,54 @@
    HZ5_DESC_P14_RETIRE_BIT | HZ5_DESC_P14_LOCKED_BIT | \
    HZ5_DESC_P23_BIT | HZ5_DESC_P25_STATS_BIT)
 
-#if BENCHLAB_HZ5_SPEED_LANE
-#define HZ5_DESC_LANE_KIND HZ5_ALLOC_LANE_SPEED
+#if BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR
+#if BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS
+#define HZ5_DESC_LANE_NAME "hz5-linux-p25attr-no-cas"
+#elif BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_COOKIE
+#define HZ5_DESC_LANE_NAME "hz5-linux-p25attr-no-cookie"
+#elif BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_READONLY_STATE
+#define HZ5_DESC_LANE_NAME "hz5-linux-p25attr-readonly"
+#else
+#define HZ5_DESC_LANE_NAME "hz5-linux-p25attr"
+#endif
+#elif BENCHLAB_HZ5_LINUX_P43_PORT
+#if BENCHLAB_HZ5_P43_WRAPPER_TOKEN
+#if BENCHLAB_HZ5_P43_WRAPPER_TOKEN_BRIDGE
+#define HZ5_DESC_LANE_NAME "hz5-linux-p43-tokenbridge"
+#else
+#define HZ5_DESC_LANE_NAME "hz5-linux-p43-token"
+#endif
+#elif BENCHLAB_HZ5_P43_DECODED_RAW_LOOKUP
+#if BENCHLAB_HZ5_P43_RAW_ALLOCATED_LOOKUP_ONLY
+#define HZ5_DESC_LANE_NAME "hz5-linux-p43-rawalloc"
+#elif BENCHLAB_HZ5_P43_RAW_FAST_LOOKUP_ONLY
+#define HZ5_DESC_LANE_NAME "hz5-linux-p43-rawfast"
+#else
+#define HZ5_DESC_LANE_NAME "hz5-linux-p43-rawlookup"
+#endif
+#elif BENCHLAB_HZ5_P43_TRUST_WRAPPER_SOURCE
+#define HZ5_DESC_LANE_NAME "hz5-linux-p43-trustwrap"
+#elif BENCHLAB_HZ5_P43_TRUST_FAST_LOOKUP
+#define HZ5_DESC_LANE_NAME "hz5-linux-p43-trustfast"
+#elif BENCHLAB_HZ5_P43_UNSAFE_NO_LOOKUP
+#define HZ5_DESC_LANE_NAME "hz5-linux-p43-nolookup"
+#elif !BENCHLAB_HZ5_P43_PREPARED_BRIDGE
+#define HZ5_DESC_LANE_NAME "hz5-linux-p43-source"
+#else
+#define HZ5_DESC_LANE_NAME "hz5-linux-p43"
+#endif
+#elif BENCHLAB_HZ5_STANDALONE_EXACT_ONLY
+#define HZ5_DESC_LANE_NAME "hz5-linux-standalone-exact"
+#elif BENCHLAB_HZ5_SPEED_LANE
 #define HZ5_DESC_LANE_NAME "hz5-speed-lane"
 #else
-#define HZ5_DESC_LANE_KIND HZ5_ALLOC_LANE_DIAGNOSTIC
 #define HZ5_DESC_LANE_NAME "hz5-diagnostic-or-research"
+#endif
+
+#if BENCHLAB_HZ5_SPEED_LANE
+#define HZ5_DESC_LANE_KIND HZ5_ALLOC_LANE_SPEED
+#else
+#define HZ5_DESC_LANE_KIND HZ5_ALLOC_LANE_DIAGNOSTIC
 #endif
 
 const Hz5AllocatorDescriptorV1* hz5_contract_descriptor_v1(void) {
@@ -126,8 +172,8 @@ const Hz5AllocatorDescriptorV1* hz5_contract_descriptor_v1(void) {
       HZ5_ALLOC_SPEED_FORBIDDEN_MASK,
       "hakozuna-hz5",
       HZ5_DESC_LANE_NAME,
-      "unknown",
+      HZ5_DESC_SOURCE_COMMIT,
       "manual-contract",
-      "benchlab-hz5-adapter"};
+      HZ5_DESC_LANE_NAME};
   return &descriptor;
 }

@@ -1,6 +1,7 @@
 #include "hz5.h"
 
 #include "hz5_contract.h"
+#include "hz5_internal.h"
 #include "hz5_policy.h"
 #include "hz5_wrapper.h"
 

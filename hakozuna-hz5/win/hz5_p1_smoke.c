@@ -1,4 +1,4 @@
-#include "hz5.h"
+#include "hz5_internal.h"
 
 #include <stdint.h>
 #include <stdio.h>
