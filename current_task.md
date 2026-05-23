@@ -1720,3 +1720,61 @@ Conclusion:
 - The next distinct attack is `local2p-remote`: owner inbox / MPSC remote-free
   queue. Do not try to solve remote-free by adding more global-lock work to the
   speed lane.
+
+## Local2P Remote Owner Inbox Plan
+
+Next candidate:
+
+```text
+--linux-local2p-owner-inbox
+```
+
+Goal:
+
+- keep the `local2p` route and safety checks
+- replace cross-thread global-lock recycle with owner-thread inbox recycle
+- measure producer/consumer remote-free without making it the speed default
+
+Candidate path:
+
+- owner alloc checks TLS, owner inbox, global recycle, then OS source
+- remote free validates wrapper/cookie/state and pushes raw 128K span to the
+  owner inbox with an MPSC stack
+- if owner inbox is unavailable, fall back to the bounded global recycle stack
+
+Constraint:
+
+- first candidate assumes the owner thread is still alive while remote frees
+  arrive; thread-exit hardening is later work if the performance signal is good
+
+### Local2P Owner Inbox Candidate
+
+Implemented:
+
+- build flag: `--linux-local2p-owner-inbox`
+- runner label: `hz5-local2p-inbox`
+- owner TLS MPSC inbox for remote free
+- owner alloc checks TLS, inbox cache, global recycle, then OS source
+- inbox pop uses batch drain via `atomic_exchange`, then non-atomic owner-local
+  cache consumption
+
+Smoke:
+
+- `bench_hz5_standalone_safety` passed.
+- trace showed:
+  `alloc_local2p_inbox_hit=9923 alloc_local2p_os=77
+  free_local2p_inbox=10000 free_local2p_remote=10000`.
+
+Repeat5 HZ5-only focus:
+
+- local: Local2P fast `141.8M`, Local2P inbox `147.8M`, P25 `67.8M`
+- mixed final: Local2P fast `154.4M`, Local2P inbox `155.3M`, P25 `56.6M`
+- remote pairs/s: Local2P fast `7.17M`, Local2P inbox `10.47M`, P25 `12.57M`
+- RSS throughput: Local2P fast `50.2K`, Local2P inbox `50.2K`, P25 `78.6K`
+
+Conclusion:
+
+- owner inbox is a real remote-free improvement, but not yet a P25/HZ4 remote
+  win.
+- next remote work should reduce remote free push cost or add batching on the
+  producer/consumer handoff path, not return to the global lock.

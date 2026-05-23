@@ -113,6 +113,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_LOCAL2P_NO_CAS 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LOCAL2P_OWNER_INBOX
+#define BENCHLAB_HZ5_LINUX_LOCAL2P_OWNER_INBOX 0
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS
 #define BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS 0
 #endif
@@ -174,6 +178,10 @@ typedef struct Hz5PolicyLocal2PTls {
   size_t count;
   uintptr_t owner_token;
   uint32_t generation;
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_OWNER_INBOX
+  _Atomic(void*) inbox_head;
+  void* inbox_cache;
+#endif
 } Hz5PolicyLocal2PTls;
 static _Thread_local Hz5PolicyLocal2PTls g_hz5_policy_local2p_tls;
 #else
@@ -384,10 +392,15 @@ static Hz5PolicyLocal2PTls* hz5_policy_local2p_tls(void) {
 static uintptr_t hz5_policy_local2p_owner_token(void) {
 #if BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
   Hz5PolicyLocal2PTls* tls = hz5_policy_local2p_tls();
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_OWNER_INBOX
+  tls->owner_token = (uintptr_t)tls;
+  return tls->owner_token;
+#else
   if (!tls->owner_token) {
     tls->owner_token = (uintptr_t)&tls->owner_token;
   }
   return tls->owner_token;
+#endif
 #else
   if (!g_hz5_policy_local2p_owner_token) {
     g_hz5_policy_local2p_owner_token =
@@ -435,6 +448,41 @@ static void* hz5_policy_local2p_pop(void) {
   hz5_trace_inc(HZ5_TRACE_ALLOC_LOCAL2P_TLS_HIT);
   return (void*)node;
 }
+
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_OWNER_INBOX && \
+    BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
+static void* hz5_policy_local2p_inbox_pop(void) {
+  Hz5PolicyLocal2PTls* tls = hz5_policy_local2p_tls();
+  Hz5LinuxLocal2PNode* node = (Hz5LinuxLocal2PNode*)tls->inbox_cache;
+  if (!node) {
+    node = (Hz5LinuxLocal2PNode*)atomic_exchange_explicit(
+        &tls->inbox_head, NULL, memory_order_acq_rel);
+  }
+  if (!node) {
+    return NULL;
+  }
+  tls->inbox_cache = node->next;
+  hz5_trace_inc(HZ5_TRACE_ALLOC_LOCAL2P_INBOX_HIT);
+  return (void*)node;
+}
+
+static int hz5_policy_local2p_inbox_push(uintptr_t owner, void* raw_ptr) {
+  if (!owner) {
+    return 0;
+  }
+  Hz5PolicyLocal2PTls* owner_tls = (Hz5PolicyLocal2PTls*)owner;
+  Hz5LinuxLocal2PNode* node = (Hz5LinuxLocal2PNode*)raw_ptr;
+  void* head = atomic_load_explicit(&owner_tls->inbox_head,
+                                    memory_order_acquire);
+  do {
+    node->next = (Hz5LinuxLocal2PNode*)head;
+  } while (!atomic_compare_exchange_weak_explicit(
+      &owner_tls->inbox_head, &head, node,
+      memory_order_acq_rel, memory_order_acquire));
+  hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INBOX);
+  return 1;
+}
+#endif
 
 static void* hz5_policy_local2p_global_pop(void) {
   if (BENCHLAB_HZ5_LINUX_LOCAL2P_GLOBAL_CAP == 0u) {
@@ -550,6 +598,12 @@ static void* hz5_policy_local2p_alloc(size_t size, size_t align) {
   }
 
   void* raw_ptr = hz5_policy_local2p_pop();
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_OWNER_INBOX && \
+    BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
+  if (!raw_ptr) {
+    raw_ptr = hz5_policy_local2p_inbox_pop();
+  }
+#endif
   if (!raw_ptr) {
     raw_ptr = hz5_policy_local2p_global_pop();
   }
@@ -624,6 +678,13 @@ static Hz5FreeResult hz5_policy_local2p_free(Hz5WrapperHdr* header,
 
   if (header->local2p_owner != hz5_policy_local2p_owner_token()) {
     hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_REMOTE);
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_OWNER_INBOX && \
+    BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
+    if (hz5_policy_local2p_inbox_push(header->local2p_owner,
+                                      (void*)header->raw)) {
+      return HZ5_FREE_OK_HZ5;
+    }
+#endif
     (void)hz5_policy_local2p_global_push((void*)header->raw);
     return HZ5_FREE_OK_HZ5;
   }

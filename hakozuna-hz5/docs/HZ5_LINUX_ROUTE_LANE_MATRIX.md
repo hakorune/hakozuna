@@ -189,6 +189,7 @@ This is a useful hit-rate diagnostic, but a miss is not an HZ5 allocation.
 | Runner label | Role name | Build selector | Primary route | Classification |
 | --- | --- | --- | --- | --- |
 | `hz5-local2p-fast` | `hz5-linux-local2p-fast` | `--linux-local2p-fast` | `local2p` | current appendix speed candidate |
+| `hz5-local2p-inbox` | `hz5-linux-local2p-remote-inbox` | `--linux-local2p-fast --linux-local2p-owner-inbox` | `local2p` | remote-free candidate |
 | `hz5-local2p` | `hz5-linux-local2p` | `--linux-local2p` | `local2p` | baseline Local2P implementation |
 | `hz5-p25` | `hz5-linux-p25-control` | no Local2P/P43/P25Attr selector | `p25_bridge` | Linux control |
 | `p25attr` | `hz5-linux-p25attr` | `--linux-p25-bridge-attr` | `p25attr` | safety diagnostic |
@@ -336,3 +337,13 @@ Current Ubuntu HZ5 development order:
 
 Keep these as separate lanes. A win in one lane must not be presented as a win
 in the other two.
+
+`local2p-remote` candidate selector:
+
+```text
+--linux-local2p-owner-inbox
+```
+
+This is a producer/consumer remote-free candidate. It is not the default
+`hz5-local2p-fast` speed lane until measured across local, mixed, remote, and
+RSS profiles.

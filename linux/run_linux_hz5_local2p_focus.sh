@@ -53,6 +53,7 @@ Options:
 
 Allocators:
   hz5-local2p-fast
+  hz5-local2p-inbox
   hz5-local2p
   hz5-p25
   hz5-preload-hybrid
@@ -110,6 +111,7 @@ build_hz5_lane() {
 
 if [[ "$SKIP_BUILD" -ne 1 ]]; then
   build_hz5_lane hz5-local2p-fast --linux-local2p-fast
+  build_hz5_lane hz5-local2p-inbox --linux-local2p-fast --linux-local2p-owner-inbox
   build_hz5_lane hz5-local2p --linux-local2p
   build_hz5_lane hz5-p25
 fi
@@ -172,7 +174,7 @@ require_file generic-mixed "$GENERIC_MIXED_BENCH"
 IFS=',' read -r -a allocator_list <<< "$ALLOCATORS"
 for alloc in "${allocator_list[@]}"; do
   case "$alloc" in
-    hz5-local2p-fast|hz5-local2p|hz5-p25) require_hz5_lane "$alloc" ;;
+    hz5-local2p-fast|hz5-local2p-inbox|hz5-local2p|hz5-p25) require_hz5_lane "$alloc" ;;
     hz5-preload-hybrid) require_file hz5-preload-hybrid "$HZ5_PRELOAD_HYBRID_SO" ;;
     hz4) require_file hz4 "$HZ4_SO" ;;
     tcmalloc) require_file tcmalloc "$TCMALLOC_SO" ;;
@@ -223,6 +225,12 @@ write_allocator_metadata() {
         "$alloc" "hz5-linux-local2p" "local2p" \
         "appendix-baseline" "exact-64k-a8192-local" \
         "baseline-local2p-implementation"
+      ;;
+    hz5-local2p-inbox)
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$alloc" "hz5-linux-local2p-remote-inbox" "local2p" \
+        "remote-candidate" "producer-consumer-remote-free" \
+        "owner-inbox-candidate-not-speed-default"
       ;;
     hz5-p25)
       printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
@@ -342,6 +350,7 @@ run_one() {
   local timefile="${OUTDIR}/${workload}_${alloc}_${run}.time"
   local status=0
   if [[ "$alloc" == "hz5-local2p-fast" || \
+        "$alloc" == "hz5-local2p-inbox" || \
         "$alloc" == "hz5-local2p" || \
         "$alloc" == "hz5-p25" ]]; then
     run_hz5 "$workload" "$alloc" "$log" "$timefile" || status=$?

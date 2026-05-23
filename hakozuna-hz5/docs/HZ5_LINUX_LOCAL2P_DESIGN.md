@@ -245,7 +245,7 @@ Windows P43i/P45 port.
    - current step: Local2P direct free decode before generic wrapper decode
 2. `local2p-remote`
    - goal: beat P25/HZ4 producer/consumer remote-free
-   - next step: owner inbox / MPSC queue
+   - current step: owner inbox / MPSC queue candidate
 3. `rss-control`
    - goal: keep low final RSS without confusing the speed lane
    - next step: separate release/decommit policy lane
@@ -267,6 +267,56 @@ repeat5 focus:
 
 Next distinct lane is `local2p-remote`, not more global-lock work in the speed
 lane.
+
+## Owner Inbox Candidate
+
+The global recycle stack removes per-remote-free OS release, but it still
+serializes producer/consumer traffic through one lock. The next remote-free
+candidate keeps the Local2P source and wrapper semantics but routes cross-thread
+frees to the allocating thread's inbox.
+
+Build knob:
+
+```text
+--linux-local2p-owner-inbox
+```
+
+Candidate path:
+
+```text
+alloc owner thread:
+  TLS pop
+  owner inbox pop
+  global recycle pop
+  OS source
+
+remote free thread:
+  validate wrapper/cookie/state
+  ACTIVE -> FREED
+  MPSC push raw span to owner inbox
+```
+
+Constraints:
+
+- This is a `local2p-remote` candidate, not the speed default.
+- The first candidate assumes the allocation owner thread is still alive while
+  remote frees arrive.
+- If the owner inbox is unavailable, fall back to the bounded global recycle
+  stack.
+- Do not add RSS release/decommit policy here.
+
+First result:
+
+```text
+repeat5 producer/consumer pairs/s:
+  local2p-fast:  7.17M
+  local2p-inbox: 10.47M
+  p25-control:  12.57M
+```
+
+The inbox candidate improves remote-free materially but does not yet beat P25.
+Next remote work should focus on reducing remote push cost or adding larger
+handoff batches.
 
 ## TLS Cache
 

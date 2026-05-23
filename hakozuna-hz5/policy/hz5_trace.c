@@ -60,6 +60,8 @@ static const char* hz5_trace_name(Hz5TraceCounter counter) {
       return "bridge_attr_cas_fail";
     case HZ5_TRACE_ALLOC_LOCAL2P_TLS_HIT:
       return "alloc_local2p_tls_hit";
+    case HZ5_TRACE_ALLOC_LOCAL2P_INBOX_HIT:
+      return "alloc_local2p_inbox_hit";
     case HZ5_TRACE_ALLOC_LOCAL2P_GLOBAL_HIT:
       return "alloc_local2p_global_hit";
     case HZ5_TRACE_ALLOC_LOCAL2P_OS:
@@ -68,6 +70,8 @@ static const char* hz5_trace_name(Hz5TraceCounter counter) {
       return "alloc_local2p_escape";
     case HZ5_TRACE_FREE_LOCAL2P_TLS:
       return "free_local2p_tls";
+    case HZ5_TRACE_FREE_LOCAL2P_INBOX:
+      return "free_local2p_inbox";
     case HZ5_TRACE_FREE_LOCAL2P_GLOBAL:
       return "free_local2p_global";
     case HZ5_TRACE_FREE_LOCAL2P_REMOTE:
