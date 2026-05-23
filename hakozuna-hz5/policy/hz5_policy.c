@@ -141,6 +141,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_LOCAL2P_FAST_COOKIE 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LOCAL2P_FREE_FIRST
+#define BENCHLAB_HZ5_LINUX_LOCAL2P_FREE_FIRST 0
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS
 #define BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS 0
 #endif
@@ -1147,6 +1151,15 @@ void* hz5_policy_alloc_aligned(size_t size, size_t align,
 }
 
 Hz5FreeResult hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
+#if defined(__linux__) && BENCHLAB_HZ5_LINUX_LOCAL2P && \
+    BENCHLAB_HZ5_LINUX_LOCAL2P_FREE_FIRST
+  Hz5WrapperHdr* local2p_wrapped = NULL;
+  if (hz5_policy_local2p_direct_decode(ptr, &local2p_wrapped)) {
+    hz5_trace_inc(HZ5_TRACE_WRAPPER_DECODE_OK);
+    return hz5_policy_local2p_free(local2p_wrapped, (uintptr_t)ptr);
+  }
+#endif
+
   if (atomic_load_explicit(&g_hz5_policy_seen_allocation,
                            memory_order_relaxed) &&
       hz5_p1_owns(ptr)) {
@@ -1154,7 +1167,8 @@ Hz5FreeResult hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
     return HZ5_FREE_OK_HZ5;
   }
 
-#if defined(__linux__) && BENCHLAB_HZ5_LINUX_LOCAL2P
+#if defined(__linux__) && BENCHLAB_HZ5_LINUX_LOCAL2P && \
+    !BENCHLAB_HZ5_LINUX_LOCAL2P_FREE_FIRST
   Hz5WrapperHdr* local2p_wrapped = NULL;
   if (hz5_policy_local2p_direct_decode(ptr, &local2p_wrapped)) {
     hz5_trace_inc(HZ5_TRACE_WRAPPER_DECODE_OK);

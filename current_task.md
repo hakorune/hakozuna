@@ -16,7 +16,8 @@ The target lane is standalone and fallback-free:
 ## Current Development Focus: Linux Local2P v2
 
 Status: object-node, route-cookie, reuse-state-only, slim-check, and
-fast-cookie measured; offset-cookie A/B was tested and rejected.
+fast-cookie measured; offset-cookie A/B was rejected; free-first dispatch A/B
+was measured and kept as a mixed-speed candidate.
 
 Goal:
 
@@ -50,6 +51,8 @@ Design:
 - remove redundant source/requested/raw_bytes checks after direct Local2P decode
 - keep corrupted-cookie guard but simplify Local2P cookie to
   raw/aligned/process-secret in the fast-cookie candidate
+- free-first dispatch is available as a mixed-speed candidate, but fast-cookie
+  remains the local-speed reference
 
 Measurement policy:
 
@@ -248,6 +251,40 @@ Rejected A/B:
   `204.6M` vs `206.3M` local ops/s and `208.2M` vs `213.4M` mixed ops/s.
 - Code was not kept; measurement folder:
   `private/raw-results/linux/local2p_offsetcookie_runs10`
+
+Free-first measurement:
+
+```text
+private/raw-results/linux/local2p_freefirst_runs10
+
+local median:
+  hz5-local2p-fastcookie  210.3M ops/s
+  hz5-local2p-freefirst   210.0M ops/s
+  hz5-p25                  63.5M ops/s
+  hz4                     119.8M ops/s
+  tcmalloc                249.5M ops/s
+
+mixed final median:
+  hz5-local2p-freefirst   217.6M ops/s
+  hz5-local2p-fastcookie  210.0M ops/s
+  hz5-p25                  58.0M ops/s
+  hz4                     136.6M ops/s
+  tcmalloc                270.5M ops/s
+
+remote pairs/s median:
+  hz5-local2p-freefirst     7.95M
+  hz5-local2p-fastcookie    8.17M
+  hz5-p25                  12.21M
+  hz4                      11.29M
+  tcmalloc                  2.35M
+```
+
+Interpretation:
+
+- free-first does not replace fast-cookie for pure local throughput
+- it is useful as a mixed-prelude candidate because it improved mixed final
+  throughput in the same RUNS=10 set
+- remote remains separate and should not inherit local/mixed dispatch choices
 
 ## Branch
 

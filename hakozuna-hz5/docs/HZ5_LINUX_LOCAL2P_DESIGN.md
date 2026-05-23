@@ -489,6 +489,42 @@ mixed:
 Remote-free remains a separate lane: fast-cookie measured 8.13M pairs/s versus
 12.52M for the P25 control in the same run.
 
+### Free-First Candidate
+
+`hz5-linux-local2p-free-first` keeps the fast-cookie Local2P route and changes
+only `hz5_free()` dispatch order:
+
+```text
+before:
+  P1/P2 ownership check
+  Local2P direct decode
+
+candidate:
+  Local2P direct decode
+  P1/P2 ownership check
+```
+
+This isolates the cost of the generic ownership branch in the standalone
+Local2P speed lane. It does not change cookie, state, owner, remote-free, or
+RSS behavior.
+
+Initial RUNS=10 result:
+
+```text
+private/raw-results/linux/local2p_freefirst_runs10
+
+local:
+  fast-cookie 210.3M ops/s
+  free-first  210.0M ops/s
+
+mixed:
+  free-first  217.6M ops/s
+  fast-cookie 210.0M ops/s
+```
+
+Treat free-first as a mixed-speed candidate. It did not improve pure local
+median and slightly regressed remote-free in the same run.
+
 Overflow policy for the first candidate should be explicit and visible in the
 lane name or build metadata. Prefer keeping it simple:
 

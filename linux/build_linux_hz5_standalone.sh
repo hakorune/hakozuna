@@ -19,6 +19,7 @@ LINUX_LOCAL2P_ROUTE_COOKIE=0
 LINUX_LOCAL2P_REUSE_STATE_ONLY=0
 LINUX_LOCAL2P_SLIM_CHECK=0
 LINUX_LOCAL2P_FAST_COOKIE=0
+LINUX_LOCAL2P_FREE_FIRST=0
 LINUX_P25_BRIDGE_ATTR=0
 LINUX_P25_BRIDGE_ATTR_NO_CAS=0
 LINUX_P25_BRIDGE_ATTR_NO_COOKIE=0
@@ -71,6 +72,8 @@ Options:
                      candidate only: reuse-state-only lane with reduced Local2P free checks
   --linux-local2p-fast-cookie
                      candidate only: slim-check lane with lightweight Local2P cookie
+  --linux-local2p-free-first
+                     candidate only: fast-cookie lane with Local2P decode first in free
   --linux-p25-bridge-attr
                      preserve P25 bridge topology with wrapper attr CAS guard
   --linux-p25-bridge-attr-no-cas
@@ -229,6 +232,21 @@ while [[ $# -gt 0 ]]; do
       LINUX_LOCAL2P_REUSE_STATE_ONLY=1
       LINUX_LOCAL2P_SLIM_CHECK=1
       LINUX_LOCAL2P_FAST_COOKIE=1
+      shift
+      ;;
+    --linux-local2p-free-first)
+      LINUX_LOCAL2P=1
+      LINUX_LOCAL2P_TLS_PACKED=1
+      LINUX_LOCAL2P_TLS_INITIAL_EXEC=1
+      LINUX_LOCAL2P_DIRECT_ROUTE=1
+      LINUX_LOCAL2P_DIRECT_INIT=1
+      LINUX_LOCAL2P_OBJECT_NODE=1
+      LINUX_LOCAL2P_SAME_OWNER_FAST_STATE=1
+      LINUX_LOCAL2P_ROUTE_COOKIE=1
+      LINUX_LOCAL2P_REUSE_STATE_ONLY=1
+      LINUX_LOCAL2P_SLIM_CHECK=1
+      LINUX_LOCAL2P_FAST_COOKIE=1
+      LINUX_LOCAL2P_FREE_FIRST=1
       shift
       ;;
     --linux-p25-bridge-attr)
@@ -493,6 +511,9 @@ if [[ "$LINUX_LOCAL2P" -eq 1 ]]; then
   if [[ "$LINUX_LOCAL2P_FAST_COOKIE" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LOCAL2P_FAST_COOKIE=1)
   fi
+  if [[ "$LINUX_LOCAL2P_FREE_FIRST" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LOCAL2P_FREE_FIRST=1)
+  fi
 fi
 
 if [[ "$ENABLE_LINUX_P43" -eq 1 ]]; then
@@ -560,6 +581,7 @@ fi
   echo "linux_local2p_reuse_state_only=${LINUX_LOCAL2P_REUSE_STATE_ONLY}"
   echo "linux_local2p_slim_check=${LINUX_LOCAL2P_SLIM_CHECK}"
   echo "linux_local2p_fast_cookie=${LINUX_LOCAL2P_FAST_COOKIE}"
+  echo "linux_local2p_free_first=${LINUX_LOCAL2P_FREE_FIRST}"
   echo "linux_p25_bridge_attr=${LINUX_P25_BRIDGE_ATTR}"
   echo "linux_p25_bridge_attr_no_cas=${LINUX_P25_BRIDGE_ATTR_NO_CAS}"
   echo "linux_p25_bridge_attr_no_cookie=${LINUX_P25_BRIDGE_ATTR_NO_COOKIE}"
