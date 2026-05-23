@@ -86,6 +86,18 @@ static Hz5SmallFrontTls* hz5_smallfront_tls(void) {
   return tls;
 }
 
+static int hz5_smallfront_class_valid(uint32_t class_index) {
+  return class_index < HZ5_SMALLFRONT_CLASS_COUNT;
+}
+
+static int hz5_smallfront_can_publish_to_owner(Hz5OwnerToken owner,
+                                               uint32_t class_index,
+                                               const Hz5SmallFrontNode* head,
+                                               const Hz5SmallFrontNode* tail) {
+  return owner.slot != 0 && hz5_smallfront_class_valid(class_index) && head &&
+         tail && hz5_owner_is_alive(owner);
+}
+
 static int hz5_smallfront_class_index(size_t size) {
   size_t request = size == 0 ? 1u : size;
   for (uint32_t i = 0; i < HZ5_SMALLFRONT_CLASS_COUNT; ++i) {
@@ -215,11 +227,7 @@ static void hz5_smallfront_remote_publish_list(Hz5OwnerToken owner,
                                                uint32_t class_index,
                                                Hz5SmallFrontNode* head,
                                                Hz5SmallFrontNode* tail) {
-  if (owner.slot == 0 || class_index >= HZ5_SMALLFRONT_CLASS_COUNT || !head ||
-      !tail) {
-    return;
-  }
-  if (!hz5_owner_is_alive(owner)) {
+  if (!hz5_smallfront_can_publish_to_owner(owner, class_index, head, tail)) {
     return;
   }
 
