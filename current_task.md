@@ -15,7 +15,8 @@ The target lane is standalone and fallback-free:
 
 ## Current Development Focus: Linux Local2P v2
 
-Status: implementing A/B candidate.
+Status: object-node committed; same-owner fast-state measured; route-cookie
+A/B in progress.
 
 Goal:
 
@@ -24,10 +25,10 @@ Goal:
 - keep P25 bridge, P43 token/source, and Linux Local2P roles separated
 - keep invalid/double-free behavior fail-closed
 
-Next candidate:
+Current candidate:
 
 ```text
-hz5-linux-local2p-object-node
+hz5-linux-local2p-route-cookie
 ```
 
 Design:
@@ -38,16 +39,89 @@ Design:
 - store freelist `next` in freed user memory, tcmalloc-style
 - keep `raw` in the wrapper header for validation and OS release
 - skip invariant wrapper-prefix rewrites on cached object-node reuse
-- leave cookie consolidation, slim header, and same-owner fast state as
-  follow-up A/B lanes
+- for `owner == current`, replace the locked `atomic_exchange` free-state
+  transition with atomic load/store
+- keep remote free on locked atomic transition
+- use the Local2P cookie as the direct route guard instead of also checking the
+  generic wrapper cookie
+- leave slim header as follow-up A/B lane
 
 Expected first measurement:
 
-- compare `hz5-local2p-fast` vs `hz5-local2p-object` vs `hz5-p25` vs `hz4` vs
-  `tcmalloc`
+- compare `hz5-local2p-object` vs `hz5-local2p-faststate` vs `hz5-p25` vs
+  `hz4` vs `tcmalloc`
 - focus first on local `64K/a8192` ops/s and instruction count
 - then check remote/RSS/mixed to make sure object-node does not regress the
   non-local controls unexpectedly
+
+Latest measurement:
+
+```text
+private/raw-results/linux/local2p_faststate_earlyreturn_runs10
+
+local median:
+  hz5-local2p-faststate  161.9M ops/s
+  hz5-local2p-object     155.7M ops/s
+  hz4                    131.6M ops/s
+  tcmalloc               248.3M ops/s
+
+mixed final median:
+  hz5-local2p-faststate  160.3M ops/s
+  hz5-local2p-object     155.7M ops/s
+  hz4                    137.0M ops/s
+  tcmalloc               269.9M ops/s
+
+remote pairs/s median:
+  hz5-local2p-faststate    8.20M
+  hz5-local2p-object       8.17M
+  hz5-p25                 12.46M
+  hz4                     11.07M
+  tcmalloc                 2.38M
+```
+
+Interpretation:
+
+- same-owner fast-state helps only when the owner-local path returns directly
+  after TLS push
+- the first branch-only version was slower, so local fast-path layout matters
+- tcmalloc gap remains mostly in cookie/header validation and route-specific ABI
+
+Route-cookie measurement:
+
+```text
+private/raw-results/linux/local2p_routecookie_runs10
+
+local median:
+  hz5-local2p-routecookie  173.3M ops/s
+  hz5-local2p-faststate    160.9M ops/s
+  hz5-local2p-object       150.8M ops/s
+  hz4                      130.5M ops/s
+  tcmalloc                 250.3M ops/s
+
+mixed final median:
+  hz5-local2p-routecookie  175.7M ops/s
+  hz5-local2p-faststate    161.6M ops/s
+  hz5-local2p-object       154.4M ops/s
+  hz4                      136.7M ops/s
+  tcmalloc                 269.9M ops/s
+
+remote pairs/s median:
+  hz5-local2p-routecookie    8.23M
+  hz5-local2p-faststate      8.11M
+  hz5-local2p-object         8.35M
+  hz5-p25                   12.30M
+  hz4                       10.64M
+  tcmalloc                   2.33M
+```
+
+Interpretation:
+
+- skipping the generic wrapper-cookie check in the direct Local2P route is a
+  real speed win
+- Local2P cookie remains the route guard, so mutated Local2P cookie safety smoke
+  still fails closed
+- remaining tcmalloc gap is now likely header shape, API call path, generation /
+  cookie recompute, and RSS/source policy
 
 ## Branch
 

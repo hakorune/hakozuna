@@ -18,7 +18,7 @@ PROBE_SIZE=262144
 PROBE_ALIGN=8192
 PROBE_ATTEMPTS=256
 QUEUE=1024
-ALLOCATORS="hz5-local2p-fast,hz5-local2p-object,hz5-local2p,hz5-p25,hz4,tcmalloc,mimalloc,system"
+ALLOCATORS="hz5-local2p-fast,hz5-local2p-object,hz5-local2p-faststate,hz5-local2p-routecookie,hz5-local2p,hz5-p25,hz4,tcmalloc,mimalloc,system"
 OUTDIR="${ROOT_DIR}/private/raw-results/linux/hz5_local2p_focus_$(date +%Y%m%d_%H%M%S)"
 SKIP_BUILD=0
 SKIP_PREPARE_ALLOCATORS=0
@@ -54,6 +54,8 @@ Options:
 Allocators:
   hz5-local2p-fast
   hz5-local2p-object
+  hz5-local2p-faststate
+  hz5-local2p-routecookie
   hz5-local2p-inbox
   hz5-local2p
   hz5-p25
@@ -113,6 +115,8 @@ build_hz5_lane() {
 if [[ "$SKIP_BUILD" -ne 1 ]]; then
   build_hz5_lane hz5-local2p-fast --linux-local2p-fast
   build_hz5_lane hz5-local2p-object --linux-local2p-object-node
+  build_hz5_lane hz5-local2p-faststate --linux-local2p-same-owner-fast-state
+  build_hz5_lane hz5-local2p-routecookie --linux-local2p-route-cookie
   build_hz5_lane hz5-local2p-inbox --linux-local2p-fast --linux-local2p-owner-inbox
   build_hz5_lane hz5-local2p --linux-local2p
   build_hz5_lane hz5-p25
@@ -176,7 +180,7 @@ require_file generic-mixed "$GENERIC_MIXED_BENCH"
 IFS=',' read -r -a allocator_list <<< "$ALLOCATORS"
 for alloc in "${allocator_list[@]}"; do
   case "$alloc" in
-    hz5-local2p-fast|hz5-local2p-object|hz5-local2p-inbox|hz5-local2p|hz5-p25) require_hz5_lane "$alloc" ;;
+    hz5-local2p-fast|hz5-local2p-object|hz5-local2p-faststate|hz5-local2p-routecookie|hz5-local2p-inbox|hz5-local2p|hz5-p25) require_hz5_lane "$alloc" ;;
     hz5-preload-hybrid) require_file hz5-preload-hybrid "$HZ5_PRELOAD_HYBRID_SO" ;;
     hz4) require_file hz4 "$HZ4_SO" ;;
     tcmalloc) require_file tcmalloc "$TCMALLOC_SO" ;;
@@ -233,6 +237,18 @@ write_allocator_metadata() {
         "$alloc" "hz5-linux-local2p-object-node" "local2p" \
         "speed-candidate" "exact-64k-a8192-local" \
         "user-pointer-freelist-node-candidate"
+      ;;
+    hz5-local2p-faststate)
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$alloc" "hz5-linux-local2p-same-owner-fast-state" "local2p" \
+        "speed-candidate" "exact-64k-a8192-local" \
+        "owner-local-load-store-state-candidate"
+      ;;
+    hz5-local2p-routecookie)
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$alloc" "hz5-linux-local2p-route-cookie" "local2p" \
+        "speed-candidate" "exact-64k-a8192-local" \
+        "local2p-cookie-as-direct-route-guard"
       ;;
     hz5-local2p-inbox)
       printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
@@ -359,6 +375,8 @@ run_one() {
   local status=0
   if [[ "$alloc" == "hz5-local2p-fast" || \
         "$alloc" == "hz5-local2p-object" || \
+        "$alloc" == "hz5-local2p-faststate" || \
+        "$alloc" == "hz5-local2p-routecookie" || \
         "$alloc" == "hz5-local2p-inbox" || \
         "$alloc" == "hz5-local2p" || \
         "$alloc" == "hz5-p25" ]]; then

@@ -373,6 +373,46 @@ alloc cached reuse:
 This is the tcmalloc-like topology test. It is still not the final slim-header
 or same-owner-fast-state design.
 
+### Same-Owner Fast-State Candidate
+
+`hz5-linux-local2p-same-owner-fast-state` keeps the object-node topology and
+changes only the state transition:
+
+```text
+owner == current:
+  atomic_load ACTIVE check
+  atomic_store FREED
+
+owner != current:
+  atomic_exchange ACTIVE -> FREED
+  remote path
+```
+
+This removes the locked RMW from the owner-local hot path while keeping remote
+free on the safer transition. It still detects sequential double-free before
+reuse, but it is a candidate lane because it is intentionally weaker than
+locked exchange for concurrent invalid frees.
+
+### Route-Cookie Candidate
+
+`hz5-linux-local2p-route-cookie` keeps object-node and same-owner fast-state,
+but uses the Local2P cookie as the direct route attribution guard:
+
+```text
+direct decode:
+  magic/layout/source/raw checks
+  no generic wrapper-cookie recompute
+
+local2p free:
+  Local2P cookie check
+  state transition
+  owner-local or remote recycle
+```
+
+This is the first cookie consolidation step. It does not remove the Local2P
+cookie check; it removes the extra generic wrapper-cookie check from the
+Local2P fast path.
+
 Overflow policy for the first candidate should be explicit and visible in the
 lane name or build metadata. Prefer keeping it simple:
 
