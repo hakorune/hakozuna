@@ -137,6 +137,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_LOCAL2P_SLIM_CHECK 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LOCAL2P_FAST_COOKIE
+#define BENCHLAB_HZ5_LINUX_LOCAL2P_FAST_COOKIE 0
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS
 #define BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS 0
 #endif
@@ -435,12 +439,23 @@ static uint64_t hz5_policy_local2p_cookie(uintptr_t raw,
                                           size_t raw_bytes,
                                           uint32_t generation,
                                           uintptr_t owner) {
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_FAST_COOKIE
+  (void)raw_bytes;
+  (void)generation;
+  (void)owner;
+  uint64_t mixed =
+      (uint64_t)(raw ^ aligned ^
+                 (uintptr_t)&g_hz5_policy_local2p_secret_anchor) ^
+      UINT64_C(0x2f125a8192c0ffee);
+  return mixed ? mixed : UINT64_C(0x2f12);
+#else
   uint64_t mixed =
       (uint64_t)(raw ^ aligned ^ owner ^
                  (uintptr_t)&g_hz5_policy_local2p_secret_anchor) ^
       ((uint64_t)raw_bytes << 17) ^ ((uint64_t)generation << 32) ^
       UINT64_C(0x2f125a8192c0ffee);
   return mixed ? mixed : UINT64_C(0x2f12);
+#endif
 }
 
 static int hz5_policy_local2p_exact(size_t size, size_t align) {

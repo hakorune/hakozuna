@@ -15,8 +15,8 @@ The target lane is standalone and fallback-free:
 
 ## Current Development Focus: Linux Local2P v2
 
-Status: object-node, route-cookie, and reuse-state-only committed; slim-check
-A/B implemented.
+Status: object-node, route-cookie, reuse-state-only, slim-check, and
+fast-cookie measured; fast-cookie is the current local-speed candidate.
 
 Goal:
 
@@ -28,7 +28,7 @@ Goal:
 Current candidate:
 
 ```text
-hz5-linux-local2p-slim-check
+hz5-linux-local2p-fast-cookie
 ```
 
 Design:
@@ -47,16 +47,17 @@ Design:
 - on TLS reuse, update only `local2p_state=ACTIVE`; do not rewrite owner,
   generation, or Local2P cookie
 - direct exact API was tested and rejected: it was slower than reusefast
-- next A/B: remove redundant source/requested/raw_bytes checks after direct
-  Local2P decode
+- remove redundant source/requested/raw_bytes checks after direct Local2P decode
+- keep corrupted-cookie guard but simplify Local2P cookie to
+  raw/aligned/process-secret in the fast-cookie candidate
 
-Expected first measurement:
+Measurement policy:
 
-- compare `hz5-local2p-object` vs `hz5-local2p-faststate` vs `hz5-p25` vs
-  `hz4` vs `tcmalloc`
-- focus first on local `64K/a8192` ops/s and instruction count
-- then check remote/RSS/mixed to make sure object-node does not regress the
-  non-local controls unexpectedly
+- compare each new Local2P candidate against the previous candidate, `hz5-p25`,
+  `hz4`, and `tcmalloc`
+- focus first on local and mixed `64K/a8192` ops/s and instruction count
+- keep remote/RSS rows in the same run so local-speed wins do not get mistaken
+  for remote/RSS wins
 
 Latest measurement:
 
@@ -196,6 +197,48 @@ Interpretation:
 - slim-check is a real local/mixed speed win
 - it slightly hurts remote, so it should remain a local-speed candidate
 - remaining local gap to tcmalloc is now about 60M ops/s rather than 100M+
+
+Fast-cookie measurement:
+
+```text
+private/raw-results/linux/local2p_fastcookie_runs10
+
+local median:
+  hz5-local2p-fastcookie  206.2M ops/s
+  hz5-local2p-slimcheck   197.1M ops/s
+  hz5-p25                  66.2M ops/s
+  hz4                     129.8M ops/s
+  tcmalloc                250.0M ops/s
+
+mixed final median:
+  hz5-local2p-fastcookie  215.3M ops/s
+  hz5-local2p-slimcheck   204.3M ops/s
+  hz5-p25                  57.3M ops/s
+  hz4                     137.1M ops/s
+  tcmalloc                265.5M ops/s
+
+remote pairs/s median:
+  hz5-local2p-fastcookie    8.13M
+  hz5-local2p-slimcheck     8.22M
+  hz5-p25                  12.52M
+  hz4                      12.14M
+  tcmalloc                  2.36M
+
+rss median ops/s:
+  hz5-local2p-fastcookie   49.4K ops/s, final RSS 1.6MB
+  hz5-local2p-slimcheck    49.4K ops/s, final RSS 1.5MB
+  hz5-p25                  61.5K ops/s, final RSS 21.0MB
+  hz4                     328.6K ops/s, final RSS 75.5MB
+  tcmalloc                366.4K ops/s, final RSS 73.2MB
+```
+
+Interpretation:
+
+- fast-cookie is a clean local/mixed speed win while preserving mutated-cookie
+  fail-closed safety smoke
+- remote remains a separate problem; fast-cookie does not improve the
+  producer/consumer remote-free lane
+- local gap to tcmalloc is now about 44M ops/s on this focused benchmark
 
 ## Branch
 

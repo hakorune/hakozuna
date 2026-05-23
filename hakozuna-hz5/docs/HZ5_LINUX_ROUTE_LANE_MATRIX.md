@@ -194,6 +194,7 @@ This is a useful hit-rate diagnostic, but a miss is not an HZ5 allocation.
 | `hz5-local2p-routecookie` | `hz5-linux-local2p-route-cookie` | `--linux-local2p-route-cookie` | `local2p` | speed candidate: Local2P cookie as route guard |
 | `hz5-local2p-reusefast` | `hz5-linux-local2p-reuse-state-only` | `--linux-local2p-reuse-state-only` | `local2p` | speed candidate: TLS reuse updates state only |
 | `hz5-local2p-slimcheck` | `hz5-linux-local2p-slim-check` | `--linux-local2p-slim-check` | `local2p` | speed candidate: reduced direct free checks |
+| `hz5-local2p-fastcookie` | `hz5-linux-local2p-fast-cookie` | `--linux-local2p-fast-cookie` | `local2p` | speed candidate: lightweight cookie |
 | `hz5-local2p-inbox` | `hz5-linux-local2p-remote-inbox` | `--linux-local2p-fast --linux-local2p-owner-inbox` | `local2p` | remote-free candidate |
 | `hz5-local2p` | `hz5-linux-local2p` | `--linux-local2p` | `local2p` | baseline Local2P implementation |
 | `hz5-p25` | `hz5-linux-p25-control` | no Local2P/P43/P25Attr selector | `p25_bridge` | Linux control |
@@ -293,6 +294,7 @@ Local2P speed candidates:
 --linux-local2p-route-cookie
 --linux-local2p-reuse-state-only
 --linux-local2p-slim-check
+--linux-local2p-fast-cookie
 ```
 
 `--linux-local2p-object-node` stores the recycle `next` pointer in freed user
@@ -316,6 +318,11 @@ generation, or Local2P cookie on the owner-local reuse path.
 Local2P decode as the source/requested/raw_bytes route guard. `local2p_free`
 keeps the Local2P cookie and state checks but skips duplicate header field
 checks.
+
+`--linux-local2p-fast-cookie` builds on slim-check and uses a lightweight
+Local2P cookie based on raw, aligned, and the process secret. It keeps mutated
+cookie fail-closed behavior but intentionally drops generation/owner/raw-bytes
+from the cookie mix for the speed A/B.
 
 ## Decision Rules
 

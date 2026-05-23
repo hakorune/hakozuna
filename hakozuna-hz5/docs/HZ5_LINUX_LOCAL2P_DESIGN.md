@@ -453,6 +453,42 @@ The generic `source/requested/raw_bytes` checks are skipped only in this
 candidate because the exact route has already been narrowed by direct decode and
 the Local2P cookie still includes the raw bytes value.
 
+### Fast-Cookie Candidate
+
+`hz5-linux-local2p-fast-cookie` keeps slim-check and changes only the Local2P
+cookie mix:
+
+```text
+full cookie:
+  raw, aligned, raw_bytes, generation, owner, process secret
+
+fast cookie:
+  raw, aligned, process secret
+```
+
+This keeps a route-local corrupted-cookie guard while removing fields that are
+already invariant on owner-local TLS reuse. Treat it as a speed candidate until
+the final safety contract is written.
+
+Initial RUNS=10 result:
+
+```text
+private/raw-results/linux/local2p_fastcookie_runs10
+
+local:
+  fast-cookie 206.2M ops/s
+  slim-check  197.1M ops/s
+  tcmalloc    250.0M ops/s
+
+mixed:
+  fast-cookie 215.3M ops/s
+  slim-check  204.3M ops/s
+  tcmalloc    265.5M ops/s
+```
+
+Remote-free remains a separate lane: fast-cookie measured 8.13M pairs/s versus
+12.52M for the P25 control in the same run.
+
 Overflow policy for the first candidate should be explicit and visible in the
 lane name or build metadata. Prefer keeping it simple:
 
