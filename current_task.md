@@ -297,7 +297,7 @@ codex/hz5-linux-p43-port
 Latest Local2P implementation commit:
 
 ```bash
-fd3c759 Add HZ5 Local2P fast-cookie lane
+73f4ab2 Add HZ5 Local2P free-first candidate
 ```
 
 Parent branch:
