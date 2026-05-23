@@ -369,7 +369,7 @@ codex/hz5-linux-p43-port
 Latest Local2P implementation commit:
 
 ```bash
-b47099a Add HZ5 Local2P remote batch candidate
+79fca0f Refactor HZ5 Local2P free path helpers
 ```
 
 Parent branch:
