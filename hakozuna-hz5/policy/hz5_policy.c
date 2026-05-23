@@ -161,6 +161,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_LOCAL2P_SINGLE_SLOT_TLS 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LOCAL2P_LOCAL_OVERFLOW_GLOBAL
+#define BENCHLAB_HZ5_LINUX_LOCAL2P_LOCAL_OVERFLOW_GLOBAL 0
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS
 #define BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS 0
 #endif
@@ -519,6 +523,8 @@ static void* hz5_policy_local2p_node_from_header(Hz5WrapperHdr* header,
 #endif
 }
 
+static int hz5_policy_local2p_global_push(void* node_ptr);
+
 static void* hz5_policy_local2p_pop(void) {
 #if BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
   Hz5PolicyLocal2PTls* tls = hz5_policy_local2p_tls();
@@ -669,9 +675,13 @@ static int hz5_policy_local2p_push(void* node_ptr) {
   if (g_hz5_policy_local2p_count >= BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_CAP) {
 #endif
 #endif
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_LOCAL_OVERFLOW_GLOBAL
+    return hz5_policy_local2p_global_push(node_ptr);
+#else
     hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_OVERFLOW);
     hz5_policy_local2p_free_node(node_ptr);
     return 0;
+#endif
   }
   Hz5LinuxLocal2PNode* node = (Hz5LinuxLocal2PNode*)node_ptr;
 #if BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED

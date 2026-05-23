@@ -943,6 +943,53 @@ Conclusion: the linkflags lane is stable enough to document as the current
 Linux exact-overaligned local speed candidate. It should still be reported as a
 speed-lane build, not as the default production build.
 
+### RSS Retain Candidate
+
+The broad RSS scan showed that Local2P's low final RSS comes from freeing local
+TLS overflow directly to the OS. That keeps final RSS near zero, but the next
+plateau round pays `posix_memalign/free` for almost every block.
+
+`hz5-linux-local2p-rss-retain` keeps the linkflags/exact API shape but changes
+only the local recycle overflow policy:
+
+```text
+TLS push succeeds:
+  keep in TLS
+
+TLS full:
+  push to bounded Local2P global cache
+
+global full:
+  free raw span to OS
+```
+
+RUNS=10 confirmation:
+
+```text
+private/raw-results/linux/local2p_rssretain_confirm_runs10_20260524_024710
+
+RSS plateau, 2048 blocks:
+  tcmalloc                  368.6K ops/s, final RSS 139.0MB
+  hz4                       319.2K ops/s, final RSS 149.2MB
+  hz5-local2p-rssretain2048 315.2K ops/s, final RSS 153.1MB
+  hz5-local2p-rssretain      86.7K ops/s, final RSS  77.6MB
+  hz5-local2p-linkflags      48.6K ops/s, final RSS   1.6MB
+
+mixed final:
+  hz5-local2p-rssretain2048 273.8M ops/s, final RSS 153.0MB
+  tcmalloc                  269.8M ops/s, final RSS 156.0MB
+  hz5-local2p-linkflags     264.0M ops/s, final RSS   1.5MB
+
+local:
+  hz5-local2p-rssretain2048 256.8M ops/s
+  hz5-local2p-linkflags     256.0M ops/s
+  tcmalloc                  253.1M ops/s
+```
+
+Decision: keep `linkflags` as the low-final-RSS local exact speed reference and
+use `rssretain2048` as a separate RSS-throughput profile. Do not merge the RSS
+retention policy into the low-RSS speed lane.
+
 Overflow policy for the first candidate should be explicit and visible in the
 lane name or build metadata. Prefer keeping it simple:
 

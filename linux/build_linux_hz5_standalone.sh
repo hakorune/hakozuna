@@ -15,6 +15,7 @@ LINUX_LOCAL2P_NO_CAS=0
 LINUX_LOCAL2P_OWNER_INBOX=0
 LINUX_LOCAL2P_REMOTE_BATCH=0
 LINUX_LOCAL2P_REMOTE_BATCH_CAP=16
+LINUX_LOCAL2P_GLOBAL_CAP=1024
 LINUX_LOCAL2P_OBJECT_NODE=0
 LINUX_LOCAL2P_SAME_OWNER_FAST_STATE=0
 LINUX_LOCAL2P_ROUTE_COOKIE=0
@@ -26,6 +27,7 @@ LINUX_LOCAL2P_TLS_FAST_RETURN=0
 LINUX_LOCAL2P_EXACT_API=0
 LINUX_LOCAL2P_SINGLE_SLOT_TLS=0
 LINUX_LOCAL2P_SPEED_LINKFLAGS=0
+LINUX_LOCAL2P_LOCAL_OVERFLOW_GLOBAL=0
 LINUX_P25_BRIDGE_ATTR=0
 LINUX_P25_BRIDGE_ATTR_NO_CAS=0
 LINUX_P25_BRIDGE_ATTR_NO_COOKIE=0
@@ -70,6 +72,8 @@ Options:
                      candidate only: batch remote frees before owner inbox push
   --linux-local2p-remote-batch-cap N
                      candidate only: remote batch flush threshold (default: 16)
+  --linux-local2p-global-cap N
+                     candidate only: Local2P bounded global retained-cache cap (default: 1024)
   --linux-local2p-object-node
                      candidate only: use aligned user pointers as Local2P free-list nodes
   --linux-local2p-same-owner-fast-state
@@ -94,6 +98,8 @@ Options:
                      candidate only: exact-api lane with TLS_CAP=1 head-only cache
   --linux-local2p-speed-linkflags
                      candidate only: exact-api lane with speed-oriented compile/link flags
+  --linux-local2p-rss-retain
+                     candidate only: speed-linkflags lane retaining local TLS overflow in bounded global cache
   --linux-p25-bridge-attr
                      preserve P25 bridge topology with wrapper attr CAS guard
   --linux-p25-bridge-attr-no-cas
@@ -203,6 +209,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --linux-local2p-remote-batch-cap)
       LINUX_LOCAL2P_REMOTE_BATCH_CAP="$2"
+      shift 2
+      ;;
+    --linux-local2p-global-cap)
+      LINUX_LOCAL2P_GLOBAL_CAP="$2"
       shift 2
       ;;
     --linux-local2p-object-node)
@@ -352,6 +362,24 @@ while [[ $# -gt 0 ]]; do
       LINUX_LOCAL2P_TLS_FAST_RETURN=1
       LINUX_LOCAL2P_EXACT_API=1
       LINUX_LOCAL2P_SPEED_LINKFLAGS=1
+      shift
+      ;;
+    --linux-local2p-rss-retain)
+      LINUX_LOCAL2P=1
+      LINUX_LOCAL2P_TLS_PACKED=1
+      LINUX_LOCAL2P_TLS_INITIAL_EXEC=1
+      LINUX_LOCAL2P_DIRECT_ROUTE=1
+      LINUX_LOCAL2P_DIRECT_INIT=1
+      LINUX_LOCAL2P_OBJECT_NODE=1
+      LINUX_LOCAL2P_SAME_OWNER_FAST_STATE=1
+      LINUX_LOCAL2P_ROUTE_COOKIE=1
+      LINUX_LOCAL2P_REUSE_STATE_ONLY=1
+      LINUX_LOCAL2P_SLIM_CHECK=1
+      LINUX_LOCAL2P_FAST_COOKIE=1
+      LINUX_LOCAL2P_TLS_FAST_RETURN=1
+      LINUX_LOCAL2P_EXACT_API=1
+      LINUX_LOCAL2P_SPEED_LINKFLAGS=1
+      LINUX_LOCAL2P_LOCAL_OVERFLOW_GLOBAL=1
       shift
       ;;
     --linux-p25-bridge-attr)
@@ -594,6 +622,7 @@ if [[ "$LINUX_LOCAL2P" -eq 1 ]]; then
   COMMON_FLAGS+=(
     -DBENCHLAB_HZ5_LINUX_LOCAL2P=1
     -DBENCHLAB_HZ5_LINUX_LOCAL2P_TLS_CAP=1
+    -DBENCHLAB_HZ5_LINUX_LOCAL2P_GLOBAL_CAP="${LINUX_LOCAL2P_GLOBAL_CAP}u"
   )
   if [[ "$LINUX_LOCAL2P_TLS_PACKED" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED=1)
@@ -649,6 +678,9 @@ if [[ "$LINUX_LOCAL2P" -eq 1 ]]; then
   fi
   if [[ "$LINUX_LOCAL2P_SINGLE_SLOT_TLS" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LOCAL2P_SINGLE_SLOT_TLS=1)
+  fi
+  if [[ "$LINUX_LOCAL2P_LOCAL_OVERFLOW_GLOBAL" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LOCAL2P_LOCAL_OVERFLOW_GLOBAL=1)
   fi
 fi
 
@@ -713,6 +745,7 @@ fi
   echo "linux_local2p_owner_inbox=${LINUX_LOCAL2P_OWNER_INBOX}"
   echo "linux_local2p_remote_batch=${LINUX_LOCAL2P_REMOTE_BATCH}"
   echo "linux_local2p_remote_batch_cap=${LINUX_LOCAL2P_REMOTE_BATCH_CAP}"
+  echo "linux_local2p_global_cap=${LINUX_LOCAL2P_GLOBAL_CAP}"
   echo "linux_local2p_object_node=${LINUX_LOCAL2P_OBJECT_NODE}"
   echo "linux_local2p_same_owner_fast_state=${LINUX_LOCAL2P_SAME_OWNER_FAST_STATE}"
   echo "linux_local2p_route_cookie=${LINUX_LOCAL2P_ROUTE_COOKIE}"
@@ -724,6 +757,7 @@ fi
   echo "linux_local2p_exact_api=${LINUX_LOCAL2P_EXACT_API}"
   echo "linux_local2p_single_slot_tls=${LINUX_LOCAL2P_SINGLE_SLOT_TLS}"
   echo "linux_local2p_speed_linkflags=${LINUX_LOCAL2P_SPEED_LINKFLAGS}"
+  echo "linux_local2p_local_overflow_global=${LINUX_LOCAL2P_LOCAL_OVERFLOW_GLOBAL}"
   echo "linux_p25_bridge_attr=${LINUX_P25_BRIDGE_ATTR}"
   echo "linux_p25_bridge_attr_no_cas=${LINUX_P25_BRIDGE_ATTR_NO_CAS}"
   echo "linux_p25_bridge_attr_no_cookie=${LINUX_P25_BRIDGE_ATTR_NO_COOKIE}"

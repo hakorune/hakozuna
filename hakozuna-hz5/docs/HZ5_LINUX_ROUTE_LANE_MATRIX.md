@@ -199,6 +199,8 @@ This is a useful hit-rate diagnostic, but a miss is not an HZ5 allocation.
 | `hz5-local2p-exactapi` | `hz5-linux-local2p-exact-api` | `--linux-local2p-exact-api` | `local2p` | local-only exact API control |
 | `hz5-local2p-slot1` | `hz5-linux-local2p-single-slot-tls` | `--linux-local2p-single-slot-tls` | `local2p` | mixed-prelude candidate: TLS_CAP=1 head-only cache |
 | `hz5-local2p-linkflags` | `hz5-linux-local2p-speed-linkflags` | `--linux-local2p-speed-linkflags` | `local2p` | current local-only exact speed reference |
+| `hz5-local2p-rssretain` | `hz5-linux-local2p-rss-retain` | `--linux-local2p-rss-retain` | `local2p` | RSS candidate: local overflow to bounded global cache |
+| `hz5-local2p-rssretain2048` | `hz5-linux-local2p-rss-retain-cap2048` | `--linux-local2p-rss-retain --linux-local2p-global-cap 2048` | `local2p` | RSS throughput candidate: retain full 2048-block plateau |
 | `hz5-local2p-freefirst` | `hz5-linux-local2p-free-first` | `--linux-local2p-free-first` | `local2p` | speed candidate: Local2P free-first dispatch |
 | `hz5-local2p-freefirst-fastcookie` | `hz5-linux-local2p-freefirst-fastcookie` | `--linux-local2p-freefirst-fastcookie` | `local2p` | explicit alias for the fast-cookie + free-first compound lane |
 | `hz5-local2p-inbox` | `hz5-linux-local2p-remote-inbox` | `--linux-local2p-fast --linux-local2p-owner-inbox` | `local2p` | remote-free candidate |

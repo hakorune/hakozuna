@@ -861,6 +861,73 @@ Interpretation:
   - Remote profile: continue from `remotebatch`, since it already beats p25,
     HZ4, and tcmalloc in this producer/consumer row.
 
+RSS retain implementation:
+
+```text
+change:
+  BENCHLAB_HZ5_LINUX_LOCAL2P_LOCAL_OVERFLOW_GLOBAL
+
+policy:
+  local TLS push succeeds -> keep in TLS
+  local TLS full          -> push to bounded Local2P global cache
+  global full             -> free raw span to OS
+
+new build selector:
+  --linux-local2p-rss-retain
+
+new focus labels:
+  hz5-local2p-rssretain      global cap 1024
+  hz5-local2p-rssretain2048  global cap 2048
+```
+
+Worker/explorer check:
+
+- confirmed RSS plateau loses time because Local2P keeps only one object in TLS
+  and frees the rest to libc/OS on every round
+- confirmed existing bounded global cache was already present but not used by
+  local TLS overflow
+- recommended exactly this separate RSS retain lane rather than changing
+  linkflags or remotebatch
+
+RSS retain RUNS=10:
+
+```text
+private/raw-results/linux/local2p_rssretain_confirm_runs10_20260524_024710
+
+RSS plateau, 2048 blocks:
+  tcmalloc                  368.6K ops/s, final RSS 139.0MB
+  hz4                       319.2K ops/s, final RSS 149.2MB
+  hz5-local2p-rssretain2048 315.2K ops/s, final RSS 153.1MB
+  hz5-local2p-rssretain      86.7K ops/s, final RSS  77.6MB
+  hz5-local2p-linkflags      48.6K ops/s, final RSS   1.6MB
+
+mixed final:
+  hz5-local2p-rssretain2048 273.8M ops/s, final RSS 153.0MB
+  tcmalloc                  269.8M ops/s, final RSS 156.0MB
+  hz5-local2p-linkflags     264.0M ops/s, final RSS   1.5MB
+
+local:
+  hz5-local2p-rssretain2048 256.8M ops/s
+  hz5-local2p-linkflags     256.0M ops/s
+  tcmalloc                  253.1M ops/s
+
+remote pairs/s:
+  remotebatch               14.76M
+  p25                       12.39M
+  hz4                       11.50M
+  rssretain2048              7.55M
+```
+
+Interpretation:
+
+- `rssretain2048` nearly closes the RSS plateau throughput gap to HZ4 while
+  matching tcmalloc/HZ4-style retained RSS.
+- `rssretain1024` is a middle point: about 1.8x linkflags RSS throughput with
+  about half the final RSS of the 2048 retained-cache lane.
+- `linkflags` remains the low-final-RSS local exact speed reference.
+- `rssretain2048` is a separate RSS-throughput profile, not a replacement for
+  `linkflags` or `remotebatch`.
+
 ## Branch
 
 Use:
