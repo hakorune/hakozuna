@@ -93,6 +93,9 @@ Design:
 - `hz5-local2p-slot1` is the single-slot TLS candidate: exactapi plus
   `TLS_CAP=1` head-only push/pop, avoiding the local `count` and `next`
   maintenance in the owner-local cache
+- `hz5-local2p-linkflags` is the speed-link candidate: exactapi plus
+  `-fno-semantic-interposition`, `-fno-plt`, `-fno-stack-protector`,
+  x86 `-fcf-protection=none`, and `-Wl,-Bsymbolic-functions`
 - remote-batch is the current remote-free candidate: batch remote frees in the
   freeing thread before owner-inbox handoff
 - cleanup rule: commonize decode/cookie/state validation helpers, but keep
@@ -602,6 +605,47 @@ Interpretation:
 - `slot1` reduced instruction count further but worsened local cycles, so the
   remaining tcmalloc gap should be attacked with link/call-boundary or memory
   ordering/cacheline A/B rather than more instruction-count-only reductions
+- safety smoke passed: `bench_hz5_standalone_safety`
+
+Speed linkflags measurement:
+
+```text
+private/raw-results/linux/local2p_linkflags_runs10
+
+local median:
+  hz5-local2p-linkflags             253.0M ops/s
+  tcmalloc                          254.7M ops/s
+  hz5-local2p-exactapi              223.2M ops/s
+  hz5-local2p-slot1                 218.9M ops/s
+  hz4                               131.5M ops/s
+
+mixed final median:
+  hz5-local2p-linkflags             280.9M ops/s
+  tcmalloc                          268.9M ops/s
+  hz5-local2p-slot1                 223.6M ops/s
+  hz5-local2p-tlsfast               218.7M ops/s
+  hz4                               136.5M ops/s
+
+remote pairs/s median:
+  hz5-local2p-remotebatch           14.83M
+  hz5-p25                           13.02M
+  hz4                               12.25M
+  hz5-local2p-tlsfast                8.16M
+  hz5-local2p-linkflags              7.45M
+  tcmalloc                           2.34M
+
+perf stat local 10M, one-run:
+  linkflags: 1.03B instructions, 308.1M cycles
+```
+
+Interpretation:
+
+- `linkflags` is the new local-only exact speed reference and reaches tcmalloc
+  class on this exact workload
+- `linkflags` also wins the mixed-prelude final throughput in this run
+- it is still not a remote-free lane; keep `remotebatch` for remote
+- speed-link flags are benchmark-lane flags, not a default production policy
+  until the safety/build contract is reviewed
 - safety smoke passed: `bench_hz5_standalone_safety`
 
 ## Branch

@@ -18,7 +18,7 @@ PROBE_SIZE=262144
 PROBE_ALIGN=8192
 PROBE_ATTEMPTS=256
 QUEUE=1024
-ALLOCATORS="hz5-local2p-fast,hz5-local2p-object,hz5-local2p-faststate,hz5-local2p-routecookie,hz5-local2p-reusefast,hz5-local2p-slimcheck,hz5-local2p-fastcookie,hz5-local2p-tlsfast,hz5-local2p-exactapi,hz5-local2p-slot1,hz5-local2p-freefirst,hz5-local2p-freefirst-fastcookie,hz5-local2p-inbox,hz5-local2p-remotebatch,hz5-local2p-remotebatch8,hz5-local2p-remotebatch32,hz5-local2p,hz5-p25,hz4,tcmalloc,mimalloc,system"
+ALLOCATORS="hz5-local2p-fast,hz5-local2p-object,hz5-local2p-faststate,hz5-local2p-routecookie,hz5-local2p-reusefast,hz5-local2p-slimcheck,hz5-local2p-fastcookie,hz5-local2p-tlsfast,hz5-local2p-exactapi,hz5-local2p-slot1,hz5-local2p-linkflags,hz5-local2p-freefirst,hz5-local2p-freefirst-fastcookie,hz5-local2p-inbox,hz5-local2p-remotebatch,hz5-local2p-remotebatch8,hz5-local2p-remotebatch32,hz5-local2p,hz5-p25,hz4,tcmalloc,mimalloc,system"
 OUTDIR="${ROOT_DIR}/private/raw-results/linux/hz5_local2p_focus_$(date +%Y%m%d_%H%M%S)"
 SKIP_BUILD=0
 SKIP_PREPARE_ALLOCATORS=0
@@ -62,6 +62,7 @@ Allocators:
   hz5-local2p-tlsfast
   hz5-local2p-exactapi
   hz5-local2p-slot1
+  hz5-local2p-linkflags
   hz5-local2p-freefirst
   hz5-local2p-freefirst-fastcookie
   hz5-local2p-inbox
@@ -134,6 +135,7 @@ if [[ "$SKIP_BUILD" -ne 1 ]]; then
   build_hz5_lane hz5-local2p-tlsfast --linux-local2p-tls-fast-return
   build_hz5_lane hz5-local2p-exactapi --linux-local2p-exact-api
   build_hz5_lane hz5-local2p-slot1 --linux-local2p-single-slot-tls
+  build_hz5_lane hz5-local2p-linkflags --linux-local2p-speed-linkflags
   build_hz5_lane hz5-local2p-freefirst --linux-local2p-free-first
   build_hz5_lane hz5-local2p-freefirst-fastcookie --linux-local2p-freefirst-fastcookie
   build_hz5_lane hz5-local2p-inbox --linux-local2p-fast --linux-local2p-owner-inbox
@@ -202,7 +204,7 @@ require_file generic-mixed "$GENERIC_MIXED_BENCH"
 IFS=',' read -r -a allocator_list <<< "$ALLOCATORS"
 for alloc in "${allocator_list[@]}"; do
   case "$alloc" in
-    hz5-local2p-fast|hz5-local2p-object|hz5-local2p-faststate|hz5-local2p-routecookie|hz5-local2p-reusefast|hz5-local2p-slimcheck|hz5-local2p-fastcookie|hz5-local2p-tlsfast|hz5-local2p-exactapi|hz5-local2p-slot1|hz5-local2p-freefirst|hz5-local2p-freefirst-fastcookie|hz5-local2p-inbox|hz5-local2p-remotebatch|hz5-local2p-remotebatch8|hz5-local2p-remotebatch32|hz5-local2p|hz5-p25) require_hz5_lane "$alloc" ;;
+    hz5-local2p-fast|hz5-local2p-object|hz5-local2p-faststate|hz5-local2p-routecookie|hz5-local2p-reusefast|hz5-local2p-slimcheck|hz5-local2p-fastcookie|hz5-local2p-tlsfast|hz5-local2p-exactapi|hz5-local2p-slot1|hz5-local2p-linkflags|hz5-local2p-freefirst|hz5-local2p-freefirst-fastcookie|hz5-local2p-inbox|hz5-local2p-remotebatch|hz5-local2p-remotebatch8|hz5-local2p-remotebatch32|hz5-local2p|hz5-p25) require_hz5_lane "$alloc" ;;
     hz5-preload-hybrid) require_file hz5-preload-hybrid "$HZ5_PRELOAD_HYBRID_SO" ;;
     hz4) require_file hz4 "$HZ4_SO" ;;
     tcmalloc) require_file tcmalloc "$TCMALLOC_SO" ;;
@@ -307,6 +309,12 @@ write_allocator_metadata() {
         "$alloc" "hz5-linux-local2p-single-slot-tls" "local2p" \
         "speed-candidate" "exact-64k-a8192-local" \
         "tls-cap1-head-only-cache"
+      ;;
+    hz5-local2p-linkflags)
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$alloc" "hz5-linux-local2p-speed-linkflags" "local2p" \
+        "speed-candidate" "exact-64k-a8192-local" \
+        "exact-api-with-speed-oriented-compile-link-flags"
       ;;
     hz5-local2p-freefirst)
       printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
@@ -471,6 +479,7 @@ run_one() {
         "$alloc" == "hz5-local2p-tlsfast" || \
         "$alloc" == "hz5-local2p-exactapi" || \
         "$alloc" == "hz5-local2p-slot1" || \
+        "$alloc" == "hz5-local2p-linkflags" || \
         "$alloc" == "hz5-local2p-freefirst" || \
         "$alloc" == "hz5-local2p-freefirst-fastcookie" || \
         "$alloc" == "hz5-local2p-inbox" || \

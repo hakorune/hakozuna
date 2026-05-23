@@ -850,6 +850,53 @@ Decision: do not replace `exactapi` as the local-only speed reference. Keep
 `slot1` as a mixed-prelude candidate. It reduced instructions but local cycles
 worsened, so it is not a clean local-speed promotion.
 
+### Speed Linkflags Candidate
+
+`hz5-linux-local2p-speed-linkflags` keeps exact API and changes build/link
+flags only:
+
+```text
+-fno-semantic-interposition
+-fno-plt
+-fno-stack-protector
+-fcf-protection=none       # x86 only
+-Wl,-Bsymbolic-functions   # shared library link
+```
+
+This tests whether the remaining tcmalloc gap is call-boundary / interposition
+overhead rather than allocator algorithm work.
+
+RUNS=10 result:
+
+```text
+private/raw-results/linux/local2p_linkflags_runs10
+
+local:
+  linkflags 253.0M ops/s
+  tcmalloc  254.7M ops/s
+  exactapi  223.2M ops/s
+
+mixed:
+  linkflags 280.9M ops/s
+  tcmalloc  268.9M ops/s
+  slot1     223.6M ops/s
+
+remote pairs/s:
+  remotebatch 14.83M
+  p25         13.02M
+  linkflags    7.45M
+```
+
+One-run `perf stat` on local 10M:
+
+```text
+linkflags: 1.03B instructions, 308.1M cycles
+```
+
+Decision: `linkflags` is the current local-only exact speed reference. It is a
+speed-lane build policy, not a default production build policy. Keep
+`remotebatch` as the remote-free reference.
+
 Overflow policy for the first candidate should be explicit and visible in the
 lane name or build metadata. Prefer keeping it simple:
 
