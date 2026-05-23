@@ -23,6 +23,7 @@ LINUX_LOCAL2P_SLIM_CHECK=0
 LINUX_LOCAL2P_FAST_COOKIE=0
 LINUX_LOCAL2P_FREE_FIRST=0
 LINUX_LOCAL2P_TLS_FAST_RETURN=0
+LINUX_LOCAL2P_EXACT_API=0
 LINUX_P25_BRIDGE_ATTR=0
 LINUX_P25_BRIDGE_ATTR_NO_CAS=0
 LINUX_P25_BRIDGE_ATTR_NO_COOKIE=0
@@ -85,6 +86,8 @@ Options:
                      alias for --linux-local2p-free-first; explicit compound lane name
   --linux-local2p-tls-fast-return
                      candidate only: fast-cookie lane with immediate owner-TLS hit return
+  --linux-local2p-exact-api
+                     candidate only: tls-fast-return lane with exact 64K/a8192 alloc/free API in benchmark
   --linux-p25-bridge-attr
                      preserve P25 bridge topology with wrapper attr CAS guard
   --linux-p25-bridge-attr-no-cas
@@ -293,6 +296,22 @@ while [[ $# -gt 0 ]]; do
       LINUX_LOCAL2P_SLIM_CHECK=1
       LINUX_LOCAL2P_FAST_COOKIE=1
       LINUX_LOCAL2P_TLS_FAST_RETURN=1
+      shift
+      ;;
+    --linux-local2p-exact-api)
+      LINUX_LOCAL2P=1
+      LINUX_LOCAL2P_TLS_PACKED=1
+      LINUX_LOCAL2P_TLS_INITIAL_EXEC=1
+      LINUX_LOCAL2P_DIRECT_ROUTE=1
+      LINUX_LOCAL2P_DIRECT_INIT=1
+      LINUX_LOCAL2P_OBJECT_NODE=1
+      LINUX_LOCAL2P_SAME_OWNER_FAST_STATE=1
+      LINUX_LOCAL2P_ROUTE_COOKIE=1
+      LINUX_LOCAL2P_REUSE_STATE_ONLY=1
+      LINUX_LOCAL2P_SLIM_CHECK=1
+      LINUX_LOCAL2P_FAST_COOKIE=1
+      LINUX_LOCAL2P_TLS_FAST_RETURN=1
+      LINUX_LOCAL2P_EXACT_API=1
       shift
       ;;
     --linux-p25-bridge-attr)
@@ -645,6 +664,7 @@ fi
   echo "linux_local2p_fast_cookie=${LINUX_LOCAL2P_FAST_COOKIE}"
   echo "linux_local2p_free_first=${LINUX_LOCAL2P_FREE_FIRST}"
   echo "linux_local2p_tls_fast_return=${LINUX_LOCAL2P_TLS_FAST_RETURN}"
+  echo "linux_local2p_exact_api=${LINUX_LOCAL2P_EXACT_API}"
   echo "linux_p25_bridge_attr=${LINUX_P25_BRIDGE_ATTR}"
   echo "linux_p25_bridge_attr_no_cas=${LINUX_P25_BRIDGE_ATTR_NO_CAS}"
   echo "linux_p25_bridge_attr_no_cookie=${LINUX_P25_BRIDGE_ATTR_NO_COOKIE}"
@@ -686,7 +706,12 @@ gcc "${COMMON_FLAGS[@]}" -shared \
   -pthread -ldl -o "$PRELOAD_HYBRID_LIB"
 
 echo "[linux][hz5] building benchmark: ${BENCH}"
+BENCH_ALIGNED_FLAGS=()
+if [[ "$LINUX_LOCAL2P_EXACT_API" -eq 1 ]]; then
+  BENCH_ALIGNED_FLAGS+=(-DBENCHLAB_HZ5_EXACT_LOCAL2P_API=1)
+fi
 gcc -O3 -Wall -Wextra -Werror -std=c11 -D_POSIX_C_SOURCE=200809L \
+  "${BENCH_ALIGNED_FLAGS[@]}" \
   -I"${HZ5_DIR}/include" \
   "${ROOT_DIR}/bench/bench_hz5_standalone_aligned64k.c" \
   -L"${OUT_DIR}" -Wl,-rpath,"${OUT_DIR}" -lhakozuna_hz5_standalone \

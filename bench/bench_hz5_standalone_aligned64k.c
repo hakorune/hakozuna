@@ -6,6 +6,10 @@
 #include <stdlib.h>
 #include <time.h>
 
+#ifndef BENCHLAB_HZ5_EXACT_LOCAL2P_API
+#define BENCHLAB_HZ5_EXACT_LOCAL2P_API 0
+#endif
+
 typedef struct WorkerArgs {
   uint64_t iters;
   size_t size;
@@ -23,7 +27,13 @@ static double now_sec(void) {
 static void* worker_main(void* arg) {
   WorkerArgs* args = (WorkerArgs*)arg;
   for (uint64_t i = 0; i < args->iters; ++i) {
+#if BENCHLAB_HZ5_EXACT_LOCAL2P_API
+    void* ptr = (args->size == 65536u && args->align == 8192u)
+                    ? hz5_local2p_alloc_64k_a8192()
+                    : hz5_aligned_alloc(args->size, args->align);
+#else
     void* ptr = hz5_aligned_alloc(args->size, args->align);
+#endif
     if (!ptr) {
       fprintf(stderr, "hz5_aligned_alloc failed iter=%llu size=%zu align=%zu\n",
               (unsigned long long)i, args->size, args->align);
@@ -38,7 +48,15 @@ static void* worker_main(void* arg) {
     }
     ((volatile unsigned char*)ptr)[0] = (unsigned char)i;
     ((volatile unsigned char*)ptr)[args->size - 1u] = (unsigned char)(i >> 8);
-    if (hz5_free(ptr) == HZ5_FREE_INVALID) {
+#if BENCHLAB_HZ5_EXACT_LOCAL2P_API
+    Hz5FreeResult free_result =
+        (args->size == 65536u && args->align == 8192u)
+            ? hz5_local2p_free_64k_a8192(ptr)
+            : hz5_free(ptr);
+#else
+    Hz5FreeResult free_result = hz5_free(ptr);
+#endif
+    if (free_result == HZ5_FREE_INVALID) {
       fprintf(stderr, "hz5_free rejected ptr=%p\n", ptr);
       args->status = 7;
       return NULL;

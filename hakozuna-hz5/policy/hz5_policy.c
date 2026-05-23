@@ -1254,6 +1254,33 @@ void* hz5_policy_alloc_aligned(size_t size, size_t align,
 #endif
 }
 
+void* hz5_policy_alloc_local2p_64k_a8192(void) {
+#if defined(__linux__) && BENCHLAB_HZ5_LINUX_LOCAL2P
+  hz5_policy_register_observers_once();
+  return hz5_policy_local2p_alloc(65536u,
+                                  BENCHLAB_HZ5_LINUX_LOCAL2P_ALIGN);
+#else
+  return NULL;
+#endif
+}
+
+Hz5FreeResult hz5_policy_free_local2p_64k_a8192(void* ptr) {
+#if defined(__linux__) && BENCHLAB_HZ5_LINUX_LOCAL2P
+  if (!ptr) {
+    return HZ5_FREE_OK_HZ5;
+  }
+  Hz5WrapperHdr* local2p_wrapped = NULL;
+  if (!hz5_policy_local2p_direct_decode(ptr, &local2p_wrapped)) {
+    return HZ5_FREE_INVALID;
+  }
+  hz5_trace_inc(HZ5_TRACE_WRAPPER_DECODE_OK);
+  return hz5_policy_local2p_free(local2p_wrapped, (uintptr_t)ptr);
+#else
+  (void)ptr;
+  return HZ5_FREE_INVALID;
+#endif
+}
+
 Hz5FreeResult hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_LOCAL2P && \
     BENCHLAB_HZ5_LINUX_LOCAL2P_FREE_FIRST

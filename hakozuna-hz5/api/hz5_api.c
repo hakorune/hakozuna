@@ -16,6 +16,14 @@ void* hz5_aligned_alloc(size_t size, size_t align) {
   return hz5_policy_alloc_aligned(size, align, &hooks);
 }
 
+void* hz5_local2p_alloc_64k_a8192(void) {
+  return hz5_policy_alloc_local2p_64k_a8192();
+}
+
+Hz5FreeResult hz5_local2p_free_64k_a8192(void* ptr) {
+  return hz5_policy_free_local2p_64k_a8192(ptr);
+}
+
 Hz5FreeResult hz5_free(void* ptr) {
   static const Hz5PolicyHooks hooks = {0};
   if (!ptr) {

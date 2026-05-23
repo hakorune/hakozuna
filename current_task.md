@@ -87,6 +87,9 @@ Design:
 - `hz5-local2p-tlsfast` is the alloc-side TLS hit fast-return candidate:
   owner-local TLS reuse restores only `local2p_state=ACTIVE` and returns the
   cached aligned user pointer without re-reading raw/bounds/header init paths
+- `hz5-local2p-exactapi` is the local-only exact API candidate: the aligned64k
+  benchmark calls `hz5_local2p_alloc_64k_a8192()` and
+  `hz5_local2p_free_64k_a8192()` to bypass generic alloc/free route dispatch
 - remote-batch is the current remote-free candidate: batch remote frees in the
   freeing thread before owner-inbox handoff
 - cleanup rule: commonize decode/cookie/state validation helpers, but keep
@@ -510,6 +513,50 @@ Interpretation:
 - it does not fix remote-free; keep `remotebatch` as the remote reference
 - remaining tcmalloc gap is now smaller but still visible in alloc/free
   instruction count and cycle count
+- safety smoke passed: `bench_hz5_standalone_safety`
+
+Exact API measurement:
+
+```text
+private/raw-results/linux/local2p_exactapi2_runs10
+
+local median:
+  hz5-local2p-exactapi              222.7M ops/s
+  hz5-local2p-tlsfast               214.7M ops/s
+  hz5-local2p-remotebatch           201.2M ops/s
+  hz5-local2p-fastcookie            198.6M ops/s
+  hz4                               131.3M ops/s
+  tcmalloc                          256.1M ops/s
+
+mixed final median:
+  hz5-local2p-tlsfast               222.6M ops/s
+  hz5-local2p-exactapi              217.8M ops/s
+  hz5-local2p-fastcookie            207.5M ops/s
+  hz4                               135.8M ops/s
+  tcmalloc                          270.6M ops/s
+
+remote pairs/s median:
+  hz5-local2p-remotebatch           14.23M
+  hz5-p25                           12.69M
+  hz4                               11.21M
+  hz5-local2p-tlsfast                8.18M
+  hz5-local2p-exactapi               7.51M
+  tcmalloc                           2.31M
+
+perf stat local 10M, one-run:
+  exactapi:  1.15B instructions, 336.8M cycles
+  tlsfast:   1.50B instructions, 355.6M cycles
+  tcmalloc:  1.31B instructions, 318.8M cycles
+```
+
+Interpretation:
+
+- `exactapi` is the new local-only speed reference for exact `64K/a8192`
+- `tlsfast` remains the better same-public-API local/mixed reference
+- `remotebatch` remains the remote-free reference
+- exact API reduces instruction count below tcmalloc, so the remaining local
+  gap is likely cycles from call boundaries, stores/fences, or cacheline
+  behavior rather than raw instruction count
 - safety smoke passed: `bench_hz5_standalone_safety`
 
 ## Branch

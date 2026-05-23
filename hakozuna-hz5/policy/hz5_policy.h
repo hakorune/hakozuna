@@ -16,6 +16,8 @@ typedef struct Hz5PolicyHooks {
 
 void* hz5_policy_alloc_aligned(size_t size, size_t align,
                                const Hz5PolicyHooks* hooks);
+void* hz5_policy_alloc_local2p_64k_a8192(void);
+Hz5FreeResult hz5_policy_free_local2p_64k_a8192(void* ptr);
 Hz5FreeResult hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks);
 
 #ifdef __cplusplus

@@ -754,6 +754,53 @@ Decision: promote `tlsfast` as the local/mixed speed reference. It is still not
 the remote-free reference; keep `remotebatch` for producer/consumer remote
 rows.
 
+### Exact API Candidate
+
+`hz5-linux-local2p-exact-api` keeps the `tlsfast` library path and changes the
+standalone aligned64k benchmark to call exact Local2P entrypoints:
+
+```c
+hz5_local2p_alloc_64k_a8192()
+hz5_local2p_free_64k_a8192(ptr)
+```
+
+This bypasses generic alloc/free route dispatch for the exact local-only row.
+It is not a general allocator API and does not change the remote or RSS
+benchmarks.
+
+RUNS=10 result:
+
+```text
+private/raw-results/linux/local2p_exactapi2_runs10
+
+local:
+  exactapi 222.7M ops/s
+  tlsfast  214.7M ops/s
+  tcmalloc 256.1M ops/s
+
+mixed:
+  tlsfast  222.6M ops/s
+  exactapi 217.8M ops/s
+  tcmalloc 270.6M ops/s
+
+remote pairs/s:
+  remotebatch 14.23M
+  p25         12.69M
+  exactapi     7.51M
+```
+
+One-run `perf stat` on local 10M:
+
+```text
+exactapi: 1.15B instructions, 336.8M cycles
+tlsfast:  1.50B instructions, 355.6M cycles
+tcmalloc: 1.31B instructions, 318.8M cycles
+```
+
+Decision: `exactapi` is the local-only exact API reference. Keep `tlsfast` as
+the same-public-API local/mixed reference and `remotebatch` as the remote-free
+reference.
+
 Overflow policy for the first candidate should be explicit and visible in the
 lane name or build metadata. Prefer keeping it simple:
 
