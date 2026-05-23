@@ -269,6 +269,15 @@ Examples:
 
 Diagnostic rows are not paper claims.
 
+Local2P-specific diagnostic switches:
+
+```text
+--linux-local2p-no-cookie
+--linux-local2p-no-cas
+```
+
+These are cost-isolation builds only. Keep them out of appendix defaults.
+
 ## Decision Rules
 
 Use these rules when adding a new result:

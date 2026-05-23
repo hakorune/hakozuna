@@ -210,6 +210,10 @@ Minimum state machine:
 ACTIVE -> FREED
 ```
 
+The optimized implementation uses `atomic_exchange(ACTIVE -> FREED)` rather
+than compare-exchange. The safety property is the same for this state machine:
+only one free can observe `ACTIVE`.
+
 The first safe candidate should reject invalid frees by:
 
 - wrapper decode failure
@@ -220,6 +224,15 @@ The first safe candidate should reject invalid frees by:
 - unsupported route
 
 Invalid owned-looking pointers must not fall back to HZ3/CRT or P43 release.
+
+Diagnostic-only cost switches exist for attribution experiments:
+
+```text
+--linux-local2p-no-cookie
+--linux-local2p-no-cas
+```
+
+Do not use those as paper or safety lanes.
 
 ## TLS Cache
 

@@ -105,6 +105,14 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_LOCAL2P_GLOBAL_CAP ((size_t)1024)
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LOCAL2P_NO_COOKIE
+#define BENCHLAB_HZ5_LINUX_LOCAL2P_NO_COOKIE 0
+#endif
+
+#ifndef BENCHLAB_HZ5_LINUX_LOCAL2P_NO_CAS
+#define BENCHLAB_HZ5_LINUX_LOCAL2P_NO_CAS 0
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS
 #define BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS 0
 #endif
@@ -394,14 +402,11 @@ static uint64_t hz5_policy_local2p_cookie(uintptr_t raw,
                                           size_t raw_bytes,
                                           uint32_t generation,
                                           uintptr_t owner) {
-  uint64_t mixed = (uint64_t)raw ^ ((uint64_t)aligned << 13) ^
-                   ((uint64_t)raw_bytes << 29) ^
-                   ((uint64_t)generation << 32) ^ (uint64_t)owner ^
-                   (uint64_t)(uintptr_t)&g_hz5_policy_local2p_secret_anchor ^
-                   UINT64_C(0x2f125a8192c0ffee);
-  mixed ^= mixed >> 33;
-  mixed ^= mixed << 17;
-  mixed ^= mixed >> 11;
+  uint64_t mixed =
+      (uint64_t)(raw ^ aligned ^ owner ^
+                 (uintptr_t)&g_hz5_policy_local2p_secret_anchor) ^
+      ((uint64_t)raw_bytes << 17) ^ ((uint64_t)generation << 32) ^
+      UINT64_C(0x2f125a8192c0ffee);
   return mixed ? mixed : UINT64_C(0x2f12);
 }
 
@@ -527,9 +532,13 @@ static void hz5_policy_local2p_init_header(Hz5WrapperHdr* header,
   uintptr_t owner = hz5_policy_local2p_owner_token();
   header->local2p_owner = owner;
   header->local2p_generation = generation;
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_NO_COOKIE
+  header->local2p_cookie = UINT64_C(0x2f12);
+#else
   header->local2p_cookie =
       hz5_policy_local2p_cookie(header->raw, aligned, header->raw_bytes,
                                 generation, owner);
+#endif
   atomic_store_explicit(&header->local2p_state, HZ5_LOCAL2P_STATE_ACTIVE,
                         memory_order_release);
 }
@@ -584,6 +593,7 @@ static Hz5FreeResult hz5_policy_local2p_free(Hz5WrapperHdr* header,
     return HZ5_FREE_INVALID;
   }
 
+#if !BENCHLAB_HZ5_LINUX_LOCAL2P_NO_COOKIE
   uint64_t expected_cookie = hz5_policy_local2p_cookie(
       header->raw, aligned, header->raw_bytes, header->local2p_generation,
       header->local2p_owner);
@@ -591,14 +601,26 @@ static Hz5FreeResult hz5_policy_local2p_free(Hz5WrapperHdr* header,
     hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INVALID_COOKIE);
     return HZ5_FREE_INVALID;
   }
+#endif
 
-  uint32_t expected_state = HZ5_LOCAL2P_STATE_ACTIVE;
-  if (!atomic_compare_exchange_strong_explicit(
-          &header->local2p_state, &expected_state, HZ5_LOCAL2P_STATE_FREED,
-          memory_order_acq_rel, memory_order_acquire)) {
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_NO_CAS
+  uint32_t state =
+      atomic_load_explicit(&header->local2p_state, memory_order_acquire);
+  if (state != HZ5_LOCAL2P_STATE_ACTIVE) {
     hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INVALID_STATE);
     return HZ5_FREE_INVALID;
   }
+  atomic_store_explicit(&header->local2p_state, HZ5_LOCAL2P_STATE_FREED,
+                        memory_order_release);
+#else
+  uint32_t old_state = atomic_exchange_explicit(
+      &header->local2p_state, HZ5_LOCAL2P_STATE_FREED,
+      memory_order_acq_rel);
+  if (old_state != HZ5_LOCAL2P_STATE_ACTIVE) {
+    hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INVALID_STATE);
+    return HZ5_FREE_INVALID;
+  }
+#endif
 
   if (header->local2p_owner != hz5_policy_local2p_owner_token()) {
     hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_REMOTE);

@@ -1634,3 +1634,34 @@ Local2P remote recycle control:
 - Smoke remote-free:
   `bench_hz5_standalone_remote64k 200000 65536 8192 1024` reached about
   `7.06M pairs/s`.
+
+Local2P safe hot-path optimization:
+
+- Added diagnostic build switches:
+  `--linux-local2p-no-cookie` and `--linux-local2p-no-cas`.
+- Cost isolation result on local `64K/a8192`, 10M iterations:
+  - fast baseline: about `124M ops/s`, `2.64B` instructions
+  - no-cookie diagnostic: about `146M ops/s`, `2.14B` instructions, unsafe
+    because mutated-cookie safety intentionally fails
+  - no-CAS diagnostic: about `139M ops/s`, safety smoke still passes
+- Kept cookie validation enabled, but simplified the Local2P attribution cookie
+  mix to reduce hot-path instructions.
+- Replaced Local2P free `compare_exchange` with `atomic_exchange`; double-free
+  detection remains intact because only the first free observes `ACTIVE`.
+- Safety smoke after the safe optimization: `hz5-standalone-safety ok`.
+- Perf after safe optimization, local `64K/a8192`, 10M iterations:
+  about `140M ops/s`, `2.42B` instructions.
+- Repeat5 HZ5-only focus:
+  - local: Local2P fast `136.4M`, P25 `67.5M`
+  - mixed final: Local2P fast `136.2M`, P25 `57.1M`
+  - remote pairs/s: Local2P fast `7.16M`, P25 `12.83M`
+  - RSS throughput: Local2P fast `50.2K`, P25 `62.1K`
+
+Conclusion:
+
+- Local2P exact local/mixed is now HZ4-class or slightly above the prior HZ4
+  median in this branch's Ubuntu measurements.
+- The next performance gap is not local-only HZ4 parity; it is either:
+  - tcmalloc's much shorter local hot path, or
+  - Local2P remote-free, which needs an owner-inbox/MPSC design instead of a
+    single global recycle stack.

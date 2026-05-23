@@ -10,6 +10,8 @@ LINUX_LOCAL2P_TLS_PACKED=0
 LINUX_LOCAL2P_TLS_INITIAL_EXEC=0
 LINUX_LOCAL2P_DIRECT_ROUTE=0
 LINUX_LOCAL2P_DIRECT_INIT=0
+LINUX_LOCAL2P_NO_COOKIE=0
+LINUX_LOCAL2P_NO_CAS=0
 LINUX_P25_BRIDGE_ATTR=0
 LINUX_P25_BRIDGE_ATTR_NO_CAS=0
 LINUX_P25_BRIDGE_ATTR_NO_COOKIE=0
@@ -44,6 +46,10 @@ Options:
                      initialize Local2P wrapper prefix directly
   --linux-local2p-fast
                      enable packed TLS, initial-exec, direct route, direct init
+  --linux-local2p-no-cookie
+                     diagnostic only: skip Local2P attribution cookie recompute
+  --linux-local2p-no-cas
+                     diagnostic only: replace Local2P ACTIVE->FREED CAS with load/store
   --linux-p25-bridge-attr
                      preserve P25 bridge topology with wrapper attr CAS guard
   --linux-p25-bridge-attr-no-cas
@@ -117,6 +123,16 @@ while [[ $# -gt 0 ]]; do
       LINUX_LOCAL2P_TLS_INITIAL_EXEC=1
       LINUX_LOCAL2P_DIRECT_ROUTE=1
       LINUX_LOCAL2P_DIRECT_INIT=1
+      shift
+      ;;
+    --linux-local2p-no-cookie)
+      LINUX_LOCAL2P=1
+      LINUX_LOCAL2P_NO_COOKIE=1
+      shift
+      ;;
+    --linux-local2p-no-cas)
+      LINUX_LOCAL2P=1
+      LINUX_LOCAL2P_NO_CAS=1
       shift
       ;;
     --linux-p25-bridge-attr)
@@ -210,6 +226,12 @@ done
 if [[ "$LINUX_LOCAL2P" -eq 1 && \
       ( "$LINUX_P25_BRIDGE_ATTR" -eq 1 || "$ENABLE_LINUX_P43" -eq 1 ) ]]; then
   echo "local2p, p25attr, and p43 lanes are mutually exclusive" >&2
+  exit 1
+fi
+
+if [[ "$LINUX_LOCAL2P_NO_COOKIE" -eq 1 && \
+      "$LINUX_LOCAL2P_NO_CAS" -eq 1 ]]; then
+  echo "local2p diagnostic variants are mutually exclusive" >&2
   exit 1
 fi
 
@@ -348,6 +370,12 @@ if [[ "$LINUX_LOCAL2P" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LOCAL2P_TLS_INITIAL_EXEC=1)
     COMMON_FLAGS+=(-ftls-model=initial-exec)
   fi
+  if [[ "$LINUX_LOCAL2P_NO_COOKIE" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LOCAL2P_NO_COOKIE=1)
+  fi
+  if [[ "$LINUX_LOCAL2P_NO_CAS" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LOCAL2P_NO_CAS=1)
+  fi
 fi
 
 if [[ "$ENABLE_LINUX_P43" -eq 1 ]]; then
@@ -406,6 +434,8 @@ fi
   echo "linux_local2p_tls_initial_exec=${LINUX_LOCAL2P_TLS_INITIAL_EXEC}"
   echo "linux_local2p_direct_route=${LINUX_LOCAL2P_DIRECT_ROUTE}"
   echo "linux_local2p_direct_init=${LINUX_LOCAL2P_DIRECT_INIT}"
+  echo "linux_local2p_no_cookie=${LINUX_LOCAL2P_NO_COOKIE}"
+  echo "linux_local2p_no_cas=${LINUX_LOCAL2P_NO_CAS}"
   echo "linux_p25_bridge_attr=${LINUX_P25_BRIDGE_ATTR}"
   echo "linux_p25_bridge_attr_no_cas=${LINUX_P25_BRIDGE_ATTR_NO_CAS}"
   echo "linux_p25_bridge_attr_no_cookie=${LINUX_P25_BRIDGE_ATTR_NO_COOKIE}"
