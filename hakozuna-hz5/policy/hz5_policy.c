@@ -133,6 +133,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_LOCAL2P_REUSE_STATE_ONLY 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LOCAL2P_SLIM_CHECK
+#define BENCHLAB_HZ5_LINUX_LOCAL2P_SLIM_CHECK 0
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS
 #define BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS 0
 #endif
@@ -712,6 +716,12 @@ static void* hz5_policy_local2p_alloc(size_t size, size_t align) {
 
 static Hz5FreeResult hz5_policy_local2p_free(Hz5WrapperHdr* header,
                                              uintptr_t aligned) {
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_SLIM_CHECK
+  if (!header) {
+    hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INVALID_COOKIE);
+    return HZ5_FREE_INVALID;
+  }
+#else
   if (!header ||
       header->source != HZ5_WRAPPER_SOURCE_LINUX_LOCAL2P ||
       header->requested != 65536u ||
@@ -719,6 +729,7 @@ static Hz5FreeResult hz5_policy_local2p_free(Hz5WrapperHdr* header,
     hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INVALID_COOKIE);
     return HZ5_FREE_INVALID;
   }
+#endif
 
 #if !BENCHLAB_HZ5_LINUX_LOCAL2P_NO_COOKIE
   uint64_t expected_cookie = hz5_policy_local2p_cookie(

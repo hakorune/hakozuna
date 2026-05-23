@@ -15,8 +15,8 @@ The target lane is standalone and fallback-free:
 
 ## Current Development Focus: Linux Local2P v2
 
-Status: object-node and route-cookie committed; reuse-state-only A/B in
-progress.
+Status: object-node, route-cookie, and reuse-state-only committed; slim-check
+A/B implemented.
 
 Goal:
 
@@ -28,7 +28,7 @@ Goal:
 Current candidate:
 
 ```text
-hz5-linux-local2p-reuse-state-only
+hz5-linux-local2p-slim-check
 ```
 
 Design:
@@ -46,7 +46,9 @@ Design:
   generic wrapper cookie
 - on TLS reuse, update only `local2p_state=ACTIVE`; do not rewrite owner,
   generation, or Local2P cookie
-- leave slim header as follow-up A/B lane
+- direct exact API was tested and rejected: it was slower than reusefast
+- next A/B: remove redundant source/requested/raw_bytes checks after direct
+  Local2P decode
 
 Expected first measurement:
 
@@ -156,6 +158,44 @@ Interpretation:
   speed win
 - 10M perf smoke dropped to about 1.80B instructions
 - remaining tcmalloc gap is mostly direct header/API shape and RSS/source policy
+
+Direct exact API note:
+
+- `hz5-linux-local2p-direct-exact-api` was tested as an API/route-dispatch A/B.
+- It was slower than `reusefast` in RUNS=10, so the public exact API change was
+  not kept.
+- Measurement folder: `private/raw-results/linux/local2p_directapi_runs10`
+
+Slim-check measurement:
+
+```text
+private/raw-results/linux/local2p_slimcheck_runs10
+
+local median:
+  hz5-local2p-slimcheck  198.4M ops/s
+  hz5-local2p-reusefast  186.9M ops/s
+  hz4                    132.3M ops/s
+  tcmalloc               257.8M ops/s
+
+mixed final median:
+  hz5-local2p-slimcheck  204.4M ops/s
+  hz5-local2p-reusefast  191.6M ops/s
+  hz4                    137.2M ops/s
+  tcmalloc               269.2M ops/s
+
+remote pairs/s median:
+  hz5-local2p-slimcheck    7.97M
+  hz5-local2p-reusefast    8.29M
+  hz5-p25                 12.51M
+  hz4                     11.17M
+  tcmalloc                 2.39M
+```
+
+Interpretation:
+
+- slim-check is a real local/mixed speed win
+- it slightly hurts remote, so it should remain a local-speed candidate
+- remaining local gap to tcmalloc is now about 60M ops/s rather than 100M+
 
 ## Branch
 

@@ -17,6 +17,7 @@ LINUX_LOCAL2P_OBJECT_NODE=0
 LINUX_LOCAL2P_SAME_OWNER_FAST_STATE=0
 LINUX_LOCAL2P_ROUTE_COOKIE=0
 LINUX_LOCAL2P_REUSE_STATE_ONLY=0
+LINUX_LOCAL2P_SLIM_CHECK=0
 LINUX_P25_BRIDGE_ATTR=0
 LINUX_P25_BRIDGE_ATTR_NO_CAS=0
 LINUX_P25_BRIDGE_ATTR_NO_COOKIE=0
@@ -65,6 +66,8 @@ Options:
                      candidate only: fast-state lane using Local2P cookie as direct route guard
   --linux-local2p-reuse-state-only
                      candidate only: route-cookie lane updating only state on TLS reuse
+  --linux-local2p-slim-check
+                     candidate only: reuse-state-only lane with reduced Local2P free checks
   --linux-p25-bridge-attr
                      preserve P25 bridge topology with wrapper attr CAS guard
   --linux-p25-bridge-attr-no-cas
@@ -196,6 +199,19 @@ while [[ $# -gt 0 ]]; do
       LINUX_LOCAL2P_SAME_OWNER_FAST_STATE=1
       LINUX_LOCAL2P_ROUTE_COOKIE=1
       LINUX_LOCAL2P_REUSE_STATE_ONLY=1
+      shift
+      ;;
+    --linux-local2p-slim-check)
+      LINUX_LOCAL2P=1
+      LINUX_LOCAL2P_TLS_PACKED=1
+      LINUX_LOCAL2P_TLS_INITIAL_EXEC=1
+      LINUX_LOCAL2P_DIRECT_ROUTE=1
+      LINUX_LOCAL2P_DIRECT_INIT=1
+      LINUX_LOCAL2P_OBJECT_NODE=1
+      LINUX_LOCAL2P_SAME_OWNER_FAST_STATE=1
+      LINUX_LOCAL2P_ROUTE_COOKIE=1
+      LINUX_LOCAL2P_REUSE_STATE_ONLY=1
+      LINUX_LOCAL2P_SLIM_CHECK=1
       shift
       ;;
     --linux-p25-bridge-attr)
@@ -454,6 +470,9 @@ if [[ "$LINUX_LOCAL2P" -eq 1 ]]; then
   if [[ "$LINUX_LOCAL2P_REUSE_STATE_ONLY" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LOCAL2P_REUSE_STATE_ONLY=1)
   fi
+  if [[ "$LINUX_LOCAL2P_SLIM_CHECK" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LOCAL2P_SLIM_CHECK=1)
+  fi
 fi
 
 if [[ "$ENABLE_LINUX_P43" -eq 1 ]]; then
@@ -519,6 +538,7 @@ fi
   echo "linux_local2p_same_owner_fast_state=${LINUX_LOCAL2P_SAME_OWNER_FAST_STATE}"
   echo "linux_local2p_route_cookie=${LINUX_LOCAL2P_ROUTE_COOKIE}"
   echo "linux_local2p_reuse_state_only=${LINUX_LOCAL2P_REUSE_STATE_ONLY}"
+  echo "linux_local2p_slim_check=${LINUX_LOCAL2P_SLIM_CHECK}"
   echo "linux_p25_bridge_attr=${LINUX_P25_BRIDGE_ATTR}"
   echo "linux_p25_bridge_attr_no_cas=${LINUX_P25_BRIDGE_ATTR_NO_CAS}"
   echo "linux_p25_bridge_attr_no_cookie=${LINUX_P25_BRIDGE_ATTR_NO_COOKIE}"

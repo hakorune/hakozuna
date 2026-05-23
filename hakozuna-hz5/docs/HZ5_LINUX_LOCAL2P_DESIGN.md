@@ -434,6 +434,25 @@ carry the generation. The candidate keeps sequential double-free-before-reuse
 detection through the state field while avoiding redundant owner/cookie writes
 on owner-local reuse.
 
+### Slim-Check Candidate
+
+`hz5-linux-local2p-slim-check` keeps reuse-state-only and reduces duplicate
+free-time checks after direct Local2P decode:
+
+```text
+direct decode:
+  magic/layout/source/raw checks
+
+local2p free:
+  Local2P cookie check
+  state transition
+  owner-local or remote recycle
+```
+
+The generic `source/requested/raw_bytes` checks are skipped only in this
+candidate because the exact route has already been narrowed by direct decode and
+the Local2P cookie still includes the raw bytes value.
+
 Overflow policy for the first candidate should be explicit and visible in the
 lane name or build metadata. Prefer keeping it simple:
 
