@@ -180,6 +180,28 @@ linux-p11-speed-core:
   measure before creating a new SmallA8192 route
 ```
 
+Build selector:
+
+```text
+--linux-p11-speed-core
+```
+
+Ubuntu result:
+
+```text
+p11_speed_core_small_a8192_runs5_20260524_035412:
+  4096:8192  hz5 43.6M vs hz4 112.4M vs tcmalloc 258.6M
+  8192:8192  hz5 43.8M vs hz4  99.9M vs tcmalloc 257.9M
+
+p11_speed_core_local2p_small_a8192_runs3_20260524_035441:
+  4096:8192  hz5 47.9M vs hz4 115.9M vs tcmalloc 256.4M
+  8192:8192  hz5 45.7M vs hz4 100.3M vs tcmalloc 257.6M
+```
+
+Conclusion: P11 speed-core is not sufficient on Ubuntu. Keep it as a diagnostic
+knob. If the small exact rows need to compete, create a separate SmallA8192
+route/profile.
+
 ### `p25attr`
 
 Path shape:

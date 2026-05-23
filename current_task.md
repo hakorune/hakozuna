@@ -85,6 +85,46 @@ Do not broaden the Local2P claim to 4K/8K. If those rows matter, first measure
 the existing P2 route with `HZ5_P11_SPEED_CORE=1`; only add a separate
 SmallA8192 lane if the P11 speed-core A/B is not enough.
 
+P11 speed-core A/B:
+
+```text
+build selector:
+  --linux-p11-speed-core
+
+standalone compare selector:
+  --hz5-p11-speed-core
+
+scope:
+  existing P2 run/tcache route for 4096:8192 and 8192:8192
+  no Local2P policy change
+```
+
+Measured result:
+
+```text
+private/raw-results/linux/p11_speed_core_small_a8192_runs5_20260524_035412
+
+P11 speed-core only, RUNS=5, 1M iters:
+  4096:8192  hz5 43.6M, hz4 112.4M, tcmalloc 258.6M, system 49.1M
+  8192:8192  hz5 43.8M, hz4  99.9M, tcmalloc 257.9M, system 47.8M
+  65536:8192 hz5 65.6M, hz4 130.4M, tcmalloc 256.9M, system 50.0M
+
+private/raw-results/linux/p11_speed_core_local2p_small_a8192_runs3_20260524_035441
+
+P11 speed-core + Local2P-fast, RUNS=3, 1M iters:
+  4096:8192  hz5 47.9M, hz4 115.9M, tcmalloc 256.4M, system 48.0M
+  8192:8192  hz5 45.7M, hz4 100.3M, tcmalloc 257.6M, system 46.8M
+  65536:8192 hz5 141.8M, hz4 132.7M, tcmalloc 253.5M, system 49.8M
+```
+
+Interpretation:
+
+- `HZ5_P11_SPEED_CORE=1` is not enough on Ubuntu/Linux for 4K/8K a8192.
+- 64K remains separate: Local2P-fast improves that row, but does not help the
+  P2 small exact route.
+- If 4K/8K matter, the next design should be a separate `SmallA8192` route
+  with a tcmalloc-like object-node cache, not more P11 cleanup.
+
 Design:
 
 - keep exact route only: `size=65536`, `align=8192`

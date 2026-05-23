@@ -28,6 +28,7 @@ LINUX_LOCAL2P_EXACT_API=0
 LINUX_LOCAL2P_SINGLE_SLOT_TLS=0
 LINUX_LOCAL2P_SPEED_LINKFLAGS=0
 LINUX_LOCAL2P_LOCAL_OVERFLOW_GLOBAL=0
+LINUX_P11_SPEED_CORE=0
 LINUX_P25_BRIDGE_ATTR=0
 LINUX_P25_BRIDGE_ATTR_NO_CAS=0
 LINUX_P25_BRIDGE_ATTR_NO_COOKIE=0
@@ -100,6 +101,8 @@ Options:
                      candidate only: exact-api lane with speed-oriented compile/link flags
   --linux-local2p-rss-retain
                      candidate only: speed-linkflags lane retaining local TLS overflow in bounded global cache
+  --linux-p11-speed-core
+                     diagnostic only: compile the legacy P2 run/tcache path with HZ5_P11_SPEED_CORE=1
   --linux-p25-bridge-attr
                      preserve P25 bridge topology with wrapper attr CAS guard
   --linux-p25-bridge-attr-no-cas
@@ -330,6 +333,10 @@ while [[ $# -gt 0 ]]; do
       LINUX_LOCAL2P_LOCAL_OVERFLOW_GLOBAL=1
       shift
       ;;
+    --linux-p11-speed-core)
+      LINUX_P11_SPEED_CORE=1
+      shift
+      ;;
     --linux-p25-bridge-attr)
       LINUX_P25_BRIDGE_ATTR=1
       shift
@@ -529,6 +536,7 @@ COMMON_FLAGS=(
   -DBENCHLAB_HZ5_STANDALONE_EXACT_ONLY=1
   -DBENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192=1
   -DBENCHLAB_HZ5_P25_STATS=0
+  -DHZ5_P11_SPEED_CORE="${LINUX_P11_SPEED_CORE}u"
   -DHZ5_DESC_SOURCE_COMMIT=\"${SOURCE_COMMIT}\"
   -I"${HZ5_DIR}/include"
   -I"${HZ5_DIR}/contract"
@@ -706,6 +714,7 @@ fi
   echo "linux_local2p_single_slot_tls=${LINUX_LOCAL2P_SINGLE_SLOT_TLS}"
   echo "linux_local2p_speed_linkflags=${LINUX_LOCAL2P_SPEED_LINKFLAGS}"
   echo "linux_local2p_local_overflow_global=${LINUX_LOCAL2P_LOCAL_OVERFLOW_GLOBAL}"
+  echo "linux_p11_speed_core=${LINUX_P11_SPEED_CORE}"
   echo "linux_p25_bridge_attr=${LINUX_P25_BRIDGE_ATTR}"
   echo "linux_p25_bridge_attr_no_cas=${LINUX_P25_BRIDGE_ATTR_NO_CAS}"
   echo "linux_p25_bridge_attr_no_cookie=${LINUX_P25_BRIDGE_ATTR_NO_COOKIE}"
