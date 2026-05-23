@@ -727,6 +727,62 @@ static void hz5_policy_local2p_init_header(Hz5WrapperHdr* header,
                         memory_order_release);
 }
 
+static inline int hz5_policy_local2p_validate_free_header(Hz5WrapperHdr* header,
+                                                          uintptr_t aligned) {
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_SLIM_CHECK
+  if (!header) {
+    hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INVALID_COOKIE);
+    return 0;
+  }
+#else
+  if (!header ||
+      header->source != HZ5_WRAPPER_SOURCE_LINUX_LOCAL2P ||
+      header->requested != 65536u ||
+      header->raw_bytes != BENCHLAB_HZ5_LINUX_LOCAL2P_RAW_BYTES) {
+    hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INVALID_COOKIE);
+    return 0;
+  }
+#endif
+
+#if !BENCHLAB_HZ5_LINUX_LOCAL2P_NO_COOKIE
+  uint64_t expected_cookie = hz5_policy_local2p_cookie(
+      header->raw, aligned, header->raw_bytes, header->local2p_generation,
+      header->local2p_owner);
+  if (header->local2p_cookie != expected_cookie) {
+    hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INVALID_COOKIE);
+    return 0;
+  }
+#endif
+
+  return 1;
+}
+
+static inline Hz5FreeResult
+hz5_policy_local2p_recycle_local(Hz5WrapperHdr* header, uintptr_t aligned) {
+  (void)hz5_policy_local2p_push(
+      hz5_policy_local2p_node_from_header(header, aligned));
+  return HZ5_FREE_OK_HZ5;
+}
+
+static inline Hz5FreeResult
+hz5_policy_local2p_recycle_remote(Hz5WrapperHdr* header, uintptr_t aligned) {
+  hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_REMOTE);
+  void* node_ptr = hz5_policy_local2p_node_from_header(header, aligned);
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_OWNER_INBOX && \
+    BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_REMOTE_BATCH
+  if (hz5_policy_local2p_remote_batch_push(header->local2p_owner, node_ptr)) {
+    return HZ5_FREE_OK_HZ5;
+  }
+#endif
+  if (hz5_policy_local2p_inbox_push(header->local2p_owner, node_ptr)) {
+    return HZ5_FREE_OK_HZ5;
+  }
+#endif
+  (void)hz5_policy_local2p_global_push(node_ptr);
+  return HZ5_FREE_OK_HZ5;
+}
+
 static void* hz5_policy_local2p_alloc(size_t size, size_t align) {
   if (!hz5_policy_local2p_exact(size, align)) {
     hz5_trace_inc(HZ5_TRACE_ALLOC_LOCAL2P_ESCAPE);
@@ -801,30 +857,9 @@ static void* hz5_policy_local2p_alloc(size_t size, size_t align) {
 
 static Hz5FreeResult hz5_policy_local2p_free(Hz5WrapperHdr* header,
                                              uintptr_t aligned) {
-#if BENCHLAB_HZ5_LINUX_LOCAL2P_SLIM_CHECK
-  if (!header) {
-    hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INVALID_COOKIE);
+  if (!hz5_policy_local2p_validate_free_header(header, aligned)) {
     return HZ5_FREE_INVALID;
   }
-#else
-  if (!header ||
-      header->source != HZ5_WRAPPER_SOURCE_LINUX_LOCAL2P ||
-      header->requested != 65536u ||
-      header->raw_bytes != BENCHLAB_HZ5_LINUX_LOCAL2P_RAW_BYTES) {
-    hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INVALID_COOKIE);
-    return HZ5_FREE_INVALID;
-  }
-#endif
-
-#if !BENCHLAB_HZ5_LINUX_LOCAL2P_NO_COOKIE
-  uint64_t expected_cookie = hz5_policy_local2p_cookie(
-      header->raw, aligned, header->raw_bytes, header->local2p_generation,
-      header->local2p_owner);
-  if (header->local2p_cookie != expected_cookie) {
-    hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INVALID_COOKIE);
-    return HZ5_FREE_INVALID;
-  }
-#endif
 
   uintptr_t current_owner = hz5_policy_local2p_owner_token();
 
@@ -847,9 +882,7 @@ static Hz5FreeResult hz5_policy_local2p_free(Hz5WrapperHdr* header,
     }
     atomic_store_explicit(&header->local2p_state, HZ5_LOCAL2P_STATE_FREED,
                           memory_order_release);
-    (void)hz5_policy_local2p_push(
-        hz5_policy_local2p_node_from_header(header, aligned));
-    return HZ5_FREE_OK_HZ5;
+    return hz5_policy_local2p_recycle_local(header, aligned);
   }
 
   uint32_t old_state = atomic_exchange_explicit(
@@ -870,27 +903,10 @@ static Hz5FreeResult hz5_policy_local2p_free(Hz5WrapperHdr* header,
 #endif
 
   if (header->local2p_owner != current_owner) {
-    hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_REMOTE);
-    void* node_ptr = hz5_policy_local2p_node_from_header(header, aligned);
-#if BENCHLAB_HZ5_LINUX_LOCAL2P_OWNER_INBOX && \
-    BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
-#if BENCHLAB_HZ5_LINUX_LOCAL2P_REMOTE_BATCH
-    if (hz5_policy_local2p_remote_batch_push(header->local2p_owner,
-                                             node_ptr)) {
-      return HZ5_FREE_OK_HZ5;
-    }
-#endif
-    if (hz5_policy_local2p_inbox_push(header->local2p_owner, node_ptr)) {
-      return HZ5_FREE_OK_HZ5;
-    }
-#endif
-    (void)hz5_policy_local2p_global_push(node_ptr);
-    return HZ5_FREE_OK_HZ5;
+    return hz5_policy_local2p_recycle_remote(header, aligned);
   }
 
-  (void)hz5_policy_local2p_push(
-      hz5_policy_local2p_node_from_header(header, aligned));
-  return HZ5_FREE_OK_HZ5;
+  return hz5_policy_local2p_recycle_local(header, aligned);
 }
 
 static int hz5_policy_local2p_direct_decode(void* ptr,

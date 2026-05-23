@@ -18,7 +18,7 @@ The target lane is standalone and fallback-free:
 Status: object-node, route-cookie, reuse-state-only, slim-check, and
 fast-cookie measured; offset-cookie A/B was rejected; free-first dispatch A/B
 was measured and kept as a mixed-speed candidate; remote-batch was measured and
-kept as the current remote-free candidate.
+kept as the current remote-free candidate; source cleanup phase is in progress.
 
 Goal:
 
@@ -58,6 +58,10 @@ Design:
   remains the local-speed reference
 - remote-batch is the current remote-free candidate: batch remote frees in the
   freeing thread before owner-inbox handoff
+- cleanup rule: commonize decode/cookie/state validation helpers, but keep
+  local TLS recycle and remote handoff policy separate
+- cleanup done so far: split Local2P free path into validate/recycle-local/
+  recycle-remote helpers without changing lane selectors
 
 Measurement policy:
 
@@ -327,6 +331,32 @@ Interpretation:
   remain a remote lane rather than replacing the local/mixed reference
 - next remote attack should tune batch cap / flush policy, not local header
   dispatch
+
+Cleanup smoke:
+
+```text
+private/raw-results/linux/local2p_cleanup_smoke_runs3
+
+local median:
+  hz5-local2p-fastcookie   204.3M ops/s
+  hz5-local2p-remotebatch  202.1M ops/s
+  hz5-p25                   66.7M ops/s
+  hz4                      127.9M ops/s
+  tcmalloc                 255.8M ops/s
+
+remote pairs/s median:
+  hz5-local2p-remotebatch  15.65M
+  hz5-p25                  11.88M
+  hz4                      12.47M
+  hz5-local2p-fastcookie    8.39M
+  tcmalloc                  2.44M
+```
+
+Interpretation:
+
+- Local2P free-path helper split did not break safety or the main route shapes
+- helper split is acceptable as source cleanup; keep future commonization at the
+  validation/recycle-boundary level unless measurements justify more
 
 ## Branch
 

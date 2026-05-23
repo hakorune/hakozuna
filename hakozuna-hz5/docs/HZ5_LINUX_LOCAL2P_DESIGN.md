@@ -227,6 +227,24 @@ RSS lanes may optimize cap/release/decommit
 Never promote a local-speed improvement as a remote-free improvement unless the
 producer/consumer row confirms it.
 
+Implementation organization follows the same boundary:
+
+```text
+common helpers:
+  local2p_validate_free_header
+  local2p_recycle_local
+  local2p_recycle_remote
+
+local helper:
+  owner-local TLS object-node push
+
+remote helper:
+  remote trace, optional batch, optional owner inbox, global fallback
+```
+
+The helpers are intentionally small and inline-friendly. They exist to make the
+route boundary explicit, not to force one shared local/remote fast path.
+
 ### Remote-Batch Candidate
 
 `hz5-linux-local2p-remote-batch` is a remote-only A/B on top of owner inbox.
