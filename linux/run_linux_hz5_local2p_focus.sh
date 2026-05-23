@@ -18,7 +18,7 @@ PROBE_SIZE=262144
 PROBE_ALIGN=8192
 PROBE_ATTEMPTS=256
 QUEUE=1024
-ALLOCATORS="hz5-local2p-linkflags,hz5-local2p-rssretain2048,hz5-local2p-remotebatch,hz5-p25,hz4,tcmalloc,mimalloc,system"
+ALLOCATORS="hz5-local2p-linkflags,hz5-local2p-rssretain2048tls,hz5-local2p-remotebatch,hz5-p25,hz4,tcmalloc,mimalloc,system"
 OUTDIR="${ROOT_DIR}/private/raw-results/linux/hz5_local2p_focus_$(date +%Y%m%d_%H%M%S)"
 SKIP_BUILD=0
 SKIP_PREPARE_ALLOCATORS=0
@@ -53,7 +53,7 @@ Options:
 
 Default allocator set:
   hz5-local2p-linkflags      low-final-RSS local/mixed exact speed profile
-  hz5-local2p-rssretain2048  RSS-throughput retained-cache profile
+  hz5-local2p-rssretain2048tls  RSS-throughput retained-cache profile
   hz5-local2p-remotebatch    producer/consumer remote-free profile
   hz5-p25,hz4,tcmalloc,mimalloc,system controls
 
@@ -392,13 +392,13 @@ write_allocator_metadata() {
     hz5-local2p-rssretain2048)
       printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
         "$alloc" "hz5-linux-local2p-rss-retain-cap2048" "local2p" \
-        "appendix-reporting-row" "rss-throughput-retained-64k-a8192" \
+        "rss-control" "rss-throughput-retained-64k-a8192" \
         "retains-full-2048-block-rss-plateau-working-set"
       ;;
     hz5-local2p-rssretain2048tls)
       printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
         "$alloc" "hz5-linux-local2p-rss-retain-cap2048-tls2048" "local2p" \
-        "rss-candidate" "rss-plateau-exact-64k-a8192" \
+        "appendix-reporting-row" "rss-throughput-retained-64k-a8192" \
         "retains-2048-block-working-set-in-owner-local-tls-cache"
       ;;
     hz5-local2p-rssretain256|hz5-local2p-rssretain512|\

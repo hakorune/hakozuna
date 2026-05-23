@@ -42,9 +42,9 @@ Current policy:
 ## Current Development Focus: Linux Local2P v2
 
 Status: Local2P has split into explicit Linux profiles. `linkflags` is the
-low-final-RSS local/mixed exact speed profile, `rssretain2048` is the retained
-RSS-throughput profile, and `remotebatch` is the producer/consumer remote-free
-profile. Older Local2P evolution lanes remain diagnostic.
+low-final-RSS local/mixed exact speed profile, `rssretain2048tls` is the
+retained RSS-throughput profile, and `remotebatch` is the producer/consumer
+remote-free profile. Older Local2P evolution lanes remain diagnostic.
 
 Goal:
 
@@ -57,12 +57,13 @@ Current lane roles:
 
 ```text
 local low-final-RSS:    hz5-local2p-linkflags
-RSS throughput:         hz5-local2p-rssretain2048
+RSS throughput:         hz5-local2p-rssretain2048tls
 remote-free:            hz5-local2p-remotebatch
 small exact guard:      4096:8192 and 8192:8192 through P2 run/tcache
 P25 control:            hz5-p25
 public API control:     hz5-local2p-tlsfast
 exact API control:      hz5-local2p-exactapi
+RSS control:            hz5-local2p-rssretain2048
 diagnostic cap sweep:   hz5-local2p-rssretain256/512/1024/1536
 diagnostic evolution:   object/faststate/routecookie/reusefast/slimcheck/
                         fastcookie/freefirst/slot1/inbox/remotebatch8/32
@@ -78,8 +79,8 @@ Comparison priority:
    already matched or beaten by linkflags; do not spend more effort here first
 
 2. tcmalloc/HZ4 RSS plateau:
-   rssretain2048 is close to HZ4 and below tcmalloc; this is the best remaining
-   paper-facing comparison axis
+   rssretain2048tls is near-HZ4 and below tcmalloc; accept it as the retained
+   RSS-throughput profile unless one optional B-lite experiment clearly wins
 
 3. HZ4/P25/tcmalloc remote-free:
    remotebatch already wins the producer/consumer row; only small cap/flush
@@ -128,12 +129,11 @@ RSS plateau:
 
 Interpretation:
 
-- The three reporting profiles are coherent:
+- The three profile split is coherent in this baseline:
   `linkflags` for low-final-RSS local speed, `rssretain2048` for retained RSS
   throughput, and `remotebatch` for remote-free.
-- `rssretain2048` is the best next paper-facing comparison axis because it is
-  close to HZ4 on RSS throughput and still competitive with tcmalloc on mixed
-  final throughput.
+- This earlier reporting-row run used `rssretain2048`; the later
+  `rssretain2048tls` A/B supersedes it for the retained RSS-throughput row.
 - `mimalloc` remains an external comparison row with an unfavorable aligned
   path on this workload; do not use it as the main optimization target.
 
@@ -181,9 +181,30 @@ Interpretation:
   mutex path: `rssretain2048tls` still spends about 319M cycles / 253M
   instructions versus tcmalloc about 289M cycles / 240M instructions in a
   three-repeat perf stat probe.
-- Keep `rssretain2048` as the reporting row for now; `rssretain2048tls` is a
-  candidate if we decide the extra per-thread TLS retention is an acceptable
-  profile contract.
+- Adopt `rssretain2048tls` as the retained RSS-throughput reporting row.
+  `rssretain2048` remains the conservative global-retain control.
+
+Development stop rule:
+
+```text
+default:
+  stop broad allocator development and move to reproducibility/paper wording
+
+optional single experiment:
+  B-lite retained pointer-array cache
+
+acceptance:
+  RSS plateau >= rssretain2048tls + 5%
+  final RSS <= rssretain2048tls + 5%
+  mixed final >= rssretain2048tls - 3%
+  local >= rssretain2048tls - 3%
+  safety smoke clean
+
+no-go:
+  +3% RSS or less
+  any local/mixed regression that complicates the profile
+  any safety or wording complexity
+```
 
 Current exact-a8192 route split:
 
@@ -1141,7 +1162,7 @@ Interpretation:
   RSS throughput.
 - cap512/cap256 mostly preserve lower RSS but do not solve plateau throughput.
 - For paper/reporting, use three profiles rather than one blended claim:
-  `linkflags` = low final RSS speed lane, `rssretain2048` = RSS throughput lane,
+  `linkflags` = low final RSS speed lane, `rssretain2048tls` = RSS throughput lane,
   `remotebatch` = remote-free lane.
 - Safety passed for new cap256/cap512/cap1536 lanes.
 
@@ -1187,7 +1208,7 @@ Lane organization checkpoint:
 change:
   linux/run_linux_hz5_local2p_focus.sh
     default allocator list now uses the reporting set:
-    linkflags, rssretain2048, remotebatch, p25, hz4, tcmalloc, mimalloc,
+    linkflags, rssretain2048tls, remotebatch, p25, hz4, tcmalloc, mimalloc,
     system
 
   linux/run_paper_allocator_suite.sh
@@ -1203,7 +1224,7 @@ Interpretation:
 - default runs no longer rebuild and report every historical Local2P A/B lane
 - diagnostic lanes remain selectable with `--allocators`
 - paper-facing summaries should use three HZ5 rows only when all three workload
-  families are relevant: `linkflags`, `rssretain2048`, and `remotebatch`
+  families are relevant: `linkflags`, `rssretain2048tls`, and `remotebatch`
 
 ## Branch
 

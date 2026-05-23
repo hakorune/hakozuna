@@ -173,7 +173,7 @@ Current HZ5 appendix candidates:
 
 ```text
 hz5-local2p-linkflags       local/mixed exact speed with low final RSS
-hz5-local2p-rssretain2048   retained-cache RSS-throughput profile
+hz5-local2p-rssretain2048tls retained-cache RSS-throughput profile
 hz5-local2p-remotebatch     producer/consumer remote-free profile
 hz5-p25
 hz4
@@ -186,8 +186,8 @@ Interpretation rules:
 
 - `hz5-local2p-linkflags` may claim local/mixed exact `64K/a8192` throughput
   with low final RSS.
-- `hz5-local2p-rssretain2048` may claim RSS plateau throughput for the retained
-  2048-block working set, with retained RSS.
+- `hz5-local2p-rssretain2048tls` may claim RSS plateau throughput for the
+  retained 2048-block working set, with retained RSS.
 - `hz5-local2p-remotebatch` may claim producer/consumer remote-free behavior.
 - These profiles are not general allocator profiles unless HZ5 passes
   paper-main workloads.
@@ -272,7 +272,7 @@ Run from this repository:
   --mixed-rounds 3 \
   --mixed-iters 1000000 \
   --probe-attempts 256 \
-  --allocators hz5-local2p-linkflags,hz5-local2p-rssretain2048,hz5-local2p-remotebatch,hz5-p25,hz4,tcmalloc,mimalloc,system \
+  --allocators hz5-local2p-linkflags,hz5-local2p-rssretain2048tls,hz5-local2p-remotebatch,hz5-p25,hz4,tcmalloc,mimalloc,system \
   --skip-prepare-allocators \
   --outdir private/raw-results/linux/local2p_focus_runs10
 ```
@@ -304,7 +304,7 @@ and currently excludes HZ5 unless an HZ5 LD_PRELOAD lane is provided.
 Current reporting rows:
 
 - `hz5-local2p-linkflags` is the low-final-RSS local/mixed exact speed profile.
-- `hz5-local2p-rssretain2048` is the retained-cache RSS-throughput profile.
+- `hz5-local2p-rssretain2048tls` is the retained-cache RSS-throughput profile.
 - `hz5-local2p-remotebatch` is the producer/consumer remote-free profile.
 - Older Local2P evolution lanes are diagnostics and should stay out of appendix
   defaults unless the table is explicitly an implementation A/B.

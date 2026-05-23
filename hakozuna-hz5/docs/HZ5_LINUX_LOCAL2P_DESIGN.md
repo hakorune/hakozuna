@@ -11,7 +11,7 @@ Current reporting split:
 
 ```text
 hz5-local2p-linkflags      low-final-RSS local/mixed exact speed profile
-hz5-local2p-rssretain2048  retained-cache RSS-throughput profile
+hz5-local2p-rssretain2048tls  retained-cache RSS-throughput profile
 hz5-local2p-remotebatch    producer/consumer remote-free profile
 ```
 
@@ -410,9 +410,10 @@ Windows P43i/P45 port.
 2. `local2p-remote`
    - goal: beat P25/HZ4 producer/consumer remote-free
    - current profile: `hz5-local2p-remotebatch`
-3. `rss-control`
-   - goal: keep low final RSS without confusing the speed lane
-   - current profile: `hz5-local2p-rssretain2048`
+3. `rss-throughput`
+   - goal: retain the plateau working set without confusing the speed lane
+   - current profile: `hz5-local2p-rssretain2048tls`
+   - control profile: `hz5-local2p-rssretain2048`
 
 Do not add remote inbox or RSS retention policy to the speed lane only for code
 sharing. The current reporting rows deliberately keep local, remote, and RSS
@@ -1036,6 +1037,27 @@ The curve is workload-size dependent: retaining part of a 2048-block plateau
 helps RSS throughput only modestly, while retaining the full plateau recovers
 HZ4-class reuse. Treat cap2048 as the RSS-throughput profile and cap1024/1536 as
 diagnostic points, not default policy.
+
+TLS-cap follow-up:
+
+```text
+private/raw-results/linux/local2p_rsstls2048_runs10_20260524_041238
+
+RSS plateau:
+  tcmalloc                       379.5K ops/s, final RSS 138.9MB
+  hz4                            329.6K ops/s, final RSS 149.2MB
+  hz5-local2p-rssretain2048tls   325.3K ops/s, final RSS 153.1MB
+  hz5-local2p-rssretain2048      321.5K ops/s, final RSS 153.1MB
+
+mixed final:
+  hz5-local2p-rssretain2048tls   274.0M ops/s, final RSS 153.0MB
+  tcmalloc                       267.7M ops/s, final RSS 156.0MB
+```
+
+Decision: use `rssretain2048tls` as the retained-cache RSS-throughput profile.
+It is near HZ4 on RSS plateau and remains tcmalloc-class on mixed/local rows.
+Do not keep broadening RSS knobs; only one optional B-lite retained
+pointer-array experiment remains in scope.
 
 Overflow policy for the first candidate should be explicit and visible in the
 lane name or build metadata. Prefer keeping it simple:

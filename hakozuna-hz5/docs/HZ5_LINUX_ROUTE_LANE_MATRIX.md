@@ -26,7 +26,7 @@ Current paper/appendix-facing HZ5 Linux rows are profile-specific:
 | Reporting row | Lane | Use |
 | --- | --- | --- |
 | Low-final-RSS local/mixed exact speed | `hz5-local2p-linkflags` | local-only and mixed-prelude final `64K/a8192` throughput when low final RSS matters |
-| RSS-throughput retained-cache profile | `hz5-local2p-rssretain2048` | 2048-block RSS plateau and retained working-set reuse |
+| RSS-throughput retained-cache profile | `hz5-local2p-rssretain2048tls` | 2048-block RSS plateau and retained working-set reuse |
 | Producer/consumer remote-free profile | `hz5-local2p-remotebatch` | cross-thread free handoff rows |
 | Linux HZ5 control | `hz5-p25` | P25 bridge baseline |
 
@@ -41,8 +41,8 @@ local/mixed speed:
   linkflags is already tcmalloc-class; maintain reproducibility
 
 RSS plateau:
-  rssretain2048 is the remaining paper-facing improvement target versus
-  tcmalloc/HZ4
+  rssretain2048tls is the accepted retained-RSS profile; do not chase tcmalloc
+  further unless one optional B-lite experiment clearly wins
 
 remote-free:
   remotebatch already beats P25/HZ4/tcmalloc in the producer/consumer row;
@@ -128,7 +128,7 @@ What it is not:
 
 Remote-free is no longer forced through OS `free(raw)` on every operation. The
 remote-free reporting lane is `hz5-local2p-remotebatch`. RSS-throughput
-reporting uses `hz5-local2p-rssretain2048`. The low-final-RSS local/mixed
+reporting uses `hz5-local2p-rssretain2048tls`. The low-final-RSS local/mixed
 speed lane remains `hz5-local2p-linkflags`.
 
 ### `p25_bridge`
@@ -319,8 +319,8 @@ This is a useful hit-rate diagnostic, but a miss is not an HZ5 allocation.
 | `hz5-local2p-rssretain512` | `hz5-linux-local2p-rss-retain-cap512` | `--linux-local2p-rss-retain --linux-local2p-global-cap 512` | `local2p` | RSS retained-cache cap sweep |
 | `hz5-local2p-rssretain` | `hz5-linux-local2p-rss-retain` | `--linux-local2p-rss-retain` | `local2p` | RSS candidate: local overflow to bounded global cache |
 | `hz5-local2p-rssretain1536` | `hz5-linux-local2p-rss-retain-cap1536` | `--linux-local2p-rss-retain --linux-local2p-global-cap 1536` | `local2p` | RSS retained-cache cap sweep |
-| `hz5-local2p-rssretain2048` | `hz5-linux-local2p-rss-retain-cap2048` | `--linux-local2p-rss-retain --linux-local2p-global-cap 2048` | `local2p` | RSS throughput candidate: retain full 2048-block plateau |
-| `hz5-local2p-rssretain2048tls` | `hz5-linux-local2p-rss-retain-cap2048-tls2048` | `--linux-local2p-rss-retain --linux-local2p-global-cap 2048 --linux-local2p-tls-cap 2048` | `local2p` | RSS A/B: retain full plateau in owner-local TLS |
+| `hz5-local2p-rssretain2048` | `hz5-linux-local2p-rss-retain-cap2048` | `--linux-local2p-rss-retain --linux-local2p-global-cap 2048` | `local2p` | RSS control: retain full 2048-block plateau through global cache |
+| `hz5-local2p-rssretain2048tls` | `hz5-linux-local2p-rss-retain-cap2048-tls2048` | `--linux-local2p-rss-retain --linux-local2p-global-cap 2048 --linux-local2p-tls-cap 2048` | `local2p` | current RSS throughput profile: retain full plateau in owner-local TLS |
 | `hz5-local2p-freefirst` | `hz5-linux-local2p-free-first` | `--linux-local2p-free-first` | `local2p` | speed candidate: Local2P free-first dispatch |
 | `hz5-local2p-freefirst-fastcookie` | `hz5-linux-local2p-freefirst-fastcookie` | `--linux-local2p-freefirst-fastcookie` | `local2p` | explicit alias for the fast-cookie + free-first compound lane |
 | `hz5-local2p-inbox` | `hz5-linux-local2p-remote-inbox` | `--linux-local2p-fast --linux-local2p-owner-inbox` | `local2p` | remote-free candidate |
@@ -363,10 +363,15 @@ rssretain2048tls:
   TLS cap 2048, global cap 2048
 ```
 
-The TLS-cap variant is a measured A/B, not the default reporting row yet. On
+The TLS-cap variant is the current RSS reporting row. On
 `local2p_rsstls2048_runs10_20260524_041238`, it improved RSS plateau from
 about `321.5K` to `325.3K ops/s`, essentially matching HZ4 in that run, but it
 did not close the tcmalloc gap.
+
+Stop rule: do not add more RSS knobs by default. The only optional continuation
+is one B-lite retained pointer-array experiment; if it does not exceed
+`rssretain2048tls` RSS throughput by at least 5% without local/mixed/safety
+regression, stop allocator work and move to paper/reproducibility.
 
 ## Benchmark Profiles
 
@@ -410,7 +415,7 @@ mixed-prelude final 64K/a8192:
   hz5-local2p-linkflags checks whether exact speed survives route pressure
 
 RSS plateau 64K/a8192:
-  hz5-local2p-rssretain2048 vs hz4/tcmalloc/mimalloc/system
+  hz5-local2p-rssretain2048tls vs hz4/tcmalloc/mimalloc/system
 
 producer/consumer remote-free 64K/a8192:
   hz5-local2p-remotebatch vs hz5-p25 vs hz4/tcmalloc/mimalloc/system
@@ -551,7 +556,7 @@ Allowed:
 ```text
 HZ5 Local2P is a Linux exact-overaligned profile family for 64K/a8192. The
 `linkflags` profile is tcmalloc-class on local/mixed exact throughput with low
-final RSS, `rssretain2048` is the retained-cache RSS-throughput profile, and
+final RSS, `rssretain2048tls` is the retained-cache RSS-throughput profile, and
 `remotebatch` is the producer/consumer remote-free profile. These are appendix
 profiles, not a general allocator claim.
 ```
