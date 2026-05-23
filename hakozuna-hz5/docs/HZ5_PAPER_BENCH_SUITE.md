@@ -124,6 +124,41 @@ So HZ5 Local2P cannot be evaluated by simply adding the hybrid preload library
 to the existing paper-main matrix. It needs either a true general HZ5 allocator
 lane or a separate exact-overaligned appendix suite.
 
+### HZ5 Full Preload Control
+
+`libhakozuna_hz5_preload_full.so` is the first experimental control lane for a
+general HZ5 front-end.
+
+Policy:
+
+- route ordinary `malloc`, `calloc`, `realloc`, `posix_memalign`, and
+  `aligned_alloc` calls to the HZ5 API
+- keep a pointer table so HZ5-owned pointers and bootstrap real-libc pointers
+  are freed through the correct path
+- interpose `malloc_usable_size` for app compatibility
+- use real libc only for pre-main/bootstrap/reentrant allocations
+
+Build:
+
+```bash
+./linux/build_linux_hz5_standalone.sh \
+  --linux-preload-full \
+  --linux-local2p-speed-linkflags \
+  --out-dir hakozuna-hz5/out/linux/x86_64-hz5-preload-full
+```
+
+Initial smoke result:
+
+```text
+private/raw-results/linux/hz5_preload_full_smoke_20260524_053601
+```
+
+The paper MT random-mixed smoke now shows thousands of `malloc_hz5` calls and
+zero `malloc_real` calls in the benchmark body. This solves attribution, but it
+does not solve performance: non-exact small/mid traffic currently goes through
+the no-HZ3 fallback wrapped mmap path. Treat this as a control lane until a real
+HZ5 small/mid front-end exists.
+
 ### Paper Appendix
 
 Use this tier for narrow HZ5 profile claims.
@@ -256,6 +291,91 @@ hakozuna/scripts/run_realworld_4pack.sh
 
 Keep imported files under a paper-compat namespace; do not mix them with HZ5
 standalone exact-lane benchmarks.
+
+### Paper/hakmem mapping audit (2026-05-24)
+
+The paper tables map to the following Linux/hakmem workloads:
+
+| Paper table/section | Workload | hakmem entry point | HZ5 comparability |
+| --- | --- | --- | --- |
+| SSOT / T sweep / R sweep | MT `random_mixed` remote | `scripts/run_mt_lane_remote_matrix.sh` or direct `hakozuna/out/bench_random_mixed_mt_remote_malloc` | Not a pure HZ5 row today. `guard`/`main` never hit HZ5 exact `64K/a8192`; `cross128` hits it only rarely under random distribution. |
+| Latest MT lane x remote% snapshot | `guard`, `main`, `cross128` x `R=0,50,90` | `scripts/run_mt_lane_remote_matrix.sh --runs 10 --cpu-list 0-15` | Good for hz3/hz4/mimalloc/tcmalloc general comparison. Use HZ5 only with hit attribution, otherwise it is mostly libc passthrough. |
+| ST `dist_app` | single-thread distribution app shape | `hakozuna/out/bench_random_mixed_malloc_dist` or legacy paper work-order direct command | Potentially useful only if the distribution includes substantial `65536` byte calls. Needs HZ5 preload hit counters. |
+| RSS MT / RSS ST | `ru_maxrss` around MT remote and ST dist | `/usr/bin/time -v` wrapping the same paper commands | Valid for general allocators. HZ5 requires hit-rate qualification. |
+| mimalloc-bench subset | `alloc-testN`, `xmalloc-testN`, `sh8benchN`, `cache-scratchN` | `hakozuna/scripts/run_bench_mimalloc_bench_subset_compare.sh` | Appendix/general allocator evidence for hz3/hz4. HZ5 exact-route relevance is unknown until preload hit counters are added per binary. |
+| Redis workload / redis-like | synthetic Redis or memtier Redis lane | `benchmarks/scripts/run_redis_matrix.sh`, `benchmarks/redis/redis_final_comparison.sh`, or `hakozuna/scripts/run_realworld_4pack.sh` | Mostly small-object/app-like; current HZ5 Local2P exact lane should not be mixed in as a general result. |
+| HZ5 Linux supplement | exact `64K/a8192` local/mixed/RSS/remote | `linux/run_linux_hz5_local2p_focus.sh` | Valid HZ5 appendix evidence; compare to hz4/tcmalloc/mimalloc/system as exact-overaligned controls, not as paper-main default allocator evidence. |
+
+Fresh paper-main reproduction command:
+
+```bash
+cd /mnt/workdisk/public_share/hakmem
+scripts/run_mt_lane_remote_matrix.sh \
+  --runs 10 \
+  --cpu-list 0-15 \
+  --outdir /tmp/mt_lane_remote_matrix_paper_<timestamp>
+```
+
+Paper work-order legacy rows can be reproduced from:
+
+```text
+/mnt/workdisk/public_share/hakmem/docs/benchmarks/2026-01-24_PAPER_BENCH_WORK_ORDER.md
+/mnt/workdisk/public_share/hakmem/docs/benchmarks/2026-02-18_PAPER_BENCH_RESULTS.md
+```
+
+#### HZ5 preload hit audit
+
+The HZ5 preload hybrid shim is exact-only:
+
+```text
+malloc(size):        HZ5 only when size == 65536, synthetic align == 8192
+posix_memalign:      HZ5 only when size == 65536 and align == 8192
+aligned_alloc:       HZ5 only when size == 65536 and align == 8192
+all other requests:  libc
+```
+
+Short probe against `/mnt/workdisk/public_share/hakmem`:
+
+```bash
+./linux/run_hz5_preload_hit_probe.sh \
+  --paper-root /mnt/workdisk/public_share/hakmem \
+  --threads 4 \
+  --iters 20000 \
+  --ws 400 \
+  --lanes guard,main,cross128 \
+  --remote-pcts 0,90 \
+  --skip-build \
+  --outdir private/raw-results/linux/hz5_hakmem_hit_probe_20260524_051807
+```
+
+Result:
+
+| Lane | HZ5 malloc hits | libc malloc calls | Interpretation |
+| --- | ---: | ---: | --- |
+| `guard_r0` | 0 | 40393 | No HZ5 route exercised. |
+| `guard_r90` | 0 | 40393 | No HZ5 route exercised. |
+| `main_r0` | 0 | 40393 | No HZ5 route exercised. |
+| `main_r90` | 0 | 40393 | No HZ5 route exercised. |
+| `cross128_r0` | 1 | 40392 | HZ5 exact route is statistically negligible. |
+| `cross128_r90` | 1 | 40392 | HZ5 exact route is statistically negligible. |
+
+Implication:
+
+```text
+Adding hz5-preload-hybrid to the paper MT matrix would mostly measure libc
+passthrough plus shim overhead, not HZ5 allocator behavior.
+```
+
+Clean comparison strategy:
+
+1. Use `scripts/run_mt_lane_remote_matrix.sh` unchanged for paper-main
+   hz3/hz4/mimalloc/tcmalloc rows.
+2. Add HZ5 only to rows where `[HZ5_PRELOAD_STATS]` shows meaningful
+   `malloc_hz5` / `free_hz5` counts.
+3. For HZ5 claims, use the exact appendix suite unless a true general HZ5
+   LD_PRELOAD allocator lane is implemented.
+4. If paper-style HZ5 coverage is needed, add a separate controlled
+   `64K/a8192` distribution row instead of over-interpreting `cross128`.
 
 ### HZ5 appendix/focus
 

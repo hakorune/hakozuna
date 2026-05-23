@@ -39,7 +39,126 @@ Current policy:
 - keep these paper-main workloads separate from HZ5 standalone exact
   `64K/a8192` appendix benchmarks
 
-## Current Development Focus: Linux Local2P v2
+2026-05-24 audit:
+
+- paper-main benchmark mapping is recorded in
+  `hakozuna-hz5/docs/HZ5_PAPER_BENCH_SUITE.md`
+- the refreshed paper-main MT entry point is
+  `/mnt/workdisk/public_share/hakmem/scripts/run_mt_lane_remote_matrix.sh`
+- the latest paper-main results are documented in
+  `/mnt/workdisk/public_share/hakmem/docs/benchmarks/2026-02-18_PAPER_BENCH_RESULTS.md`
+- a short HZ5 preload hit probe against `/mnt/workdisk/public_share/hakmem`
+  produced:
+
+```text
+private/raw-results/linux/hz5_hakmem_hit_probe_20260524_051807
+
+guard/main:
+  malloc_hz5=0
+
+cross128:
+  malloc_hz5=1 out of about 40393 malloc calls
+```
+
+Interpretation:
+
+```text
+Do not add hz5-preload-hybrid as a paper-main allocator row.
+The paper MT matrix mostly measures libc passthrough for current HZ5.
+Use paper-main for hz3/hz4/mimalloc/tcmalloc, and use HZ5 exact appendix
+benchmarks for Local2P claims unless a true general HZ5 LD_PRELOAD lane is
+implemented.
+```
+
+## Current Development Focus: General HZ5 Linux Front-End
+
+Direction change, 2026-05-24:
+
+```text
+Goal:
+  Move from HZ5 exact sidecar back toward a real hz3/hz4 successor.
+
+Immediate target:
+  paper-main LD_PRELOAD should exercise HZ5 for ordinary malloc traffic instead
+  of delegating almost everything to libc.
+
+Do not weaken:
+  existing Local2P exact 64K/a8192 profiles
+  existing hybrid preload diagnostic adapter
+  fail-closed invalid/double-free behavior
+```
+
+First implementation lane:
+
+```text
+libhakozuna_hz5_preload_full.so
+  experimental full LD_PRELOAD front-end
+  malloc/calloc/realloc/posix_memalign/aligned_alloc -> HZ5 API
+  real libc only for reentrant/bootstrap allocations
+  pointer table separates HZ5-owned and bootstrap-real pointers
+  malloc_usable_size interposed for app compatibility
+```
+
+Build selector:
+
+```bash
+./linux/build_linux_hz5_standalone.sh \
+  --linux-preload-full \
+  --linux-local2p-speed-linkflags \
+  --out-dir hakozuna-hz5/out/linux/x86_64-hz5-preload-full
+```
+
+Important limitation:
+
+```text
+This first full preload lane is an integration/control lane, not the final
+allocator design. Non-exact ordinary malloc traffic currently reaches HZ5's
+general policy, which may use the no-HZ3 fallback wrapped mmap path until true
+small/mid HZ5 routes are promoted. That is still better for attribution than
+libc passthrough, but performance must be judged separately.
+```
+
+Validation order:
+
+1. Build `--linux-preload-full`.
+2. Smoke `/bin/true`, small malloc/free, calloc, realloc, `malloc_usable_size`.
+3. Run a short `hakmem` MT matrix with `HZ5_PRELOAD_STATS=1`.
+4. Confirm `malloc_hz5` is high and `malloc_real` is only bootstrap/reentrant.
+5. Only then compare ops/s against hz3/hz4/mimalloc/tcmalloc.
+
+Initial result:
+
+```text
+private/raw-results/linux/hz5_preload_full_smoke_20260524_053601
+
+short hakmem MT remote malloc bench, threads=2, iters=5000, ws=100, r0
+
+guard:
+  malloc_hz5=5054 malloc_real=0 calloc_hz5=11 free_hz5=5062
+  ops/s=220.6K
+
+main:
+  malloc_hz5=5054 malloc_real=0 calloc_hz5=11 free_hz5=5062
+  ops/s=235.7K
+
+cross128:
+  malloc_hz5=5054 malloc_real=0 calloc_hz5=11 free_hz5=5062
+  ops/s=224.0K
+```
+
+Interpretation:
+
+```text
+The attribution problem is solved for the first control lane: paper-main malloc
+traffic now goes through HZ5 rather than libc passthrough.
+
+The performance problem is now exposed clearly: ordinary small/mid malloc uses
+the no-HZ3 fallback wrapped mmap path, so throughput is far below hz3/hz4.
+Next development target is a real HZ5 small/mid front-end, not more preload
+plumbing.
+```
+
+## Previous Development Focus: Linux Local2P v2
 
 Status: Local2P has split into explicit Linux profiles. `linkflags` is the
 low-final-RSS local/mixed exact speed profile, `rssretain2048tls` is the

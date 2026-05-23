@@ -45,6 +45,8 @@ LINUX_P43_RAW_ALLOCATED_LOOKUP_ONLY=0
 LINUX_P43_WRAPPER_TOKEN=0
 LINUX_P43_WRAPPER_TOKEN_BRIDGE=0
 TRACE_LANE=0
+BUILD_PRELOAD_FULL=0
+HZ5_STANDALONE_EXACT_ONLY=1
 
 usage() {
   cat <<'EOF'
@@ -135,6 +137,9 @@ Options:
   --linux-p43-token  store P43 segment/slot token in the HZ5 wrapper
   --linux-p43-token-bridge
                      validate wrapper token, then release through P25 bridge
+  --linux-preload-full
+                     build an experimental full LD_PRELOAD front-end; disables
+                     standalone exact-only gating for this output directory
   --trace-lane       enable route/reuse counters; disables SPEED_LANE
   --help             show this message
 EOF
@@ -425,6 +430,11 @@ while [[ $# -gt 0 ]]; do
       LINUX_P43_WRAPPER_TOKEN_BRIDGE=1
       shift
       ;;
+    --linux-preload-full)
+      BUILD_PRELOAD_FULL=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
     --trace-lane)
       TRACE_LANE=1
       shift
@@ -517,6 +527,7 @@ SOURCE_COMMIT="$(git -C "$ROOT_DIR" rev-parse HEAD)"
 OUT_DIR="${OUT_DIR:-${HZ5_DIR}/out/linux/${ARCH}}"
 LIB="${OUT_DIR}/libhakozuna_hz5_standalone.so"
 PRELOAD_HYBRID_LIB="${OUT_DIR}/libhakozuna_hz5_preload_hybrid.so"
+PRELOAD_FULL_LIB="${OUT_DIR}/libhakozuna_hz5_preload_full.so"
 BENCH="${OUT_DIR}/bench_hz5_standalone_aligned64k"
 REMOTE_BENCH="${OUT_DIR}/bench_hz5_standalone_remote64k"
 RSS_BENCH="${OUT_DIR}/bench_hz5_standalone_rss_plateau"
@@ -549,7 +560,7 @@ COMMON_FLAGS=(
   -DBENCHLAB_HZ5_SPEED_LANE="${SPEED_LANE}"
   -DBENCHLAB_HZ5_TRACE_LANE="${TRACE_LANE}"
   -DBENCHLAB_HZ5_NO_HZ3_FALLBACK=1
-  -DBENCHLAB_HZ5_STANDALONE_EXACT_ONLY=1
+  -DBENCHLAB_HZ5_STANDALONE_EXACT_ONLY="${HZ5_STANDALONE_EXACT_ONLY}"
   -DBENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192=1
   -DBENCHLAB_HZ5_P25_STATS=0
   -DHZ5_P11_SPEED_CORE="${LINUX_P11_SPEED_CORE}u"
@@ -734,6 +745,8 @@ fi
   echo "linux_local2p_single_slot_tls=${LINUX_LOCAL2P_SINGLE_SLOT_TLS}"
   echo "linux_local2p_speed_linkflags=${LINUX_LOCAL2P_SPEED_LINKFLAGS}"
   echo "linux_local2p_local_overflow_global=${LINUX_LOCAL2P_LOCAL_OVERFLOW_GLOBAL}"
+  echo "build_preload_full=${BUILD_PRELOAD_FULL}"
+  echo "standalone_exact_only=${HZ5_STANDALONE_EXACT_ONLY}"
   echo "linux_p11_speed_core=${LINUX_P11_SPEED_CORE}"
   echo "linux_p25_bridge_attr=${LINUX_P25_BRIDGE_ATTR}"
   echo "linux_p25_bridge_attr_no_cas=${LINUX_P25_BRIDGE_ATTR_NO_CAS}"
@@ -775,6 +788,14 @@ gcc "${COMMON_FLAGS[@]}" -shared \
   "${HZ5_SRCS[@]}" \
   "${HZ5_DIR}/preload/hz5_preload_hybrid.c" \
   "${SHARED_LINK_FLAGS[@]}" -pthread -ldl -o "$PRELOAD_HYBRID_LIB"
+
+if [[ "$BUILD_PRELOAD_FULL" -eq 1 ]]; then
+  echo "[linux][hz5] building preload full library: ${PRELOAD_FULL_LIB}"
+  gcc "${COMMON_FLAGS[@]}" -shared \
+    "${HZ5_SRCS[@]}" \
+    "${HZ5_DIR}/preload/hz5_preload_full.c" \
+    "${SHARED_LINK_FLAGS[@]}" -pthread -ldl -o "$PRELOAD_FULL_LIB"
+fi
 
 echo "[linux][hz5] building benchmark: ${BENCH}"
 BENCH_ALIGNED_FLAGS=()
