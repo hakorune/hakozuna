@@ -93,6 +93,50 @@ Comparison priority:
    keep as guard/control; do not build SmallA8192 unless the paper needs it
 ```
 
+Current reporting-row measurement:
+
+```text
+private/raw-results/linux/local2p_reporting_rows_runs10_20260524_040203
+
+RUNS=10, 64K/a8192, rss/mixed blocks=2048
+
+local:
+  hz5-local2p-linkflags     256.3M ops/s
+  tcmalloc                  253.3M
+  hz5-local2p-rssretain2048 249.7M
+  hz4                       130.5M
+  hz5-p25                    66.9M
+
+mixed final:
+  hz5-local2p-rssretain2048 274.5M ops/s, final RSS 153.0MB
+  tcmalloc                  268.6M ops/s, final RSS 156.0MB
+  hz5-local2p-linkflags     264.8M ops/s, final RSS   1.4MB
+  hz4                       135.6M ops/s, final RSS 151.9MB
+
+remote pairs/s:
+  hz5-local2p-remotebatch   15.36M
+  hz5-p25                   12.41M
+  hz4                       11.06M
+  tcmalloc                   2.35M
+
+RSS plateau:
+  tcmalloc                  368.7K ops/s, final RSS 139.0MB
+  hz4                       322.5K ops/s, final RSS 149.1MB
+  hz5-local2p-rssretain2048 314.1K ops/s, final RSS 153.0MB
+  hz5-local2p-linkflags      48.8K ops/s, final RSS   1.6MB
+```
+
+Interpretation:
+
+- The three reporting profiles are coherent:
+  `linkflags` for low-final-RSS local speed, `rssretain2048` for retained RSS
+  throughput, and `remotebatch` for remote-free.
+- `rssretain2048` is the best next paper-facing comparison axis because it is
+  close to HZ4 on RSS throughput and still competitive with tcmalloc on mixed
+  final throughput.
+- `mimalloc` remains an external comparison row with an unfavorable aligned
+  path on this workload; do not use it as the main optimization target.
+
 Current exact-a8192 route split:
 
 ```text
