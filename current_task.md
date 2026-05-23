@@ -248,10 +248,10 @@ Use:
 codex/hz5-linux-p43-port
 ```
 
-Current reference commit:
+Latest Local2P implementation commit:
 
 ```bash
-f27f484 Split lowpage OS path and version wrapper layout
+fd3c759 Add HZ5 Local2P fast-cookie lane
 ```
 
 Parent branch:
