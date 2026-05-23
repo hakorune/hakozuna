@@ -928,6 +928,34 @@ Interpretation:
 - `rssretain2048` is a separate RSS-throughput profile, not a replacement for
   `linkflags` or `remotebatch`.
 
+Source cleanup checkpoint:
+
+```text
+change:
+  linux/run_linux_hz5_local2p_focus.sh
+    added is_hz5_focus_lane() helper
+    removed duplicated HZ5 lane list from require/run dispatch
+
+  hakozuna-hz5/policy/hz5_policy.c
+    split Local2P TLS overflow handling into
+    hz5_policy_local2p_push_overflow()
+
+smoke:
+  private/raw-results/linux/local2p_cleanup_runner_smoke_20260524_025145
+
+verification:
+  bash -n build_linux_hz5_standalone.sh
+  bash -n run_linux_hz5_local2p_focus.sh
+  rssretain2048 standalone safety
+  focus runner smoke with hz5-local2p-rssretain2048 + system
+```
+
+Interpretation:
+
+- No allocator policy change beyond helper extraction.
+- Runner now has fewer duplicated places where a new HZ5 focus lane must be
+  added.
+
 ## Branch
 
 Use:

@@ -212,14 +212,48 @@ require_hz5_lane() {
   require_file "${lane}-mixed" "${out}/bench_hz5_standalone_mixed_prelude"
 }
 
+is_hz5_focus_lane() {
+  case "$1" in
+    hz5-local2p-fast|\
+    hz5-local2p-object|\
+    hz5-local2p-faststate|\
+    hz5-local2p-routecookie|\
+    hz5-local2p-reusefast|\
+    hz5-local2p-slimcheck|\
+    hz5-local2p-fastcookie|\
+    hz5-local2p-tlsfast|\
+    hz5-local2p-exactapi|\
+    hz5-local2p-slot1|\
+    hz5-local2p-linkflags|\
+    hz5-local2p-rssretain|\
+    hz5-local2p-rssretain2048|\
+    hz5-local2p-freefirst|\
+    hz5-local2p-freefirst-fastcookie|\
+    hz5-local2p-inbox|\
+    hz5-local2p-remotebatch|\
+    hz5-local2p-remotebatch8|\
+    hz5-local2p-remotebatch32|\
+    hz5-local2p|\
+    hz5-p25)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
 require_file generic-local "$GENERIC_BENCH"
 require_file generic-remote "$GENERIC_REMOTE_BENCH"
 require_file generic-rss "$GENERIC_RSS_BENCH"
 require_file generic-mixed "$GENERIC_MIXED_BENCH"
 
 for alloc in "${allocator_list[@]}"; do
+  if is_hz5_focus_lane "$alloc"; then
+    require_hz5_lane "$alloc"
+    continue
+  fi
   case "$alloc" in
-    hz5-local2p-fast|hz5-local2p-object|hz5-local2p-faststate|hz5-local2p-routecookie|hz5-local2p-reusefast|hz5-local2p-slimcheck|hz5-local2p-fastcookie|hz5-local2p-tlsfast|hz5-local2p-exactapi|hz5-local2p-slot1|hz5-local2p-linkflags|hz5-local2p-rssretain|hz5-local2p-rssretain2048|hz5-local2p-freefirst|hz5-local2p-freefirst-fastcookie|hz5-local2p-inbox|hz5-local2p-remotebatch|hz5-local2p-remotebatch8|hz5-local2p-remotebatch32|hz5-local2p|hz5-p25) require_hz5_lane "$alloc" ;;
     hz5-preload-hybrid) require_file hz5-preload-hybrid "$HZ5_PRELOAD_HYBRID_SO" ;;
     hz4) require_file hz4 "$HZ4_SO" ;;
     tcmalloc) require_file tcmalloc "$TCMALLOC_SO" ;;
@@ -496,27 +530,7 @@ run_one() {
   local log="${OUTDIR}/${workload}_${alloc}_${run}.log"
   local timefile="${OUTDIR}/${workload}_${alloc}_${run}.time"
   local status=0
-  if [[ "$alloc" == "hz5-local2p-fast" || \
-        "$alloc" == "hz5-local2p-object" || \
-        "$alloc" == "hz5-local2p-faststate" || \
-        "$alloc" == "hz5-local2p-routecookie" || \
-        "$alloc" == "hz5-local2p-reusefast" || \
-        "$alloc" == "hz5-local2p-slimcheck" || \
-        "$alloc" == "hz5-local2p-fastcookie" || \
-        "$alloc" == "hz5-local2p-tlsfast" || \
-        "$alloc" == "hz5-local2p-exactapi" || \
-        "$alloc" == "hz5-local2p-slot1" || \
-        "$alloc" == "hz5-local2p-linkflags" || \
-        "$alloc" == "hz5-local2p-rssretain" || \
-        "$alloc" == "hz5-local2p-rssretain2048" || \
-        "$alloc" == "hz5-local2p-freefirst" || \
-        "$alloc" == "hz5-local2p-freefirst-fastcookie" || \
-        "$alloc" == "hz5-local2p-inbox" || \
-        "$alloc" == "hz5-local2p-remotebatch" || \
-        "$alloc" == "hz5-local2p-remotebatch8" || \
-        "$alloc" == "hz5-local2p-remotebatch32" || \
-        "$alloc" == "hz5-local2p" || \
-        "$alloc" == "hz5-p25" ]]; then
+  if is_hz5_focus_lane "$alloc"; then
     run_hz5 "$workload" "$alloc" "$log" "$timefile" || status=$?
   else
     run_generic "$workload" "$alloc" "$log" "$timefile" || status=$?
