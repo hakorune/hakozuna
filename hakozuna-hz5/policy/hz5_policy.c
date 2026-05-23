@@ -632,6 +632,34 @@ static Hz5FreeResult hz5_policy_local2p_free(Hz5WrapperHdr* header,
   return HZ5_FREE_OK_HZ5;
 }
 
+static int hz5_policy_local2p_direct_decode(void* ptr,
+                                            Hz5WrapperHdr** header_out) {
+  if (!ptr) {
+    return 0;
+  }
+  uintptr_t aligned = (uintptr_t)ptr;
+  if (aligned < sizeof(Hz5WrapperHdr)) {
+    return 0;
+  }
+
+  Hz5WrapperHdr* header =
+      (Hz5WrapperHdr*)(aligned - sizeof(Hz5WrapperHdr));
+  if (header->magic != HZ5_WRAPPER_HDR_MAGIC ||
+      header->layout_version != HZ5_WRAPPER_LAYOUT_VERSION ||
+      header->layout_size != sizeof(Hz5WrapperHdr) ||
+      header->source != HZ5_WRAPPER_SOURCE_LINUX_LOCAL2P) {
+    return 0;
+  }
+  uintptr_t raw = header->raw;
+  if (raw == 0 || header->cookie != hz5_wrapper_cookie(raw, aligned)) {
+    return 0;
+  }
+  if (header_out) {
+    *header_out = header;
+  }
+  return 1;
+}
+
 static int hz5_policy_local2p_metadata_present(const Hz5WrapperHdr* header) {
   if (!header) {
     return 0;
@@ -934,6 +962,14 @@ Hz5FreeResult hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
     hz5_p2_free(ptr);
     return HZ5_FREE_OK_HZ5;
   }
+
+#if defined(__linux__) && BENCHLAB_HZ5_LINUX_LOCAL2P
+  Hz5WrapperHdr* local2p_wrapped = NULL;
+  if (hz5_policy_local2p_direct_decode(ptr, &local2p_wrapped)) {
+    hz5_trace_inc(HZ5_TRACE_WRAPPER_DECODE_OK);
+    return hz5_policy_local2p_free(local2p_wrapped, (uintptr_t)ptr);
+  }
+#endif
 
 #if BENCHLAB_HZ5_LAZY_HZ3_FALLBACK && !BENCHLAB_HZ5_P16_WRAPPER_64K_A8192 && \
     !BENCHLAB_HZ5_P17_PAGEBIN_64K_A8192 && !BENCHLAB_HZ5_P24_RAW64K_A8192 && \

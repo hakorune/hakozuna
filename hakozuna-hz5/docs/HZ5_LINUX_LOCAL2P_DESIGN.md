@@ -124,19 +124,20 @@ hz5_policy_alloc_aligned(65536, 8192)
 
 ```text
 hz5_policy_free(ptr)
-  decode wrapper
+  if Local2P enabled:
+    try local2p_direct_decode(ptr)
+    if source == HZ5_WRAPPER_SOURCE_LINUX_LOCAL2P:
+      validate local2p metadata
+      mark ACTIVE -> FREED
+      if owner is current thread:
+        local2p_tls_push(raw)
+      else:
+        local2p_global_push(raw)
+      return
 
-  if source == HZ5_WRAPPER_SOURCE_LINUX_LOCAL2P:
-    validate local2p metadata
-    mark ACTIVE -> FREED
-    if owner is current thread:
-      local2p_tls_push(raw)
-    else:
-      local2p_global_push(raw)
-    return
+  decode wrapper for non-Local2P routes
 
-  otherwise:
-    existing policy
+  otherwise existing policy
 ```
 
 The first candidate should use direct raw 128K spans in a TLS stack, not P25
@@ -233,6 +234,39 @@ Diagnostic-only cost switches exist for attribution experiments:
 ```
 
 Do not use those as paper or safety lanes.
+
+## Current Attack Order
+
+Ubuntu/Linux should be attacked as separate workload lanes, not as a direct
+Windows P43i/P45 port.
+
+1. `local2p-speed`
+   - goal: reduce local `64K/a8192` hot-path instructions toward tcmalloc
+   - current step: Local2P direct free decode before generic wrapper decode
+2. `local2p-remote`
+   - goal: beat P25/HZ4 producer/consumer remote-free
+   - next step: owner inbox / MPSC queue
+3. `rss-control`
+   - goal: keep low final RSS without confusing the speed lane
+   - next step: separate release/decommit policy lane
+
+Do not add remote inbox or RSS release policy to the speed lane until the
+direct free decode cost is measured.
+
+Direct free decode result:
+
+```text
+local 64K/a8192, 10M iterations:
+  before direct decode: about 140M ops/s, 2.42B instructions
+  after direct decode:  about 150.5M ops/s, 2.30B instructions
+
+repeat5 focus:
+  local:       143.5M ops/s
+  mixed final: 148.1M ops/s
+```
+
+Next distinct lane is `local2p-remote`, not more global-lock work in the speed
+lane.
 
 ## TLS Cache
 

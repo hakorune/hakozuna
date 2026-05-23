@@ -1665,3 +1665,58 @@ Conclusion:
   - tcmalloc's much shorter local hot path, or
   - Local2P remote-free, which needs an owner-inbox/MPSC design instead of a
     single global recycle stack.
+
+## Next Attack Order
+
+Ubuntu HZ5 will be developed as separate workload lanes:
+
+1. `local2p-speed`
+   - reduce local `64K/a8192` instruction count toward tcmalloc
+   - first target: Local2P direct free decode before generic wrapper decode
+2. `local2p-remote`
+   - recover producer/consumer remote-free beyond the global recycle control
+   - first target: owner inbox / MPSC queue
+3. `rss-control`
+   - keep low final RSS without polluting the speed lane
+   - first target: separate release/decommit policy lane
+
+Do not mix these claims. The next implementation step is `local2p-speed`
+direct free decode.
+
+### Local2P Direct Free Decode
+
+Implemented a Local2P-specific free decode before the generic wrapper decode:
+
+```text
+hz5_policy_free(ptr)
+  -> hz5_policy_local2p_direct_decode(ptr)
+  -> hz5_policy_local2p_free(...)
+  -> generic wrapper decode only for non-Local2P routes
+```
+
+Safety:
+
+- Keeps wrapper magic/layout/cookie/source checks.
+- Keeps Local2P cookie validation.
+- Keeps `atomic_exchange(ACTIVE -> FREED)` double-free guard.
+- `bench_hz5_standalone_safety` passed.
+
+Perf, local `64K/a8192`, 10M iterations:
+
+- before direct decode safe optimization: about `140M ops/s`, `2.42B`
+  instructions
+- after direct decode: about `150.5M ops/s`, `2.30B` instructions
+
+Repeat5 HZ5-only focus:
+
+- local: Local2P fast `143.5M`, P25 `68.1M`
+- mixed final: Local2P fast `148.1M`, P25 `58.3M`
+- remote pairs/s: Local2P fast `7.35M`, P25 `12.80M`
+- RSS throughput: Local2P fast `49.4K`, P25 `62.5K`
+
+Conclusion:
+
+- `local2p-speed` moved above HZ4-class in the latest HZ5-only repeat.
+- The next distinct attack is `local2p-remote`: owner inbox / MPSC remote-free
+  queue. Do not try to solve remote-free by adding more global-lock work to the
+  speed lane.

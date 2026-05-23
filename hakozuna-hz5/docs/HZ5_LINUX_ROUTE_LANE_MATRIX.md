@@ -318,3 +318,21 @@ Do not add another route knob until one of these is done:
 4. Add route-attribution summaries to focus output when trace lanes are used.
 5. If general HZ5 is required for paper-main, design a real general preload
    lane instead of extending `preload_hybrid`.
+
+## Development Order
+
+Current Ubuntu HZ5 development order:
+
+```text
+1. local2p-speed:
+   direct free decode and instruction-count reduction
+
+2. local2p-remote:
+   owner inbox / MPSC remote-free queue
+
+3. rss-control:
+   separate release/decommit policy lane
+```
+
+Keep these as separate lanes. A win in one lane must not be presented as a win
+in the other two.
