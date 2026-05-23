@@ -309,9 +309,11 @@ layout:
 hot path:
   malloc <= 2048 and align <= 16 routes to SmallFront before exact routes
   owner-local TLS free list per class
-  owner-local active-bit load/store
-  remote free active-bit CAS + page remote stack
-  owner drains remote stack on class miss
+  per-slot state byte, not shared 64-slot bitmap word
+  owner-local state load/store
+  remote free state CAS
+  remote free pushes to owner TLS per-class inbox
+  owner drains the matching class inbox on local class miss
 
 preload:
   SmallFront-owned pointers are not inserted into the full-preload pointer table
@@ -335,22 +337,22 @@ small malloc smoke:
   track_insert_fail=0
 
 short hakmem guard, threads=2, iters=50000, ws=100:
-  r0:  about 28-30M ops/s
-  r90: about 17M ops/s
+  r0:  about 32M ops/s
+  r90: about 7.3M ops/s
 ```
 
 Short comparison on the same smoke:
 
 ```text
 guard r0:
-  hz5-smallfront-s1  ~28-30M
+  hz5-smallfront-s1  ~32M
   hz3                ~44.7M
   hz4                ~16.5M
   mimalloc           ~70.1M
   tcmalloc           ~82.0M
 
 guard r90:
-  hz5-smallfront-s1  ~17.1M
+  hz5-smallfront-s1   ~7.3M
   hz3                ~31.4M
   hz4                 ~8.1M
   mimalloc           ~12.4M
@@ -367,7 +369,7 @@ S1 has crossed the first correctness/attribution/performance line:
 
 It is not yet a final paper-main allocator:
   local small still trails hz3/mimalloc/tcmalloc
-  remote-heavy still trails hz3/tcmalloc
+  remote-heavy still trails hz3/hz4/mimalloc/tcmalloc on the short r90 smoke
   main/cross128 remain slow because >2048 bytes still fall to wrapped mmap
 ```
 
@@ -381,8 +383,8 @@ Next likely attack order:
    extend beyond 2048 only after S1 hot path is cleaner
 
 3. remote drain:
-   owner remote stack drain currently happens on class miss; add cheaper/batched
-   opportunistic drain only if r90 remains target-critical
+   owner per-class inbox is correct but not competitive yet; batch/owner-local
+   transfer policy needs another pass if r90 remains target-critical
 ```
 
 ## Previous Development Focus: Linux Local2P v2

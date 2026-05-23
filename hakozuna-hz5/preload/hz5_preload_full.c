@@ -338,13 +338,14 @@ static void* hz5_preload_full_real_malloc(size_t size) {
 }
 
 static void* hz5_preload_full_hz5_malloc(size_t size, size_t align) {
+  int smallfront_direct = hz5_smallfront_can_handle(size, align);
   g_hz5_preload_full_inside++;
   void* ptr = hz5_aligned_alloc(size, align);
   g_hz5_preload_full_inside--;
   if (!ptr) {
     return NULL;
   }
-  if (hz5_smallfront_owns(ptr)) {
+  if (smallfront_direct) {
     return ptr;
   }
   if (!hz5_preload_full_track_insert(ptr, HZ5_PRELOAD_FULL_OWNER_HZ5)) {
@@ -416,12 +417,11 @@ void free(void* ptr) {
     return;
   }
 
-  if (hz5_smallfront_owns(ptr)) {
+  Hz5SmallFrontFreeResult small_free = hz5_smallfront_free(ptr);
+  if (small_free == HZ5_SMALLFRONT_FREE_OK ||
+      small_free == HZ5_SMALLFRONT_FREE_INVALID) {
     atomic_fetch_add_explicit(&g_hz5_preload_full_free_hz5, 1u,
                               memory_order_relaxed);
-    g_hz5_preload_full_inside++;
-    (void)hz5_free(ptr);
-    g_hz5_preload_full_inside--;
     return;
   }
 
@@ -594,15 +594,13 @@ void* realloc(void* ptr, size_t size) {
     return malloc(size);
   }
 
-  if (hz5_smallfront_owns(ptr)) {
-    size_t old_size = hz5_smallfront_usable_size(ptr);
+  size_t small_old_size = hz5_smallfront_usable_size(ptr);
+  if (small_old_size != 0) {
     void* next = hz5_preload_full_hz5_malloc(size, 16u);
     if (!next) {
       return NULL;
     }
-    if (old_size != 0) {
-      memcpy(next, ptr, old_size < size ? old_size : size);
-    }
+    memcpy(next, ptr, small_old_size < size ? small_old_size : size);
     free(ptr);
     atomic_fetch_add_explicit(&g_hz5_preload_full_realloc_hz5, 1u,
                               memory_order_relaxed);

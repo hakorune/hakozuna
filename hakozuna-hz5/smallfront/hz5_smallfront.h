@@ -15,6 +15,7 @@ typedef enum Hz5SmallFrontFreeResult {
 
 void* hz5_smallfront_alloc(size_t size, size_t align);
 Hz5SmallFrontFreeResult hz5_smallfront_free(void* ptr);
+int hz5_smallfront_can_handle(size_t size, size_t align);
 int hz5_smallfront_owns(void* ptr);
 size_t hz5_smallfront_usable_size(void* ptr);
 

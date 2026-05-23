@@ -1259,13 +1259,13 @@ void* hz5_policy_alloc_aligned(size_t size, size_t align,
 #endif
 
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_SMALLFRONT_S1
-  if (align <= HZ5_POLICY_MIN_ALIGN) {
+  if (hz5_smallfront_can_handle(size, align)) {
     void* small = hz5_smallfront_alloc(size, align);
     if (small) {
       atomic_store_explicit(&g_hz5_policy_seen_allocation, 1,
                             memory_order_relaxed);
-      return small;
     }
+    return small;
   }
 #endif
 

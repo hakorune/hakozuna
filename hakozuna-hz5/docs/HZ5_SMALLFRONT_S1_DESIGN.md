@@ -413,11 +413,23 @@ Short hakmem guard smoke, `threads=2 iters=50000 ws=100`:
 
 ```text
 r0:
-  about 28-30M ops/s
+  about 32M ops/s
 
 r90:
-  about 17M ops/s
+  about 7.3M ops/s
 ```
 
 This is enough to continue development, but not enough to promote SmallFront as
 the paper-main HZ5 allocator row.
+
+Implementation correction:
+
+```text
+The first owner-local load/store bitmap experiment was unsafe because one
+64-bit active word covered many slots. Remote free CAS on one slot could race
+with owner-local store on another slot and lose updates.
+
+S1 now uses one state byte per slot. Owner-local paths use load/store on that
+slot byte; remote free uses CAS on that slot byte. Remote frees go to an owner
+TLS per-class inbox instead of a per-page remote stack.
+```

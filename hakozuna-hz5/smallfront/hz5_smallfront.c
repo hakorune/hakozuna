@@ -26,10 +26,6 @@ void _aligned_free(void* ptr);
 #define HZ5_SMALLFRONT_PAGE_MAP_CAP \
   ((size_t)1u << HZ5_SMALLFRONT_PAGE_MAP_BITS)
 
-typedef struct Hz5SmallFrontNode {
-  struct Hz5SmallFrontNode* next;
-} Hz5SmallFrontNode;
-
 typedef struct Hz5SmallFrontPage {
   uint64_t magic;
   void* raw;
@@ -39,10 +35,15 @@ typedef struct Hz5SmallFrontPage {
   uint16_t slot_count;
   uint16_t reserved0;
   uintptr_t owner_token;
-  _Atomic uint64_t active_bits[4];
+  _Atomic unsigned char slot_state[256];
   _Atomic(void*) remote_head;
   struct Hz5SmallFrontPage* owner_next;
 } Hz5SmallFrontPage;
+
+typedef struct Hz5SmallFrontNode {
+  struct Hz5SmallFrontNode* next;
+  Hz5SmallFrontPage* page;
+} Hz5SmallFrontNode;
 
 typedef struct Hz5SmallFrontPageMapEntry {
   _Atomic uintptr_t page_base;
@@ -52,6 +53,7 @@ typedef struct Hz5SmallFrontPageMapEntry {
 typedef struct Hz5SmallFrontTls {
   uintptr_t owner_token;
   void* free_head[HZ5_SMALLFRONT_CLASS_COUNT];
+  _Atomic(void*) remote_head[HZ5_SMALLFRONT_CLASS_COUNT];
   Hz5SmallFrontPage* owned_pages[HZ5_SMALLFRONT_CLASS_COUNT];
 } Hz5SmallFrontTls;
 
@@ -172,98 +174,85 @@ static int hz5_smallfront_slot_index(Hz5SmallFrontPage* page,
 
 static void hz5_smallfront_local_push(Hz5SmallFrontTls* tls,
                                       uint32_t class_index,
-                                      void* ptr) {
+                                      void* ptr,
+                                      Hz5SmallFrontPage* page) {
   Hz5SmallFrontNode* node = (Hz5SmallFrontNode*)ptr;
+  node->page = page;
   node->next = (Hz5SmallFrontNode*)tls->free_head[class_index];
   tls->free_head[class_index] = node;
 }
 
 static void* hz5_smallfront_local_pop(Hz5SmallFrontTls* tls,
-                                      uint32_t class_index) {
+                                      uint32_t class_index,
+                                      Hz5SmallFrontPage** page_out) {
   Hz5SmallFrontNode* node =
       (Hz5SmallFrontNode*)tls->free_head[class_index];
   if (!node) {
+    if (page_out) {
+      *page_out = NULL;
+    }
     return NULL;
   }
   tls->free_head[class_index] = node->next;
+  if (page_out) {
+    *page_out = node->page;
+  }
   return node;
 }
 
 static void hz5_smallfront_remote_push(Hz5SmallFrontPage* page, void* ptr) {
+  Hz5SmallFrontTls* owner_tls = (Hz5SmallFrontTls*)page->owner_token;
   Hz5SmallFrontNode* node = (Hz5SmallFrontNode*)ptr;
+  node->page = page;
   void* old_head = NULL;
   do {
-    old_head = atomic_load_explicit(&page->remote_head, memory_order_acquire);
+    old_head = atomic_load_explicit(
+        &owner_tls->remote_head[page->class_index], memory_order_acquire);
     node->next = (Hz5SmallFrontNode*)old_head;
   } while (!atomic_compare_exchange_weak_explicit(
-      &page->remote_head, &old_head, node, memory_order_release,
-      memory_order_acquire));
-}
-
-static void hz5_smallfront_drain_remote_page(Hz5SmallFrontTls* tls,
-                                             Hz5SmallFrontPage* page) {
-  void* head =
-      atomic_exchange_explicit(&page->remote_head, NULL, memory_order_acq_rel);
-  while (head) {
-    Hz5SmallFrontNode* node = (Hz5SmallFrontNode*)head;
-    head = node->next;
-    hz5_smallfront_local_push(tls, page->class_index, node);
-  }
+      &owner_tls->remote_head[page->class_index], &old_head, node,
+      memory_order_release, memory_order_acquire));
 }
 
 static void hz5_smallfront_drain_remote_class(Hz5SmallFrontTls* tls,
                                               uint32_t class_index) {
-  for (Hz5SmallFrontPage* page = tls->owned_pages[class_index]; page;
-       page = page->owner_next) {
-    if (atomic_load_explicit(&page->remote_head, memory_order_acquire)) {
-      hz5_smallfront_drain_remote_page(tls, page);
-    }
+  void* head = atomic_exchange_explicit(&tls->remote_head[class_index], NULL,
+                                        memory_order_acq_rel);
+  while (head) {
+    Hz5SmallFrontNode* node = (Hz5SmallFrontNode*)head;
+    head = node->next;
+    hz5_smallfront_local_push(tls, class_index, node, node->page);
   }
 }
 
 static int hz5_smallfront_mark_active_local(Hz5SmallFrontPage* page,
                                             uint32_t slot) {
-  uint32_t word = slot >> 6u;
-  uint64_t mask = UINT64_C(1) << (slot & 63u);
-  uint64_t old =
-      atomic_load_explicit(&page->active_bits[word], memory_order_relaxed);
-  if (old & mask) {
+  unsigned char old =
+      atomic_load_explicit(&page->slot_state[slot], memory_order_acquire);
+  if (old != 0) {
     return 0;
   }
-  atomic_store_explicit(&page->active_bits[word], old | mask,
-                        memory_order_release);
+  atomic_store_explicit(&page->slot_state[slot], 1u, memory_order_release);
   return 1;
 }
 
 static int hz5_smallfront_mark_free_local(Hz5SmallFrontPage* page,
                                           uint32_t slot) {
-  uint32_t word = slot >> 6u;
-  uint64_t mask = UINT64_C(1) << (slot & 63u);
-  uint64_t old =
-      atomic_load_explicit(&page->active_bits[word], memory_order_acquire);
-  if ((old & mask) == 0) {
+  unsigned char old =
+      atomic_load_explicit(&page->slot_state[slot], memory_order_acquire);
+  if (old != 1u) {
     return 0;
   }
-  atomic_store_explicit(&page->active_bits[word], old & ~mask,
-                        memory_order_release);
+  atomic_store_explicit(&page->slot_state[slot], 0u, memory_order_release);
   return 1;
 }
 
 static int hz5_smallfront_mark_free_remote(Hz5SmallFrontPage* page,
                                            uint32_t slot) {
-  uint32_t word = slot >> 6u;
-  uint64_t mask = UINT64_C(1) << (slot & 63u);
-  uint64_t old = atomic_load_explicit(&page->active_bits[word],
-                                      memory_order_acquire);
-  while (old & mask) {
-    uint64_t next = old & ~mask;
-    if (atomic_compare_exchange_weak_explicit(
-            &page->active_bits[word], &old, next, memory_order_acq_rel,
-            memory_order_acquire)) {
-      return 1;
-    }
-  }
-  return 0;
+  unsigned char expected = 1u;
+  return atomic_compare_exchange_strong_explicit(
+      &page->slot_state[slot], &expected, 0u, memory_order_acq_rel,
+      memory_order_acquire);
 }
 
 static Hz5SmallFrontPage* hz5_smallfront_new_page(Hz5SmallFrontTls* tls,
@@ -288,8 +277,8 @@ static Hz5SmallFrontPage* hz5_smallfront_new_page(Hz5SmallFrontTls* tls,
   page->slot_count = slot_count;
   page->reserved0 = 0;
   page->owner_token = tls->owner_token;
-  for (uint32_t i = 0; i < 4u; ++i) {
-    atomic_store_explicit(&page->active_bits[i], 0, memory_order_relaxed);
+  for (uint32_t i = 0; i < 256u; ++i) {
+    atomic_store_explicit(&page->slot_state[i], 0, memory_order_relaxed);
   }
   atomic_store_explicit(&page->remote_head, NULL, memory_order_relaxed);
   page->owner_next = tls->owned_pages[class_index];
@@ -302,38 +291,38 @@ static Hz5SmallFrontPage* hz5_smallfront_new_page(Hz5SmallFrontTls* tls,
   tls->owned_pages[class_index] = page;
   for (uint32_t slot = slot_count; slot > 0; --slot) {
     void* ptr = (void*)(page_base + (uintptr_t)(slot - 1u) * class_size);
-    hz5_smallfront_local_push(tls, class_index, ptr);
+    hz5_smallfront_local_push(tls, class_index, ptr, page);
   }
   return page;
 }
 
 void* hz5_smallfront_alloc(size_t size, size_t align) {
-  if (align > 16u) {
-    return NULL;
-  }
   int class_index = hz5_smallfront_class_index(size);
-  if (class_index < 0) {
+  if (align > 16u || class_index < 0) {
     return NULL;
   }
 
   Hz5SmallFrontTls* tls = hz5_smallfront_tls();
   uint32_t ci = (uint32_t)class_index;
-  void* ptr = hz5_smallfront_local_pop(tls, ci);
+  Hz5SmallFrontPage* page = NULL;
+  void* ptr = hz5_smallfront_local_pop(tls, ci, &page);
   if (!ptr) {
     hz5_smallfront_drain_remote_class(tls, ci);
-    ptr = hz5_smallfront_local_pop(tls, ci);
+    ptr = hz5_smallfront_local_pop(tls, ci, &page);
   }
   if (!ptr) {
     if (!hz5_smallfront_new_page(tls, ci)) {
       return NULL;
     }
-    ptr = hz5_smallfront_local_pop(tls, ci);
+    ptr = hz5_smallfront_local_pop(tls, ci, &page);
   }
   if (!ptr) {
     return NULL;
   }
 
-  Hz5SmallFrontPage* page = hz5_smallfront_page_for_ptr(ptr);
+  if (!page || page->magic != HZ5_SMALLFRONT_MAGIC) {
+    page = hz5_smallfront_page_for_ptr(ptr);
+  }
   uint32_t slot = 0;
   if (!page || !hz5_smallfront_slot_index(page, ptr, &slot) ||
       !hz5_smallfront_mark_active_local(page, slot)) {
@@ -358,7 +347,7 @@ Hz5SmallFrontFreeResult hz5_smallfront_free(void* ptr) {
     if (!hz5_smallfront_mark_free_local(page, slot)) {
       return HZ5_SMALLFRONT_FREE_INVALID;
     }
-    hz5_smallfront_local_push(tls, page->class_index, ptr);
+    hz5_smallfront_local_push(tls, page->class_index, ptr, page);
   } else {
     if (!hz5_smallfront_mark_free_remote(page, slot)) {
       return HZ5_SMALLFRONT_FREE_INVALID;
@@ -366,6 +355,10 @@ Hz5SmallFrontFreeResult hz5_smallfront_free(void* ptr) {
     hz5_smallfront_remote_push(page, ptr);
   }
   return HZ5_SMALLFRONT_FREE_OK;
+}
+
+int hz5_smallfront_can_handle(size_t size, size_t align) {
+  return align <= 16u && hz5_smallfront_class_index(size) >= 0;
 }
 
 int hz5_smallfront_owns(void* ptr) {
@@ -395,6 +388,12 @@ void* hz5_smallfront_alloc(size_t size, size_t align) {
 Hz5SmallFrontFreeResult hz5_smallfront_free(void* ptr) {
   (void)ptr;
   return HZ5_SMALLFRONT_FREE_NOT_OWNED;
+}
+
+int hz5_smallfront_can_handle(size_t size, size_t align) {
+  (void)size;
+  (void)align;
+  return 0;
 }
 
 int hz5_smallfront_owns(void* ptr) {
