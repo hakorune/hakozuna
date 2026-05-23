@@ -129,6 +129,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_LOCAL2P_ROUTE_COOKIE 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LOCAL2P_REUSE_STATE_ONLY
+#define BENCHLAB_HZ5_LINUX_LOCAL2P_REUSE_STATE_ONLY 0
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS
 #define BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS 0
 #endif
@@ -641,6 +645,7 @@ static void* hz5_policy_local2p_alloc(size_t size, size_t align) {
   }
 
   void* node_ptr = hz5_policy_local2p_pop();
+  int tls_reuse = node_ptr != NULL;
 #if BENCHLAB_HZ5_LINUX_LOCAL2P_OWNER_INBOX && \
     BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
   if (!node_ptr) {
@@ -692,7 +697,16 @@ static void* hz5_policy_local2p_alloc(size_t size, size_t align) {
 #if BENCHLAB_HZ5_LINUX_LOCAL2P_OBJECT_NODE
   }
 #endif
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_REUSE_STATE_ONLY
+  if (tls_reuse) {
+    atomic_store_explicit(&header->local2p_state, HZ5_LOCAL2P_STATE_ACTIVE,
+                          memory_order_release);
+  } else {
+    hz5_policy_local2p_init_header(header, aligned);
+  }
+#else
   hz5_policy_local2p_init_header(header, aligned);
+#endif
   return (void*)aligned;
 }
 

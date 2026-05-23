@@ -413,6 +413,27 @@ This is the first cookie consolidation step. It does not remove the Local2P
 cookie check; it removes the extra generic wrapper-cookie check from the
 Local2P fast path.
 
+### Reuse-State-Only Candidate
+
+`hz5-linux-local2p-reuse-state-only` keeps route-cookie and optimizes only TLS
+cache hits:
+
+```text
+TLS hit:
+  wrapper prefix already initialized
+  Local2P owner/generation/cookie already initialized
+  store state = ACTIVE
+  return aligned user pointer
+
+non-TLS source:
+  full Local2P attribution init
+```
+
+Generation is not a temporal-safety boundary because the user pointer does not
+carry the generation. The candidate keeps sequential double-free-before-reuse
+detection through the state field while avoiding redundant owner/cookie writes
+on owner-local reuse.
+
 Overflow policy for the first candidate should be explicit and visible in the
 lane name or build metadata. Prefer keeping it simple:
 

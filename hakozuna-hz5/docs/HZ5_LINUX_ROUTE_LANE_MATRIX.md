@@ -192,6 +192,7 @@ This is a useful hit-rate diagnostic, but a miss is not an HZ5 allocation.
 | `hz5-local2p-object` | `hz5-linux-local2p-object-node` | `--linux-local2p-object-node` | `local2p` | speed candidate: user-pointer freelist node |
 | `hz5-local2p-faststate` | `hz5-linux-local2p-same-owner-fast-state` | `--linux-local2p-same-owner-fast-state` | `local2p` | speed candidate: owner-local load/store state |
 | `hz5-local2p-routecookie` | `hz5-linux-local2p-route-cookie` | `--linux-local2p-route-cookie` | `local2p` | speed candidate: Local2P cookie as route guard |
+| `hz5-local2p-reusefast` | `hz5-linux-local2p-reuse-state-only` | `--linux-local2p-reuse-state-only` | `local2p` | speed candidate: TLS reuse updates state only |
 | `hz5-local2p-inbox` | `hz5-linux-local2p-remote-inbox` | `--linux-local2p-fast --linux-local2p-owner-inbox` | `local2p` | remote-free candidate |
 | `hz5-local2p` | `hz5-linux-local2p` | `--linux-local2p` | `local2p` | baseline Local2P implementation |
 | `hz5-p25` | `hz5-linux-p25-control` | no Local2P/P43/P25Attr selector | `p25_bridge` | Linux control |
@@ -289,6 +290,7 @@ Local2P speed candidates:
 --linux-local2p-object-node
 --linux-local2p-same-owner-fast-state
 --linux-local2p-route-cookie
+--linux-local2p-reuse-state-only
 ```
 
 `--linux-local2p-object-node` stores the recycle `next` pointer in freed user
@@ -303,6 +305,10 @@ safety contract is finalized.
 `--linux-local2p-route-cookie` builds on fast-state and skips the generic
 wrapper-cookie check in the direct Local2P decode. The Local2P cookie remains
 the route attribution guard in `local2p_free`.
+
+`--linux-local2p-reuse-state-only` builds on route-cookie and, for TLS cache
+hits, only changes `local2p_state` back to ACTIVE. It does not rewrite owner,
+generation, or Local2P cookie on the owner-local reuse path.
 
 ## Decision Rules
 

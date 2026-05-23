@@ -15,8 +15,8 @@ The target lane is standalone and fallback-free:
 
 ## Current Development Focus: Linux Local2P v2
 
-Status: object-node committed; same-owner fast-state measured; route-cookie
-A/B in progress.
+Status: object-node and route-cookie committed; reuse-state-only A/B in
+progress.
 
 Goal:
 
@@ -28,7 +28,7 @@ Goal:
 Current candidate:
 
 ```text
-hz5-linux-local2p-route-cookie
+hz5-linux-local2p-reuse-state-only
 ```
 
 Design:
@@ -44,6 +44,8 @@ Design:
 - keep remote free on locked atomic transition
 - use the Local2P cookie as the direct route guard instead of also checking the
   generic wrapper cookie
+- on TLS reuse, update only `local2p_state=ACTIVE`; do not rewrite owner,
+  generation, or Local2P cookie
 - leave slim header as follow-up A/B lane
 
 Expected first measurement:
@@ -122,6 +124,38 @@ Interpretation:
   still fails closed
 - remaining tcmalloc gap is now likely header shape, API call path, generation /
   cookie recompute, and RSS/source policy
+
+Reuse-state-only measurement:
+
+```text
+private/raw-results/linux/local2p_reusefast_runs10
+
+local median:
+  hz5-local2p-reusefast    187.0M ops/s
+  hz5-local2p-routecookie  176.1M ops/s
+  hz4                      133.1M ops/s
+  tcmalloc                 256.3M ops/s
+
+mixed final median:
+  hz5-local2p-reusefast    193.6M ops/s
+  hz5-local2p-routecookie  177.5M ops/s
+  hz4                      137.3M ops/s
+  tcmalloc                 270.0M ops/s
+
+remote pairs/s median:
+  hz5-local2p-reusefast      8.36M
+  hz5-local2p-routecookie    8.22M
+  hz5-p25                   12.48M
+  hz4                       10.93M
+  tcmalloc                   2.38M
+```
+
+Interpretation:
+
+- avoiding owner/generation/cookie rewrites on owner-local TLS reuse is a real
+  speed win
+- 10M perf smoke dropped to about 1.80B instructions
+- remaining tcmalloc gap is mostly direct header/API shape and RSS/source policy
 
 ## Branch
 
