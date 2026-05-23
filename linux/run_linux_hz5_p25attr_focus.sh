@@ -177,7 +177,78 @@ done
   echo "probe_attempts=${PROBE_ATTEMPTS}"
   echo "queue=${QUEUE}"
   echo "note=focus runner for Linux P25 bridge attr vs trustwrap/token lanes across local, producer-consumer remote-free, RSS plateau, and mixed-prelude robustness."
+  echo "lane_metadata=${OUTDIR}/lane_metadata.tsv"
 } > "${OUTDIR}/README.log"
+
+write_lane_metadata() {
+  local lane="$1"
+  case "$lane" in
+    p25)
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$lane" "hz5-linux-p25-control" "p25_bridge" \
+        "control" "exact-lowpage64-control" \
+        "baseline-for-attribution-and-p43-diagnostics"
+      ;;
+    p25attr)
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$lane" "hz5-linux-p25attr" "p25attr" \
+        "safety-diagnostic" "not-paper-claim" \
+        "p25-topology-with-cookie-and-state-validation"
+      ;;
+    p25attr-nocas)
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$lane" "hz5-linux-p25attr-nocas" "p25attr" \
+        "cost-diagnostic" "not-paper-claim" \
+        "no-cas-cost-isolation"
+      ;;
+    p25attr-nocookie)
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$lane" "hz5-linux-p25attr-nocookie" "p25attr" \
+        "cost-diagnostic" "not-paper-claim" \
+        "no-cookie-recompute-cost-isolation"
+      ;;
+    p25attr-readonly)
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$lane" "hz5-linux-p25attr-readonly" "p25attr" \
+        "cost-diagnostic" "not-paper-claim" \
+        "state-readonly-cost-isolation"
+      ;;
+    p43-trustwrap)
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$lane" "hz5-linux-p43-trustwrap" "p43_trustwrap" \
+        "unsafe-control" "not-paper-claim" \
+        "trusts-wrapper-source-and-skips-stronger-ownership-lookup"
+      ;;
+    p43-token)
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$lane" "hz5-linux-p43-token" "p43_token" \
+        "remote-rss-candidate-watch" "diagnostic-until-proven" \
+        "direct-p43-token-release-topology"
+      ;;
+    p43-tokenbridge)
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$lane" "hz5-linux-p43-tokenbridge" "p43_tokenbridge" \
+        "topology-mismatch-evidence" "not-paper-claim" \
+        "p43-source-acquire-with-p25-bridge-release-shape"
+      ;;
+    p43-source)
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$lane" "hz5-linux-p43-source-control" "p43_source" \
+        "source-control" "diagnostic" \
+        "linux-p43-source-layer-control"
+      ;;
+    *)
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$lane" "unknown" "unknown" "unknown" "unknown" "unknown"
+      ;;
+  esac
+}
+
+printf 'label\trole_name\tprimary_route\tclassification\tclaim_scope\tnote\n' \
+  > "${OUTDIR}/lane_metadata.tsv"
+for lane in p25 p25attr p25attr-nocas p25attr-nocookie p25attr-readonly p43-trustwrap p43-token p43-tokenbridge p43-source; do
+  write_lane_metadata "$lane" >> "${OUTDIR}/lane_metadata.tsv"
+done
 
 printf 'workload\tlane\trun\tstatus\tops_s\tpairs_s\trss_peak_kb\trss_final_kb\tprobe_successes\tprobe_nulls\tru_maxrss_kb\tlog\n' \
   > "${OUTDIR}/results.tsv"

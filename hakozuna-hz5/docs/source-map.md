@@ -44,6 +44,8 @@ the `lowpage/` bridge/source split above.
 * `docs/HZ5_CONTROL_PLANE_DESIGN.md`: post-P45 control-plane design. P25 bridge
   is the speed layer, P43 segment slots are the source layer, P40 release is
   source-demotion intent, and OPEN/DRAIN/CLOSED admission is the control plane.
+* `docs/HZ5_LINUX_ROUTE_LANE_MATRIX.md`: Linux-specific route/lane/benchmark
+  classification. Use it before naming a new HZ5 Linux result or paper claim.
 * `docs/HZ5_P43I_P43O_ALGO_CONSULT.md`: historical consultation ledger for
   P43i/P43o/P43p/P45. Use it as evidence, not as the current implementation map.
 * `docs/source-map.md`: this file.

@@ -132,7 +132,7 @@ hz5_policy_free(ptr)
     if owner is current thread:
       local2p_tls_push(raw)
     else:
-      remote-free path for later lane, or fail/escape explicitly
+      local2p_global_push(raw)
     return
 
   otherwise:
@@ -156,11 +156,32 @@ Later source options:
 
 - Linux `mmap` 128K source
 - P43 segment source as a cold source only
-- shared/global pool for overflow
 - RSS release lane with explicit policy
 
 Do not route steady-state local alloc/free through P25 bridge just to obtain
 raw spans. That would reintroduce the measured bottleneck.
+
+## Remote Recycle Control
+
+The first Local2P implementation released cross-thread frees directly to the
+OS. That made producer/consumer remote-free syscall-bound.
+
+Current control path:
+
+```text
+remote free:
+  validate wrapper/cookie/state
+  ACTIVE -> FREED
+  push raw 128K span to bounded global recycle stack, cap 1024 by default
+
+alloc TLS miss:
+  pop from global recycle stack
+  otherwise posix_memalign(8192, 131072)
+```
+
+This keeps the `local2p` route intact and avoids P25/P43 topology changes. It
+is still not the final remote-free design: it is a simple global recycle
+control, not an owner inbox.
 
 ## Metadata
 

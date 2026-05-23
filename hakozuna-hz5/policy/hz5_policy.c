@@ -12,6 +12,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#if defined(__linux__)
+#include <pthread.h>
+#endif
+
 #if !defined(_WIN32)
 void* _aligned_malloc(size_t size, size_t alignment);
 void _aligned_free(void* ptr);
@@ -97,6 +101,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_CAP ((size_t)1)
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LOCAL2P_GLOBAL_CAP
+#define BENCHLAB_HZ5_LINUX_LOCAL2P_GLOBAL_CAP ((size_t)1024)
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS
 #define BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS 0
 #endif
@@ -148,6 +156,10 @@ static uintptr_t g_hz5_policy_bridge_secret_anchor;
 #endif
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_LOCAL2P
 static uintptr_t g_hz5_policy_local2p_secret_anchor;
+static pthread_mutex_t g_hz5_policy_local2p_global_lock =
+    PTHREAD_MUTEX_INITIALIZER;
+static void* g_hz5_policy_local2p_global_head;
+static size_t g_hz5_policy_local2p_global_count;
 #if BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
 typedef struct Hz5PolicyLocal2PTls {
   void* head;
@@ -419,6 +431,24 @@ static void* hz5_policy_local2p_pop(void) {
   return (void*)node;
 }
 
+static void* hz5_policy_local2p_global_pop(void) {
+  if (BENCHLAB_HZ5_LINUX_LOCAL2P_GLOBAL_CAP == 0u) {
+    return NULL;
+  }
+  pthread_mutex_lock(&g_hz5_policy_local2p_global_lock);
+  Hz5LinuxLocal2PNode* node =
+      (Hz5LinuxLocal2PNode*)g_hz5_policy_local2p_global_head;
+  if (node) {
+    g_hz5_policy_local2p_global_head = node->next;
+    --g_hz5_policy_local2p_global_count;
+  }
+  pthread_mutex_unlock(&g_hz5_policy_local2p_global_lock);
+  if (node) {
+    hz5_trace_inc(HZ5_TRACE_ALLOC_LOCAL2P_GLOBAL_HIT);
+  }
+  return (void*)node;
+}
+
 static int hz5_policy_local2p_push(void* raw_ptr) {
 #if BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
   Hz5PolicyLocal2PTls* tls = hz5_policy_local2p_tls();
@@ -442,6 +472,31 @@ static int hz5_policy_local2p_push(void* raw_ptr) {
 #endif
   hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_TLS);
   return 1;
+}
+
+static int hz5_policy_local2p_global_push(void* raw_ptr) {
+  if (BENCHLAB_HZ5_LINUX_LOCAL2P_GLOBAL_CAP == 0u) {
+    free(raw_ptr);
+    return 0;
+  }
+  int pushed = 0;
+  pthread_mutex_lock(&g_hz5_policy_local2p_global_lock);
+  if (g_hz5_policy_local2p_global_count <
+      BENCHLAB_HZ5_LINUX_LOCAL2P_GLOBAL_CAP) {
+    Hz5LinuxLocal2PNode* node = (Hz5LinuxLocal2PNode*)raw_ptr;
+    node->next = (Hz5LinuxLocal2PNode*)g_hz5_policy_local2p_global_head;
+    g_hz5_policy_local2p_global_head = node;
+    ++g_hz5_policy_local2p_global_count;
+    pushed = 1;
+  }
+  pthread_mutex_unlock(&g_hz5_policy_local2p_global_lock);
+  if (pushed) {
+    hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_GLOBAL);
+    return 1;
+  }
+  hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_OVERFLOW);
+  free(raw_ptr);
+  return 0;
 }
 
 static void* hz5_policy_local2p_os_alloc(void) {
@@ -486,6 +541,9 @@ static void* hz5_policy_local2p_alloc(size_t size, size_t align) {
   }
 
   void* raw_ptr = hz5_policy_local2p_pop();
+  if (!raw_ptr) {
+    raw_ptr = hz5_policy_local2p_global_pop();
+  }
   if (!raw_ptr) {
     raw_ptr = hz5_policy_local2p_os_alloc();
   }
@@ -544,7 +602,7 @@ static Hz5FreeResult hz5_policy_local2p_free(Hz5WrapperHdr* header,
 
   if (header->local2p_owner != hz5_policy_local2p_owner_token()) {
     hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_REMOTE);
-    free((void*)header->raw);
+    (void)hz5_policy_local2p_global_push((void*)header->raw);
     return HZ5_FREE_OK_HZ5;
   }
 

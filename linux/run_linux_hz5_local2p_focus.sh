@@ -206,7 +206,54 @@ done
   echo "hz5_preload_hybrid=${HZ5_PRELOAD_HYBRID_SO}"
   echo "mimalloc=${MIMALLOC_SO:-missing}"
   echo "tcmalloc=${TCMALLOC_SO:-missing}"
+  echo "lane_metadata=${OUTDIR}/lane_metadata.tsv"
 } > "${OUTDIR}/README.log"
+
+write_allocator_metadata() {
+  local alloc="$1"
+  case "$alloc" in
+    hz5-local2p-fast)
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$alloc" "hz5-linux-local2p-fast" "local2p" \
+        "appendix-speed-candidate" "exact-64k-a8192-local" \
+        "not-general-not-remote-profile"
+      ;;
+    hz5-local2p)
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$alloc" "hz5-linux-local2p" "local2p" \
+        "appendix-baseline" "exact-64k-a8192-local" \
+        "baseline-local2p-implementation"
+      ;;
+    hz5-p25)
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$alloc" "hz5-linux-p25-control" "p25_bridge" \
+        "control" "exact-lowpage64-control" \
+        "baseline-for-local2p"
+      ;;
+    hz5-preload-hybrid)
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$alloc" "hz5-preload-hybrid-diagnostic" "local2p+libc_passthrough" \
+        "diagnostic-adapter" "same-binary-hit-rate" \
+        "libc-plus-hz5-hybrid-not-pure-hz5"
+      ;;
+    hz4|tcmalloc|mimalloc|system)
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$alloc" "$alloc" "external_allocator" \
+        "comparison" "general-comparison" \
+        "not-hz5-route"
+      ;;
+    *)
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$alloc" "unknown" "unknown" "unknown" "unknown" "unknown"
+      ;;
+  esac
+}
+
+printf 'label\trole_name\tprimary_route\tclassification\tclaim_scope\tnote\n' \
+  > "${OUTDIR}/lane_metadata.tsv"
+for alloc in "${allocator_list[@]}"; do
+  write_allocator_metadata "$alloc" >> "${OUTDIR}/lane_metadata.tsv"
+done
 
 printf 'workload\talloc\trun\tstatus\tops_s\tpairs_s\trss_peak_kb\trss_final_kb\tprobe_successes\tprobe_nulls\tru_maxrss_kb\tlog\n' \
   > "${OUTDIR}/results.tsv"

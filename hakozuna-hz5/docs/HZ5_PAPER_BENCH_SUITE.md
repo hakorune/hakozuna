@@ -4,6 +4,12 @@ This document defines which benchmarks are paper-main, appendix, or diagnostic
 for HZ5 work. The goal is to stop benchmark sprawl and keep claims tied to a
 stable evaluation tier.
 
+Route/lane names are defined in:
+
+```text
+hakozuna-hz5/docs/HZ5_LINUX_ROUTE_LANE_MATRIX.md
+```
+
 ## Rule
 
 Do not mix benchmark tiers in one claim.
@@ -158,7 +164,6 @@ Current HZ5 appendix candidates:
 hz5-local2p-fast
 hz5-local2p
 hz5-p25
-hz5-preload-hybrid
 hz4
 tcmalloc
 mimalloc
@@ -171,6 +176,8 @@ Interpretation rules:
 - It is not a remote-free profile unless a later owner-inbox/remote queue lane
   fixes producer/consumer performance.
 - It is not a general allocator profile unless it passes paper-main workloads.
+- `hz5-preload-hybrid` is excluded from appendix claim rows by default. Use it
+  only for same-binary hit-rate and shim-overhead diagnostics.
 
 ### Diagnostic
 
@@ -228,6 +235,15 @@ Run from this repository:
   --outdir private/raw-results/linux/local2p_focus_runs10
 ```
 
+Each HZ5 focus output directory includes:
+
+```text
+lane_metadata.tsv
+```
+
+Use this file to separate appendix claim rows from diagnostic/control rows
+before copying results into paper tables.
+
 ### One front door
 
 Use:
@@ -247,8 +263,9 @@ As of `4b3ecb7`:
 
 - `hz5-local2p-fast` is HZ4-class on local exact `64K/a8192`.
 - It is also HZ4-class on the exact mixed-prelude final throughput.
-- It is much weaker on producer/consumer remote-free because remote frees are
-  released to the OS in the first Local2P lane.
+- Producer/consumer remote-free now uses a bounded global recycle stack, but it
+  remains a simple control path rather than a final owner-inbox remote-free
+  profile.
 - It has low final RSS in the plateau test, but low RSS throughput.
 
 Paper wording should be:

@@ -1198,7 +1198,7 @@ Initial implementation notes:
 - Span source: `posix_memalign(8192, 131072)`.
 - Cache: thread-local raw span stack, cap1 by default.
 - Free policy: wrapper decode, Local2P cookie check, `ACTIVE -> FREED` CAS,
-  same-owner TLS push, cross-thread direct OS free for the initial lane.
+  same-owner TLS push.
 - Invalid Local2P-looking frees fail closed and do not fall through to P25,
   P43, or HZ3 fallback.
 
@@ -1310,8 +1310,9 @@ Interpretation:
 
 - Local2P fast is now HZ4-class for local-only and mixed-prelude exact
   `64K/a8192`.
-- Local2P fast is not a remote-free or RSS-throughput lane. cap1 + remote OS
-  release is intentionally conservative and very slow under producer/consumer.
+- Local2P fast was not a remote-free or RSS-throughput lane at this point.
+  cap1 + remote OS release was intentionally conservative and very slow under
+  producer/consumer.
 - HZ5 P25 remains the stronger Linux remote-free/control lane.
 - tcmalloc remains the local throughput ceiling for this Ubuntu microbench.
 - mimalloc remains anomalously weak on this aligned workload in this setup.
@@ -1572,3 +1573,64 @@ Fail-closed checks:
 ```
 
 Both reject unsupported routes instead of falling back.
+
+## HZ5 Linux Route/Lane Cleanup
+
+Added a route/lane/benchmark-profile SSOT:
+
+```text
+hakozuna-hz5/docs/HZ5_LINUX_ROUTE_LANE_MATRIX.md
+```
+
+Purpose:
+
+- stop mixing actual allocation routes with build lanes and paper benchmark
+  profiles
+- keep `local2p`, `p25_bridge`, `p25attr`, `p43_token`, and
+  `preload_hybrid` in separate categories
+- prevent diagnostic lanes from becoming paper claims by accident
+
+Current classification, using runner labels:
+
+- `hz5-local2p-fast`: current Linux exact `64K/a8192` appendix speed
+  candidate
+- `hz5-p25`: Linux HZ5 control/baseline route
+- `p25attr` variants: safety/cost diagnostics
+- `p43-token` / `p43-tokenbridge` / `p43-trustwrap`: diagnostic or
+  remote/RSS candidate-watch only
+- `hz5-preload-hybrid`: libc+HZ5 diagnostic adapter, not paper-main and not a
+  pure HZ5 allocator
+
+Paper wording rule:
+
+```text
+HZ5 Local2P is a Linux exact-overaligned local-throughput candidate for
+64K/a8192. It is not a general allocator profile.
+```
+
+Runner cleanup:
+
+- `linux/run_linux_hz5_local2p_focus.sh` now writes `lane_metadata.tsv`.
+- `linux/run_linux_hz5_p25attr_focus.sh` now writes `lane_metadata.tsv`.
+- The metadata records runner label, role name, primary route, classification,
+  claim scope, and note.
+- Use this metadata before moving rows into paper appendix or diagnostic tables.
+
+Local2P remote recycle control:
+
+- Added a bounded global recycle stack inside the existing `local2p` route,
+  cap 1024 by default.
+- Same-owner free still pushes to the TLS cap1 stack.
+- Cross-thread free now validates wrapper/cookie/state, marks `ACTIVE -> FREED`,
+  then pushes the raw 128K span to the global recycle stack instead of calling
+  OS `free(raw)` on every remote free.
+- Allocation checks TLS first, then global recycle, then
+  `posix_memalign(8192, 131072)`.
+- New trace counters:
+  `alloc_local2p_global_hit` and `free_local2p_global`.
+- Smoke trace:
+  `wrapper_decode_ok=10000 alloc_local2p_global_hit=9896 alloc_local2p_os=104
+  free_local2p_global=10000 free_local2p_remote=10000`.
+- Smoke remote-free:
+  `bench_hz5_standalone_remote64k 200000 65536 8192 1024` reached about
+  `7.06M pairs/s`.
