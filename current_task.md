@@ -16,7 +16,7 @@ The target lane is standalone and fallback-free:
 ## Current Development Focus: Linux Local2P v2
 
 Status: object-node, route-cookie, reuse-state-only, slim-check, and
-fast-cookie measured; fast-cookie is the current local-speed candidate.
+fast-cookie measured; offset-cookie A/B was tested and rejected.
 
 Goal:
 
@@ -239,6 +239,15 @@ Interpretation:
 - remote remains a separate problem; fast-cookie does not improve the
   producer/consumer remote-free lane
 - local gap to tcmalloc is now about 44M ops/s on this focused benchmark
+
+Rejected A/B:
+
+- `hz5-linux-local2p-offset-cookie` replaced the per-free cookie mix with a
+  fixed route cookie plus `raw == aligned - 8192` validation.
+- Safety smoke passed, but RUNS=10 regressed versus fast-cookie:
+  `204.6M` vs `206.3M` local ops/s and `208.2M` vs `213.4M` mixed ops/s.
+- Code was not kept; measurement folder:
+  `private/raw-results/linux/local2p_offsetcookie_runs10`
 
 ## Branch
 
