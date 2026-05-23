@@ -22,6 +22,76 @@ MidFront-M1:
   fail-closed state transitions
 ```
 
+## Implementation Status
+
+Implemented behind:
+
+```text
+--linux-midfront-m1
+```
+
+Current M1 implementation:
+
+```text
+files:
+  midfront/hz5_midfront.c
+  midfront/hz5_midfront.h
+
+layout:
+  descriptor/control prefix outside the user object
+  user base starts one 4KiB page after the raw mapping
+  one object per span
+
+ownership:
+  every user page in the span maps to the MidSpan descriptor
+  free requires ptr == span->base
+  malloc_usable_size returns class_bytes
+
+remote:
+  owner token per span
+  owner-slot x class inbox
+  sender-side remote batch
+  ACTIVE -> REMOTE_PENDING CAS
+```
+
+Current smoke:
+
+```text
+/bin/true under full preload:
+  OK
+
+class usable smoke:
+  3000  -> 4096
+  4096  -> 4096
+  5000  -> 8192
+  8192  -> 8192
+  16000 -> 16384
+  32768 -> 32768
+  65000 -> 65536
+
+owner-death smoke:
+  worker malloc(8192), worker exits, main free(ptr)
+  OK, no crash
+
+short hakmem, threads=2 iters=50000 ws=100 size=16..65536:
+  r0 median:  about 36.8M ops/s
+  r90 median: about 2.69M ops/s
+
+attribution:
+  malloc_hz5=5054
+  malloc_real=0
+  track_insert_fail=0
+```
+
+Interpretation:
+
+```text
+M1 is a coverage/control implementation, not the final fast MidFront. It makes
+ordinary 4K..64K malloc HZ5-owned and descriptor-safe. The one-object source
+path is intentionally simple and should be optimized after correctness and
+paper-main coverage are stable.
+```
+
 ## Allocator Shape
 
 The Linux HZ5 general allocator should be split by responsibility:
@@ -341,4 +411,3 @@ malloc_real remains 0 in benchmark body
 SmallFront <=2KiB performance remains stable
 Local2P exact profile remains unchanged
 ```
-

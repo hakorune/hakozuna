@@ -477,6 +477,82 @@ hakozuna-hz5/docs/HZ5_OWNER_LIFETIME_O1.md
 hakozuna-hz5/docs/HZ5_MIDFRONT_M1_DESIGN.md
 ```
 
+MidFront-M1 implementation status:
+
+```text
+build selector:
+  --linux-midfront-m1
+
+implemented:
+  hakozuna-hz5/midfront/hz5_midfront.c
+  hakozuna-hz5/midfront/hz5_midfront.h
+
+scope:
+  Linux full preload
+  normal malloc alignment <= 16
+  classes: 4096, 8192, 16384, 32768, 65536
+  one object per span
+  descriptor outside user object
+  span-base/page map ownership lookup
+  owner-local TLS span cache
+  owner-slot x class remote inbox
+  sender-side remote batch
+  fail-closed ACTIVE state transitions
+
+preload:
+  malloc/calloc/realloc/malloc_usable_size consult MidFront after SmallFront
+  MidFront-owned pointers are not inserted into the full-preload pointer table
+```
+
+MidFront-M1 smoke:
+
+```text
+/bin/true under preload OK
+malloc/free/usable classes OK:
+  3000 -> usable 4096
+  4096 -> usable 4096
+  5000 -> usable 8192
+  8192 -> usable 8192
+  16000 -> usable 16384
+  32768 -> usable 32768
+  65000 -> usable 65536
+
+owner-death smoke OK:
+  worker malloc(8192), worker exits, main free(ptr)
+  no crash
+```
+
+Short hakmem smoke with MidFront enabled:
+
+```text
+threads=2 iters=50000 ws=100
+
+size=16..65536:
+  r0 median:  about 36.8M ops/s
+  r90 median: about 2.69M ops/s
+
+size=16..2048:
+  r0 median:  about 41.2M ops/s
+  r90 median: about 6.70M ops/s
+
+short attribution, size=16..65536:
+  malloc_hz5=5054
+  malloc_real=0
+  track_insert_fail=0
+```
+
+Interpretation:
+
+```text
+MidFront-M1 fixes the immediate coverage/control problem: 16..65536 paper-main
+smoke no longer fails ring setup and no longer falls to real malloc.
+
+This is not yet a final performance design. One-object mmap-backed spans are
+simple and descriptor-safe, but remote-heavy throughput is low. Next MidFront
+work should reduce source cost and improve remote reuse, not route through P2
+as the hot path.
+```
+
 OwnerLifetime-O1 implementation status:
 
 ```text

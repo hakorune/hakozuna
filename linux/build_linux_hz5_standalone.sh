@@ -48,6 +48,7 @@ TRACE_LANE=0
 BUILD_PRELOAD_FULL=0
 LINUX_SMALLFRONT_S1=0
 LINUX_SMALLFRONT_REMOTE_BATCH_CAP=16
+LINUX_MIDFRONT_M1=0
 HZ5_STANDALONE_EXACT_ONLY=1
 
 usage() {
@@ -113,6 +114,8 @@ Options:
                      diagnostic only: store retained owner-local TLS entries in a pointer array
   --linux-smallfront-remote-batch-cap N
                      SmallFront-S1 remote-free sender batch flush threshold (default: 16)
+  --linux-midfront-m1
+                     enable Linux MidFront-M1 ordinary malloc 4K..64K front-end
   --linux-p11-speed-core
                      diagnostic only: compile the legacy P2 run/tcache path with HZ5_P11_SPEED_CORE=1
   --linux-p25-bridge-attr
@@ -452,6 +455,13 @@ while [[ $# -gt 0 ]]; do
       LINUX_SMALLFRONT_REMOTE_BATCH_CAP="$2"
       shift 2
       ;;
+    --linux-midfront-m1)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDFRONT_M1=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
     --trace-lane)
       TRACE_LANE=1
       shift
@@ -595,6 +605,7 @@ COMMON_FLAGS=(
   -I"${HZ5_DIR}/lowpage"
   -I"${HZ5_DIR}/fallback"
   -I"${HZ5_DIR}/smallfront"
+  -I"${HZ5_DIR}/midfront"
 )
 SPEED_LINK_COMPILE_FLAGS=()
 SHARED_LINK_FLAGS=()
@@ -740,6 +751,9 @@ if [[ "$LINUX_SMALLFRONT_S1" -eq 1 ]]; then
     -DHZ5_SMALLFRONT_REMOTE_BATCH_CAP="${LINUX_SMALLFRONT_REMOTE_BATCH_CAP}u"
   )
 fi
+if [[ "$LINUX_MIDFRONT_M1" -eq 1 ]]; then
+  COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDFRONT_M1=1)
+fi
 
 {
   echo "commit=${SOURCE_COMMIT}"
@@ -778,6 +792,7 @@ fi
   echo "build_preload_full=${BUILD_PRELOAD_FULL}"
   echo "linux_smallfront_s1=${LINUX_SMALLFRONT_S1}"
   echo "linux_smallfront_remote_batch_cap=${LINUX_SMALLFRONT_REMOTE_BATCH_CAP}"
+  echo "linux_midfront_m1=${LINUX_MIDFRONT_M1}"
   echo "standalone_exact_only=${HZ5_STANDALONE_EXACT_ONLY}"
   echo "linux_p11_speed_core=${LINUX_P11_SPEED_CORE}"
   echo "linux_p25_bridge_attr=${LINUX_P25_BRIDGE_ATTR}"
@@ -804,6 +819,7 @@ HZ5_SRCS=(
   "${HZ5_DIR}/policy/hz5_trace.c"
   "${HZ5_DIR}/route/hz5_route.c"
   "${HZ5_DIR}/smallfront/hz5_smallfront.c"
+  "${HZ5_DIR}/midfront/hz5_midfront.c"
   "${HZ5_DIR}/wrapper/hz5_wrapper.c"
   "${HZ5_DIR}/lowpage/hz5_lowpage64.c"
   "${HZ5_DIR}/lowpage/hz5_lowpage64_os.c"
