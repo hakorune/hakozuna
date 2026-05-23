@@ -782,6 +782,85 @@ Interpretation:
 - broad Local2P matrix rebuilds still happen by listing all desired lanes in
   `--allocators`
 
+Broad weakness scan with RSS:
+
+```text
+private/raw-results/linux/local2p_broad_rss_runs10_20260524_023547
+
+local 64K/a8192:
+  hz5-local2p-linkflags 249.9M ops/s
+  tcmalloc              249.4M
+  exactapi              232.6M
+  tlsfast               204.8M
+  remotebatch           203.5M
+  hz4                   127.4M
+  p25                    66.5M
+  system                 48.7M
+  mimalloc                1.37M
+
+mixed final:
+  tcmalloc              268.5M ops/s, final RSS 156.0MB
+  hz5-local2p-linkflags 262.5M ops/s, final RSS   1.6MB
+  tlsfast               205.1M ops/s, final RSS   1.5MB
+  hz4                   134.7M ops/s, final RSS 151.8MB
+
+remote pairs/s:
+  hz5-local2p-remotebatch 13.79M
+  p25                     12.29M
+  hz4                     10.71M
+  linkflags                7.39M
+  tcmalloc                 2.33M
+
+RSS plateau throughput:
+  tcmalloc 365.9K ops/s, peak 138.9MB, final 138.9MB
+  hz4      318.5K ops/s, peak 149.1MB, final 149.1MB
+  mimalloc  95.3K ops/s, peak 188.7MB, final 188.7MB
+  system    60.0K ops/s, peak 157.0MB, final  10.1MB
+  p25       53.6K ops/s, peak 149.9MB, final  20.9MB
+  linkflags 48.4K ops/s, peak 153.1MB, final   1.7MB
+```
+
+Interpretation:
+
+- Local2P linkflags is still tcmalloc-class for local exact `64K/a8192`.
+- Mixed final is slightly below tcmalloc on throughput, but with much lower
+  final RSS. This is a legitimate differentiator, not a pure speed win.
+- Remote-free winner remains `remotebatch`.
+- RSS plateau is the clear weak row: HZ5 releases/returns memory aggressively
+  and keeps final RSS very low, but plateau throughput is far below
+  tcmalloc/HZ4.
+
+Guard/local allocator matrix:
+
+```text
+private/raw-results/linux/guard_allocator_matrix_runs5_20260524_023754
+
+HZ5 exact-only unsupported rows:
+  2048:8192    status=5
+  65536:4096   status=5
+  65537:16     status=5
+  262144:4096  status=5
+
+Supported HZ5 rows in this non-linkflags local2p-fast build:
+  4096:8192    hz5 44.3M, hz4 107.4M, tcmalloc 221.9M
+  8192:8192    hz5 43.5M, hz4  90.4M, tcmalloc 233.0M
+  65536:8192   hz5 132.9M, hz4 127.6M, tcmalloc 243.2M
+```
+
+Interpretation:
+
+- Guard rows fail closed as intended.
+- HZ5's current optimized Linux story is specifically `64K/a8192` Local2P.
+- Existing 4K/8K a8192 HZ5 routes are much weaker than HZ4/tcmalloc and should
+  not be marketed as part of the Local2P win.
+- The next development choice should be explicit:
+  - RSS profile: keep low final RSS while improving plateau throughput with a
+    bounded retained-cache/reuse policy.
+  - Small exact profile: add Local2P-like lanes for 4K/8K a8192 only if the
+    paper needs broader exact-overaligned coverage.
+  - Remote profile: continue from `remotebatch`, since it already beats p25,
+    HZ4, and tcmalloc in this producer/consumer row.
+
 ## Branch
 
 Use:
