@@ -15,6 +15,7 @@ LINUX_LOCAL2P_NO_CAS=0
 LINUX_LOCAL2P_OWNER_INBOX=0
 LINUX_LOCAL2P_REMOTE_BATCH=0
 LINUX_LOCAL2P_REMOTE_BATCH_CAP=16
+LINUX_LOCAL2P_TLS_CAP=1
 LINUX_LOCAL2P_GLOBAL_CAP=1024
 LINUX_LOCAL2P_OBJECT_NODE=0
 LINUX_LOCAL2P_SAME_OWNER_FAST_STATE=0
@@ -73,6 +74,8 @@ Options:
                      candidate only: batch remote frees before owner inbox push
   --linux-local2p-remote-batch-cap N
                      candidate only: remote batch flush threshold (default: 16)
+  --linux-local2p-tls-cap N
+                     candidate only: Local2P owner-local TLS cache cap (default: 1)
   --linux-local2p-global-cap N
                      candidate only: Local2P bounded global retained-cache cap (default: 1024)
   --linux-local2p-object-node
@@ -241,6 +244,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --linux-local2p-remote-batch-cap)
       LINUX_LOCAL2P_REMOTE_BATCH_CAP="$2"
+      shift 2
+      ;;
+    --linux-local2p-tls-cap)
+      LINUX_LOCAL2P_TLS_CAP="$2"
       shift 2
       ;;
     --linux-local2p-global-cap)
@@ -577,7 +584,7 @@ fi
 if [[ "$LINUX_LOCAL2P" -eq 1 ]]; then
   COMMON_FLAGS+=(
     -DBENCHLAB_HZ5_LINUX_LOCAL2P=1
-    -DBENCHLAB_HZ5_LINUX_LOCAL2P_TLS_CAP=1
+    -DBENCHLAB_HZ5_LINUX_LOCAL2P_TLS_CAP="${LINUX_LOCAL2P_TLS_CAP}u"
     -DBENCHLAB_HZ5_LINUX_LOCAL2P_GLOBAL_CAP="${LINUX_LOCAL2P_GLOBAL_CAP}u"
   )
   if [[ "$LINUX_LOCAL2P_TLS_PACKED" -eq 1 ]]; then
@@ -701,6 +708,7 @@ fi
   echo "linux_local2p_owner_inbox=${LINUX_LOCAL2P_OWNER_INBOX}"
   echo "linux_local2p_remote_batch=${LINUX_LOCAL2P_REMOTE_BATCH}"
   echo "linux_local2p_remote_batch_cap=${LINUX_LOCAL2P_REMOTE_BATCH_CAP}"
+  echo "linux_local2p_tls_cap=${LINUX_LOCAL2P_TLS_CAP}"
   echo "linux_local2p_global_cap=${LINUX_LOCAL2P_GLOBAL_CAP}"
   echo "linux_local2p_object_node=${LINUX_LOCAL2P_OBJECT_NODE}"
   echo "linux_local2p_same_owner_fast_state=${LINUX_LOCAL2P_SAME_OWNER_FAST_STATE}"

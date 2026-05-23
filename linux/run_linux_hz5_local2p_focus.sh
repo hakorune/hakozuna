@@ -74,6 +74,7 @@ Allocators:
   hz5-local2p-rssretain
   hz5-local2p-rssretain1536
   hz5-local2p-rssretain2048
+  hz5-local2p-rssretain2048tls
   hz5-local2p-freefirst
   hz5-local2p-freefirst-fastcookie
   hz5-local2p-inbox
@@ -155,6 +156,7 @@ build_requested_hz5_lane() {
     hz5-local2p-rssretain) build_hz5_lane hz5-local2p-rssretain --linux-local2p-rss-retain ;;
     hz5-local2p-rssretain1536) build_hz5_lane hz5-local2p-rssretain1536 --linux-local2p-rss-retain --linux-local2p-global-cap 1536 ;;
     hz5-local2p-rssretain2048) build_hz5_lane hz5-local2p-rssretain2048 --linux-local2p-rss-retain --linux-local2p-global-cap 2048 ;;
+    hz5-local2p-rssretain2048tls) build_hz5_lane hz5-local2p-rssretain2048tls --linux-local2p-rss-retain --linux-local2p-global-cap 2048 --linux-local2p-tls-cap 2048 ;;
     hz5-local2p-freefirst) build_hz5_lane hz5-local2p-freefirst --linux-local2p-free-first ;;
     hz5-local2p-freefirst-fastcookie) build_hz5_lane hz5-local2p-freefirst-fastcookie --linux-local2p-freefirst-fastcookie ;;
     hz5-local2p-inbox) build_hz5_lane hz5-local2p-inbox --linux-local2p-fast --linux-local2p-owner-inbox ;;
@@ -242,6 +244,7 @@ is_hz5_focus_lane() {
     hz5-local2p-rssretain|\
     hz5-local2p-rssretain1536|\
     hz5-local2p-rssretain2048|\
+    hz5-local2p-rssretain2048tls|\
     hz5-local2p-freefirst|\
     hz5-local2p-freefirst-fastcookie|\
     hz5-local2p-inbox|\
@@ -391,6 +394,12 @@ write_allocator_metadata() {
         "$alloc" "hz5-linux-local2p-rss-retain-cap2048" "local2p" \
         "appendix-reporting-row" "rss-throughput-retained-64k-a8192" \
         "retains-full-2048-block-rss-plateau-working-set"
+      ;;
+    hz5-local2p-rssretain2048tls)
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$alloc" "hz5-linux-local2p-rss-retain-cap2048-tls2048" "local2p" \
+        "rss-candidate" "rss-plateau-exact-64k-a8192" \
+        "retains-2048-block-working-set-in-owner-local-tls-cache"
       ;;
     hz5-local2p-rssretain256|hz5-local2p-rssretain512|\
     hz5-local2p-rssretain1536)

@@ -137,6 +137,54 @@ Interpretation:
 - `mimalloc` remains an external comparison row with an unfavorable aligned
   path on this workload; do not use it as the main optimization target.
 
+Next RSS A/B:
+
+```text
+hz5-local2p-rssretain2048tls:
+  --linux-local2p-rss-retain
+  --linux-local2p-global-cap 2048
+  --linux-local2p-tls-cap 2048
+
+hypothesis:
+  RSS plateau is paying global-cache mutex push/pop for almost all 2048 blocks.
+  Retaining the 2048-block working set in owner-local TLS should remove that
+  lock path while keeping the same retained-RSS profile.
+```
+
+Result:
+
+```text
+private/raw-results/linux/local2p_rsstls2048_runs10_20260524_041238
+
+RSS plateau:
+  tcmalloc                       379.5K ops/s, final RSS 138.9MB
+  hz4                            329.6K ops/s, final RSS 149.2MB
+  hz5-local2p-rssretain2048tls   325.3K ops/s, final RSS 153.1MB
+  hz5-local2p-rssretain2048      321.5K ops/s, final RSS 153.1MB
+
+mixed final:
+  hz5-local2p-rssretain2048      274.1M ops/s, final RSS 153.0MB
+  hz5-local2p-rssretain2048tls   274.0M ops/s, final RSS 153.0MB
+  tcmalloc                       267.7M ops/s, final RSS 156.0MB
+
+local:
+  hz5-local2p-rssretain2048tls   251.4M ops/s
+  tcmalloc                       252.3M
+  hz5-local2p-rssretain2048      248.2M
+```
+
+Interpretation:
+
+- TLS cap 2048 is a small RSS throughput win, not a structural tcmalloc catchup.
+- It essentially reaches HZ4 on this run while keeping the retained RSS profile.
+- Perf counters show the remaining gap to tcmalloc is broader than the global
+  mutex path: `rssretain2048tls` still spends about 319M cycles / 253M
+  instructions versus tcmalloc about 289M cycles / 240M instructions in a
+  three-repeat perf stat probe.
+- Keep `rssretain2048` as the reporting row for now; `rssretain2048tls` is a
+  candidate if we decide the extra per-thread TLS retention is an acceptable
+  profile contract.
+
 Current exact-a8192 route split:
 
 ```text

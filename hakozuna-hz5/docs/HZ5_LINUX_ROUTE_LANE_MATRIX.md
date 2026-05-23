@@ -320,6 +320,7 @@ This is a useful hit-rate diagnostic, but a miss is not an HZ5 allocation.
 | `hz5-local2p-rssretain` | `hz5-linux-local2p-rss-retain` | `--linux-local2p-rss-retain` | `local2p` | RSS candidate: local overflow to bounded global cache |
 | `hz5-local2p-rssretain1536` | `hz5-linux-local2p-rss-retain-cap1536` | `--linux-local2p-rss-retain --linux-local2p-global-cap 1536` | `local2p` | RSS retained-cache cap sweep |
 | `hz5-local2p-rssretain2048` | `hz5-linux-local2p-rss-retain-cap2048` | `--linux-local2p-rss-retain --linux-local2p-global-cap 2048` | `local2p` | RSS throughput candidate: retain full 2048-block plateau |
+| `hz5-local2p-rssretain2048tls` | `hz5-linux-local2p-rss-retain-cap2048-tls2048` | `--linux-local2p-rss-retain --linux-local2p-global-cap 2048 --linux-local2p-tls-cap 2048` | `local2p` | RSS A/B: retain full plateau in owner-local TLS |
 | `hz5-local2p-freefirst` | `hz5-linux-local2p-free-first` | `--linux-local2p-free-first` | `local2p` | speed candidate: Local2P free-first dispatch |
 | `hz5-local2p-freefirst-fastcookie` | `hz5-linux-local2p-freefirst-fastcookie` | `--linux-local2p-freefirst-fastcookie` | `local2p` | explicit alias for the fast-cookie + free-first compound lane |
 | `hz5-local2p-inbox` | `hz5-linux-local2p-remote-inbox` | `--linux-local2p-fast --linux-local2p-owner-inbox` | `local2p` | remote-free candidate |
@@ -351,6 +352,21 @@ RSS:    cap/release/decommit policy
 Do not treat a local-speed candidate as a remote-free candidate without a
 producer/consumer row. Do not move remote inbox or RSS release policy into the
 local-speed reference only for code sharing.
+
+RSS retain note:
+
+```text
+rssretain2048:
+  TLS cap 1, global cap 2048
+
+rssretain2048tls:
+  TLS cap 2048, global cap 2048
+```
+
+The TLS-cap variant is a measured A/B, not the default reporting row yet. On
+`local2p_rsstls2048_runs10_20260524_041238`, it improved RSS plateau from
+about `321.5K` to `325.3K ops/s`, essentially matching HZ4 in that run, but it
+did not close the tcmalloc gap.
 
 ## Benchmark Profiles
 
