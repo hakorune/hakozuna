@@ -696,6 +696,64 @@ Decision: keep `fast-cookie` as the local/mixed reference and `remotebatch` as
 the remote-free reference. `freefirst-fastcookie` is a named A/B row, not a
 promotion.
 
+### TLS Fast-Return Candidate
+
+`hz5-linux-local2p-tls-fast-return` keeps fast-cookie but shortens only the
+owner-local TLS reuse path:
+
+```text
+before:
+  pop TLS node
+  read header->raw from user-prefix
+  run raw/bounds path
+  restore state
+  return aligned
+
+candidate:
+  pop TLS object-node
+  header = aligned - sizeof(header)
+  state = ACTIVE
+  return aligned
+```
+
+This is valid only for the object-node + reuse-state-only shape, where the TLS
+node is the aligned user pointer previously produced by Local2P. Inbox/global
+and OS misses still use the normal path so owner/cookie/source metadata can be
+refreshed.
+
+RUNS=10 result:
+
+```text
+private/raw-results/linux/local2p_tlsfast_runs10
+
+local:
+  tlsfast    216.3M ops/s
+  fastcookie 199.8M ops/s
+  tcmalloc   253.5M ops/s
+
+mixed:
+  tlsfast    218.8M ops/s
+  fastcookie 205.5M ops/s
+  tcmalloc   270.5M ops/s
+
+remote pairs/s:
+  remotebatch 15.57M
+  p25         12.33M
+  tlsfast      8.18M
+```
+
+One-run `perf stat` on local 10M:
+
+```text
+fastcookie: 1.70B instructions, 375.7M cycles
+tlsfast:    1.50B instructions, 354.1M cycles
+tcmalloc:   1.31B instructions, 316.6M cycles
+```
+
+Decision: promote `tlsfast` as the local/mixed speed reference. It is still not
+the remote-free reference; keep `remotebatch` for producer/consumer remote
+rows.
+
 Overflow policy for the first candidate should be explicit and visible in the
 lane name or build metadata. Prefer keeping it simple:
 

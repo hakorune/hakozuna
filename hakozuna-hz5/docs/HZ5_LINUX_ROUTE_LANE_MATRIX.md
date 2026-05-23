@@ -195,6 +195,7 @@ This is a useful hit-rate diagnostic, but a miss is not an HZ5 allocation.
 | `hz5-local2p-reusefast` | `hz5-linux-local2p-reuse-state-only` | `--linux-local2p-reuse-state-only` | `local2p` | speed candidate: TLS reuse updates state only |
 | `hz5-local2p-slimcheck` | `hz5-linux-local2p-slim-check` | `--linux-local2p-slim-check` | `local2p` | speed candidate: reduced direct free checks |
 | `hz5-local2p-fastcookie` | `hz5-linux-local2p-fast-cookie` | `--linux-local2p-fast-cookie` | `local2p` | speed candidate: lightweight cookie |
+| `hz5-local2p-tlsfast` | `hz5-linux-local2p-tls-fast-return` | `--linux-local2p-tls-fast-return` | `local2p` | current local/mixed speed reference |
 | `hz5-local2p-freefirst` | `hz5-linux-local2p-free-first` | `--linux-local2p-free-first` | `local2p` | speed candidate: Local2P free-first dispatch |
 | `hz5-local2p-freefirst-fastcookie` | `hz5-linux-local2p-freefirst-fastcookie` | `--linux-local2p-freefirst-fastcookie` | `local2p` | explicit alias for the fast-cookie + free-first compound lane |
 | `hz5-local2p-inbox` | `hz5-linux-local2p-remote-inbox` | `--linux-local2p-fast --linux-local2p-owner-inbox` | `local2p` | remote-free candidate |
@@ -313,6 +314,7 @@ Local2P speed candidates:
 --linux-local2p-reuse-state-only
 --linux-local2p-slim-check
 --linux-local2p-fast-cookie
+--linux-local2p-tls-fast-return
 --linux-local2p-free-first
 --linux-local2p-freefirst-fastcookie
 ```
@@ -343,6 +345,12 @@ checks.
 Local2P cookie based on raw, aligned, and the process secret. It keeps mutated
 cookie fail-closed behavior but intentionally drops generation/owner/raw-bytes
 from the cookie mix for the speed A/B.
+
+`--linux-local2p-tls-fast-return` builds on fast-cookie and short-circuits the
+owner-local TLS hit path after restoring `local2p_state=ACTIVE`. It skips the
+raw/bounds/header-init path only for object-node TLS hits; inbox/global/OS paths
+still refresh metadata normally. Current decision: this is the local/mixed speed
+reference, not the remote-free reference.
 
 `--linux-local2p-free-first` builds on fast-cookie and moves Local2P direct
 free decode before the generic P1/P2 ownership check. This is a dispatch-order

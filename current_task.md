@@ -84,6 +84,9 @@ Design:
   remains the local-speed reference
 - `hz5-local2p-freefirst-fastcookie` is now the explicit measurement label for
   the same fast-cookie + free-first compound lane
+- `hz5-local2p-tlsfast` is the alloc-side TLS hit fast-return candidate:
+  owner-local TLS reuse restores only `local2p_state=ACTIVE` and returns the
+  cached aligned user pointer without re-reading raw/bounds/header init paths
 - remote-batch is the current remote-free candidate: batch remote frees in the
   freeing thread before owner-inbox handoff
 - cleanup rule: commonize decode/cookie/state validation helpers, but keep
@@ -464,6 +467,51 @@ Interpretation:
   confusion
 - safety smoke passed: `bench_hz5_standalone_safety`
 
+TLS fast-return measurement:
+
+```text
+private/raw-results/linux/local2p_tlsfast_runs10
+
+local median:
+  hz5-local2p-tlsfast               216.3M ops/s
+  hz5-local2p-remotebatch           203.0M ops/s
+  hz5-local2p-freefirst-fastcookie  200.6M ops/s
+  hz5-local2p-fastcookie            199.8M ops/s
+  hz4                               131.1M ops/s
+  tcmalloc                          253.5M ops/s
+
+mixed final median:
+  hz5-local2p-tlsfast               218.8M ops/s
+  hz5-local2p-fastcookie            205.5M ops/s
+  hz5-local2p-freefirst-fastcookie  204.5M ops/s
+  hz5-local2p-remotebatch           203.4M ops/s
+  hz4                               137.2M ops/s
+  tcmalloc                          270.5M ops/s
+
+remote pairs/s median:
+  hz5-local2p-remotebatch           15.57M
+  hz5-p25                           12.33M
+  hz4                               11.12M
+  hz5-local2p-tlsfast                8.18M
+  hz5-local2p-fastcookie             8.18M
+  tcmalloc                           2.37M
+
+perf stat local 10M, one-run:
+  fastcookie:  1.70B instructions, 375.7M cycles
+  tlsfast:     1.50B instructions, 354.1M cycles
+  tcmalloc:    1.31B instructions, 316.6M cycles
+```
+
+Interpretation:
+
+- `tlsfast` is the new local/mixed speed reference
+- it reduces Local2P local instructions by about 12% versus fastcookie in the
+  one-run perf check
+- it does not fix remote-free; keep `remotebatch` as the remote reference
+- remaining tcmalloc gap is now smaller but still visible in alloc/free
+  instruction count and cycle count
+- safety smoke passed: `bench_hz5_standalone_safety`
+
 ## Branch
 
 Use:
@@ -475,7 +523,7 @@ codex/hz5-linux-p43-port
 Latest Local2P implementation commit:
 
 ```bash
-c3a44b9 Add HZ5 Local2P remote batch cap sweep
+see git log; current latest Local2P work is the tlsfast candidate
 ```
 
 Parent branch:
