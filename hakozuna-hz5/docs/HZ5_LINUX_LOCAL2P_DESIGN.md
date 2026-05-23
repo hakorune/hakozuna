@@ -990,6 +990,27 @@ Decision: keep `linkflags` as the low-final-RSS local exact speed reference and
 use `rssretain2048` as a separate RSS-throughput profile. Do not merge the RSS
 retention policy into the low-RSS speed lane.
 
+Cap sweep:
+
+```text
+private/raw-results/linux/local2p_rssretain_capsweep_runs10_20260524_030427
+
+RSS plateau, 2048 blocks:
+  tcmalloc                  362.0K ops/s, final RSS 139.0MB
+  hz4                       317.9K ops/s, final RSS 149.0MB
+  hz5-local2p-rssretain2048 313.5K ops/s, final RSS 153.0MB
+  hz5-local2p-rssretain1536 135.6K ops/s, final RSS 115.3MB
+  hz5-local2p-rssretain      85.9K ops/s, final RSS  77.4MB
+  hz5-local2p-rssretain512   61.8K ops/s, final RSS  39.5MB
+  hz5-local2p-rssretain256   54.0K ops/s, final RSS  20.6MB
+  hz5-local2p-linkflags      48.5K ops/s, final RSS   1.7MB
+```
+
+The curve is workload-size dependent: retaining part of a 2048-block plateau
+helps RSS throughput only modestly, while retaining the full plateau recovers
+HZ4-class reuse. Treat cap2048 as the RSS-throughput profile and cap1024/1536 as
+diagnostic points, not default policy.
+
 Overflow policy for the first candidate should be explicit and visible in the
 lane name or build metadata. Prefer keeping it simple:
 

@@ -928,6 +928,45 @@ Interpretation:
 - `rssretain2048` is a separate RSS-throughput profile, not a replacement for
   `linkflags` or `remotebatch`.
 
+RSS retain cap sweep:
+
+```text
+private/raw-results/linux/local2p_rssretain_capsweep_runs10_20260524_030427
+
+RSS plateau, 2048 blocks:
+  tcmalloc                  362.0K ops/s, final RSS 139.0MB
+  hz4                       317.9K ops/s, final RSS 149.0MB
+  hz5-local2p-rssretain2048 313.5K ops/s, final RSS 153.0MB
+  hz5-local2p-rssretain1536 135.6K ops/s, final RSS 115.3MB
+  hz5-local2p-rssretain      85.9K ops/s, final RSS  77.4MB
+  hz5-local2p-rssretain512   61.8K ops/s, final RSS  39.5MB
+  hz5-local2p-rssretain256   54.0K ops/s, final RSS  20.6MB
+  hz5-local2p-linkflags      48.5K ops/s, final RSS   1.7MB
+
+mixed final:
+  hz5-local2p-rssretain2048 273.3M ops/s, final RSS 153.0MB
+  tcmalloc                  268.2M ops/s, final RSS 156.0MB
+  hz5-local2p-rssretain1536 267.7M ops/s, final RSS 115.2MB
+  hz5-local2p-linkflags     266.4M ops/s, final RSS   1.6MB
+
+local:
+  hz5-local2p-linkflags     254.7M ops/s
+  hz5-local2p-rssretain2048 254.2M ops/s
+  tcmalloc                  249.5M ops/s
+```
+
+Interpretation:
+
+- Throughput is not linear in cap. For a 2048-block plateau, retaining the full
+  live set is the first point that removes almost all OS alloc/free churn.
+- cap1536 is an intermediate RSS point, but it is still far below HZ4/tcmalloc
+  RSS throughput.
+- cap512/cap256 mostly preserve lower RSS but do not solve plateau throughput.
+- For paper/reporting, use three profiles rather than one blended claim:
+  `linkflags` = low final RSS speed lane, `rssretain2048` = RSS throughput lane,
+  `remotebatch` = remote-free lane.
+- Safety passed for new cap256/cap512/cap1536 lanes.
+
 Source cleanup checkpoint:
 
 ```text
