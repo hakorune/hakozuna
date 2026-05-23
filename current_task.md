@@ -53,10 +53,13 @@ Goal:
 - keep P25 bridge, P43 token/source, and Linux Local2P roles separated
 - keep invalid/double-free behavior fail-closed
 
-Current candidate:
+Current references:
 
 ```text
-hz5-linux-local2p-fast-cookie
+local exact speed:      hz5-local2p-linkflags
+public API shape:       hz5-local2p-tlsfast
+remote-free candidate:  hz5-local2p-remotebatch
+mixed-prelude watch:    hz5-local2p-slot1
 ```
 
 Design:
@@ -80,11 +83,11 @@ Design:
 - remove redundant source/requested/raw_bytes checks after direct Local2P decode
 - keep corrupted-cookie guard but simplify Local2P cookie to
   raw/aligned/process-secret in the fast-cookie candidate
-- free-first dispatch is available as a mixed-speed candidate, but fast-cookie
-  remains the local-speed reference
+- free-first dispatch is available as a mixed-speed candidate, but it is not the
+  local-speed reference
 - `hz5-local2p-freefirst-fastcookie` is now the explicit measurement label for
   the same fast-cookie + free-first compound lane
-- `hz5-local2p-tlsfast` is the alloc-side TLS hit fast-return candidate:
+- `hz5-local2p-tlsfast` is the public-API-shape local/mixed reference:
   owner-local TLS reuse restores only `local2p_state=ACTIVE` and returns the
   cached aligned user pointer without re-reading raw/bounds/header init paths
 - `hz5-local2p-exactapi` is the local-only exact API candidate: the aligned64k
@@ -93,7 +96,7 @@ Design:
 - `hz5-local2p-slot1` is the single-slot TLS candidate: exactapi plus
   `TLS_CAP=1` head-only push/pop, avoiding the local `count` and `next`
   maintenance in the owner-local cache
-- `hz5-local2p-linkflags` is the speed-link candidate: exactapi plus
+- `hz5-local2p-linkflags` is the local exact speed reference: exactapi plus
   `-fno-semantic-interposition`, `-fno-plt`, `-fno-stack-protector`,
   x86 `-fcf-protection=none`, and `-Wl,-Bsymbolic-functions`
 - remote-batch is the current remote-free candidate: batch remote frees in the
@@ -115,37 +118,41 @@ Measurement policy:
 - do not merge remote inbox/batch policy into the local-speed reference unless
   local, remote, mixed, and RSS all support the change
 
-Latest measurement:
+Latest confirmed measurement:
 
 ```text
-private/raw-results/linux/local2p_faststate_earlyreturn_runs10
+private/raw-results/linux/local2p_linkflags_runs30
 
 local median:
-  hz5-local2p-faststate  161.9M ops/s
-  hz5-local2p-object     155.7M ops/s
-  hz4                    131.6M ops/s
-  tcmalloc               248.3M ops/s
+  hz5-local2p-linkflags  253.2M ops/s
+  tcmalloc               252.6M ops/s
+  exactapi               223.1M ops/s
+  tlsfast                213.2M ops/s
+  hz4                    129.0M ops/s
 
 mixed final median:
-  hz5-local2p-faststate  160.3M ops/s
-  hz5-local2p-object     155.7M ops/s
-  hz4                    137.0M ops/s
-  tcmalloc               269.9M ops/s
+  hz5-local2p-linkflags  282.6M ops/s
+  tcmalloc               267.6M ops/s
+  exactapi               220.9M ops/s
+  tlsfast                220.6M ops/s
+  hz4                    136.0M ops/s
 
 remote pairs/s median:
-  hz5-local2p-faststate    8.20M
-  hz5-local2p-object       8.17M
-  hz5-p25                 12.46M
-  hz4                     11.07M
-  tcmalloc                 2.38M
+  hz5-local2p-remotebatch 14.79M
+  hz5-p25                 12.30M
+  hz4                     11.80M
+  tlsfast                  8.05M
+  hz5-local2p-linkflags    7.49M
+  tcmalloc                 2.34M
 ```
 
 Interpretation:
 
-- same-owner fast-state helps only when the owner-local path returns directly
-  after TLS push
-- the first branch-only version was slower, so local fast-path layout matters
-- tcmalloc gap remains mostly in cookie/header validation and route-specific ABI
+- linkflags is tcmalloc-class for local exact `64K/a8192` and wins this
+  mixed-prelude final row
+- linkflags is a speed-lane build policy, not a production/default build policy
+- remote-free still belongs to `remotebatch`; do not use linkflags as a remote
+  result
 
 Route-cookie measurement:
 
@@ -722,7 +729,8 @@ codex/hz5-linux-p43-port
 Latest Local2P implementation commit:
 
 ```bash
-see git log; current latest Local2P work is the tlsfast candidate
+see git log; current latest Local2P measurement confirmation is the linkflags
+RUNS=30 record
 ```
 
 Parent branch:

@@ -188,15 +188,15 @@ This is a useful hit-rate diagnostic, but a miss is not an HZ5 allocation.
 
 | Runner label | Role name | Build selector | Primary route | Classification |
 | --- | --- | --- | --- | --- |
-| `hz5-local2p-fast` | `hz5-linux-local2p-fast` | `--linux-local2p-fast` | `local2p` | current appendix speed candidate |
+| `hz5-local2p-fast` | `hz5-linux-local2p-fast` | `--linux-local2p-fast` | `local2p` | older appendix speed candidate |
 | `hz5-local2p-object` | `hz5-linux-local2p-object-node` | `--linux-local2p-object-node` | `local2p` | speed candidate: user-pointer freelist node |
 | `hz5-local2p-faststate` | `hz5-linux-local2p-same-owner-fast-state` | `--linux-local2p-same-owner-fast-state` | `local2p` | speed candidate: owner-local load/store state |
 | `hz5-local2p-routecookie` | `hz5-linux-local2p-route-cookie` | `--linux-local2p-route-cookie` | `local2p` | speed candidate: Local2P cookie as route guard |
 | `hz5-local2p-reusefast` | `hz5-linux-local2p-reuse-state-only` | `--linux-local2p-reuse-state-only` | `local2p` | speed candidate: TLS reuse updates state only |
 | `hz5-local2p-slimcheck` | `hz5-linux-local2p-slim-check` | `--linux-local2p-slim-check` | `local2p` | speed candidate: reduced direct free checks |
 | `hz5-local2p-fastcookie` | `hz5-linux-local2p-fast-cookie` | `--linux-local2p-fast-cookie` | `local2p` | speed candidate: lightweight cookie |
-| `hz5-local2p-tlsfast` | `hz5-linux-local2p-tls-fast-return` | `--linux-local2p-tls-fast-return` | `local2p` | current local/mixed speed reference |
-| `hz5-local2p-exactapi` | `hz5-linux-local2p-exact-api` | `--linux-local2p-exact-api` | `local2p` | local-only exact API speed reference |
+| `hz5-local2p-tlsfast` | `hz5-linux-local2p-tls-fast-return` | `--linux-local2p-tls-fast-return` | `local2p` | public-API-shape local/mixed reference |
+| `hz5-local2p-exactapi` | `hz5-linux-local2p-exact-api` | `--linux-local2p-exact-api` | `local2p` | local-only exact API control |
 | `hz5-local2p-slot1` | `hz5-linux-local2p-single-slot-tls` | `--linux-local2p-single-slot-tls` | `local2p` | mixed-prelude candidate: TLS_CAP=1 head-only cache |
 | `hz5-local2p-linkflags` | `hz5-linux-local2p-speed-linkflags` | `--linux-local2p-speed-linkflags` | `local2p` | current local-only exact speed reference |
 | `hz5-local2p-freefirst` | `hz5-linux-local2p-free-first` | `--linux-local2p-free-first` | `local2p` | speed candidate: Local2P free-first dispatch |
