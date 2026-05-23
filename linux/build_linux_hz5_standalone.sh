@@ -14,6 +14,7 @@ LINUX_LOCAL2P_NO_COOKIE=0
 LINUX_LOCAL2P_NO_CAS=0
 LINUX_LOCAL2P_OWNER_INBOX=0
 LINUX_LOCAL2P_REMOTE_BATCH=0
+LINUX_LOCAL2P_REMOTE_BATCH_CAP=16
 LINUX_LOCAL2P_OBJECT_NODE=0
 LINUX_LOCAL2P_SAME_OWNER_FAST_STATE=0
 LINUX_LOCAL2P_ROUTE_COOKIE=0
@@ -63,6 +64,8 @@ Options:
                      candidate only: route remote frees to owner MPSC inbox
   --linux-local2p-remote-batch
                      candidate only: batch remote frees before owner inbox push
+  --linux-local2p-remote-batch-cap N
+                     candidate only: remote batch flush threshold (default: 16)
   --linux-local2p-object-node
                      candidate only: use aligned user pointers as Local2P free-list nodes
   --linux-local2p-same-owner-fast-state
@@ -183,6 +186,10 @@ while [[ $# -gt 0 ]]; do
       LINUX_LOCAL2P_SLIM_CHECK=1
       LINUX_LOCAL2P_FAST_COOKIE=1
       shift
+      ;;
+    --linux-local2p-remote-batch-cap)
+      LINUX_LOCAL2P_REMOTE_BATCH_CAP="$2"
+      shift 2
       ;;
     --linux-local2p-object-node)
       LINUX_LOCAL2P=1
@@ -368,6 +375,11 @@ if [[ "$LINUX_LOCAL2P_NO_COOKIE" -eq 1 && \
   exit 1
 fi
 
+if [[ "$LINUX_LOCAL2P_REMOTE_BATCH_CAP" -lt 1 ]]; then
+  echo "remote batch cap must be >= 1" >&2
+  exit 1
+fi
+
 if [[ "$LINUX_P25_BRIDGE_ATTR" -eq 1 && "$ENABLE_LINUX_P43" -eq 1 ]]; then
   echo "p25attr and p43 lanes are mutually exclusive" >&2
   exit 1
@@ -514,6 +526,9 @@ if [[ "$LINUX_LOCAL2P" -eq 1 ]]; then
   fi
   if [[ "$LINUX_LOCAL2P_REMOTE_BATCH" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LOCAL2P_REMOTE_BATCH=1)
+    COMMON_FLAGS+=(
+      -DBENCHLAB_HZ5_LINUX_LOCAL2P_REMOTE_BATCH_CAP="${LINUX_LOCAL2P_REMOTE_BATCH_CAP}u"
+    )
   fi
   if [[ "$LINUX_LOCAL2P_OBJECT_NODE" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LOCAL2P_OBJECT_NODE=1)
@@ -598,6 +613,7 @@ fi
   echo "linux_local2p_no_cas=${LINUX_LOCAL2P_NO_CAS}"
   echo "linux_local2p_owner_inbox=${LINUX_LOCAL2P_OWNER_INBOX}"
   echo "linux_local2p_remote_batch=${LINUX_LOCAL2P_REMOTE_BATCH}"
+  echo "linux_local2p_remote_batch_cap=${LINUX_LOCAL2P_REMOTE_BATCH_CAP}"
   echo "linux_local2p_object_node=${LINUX_LOCAL2P_OBJECT_NODE}"
   echo "linux_local2p_same_owner_fast_state=${LINUX_LOCAL2P_SAME_OWNER_FAST_STATE}"
   echo "linux_local2p_route_cookie=${LINUX_LOCAL2P_ROUTE_COOKIE}"

@@ -198,6 +198,8 @@ This is a useful hit-rate diagnostic, but a miss is not an HZ5 allocation.
 | `hz5-local2p-freefirst` | `hz5-linux-local2p-free-first` | `--linux-local2p-free-first` | `local2p` | speed candidate: Local2P free-first dispatch |
 | `hz5-local2p-inbox` | `hz5-linux-local2p-remote-inbox` | `--linux-local2p-fast --linux-local2p-owner-inbox` | `local2p` | remote-free candidate |
 | `hz5-local2p-remotebatch` | `hz5-linux-local2p-remote-batch` | `--linux-local2p-remote-batch` | `local2p` | remote-free candidate: batched owner inbox |
+| `hz5-local2p-remotebatch8` | `hz5-linux-local2p-remote-batch-cap8` | `--linux-local2p-remote-batch --linux-local2p-remote-batch-cap 8` | `local2p` | remote-free A/B: batch cap 8 |
+| `hz5-local2p-remotebatch32` | `hz5-linux-local2p-remote-batch-cap32` | `--linux-local2p-remote-batch --linux-local2p-remote-batch-cap 32` | `local2p` | remote-free A/B: batch cap 32 |
 | `hz5-local2p` | `hz5-linux-local2p` | `--linux-local2p` | `local2p` | baseline Local2P implementation |
 | `hz5-p25` | `hz5-linux-p25-control` | no Local2P/P43/P25Attr selector | `p25_bridge` | Linux control |
 | `p25attr` | `hz5-linux-p25attr` | `--linux-p25-bridge-attr` | `p25attr` | safety diagnostic |

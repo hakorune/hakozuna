@@ -292,6 +292,38 @@ mixed:
 This is a real remote-free win, but not a replacement for the local/mixed speed
 reference. Keep it as a remote lane and tune batch cap / flush policy there.
 
+Batch cap is intentionally a build-time A/B:
+
+```text
+--linux-local2p-remote-batch-cap 8
+--linux-local2p-remote-batch-cap 16  # default
+--linux-local2p-remote-batch-cap 32
+```
+
+Smaller caps return spans to the owner sooner but pay more inbox CAS work.
+Larger caps reduce CAS pressure but delay reuse and can increase cold-source
+pressure. Judge by producer/consumer remote-free first, then verify local,
+mixed, and RSS do not regress unexpectedly.
+
+Initial cap sweep:
+
+```text
+private/raw-results/linux/local2p_remotebatch_cap_runs10
+
+remote pairs/s:
+  cap32 15.28M
+  cap16 15.22M
+  cap8  14.87M
+
+mixed:
+  cap8  204.9M ops/s
+  cap16 204.7M ops/s
+  cap32 199.5M ops/s
+```
+
+Keep cap16 as the balanced default. Use cap32 only for remote-only rows because
+the remote win is small and mixed throughput is worse.
+
 ## Metadata
 
 Add a distinct wrapper source tag:

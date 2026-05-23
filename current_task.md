@@ -18,7 +18,7 @@ The target lane is standalone and fallback-free:
 Status: object-node, route-cookie, reuse-state-only, slim-check, and
 fast-cookie measured; offset-cookie A/B was rejected; free-first dispatch A/B
 was measured and kept as a mixed-speed candidate; remote-batch was measured and
-kept as the current remote-free candidate; source cleanup phase is in progress.
+kept as the current remote-free candidate; remote-batch cap A/B measured.
 
 Goal:
 
@@ -62,6 +62,8 @@ Design:
   local TLS recycle and remote handoff policy separate
 - cleanup done so far: split Local2P free path into validate/recycle-local/
   recycle-remote helpers without changing lane selectors
+- remote-batch cap is selectable; cap16 remains the balanced default, cap32 is
+  the remote-only candidate
 
 Measurement policy:
 
@@ -357,6 +359,37 @@ Interpretation:
 - Local2P free-path helper split did not break safety or the main route shapes
 - helper split is acceptable as source cleanup; keep future commonization at the
   validation/recycle-boundary level unless measurements justify more
+
+Remote-batch cap sweep:
+
+```text
+private/raw-results/linux/local2p_remotebatch_cap_runs10
+
+remote pairs/s median:
+  hz5-local2p-remotebatch32  15.28M
+  hz5-local2p-remotebatch    15.22M
+  hz5-local2p-remotebatch8   14.87M
+  hz5-p25                    12.42M
+  hz4                        11.06M
+  tcmalloc                    2.38M
+
+local median:
+  hz5-local2p-remotebatch8   203.1M ops/s
+  hz5-local2p-remotebatch    199.1M ops/s
+  hz5-local2p-remotebatch32  198.6M ops/s
+
+mixed final median:
+  hz5-local2p-remotebatch8   204.9M ops/s
+  hz5-local2p-remotebatch    204.7M ops/s
+  hz5-local2p-remotebatch32  199.5M ops/s
+```
+
+Interpretation:
+
+- cap32 is marginally best for producer/consumer remote-free
+- cap8/cap16 are better for local/mixed robustness
+- keep cap16 as the default `hz5-local2p-remotebatch`; use cap32 only when
+  explicitly measuring a remote-only lane
 
 ## Branch
 
