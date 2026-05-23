@@ -371,7 +371,7 @@ candidate, not local-only speed reference.
 `--linux-local2p-speed-linkflags` builds on exact API and changes only
 compile/link flags to reduce semantic interposition, PLT, stack protector, and
 x86 CET overhead in the speed lane. Current decision: local-only exact speed
-reference, not a production/default build policy.
+reference after RUNS=30 confirmation, not a production/default build policy.
 
 `--linux-local2p-free-first` builds on fast-cookie and moves Local2P direct
 free decode before the generic P1/P2 ownership check. This is a dispatch-order

@@ -648,6 +648,69 @@ Interpretation:
   until the safety/build contract is reviewed
 - safety smoke passed: `bench_hz5_standalone_safety`
 
+Speed linkflags RUNS=30:
+
+```text
+private/raw-results/linux/local2p_linkflags_runs30
+
+local median:
+  hz5-local2p-linkflags 253.2M ops/s
+  tcmalloc              252.6M ops/s
+  exactapi              223.1M ops/s
+  tlsfast               213.2M ops/s
+  hz4                   129.0M ops/s
+
+mixed final median:
+  hz5-local2p-linkflags 282.6M ops/s
+  tcmalloc              267.6M ops/s
+  exactapi              220.9M ops/s
+  tlsfast               220.6M ops/s
+  hz4                   136.0M ops/s
+
+remote pairs/s median:
+  remotebatch           14.79M
+  p25                   12.30M
+  hz4                   11.80M
+  tlsfast                8.05M
+  linkflags              7.49M
+  tcmalloc               2.34M
+```
+
+Perf repeat, local 10M x5:
+
+```text
+private/raw-results/linux/local2p_perf_repeat_20260524_022458
+
+median:
+  linkflags  ops/s=261.5M cycles=305.2M instructions=1.03B
+  tcmalloc   ops/s=262.0M cycles=318.3M instructions=1.31B
+  exactapi   ops/s=240.0M cycles=336.0M instructions=1.15B
+```
+
+Guard/safety:
+
+```text
+private/raw-results/linux/local2p_linkflags_guard_20260524_022516
+
+2048:8192    status=5  unsupported exact-only row
+4096:8192    status=0  existing HZ5 exact a8192 route, not Local2P claim
+8192:8192    status=0  existing HZ5 exact a8192 route, not Local2P claim
+65536:4096   status=5  unsupported exact-only row
+65537:16     status=5  unsupported exact-only row
+262144:4096  status=5  unsupported exact-only row
+65536:8192   status=0  Local2P positive control
+safety        status=0  hz5-standalone-safety ok
+```
+
+Interpretation:
+
+- RUNS=30 confirms linkflags is tcmalloc-class for local exact `64K/a8192`
+  and above tcmalloc in this mixed-prelude final row
+- perf repeat confirms the remaining local result is not instruction-count
+  limited; linkflags uses fewer cycles and instructions than tcmalloc in the
+  perf median but measured ops/s is effectively tied
+- guard rows did not crash; unsupported exact-only rows fail closed
+
 ## Branch
 
 Use:

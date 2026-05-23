@@ -897,6 +897,52 @@ Decision: `linkflags` is the current local-only exact speed reference. It is a
 speed-lane build policy, not a default production build policy. Keep
 `remotebatch` as the remote-free reference.
 
+RUNS=30 confirmation:
+
+```text
+private/raw-results/linux/local2p_linkflags_runs30
+
+local:
+  linkflags 253.2M ops/s
+  tcmalloc  252.6M ops/s
+  exactapi  223.1M ops/s
+
+mixed:
+  linkflags 282.6M ops/s
+  tcmalloc  267.6M ops/s
+  exactapi  220.9M ops/s
+
+remote pairs/s:
+  remotebatch 14.79M
+  p25         12.30M
+  hz4         11.80M
+  linkflags    7.49M
+```
+
+Perf repeat, local 10M x5:
+
+```text
+private/raw-results/linux/local2p_perf_repeat_20260524_022458
+
+linkflags  ops/s=261.5M cycles=305.2M instructions=1.03B
+tcmalloc   ops/s=262.0M cycles=318.3M instructions=1.31B
+exactapi   ops/s=240.0M cycles=336.0M instructions=1.15B
+```
+
+Guard/safety:
+
+```text
+private/raw-results/linux/local2p_linkflags_guard_20260524_022516
+
+unsupported exact-only rows returned failure status without crash
+positive 64K/a8192 row passed
+safety smoke passed
+```
+
+Conclusion: the linkflags lane is stable enough to document as the current
+Linux exact-overaligned local speed candidate. It should still be reported as a
+speed-lane build, not as the default production build.
+
 Overflow policy for the first candidate should be explicit and visible in the
 lane name or build metadata. Prefer keeping it simple:
 
