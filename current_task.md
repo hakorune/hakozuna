@@ -759,6 +759,29 @@ Interpretation:
 - linkflags remains the exact local speed reference
 - remotebatch remains the remote-free reference
 
+Focus runner cleanup:
+
+```text
+change:
+  run_linux_hz5_local2p_focus.sh now builds only HZ5 lanes listed in
+  --allocators instead of rebuilding every Local2P experiment lane
+
+smoke:
+  private/raw-results/linux/local2p_runner_selective_build_smoke_20260524_023225
+
+command shape:
+  --allocators hz5-p25 --skip-prepare-allocators
+
+observed:
+  only hakozuna-hz5/out/linux/x86_64-hz5-p25 was rebuilt
+```
+
+Interpretation:
+
+- focus runs are now cheaper and less noisy when validating one or two lanes
+- broad Local2P matrix rebuilds still happen by listing all desired lanes in
+  `--allocators`
+
 ## Branch
 
 Use:

@@ -115,6 +115,7 @@ if [[ "$ARCH" == "auto" ]]; then
 fi
 
 mkdir -p "$OUTDIR"
+IFS=',' read -r -a allocator_list <<< "$ALLOCATORS"
 
 build_hz5_lane() {
   local lane="$1"
@@ -124,26 +125,37 @@ build_hz5_lane() {
     --out-dir "${ROOT_DIR}/hakozuna-hz5/out/linux/${ARCH}-${lane}"
 }
 
+build_requested_hz5_lane() {
+  local alloc="$1"
+  case "$alloc" in
+    hz5-local2p-fast) build_hz5_lane hz5-local2p-fast --linux-local2p-fast ;;
+    hz5-local2p-object) build_hz5_lane hz5-local2p-object --linux-local2p-object-node ;;
+    hz5-local2p-faststate) build_hz5_lane hz5-local2p-faststate --linux-local2p-same-owner-fast-state ;;
+    hz5-local2p-routecookie) build_hz5_lane hz5-local2p-routecookie --linux-local2p-route-cookie ;;
+    hz5-local2p-reusefast) build_hz5_lane hz5-local2p-reusefast --linux-local2p-reuse-state-only ;;
+    hz5-local2p-slimcheck) build_hz5_lane hz5-local2p-slimcheck --linux-local2p-slim-check ;;
+    hz5-local2p-fastcookie) build_hz5_lane hz5-local2p-fastcookie --linux-local2p-fast-cookie ;;
+    hz5-local2p-tlsfast) build_hz5_lane hz5-local2p-tlsfast --linux-local2p-tls-fast-return ;;
+    hz5-local2p-exactapi) build_hz5_lane hz5-local2p-exactapi --linux-local2p-exact-api ;;
+    hz5-local2p-slot1) build_hz5_lane hz5-local2p-slot1 --linux-local2p-single-slot-tls ;;
+    hz5-local2p-linkflags) build_hz5_lane hz5-local2p-linkflags --linux-local2p-speed-linkflags ;;
+    hz5-local2p-freefirst) build_hz5_lane hz5-local2p-freefirst --linux-local2p-free-first ;;
+    hz5-local2p-freefirst-fastcookie) build_hz5_lane hz5-local2p-freefirst-fastcookie --linux-local2p-freefirst-fastcookie ;;
+    hz5-local2p-inbox) build_hz5_lane hz5-local2p-inbox --linux-local2p-fast --linux-local2p-owner-inbox ;;
+    hz5-local2p-remotebatch) build_hz5_lane hz5-local2p-remotebatch --linux-local2p-remote-batch ;;
+    hz5-local2p-remotebatch8) build_hz5_lane hz5-local2p-remotebatch8 --linux-local2p-remote-batch --linux-local2p-remote-batch-cap 8 ;;
+    hz5-local2p-remotebatch32) build_hz5_lane hz5-local2p-remotebatch32 --linux-local2p-remote-batch --linux-local2p-remote-batch-cap 32 ;;
+    hz5-local2p) build_hz5_lane hz5-local2p --linux-local2p ;;
+    hz5-p25) build_hz5_lane hz5-p25 ;;
+    hz5-preload-hybrid) build_hz5_lane hz5-local2p-fast --linux-local2p-fast ;;
+    *) ;;
+  esac
+}
+
 if [[ "$SKIP_BUILD" -ne 1 ]]; then
-  build_hz5_lane hz5-local2p-fast --linux-local2p-fast
-  build_hz5_lane hz5-local2p-object --linux-local2p-object-node
-  build_hz5_lane hz5-local2p-faststate --linux-local2p-same-owner-fast-state
-  build_hz5_lane hz5-local2p-routecookie --linux-local2p-route-cookie
-  build_hz5_lane hz5-local2p-reusefast --linux-local2p-reuse-state-only
-  build_hz5_lane hz5-local2p-slimcheck --linux-local2p-slim-check
-  build_hz5_lane hz5-local2p-fastcookie --linux-local2p-fast-cookie
-  build_hz5_lane hz5-local2p-tlsfast --linux-local2p-tls-fast-return
-  build_hz5_lane hz5-local2p-exactapi --linux-local2p-exact-api
-  build_hz5_lane hz5-local2p-slot1 --linux-local2p-single-slot-tls
-  build_hz5_lane hz5-local2p-linkflags --linux-local2p-speed-linkflags
-  build_hz5_lane hz5-local2p-freefirst --linux-local2p-free-first
-  build_hz5_lane hz5-local2p-freefirst-fastcookie --linux-local2p-freefirst-fastcookie
-  build_hz5_lane hz5-local2p-inbox --linux-local2p-fast --linux-local2p-owner-inbox
-  build_hz5_lane hz5-local2p-remotebatch --linux-local2p-remote-batch
-  build_hz5_lane hz5-local2p-remotebatch8 --linux-local2p-remote-batch --linux-local2p-remote-batch-cap 8
-  build_hz5_lane hz5-local2p-remotebatch32 --linux-local2p-remote-batch --linux-local2p-remote-batch-cap 32
-  build_hz5_lane hz5-local2p --linux-local2p
-  build_hz5_lane hz5-p25
+  for alloc in "${allocator_list[@]}"; do
+    build_requested_hz5_lane "$alloc"
+  done
 fi
 
 if [[ "$SKIP_PREPARE_ALLOCATORS" -ne 1 ]]; then
@@ -201,7 +213,6 @@ require_file generic-remote "$GENERIC_REMOTE_BENCH"
 require_file generic-rss "$GENERIC_RSS_BENCH"
 require_file generic-mixed "$GENERIC_MIXED_BENCH"
 
-IFS=',' read -r -a allocator_list <<< "$ALLOCATORS"
 for alloc in "${allocator_list[@]}"; do
   case "$alloc" in
     hz5-local2p-fast|hz5-local2p-object|hz5-local2p-faststate|hz5-local2p-routecookie|hz5-local2p-reusefast|hz5-local2p-slimcheck|hz5-local2p-fastcookie|hz5-local2p-tlsfast|hz5-local2p-exactapi|hz5-local2p-slot1|hz5-local2p-linkflags|hz5-local2p-freefirst|hz5-local2p-freefirst-fastcookie|hz5-local2p-inbox|hz5-local2p-remotebatch|hz5-local2p-remotebatch8|hz5-local2p-remotebatch32|hz5-local2p|hz5-p25) require_hz5_lane "$alloc" ;;
