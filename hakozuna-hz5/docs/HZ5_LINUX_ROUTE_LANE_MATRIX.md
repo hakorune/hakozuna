@@ -197,6 +197,7 @@ This is a useful hit-rate diagnostic, but a miss is not an HZ5 allocation.
 | `hz5-local2p-fastcookie` | `hz5-linux-local2p-fast-cookie` | `--linux-local2p-fast-cookie` | `local2p` | speed candidate: lightweight cookie |
 | `hz5-local2p-freefirst` | `hz5-linux-local2p-free-first` | `--linux-local2p-free-first` | `local2p` | speed candidate: Local2P free-first dispatch |
 | `hz5-local2p-inbox` | `hz5-linux-local2p-remote-inbox` | `--linux-local2p-fast --linux-local2p-owner-inbox` | `local2p` | remote-free candidate |
+| `hz5-local2p-remotebatch` | `hz5-linux-local2p-remote-batch` | `--linux-local2p-remote-batch` | `local2p` | remote-free candidate: batched owner inbox |
 | `hz5-local2p` | `hz5-linux-local2p` | `--linux-local2p` | `local2p` | baseline Local2P implementation |
 | `hz5-p25` | `hz5-linux-p25-control` | no Local2P/P43/P25Attr selector | `p25_bridge` | Linux control |
 | `p25attr` | `hz5-linux-p25attr` | `--linux-p25-bridge-attr` | `p25attr` | safety diagnostic |
@@ -209,6 +210,19 @@ This is a useful hit-rate diagnostic, but a miss is not an HZ5 allocation.
 
 Build selectors for `local2p`, `p25attr`, and `p43` are mutually exclusive.
 Keep that rule. It prevents mixed-route benchmark rows.
+
+Local2P speed and remote lanes share decode/validation but not recycle policy:
+
+```text
+shared: direct decode, cookie/state validation, owner comparison
+local:  owner-local TLS object-node push/pop
+remote: owner inbox, remote batch, or handoff queue
+RSS:    cap/release/decommit policy
+```
+
+Do not treat a local-speed candidate as a remote-free candidate without a
+producer/consumer row. Do not move remote inbox or RSS release policy into the
+local-speed reference only for code sharing.
 
 ## Benchmark Profiles
 

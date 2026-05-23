@@ -17,7 +17,8 @@ The target lane is standalone and fallback-free:
 
 Status: object-node, route-cookie, reuse-state-only, slim-check, and
 fast-cookie measured; offset-cookie A/B was rejected; free-first dispatch A/B
-was measured and kept as a mixed-speed candidate.
+was measured and kept as a mixed-speed candidate; remote-batch was measured and
+kept as the current remote-free candidate.
 
 Goal:
 
@@ -43,6 +44,8 @@ Design:
 - for `owner == current`, replace the locked `atomic_exchange` free-state
   transition with atomic load/store
 - keep remote free on locked atomic transition
+- keep local and remote recycle policies separate after shared decode/cookie/state
+  validation
 - use the Local2P cookie as the direct route guard instead of also checking the
   generic wrapper cookie
 - on TLS reuse, update only `local2p_state=ACTIVE`; do not rewrite owner,
@@ -53,6 +56,8 @@ Design:
   raw/aligned/process-secret in the fast-cookie candidate
 - free-first dispatch is available as a mixed-speed candidate, but fast-cookie
   remains the local-speed reference
+- remote-batch is the current remote-free candidate: batch remote frees in the
+  freeing thread before owner-inbox handoff
 
 Measurement policy:
 
@@ -61,6 +66,8 @@ Measurement policy:
 - focus first on local and mixed `64K/a8192` ops/s and instruction count
 - keep remote/RSS rows in the same run so local-speed wins do not get mistaken
   for remote/RSS wins
+- do not merge remote inbox/batch policy into the local-speed reference unless
+  local, remote, mixed, and RSS all support the change
 
 Latest measurement:
 
@@ -285,6 +292,41 @@ Interpretation:
 - it is useful as a mixed-prelude candidate because it improved mixed final
   throughput in the same RUNS=10 set
 - remote remains separate and should not inherit local/mixed dispatch choices
+
+Remote-batch measurement:
+
+```text
+private/raw-results/linux/local2p_remotebatch_runs10
+
+remote pairs/s median:
+  hz5-local2p-remotebatch  13.78M
+  hz5-p25                  12.08M
+  hz4                      11.88M
+  hz5-local2p-inbox         9.99M
+  hz5-local2p-fastcookie    8.23M
+  tcmalloc                  2.39M
+
+local median:
+  hz5-local2p-remotebatch  207.7M ops/s
+  hz5-local2p-fastcookie   206.8M ops/s
+  hz4                      129.5M ops/s
+  tcmalloc                 254.5M ops/s
+
+mixed final median:
+  hz5-local2p-fastcookie   213.8M ops/s
+  hz5-local2p-remotebatch  206.9M ops/s
+  hz4                      135.4M ops/s
+  tcmalloc                 269.9M ops/s
+```
+
+Interpretation:
+
+- remote-batch is the first Local2P remote candidate in this branch that beats
+  both P25 and HZ4 on producer/consumer remote-free
+- local throughput stayed near fast-cookie, but mixed was lower, so it should
+  remain a remote lane rather than replacing the local/mixed reference
+- next remote attack should tune batch cap / flush policy, not local header
+  dispatch
 
 ## Branch
 

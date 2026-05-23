@@ -184,6 +184,96 @@ This keeps the `local2p` route intact and avoids P25/P43 topology changes. It
 is still not the final remote-free design: it is a simple global recycle
 control, not an owner inbox.
 
+## Local / Remote Split
+
+Local and remote Local2P rows share only the front-end attribution work:
+
+```text
+direct decode
+source/cookie validation
+state validation
+owner token comparison
+```
+
+After that point the hot paths should stay separate.
+
+Local-only target:
+
+```text
+alloc: TLS object-node pop
+free:  owner-local state mark + TLS object-node push
+```
+
+Remote-free target:
+
+```text
+producer alloc: owner TLS / owner inbox / cold source
+consumer free:  remote state mark + owner handoff
+```
+
+Do not force one shared recycle fast path for both cases. Local throughput is a
+single-thread freelist problem; remote-free is a cross-thread handoff problem.
+Common helpers are useful for decode and validation, but recycle policy should
+remain lane-specific.
+
+Current rule:
+
+```text
+local-speed lanes may optimize dispatch/header/cookie/state
+remote lanes may optimize inbox/batching/handoff
+RSS lanes may optimize cap/release/decommit
+```
+
+Never promote a local-speed improvement as a remote-free improvement unless the
+producer/consumer row confirms it.
+
+### Remote-Batch Candidate
+
+`hz5-linux-local2p-remote-batch` is a remote-only A/B on top of owner inbox.
+The consumer/freeing thread keeps a small per-thread batch for one owner and
+splices that list into the owner's inbox with one CAS when the batch fills:
+
+```text
+remote free:
+  validate Local2P metadata
+  ACTIVE -> FREED via locked exchange
+  append node to freeing-thread remote batch
+  when batch is full, CAS whole batch to owner inbox
+
+owner alloc:
+  TLS pop
+  owner inbox pop/drain
+  global/cold source
+```
+
+This intentionally trades some return latency for fewer remote inbox CAS
+operations. It is not a local-speed candidate and should be judged by
+producer/consumer remote-free first.
+
+Initial RUNS=10 result:
+
+```text
+private/raw-results/linux/local2p_remotebatch_runs10
+
+remote pairs/s:
+  remote-batch 13.78M
+  P25 control  12.08M
+  HZ4          11.88M
+  owner inbox   9.99M
+  fast-cookie   8.23M
+
+local:
+  remote-batch 207.7M ops/s
+  fast-cookie  206.8M ops/s
+
+mixed:
+  fast-cookie  213.8M ops/s
+  remote-batch 206.9M ops/s
+```
+
+This is a real remote-free win, but not a replacement for the local/mixed speed
+reference. Keep it as a remote lane and tune batch cap / flush policy there.
+
 ## Metadata
 
 Add a distinct wrapper source tag:

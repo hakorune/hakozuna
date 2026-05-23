@@ -117,6 +117,14 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_LOCAL2P_OWNER_INBOX 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LOCAL2P_REMOTE_BATCH
+#define BENCHLAB_HZ5_LINUX_LOCAL2P_REMOTE_BATCH 0
+#endif
+
+#ifndef BENCHLAB_HZ5_LINUX_LOCAL2P_REMOTE_BATCH_CAP
+#define BENCHLAB_HZ5_LINUX_LOCAL2P_REMOTE_BATCH_CAP 16u
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_LOCAL2P_OBJECT_NODE
 #define BENCHLAB_HZ5_LINUX_LOCAL2P_OBJECT_NODE 0
 #endif
@@ -209,6 +217,12 @@ typedef struct Hz5PolicyLocal2PTls {
 #if BENCHLAB_HZ5_LINUX_LOCAL2P_OWNER_INBOX
   _Atomic(void*) inbox_head;
   void* inbox_cache;
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_REMOTE_BATCH
+  uintptr_t remote_batch_owner;
+  void* remote_batch_head;
+  void* remote_batch_tail;
+  size_t remote_batch_count;
+#endif
 #endif
 } Hz5PolicyLocal2PTls;
 static _Thread_local Hz5PolicyLocal2PTls g_hz5_policy_local2p_tls;
@@ -552,6 +566,58 @@ static int hz5_policy_local2p_inbox_push(uintptr_t owner, void* node_ptr) {
   hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INBOX);
   return 1;
 }
+
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_REMOTE_BATCH
+static int hz5_policy_local2p_remote_batch_flush(Hz5PolicyLocal2PTls* tls) {
+  if (!tls || !tls->remote_batch_owner || !tls->remote_batch_head ||
+      !tls->remote_batch_tail) {
+    return 0;
+  }
+  Hz5PolicyLocal2PTls* owner_tls =
+      (Hz5PolicyLocal2PTls*)tls->remote_batch_owner;
+  Hz5LinuxLocal2PNode* head =
+      (Hz5LinuxLocal2PNode*)tls->remote_batch_head;
+  Hz5LinuxLocal2PNode* tail =
+      (Hz5LinuxLocal2PNode*)tls->remote_batch_tail;
+  void* inbox_head =
+      atomic_load_explicit(&owner_tls->inbox_head, memory_order_acquire);
+  do {
+    tail->next = (Hz5LinuxLocal2PNode*)inbox_head;
+  } while (!atomic_compare_exchange_weak_explicit(
+      &owner_tls->inbox_head, &inbox_head, head,
+      memory_order_acq_rel, memory_order_acquire));
+
+  tls->remote_batch_owner = 0;
+  tls->remote_batch_head = NULL;
+  tls->remote_batch_tail = NULL;
+  tls->remote_batch_count = 0;
+  hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INBOX);
+  return 1;
+}
+
+static int hz5_policy_local2p_remote_batch_push(uintptr_t owner,
+                                                void* node_ptr) {
+  if (!owner || !node_ptr) {
+    return 0;
+  }
+  Hz5PolicyLocal2PTls* tls = hz5_policy_local2p_tls();
+  if (tls->remote_batch_owner && tls->remote_batch_owner != owner) {
+    (void)hz5_policy_local2p_remote_batch_flush(tls);
+  }
+  Hz5LinuxLocal2PNode* node = (Hz5LinuxLocal2PNode*)node_ptr;
+  node->next = (Hz5LinuxLocal2PNode*)tls->remote_batch_head;
+  tls->remote_batch_head = node;
+  if (!tls->remote_batch_tail) {
+    tls->remote_batch_tail = node;
+  }
+  tls->remote_batch_owner = owner;
+  ++tls->remote_batch_count;
+  if (tls->remote_batch_count >= BENCHLAB_HZ5_LINUX_LOCAL2P_REMOTE_BATCH_CAP) {
+    return hz5_policy_local2p_remote_batch_flush(tls);
+  }
+  return 1;
+}
+#endif
 #endif
 
 static void* hz5_policy_local2p_global_pop(void) {
@@ -808,6 +874,12 @@ static Hz5FreeResult hz5_policy_local2p_free(Hz5WrapperHdr* header,
     void* node_ptr = hz5_policy_local2p_node_from_header(header, aligned);
 #if BENCHLAB_HZ5_LINUX_LOCAL2P_OWNER_INBOX && \
     BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_REMOTE_BATCH
+    if (hz5_policy_local2p_remote_batch_push(header->local2p_owner,
+                                             node_ptr)) {
+      return HZ5_FREE_OK_HZ5;
+    }
+#endif
     if (hz5_policy_local2p_inbox_push(header->local2p_owner, node_ptr)) {
       return HZ5_FREE_OK_HZ5;
     }
