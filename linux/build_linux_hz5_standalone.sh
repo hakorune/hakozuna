@@ -24,6 +24,7 @@ LINUX_LOCAL2P_FAST_COOKIE=0
 LINUX_LOCAL2P_FREE_FIRST=0
 LINUX_LOCAL2P_TLS_FAST_RETURN=0
 LINUX_LOCAL2P_EXACT_API=0
+LINUX_LOCAL2P_SINGLE_SLOT_TLS=0
 LINUX_P25_BRIDGE_ATTR=0
 LINUX_P25_BRIDGE_ATTR_NO_CAS=0
 LINUX_P25_BRIDGE_ATTR_NO_COOKIE=0
@@ -88,6 +89,8 @@ Options:
                      candidate only: fast-cookie lane with immediate owner-TLS hit return
   --linux-local2p-exact-api
                      candidate only: tls-fast-return lane with exact 64K/a8192 alloc/free API in benchmark
+  --linux-local2p-single-slot-tls
+                     candidate only: exact-api lane with TLS_CAP=1 head-only cache
   --linux-p25-bridge-attr
                      preserve P25 bridge topology with wrapper attr CAS guard
   --linux-p25-bridge-attr-no-cas
@@ -312,6 +315,23 @@ while [[ $# -gt 0 ]]; do
       LINUX_LOCAL2P_FAST_COOKIE=1
       LINUX_LOCAL2P_TLS_FAST_RETURN=1
       LINUX_LOCAL2P_EXACT_API=1
+      shift
+      ;;
+    --linux-local2p-single-slot-tls)
+      LINUX_LOCAL2P=1
+      LINUX_LOCAL2P_TLS_PACKED=1
+      LINUX_LOCAL2P_TLS_INITIAL_EXEC=1
+      LINUX_LOCAL2P_DIRECT_ROUTE=1
+      LINUX_LOCAL2P_DIRECT_INIT=1
+      LINUX_LOCAL2P_OBJECT_NODE=1
+      LINUX_LOCAL2P_SAME_OWNER_FAST_STATE=1
+      LINUX_LOCAL2P_ROUTE_COOKIE=1
+      LINUX_LOCAL2P_REUSE_STATE_ONLY=1
+      LINUX_LOCAL2P_SLIM_CHECK=1
+      LINUX_LOCAL2P_FAST_COOKIE=1
+      LINUX_LOCAL2P_TLS_FAST_RETURN=1
+      LINUX_LOCAL2P_EXACT_API=1
+      LINUX_LOCAL2P_SINGLE_SLOT_TLS=1
       shift
       ;;
     --linux-p25-bridge-attr)
@@ -593,6 +613,9 @@ if [[ "$LINUX_LOCAL2P" -eq 1 ]]; then
   if [[ "$LINUX_LOCAL2P_TLS_FAST_RETURN" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LOCAL2P_TLS_FAST_RETURN=1)
   fi
+  if [[ "$LINUX_LOCAL2P_SINGLE_SLOT_TLS" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LOCAL2P_SINGLE_SLOT_TLS=1)
+  fi
 fi
 
 if [[ "$ENABLE_LINUX_P43" -eq 1 ]]; then
@@ -665,6 +688,7 @@ fi
   echo "linux_local2p_free_first=${LINUX_LOCAL2P_FREE_FIRST}"
   echo "linux_local2p_tls_fast_return=${LINUX_LOCAL2P_TLS_FAST_RETURN}"
   echo "linux_local2p_exact_api=${LINUX_LOCAL2P_EXACT_API}"
+  echo "linux_local2p_single_slot_tls=${LINUX_LOCAL2P_SINGLE_SLOT_TLS}"
   echo "linux_p25_bridge_attr=${LINUX_P25_BRIDGE_ATTR}"
   echo "linux_p25_bridge_attr_no_cas=${LINUX_P25_BRIDGE_ATTR_NO_CAS}"
   echo "linux_p25_bridge_attr_no_cookie=${LINUX_P25_BRIDGE_ATTR_NO_COOKIE}"

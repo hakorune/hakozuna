@@ -157,6 +157,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_FAST_RETURN 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LOCAL2P_SINGLE_SLOT_TLS
+#define BENCHLAB_HZ5_LINUX_LOCAL2P_SINGLE_SLOT_TLS 0
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS
 #define BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS 0
 #endif
@@ -527,11 +531,19 @@ static void* hz5_policy_local2p_pop(void) {
     return NULL;
   }
 #if BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_SINGLE_SLOT_TLS
+  tls->head = NULL;
+#else
   tls->head = node->next;
   --tls->count;
+#endif
+#else
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_SINGLE_SLOT_TLS
+  g_hz5_policy_local2p_head = NULL;
 #else
   g_hz5_policy_local2p_head = node->next;
   --g_hz5_policy_local2p_count;
+#endif
 #endif
   hz5_trace_inc(HZ5_TRACE_ALLOC_LOCAL2P_TLS_HIT);
   return (void*)node;
@@ -645,9 +657,17 @@ static void* hz5_policy_local2p_global_pop(void) {
 static int hz5_policy_local2p_push(void* node_ptr) {
 #if BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
   Hz5PolicyLocal2PTls* tls = hz5_policy_local2p_tls();
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_SINGLE_SLOT_TLS
+  if (tls->head != NULL) {
+#else
   if (tls->count >= BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_CAP) {
+#endif
+#else
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_SINGLE_SLOT_TLS
+  if (g_hz5_policy_local2p_head != NULL) {
 #else
   if (g_hz5_policy_local2p_count >= BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_CAP) {
+#endif
 #endif
     hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_OVERFLOW);
     hz5_policy_local2p_free_node(node_ptr);
@@ -655,13 +675,21 @@ static int hz5_policy_local2p_push(void* node_ptr) {
   }
   Hz5LinuxLocal2PNode* node = (Hz5LinuxLocal2PNode*)node_ptr;
 #if BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_SINGLE_SLOT_TLS
+  tls->head = node;
+#else
   node->next = (Hz5LinuxLocal2PNode*)tls->head;
   tls->head = node;
   ++tls->count;
+#endif
+#else
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_SINGLE_SLOT_TLS
+  g_hz5_policy_local2p_head = node;
 #else
   node->next = (Hz5LinuxLocal2PNode*)g_hz5_policy_local2p_head;
   g_hz5_policy_local2p_head = node;
   ++g_hz5_policy_local2p_count;
+#endif
 #endif
   hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_TLS);
   return 1;

@@ -90,6 +90,9 @@ Design:
 - `hz5-local2p-exactapi` is the local-only exact API candidate: the aligned64k
   benchmark calls `hz5_local2p_alloc_64k_a8192()` and
   `hz5_local2p_free_64k_a8192()` to bypass generic alloc/free route dispatch
+- `hz5-local2p-slot1` is the single-slot TLS candidate: exactapi plus
+  `TLS_CAP=1` head-only push/pop, avoiding the local `count` and `next`
+  maintenance in the owner-local cache
 - remote-batch is the current remote-free candidate: batch remote frees in the
   freeing thread before owner-inbox handoff
 - cleanup rule: commonize decode/cookie/state validation helpers, but keep
@@ -557,6 +560,48 @@ Interpretation:
 - exact API reduces instruction count below tcmalloc, so the remaining local
   gap is likely cycles from call boundaries, stores/fences, or cacheline
   behavior rather than raw instruction count
+- safety smoke passed: `bench_hz5_standalone_safety`
+
+Single-slot TLS measurement:
+
+```text
+private/raw-results/linux/local2p_slot1_runs10
+
+local median:
+  hz5-local2p-exactapi              225.2M ops/s
+  hz5-local2p-slot1                 221.6M ops/s
+  hz5-local2p-tlsfast               214.9M ops/s
+  hz4                               130.6M ops/s
+  tcmalloc                          251.8M ops/s
+
+mixed final median:
+  hz5-local2p-slot1                 238.8M ops/s
+  hz5-local2p-tlsfast               225.8M ops/s
+  hz5-local2p-exactapi              215.6M ops/s
+  hz4                               137.0M ops/s
+  tcmalloc                          268.5M ops/s
+
+remote pairs/s median:
+  hz5-local2p-remotebatch           15.78M
+  hz5-p25                           12.99M
+  hz4                               10.98M
+  hz5-local2p-tlsfast                7.99M
+  hz5-local2p-slot1                  7.49M
+  tcmalloc                           2.36M
+
+perf stat local 10M, one-run:
+  slot1:     1.10B instructions, 353.9M cycles
+```
+
+Interpretation:
+
+- `slot1` is not the local-only speed reference; `exactapi` remains faster in
+  the local median and has lower cycles in the previous perf check
+- `slot1` is a promising mixed-prelude candidate because it improved mixed
+  final throughput materially in this run
+- `slot1` reduced instruction count further but worsened local cycles, so the
+  remaining tcmalloc gap should be attacked with link/call-boundary or memory
+  ordering/cacheline A/B rather than more instruction-count-only reductions
 - safety smoke passed: `bench_hz5_standalone_safety`
 
 ## Branch

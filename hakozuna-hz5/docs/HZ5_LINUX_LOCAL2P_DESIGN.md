@@ -801,6 +801,55 @@ Decision: `exactapi` is the local-only exact API reference. Keep `tlsfast` as
 the same-public-API local/mixed reference and `remotebatch` as the remote-free
 reference.
 
+### Single-Slot TLS Candidate
+
+`hz5-linux-local2p-single-slot-tls` builds on exact API and specializes the
+owner-local cache for `TLS_CAP=1`:
+
+```text
+pop:
+  node = head
+  head = NULL
+
+push:
+  if head != NULL: overflow
+  head = node
+```
+
+This avoids maintaining `count` and avoids reading/writing `node->next` on the
+owner-local cache path. Remote/inbox/global paths remain separate.
+
+RUNS=10 result:
+
+```text
+private/raw-results/linux/local2p_slot1_runs10
+
+local:
+  exactapi 225.2M ops/s
+  slot1    221.6M ops/s
+  tcmalloc 251.8M ops/s
+
+mixed:
+  slot1    238.8M ops/s
+  tlsfast  225.8M ops/s
+  tcmalloc 268.5M ops/s
+
+remote pairs/s:
+  remotebatch 15.78M
+  p25         12.99M
+  slot1        7.49M
+```
+
+One-run `perf stat` on local 10M:
+
+```text
+slot1: 1.10B instructions, 353.9M cycles
+```
+
+Decision: do not replace `exactapi` as the local-only speed reference. Keep
+`slot1` as a mixed-prelude candidate. It reduced instructions but local cycles
+worsened, so it is not a clean local-speed promotion.
+
 Overflow policy for the first candidate should be explicit and visible in the
 lane name or build metadata. Prefer keeping it simple:
 

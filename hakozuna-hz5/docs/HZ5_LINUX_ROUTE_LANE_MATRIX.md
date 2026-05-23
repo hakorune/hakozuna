@@ -197,6 +197,7 @@ This is a useful hit-rate diagnostic, but a miss is not an HZ5 allocation.
 | `hz5-local2p-fastcookie` | `hz5-linux-local2p-fast-cookie` | `--linux-local2p-fast-cookie` | `local2p` | speed candidate: lightweight cookie |
 | `hz5-local2p-tlsfast` | `hz5-linux-local2p-tls-fast-return` | `--linux-local2p-tls-fast-return` | `local2p` | current local/mixed speed reference |
 | `hz5-local2p-exactapi` | `hz5-linux-local2p-exact-api` | `--linux-local2p-exact-api` | `local2p` | local-only exact API speed reference |
+| `hz5-local2p-slot1` | `hz5-linux-local2p-single-slot-tls` | `--linux-local2p-single-slot-tls` | `local2p` | mixed-prelude candidate: TLS_CAP=1 head-only cache |
 | `hz5-local2p-freefirst` | `hz5-linux-local2p-free-first` | `--linux-local2p-free-first` | `local2p` | speed candidate: Local2P free-first dispatch |
 | `hz5-local2p-freefirst-fastcookie` | `hz5-linux-local2p-freefirst-fastcookie` | `--linux-local2p-freefirst-fastcookie` | `local2p` | explicit alias for the fast-cookie + free-first compound lane |
 | `hz5-local2p-inbox` | `hz5-linux-local2p-remote-inbox` | `--linux-local2p-fast --linux-local2p-owner-inbox` | `local2p` | remote-free candidate |
@@ -317,6 +318,7 @@ Local2P speed candidates:
 --linux-local2p-fast-cookie
 --linux-local2p-tls-fast-return
 --linux-local2p-exact-api
+--linux-local2p-single-slot-tls
 --linux-local2p-free-first
 --linux-local2p-freefirst-fastcookie
 ```
@@ -358,6 +360,11 @@ reference, not the remote-free reference.
 standalone benchmark call `hz5_local2p_alloc_64k_a8192()` and
 `hz5_local2p_free_64k_a8192()`. It is a local-only exact API measurement lane,
 not a general allocator or LD_PRELOAD lane.
+
+`--linux-local2p-single-slot-tls` builds on exact API and specializes
+`TLS_CAP=1` owner-local cache operations to `head` only. It avoids the local
+`count` and `node->next` maintenance. Current decision: mixed-prelude
+candidate, not local-only speed reference.
 
 `--linux-local2p-free-first` builds on fast-cookie and moves Local2P direct
 free decode before the generic P1/P2 ownership check. This is a dispatch-order
