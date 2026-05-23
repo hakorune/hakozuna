@@ -987,6 +987,19 @@ static int hz5_policy_local2p_direct_decode(void* ptr,
   return 1;
 }
 
+static inline int
+hz5_policy_local2p_try_free_direct(void* ptr, Hz5FreeResult* result_out) {
+  Hz5WrapperHdr* local2p_wrapped = NULL;
+  if (!hz5_policy_local2p_direct_decode(ptr, &local2p_wrapped)) {
+    return 0;
+  }
+  hz5_trace_inc(HZ5_TRACE_WRAPPER_DECODE_OK);
+  if (result_out) {
+    *result_out = hz5_policy_local2p_free(local2p_wrapped, (uintptr_t)ptr);
+  }
+  return 1;
+}
+
 static int hz5_policy_local2p_metadata_present(const Hz5WrapperHdr* header) {
   if (!header) {
     return 0;
@@ -1297,12 +1310,11 @@ Hz5FreeResult hz5_policy_free_local2p_64k_a8192(void* ptr) {
   if (!ptr) {
     return HZ5_FREE_OK_HZ5;
   }
-  Hz5WrapperHdr* local2p_wrapped = NULL;
-  if (!hz5_policy_local2p_direct_decode(ptr, &local2p_wrapped)) {
-    return HZ5_FREE_INVALID;
+  Hz5FreeResult result = HZ5_FREE_INVALID;
+  if (hz5_policy_local2p_try_free_direct(ptr, &result)) {
+    return result;
   }
-  hz5_trace_inc(HZ5_TRACE_WRAPPER_DECODE_OK);
-  return hz5_policy_local2p_free(local2p_wrapped, (uintptr_t)ptr);
+  return HZ5_FREE_INVALID;
 #else
   (void)ptr;
   return HZ5_FREE_INVALID;
@@ -1312,10 +1324,9 @@ Hz5FreeResult hz5_policy_free_local2p_64k_a8192(void* ptr) {
 Hz5FreeResult hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_LOCAL2P && \
     BENCHLAB_HZ5_LINUX_LOCAL2P_FREE_FIRST
-  Hz5WrapperHdr* local2p_wrapped = NULL;
-  if (hz5_policy_local2p_direct_decode(ptr, &local2p_wrapped)) {
-    hz5_trace_inc(HZ5_TRACE_WRAPPER_DECODE_OK);
-    return hz5_policy_local2p_free(local2p_wrapped, (uintptr_t)ptr);
+  Hz5FreeResult local2p_result = HZ5_FREE_INVALID;
+  if (hz5_policy_local2p_try_free_direct(ptr, &local2p_result)) {
+    return local2p_result;
   }
 #endif
 
@@ -1328,10 +1339,9 @@ Hz5FreeResult hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
 
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_LOCAL2P && \
     !BENCHLAB_HZ5_LINUX_LOCAL2P_FREE_FIRST
-  Hz5WrapperHdr* local2p_wrapped = NULL;
-  if (hz5_policy_local2p_direct_decode(ptr, &local2p_wrapped)) {
-    hz5_trace_inc(HZ5_TRACE_WRAPPER_DECODE_OK);
-    return hz5_policy_local2p_free(local2p_wrapped, (uintptr_t)ptr);
+  Hz5FreeResult local2p_result = HZ5_FREE_INVALID;
+  if (hz5_policy_local2p_try_free_direct(ptr, &local2p_result)) {
+    return local2p_result;
   }
 #endif
 

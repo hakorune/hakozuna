@@ -718,6 +718,47 @@ Interpretation:
   perf median but measured ops/s is effectively tied
 - guard rows did not crash; unsupported exact-only rows fail closed
 
+Local2P direct free cleanup:
+
+```text
+commit pending
+
+change:
+  commonized direct Local2P decode/free dispatch into
+  hz5_policy_local2p_try_free_direct()
+
+scope:
+  exact Local2P API free
+  normal hz5_policy_free() Local2P direct path
+
+rebuild smoke:
+  private/raw-results/linux/local2p_cleanup_rebuild_smoke_20260524_023021
+
+local median:
+  hz5-local2p-linkflags 252.9M ops/s
+  tcmalloc              254.1M ops/s
+  exactapi              229.1M ops/s
+
+mixed final median:
+  hz5-local2p-linkflags 285.5M ops/s
+  tcmalloc              269.1M ops/s
+
+remote pairs/s median:
+  remotebatch           13.23M
+  p25                   11.94M
+  hz4                   11.18M
+  linkflags              6.70M
+
+safety:
+  linkflags/exactapi/remotebatch standalone safety passed
+```
+
+Interpretation:
+
+- helper cleanup did not break build, safety, or the current local/mixed shape
+- linkflags remains the exact local speed reference
+- remotebatch remains the remote-free reference
+
 ## Branch
 
 Use:
