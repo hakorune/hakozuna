@@ -402,7 +402,7 @@ codex/hz5-linux-p43-port
 Latest Local2P implementation commit:
 
 ```bash
-79fca0f Refactor HZ5 Local2P free path helpers
+c3a44b9 Add HZ5 Local2P remote batch cap sweep
 ```
 
 Parent branch:
