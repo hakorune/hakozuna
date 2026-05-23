@@ -29,6 +29,29 @@ owner generation must be checked before enqueue/drain decisions
 
 O1 does not need to implement perfect reclamation.
 
+## Implementation Status
+
+Implemented on Linux:
+
+```text
+pthread key destructor for hz5_owner
+owner state table: ALIVE / DYING / DEAD
+per-slot owner generation increments on owner creation
+hz5_owner_is_alive checks generation and ALIVE state
+SmallFront remote publish refuses dead/stale owners
+SmallFront owner inbox drain drops generation-mismatched nodes
+```
+
+Current behavior for dead-owner SmallFront remote free:
+
+```text
+remote free validates descriptor and clears the slot state
+publish to the dead owner is refused
+the freed object is not reused until a later orphan/reclaim design
+```
+
+This is intentionally leak-safe rather than reclaim-complete.
+
 ## Scope
 
 Covered:
@@ -170,6 +193,25 @@ malloc_real remains 0 in benchmark body
 track_insert_fail remains 0
 ```
 
+Observed smoke:
+
+```text
+/bin/true under full preload:
+  OK
+
+SmallFront smoke:
+  OK
+
+owner-death smoke:
+  worker malloc(128), worker exits, main free(ptr)
+  OK, no crash
+  malloc_hz5=2 malloc_real=0 track_insert_fail=0
+
+short guard, threads=2 iters=50000 ws=100 size=16..2048:
+  r0 median:  about 49.4M ops/s
+  r90 median: about 6.7M ops/s
+```
+
 ## Stop Rules
 
 Stop and redesign if:
@@ -180,4 +222,3 @@ remote free can publish to a dead owner's inbox as if alive
 thread exit can dereference a dead thread's TLS object
 SmallFront invalid/double-free falls through to real libc
 ```
-

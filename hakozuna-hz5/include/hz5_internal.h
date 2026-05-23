@@ -23,6 +23,13 @@ typedef enum Hz5DecommitState {
     HZ5_DECOMMITTED = 2
 } Hz5DecommitState;
 
+typedef enum Hz5OwnerState {
+    HZ5_OWNER_EMPTY = 0,
+    HZ5_OWNER_ALIVE = 1,
+    HZ5_OWNER_DYING = 2,
+    HZ5_OWNER_DEAD = 3
+} Hz5OwnerState;
+
 typedef struct Hz5OwnerToken {
     uint16_t slot;
     uint16_t generation;

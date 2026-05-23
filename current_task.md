@@ -477,6 +477,42 @@ hakozuna-hz5/docs/HZ5_OWNER_LIFETIME_O1.md
 hakozuna-hz5/docs/HZ5_MIDFRONT_M1_DESIGN.md
 ```
 
+OwnerLifetime-O1 implementation status:
+
+```text
+implemented:
+  Linux pthread key destructor for hz5_owner
+  owner state table: ALIVE / DYING / DEAD
+  per-slot owner generation increments on owner creation
+  hz5_owner_is_alive checks both generation and ALIVE state
+  SmallFront remote publish refuses dead/stale owners
+  SmallFront owner inbox drain drops generation-mismatched nodes
+
+not implemented:
+  full orphan queue reuse/reclaim
+  active allocation migration on owner death
+  owner slot free-list reuse policy
+```
+
+O1 smoke:
+
+```text
+build:
+  --linux-smallfront-s1 --linux-local2p-speed-linkflags
+
+checks:
+  /bin/true under preload OK
+  smallfront smoke OK
+  owner-death smoke OK:
+    worker malloc(128), worker exits, main free(ptr)
+    no crash
+    malloc_hz5=2 malloc_real=0 track_insert_fail=0
+
+short guard, threads=2 iters=50000 ws=100 size=16..2048:
+  r0 median:  about 49.4M ops/s
+  r90 median: about 6.7M ops/s
+```
+
 ## Previous Development Focus: Linux Local2P v2
 
 Status: Local2P has split into explicit Linux profiles. `linkflags` is the

@@ -219,6 +219,9 @@ static void hz5_smallfront_remote_publish_list(Hz5OwnerToken owner,
       !tail) {
     return;
   }
+  if (!hz5_owner_is_alive(owner)) {
+    return;
+  }
 
   void* old_head = NULL;
   _Atomic(void*)* inbox =
@@ -250,6 +253,9 @@ static void hz5_smallfront_remote_batch_push(Hz5SmallFrontTls* tls,
                                              Hz5SmallFrontPage* page,
                                              void* ptr) {
   uint32_t class_index = page->class_index;
+  if (!hz5_owner_is_alive(page->owner)) {
+    return;
+  }
   if (tls->remote_batch_count != 0u &&
       (!hz5_owner_equal(tls->remote_batch_owner, page->owner) ||
        tls->remote_batch_class != class_index)) {
@@ -287,7 +293,9 @@ static void hz5_smallfront_drain_remote_class(Hz5SmallFrontTls* tls,
   while (head) {
     Hz5SmallFrontNode* node = (Hz5SmallFrontNode*)head;
     head = node->next;
-    hz5_smallfront_local_push(tls, class_index, node, node->page);
+    if (node->page && hz5_owner_equal(node->page->owner, tls->owner)) {
+      hz5_smallfront_local_push(tls, class_index, node, node->page);
+    }
   }
 }
 
