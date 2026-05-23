@@ -198,10 +198,10 @@ Diagnostic results are not paper claims.
 
 ### Existing paper main
 
-The paper snapshot lives in the paper/hakmem tree:
+The paper snapshot is available in the `hakmem` tree:
 
 ```bash
-cd /mnt/workdisk/public_share/hakozuna_paper/hakmem
+cd /mnt/workdisk/public_share/hakmem
 scripts/run_mt_lane_remote_matrix.sh \
   --runs 10 \
   --cpu-list 0-15 \
@@ -214,6 +214,28 @@ MEMTIER_SECONDS=15 \
 OUTDIR=/tmp/realworld_redis_paper_<timestamp> \
 hakozuna/scripts/run_realworld_4pack.sh
 ```
+
+The archived paper tree at
+`/mnt/workdisk/public_share/hakozuna_paper/hakmem` has matching copies of the
+MT matrix runner and benchmark source, but it is not a git checkout. Prefer
+`/mnt/workdisk/public_share/hakmem` for fresh runs and use the archive only for
+paper snapshot cross-checks.
+
+Do not copy the entire `hakmem` tree into this repository. If a self-contained
+paper-compat suite becomes necessary, import only:
+
+```text
+docs/benchmarks/2026-02-18_PAPER_BENCH_RESULTS.md
+docs/benchmarks/2026-01-24_PAPER_BENCH_WORK_ORDER.md
+docs/benchmarks/2026-01-25_MT_REMOTE_MATRIX_SSOT_RESULTS.md
+scripts/run_mt_lane_remote_matrix.sh
+scripts/lib/ssot_preload_guard.sh
+hakozuna/bench/bench_random_mixed_mt_remote.c
+hakozuna/scripts/run_realworld_4pack.sh
+```
+
+Keep imported files under a paper-compat namespace; do not mix them with HZ5
+standalone exact-lane benchmarks.
 
 ### HZ5 appendix/focus
 

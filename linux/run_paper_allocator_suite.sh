@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PAPER_ROOT="${PAPER_ROOT:-/mnt/workdisk/public_share/hakozuna_paper/hakmem}"
+PAPER_ROOT="${PAPER_ROOT:-/mnt/workdisk/public_share/hakmem}"
 TIER="appendix-hz5"
 RUNS=10
 ARCH="auto"
@@ -33,7 +33,7 @@ Options:
   --cpu-list LIST            CPU list for paper-main taskset (default: 0-15)
   --outdir DIR               output directory
   --paper-root DIR           paper/hakmem root
-                             (default: /mnt/workdisk/public_share/hakozuna_paper/hakmem)
+                             (default: /mnt/workdisk/public_share/hakmem)
   --local-iters N            appendix-hz5 local iterations
   --remote-iters N           appendix-hz5 remote pairs
   --rss-blocks N             appendix-hz5 RSS live blocks

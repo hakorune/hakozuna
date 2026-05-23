@@ -13,6 +13,32 @@ The target lane is standalone and fallback-free:
 - call the HZ5 API directly from a dedicated benchmark binary
 - route only supported exact HZ5 cases, starting with `64K align=8192`
 
+## Paper Benchmark Source
+
+The previous paper benchmark tree is available at:
+
+```text
+/mnt/workdisk/public_share/hakmem
+```
+
+This maps to the user's `Y:\hakmem` path. Use it as the default paper-main
+source for fresh runs. The archived copy at
+`/mnt/workdisk/public_share/hakozuna_paper/hakmem` has matching MT matrix
+runner and benchmark source, but it is not a git checkout.
+
+Current policy:
+
+- do not copy the whole `hakmem` tree into this branch
+- run paper-main through `linux/run_paper_allocator_suite.sh --tier paper-main`
+  when a general LD_PRELOAD allocator comparison is needed
+- if a self-contained paper-compat suite is needed, import only the paper result
+  docs, `scripts/run_mt_lane_remote_matrix.sh`,
+  `scripts/lib/ssot_preload_guard.sh`,
+  `hakozuna/bench/bench_random_mixed_mt_remote.c`, and
+  `hakozuna/scripts/run_realworld_4pack.sh`
+- keep these paper-main workloads separate from HZ5 standalone exact
+  `64K/a8192` appendix benchmarks
+
 ## Current Development Focus: Linux Local2P v2
 
 Status: object-node, route-cookie, reuse-state-only, slim-check, and
