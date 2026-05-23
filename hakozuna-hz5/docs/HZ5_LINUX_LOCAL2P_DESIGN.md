@@ -339,6 +339,40 @@ first allocation: OS source
 steady state: TLS pop / TLS push
 ```
 
+### Object-Node Candidate
+
+`hz5-linux-local2p-object-node` changes only the recycle topology:
+
+```text
+current fast lane:
+  TLS/global/inbox node = raw span pointer
+
+object-node lane:
+  TLS/global/inbox node = aligned user pointer
+  freed user memory stores freelist next
+```
+
+The wrapper header still stores `raw`, cookie, owner, generation, and state.
+The first object-node A/B keeps the existing Local2P safety checks:
+
+```text
+free:
+  direct Local2P decode
+  wrapper cookie check
+  Local2P cookie check
+  ACTIVE -> FREED atomic state transition
+  push aligned user pointer into recycle cache
+
+alloc cached reuse:
+  pop aligned user pointer
+  recover raw from wrapper header
+  skip invariant wrapper-prefix rewrite
+  refresh Local2P attribution/state
+```
+
+This is the tcmalloc-like topology test. It is still not the final slim-header
+or same-owner-fast-state design.
+
 Overflow policy for the first candidate should be explicit and visible in the
 lane name or build metadata. Prefer keeping it simple:
 

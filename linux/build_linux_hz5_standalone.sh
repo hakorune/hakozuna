@@ -13,6 +13,7 @@ LINUX_LOCAL2P_DIRECT_INIT=0
 LINUX_LOCAL2P_NO_COOKIE=0
 LINUX_LOCAL2P_NO_CAS=0
 LINUX_LOCAL2P_OWNER_INBOX=0
+LINUX_LOCAL2P_OBJECT_NODE=0
 LINUX_P25_BRIDGE_ATTR=0
 LINUX_P25_BRIDGE_ATTR_NO_CAS=0
 LINUX_P25_BRIDGE_ATTR_NO_COOKIE=0
@@ -53,6 +54,8 @@ Options:
                      diagnostic only: replace Local2P ACTIVE->FREED CAS with load/store
   --linux-local2p-owner-inbox
                      candidate only: route remote frees to owner MPSC inbox
+  --linux-local2p-object-node
+                     candidate only: use aligned user pointers as Local2P free-list nodes
   --linux-p25-bridge-attr
                      preserve P25 bridge topology with wrapper attr CAS guard
   --linux-p25-bridge-attr-no-cas
@@ -142,6 +145,15 @@ while [[ $# -gt 0 ]]; do
       LINUX_LOCAL2P=1
       LINUX_LOCAL2P_TLS_PACKED=1
       LINUX_LOCAL2P_OWNER_INBOX=1
+      shift
+      ;;
+    --linux-local2p-object-node)
+      LINUX_LOCAL2P=1
+      LINUX_LOCAL2P_TLS_PACKED=1
+      LINUX_LOCAL2P_TLS_INITIAL_EXEC=1
+      LINUX_LOCAL2P_DIRECT_ROUTE=1
+      LINUX_LOCAL2P_DIRECT_INIT=1
+      LINUX_LOCAL2P_OBJECT_NODE=1
       shift
       ;;
     --linux-p25-bridge-attr)
@@ -388,6 +400,9 @@ if [[ "$LINUX_LOCAL2P" -eq 1 ]]; then
   if [[ "$LINUX_LOCAL2P_OWNER_INBOX" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LOCAL2P_OWNER_INBOX=1)
   fi
+  if [[ "$LINUX_LOCAL2P_OBJECT_NODE" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LOCAL2P_OBJECT_NODE=1)
+  fi
 fi
 
 if [[ "$ENABLE_LINUX_P43" -eq 1 ]]; then
@@ -449,6 +464,7 @@ fi
   echo "linux_local2p_no_cookie=${LINUX_LOCAL2P_NO_COOKIE}"
   echo "linux_local2p_no_cas=${LINUX_LOCAL2P_NO_CAS}"
   echo "linux_local2p_owner_inbox=${LINUX_LOCAL2P_OWNER_INBOX}"
+  echo "linux_local2p_object_node=${LINUX_LOCAL2P_OBJECT_NODE}"
   echo "linux_p25_bridge_attr=${LINUX_P25_BRIDGE_ATTR}"
   echo "linux_p25_bridge_attr_no_cas=${LINUX_P25_BRIDGE_ATTR_NO_CAS}"
   echo "linux_p25_bridge_attr_no_cookie=${LINUX_P25_BRIDGE_ATTR_NO_COOKIE}"

@@ -13,6 +13,42 @@ The target lane is standalone and fallback-free:
 - call the HZ5 API directly from a dedicated benchmark binary
 - route only supported exact HZ5 cases, starting with `64K align=8192`
 
+## Current Development Focus: Linux Local2P v2
+
+Status: implementing A/B candidate.
+
+Goal:
+
+- close the remaining Linux local-only gap to HZ4/tcmalloc without touching the
+  Windows P43i/P45 lanes
+- keep P25 bridge, P43 token/source, and Linux Local2P roles separated
+- keep invalid/double-free behavior fail-closed
+
+Next candidate:
+
+```text
+hz5-linux-local2p-object-node
+```
+
+Design:
+
+- keep exact route only: `size=65536`, `align=8192`
+- keep current Local2P wrapper/cookie/state safety for the first A/B
+- change the Local2P recycle node from `raw_ptr` to the aligned `user_ptr`
+- store freelist `next` in freed user memory, tcmalloc-style
+- keep `raw` in the wrapper header for validation and OS release
+- skip invariant wrapper-prefix rewrites on cached object-node reuse
+- leave cookie consolidation, slim header, and same-owner fast state as
+  follow-up A/B lanes
+
+Expected first measurement:
+
+- compare `hz5-local2p-fast` vs `hz5-local2p-object` vs `hz5-p25` vs `hz4` vs
+  `tcmalloc`
+- focus first on local `64K/a8192` ops/s and instruction count
+- then check remote/RSS/mixed to make sure object-node does not regress the
+  non-local controls unexpectedly
+
 ## Branch
 
 Use:

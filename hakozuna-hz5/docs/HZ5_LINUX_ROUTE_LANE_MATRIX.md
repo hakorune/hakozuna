@@ -189,6 +189,7 @@ This is a useful hit-rate diagnostic, but a miss is not an HZ5 allocation.
 | Runner label | Role name | Build selector | Primary route | Classification |
 | --- | --- | --- | --- | --- |
 | `hz5-local2p-fast` | `hz5-linux-local2p-fast` | `--linux-local2p-fast` | `local2p` | current appendix speed candidate |
+| `hz5-local2p-object` | `hz5-linux-local2p-object-node` | `--linux-local2p-object-node` | `local2p` | speed candidate: user-pointer freelist node |
 | `hz5-local2p-inbox` | `hz5-linux-local2p-remote-inbox` | `--linux-local2p-fast --linux-local2p-owner-inbox` | `local2p` | remote-free candidate |
 | `hz5-local2p` | `hz5-linux-local2p` | `--linux-local2p` | `local2p` | baseline Local2P implementation |
 | `hz5-p25` | `hz5-linux-p25-control` | no Local2P/P43/P25Attr selector | `p25_bridge` | Linux control |
@@ -279,6 +280,17 @@ Local2P-specific diagnostic switches:
 
 These are cost-isolation builds only. Keep them out of appendix defaults.
 
+Local2P speed candidates:
+
+```text
+--linux-local2p-fast
+--linux-local2p-object-node
+```
+
+`--linux-local2p-object-node` stores the recycle `next` pointer in freed user
+memory and skips invariant wrapper-prefix rewrites on cached reuse. It keeps
+the Local2P cookie/state checks in the first A/B candidate.
+
 ## Decision Rules
 
 Use these rules when adding a new result:
@@ -326,7 +338,7 @@ Current Ubuntu HZ5 development order:
 
 ```text
 1. local2p-speed:
-   direct free decode and instruction-count reduction
+   direct free decode, object-node reuse, and instruction-count reduction
 
 2. local2p-remote:
    owner inbox / MPSC remote-free queue
