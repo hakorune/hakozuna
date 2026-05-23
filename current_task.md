@@ -932,6 +932,11 @@ Source cleanup checkpoint:
 
 ```text
 change:
+  linux/build_linux_hz5_standalone.sh
+    added enable_local2p_* helper functions
+    removed duplicated flag setup from fast-cookie/tlsfast/exact/linkflags/
+    rss-retain lane selectors
+
   linux/run_linux_hz5_local2p_focus.sh
     added is_hz5_focus_lane() helper
     removed duplicated HZ5 lane list from require/run dispatch
@@ -947,6 +952,7 @@ verification:
   bash -n build_linux_hz5_standalone.sh
   bash -n run_linux_hz5_local2p_focus.sh
   rssretain2048 standalone safety
+  linkflags standalone safety after helper cleanup
   focus runner smoke with hz5-local2p-rssretain2048 + system
 ```
 
@@ -955,6 +961,8 @@ Interpretation:
 - No allocator policy change beyond helper extraction.
 - Runner now has fewer duplicated places where a new HZ5 focus lane must be
   added.
+- Build script now makes the Local2P lane hierarchy explicit:
+  fast-cookie -> tlsfast -> exact-api -> speed-linkflags -> rss-retain.
 
 ## Branch
 
