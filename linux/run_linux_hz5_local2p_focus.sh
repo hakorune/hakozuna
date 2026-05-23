@@ -359,13 +359,13 @@ write_allocator_metadata() {
     hz5-local2p-tlsfast)
       printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
         "$alloc" "hz5-linux-local2p-tls-fast-return" "local2p" \
-        "speed-candidate" "exact-64k-a8192-local" \
+        "control" "public-api-shape-local2p-control" \
         "owner-local-tls-hit-returns-after-state-restore"
       ;;
     hz5-local2p-exactapi)
       printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
         "$alloc" "hz5-linux-local2p-exact-api" "local2p" \
-        "speed-candidate" "exact-64k-a8192-local" \
+        "control" "exact-api-local2p-control" \
         "benchmark-calls-exact-local2p-alloc-free-api"
       ;;
     hz5-local2p-slot1)
@@ -377,21 +377,27 @@ write_allocator_metadata() {
     hz5-local2p-linkflags)
       printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
         "$alloc" "hz5-linux-local2p-speed-linkflags" "local2p" \
-        "speed-candidate" "exact-64k-a8192-local" \
-        "exact-api-with-speed-oriented-compile-link-flags"
+        "appendix-reporting-row" "local-mixed-exact-64k-a8192-low-final-rss" \
+        "low-final-rss-local-mixed-speed-profile"
       ;;
     hz5-local2p-rssretain)
       printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
         "$alloc" "hz5-linux-local2p-rss-retain" "local2p" \
-        "rss-candidate" "rss-plateau-exact-64k-a8192" \
+        "diagnostic-cap-sweep" "rss-plateau-exact-64k-a8192" \
         "speed-linkflags-with-local-overflow-to-bounded-global-cache"
       ;;
+    hz5-local2p-rssretain2048)
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$alloc" "hz5-linux-local2p-rss-retain-cap2048" "local2p" \
+        "appendix-reporting-row" "rss-throughput-retained-64k-a8192" \
+        "retains-full-2048-block-rss-plateau-working-set"
+      ;;
     hz5-local2p-rssretain256|hz5-local2p-rssretain512|\
-    hz5-local2p-rssretain1536|hz5-local2p-rssretain2048)
+    hz5-local2p-rssretain1536)
       local cap="${alloc##*rssretain}"
       printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
         "$alloc" "hz5-linux-local2p-rss-retain-cap${cap}" "local2p" \
-        "rss-candidate" "rss-plateau-exact-64k-a8192" \
+        "diagnostic-cap-sweep" "rss-plateau-exact-64k-a8192" \
         "rss-retain-with-global-cap-${cap}"
       ;;
     hz5-local2p-freefirst)
@@ -415,7 +421,7 @@ write_allocator_metadata() {
     hz5-local2p-remotebatch)
       printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
         "$alloc" "hz5-linux-local2p-remote-batch" "local2p" \
-        "remote-candidate" "producer-consumer-remote-free" \
+        "appendix-reporting-row" "producer-consumer-remote-free-64k-a8192" \
         "remote-free-batch-before-owner-inbox"
       ;;
     hz5-local2p-remotebatch8)
@@ -445,7 +451,7 @@ write_allocator_metadata() {
     hz4|tcmalloc|mimalloc|system)
       printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
         "$alloc" "$alloc" "external_allocator" \
-        "comparison" "general-comparison" \
+        "comparison-control" "external-comparison" \
         "not-hz5-route"
       ;;
     *)

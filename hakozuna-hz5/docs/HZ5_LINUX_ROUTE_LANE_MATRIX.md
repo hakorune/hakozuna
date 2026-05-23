@@ -34,6 +34,24 @@ Older Local2P evolution lanes remain selectable diagnostics. Do not report them
 as competing HZ5 profiles unless the result is explicitly an implementation
 A/B.
 
+Current comparison priority:
+
+```text
+local/mixed speed:
+  linkflags is already tcmalloc-class; maintain reproducibility
+
+RSS plateau:
+  rssretain2048 is the remaining paper-facing improvement target versus
+  tcmalloc/HZ4
+
+remote-free:
+  remotebatch already beats P25/HZ4/tcmalloc in the producer/consumer row;
+  tune only with small cap/flush A/B
+
+small 4K/8K a8192:
+  guard/control only unless a separate SmallA8192 profile is required
+```
+
 ## Current Classification
 
 | Name | Type | Status | Paper use |

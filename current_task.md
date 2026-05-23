@@ -71,6 +71,28 @@ diagnostic evolution:   object/faststate/routecookie/reusefast/slimcheck/
 There is intentionally no single "current HZ5" row. Report the profile that
 matches the workload being claimed.
 
+Comparison priority:
+
+```text
+1. tcmalloc local/mixed:
+   already matched or beaten by linkflags; do not spend more effort here first
+
+2. tcmalloc/HZ4 RSS plateau:
+   rssretain2048 is close to HZ4 and below tcmalloc; this is the best remaining
+   paper-facing comparison axis
+
+3. HZ4/P25/tcmalloc remote-free:
+   remotebatch already wins the producer/consumer row; only small cap/flush
+   tuning is worth doing now
+
+4. mimalloc:
+   treat as an external comparison with an unfavorable aligned path on this
+   workload, not as the main target to "defeat"
+
+5. 4K/8K a8192:
+   keep as guard/control; do not build SmallA8192 unless the paper needs it
+```
+
 Current exact-a8192 route split:
 
 ```text

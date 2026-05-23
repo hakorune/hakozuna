@@ -193,6 +193,11 @@ Interpretation rules:
   paper-main workloads.
 - `hz5-preload-hybrid` is excluded from appendix claim rows by default. Use it
   only for same-binary hit-rate and shim-overhead diagnostics.
+- `mimalloc` is an external comparison row. If it is unusually slow on
+  `64K/a8192`, describe that as an aligned-path/workload interaction rather
+  than as a broad allocator conclusion.
+- `4096:8192` and `8192:8192` are P2 run/tcache guard rows today, not Local2P
+  wins or losses.
 
 ### Diagnostic
 
