@@ -321,6 +321,7 @@ This is a useful hit-rate diagnostic, but a miss is not an HZ5 allocation.
 | `hz5-local2p-rssretain1536` | `hz5-linux-local2p-rss-retain-cap1536` | `--linux-local2p-rss-retain --linux-local2p-global-cap 1536` | `local2p` | RSS retained-cache cap sweep |
 | `hz5-local2p-rssretain2048` | `hz5-linux-local2p-rss-retain-cap2048` | `--linux-local2p-rss-retain --linux-local2p-global-cap 2048` | `local2p` | RSS control: retain full 2048-block plateau through global cache |
 | `hz5-local2p-rssretain2048tls` | `hz5-linux-local2p-rss-retain-cap2048-tls2048` | `--linux-local2p-rss-retain --linux-local2p-global-cap 2048 --linux-local2p-tls-cap 2048` | `local2p` | current RSS throughput profile: retain full plateau in owner-local TLS |
+| `hz5-local2p-rssretain2048array` | `hz5-linux-local2p-rss-retain-cap2048-tls2048-array` | `--linux-local2p-rss-retain --linux-local2p-global-cap 2048 --linux-local2p-tls-cap 2048 --linux-local2p-retain-array` | `local2p` | B-lite diagnostic: retain owner-local TLS entries in pointer array |
 | `hz5-local2p-freefirst` | `hz5-linux-local2p-free-first` | `--linux-local2p-free-first` | `local2p` | speed candidate: Local2P free-first dispatch |
 | `hz5-local2p-freefirst-fastcookie` | `hz5-linux-local2p-freefirst-fastcookie` | `--linux-local2p-freefirst-fastcookie` | `local2p` | explicit alias for the fast-cookie + free-first compound lane |
 | `hz5-local2p-inbox` | `hz5-linux-local2p-remote-inbox` | `--linux-local2p-fast --linux-local2p-owner-inbox` | `local2p` | remote-free candidate |
@@ -361,6 +362,9 @@ rssretain2048:
 
 rssretain2048tls:
   TLS cap 2048, global cap 2048
+
+rssretain2048array:
+  TLS cap 2048, global cap 2048, owner-local TLS pointer array
 ```
 
 The TLS-cap variant is the current RSS reporting row. On
@@ -372,6 +376,10 @@ Stop rule: do not add more RSS knobs by default. The only optional continuation
 is one B-lite retained pointer-array experiment; if it does not exceed
 `rssretain2048tls` RSS throughput by at least 5% without local/mixed/safety
 regression, stop allocator work and move to paper/reproducibility.
+
+Measured B-lite result: `hz5-local2p-rssretain2048array` did not meet the stop
+rule on `local2p_rssarray_runs5_20260524_050407`; RSS plateau was lower than
+`rssretain2048tls` (`316.4K` vs `321.3K ops/s`). Keep it diagnostic-only.
 
 ## Benchmark Profiles
 

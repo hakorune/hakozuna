@@ -1013,9 +1013,10 @@ local:
   tcmalloc                  253.1M ops/s
 ```
 
-Decision: keep `linkflags` as the low-final-RSS local exact speed reference and
-use `rssretain2048` as a separate RSS-throughput profile. Do not merge the RSS
-retention policy into the low-RSS speed lane.
+Historical decision: keep `linkflags` as the low-final-RSS local exact speed
+reference and use a separate retained-cache RSS-throughput profile. The later
+`rssretain2048tls` A/B supersedes `rssretain2048` as the reporting row.
+Do not merge the RSS retention policy into the low-RSS speed lane.
 
 Cap sweep:
 
@@ -1058,6 +1059,28 @@ Decision: use `rssretain2048tls` as the retained-cache RSS-throughput profile.
 It is near HZ4 on RSS plateau and remains tcmalloc-class on mixed/local rows.
 Do not keep broadening RSS knobs; only one optional B-lite retained
 pointer-array experiment remains in scope.
+
+B-lite retained pointer-array follow-up:
+
+```text
+private/raw-results/linux/local2p_rssarray_runs5_20260524_050407
+
+RSS plateau, 2048 blocks:
+  hz5-local2p-rssretain2048tls    321.3K ops/s
+  hz5-local2p-rssretain2048array  316.4K ops/s
+
+mixed final:
+  hz5-local2p-rssretain2048tls    276.5M ops/s
+  hz5-local2p-rssretain2048array  272.8M ops/s
+
+local:
+  hz5-local2p-rssretain2048array  264.3M ops/s
+  hz5-local2p-rssretain2048tls    252.8M ops/s
+```
+
+Decision: `rssretain2048array` is a diagnostic no-go for the paper row. It
+improves local-only speed in this run, but loses the RSS plateau row it was
+designed to improve. Keep `rssretain2048tls` as the RSS reporting profile.
 
 Overflow policy for the first candidate should be explicit and visible in the
 lane name or build metadata. Prefer keeping it simple:

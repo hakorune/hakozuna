@@ -206,6 +206,32 @@ no-go:
   any safety or wording complexity
 ```
 
+B-lite result:
+
+```text
+private/raw-results/linux/local2p_rssarray_runs5_20260524_050407
+
+RSS plateau, 2048 blocks:
+  hz5-local2p-rssretain2048tls    321.3K ops/s, final RSS 153.1MB
+  hz5-local2p-rssretain2048array  316.4K ops/s, final RSS 153.1MB
+  hz4                             327.2K ops/s
+  tcmalloc                        359.0K ops/s
+
+mixed final:
+  hz5-local2p-rssretain2048tls    276.5M ops/s
+  hz5-local2p-rssretain2048array  272.8M ops/s
+
+local:
+  hz5-local2p-rssretain2048array  264.3M ops/s
+  hz5-local2p-rssretain2048tls    252.8M ops/s
+
+safety:
+  hz5-standalone-safety ok
+```
+
+Decision: B-lite pointer-array does not meet the RSS stop rule. Keep it as a
+diagnostic lane only; do not promote it over `rssretain2048tls`.
+
 Current exact-a8192 route split:
 
 ```text
@@ -1119,13 +1145,14 @@ remote pairs/s:
 
 Interpretation:
 
-- `rssretain2048` nearly closes the RSS plateau throughput gap to HZ4 while
-  matching tcmalloc/HZ4-style retained RSS.
+- Historical note: `rssretain2048` nearly closed the RSS plateau throughput gap
+  to HZ4 while matching tcmalloc/HZ4-style retained RSS; the later
+  `rssretain2048tls` lane supersedes it as the retained RSS reporting row.
 - `rssretain1024` is a middle point: about 1.8x linkflags RSS throughput with
   about half the final RSS of the 2048 retained-cache lane.
 - `linkflags` remains the low-final-RSS local exact speed reference.
-- `rssretain2048` is a separate RSS-throughput profile, not a replacement for
-  `linkflags` or `remotebatch`.
+- `rssretain2048` now remains the conservative global-retain control, not the
+  paper-facing RSS-throughput profile.
 
 RSS retain cap sweep:
 

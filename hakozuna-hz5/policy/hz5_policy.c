@@ -165,6 +165,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_LOCAL2P_LOCAL_OVERFLOW_GLOBAL 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LOCAL2P_RETAIN_ARRAY
+#define BENCHLAB_HZ5_LINUX_LOCAL2P_RETAIN_ARRAY 0
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS
 #define BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS 0
 #endif
@@ -224,6 +228,9 @@ static size_t g_hz5_policy_local2p_global_count;
 typedef struct Hz5PolicyLocal2PTls {
   void* head;
   size_t count;
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_RETAIN_ARRAY
+  void* retained[BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_CAP];
+#endif
   uintptr_t owner_token;
   uint32_t generation;
 #if BENCHLAB_HZ5_LINUX_LOCAL2P_OWNER_INBOX
@@ -538,7 +545,15 @@ static int hz5_policy_local2p_push_overflow(void* node_ptr) {
 static void* hz5_policy_local2p_pop(void) {
 #if BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
   Hz5PolicyLocal2PTls* tls = hz5_policy_local2p_tls();
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_RETAIN_ARRAY
+  if (tls->count == 0u) {
+    return NULL;
+  }
+  Hz5LinuxLocal2PNode* node =
+      (Hz5LinuxLocal2PNode*)tls->retained[--tls->count];
+#else
   Hz5LinuxLocal2PNode* node = (Hz5LinuxLocal2PNode*)tls->head;
+#endif
 #else
   Hz5LinuxLocal2PNode* node =
       (Hz5LinuxLocal2PNode*)g_hz5_policy_local2p_head;
@@ -547,7 +562,9 @@ static void* hz5_policy_local2p_pop(void) {
     return NULL;
   }
 #if BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
-#if BENCHLAB_HZ5_LINUX_LOCAL2P_SINGLE_SLOT_TLS
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_RETAIN_ARRAY
+  /* Array mode keeps freelist pointers in TLS, avoiding user-payload writes. */
+#elif BENCHLAB_HZ5_LINUX_LOCAL2P_SINGLE_SLOT_TLS
   tls->head = NULL;
 #else
   tls->head = node->next;
@@ -671,6 +688,16 @@ static void* hz5_policy_local2p_global_pop(void) {
 }
 
 static int hz5_policy_local2p_push(void* node_ptr) {
+#if BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED && \
+    BENCHLAB_HZ5_LINUX_LOCAL2P_RETAIN_ARRAY
+  Hz5PolicyLocal2PTls* tls = hz5_policy_local2p_tls();
+  if (tls->count >= BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_CAP) {
+    return hz5_policy_local2p_push_overflow(node_ptr);
+  }
+  tls->retained[tls->count++] = node_ptr;
+  hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_TLS);
+  return 1;
+#else
 #if BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
   Hz5PolicyLocal2PTls* tls = hz5_policy_local2p_tls();
 #if BENCHLAB_HZ5_LINUX_LOCAL2P_SINGLE_SLOT_TLS
@@ -707,6 +734,7 @@ static int hz5_policy_local2p_push(void* node_ptr) {
 #endif
   hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_TLS);
   return 1;
+#endif
 }
 
 static int hz5_policy_local2p_global_push(void* node_ptr) {

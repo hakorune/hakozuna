@@ -29,6 +29,7 @@ LINUX_LOCAL2P_EXACT_API=0
 LINUX_LOCAL2P_SINGLE_SLOT_TLS=0
 LINUX_LOCAL2P_SPEED_LINKFLAGS=0
 LINUX_LOCAL2P_LOCAL_OVERFLOW_GLOBAL=0
+LINUX_LOCAL2P_RETAIN_ARRAY=0
 LINUX_P11_SPEED_CORE=0
 LINUX_P25_BRIDGE_ATTR=0
 LINUX_P25_BRIDGE_ATTR_NO_CAS=0
@@ -104,6 +105,8 @@ Options:
                      candidate only: exact-api lane with speed-oriented compile/link flags
   --linux-local2p-rss-retain
                      candidate only: speed-linkflags lane retaining local TLS overflow in bounded global cache
+  --linux-local2p-retain-array
+                     diagnostic only: store retained owner-local TLS entries in a pointer array
   --linux-p11-speed-core
                      diagnostic only: compile the legacy P2 run/tcache path with HZ5_P11_SPEED_CORE=1
   --linux-p25-bridge-attr
@@ -338,6 +341,12 @@ while [[ $# -gt 0 ]]; do
     --linux-local2p-rss-retain)
       enable_local2p_speed_linkflags_base
       LINUX_LOCAL2P_LOCAL_OVERFLOW_GLOBAL=1
+      shift
+      ;;
+    --linux-local2p-retain-array)
+      LINUX_LOCAL2P=1
+      LINUX_LOCAL2P_TLS_PACKED=1
+      LINUX_LOCAL2P_RETAIN_ARRAY=1
       shift
       ;;
     --linux-p11-speed-core)
@@ -644,6 +653,9 @@ if [[ "$LINUX_LOCAL2P" -eq 1 ]]; then
   fi
   if [[ "$LINUX_LOCAL2P_LOCAL_OVERFLOW_GLOBAL" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LOCAL2P_LOCAL_OVERFLOW_GLOBAL=1)
+  fi
+  if [[ "$LINUX_LOCAL2P_RETAIN_ARRAY" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LOCAL2P_RETAIN_ARRAY=1)
   fi
 fi
 
