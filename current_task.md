@@ -1385,6 +1385,44 @@ Smoke checks:
 
 Both smoke tiers completed successfully.
 
+### HZ5 LD_PRELOAD Hybrid Bridge
+
+Purpose:
+
+- Provide a diagnostic bridge for same-binary `LD_PRELOAD` experiments.
+- Do not treat it as a pure/general HZ5 allocator.
+
+Implementation:
+
+- Added `hakozuna-hz5/preload/hz5_preload_hybrid.c`.
+- `linux/build_linux_hz5_standalone.sh` now emits:
+  `libhakozuna_hz5_preload_hybrid.so`.
+- The shim routes only exact `65536` bytes with `8192` alignment to HZ5 and
+  delegates everything else to libc.
+- The shim uses a side table to identify HZ5-owned pointers on `free()`,
+  avoiding unsafe wrapper decode on arbitrary libc pointers.
+- Reentrant libc allocation calls from inside HZ5 are guarded and delegated to
+  the real libc symbols.
+
+Smoke:
+
+```bash
+env LD_PRELOAD=$PWD/hakozuna-hz5/out/linux/hz5-preload-hybrid-smoke/libhakozuna_hz5_preload_hybrid.so \
+  bench/out/linux/x86_64/bench_aligned64k 1 100000 65536 8192
+
+env LD_PRELOAD=$PWD/hakozuna-hz5/out/linux/hz5-preload-hybrid-smoke/libhakozuna_hz5_preload_hybrid.so \
+  bench/out/linux/x86_64/bench_aligned64k 1 10000 4096 8192
+```
+
+Focus runner support:
+
+- `linux/run_linux_hz5_local2p_focus.sh` now accepts
+  `hz5-preload-hybrid` as an allocator.
+- Short smoke:
+  `private/raw-results/linux/hz5_preload_hybrid_focus_smoke/summary.tsv`.
+- Initial result: hybrid works, but side-table/mutex overhead is visible.
+  It is useful as a same-binary diagnostic, not as a paper-main candidate.
+
 Go/no-go:
 
 - Minimum: Local2P beats HZ5 P25 by at least 50% on local-only `64K/a8192`.

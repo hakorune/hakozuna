@@ -68,6 +68,32 @@ system optional
 
 HZ5 enters this tier only after a general LD_PRELOAD lane exists.
 
+### HZ5 Preload Hybrid Bridge
+
+`libhakozuna_hz5_preload_hybrid.so` exists only as a diagnostic bridge.
+
+It interposes:
+
+```text
+malloc
+free
+posix_memalign
+aligned_alloc
+calloc
+realloc
+```
+
+Policy:
+
+- Route only exact `65536` bytes with `8192` alignment to HZ5.
+- Delegate all other allocations to libc.
+- Track HZ5-owned pointers in a side table so arbitrary libc pointers are not
+  passed to HZ5 wrapper decode.
+
+This is not a pure HZ5 allocator and not a paper-main lane. It is useful for
+checking same-binary/LD_PRELOAD overhead and whether exact 64K/a8192 calls are
+visible in a generic benchmark.
+
 ### Paper Appendix
 
 Use this tier for narrow HZ5 profile claims.
@@ -108,6 +134,7 @@ Current HZ5 appendix candidates:
 hz5-local2p-fast
 hz5-local2p
 hz5-p25
+hz5-preload-hybrid
 hz4
 tcmalloc
 mimalloc
@@ -212,3 +239,5 @@ Do not write:
 HZ5 is faster than hz3/hz4/tcmalloc generally.
 ```
 
+Also do not use `hz5-preload-hybrid` as evidence for a pure HZ5 general
+allocator. It is a libc+HZ5 hybrid diagnostic adapter.

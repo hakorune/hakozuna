@@ -55,6 +55,7 @@ Allocators:
   hz5-local2p-fast
   hz5-local2p
   hz5-p25
+  hz5-preload-hybrid
   hz4
   tcmalloc
   mimalloc
@@ -143,6 +144,7 @@ TCMALLOC_SO="${TCMALLOC_SO:-$(find_first_allocator_so 'libtcmalloc_minimal.so*' 
   "${ROOT_DIR}/private/bench-assets/linux/allocators/${ARCH}/libtcmalloc-minimal4t64" \
   "${ROOT_DIR}/private/bench-assets/linux/allocators/${ARCH}/libgoogle-perftools4" \
   "${ROOT_DIR}/private/bench-assets/linux/allocators/${ARCH}/libgoogle-perftools4t64")}"
+HZ5_PRELOAD_HYBRID_SO="${HZ5_PRELOAD_HYBRID_SO:-${ROOT_DIR}/hakozuna-hz5/out/linux/${ARCH}-hz5-local2p-fast/libhakozuna_hz5_preload_hybrid.so}"
 
 require_file() {
   local label="$1"
@@ -171,6 +173,7 @@ IFS=',' read -r -a allocator_list <<< "$ALLOCATORS"
 for alloc in "${allocator_list[@]}"; do
   case "$alloc" in
     hz5-local2p-fast|hz5-local2p|hz5-p25) require_hz5_lane "$alloc" ;;
+    hz5-preload-hybrid) require_file hz5-preload-hybrid "$HZ5_PRELOAD_HYBRID_SO" ;;
     hz4) require_file hz4 "$HZ4_SO" ;;
     tcmalloc) require_file tcmalloc "$TCMALLOC_SO" ;;
     mimalloc) require_file mimalloc "$MIMALLOC_SO" ;;
@@ -200,6 +203,7 @@ done
   echo "queue=${QUEUE}"
   echo "allocators=${ALLOCATORS}"
   echo "hz4=${HZ4_SO}"
+  echo "hz5_preload_hybrid=${HZ5_PRELOAD_HYBRID_SO}"
   echo "mimalloc=${MIMALLOC_SO:-missing}"
   echo "tcmalloc=${TCMALLOC_SO:-missing}"
 } > "${OUTDIR}/README.log"
@@ -247,6 +251,7 @@ run_generic() {
   local preload=""
   case "$alloc" in
     system) preload="" ;;
+    hz5-preload-hybrid) preload="$HZ5_PRELOAD_HYBRID_SO" ;;
     hz4) preload="$HZ4_SO" ;;
     tcmalloc) preload="$TCMALLOC_SO" ;;
     mimalloc) preload="$MIMALLOC_SO" ;;
@@ -289,7 +294,9 @@ run_one() {
   local log="${OUTDIR}/${workload}_${alloc}_${run}.log"
   local timefile="${OUTDIR}/${workload}_${alloc}_${run}.time"
   local status=0
-  if [[ "$alloc" == hz5-* ]]; then
+  if [[ "$alloc" == "hz5-local2p-fast" || \
+        "$alloc" == "hz5-local2p" || \
+        "$alloc" == "hz5-p25" ]]; then
     run_hz5 "$workload" "$alloc" "$log" "$timefile" || status=$?
   else
     run_generic "$workload" "$alloc" "$log" "$timefile" || status=$?

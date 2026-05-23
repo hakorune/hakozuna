@@ -271,6 +271,7 @@ HZ5_DIR="${ROOT_DIR}/hakozuna-hz5"
 SOURCE_COMMIT="$(git -C "$ROOT_DIR" rev-parse HEAD)"
 OUT_DIR="${OUT_DIR:-${HZ5_DIR}/out/linux/${ARCH}}"
 LIB="${OUT_DIR}/libhakozuna_hz5_standalone.so"
+PRELOAD_HYBRID_LIB="${OUT_DIR}/libhakozuna_hz5_preload_hybrid.so"
 BENCH="${OUT_DIR}/bench_hz5_standalone_aligned64k"
 REMOTE_BENCH="${OUT_DIR}/bench_hz5_standalone_remote64k"
 RSS_BENCH="${OUT_DIR}/bench_hz5_standalone_rss_plateau"
@@ -438,6 +439,12 @@ HZ5_SRCS=(
 echo "[linux][hz5] arch: ${ARCH}"
 echo "[linux][hz5] building library: ${LIB}"
 gcc "${COMMON_FLAGS[@]}" -shared "${HZ5_SRCS[@]}" -pthread -ldl -o "$LIB"
+
+echo "[linux][hz5] building preload hybrid library: ${PRELOAD_HYBRID_LIB}"
+gcc "${COMMON_FLAGS[@]}" -shared \
+  "${HZ5_SRCS[@]}" \
+  "${HZ5_DIR}/preload/hz5_preload_hybrid.c" \
+  -pthread -ldl -o "$PRELOAD_HYBRID_LIB"
 
 echo "[linux][hz5] building benchmark: ${BENCH}"
 gcc -O3 -Wall -Wextra -Werror -std=c11 -D_POSIX_C_SOURCE=200809L \
