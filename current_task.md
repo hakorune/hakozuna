@@ -1423,6 +1423,35 @@ Focus runner support:
 - Initial result: hybrid works, but side-table/mutex overhead is visible.
   It is useful as a same-binary diagnostic, not as a paper-main candidate.
 
+Paper-main hit-rate probe:
+
+- Added `linux/run_hz5_preload_hit_probe.sh`.
+- Added suite tier:
+  `./linux/run_paper_allocator_suite.sh --tier diagnostic-hz5-preload`.
+- Probe command:
+
+```bash
+./linux/run_hz5_preload_hit_probe.sh \
+  --iters 100000 \
+  --outdir private/raw-results/linux/hz5_preload_hit_probe_paper_shape
+```
+
+Result:
+
+- `guard_r0/r50/r90`: `malloc_hz5=0`.
+- `main_r0/r50/r90`: `malloc_hz5=0`.
+- `cross128_r0/r50/r90`: `malloc_hz5=3` out of about `801589`
+  malloc calls.
+
+Conclusion:
+
+- Existing paper-main random_mixed workloads almost never exercise the HZ5
+  Local2P exact `64K/a8192` route.
+- Adding the hybrid preload library to paper-main would mostly measure libc
+  plus shim overhead, not HZ5.
+- HZ5 Local2P remains an appendix exact-overaligned profile unless a true
+  general HZ5 preload lane is developed.
+
 Go/no-go:
 
 - Minimum: Local2P beats HZ5 P25 by at least 50% on local-only `64K/a8192`.

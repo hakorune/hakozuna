@@ -94,6 +94,30 @@ This is not a pure HZ5 allocator and not a paper-main lane. It is useful for
 checking same-binary/LD_PRELOAD overhead and whether exact 64K/a8192 calls are
 visible in a generic benchmark.
 
+Hit-rate probe:
+
+```bash
+./linux/run_hz5_preload_hit_probe.sh \
+  --iters 100000 \
+  --outdir private/raw-results/linux/hz5_preload_hit_probe_paper_shape
+```
+
+Observed paper-shape result:
+
+- `guard` and `main`: `malloc_hz5=0`.
+- `cross128`: only `malloc_hz5=3` out of roughly `801589` malloc calls.
+
+Implication:
+
+```text
+The existing paper-main random_mixed matrix almost never exercises the HZ5
+Local2P exact 64K/a8192 route.
+```
+
+So HZ5 Local2P cannot be evaluated by simply adding the hybrid preload library
+to the existing paper-main matrix. It needs either a true general HZ5 allocator
+lane or a separate exact-overaligned appendix suite.
+
 ### Paper Appendix
 
 Use this tier for narrow HZ5 profile claims.
@@ -211,6 +235,7 @@ Use:
 ```bash
 ./linux/run_paper_allocator_suite.sh --tier appendix-hz5
 ./linux/run_paper_allocator_suite.sh --tier diagnostic-hz5
+./linux/run_paper_allocator_suite.sh --tier diagnostic-hz5-preload
 ```
 
 `paper-main` is documented by the front door but requires the paper/hakmem tree

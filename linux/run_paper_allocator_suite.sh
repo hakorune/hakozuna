@@ -25,7 +25,8 @@ Usage:
   ./linux/run_paper_allocator_suite.sh [options]
 
 Options:
-  --tier NAME                paper-main | appendix-hz5 | diagnostic-hz5
+  --tier NAME                paper-main | appendix-hz5 | diagnostic-hz5 |
+                             diagnostic-hz5-preload
                              (default: appendix-hz5)
   --runs N                   runs per case (default: 10)
   --arch ARCH                override detected arch for HZ5 appendix
@@ -55,6 +56,10 @@ Tiers:
 
   diagnostic-hz5
     Runs HZ5 Local2P fast trace guard rows.
+
+  diagnostic-hz5-preload
+    Runs HZ5 preload hybrid hit-rate probe against the paper MT random_mixed
+    benchmark shape.
 EOF
 }
 
@@ -172,9 +177,16 @@ run_diagnostic_hz5() {
   echo "[DONE] diagnostic-hz5 results: $suite_out"
 }
 
+run_diagnostic_hz5_preload() {
+  local suite_out="${OUTDIR:-${ROOT_DIR}/private/raw-results/linux/hz5_preload_hit_probe_$(timestamp)}"
+  "${ROOT_DIR}/linux/run_hz5_preload_hit_probe.sh" \
+    --outdir "$suite_out"
+}
+
 case "$TIER" in
   paper-main) run_paper_main ;;
   appendix-hz5) run_appendix_hz5 ;;
   diagnostic-hz5) run_diagnostic_hz5 ;;
+  diagnostic-hz5-preload) run_diagnostic_hz5_preload ;;
   *) echo "[ERR] unknown tier: $TIER" >&2; usage >&2; exit 2 ;;
 esac
