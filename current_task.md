@@ -339,7 +339,7 @@ codex/hz5-linux-p43-port
 Latest Local2P implementation commit:
 
 ```bash
-73f4ab2 Add HZ5 Local2P free-first candidate
+b47099a Add HZ5 Local2P remote batch candidate
 ```
 
 Parent branch:
