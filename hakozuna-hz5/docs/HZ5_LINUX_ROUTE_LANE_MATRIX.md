@@ -19,11 +19,27 @@ Benchmark profile:
 Do not use a route name as a paper claim. Do not use a benchmark result without
 the lane and profile that produced it.
 
+## Reporting Rows
+
+Current paper/appendix-facing HZ5 Linux rows are profile-specific:
+
+| Reporting row | Lane | Use |
+| --- | --- | --- |
+| Low-final-RSS local/mixed exact speed | `hz5-local2p-linkflags` | local-only and mixed-prelude final `64K/a8192` throughput when low final RSS matters |
+| RSS-throughput retained-cache profile | `hz5-local2p-rssretain2048` | 2048-block RSS plateau and retained working-set reuse |
+| Producer/consumer remote-free profile | `hz5-local2p-remotebatch` | cross-thread free handoff rows |
+| Linux HZ5 control | `hz5-p25` | P25 bridge baseline |
+
+Older Local2P evolution lanes remain selectable diagnostics. Do not report them
+as competing HZ5 profiles unless the result is explicitly an implementation
+A/B.
+
 ## Current Classification
 
 | Name | Type | Status | Paper use |
 | --- | --- | --- | --- |
 | `local2p` | route | active Linux exact route | appendix only |
+| `p2_run_a8192` | route | active legacy exact 4K/8K route | guard/control until optimized |
 | `p25_bridge` | route | active control route | control/baseline |
 | `p25attr` | lane/route variant | diagnostic/safety evidence | not a claim |
 | `p43_token` | lane/route variant | remote/RSS candidate-watch | diagnostic until proven |
@@ -34,6 +50,24 @@ the lane and profile that produced it.
 | `libc_passthrough` | adapter route | used by preload hybrid misses | not HZ5 |
 
 ## Routes
+
+### Exact `a8192` Dispatch Map
+
+The Linux standalone exact gate accepts several `align=8192` sizes, but they
+do not share one implementation path:
+
+| Request | Current route | Current role |
+| --- | --- | --- |
+| `4096:8192` | `p2_run_a8192` | legacy small exact route; weak guard/control row |
+| `8192:8192` | `p2_run_a8192` | legacy small exact route; weak guard/control row |
+| `65536:8192` with Local2P lanes | `local2p` | optimized Linux appendix profile family |
+| `65536:8192` with P25 control | `p25_bridge` | Linux HZ5 control route |
+| unsupported rows such as `2048:8192`, `65536:4096`, `65537:16`, `262144:4096` | fail closed in standalone exact-only | guard rows |
+
+Do not describe these as one HZ5 exact-a8192 lane. `4K/8K a8192` currently use
+the older P2 run/tcache path, while `64K/a8192` is the Local2P profile family.
+If 4K/8K are optimized, add a separate small-a8192 profile instead of folding
+it into Local2P.
 
 ### `local2p`
 
@@ -71,13 +105,13 @@ What it is:
 What it is not:
 
 - Not a general allocator.
-- Not a remote-free profile.
-- Not an RSS-throughput profile.
+- Not one single profile for all workloads.
 - Not a Windows P43i/P45 replacement.
 
 Remote-free is no longer forced through OS `free(raw)` on every operation. The
-current lane uses a small global recycle stack after remote free, but it is
-still a simple control path, not an owner-inbox remote-free design.
+remote-free reporting lane is `hz5-local2p-remotebatch`. RSS-throughput
+reporting uses `hz5-local2p-rssretain2048`. The low-final-RSS local/mixed
+speed lane remains `hz5-local2p-linkflags`.
 
 ### `p25_bridge`
 
@@ -103,6 +137,48 @@ free:
 
 Use this as the Linux HZ5 control route. It is the baseline that Local2P must
 beat for local-only exact `64K/a8192`.
+
+### `p2_run_a8192`
+
+Claimed domain today:
+
+```text
+size == 4096 or size == 8192
+align == 8192
+Linux standalone exact route
+```
+
+Path:
+
+```text
+alloc:
+  hz5_policy_alloc_aligned
+  -> hz5_route_exact_a8192
+  -> hz5_p2_alloc_aligned
+  -> P2 run/tcache/segment path
+
+free:
+  hz5_policy_free
+  -> policy ownership check
+  -> hz5_p2_free
+```
+
+Classification:
+
+- Guard/control route until optimized.
+- Not Local2P.
+- Not P25 lowpage64.
+- Likely overhead sources are P2 front-door dispatch, ownership lookup,
+  tcache/reference atomics, and diagnostic stats registration.
+
+Next safe A/B:
+
+```text
+linux-p11-speed-core:
+  compile existing P2 4K/8K route with HZ5_P11_SPEED_CORE=1
+  keep 64K/a8192 on Local2P when Local2P is enabled
+  measure before creating a new SmallA8192 route
+```
 
 ### `p25attr`
 
@@ -195,10 +271,10 @@ This is a useful hit-rate diagnostic, but a miss is not an HZ5 allocation.
 | `hz5-local2p-reusefast` | `hz5-linux-local2p-reuse-state-only` | `--linux-local2p-reuse-state-only` | `local2p` | speed candidate: TLS reuse updates state only |
 | `hz5-local2p-slimcheck` | `hz5-linux-local2p-slim-check` | `--linux-local2p-slim-check` | `local2p` | speed candidate: reduced direct free checks |
 | `hz5-local2p-fastcookie` | `hz5-linux-local2p-fast-cookie` | `--linux-local2p-fast-cookie` | `local2p` | speed candidate: lightweight cookie |
-| `hz5-local2p-tlsfast` | `hz5-linux-local2p-tls-fast-return` | `--linux-local2p-tls-fast-return` | `local2p` | public-API-shape local/mixed reference |
+| `hz5-local2p-tlsfast` | `hz5-linux-local2p-tls-fast-return` | `--linux-local2p-tls-fast-return` | `local2p` | public-API-shape control |
 | `hz5-local2p-exactapi` | `hz5-linux-local2p-exact-api` | `--linux-local2p-exact-api` | `local2p` | local-only exact API control |
 | `hz5-local2p-slot1` | `hz5-linux-local2p-single-slot-tls` | `--linux-local2p-single-slot-tls` | `local2p` | mixed-prelude candidate: TLS_CAP=1 head-only cache |
-| `hz5-local2p-linkflags` | `hz5-linux-local2p-speed-linkflags` | `--linux-local2p-speed-linkflags` | `local2p` | current local-only exact speed reference |
+| `hz5-local2p-linkflags` | `hz5-linux-local2p-speed-linkflags` | `--linux-local2p-speed-linkflags` | `local2p` | low-final-RSS local/mixed speed profile |
 | `hz5-local2p-rssretain256` | `hz5-linux-local2p-rss-retain-cap256` | `--linux-local2p-rss-retain --linux-local2p-global-cap 256` | `local2p` | RSS retained-cache cap sweep |
 | `hz5-local2p-rssretain512` | `hz5-linux-local2p-rss-retain-cap512` | `--linux-local2p-rss-retain --linux-local2p-global-cap 512` | `local2p` | RSS retained-cache cap sweep |
 | `hz5-local2p-rssretain` | `hz5-linux-local2p-rss-retain` | `--linux-local2p-rss-retain` | `local2p` | RSS candidate: local overflow to bounded global cache |
@@ -272,17 +348,23 @@ Primary rows:
 
 ```text
 local-only 64K/a8192:
-  hz5-local2p-fast vs hz5-p25 vs hz4/tcmalloc/mimalloc/system
+  hz5-local2p-linkflags vs hz5-p25 vs hz4/tcmalloc/mimalloc/system
 
 mixed-prelude final 64K/a8192:
-  checks whether exact speed survives route pressure
+  hz5-local2p-linkflags checks whether exact speed survives route pressure
+
+RSS plateau 64K/a8192:
+  hz5-local2p-rssretain2048 vs hz4/tcmalloc/mimalloc/system
+
+producer/consumer remote-free 64K/a8192:
+  hz5-local2p-remotebatch vs hz5-p25 vs hz4/tcmalloc/mimalloc/system
 
 guard rows:
   verifies unsupported routes fail closed
 ```
 
-Remote-free and RSS rows are allowed in the appendix, but they must say that
-Local2P is not currently the remote/RSS candidate.
+Remote-free and RSS rows are allowed in the appendix only with their matching
+profile lane. Do not use `linkflags` as a remote-free or RSS-throughput result.
 
 ### `diagnostic-hz5`
 
@@ -360,8 +442,8 @@ from the cookie mix for the speed A/B.
 `--linux-local2p-tls-fast-return` builds on fast-cookie and short-circuits the
 owner-local TLS hit path after restoring `local2p_state=ACTIVE`. It skips the
 raw/bounds/header-init path only for object-node TLS hits; inbox/global/OS paths
-still refresh metadata normally. Current decision: this is the local/mixed speed
-reference, not the remote-free reference.
+still refresh metadata normally. Current decision: this is the public-API-shape
+control, superseded by `linkflags` for appendix local/mixed speed reporting.
 
 `--linux-local2p-exact-api` builds on tls-fast-return and makes the aligned64k
 standalone benchmark call `hz5_local2p_alloc_64k_a8192()` and
@@ -375,8 +457,9 @@ candidate, not local-only speed reference.
 
 `--linux-local2p-speed-linkflags` builds on exact API and changes only
 compile/link flags to reduce semantic interposition, PLT, stack protector, and
-x86 CET overhead in the speed lane. Current decision: local-only exact speed
-reference after RUNS=30 confirmation, not a production/default build policy.
+x86 CET overhead in the speed lane. Current decision: low-final-RSS local/mixed
+speed reporting profile after RUNS=30 confirmation, not a production/default
+build policy.
 
 `--linux-local2p-free-first` builds on fast-cookie and moves Local2P direct
 free decode before the generic P1/P2 ownership check. This is a dispatch-order
@@ -388,8 +471,8 @@ important point is that free-first is being measured on top of fast-cookie, not
 as an independent route.
 
 Current decision: `freefirst-fastcookie` is an A/B label only. It does not
-replace `fastcookie` as the local/mixed speed reference because the follow-up
-RUNS=10 result improved local slightly but regressed mixed and remote.
+replace the reporting profiles because the follow-up RUNS=10 result improved
+local slightly but regressed mixed and remote.
 
 ## Decision Rules
 
@@ -410,9 +493,11 @@ Use these rules when adding a new result:
 Allowed:
 
 ```text
-HZ5 Local2P is a Linux exact-overaligned local-throughput candidate for
-64K/a8192. It reaches HZ4-class throughput on local-only and mixed-prelude
-exact rows, but it is not a general allocator or remote-free profile.
+HZ5 Local2P is a Linux exact-overaligned profile family for 64K/a8192. The
+`linkflags` profile is tcmalloc-class on local/mixed exact throughput with low
+final RSS, `rssretain2048` is the retained-cache RSS-throughput profile, and
+`remotebatch` is the producer/consumer remote-free profile. These are appendix
+profiles, not a general allocator claim.
 ```
 
 Not allowed:
@@ -425,11 +510,11 @@ HZ5 is generally faster than HZ3/HZ4/mimalloc/tcmalloc.
 
 Do not add another route knob until one of these is done:
 
-1. Rename result labels to match the lane table above.
-2. Keep `p43_*` and `p25attr_*` out of appendix default allocator lists.
-3. Use `lane_metadata.tsv` from focus runners before promoting any row.
-4. Add route-attribution summaries to focus output when trace lanes are used.
-5. If general HZ5 is required for paper-main, design a real general preload
+1. Keep `p43_*`, `p25attr_*`, and old Local2P A/B lanes out of appendix default
+   allocator lists.
+2. Use `lane_metadata.tsv` from focus runners before promoting any row.
+3. Add route-attribution summaries to focus output when trace lanes are used.
+4. If general HZ5 is required for paper-main, design a real general preload
    lane instead of extending `preload_hybrid`.
 
 ## Development Order

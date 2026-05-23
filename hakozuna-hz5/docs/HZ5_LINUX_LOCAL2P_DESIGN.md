@@ -7,6 +7,30 @@ Design note for the next Linux-only HZ5 candidate lane.
 This is not a Windows P43i/P45 change. It is a Linux local-throughput control
 lane for exact `64K align=8192`.
 
+Current reporting split:
+
+```text
+hz5-local2p-linkflags      low-final-RSS local/mixed exact speed profile
+hz5-local2p-rssretain2048  retained-cache RSS-throughput profile
+hz5-local2p-remotebatch    producer/consumer remote-free profile
+```
+
+Do not collapse these into one "HZ5 Local2P" result. The same route is being
+used with different cache/recycle policies, and each profile should be judged
+only by its matching workload family.
+
+Adjacent exact-a8192 rows are intentionally not part of Local2P:
+
+```text
+4096:8192   -> P2 run/tcache legacy exact route
+8192:8192   -> P2 run/tcache legacy exact route
+65536:8192  -> Local2P in this design
+```
+
+The weak 4K/8K a8192 guard rows should be investigated through the P2 route
+first, especially `HZ5_P11_SPEED_CORE=1`, before adding a new Linux
+SmallA8192 profile. Local2P should stay focused on the 64K/a8192 route.
+
 ## Problem
 
 Native Ubuntu measurements show that the current HZ5 Linux speed lane is not
@@ -382,16 +406,17 @@ Windows P43i/P45 port.
 
 1. `local2p-speed`
    - goal: reduce local `64K/a8192` hot-path instructions toward tcmalloc
-   - current step: Local2P direct free decode before generic wrapper decode
+   - current profile: `hz5-local2p-linkflags`
 2. `local2p-remote`
    - goal: beat P25/HZ4 producer/consumer remote-free
-   - current step: owner inbox / MPSC queue candidate
+   - current profile: `hz5-local2p-remotebatch`
 3. `rss-control`
    - goal: keep low final RSS without confusing the speed lane
-   - next step: separate release/decommit policy lane
+   - current profile: `hz5-local2p-rssretain2048`
 
-Do not add remote inbox or RSS release policy to the speed lane until the
-direct free decode cost is measured.
+Do not add remote inbox or RSS retention policy to the speed lane only for code
+sharing. The current reporting rows deliberately keep local, remote, and RSS
+policies separated.
 
 Direct free decode result:
 
@@ -750,9 +775,10 @@ tlsfast:    1.50B instructions, 354.1M cycles
 tcmalloc:   1.31B instructions, 316.6M cycles
 ```
 
-Decision: promote `tlsfast` as the local/mixed speed reference. It is still not
-the remote-free reference; keep `remotebatch` for producer/consumer remote
-rows.
+Decision at this stage: promote `tlsfast` as the public-API-shape local/mixed
+control. It was later superseded by `linkflags` for appendix local/mixed speed
+reporting. It is still not the remote-free reference; keep `remotebatch` for
+producer/consumer remote rows.
 
 ### Exact API Candidate
 
@@ -893,9 +919,9 @@ One-run `perf stat` on local 10M:
 linkflags: 1.03B instructions, 308.1M cycles
 ```
 
-Decision: `linkflags` is the current local-only exact speed reference. It is a
-speed-lane build policy, not a default production build policy. Keep
-`remotebatch` as the remote-free reference.
+Decision: `linkflags` is the low-final-RSS local/mixed speed reporting
+profile. It is a speed-lane build policy, not a default production build
+policy. Keep `remotebatch` as the remote-free reference.
 
 RUNS=30 confirmation:
 

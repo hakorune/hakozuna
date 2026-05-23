@@ -18,6 +18,7 @@ MIXED_BLOCKS=1024
 MIXED_ROUNDS=3
 MIXED_ITERS=1000000
 PROBE_ATTEMPTS=256
+APPENDIX_HZ5_ALLOCATORS="hz5-local2p-linkflags,hz5-local2p-rssretain2048,hz5-local2p-remotebatch,hz5-p25,hz4,tcmalloc,mimalloc,system"
 
 usage() {
   cat <<'EOF'
@@ -140,7 +141,7 @@ run_appendix_hz5() {
     --mixed-rounds "$MIXED_ROUNDS"
     --mixed-iters "$MIXED_ITERS"
     --probe-attempts "$PROBE_ATTEMPTS"
-    --allocators hz5-local2p-fast,hz5-p25,hz4,tcmalloc,mimalloc,system
+    --allocators "$APPENDIX_HZ5_ALLOCATORS"
     --outdir "$suite_out"
   )
   if [[ "$ARCH" != "auto" ]]; then

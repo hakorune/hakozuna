@@ -158,11 +158,23 @@ Required HZ5 appendix workloads:
    - `262144:4096`
    - `65536:8192` as positive control
 
+Route interpretation:
+
+```text
+4096:8192 and 8192:8192:
+  current P2 run/tcache exact route, guard/control until a SmallA8192 profile
+  exists
+
+65536:8192:
+  Local2P appendix profile family
+```
+
 Current HZ5 appendix candidates:
 
 ```text
-hz5-local2p-fast
-hz5-local2p
+hz5-local2p-linkflags       local/mixed exact speed with low final RSS
+hz5-local2p-rssretain2048   retained-cache RSS-throughput profile
+hz5-local2p-remotebatch     producer/consumer remote-free profile
 hz5-p25
 hz4
 tcmalloc
@@ -172,10 +184,13 @@ system
 
 Interpretation rules:
 
-- `hz5-local2p-fast` may claim local exact `64K/a8192` throughput only.
-- It is not a remote-free profile unless a later owner-inbox/remote queue lane
-  fixes producer/consumer performance.
-- It is not a general allocator profile unless it passes paper-main workloads.
+- `hz5-local2p-linkflags` may claim local/mixed exact `64K/a8192` throughput
+  with low final RSS.
+- `hz5-local2p-rssretain2048` may claim RSS plateau throughput for the retained
+  2048-block working set, with retained RSS.
+- `hz5-local2p-remotebatch` may claim producer/consumer remote-free behavior.
+- These profiles are not general allocator profiles unless HZ5 passes
+  paper-main workloads.
 - `hz5-preload-hybrid` is excluded from appendix claim rows by default. Use it
   only for same-binary hit-rate and shim-overhead diagnostics.
 
@@ -252,7 +267,7 @@ Run from this repository:
   --mixed-rounds 3 \
   --mixed-iters 1000000 \
   --probe-attempts 256 \
-  --allocators hz5-local2p-fast,hz5-p25,hz4,tcmalloc,mimalloc,system \
+  --allocators hz5-local2p-linkflags,hz5-local2p-rssretain2048,hz5-local2p-remotebatch,hz5-p25,hz4,tcmalloc,mimalloc,system \
   --skip-prepare-allocators \
   --outdir private/raw-results/linux/local2p_focus_runs10
 ```
@@ -281,19 +296,19 @@ and currently excludes HZ5 unless an HZ5 LD_PRELOAD lane is provided.
 
 ## Current HZ5 Result Classification
 
-As of `4b3ecb7`:
+Current reporting rows:
 
-- `hz5-local2p-fast` is HZ4-class on local exact `64K/a8192`.
-- It is also HZ4-class on the exact mixed-prelude final throughput.
-- Producer/consumer remote-free now uses a bounded global recycle stack, but it
-  remains a simple control path rather than a final owner-inbox remote-free
-  profile.
-- It has low final RSS in the plateau test, but low RSS throughput.
+- `hz5-local2p-linkflags` is the low-final-RSS local/mixed exact speed profile.
+- `hz5-local2p-rssretain2048` is the retained-cache RSS-throughput profile.
+- `hz5-local2p-remotebatch` is the producer/consumer remote-free profile.
+- Older Local2P evolution lanes are diagnostics and should stay out of appendix
+  defaults unless the table is explicitly an implementation A/B.
 
 Paper wording should be:
 
 ```text
-HZ5 Local2P is a Linux exact-overaligned local-throughput candidate, not a
+HZ5 Local2P is a Linux exact-overaligned 64K/a8192 profile family. It has
+separate local/mixed speed, RSS-throughput, and remote-free rows; it is not a
 general allocator profile.
 ```
 

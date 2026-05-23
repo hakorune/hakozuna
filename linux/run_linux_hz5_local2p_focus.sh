@@ -18,7 +18,7 @@ PROBE_SIZE=262144
 PROBE_ALIGN=8192
 PROBE_ATTEMPTS=256
 QUEUE=1024
-ALLOCATORS="hz5-local2p-fast,hz5-local2p-object,hz5-local2p-faststate,hz5-local2p-routecookie,hz5-local2p-reusefast,hz5-local2p-slimcheck,hz5-local2p-fastcookie,hz5-local2p-tlsfast,hz5-local2p-exactapi,hz5-local2p-slot1,hz5-local2p-linkflags,hz5-local2p-rssretain256,hz5-local2p-rssretain512,hz5-local2p-rssretain,hz5-local2p-rssretain1536,hz5-local2p-rssretain2048,hz5-local2p-freefirst,hz5-local2p-freefirst-fastcookie,hz5-local2p-inbox,hz5-local2p-remotebatch,hz5-local2p-remotebatch8,hz5-local2p-remotebatch32,hz5-local2p,hz5-p25,hz4,tcmalloc,mimalloc,system"
+ALLOCATORS="hz5-local2p-linkflags,hz5-local2p-rssretain2048,hz5-local2p-remotebatch,hz5-p25,hz4,tcmalloc,mimalloc,system"
 OUTDIR="${ROOT_DIR}/private/raw-results/linux/hz5_local2p_focus_$(date +%Y%m%d_%H%M%S)"
 SKIP_BUILD=0
 SKIP_PREPARE_ALLOCATORS=0
@@ -50,6 +50,12 @@ Options:
   --skip-build               reuse existing binaries
   --skip-prepare-allocators  skip mimalloc/tcmalloc cache prep
   --help                     show this message
+
+Default allocator set:
+  hz5-local2p-linkflags      low-final-RSS local/mixed exact speed profile
+  hz5-local2p-rssretain2048  RSS-throughput retained-cache profile
+  hz5-local2p-remotebatch    producer/consumer remote-free profile
+  hz5-p25,hz4,tcmalloc,mimalloc,system controls
 
 Allocators:
   hz5-local2p-fast

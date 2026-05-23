@@ -41,10 +41,10 @@ Current policy:
 
 ## Current Development Focus: Linux Local2P v2
 
-Status: object-node, route-cookie, reuse-state-only, slim-check, and
-fast-cookie measured; offset-cookie A/B was rejected; free-first dispatch A/B
-was measured and kept as a mixed-speed candidate; remote-batch was measured and
-kept as the current remote-free candidate; remote-batch cap A/B measured.
+Status: Local2P has split into explicit Linux profiles. `linkflags` is the
+low-final-RSS local/mixed exact speed profile, `rssretain2048` is the retained
+RSS-throughput profile, and `remotebatch` is the producer/consumer remote-free
+profile. Older Local2P evolution lanes remain diagnostic.
 
 Goal:
 
@@ -53,14 +53,37 @@ Goal:
 - keep P25 bridge, P43 token/source, and Linux Local2P roles separated
 - keep invalid/double-free behavior fail-closed
 
-Current references:
+Current lane roles:
 
 ```text
-local exact speed:      hz5-local2p-linkflags
-public API shape:       hz5-local2p-tlsfast
-remote-free candidate:  hz5-local2p-remotebatch
-mixed-prelude watch:    hz5-local2p-slot1
+local low-final-RSS:    hz5-local2p-linkflags
+RSS throughput:         hz5-local2p-rssretain2048
+remote-free:            hz5-local2p-remotebatch
+small exact guard:      4096:8192 and 8192:8192 through P2 run/tcache
+P25 control:            hz5-p25
+public API control:     hz5-local2p-tlsfast
+exact API control:      hz5-local2p-exactapi
+diagnostic cap sweep:   hz5-local2p-rssretain256/512/1024/1536
+diagnostic evolution:   object/faststate/routecookie/reusefast/slimcheck/
+                        fastcookie/freefirst/slot1/inbox/remotebatch8/32
 ```
+
+There is intentionally no single "current HZ5" row. Report the profile that
+matches the workload being claimed.
+
+Current exact-a8192 route split:
+
+```text
+4096:8192   -> P2 run/tcache legacy exact route
+8192:8192   -> P2 run/tcache legacy exact route
+65536:8192  -> Local2P in Linux Local2P lanes
+65536:8192  -> P25 bridge in the P25 control lane
+unsupported -> NULL/fail-closed in standalone exact-only
+```
+
+Do not broaden the Local2P claim to 4K/8K. If those rows matter, first measure
+the existing P2 route with `HZ5_P11_SPEED_CORE=1`; only add a separate
+SmallA8192 lane if the P11 speed-core A/B is not enough.
 
 Design:
 
@@ -520,7 +543,8 @@ perf stat local 10M, one-run:
 
 Interpretation:
 
-- `tlsfast` is the new local/mixed speed reference
+- `tlsfast` became the public-API-shape local/mixed control at this stage; it
+  is now superseded by `linkflags` for appendix local/mixed speed reporting
 - it reduces Local2P local instructions by about 12% versus fastcookie in the
   one-run perf check
 - it does not fix remote-free; keep `remotebatch` as the remote reference
@@ -647,8 +671,8 @@ perf stat local 10M, one-run:
 
 Interpretation:
 
-- `linkflags` is the new local-only exact speed reference and reaches tcmalloc
-  class on this exact workload
+- `linkflags` is the low-final-RSS local/mixed speed reporting profile and
+  reaches tcmalloc class on this exact workload
 - `linkflags` also wins the mixed-prelude final throughput in this run
 - it is still not a remote-free lane; keep `remotebatch` for remote
 - speed-link flags are benchmark-lane flags, not a default production policy
@@ -1002,6 +1026,30 @@ Interpretation:
   added.
 - Build script now makes the Local2P lane hierarchy explicit:
   fast-cookie -> tlsfast -> exact-api -> speed-linkflags -> rss-retain.
+
+Lane organization checkpoint:
+
+```text
+change:
+  linux/run_linux_hz5_local2p_focus.sh
+    default allocator list now uses the reporting set:
+    linkflags, rssretain2048, remotebatch, p25, hz4, tcmalloc, mimalloc,
+    system
+
+  linux/run_paper_allocator_suite.sh
+    appendix-hz5 front door now delegates to the same reporting set
+
+  docs:
+    route/lane matrix, Local2P design note, and paper benchmark suite now
+    separate reporting profiles from diagnostic/evolution lanes
+```
+
+Interpretation:
+
+- default runs no longer rebuild and report every historical Local2P A/B lane
+- diagnostic lanes remain selectable with `--allocators`
+- paper-facing summaries should use three HZ5 rows only when all three workload
+  families are relevant: `linkflags`, `rssretain2048`, and `remotebatch`
 
 ## Branch
 
