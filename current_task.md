@@ -318,6 +318,9 @@ hot path:
 preload:
   SmallFront-owned pointers are not inserted into the full-preload pointer table
   free/realloc/malloc_usable_size use SmallFront descriptor ownership directly
+  speed path gates preload stats atomics behind HZ5_PRELOAD_STATS
+  malloc <= 2048 enters SmallFront directly from preload, bypassing
+  hz5_aligned_alloc -> policy dispatch
 ```
 
 Smoke result:
@@ -337,22 +340,22 @@ small malloc smoke:
   track_insert_fail=0
 
 short hakmem guard, threads=2, iters=50000, ws=100:
-  r0:  about 32M ops/s
-  r90: about 7.3M ops/s
+  r0:  about 49M ops/s, 3-run short median after direct preload path
+  r90: about 5.8M ops/s, 3-run short median after direct preload path
 ```
 
 Short comparison on the same smoke:
 
 ```text
 guard r0:
-  hz5-smallfront-s1  ~32M
+  hz5-smallfront-s1  ~49M short median after direct preload path
   hz3                ~44.7M
   hz4                ~16.5M
   mimalloc           ~70.1M
   tcmalloc           ~82.0M
 
 guard r90:
-  hz5-smallfront-s1   ~7.3M
+  hz5-smallfront-s1   ~5.8M short median after direct preload path
   hz3                ~31.4M
   hz4                 ~8.1M
   mimalloc           ~12.4M
@@ -364,11 +367,11 @@ Interpretation:
 ```text
 S1 has crossed the first correctness/attribution/performance line:
   it is far faster than the previous wrapped-mmap full-preload control
-  it beats HZ4 on the short guard smoke
+  it beats HZ3/HZ4 on the short local guard smoke
   it keeps malloc_real=0 and track_insert_fail=0
 
 It is not yet a final paper-main allocator:
-  local small still trails hz3/mimalloc/tcmalloc
+  local small still trails mimalloc/tcmalloc on this short smoke
   remote-heavy still trails hz3/hz4/mimalloc/tcmalloc on the short r90 smoke
   main/cross128 remain slow because >2048 bytes still fall to wrapped mmap
 ```
@@ -376,15 +379,20 @@ It is not yet a final paper-main allocator:
 Next likely attack order:
 
 ```text
-1. local small speed:
-   reduce active-bit and page lookup overhead further
+1. remote-free:
+   replace raw owner TLS pointer with owner token + owner/class inbox
+   add sender-side remote batch keyed by owner/class, HZ4-style
 
-2. mid front-end:
+2. local small speed:
+   keep 14-class grouping for now; 128-class exact HZ3 grid hurt local r0 on
+   the short random guard smoke
+
+3. mid front-end:
    extend beyond 2048 only after S1 hot path is cleaner
 
-3. remote drain:
-   owner per-class inbox is correct but not competitive yet; batch/owner-local
-   transfer policy needs another pass if r90 remains target-critical
+4. page map:
+   xor-fold hash is now used instead of multiply hash; direct arena/index table
+   remains a later design if small-object arena reservation is added
 ```
 
 ## Previous Development Focus: Linux Local2P v2

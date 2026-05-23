@@ -64,6 +64,7 @@ static Hz5PreloadFullEntry
 static pthread_mutex_t g_hz5_preload_full_lock = PTHREAD_MUTEX_INITIALIZER;
 static __thread int g_hz5_preload_full_inside;
 static _Atomic int g_hz5_preload_full_ready;
+static int g_hz5_preload_full_stats_enabled;
 static atomic_flag g_hz5_preload_full_stats_registered = ATOMIC_FLAG_INIT;
 static unsigned char g_hz5_preload_full_bootstrap[1024u * 1024u];
 static _Atomic size_t g_hz5_preload_full_bootstrap_used;
@@ -98,9 +99,17 @@ static Hz5MainFn g_hz5_preload_full_main;
 
 __attribute__((constructor)) static void hz5_preload_full_constructor(void) {
   atomic_store_explicit(&g_hz5_preload_full_ready, 0, memory_order_release);
+  g_hz5_preload_full_stats_enabled = getenv("HZ5_PRELOAD_STATS") != NULL;
+}
+
+static inline void hz5_preload_full_stat_inc(_Atomic uint64_t* counter) {
+  if (g_hz5_preload_full_stats_enabled) {
+    atomic_fetch_add_explicit(counter, 1u, memory_order_relaxed);
+  }
 }
 
 static int hz5_preload_full_main_thunk(int argc, char** argv, char** envp) {
+  g_hz5_preload_full_stats_enabled = getenv("HZ5_PRELOAD_STATS") != NULL;
   atomic_store_explicit(&g_hz5_preload_full_ready, 1, memory_order_release);
   return g_hz5_preload_full_main
              ? g_hz5_preload_full_main(argc, argv, envp)
@@ -149,7 +158,7 @@ static int hz5_preload_full_is_bootstrap_ptr(void* ptr) {
 }
 
 static void hz5_preload_full_stats_print(void) {
-  if (!getenv("HZ5_PRELOAD_STATS")) {
+  if (!g_hz5_preload_full_stats_enabled) {
     return;
   }
   fprintf(stderr,
@@ -198,6 +207,9 @@ static void hz5_preload_full_stats_print(void) {
 }
 
 static void hz5_preload_full_stats_register_once(void) {
+  if (!g_hz5_preload_full_stats_enabled) {
+    return;
+  }
   if (atomic_flag_test_and_set_explicit(
           &g_hz5_preload_full_stats_registered, memory_order_acq_rel)) {
     return;
@@ -328,29 +340,26 @@ static void* hz5_preload_full_real_malloc(size_t size) {
   if (ptr) {
     if (!hz5_preload_full_is_bootstrap_ptr(ptr) &&
         !hz5_preload_full_track_insert(ptr, HZ5_PRELOAD_FULL_OWNER_REAL)) {
-      atomic_fetch_add_explicit(&g_hz5_preload_full_track_insert_fail, 1u,
-                                memory_order_relaxed);
+      hz5_preload_full_stat_inc(&g_hz5_preload_full_track_insert_fail);
     }
-    atomic_fetch_add_explicit(&g_hz5_preload_full_malloc_real, 1u,
-                              memory_order_relaxed);
+    hz5_preload_full_stat_inc(&g_hz5_preload_full_malloc_real);
   }
   return ptr;
 }
 
 static void* hz5_preload_full_hz5_malloc(size_t size, size_t align) {
-  int smallfront_direct = hz5_smallfront_can_handle(size, align);
+  if (hz5_smallfront_can_handle(size, align)) {
+    return hz5_smallfront_alloc(size, align);
+  }
+
   g_hz5_preload_full_inside++;
   void* ptr = hz5_aligned_alloc(size, align);
   g_hz5_preload_full_inside--;
   if (!ptr) {
     return NULL;
   }
-  if (smallfront_direct) {
-    return ptr;
-  }
   if (!hz5_preload_full_track_insert(ptr, HZ5_PRELOAD_FULL_OWNER_HZ5)) {
-    atomic_fetch_add_explicit(&g_hz5_preload_full_track_insert_fail, 1u,
-                              memory_order_relaxed);
+    hz5_preload_full_stat_inc(&g_hz5_preload_full_track_insert_fail);
     g_hz5_preload_full_inside++;
     (void)hz5_free(ptr);
     g_hz5_preload_full_inside--;
@@ -398,13 +407,11 @@ void* malloc(size_t size) {
 
   void* ptr = hz5_preload_full_hz5_malloc(size, 16u);
   if (ptr) {
-    atomic_fetch_add_explicit(&g_hz5_preload_full_malloc_hz5, 1u,
-                              memory_order_relaxed);
+    hz5_preload_full_stat_inc(&g_hz5_preload_full_malloc_hz5);
     return ptr;
   }
 
-  atomic_fetch_add_explicit(&g_hz5_preload_full_malloc_fail, 1u,
-                            memory_order_relaxed);
+  hz5_preload_full_stat_inc(&g_hz5_preload_full_malloc_fail);
   errno = ENOMEM;
   return NULL;
 }
@@ -420,31 +427,27 @@ void free(void* ptr) {
   Hz5SmallFrontFreeResult small_free = hz5_smallfront_free(ptr);
   if (small_free == HZ5_SMALLFRONT_FREE_OK ||
       small_free == HZ5_SMALLFRONT_FREE_INVALID) {
-    atomic_fetch_add_explicit(&g_hz5_preload_full_free_hz5, 1u,
-                              memory_order_relaxed);
+    hz5_preload_full_stat_inc(&g_hz5_preload_full_free_hz5);
     return;
   }
 
   uint8_t owner = hz5_preload_full_track_remove(ptr);
   if (owner == HZ5_PRELOAD_FULL_OWNER_HZ5) {
-    atomic_fetch_add_explicit(&g_hz5_preload_full_free_hz5, 1u,
-                              memory_order_relaxed);
+    hz5_preload_full_stat_inc(&g_hz5_preload_full_free_hz5);
     g_hz5_preload_full_inside++;
     (void)hz5_free(ptr);
     g_hz5_preload_full_inside--;
     return;
   }
   if (owner == HZ5_PRELOAD_FULL_OWNER_REAL) {
-    atomic_fetch_add_explicit(&g_hz5_preload_full_free_real, 1u,
-                              memory_order_relaxed);
+    hz5_preload_full_stat_inc(&g_hz5_preload_full_free_real);
     if (g_real_free) {
       g_real_free(ptr);
     }
     return;
   }
 
-  atomic_fetch_add_explicit(&g_hz5_preload_full_free_unknown_real, 1u,
-                            memory_order_relaxed);
+  hz5_preload_full_stat_inc(&g_hz5_preload_full_free_unknown_real);
   hz5_preload_full_resolve();
   if (g_real_free) {
     g_real_free(ptr);
@@ -480,8 +483,7 @@ int posix_memalign(void** memptr, size_t alignment, size_t size) {
       if (!hz5_preload_full_is_bootstrap_ptr(*memptr)) {
         hz5_preload_full_track_insert(*memptr, HZ5_PRELOAD_FULL_OWNER_REAL);
       }
-      atomic_fetch_add_explicit(&g_hz5_preload_full_posix_real, 1u,
-                                memory_order_relaxed);
+      hz5_preload_full_stat_inc(&g_hz5_preload_full_posix_real);
     }
     return rc;
   }
@@ -489,12 +491,10 @@ int posix_memalign(void** memptr, size_t alignment, size_t size) {
   void* ptr = hz5_preload_full_hz5_malloc(size, alignment);
   if (ptr) {
     *memptr = ptr;
-    atomic_fetch_add_explicit(&g_hz5_preload_full_posix_hz5, 1u,
-                              memory_order_relaxed);
+    hz5_preload_full_stat_inc(&g_hz5_preload_full_posix_hz5);
     return 0;
   }
-  atomic_fetch_add_explicit(&g_hz5_preload_full_posix_fail, 1u,
-                            memory_order_relaxed);
+  hz5_preload_full_stat_inc(&g_hz5_preload_full_posix_fail);
   return ENOMEM;
 }
 
@@ -517,20 +517,17 @@ void* aligned_alloc(size_t alignment, size_t size) {
       if (!hz5_preload_full_is_bootstrap_ptr(ptr)) {
         hz5_preload_full_track_insert(ptr, HZ5_PRELOAD_FULL_OWNER_REAL);
       }
-      atomic_fetch_add_explicit(&g_hz5_preload_full_aligned_real, 1u,
-                                memory_order_relaxed);
+      hz5_preload_full_stat_inc(&g_hz5_preload_full_aligned_real);
     }
     return ptr;
   }
 
   void* ptr = hz5_preload_full_hz5_malloc(size, alignment);
   if (ptr) {
-    atomic_fetch_add_explicit(&g_hz5_preload_full_aligned_hz5, 1u,
-                              memory_order_relaxed);
+    hz5_preload_full_stat_inc(&g_hz5_preload_full_aligned_hz5);
     return ptr;
   }
-  atomic_fetch_add_explicit(&g_hz5_preload_full_aligned_fail, 1u,
-                            memory_order_relaxed);
+  hz5_preload_full_stat_inc(&g_hz5_preload_full_aligned_fail);
   errno = ENOMEM;
   return NULL;
 }
@@ -560,21 +557,18 @@ void* calloc(size_t nmemb, size_t size) {
       if (!hz5_preload_full_is_bootstrap_ptr(ptr)) {
         hz5_preload_full_track_insert(ptr, HZ5_PRELOAD_FULL_OWNER_REAL);
       }
-      atomic_fetch_add_explicit(&g_hz5_preload_full_calloc_real, 1u,
-                                memory_order_relaxed);
+      hz5_preload_full_stat_inc(&g_hz5_preload_full_calloc_real);
     }
     return ptr;
   }
 
   void* ptr = hz5_preload_full_hz5_malloc(total, 16u);
   if (!ptr) {
-    atomic_fetch_add_explicit(&g_hz5_preload_full_malloc_fail, 1u,
-                              memory_order_relaxed);
+    hz5_preload_full_stat_inc(&g_hz5_preload_full_malloc_fail);
     return NULL;
   }
   memset(ptr, 0, total);
-  atomic_fetch_add_explicit(&g_hz5_preload_full_calloc_hz5, 1u,
-                            memory_order_relaxed);
+  hz5_preload_full_stat_inc(&g_hz5_preload_full_calloc_hz5);
   return ptr;
 }
 
@@ -602,8 +596,7 @@ void* realloc(void* ptr, size_t size) {
     }
     memcpy(next, ptr, small_old_size < size ? small_old_size : size);
     free(ptr);
-    atomic_fetch_add_explicit(&g_hz5_preload_full_realloc_hz5, 1u,
-                              memory_order_relaxed);
+    hz5_preload_full_stat_inc(&g_hz5_preload_full_realloc_hz5);
     return next;
   }
 
@@ -615,8 +608,7 @@ void* realloc(void* ptr, size_t size) {
     void* next = g_real_realloc ? g_real_realloc(ptr, size) : NULL;
     if (next) {
       hz5_preload_full_track_insert(next, HZ5_PRELOAD_FULL_OWNER_REAL);
-      atomic_fetch_add_explicit(&g_hz5_preload_full_realloc_real, 1u,
-                                memory_order_relaxed);
+      hz5_preload_full_stat_inc(&g_hz5_preload_full_realloc_real);
     }
     return next;
   }
@@ -631,13 +623,11 @@ void* realloc(void* ptr, size_t size) {
       memcpy(next, ptr, old_size < size ? old_size : size);
     }
     free(ptr);
-    atomic_fetch_add_explicit(&g_hz5_preload_full_realloc_hz5, 1u,
-                              memory_order_relaxed);
+    hz5_preload_full_stat_inc(&g_hz5_preload_full_realloc_hz5);
     return next;
   }
 
-  atomic_fetch_add_explicit(&g_hz5_preload_full_realloc_real, 1u,
-                            memory_order_relaxed);
+  hz5_preload_full_stat_inc(&g_hz5_preload_full_realloc_real);
   hz5_preload_full_resolve();
   return g_real_realloc ? g_real_realloc(ptr, size) : NULL;
 }

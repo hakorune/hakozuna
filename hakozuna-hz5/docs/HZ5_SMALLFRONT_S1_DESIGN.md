@@ -413,14 +413,22 @@ Short hakmem guard smoke, `threads=2 iters=50000 ws=100`:
 
 ```text
 r0:
-  about 32M ops/s
+  about 49M ops/s, 3-run short median after direct preload SmallFront path
 
 r90:
-  about 7.3M ops/s
+  about 5.8M ops/s, 3-run short median after direct preload SmallFront path
 ```
 
 This is enough to continue development, but not enough to promote SmallFront as
 the paper-main HZ5 allocator row.
+
+Local speed note:
+
+```text
+HZ3-style 128 exact 16-byte classes were tested as a local mapping experiment.
+They hurt the short random guard r0 smoke because the working set spread across
+too many pages. S1 keeps the coarser 14-class grouping for now.
+```
 
 Implementation correction:
 
@@ -432,4 +440,13 @@ with owner-local store on another slot and lose updates.
 S1 now uses one state byte per slot. Owner-local paths use load/store on that
 slot byte; remote free uses CAS on that slot byte. Remote frees go to an owner
 TLS per-class inbox instead of a per-page remote stack.
+```
+
+Preload speed correction:
+
+```text
+SmallFront speed runs now bypass full HZ5 API/policy dispatch for
+malloc <= 2048. The preload interposer calls SmallFront directly for S1-sized
+malloc/calloc/realloc allocations. Full-preload counters are gated behind
+HZ5_PRELOAD_STATS so normal speed runs do not pay per-operation stats atomics.
 ```

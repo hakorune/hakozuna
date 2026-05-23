@@ -47,7 +47,7 @@ typedef struct Hz5SmallFrontNode {
 
 typedef struct Hz5SmallFrontPageMapEntry {
   _Atomic uintptr_t page_base;
-  Hz5SmallFrontPage* page;
+  _Atomic(Hz5SmallFrontPage*) page;
 } Hz5SmallFrontPageMapEntry;
 
 typedef struct Hz5SmallFrontTls {
@@ -86,9 +86,8 @@ static int hz5_smallfront_class_index(size_t size) {
 
 static size_t hz5_smallfront_page_hash(uintptr_t page_base) {
   uintptr_t x = page_base >> 12;
-  x ^= x >> 33;
-  x *= UINT64_C(0xff51afd7ed558ccd);
-  x ^= x >> 33;
+  x ^= x >> HZ5_SMALLFRONT_PAGE_MAP_BITS;
+  x ^= x >> (HZ5_SMALLFRONT_PAGE_MAP_BITS * 2u);
   return (size_t)x & (HZ5_SMALLFRONT_PAGE_MAP_CAP - 1u);
 }
 
@@ -102,7 +101,7 @@ static Hz5SmallFrontPage* hz5_smallfront_page_lookup_base(
     uintptr_t current =
         atomic_load_explicit(&entry->page_base, memory_order_acquire);
     if (current == page_base) {
-      return entry->page;
+      return atomic_load_explicit(&entry->page, memory_order_acquire);
     }
     if (current == 0) {
       return NULL;
@@ -122,12 +121,12 @@ static int hz5_smallfront_page_map_insert(uintptr_t page_base,
     uintptr_t current =
         atomic_load_explicit(&entry->page_base, memory_order_acquire);
     if (current == page_base) {
-      entry->page = page;
+      atomic_store_explicit(&entry->page, page, memory_order_release);
       pthread_mutex_unlock(&g_hz5_smallfront_page_map_lock);
       return 1;
     }
     if (current == 0) {
-      entry->page = page;
+      atomic_store_explicit(&entry->page, page, memory_order_relaxed);
       atomic_store_explicit(&entry->page_base, page_base,
                             memory_order_release);
       pthread_mutex_unlock(&g_hz5_smallfront_page_map_lock);
@@ -358,7 +357,7 @@ Hz5SmallFrontFreeResult hz5_smallfront_free(void* ptr) {
 }
 
 int hz5_smallfront_can_handle(size_t size, size_t align) {
-  return align <= 16u && hz5_smallfront_class_index(size) >= 0;
+  return align <= 16u && size <= 2048u;
 }
 
 int hz5_smallfront_owns(void* ptr) {
