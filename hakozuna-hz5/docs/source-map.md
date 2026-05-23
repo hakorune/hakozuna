@@ -39,6 +39,34 @@ the `lowpage/` bridge/source split above.
 * `core/hz5_remote.c`: remote-free queue/drain prototype.
 * `core/hz5_stats.c`: core diagnostic statistics.
 
+## General Linux Front-End Direction
+
+The Linux full-preload work changes HZ5 from an exact sidecar back toward a
+general allocator. The current full-preload adapter is an attribution/control
+lane; it proves ordinary `malloc` traffic can enter HZ5, but it is not the
+final small-object allocator.
+
+Planned next layer:
+
+```text
+smallfront/
+  HZ5-SmallFront-S1
+  Linux ordinary malloc/free <= 2048 bytes
+  4KiB single-class pages
+  descriptor-owned slots
+  owner-local TLS free lists
+  owner-aware remote inbox
+```
+
+Design source:
+
+* `docs/HZ5_SMALLFRONT_S1_DESIGN.md`: HZ5-native small allocator front-end
+  plan. It combines hz3-style size classes/TLS speed, hz4-style owner-aware
+  remote handling, and HZ5 fail-closed descriptor ownership.
+
+Do not implement SmallFront by adding per-object wrappers to small objects or
+by depending on the full-preload pointer table for HZ5-owned small frees.
+
 ## Design Notes
 
 * `docs/HZ5_CONTROL_PLANE_DESIGN.md`: post-P45 control-plane design. P25 bridge
@@ -46,6 +74,8 @@ the `lowpage/` bridge/source split above.
   source-demotion intent, and OPEN/DRAIN/CLOSED admission is the control plane.
 * `docs/HZ5_LINUX_ROUTE_LANE_MATRIX.md`: Linux-specific route/lane/benchmark
   classification. Use it before naming a new HZ5 Linux result or paper claim.
+* `docs/HZ5_SMALLFRONT_S1_DESIGN.md`: Linux general allocator front-end plan for
+  ordinary small malloc traffic.
 * `docs/HZ5_P43I_P43O_ALGO_CONSULT.md`: historical consultation ledger for
   P43i/P43o/P43p/P45. Use it as evidence, not as the current implementation map.
 * `docs/source-map.md`: this file.
@@ -62,6 +92,7 @@ P45r1 / P45dr:
   not SpeedLane
 
 Next cleanup:
-  make bridge/source/control-plane boundaries easier to read
-  avoid new behavior knobs unless the control-plane design changes
+  add SmallFront-S1 behind an explicit selector
+  keep Local2P/P25/P43 exact lanes independent
+  avoid new behavior knobs unless the route boundary changes
 ```

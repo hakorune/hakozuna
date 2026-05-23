@@ -158,6 +158,233 @@ Next development target is a real HZ5 small/mid front-end, not more preload
 plumbing.
 ```
 
+## Next Development Target: HZ5-SmallFront-S1
+
+Design decision, 2026-05-24:
+
+```text
+HZ5 Linux full preload now has correct attribution but no competitive ordinary
+malloc path. The next allocator work is HZ5-SmallFront-S1: a HZ5-native
+small-object front-end for Linux preload, not a direct hz3 small-bin port and
+not a Local2P/P43 extension.
+```
+
+Target architecture:
+
+```text
+HZ5 general allocator =
+  SmallFront     <= 2KiB or 4KiB ordinary malloc
+  MidRun         4KiB..64KiB normal aligned/page-ish allocations
+  Local2P        Linux exact 64K/a8192 appendix/special route
+  P43/P45        Windows exact/overaligned and control-plane research
+  LargeFallback  true large or unsupported allocations
+```
+
+S1 scope:
+
+```text
+name:
+  HZ5-SmallFront-S1 / P46 candidate
+
+platform:
+  Linux full preload lane first
+
+covered:
+  malloc/free <= 2048 bytes
+  normal malloc alignment, 16 bytes
+  calloc via malloc + memset
+  realloc via allocate-copy-free
+  malloc_usable_size from small-page descriptor
+
+not covered in S1:
+  posix_memalign/aligned_alloc over 16-byte alignment
+  exact 4K/8K a8192 special rows
+  thread-death hardening
+  RSS trimming
+  huge pages
+  replacing Local2P
+```
+
+Initial size classes:
+
+```text
+16, 32, 48, 64, 96, 128, 192, 256,
+384, 512, 768, 1024, 1536, 2048
+```
+
+Implementation shape:
+
+```text
+SmallPage:
+  4KiB single-class page
+  descriptor outside user objects
+  page_base, class size, slot count, owner, active bitmap, local free list
+
+Object:
+  no per-object wrapper header
+  freed object stores intrusive next pointer
+  active object belongs entirely to user
+
+Free ownership:
+  ptr -> page_base -> small descriptor
+  slot boundary check
+  active-bit check
+  owner-local free returns to local free list
+  remote free enters owner-aware inbox
+```
+
+Safety policy:
+
+```text
+fail closed:
+  foreign pointer
+  wrong page kind
+  non-slot pointer
+  double free
+  corrupted descriptor
+
+do not:
+  send HZ5-owned invalid small pointers to libc
+  rely on the full-preload pointer table for HZ5-owned small frees
+  add a per-object wrapper header to small objects
+  put a global lock on the hot path
+```
+
+Validation order:
+
+1. Add docs and source-map entries.
+2. Add build-disabled SmallFront skeleton and size-class tests. Done.
+3. Enable `malloc/free <= 2048` under an explicit build selector. Done.
+4. Smoke `malloc`, `calloc`, `realloc`, `malloc_usable_size`, double free,
+   foreign pointer, and remote free.
+5. Run short hakmem paper-main MT with `HZ5_PRELOAD_STATS=1`.
+6. Compare against hz3/hz4/mimalloc/tcmalloc only after attribution and safety
+   are clean.
+
+S1 stop rules:
+
+```text
+immediate no-go:
+  crash
+  unexpected malloc_real in benchmark body
+  track_insert_fail > 0
+  double-free goes to real libc
+  foreign pointer corrupts HZ5
+  remote-free crash
+  malloc_usable_size breaks app compatibility
+
+performance no-go:
+  SmallFront is less than 5x current full-preload wrapped-mmap path
+  paper-main guard/main/cross128 remain more than 2x slower than hz3/hz4
+  small malloc/free is less than 50% of hz4 in the first microbench
+
+complexity no-go:
+  pointer table required for HZ5-owned small free
+  per-object wrapper required
+  global lock required on the common fast path
+```
+
+Design source of truth:
+
+```text
+hakozuna-hz5/docs/HZ5_SMALLFRONT_S1_DESIGN.md
+```
+
+Implementation status:
+
+```text
+build selector:
+  --linux-smallfront-s1
+
+implemented:
+  hakozuna-hz5/smallfront/hz5_smallfront.c
+  hakozuna-hz5/smallfront/hz5_smallfront.h
+
+layout:
+  8KiB raw mapping
+  first 4KiB descriptor/control page
+  second 4KiB user slot page
+  page-base -> descriptor lookup through lock-free read page map
+
+hot path:
+  malloc <= 2048 and align <= 16 routes to SmallFront before exact routes
+  owner-local TLS free list per class
+  owner-local active-bit load/store
+  remote free active-bit CAS + page remote stack
+  owner drains remote stack on class miss
+
+preload:
+  SmallFront-owned pointers are not inserted into the full-preload pointer table
+  free/realloc/malloc_usable_size use SmallFront descriptor ownership directly
+```
+
+Smoke result:
+
+```text
+build:
+  ./linux/build_linux_hz5_standalone.sh \
+    --linux-smallfront-s1 \
+    --linux-local2p-speed-linkflags \
+    --out-dir hakozuna-hz5/out/linux/x86_64-hz5-smallfront-s1
+
+small malloc smoke:
+  malloc/calloc/realloc/malloc_usable_size OK
+  remote free OK
+  hz5_malloc double-free returns HZ5_FREE_INVALID
+  malloc_real=0
+  track_insert_fail=0
+
+short hakmem guard, threads=2, iters=50000, ws=100:
+  r0:  about 28-30M ops/s
+  r90: about 17M ops/s
+```
+
+Short comparison on the same smoke:
+
+```text
+guard r0:
+  hz5-smallfront-s1  ~28-30M
+  hz3                ~44.7M
+  hz4                ~16.5M
+  mimalloc           ~70.1M
+  tcmalloc           ~82.0M
+
+guard r90:
+  hz5-smallfront-s1  ~17.1M
+  hz3                ~31.4M
+  hz4                 ~8.1M
+  mimalloc           ~12.4M
+  tcmalloc           ~21.6M
+```
+
+Interpretation:
+
+```text
+S1 has crossed the first correctness/attribution/performance line:
+  it is far faster than the previous wrapped-mmap full-preload control
+  it beats HZ4 on the short guard smoke
+  it keeps malloc_real=0 and track_insert_fail=0
+
+It is not yet a final paper-main allocator:
+  local small still trails hz3/mimalloc/tcmalloc
+  remote-heavy still trails hz3/tcmalloc
+  main/cross128 remain slow because >2048 bytes still fall to wrapped mmap
+```
+
+Next likely attack order:
+
+```text
+1. local small speed:
+   reduce active-bit and page lookup overhead further
+
+2. mid front-end:
+   extend beyond 2048 only after S1 hot path is cleaner
+
+3. remote drain:
+   owner remote stack drain currently happens on class miss; add cheaper/batched
+   opportunistic drain only if r90 remains target-critical
+```
+
 ## Previous Development Focus: Linux Local2P v2
 
 Status: Local2P has split into explicit Linux profiles. `linkflags` is the

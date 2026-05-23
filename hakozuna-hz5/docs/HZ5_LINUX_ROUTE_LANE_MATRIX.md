@@ -29,6 +29,7 @@ Current paper/appendix-facing HZ5 Linux rows are profile-specific:
 | RSS-throughput retained-cache profile | `hz5-local2p-rssretain2048tls` | 2048-block RSS plateau and retained working-set reuse |
 | Producer/consumer remote-free profile | `hz5-local2p-remotebatch` | cross-thread free handoff rows |
 | Linux HZ5 control | `hz5-p25` | P25 bridge baseline |
+| General allocator candidate | `hz5-smallfront-s1` | planned paper-main Linux preload route for ordinary small malloc |
 
 Older Local2P evolution lanes remain selectable diagnostics. Do not report them
 as competing HZ5 profiles unless the result is explicitly an implementation
@@ -64,10 +65,90 @@ small 4K/8K a8192:
 | `p43_tokenbridge` | lane/route variant | topology-mismatch evidence | diagnostic only |
 | `p43_trustwrap` | lane/route variant | unsafe speed control | diagnostic only |
 | `preload_hybrid` | adapter | libc+HZ5 diagnostic bridge | not paper-main |
+| `preload_full` | adapter | HZ5 attribution control | not a performance claim by itself |
+| `smallfront_s1` | route/lane family | planned Linux general front-end | candidate after safety/perf validation |
 | `hz3_fallback` | fallback route | disabled in standalone exact-only | not a HZ5 win |
 | `libc_passthrough` | adapter route | used by preload hybrid misses | not HZ5 |
 
 ## Routes
+
+### `smallfront_s1` Planned Route
+
+Claimed domain:
+
+```text
+ordinary malloc/free <= 2048 bytes
+normal malloc alignment, 16 bytes
+Linux full preload lane first
+```
+
+Path goal:
+
+```text
+alloc:
+  malloc(size <= 2048)
+  -> size class
+  -> owner-local TLS free list
+  -> partial 4KiB small page
+  -> new small page on miss
+
+free:
+  ptr -> small page descriptor
+  -> descriptor kind and slot-boundary check
+  -> active-bit check
+  -> owner-local free list or owner remote inbox
+```
+
+Classification:
+
+- Planned general allocator candidate.
+- Not Local2P.
+- Not a P43/P25 exact route.
+- Not a direct hz3 small-bin port.
+- Not dependent on the full-preload pointer table for HZ5-owned small frees.
+
+Design source:
+
+```text
+docs/HZ5_SMALLFRONT_S1_DESIGN.md
+```
+
+Promotion requirement:
+
+```text
+safety smoke clean
+malloc_hz5 high, malloc_real only bootstrap/reentrant
+track_insert_fail == 0
+paper-main guard/main/cross128 no longer wrapped-mmap slow path
+```
+
+### `preload_full`
+
+The full preload adapter routes ordinary allocation APIs into HZ5:
+
+```text
+malloc/calloc/realloc/posix_memalign/aligned_alloc -> HZ5 API
+free/malloc_usable_size -> HZ5 ownership or bootstrap-real handling
+```
+
+Classification:
+
+- Attribution/control adapter.
+- Useful to prove benchmark traffic enters HZ5.
+- Not a performance allocator until `smallfront_s1` or another general
+  front-end handles ordinary malloc traffic.
+
+Current smoke:
+
+```text
+private/raw-results/linux/hz5_preload_full_smoke_20260524_053601:
+  malloc_hz5=5054
+  malloc_real=0
+  ops/s about 220K on short paper-main shape
+```
+
+Interpretation: attribution is fixed, but ordinary small/mid malloc still needs
+SmallFront.
 
 ### Exact `a8192` Dispatch Map
 
@@ -337,6 +418,8 @@ This is a useful hit-rate diagnostic, but a miss is not an HZ5 allocation.
 | `p43-tokenbridge` | `hz5-linux-p43-tokenbridge` | `--linux-p43-token-bridge` | `p43_tokenbridge` | diagnostic only |
 | `p43-trustwrap` | `hz5-linux-p43-trustwrap` | `--linux-p43-trust-wrapper-source` | `p43_trustwrap` | unsafe control |
 | `hz5-preload-hybrid` | `hz5-preload-hybrid-diagnostic` | hybrid preload library | `local2p` hits + `libc_passthrough` misses | diagnostic adapter |
+| `hz5-preload-full` | `hz5-linux-preload-full-control` | `--linux-preload-full` | HZ5 API + bootstrap real-libc | attribution/control adapter |
+| `hz5-smallfront-s1` | `hz5-linux-smallfront-s1` | `--linux-smallfront-s1` | `smallfront_s1` | active general allocator candidate |
 
 Build selectors for `local2p`, `p25attr`, and `p43` are mutually exclusive.
 Keep that rule. It prevents mixed-route benchmark rows.
@@ -404,6 +487,10 @@ system
 HZ5 is excluded until there is a true general LD_PRELOAD-compatible HZ5 lane.
 The hybrid preload bridge is not enough because paper-shape hit probes show
 near-zero Local2P hits.
+
+The full preload control lane fixes attribution but is still excluded as a
+performance row until `smallfront_s1` or a later general front-end replaces the
+ordinary small/mid wrapped-mmap path.
 
 ### `appendix-hz5`
 

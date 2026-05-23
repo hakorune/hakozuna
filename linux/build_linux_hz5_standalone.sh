@@ -46,6 +46,7 @@ LINUX_P43_WRAPPER_TOKEN=0
 LINUX_P43_WRAPPER_TOKEN_BRIDGE=0
 TRACE_LANE=0
 BUILD_PRELOAD_FULL=0
+LINUX_SMALLFRONT_S1=0
 HZ5_STANDALONE_EXACT_ONLY=1
 
 usage() {
@@ -140,6 +141,9 @@ Options:
   --linux-preload-full
                      build an experimental full LD_PRELOAD front-end; disables
                      standalone exact-only gating for this output directory
+  --linux-smallfront-s1
+                     build HZ5-SmallFront-S1 for ordinary malloc <= 2048;
+                     implies --linux-preload-full and disables exact-only gate
   --trace-lane       enable route/reuse counters; disables SPEED_LANE
   --help             show this message
 EOF
@@ -435,6 +439,12 @@ while [[ $# -gt 0 ]]; do
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
+    --linux-smallfront-s1)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
     --trace-lane)
       TRACE_LANE=1
       shift
@@ -572,6 +582,7 @@ COMMON_FLAGS=(
   -I"${HZ5_DIR}/wrapper"
   -I"${HZ5_DIR}/lowpage"
   -I"${HZ5_DIR}/fallback"
+  -I"${HZ5_DIR}/smallfront"
 )
 SPEED_LINK_COMPILE_FLAGS=()
 SHARED_LINK_FLAGS=()
@@ -711,6 +722,10 @@ if [[ "$ENABLE_LINUX_P43" -eq 1 ]]; then
   fi
 fi
 
+if [[ "$LINUX_SMALLFRONT_S1" -eq 1 ]]; then
+  COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_SMALLFRONT_S1=1)
+fi
+
 {
   echo "commit=${SOURCE_COMMIT}"
   if [[ -n "$(git -C "$ROOT_DIR" status --porcelain --untracked-files=all)" ]]; then
@@ -746,6 +761,7 @@ fi
   echo "linux_local2p_speed_linkflags=${LINUX_LOCAL2P_SPEED_LINKFLAGS}"
   echo "linux_local2p_local_overflow_global=${LINUX_LOCAL2P_LOCAL_OVERFLOW_GLOBAL}"
   echo "build_preload_full=${BUILD_PRELOAD_FULL}"
+  echo "linux_smallfront_s1=${LINUX_SMALLFRONT_S1}"
   echo "standalone_exact_only=${HZ5_STANDALONE_EXACT_ONLY}"
   echo "linux_p11_speed_core=${LINUX_P11_SPEED_CORE}"
   echo "linux_p25_bridge_attr=${LINUX_P25_BRIDGE_ATTR}"
@@ -771,6 +787,7 @@ HZ5_SRCS=(
   "${HZ5_DIR}/policy/hz5_policy.c"
   "${HZ5_DIR}/policy/hz5_trace.c"
   "${HZ5_DIR}/route/hz5_route.c"
+  "${HZ5_DIR}/smallfront/hz5_smallfront.c"
   "${HZ5_DIR}/wrapper/hz5_wrapper.c"
   "${HZ5_DIR}/lowpage/hz5_lowpage64.c"
   "${HZ5_DIR}/lowpage/hz5_lowpage64_os.c"

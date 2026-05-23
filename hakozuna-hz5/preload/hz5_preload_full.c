@@ -1,6 +1,7 @@
 #include "hz5.h"
 
 #include "hz5_internal.h"
+#include "hz5_smallfront.h"
 #include "hz5_wrapper.h"
 
 #include <dlfcn.h>
@@ -343,6 +344,9 @@ static void* hz5_preload_full_hz5_malloc(size_t size, size_t align) {
   if (!ptr) {
     return NULL;
   }
+  if (hz5_smallfront_owns(ptr)) {
+    return ptr;
+  }
   if (!hz5_preload_full_track_insert(ptr, HZ5_PRELOAD_FULL_OWNER_HZ5)) {
     atomic_fetch_add_explicit(&g_hz5_preload_full_track_insert_fail, 1u,
                               memory_order_relaxed);
@@ -355,6 +359,11 @@ static void* hz5_preload_full_hz5_malloc(size_t size, size_t align) {
 }
 
 static size_t hz5_preload_full_hz5_usable_size(void* ptr) {
+  size_t small = hz5_smallfront_usable_size(ptr);
+  if (small != 0) {
+    return small;
+  }
+
   Hz5WrapperHdr* wrapped = NULL;
   if (hz5_wrapper_decode(ptr, &wrapped)) {
     return wrapped->requested;
@@ -404,6 +413,15 @@ void free(void* ptr) {
     return;
   }
   if (hz5_preload_full_is_bootstrap_ptr(ptr)) {
+    return;
+  }
+
+  if (hz5_smallfront_owns(ptr)) {
+    atomic_fetch_add_explicit(&g_hz5_preload_full_free_hz5, 1u,
+                              memory_order_relaxed);
+    g_hz5_preload_full_inside++;
+    (void)hz5_free(ptr);
+    g_hz5_preload_full_inside--;
     return;
   }
 
@@ -576,6 +594,21 @@ void* realloc(void* ptr, size_t size) {
     return malloc(size);
   }
 
+  if (hz5_smallfront_owns(ptr)) {
+    size_t old_size = hz5_smallfront_usable_size(ptr);
+    void* next = hz5_preload_full_hz5_malloc(size, 16u);
+    if (!next) {
+      return NULL;
+    }
+    if (old_size != 0) {
+      memcpy(next, ptr, old_size < size ? old_size : size);
+    }
+    free(ptr);
+    atomic_fetch_add_explicit(&g_hz5_preload_full_realloc_hz5, 1u,
+                              memory_order_relaxed);
+    return next;
+  }
+
   uint8_t owner = hz5_preload_full_track_lookup(ptr);
   if (owner == HZ5_PRELOAD_FULL_OWNER_REAL) {
     hz5_preload_full_resolve();
@@ -614,6 +647,10 @@ void* realloc(void* ptr, size_t size) {
 size_t malloc_usable_size(void* ptr) {
   if (!ptr) {
     return 0;
+  }
+  size_t small = hz5_smallfront_usable_size(ptr);
+  if (small != 0) {
+    return small;
   }
   uint8_t owner = hz5_preload_full_track_lookup(ptr);
   if (owner == HZ5_PRELOAD_FULL_OWNER_HZ5) {

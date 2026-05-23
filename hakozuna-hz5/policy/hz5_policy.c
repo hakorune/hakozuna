@@ -4,6 +4,7 @@
 #include "hz5_lowpage64.h"
 #include "hz5_internal.h"
 #include "hz5_route.h"
+#include "hz5_smallfront.h"
 #include "hz5_trace.h"
 #include "hz5_wrapper.h"
 
@@ -75,6 +76,10 @@ void _aligned_free(void* ptr);
 
 #ifndef BENCHLAB_HZ5_LINUX_LOCAL2P
 #define BENCHLAB_HZ5_LINUX_LOCAL2P 0
+#endif
+
+#ifndef BENCHLAB_HZ5_LINUX_SMALLFRONT_S1
+#define BENCHLAB_HZ5_LINUX_SMALLFRONT_S1 0
 #endif
 
 #ifndef BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
@@ -1253,6 +1258,17 @@ void* hz5_policy_alloc_aligned(size_t size, size_t align,
   hz5_route_p12_on_alloc(size, align);
 #endif
 
+#if defined(__linux__) && BENCHLAB_HZ5_LINUX_SMALLFRONT_S1
+  if (align <= HZ5_POLICY_MIN_ALIGN) {
+    void* small = hz5_smallfront_alloc(size, align);
+    if (small) {
+      atomic_store_explicit(&g_hz5_policy_seen_allocation, 1,
+                            memory_order_relaxed);
+      return small;
+    }
+  }
+#endif
+
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_LOCAL2P && \
     BENCHLAB_HZ5_LINUX_LOCAL2P_DIRECT_ROUTE
   if (hz5_policy_local2p_exact(size, align)) {
@@ -1364,6 +1380,16 @@ Hz5FreeResult hz5_policy_free_local2p_64k_a8192(void* ptr) {
 }
 
 Hz5FreeResult hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
+#if defined(__linux__) && BENCHLAB_HZ5_LINUX_SMALLFRONT_S1
+  Hz5SmallFrontFreeResult small_result = hz5_smallfront_free(ptr);
+  if (small_result == HZ5_SMALLFRONT_FREE_OK) {
+    return HZ5_FREE_OK_HZ5;
+  }
+  if (small_result == HZ5_SMALLFRONT_FREE_INVALID) {
+    return HZ5_FREE_INVALID;
+  }
+#endif
+
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_LOCAL2P && \
     BENCHLAB_HZ5_LINUX_LOCAL2P_FREE_FIRST
   Hz5FreeResult local2p_result = HZ5_FREE_INVALID;

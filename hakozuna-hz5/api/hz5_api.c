@@ -3,6 +3,7 @@
 #include "hz5_contract.h"
 #include "hz5_internal.h"
 #include "hz5_policy.h"
+#include "hz5_smallfront.h"
 #include "hz5_wrapper.h"
 
 #include <stddef.h>
@@ -35,6 +36,9 @@ Hz5FreeResult hz5_free(void* ptr) {
 int hz5_owns(void* ptr) {
   /* Best-effort ownership probe for HZ5-managed pointers, not a foreign
      pointer safety boundary. */
+  if (hz5_smallfront_owns(ptr)) {
+    return 1;
+  }
   Hz5WrapperHdr* wrapped = NULL;
   if (hz5_wrapper_decode(ptr, &wrapped)) {
     return 1;
