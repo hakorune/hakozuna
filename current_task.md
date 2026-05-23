@@ -82,6 +82,8 @@ Design:
   raw/aligned/process-secret in the fast-cookie candidate
 - free-first dispatch is available as a mixed-speed candidate, but fast-cookie
   remains the local-speed reference
+- `hz5-local2p-freefirst-fastcookie` is now the explicit measurement label for
+  the same fast-cookie + free-first compound lane
 - remote-batch is the current remote-free candidate: batch remote frees in the
   freeing thread before owner-inbox handoff
 - cleanup rule: commonize decode/cookie/state validation helpers, but keep
@@ -416,6 +418,51 @@ Interpretation:
 - cap8/cap16 are better for local/mixed robustness
 - keep cap16 as the default `hz5-local2p-remotebatch`; use cap32 only when
   explicitly measuring a remote-only lane
+
+Freefirst-fastcookie explicit alias measurement:
+
+```text
+private/raw-results/linux/local2p_freefirst_fastcookie_runs10
+
+local median:
+  hz5-local2p-freefirst-fastcookie  205.1M ops/s
+  hz5-local2p-remotebatch           202.3M ops/s
+  hz5-local2p-fastcookie            200.4M ops/s
+  hz5-local2p-freefirst             199.3M ops/s
+  hz4                               130.8M ops/s
+  tcmalloc                          254.6M ops/s
+
+mixed final median:
+  hz5-local2p-fastcookie            204.6M ops/s
+  hz5-local2p-freefirst             202.3M ops/s
+  hz5-local2p-freefirst-fastcookie  202.3M ops/s
+  hz5-local2p-remotebatch           202.0M ops/s
+  hz4                               137.0M ops/s
+  tcmalloc                          270.4M ops/s
+
+remote pairs/s median:
+  hz5-local2p-remotebatch           15.26M
+  hz5-p25                           12.28M
+  hz4                               11.47M
+  hz5-local2p-fastcookie             8.24M
+  hz5-local2p-freefirst-fastcookie   8.03M
+  tcmalloc                           2.36M
+
+rss plateau:
+  hz5-local2p-freefirst-fastcookie  49.3K ops/s, final RSS 1.6MB
+  hz5-local2p-fastcookie            49.9K ops/s, final RSS 1.6MB
+  tcmalloc                         374.3K ops/s, final RSS 73.3MB
+```
+
+Interpretation:
+
+- `hz5-local2p-freefirst-fastcookie` is useful as an explicit result label
+  for the compound build, but it does not replace `fastcookie` as the
+  local/mixed reference
+- `remotebatch` remains the remote-free reference
+- the remaining tcmalloc gap is still local hot-path cost, not P25/P43 route
+  confusion
+- safety smoke passed: `bench_hz5_standalone_safety`
 
 ## Branch
 

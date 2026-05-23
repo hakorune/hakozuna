@@ -196,6 +196,7 @@ This is a useful hit-rate diagnostic, but a miss is not an HZ5 allocation.
 | `hz5-local2p-slimcheck` | `hz5-linux-local2p-slim-check` | `--linux-local2p-slim-check` | `local2p` | speed candidate: reduced direct free checks |
 | `hz5-local2p-fastcookie` | `hz5-linux-local2p-fast-cookie` | `--linux-local2p-fast-cookie` | `local2p` | speed candidate: lightweight cookie |
 | `hz5-local2p-freefirst` | `hz5-linux-local2p-free-first` | `--linux-local2p-free-first` | `local2p` | speed candidate: Local2P free-first dispatch |
+| `hz5-local2p-freefirst-fastcookie` | `hz5-linux-local2p-freefirst-fastcookie` | `--linux-local2p-freefirst-fastcookie` | `local2p` | explicit alias for the fast-cookie + free-first compound lane |
 | `hz5-local2p-inbox` | `hz5-linux-local2p-remote-inbox` | `--linux-local2p-fast --linux-local2p-owner-inbox` | `local2p` | remote-free candidate |
 | `hz5-local2p-remotebatch` | `hz5-linux-local2p-remote-batch` | `--linux-local2p-remote-batch` | `local2p` | remote-free candidate: batched owner inbox |
 | `hz5-local2p-remotebatch8` | `hz5-linux-local2p-remote-batch-cap8` | `--linux-local2p-remote-batch --linux-local2p-remote-batch-cap 8` | `local2p` | remote-free A/B: batch cap 8 |
@@ -313,6 +314,7 @@ Local2P speed candidates:
 --linux-local2p-slim-check
 --linux-local2p-fast-cookie
 --linux-local2p-free-first
+--linux-local2p-freefirst-fastcookie
 ```
 
 `--linux-local2p-object-node` stores the recycle `next` pointer in freed user
@@ -345,6 +347,15 @@ from the cookie mix for the speed A/B.
 `--linux-local2p-free-first` builds on fast-cookie and moves Local2P direct
 free decode before the generic P1/P2 ownership check. This is a dispatch-order
 A/B for standalone Local2P speed lanes, not a remote/RSS policy change.
+
+`--linux-local2p-freefirst-fastcookie` is an explicit alias for
+`--linux-local2p-free-first`. Use the longer name in result tables when the
+important point is that free-first is being measured on top of fast-cookie, not
+as an independent route.
+
+Current decision: `freefirst-fastcookie` is an A/B label only. It does not
+replace `fastcookie` as the local/mixed speed reference because the follow-up
+RUNS=10 result improved local slightly but regressed mixed and remote.
 
 ## Decision Rules
 

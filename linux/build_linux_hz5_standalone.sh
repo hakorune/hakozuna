@@ -80,6 +80,8 @@ Options:
                      candidate only: slim-check lane with lightweight Local2P cookie
   --linux-local2p-free-first
                      candidate only: fast-cookie lane with Local2P decode first in free
+  --linux-local2p-freefirst-fastcookie
+                     alias for --linux-local2p-free-first; explicit compound lane name
   --linux-p25-bridge-attr
                      preserve P25 bridge topology with wrapper attr CAS guard
   --linux-p25-bridge-attr-no-cas
@@ -260,7 +262,7 @@ while [[ $# -gt 0 ]]; do
       LINUX_LOCAL2P_FAST_COOKIE=1
       shift
       ;;
-    --linux-local2p-free-first)
+    --linux-local2p-free-first|--linux-local2p-freefirst-fastcookie)
       LINUX_LOCAL2P=1
       LINUX_LOCAL2P_TLS_PACKED=1
       LINUX_LOCAL2P_TLS_INITIAL_EXEC=1

@@ -665,6 +665,37 @@ mixed:
 Treat free-first as a mixed-speed candidate. It did not improve pure local
 median and slightly regressed remote-free in the same run.
 
+The runner also exposes this same build as
+`hz5-local2p-freefirst-fastcookie`. The longer name is preferred for new A/B
+tables because it makes the compound nature explicit: fast-cookie is still the
+route/cookie policy, and free-first changes only dispatch order.
+
+Follow-up RUNS=10 result:
+
+```text
+private/raw-results/linux/local2p_freefirst_fastcookie_runs10
+
+local:
+  freefirst-fastcookie 205.1M ops/s
+  fast-cookie          200.4M ops/s
+  tcmalloc             254.6M ops/s
+
+mixed:
+  fast-cookie          204.6M ops/s
+  freefirst-fastcookie 202.3M ops/s
+  tcmalloc             270.4M ops/s
+
+remote pairs/s:
+  remotebatch          15.26M
+  p25                  12.28M
+  fast-cookie           8.24M
+  freefirst-fastcookie  8.03M
+```
+
+Decision: keep `fast-cookie` as the local/mixed reference and `remotebatch` as
+the remote-free reference. `freefirst-fastcookie` is a named A/B row, not a
+promotion.
+
 Overflow policy for the first candidate should be explicit and visible in the
 lane name or build metadata. Prefer keeping it simple:
 
