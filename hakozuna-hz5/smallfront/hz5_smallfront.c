@@ -1,6 +1,7 @@
 #include "hz5_smallfront.h"
 
 #include "hz5_config.h"
+#include "hz5_internal.h"
 
 #include <pthread.h>
 #include <stdint.h>
@@ -26,6 +27,10 @@ void _aligned_free(void* ptr);
 #define HZ5_SMALLFRONT_PAGE_MAP_CAP \
   ((size_t)1u << HZ5_SMALLFRONT_PAGE_MAP_BITS)
 
+#ifndef HZ5_SMALLFRONT_REMOTE_BATCH_CAP
+#define HZ5_SMALLFRONT_REMOTE_BATCH_CAP 16u
+#endif
+
 typedef struct Hz5SmallFrontPage {
   uint64_t magic;
   void* raw;
@@ -34,9 +39,8 @@ typedef struct Hz5SmallFrontPage {
   uint16_t class_size;
   uint16_t slot_count;
   uint16_t reserved0;
-  uintptr_t owner_token;
+  Hz5OwnerToken owner;
   _Atomic unsigned char slot_state[256];
-  _Atomic(void*) remote_head;
   struct Hz5SmallFrontPage* owner_next;
 } Hz5SmallFrontPage;
 
@@ -51,25 +55,33 @@ typedef struct Hz5SmallFrontPageMapEntry {
 } Hz5SmallFrontPageMapEntry;
 
 typedef struct Hz5SmallFrontTls {
-  uintptr_t owner_token;
+  Hz5OwnerToken owner;
   void* free_head[HZ5_SMALLFRONT_CLASS_COUNT];
-  _Atomic(void*) remote_head[HZ5_SMALLFRONT_CLASS_COUNT];
   Hz5SmallFrontPage* owned_pages[HZ5_SMALLFRONT_CLASS_COUNT];
+  Hz5OwnerToken remote_batch_owner;
+  uint32_t remote_batch_class;
+  uint32_t remote_batch_count;
+  Hz5SmallFrontNode* remote_batch_head;
+  Hz5SmallFrontNode* remote_batch_tail;
 } Hz5SmallFrontTls;
 
 static const uint16_t g_hz5_smallfront_classes[HZ5_SMALLFRONT_CLASS_COUNT] = {
     16, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, 1536, 2048};
 
+static const Hz5OwnerToken k_hz5_smallfront_no_owner = {0, 0};
+
 static Hz5SmallFrontPageMapEntry
     g_hz5_smallfront_page_map[HZ5_SMALLFRONT_PAGE_MAP_CAP];
+static _Atomic(void*) g_hz5_smallfront_owner_inbox[UINT16_MAX + 1u]
+                                                [HZ5_SMALLFRONT_CLASS_COUNT];
 static pthread_mutex_t g_hz5_smallfront_page_map_lock =
     PTHREAD_MUTEX_INITIALIZER;
 static _Thread_local Hz5SmallFrontTls g_hz5_smallfront_tls;
 
 static Hz5SmallFrontTls* hz5_smallfront_tls(void) {
   Hz5SmallFrontTls* tls = &g_hz5_smallfront_tls;
-  if (!tls->owner_token) {
-    tls->owner_token = (uintptr_t)tls;
+  if (tls->owner.slot == 0) {
+    tls->owner = hz5_owner_current();
   }
   return tls;
 }
@@ -199,24 +211,79 @@ static void* hz5_smallfront_local_pop(Hz5SmallFrontTls* tls,
   return node;
 }
 
-static void hz5_smallfront_remote_push(Hz5SmallFrontPage* page, void* ptr) {
-  Hz5SmallFrontTls* owner_tls = (Hz5SmallFrontTls*)page->owner_token;
+static void hz5_smallfront_remote_publish_list(Hz5OwnerToken owner,
+                                               uint32_t class_index,
+                                               Hz5SmallFrontNode* head,
+                                               Hz5SmallFrontNode* tail) {
+  if (owner.slot == 0 || class_index >= HZ5_SMALLFRONT_CLASS_COUNT || !head ||
+      !tail) {
+    return;
+  }
+
+  void* old_head = NULL;
+  _Atomic(void*)* inbox =
+      &g_hz5_smallfront_owner_inbox[owner.slot][class_index];
+  do {
+    old_head = atomic_load_explicit(inbox, memory_order_acquire);
+    tail->next = (Hz5SmallFrontNode*)old_head;
+  } while (!atomic_compare_exchange_weak_explicit(
+      inbox, &old_head, head, memory_order_release, memory_order_acquire));
+}
+
+/* Batch remote frees in the freeing thread to reduce owner-inbox CAS traffic. */
+static void hz5_smallfront_remote_batch_flush(Hz5SmallFrontTls* tls) {
+  if (!tls || tls->remote_batch_count == 0u) {
+    return;
+  }
+
+  hz5_smallfront_remote_publish_list(
+      tls->remote_batch_owner, tls->remote_batch_class,
+      tls->remote_batch_head, tls->remote_batch_tail);
+  tls->remote_batch_owner = k_hz5_smallfront_no_owner;
+  tls->remote_batch_class = 0;
+  tls->remote_batch_count = 0;
+  tls->remote_batch_head = NULL;
+  tls->remote_batch_tail = NULL;
+}
+
+static void hz5_smallfront_remote_batch_push(Hz5SmallFrontTls* tls,
+                                             Hz5SmallFrontPage* page,
+                                             void* ptr) {
+  uint32_t class_index = page->class_index;
+  if (tls->remote_batch_count != 0u &&
+      (!hz5_owner_equal(tls->remote_batch_owner, page->owner) ||
+       tls->remote_batch_class != class_index)) {
+    hz5_smallfront_remote_batch_flush(tls);
+  }
+
   Hz5SmallFrontNode* node = (Hz5SmallFrontNode*)ptr;
   node->page = page;
-  void* old_head = NULL;
-  do {
-    old_head = atomic_load_explicit(
-        &owner_tls->remote_head[page->class_index], memory_order_acquire);
-    node->next = (Hz5SmallFrontNode*)old_head;
-  } while (!atomic_compare_exchange_weak_explicit(
-      &owner_tls->remote_head[page->class_index], &old_head, node,
-      memory_order_release, memory_order_acquire));
+  node->next = NULL;
+  if (tls->remote_batch_count == 0u) {
+    tls->remote_batch_owner = page->owner;
+    tls->remote_batch_class = class_index;
+    tls->remote_batch_head = node;
+  } else {
+    tls->remote_batch_tail->next = node;
+  }
+  tls->remote_batch_tail = node;
+  ++tls->remote_batch_count;
+
+  if (tls->remote_batch_count >= HZ5_SMALLFRONT_REMOTE_BATCH_CAP) {
+    hz5_smallfront_remote_batch_flush(tls);
+  }
 }
 
 static void hz5_smallfront_drain_remote_class(Hz5SmallFrontTls* tls,
                                               uint32_t class_index) {
-  void* head = atomic_exchange_explicit(&tls->remote_head[class_index], NULL,
-                                        memory_order_acq_rel);
+  if (!tls || tls->owner.slot == 0 ||
+      class_index >= HZ5_SMALLFRONT_CLASS_COUNT) {
+    return;
+  }
+
+  void* head = atomic_exchange_explicit(
+      &g_hz5_smallfront_owner_inbox[tls->owner.slot][class_index], NULL,
+      memory_order_acq_rel);
   while (head) {
     Hz5SmallFrontNode* node = (Hz5SmallFrontNode*)head;
     head = node->next;
@@ -275,11 +342,10 @@ static Hz5SmallFrontPage* hz5_smallfront_new_page(Hz5SmallFrontTls* tls,
   page->class_size = class_size;
   page->slot_count = slot_count;
   page->reserved0 = 0;
-  page->owner_token = tls->owner_token;
+  page->owner = tls->owner;
   for (uint32_t i = 0; i < 256u; ++i) {
     atomic_store_explicit(&page->slot_state[i], 0, memory_order_relaxed);
   }
-  atomic_store_explicit(&page->remote_head, NULL, memory_order_relaxed);
   page->owner_next = tls->owned_pages[class_index];
 
   if (!hz5_smallfront_page_map_insert(page_base, page)) {
@@ -342,7 +408,7 @@ Hz5SmallFrontFreeResult hz5_smallfront_free(void* ptr) {
   }
 
   Hz5SmallFrontTls* tls = hz5_smallfront_tls();
-  if (page->owner_token == tls->owner_token) {
+  if (hz5_owner_equal(page->owner, tls->owner)) {
     if (!hz5_smallfront_mark_free_local(page, slot)) {
       return HZ5_SMALLFRONT_FREE_INVALID;
     }
@@ -351,7 +417,7 @@ Hz5SmallFrontFreeResult hz5_smallfront_free(void* ptr) {
     if (!hz5_smallfront_mark_free_remote(page, slot)) {
       return HZ5_SMALLFRONT_FREE_INVALID;
     }
-    hz5_smallfront_remote_push(page, ptr);
+    hz5_smallfront_remote_batch_push(tls, page, ptr);
   }
   return HZ5_SMALLFRONT_FREE_OK;
 }

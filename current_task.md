@@ -312,7 +312,8 @@ hot path:
   per-slot state byte, not shared 64-slot bitmap word
   owner-local state load/store
   remote free state CAS
-  remote free pushes to owner TLS per-class inbox
+  remote free batches in the freeing thread, then pushes a list to the owner
+  slot/class inbox
   owner drains the matching class inbox on local class miss
 
 preload:
@@ -342,6 +343,61 @@ small malloc smoke:
 short hakmem guard, threads=2, iters=50000, ws=100:
   r0:  about 49M ops/s, 3-run short median after direct preload path
   r90: about 5.8M ops/s, 3-run short median after direct preload path
+```
+
+Remote-batch update:
+
+```text
+change:
+  remote frees keep fail-closed per-slot CAS
+  owner-inbox publication is batched in the freeing thread
+  default batch cap is 16
+
+selector:
+  --linux-smallfront-remote-batch-cap N
+
+short guard A/B, threads=2, iters=50000, ws=100:
+  cap1  r0 median:  about 49.8M ops/s
+  cap1  r90 median: about 6.5M ops/s
+  cap16 r0 median:  about 47.2M ops/s
+  cap16 r90 median: about 8.3M ops/s
+  cap32 r0 median:  about 48.3M ops/s
+  cap32 r90 median: about 7.9M ops/s
+
+decision:
+  keep cap16 as the current S1 default; it improves the remote-heavy smoke
+  without changing owner-local ownership semantics.
+```
+
+Owner-inbox hardening:
+
+```text
+change:
+  SmallFront pages store Hz5OwnerToken instead of a raw TLS pointer
+  remote inbox is now global owner-slot x size-class storage
+  remote batch publishes to owner.slot/class rather than owner TLS address
+
+why:
+  removes direct references to another thread's TLS object from page metadata
+  keeps the HZ4-style owner/class handoff shape
+
+remaining limitation:
+  Linux hz5_owner still does not clear owner liveness at thread exit, so S1 is
+  safer than raw TLS ownership but still assumes owner threads remain alive for
+  the current benchmark smoke. Orphan/thread-exit cleanup remains future work.
+```
+
+Short guard after owner-token inbox, `threads=2 iters=50000 ws=100`:
+
+```text
+r0 median:  about 47.9M ops/s
+r50 median: about 9.0M ops/s
+r90 median: about 7.0M ops/s
+
+attribution smoke:
+  malloc_hz5=5054
+  malloc_real=0
+  track_insert_fail=0
 ```
 
 Short comparison on the same smoke:
@@ -380,8 +436,9 @@ Next likely attack order:
 
 ```text
 1. remote-free:
-   replace raw owner TLS pointer with owner token + owner/class inbox
-   add sender-side remote batch keyed by owner/class, HZ4-style
+   sender-side remote batch is implemented
+   raw owner TLS pointer has been replaced with owner token + owner/class inbox
+   next cleanup is owner-death/orphan handling or faster owner inbox drain
 
 2. local small speed:
    keep 14-class grouping for now; 128-class exact HZ3 grid hurt local r0 on

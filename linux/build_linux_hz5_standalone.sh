@@ -47,6 +47,7 @@ LINUX_P43_WRAPPER_TOKEN_BRIDGE=0
 TRACE_LANE=0
 BUILD_PRELOAD_FULL=0
 LINUX_SMALLFRONT_S1=0
+LINUX_SMALLFRONT_REMOTE_BATCH_CAP=16
 HZ5_STANDALONE_EXACT_ONLY=1
 
 usage() {
@@ -110,6 +111,8 @@ Options:
                      candidate only: speed-linkflags lane retaining local TLS overflow in bounded global cache
   --linux-local2p-retain-array
                      diagnostic only: store retained owner-local TLS entries in a pointer array
+  --linux-smallfront-remote-batch-cap N
+                     SmallFront-S1 remote-free sender batch flush threshold (default: 16)
   --linux-p11-speed-core
                      diagnostic only: compile the legacy P2 run/tcache path with HZ5_P11_SPEED_CORE=1
   --linux-p25-bridge-attr
@@ -445,6 +448,10 @@ while [[ $# -gt 0 ]]; do
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
+    --linux-smallfront-remote-batch-cap)
+      LINUX_SMALLFRONT_REMOTE_BATCH_CAP="$2"
+      shift 2
+      ;;
     --trace-lane)
       TRACE_LANE=1
       shift
@@ -475,6 +482,11 @@ fi
 
 if [[ "$LINUX_LOCAL2P_REMOTE_BATCH_CAP" -lt 1 ]]; then
   echo "remote batch cap must be >= 1" >&2
+  exit 1
+fi
+
+if [[ "$LINUX_SMALLFRONT_REMOTE_BATCH_CAP" -lt 1 ]]; then
+  echo "smallfront remote batch cap must be >= 1" >&2
   exit 1
 fi
 
@@ -724,6 +736,9 @@ fi
 
 if [[ "$LINUX_SMALLFRONT_S1" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_SMALLFRONT_S1=1)
+  COMMON_FLAGS+=(
+    -DHZ5_SMALLFRONT_REMOTE_BATCH_CAP="${LINUX_SMALLFRONT_REMOTE_BATCH_CAP}u"
+  )
 fi
 
 {
@@ -762,6 +777,7 @@ fi
   echo "linux_local2p_local_overflow_global=${LINUX_LOCAL2P_LOCAL_OVERFLOW_GLOBAL}"
   echo "build_preload_full=${BUILD_PRELOAD_FULL}"
   echo "linux_smallfront_s1=${LINUX_SMALLFRONT_S1}"
+  echo "linux_smallfront_remote_batch_cap=${LINUX_SMALLFRONT_REMOTE_BATCH_CAP}"
   echo "standalone_exact_only=${HZ5_STANDALONE_EXACT_ONLY}"
   echo "linux_p11_speed_core=${LINUX_P11_SPEED_CORE}"
   echo "linux_p25_bridge_attr=${LINUX_P25_BRIDGE_ATTR}"

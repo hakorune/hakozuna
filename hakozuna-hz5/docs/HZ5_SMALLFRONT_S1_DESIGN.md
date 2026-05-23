@@ -450,3 +450,77 @@ malloc <= 2048. The preload interposer calls SmallFront directly for S1-sized
 malloc/calloc/realloc allocations. Full-preload counters are gated behind
 HZ5_PRELOAD_STATS so normal speed runs do not pay per-operation stats atomics.
 ```
+
+Remote-batch correction:
+
+```text
+Remote frees still validate ownership through the SmallFront page map and clear
+the per-slot state with CAS. The synchronization reduction is only on owner
+inbox publication: the freeing thread batches objects for one owner/class and
+splices the whole list into the owner TLS inbox with one CAS.
+
+Default cap:
+  HZ5_SMALLFRONT_REMOTE_BATCH_CAP=16
+
+Build A/B:
+  --linux-smallfront-remote-batch-cap N
+```
+
+Short guard A/B, `threads=2 iters=50000 ws=100`:
+
+```text
+cap1:
+  r0 median   about 49.8M ops/s
+  r90 median  about 6.5M ops/s
+
+cap16:
+  r0 median   about 47.2M ops/s
+  r90 median  about 8.3M ops/s
+
+cap32:
+  r0 median   about 48.3M ops/s
+  r90 median  about 7.9M ops/s
+```
+
+Decision:
+
+```text
+Keep cap16 as the current S1 default. It targets remote-heavy paper-main rows
+without weakening fail-closed slot-state checks. This is still an S1
+owner-alive assumption; owner-token/global-inbox cleanup remains the next
+correctness hardening step.
+```
+
+Owner-inbox hardening:
+
+```text
+SmallFront page metadata now stores Hz5OwnerToken instead of a raw TLS pointer.
+Remote handoff publishes to a global owner-slot x size-class inbox:
+
+  page.owner = Hz5OwnerToken
+  remote free -> sender batch keyed by (owner, class)
+  batch flush -> g_owner_inbox[owner.slot][class]
+  owner alloc miss -> drain g_owner_inbox[current_owner.slot][class]
+
+This removes direct references to another thread's TLS object from page
+metadata. The remaining S1 limitation is Linux owner lifetime: hz5_owner does
+not yet clear owner liveness or orphan SmallFront pages on thread exit.
+```
+
+Short guard after owner-token inbox, `threads=2 iters=50000 ws=100`:
+
+```text
+r0 median:
+  about 47.9M ops/s
+
+r50 median:
+  about 9.0M ops/s
+
+r90 median:
+  about 7.0M ops/s
+
+attribution:
+  malloc_hz5=5054
+  malloc_real=0
+  track_insert_fail=0
+```
