@@ -24,7 +24,20 @@ RSS policy is designed in from day one.
 
 ## Current Status
 
-HZ5 has moved past the initial P0/P3 route proof. The current split is:
+HZ5 has moved past the initial P0/P3 route proof. On Linux, the current
+paper-facing status is a set of exact `64K/a8192` appendix profiles rather than
+a single general-purpose allocator claim:
+
+- `hz5-local2p-linkflags`: low-final-RSS local/mixed exact speed profile.
+- `hz5-local2p-rssretain2048tls`: retained-cache RSS-throughput profile.
+- `hz5-local2p-remotebatch`: producer/consumer remote-free profile.
+
+These Linux profiles are deliberately separate. Unsupported exact-only routes
+fail closed, and diagnostic lanes such as `rssretain2048array` stay out of the
+paper-facing default unless they beat the active reporting row under the stated
+stop rules.
+
+Implementation split:
 
 - `api`: public HZ5 allocator API. It exports `hz5_malloc()`,
   `hz5_aligned_alloc()`, `hz5_free()`, `hz5_owns()`, and
@@ -64,6 +77,15 @@ HZ5 has moved past the initial P0/P3 route proof. The current split is:
   ordering, P25 lowpage dispatch, HZ5 P2 dispatch, lazy HZ3 fallback dispatch,
   and wrapper-source free ordering. Legacy P17/P24 raw-cache diagnostics remain
   adapter hooks.
+
+Linux Local2P notes:
+
+- `Local2P` is a Linux-only exact `64K/a8192` path. It is closer to an HZ4-like
+  TLS span-cache profile than to a direct Windows P43i/P45 port.
+- `P25` remains the Linux HZ5 control path for exact lowpage64 behavior.
+- P43 token/source lanes remain remote/RSS/source-control candidates and are not
+  the local-only speed default.
+- Current benchmark entrypoint: `linux/run_linux_hz5_local2p_focus.sh`.
 
 P13/P14 are not speed lanes. P11/P9 should stay counter-free when used for
 throughput measurements; P12 cap1 should now be included only when comparing

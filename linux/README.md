@@ -21,6 +21,7 @@ Use it to keep Linux build and smoke commands in one place without mixing:
 - [run_linux_arm64_order_gate_compare.sh](run_linux_arm64_order_gate_compare.sh): explicit Ubuntu arm64 order-gate compare wrapper for experimental tuning
 - [prepare_linux_bench_allocators.sh](prepare_linux_bench_allocators.sh): local `mimalloc` / `tcmalloc` cache prep for benchmark runs
 - [run_bench_compare.sh](run_bench_compare.sh): thin Linux frontend for the shared allocator compare runner
+- [run_linux_hz5_local2p_focus.sh](run_linux_hz5_local2p_focus.sh): HZ5 exact `64K/a8192` appendix-profile runner
 
 ## Quick Start
 
@@ -85,6 +86,24 @@ Examples:
 - `all_ldpreload_scale_r50`
 - `all_ldpreload_scale_r90`
 - `all_ldpreload_scale_r90_pf2_s97_2`
+
+## HZ5 Exact-Profile Runner
+
+HZ5 Linux results are currently scoped to exact `64K/a8192` profile rows:
+
+- `hz5-local2p-linkflags`: low-final-RSS local/mixed exact speed profile
+- `hz5-local2p-rssretain2048tls`: retained-cache RSS-throughput profile
+- `hz5-local2p-remotebatch`: producer/consumer remote-free profile
+
+Run the focus matrix with:
+
+```bash
+./linux/run_linux_hz5_local2p_focus.sh
+```
+
+Keep HZ5 results separate from the default hz3/hz4 public allocator comparison.
+HZ5 is a research sidecar, and unsupported exact-only routes must not be counted
+as HZ5 wins.
 
 ## GO / NO-GO And Conditions
 

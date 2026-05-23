@@ -1,10 +1,12 @@
 Hakozuna 公開リポジトリ案内 (日本語)
 ====================================
 
-この公開リポジトリには、2つのアロケータ実装が含まれています。
+この公開リポジトリには、安定運用向けの2つのアロケータ実装と、
+研究用 sidecar が含まれています。
 
 - hakozuna/     : hz3 (local-heavy 向け)
 - hakozuna-mt/  : hz4 (remote-heavy / 高スレッド向け)
+- hakozuna-hz5/ : HZ5 (exact over-aligned profile 向け研究 sidecar)
 
 対応プラットフォーム
 --------------------
@@ -14,6 +16,7 @@ Hakozuna 公開リポジトリ案内 (日本語)
 - Windows native の公開エントリポイント: win/
 - macOS の公開エントリポイント: mac/
 - Windows の build / bench ガイド: docs/WINDOWS_BUILD.md
+- HZ5 Linux exact profile runner: linux/run_linux_hz5_local2p_focus.sh
 
 推奨プロファイル選択
 --------------------
@@ -21,6 +24,7 @@ Hakozuna 公開リポジトリ案内 (日本語)
 - 迷ったら hz3 を使う
 - Redis系・local-heavy ワークロードは hz3
 - cross-thread free が多い remote-heavy ワークロードは hz4
+- HZ5 は既定 allocator ではなく、64K/a8192 exact profile の研究・付録行として扱う
 
 最新版の結果と論文
 ------------------
@@ -35,6 +39,19 @@ Hakozuna 公開リポジトリ案内 (日本語)
   source / artifact release です
 - 最新の Zenodo アーカイブ（v3.3）: https://zenodo.org/records/19139939
 - DOI（v3.3）: https://doi.org/10.5281/zenodo.19139939
+
+HZ5 Linux 付録プロファイル
+--------------------------
+
+現時点の HZ5 Linux は、64K allocation / align=8192 の exact-overaligned
+条件に限定した付録プロファイルとして扱います。
+
+- hz5-local2p-linkflags: low-final-RSS local/mixed speed profile
+- hz5-local2p-rssretain2048tls: retained-cache RSS-throughput profile
+- hz5-local2p-remotebatch: producer/consumer remote-free profile
+
+これらは用途別 profile であり、HZ5 単体が一般用途 allocator として
+全条件を支配する、という主張にはしません。
 
 最小実行例
 ----------

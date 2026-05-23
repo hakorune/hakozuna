@@ -1,4 +1,4 @@
-# hakozuna (hz3) / hakozuna-mt (hz4)
+# hakozuna (hz3) / hakozuna-mt (hz4) / hakozuna-hz5
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19139939.svg)](https://doi.org/10.5281/zenodo.19139939)
 
@@ -14,6 +14,7 @@ Part of the [hakorune](https://github.com/hakorune) project.
 
 - **hz3 (hakozuna)**: Local-heavy performance + minimal RSS footprint. Default for most workloads.
 - **hz4 (hakozuna-mt)**: Message-passing, remote-heavy scaling (best at high thread counts).
+- **HZ5 (hakozuna-hz5)**: Research sidecar for exact over-aligned profiles. It is not the default general allocator.
 - Profile selection guide: [PROFILE_GUIDE.md](PROFILE_GUIDE.md)
 
 ## Platform Support
@@ -41,6 +42,7 @@ Notes:
 - On Ubuntu arm64, use `./linux/build_linux_arm64_release_lane.sh` for the explicit lane wrapper.
 - For benchmark compare runs, `./linux/run_linux_bench_compare.sh` prepares local `mimalloc` / `tcmalloc` caches and uses the CRT smoke binary.
 - Record the CPU architecture in Linux benchmark summaries to keep lanes separate.
+- HZ5 Linux exact-profile experiments live under `hakozuna-hz5/` and are run through `linux/run_linux_hz5_local2p_focus.sh`.
 
 ### macOS
 
@@ -121,6 +123,26 @@ Lane legend:
 - Default profile: `hz3` (`scale` lane).
 - Remote-heavy / high-thread profile: `hz4`.
 - `hz4` redis preload crash (`rc=139`) was fixed via `malloc_usable_size` interpose; redis-like rerun is now stable (`n_ok=10`).
+
+## HZ5 Linux Appendix Snapshot (2026-05-24, Ubuntu x86_64)
+
+HZ5 is currently reported as a small set of exact-overaligned appendix profiles for
+`64K` allocations with `8192`-byte alignment. These rows are intentionally
+profile-specific; they are not a claim that HZ5 is a single general-purpose
+allocator profile.
+
+| HZ5 profile | Claim scope | Representative median |
+|-------------|-------------|-----------------------|
+| `hz5-local2p-linkflags` | low-final-RSS local/mixed exact speed | local `256.3M ops/s`; mixed final `264.8M ops/s`, final RSS ~1.4MB |
+| `hz5-local2p-rssretain2048tls` | retained-cache RSS-throughput profile | RSS plateau `325.3K ops/s`, near HZ4 in the same run |
+| `hz5-local2p-remotebatch` | producer/consumer remote-free profile | remote-free `15.36M pairs/s` in the reporting-row run |
+
+Current interpretation:
+
+- Keep `hz3` as the default public profile and `hz4` as the remote-heavy profile.
+- Use HZ5 only for exact `64K/a8192` research/profile comparisons.
+- Do not treat unsupported HZ5 routes as wins; unsupported exact-only routes fail closed.
+- The optional retained pointer-array RSS lane was tested and kept diagnostic-only because it did not beat `rssretain2048tls` on RSS plateau.
 
 ## Documentation
 
