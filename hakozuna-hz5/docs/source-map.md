@@ -56,6 +56,14 @@ smallfront/
   descriptor-owned slots
   owner-local TLS free lists
   owner-aware remote inbox
+
+midfront/
+  HZ5-MidFront-M1
+  Linux ordinary malloc/free 4096..65536 bytes
+  one object per page/run-sized span in M1
+  descriptor-owned spans
+  owner-local TLS span caches
+  owner-aware remote inbox
 ```
 
 Design source:
@@ -63,9 +71,16 @@ Design source:
 * `docs/HZ5_SMALLFRONT_S1_DESIGN.md`: HZ5-native small allocator front-end
   plan. It combines hz3-style size classes/TLS speed, hz4-style owner-aware
   remote handling, and HZ5 fail-closed descriptor ownership.
+* `docs/HZ5_OWNER_LIFETIME_O1.md`: minimum Linux owner-lifetime hardening before
+  adding more owner-aware front-ends.
+* `docs/HZ5_MIDFRONT_M1_DESIGN.md`: HZ5-native mid allocator front-end plan for
+  ordinary 4K..64K malloc traffic.
 
 Do not implement SmallFront by adding per-object wrappers to small objects or
 by depending on the full-preload pointer table for HZ5-owned small frees.
+Do not implement MidFront by routing ordinary malloc directly through the P2
+hot path; P2 may become a slow source/provider after MidFront ownership is
+stable.
 
 ## Design Notes
 
@@ -76,6 +91,9 @@ by depending on the full-preload pointer table for HZ5-owned small frees.
   classification. Use it before naming a new HZ5 Linux result or paper claim.
 * `docs/HZ5_SMALLFRONT_S1_DESIGN.md`: Linux general allocator front-end plan for
   ordinary small malloc traffic.
+* `docs/HZ5_OWNER_LIFETIME_O1.md`: Linux owner lifetime and orphan safety plan.
+* `docs/HZ5_MIDFRONT_M1_DESIGN.md`: Linux general allocator front-end plan for
+  ordinary 4K..64K malloc traffic.
 * `docs/HZ5_P43I_P43O_ALGO_CONSULT.md`: historical consultation ledger for
   P43i/P43o/P43p/P45. Use it as evidence, not as the current implementation map.
 * `docs/source-map.md`: this file.
@@ -92,7 +110,8 @@ P45r1 / P45dr:
   not SpeedLane
 
 Next cleanup:
-  add SmallFront-S1 behind an explicit selector
+  add OwnerLifetime-O1 minimum hardening
+  add MidFront-M1 behind an explicit selector
   keep Local2P/P25/P43 exact lanes independent
   avoid new behavior knobs unless the route boundary changes
 ```

@@ -173,11 +173,19 @@ Target architecture:
 
 ```text
 HZ5 general allocator =
-  SmallFront     <= 2KiB or 4KiB ordinary malloc
-  MidRun         4KiB..64KiB normal aligned/page-ish allocations
+  SmallFront     <= 2KiB ordinary malloc
+  MidFront       4KiB..64KiB ordinary malloc
   Local2P        Linux exact 64K/a8192 appendix/special route
   P43/P45        Windows exact/overaligned and control-plane research
   LargeFallback  true large or unsupported allocations
+```
+
+Current architectural decision:
+
+```text
+4096 belongs to MidFront, not SmallFront.
+P2 may be reused later as a source/provider, but not as the MidFront hot path.
+SmallFront-S1 remains fixed at <=2048 bytes.
 ```
 
 S1 scope:
@@ -199,6 +207,7 @@ covered:
 not covered in S1:
   posix_memalign/aligned_alloc over 16-byte alignment
   exact 4K/8K a8192 special rows
+  4096-byte ordinary malloc objects
   thread-death hardening
   RSS trimming
   huge pages
@@ -435,21 +444,37 @@ It is not yet a final paper-main allocator:
 Next likely attack order:
 
 ```text
-1. remote-free:
+0. owner lifetime:
+   implement OwnerLifetime-O1 minimum hardening before adding more owner-aware
+   front-ends
+
+1. mid front-end:
+   implement MidFront-M1 for normal malloc 4096/8192/16384/32768/65536
+   keep descriptor ownership, owner inbox, and fail-closed state transitions
+
+2. paper-main matrix:
+   rerun hakmem guard/main/cross128 after MidFront-M1 so >2048 traffic no
+   longer falls to wrapped mmap
+
+3. remote-free:
    sender-side remote batch is implemented
    raw owner TLS pointer has been replaced with owner token + owner/class inbox
-   next cleanup is owner-death/orphan handling or faster owner inbox drain
+   optimize owner inbox drain only after coverage improves
 
-2. local small speed:
+4. local small speed:
    keep 14-class grouping for now; 128-class exact HZ3 grid hurt local r0 on
    the short random guard smoke
 
-3. mid front-end:
-   extend beyond 2048 only after S1 hot path is cleaner
-
-4. page map:
+5. page map:
    xor-fold hash is now used instead of multiply hash; direct arena/index table
    remains a later design if small-object arena reservation is added
+```
+
+Design source of truth for next steps:
+
+```text
+hakozuna-hz5/docs/HZ5_OWNER_LIFETIME_O1.md
+hakozuna-hz5/docs/HZ5_MIDFRONT_M1_DESIGN.md
 ```
 
 ## Previous Development Focus: Linux Local2P v2

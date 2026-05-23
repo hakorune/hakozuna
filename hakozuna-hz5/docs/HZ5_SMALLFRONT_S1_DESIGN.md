@@ -44,15 +44,17 @@ from HZ5:
 HZ5 Linux should be split by responsibility:
 
 ```text
-SmallFront     <= 2KiB or 4KiB ordinary malloc
-MidRun         4KiB..64KiB normal aligned/page-ish allocations
+SmallFront     <= 2KiB ordinary malloc
+MidFront       4KiB..64KiB ordinary malloc
 Local2P        exact 64K/a8192 Linux appendix/special route
 P43/P45        Windows exact/overaligned and control-plane research
 LargeFallback  true large or unsupported allocations
 ```
 
 Local2P remains the exact 64K/a8192 research profile. SmallFront is the start
-of the general allocator path.
+of the general allocator path. 4096-byte objects are not SmallFront objects;
+they belong to MidFront because they are page/run-sized objects, not sub-page
+slots.
 
 ## S1 Scope
 
@@ -73,6 +75,7 @@ Not covered by S1:
 ```text
 posix_memalign/aligned_alloc with alignment > 16
 exact 4K/8K a8192 guard rows
+4096-byte ordinary malloc objects
 thread-death hardening
 RSS trimming
 huge page policy
@@ -208,7 +211,7 @@ malloc(size):
       return first slot
 
   else:
-      MidRun / P2 / Local2P / LargeFallback
+      MidFront / Local2P / LargeFallback
 ```
 
 ### free
@@ -252,6 +255,10 @@ owner thread:
 
 Thread death may be handled later through orphan ownership or global transfer.
 For S1, benchmark smoke may assume owner threads remain alive.
+
+After commit `32306cc`, SmallFront pages store `Hz5OwnerToken` and publish
+remote frees to a global owner-slot x class inbox. The remaining Linux lifetime
+gap is tracked separately in `HZ5_OWNER_LIFETIME_O1.md`.
 
 ## Safety Contract
 
@@ -319,6 +326,9 @@ hz5-local2p-*:
 
 hz5-p25:
   exact lowpage64 control
+
+hz5-midfront-m1:
+  ordinary 4K..64K malloc front-end
 ```
 
 ## Validation Plan
