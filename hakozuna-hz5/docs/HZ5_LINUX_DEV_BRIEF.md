@@ -929,6 +929,75 @@ Next if continued:
   avoid locked CAS without racing remote frees
 ```
 
+M2.2 implemented the region-array lookup:
+
+```text
+--linux-midpagefront-region-array
+
+64MiB aligned source regions
+1024 x 64KiB slabs per region
+descriptor array indexed by ptr region/slab offset
+```
+
+Focused repeat-3, `threads=16/ws=400/r90`, stats unset:
+
+```text
+private/raw-results/linux/midpage_regionarray_r3_20260525_022138
+
+main_r90:
+  region           22.51M
+  midpage region   38.03M
+  HZ4              49.72M
+  tcmalloc         50.98M
+
+mid_only_r90:
+  region           26.04M
+  midpage region   39.33M
+  HZ4              56.47M
+  tcmalloc         52.26M
+
+cross128_r90:
+  region           11.89M
+  midpage region   15.74M
+  HZ4              23.44M
+  tcmalloc          7.62M
+```
+
+r0/r50 check:
+
+```text
+private/raw-results/linux/midpage_regionarray_r0r50_r3_20260525_022224
+
+main_r0:
+  region           87.63M
+  midpage region   78.56M
+
+main_r50:
+  region           27.81M
+  midpage region   38.05M
+
+mid_only_r0:
+  region           91.22M
+  midpage region   86.36M
+
+mid_only_r50:
+  region           28.46M
+  midpage region   43.04M
+```
+
+Decision:
+
+```text
+MidPageFront-M2.2 region-array:
+  lead M2 candidate
+  strong r50/r90 improvement over region baseline
+  r0 still slightly below region baseline due to local state/route overhead
+
+remote-shadow:
+  diagnostic only
+  main improves but cross128 remains weaker/unstable
+```
+
 ## Where To Read Next
 
 ```text

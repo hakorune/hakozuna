@@ -6634,3 +6634,146 @@ Next possible attack:
   or remote protocol change so owner-local state can avoid locked CAS without
   racing remote frees
 ```
+
+### MidPageFront-M2.2 Region Array
+
+Implemented A/B flags:
+
+```bash
+--linux-midpagefront-region-array
+--linux-midpagefront-remote-shadow
+```
+
+Region-array design:
+
+```text
+source:
+  64MiB aligned source regions
+  1024 x 64KiB slabs per region
+  descriptor array parallel to slabs
+
+lookup:
+  ptr -> 64MiB region base
+  region base -> region descriptor
+  slab index = offset >> 16
+  page = region->pages[slab_index]
+```
+
+This keeps M2.1 hash-map lookup as the control.
+
+Quick smoke:
+
+```text
+mid_only r90, threads=16/ws=400/iters=30000:
+  midpage hash    11.19M, alloc_failed=0
+  region-array    30.99M, alloc_failed=0
+```
+
+Focused r90 repeat-3:
+
+```text
+private/raw-results/linux/midpage_regionarray_r3_20260525_022138
+
+main_r90:
+  region           22.51M
+  midpage hash     17.94M
+  midpage region   38.03M
+  HZ4              49.72M
+  tcmalloc         50.98M
+
+mid_only_r90:
+  region           26.04M
+  midpage hash     18.81M
+  midpage region   39.33M
+  HZ4              56.47M
+  tcmalloc         52.26M
+
+cross128_r90:
+  region           11.89M
+  midpage hash     10.08M
+  midpage region   15.74M
+  HZ4              23.44M
+  tcmalloc          7.62M
+
+large_only_r90:
+  region            4.95M
+  midpage region    9.61M
+  HZ4               2.02M
+  tcmalloc          3.76M
+```
+
+r0/r50 repeat-3:
+
+```text
+private/raw-results/linux/midpage_regionarray_r0r50_r3_20260525_022224
+
+main_r0:
+  region           87.63M
+  midpage region   78.56M
+  HZ4              49.51M
+  tcmalloc        159.85M
+
+main_r50:
+  region           27.81M
+  midpage region   38.05M
+  HZ4              42.77M
+  tcmalloc         79.82M
+
+mid_only_r0:
+  region           91.22M
+  midpage region   86.36M
+  HZ4              62.31M
+  tcmalloc        175.15M
+
+mid_only_r50:
+  region           28.46M
+  midpage region   43.04M
+  HZ4              48.49M
+  tcmalloc         80.66M
+
+cross128_r0:
+  region           69.59M
+  midpage region   54.90M
+  HZ4              30.74M
+  tcmalloc         10.39M
+
+cross128_r50:
+  region           22.53M
+  midpage region   27.06M
+  HZ4              23.21M
+  tcmalloc         10.29M
+```
+
+Remote-shadow A/B:
+
+```text
+private/raw-results/linux/midpage_shadow_ab_r3_20260525_022409
+
+main_r90:
+  region-array  26.43M
+  shadow        29.88M
+
+mid_only_r90:
+  region-array  36.97M
+  shadow        37.74M
+
+cross128_r90:
+  region-array  14.72M
+  shadow        14.10M
+```
+
+Decision:
+
+```text
+region-array:
+  M2.2 lead candidate
+  fixes the main M2.1 lookup cost
+  strong r50/r90 improvement over general-region baseline
+
+remote-shadow:
+  diagnostic only for now
+  main improves, but cross128 does not
+
+open weakness:
+  r0 is still below region baseline, likely local state/route overhead
+```

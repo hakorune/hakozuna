@@ -38,7 +38,8 @@ Current paper/appendix-facing HZ5 Linux rows are profile-specific:
 | Small ordinary malloc candidate | `hz5-smallfront-s1` | Linux full-preload route for ordinary malloc <=2KiB |
 | Broad mid ordinary malloc candidate | `hz5-midfront-rb16` | Linux full-preload route for ordinary malloc 4KiB..64KiB, broad baseline/default candidate |
 | Remote-heavy mid ordinary malloc candidate | `hz5-midfront-allgate` | MidFront owner-inbox drain-all plus empty-gated exchange co-lead candidate |
-| MidPage ordinary malloc prototype | `hz5-general-midpage` | 64KiB class-owned slab prototype for ordinary malloc 2049..32768; candidate evidence only |
+| MidPage ordinary malloc prototype | `hz5-general-midpage` | 64KiB class-owned slab prototype for ordinary malloc 2049..32768; hash-map M2.1 control |
+| MidPage region-array candidate | `hz5-general-midpage + --linux-midpagefront-region-array` | M2.2 lead candidate for 2049..32768 r50/r90 ordinary malloc |
 | Large ordinary malloc candidate | `hz5-largefront-l1` | Linux full-preload route for ordinary malloc >64K..1M, cross128 local coverage candidate |
 | Remote-heavy large candidate | `hz5-largefront-inbox` | LargeFront owner-inbox candidate for remote-heavy large rows |
 | General remote-tail candidate | `hz5-general-region-outbox` | SmallFront outbox + MidFront rb16 + LargeFront region-map candidate |
@@ -89,7 +90,9 @@ small 4K/8K a8192:
 | `midfront_remote_outbox` | lane | MidFront owner/class sender outbox candidate | cross128 candidate only |
 | `midfront_remote_rbuf` | lane | HZ4-style sender TLS ring grouped on flush | diagnostic only |
 | `midfront_directfree` | lane | remote ACTIVE->LOCAL_FREE state diagnostic | candidate-watch |
-| `midpagefront_m2` | route/lane family | 64KiB class-owned slab prototype for 2049..32768 ordinary malloc | candidate evidence; not default |
+| `midpagefront_m2` | route/lane family | 64KiB class-owned slab prototype for 2049..32768 ordinary malloc | active candidate |
+| `midpagefront_region_array` | lane | 64MiB source regions with descriptor-array lookup | M2.2 lead candidate |
+| `midpagefront_remote_shadow` | lane | separate remote-pending bitmap diagnostic | diagnostic only |
 | `preload_free_midfirst` | lane | preload free dispatch order diagnostic | diagnostic only |
 | `midfront_lookup_cache` | lane | MidFront TLS page lookup cache diagnostic | diagnostic only |
 | `largefront_l1` | route/lane family | active Linux large front-end candidate | candidate for cross128 coverage |
@@ -253,21 +256,35 @@ Build:
 ```text
 hz5-general-midpage:
   --linux-hz5-general-midpage
+
+hz5-general-midpage-region:
+  --linux-hz5-general-midpage --linux-midpagefront-region-array
+
+hz5-general-midpage-region-shadow:
+  --linux-hz5-general-midpage --linux-midpagefront-region-array
+  --linux-midpagefront-remote-shadow
 ```
 
 Status:
 
 ```text
-prototype/candidate evidence only
-not a broad default
+M2.1 hash map:
+  control
+
+M2.2 region-array:
+  lead M2 candidate
+
+remote-shadow:
+  diagnostic only
 ```
 
 Current read:
 
 ```text
-The first race-fixed M2.1 improves cross128_r90 versus the general-region
-baseline, but main_r90 and mid_only_r90 remain below baseline. Further work
-needs a cheaper lookup/state protocol before promotion.
+M2.2 region-array fixes the largest M2.1 lookup cost and improves r50/r90
+main/mid_only/cross128 versus the general-region baseline. r0 remains below
+the region baseline, so M2.2 is currently a remote-heavy candidate rather than
+an unconditional broad default.
 ```
 
 Current decision:

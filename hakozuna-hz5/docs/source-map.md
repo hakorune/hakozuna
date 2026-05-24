@@ -78,6 +78,8 @@ midpagefront/
   descriptor-owned slots
   active bitmap validation
   owner/class remote inbox
+  M2.2 region-array candidate uses 64MiB aligned source regions with a
+  descriptor array indexed by ptr -> region/slab offset
 
 largefront/
   HZ5-LargeFront-L1

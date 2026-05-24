@@ -56,6 +56,8 @@ LINUX_SMALLFRONT_DRAIN_EMPTY_GATED=0
 LINUX_SMALLFRONT_REMOTE_OUTBOX=0
 LINUX_MIDPAGEFRONT_M2=0
 LINUX_MIDPAGEFRONT_REMOTE_BATCH_CAP=16
+LINUX_MIDPAGEFRONT_REGION_ARRAY=0
+LINUX_MIDPAGEFRONT_REMOTE_SHADOW=0
 LINUX_MIDFRONT_M1=0
 LINUX_MIDFRONT_OWNER_FAST_STATE=0
 LINUX_MIDFRONT_MAX_BYTES=65536
@@ -193,6 +195,12 @@ Options:
                      enable Linux MidFront-M1 ordinary malloc 4K..64K front-end
   --linux-midpagefront-m2
                      enable Linux MidPageFront-M2 ordinary malloc 2049..32768
+  --linux-midpagefront-region-array
+                     candidate only: use 64MiB region + descriptor-array
+                     lookup for MidPageFront-M2 instead of slab hash lookup
+  --linux-midpagefront-remote-shadow
+                     candidate only: remote free marks a separate pending
+                     bitmap so owner-local active bits avoid locked CAS
   --linux-midpagefront-remote-batch-cap N
                      MidPageFront remote-free sender batch threshold (default: 16)
   --linux-midfront-owner-fast-state
@@ -824,6 +832,22 @@ while [[ $# -gt 0 ]]; do
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
+    --linux-midpagefront-region-array)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDPAGEFRONT_M2=1
+      LINUX_MIDPAGEFRONT_REGION_ARRAY=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
+    --linux-midpagefront-remote-shadow)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDPAGEFRONT_M2=1
+      LINUX_MIDPAGEFRONT_REMOTE_SHADOW=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
     --linux-midpagefront-remote-batch-cap)
       require_value "$@"
       LINUX_MIDPAGEFRONT_REMOTE_BATCH_CAP="$2"
@@ -1416,6 +1440,12 @@ if [[ "$LINUX_MIDPAGEFRONT_M2" -eq 1 ]]; then
   COMMON_FLAGS+=(
     -DHZ5_MIDPAGEFRONT_REMOTE_BATCH_CAP="${LINUX_MIDPAGEFRONT_REMOTE_BATCH_CAP}u"
   )
+  if [[ "$LINUX_MIDPAGEFRONT_REGION_ARRAY" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_REGION_ARRAY=1)
+  fi
+  if [[ "$LINUX_MIDPAGEFRONT_REMOTE_SHADOW" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_REMOTE_SHADOW=1)
+  fi
 fi
 if [[ "$LINUX_OWNERHUB_R1" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_OWNERHUB_R1=1)
@@ -1560,6 +1590,8 @@ fi
   echo "linux_smallfront_remote_outbox=${LINUX_SMALLFRONT_REMOTE_OUTBOX}"
   echo "linux_midpagefront_m2=${LINUX_MIDPAGEFRONT_M2}"
   echo "linux_midpagefront_remote_batch_cap=${LINUX_MIDPAGEFRONT_REMOTE_BATCH_CAP}"
+  echo "linux_midpagefront_region_array=${LINUX_MIDPAGEFRONT_REGION_ARRAY}"
+  echo "linux_midpagefront_remote_shadow=${LINUX_MIDPAGEFRONT_REMOTE_SHADOW}"
   echo "linux_midfront_m1=${LINUX_MIDFRONT_M1}"
   echo "linux_midfront_owner_fast_state=${LINUX_MIDFRONT_OWNER_FAST_STATE}"
   echo "linux_midfront_max_bytes=${LINUX_MIDFRONT_MAX_BYTES}"
