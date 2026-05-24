@@ -69,6 +69,7 @@ LINUX_MIDPAGEFRONT_LOCAL_ACTIVE_TRUST=0
 LINUX_MIDPAGEFRONT_SLOT_SWITCH=0
 LINUX_MIDPAGEFRONT_NODELESS_RUN=0
 LINUX_MIDPAGEFRONT_NODELESS_STATS=0
+LINUX_MIDPAGEFRONT_NODELESS_PTRCACHE=0
 LINUX_MIDFRONT_M1=0
 LINUX_MIDFRONT_OWNER_FAST_STATE=0
 LINUX_MIDFRONT_MAX_BYTES=65536
@@ -226,9 +227,15 @@ Options:
   --linux-hz5-general-midpage-region-shadow-nodeless
                      diagnostic preset: midpage-region-shadow-allocfirst plus
                      MidPageFront nodeless local page-run cache
+  --linux-hz5-general-midpage-region-shadow-nodeless-ptrcache
+                     diagnostic preset: nodeless plus per-class TLS pointer
+                     cache to reduce partial/refill churn
   --linux-hz5-general-midpage-region-shadow-nodeless-stats
                      diagnostic preset: nodeless plus MidPageFront nodeless
                      observation counters; not for performance medians
+  --linux-hz5-general-midpage-region-shadow-nodeless-ptrcache-stats
+                     diagnostic preset: nodeless-ptrcache plus observation
+                     counters; not for performance medians
   --linux-hz5-general-midpage-region-frontfirst
                      diagnostic preset: midpage-region plus MidPageFront first
                      in preload free() ownership dispatch
@@ -1071,6 +1078,29 @@ while [[ $# -gt 0 ]]; do
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
+    --linux-hz5-general-midpage-region-shadow-nodeless-ptrcache)
+      BUILD_PRELOAD_FULL=1
+      PRELOAD_MIDPAGE_ALLOC_FIRST=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_SMALLFRONT_REMOTE_OUTBOX=1
+      LINUX_SMALLFRONT_REMOTE_BATCH_CAP=8
+      LINUX_MIDPAGEFRONT_M2=1
+      LINUX_MIDPAGEFRONT_REGION_ARRAY=1
+      LINUX_MIDPAGEFRONT_REMOTE_SHADOW=1
+      LINUX_MIDPAGEFRONT_LOCAL_FAST_STATE=1
+      LINUX_MIDPAGEFRONT_NODELESS_RUN=1
+      LINUX_MIDPAGEFRONT_NODELESS_PTRCACHE=1
+      LINUX_MIDPAGEFRONT_REMOTE_BATCH_CAP=16
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_OWNER_FAST_STATE=1
+      LINUX_MIDFRONT_REMOTE_BATCH_CAP=16
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      LINUX_LARGEFRONT_OWNER_FAST_STATE=1
+      LINUX_LARGEFRONT_REGION_MAP=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
     --linux-hz5-general-midpage-region-shadow-nodeless-stats)
       BUILD_PRELOAD_FULL=1
       PRELOAD_MIDPAGE_ALLOC_FIRST=1
@@ -1082,6 +1112,30 @@ while [[ $# -gt 0 ]]; do
       LINUX_MIDPAGEFRONT_REMOTE_SHADOW=1
       LINUX_MIDPAGEFRONT_LOCAL_FAST_STATE=1
       LINUX_MIDPAGEFRONT_NODELESS_RUN=1
+      LINUX_MIDPAGEFRONT_NODELESS_STATS=1
+      LINUX_MIDPAGEFRONT_REMOTE_BATCH_CAP=16
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_OWNER_FAST_STATE=1
+      LINUX_MIDFRONT_REMOTE_BATCH_CAP=16
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      LINUX_LARGEFRONT_OWNER_FAST_STATE=1
+      LINUX_LARGEFRONT_REGION_MAP=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
+    --linux-hz5-general-midpage-region-shadow-nodeless-ptrcache-stats)
+      BUILD_PRELOAD_FULL=1
+      PRELOAD_MIDPAGE_ALLOC_FIRST=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_SMALLFRONT_REMOTE_OUTBOX=1
+      LINUX_SMALLFRONT_REMOTE_BATCH_CAP=8
+      LINUX_MIDPAGEFRONT_M2=1
+      LINUX_MIDPAGEFRONT_REGION_ARRAY=1
+      LINUX_MIDPAGEFRONT_REMOTE_SHADOW=1
+      LINUX_MIDPAGEFRONT_LOCAL_FAST_STATE=1
+      LINUX_MIDPAGEFRONT_NODELESS_RUN=1
+      LINUX_MIDPAGEFRONT_NODELESS_PTRCACHE=1
       LINUX_MIDPAGEFRONT_NODELESS_STATS=1
       LINUX_MIDPAGEFRONT_REMOTE_BATCH_CAP=16
       LINUX_MIDFRONT_M1=1
@@ -1856,6 +1910,9 @@ if [[ "$LINUX_MIDPAGEFRONT_M2" -eq 1 ]]; then
   if [[ "$LINUX_MIDPAGEFRONT_NODELESS_RUN" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_RUN=1)
   fi
+  if [[ "$LINUX_MIDPAGEFRONT_NODELESS_PTRCACHE" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_PTRCACHE=1)
+  fi
   if [[ "$LINUX_MIDPAGEFRONT_NODELESS_STATS" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_STATS=1)
   fi
@@ -2015,6 +2072,7 @@ fi
   echo "linux_midpagefront_local_active_trust=${LINUX_MIDPAGEFRONT_LOCAL_ACTIVE_TRUST}"
   echo "linux_midpagefront_slot_switch=${LINUX_MIDPAGEFRONT_SLOT_SWITCH}"
   echo "linux_midpagefront_nodeless_run=${LINUX_MIDPAGEFRONT_NODELESS_RUN}"
+  echo "linux_midpagefront_nodeless_ptrcache=${LINUX_MIDPAGEFRONT_NODELESS_PTRCACHE}"
   echo "linux_midpagefront_nodeless_stats=${LINUX_MIDPAGEFRONT_NODELESS_STATS}"
   echo "linux_midfront_m1=${LINUX_MIDFRONT_M1}"
   echo "linux_midfront_owner_fast_state=${LINUX_MIDFRONT_OWNER_FAST_STATE}"

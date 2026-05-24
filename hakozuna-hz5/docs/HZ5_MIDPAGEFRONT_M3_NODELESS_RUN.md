@@ -302,3 +302,81 @@ cycle for a large fraction of operations. M3.2 should not just tune remote
 drain; it needs a wider local page-run cache or a different partial
 representation.
 ```
+
+## M3.2 Pointer Cache Diagnostic
+
+Preset:
+
+```text
+--linux-hz5-general-midpage-region-shadow-nodeless-ptrcache
+```
+
+Design:
+
+```text
+Keep nodeless free_bits/remote_bits.
+On owner-local free, push a validated (ptr, page, mask) entry into a per-class
+TLS pointer cache.
+On alloc, pop the pointer cache before current_page/partial refill and clear
+free_bits through the same fail-closed mark-active path.
+Do not push remote-drained objects into this cache in the kept version.
+```
+
+Result:
+
+```text
+private/raw-results/linux/midpage_nodeless_ptrcache_r3_20260525_071403
+
+mid_only_r0:
+  allocfirst 70.63M
+  nodeless   73.89M
+  ptrcache   76.48M
+  tcmalloc  139.49M
+
+mid_only_r90:
+  allocfirst 35.31M
+  nodeless   25.18M
+  ptrcache   25.82M
+  tcmalloc   41.78M
+
+main_r90:
+  allocfirst 25.23M
+  nodeless   18.73M
+  ptrcache   27.15M
+  tcmalloc   21.72M
+
+cross128_r90:
+  allocfirst 21.58M
+  nodeless   13.64M
+  ptrcache   10.26M
+  tcmalloc    7.88M
+```
+
+Stats:
+
+```text
+private/raw-results/linux/midpage_nodeless_ptrcache_stats_20260525_071429
+
+mid_only_r0:
+  refill=1569
+  partial_push=1020
+  ptrcache_hit=636934
+  ptrcache_push=640236
+  ptrcache_full=1400
+
+mid_only_r90:
+  refill=265631
+  partial_push=259095
+  remote_drained=556792
+  ptrcache_hit=63972
+  ptrcache_push=66574
+```
+
+Decision:
+
+```text
+Diagnostic only. Pointer cache confirms that partial/refill churn was real and
+fixable for owner-local r0, but it does not solve remote-heavy mid_only/cross.
+The next remote design needs page+bitmask packets or another non-payload
+handoff; simply caching local frees is not enough.
+```

@@ -695,6 +695,58 @@ refill=463246 and partial_push=463165 with only refill_new_page=1568, so the
 single current_page[class] design is too narrow.
 ```
 
+### `midpage_nodeless_ptrcache_r3_20260525_071403`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_nodeless_ptrcache_r3_20260525_071403
+```
+
+Purpose:
+
+```text
+Short r3 comparison for M3.2 per-class TLS pointer cache.
+```
+
+Decision:
+
+```text
+Diagnostic only. ptrcache improves mid_only_r0 versus nodeless/allocfirst and
+can help main_r90, but mid_only_r90 and cross128_r90 regress versus allocfirst.
+```
+
+Key medians:
+
+```text
+mid_only_r0:   allocfirst 70.63M, nodeless 73.89M, ptrcache 76.48M, tcmalloc 139.49M
+mid_only_r90:  allocfirst 35.31M, nodeless 25.18M, ptrcache 25.82M, tcmalloc  41.78M
+main_r90:      allocfirst 25.23M, nodeless 18.73M, ptrcache 27.15M, tcmalloc  21.72M
+cross128_r90:  allocfirst 21.58M, nodeless 13.64M, ptrcache 10.26M, tcmalloc   7.88M
+```
+
+### `midpage_nodeless_ptrcache_stats_20260525_071429`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_nodeless_ptrcache_stats_20260525_071429
+```
+
+Purpose:
+
+```text
+Stats-only observation for M3.2 ptrcache. This is not a speed lane.
+```
+
+Decision:
+
+```text
+ptrcache fixes local r0 refill churn but does not solve remote-heavy churn.
+mid_only_r0 has ptrcache_hit=636934 and refill=1569, while mid_only_r90 still
+has refill=265631 and remote_drained=556792.
+```
+
 ## Older Results
 
 The full chronological result log remains in:

@@ -183,9 +183,15 @@ stats:
   A single current_page[class] is too small for the random mid workload and
   repeatedly round-trips pages through the partial list.
 
+ptrcache:
+  per-class TLS pointer cache fixes most r0 partial/refill churn and gives a
+  small r0 gain. It is still diagnostic only: mid_only_r90 and cross128_r90
+  remain weaker than allocfirst, while main_r90 can improve.
+
 next:
-  refine M3 only if it reduces partial/refill churn. Candidate directions are
-  a small per-class current-page set or page+bitmask remote/partial packets.
+  do not promote nodeless/ptrcache broadly. The next useful design must handle
+  remote/cross-size pressure without reusing remote object payload lists or
+  destabilizing main_r90.
 ```
 
 ## Next Step
@@ -196,6 +202,8 @@ not meet promotion criteria.
 ```text
 --linux-hz5-general-midpage-region-shadow-nodeless
 --linux-hz5-general-midpage-region-shadow-nodeless-stats
+--linux-hz5-general-midpage-region-shadow-nodeless-ptrcache
+--linux-hz5-general-midpage-region-shadow-nodeless-ptrcache-stats
 ```
 
 Design intent:
@@ -227,6 +235,32 @@ mid_only_r90:
   refill_new_page=19748
   partial_push=305066
   remote_drained=525393
+```
+
+Latest M3.2 ptrcache:
+
+```text
+private/raw-results/linux/midpage_nodeless_ptrcache_r3_20260525_071403
+
+mid_only_r0:
+  allocfirst 70.63M
+  ptrcache   76.48M
+  tcmalloc  139.49M
+
+mid_only_r90:
+  allocfirst 35.31M
+  ptrcache   25.82M
+  tcmalloc   41.78M
+
+main_r90:
+  allocfirst 25.23M
+  ptrcache   27.15M
+  tcmalloc   21.72M
+
+cross128_r90:
+  allocfirst 21.58M
+  ptrcache   10.26M
+  tcmalloc    7.88M
 ```
 
 ## Operating Rules

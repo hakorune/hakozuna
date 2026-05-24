@@ -406,6 +406,28 @@ mid_only_r0 already shows refill=463246 and partial_push=463165, while
 refill_new_page is only 1568. The cost is partial-list churn, not page source.
 ```
 
+M3.2 pointer-cache diagnostic:
+
+```text
+private/raw-results/linux/midpage_nodeless_ptrcache_r3_20260525_071403
+private/raw-results/linux/midpage_nodeless_ptrcache_stats_20260525_071429
+```
+
+Read:
+
+```text
+Per-class TLS pointer cache reduces r0 churn:
+  mid_only_r0 allocfirst 70.63M, ptrcache 76.48M
+  ptrcache_hit=636934, refill=1569
+
+It is not a broad default:
+  mid_only_r90 allocfirst 35.31M, ptrcache 25.82M
+  cross128_r90 allocfirst 21.58M, ptrcache 10.26M
+
+main_r90 can improve in short runs:
+  allocfirst 25.23M, ptrcache 27.15M, tcmalloc 21.72M
+```
+
 ## Next Engineering Target
 
 Refine or replace the MidPageFront-M3 local topology diagnostic:

@@ -55,6 +55,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_STATS 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_PTRCACHE
+#define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_PTRCACHE 0
+#endif
+
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M2
 
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_RUN && \
@@ -76,6 +80,7 @@ void _aligned_free(void* ptr);
   ((size_t)1u << HZ5_MIDPAGEFRONT_REGION_MAP_BITS)
 #define HZ5_MIDPAGEFRONT_REGION_CAP 8192u
 #define HZ5_MIDPAGEFRONT_TLS_REGION_CACHE_CAP 8u
+#define HZ5_MIDPAGEFRONT_NODELESS_PTRCACHE_CAP 64u
 
 #ifndef HZ5_MIDPAGEFRONT_REMOTE_BATCH_CAP
 #define HZ5_MIDPAGEFRONT_REMOTE_BATCH_CAP 16u
@@ -126,6 +131,12 @@ typedef struct Hz5MidPageRawNode {
   struct Hz5MidPageRawNode* next;
 } Hz5MidPageRawNode;
 
+typedef struct Hz5MidPagePtrCacheEntry {
+  void* ptr;
+  Hz5MidPage* page;
+  uint64_t mask;
+} Hz5MidPagePtrCacheEntry;
+
 typedef struct Hz5MidPageTls {
   Hz5OwnerToken owner;
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_TLS_HOT_SLOT
@@ -137,6 +148,11 @@ typedef struct Hz5MidPageTls {
   Hz5MidPage* current_page[HZ5_MIDPAGEFRONT_CLASS_COUNT];
   uint64_t current_bits[HZ5_MIDPAGEFRONT_CLASS_COUNT];
   Hz5MidPage* partial_pages[HZ5_MIDPAGEFRONT_CLASS_COUNT];
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_PTRCACHE
+  Hz5MidPagePtrCacheEntry ptrcache[HZ5_MIDPAGEFRONT_CLASS_COUNT]
+                                  [HZ5_MIDPAGEFRONT_NODELESS_PTRCACHE_CAP];
+  uint32_t ptrcache_count[HZ5_MIDPAGEFRONT_CLASS_COUNT];
+#endif
 #endif
   Hz5MidPage* owned_pages[HZ5_MIDPAGEFRONT_CLASS_COUNT];
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_REGION_ARRAY && \
@@ -183,6 +199,9 @@ static _Atomic uint64_t g_hz5_midpagefront_stat_refill_remote_hit;
 static _Atomic uint64_t g_hz5_midpagefront_stat_refill_new_page;
 static _Atomic uint64_t g_hz5_midpagefront_stat_partial_push;
 static _Atomic uint64_t g_hz5_midpagefront_stat_remote_drained;
+static _Atomic uint64_t g_hz5_midpagefront_stat_ptrcache_hit;
+static _Atomic uint64_t g_hz5_midpagefront_stat_ptrcache_push;
+static _Atomic uint64_t g_hz5_midpagefront_stat_ptrcache_full;
 
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_STATS
 __attribute__((destructor)) static void hz5_midpagefront_stats_dump(void) {
@@ -193,7 +212,10 @@ __attribute__((destructor)) static void hz5_midpagefront_stats_dump(void) {
           " refill_remote_hit=%llu"
           " refill_new_page=%llu"
           " partial_push=%llu"
-          " remote_drained=%llu\n",
+          " remote_drained=%llu"
+          " ptrcache_hit=%llu"
+          " ptrcache_push=%llu"
+          " ptrcache_full=%llu\n",
           (unsigned long long)atomic_load(&g_hz5_midpagefront_stat_refill),
           (unsigned long long)atomic_load(
               &g_hz5_midpagefront_stat_refill_partial_hit),
@@ -204,7 +226,13 @@ __attribute__((destructor)) static void hz5_midpagefront_stats_dump(void) {
           (unsigned long long)atomic_load(
               &g_hz5_midpagefront_stat_partial_push),
           (unsigned long long)atomic_load(
-              &g_hz5_midpagefront_stat_remote_drained));
+              &g_hz5_midpagefront_stat_remote_drained),
+          (unsigned long long)atomic_load(
+              &g_hz5_midpagefront_stat_ptrcache_hit),
+          (unsigned long long)atomic_load(
+              &g_hz5_midpagefront_stat_ptrcache_push),
+          (unsigned long long)atomic_load(
+              &g_hz5_midpagefront_stat_ptrcache_full));
 }
 
 static void hz5_midpagefront_stat_inc(_Atomic uint64_t* counter) {
@@ -227,6 +255,9 @@ static Hz5MidPageTls* hz5_midpagefront_tls(void) {
   }
   return tls;
 }
+
+static int hz5_midpagefront_mark_active_local(Hz5MidPage* page,
+                                              uint32_t slot);
 
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_REGION_ARRAY && \
     BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_TLS_REGION_CACHE
@@ -550,6 +581,58 @@ static void hz5_midpagefront_nodeless_publish_free_bit(Hz5MidPageTls* tls,
   }
   hz5_midpagefront_nodeless_partial_push(tls, class_index, page);
 }
+
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_PTRCACHE
+static int hz5_midpagefront_nodeless_ptrcache_push(Hz5MidPageTls* tls,
+                                                   uint32_t class_index,
+                                                   void* ptr,
+                                                   Hz5MidPage* page,
+                                                   uint64_t mask) {
+  if (!tls || !ptr || !page || mask == 0 ||
+      class_index >= HZ5_MIDPAGEFRONT_CLASS_COUNT) {
+    return 0;
+  }
+  uint32_t count = tls->ptrcache_count[class_index];
+  if (count >= HZ5_MIDPAGEFRONT_NODELESS_PTRCACHE_CAP) {
+    hz5_midpagefront_stat_inc(&g_hz5_midpagefront_stat_ptrcache_full);
+    return 0;
+  }
+  Hz5MidPagePtrCacheEntry* entry = &tls->ptrcache[class_index][count];
+  entry->ptr = ptr;
+  entry->page = page;
+  entry->mask = mask;
+  tls->ptrcache_count[class_index] = count + 1u;
+  hz5_midpagefront_stat_inc(&g_hz5_midpagefront_stat_ptrcache_push);
+  return 1;
+}
+
+static void* hz5_midpagefront_nodeless_ptrcache_pop(Hz5MidPageTls* tls,
+                                                    uint32_t class_index) {
+  if (!tls || class_index >= HZ5_MIDPAGEFRONT_CLASS_COUNT) {
+    return NULL;
+  }
+  while (tls->ptrcache_count[class_index] != 0u) {
+    uint32_t count = tls->ptrcache_count[class_index] - 1u;
+    tls->ptrcache_count[class_index] = count;
+    Hz5MidPagePtrCacheEntry entry = tls->ptrcache[class_index][count];
+    if (!entry.ptr || !entry.page ||
+        entry.page->magic != HZ5_MIDPAGEFRONT_MAGIC ||
+        entry.page->class_index != class_index ||
+        entry.mask == 0 ||
+        (entry.mask & (entry.mask - UINT64_C(1))) != 0) {
+      continue;
+    }
+    uint32_t slot = (uint32_t)__builtin_ctzll(entry.mask);
+    if (slot >= entry.page->slot_count ||
+        !hz5_midpagefront_mark_active_local(entry.page, slot)) {
+      continue;
+    }
+    hz5_midpagefront_stat_inc(&g_hz5_midpagefront_stat_ptrcache_hit);
+    return entry.ptr;
+  }
+  return NULL;
+}
+#endif
 #endif
 
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_TLS_HOT_SLOT
@@ -1128,6 +1211,12 @@ static void* hz5_midpagefront_nodeless_alloc_class(uint32_t ci) {
     return NULL;
   }
   Hz5MidPageTls* tls = hz5_midpagefront_tls();
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_PTRCACHE
+  void* cached = hz5_midpagefront_nodeless_ptrcache_pop(tls, ci);
+  if (cached) {
+    return cached;
+  }
+#endif
   if (tls->current_bits[ci] == 0 &&
       !hz5_midpagefront_nodeless_refill_current(tls, ci)) {
     return NULL;
@@ -1233,6 +1322,12 @@ Hz5MidPageFrontFreeResult hz5_midpagefront_free(void* ptr) {
     }
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_RUN
     uint64_t mask = hz5_midpagefront_slot_mask(slot);
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_PTRCACHE
+    if (hz5_midpagefront_nodeless_ptrcache_push(
+            tls, page->class_index, ptr, page, mask)) {
+      return HZ5_MIDPAGEFRONT_FREE_OK;
+    }
+#endif
     if (tls->current_page[page->class_index] == page) {
       tls->current_bits[page->class_index] |= mask;
     } else {
