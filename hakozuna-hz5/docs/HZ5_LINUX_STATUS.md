@@ -199,6 +199,61 @@ mid_only_r90:
   tcmalloc   52.19M
 ```
 
+TLS/linkage diagnostic:
+
+```text
+private/raw-results/linux/midpage_tlslink_r3_20260525_054807
+private/raw-results/linux/midpage_tlslink_broad_r3_20260525_054859
+private/raw-results/linux/midpage_tlslink_cross128_verify_r5_20260525_055003
+```
+
+Decision:
+
+```text
+tlslink is promising but not promoted as the broad default. It removes
+MidPageFront hot-path __tls_get_addr calls and improves main/mid rows.
+cross128_r90 remains above tcmalloc, but regresses versus allocfirst in the
+focused r5 verify.
+```
+
+Focused key medians:
+
+```text
+mid_only_r0:
+  allocfirst 68.98M
+  tlslink    73.87M
+  tcmalloc  144.14M
+
+mid_only_r90:
+  allocfirst 37.17M
+  tlslink    39.72M
+  tcmalloc   46.35M
+```
+
+Broad key medians:
+
+```text
+main_r0:
+  allocfirst 64.24M
+  tlslink    69.21M
+  tcmalloc  131.17M
+
+main_r90:
+  allocfirst 26.18M
+  tlslink    35.32M
+  tcmalloc   46.51M
+
+cross128_r90:
+  allocfirst 19.70M
+  tlslink    10.71M
+  tcmalloc    7.81M
+
+cross128_r90 verify r5:
+  allocfirst 14.52M
+  tlslink    10.16M
+  tcmalloc    7.80M
+```
+
 ## Next Engineering Target
 
 Prototype a MidPageFront local topology diagnostic:

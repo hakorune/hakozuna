@@ -295,6 +295,13 @@ hz5-general-midpage-region-shadow-slotswitch:
   tcmalloc-chase diagnostic replacing variable MidPageFront slot-index division
   with fixed-class switch/shift dispatch
   no-go in r3: does not improve r0 and regresses r90 versus allocfirst
+
+hz5-general-midpage-region-shadow-tlslink:
+  --linux-hz5-general-midpage-region-shadow-tlslink
+  tcmalloc-chase diagnostic applying preload-wide initial-exec TLS and speed
+  link flags to midpage-region-shadow-allocfirst
+  promising diagnostic for main/mid; not broad default because cross128_r90
+  regresses versus allocfirst, though it remains above tcmalloc
 ```
 
 Status:

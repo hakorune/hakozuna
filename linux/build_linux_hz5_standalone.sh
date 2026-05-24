@@ -49,6 +49,8 @@ BUILD_PRELOAD_FULL=0
 PRELOAD_FREE_MID_FIRST=0
 PRELOAD_FREE_MIDPAGE_FIRST=0
 PRELOAD_MIDPAGE_ALLOC_FIRST=0
+PRELOAD_TLS_INITIAL_EXEC=0
+PRELOAD_SPEED_LINKFLAGS=0
 LINUX_OWNERHUB_R1=0
 LINUX_OWNERHUB_R2=0
 LINUX_OWNERHUB_R3=0
@@ -210,6 +212,9 @@ Options:
   --linux-hz5-general-midpage-region-shadow-slotswitch
                      diagnostic preset: midpage-region-shadow-allocfirst plus
                      fixed-class MidPageFront slot index dispatch
+  --linux-hz5-general-midpage-region-shadow-tlslink
+                     diagnostic preset: midpage-region-shadow-allocfirst plus
+                     preload-wide initial-exec TLS and speed link flags
   --linux-hz5-general-midpage-region-frontfirst
                      diagnostic preset: midpage-region plus MidPageFront first
                      in preload free() ownership dispatch
@@ -963,6 +968,29 @@ while [[ $# -gt 0 ]]; do
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
+    --linux-hz5-general-midpage-region-shadow-tlslink)
+      BUILD_PRELOAD_FULL=1
+      PRELOAD_MIDPAGE_ALLOC_FIRST=1
+      PRELOAD_TLS_INITIAL_EXEC=1
+      PRELOAD_SPEED_LINKFLAGS=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_SMALLFRONT_REMOTE_OUTBOX=1
+      LINUX_SMALLFRONT_REMOTE_BATCH_CAP=8
+      LINUX_MIDPAGEFRONT_M2=1
+      LINUX_MIDPAGEFRONT_REGION_ARRAY=1
+      LINUX_MIDPAGEFRONT_REMOTE_SHADOW=1
+      LINUX_MIDPAGEFRONT_LOCAL_FAST_STATE=1
+      LINUX_MIDPAGEFRONT_REMOTE_BATCH_CAP=16
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_OWNER_FAST_STATE=1
+      LINUX_MIDFRONT_REMOTE_BATCH_CAP=16
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      LINUX_LARGEFRONT_OWNER_FAST_STATE=1
+      LINUX_LARGEFRONT_REGION_MAP=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
     --linux-hz5-general-midpage-region-frontfirst)
       BUILD_PRELOAD_FULL=1
       PRELOAD_FREE_MIDPAGE_FIRST=1
@@ -1547,7 +1575,8 @@ COMMON_FLAGS=(
 )
 SPEED_LINK_COMPILE_FLAGS=()
 SHARED_LINK_FLAGS=()
-if [[ "$LINUX_LOCAL2P_SPEED_LINKFLAGS" -eq 1 ]]; then
+if [[ "$LINUX_LOCAL2P_SPEED_LINKFLAGS" -eq 1 ||
+      "$PRELOAD_SPEED_LINKFLAGS" -eq 1 ]]; then
   SPEED_LINK_COMPILE_FLAGS+=(
     -fno-semantic-interposition
     -fno-plt
@@ -1858,6 +1887,8 @@ fi
   echo "preload_free_mid_first=${PRELOAD_FREE_MID_FIRST}"
   echo "preload_free_midpage_first=${PRELOAD_FREE_MIDPAGE_FIRST}"
   echo "preload_midpage_alloc_first=${PRELOAD_MIDPAGE_ALLOC_FIRST}"
+  echo "preload_tls_initial_exec=${PRELOAD_TLS_INITIAL_EXEC}"
+  echo "preload_speed_linkflags=${PRELOAD_SPEED_LINKFLAGS}"
   echo "linux_ownerhub_r1=${LINUX_OWNERHUB_R1}"
   echo "linux_ownerhub_r2=${LINUX_OWNERHUB_R2}"
   echo "linux_ownerhub_r3=${LINUX_OWNERHUB_R3}"
@@ -1924,6 +1955,10 @@ if [[ "$PRELOAD_FREE_MIDPAGE_FIRST" -eq 1 ]]; then
 fi
 if [[ "$PRELOAD_MIDPAGE_ALLOC_FIRST" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_PRELOAD_MIDPAGE_ALLOC_FIRST=1)
+fi
+if [[ "$PRELOAD_TLS_INITIAL_EXEC" -eq 1 ]]; then
+  COMMON_FLAGS+=(-DBENCHLAB_HZ5_PRELOAD_TLS_INITIAL_EXEC=1)
+  COMMON_FLAGS+=(-ftls-model=initial-exec)
 fi
 
 HZ5_SRCS=(

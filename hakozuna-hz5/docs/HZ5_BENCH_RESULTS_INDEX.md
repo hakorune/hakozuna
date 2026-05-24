@@ -312,6 +312,111 @@ mid_only_r90:
   tcmalloc   52.19M
 ```
 
+### `midpage_tlslink_r3_20260525_054807`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_tlslink_r3_20260525_054807
+```
+
+Purpose:
+
+```text
+Focused test for preload-wide initial-exec TLS and speed link flags after
+assembly showed repeated MidPageFront hot-path __tls_get_addr calls.
+```
+
+Decision:
+
+```text
+Promising. tlslink improves mid_only r0/r90 versus allocfirst.
+```
+
+Key medians:
+
+```text
+mid_only_r0:
+  allocfirst 68.98M
+  tlslink    73.87M
+  tcmalloc  144.14M
+
+mid_only_r90:
+  allocfirst 37.17M
+  tlslink    39.72M
+  tcmalloc   46.35M
+```
+
+### `midpage_tlslink_broad_r3_20260525_054859`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_tlslink_broad_r3_20260525_054859
+```
+
+Purpose:
+
+```text
+Short broad check for tlslink across main and cross128.
+```
+
+Decision:
+
+```text
+Do not promote yet. main improves, but cross128_r90 needs verification because
+the short r3 showed a regression versus allocfirst.
+```
+
+Key medians:
+
+```text
+main_r0:
+  allocfirst 64.24M
+  tlslink    69.21M
+  tcmalloc  131.17M
+
+main_r90:
+  allocfirst 26.18M
+  tlslink    35.32M
+  tcmalloc   46.51M
+
+cross128_r90:
+  allocfirst 19.70M
+  tlslink    10.71M
+  tcmalloc    7.81M
+```
+
+### `midpage_tlslink_cross128_verify_r5_20260525_055003`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_tlslink_cross128_verify_r5_20260525_055003
+```
+
+Purpose:
+
+```text
+Focused r5 verification of tlslink on cross128_r90.
+```
+
+Decision:
+
+```text
+tlslink remains above tcmalloc on cross128_r90 but regresses versus allocfirst.
+Keep it diagnostic instead of broad default.
+```
+
+Key medians:
+
+```text
+cross128_r90:
+  allocfirst 14.52M
+  tlslink    10.16M
+  tcmalloc    7.80M
+```
+
 ## MidPageFront-M2
 
 ### `midpage_region_broad_r5_20260525_031852`

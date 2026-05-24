@@ -89,6 +89,10 @@ hakozuna-hz5/docs/archive/current_task_2026-05-hz5-linux.md
 --linux-hz5-general-midpage-region-shadow-slotswitch
   no-go; removes variable slot-index division but regresses r90 and does not
   improve r0
+
+--linux-hz5-general-midpage-region-shadow-tlslink
+  promising diagnostic; preload-wide initial-exec TLS and speed link flags
+  improve main/mid, but cross128_r90 regresses versus allocfirst
 ```
 
 ## Latest Key Results
@@ -103,6 +107,9 @@ private/raw-results/linux/midpage_allocfirst_r3_20260525_053010
 private/raw-results/linux/midpage_allocfirst_r90_verify_r5_20260525_053037
 private/raw-results/linux/midpage_allocfirst_tryalloc_r3_20260525_054204
 private/raw-results/linux/midpage_slotswitch_r3_20260525_054521
+private/raw-results/linux/midpage_tlslink_r3_20260525_054807
+private/raw-results/linux/midpage_tlslink_broad_r3_20260525_054859
+private/raw-results/linux/midpage_tlslink_cross128_verify_r5_20260525_055003
 ```
 
 Current read:
@@ -131,9 +138,14 @@ slotswitch:
   slot-index division is not the main bottleneck; fixed-class switch removes
   div but loses to allocfirst
 
+tlslink:
+  TLS/linkage overhead is real; removes MidPageFront hot-path __tls_get_addr
+  and improves main/mid. cross128_r90 still beats tcmalloc but regresses versus
+  allocfirst, so do not make it the broad default yet.
+
 next:
-  reduce MidPageFront active-state / metadata / freelist work per local
-  ordinary mid-size alloc/free.
+  continue reducing MidPageFront local active-state / metadata / freelist work
+  without hurting cross128_r90.
 ```
 
 ## Next Step
