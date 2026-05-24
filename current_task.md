@@ -6164,3 +6164,151 @@ Conclusion:
   win.
 - next remote work should reduce remote free push cost or add batching on the
   producer/consumer handoff path, not return to the global lock.
+
+## HZ4 Remote Path Audit
+
+The next HZ5 remote-heavy work is now anchored on an HZ4 code-level comparison,
+not only on more OwnerHub/LargeFront knobs.
+
+Reference files:
+
+```text
+/mnt/workdisk/public_share/hakmem/hakozuna/hz4/src/hz4_mid_malloc.inc
+/mnt/workdisk/public_share/hakmem/hakozuna/hz4/src/hz4_mid_free.inc
+/mnt/workdisk/public_share/hakmem/hakozuna/hz4/src/hz4_mid_owner_remote.inc
+/mnt/workdisk/public_share/hakmem/hakozuna/hz4/include/hz4_mid.h
+```
+
+Key difference:
+
+```text
+HZ4 mid:
+  ptr -> page by 4KiB mask
+  owner page per class in TLS
+  remote free pushes to page->remote_head
+  owner allocation drains that page-local remote list
+
+HZ5 MidFront-M1:
+  preload free currently tries SmallFront before MidFront
+  MidFront ownership uses a hash page-map lookup
+  4K/8K/16K/32K/64K are one-object spans
+  remote free publishes through owner/class inbox
+```
+
+Worker audit flagged one concrete low-risk cost to isolate: a MidFront pointer
+currently pays a SmallFront ownership miss before the MidFront hit in preload
+`free()`. Added diagnostic preset:
+
+```bash
+./linux/build_linux_hz5_standalone.sh \
+  --linux-hz5-general-midfirst \
+  --out-dir hakozuna-hz5/out/linux/x86_64-hz5-general-midfirst
+```
+
+This preserves front-end descriptor validation and fail-closed invalid-free
+behavior, but changes preload free dispatch from:
+
+```text
+Small -> Mid -> Large
+```
+
+to:
+
+```text
+Mid -> Small -> Large
+```
+
+Expected read:
+
+```text
+mid_only improves:
+  dispatch miss cost is material
+
+main/cross128 regress:
+  global reordering is not a default; use the result to justify a page-kind or
+  front-hint ownership map
+```
+
+Design note:
+
+```text
+hakozuna-hz5/docs/HZ5_HZ4_REMOTE_PATH_AUDIT.md
+```
+
+### HZ4-Inspired Dispatch/Lookup Diagnostics
+
+Built and smoked:
+
+```bash
+./linux/build_linux_hz5_standalone.sh \
+  --linux-hz5-general-midfirst \
+  --out-dir hakozuna-hz5/out/linux/x86_64-hz5-general-midfirst
+
+./linux/build_linux_hz5_standalone.sh \
+  --linux-hz5-general-midcache \
+  --out-dir hakozuna-hz5/out/linux/x86_64-hz5-general-midcache
+```
+
+Both passed `/bin/true` under full preload and the LargeFront smoke.
+
+Short smoke, `threads=16`, `ws=400`, `remote=90`, repeat-3:
+
+```text
+private/raw-results/linux/midfirst_smoke_20260525_012438
+
+main:
+  region    25.02M
+  midfirst  23.65M
+
+mid_only:
+  region    25.00M
+  midfirst  15.97M
+
+cross128:
+  region    14.30M
+  midfirst  11.56M
+```
+
+Decision:
+
+```text
+midfirst is no-go.
+Trying MidFront before SmallFront makes non-mid misses too expensive and does
+not expose a useful win.
+```
+
+Second smoke:
+
+```text
+private/raw-results/linux/midcache_smoke_20260525_012716
+
+main:
+  region    34.36M
+  midcache  20.70M
+
+mid_only:
+  region    24.44M
+  midcache  25.47M
+
+cross128:
+  region    17.59M
+  midcache  11.16M
+```
+
+Decision:
+
+```text
+midcache is diagnostic-only.
+The two-entry MidFront lookup cache gives a small mid_only signal but regresses
+mixed rows badly.
+```
+
+Updated next read:
+
+```text
+Do not keep chasing preload dispatch order or tiny lookup caches.
+HZ4's real advantage is more likely:
+  sender rbuf cap/flush/grouping
+  direct page/header lookup rather than HZ5 hash maps
+  HZ4 route split where mid_only is mid + large, not one broad MidFront band
+```

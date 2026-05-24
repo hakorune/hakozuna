@@ -13,6 +13,10 @@
 #include <pthread.h>
 #include <stdint.h>
 #include <stdatomic.h>
+
+#ifndef BENCHLAB_HZ5_PRELOAD_FREE_MID_FIRST
+#define BENCHLAB_HZ5_PRELOAD_FREE_MID_FIRST 0
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -429,6 +433,20 @@ void free(void* ptr) {
     return;
   }
 
+#if BENCHLAB_HZ5_PRELOAD_FREE_MID_FIRST
+  Hz5MidFrontFreeResult mid_free = hz5_midfront_free(ptr);
+  if (mid_free == HZ5_MIDFRONT_FREE_OK ||
+      mid_free == HZ5_MIDFRONT_FREE_INVALID) {
+    hz5_preload_full_stat_inc(&g_hz5_preload_full_free_hz5);
+    return;
+  }
+  Hz5SmallFrontFreeResult small_free = hz5_smallfront_free(ptr);
+  if (small_free == HZ5_SMALLFRONT_FREE_OK ||
+      small_free == HZ5_SMALLFRONT_FREE_INVALID) {
+    hz5_preload_full_stat_inc(&g_hz5_preload_full_free_hz5);
+    return;
+  }
+#else
   Hz5SmallFrontFreeResult small_free = hz5_smallfront_free(ptr);
   if (small_free == HZ5_SMALLFRONT_FREE_OK ||
       small_free == HZ5_SMALLFRONT_FREE_INVALID) {
@@ -441,6 +459,7 @@ void free(void* ptr) {
     hz5_preload_full_stat_inc(&g_hz5_preload_full_free_hz5);
     return;
   }
+#endif
   Hz5LargeFrontFreeResult large_free = hz5_largefront_free(ptr);
   if (large_free == HZ5_LARGEFRONT_FREE_OK ||
       large_free == HZ5_LARGEFRONT_FREE_INVALID) {

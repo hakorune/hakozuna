@@ -63,6 +63,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_TRUST_DRAIN_STATE 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDFRONT_LOOKUP_CACHE
+#define BENCHLAB_HZ5_LINUX_MIDFRONT_LOOKUP_CACHE 0
+#endif
+
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_MIDFRONT_M1
 
 #define HZ5_MIDFRONT_MAGIC UINT64_C(0x485A354D49444D31)
@@ -159,6 +163,11 @@ static _Atomic uint32_t g_hz5_midfront_owner_inbox_mask[UINT16_MAX + 1u];
 #endif
 static pthread_mutex_t g_hz5_midfront_map_lock = PTHREAD_MUTEX_INITIALIZER;
 static _Thread_local Hz5MidTls g_hz5_midfront_tls;
+#if BENCHLAB_HZ5_LINUX_MIDFRONT_LOOKUP_CACHE
+static _Thread_local uintptr_t g_hz5_midfront_lookup_page_base[2];
+static _Thread_local Hz5MidSpan* g_hz5_midfront_lookup_span[2];
+static _Thread_local uint32_t g_hz5_midfront_lookup_victim;
+#endif
 
 static Hz5MidTls* hz5_midfront_tls(void) {
   Hz5MidTls* tls = &g_hz5_midfront_tls;
@@ -257,6 +266,16 @@ static void hz5_midfront_source_free_raw(uint32_t class_index, void* raw) {
 }
 
 static Hz5MidSpan* hz5_midfront_lookup_page(uintptr_t page_base) {
+#if BENCHLAB_HZ5_LINUX_MIDFRONT_LOOKUP_CACHE
+  for (uint32_t i = 0; i < 2u; ++i) {
+    if (g_hz5_midfront_lookup_page_base[i] == page_base) {
+      Hz5MidSpan* cached = g_hz5_midfront_lookup_span[i];
+      if (cached && cached->magic == HZ5_MIDFRONT_MAGIC) {
+        return cached;
+      }
+    }
+  }
+#endif
   size_t idx = hz5_midfront_hash(page_base);
   for (size_t probe = 0; probe < HZ5_MIDFRONT_MAP_CAP; ++probe) {
     Hz5MidMapEntry* entry =
@@ -264,7 +283,17 @@ static Hz5MidSpan* hz5_midfront_lookup_page(uintptr_t page_base) {
     uintptr_t current =
         atomic_load_explicit(&entry->page_base, memory_order_acquire);
     if (current == page_base) {
-      return atomic_load_explicit(&entry->span, memory_order_acquire);
+      Hz5MidSpan* span =
+          atomic_load_explicit(&entry->span, memory_order_acquire);
+#if BENCHLAB_HZ5_LINUX_MIDFRONT_LOOKUP_CACHE
+      if (span && span->magic == HZ5_MIDFRONT_MAGIC) {
+        uint32_t victim = g_hz5_midfront_lookup_victim & 1u;
+        g_hz5_midfront_lookup_page_base[victim] = page_base;
+        g_hz5_midfront_lookup_span[victim] = span;
+        g_hz5_midfront_lookup_victim = victim ^ 1u;
+      }
+#endif
+      return span;
     }
     if (current == 0) {
       return NULL;

@@ -46,6 +46,7 @@ LINUX_P43_WRAPPER_TOKEN=0
 LINUX_P43_WRAPPER_TOKEN_BRIDGE=0
 TRACE_LANE=0
 BUILD_PRELOAD_FULL=0
+PRELOAD_FREE_MID_FIRST=0
 LINUX_OWNERHUB_R1=0
 LINUX_OWNERHUB_R2=0
 LINUX_OWNERHUB_R3=0
@@ -61,6 +62,7 @@ LINUX_MIDFRONT_REMOTE_OUTBOX_SLOTS=4
 LINUX_MIDFRONT_OUTBOX_FLUSH_ON_MISS=0
 LINUX_MIDFRONT_REMOTE_DIRECT_FREE_STATE=0
 LINUX_MIDFRONT_REMOTE_TRUST_DRAIN_STATE=0
+LINUX_MIDFRONT_LOOKUP_CACHE=0
 LINUX_MIDFRONT_DRAIN_ALL_ON_MISS=0
 LINUX_MIDFRONT_DRAIN_MASK_ON_MISS=0
 LINUX_MIDFRONT_DRAIN_MASK_HIT_STOP=0
@@ -153,6 +155,12 @@ Options:
   --linux-hz5-general-directfree
                      candidate preset: general-region-outbox plus MidFront
                      remote ACTIVE->LOCAL_FREE state transition
+  --linux-hz5-general-midfirst
+                     diagnostic preset: general-region-outbox plus MidFront
+                     first in the preload free() ownership dispatch
+  --linux-hz5-general-midcache
+                     diagnostic preset: general-region-outbox plus MidFront
+                     TLS page lookup cache
   --linux-hz5-general-midoutbox
                      candidate preset: general-region-outbox plus MidFront
                      owner/class sender outbox
@@ -186,6 +194,9 @@ Options:
                      diagnostic only: with direct-free-state, owner drain trusts
                      inbox provenance and skips LOCAL_FREE state load before
                      pushing to owner cache
+  --linux-midfront-lookup-cache
+                     diagnostic only: cache two MidFront page-map lookups per
+                     thread before the hash table probe
   --linux-midfront-drain-all-on-miss
                      candidate only: drain all MidFront owner inbox classes on local miss
   --linux-midfront-drain-mask-on-miss
@@ -623,6 +634,38 @@ while [[ $# -gt 0 ]]; do
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
+    --linux-hz5-general-midfirst)
+      BUILD_PRELOAD_FULL=1
+      PRELOAD_FREE_MID_FIRST=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_SMALLFRONT_REMOTE_OUTBOX=1
+      LINUX_SMALLFRONT_REMOTE_BATCH_CAP=8
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_OWNER_FAST_STATE=1
+      LINUX_MIDFRONT_REMOTE_BATCH_CAP=16
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      LINUX_LARGEFRONT_OWNER_FAST_STATE=1
+      LINUX_LARGEFRONT_REGION_MAP=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
+    --linux-hz5-general-midcache)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_SMALLFRONT_REMOTE_OUTBOX=1
+      LINUX_SMALLFRONT_REMOTE_BATCH_CAP=8
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_OWNER_FAST_STATE=1
+      LINUX_MIDFRONT_REMOTE_BATCH_CAP=16
+      LINUX_MIDFRONT_LOOKUP_CACHE=1
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      LINUX_LARGEFRONT_OWNER_FAST_STATE=1
+      LINUX_LARGEFRONT_REGION_MAP=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
     --linux-hz5-general-midoutbox)
       BUILD_PRELOAD_FULL=1
       LINUX_SMALLFRONT_S1=1
@@ -742,6 +785,14 @@ while [[ $# -gt 0 ]]; do
       LINUX_MIDFRONT_M1=1
       LINUX_MIDFRONT_REMOTE_DIRECT_FREE_STATE=1
       LINUX_MIDFRONT_REMOTE_TRUST_DRAIN_STATE=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
+    --linux-midfront-lookup-cache)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_LOOKUP_CACHE=1
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
@@ -1255,6 +1306,9 @@ if [[ "$LINUX_MIDFRONT_M1" -eq 1 ]]; then
   if [[ "$LINUX_MIDFRONT_REMOTE_TRUST_DRAIN_STATE" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_TRUST_DRAIN_STATE=1)
   fi
+  if [[ "$LINUX_MIDFRONT_LOOKUP_CACHE" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDFRONT_LOOKUP_CACHE=1)
+  fi
 fi
 if [[ "$LINUX_LARGEFRONT_L1" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_L1=1)
@@ -1324,6 +1378,7 @@ fi
   echo "linux_local2p_speed_linkflags=${LINUX_LOCAL2P_SPEED_LINKFLAGS}"
   echo "linux_local2p_local_overflow_global=${LINUX_LOCAL2P_LOCAL_OVERFLOW_GLOBAL}"
   echo "build_preload_full=${BUILD_PRELOAD_FULL}"
+  echo "preload_free_mid_first=${PRELOAD_FREE_MID_FIRST}"
   echo "linux_ownerhub_r1=${LINUX_OWNERHUB_R1}"
   echo "linux_ownerhub_r2=${LINUX_OWNERHUB_R2}"
   echo "linux_ownerhub_r3=${LINUX_OWNERHUB_R3}"
@@ -1339,6 +1394,7 @@ fi
   echo "linux_midfront_outbox_flush_on_miss=${LINUX_MIDFRONT_OUTBOX_FLUSH_ON_MISS}"
   echo "linux_midfront_remote_direct_free_state=${LINUX_MIDFRONT_REMOTE_DIRECT_FREE_STATE}"
   echo "linux_midfront_remote_trust_drain_state=${LINUX_MIDFRONT_REMOTE_TRUST_DRAIN_STATE}"
+  echo "linux_midfront_lookup_cache=${LINUX_MIDFRONT_LOOKUP_CACHE}"
   echo "linux_midfront_drain_all_on_miss=${LINUX_MIDFRONT_DRAIN_ALL_ON_MISS}"
   echo "linux_midfront_drain_mask_on_miss=${LINUX_MIDFRONT_DRAIN_MASK_ON_MISS}"
   echo "linux_midfront_drain_mask_hit_stop=${LINUX_MIDFRONT_DRAIN_MASK_HIT_STOP}"
@@ -1366,6 +1422,10 @@ fi
   echo "linux_p43_wrapper_token=${LINUX_P43_WRAPPER_TOKEN}"
   echo "linux_p43_wrapper_token_bridge=${LINUX_P43_WRAPPER_TOKEN_BRIDGE}"
 } > "$BUILD_CONFIG"
+
+if [[ "$PRELOAD_FREE_MID_FIRST" -eq 1 ]]; then
+  COMMON_FLAGS+=(-DBENCHLAB_HZ5_PRELOAD_FREE_MID_FIRST=1)
+fi
 
 HZ5_SRCS=(
   "${HZ5_DIR}/api/hz5_api.c"

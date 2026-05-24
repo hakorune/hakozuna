@@ -84,6 +84,12 @@ ownerhub/
   Tracks cross-front remote backlog without changing allocation behavior
   HZ5-OwnerHub-R2/R3
   Coordinated cross-front drain candidates for remote-heavy mixed workloads
+
+preload/
+  full LD_PRELOAD adapter
+  dispatches ordinary malloc/free into SmallFront, MidFront, LargeFront, then
+  the fallback pointer table
+  owns diagnostic dispatch-order lanes such as preload_free_midfirst
 ```
 
 Current MidFront lane naming:
@@ -116,6 +122,8 @@ Design source:
   final 2MiB split/merge pool.
 * `docs/HZ5_OWNERHUB_R1_DESIGN.md`: shared owner pending-mask observer and
   planned coordinated drain layer for cross-front remote-heavy workloads.
+* `docs/HZ5_HZ4_REMOTE_PATH_AUDIT.md`: code-level HZ4/HZ5 remote-heavy path
+  comparison and current MidFront dispatch-cost diagnostic.
 
 Do not implement SmallFront by adding per-object wrappers to small objects or
 by depending on the full-preload pointer table for HZ5-owned small frees.

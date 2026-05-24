@@ -87,6 +87,8 @@ small 4K/8K a8192:
 | `midfront_globalrecycle` | lane | global recycle control | control only |
 | `midfront_remote_outbox` | lane | MidFront owner/class sender outbox candidate | cross128 candidate only |
 | `midfront_directfree` | lane | remote ACTIVE->LOCAL_FREE state diagnostic | candidate-watch |
+| `preload_free_midfirst` | lane | preload free dispatch order diagnostic | diagnostic only |
+| `midfront_lookup_cache` | lane | MidFront TLS page lookup cache diagnostic | diagnostic only |
 | `largefront_l1` | route/lane family | active Linux large front-end candidate | candidate for cross128 coverage |
 | `largefront_inbox` | lane | active remote-large candidate | candidate for remote-heavy large rows |
 | `largefront_rb16` | lane | remote batch A/B | diagnostic only |
@@ -194,6 +196,8 @@ Reporting lanes:
 | `hz5-midfront-outbox` | `--linux-midfront-owner-fast-state --linux-midfront-remote-outbox --linux-midfront-remote-batch-cap 16` | cross-size remote candidate; not default |
 | `hz5-midfront-outbox-flush` | `--linux-midfront-owner-fast-state --linux-midfront-remote-outbox --linux-midfront-outbox-flush-on-miss` | timely-publish diagnostic; not default |
 | `hz5-midfront-directfree` | `--linux-midfront-owner-fast-state --linux-midfront-remote-direct-free-state --linux-midfront-remote-batch-cap 16` | remote state-machine diagnostic; candidate-watch |
+| `hz5-general-midfirst` | `--linux-hz5-general-midfirst` | preload dispatch-cost diagnostic; not default |
+| `hz5-general-midcache` | `--linux-hz5-general-midcache` | MidFront lookup-cache diagnostic; not default |
 
 Diagnostic-only lanes:
 
@@ -223,6 +227,17 @@ allgate:
 
 globalrecycle:
   control only after source batching fixed the original failure class
+
+midfirst:
+  diagnostic only. It tests whether MidFront frees are paying too much for the
+  SmallFront miss lookup in preload free(). Do not promote global dispatch
+  reordering unless broad mixed rows prove it; a page-kind/front-hint map is the
+  cleaner follow-up if the signal is real.
+
+midcache:
+  diagnostic only. It caches two MidFront page-map lookups per thread. The
+  first smoke gave only a small mid_only signal and regressed main/cross128, so
+  it is not a broad profile.
 ```
 
 ### `largefront_l1`

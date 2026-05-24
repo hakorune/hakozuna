@@ -683,6 +683,81 @@ default:
 
 candidate preset:
   --linux-hz5-general-directfree
+
+HZ4-inspired dispatch diagnostic:
+  --linux-hz5-general-midfirst
+
+HZ4-inspired lookup diagnostic:
+  --linux-hz5-general-midcache
+```
+
+## HZ4 Path Audit Finding
+
+HZ4 is not just faster at the same MidFront design. Its mid remote-heavy path is
+structurally different:
+
+```text
+HZ4 mid:
+  ptr -> page by direct 4KiB mask
+  owner page per class in TLS
+  remote free pushes to page->remote_head
+  owner allocation drains that page-local remote list
+
+HZ5 MidFront-M1:
+  ptr -> SmallFront miss lookup first in preload free()
+  ptr -> MidFront hash page-map lookup
+  one object per span for 4K/8K/16K/32K/64K
+  remote free publishes through owner/class inbox
+```
+
+Worker audit also flagged preload free dispatch as a concrete fixed cost:
+MidFront frees currently pay a SmallFront ownership miss before the MidFront
+hit. Added diagnostic lane:
+
+```text
+--linux-hz5-general-midfirst
+```
+
+It keeps `general-region-outbox` routes but changes preload free dispatch from
+`Small -> Mid -> Large` to `Mid -> Small -> Large`. This is safe as a
+diagnostic because each front-end still validates descriptor ownership and
+invalid owned-looking pointers fail closed.
+
+Expected interpretation:
+
+```text
+mid_only improves:
+  front dispatch miss cost matters
+
+main/cross128 regresses:
+  global reordering is not a default; use the result to justify a page-kind or
+  front-hint ownership map instead
+```
+
+Full audit:
+
+```text
+docs/HZ5_HZ4_REMOTE_PATH_AUDIT.md
+```
+
+Short diagnostic results:
+
+```text
+midfirst:
+  no-go. It regressed main, mid_only, and cross128 in the first smoke.
+
+midcache:
+  diagnostic-only. It slightly improved mid_only in one smoke but regressed
+  main/cross128 badly.
+```
+
+Updated read:
+
+```text
+Do not chase global preload dispatch reordering.
+Do not expect a two-entry MidFront lookup cache to close the HZ4 gap.
+Next HZ4-inspired work should target sender rbuf grouping or the Mid/Large
+route split.
 ```
 
 ## Next Technical Question
