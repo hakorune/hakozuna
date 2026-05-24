@@ -448,6 +448,92 @@ flush-on-miss does not stabilize cross128 enough to justify default use.
 MidFront outbox remains cross-size candidate only because mid_only regresses.
 ```
 
+Broad repeat-5 confirmation:
+
+```text
+private/raw-results/linux/general_midoutbox_broad_r5_20260525_003432
+
+main_r50:
+  region     31.73M
+  midoutbox  33.56M
+  HZ4        82.14M
+  tcmalloc   79.18M
+
+main_r90:
+  region     30.09M, ok 5/5
+  midoutbox  22.88M, ok 3/5
+  HZ4        69.96M
+  tcmalloc   51.25M
+
+cross128_r50:
+  region     30.30M
+  midoutbox  35.53M
+  HZ4        42.58M
+  tcmalloc   10.17M
+
+cross128_r90:
+  region     19.10M
+  midoutbox  18.16M
+  HZ4        43.36M
+  tcmalloc    7.49M
+
+mid_only_r90:
+  region     33.64M, ok 5/5
+  midoutbox  22.97M, ok 3/5
+  HZ4        67.89M
+  tcmalloc   50.18M
+```
+
+Decision:
+
+```text
+Do not promote MidFront outbox to the combined default.
+It is useful evidence for r50/cross-size sender batching, but r90 failures and
+mid_only regressions make it no-go for the next broad profile.
+Keep `hz5-general-region-outbox` as the current combined candidate.
+```
+
+Perf stat spot-check, stats unset:
+
+```text
+private/raw-results/linux/remote_cost_perf_20260525_003835
+
+mid_only_r90:
+  HZ4:
+    50.58M ops/s
+    364.9 cycles/op
+    216.7 instructions/op
+    44.4 branches/op
+
+  HZ5 region:
+    21.89M ops/s
+    456.2 cycles/op
+    393.1 instructions/op
+    87.6 branches/op
+
+cross128_r90:
+  HZ4:
+    29.96M ops/s
+    588.5 cycles/op
+    339.1 instructions/op
+    69.7 branches/op
+
+  HZ5 region:
+    21.98M ops/s
+    510.8 cycles/op
+    400.6 instructions/op
+    90.0 branches/op
+```
+
+Interpretation:
+
+```text
+The clearest stable gap is MidFront remote-heavy instruction count:
+HZ5 spends about 1.8x HZ4 instructions/op and about 2x branches/op on
+mid_only_r90. The next design target should reduce MidFront remote free/drain
+state-machine cost, not add more cross-front drain policy.
+```
+
 ## Next Technical Question
 
 Why is HZ4 still much stronger on `cross128 r90`, and which part of HZ5's

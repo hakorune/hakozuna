@@ -635,6 +635,119 @@ Keep as cross128 candidate only. Slots4 is the better current candidate.
 Flush-on-miss is retained as a diagnostic but should not be default.
 ```
 
+Broad repeat-5 confirmation:
+
+```text
+private/raw-results/linux/general_midoutbox_broad_r5_20260525_003432
+
+Compared:
+  hz5_region
+  hz5_midoutbox
+  HZ4
+  tcmalloc
+
+Cases:
+  main_r50/r90
+  cross128_r50/r90
+  mid_only_r50/r90
+  large_only_r50/r90
+```
+
+Clean medians, excluding nan/timeout rows:
+
+```text
+main_r50:
+  hz5_region     31.73M
+  hz5_midoutbox  33.56M
+  HZ4            82.14M
+  tcmalloc       79.18M
+
+main_r90:
+  hz5_region     30.09M, ok 5/5
+  hz5_midoutbox  22.88M, ok 3/5
+  HZ4            69.96M
+  tcmalloc       51.25M
+
+cross128_r50:
+  hz5_region     30.30M
+  hz5_midoutbox  35.53M
+  HZ4            42.58M
+  tcmalloc       10.17M
+
+cross128_r90:
+  hz5_region     19.10M
+  hz5_midoutbox  18.16M
+  HZ4            43.36M
+  tcmalloc        7.49M
+
+mid_only_r90:
+  hz5_region     33.64M, ok 5/5
+  hz5_midoutbox  22.97M, ok 3/5
+  HZ4            67.89M
+  tcmalloc       50.18M
+
+large_only_r90:
+  hz5_region     13.92M
+  hz5_midoutbox  12.97M
+  tcmalloc        7.10M
+  HZ4             5.47M
+```
+
+Decision:
+
+```text
+MidFront outbox is no-go for the combined default.
+It improves r50 mixed/cross-size rows but hurts or times out r90 and mid_only.
+Keep as diagnostic/cross-size evidence only.
+Current combined candidate remains:
+  --linux-hz5-general-region-outbox
+```
+
+Remote cost perf spot-check:
+
+```text
+private/raw-results/linux/remote_cost_perf_20260525_003835
+
+mid_only_r90:
+  HZ4:
+    50.58M ops/s
+    364.9 cycles/op
+    216.7 instructions/op
+    44.4 branches/op
+
+  HZ5 region:
+    21.89M ops/s
+    456.2 cycles/op
+    393.1 instructions/op
+    87.6 branches/op
+
+cross128_r90:
+  HZ4:
+    29.96M ops/s
+    588.5 cycles/op
+    339.1 instructions/op
+    69.7 branches/op
+
+  HZ5 region:
+    21.98M ops/s
+    510.8 cycles/op
+    400.6 instructions/op
+    90.0 branches/op
+```
+
+Read:
+
+```text
+The broad no-go is now confirmed.
+The clearest next target is MidFront remote-heavy instruction/branch cost:
+HZ5 uses about 1.8x HZ4 instructions/op and about 2x branches/op on
+mid_only_r90.
+
+Next design should reduce MidFront remote free/drain state-machine overhead.
+Do not keep adding cross-front drain policy until the MidFront per-object
+remote path is closer to HZ4.
+```
+
 Lane cleanup:
 
 ```text
