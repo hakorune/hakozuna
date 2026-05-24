@@ -57,6 +57,8 @@ LINUX_MIDFRONT_M1=0
 LINUX_MIDFRONT_OWNER_FAST_STATE=0
 LINUX_MIDFRONT_REMOTE_BATCH_CAP=16
 LINUX_MIDFRONT_REMOTE_OUTBOX=0
+LINUX_MIDFRONT_REMOTE_OUTBOX_SLOTS=4
+LINUX_MIDFRONT_OUTBOX_FLUSH_ON_MISS=0
 LINUX_MIDFRONT_DRAIN_ALL_ON_MISS=0
 LINUX_MIDFRONT_DRAIN_MASK_ON_MISS=0
 LINUX_MIDFRONT_DRAIN_MASK_HIT_STOP=0
@@ -167,6 +169,11 @@ Options:
   --linux-midfront-remote-outbox
                      candidate only: keep multiple sender-side MidFront
                      remote-free outbox slots keyed by owner/class
+  --linux-midfront-remote-outbox-slots N
+                     MidFront sender outbox slot count (default: 4)
+  --linux-midfront-outbox-flush-on-miss
+                     candidate only: publish MidFront sender outbox slots on
+                     local allocation miss before owner-inbox drain
   --linux-midfront-drain-all-on-miss
                      candidate only: drain all MidFront owner inbox classes on local miss
   --linux-midfront-drain-mask-on-miss
@@ -604,6 +611,23 @@ while [[ $# -gt 0 ]]; do
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
+    --linux-hz5-general-midoutbox-flush)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_SMALLFRONT_REMOTE_OUTBOX=1
+      LINUX_SMALLFRONT_REMOTE_BATCH_CAP=8
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_OWNER_FAST_STATE=1
+      LINUX_MIDFRONT_REMOTE_BATCH_CAP=16
+      LINUX_MIDFRONT_REMOTE_OUTBOX=1
+      LINUX_MIDFRONT_OUTBOX_FLUSH_ON_MISS=1
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      LINUX_LARGEFRONT_OWNER_FAST_STATE=1
+      LINUX_LARGEFRONT_REGION_MAP=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
     --linux-ownerhub-r1)
       BUILD_PRELOAD_FULL=1
       LINUX_OWNERHUB_R1=1
@@ -659,6 +683,20 @@ while [[ $# -gt 0 ]]; do
       LINUX_SMALLFRONT_S1=1
       LINUX_MIDFRONT_M1=1
       LINUX_MIDFRONT_REMOTE_OUTBOX=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
+    --linux-midfront-remote-outbox-slots)
+      require_value "$@"
+      LINUX_MIDFRONT_REMOTE_OUTBOX_SLOTS="$2"
+      shift 2
+      ;;
+    --linux-midfront-outbox-flush-on-miss)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_REMOTE_OUTBOX=1
+      LINUX_MIDFRONT_OUTBOX_FLUSH_ON_MISS=1
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
@@ -832,6 +870,11 @@ fi
 
 if [[ "$LINUX_MIDFRONT_REMOTE_BATCH_CAP" -lt 1 ]]; then
   echo "midfront remote batch cap must be >= 1" >&2
+  exit 1
+fi
+
+if [[ "$LINUX_MIDFRONT_REMOTE_OUTBOX_SLOTS" -lt 1 ]]; then
+  echo "midfront remote outbox slots must be >= 1" >&2
   exit 1
 fi
 
@@ -1148,6 +1191,12 @@ if [[ "$LINUX_MIDFRONT_M1" -eq 1 ]]; then
   fi
   if [[ "$LINUX_MIDFRONT_REMOTE_OUTBOX" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_OUTBOX=1)
+    COMMON_FLAGS+=(
+      -DHZ5_MIDFRONT_REMOTE_OUTBOX_SLOTS="${LINUX_MIDFRONT_REMOTE_OUTBOX_SLOTS}u"
+    )
+  fi
+  if [[ "$LINUX_MIDFRONT_OUTBOX_FLUSH_ON_MISS" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDFRONT_OUTBOX_FLUSH_ON_MISS=1)
   fi
 fi
 if [[ "$LINUX_LARGEFRONT_L1" -eq 1 ]]; then
@@ -1229,6 +1278,8 @@ fi
   echo "linux_midfront_owner_fast_state=${LINUX_MIDFRONT_OWNER_FAST_STATE}"
   echo "linux_midfront_remote_batch_cap=${LINUX_MIDFRONT_REMOTE_BATCH_CAP}"
   echo "linux_midfront_remote_outbox=${LINUX_MIDFRONT_REMOTE_OUTBOX}"
+  echo "linux_midfront_remote_outbox_slots=${LINUX_MIDFRONT_REMOTE_OUTBOX_SLOTS}"
+  echo "linux_midfront_outbox_flush_on_miss=${LINUX_MIDFRONT_OUTBOX_FLUSH_ON_MISS}"
   echo "linux_midfront_drain_all_on_miss=${LINUX_MIDFRONT_DRAIN_ALL_ON_MISS}"
   echo "linux_midfront_drain_mask_on_miss=${LINUX_MIDFRONT_DRAIN_MASK_ON_MISS}"
   echo "linux_midfront_drain_mask_hit_stop=${LINUX_MIDFRONT_DRAIN_MASK_HIT_STOP}"

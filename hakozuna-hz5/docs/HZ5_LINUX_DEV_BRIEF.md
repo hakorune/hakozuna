@@ -388,7 +388,9 @@ MidFront sender outbox was added as the next HZ4-inspired A/B:
 ```
 
 It keeps MidFront descriptor validation and state transitions unchanged, but
-uses 8 sender-side owner/class slots instead of one remote batch slot.
+uses a small sender-side owner/class outbox instead of one remote batch slot.
+The current candidate default is 4 slots; larger slot counts can retain spans
+too long before owner reuse sees them.
 
 Focused repeat-3, threads=16/ws=400/r90, stats unset:
 
@@ -413,6 +415,37 @@ MidFront outbox is useful evidence for the HZ4-style sender-outbox hypothesis,
 especially on cross128, but it is not a default because main/mid_only regress.
 The likely issue is delayed publication/reuse when MidFront traffic is the
 dominant front-end.
+```
+
+Follow-up A/B added a timely-publish flag:
+
+```text
+--linux-midfront-outbox-flush-on-miss
+```
+
+That publishes matching-class sender outbox slots on MidFront local allocation
+miss. It is useful evidence but not a broad win.
+
+Focused repeat-3, threads=16/ws=400/r90, stats unset:
+
+```text
+slots4:
+  main      35.30M vs region 32.78M
+  cross128  24.51M vs region 20.06M
+  mid_only  25.80M vs region 29.83M
+
+class-flush:
+  main      26.06M
+  cross128  19.50M
+  mid_only  28.73M
+```
+
+Read:
+
+```text
+slots4 is the better MidFront-outbox candidate.
+flush-on-miss does not stabilize cross128 enough to justify default use.
+MidFront outbox remains cross-size candidate only because mid_only regresses.
 ```
 
 ## Next Technical Question

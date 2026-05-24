@@ -551,7 +551,7 @@ MidFront remote-outbox candidate:
 --linux-midfront-remote-outbox
 
 Design:
-  sender TLS keeps 8 associative outbox slots
+  sender TLS keeps 4 associative outbox slots by default
   each slot is keyed by exact owner token + MidFront class
   flushed slot publishes one list to the existing owner-slot/class inbox
   span ownership lookup, ACTIVE->REMOTE_PENDING transition, and fail-closed
@@ -606,6 +606,23 @@ mid_only:
   hz5_midoutbox_slots8  31.10M
 ```
 
+Slots4 and timely-publish follow-up:
+
+```text
+private/raw-results/linux/midfront_outbox_flush_focus_20260525_000320
+private/raw-results/linux/midfront_outbox_classflush_focus_20260525_000446
+private/raw-results/linux/midfront_outbox_slots4_focus_20260525_000552
+
+flush-on-miss:
+  publishes matching-class sender outbox slots on local allocation miss
+  not a broad win
+
+slots4:
+  cross128  24.51M vs region 20.06M
+  main      35.30M vs region 32.78M
+  mid_only  25.80M vs region 29.83M
+```
+
 Read:
 
 ```text
@@ -614,8 +631,8 @@ but it is not a broad default. Main/mid_only regress, likely because returned
 MidFront spans are retained in sender outboxes too long before owner reuse can
 drain them.
 
-Keep as cross128 candidate only. Next likely design is an adaptive/timely
-publish policy, not a larger outbox.
+Keep as cross128 candidate only. Slots4 is the better current candidate.
+Flush-on-miss is retained as a diagnostic but should not be default.
 ```
 
 Lane cleanup:

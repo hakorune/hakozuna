@@ -191,6 +191,7 @@ Reporting lanes:
 | `hz5-midfront-drainmask` | `--linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16 --linux-midfront-drain-mask-on-miss` | pending-mask candidate/control |
 | `hz5-midfront-globalrecycle` | `--linux-midfront-owner-fast-state --linux-midfront-remote-global-recycle` | global recycle control |
 | `hz5-midfront-outbox` | `--linux-midfront-owner-fast-state --linux-midfront-remote-outbox --linux-midfront-remote-batch-cap 16` | cross-size remote candidate; not default |
+| `hz5-midfront-outbox-flush` | `--linux-midfront-owner-fast-state --linux-midfront-remote-outbox --linux-midfront-outbox-flush-on-miss` | timely-publish diagnostic; not default |
 
 Diagnostic-only lanes:
 
@@ -308,6 +309,11 @@ midfront-remote-outbox:
   useful as a cross128 candidate
   not a default because main/mid_only r90 can regress when remote frees are
   retained in sender outbox slots too long
+  current default outbox slot count is 4
+
+midfront-outbox-flush-on-miss:
+  publishes matching-class sender outbox slots on local allocation miss
+  diagnostic only; it did not become a broad win in short r90 checks
 
 deferred:
   hz3/hz4-style 2MiB page-run split/merge pool
@@ -627,11 +633,13 @@ This is a useful hit-rate diagnostic, but a miss is not an HZ5 allocation.
 | `hz5-midfront-allgate` | `hz5-linux-midfront-allgate` | `--linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16 --linux-midfront-drain-all-on-miss --linux-midfront-drain-empty-gated` | `midfront_m1` | remote-heavy MidFront co-lead |
 | `hz5-midfront-drainmask` | `hz5-linux-midfront-drainmask` | `--linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16 --linux-midfront-drain-mask-on-miss` | `midfront_m1` | pending-mask diagnostic/control |
 | `hz5-midfront-outbox` | `hz5-linux-midfront-outbox` | `--linux-midfront-owner-fast-state --linux-midfront-remote-outbox --linux-midfront-remote-batch-cap 16` | `midfront_m1` | cross-size remote candidate; not default |
+| `hz5-midfront-outbox-flush` | `hz5-linux-midfront-outbox-flush` | `--linux-midfront-owner-fast-state --linux-midfront-remote-outbox --linux-midfront-outbox-flush-on-miss` | `midfront_m1` | timely-publish diagnostic; not default |
 | `hz5-largefront-l1` | `hz5-linux-largefront-l1` | `--linux-largefront-l1 --linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | `largefront_l1` | first large ordinary malloc coverage candidate |
 | `hz5-largefront-inbox` | `hz5-linux-largefront-inbox` | `--linux-largefront-owner-inbox --linux-largefront-owner-fast-state --linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | `largefront_l1` | remote-heavy large candidate |
 | `hz5-largefront-region-map` | `hz5-linux-largefront-region-map` | `--linux-largefront-region-map --linux-largefront-owner-fast-state --linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | `largefront_l1` | LargeFront-L2 source-region lookup candidate |
 | `hz5-general-region-outbox` | `hz5-linux-general-region-outbox` | `--linux-hz5-general-region-outbox` | `smallfront_s1 + midfront_m1 + largefront_l1` | current combined general remote-tail candidate preset |
 | `hz5-general-midoutbox` | `hz5-linux-general-midoutbox` | `--linux-hz5-general-midoutbox` | `smallfront_s1 + midfront_m1 + largefront_l1` | cross128 candidate with MidFront sender outbox; not default |
+| `hz5-general-midoutbox-flush` | `hz5-linux-general-midoutbox-flush` | `--linux-hz5-general-midoutbox-flush` | `smallfront_s1 + midfront_m1 + largefront_l1` | timely-publish diagnostic; not default |
 
 Build selectors for `local2p`, `p25attr`, and `p43` are mutually exclusive.
 Keep that rule. It prevents mixed-route benchmark rows.
