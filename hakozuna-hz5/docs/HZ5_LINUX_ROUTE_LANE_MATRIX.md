@@ -40,6 +40,7 @@ Current paper/appendix-facing HZ5 Linux rows are profile-specific:
 | Remote-heavy mid ordinary malloc candidate | `hz5-midfront-allgate` | MidFront owner-inbox drain-all plus empty-gated exchange co-lead candidate |
 | Large ordinary malloc candidate | `hz5-largefront-l1` | Linux full-preload route for ordinary malloc >64K..1M, cross128 local coverage candidate |
 | Remote-heavy large candidate | `hz5-largefront-inbox` | LargeFront owner-inbox candidate for remote-heavy large rows |
+| General remote-tail candidate | `hz5-general-region-outbox` | SmallFront outbox + MidFront rb16 + LargeFront region-map candidate |
 
 Older Local2P evolution lanes remain selectable diagnostics. Do not report them
 as competing HZ5 profiles unless the result is explicitly an implementation
@@ -88,6 +89,9 @@ small 4K/8K a8192:
 | `largefront_inbox` | lane | active remote-large candidate | candidate for remote-heavy large rows |
 | `largefront_rb16` | lane | remote batch A/B | diagnostic only |
 | `largefront_takefirst` | lane | direct-return A/B | diagnostic only |
+| `largefront_region_map` | lane | LargeFront-L2 source-region lookup candidate | candidate after broader matrix |
+| `smallfront_remote_outbox` | lane | SmallFront owner/class sender outbox candidate | diagnostic/candidate only |
+| `general_region_outbox` | preset lane | combined general allocator candidate | not a default until broad matrix passes |
 | `hz3_fallback` | fallback route | disabled in standalone exact-only | not a HZ5 win |
 | `libc_passthrough` | adapter route | used by preload hybrid misses | not HZ5 |
 
@@ -261,6 +265,7 @@ Reporting lane:
 | `hz5-largefront-map-base-only` | `--linux-largefront-map-base-only --linux-largefront-owner-fast-state --linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | timeout/root-cause diagnostic only; weakens interior-pointer invalid-free attribution |
 | `hz5-largefront-region-map` | `--linux-largefront-region-map --linux-largefront-owner-fast-state --linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | LargeFront-L2 candidate; source-region lookup without losing interior invalid-free attribution |
 | `hz5-smallfront-remote-outbox` | `--linux-smallfront-remote-outbox --linux-smallfront-remote-batch-cap 8 --linux-largefront-region-map --linux-largefront-owner-fast-state --linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | SmallFront remote-handoff candidate; associative owner/class sender outbox |
+| `hz5-general-region-outbox` | `--linux-hz5-general-region-outbox` | short preset for SmallFront outbox cap8 + MidFront rb16/owner-fast + LargeFront region-map |
 
 Current decision:
 

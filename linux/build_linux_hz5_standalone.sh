@@ -142,6 +142,9 @@ Options:
   --linux-smallfront-remote-outbox
                      candidate only: keep multiple sender-side SmallFront
                      remote-free outbox slots keyed by owner/class
+  --linux-hz5-general-region-outbox
+                     candidate preset: SmallFront remote outbox cap8,
+                     MidFront rb16/owner-fast, and LargeFront region-map
   --linux-ownerhub-r1
                      diagnostic only: enable shared owner pending-mask
                      observation; use only with HZ5_OWNERHUB_STATS=1
@@ -548,6 +551,21 @@ while [[ $# -gt 0 ]]; do
       BUILD_PRELOAD_FULL=1
       LINUX_SMALLFRONT_S1=1
       LINUX_SMALLFRONT_REMOTE_OUTBOX=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
+    --linux-hz5-general-region-outbox)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_SMALLFRONT_REMOTE_OUTBOX=1
+      LINUX_SMALLFRONT_REMOTE_BATCH_CAP=8
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_OWNER_FAST_STATE=1
+      LINUX_MIDFRONT_REMOTE_BATCH_CAP=16
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      LINUX_LARGEFRONT_OWNER_FAST_STATE=1
+      LINUX_LARGEFRONT_REGION_MAP=1
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;

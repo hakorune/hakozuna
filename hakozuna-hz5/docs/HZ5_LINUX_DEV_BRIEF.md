@@ -42,6 +42,17 @@ General malloc local/mixed:
 
 Remote-heavy large:
   hz5-largefront-inbox
+
+General remote-tail candidate:
+  hz5-general-region-outbox
+```
+
+Use this short preset for the current combined general candidate:
+
+```bash
+./linux/build_linux_hz5_standalone.sh \
+  --linux-hz5-general-region-outbox \
+  --out-dir hakozuna-hz5/out/linux/x86_64-hz5-general-region-outbox
 ```
 
 Diagnostic-only LargeFront rows:

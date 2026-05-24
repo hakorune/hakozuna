@@ -540,6 +540,39 @@ owner/class outbox idea for MidFront, or a lower-cost state transition for
 remote frees that preserves fail-closed behavior.
 ```
 
+Lane cleanup:
+
+```text
+Added preset:
+  --linux-hz5-general-region-outbox
+
+Equivalent intent:
+  --linux-smallfront-remote-outbox
+  --linux-smallfront-remote-batch-cap 8
+  --linux-midfront-owner-fast-state
+  --linux-midfront-remote-batch-cap 16
+  --linux-largefront-owner-fast-state
+  --linux-largefront-region-map
+```
+
+Validation:
+
+```text
+build output:
+  hakozuna-hz5/out/linux/x86_64-hz5-general-region-outbox
+
+build config:
+  linux_smallfront_remote_outbox=1
+  linux_smallfront_remote_batch_cap=8
+  linux_midfront_owner_fast_state=1
+  linux_midfront_remote_batch_cap=16
+  linux_largefront_owner_fast_state=1
+  linux_largefront_region_map=1
+
+/bin/true under full preload: OK
+/tmp/hz5_largefront_smoke: OK
+```
+
 First implementation lane:
 
 ```text
