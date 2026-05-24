@@ -112,6 +112,119 @@ Do not weaken:
   fail-closed invalid/double-free behavior
 ```
 
+## Broad Matrix Snapshot: 2026-05-24
+
+Raw result root:
+
+```text
+private/raw-results/linux/hz5_full_matrix_20260524_200354
+```
+
+Files:
+
+```text
+dev_threads2_raw.tsv
+dev_threads2_summary.tsv
+paper_threads16_raw.tsv
+paper_threads16_summary_partial.tsv
+paper_threads16_extra_raw.tsv
+paper_threads16_extra_summary.tsv
+paper_threads16_combined_summary.tsv
+matrix_report.md
+```
+
+Development matrix:
+
+```text
+threads=2
+ws=100
+runs=5
+lanes=guard,main,mid_only,large_only,cross128,xlarge
+remote=0,50,90
+allocators=system,hz3,hz4,mimalloc,tcmalloc,HZ5 variants
+```
+
+Paper-shape matrix:
+
+```text
+threads=16
+ws=400
+runs=3
+taskset=0-15
+same lanes and remotes
+```
+
+Important caveat:
+
+```text
+paper_threads16 produced timeout rows for several HZ5 remote-heavy r90 cases.
+The combined summary uses successful runs only and records failures in
+matrix_report.md. Treat timeout rows as a real stability/performance signal,
+not as missing data.
+```
+
+High-level read:
+
+```text
+threads=2:
+  HZ5 is competitive on local-ish r0 rows, especially cross128 r0.
+  HZ5 is still weak on remote-heavy guard/main/mid/cross rows.
+  HZ5 xlarge is not competitive.
+
+threads=16:
+  HZ5 LargeFront is strong on large_only and cross128 local/r50/r90 rows.
+  HZ5 still trails hz3/hz4/tcmalloc on guard/main/mid remote-heavy rows.
+  Some HZ5 r90 cases timeout, especially OwnerHub/emptygate large_only r90.
+```
+
+Key medians:
+
+```text
+dev threads=2:
+  cross128 r0:
+    hz5_small_emptygate 61.55M
+    tcmalloc            60.23M
+  cross128 r90:
+    hz4                 17.42M
+    tcmalloc            13.61M
+    hz5_ownerhub_r2      7.49M
+  large_only r90:
+    tcmalloc            17.06M
+    hz5_small_emptygate  7.35M
+
+paper threads=16:
+  large_only r0:
+    hz4                142.82M
+    hz5_ownerhub_r3    138.28M
+    hz5_inbox          137.64M
+  large_only r50:
+    hz5_small_emptygate 25.45M
+    hz5_large_emptygate 22.26M
+    hz5_inbox           20.83M
+    tcmalloc             9.91M
+  large_only r90:
+    hz5 best successful 19.75M but with timeout risk
+    tcmalloc             7.18M
+  cross128 r0:
+    hz5_large_emptygate 137.16M
+    hz4                  60.73M
+  cross128 r50:
+    hz4                  41.06M
+    hz5_large_emptygate  31.61M
+  cross128 r90:
+    hz4                  42.33M
+    hz5_large_emptygate  29.07M with timeout risk
+```
+
+Decision from broad matrix:
+
+```text
+Do not make OwnerHub-R2/R3 or emptygate default.
+Do not spend more time on xlarge with the current LargeFront-L1 design.
+Next productive target is not more cross-front drain tuning.
+The real gap is remote-heavy Small/Mid handoff under many threads.
+```
+
 First implementation lane:
 
 ```text
