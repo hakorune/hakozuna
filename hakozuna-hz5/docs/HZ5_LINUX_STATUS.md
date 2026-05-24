@@ -254,6 +254,57 @@ cross128_r90 verify r5:
   tcmalloc    7.80M
 ```
 
+TLS split:
+
+```text
+private/raw-results/linux/midpage_tls_split_r3_20260525_055155
+private/raw-results/linux/midpage_linkonly_broad_r3_20260525_055224
+```
+
+Decision:
+
+```text
+linkonly is the best balanced follow-up diagnostic. initial-exec TLS alone
+helps mid_only_r0 but is weaker on remote/cross. Combined tlslink is worse than
+linkonly, so do not combine the flags by default.
+```
+
+Split key medians:
+
+```text
+mid_only_r0:
+  allocfirst 69.59M
+  tlsie      80.03M
+  linkonly   77.63M
+  tlslink    78.16M
+
+mid_only_r90:
+  allocfirst 26.57M
+  tlsie      30.68M
+  linkonly   35.73M
+  tlslink    20.22M
+
+cross128_r90:
+  allocfirst 12.66M
+  tlsie      11.83M
+  linkonly   13.89M
+  tlslink    10.40M
+```
+
+Linkonly broad key medians:
+
+```text
+main_r90:
+  allocfirst 23.69M
+  linkonly   36.68M
+  tcmalloc   50.92M
+
+cross128_r90:
+  allocfirst 13.57M
+  linkonly   11.02M
+  tcmalloc    7.82M
+```
+
 ## Next Engineering Target
 
 Prototype a MidPageFront local topology diagnostic:

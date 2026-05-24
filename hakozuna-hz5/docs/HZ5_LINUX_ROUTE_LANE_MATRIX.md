@@ -302,6 +302,17 @@ hz5-general-midpage-region-shadow-tlslink:
   link flags to midpage-region-shadow-allocfirst
   promising diagnostic for main/mid; not broad default because cross128_r90
   regresses versus allocfirst, though it remains above tcmalloc
+
+hz5-general-midpage-region-shadow-tlsie:
+  --linux-hz5-general-midpage-region-shadow-tlsie
+  tcmalloc-chase diagnostic applying preload-wide initial-exec TLS only
+  diagnostic split: helps mid_only_r0, weaker on remote/cross than linkonly
+
+hz5-general-midpage-region-shadow-linkonly:
+  --linux-hz5-general-midpage-region-shadow-linkonly
+  tcmalloc-chase diagnostic applying preload-wide speed link flags only
+  best balanced tls/linkage split so far; needs higher-run verification before
+  lead promotion
 ```
 
 Status:

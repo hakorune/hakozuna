@@ -93,6 +93,14 @@ hakozuna-hz5/docs/archive/current_task_2026-05-hz5-linux.md
 --linux-hz5-general-midpage-region-shadow-tlslink
   promising diagnostic; preload-wide initial-exec TLS and speed link flags
   improve main/mid, but cross128_r90 regresses versus allocfirst
+
+--linux-hz5-general-midpage-region-shadow-linkonly
+  current best follow-up diagnostic; speed link flags without initial-exec TLS
+  improve main_r90/mid remote in short runs, but cross128 variance remains high
+
+--linux-hz5-general-midpage-region-shadow-tlsie
+  diagnostic split; initial-exec TLS only helps mid_only_r0 but is weaker on
+  remote/cross rows
 ```
 
 ## Latest Key Results
@@ -110,6 +118,8 @@ private/raw-results/linux/midpage_slotswitch_r3_20260525_054521
 private/raw-results/linux/midpage_tlslink_r3_20260525_054807
 private/raw-results/linux/midpage_tlslink_broad_r3_20260525_054859
 private/raw-results/linux/midpage_tlslink_cross128_verify_r5_20260525_055003
+private/raw-results/linux/midpage_tls_split_r3_20260525_055155
+private/raw-results/linux/midpage_linkonly_broad_r3_20260525_055224
 ```
 
 Current read:
@@ -143,9 +153,13 @@ tlslink:
   and improves main/mid. cross128_r90 still beats tcmalloc but regresses versus
   allocfirst, so do not make it the broad default yet.
 
+tls split:
+  linkonly is the best balanced diagnostic so far. initial-exec TLS alone helps
+  r0, but does not carry remote/cross. combined tlslink is worse than linkonly.
+
 next:
-  continue reducing MidPageFront local active-state / metadata / freelist work
-  without hurting cross128_r90.
+  verify linkonly with higher runs, then continue reducing MidPageFront local
+  active-state / metadata / freelist work without hurting cross128_r90.
 ```
 
 ## Next Step

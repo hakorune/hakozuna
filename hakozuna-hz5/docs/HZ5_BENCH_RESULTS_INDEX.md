@@ -417,6 +417,84 @@ cross128_r90:
   tcmalloc    7.80M
 ```
 
+### `midpage_tls_split_r3_20260525_055155`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_tls_split_r3_20260525_055155
+```
+
+Purpose:
+
+```text
+Split tlslink into initial-exec TLS only and speed link flags only.
+```
+
+Decision:
+
+```text
+linkonly is the best balanced split. tlsie helps mid_only_r0 most, but linkonly
+is stronger on mid_only_r90 and cross128_r90 in this r3.
+```
+
+Key medians:
+
+```text
+mid_only_r0:
+  allocfirst 69.59M
+  tlsie      80.03M
+  linkonly   77.63M
+  tlslink    78.16M
+
+mid_only_r90:
+  allocfirst 26.57M
+  tlsie      30.68M
+  linkonly   35.73M
+  tlslink    20.22M
+
+cross128_r90:
+  allocfirst 12.66M
+  tlsie      11.83M
+  linkonly   13.89M
+  tlslink    10.40M
+```
+
+### `midpage_linkonly_broad_r3_20260525_055224`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_linkonly_broad_r3_20260525_055224
+```
+
+Purpose:
+
+```text
+Short broad check for linkonly after the TLS split.
+```
+
+Decision:
+
+```text
+linkonly improves main_r90 and stays above tcmalloc on cross128_r90, but
+cross128 remains noisy and needs higher-run verification.
+```
+
+Key medians:
+
+```text
+main_r90:
+  allocfirst 23.69M
+  linkonly   36.68M
+  tcmalloc   50.92M
+
+cross128_r90:
+  allocfirst 13.57M
+  linkonly   11.02M
+  tcmalloc    7.82M
+```
+
 ## MidPageFront-M2
 
 ### `midpage_region_broad_r5_20260525_031852`

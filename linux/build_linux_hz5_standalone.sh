@@ -215,6 +215,12 @@ Options:
   --linux-hz5-general-midpage-region-shadow-tlslink
                      diagnostic preset: midpage-region-shadow-allocfirst plus
                      preload-wide initial-exec TLS and speed link flags
+  --linux-hz5-general-midpage-region-shadow-tlsie
+                     diagnostic preset: midpage-region-shadow-allocfirst plus
+                     preload-wide initial-exec TLS only
+  --linux-hz5-general-midpage-region-shadow-linkonly
+                     diagnostic preset: midpage-region-shadow-allocfirst plus
+                     preload-wide speed link flags only
   --linux-hz5-general-midpage-region-frontfirst
                      diagnostic preset: midpage-region plus MidPageFront first
                      in preload free() ownership dispatch
@@ -972,6 +978,50 @@ while [[ $# -gt 0 ]]; do
       BUILD_PRELOAD_FULL=1
       PRELOAD_MIDPAGE_ALLOC_FIRST=1
       PRELOAD_TLS_INITIAL_EXEC=1
+      PRELOAD_SPEED_LINKFLAGS=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_SMALLFRONT_REMOTE_OUTBOX=1
+      LINUX_SMALLFRONT_REMOTE_BATCH_CAP=8
+      LINUX_MIDPAGEFRONT_M2=1
+      LINUX_MIDPAGEFRONT_REGION_ARRAY=1
+      LINUX_MIDPAGEFRONT_REMOTE_SHADOW=1
+      LINUX_MIDPAGEFRONT_LOCAL_FAST_STATE=1
+      LINUX_MIDPAGEFRONT_REMOTE_BATCH_CAP=16
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_OWNER_FAST_STATE=1
+      LINUX_MIDFRONT_REMOTE_BATCH_CAP=16
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      LINUX_LARGEFRONT_OWNER_FAST_STATE=1
+      LINUX_LARGEFRONT_REGION_MAP=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
+    --linux-hz5-general-midpage-region-shadow-tlsie)
+      BUILD_PRELOAD_FULL=1
+      PRELOAD_MIDPAGE_ALLOC_FIRST=1
+      PRELOAD_TLS_INITIAL_EXEC=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_SMALLFRONT_REMOTE_OUTBOX=1
+      LINUX_SMALLFRONT_REMOTE_BATCH_CAP=8
+      LINUX_MIDPAGEFRONT_M2=1
+      LINUX_MIDPAGEFRONT_REGION_ARRAY=1
+      LINUX_MIDPAGEFRONT_REMOTE_SHADOW=1
+      LINUX_MIDPAGEFRONT_LOCAL_FAST_STATE=1
+      LINUX_MIDPAGEFRONT_REMOTE_BATCH_CAP=16
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_OWNER_FAST_STATE=1
+      LINUX_MIDFRONT_REMOTE_BATCH_CAP=16
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      LINUX_LARGEFRONT_OWNER_FAST_STATE=1
+      LINUX_LARGEFRONT_REGION_MAP=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
+    --linux-hz5-general-midpage-region-shadow-linkonly)
+      BUILD_PRELOAD_FULL=1
+      PRELOAD_MIDPAGE_ALLOC_FIRST=1
       PRELOAD_SPEED_LINKFLAGS=1
       LINUX_SMALLFRONT_S1=1
       LINUX_SMALLFRONT_REMOTE_OUTBOX=1
