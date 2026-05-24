@@ -477,8 +477,8 @@ Short broad check for linkonly after the TLS split.
 Decision:
 
 ```text
-linkonly improves main_r90 and stays above tcmalloc on cross128_r90, but
-cross128 remains noisy and needs higher-run verification.
+linkonly improves main_r90 in this r3 and stays above tcmalloc on cross128_r90,
+but later r7 verification does not promote it.
 ```
 
 Key medians:
@@ -493,6 +493,47 @@ cross128_r90:
   allocfirst 13.57M
   linkonly   11.02M
   tcmalloc    7.82M
+```
+
+### `midpage_linkonly_verify_r7_20260525_055344`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_linkonly_verify_r7_20260525_055344
+```
+
+Purpose:
+
+```text
+Higher-run verification for linkonly on remote-heavy main, mid_only, and
+cross128.
+```
+
+Decision:
+
+```text
+No promotion. linkonly is roughly cross128-equivalent to allocfirst and remains
+above tcmalloc there, but loses to allocfirst on main_r90 and mid_only_r90.
+```
+
+Key medians:
+
+```text
+main_r90:
+  allocfirst 38.71M
+  linkonly   29.83M
+  tcmalloc   48.97M
+
+mid_only_r90:
+  allocfirst 37.52M
+  linkonly   33.50M
+  tcmalloc   44.69M
+
+cross128_r90:
+  allocfirst 10.87M
+  linkonly   10.92M
+  tcmalloc    7.83M
 ```
 
 ## MidPageFront-M2

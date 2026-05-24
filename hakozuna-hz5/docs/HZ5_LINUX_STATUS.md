@@ -259,14 +259,15 @@ TLS split:
 ```text
 private/raw-results/linux/midpage_tls_split_r3_20260525_055155
 private/raw-results/linux/midpage_linkonly_broad_r3_20260525_055224
+private/raw-results/linux/midpage_linkonly_verify_r7_20260525_055344
 ```
 
 Decision:
 
 ```text
-linkonly is the best balanced follow-up diagnostic. initial-exec TLS alone
-helps mid_only_r0 but is weaker on remote/cross. Combined tlslink is worse than
-linkonly, so do not combine the flags by default.
+linkonly is diagnostic only after r7. initial-exec TLS alone helps mid_only_r0
+but is weaker on remote/cross. Combined tlslink is worse than linkonly, and
+linkonly does not beat allocfirst on main_r90/mid_only_r90 in the r7 verify.
 ```
 
 Split key medians:
@@ -303,6 +304,25 @@ cross128_r90:
   allocfirst 13.57M
   linkonly   11.02M
   tcmalloc    7.82M
+```
+
+Linkonly verify r7:
+
+```text
+main_r90:
+  allocfirst 38.71M
+  linkonly   29.83M
+  tcmalloc   48.97M
+
+mid_only_r90:
+  allocfirst 37.52M
+  linkonly   33.50M
+  tcmalloc   44.69M
+
+cross128_r90:
+  allocfirst 10.87M
+  linkonly   10.92M
+  tcmalloc    7.83M
 ```
 
 ## Next Engineering Target

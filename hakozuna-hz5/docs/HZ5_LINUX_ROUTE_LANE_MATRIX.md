@@ -311,8 +311,7 @@ hz5-general-midpage-region-shadow-tlsie:
 hz5-general-midpage-region-shadow-linkonly:
   --linux-hz5-general-midpage-region-shadow-linkonly
   tcmalloc-chase diagnostic applying preload-wide speed link flags only
-  best balanced tls/linkage split so far; needs higher-run verification before
-  lead promotion
+  diagnostic only after r7: does not beat allocfirst on main_r90/mid_only_r90
 ```
 
 Status:
