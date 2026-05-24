@@ -32,6 +32,10 @@ void _aligned_free(void* ptr);
 #define HZ5_SMALLFRONT_REMOTE_BATCH_CAP 16u
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_SMALLFRONT_DRAIN_EMPTY_GATED
+#define BENCHLAB_HZ5_LINUX_SMALLFRONT_DRAIN_EMPTY_GATED 0
+#endif
+
 typedef struct Hz5SmallFrontPage {
   uint64_t magic;
   void* raw;
@@ -304,6 +308,13 @@ static uint32_t hz5_smallfront_drain_remote_class_budget(
   hz5_ownerhub_clear_pending(tls->owner,
                              HZ5_OWNERHUB_FRONT_SMALL,
                              class_index);
+#if BENCHLAB_HZ5_LINUX_SMALLFRONT_DRAIN_EMPTY_GATED
+  if (!atomic_load_explicit(
+          &g_hz5_smallfront_owner_inbox[tls->owner.slot][class_index],
+          memory_order_acquire)) {
+    return 0;
+  }
+#endif
   void* head = atomic_exchange_explicit(
       &g_hz5_smallfront_owner_inbox[tls->owner.slot][class_index], NULL,
       memory_order_acq_rel);

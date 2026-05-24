@@ -73,6 +73,7 @@ small 4K/8K a8192:
 | `p25attr` | lane/route variant | diagnostic/safety evidence | not a claim |
 | `p43_token` | lane/route variant | remote/RSS candidate-watch | diagnostic until proven |
 | `p43_tokenbridge` | lane/route variant | topology-mismatch evidence | diagnostic only |
+| `smallfront_emptygate` | lane variant | diagnostic only | not a claim |
 | `p43_trustwrap` | lane/route variant | unsafe speed control | diagnostic only |
 | `preload_hybrid` | adapter | libc+HZ5 diagnostic bridge | not paper-main |
 | `preload_full` | adapter | HZ5 attribution control | not a performance claim by itself |
@@ -188,6 +189,10 @@ Reporting lanes:
 Diagnostic-only lanes:
 
 ```text
+hz5-smallfront-emptygate:
+  --linux-smallfront-drain-empty-gated
+  skips empty SmallFront owner-inbox exchange; not broad enough for default
+
 hz5-midfront-takefirst:
   --linux-midfront-drain-take-first
   direct-return A/B; safe but not the lead policy in the current matrix

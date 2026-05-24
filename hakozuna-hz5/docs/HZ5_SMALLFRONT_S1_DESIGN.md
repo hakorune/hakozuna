@@ -534,3 +534,32 @@ attribution:
   malloc_real=0
   track_insert_fail=0
 ```
+
+Empty-gated owner-inbox drain:
+
+```text
+--linux-smallfront-drain-empty-gated
+```
+
+This candidate skips the owner-inbox `atomic_exchange` when an acquire load
+sees an empty class inbox. It keeps the same page-map ownership lookup,
+per-slot state, sender batch, and owner/class inbox structure.
+
+Short raw repeat-3, `threads=2 iters=200000 ws=100`, stats unset:
+
+```text
+guard r90:
+  inbox      7.10M
+  smallgate  6.81M
+
+main r90:
+  inbox      8.85M
+  smallgate  7.13M
+
+cross128 r90:
+  inbox      6.42M
+  smallgate  6.90M
+```
+
+Decision: diagnostic only. The cross128 r90 sample improved, but guard/main
+regressed enough that empty-gated SmallFront drain should not become default.

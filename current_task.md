@@ -2173,6 +2173,41 @@ short raw repeat-3, threads=2 iters=200000 ws=100, stats unset:
 decision:
   Empty-gated LargeFront drain is useful as a large/main diagnostic candidate,
   but it is not a cross-size default. Keep it behind the explicit build flag.
+
+SmallFront empty-gated drain candidate:
+  implemented:
+    --linux-smallfront-drain-empty-gated
+  design:
+    same SmallFront owner inbox
+    before draining a class, acquire-load the inbox head
+    skip atomic_exchange when the inbox is empty
+  purpose:
+    test whether guard/main remote-heavy fixed cost comes from empty inbox
+    exchanges on SmallFront local misses
+
+short raw repeat-3, threads=2 iters=200000 ws=100, stats unset:
+  guard r50:
+    inbox      11.15M median
+    smallgate   9.87M median
+  guard r90:
+    inbox       7.10M median
+    smallgate   6.81M median
+  main r50:
+    inbox       9.64M median
+    smallgate  10.24M median
+  main r90:
+    inbox       8.85M median
+    smallgate   7.13M median
+  cross128 r50:
+    inbox       9.16M median
+    smallgate   8.98M median
+  cross128 r90:
+    inbox       6.42M median
+    smallgate   6.90M median
+
+decision:
+  SmallFront empty-gated drain is diagnostic only. It improves one cross-size
+  r90 sample but regresses guard/main enough that it should not become default.
 ```
 
 MidFront source-return cleanup:
