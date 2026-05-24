@@ -97,6 +97,7 @@ Candidate lane:
 --linux-midfront-owner-fast-state
 --linux-midfront-remote-batch-cap N
 --linux-midfront-drain-all-on-miss
+--linux-midfront-drain-mask-on-miss
 ```
 
 This keeps MidFront-M1 as the default safe lane, but replaces owner-local
@@ -114,6 +115,11 @@ later owner drain/source-reuse path.
 requested local class is empty. It is a mixed-workload candidate: useful if
 remote frees pile up in other classes and force avoidable source allocation,
 but potentially wasteful for narrow single-class workloads.
+
+`--linux-midfront-drain-mask-on-miss` keeps an owner-local pending-class bitmask
+updated by remote publish. On local miss, it drains the requested class plus any
+classes with pending bits. This is a lower-overhead form of drain-all and is a
+candidate, not the default policy.
 ```
 
 ## Allocator Shape

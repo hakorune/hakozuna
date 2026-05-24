@@ -493,6 +493,9 @@ candidate selector:
   --linux-midfront-drain-all-on-miss
     candidate lane that drains all MidFront owner inbox classes when the
     requested local class misses
+  --linux-midfront-drain-mask-on-miss
+    candidate lane that tracks pending owner inbox classes and drains only
+    pending classes when the requested local class misses
 
 implemented:
   hakozuna-hz5/midfront/hz5_midfront.c
@@ -583,6 +586,13 @@ MidFront drain-all-on-miss:
   classes different from the current allocation miss
   expected to help random mixed r90 if owner inbox backlog/source churn is the
   limiter, but may hurt narrow single-class local misses
+
+MidFront drain-mask-on-miss:
+  lighter version of drain-all-on-miss
+  remote publish sets an owner/class pending bit
+  local miss drains the requested class and any other pending classes
+  intended to keep drain-all's mixed r90 win while avoiding useless empty-class
+  atomic exchanges
 ```
 
 Initial smoke measurement:
@@ -666,6 +676,40 @@ interpretation:
   mixed remote-heavy is sensitive to owner inbox drain policy
   drain-all-on-miss is worth keeping as a candidate
   next remote work should refine drain policy before replacing source layout
+```
+
+Drain-mask-on-miss probe:
+
+```text
+build:
+  --linux-midfront-owner-fast-state
+  --linux-midfront-remote-batch-cap 16
+  --linux-midfront-drain-mask-on-miss
+
+smoke:
+  /bin/true OK
+  MidFront usable class smoke OK
+  MidFront owner-death smoke OK
+
+short hakmem comparison, threads=2 ws=100:
+  fixed 4096 r0 median:
+    rb16:      about 69.2M ops/s
+    drainall:  about 70.9M ops/s
+    drainmask: about 70.2M ops/s
+  main 16..65536 r90 median:
+    rb16:      about 3.86M ops/s
+    drainall:  about 5.20M ops/s
+    drainmask: about 3.98M ops/s
+  mid 2049..32768 r90 median:
+    rb16:      about 3.79M ops/s
+    drainall:  about 2.77M ops/s
+    drainmask: about 3.42M ops/s
+
+interpretation:
+  short r90 runs are noisy
+  drain-mask is safe enough to keep as an A/B candidate
+  it does not clearly replace drain-all yet
+  next serious comparison needs longer runs or perf counters
 ```
 
 OwnerLifetime-O1 implementation status:

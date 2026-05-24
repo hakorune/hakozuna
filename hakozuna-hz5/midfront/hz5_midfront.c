@@ -25,6 +25,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDFRONT_DRAIN_ALL_ON_MISS 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDFRONT_DRAIN_MASK_ON_MISS
+#define BENCHLAB_HZ5_LINUX_MIDFRONT_DRAIN_MASK_ON_MISS 0
+#endif
+
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_MIDFRONT_M1
 
 #define HZ5_MIDFRONT_MAGIC UINT64_C(0x485A354D49444D31)
@@ -83,6 +87,9 @@ static const Hz5OwnerToken k_hz5_midfront_no_owner = {0, 0};
 static Hz5MidMapEntry g_hz5_midfront_map[HZ5_MIDFRONT_MAP_CAP];
 static _Atomic(void*) g_hz5_midfront_owner_inbox[UINT16_MAX + 1u]
                                              [HZ5_MIDFRONT_CLASS_COUNT];
+#if BENCHLAB_HZ5_LINUX_MIDFRONT_DRAIN_MASK_ON_MISS
+static _Atomic uint32_t g_hz5_midfront_owner_inbox_mask[UINT16_MAX + 1u];
+#endif
 static pthread_mutex_t g_hz5_midfront_map_lock = PTHREAD_MUTEX_INITIALIZER;
 static _Thread_local Hz5MidTls g_hz5_midfront_tls;
 
@@ -267,6 +274,11 @@ static void hz5_midfront_remote_publish_list(Hz5OwnerToken owner,
     tail->next = (Hz5MidSpan*)old_head;
   } while (!atomic_compare_exchange_weak_explicit(
       inbox, &old_head, head, memory_order_release, memory_order_acquire));
+#if BENCHLAB_HZ5_LINUX_MIDFRONT_DRAIN_MASK_ON_MISS
+  atomic_fetch_or_explicit(&g_hz5_midfront_owner_inbox_mask[owner.slot],
+                           UINT32_C(1) << class_index,
+                           memory_order_release);
+#endif
 }
 
 static void hz5_midfront_remote_batch_flush(Hz5MidTls* tls) {
@@ -320,6 +332,11 @@ static void hz5_midfront_drain_remote_class(Hz5MidTls* tls,
     return;
   }
 
+#if BENCHLAB_HZ5_LINUX_MIDFRONT_DRAIN_MASK_ON_MISS
+  atomic_fetch_and_explicit(&g_hz5_midfront_owner_inbox_mask[tls->owner.slot],
+                            ~(UINT32_C(1) << class_index),
+                            memory_order_acq_rel);
+#endif
   void* head = atomic_exchange_explicit(
       &g_hz5_midfront_owner_inbox[tls->owner.slot][class_index], NULL,
       memory_order_acq_rel);
@@ -343,6 +360,20 @@ static void hz5_midfront_drain_remote_on_miss(Hz5MidTls* tls,
 #if BENCHLAB_HZ5_LINUX_MIDFRONT_DRAIN_ALL_ON_MISS
   for (uint32_t i = 0; i < HZ5_MIDFRONT_CLASS_COUNT; ++i) {
     hz5_midfront_drain_remote_class(tls, i);
+  }
+#elif BENCHLAB_HZ5_LINUX_MIDFRONT_DRAIN_MASK_ON_MISS
+  hz5_midfront_drain_remote_class(tls, class_index);
+  if (!tls || tls->owner.slot == 0) {
+    return;
+  }
+  uint32_t mask = atomic_load_explicit(
+      &g_hz5_midfront_owner_inbox_mask[tls->owner.slot],
+      memory_order_acquire);
+  mask &= (UINT32_C(1) << HZ5_MIDFRONT_CLASS_COUNT) - UINT32_C(1);
+  for (uint32_t i = 0; i < HZ5_MIDFRONT_CLASS_COUNT; ++i) {
+    if (i != class_index && (mask & (UINT32_C(1) << i))) {
+      hz5_midfront_drain_remote_class(tls, i);
+    }
   }
 #else
   hz5_midfront_drain_remote_class(tls, class_index);
