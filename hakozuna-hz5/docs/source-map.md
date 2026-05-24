@@ -148,6 +148,12 @@ pool only if broad measurements show RSS or size-mix pressure.
 
 ## Design Notes
 
+* `docs/HZ5_LINUX_STATUS.md`: short active status dashboard for HZ5 Linux.
+  Start here before continuing development.
+* `docs/HZ5_BENCH_RESULTS_INDEX.md`: raw benchmark directory index and main
+  decisions supported by recent measurements.
+* `docs/archive/current_task_2026-05-hz5-linux.md`: archived chronological
+  work log that used to live in `current_task.md`.
 * `docs/HZ5_CONTROL_PLANE_DESIGN.md`: post-P45 control-plane design. P25 bridge
   is the speed layer, P43 segment slots are the source layer, P40 release is
   source-demotion intent, and OPEN/DRAIN/CLOSED admission is the control plane.
