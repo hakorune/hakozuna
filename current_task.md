@@ -1560,6 +1560,119 @@ initial smoke readout:
       hz5-allgate 9.6M
 ```
 
+Hakmem full comparison:
+
+```text
+result directory:
+  private/raw-results/linux/hz5_hakmem_compare_20260524_114738
+
+commit:
+  427404cc25c7d2986e978898467313cc0842f476
+
+tree:
+  dirty=0
+
+benchmark:
+  /mnt/workdisk/public_share/hakmem/hakozuna/out/bench_random_mixed_mt_remote_malloc
+
+allocators:
+  system
+  hz3
+  hz4
+  mimalloc
+  tcmalloc
+  hz5-rb16
+  hz5-allgate
+
+configuration:
+  runs=5
+  threads=2,4,8
+  lanes=guard,main,mid_only,cross128
+  remote_pcts=0,50,90
+  ws=100
+  slots=65536
+
+measurement hygiene:
+  raw performance:
+    HZ5_PRELOAD_STATS unset
+  attribution:
+    separate attrib.tsv
+
+HZ5 attribution:
+  hz5-rb16/hz5-allgate:
+    malloc_hz5=10049
+    malloc_real=0
+    malloc_fail=0
+    free_real=0
+    track_insert_fail=0
+
+failure result:
+  all summary rows:
+    alloc_failed_runs=0
+    bad_status_runs=0
+
+HZ5 strengths:
+  main r0:
+    t2:
+      tcmalloc 115.75M
+      hz5-rb16 80.65M
+      hz5-allgate 79.88M
+      hz3 72.21M
+    t4:
+      tcmalloc 151.75M
+      hz3 140.86M
+      hz5-rb16 98.36M
+    t8:
+      tcmalloc 241.28M
+      hz3 226.48M
+      hz5-rb16 158.04M
+  mid_only r0:
+    t2:
+      tcmalloc 119.46M
+      hz5-rb16 84.21M
+      hz5-allgate 82.65M
+      mimalloc 79.34M
+      hz3 75.64M
+    t4:
+      tcmalloc 155.24M
+      hz3 145.30M
+      hz5-allgate 104.79M
+    t8:
+      tcmalloc 240.29M
+      hz3 238.43M
+      hz5-rb16 160.40M
+  remote-heavy mid/main:
+    HZ5 often beats system and sometimes tcmalloc/mimalloc on mid/main r50/r90,
+    but not HZ4 and usually not HZ3.
+
+HZ5 weaknesses:
+  guard remote-heavy:
+    HZ5 is weak because SmallFront remote path is not yet HZ3/HZ4-class.
+  main/mid remote-heavy:
+    HZ4 is the clear leader.
+    HZ5 allgate/rb16 are behind HZ4 and mostly behind HZ3.
+  cross128:
+    HZ5 is about 0.4M..0.8M ops/s while HZ4/tcmalloc are tens of millions.
+    Reason:
+      cross128 includes >64K allocations.
+      HZ5 currently has SmallFront <=2K and MidFront <=64K.
+      >64K still goes to slow general fallback/wrapped path.
+
+interpretation:
+  HZ5 Linux full-preload is no longer just an exact 64K sidecar.
+  It is credible for local ordinary malloc in main/mid ranges.
+  It is not yet competitive for remote-heavy general allocator workloads versus
+  HZ4/HZ3.
+  It needs a LargeFront/>64K route before cross128 can be treated as a valid
+  general HZ5 row.
+
+next development targets:
+  1. LargeFront for >64K ordinary malloc to fix cross128.
+  2. SmallFront remote path if guard r50/r90 becomes a paper target.
+  3. MidFront remote owner-inbox / transfer improvements if main/mid r90 is the
+     next target.
+```
+
 MidFront source-return cleanup:
 
 ```text

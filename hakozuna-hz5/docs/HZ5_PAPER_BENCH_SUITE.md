@@ -306,6 +306,59 @@ The paper tables map to the following Linux/hakmem workloads:
 | Redis workload / redis-like | synthetic Redis or memtier Redis lane | `benchmarks/scripts/run_redis_matrix.sh`, `benchmarks/redis/redis_final_comparison.sh`, or `hakozuna/scripts/run_realworld_4pack.sh` | Mostly small-object/app-like; current HZ5 Local2P exact lane should not be mixed in as a general result. |
 | HZ5 Linux supplement | exact `64K/a8192` local/mixed/RSS/remote | `linux/run_linux_hz5_local2p_focus.sh` | Valid HZ5 appendix evidence; compare to hz4/tcmalloc/mimalloc/system as exact-overaligned controls, not as paper-main default allocator evidence. |
 
+### HZ5 Full-Preload Hakmem Compare
+
+Use the HZ5-aware compare runner from this repository:
+
+```bash
+cd /mnt/workdisk/public_share/hakozuna_repo
+./linux/run_hz5_hakmem_compare.sh
+```
+
+Folder policy:
+
+```text
+benchmark asset:
+  /mnt/workdisk/public_share/hakmem
+
+runner:
+  /mnt/workdisk/public_share/hakozuna_repo/linux/run_hz5_hakmem_compare.sh
+
+results:
+  /mnt/workdisk/public_share/hakozuna_repo/private/raw-results/linux/
+```
+
+Do not copy the full `hakmem` tree into this repository. Treat `hakmem` as the
+external paper benchmark asset.
+
+First full comparison result:
+
+```text
+private/raw-results/linux/hz5_hakmem_compare_20260524_114738
+
+runs=5
+threads=2,4,8
+lanes=guard,main,mid_only,cross128
+remote_pcts=0,50,90
+allocators=system,hz3,hz4,mimalloc,tcmalloc,hz5-rb16,hz5-allgate
+```
+
+Result interpretation:
+
+```text
+HZ5 is credible on local ordinary malloc:
+  main/mid r0 rows are competitive with hz3 and mimalloc,
+  though still behind tcmalloc at higher thread counts.
+
+HZ5 is not yet HZ4-class on remote-heavy general workloads:
+  HZ4 wins main/mid r50/r90.
+
+HZ5 cross128 is not a valid strength row yet:
+  cross128 includes >64K allocations, while current HZ5 full-preload front-ends
+  cover SmallFront <=2K and MidFront <=64K.
+  A LargeFront/>64K route is required before paper-main cross128 can be claimed.
+```
+
 Fresh paper-main reproduction command:
 
 ```bash
