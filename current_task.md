@@ -1276,6 +1276,63 @@ interpretation:
   globalrecycle should remain only a control lane
 ```
 
+RB16 vs allgate repeat-10:
+
+```text
+result directory:
+  private/raw-results/linux/midfront_rb16_allgate_repeat10_20260524_112935
+
+configuration:
+  candidates:
+    rb16:
+      --linux-midfront-owner-fast-state
+      --linux-midfront-remote-batch-cap 16
+    allgate:
+      --linux-midfront-owner-fast-state
+      --linux-midfront-remote-batch-cap 16
+      --linux-midfront-drain-all-on-miss
+      --linux-midfront-drain-empty-gated
+  repeat=10
+  threads=2,4,8
+  ws=100
+  HZ5_PRELOAD_STATS unset
+
+failure result:
+  all cases:
+    alloc_failed_runs=0
+    bad_status_runs=0
+
+medians:
+  threads=2:
+    main_r50:    rb16 9.20M,  allgate 8.84M
+    main_r90:    allgate 8.75M, rb16 6.71M
+    mid_r50:     allgate 10.71M, rb16 9.39M
+    mid_r90:     allgate 8.96M, rb16 8.16M
+    hi64_r90:    allgate 9.49M, rb16 8.78M
+    fixed4k_r0:  rb16 85.37M, allgate 83.34M
+  threads=4:
+    main_r50:    rb16 14.11M, allgate 11.92M
+    main_r90:    rb16 14.22M, allgate 10.01M
+    mid_r50:     allgate 17.69M, rb16 12.56M
+    mid_r90:     allgate 13.72M, rb16 10.17M
+    hi64_r90:    allgate 17.18M, rb16 13.91M
+    fixed4k_r0:  rb16 96.23M, allgate 92.46M
+  threads=8:
+    main_r50:    rb16 24.32M, allgate 22.89M
+    main_r90:    rb16 20.50M, allgate 18.96M
+    mid_r50:     allgate 24.08M, rb16 22.10M
+    mid_r90:     rb16 19.40M, allgate 18.19M
+    hi64_r90:    rb16 17.63M, allgate 16.78M
+    fixed4k_r0:  rb16 145.59M, allgate 141.35M
+
+interpretation:
+  rb16 should remain the broad MidFront default candidate
+  allgate is a useful mid-heavy/low-thread remote candidate, especially
+  threads=2/4 mid_r50/r90 and hi64_r90
+  allgate does not replace rb16 for paper-main or high-thread general runs
+  owner-inbox tuning should avoid collapsing to a single universal policy
+```
+
 MidFront source-return cleanup:
 
 ```text

@@ -219,6 +219,10 @@ threads=8 repeat-5 smoke, `allgate` led the MidFront mid-range remote-heavy
 cases, while `rb16` remained stronger for broader `main_r90` and high-mid
 `hi64_r90`. Treat `allgate` as a MidFront candidate, not a universal default.
 
+A focused repeat-10 comparison confirmed that `rb16` should remain the broad
+default candidate. `allgate` is useful for mid-heavy low-thread remote workloads
+but does not replace `rb16` for paper-main style or high-thread general runs.
+
 ## Allocator Shape
 
 The Linux HZ5 general allocator should be split by responsibility:
