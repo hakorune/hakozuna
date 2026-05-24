@@ -325,9 +325,47 @@ cross128_r90:
   tcmalloc    7.83M
 ```
 
+M3 nodeless diagnostic:
+
+```text
+private/raw-results/linux/midpage_nodeless_r3_20260525_065654
+```
+
+Decision:
+
+```text
+Nodeless is diagnostic only in the first implementation. It confirms that
+removing local node->page/node->next traffic helps mid_only_r0 a little, but
+the gain is far below the acceptance target and remote rows regress.
+```
+
+Key medians:
+
+```text
+mid_only_r0:
+  allocfirst 67.55M
+  nodeless   70.83M
+  tcmalloc  141.93M
+
+mid_only_r90:
+  allocfirst 39.89M
+  nodeless   32.29M
+  tcmalloc   46.23M
+
+main_r90:
+  allocfirst 27.91M
+  nodeless   22.96M
+  tcmalloc   51.59M
+
+cross128_r90:
+  allocfirst 12.23M
+  nodeless   10.82M
+  tcmalloc    7.72M
+```
+
 ## Next Engineering Target
 
-Prototype a MidPageFront local topology diagnostic:
+Refine or replace the MidPageFront-M3 local topology diagnostic:
 
 ```text
 Goal:

@@ -202,3 +202,45 @@ foreign/wrong-route pointers fall to libc
 partial lists duplicate pages and grow unstable
 free_bits and remote_bits overlap
 ```
+
+## First Implementation Result
+
+First diagnostic:
+
+```text
+--linux-hz5-general-midpage-region-shadow-nodeless
+private/raw-results/linux/midpage_nodeless_r3_20260525_065654
+```
+
+Result:
+
+```text
+mid_only_r0:
+  allocfirst 67.55M
+  nodeless   70.83M
+  tcmalloc  141.93M
+
+mid_only_r90:
+  allocfirst 39.89M
+  nodeless   32.29M
+  tcmalloc   46.23M
+
+main_r90:
+  allocfirst 27.91M
+  nodeless   22.96M
+  tcmalloc   51.59M
+
+cross128_r90:
+  allocfirst 12.23M
+  nodeless   10.82M
+  tcmalloc    7.72M
+```
+
+Decision:
+
+```text
+Diagnostic only. M3 removes local object node traffic and gives a small
+mid_only_r0 gain, but it does not reach the 90M minimum keep line and remote
+rows regress. The remaining issue is likely remote drain / partial-page
+management and local-free validation cost, not just node->page removal.
+```

@@ -312,6 +312,12 @@ hz5-general-midpage-region-shadow-linkonly:
   --linux-hz5-general-midpage-region-shadow-linkonly
   tcmalloc-chase diagnostic applying preload-wide speed link flags only
   diagnostic only after r7: does not beat allocfirst on main_r90/mid_only_r90
+
+hz5-general-midpage-region-shadow-nodeless:
+  --linux-hz5-general-midpage-region-shadow-nodeless
+  MidPageFront-M3 diagnostic replacing local object linked-list cache with
+  descriptor free_bits plus TLS current_page/current_bits
+  diagnostic only in first r3: mid_only_r0 improves slightly, remote regresses
 ```
 
 Status:

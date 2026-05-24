@@ -536,6 +536,51 @@ cross128_r90:
   tcmalloc    7.83M
 ```
 
+### `midpage_nodeless_r3_20260525_065654`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_nodeless_r3_20260525_065654
+```
+
+Purpose:
+
+```text
+First MidPageFront-M3 nodeless local page-run diagnostic.
+```
+
+Decision:
+
+```text
+Diagnostic only. It improves mid_only_r0 slightly, but misses the acceptance
+target and regresses remote rows.
+```
+
+Key medians:
+
+```text
+mid_only_r0:
+  allocfirst 67.55M
+  nodeless   70.83M
+  tcmalloc  141.93M
+
+mid_only_r90:
+  allocfirst 39.89M
+  nodeless   32.29M
+  tcmalloc   46.23M
+
+main_r90:
+  allocfirst 27.91M
+  nodeless   22.96M
+  tcmalloc   51.59M
+
+cross128_r90:
+  allocfirst 12.23M
+  nodeless   10.82M
+  tcmalloc    7.72M
+```
+
 ## MidPageFront-M2
 
 ### `midpage_region_broad_r5_20260525_031852`

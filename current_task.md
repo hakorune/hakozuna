@@ -104,6 +104,10 @@ hakozuna-hz5/docs/archive/current_task_2026-05-hz5-linux.md
 --linux-hz5-general-midpage-region-shadow-tlsie
   diagnostic split; initial-exec TLS only helps mid_only_r0 but is weaker on
   remote/cross rows
+
+--linux-hz5-general-midpage-region-shadow-nodeless
+  diagnostic only so far; M3 nodeless local page-run cache improves mid_only_r0
+  slightly, but remote rows regress
 ```
 
 ## Latest Key Results
@@ -124,6 +128,7 @@ private/raw-results/linux/midpage_tlslink_cross128_verify_r5_20260525_055003
 private/raw-results/linux/midpage_tls_split_r3_20260525_055155
 private/raw-results/linux/midpage_linkonly_broad_r3_20260525_055224
 private/raw-results/linux/midpage_linkonly_verify_r7_20260525_055344
+private/raw-results/linux/midpage_nodeless_r3_20260525_065654
 ```
 
 Current read:
@@ -161,9 +166,15 @@ tls split:
   linkonly is not promoted after r7. initial-exec TLS helps r0, link flags can
   help short runs, but neither is a broad tcmalloc-chase lead yet.
 
+nodeless:
+  first M3 implementation validates the hypothesis only weakly. It removes
+  local node->page/node->next traffic and improves mid_only_r0 by ~5%, but
+  remote rows regress; remote drain / partial page handling needs redesign
+  before promotion.
+
 next:
-  continue reducing MidPageFront local active-state / metadata / freelist work
-  without hurting remote rows.
+  decide whether to refine M3 remote/partial handling or pivot to a smaller
+  local-free optimization.
 ```
 
 ## Next Step
