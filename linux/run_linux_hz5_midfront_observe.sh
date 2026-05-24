@@ -35,6 +35,12 @@ Outputs:
   attrib.tsv        separate stats smoke with HZ5_PRELOAD_STATS=1
   meta.txt          run configuration
 
+Default candidates:
+  rb16              broad MidFront default candidate
+  allgate           mid-heavy candidate: drain-all + empty-gated exchange
+  drainmask         pending-mask candidate/control
+  globalrecycle     global recycle control
+
 Important:
   Performance runs intentionally do not set HZ5_PRELOAD_STATS, so preload
   atomic counters are not mixed into ops/s measurements.
@@ -75,7 +81,7 @@ CAND_FLAGS[drainmask]="--linux-midfront-owner-fast-state --linux-midfront-remote
 CAND_FLAGS[maskhitstop]="--linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16 --linux-midfront-drain-mask-hit-stop"
 CAND_FLAGS[globalrecycle]="--linux-midfront-owner-fast-state --linux-midfront-remote-global-recycle"
 
-declare -a CANDIDATES=(rb16 takefirst drainall allgate drainmask globalrecycle)
+declare -a CANDIDATES=(rb16 allgate drainmask globalrecycle)
 
 build_candidate() {
   local cand="$1"

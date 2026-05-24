@@ -1194,8 +1194,8 @@ empty-gated:
   rb16gate helps some main_r90 threads=8 cases but is not broadly better than
   the existing rb16 baseline
 
-runner update:
-  default MidFront observe candidates now include:
+historical runner update, later superseded by lane cleanup:
+  MidFront observe candidates temporarily included:
     rb16
     takefirst
     drainall
@@ -1233,6 +1233,14 @@ candidates:
   allgate
   drainmask
   globalrecycle
+
+note:
+  this was the pre-cleanup matrix
+  current default observe runner is:
+    rb16
+    allgate
+    drainmask
+    globalrecycle
 
 failure result:
   all candidates/cases:
@@ -1331,6 +1339,38 @@ interpretation:
   threads=2/4 mid_r50/r90 and hi64_r90
   allgate does not replace rb16 for paper-main or high-thread general runs
   owner-inbox tuning should avoid collapsing to a single universal policy
+```
+
+MidFront lane cleanup decision:
+
+```text
+default observe runner:
+  rb16:
+    broad default candidate
+  allgate:
+    mid-heavy remote candidate
+  drainmask:
+    pending-mask candidate/control
+  globalrecycle:
+    global recycle control
+
+focused diagnostics only:
+  takefirst:
+    direct-return A/B
+  maskhitstop:
+    bounded mask A/B
+
+documentation updated:
+  hakozuna-hz5/docs/HZ5_LINUX_ROUTE_LANE_MATRIX.md
+  hakozuna-hz5/docs/HZ5_MIDFRONT_M1_DESIGN.md
+  hakozuna-hz5/docs/source-map.md
+  linux/README.md
+
+reason:
+  rb16 remains the broad policy
+  allgate is useful but workload-specific
+  takefirst/maskhitstop should not appear in the default matrix until they have
+  a clear promotion case
 ```
 
 MidFront source-return cleanup:

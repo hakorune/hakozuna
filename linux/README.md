@@ -105,6 +105,49 @@ Keep HZ5 results separate from the default hz3/hz4 public allocator comparison.
 HZ5 is a research sidecar, and unsupported exact-only routes must not be counted
 as HZ5 wins.
 
+## HZ5 Full-Preload Research Lanes
+
+HZ5 also has Linux full-preload research front-ends for ordinary `malloc`
+traffic. These are separate from the exact `64K/a8192` Local2P appendix lanes.
+
+Current front-end split:
+
+- `hz5-smallfront-s1`: ordinary `malloc` up to 2KiB.
+- `hz5-midfront-rb16`: ordinary `malloc` 4KiB..64KiB, broad default MidFront candidate.
+- `hz5-midfront-allgate`: MidFront mid-heavy remote candidate.
+- `hz5-midfront-globalrecycle`: MidFront control lane, not the lead policy.
+
+Build examples:
+
+```bash
+./linux/build_linux_hz5_standalone.sh \
+  --linux-midfront-owner-fast-state \
+  --linux-midfront-remote-batch-cap 16 \
+  --linux-local2p-speed-linkflags \
+  --out-dir hakozuna-hz5/out/linux/x86_64-hz5-midfront-rb16
+
+./linux/build_linux_hz5_standalone.sh \
+  --linux-midfront-owner-fast-state \
+  --linux-midfront-remote-batch-cap 16 \
+  --linux-midfront-drain-all-on-miss \
+  --linux-midfront-drain-empty-gated \
+  --linux-local2p-speed-linkflags \
+  --out-dir hakozuna-hz5/out/linux/x86_64-hz5-midfront-allgate
+```
+
+Run the MidFront observation matrix with:
+
+```bash
+./linux/run_linux_hz5_midfront_observe.sh
+```
+
+The runner keeps raw performance runs separate from attribution counters:
+
+- `raw.tsv`: `HZ5_PRELOAD_STATS` unset.
+- `attrib.tsv`: separate short attribution smoke with `HZ5_PRELOAD_STATS=1`.
+
+Do not mix attribution-counter runs into performance medians.
+
 ## GO / NO-GO And Conditions
 
 - Quick GO / NO-GO status: [docs/benchmarks/GO_NO_GO_LEDGER.md](../docs/benchmarks/GO_NO_GO_LEDGER.md)

@@ -29,7 +29,9 @@ Current paper/appendix-facing HZ5 Linux rows are profile-specific:
 | RSS-throughput retained-cache profile | `hz5-local2p-rssretain2048tls` | 2048-block RSS plateau and retained working-set reuse |
 | Producer/consumer remote-free profile | `hz5-local2p-remotebatch` | cross-thread free handoff rows |
 | Linux HZ5 control | `hz5-p25` | P25 bridge baseline |
-| General allocator candidate | `hz5-smallfront-s1` | planned paper-main Linux preload route for ordinary small malloc |
+| Small ordinary malloc candidate | `hz5-smallfront-s1` | Linux full-preload route for ordinary malloc <=2KiB |
+| Broad mid ordinary malloc candidate | `hz5-midfront-rb16` | Linux full-preload route for ordinary malloc 4KiB..64KiB, broad default candidate |
+| Mid-heavy remote candidate | `hz5-midfront-allgate` | MidFront owner-inbox drain-all plus empty-gated exchange candidate |
 
 Older Local2P evolution lanes remain selectable diagnostics. Do not report them
 as competing HZ5 profiles unless the result is explicitly an implementation
@@ -66,13 +68,19 @@ small 4K/8K a8192:
 | `p43_trustwrap` | lane/route variant | unsafe speed control | diagnostic only |
 | `preload_hybrid` | adapter | libc+HZ5 diagnostic bridge | not paper-main |
 | `preload_full` | adapter | HZ5 attribution control | not a performance claim by itself |
-| `smallfront_s1` | route/lane family | planned Linux general front-end | candidate after safety/perf validation |
+| `smallfront_s1` | route/lane family | active Linux small front-end | candidate for <=2KiB ordinary malloc |
+| `midfront_m1` | route/lane family | active Linux mid front-end | candidate for 4KiB..64KiB ordinary malloc |
+| `midfront_rb16` | lane | broad MidFront default candidate | general MidFront comparison row |
+| `midfront_allgate` | lane | mid-heavy remote candidate | candidate/control, not universal default |
+| `midfront_takefirst` | lane | direct-return A/B | diagnostic only |
+| `midfront_maskhitstop` | lane | bounded mask A/B | diagnostic only |
+| `midfront_globalrecycle` | lane | global recycle control | control only |
 | `hz3_fallback` | fallback route | disabled in standalone exact-only | not a HZ5 win |
 | `libc_passthrough` | adapter route | used by preload hybrid misses | not HZ5 |
 
 ## Routes
 
-### `smallfront_s1` Planned Route
+### `smallfront_s1`
 
 Claimed domain:
 
@@ -101,7 +109,7 @@ free:
 
 Classification:
 
-- Planned general allocator candidate.
+- Active Linux full-preload small-object front-end.
 - Not Local2P.
 - Not a P43/P25 exact route.
 - Not a direct hz3 small-bin port.
@@ -120,6 +128,83 @@ safety smoke clean
 malloc_hz5 high, malloc_real only bootstrap/reentrant
 track_insert_fail == 0
 paper-main guard/main/cross128 no longer wrapped-mmap slow path
+```
+
+### `midfront_m1`
+
+Claimed domain:
+
+```text
+ordinary malloc/free 2049..65536 bytes
+normal malloc alignment, 16 bytes
+Linux full preload lane
+```
+
+Path:
+
+```text
+alloc:
+  malloc(2049..65536)
+  -> round to 4K/8K/16K/32K/64K class
+  -> owner-local span list
+  -> owner inbox drain on local miss
+  -> batched source allocation on source miss
+
+free:
+  ptr -> MidFront page-map descriptor
+  -> ptr == span->base check
+  -> ACTIVE -> LOCAL_FREE owner-local transition
+  -> or ACTIVE -> REMOTE_PENDING remote CAS and owner inbox publish
+```
+
+Source capacity:
+
+```text
+HZ5_MIDFRONT_SOURCE_BATCH_COUNT=64
+HZ5_MIDFRONT_MAP_BITS=21
+```
+
+Reporting lanes:
+
+| Lane | Build flags | Role |
+| --- | --- | --- |
+| `hz5-midfront-rb16` | `--linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | broad default candidate |
+| `hz5-midfront-allgate` | `--linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16 --linux-midfront-drain-all-on-miss --linux-midfront-drain-empty-gated` | mid-heavy remote candidate |
+| `hz5-midfront-drainmask` | `--linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16 --linux-midfront-drain-mask-on-miss` | pending-mask candidate/control |
+| `hz5-midfront-globalrecycle` | `--linux-midfront-owner-fast-state --linux-midfront-remote-global-recycle` | global recycle control |
+
+Diagnostic-only lanes:
+
+```text
+hz5-midfront-takefirst:
+  --linux-midfront-drain-take-first
+  direct-return A/B; safe but not the lead policy in the current matrix
+
+hz5-midfront-maskhitstop:
+  --linux-midfront-drain-mask-hit-stop
+  bounded mask A/B; buildable but excluded from the default observe runner
+```
+
+Current decision:
+
+```text
+rb16:
+  broad default MidFront candidate
+
+allgate:
+  useful for mid-heavy / lower-thread remote workloads
+  not a universal replacement for rb16
+
+globalrecycle:
+  control only after source batching fixed the original failure class
+```
+
+Observation hygiene:
+
+```text
+linux/run_linux_hz5_midfront_observe.sh:
+  raw.tsv runs with HZ5_PRELOAD_STATS unset
+  attrib.tsv is separate and may set HZ5_PRELOAD_STATS=1
 ```
 
 ### `preload_full`

@@ -46,7 +46,7 @@ general allocator. The current full-preload adapter is an attribution/control
 lane; it proves ordinary `malloc` traffic can enter HZ5, but it is not the
 final small-object allocator.
 
-Planned next layer:
+Current Linux full-preload front-end layers:
 
 ```text
 smallfront/
@@ -64,6 +64,22 @@ midfront/
   descriptor-owned spans
   owner-local TLS span caches
   owner-aware remote inbox
+```
+
+Current MidFront lane naming:
+
+```text
+hz5-midfront-rb16:
+  broad default candidate
+
+hz5-midfront-allgate:
+  mid-heavy remote candidate
+
+hz5-midfront-globalrecycle:
+  control lane
+
+hz5-midfront-takefirst / hz5-midfront-maskhitstop:
+  focused diagnostics only
 ```
 
 Design source:
@@ -110,8 +126,8 @@ P45r1 / P45dr:
   not SpeedLane
 
 Next cleanup:
-  add OwnerLifetime-O1 minimum hardening
-  add MidFront-M1 behind an explicit selector
+  keep OwnerLifetime-O1 hardening
+  keep MidFront-M1 behind explicit selector lanes
   keep Local2P/P25/P43 exact lanes independent
   avoid new behavior knobs unless the route boundary changes
 ```

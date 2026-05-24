@@ -94,18 +94,35 @@ paper-main coverage are stable.
 Candidate lane:
 
 ```text
---linux-midfront-owner-fast-state
---linux-midfront-remote-batch-cap N
---linux-midfront-drain-all-on-miss
---linux-midfront-drain-mask-on-miss
---linux-midfront-remote-global-recycle
+hz5-midfront-rb16:
+  --linux-midfront-owner-fast-state
+  --linux-midfront-remote-batch-cap 16
+  broad default candidate
+
+hz5-midfront-allgate:
+  --linux-midfront-owner-fast-state
+  --linux-midfront-remote-batch-cap 16
+  --linux-midfront-drain-all-on-miss
+  --linux-midfront-drain-empty-gated
+  mid-heavy remote candidate
+
+hz5-midfront-drainmask:
+  --linux-midfront-owner-fast-state
+  --linux-midfront-remote-batch-cap 16
+  --linux-midfront-drain-mask-on-miss
+  pending-mask candidate/control
+
+hz5-midfront-globalrecycle:
+  --linux-midfront-owner-fast-state
+  --linux-midfront-remote-global-recycle
+  global recycle control
 ```
 
-This keeps MidFront-M1 as the default safe lane, but replaces owner-local
+These candidate lanes keep MidFront-M1 descriptor ownership intact. The broad
+default candidate is `hz5-midfront-rb16`, which replaces owner-local
 `LOCAL_FREE -> ACTIVE` and `ACTIVE -> LOCAL_FREE` state transitions with
 load/store checks. Remote-free still uses the `ACTIVE -> REMOTE_PENDING` CAS
-and owner inbox path. Treat this as a diagnostic/candidate until r0/r50/r90 and
-double-free smoke results are recorded.
+and owner inbox path.
 
 `--linux-midfront-remote-batch-cap` only changes how many remote frees a sender
 keeps before publishing to the owner inbox. It does not weaken ownership checks.
@@ -116,6 +133,10 @@ later owner drain/source-reuse path.
 requested local class is empty. It is a mixed-workload candidate: useful if
 remote frees pile up in other classes and force avoidable source allocation,
 but potentially wasteful for narrow single-class workloads.
+
+`--linux-midfront-drain-empty-gated` does an acquire load before the owner-inbox
+exchange and skips the exchange when the inbox is empty. Combined with
+drain-all, this is the `hz5-midfront-allgate` lane.
 
 `--linux-midfront-drain-mask-on-miss` keeps an owner-local pending-class bitmask
 updated by remote publish. On local miss, it drains the requested class plus any
@@ -132,6 +153,19 @@ always uses CAS when activating a global span, even when owner-fast-state is
 enabled. It preserves descriptor state checks but weakens owner-locality, so it
 remains a candidate policy.
 ```
+
+Diagnostic-only lane flags:
+
+```text
+--linux-midfront-drain-take-first:
+  requested-class direct-return A/B
+
+--linux-midfront-drain-mask-hit-stop:
+  bounded mask A/B
+```
+
+Both are buildable for focused experiments, but they are excluded from the
+default observe runner to keep the lane matrix compact.
 
 ## Observation Hygiene
 
@@ -209,15 +243,16 @@ maskhitstop:
   were not a clear win.
 ```
 
-Focused smokes identified `allgate` (`drainall + empty-gated`) as the strongest
-new candidate. `takefirst` remains useful as a direct-return A/B, while
+Focused smokes identified `allgate` (`drainall + empty-gated`) as a useful
+mid-heavy candidate. `takefirst` remains useful as a direct-return A/B, while
 `maskhitstop` is buildable but excluded from the default observe runner to avoid
 unnecessary lane spread.
 
-The updated default observe runner includes `allgate` and `takefirst`. In the
-threads=8 repeat-5 smoke, `allgate` led the MidFront mid-range remote-heavy
-cases, while `rb16` remained stronger for broader `main_r90` and high-mid
-`hi64_r90`. Treat `allgate` as a MidFront candidate, not a universal default.
+The updated default observe runner includes `rb16`, `allgate`, `drainmask`, and
+`globalrecycle`. In the threads=8 repeat-5 smoke, `allgate` led the MidFront
+mid-range remote-heavy cases, while `rb16` remained stronger for broader
+`main_r90` and high-mid `hi64_r90`. Treat `allgate` as a MidFront candidate,
+not a universal default.
 
 A focused repeat-10 comparison confirmed that `rb16` should remain the broad
 default candidate. `allgate` is useful for mid-heavy low-thread remote workloads
