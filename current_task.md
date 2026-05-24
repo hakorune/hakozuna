@@ -1373,6 +1373,124 @@ reason:
   a clear promotion case
 ```
 
+MidFront default full matrix:
+
+```text
+result base:
+  private/raw-results/linux/midfront_default_full_20260524_113628
+
+commit:
+  248a8abc48cd3a589de756fd1a53727f642a987c
+
+tree:
+  dirty=0
+
+configuration:
+  candidates:
+    rb16
+    allgate
+    drainmask
+    globalrecycle
+  runs=10
+  threads=2,4,8
+  ws=100
+  slots=65536
+  HZ5_MIDFRONT_SOURCE_BATCH_COUNT=64
+  HZ5_MIDFRONT_MAP_BITS=21
+
+measurement hygiene:
+  raw performance:
+    HZ5_PRELOAD_STATS unset
+    diagnostic stats build off
+  attribution:
+    separate t2 attrib.tsv only
+    HZ5_PRELOAD_STATS=1
+  no raw ops/s median includes preload atomic counters
+
+attribution smoke, t2 main_r90:
+  rb16/allgate/drainmask/globalrecycle:
+    malloc_hz5=10049
+    malloc_real=0
+    malloc_fail=0
+    free_real=0
+    track_insert_fail=0
+
+failure result:
+  all candidates/cases/threads:
+    alloc_failed_runs=0
+    bad_status_runs=0
+
+threads=2 notable winners:
+  main_r0:
+    rb16 63.43M
+  main_r50:
+    allgate 9.78M
+  main_r90:
+    drainmask 6.71M, rb16 6.50M, allgate 6.49M
+  mid_r50:
+    allgate 10.19M
+  mid_r90:
+    allgate 9.05M
+  hi64_r90:
+    rb16 11.95M
+  fixed4k_r0:
+    globalrecycle 85.35M, rb16 82.98M
+
+threads=4 notable winners:
+  main_r50:
+    globalrecycle 16.28M, allgate 15.48M
+  main_r90:
+    allgate 14.71M
+  mid_r50:
+    allgate 14.68M
+  mid_r90:
+    allgate 13.57M
+  hi64_r90:
+    allgate 18.87M
+  fixed4k_r0:
+    drainmask 108.65M, rb16 107.55M
+
+threads=8 notable winners:
+  main_r50:
+    rb16 21.94M, drainmask 21.85M, allgate 20.98M
+  main_r90:
+    allgate 19.07M, rb16 18.69M
+  mid_r50:
+    allgate 26.35M
+  mid_r90:
+    allgate 16.44M, rb16 16.26M
+  hi64_r90:
+    rb16 18.77M
+  fixed4k_r0:
+    globalrecycle 167.52M, drainmask 165.30M, rb16 158.54M
+
+interpretation:
+  allgate is stronger than expected as a default-matrix candidate:
+    main_r90 t4/t8
+    mid_r50/mid_r90 t2/t4/t8
+    hi64_r90 t4
+  rb16 remains important:
+    main_r0
+    hi64_r90 t2/t8
+    high-thread main_r50 tie group
+  drainmask remains useful:
+    main_r90 t2
+    fixed4k/high-local control rows
+  globalrecycle remains control:
+    good on local r0/fixed4k rows
+    weak on remote-heavy rows
+
+lane decision after full matrix:
+  rb16:
+    broad baseline/default candidate
+  allgate:
+    promoted to co-lead MidFront remote-heavy candidate
+  drainmask:
+    candidate/control
+  globalrecycle:
+    control only
+```
+
 MidFront source-return cleanup:
 
 ```text

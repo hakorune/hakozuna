@@ -113,8 +113,8 @@ traffic. These are separate from the exact `64K/a8192` Local2P appendix lanes.
 Current front-end split:
 
 - `hz5-smallfront-s1`: ordinary `malloc` up to 2KiB.
-- `hz5-midfront-rb16`: ordinary `malloc` 4KiB..64KiB, broad default MidFront candidate.
-- `hz5-midfront-allgate`: MidFront mid-heavy remote candidate.
+- `hz5-midfront-rb16`: ordinary `malloc` 4KiB..64KiB, broad baseline/default MidFront candidate.
+- `hz5-midfront-allgate`: MidFront remote-heavy co-lead candidate.
 - `hz5-midfront-globalrecycle`: MidFront control lane, not the lead policy.
 
 Build examples:

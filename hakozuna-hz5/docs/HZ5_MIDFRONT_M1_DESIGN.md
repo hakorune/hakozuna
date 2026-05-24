@@ -254,9 +254,11 @@ mid-range remote-heavy cases, while `rb16` remained stronger for broader
 `main_r90` and high-mid `hi64_r90`. Treat `allgate` as a MidFront candidate,
 not a universal default.
 
-A focused repeat-10 comparison confirmed that `rb16` should remain the broad
-default candidate. `allgate` is useful for mid-heavy low-thread remote workloads
-but does not replace `rb16` for paper-main style or high-thread general runs.
+A focused repeat-10 comparison kept `rb16` as the broad baseline/default
+candidate. A later full default-matrix pass showed `allgate` is stronger than a
+minor side candidate: it leads many remote-heavy main/mid rows, especially
+threads 4 and 8. Treat `rb16` and `allgate` as co-lead MidFront candidates with
+different workload bias, not as one universal winner.
 
 ## Allocator Shape
 

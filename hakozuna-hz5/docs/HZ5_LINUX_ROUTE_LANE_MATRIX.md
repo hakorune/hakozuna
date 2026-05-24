@@ -30,8 +30,8 @@ Current paper/appendix-facing HZ5 Linux rows are profile-specific:
 | Producer/consumer remote-free profile | `hz5-local2p-remotebatch` | cross-thread free handoff rows |
 | Linux HZ5 control | `hz5-p25` | P25 bridge baseline |
 | Small ordinary malloc candidate | `hz5-smallfront-s1` | Linux full-preload route for ordinary malloc <=2KiB |
-| Broad mid ordinary malloc candidate | `hz5-midfront-rb16` | Linux full-preload route for ordinary malloc 4KiB..64KiB, broad default candidate |
-| Mid-heavy remote candidate | `hz5-midfront-allgate` | MidFront owner-inbox drain-all plus empty-gated exchange candidate |
+| Broad mid ordinary malloc candidate | `hz5-midfront-rb16` | Linux full-preload route for ordinary malloc 4KiB..64KiB, broad baseline/default candidate |
+| Remote-heavy mid ordinary malloc candidate | `hz5-midfront-allgate` | MidFront owner-inbox drain-all plus empty-gated exchange co-lead candidate |
 
 Older Local2P evolution lanes remain selectable diagnostics. Do not report them
 as competing HZ5 profiles unless the result is explicitly an implementation
@@ -71,7 +71,7 @@ small 4K/8K a8192:
 | `smallfront_s1` | route/lane family | active Linux small front-end | candidate for <=2KiB ordinary malloc |
 | `midfront_m1` | route/lane family | active Linux mid front-end | candidate for 4KiB..64KiB ordinary malloc |
 | `midfront_rb16` | lane | broad MidFront default candidate | general MidFront comparison row |
-| `midfront_allgate` | lane | mid-heavy remote candidate | candidate/control, not universal default |
+| `midfront_allgate` | lane | remote-heavy MidFront co-lead candidate | candidate for remote-heavy MidFront rows |
 | `midfront_takefirst` | lane | direct-return A/B | diagnostic only |
 | `midfront_maskhitstop` | lane | bounded mask A/B | diagnostic only |
 | `midfront_globalrecycle` | lane | global recycle control | control only |
@@ -189,10 +189,10 @@ Current decision:
 
 ```text
 rb16:
-  broad default MidFront candidate
+  broad baseline/default MidFront candidate
 
 allgate:
-  useful for mid-heavy / lower-thread remote workloads
+  co-lead candidate for remote-heavy main/mid rows
   not a universal replacement for rb16
 
 globalrecycle:
