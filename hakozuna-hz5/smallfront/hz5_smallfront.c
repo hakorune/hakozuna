@@ -36,6 +36,14 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_SMALLFRONT_DRAIN_EMPTY_GATED 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_SMALLFRONT_REMOTE_OUTBOX
+#define BENCHLAB_HZ5_LINUX_SMALLFRONT_REMOTE_OUTBOX 0
+#endif
+
+#ifndef HZ5_SMALLFRONT_REMOTE_OUTBOX_SLOTS
+#define HZ5_SMALLFRONT_REMOTE_OUTBOX_SLOTS 64u
+#endif
+
 typedef struct Hz5SmallFrontPage {
   uint64_t magic;
   void* raw;
@@ -59,15 +67,29 @@ typedef struct Hz5SmallFrontPageMapEntry {
   _Atomic(Hz5SmallFrontPage*) page;
 } Hz5SmallFrontPageMapEntry;
 
+typedef struct Hz5SmallFrontRemoteOutboxSlot {
+  Hz5OwnerToken owner;
+  uint32_t class_index;
+  uint32_t count;
+  Hz5SmallFrontNode* head;
+  Hz5SmallFrontNode* tail;
+} Hz5SmallFrontRemoteOutboxSlot;
+
 typedef struct Hz5SmallFrontTls {
   Hz5OwnerToken owner;
   void* free_head[HZ5_SMALLFRONT_CLASS_COUNT];
   Hz5SmallFrontPage* owned_pages[HZ5_SMALLFRONT_CLASS_COUNT];
+#if BENCHLAB_HZ5_LINUX_SMALLFRONT_REMOTE_OUTBOX
+  Hz5SmallFrontRemoteOutboxSlot remote_outbox
+      [HZ5_SMALLFRONT_REMOTE_OUTBOX_SLOTS];
+  uint32_t remote_outbox_victim;
+#else
   Hz5OwnerToken remote_batch_owner;
   uint32_t remote_batch_class;
   uint32_t remote_batch_count;
   Hz5SmallFrontNode* remote_batch_head;
   Hz5SmallFrontNode* remote_batch_tail;
+#endif
 } Hz5SmallFrontTls;
 
 static const uint16_t g_hz5_smallfront_classes[HZ5_SMALLFRONT_CLASS_COUNT] = {
@@ -249,6 +271,76 @@ static void hz5_smallfront_remote_publish_list(Hz5OwnerToken owner,
                             class_index);
 }
 
+#if BENCHLAB_HZ5_LINUX_SMALLFRONT_REMOTE_OUTBOX
+static void hz5_smallfront_remote_outbox_flush_slot(
+    Hz5SmallFrontRemoteOutboxSlot* slot) {
+  if (!slot || slot->count == 0u) {
+    return;
+  }
+  hz5_smallfront_remote_publish_list(
+      slot->owner, slot->class_index, slot->head, slot->tail);
+  slot->owner = k_hz5_smallfront_no_owner;
+  slot->class_index = 0;
+  slot->count = 0;
+  slot->head = NULL;
+  slot->tail = NULL;
+}
+
+static Hz5SmallFrontRemoteOutboxSlot* hz5_smallfront_remote_outbox_slot(
+    Hz5SmallFrontTls* tls,
+    Hz5OwnerToken owner,
+    uint32_t class_index) {
+  Hz5SmallFrontRemoteOutboxSlot* empty = NULL;
+  for (uint32_t i = 0; i < HZ5_SMALLFRONT_REMOTE_OUTBOX_SLOTS; ++i) {
+    Hz5SmallFrontRemoteOutboxSlot* slot = &tls->remote_outbox[i];
+    if (slot->count != 0u && slot->class_index == class_index &&
+        hz5_owner_equal(slot->owner, owner)) {
+      return slot;
+    }
+    if (slot->count == 0u && !empty) {
+      empty = slot;
+    }
+  }
+  if (empty) {
+    return empty;
+  }
+
+  uint32_t victim =
+      tls->remote_outbox_victim++ % HZ5_SMALLFRONT_REMOTE_OUTBOX_SLOTS;
+  Hz5SmallFrontRemoteOutboxSlot* slot = &tls->remote_outbox[victim];
+  hz5_smallfront_remote_outbox_flush_slot(slot);
+  return slot;
+}
+
+static void hz5_smallfront_remote_batch_push(Hz5SmallFrontTls* tls,
+                                             Hz5SmallFrontPage* page,
+                                             void* ptr) {
+  if (!tls || !page || !ptr || !hz5_owner_is_alive(page->owner)) {
+    return;
+  }
+
+  uint32_t class_index = page->class_index;
+  Hz5SmallFrontRemoteOutboxSlot* slot =
+      hz5_smallfront_remote_outbox_slot(tls, page->owner, class_index);
+  Hz5SmallFrontNode* node = (Hz5SmallFrontNode*)ptr;
+  node->page = page;
+  node->next = NULL;
+
+  if (slot->count == 0u) {
+    slot->owner = page->owner;
+    slot->class_index = class_index;
+    slot->head = node;
+  } else {
+    slot->tail->next = node;
+  }
+  slot->tail = node;
+  ++slot->count;
+
+  if (slot->count >= HZ5_SMALLFRONT_REMOTE_BATCH_CAP) {
+    hz5_smallfront_remote_outbox_flush_slot(slot);
+  }
+}
+#else
 /* Batch remote frees in the freeing thread to reduce owner-inbox CAS traffic. */
 static void hz5_smallfront_remote_batch_flush(Hz5SmallFrontTls* tls) {
   if (!tls || tls->remote_batch_count == 0u) {
@@ -295,6 +387,7 @@ static void hz5_smallfront_remote_batch_push(Hz5SmallFrontTls* tls,
     hz5_smallfront_remote_batch_flush(tls);
   }
 }
+#endif
 
 static uint32_t hz5_smallfront_drain_remote_class_budget(
     Hz5SmallFrontTls* tls,

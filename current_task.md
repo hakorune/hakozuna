@@ -471,6 +471,75 @@ Next attack after committing/documenting region-map:
   handoff costs
 ```
 
+HZ4 vs HZ5 remote-path read:
+
+```text
+HZ4 lcache remote path:
+  sender TLS has outbox slots indexed by shard x class
+  flush threshold defaults to 8
+  outbox stores user pointers directly as intrusive next nodes
+  owner drains per shard/class inbox with empty pre-load gating
+
+HZ5 SmallFront before this experiment:
+  sender TLS has one remote batch slot total
+  owner/class change flushes immediately
+  remote-heavy mixed traffic can therefore publish too often
+```
+
+SmallFront remote-outbox candidate:
+
+```text
+--linux-smallfront-remote-outbox
+
+Design:
+  sender TLS keeps 64 associative outbox slots
+  each slot is keyed by exact owner token + small class
+  flushed slot publishes one list to the existing owner-slot/class inbox
+  object state validation and fail-closed free behavior are unchanged
+```
+
+Build used for the useful check:
+
+```bash
+./linux/build_linux_hz5_standalone.sh \
+  --linux-smallfront-remote-outbox \
+  --linux-smallfront-remote-batch-cap 8 \
+  --linux-largefront-region-map \
+  --linux-largefront-owner-fast-state \
+  --linux-midfront-owner-fast-state \
+  --linux-midfront-remote-batch-cap 16 \
+  --linux-local2p-speed-linkflags \
+  --out-dir hakozuna-hz5/out/linux/x86_64-hz5-smalloutbox8-regionmap
+```
+
+Focused short check, `threads=16`, `ws=400`, `remote=90`, timeout 10s:
+
+```text
+main, iters=600000, repeat5:
+  ok=5 timeout=0
+  median successful ops/s about 28.08M
+
+cross128, iters=300000, repeat5:
+  ok=5 timeout=0
+  median successful ops/s about 18.59M
+
+large_only, iters=250000, repeat5:
+  ok=5 timeout=0
+  median successful ops/s about 17.09M
+```
+
+Read:
+
+```text
+Small outbox cap8 is a modest improvement over region-map alone on main and
+large_only, and roughly flat/slightly better on cross128. It is not enough to
+close the HZ4 cross128 r90 gap.
+
+Keep it as a diagnostic/candidate. The next likely target is the same
+owner/class outbox idea for MidFront, or a lower-cost state transition for
+remote frees that preserves fail-closed behavior.
+```
+
 First implementation lane:
 
 ```text

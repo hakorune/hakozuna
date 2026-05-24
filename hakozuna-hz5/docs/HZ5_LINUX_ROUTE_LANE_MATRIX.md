@@ -260,6 +260,7 @@ Reporting lane:
 | `hz5-largefront-emptygate` | `--linux-largefront-drain-empty-gated --linux-largefront-owner-fast-state --linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | large/main diagnostic only |
 | `hz5-largefront-map-base-only` | `--linux-largefront-map-base-only --linux-largefront-owner-fast-state --linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | timeout/root-cause diagnostic only; weakens interior-pointer invalid-free attribution |
 | `hz5-largefront-region-map` | `--linux-largefront-region-map --linux-largefront-owner-fast-state --linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | LargeFront-L2 candidate; source-region lookup without losing interior invalid-free attribution |
+| `hz5-smallfront-remote-outbox` | `--linux-smallfront-remote-outbox --linux-smallfront-remote-batch-cap 8 --linux-largefront-region-map --linux-largefront-owner-fast-state --linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | SmallFront remote-handoff candidate; associative owner/class sender outbox |
 
 Current decision:
 
@@ -289,6 +290,11 @@ region-map:
   registers source regions instead of every covered 4K page
   keeps interior-pointer invalid-free attribution
   needs broad matrix before becoming the lead LargeFront row
+
+smallfront-remote-outbox:
+  copies HZ4 lcache's multi-outbox idea without changing HZ5 slot-state checks
+  modest main/cross improvement in short r90 checks
+  candidate only
 
 deferred:
   hz3/hz4-style 2MiB page-run split/merge pool

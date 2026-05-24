@@ -64,6 +64,13 @@ hz5-largefront-region-map:
   source-region lookup instead of per-page insertion
   LargeFront-L2 candidate
   keeps interior-pointer invalid-free attribution
+
+SmallFront remote diagnostic:
+
+hz5-smallfront-remote-outbox:
+  sender-side associative owner/class outbox
+  mirrors HZ4 lcache's shard x class outbox idea
+  candidate only
 ```
 
 ## Latest LargeFront Finding
@@ -332,6 +339,34 @@ Interpretation:
 Region-map fixes the clean-safety timeout issue, but does not close the HZ4
 cross128 r90 gap. The next performance work should inspect HZ4's cross128
 remote path against HZ5's Small/Mid/Large remote handoff cost.
+```
+
+HZ4 path audit found one concrete difference: HZ4 lcache keeps multiple
+sender-side outbox slots keyed by shard/class, while HZ5 SmallFront had one
+remote batch slot total. `--linux-smallfront-remote-outbox` adds a 64-slot
+associative owner/class outbox without changing SmallFront state validation.
+
+Short check with `--linux-smallfront-remote-batch-cap 8`:
+
+```text
+main_r90:
+  smalloutbox8 + region-map  28.08M
+  region-map                 27.71M
+
+cross128_r90:
+  smalloutbox8 + region-map  18.59M
+  region-map                 17.23M
+
+large_only_r90:
+  smalloutbox8 + region-map  17.09M
+  region-map                 10.07M
+```
+
+Read:
+
+```text
+SmallFront outbox helps modestly and removes no safety checks, but it is not
+the missing HZ4-level cross128 mechanism by itself.
 ```
 
 ## Next Technical Question

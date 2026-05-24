@@ -52,6 +52,7 @@ LINUX_OWNERHUB_R3=0
 LINUX_SMALLFRONT_S1=0
 LINUX_SMALLFRONT_REMOTE_BATCH_CAP=16
 LINUX_SMALLFRONT_DRAIN_EMPTY_GATED=0
+LINUX_SMALLFRONT_REMOTE_OUTBOX=0
 LINUX_MIDFRONT_M1=0
 LINUX_MIDFRONT_OWNER_FAST_STATE=0
 LINUX_MIDFRONT_REMOTE_BATCH_CAP=16
@@ -138,6 +139,9 @@ Options:
   --linux-smallfront-drain-empty-gated
                      candidate only: skip SmallFront owner-inbox exchange when
                      an acquire load observes an empty inbox
+  --linux-smallfront-remote-outbox
+                     candidate only: keep multiple sender-side SmallFront
+                     remote-free outbox slots keyed by owner/class
   --linux-ownerhub-r1
                      diagnostic only: enable shared owner pending-mask
                      observation; use only with HZ5_OWNERHUB_STATS=1
@@ -537,6 +541,13 @@ while [[ $# -gt 0 ]]; do
       BUILD_PRELOAD_FULL=1
       LINUX_SMALLFRONT_S1=1
       LINUX_SMALLFRONT_DRAIN_EMPTY_GATED=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
+    --linux-smallfront-remote-outbox)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_SMALLFRONT_REMOTE_OUTBOX=1
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
@@ -1033,6 +1044,9 @@ if [[ "$LINUX_SMALLFRONT_S1" -eq 1 ]]; then
   if [[ "$LINUX_SMALLFRONT_DRAIN_EMPTY_GATED" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_SMALLFRONT_DRAIN_EMPTY_GATED=1)
   fi
+  if [[ "$LINUX_SMALLFRONT_REMOTE_OUTBOX" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_SMALLFRONT_REMOTE_OUTBOX=1)
+  fi
 fi
 if [[ "$LINUX_OWNERHUB_R1" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_OWNERHUB_R1=1)
@@ -1144,6 +1158,7 @@ fi
   echo "linux_smallfront_s1=${LINUX_SMALLFRONT_S1}"
   echo "linux_smallfront_remote_batch_cap=${LINUX_SMALLFRONT_REMOTE_BATCH_CAP}"
   echo "linux_smallfront_drain_empty_gated=${LINUX_SMALLFRONT_DRAIN_EMPTY_GATED}"
+  echo "linux_smallfront_remote_outbox=${LINUX_SMALLFRONT_REMOTE_OUTBOX}"
   echo "linux_midfront_m1=${LINUX_MIDFRONT_M1}"
   echo "linux_midfront_owner_fast_state=${LINUX_MIDFRONT_OWNER_FAST_STATE}"
   echo "linux_midfront_remote_batch_cap=${LINUX_MIDFRONT_REMOTE_BATCH_CAP}"
