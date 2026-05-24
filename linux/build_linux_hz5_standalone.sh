@@ -178,7 +178,13 @@ Options:
                      handles <=4096 and LargeFront handles >4096
   --linux-hz5-general-midpage
                      candidate preset: general-region-outbox plus
-                     MidPageFront-M2 for 2049..32768
+                     MidPageFront-M2 hash-map control for 2049..32768
+  --linux-hz5-general-midpage-region
+                     candidate preset: general-region-outbox plus
+                     MidPageFront-M2.2 region-array lookup
+  --linux-hz5-general-midpage-region-shadow
+                     diagnostic preset: midpage-region plus remote-shadow
+                     pending bitmap experiment
   --linux-hz5-general-midoutbox
                      candidate preset: general-region-outbox plus MidFront
                      owner/class sender outbox
@@ -744,6 +750,43 @@ while [[ $# -gt 0 ]]; do
       LINUX_SMALLFRONT_REMOTE_OUTBOX=1
       LINUX_SMALLFRONT_REMOTE_BATCH_CAP=8
       LINUX_MIDPAGEFRONT_M2=1
+      LINUX_MIDPAGEFRONT_REMOTE_BATCH_CAP=16
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_OWNER_FAST_STATE=1
+      LINUX_MIDFRONT_REMOTE_BATCH_CAP=16
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      LINUX_LARGEFRONT_OWNER_FAST_STATE=1
+      LINUX_LARGEFRONT_REGION_MAP=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
+    --linux-hz5-general-midpage-region)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_SMALLFRONT_REMOTE_OUTBOX=1
+      LINUX_SMALLFRONT_REMOTE_BATCH_CAP=8
+      LINUX_MIDPAGEFRONT_M2=1
+      LINUX_MIDPAGEFRONT_REGION_ARRAY=1
+      LINUX_MIDPAGEFRONT_REMOTE_BATCH_CAP=16
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_OWNER_FAST_STATE=1
+      LINUX_MIDFRONT_REMOTE_BATCH_CAP=16
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      LINUX_LARGEFRONT_OWNER_FAST_STATE=1
+      LINUX_LARGEFRONT_REGION_MAP=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
+    --linux-hz5-general-midpage-region-shadow)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_SMALLFRONT_REMOTE_OUTBOX=1
+      LINUX_SMALLFRONT_REMOTE_BATCH_CAP=8
+      LINUX_MIDPAGEFRONT_M2=1
+      LINUX_MIDPAGEFRONT_REGION_ARRAY=1
+      LINUX_MIDPAGEFRONT_REMOTE_SHADOW=1
       LINUX_MIDPAGEFRONT_REMOTE_BATCH_CAP=16
       LINUX_MIDFRONT_M1=1
       LINUX_MIDFRONT_OWNER_FAST_STATE=1

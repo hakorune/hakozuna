@@ -6777,3 +6777,39 @@ remote-shadow:
 open weakness:
   r0 is still below region baseline, likely local state/route overhead
 ```
+
+### MidPageFront Lane Cleanup
+
+Cleanup action:
+
+```text
+Added explicit presets:
+  --linux-hz5-general-midpage-region
+  --linux-hz5-general-midpage-region-shadow
+
+Kept lower-level flags:
+  --linux-midpagefront-region-array
+  --linux-midpagefront-remote-shadow
+```
+
+Lane naming after cleanup:
+
+```text
+hz5-general-midpage:
+  M2.1 hash-map control
+
+hz5-general-midpage-region:
+  M2.2 lead candidate
+
+hz5-general-midpage-region-shadow:
+  remote-shadow diagnostic only
+```
+
+Source cleanup:
+
+```text
+midpagefront hash-map table/mutex/helpers are now compiled only when
+BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_REGION_ARRAY=0.
+
+region-array builds use only the region map/source arrays for ownership lookup.
+```

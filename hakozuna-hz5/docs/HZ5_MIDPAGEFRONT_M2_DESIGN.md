@@ -142,7 +142,7 @@ M2.2 optimization after M2.1 proves the route is useful.
 M2.2 adds that lookup as an explicit candidate:
 
 ```text
---linux-midpagefront-region-array
+--linux-hz5-general-midpage-region
 
 source:
   64MiB aligned source regions
@@ -162,7 +162,7 @@ preload route boundary.
 Remote-shadow is a separate diagnostic:
 
 ```text
---linux-midpagefront-remote-shadow
+--linux-hz5-general-midpage-region-shadow
 
 remote free:
   sets a separate remote bitmap
@@ -186,6 +186,10 @@ Build:
 ./linux/build_linux_hz5_standalone.sh \
   --linux-hz5-general-midpage \
   --out-dir hakozuna-hz5/out/linux/x86_64-hz5-general-midpage
+
+./linux/build_linux_hz5_standalone.sh \
+  --linux-hz5-general-midpage-region \
+  --out-dir hakozuna-hz5/out/linux/x86_64-hz5-general-midpage-region
 ```
 
 Initial r90 smoke exposed an active-bit race:
@@ -332,6 +336,19 @@ region-array:
 remote-shadow:
   diagnostic only for now
   main improves, but cross128 does not
+```
+
+Lane names after cleanup:
+
+```text
+hz5-general-midpage:
+  M2.1 hash-map control
+
+hz5-general-midpage-region:
+  M2.2 lead candidate
+
+hz5-general-midpage-region-shadow:
+  remote-shadow diagnostic
 ```
 
 ## Acceptance

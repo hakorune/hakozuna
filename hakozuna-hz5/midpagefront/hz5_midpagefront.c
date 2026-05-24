@@ -102,8 +102,6 @@ static const uint32_t g_hz5_midpagefront_classes
 
 static const Hz5OwnerToken k_hz5_midpagefront_no_owner = {0, 0};
 
-static Hz5MidPageMapEntry
-    g_hz5_midpagefront_map[HZ5_MIDPAGEFRONT_MAP_CAP];
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_REGION_ARRAY
 static Hz5MidPageRegion
     g_hz5_midpagefront_regions[HZ5_MIDPAGEFRONT_REGION_CAP];
@@ -114,11 +112,14 @@ static Hz5MidPageRawNode*
 static size_t g_hz5_midpagefront_region_count;
 static pthread_mutex_t g_hz5_midpagefront_region_lock =
     PTHREAD_MUTEX_INITIALIZER;
+#else
+static Hz5MidPageMapEntry
+    g_hz5_midpagefront_map[HZ5_MIDPAGEFRONT_MAP_CAP];
+static pthread_mutex_t g_hz5_midpagefront_map_lock =
+    PTHREAD_MUTEX_INITIALIZER;
 #endif
 static _Atomic(void*) g_hz5_midpagefront_owner_inbox[UINT16_MAX + 1u]
                                                   [HZ5_MIDPAGEFRONT_CLASS_COUNT];
-static pthread_mutex_t g_hz5_midpagefront_map_lock =
-    PTHREAD_MUTEX_INITIALIZER;
 static _Thread_local Hz5MidPageTls g_hz5_midpagefront_tls;
 
 static Hz5MidPageTls* hz5_midpagefront_tls(void) {
@@ -143,13 +144,6 @@ static int hz5_midpagefront_class_index(size_t size) {
     }
   }
   return -1;
-}
-
-static size_t hz5_midpagefront_hash(uintptr_t slab_base) {
-  uintptr_t x = slab_base >> 16;
-  x ^= x >> HZ5_MIDPAGEFRONT_MAP_BITS;
-  x ^= x >> (HZ5_MIDPAGEFRONT_MAP_BITS * 2u);
-  return (size_t)x & (HZ5_MIDPAGEFRONT_MAP_CAP - 1u);
 }
 
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_REGION_ARRAY
@@ -200,7 +194,13 @@ static int hz5_midpagefront_region_map_insert(uintptr_t region_base,
   }
   return 0;
 }
-#endif
+#else
+static size_t hz5_midpagefront_hash(uintptr_t slab_base) {
+  uintptr_t x = slab_base >> 16;
+  x ^= x >> HZ5_MIDPAGEFRONT_MAP_BITS;
+  x ^= x >> (HZ5_MIDPAGEFRONT_MAP_BITS * 2u);
+  return (size_t)x & (HZ5_MIDPAGEFRONT_MAP_CAP - 1u);
+}
 
 static Hz5MidPage* hz5_midpagefront_lookup_slab(uintptr_t slab_base) {
   size_t idx = hz5_midpagefront_hash(slab_base);
@@ -246,6 +246,7 @@ static int hz5_midpagefront_map_insert(uintptr_t slab_base,
   pthread_mutex_unlock(&g_hz5_midpagefront_map_lock);
   return 0;
 }
+#endif
 
 static Hz5MidPage* hz5_midpagefront_page_for_ptr(void* ptr) {
   if (!ptr) {

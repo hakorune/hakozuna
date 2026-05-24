@@ -932,7 +932,7 @@ Next if continued:
 M2.2 implemented the region-array lookup:
 
 ```text
---linux-midpagefront-region-array
+--linux-hz5-general-midpage-region
 
 64MiB aligned source regions
 1024 x 64KiB slabs per region
@@ -996,6 +996,19 @@ MidPageFront-M2.2 region-array:
 remote-shadow:
   diagnostic only
   main improves but cross128 remains weaker/unstable
+```
+
+Lane cleanup:
+
+```text
+lead:
+  --linux-hz5-general-midpage-region
+
+control:
+  --linux-hz5-general-midpage
+
+diagnostic:
+  --linux-hz5-general-midpage-region-shadow
 ```
 
 ## Where To Read Next

@@ -39,7 +39,7 @@ Current paper/appendix-facing HZ5 Linux rows are profile-specific:
 | Broad mid ordinary malloc candidate | `hz5-midfront-rb16` | Linux full-preload route for ordinary malloc 4KiB..64KiB, broad baseline/default candidate |
 | Remote-heavy mid ordinary malloc candidate | `hz5-midfront-allgate` | MidFront owner-inbox drain-all plus empty-gated exchange co-lead candidate |
 | MidPage ordinary malloc prototype | `hz5-general-midpage` | 64KiB class-owned slab prototype for ordinary malloc 2049..32768; hash-map M2.1 control |
-| MidPage region-array candidate | `hz5-general-midpage + --linux-midpagefront-region-array` | M2.2 lead candidate for 2049..32768 r50/r90 ordinary malloc |
+| MidPage region-array candidate | `hz5-general-midpage-region` | M2.2 lead candidate for 2049..32768 r50/r90 ordinary malloc |
 | Large ordinary malloc candidate | `hz5-largefront-l1` | Linux full-preload route for ordinary malloc >64K..1M, cross128 local coverage candidate |
 | Remote-heavy large candidate | `hz5-largefront-inbox` | LargeFront owner-inbox candidate for remote-heavy large rows |
 | General remote-tail candidate | `hz5-general-region-outbox` | SmallFront outbox + MidFront rb16 + LargeFront region-map candidate |
@@ -258,11 +258,10 @@ hz5-general-midpage:
   --linux-hz5-general-midpage
 
 hz5-general-midpage-region:
-  --linux-hz5-general-midpage --linux-midpagefront-region-array
+  --linux-hz5-general-midpage-region
 
 hz5-general-midpage-region-shadow:
-  --linux-hz5-general-midpage --linux-midpagefront-region-array
-  --linux-midpagefront-remote-shadow
+  --linux-hz5-general-midpage-region-shadow
 ```
 
 Status:
@@ -276,6 +275,17 @@ M2.2 region-array:
 
 remote-shadow:
   diagnostic only
+```
+
+Cleanup rule:
+
+```text
+Use preset names in benchmark output directories and docs:
+  x86_64-hz5-general-midpage
+  x86_64-hz5-general-midpage-region
+  x86_64-hz5-general-midpage-region-shadow
+
+Use component flags only for narrow A/B sweeps.
 ```
 
 Current read:
