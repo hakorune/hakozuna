@@ -813,16 +813,11 @@ static Hz5MidPage* hz5_midpagefront_new_page(Hz5MidPageTls* tls,
   return page;
 }
 
-void* hz5_midpagefront_alloc(size_t size, size_t align) {
-  if (align > 16u) {
-    return NULL;
-  }
-  int class_index = hz5_midpagefront_class_index(size);
-  if (class_index < 0) {
+static void* hz5_midpagefront_alloc_class(uint32_t ci) {
+  if (!hz5_midpagefront_class_valid(ci)) {
     return NULL;
   }
   Hz5MidPageTls* tls = hz5_midpagefront_tls();
-  uint32_t ci = (uint32_t)class_index;
   Hz5MidPage* page = NULL;
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_TLS_HOT_SLOT
   void* ptr = hz5_midpagefront_hot_pop(tls, ci, &page);
@@ -850,6 +845,32 @@ void* hz5_midpagefront_alloc(size_t size, size_t align) {
       !hz5_midpagefront_mark_active_local(page, slot)) {
     return NULL;
   }
+  return ptr;
+}
+
+Hz5MidPageFrontAllocResult hz5_midpagefront_try_alloc(size_t size,
+                                                      size_t align,
+                                                      void** ptr_out) {
+  if (ptr_out) {
+    *ptr_out = NULL;
+  }
+  if (align > 16u) {
+    return HZ5_MIDPAGEFRONT_ALLOC_UNSUPPORTED;
+  }
+  int class_index = hz5_midpagefront_class_index(size);
+  if (class_index < 0) {
+    return HZ5_MIDPAGEFRONT_ALLOC_UNSUPPORTED;
+  }
+  void* ptr = hz5_midpagefront_alloc_class((uint32_t)class_index);
+  if (ptr_out) {
+    *ptr_out = ptr;
+  }
+  return ptr ? HZ5_MIDPAGEFRONT_ALLOC_OK : HZ5_MIDPAGEFRONT_ALLOC_OOM;
+}
+
+void* hz5_midpagefront_alloc(size_t size, size_t align) {
+  void* ptr = NULL;
+  (void)hz5_midpagefront_try_alloc(size, align, &ptr);
   return ptr;
 }
 
@@ -909,6 +930,17 @@ void* hz5_midpagefront_alloc(size_t size, size_t align) {
   (void)size;
   (void)align;
   return NULL;
+}
+
+Hz5MidPageFrontAllocResult hz5_midpagefront_try_alloc(size_t size,
+                                                      size_t align,
+                                                      void** ptr_out) {
+  (void)size;
+  (void)align;
+  if (ptr_out) {
+    *ptr_out = NULL;
+  }
+  return HZ5_MIDPAGEFRONT_ALLOC_UNSUPPORTED;
 }
 
 Hz5MidPageFrontFreeResult hz5_midpagefront_free(void* ptr) {

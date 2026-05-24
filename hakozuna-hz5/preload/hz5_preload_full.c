@@ -357,8 +357,10 @@ static void* hz5_preload_full_hz5_malloc(size_t size, size_t align) {
     return hz5_smallfront_alloc(size, align);
   }
 #if BENCHLAB_HZ5_PRELOAD_MIDPAGE_ALLOC_FIRST
-  void* midpage_ptr = hz5_midpagefront_alloc(size, align);
-  if (midpage_ptr || hz5_midpagefront_can_handle(size, align)) {
+  void* midpage_ptr = NULL;
+  Hz5MidPageFrontAllocResult midpage_result =
+      hz5_midpagefront_try_alloc(size, align, &midpage_ptr);
+  if (midpage_result != HZ5_MIDPAGEFRONT_ALLOC_UNSUPPORTED) {
     return midpage_ptr;
   }
 #else

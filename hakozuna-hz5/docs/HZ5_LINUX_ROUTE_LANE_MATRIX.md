@@ -287,7 +287,7 @@ hz5-general-midpage-region-shadow-activetrust:
 hz5-general-midpage-region-shadow-allocfirst:
   --linux-hz5-general-midpage-region-shadow-allocfirst
   tcmalloc-chase diagnostic removing duplicate MidPageFront class lookup in
-  preload malloc dispatch
+  preload malloc dispatch via explicit try-alloc API
   promising diagnostic: mid_only r0 improves, r90 verifies near shadow
 ```
 

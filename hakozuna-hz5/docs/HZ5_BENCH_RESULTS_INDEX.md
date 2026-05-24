@@ -241,6 +241,42 @@ mid_only_r90:
   tcmalloc   43.50M
 ```
 
+### `midpage_allocfirst_tryalloc_r3_20260525_054204`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_allocfirst_tryalloc_r3_20260525_054204
+```
+
+Purpose:
+
+```text
+Verify the cleaned allocfirst implementation after replacing the preload
+alloc-then-can-handle shortcut with an explicit MidPageFront try-alloc API.
+```
+
+Decision:
+
+```text
+allocfirst remains a useful diagnostic. It improves mid_only_r0 versus shadow
+and does not show a r90 loss in this focused r3.
+```
+
+Key medians:
+
+```text
+mid_only_r0:
+  shadow     66.04M
+  allocfirst 70.63M
+  tcmalloc  141.00M
+
+mid_only_r90:
+  shadow     33.57M
+  allocfirst 37.00M
+  tcmalloc   48.94M
+```
+
 ## MidPageFront-M2
 
 ### `midpage_region_broad_r5_20260525_031852`

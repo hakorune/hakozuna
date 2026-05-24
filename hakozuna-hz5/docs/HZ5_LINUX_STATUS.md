@@ -145,6 +145,33 @@ The allocfirst diagnostic shows duplicate preload class lookup is part of the
 local-only cost, but not enough to close the tcmalloc gap alone.
 ```
 
+Follow-up cleanup:
+
+```text
+private/raw-results/linux/midpage_allocfirst_tryalloc_r3_20260525_054204
+```
+
+Key medians:
+
+```text
+mid_only_r0:
+  shadow     66.04M
+  allocfirst 70.63M
+  tcmalloc  141.00M
+
+mid_only_r90:
+  shadow     33.57M
+  allocfirst 37.00M
+  tcmalloc   48.94M
+```
+
+Interpretation:
+
+```text
+The explicit MidPageFront try-alloc API preserves the allocfirst signal while
+removing the previous alloc-then-can-handle preload shortcut.
+```
+
 ## Next Engineering Target
 
 Prototype a MidPageFront local topology diagnostic:

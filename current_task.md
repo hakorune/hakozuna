@@ -84,6 +84,7 @@ hakozuna-hz5/docs/archive/current_task_2026-05-hz5-linux.md
 
 --linux-hz5-general-midpage-region-shadow-allocfirst
   promising diagnostic; removes duplicate MidPageFront class lookup in preload
+  via explicit MidPageFront try-alloc dispatch
 ```
 
 ## Latest Key Results
@@ -96,6 +97,7 @@ private/raw-results/linux/midpage_hotslot_smoke_r3_20260525_052514
 private/raw-results/linux/midpage_activetrust_smoke_r3_20260525_052755
 private/raw-results/linux/midpage_allocfirst_r3_20260525_053010
 private/raw-results/linux/midpage_allocfirst_r90_verify_r5_20260525_053037
+private/raw-results/linux/midpage_allocfirst_tryalloc_r3_20260525_054204
 ```
 
 Current read:
@@ -118,7 +120,7 @@ activetrust:
 
 allocfirst:
   duplicate class lookup matters for mid_only r0
-  r90 verify is roughly shadow-equivalent
+  try-alloc cleanup keeps r0 ahead of shadow and r90 near/slightly ahead
 
 next:
   reduce MidPageFront active-state / metadata / freelist work per local
