@@ -294,6 +294,37 @@ largefront-takefirst:
   diagnostic only; broad regression risk
 ```
 
+## Empty-Gated Drain Candidate
+
+`--linux-largefront-drain-empty-gated` keeps the LargeFront owner inbox design
+but skips the owner-inbox `atomic_exchange` when an acquire load observes an
+empty class inbox. This mirrors the MidFront empty-gated diagnostic and does not
+change descriptor ownership, state transitions, or remote publish semantics.
+
+Short raw repeat-3, `HZ5_PRELOAD_STATS` unset:
+
+```text
+main r90:
+  inbox      7.28M
+  emptygate  8.77M
+
+large_only r90:
+  inbox      7.09M
+  emptygate  7.57M
+
+cross128 r90:
+  inbox      7.69M
+  emptygate  5.56M
+```
+
+Decision:
+
+```text
+largefront-emptygate:
+  useful large/main diagnostic candidate
+  not a cross-size default
+```
+
 ## Stop Rules
 
 Stop and redesign if:

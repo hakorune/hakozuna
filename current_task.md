@@ -2139,6 +2139,40 @@ R3 decision:
   Front-dirty bookkeeping reduces some R2 damage, especially mid_only r90, but
   it does not produce a broad win. OwnerHub coordinated drain remains a
   workload-specific candidate rather than default policy.
+
+LargeFront empty-gated drain candidate:
+  implemented:
+    --linux-largefront-drain-empty-gated
+  design:
+    same LargeFront owner inbox
+    before draining a class, acquire-load the inbox head
+    skip atomic_exchange when the inbox is empty
+  purpose:
+    reduce per-front owner-inbox fixed cost without introducing OwnerHub
+
+short raw repeat-3, threads=2 iters=200000 ws=100, stats unset:
+  main r50:
+    inbox      10.70M median
+    emptygate   9.72M median
+  main r90:
+    inbox       7.28M median
+    emptygate   8.77M median
+  large_only r50:
+    inbox       9.19M median
+    emptygate   9.73M median
+  large_only r90:
+    inbox       7.09M median
+    emptygate   7.57M median
+  cross128 r50:
+    inbox       9.31M median
+    emptygate   8.88M median
+  cross128 r90:
+    inbox       7.69M median
+    emptygate   5.56M median
+
+decision:
+  Empty-gated LargeFront drain is useful as a large/main diagnostic candidate,
+  but it is not a cross-size default. Keep it behind the explicit build flag.
 ```
 
 MidFront source-return cleanup:

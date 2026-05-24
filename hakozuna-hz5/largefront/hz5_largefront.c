@@ -30,6 +30,10 @@
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_TAKE_FIRST 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_EMPTY_GATED
+#define BENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_EMPTY_GATED 0
+#endif
+
 #ifndef HZ5_LARGEFRONT_REMOTE_BATCH_CAP
 #define HZ5_LARGEFRONT_REMOTE_BATCH_CAP 16u
 #endif
@@ -497,6 +501,14 @@ static Hz5LargeSpan* hz5_largefront_drain_remote_class_budget(
   hz5_ownerhub_clear_pending(tls->owner,
                              HZ5_OWNERHUB_FRONT_LARGE,
                              class_index);
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_EMPTY_GATED
+  if (!atomic_load_explicit(inbox, memory_order_acquire)) {
+    if (drained_out) {
+      *drained_out = 0;
+    }
+    return NULL;
+  }
+#endif
   void* head = atomic_exchange_explicit(inbox, NULL, memory_order_acq_rel);
   Hz5LargeSpan* taken = NULL;
   while (head) {

@@ -252,6 +252,7 @@ Reporting lane:
 | `hz5-largefront-inbox` | `--linux-largefront-owner-inbox --linux-largefront-owner-fast-state --linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | useful remote-large candidate |
 | `hz5-largefront-rb16` | `--linux-largefront-remote-batch --linux-largefront-remote-batch-cap 16` | diagnostic only |
 | `hz5-largefront-takefirst` | `--linux-largefront-drain-take-first` | diagnostic only |
+| `hz5-largefront-emptygate` | `--linux-largefront-drain-empty-gated --linux-largefront-owner-fast-state --linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | large/main diagnostic only |
 
 Current decision:
 
@@ -266,6 +267,10 @@ inbox:
 
 rb16/takefirst:
   diagnostic only after focused A/B
+
+emptygate:
+  helps some large/main rows
+  not cross-size default
 
 deferred:
   hz3/hz4-style 2MiB page-run split/merge pool
