@@ -6857,3 +6857,103 @@ kept:
   local-fast-state remains a component flag only, currently used by
   --linux-hz5-general-midpage-region-shadow diagnostic
 ```
+
+### MidPageFront Region-Array Broad Matrix
+
+Run:
+
+```text
+private/raw-results/linux/midpage_region_broad_r5_20260525_031852
+
+threads=16
+ws=400
+runs=5
+HZ5_PRELOAD_STATS unset
+allocators:
+  region baseline
+  midpage_region
+  HZ4
+  tcmalloc
+```
+
+Summary:
+
+```text
+main_r0:
+  region          99.37M
+  midpage_region 93.90M
+  HZ4             58.22M
+  tcmalloc       179.07M
+
+main_r50:
+  region          30.92M
+  midpage_region 41.20M
+  HZ4             49.79M
+  tcmalloc        78.47M
+
+main_r90:
+  region          29.48M
+  midpage_region 32.12M
+  HZ4             57.53M
+  tcmalloc        53.51M
+
+mid_only_r0:
+  region         103.62M
+  midpage_region 94.81M
+  HZ4             70.11M
+  tcmalloc       194.08M
+
+mid_only_r50:
+  region          28.26M
+  midpage_region 44.43M
+  HZ4             56.27M
+  tcmalloc        78.08M
+
+mid_only_r90:
+  region          29.81M
+  midpage_region 35.61M
+  HZ4             65.09M
+  tcmalloc        51.56M
+
+cross128_r0:
+  region          74.38M
+  midpage_region 61.77M
+  HZ4             35.60M
+  tcmalloc        10.50M
+
+cross128_r50:
+  region          27.92M
+  midpage_region 28.31M
+  HZ4             26.73M
+  tcmalloc        10.28M
+
+cross128_r90:
+  region          13.88M
+  midpage_region 20.83M
+  HZ4             26.97M
+  tcmalloc         7.61M
+
+large_only_r90:
+  region          10.88M
+  midpage_region  6.88M
+  HZ4              2.08M
+  tcmalloc         3.63M
+```
+
+Decision:
+
+```text
+MidPageFront-M2.2 region-array:
+  valid remote-heavy candidate
+  improves region baseline on main/mid_only r50/r90 and cross128 r90
+  not broad default because r0 regresses and large_only r90 regresses
+
+Profile role:
+  ordinary mid-size remote-heavy candidate
+  not replacement for general-region-outbox in large-only rows
+
+Next likely target:
+  r0/perf investigation or route gating that enables M2 only for mid-size rows
+  where it helps, while leaving large-only and pure-local broad rows on region
+  baseline.
+```

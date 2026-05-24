@@ -303,6 +303,30 @@ the region baseline, so M2.2 is currently a remote-heavy candidate rather than
 an unconditional broad default.
 ```
 
+Broad r5 status:
+
+```text
+main_r50:
+  region 30.92M, midpage_region 41.20M
+
+mid_only_r50:
+  region 28.26M, midpage_region 44.43M
+
+cross128_r90:
+  region 13.88M, midpage_region 20.83M
+
+large_only_r90:
+  region 10.88M, midpage_region 6.88M
+```
+
+Classification:
+
+```text
+midpage_region:
+  remote-heavy mid-size candidate
+  not general large-only default
+```
+
 Current decision:
 
 ```text

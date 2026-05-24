@@ -373,6 +373,56 @@ active-bitmap race under remote pressure unless remote writes are isolated.
 Keep it diagnostic only, currently only through the remote-shadow preset.
 ```
 
+Broad repeat-5:
+
+```text
+private/raw-results/linux/midpage_region_broad_r5_20260525_031852
+
+main_r0:
+  region          99.37M
+  midpage_region 93.90M
+
+main_r50:
+  region          30.92M
+  midpage_region 41.20M
+
+main_r90:
+  region          29.48M
+  midpage_region 32.12M
+
+mid_only_r0:
+  region         103.62M
+  midpage_region 94.81M
+
+mid_only_r50:
+  region          28.26M
+  midpage_region 44.43M
+
+mid_only_r90:
+  region          29.81M
+  midpage_region 35.61M
+
+cross128_r90:
+  region          13.88M
+  midpage_region 20.83M
+
+large_only_r90:
+  region          10.88M
+  midpage_region  6.88M
+```
+
+Updated decision:
+
+```text
+M2.2 region-array:
+  keep as remote-heavy mid-size candidate
+  do not make broad default yet
+
+Reason:
+  improves r50/r90 mid-size rows versus region baseline
+  still regresses r0 and large_only r90
+```
+
 Lane names after cleanup:
 
 ```text

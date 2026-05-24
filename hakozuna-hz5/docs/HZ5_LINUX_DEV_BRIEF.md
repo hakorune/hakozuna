@@ -1012,6 +1012,56 @@ decision:
   keep only as a component of the remote-shadow diagnostic
 ```
 
+Broad M2.2 check:
+
+```text
+private/raw-results/linux/midpage_region_broad_r5_20260525_031852
+threads=16, ws=400, runs=5, HZ5_PRELOAD_STATS unset
+
+main_r50:
+  region          30.92M
+  midpage_region 41.20M
+  HZ4             49.79M
+  tcmalloc        78.47M
+
+main_r90:
+  region          29.48M
+  midpage_region 32.12M
+  HZ4             57.53M
+  tcmalloc        53.51M
+
+mid_only_r50:
+  region          28.26M
+  midpage_region 44.43M
+  HZ4             56.27M
+  tcmalloc        78.08M
+
+mid_only_r90:
+  region          29.81M
+  midpage_region 35.61M
+  HZ4             65.09M
+  tcmalloc        51.56M
+
+cross128_r90:
+  region          13.88M
+  midpage_region 20.83M
+  HZ4             26.97M
+  tcmalloc         7.61M
+
+large_only_r90:
+  region          10.88M
+  midpage_region  6.88M
+```
+
+Updated role:
+
+```text
+MidPageFront-M2.2 region-array:
+  remote-heavy mid-size candidate
+  improves the region baseline in main/mid_only r50/r90 and cross128 r90
+  not a broad default because r0 and large_only r90 regress
+```
+
 Lane cleanup:
 
 ```text
