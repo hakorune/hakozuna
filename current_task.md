@@ -27,11 +27,11 @@ codex/hz5-linux-p43-port
 Latest commits:
 
 ```text
+3e766ee Add MidPageFront tcmalloc consultation prompt
 4bd404a Record MidPageFront linkonly verification
 869837c Split MidPageFront TLS link diagnostics
 b398eee Add MidPageFront tlslink diagnostic
 b2f8238 Add MidPageFront slot switch diagnostic
-0cf9cc0 Add MidPageFront try-alloc dispatch
 ```
 
 ## Read First
@@ -168,15 +168,19 @@ next:
 
 ## Next Step
 
-Attack MidPageFront local object topology without weakening fail-closed
-ownership:
+Implement MidPageFront-M3 nodeless local page-run cache as a diagnostic lane:
 
 ```text
-1. Inspect current local alloc/free instruction path.
-2. Compare against tcmalloc-like object freelist topology.
-3. Prototype a diagnostic that reduces per-local operation metadata writes or
-   active-bit work.
-4. Keep remote-shadow or equivalent protection to avoid r90 alloc_failed.
+--linux-hz5-general-midpage-region-shadow-nodeless
+```
+
+Design intent:
+
+```text
+Keep HZ4's page/header-owned and owner-aware remote principles.
+Borrow tcmalloc's local run/cache shape.
+Keep HZ5 fail-closed descriptor ownership.
+Do not mutate Windows P43i/P45 or Local2P.
 ```
 
 ## Operating Rules

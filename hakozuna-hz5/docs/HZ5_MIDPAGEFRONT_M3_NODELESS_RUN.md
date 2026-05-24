@@ -1,0 +1,204 @@
+# HZ5 MidPageFront-M3 Nodeless Run Design
+
+## Goal
+
+Close the remaining `mid_only_r0` gap to tcmalloc without weakening HZ5's
+fail-closed ownership model.
+
+Current M2 local path still uses freed user objects as:
+
+```text
+Hz5MidPageNode {
+  next;
+  page;
+}
+```
+
+That means local free writes allocator metadata into user payload, and local
+alloc reads both `next` and `page` back from user payload. The M3 hypothesis is
+that this object-linked topology is the main local-only gap after dispatch,
+slot-index, TLS/linkage, and one-entry hot-slot diagnostics failed to close it.
+
+## Relationship to HZ4 and tcmalloc
+
+M3 is not a pure tcmalloc copy.
+
+```text
+HZ4 contribution:
+  page/header-owned metadata
+  owner-aware remote handoff
+  sender-side grouping
+  page-local drain thinking
+
+tcmalloc contribution:
+  local class/run cache
+  object pointer/path should not carry page metadata on every pop
+  refill only when the local run is empty
+
+HZ5 contribution:
+  descriptor ownership
+  fail-closed invalid/double-free behavior
+  no libc fallback for owned-looking invalid pointers
+```
+
+## Proposed Diagnostic Lane
+
+```text
+BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_RUN=1
+--linux-hz5-general-midpage-region-shadow-nodeless
+```
+
+M3 keeps:
+
+```text
+64KiB slab geometry
+class table: 3072, 4096, 8192, 16384, 32768
+region-array lookup
+remote-shadow semantics
+owner token semantics
+```
+
+M3 changes local topology:
+
+```text
+Do not build a local object linked list on new page.
+Do not use node->page on local alloc.
+Use descriptor free_bits + TLS current_page/current_bits.
+Use partial page lists for pages with free bits outside current_page.
+```
+
+## Metadata
+
+Descriptor additions:
+
+```c
+_Atomic uint64_t free_bits;   // 1 = free / not live
+uint8_t in_partial;
+Hz5MidPage* next_partial;
+```
+
+TLS additions:
+
+```c
+Hz5MidPage* current_page[class_count];
+uint64_t current_bits[class_count];
+Hz5MidPage* partial_pages[class_count];
+```
+
+Existing `remote_bits` remains the remote claim state:
+
+```text
+remote_bits bit = remote-free claimed, owner has not drained yet
+```
+
+Invariant:
+
+```text
+(free_bits & remote_bits) == 0
+```
+
+## Fast Path
+
+Alloc:
+
+```text
+if current_bits[class] == 0:
+  refill current from partial page, remote drain, or new page
+
+mask = lowbit(current_bits[class])
+current_bits[class] &= ~mask
+free_bits &= ~mask       // owner-local store, not locked RMW
+return slab_base + slot * class_size
+```
+
+Local free:
+
+```text
+page = page_for_ptr(ptr)
+slot = slot_index(page, ptr)
+mask = 1 << slot
+
+if free_bits or remote_bits already has mask:
+  INVALID
+
+free_bits |= mask        // owner-local store
+
+if page == current_page[class]:
+  current_bits[class] |= mask
+else:
+  push page to partial list once
+```
+
+Remote free:
+
+```text
+page = page_for_ptr(ptr)
+slot = slot_index(page, ptr)
+if free_bits has mask:
+  INVALID
+CAS remote_bits to claim mask
+enqueue object to existing sender batch for first diagnostic
+```
+
+Owner drain:
+
+```text
+consume existing remote object list
+for each object:
+  clear remote_bits
+  set free_bits
+  push page to partial list once
+```
+
+The first M3 diagnostic may keep the existing object-list remote payload. A
+later M3.2 can replace remote lists with page+bitmask packets.
+
+## Why Previous Diagnostics Do Not Rule This Out
+
+```text
+allocfirst:
+  removed duplicate preload class lookup, but only modestly improved r0
+
+slotswitch:
+  removed variable division from slot_index, but did not improve r0/r90
+
+hotslot:
+  one-entry cache is too small; it did not change the page-run topology
+
+activetrust:
+  weakening checks helped r0 slightly but hurt r90, so state representation
+  should change instead of simply removing checks
+
+tlslink/linkonly/tlsie:
+  TLS/linkage overhead is real but not broad enough to close the gap
+```
+
+## Acceptance
+
+Keep if:
+
+```text
+mid_only_r0 >= allocfirst + 25%
+mid_only_r90 >= allocfirst - 5%
+main_r90 >= allocfirst - 5%
+cross128_r90 >= allocfirst - 8%
+attribution smoke: malloc_real=0, track_insert_fail=0
+```
+
+Strong keep if:
+
+```text
+mid_only_r0 >= 100M
+mid_only_r90 closes at least half the tcmalloc gap
+```
+
+No-go if:
+
+```text
+mid_only_r0 < 90M
+remote rows regress more than 8-10%
+double-free-before-reuse no longer fails closed
+foreign/wrong-route pointers fall to libc
+partial lists duplicate pages and grow unstable
+free_bits and remote_bits overlap
+```
