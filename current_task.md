@@ -1491,6 +1491,75 @@ lane decision after full matrix:
     control only
 ```
 
+Hakmem compare runner:
+
+```text
+script:
+  linux/run_hz5_hakmem_compare.sh
+
+layout:
+  benchmark binary:
+    /mnt/workdisk/public_share/hakmem/hakozuna/out/bench_random_mixed_mt_remote_malloc
+  allocator libraries:
+    hakmem allocator assets for hz3/hz4/mimalloc/tcmalloc
+    hakozuna_repo HZ5 builds for hz5-rb16/hz5-allgate
+  runner:
+    hakozuna_repo/linux/run_hz5_hakmem_compare.sh
+  results:
+    hakozuna_repo/private/raw-results/linux/hz5_hakmem_compare_<timestamp>
+
+policy:
+  do not copy the full hakmem tree into hakozuna_repo
+  treat hakmem as an external paper benchmark asset
+  raw performance runs keep HZ5_PRELOAD_STATS unset
+  HZ5 attribution runs are separate attrib.tsv rows
+
+smoke:
+  result directory:
+    private/raw-results/linux/hz5_hakmem_compare_smoke_20260524_114624
+  configuration:
+    runs=2
+    threads=2
+    lanes=guard,main,mid_only
+    remote_pcts=0,90
+  HZ5 attribution:
+    hz5-rb16/hz5-allgate:
+      malloc_hz5=10049
+      malloc_real=0
+      malloc_fail=0
+      free_real=0
+      track_insert_fail=0
+  result:
+    all compared allocator/case rows completed
+    alloc_failed_runs=0
+    bad_status_runs=0
+
+initial smoke readout:
+  HZ5 is competitive on local r0 mid/main:
+    main r0:
+      tcmalloc 117.8M
+      hz5-rb16 78.0M
+      hz5-allgate 76.5M
+      hz3 75.4M
+    mid_only r0:
+      tcmalloc 111.6M
+      hz5-allgate 85.7M
+      hz5-rb16 76.6M
+      hz3 75.7M
+  HZ5 is still behind hz4 on remote-heavy r90:
+    main r90:
+      hz4 32.0M
+      tcmalloc 11.4M
+      mimalloc 10.9M
+      hz3 10.1M
+      hz5-allgate 8.9M
+    mid_only r90:
+      hz4 35.6M
+      hz3 11.0M
+      mimalloc 10.4M
+      hz5-allgate 9.6M
+```
+
 MidFront source-return cleanup:
 
 ```text

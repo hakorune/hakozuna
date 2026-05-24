@@ -148,6 +148,22 @@ The runner keeps raw performance runs separate from attribution counters:
 
 Do not mix attribution-counter runs into performance medians.
 
+For cross-allocator paper-main style comparison against the existing `hakmem`
+benchmark binary, use:
+
+```bash
+./linux/run_hz5_hakmem_compare.sh
+```
+
+This keeps the layout separated:
+
+- benchmark binary: `/mnt/workdisk/public_share/hakmem/hakozuna/out/...`
+- runner: this repository under `linux/`
+- results: this repository under `private/raw-results/linux/`
+
+The `hakmem` tree is treated as an external benchmark asset. Do not copy the
+whole `hakmem` tree into this repository.
+
 ## GO / NO-GO And Conditions
 
 - Quick GO / NO-GO status: [docs/benchmarks/GO_NO_GO_LEDGER.md](../docs/benchmarks/GO_NO_GO_LEDGER.md)
