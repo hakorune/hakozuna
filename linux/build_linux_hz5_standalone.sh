@@ -53,6 +53,9 @@ LINUX_MIDFRONT_OWNER_FAST_STATE=0
 LINUX_MIDFRONT_REMOTE_BATCH_CAP=16
 LINUX_MIDFRONT_DRAIN_ALL_ON_MISS=0
 LINUX_MIDFRONT_DRAIN_MASK_ON_MISS=0
+LINUX_MIDFRONT_DRAIN_MASK_HIT_STOP=0
+LINUX_MIDFRONT_DRAIN_TAKE_FIRST=0
+LINUX_MIDFRONT_DRAIN_EMPTY_GATED=0
 LINUX_MIDFRONT_REMOTE_GLOBAL_RECYCLE=0
 HZ5_STANDALONE_EXACT_ONLY=1
 
@@ -129,6 +132,15 @@ Options:
                      candidate only: drain all MidFront owner inbox classes on local miss
   --linux-midfront-drain-mask-on-miss
                      candidate only: drain pending MidFront owner inbox classes on local miss
+  --linux-midfront-drain-mask-hit-stop
+                     candidate only: drain requested MidFront inbox class first,
+                     then stop if it fills the local class cache
+  --linux-midfront-drain-take-first
+                     candidate only: activate and return the first requested-class
+                     remote span directly during owner-inbox drain
+  --linux-midfront-drain-empty-gated
+                     candidate only: skip MidFront owner-inbox exchange when
+                     an acquire load observes an empty inbox
   --linux-midfront-remote-global-recycle
                      candidate only: recycle MidFront remote frees through global class stacks
   --linux-p11-speed-core
@@ -505,6 +517,31 @@ while [[ $# -gt 0 ]]; do
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
+    --linux-midfront-drain-mask-hit-stop)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_DRAIN_MASK_ON_MISS=1
+      LINUX_MIDFRONT_DRAIN_MASK_HIT_STOP=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
+    --linux-midfront-drain-take-first)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_DRAIN_TAKE_FIRST=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
+    --linux-midfront-drain-empty-gated)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_DRAIN_EMPTY_GATED=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
     --linux-midfront-remote-global-recycle)
       BUILD_PRELOAD_FULL=1
       LINUX_SMALLFRONT_S1=1
@@ -827,6 +864,15 @@ if [[ "$LINUX_MIDFRONT_M1" -eq 1 ]]; then
   if [[ "$LINUX_MIDFRONT_DRAIN_MASK_ON_MISS" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDFRONT_DRAIN_MASK_ON_MISS=1)
   fi
+  if [[ "$LINUX_MIDFRONT_DRAIN_MASK_HIT_STOP" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDFRONT_DRAIN_MASK_HIT_STOP=1)
+  fi
+  if [[ "$LINUX_MIDFRONT_DRAIN_TAKE_FIRST" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDFRONT_DRAIN_TAKE_FIRST=1)
+  fi
+  if [[ "$LINUX_MIDFRONT_DRAIN_EMPTY_GATED" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDFRONT_DRAIN_EMPTY_GATED=1)
+  fi
   if [[ "$LINUX_MIDFRONT_REMOTE_GLOBAL_RECYCLE" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_GLOBAL_RECYCLE=1)
   fi
@@ -874,6 +920,9 @@ fi
   echo "linux_midfront_remote_batch_cap=${LINUX_MIDFRONT_REMOTE_BATCH_CAP}"
   echo "linux_midfront_drain_all_on_miss=${LINUX_MIDFRONT_DRAIN_ALL_ON_MISS}"
   echo "linux_midfront_drain_mask_on_miss=${LINUX_MIDFRONT_DRAIN_MASK_ON_MISS}"
+  echo "linux_midfront_drain_mask_hit_stop=${LINUX_MIDFRONT_DRAIN_MASK_HIT_STOP}"
+  echo "linux_midfront_drain_take_first=${LINUX_MIDFRONT_DRAIN_TAKE_FIRST}"
+  echo "linux_midfront_drain_empty_gated=${LINUX_MIDFRONT_DRAIN_EMPTY_GATED}"
   echo "linux_midfront_remote_global_recycle=${LINUX_MIDFRONT_REMOTE_GLOBAL_RECYCLE}"
   echo "standalone_exact_only=${HZ5_STANDALONE_EXACT_ONLY}"
   echo "linux_p11_speed_core=${LINUX_P11_SPEED_CORE}"

@@ -68,11 +68,14 @@ mkdir -p "${OUTDIR}"
 
 declare -A CAND_FLAGS
 CAND_FLAGS[rb16]="--linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16"
+CAND_FLAGS[takefirst]="--linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16 --linux-midfront-drain-take-first"
 CAND_FLAGS[drainall]="--linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16 --linux-midfront-drain-all-on-miss"
+CAND_FLAGS[allgate]="--linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16 --linux-midfront-drain-all-on-miss --linux-midfront-drain-empty-gated"
 CAND_FLAGS[drainmask]="--linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16 --linux-midfront-drain-mask-on-miss"
+CAND_FLAGS[maskhitstop]="--linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16 --linux-midfront-drain-mask-hit-stop"
 CAND_FLAGS[globalrecycle]="--linux-midfront-owner-fast-state --linux-midfront-remote-global-recycle"
 
-declare -a CANDIDATES=(rb16 drainall drainmask globalrecycle)
+declare -a CANDIDATES=(rb16 takefirst drainall allgate drainmask globalrecycle)
 
 build_candidate() {
   local cand="$1"

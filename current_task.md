@@ -1141,6 +1141,141 @@ interpretation:
     drainall remains a useful broad control but is not always best
 ```
 
+MidFront owner-inbox drain candidate pass:
+
+```text
+purpose:
+  reduce owner-inbox drain overhead after source/page-map failures were fixed
+  raw runs only; HZ5_PRELOAD_STATS unset
+
+new candidate flags:
+  --linux-midfront-drain-mask-hit-stop:
+    drain requested class first, then stop before masked extra classes if the
+    requested local list was filled
+  --linux-midfront-drain-take-first:
+    during requested-class drain, CAS the first valid remote span directly from
+    REMOTE_PENDING -> ACTIVE and return it without local push/pop
+  --linux-midfront-drain-empty-gated:
+    acquire-load owner inbox first and skip atomic_exchange when it is empty
+
+focused result directories:
+  private/raw-results/linux/midfront_maskhitstop_focus_20260524_105355
+  private/raw-results/linux/midfront_batchcap_focus_20260524_105446
+  private/raw-results/linux/midfront_takefirst_focus_20260524_105648
+  private/raw-results/linux/midfront_takefirst_combo_focus_20260524_105723
+  private/raw-results/linux/midfront_emptygate_focus_20260524_105846
+  private/raw-results/linux/midfront_takeallgate_focus_20260524_105926
+
+batch-cap sweep:
+  rb16 remains a strong general baseline
+  rb32/rb64 can win isolated hi64 cases but are less stable overall
+
+maskhitstop:
+  safe, no alloc failures
+  not a clear win over drainmask/rb16
+  keep as diagnostic flag, not default observe candidate
+
+takefirst:
+  safe, no alloc failures
+  strong on threads=8 mid_r90:
+    23.73M median
+  weaker on main_r90 than drainmask/rb16
+
+takefirst + drainall:
+  safe, no alloc failures
+  useful but not consistently better than allgate/rb16/drainmask
+
+empty-gated:
+  safe, no alloc failures
+  allgate is the most promising new candidate:
+    main_r90 threads=2:  8.31M
+    mid_r90  threads=8: 24.54M
+    hi64_r90 threads=8: 22.29M
+  rb16gate helps some main_r90 threads=8 cases but is not broadly better than
+  the existing rb16 baseline
+
+runner update:
+  default MidFront observe candidates now include:
+    rb16
+    takefirst
+    drainall
+    allgate
+    drainmask
+    globalrecycle
+  maskhitstop remains buildable but is excluded from the default runner to keep
+  the lane matrix manageable
+
+interpretation:
+  empty-gated drain is the highest ROI change in this pass
+  takefirst is worth keeping as a direct-return A/B because it removes one
+  push/pop and one state transition, but it is workload-sensitive
+  next formal measurement should run the updated default observe matrix with
+  allgate included
+```
+
+Updated default observe smoke with allgate:
+
+```text
+result directory:
+  private/raw-results/linux/midfront_observe_20260524_110037
+
+configuration:
+  repeat=5
+  threads=8
+  ws=100
+  HZ5_PRELOAD_STATS unset
+  --no-attrib
+
+candidates:
+  rb16
+  takefirst
+  drainall
+  allgate
+  drainmask
+  globalrecycle
+
+failure result:
+  all candidates/cases:
+    alloc_failed_runs=0
+    bad_status_runs=0
+
+notable medians:
+  main_r90:
+    rb16:          20.90M
+    drainmask:     17.78M
+    takefirst:     16.11M
+    allgate:       15.92M
+    drainall:      13.69M
+    globalrecycle:  8.42M
+  mid_r90:
+    allgate:       19.52M
+    rb16:          19.02M
+    takefirst:     18.02M
+    drainall:      17.35M
+    drainmask:     16.18M
+    globalrecycle:  6.45M
+  mid_r50:
+    allgate:       27.12M
+    takefirst:     25.48M
+    drainmask:     23.87M
+    rb16:          23.61M
+    drainall:      21.69M
+    globalrecycle: 11.06M
+  hi64_r90:
+    rb16:          19.75M
+    drainmask:     17.52M
+    drainall:      15.37M
+    allgate:       15.28M
+    takefirst:     13.17M
+    globalrecycle:  6.03M
+
+interpretation:
+  allgate is now the best MidFront mid-range remote-heavy candidate
+  rb16 remains the strongest broad policy for main_r90 and hi64_r90
+  takefirst is safe but not the lead policy in the updated matrix
+  globalrecycle should remain only a control lane
+```
+
 MidFront source-return cleanup:
 
 ```text

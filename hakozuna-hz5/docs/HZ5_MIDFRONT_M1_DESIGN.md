@@ -190,6 +190,35 @@ Follow-up threads=4 and threads=8 repeat-5 stress smokes also reported zero
 global recycle and toward owner-inbox drain policy tuning (`rb16`, `drainmask`,
 and `drainall`) as the next optimization target.
 
+Owner-inbox drain policy candidates:
+
+```text
+takefirst:
+  Requested-class drain can activate the first valid remote span directly as
+  ACTIVE and return it, instead of pushing it to the local list and popping it
+  again. This preserves owner-token and state-CAS validation.
+
+empty-gated:
+  Drain can acquire-load the inbox head and skip atomic_exchange when it is
+  empty. A concurrent publish after the empty load remains pending for a later
+  miss; correctness is not weakened.
+
+maskhitstop:
+  Drainmask can stop after the requested class if that class now has a local
+  span. This is safe but is currently diagnostic-only because focused results
+  were not a clear win.
+```
+
+Focused smokes identified `allgate` (`drainall + empty-gated`) as the strongest
+new candidate. `takefirst` remains useful as a direct-return A/B, while
+`maskhitstop` is buildable but excluded from the default observe runner to avoid
+unnecessary lane spread.
+
+The updated default observe runner includes `allgate` and `takefirst`. In the
+threads=8 repeat-5 smoke, `allgate` led the MidFront mid-range remote-heavy
+cases, while `rb16` remained stronger for broader `main_r90` and high-mid
+`hi64_r90`. Treat `allgate` as a MidFront candidate, not a universal default.
+
 ## Allocator Shape
 
 The Linux HZ5 general allocator should be split by responsibility:
