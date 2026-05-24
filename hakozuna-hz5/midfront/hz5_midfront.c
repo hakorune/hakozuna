@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdatomic.h>
 #include <stddef.h>
+#include <sys/mman.h>
 
 #if !defined(_WIN32)
 void* _aligned_malloc(size_t size, size_t alignment);
@@ -38,11 +39,19 @@ void _aligned_free(void* ptr);
 #define HZ5_MIDFRONT_MAGIC UINT64_C(0x485A354D49444D31)
 #define HZ5_MIDFRONT_PAGE_SIZE ((size_t)4096)
 #define HZ5_MIDFRONT_CLASS_COUNT 5u
-#define HZ5_MIDFRONT_MAP_BITS 18u
+
+#ifndef HZ5_MIDFRONT_MAP_BITS
+#define HZ5_MIDFRONT_MAP_BITS 21u
+#endif
+
 #define HZ5_MIDFRONT_MAP_CAP ((size_t)1u << HZ5_MIDFRONT_MAP_BITS)
 
 #ifndef HZ5_MIDFRONT_REMOTE_BATCH_CAP
 #define HZ5_MIDFRONT_REMOTE_BATCH_CAP 16u
+#endif
+
+#ifndef HZ5_MIDFRONT_SOURCE_BATCH_COUNT
+#define HZ5_MIDFRONT_SOURCE_BATCH_COUNT 64u
 #endif
 
 typedef enum Hz5MidSpanState {
@@ -83,6 +92,10 @@ typedef struct Hz5MidTls {
   Hz5MidSpan* remote_batch_tail;
 } Hz5MidTls;
 
+typedef struct Hz5MidRawNode {
+  struct Hz5MidRawNode* next;
+} Hz5MidRawNode;
+
 static const uint32_t g_hz5_midfront_classes[HZ5_MIDFRONT_CLASS_COUNT] = {
     4096u, 8192u, 16384u, 32768u, 65536u};
 
@@ -93,6 +106,8 @@ static _Atomic(void*) g_hz5_midfront_owner_inbox[UINT16_MAX + 1u]
                                              [HZ5_MIDFRONT_CLASS_COUNT];
 static Hz5MidSpan* g_hz5_midfront_global_free[HZ5_MIDFRONT_CLASS_COUNT];
 static pthread_mutex_t g_hz5_midfront_global_lock = PTHREAD_MUTEX_INITIALIZER;
+static Hz5MidRawNode* g_hz5_midfront_source_free[HZ5_MIDFRONT_CLASS_COUNT];
+static pthread_mutex_t g_hz5_midfront_source_lock = PTHREAD_MUTEX_INITIALIZER;
 #if BENCHLAB_HZ5_LINUX_MIDFRONT_DRAIN_MASK_ON_MISS
 static _Atomic uint32_t g_hz5_midfront_owner_inbox_mask[UINT16_MAX + 1u];
 #endif
@@ -127,11 +142,61 @@ static int hz5_midfront_class_index(size_t size) {
   return -1;
 }
 
+static size_t hz5_midfront_span_stride(uint32_t class_index) {
+  return HZ5_MIDFRONT_PAGE_SIZE +
+         (size_t)hz5_midfront_class_bytes(class_index);
+}
+
 static size_t hz5_midfront_hash(uintptr_t page_base) {
   uintptr_t x = page_base >> 12;
   x ^= x >> HZ5_MIDFRONT_MAP_BITS;
   x ^= x >> (HZ5_MIDFRONT_MAP_BITS * 2u);
   return (size_t)x & (HZ5_MIDFRONT_MAP_CAP - 1u);
+}
+
+static int hz5_midfront_source_refill_locked(uint32_t class_index) {
+  if (!hz5_midfront_class_valid(class_index)) {
+    return 0;
+  }
+  size_t stride = hz5_midfront_span_stride(class_index);
+  if (stride == 0 ||
+      HZ5_MIDFRONT_SOURCE_BATCH_COUNT > SIZE_MAX / stride) {
+    return 0;
+  }
+  size_t bytes = stride * (size_t)HZ5_MIDFRONT_SOURCE_BATCH_COUNT;
+  void* block = mmap(NULL,
+                     bytes,
+                     PROT_READ | PROT_WRITE,
+                     MAP_PRIVATE | MAP_ANONYMOUS,
+                     -1,
+                     0);
+  if (block == MAP_FAILED) {
+    return 0;
+  }
+
+  uintptr_t base = (uintptr_t)block;
+  for (uint32_t i = 0; i < HZ5_MIDFRONT_SOURCE_BATCH_COUNT; ++i) {
+    Hz5MidRawNode* node = (Hz5MidRawNode*)(base + (uintptr_t)i * stride);
+    node->next = g_hz5_midfront_source_free[class_index];
+    g_hz5_midfront_source_free[class_index] = node;
+  }
+  return 1;
+}
+
+static void* hz5_midfront_source_alloc_raw(uint32_t class_index) {
+  if (!hz5_midfront_class_valid(class_index)) {
+    return NULL;
+  }
+  pthread_mutex_lock(&g_hz5_midfront_source_lock);
+  if (!g_hz5_midfront_source_free[class_index] &&
+      !hz5_midfront_source_refill_locked(class_index)) {
+    pthread_mutex_unlock(&g_hz5_midfront_source_lock);
+    return NULL;
+  }
+  Hz5MidRawNode* node = g_hz5_midfront_source_free[class_index];
+  g_hz5_midfront_source_free[class_index] = node->next;
+  pthread_mutex_unlock(&g_hz5_midfront_source_lock);
+  return node;
 }
 
 static Hz5MidSpan* hz5_midfront_lookup_page(uintptr_t page_base) {
@@ -271,12 +336,23 @@ static int hz5_midfront_owner_local_state_transition(Hz5MidSpan* span,
 #endif
 }
 
-static int hz5_midfront_activate_for_owner(Hz5MidTls* tls,
-                                           Hz5MidSpan* span) {
+static int hz5_midfront_activate_local_for_owner(Hz5MidTls* tls,
+                                                 Hz5MidSpan* span) {
   if (!hz5_midfront_owner_local_state_transition(
           span,
           (unsigned char)HZ5_MIDSPAN_LOCAL_FREE,
           (unsigned char)HZ5_MIDSPAN_ACTIVE)) {
+    return 0;
+  }
+  span->owner = tls->owner;
+  return 1;
+}
+
+static int hz5_midfront_activate_global_for_owner(Hz5MidTls* tls,
+                                                  Hz5MidSpan* span) {
+  if (!hz5_midfront_state_cas(span,
+                              (unsigned char)HZ5_MIDSPAN_LOCAL_FREE,
+                              (unsigned char)HZ5_MIDSPAN_ACTIVE)) {
     return 0;
   }
   span->owner = tls->owner;
@@ -425,8 +501,7 @@ static void hz5_midfront_drain_remote_on_miss(Hz5MidTls* tls,
 static Hz5MidSpan* hz5_midfront_new_span(Hz5MidTls* tls,
                                          uint32_t class_index) {
   uint32_t class_bytes = hz5_midfront_class_bytes(class_index);
-  size_t raw_bytes = HZ5_MIDFRONT_PAGE_SIZE + (size_t)class_bytes;
-  void* raw = _aligned_malloc(raw_bytes, HZ5_MIDFRONT_PAGE_SIZE);
+  void* raw = hz5_midfront_source_alloc_raw(class_index);
   if (!raw) {
     return NULL;
   }
@@ -447,7 +522,6 @@ static Hz5MidSpan* hz5_midfront_new_span(Hz5MidTls* tls,
   span->next = NULL;
 
   if (!hz5_midfront_map_insert(span)) {
-    _aligned_free(raw);
     return NULL;
   }
   return span;
@@ -470,7 +544,7 @@ void* hz5_midfront_alloc(size_t size, size_t align) {
     span = hz5_midfront_local_pop(tls, ci);
   }
   if (span) {
-    if (!hz5_midfront_activate_for_owner(tls, span)) {
+    if (!hz5_midfront_activate_local_for_owner(tls, span)) {
       return NULL;
     }
     return span->base;
@@ -478,7 +552,7 @@ void* hz5_midfront_alloc(size_t size, size_t align) {
 
 #if BENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_GLOBAL_RECYCLE
   while ((span = hz5_midfront_global_pop(ci)) != NULL) {
-    if (hz5_midfront_activate_for_owner(tls, span)) {
+    if (hz5_midfront_activate_global_for_owner(tls, span)) {
       return span->base;
     }
   }

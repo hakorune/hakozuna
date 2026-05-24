@@ -128,8 +128,9 @@ it onto a global class stack; the next allocating thread pops it, retakes owner,
 and activates it. This tests whether remote-heavy stalls come from owner-inbox
 delayed reuse. The current candidate uses a mutex-protected global class stack;
 the initial lock-free stack draft was rejected after alloc-failure probes. It
-preserves descriptor state checks but weakens owner-locality, so it remains a
-candidate policy.
+always uses CAS when activating a global span, even when owner-fast-state is
+enabled. It preserves descriptor state checks but weakens owner-locality, so it
+remains a candidate policy.
 ```
 
 ## Observation Hygiene
@@ -148,6 +149,32 @@ attrib.tsv:
 
 Do not compare ops/s from attribution runs against raw performance runs; preload
 stats use atomic counters and are intentionally isolated.
+
+## Source Batching
+
+MidFront source allocation is batched by class. The initial M1 source used one
+`mmap` per one-object span, which made remote-heavy high-mid runs sensitive to
+VMA/map-count pressure before reuse caught up. The baseline source now refills
+64 raw spans per class block:
+
+```text
+HZ5_MIDFRONT_SOURCE_BATCH_COUNT=64
+HZ5_MIDFRONT_MAP_BITS=21
+```
+
+This is not a policy lane. It does not change descriptor ownership, page-map
+lookup, state transitions, or remote policy; it only reduces source-allocation
+failure risk and source-path overhead.
+
+The larger page map is paired with source batching because 64K-class spans
+consume 16 page-map entries each. Remote-heavy high-mid workloads can create
+many unique spans before reuse catches up, so the old 18-bit map was too small
+for reliable full-preload observation.
+
+The repeat-5 source-batching smoke and the focused global-recycle CAS smoke both
+ran with `HZ5_PRELOAD_STATS` unset. The observed `alloc_failed` class did not
+reproduce in those raw runs. Attribution runs remain separate because preload
+stats use atomic counters.
 
 ## Allocator Shape
 

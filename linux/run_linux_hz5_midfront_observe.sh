@@ -103,6 +103,8 @@ fi
   echo "timeout_sec=${TIMEOUT_SEC}"
   echo "performance_stats=HZ5_PRELOAD_STATS_UNSET"
   echo "diagnostic_stats_build=HZ5_DIAGNOSTIC_STATS_0"
+  echo "midfront_source_batch_count=64"
+  echo "midfront_map_bits=21"
   for cand in "${CANDIDATES[@]}"; do
     echo "candidate_${cand}_flags=${CAND_FLAGS[$cand]}"
   done

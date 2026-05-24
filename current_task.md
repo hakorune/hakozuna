@@ -605,8 +605,27 @@ MidFront remote-global-recycle:
   extra source allocation or long stalls
   current candidate uses a mutex-protected global class stack; the first
   lock-free stack draft was rejected after main r90 alloc-failure probes
+  global-pop activation always uses CAS, even when owner-fast-state is enabled;
+  owner-fast-state remains limited to owner-local lists
   descriptor state still protects double-free; this is a policy candidate, not
   the default owner-local semantics
+
+MidFront source batching:
+  baseline source fix, not a policy lane
+  old M1 source used one mmap per MidSpan, which can hit VMA/map-count pressure
+  in hi64/cross128 remote-heavy runs before reuse catches up
+  new source refills per-class raw span blocks with one mmap per 64 spans
+  descriptor/page-map ownership remains unchanged
+
+MidFront page-map capacity:
+  baseline capacity raised from 18 bits to 21 bits
+  reason:
+    64K class consumes 16 page-map entries per unique span
+    remote-heavy hi64/main runs can create enough unique spans that the old
+    262K-entry map can fail insertion before the benchmark ends
+  tradeoff:
+    larger BSS/page-map footprint, but this is preferable to benchmark-body
+    alloc failure in the general preload lane
 ```
 
 Initial smoke measurement:
@@ -858,12 +877,118 @@ perf stat, separate one-run probe:
     globalrecycle: 399.1M / 346.8M
 
 interpretation:
-  globalrecycle is the strongest MidFront remote/mixed candidate so far
+  this checkpoint is superseded by the source-batching/map21 smoke below
+  globalrecycle looked strongest before the source failure fix
   it improves main_r90 and mid_r50/r90 without hurting fixed4k_r0
   drainall remains a useful owner-inbox policy control
   drainmask is safe but not clearly useful yet
-  hi64/cross128 are still not solved by MidFront; they need a separate
-  LargeFront / >64K route if they become paper-facing
+  the hi64 alloc_failed class was later traced to source/page-map capacity
+  cross128 remains outside the MidFront <=64K claim and still needs a separate
+  LargeFront / >64K route if it becomes paper-facing
+```
+
+Failure fix target:
+
+```text
+hi64_r90 alloc_failed observations:
+  rb16:          1/10
+  globalrecycle: 2/10
+
+failure logs show:
+  benchmark body reports "alloc failed"
+  HZ5 preload attribution smoke has malloc_fail=0 for short runs
+  failures appear only in longer remote-heavy hi64/main style runs
+
+root-cause hypothesis:
+  one-object MidFront source used one mmap per span
+  32769..65536 random remote-heavy can allocate tens of thousands of spans
+  before owner/global reuse catches up
+  mmap/VMA pressure can cause source allocation NULL and benchmark alloc failed
+
+fix:
+  MidFront source now batches raw spans:
+    HZ5_MIDFRONT_SOURCE_BATCH_COUNT=64
+    one mmap block supplies 64 same-class MidSpans
+    individual MidSpan descriptors/page-map entries stay the same
+  MidFront page map default raised:
+    HZ5_MIDFRONT_MAP_BITS=21
+
+validation:
+  MidFront observe smoke rerun completed after source batching
+  success criterion met:
+    hi64_r90 alloc_failed_runs == 0 in repeat-5 smoke
+    fixed4k_r0 still in the 80M+ ops/s range
+```
+
+Source batching + map21 smoke:
+
+```text
+result directory:
+  private/raw-results/linux/midfront_source_batch_map21_smoke_20260524_101826
+
+runs:
+  repeat=5
+  threads=2
+  ws=100
+
+failure result:
+  all candidates/cases in the smoke had alloc_failed_runs=0
+
+notable medians:
+  hi64_r90:
+    drainall:      10.71M
+    rb16:           9.56M
+    drainmask:      9.00M
+    globalrecycle:  8.92M
+  main_r90:
+    drainall:       7.74M
+    drainmask:      7.72M
+    rb16:           7.26M
+    globalrecycle:  6.40M
+  mid_r90:
+    rb16:           8.64M
+    drainmask:      7.92M
+    globalrecycle:  7.12M
+    drainall:       6.82M
+
+interpretation:
+  failure was primarily source/page-map capacity, not just remote policy
+  after source batching + map21, owner-inbox policies look competitive again
+  globalrecycle is no longer clearly best and should remain candidate only
+```
+
+Global recycle CAS-check focused smoke:
+
+```text
+result directory:
+  private/raw-results/linux/midfront_globalrecycle_cas_sourcecheck_20260524_102228
+
+lane:
+  --linux-midfront-owner-fast-state
+  --linux-midfront-remote-global-recycle
+  --linux-local2p-speed-linkflags
+
+important hygiene:
+  HZ5_PRELOAD_STATS was not set
+  raw runs used only LD_PRELOAD, so preload atomic counters were not mixed into
+  ops/s measurement
+
+runs:
+  repeat=5
+  threads=2
+  ws=100
+
+result:
+  fixed4k_r0 median 88.81M, alloc_failed_runs=0
+  hi64_r90  median  6.67M, alloc_failed_runs=0
+  main_r90  median  5.91M, alloc_failed_runs=0
+  mid_r90   median  7.30M, alloc_failed_runs=0
+
+interpretation:
+  source batching + map21 fixes the observed alloc_failed failure class for
+  the focused globalrecycle lane
+  global-recycle activation now uses CAS even when owner-fast-state is enabled
+  owner-fast-state remains restricted to owner-local lists
 ```
 
 OwnerLifetime-O1 implementation status:
