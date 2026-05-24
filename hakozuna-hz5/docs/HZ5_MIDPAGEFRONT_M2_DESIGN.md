@@ -423,6 +423,41 @@ Reason:
   still regresses r0 and large_only r90
 ```
 
+FrontHint-F1 diagnostic:
+
+```text
+FrontHint-F1 / midpage-frontfirst
+```
+
+Purpose:
+
+```text
+Measure whether preload free() dispatch order is a remaining M2 cost.
+MidPageFront-owned pointers currently pass SmallFront ownership lookup first.
+```
+
+Safety rule:
+
+```text
+Only reorder validated front probes.
+Do not bypass MidPageFront descriptor checks.
+Do not use the preload pointer table for HZ5-owned MidPage objects.
+```
+
+Result:
+
+```text
+mid_only_r90 improves versus midpage_region
+main_r90, cross128_r90, and guard_r90 regress versus midpage_region
+```
+
+Decision:
+
+```text
+keep as dispatch-cost diagnostic
+do not promote to lead MidPageFront preset
+```
+
 Lane names after cleanup:
 
 ```text

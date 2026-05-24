@@ -18,6 +18,10 @@
 #ifndef BENCHLAB_HZ5_PRELOAD_FREE_MID_FIRST
 #define BENCHLAB_HZ5_PRELOAD_FREE_MID_FIRST 0
 #endif
+
+#ifndef BENCHLAB_HZ5_PRELOAD_FREE_MIDPAGE_FIRST
+#define BENCHLAB_HZ5_PRELOAD_FREE_MIDPAGE_FIRST 0
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -457,6 +461,25 @@ void free(void* ptr) {
   Hz5MidPageFrontFreeResult midpage_free = hz5_midpagefront_free(ptr);
   if (midpage_free == HZ5_MIDPAGEFRONT_FREE_OK ||
       midpage_free == HZ5_MIDPAGEFRONT_FREE_INVALID) {
+    hz5_preload_full_stat_inc(&g_hz5_preload_full_free_hz5);
+    return;
+  }
+#elif BENCHLAB_HZ5_PRELOAD_FREE_MIDPAGE_FIRST
+  Hz5MidPageFrontFreeResult midpage_free = hz5_midpagefront_free(ptr);
+  if (midpage_free == HZ5_MIDPAGEFRONT_FREE_OK ||
+      midpage_free == HZ5_MIDPAGEFRONT_FREE_INVALID) {
+    hz5_preload_full_stat_inc(&g_hz5_preload_full_free_hz5);
+    return;
+  }
+  Hz5SmallFrontFreeResult small_free = hz5_smallfront_free(ptr);
+  if (small_free == HZ5_SMALLFRONT_FREE_OK ||
+      small_free == HZ5_SMALLFRONT_FREE_INVALID) {
+    hz5_preload_full_stat_inc(&g_hz5_preload_full_free_hz5);
+    return;
+  }
+  Hz5MidFrontFreeResult mid_free = hz5_midfront_free(ptr);
+  if (mid_free == HZ5_MIDFRONT_FREE_OK ||
+      mid_free == HZ5_MIDFRONT_FREE_INVALID) {
     hz5_preload_full_stat_inc(&g_hz5_preload_full_free_hz5);
     return;
   }

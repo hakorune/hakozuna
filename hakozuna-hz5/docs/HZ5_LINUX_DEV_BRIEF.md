@@ -1062,6 +1062,48 @@ MidPageFront-M2.2 region-array:
   not a broad default because r0 and large_only r90 regress
 ```
 
+## FrontHint-F1 Result
+
+FrontHint-F1 measured free-dispatch cost by probing MidPageFront before
+SmallFront in the MidPage region-array profile:
+
+```text
+FrontHint-F1:
+  --linux-hz5-general-midpage-region-frontfirst
+```
+
+Verify r5 medians:
+
+```text
+main_r90:
+  midpage_region 25.79M
+  frontfirst     21.35M
+
+mid_only_r90:
+  midpage_region 21.60M
+  frontfirst     34.07M
+
+cross128_r90:
+  midpage_region 19.50M
+  frontfirst     14.25M
+
+guard_r90:
+  midpage_region 34.90M
+  frontfirst     28.15M
+```
+
+Decision:
+
+```text
+diagnostic only
+not broad default
+
+Reason:
+  helps pure mid_only r90
+  regresses main/cross128/guard r90
+  midpage_region remains the lead MidPageFront candidate
+```
+
 Lane cleanup:
 
 ```text

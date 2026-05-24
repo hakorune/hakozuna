@@ -47,6 +47,7 @@ LINUX_P43_WRAPPER_TOKEN_BRIDGE=0
 TRACE_LANE=0
 BUILD_PRELOAD_FULL=0
 PRELOAD_FREE_MID_FIRST=0
+PRELOAD_FREE_MIDPAGE_FIRST=0
 LINUX_OWNERHUB_R1=0
 LINUX_OWNERHUB_R2=0
 LINUX_OWNERHUB_R3=0
@@ -186,6 +187,9 @@ Options:
   --linux-hz5-general-midpage-region-shadow
                      diagnostic preset: midpage-region plus remote-shadow
                      pending bitmap experiment
+  --linux-hz5-general-midpage-region-frontfirst
+                     diagnostic preset: midpage-region plus MidPageFront first
+                     in preload free() ownership dispatch
   --linux-hz5-general-midoutbox
                      candidate preset: general-region-outbox plus MidFront
                      owner/class sender outbox
@@ -792,6 +796,25 @@ while [[ $# -gt 0 ]]; do
       LINUX_MIDPAGEFRONT_REGION_ARRAY=1
       LINUX_MIDPAGEFRONT_REMOTE_SHADOW=1
       LINUX_MIDPAGEFRONT_LOCAL_FAST_STATE=1
+      LINUX_MIDPAGEFRONT_REMOTE_BATCH_CAP=16
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_OWNER_FAST_STATE=1
+      LINUX_MIDFRONT_REMOTE_BATCH_CAP=16
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      LINUX_LARGEFRONT_OWNER_FAST_STATE=1
+      LINUX_LARGEFRONT_REGION_MAP=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
+    --linux-hz5-general-midpage-region-frontfirst)
+      BUILD_PRELOAD_FULL=1
+      PRELOAD_FREE_MIDPAGE_FIRST=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_SMALLFRONT_REMOTE_OUTBOX=1
+      LINUX_SMALLFRONT_REMOTE_BATCH_CAP=8
+      LINUX_MIDPAGEFRONT_M2=1
+      LINUX_MIDPAGEFRONT_REGION_ARRAY=1
       LINUX_MIDPAGEFRONT_REMOTE_BATCH_CAP=16
       LINUX_MIDFRONT_M1=1
       LINUX_MIDFRONT_OWNER_FAST_STATE=1
@@ -1640,6 +1663,7 @@ fi
   echo "linux_local2p_local_overflow_global=${LINUX_LOCAL2P_LOCAL_OVERFLOW_GLOBAL}"
   echo "build_preload_full=${BUILD_PRELOAD_FULL}"
   echo "preload_free_mid_first=${PRELOAD_FREE_MID_FIRST}"
+  echo "preload_free_midpage_first=${PRELOAD_FREE_MIDPAGE_FIRST}"
   echo "linux_ownerhub_r1=${LINUX_OWNERHUB_R1}"
   echo "linux_ownerhub_r2=${LINUX_OWNERHUB_R2}"
   echo "linux_ownerhub_r3=${LINUX_OWNERHUB_R3}"
@@ -1696,6 +1720,9 @@ fi
 
 if [[ "$PRELOAD_FREE_MID_FIRST" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_PRELOAD_FREE_MID_FIRST=1)
+fi
+if [[ "$PRELOAD_FREE_MIDPAGE_FIRST" -eq 1 ]]; then
+  COMMON_FLAGS+=(-DBENCHLAB_HZ5_PRELOAD_FREE_MIDPAGE_FIRST=1)
 fi
 
 HZ5_SRCS=(

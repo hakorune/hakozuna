@@ -6957,3 +6957,115 @@ Next likely target:
   where it helps, while leaving large-only and pure-local broad rows on region
   baseline.
 ```
+
+### Next Attack: Front Ownership Hint
+
+Goal:
+
+```text
+Chase mimalloc/tcmalloc on ordinary mid-size remote-heavy rows without weakening
+MidPageFront fail-closed ownership.
+```
+
+Current gap from broad matrix:
+
+```text
+main_r90:
+  midpage_region 32.12M
+  HZ4            57.53M
+  tcmalloc       53.51M
+
+mid_only_r90:
+  midpage_region 35.61M
+  HZ4            65.09M
+  tcmalloc       51.56M
+
+cross128_r90:
+  midpage_region 20.83M
+  HZ4            26.97M
+  tcmalloc        7.61M
+```
+
+Interpretation:
+
+```text
+MidPageFront-M2.2 is useful, but free() still probes front-ends in order:
+  SmallFront -> MidPageFront -> MidFront -> LargeFront
+
+MidPage hits still pay at least a SmallFront ownership miss. For r0/r50/r90
+ordinary mid-size rows, this dispatch cost is a plausible remaining gap.
+```
+
+Next design target:
+
+```text
+FrontHint-F1:
+  preload free() fast-probes MidPageFront before SmallFront when enabled by a
+  dedicated candidate preset.
+
+Constraints:
+  each front still validates ownership
+  invalid/double-free owned-looking pointers remain fail-closed
+  no pointer-table shortcut for HZ5-owned objects
+  no change to Windows P43i/P45 or exact Local2P lanes
+```
+
+Candidate preset:
+
+```text
+--linux-hz5-general-midpage-region-frontfirst
+```
+
+Expected interpretation:
+
+```text
+main/mid_only improve:
+  front dispatch miss cost matters
+
+small/guard regress or cross128 regresses:
+  keep as profile-specific candidate, not broad default
+```
+
+Measurement:
+
+```text
+Focused r3:
+  private/raw-results/linux/frontfirst_focused_r3_20260525_032736
+
+Verify r5, HZ5 variants only:
+  private/raw-results/linux/frontfirst_verify_r5_20260525_032806
+```
+
+Verify r5 medians:
+
+```text
+main_r90:
+  region          16.05M
+  midpage_region 25.79M
+  frontfirst     21.35M
+
+mid_only_r90:
+  region          21.77M
+  midpage_region 21.60M
+  frontfirst     34.07M
+
+cross128_r90:
+  region          13.10M
+  midpage_region 19.50M
+  frontfirst     14.25M
+
+guard_r90:
+  region          17.60M
+  midpage_region 34.90M
+  frontfirst     28.15M
+```
+
+Decision:
+
+```text
+FrontHint-F1 is not a broad default.
+
+It proves dispatch order can help a pure mid-only remote row, but the same
+reordering regresses main/cross128/guard. Keep the preset as a diagnostic for
+front dispatch cost; do not replace midpage_region.
+```

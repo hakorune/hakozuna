@@ -327,6 +327,19 @@ midpage_region:
   not general large-only default
 ```
 
+Diagnostic candidate:
+
+```text
+hz5-general-midpage-region-frontfirst:
+  MidPageFront ownership probe before SmallFront in preload free()
+  intended to measure front dispatch miss cost on main/mid_only rows
+  not broad default
+
+Result:
+  helps mid_only r90
+  regresses main/cross128/guard r90
+```
+
 Current decision:
 
 ```text
