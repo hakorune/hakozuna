@@ -614,6 +614,14 @@ This is a useful hit-rate diagnostic, but a miss is not an HZ5 allocation.
 | `hz5-preload-hybrid` | `hz5-preload-hybrid-diagnostic` | hybrid preload library | `local2p` hits + `libc_passthrough` misses | diagnostic adapter |
 | `hz5-preload-full` | `hz5-linux-preload-full-control` | `--linux-preload-full` | HZ5 API + bootstrap real-libc | attribution/control adapter |
 | `hz5-smallfront-s1` | `hz5-linux-smallfront-s1` | `--linux-smallfront-s1` | `smallfront_s1` | active general allocator candidate |
+| `hz5-smallfront-remote-outbox` | `hz5-linux-smallfront-remote-outbox` | `--linux-smallfront-remote-outbox --linux-smallfront-remote-batch-cap 8 --linux-largefront-region-map --linux-largefront-owner-fast-state --linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | `smallfront_s1 + midfront_m1 + largefront_l1` | SmallFront remote-handoff candidate |
+| `hz5-midfront-rb16` | `hz5-linux-midfront-rb16` | `--linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | `midfront_m1` | broad MidFront default candidate |
+| `hz5-midfront-allgate` | `hz5-linux-midfront-allgate` | `--linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16 --linux-midfront-drain-all-on-miss --linux-midfront-drain-empty-gated` | `midfront_m1` | remote-heavy MidFront co-lead |
+| `hz5-midfront-drainmask` | `hz5-linux-midfront-drainmask` | `--linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16 --linux-midfront-drain-mask-on-miss` | `midfront_m1` | pending-mask diagnostic/control |
+| `hz5-largefront-l1` | `hz5-linux-largefront-l1` | `--linux-largefront-l1 --linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | `largefront_l1` | first large ordinary malloc coverage candidate |
+| `hz5-largefront-inbox` | `hz5-linux-largefront-inbox` | `--linux-largefront-owner-inbox --linux-largefront-owner-fast-state --linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | `largefront_l1` | remote-heavy large candidate |
+| `hz5-largefront-region-map` | `hz5-linux-largefront-region-map` | `--linux-largefront-region-map --linux-largefront-owner-fast-state --linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | `largefront_l1` | LargeFront-L2 source-region lookup candidate |
+| `hz5-general-region-outbox` | `hz5-linux-general-region-outbox` | `--linux-hz5-general-region-outbox` | `smallfront_s1 + midfront_m1 + largefront_l1` | current combined general remote-tail candidate preset |
 
 Build selectors for `local2p`, `p25attr`, and `p43` are mutually exclusive.
 Keep that rule. It prevents mixed-route benchmark rows.

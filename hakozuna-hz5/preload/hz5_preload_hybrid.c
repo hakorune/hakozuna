@@ -22,6 +22,8 @@
 
 #define HZ5_PRELOAD_TRACK_CAP ((size_t)1u << HZ5_PRELOAD_TRACK_BITS)
 #define HZ5_PRELOAD_TOMBSTONE ((void*)(uintptr_t)1u)
+#define HZ5_PRELOAD_CLAIM_SIZE 65536u
+#define HZ5_PRELOAD_CLAIM_ALIGN 8192u
 
 typedef void* (*Hz5RealMallocFn)(size_t);
 typedef void (*Hz5RealFreeFn)(void*);
@@ -184,7 +186,7 @@ static int hz5_preload_track_remove(void* ptr) {
 }
 
 static int hz5_preload_claims(size_t size, size_t align) {
-  return size == 65536u && align == 8192u;
+  return size == HZ5_PRELOAD_CLAIM_SIZE && align == HZ5_PRELOAD_CLAIM_ALIGN;
 }
 
 static void* hz5_preload_hz5_alloc(size_t size, size_t align) {
@@ -207,12 +209,13 @@ static void* hz5_preload_hz5_alloc(size_t size, size_t align) {
 
 void* malloc(size_t size) {
   hz5_preload_resolve();
-  if (g_hz5_preload_inside || !hz5_preload_claims(size, 8192u)) {
+  if (g_hz5_preload_inside ||
+      !hz5_preload_claims(size, HZ5_PRELOAD_CLAIM_ALIGN)) {
     atomic_fetch_add_explicit(&g_hz5_preload_malloc_libc, 1u,
                               memory_order_relaxed);
     return g_real_malloc ? g_real_malloc(size) : NULL;
   }
-  void* ptr = hz5_preload_hz5_alloc(size, 8192u);
+  void* ptr = hz5_preload_hz5_alloc(size, HZ5_PRELOAD_CLAIM_ALIGN);
   if (ptr) {
     atomic_fetch_add_explicit(&g_hz5_preload_malloc_hz5, 1u,
                               memory_order_relaxed);
@@ -291,8 +294,9 @@ void* calloc(size_t nmemb, size_t size) {
     return NULL;
   }
   size_t total = nmemb * size;
-  if (!g_hz5_preload_inside && hz5_preload_claims(total, 8192u)) {
-    void* ptr = hz5_preload_hz5_alloc(total, 8192u);
+  if (!g_hz5_preload_inside &&
+      hz5_preload_claims(total, HZ5_PRELOAD_CLAIM_ALIGN)) {
+    void* ptr = hz5_preload_hz5_alloc(total, HZ5_PRELOAD_CLAIM_ALIGN);
     if (ptr) {
       memset(ptr, 0, total);
       atomic_fetch_add_explicit(&g_hz5_preload_calloc_hz5, 1u,
@@ -317,7 +321,8 @@ void* realloc(void* ptr, size_t size) {
   if (!g_hz5_preload_inside && hz5_preload_track_remove(ptr)) {
     void* next = malloc(size);
     if (next) {
-      memcpy(next, ptr, size < 65536u ? size : 65536u);
+      memcpy(next, ptr,
+             size < HZ5_PRELOAD_CLAIM_SIZE ? size : HZ5_PRELOAD_CLAIM_SIZE);
     }
     g_hz5_preload_inside++;
     (void)hz5_free(ptr);

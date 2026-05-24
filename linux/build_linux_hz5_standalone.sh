@@ -240,6 +240,14 @@ Options:
 EOF
 }
 
+require_value() {
+  local opt="$1"
+  if [[ $# -lt 2 || -z "${2:-}" || "${2:-}" == --* ]]; then
+    echo "missing value for ${opt}" >&2
+    exit 1
+  fi
+}
+
 enable_local2p_fast_cookie_base() {
   LINUX_LOCAL2P=1
   LINUX_LOCAL2P_TLS_PACKED=1
@@ -272,12 +280,12 @@ enable_local2p_speed_linkflags_base() {
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --arch)
-      [[ $# -ge 2 ]] || { echo "missing value for --arch" >&2; exit 1; }
+      require_value "$@"
       ARCH="$2"
       shift 2
       ;;
     --out-dir)
-      [[ $# -ge 2 ]] || { echo "missing value for --out-dir" >&2; exit 1; }
+      require_value "$@"
       OUT_DIR="$2"
       shift 2
       ;;
@@ -346,14 +354,17 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --linux-local2p-remote-batch-cap)
+      require_value "$@"
       LINUX_LOCAL2P_REMOTE_BATCH_CAP="$2"
       shift 2
       ;;
     --linux-local2p-tls-cap)
+      require_value "$@"
       LINUX_LOCAL2P_TLS_CAP="$2"
       shift 2
       ;;
     --linux-local2p-global-cap)
+      require_value "$@"
       LINUX_LOCAL2P_GLOBAL_CAP="$2"
       shift 2
       ;;
@@ -537,6 +548,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --linux-smallfront-remote-batch-cap)
+      require_value "$@"
       LINUX_SMALLFRONT_REMOTE_BATCH_CAP="$2"
       shift 2
       ;;
@@ -615,6 +627,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --linux-midfront-remote-batch-cap)
+      require_value "$@"
       LINUX_MIDFRONT_REMOTE_BATCH_CAP="$2"
       shift 2
       ;;
@@ -704,6 +717,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --linux-largefront-remote-batch-cap)
+      require_value "$@"
       LINUX_LARGEFRONT_REMOTE_BATCH_CAP="$2"
       shift 2
       ;;

@@ -433,6 +433,9 @@ Candidate designs:
 Route and lane names:
   docs/HZ5_LINUX_ROUTE_LANE_MATRIX.md
 
+Cleanup/modularization audit:
+  docs/HZ5_LINUX_CLEANUP_AUDIT.md
+
 LargeFront design and measurements:
   docs/HZ5_LARGEFRONT_L1_DESIGN.md
 

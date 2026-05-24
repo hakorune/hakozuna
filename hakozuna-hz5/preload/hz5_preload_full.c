@@ -68,7 +68,6 @@ static pthread_mutex_t g_hz5_preload_full_lock = PTHREAD_MUTEX_INITIALIZER;
 static __thread int g_hz5_preload_full_inside;
 static _Atomic int g_hz5_preload_full_ready;
 static int g_hz5_preload_full_stats_enabled;
-static atomic_flag g_hz5_preload_full_stats_registered = ATOMIC_FLAG_INIT;
 static unsigned char g_hz5_preload_full_bootstrap[1024u * 1024u];
 static _Atomic size_t g_hz5_preload_full_bootstrap_used;
 
@@ -209,16 +208,6 @@ static void hz5_preload_full_stats_print(void) {
               &g_hz5_preload_full_track_insert_fail, memory_order_relaxed));
 }
 
-static void hz5_preload_full_stats_register_once(void) {
-  if (!g_hz5_preload_full_stats_enabled) {
-    return;
-  }
-  if (atomic_flag_test_and_set_explicit(
-          &g_hz5_preload_full_stats_registered, memory_order_acq_rel)) {
-    return;
-  }
-}
-
 __attribute__((destructor)) static void hz5_preload_full_stats_destructor(
     void) {
   hz5_preload_full_stats_print();
@@ -226,7 +215,6 @@ __attribute__((destructor)) static void hz5_preload_full_stats_destructor(
 }
 
 static void hz5_preload_full_resolve(void) {
-  hz5_preload_full_stats_register_once();
   if (g_hz5_preload_full_inside) {
     return;
   }
@@ -421,7 +409,6 @@ void* malloc(size_t size) {
     hz5_preload_full_resolve();
     return hz5_preload_full_real_malloc(size);
   }
-  hz5_preload_full_stats_register_once();
 
   void* ptr = hz5_preload_full_hz5_malloc(size, 16u);
   if (ptr) {

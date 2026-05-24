@@ -1,4 +1,4 @@
-# Current Task: HZ5 Ubuntu Standalone Exact Lane
+# Current Task: HZ5 Linux General Front-End
 
 ## Read First
 
@@ -15,18 +15,23 @@ history.
 Current active question:
 
 ```text
-HZ5 Linux now covers SmallFront, MidFront, and LargeFront under full preload.
-Local/mixed coverage improved substantially.
-Remote-heavy cross-size workloads remain weak.
+HZ5 Linux now covers:
+  SmallFront-S1   ordinary malloc <= 2KiB
+  MidFront-M1     ordinary malloc 2049..65536
+  LargeFront-L1   ordinary malloc 65537..1MiB
+  Local2P         exact 64K/a8192 appendix/profile lane
+
+The current general candidate preset is:
+  --linux-hz5-general-region-outbox
 
 Latest result:
-  broad paper-shape runs exposed HZ5 r90 timeout tails.
-  perf attributes the LargeFront large_only tail mostly to LargeFront page-map
-  insertion pressure.
+  LargeFront region-map removed the per-page insertion timeout tail while
+  preserving interior invalid-free attribution.
+  SmallFront remote outbox cap8 modestly improves r90, but does not close the
+  HZ4 cross128 gap.
 
 Next decision:
-  replace LargeFront per-page map insertion with a safer range/region map
-  or keep the current map and continue remote-heavy Small/Mid work separately
+  clean up lane/docs and then inspect MidFront/remote handoff cost versus HZ4.
 ```
 
 ## Goal
@@ -34,13 +39,13 @@ Next decision:
 Build an Ubuntu/Linux development lane for HZ5 that can be moved to native
 Ubuntu later for paper-facing measurement.
 
-The target lane is standalone and fallback-free:
+Current direction:
 
 - do not merge to `main`
-- do not depend on HZ3 fallback
-- do not use process-wide `LD_PRELOAD` as the primary HZ5 measurement path
-- call the HZ5 API directly from a dedicated benchmark binary
-- route only supported exact HZ5 cases, starting with `64K align=8192`
+- keep Windows P43i/P45 behavior separate and unchanged
+- use full `LD_PRELOAD` lanes for general allocator coverage
+- keep exact standalone lanes fallback-free for route attribution
+- route unsupported exact cases fail-closed instead of counting them as HZ5 wins
 
 ## Paper Benchmark Source
 
@@ -571,6 +576,23 @@ build config:
 
 /bin/true under full preload: OK
 /tmp/hz5_largefront_smoke: OK
+```
+
+Cleanup audit:
+
+```text
+hakozuna-hz5/docs/HZ5_LINUX_CLEANUP_AUDIT.md
+```
+
+Current cleanup policy:
+
+```text
+Keep Small/Mid/Large front-end implementations separate for now.
+Commonize lane presets and docs first.
+Do not delete diagnostic lanes until their raw results and decisions are
+preserved.
+Avoid generic RemoteEntry or generic state machines until a second front-end
+proves the same typed outbox shape is stable.
 ```
 
 First implementation lane:
