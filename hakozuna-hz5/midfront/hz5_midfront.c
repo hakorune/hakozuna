@@ -2,6 +2,7 @@
 
 #include "hz5_config.h"
 #include "hz5_internal.h"
+#include "hz5_ownerhub.h"
 
 #include <pthread.h>
 #include <stdint.h>
@@ -415,6 +416,7 @@ static void hz5_midfront_remote_publish_list(Hz5OwnerToken owner,
     tail->next = (Hz5MidSpan*)old_head;
   } while (!atomic_compare_exchange_weak_explicit(
       inbox, &old_head, head, memory_order_release, memory_order_acquire));
+  hz5_ownerhub_mark_pending(owner, HZ5_OWNERHUB_FRONT_MID, class_index);
 #if BENCHLAB_HZ5_LINUX_MIDFRONT_DRAIN_MASK_ON_MISS
   atomic_fetch_or_explicit(&g_hz5_midfront_owner_inbox_mask[owner.slot],
                            UINT32_C(1) << class_index,
@@ -479,6 +481,9 @@ static Hz5MidSpan* hz5_midfront_drain_remote_class(Hz5MidTls* tls,
                             ~(UINT32_C(1) << class_index),
                             memory_order_acq_rel);
 #endif
+  hz5_ownerhub_clear_pending(tls->owner,
+                             HZ5_OWNERHUB_FRONT_MID,
+                             class_index);
   _Atomic(void*)* inbox =
       &g_hz5_midfront_owner_inbox[tls->owner.slot][class_index];
 #if BENCHLAB_HZ5_LINUX_MIDFRONT_DRAIN_EMPTY_GATED
@@ -599,6 +604,7 @@ void* hz5_midfront_alloc(size_t size, size_t align) {
   uint32_t ci = (uint32_t)class_index;
   Hz5MidSpan* span = hz5_midfront_local_pop(tls, ci);
   if (!span) {
+    hz5_ownerhub_note_alloc_miss(tls->owner, HZ5_OWNERHUB_FRONT_MID, ci);
     span = hz5_midfront_drain_remote_on_miss(tls, ci);
     if (span) {
       return span->base;

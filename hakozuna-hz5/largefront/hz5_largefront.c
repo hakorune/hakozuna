@@ -2,6 +2,7 @@
 
 #include "hz5_config.h"
 #include "hz5_internal.h"
+#include "hz5_ownerhub.h"
 
 #include <pthread.h>
 #include <stdint.h>
@@ -399,6 +400,7 @@ static int hz5_largefront_remote_publish_one(Hz5OwnerToken owner,
     span->next = (Hz5LargeSpan*)old_head;
   } while (!atomic_compare_exchange_weak_explicit(
       inbox, &old_head, span, memory_order_release, memory_order_acquire));
+  hz5_ownerhub_mark_pending(owner, HZ5_OWNERHUB_FRONT_LARGE, class_index);
   return 1;
 }
 
@@ -418,6 +420,7 @@ static int hz5_largefront_remote_publish_list(Hz5OwnerToken owner,
     tail->next = (Hz5LargeSpan*)old_head;
   } while (!atomic_compare_exchange_weak_explicit(
       inbox, &old_head, head, memory_order_release, memory_order_acquire));
+  hz5_ownerhub_mark_pending(owner, HZ5_OWNERHUB_FRONT_LARGE, class_index);
   return 1;
 }
 
@@ -484,6 +487,9 @@ static Hz5LargeSpan* hz5_largefront_drain_remote_class(Hz5LargeTls* tls,
 
   _Atomic(void*)* inbox =
       &g_hz5_largefront_owner_inbox[tls->owner.slot][class_index];
+  hz5_ownerhub_clear_pending(tls->owner,
+                             HZ5_OWNERHUB_FRONT_LARGE,
+                             class_index);
   void* head = atomic_exchange_explicit(inbox, NULL, memory_order_acq_rel);
   Hz5LargeSpan* taken = NULL;
   while (head) {
@@ -564,6 +570,7 @@ void* hz5_largefront_alloc(size_t size, size_t align) {
   }
 
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX
+  hz5_ownerhub_note_alloc_miss(tls->owner, HZ5_OWNERHUB_FRONT_LARGE, ci);
   span = hz5_largefront_drain_remote_class(tls, ci);
   if (span) {
     return span->base;

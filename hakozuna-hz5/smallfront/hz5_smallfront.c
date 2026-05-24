@@ -2,6 +2,7 @@
 
 #include "hz5_config.h"
 #include "hz5_internal.h"
+#include "hz5_ownerhub.h"
 
 #include <pthread.h>
 #include <stdint.h>
@@ -239,6 +240,9 @@ static void hz5_smallfront_remote_publish_list(Hz5OwnerToken owner,
     tail->next = (Hz5SmallFrontNode*)old_head;
   } while (!atomic_compare_exchange_weak_explicit(
       inbox, &old_head, head, memory_order_release, memory_order_acquire));
+  hz5_ownerhub_mark_pending(owner,
+                            HZ5_OWNERHUB_FRONT_SMALL,
+                            class_index);
 }
 
 /* Batch remote frees in the freeing thread to reduce owner-inbox CAS traffic. */
@@ -295,6 +299,9 @@ static void hz5_smallfront_drain_remote_class(Hz5SmallFrontTls* tls,
     return;
   }
 
+  hz5_ownerhub_clear_pending(tls->owner,
+                             HZ5_OWNERHUB_FRONT_SMALL,
+                             class_index);
   void* head = atomic_exchange_explicit(
       &g_hz5_smallfront_owner_inbox[tls->owner.slot][class_index], NULL,
       memory_order_acq_rel);
@@ -388,6 +395,9 @@ void* hz5_smallfront_alloc(size_t size, size_t align) {
   Hz5SmallFrontPage* page = NULL;
   void* ptr = hz5_smallfront_local_pop(tls, ci, &page);
   if (!ptr) {
+    hz5_ownerhub_note_alloc_miss(tls->owner,
+                                 HZ5_OWNERHUB_FRONT_SMALL,
+                                 ci);
     hz5_smallfront_drain_remote_class(tls, ci);
     ptr = hz5_smallfront_local_pop(tls, ci, &page);
   }

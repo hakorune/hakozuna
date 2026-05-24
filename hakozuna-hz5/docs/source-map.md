@@ -77,6 +77,11 @@ largefront/
   128K/256K/512K/1M retained span classes
   descriptor-owned spans with page-map lookup
   owner-local retained lists and global remote recycle
+
+ownerhub/
+  HZ5-OwnerHub-R1
+  Diagnostic owner-slot pending-mask observer
+  Tracks cross-front remote backlog without changing allocation behavior
 ```
 
 Current MidFront lane naming:
@@ -107,6 +112,8 @@ Design source:
 * `docs/HZ5_LARGEFRONT_L1_DESIGN.md`: HZ5-native large allocator front-end plan
   for ordinary >64K malloc traffic. L1 is the cross128 coverage fix, not the
   final 2MiB split/merge pool.
+* `docs/HZ5_OWNERHUB_R1_DESIGN.md`: shared owner pending-mask observer and
+  planned coordinated drain layer for cross-front remote-heavy workloads.
 
 Do not implement SmallFront by adding per-object wrappers to small objects or
 by depending on the full-preload pointer table for HZ5-owned small frees.

@@ -3,6 +3,7 @@
 #include "hz5_internal.h"
 #include "hz5_largefront.h"
 #include "hz5_midfront.h"
+#include "hz5_ownerhub.h"
 #include "hz5_smallfront.h"
 #include "hz5_wrapper.h"
 
@@ -221,6 +222,7 @@ static void hz5_preload_full_stats_register_once(void) {
 __attribute__((destructor)) static void hz5_preload_full_stats_destructor(
     void) {
   hz5_preload_full_stats_print();
+  hz5_ownerhub_stats_print();
 }
 
 static void hz5_preload_full_resolve(void) {

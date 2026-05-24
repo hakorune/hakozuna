@@ -1957,6 +1957,82 @@ interpretation:
   lane, rather than more LargeFront-local tuning.
 ```
 
+OwnerHub-R1 dry-run:
+
+```text
+design doc:
+  hakozuna-hz5/docs/HZ5_OWNERHUB_R1_DESIGN.md
+
+implemented:
+  hakozuna-hz5/ownerhub/hz5_ownerhub.c
+  hakozuna-hz5/ownerhub/hz5_ownerhub.h
+  --linux-ownerhub-r1
+
+scope:
+  diagnostic only
+  shared owner-slot pending mask
+  per-front inbox payloads remain specialized
+  no allocation behavior change
+  stats print only with HZ5_OWNERHUB_STATS=1
+
+build:
+  ./linux/build_linux_hz5_standalone.sh \
+    --linux-ownerhub-r1 \
+    --linux-largefront-owner-fast-state \
+    --linux-midfront-owner-fast-state \
+    --linux-midfront-remote-batch-cap 16 \
+    --linux-local2p-speed-linkflags \
+    --out-dir hakozuna-hz5/out/linux/x86_64-hz5-ownerhub-r1
+
+smoke:
+  /bin/true under full preload: OK
+  /tmp/hz5_largefront_smoke under full preload: OK
+
+diagnostic runs:
+  HZ5_PRELOAD_STATS=1
+  HZ5_OWNERHUB_STATS=1
+  threads=2 iters=10000 ws=100 remote=90 slots=65536
+
+cross128:
+  publish_small=84
+  publish_mid=1977
+  publish_large=3090
+  miss_small=65
+  miss_mid=1738
+  miss_large=1608
+  miss_any_pending=3302
+  miss_target_pending=537
+  miss_other_pending=3258
+
+main:
+  publish_small=373
+  publish_mid=4270
+  publish_large=0
+  miss_small=144
+  miss_mid=2128
+  miss_large=2
+  miss_any_pending=2143
+  miss_target_pending=480
+  miss_other_pending=2090
+
+large_only:
+  publish_small=0
+  publish_mid=0
+  publish_large=8233
+  miss_small=5
+  miss_mid=1
+  miss_large=1250
+  miss_any_pending=414
+  miss_target_pending=414
+  miss_other_pending=0
+
+interpretation:
+  cross128/main frequently miss allocation while other front-ends have pending
+  remote work. That supports OwnerHub-R2 coordinated drain.
+  large_only has no other-front pending, so LargeFront-specific remote work is
+  separate from the cross-front problem.
+```
+
 MidFront source-return cleanup:
 
 ```text

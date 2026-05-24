@@ -103,6 +103,50 @@ not enough:
   LargeFront remote batch only
 ```
 
+## OwnerHub-R1 Finding
+
+After the Pro review, the next direction is OwnerHub-R1:
+
+```text
+shared owner-slot pending mask
+per-front specialized inbox payloads
+no generic RemoteEntry yet
+dry-run observation only
+```
+
+Initial diagnostic runs used `HZ5_OWNERHUB_STATS=1` and are not raw performance
+runs.
+
+Short r90 observations:
+
+```text
+cross128:
+  publish_small=84 publish_mid=1977 publish_large=3090
+  miss_any_pending=3302
+  miss_target_pending=537
+  miss_other_pending=3258
+
+main:
+  publish_small=373 publish_mid=4270 publish_large=0
+  miss_any_pending=2143
+  miss_target_pending=480
+  miss_other_pending=2090
+
+large_only:
+  publish_large=8233
+  miss_any_pending=414
+  miss_target_pending=414
+  miss_other_pending=0
+```
+
+Interpretation:
+
+```text
+large_only is a same-front problem.
+main/cross128 frequently have other-front pending work at alloc miss.
+OwnerHub-R2 coordinated drain has a real target.
+```
+
 ## Next Technical Question
 
 Should HZ5 Linux remote-heavy general malloc continue with per-front-end owner
@@ -111,13 +155,15 @@ inboxes, or should it introduce a shared remote handoff layer?
 Candidate designs:
 
 ```text
-1. Shared remote handoff layer:
+1. OwnerHub-R2 coordinated drain:
+   shared owner pending mask
+   per-front specialized inbox payloads
+   drain bounded Small/Mid/Large work on alloc miss
+
+2. Full shared remote handoff layer:
    one owner-slot inbox shared by SmallFront/MidFront/LargeFront
    entries carry front-end kind + class + pointer
-
-2. Per-front-end inbox with coordinated drain:
-   keep current implementation shape
-   drain Small/Mid/Large together on allocation miss
+   not recommended yet
 
 3. Benchmark-shape SPSC transfer lane:
    optimize producer/consumer handoff directly

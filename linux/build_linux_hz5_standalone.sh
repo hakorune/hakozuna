@@ -46,6 +46,7 @@ LINUX_P43_WRAPPER_TOKEN=0
 LINUX_P43_WRAPPER_TOKEN_BRIDGE=0
 TRACE_LANE=0
 BUILD_PRELOAD_FULL=0
+LINUX_OWNERHUB_R1=0
 LINUX_SMALLFRONT_S1=0
 LINUX_SMALLFRONT_REMOTE_BATCH_CAP=16
 LINUX_MIDFRONT_M1=0
@@ -128,6 +129,9 @@ Options:
                      diagnostic only: store retained owner-local TLS entries in a pointer array
   --linux-smallfront-remote-batch-cap N
                      SmallFront-S1 remote-free sender batch flush threshold (default: 16)
+  --linux-ownerhub-r1
+                     diagnostic only: enable shared owner pending-mask
+                     observation; use only with HZ5_OWNERHUB_STATS=1
   --linux-midfront-m1
                      enable Linux MidFront-M1 ordinary malloc 4K..64K front-end
   --linux-midfront-owner-fast-state
@@ -503,6 +507,16 @@ while [[ $# -gt 0 ]]; do
       LINUX_SMALLFRONT_REMOTE_BATCH_CAP="$2"
       shift 2
       ;;
+    --linux-ownerhub-r1)
+      BUILD_PRELOAD_FULL=1
+      LINUX_OWNERHUB_R1=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDFRONT_M1=1
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
     --linux-midfront-m1)
       BUILD_PRELOAD_FULL=1
       LINUX_SMALLFRONT_S1=1
@@ -782,6 +796,7 @@ COMMON_FLAGS=(
   -I"${HZ5_DIR}/smallfront"
   -I"${HZ5_DIR}/midfront"
   -I"${HZ5_DIR}/largefront"
+  -I"${HZ5_DIR}/ownerhub"
 )
 SPEED_LINK_COMPILE_FLAGS=()
 SHARED_LINK_FLAGS=()
@@ -927,6 +942,9 @@ if [[ "$LINUX_SMALLFRONT_S1" -eq 1 ]]; then
     -DHZ5_SMALLFRONT_REMOTE_BATCH_CAP="${LINUX_SMALLFRONT_REMOTE_BATCH_CAP}u"
   )
 fi
+if [[ "$LINUX_OWNERHUB_R1" -eq 1 ]]; then
+  COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_OWNERHUB_R1=1)
+fi
 if [[ "$LINUX_MIDFRONT_M1" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDFRONT_M1=1)
   COMMON_FLAGS+=(
@@ -1010,6 +1028,7 @@ fi
   echo "linux_local2p_speed_linkflags=${LINUX_LOCAL2P_SPEED_LINKFLAGS}"
   echo "linux_local2p_local_overflow_global=${LINUX_LOCAL2P_LOCAL_OVERFLOW_GLOBAL}"
   echo "build_preload_full=${BUILD_PRELOAD_FULL}"
+  echo "linux_ownerhub_r1=${LINUX_OWNERHUB_R1}"
   echo "linux_smallfront_s1=${LINUX_SMALLFRONT_S1}"
   echo "linux_smallfront_remote_batch_cap=${LINUX_SMALLFRONT_REMOTE_BATCH_CAP}"
   echo "linux_midfront_m1=${LINUX_MIDFRONT_M1}"
@@ -1052,6 +1071,7 @@ HZ5_SRCS=(
   "${HZ5_DIR}/policy/hz5_policy.c"
   "${HZ5_DIR}/policy/hz5_trace.c"
   "${HZ5_DIR}/route/hz5_route.c"
+  "${HZ5_DIR}/ownerhub/hz5_ownerhub.c"
   "${HZ5_DIR}/smallfront/hz5_smallfront.c"
   "${HZ5_DIR}/midfront/hz5_midfront.c"
   "${HZ5_DIR}/largefront/hz5_largefront.c"
