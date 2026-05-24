@@ -487,6 +487,12 @@ candidate selector:
   --linux-midfront-owner-fast-state
     enables MidFront-M1 and replaces owner-local ACTIVE/LOCAL_FREE CAS with
     load/store transitions; remote-free still uses CAS and owner inbox
+  --linux-midfront-remote-batch-cap N
+    changes MidFront remote-free sender batch flush threshold for remote-heavy
+    A/B; default remains 16
+  --linux-midfront-drain-all-on-miss
+    candidate lane that drains all MidFront owner inbox classes when the
+    requested local class misses
 
 implemented:
   hakozuna-hz5/midfront/hz5_midfront.c
@@ -566,6 +572,17 @@ MidFront owner-fast-state:
   add an explicit diagnostic/candidate lane for owner-local load/store state
   keep remote-free ACTIVE -> REMOTE_PENDING CAS unchanged
   measure local 4K/8K/16K/32K/64K and paper-main r0/r50/r90 before deciding
+
+MidFront remote-batch-cap:
+  expose remote batch cap as a build knob before changing remote topology
+  compare cap=16/64/256 on r90 to decide whether publish CAS frequency is a
+  real limiter or whether the next target is owner drain/source reuse
+
+MidFront drain-all-on-miss:
+  candidate for mixed remote-heavy workloads where remote frees arrive in
+  classes different from the current allocation miss
+  expected to help random mixed r90 if owner inbox backlog/source churn is the
+  limiter, but may hurt narrow single-class local misses
 ```
 
 Initial smoke measurement:
@@ -592,6 +609,63 @@ short hakmem, threads=2 iters=100000 ws=100 min=max=4096 r0:
 interpretation:
   owner-local atomic removal is worth keeping as a candidate
   remote-heavy weakness remains elsewhere, likely inbox/drain/source policy
+```
+
+Remote-batch cap sweep:
+
+```text
+build:
+  --linux-midfront-owner-fast-state
+  --linux-midfront-remote-batch-cap 16/64/256
+
+short hakmem r90, threads=2 iters=50000 ws=100:
+  main 16..65536 median:
+    cap16:  about 3.44M ops/s
+    cap64:  about 3.50M ops/s
+    cap256: about 2.98M ops/s
+  mid 2049..32768 median:
+    cap16:  about 3.49M ops/s
+    cap64:  about 3.15M ops/s
+    cap256: about 2.69M ops/s
+
+interpretation:
+  large sender batches are not the fix
+  keep default cap=16
+  next candidate is drain/source reuse, not bigger publish batching
+```
+
+Drain-all-on-miss probe:
+
+```text
+builds:
+  rb16:
+    --linux-midfront-owner-fast-state
+    --linux-midfront-remote-batch-cap 16
+  drainall:
+    --linux-midfront-owner-fast-state
+    --linux-midfront-remote-batch-cap 16
+    --linux-midfront-drain-all-on-miss
+
+smoke:
+  /bin/true OK
+  MidFront usable class smoke OK
+  MidFront owner-death smoke OK
+
+short hakmem, threads=2 ws=100:
+  mid 2049..32768 r90 median:
+    rb16:     about 3.49M ops/s
+    drainall: about 5.97M ops/s
+  main 16..65536 r90 median:
+    rb16:     about 3.20M ops/s
+    drainall: about 3.35M ops/s
+  fixed 4096 r0 median:
+    rb16:     about 67.1M ops/s
+    drainall: about 69.8M ops/s
+
+interpretation:
+  mixed remote-heavy is sensitive to owner inbox drain policy
+  drain-all-on-miss is worth keeping as a candidate
+  next remote work should refine drain policy before replacing source layout
 ```
 
 OwnerLifetime-O1 implementation status:

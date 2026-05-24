@@ -21,6 +21,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDFRONT_OWNER_FAST_STATE 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDFRONT_DRAIN_ALL_ON_MISS
+#define BENCHLAB_HZ5_LINUX_MIDFRONT_DRAIN_ALL_ON_MISS 0
+#endif
+
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_MIDFRONT_M1
 
 #define HZ5_MIDFRONT_MAGIC UINT64_C(0x485A354D49444D31)
@@ -334,6 +338,17 @@ static void hz5_midfront_drain_remote_class(Hz5MidTls* tls,
   }
 }
 
+static void hz5_midfront_drain_remote_on_miss(Hz5MidTls* tls,
+                                              uint32_t class_index) {
+#if BENCHLAB_HZ5_LINUX_MIDFRONT_DRAIN_ALL_ON_MISS
+  for (uint32_t i = 0; i < HZ5_MIDFRONT_CLASS_COUNT; ++i) {
+    hz5_midfront_drain_remote_class(tls, i);
+  }
+#else
+  hz5_midfront_drain_remote_class(tls, class_index);
+#endif
+}
+
 static Hz5MidSpan* hz5_midfront_new_span(Hz5MidTls* tls,
                                          uint32_t class_index) {
   uint32_t class_bytes = hz5_midfront_class_bytes(class_index);
@@ -378,7 +393,7 @@ void* hz5_midfront_alloc(size_t size, size_t align) {
   uint32_t ci = (uint32_t)class_index;
   Hz5MidSpan* span = hz5_midfront_local_pop(tls, ci);
   if (!span) {
-    hz5_midfront_drain_remote_class(tls, ci);
+    hz5_midfront_drain_remote_on_miss(tls, ci);
     span = hz5_midfront_local_pop(tls, ci);
   }
   if (span) {

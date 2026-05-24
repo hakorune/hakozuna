@@ -95,6 +95,8 @@ Candidate lane:
 
 ```text
 --linux-midfront-owner-fast-state
+--linux-midfront-remote-batch-cap N
+--linux-midfront-drain-all-on-miss
 ```
 
 This keeps MidFront-M1 as the default safe lane, but replaces owner-local
@@ -102,6 +104,16 @@ This keeps MidFront-M1 as the default safe lane, but replaces owner-local
 load/store checks. Remote-free still uses the `ACTIVE -> REMOTE_PENDING` CAS
 and owner inbox path. Treat this as a diagnostic/candidate until r0/r50/r90 and
 double-free smoke results are recorded.
+
+`--linux-midfront-remote-batch-cap` only changes how many remote frees a sender
+keeps before publishing to the owner inbox. It does not weaken ownership checks.
+Use it to decide whether remote-heavy cost is inbox publish frequency or the
+later owner drain/source-reuse path.
+
+`--linux-midfront-drain-all-on-miss` drains every MidFront class inbox when the
+requested local class is empty. It is a mixed-workload candidate: useful if
+remote frees pile up in other classes and force avoidable source allocation,
+but potentially wasteful for narrow single-class workloads.
 ```
 
 ## Allocator Shape
