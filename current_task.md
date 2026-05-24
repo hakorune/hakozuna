@@ -27,8 +27,11 @@ codex/hz5-linux-p43-port
 Latest commits:
 
 ```text
-b74bdc5 Add tcmalloc-target MidPage diagnostics
-41cd182 Add MidPageFront free-dispatch diagnostic
+4bd404a Record MidPageFront linkonly verification
+869837c Split MidPageFront TLS link diagnostics
+b398eee Add MidPageFront tlslink diagnostic
+b2f8238 Add MidPageFront slot switch diagnostic
+0cf9cc0 Add MidPageFront try-alloc dispatch
 ```
 
 ## Read First
