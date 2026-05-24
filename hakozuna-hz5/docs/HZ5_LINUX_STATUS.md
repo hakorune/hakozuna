@@ -15,7 +15,7 @@ HZ5 Linux is now targeting `tcmalloc` on ordinary malloc workloads.
 Current bottleneck:
 
 ```text
-MidPageFront local object topology
+MidPageFront front-cache / remote packet shape
 ```
 
 The remaining gap is not primarily:
@@ -25,14 +25,15 @@ front dispatch order
 region lookup
 cross-size ownership handoff
 large allocation handling
+owner-local bitmap checks alone
 ```
 
 It is most likely:
 
 ```text
-per-local alloc/free active-state work
-metadata/freelist topology
-ordinary mid-size object path length
+per-class front-cache shape
+remote handoff payload shape
+ordinary mid-size object path length and free-route fixed cost
 ```
 
 ## Active Branch
@@ -44,15 +45,25 @@ codex/hz5-linux-p43-port
 Recent commits:
 
 ```text
-b74bdc5 Add tcmalloc-target MidPage diagnostics
-41cd182 Add MidPageFront free-dispatch diagnostic
+0b9d632 Add MidPageFront M4 design checks
+9659944 Clean up HZ5 Linux lane organization
 ```
 
 ## Lead Lanes
 
 ```text
 --linux-hz5-general-midpage-region-shadow
-  current tcmalloc-chase lead
+  remote-shadow control for MidPageFront state representation
+
+--linux-hz5-general-midpage-region-shadow-allocfirst
+  current local-r0 comparison baseline for later MidPage diagnostics
+
+--linux-hz5-general-midpage-region-shadow-m4mag
+  M4 owner-local slot magazine candidate; improves mid/main r90, not local r0
+
+--linux-hz5-general-midpage-region-shadow-m4packet
+  M4b page-descriptor remote packet candidate; wins mid/main r50/r90 and
+  cross128 r0/r50 in gated RUNS=5
 
 --linux-hz5-general-midpage-region
   MidPageFront-M2.2 stable remote-heavy mid-size candidate
@@ -92,12 +103,42 @@ b74bdc5 Add tcmalloc-target MidPage diagnostics
 
 --linux-hz5-general-midpage-region-shadow-allocfirst
   shadow with MidPageFront alloc-before-can-handle dispatch in preload
-  promising diagnostic; improves mid_only r0 without a verified r90 loss
+  current local-r0 comparison baseline
+
+--linux-hz5-general-midpage-region-shadow-localunsafe
+  unsafe r0 upper-bound diagnostic; showed owner-local bitmap checks alone are
+  not the main tcmalloc gap
+
+--linux-hz5-general-midpage-region-shadow-nodeless
+--linux-hz5-general-midpage-region-shadow-nodeless-ptrcache
+  M3 diagnostics; fixed some refill churn but did not become broad leads
+
+--linux-hz5-general-midpage-region-shadow-m4mag
+  M4 magazine diagnostic/candidate; strong mid/main r90 signal, cross128 and
+  local r0 still need more work
+
+--linux-hz5-general-midpage-region-shadow-m4packet
+  M4b page-packet diagnostic/candidate; strong mid/main remote signal,
+  cross128_r90 still below allocfirst
 ```
 
 ## Current tcmalloc Read
 
-`shadow` is the most promising tcmalloc-chase profile so far.
+MidPageFront has split into separate roles:
+
+```text
+allocfirst:
+  local-r0 comparison baseline
+
+m4mag:
+  remote-heavy mid/main candidate
+
+m4packet:
+  remote-heavy mid/main/cross candidate
+
+shadow/region:
+  controls for state representation and region lookup
+```
 
 Latest focused read:
 
@@ -136,13 +177,11 @@ mid_only_r90:
 Interpretation:
 
 ```text
-main rows are tcmalloc-class in the focused run.
-mid_only remote-heavy is closer but still below tcmalloc.
-mid_only local-only remains the clear structural gap.
-The hot-slot and tlscache diagnostics indicate this gap is not a simple
-dispatch, region-lookup, or one-entry freelist bypass issue.
-The allocfirst diagnostic shows duplicate preload class lookup is part of the
-local-only cost, but not enough to close the tcmalloc gap alone.
+The early shadow result was promising, but later diagnostics show the local r0
+gap is structural. M4 magazine improves remote-heavy mid/main rows but does
+not close local r0. M4b page packets improve remote-heavy mid/main/cross rows.
+Treat `allocfirst` as the local baseline and `m4packet` as the current
+remote-heavy mid/main candidate. Cross128_r90 still needs separate recovery.
 ```
 
 Follow-up cleanup:

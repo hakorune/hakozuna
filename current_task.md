@@ -7,15 +7,16 @@ HZ5 Linux general allocator work is now targeting `tcmalloc`, not `mimalloc`.
 Immediate focus:
 
 ```text
-MidPageFront local object topology
+MidPageFront-M4 owner-local magazine
 ```
 
 Reason:
 
 ```text
 shadow is already close to tcmalloc on main r0/r50/r90 and mid_only r90.
-The remaining large gap is pure local ordinary mid-size allocation, especially
-mid_only_r0.
+The remaining large gap is ordinary mid-size local/front-cache throughput,
+especially mid_only_r0. M2/M3 tuning showed the issue is not just slot division,
+bitmap checks, or a one-entry/current-page cache.
 ```
 
 ## Branch
@@ -304,30 +305,163 @@ ptrcache:
   remain weaker than allocfirst, while main_r90 can improve.
 
 next:
-  do not promote nodeless/ptrcache broadly. The next useful design must handle
-  remote/cross-size pressure without reusing remote object payload lists or
-  destabilizing main_r90.
+  move to MidPageFront-M4. The next useful design is a descriptor-owned
+  owner-local magazine with canonical slot state, followed by page+bitmask
+  remote packets if M4a improves local r0.
 ```
 
 ## Next Step
 
-Refine MidPageFront-M3 only as a diagnostic lane. The first nodeless run did
-not meet promotion criteria.
+Implement MidPageFront-M4 as a diagnostic lane. Keep M2/M3 lanes available for
+reproduction, but do not promote them.
 
 ```text
---linux-hz5-general-midpage-region-shadow-nodeless
---linux-hz5-general-midpage-region-shadow-nodeless-stats
---linux-hz5-general-midpage-region-shadow-nodeless-ptrcache
---linux-hz5-general-midpage-region-shadow-nodeless-ptrcache-stats
+--linux-hz5-general-midpage-region-shadow-m4mag
 ```
 
 Design intent:
 
 ```text
 Keep HZ4's page/header-owned and owner-aware remote principles.
-Borrow tcmalloc's local run/cache shape.
+Borrow tcmalloc's per-class front-cache shape.
 Keep HZ5 fail-closed descriptor ownership.
 Do not mutate Windows P43i/P45 or Local2P.
+```
+
+M4a scope:
+
+```text
+64KiB slab unchanged
+class table unchanged: 3072, 4096, 8192, 16384, 32768
+magazine entry: { page, slot }
+slot_state2 canonical states: LIVE/CACHE/REMOTE/DEAD
+alloc pop: CACHE -> LIVE, no page lookup or slot division
+local free: validate ptr -> page -> slot, LIVE -> CACHE, push magazine
+remote path: existing object-list handoff is allowed for first M4a smoke
+```
+
+Acceptance:
+
+```text
+Keep if mid_only_r0 >= 90M or allocfirst best +15%.
+No-go if mid_only_r90/main_r90 regress more than 8% or cross128_r90 more than
+10%.
+Do not mix speed runs with runtime stats/counters.
+```
+
+First M4a smoke:
+
+```text
+private/raw-results/linux/midpage_m4mag_smoke_20260525_080112
+private/raw-results/linux/midpage_m4mag_localfast_smoke_20260525_080203
+private/raw-results/linux/midpage_m4mag_broad_smoke_20260525_080228
+private/raw-results/linux/midpage_m4mag_attrib_20260525_080241
+```
+
+Result:
+
+```text
+mid_only_r0:
+  allocfirst 93.53M
+  m4mag      90.92M
+  tcmalloc  230.97M
+
+mid_only_r90:
+  allocfirst 23.83M
+  m4mag      37.22M
+  tcmalloc   26.23M
+
+main_r90:
+  allocfirst 23.65M
+  m4mag      39.36M
+  tcmalloc   29.96M
+
+cross128_r90:
+  allocfirst 17.33M
+  m4mag      14.98M
+  tcmalloc   14.65M
+```
+
+Read:
+
+```text
+M4 magazine is not yet the local r0 tcmalloc chase answer. It improves
+remote-heavy mid/main rows strongly, but cross128 regresses versus allocfirst.
+The next M4 work should either add page+bitmask remote packets to remove
+object-list remote payloads, or stop local-r0 chasing here and inspect
+free-route/classifier fixed cost.
+```
+
+First M4b page-packet smoke:
+
+```text
+private/raw-results/linux/midpage_m4packet_smoke_20260525_082809
+private/raw-results/linux/midpage_m4packet_attrib_20260525_082826
+```
+
+Result:
+
+```text
+mid_only_r90:
+  allocfirst 27.53M
+  m4mag      23.25M
+  m4packet   36.12M
+  tcmalloc   24.31M
+
+main_r90:
+  allocfirst 24.33M
+  m4mag      34.07M
+  m4packet   36.28M
+  tcmalloc   31.43M
+
+cross128_r90:
+  allocfirst 15.02M
+  m4mag      15.94M
+  m4packet   16.72M
+  tcmalloc   15.60M
+```
+
+Read:
+
+```text
+M4b page-descriptor packet is a real remote-heavy candidate. It fixes the M4a
+cross128_r90 regression in the short smoke and beats tcmalloc on mid_only_r90,
+main_r90, and cross128_r90. It still does not address local r0.
+```
+
+M4b gated-drain verify:
+
+```text
+private/raw-results/linux/midpage_m4packet_gated_smoke_20260525_084328
+private/raw-results/linux/midpage_m4packet_gated_verify_r5_20260525_084409
+private/raw-results/linux/midpage_m4packet_gated_attrib_20260525_084433
+```
+
+Result:
+
+```text
+mid_only:
+  r0   allocfirst 90.20M, m4packet 88.07M, tcmalloc 221.24M
+  r50  allocfirst 30.96M, m4packet 37.34M, tcmalloc  24.01M
+  r90  allocfirst 24.79M, m4packet 33.82M, tcmalloc  25.46M
+
+main:
+  r0   allocfirst 92.54M, m4packet 88.49M, tcmalloc 210.87M
+  r50  allocfirst 29.64M, m4packet 35.28M, tcmalloc  26.30M
+  r90  allocfirst 23.77M, m4packet 31.50M, tcmalloc  29.86M
+
+cross128:
+  r0   allocfirst 53.77M, m4packet 56.83M, tcmalloc 46.12M
+  r50  allocfirst 21.63M, m4packet 23.52M, tcmalloc 21.37M
+  r90  allocfirst 18.64M, m4packet 14.62M, tcmalloc 14.68M
+```
+
+Read:
+
+```text
+Gated M4b is a strong mid/main remote-heavy candidate and beats tcmalloc on
+main/mid r50/r90. It is not a local-r0 answer. It is not a broad cross128_r90
+default yet because allocfirst remains better there.
 ```
 
 Latest M3 stats:

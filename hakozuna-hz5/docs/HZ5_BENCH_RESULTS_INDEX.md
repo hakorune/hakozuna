@@ -787,6 +787,238 @@ alloc+free MidPage-first:
   cross128_r90:  allocfirst 14.67M, allocfreefirst 14.71M, tcmalloc   7.80M
 ```
 
+### `midpage_m4mag_localfast_smoke_20260525_080203`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_m4mag_localfast_smoke_20260525_080203
+```
+
+Purpose:
+
+```text
+First MidPageFront-M4 magazine smoke after switching owner-local slot_state2
+transitions from CAS to load/store. Performance runs do not enable
+HZ5_PRELOAD_STATS.
+```
+
+Decision:
+
+```text
+M4 magazine is not the local r0 tcmalloc answer yet, but it is a strong
+remote-heavy candidate. It improves mid_only_r90 versus allocfirst and tcmalloc,
+while mid_only_r0 remains slightly below allocfirst and far below tcmalloc.
+```
+
+Key rows:
+
+```text
+mid_only_r0:
+  allocfirst 93.53M
+  m4mag      90.92M
+  tcmalloc  230.97M
+
+mid_only_r90:
+  allocfirst 23.83M
+  m4mag      37.22M
+  tcmalloc   26.23M
+```
+
+### `midpage_m4mag_broad_smoke_20260525_080228`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_m4mag_broad_smoke_20260525_080228
+```
+
+Purpose:
+
+```text
+Short broad smoke for M4 magazine on main/cross128 r0/r90.
+```
+
+Decision:
+
+```text
+M4 magazine improves main_r90 strongly but regresses cross128_r90 versus
+allocfirst. Keep as diagnostic/candidate, not a broad default.
+```
+
+Key rows:
+
+```text
+main_r90:
+  allocfirst 23.65M
+  m4mag      39.36M
+  tcmalloc   29.96M
+
+cross128_r90:
+  allocfirst 17.33M
+  m4mag      14.98M
+  tcmalloc   14.65M
+```
+
+### `midpage_m4mag_attrib_20260525_080241`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_m4mag_attrib_20260525_080241
+```
+
+Purpose:
+
+```text
+Separate HZ5_PRELOAD_STATS attribution smoke for M4 magazine.
+```
+
+Result:
+
+```text
+malloc_hz5=40208
+malloc_real=0
+free_hz5=40238
+free_real=0
+track_insert_fail=0
+```
+
+### `midpage_m4packet_smoke_20260525_082809`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_m4packet_smoke_20260525_082809
+```
+
+Purpose:
+
+```text
+First MidPageFront-M4b page-descriptor packet smoke. Performance runs do not
+enable HZ5_PRELOAD_STATS.
+```
+
+Decision:
+
+```text
+M4b is a remote-heavy candidate. It improves over m4mag on mid_only_r90,
+main_r90, and cross128_r90, and beats tcmalloc in this short smoke. It is not a
+local r0 solution.
+```
+
+Key rows:
+
+```text
+mid_only_r90:
+  allocfirst 27.53M
+  m4mag      23.25M
+  m4packet   36.12M
+  tcmalloc   24.31M
+
+main_r90:
+  allocfirst 24.33M
+  m4mag      34.07M
+  m4packet   36.28M
+  tcmalloc   31.43M
+
+cross128_r90:
+  allocfirst 15.02M
+  m4mag      15.94M
+  m4packet   16.72M
+  tcmalloc   15.60M
+```
+
+### `midpage_m4packet_attrib_20260525_082826`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_m4packet_attrib_20260525_082826
+```
+
+Purpose:
+
+```text
+Separate HZ5_PRELOAD_STATS attribution smoke for M4b page packets.
+```
+
+Result:
+
+```text
+malloc_hz5=40208
+malloc_real=0
+free_hz5=40238
+free_real=0
+track_insert_fail=0
+```
+
+### `midpage_m4packet_gated_verify_r5_20260525_084409`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_m4packet_gated_verify_r5_20260525_084409
+```
+
+Purpose:
+
+```text
+RUNS=5 verify after adding gated owner-inbox drain before M4 magazine pop.
+Performance runs do not enable HZ5_PRELOAD_STATS.
+```
+
+Decision:
+
+```text
+M4b gated drain is a strong mid/main remote-heavy candidate. It wins main and
+mid_only r50/r90 versus allocfirst and tcmalloc. It also wins cross128 r0/r50,
+but cross128 r90 remains below allocfirst and roughly tcmalloc-class.
+```
+
+Key rows:
+
+```text
+mid_only:
+  r0   allocfirst 90.20M, m4packet 88.07M, tcmalloc 221.24M
+  r50  allocfirst 30.96M, m4packet 37.34M, tcmalloc  24.01M
+  r90  allocfirst 24.79M, m4packet 33.82M, tcmalloc  25.46M
+
+main:
+  r0   allocfirst 92.54M, m4packet 88.49M, tcmalloc 210.87M
+  r50  allocfirst 29.64M, m4packet 35.28M, tcmalloc  26.30M
+  r90  allocfirst 23.77M, m4packet 31.50M, tcmalloc  29.86M
+
+cross128:
+  r0   allocfirst 53.77M, m4packet 56.83M, tcmalloc 46.12M
+  r50  allocfirst 21.63M, m4packet 23.52M, tcmalloc 21.37M
+  r90  allocfirst 18.64M, m4packet 14.62M, tcmalloc 14.68M
+```
+
+### `midpage_m4packet_gated_attrib_20260525_084433`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_m4packet_gated_attrib_20260525_084433
+```
+
+Purpose:
+
+```text
+Separate HZ5_PRELOAD_STATS attribution smoke for gated M4b.
+```
+
+Result:
+
+```text
+malloc_hz5=40208
+malloc_real=0
+free_hz5=40238
+free_real=0
+track_insert_fail=0
+```
+
 ## Older Results
 
 The full chronological result log remains in:

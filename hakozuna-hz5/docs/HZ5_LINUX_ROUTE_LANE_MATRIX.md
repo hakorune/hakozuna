@@ -46,6 +46,9 @@ Current paper/appendix-facing HZ5 Linux rows are profile-specific:
 | Remote-heavy mid ordinary malloc candidate | `hz5-midfront-allgate` | MidFront owner-inbox drain-all plus empty-gated exchange co-lead candidate |
 | MidPage ordinary malloc prototype | `hz5-general-midpage` | 64KiB class-owned slab prototype for ordinary malloc 2049..32768; hash-map M2.1 control |
 | MidPage region-array candidate | `hz5-general-midpage-region` | M2.2 lead candidate for 2049..32768 r50/r90 ordinary malloc |
+| MidPage local-r0 comparison baseline | `hz5-general-midpage-region-shadow-allocfirst` | M2/M3/M4 diagnostic baseline after removing duplicate preload class lookup |
+| MidPage remote-heavy magazine candidate | `hz5-general-midpage-region-shadow-m4mag` | M4 owner-local slot magazine; improves mid/main r90, not broad default |
+| MidPage remote-packet candidate | `hz5-general-midpage-region-shadow-m4packet` | M4b page-descriptor remote packet; first smoke wins remote-heavy rows |
 | Large ordinary malloc candidate | `hz5-largefront-l1` | Linux full-preload route for ordinary malloc >64K..1M, cross128 local coverage candidate |
 | Remote-heavy large candidate | `hz5-largefront-inbox` | LargeFront owner-inbox candidate for remote-heavy large rows |
 | General remote-tail candidate | `hz5-general-region-outbox` | SmallFront outbox + MidFront rb16 + LargeFront region-map candidate |
@@ -100,6 +103,9 @@ small 4K/8K a8192:
 | `midpagefront_region_array` | lane | 64MiB source regions with descriptor-array lookup | M2.2 lead candidate |
 | `midpagefront_remote_shadow` | lane | separate remote-pending bitmap diagnostic | diagnostic only |
 | `midpagefront_local_fast_state` | flag | owner-local active-bit load/store diagnostic | component only; no standalone preset |
+| `midpagefront_allocfirst` | lane | duplicate preload class-lookup removal | local-r0 comparison baseline |
+| `midpagefront_m4_magazine` | lane | descriptor-owned owner-local slot magazine | remote-heavy candidate; not broad default |
+| `midpagefront_m4_remote_packet` | lane | page-descriptor remote packet for M4 magazine | remote-heavy candidate |
 | `preload_free_midfirst` | lane | preload free dispatch order diagnostic | diagnostic only |
 | `midfront_lookup_cache` | lane | MidFront TLS page lookup cache diagnostic | diagnostic only |
 | `largefront_l1` | route/lane family | active Linux large front-end candidate | candidate for cross128 coverage |
@@ -324,6 +330,26 @@ hz5-general-midpage-region-shadow-nodeless:
   MidPageFront-M3 diagnostic replacing local object linked-list cache with
   descriptor free_bits plus TLS current_page/current_bits
   diagnostic only in first r3: mid_only_r0 improves slightly, remote regresses
+
+hz5-general-midpage-region-shadow-nodeless-ptrcache:
+  --linux-hz5-general-midpage-region-shadow-nodeless-ptrcache
+  M3.2 diagnostic adding a per-class TLS pointer cache
+  diagnostic only: fixes much of r0 partial/refill churn but remote rows remain
+  weaker than allocfirst
+
+hz5-general-midpage-region-shadow-m4mag:
+  --linux-hz5-general-midpage-region-shadow-m4mag
+  MidPageFront-M4 diagnostic adding descriptor-owned owner-local magazines with
+  slot_state2 canonical state
+  candidate-watch: improves mid_only_r90 and main_r90, but does not solve
+  mid_only_r0 and regresses cross128_r90 versus allocfirst
+
+hz5-general-midpage-region-shadow-m4packet:
+  --linux-hz5-general-midpage-region-shadow-m4packet
+  MidPageFront-M4b diagnostic replacing remote object-list payloads with
+  page-descriptor packets and remote slot bitmasks
+  remote-heavy candidate-watch: gated RUNS=5 wins mid_only/main r50/r90 and
+  cross128 r0/r50; cross128 r90 remains below allocfirst
 ```
 
 Status:
@@ -357,7 +383,16 @@ local-active-trust:
 
 midpage-alloc-first:
   preload dispatch diagnostic
-  candidate component for reducing duplicate size-class lookup
+  current local-r0 comparison baseline
+
+midpage-m4-magazine:
+  remote/main candidate component
+  not a broad default until M4b remote packets or cross128 recovery passes
+
+midpage-m4-remote-packet:
+  remote-heavy candidate component
+  local r0 remains out of scope
+  cross128 r90 needs separate recovery before broad default promotion
 ```
 
 Cleanup rule:
@@ -374,10 +409,10 @@ Use component flags only for narrow A/B sweeps.
 Current read:
 
 ```text
-M2.2 region-array fixes the largest M2.1 lookup cost and improves r50/r90
-main/mid_only/cross128 versus the general-region baseline. r0 remains below
-the region baseline, so M2.2 is currently a remote-heavy candidate rather than
-an unconditional broad default.
+M2.2 region-array fixed the largest M2.1 lookup cost.
+M3 nodeless/ptrcache showed refill churn but did not become broad leads.
+M4 magazine improved remote-heavy mid/main rows, but local r0 remains far below
+tcmalloc and cross128_r90 regressed versus allocfirst.
 ```
 
 Broad r5 status:
@@ -402,6 +437,13 @@ Classification:
 midpage_region:
   remote-heavy mid-size candidate
   not general large-only default
+
+midpage_allocfirst:
+  local-r0 comparison baseline
+
+midpage_m4mag:
+  remote-heavy mid/main candidate-watch
+  not broad default
 ```
 
 Diagnostic candidate:

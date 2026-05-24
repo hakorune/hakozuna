@@ -25,6 +25,15 @@ shorter than the historical benchmark logs.
 --linux-hz5-general-midpage-region-shadow-allocfirst
   Current MidPage tcmalloc-chase lead diagnostic. Keep selectable because most
   later MidPage diagnostics compare against it.
+
+--linux-hz5-general-midpage-region-shadow-m4mag
+  MidPageFront-M4 magazine candidate. First smoke improves mid/main r90 but does
+  not solve mid_only r0 and regresses cross128_r90 versus allocfirst.
+
+--linux-hz5-general-midpage-region-shadow-m4packet
+  MidPageFront-M4b remote packet candidate. Gated-drain RUNS=5 wins
+  mid_only/main r50/r90 and cross128 r0/r50; cross128 r90 remains below
+  allocfirst and local r0 remains unsolved.
 ```
 
 ## Keep As Diagnostics
@@ -122,6 +131,7 @@ enable_midpage_region_base
 enable_midpage_region_shadow_base
 enable_midpage_shadow_allocfirst_base
 enable_midpage_nodeless_base
+enable_midpage_m4mag_base
 ```
 
 Rules for new lanes:
