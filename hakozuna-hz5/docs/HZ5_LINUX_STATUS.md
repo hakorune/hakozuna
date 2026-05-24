@@ -81,6 +81,18 @@ b74bdc5 Add tcmalloc-target MidPage diagnostics
 --linux-hz5-general-midpage-region-shadow-tlscache
   shadow + TLS region lookup cache
   no-go; region lookup is not the main tcmalloc gap
+
+--linux-hz5-general-midpage-region-shadow-hotslot
+  shadow + one-entry TLS hot object cache per MidPageFront class
+  no-go; local object freelist bypass does not close the tcmalloc gap
+
+--linux-hz5-general-midpage-region-shadow-activetrust
+  shadow without local alloc-side remote bitmap check
+  diagnostic only; r0 improves slightly but r90 becomes unstable
+
+--linux-hz5-general-midpage-region-shadow-allocfirst
+  shadow with MidPageFront alloc-before-can-handle dispatch in preload
+  promising diagnostic; improves mid_only r0 without a verified r90 loss
 ```
 
 ## Current tcmalloc Read
@@ -127,6 +139,10 @@ Interpretation:
 main rows are tcmalloc-class in the focused run.
 mid_only remote-heavy is closer but still below tcmalloc.
 mid_only local-only remains the clear structural gap.
+The hot-slot and tlscache diagnostics indicate this gap is not a simple
+dispatch, region-lookup, or one-entry freelist bypass issue.
+The allocfirst diagnostic shows duplicate preload class lookup is part of the
+local-only cost, but not enough to close the tcmalloc gap alone.
 ```
 
 ## Next Engineering Target

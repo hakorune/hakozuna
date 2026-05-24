@@ -22,6 +22,10 @@
 #ifndef BENCHLAB_HZ5_PRELOAD_FREE_MIDPAGE_FIRST
 #define BENCHLAB_HZ5_PRELOAD_FREE_MIDPAGE_FIRST 0
 #endif
+
+#ifndef BENCHLAB_HZ5_PRELOAD_MIDPAGE_ALLOC_FIRST
+#define BENCHLAB_HZ5_PRELOAD_MIDPAGE_ALLOC_FIRST 0
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -352,9 +356,16 @@ static void* hz5_preload_full_hz5_malloc(size_t size, size_t align) {
   if (hz5_smallfront_can_handle(size, align)) {
     return hz5_smallfront_alloc(size, align);
   }
+#if BENCHLAB_HZ5_PRELOAD_MIDPAGE_ALLOC_FIRST
+  void* midpage_ptr = hz5_midpagefront_alloc(size, align);
+  if (midpage_ptr || hz5_midpagefront_can_handle(size, align)) {
+    return midpage_ptr;
+  }
+#else
   if (hz5_midpagefront_can_handle(size, align)) {
     return hz5_midpagefront_alloc(size, align);
   }
+#endif
   if (hz5_midfront_can_handle(size, align)) {
     return hz5_midfront_alloc(size, align);
   }

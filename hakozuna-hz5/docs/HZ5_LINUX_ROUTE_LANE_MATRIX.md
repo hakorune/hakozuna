@@ -273,6 +273,22 @@ hz5-general-midpage-region-shadow-tlscache:
   --linux-hz5-general-midpage-region-shadow-tlscache
   tcmalloc-chase diagnostic adding TLS region lookup cache
   no-go in r3: mid_only and cross128 regress versus shadow
+
+hz5-general-midpage-region-shadow-hotslot:
+  --linux-hz5-general-midpage-region-shadow-hotslot
+  tcmalloc-chase diagnostic adding a one-entry TLS hot object cache per class
+  no-go in smoke r3: mid_only r0/r90 regress versus shadow
+
+hz5-general-midpage-region-shadow-activetrust:
+  --linux-hz5-general-midpage-region-shadow-activetrust
+  tcmalloc-chase diagnostic skipping local alloc-side remote bitmap check
+  diagnostic only: r0 improves slightly but r90 becomes unstable
+
+hz5-general-midpage-region-shadow-allocfirst:
+  --linux-hz5-general-midpage-region-shadow-allocfirst
+  tcmalloc-chase diagnostic removing duplicate MidPageFront class lookup in
+  preload malloc dispatch
+  promising diagnostic: mid_only r0 improves, r90 verifies near shadow
 ```
 
 Status:
@@ -295,6 +311,18 @@ local-fast-state:
 tls-region-cache:
   component diagnostic
   not a lead candidate; region lookup is not the remaining tcmalloc gap
+
+tls-hot-slot:
+  component diagnostic
+  not a lead candidate; one-entry local object bypass is not enough
+
+local-active-trust:
+  component diagnostic
+  not a lead candidate; local alloc-side remote check is not the broad gap
+
+midpage-alloc-first:
+  preload dispatch diagnostic
+  candidate component for reducing duplicate size-class lookup
 ```
 
 Cleanup rule:

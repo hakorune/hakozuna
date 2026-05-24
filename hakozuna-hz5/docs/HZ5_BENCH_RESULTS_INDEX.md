@@ -98,6 +98,149 @@ mid_only_r90: shadow 40.73M, tlscache 38.43M, tcmalloc  46.92M
 cross128_r90: shadow 15.41M, tlscache 12.00M, tcmalloc  7.69M
 ```
 
+### `midpage_hotslot_smoke_r3_20260525_052514`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_hotslot_smoke_r3_20260525_052514
+```
+
+Purpose:
+
+```text
+Test shadow + one-entry TLS hot object cache per MidPageFront class.
+```
+
+Decision:
+
+```text
+no-go.
+One-entry local object bypass does not close the tcmalloc gap and regresses
+mid_only r90 versus shadow.
+```
+
+Key medians:
+
+```text
+mid_only_r0:
+  shadow   53.86M
+  hotslot  51.28M
+  tcmalloc 107.21M
+
+mid_only_r90:
+  shadow   29.88M
+  hotslot  26.94M
+  tcmalloc 41.77M
+```
+
+### `midpage_activetrust_smoke_r3_20260525_052755`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_activetrust_smoke_r3_20260525_052755
+```
+
+Purpose:
+
+```text
+Test shadow without local alloc-side remote bitmap check.
+```
+
+Decision:
+
+```text
+diagnostic only.
+It improves mid_only_r0 modestly but makes mid_only_r90 unstable and slower.
+```
+
+Key medians:
+
+```text
+mid_only_r0:
+  shadow      51.73M
+  activetrust 55.62M
+  tcmalloc   109.90M
+
+mid_only_r90:
+  shadow      33.50M
+  activetrust 24.44M
+  tcmalloc    39.06M
+```
+
+### `midpage_allocfirst_r3_20260525_053010`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_allocfirst_r3_20260525_053010
+```
+
+Purpose:
+
+```text
+Test preload MidPageFront alloc-before-can-handle dispatch to remove duplicate
+size-class lookup on supported MidPageFront allocations.
+```
+
+Decision:
+
+```text
+promising diagnostic.
+It improves mid_only_r0 and keeps main rows close to shadow, but needs broad
+confirmation before promotion.
+```
+
+Key medians:
+
+```text
+mid_only_r0:
+  shadow     66.46M
+  allocfirst 73.74M
+  tcmalloc  153.38M
+
+mid_only_r50:
+  shadow     41.02M
+  allocfirst 39.92M
+  tcmalloc   75.63M
+
+mid_only_r90:
+  shadow     30.02M
+  allocfirst 18.53M
+  tcmalloc   46.74M
+```
+
+### `midpage_allocfirst_r90_verify_r5_20260525_053037`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_allocfirst_r90_verify_r5_20260525_053037
+```
+
+Purpose:
+
+```text
+Verify whether the allocfirst r90 drop was persistent.
+```
+
+Decision:
+
+```text
+allocfirst r90 is roughly shadow-equivalent in the r5 verify.
+The useful signal remains mid_only_r0 improvement.
+```
+
+Key medians:
+
+```text
+mid_only_r90:
+  shadow     32.34M
+  allocfirst 32.06M
+  tcmalloc   43.50M
+```
+
 ## MidPageFront-M2
 
 ### `midpage_region_broad_r5_20260525_031852`

@@ -75,6 +75,15 @@ hakozuna-hz5/docs/archive/current_task_2026-05-hz5-linux.md
 
 --linux-hz5-general-midpage-region-shadow-tlscache
   no-go; region lookup cache does not close the tcmalloc gap
+
+--linux-hz5-general-midpage-region-shadow-hotslot
+  no-go; one-entry TLS hot object cache does not improve MidPageFront local path
+
+--linux-hz5-general-midpage-region-shadow-activetrust
+  diagnostic only; improves r0 slightly but hurts r90
+
+--linux-hz5-general-midpage-region-shadow-allocfirst
+  promising diagnostic; removes duplicate MidPageFront class lookup in preload
 ```
 
 ## Latest Key Results
@@ -83,6 +92,10 @@ hakozuna-hz5/docs/archive/current_task_2026-05-hz5-linux.md
 private/raw-results/linux/tcmalloc_target_shadow_r3_20260525_033348
 private/raw-results/linux/tcmalloc_shadow_frontfirst_r3_20260525_033543
 private/raw-results/linux/tcmalloc_tlscache_r3_20260525_033858
+private/raw-results/linux/midpage_hotslot_smoke_r3_20260525_052514
+private/raw-results/linux/midpage_activetrust_smoke_r3_20260525_052755
+private/raw-results/linux/midpage_allocfirst_r3_20260525_053010
+private/raw-results/linux/midpage_allocfirst_r90_verify_r5_20260525_053037
 ```
 
 Current read:
@@ -96,6 +109,16 @@ frontfirst:
 
 tlscache:
   region lookup is not the main bottleneck
+
+hotslot:
+  one-entry local object bypass is not enough and hurts r90
+
+activetrust:
+  alloc-side remote-bit check is not the main bottleneck; r90 becomes unstable
+
+allocfirst:
+  duplicate class lookup matters for mid_only r0
+  r90 verify is roughly shadow-equivalent
 
 next:
   reduce MidPageFront active-state / metadata / freelist work per local
