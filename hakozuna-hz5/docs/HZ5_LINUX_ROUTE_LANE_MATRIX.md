@@ -38,6 +38,7 @@ Current paper/appendix-facing HZ5 Linux rows are profile-specific:
 | Small ordinary malloc candidate | `hz5-smallfront-s1` | Linux full-preload route for ordinary malloc <=2KiB |
 | Broad mid ordinary malloc candidate | `hz5-midfront-rb16` | Linux full-preload route for ordinary malloc 4KiB..64KiB, broad baseline/default candidate |
 | Remote-heavy mid ordinary malloc candidate | `hz5-midfront-allgate` | MidFront owner-inbox drain-all plus empty-gated exchange co-lead candidate |
+| MidPage ordinary malloc prototype | `hz5-general-midpage` | 64KiB class-owned slab prototype for ordinary malloc 2049..32768; candidate evidence only |
 | Large ordinary malloc candidate | `hz5-largefront-l1` | Linux full-preload route for ordinary malloc >64K..1M, cross128 local coverage candidate |
 | Remote-heavy large candidate | `hz5-largefront-inbox` | LargeFront owner-inbox candidate for remote-heavy large rows |
 | General remote-tail candidate | `hz5-general-region-outbox` | SmallFront outbox + MidFront rb16 + LargeFront region-map candidate |
@@ -88,6 +89,7 @@ small 4K/8K a8192:
 | `midfront_remote_outbox` | lane | MidFront owner/class sender outbox candidate | cross128 candidate only |
 | `midfront_remote_rbuf` | lane | HZ4-style sender TLS ring grouped on flush | diagnostic only |
 | `midfront_directfree` | lane | remote ACTIVE->LOCAL_FREE state diagnostic | candidate-watch |
+| `midpagefront_m2` | route/lane family | 64KiB class-owned slab prototype for 2049..32768 ordinary malloc | candidate evidence; not default |
 | `preload_free_midfirst` | lane | preload free dispatch order diagnostic | diagnostic only |
 | `midfront_lookup_cache` | lane | MidFront TLS page lookup cache diagnostic | diagnostic only |
 | `largefront_l1` | route/lane family | active Linux large front-end candidate | candidate for cross128 coverage |
@@ -217,6 +219,55 @@ hz5-midfront-takefirst:
 hz5-midfront-maskhitstop:
   --linux-midfront-drain-mask-hit-stop
   bounded mask A/B; buildable but excluded from the default observe runner
+```
+
+### `midpagefront_m2`
+
+Claimed domain:
+
+```text
+ordinary malloc/free 2049..32768 bytes
+normal malloc alignment, 16 bytes
+Linux full preload lane
+```
+
+Path:
+
+```text
+alloc:
+  malloc(2049..32768)
+  -> round to 3072/4096/8192/16384/32768 class
+  -> owner-local free list
+  -> owner inbox drain on local miss
+  -> new 64KiB class-owned slab on source miss
+
+free:
+  ptr -> 64KiB slab-base hash lookup
+  -> descriptor and slot-boundary check
+  -> active bitmap transition
+  -> owner-local free list or owner/class remote inbox
+```
+
+Build:
+
+```text
+hz5-general-midpage:
+  --linux-hz5-general-midpage
+```
+
+Status:
+
+```text
+prototype/candidate evidence only
+not a broad default
+```
+
+Current read:
+
+```text
+The first race-fixed M2.1 improves cross128_r90 versus the general-region
+baseline, but main_r90 and mid_only_r90 remain below baseline. Further work
+needs a cheaper lookup/state protocol before promotion.
 ```
 
 Current decision:

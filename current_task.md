@@ -6504,3 +6504,133 @@ attacking remote-heavy general malloc. Current low-risk knobs are exhausted:
   midrbuf no-go
   routesplit no-go
 ```
+
+### MidPageFront-M2 Prototype
+
+External review recommendation:
+
+```text
+Stop tuning MidFront-M1 / LargeFront-L1 boundaries for the HZ4 gap.
+Add a new page/header-owned MidPageFront-M2 for ordinary 2049..32768 malloc.
+Start with 64KiB class-owned slabs, not full 64K coverage.
+```
+
+Implemented:
+
+```bash
+./linux/build_linux_hz5_standalone.sh \
+  --linux-hz5-general-midpage \
+  --out-dir hakozuna-hz5/out/linux/x86_64-hz5-general-midpage
+```
+
+Route:
+
+```text
+SmallFront:
+  <=2048
+
+MidPageFront-M2:
+  2049..32768
+  classes 3072/4096/8192/16384/32768
+  64KiB class-owned slabs
+  descriptor + active bitmap
+  owner/class remote inbox
+
+MidFront-M1:
+  remaining mid control route
+```
+
+Build/smoke:
+
+```text
+build OK
+/bin/true under full preload OK
+manual malloc/free/usable_size smoke for 2049,2300,3072,4096,8192,16384,32768 OK
+```
+
+First r90 smoke found a correctness bug:
+
+```text
+private/raw-results/linux/midpage_smoke_20260525_020316
+
+main:
+  region   29.75M
+  midpage   0.85M with alloc failed
+
+mid_only:
+  region   25.76M
+  midpage   0.74M with alloc failed
+```
+
+Cause:
+
+```text
+owner-local active bitmap load/store raced with remote CAS clears on the same
+64-bit word. Different slots can still overwrite each other's state when they
+share the bitmap word.
+```
+
+Fix:
+
+```text
+M2.1 now uses CAS for all active-bit transitions.
+```
+
+Race-fixed focused repeat-3, threads=16/ws=400/r90/stats unset:
+
+```text
+private/raw-results/linux/midpage_m2_racefix_r3_20260525_020747
+
+main_r90:
+  region   23.89M
+  midpage  10.53M
+  HZ4      48.99M
+  tcmalloc 53.74M
+
+mid_only_r90:
+  region   20.68M
+  midpage  16.91M
+  HZ4      55.87M
+  tcmalloc 49.04M
+
+cross128_r90:
+  region   12.84M
+  midpage  17.49M
+  HZ4      23.31M
+  tcmalloc  7.85M
+
+large_only_r90:
+  region    4.77M
+  midpage  11.14M
+  HZ4       2.05M
+  tcmalloc  3.68M
+```
+
+Additional A/B:
+
+```text
+slot_state byte array:
+  tried after the race fix
+  alloc_failed stayed 0
+  first smoke made mid_only worse
+  reverted before commit
+```
+
+Decision:
+
+```text
+MidPageFront-M2.1:
+  keep as prototype/candidate evidence
+  not a broad default
+
+Useful signal:
+  cross128_r90 improves versus general-region baseline
+
+Still weak:
+  main_r90 and mid_only_r90 remain below region and far behind HZ4/tcmalloc
+
+Next possible attack:
+  region-array lookup instead of hash lookup
+  or remote protocol change so owner-local state can avoid locked CAS without
+  racing remote frees
+```

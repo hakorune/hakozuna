@@ -71,6 +71,14 @@ midfront/
   owner-local TLS span caches
   owner-aware remote inbox
 
+midpagefront/
+  HZ5-MidPageFront-M2
+  Linux ordinary malloc/free 2049..32768 bytes
+  64KiB class-owned slabs
+  descriptor-owned slots
+  active bitmap validation
+  owner/class remote inbox
+
 largefront/
   HZ5-LargeFront-L1
   Linux ordinary malloc/free 65537..1048576 bytes
@@ -117,6 +125,8 @@ Design source:
   adding more owner-aware front-ends.
 * `docs/HZ5_MIDFRONT_M1_DESIGN.md`: HZ5-native mid allocator front-end plan for
   ordinary 4K..64K malloc traffic.
+* `docs/HZ5_MIDPAGEFRONT_M2_DESIGN.md`: HZ5-native 64KiB class-owned slab
+  prototype for ordinary 2049..32768 malloc traffic.
 * `docs/HZ5_LARGEFRONT_L1_DESIGN.md`: HZ5-native large allocator front-end plan
   for ordinary >64K malloc traffic. L1 is the cross128 coverage fix, not the
   final 2MiB split/merge pool.

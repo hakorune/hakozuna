@@ -859,6 +859,76 @@ Candidate designs:
    document remote-heavy as future work
 ```
 
+## MidPageFront-M2 Prototype
+
+External review recommended replacing more MidFront/LargeFront boundary tuning
+with a lighter page/header-owned mid-sized front. M2.1 was added as:
+
+```text
+--linux-hz5-general-midpage
+
+range:
+  ordinary malloc 2049..32768
+
+shape:
+  64KiB class-owned slabs
+  classes 3072/4096/8192/16384/32768
+  descriptor ownership
+  active bitmap
+  owner/class remote inbox
+```
+
+The first implementation found and fixed a real bitmap race. Owner-local
+load/store updates to the shared active bitmap can race with remote CAS clears
+on other slots, causing free-list/bitmap disagreement and `alloc failed`. M2.1
+now uses CAS for all bitmap transitions.
+
+Focused repeat-3 after the race fix:
+
+```text
+private/raw-results/linux/midpage_m2_racefix_r3_20260525_020747
+
+main_r90:
+  region   23.89M
+  midpage  10.53M
+  HZ4      48.99M
+  tcmalloc 53.74M
+
+mid_only_r90:
+  region   20.68M
+  midpage  16.91M
+  HZ4      55.87M
+  tcmalloc 49.04M
+
+cross128_r90:
+  region   12.84M
+  midpage  17.49M
+  HZ4      23.31M
+  tcmalloc  7.85M
+
+large_only_r90:
+  region    4.77M
+  midpage  11.14M
+  HZ4       2.05M
+  tcmalloc  3.68M
+```
+
+Decision:
+
+```text
+MidPageFront-M2.1:
+  keep as prototype/candidate evidence
+  not a broad default
+
+Reason:
+  cross128 improves versus region, but main/mid_only remain below region and
+  far below HZ4/tcmalloc
+
+Next if continued:
+  region-array lookup and/or a remote protocol that lets owner-local slot state
+  avoid locked CAS without racing remote frees
+```
+
 ## Where To Read Next
 
 ```text
