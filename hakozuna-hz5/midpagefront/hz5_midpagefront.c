@@ -26,6 +26,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_REMOTE_SHADOW 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_LOCAL_FAST_STATE
+#define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_LOCAL_FAST_STATE 0
+#endif
+
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M2
 
 #define HZ5_MIDPAGEFRONT_MAGIC UINT64_C(0x485A354D50414732)
@@ -459,12 +463,17 @@ static uint32_t hz5_midpagefront_drain_remote_class(Hz5MidPageTls* tls,
 static int hz5_midpagefront_mark_active_local(Hz5MidPage* page,
                                               uint32_t slot) {
   uint64_t mask = hz5_midpagefront_slot_mask(slot);
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_LOCAL_FAST_STATE
+  uint64_t bits = atomic_load_explicit(&page->active_bits,
+                                       memory_order_acquire);
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_REMOTE_SHADOW
   uint64_t remote = atomic_load_explicit(&page->remote_bits,
                                          memory_order_acquire);
-  uint64_t bits = atomic_load_explicit(&page->active_bits,
-                                       memory_order_acquire);
-  if ((remote & mask) != 0 || (bits & mask) != 0) {
+  if ((remote & mask) != 0) {
+    return 0;
+  }
+#endif
+  if ((bits & mask) != 0) {
     return 0;
   }
   atomic_store_explicit(&page->active_bits, bits | mask,
@@ -492,12 +501,17 @@ static int hz5_midpagefront_mark_active_local(Hz5MidPage* page,
 static int hz5_midpagefront_mark_free_local(Hz5MidPage* page,
                                             uint32_t slot) {
   uint64_t mask = hz5_midpagefront_slot_mask(slot);
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_LOCAL_FAST_STATE
+  uint64_t bits = atomic_load_explicit(&page->active_bits,
+                                       memory_order_acquire);
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_REMOTE_SHADOW
   uint64_t remote = atomic_load_explicit(&page->remote_bits,
                                          memory_order_acquire);
-  uint64_t bits = atomic_load_explicit(&page->active_bits,
-                                       memory_order_acquire);
-  if ((remote & mask) != 0 || (bits & mask) == 0) {
+  if ((remote & mask) != 0) {
+    return 0;
+  }
+#endif
+  if ((bits & mask) == 0) {
     return 0;
   }
   atomic_store_explicit(&page->active_bits, bits & ~mask,

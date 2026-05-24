@@ -93,6 +93,7 @@ small 4K/8K a8192:
 | `midpagefront_m2` | route/lane family | 64KiB class-owned slab prototype for 2049..32768 ordinary malloc | active candidate |
 | `midpagefront_region_array` | lane | 64MiB source regions with descriptor-array lookup | M2.2 lead candidate |
 | `midpagefront_remote_shadow` | lane | separate remote-pending bitmap diagnostic | diagnostic only |
+| `midpagefront_local_fast_state` | flag | owner-local active-bit load/store diagnostic | component only; no standalone preset |
 | `preload_free_midfirst` | lane | preload free dispatch order diagnostic | diagnostic only |
 | `midfront_lookup_cache` | lane | MidFront TLS page lookup cache diagnostic | diagnostic only |
 | `largefront_l1` | route/lane family | active Linux large front-end candidate | candidate for cross128 coverage |
@@ -275,6 +276,11 @@ M2.2 region-array:
 
 remote-shadow:
   diagnostic only
+
+local-fast-state:
+  component diagnostic
+  no standalone preset because it reintroduces alloc_failed under r90 without
+  remote-shadow
 ```
 
 Cleanup rule:

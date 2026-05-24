@@ -338,6 +338,41 @@ remote-shadow:
   main improves, but cross128 does not
 ```
 
+Local-fast-state diagnostic:
+
+```text
+flag:
+  --linux-midpagefront-local-fast-state
+
+meaning:
+  owner-local active-bit transitions use load/store instead of CAS
+
+result:
+  no-go without remote-shadow
+```
+
+Smoke:
+
+```text
+mid_only, threads=16/ws=400/iters=50000
+
+region-array:
+  r0   49.06M, alloc_failed=0
+  r90  32.17M, alloc_failed=0
+
+local-fast without remote-shadow:
+  r0   52.20M, alloc_failed=0
+  r90   2.44M, alloc_failed=12
+```
+
+Read:
+
+```text
+Local load/store does improve r0 slightly, but it reintroduces the shared
+active-bitmap race under remote pressure unless remote writes are isolated.
+Keep it diagnostic only, currently only through the remote-shadow preset.
+```
+
 Lane names after cleanup:
 
 ```text

@@ -58,6 +58,7 @@ LINUX_MIDPAGEFRONT_M2=0
 LINUX_MIDPAGEFRONT_REMOTE_BATCH_CAP=16
 LINUX_MIDPAGEFRONT_REGION_ARRAY=0
 LINUX_MIDPAGEFRONT_REMOTE_SHADOW=0
+LINUX_MIDPAGEFRONT_LOCAL_FAST_STATE=0
 LINUX_MIDFRONT_M1=0
 LINUX_MIDFRONT_OWNER_FAST_STATE=0
 LINUX_MIDFRONT_MAX_BYTES=65536
@@ -207,6 +208,9 @@ Options:
   --linux-midpagefront-remote-shadow
                      candidate only: remote free marks a separate pending
                      bitmap so owner-local active bits avoid locked CAS
+  --linux-midpagefront-local-fast-state
+                     diagnostic only: owner-local MidPageFront active-bit
+                     transitions use load/store instead of CAS
   --linux-midpagefront-remote-batch-cap N
                      MidPageFront remote-free sender batch threshold (default: 16)
   --linux-midfront-owner-fast-state
@@ -787,6 +791,7 @@ while [[ $# -gt 0 ]]; do
       LINUX_MIDPAGEFRONT_M2=1
       LINUX_MIDPAGEFRONT_REGION_ARRAY=1
       LINUX_MIDPAGEFRONT_REMOTE_SHADOW=1
+      LINUX_MIDPAGEFRONT_LOCAL_FAST_STATE=1
       LINUX_MIDPAGEFRONT_REMOTE_BATCH_CAP=16
       LINUX_MIDFRONT_M1=1
       LINUX_MIDFRONT_OWNER_FAST_STATE=1
@@ -888,6 +893,14 @@ while [[ $# -gt 0 ]]; do
       LINUX_SMALLFRONT_S1=1
       LINUX_MIDPAGEFRONT_M2=1
       LINUX_MIDPAGEFRONT_REMOTE_SHADOW=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
+    --linux-midpagefront-local-fast-state)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDPAGEFRONT_M2=1
+      LINUX_MIDPAGEFRONT_LOCAL_FAST_STATE=1
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
@@ -1489,6 +1502,9 @@ if [[ "$LINUX_MIDPAGEFRONT_M2" -eq 1 ]]; then
   if [[ "$LINUX_MIDPAGEFRONT_REMOTE_SHADOW" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_REMOTE_SHADOW=1)
   fi
+  if [[ "$LINUX_MIDPAGEFRONT_LOCAL_FAST_STATE" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_LOCAL_FAST_STATE=1)
+  fi
 fi
 if [[ "$LINUX_OWNERHUB_R1" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_OWNERHUB_R1=1)
@@ -1635,6 +1651,7 @@ fi
   echo "linux_midpagefront_remote_batch_cap=${LINUX_MIDPAGEFRONT_REMOTE_BATCH_CAP}"
   echo "linux_midpagefront_region_array=${LINUX_MIDPAGEFRONT_REGION_ARRAY}"
   echo "linux_midpagefront_remote_shadow=${LINUX_MIDPAGEFRONT_REMOTE_SHADOW}"
+  echo "linux_midpagefront_local_fast_state=${LINUX_MIDPAGEFRONT_LOCAL_FAST_STATE}"
   echo "linux_midfront_m1=${LINUX_MIDFRONT_M1}"
   echo "linux_midfront_owner_fast_state=${LINUX_MIDFRONT_OWNER_FAST_STATE}"
   echo "linux_midfront_max_bytes=${LINUX_MIDFRONT_MAX_BYTES}"

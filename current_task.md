@@ -6813,3 +6813,47 @@ BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_REGION_ARRAY=0.
 
 region-array builds use only the region map/source arrays for ownership lookup.
 ```
+
+### MidPageFront Local-Fast-State Diagnostic
+
+Implemented component flag:
+
+```text
+--linux-midpagefront-local-fast-state
+```
+
+Purpose:
+
+```text
+Measure the r0 upper bound of replacing owner-local active-bit CAS with
+load/store transitions.
+```
+
+Smoke result:
+
+```text
+mid_only, threads=16/ws=400/iters=50000
+
+region-array:
+  r0   49.06M, alloc_failed=0
+  r90  32.17M, alloc_failed=0
+
+local-fast without remote-shadow:
+  r0   52.20M, alloc_failed=0
+  r90   2.44M, alloc_failed=12
+```
+
+Decision:
+
+```text
+standalone local-fast preset:
+  removed / no-go
+
+reason:
+  r0 improves slightly, but r90 reintroduces the active-bitmap race and alloc
+  failures
+
+kept:
+  local-fast-state remains a component flag only, currently used by
+  --linux-hz5-general-midpage-region-shadow diagnostic
+```

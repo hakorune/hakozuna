@@ -998,6 +998,20 @@ remote-shadow:
   main improves but cross128 remains weaker/unstable
 ```
 
+Local-fast-state follow-up:
+
+```text
+--linux-midpagefront-local-fast-state
+
+owner-local active-bit load/store without remote-shadow:
+  r0 improves slightly
+  r90 reintroduces alloc_failed
+
+decision:
+  no standalone preset
+  keep only as a component of the remote-shadow diagnostic
+```
+
 Lane cleanup:
 
 ```text
