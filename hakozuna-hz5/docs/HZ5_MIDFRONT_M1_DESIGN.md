@@ -182,6 +182,11 @@ In that pass, owner-inbox drain policies were stronger than global recycle on
 remote-heavy cases after source capacity was fixed, so global recycle remains a
 candidate/control rather than the leading default direction.
 
+Follow-up threads=4 and threads=8 repeat-5 stress smokes also reported zero
+`alloc_failed` and zero bad-status runs. The scaling results point away from
+global recycle and toward owner-inbox drain policy tuning (`rb16`, `drainmask`,
+and `drainall`) as the next optimization target.
+
 ## Allocator Shape
 
 The Linux HZ5 general allocator should be split by responsibility:

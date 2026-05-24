@@ -1070,6 +1070,75 @@ interpretation:
   becomes paper-facing
 ```
 
+MidFront thread stress smoke after source fix:
+
+```text
+purpose:
+  confirm the source/page-map failure fix does not only hold for threads=2
+
+measurement hygiene:
+  HZ5_PRELOAD_STATS unset
+  --no-attrib
+  repeat=5
+  ws=100
+
+threads=4:
+  result directory:
+    private/raw-results/linux/midfront_observe_20260524_104502
+  result:
+    all candidates/cases:
+      alloc_failed_runs=0
+      bad_status_runs=0
+  notable medians:
+    main_r90:
+      drainall:      16.74M
+      rb16:          12.84M
+      drainmask:      8.63M
+      globalrecycle:  7.29M
+    mid_r90:
+      rb16:          16.59M
+      drainall:      13.29M
+      drainmask:     11.12M
+      globalrecycle:  7.60M
+    hi64_r90:
+      drainmask:     14.44M
+      rb16:          14.34M
+      drainall:      13.08M
+      globalrecycle:  5.02M
+
+threads=8:
+  result directory:
+    private/raw-results/linux/midfront_observe_20260524_104539
+  result:
+    all candidates/cases:
+      alloc_failed_runs=0
+      bad_status_runs=0
+  notable medians:
+    main_r90:
+      drainmask:     19.06M
+      rb16:          17.84M
+      drainall:      13.77M
+      globalrecycle:  8.61M
+    mid_r90:
+      rb16:          19.10M
+      drainmask:     18.15M
+      drainall:      15.24M
+      globalrecycle:  4.27M
+    hi64_r90:
+      rb16:          19.12M
+      drainall:      16.58M
+      drainmask:     15.79M
+      globalrecycle:  7.42M
+
+interpretation:
+  source batching + map21 holds through 2/4/8 thread smokes
+  globalrecycle is weak under remote-heavy scaling after source capacity is fixed
+  next work should focus on owner-inbox drain policy:
+    rb16 is strong for mid/hi64 remote-heavy scaling
+    drainmask is strong for main_r90 at higher thread count
+    drainall remains a useful broad control but is not always best
+```
+
 OwnerLifetime-O1 implementation status:
 
 ```text
