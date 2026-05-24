@@ -93,8 +93,12 @@ typedef struct Hz5MidPage {
   uint16_t class_index;
   uint16_t slot_count;
   Hz5OwnerToken owner;
+  // active_bits is the canonical live-slot bitmap for the node-list path.
+  // nodeless diagnostics use free_bits plus remote_bits instead.
   _Atomic uint64_t active_bits;
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_RUN
+  // free_bits is owner-local reusable state. remote_bits claims cross-thread
+  // frees until the owner drains them, so the two bitmaps must not overlap.
   _Atomic uint64_t free_bits;
   uint8_t in_partial;
   struct Hz5MidPage* next_partial;
@@ -193,6 +197,7 @@ static pthread_mutex_t g_hz5_midpagefront_map_lock =
 static _Atomic(void*) g_hz5_midpagefront_owner_inbox[UINT16_MAX + 1u]
                                                   [HZ5_MIDPAGEFRONT_CLASS_COUNT];
 static _Thread_local Hz5MidPageTls g_hz5_midpagefront_tls;
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_STATS
 static _Atomic uint64_t g_hz5_midpagefront_stat_refill;
 static _Atomic uint64_t g_hz5_midpagefront_stat_refill_partial_hit;
 static _Atomic uint64_t g_hz5_midpagefront_stat_refill_remote_hit;
@@ -203,7 +208,6 @@ static _Atomic uint64_t g_hz5_midpagefront_stat_ptrcache_hit;
 static _Atomic uint64_t g_hz5_midpagefront_stat_ptrcache_push;
 static _Atomic uint64_t g_hz5_midpagefront_stat_ptrcache_full;
 
-#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_STATS
 __attribute__((destructor)) static void hz5_midpagefront_stats_dump(void) {
   fprintf(stderr,
           "[HZ5_MIDPAGEFRONT_NODELESS_STATS]"
@@ -239,9 +243,7 @@ static void hz5_midpagefront_stat_inc(_Atomic uint64_t* counter) {
   atomic_fetch_add_explicit(counter, 1, memory_order_relaxed);
 }
 #else
-static void hz5_midpagefront_stat_inc(void* counter) {
-  (void)counter;
-}
+#define hz5_midpagefront_stat_inc(counter) ((void)0)
 #endif
 
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_REGION_ARRAY
@@ -285,6 +287,9 @@ static int hz5_midpagefront_class_valid(uint32_t class_index) {
   return class_index < HZ5_MIDPAGEFRONT_CLASS_COUNT;
 }
 
+// MidPageFront owns the ordinary malloc gap between SmallFront and MidFront.
+// Keep this range narrow: 64K exact/overaligned and LargeFront rows are separate
+// routes with different RSS and remote-free behavior.
 static int hz5_midpagefront_class_index(size_t size) {
   if (size <= 2048u || size > 32768u) {
     return -1;
@@ -739,6 +744,8 @@ static void hz5_midpagefront_remote_batch_push(Hz5MidPageTls* tls,
   if (!tls || !page || !ptr || !hz5_owner_is_alive(page->owner)) {
     return;
   }
+  // mark_free_remote has already claimed the slot. If the owner died before
+  // publish, fail closed by not enqueueing into a stale owner inbox.
   uint32_t class_index = page->class_index;
   if (tls->remote_batch_count != 0u &&
       (!hz5_owner_equal(tls->remote_batch_owner, page->owner) ||

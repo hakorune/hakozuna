@@ -100,6 +100,10 @@ preload/
   dispatches ordinary malloc/free into SmallFront, MidFront, LargeFront, then
   the fallback pointer table
   owns diagnostic dispatch-order lanes such as preload_free_midfirst
+
+docs/HZ5_LINUX_LANE_CLEANUP.md
+  Short lane cleanup source for canonical / diagnostic / archive preset status
+  and build-script organization rules
 ```
 
 Current MidFront lane naming:

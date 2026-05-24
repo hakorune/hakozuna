@@ -9,6 +9,12 @@ For the short current-status summary, read:
 docs/HZ5_LINUX_DEV_BRIEF.md
 ```
 
+For cleanup-oriented lane status, read:
+
+```text
+docs/HZ5_LINUX_LANE_CLEANUP.md
+```
+
 ## Rule
 
 ```text

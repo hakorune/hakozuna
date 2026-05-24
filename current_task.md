@@ -27,11 +27,40 @@ codex/hz5-linux-p43-port
 Latest commits:
 
 ```text
+f3b287e Add MidPageFront nodeless pointer cache diagnostic
+1450c76 Add MidPageFront nodeless stats observation
+afc5317 Add MidPageFront nodeless run diagnostic
+dbf751e Document MidPageFront M3 nodeless run
 3e766ee Add MidPageFront tcmalloc consultation prompt
-4bd404a Record MidPageFront linkonly verification
-869837c Split MidPageFront TLS link diagnostics
-b398eee Add MidPageFront tlslink diagnostic
-b2f8238 Add MidPageFront slot switch diagnostic
+```
+
+## Cleanup Pass
+
+Current cleanup target:
+
+```text
+Lane and source-code organization before the next remote/cross-size design.
+```
+
+Actions:
+
+```text
+1. Keep preset names stable for reproducibility.
+2. Consolidate repeated build-script preset bodies into helper functions.
+3. Record canonical / diagnostic / archive lane status in:
+   hakozuna-hz5/docs/HZ5_LINUX_LANE_CLEANUP.md
+4. Do not split MidPageFront into multiple translation units yet; the diagnostic
+   flag matrix is still moving.
+```
+
+Validation:
+
+```text
+bash -n linux/build_linux_hz5_standalone.sh
+--linux-hz5-general-midpage-region-shadow-allocfirst build OK
+--linux-hz5-general-midpage-region-shadow-nodeless-ptrcache-stats build OK
+--linux-hz5-general-region-outbox build OK
+short MidPage malloc smoke OK
 ```
 
 ## Read First
