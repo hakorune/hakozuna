@@ -2033,6 +2033,53 @@ interpretation:
   separate from the cross-front problem.
 ```
 
+OwnerHub-R2 bounded coordinated drain:
+
+```text
+implemented:
+  --linux-ownerhub-r2
+  Small/Mid/Large keep specialized inbox payloads
+  ownerhub drains other-front pending work on alloc miss
+
+budgets:
+  small 16 objects
+  mid 8 spans
+  large 4 spans
+
+raw repeat-3 comparison, HZ5_PRELOAD_STATS unset:
+  main r50:
+    inbox  11.38M median
+    R2     11.11M median
+  main r90:
+    inbox   9.01M median
+    R2      7.87M median
+  mid_only r50:
+    inbox  11.70M median
+    R2     11.14M median
+  mid_only r90:
+    inbox   8.84M median
+    R2      6.91M median
+  large_only r50:
+    inbox   9.09M median
+    R2      9.56M median
+  large_only r90:
+    inbox   7.58M median
+    R2      7.13M median
+  cross128 r50:
+    inbox   8.25M median
+    R2     10.38M median
+  cross128 r90:
+    inbox   7.83M median
+    R2      6.96M median
+
+decision:
+  R1 observation is useful.
+  R2 bounded coordinated drain is diagnostic only for now.
+  Naive opportunistic drain reduces pending backlog but adds enough miss-path
+  work to hurt r90. Next remote design should be more selective or lower the
+  handoff cost itself.
+```
+
 MidFront source-return cleanup:
 
 ```text

@@ -147,6 +147,33 @@ main/cross128 frequently have other-front pending work at alloc miss.
 OwnerHub-R2 coordinated drain has a real target.
 ```
 
+OwnerHub-R2 bounded coordinated drain was implemented and measured, but it is
+not a broad win yet:
+
+```text
+cross128 r50:
+  inbox  8.25M
+  R2    10.38M
+
+cross128 r90:
+  inbox  7.83M
+  R2     6.96M
+
+main/mid r90:
+  R2 regressed versus inbox
+```
+
+Current decision:
+
+```text
+OwnerHub-R1:
+  keep as observation evidence
+
+OwnerHub-R2:
+  diagnostic only
+  needs a more selective drain policy or a lower-cost remote handoff design
+```
+
 ## Next Technical Question
 
 Should HZ5 Linux remote-heavy general malloc continue with per-front-end owner

@@ -292,8 +292,9 @@ static void hz5_smallfront_remote_batch_push(Hz5SmallFrontTls* tls,
   }
 }
 
-static void hz5_smallfront_drain_remote_class(Hz5SmallFrontTls* tls,
-                                              uint32_t class_index) {
+static void hz5_smallfront_drain_remote_class_budget(Hz5SmallFrontTls* tls,
+                                                     uint32_t class_index,
+                                                     uint32_t budget) {
   if (!tls || tls->owner.slot == 0 ||
       class_index >= HZ5_SMALLFRONT_CLASS_COUNT) {
     return;
@@ -305,12 +306,34 @@ static void hz5_smallfront_drain_remote_class(Hz5SmallFrontTls* tls,
   void* head = atomic_exchange_explicit(
       &g_hz5_smallfront_owner_inbox[tls->owner.slot][class_index], NULL,
       memory_order_acq_rel);
+  uint32_t drained = 0;
   while (head) {
     Hz5SmallFrontNode* node = (Hz5SmallFrontNode*)head;
     head = node->next;
+    if (budget != 0u && drained >= budget) {
+      Hz5SmallFrontNode* tail = node;
+      while (tail->next) {
+        tail = tail->next;
+      }
+      hz5_smallfront_remote_publish_list(tls->owner, class_index, node, tail);
+      return;
+    }
     if (node->page && hz5_owner_equal(node->page->owner, tls->owner)) {
       hz5_smallfront_local_push(tls, class_index, node, node->page);
     }
+    ++drained;
+  }
+}
+
+static void hz5_smallfront_drain_remote_class(Hz5SmallFrontTls* tls,
+                                              uint32_t class_index) {
+  hz5_smallfront_drain_remote_class_budget(tls, class_index, 0u);
+}
+
+void hz5_smallfront_ownerhub_drain_some(uint32_t budget) {
+  Hz5SmallFrontTls* tls = hz5_smallfront_tls();
+  for (uint32_t i = 0; i < HZ5_SMALLFRONT_CLASS_COUNT; ++i) {
+    hz5_smallfront_drain_remote_class_budget(tls, i, budget);
   }
 }
 
@@ -399,6 +422,7 @@ void* hz5_smallfront_alloc(size_t size, size_t align) {
                                  HZ5_OWNERHUB_FRONT_SMALL,
                                  ci);
     hz5_smallfront_drain_remote_class(tls, ci);
+    hz5_ownerhub_drain_cross_fronts(tls->owner, HZ5_OWNERHUB_FRONT_SMALL);
     ptr = hz5_smallfront_local_pop(tls, ci, &page);
   }
   if (!ptr) {
@@ -469,6 +493,10 @@ size_t hz5_smallfront_usable_size(void* ptr) {
 }
 
 #else
+
+void hz5_smallfront_ownerhub_drain_some(uint32_t budget) {
+  (void)budget;
+}
 
 void* hz5_smallfront_alloc(size_t size, size_t align) {
   (void)size;

@@ -478,8 +478,10 @@ static void hz5_largefront_remote_batch_push(Hz5LargeTls* tls,
 }
 #endif
 
-static Hz5LargeSpan* hz5_largefront_drain_remote_class(Hz5LargeTls* tls,
-                                                       uint32_t class_index) {
+static Hz5LargeSpan* hz5_largefront_drain_remote_class_budget(
+    Hz5LargeTls* tls,
+    uint32_t class_index,
+    uint32_t budget) {
   if (!tls || tls->owner.slot == 0 ||
       class_index >= HZ5_LARGEFRONT_CLASS_COUNT) {
     return NULL;
@@ -492,9 +494,21 @@ static Hz5LargeSpan* hz5_largefront_drain_remote_class(Hz5LargeTls* tls,
                              class_index);
   void* head = atomic_exchange_explicit(inbox, NULL, memory_order_acq_rel);
   Hz5LargeSpan* taken = NULL;
+  uint32_t drained = 0;
   while (head) {
     Hz5LargeSpan* span = (Hz5LargeSpan*)head;
     head = span->next;
+    if (budget != 0u && drained >= budget) {
+      Hz5LargeSpan* tail = span;
+      while (tail->next) {
+        tail = tail->next;
+      }
+      (void)hz5_largefront_remote_publish_list(tls->owner,
+                                               class_index,
+                                               span,
+                                               tail);
+      return taken;
+    }
     if (!hz5_owner_equal(span->owner, tls->owner)) {
       hz5_largefront_mark_orphan(span);
       continue;
@@ -514,8 +528,21 @@ static Hz5LargeSpan* hz5_largefront_drain_remote_class(Hz5LargeTls* tls,
                                  (unsigned char)HZ5_LARGESPAN_LOCAL_FREE)) {
       hz5_largefront_local_push(tls, class_index, span);
     }
+    ++drained;
   }
   return taken;
+}
+
+static Hz5LargeSpan* hz5_largefront_drain_remote_class(Hz5LargeTls* tls,
+                                                       uint32_t class_index) {
+  return hz5_largefront_drain_remote_class_budget(tls, class_index, 0u);
+}
+
+void hz5_largefront_ownerhub_drain_some(uint32_t budget) {
+  Hz5LargeTls* tls = hz5_largefront_tls();
+  for (uint32_t i = 0; i < HZ5_LARGEFRONT_CLASS_COUNT; ++i) {
+    (void)hz5_largefront_drain_remote_class_budget(tls, i, budget);
+  }
 }
 #endif
 
@@ -575,6 +602,7 @@ void* hz5_largefront_alloc(size_t size, size_t align) {
   if (span) {
     return span->base;
   }
+  hz5_ownerhub_drain_cross_fronts(tls->owner, HZ5_OWNERHUB_FRONT_LARGE);
   span = hz5_largefront_local_pop(tls, ci);
   if (span) {
     if (hz5_largefront_activate_local_for_owner(tls, span)) {
@@ -660,6 +688,10 @@ size_t hz5_largefront_usable_size(void* ptr) {
 }
 
 #else
+
+void hz5_largefront_ownerhub_drain_some(uint32_t budget) {
+  (void)budget;
+}
 
 void* hz5_largefront_alloc(size_t size, size_t align) {
   (void)size;

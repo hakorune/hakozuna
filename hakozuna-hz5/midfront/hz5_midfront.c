@@ -468,9 +468,10 @@ static void hz5_midfront_remote_batch_push(Hz5MidTls* tls, Hz5MidSpan* span) {
   }
 }
 
-static Hz5MidSpan* hz5_midfront_drain_remote_class(Hz5MidTls* tls,
-                                                   uint32_t class_index,
-                                                   int take_first) {
+static Hz5MidSpan* hz5_midfront_drain_remote_class_budget(Hz5MidTls* tls,
+                                                          uint32_t class_index,
+                                                          int take_first,
+                                                          uint32_t budget) {
   if (!tls || tls->owner.slot == 0 ||
       class_index >= HZ5_MIDFRONT_CLASS_COUNT) {
     return NULL;
@@ -493,9 +494,18 @@ static Hz5MidSpan* hz5_midfront_drain_remote_class(Hz5MidTls* tls,
 #endif
   void* head = atomic_exchange_explicit(inbox, NULL, memory_order_acq_rel);
   Hz5MidSpan* taken = NULL;
+  uint32_t drained = 0;
   while (head) {
     Hz5MidSpan* span = (Hz5MidSpan*)head;
     head = span->next;
+    if (budget != 0u && drained >= budget) {
+      Hz5MidSpan* tail = span;
+      while (tail->next) {
+        tail = tail->next;
+      }
+      hz5_midfront_remote_publish_list(tls->owner, class_index, span, tail);
+      return taken;
+    }
     if (!hz5_owner_equal(span->owner, tls->owner)) {
       hz5_midfront_mark_orphan(span);
       continue;
@@ -513,8 +523,18 @@ static Hz5MidSpan* hz5_midfront_drain_remote_class(Hz5MidTls* tls,
                                (unsigned char)HZ5_MIDSPAN_LOCAL_FREE)) {
       hz5_midfront_local_push(tls, class_index, span);
     }
+    ++drained;
   }
   return taken;
+}
+
+static Hz5MidSpan* hz5_midfront_drain_remote_class(Hz5MidTls* tls,
+                                                   uint32_t class_index,
+                                                   int take_first) {
+  return hz5_midfront_drain_remote_class_budget(tls,
+                                                class_index,
+                                                take_first,
+                                                0u);
 }
 
 static Hz5MidSpan* hz5_midfront_drain_remote_on_miss(Hz5MidTls* tls,
@@ -559,6 +579,13 @@ static Hz5MidSpan* hz5_midfront_drain_remote_on_miss(Hz5MidTls* tls,
   taken = hz5_midfront_drain_remote_class(tls, class_index, take_first);
 #endif
   return taken;
+}
+
+void hz5_midfront_ownerhub_drain_some(uint32_t budget) {
+  Hz5MidTls* tls = hz5_midfront_tls();
+  for (uint32_t i = 0; i < HZ5_MIDFRONT_CLASS_COUNT; ++i) {
+    (void)hz5_midfront_drain_remote_class_budget(tls, i, 0, budget);
+  }
 }
 
 static Hz5MidSpan* hz5_midfront_new_span(Hz5MidTls* tls,
@@ -609,6 +636,7 @@ void* hz5_midfront_alloc(size_t size, size_t align) {
     if (span) {
       return span->base;
     }
+    hz5_ownerhub_drain_cross_fronts(tls->owner, HZ5_OWNERHUB_FRONT_MID);
     span = hz5_midfront_local_pop(tls, ci);
   }
   if (span) {
@@ -685,6 +713,10 @@ size_t hz5_midfront_usable_size(void* ptr) {
 }
 
 #else
+
+void hz5_midfront_ownerhub_drain_some(uint32_t budget) {
+  (void)budget;
+}
 
 void* hz5_midfront_alloc(size_t size, size_t align) {
   (void)size;

@@ -90,9 +90,9 @@ No-go if other-front pending is rare. In that case the bottleneck is not
 cross-front drain scheduling; it is per-front remote handoff cost or benchmark
 handoff overhead.
 
-## R2 Candidate
+## R2 Candidate Result
 
-If R1 confirms cross-front backlog, R2 should add:
+R2 was implemented as a bounded coordinated-drain candidate:
 
 ```text
 on alloc miss:
@@ -100,7 +100,7 @@ on alloc miss:
   then drain bounded work from other pending fronts
 ```
 
-Initial budgets:
+Budgets:
 
 ```text
 small: 16 objects
@@ -108,5 +108,60 @@ mid:    8 spans
 large:  4 spans
 ```
 
-The first R2 implementation should still keep Small/Mid/Large inbox payloads
-specialized.
+Small/Mid/Large inbox payloads remained specialized.
+
+Focused repeat-3 raw comparison, `HZ5_PRELOAD_STATS` unset:
+
+```text
+main r50:
+  inbox  11.38M median
+  R2     11.11M median
+
+main r90:
+  inbox   9.01M median
+  R2      7.87M median
+
+mid_only r50:
+  inbox  11.70M median
+  R2     11.14M median
+
+mid_only r90:
+  inbox   8.84M median
+  R2      6.91M median
+
+large_only r50:
+  inbox   9.09M median
+  R2      9.56M median
+
+large_only r90:
+  inbox   7.58M median
+  R2      7.13M median
+
+cross128 r50:
+  inbox   8.25M median
+  R2     10.38M median
+
+cross128 r90:
+  inbox   7.83M median
+  R2      6.96M median
+```
+
+Decision:
+
+```text
+OwnerHub-R1:
+  useful observation
+
+OwnerHub-R2 bounded coordinated drain:
+  diagnostic only for now
+  not a broad remote-heavy win
+```
+
+Interpretation:
+
+```text
+cross-front pending exists, but naive opportunistic drain adds enough work on
+miss paths to hurt r90. The next design should reduce remote handoff cost or
+make drain scheduling more selective, rather than draining every other front
+on each miss.
+```

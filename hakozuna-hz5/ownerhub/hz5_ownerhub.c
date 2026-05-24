@@ -8,7 +8,12 @@
 #define BENCHLAB_HZ5_LINUX_OWNERHUB_R1 0
 #endif
 
-#if defined(__linux__) && BENCHLAB_HZ5_LINUX_OWNERHUB_R1
+#ifndef BENCHLAB_HZ5_LINUX_OWNERHUB_R2
+#define BENCHLAB_HZ5_LINUX_OWNERHUB_R2 0
+#endif
+
+#if defined(__linux__) && \
+    (BENCHLAB_HZ5_LINUX_OWNERHUB_R1 || BENCHLAB_HZ5_LINUX_OWNERHUB_R2)
 
 #define HZ5_OWNERHUB_SMALL_SHIFT 0u
 #define HZ5_OWNERHUB_MID_SHIFT 16u
@@ -19,6 +24,7 @@
 
 static _Atomic uint64_t g_hz5_ownerhub_pending[UINT16_MAX + 1u];
 
+#if BENCHLAB_HZ5_LINUX_OWNERHUB_R1
 static _Atomic uint64_t g_hz5_ownerhub_publish_small;
 static _Atomic uint64_t g_hz5_ownerhub_publish_mid;
 static _Atomic uint64_t g_hz5_ownerhub_publish_large;
@@ -28,6 +34,15 @@ static _Atomic uint64_t g_hz5_ownerhub_alloc_miss_large;
 static _Atomic uint64_t g_hz5_ownerhub_alloc_miss_target_pending;
 static _Atomic uint64_t g_hz5_ownerhub_alloc_miss_other_pending;
 static _Atomic uint64_t g_hz5_ownerhub_alloc_miss_any_pending;
+static _Atomic uint64_t g_hz5_ownerhub_cross_drain_call;
+static _Atomic uint64_t g_hz5_ownerhub_cross_drain_small;
+static _Atomic uint64_t g_hz5_ownerhub_cross_drain_mid;
+static _Atomic uint64_t g_hz5_ownerhub_cross_drain_large;
+#endif
+
+void hz5_smallfront_ownerhub_drain_some(uint32_t budget);
+void hz5_midfront_ownerhub_drain_some(uint32_t budget);
+void hz5_largefront_ownerhub_drain_some(uint32_t budget);
 
 static uint64_t hz5_ownerhub_front_mask(Hz5OwnerHubFront front) {
   switch (front) {
@@ -81,6 +96,7 @@ void hz5_ownerhub_mark_pending(Hz5OwnerToken owner,
   atomic_fetch_or_explicit(&g_hz5_ownerhub_pending[owner.slot],
                            bit,
                            memory_order_release);
+#if BENCHLAB_HZ5_LINUX_OWNERHUB_R1
   switch (front) {
     case HZ5_OWNERHUB_FRONT_SMALL:
       atomic_fetch_add_explicit(&g_hz5_ownerhub_publish_small,
@@ -100,6 +116,9 @@ void hz5_ownerhub_mark_pending(Hz5OwnerToken owner,
     default:
       break;
   }
+#else
+  (void)front;
+#endif
 }
 
 void hz5_ownerhub_clear_pending(Hz5OwnerToken owner,
@@ -120,6 +139,7 @@ void hz5_ownerhub_clear_pending(Hz5OwnerToken owner,
 void hz5_ownerhub_note_alloc_miss(Hz5OwnerToken owner,
                                   Hz5OwnerHubFront front,
                                   uint32_t class_index) {
+#if BENCHLAB_HZ5_LINUX_OWNERHUB_R1
   if (owner.slot == 0) {
     return;
   }
@@ -164,9 +184,64 @@ void hz5_ownerhub_note_alloc_miss(Hz5OwnerToken owner,
                               1u,
                               memory_order_relaxed);
   }
+#else
+  (void)owner;
+  (void)front;
+  (void)class_index;
+#endif
+}
+
+void hz5_ownerhub_drain_cross_fronts(Hz5OwnerToken owner,
+                                     Hz5OwnerHubFront target_front) {
+#if BENCHLAB_HZ5_LINUX_OWNERHUB_R2
+  if (owner.slot == 0) {
+    return;
+  }
+  uint64_t pending = atomic_load_explicit(&g_hz5_ownerhub_pending[owner.slot],
+                                          memory_order_acquire);
+  if (pending == 0) {
+    return;
+  }
+#if BENCHLAB_HZ5_LINUX_OWNERHUB_R1
+  atomic_fetch_add_explicit(&g_hz5_ownerhub_cross_drain_call,
+                            1u,
+                            memory_order_relaxed);
+#endif
+  if (target_front != HZ5_OWNERHUB_FRONT_SMALL &&
+      (pending & hz5_ownerhub_front_mask(HZ5_OWNERHUB_FRONT_SMALL)) != 0) {
+#if BENCHLAB_HZ5_LINUX_OWNERHUB_R1
+    atomic_fetch_add_explicit(&g_hz5_ownerhub_cross_drain_small,
+                              1u,
+                              memory_order_relaxed);
+#endif
+    hz5_smallfront_ownerhub_drain_some(16u);
+  }
+  if (target_front != HZ5_OWNERHUB_FRONT_MID &&
+      (pending & hz5_ownerhub_front_mask(HZ5_OWNERHUB_FRONT_MID)) != 0) {
+#if BENCHLAB_HZ5_LINUX_OWNERHUB_R1
+    atomic_fetch_add_explicit(&g_hz5_ownerhub_cross_drain_mid,
+                              1u,
+                              memory_order_relaxed);
+#endif
+    hz5_midfront_ownerhub_drain_some(8u);
+  }
+  if (target_front != HZ5_OWNERHUB_FRONT_LARGE &&
+      (pending & hz5_ownerhub_front_mask(HZ5_OWNERHUB_FRONT_LARGE)) != 0) {
+#if BENCHLAB_HZ5_LINUX_OWNERHUB_R1
+    atomic_fetch_add_explicit(&g_hz5_ownerhub_cross_drain_large,
+                              1u,
+                              memory_order_relaxed);
+#endif
+    hz5_largefront_ownerhub_drain_some(4u);
+  }
+#else
+  (void)owner;
+  (void)target_front;
+#endif
 }
 
 void hz5_ownerhub_stats_print(void) {
+#if BENCHLAB_HZ5_LINUX_OWNERHUB_R1
   if (!getenv("HZ5_OWNERHUB_STATS")) {
     return;
   }
@@ -175,7 +250,9 @@ void hz5_ownerhub_stats_print(void) {
           " publish_small=%llu publish_mid=%llu publish_large=%llu"
           " miss_small=%llu miss_mid=%llu miss_large=%llu"
           " miss_any_pending=%llu miss_target_pending=%llu"
-          " miss_other_pending=%llu\n",
+          " miss_other_pending=%llu"
+          " cross_drain_call=%llu cross_drain_small=%llu"
+          " cross_drain_mid=%llu cross_drain_large=%llu\n",
           (unsigned long long)atomic_load_explicit(
               &g_hz5_ownerhub_publish_small, memory_order_relaxed),
           (unsigned long long)atomic_load_explicit(
@@ -195,7 +272,18 @@ void hz5_ownerhub_stats_print(void) {
               memory_order_relaxed),
           (unsigned long long)atomic_load_explicit(
               &g_hz5_ownerhub_alloc_miss_other_pending,
-              memory_order_relaxed));
+              memory_order_relaxed),
+          (unsigned long long)atomic_load_explicit(
+              &g_hz5_ownerhub_cross_drain_call, memory_order_relaxed),
+          (unsigned long long)atomic_load_explicit(
+              &g_hz5_ownerhub_cross_drain_small, memory_order_relaxed),
+          (unsigned long long)atomic_load_explicit(
+              &g_hz5_ownerhub_cross_drain_mid, memory_order_relaxed),
+          (unsigned long long)atomic_load_explicit(
+              &g_hz5_ownerhub_cross_drain_large, memory_order_relaxed));
+#else
+  return;
+#endif
 }
 
 #else
