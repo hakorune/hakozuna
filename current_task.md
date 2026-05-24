@@ -1891,6 +1891,48 @@ current decision:
   transfer design; LargeFront-only tuning is no longer the whole bottleneck.
 ```
 
+Mixed remote drain policy check:
+
+```text
+candidate:
+  hz5-largefront-inbox-allgate
+  build flags:
+    --linux-largefront-owner-inbox
+    --linux-largefront-owner-fast-state
+    --linux-midfront-owner-fast-state
+    --linux-midfront-remote-batch-cap 16
+    --linux-midfront-drain-all-on-miss
+    --linux-midfront-drain-empty-gated
+    --linux-local2p-speed-linkflags
+
+focused repeat-3, HZ5_PRELOAD_STATS unset:
+  main r50:
+    inbox    10.37M median
+    allgate  11.17M median
+  main r90:
+    inbox     6.93M median
+    allgate   7.22M median
+  mid_only r50:
+    inbox    10.81M median
+    allgate   9.76M median
+  mid_only r90:
+    inbox     7.50M median
+    allgate   8.55M median
+  cross128 r50:
+    inbox     9.85M median
+    allgate   9.94M median
+  cross128 r90:
+    inbox     6.03M median
+    allgate   5.89M median
+
+interpretation:
+  MidFront allgate plus LargeFront inbox is not a broad cross128 fix.
+  The remaining remote-heavy gap is not solved by class-drain policy alone.
+  Next likely design target is a lower-cost remote handoff path shared by
+  SmallFront/MidFront/LargeFront, or a benchmark-specific SPSC/owner transfer
+  lane, rather than more LargeFront-local tuning.
+```
+
 MidFront source-return cleanup:
 
 ```text
