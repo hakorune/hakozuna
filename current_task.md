@@ -1673,6 +1673,160 @@ next development targets:
      next target.
 ```
 
+LargeFront-L1 plan:
+
+```text
+design doc:
+  hakozuna-hz5/docs/HZ5_LARGEFRONT_L1_DESIGN.md
+
+reason:
+  cross128 includes ordinary malloc traffic above 64K.
+  HZ5 currently owns SmallFront <=2K and MidFront <=64K.
+  >64K goes to the slow wrapped/fallback path, so cross128 is not yet a valid
+  HZ5 general allocator result.
+
+reference designs:
+  MidFront:
+    descriptor-owned spans
+    page-map ownership lookup
+    fail-closed state transitions
+  hz3/hz4 large pool:
+    retained/reuse-first large allocation idea
+    split/merge pool is deferred to L2/L3
+
+L1 target:
+  Linux full preload
+  normal malloc align <= 16
+  size domain 65537..1048576
+  classes 128K, 256K, 512K, 1M
+  one object per retained span
+  4KiB descriptor prefix outside user memory
+  no wrapper on the hot path
+  owner-local retained list for local frees
+  global recycle for remote frees
+  no RSS-return claim
+
+implementation tasks:
+  1. Add largefront/hz5_largefront.{c,h}.
+  2. Add --linux-largefront-l1 build flag and compile define.
+  3. Add LargeFront source/include to the Linux build.
+  4. Route preload_full alloc/free/usable/realloc through LargeFront after
+     MidFront and before the wrapped fallback.
+  5. Update route/lane docs and source map.
+  6. Build smoke, /bin/true preload smoke, LargeFront malloc/free smoke.
+  7. Run focused hakmem cross128 comparison with HZ5_PRELOAD_STATS unset for
+     raw ops/s and a separate attribution run for counters.
+```
+
+LargeFront-L1 implementation status:
+
+```text
+implemented:
+  hakozuna-hz5/largefront/hz5_largefront.c
+  hakozuna-hz5/largefront/hz5_largefront.h
+  --linux-largefront-l1
+  --linux-largefront-owner-fast-state
+  preload_full allocation/free/usable/realloc routing
+
+build:
+  ./linux/build_linux_hz5_standalone.sh
+    --linux-largefront-owner-fast-state
+    --linux-midfront-owner-fast-state
+    --linux-midfront-remote-batch-cap 16
+    --linux-local2p-speed-linkflags
+    --out-dir hakozuna-hz5/out/linux/x86_64-hz5-largefront-l1
+
+smoke:
+  /bin/true under full preload: OK
+  /tmp/hz5_largefront_smoke under full preload: OK
+
+focused raw smoke, HZ5_PRELOAD_STATS unset:
+  hakmem bench_random_mixed_mt_remote_malloc
+  threads=2 iters=200000 ws=100 slots=65536
+
+  cross128 r0:
+    HZ5 LargeFront-L1  51.10M ops/s
+    tcmalloc           63.44M ops/s
+    HZ4                23.41M ops/s
+
+  cross128 r90:
+    HZ5 LargeFront-L1   2.79M ops/s
+    tcmalloc           14.30M ops/s
+    HZ4                21.24M ops/s
+
+  large_only r0:
+    HZ5 LargeFront-L1  74.38M ops/s
+
+  large_only r90:
+    HZ5 LargeFront-L1   6.37M ops/s
+
+focused attribution smoke, separate HZ5_PRELOAD_STATS=1 run:
+  cross128 r0 short:
+    malloc_hz5=10049
+    malloc_real=0
+    malloc_fail=0
+    free_real=0
+    free_unknown_real=0
+    track_insert_fail=0
+
+  large_only r90 short:
+    malloc_hz5=10049
+    malloc_real=0
+    malloc_fail=0
+    free_real=0
+    free_unknown_real=0
+    track_insert_fail=0
+
+interpretation:
+  LargeFront-L1 fixes the cross128 wrapped/fallback hole for local traffic.
+  Remote-heavy cross128 remains weak versus HZ4/tcmalloc because L1 uses global
+  recycle rather than an owner-inbox or SPSC/batched remote path.
+
+next:
+  1. Commit L1 docs + implementation.
+  2. Add LargeFront rows to a compact HZ5 comparison runner or run focused
+     repeat-5 cross128/large_only matrix.
+  3. If remote-heavy remains the target, implement LargeFront owner-inbox or
+     remote batch instead of tuning local path.
+```
+
+LargeFront-L1 focused repeat-3 comparison:
+
+```text
+bench:
+  hakmem bench_random_mixed_mt_remote_malloc
+  threads=2 iters=200000 ws=100 slots=65536
+  HZ5_PRELOAD_STATS unset
+
+median ops/s:
+  cross128 r0:
+    tcmalloc  80.22M
+    HZ5       63.45M
+    HZ4       30.79M
+
+  cross128 r90:
+    HZ4       21.91M
+    tcmalloc  14.86M
+    HZ5        3.20M
+
+  large_only r0:
+    tcmalloc 104.12M
+    HZ4       94.63M
+    HZ5       81.93M
+
+  large_only r90:
+    tcmalloc  19.10M
+    HZ4        6.56M
+    HZ5        4.30M
+
+interpretation:
+  local retained-span LargeFront is already in the right order of magnitude.
+  remote-heavy large traffic is the next clear weakness.
+  The likely next design is not more local tuning; it is LargeFront remote
+  batching/owner-inbox or SPSC-style transfer to avoid global-recycle contention
+  and cross-thread cacheline churn.
+```
+
 MidFront source-return cleanup:
 
 ```text

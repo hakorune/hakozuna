@@ -57,6 +57,8 @@ LINUX_MIDFRONT_DRAIN_MASK_HIT_STOP=0
 LINUX_MIDFRONT_DRAIN_TAKE_FIRST=0
 LINUX_MIDFRONT_DRAIN_EMPTY_GATED=0
 LINUX_MIDFRONT_REMOTE_GLOBAL_RECYCLE=0
+LINUX_LARGEFRONT_L1=0
+LINUX_LARGEFRONT_OWNER_FAST_STATE=0
 HZ5_STANDALONE_EXACT_ONLY=1
 
 usage() {
@@ -143,6 +145,11 @@ Options:
                      an acquire load observes an empty inbox
   --linux-midfront-remote-global-recycle
                      candidate only: recycle MidFront remote frees through global class stacks
+  --linux-largefront-l1
+                     enable Linux LargeFront-L1 ordinary malloc >64K..1M front-end;
+                     implies SmallFront, MidFront, preload full, and exact-only off
+  --linux-largefront-owner-fast-state
+                     candidate only: LargeFront owner-local load/store state transition
   --linux-p11-speed-core
                      diagnostic only: compile the legacy P2 run/tcache path with HZ5_P11_SPEED_CORE=1
   --linux-p25-bridge-attr
@@ -550,6 +557,23 @@ while [[ $# -gt 0 ]]; do
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
+    --linux-largefront-l1)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDFRONT_M1=1
+      LINUX_LARGEFRONT_L1=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
+    --linux-largefront-owner-fast-state)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDFRONT_M1=1
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_FAST_STATE=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
     --trace-lane)
       TRACE_LANE=1
       shift
@@ -705,6 +729,7 @@ COMMON_FLAGS=(
   -I"${HZ5_DIR}/fallback"
   -I"${HZ5_DIR}/smallfront"
   -I"${HZ5_DIR}/midfront"
+  -I"${HZ5_DIR}/largefront"
 )
 SPEED_LINK_COMPILE_FLAGS=()
 SHARED_LINK_FLAGS=()
@@ -877,6 +902,12 @@ if [[ "$LINUX_MIDFRONT_M1" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_GLOBAL_RECYCLE=1)
   fi
 fi
+if [[ "$LINUX_LARGEFRONT_L1" -eq 1 ]]; then
+  COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_L1=1)
+  if [[ "$LINUX_LARGEFRONT_OWNER_FAST_STATE" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_FAST_STATE=1)
+  fi
+fi
 
 {
   echo "commit=${SOURCE_COMMIT}"
@@ -924,6 +955,8 @@ fi
   echo "linux_midfront_drain_take_first=${LINUX_MIDFRONT_DRAIN_TAKE_FIRST}"
   echo "linux_midfront_drain_empty_gated=${LINUX_MIDFRONT_DRAIN_EMPTY_GATED}"
   echo "linux_midfront_remote_global_recycle=${LINUX_MIDFRONT_REMOTE_GLOBAL_RECYCLE}"
+  echo "linux_largefront_l1=${LINUX_LARGEFRONT_L1}"
+  echo "linux_largefront_owner_fast_state=${LINUX_LARGEFRONT_OWNER_FAST_STATE}"
   echo "standalone_exact_only=${HZ5_STANDALONE_EXACT_ONLY}"
   echo "linux_p11_speed_core=${LINUX_P11_SPEED_CORE}"
   echo "linux_p25_bridge_attr=${LINUX_P25_BRIDGE_ATTR}"
@@ -951,6 +984,7 @@ HZ5_SRCS=(
   "${HZ5_DIR}/route/hz5_route.c"
   "${HZ5_DIR}/smallfront/hz5_smallfront.c"
   "${HZ5_DIR}/midfront/hz5_midfront.c"
+  "${HZ5_DIR}/largefront/hz5_largefront.c"
   "${HZ5_DIR}/wrapper/hz5_wrapper.c"
   "${HZ5_DIR}/lowpage/hz5_lowpage64.c"
   "${HZ5_DIR}/lowpage/hz5_lowpage64_os.c"

@@ -32,6 +32,7 @@ Current paper/appendix-facing HZ5 Linux rows are profile-specific:
 | Small ordinary malloc candidate | `hz5-smallfront-s1` | Linux full-preload route for ordinary malloc <=2KiB |
 | Broad mid ordinary malloc candidate | `hz5-midfront-rb16` | Linux full-preload route for ordinary malloc 4KiB..64KiB, broad baseline/default candidate |
 | Remote-heavy mid ordinary malloc candidate | `hz5-midfront-allgate` | MidFront owner-inbox drain-all plus empty-gated exchange co-lead candidate |
+| Large ordinary malloc candidate | `hz5-largefront-l1` | Linux full-preload route for ordinary malloc >64K..1M, cross128 coverage candidate |
 
 Older Local2P evolution lanes remain selectable diagnostics. Do not report them
 as competing HZ5 profiles unless the result is explicitly an implementation
@@ -75,6 +76,7 @@ small 4K/8K a8192:
 | `midfront_takefirst` | lane | direct-return A/B | diagnostic only |
 | `midfront_maskhitstop` | lane | bounded mask A/B | diagnostic only |
 | `midfront_globalrecycle` | lane | global recycle control | control only |
+| `largefront_l1` | route/lane family | active Linux large front-end candidate | candidate for cross128 coverage |
 | `hz3_fallback` | fallback route | disabled in standalone exact-only | not a HZ5 win |
 | `libc_passthrough` | adapter route | used by preload hybrid misses | not HZ5 |
 
@@ -197,6 +199,59 @@ allgate:
 
 globalrecycle:
   control only after source batching fixed the original failure class
+```
+
+### `largefront_l1`
+
+Claimed domain:
+
+```text
+ordinary malloc/free 65537..1048576 bytes
+normal malloc alignment, 16 bytes
+Linux full preload lane
+```
+
+Path:
+
+```text
+alloc:
+  malloc(>64K..1M)
+  -> round to 128K/256K/512K/1M class
+  -> owner-local retained span
+  -> global retained span
+  -> batched mmap source block on miss
+
+free:
+  ptr -> LargeFront page-map descriptor
+  -> ptr == span->base check
+  -> ACTIVE -> LOCAL_FREE
+  -> owner-local retained list or global recycle
+```
+
+Design source:
+
+```text
+docs/HZ5_LARGEFRONT_L1_DESIGN.md
+```
+
+Reporting lane:
+
+| Lane | Build flags | Role |
+| --- | --- | --- |
+| `hz5-largefront-l1` | `--linux-largefront-l1 --linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | first cross128 coverage candidate |
+
+Current decision:
+
+```text
+L1:
+  retained descriptor spans only
+  no RSS-return claim
+  global recycle for remote frees
+
+deferred:
+  hz3/hz4-style 2MiB page-run split/merge pool
+  epoch release of empty large segments
+  owner-inbox remote large transfer
 ```
 
 Observation hygiene:

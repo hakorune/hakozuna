@@ -64,6 +64,13 @@ midfront/
   descriptor-owned spans
   owner-local TLS span caches
   owner-aware remote inbox
+
+largefront/
+  HZ5-LargeFront-L1
+  Linux ordinary malloc/free 65537..1048576 bytes
+  128K/256K/512K/1M retained span classes
+  descriptor-owned spans with page-map lookup
+  owner-local retained lists and global remote recycle
 ```
 
 Current MidFront lane naming:
@@ -91,12 +98,18 @@ Design source:
   adding more owner-aware front-ends.
 * `docs/HZ5_MIDFRONT_M1_DESIGN.md`: HZ5-native mid allocator front-end plan for
   ordinary 4K..64K malloc traffic.
+* `docs/HZ5_LARGEFRONT_L1_DESIGN.md`: HZ5-native large allocator front-end plan
+  for ordinary >64K malloc traffic. L1 is the cross128 coverage fix, not the
+  final 2MiB split/merge pool.
 
 Do not implement SmallFront by adding per-object wrappers to small objects or
 by depending on the full-preload pointer table for HZ5-owned small frees.
 Do not implement MidFront by routing ordinary malloc directly through the P2
 hot path; P2 may become a slow source/provider after MidFront ownership is
 stable.
+Do not implement LargeFront-L1 by porting the full hz3/hz4 large split/merge
+pool yet. Use MidFront-style descriptor ownership first, then add a page-run
+pool only if broad measurements show RSS or size-mix pressure.
 
 ## Design Notes
 
@@ -110,6 +123,8 @@ stable.
 * `docs/HZ5_OWNER_LIFETIME_O1.md`: Linux owner lifetime and orphan safety plan.
 * `docs/HZ5_MIDFRONT_M1_DESIGN.md`: Linux general allocator front-end plan for
   ordinary 4K..64K malloc traffic.
+* `docs/HZ5_LARGEFRONT_L1_DESIGN.md`: Linux general allocator front-end plan for
+  ordinary >64K malloc traffic.
 * `docs/HZ5_P43I_P43O_ALGO_CONSULT.md`: historical consultation ledger for
   P43i/P43o/P43p/P45. Use it as evidence, not as the current implementation map.
 * `docs/source-map.md`: this file.

@@ -74,6 +74,24 @@ system optional
 
 HZ5 enters this tier only after a general LD_PRELOAD lane exists.
 
+Current Linux general allocator coverage under full preload:
+
+```text
+SmallFront-S1:
+  ordinary malloc <= 2048
+
+MidFront-M1:
+  ordinary malloc 2049..65536
+
+LargeFront-L1:
+  ordinary malloc 65537..1048576
+  first target: hakmem cross128 coverage
+```
+
+LargeFront-L1 is a retained-span coverage lane, not an RSS-return claim. It is
+the first step required before `cross128` can be interpreted as an HZ5 general
+allocator row instead of a wrapped/fallback-path result.
+
 ### HZ5 Preload Hybrid Bridge
 
 `libhakozuna_hz5_preload_hybrid.so` exists only as a diagnostic bridge.
