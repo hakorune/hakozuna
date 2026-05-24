@@ -55,6 +55,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDFRONT_OUTBOX_FLUSH_ON_MISS 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_DIRECT_FREE_STATE
+#define BENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_DIRECT_FREE_STATE 0
+#endif
+
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_MIDFRONT_M1
 
 #define HZ5_MIDFRONT_MAGIC UINT64_C(0x485A354D49444D31)
@@ -626,6 +630,20 @@ static Hz5MidSpan* hz5_midfront_drain_remote_class_budget(Hz5MidTls* tls,
       hz5_midfront_mark_orphan(span);
       continue;
     }
+#if BENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_DIRECT_FREE_STATE
+    if (take_first && !taken &&
+        hz5_midfront_state_cas(span,
+                               (unsigned char)HZ5_MIDSPAN_LOCAL_FREE,
+                               (unsigned char)HZ5_MIDSPAN_ACTIVE)) {
+      span->next = NULL;
+      taken = span;
+      continue;
+    }
+    if (atomic_load_explicit(&span->state, memory_order_acquire) ==
+        (unsigned char)HZ5_MIDSPAN_LOCAL_FREE) {
+      hz5_midfront_local_push(tls, class_index, span);
+    }
+#else
     if (take_first && !taken &&
         hz5_midfront_state_cas(span,
                                (unsigned char)HZ5_MIDSPAN_REMOTE_PENDING,
@@ -639,6 +657,7 @@ static Hz5MidSpan* hz5_midfront_drain_remote_class_budget(Hz5MidTls* tls,
                                (unsigned char)HZ5_MIDSPAN_LOCAL_FREE)) {
       hz5_midfront_local_push(tls, class_index, span);
     }
+#endif
     ++drained;
   }
   if (drained_out) {
@@ -819,11 +838,19 @@ Hz5MidFrontFreeResult hz5_midfront_free(void* ptr) {
     }
     hz5_midfront_global_push(span->class_index, span);
 #else
+#if BENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_DIRECT_FREE_STATE
+    if (!hz5_midfront_state_cas(span,
+                                (unsigned char)HZ5_MIDSPAN_ACTIVE,
+                                (unsigned char)HZ5_MIDSPAN_LOCAL_FREE)) {
+      return HZ5_MIDFRONT_FREE_INVALID;
+    }
+#else
     if (!hz5_midfront_state_cas(span,
                                 (unsigned char)HZ5_MIDSPAN_ACTIVE,
                                 (unsigned char)HZ5_MIDSPAN_REMOTE_PENDING)) {
       return HZ5_MIDFRONT_FREE_INVALID;
     }
+#endif
     hz5_midfront_remote_batch_push(tls, span);
 #endif
   }

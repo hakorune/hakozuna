@@ -534,6 +534,63 @@ mid_only_r90. The next design target should reduce MidFront remote free/drain
 state-machine cost, not add more cross-front drain policy.
 ```
 
+MidFront direct-free-state diagnostic:
+
+```text
+--linux-midfront-remote-direct-free-state
+```
+
+Design:
+
+```text
+default:
+  remote free: ACTIVE -> REMOTE_PENDING
+  owner drain: REMOTE_PENDING -> LOCAL_FREE
+
+direct-free-state:
+  remote free: ACTIVE -> LOCAL_FREE
+  owner drain: verify LOCAL_FREE and push to owner cache
+```
+
+This keeps the first remote-free CAS and still rejects double-free before reuse,
+but removes the owner-drain state CAS from the diagnostic lane.
+
+Focused repeat-5, threads=16/ws=400/r90, stats unset:
+
+```text
+private/raw-results/linux/midfront_directfree_focus_20260525_004106
+
+main:
+  region      29.21M
+  directfree  31.11M
+
+mid_only:
+  region      26.57M
+  directfree  32.11M
+
+cross128:
+  region      21.46M
+  directfree  20.10M
+```
+
+Perf spot-check:
+
+```text
+private/raw-results/linux/directfree_perf_20260525_004141
+
+mid_only_r90:
+  region      25.99M ops/s, 361.3 instructions/op
+  directfree  25.98M ops/s, 362.3 instructions/op
+```
+
+Read:
+
+```text
+direct-free-state is promising enough to keep as candidate-watch for MidFront
+r90 throughput, but the first perf spot-check did not prove an instruction
+reduction. Treat it as an implementation hypothesis, not a confirmed cause.
+```
+
 ## Next Technical Question
 
 Why is HZ4 still much stronger on `cross128 r90`, and which part of HZ5's

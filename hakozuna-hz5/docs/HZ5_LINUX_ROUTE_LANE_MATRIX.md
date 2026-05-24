@@ -86,6 +86,7 @@ small 4K/8K a8192:
 | `midfront_maskhitstop` | lane | bounded mask A/B | diagnostic only |
 | `midfront_globalrecycle` | lane | global recycle control | control only |
 | `midfront_remote_outbox` | lane | MidFront owner/class sender outbox candidate | cross128 candidate only |
+| `midfront_directfree` | lane | remote ACTIVE->LOCAL_FREE state diagnostic | candidate-watch |
 | `largefront_l1` | route/lane family | active Linux large front-end candidate | candidate for cross128 coverage |
 | `largefront_inbox` | lane | active remote-large candidate | candidate for remote-heavy large rows |
 | `largefront_rb16` | lane | remote batch A/B | diagnostic only |
@@ -192,6 +193,7 @@ Reporting lanes:
 | `hz5-midfront-globalrecycle` | `--linux-midfront-owner-fast-state --linux-midfront-remote-global-recycle` | global recycle control |
 | `hz5-midfront-outbox` | `--linux-midfront-owner-fast-state --linux-midfront-remote-outbox --linux-midfront-remote-batch-cap 16` | cross-size remote candidate; not default |
 | `hz5-midfront-outbox-flush` | `--linux-midfront-owner-fast-state --linux-midfront-remote-outbox --linux-midfront-outbox-flush-on-miss` | timely-publish diagnostic; not default |
+| `hz5-midfront-directfree` | `--linux-midfront-owner-fast-state --linux-midfront-remote-direct-free-state --linux-midfront-remote-batch-cap 16` | remote state-machine diagnostic; candidate-watch |
 
 Diagnostic-only lanes:
 
@@ -314,6 +316,12 @@ midfront-remote-outbox:
 midfront-outbox-flush-on-miss:
   publishes matching-class sender outbox slots on local allocation miss
   diagnostic only; it did not become a broad win in short r90 checks
+
+midfront-remote-direct-free-state:
+  remote free transitions ACTIVE -> LOCAL_FREE before publishing to owner inbox
+  owner drain accepts LOCAL_FREE spans and skips REMOTE_PENDING -> LOCAL_FREE CAS
+  diagnostic/candidate-watch; keep separate from default until repeat/perf
+  evidence is stronger
 
 deferred:
   hz3/hz4-style 2MiB page-run split/merge pool

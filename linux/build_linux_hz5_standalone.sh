@@ -59,6 +59,7 @@ LINUX_MIDFRONT_REMOTE_BATCH_CAP=16
 LINUX_MIDFRONT_REMOTE_OUTBOX=0
 LINUX_MIDFRONT_REMOTE_OUTBOX_SLOTS=4
 LINUX_MIDFRONT_OUTBOX_FLUSH_ON_MISS=0
+LINUX_MIDFRONT_REMOTE_DIRECT_FREE_STATE=0
 LINUX_MIDFRONT_DRAIN_ALL_ON_MISS=0
 LINUX_MIDFRONT_DRAIN_MASK_ON_MISS=0
 LINUX_MIDFRONT_DRAIN_MASK_HIT_STOP=0
@@ -174,6 +175,9 @@ Options:
   --linux-midfront-outbox-flush-on-miss
                      candidate only: publish MidFront sender outbox slots on
                      local allocation miss before owner-inbox drain
+  --linux-midfront-remote-direct-free-state
+                     diagnostic only: remote free transitions ACTIVE->LOCAL_FREE
+                     so owner drain can skip REMOTE_PENDING->LOCAL_FREE CAS
   --linux-midfront-drain-all-on-miss
                      candidate only: drain all MidFront owner inbox classes on local miss
   --linux-midfront-drain-mask-on-miss
@@ -700,6 +704,14 @@ while [[ $# -gt 0 ]]; do
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
+    --linux-midfront-remote-direct-free-state)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_REMOTE_DIRECT_FREE_STATE=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
     --linux-midfront-drain-all-on-miss)
       BUILD_PRELOAD_FULL=1
       LINUX_SMALLFRONT_S1=1
@@ -1198,6 +1210,9 @@ if [[ "$LINUX_MIDFRONT_M1" -eq 1 ]]; then
   if [[ "$LINUX_MIDFRONT_OUTBOX_FLUSH_ON_MISS" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDFRONT_OUTBOX_FLUSH_ON_MISS=1)
   fi
+  if [[ "$LINUX_MIDFRONT_REMOTE_DIRECT_FREE_STATE" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_DIRECT_FREE_STATE=1)
+  fi
 fi
 if [[ "$LINUX_LARGEFRONT_L1" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_L1=1)
@@ -1280,6 +1295,7 @@ fi
   echo "linux_midfront_remote_outbox=${LINUX_MIDFRONT_REMOTE_OUTBOX}"
   echo "linux_midfront_remote_outbox_slots=${LINUX_MIDFRONT_REMOTE_OUTBOX_SLOTS}"
   echo "linux_midfront_outbox_flush_on_miss=${LINUX_MIDFRONT_OUTBOX_FLUSH_ON_MISS}"
+  echo "linux_midfront_remote_direct_free_state=${LINUX_MIDFRONT_REMOTE_DIRECT_FREE_STATE}"
   echo "linux_midfront_drain_all_on_miss=${LINUX_MIDFRONT_DRAIN_ALL_ON_MISS}"
   echo "linux_midfront_drain_mask_on_miss=${LINUX_MIDFRONT_DRAIN_MASK_ON_MISS}"
   echo "linux_midfront_drain_mask_hit_stop=${LINUX_MIDFRONT_DRAIN_MASK_HIT_STOP}"

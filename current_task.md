@@ -748,6 +748,69 @@ Do not keep adding cross-front drain policy until the MidFront per-object
 remote path is closer to HZ4.
 ```
 
+MidFront direct-free-state diagnostic:
+
+```text
+--linux-midfront-remote-direct-free-state
+```
+
+Design:
+
+```text
+default:
+  remote free: ACTIVE -> REMOTE_PENDING
+  owner drain: REMOTE_PENDING -> LOCAL_FREE
+
+direct-free-state:
+  remote free: ACTIVE -> LOCAL_FREE
+  owner drain: verify LOCAL_FREE and push to owner cache
+```
+
+Safety read:
+
+```text
+double-free before reuse still fails because the second free does not see
+ACTIVE
+the first remote-free CAS remains
+owner-drain CAS is removed in this diagnostic lane
+```
+
+Focused repeat-5, `threads=16`, `ws=400`, `remote=90`:
+
+```text
+private/raw-results/linux/midfront_directfree_focus_20260525_004106
+
+main:
+  region      29.21M
+  directfree  31.11M
+
+mid_only:
+  region      26.57M
+  directfree  32.11M
+
+cross128:
+  region      21.46M
+  directfree  20.10M
+```
+
+Perf spot-check:
+
+```text
+private/raw-results/linux/directfree_perf_20260525_004141
+
+mid_only_r90:
+  region      25.99M ops/s, 361.3 instructions/op
+  directfree  25.98M ops/s, 362.3 instructions/op
+```
+
+Read:
+
+```text
+direct-free-state is promising for main/mid_only throughput, but not confirmed
+as an instruction-count fix. Keep it as candidate-watch and run broader repeat
+before promoting.
+```
+
 Lane cleanup:
 
 ```text
