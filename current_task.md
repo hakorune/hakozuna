@@ -129,6 +129,7 @@ private/raw-results/linux/midpage_tls_split_r3_20260525_055155
 private/raw-results/linux/midpage_linkonly_broad_r3_20260525_055224
 private/raw-results/linux/midpage_linkonly_verify_r7_20260525_055344
 private/raw-results/linux/midpage_nodeless_r3_20260525_065654
+private/raw-results/linux/midpage_perf_allocfirst_nodeless_20260525_070623
 ```
 
 Current read:
@@ -172,17 +173,29 @@ nodeless:
   remote rows regress; remote drain / partial page handling needs redesign
   before promotion.
 
+perf:
+  nodeless reduces cache misses but increases branches/instructions, especially
+  on r90. The remaining problem is control-flow/state management, not payload
+  cache traffic alone.
+
+stats:
+  nodeless stats-only run shows very high refill/partial churn even on r0.
+  A single current_page[class] is too small for the random mid workload and
+  repeatedly round-trips pages through the partial list.
+
 next:
-  decide whether to refine M3 remote/partial handling or pivot to a smaller
-  local-free optimization.
+  refine M3 only if it reduces partial/refill churn. Candidate directions are
+  a small per-class current-page set or page+bitmask remote/partial packets.
 ```
 
 ## Next Step
 
-Implement MidPageFront-M3 nodeless local page-run cache as a diagnostic lane:
+Refine MidPageFront-M3 only as a diagnostic lane. The first nodeless run did
+not meet promotion criteria.
 
 ```text
 --linux-hz5-general-midpage-region-shadow-nodeless
+--linux-hz5-general-midpage-region-shadow-nodeless-stats
 ```
 
 Design intent:
@@ -192,6 +205,28 @@ Keep HZ4's page/header-owned and owner-aware remote principles.
 Borrow tcmalloc's local run/cache shape.
 Keep HZ5 fail-closed descriptor ownership.
 Do not mutate Windows P43i/P45 or Local2P.
+```
+
+Latest M3 stats:
+
+```text
+private/raw-results/linux/midpage_nodeless_stats_20260525_070957
+
+mid_only_r0:
+  refill=463246
+  refill_partial_hit=461678
+  refill_remote_hit=0
+  refill_new_page=1568
+  partial_push=463165
+  remote_drained=0
+
+mid_only_r90:
+  refill=321442
+  refill_partial_hit=293643
+  refill_remote_hit=8051
+  refill_new_page=19748
+  partial_push=305066
+  remote_drained=525393
 ```
 
 ## Operating Rules

@@ -329,6 +329,7 @@ M3 nodeless diagnostic:
 
 ```text
 private/raw-results/linux/midpage_nodeless_r3_20260525_065654
+private/raw-results/linux/midpage_perf_allocfirst_nodeless_20260525_070623
 ```
 
 Decision:
@@ -361,6 +362,48 @@ cross128_r90:
   allocfirst 12.23M
   nodeless   10.82M
   tcmalloc    7.72M
+```
+
+Perf spot check:
+
+```text
+mid_only_r0:
+  allocfirst 90.71M ops/s, cycles 474.3M, instr 660.1M, branches 136.3M,
+             cache-misses 2.20M
+  nodeless   89.31M ops/s, cycles 455.2M, instr 657.6M, branches 147.3M,
+             cache-misses 1.52M
+  tcmalloc  165.16M ops/s, cycles 394.3M, instr 298.4M, branches 55.9M,
+             cache-misses 2.20M
+
+mid_only_r90:
+  allocfirst 40.97M ops/s, cycles 1.24B, instr 1.07B, branches 242.9M,
+             branch-misses 9.43M
+  nodeless   23.35M ops/s, cycles 1.36B, instr 1.31B, branches 298.5M,
+             branch-misses 14.58M
+  tcmalloc   46.37M ops/s, cycles 1.67B, instr 866.7M, branches 165.0M,
+             branch-misses 15.95M
+```
+
+Interpretation:
+
+```text
+Nodeless reduced cache misses, but did not reduce instructions or branches.
+The next fix should target M3 refill/partial/remote control flow rather than
+only payload cache traffic.
+```
+
+Stats-only follow-up:
+
+```text
+private/raw-results/linux/midpage_nodeless_stats_20260525_070957
+```
+
+Interpretation:
+
+```text
+The nodeless current_page[class] model is too narrow for random mid traffic.
+mid_only_r0 already shows refill=463246 and partial_push=463165, while
+refill_new_page is only 1568. The cost is partial-list churn, not page source.
 ```
 
 ## Next Engineering Target

@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdatomic.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 
 #if !defined(_WIN32)
@@ -48,6 +49,10 @@ void _aligned_free(void* ptr);
 
 #ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_RUN
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_RUN 0
+#endif
+
+#ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_STATS
+#define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_STATS 0
 #endif
 
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M2
@@ -172,6 +177,44 @@ static pthread_mutex_t g_hz5_midpagefront_map_lock =
 static _Atomic(void*) g_hz5_midpagefront_owner_inbox[UINT16_MAX + 1u]
                                                   [HZ5_MIDPAGEFRONT_CLASS_COUNT];
 static _Thread_local Hz5MidPageTls g_hz5_midpagefront_tls;
+static _Atomic uint64_t g_hz5_midpagefront_stat_refill;
+static _Atomic uint64_t g_hz5_midpagefront_stat_refill_partial_hit;
+static _Atomic uint64_t g_hz5_midpagefront_stat_refill_remote_hit;
+static _Atomic uint64_t g_hz5_midpagefront_stat_refill_new_page;
+static _Atomic uint64_t g_hz5_midpagefront_stat_partial_push;
+static _Atomic uint64_t g_hz5_midpagefront_stat_remote_drained;
+
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_STATS
+__attribute__((destructor)) static void hz5_midpagefront_stats_dump(void) {
+  fprintf(stderr,
+          "[HZ5_MIDPAGEFRONT_NODELESS_STATS]"
+          " refill=%llu"
+          " refill_partial_hit=%llu"
+          " refill_remote_hit=%llu"
+          " refill_new_page=%llu"
+          " partial_push=%llu"
+          " remote_drained=%llu\n",
+          (unsigned long long)atomic_load(&g_hz5_midpagefront_stat_refill),
+          (unsigned long long)atomic_load(
+              &g_hz5_midpagefront_stat_refill_partial_hit),
+          (unsigned long long)atomic_load(
+              &g_hz5_midpagefront_stat_refill_remote_hit),
+          (unsigned long long)atomic_load(
+              &g_hz5_midpagefront_stat_refill_new_page),
+          (unsigned long long)atomic_load(
+              &g_hz5_midpagefront_stat_partial_push),
+          (unsigned long long)atomic_load(
+              &g_hz5_midpagefront_stat_remote_drained));
+}
+
+static void hz5_midpagefront_stat_inc(_Atomic uint64_t* counter) {
+  atomic_fetch_add_explicit(counter, 1, memory_order_relaxed);
+}
+#else
+static void hz5_midpagefront_stat_inc(void* counter) {
+  (void)counter;
+}
+#endif
 
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_REGION_ARRAY
 static Hz5MidPageRegion* hz5_midpagefront_lookup_region(uintptr_t region_base);
@@ -454,6 +497,7 @@ static void hz5_midpagefront_nodeless_partial_push(Hz5MidPageTls* tls,
   if (tls->current_page[class_index] == page) {
     return;
   }
+  hz5_midpagefront_stat_inc(&g_hz5_midpagefront_stat_partial_push);
   page->in_partial = 1;
   page->next_partial = tls->partial_pages[class_index];
   tls->partial_pages[class_index] = page;
@@ -669,6 +713,8 @@ static uint32_t hz5_midpagefront_drain_remote_class(Hz5MidPageTls* tls,
                     memory_order_acquire)) {
               hz5_midpagefront_nodeless_publish_free_bit(tls, node->page,
                                                          mask);
+              hz5_midpagefront_stat_inc(
+                  &g_hz5_midpagefront_stat_remote_drained);
               ++drained;
               break;
             }
@@ -1045,17 +1091,27 @@ static int hz5_midpagefront_nodeless_refill_current(Hz5MidPageTls* tls,
     return 0;
   }
 
+  hz5_midpagefront_stat_inc(&g_hz5_midpagefront_stat_refill);
   uint64_t bits = 0;
   Hz5MidPage* page = hz5_midpagefront_nodeless_partial_pop(tls, ci, &bits);
+  if (page) {
+    hz5_midpagefront_stat_inc(
+        &g_hz5_midpagefront_stat_refill_partial_hit);
+  }
   if (!page) {
     (void)hz5_midpagefront_drain_remote_class(tls, ci);
     page = hz5_midpagefront_nodeless_partial_pop(tls, ci, &bits);
+    if (page) {
+      hz5_midpagefront_stat_inc(
+          &g_hz5_midpagefront_stat_refill_remote_hit);
+    }
   }
   if (!page) {
     page = hz5_midpagefront_new_page(tls, ci);
     if (!page) {
       return 0;
     }
+    hz5_midpagefront_stat_inc(&g_hz5_midpagefront_stat_refill_new_page);
     bits = atomic_load_explicit(&page->free_bits, memory_order_acquire);
     bits &= hz5_midpagefront_slot_count_mask(page->slot_count);
   }

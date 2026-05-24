@@ -244,3 +244,61 @@ mid_only_r0 gain, but it does not reach the 90M minimum keep line and remote
 rows regress. The remaining issue is likely remote drain / partial-page
 management and local-free validation cost, not just node->page removal.
 ```
+
+Perf follow-up:
+
+```text
+private/raw-results/linux/midpage_perf_allocfirst_nodeless_20260525_070623
+```
+
+Read:
+
+```text
+Nodeless reduces cache misses but increases branches/instructions. The r90
+regression is control-flow/state-management driven. M3.2 should simplify
+partial/refill/remote drain rather than only removing object payload metadata.
+```
+
+Stats follow-up:
+
+```text
+private/raw-results/linux/midpage_nodeless_stats_20260525_070957
+```
+
+Key counters:
+
+```text
+mid_only_r0:
+  refill=463246
+  refill_partial_hit=461678
+  refill_remote_hit=0
+  refill_new_page=1568
+  partial_push=463165
+  remote_drained=0
+
+mid_only_r90:
+  refill=321442
+  refill_partial_hit=293643
+  refill_remote_hit=8051
+  refill_new_page=19748
+  partial_push=305066
+  remote_drained=525393
+
+main_r90:
+  refill=166361
+  refill_partial_hit=150640
+  refill_remote_hit=8982
+  refill_new_page=6739
+  partial_push=160641
+  remote_drained=252602
+```
+
+Interpretation:
+
+```text
+The first nodeless design is not short on pages. It is churning between a
+single current_page[class] and the partial list. Even r0 has one refill/partial
+cycle for a large fraction of operations. M3.2 should not just tune remote
+drain; it needs a wider local page-run cache or a different partial
+representation.
+```

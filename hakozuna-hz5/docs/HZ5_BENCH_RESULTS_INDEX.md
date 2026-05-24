@@ -581,6 +581,42 @@ cross128_r90:
   tcmalloc    7.72M
 ```
 
+### `midpage_perf_allocfirst_nodeless_20260525_070623`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_perf_allocfirst_nodeless_20260525_070623
+```
+
+Purpose:
+
+```text
+Perf spot check for allocfirst, nodeless, and tcmalloc on mid_only r0/r90.
+```
+
+Decision:
+
+```text
+Nodeless reduces cache misses but increases branch/control-flow pressure,
+especially on remote-heavy r90. Payload linked-list traffic is not the only
+bottleneck.
+```
+
+Key counters:
+
+```text
+mid_only_r0:
+  allocfirst 90.71M ops/s, instr 660.1M, branches 136.3M, cache-misses 2.20M
+  nodeless   89.31M ops/s, instr 657.6M, branches 147.3M, cache-misses 1.52M
+  tcmalloc  165.16M ops/s, instr 298.4M, branches  55.9M, cache-misses 2.20M
+
+mid_only_r90:
+  allocfirst 40.97M ops/s, instr 1.07B, branches 242.9M, branch-misses  9.43M
+  nodeless   23.35M ops/s, instr 1.31B, branches 298.5M, branch-misses 14.58M
+  tcmalloc   46.37M ops/s, instr 866.7M, branches 165.0M, branch-misses 15.95M
+```
+
 ## MidPageFront-M2
 
 ### `midpage_region_broad_r5_20260525_031852`
@@ -634,6 +670,29 @@ Decision:
 ```text
 frontfirst is diagnostic only.
 It helps mid_only_r90 but regresses main/cross128/guard.
+```
+
+### `midpage_nodeless_stats_20260525_070957`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_nodeless_stats_20260525_070957
+```
+
+Purpose:
+
+```text
+Stats-only observation for MidPageFront-M3 nodeless. This build enables
+BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_STATS and is not a speed lane.
+```
+
+Decision:
+
+```text
+M3 nodeless is bottlenecked by partial/refill churn. mid_only_r0 has
+refill=463246 and partial_push=463165 with only refill_new_page=1568, so the
+single current_page[class] design is too narrow.
 ```
 
 ## Older Results
