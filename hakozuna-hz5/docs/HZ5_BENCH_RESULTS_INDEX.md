@@ -1070,6 +1070,57 @@ m4packet:    malloc_hz5=10049 malloc_real=0 free_hz5=10057 free_real=0 track_ins
 crossdrain:  malloc_hz5=10049 malloc_real=0 free_hz5=10057 free_real=0 track_insert_fail=0
 ```
 
+### `midpage_m4packet_freefirst_smoke_20260525_085727`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_m4packet_freefirst_smoke_20260525_085727
+```
+
+Purpose:
+
+```text
+Focused RUNS=3 A/B for MidPageFront-first preload free dispatch on top of
+M4packet. Performance runs keep HZ5_PRELOAD_STATS unset.
+```
+
+Decision:
+
+```text
+Keep as an incremental candidate. Freefirst improves main/mid_only r0 and
+slightly improves main/cross128 r90 without changing allocator ownership
+metadata. It does not close the local-r0 tcmalloc gap.
+```
+
+Key rows:
+
+```text
+main r0:
+  m4packet 33.09M, freefirst 36.33M, tcmalloc 117.42M
+
+mid_only r0:
+  m4packet 35.33M, freefirst 37.66M, tcmalloc 102.98M
+
+cross128 r90:
+  m4packet  6.30M, freefirst  6.76M, tcmalloc 10.83M
+```
+
+### `midpage_m4packet_freefirst_attrib_20260525_085745`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_m4packet_freefirst_attrib_20260525_085745
+```
+
+Result:
+
+```text
+m4packet:   malloc_hz5=10049 malloc_real=0 free_hz5=10057 free_real=0 track_insert_fail=0
+freefirst:  malloc_hz5=10049 malloc_real=0 free_hz5=10057 free_real=0 track_insert_fail=0
+```
+
 ## Older Results
 
 The full chronological result log remains in:

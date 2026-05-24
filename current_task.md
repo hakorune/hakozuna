@@ -513,6 +513,51 @@ traffic. Keep m4packet as the better current candidate and treat cross-drain as
 a no-promote lane.
 ```
 
+M4packet free-dispatch A/B:
+
+```text
+private/raw-results/linux/midpage_m4packet_freefirst_smoke_20260525_085727
+private/raw-results/linux/midpage_m4packet_freefirst_attrib_20260525_085745
+```
+
+Result:
+
+```text
+main r0:
+  m4packet   33.09M
+  freefirst  36.33M
+  tcmalloc  117.42M
+
+mid_only r0:
+  m4packet   35.33M
+  freefirst  37.66M
+  tcmalloc  102.98M
+
+cross128 r0:
+  m4packet   19.24M
+  freefirst  19.60M
+  tcmalloc   60.62M
+
+main r90:
+  m4packet   11.50M
+  freefirst  11.73M
+  tcmalloc   10.50M
+
+cross128 r90:
+  m4packet    6.30M
+  freefirst   6.76M
+  tcmalloc   10.83M
+```
+
+Decision:
+
+```text
+MidPageFront-first free dispatch is a cleaner candidate than cross-drain. It
+improves local r0 and slightly improves main/cross128 r90 without attribution
+regression. It still leaves a large tcmalloc local-r0 gap, so this is an
+incremental lane, not the final answer.
+```
+
 Latest M3 stats:
 
 ```text

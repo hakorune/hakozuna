@@ -231,6 +231,54 @@ cross128 r50/r90. The result says the remaining cross128 gap is not solved by
 draining MidPage remote packets from every other-front miss.
 ```
 
+### M4b free-dispatch lane
+
+```text
+private/raw-results/linux/midpage_m4packet_freefirst_smoke_20260525_085727
+private/raw-results/linux/midpage_m4packet_freefirst_attrib_20260525_085745
+```
+
+Implementation:
+
+```text
+BENCHLAB_HZ5_PRELOAD_FREE_MIDPAGE_FIRST=1
+This keeps the M4packet allocator data structure unchanged and only moves
+MidPageFront earlier in preload free dispatch. It avoids extra remote-drain
+work on other-front misses.
+```
+
+Result:
+
+```text
+main r0:
+  m4packet   33.09M
+  freefirst  36.33M
+  tcmalloc  117.42M
+
+mid_only r0:
+  m4packet   35.33M
+  freefirst  37.66M
+  tcmalloc  102.98M
+
+main r90:
+  m4packet   11.50M
+  freefirst  11.73M
+  tcmalloc   10.50M
+
+cross128 r90:
+  m4packet    6.30M
+  freefirst   6.76M
+  tcmalloc   10.83M
+```
+
+Decision:
+
+```text
+Keep as an incremental candidate. It is not a tcmalloc local-r0 answer, but it
+is cleaner than cross-drain and gives broad small gains without changing
+descriptor ownership semantics.
+```
+
 ## No-Go
 
 ```text

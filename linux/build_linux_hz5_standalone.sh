@@ -225,6 +225,9 @@ Options:
   --linux-hz5-general-midpage-region-shadow-m4packet
                      diagnostic preset: m4mag plus descriptor page-packet
                      remote handoff
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst
+                     diagnostic preset: m4packet plus MidPageFront-first
+                     preload free dispatch
   --linux-hz5-general-midpage-region-shadow-m4packet-crossdrain
                      diagnostic preset: m4packet plus low-cost MidPageFront
                      owner pending mask drained from other front-end misses
@@ -484,6 +487,11 @@ enable_midpage_m4mag_base() {
 enable_midpage_m4packet_base() {
   enable_midpage_m4mag_base
   LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET=1
+}
+
+enable_midpage_m4packet_freefirst_base() {
+  enable_midpage_m4packet_base
+  PRELOAD_FREE_MIDPAGE_FIRST=1
 }
 
 enable_midpage_m4packet_crossdrain_base() {
@@ -925,6 +933,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --linux-hz5-general-midpage-region-shadow-m4packet)
       enable_midpage_m4packet_base
+      shift
+      ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst)
+      enable_midpage_m4packet_freefirst_base
       shift
       ;;
     --linux-hz5-general-midpage-region-shadow-m4packet-crossdrain)
