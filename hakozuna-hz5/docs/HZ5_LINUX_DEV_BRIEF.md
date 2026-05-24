@@ -790,6 +790,28 @@ Test an HZ5 split:
   LargeFront lower classes handle 8192/16384/32768/65536
 ```
 
+Route split was implemented and rejected:
+
+```text
+--linux-hz5-general-routesplit
+
+main_r90:
+  region      23.69M
+  routesplit   8.73M
+
+mid_only_r90:
+  region      27.01M
+  routesplit   8.74M
+```
+
+Updated read:
+
+```text
+LargeFront lower classes are not a HZ4-large substitute.
+The next serious design would need a new lighter page/header-owned mid-sized
+front, not more reshuffling between current MidFront and current LargeFront.
+```
+
 ## Next Technical Question
 
 Why is HZ4 still much stronger on `cross128 r90`, and which part of HZ5's

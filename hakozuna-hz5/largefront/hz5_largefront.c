@@ -42,6 +42,10 @@
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_MAP 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_LOWER_CLASSES
+#define BENCHLAB_HZ5_LINUX_LARGEFRONT_LOWER_CLASSES 0
+#endif
+
 #ifndef HZ5_LARGEFRONT_REMOTE_BATCH_CAP
 #define HZ5_LARGEFRONT_REMOTE_BATCH_CAP 16u
 #endif
@@ -50,7 +54,11 @@
 
 #define HZ5_LARGEFRONT_MAGIC UINT64_C(0x485A354C41524731)
 #define HZ5_LARGEFRONT_PAGE_SIZE ((size_t)4096)
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_LOWER_CLASSES
+#define HZ5_LARGEFRONT_CLASS_COUNT 8u
+#else
 #define HZ5_LARGEFRONT_CLASS_COUNT 4u
+#endif
 
 #ifndef HZ5_LARGEFRONT_MAP_BITS
 #define HZ5_LARGEFRONT_MAP_BITS 22u
@@ -137,6 +145,9 @@ typedef struct Hz5LargeRawNode {
 } Hz5LargeRawNode;
 
 static const uint32_t g_hz5_largefront_classes[HZ5_LARGEFRONT_CLASS_COUNT] = {
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_LOWER_CLASSES
+    8192u, 16384u, 32768u, 65536u,
+#endif
     131072u, 262144u, 524288u, 1048576u};
 
 static const Hz5OwnerToken k_hz5_largefront_no_owner = {0, 0};
@@ -183,9 +194,15 @@ static uint32_t hz5_largefront_class_bytes(uint32_t class_index) {
 }
 
 static int hz5_largefront_class_index(size_t size) {
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_LOWER_CLASSES
+  if (size <= 4096u || size > 1048576u) {
+    return -1;
+  }
+#else
   if (size <= 65536u || size > 1048576u) {
     return -1;
   }
+#endif
   for (uint32_t i = 0; i < HZ5_LARGEFRONT_CLASS_COUNT; ++i) {
     if (size <= g_hz5_largefront_classes[i]) {
       return (int)i;

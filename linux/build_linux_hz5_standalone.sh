@@ -56,6 +56,7 @@ LINUX_SMALLFRONT_DRAIN_EMPTY_GATED=0
 LINUX_SMALLFRONT_REMOTE_OUTBOX=0
 LINUX_MIDFRONT_M1=0
 LINUX_MIDFRONT_OWNER_FAST_STATE=0
+LINUX_MIDFRONT_MAX_BYTES=65536
 LINUX_MIDFRONT_REMOTE_BATCH_CAP=16
 LINUX_MIDFRONT_REMOTE_OUTBOX=0
 LINUX_MIDFRONT_REMOTE_OUTBOX_SLOTS=4
@@ -80,6 +81,7 @@ LINUX_LARGEFRONT_DRAIN_TAKE_FIRST=0
 LINUX_LARGEFRONT_DRAIN_EMPTY_GATED=0
 LINUX_LARGEFRONT_MAP_BASE_ONLY=0
 LINUX_LARGEFRONT_REGION_MAP=0
+LINUX_LARGEFRONT_LOWER_CLASSES=0
 LINUX_LARGEFRONT_REMOTE_BATCH_CAP=16
 HZ5_STANDALONE_EXACT_ONLY=1
 
@@ -167,6 +169,9 @@ Options:
   --linux-hz5-general-midrbuf
                      candidate preset: general-region-outbox plus HZ4-style
                      MidFront sender rbuf grouping
+  --linux-hz5-general-routesplit
+                     candidate preset: general-region-outbox but MidFront only
+                     handles <=4096 and LargeFront handles >4096
   --linux-hz5-general-midoutbox
                      candidate preset: general-region-outbox plus MidFront
                      owner/class sender outbox
@@ -183,6 +188,8 @@ Options:
                      enable Linux MidFront-M1 ordinary malloc 4K..64K front-end
   --linux-midfront-owner-fast-state
                      candidate only: MidFront owner-local load/store state transition
+  --linux-midfront-max-bytes N
+                     cap MidFront claimed ordinary malloc size (default: 65536)
   --linux-midfront-remote-batch-cap N
                      MidFront remote-free sender batch flush threshold (default: 16)
   --linux-midfront-remote-outbox
@@ -251,6 +258,8 @@ Options:
                      candidate only: register LargeFront source regions instead
                      of every covered 4K page; keeps interior invalid-free
                      attribution without per-page insertion
+  --linux-largefront-lower-classes
+                     candidate only: add 8K/16K/32K/64K classes to LargeFront
   --linux-p11-speed-core
                      diagnostic only: compile the legacy P2 run/tcache path with HZ5_P11_SPEED_CORE=1
   --linux-p25-bridge-attr
@@ -695,6 +704,23 @@ while [[ $# -gt 0 ]]; do
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
+    --linux-hz5-general-routesplit)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_SMALLFRONT_REMOTE_OUTBOX=1
+      LINUX_SMALLFRONT_REMOTE_BATCH_CAP=8
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_OWNER_FAST_STATE=1
+      LINUX_MIDFRONT_REMOTE_BATCH_CAP=16
+      LINUX_MIDFRONT_MAX_BYTES=4096
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      LINUX_LARGEFRONT_OWNER_FAST_STATE=1
+      LINUX_LARGEFRONT_REGION_MAP=1
+      LINUX_LARGEFRONT_LOWER_CLASSES=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
     --linux-hz5-general-midoutbox)
       BUILD_PRELOAD_FULL=1
       LINUX_SMALLFRONT_S1=1
@@ -772,6 +798,11 @@ while [[ $# -gt 0 ]]; do
       LINUX_MIDFRONT_OWNER_FAST_STATE=1
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
+      ;;
+    --linux-midfront-max-bytes)
+      require_value "$@"
+      LINUX_MIDFRONT_MAX_BYTES="$2"
+      shift 2
       ;;
     --linux-midfront-remote-batch-cap)
       require_value "$@"
@@ -973,6 +1004,15 @@ while [[ $# -gt 0 ]]; do
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
+    --linux-largefront-lower-classes)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDFRONT_M1=1
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_LOWER_CLASSES=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
     --trace-lane)
       TRACE_LANE=1
       shift
@@ -1013,6 +1053,12 @@ fi
 
 if [[ "$LINUX_MIDFRONT_REMOTE_BATCH_CAP" -lt 1 ]]; then
   echo "midfront remote batch cap must be >= 1" >&2
+  exit 1
+fi
+
+if [[ "$LINUX_MIDFRONT_MAX_BYTES" -lt 2049 || \
+      "$LINUX_MIDFRONT_MAX_BYTES" -gt 65536 ]]; then
+  echo "midfront max bytes must be in 2049..65536" >&2
   exit 1
 fi
 
@@ -1333,6 +1379,7 @@ fi
 if [[ "$LINUX_MIDFRONT_M1" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDFRONT_M1=1)
   COMMON_FLAGS+=(
+    -DHZ5_MIDFRONT_MAX_BYTES="${LINUX_MIDFRONT_MAX_BYTES}u"
     -DHZ5_MIDFRONT_REMOTE_BATCH_CAP="${LINUX_MIDFRONT_REMOTE_BATCH_CAP}u"
   )
   if [[ "$LINUX_MIDFRONT_OWNER_FAST_STATE" -eq 1 ]]; then
@@ -1413,6 +1460,9 @@ if [[ "$LINUX_LARGEFRONT_L1" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX=1)
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_MAP=1)
   fi
+  if [[ "$LINUX_LARGEFRONT_LOWER_CLASSES" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_LOWER_CLASSES=1)
+  fi
 fi
 
 {
@@ -1460,6 +1510,7 @@ fi
   echo "linux_smallfront_remote_outbox=${LINUX_SMALLFRONT_REMOTE_OUTBOX}"
   echo "linux_midfront_m1=${LINUX_MIDFRONT_M1}"
   echo "linux_midfront_owner_fast_state=${LINUX_MIDFRONT_OWNER_FAST_STATE}"
+  echo "linux_midfront_max_bytes=${LINUX_MIDFRONT_MAX_BYTES}"
   echo "linux_midfront_remote_batch_cap=${LINUX_MIDFRONT_REMOTE_BATCH_CAP}"
   echo "linux_midfront_remote_outbox=${LINUX_MIDFRONT_REMOTE_OUTBOX}"
   echo "linux_midfront_remote_outbox_slots=${LINUX_MIDFRONT_REMOTE_OUTBOX_SLOTS}"
@@ -1484,6 +1535,7 @@ fi
   echo "linux_largefront_drain_empty_gated=${LINUX_LARGEFRONT_DRAIN_EMPTY_GATED}"
   echo "linux_largefront_map_base_only=${LINUX_LARGEFRONT_MAP_BASE_ONLY}"
   echo "linux_largefront_region_map=${LINUX_LARGEFRONT_REGION_MAP}"
+  echo "linux_largefront_lower_classes=${LINUX_LARGEFRONT_LOWER_CLASSES}"
   echo "linux_largefront_remote_batch_cap=${LINUX_LARGEFRONT_REMOTE_BATCH_CAP}"
   echo "standalone_exact_only=${HZ5_STANDALONE_EXACT_ONLY}"
   echo "linux_p11_speed_core=${LINUX_P11_SPEED_CORE}"

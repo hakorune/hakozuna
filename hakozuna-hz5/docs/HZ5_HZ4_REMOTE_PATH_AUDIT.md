@@ -341,5 +341,75 @@ HZ5 should test:
   LargeFront lower classes for 8192/16384/32768/65536
 ```
 
+## Route Split Diagnostic
+
+Added:
+
+```text
+--linux-hz5-general-routesplit
+--linux-midfront-max-bytes N
+--linux-largefront-lower-classes
+```
+
+Candidate shape:
+
+```text
+SmallFront:
+  <=2048
+
+MidFront:
+  2049..4096
+
+LargeFront:
+  4097..1MiB
+  classes: 8K/16K/32K/64K/128K/256K/512K/1M
+```
+
+Build/smoke:
+
+```text
+/bin/true under full preload: OK
+LargeFront smoke: OK
+```
+
+Short smoke, `threads=16`, `ws=400`, `remote=90`, repeat-3:
+
+```text
+private/raw-results/linux/routesplit_smoke_20260525_013809
+
+main:
+  region      23.69M
+  routesplit   8.73M
+
+mid_only:
+  region      27.01M
+  routesplit   8.74M
+
+cross128:
+  region      18.47M
+  routesplit  13.71M
+
+large_only:
+  region       5.91M
+  routesplit   5.25M
+```
+
+Decision:
+
+```text
+routesplit is no-go.
+LargeFront lower classes are not a cheap replacement for HZ4 large/cache
+behavior. Moving 8K..64K out of MidFront into current LargeFront L1 makes the
+hot path much worse.
+```
+
+Updated read:
+
+```text
+HZ4's advantage is not simply the route boundary.
+The missing piece is a lighter page/header-owned front for mid-sized objects,
+not current MidFront one-object spans and not current LargeFront lower classes.
+```
+
 Do not copy HZ4 wholesale. HZ5 should keep descriptor ownership, fail-closed
 invalid frees, and Linux/Windows lane separation.

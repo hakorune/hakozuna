@@ -6425,3 +6425,82 @@ Implement candidate:
   MidFront <= 4096
   LargeFront lower classes 8192/16384/32768/65536
 ```
+
+### Route Split Diagnostic
+
+Implemented:
+
+```bash
+./linux/build_linux_hz5_standalone.sh \
+  --linux-hz5-general-routesplit \
+  --out-dir hakozuna-hz5/out/linux/x86_64-hz5-general-routesplit
+```
+
+Added controls:
+
+```text
+--linux-midfront-max-bytes N
+--linux-largefront-lower-classes
+```
+
+Candidate shape:
+
+```text
+SmallFront:
+  <=2048
+
+MidFront:
+  2049..4096
+
+LargeFront:
+  4097..1MiB
+  8K/16K/32K/64K/128K/256K/512K/1M classes
+```
+
+Build/smoke:
+
+```text
+/bin/true under full preload OK
+LargeFront smoke OK
+```
+
+Short smoke, `threads=16`, `ws=400`, `remote=90`, repeat-3:
+
+```text
+private/raw-results/linux/routesplit_smoke_20260525_013809
+
+main:
+  region      23.69M
+  routesplit   8.73M
+
+mid_only:
+  region      27.01M
+  routesplit   8.74M
+
+cross128:
+  region      18.47M
+  routesplit  13.71M
+
+large_only:
+  region       5.91M
+  routesplit   5.25M
+```
+
+Decision:
+
+```text
+routesplit is no-go.
+Current LargeFront lower classes are too heavy for 8K..64K. HZ4's route split
+cannot be copied by simply moving objects from MidFront to LargeFront.
+```
+
+Updated next read:
+
+```text
+The HZ4 gap needs a new lighter page/header-owned mid-sized front if we keep
+attacking remote-heavy general malloc. Current low-risk knobs are exhausted:
+  midfirst no-go
+  midcache diagnostic-only
+  midrbuf no-go
+  routesplit no-go
+```

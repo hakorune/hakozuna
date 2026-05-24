@@ -99,6 +99,10 @@ void _aligned_free(void* ptr);
 #define HZ5_MIDFRONT_REMOTE_RBUF_FLUSH_THRESHOLD 96u
 #endif
 
+#ifndef HZ5_MIDFRONT_MAX_BYTES
+#define HZ5_MIDFRONT_MAX_BYTES 65536u
+#endif
+
 #ifndef HZ5_MIDFRONT_SOURCE_BATCH_COUNT
 #define HZ5_MIDFRONT_SOURCE_BATCH_COUNT 64u
 #endif
@@ -207,7 +211,7 @@ static int hz5_midfront_class_valid(uint32_t class_index) {
 }
 
 static int hz5_midfront_class_index(size_t size) {
-  if (size <= 2048u || size > 65536u) {
+  if (size <= 2048u || size > HZ5_MIDFRONT_MAX_BYTES) {
     return -1;
   }
   for (uint32_t i = 0; i < HZ5_MIDFRONT_CLASS_COUNT; ++i) {

@@ -95,6 +95,7 @@ small 4K/8K a8192:
 | `largefront_rb16` | lane | remote batch A/B | diagnostic only |
 | `largefront_takefirst` | lane | direct-return A/B | diagnostic only |
 | `largefront_region_map` | lane | LargeFront-L2 source-region lookup candidate | candidate after broader matrix |
+| `largefront_lower_classes` | lane | 8K..64K LargeFront route-split diagnostic | diagnostic only |
 | `smallfront_remote_outbox` | lane | SmallFront owner/class sender outbox candidate | diagnostic/candidate only |
 | `general_region_outbox` | preset lane | combined general allocator candidate | not a default until broad matrix passes |
 | `hz3_fallback` | fallback route | disabled in standalone exact-only | not a HZ5 win |
@@ -200,6 +201,7 @@ Reporting lanes:
 | `hz5-midfront-directfree` | `--linux-midfront-owner-fast-state --linux-midfront-remote-direct-free-state --linux-midfront-remote-batch-cap 16` | remote state-machine diagnostic; candidate-watch |
 | `hz5-general-midfirst` | `--linux-hz5-general-midfirst` | preload dispatch-cost diagnostic; not default |
 | `hz5-general-midcache` | `--linux-hz5-general-midcache` | MidFront lookup-cache diagnostic; not default |
+| `hz5-general-routesplit` | `--linux-hz5-general-routesplit` | Mid<=4K, Large>4K route split diagnostic; not default |
 
 Diagnostic-only lanes:
 
@@ -245,6 +247,10 @@ midrbuf:
   diagnostic only. It groups sender-side remote frees by owner/class on flush.
   It gave selected cross-size signals but repeat-5 regressed main_r90 and
   mid_only_r90, so it is not a combined default.
+
+routesplit:
+  diagnostic only. It moves 8K..64K into lower LargeFront classes and caps
+  MidFront at 4096. First smoke regressed main/mid_only heavily.
 ```
 
 ### `largefront_l1`
