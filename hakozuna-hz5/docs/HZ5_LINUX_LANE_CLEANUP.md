@@ -55,6 +55,10 @@ shorter than the historical benchmark logs.
 --linux-hz5-general-midpage-region-shadow-nodeless-ptrcache-stats
   Observation-only builds. Never use for speed medians.
 
+--linux-hz5-general-midpage-region-shadow-localunsafe
+  Unsafe r0 upper-bound diagnostic. Skips owner-local MidPage bitmap state
+  checks. Never use for safety, remote, or paper rows.
+
 --linux-ownerhub-r1
 --linux-ownerhub-r2
 --linux-ownerhub-r3

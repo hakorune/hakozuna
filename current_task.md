@@ -63,6 +63,92 @@ bash -n linux/build_linux_hz5_standalone.sh
 short MidPage malloc smoke OK
 ```
 
+## Design Check Before Pro Consultation
+
+Raw output:
+
+```text
+private/raw-results/linux/midpage_design_check_20260525_073659
+```
+
+Size histogram:
+
+```text
+mid_only allocation distribution:
+  2304..3072      21,190
+  3073..4096      21,396
+  4097..8192      85,519
+  8193..16384    170,952
+  16385..32768   342,543
+
+main allocation distribution:
+  <=2048          20,042
+  2049..32768   301,179
+  32769..65536  320,399
+
+cross128 allocation distribution:
+  <=2048           9,992
+  2049..32768    150,498
+  32769..65536   160,700
+  >65536         320,430
+```
+
+Unsafe local upper-bound:
+
+```text
+mid_only_r0:
+  allocfirst   72.83M
+  localunsafe  76.79M
+  tcmalloc    147.13M
+```
+
+Read:
+
+```text
+Skipping owner-local MidPage bitmap checks gives only about +5%.
+The tcmalloc gap is not primarily local active/free bitmap validation.
+```
+
+Alloc+free MidPage-first dispatch:
+
+```text
+mid_only_r0:
+  allocfirst      69.02M
+  allocfreefirst  67.02M
+  tcmalloc       139.85M
+
+mid_only_r90:
+  allocfirst      31.50M
+  allocfreefirst  26.17M
+  tcmalloc        47.02M
+
+main_r90:
+  allocfirst      25.35M
+  allocfreefirst  29.39M
+  tcmalloc        19.90M
+
+cross128_r90:
+  allocfirst      14.67M
+  allocfreefirst  14.71M
+  tcmalloc         7.80M
+```
+
+Read:
+
+```text
+MidPage-first free dispatch can help main_r90, but it hurts mid_only.
+Dispatch order alone is not the missing tcmalloc-class local design.
+```
+
+Perf note:
+
+```text
+perf record/report is noisy but shows MidPage r0 still paying substantial
+preload ownership dispatch, including smallfront_page_for_ptr, and MidPage
+try_alloc/free. tcmalloc still has much lower instruction/branch footprint in
+perf-stat runs.
+```
+
 ## Read First
 
 ```text

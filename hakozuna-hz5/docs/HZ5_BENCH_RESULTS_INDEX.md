@@ -747,6 +747,46 @@ mid_only_r0 has ptrcache_hit=636934 and refill=1569, while mid_only_r90 still
 has refill=265631 and remote_drained=556792.
 ```
 
+### `midpage_design_check_20260525_073659`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_design_check_20260525_073659
+```
+
+Purpose:
+
+```text
+Design-check packet before the next MidPageFront architecture decision:
+size-class histogram, unsafe local bitmap-check upper bound, alloc+free
+MidPage-first dispatch A/B, and perf record spot checks.
+```
+
+Decision:
+
+```text
+The tcmalloc gap is structural. Unsafe local bitmap-check removal gives only a
+small r0 gain, and alloc+free MidPage-first dispatch helps main_r90 but hurts
+mid_only. The next design should focus on a real front-cache / magazine /
+batch-refill shape rather than smaller state-check or dispatch tweaks.
+```
+
+Key rows:
+
+```text
+mid_only_r0 unsafe upper bound:
+  allocfirst   72.83M
+  localunsafe  76.79M
+  tcmalloc    147.13M
+
+alloc+free MidPage-first:
+  mid_only_r0:   allocfirst 69.02M, allocfreefirst 67.02M, tcmalloc 139.85M
+  mid_only_r90:  allocfirst 31.50M, allocfreefirst 26.17M, tcmalloc  47.02M
+  main_r90:      allocfirst 25.35M, allocfreefirst 29.39M, tcmalloc  19.90M
+  cross128_r90:  allocfirst 14.67M, allocfreefirst 14.71M, tcmalloc   7.80M
+```
+
 ## Older Results
 
 The full chronological result log remains in:

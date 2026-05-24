@@ -59,6 +59,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_PTRCACHE 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_UNSAFE_LOCAL_NOCHECK
+#define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_UNSAFE_LOCAL_NOCHECK 0
+#endif
+
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M2
 
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_RUN && \
@@ -857,6 +861,11 @@ static uint32_t hz5_midpagefront_drain_remote_class(Hz5MidPageTls* tls,
 
 static int hz5_midpagefront_mark_active_local(Hz5MidPage* page,
                                               uint32_t slot) {
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_UNSAFE_LOCAL_NOCHECK
+  (void)page;
+  (void)slot;
+  return 1;
+#else
   uint64_t mask = hz5_midpagefront_slot_mask(slot);
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_RUN
   uint64_t bits = atomic_load_explicit(&page->free_bits,
@@ -905,10 +914,16 @@ static int hz5_midpagefront_mark_active_local(Hz5MidPage* page,
   }
 #endif
 #endif
+#endif
 }
 
 static int hz5_midpagefront_mark_free_local(Hz5MidPage* page,
                                             uint32_t slot) {
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_UNSAFE_LOCAL_NOCHECK
+  (void)page;
+  (void)slot;
+  return 1;
+#else
   uint64_t mask = hz5_midpagefront_slot_mask(slot);
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_RUN
   uint64_t bits = atomic_load_explicit(&page->free_bits,
@@ -954,6 +969,7 @@ static int hz5_midpagefront_mark_free_local(Hz5MidPage* page,
       return 1;
     }
   }
+#endif
 #endif
 #endif
 }
