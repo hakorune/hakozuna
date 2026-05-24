@@ -85,6 +85,7 @@ small 4K/8K a8192:
 | `midfront_takefirst` | lane | direct-return A/B | diagnostic only |
 | `midfront_maskhitstop` | lane | bounded mask A/B | diagnostic only |
 | `midfront_globalrecycle` | lane | global recycle control | control only |
+| `midfront_remote_outbox` | lane | MidFront owner/class sender outbox candidate | cross128 candidate only |
 | `largefront_l1` | route/lane family | active Linux large front-end candidate | candidate for cross128 coverage |
 | `largefront_inbox` | lane | active remote-large candidate | candidate for remote-heavy large rows |
 | `largefront_rb16` | lane | remote batch A/B | diagnostic only |
@@ -189,6 +190,7 @@ Reporting lanes:
 | `hz5-midfront-allgate` | `--linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16 --linux-midfront-drain-all-on-miss --linux-midfront-drain-empty-gated` | mid-heavy remote candidate |
 | `hz5-midfront-drainmask` | `--linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16 --linux-midfront-drain-mask-on-miss` | pending-mask candidate/control |
 | `hz5-midfront-globalrecycle` | `--linux-midfront-owner-fast-state --linux-midfront-remote-global-recycle` | global recycle control |
+| `hz5-midfront-outbox` | `--linux-midfront-owner-fast-state --linux-midfront-remote-outbox --linux-midfront-remote-batch-cap 16` | cross-size remote candidate; not default |
 
 Diagnostic-only lanes:
 
@@ -300,6 +302,12 @@ smallfront-remote-outbox:
   copies HZ4 lcache's multi-outbox idea without changing HZ5 slot-state checks
   modest main/cross improvement in short r90 checks
   candidate only
+
+midfront-remote-outbox:
+  applies the same owner/class sender-outbox idea to MidFront spans
+  useful as a cross128 candidate
+  not a default because main/mid_only r90 can regress when remote frees are
+  retained in sender outbox slots too long
 
 deferred:
   hz3/hz4-style 2MiB page-run split/merge pool
@@ -618,10 +626,12 @@ This is a useful hit-rate diagnostic, but a miss is not an HZ5 allocation.
 | `hz5-midfront-rb16` | `hz5-linux-midfront-rb16` | `--linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | `midfront_m1` | broad MidFront default candidate |
 | `hz5-midfront-allgate` | `hz5-linux-midfront-allgate` | `--linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16 --linux-midfront-drain-all-on-miss --linux-midfront-drain-empty-gated` | `midfront_m1` | remote-heavy MidFront co-lead |
 | `hz5-midfront-drainmask` | `hz5-linux-midfront-drainmask` | `--linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16 --linux-midfront-drain-mask-on-miss` | `midfront_m1` | pending-mask diagnostic/control |
+| `hz5-midfront-outbox` | `hz5-linux-midfront-outbox` | `--linux-midfront-owner-fast-state --linux-midfront-remote-outbox --linux-midfront-remote-batch-cap 16` | `midfront_m1` | cross-size remote candidate; not default |
 | `hz5-largefront-l1` | `hz5-linux-largefront-l1` | `--linux-largefront-l1 --linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | `largefront_l1` | first large ordinary malloc coverage candidate |
 | `hz5-largefront-inbox` | `hz5-linux-largefront-inbox` | `--linux-largefront-owner-inbox --linux-largefront-owner-fast-state --linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | `largefront_l1` | remote-heavy large candidate |
 | `hz5-largefront-region-map` | `hz5-linux-largefront-region-map` | `--linux-largefront-region-map --linux-largefront-owner-fast-state --linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | `largefront_l1` | LargeFront-L2 source-region lookup candidate |
 | `hz5-general-region-outbox` | `hz5-linux-general-region-outbox` | `--linux-hz5-general-region-outbox` | `smallfront_s1 + midfront_m1 + largefront_l1` | current combined general remote-tail candidate preset |
+| `hz5-general-midoutbox` | `hz5-linux-general-midoutbox` | `--linux-hz5-general-midoutbox` | `smallfront_s1 + midfront_m1 + largefront_l1` | cross128 candidate with MidFront sender outbox; not default |
 
 Build selectors for `local2p`, `p25attr`, and `p43` are mutually exclusive.
 Keep that rule. It prevents mixed-route benchmark rows.

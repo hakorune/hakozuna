@@ -545,6 +545,79 @@ owner/class outbox idea for MidFront, or a lower-cost state transition for
 remote frees that preserves fail-closed behavior.
 ```
 
+MidFront remote-outbox candidate:
+
+```text
+--linux-midfront-remote-outbox
+
+Design:
+  sender TLS keeps 8 associative outbox slots
+  each slot is keyed by exact owner token + MidFront class
+  flushed slot publishes one list to the existing owner-slot/class inbox
+  span ownership lookup, ACTIVE->REMOTE_PENDING transition, and fail-closed
+  validation are unchanged
+```
+
+Combined preset:
+
+```text
+--linux-hz5-general-midoutbox
+```
+
+Focused short checks, `threads=16`, `ws=400`, `remote=90`, timeout 15s:
+
+```text
+private/raw-results/linux/midfront_outbox_focus_20260524_223542
+
+cross128:
+  HZ4             43.69M
+  hz5_midoutbox   23.65M
+  hz5_region      21.66M
+  tcmalloc         7.53M
+
+main:
+  HZ4             66.99M
+  tcmalloc        54.20M
+  hz5_region      42.25M
+  hz5_midoutbox   26.65M
+
+large_only:
+  hz5_region      15.06M
+  hz5_midoutbox   14.39M
+  tcmalloc         7.17M
+  HZ4              7.00M
+```
+
+Slots8 follow-up:
+
+```text
+private/raw-results/linux/midfront_outbox_slots8_focus_20260524_223736
+
+cross128:
+  hz5_midoutbox_slots8  26.17M
+  hz5_region            16.13M
+
+main:
+  hz5_region            30.87M
+  hz5_midoutbox_slots8  23.95M
+
+mid_only:
+  hz5_region            37.42M
+  hz5_midoutbox_slots8  31.10M
+```
+
+Read:
+
+```text
+MidFront outbox supports the HZ4-style sender-outbox hypothesis for cross128,
+but it is not a broad default. Main/mid_only regress, likely because returned
+MidFront spans are retained in sender outboxes too long before owner reuse can
+drain them.
+
+Keep as cross128 candidate only. Next likely design is an adaptive/timely
+publish policy, not a larger outbox.
+```
+
 Lane cleanup:
 
 ```text

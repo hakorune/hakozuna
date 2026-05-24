@@ -47,6 +47,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_GLOBAL_RECYCLE 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_OUTBOX
+#define BENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_OUTBOX 0
+#endif
+
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_MIDFRONT_M1
 
 #define HZ5_MIDFRONT_MAGIC UINT64_C(0x485A354D49444D31)
@@ -61,6 +65,10 @@ void _aligned_free(void* ptr);
 
 #ifndef HZ5_MIDFRONT_REMOTE_BATCH_CAP
 #define HZ5_MIDFRONT_REMOTE_BATCH_CAP 16u
+#endif
+
+#ifndef HZ5_MIDFRONT_REMOTE_OUTBOX_SLOTS
+#define HZ5_MIDFRONT_REMOTE_OUTBOX_SLOTS 8u
 #endif
 
 #ifndef HZ5_MIDFRONT_SOURCE_BATCH_COUNT
@@ -95,14 +103,27 @@ typedef struct Hz5MidMapEntry {
   _Atomic(Hz5MidSpan*) span;
 } Hz5MidMapEntry;
 
+typedef struct Hz5MidRemoteOutboxSlot {
+  Hz5OwnerToken owner;
+  uint32_t class_index;
+  uint32_t count;
+  Hz5MidSpan* head;
+  Hz5MidSpan* tail;
+} Hz5MidRemoteOutboxSlot;
+
 typedef struct Hz5MidTls {
   Hz5OwnerToken owner;
   Hz5MidSpan* free_head[HZ5_MIDFRONT_CLASS_COUNT];
+#if BENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_OUTBOX
+  Hz5MidRemoteOutboxSlot remote_outbox[HZ5_MIDFRONT_REMOTE_OUTBOX_SLOTS];
+  uint32_t remote_outbox_victim;
+#else
   Hz5OwnerToken remote_batch_owner;
   uint32_t remote_batch_class;
   uint32_t remote_batch_count;
   Hz5MidSpan* remote_batch_head;
   Hz5MidSpan* remote_batch_tail;
+#endif
 } Hz5MidTls;
 
 typedef struct Hz5MidRawNode {
@@ -424,6 +445,76 @@ static void hz5_midfront_remote_publish_list(Hz5OwnerToken owner,
 #endif
 }
 
+#if BENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_OUTBOX
+static void hz5_midfront_remote_outbox_flush_slot(
+    Hz5MidRemoteOutboxSlot* slot) {
+  if (!slot || slot->count == 0u) {
+    return;
+  }
+
+  hz5_midfront_remote_publish_list(
+      slot->owner, slot->class_index, slot->head, slot->tail);
+  slot->owner = k_hz5_midfront_no_owner;
+  slot->class_index = 0;
+  slot->count = 0;
+  slot->head = NULL;
+  slot->tail = NULL;
+}
+
+static Hz5MidRemoteOutboxSlot* hz5_midfront_remote_outbox_slot(
+    Hz5MidTls* tls,
+    Hz5OwnerToken owner,
+    uint32_t class_index) {
+  Hz5MidRemoteOutboxSlot* empty = NULL;
+  for (uint32_t i = 0; i < HZ5_MIDFRONT_REMOTE_OUTBOX_SLOTS; ++i) {
+    Hz5MidRemoteOutboxSlot* slot = &tls->remote_outbox[i];
+    if (slot->count != 0u && slot->class_index == class_index &&
+        hz5_owner_equal(slot->owner, owner)) {
+      return slot;
+    }
+    if (slot->count == 0u && !empty) {
+      empty = slot;
+    }
+  }
+  if (empty) {
+    return empty;
+  }
+
+  uint32_t victim =
+      tls->remote_outbox_victim++ % HZ5_MIDFRONT_REMOTE_OUTBOX_SLOTS;
+  Hz5MidRemoteOutboxSlot* slot = &tls->remote_outbox[victim];
+  hz5_midfront_remote_outbox_flush_slot(slot);
+  return slot;
+}
+
+static void hz5_midfront_remote_batch_push(Hz5MidTls* tls, Hz5MidSpan* span) {
+  if (!tls || !span || !hz5_owner_is_alive(span->owner)) {
+    if (span) {
+      hz5_midfront_mark_orphan(span);
+    }
+    return;
+  }
+
+  uint32_t class_index = span->class_index;
+  Hz5MidRemoteOutboxSlot* slot =
+      hz5_midfront_remote_outbox_slot(tls, span->owner, class_index);
+  span->next = NULL;
+
+  if (slot->count == 0u) {
+    slot->owner = span->owner;
+    slot->class_index = class_index;
+    slot->head = span;
+  } else {
+    slot->tail->next = span;
+  }
+  slot->tail = span;
+  ++slot->count;
+
+  if (slot->count >= HZ5_MIDFRONT_REMOTE_BATCH_CAP) {
+    hz5_midfront_remote_outbox_flush_slot(slot);
+  }
+}
+#else
 static void hz5_midfront_remote_batch_flush(Hz5MidTls* tls) {
   if (!tls || tls->remote_batch_count == 0u) {
     return;
@@ -467,6 +558,7 @@ static void hz5_midfront_remote_batch_push(Hz5MidTls* tls, Hz5MidSpan* span) {
     hz5_midfront_remote_batch_flush(tls);
   }
 }
+#endif
 
 static Hz5MidSpan* hz5_midfront_drain_remote_class_budget(Hz5MidTls* tls,
                                                           uint32_t class_index,

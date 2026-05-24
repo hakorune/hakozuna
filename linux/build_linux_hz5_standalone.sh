@@ -56,6 +56,7 @@ LINUX_SMALLFRONT_REMOTE_OUTBOX=0
 LINUX_MIDFRONT_M1=0
 LINUX_MIDFRONT_OWNER_FAST_STATE=0
 LINUX_MIDFRONT_REMOTE_BATCH_CAP=16
+LINUX_MIDFRONT_REMOTE_OUTBOX=0
 LINUX_MIDFRONT_DRAIN_ALL_ON_MISS=0
 LINUX_MIDFRONT_DRAIN_MASK_ON_MISS=0
 LINUX_MIDFRONT_DRAIN_MASK_HIT_STOP=0
@@ -145,6 +146,9 @@ Options:
   --linux-hz5-general-region-outbox
                      candidate preset: SmallFront remote outbox cap8,
                      MidFront rb16/owner-fast, and LargeFront region-map
+  --linux-hz5-general-midoutbox
+                     candidate preset: general-region-outbox plus MidFront
+                     owner/class sender outbox
   --linux-ownerhub-r1
                      diagnostic only: enable shared owner pending-mask
                      observation; use only with HZ5_OWNERHUB_STATS=1
@@ -160,6 +164,9 @@ Options:
                      candidate only: MidFront owner-local load/store state transition
   --linux-midfront-remote-batch-cap N
                      MidFront remote-free sender batch flush threshold (default: 16)
+  --linux-midfront-remote-outbox
+                     candidate only: keep multiple sender-side MidFront
+                     remote-free outbox slots keyed by owner/class
   --linux-midfront-drain-all-on-miss
                      candidate only: drain all MidFront owner inbox classes on local miss
   --linux-midfront-drain-mask-on-miss
@@ -581,6 +588,22 @@ while [[ $# -gt 0 ]]; do
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
+    --linux-hz5-general-midoutbox)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_SMALLFRONT_REMOTE_OUTBOX=1
+      LINUX_SMALLFRONT_REMOTE_BATCH_CAP=8
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_OWNER_FAST_STATE=1
+      LINUX_MIDFRONT_REMOTE_BATCH_CAP=16
+      LINUX_MIDFRONT_REMOTE_OUTBOX=1
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      LINUX_LARGEFRONT_OWNER_FAST_STATE=1
+      LINUX_LARGEFRONT_REGION_MAP=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
     --linux-ownerhub-r1)
       BUILD_PRELOAD_FULL=1
       LINUX_OWNERHUB_R1=1
@@ -630,6 +653,14 @@ while [[ $# -gt 0 ]]; do
       require_value "$@"
       LINUX_MIDFRONT_REMOTE_BATCH_CAP="$2"
       shift 2
+      ;;
+    --linux-midfront-remote-outbox)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_REMOTE_OUTBOX=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
       ;;
     --linux-midfront-drain-all-on-miss)
       BUILD_PRELOAD_FULL=1
@@ -1115,6 +1146,9 @@ if [[ "$LINUX_MIDFRONT_M1" -eq 1 ]]; then
   if [[ "$LINUX_MIDFRONT_REMOTE_GLOBAL_RECYCLE" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_GLOBAL_RECYCLE=1)
   fi
+  if [[ "$LINUX_MIDFRONT_REMOTE_OUTBOX" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_OUTBOX=1)
+  fi
 fi
 if [[ "$LINUX_LARGEFRONT_L1" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_L1=1)
@@ -1194,6 +1228,7 @@ fi
   echo "linux_midfront_m1=${LINUX_MIDFRONT_M1}"
   echo "linux_midfront_owner_fast_state=${LINUX_MIDFRONT_OWNER_FAST_STATE}"
   echo "linux_midfront_remote_batch_cap=${LINUX_MIDFRONT_REMOTE_BATCH_CAP}"
+  echo "linux_midfront_remote_outbox=${LINUX_MIDFRONT_REMOTE_OUTBOX}"
   echo "linux_midfront_drain_all_on_miss=${LINUX_MIDFRONT_DRAIN_ALL_ON_MISS}"
   echo "linux_midfront_drain_mask_on_miss=${LINUX_MIDFRONT_DRAIN_MASK_ON_MISS}"
   echo "linux_midfront_drain_mask_hit_stop=${LINUX_MIDFRONT_DRAIN_MASK_HIT_STOP}"

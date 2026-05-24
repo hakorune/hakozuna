@@ -380,6 +380,41 @@ SmallFront outbox helps modestly and removes no safety checks, but it is not
 the missing HZ4-level cross128 mechanism by itself.
 ```
 
+MidFront sender outbox was added as the next HZ4-inspired A/B:
+
+```text
+--linux-midfront-remote-outbox
+--linux-hz5-general-midoutbox
+```
+
+It keeps MidFront descriptor validation and state transitions unchanged, but
+uses 8 sender-side owner/class slots instead of one remote batch slot.
+
+Focused repeat-3, threads=16/ws=400/r90, stats unset:
+
+```text
+main:
+  region baseline       30.87M
+  midoutbox slots8      23.95M
+
+mid_only:
+  region baseline       37.42M
+  midoutbox slots8      31.10M
+
+cross128:
+  region baseline       16.13M
+  midoutbox slots8      26.17M
+```
+
+Read:
+
+```text
+MidFront outbox is useful evidence for the HZ4-style sender-outbox hypothesis,
+especially on cross128, but it is not a default because main/mid_only regress.
+The likely issue is delayed publication/reuse when MidFront traffic is the
+dominant front-end.
+```
+
 ## Next Technical Question
 
 Why is HZ4 still much stronger on `cross128 r90`, and which part of HZ5's
