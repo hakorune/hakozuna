@@ -258,6 +258,7 @@ Reporting lane:
 | `hz5-largefront-rb16` | `--linux-largefront-remote-batch --linux-largefront-remote-batch-cap 16` | diagnostic only |
 | `hz5-largefront-takefirst` | `--linux-largefront-drain-take-first` | diagnostic only |
 | `hz5-largefront-emptygate` | `--linux-largefront-drain-empty-gated --linux-largefront-owner-fast-state --linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | large/main diagnostic only |
+| `hz5-largefront-map-base-only` | `--linux-largefront-map-base-only --linux-largefront-owner-fast-state --linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | timeout/root-cause diagnostic only; weakens interior-pointer invalid-free attribution |
 
 Current decision:
 
@@ -277,10 +278,16 @@ emptygate:
   helps some large/main rows
   not cross-size default
 
+base-only:
+  confirms per-page LargeFront map insertion can cause r90 timeout tails
+  diagnostic only because interior pages no longer map to the descriptor
+  production replacement should be LargeFront-L2 range/region lookup
+
 deferred:
   hz3/hz4-style 2MiB page-run split/merge pool
   epoch release of empty large segments
   owner-inbox remote large transfer
+  LargeFront-L2 range/region ownership map
 ```
 
 Observation hygiene:

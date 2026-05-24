@@ -67,6 +67,7 @@ LINUX_LARGEFRONT_OWNER_INBOX=0
 LINUX_LARGEFRONT_REMOTE_BATCH=0
 LINUX_LARGEFRONT_DRAIN_TAKE_FIRST=0
 LINUX_LARGEFRONT_DRAIN_EMPTY_GATED=0
+LINUX_LARGEFRONT_MAP_BASE_ONLY=0
 LINUX_LARGEFRONT_REMOTE_BATCH_CAP=16
 HZ5_STANDALONE_EXACT_ONLY=1
 
@@ -184,6 +185,10 @@ Options:
   --linux-largefront-drain-empty-gated
                      candidate only: skip LargeFront owner-inbox exchange when
                      an acquire load observes an empty inbox
+  --linux-largefront-map-base-only
+                     diagnostic only: map only the returned base page for
+                     LargeFront spans; reduces map insert pressure but weakens
+                     interior-pointer invalid-free attribution
   --linux-p11-speed-core
                      diagnostic only: compile the legacy P2 run/tcache path with HZ5_P11_SPEED_CORE=1
   --linux-p25-bridge-attr
@@ -688,6 +693,16 @@ while [[ $# -gt 0 ]]; do
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
+    --linux-largefront-map-base-only)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDFRONT_M1=1
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      LINUX_LARGEFRONT_MAP_BASE_ONLY=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
     --trace-lane)
       TRACE_LANE=1
       shift
@@ -1057,6 +1072,10 @@ if [[ "$LINUX_LARGEFRONT_L1" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX=1)
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_EMPTY_GATED=1)
   fi
+  if [[ "$LINUX_LARGEFRONT_MAP_BASE_ONLY" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX=1)
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_MAP_BASE_ONLY=1)
+  fi
 fi
 
 {
@@ -1115,6 +1134,7 @@ fi
   echo "linux_largefront_remote_batch=${LINUX_LARGEFRONT_REMOTE_BATCH}"
   echo "linux_largefront_drain_take_first=${LINUX_LARGEFRONT_DRAIN_TAKE_FIRST}"
   echo "linux_largefront_drain_empty_gated=${LINUX_LARGEFRONT_DRAIN_EMPTY_GATED}"
+  echo "linux_largefront_map_base_only=${LINUX_LARGEFRONT_MAP_BASE_ONLY}"
   echo "linux_largefront_remote_batch_cap=${LINUX_LARGEFRONT_REMOTE_BATCH_CAP}"
   echo "standalone_exact_only=${HZ5_STANDALONE_EXACT_ONLY}"
   echo "linux_p11_speed_core=${LINUX_P11_SPEED_CORE}"

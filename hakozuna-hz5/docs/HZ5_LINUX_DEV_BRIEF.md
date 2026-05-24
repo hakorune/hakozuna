@@ -54,6 +54,11 @@ hz5-largefront-rb16:
 hz5-largefront-takefirst:
   direct remote drain return
   broad regression risk
+
+hz5-largefront-map-base-only:
+  maps only the returned base page
+  timeout/root-cause diagnostic only
+  weakens interior-pointer invalid-free attribution
 ```
 
 ## Latest LargeFront Finding
@@ -212,29 +217,90 @@ R3 reduces some R2 damage but does not create a general win. OwnerHub should
 remain a candidate for selected mixed rows, while the default remote-heavy path
 should stay per-front until a lower-cost handoff design is found.
 
+## Latest Timeout Finding
+
+The broad paper-shape matrix produced HZ5 r90 timeout tails. A focused
+large_only r90 probe showed the tail was frequent enough to reproduce under a
+10s timeout.
+
+```text
+threads=16, ws=400, large_only r90, iters=250000, timeout=10s, repeat20:
+  hz5_inbox       ok=14 timeout=6
+  hz5_ownerhub_r2 ok=3  timeout=17
+  hz5_ownerhub_r3 ok=7  timeout=13
+```
+
+`perf` on a slow OwnerHub-R2 process attributed the hot samples to
+`hz5_largefront_alloc`, around LargeFront page-map insertion. The current L1
+map registers every 4KiB page in each retained large span, so a 128K span
+performs 32 map insertions before reuse.
+
+The base-only diagnostic validates the cause:
+
+```text
+--linux-largefront-map-base-only
+
+large_only r90, repeat20:
+  ok=20 timeout=0
+
+cross128 r90, repeat10:
+  ok=10 timeout=0
+
+main r90, repeat10:
+  ok=7 timeout=3
+```
+
+Decision:
+
+```text
+Do not make base-only default.
+Implement a LargeFront-L2 range/region ownership map instead.
+Main r90 still needs separate Small/Mid remote-tail investigation.
+```
+
 ## Next Technical Question
 
-Should HZ5 Linux remote-heavy general malloc continue with per-front-end owner
-inboxes, or should it introduce a shared remote handoff layer?
+Should LargeFront-L2 use per-span range descriptors or larger source-region
+descriptors for ownership lookup?
+
+Immediate design target:
+
+```text
+LargeFront-L2 range/region map:
+  avoid per-page insertion loops
+  keep exact base-pointer free fast
+  keep interior-pointer invalid frees fail-closed
+```
+
+The earlier cross-front handoff question remains relevant for Small/Mid remote
+tails, but it is no longer the first timeout fix.
 
 Candidate designs:
 
 ```text
-1. OwnerHub-R2 coordinated drain:
+1. LargeFront per-span range map:
+   register one range per retained span
+   simplest production replacement for per-page map insertion
+
+2. LargeFront source-region map:
+   register one larger source region and resolve span by descriptor metadata
+   more complex, potentially lower insertion cost under batch source allocation
+
+3. OwnerHub-R2 coordinated drain:
    shared owner pending mask
    per-front specialized inbox payloads
    drain bounded Small/Mid/Large work on alloc miss
 
-2. Full shared remote handoff layer:
+4. Full shared remote handoff layer:
    one owner-slot inbox shared by SmallFront/MidFront/LargeFront
    entries carry front-end kind + class + pointer
    not recommended yet
 
-3. Benchmark-shape SPSC transfer lane:
+5. Benchmark-shape SPSC transfer lane:
    optimize producer/consumer handoff directly
    likely diagnostic/paper appendix, not default allocator
 
-4. Stop remote tuning for now:
+6. Stop remote tuning for now:
    treat HZ5 as local/mixed candidate
    document remote-heavy as future work
 ```

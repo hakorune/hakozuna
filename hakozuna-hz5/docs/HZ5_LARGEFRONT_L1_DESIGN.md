@@ -325,6 +325,63 @@ largefront-emptygate:
   not a cross-size default
 ```
 
+## Base-Only Page-Map Diagnostic
+
+`--linux-largefront-map-base-only` is a timeout diagnosis lane. It keeps the
+LargeFront owner-inbox route but changes page-map registration from every 4KiB
+page in the retained span to only the returned base page.
+
+```text
+normal L1 registration:
+  register every page covered by span->base..span->base + class_bytes
+
+base-only diagnostic:
+  register only span->base
+```
+
+Why it exists:
+
+```text
+paper-shape r90 runs showed timeout tails in several HZ5 LargeFront-heavy rows.
+perf on a slow large_only r90 process attributed almost all sampled cycles to
+hz5_largefront_alloc, centered around LargeFront page-map insertion.
+```
+
+Focused check:
+
+```text
+large_only r90, threads=16, ws=400, iters=250000, timeout=10s, repeat20:
+  base-only: ok=20 timeout=0
+
+cross128 r90, threads=16, ws=400, iters=300000, timeout=10s, repeat10:
+  base-only: ok=10 timeout=0
+
+main r90, threads=16, ws=400, iters=600000, timeout=10s, repeat10:
+  base-only: ok=7 timeout=3
+```
+
+Safety status:
+
+```text
+diagnostic only
+not paper-facing
+not the default LargeFront safety contract
+```
+
+Base-only weakens interior-pointer invalid-free attribution because an interior
+page no longer maps back to the LargeFront descriptor. The result is useful as
+evidence that per-page map insertion is too expensive, not as the final design.
+
+Next production direction:
+
+```text
+LargeFront-L2 range/region map:
+  one registration per span or source region
+  exact base-pointer free stays fast
+  interior-pointer frees still detect HZ5 ownership and fail closed
+  no per-page insertion loop for 128K/256K/512K/1M spans
+```
+
 ## Stop Rules
 
 Stop and redesign if:

@@ -34,6 +34,10 @@
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_EMPTY_GATED 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_MAP_BASE_ONLY
+#define BENCHLAB_HZ5_LINUX_LARGEFRONT_MAP_BASE_ONLY 0
+#endif
+
 #ifndef HZ5_LARGEFRONT_REMOTE_BATCH_CAP
 #define HZ5_LARGEFRONT_REMOTE_BATCH_CAP 16u
 #endif
@@ -252,6 +256,12 @@ static int hz5_largefront_map_insert_one(uintptr_t page_base,
 static int hz5_largefront_map_insert(Hz5LargeSpan* span) {
   uintptr_t base = (uintptr_t)span->base;
   pthread_mutex_lock(&g_hz5_largefront_map_lock);
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_MAP_BASE_ONLY
+  if (!hz5_largefront_map_insert_one(base, span)) {
+    pthread_mutex_unlock(&g_hz5_largefront_map_lock);
+    return 0;
+  }
+#else
   for (uint32_t i = 0; i < span->page_count; ++i) {
     uintptr_t page_base = base + ((uintptr_t)i * HZ5_LARGEFRONT_PAGE_SIZE);
     if (!hz5_largefront_map_insert_one(page_base, span)) {
@@ -259,6 +269,7 @@ static int hz5_largefront_map_insert(Hz5LargeSpan* span) {
       return 0;
     }
   }
+#endif
   pthread_mutex_unlock(&g_hz5_largefront_map_lock);
   return 1;
 }

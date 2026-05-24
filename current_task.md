@@ -19,9 +19,14 @@ HZ5 Linux now covers SmallFront, MidFront, and LargeFront under full preload.
 Local/mixed coverage improved substantially.
 Remote-heavy cross-size workloads remain weak.
 
+Latest result:
+  broad paper-shape runs exposed HZ5 r90 timeout tails.
+  perf attributes the LargeFront large_only tail mostly to LargeFront page-map
+  insertion pressure.
+
 Next decision:
-  keep tuning per-front-end owner inboxes
-  or add a shared remote handoff layer across Small/Mid/Large
+  replace LargeFront per-page map insertion with a safer range/region map
+  or keep the current map and continue remote-heavy Small/Mid work separately
 ```
 
 ## Goal
@@ -223,6 +228,112 @@ Do not make OwnerHub-R2/R3 or emptygate default.
 Do not spend more time on xlarge with the current LargeFront-L1 design.
 Next productive target is not more cross-front drain tuning.
 The real gap is remote-heavy Small/Mid handoff under many threads.
+```
+
+Timeout investigation:
+
+```text
+Focused probe:
+  threads=16
+  ws=400
+  large_only r90
+  iters=250000
+  timeout=10s
+
+repeat20:
+  hz5_inbox       ok=14 timeout=6
+  hz5_ownerhub_r2 ok=3  timeout=17
+  hz5_ownerhub_r3 ok=7  timeout=13
+```
+
+Runtime observation:
+
+```text
+Timeout logs are empty because the benchmark prints only after completion.
+gdb attach is blocked by ptrace_scope=1 in this environment.
+/proc sampling usually shows one worker thread running while the rest wait.
+perf on a slow ownerhub_r2 large_only r90 process attributes about 98% of
+sampled cycles inside libhakozuna_hz5_preload_full.so, centered in
+hz5_largefront_alloc.
+```
+
+Interpretation:
+
+```text
+The large_only timeout tail is not primarily an OwnerHub drain-policy problem.
+It is LargeFront page-map insertion pressure.
+
+Current LargeFront maps every 4K page covered by a retained large span.
+For a 128K object this is 32 page-map insertions per new span; for larger
+classes it is more. Under 16-thread r90 source churn, that per-page insertion
+cost can dominate and create timeout tails.
+```
+
+Diagnostic lane added:
+
+```text
+--linux-largefront-map-base-only
+
+Effect:
+  map only span->base in the LargeFront page map
+  keep LargeFront owner-inbox enabled
+
+Important:
+  diagnostic only
+  weakens interior-pointer invalid-free attribution
+  must not become the default LargeFront safety contract
+```
+
+Build used:
+
+```bash
+./linux/build_linux_hz5_standalone.sh \
+  --linux-largefront-map-base-only \
+  --linux-largefront-owner-fast-state \
+  --linux-midfront-owner-fast-state \
+  --linux-midfront-remote-batch-cap 16 \
+  --linux-local2p-speed-linkflags \
+  --out-dir hakozuna-hz5/out/linux/x86_64-hz5-largefront-baseonly
+```
+
+Smoke:
+
+```text
+/bin/true under full preload: OK
+/tmp/hz5_largefront_smoke: OK
+build config includes linux_largefront_map_base_only=1
+```
+
+Focused timeout check:
+
+```text
+large_only r90, threads=16, ws=400, iters=250000, timeout=10s, repeat20:
+  ok=20 timeout=0
+
+cross128 r90, threads=16, ws=400, iters=300000, timeout=10s, repeat10:
+  ok=10 timeout=0
+  median successful ops/s about 18.19M
+
+main r90, threads=16, ws=400, iters=600000, timeout=10s, repeat10:
+  ok=7 timeout=3
+  median successful ops/s about 24.41M
+```
+
+Decision:
+
+```text
+Base-only confirms that LargeFront per-page map insertion is a real timeout
+source for large_only/cross128 r90.
+
+Do not publish base-only as a final HZ5 safety lane. The production fix should
+be LargeFront-L2 range/region ownership lookup:
+  one descriptor/range registration per retained span or source region
+  base-pointer free still fast
+  interior-pointer frees still detected and fail closed
+  no per-4K-page insertion loop on large span acquisition
+
+Remaining main r90 timeouts are likely Small/Mid remote-heavy tails and should
+be investigated separately after LargeFront map pressure is fixed cleanly.
 ```
 
 First implementation lane:
