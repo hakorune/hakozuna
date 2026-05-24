@@ -86,6 +86,7 @@ small 4K/8K a8192:
 | `midfront_maskhitstop` | lane | bounded mask A/B | diagnostic only |
 | `midfront_globalrecycle` | lane | global recycle control | control only |
 | `midfront_remote_outbox` | lane | MidFront owner/class sender outbox candidate | cross128 candidate only |
+| `midfront_remote_rbuf` | lane | HZ4-style sender TLS ring grouped on flush | diagnostic only |
 | `midfront_directfree` | lane | remote ACTIVE->LOCAL_FREE state diagnostic | candidate-watch |
 | `preload_free_midfirst` | lane | preload free dispatch order diagnostic | diagnostic only |
 | `midfront_lookup_cache` | lane | MidFront TLS page lookup cache diagnostic | diagnostic only |
@@ -195,6 +196,7 @@ Reporting lanes:
 | `hz5-midfront-globalrecycle` | `--linux-midfront-owner-fast-state --linux-midfront-remote-global-recycle` | global recycle control |
 | `hz5-midfront-outbox` | `--linux-midfront-owner-fast-state --linux-midfront-remote-outbox --linux-midfront-remote-batch-cap 16` | cross-size remote candidate; not default |
 | `hz5-midfront-outbox-flush` | `--linux-midfront-owner-fast-state --linux-midfront-remote-outbox --linux-midfront-outbox-flush-on-miss` | timely-publish diagnostic; not default |
+| `hz5-general-midrbuf` | `--linux-hz5-general-midrbuf` | HZ4-style sender rbuf diagnostic; not default |
 | `hz5-midfront-directfree` | `--linux-midfront-owner-fast-state --linux-midfront-remote-direct-free-state --linux-midfront-remote-batch-cap 16` | remote state-machine diagnostic; candidate-watch |
 | `hz5-general-midfirst` | `--linux-hz5-general-midfirst` | preload dispatch-cost diagnostic; not default |
 | `hz5-general-midcache` | `--linux-hz5-general-midcache` | MidFront lookup-cache diagnostic; not default |
@@ -238,6 +240,11 @@ midcache:
   diagnostic only. It caches two MidFront page-map lookups per thread. The
   first smoke gave only a small mid_only signal and regressed main/cross128, so
   it is not a broad profile.
+
+midrbuf:
+  diagnostic only. It groups sender-side remote frees by owner/class on flush.
+  It gave selected cross-size signals but repeat-5 regressed main_r90 and
+  mid_only_r90, so it is not a combined default.
 ```
 
 ### `largefront_l1`

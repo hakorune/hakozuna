@@ -59,6 +59,9 @@ LINUX_MIDFRONT_OWNER_FAST_STATE=0
 LINUX_MIDFRONT_REMOTE_BATCH_CAP=16
 LINUX_MIDFRONT_REMOTE_OUTBOX=0
 LINUX_MIDFRONT_REMOTE_OUTBOX_SLOTS=4
+LINUX_MIDFRONT_REMOTE_RBUF=0
+LINUX_MIDFRONT_REMOTE_RBUF_CAP=128
+LINUX_MIDFRONT_REMOTE_RBUF_FLUSH_THRESHOLD=96
 LINUX_MIDFRONT_OUTBOX_FLUSH_ON_MISS=0
 LINUX_MIDFRONT_REMOTE_DIRECT_FREE_STATE=0
 LINUX_MIDFRONT_REMOTE_TRUST_DRAIN_STATE=0
@@ -161,6 +164,9 @@ Options:
   --linux-hz5-general-midcache
                      diagnostic preset: general-region-outbox plus MidFront
                      TLS page lookup cache
+  --linux-hz5-general-midrbuf
+                     candidate preset: general-region-outbox plus HZ4-style
+                     MidFront sender rbuf grouping
   --linux-hz5-general-midoutbox
                      candidate preset: general-region-outbox plus MidFront
                      owner/class sender outbox
@@ -184,6 +190,13 @@ Options:
                      remote-free outbox slots keyed by owner/class
   --linux-midfront-remote-outbox-slots N
                      MidFront sender outbox slot count (default: 4)
+  --linux-midfront-remote-rbuf
+                     candidate only: collect MidFront remote frees in a
+                     sender TLS ring, then group by owner/class on flush
+  --linux-midfront-remote-rbuf-cap N
+                     MidFront rbuf entry count (default: 128)
+  --linux-midfront-remote-rbuf-threshold N
+                     MidFront rbuf flush threshold (default: 96)
   --linux-midfront-outbox-flush-on-miss
                      candidate only: publish MidFront sender outbox slots on
                      local allocation miss before owner-inbox drain
@@ -666,6 +679,22 @@ while [[ $# -gt 0 ]]; do
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
+    --linux-hz5-general-midrbuf)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_SMALLFRONT_REMOTE_OUTBOX=1
+      LINUX_SMALLFRONT_REMOTE_BATCH_CAP=8
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_OWNER_FAST_STATE=1
+      LINUX_MIDFRONT_REMOTE_BATCH_CAP=16
+      LINUX_MIDFRONT_REMOTE_RBUF=1
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      LINUX_LARGEFRONT_OWNER_FAST_STATE=1
+      LINUX_LARGEFRONT_REGION_MAP=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
     --linux-hz5-general-midoutbox)
       BUILD_PRELOAD_FULL=1
       LINUX_SMALLFRONT_S1=1
@@ -760,6 +789,24 @@ while [[ $# -gt 0 ]]; do
     --linux-midfront-remote-outbox-slots)
       require_value "$@"
       LINUX_MIDFRONT_REMOTE_OUTBOX_SLOTS="$2"
+      shift 2
+      ;;
+    --linux-midfront-remote-rbuf)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_REMOTE_RBUF=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
+    --linux-midfront-remote-rbuf-cap)
+      require_value "$@"
+      LINUX_MIDFRONT_REMOTE_RBUF_CAP="$2"
+      shift 2
+      ;;
+    --linux-midfront-remote-rbuf-threshold)
+      require_value "$@"
+      LINUX_MIDFRONT_REMOTE_RBUF_FLUSH_THRESHOLD="$2"
       shift 2
       ;;
     --linux-midfront-outbox-flush-on-miss)
@@ -971,6 +1018,24 @@ fi
 
 if [[ "$LINUX_MIDFRONT_REMOTE_OUTBOX_SLOTS" -lt 1 ]]; then
   echo "midfront remote outbox slots must be >= 1" >&2
+  exit 1
+fi
+
+if [[ "$LINUX_MIDFRONT_REMOTE_OUTBOX" -eq 1 && \
+      "$LINUX_MIDFRONT_REMOTE_RBUF" -eq 1 ]]; then
+  echo "midfront remote outbox and rbuf are mutually exclusive" >&2
+  exit 1
+fi
+
+if [[ "$LINUX_MIDFRONT_REMOTE_RBUF_CAP" -lt 1 ]]; then
+  echo "midfront remote rbuf cap must be >= 1" >&2
+  exit 1
+fi
+
+if [[ "$LINUX_MIDFRONT_REMOTE_RBUF_FLUSH_THRESHOLD" -lt 1 || \
+      "$LINUX_MIDFRONT_REMOTE_RBUF_FLUSH_THRESHOLD" -gt \
+      "$LINUX_MIDFRONT_REMOTE_RBUF_CAP" ]]; then
+  echo "midfront remote rbuf threshold must be in 1..cap" >&2
   exit 1
 fi
 
@@ -1297,6 +1362,13 @@ if [[ "$LINUX_MIDFRONT_M1" -eq 1 ]]; then
       -DHZ5_MIDFRONT_REMOTE_OUTBOX_SLOTS="${LINUX_MIDFRONT_REMOTE_OUTBOX_SLOTS}u"
     )
   fi
+  if [[ "$LINUX_MIDFRONT_REMOTE_RBUF" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_RBUF=1)
+    COMMON_FLAGS+=(
+      -DHZ5_MIDFRONT_REMOTE_RBUF_CAP="${LINUX_MIDFRONT_REMOTE_RBUF_CAP}u"
+      -DHZ5_MIDFRONT_REMOTE_RBUF_FLUSH_THRESHOLD="${LINUX_MIDFRONT_REMOTE_RBUF_FLUSH_THRESHOLD}u"
+    )
+  fi
   if [[ "$LINUX_MIDFRONT_OUTBOX_FLUSH_ON_MISS" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDFRONT_OUTBOX_FLUSH_ON_MISS=1)
   fi
@@ -1391,6 +1463,9 @@ fi
   echo "linux_midfront_remote_batch_cap=${LINUX_MIDFRONT_REMOTE_BATCH_CAP}"
   echo "linux_midfront_remote_outbox=${LINUX_MIDFRONT_REMOTE_OUTBOX}"
   echo "linux_midfront_remote_outbox_slots=${LINUX_MIDFRONT_REMOTE_OUTBOX_SLOTS}"
+  echo "linux_midfront_remote_rbuf=${LINUX_MIDFRONT_REMOTE_RBUF}"
+  echo "linux_midfront_remote_rbuf_cap=${LINUX_MIDFRONT_REMOTE_RBUF_CAP}"
+  echo "linux_midfront_remote_rbuf_flush_threshold=${LINUX_MIDFRONT_REMOTE_RBUF_FLUSH_THRESHOLD}"
   echo "linux_midfront_outbox_flush_on_miss=${LINUX_MIDFRONT_OUTBOX_FLUSH_ON_MISS}"
   echo "linux_midfront_remote_direct_free_state=${LINUX_MIDFRONT_REMOTE_DIRECT_FREE_STATE}"
   echo "linux_midfront_remote_trust_drain_state=${LINUX_MIDFRONT_REMOTE_TRUST_DRAIN_STATE}"

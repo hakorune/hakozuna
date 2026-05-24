@@ -238,5 +238,108 @@ reordering dispatch globally. It is to reduce front ownership lookup cost:
    records, then group by owner/class at flush time
 ```
 
+## MidFront Sender Rbuf Diagnostic
+
+Added:
+
+```text
+--linux-hz5-general-midrbuf
+--linux-midfront-remote-rbuf
+--linux-midfront-remote-rbuf-cap N
+--linux-midfront-remote-rbuf-threshold N
+```
+
+Design:
+
+```text
+remote free:
+  validate descriptor/state as before
+  append {owner, class, span} to sender TLS rbuf
+
+flush:
+  group entries by owner/class
+  publish one list per group to the existing owner/class inbox
+```
+
+This keeps MidFront descriptor validation and fail-closed state transitions.
+It only changes sender-side publication shape.
+
+Short smoke showed possible cross-size signal:
+
+```text
+private/raw-results/linux/midrbuf_smoke_20260525_013236
+
+cross128_r90:
+  region   14.55M
+  midrbuf  19.61M
+
+large_only_r90:
+  region    7.08M
+  midrbuf  12.60M
+
+main_r90:
+  region   24.03M
+  midrbuf  21.05M
+
+mid_only_r90:
+  region   23.29M
+  midrbuf  16.46M
+```
+
+Threshold sweep:
+
+```text
+private/raw-results/linux/midrbuf_threshold_smoke_20260525_013354
+
+rbuf16 was the least bad:
+  main_r90      29.25M vs region 25.41M
+  cross128_r90  15.69M vs region 15.34M
+  large_only    9.51M vs region 5.99M
+  mid_only     16.44M vs region 17.21M
+```
+
+Broad repeat-5 rejected it as a default:
+
+```text
+private/raw-results/linux/midrbuf16_broad_r5_20260525_013427
+
+main_r90:
+  region  21.24M
+  rbuf16  18.53M
+
+mid_only_r90:
+  region  27.03M
+  rbuf16  21.03M
+
+cross128_r90:
+  region  12.02M
+  rbuf16  12.43M
+
+large_only_r90:
+  region   6.72M
+  rbuf16   6.45M
+```
+
+Decision:
+
+```text
+midrbuf is no-go for the broad combined lane.
+It can help selected cross-size samples, but delayed publication hurts
+MidFront-dominant rows.
+```
+
+Updated next target:
+
+```text
+route split:
+  HZ4 mid_only is not one broad mid front-end.
+  HZ4 routes lower mid through 4KiB-page mid machinery and larger objects
+  through large/header/cache paths.
+
+HZ5 should test:
+  MidFront <= 4096
+  LargeFront lower classes for 8192/16384/32768/65536
+```
+
 Do not copy HZ4 wholesale. HZ5 should keep descriptor ownership, fail-closed
 invalid frees, and Linux/Windows lane separation.

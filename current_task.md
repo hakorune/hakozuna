@@ -6312,3 +6312,116 @@ HZ4's real advantage is more likely:
   direct page/header lookup rather than HZ5 hash maps
   HZ4 route split where mid_only is mid + large, not one broad MidFront band
 ```
+
+### MidFront Sender Rbuf Diagnostic
+
+Implemented:
+
+```bash
+./linux/build_linux_hz5_standalone.sh \
+  --linux-hz5-general-midrbuf \
+  --out-dir hakozuna-hz5/out/linux/x86_64-hz5-general-midrbuf
+```
+
+Additional threshold controls:
+
+```text
+--linux-midfront-remote-rbuf-cap N
+--linux-midfront-remote-rbuf-threshold N
+```
+
+Design:
+
+```text
+remote free:
+  descriptor lookup and state transition unchanged
+  append {owner, class, span} into sender TLS rbuf
+
+flush:
+  group entries by owner/class
+  publish one list per group to the existing owner/class inbox
+```
+
+Build/smoke:
+
+```text
+midrbuf, midrbuf32, midrbuf16:
+  /bin/true under full preload OK
+```
+
+First smoke, `threads=16`, `ws=400`, `remote=90`, repeat-3:
+
+```text
+private/raw-results/linux/midrbuf_smoke_20260525_013236
+
+cross128:
+  region   14.55M
+  midrbuf  19.61M
+
+large_only:
+  region    7.08M
+  midrbuf  12.60M
+
+main:
+  region   24.03M
+  midrbuf  21.05M
+
+mid_only:
+  region   23.29M
+  midrbuf  16.46M
+```
+
+Threshold sweep:
+
+```text
+private/raw-results/linux/midrbuf_threshold_smoke_20260525_013354
+
+rbuf16:
+  main_r90      29.25M vs region 25.41M
+  mid_only_r90  16.44M vs region 17.21M
+  cross128_r90  15.69M vs region 15.34M
+  large_only     9.51M vs region 5.99M
+```
+
+Broad repeat-5:
+
+```text
+private/raw-results/linux/midrbuf16_broad_r5_20260525_013427
+
+main_r90:
+  region  21.24M
+  rbuf16  18.53M
+
+mid_only_r90:
+  region  27.03M
+  rbuf16  21.03M
+
+cross128_r90:
+  region  12.02M
+  rbuf16  12.43M
+
+large_only_r90:
+  region   6.72M
+  rbuf16   6.45M
+```
+
+Decision:
+
+```text
+midrbuf:
+  no-go for combined default
+  diagnostic evidence only
+  delayed publication hurts MidFront-dominant rows
+```
+
+Next target:
+
+```text
+HZ4 route split hypothesis:
+  HZ4 mid_only is not a single broad MidFront equivalent.
+  It routes lower mid through HZ4 mid and larger objects through HZ4 large.
+
+Implement candidate:
+  MidFront <= 4096
+  LargeFront lower classes 8192/16384/32768/65536
+```

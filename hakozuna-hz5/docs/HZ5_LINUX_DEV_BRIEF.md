@@ -689,6 +689,9 @@ HZ4-inspired dispatch diagnostic:
 
 HZ4-inspired lookup diagnostic:
   --linux-hz5-general-midcache
+
+HZ4-inspired sender rbuf diagnostic:
+  --linux-hz5-general-midrbuf
 ```
 
 ## HZ4 Path Audit Finding
@@ -758,6 +761,33 @@ Do not chase global preload dispatch reordering.
 Do not expect a two-entry MidFront lookup cache to close the HZ4 gap.
 Next HZ4-inspired work should target sender rbuf grouping or the Mid/Large
 route split.
+```
+
+MidFront sender rbuf was implemented and measured:
+
+```text
+--linux-hz5-general-midrbuf
+--linux-midfront-remote-rbuf-threshold 16
+```
+
+Result:
+
+```text
+midrbuf:
+  no-go for broad default
+  small cross128_r90 signal only
+  main_r90 and mid_only_r90 regress in repeat-5
+```
+
+Updated next target:
+
+```text
+HZ4 route split hypothesis:
+  HZ4 mid_only is mid + large internally, not one broad MidFront band.
+
+Test an HZ5 split:
+  MidFront handles <=4096
+  LargeFront lower classes handle 8192/16384/32768/65536
 ```
 
 ## Next Technical Question
