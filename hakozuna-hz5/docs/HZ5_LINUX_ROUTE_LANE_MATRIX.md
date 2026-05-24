@@ -3,6 +3,12 @@
 This document is the Linux HZ5 naming and classification source of truth.
 Keep route, lane, and benchmark profile separate.
 
+For the short current-status summary, read:
+
+```text
+docs/HZ5_LINUX_DEV_BRIEF.md
+```
+
 ## Rule
 
 ```text

@@ -1,5 +1,29 @@
 # Current Task: HZ5 Ubuntu Standalone Exact Lane
 
+## Read First
+
+Short current-status entry point:
+
+```text
+hakozuna-hz5/docs/HZ5_LINUX_DEV_BRIEF.md
+```
+
+Use that brief for the active decision tree. This file is now the chronological
+work log and keeps detailed measurements, failed candidates, and exact command
+history.
+
+Current active question:
+
+```text
+HZ5 Linux now covers SmallFront, MidFront, and LargeFront under full preload.
+Local/mixed coverage improved substantially.
+Remote-heavy cross-size workloads remain weak.
+
+Next decision:
+  keep tuning per-front-end owner inboxes
+  or add a shared remote handoff layer across Small/Mid/Large
+```
+
 ## Goal
 
 Build an Ubuntu/Linux development lane for HZ5 that can be moved to native

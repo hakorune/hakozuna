@@ -4,6 +4,12 @@ This document defines which benchmarks are paper-main, appendix, or diagnostic
 for HZ5 work. The goal is to stop benchmark sprawl and keep claims tied to a
 stable evaluation tier.
 
+For the short current-status summary, read:
+
+```text
+hakozuna-hz5/docs/HZ5_LINUX_DEV_BRIEF.md
+```
+
 Route/lane names are defined in:
 
 ```text

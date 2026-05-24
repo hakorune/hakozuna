@@ -3,6 +3,12 @@
 This map names the current HZ5 implementation layers after the P45dr closeout.
 Use it as a navigation guide before adding another lane or moving code.
 
+Start here for the current Linux allocator status:
+
+```text
+docs/HZ5_LINUX_DEV_BRIEF.md
+```
+
 ## Current Lowpage64 Path
 
 These files are the active 64K/a8192 path used by the P25/P33/P43i/P45 family.
