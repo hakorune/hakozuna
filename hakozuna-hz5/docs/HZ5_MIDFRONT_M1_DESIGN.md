@@ -132,6 +132,23 @@ preserves descriptor state checks but weakens owner-locality, so it remains a
 candidate policy.
 ```
 
+## Observation Hygiene
+
+Use `linux/run_linux_hz5_midfront_observe.sh` for candidate comparisons. The
+script keeps raw performance runs separate from attribution counters:
+
+```text
+raw.tsv:
+  HZ5_PRELOAD_STATS unset
+  HZ5_DIAGNOSTIC_STATS=0 build
+
+attrib.tsv:
+  short HZ5_PRELOAD_STATS=1 smoke only
+```
+
+Do not compare ops/s from attribution runs against raw performance runs; preload
+stats use atomic counters and are intentionally isolated.
+
 ## Allocator Shape
 
 The Linux HZ5 general allocator should be split by responsibility:

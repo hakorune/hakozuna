@@ -782,6 +782,90 @@ interpretation:
   keep as candidate only
 ```
 
+MidFront observation checkpoint:
+
+```text
+script:
+  linux/run_linux_hz5_midfront_observe.sh
+
+result directory:
+  private/raw-results/linux/midfront_observe_20260524_100727
+
+measurement hygiene:
+  performance runs use env -i with LD_PRELOAD only
+  HZ5_PRELOAD_STATS is intentionally unset for raw ops/s
+  HZ5_DIAGNOSTIC_STATS=0 in build flags
+  attribution smoke uses HZ5_PRELOAD_STATS=1 separately and writes attrib.tsv
+
+attribution smoke:
+  rb16/drainall/drainmask/globalrecycle all reported:
+    malloc_hz5=10049
+    malloc_real=0
+    malloc_fail=0
+    free_real=0
+    track_insert_fail=0
+
+runs:
+  threads=2
+  ws=100
+  repeat=10
+  candidates:
+    rb16
+    drainall
+    drainmask
+    globalrecycle
+
+key medians:
+  main_r90:
+    globalrecycle: 5.93M ops/s
+    rb16:          3.28M ops/s
+    drainmask:     3.28M ops/s
+    drainall:      3.00M ops/s
+  mid_r90:
+    globalrecycle: 3.95M ops/s
+    drainmask:     3.11M ops/s
+    drainall:      3.11M ops/s
+    rb16:          2.95M ops/s
+  mid_r50:
+    globalrecycle: 5.69M ops/s
+    rb16:          4.51M ops/s
+    drainall:      4.30M ops/s
+    drainmask:     4.18M ops/s
+  fixed4k_r0:
+    globalrecycle: 71.2M ops/s
+    drainmask:     70.3M ops/s
+    rb16:          70.0M ops/s
+    drainall:      66.6M ops/s
+  cross128_r90:
+    all candidates about 0.75M ops/s
+
+failure counts:
+  main_r90:       0 alloc_failed_runs for all candidates
+  mid_r90:        0 alloc_failed_runs for all candidates
+  cross128_r90:   0 alloc_failed_runs for all candidates
+  hi64_r90:
+    globalrecycle had 2 alloc_failed_runs
+    rb16 had 1 alloc_failed_run
+
+perf stat, separate one-run probe:
+  main_r90 cycles/instructions:
+    rb16:          476.6M / 403.5M
+    drainall:      299.6M / 252.3M
+    globalrecycle: 283.7M / 241.5M
+  mid_r90 cycles/instructions:
+    rb16:          621.6M / 557.1M
+    drainall:      367.5M / 313.5M
+    globalrecycle: 399.1M / 346.8M
+
+interpretation:
+  globalrecycle is the strongest MidFront remote/mixed candidate so far
+  it improves main_r90 and mid_r50/r90 without hurting fixed4k_r0
+  drainall remains a useful owner-inbox policy control
+  drainmask is safe but not clearly useful yet
+  hi64/cross128 are still not solved by MidFront; they need a separate
+  LargeFront / >64K route if they become paper-facing
+```
+
 OwnerLifetime-O1 implementation status:
 
 ```text
