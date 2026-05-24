@@ -42,6 +42,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_LOCAL_ACTIVE_TRUST 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_SLOT_SWITCH
+#define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_SLOT_SWITCH 0
+#endif
+
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M2
 
 #define HZ5_MIDPAGEFRONT_MAGIC UINT64_C(0x485A354D50414732)
@@ -347,10 +351,48 @@ static int hz5_midpagefront_slot_index(Hz5MidPage* page,
     return 0;
   }
   size_t offset = (size_t)(p - base);
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_SLOT_SWITCH
+  uint32_t slot = 0;
+  switch (page->class_index) {
+    case 0:
+      if (page->class_size != 3072u || offset % 3072u != 0) {
+        return 0;
+      }
+      slot = (uint32_t)(offset / 3072u);
+      break;
+    case 1:
+      if (page->class_size != 4096u || (offset & 4095u) != 0) {
+        return 0;
+      }
+      slot = (uint32_t)(offset >> 12);
+      break;
+    case 2:
+      if (page->class_size != 8192u || (offset & 8191u) != 0) {
+        return 0;
+      }
+      slot = (uint32_t)(offset >> 13);
+      break;
+    case 3:
+      if (page->class_size != 16384u || (offset & 16383u) != 0) {
+        return 0;
+      }
+      slot = (uint32_t)(offset >> 14);
+      break;
+    case 4:
+      if (page->class_size != 32768u || (offset & 32767u) != 0) {
+        return 0;
+      }
+      slot = (uint32_t)(offset >> 15);
+      break;
+    default:
+      return 0;
+  }
+#else
   if (page->class_size == 0 || offset % page->class_size != 0) {
     return 0;
   }
   uint32_t slot = (uint32_t)(offset / page->class_size);
+#endif
   if (slot >= page->slot_count || slot >= 64u) {
     return 0;
   }

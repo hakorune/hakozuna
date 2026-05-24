@@ -85,6 +85,10 @@ hakozuna-hz5/docs/archive/current_task_2026-05-hz5-linux.md
 --linux-hz5-general-midpage-region-shadow-allocfirst
   promising diagnostic; removes duplicate MidPageFront class lookup in preload
   via explicit MidPageFront try-alloc dispatch
+
+--linux-hz5-general-midpage-region-shadow-slotswitch
+  no-go; removes variable slot-index division but regresses r90 and does not
+  improve r0
 ```
 
 ## Latest Key Results
@@ -98,6 +102,7 @@ private/raw-results/linux/midpage_activetrust_smoke_r3_20260525_052755
 private/raw-results/linux/midpage_allocfirst_r3_20260525_053010
 private/raw-results/linux/midpage_allocfirst_r90_verify_r5_20260525_053037
 private/raw-results/linux/midpage_allocfirst_tryalloc_r3_20260525_054204
+private/raw-results/linux/midpage_slotswitch_r3_20260525_054521
 ```
 
 Current read:
@@ -121,6 +126,10 @@ activetrust:
 allocfirst:
   duplicate class lookup matters for mid_only r0
   try-alloc cleanup keeps r0 ahead of shadow and r90 near/slightly ahead
+
+slotswitch:
+  slot-index division is not the main bottleneck; fixed-class switch removes
+  div but loses to allocfirst
 
 next:
   reduce MidPageFront active-state / metadata / freelist work per local

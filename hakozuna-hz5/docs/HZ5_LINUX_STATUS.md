@@ -172,6 +172,33 @@ The explicit MidPageFront try-alloc API preserves the allocfirst signal while
 removing the previous alloc-then-can-handle preload shortcut.
 ```
 
+Slot-index diagnostic:
+
+```text
+private/raw-results/linux/midpage_slotswitch_r3_20260525_054521
+```
+
+Decision:
+
+```text
+slotswitch is no-go. Replacing variable slot-index division with fixed-class
+switch/shift does not improve mid_only_r0 and regresses mid_only_r90.
+```
+
+Key medians:
+
+```text
+mid_only_r0:
+  allocfirst 66.17M
+  slotswitch 65.72M
+  tcmalloc  141.17M
+
+mid_only_r90:
+  allocfirst 40.66M
+  slotswitch 37.04M
+  tcmalloc   52.19M
+```
+
 ## Next Engineering Target
 
 Prototype a MidPageFront local topology diagnostic:

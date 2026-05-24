@@ -277,6 +277,41 @@ mid_only_r90:
   tcmalloc   48.94M
 ```
 
+### `midpage_slotswitch_r3_20260525_054521`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_slotswitch_r3_20260525_054521
+```
+
+Purpose:
+
+```text
+Test whether replacing MidPageFront slot-index variable division with
+fixed-class switch/shift dispatch closes the mid_only local gap.
+```
+
+Decision:
+
+```text
+No-go. The division removal does not beat allocfirst on r0 and hurts r90.
+```
+
+Key medians:
+
+```text
+mid_only_r0:
+  allocfirst 66.17M
+  slotswitch 65.72M
+  tcmalloc  141.17M
+
+mid_only_r90:
+  allocfirst 40.66M
+  slotswitch 37.04M
+  tcmalloc   52.19M
+```
+
 ## MidPageFront-M2
 
 ### `midpage_region_broad_r5_20260525_031852`

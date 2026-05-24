@@ -289,6 +289,12 @@ hz5-general-midpage-region-shadow-allocfirst:
   tcmalloc-chase diagnostic removing duplicate MidPageFront class lookup in
   preload malloc dispatch via explicit try-alloc API
   promising diagnostic: mid_only r0 improves, r90 verifies near shadow
+
+hz5-general-midpage-region-shadow-slotswitch:
+  --linux-hz5-general-midpage-region-shadow-slotswitch
+  tcmalloc-chase diagnostic replacing variable MidPageFront slot-index division
+  with fixed-class switch/shift dispatch
+  no-go in r3: does not improve r0 and regresses r90 versus allocfirst
 ```
 
 Status:
