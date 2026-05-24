@@ -176,6 +176,12 @@ ran with `HZ5_PRELOAD_STATS` unset. The observed `alloc_failed` class did not
 reproduce in those raw runs. Attribution runs remain separate because preload
 stats use atomic counters.
 
+A clean-tree repeat-10 observation on commit `432cff0` also reported zero
+`alloc_failed` and zero bad-status runs across the MidFront observation matrix.
+In that pass, owner-inbox drain policies were stronger than global recycle on
+remote-heavy cases after source capacity was fixed, so global recycle remains a
+candidate/control rather than the leading default direction.
+
 ## Allocator Shape
 
 The Linux HZ5 general allocator should be split by responsibility:

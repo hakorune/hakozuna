@@ -991,6 +991,85 @@ interpretation:
   owner-fast-state remains restricted to owner-local lists
 ```
 
+Clean-tree MidFront observe repeat-10:
+
+```text
+result directory:
+  private/raw-results/linux/midfront_observe_20260524_104321
+
+commit:
+  432cff030fc745211320e3330d67163fa39dc0d5
+
+tree:
+  dirty=0
+
+measurement hygiene:
+  raw performance runs:
+    HZ5_PRELOAD_STATS unset
+    diagnostic stats build off
+  attribution runs:
+    separate attrib.tsv only
+    HZ5_PRELOAD_STATS=1
+  therefore preload atomic counters are not mixed into ops/s measurements
+
+configuration:
+  runs=10
+  threads=2
+  ws=100
+  slots=65536
+  HZ5_MIDFRONT_SOURCE_BATCH_COUNT=64
+  HZ5_MIDFRONT_MAP_BITS=21
+
+failure result:
+  all candidates/cases:
+    alloc_failed_runs=0
+    bad_status_runs=0
+
+attribution smoke:
+  rb16/drainall/drainmask/globalrecycle main_r90:
+    malloc_hz5=10049
+    malloc_real=0
+    malloc_fail=0
+    free_real=0
+    track_insert_fail=0
+
+notable medians:
+  hi64_r90:
+    rb16:          11.08M
+    drainmask:     10.85M
+    drainall:      10.35M
+    globalrecycle:  6.80M
+  main_r90:
+    drainall:       7.82M
+    drainmask:      6.88M
+    rb16:           6.41M
+    globalrecycle:  5.98M
+  mid_r90:
+    drainmask:     11.35M
+    drainall:       7.69M
+    rb16:           7.39M
+    globalrecycle:  6.20M
+  fixed4k_r0:
+    globalrecycle: 85.43M
+    rb16:          84.87M
+    drainmask:     81.89M
+    drainall:      78.96M
+  cross128_r90:
+    all candidates about 0.77M
+
+interpretation:
+  source batching + map21 fixed the observed benchmark-body alloc failure class
+  on clean repeat-10 observation
+  globalrecycle is no longer the leading remote-heavy policy after source
+  capacity is fixed
+  owner-inbox drain policies are the better next optimization target:
+    drainall leads main_r90
+    drainmask leads mid_r90
+    rb16/drainmask lead hi64_r90
+  cross128 remains outside the MidFront <=64K claim and needs LargeFront if it
+  becomes paper-facing
+```
+
 OwnerLifetime-O1 implementation status:
 
 ```text
