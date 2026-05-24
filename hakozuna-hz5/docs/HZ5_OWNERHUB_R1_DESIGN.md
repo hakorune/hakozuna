@@ -171,6 +171,11 @@ OwnerHub-R1:
 OwnerHub-R2 bounded coordinated drain:
   mixed-workload candidate only
   not a default remote-heavy replacement for per-front inbox
+
+OwnerHub-R3 front-dirty drain:
+  next candidate
+  keep the same coordinated drain shape
+  replace class-granular pending bits with coarse per-front dirty bits
 ```
 
 Interpretation:
@@ -181,4 +186,34 @@ main r90. However, the ownerhub pending-mask atomics add fixed remote publish
 and drain overhead that hurts single-front remote-heavy rows. The next design
 must reduce ownerhub bookkeeping cost or enable it only for mixed/cross-size
 profiles.
+
+R3 tests whether the class-granular pending mask is too expensive or too
+fragile. It intentionally makes pending state approximate: remote publish marks
+only the front as dirty, ordinary class drains do not clear it, and cross-front
+drain clears the front dirty bit after a bounded opportunistic drain. This keeps
+Small/Mid/Large ownership validation specialized and does not introduce a
+generic RemoteEntry payload.
+
+Short raw repeat-3 result:
+
+```text
+main r90:
+  inbox 7.54M
+  R2    9.85M
+  R3    6.97M
+
+mid_only r90:
+  inbox 7.73M
+  R2    6.42M
+  R3    7.71M
+
+cross128 r90:
+  inbox 6.23M
+  R2    5.99M
+  R3    6.18M
+```
+
+Decision: R3 is useful as a diagnostic, but it is not a broad default. It
+recovers some single-front damage from R2 but fails to beat the owner-inbox
+baseline on the important mixed r90 row.
 ```

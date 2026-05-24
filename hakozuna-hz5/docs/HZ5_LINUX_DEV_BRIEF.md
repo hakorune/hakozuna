@@ -181,7 +181,36 @@ OwnerHub-R1:
 OwnerHub-R2:
   mixed-workload candidate only
   needs lower-cost bookkeeping before it can be a default remote-heavy lane
+
+OwnerHub-R3:
+  implemented as the next candidate
+  uses coarse per-front dirty bits instead of class-granular pending bits
+  keeps per-front inbox payloads and fail-closed descriptor validation
+  should be measured against R2 and the owner-inbox baseline without stats
 ```
+
+Short raw repeat-3 results show R3 is not a broad default:
+
+```text
+main r90:
+  inbox 7.54M
+  R2    9.85M
+  R3    6.97M
+
+mid_only r90:
+  inbox 7.73M
+  R2    6.42M
+  R3    7.71M
+
+cross128 r90:
+  inbox 6.23M
+  R2    5.99M
+  R3    6.18M
+```
+
+R3 reduces some R2 damage but does not create a general win. OwnerHub should
+remain a candidate for selected mixed rows, while the default remote-heavy path
+should stay per-front until a lower-cost handoff design is found.
 
 ## Next Technical Question
 

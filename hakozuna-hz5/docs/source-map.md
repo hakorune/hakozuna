@@ -82,6 +82,8 @@ ownerhub/
   HZ5-OwnerHub-R1
   Diagnostic owner-slot pending-mask observer
   Tracks cross-front remote backlog without changing allocation behavior
+  HZ5-OwnerHub-R2/R3
+  Coordinated cross-front drain candidates for remote-heavy mixed workloads
 ```
 
 Current MidFront lane naming:

@@ -48,6 +48,7 @@ TRACE_LANE=0
 BUILD_PRELOAD_FULL=0
 LINUX_OWNERHUB_R1=0
 LINUX_OWNERHUB_R2=0
+LINUX_OWNERHUB_R3=0
 LINUX_SMALLFRONT_S1=0
 LINUX_SMALLFRONT_REMOTE_BATCH_CAP=16
 LINUX_MIDFRONT_M1=0
@@ -136,6 +137,9 @@ Options:
   --linux-ownerhub-r2
                      candidate only: OwnerHub coordinated cross-front drain
                      on allocation miss; does not enable diagnostic counters
+  --linux-ownerhub-r3
+                     candidate only: OwnerHub front-dirty coordinated drain;
+                     uses coarse per-front pending bits instead of class bits
   --linux-midfront-m1
                      enable Linux MidFront-M1 ordinary malloc 4K..64K front-end
   --linux-midfront-owner-fast-state
@@ -524,6 +528,16 @@ while [[ $# -gt 0 ]]; do
     --linux-ownerhub-r2)
       BUILD_PRELOAD_FULL=1
       LINUX_OWNERHUB_R2=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDFRONT_M1=1
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
+    --linux-ownerhub-r3)
+      BUILD_PRELOAD_FULL=1
+      LINUX_OWNERHUB_R3=1
       LINUX_SMALLFRONT_S1=1
       LINUX_MIDFRONT_M1=1
       LINUX_LARGEFRONT_L1=1
@@ -962,6 +976,9 @@ fi
 if [[ "$LINUX_OWNERHUB_R2" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_OWNERHUB_R2=1)
 fi
+if [[ "$LINUX_OWNERHUB_R3" -eq 1 ]]; then
+  COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_OWNERHUB_R3=1)
+fi
 if [[ "$LINUX_MIDFRONT_M1" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDFRONT_M1=1)
   COMMON_FLAGS+=(
@@ -1047,6 +1064,7 @@ fi
   echo "build_preload_full=${BUILD_PRELOAD_FULL}"
   echo "linux_ownerhub_r1=${LINUX_OWNERHUB_R1}"
   echo "linux_ownerhub_r2=${LINUX_OWNERHUB_R2}"
+  echo "linux_ownerhub_r3=${LINUX_OWNERHUB_R3}"
   echo "linux_smallfront_s1=${LINUX_SMALLFRONT_S1}"
   echo "linux_smallfront_remote_batch_cap=${LINUX_SMALLFRONT_REMOTE_BATCH_CAP}"
   echo "linux_midfront_m1=${LINUX_MIDFRONT_M1}"

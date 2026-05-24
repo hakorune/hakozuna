@@ -2084,6 +2084,61 @@ decision:
   Ownerhub pending-mask atomics add fixed remote publish/drain overhead that
   hurts single-front remote-heavy rows. Next remote design should reduce
   bookkeeping cost or enable ownerhub only for mixed/cross-size profiles.
+
+OwnerHub-R3 front-dirty candidate:
+  implemented:
+    --linux-ownerhub-r3
+  design:
+    same coordinated cross-front drain shape as R2
+    pending state is coarse front-dirty bits instead of class-granular bits
+    ordinary class drains do not clear front dirty
+    bounded cross-front drains clear the front dirty bit after draining
+    Small/Mid/Large inbox payloads and ownership validation remain specialized
+  purpose:
+    test whether R2's class-granular pending bookkeeping is the source of the
+    single-front remote-heavy regression
+  measurement rule:
+    compare against owner-inbox baseline and R2 with HZ5_PRELOAD_STATS unset
+    do not mix R1/HZ5_OWNERHUB_STATS counters into raw timing
+
+R3 short raw repeat-3, threads=2 iters=200000 ws=100, stats unset:
+  main r50:
+    inbox 11.03M median
+    R2    10.14M median
+    R3    10.71M median
+  main r90:
+    inbox  7.54M median
+    R2     9.85M median
+    R3     6.97M median
+  mid_only r50:
+    inbox 10.86M median
+    R2    10.32M median
+    R3    10.03M median
+  mid_only r90:
+    inbox  7.73M median
+    R2     6.42M median
+    R3     7.71M median
+  large_only r50:
+    inbox  9.17M median
+    R2     9.60M median
+    R3     9.63M median
+  large_only r90:
+    inbox  7.59M median
+    R2     6.62M median
+    R3     6.53M median
+  cross128 r50:
+    inbox  9.28M median
+    R2     9.45M median
+    R3     9.37M median
+  cross128 r90:
+    inbox  6.23M median
+    R2     5.99M median
+    R3     6.18M median
+
+R3 decision:
+  Front-dirty bookkeeping reduces some R2 damage, especially mid_only r90, but
+  it does not produce a broad win. OwnerHub coordinated drain remains a
+  workload-specific candidate rather than default policy.
 ```
 
 MidFront source-return cleanup:

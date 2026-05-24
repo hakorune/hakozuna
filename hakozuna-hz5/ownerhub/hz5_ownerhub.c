@@ -12,8 +12,13 @@
 #define BENCHLAB_HZ5_LINUX_OWNERHUB_R2 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_OWNERHUB_R3
+#define BENCHLAB_HZ5_LINUX_OWNERHUB_R3 0
+#endif
+
 #if defined(__linux__) && \
-    (BENCHLAB_HZ5_LINUX_OWNERHUB_R1 || BENCHLAB_HZ5_LINUX_OWNERHUB_R2)
+    (BENCHLAB_HZ5_LINUX_OWNERHUB_R1 || BENCHLAB_HZ5_LINUX_OWNERHUB_R2 || \
+     BENCHLAB_HZ5_LINUX_OWNERHUB_R3)
 
 #define HZ5_OWNERHUB_SMALL_SHIFT 0u
 #define HZ5_OWNERHUB_MID_SHIFT 16u
@@ -21,6 +26,7 @@
 #define HZ5_OWNERHUB_SMALL_BITS 14u
 #define HZ5_OWNERHUB_MID_BITS 5u
 #define HZ5_OWNERHUB_LARGE_BITS 4u
+#define HZ5_OWNERHUB_FRONT_DIRTY_SHIFT 48u
 
 static _Atomic uint64_t g_hz5_ownerhub_pending[UINT16_MAX + 1u];
 
@@ -45,6 +51,17 @@ void hz5_midfront_ownerhub_drain_some(uint32_t budget);
 void hz5_largefront_ownerhub_drain_some(uint32_t budget);
 
 static uint64_t hz5_ownerhub_front_mask(Hz5OwnerHubFront front) {
+#if BENCHLAB_HZ5_LINUX_OWNERHUB_R3
+  switch (front) {
+    case HZ5_OWNERHUB_FRONT_SMALL:
+    case HZ5_OWNERHUB_FRONT_MID:
+    case HZ5_OWNERHUB_FRONT_LARGE:
+      return UINT64_C(1) << (HZ5_OWNERHUB_FRONT_DIRTY_SHIFT +
+                             (uint32_t)front);
+    default:
+      return 0;
+  }
+#else
   switch (front) {
     case HZ5_OWNERHUB_FRONT_SMALL:
       return ((UINT64_C(1) << HZ5_OWNERHUB_SMALL_BITS) - UINT64_C(1))
@@ -58,6 +75,7 @@ static uint64_t hz5_ownerhub_front_mask(Hz5OwnerHubFront front) {
     default:
       return 0;
   }
+#endif
 }
 
 static uint64_t hz5_ownerhub_bit(Hz5OwnerHubFront front,
@@ -83,13 +101,23 @@ static uint64_t hz5_ownerhub_bit(Hz5OwnerHubFront front,
   }
 }
 
+static uint64_t hz5_ownerhub_pending_bit(Hz5OwnerHubFront front,
+                                         uint32_t class_index) {
+#if BENCHLAB_HZ5_LINUX_OWNERHUB_R3
+  (void)class_index;
+  return hz5_ownerhub_front_mask(front);
+#else
+  return hz5_ownerhub_bit(front, class_index);
+#endif
+}
+
 void hz5_ownerhub_mark_pending(Hz5OwnerToken owner,
                                Hz5OwnerHubFront front,
                                uint32_t class_index) {
   if (owner.slot == 0 || !hz5_owner_is_alive(owner)) {
     return;
   }
-  uint64_t bit = hz5_ownerhub_bit(front, class_index);
+  uint64_t bit = hz5_ownerhub_pending_bit(front, class_index);
   if (bit == 0) {
     return;
   }
@@ -127,6 +155,11 @@ void hz5_ownerhub_clear_pending(Hz5OwnerToken owner,
   if (owner.slot == 0) {
     return;
   }
+#if BENCHLAB_HZ5_LINUX_OWNERHUB_R3
+  (void)front;
+  (void)class_index;
+  return;
+#else
   uint64_t bit = hz5_ownerhub_bit(front, class_index);
   if (bit == 0) {
     return;
@@ -134,6 +167,7 @@ void hz5_ownerhub_clear_pending(Hz5OwnerToken owner,
   atomic_fetch_and_explicit(&g_hz5_ownerhub_pending[owner.slot],
                             ~bit,
                             memory_order_acq_rel);
+#endif
 }
 
 void hz5_ownerhub_note_alloc_miss(Hz5OwnerToken owner,
@@ -143,7 +177,7 @@ void hz5_ownerhub_note_alloc_miss(Hz5OwnerToken owner,
   if (owner.slot == 0) {
     return;
   }
-  uint64_t bit = hz5_ownerhub_bit(front, class_index);
+  uint64_t bit = hz5_ownerhub_pending_bit(front, class_index);
   uint64_t front_mask = hz5_ownerhub_front_mask(front);
   if (bit == 0 || front_mask == 0) {
     return;
@@ -193,7 +227,7 @@ void hz5_ownerhub_note_alloc_miss(Hz5OwnerToken owner,
 
 void hz5_ownerhub_drain_cross_fronts(Hz5OwnerToken owner,
                                      Hz5OwnerHubFront target_front) {
-#if BENCHLAB_HZ5_LINUX_OWNERHUB_R2
+#if BENCHLAB_HZ5_LINUX_OWNERHUB_R2 || BENCHLAB_HZ5_LINUX_OWNERHUB_R3
   if (owner.slot == 0) {
     return;
   }
@@ -215,6 +249,12 @@ void hz5_ownerhub_drain_cross_fronts(Hz5OwnerToken owner,
                               memory_order_relaxed);
 #endif
     hz5_smallfront_ownerhub_drain_some(16u);
+#if BENCHLAB_HZ5_LINUX_OWNERHUB_R3
+    atomic_fetch_and_explicit(&g_hz5_ownerhub_pending[owner.slot],
+                              ~hz5_ownerhub_front_mask(
+                                  HZ5_OWNERHUB_FRONT_SMALL),
+                              memory_order_acq_rel);
+#endif
   }
   if (target_front != HZ5_OWNERHUB_FRONT_MID &&
       (pending & hz5_ownerhub_front_mask(HZ5_OWNERHUB_FRONT_MID)) != 0) {
@@ -224,6 +264,12 @@ void hz5_ownerhub_drain_cross_fronts(Hz5OwnerToken owner,
                               memory_order_relaxed);
 #endif
     hz5_midfront_ownerhub_drain_some(8u);
+#if BENCHLAB_HZ5_LINUX_OWNERHUB_R3
+    atomic_fetch_and_explicit(&g_hz5_ownerhub_pending[owner.slot],
+                              ~hz5_ownerhub_front_mask(
+                                  HZ5_OWNERHUB_FRONT_MID),
+                              memory_order_acq_rel);
+#endif
   }
   if (target_front != HZ5_OWNERHUB_FRONT_LARGE &&
       (pending & hz5_ownerhub_front_mask(HZ5_OWNERHUB_FRONT_LARGE)) != 0) {
@@ -233,6 +279,12 @@ void hz5_ownerhub_drain_cross_fronts(Hz5OwnerToken owner,
                               memory_order_relaxed);
 #endif
     hz5_largefront_ownerhub_drain_some(4u);
+#if BENCHLAB_HZ5_LINUX_OWNERHUB_R3
+    atomic_fetch_and_explicit(&g_hz5_ownerhub_pending[owner.slot],
+                              ~hz5_ownerhub_front_mask(
+                                  HZ5_OWNERHUB_FRONT_LARGE),
+                              memory_order_acq_rel);
+#endif
   }
 #else
   (void)owner;

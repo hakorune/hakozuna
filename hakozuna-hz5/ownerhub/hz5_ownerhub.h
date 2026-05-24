@@ -23,8 +23,13 @@ typedef enum Hz5OwnerHubFront {
 #define BENCHLAB_HZ5_LINUX_OWNERHUB_R2 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_OWNERHUB_R3
+#define BENCHLAB_HZ5_LINUX_OWNERHUB_R3 0
+#endif
+
 #if defined(__linux__) && \
-    (BENCHLAB_HZ5_LINUX_OWNERHUB_R1 || BENCHLAB_HZ5_LINUX_OWNERHUB_R2)
+    (BENCHLAB_HZ5_LINUX_OWNERHUB_R1 || BENCHLAB_HZ5_LINUX_OWNERHUB_R2 || \
+     BENCHLAB_HZ5_LINUX_OWNERHUB_R3)
 void hz5_ownerhub_mark_pending(Hz5OwnerToken owner,
                                Hz5OwnerHubFront front,
                                uint32_t class_index);
