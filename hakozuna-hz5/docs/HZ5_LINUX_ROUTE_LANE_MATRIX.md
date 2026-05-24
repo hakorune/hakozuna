@@ -106,6 +106,7 @@ small 4K/8K a8192:
 | `midpagefront_allocfirst` | lane | duplicate preload class-lookup removal | local-r0 comparison baseline |
 | `midpagefront_m4_magazine` | lane | descriptor-owned owner-local slot magazine | remote-heavy candidate; not broad default |
 | `midpagefront_m4_remote_packet` | lane | page-descriptor remote packet for M4 magazine | remote-heavy candidate |
+| `midpagefront_m4_crossdrain` | lane | low-cost MidPage owner pending drain from other-front misses | diagnostic no-promote; hurts cross128 r90 |
 | `preload_free_midfirst` | lane | preload free dispatch order diagnostic | diagnostic only |
 | `midfront_lookup_cache` | lane | MidFront TLS page lookup cache diagnostic | diagnostic only |
 | `largefront_l1` | route/lane family | active Linux large front-end candidate | candidate for cross128 coverage |

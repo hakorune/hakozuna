@@ -2,6 +2,7 @@
 
 #include "hz5_config.h"
 #include "hz5_internal.h"
+#include "hz5_midpagefront.h"
 #include "hz5_ownerhub.h"
 
 #include <pthread.h>
@@ -38,6 +39,10 @@ void _aligned_free(void* ptr);
 
 #ifndef BENCHLAB_HZ5_LINUX_SMALLFRONT_REMOTE_OUTBOX
 #define BENCHLAB_HZ5_LINUX_SMALLFRONT_REMOTE_OUTBOX 0
+#endif
+
+#ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN
+#define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN 0
 #endif
 
 #ifndef HZ5_SMALLFRONT_REMOTE_OUTBOX_SLOTS
@@ -535,6 +540,9 @@ void* hz5_smallfront_alloc(size_t size, size_t align) {
                                  ci);
     hz5_smallfront_drain_remote_class(tls, ci);
     hz5_ownerhub_drain_cross_fronts(tls->owner, HZ5_OWNERHUB_FRONT_SMALL);
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN
+    hz5_midpagefront_owner_drain_some(2u);
+#endif
     ptr = hz5_smallfront_local_pop(tls, ci, &page);
   }
   if (!ptr) {

@@ -2,6 +2,7 @@
 
 #include "hz5_config.h"
 #include "hz5_internal.h"
+#include "hz5_midpagefront.h"
 #include "hz5_ownerhub.h"
 
 #include <pthread.h>
@@ -32,6 +33,10 @@
 
 #ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_EMPTY_GATED
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_EMPTY_GATED 0
+#endif
+
+#ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN
+#define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN 0
 #endif
 
 #ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_MAP_BASE_ONLY
@@ -822,6 +827,9 @@ void* hz5_largefront_alloc(size_t size, size_t align) {
     return span->base;
   }
   hz5_ownerhub_drain_cross_fronts(tls->owner, HZ5_OWNERHUB_FRONT_LARGE);
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN
+  hz5_midpagefront_owner_drain_some(2u);
+#endif
   span = hz5_largefront_local_pop(tls, ci);
   if (span) {
     if (hz5_largefront_activate_local_for_owner(tls, span)) {

@@ -2,6 +2,7 @@
 
 #include "hz5_config.h"
 #include "hz5_internal.h"
+#include "hz5_midpagefront.h"
 #include "hz5_ownerhub.h"
 
 #include <pthread.h>
@@ -33,6 +34,10 @@ void _aligned_free(void* ptr);
 
 #ifndef BENCHLAB_HZ5_LINUX_MIDFRONT_DRAIN_MASK_HIT_STOP
 #define BENCHLAB_HZ5_LINUX_MIDFRONT_DRAIN_MASK_HIT_STOP 0
+#endif
+
+#ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN
+#define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN 0
 #endif
 
 #ifndef BENCHLAB_HZ5_LINUX_MIDFRONT_DRAIN_TAKE_FIRST
@@ -941,6 +946,9 @@ void* hz5_midfront_alloc(size_t size, size_t align) {
       return span->base;
     }
     hz5_ownerhub_drain_cross_fronts(tls->owner, HZ5_OWNERHUB_FRONT_MID);
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN
+    hz5_midpagefront_owner_drain_some(2u);
+#endif
     span = hz5_midfront_local_pop(tls, ci);
   }
   if (span) {

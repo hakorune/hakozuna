@@ -1019,6 +1019,57 @@ free_real=0
 track_insert_fail=0
 ```
 
+### `midpage_m4packet_crossdrain_smoke_20260525_085453`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_m4packet_crossdrain_smoke_20260525_085453
+```
+
+Purpose:
+
+```text
+Focused RUNS=3 smoke for the separate m4packet-crossdrain lane. Performance
+runs keep HZ5_PRELOAD_STATS unset.
+```
+
+Decision:
+
+```text
+No promote. Cross-drain helps mid_only/main r90 but hurts cross128 r50/r90.
+Keep it as a diagnostic that the remaining cross128 gap needs a different
+control point than other-front MidPage draining.
+```
+
+Key rows:
+
+```text
+main r90:
+  allocfirst  6.50M, m4packet 11.02M, crossdrain 11.52M, tcmalloc 11.83M
+
+mid_only r90:
+  allocfirst  6.81M, m4packet 11.23M, crossdrain 12.79M, tcmalloc 11.92M
+
+cross128 r90:
+  allocfirst  5.17M, m4packet  7.11M, crossdrain  5.88M, tcmalloc 12.70M
+```
+
+### `midpage_m4packet_crossdrain_attrib_20260525_085513`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_m4packet_crossdrain_attrib_20260525_085513
+```
+
+Result:
+
+```text
+m4packet:    malloc_hz5=10049 malloc_real=0 free_hz5=10057 free_real=0 track_insert_fail=0
+crossdrain:  malloc_hz5=10049 malloc_real=0 free_hz5=10057 free_real=0 track_insert_fail=0
+```
+
 ## Older Results
 
 The full chronological result log remains in:

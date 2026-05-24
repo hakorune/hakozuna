@@ -73,6 +73,7 @@ LINUX_MIDPAGEFRONT_NODELESS_PTRCACHE=0
 LINUX_MIDPAGEFRONT_UNSAFE_LOCAL_NOCHECK=0
 LINUX_MIDPAGEFRONT_M4_MAGAZINE=0
 LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET=0
+LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN=0
 LINUX_MIDFRONT_M1=0
 LINUX_MIDFRONT_OWNER_FAST_STATE=0
 LINUX_MIDFRONT_MAX_BYTES=65536
@@ -224,6 +225,9 @@ Options:
   --linux-hz5-general-midpage-region-shadow-m4packet
                      diagnostic preset: m4mag plus descriptor page-packet
                      remote handoff
+  --linux-hz5-general-midpage-region-shadow-m4packet-crossdrain
+                     diagnostic preset: m4packet plus low-cost MidPageFront
+                     owner pending mask drained from other front-end misses
   --linux-hz5-general-midpage-region-shadow-slotswitch
                      diagnostic preset: midpage-region-shadow-allocfirst plus
                      fixed-class MidPageFront slot index dispatch
@@ -480,6 +484,11 @@ enable_midpage_m4mag_base() {
 enable_midpage_m4packet_base() {
   enable_midpage_m4mag_base
   LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET=1
+}
+
+enable_midpage_m4packet_crossdrain_base() {
+  enable_midpage_m4packet_base
+  LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN=1
 }
 
 while [[ $# -gt 0 ]]; do
@@ -916,6 +925,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --linux-hz5-general-midpage-region-shadow-m4packet)
       enable_midpage_m4packet_base
+      shift
+      ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-crossdrain)
+      enable_midpage_m4packet_crossdrain_base
       shift
       ;;
     --linux-hz5-general-midpage-region-shadow-slotswitch)
@@ -1736,6 +1749,9 @@ if [[ "$LINUX_MIDPAGEFRONT_M2" -eq 1 ]]; then
   if [[ "$LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET=1)
   fi
+  if [[ "$LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN=1)
+  fi
 fi
 if [[ "$LINUX_OWNERHUB_R1" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_OWNERHUB_R1=1)
@@ -1897,6 +1913,7 @@ fi
   echo "linux_midpagefront_unsafe_local_nocheck=${LINUX_MIDPAGEFRONT_UNSAFE_LOCAL_NOCHECK}"
   echo "linux_midpagefront_m4_magazine=${LINUX_MIDPAGEFRONT_M4_MAGAZINE}"
   echo "linux_midpagefront_m4_remote_packet=${LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET}"
+  echo "linux_midpagefront_m4_cross_drain=${LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN}"
   echo "linux_midfront_m1=${LINUX_MIDFRONT_M1}"
   echo "linux_midfront_owner_fast_state=${LINUX_MIDFRONT_OWNER_FAST_STATE}"
   echo "linux_midfront_max_bytes=${LINUX_MIDFRONT_MAX_BYTES}"

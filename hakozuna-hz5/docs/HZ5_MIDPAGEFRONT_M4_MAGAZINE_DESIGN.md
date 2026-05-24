@@ -186,6 +186,51 @@ than allocfirst and only tcmalloc-class, so do not promote it as a broad remote
 default yet.
 ```
 
+### M4b cross-drain diagnostic
+
+```text
+private/raw-results/linux/midpage_m4packet_crossdrain_smoke_20260525_085453
+private/raw-results/linux/midpage_m4packet_crossdrain_r0_smoke_20260525_085539
+private/raw-results/linux/midpage_m4packet_crossdrain_attrib_20260525_085513
+```
+
+Implementation:
+
+```text
+BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN=1
+Remote packet publish sets a MidPageFront owner/class pending mask.
+Other front-end alloc misses call hz5_midpagefront_owner_drain_some with a
+small budget. This avoids generic OwnerHub-R2/R3 stats/fixed policy and keeps
+the experiment isolated.
+```
+
+Result:
+
+```text
+main r90:
+  m4packet    11.02M
+  crossdrain  11.52M
+  tcmalloc    11.83M
+
+mid_only r90:
+  m4packet    11.23M
+  crossdrain  12.79M
+  tcmalloc    11.92M
+
+cross128 r90:
+  m4packet     7.11M
+  crossdrain   5.88M
+  tcmalloc    12.70M
+```
+
+Decision:
+
+```text
+Do not promote cross-drain. It improves the MidPage-heavy r90 rows, but hurts
+cross128 r50/r90. The result says the remaining cross128 gap is not solved by
+draining MidPage remote packets from every other-front miss.
+```
+
 ## No-Go
 
 ```text

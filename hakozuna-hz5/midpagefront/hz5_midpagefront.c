@@ -71,6 +71,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN
+#define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN 0
+#endif
+
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M2
 
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_RUN && \
@@ -244,6 +248,10 @@ static pthread_mutex_t g_hz5_midpagefront_map_lock =
 #endif
 static _Atomic(void*) g_hz5_midpagefront_owner_inbox[UINT16_MAX + 1u]
                                                   [HZ5_MIDPAGEFRONT_CLASS_COUNT];
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET && \
+    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN
+static _Atomic uint32_t g_hz5_midpagefront_owner_pending[UINT16_MAX + 1u];
+#endif
 static _Thread_local Hz5MidPageTls g_hz5_midpagefront_tls;
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_STATS
 static _Atomic uint64_t g_hz5_midpagefront_stat_refill;
@@ -310,6 +318,54 @@ static int hz5_midpagefront_mark_active_local(Hz5MidPage* page,
                                               uint32_t slot);
 static uint32_t hz5_midpagefront_drain_remote_class(Hz5MidPageTls* tls,
                                                     uint32_t class_index);
+
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET && \
+    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN
+static void hz5_midpagefront_owner_mark_pending(Hz5OwnerToken owner,
+                                                uint32_t class_index) {
+  if (owner.slot == 0 || class_index >= HZ5_MIDPAGEFRONT_CLASS_COUNT) {
+    return;
+  }
+  atomic_fetch_or_explicit(&g_hz5_midpagefront_owner_pending[owner.slot],
+                           UINT32_C(1) << class_index,
+                           memory_order_release);
+}
+
+static uint32_t hz5_midpagefront_owner_pending_load(Hz5OwnerToken owner) {
+  if (owner.slot == 0) {
+    return 0;
+  }
+  return atomic_load_explicit(&g_hz5_midpagefront_owner_pending[owner.slot],
+                              memory_order_acquire);
+}
+
+static void hz5_midpagefront_owner_clear_pending(Hz5OwnerToken owner,
+                                                 uint32_t class_index) {
+  if (owner.slot == 0 || class_index >= HZ5_MIDPAGEFRONT_CLASS_COUNT) {
+    return;
+  }
+  atomic_fetch_and_explicit(&g_hz5_midpagefront_owner_pending[owner.slot],
+                            ~(UINT32_C(1) << class_index),
+                            memory_order_acq_rel);
+}
+#else
+static void hz5_midpagefront_owner_mark_pending(Hz5OwnerToken owner,
+                                                uint32_t class_index) {
+  (void)owner;
+  (void)class_index;
+}
+
+static uint32_t hz5_midpagefront_owner_pending_load(Hz5OwnerToken owner) {
+  (void)owner;
+  return 0;
+}
+
+static void hz5_midpagefront_owner_clear_pending(Hz5OwnerToken owner,
+                                                 uint32_t class_index) {
+  (void)owner;
+  (void)class_index;
+}
+#endif
 
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_REGION_ARRAY && \
     BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_TLS_REGION_CACHE
@@ -712,6 +768,7 @@ static void hz5_midpagefront_m4_remote_packet_publish(Hz5OwnerToken owner,
     page->remote_packet_next = (Hz5MidPage*)old_head;
   } while (!atomic_compare_exchange_weak_explicit(
       inbox, &old_head, page, memory_order_release, memory_order_acquire));
+  hz5_midpagefront_owner_mark_pending(owner, class_index);
 }
 
 static void hz5_midpagefront_m4_remote_packet_requeue_if_needed(
@@ -1040,6 +1097,7 @@ static void hz5_midpagefront_remote_publish_list(Hz5OwnerToken owner,
     tail->next = (Hz5MidPageNode*)old_head;
   } while (!atomic_compare_exchange_weak_explicit(
       inbox, &old_head, head, memory_order_release, memory_order_acquire));
+  hz5_midpagefront_owner_mark_pending(owner, class_index);
 }
 
 static void hz5_midpagefront_remote_batch_flush(Hz5MidPageTls* tls) {
@@ -1096,6 +1154,7 @@ static uint32_t hz5_midpagefront_drain_remote_class(Hz5MidPageTls* tls,
       class_index >= HZ5_MIDPAGEFRONT_CLASS_COUNT) {
     return 0;
   }
+  hz5_midpagefront_owner_clear_pending(tls->owner, class_index);
   void* head = atomic_exchange_explicit(
       &g_hz5_midpagefront_owner_inbox[tls->owner.slot][class_index],
       NULL,
@@ -1805,6 +1864,32 @@ size_t hz5_midpagefront_usable_size(void* ptr) {
   return page->class_size;
 }
 
+void hz5_midpagefront_owner_drain_some(unsigned budget) {
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET && \
+    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN
+  if (budget == 0u) {
+    return;
+  }
+  Hz5MidPageTls* tls = hz5_midpagefront_tls();
+  uint32_t pending = hz5_midpagefront_owner_pending_load(tls->owner);
+  if (pending == 0) {
+    return;
+  }
+  unsigned drained_classes = 0;
+  for (uint32_t ci = 0; ci < HZ5_MIDPAGEFRONT_CLASS_COUNT; ++ci) {
+    if ((pending & (UINT32_C(1) << ci)) == 0) {
+      continue;
+    }
+    (void)hz5_midpagefront_drain_remote_class(tls, ci);
+    if (++drained_classes >= budget) {
+      break;
+    }
+  }
+#else
+  (void)budget;
+#endif
+}
+
 #else
 
 void* hz5_midpagefront_alloc(size_t size, size_t align) {
@@ -1843,6 +1928,10 @@ int hz5_midpagefront_owns(void* ptr) {
 size_t hz5_midpagefront_usable_size(void* ptr) {
   (void)ptr;
   return 0;
+}
+
+void hz5_midpagefront_owner_drain_some(unsigned budget) {
+  (void)budget;
 }
 
 #endif

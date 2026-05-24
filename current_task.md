@@ -464,6 +464,55 @@ main/mid r50/r90. It is not a local-r0 answer. It is not a broad cross128_r90
 default yet because allocfirst remains better there.
 ```
 
+M4b cross-drain diagnostic:
+
+```text
+private/raw-results/linux/midpage_m4packet_crossdrain_smoke_20260525_085453
+private/raw-results/linux/midpage_m4packet_crossdrain_r0_smoke_20260525_085539
+private/raw-results/linux/midpage_m4packet_crossdrain_attrib_20260525_085513
+```
+
+Change:
+
+```text
+Add a separate m4packet-crossdrain lane.
+Remote packet publish sets a MidPageFront owner/class pending mask.
+SmallFront/MidFront/LargeFront alloc miss can opportunistically drain a small
+MidPageFront budget without enabling generic OwnerHub-R2/R3.
+```
+
+Result:
+
+```text
+main r90:
+  m4packet    11.02M
+  crossdrain  11.52M
+  tcmalloc    11.83M
+
+mid_only r90:
+  m4packet    11.23M
+  crossdrain  12.79M
+  tcmalloc    11.92M
+
+cross128 r90:
+  m4packet     7.11M
+  crossdrain   5.88M
+  tcmalloc    12.70M
+
+r0:
+  m4packet and crossdrain are similar; both remain far below tcmalloc.
+```
+
+Decision:
+
+```text
+Cross-drain is useful as a diagnostic signal for mid_only/main r90, but it is
+not a broad default. It worsens cross128 r50/r90, likely because other-front
+alloc miss drain adds fixed work while cross128 is dominated by cross-size
+traffic. Keep m4packet as the better current candidate and treat cross-drain as
+a no-promote lane.
+```
+
 Latest M3 stats:
 
 ```text
