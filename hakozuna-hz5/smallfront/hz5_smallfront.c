@@ -292,12 +292,13 @@ static void hz5_smallfront_remote_batch_push(Hz5SmallFrontTls* tls,
   }
 }
 
-static void hz5_smallfront_drain_remote_class_budget(Hz5SmallFrontTls* tls,
-                                                     uint32_t class_index,
-                                                     uint32_t budget) {
+static uint32_t hz5_smallfront_drain_remote_class_budget(
+    Hz5SmallFrontTls* tls,
+    uint32_t class_index,
+    uint32_t budget) {
   if (!tls || tls->owner.slot == 0 ||
       class_index >= HZ5_SMALLFRONT_CLASS_COUNT) {
-    return;
+    return 0;
   }
 
   hz5_ownerhub_clear_pending(tls->owner,
@@ -316,24 +317,31 @@ static void hz5_smallfront_drain_remote_class_budget(Hz5SmallFrontTls* tls,
         tail = tail->next;
       }
       hz5_smallfront_remote_publish_list(tls->owner, class_index, node, tail);
-      return;
+      return drained;
     }
     if (node->page && hz5_owner_equal(node->page->owner, tls->owner)) {
       hz5_smallfront_local_push(tls, class_index, node, node->page);
     }
     ++drained;
   }
+  return drained;
 }
 
 static void hz5_smallfront_drain_remote_class(Hz5SmallFrontTls* tls,
                                               uint32_t class_index) {
-  hz5_smallfront_drain_remote_class_budget(tls, class_index, 0u);
+  (void)hz5_smallfront_drain_remote_class_budget(tls, class_index, 0u);
 }
 
 void hz5_smallfront_ownerhub_drain_some(uint32_t budget) {
   Hz5SmallFrontTls* tls = hz5_smallfront_tls();
+  uint32_t remaining = budget;
   for (uint32_t i = 0; i < HZ5_SMALLFRONT_CLASS_COUNT; ++i) {
-    hz5_smallfront_drain_remote_class_budget(tls, i, budget);
+    if (remaining == 0u) {
+      break;
+    }
+    uint32_t drained =
+        hz5_smallfront_drain_remote_class_budget(tls, i, remaining);
+    remaining -= drained > remaining ? remaining : drained;
   }
 }
 

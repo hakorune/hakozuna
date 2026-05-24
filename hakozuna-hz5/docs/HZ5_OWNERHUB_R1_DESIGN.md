@@ -110,40 +110,56 @@ large:  4 spans
 
 Small/Mid/Large inbox payloads remained specialized.
 
-Focused repeat-3 raw comparison, `HZ5_PRELOAD_STATS` unset:
+Initial per-class budget R2 was not a broad win. It was then fixed to use a
+total front budget, not per-class budget:
+
+```text
+old:
+  small 16 per class = up to 224 objects
+  mid   8 per class  = up to 40 spans
+  large 4 per class  = up to 16 spans
+
+fixed:
+  small 16 total
+  mid   8 total
+  large 4 total
+```
+
+Focused repeat-3 raw comparison after total-budget fix,
+`HZ5_PRELOAD_STATS` unset:
 
 ```text
 main r50:
-  inbox  11.38M median
-  R2     11.11M median
+  inbox   9.89M median
+  R2     10.89M median
 
 main r90:
-  inbox   9.01M median
-  R2      7.87M median
+  inbox   6.99M median
+  R2      8.69M median
 
 mid_only r50:
-  inbox  11.70M median
-  R2     11.14M median
+  inbox  10.83M median
+  R2     10.35M median
 
 mid_only r90:
-  inbox   8.84M median
-  R2      6.91M median
+  inbox  10.30M median
+  R2      6.52M median
 
 large_only r50:
-  inbox   9.09M median
-  R2      9.56M median
+  inbox  10.44M median
+  R2     10.02M median
 
 large_only r90:
-  inbox   7.58M median
-  R2      7.13M median
+  inbox   8.42M median
+  R2      6.14M median
 
 cross128 r50:
-  inbox   8.25M median
-  R2     10.38M median
+  inbox   8.98M median
+  R2      9.60M median
 
 cross128 r90:
-  inbox   7.83M median
-  R2      6.96M median
+  inbox   7.01M median
+  R2      6.32M median
 ```
 
 Decision:
@@ -153,15 +169,16 @@ OwnerHub-R1:
   useful observation
 
 OwnerHub-R2 bounded coordinated drain:
-  diagnostic only for now
-  not a broad remote-heavy win
+  mixed-workload candidate only
+  not a default remote-heavy replacement for per-front inbox
 ```
 
 Interpretation:
 
 ```text
-cross-front pending exists, but naive opportunistic drain adds enough work on
-miss paths to hurt r90. The next design should reduce remote handoff cost or
-make drain scheduling more selective, rather than draining every other front
-on each miss.
+cross-front pending exists, and total-budget R2 can help main/cross r50 and
+main r90. However, the ownerhub pending-mask atomics add fixed remote publish
+and drain overhead that hurts single-front remote-heavy rows. The next design
+must reduce ownerhub bookkeeping cost or enable it only for mixed/cross-size
+profiles.
 ```

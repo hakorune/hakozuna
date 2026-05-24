@@ -481,9 +481,14 @@ static void hz5_largefront_remote_batch_push(Hz5LargeTls* tls,
 static Hz5LargeSpan* hz5_largefront_drain_remote_class_budget(
     Hz5LargeTls* tls,
     uint32_t class_index,
-    uint32_t budget) {
+    uint32_t budget,
+    uint32_t* drained_out) {
+  uint32_t drained = 0;
   if (!tls || tls->owner.slot == 0 ||
       class_index >= HZ5_LARGEFRONT_CLASS_COUNT) {
+    if (drained_out) {
+      *drained_out = 0;
+    }
     return NULL;
   }
 
@@ -494,7 +499,6 @@ static Hz5LargeSpan* hz5_largefront_drain_remote_class_budget(
                              class_index);
   void* head = atomic_exchange_explicit(inbox, NULL, memory_order_acq_rel);
   Hz5LargeSpan* taken = NULL;
-  uint32_t drained = 0;
   while (head) {
     Hz5LargeSpan* span = (Hz5LargeSpan*)head;
     head = span->next;
@@ -507,6 +511,9 @@ static Hz5LargeSpan* hz5_largefront_drain_remote_class_budget(
                                                class_index,
                                                span,
                                                tail);
+      if (drained_out) {
+        *drained_out = drained;
+      }
       return taken;
     }
     if (!hz5_owner_equal(span->owner, tls->owner)) {
@@ -530,18 +537,33 @@ static Hz5LargeSpan* hz5_largefront_drain_remote_class_budget(
     }
     ++drained;
   }
+  if (drained_out) {
+    *drained_out = drained;
+  }
   return taken;
 }
 
 static Hz5LargeSpan* hz5_largefront_drain_remote_class(Hz5LargeTls* tls,
                                                        uint32_t class_index) {
-  return hz5_largefront_drain_remote_class_budget(tls, class_index, 0u);
+  return hz5_largefront_drain_remote_class_budget(tls,
+                                                  class_index,
+                                                  0u,
+                                                  NULL);
 }
 
 void hz5_largefront_ownerhub_drain_some(uint32_t budget) {
   Hz5LargeTls* tls = hz5_largefront_tls();
+  uint32_t remaining = budget;
   for (uint32_t i = 0; i < HZ5_LARGEFRONT_CLASS_COUNT; ++i) {
-    (void)hz5_largefront_drain_remote_class_budget(tls, i, budget);
+    if (remaining == 0u) {
+      break;
+    }
+    uint32_t drained = 0;
+    (void)hz5_largefront_drain_remote_class_budget(tls,
+                                                   i,
+                                                   remaining,
+                                                   &drained);
+    remaining -= drained > remaining ? remaining : drained;
   }
 }
 #endif

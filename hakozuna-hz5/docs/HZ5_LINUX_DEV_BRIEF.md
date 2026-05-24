@@ -147,19 +147,28 @@ main/cross128 frequently have other-front pending work at alloc miss.
 OwnerHub-R2 coordinated drain has a real target.
 ```
 
-OwnerHub-R2 bounded coordinated drain was implemented and measured, but it is
-not a broad win yet:
+OwnerHub-R2 bounded coordinated drain was implemented and measured. After
+fixing the budgets to be total-front budgets instead of per-class budgets, it
+helps some mixed rows but is still not a broad default:
 
 ```text
+main r50:
+  inbox  9.89M
+  R2    10.89M
+
+main r90:
+  inbox  6.99M
+  R2     8.69M
+
 cross128 r50:
-  inbox  8.25M
-  R2    10.38M
+  inbox  8.98M
+  R2     9.60M
 
 cross128 r90:
-  inbox  7.83M
-  R2     6.96M
+  inbox  7.01M
+  R2     6.32M
 
-main/mid r90:
+mid_only/large_only r90:
   R2 regressed versus inbox
 ```
 
@@ -170,8 +179,8 @@ OwnerHub-R1:
   keep as observation evidence
 
 OwnerHub-R2:
-  diagnostic only
-  needs a more selective drain policy or a lower-cost remote handoff design
+  mixed-workload candidate only
+  needs lower-cost bookkeeping before it can be a default remote-heavy lane
 ```
 
 ## Next Technical Question

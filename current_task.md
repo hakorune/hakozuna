@@ -2041,43 +2041,49 @@ implemented:
   Small/Mid/Large keep specialized inbox payloads
   ownerhub drains other-front pending work on alloc miss
 
-budgets:
+initial budgets were accidentally per-class and too aggressive:
+  small 16 per class = up to 224 objects
+  mid 8 per class = up to 40 spans
+  large 4 per class = up to 16 spans
+
+fixed total-front budgets:
   small 16 objects
   mid 8 spans
   large 4 spans
 
-raw repeat-3 comparison, HZ5_PRELOAD_STATS unset:
+raw repeat-3 comparison after total-budget fix, HZ5_PRELOAD_STATS unset:
   main r50:
-    inbox  11.38M median
-    R2     11.11M median
+    inbox   9.89M median
+    R2     10.89M median
   main r90:
-    inbox   9.01M median
-    R2      7.87M median
+    inbox   6.99M median
+    R2      8.69M median
   mid_only r50:
-    inbox  11.70M median
-    R2     11.14M median
+    inbox  10.83M median
+    R2     10.35M median
   mid_only r90:
-    inbox   8.84M median
-    R2      6.91M median
+    inbox  10.30M median
+    R2      6.52M median
   large_only r50:
-    inbox   9.09M median
-    R2      9.56M median
+    inbox  10.44M median
+    R2     10.02M median
   large_only r90:
-    inbox   7.58M median
-    R2      7.13M median
+    inbox   8.42M median
+    R2      6.14M median
   cross128 r50:
-    inbox   8.25M median
-    R2     10.38M median
+    inbox   8.98M median
+    R2      9.60M median
   cross128 r90:
-    inbox   7.83M median
-    R2      6.96M median
+    inbox   7.01M median
+    R2      6.32M median
 
 decision:
   R1 observation is useful.
-  R2 bounded coordinated drain is diagnostic only for now.
-  Naive opportunistic drain reduces pending backlog but adds enough miss-path
-  work to hurt r90. Next remote design should be more selective or lower the
-  handoff cost itself.
+  R2 total-budget drain is a mixed-workload candidate, not a default
+  remote-heavy replacement.
+  Ownerhub pending-mask atomics add fixed remote publish/drain overhead that
+  hurts single-front remote-heavy rows. Next remote design should reduce
+  bookkeeping cost or enable ownerhub only for mixed/cross-size profiles.
 ```
 
 MidFront source-return cleanup:
