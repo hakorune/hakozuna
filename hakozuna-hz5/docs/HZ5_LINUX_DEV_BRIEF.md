@@ -302,19 +302,50 @@ It should be compared in the next broad matrix before becoming the lead
 LargeFront remote-heavy candidate.
 ```
 
+Focused comparison, `threads=16`, `ws=400`, `remote=90`, repeat-3:
+
+```text
+main_r90:
+  HZ4 corrected   93.28M
+  tcmalloc        73.63M
+  region-map      27.71M
+  inbox           27.00M
+
+large_only_r90:
+  base-only       16.97M
+  inbox           15.09M, but only 1/3 successful under 15s timeout
+  region-map      10.07M
+  tcmalloc         7.13M
+  HZ4 corrected    6.87M
+
+cross128_r90:
+  HZ4 corrected   46.51M
+  inbox           20.18M
+  region-map      17.23M
+  base-only       10.76M
+  tcmalloc         7.37M
+```
+
+Interpretation:
+
+```text
+Region-map fixes the clean-safety timeout issue, but does not close the HZ4
+cross128 r90 gap. The next performance work should inspect HZ4's cross128
+remote path against HZ5's Small/Mid/Large remote handoff cost.
+```
+
 ## Next Technical Question
 
-Should LargeFront region-map become the lead LargeFront row after a broad
-comparison, or does it need a lower-overhead per-span/radix variant?
+Why is HZ4 still much stronger on `cross128 r90`, and which part of HZ5's
+Small/Mid/Large remote handoff is paying the extra cost?
 
 Immediate design target:
 
 ```text
-LargeFront-L2 validation:
-  compare region-map against hz5_inbox, base-only, HZ4, and tcmalloc
-  focus on large_only/cross128/main r50/r90 at paper shape
-  keep exact base-pointer free fast
-  keep interior-pointer invalid frees fail-closed
+HZ4 vs HZ5 remote-path audit:
+  compare cross128 r90 allocation/free paths
+  identify per-free atomic, owner lookup, inbox publish, and drain costs
+  keep region-map as the clean LargeFront ownership lookup candidate
 ```
 
 The earlier cross-front handoff question remains relevant for Small/Mid remote

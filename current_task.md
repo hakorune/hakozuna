@@ -409,6 +409,68 @@ Next:
   decide whether region-map becomes the lead LargeFront remote-heavy candidate
 ```
 
+Focused comparison snapshot:
+
+```text
+raw root:
+  private/raw-results/linux/hz5_largefront_regionmap_focus_20260524_220438
+
+shape:
+  threads=16
+  ws=400
+  runs=3
+  taskset=0-15
+  remote=90
+```
+
+Important hygiene note:
+
+```text
+The first HZ4 row used /mnt/workdisk/public_share/hakmem/allocators/libhakozuna_hz4.so
+and timed out on large/cross rows. Corrected HZ4 rows use:
+  /mnt/workdisk/public_share/hakmem/allocators/hz4/libhakozuna_hz4.so
+```
+
+Medians:
+
+```text
+main_r90:
+  hz4_corrected   93.28M
+  tcmalloc        73.63M
+  hz5_regionmap   27.71M
+  hz5_inbox       27.00M
+  hz5_baseonly    24.84M
+
+large_only_r90:
+  hz5_baseonly    16.97M
+  hz5_inbox       15.09M, but only 1/3 successful under 15s timeout
+  hz5_regionmap   10.07M
+  tcmalloc         7.13M
+  hz4_corrected    6.87M
+
+cross128_r90:
+  hz4_corrected   46.51M
+  hz5_inbox       20.18M
+  hz5_regionmap   17.23M
+  hz5_baseonly    10.76M
+  tcmalloc         7.37M
+```
+
+Read:
+
+```text
+Region-map is cleaner and timeout-stable, but it is not a throughput win over
+the current inbox row on cross128 r90.
+
+It is still a strong production candidate because base-only weakens safety and
+inbox has large_only timeout tails. The remaining cross128 gap is not solved by
+LargeFront map insertion alone; HZ4's cross128 r90 path is still much stronger.
+
+Next attack after committing/documenting region-map:
+  inspect HZ4 cross128 remote path and compare it to HZ5 Small/Mid/Large remote
+  handoff costs
+```
+
 First implementation lane:
 
 ```text
