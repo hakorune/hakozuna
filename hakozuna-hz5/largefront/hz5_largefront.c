@@ -17,6 +17,22 @@
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_FAST_STATE 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX
+#define BENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX 0
+#endif
+
+#ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_BATCH
+#define BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_BATCH 0
+#endif
+
+#ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_TAKE_FIRST
+#define BENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_TAKE_FIRST 0
+#endif
+
+#ifndef HZ5_LARGEFRONT_REMOTE_BATCH_CAP
+#define HZ5_LARGEFRONT_REMOTE_BATCH_CAP 16u
+#endif
+
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_LARGEFRONT_L1
 
 #define HZ5_LARGEFRONT_MAGIC UINT64_C(0x485A354C41524731)
@@ -37,7 +53,8 @@ typedef enum Hz5LargeSpanState {
   HZ5_LARGESPAN_INVALID = 0,
   HZ5_LARGESPAN_ACTIVE = 1,
   HZ5_LARGESPAN_LOCAL_FREE = 2,
-  HZ5_LARGESPAN_ORPHAN = 3
+  HZ5_LARGESPAN_REMOTE_PENDING = 3,
+  HZ5_LARGESPAN_ORPHAN = 4
 } Hz5LargeSpanState;
 
 typedef struct Hz5LargeSpan {
@@ -62,6 +79,11 @@ typedef struct Hz5LargeMapEntry {
 typedef struct Hz5LargeTls {
   Hz5OwnerToken owner;
   Hz5LargeSpan* free_head[HZ5_LARGEFRONT_CLASS_COUNT];
+  Hz5OwnerToken remote_batch_owner;
+  uint32_t remote_batch_class;
+  uint32_t remote_batch_count;
+  Hz5LargeSpan* remote_batch_head;
+  Hz5LargeSpan* remote_batch_tail;
 } Hz5LargeTls;
 
 typedef struct Hz5LargeRawNode {
@@ -71,7 +93,13 @@ typedef struct Hz5LargeRawNode {
 static const uint32_t g_hz5_largefront_classes[HZ5_LARGEFRONT_CLASS_COUNT] = {
     131072u, 262144u, 524288u, 1048576u};
 
+static const Hz5OwnerToken k_hz5_largefront_no_owner = {0, 0};
+
 static Hz5LargeMapEntry g_hz5_largefront_map[HZ5_LARGEFRONT_MAP_CAP];
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX
+static _Atomic(void*) g_hz5_largefront_owner_inbox[UINT16_MAX + 1u]
+                                                 [HZ5_LARGEFRONT_CLASS_COUNT];
+#endif
 static Hz5LargeSpan* g_hz5_largefront_global_free[HZ5_LARGEFRONT_CLASS_COUNT];
 static pthread_mutex_t g_hz5_largefront_global_lock =
     PTHREAD_MUTEX_INITIALIZER;
@@ -339,6 +367,152 @@ static int hz5_largefront_activate_global_for_owner(Hz5LargeTls* tls,
   return 1;
 }
 
+static void hz5_largefront_mark_orphan(Hz5LargeSpan* span) {
+  if (!span) {
+    return;
+  }
+  atomic_store_explicit(&span->state,
+                        (unsigned char)HZ5_LARGESPAN_ORPHAN,
+                        memory_order_release);
+}
+
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX
+static int hz5_largefront_can_publish_to_owner(Hz5OwnerToken owner,
+                                               uint32_t class_index,
+                                               const Hz5LargeSpan* span) {
+  return owner.slot != 0 && hz5_largefront_class_valid(class_index) && span &&
+         hz5_owner_is_alive(owner);
+}
+
+static int hz5_largefront_remote_publish_one(Hz5OwnerToken owner,
+                                             uint32_t class_index,
+                                             Hz5LargeSpan* span) {
+  if (!hz5_largefront_can_publish_to_owner(owner, class_index, span)) {
+    return 0;
+  }
+
+  void* old_head = NULL;
+  _Atomic(void*)* inbox =
+      &g_hz5_largefront_owner_inbox[owner.slot][class_index];
+  do {
+    old_head = atomic_load_explicit(inbox, memory_order_acquire);
+    span->next = (Hz5LargeSpan*)old_head;
+  } while (!atomic_compare_exchange_weak_explicit(
+      inbox, &old_head, span, memory_order_release, memory_order_acquire));
+  return 1;
+}
+
+static int hz5_largefront_remote_publish_list(Hz5OwnerToken owner,
+                                              uint32_t class_index,
+                                              Hz5LargeSpan* head,
+                                              Hz5LargeSpan* tail) {
+  if (!hz5_largefront_can_publish_to_owner(owner, class_index, head) || !tail) {
+    return 0;
+  }
+
+  void* old_head = NULL;
+  _Atomic(void*)* inbox =
+      &g_hz5_largefront_owner_inbox[owner.slot][class_index];
+  do {
+    old_head = atomic_load_explicit(inbox, memory_order_acquire);
+    tail->next = (Hz5LargeSpan*)old_head;
+  } while (!atomic_compare_exchange_weak_explicit(
+      inbox, &old_head, head, memory_order_release, memory_order_acquire));
+  return 1;
+}
+
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_BATCH
+static void hz5_largefront_remote_batch_flush(Hz5LargeTls* tls) {
+  if (!tls || tls->remote_batch_count == 0u) {
+    return;
+  }
+
+  if (!hz5_largefront_remote_publish_list(tls->remote_batch_owner,
+                                          tls->remote_batch_class,
+                                          tls->remote_batch_head,
+                                          tls->remote_batch_tail)) {
+    Hz5LargeSpan* span = tls->remote_batch_head;
+    while (span) {
+      Hz5LargeSpan* next = span->next;
+      hz5_largefront_mark_orphan(span);
+      span = next;
+    }
+  }
+  tls->remote_batch_owner = k_hz5_largefront_no_owner;
+  tls->remote_batch_class = 0;
+  tls->remote_batch_count = 0;
+  tls->remote_batch_head = NULL;
+  tls->remote_batch_tail = NULL;
+}
+
+static void hz5_largefront_remote_batch_push(Hz5LargeTls* tls,
+                                             Hz5LargeSpan* span) {
+  if (!hz5_owner_is_alive(span->owner)) {
+    hz5_largefront_mark_orphan(span);
+    return;
+  }
+  uint32_t class_index = span->class_index;
+  if (tls->remote_batch_count != 0u &&
+      (!hz5_owner_equal(tls->remote_batch_owner, span->owner) ||
+       tls->remote_batch_class != class_index)) {
+    hz5_largefront_remote_batch_flush(tls);
+  }
+
+  span->next = NULL;
+  if (tls->remote_batch_count == 0u) {
+    tls->remote_batch_owner = span->owner;
+    tls->remote_batch_class = class_index;
+    tls->remote_batch_head = span;
+  } else {
+    tls->remote_batch_tail->next = span;
+  }
+  tls->remote_batch_tail = span;
+  ++tls->remote_batch_count;
+
+  if (tls->remote_batch_count >= HZ5_LARGEFRONT_REMOTE_BATCH_CAP) {
+    hz5_largefront_remote_batch_flush(tls);
+  }
+}
+#endif
+
+static Hz5LargeSpan* hz5_largefront_drain_remote_class(Hz5LargeTls* tls,
+                                                       uint32_t class_index) {
+  if (!tls || tls->owner.slot == 0 ||
+      class_index >= HZ5_LARGEFRONT_CLASS_COUNT) {
+    return NULL;
+  }
+
+  _Atomic(void*)* inbox =
+      &g_hz5_largefront_owner_inbox[tls->owner.slot][class_index];
+  void* head = atomic_exchange_explicit(inbox, NULL, memory_order_acq_rel);
+  Hz5LargeSpan* taken = NULL;
+  while (head) {
+    Hz5LargeSpan* span = (Hz5LargeSpan*)head;
+    head = span->next;
+    if (!hz5_owner_equal(span->owner, tls->owner)) {
+      hz5_largefront_mark_orphan(span);
+      continue;
+    }
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_TAKE_FIRST
+    if (!taken &&
+        hz5_largefront_state_cas(span,
+                                 (unsigned char)HZ5_LARGESPAN_REMOTE_PENDING,
+                                 (unsigned char)HZ5_LARGESPAN_ACTIVE)) {
+      span->next = NULL;
+      taken = span;
+      continue;
+    }
+#endif
+    if (hz5_largefront_state_cas(span,
+                                 (unsigned char)HZ5_LARGESPAN_REMOTE_PENDING,
+                                 (unsigned char)HZ5_LARGESPAN_LOCAL_FREE)) {
+      hz5_largefront_local_push(tls, class_index, span);
+    }
+  }
+  return taken;
+}
+#endif
+
 static Hz5LargeSpan* hz5_largefront_new_span(Hz5LargeTls* tls,
                                              uint32_t class_index) {
   uint32_t class_bytes = hz5_largefront_class_bytes(class_index);
@@ -389,6 +563,20 @@ void* hz5_largefront_alloc(size_t size, size_t align) {
     return NULL;
   }
 
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX
+  span = hz5_largefront_drain_remote_class(tls, ci);
+  if (span) {
+    return span->base;
+  }
+  span = hz5_largefront_local_pop(tls, ci);
+  if (span) {
+    if (hz5_largefront_activate_local_for_owner(tls, span)) {
+      return span->base;
+    }
+    return NULL;
+  }
+#endif
+
   while ((span = hz5_largefront_global_pop(ci)) != NULL) {
     if (hz5_largefront_activate_global_for_owner(tls, span)) {
       return span->base;
@@ -418,6 +606,26 @@ Hz5LargeFrontFreeResult hz5_largefront_free(void* ptr) {
     }
     hz5_largefront_local_push(tls, span->class_index, span);
   } else {
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX
+    if (hz5_owner_is_alive(span->owner)) {
+      if (!hz5_largefront_state_cas(
+              span,
+              (unsigned char)HZ5_LARGESPAN_ACTIVE,
+              (unsigned char)HZ5_LARGESPAN_REMOTE_PENDING)) {
+        return HZ5_LARGEFRONT_FREE_INVALID;
+      }
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_BATCH
+      hz5_largefront_remote_batch_push(tls, span);
+#else
+      if (!hz5_largefront_remote_publish_one(span->owner,
+                                             span->class_index,
+                                             span)) {
+        hz5_largefront_mark_orphan(span);
+      }
+#endif
+      return HZ5_LARGEFRONT_FREE_OK;
+    }
+#endif
     if (!hz5_largefront_state_cas(span,
                                   (unsigned char)HZ5_LARGESPAN_ACTIVE,
                                   (unsigned char)HZ5_LARGESPAN_LOCAL_FREE)) {

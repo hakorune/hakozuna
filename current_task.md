@@ -1827,6 +1827,70 @@ interpretation:
   and cross-thread cacheline churn.
 ```
 
+LargeFront remote candidate update:
+
+```text
+implemented after L1:
+  --linux-largefront-owner-inbox
+    remote free:
+      ACTIVE -> REMOTE_PENDING
+      publish to owner-slot x large-class inbox
+    owner alloc miss:
+      drain owner inbox
+      REMOTE_PENDING -> LOCAL_FREE
+
+  --linux-largefront-remote-batch
+    diagnostic candidate
+    batches sender-side remote frees before owner inbox publish
+
+  --linux-largefront-drain-take-first
+    diagnostic candidate
+    owner drain may activate first requested-class remote span directly
+
+smoke:
+  /bin/true under full preload: OK
+  /tmp/hz5_largefront_smoke under full preload: OK
+  HZ5_PRELOAD_STATS=1 short attribution:
+    malloc_hz5=10049
+    malloc_real=0
+    track_insert_fail=0
+
+focused repeat-3, HZ5_PRELOAD_STATS unset:
+  L1 global recycle vs owner inbox:
+    large_only r90:
+      L1     3.66M median
+      inbox  8.81M median
+    cross128 r90:
+      L1     3.03M median
+      inbox  6.51M median
+
+  owner inbox vs remote-batch cap16:
+    large_only r90:
+      inbox  8.81M median
+      rb16   8.21M median
+    cross128 r90:
+      inbox  6.76M median
+      rb16   6.86M median
+    interpretation:
+      remote batch is not a clear win; publish delay offsets CAS reduction.
+
+  owner inbox vs drain-takefirst:
+    large_only r90:
+      inbox      7.98M median
+      takefirst  8.76M median
+    cross128 r90:
+      inbox      6.81M median
+      takefirst  4.71M median
+    interpretation:
+      takefirst is not a broad win; keep diagnostic only.
+
+current decision:
+  LargeFront owner-inbox is the useful remote candidate.
+  LargeFront remote-batch and takefirst stay diagnostic.
+  cross128 r90 still needs SmallFront/MidFront remote work or a broader remote
+  transfer design; LargeFront-only tuning is no longer the whole bottleneck.
+```
+
 MidFront source-return cleanup:
 
 ```text

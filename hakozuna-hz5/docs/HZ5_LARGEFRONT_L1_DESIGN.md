@@ -128,6 +128,21 @@ hz5-largefront-l1:
   --linux-largefront-l1
   --linux-midfront-owner-fast-state
   --linux-midfront-remote-batch-cap 16
+
+hz5-largefront-inbox:
+  --linux-largefront-owner-inbox
+  --linux-largefront-owner-fast-state
+  --linux-midfront-owner-fast-state
+  --linux-midfront-remote-batch-cap 16
+
+hz5-largefront-rb16:
+  --linux-largefront-remote-batch
+  --linux-largefront-remote-batch-cap 16
+  diagnostic only
+
+hz5-largefront-takefirst:
+  --linux-largefront-drain-take-first
+  diagnostic only
 ```
 
 ## Implementation Status
@@ -219,6 +234,64 @@ local:
 
 remote-heavy:
   needs owner-inbox, remote batching, or SPSC-style transfer
+```
+
+## Remote Candidate Status
+
+Owner-inbox was added after L1 as the first remote-large candidate:
+
+```text
+remote free:
+  ACTIVE -> REMOTE_PENDING
+  publish to owner-slot x large-class inbox
+
+owner alloc miss:
+  drain owner inbox
+  REMOTE_PENDING -> LOCAL_FREE
+```
+
+Focused repeat-3 results, `HZ5_PRELOAD_STATS` unset:
+
+```text
+L1 global recycle vs owner inbox:
+  large_only r90:
+    L1     3.66M median
+    inbox  8.81M median
+
+  cross128 r90:
+    L1     3.03M median
+    inbox  6.51M median
+
+owner inbox vs remote-batch cap16:
+  large_only r90:
+    inbox  8.81M median
+    rb16   8.21M median
+
+  cross128 r90:
+    inbox  6.76M median
+    rb16   6.86M median
+
+owner inbox vs drain-takefirst:
+  large_only r90:
+    inbox      7.98M median
+    takefirst  8.76M median
+
+  cross128 r90:
+    inbox      6.81M median
+    takefirst  4.71M median
+```
+
+Decision:
+
+```text
+largefront-inbox:
+  useful remote candidate
+
+largefront-rb16:
+  diagnostic only; not a clear win
+
+largefront-takefirst:
+  diagnostic only; broad regression risk
 ```
 
 ## Stop Rules

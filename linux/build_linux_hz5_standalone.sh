@@ -59,6 +59,10 @@ LINUX_MIDFRONT_DRAIN_EMPTY_GATED=0
 LINUX_MIDFRONT_REMOTE_GLOBAL_RECYCLE=0
 LINUX_LARGEFRONT_L1=0
 LINUX_LARGEFRONT_OWNER_FAST_STATE=0
+LINUX_LARGEFRONT_OWNER_INBOX=0
+LINUX_LARGEFRONT_REMOTE_BATCH=0
+LINUX_LARGEFRONT_DRAIN_TAKE_FIRST=0
+LINUX_LARGEFRONT_REMOTE_BATCH_CAP=16
 HZ5_STANDALONE_EXACT_ONLY=1
 
 usage() {
@@ -150,6 +154,16 @@ Options:
                      implies SmallFront, MidFront, preload full, and exact-only off
   --linux-largefront-owner-fast-state
                      candidate only: LargeFront owner-local load/store state transition
+  --linux-largefront-owner-inbox
+                     candidate only: route LargeFront remote frees through owner inbox
+                     instead of global recycle
+  --linux-largefront-remote-batch
+                     candidate only: batch LargeFront remote frees before owner inbox publish
+  --linux-largefront-remote-batch-cap N
+                     LargeFront remote batch flush threshold (default: 16)
+  --linux-largefront-drain-take-first
+                     candidate only: activate and return the first requested-class
+                     LargeFront remote span during owner-inbox drain
   --linux-p11-speed-core
                      diagnostic only: compile the legacy P2 run/tcache path with HZ5_P11_SPEED_CORE=1
   --linux-p25-bridge-attr
@@ -574,6 +588,39 @@ while [[ $# -gt 0 ]]; do
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
+    --linux-largefront-owner-inbox)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDFRONT_M1=1
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
+    --linux-largefront-remote-batch)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDFRONT_M1=1
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      LINUX_LARGEFRONT_REMOTE_BATCH=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
+    --linux-largefront-remote-batch-cap)
+      LINUX_LARGEFRONT_REMOTE_BATCH_CAP="$2"
+      shift 2
+      ;;
+    --linux-largefront-drain-take-first)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDFRONT_M1=1
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      LINUX_LARGEFRONT_DRAIN_TAKE_FIRST=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
     --trace-lane)
       TRACE_LANE=1
       shift
@@ -614,6 +661,11 @@ fi
 
 if [[ "$LINUX_MIDFRONT_REMOTE_BATCH_CAP" -lt 1 ]]; then
   echo "midfront remote batch cap must be >= 1" >&2
+  exit 1
+fi
+
+if [[ "$LINUX_LARGEFRONT_REMOTE_BATCH_CAP" -lt 1 ]]; then
+  echo "largefront remote batch cap must be >= 1" >&2
   exit 1
 fi
 
@@ -907,6 +959,20 @@ if [[ "$LINUX_LARGEFRONT_L1" -eq 1 ]]; then
   if [[ "$LINUX_LARGEFRONT_OWNER_FAST_STATE" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_FAST_STATE=1)
   fi
+  if [[ "$LINUX_LARGEFRONT_OWNER_INBOX" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX=1)
+  fi
+  if [[ "$LINUX_LARGEFRONT_REMOTE_BATCH" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX=1)
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_BATCH=1)
+    COMMON_FLAGS+=(
+      -DHZ5_LARGEFRONT_REMOTE_BATCH_CAP="${LINUX_LARGEFRONT_REMOTE_BATCH_CAP}u"
+    )
+  fi
+  if [[ "$LINUX_LARGEFRONT_DRAIN_TAKE_FIRST" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX=1)
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_TAKE_FIRST=1)
+  fi
 fi
 
 {
@@ -957,6 +1023,10 @@ fi
   echo "linux_midfront_remote_global_recycle=${LINUX_MIDFRONT_REMOTE_GLOBAL_RECYCLE}"
   echo "linux_largefront_l1=${LINUX_LARGEFRONT_L1}"
   echo "linux_largefront_owner_fast_state=${LINUX_LARGEFRONT_OWNER_FAST_STATE}"
+  echo "linux_largefront_owner_inbox=${LINUX_LARGEFRONT_OWNER_INBOX}"
+  echo "linux_largefront_remote_batch=${LINUX_LARGEFRONT_REMOTE_BATCH}"
+  echo "linux_largefront_drain_take_first=${LINUX_LARGEFRONT_DRAIN_TAKE_FIRST}"
+  echo "linux_largefront_remote_batch_cap=${LINUX_LARGEFRONT_REMOTE_BATCH_CAP}"
   echo "standalone_exact_only=${HZ5_STANDALONE_EXACT_ONLY}"
   echo "linux_p11_speed_core=${LINUX_P11_SPEED_CORE}"
   echo "linux_p25_bridge_attr=${LINUX_P25_BRIDGE_ATTR}"

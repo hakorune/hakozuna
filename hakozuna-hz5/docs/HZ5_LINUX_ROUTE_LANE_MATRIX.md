@@ -32,7 +32,8 @@ Current paper/appendix-facing HZ5 Linux rows are profile-specific:
 | Small ordinary malloc candidate | `hz5-smallfront-s1` | Linux full-preload route for ordinary malloc <=2KiB |
 | Broad mid ordinary malloc candidate | `hz5-midfront-rb16` | Linux full-preload route for ordinary malloc 4KiB..64KiB, broad baseline/default candidate |
 | Remote-heavy mid ordinary malloc candidate | `hz5-midfront-allgate` | MidFront owner-inbox drain-all plus empty-gated exchange co-lead candidate |
-| Large ordinary malloc candidate | `hz5-largefront-l1` | Linux full-preload route for ordinary malloc >64K..1M, cross128 coverage candidate |
+| Large ordinary malloc candidate | `hz5-largefront-l1` | Linux full-preload route for ordinary malloc >64K..1M, cross128 local coverage candidate |
+| Remote-heavy large candidate | `hz5-largefront-inbox` | LargeFront owner-inbox candidate for remote-heavy large rows |
 
 Older Local2P evolution lanes remain selectable diagnostics. Do not report them
 as competing HZ5 profiles unless the result is explicitly an implementation
@@ -77,6 +78,9 @@ small 4K/8K a8192:
 | `midfront_maskhitstop` | lane | bounded mask A/B | diagnostic only |
 | `midfront_globalrecycle` | lane | global recycle control | control only |
 | `largefront_l1` | route/lane family | active Linux large front-end candidate | candidate for cross128 coverage |
+| `largefront_inbox` | lane | active remote-large candidate | candidate for remote-heavy large rows |
+| `largefront_rb16` | lane | remote batch A/B | diagnostic only |
+| `largefront_takefirst` | lane | direct-return A/B | diagnostic only |
 | `hz3_fallback` | fallback route | disabled in standalone exact-only | not a HZ5 win |
 | `libc_passthrough` | adapter route | used by preload hybrid misses | not HZ5 |
 
@@ -239,6 +243,9 @@ Reporting lane:
 | Lane | Build flags | Role |
 | --- | --- | --- |
 | `hz5-largefront-l1` | `--linux-largefront-l1 --linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | first cross128 coverage candidate |
+| `hz5-largefront-inbox` | `--linux-largefront-owner-inbox --linux-largefront-owner-fast-state --linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | useful remote-large candidate |
+| `hz5-largefront-rb16` | `--linux-largefront-remote-batch --linux-largefront-remote-batch-cap 16` | diagnostic only |
+| `hz5-largefront-takefirst` | `--linux-largefront-drain-take-first` | diagnostic only |
 
 Current decision:
 
@@ -247,6 +254,12 @@ L1:
   retained descriptor spans only
   no RSS-return claim
   global recycle for remote frees
+
+inbox:
+  useful remote-large candidate
+
+rb16/takefirst:
+  diagnostic only after focused A/B
 
 deferred:
   hz3/hz4-style 2MiB page-run split/merge pool
