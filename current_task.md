@@ -7069,3 +7069,251 @@ It proves dispatch order can help a pure mid-only remote row, but the same
 reordering regresses main/cross128/guard. Keep the preset as a diagnostic for
 front dispatch cost; do not replace midpage_region.
 ```
+
+### Target Switch: tcmalloc
+
+Goal:
+
+```text
+Retarget the next HZ5 Linux work from mimalloc to tcmalloc.
+```
+
+Current position:
+
+```text
+HZ5 already beats mimalloc in the focused ordinary mid-size rows.
+The remaining external target is tcmalloc, especially main/mid_only local and
+remote-heavy ordinary malloc.
+```
+
+Broad matrix gaps:
+
+```text
+main_r0:
+  region          99.37M
+  midpage_region 93.90M
+  tcmalloc      179.07M
+
+main_r50:
+  midpage_region 41.20M
+  tcmalloc       78.47M
+
+main_r90:
+  midpage_region 32.12M
+  tcmalloc       53.51M
+
+mid_only_r0:
+  region         103.62M
+  midpage_region 94.81M
+  tcmalloc      194.08M
+
+mid_only_r50:
+  midpage_region 44.43M
+  tcmalloc       78.08M
+
+mid_only_r90:
+  midpage_region 35.61M
+  tcmalloc       51.56M
+```
+
+Rows where HZ5 is already better than tcmalloc:
+
+```text
+cross128_r0/r50/r90
+large_only_r0/r50/r90
+exact Local2P 64K/a8192 profiles
+```
+
+Interpretation:
+
+```text
+tcmalloc's remaining advantage is not cross-size ownership.
+It is shorter ordinary small/mid local and remote hot paths:
+  class lookup
+  local freelist
+  remote transfer
+  minimal per-object validation
+```
+
+Next measurement:
+
+```text
+Re-evaluate --linux-hz5-general-midpage-region-shadow against tcmalloc on
+main/mid_only r0/r50/r90.
+
+Reason:
+  remote-shadow + owner-local fast state is the existing candidate closest to a
+  tcmalloc-like state path, but it must be judged by broad rows, not only a
+  component smoke.
+```
+
+Result:
+
+```text
+private/raw-results/linux/tcmalloc_target_shadow_r3_20260525_033348
+
+main_r0:
+  region          65.34M
+  midpage_region 56.64M
+  shadow         58.03M
+  tcmalloc       53.11M
+
+main_r50:
+  midpage_region 36.69M
+  shadow         31.85M
+  tcmalloc       30.91M
+
+main_r90:
+  midpage_region 22.31M
+  shadow         22.74M
+  tcmalloc       21.64M
+
+mid_only_r0:
+  region          73.05M
+  midpage_region 66.87M
+  shadow         71.36M
+  tcmalloc      139.58M
+
+mid_only_r50:
+  midpage_region 24.70M
+  shadow         40.56M
+  tcmalloc       77.68M
+
+mid_only_r90:
+  midpage_region 33.82M
+  shadow         41.27M
+  tcmalloc       48.23M
+```
+
+Interpretation:
+
+```text
+shadow is a real tcmalloc-chase candidate for main and remote-heavy mid_only.
+The remaining clear gap is mid_only_r0, i.e. pure local ordinary mid-size
+hot-path cost.
+```
+
+Next candidate:
+
+```text
+--linux-hz5-general-midpage-region-shadow-frontfirst
+
+Combine:
+  remote-shadow + owner-local fast state
+  MidPageFront-first free dispatch
+
+Purpose:
+  test whether the remaining mid_only_r0 gap is dispatch miss + state path,
+  while preserving the shadow path that avoided alloc_failed in r90.
+```
+
+Shadow-frontfirst result:
+
+```text
+private/raw-results/linux/tcmalloc_shadow_frontfirst_r3_20260525_033543
+
+main_r0:
+  shadow            58.11M
+  shadow_frontfirst 57.44M
+  tcmalloc          52.92M
+
+main_r90:
+  shadow            23.49M
+  shadow_frontfirst 20.73M
+  tcmalloc          20.28M
+
+mid_only_r0:
+  shadow             74.17M
+  shadow_frontfirst  76.10M
+  tcmalloc          142.85M
+
+mid_only_r50:
+  shadow            37.37M
+  shadow_frontfirst 37.64M
+  tcmalloc          78.04M
+
+mid_only_r90:
+  shadow            28.77M
+  shadow_frontfirst 31.78M
+  tcmalloc          46.18M
+
+cross128_r90:
+  shadow            17.38M
+  shadow_frontfirst 11.87M
+  tcmalloc           7.73M
+```
+
+Decision:
+
+```text
+shadow-frontfirst is still diagnostic only.
+It helps pure mid_only slightly but hurts main/cross128, so it is not the
+tcmalloc lead.
+```
+
+Next diagnostic:
+
+```text
+--linux-hz5-general-midpage-region-shadow-tlscache
+
+Purpose:
+  test whether the remaining tcmalloc gap is MidPageFront region lookup cost.
+  Adds a small TLS cache for region_base -> MidPageRegion.
+```
+
+TLS region-cache result:
+
+```text
+private/raw-results/linux/tcmalloc_tlscache_r3_20260525_033858
+
+main_r0:
+  shadow   59.33M
+  tlscache 57.25M
+  tcmalloc 51.53M
+
+main_r50:
+  shadow   31.14M
+  tlscache 24.89M
+  tcmalloc 32.58M
+
+main_r90:
+  shadow   22.90M
+  tlscache 29.76M
+  tcmalloc 22.24M
+
+mid_only_r0:
+  shadow    72.91M
+  tlscache  70.22M
+  tcmalloc 139.80M
+
+mid_only_r50:
+  shadow   40.79M
+  tlscache 36.47M
+  tcmalloc 80.02M
+
+mid_only_r90:
+  shadow   40.73M
+  tlscache 38.43M
+  tcmalloc 46.92M
+
+cross128_r90:
+  shadow   15.41M
+  tlscache 12.00M
+  tcmalloc  7.69M
+```
+
+Decision:
+
+```text
+TLS region cache is no-go for broad tcmalloc chase.
+Region lookup is not the main remaining bottleneck.
+```
+
+Next likely target:
+
+```text
+MidPageFront local object topology:
+  reduce active-state/metadata work per local alloc/free
+  avoid extra page/node fields on the hot local freelist if possible
+  keep remote-shadow or equivalent to avoid r90 alloc_failed
+```

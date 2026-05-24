@@ -1104,6 +1104,39 @@ Reason:
   midpage_region remains the lead MidPageFront candidate
 ```
 
+## tcmalloc Target Read
+
+The next external target is tcmalloc, not mimalloc. In the focused ordinary
+mid-size rows, HZ5 already beats mimalloc; tcmalloc remains ahead mainly on
+pure mid-size local and mixed remote rows.
+
+Latest tcmalloc-chase diagnostics:
+
+```text
+shadow:
+  --linux-hz5-general-midpage-region-shadow
+  real candidate for main and remote-heavy mid_only
+
+shadow-frontfirst:
+  --linux-hz5-general-midpage-region-shadow-frontfirst
+  helps pure mid_only slightly
+  hurts main/cross128
+  diagnostic only
+
+shadow-tlscache:
+  --linux-hz5-general-midpage-region-shadow-tlscache
+  TLS region lookup cache
+  no-go; mid_only and cross128 regress versus shadow
+```
+
+Current conclusion:
+
+```text
+The remaining tcmalloc gap is not front dispatch or region hash lookup.
+It is MidPageFront local object topology: active-state / metadata /
+freelist work per ordinary mid-size malloc/free.
+```
+
 Lane cleanup:
 
 ```text

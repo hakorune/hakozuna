@@ -30,6 +30,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_LOCAL_FAST_STATE 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_TLS_REGION_CACHE
+#define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_TLS_REGION_CACHE 0
+#endif
+
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M2
 
 #define HZ5_MIDPAGEFRONT_MAGIC UINT64_C(0x485A354D50414732)
@@ -45,6 +49,7 @@ void _aligned_free(void* ptr);
 #define HZ5_MIDPAGEFRONT_REGION_MAP_CAP \
   ((size_t)1u << HZ5_MIDPAGEFRONT_REGION_MAP_BITS)
 #define HZ5_MIDPAGEFRONT_REGION_CAP 8192u
+#define HZ5_MIDPAGEFRONT_TLS_REGION_CACHE_CAP 8u
 
 #ifndef HZ5_MIDPAGEFRONT_REMOTE_BATCH_CAP
 #define HZ5_MIDPAGEFRONT_REMOTE_BATCH_CAP 16u
@@ -94,6 +99,13 @@ typedef struct Hz5MidPageTls {
   Hz5OwnerToken owner;
   Hz5MidPageNode* free_head[HZ5_MIDPAGEFRONT_CLASS_COUNT];
   Hz5MidPage* owned_pages[HZ5_MIDPAGEFRONT_CLASS_COUNT];
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_REGION_ARRAY && \
+    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_TLS_REGION_CACHE
+  uintptr_t region_cache_base[HZ5_MIDPAGEFRONT_TLS_REGION_CACHE_CAP];
+  Hz5MidPageRegion*
+      region_cache_region[HZ5_MIDPAGEFRONT_TLS_REGION_CACHE_CAP];
+  uint32_t region_cache_victim;
+#endif
   Hz5OwnerToken remote_batch_owner;
   uint32_t remote_batch_class;
   uint32_t remote_batch_count;
@@ -126,6 +138,10 @@ static _Atomic(void*) g_hz5_midpagefront_owner_inbox[UINT16_MAX + 1u]
                                                   [HZ5_MIDPAGEFRONT_CLASS_COUNT];
 static _Thread_local Hz5MidPageTls g_hz5_midpagefront_tls;
 
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_REGION_ARRAY
+static Hz5MidPageRegion* hz5_midpagefront_lookup_region(uintptr_t region_base);
+#endif
+
 static Hz5MidPageTls* hz5_midpagefront_tls(void) {
   Hz5MidPageTls* tls = &g_hz5_midpagefront_tls;
   if (tls->owner.slot == 0) {
@@ -133,6 +149,28 @@ static Hz5MidPageTls* hz5_midpagefront_tls(void) {
   }
   return tls;
 }
+
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_REGION_ARRAY && \
+    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_TLS_REGION_CACHE
+static Hz5MidPageRegion*
+hz5_midpagefront_lookup_region_tls_cached(uintptr_t region_base) {
+  Hz5MidPageTls* tls = &g_hz5_midpagefront_tls;
+  for (uint32_t i = 0; i < HZ5_MIDPAGEFRONT_TLS_REGION_CACHE_CAP; ++i) {
+    if (tls->region_cache_base[i] == region_base) {
+      return tls->region_cache_region[i];
+    }
+  }
+
+  Hz5MidPageRegion* region = hz5_midpagefront_lookup_region(region_base);
+  if (region) {
+    uint32_t slot = tls->region_cache_victim++ %
+                    HZ5_MIDPAGEFRONT_TLS_REGION_CACHE_CAP;
+    tls->region_cache_region[slot] = region;
+    tls->region_cache_base[slot] = region_base;
+  }
+  return region;
+}
+#endif
 
 static int hz5_midpagefront_class_valid(uint32_t class_index) {
   return class_index < HZ5_MIDPAGEFRONT_CLASS_COUNT;
@@ -262,8 +300,13 @@ static Hz5MidPage* hz5_midpagefront_page_for_ptr(void* ptr) {
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_REGION_ARRAY
   uintptr_t region_base =
       p & ~(uintptr_t)(HZ5_MIDPAGEFRONT_REGION_BYTES - 1u);
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_TLS_REGION_CACHE
+  Hz5MidPageRegion* region =
+      hz5_midpagefront_lookup_region_tls_cached(region_base);
+#else
   Hz5MidPageRegion* region =
       hz5_midpagefront_lookup_region(region_base);
+#endif
   if (!region || region->base != region_base || !region->pages) {
     return NULL;
   }

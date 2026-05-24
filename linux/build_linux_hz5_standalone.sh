@@ -60,6 +60,7 @@ LINUX_MIDPAGEFRONT_REMOTE_BATCH_CAP=16
 LINUX_MIDPAGEFRONT_REGION_ARRAY=0
 LINUX_MIDPAGEFRONT_REMOTE_SHADOW=0
 LINUX_MIDPAGEFRONT_LOCAL_FAST_STATE=0
+LINUX_MIDPAGEFRONT_TLS_REGION_CACHE=0
 LINUX_MIDFRONT_M1=0
 LINUX_MIDFRONT_OWNER_FAST_STATE=0
 LINUX_MIDFRONT_MAX_BYTES=65536
@@ -187,6 +188,12 @@ Options:
   --linux-hz5-general-midpage-region-shadow
                      diagnostic preset: midpage-region plus remote-shadow
                      pending bitmap experiment
+  --linux-hz5-general-midpage-region-shadow-frontfirst
+                     diagnostic preset: midpage-region-shadow plus
+                     MidPageFront first in preload free() dispatch
+  --linux-hz5-general-midpage-region-shadow-tlscache
+                     diagnostic preset: midpage-region-shadow plus TLS
+                     region lookup cache
   --linux-hz5-general-midpage-region-frontfirst
                      diagnostic preset: midpage-region plus MidPageFront first
                      in preload free() ownership dispatch
@@ -215,6 +222,8 @@ Options:
   --linux-midpagefront-local-fast-state
                      diagnostic only: owner-local MidPageFront active-bit
                      transitions use load/store instead of CAS
+  --linux-midpagefront-tls-region-cache
+                     diagnostic only: cache MidPageFront region lookup in TLS
   --linux-midpagefront-remote-batch-cap N
                      MidPageFront remote-free sender batch threshold (default: 16)
   --linux-midfront-owner-fast-state
@@ -807,6 +816,48 @@ while [[ $# -gt 0 ]]; do
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
+    --linux-hz5-general-midpage-region-shadow-frontfirst)
+      BUILD_PRELOAD_FULL=1
+      PRELOAD_FREE_MIDPAGE_FIRST=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_SMALLFRONT_REMOTE_OUTBOX=1
+      LINUX_SMALLFRONT_REMOTE_BATCH_CAP=8
+      LINUX_MIDPAGEFRONT_M2=1
+      LINUX_MIDPAGEFRONT_REGION_ARRAY=1
+      LINUX_MIDPAGEFRONT_REMOTE_SHADOW=1
+      LINUX_MIDPAGEFRONT_LOCAL_FAST_STATE=1
+      LINUX_MIDPAGEFRONT_REMOTE_BATCH_CAP=16
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_OWNER_FAST_STATE=1
+      LINUX_MIDFRONT_REMOTE_BATCH_CAP=16
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      LINUX_LARGEFRONT_OWNER_FAST_STATE=1
+      LINUX_LARGEFRONT_REGION_MAP=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
+    --linux-hz5-general-midpage-region-shadow-tlscache)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_SMALLFRONT_REMOTE_OUTBOX=1
+      LINUX_SMALLFRONT_REMOTE_BATCH_CAP=8
+      LINUX_MIDPAGEFRONT_M2=1
+      LINUX_MIDPAGEFRONT_REGION_ARRAY=1
+      LINUX_MIDPAGEFRONT_REMOTE_SHADOW=1
+      LINUX_MIDPAGEFRONT_LOCAL_FAST_STATE=1
+      LINUX_MIDPAGEFRONT_TLS_REGION_CACHE=1
+      LINUX_MIDPAGEFRONT_REMOTE_BATCH_CAP=16
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_OWNER_FAST_STATE=1
+      LINUX_MIDFRONT_REMOTE_BATCH_CAP=16
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      LINUX_LARGEFRONT_OWNER_FAST_STATE=1
+      LINUX_LARGEFRONT_REGION_MAP=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
     --linux-hz5-general-midpage-region-frontfirst)
       BUILD_PRELOAD_FULL=1
       PRELOAD_FREE_MIDPAGE_FIRST=1
@@ -924,6 +975,15 @@ while [[ $# -gt 0 ]]; do
       LINUX_SMALLFRONT_S1=1
       LINUX_MIDPAGEFRONT_M2=1
       LINUX_MIDPAGEFRONT_LOCAL_FAST_STATE=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
+    --linux-midpagefront-tls-region-cache)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDPAGEFRONT_M2=1
+      LINUX_MIDPAGEFRONT_REGION_ARRAY=1
+      LINUX_MIDPAGEFRONT_TLS_REGION_CACHE=1
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
@@ -1528,6 +1588,9 @@ if [[ "$LINUX_MIDPAGEFRONT_M2" -eq 1 ]]; then
   if [[ "$LINUX_MIDPAGEFRONT_LOCAL_FAST_STATE" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_LOCAL_FAST_STATE=1)
   fi
+  if [[ "$LINUX_MIDPAGEFRONT_TLS_REGION_CACHE" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_TLS_REGION_CACHE=1)
+  fi
 fi
 if [[ "$LINUX_OWNERHUB_R1" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_OWNERHUB_R1=1)
@@ -1676,6 +1739,7 @@ fi
   echo "linux_midpagefront_region_array=${LINUX_MIDPAGEFRONT_REGION_ARRAY}"
   echo "linux_midpagefront_remote_shadow=${LINUX_MIDPAGEFRONT_REMOTE_SHADOW}"
   echo "linux_midpagefront_local_fast_state=${LINUX_MIDPAGEFRONT_LOCAL_FAST_STATE}"
+  echo "linux_midpagefront_tls_region_cache=${LINUX_MIDPAGEFRONT_TLS_REGION_CACHE}"
   echo "linux_midfront_m1=${LINUX_MIDFRONT_M1}"
   echo "linux_midfront_owner_fast_state=${LINUX_MIDFRONT_OWNER_FAST_STATE}"
   echo "linux_midfront_max_bytes=${LINUX_MIDFRONT_MAX_BYTES}"

@@ -263,6 +263,16 @@ hz5-general-midpage-region:
 
 hz5-general-midpage-region-shadow:
   --linux-hz5-general-midpage-region-shadow
+
+hz5-general-midpage-region-shadow-frontfirst:
+  --linux-hz5-general-midpage-region-shadow-frontfirst
+  tcmalloc-chase diagnostic combining remote-shadow/local-fast-state with
+  MidPageFront-first free dispatch
+
+hz5-general-midpage-region-shadow-tlscache:
+  --linux-hz5-general-midpage-region-shadow-tlscache
+  tcmalloc-chase diagnostic adding TLS region lookup cache
+  no-go in r3: mid_only and cross128 regress versus shadow
 ```
 
 Status:
@@ -281,6 +291,10 @@ local-fast-state:
   component diagnostic
   no standalone preset because it reintroduces alloc_failed under r90 without
   remote-shadow
+
+tls-region-cache:
+  component diagnostic
+  not a lead candidate; region lookup is not the remaining tcmalloc gap
 ```
 
 Cleanup rule:
