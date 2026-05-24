@@ -17,6 +17,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDFRONT_M1 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDFRONT_OWNER_FAST_STATE
+#define BENCHLAB_HZ5_LINUX_MIDFRONT_OWNER_FAST_STATE 0
+#endif
+
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_MIDFRONT_M1
 
 #define HZ5_MIDFRONT_MAGIC UINT64_C(0x485A354D49444D31)
@@ -212,6 +216,20 @@ static int hz5_midfront_state_cas(Hz5MidSpan* span,
                                                  memory_order_acquire);
 }
 
+static int hz5_midfront_owner_local_state_transition(Hz5MidSpan* span,
+                                                     unsigned char from,
+                                                     unsigned char to) {
+#if BENCHLAB_HZ5_LINUX_MIDFRONT_OWNER_FAST_STATE
+  if (atomic_load_explicit(&span->state, memory_order_acquire) != from) {
+    return 0;
+  }
+  atomic_store_explicit(&span->state, to, memory_order_release);
+  return 1;
+#else
+  return hz5_midfront_state_cas(span, from, to);
+#endif
+}
+
 static void hz5_midfront_mark_orphan(Hz5MidSpan* span) {
   if (!span) {
     return;
@@ -364,9 +382,10 @@ void* hz5_midfront_alloc(size_t size, size_t align) {
     span = hz5_midfront_local_pop(tls, ci);
   }
   if (span) {
-    if (!hz5_midfront_state_cas(span,
-                                (unsigned char)HZ5_MIDSPAN_LOCAL_FREE,
-                                (unsigned char)HZ5_MIDSPAN_ACTIVE)) {
+    if (!hz5_midfront_owner_local_state_transition(
+            span,
+            (unsigned char)HZ5_MIDSPAN_LOCAL_FREE,
+            (unsigned char)HZ5_MIDSPAN_ACTIVE)) {
       return NULL;
     }
     return span->base;
@@ -387,9 +406,10 @@ Hz5MidFrontFreeResult hz5_midfront_free(void* ptr) {
 
   Hz5MidTls* tls = hz5_midfront_tls();
   if (hz5_owner_equal(span->owner, tls->owner)) {
-    if (!hz5_midfront_state_cas(span,
-                                (unsigned char)HZ5_MIDSPAN_ACTIVE,
-                                (unsigned char)HZ5_MIDSPAN_LOCAL_FREE)) {
+    if (!hz5_midfront_owner_local_state_transition(
+            span,
+            (unsigned char)HZ5_MIDSPAN_ACTIVE,
+            (unsigned char)HZ5_MIDSPAN_LOCAL_FREE)) {
       return HZ5_MIDFRONT_FREE_INVALID;
     }
     hz5_midfront_local_push(tls, span->class_index, span);

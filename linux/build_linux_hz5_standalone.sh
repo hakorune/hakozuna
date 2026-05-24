@@ -49,6 +49,7 @@ BUILD_PRELOAD_FULL=0
 LINUX_SMALLFRONT_S1=0
 LINUX_SMALLFRONT_REMOTE_BATCH_CAP=16
 LINUX_MIDFRONT_M1=0
+LINUX_MIDFRONT_OWNER_FAST_STATE=0
 HZ5_STANDALONE_EXACT_ONLY=1
 
 usage() {
@@ -116,6 +117,8 @@ Options:
                      SmallFront-S1 remote-free sender batch flush threshold (default: 16)
   --linux-midfront-m1
                      enable Linux MidFront-M1 ordinary malloc 4K..64K front-end
+  --linux-midfront-owner-fast-state
+                     candidate only: MidFront owner-local load/store state transition
   --linux-p11-speed-core
                      diagnostic only: compile the legacy P2 run/tcache path with HZ5_P11_SPEED_CORE=1
   --linux-p25-bridge-attr
@@ -462,6 +465,14 @@ while [[ $# -gt 0 ]]; do
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
+    --linux-midfront-owner-fast-state)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_OWNER_FAST_STATE=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
     --trace-lane)
       TRACE_LANE=1
       shift
@@ -753,6 +764,9 @@ if [[ "$LINUX_SMALLFRONT_S1" -eq 1 ]]; then
 fi
 if [[ "$LINUX_MIDFRONT_M1" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDFRONT_M1=1)
+  if [[ "$LINUX_MIDFRONT_OWNER_FAST_STATE" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDFRONT_OWNER_FAST_STATE=1)
+  fi
 fi
 
 {
@@ -793,6 +807,7 @@ fi
   echo "linux_smallfront_s1=${LINUX_SMALLFRONT_S1}"
   echo "linux_smallfront_remote_batch_cap=${LINUX_SMALLFRONT_REMOTE_BATCH_CAP}"
   echo "linux_midfront_m1=${LINUX_MIDFRONT_M1}"
+  echo "linux_midfront_owner_fast_state=${LINUX_MIDFRONT_OWNER_FAST_STATE}"
   echo "standalone_exact_only=${HZ5_STANDALONE_EXACT_ONLY}"
   echo "linux_p11_speed_core=${LINUX_P11_SPEED_CORE}"
   echo "linux_p25_bridge_attr=${LINUX_P25_BRIDGE_ATTR}"

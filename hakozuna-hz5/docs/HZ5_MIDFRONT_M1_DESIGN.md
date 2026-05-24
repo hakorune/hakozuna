@@ -90,6 +90,18 @@ M1 is a coverage/control implementation, not the final fast MidFront. It makes
 ordinary 4K..64K malloc HZ5-owned and descriptor-safe. The one-object source
 path is intentionally simple and should be optimized after correctness and
 paper-main coverage are stable.
+
+Candidate lane:
+
+```text
+--linux-midfront-owner-fast-state
+```
+
+This keeps MidFront-M1 as the default safe lane, but replaces owner-local
+`LOCAL_FREE -> ACTIVE` and `ACTIVE -> LOCAL_FREE` state transitions with
+load/store checks. Remote-free still uses the `ACTIVE -> REMOTE_PENDING` CAS
+and owner inbox path. Treat this as a diagnostic/candidate until r0/r50/r90 and
+double-free smoke results are recorded.
 ```
 
 ## Allocator Shape

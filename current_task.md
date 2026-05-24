@@ -483,6 +483,11 @@ MidFront-M1 implementation status:
 build selector:
   --linux-midfront-m1
 
+candidate selector:
+  --linux-midfront-owner-fast-state
+    enables MidFront-M1 and replaces owner-local ACTIVE/LOCAL_FREE CAS with
+    load/store transitions; remote-free still uses CAS and owner inbox
+
 implemented:
   hakozuna-hz5/midfront/hz5_midfront.c
   hakozuna-hz5/midfront/hz5_midfront.h
@@ -551,6 +556,42 @@ This is not yet a final performance design. One-object mmap-backed spans are
 simple and descriptor-safe, but remote-heavy throughput is low. Next MidFront
 work should reduce source cost and improve remote reuse, not route through P2
 as the hot path.
+```
+
+2026-05-24 next candidate:
+
+```text
+MidFront owner-fast-state:
+  keep safe M1 as default
+  add an explicit diagnostic/candidate lane for owner-local load/store state
+  keep remote-free ACTIVE -> REMOTE_PENDING CAS unchanged
+  measure local 4K/8K/16K/32K/64K and paper-main r0/r50/r90 before deciding
+```
+
+Initial smoke measurement:
+
+```text
+builds:
+  --linux-midfront-m1 --linux-local2p-speed-linkflags
+  --linux-midfront-owner-fast-state --linux-local2p-speed-linkflags
+
+smoke:
+  /bin/true OK for both
+  MidFront usable class smoke OK for both
+  MidFront owner-death smoke OK for both
+
+short hakmem, threads=2 iters=50000 ws=100 min=2049 max=32768:
+  safe M1 r0 median:       about 38.6M ops/s
+  fast-state r0 median:    about 41.3M ops/s
+  r90:                     noisy, no clear win yet
+
+short hakmem, threads=2 iters=100000 ws=100 min=max=4096 r0:
+  safe M1 median:          about 64.2M ops/s
+  fast-state median:       about 68.4M ops/s
+
+interpretation:
+  owner-local atomic removal is worth keeping as a candidate
+  remote-heavy weakness remains elsewhere, likely inbox/drain/source policy
 ```
 
 OwnerLifetime-O1 implementation status:
