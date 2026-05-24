@@ -199,6 +199,17 @@ static void* hz5_midfront_source_alloc_raw(uint32_t class_index) {
   return node;
 }
 
+static void hz5_midfront_source_free_raw(uint32_t class_index, void* raw) {
+  if (!hz5_midfront_class_valid(class_index) || !raw) {
+    return;
+  }
+  Hz5MidRawNode* node = (Hz5MidRawNode*)raw;
+  pthread_mutex_lock(&g_hz5_midfront_source_lock);
+  node->next = g_hz5_midfront_source_free[class_index];
+  g_hz5_midfront_source_free[class_index] = node;
+  pthread_mutex_unlock(&g_hz5_midfront_source_lock);
+}
+
 static Hz5MidSpan* hz5_midfront_lookup_page(uintptr_t page_base) {
   size_t idx = hz5_midfront_hash(page_base);
   for (size_t probe = 0; probe < HZ5_MIDFRONT_MAP_CAP; ++probe) {
@@ -522,6 +533,7 @@ static Hz5MidSpan* hz5_midfront_new_span(Hz5MidTls* tls,
   span->next = NULL;
 
   if (!hz5_midfront_map_insert(span)) {
+    hz5_midfront_source_free_raw(class_index, raw);
     return NULL;
   }
   return span;

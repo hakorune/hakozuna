@@ -171,6 +171,9 @@ consume 16 page-map entries each. Remote-heavy high-mid workloads can create
 many unique spans before reuse catches up, so the old 18-bit map was too small
 for reliable full-preload observation.
 
+If descriptor page-map insertion fails, the raw span is returned to the source
+free-list. This keeps the failure path bounded without changing the hot path.
+
 The repeat-5 source-batching smoke and the focused global-recycle CAS smoke both
 ran with `HZ5_PRELOAD_STATS` unset. The observed `alloc_failed` class did not
 reproduce in those raw runs. Attribution runs remain separate because preload

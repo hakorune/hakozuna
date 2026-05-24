@@ -616,6 +616,8 @@ MidFront source batching:
   in hi64/cross128 remote-heavy runs before reuse catches up
   new source refills per-class raw span blocks with one mmap per 64 spans
   descriptor/page-map ownership remains unchanged
+  if descriptor page-map insertion fails, the raw span is returned to the
+  source free-list instead of being leaked
 
 MidFront page-map capacity:
   baseline capacity raised from 18 bits to 21 bits
@@ -1137,6 +1139,32 @@ interpretation:
     rb16 is strong for mid/hi64 remote-heavy scaling
     drainmask is strong for main_r90 at higher thread count
     drainall remains a useful broad control but is not always best
+```
+
+MidFront source-return cleanup:
+
+```text
+change:
+  hz5_midfront_new_span now returns raw source spans to the source free-list
+  when hz5_midfront_map_insert fails
+
+purpose:
+  close the remaining non-hot failure cleanup leak in the source batching path
+
+validation:
+  build:
+    --linux-midfront-owner-fast-state
+    --linux-midfront-remote-batch-cap 16
+    --linux-local2p-speed-linkflags
+  preload smoke:
+    /bin/true
+    /tmp/hz5_midfront_smoke
+    /tmp/hz5_midfront_owner_death
+    /tmp/hz5_midfront_double_free
+  raw representative case:
+    threads=8, mid_r90, HZ5_PRELOAD_STATS unset
+    ops/s=12.24M
+    alloc_failed not observed
 ```
 
 OwnerLifetime-O1 implementation status:
