@@ -59,6 +59,11 @@ hz5-largefront-map-base-only:
   maps only the returned base page
   timeout/root-cause diagnostic only
   weakens interior-pointer invalid-free attribution
+
+hz5-largefront-region-map:
+  source-region lookup instead of per-page insertion
+  LargeFront-L2 candidate
+  keeps interior-pointer invalid-free attribution
 ```
 
 ## Latest LargeFront Finding
@@ -255,19 +260,59 @@ Decision:
 ```text
 Do not make base-only default.
 Implement a LargeFront-L2 range/region ownership map instead.
-Main r90 still needs separate Small/Mid remote-tail investigation.
+```
+
+Region-map was implemented as the first L2 candidate:
+
+```text
+--linux-largefront-region-map
+
+source refill:
+  register one coarse source region
+
+lookup:
+  ptr -> 2MiB-granule bucket -> region -> span index -> descriptor
+```
+
+Focused check:
+
+```text
+/bin/true under full preload: OK
+large malloc/free smoke: OK
+interior free smoke: OK
+
+large_only r90, repeat20:
+  ok=20 timeout=0
+  median successful ops/s about 15.15M
+
+cross128 r90, repeat10:
+  ok=10 timeout=0
+  median successful ops/s about 16.33M
+
+main r90, repeat10:
+  ok=10 timeout=0
+  median successful ops/s about 22.34M
+```
+
+Current read:
+
+```text
+Region-map is a cleaner replacement for base-only.
+It should be compared in the next broad matrix before becoming the lead
+LargeFront remote-heavy candidate.
 ```
 
 ## Next Technical Question
 
-Should LargeFront-L2 use per-span range descriptors or larger source-region
-descriptors for ownership lookup?
+Should LargeFront region-map become the lead LargeFront row after a broad
+comparison, or does it need a lower-overhead per-span/radix variant?
 
 Immediate design target:
 
 ```text
-LargeFront-L2 range/region map:
-  avoid per-page insertion loops
+LargeFront-L2 validation:
+  compare region-map against hz5_inbox, base-only, HZ4, and tcmalloc
+  focus on large_only/cross128/main r50/r90 at paper shape
   keep exact base-pointer free fast
   keep interior-pointer invalid frees fail-closed
 ```

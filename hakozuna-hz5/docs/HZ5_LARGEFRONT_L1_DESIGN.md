@@ -382,6 +382,71 @@ LargeFront-L2 range/region map:
   no per-page insertion loop for 128K/256K/512K/1M spans
 ```
 
+## Region-Map Candidate
+
+`--linux-largefront-region-map` is the first LargeFront-L2 candidate. It keeps
+the LargeFront descriptor/free contract but replaces per-page map insertion with
+source-region lookup.
+
+```text
+source refill:
+  mmap one class-specific source block
+  register one coarse region for that source block
+  carve HZ5_LARGEFRONT_SOURCE_BATCH_COUNT retained spans from it
+
+free/owns/usable lookup:
+  ptr -> 2MiB-granule bucket
+  bucket link -> source region
+  source region -> span index
+  span prefix -> Hz5LargeSpan descriptor
+```
+
+Contract:
+
+```text
+base pointer:
+  maps to span descriptor and can be freed
+
+interior pointer:
+  maps to span descriptor, then fails ptr == span->base
+  returns HZ5_LARGEFRONT_FREE_INVALID
+
+foreign pointer:
+  misses the region map and falls through as not owned
+```
+
+This is the intended production direction over `base-only`: it avoids the
+per-4KiB insertion loop without losing HZ5-owned interior invalid-free
+attribution.
+
+Focused smoke and timeout check:
+
+```text
+/bin/true under full preload: OK
+large malloc/free smoke: OK
+interior free smoke: OK
+
+large_only r90, threads=16, ws=400, iters=250000, timeout=10s, repeat20:
+  ok=20 timeout=0
+  median successful ops/s about 15.15M
+
+cross128 r90, threads=16, ws=400, iters=300000, timeout=10s, repeat10:
+  ok=10 timeout=0
+  median successful ops/s about 16.33M
+
+main r90, threads=16, ws=400, iters=600000, timeout=10s, repeat10:
+  ok=10 timeout=0
+  median successful ops/s about 22.34M
+```
+
+Current status:
+
+```text
+candidate only
+stronger safety story than base-only
+needs broader matrix before becoming the lead LargeFront row
+```
+
 ## Stop Rules
 
 Stop and redesign if:

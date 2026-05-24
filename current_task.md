@@ -336,6 +336,79 @@ Remaining main r90 timeouts are likely Small/Mid remote-heavy tails and should
 be investigated separately after LargeFront map pressure is fixed cleanly.
 ```
 
+LargeFront-L2 region-map candidate:
+
+```text
+--linux-largefront-region-map
+
+Design:
+  register each LargeFront source block as a coarse address region
+  bucket by 2MiB address granule
+  lookup ptr -> region -> span index -> Hz5LargeSpan descriptor
+  no per-4K-page registration loop
+  interior user pointers still map to the descriptor, so free(ptr+offset)
+  returns HZ5_LARGEFRONT_FREE_INVALID instead of falling through to libc
+```
+
+Implementation notes:
+
+```text
+Region map is additive and append-only.
+Source refill registers one region before putting raw spans on the source-free
+list. Span descriptors still live at each raw span prefix page.
+hz5_largefront_span_for_ptr uses the region map when the flag is enabled.
+The old page map remains the default L1 implementation.
+```
+
+Build used:
+
+```bash
+./linux/build_linux_hz5_standalone.sh \
+  --linux-largefront-region-map \
+  --linux-largefront-owner-fast-state \
+  --linux-midfront-owner-fast-state \
+  --linux-midfront-remote-batch-cap 16 \
+  --linux-local2p-speed-linkflags \
+  --out-dir hakozuna-hz5/out/linux/x86_64-hz5-largefront-regionmap
+```
+
+Smoke:
+
+```text
+/bin/true under full preload: OK
+/tmp/hz5_largefront_smoke: OK
+interior free smoke, malloc(100000); free(p+1); free(p): OK
+build config includes linux_largefront_region_map=1
+```
+
+Focused timeout check:
+
+```text
+large_only r90, threads=16, ws=400, iters=250000, timeout=10s, repeat20:
+  ok=20 timeout=0
+  median successful ops/s about 15.15M
+
+cross128 r90, threads=16, ws=400, iters=300000, timeout=10s, repeat10:
+  ok=10 timeout=0
+  median successful ops/s about 16.33M
+
+main r90, threads=16, ws=400, iters=600000, timeout=10s, repeat10:
+  ok=10 timeout=0
+  median successful ops/s about 22.34M
+```
+
+Decision:
+
+```text
+Region-map is the first clean replacement for base-only.
+It preserves the LargeFront invalid-free contract and removes the per-page
+insertion tail in the focused checks.
+
+Next:
+  run a broader comparison against hz5_inbox/base-only/HZ4/tcmalloc
+  decide whether region-map becomes the lead LargeFront remote-heavy candidate
+```
+
 First implementation lane:
 
 ```text
