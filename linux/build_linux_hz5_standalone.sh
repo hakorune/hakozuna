@@ -60,6 +60,7 @@ LINUX_MIDFRONT_REMOTE_OUTBOX=0
 LINUX_MIDFRONT_REMOTE_OUTBOX_SLOTS=4
 LINUX_MIDFRONT_OUTBOX_FLUSH_ON_MISS=0
 LINUX_MIDFRONT_REMOTE_DIRECT_FREE_STATE=0
+LINUX_MIDFRONT_REMOTE_TRUST_DRAIN_STATE=0
 LINUX_MIDFRONT_DRAIN_ALL_ON_MISS=0
 LINUX_MIDFRONT_DRAIN_MASK_ON_MISS=0
 LINUX_MIDFRONT_DRAIN_MASK_HIT_STOP=0
@@ -149,6 +150,9 @@ Options:
   --linux-hz5-general-region-outbox
                      candidate preset: SmallFront remote outbox cap8,
                      MidFront rb16/owner-fast, and LargeFront region-map
+  --linux-hz5-general-directfree
+                     candidate preset: general-region-outbox plus MidFront
+                     remote ACTIVE->LOCAL_FREE state transition
   --linux-hz5-general-midoutbox
                      candidate preset: general-region-outbox plus MidFront
                      owner/class sender outbox
@@ -178,6 +182,10 @@ Options:
   --linux-midfront-remote-direct-free-state
                      diagnostic only: remote free transitions ACTIVE->LOCAL_FREE
                      so owner drain can skip REMOTE_PENDING->LOCAL_FREE CAS
+  --linux-midfront-remote-trust-drain-state
+                     diagnostic only: with direct-free-state, owner drain trusts
+                     inbox provenance and skips LOCAL_FREE state load before
+                     pushing to owner cache
   --linux-midfront-drain-all-on-miss
                      candidate only: drain all MidFront owner inbox classes on local miss
   --linux-midfront-drain-mask-on-miss
@@ -599,6 +607,22 @@ while [[ $# -gt 0 ]]; do
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
+    --linux-hz5-general-directfree)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_SMALLFRONT_REMOTE_OUTBOX=1
+      LINUX_SMALLFRONT_REMOTE_BATCH_CAP=8
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_OWNER_FAST_STATE=1
+      LINUX_MIDFRONT_REMOTE_BATCH_CAP=16
+      LINUX_MIDFRONT_REMOTE_DIRECT_FREE_STATE=1
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      LINUX_LARGEFRONT_OWNER_FAST_STATE=1
+      LINUX_LARGEFRONT_REGION_MAP=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
     --linux-hz5-general-midoutbox)
       BUILD_PRELOAD_FULL=1
       LINUX_SMALLFRONT_S1=1
@@ -709,6 +733,15 @@ while [[ $# -gt 0 ]]; do
       LINUX_SMALLFRONT_S1=1
       LINUX_MIDFRONT_M1=1
       LINUX_MIDFRONT_REMOTE_DIRECT_FREE_STATE=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
+    --linux-midfront-remote-trust-drain-state)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDFRONT_M1=1
+      LINUX_MIDFRONT_REMOTE_DIRECT_FREE_STATE=1
+      LINUX_MIDFRONT_REMOTE_TRUST_DRAIN_STATE=1
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
@@ -887,6 +920,12 @@ fi
 
 if [[ "$LINUX_MIDFRONT_REMOTE_OUTBOX_SLOTS" -lt 1 ]]; then
   echo "midfront remote outbox slots must be >= 1" >&2
+  exit 1
+fi
+
+if [[ "$LINUX_MIDFRONT_REMOTE_TRUST_DRAIN_STATE" -eq 1 && \
+      "$LINUX_MIDFRONT_REMOTE_DIRECT_FREE_STATE" -ne 1 ]]; then
+  echo "midfront trust-drain-state requires direct-free-state" >&2
   exit 1
 fi
 
@@ -1213,6 +1252,9 @@ if [[ "$LINUX_MIDFRONT_M1" -eq 1 ]]; then
   if [[ "$LINUX_MIDFRONT_REMOTE_DIRECT_FREE_STATE" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_DIRECT_FREE_STATE=1)
   fi
+  if [[ "$LINUX_MIDFRONT_REMOTE_TRUST_DRAIN_STATE" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_TRUST_DRAIN_STATE=1)
+  fi
 fi
 if [[ "$LINUX_LARGEFRONT_L1" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_L1=1)
@@ -1296,6 +1338,7 @@ fi
   echo "linux_midfront_remote_outbox_slots=${LINUX_MIDFRONT_REMOTE_OUTBOX_SLOTS}"
   echo "linux_midfront_outbox_flush_on_miss=${LINUX_MIDFRONT_OUTBOX_FLUSH_ON_MISS}"
   echo "linux_midfront_remote_direct_free_state=${LINUX_MIDFRONT_REMOTE_DIRECT_FREE_STATE}"
+  echo "linux_midfront_remote_trust_drain_state=${LINUX_MIDFRONT_REMOTE_TRUST_DRAIN_STATE}"
   echo "linux_midfront_drain_all_on_miss=${LINUX_MIDFRONT_DRAIN_ALL_ON_MISS}"
   echo "linux_midfront_drain_mask_on_miss=${LINUX_MIDFRONT_DRAIN_MASK_ON_MISS}"
   echo "linux_midfront_drain_mask_hit_stop=${LINUX_MIDFRONT_DRAIN_MASK_HIT_STOP}"

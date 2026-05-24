@@ -59,6 +59,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_DIRECT_FREE_STATE 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_TRUST_DRAIN_STATE
+#define BENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_TRUST_DRAIN_STATE 0
+#endif
+
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_MIDFRONT_M1
 
 #define HZ5_MIDFRONT_MAGIC UINT64_C(0x485A354D49444D31)
@@ -639,10 +643,14 @@ static Hz5MidSpan* hz5_midfront_drain_remote_class_budget(Hz5MidTls* tls,
       taken = span;
       continue;
     }
+#if BENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_TRUST_DRAIN_STATE
+    hz5_midfront_local_push(tls, class_index, span);
+#else
     if (atomic_load_explicit(&span->state, memory_order_acquire) ==
         (unsigned char)HZ5_MIDSPAN_LOCAL_FREE) {
       hz5_midfront_local_push(tls, class_index, span);
     }
+#endif
 #else
     if (take_first && !taken &&
         hz5_midfront_state_cas(span,

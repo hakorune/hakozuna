@@ -31,7 +31,11 @@ Latest result:
   HZ4 cross128 gap.
 
 Next decision:
-  clean up lane/docs and then inspect MidFront/remote handoff cost versus HZ4.
+  Pro review agrees with the shared owner handoff direction, but this branch
+  already tested OwnerHub-R1/R2/R3 and found no broad default win.
+  Next work should not reimplement OwnerHub generically; it should either:
+    1. make OwnerHub selective/mixed-only with lower fixed publish cost, or
+    2. reduce MidFront remote-heavy instruction/branch cost versus HZ4.
 ```
 
 ## Goal
@@ -809,6 +813,165 @@ Read:
 direct-free-state is promising for main/mid_only throughput, but not confirmed
 as an instruction-count fix. Keep it as candidate-watch and run broader repeat
 before promoting.
+```
+
+Direct-drain follow-up:
+
+```text
+--linux-midfront-remote-trust-drain-state
+```
+
+Shape:
+
+```text
+requires:
+  --linux-midfront-remote-direct-free-state
+
+remote free:
+  ACTIVE -> LOCAL_FREE CAS is still done by the freeing thread
+
+owner drain:
+  trusts inbox provenance and pushes to owner cache without a LOCAL_FREE state
+  load/check
+```
+
+Safety read:
+
+```text
+This is diagnostic only.
+It keeps the first remote-free CAS, so sequential double-free before reuse still
+does not publish a second span.
+It removes owner-drain state validation and is therefore not a final safety
+profile without additional proof.
+```
+
+Build/smoke:
+
+```text
+hakozuna-hz5/out/linux/x86_64-hz5-general-region-trustdrain
+hakozuna-hz5/out/linux/x86_64-hz5-general-region-directfree
+
+/bin/true under full preload:
+  trustdrain OK
+  directfree OK
+```
+
+MidFront-only repeat-3:
+
+```text
+private/raw-results/linux/midfront_trustdrain_r3_20260525_010410
+
+mid_r90:
+  rb16        20.58M
+  directfree  26.48M
+  trustdrain  23.13M
+
+main_r90:
+  rb16        21.27M
+  directfree  14.69M
+  trustdrain  15.30M
+```
+
+General region repeat-3:
+
+```text
+private/raw-results/linux/general_direct_trust_r3_20260525_010715
+
+main_r90:
+  region      25.91M
+  directfree  31.09M
+  trustdrain  23.43M
+
+mid_only_r90:
+  region      18.46M
+  directfree  37.54M
+  trustdrain  20.85M
+
+cross128_r90:
+  region      13.98M
+  directfree  14.10M
+  trustdrain  13.73M
+
+large_only_r90:
+  region      16.29M
+  directfree  19.12M
+  trustdrain  14.20M
+```
+
+Decision:
+
+```text
+trustdrain:
+  no-go for promotion; keep only as upper-bound diagnostic.
+
+directfree:
+  candidate-watch. It materially improves general main/mid/large r90 in this
+  focused repeat, but needs broader repeat and safety smoke before promotion.
+```
+
+Broad repeat-5:
+
+```text
+private/raw-results/linux/directfree_broad_r5_20260525_011108
+
+main_r50:
+  region      28.50M
+  directfree  32.44M
+  HZ4         66.98M
+  tcmalloc    81.10M
+
+main_r90:
+  region      20.68M
+  directfree  25.85M
+  HZ4         75.04M
+  tcmalloc    51.74M
+
+mid_only_r50:
+  region      29.48M
+  directfree  31.79M
+  HZ4         73.66M
+  tcmalloc    82.12M
+
+mid_only_r90:
+  region      24.68M
+  directfree  25.37M
+  HZ4         83.65M
+  tcmalloc    49.91M
+
+cross128_r90:
+  region      18.27M
+  directfree  15.25M
+  HZ4         29.31M
+  tcmalloc     7.60M
+
+large_only_r90:
+  region      21.76M
+  directfree  19.18M
+  HZ4          6.63M
+  tcmalloc     7.15M
+```
+
+Updated decision:
+
+```text
+directfree:
+  useful main/mid remote-heavy candidate
+  not a broad default because cross128_r90 and large_only_r90 regress versus
+  region
+
+general default remains:
+  --linux-hz5-general-region-outbox
+
+new reproducible candidate preset:
+  --linux-hz5-general-directfree
+```
+
+Smoke:
+
+```text
+--linux-hz5-general-directfree build OK
+/bin/true under full preload OK
+/tmp/hz5_largefront_smoke under full preload OK
 ```
 
 Lane cleanup:

@@ -217,3 +217,43 @@ Decision: R3 is useful as a diagnostic, but it is not a broad default. It
 recovers some single-front damage from R2 but fails to beat the owner-inbox
 baseline on the important mixed r90 row.
 ```
+
+## 2026-05-25 External Review Reconciliation
+
+The external review recommended the same intermediate architecture used by
+R1/R2/R3:
+
+```text
+shared:
+  owner-slot handoff coordinator
+  pending mask / drain scheduling
+
+not shared:
+  generic RemoteEntry payload
+  Small/Mid/Large ownership validation
+  Small/Mid/Large inbox node layout
+```
+
+The branch-local result is that this shape is useful but not yet a default
+remote-heavy lane:
+
+```text
+R2:
+  can help selected main/cross mixed rows
+  hurts mid_only/large_only remote-heavy rows
+
+R3:
+  reduces some R2 fixed cost
+  still fails to beat the owner-inbox baseline on key mixed r90 rows
+```
+
+Next OwnerHub work should therefore be narrower:
+
+```text
+1. selective/mixed-only enablement,
+2. lower-cost publish bookkeeping, or
+3. no OwnerHub default until MidFront remote-free instruction cost is reduced.
+```
+
+Do not introduce a generic per-object `RemoteEntry` queue unless the
+front-specific queues are proven to be the remaining bottleneck.

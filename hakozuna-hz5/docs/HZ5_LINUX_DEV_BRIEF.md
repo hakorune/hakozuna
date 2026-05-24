@@ -131,19 +131,19 @@ not enough:
   LargeFront remote batch only
 ```
 
-## OwnerHub-R1 Finding
+## OwnerHub Finding
 
-After the Pro review, the next direction is OwnerHub-R1:
+External review agreed with the OwnerHub direction in principle:
 
 ```text
 shared owner-slot pending mask
 per-front specialized inbox payloads
 no generic RemoteEntry yet
-dry-run observation only
 ```
 
-Initial diagnostic runs used `HZ5_OWNERHUB_STATS=1` and are not raw performance
-runs.
+This branch already implements that idea as `OwnerHub-R1/R2/R3`.
+Initial R1 diagnostic runs used `HZ5_OWNERHUB_STATS=1` and are not raw
+performance runs.
 
 Short r90 observations:
 
@@ -214,7 +214,7 @@ OwnerHub-R3:
   implemented as the next candidate
   uses coarse per-front dirty bits instead of class-granular pending bits
   keeps per-front inbox payloads and fail-closed descriptor validation
-  should be measured against R2 and the owner-inbox baseline without stats
+  not a broad default in the short raw comparison
 ```
 
 Short raw repeat-3 results show R3 is not a broad default:
@@ -589,6 +589,100 @@ Read:
 direct-free-state is promising enough to keep as candidate-watch for MidFront
 r90 throughput, but the first perf spot-check did not prove an instruction
 reduction. Treat it as an implementation hypothesis, not a confirmed cause.
+```
+
+Direct-drain follow-up:
+
+```text
+--linux-midfront-remote-trust-drain-state
+```
+
+This diagnostic requires `--linux-midfront-remote-direct-free-state`. The
+freeing thread still performs the first `ACTIVE -> LOCAL_FREE` CAS, but owner
+drain trusts inbox provenance and skips the `LOCAL_FREE` state load/check before
+pushing the span to the owner cache.
+
+Focused general repeat-3, stats unset:
+
+```text
+private/raw-results/linux/general_direct_trust_r3_20260525_010715
+
+main_r90:
+  region      25.91M
+  directfree  31.09M
+  trustdrain  23.43M
+
+mid_only_r90:
+  region      18.46M
+  directfree  37.54M
+  trustdrain  20.85M
+
+cross128_r90:
+  region      13.98M
+  directfree  14.10M
+  trustdrain  13.73M
+
+large_only_r90:
+  region      16.29M
+  directfree  19.12M
+  trustdrain  14.20M
+```
+
+Decision:
+
+```text
+trustdrain:
+  no-go for promotion; it removes owner-drain state validation and does not win.
+
+directfree:
+  candidate-watch. It improved this focused general matrix and keeps the first
+  remote-free CAS, but still needs broad repeat and safety smoke before
+  promotion.
+```
+
+Broad repeat-5 result:
+
+```text
+private/raw-results/linux/directfree_broad_r5_20260525_011108
+
+main_r90:
+  region      20.68M
+  directfree  25.85M
+  HZ4         75.04M
+  tcmalloc    51.74M
+
+mid_only_r90:
+  region      24.68M
+  directfree  25.37M
+  HZ4         83.65M
+  tcmalloc    49.91M
+
+cross128_r90:
+  region      18.27M
+  directfree  15.25M
+  HZ4         29.31M
+  tcmalloc     7.60M
+
+large_only_r90:
+  region      21.76M
+  directfree  19.18M
+  HZ4          6.63M
+  tcmalloc     7.15M
+```
+
+Updated decision:
+
+```text
+directfree:
+  useful main/mid remote-heavy candidate
+  not a broad default because cross128_r90 and large_only_r90 regress versus
+  region
+
+default:
+  --linux-hz5-general-region-outbox
+
+candidate preset:
+  --linux-hz5-general-directfree
 ```
 
 ## Next Technical Question

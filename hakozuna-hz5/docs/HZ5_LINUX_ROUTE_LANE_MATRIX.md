@@ -271,6 +271,8 @@ Reporting lane:
 | `hz5-largefront-region-map` | `--linux-largefront-region-map --linux-largefront-owner-fast-state --linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | LargeFront-L2 candidate; source-region lookup without losing interior invalid-free attribution |
 | `hz5-smallfront-remote-outbox` | `--linux-smallfront-remote-outbox --linux-smallfront-remote-batch-cap 8 --linux-largefront-region-map --linux-largefront-owner-fast-state --linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16` | SmallFront remote-handoff candidate; associative owner/class sender outbox |
 | `hz5-general-region-outbox` | `--linux-hz5-general-region-outbox` | short preset for SmallFront outbox cap8 + MidFront rb16/owner-fast + LargeFront region-map |
+| `hz5-midfront-directfree` | `--linux-hz5-general-directfree` | MidFront remote-free state-machine candidate/watch; main/mid remote-heavy only, not broad default |
+| `hz5-midfront-trustdrain` | `--linux-hz5-general-region-outbox --linux-midfront-remote-trust-drain-state` | diagnostic upper-bound only; skips owner-drain state load/check after directfree |
 
 Current decision:
 
@@ -322,6 +324,11 @@ midfront-remote-direct-free-state:
   owner drain accepts LOCAL_FREE spans and skips REMOTE_PENDING -> LOCAL_FREE CAS
   diagnostic/candidate-watch; keep separate from default until repeat/perf
   evidence is stronger
+
+midfront-remote-trust-drain-state:
+  requires direct-free-state
+  owner drain trusts inbox provenance and skips the LOCAL_FREE state load/check
+  no-go for promotion in the first focused general repeat; diagnostic only
 
 deferred:
   hz3/hz4-style 2MiB page-run split/merge pool

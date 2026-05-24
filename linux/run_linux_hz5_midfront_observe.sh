@@ -39,6 +39,8 @@ Default candidates:
   rb16              broad MidFront default candidate
   allgate           mid-heavy candidate: drain-all + empty-gated exchange
   drainmask         pending-mask candidate/control
+  directfree        remote free ACTIVE->LOCAL_FREE candidate
+  trustdrain        directfree plus owner-drain state-load skip diagnostic
   globalrecycle     global recycle control
 
 Important:
@@ -80,8 +82,10 @@ CAND_FLAGS[allgate]="--linux-midfront-owner-fast-state --linux-midfront-remote-b
 CAND_FLAGS[drainmask]="--linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16 --linux-midfront-drain-mask-on-miss"
 CAND_FLAGS[maskhitstop]="--linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16 --linux-midfront-drain-mask-hit-stop"
 CAND_FLAGS[globalrecycle]="--linux-midfront-owner-fast-state --linux-midfront-remote-global-recycle"
+CAND_FLAGS[directfree]="--linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16 --linux-midfront-remote-direct-free-state"
+CAND_FLAGS[trustdrain]="--linux-midfront-owner-fast-state --linux-midfront-remote-batch-cap 16 --linux-midfront-remote-trust-drain-state"
 
-declare -a CANDIDATES=(rb16 allgate drainmask globalrecycle)
+declare -a CANDIDATES=(rb16 directfree trustdrain allgate drainmask globalrecycle)
 
 build_candidate() {
   local cand="$1"
