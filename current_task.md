@@ -496,6 +496,9 @@ candidate selector:
   --linux-midfront-drain-mask-on-miss
     candidate lane that tracks pending owner inbox classes and drains only
     pending classes when the requested local class misses
+  --linux-midfront-remote-global-recycle
+    candidate lane that recycles remote-freed MidSpans through global class
+    stacks instead of waiting for owner inbox drain
 
 implemented:
   hakozuna-hz5/midfront/hz5_midfront.c
@@ -593,6 +596,17 @@ MidFront drain-mask-on-miss:
   local miss drains the requested class and any other pending classes
   intended to keep drain-all's mixed r90 win while avoiding useless empty-class
   atomic exchanges
+
+MidFront remote-global-recycle:
+  remote free performs ACTIVE -> LOCAL_FREE and publishes the span to a global
+  class stack
+  next allocator thread pops the global span, retakes owner, then activates it
+  intended for remote-heavy workloads where owner-inbox delayed reuse forces
+  extra source allocation or long stalls
+  current candidate uses a mutex-protected global class stack; the first
+  lock-free stack draft was rejected after main r90 alloc-failure probes
+  descriptor state still protects double-free; this is a policy candidate, not
+  the default owner-local semantics
 ```
 
 Initial smoke measurement:
@@ -710,6 +724,62 @@ interpretation:
   drain-mask is safe enough to keep as an A/B candidate
   it does not clearly replace drain-all yet
   next serious comparison needs longer runs or perf counters
+```
+
+Long r90 observation:
+
+```text
+longer main 16..65536 r90 runs exposed instability/stalls:
+  some runs printed "alloc failed"
+  repeated probe with HZ5_PRELOAD_STATS completed with malloc_fail=0 but only
+  about 0.34M ops/s
+
+size-band probe with drainall:
+  small 16..2048 r90 median:       about 8.29M ops/s
+  mid 2049..32768 r90 median:      about 3.11M ops/s
+  high 32769..65536 r90 median:    about 4.32M ops/s
+  fixed 65536 r90 median:          about 5.09M ops/s
+  main 16..65536 r90 median:       about 3.30M ops/s
+
+interpretation:
+  SmallFront is not the primary blocker
+  MidFront remote reuse policy remains the main target
+  next candidate is remote-global-recycle to test owner-inbox delay vs global
+  class reuse
+```
+
+Remote-global-recycle probe:
+
+```text
+first lock-free stack draft:
+  smoke passed
+  main 16..65536 r90 produced alloc failures
+  conclusion: no-go; likely unsafe stack reuse/ABA risk
+
+mutex global class stack candidate:
+  build:
+    --linux-midfront-owner-fast-state
+    --linux-midfront-remote-global-recycle
+  smoke:
+    /bin/true OK
+    MidFront usable class smoke OK
+    MidFront owner-death smoke OK
+    MidFront double-free smoke OK
+
+short hakmem, threads=2 ws=100:
+  mid 2049..32768 r90:
+    median in quick probe about 4.18M ops/s with high variance
+  main 16..65536 r90:
+    no alloc failures in quick probe
+    median about 4.17M ops/s, with high outliers above 13M
+  fixed 4096 r0:
+    median about 68.4M ops/s
+
+interpretation:
+  owner-inbox delayed reuse is a real limiter
+  global recycle can help main r90, but mutex/global locality tradeoff must be
+  measured longer before promotion
+  keep as candidate only
 ```
 
 OwnerLifetime-O1 implementation status:

@@ -98,6 +98,7 @@ Candidate lane:
 --linux-midfront-remote-batch-cap N
 --linux-midfront-drain-all-on-miss
 --linux-midfront-drain-mask-on-miss
+--linux-midfront-remote-global-recycle
 ```
 
 This keeps MidFront-M1 as the default safe lane, but replaces owner-local
@@ -120,6 +121,15 @@ but potentially wasteful for narrow single-class workloads.
 updated by remote publish. On local miss, it drains the requested class plus any
 classes with pending bits. This is a lower-overhead form of drain-all and is a
 candidate, not the default policy.
+
+`--linux-midfront-remote-global-recycle` bypasses owner inbox for remote frees.
+The freeing thread moves a remote span from `ACTIVE` to `LOCAL_FREE` and pushes
+it onto a global class stack; the next allocating thread pops it, retakes owner,
+and activates it. This tests whether remote-heavy stalls come from owner-inbox
+delayed reuse. The current candidate uses a mutex-protected global class stack;
+the initial lock-free stack draft was rejected after alloc-failure probes. It
+preserves descriptor state checks but weakens owner-locality, so it remains a
+candidate policy.
 ```
 
 ## Allocator Shape

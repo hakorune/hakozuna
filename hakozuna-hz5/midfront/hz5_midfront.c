@@ -29,6 +29,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDFRONT_DRAIN_MASK_ON_MISS 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_GLOBAL_RECYCLE
+#define BENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_GLOBAL_RECYCLE 0
+#endif
+
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_MIDFRONT_M1
 
 #define HZ5_MIDFRONT_MAGIC UINT64_C(0x485A354D49444D31)
@@ -87,6 +91,8 @@ static const Hz5OwnerToken k_hz5_midfront_no_owner = {0, 0};
 static Hz5MidMapEntry g_hz5_midfront_map[HZ5_MIDFRONT_MAP_CAP];
 static _Atomic(void*) g_hz5_midfront_owner_inbox[UINT16_MAX + 1u]
                                              [HZ5_MIDFRONT_CLASS_COUNT];
+static Hz5MidSpan* g_hz5_midfront_global_free[HZ5_MIDFRONT_CLASS_COUNT];
+static pthread_mutex_t g_hz5_midfront_global_lock = PTHREAD_MUTEX_INITIALIZER;
 #if BENCHLAB_HZ5_LINUX_MIDFRONT_DRAIN_MASK_ON_MISS
 static _Atomic uint32_t g_hz5_midfront_owner_inbox_mask[UINT16_MAX + 1u];
 #endif
@@ -216,6 +222,30 @@ static Hz5MidSpan* hz5_midfront_local_pop(Hz5MidTls* tls,
   return span;
 }
 
+static void hz5_midfront_global_push(uint32_t class_index, Hz5MidSpan* span) {
+  if (!hz5_midfront_class_valid(class_index) || !span) {
+    return;
+  }
+  pthread_mutex_lock(&g_hz5_midfront_global_lock);
+  span->next = g_hz5_midfront_global_free[class_index];
+  g_hz5_midfront_global_free[class_index] = span;
+  pthread_mutex_unlock(&g_hz5_midfront_global_lock);
+}
+
+static Hz5MidSpan* hz5_midfront_global_pop(uint32_t class_index) {
+  if (!hz5_midfront_class_valid(class_index)) {
+    return NULL;
+  }
+  pthread_mutex_lock(&g_hz5_midfront_global_lock);
+  Hz5MidSpan* span = g_hz5_midfront_global_free[class_index];
+  if (span) {
+    g_hz5_midfront_global_free[class_index] = span->next;
+    span->next = NULL;
+  }
+  pthread_mutex_unlock(&g_hz5_midfront_global_lock);
+  return span;
+}
+
 static int hz5_midfront_state_cas(Hz5MidSpan* span,
                                   unsigned char from,
                                   unsigned char to) {
@@ -239,6 +269,18 @@ static int hz5_midfront_owner_local_state_transition(Hz5MidSpan* span,
 #else
   return hz5_midfront_state_cas(span, from, to);
 #endif
+}
+
+static int hz5_midfront_activate_for_owner(Hz5MidTls* tls,
+                                           Hz5MidSpan* span) {
+  if (!hz5_midfront_owner_local_state_transition(
+          span,
+          (unsigned char)HZ5_MIDSPAN_LOCAL_FREE,
+          (unsigned char)HZ5_MIDSPAN_ACTIVE)) {
+    return 0;
+  }
+  span->owner = tls->owner;
+  return 1;
 }
 
 static void hz5_midfront_mark_orphan(Hz5MidSpan* span) {
@@ -428,14 +470,19 @@ void* hz5_midfront_alloc(size_t size, size_t align) {
     span = hz5_midfront_local_pop(tls, ci);
   }
   if (span) {
-    if (!hz5_midfront_owner_local_state_transition(
-            span,
-            (unsigned char)HZ5_MIDSPAN_LOCAL_FREE,
-            (unsigned char)HZ5_MIDSPAN_ACTIVE)) {
+    if (!hz5_midfront_activate_for_owner(tls, span)) {
       return NULL;
     }
     return span->base;
   }
+
+#if BENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_GLOBAL_RECYCLE
+  while ((span = hz5_midfront_global_pop(ci)) != NULL) {
+    if (hz5_midfront_activate_for_owner(tls, span)) {
+      return span->base;
+    }
+  }
+#endif
 
   span = hz5_midfront_new_span(tls, ci);
   return span ? span->base : NULL;
@@ -460,12 +507,21 @@ Hz5MidFrontFreeResult hz5_midfront_free(void* ptr) {
     }
     hz5_midfront_local_push(tls, span->class_index, span);
   } else {
+#if BENCHLAB_HZ5_LINUX_MIDFRONT_REMOTE_GLOBAL_RECYCLE
+    if (!hz5_midfront_state_cas(span,
+                                (unsigned char)HZ5_MIDSPAN_ACTIVE,
+                                (unsigned char)HZ5_MIDSPAN_LOCAL_FREE)) {
+      return HZ5_MIDFRONT_FREE_INVALID;
+    }
+    hz5_midfront_global_push(span->class_index, span);
+#else
     if (!hz5_midfront_state_cas(span,
                                 (unsigned char)HZ5_MIDSPAN_ACTIVE,
                                 (unsigned char)HZ5_MIDSPAN_REMOTE_PENDING)) {
       return HZ5_MIDFRONT_FREE_INVALID;
     }
     hz5_midfront_remote_batch_push(tls, span);
+#endif
   }
   return HZ5_MIDFRONT_FREE_OK;
 }
