@@ -7,33 +7,125 @@ HZ5 Linux general allocator work is now targeting `tcmalloc`, not `mimalloc`.
 Immediate focus:
 
 ```text
-FrontCache-M5 / RouteTag-R1
+MidPageFront-M6 deferred-free ThreadCache
 ```
 
 Reason:
 
 ```text
-M4/freefirst/tlslink reaches about 100M-107M ops/s on main/mid_only r0, but
-tcmalloc is still about 226M. allocelide, ptrmag, absalloc, regcache, and
-slotswitch showed the remaining gap is structural path length, not one isolated
-state transition or slot arithmetic issue.
+M5 hit-only, SuperFast, Direct MidPage API, and freeelide diagnostics did not
+close the tcmalloc local-r0 gap. Even direct-freeelide stops around 125M ops/s
+while tcmalloc is around 219M, with HZ5 still paying about 1.9x instructions
+and 2.1x branches. The next experiment must change the free-path topology.
 ```
 
 Design doc:
 
 ```text
-hakozuna-hz5/docs/HZ5_FRONTCACHE_M5_ROUTETAG_R1_DESIGN.md
+hakozuna-hz5/docs/HZ5_MIDPAGEFRONT_M6_DEFERRED_FREE_DESIGN.md
 ```
 
 Implementation order:
 
 ```text
-1. Record M5a hit-only as no-go.
-2. Add a deliberately unsafe SuperFast upper-bound lane.
-3. Run RUNS=5 local r0 smoke vs tlslink/tcmalloc.
-4. If SuperFast still misses 150M mid_only_r0, stop tuning individual M4/M5
-   pieces and redesign the front path.
-5. If SuperFast clears the bar, reintroduce safety checks one at a time.
+1. Document M6 as a diagnostic/proof lane, not a reportable safety profile.
+2. Add a classless per-thread raw free quarantine to MidPageFront M4 magazine.
+3. Make free hit push only to raw quarantine; no page lookup, slot index, owner
+   check, or state transition on that hot path.
+4. Flush raw quarantine on alloc-bin miss or raw-cap full, then batch validate
+   ptr -> page -> slot and only promote validated slots to the magazine.
+5. First measure direct MidPage API r0. If mid_only_r0 < 145M, treat M6 as
+   no-go for the tcmalloc chase and stop local-r0 micro-tuning.
+6. If direct proof is >=165M, integrate a general/preload lane and then revisit
+   page-tag/RouteTag acceleration for batch validation.
+```
+
+M6 safety contract:
+
+```text
+raw_free quarantine:
+  untrusted, never allocated from directly
+
+validated magazine:
+  trusted, alloc may pop after CACHE -> LIVE transition
+
+invalid/double-free:
+  may not be reported inside free(); it must fail closed before reuse during
+  raw flush and must never be promoted to the validated magazine
+```
+
+Initial lane:
+
+```text
+--linux-hz5-general-midpage-m6-deferred-free-direct
+
+compiled as:
+  M4 magazine
+  M4 remote packet
+  M5 hit-only
+  M6 deferred free
+  no alloc/free state-elision unsafe flags
+  no stats in speed lane
+```
+
+## M6 Deferred-Free Result
+
+Raw output:
+
+```text
+private/raw-results/linux/midpage_m6defer_direct_smoke_20260525_160954
+private/raw-results/linux/midpage_m6defer_cap64_direct_smoke_20260525_161054
+private/raw-results/linux/midpage_m6batch_cap64_direct_smoke_20260525_161155
+private/raw-results/linux/midpage_m6batch_perf_20260525_161204
+```
+
+RUNS=5, direct MidPage API, threads=8, iters=300000, ws=100,
+size 2049..32768:
+
+```text
+M6 raw_cap=256, per-object flush:
+  101.02M
+
+M6 raw_cap=64, per-object flush:
+  102.40M
+
+M6 raw_cap=64, page-batch state update:
+   79.30M
+
+previous direct-freeelide:
+  125.02M
+
+tcmalloc reference from same mid_only shape:
+  219.37M
+```
+
+Perf one-shot, M6 page-batch:
+
+```text
+79.55M ops/s
+985.0M instructions
+220.5M branches
+441.4M cycles
+```
+
+Decision:
+
+```text
+M6 deferred-free is no-go for the tcmalloc local-r0 chase. Deferring free
+validation does not reduce total path length in this workload; it delays reuse,
+adds raw-buffer/refill pressure, and page-batch grouping is even more expensive
+than the immediate-validation path.
+```
+
+Read:
+
+```text
+The remaining gap is not just fail-closed immediate validation timing. Direct
+API + freeelide was already only ~125M, and M6 drops below that. Next design
+should stop chasing deferred free and inspect the whole MidPage object/class
+shape against tcmalloc/HZ4: class distribution, span packing, cache capacity,
+and whether the direct benchmark is stressing random class misses rather than
+same-class ThreadCache hits.
 ```
 
 ## M5a Result
