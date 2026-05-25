@@ -571,3 +571,59 @@ Next:
      necessarily fault every allocated byte.
   4. If broad rows hold, promote as C8 PageRun throughput/RSS profile and keep
      C7 M6 remote as the conservative saved profile.
+
+Follow-up perf:
+  RUNS=3, same mid_only r90 shape:
+
+    allocator       ops/s      cycles/op  instr/op  branches/op  br_miss%
+    hz5-pagerun     66.54M     295.46     284.97    63.08        1.97
+    hz5-m6remote    20.69M     706.43     442.67    90.38        7.41
+    hz4             35.80M     371.84     232.09    47.71        7.19
+    tcmalloc        26.64M     608.29     373.35    74.76        9.01
+
+Read:
+  PageRun did not become as instruction-thin as HZ4, but it cuts M6/tcmalloc
+  path cost enough to win throughput. Branch misses are especially low. The
+  remaining HZ4 advantage is still branch/path length, not correctness.
+
+Broad result:
+  PageRun32 RUNS=3:
+    main and mid_only are strong.
+    cross128 r90 regresses because the 32769..65536 gap remains on the old
+    path and can timeout.
+
+  Triage:
+    cross64 r90 has one PageRun32 timeout.
+    midgap64 32769..65536 r90 times out in all PageRun32 runs.
+    large128 is not the PageRun problem.
+
+Next implementation:
+  Add PageRun64 diagnostic:
+    keep PageRun32 intact
+    add optional 65536 class under `BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN_64K`
+    route ordinary malloc 32769..65536 into MidPage only for this lane
+
+PageRun64 result:
+  Lane:
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64
+    --linux-midpagefront-empty-retain-cap 4096
+
+  RUNS=5:
+
+    case       r0 ops/s   r50 ops/s  r90 ops/s  r90 maxrss
+    main       92.35M     60.68M     58.52M     44.7MB
+    mid_only   89.19M     66.60M     66.59M     12.0MB
+    midgap64   67.32M     17.93M     42.32M     24.1MB
+    cross64    80.17M     41.15M     56.94M     32.6MB
+    cross128   61.47M     29.08M     22.71M     377.9MB
+
+  Smoke:
+    2049/8192/32768/32769/49152/65536 malloc/free/malloc_usable_size ok
+    64K double-free-before-reuse did not duplicate a pointer
+    64K remote free smoke passed
+
+Read:
+  PageRun64 fixes the 32769..65536 timeout gap and makes cross64 strong.
+  cross128 r90 recovers versus PageRun32 and beats tcmalloc, but still trails
+  HZ4 and is roughly tied with old M6 remote while using slightly more RSS.
+  The remaining broad gap is LargeFront/cross-size, not MidPage PageRun.

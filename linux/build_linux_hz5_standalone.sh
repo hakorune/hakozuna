@@ -96,6 +96,7 @@ LINUX_MIDPAGEFRONT_M9_BUDGET_DRAIN=0
 LINUX_MIDPAGEFRONT_M10_REMOTE_SLOT_RING=0
 LINUX_MIDPAGEFRONT_M11_REMOTE_DIRECT_CACHE=0
 LINUX_MIDPAGEFRONT_PAGERUN=0
+LINUX_MIDPAGEFRONT_PAGERUN_64K=0
 LINUX_MIDPAGEFRONT_M4_FLAT_MAG_CAP=0
 LINUX_MIDPAGEFRONT_M4_OVERFLOW_ARRAY=0
 LINUX_MIDPAGEFRONT_WIDE_32K_CLASS=0
@@ -336,6 +337,9 @@ Options:
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun
                      remote-heavy diagnostic: M6 remote with PageRun owner
                      local bitset path bypassing M4 magazine hot path
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64
+                     remote-heavy diagnostic: PageRun plus 64K MidPage class
+                     for the 32769..65536 route gap
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-drainhit
                      remote-heavy diagnostic: band8/32 checkpoint lane with
                      periodic M4 remote packet drain restored on M5 alloc hits
@@ -794,6 +798,11 @@ enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_m1
 enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun_base() {
   enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_base "$1"
   LINUX_MIDPAGEFRONT_PAGERUN=1
+}
+
+enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_base() {
+  enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun_base "$1"
+  LINUX_MIDPAGEFRONT_PAGERUN_64K=1
 }
 
 enable_midpage_m4packet_freefirst_tlslink_tagfree_base() {
@@ -1360,6 +1369,10 @@ while [[ $# -gt 0 ]]; do
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun_base 2
       shift
       ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_base 2
+      shift
+      ;;
     --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-drainhit)
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_drainhit_base 2
       shift
@@ -1441,6 +1454,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --linux-midpagefront-pagerun)
       LINUX_MIDPAGEFRONT_PAGERUN=1
+      shift
+      ;;
+    --linux-midpagefront-pagerun-64k)
+      LINUX_MIDPAGEFRONT_PAGERUN_64K=1
       shift
       ;;
     --linux-midpagefront-m4-remote-drain-hit-interval)
@@ -2381,6 +2398,11 @@ if [[ "$LINUX_MIDPAGEFRONT_M2" -eq 1 ]]; then
       -DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN=1
     )
   fi
+  if [[ "$LINUX_MIDPAGEFRONT_PAGERUN_64K" -eq 1 ]]; then
+    COMMON_FLAGS+=(
+      -DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN_64K=1
+    )
+  fi
   if [[ "$LINUX_MIDPAGEFRONT_M4_FLAT_MAG_CAP" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_FLAT_MAG_CAP=1)
   fi
@@ -2592,6 +2614,7 @@ fi
   echo "linux_midpagefront_m10_remote_slot_ring=${LINUX_MIDPAGEFRONT_M10_REMOTE_SLOT_RING}"
   echo "linux_midpagefront_m11_remote_direct_cache=${LINUX_MIDPAGEFRONT_M11_REMOTE_DIRECT_CACHE}"
   echo "linux_midpagefront_pagerun=${LINUX_MIDPAGEFRONT_PAGERUN}"
+  echo "linux_midpagefront_pagerun_64k=${LINUX_MIDPAGEFRONT_PAGERUN_64K}"
   echo "linux_midpagefront_m4_flat_mag_cap=${LINUX_MIDPAGEFRONT_M4_FLAT_MAG_CAP}"
   echo "linux_midpagefront_m4_overflow_array=${LINUX_MIDPAGEFRONT_M4_OVERFLOW_ARRAY}"
   echo "linux_midpagefront_wide_32k_class=${LINUX_MIDPAGEFRONT_WIDE_32K_CLASS}"

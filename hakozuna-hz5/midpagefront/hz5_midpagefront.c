@@ -134,6 +134,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN_64K
+#define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN_64K 0
+#endif
+
 #define HZ5_MIDPAGEFRONT_M6_ANY_DEFERRED_FREE \
   (BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_DEFERRED_FREE || \
    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_REMOTE_DEFERRED_FREE)
@@ -232,7 +236,11 @@ void _aligned_free(void* ptr);
 
 #define HZ5_MIDPAGEFRONT_MAGIC UINT64_C(0x485A354D50414732)
 #define HZ5_MIDPAGEFRONT_SLAB_BYTES ((size_t)65536)
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN_64K
+#define HZ5_MIDPAGEFRONT_CLASS_COUNT 6u
+#else
 #define HZ5_MIDPAGEFRONT_CLASS_COUNT 5u
+#endif
 #define HZ5_MIDPAGEFRONT_MAP_BITS 18u
 #define HZ5_MIDPAGEFRONT_MAP_CAP \
   ((size_t)1u << HZ5_MIDPAGEFRONT_MAP_BITS)
@@ -459,7 +467,16 @@ typedef struct Hz5MidPageTls {
 } Hz5MidPageTls;
 
 static const uint32_t g_hz5_midpagefront_classes
-    [HZ5_MIDPAGEFRONT_CLASS_COUNT] = {3072u, 4096u, 8192u, 16384u, 32768u};
+    [HZ5_MIDPAGEFRONT_CLASS_COUNT] = {3072u,
+                                      4096u,
+                                      8192u,
+                                      16384u,
+                                      32768u
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN_64K
+                                      ,
+                                      65536u
+#endif
+};
 
 static const Hz5OwnerToken k_hz5_midpagefront_no_owner = {0, 0};
 
@@ -751,9 +768,18 @@ static int hz5_midpagefront_class_valid(uint32_t class_index) {
 }
 
 static int hz5_midpagefront_request_bucket(size_t size) {
-  if (size <= 2048u || size > 32768u) {
+  if (size <= 2048u) {
     return -1;
   }
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN_64K
+  if (size > 65536u) {
+    return -1;
+  }
+#else
+  if (size > 32768u) {
+    return -1;
+  }
+#endif
   if (size <= 3072u) {
     return 0;
   }
@@ -766,7 +792,14 @@ static int hz5_midpagefront_request_bucket(size_t size) {
   if (size <= 16384u) {
     return 3;
   }
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN_64K
+  if (size <= 32768u) {
+    return 4;
+  }
+  return 5;
+#else
   return 4;
+#endif
 }
 
 // MidPageFront owns the ordinary malloc gap between SmallFront and MidFront.
@@ -774,21 +807,61 @@ static int hz5_midpagefront_request_bucket(size_t size) {
 // routes with different RSS and remote-free behavior.
 static int hz5_midpagefront_class_index(size_t size) {
   static const uint8_t strict_map[HZ5_MIDPAGEFRONT_CLASS_COUNT] = {
-      0u, 1u, 2u, 3u, 4u};
+      0u, 1u, 2u, 3u, 4u
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN_64K
+      ,
+      5u
+#endif
+  };
   static const uint8_t band4_16_32_map[HZ5_MIDPAGEFRONT_CLASS_COUNT] = {
-      1u, 1u, 3u, 3u, 4u};
+      1u, 1u, 3u, 3u, 4u
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN_64K
+      ,
+      5u
+#endif
+  };
   static const uint8_t band8_32_map[HZ5_MIDPAGEFRONT_CLASS_COUNT] = {
-      2u, 2u, 2u, 4u, 4u};
+      2u, 2u, 2u, 4u, 4u
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN_64K
+      ,
+      5u
+#endif
+  };
   static const uint8_t band16_32_map[HZ5_MIDPAGEFRONT_CLASS_COUNT] = {
-      3u, 3u, 3u, 3u, 4u};
+      3u, 3u, 3u, 3u, 4u
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN_64K
+      ,
+      5u
+#endif
+  };
   static const uint8_t band4_8_16_32_map[HZ5_MIDPAGEFRONT_CLASS_COUNT] = {
-      1u, 1u, 2u, 3u, 4u};
+      1u, 1u, 2u, 3u, 4u
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN_64K
+      ,
+      5u
+#endif
+  };
   static const uint8_t band4_8_32_map[HZ5_MIDPAGEFRONT_CLASS_COUNT] = {
-      1u, 1u, 2u, 4u, 4u};
+      1u, 1u, 2u, 4u, 4u
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN_64K
+      ,
+      5u
+#endif
+  };
   static const uint8_t band8_16_32_map[HZ5_MIDPAGEFRONT_CLASS_COUNT] = {
-      2u, 2u, 2u, 3u, 4u};
+      2u, 2u, 2u, 3u, 4u
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN_64K
+      ,
+      5u
+#endif
+  };
   static const uint8_t wide32k_map[HZ5_MIDPAGEFRONT_CLASS_COUNT] = {
-      4u, 4u, 4u, 4u, 4u};
+      4u, 4u, 4u, 4u, 4u
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN_64K
+      ,
+      5u
+#endif
+  };
 
   int bucket = hz5_midpagefront_request_bucket(size);
   if (bucket < 0) {
@@ -1030,7 +1103,12 @@ static uint16_t hz5_midpagefront_m4_mag_cap(uint32_t class_index) {
   return HZ5_MIDPAGEFRONT_M4_MAG_CAP_MAX;
 #else
   static const uint16_t caps[HZ5_MIDPAGEFRONT_CLASS_COUNT] = {
-      64u, 64u, 32u, 16u, 8u};
+      64u, 64u, 32u, 16u, 8u
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN_64K
+      ,
+      4u
+#endif
+  };
   return class_index < HZ5_MIDPAGEFRONT_CLASS_COUNT ? caps[class_index] : 0u;
 #endif
 }

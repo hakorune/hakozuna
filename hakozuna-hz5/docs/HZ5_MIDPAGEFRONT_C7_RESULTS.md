@@ -790,3 +790,78 @@ The very low maxrss should be interpreted carefully: this benchmark does not
 necessarily fault every allocated byte. Keep touched-payload RSS rows separate
 before making a final memory-efficiency claim.
 ```
+
+Perf compare, RUNS=3 on the same r90 shape:
+
+```text
+allocator       ops/s      cycles/op  instr/op  branches/op  br_miss%
+hz5-pagerun     66.54M     295.46     284.97    63.08        1.97
+hz5-m6remote    20.69M     706.43     442.67    90.38        7.41
+hz4             35.80M     371.84     232.09    47.71        7.19
+tcmalloc        26.64M     608.29     373.35    74.76        9.01
+```
+
+Read:
+
+```text
+PageRun is not yet as instruction-thin as HZ4, but it dramatically cuts the M6
+path cost and has much lower branch misses. The design win is real: removing M4
+magazine/refill/cache_slot from owner reuse was the right lever.
+```
+
+## C8 PageRun64 Diagnostic
+
+Reason:
+
+```text
+PageRun32 fixed MidPage band8/32, but broad cross rows exposed an unrecovered
+32769..65536 ordinary malloc gap. In cross64/cross128 r90, that old path could
+timeout or dominate the row.
+```
+
+Implementation:
+
+```text
+preset:
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64
+  --linux-midpagefront-empty-retain-cap 4096
+
+design:
+  keep PageRun32 intact
+  add optional 65536 class with one slot per 64KiB slab
+  route 32769..65536 ordinary malloc into MidPage only for this diagnostic
+```
+
+RUNS=5:
+
+```text
+workload:
+  bench_random_mixed_mt_remote_malloc 8 500000 4000 min max r 65536
+
+case       r0 ops/s   r50 ops/s  r90 ops/s  r90 maxrss
+main       92.35M     60.68M     58.52M     44.7MB
+mid_only   89.19M     66.60M     66.59M     12.0MB
+midgap64   67.32M     17.93M     42.32M     24.1MB
+cross64    80.17M     41.15M     56.94M     32.6MB
+cross128   61.47M     29.08M     22.71M     377.9MB
+```
+
+Smoke:
+
+```text
+2049/8192/32768/32769/49152/65536 malloc/free/malloc_usable_size ok
+64K double-free-before-reuse did not duplicate a pointer
+64K remote free smoke passed
+```
+
+Read:
+
+```text
+PageRun64 is a strong diagnostic keep. It fixes the 32769..65536 timeout gap
+and makes cross64 strong. cross128 r90 recovers versus PageRun32 and beats
+tcmalloc in this run, but it still trails HZ4 and is roughly tied with old M6
+remote while using slightly more RSS.
+
+Remaining broad work is no longer the MidPage owner-local path. It is
+LargeFront/cross-size behavior in 16..131072 remote-heavy rows.
+```
