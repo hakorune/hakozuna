@@ -87,6 +87,18 @@ Linux Local2P notes:
   the local-only speed default.
 - Current benchmark entrypoint: `linux/run_linux_hz5_local2p_focus.sh`.
 
+Linux general allocator notes:
+
+- `SmallFront`, `MidPageFront`, `MidFront`, and `LargeFront` are experimental
+  Linux full-preload front-ends. They are separate from the exact 64K Local2P
+  appendix profiles.
+- `MidPageFront-C7` is the current ordinary malloc `2049..32768` focus. It is
+  now a profile-family problem rather than a single-lane speed chase:
+  `strict` is the low-waste default candidate, `band8/32` and `band8/16/32`
+  are coarse speed/RSS candidates, and `wide32k` is diagnostic only.
+- Current MidPage lane matrix:
+  `docs/HZ5_MIDPAGEFRONT_C7_LANES.md`.
+
 P13/P14 are not speed lanes. P11/P9 should stay counter-free when used for
 throughput measurements; P12 cap1 should now be included only when comparing
 negative run16 evidence.

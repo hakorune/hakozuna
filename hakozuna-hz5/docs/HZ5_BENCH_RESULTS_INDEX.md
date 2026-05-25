@@ -1752,3 +1752,36 @@ docs/archive/current_task_2026-05-hz5-linux.md
 
 Use that archive for older Local2P, SmallFront, MidFront, LargeFront, OwnerHub,
 and paper-main observations that have not yet been promoted into this index.
+
+## Current MidPage-C7 Results
+
+Canonical lane matrix:
+
+```text
+docs/HZ5_MIDPAGEFRONT_C7_LANES.md
+```
+
+Latest raw outputs:
+
+```text
+private/raw-results/linux/midpage_c7_direct_rss_sweep_20260525_172138
+private/raw-results/linux/midpage_c7_preload_rss_sweep_20260525_172216
+```
+
+Decision:
+
+```text
+MidPage-C7 is now a profile-family problem.
+
+strict:
+  keep as the low-waste default candidate
+
+band8/32 and band8/16/32:
+  keep as speed/RSS candidates, but do not promote until r90 RSS is controlled
+
+wide32k:
+  keep only as a speed upper-bound diagnostic
+
+next:
+  implement RSS governor / empty-slab release before adding more class mappings
+```

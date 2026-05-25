@@ -6,6 +6,21 @@ shorter than the historical benchmark logs.
 ## Keep As Reporting / Candidate Rows
 
 ```text
+MidPageFront-C7 profile family:
+  See docs/HZ5_MIDPAGEFRONT_C7_LANES.md for the active strict/coarse/wide32k
+  lane matrix. C7 supersedes most older MidPage local-r0 chase diagnostics.
+
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-superfast-freeelide
+  C7 strict baseline: 3K/4K/8K/16K/32K. Keep as the low-waste default
+  candidate until a coarse profile passes RSS thresholds.
+
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-16-32
+  C7 coarse-pareto candidate. Improves local mixed-mid speed; not promoted
+  until r90 RSS is controlled.
+
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32
+  C7 coarse-speed candidate. Strong r0 speed profile candidate, not default.
+
 --linux-local2p-speed-linkflags
   Exact 64K/a8192 low-final-RSS local/mixed profile.
 
@@ -108,7 +123,33 @@ shorter than the historical benchmark logs.
 --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-superfast-freeelide
   Unsafe free-side state upper-bound diagnostic. Skips owner-local M4 free-side
   slot-state transition/check on top of superfast. First smoke is no-go; it
-  does not close the tcmalloc local-r0 gap.
+  does not close the tcmalloc local-r0 gap. Retained only as the C7 strict
+  speed/RSS baseline because later class-dispersion diagnostics are built on
+  this preset.
+
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-wide32k
+  C7 speed upper-bound diagnostic. It proves class dispersion is a major direct
+  speed limiter, but it is too wasteful and unstable under high working set for
+  default or broad speed-profile promotion.
+
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band4-16-32
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band4-8-16-32
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band4-8-32
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band16-32
+  C7 coarse-pareto diagnostics. Keep for reproducibility; current lead
+  candidates are band8/16/32 and band8/32.
+
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-tagfree
+  No-go RouteTag wrapper diagnostic. It calls page_for_ptr before free_tagged,
+  so it does not remove the actual ownership lookup.
+
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-overarray
+  No-go M4 overflow-array diagnostic. Avoiding payload node overflow did not
+  beat the baseline.
+
+--linux-hz5-general-midpage-m6-deferred-free-direct
+  No-go deferred-free ThreadCache diagnostic. Delaying validation increased
+  refill/raw-buffer pressure and did not close the tcmalloc gap.
 
 --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-regcache
 --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-slotswitch

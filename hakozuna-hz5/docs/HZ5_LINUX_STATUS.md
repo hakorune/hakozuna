@@ -15,25 +15,23 @@ HZ5 Linux is now targeting `tcmalloc` on ordinary malloc workloads.
 Current bottleneck:
 
 ```text
-MidPageFront front-cache / remote packet shape
+MidPageFront speed/RSS Pareto under mixed MidPage class dispersion
 ```
 
-The remaining gap is not primarily:
+Current status:
 
 ```text
-front dispatch order
-region lookup
-cross-size ownership handoff
-large allocation handling
-owner-local bitmap checks alone
+MidPageFront-C7 has become a profile-family problem:
+  strict      = low-waste default candidate
+  band8/32    = coarse-speed candidate
+  band8/16/32 = coarse-pareto candidate
+  wide32k     = speed upper-bound diagnostic only
 ```
 
-It is most likely:
+Primary lane matrix:
 
 ```text
-per-class front-cache shape
-remote handoff payload shape
-ordinary mid-size object path length and free-route fixed cost
+docs/HZ5_MIDPAGEFRONT_C7_LANES.md
 ```
 
 ## Active Branch
@@ -45,14 +43,26 @@ codex/hz5-linux-p43-port
 Recent commits:
 
 ```text
-24e0631 Add MidPageFront M4 freefirst lane
-ced9279 Add MidPageFront M4 cross-drain diagnostic
-3b25a0c Add MidPageFront M4 remote packet lane
+3dac9e9 Add MidPageFront C7 coarse profile matrix
+447af28 Add MidPageFront coarse-band diagnostics
+bd1ef22 Add MidPageFront class-dispersion diagnostics
 ```
 
 ## Lead Lanes
 
 ```text
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-superfast-freeelide
+  C7 strict profile baseline: 3K/4K/8K/16K/32K.
+
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-16-32
+  C7 coarse-pareto candidate: 8K/16K/32K.
+
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32
+  C7 coarse-speed candidate: 8K/32K.
+
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-wide32k
+  C7 speed upper-bound diagnostic only.
+
 --linux-hz5-general-midpage-region-shadow
   remote-shadow control for MidPageFront state representation
 
@@ -89,6 +99,14 @@ ced9279 Add MidPageFront M4 cross-drain diagnostic
 
 --linux-hz5-local2p-remotebatch
   exact remote-free appendix profile
+```
+
+C7 promotion rule:
+
+```text
+Keep strict as default until a coarse candidate passes RSS/retention thresholds.
+Do not promote wide32k.
+Do not add more class mappings before RSS governor / empty-slab release.
 ```
 
 ## Diagnostic Lanes
