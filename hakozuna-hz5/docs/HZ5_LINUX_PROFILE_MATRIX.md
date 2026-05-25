@@ -389,6 +389,63 @@ decision:
   remainder length alone is too crude for r50/r90 mode selection
 ```
 
+### `hz5-linux-large128-policy-l8-shadow`
+
+Role:
+
+```text
+LargeFront-L8 shadow classifier
+```
+
+Build:
+
+```text
+--linux-hz5-profile-large128-policy-l8-shadow
+```
+
+Runner:
+
+```text
+hz5-large128-policy-l8-shadow
+```
+
+Status:
+
+```text
+observation only
+source batch16 + drain1-hold4 behavior
+adds Policy-L0 owner-drain shadow classification counters:
+  l8_heavy_drain
+  l8_sparse_drain
+  l8_local_like
+  l8_hold_like
+  l8_republish_like
+  l8_mixed_like
+
+Use this before L9:
+  if r50 and r90 rows separate cleanly in L8 counters, implement a runtime
+  selector.
+  if they do not separate, keep fixed profile split.
+
+First smoke:
+  private/raw-results/linux/hz5_large128_policy_l8_shadow_smoke_r1
+
+  t4/r50 class0:
+    l8_heavy_drain=9402
+    l8_sparse_drain=8883
+    l8_republish_like=17928
+
+  t4/r90 class0:
+    l8_heavy_drain=20954
+    l8_sparse_drain=14793
+    l8_republish_like=35234
+
+  read:
+    counters are emitted correctly.
+    simple sink-dominance does not yet separate r50/r90 because both rows are
+    republish-dominated.
+```
+
 Policy-L0 owner-drain detail after adding `owner_hold`, `owner_orphan`, and
 `owner_state_fail` counters:
 

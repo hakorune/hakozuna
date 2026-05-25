@@ -40,6 +40,7 @@ HZ5_PAGERUN64_LARGE_B16_POPBUDGET1_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_6
 HZ5_PAGERUN64_LARGE_B16_REMOTEHOLD4_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-pagerun64-large128-b16-remotehold4"
 HZ5_PAGERUN64_LARGE_B16_DRAIN1_HOLD4_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-pagerun64-large128-b16-drain1-hold4"
 HZ5_PAGERUN64_LARGE_B16_POLICY_L7_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-pagerun64-large128-b16-policy-l7"
+HZ5_PAGERUN64_LARGE_POLICY_L8_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-large128-policy-l8-shadow"
 HZ5_PAGERUN64_LARGE_B16_RB32_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-pagerun64-large128-b16-rb32"
 HZ5_PAGERUN64_LARGE_B16_RB64_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-pagerun64-large128-b16-rb64"
 
@@ -71,7 +72,8 @@ Options:
                        hz5-large128-source16,
                        hz5-large128-r50-drain,
                        hz5-large128-r50-hold,
-                       hz5-large128-policy-l7
+                       hz5-large128-policy-l7,
+                       hz5-large128-policy-l8-shadow
   --outdir DIR         output directory
   --paper-root DIR     hakmem root (default: /mnt/workdisk/public_share/hakmem)
   --bench-bin PATH     benchmark binary
@@ -205,6 +207,11 @@ build_hz5() {
       --linux-hz5-profile-pagerun64-large128-b16-policy-l7 \
       --out-dir "${HZ5_PAGERUN64_LARGE_B16_POLICY_L7_OUT}" >/dev/null
   fi
+  if [[ ",${ALLOCATORS}," == *",hz5-large128-policy-l8-shadow,"* ]]; then
+    "${ROOT_DIR}/linux/build_linux_hz5_standalone.sh" \
+      --linux-hz5-profile-large128-policy-l8-shadow \
+      --out-dir "${HZ5_PAGERUN64_LARGE_POLICY_L8_OUT}" >/dev/null
+  fi
   if [[ ",${ALLOCATORS}," == *",hz5-pagerun64-large128-b16-rb32,"* ]]; then
     "${ROOT_DIR}/linux/build_linux_hz5_standalone.sh" \
       --linux-hz5-profile-pagerun64-large128-b16-rb32 \
@@ -232,6 +239,7 @@ HZ5_PAGERUN64_LARGE_B16_POPBUDGET1_SO="${HZ5_PAGERUN64_LARGE_B16_POPBUDGET1_OUT}
 HZ5_PAGERUN64_LARGE_B16_REMOTEHOLD4_SO="${HZ5_PAGERUN64_LARGE_B16_REMOTEHOLD4_OUT}/libhakozuna_hz5_preload_full.so"
 HZ5_PAGERUN64_LARGE_B16_DRAIN1_HOLD4_SO="${HZ5_PAGERUN64_LARGE_B16_DRAIN1_HOLD4_OUT}/libhakozuna_hz5_preload_full.so"
 HZ5_PAGERUN64_LARGE_B16_POLICY_L7_SO="${HZ5_PAGERUN64_LARGE_B16_POLICY_L7_OUT}/libhakozuna_hz5_preload_full.so"
+HZ5_PAGERUN64_LARGE_POLICY_L8_SO="${HZ5_PAGERUN64_LARGE_POLICY_L8_OUT}/libhakozuna_hz5_preload_full.so"
 HZ5_PAGERUN64_LARGE_B16_RB32_SO="${HZ5_PAGERUN64_LARGE_B16_RB32_OUT}/libhakozuna_hz5_preload_full.so"
 HZ5_PAGERUN64_LARGE_B16_RB64_SO="${HZ5_PAGERUN64_LARGE_B16_RB64_OUT}/libhakozuna_hz5_preload_full.so"
 
@@ -259,6 +267,7 @@ ALLOC_SO[hz5-pagerun64-large128-b16-drain1-hold4]="${HZ5_PAGERUN64_LARGE_B16_DRA
 ALLOC_SO[hz5-large128-r50-hold]="${HZ5_PAGERUN64_LARGE_B16_DRAIN1_HOLD4_SO}"
 ALLOC_SO[hz5-pagerun64-large128-b16-policy-l7]="${HZ5_PAGERUN64_LARGE_B16_POLICY_L7_SO}"
 ALLOC_SO[hz5-large128-policy-l7]="${HZ5_PAGERUN64_LARGE_B16_POLICY_L7_SO}"
+ALLOC_SO[hz5-large128-policy-l8-shadow]="${HZ5_PAGERUN64_LARGE_POLICY_L8_SO}"
 ALLOC_SO[hz5-pagerun64-large128-b16-rb32]="${HZ5_PAGERUN64_LARGE_B16_RB32_SO}"
 ALLOC_SO[hz5-pagerun64-large128-b16-rb64]="${HZ5_PAGERUN64_LARGE_B16_RB64_SO}"
 
@@ -285,6 +294,8 @@ lane_spec() {
   esac
 }
 
+RUN_ONCE_EXTRA_ENV=()
+
 run_once() {
   local so="$1"
   shift
@@ -294,10 +305,12 @@ run_once() {
   fi
   if [[ -n "${so}" ]]; then
     timeout "${TIMEOUT_SEC}" /usr/bin/time -f 'ru_maxrss_kb=%M' \
-      env -i PATH="${PATH}" HOME="${HOME}" LD_PRELOAD="${so}" "${cmd[@]}"
+      env -i PATH="${PATH}" HOME="${HOME}" "${RUN_ONCE_EXTRA_ENV[@]}" \
+      LD_PRELOAD="${so}" "${cmd[@]}"
   else
     timeout "${TIMEOUT_SEC}" /usr/bin/time -f 'ru_maxrss_kb=%M' \
-      env -i PATH="${PATH}" HOME="${HOME}" "${cmd[@]}"
+      env -i PATH="${PATH}" HOME="${HOME}" "${RUN_ONCE_EXTRA_ENV[@]}" \
+      "${cmd[@]}"
   fi
 }
 
@@ -339,6 +352,7 @@ extract_rss() {
   echo "hz5_pagerun64_large128_b8_so=${HZ5_PAGERUN64_LARGE_B8_SO}"
   echo "hz5_pagerun64_large128_b16_so=${HZ5_PAGERUN64_LARGE_B16_SO}"
   echo "hz5_pagerun64_large128_b16_drain1_so=${HZ5_PAGERUN64_LARGE_B16_DRAIN1_SO}"
+  echo "hz5_large128_policy_l8_shadow_so=${HZ5_PAGERUN64_LARGE_POLICY_L8_SO}"
   echo "hz5_pagerun64_large128_b16_rb32_so=${HZ5_PAGERUN64_LARGE_B16_RB32_SO}"
   echo "hz5_pagerun64_large128_b16_rb64_so=${HZ5_PAGERUN64_LARGE_B16_RB64_SO}"
 } > "${OUTDIR}/meta.txt"
@@ -376,6 +390,10 @@ for thread in "${thread_list[@]}"; do
         idx=$((idx + 1))
         log="${case_dir}/${idx}_${alloc}.log"
         so="${ALLOC_SO[${alloc}]}"
+        RUN_ONCE_EXTRA_ENV=()
+        if [[ "${alloc}" == "hz5-large128-policy-l8-shadow" ]]; then
+          RUN_ONCE_EXTRA_ENV=(HZ5_LARGEFRONT_POLICY_L0=1)
+        fi
         set +e
         run_once "${so}" "${BENCH_BIN}" "${thread}" "${iters}" "${WS}" \
           "${min_size}" "${max_size}" "${remote_pct}" "${SLOTS}" \

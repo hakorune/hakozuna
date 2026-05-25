@@ -136,6 +136,8 @@ LINUX_LARGEFRONT_REMOTE_HOLD=0
 LINUX_LARGEFRONT_REMOTE_HOLD_CAP=0
 LINUX_LARGEFRONT_POLICY_L7=0
 LINUX_LARGEFRONT_POLICY_L7_REMAINDER_LOCAL_THRESHOLD=32
+LINUX_LARGEFRONT_POLICY_L8_SHADOW=0
+LINUX_LARGEFRONT_POLICY_L8_HEAVY_SPANS=32
 LINUX_LARGEFRONT_DRAIN_EMPTY_GATED=0
 LINUX_LARGEFRONT_MAP_BASE_ONLY=0
 LINUX_LARGEFRONT_REGION_MAP=0
@@ -208,6 +210,9 @@ Options:
   --linux-hz5-profile-large128-policy-l7
                      human alias for b16-policy-l7: first rule policy
                      diagnostic
+  --linux-hz5-profile-large128-policy-l8-shadow
+                     human alias: source batch16 + drain1-hold4 with
+                     Policy-L8 shadow classification counters only
   --linux-hz5-profile-pagerun64-large128-b16-rb32
                      diagnostic alias: same as large128-batch16 with
                      LargeFront remote batch cap 32
@@ -1063,6 +1068,16 @@ while [[ $# -gt 0 ]]; do
       LINUX_LARGEFRONT_REMOTE_HOLD_CAP=4
       LINUX_LARGEFRONT_POLICY_L7=1
       LINUX_LARGEFRONT_POLICY_L7_REMAINDER_LOCAL_THRESHOLD=32
+      shift
+      ;;
+    --linux-hz5-profile-large128-policy-l8-shadow)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 16
+      LINUX_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET=1
+      LINUX_LARGEFRONT_REMOTE_HOLD=1
+      LINUX_LARGEFRONT_REMOTE_HOLD_CAP=4
+      LINUX_LARGEFRONT_POLICY_L0=1
+      LINUX_LARGEFRONT_POLICY_L8_SHADOW=1
+      LINUX_LARGEFRONT_POLICY_L8_HEAVY_SPANS=32
       shift
       ;;
     --linux-hz5-profile-pagerun64-large128-b16-rb32)
@@ -2908,6 +2923,15 @@ if [[ "$LINUX_LARGEFRONT_L1" -eq 1 ]]; then
       -DHZ5_LARGEFRONT_POLICY_L7_REMAINDER_LOCAL_THRESHOLD="${LINUX_LARGEFRONT_POLICY_L7_REMAINDER_LOCAL_THRESHOLD}u"
     )
   fi
+  if [[ "$LINUX_LARGEFRONT_POLICY_L8_SHADOW" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX=1)
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_TAKE_FIRST=1)
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L0=1)
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L8_SHADOW=1)
+    COMMON_FLAGS+=(
+      -DHZ5_LARGEFRONT_POLICY_L8_HEAVY_SPANS="${LINUX_LARGEFRONT_POLICY_L8_HEAVY_SPANS}u"
+    )
+  fi
   if [[ "$LINUX_LARGEFRONT_DRAIN_EMPTY_GATED" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX=1)
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_EMPTY_GATED=1)
@@ -3092,6 +3116,8 @@ fi
   echo "linux_largefront_remote_hold_cap=${LINUX_LARGEFRONT_REMOTE_HOLD_CAP}"
   echo "linux_largefront_policy_l7=${LINUX_LARGEFRONT_POLICY_L7}"
   echo "linux_largefront_policy_l7_remainder_local_threshold=${LINUX_LARGEFRONT_POLICY_L7_REMAINDER_LOCAL_THRESHOLD}"
+  echo "linux_largefront_policy_l8_shadow=${LINUX_LARGEFRONT_POLICY_L8_SHADOW}"
+  echo "linux_largefront_policy_l8_heavy_spans=${LINUX_LARGEFRONT_POLICY_L8_HEAVY_SPANS}"
   echo "linux_largefront_drain_empty_gated=${LINUX_LARGEFRONT_DRAIN_EMPTY_GATED}"
   echo "linux_largefront_map_base_only=${LINUX_LARGEFRONT_MAP_BASE_ONLY}"
   echo "linux_largefront_region_map=${LINUX_LARGEFRONT_REGION_MAP}"

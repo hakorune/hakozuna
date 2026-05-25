@@ -33,6 +33,22 @@ LargeFront Policy-L7:
     t4/r50 regressed hard.
     r90 did not recover enough.
 
+LargeFront Policy-L8 shadow:
+  implemented and smoke-tested.
+  no behavior change.
+  extends Policy-L0 owner-drain counters with slow-path-only shadow
+  classification:
+    heavy vs sparse drains
+    local-like vs hold-like vs republish-like vs mixed drains
+  goal:
+    check whether r50-like and r90-like phases are separable before another
+    runtime policy is attempted.
+  first smoke:
+    private/raw-results/linux/hz5_large128_policy_l8_shadow_smoke_r1
+    t4/r50 and t4/r90 both show republish-like dominance.
+    current L8 sink-dominance classifier is useful instrumentation, but not
+    yet a clean selector.
+
 Lane naming cleanup:
   committed L7 as a diagnostic checkpoint.
   current cleanup adds human-facing aliases while preserving historical names:
@@ -41,6 +57,7 @@ Lane naming cleanup:
     large128-r50-drain
     large128-r50-hold
     large128-policy-l7
+    large128-policy-l8-shadow
   use the human aliases in new commands and reports.
 
 Cleanup checkpoint:

@@ -61,8 +61,16 @@
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L7 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L8_SHADOW
+#define BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L8_SHADOW 0
+#endif
+
 #ifndef HZ5_LARGEFRONT_POLICY_L7_REMAINDER_LOCAL_THRESHOLD
 #define HZ5_LARGEFRONT_POLICY_L7_REMAINDER_LOCAL_THRESHOLD 32u
+#endif
+
+#ifndef HZ5_LARGEFRONT_POLICY_L8_HEAVY_SPANS
+#define HZ5_LARGEFRONT_POLICY_L8_HEAVY_SPANS 32u
 #endif
 
 #ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN
@@ -367,6 +375,20 @@ static _Atomic uint64_t
     g_hz5_largefront_policy_owner_orphan[HZ5_LARGEFRONT_CLASS_COUNT];
 static _Atomic uint64_t
     g_hz5_largefront_policy_owner_state_fail[HZ5_LARGEFRONT_CLASS_COUNT];
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L8_SHADOW
+static _Atomic uint64_t
+    g_hz5_largefront_policy_l8_heavy_drain[HZ5_LARGEFRONT_CLASS_COUNT];
+static _Atomic uint64_t
+    g_hz5_largefront_policy_l8_sparse_drain[HZ5_LARGEFRONT_CLASS_COUNT];
+static _Atomic uint64_t
+    g_hz5_largefront_policy_l8_local_like[HZ5_LARGEFRONT_CLASS_COUNT];
+static _Atomic uint64_t
+    g_hz5_largefront_policy_l8_hold_like[HZ5_LARGEFRONT_CLASS_COUNT];
+static _Atomic uint64_t
+    g_hz5_largefront_policy_l8_republish_like[HZ5_LARGEFRONT_CLASS_COUNT];
+static _Atomic uint64_t
+    g_hz5_largefront_policy_l8_mixed_like[HZ5_LARGEFRONT_CLASS_COUNT];
+#endif
 #endif
 
 static Hz5LargeTls* hz5_largefront_tls(void) {
@@ -600,6 +622,32 @@ static void hz5_largefront_policy_note_owner_drain(uint32_t class_index,
       &g_hz5_largefront_policy_owner_orphan[class_index], orphaned);
   hz5_largefront_counter_add(
       &g_hz5_largefront_policy_owner_state_fail[class_index], state_fail);
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L8_SHADOW
+  if (spans >= HZ5_LARGEFRONT_POLICY_L8_HEAVY_SPANS) {
+    hz5_largefront_counter_inc(
+        &g_hz5_largefront_policy_l8_heavy_drain[class_index]);
+  } else {
+    hz5_largefront_counter_inc(
+        &g_hz5_largefront_policy_l8_sparse_drain[class_index]);
+  }
+
+  // Shadow classification only. It records which sink dominated this drain;
+  // it never changes the owner handoff behavior.
+  if (to_local >= held && to_local >= republished && to_local != 0u) {
+    hz5_largefront_counter_inc(
+        &g_hz5_largefront_policy_l8_local_like[class_index]);
+  } else if (held >= to_local && held >= republished && held != 0u) {
+    hz5_largefront_counter_inc(
+        &g_hz5_largefront_policy_l8_hold_like[class_index]);
+  } else if (republished >= to_local && republished >= held &&
+             republished != 0u) {
+    hz5_largefront_counter_inc(
+        &g_hz5_largefront_policy_l8_republish_like[class_index]);
+  } else {
+    hz5_largefront_counter_inc(
+        &g_hz5_largefront_policy_l8_mixed_like[class_index]);
+  }
+#endif
 }
 
 __attribute__((destructor)) static void hz5_largefront_policy_l0_dump(void) {
@@ -618,7 +666,13 @@ __attribute__((destructor)) static void hz5_largefront_policy_l0_dump(void) {
             " owner_drain=%llu owner_drain_spans=%llu"
             " owner_take_first=%llu owner_to_local=%llu"
             " owner_republish=%llu owner_hold=%llu"
-            " owner_orphan=%llu owner_state_fail=%llu\n",
+            " owner_orphan=%llu owner_state_fail=%llu"
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L8_SHADOW
+            " l8_heavy_drain=%llu l8_sparse_drain=%llu"
+            " l8_local_like=%llu l8_hold_like=%llu"
+            " l8_republish_like=%llu l8_mixed_like=%llu"
+#endif
+            "\n",
             i,
             hz5_largefront_class_bytes(i),
             (unsigned long long)atomic_load_explicit(
@@ -677,7 +731,29 @@ __attribute__((destructor)) static void hz5_largefront_policy_l0_dump(void) {
                 memory_order_relaxed),
             (unsigned long long)atomic_load_explicit(
                 &g_hz5_largefront_policy_owner_state_fail[i],
-                memory_order_relaxed));
+                memory_order_relaxed)
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L8_SHADOW
+                ,
+            (unsigned long long)atomic_load_explicit(
+                &g_hz5_largefront_policy_l8_heavy_drain[i],
+                memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(
+                &g_hz5_largefront_policy_l8_sparse_drain[i],
+                memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(
+                &g_hz5_largefront_policy_l8_local_like[i],
+                memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(
+                &g_hz5_largefront_policy_l8_hold_like[i],
+                memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(
+                &g_hz5_largefront_policy_l8_republish_like[i],
+                memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(
+                &g_hz5_largefront_policy_l8_mixed_like[i],
+                memory_order_relaxed)
+#endif
+            );
   }
 }
 #endif
