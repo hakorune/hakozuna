@@ -351,6 +351,23 @@ static void hz5_largefront_counter_add(_Atomic uint64_t* counter,
                                        uint64_t value) {
   atomic_fetch_add_explicit(counter, value, memory_order_relaxed);
 }
+
+static void hz5_largefront_counter_note_source_batch(
+    _Atomic uint64_t* batch4,
+    _Atomic uint64_t* batch8,
+    _Atomic uint64_t* batch16,
+    _Atomic uint64_t* batch_other,
+    uint32_t batch_count) {
+  if (batch_count == 4u) {
+    hz5_largefront_counter_inc(batch4);
+  } else if (batch_count == 8u) {
+    hz5_largefront_counter_inc(batch8);
+  } else if (batch_count == 16u) {
+    hz5_largefront_counter_inc(batch16);
+  } else {
+    hz5_largefront_counter_inc(batch_other);
+  }
+}
 #endif
 
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_OBSERVE
@@ -374,19 +391,12 @@ static void hz5_largefront_obs_note_source_refill(uint32_t class_index,
       &g_hz5_largefront_obs_source_refill[class_index]);
   hz5_largefront_counter_add(&g_hz5_largefront_obs_source_spans[class_index],
                              batch_count);
-  if (batch_count == 4u) {
-    hz5_largefront_counter_inc(
-        &g_hz5_largefront_obs_source_batch4[class_index]);
-  } else if (batch_count == 8u) {
-    hz5_largefront_counter_inc(
-        &g_hz5_largefront_obs_source_batch8[class_index]);
-  } else if (batch_count == 16u) {
-    hz5_largefront_counter_inc(
-        &g_hz5_largefront_obs_source_batch16[class_index]);
-  } else {
-    hz5_largefront_counter_inc(
-        &g_hz5_largefront_obs_source_batch_other[class_index]);
-  }
+  hz5_largefront_counter_note_source_batch(
+      &g_hz5_largefront_obs_source_batch4[class_index],
+      &g_hz5_largefront_obs_source_batch8[class_index],
+      &g_hz5_largefront_obs_source_batch16[class_index],
+      &g_hz5_largefront_obs_source_batch_other[class_index],
+      batch_count);
 }
 
 __attribute__((destructor)) static void hz5_largefront_obs_dump(void) {
@@ -466,19 +476,12 @@ static void hz5_largefront_policy_note_source_refill(uint32_t class_index,
       &g_hz5_largefront_policy_source_spans[class_index], batch_count);
   hz5_largefront_counter_add(
       &g_hz5_largefront_policy_mapped_spans[class_index], batch_count);
-  if (batch_count == 4u) {
-    hz5_largefront_counter_inc(
-        &g_hz5_largefront_policy_source_batch4[class_index]);
-  } else if (batch_count == 8u) {
-    hz5_largefront_counter_inc(
-        &g_hz5_largefront_policy_source_batch8[class_index]);
-  } else if (batch_count == 16u) {
-    hz5_largefront_counter_inc(
-        &g_hz5_largefront_policy_source_batch16[class_index]);
-  } else {
-    hz5_largefront_counter_inc(
-        &g_hz5_largefront_policy_source_batch_other[class_index]);
-  }
+  hz5_largefront_counter_note_source_batch(
+      &g_hz5_largefront_policy_source_batch4[class_index],
+      &g_hz5_largefront_policy_source_batch8[class_index],
+      &g_hz5_largefront_policy_source_batch16[class_index],
+      &g_hz5_largefront_policy_source_batch_other[class_index],
+      batch_count);
 }
 
 static void hz5_largefront_policy_note_remote_flush(uint32_t class_index,

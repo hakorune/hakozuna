@@ -25,6 +25,7 @@ LargeFront Policy-L0:
 Cleanup checkpoint:
   LargeFront observe and Policy-L0 are intentionally separate.
   shared atomic counter helpers are allowed.
+  source batch bucket classification is shared between observe and policy.
   state transitions, region map lookup, source refill lifetime, and owner drain
   ordering are not cleanup targets without a measurement task.
 ```
@@ -121,6 +122,7 @@ finish source/lane cleanup:
   keep saved large128 aliases on the new batch helper
   keep rb32/rb64 as diagnostics only
   keep Policy-L0 out of speed lanes
+  keep shared counter helpers and batch-bucket helper in largefront.c
 
 Then:
 
