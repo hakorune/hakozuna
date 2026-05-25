@@ -890,6 +890,17 @@ enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pa
   PRELOAD_FREE_LARGE_FIRST=1
 }
 
+enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base() {
+  enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_largefirst_base 2
+  LINUX_LARGEFRONT_SOURCE_BATCH_COUNT="$1"
+}
+
+enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch16_rbatch_base() {
+  enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 16
+  LINUX_LARGEFRONT_REMOTE_BATCH=1
+  LINUX_LARGEFRONT_REMOTE_BATCH_CAP="$1"
+}
+
 enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_adaptive128_base() {
   enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_takefirst_base "$1"
   LINUX_LARGEFRONT_ADAPTIVE128=1
@@ -906,8 +917,7 @@ enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pa
 }
 
 enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_policy_l0_base() {
-  enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_largefirst_base "$1"
-  LINUX_LARGEFRONT_SOURCE_BATCH_COUNT=4
+  enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 4
   LINUX_LARGEFRONT_POLICY_L0=1
 }
 
@@ -943,38 +953,28 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --linux-hz5-profile-pagerun64-large128)
-      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_largefirst_base 2
-      LINUX_LARGEFRONT_SOURCE_BATCH_COUNT=4
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 4
       shift
       ;;
     --linux-hz5-profile-pagerun64-large128-batch8)
-      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_largefirst_base 2
-      LINUX_LARGEFRONT_SOURCE_BATCH_COUNT=8
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 8
       shift
       ;;
     --linux-hz5-profile-pagerun64-large128-batch16)
-      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_largefirst_base 2
-      LINUX_LARGEFRONT_SOURCE_BATCH_COUNT=16
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 16
       shift
       ;;
     --linux-hz5-profile-pagerun64-large128-b16-drain1)
-      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_largefirst_base 2
-      LINUX_LARGEFRONT_SOURCE_BATCH_COUNT=16
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 16
       LINUX_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET=1
       shift
       ;;
     --linux-hz5-profile-pagerun64-large128-b16-rb32)
-      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_largefirst_base 2
-      LINUX_LARGEFRONT_SOURCE_BATCH_COUNT=16
-      LINUX_LARGEFRONT_REMOTE_BATCH=1
-      LINUX_LARGEFRONT_REMOTE_BATCH_CAP=32
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch16_rbatch_base 32
       shift
       ;;
     --linux-hz5-profile-pagerun64-large128-b16-rb64)
-      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_largefirst_base 2
-      LINUX_LARGEFRONT_SOURCE_BATCH_COUNT=16
-      LINUX_LARGEFRONT_REMOTE_BATCH=1
-      LINUX_LARGEFRONT_REMOTE_BATCH_CAP=64
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch16_rbatch_base 64
       shift
       ;;
     --linux-hz5-profile-pagerun64-large128-policy-l0)

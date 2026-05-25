@@ -21,6 +21,12 @@ LargeFront Policy-L0:
   new control-plane observation lane.
   slow-path only; no malloc/free hot-path counter updates.
   name is policy-l0, not auto, because it does not select policy yet.
+
+Cleanup checkpoint:
+  LargeFront observe and Policy-L0 are intentionally separate.
+  shared atomic counter helpers are allowed.
+  state transitions, region map lookup, source refill lifetime, and owner drain
+  ordering are not cleanup targets without a measurement task.
 ```
 
 Primary registry:
@@ -111,6 +117,13 @@ Largest remaining gaps:
 First:
 
 ```text
+finish source/lane cleanup:
+  keep saved large128 aliases on the new batch helper
+  keep rb32/rb64 as diagnostics only
+  keep Policy-L0 out of speed lanes
+
+Then:
+
 add diagnostic LargeFront-L4 source-batch aliases:
   large128-batch8
   large128-batch16
