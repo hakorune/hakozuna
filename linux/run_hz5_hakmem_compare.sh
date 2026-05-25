@@ -10,17 +10,18 @@ THREADS_LIST="2,4,8"
 WS=100
 SLOTS=65536
 REMOTE_PCTS="0,50,90"
-LANES="guard,main,mid_only,cross128"
+LANES="guard,main,mid_only,cross128,large128"
 ITERS_GUARD=300000
 ITERS_MAIN=300000
 ITERS_MID_ONLY=300000
 ITERS_CROSS128=120000
+ITERS_LARGE128=120000
 TIMEOUT_SEC=120
 OUTDIR=""
 CPU_LIST=""
 SKIP_BUILD=0
 DO_ATTRIB=1
-ALLOCATORS="system,hz3,hz4,mimalloc,tcmalloc,hz5-rb16,hz5-allgate"
+ALLOCATORS="system,hz3,hz4,mimalloc,tcmalloc,hz5-pagerun64-main,hz5-pagerun64-cross128,hz5-pagerun64-large128"
 
 HZ3_SO="${PAPER_ROOT}/libhakozuna_hz3_scale.so"
 HZ4_SO="${PAPER_ROOT}/hakozuna/hz4/libhakozuna_hz4.so"
@@ -28,6 +29,9 @@ MIMALLOC_SO="${PAPER_ROOT}/allocators/mimalloc/libmimalloc.so"
 TCMALLOC_SO="${PAPER_ROOT}/allocators/tcmalloc/libtcmalloc_minimal.so"
 HZ5_RB16_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-hakmem-rb16"
 HZ5_ALLGATE_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-hakmem-allgate"
+HZ5_PAGERUN64_MAIN_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-pagerun64-main"
+HZ5_PAGERUN64_CROSS_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-pagerun64-cross128"
+HZ5_PAGERUN64_LARGE_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-pagerun64-large128"
 
 usage() {
   cat <<'EOF'
@@ -40,9 +44,9 @@ Options:
   --ws N               benchmark working set (default: 100)
   --slots N            remote ring slots (default: 65536)
   --remote-pcts LIST   comma-separated remote percentages (default: 0,50,90)
-  --lanes LIST         comma-separated lanes (default: guard,main,mid_only,cross128)
+  --lanes LIST         comma-separated lanes (default: guard,main,mid_only,cross128,large128)
   --allocators LIST    comma-separated allocators
-                       (default: system,hz3,hz4,mimalloc,tcmalloc,hz5-rb16,hz5-allgate)
+                       (default: system,hz3,hz4,mimalloc,tcmalloc,hz5-pagerun64-main,hz5-pagerun64-cross128,hz5-pagerun64-large128)
   --outdir DIR         output directory
   --paper-root DIR     hakmem root (default: /mnt/workdisk/public_share/hakmem)
   --bench-bin PATH     benchmark binary
@@ -57,6 +61,7 @@ Lanes:
   main:     16..32768
   mid_only: 2049..32768
   cross128: 16..131072
+  large128: 65537..131072
 
 Output:
   meta.txt
@@ -122,12 +127,24 @@ build_hz5() {
     --linux-midfront-drain-empty-gated \
     --linux-local2p-speed-linkflags \
     --out-dir "${HZ5_ALLGATE_OUT}" >/dev/null
+  "${ROOT_DIR}/linux/build_linux_hz5_standalone.sh" \
+    --linux-hz5-profile-pagerun64-main \
+    --out-dir "${HZ5_PAGERUN64_MAIN_OUT}" >/dev/null
+  "${ROOT_DIR}/linux/build_linux_hz5_standalone.sh" \
+    --linux-hz5-profile-pagerun64-cross128 \
+    --out-dir "${HZ5_PAGERUN64_CROSS_OUT}" >/dev/null
+  "${ROOT_DIR}/linux/build_linux_hz5_standalone.sh" \
+    --linux-hz5-profile-pagerun64-large128 \
+    --out-dir "${HZ5_PAGERUN64_LARGE_OUT}" >/dev/null
 }
 
 build_hz5
 
 HZ5_RB16_SO="${HZ5_RB16_OUT}/libhakozuna_hz5_preload_full.so"
 HZ5_ALLGATE_SO="${HZ5_ALLGATE_OUT}/libhakozuna_hz5_preload_full.so"
+HZ5_PAGERUN64_MAIN_SO="${HZ5_PAGERUN64_MAIN_OUT}/libhakozuna_hz5_preload_full.so"
+HZ5_PAGERUN64_CROSS_SO="${HZ5_PAGERUN64_CROSS_OUT}/libhakozuna_hz5_preload_full.so"
+HZ5_PAGERUN64_LARGE_SO="${HZ5_PAGERUN64_LARGE_OUT}/libhakozuna_hz5_preload_full.so"
 
 declare -A ALLOC_SO
 ALLOC_SO[system]=""
@@ -137,6 +154,9 @@ ALLOC_SO[mimalloc]="${MIMALLOC_SO}"
 ALLOC_SO[tcmalloc]="${TCMALLOC_SO}"
 ALLOC_SO[hz5-rb16]="${HZ5_RB16_SO}"
 ALLOC_SO[hz5-allgate]="${HZ5_ALLGATE_SO}"
+ALLOC_SO[hz5-pagerun64-main]="${HZ5_PAGERUN64_MAIN_SO}"
+ALLOC_SO[hz5-pagerun64-cross128]="${HZ5_PAGERUN64_CROSS_SO}"
+ALLOC_SO[hz5-pagerun64-large128]="${HZ5_PAGERUN64_LARGE_SO}"
 
 IFS=',' read -r -a alloc_list <<< "${ALLOCATORS}"
 for alloc in "${alloc_list[@]}"; do
@@ -156,6 +176,7 @@ lane_spec() {
     main) echo "16 32768 ${ITERS_MAIN}" ;;
     mid_only) echo "2049 32768 ${ITERS_MID_ONLY}" ;;
     cross128) echo "16 131072 ${ITERS_CROSS128}" ;;
+    large128) echo "65537 131072 ${ITERS_LARGE128}" ;;
     *) return 1 ;;
   esac
 }
@@ -168,15 +189,22 @@ run_once() {
     cmd=(taskset -c "${CPU_LIST}" "${cmd[@]}")
   fi
   if [[ -n "${so}" ]]; then
-    timeout "${TIMEOUT_SEC}" env -i PATH="${PATH}" HOME="${HOME}" LD_PRELOAD="${so}" "${cmd[@]}"
+    timeout "${TIMEOUT_SEC}" /usr/bin/time -f 'ru_maxrss_kb=%M' \
+      env -i PATH="${PATH}" HOME="${HOME}" LD_PRELOAD="${so}" "${cmd[@]}"
   else
-    timeout "${TIMEOUT_SEC}" env -i PATH="${PATH}" HOME="${HOME}" "${cmd[@]}"
+    timeout "${TIMEOUT_SEC}" /usr/bin/time -f 'ru_maxrss_kb=%M' \
+      env -i PATH="${PATH}" HOME="${HOME}" "${cmd[@]}"
   fi
 }
 
 extract_ops() {
   local log="$1"
   grep -oE 'ops/s=[0-9]+([.][0-9]+)?' "${log}" | tail -1 | cut -d= -f2 || true
+}
+
+extract_rss() {
+  local log="$1"
+  grep -oE 'ru_maxrss_kb=[0-9]+' "${log}" | tail -1 | cut -d= -f2 || true
 }
 
 {
@@ -201,9 +229,12 @@ extract_ops() {
   echo "tcmalloc_so=${TCMALLOC_SO}"
   echo "hz5_rb16_so=${HZ5_RB16_SO}"
   echo "hz5_allgate_so=${HZ5_ALLGATE_SO}"
+  echo "hz5_pagerun64_main_so=${HZ5_PAGERUN64_MAIN_SO}"
+  echo "hz5_pagerun64_cross128_so=${HZ5_PAGERUN64_CROSS_SO}"
+  echo "hz5_pagerun64_large128_so=${HZ5_PAGERUN64_LARGE_SO}"
 } > "${OUTDIR}/meta.txt"
 
-echo -e "thread\tlane\tremote_pct\talloc\trun\tops_per_sec\talloc_failed\tstatus\tlog" \
+echo -e "thread\tlane\tremote_pct\talloc\trun\tops_per_sec\tru_maxrss_kb\talloc_failed\tstatus\tlog" \
   > "${OUTDIR}/raw.tsv"
 
 IFS=',' read -r -a thread_list <<< "${THREADS_LIST}"
@@ -254,7 +285,11 @@ for thread in "${thread_list[@]}"; do
           ops="nan"
           status="${status}_no_ops"
         fi
-        echo -e "${thread}\t${lane}\t${remote_pct}\t${alloc}\t${idx}\t${ops}\t${failed}\t${status}\t${log}" \
+        rss="$(extract_rss "${log}")"
+        if [[ -z "${rss}" ]]; then
+          rss="nan"
+        fi
+        echo -e "${thread}\t${lane}\t${remote_pct}\t${alloc}\t${idx}\t${ops}\t${rss}\t${failed}\t${status}\t${log}" \
           >> "${OUTDIR}/raw.tsv"
       done < "${order_file}"
       echo "[case] t=${thread} lane=${lane} r=${remote_pct}"
@@ -279,18 +314,20 @@ for r in rows:
         alloc_order.append(r["alloc"])
 
 with open(summary, "w") as f:
-    f.write("thread\tlane\tremote_pct\talloc\tmedian_ops\tmin_ops\tmax_ops\talloc_failed_runs\tbad_status_runs\n")
+    f.write("thread\tlane\tremote_pct\talloc\tmedian_ops\tmin_ops\tmax_ops\tmedian_ru_maxrss_kb\talloc_failed_runs\tbad_status_runs\n")
     for key in sorted(groups, key=lambda x: (int(x[0]), x[1], int(x[2]), x[3])):
         vals = [float(r["ops_per_sec"]) for r in groups[key] if r["ops_per_sec"] != "nan"]
+        rss_vals = [float(r["ru_maxrss_kb"]) for r in groups[key] if r["ru_maxrss_kb"] != "nan"]
         failed = sum(1 for r in groups[key] if int(r["alloc_failed"]) > 0)
         bad = sum(1 for r in groups[key] if r["status"] != "ok")
+        rss = f"{statistics.median(rss_vals):.0f}" if rss_vals else "nan"
         if vals:
             f.write(
                 f"{key[0]}\t{key[1]}\t{key[2]}\t{key[3]}\t"
-                f"{statistics.median(vals):.2f}\t{min(vals):.2f}\t{max(vals):.2f}\t{failed}\t{bad}\n"
+                f"{statistics.median(vals):.2f}\t{min(vals):.2f}\t{max(vals):.2f}\t{rss}\t{failed}\t{bad}\n"
             )
         else:
-            f.write(f"{key[0]}\t{key[1]}\t{key[2]}\t{key[3]}\tnan\tnan\tnan\t{failed}\t{bad}\n")
+            f.write(f"{key[0]}\t{key[1]}\t{key[2]}\t{key[3]}\tnan\tnan\tnan\t{rss}\t{failed}\t{bad}\n")
 
 summary_rows = list(csv.DictReader(open(summary), delimiter="\t"))
 case_groups = defaultdict(list)
@@ -312,22 +349,31 @@ with open(matrix, "w") as f:
             if best is None or val > best[0]:
                 best = (val, r["alloc"])
         f.write(f"## t={case[0]} lane={case[1]} r={case[2]}\n\n")
-        f.write("| allocator | median ops/s | alloc_failed_runs | bad_status_runs |\n")
-        f.write("|---|---:|---:|---:|\n")
+        f.write("| allocator | median ops/s | median ru_maxrss KB | vs winner | alloc_failed_runs | bad_status_runs |\n")
+        f.write("|---|---:|---:|---:|---:|---:|\n")
         for alloc in alloc_order:
             r = by_alloc.get(alloc)
             if not r:
                 continue
             mark = " **winner**" if best and alloc == best[1] else ""
+            try:
+                val = float(r["median_ops"])
+                ratio = f"{(val / best[0] * 100.0):.1f}%" if best else "nan"
+            except ValueError:
+                ratio = "nan"
             f.write(
-                f"| {alloc}{mark} | {r['median_ops']} | {r['alloc_failed_runs']} | {r['bad_status_runs']} |\n"
+                f"| {alloc}{mark} | {r['median_ops']} | {r['median_ru_maxrss_kb']} | {ratio} | {r['alloc_failed_runs']} | {r['bad_status_runs']} |\n"
             )
         f.write("\n")
 PY
 
 if [[ "${DO_ATTRIB}" == "1" ]]; then
   echo -e "alloc\tstats_line\tlog" > "${OUTDIR}/attrib.tsv"
-  for alloc in hz5-rb16 hz5-allgate; do
+  for alloc in "${alloc_list[@]}"; do
+    case "${alloc}" in
+      hz5-*) ;;
+      *) continue ;;
+    esac
     so="${ALLOC_SO[${alloc}]}"
     log="${OUTDIR}/${alloc}_attrib_main_r90.log"
     env -i PATH="${PATH}" HOME="${HOME}" HZ5_PRELOAD_STATS=1 LD_PRELOAD="${so}" \
