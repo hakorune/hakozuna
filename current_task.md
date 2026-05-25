@@ -727,3 +727,37 @@ Freefirst is the balanced MidPage lead. Routefree is only a candidate-watch for
 mid_only r90. The local-r0 and cross128 gaps to tcmalloc are structural; free
 dispatch order is not enough.
 ```
+
+Perf / worker-audit phase:
+
+```text
+private/raw-results/linux/perf_midpage_freefirst_r0_20260525_091532
+private/raw-results/linux/perf_midpage_freefirst_tlslink_20260525_091619
+private/raw-results/linux/perf_midpage_freefirst_tlslink_record_20260525_091650
+```
+
+Read:
+
+```text
+mid_only r0 perf stat:
+  freefirst cycles 108.72M, instructions 223.67M, branches 48.79M
+  tcmalloc   cycles  52.27M, instructions  82.64M, branches 14.59M
+
+perf report:
+  freefirst shows visible __tls_get_addr cost plus
+  hz5_midpagefront_try_alloc/free hot samples.
+
+freefirst -> tlslink:
+  median ops/s 33.51M -> 38.97M
+  instructions 221.28M -> 178.47M
+  branches 48.83M -> 37.03M
+```
+
+Decision:
+
+```text
+Add m4packet-freefirst-tlslink as candidate-watch. TLS/linkage overhead is a
+real component. It is not enough alone; after broad verification, the next
+structural experiment should test descriptor slot_state2 transition cost or a
+pointer-only local magazine upper bound.
+```

@@ -1240,6 +1240,80 @@ freefirst:  malloc_hz5=10049 malloc_real=0 free_hz5=10057 free_real=0 track_inse
 routefree:  malloc_hz5=10049 malloc_real=0 free_hz5=10057 free_real=0 track_insert_fail=0
 ```
 
+### `perf_midpage_freefirst_r0_20260525_091532`
+
+Path:
+
+```text
+private/raw-results/linux/perf_midpage_freefirst_r0_20260525_091532
+```
+
+Purpose:
+
+```text
+perf stat/record smoke for mid_only r0 comparing M4packet-freefirst and
+tcmalloc. Performance runs keep HZ5_PRELOAD_STATS unset.
+```
+
+Read:
+
+```text
+freefirst:
+  cycles       108.72M
+  instructions 223.67M
+  branches      48.79M
+
+tcmalloc:
+  cycles        52.27M
+  instructions  82.64M
+  branches      14.59M
+```
+
+perf report signal:
+
+```text
+freefirst has visible __tls_get_addr cost and hot samples in
+hz5_midpagefront_try_alloc/free. The gap is instruction/branch/TLS heavy, not
+primarily cache-miss heavy.
+```
+
+### `perf_midpage_freefirst_tlslink_20260525_091619`
+
+Path:
+
+```text
+private/raw-results/linux/perf_midpage_freefirst_tlslink_20260525_091619
+```
+
+Purpose:
+
+```text
+Focused mid_only r0 A/B for M4packet-freefirst with preload initial-exec TLS
+and speed link flags.
+```
+
+Result:
+
+```text
+mid_only r0 median:
+  freefirst 33.51M
+  tlslink   38.97M
+  tcmalloc 106.55M
+
+perf stat:
+  freefirst instructions 221.28M, branches 48.83M
+  tlslink   instructions 178.47M, branches 37.03M
+  tcmalloc  instructions  70.81M, branches 13.64M
+```
+
+Decision:
+
+```text
+Add m4packet-freefirst-tlslink as a candidate-watch lane. It clearly reduces
+TLS/instruction overhead, but tcmalloc remains far ahead. It needs a broad
+RUNS=5 matrix before promotion.
+```
+
 ## Older Results
 
 The full chronological result log remains in:

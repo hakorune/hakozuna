@@ -70,6 +70,10 @@ ced9279 Add MidPageFront M4 cross-drain diagnostic
   M4packet plus MidPageFront-first preload free dispatch; current balanced
   MidPage lead after RUNS=5
 
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink
+  M4packet-freefirst plus initial-exec TLS and speed link flags; local-r0
+  candidate-watch after perf showed __tls_get_addr overhead
+
 --linux-hz5-general-midpage-region-shadow-m4packet-routefree
   M4packet plus MidPageFront -> LargeFront free dispatch; candidate-watch for
   mid_only r90/free-route ordering, not a broad default
@@ -204,6 +208,8 @@ private/raw-results/linux/midpage_m4packet_freefirst_smoke_20260525_085727
 private/raw-results/linux/midpage_m4packet_crossdrain_smoke_20260525_085453
 private/raw-results/linux/midpage_m4packet_routefree_smoke_20260525_090830
 private/raw-results/linux/midpage_route_matrix_r5_20260525_091054
+private/raw-results/linux/perf_midpage_freefirst_r0_20260525_091532
+private/raw-results/linux/perf_midpage_freefirst_tlslink_20260525_091619
 ```
 
 Interpretation:
@@ -231,6 +237,19 @@ routefree:
 
 remaining gap:
   local r0 and cross128 are structural, not just free dispatch order.
+```
+
+Perf update:
+
+```text
+freefirst -> freefirst-tlslink:
+  mid_only r0 median improves 33.51M -> 38.97M
+  instructions drop 221.28M -> 178.47M
+  branches drop 48.83M -> 37.03M
+
+Interpretation:
+  TLS/linkage overhead is real, but the remaining tcmalloc gap is still mostly
+  MidPageFront hot-path length and descriptor state work.
 ```
 
 Follow-up cleanup:

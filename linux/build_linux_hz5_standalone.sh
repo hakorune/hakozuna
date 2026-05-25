@@ -229,6 +229,9 @@ Options:
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst
                      diagnostic preset: m4packet plus MidPageFront-first
                      preload free dispatch
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink
+                     diagnostic preset: m4packet-freefirst plus preload
+                     initial-exec TLS and speed link flags
   --linux-hz5-general-midpage-region-shadow-m4packet-routefree
                      diagnostic preset: m4packet plus MidPageFront then
                      LargeFront preload free dispatch
@@ -496,6 +499,12 @@ enable_midpage_m4packet_base() {
 enable_midpage_m4packet_freefirst_base() {
   enable_midpage_m4packet_base
   PRELOAD_FREE_MIDPAGE_FIRST=1
+}
+
+enable_midpage_m4packet_freefirst_tlslink_base() {
+  enable_midpage_m4packet_freefirst_base
+  PRELOAD_TLS_INITIAL_EXEC=1
+  PRELOAD_SPEED_LINKFLAGS=1
 }
 
 enable_midpage_m4packet_routefree_base() {
@@ -946,6 +955,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --linux-hz5-general-midpage-region-shadow-m4packet-freefirst)
       enable_midpage_m4packet_freefirst_base
+      shift
+      ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink)
+      enable_midpage_m4packet_freefirst_tlslink_base
       shift
       ;;
     --linux-hz5-general-midpage-region-shadow-m4packet-routefree)

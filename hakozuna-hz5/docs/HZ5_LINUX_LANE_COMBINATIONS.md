@@ -47,6 +47,7 @@ MidPageFront is the current tcmalloc chase track for ordinary malloc
 | `--linux-hz5-general-midpage-region-shadow-m4mag` | descriptor-owned owner-local magazine | M4 magazine A/B | remote-heavy candidate, not broad default |
 | `--linux-hz5-general-midpage-region-shadow-m4packet` | page-descriptor remote packet | M4b remote handoff | current remote-heavy candidate |
 | `--linux-hz5-general-midpage-region-shadow-m4packet-freefirst` | M4packet + MidPage-first preload free dispatch | balanced MidPage candidate | current lead |
+| `--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink` | M4packet-freefirst + initial-exec TLS/speed link flags | TLS overhead reduction | local-r0 candidate-watch |
 | `--linux-hz5-general-midpage-region-shadow-m4packet-routefree` | M4packet + MidPage/Large/Small/Mid free dispatch | free-route fixed-cost diagnostic | mid_only r90 candidate-watch; not broad default |
 | `--linux-hz5-general-midpage-region-shadow-m4packet-crossdrain` | M4packet + MidPage pending drain from other-front misses | fixed-cost diagnostic | no-promote |
 
@@ -56,11 +57,13 @@ Current comparison set for MidPage work:
 allocfirst
 m4packet
 m4packet-freefirst
+m4packet-freefirst-tlslink
 routefree
 tcmalloc
 ```
 
-After RUNS=5, use `m4packet-freefirst` as the balanced lead. Add `routefree`
+After RUNS=5, use `m4packet-freefirst` as the balanced lead. Add
+`m4packet-freefirst-tlslink` when testing local-r0 path length. Add `routefree`
 only when testing MidPage-heavy r90 or free-route ordering. Add
 `m4packet-crossdrain` only when explicitly testing cross-front drain policy.
 Do not include crossdrain in broad candidate matrices by default.
@@ -99,6 +102,10 @@ m4packet-crossdrain + broad default:
 routefree + broad default:
   routefree is useful for mid_only r90, but RUNS=5 keeps freefirst as the
   balanced lead.
+
+tlslink + final claim:
+  candidate-watch only until a broad RUNS=5 matrix proves r50/r90 and cross128
+  do not regress.
 ```
 
 ## Next Matrix
@@ -110,6 +117,7 @@ lanes:
   allocfirst
   m4packet
   m4packet-freefirst
+  m4packet-freefirst-tlslink
   tcmalloc
 
 workloads:
