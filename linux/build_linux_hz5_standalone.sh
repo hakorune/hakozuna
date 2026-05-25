@@ -87,6 +87,7 @@ LINUX_MIDPAGEFRONT_M6_RAW_CAP=64
 LINUX_MIDPAGEFRONT_M4_FLAT_MAG_CAP=0
 LINUX_MIDPAGEFRONT_M4_OVERFLOW_ARRAY=0
 LINUX_MIDPAGEFRONT_WIDE_32K_CLASS=0
+LINUX_MIDPAGEFRONT_COARSE_BANDS=0
 LINUX_MIDPAGEFRONT_M4_STATS=0
 LINUX_MIDFRONT_M1=0
 LINUX_MIDFRONT_OWNER_FAST_STATE=0
@@ -281,6 +282,15 @@ Options:
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-wide32k
                      unsafe speed upper-bound: superfast-freeelide plus one
                      32K MidPage class for every 2049..32768 allocation
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band4-16-32
+                     diagnostic preset: superfast-freeelide plus coarse
+                     MidPage bands 4K/16K/32K
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32
+                     diagnostic preset: superfast-freeelide plus coarse
+                     MidPage bands 8K/32K
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band16-32
+                     diagnostic preset: superfast-freeelide plus coarse
+                     MidPage bands 16K/32K
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-tagfree
                      diagnostic preset: superfast-freeelide plus MidPage
                      tagged free wrapper
@@ -625,6 +635,11 @@ enable_midpage_m4packet_freefirst_tlslink_overarray_base() {
 enable_midpage_m4packet_freefirst_tlslink_wide32k_base() {
   enable_midpage_m4packet_freefirst_tlslink_superfast_freeelide_base
   LINUX_MIDPAGEFRONT_WIDE_32K_CLASS=1
+}
+
+enable_midpage_m4packet_freefirst_tlslink_coarse_bands_base() {
+  enable_midpage_m4packet_freefirst_tlslink_superfast_freeelide_base
+  LINUX_MIDPAGEFRONT_COARSE_BANDS="$1"
 }
 
 enable_midpage_m4packet_freefirst_tlslink_tagfree_base() {
@@ -1137,6 +1152,18 @@ while [[ $# -gt 0 ]]; do
       ;;
     --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-wide32k)
       enable_midpage_m4packet_freefirst_tlslink_wide32k_base
+      shift
+      ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band4-16-32)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_base 1
+      shift
+      ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_base 2
+      shift
+      ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band16-32)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_base 3
       shift
       ;;
     --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-tagfree)
@@ -2015,6 +2042,11 @@ if [[ "$LINUX_MIDPAGEFRONT_M2" -eq 1 ]]; then
   if [[ "$LINUX_MIDPAGEFRONT_WIDE_32K_CLASS" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_WIDE_32K_CLASS=1)
   fi
+  if [[ "$LINUX_MIDPAGEFRONT_COARSE_BANDS" -ne 0 ]]; then
+    COMMON_FLAGS+=(
+      -DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_COARSE_BANDS="${LINUX_MIDPAGEFRONT_COARSE_BANDS}"
+    )
+  fi
   if [[ "$LINUX_MIDPAGEFRONT_M4_STATS" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_STATS=1)
   fi
@@ -2193,6 +2225,7 @@ fi
   echo "linux_midpagefront_m4_flat_mag_cap=${LINUX_MIDPAGEFRONT_M4_FLAT_MAG_CAP}"
   echo "linux_midpagefront_m4_overflow_array=${LINUX_MIDPAGEFRONT_M4_OVERFLOW_ARRAY}"
   echo "linux_midpagefront_wide_32k_class=${LINUX_MIDPAGEFRONT_WIDE_32K_CLASS}"
+  echo "linux_midpagefront_coarse_bands=${LINUX_MIDPAGEFRONT_COARSE_BANDS}"
   echo "linux_midpagefront_m4_stats=${LINUX_MIDPAGEFRONT_M4_STATS}"
   echo "linux_midfront_m1=${LINUX_MIDFRONT_M1}"
   echo "linux_midfront_owner_fast_state=${LINUX_MIDFRONT_OWNER_FAST_STATE}"

@@ -103,6 +103,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_WIDE_32K_CLASS 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_COARSE_BANDS
+#define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_COARSE_BANDS 0
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_STATS
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_STATS 0
 #endif
@@ -533,6 +537,33 @@ static int hz5_midpagefront_class_index(size_t size) {
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_WIDE_32K_CLASS
   if (size <= 2048u || size > 32768u) {
     return -1;
+  }
+  return 4;
+#elif BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_COARSE_BANDS == 1
+  if (size <= 2048u || size > 32768u) {
+    return -1;
+  }
+  if (size <= 4096u) {
+    return 1;
+  }
+  if (size <= 16384u) {
+    return 3;
+  }
+  return 4;
+#elif BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_COARSE_BANDS == 2
+  if (size <= 2048u || size > 32768u) {
+    return -1;
+  }
+  if (size <= 8192u) {
+    return 2;
+  }
+  return 4;
+#elif BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_COARSE_BANDS == 3
+  if (size <= 2048u || size > 32768u) {
+    return -1;
+  }
+  if (size <= 16384u) {
+    return 3;
   }
   return 4;
 #else

@@ -278,6 +278,53 @@ next real design: reduce class dispersion without a single wasteful 32K class,
 probably by coarser mid bands or adaptive class grouping.
 ```
 
+## Coarse MidPage Bands
+
+Raw output:
+
+```text
+private/raw-results/linux/midpage_coarse_band_direct_range_sweep_20260525_164849
+private/raw-results/linux/midpage_band8_32_hakmem_range_sweep_20260525_164919
+```
+
+Direct MidPage API, RUNS=5:
+
+```text
+case        base     band4/16/32  band8/32  band16/32  wide32k
+mix_2_4k   209.85M  193.97M      235.27M   223.61M    254.28M
+mix_3_8k   150.60M  183.84M      200.88M   237.13M    242.68M
+mix_4_16k  132.34M  153.99M      196.46M   237.82M    191.22M
+mix_5_32k  111.69M  174.22M      203.07M   186.77M    268.51M
+r32768     250.30M  226.71M      210.94M   247.34M    238.19M
+```
+
+Hakmem preload r0, RUNS=5:
+
+```text
+case        base     band8/32  wide32k  tcmalloc
+mix_2_4k   171.62M  194.38M   198.55M  231.14M
+mix_3_8k   148.65M  203.97M   202.00M  234.42M
+mix_4_16k  127.02M  166.83M   181.07M  230.16M
+mix_5_32k  123.61M  171.47M   195.28M  223.13M
+r32768     170.06M  166.31M   196.31M  238.65M
+```
+
+Decision:
+
+```text
+Coarse classing is a real speed lever. band8/32 is the best balanced direct
+candidate and gives large preload gains without collapsing every allocation to
+32K. wide32k remains the speed upper bound and wins the broad 32K preload row,
+but it is too wasteful for a default profile.
+
+Next work should focus on turning this into an explicit profile family:
+  strict: original classes, lower RSS
+  coarse: 8K/32K bands, better mixed-mid speed
+  wide32k: speed upper bound / diagnostic only
+
+Then measure RSS/memory overhead before promoting any coarse profile.
+```
+
 ## Class-Mix Finding
 
 Raw output:
