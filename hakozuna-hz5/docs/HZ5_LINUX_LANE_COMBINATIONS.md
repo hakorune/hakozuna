@@ -47,6 +47,8 @@ scripts and reports instead of copying the long historical flag chains.
 | `--linux-hz5-profile-pagerun64-large128-batch8` | same as `large128` but source batch8 | large128 r50/r90 source-batch diagnostic | diagnostic only |
 | `--linux-hz5-profile-pagerun64-large128-batch16` | same as `large128` but source batch16 | large128 r50/r90 source-batch diagnostic | diagnostic only |
 | `--linux-hz5-profile-pagerun64-large128-b16-drain1` | same as `large128-batch16` but alloc-miss drain local budget 1 | large128 r50 drain-budget diagnostic | diagnostic only |
+| `--linux-hz5-profile-pagerun64-large128-b16-rb32` | same as `large128-batch16` but remote batch cap 32 | large128 remote publish diagnostic | diagnostic only |
+| `--linux-hz5-profile-pagerun64-large128-b16-rb64` | same as `large128-batch16` but remote batch cap 64 | large128 remote publish diagnostic | diagnostic only |
 
 Use the fixed cross128 and large128 aliases as separate profiles. The source
 batch optimum reverses between those workloads, so a single fixed value is not
@@ -67,10 +69,11 @@ large128 r50:
   still the next LargeFront gap.
 ```
 
-Use `hz5-pagerun64-large128-b8`, `hz5-pagerun64-large128-b16`, and
-`hz5-pagerun64-large128-b16-drain1` in `linux/run_hz5_hakmem_compare.sh` only
-for LargeFront-L4 sweeps. Do not include them in broad default matrices unless
-they replace the saved batch4 profile.
+Use `hz5-pagerun64-large128-b8`, `hz5-pagerun64-large128-b16`,
+`hz5-pagerun64-large128-b16-drain1`, `hz5-pagerun64-large128-b16-rb32`, and
+`hz5-pagerun64-large128-b16-rb64` in `linux/run_hz5_hakmem_compare.sh` only for
+LargeFront-L4 sweeps. Do not include them in broad default matrices unless they
+replace the saved batch4 profile.
 
 L4 first read:
 
@@ -89,6 +92,16 @@ decision:
   b16-drain1 is no-go for broad promotion.
   saved large128 stays batch4 until a lane improves r50/r90 without losing
   t=8 r50 or r0.
+```
+
+Remote batch cap sweep:
+
+```text
+private/raw-results/linux/hz5_large128_l4_remote_batch_cap_r3
+
+decision:
+  rb32/rb64 remain high-thread diagnostics only.
+  They are not broad replacements because t=2/t=4 regress.
 ```
 
 ## MidPageFront Combination Chain

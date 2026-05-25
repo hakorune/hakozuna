@@ -170,6 +170,12 @@ Options:
   --linux-hz5-profile-pagerun64-large128-b16-drain1
                      diagnostic alias: same as large128-batch16 with
                      alloc-miss remote drain local budget 1
+  --linux-hz5-profile-pagerun64-large128-b16-rb32
+                     diagnostic alias: same as large128-batch16 with
+                     LargeFront remote batch cap 32
+  --linux-hz5-profile-pagerun64-large128-b16-rb64
+                     diagnostic alias: same as large128-batch16 with
+                     LargeFront remote batch cap 64
   --linux-local2p    enable Linux Local2P exact 64K/a8192 TLS span candidate
   --linux-local2p-tls-packed
                      pack Local2P TLS state into one TLS object
@@ -942,6 +948,18 @@ while [[ $# -gt 0 ]]; do
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_largefirst_base 2
       LINUX_LARGEFRONT_SOURCE_BATCH_COUNT=16
       LINUX_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET=1
+      shift
+      ;;
+    --linux-hz5-profile-pagerun64-large128-b16-rb32)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_largefirst_base 2
+      LINUX_LARGEFRONT_SOURCE_BATCH_COUNT=16
+      LINUX_LARGEFRONT_REMOTE_BATCH_CAP=32
+      shift
+      ;;
+    --linux-hz5-profile-pagerun64-large128-b16-rb64)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_largefirst_base 2
+      LINUX_LARGEFRONT_SOURCE_BATCH_COUNT=16
+      LINUX_LARGEFRONT_REMOTE_BATCH_CAP=64
       shift
       ;;
     --arch)

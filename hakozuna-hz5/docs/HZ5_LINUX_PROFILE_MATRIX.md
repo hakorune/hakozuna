@@ -188,6 +188,48 @@ alloc miss
 no-go in first RUNS=3 broad check
 ```
 
+### `hz5-linux-pagerun64-large-only-b16-rb32`
+
+Role:
+
+```text
+LargeFront-L4 remote publish batch-cap diagnostic
+```
+
+Build:
+
+```text
+--linux-hz5-profile-pagerun64-large128-b16-rb32
+```
+
+Status:
+
+```text
+diagnostic only
+source batch16 with LargeFront remote batch cap 32
+```
+
+### `hz5-linux-pagerun64-large-only-b16-rb64`
+
+Role:
+
+```text
+LargeFront-L4 remote publish batch-cap diagnostic
+```
+
+Build:
+
+```text
+--linux-hz5-profile-pagerun64-large128-b16-rb64
+```
+
+Status:
+
+```text
+diagnostic only
+source batch16 with LargeFront remote batch cap 64
+```
+
 Latest L4 source-batch/drain read:
 
 ```text
@@ -205,6 +247,18 @@ read:
   b16-drain1 is no-go: it helps t=2 r50 but hurts r90 and t=8 badly.
   batch4 remains the saved large128 profile because it still wins t=8 r50 and
   is competitive on r0.
+```
+
+Latest L4 remote batch-cap read:
+
+```text
+result:
+  private/raw-results/linux/hz5_large128_l4_remote_batch_cap_r3
+
+read:
+  rb32/rb64 help high-thread r50.
+  rb64 is close to neutral/slightly positive at t=8 r90.
+  t=2/t=4 regress too much for broad promotion.
 ```
 
 ## Diagnostic / No-Go Lanes

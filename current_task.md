@@ -199,6 +199,26 @@ Use fixed diagnostic lanes first. Adaptive policy only comes after a clear
 source-batch or drain-budget signal.
 ```
 
+Next L4 diagnostic:
+
+```text
+remote batch cap sweep on the batch16 candidate:
+  hz5-pagerun64-large128-b16-rb32
+  hz5-pagerun64-large128-b16-rb64
+
+purpose:
+  check whether remote publish cost, not drain-to-local budget, is still a
+  visible r50/r90 bottleneck.
+
+result:
+  private/raw-results/linux/hz5_large128_l4_remote_batch_cap_r3
+
+read:
+  rb32/rb64 can improve t=8 r50, and rb64 slightly improves t=8 r90.
+  lower-thread rows regress heavily.
+  Do not promote remote batch cap 32/64 broadly.
+```
+
 Do not:
 
 ```text
