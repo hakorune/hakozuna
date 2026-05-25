@@ -53,6 +53,10 @@ large128-base-directmap:
   improves t4/r90 versus source16.
   loses source16 on t8 rows.
   no-promote diagnostic.
+
+large128-r50-drain-directmap:
+  combines drain1 and base-directmap.
+  current RUNS=3 no-go: it does not beat either parent and r90 RSS/ops regress.
 ```
 
 Recent result roots:
@@ -61,13 +65,15 @@ Recent result roots:
 private/raw-results/linux/hz5_large128_hold8_r3_20260526_050802
 private/raw-results/linux/hz5_large128_direct_header_r3_20260526_051345
 private/raw-results/linux/hz5_large128_base_directmap_r3_20260526_051731
+private/raw-results/linux/hz5_large128_current_focus_r3_20260526_052851
+private/raw-results/linux/hz5_large128_drain_directmap_r3_20260526_053047
 ```
 
 ## Next Engineering Direction
 
 ```text
-1. Keep source16 as the current r90/t8 baseline.
-2. Treat hold8/base-directmap/direct-header as diagnostics, not defaults.
+1. Keep source16 and large128-rss as the current comparison pair.
+2. Treat hold8/base-directmap/direct-header/drain-directmap as diagnostics.
 3. If continuing LargeFront optimization, focus on t4/r50 with perf evidence.
 4. Do not add another policy until a concrete hotspot explains the row split.
 5. Keep speed lanes free of HZ5_PRELOAD_STATS and hot-path counters.

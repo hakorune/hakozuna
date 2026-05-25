@@ -68,6 +68,7 @@ private/raw-results/linux/hz5_large128_base_directmap_r3_20260526_051731
 | r50-hold8 | `--linux-hz5-profile-large128-r50-hold8` | `hz5-large128-r50-hold8` | wins t8/r50 in one run; loses source16 on r90 |
 | direct-header | `--linux-hz5-profile-large128-direct-header` | `hz5-large128-direct-header` | unsafe lookup upper bound only |
 | base-directmap | `--linux-hz5-profile-large128-base-directmap` | `hz5-large128-base-directmap` | safe exact-base cache; helps t4/r90 but not broad |
+| r50-drain-directmap | `--linux-hz5-profile-large128-r50-drain-directmap` | `hz5-large128-r50-drain-directmap` | no-go composition; worse than parent lanes |
 | policy-l7 | `--linux-hz5-profile-large128-policy-l7` | `hz5-large128-policy-l7` | no-go broad policy |
 | policy-l8-shadow | `--linux-hz5-profile-large128-policy-l8-shadow` | `hz5-large128-policy-l8-shadow` | observation only |
 
@@ -142,6 +143,31 @@ Safe route-cache changes can help specific low-thread r90 cases, but source16
 still leads the t8 rows.
 ```
 
+### Drain Directmap
+
+```text
+root:
+  private/raw-results/linux/hz5_large128_drain_directmap_r3_20260526_053047
+
+t4/r50:
+  tcmalloc          29.80M /  50MB
+  source16         18.82M /  49MB
+  drain-directmap  12.48M /  66MB
+
+t8/r90:
+  source16         32.80M /  62MB
+  tcmalloc         16.05M / 149MB
+  drain-directmap   6.60M / 332MB
+```
+
+Decision:
+
+```text
+no-go diagnostic.
+Combining drain1 with base-directmap does not compose; it worsens both parent
+lanes and should not be pursued without new perf evidence.
+```
+
 ## No-Promote Summary
 
 | Lane | Reason |
@@ -153,6 +179,7 @@ still leads the t8 rows.
 | policy-l7 | remainder threshold is too crude |
 | direct-header | unsafe foreign-pointer behavior |
 | base-directmap | row-specific improvement, not broad enough |
+| r50-drain-directmap | simple composition worsens r50 and r90 |
 
 ## Next Work
 
