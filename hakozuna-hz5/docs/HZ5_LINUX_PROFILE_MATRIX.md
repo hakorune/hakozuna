@@ -317,6 +317,73 @@ decision:
   reusable local/free spans and the t4/r50 target regresses
 ```
 
+Update after changing RemoteHold consumption to takefirst + local budget:
+
+```text
+result root:
+  private/raw-results/linux/hz5_large128_remotehold4_drainbudget_smoke_r3
+
+large128/t4/r50:
+  drain1-hold4 25.09M /  34MB
+  tcmalloc     26.53M /  53MB
+
+large128/t4/r90:
+  drain1-hold4  7.63M / 139MB
+  batch16      22.93M /  41MB
+  tcmalloc     25.41M /  59MB
+
+large128/t8/r50:
+  drain1-hold4 24.84M /  66MB
+  tcmalloc     23.66M /  93MB
+
+large128/t8/r90:
+  drain1-hold4 10.70M / 185MB
+  batch16      20.42M / 108MB
+  tcmalloc     14.12M / 163MB
+```
+
+Decision:
+
+```text
+keep drain1-hold4 as an r50 diagnostic/candidate only.
+It nearly closes t4/r50 and beats tcmalloc on t8/r50 with lower RSS.
+Do not use for r90; r90 still prefers immediate reusable local/free behavior
+from batch16/batch4 lanes.
+```
+
+### `hz5-linux-pagerun64-large-only-b16-policy-l7`
+
+Role:
+
+```text
+LargeFront-L7 first rule-based drain policy diagnostic
+```
+
+Build:
+
+```text
+--linux-hz5-profile-pagerun64-large128-b16-policy-l7
+```
+
+Status:
+
+```text
+diagnostic only
+source batch16 + drain1-hold4 components
+if owner-inbox remainder >= 32 spans, convert remainder to LOCAL_FREE
+otherwise use hold4
+
+RUNS=3 large128 smoke:
+  t4/r50  11.36M /  81MB, no-go
+  t4/r90  14.64M /  63MB, no-go versus batch4/tcmalloc
+  t8/r50  24.42M /  74MB, modest signal
+  t8/r90  14.64M / 147MB, tcmalloc-class but behind batch16
+
+decision:
+  no promotion
+  remainder length alone is too crude for r50/r90 mode selection
+```
+
 Policy-L0 owner-drain detail after adding `owner_hold`, `owner_orphan`, and
 `owner_state_fail` counters:
 

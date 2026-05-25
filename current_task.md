@@ -871,6 +871,151 @@ Next design should avoid repeatedly reprocessing the same remainder list.
 Do not keep tuning hold cap alone.
 ```
 
+## RemoteHold Drain-Budget Consumption
+
+```text
+change:
+  remote_hold is no longer consumed as ACTIVE-only.
+  alloc miss now drains remote_hold with the same local budget:
+    take one REMOTE_PENDING -> ACTIVE
+    convert up to HZ5_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET to LOCAL_FREE
+
+result root:
+  private/raw-results/linux/hz5_large128_remotehold4_drainbudget_smoke_r3
+```
+
+Result:
+
+```text
+large128/t4/r50:
+  drain1-hold4 25.09M /  34MB
+  tcmalloc     26.53M /  53MB
+
+large128/t4/r90:
+  drain1-hold4  7.63M / 139MB
+  batch16      22.93M /  41MB
+  tcmalloc     25.41M /  59MB
+
+large128/t8/r50:
+  drain1-hold4 24.84M /  66MB
+  tcmalloc     23.66M /  93MB
+
+large128/t8/r90:
+  drain1-hold4 10.70M / 185MB
+  batch16      20.42M / 108MB
+  tcmalloc     14.12M / 163MB
+```
+
+Policy-L0 detail:
+
+```text
+root:
+  private/raw-results/linux/hz5_largefront_policy_l0_drainbudget_hold4_20260526_042346
+
+drain1-hold4 t4/r50:
+  owner_drain=18261
+  owner_drain_spans=499743
+  owner_to_local=18222
+  owner_hold=72655
+  owner_republish=390605
+
+drain1-hold4 t4/r90:
+  owner_drain=31474
+  owner_drain_spans=1183875
+  owner_to_local=31427
+  owner_hold=125224
+  owner_republish=995750
+```
+
+Decision:
+
+```text
+keep as r50 diagnostic/candidate.
+It nearly closes t4/r50 and wins t8/r50, with lower RSS than tcmalloc.
+
+Do not use for r90.
+r90 still needs batch16/batch4 style immediate reuse; hold still leaves too
+much republish/reprocess and delays reuse.
+```
+
+## Next Implementation: LargeFront-L7 Policy
+
+```text
+Goal:
+  move from fixed large128 r50/r90 lanes toward one runtime policy lane.
+
+Scope:
+  LargeFront 128K class only.
+  Slow drain path only.
+  Do not add malloc/free hot-path counters.
+
+First rule:
+  use the owner inbox drain itself as the observation point.
+
+  small/moderate remainder:
+    use drain1-hold4 behavior
+    keep takefirst
+    convert one extra span to LOCAL_FREE
+    hold up to 4 REMOTE_PENDING spans
+
+  large remainder:
+    use immediate reuse behavior
+    convert the remainder to LOCAL_FREE instead of holding/republishing
+
+Reason:
+  r50 likes drain1-hold4 because it avoids repeated remote remainder churn.
+  r90 needs immediate reusable spans; hold delays reuse and collapses.
+  The owner inbox remainder length is available on the slow drain path and
+  does not require hot-path counters.
+
+Initial threshold:
+  if remainder >= 32 spans, switch that drain to immediate local conversion.
+  otherwise use hold4.
+
+Lane:
+  --linux-hz5-profile-pagerun64-large128-b16-policy-l7
+```
+
+Result:
+
+```text
+root:
+  private/raw-results/linux/hz5_large128_policy_l7_smoke_r3
+
+large128/t4/r50:
+  policy-l7 11.36M /  81MB
+  drain1    20.19M /  32MB
+  tcmalloc  30.09M /  50MB
+
+large128/t4/r90:
+  policy-l7 14.64M /  63MB
+  batch4    29.08M /  27MB
+  tcmalloc  26.42M /  61MB
+
+large128/t8/r50:
+  policy-l7 24.42M /  74MB
+  batch16   23.64M /  76MB
+  tcmalloc  26.67M /  81MB
+
+large128/t8/r90:
+  policy-l7 14.64M / 147MB
+  batch16   19.21M / 109MB
+  tcmalloc  14.55M / 179MB
+```
+
+Decision:
+
+```text
+no-go as a broad policy.
+Remainder length threshold 32 is too crude:
+  it hurts t4/r50
+  it does not recover r90 enough
+  it only helps t8/r50 modestly
+
+Next L7 attempt needs a stronger phase signal than current drain remainder
+length alone, or should remain a fixed profile split.
+```
+
 ## Reading Order
 
 ```text
