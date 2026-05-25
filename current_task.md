@@ -158,12 +158,20 @@ LargeFront-L4 source-batch sweep:
 ```text
 result:
   private/raw-results/linux/hz5_large128_l4_batch_sweep_r3
+  private/raw-results/linux/hz5_large128_l4_batch16_confirm_r5
+  private/raw-results/linux/hz5_large128_l4_batch16_r0_r5
 
 read:
   batch16 helps several large128 r50/r90 rows after the Large-first/free-map
   fix, especially high-thread rows.
   batch8 is not consistently better than batch4/batch16.
   source batch is still a real lever, but the row-to-row optimum remains noisy.
+
+RUNS=5 confirmation:
+  batch16 wins or nearly wins r90 and improves lower-thread r50.
+  batch4 still wins t=8 r50 and remains competitive on r0.
+  Do not replace the saved batch4 large128 profile yet.
+  Keep batch16 as a high-remote/high-thread candidate-watch.
 ```
 
 LargeFront-L4 drain-budget diagnostic:
@@ -227,8 +235,7 @@ LargeFront-L4 source-batch diagnostic:
   first result:
     batch16 is the only promising fixed diagnostic.
     drain1 is no-go.
-    next confirmation should be RUNS=5/10 on batch4 vs batch16 vs tcmalloc/HZ4
-    before changing the saved profile.
+    RUNS=5 confirms batch16 is useful but not broad enough to replace batch4.
 ```
 
 ## Reading Order

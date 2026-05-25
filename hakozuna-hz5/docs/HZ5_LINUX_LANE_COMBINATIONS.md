@@ -77,14 +77,18 @@ L4 first read:
 ```text
 source batch sweep:
   private/raw-results/linux/hz5_large128_l4_batch_sweep_r3
+  private/raw-results/linux/hz5_large128_l4_batch16_confirm_r5
+  private/raw-results/linux/hz5_large128_l4_batch16_r0_r5
 
 drain budget:
   private/raw-results/linux/hz5_large128_l4_drain1_r3
 
 decision:
-  batch16 remains candidate-watch.
+  batch16 remains high-remote/high-thread candidate-watch.
   batch8 is not clear.
   b16-drain1 is no-go for broad promotion.
+  saved large128 stays batch4 until a lane improves r50/r90 without losing
+  t=8 r50 or r0.
 ```
 
 ## MidPageFront Combination Chain

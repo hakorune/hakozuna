@@ -193,14 +193,18 @@ Latest L4 source-batch/drain read:
 ```text
 batch sweep:
   private/raw-results/linux/hz5_large128_l4_batch_sweep_r3
+  private/raw-results/linux/hz5_large128_l4_batch16_confirm_r5
+  private/raw-results/linux/hz5_large128_l4_batch16_r0_r5
 
 drain1:
   private/raw-results/linux/hz5_large128_l4_drain1_r3
 
 read:
-  batch16 is promising in several high-thread r50/r90 rows.
+  batch16 is promising in r90 and several lower-thread/high-thread rows.
   batch8 is not a clear improvement.
   b16-drain1 is no-go: it helps t=2 r50 but hurts r90 and t=8 badly.
+  batch4 remains the saved large128 profile because it still wins t=8 r50 and
+  is competitive on r0.
 ```
 
 ## Diagnostic / No-Go Lanes
