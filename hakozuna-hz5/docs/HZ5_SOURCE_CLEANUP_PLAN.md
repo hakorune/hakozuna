@@ -23,6 +23,7 @@ comparability.
 | `midpagefront/hz5_midpagefront_m4_pagerun.inc` | MidPage M4 remote packet and PageRun helper cluster | split out from `hz5_midpagefront.c`; keep include-local while the pagerun profile settles |
 | `midpagefront/hz5_midpagefront_nodeless.inc` | MidPage nodeless partial / ptrcache / hot-slot helpers | split out from `hz5_midpagefront.c`; keep include-local while the nodeless diagnostic lane settles |
 | `midfront/hz5_midfront_remote_batch.inc` | MidFront remote batch helper cluster | split out from `hz5_midfront.c`; keep include-local while the remote-batch profile settles |
+| `preload/hz5_preload_full_support.inc` | Preload full bootstrap / stats / pointer-track support helpers | split out from `hz5_preload_full.c`; keep include-local while the full preload control path settles |
 | `lowpage/hz5_lowpage64_p43o.inc` | LowPage P43O admission/projection diagnostics | split out from `hz5_lowpage64.c`; keep include-local while the admission probes settle |
 | `lowpage/hz5_lowpage64_p43_segment_helpers.inc` | LowPage P43 segment lookup/slot-mask helper cluster | split out from `hz5_lowpage64_p43_segment.c`; keep include-local while the segment-slot source stabilizes |
 | `lowpage/hz5_lowpage64_p43p_bridge.inc` | LowPage P43P/P44/P45 bridge diagnostics | split out from `hz5_lowpage64.c`; keep include-local while the bridge probes settle |
@@ -101,5 +102,7 @@ P43 segment lookup/slot-mask helpers in `hz5_lowpage64_p43_segment_helpers.inc`,
 P43P/P44/P45 bridge diagnostics in `hz5_lowpage64_p43p_bridge.inc`, plus P45
 drain diagnostics in `hz5_lowpage64_p45dr.inc`. Policy now keeps Local2P
 helpers in `hz5_policy_local2p.inc`. MidFront now also keeps its remote batch
-helpers in `hz5_midfront_remote_batch.inc`, and the Linux build script now
-centralizes the repeated profile flag groups so the alias table stays readable.
+helpers in `hz5_midfront_remote_batch.inc`. Preload full now also keeps its
+bootstrap/stat/pointer-track support helpers in
+`hz5_preload_full_support.inc`. The Linux build script now centralizes the
+repeated profile flag groups so the alias table stays readable.
