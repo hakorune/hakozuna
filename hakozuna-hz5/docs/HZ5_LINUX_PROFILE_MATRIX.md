@@ -58,6 +58,7 @@ Latest focused reads:
   private/raw-results/linux/hz5_large128_rb_current_r3_20260526_053400
   private/raw-results/linux/hz5_large128_ownerfast_r3_20260526_053858
   private/raw-results/linux/hz5_large128_direct_header_recheck_r3_20260526_055156
+  private/raw-results/linux/hz5_large128_source_populate_r3_20260526_055548
 ```
 
 ## Saved Profiles
@@ -256,6 +257,36 @@ source batch32:
 
 4-way base-directmap:
   no-go; source kept at the simpler 1-way diagnostic cache.
+```
+
+### Source Populate
+
+```text
+root:
+  private/raw-results/linux/hz5_large128_source_populate_r3_20260526_055548
+
+t4/r50:
+  tcmalloc        29.73M /   47MB
+  source16        17.27M /   53MB
+  source-populate  0.83M / 1993MB
+
+t8/r50:
+  tcmalloc        24.68M /   93MB
+  source16        20.71M /   86MB
+  source-populate  1.45M / 2309MB
+
+t8/r90:
+  source16        19.20M /  119MB
+  tcmalloc        16.18M /  141MB
+  source-populate  0.89M / 4134MB
+```
+
+Decision:
+
+```text
+hard no-go.
+MAP_POPULATE on 128K LargeFront source refill pre-faults far too much memory,
+destroys throughput, and should not be kept as a selectable lane.
 ```
 
 ### OwnerFast

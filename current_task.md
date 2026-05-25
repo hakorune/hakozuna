@@ -77,6 +77,7 @@ private/raw-results/linux/hz5_large128_batch32_smoke_20260526_053458
 private/raw-results/linux/hz5_large128_base_directmap4_r3_20260526_053547
 private/raw-results/linux/hz5_large128_ownerfast_r3_20260526_053858
 private/raw-results/linux/hz5_large128_direct_header_recheck_r3_20260526_055156
+private/raw-results/linux/hz5_large128_source_populate_r3_20260526_055548
 ```
 
 ## Next Engineering Direction
@@ -90,8 +91,10 @@ private/raw-results/linux/hz5_large128_direct_header_recheck_r3_20260526_055156
    diagnostic/no-go.
 5. Direct-header recheck does not improve t4/r50; free lookup alone is not
    the next primary fix.
-6. Do not add another policy until a concrete hotspot explains the row split.
-7. Keep speed lanes free of HZ5_PRELOAD_STATS and hot-path counters.
+6. MAP_POPULATE source refill is a hard no-go; page-fault prepopulation
+   explodes RSS and throughput collapses.
+7. Do not add another policy until a concrete hotspot explains the row split.
+8. Keep speed lanes free of HZ5_PRELOAD_STATS and hot-path counters.
 ```
 
 ## Cleanup Status
