@@ -22,7 +22,7 @@ MidPage PageRun64:
 LargeFront 128K:
   active tcmalloc chase area
   source16, draintrust, and transfer128 are the current comparison controls
-  next candidate is transfer128-tlsfirst
+  transfer128-tlsfirst / ownershard / shard16 are no-go diagnostics
 
 Local2P:
   exact 64K/a8192 appendix/special profiles
@@ -65,12 +65,18 @@ transfer128-ownershard:
   routes TRANSFER_FREE spans by old owner slot so consumers can see incoming
   remote frees without a single global transfer lock
 
+transfer128-shard16:
+  no-go diagnostic
+  consumer-visible 16-shard transfer cache with shard stealing; nonempty-mask
+  version still loses transfer128's t4/r50 win and does not recover t8
+
 known no-go diagnostics:
   rb32/rb64 for t4/r50
   batch32
   ownerfast
   transfer128-tlsfirst
   transfer128-ownershard
+  transfer128-shard16
   drain-directmap
   base-directmap4
 ```

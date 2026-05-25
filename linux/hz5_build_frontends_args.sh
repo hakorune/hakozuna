@@ -423,6 +423,11 @@ hz5_try_parse_frontend_build_arg() {
         LINUX_LARGEFRONT_TRANSFER128=1
         HZ5_PARSE_SHIFT=1
         ;;
+      --linux-largefront-transfer128-consumer-shard)
+        LINUX_LARGEFRONT_TRANSFER128=1
+        LINUX_LARGEFRONT_TRANSFER128_CONSUMER_SHARD=1
+        HZ5_PARSE_SHIFT=1
+        ;;
       --linux-largefront-policy-l1a)
         BUILD_PRELOAD_FULL=1
         LINUX_SMALLFRONT_S1=1

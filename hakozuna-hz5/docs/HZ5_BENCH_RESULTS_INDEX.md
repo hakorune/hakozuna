@@ -35,6 +35,7 @@ private/raw-results/linux/
 | `hz5_large128_transfer128_flushmiss_r3_20260526_064056` | transfer128 with alloc-miss TLS flush | t4/r50 still improves, t8 still no-go |
 | `hz5_large128_transfer128_tlsfirst_smoke_r1` | transfer128 with TLS-local reuse before global cache | no-go; producer-local retention hurts t4/t8 throughput and RSS |
 | `hz5_large128_transfer128_ownershard_r3` | transfer128 routed by old owner-slot shard | no-go; owner shard loses t4/r50 and r90, only partial high-thread signal |
+| `hz5_large128_transfer128_shard16_mask_smoke_r1` | transfer128 through consumer-visible 16-shard cache with nonempty mask | no-go; shard stealing loses transfer128 t4/r50 and does not recover t8 |
 
 ## Current Large128 Baselines
 
@@ -192,6 +193,40 @@ candidate would need a consumer-visible queue with lower fixed cost than owner
 inbox and less retention than TLS/owner shards.
 ```
 
+Transfer128 consumer-shard follow-up:
+
+```text
+private/raw-results/linux/hz5_large128_transfer128_shard16_mask_smoke_r1
+
+t4/r50:
+  hz5-large128-transfer128          25.48M /  11MB
+  tcmalloc                          21.49M /  55MB
+  hz5-large128-source16             17.25M /  48MB
+  hz5-large128-transfer128-shard16  14.52M /  25MB
+
+t8/r50:
+  tcmalloc                          22.22M / 102MB
+  hz5-large128-transfer128          13.99M /  65MB
+  hz5-large128-source16             13.22M / 125MB
+  hz5-large128-transfer128-shard16   6.39M / 186MB
+
+t8/r90:
+  hz5-large128-source16             14.05M / 140MB
+  tcmalloc                          13.04M / 181MB
+  hz5-large128-transfer128           9.68M / 110MB
+  hz5-large128-transfer128-shard16   6.13M / 174MB
+```
+
+Decision:
+
+```text
+Consumer-visible shard16 is no-go. Adding a nonempty mask avoids empty-shard
+lock scans, but shard stealing still loses the global transfer128 t4/r50 signal
+and does not recover t8. The transfer128 family now has no broad placement:
+global has a t4/r50 signal, TLS-local starves consumers, owner-shard loses
+locality, and consumer-shard adds too much fixed cost.
+```
+
 ## Recently Closed Diagnostics
 
 | Diagnostic | Root | Decision |
@@ -206,6 +241,7 @@ inbox and less retention than TLS/owner shards.
 | `draintrust+budget1` | `hz5_large128_draintrust_budget1_manual_r3_20260526_062121` | no named lane; t4/r50-only local optimum |
 | `large128-transfer128-tlsfirst` | `hz5_large128_transfer128_tlsfirst_smoke_r1` | no-go; TLS-local transfer starves consumers and worsens RSS |
 | `large128-transfer128-ownershard` | `hz5_large128_transfer128_ownershard_r3` | no-go; owner-slot shard loses transfer128/source16 strengths |
+| `large128-transfer128-shard16` | `hz5_large128_transfer128_shard16_mask_smoke_r1` | no-go; consumer shard loses transfer128 t4/r50 and t8 |
 
 ## Update Discipline
 

@@ -4,7 +4,8 @@ static int hz5_largefront_transfer128_class(uint32_t class_index) {
          hz5_largefront_class_bytes(class_index) == 131072u;
 }
 
-#if BENCHLAB_HZ5_LINUX_LARGEFRONT_TRANSFER128_OWNER_SHARD
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_TRANSFER128_OWNER_SHARD || \
+    BENCHLAB_HZ5_LINUX_LARGEFRONT_TRANSFER128_CONSUMER_SHARD
 static uint32_t hz5_largefront_transfer128_owner_shard(Hz5OwnerToken owner) {
   if (HZ5_LARGEFRONT_TRANSFER128_SHARD_COUNT == 0u) {
     return 0u;
@@ -65,6 +66,38 @@ static void hz5_largefront_transfer128_owner_shard_push_one(
   hz5_largefront_transfer128_shard_unlock(shard);
 }
 
+static void hz5_largefront_transfer128_shard_push_one(Hz5LargeSpan* span,
+                                                      uint32_t shard) {
+  if (!span) {
+    return;
+  }
+  if (HZ5_LARGEFRONT_TRANSFER128_SHARD_COUNT == 0u) {
+    hz5_largefront_transfer128_overflow_global(span);
+    return;
+  }
+  shard %= HZ5_LARGEFRONT_TRANSFER128_SHARD_COUNT;
+
+  hz5_largefront_transfer128_shard_lock(shard);
+  if (g_hz5_largefront_transfer128_shard_count[shard] >=
+      HZ5_LARGEFRONT_TRANSFER128_SHARD_CAP) {
+    hz5_largefront_transfer128_shard_unlock(shard);
+    hz5_largefront_transfer128_overflow_global(span);
+    return;
+  }
+
+  span->next = g_hz5_largefront_transfer128_shard_head[shard];
+  g_hz5_largefront_transfer128_shard_head[shard] = span;
+  ++g_hz5_largefront_transfer128_shard_count[shard];
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_TRANSFER128_CONSUMER_SHARD
+  if (shard < 64u) {
+    atomic_fetch_or_explicit(&g_hz5_largefront_transfer128_nonempty_mask,
+                             UINT64_C(1) << shard,
+                             memory_order_release);
+  }
+#endif
+  hz5_largefront_transfer128_shard_unlock(shard);
+}
+
 static Hz5LargeSpan* hz5_largefront_transfer128_shard_pop_one(
     Hz5LargeTls* tls,
     uint32_t class_index,
@@ -80,6 +113,14 @@ static Hz5LargeSpan* hz5_largefront_transfer128_shard_pop_one(
     if (g_hz5_largefront_transfer128_shard_count[shard] != 0u) {
       --g_hz5_largefront_transfer128_shard_count[shard];
     }
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_TRANSFER128_CONSUMER_SHARD
+    if (g_hz5_largefront_transfer128_shard_count[shard] == 0u &&
+        shard < 64u) {
+      atomic_fetch_and_explicit(&g_hz5_largefront_transfer128_nonempty_mask,
+                                ~(UINT64_C(1) << shard),
+                                memory_order_release);
+    }
+#endif
   }
   hz5_largefront_transfer128_shard_unlock(shard);
 
@@ -122,6 +163,43 @@ static Hz5LargeSpan* hz5_largefront_transfer128_owner_shard_pop(
   }
   return hz5_largefront_transfer128_shard_pop_one(tls, class_index, neighbor);
 }
+
+static Hz5LargeSpan* hz5_largefront_transfer128_consumer_shard_pop(
+    Hz5LargeTls* tls,
+    uint32_t class_index) {
+  if (!tls || tls->owner.slot == 0 ||
+      !hz5_largefront_transfer128_class(class_index) ||
+      HZ5_LARGEFRONT_TRANSFER128_SHARD_COUNT == 0u) {
+    return NULL;
+  }
+
+  uint32_t home = hz5_largefront_transfer128_owner_shard(tls->owner);
+  uint64_t mask = atomic_load_explicit(
+      &g_hz5_largefront_transfer128_nonempty_mask,
+      memory_order_acquire);
+  if (HZ5_LARGEFRONT_TRANSFER128_SHARD_COUNT < 64u) {
+    mask &= (UINT64_C(1) << HZ5_LARGEFRONT_TRANSFER128_SHARD_COUNT) - 1u;
+  }
+  if ((mask & (UINT64_C(1) << home)) != 0u) {
+    Hz5LargeSpan* span =
+        hz5_largefront_transfer128_shard_pop_one(tls, class_index, home);
+    if (span) {
+      return span;
+    }
+    mask &= ~(UINT64_C(1) << home);
+  }
+
+  while (mask != 0u) {
+    uint32_t shard = (uint32_t)__builtin_ctzll(mask);
+    Hz5LargeSpan* span =
+        hz5_largefront_transfer128_shard_pop_one(tls, class_index, shard);
+    if (span) {
+      return span;
+    }
+    mask &= ~(UINT64_C(1) << shard);
+  }
+  return NULL;
+}
 #endif
 
 static void hz5_largefront_transfer128_global_push_list(Hz5LargeSpan* head,
@@ -139,6 +217,22 @@ static void hz5_largefront_transfer128_global_push_list(Hz5LargeSpan* head,
     Hz5LargeSpan* next = span->next;
     span->next = NULL;
     hz5_largefront_transfer128_owner_shard_push_one(span);
+    span = next;
+  }
+  return;
+#endif
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_TRANSFER128_CONSUMER_SHARD
+  (void)tail;
+  Hz5LargeSpan* span = head;
+  uint32_t cursor = atomic_fetch_add_explicit(
+      &g_hz5_largefront_transfer128_push_shard_cursor,
+      count,
+      memory_order_relaxed);
+  while (span) {
+    Hz5LargeSpan* next = span->next;
+    span->next = NULL;
+    uint32_t shard = cursor++;
+    hz5_largefront_transfer128_shard_push_one(span, shard);
     span = next;
   }
   return;

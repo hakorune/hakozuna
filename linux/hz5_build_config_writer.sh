@@ -151,6 +151,7 @@ hz5_write_build_config() {
     echo "linux_largefront_transfer128=${LINUX_LARGEFRONT_TRANSFER128}"
     echo "linux_largefront_transfer128_tls_first=${LINUX_LARGEFRONT_TRANSFER128_TLS_FIRST}"
     echo "linux_largefront_transfer128_owner_shard=${LINUX_LARGEFRONT_TRANSFER128_OWNER_SHARD}"
+    echo "linux_largefront_transfer128_consumer_shard=${LINUX_LARGEFRONT_TRANSFER128_CONSUMER_SHARD}"
     echo "linux_largefront_transfer128_cap=${LINUX_LARGEFRONT_TRANSFER128_CAP}"
     echo "linux_largefront_transfer128_chunk_cap=${LINUX_LARGEFRONT_TRANSFER128_CHUNK_CAP}"
     echo "linux_largefront_transfer128_shard_count=${LINUX_LARGEFRONT_TRANSFER128_SHARD_COUNT}"

@@ -102,6 +102,10 @@ private/raw-results/linux/hz5_large128_source16_draintrust_perf_t4_20260526_0626
 private/raw-results/linux/hz5_large128_source16_draintrust_median_r3_20260526_062644
 private/raw-results/linux/hz5_large128_transfer128_smoke_r3_20260526_063953
 private/raw-results/linux/hz5_large128_transfer128_flushmiss_r3_20260526_064056
+private/raw-results/linux/hz5_large128_transfer128_tlsfirst_smoke_r1
+private/raw-results/linux/hz5_large128_transfer128_ownershard_r3
+private/raw-results/linux/hz5_large128_transfer128_shard16_smoke_r1
+private/raw-results/linux/hz5_large128_transfer128_shard16_mask_smoke_r1
 ```
 
 ## Next Engineering Direction
@@ -140,8 +144,15 @@ private/raw-results/linux/hz5_large128_transfer128_flushmiss_r3_20260526_064056
     t4/r50 with very low RSS, showing class-level transfer can cut owner-inbox
     cost. It is not broad yet; t8 rows regress, likely from global transfer
     contention or poor high-thread consumption order.
-15. Do not add another policy until a concrete hotspot explains the row split.
-16. Keep speed lanes free of HZ5_PRELOAD_STATS and hot-path counters.
+15. Transfer128-tlsfirst is no-go: producer-local retention starves consumer
+    reuse and worsens RSS.
+16. Transfer128-ownershard is no-go: routing by old owner slot preserves
+    neither transfer128's t4/r50 signal nor source16's r90 behavior.
+17. Transfer128-shard16 is no-go even after adding a nonempty mask to avoid
+    empty-shard locks. Consumer-visible sharding loses the global transfer128
+    t4/r50 win and does not recover t8.
+18. Do not add another policy until a concrete hotspot explains the row split.
+19. Keep speed lanes free of HZ5_PRELOAD_STATS and hot-path counters.
 ```
 
 ## Cleanup Status

@@ -49,6 +49,9 @@ Options:
                      transfer spans before global transfer cache
   --linux-hz5-profile-large128-transfer128-ownershard
                      diagnostic alias: transfer128 routed through owner-slot
+  --linux-hz5-profile-large128-transfer128-shard16
+                     diagnostic alias: transfer128 with consumer-visible
+                     16-shard transfer cache and shard stealing
                      shards before the global fallback cache
   --linux-hz5-profile-pagerun64-large128-b16-takeonly
                      diagnostic alias: same as large128-batch16 with
@@ -550,6 +553,7 @@ Options:
                      diagnostic only: replace owner-drained
                      REMOTE_PENDING->LOCAL_FREE CAS with load/store
   --linux-largefront-transfer128
+  --linux-largefront-transfer128-consumer-shard
                      diagnostic only: route 128K remote frees through a
                      bounded class transfer cache before owner inbox/source
   --linux-largefront-policy-l1a

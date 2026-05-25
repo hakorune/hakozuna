@@ -89,6 +89,10 @@
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_TRANSFER128_OWNER_SHARD 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_TRANSFER128_CONSUMER_SHARD
+#define BENCHLAB_HZ5_LINUX_LARGEFRONT_TRANSFER128_CONSUMER_SHARD 0
+#endif
+
 #ifndef HZ5_LARGEFRONT_TRANSFER128_CAP
 #define HZ5_LARGEFRONT_TRANSFER128_CAP 128u
 #endif
@@ -381,13 +385,18 @@ static Hz5LargeSpan* g_hz5_largefront_transfer128_head;
 static uint32_t g_hz5_largefront_transfer128_count;
 static pthread_mutex_t g_hz5_largefront_transfer128_lock =
     PTHREAD_MUTEX_INITIALIZER;
-#if BENCHLAB_HZ5_LINUX_LARGEFRONT_TRANSFER128_OWNER_SHARD
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_TRANSFER128_OWNER_SHARD || \
+    BENCHLAB_HZ5_LINUX_LARGEFRONT_TRANSFER128_CONSUMER_SHARD
 static Hz5LargeSpan*
     g_hz5_largefront_transfer128_shard_head[HZ5_LARGEFRONT_TRANSFER128_SHARD_COUNT];
 static uint32_t
     g_hz5_largefront_transfer128_shard_count[HZ5_LARGEFRONT_TRANSFER128_SHARD_COUNT];
 static _Atomic unsigned char
     g_hz5_largefront_transfer128_shard_lock[HZ5_LARGEFRONT_TRANSFER128_SHARD_COUNT];
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_TRANSFER128_CONSUMER_SHARD
+static _Atomic uint32_t g_hz5_largefront_transfer128_push_shard_cursor;
+static _Atomic uint64_t g_hz5_largefront_transfer128_nonempty_mask;
+#endif
 #endif
 #endif
 static Hz5LargeRawNode* g_hz5_largefront_source_free[HZ5_LARGEFRONT_CLASS_COUNT];
@@ -1482,6 +1491,12 @@ void* hz5_largefront_alloc(size_t size, size_t align) {
 #endif
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_TRANSFER128_OWNER_SHARD
   span = hz5_largefront_transfer128_owner_shard_pop(tls, ci);
+  if (span) {
+    return span->base;
+  }
+#endif
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_TRANSFER128_CONSUMER_SHARD
+  span = hz5_largefront_transfer128_consumer_shard_pop(tls, ci);
   if (span) {
     return span->base;
   }
