@@ -5,7 +5,7 @@ This is the short current-status entry point for HZ5 Linux work.
 For full chronology, see:
 
 ```text
-docs/archive/current_task_2026-05-hz5-linux.md
+docs/archive/current_task_2026-05-hz5-linux_history.md
 ```
 
 ## Current Goal
