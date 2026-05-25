@@ -51,6 +51,8 @@ Use these names in new benchmark command lines and reports. The historical
 | `large128-r50-drain` | `--linux-hz5-profile-large128-r50-drain` | `hz5-large128-r50-drain` | source16 + drain budget 1; r50 drain diagnostic | diagnostic only |
 | `large128-drainbulk` | `--linux-hz5-profile-large128-drainbulk` | `hz5-large128-drainbulk` | source16 + bulk local-list commit during owner drain | diagnostic only |
 | `large128-draintrust` | `--linux-hz5-profile-large128-draintrust` | `hz5-large128-draintrust` | source16 + trusted owner-drain REMOTE_PENDING->LOCAL_FREE transition | diagnostic only |
+| `large128-transfer128` | `--linux-hz5-profile-large128-transfer128` | `hz5-large128-transfer128` | source16 + bounded 128K class transfer cache | diagnostic only |
+| `large128-transfer128-tlsfirst` | `--linux-hz5-profile-large128-transfer128-tlsfirst` | `hz5-large128-transfer128-tlsfirst` | transfer128 with TLS-local reuse before global cache | diagnostic only |
 | `large128-r50-hold` | `--linux-hz5-profile-large128-r50-hold` | `hz5-large128-r50-hold` | source16 + drain budget 1 + RemoteHold cap4; r50 candidate/diagnostic | diagnostic only |
 | `large128-r50-hold8` | `--linux-hz5-profile-large128-r50-hold8` | `hz5-large128-r50-hold8` | source16 + drain budget 1 + RemoteHold cap8; wider r50 diagnostic | diagnostic only |
 | `large128-global-remote` | `--linux-hz5-profile-large128-global-remote` | `hz5-large128-global-remote` | 128K remote frees go to global recycle instead of owner inbox | diagnostic only |
@@ -77,6 +79,10 @@ r50-specific diagnostics:
 drain implementation diagnostics:
   large128-drainbulk
   large128-draintrust
+
+transfer diagnostics:
+  large128-transfer128
+  large128-transfer128-tlsfirst
 
 policy experiments:
   large128-policy-*

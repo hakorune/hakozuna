@@ -50,6 +50,38 @@ static void hz5_largefront_transfer128_tls_flush(Hz5LargeTls* tls) {
   tls->transfer128_count = 0;
 }
 
+static Hz5LargeSpan* hz5_largefront_transfer128_tls_pop_for_owner(
+    Hz5LargeTls* tls,
+    uint32_t class_index) {
+  if (!tls || !hz5_largefront_transfer128_class(class_index)) {
+    return NULL;
+  }
+
+  while (tls->transfer128_head) {
+    Hz5LargeSpan* span = tls->transfer128_head;
+    tls->transfer128_head = span->next;
+    if (!tls->transfer128_head) {
+      tls->transfer128_tail = NULL;
+    }
+    if (tls->transfer128_count != 0u) {
+      --tls->transfer128_count;
+    }
+
+    span->next = NULL;
+    if (!hz5_largefront_state_cas(span,
+                                  (unsigned char)HZ5_LARGESPAN_TRANSFER_FREE,
+                                  (unsigned char)HZ5_LARGESPAN_ACTIVE)) {
+      hz5_largefront_mark_orphan(span);
+      continue;
+    }
+    span->owner = tls->owner;
+    hz5_largefront_payload_reactivate(span);
+    return span;
+  }
+
+  return NULL;
+}
+
 static int hz5_largefront_transfer128_push(Hz5LargeTls* tls,
                                            Hz5LargeSpan* span) {
   if (!tls || !span || !hz5_largefront_transfer128_class(span->class_index)) {
@@ -65,9 +97,29 @@ static int hz5_largefront_transfer128_push(Hz5LargeTls* tls,
   tls->transfer128_tail = span;
   ++tls->transfer128_count;
 
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_TRANSFER128_TLS_FIRST
+  if (tls->transfer128_count > HZ5_LARGEFRONT_TRANSFER128_CHUNK_CAP) {
+    Hz5LargeSpan* flush_head = tls->transfer128_head;
+    Hz5LargeSpan* flush_tail = tls->transfer128_head;
+    uint32_t flush_count = 1u;
+
+    tls->transfer128_head = flush_head->next;
+    if (!tls->transfer128_head) {
+      tls->transfer128_tail = NULL;
+    }
+    flush_head->next = NULL;
+    if (tls->transfer128_count != 0u) {
+      --tls->transfer128_count;
+    }
+    hz5_largefront_transfer128_global_push_list(flush_head,
+                                                flush_tail,
+                                                flush_count);
+  }
+#else
   if (tls->transfer128_count >= HZ5_LARGEFRONT_TRANSFER128_CHUNK_CAP) {
     hz5_largefront_transfer128_tls_flush(tls);
   }
+#endif
   return 1;
 }
 

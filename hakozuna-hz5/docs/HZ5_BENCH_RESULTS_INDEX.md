@@ -33,6 +33,7 @@ private/raw-results/linux/
 | `hz5_large128_source16_draintrust_median_r3_20260526_062644` | RUNS=3 source16/draintrust/tcmalloc recheck | draintrust wins t8/r90, loses t8/r50; no broad promotion |
 | `hz5_large128_transfer128_smoke_r3_20260526_063953` | first LargeFront transfer128 diagnostic | t4/r50 signal, t8 regression |
 | `hz5_large128_transfer128_flushmiss_r3_20260526_064056` | transfer128 with alloc-miss TLS flush | t4/r50 still improves, t8 still no-go |
+| `hz5_large128_transfer128_tlsfirst_smoke_r1` | transfer128 with TLS-local reuse before global cache | no-go; producer-local retention hurts t4/t8 throughput and RSS |
 
 ## Current Large128 Baselines
 
@@ -128,6 +129,35 @@ L9 diagnostic. If continued, the next variant needs less global contention or a
 thread/owner-aware transfer cache, not just another policy switch.
 ```
 
+Transfer128 TLS-first smoke:
+
+```text
+private/raw-results/linux/hz5_large128_transfer128_tlsfirst_smoke_r1
+
+t4/r50:
+  tcmalloc                         30.60M /  45MB
+  hz5-large128-transfer128         22.46M /  16MB
+  hz5-large128-transfer128-tlsfirst 10.33M /  79MB
+
+t8/r50:
+  tcmalloc                         23.35M / 111MB
+  hz5-large128-source16            20.17M /  87MB
+  hz5-large128-transfer128-tlsfirst  7.32M / 195MB
+
+t8/r90:
+  hz5-large128-source16            15.56M / 121MB
+  tcmalloc                         14.32M / 169MB
+  hz5-large128-transfer128-tlsfirst  5.19M / 282MB
+```
+
+Decision:
+
+```text
+TLS-first is no-go. Holding TRANSFER_FREE spans producer-local prevents the
+consumer side from seeing them and increases retention. Keep the lane as
+diagnostic evidence; do not promote.
+```
+
 ## Recently Closed Diagnostics
 
 | Diagnostic | Root | Decision |
@@ -140,6 +170,7 @@ thread/owner-aware transfer cache, not just another policy switch.
 | `large128-drainbulk` | `hz5_large128_drainbulk_tail_r3_20260526_061107` | diagnostic only; local-push batching is not broad fix |
 | `large128-draintrust` | `hz5_large128_draintrust_r3_20260526_061614` | diagnostic only; drain CAS is not broad fix |
 | `draintrust+budget1` | `hz5_large128_draintrust_budget1_manual_r3_20260526_062121` | no named lane; t4/r50-only local optimum |
+| `large128-transfer128-tlsfirst` | `hz5_large128_transfer128_tlsfirst_smoke_r1` | no-go; TLS-local transfer starves consumers and worsens RSS |
 
 ## Update Discipline
 

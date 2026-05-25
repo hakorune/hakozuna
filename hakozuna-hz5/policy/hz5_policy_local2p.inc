@@ -576,6 +576,7 @@ static int hz5_policy_local2p_direct_decode(void* ptr,
 #if BENCHLAB_HZ5_LINUX_LOCAL2P_ROUTE_COOKIE
   if (raw == 0) {
     return 0;
+  }
 #else
   if (raw == 0 || header->cookie != hz5_wrapper_cookie(raw, aligned)) {
     return 0;

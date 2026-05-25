@@ -41,6 +41,12 @@ Options:
   --linux-hz5-profile-large128-draintrust
                      diagnostic alias: source16 plus trusted load/store for
                      owner-drained REMOTE_PENDING->LOCAL_FREE
+  --linux-hz5-profile-large128-transfer128
+                     diagnostic alias: source16 plus bounded 128K class
+                     transfer cache
+  --linux-hz5-profile-large128-transfer128-tlsfirst
+                     diagnostic alias: transfer128 but alloc consumes TLS
+                     transfer spans before global transfer cache
   --linux-hz5-profile-pagerun64-large128-b16-takeonly
                      diagnostic alias: same as large128-batch16 with
                      take-first-only remote drain

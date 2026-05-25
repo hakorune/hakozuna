@@ -21,7 +21,8 @@ MidPage PageRun64:
 
 LargeFront 128K:
   active tcmalloc chase area
-  source16 and large128-rss are the current comparison pair
+  source16, draintrust, and transfer128 are the current comparison controls
+  next candidate is transfer128-tlsfirst
 
 Local2P:
   exact 64K/a8192 appendix/special profiles
@@ -51,10 +52,19 @@ source16:
 large128-rss:
   saved low-RSS fixed profile
 
+transfer128:
+  t4/r50 signal with excellent RSS
+  broad no-go because the single global transfer cache hurts t8 rows
+
+transfer128-tlsfirst:
+  no-go diagnostic
+  TLS-held TRANSFER_FREE spans improved neither t4 nor t8, and RSS worsened
+
 known no-go diagnostics:
   rb32/rb64 for t4/r50
   batch32
   ownerfast
+  transfer128-tlsfirst
   drain-directmap
   base-directmap4
 ```

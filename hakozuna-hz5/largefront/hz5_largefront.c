@@ -81,6 +81,10 @@
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_TRANSFER128 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_TRANSFER128_TLS_FIRST
+#define BENCHLAB_HZ5_LINUX_LARGEFRONT_TRANSFER128_TLS_FIRST 0
+#endif
+
 #ifndef HZ5_LARGEFRONT_TRANSFER128_CAP
 #define HZ5_LARGEFRONT_TRANSFER128_CAP 128u
 #endif
@@ -1448,7 +1452,14 @@ void* hz5_largefront_alloc(size_t size, size_t align) {
   }
 
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_TRANSFER128
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_TRANSFER128_TLS_FIRST
+  span = hz5_largefront_transfer128_tls_pop_for_owner(tls, ci);
+  if (span) {
+    return span->base;
+  }
+#else
   hz5_largefront_transfer128_tls_flush(tls);
+#endif
   span = hz5_largefront_transfer128_pop_for_owner(tls, ci);
   if (span) {
     return span->base;

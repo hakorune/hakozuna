@@ -15,17 +15,18 @@ HZ5 Linux is now targeting `tcmalloc` on ordinary malloc workloads.
 Current bottleneck:
 
 ```text
-MidPageFront speed/RSS Pareto under mixed MidPage class dispersion
+LargeFront 128K remote transfer path versus tcmalloc on large128 r50/r90.
 ```
 
 Current status:
 
 ```text
-MidPageFront-C7 has become a profile-family problem:
-  strict      = low-waste default candidate
-  band8/32    = coarse-speed candidate
-  band8/16/32 = coarse-pareto candidate
-  wide32k     = speed upper-bound diagnostic only
+MidPage PageRun64 is a saved strong profile.
+LargeFront source16 remains the t8/r90 comparison lane.
+LargeFront transfer128 has a t4/r50 signal but regresses t8 through the single
+global transfer cache.
+LargeFront transfer128-tlsfirst is no-go: producer-local transfer retention
+starves consumer-side reuse and worsens RSS.
 ```
 
 Primary lane matrix:
@@ -99,6 +100,12 @@ bd1ef22 Add MidPageFront class-dispersion diagnostics
 
 --linux-hz5-local2p-remotebatch
   exact remote-free appendix profile
+
+--linux-hz5-profile-large128-transfer128
+  LargeFront 128K bounded class transfer cache diagnostic.
+
+--linux-hz5-profile-large128-transfer128-tlsfirst
+  L10 no-go diagnostic: transfer128 with TLS-local reuse before global cache.
 ```
 
 C7 promotion rule:

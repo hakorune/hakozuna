@@ -149,6 +149,7 @@ hz5_write_build_config() {
     echo "linux_largefront_policy_l1a=${LINUX_LARGEFRONT_POLICY_L1A}"
     echo "linux_largefront_policy_l1b=${LINUX_LARGEFRONT_POLICY_L1B}"
     echo "linux_largefront_transfer128=${LINUX_LARGEFRONT_TRANSFER128}"
+    echo "linux_largefront_transfer128_tls_first=${LINUX_LARGEFRONT_TRANSFER128_TLS_FIRST}"
     echo "linux_largefront_transfer128_cap=${LINUX_LARGEFRONT_TRANSFER128_CAP}"
     echo "linux_largefront_transfer128_chunk_cap=${LINUX_LARGEFRONT_TRANSFER128_CHUNK_CAP}"
     echo "linux_largefront_remote_batch_cap=${LINUX_LARGEFRONT_REMOTE_BATCH_CAP}"
