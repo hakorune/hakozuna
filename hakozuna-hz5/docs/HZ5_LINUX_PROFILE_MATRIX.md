@@ -57,6 +57,7 @@ Latest focused reads:
   private/raw-results/linux/hz5_large128_t4r50_perf_current_20260526_053300
   private/raw-results/linux/hz5_large128_rb_current_r3_20260526_053400
   private/raw-results/linux/hz5_large128_ownerfast_r3_20260526_053858
+  private/raw-results/linux/hz5_large128_direct_header_recheck_r3_20260526_055156
 ```
 
 ## Saved Profiles
@@ -127,6 +128,36 @@ Decision:
 ```text
 use as upper-bound evidence only.
 It is unsafe because it dereferences ptr-4096 before ownership lookup.
+```
+
+Recheck:
+
+```text
+root:
+  private/raw-results/linux/hz5_large128_direct_header_recheck_r3_20260526_055156
+
+t4/r50:
+  tcmalloc      30.69M / 48MB
+  source16      14.55M / 53MB
+  direct-header 14.44M / 63MB
+
+t8/r50:
+  tcmalloc      28.16M / 75MB
+  direct-header 20.25M / 86MB
+  source16      17.09M / 105MB
+
+t8/r90:
+  source16      24.41M /  86MB
+  direct-header 18.20M / 119MB
+  tcmalloc      16.11M / 142MB
+```
+
+Read:
+
+```text
+direct-header is not the t4/r50 fix.
+Free lookup can explain some rows, but the main residual still points to
+path length plus source/refill/page-fault pressure.
 ```
 
 ### Base Directmap

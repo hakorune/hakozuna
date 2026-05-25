@@ -76,6 +76,7 @@ private/raw-results/linux/hz5_large128_rb_current_r3_20260526_053400
 private/raw-results/linux/hz5_large128_batch32_smoke_20260526_053458
 private/raw-results/linux/hz5_large128_base_directmap4_r3_20260526_053547
 private/raw-results/linux/hz5_large128_ownerfast_r3_20260526_053858
+private/raw-results/linux/hz5_large128_direct_header_recheck_r3_20260526_055156
 ```
 
 ## Next Engineering Direction
@@ -87,8 +88,10 @@ private/raw-results/linux/hz5_large128_ownerfast_r3_20260526_053858
    pressure, not cache-miss rate alone.
 4. rb32/rb64, batch32, and ownerfast do not fix t4/r50; keep them
    diagnostic/no-go.
-5. Do not add another policy until a concrete hotspot explains the row split.
-6. Keep speed lanes free of HZ5_PRELOAD_STATS and hot-path counters.
+5. Direct-header recheck does not improve t4/r50; free lookup alone is not
+   the next primary fix.
+6. Do not add another policy until a concrete hotspot explains the row split.
+7. Keep speed lanes free of HZ5_PRELOAD_STATS and hot-path counters.
 ```
 
 ## Cleanup Status
