@@ -2132,14 +2132,15 @@ void* hz5_midpagefront_alloc(size_t size, size_t align) {
   return ptr;
 }
 
-Hz5MidPageFrontFreeResult hz5_midpagefront_free(void* ptr) {
+static Hz5MidPageFrontFreeResult hz5_midpagefront_free_page(
+    void* ptr,
+    Hz5MidPage* page) {
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_MAGAZINE && \
     BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_DEFERRED_FREE
   Hz5MidPageTls* tls = hz5_midpagefront_tls();
   hz5_midpagefront_m6_defer_free(tls, ptr);
   return HZ5_MIDPAGEFRONT_FREE_OK;
 #else
-  Hz5MidPage* page = hz5_midpagefront_page_for_ptr(ptr);
   if (!page) {
     return HZ5_MIDPAGEFRONT_FREE_NOT_OWNED;
   }
@@ -2224,6 +2225,22 @@ Hz5MidPageFrontFreeResult hz5_midpagefront_free(void* ptr) {
   }
   return HZ5_MIDPAGEFRONT_FREE_OK;
 #endif
+}
+
+Hz5MidPageFrontFreeResult hz5_midpagefront_free(void* ptr) {
+  return hz5_midpagefront_free_page(ptr, hz5_midpagefront_page_for_ptr(ptr));
+}
+
+Hz5MidPageFrontTag hz5_midpagefront_tag(void* ptr) {
+  Hz5MidPageFrontTag tag;
+  tag.page = hz5_midpagefront_page_for_ptr(ptr);
+  return tag;
+}
+
+Hz5MidPageFrontFreeResult hz5_midpagefront_free_tagged(
+    void* ptr,
+    Hz5MidPageFrontTag tag) {
+  return hz5_midpagefront_free_page(ptr, (Hz5MidPage*)tag.page);
 }
 
 int hz5_midpagefront_can_handle(size_t size, size_t align) {

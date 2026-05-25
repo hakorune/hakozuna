@@ -38,6 +38,10 @@
 #ifndef BENCHLAB_HZ5_PRELOAD_MIDPAGE_SUPERFAST
 #define BENCHLAB_HZ5_PRELOAD_MIDPAGE_SUPERFAST 0
 #endif
+
+#ifndef BENCHLAB_HZ5_PRELOAD_MIDPAGE_TAGGED_FREE
+#define BENCHLAB_HZ5_PRELOAD_MIDPAGE_TAGGED_FREE 0
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -495,12 +499,24 @@ void free(void* ptr) {
   }
 
 #if BENCHLAB_HZ5_PRELOAD_MIDPAGE_SUPERFAST
+#if BENCHLAB_HZ5_PRELOAD_MIDPAGE_TAGGED_FREE
+  Hz5MidPageFrontTag superfast_midpage_tag = hz5_midpagefront_tag(ptr);
+  if (superfast_midpage_tag.page) {
+    Hz5MidPageFrontFreeResult superfast_midpage_free =
+        hz5_midpagefront_free_tagged(ptr, superfast_midpage_tag);
+    if (superfast_midpage_free == HZ5_MIDPAGEFRONT_FREE_OK ||
+        superfast_midpage_free == HZ5_MIDPAGEFRONT_FREE_INVALID) {
+      return;
+    }
+  }
+#else
   Hz5MidPageFrontFreeResult superfast_midpage_free =
       hz5_midpagefront_free(ptr);
   if (superfast_midpage_free == HZ5_MIDPAGEFRONT_FREE_OK ||
       superfast_midpage_free == HZ5_MIDPAGEFRONT_FREE_INVALID) {
     return;
   }
+#endif
 #endif
 
 #if BENCHLAB_HZ5_PRELOAD_FREE_MID_FIRST

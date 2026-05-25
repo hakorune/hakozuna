@@ -19,11 +19,19 @@ typedef enum Hz5MidPageFrontAllocResult {
   HZ5_MIDPAGEFRONT_ALLOC_OOM = 2
 } Hz5MidPageFrontAllocResult;
 
+typedef struct Hz5MidPageFrontTag {
+  void* page;
+} Hz5MidPageFrontTag;
+
 void* hz5_midpagefront_alloc(size_t size, size_t align);
 Hz5MidPageFrontAllocResult hz5_midpagefront_try_alloc(size_t size,
                                                       size_t align,
                                                       void** ptr_out);
 Hz5MidPageFrontFreeResult hz5_midpagefront_free(void* ptr);
+Hz5MidPageFrontTag hz5_midpagefront_tag(void* ptr);
+Hz5MidPageFrontFreeResult hz5_midpagefront_free_tagged(
+    void* ptr,
+    Hz5MidPageFrontTag tag);
 int hz5_midpagefront_can_handle(size_t size, size_t align);
 int hz5_midpagefront_owns(void* ptr);
 size_t hz5_midpagefront_usable_size(void* ptr);

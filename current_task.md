@@ -2,21 +2,23 @@
 
 ## Active Goal
 
-HZ5 Linux general allocator work is now targeting `tcmalloc`, not `mimalloc`.
+HZ5 Linux general allocator work is still targeting `tcmalloc`, but the current
+MidPage bottleneck has moved from one safety check to class-mix cache topology.
 
 Immediate focus:
 
 ```text
-MidPageFront-M6 deferred-free ThreadCache
+MidPageFront-M4 overflow-array diagnostic
 ```
 
 Reason:
 
 ```text
-M5 hit-only, SuperFast, Direct MidPage API, and freeelide diagnostics did not
-close the tcmalloc local-r0 gap. Even direct-freeelide stops around 125M ops/s
-while tcmalloc is around 219M, with HZ5 still paying about 1.9x instructions
-and 2.1x branches. The next experiment must change the free-path topology.
+M6 deferred-free was no-go, and same-class MidPage is already tcmalloc-class.
+The large gap appears when random traffic crosses multiple MidPage classes.
+M4 stats show many magazine-full events followed by local_pop refills,
+especially in the 16K/32K classes. The next experiment should remove the
+payload linked-list overflow path from that class-mix case.
 ```
 
 Design doc:
@@ -28,16 +30,16 @@ hakozuna-hz5/docs/HZ5_MIDPAGEFRONT_M6_DEFERRED_FREE_DESIGN.md
 Implementation order:
 
 ```text
-1. Document M6 as a diagnostic/proof lane, not a reportable safety profile.
-2. Add a classless per-thread raw free quarantine to MidPageFront M4 magazine.
-3. Make free hit push only to raw quarantine; no page lookup, slot index, owner
-   check, or state transition on that hot path.
-4. Flush raw quarantine on alloc-bin miss or raw-cap full, then batch validate
-   ptr -> page -> slot and only promote validated slots to the magazine.
-5. First measure direct MidPage API r0. If mid_only_r0 < 145M, treat M6 as
-   no-go for the tcmalloc chase and stop local-r0 micro-tuning.
-6. If direct proof is >=165M, integrate a general/preload lane and then revisit
-   page-tag/RouteTag acceleration for batch validation.
+1. Record the tagged-free wrapper diagnostic as no-go. It wraps the same
+   page_for_ptr lookup and does not represent a real route-tag table.
+2. Add a MidPage M4 overflow array:
+   primary magazine full -> TLS secondary array {page, slot, ptr} instead of
+   writing node->page/node->next into user payload.
+3. Refill primary magazine from the overflow array before local_pop/new slab.
+4. Keep 64KiB slabs, class table, slot_state2, and M4 packet remote path
+   unchanged so the result isolates overflow topology.
+5. Measure direct range sweep and hakmem range sweep against the current
+   superfast-freeelide baseline and tcmalloc.
 ```
 
 M6 safety contract:
@@ -126,6 +128,45 @@ should stop chasing deferred free and inspect the whole MidPage object/class
 shape against tcmalloc/HZ4: class distribution, span packing, cache capacity,
 and whether the direct benchmark is stressing random class misses rather than
 same-class ThreadCache hits.
+```
+
+## Tagged-Free Wrapper Diagnostic
+
+Raw output:
+
+```text
+private/raw-results/linux/midpage_tagfree_hakmem_range_sweep_20260525_163526
+```
+
+Comparison, hakmem range sweep:
+
+```text
+alloc    case          median_ops_s
+base     mix_3_16k     133696274.15
+base     mix_3_32k     123484326.37
+base     mix_3_4k      161577252.51
+base     mix_3_8k      150580563.36
+base     r32768        172400801.12
+
+tagfree  mix_3_16k     131676614.74
+tagfree  mix_3_32k     119012877.44
+tagfree  mix_3_4k      160765468.70
+tagfree  mix_3_8k      141559622.52
+tagfree  r32768        169033999.57
+
+tcmalloc mix_3_16k     232260971.52
+tcmalloc mix_3_32k     220255281.38
+tcmalloc mix_3_4k      240582377.76
+tcmalloc mix_3_8k      236736282.59
+tcmalloc r32768        242252145.52
+```
+
+Decision:
+
+```text
+Tagged-free wrapper is no-go. It calls page_for_ptr before free_tagged and
+therefore does not remove the actual ownership lookup. A real RouteTag/page-tag
+table remains a separate future design, but this wrapper should not be promoted.
 ```
 
 ## Class-Mix Finding
