@@ -540,6 +540,9 @@ Options:
   --linux-largefront-drain-trust-remote-state
                      diagnostic only: replace owner-drained
                      REMOTE_PENDING->LOCAL_FREE CAS with load/store
+  --linux-largefront-transfer128
+                     diagnostic only: route 128K remote frees through a
+                     bounded class transfer cache before owner inbox/source
   --linux-largefront-policy-l1a
                      candidate only: choose LargeFront 128K source refill
                      batch 4/8/16 from slow-path mapped-span pressure

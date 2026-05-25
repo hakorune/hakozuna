@@ -100,6 +100,8 @@ private/raw-results/linux/hz5_large128_source16_draintrust_l0_compare_20260526_0
 private/raw-results/linux/hz5_large128_source16_draintrust_perf_20260526_062616
 private/raw-results/linux/hz5_large128_source16_draintrust_perf_t4_20260526_062634
 private/raw-results/linux/hz5_large128_source16_draintrust_median_r3_20260526_062644
+private/raw-results/linux/hz5_large128_transfer128_smoke_r3_20260526_063953
+private/raw-results/linux/hz5_large128_transfer128_flushmiss_r3_20260526_064056
 ```
 
 ## Next Engineering Direction
@@ -134,8 +136,12 @@ private/raw-results/linux/hz5_large128_source16_draintrust_median_r3_20260526_06
     at t8/r50 HZ5 and tcmalloc are close on aggregate instructions/op, while
     elapsed still differs. Treat parallel efficiency, owner-drain timing, and
     source/refill pressure as co-equal suspects.
-14. Do not add another policy until a concrete hotspot explains the row split.
-15. Keep speed lanes free of HZ5_PRELOAD_STATS and hot-path counters.
+14. Transfer128 class cache is a useful structural diagnostic: it improves
+    t4/r50 with very low RSS, showing class-level transfer can cut owner-inbox
+    cost. It is not broad yet; t8 rows regress, likely from global transfer
+    contention or poor high-thread consumption order.
+15. Do not add another policy until a concrete hotspot explains the row split.
+16. Keep speed lanes free of HZ5_PRELOAD_STATS and hot-path counters.
 ```
 
 ## Cleanup Status

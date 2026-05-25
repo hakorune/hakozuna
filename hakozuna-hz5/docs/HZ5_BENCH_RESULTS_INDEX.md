@@ -31,6 +31,8 @@ private/raw-results/linux/
 | `hz5_large128_source16_draintrust_perf_20260526_062616` | t8 perf stat for source16/draintrust/tcmalloc | t8 gap is not pure instruction count |
 | `hz5_large128_source16_draintrust_perf_t4_20260526_062634` | t4 perf stat for source16/draintrust/tcmalloc | t4 remains instruction/branch/refill sensitive |
 | `hz5_large128_source16_draintrust_median_r3_20260526_062644` | RUNS=3 source16/draintrust/tcmalloc recheck | draintrust wins t8/r90, loses t8/r50; no broad promotion |
+| `hz5_large128_transfer128_smoke_r3_20260526_063953` | first LargeFront transfer128 diagnostic | t4/r50 signal, t8 regression |
+| `hz5_large128_transfer128_flushmiss_r3_20260526_064056` | transfer128 with alloc-miss TLS flush | t4/r50 still improves, t8 still no-go |
 
 ## Current Large128 Baselines
 
@@ -93,6 +95,37 @@ Draintrust is not simply no-go anymore; it exposes a policy split.
 Trusted owner-drain state transition can win t8/r90 with much lower RSS, but
 the same choice hurts t8/r50 and still does not close t4 rows. Next work should
 explain the row split before adding another default policy.
+```
+
+Transfer128 diagnostic:
+
+```text
+private/raw-results/linux/hz5_large128_transfer128_flushmiss_r3_20260526_064056
+
+t4/r50:
+  tcmalloc                29.82M /  42MB
+  hz5-large128-transfer128 22.81M /  16MB
+  hz5-large128-draintrust  17.22M /  47MB
+  hz5-large128-source16    17.07M /  49MB
+
+t8/r50:
+  tcmalloc                21.48M / 106MB
+  hz5-large128-source16    17.82M /  92MB
+  hz5-large128-transfer128 13.23M /  69MB
+
+t8/r90:
+  hz5-large128-source16    16.75M / 108MB
+  tcmalloc                13.27M / 166MB
+  hz5-large128-transfer128 10.14M /  85MB
+```
+
+Decision:
+
+```text
+Class-level transfer is a real t4/r50 lever and preserves very low RSS, but the
+single global transfer cache is not a broad replacement. Keep transfer128 as an
+L9 diagnostic. If continued, the next variant needs less global contention or a
+thread/owner-aware transfer cache, not just another policy switch.
 ```
 
 ## Recently Closed Diagnostics
