@@ -1698,6 +1698,50 @@ internal alloc/free representation, not primarily in the preload dispatch
 layer.
 ```
 
+### `midpage_freeelide_smoke_20260525_153939`
+
+Raw output:
+
+```text
+private/raw-results/linux/midpage_freeelide_smoke_20260525_153939
+private/raw-results/linux/midpage_freeelide_perf_20260525_154001
+```
+
+Purpose:
+
+```text
+Unsafe upper-bound probe: add owner-local M4 free-side slot-state elision on top
+of SuperFast to test whether LIVE->CACHE/check cost explains the remaining
+mid_only_r0 gap.
+```
+
+Result:
+
+```text
+mid_only_r0:
+  superfast       118.38M
+  freeelide       121.59M
+  direct-freeelide 125.02M
+  tcmalloc        219.37M
+```
+
+Perf one-shot:
+
+```text
+freeelide:
+  124.49M ops/s, 493.8M instructions, 101.5M branches
+
+tcmalloc:
+  212.40M ops/s, 256.3M instructions, 47.3M branches
+```
+
+Decision:
+
+```text
+No-go as a tcmalloc-closing lever. Free-side slot-state elision is only a small
+increment; the remaining gap is MidPage topology/cache representation.
+```
+
 ## Older Results
 
 The full chronological result log remains in:

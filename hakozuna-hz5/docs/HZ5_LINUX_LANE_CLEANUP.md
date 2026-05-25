@@ -105,6 +105,11 @@ shorter than the historical benchmark logs.
   for safety, remote, RSS, or paper rows. First smoke is no-go for the 150M
   local-r0 upper-bound bar.
 
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-superfast-freeelide
+  Unsafe free-side state upper-bound diagnostic. Skips owner-local M4 free-side
+  slot-state transition/check on top of superfast. First smoke is no-go; it
+  does not close the tcmalloc local-r0 gap.
+
 --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-regcache
 --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-slotswitch
   M4/freefirst/tlslink combination diagnostics. Latest r0 smokes are no-go or

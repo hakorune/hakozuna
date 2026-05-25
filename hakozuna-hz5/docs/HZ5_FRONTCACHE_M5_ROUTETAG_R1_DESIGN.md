@@ -341,3 +341,35 @@ RouteTag may still simplify free classification for mixed/cross-front rows, but
 it is not the next answer for mid_only_r0. The next local-r0 design must change
 the MidPage internal cache/state representation.
 ```
+
+### SuperFast-FreeElide Result
+
+Raw output:
+
+```text
+private/raw-results/linux/midpage_freeelide_smoke_20260525_153939
+private/raw-results/linux/midpage_freeelide_perf_20260525_154001
+```
+
+RUNS=5, mid_only_r0 shape:
+
+```text
+superfast:
+  118.38M
+
+freeelide:
+  121.59M
+
+direct-freeelide:
+  125.02M
+
+tcmalloc:
+  219.37M
+```
+
+Decision:
+
+```text
+Free-side slot-state elision is not enough. The remaining gap is not a single
+state transition; it is the MidPage cache/lookup topology.
+```

@@ -79,6 +79,7 @@ LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET=0
 LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN=0
 LINUX_MIDPAGEFRONT_M4_UNSAFE_ALLOC_ELIDE=0
 LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG=0
+LINUX_MIDPAGEFRONT_M4_UNSAFE_FREE_ELIDE=0
 LINUX_MIDPAGEFRONT_M5_HIT_ONLY=0
 LINUX_MIDFRONT_M1=0
 LINUX_MIDFRONT_OWNER_FAST_STATE=0
@@ -258,6 +259,9 @@ Options:
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-superfast
                      unsafe upper-bound: M5 hit-only + pointer magazine,
                      alloc-state elision, and MidPage preload fast bypass
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-superfast-freeelide
+                     unsafe upper-bound: superfast plus owner-local MidPage
+                     free-side slot-state elision
   --linux-hz5-general-midpage-region-shadow-m4packet-routefree
                      diagnostic preset: m4packet plus MidPageFront then
                      LargeFront preload free dispatch
@@ -568,6 +572,11 @@ enable_midpage_m4packet_freefirst_tlslink_superfast_base() {
   PRELOAD_MIDPAGE_ALLOC_ABS_FIRST=1
   PRELOAD_MIDPAGE_SUPERFAST=1
   LINUX_MIDPAGEFRONT_M5_HIT_ONLY=1
+}
+
+enable_midpage_m4packet_freefirst_tlslink_superfast_freeelide_base() {
+  enable_midpage_m4packet_freefirst_tlslink_superfast_base
+  LINUX_MIDPAGEFRONT_M4_UNSAFE_FREE_ELIDE=1
 }
 
 enable_midpage_m4packet_routefree_base() {
@@ -1046,6 +1055,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-superfast)
       enable_midpage_m4packet_freefirst_tlslink_superfast_base
+      shift
+      ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-superfast-freeelide)
+      enable_midpage_m4packet_freefirst_tlslink_superfast_freeelide_base
       shift
       ;;
     --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-m5hit)
@@ -1889,6 +1902,9 @@ if [[ "$LINUX_MIDPAGEFRONT_M2" -eq 1 ]]; then
   if [[ "$LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG=1)
   fi
+  if [[ "$LINUX_MIDPAGEFRONT_M4_UNSAFE_FREE_ELIDE" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_FREE_ELIDE=1)
+  fi
   if [[ "$LINUX_MIDPAGEFRONT_M5_HIT_ONLY" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M5_HIT_ONLY=1)
   fi
@@ -2059,6 +2075,7 @@ fi
   echo "linux_midpagefront_m4_cross_drain=${LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN}"
   echo "linux_midpagefront_m4_unsafe_alloc_elide=${LINUX_MIDPAGEFRONT_M4_UNSAFE_ALLOC_ELIDE}"
   echo "linux_midpagefront_m4_unsafe_ptr_mag=${LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG}"
+  echo "linux_midpagefront_m4_unsafe_free_elide=${LINUX_MIDPAGEFRONT_M4_UNSAFE_FREE_ELIDE}"
   echo "linux_midpagefront_m5_hit_only=${LINUX_MIDPAGEFRONT_M5_HIT_ONLY}"
   echo "linux_midfront_m1=${LINUX_MIDFRONT_M1}"
   echo "linux_midfront_owner_fast_state=${LINUX_MIDFRONT_OWNER_FAST_STATE}"

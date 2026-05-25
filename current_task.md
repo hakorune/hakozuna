@@ -293,6 +293,98 @@ per-thread pointer-array/bin cache with batched refill/drain, and move slot
 state work out of the per-object hit path as much as the safety model allows.
 ```
 
+## SuperFast-FreeElide Probe
+
+Question:
+
+```text
+How much of the remaining MidPage local-r0 gap is owner-local free-side
+slot-state transition/check cost?
+```
+
+Lane:
+
+```text
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-superfast-freeelide
+```
+
+Composition:
+
+```text
+superfast
++ BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_FREE_ELIDE=1
+```
+
+Safety status:
+
+```text
+unsafe diagnostic only
+not safety-preserving
+not remote/RSS/paper evidence
+```
+
+Interpretation:
+
+```text
+freeelide >> superfast:
+  free-side state check is still a large part of the gap.
+
+freeelide ~= superfast:
+  page lookup / slot index / cache topology / benchmark shape dominate.
+```
+
+## SuperFast-FreeElide Result
+
+Raw output:
+
+```text
+private/raw-results/linux/midpage_freeelide_smoke_20260525_153939
+private/raw-results/linux/midpage_freeelide_perf_20260525_154001
+```
+
+RUNS=5, threads=8, mid_only_r0 shape:
+
+```text
+superfast:
+  118.38M
+
+freeelide:
+  121.59M
+
+direct-freeelide:
+  125.02M
+
+tcmalloc:
+  219.37M
+```
+
+Perf one-shot:
+
+```text
+freeelide:
+  124.49M ops/s, 493.8M instructions, 101.5M branches
+
+tcmalloc:
+  212.40M ops/s, 256.3M instructions, 47.3M branches
+```
+
+Decision:
+
+```text
+freeelide ~= superfast. Owner-local free-side slot-state check is not the main
+remaining gap. Even after skipping it, HZ5 still has about 1.9x tcmalloc's
+instruction count and 2.1x branch count.
+```
+
+Next read:
+
+```text
+The tcmalloc gap is now narrowed to MidPage topology: page lookup, slot index,
+class/bin routing, and per-object cache representation. The next experiment
+should not be another state-elision toggle; it needs a different thread-cache
+shape.
+```
+
 ## Branch
 
 ```text

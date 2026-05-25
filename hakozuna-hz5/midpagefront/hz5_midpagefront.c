@@ -83,6 +83,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_FREE_ELIDE
+#define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_FREE_ELIDE 0
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M5_HIT_ONLY
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M5_HIT_ONLY 0
 #endif
@@ -1854,6 +1858,9 @@ Hz5MidPageFrontFreeResult hz5_midpagefront_free(void* ptr) {
   Hz5MidPageTls* tls = hz5_midpagefront_tls();
   if (hz5_owner_equal(page->owner, tls->owner)) {
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_MAGAZINE
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_FREE_ELIDE
+    hz5_midpagefront_m4_cache_slot(tls, page->class_index, page, slot);
+#else
     if (!hz5_midpagefront_m4_transition_owner_local(
             page, slot, HZ5_MIDPAGE_SLOT_LIVE, HZ5_MIDPAGE_SLOT_CACHE)) {
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_ALLOC_ELIDE
@@ -1867,6 +1874,7 @@ Hz5MidPageFrontFreeResult hz5_midpagefront_free(void* ptr) {
 #endif
     }
     hz5_midpagefront_m4_cache_slot(tls, page->class_index, page, slot);
+#endif
 #else
     if (!hz5_midpagefront_mark_free_local(page, slot)) {
       return HZ5_MIDPAGEFRONT_FREE_INVALID;
