@@ -34,6 +34,7 @@ private/raw-results/linux/
 | `hz5_large128_transfer128_smoke_r3_20260526_063953` | first LargeFront transfer128 diagnostic | t4/r50 signal, t8 regression |
 | `hz5_large128_transfer128_flushmiss_r3_20260526_064056` | transfer128 with alloc-miss TLS flush | t4/r50 still improves, t8 still no-go |
 | `hz5_large128_transfer128_tlsfirst_smoke_r1` | transfer128 with TLS-local reuse before global cache | no-go; producer-local retention hurts t4/t8 throughput and RSS |
+| `hz5_large128_transfer128_ownershard_r3` | transfer128 routed by old owner-slot shard | no-go; owner shard loses t4/r50 and r90, only partial high-thread signal |
 
 ## Current Large128 Baselines
 
@@ -158,6 +159,39 @@ consumer side from seeing them and increases retention. Keep the lane as
 diagnostic evidence; do not promote.
 ```
 
+Transfer128 owner-shard follow-up:
+
+```text
+private/raw-results/linux/hz5_large128_transfer128_ownershard_r3
+
+t4/r50:
+  tcmalloc                          26.17M /  56MB
+  hz5-large128-transfer128          22.54M /  15MB
+  hz5-large128-source16             16.54M /  51MB
+  hz5-large128-transfer128-ownershard 10.55M / 65MB
+
+t8/r50:
+  tcmalloc                          23.75M /  95MB
+  hz5-large128-source16             20.89M /  80MB
+  hz5-large128-transfer128          12.93M /  73MB
+  hz5-large128-transfer128-ownershard 10.66M / 118MB
+
+t8/r90:
+  tcmalloc                          12.62M / 196MB
+  hz5-large128-transfer128           8.76M / 130MB
+  hz5-large128-source16              8.06M / 245MB
+  hz5-large128-transfer128-ownershard  6.42M / 227MB
+```
+
+Decision:
+
+```text
+Owner-shard transfer is no-go. Routing by old owner slot preserves neither the
+t4/r50 transfer128 win nor source16's r90 behavior. The remaining transfer
+candidate would need a consumer-visible queue with lower fixed cost than owner
+inbox and less retention than TLS/owner shards.
+```
+
 ## Recently Closed Diagnostics
 
 | Diagnostic | Root | Decision |
@@ -171,6 +205,7 @@ diagnostic evidence; do not promote.
 | `large128-draintrust` | `hz5_large128_draintrust_r3_20260526_061614` | diagnostic only; drain CAS is not broad fix |
 | `draintrust+budget1` | `hz5_large128_draintrust_budget1_manual_r3_20260526_062121` | no named lane; t4/r50-only local optimum |
 | `large128-transfer128-tlsfirst` | `hz5_large128_transfer128_tlsfirst_smoke_r1` | no-go; TLS-local transfer starves consumers and worsens RSS |
+| `large128-transfer128-ownershard` | `hz5_large128_transfer128_ownershard_r3` | no-go; owner-slot shard loses transfer128/source16 strengths |
 
 ## Update Discipline
 

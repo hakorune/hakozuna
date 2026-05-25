@@ -49,6 +49,15 @@ hz5_try_apply_profile_alias() {
       LINUX_LARGEFRONT_TRANSFER128_CAP=128
       LINUX_LARGEFRONT_TRANSFER128_CHUNK_CAP=32
       ;;
+    --linux-hz5-profile-large128-transfer128-ownershard)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 16
+      LINUX_LARGEFRONT_TRANSFER128=1
+      LINUX_LARGEFRONT_TRANSFER128_OWNER_SHARD=1
+      LINUX_LARGEFRONT_TRANSFER128_CAP=128
+      LINUX_LARGEFRONT_TRANSFER128_CHUNK_CAP=16
+      LINUX_LARGEFRONT_TRANSFER128_SHARD_COUNT=64
+      LINUX_LARGEFRONT_TRANSFER128_SHARD_CAP=8
+      ;;
     --linux-hz5-profile-pagerun64-large128-b16-takeonly)
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 16
       LINUX_LARGEFRONT_DRAIN_TAKE_ONLY=1

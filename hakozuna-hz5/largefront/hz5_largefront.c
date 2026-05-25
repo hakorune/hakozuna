@@ -85,12 +85,24 @@
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_TRANSFER128_TLS_FIRST 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_TRANSFER128_OWNER_SHARD
+#define BENCHLAB_HZ5_LINUX_LARGEFRONT_TRANSFER128_OWNER_SHARD 0
+#endif
+
 #ifndef HZ5_LARGEFRONT_TRANSFER128_CAP
 #define HZ5_LARGEFRONT_TRANSFER128_CAP 128u
 #endif
 
 #ifndef HZ5_LARGEFRONT_TRANSFER128_CHUNK_CAP
 #define HZ5_LARGEFRONT_TRANSFER128_CHUNK_CAP 16u
+#endif
+
+#ifndef HZ5_LARGEFRONT_TRANSFER128_SHARD_COUNT
+#define HZ5_LARGEFRONT_TRANSFER128_SHARD_COUNT 64u
+#endif
+
+#ifndef HZ5_LARGEFRONT_TRANSFER128_SHARD_CAP
+#define HZ5_LARGEFRONT_TRANSFER128_SHARD_CAP 8u
 #endif
 
 #ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_FIRST_128K
@@ -369,6 +381,14 @@ static Hz5LargeSpan* g_hz5_largefront_transfer128_head;
 static uint32_t g_hz5_largefront_transfer128_count;
 static pthread_mutex_t g_hz5_largefront_transfer128_lock =
     PTHREAD_MUTEX_INITIALIZER;
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_TRANSFER128_OWNER_SHARD
+static Hz5LargeSpan*
+    g_hz5_largefront_transfer128_shard_head[HZ5_LARGEFRONT_TRANSFER128_SHARD_COUNT];
+static uint32_t
+    g_hz5_largefront_transfer128_shard_count[HZ5_LARGEFRONT_TRANSFER128_SHARD_COUNT];
+static _Atomic unsigned char
+    g_hz5_largefront_transfer128_shard_lock[HZ5_LARGEFRONT_TRANSFER128_SHARD_COUNT];
+#endif
 #endif
 static Hz5LargeRawNode* g_hz5_largefront_source_free[HZ5_LARGEFRONT_CLASS_COUNT];
 static pthread_mutex_t g_hz5_largefront_source_lock =
@@ -1459,6 +1479,12 @@ void* hz5_largefront_alloc(size_t size, size_t align) {
   }
 #else
   hz5_largefront_transfer128_tls_flush(tls);
+#endif
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_TRANSFER128_OWNER_SHARD
+  span = hz5_largefront_transfer128_owner_shard_pop(tls, ci);
+  if (span) {
+    return span->base;
+  }
 #endif
   span = hz5_largefront_transfer128_pop_for_owner(tls, ci);
   if (span) {

@@ -60,11 +60,17 @@ transfer128-tlsfirst:
   no-go diagnostic
   TLS-held TRANSFER_FREE spans improved neither t4 nor t8, and RSS worsened
 
+transfer128-ownershard:
+  no-go diagnostic
+  routes TRANSFER_FREE spans by old owner slot so consumers can see incoming
+  remote frees without a single global transfer lock
+
 known no-go diagnostics:
   rb32/rb64 for t4/r50
   batch32
   ownerfast
   transfer128-tlsfirst
+  transfer128-ownershard
   drain-directmap
   base-directmap4
 ```

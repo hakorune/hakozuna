@@ -53,6 +53,7 @@ Use these names in new benchmark command lines and reports. The historical
 | `large128-draintrust` | `--linux-hz5-profile-large128-draintrust` | `hz5-large128-draintrust` | source16 + trusted owner-drain REMOTE_PENDING->LOCAL_FREE transition | diagnostic only |
 | `large128-transfer128` | `--linux-hz5-profile-large128-transfer128` | `hz5-large128-transfer128` | source16 + bounded 128K class transfer cache | diagnostic only |
 | `large128-transfer128-tlsfirst` | `--linux-hz5-profile-large128-transfer128-tlsfirst` | `hz5-large128-transfer128-tlsfirst` | transfer128 with TLS-local reuse before global cache | diagnostic only |
+| `large128-transfer128-ownershard` | `--linux-hz5-profile-large128-transfer128-ownershard` | `hz5-large128-transfer128-ownershard` | transfer128 routed through owner-slot shards before global fallback | diagnostic only |
 | `large128-r50-hold` | `--linux-hz5-profile-large128-r50-hold` | `hz5-large128-r50-hold` | source16 + drain budget 1 + RemoteHold cap4; r50 candidate/diagnostic | diagnostic only |
 | `large128-r50-hold8` | `--linux-hz5-profile-large128-r50-hold8` | `hz5-large128-r50-hold8` | source16 + drain budget 1 + RemoteHold cap8; wider r50 diagnostic | diagnostic only |
 | `large128-global-remote` | `--linux-hz5-profile-large128-global-remote` | `hz5-large128-global-remote` | 128K remote frees go to global recycle instead of owner inbox | diagnostic only |
@@ -83,6 +84,7 @@ drain implementation diagnostics:
 transfer diagnostics:
   large128-transfer128
   large128-transfer128-tlsfirst
+  large128-transfer128-ownershard
 
 policy experiments:
   large128-policy-*

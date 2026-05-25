@@ -27,6 +27,8 @@ LargeFront transfer128 has a t4/r50 signal but regresses t8 through the single
 global transfer cache.
 LargeFront transfer128-tlsfirst is no-go: producer-local transfer retention
 starves consumer-side reuse and worsens RSS.
+LargeFront transfer128-ownershard is no-go: owner-slot shards do not preserve
+transfer128's t4/r50 win or source16's r90 behavior.
 ```
 
 Primary lane matrix:
@@ -106,6 +108,10 @@ bd1ef22 Add MidPageFront class-dispersion diagnostics
 
 --linux-hz5-profile-large128-transfer128-tlsfirst
   L10 no-go diagnostic: transfer128 with TLS-local reuse before global cache.
+
+--linux-hz5-profile-large128-transfer128-ownershard
+  X1 no-go diagnostic: transfer128 routed through owner-slot shards before
+  global fallback.
 ```
 
 C7 promotion rule:
