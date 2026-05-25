@@ -613,6 +613,84 @@ Do not promote scavenging unless it is moved to a colder phase boundary than
 owner-local retained free-list insertion.
 ```
 
+### L3 phase observation lane
+
+Build:
+
+```text
+--linux-largefront-observe
+```
+
+Combined preset:
+
+```text
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64-observe
+```
+
+Runtime:
+
+```text
+HZ5_LARGEFRONT_OBSERVE=1
+```
+
+Purpose:
+
+```text
+Observe LargeFront slow-path shape without mixing counters into saved speed
+lanes.
+```
+
+Counters:
+
+```text
+alloc calls
+local free-list hit
+remote take-first hit
+remote drain to local free-list
+global hit
+new span
+local / remote / global free
+source refill count
+source refill batch histogram
+owner-local free-list high water
+```
+
+Use:
+
+```text
+Compare cross128 and large128 r90. If their slow-path counter shape differs
+reliably before source refill, adaptive source batching can be redesigned with
+a better phase signal. If not, keep the fixed source-batch split.
+```
+
+First observation:
+
+```text
+no-go for adaptive source-batch redesign
+```
+
+Reason:
+
+```text
+The current LargeFront counters mostly show traffic volume, not a stable phase
+shape. The allocator can observe that the 128K class is busy, but it does not
+yet see a reliable slow-path ratio that distinguishes:
+  cross128 wants source_batch16
+  large128 wants source_batch4
+```
+
+Decision:
+
+```text
+Preserve fixed lanes:
+  cross-size: PageRun64 + takefirst + source_batch16
+  large-only: PageRun64 + takefirst + source_batch4
+
+Do not add another adaptive128 policy until there is a colder phase signal,
+such as an explicit workload/checkpoint signal or a source-level indicator that
+does not collapse to mapped bytes or raw traffic volume.
+```
+
 Expected acceptance:
 
 ```text

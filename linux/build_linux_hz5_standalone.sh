@@ -135,6 +135,7 @@ LINUX_LARGEFRONT_REGION_MAP=0
 LINUX_LARGEFRONT_LOWER_CLASSES=0
 LINUX_LARGEFRONT_ADAPTIVE128=0
 LINUX_LARGEFRONT_PAYLOAD_SCAVENGE=0
+LINUX_LARGEFRONT_OBSERVE=0
 LINUX_LARGEFRONT_REMOTE_BATCH_CAP=16
 LINUX_LARGEFRONT_SOURCE_BATCH_COUNT=16
 LINUX_LARGEFRONT_SCAVENGE_LOCAL_CAP=4
@@ -353,6 +354,9 @@ Options:
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64-scavenge
                      remote-heavy diagnostic: PageRun64 plus LargeFront
                      takefirst and retained 128K payload scavenging
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64-observe
+                     observation preset: PageRun64 plus LargeFront
+                     takefirst and LargeFront phase counters; not for medians
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-drainhit
                      remote-heavy diagnostic: band8/32 checkpoint lane with
                      periodic M4 remote packet drain restored on M5 alloc hits
@@ -566,6 +570,9 @@ Options:
   --linux-largefront-payload-scavenge
                      diagnostic only: madvise retained 128K payloads after
                      the owner-local free-list cap is exceeded
+  --linux-largefront-observe
+                     observation only: compile LargeFront phase counters;
+                     print with HZ5_LARGEFRONT_OBSERVE=1
   --linux-largefront-scavenge-local-cap N
                      retained 128K owner-local spans kept before payload
                      scavenging (default: 4)
@@ -846,6 +853,11 @@ enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pa
 enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_scavenge_base() {
   enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_takefirst_base "$1"
   LINUX_LARGEFRONT_PAYLOAD_SCAVENGE=1
+}
+
+enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_observe_base() {
+  enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_takefirst_base "$1"
+  LINUX_LARGEFRONT_OBSERVE=1
 }
 
 enable_midpage_m4packet_freefirst_tlslink_tagfree_base() {
@@ -1428,6 +1440,10 @@ while [[ $# -gt 0 ]]; do
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_scavenge_base 2
       shift
       ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64-observe)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_observe_base 2
+      shift
+      ;;
     --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-drainhit)
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_drainhit_base 2
       shift
@@ -1972,6 +1988,17 @@ while [[ $# -gt 0 ]]; do
       LINUX_LARGEFRONT_OWNER_INBOX=1
       LINUX_LARGEFRONT_REGION_MAP=1
       LINUX_LARGEFRONT_PAYLOAD_SCAVENGE=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
+    --linux-largefront-observe)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDFRONT_M1=1
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      LINUX_LARGEFRONT_REGION_MAP=1
+      LINUX_LARGEFRONT_OBSERVE=1
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
@@ -2630,6 +2657,11 @@ if [[ "$LINUX_LARGEFRONT_L1" -eq 1 ]]; then
       -DHZ5_LARGEFRONT_SCAVENGE_LOCAL_CAP="${LINUX_LARGEFRONT_SCAVENGE_LOCAL_CAP}u"
     )
   fi
+  if [[ "$LINUX_LARGEFRONT_OBSERVE" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX=1)
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_MAP=1)
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OBSERVE=1)
+  fi
   if [[ "$LINUX_LARGEFRONT_LOWER_CLASSES" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_LOWER_CLASSES=1)
   fi
@@ -2759,6 +2791,7 @@ fi
   echo "linux_largefront_lower_classes=${LINUX_LARGEFRONT_LOWER_CLASSES}"
   echo "linux_largefront_adaptive128=${LINUX_LARGEFRONT_ADAPTIVE128}"
   echo "linux_largefront_payload_scavenge=${LINUX_LARGEFRONT_PAYLOAD_SCAVENGE}"
+  echo "linux_largefront_observe=${LINUX_LARGEFRONT_OBSERVE}"
   echo "linux_largefront_remote_batch_cap=${LINUX_LARGEFRONT_REMOTE_BATCH_CAP}"
   echo "linux_largefront_source_batch_count=${LINUX_LARGEFRONT_SOURCE_BATCH_COUNT}"
   echo "linux_largefront_scavenge_local_cap=${LINUX_LARGEFRONT_SCAVENGE_LOCAL_CAP}"

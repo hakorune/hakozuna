@@ -182,6 +182,96 @@ RSS in some rows, but the throughput collapse is too large to promote.
 Keep fixed source-batch split.
 ```
 
+### `hz5-linux-pagerun64-observe`
+
+Build:
+
+```text
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64-observe
+--linux-midpagefront-empty-retain-cap 4096
+```
+
+Runtime:
+
+```text
+HZ5_LARGEFRONT_OBSERVE=1
+```
+
+Intent:
+
+```text
+LargeFront-L3 phase-signal observation
+not for speed medians
+```
+
+Counters:
+
+```text
+per LargeFront class:
+  alloc calls
+  local free-list hits
+  remote take-first returns
+  remote drains to local free list
+  global hits
+  new spans
+  local/remote/global frees
+  source refill count and batch histogram
+  owner-local free-list high water
+```
+
+Decision target:
+
+```text
+If cross128 and large128 differ cleanly in slow-path counters, adaptive source
+batching may be redesigned. If not, keep the fixed split.
+```
+
+First observation:
+
+```text
+RUNS=1 observation smoke, threads=8, ws=100, r90, iters=120000:
+
+cross128:
+  observe_b16  23.87M /  75MB
+  observe_b4   22.56M /  70MB
+
+large128:
+  observe_b16  15.54M / 134MB
+  observe_b4   17.22M / 101MB
+```
+
+Class 0, 128K counters:
+
+```text
+cross128 b16:
+  alloc_calls=239601 local_pop_hit=219683 remote_take_first=3461
+  remote_to_local=196025 new_span=16247 source_refill=1016
+  local_free_highwater=290
+
+cross128 b4:
+  alloc_calls=239601 local_pop_hit=220943 remote_take_first=3711
+  remote_to_local=197628 new_span=14875 source_refill=3719
+  local_free_highwater=398
+
+large128 b16:
+  alloc_calls=480202 local_pop_hit=444415 remote_take_first=2253
+  remote_to_local=397697 new_span=32856 source_refill=2054
+  local_free_highwater=842
+
+large128 b4:
+  alloc_calls=480202 local_pop_hit=451984 remote_take_first=3851
+  remote_to_local=405014 new_span=24322 source_refill=6081
+  local_free_highwater=907
+```
+
+Decision:
+
+```text
+The counter shape mostly scales with 128K traffic volume. It does not expose a
+clean slow-path phase signal that would safely choose batch16 for cross128 and
+batch4 for large128. Keep fixed split.
+```
+
 ### LargeFront remote-batch
 
 Build flag:
@@ -252,7 +342,9 @@ Recommended order:
 1. Preserve fixed profile split.
 2. Stop tuning fixed source-batch constants.
 3. Do not promote retained-payload scavenging in its current form.
-4. Keep speed lanes free of HZ5_PRELOAD_STATS and diagnostic atomics.
+4. Do not redesign adaptive source batching without a colder/clearer phase
+   signal.
+5. Keep speed lanes free of HZ5_PRELOAD_STATS and diagnostic atomics.
 ```
 
 ## Detailed Docs

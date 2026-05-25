@@ -13,6 +13,9 @@ LargeFront:
 
 Adaptive128:
   first mapped-bytes-only source-batch policy is no-go.
+
+LargeFront observe:
+  phase counters did not show a clean cross128 vs large128 signal.
 ```
 
 Primary registry:
@@ -42,6 +45,8 @@ hz5-linux-pagerun64-large-only:
 ```text
 Keep fixed split.
 Do not promote mapped-bytes adaptive128.
+Do not promote retained-payload scavenging.
+Do not build another adaptive source-batch policy without a stronger signal.
 Do not keep tuning fixed source-batch constants.
 ```
 
@@ -60,8 +65,7 @@ The first adaptive policy used mapped bytes only and failed both rows.
 If continuing LargeFront-L3:
 
 ```text
-validate retained-payload scavenging
-then decide whether LargeFront-L3 continues or fixed split is final
+only continue with a colder phase signal than current LargeFront counters
 ```
 
 Do not:
@@ -77,29 +81,28 @@ change MidPage PageRun64 without a clear regression reason
 ## Active Implementation
 
 ```text
-LargeFront retained-payload scavenging diagnostic:
+LargeFront phase observation diagnostic:
   flag:
-    --linux-largefront-payload-scavenge
+    --linux-largefront-observe
 
   combined preset:
-    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64-scavenge
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64-observe
 
   behavior:
-    only 128K LargeFront spans
-    owner-local retained free list keeps a small cap
-    cap overflow madvise(DONTNEED)s payload only
-    descriptor/prefix page remains mapped
-    reuse clears the scavenged flag
+    compile-time counters only in the observation lane
+    print with HZ5_LARGEFRONT_OBSERVE=1
+    not for performance medians
 
   reason:
-    adaptive128 source-batch policy was too blunt
-    scavenging tests whether RSS can be controlled without changing source
-    batch selection or adding hot-path counters
+    adaptive128 and retained-payload scavenging were no-go
+    next question is whether cross128 vs large128 has a reliable slow-path
+    phase signal before source refill
 
   first result:
-    no-go
-    cap4 and cap64 both cut RSS but regress r90 throughput heavily
-    madvise on retained spans is too close to the remote/free hot path
+    no clear signal
+    cross128 and large128 differ mostly by volume, not by a clean reusable
+    slow-path ratio
+    fixed split remains the best current policy
 ```
 
 ## Reading Order
