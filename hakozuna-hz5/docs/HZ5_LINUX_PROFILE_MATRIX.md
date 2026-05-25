@@ -659,6 +659,79 @@ Decision:
   list traversal. Keep source16 as the r90 lane.
 ```
 
+### `hz5-linux-large128-r50-hold8`
+
+Role:
+
+```text
+LargeFront 128K wider RemoteHold diagnostic
+```
+
+Build:
+
+```text
+--linux-hz5-profile-large128-r50-hold8
+```
+
+Runner:
+
+```text
+hz5-large128-r50-hold8
+```
+
+Status:
+
+```text
+diagnostic only
+source batch16 + drain budget 1 + RemoteHold cap8
+```
+
+Question:
+
+```text
+does a wider owner-local REMOTE_PENDING hold improve the r50 rows without
+destroying source16's r90 behavior?
+```
+
+RUNS=3:
+
+```text
+private/raw-results/linux/hz5_large128_hold8_r3_20260526_050802
+
+t4/r50:
+  hold8    15.74M /  55MB
+  hold4    15.11M /  54MB
+  source16 15.41M /  56MB
+  tcmalloc 24.47M /  54MB
+
+t4/r90:
+  hold8    10.28M / 104MB
+  hold4     7.96M / 137MB
+  source16 12.38M /  89MB
+  tcmalloc 25.29M /  63MB
+
+t8/r50:
+  hold8    29.23M /  54MB
+  hold4    27.03M /  60MB
+  source16 19.92M /  89MB
+  tcmalloc 25.66M /  91MB
+
+t8/r90:
+  hold8    15.75M / 126MB
+  hold4    14.66M / 138MB
+  source16 36.14M /  56MB
+  tcmalloc 14.76M / 165MB
+```
+
+Decision:
+
+```text
+keep as r50 diagnostic, not a default.
+cap8 improves the hold family and wins t8/r50 in this run, but it still loses
+source16 badly on r90. The data supports profile split rather than one broad
+RemoteHold policy.
+```
+
 Policy-L0 owner-drain detail after adding `owner_hold`, `owner_orphan`, and
 `owner_state_fail` counters:
 

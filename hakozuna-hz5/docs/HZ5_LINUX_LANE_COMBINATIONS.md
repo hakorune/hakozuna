@@ -50,6 +50,7 @@ Use these names in new benchmark command lines and reports. The historical
 | `large128-source16` | `--linux-hz5-profile-large128-source16` | `hz5-large128-source16` | source-batch16 throughput diagnostic | diagnostic only |
 | `large128-r50-drain` | `--linux-hz5-profile-large128-r50-drain` | `hz5-large128-r50-drain` | source16 + drain budget 1; r50 drain diagnostic | diagnostic only |
 | `large128-r50-hold` | `--linux-hz5-profile-large128-r50-hold` | `hz5-large128-r50-hold` | source16 + drain budget 1 + RemoteHold cap4; r50 candidate/diagnostic | diagnostic only |
+| `large128-r50-hold8` | `--linux-hz5-profile-large128-r50-hold8` | `hz5-large128-r50-hold8` | source16 + drain budget 1 + RemoteHold cap8; wider r50 diagnostic | diagnostic only |
 | `large128-global-remote` | `--linux-hz5-profile-large128-global-remote` | `hz5-large128-global-remote` | 128K remote frees go to global recycle instead of owner inbox | diagnostic only |
 | `large128-remote-first` | `--linux-hz5-profile-large128-remote-first` | `hz5-large128-remote-first` | source16 + owner inbox drain before local free-list reuse | diagnostic only |
 | `large128-remote-first-gated` | `--linux-hz5-profile-large128-remote-first-gated` | `hz5-large128-remote-first-gated` | source16 + owner inbox drain before local reuse only if inbox nonempty | diagnostic only |
@@ -81,6 +82,7 @@ policy experiments:
 | `--linux-hz5-profile-pagerun64-large128-batch8` | same as `large128` but source batch8 | large128 r50/r90 source-batch diagnostic | diagnostic only |
 | `--linux-hz5-profile-pagerun64-large128-batch16` | same as `large128` but source batch16 | large128 r50/r90 source-batch diagnostic | diagnostic only |
 | `--linux-hz5-profile-pagerun64-large128-b16-drain1` | same as `large128-batch16` but alloc-miss drain local budget 1 | large128 r50 drain-budget diagnostic | diagnostic only |
+| `--linux-hz5-profile-pagerun64-large128-b16-drain1-hold8` | same as `large128-batch16` but drain budget 1 + RemoteHold cap8 | large128 r50 hold-width diagnostic | diagnostic only |
 | `--linux-hz5-profile-pagerun64-large128-b16-rb32` | same as `large128-batch16` but LargeFront remote batch enabled, cap 32 | large128 remote publish diagnostic | diagnostic only |
 | `--linux-hz5-profile-pagerun64-large128-b16-rb64` | same as `large128-batch16` but LargeFront remote batch enabled, cap 64 | large128 remote publish diagnostic | diagnostic only |
 | `--linux-hz5-profile-pagerun64-large128-policy-l0` | saved large128 profile + slow-path LargeFront Policy-L0 counters | control-plane feature observation | observation only |
@@ -107,11 +109,11 @@ large128 r50:
 ```
 
 Use `hz5-large128-rss`, `hz5-large128-source16`,
-`hz5-large128-r50-drain`, and `hz5-large128-r50-hold` in new
-`linux/run_hz5_hakmem_compare.sh` invocations. Keep the older
-`hz5-pagerun64-large128-*` names only when reproducing old result directories.
-Do not include diagnostics in broad default matrices unless they replace the
-saved batch4 profile.
+`hz5-large128-r50-drain`, `hz5-large128-r50-hold`, and
+`hz5-large128-r50-hold8` in new `linux/run_hz5_hakmem_compare.sh`
+invocations. Keep the older `hz5-pagerun64-large128-*` names only when
+reproducing old result directories. Do not include diagnostics in broad default
+matrices unless they replace the saved batch4 profile.
 
 L4 first read:
 

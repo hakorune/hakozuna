@@ -97,6 +97,28 @@ LargeFront chunk inbox diagnostic:
     chunk metadata/pool and drain overhead are heavier than source16 list
     inbox; RSS also regresses.
 
+LargeFront RemoteHold cap8 diagnostic:
+  implemented and measured.
+  human alias:
+    large128-r50-hold8
+  purpose:
+    test whether a wider owner-local REMOTE_PENDING hold improves r50 without
+    further structural changes.
+  result:
+    private/raw-results/linux/hz5_large128_hold8_r3_20260526_050802
+    t8/r50 wins:
+      hold8 29.23M / 54MB
+      tcmalloc 25.66M / 91MB
+    t4/r50 still behind:
+      hold8 15.74M
+      tcmalloc 24.47M
+    r90 remains source16 territory:
+      t8/r90 source16 36.14M versus hold8 15.75M
+  decision:
+    keep as r50 diagnostic only.
+    RemoteHold cap tuning is not a broad solution; profile split remains
+    cleaner than promoting hold as default.
+
 Lane naming cleanup:
   committed L7 as a diagnostic checkpoint.
   current cleanup adds human-facing aliases while preserving historical names:
@@ -104,6 +126,7 @@ Lane naming cleanup:
     large128-source16
     large128-r50-drain
     large128-r50-hold
+    large128-r50-hold8
     large128-policy-l7
     large128-policy-l8-shadow
   use the human aliases in new commands and reports.

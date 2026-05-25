@@ -210,6 +210,12 @@ Options:
   --linux-hz5-profile-large128-r50-hold
                      human alias for b16-drain1-hold4: r50 RemoteHold
                      diagnostic
+  --linux-hz5-profile-pagerun64-large128-b16-drain1-hold8
+                     diagnostic alias: same as b16-drain1 with
+                     remote hold cap 8
+  --linux-hz5-profile-large128-r50-hold8
+                     human alias for b16-drain1-hold8: wider r50
+                     RemoteHold diagnostic
   --linux-hz5-profile-large128-global-remote
                      human alias: 128K remote frees go to global recycle
                      instead of owner inbox
@@ -1077,6 +1083,13 @@ while [[ $# -gt 0 ]]; do
       LINUX_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET=1
       LINUX_LARGEFRONT_REMOTE_HOLD=1
       LINUX_LARGEFRONT_REMOTE_HOLD_CAP=4
+      shift
+      ;;
+    --linux-hz5-profile-pagerun64-large128-b16-drain1-hold8|--linux-hz5-profile-large128-r50-hold8)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 16
+      LINUX_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET=1
+      LINUX_LARGEFRONT_REMOTE_HOLD=1
+      LINUX_LARGEFRONT_REMOTE_HOLD_CAP=8
       shift
       ;;
     --linux-hz5-profile-large128-global-remote)
