@@ -19,7 +19,9 @@ comparability.
 | `largefront/hz5_largefront_transfer128.inc` | isolated LargeFront L9 transfer128 diagnostic helpers | split out from `hz5_largefront.c`; keep include-local until the diagnostic stabilizes |
 | `largefront/hz5_largefront_policy.inc` | LargeFront L0/L1 observe counters and policy selectors | split out from `hz5_largefront.c`; include-local to avoid link/build churn |
 | `midpagefront/hz5_midpagefront.c` | active PageRun64/MidPage history and saved profile implementation | defer behavior split; candidate for later archival of dead diagnostics |
+| `midpagefront/hz5_midpagefront_stats.inc` | MidPage nodeless/M4 cold stats helpers | split out from `hz5_midpagefront.c`; keep include-local until the diagnostics stabilize |
 | `lowpage/hz5_lowpage64.c` | exact-route P25/P43/P45 historical hot path | do not touch during Linux general malloc work |
+| `lowpage/hz5_lowpage64_p43g.inc` | LowPage P43g prepare/wrapper note helpers | split out from `hz5_lowpage64.c`; include-local to keep the hot file slimmer |
 | `policy/hz5_policy.c` | exact-route wrapper/policy control | do not touch unless exact-route work resumes |
 
 ## Safe Near-Term Cleanup
@@ -82,4 +84,5 @@ helpers may be split into include-local files when that reduces churn in the
 main implementation without changing build/link behavior. The current
 LargeFront splits are `hz5_largefront_transfer128.inc` and
 `hz5_largefront_policy.inc`. MidPage now also keeps cold stats in
-`hz5_midpagefront_stats.inc`.
+`hz5_midpagefront_stats.inc`, and LowPage now keeps P43g helpers in
+`hz5_lowpage64_p43g.inc`.
