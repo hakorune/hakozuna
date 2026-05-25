@@ -149,6 +149,14 @@ Usage:
 Options:
   --arch <arch>      override detected arch (default: auto)
   --out-dir DIR      output directory (default: hakozuna-hz5/out/linux/<arch>)
+  --linux-hz5-profile-pagerun64-main
+                     saved profile alias: PageRun64 main/mid/cross64 candidate
+  --linux-hz5-profile-pagerun64-cross128
+                     saved profile alias: PageRun64 + LargeFront takefirst
+                     + source batch16 for cross128-style rows
+  --linux-hz5-profile-pagerun64-large128
+                     saved profile alias: PageRun64 + LargeFront takefirst
+                     + source batch4 for large128-style rows
   --linux-local2p    enable Linux Local2P exact 64K/a8192 TLS span candidate
   --linux-local2p-tls-packed
                      pack Local2P TLS state into one TLS object
@@ -838,6 +846,7 @@ enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pa
 enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_base() {
   enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun_base "$1"
   LINUX_MIDPAGEFRONT_PAGERUN_64K=1
+  LINUX_MIDPAGEFRONT_EMPTY_RETAIN_CAP=4096
 }
 
 enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_takefirst_base() {
@@ -882,6 +891,20 @@ enable_midpage_m4packet_crossdrain_base() {
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --linux-hz5-profile-pagerun64-main)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_base 2
+      shift
+      ;;
+    --linux-hz5-profile-pagerun64-cross128)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_takefirst_base 2
+      LINUX_LARGEFRONT_SOURCE_BATCH_COUNT=16
+      shift
+      ;;
+    --linux-hz5-profile-pagerun64-large128)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_takefirst_base 2
+      LINUX_LARGEFRONT_SOURCE_BATCH_COUNT=4
+      shift
+      ;;
     --arch)
       require_value "$@"
       ARCH="$2"

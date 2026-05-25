@@ -34,6 +34,21 @@ front-end claims.
 Use this as the broad ordinary malloc baseline when a MidPage experiment is not
 being tested.
 
+## Saved PageRun64 Profile Aliases
+
+These aliases are the current HZ5 Linux profile family. Prefer them in new
+scripts and reports instead of copying the long historical flag chains.
+
+| Alias | Components | Primary rows | Status |
+| --- | --- | --- | --- |
+| `--linux-hz5-profile-pagerun64-main` | PageRun64 + M6 remote + empty retain cap 4096 | main / mid_only / cross64 | default candidate |
+| `--linux-hz5-profile-pagerun64-cross128` | PageRun64 + LargeFront takefirst + source batch16 + empty retain cap 4096 | cross128 remote-heavy | saved fixed profile |
+| `--linux-hz5-profile-pagerun64-large128` | PageRun64 + LargeFront takefirst + source batch4 + empty retain cap 4096 | large128 remote-heavy | saved fixed profile |
+
+Use the fixed cross128 and large128 aliases as separate profiles. The source
+batch optimum reverses between those workloads, so a single fixed value is not
+the current design claim.
+
 ## MidPageFront Combination Chain
 
 MidPageFront is the current tcmalloc chase track for ordinary malloc
@@ -128,20 +143,23 @@ regcache / slotswitch + default:
 
 ## Next Matrix
 
-Use this small set before designing another front-end change:
+Use this small set before designing another allocator change:
 
 ```text
 lanes:
-  allocfirst
-  m4packet
-  m4packet-freefirst
-  m4packet-freefirst-tlslink
+  --linux-hz5-profile-pagerun64-main
+  --linux-hz5-profile-pagerun64-cross128
+  --linux-hz5-profile-pagerun64-large128
+  HZ4
   tcmalloc
+  mimalloc
+  system
 
 workloads:
   main r0/r50/r90
   mid_only r0/r50/r90
   cross128 r0/r50/r90
+  large128 r0/r50/r90
 
 policy:
   RUNS=5 minimum
@@ -149,5 +167,6 @@ policy:
   separate attribution smoke with HZ5_PRELOAD_STATS=1
 ```
 
-Add `routefree` when the matrix specifically includes MidPage-heavy r90 or
-free-route ordering analysis.
+Only add diagnostic HZ5 lanes when the question is specific. `adaptive128`,
+payload scavenging, observe, no-go M4/M5/M6 variants, and stats lanes must stay
+out of reportable speed medians.

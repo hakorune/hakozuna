@@ -28,14 +28,20 @@ hakozuna-hz5/docs/HZ5_LINUX_PROFILE_MATRIX.md
 
 ```text
 hz5-linux-pagerun64-main:
+  build alias:
+    --linux-hz5-profile-pagerun64-main
   PageRun64 + empty retain cap 4096
   main / mid_only / cross64 candidate
 
 hz5-linux-pagerun64-cross-size:
+  build alias:
+    --linux-hz5-profile-pagerun64-cross128
   PageRun64 + LargeFront takefirst + source batch16
   cross128 remote-heavy diagnostic
 
 hz5-linux-pagerun64-large-only:
+  build alias:
+    --linux-hz5-profile-pagerun64-large128
   PageRun64 + LargeFront takefirst + source batch4
   large128 remote-heavy diagnostic
 ```
@@ -62,10 +68,19 @@ The first adaptive policy used mapped bytes only and failed both rows.
 
 ## Next Work
 
-If continuing LargeFront-L3:
+First:
+
+```text
+verify the three saved aliases build to the expected config
+run the broad matrix with HZ4 / tcmalloc / mimalloc / system
+keep speed lanes free of stats and observation counters
+```
+
+If continuing LargeFront-L3 after the broad matrix:
 
 ```text
 only continue with a colder phase signal than current LargeFront counters
+or a profile selector outside the allocator hot path
 ```
 
 Do not:

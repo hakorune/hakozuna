@@ -21,6 +21,10 @@ Adaptive128:
 
 ## Saved Profiles
 
+These aliases are the canonical build handles for the current reportable HZ5
+Linux profile family. The expanded historical flags are kept only for
+reproducibility in older notes.
+
 ### `hz5-linux-pagerun64-main`
 
 Role:
@@ -32,8 +36,7 @@ general MidPage throughput/RSS profile
 Build:
 
 ```text
---linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64
---linux-midpagefront-empty-retain-cap 4096
+--linux-hz5-profile-pagerun64-main
 ```
 
 Status:
@@ -55,9 +58,7 @@ prioritizes cross128 mixed rows
 Build:
 
 ```text
---linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64-takefirst
---linux-midpagefront-empty-retain-cap 4096
---linux-largefront-source-batch-count 16
+--linux-hz5-profile-pagerun64-cross128
 ```
 
 Status:
@@ -79,9 +80,7 @@ prioritizes pure 65537..131072 traffic
 Build:
 
 ```text
---linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64-takefirst
---linux-midpagefront-empty-retain-cap 4096
---linux-largefront-source-batch-count 4
+--linux-hz5-profile-pagerun64-large128
 ```
 
 Status:
