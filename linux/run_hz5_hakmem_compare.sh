@@ -36,6 +36,7 @@ HZ5_PAGERUN64_LARGE_B8_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profil
 HZ5_PAGERUN64_LARGE_B16_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-pagerun64-large128-batch16"
 HZ5_PAGERUN64_LARGE_OWNERFAST_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-large128-ownerfast"
 HZ5_PAGERUN64_LARGE_B16_DRAIN1_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-pagerun64-large128-b16-drain1"
+HZ5_PAGERUN64_LARGE_DRAINBULK_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-large128-drainbulk"
 HZ5_PAGERUN64_LARGE_B16_TAKEONLY_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-pagerun64-large128-b16-takeonly"
 HZ5_PAGERUN64_LARGE_B16_POPBUDGET1_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-pagerun64-large128-b16-popbudget1"
 HZ5_PAGERUN64_LARGE_B16_REMOTEHOLD4_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-pagerun64-large128-b16-remotehold4"
@@ -82,6 +83,7 @@ Options:
                        hz5-large128-source16,
                        hz5-large128-ownerfast,
                        hz5-large128-r50-drain,
+                       hz5-large128-drainbulk,
                        hz5-large128-r50-hold,
                        hz5-large128-r50-hold8,
                        hz5-large128-global-remote,
@@ -204,6 +206,11 @@ build_hz5() {
       --linux-hz5-profile-pagerun64-large128-b16-drain1 \
       --out-dir "${HZ5_PAGERUN64_LARGE_B16_DRAIN1_OUT}" >/dev/null
   fi
+  if [[ ",${ALLOCATORS}," == *",hz5-large128-drainbulk,"* ]]; then
+    "${ROOT_DIR}/linux/build_linux_hz5_standalone.sh" \
+      --linux-hz5-profile-large128-drainbulk \
+      --out-dir "${HZ5_PAGERUN64_LARGE_DRAINBULK_OUT}" >/dev/null
+  fi
   if [[ ",${ALLOCATORS}," == *",hz5-pagerun64-large128-b16-takeonly,"* ]]; then
     "${ROOT_DIR}/linux/build_linux_hz5_standalone.sh" \
       --linux-hz5-profile-pagerun64-large128-b16-takeonly \
@@ -300,6 +307,7 @@ HZ5_PAGERUN64_LARGE_B8_SO="${HZ5_PAGERUN64_LARGE_B8_OUT}/libhakozuna_hz5_preload
 HZ5_PAGERUN64_LARGE_B16_SO="${HZ5_PAGERUN64_LARGE_B16_OUT}/libhakozuna_hz5_preload_full.so"
 HZ5_PAGERUN64_LARGE_OWNERFAST_SO="${HZ5_PAGERUN64_LARGE_OWNERFAST_OUT}/libhakozuna_hz5_preload_full.so"
 HZ5_PAGERUN64_LARGE_B16_DRAIN1_SO="${HZ5_PAGERUN64_LARGE_B16_DRAIN1_OUT}/libhakozuna_hz5_preload_full.so"
+HZ5_PAGERUN64_LARGE_DRAINBULK_SO="${HZ5_PAGERUN64_LARGE_DRAINBULK_OUT}/libhakozuna_hz5_preload_full.so"
 HZ5_PAGERUN64_LARGE_B16_TAKEONLY_SO="${HZ5_PAGERUN64_LARGE_B16_TAKEONLY_OUT}/libhakozuna_hz5_preload_full.so"
 HZ5_PAGERUN64_LARGE_B16_POPBUDGET1_SO="${HZ5_PAGERUN64_LARGE_B16_POPBUDGET1_OUT}/libhakozuna_hz5_preload_full.so"
 HZ5_PAGERUN64_LARGE_B16_REMOTEHOLD4_SO="${HZ5_PAGERUN64_LARGE_B16_REMOTEHOLD4_OUT}/libhakozuna_hz5_preload_full.so"
@@ -335,6 +343,7 @@ ALLOC_SO[hz5-large128-source16]="${HZ5_PAGERUN64_LARGE_B16_SO}"
 ALLOC_SO[hz5-large128-ownerfast]="${HZ5_PAGERUN64_LARGE_OWNERFAST_SO}"
 ALLOC_SO[hz5-pagerun64-large128-b16-drain1]="${HZ5_PAGERUN64_LARGE_B16_DRAIN1_SO}"
 ALLOC_SO[hz5-large128-r50-drain]="${HZ5_PAGERUN64_LARGE_B16_DRAIN1_SO}"
+ALLOC_SO[hz5-large128-drainbulk]="${HZ5_PAGERUN64_LARGE_DRAINBULK_SO}"
 ALLOC_SO[hz5-pagerun64-large128-b16-takeonly]="${HZ5_PAGERUN64_LARGE_B16_TAKEONLY_SO}"
 ALLOC_SO[hz5-pagerun64-large128-b16-popbudget1]="${HZ5_PAGERUN64_LARGE_B16_POPBUDGET1_SO}"
 ALLOC_SO[hz5-pagerun64-large128-b16-remotehold4]="${HZ5_PAGERUN64_LARGE_B16_REMOTEHOLD4_SO}"

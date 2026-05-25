@@ -61,6 +61,12 @@ large128-r50-drain-directmap:
 large128-ownerfast:
   enables LargeFront same-owner load/store state transition.
   current RUNS=3 no-go: t4/t8 r50 and t8/r90 regress versus source16.
+
+large128-drainbulk:
+  source16 plus bulk local-list commit during owner remote drain.
+  diagnostic only: t4 rows show signal, but t8 rows regress versus source16.
+  useful evidence that local_push overhead is only a slice of the remaining
+  drain/refill gap.
 ```
 
 Recent result roots:
@@ -78,6 +84,9 @@ private/raw-results/linux/hz5_large128_base_directmap4_r3_20260526_053547
 private/raw-results/linux/hz5_large128_ownerfast_r3_20260526_053858
 private/raw-results/linux/hz5_large128_direct_header_recheck_r3_20260526_055156
 private/raw-results/linux/hz5_large128_source_populate_r3_20260526_055548
+private/raw-results/linux/hz5_large128_l0_compare_20260526_060606
+private/raw-results/linux/hz5_large128_drainbulk_r3_20260526_061000
+private/raw-results/linux/hz5_large128_drainbulk_tail_r3_20260526_061107
 ```
 
 ## Next Engineering Direction
@@ -93,8 +102,13 @@ private/raw-results/linux/hz5_large128_source_populate_r3_20260526_055548
    the next primary fix.
 6. MAP_POPULATE source refill is a hard no-go; page-fault prepopulation
    explodes RSS and throughput collapses.
-7. Do not add another policy until a concrete hotspot explains the row split.
-8. Keep speed lanes free of HZ5_PRELOAD_STATS and hot-path counters.
+7. L0 confirms r50-drain republish churn is huge; it is not a clean t4/r50
+   fix. Source16 has no republish but has many REMOTE_PENDING->LOCAL_FREE
+   conversions.
+8. Drainbulk reduces part of that conversion overhead and can improve t4, but
+   t8 regressions mean local-push batching is not the broad fix.
+9. Do not add another policy until a concrete hotspot explains the row split.
+10. Keep speed lanes free of HZ5_PRELOAD_STATS and hot-path counters.
 ```
 
 ## Cleanup Status

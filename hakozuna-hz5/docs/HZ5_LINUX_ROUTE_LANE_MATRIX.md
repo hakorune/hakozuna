@@ -44,6 +44,7 @@ profile, run root, and comparison allocator.
 | Large128 low-RSS remote-heavy | `large128-rss` | saved fixed profile |
 | Large128 source-batch16 throughput | `large128-source16` | comparison diagnostic |
 | Large128 r50 drain family | `large128-r50-*` | diagnostic only |
+| Large128 drain implementation | `large128-drainbulk` | diagnostic only |
 | Large128 policy family | `large128-policy-*` | observation/diagnostic only |
 
 ## Active Route Families
@@ -66,6 +67,7 @@ Prefer human-facing aliases in new commands:
 hz5-large128-rss
 hz5-large128-source16
 hz5-large128-r50-drain
+hz5-large128-drainbulk
 hz5-large128-r50-hold
 hz5-large128-r50-hold8
 hz5-large128-policy-l8-shadow
@@ -86,6 +88,9 @@ large128-source16:
 large128-r50-*:
   no broad promotion until it beats source16 or large128-rss on the focused
   large128 matrix without losing r90/RSS
+
+large128-drainbulk:
+  diagnostic only; t4 signal, t8 regression
 
 large128-policy-*:
   observation or diagnostic only; no hot-path counters in speed lanes

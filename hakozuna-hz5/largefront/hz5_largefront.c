@@ -61,6 +61,10 @@
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_POP_BUDGET 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_BULK_LOCAL
+#define BENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_BULK_LOCAL 0
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_HOLD
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_HOLD 0
 #endif
@@ -1255,6 +1259,40 @@ static void hz5_largefront_local_push(Hz5LargeTls* tls,
 #endif
 }
 
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_BULK_LOCAL
+static void hz5_largefront_local_push_list(Hz5LargeTls* tls,
+                                           uint32_t class_index,
+                                           Hz5LargeSpan* head,
+                                           Hz5LargeSpan* tail,
+                                           uint32_t count) {
+  if (!head || count == 0u) {
+    return;
+  }
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_PAYLOAD_SCAVENGE
+  Hz5LargeSpan* span = head;
+  while (span) {
+    Hz5LargeSpan* next = span->next;
+    hz5_largefront_local_push(tls, class_index, span);
+    span = next;
+  }
+#else
+  if (!tail) {
+    tail = head;
+    while (tail->next) {
+      tail = tail->next;
+    }
+  }
+  tail->next = tls->free_head[class_index];
+  tls->free_head[class_index] = head;
+  tls->free_count[class_index] += count;
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_OBSERVE
+  hz5_largefront_obs_max(&g_hz5_largefront_obs_local_free_highwater[class_index],
+                         tls->free_count[class_index]);
+#endif
+#endif
+}
+#endif
+
 static Hz5LargeSpan* hz5_largefront_local_pop(Hz5LargeTls* tls,
                                               uint32_t class_index) {
   Hz5LargeSpan* span = tls->free_head[class_index];
@@ -1818,11 +1856,41 @@ static Hz5LargeSpan* hz5_largefront_drain_remote_class_budget(
   uint32_t policy_orphaned = 0;
   uint32_t policy_state_fail = 0;
 #endif
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_BULK_LOCAL
+  Hz5LargeSpan* bulk_local_head = NULL;
+  Hz5LargeSpan* bulk_local_tail = NULL;
+  uint32_t bulk_local_count = 0;
+#define HZ5_LARGEFRONT_FLUSH_BULK_LOCAL()                                      \
+  do {                                                                         \
+    hz5_largefront_local_push_list(tls,                                        \
+                                   class_index,                                \
+                                   bulk_local_head,                            \
+                                   bulk_local_tail,                            \
+                                   bulk_local_count);                          \
+    bulk_local_head = NULL;                                                    \
+    bulk_local_tail = NULL;                                                    \
+    bulk_local_count = 0;                                                      \
+  } while (0)
+#define HZ5_LARGEFRONT_STAGE_LOCAL_SPAN(span_)                                 \
+  do {                                                                         \
+    (span_)->next = bulk_local_head;                                           \
+    if (!bulk_local_head) {                                                    \
+      bulk_local_tail = (span_);                                               \
+    }                                                                          \
+    bulk_local_head = (span_);                                                 \
+    ++bulk_local_count;                                                        \
+  } while (0)
+#else
+#define HZ5_LARGEFRONT_FLUSH_BULK_LOCAL() ((void)0)
+#define HZ5_LARGEFRONT_STAGE_LOCAL_SPAN(span_)                                 \
+  hz5_largefront_local_push(tls, class_index, (span_))
+#endif
   while (head) {
     Hz5LargeSpan* span = (Hz5LargeSpan*)head;
     head = span->next;
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_TAKE_ONLY
     if (taken) {
+      HZ5_LARGEFRONT_FLUSH_BULK_LOCAL();
       Hz5LargeSpan* tail = span;
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L0
       uint32_t republished = 1;
@@ -1856,6 +1924,7 @@ static Hz5LargeSpan* hz5_largefront_drain_remote_class_budget(
     }
 #endif
     if (budget != 0u && drained >= budget) {
+      HZ5_LARGEFRONT_FLUSH_BULK_LOCAL();
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L0
       uint32_t republished = 0;
 #endif
@@ -1881,7 +1950,7 @@ static Hz5LargeSpan* hz5_largefront_drain_remote_class_budget(
                            remainder,
                            (unsigned char)HZ5_LARGESPAN_REMOTE_PENDING,
                            (unsigned char)HZ5_LARGESPAN_LOCAL_FREE)) {
-              hz5_largefront_local_push(tls, class_index, remainder);
+              HZ5_LARGEFRONT_STAGE_LOCAL_SPAN(remainder);
               ++drained;
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L0
               ++policy_to_local;
@@ -1894,6 +1963,7 @@ static Hz5LargeSpan* hz5_largefront_drain_remote_class_budget(
             }
             remainder = next;
           }
+          HZ5_LARGEFRONT_FLUSH_BULK_LOCAL();
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L0
           hz5_largefront_policy_note_owner_drain(class_index,
                                                  drained + policy_take_first +
@@ -2016,7 +2086,7 @@ static Hz5LargeSpan* hz5_largefront_drain_remote_class_budget(
     if (hz5_largefront_state_cas(span,
                                  (unsigned char)HZ5_LARGESPAN_REMOTE_PENDING,
                                  (unsigned char)HZ5_LARGESPAN_LOCAL_FREE)) {
-      hz5_largefront_local_push(tls, class_index, span);
+      HZ5_LARGEFRONT_STAGE_LOCAL_SPAN(span);
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_OBSERVE
       hz5_largefront_counter_inc(
           &g_hz5_largefront_obs_remote_to_local[class_index]);
@@ -2031,6 +2101,7 @@ static Hz5LargeSpan* hz5_largefront_drain_remote_class_budget(
     }
     ++drained;
   }
+  HZ5_LARGEFRONT_FLUSH_BULK_LOCAL();
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L0
   hz5_largefront_policy_note_owner_drain(class_index,
                                          drained + policy_take_first +
@@ -2046,6 +2117,8 @@ static Hz5LargeSpan* hz5_largefront_drain_remote_class_budget(
   if (drained_out) {
     *drained_out = drained;
   }
+#undef HZ5_LARGEFRONT_STAGE_LOCAL_SPAN
+#undef HZ5_LARGEFRONT_FLUSH_BULK_LOCAL
   return taken;
 }
 

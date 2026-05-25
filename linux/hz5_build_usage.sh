@@ -35,6 +35,9 @@ Options:
                      alloc-miss remote drain local budget 1
   --linux-hz5-profile-large128-r50-drain
                      human alias for b16-drain1: r50 drain-budget diagnostic
+  --linux-hz5-profile-large128-drainbulk
+                     diagnostic alias: source16 plus bulk local-list commit
+                     during owner remote drain
   --linux-hz5-profile-pagerun64-large128-b16-takeonly
                      diagnostic alias: same as large128-batch16 with
                      take-first-only remote drain
@@ -528,6 +531,9 @@ Options:
   --linux-largefront-policy-l0
                      observation only: compile LargeFront slow-path policy
                      counters; print with HZ5_LARGEFRONT_POLICY_L0=1
+  --linux-largefront-drain-bulk-local
+                     diagnostic only: bulk-commit owner-drained remote spans
+                     into the local free list
   --linux-largefront-policy-l1a
                      candidate only: choose LargeFront 128K source refill
                      batch 4/8/16 from slow-path mapped-span pressure

@@ -28,6 +28,10 @@ hz5_try_apply_profile_alias() {
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 16
       LINUX_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET=1
       ;;
+    --linux-hz5-profile-large128-drainbulk)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 16
+      LINUX_LARGEFRONT_DRAIN_BULK_LOCAL=1
+      ;;
     --linux-hz5-profile-pagerun64-large128-b16-takeonly)
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 16
       LINUX_LARGEFRONT_DRAIN_TAKE_ONLY=1

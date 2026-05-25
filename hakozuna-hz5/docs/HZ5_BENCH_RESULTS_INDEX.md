@@ -23,6 +23,8 @@ private/raw-results/linux/
 | `hz5_large128_ownerfast_r3_20260526_053858` | ownerfast diagnostic | no-go |
 | `hz5_large128_direct_header_recheck_r3_20260526_055156` | unsafe adjacent-header lookup recheck | free lookup alone is not t4/r50 fix |
 | `hz5_large128_source_populate_r3_20260526_055548` | MAP_POPULATE/source pre-fault diagnostic | hard no-go |
+| `hz5_large128_l0_compare_20260526_060606` | source16 versus r50-drain L0 observation | r50-drain republish churn is huge |
+| `hz5_large128_drainbulk_tail_r3_20260526_061107` | bulk local-list owner-drain diagnostic | t4 signal, t8 regression; no promote |
 
 ## Current Large128 Baselines
 
@@ -61,6 +63,7 @@ or prove that page-fault/source pressure is the remaining bound.
 | `ownerfast` | `hz5_large128_ownerfast_r3_20260526_053858` | no-go versus source16 |
 | `base-directmap` | `hz5_large128_base_directmap_r3_20260526_051731` | helps some rows, loses broad t8 |
 | `r50-drain-directmap` | `hz5_large128_drain_directmap_r3_20260526_053047` | no-go composition |
+| `large128-drainbulk` | `hz5_large128_drainbulk_tail_r3_20260526_061107` | diagnostic only; local-push batching is not broad fix |
 
 ## Update Discipline
 
