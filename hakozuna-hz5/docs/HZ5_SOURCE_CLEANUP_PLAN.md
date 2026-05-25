@@ -24,6 +24,7 @@ comparability.
 | `lowpage/hz5_lowpage64_p43g.inc` | LowPage P43g prepare/wrapper note helpers | split out from `hz5_lowpage64.c`; include-local to keep the hot file slimmer |
 | `policy/hz5_policy.c` | exact-route wrapper/policy control | Local2P helpers moved to `hz5_policy_local2p.inc`; keep the main policy file slimmer |
 | `policy/hz5_policy_local2p.inc` | Local2P helper cluster | split out from `hz5_policy.c`; include-local to keep policy control readable |
+| `linux/build_linux_hz5_standalone.sh` | HZ5 Linux build/profile router | helperized repeated flag groups; keep alias names human-readable |
 
 ## Safe Near-Term Cleanup
 
@@ -87,4 +88,5 @@ LargeFront splits are `hz5_largefront_transfer128.inc` and
 `hz5_largefront_policy.inc`. MidPage now also keeps cold stats in
 `hz5_midpagefront_stats.inc`, and LowPage now keeps P43g helpers in
 `hz5_lowpage64_p43g.inc`. Policy now keeps Local2P helpers in
-`hz5_policy_local2p.inc`.
+`hz5_policy_local2p.inc`, and the Linux build script now centralizes the
+repeated profile flag groups so the alias table stays readable.
