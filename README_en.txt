@@ -6,7 +6,11 @@ research sidecar:
 
 - hakozuna/     : hz3 (optimized for local-heavy workloads)
 - hakozuna-mt/  : hz4 (optimized for remote-heavy, high-thread workloads)
-- hakozuna-hz5/: HZ5 research sidecar for exact over-aligned profiles
+- hakozuna-hz5/: HZ5 Linux research sidecar for low-RSS, fail-closed,
+                 descriptor-owned profile families
+
+HZ6 is a future-work name only. It would be a transfer-first successor line if
+we decide to pursue broader tcmalloc-like class-transfer throughput.
 
 Platform support
 ----------------
@@ -15,6 +19,7 @@ Platform support
 - Windows-native public entrypoints: win/
 - Windows build and benchmark guide: docs/WINDOWS_BUILD.md
 - HZ5 Linux exact-profile runner: linux/run_linux_hz5_local2p_focus.sh
+- HZ5 Linux general profile runner: linux/run_hz5_hakmem_compare.sh
 
 Recommended profile selection
 -----------------------------
@@ -22,7 +27,7 @@ Recommended profile selection
 - If unsure, start with hz3
 - Use hz3 for Redis-like and local-heavy patterns
 - Use hz4 for cross-thread free heavy (remote-heavy) patterns
-- Treat HZ5 as an appendix/research profile, not as the default allocator
+- Treat HZ5 as a research profile family, not as the default allocator
 
 Latest benchmark and paper
 --------------------------
@@ -37,17 +42,39 @@ Latest benchmark and paper
 - Latest archived Zenodo record (v3.3): https://zenodo.org/records/19139939
 - DOI (v3.3): https://doi.org/10.5281/zenodo.19139939
 
-HZ5 Linux appendix profiles
----------------------------
+HZ5 Linux profile family
+------------------------
 
-Current HZ5 Linux results are scoped to exact 64K allocations with 8192-byte
-alignment. The reporting rows are:
+HZ5 now has two paper-facing scopes.
+
+1. Exact Local2P appendix rows for explicit 64K/a8192 route specialization:
 
 - hz5-local2p-linkflags: low-final-RSS local/mixed speed profile
 - hz5-local2p-rssretain2048tls: retained-cache RSS-throughput profile
 - hz5-local2p-remotebatch: producer/consumer remote-free profile
 
-These rows should not be merged into a single general-purpose claim.
+2. Linux full-preload general-profile rows for low-RSS, fail-closed,
+descriptor-owned allocation:
+
+- hz5-pagerun64-main / hz5-pagerun64-cross128: MidPage PageRun64 profiles
+- hz5-large128-rss: low-RSS LargeFront profile
+- hz5-large128-source16: broad LargeFront 128K throughput lane
+- hz5-large128-transfer128: transfer-cache diagnostic lane
+
+HZ5 should be described as a profile family. It is strong on several
+mid/main/cross remote-pressure rows with much lower RSS than tcmalloc, but it is
+not a single universal replacement for hz3/hz4 or tcmalloc.
+
+HZ6 future branch
+-----------------
+
+HZ6 is a possible future transfer-first design:
+
+- class transfer caches are first-class boxes, not diagnostics layered on owner
+  inboxes
+- RSS governance is part of the control plane
+- any learning/policy layer must stay off the malloc/free hot path
+- strict-safety and speed-profile contracts may need to be separated explicitly
 
 Minimal usage examples
 ----------------------

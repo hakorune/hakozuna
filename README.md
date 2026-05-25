@@ -14,7 +14,10 @@ Part of the [hakorune](https://github.com/hakorune) project.
 
 - **hz3 (hakozuna)**: Local-heavy performance + minimal RSS footprint. Default for most workloads.
 - **hz4 (hakozuna-mt)**: Message-passing, remote-heavy scaling (best at high thread counts).
-- **HZ5 (hakozuna-hz5)**: Research sidecar for exact over-aligned profiles. It is not the default general allocator.
+- **HZ5 (hakozuna-hz5)**: Linux research sidecar for low-RSS, fail-closed,
+  descriptor-owned profile families. It is not the default general allocator.
+- **HZ6 (future work)**: possible transfer-first successor line; not an
+  evaluated allocator in this repository yet.
 - Profile selection guide: [PROFILE_GUIDE.md](PROFILE_GUIDE.md)
 
 ## Platform Support
@@ -42,7 +45,9 @@ Notes:
 - On Ubuntu arm64, use `./linux/build_linux_arm64_release_lane.sh` for the explicit lane wrapper.
 - For benchmark compare runs, `./linux/run_linux_bench_compare.sh` prepares local `mimalloc` / `tcmalloc` caches and uses the CRT smoke binary.
 - Record the CPU architecture in Linux benchmark summaries to keep lanes separate.
-- HZ5 Linux exact-profile experiments live under `hakozuna-hz5/` and are run through `linux/run_linux_hz5_local2p_focus.sh`.
+- HZ5 Linux experiments live under `hakozuna-hz5/`. Exact Local2P rows use
+  `linux/run_linux_hz5_local2p_focus.sh`; general full-preload profile sweeps
+  use `linux/run_hz5_hakmem_compare.sh`.
 
 ### macOS
 
@@ -124,25 +129,42 @@ Lane legend:
 - Remote-heavy / high-thread profile: `hz4`.
 - `hz4` redis preload crash (`rc=139`) was fixed via `malloc_usable_size` interpose; redis-like rerun is now stable (`n_ok=10`).
 
-## HZ5 Linux Appendix Snapshot (2026-05-24, Ubuntu x86_64)
+## HZ5 Linux General-Profile Snapshot (2026-05-26, Ubuntu x86_64)
 
-HZ5 is currently reported as a small set of exact-overaligned appendix profiles for
-`64K` allocations with `8192`-byte alignment. These rows are intentionally
-profile-specific; they are not a claim that HZ5 is a single general-purpose
-allocator profile.
+HZ5 has moved beyond the earlier exact `64K/a8192` appendix into a Linux
+full-preload profile family. The current claim is deliberately profile-scoped:
+HZ5 is a low-RSS, fail-closed, descriptor-owned allocator family with strong
+mid/main/cross remote-pressure rows, not a universal replacement for `hz3`,
+`hz4`, or tcmalloc.
 
-| HZ5 profile | Claim scope | Representative median |
-|-------------|-------------|-----------------------|
-| `hz5-local2p-linkflags` | low-final-RSS local/mixed exact speed | local `256.3M ops/s`; mixed final `264.8M ops/s`, final RSS ~1.4MB |
-| `hz5-local2p-rssretain2048tls` | retained-cache RSS-throughput profile | RSS plateau `325.3K ops/s`, near HZ4 in the same run |
-| `hz5-local2p-remotebatch` | producer/consumer remote-free profile | remote-free `15.36M pairs/s` in the reporting-row run |
+| HZ5 row | Claim scope |
+|---------|-------------|
+| `hz5-pagerun64-main` / `hz5-pagerun64-cross128` | MidPage PageRun64 general and cross-size profiles |
+| `hz5-large128-rss` | low-RSS LargeFront profile |
+| `hz5-large128-source16` | broad LargeFront 128K throughput comparison lane |
+| `hz5-large128-transfer128` | diagnostic transfer-cache lane, not a default |
+
+Representative paper-facing rows from the RUNS=5 sweep:
+
+| Case | Best HZ5 row | HZ5 ops/s | HZ5 RSS | tcmalloc ops/s | tcmalloc RSS |
+|------|--------------|----------:|--------:|---------------:|-------------:|
+| `t=8 main r50` | `hz5-large128-source16` | 63.26M | 24MB | 22.36M | 474MB |
+| `t=8 main r90` | `hz5-pagerun64-cross128` | 56.58M | 33MB | 27.80M | 367MB |
+| `t=8 mid_only r50` | `hz5-pagerun64-main` | 75.94M | 8MB | 19.30M | 497MB |
+| `t=8 cross128 r90` | `hz5-large128-transfer128` | 17.16M | 57MB | 11.72M | 183MB |
+| `t=8 large128 r90` | `hz5-large128-source16` | 13.16M | 145MB | 12.12M | 182MB |
 
 Current interpretation:
 
 - Keep `hz3` as the default public profile and `hz4` as the remote-heavy profile.
-- Use HZ5 only for exact `64K/a8192` research/profile comparisons.
-- Do not treat unsupported HZ5 routes as wins; unsupported exact-only routes fail closed.
-- The optional retained pointer-array RSS lane was tested and kept diagnostic-only because it did not beat `rssretain2048tls` on RSS plateau.
+- Present HZ5 as a profile family: strong low-RSS evidence on selected
+  mid/main/cross rows, with guard small-object and some LargeFront 128K rows
+  still profile-sensitive.
+- Keep the older exact `64K/a8192` Local2P rows as appendix evidence for
+  explicit route specialization.
+- Treat HZ6 only as future work: a possible transfer-first line with
+  consumer-visible class transfer caches and an RSS governor, without hot-path
+  learning counters.
 
 ## Documentation
 
