@@ -48,6 +48,7 @@ TRACE_LANE=0
 BUILD_PRELOAD_FULL=0
 PRELOAD_FREE_MID_FIRST=0
 PRELOAD_FREE_MIDPAGE_FIRST=0
+PRELOAD_FREE_MIDPAGE_LARGE_FIRST=0
 PRELOAD_MIDPAGE_ALLOC_FIRST=0
 PRELOAD_TLS_INITIAL_EXEC=0
 PRELOAD_SPEED_LINKFLAGS=0
@@ -228,6 +229,9 @@ Options:
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst
                      diagnostic preset: m4packet plus MidPageFront-first
                      preload free dispatch
+  --linux-hz5-general-midpage-region-shadow-m4packet-routefree
+                     diagnostic preset: m4packet plus MidPageFront then
+                     LargeFront preload free dispatch
   --linux-hz5-general-midpage-region-shadow-m4packet-crossdrain
                      diagnostic preset: m4packet plus low-cost MidPageFront
                      owner pending mask drained from other front-end misses
@@ -492,6 +496,11 @@ enable_midpage_m4packet_base() {
 enable_midpage_m4packet_freefirst_base() {
   enable_midpage_m4packet_base
   PRELOAD_FREE_MIDPAGE_FIRST=1
+}
+
+enable_midpage_m4packet_routefree_base() {
+  enable_midpage_m4packet_base
+  PRELOAD_FREE_MIDPAGE_LARGE_FIRST=1
 }
 
 enable_midpage_m4packet_crossdrain_base() {
@@ -937,6 +946,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --linux-hz5-general-midpage-region-shadow-m4packet-freefirst)
       enable_midpage_m4packet_freefirst_base
+      shift
+      ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-routefree)
+      enable_midpage_m4packet_routefree_base
       shift
       ;;
     --linux-hz5-general-midpage-region-shadow-m4packet-crossdrain)
@@ -1900,6 +1913,7 @@ fi
   echo "build_preload_full=${BUILD_PRELOAD_FULL}"
   echo "preload_free_mid_first=${PRELOAD_FREE_MID_FIRST}"
   echo "preload_free_midpage_first=${PRELOAD_FREE_MIDPAGE_FIRST}"
+  echo "preload_free_midpage_large_first=${PRELOAD_FREE_MIDPAGE_LARGE_FIRST}"
   echo "preload_midpage_alloc_first=${PRELOAD_MIDPAGE_ALLOC_FIRST}"
   echo "preload_tls_initial_exec=${PRELOAD_TLS_INITIAL_EXEC}"
   echo "preload_speed_linkflags=${PRELOAD_SPEED_LINKFLAGS}"
@@ -1973,6 +1987,9 @@ if [[ "$PRELOAD_FREE_MID_FIRST" -eq 1 ]]; then
 fi
 if [[ "$PRELOAD_FREE_MIDPAGE_FIRST" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_PRELOAD_FREE_MIDPAGE_FIRST=1)
+fi
+if [[ "$PRELOAD_FREE_MIDPAGE_LARGE_FIRST" -eq 1 ]]; then
+  COMMON_FLAGS+=(-DBENCHLAB_HZ5_PRELOAD_FREE_MIDPAGE_LARGE_FIRST=1)
 fi
 if [[ "$PRELOAD_MIDPAGE_ALLOC_FIRST" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_PRELOAD_MIDPAGE_ALLOC_FIRST=1)

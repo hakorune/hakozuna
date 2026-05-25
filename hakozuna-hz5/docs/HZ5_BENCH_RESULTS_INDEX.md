@@ -1121,6 +1121,62 @@ m4packet:   malloc_hz5=10049 malloc_real=0 free_hz5=10057 free_real=0 track_inse
 freefirst:  malloc_hz5=10049 malloc_real=0 free_hz5=10057 free_real=0 track_insert_fail=0
 ```
 
+### `midpage_m4packet_routefree_smoke_20260525_090830`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_m4packet_routefree_smoke_20260525_090830
+```
+
+Purpose:
+
+```text
+Focused RUNS=3 C1 free-route diagnostic. `routefree` uses M4packet with
+MidPageFront -> LargeFront -> SmallFront -> MidFront preload free dispatch.
+Performance runs keep HZ5_PRELOAD_STATS unset.
+```
+
+Decision:
+
+```text
+Candidate-watch, not broad default. Routefree improves local r0 and cross128
+r0 versus freefirst, and it improves mid_only r90. It does not beat freefirst
+on cross128 r90, so freefirst remains the cleaner incremental candidate for
+broad comparison.
+```
+
+Key rows:
+
+```text
+main r0:
+  m4packet 32.95M, freefirst 33.39M, routefree 36.18M, tcmalloc 116.96M
+
+mid_only r0:
+  m4packet 36.14M, freefirst 36.39M, routefree 36.89M, tcmalloc 119.44M
+
+cross128 r0:
+  m4packet 19.85M, freefirst 21.19M, routefree 21.68M, tcmalloc 64.50M
+
+cross128 r90:
+  m4packet 5.52M, freefirst 6.45M, routefree 6.15M, tcmalloc 15.08M
+```
+
+### `midpage_m4packet_routefree_attrib_20260525_090850`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_m4packet_routefree_attrib_20260525_090850
+```
+
+Result:
+
+```text
+freefirst:  malloc_hz5=10049 malloc_real=0 free_hz5=10057 free_real=0 track_insert_fail=0
+routefree:  malloc_hz5=10049 malloc_real=0 free_hz5=10057 free_real=0 track_insert_fail=0
+```
+
 ## Older Results
 
 The full chronological result log remains in:

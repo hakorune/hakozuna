@@ -47,6 +47,7 @@ MidPageFront is the current tcmalloc chase track for ordinary malloc
 | `--linux-hz5-general-midpage-region-shadow-m4mag` | descriptor-owned owner-local magazine | M4 magazine A/B | remote-heavy candidate, not broad default |
 | `--linux-hz5-general-midpage-region-shadow-m4packet` | page-descriptor remote packet | M4b remote handoff | current remote-heavy candidate |
 | `--linux-hz5-general-midpage-region-shadow-m4packet-freefirst` | M4packet + MidPage-first preload free dispatch | cleaner incremental candidate | keep for next matrix |
+| `--linux-hz5-general-midpage-region-shadow-m4packet-routefree` | M4packet + MidPage/Large/Small/Mid free dispatch | free-route fixed-cost diagnostic | candidate-watch; not broad default |
 | `--linux-hz5-general-midpage-region-shadow-m4packet-crossdrain` | M4packet + MidPage pending drain from other-front misses | fixed-cost diagnostic | no-promote |
 
 Current default comparison set for MidPage work:
@@ -55,6 +56,7 @@ Current default comparison set for MidPage work:
 allocfirst
 m4packet
 m4packet-freefirst
+routefree
 tcmalloc
 ```
 
@@ -91,6 +93,10 @@ OwnerHub-R2/R3 + MidPage M4 candidate:
 
 m4packet-crossdrain + broad default:
   improves MidPage-heavy r90 rows but hurts cross128 r50/r90
+
+routefree + broad default:
+  still under watch. It improves local r0 and cross128 r0, but does not beat
+  freefirst on cross128 r90.
 ```
 
 ## Next Matrix
@@ -102,6 +108,7 @@ lanes:
   allocfirst
   m4packet
   m4packet-freefirst
+  routefree
   tcmalloc
 
 workloads:
@@ -114,4 +121,3 @@ policy:
   HZ5_PRELOAD_STATS unset for timing
   separate attribution smoke with HZ5_PRELOAD_STATS=1
 ```
-

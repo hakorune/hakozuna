@@ -70,6 +70,10 @@ ced9279 Add MidPageFront M4 cross-drain diagnostic
   M4packet plus MidPageFront-first preload free dispatch; current incremental
   candidate for the next MidPage matrix
 
+--linux-hz5-general-midpage-region-shadow-m4packet-routefree
+  M4packet plus MidPageFront -> LargeFront free dispatch; candidate-watch for
+  local r0 and cross128 r0, not a broad default yet
+
 --linux-hz5-general-midpage-region
   MidPageFront-M2.2 stable remote-heavy mid-size candidate
 
@@ -198,6 +202,7 @@ Latest lane-combination read:
 ```text
 private/raw-results/linux/midpage_m4packet_freefirst_smoke_20260525_085727
 private/raw-results/linux/midpage_m4packet_crossdrain_smoke_20260525_085453
+private/raw-results/linux/midpage_m4packet_routefree_smoke_20260525_090830
 ```
 
 Interpretation:
@@ -206,6 +211,8 @@ Interpretation:
 m4packet-freefirst is the cleaner incremental candidate: it improves local r0
 and slightly improves main/cross128 r90 without changing descriptor ownership.
 m4packet-crossdrain should not be promoted because it hurts cross128 r50/r90.
+routefree confirms free-route ordering matters for local r0, but it does not
+beat freefirst on cross128 r90.
 Use docs/HZ5_LINUX_LANE_COMBINATIONS.md for the next matrix set.
 ```
 

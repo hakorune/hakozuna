@@ -23,6 +23,10 @@
 #define BENCHLAB_HZ5_PRELOAD_FREE_MIDPAGE_FIRST 0
 #endif
 
+#ifndef BENCHLAB_HZ5_PRELOAD_FREE_MIDPAGE_LARGE_FIRST
+#define BENCHLAB_HZ5_PRELOAD_FREE_MIDPAGE_LARGE_FIRST 0
+#endif
+
 #ifndef BENCHLAB_HZ5_PRELOAD_MIDPAGE_ALLOC_FIRST
 #define BENCHLAB_HZ5_PRELOAD_MIDPAGE_ALLOC_FIRST 0
 #endif
@@ -498,6 +502,31 @@ void free(void* ptr) {
     hz5_preload_full_stat_inc(&g_hz5_preload_full_free_hz5);
     return;
   }
+#elif BENCHLAB_HZ5_PRELOAD_FREE_MIDPAGE_LARGE_FIRST
+  Hz5MidPageFrontFreeResult midpage_free = hz5_midpagefront_free(ptr);
+  if (midpage_free == HZ5_MIDPAGEFRONT_FREE_OK ||
+      midpage_free == HZ5_MIDPAGEFRONT_FREE_INVALID) {
+    hz5_preload_full_stat_inc(&g_hz5_preload_full_free_hz5);
+    return;
+  }
+  Hz5LargeFrontFreeResult large_free = hz5_largefront_free(ptr);
+  if (large_free == HZ5_LARGEFRONT_FREE_OK ||
+      large_free == HZ5_LARGEFRONT_FREE_INVALID) {
+    hz5_preload_full_stat_inc(&g_hz5_preload_full_free_hz5);
+    return;
+  }
+  Hz5SmallFrontFreeResult small_free = hz5_smallfront_free(ptr);
+  if (small_free == HZ5_SMALLFRONT_FREE_OK ||
+      small_free == HZ5_SMALLFRONT_FREE_INVALID) {
+    hz5_preload_full_stat_inc(&g_hz5_preload_full_free_hz5);
+    return;
+  }
+  Hz5MidFrontFreeResult mid_free = hz5_midfront_free(ptr);
+  if (mid_free == HZ5_MIDFRONT_FREE_OK ||
+      mid_free == HZ5_MIDFRONT_FREE_INVALID) {
+    hz5_preload_full_stat_inc(&g_hz5_preload_full_free_hz5);
+    return;
+  }
 #else
   Hz5SmallFrontFreeResult small_free = hz5_smallfront_free(ptr);
   if (small_free == HZ5_SMALLFRONT_FREE_OK ||
@@ -518,12 +547,14 @@ void free(void* ptr) {
     return;
   }
 #endif
+#if !BENCHLAB_HZ5_PRELOAD_FREE_MIDPAGE_LARGE_FIRST
   Hz5LargeFrontFreeResult large_free = hz5_largefront_free(ptr);
   if (large_free == HZ5_LARGEFRONT_FREE_OK ||
       large_free == HZ5_LARGEFRONT_FREE_INVALID) {
     hz5_preload_full_stat_inc(&g_hz5_preload_full_free_hz5);
     return;
   }
+#endif
 
   uint8_t owner = hz5_preload_full_track_remove(ptr);
   if (owner == HZ5_PRELOAD_FULL_OWNER_HZ5) {

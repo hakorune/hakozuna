@@ -39,6 +39,11 @@ shorter than the historical benchmark logs.
   M4packet plus MidPageFront-first preload free dispatch. Cleaner incremental
   candidate than crossdrain: improves local r0 and slightly improves
   main/cross128 r90, but does not close the tcmalloc local-r0 gap.
+
+--linux-hz5-general-midpage-region-shadow-m4packet-routefree
+  M4packet plus MidPageFront -> LargeFront -> SmallFront -> MidFront free
+  dispatch. Candidate-watch: improves local r0 and cross128 r0, but does not
+  beat freefirst on cross128 r90.
 ```
 
 ## Keep As Diagnostics

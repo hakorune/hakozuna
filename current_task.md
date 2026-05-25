@@ -636,6 +636,9 @@ m4packet:
 m4packet-freefirst:
   cleaner incremental candidate for next matrix
 
+routefree:
+  candidate-watch; improves local r0/cross128 r0 but not cross128 r90
+
 tcmalloc:
   target allocator
 ```
@@ -654,4 +657,36 @@ nodeless-stats / ptrcache-stats:
 
 OwnerHub-R2/R3:
   historical generic cross-front drain experiments with fixed-cost failures
+```
+
+FreeRoute-C1 smoke:
+
+```text
+private/raw-results/linux/midpage_m4packet_routefree_smoke_20260525_090830
+private/raw-results/linux/midpage_m4packet_routefree_attrib_20260525_090850
+```
+
+Result:
+
+```text
+main r0:
+  m4packet 32.95M, freefirst 33.39M, routefree 36.18M, tcmalloc 116.96M
+
+mid_only r0:
+  m4packet 36.14M, freefirst 36.39M, routefree 36.89M, tcmalloc 119.44M
+
+cross128 r0:
+  m4packet 19.85M, freefirst 21.19M, routefree 21.68M, tcmalloc 64.50M
+
+cross128 r90:
+  m4packet 5.52M, freefirst 6.45M, routefree 6.15M, tcmalloc 15.08M
+```
+
+Decision:
+
+```text
+Routefree proves free-route ordering still matters, especially local r0 and
+large-heavy cross128 r0. It is not the broad answer because cross128 r90 is
+below freefirst. Keep it as candidate-watch and run the next RUNS=5 matrix with
+allocfirst / m4packet / freefirst / routefree / tcmalloc.
 ```
