@@ -33,6 +33,25 @@ Do not promote a coarse profile until RSS / retention passes.
 Next implementation target is RSS governor / empty-slab release.
 ```
 
+## Active Implementation
+
+```text
+MidPage RSS Governor R1:
+  empty owner-local 64KiB slabs are purged from local caches,
+  returned to the region source list,
+  and madvise(DONTNEED)'d before reuse.
+
+Candidate presets:
+  band8/16/32-rssgov
+  band8/32-rssgov
+
+R1 smoke:
+  RSS improves, but runtime madvise is too expensive for a speed profile.
+
+Next:
+  batch or checkpoint empty-slab release outside the hot free path.
+```
+
 ## Recent Results
 
 Use these for the detailed measurements:

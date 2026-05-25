@@ -96,9 +96,11 @@ band4/8/32:
 
 band8/16/32:
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-16-32
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-16-32-rssgov
 
 band8/32:
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rssgov
 
 wide32k:
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-wide32k
@@ -128,6 +130,31 @@ Keep strict as default.
 Keep band8/32 and band8/16/32 as speed/RSS candidates.
 Keep wide32k as an upper-bound diagnostic only.
 Do not add more mappings before implementing RSS governor / empty-slab release.
+```
+
+## RSS Governor R1
+
+```text
+flag:
+  --linux-midpagefront-empty-slab-release
+  --linux-midpagefront-empty-retain-cap N
+
+coarse presets:
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-16-32-rssgov
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rssgov
+
+behavior:
+  when an owner-local MidPage slab becomes fully cached, purge its local cache
+  entries, return it to the region source list, and madvise the 64KiB slab with
+  MADV_DONTNEED
+
+purpose:
+  measure whether coarse speed profiles can pass final-RSS / retention gates
+  without adding more class mappings
+
+status:
+  diagnostic only after R1 smoke; runtime madvise reduces RSS but costs too much
+  throughput for a speed profile
 ```
 
 ## Latest Evidence

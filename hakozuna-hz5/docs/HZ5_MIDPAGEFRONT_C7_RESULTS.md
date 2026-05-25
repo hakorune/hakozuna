@@ -62,3 +62,38 @@ It is RSS control for coarse profiles:
   bytes-based cache budgets
   retention control on remote-heavy rows
 ```
+
+## RSS Governor R1 Smoke
+
+Implementation:
+
+```text
+flag:
+  --linux-midpagefront-empty-slab-release
+
+coarse presets:
+  band8/16/32-rssgov
+  band8/32-rssgov
+```
+
+Direct smoke, `threads=8 iters=1000000 ws=4000 2049..32768 random`:
+
+```text
+band8/32 baseline:
+  105.05M ops/s, maxrss 75136 KB
+
+band8/32-rssgov cap=64:
+   47.10M ops/s, maxrss 54364 KB
+
+band8/32-rssgov cap=512:
+   67.20M ops/s, maxrss 62960 KB
+```
+
+Read:
+
+```text
+R1 proves empty-slab madvise can reduce RSS, but runtime madvise cost is too
+high for a speed profile. Keep it as an RSS diagnostic. The next design should
+separate release timing from the hot free path, for example by batching release
+or moving it to a checkpoint / phase boundary.
+```
