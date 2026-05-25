@@ -86,6 +86,7 @@ LINUX_MIDPAGEFRONT_M4_UNSAFE_FREE_ELIDE=0
 LINUX_MIDPAGEFRONT_M5_HIT_ONLY=0
 LINUX_MIDPAGEFRONT_M6_DEFERRED_FREE=0
 LINUX_MIDPAGEFRONT_M6_REMOTE_DEFERRED_FREE=0
+LINUX_MIDPAGEFRONT_M6_REMOTE_FLUSH_ON_REFILL=1
 LINUX_MIDPAGEFRONT_M6_RAW_CAP=64
 LINUX_MIDPAGEFRONT_M4_FLAT_MAG_CAP=0
 LINUX_MIDPAGEFRONT_M4_OVERFLOW_ARRAY=0
@@ -306,6 +307,9 @@ Options:
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint
                      RSS diagnostic preset: band8/32 plus explicit checkpoint
                      release only; no release on allocator refill/miss
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote
+                     remote-heavy candidate: band8/32 checkpoint lane plus
+                     remote-only M6 deferred free
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-drainhit
                      remote-heavy diagnostic: band8/32 checkpoint lane with
                      periodic M4 remote packet drain restored on M5 alloc hits
@@ -339,6 +343,9 @@ Options:
   --linux-midpagefront-m6-remote-deferred-free
                      defer only remote MidPage frees through the M6 raw
                      quarantine while preserving owner-local immediate free
+  --linux-midpagefront-m6-remote-no-refill-flush
+                     diagnostic: do not flush remote-only M6 raw quarantine
+                     from owner-local alloc refill
   --linux-midpagefront-m4-remote-drain-hit-interval N
                      hit-count interval for drainhit diagnostics
                      (default: 64)
@@ -706,6 +713,11 @@ enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_base() {
 enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_drainhit_base() {
   enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_base "$1"
   LINUX_MIDPAGEFRONT_M4_REMOTE_DRAIN_ON_HIT=1
+}
+
+enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_base() {
+  enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_base "$1"
+  LINUX_MIDPAGEFRONT_M6_REMOTE_DEFERRED_FREE=1
 }
 
 enable_midpage_m4packet_freefirst_tlslink_tagfree_base() {
@@ -1244,6 +1256,10 @@ while [[ $# -gt 0 ]]; do
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_base 2
       shift
       ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_base 2
+      shift
+      ;;
     --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-drainhit)
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_drainhit_base 2
       shift
@@ -1287,6 +1303,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --linux-midpagefront-m6-remote-deferred-free)
       LINUX_MIDPAGEFRONT_M6_REMOTE_DEFERRED_FREE=1
+      shift
+      ;;
+    --linux-midpagefront-m6-remote-no-refill-flush)
+      LINUX_MIDPAGEFRONT_M6_REMOTE_FLUSH_ON_REFILL=0
       shift
       ;;
     --linux-midpagefront-m4-remote-drain-hit-interval)
@@ -2176,6 +2196,10 @@ if [[ "$LINUX_MIDPAGEFRONT_M2" -eq 1 ]]; then
     COMMON_FLAGS+=(
       -DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_REMOTE_DEFERRED_FREE=1
     )
+    if [[ "$LINUX_MIDPAGEFRONT_M6_REMOTE_FLUSH_ON_REFILL" -eq 0 ]]; then
+      COMMON_FLAGS+=(
+        -DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_REMOTE_FLUSH_ON_REFILL=0)
+    fi
   fi
   if [[ "$LINUX_MIDPAGEFRONT_M6_DEFERRED_FREE" -eq 1 || \
         "$LINUX_MIDPAGEFRONT_M6_REMOTE_DEFERRED_FREE" -eq 1 ]]; then
@@ -2384,6 +2408,7 @@ fi
   echo "linux_midpagefront_m5_hit_only=${LINUX_MIDPAGEFRONT_M5_HIT_ONLY}"
   echo "linux_midpagefront_m6_deferred_free=${LINUX_MIDPAGEFRONT_M6_DEFERRED_FREE}"
   echo "linux_midpagefront_m6_remote_deferred_free=${LINUX_MIDPAGEFRONT_M6_REMOTE_DEFERRED_FREE}"
+  echo "linux_midpagefront_m6_remote_flush_on_refill=${LINUX_MIDPAGEFRONT_M6_REMOTE_FLUSH_ON_REFILL}"
   echo "linux_midpagefront_m6_raw_cap=${LINUX_MIDPAGEFRONT_M6_RAW_CAP}"
   echo "linux_midpagefront_m4_flat_mag_cap=${LINUX_MIDPAGEFRONT_M4_FLAT_MAG_CAP}"
   echo "linux_midpagefront_m4_overflow_array=${LINUX_MIDPAGEFRONT_M4_OVERFLOW_ARRAY}"

@@ -390,6 +390,9 @@ Implementation:
 build option:
   --linux-midpagefront-m6-remote-deferred-free
 
+convenience preset:
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote
+
 meaning:
   owner-local frees keep the normal immediate cache return path
   remote frees are deferred through the M6 raw quarantine and batch-promoted
@@ -402,6 +405,20 @@ Hakmem remote malloc smoke,
 band8/32-rsscheckpoint + M6 remote-only raw cap 64:
   r0:  48.46M ops/s, maxrss  75648 KB
   r90: 19.13M ops/s, maxrss 161120 KB, overflow_sent 0
+
+after splitting the remote raw quarantine out of the hot MidPage TLS:
+  r0:  50.40M ops/s, maxrss  75648 KB
+  r90: 19.31M ops/s, maxrss 162392 KB, overflow_sent 0
+
+same current-code r50 comparison:
+  baseline band8/32:
+      2.36M ops/s, maxrss 427392 KB, overflow_sent 257926
+
+  band8/32 + M6 remote-only:
+     22.33M ops/s, maxrss 128332 KB, overflow_sent 0
+
+  tcmalloc:
+     31.56M ops/s, maxrss 394240 KB, overflow_sent 0
 ```
 
 Read:
@@ -413,11 +430,11 @@ than immediate remote packet handling.
 
 Compared with full M6, it avoids applying the classless quarantine to
 owner-local frees and improves r90 from roughly 17M to 19M in this smoke.
-Compared with the baseline, r0 still drops from 62.35M to 48.46M, so this is a
-remote-heavy candidate rather than a universal default.
+After the raw quarantine was split out of `Hz5MidPageTls`, r0 is no longer
+worse than the current rebuilt baseline in the same hakmem row.
 
 Next useful work:
-  reduce the r0 tax of enabling remote-only M6
   verify r50/r90 medians
   compare against tcmalloc/HZ4 on the same hakmem rows
+  decide whether remote-only M6 should become the C7 remote profile
 ```

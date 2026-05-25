@@ -163,13 +163,22 @@ Remote-only M6 smoke:
   first strong C7 remote profile candidate.
 
   band8/32 + M6 remote-only raw cap 64:
-    r0 48.46M, r90 19.13M, overflow 0, maxrss 161MB
+    first smoke: r0 48.46M, r90 19.13M, overflow 0, maxrss 161MB
+
+  after splitting remote raw quarantine out of Hz5MidPageTls:
+    r0 50.40M, r90 19.31M, overflow 0, maxrss 162MB
+
+  same current-code comparison on hakmem remote malloc:
+    baseline band8/32: r0 46.87M, r50 2.36M, r90 3.92M
+    remote-only M6:    r0 50.40M, r50 22.33M, r90 19.31M
+    tcmalloc:          r50 31.56M
 
 Read:
   remote-only deferred-free keeps the key M6 r90 benefit without applying the
-  classless quarantine to owner-local frees. r0 still regresses versus the
-  baseline 62.35M, so this is not a universal default yet, but it is a much
-  better split profile than alloc-hit polling.
+  classless quarantine to owner-local frees. With the remote raw buffer split
+  out of the hot MidPage TLS, r0 is no longer worse than the current baseline.
+  This is now the main remote-heavy candidate, while the non-M6 C7 lane remains
+  the simpler local/RSS control.
 
 Keep RSS checkpoint as a phase-boundary/control lane, not the next speed lever.
 ```
