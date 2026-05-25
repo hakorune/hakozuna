@@ -917,3 +917,20 @@ cross128 r90 sweep, but it regresses large-only remote rows and increases RSS
 risk. The next clean direction is either a safer take-first gate or a LargeFront
 remote path that avoids delayed publish without over-retaining spans.
 ```
+
+Focused verification, RUNS=5, r90, iters=500000:
+
+```text
+row          pagerun64             pagerun64-takefirst     hz4                  tcmalloc
+cross128     21.53M / 421MB        25.00M / 319MB          28.01M / 333MB       16.16M / 401MB
+large128     11.48M / 929MB        13.25M / 800MB           3.93M / 1703MB      17.35M / 500MB
+```
+
+Updated read:
+
+```text
+takefirst survives the focused RUNS=5 check. It improves cross128 and large128
+versus PageRun64 base and lowers RSS. It still trails HZ4 on cross128 and
+tcmalloc on large128, so the remaining gap is now specifically LargeFront's
+128K remote/free path, not MidPage PageRun.
+```

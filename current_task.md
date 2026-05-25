@@ -686,3 +686,22 @@ Read:
   large128 r90 outlier when combined with the full mixed run. Keep it as a
   diagnostic candidate. Do not enable LargeFront remote-batch broadly; rb16 can
   help cross128 but hurts large-only remote rows.
+
+  Verification, RUNS=5, iters=500000, r90:
+    cross128:
+      pagerun64 21.53M / 421MB
+      pagerun64-takefirst 25.00M / 319MB
+      hz4 28.01M / 333MB
+      tcmalloc 16.16M / 401MB
+
+    large128:
+      pagerun64 11.48M / 929MB
+      pagerun64-takefirst 13.25M / 800MB
+      hz4 3.93M / 1703MB
+      tcmalloc 17.35M / 500MB
+
+Read update:
+  takefirst survives the focused RUNS=5 check. It improves cross128 and
+  large128 versus PageRun64 base and reduces RSS. It still trails HZ4 on
+  cross128 and tcmalloc on large128, so the remaining gap is LargeFront's
+  128K remote/free path, not MidPage.
