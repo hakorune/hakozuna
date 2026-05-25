@@ -678,3 +678,64 @@ Read:
 M10 is no-go. Removing the second page_for_ptr/slot_index is not enough to win;
 producer-side queue representation is unlikely to be the next large lever.
 ```
+
+## M11 Remote Direct-Cache Diagnostic
+
+Implementation:
+
+```text
+preset:
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-m11direct
+
+design:
+  M6 remote flush changes remote slots LIVE->CACHE directly
+  remote packet only wakes the owner
+  owner drain checks CACHE and skips REMOTE->CACHE transition
+```
+
+Smoke:
+
+```text
+M11 remote direct-cache:
+  r0:  60.20M, maxrss  76032 KB
+  r50: 23.13M, maxrss 128044 KB
+  r90: 18.19M, maxrss 160684 KB
+```
+
+Read:
+
+```text
+M11 is no-go versus the saved M6 cap64/refill median
+(r50 26.57M, r90 19.68M). Removing owner-side REMOTE->CACHE transition
+alone does not close the gap. The remaining cost is broader path length and
+free/refill structure, matching perf evidence.
+```
+
+## Perf Snapshot: HZ5 M6 vs HZ4/tcmalloc
+
+Core counters, RUNS=3:
+
+```text
+allocator       r90 ops/s   cycles/op  instr/op  branches/op  br_miss%
+hz5-m6remote    20.66M      271.85     219.46    44.53        2.41
+hz4             30.98M      212.85     123.93    24.93        3.31
+tcmalloc        25.61M      266.61     128.01    23.96        4.36
+```
+
+Deep r90 counters:
+
+```text
+allocator       lock/op  cache_miss/op  l2_wait/op  l2_x_req/op
+hz5-m6remote    0.396    3.43           76.25       0.689
+hz4             0.083    3.53           54.14       0.121
+tcmalloc        0.154    4.28           67.47       0.328
+```
+
+Read:
+
+```text
+HZ5 is not losing because of cache-miss footprint. It has similar or lower
+cache misses than HZ4/tcmalloc. It is paying more instructions, branches,
+non-spec locks, and L2 exclusive traffic per op. The next real design target is
+not producer queue representation; it is reducing free/refill path length.
+```

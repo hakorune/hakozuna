@@ -126,6 +126,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M10_REMOTE_SLOT_RING 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M11_REMOTE_DIRECT_CACHE
+#define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M11_REMOTE_DIRECT_CACHE 0
+#endif
+
 #define HZ5_MIDPAGEFRONT_M6_ANY_DEFERRED_FREE \
   (BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_DEFERRED_FREE || \
    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_REMOTE_DEFERRED_FREE)
@@ -205,6 +209,11 @@ void _aligned_free(void* ptr);
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M10_REMOTE_SLOT_RING && \
     !BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET
 #error "MidPageFront M10 remote slot ring requires M4 remote packet"
+#endif
+
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M11_REMOTE_DIRECT_CACHE && \
+    !BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET
+#error "MidPageFront M11 remote direct-cache requires M4 remote packet"
 #endif
 
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_OVERFLOW_ARRAY && \
@@ -1106,7 +1115,8 @@ static int hz5_midpagefront_m4_note_free(Hz5MidPage* page) {
   }
 }
 
-#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_ALLOC_ELIDE
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_ALLOC_ELIDE || \
+    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M11_REMOTE_DIRECT_CACHE
 static int hz5_midpagefront_m4_slot_state_is(Hz5MidPage* page,
                                              uint32_t slot,
                                              Hz5MidPageSlotState expected) {
@@ -1726,11 +1736,19 @@ static uint32_t hz5_midpagefront_m4_remote_packet_drain_page(
     uint64_t mask = bits & (UINT64_C(0) - bits);
     bits &= ~mask;
     uint32_t slot = (uint32_t)__builtin_ctzll(mask);
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M11_REMOTE_DIRECT_CACHE
+    if (hz5_midpagefront_m4_slot_state_is(page,
+                                          slot,
+                                          HZ5_MIDPAGE_SLOT_CACHE)) {
+      claimed_bits |= mask;
+    }
+#else
     if (hz5_midpagefront_m4_transition(page, slot,
                                        HZ5_MIDPAGE_SLOT_REMOTE,
                                        HZ5_MIDPAGE_SLOT_CACHE)) {
       claimed_bits |= mask;
     }
+#endif
   }
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M8_OWNER_XFER
   if (claimed_bits != 0 &&
@@ -2325,12 +2343,21 @@ static void hz5_midpagefront_m6_flush_raw_entries(Hz5MidPageTls* tls,
       continue;
     }
 
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M11_REMOTE_DIRECT_CACHE
+    if (!hz5_midpagefront_m4_transition(page,
+                                        slot,
+                                        HZ5_MIDPAGE_SLOT_LIVE,
+                                        HZ5_MIDPAGE_SLOT_CACHE)) {
+      continue;
+    }
+#else
     if (!hz5_midpagefront_m4_transition(page,
                                         slot,
                                         HZ5_MIDPAGE_SLOT_LIVE,
                                         HZ5_MIDPAGE_SLOT_REMOTE)) {
       continue;
     }
+#endif
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET
     hz5_midpagefront_m4_remote_packet_push(page, slot);
 #else

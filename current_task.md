@@ -380,6 +380,23 @@ M10 flat remote slot ring:
     no-go. Removing second page_for_ptr/slot_index does not recover throughput.
     Producer-side queue representation is unlikely to be the next big lever.
 
+M11 remote direct-cache:
+  Implemented diagnostic:
+    M6 remote flush transitions remote slots LIVE->CACHE directly
+    remote packet only notifies owner
+    owner drain checks CACHE and skips REMOTE->CACHE transition
+
+  Single smoke:
+    r0 60.20M, r50 23.13M, r90 18.19M
+    RSS stayed in band, overflow zero
+
+  Read:
+    no-go versus M6 cap64/refill medians:
+      cap64/refill r50 26.57M, r90 19.68M
+    Removing the owner-side REMOTE->CACHE transition alone does not close the
+    gap. The remaining loss is broader path length / refill/free structure,
+    consistent with perf showing high instructions/op and branches/op.
+
 Perf plan:
   Run speed-lane perf separately for HZ5 M6 remote, HZ4, and tcmalloc on
   r0/r50/r90. Do not enable HZ5 stats/counters in these medians.
@@ -393,6 +410,50 @@ Perf plan:
     high ls_locks or L2 exclusive requests => atomics/remote handoff
     high branch miss ratio => route/class dispatch
     high cache/TLB misses => footprint/locality issue
+
+Perf result:
+  Core counters, RUNS=3, r0/r50/r90:
+    HZ5 M6 remote r90:
+      20.66M ops/s
+      271.85 cycles/op
+      219.46 instructions/op
+      44.53 branches/op
+      2.41% branch miss
+    HZ4 r90:
+      30.98M ops/s
+      212.85 cycles/op
+      123.93 instructions/op
+      24.93 branches/op
+      3.31% branch miss
+    tcmalloc r90:
+      25.61M ops/s
+      266.61 cycles/op
+      128.01 instructions/op
+      23.96 branches/op
+      4.36% branch miss
+
+  Deep r90 counters:
+    HZ5 M6 remote:
+      non_spec_lock/op 0.396
+      cache_misses/op 3.43
+      L2 wait cycles/op 76.25
+      L2 exclusive req/op 0.689
+    HZ4:
+      non_spec_lock/op 0.083
+      cache_misses/op 3.53
+      L2 wait cycles/op 54.14
+      L2 exclusive req/op 0.121
+    tcmalloc:
+      non_spec_lock/op 0.154
+      cache_misses/op 4.28
+      L2 wait cycles/op 67.47
+      L2 exclusive req/op 0.328
+
+Read:
+  HZ5's RSS win is not a cache-miss win/loss story here. Cache misses are not
+  worse than HZ4/tcmalloc. The gap is path length plus atomic/exclusive state
+  traffic. Next target should reduce per-slot state transitions on remote drain,
+  not producer queue representation or RSS release policy.
 
 Keep RSS checkpoint as a phase-boundary/control lane, not the next speed lever.
 ```
