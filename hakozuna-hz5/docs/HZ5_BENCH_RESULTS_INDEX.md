@@ -27,6 +27,10 @@ private/raw-results/linux/
 | `hz5_large128_drainbulk_tail_r3_20260526_061107` | bulk local-list owner-drain diagnostic | t4 signal, t8 regression; no promote |
 | `hz5_large128_draintrust_r3_20260526_061614` | trusted owner-drain state transition diagnostic | t8/r50 signal, r90 regression; no promote |
 | `hz5_large128_draintrust_budget1_manual_r3_20260526_062121` | draintrust + drain budget 1 manual check | t4/r50-only spike; no named lane |
+| `hz5_large128_source16_draintrust_l0_compare_20260526_062558` | source16/draintrust L0 observation | draintrust changes refill pressure; row split remains |
+| `hz5_large128_source16_draintrust_perf_20260526_062616` | t8 perf stat for source16/draintrust/tcmalloc | t8 gap is not pure instruction count |
+| `hz5_large128_source16_draintrust_perf_t4_20260526_062634` | t4 perf stat for source16/draintrust/tcmalloc | t4 remains instruction/branch/refill sensitive |
+| `hz5_large128_source16_draintrust_median_r3_20260526_062644` | RUNS=3 source16/draintrust/tcmalloc recheck | draintrust wins t8/r90, loses t8/r50; no broad promotion |
 
 ## Current Large128 Baselines
 
@@ -54,6 +58,41 @@ Interpretation:
 The active large128/t4/r50 gap is not primarily cache misses.
 The next useful diagnostics should reduce LargeFront drain/refill path length
 or prove that page-fault/source pressure is the remaining bound.
+```
+
+Latest source16/draintrust focused recheck:
+
+```text
+private/raw-results/linux/hz5_large128_source16_draintrust_median_r3_20260526_062644
+
+t4/r50:
+  tcmalloc              28.24M /  46MB
+  hz5-large128-draintrust 15.18M /  50MB
+  hz5-large128-source16   14.03M /  55MB
+
+t4/r90:
+  tcmalloc              25.55M /  56MB
+  hz5-large128-draintrust 12.89M /  68MB
+  hz5-large128-source16   10.06M /  90MB
+
+t8/r50:
+  tcmalloc              19.34M / 114MB
+  hz5-large128-source16   13.18M / 116MB
+  hz5-large128-draintrust 10.75M / 149MB
+
+t8/r90:
+  hz5-large128-draintrust 19.15M / 102MB
+  tcmalloc              13.65M / 181MB
+  hz5-large128-source16    8.32M / 229MB
+```
+
+Interpretation:
+
+```text
+Draintrust is not simply no-go anymore; it exposes a policy split.
+Trusted owner-drain state transition can win t8/r90 with much lower RSS, but
+the same choice hurts t8/r50 and still does not close t4 rows. Next work should
+explain the row split before adding another default policy.
 ```
 
 ## Recently Closed Diagnostics

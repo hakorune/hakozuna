@@ -96,6 +96,10 @@ private/raw-results/linux/hz5_large128_drainbulk_tail_r3_20260526_061107
 private/raw-results/linux/hz5_large128_draintrust_r3_20260526_061614
 private/raw-results/linux/hz5_large128_draintrustbulk_manual_r3_20260526_061931
 private/raw-results/linux/hz5_large128_draintrust_budget1_manual_r3_20260526_062121
+private/raw-results/linux/hz5_large128_source16_draintrust_l0_compare_20260526_062558
+private/raw-results/linux/hz5_large128_source16_draintrust_perf_20260526_062616
+private/raw-results/linux/hz5_large128_source16_draintrust_perf_t4_20260526_062634
+private/raw-results/linux/hz5_large128_source16_draintrust_median_r3_20260526_062644
 ```
 
 ## Next Engineering Direction
@@ -116,13 +120,22 @@ private/raw-results/linux/hz5_large128_draintrust_budget1_manual_r3_20260526_062
    conversions.
 8. Drainbulk reduces part of that conversion overhead and can improve t4, but
    t8 regressions mean local-push batching is not the broad fix.
-9. Draintrust shows the drain CAS cost matters, especially t8/r50, but r90
-   regressions mean trusted REMOTE_PENDING->LOCAL_FREE is not a broad profile.
+9. Draintrust shows the drain CAS cost matters. The latest RUNS=3 recheck is
+   split: t8/r90 wins strongly with low RSS, but t8/r50 loses source16 and
+   t4 rows remain far behind tcmalloc.
 10. Draintrust+drainbulk composition is no-go in manual RUNS=3.
 11. Draintrust+budget1 is a t4/r50-only local optimum: 29.56M on manual RUNS=3,
    but t4/r90 and t8 rows collapse. Do not add it as a named lane.
-12. Do not add another policy until a concrete hotspot explains the row split.
-13. Keep speed lanes free of HZ5_PRELOAD_STATS and hot-path counters.
+12. L0 source16/draintrust recheck shows draintrust increases source refill
+    pressure on some rows. Example: t4/r90 source16 source_refill=392 versus
+    draintrust source_refill=1143 in the L0 run. Trusted drain can reduce a
+    state-transition slice, but can also perturb reuse/refill timing.
+13. Perf recheck says instruction count is not always the only t8 limiter:
+    at t8/r50 HZ5 and tcmalloc are close on aggregate instructions/op, while
+    elapsed still differs. Treat parallel efficiency, owner-drain timing, and
+    source/refill pressure as co-equal suspects.
+14. Do not add another policy until a concrete hotspot explains the row split.
+15. Keep speed lanes free of HZ5_PRELOAD_STATS and hot-path counters.
 ```
 
 ## Cleanup Status
