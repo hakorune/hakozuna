@@ -508,3 +508,47 @@ HZ5 remote-only M6 is now a credible remote-heavy profile:
 This is not yet a clean HZ4/tcmalloc throughput win. The current strength is
 RSS-efficient remote robustness, not absolute remote throughput leadership.
 ```
+
+## M7 RemoteTicket Diagnostic
+
+Implementation:
+
+```text
+preset:
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m7ticket
+
+design:
+  remote free already has page+slot
+  sender TLS aggregates page+slot into page+bit batches
+  flush claims LIVE->REMOTE in batch and publishes existing remote packets
+```
+
+Smoke, same hakmem row:
+
+```text
+M6 remote split:
+  r0:  50.40M
+  r50: 22.33M
+  r90: 19.31M
+
+M7 initial:
+  r0:  45.32M, maxrss  75904 KB
+  r50: 21.25M, maxrss 129728 KB
+  r90: 16.98M, maxrss 161496 KB
+
+M7 with per-slot fallback after batch CAS failure:
+  r0:  45.80M, maxrss  75904 KB
+  r50: 20.22M, maxrss 126716 KB
+  r90: 17.19M, maxrss 158284 KB
+```
+
+Read:
+
+```text
+M7 RemoteTicket does not beat M6 remote-only in this form. The removed
+page_for_ptr/slot_index reclassification cost is smaller than the added
+page-batch management and batch state-transition cost.
+
+Keep M7 as a no-go diagnostic for now. The saved profile remains C7
+band8/32 + M6 remote-only deferred free.
+```

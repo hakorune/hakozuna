@@ -217,5 +217,44 @@ Read:
   on r50/r90 throughput, but it is already a strong RSS-efficient remote profile
   and a large win over HZ5 baseline/mimalloc.
 
+Next design decision:
+  Move from M6 raw pointer remote quarantine to M7 RemoteTicket.
+
+  Reason:
+    free_page already has page and slot. M6 remote throws that away, queues a
+    raw pointer, then page-lookups and slot-indexes again during flush.
+
+  Target:
+    remote free queues page+slot as a page+bitmask ticket batch.
+    flush performs batch LIVE->REMOTE claim and publishes existing remote
+    packet pages to the owner inbox.
+
+  Keep:
+    owner-local immediate free path
+    low RSS checkpoint/release behavior
+    fail-closed ownership
+
+  First acceptance:
+    r0 no worse than m6remote by >5%
+    r50/r90 +10% over m6remote or clear instruction/overflow improvement
+    r90 RSS stays below 225MB
+
+M7 smoke:
+  M7 lazy RemoteTicket was implemented as a diagnostic:
+    remote free stores page+slot into sender TLS page+bit batches
+    flush performs batch LIVE->REMOTE and existing remote-packet publish
+
+  Smoke against M6 remote:
+    M6 remote split: r0 50.40M, r50 22.33M, r90 19.31M
+    M7 initial:      r0 45.32M, r50 21.25M, r90 16.98M
+    M7 fallback:     r0 45.80M, r50 20.22M, r90 17.19M
+
+Read:
+  M7 did not beat M6 remote. Avoid replacing M6 remote with M7 ticket in the
+  current design. The likely issue is that batch state transition / sender
+  page-batch management costs more than the raw pointer reclassification it
+  removes. Keep M7 as no-go diagnostic unless a later owner transfer cache
+  changes the drain side.
+
 Keep RSS checkpoint as a phase-boundary/control lane, not the next speed lever.
 ```
