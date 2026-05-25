@@ -552,3 +552,45 @@ page-batch management and batch state-transition cost.
 Keep M7 as a no-go diagnostic for now. The saved profile remains C7
 band8/32 + M6 remote-only deferred free.
 ```
+
+## M8 OwnerTransferCache Diagnostic
+
+Implementation:
+
+```text
+preset:
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-m8xfer
+
+design:
+  keep M6 remote producer-side raw quarantine
+  after remote packet drain, store CACHE slots as owner-local page+bitset
+  transfer entries
+  refill moves only enough transfer bits into the M4 magazine
+  transfer cache is in separate TLS to avoid growing hot MidPage TLS
+```
+
+Smoke, same hakmem row and empty_retain_cap=4096:
+
+```text
+M6 remote split:
+  r0:  47.08M, maxrss  75776 KB
+  r50: 23.43M, maxrss 127784 KB
+  r90: 18.80M, maxrss 163008 KB
+
+M8 owner xfer:
+  r0:  45.76M, maxrss  75904 KB
+  r50: 21.09M, maxrss 129744 KB
+  r90: 17.55M, maxrss 160724 KB
+```
+
+Read:
+
+```text
+M8 owner transfer cache is no-go in the current design. It preserves the RSS
+band but loses throughput. For this workload, current M4 remote packet drain
+to magazine/local cache is cheaper than holding drained slots as a compact
+page+bitset transfer cache.
+
+Keep M8 as diagnostic only. The saved remote profile remains C7 band8/32 +
+M6 remote-only deferred free.
+```

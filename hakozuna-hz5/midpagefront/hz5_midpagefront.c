@@ -114,6 +114,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M7_REMOTE_TICKET 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M8_OWNER_XFER
+#define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M8_OWNER_XFER 0
+#endif
+
 #define HZ5_MIDPAGEFRONT_M6_ANY_DEFERRED_FREE \
   (BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_DEFERRED_FREE || \
    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_REMOTE_DEFERRED_FREE)
@@ -180,6 +184,11 @@ void _aligned_free(void* ptr);
 #error "MidPageFront M7 remote ticket requires M4 remote packet"
 #endif
 
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M8_OWNER_XFER && \
+    !BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET
+#error "MidPageFront M8 owner transfer cache requires M4 remote packet"
+#endif
+
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_OVERFLOW_ARRAY && \
     !BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_MAGAZINE
 #error "MidPageFront M4 overflow array requires M4 magazine"
@@ -208,6 +217,10 @@ void _aligned_free(void* ptr);
 
 #ifndef HZ5_MIDPAGEFRONT_M7_REMOTE_PAGE_CAP
 #define HZ5_MIDPAGEFRONT_M7_REMOTE_PAGE_CAP 64u
+#endif
+
+#ifndef HZ5_MIDPAGEFRONT_M8_XFER_PAGE_CAP
+#define HZ5_MIDPAGEFRONT_M8_XFER_PAGE_CAP 64u
 #endif
 
 #ifndef HZ5_MIDPAGEFRONT_REMOTE_BATCH_CAP
@@ -321,6 +334,19 @@ typedef struct Hz5MidPageM7RemoteTls {
 } Hz5MidPageM7RemoteTls;
 #endif
 
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M8_OWNER_XFER
+typedef struct Hz5MidPageM8XferEntry {
+  Hz5MidPage* page;
+  uint64_t bits;
+} Hz5MidPageM8XferEntry;
+
+typedef struct Hz5MidPageM8XferTls {
+  Hz5MidPageM8XferEntry xfer[HZ5_MIDPAGEFRONT_CLASS_COUNT]
+                             [HZ5_MIDPAGEFRONT_M8_XFER_PAGE_CAP];
+  uint16_t xfer_count[HZ5_MIDPAGEFRONT_CLASS_COUNT];
+} Hz5MidPageM8XferTls;
+#endif
+
 typedef struct Hz5MidPageTls {
   Hz5OwnerToken owner;
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_TLS_HOT_SLOT
@@ -409,6 +435,9 @@ static _Thread_local Hz5MidPageM6RawTls g_hz5_midpagefront_m6_remote_tls;
 #endif
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M7_REMOTE_TICKET
 static _Thread_local Hz5MidPageM7RemoteTls g_hz5_midpagefront_m7_remote_tls;
+#endif
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M8_OWNER_XFER
+static _Thread_local Hz5MidPageM8XferTls g_hz5_midpagefront_m8_xfer_tls;
 #endif
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_EMPTY_SLAB_RELEASE && \
     BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_MAGAZINE && \
@@ -1179,6 +1208,109 @@ static void hz5_midpagefront_m4_cache_slot(Hz5MidPageTls* tls,
   hz5_midpagefront_local_push(tls, class_index, ptr, page);
 }
 
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M8_OWNER_XFER
+static int hz5_midpagefront_m8_xfer_has_class(uint32_t class_index) {
+  if (!hz5_midpagefront_class_valid(class_index)) {
+    return 0;
+  }
+  return g_hz5_midpagefront_m8_xfer_tls.xfer_count[class_index] != 0u;
+}
+
+static int hz5_midpagefront_m8_xfer_add_bits(Hz5MidPageTls* tls,
+                                             uint32_t class_index,
+                                             Hz5MidPage* page,
+                                             uint64_t bits) {
+  if (!tls || !page || !hz5_midpagefront_class_valid(class_index) ||
+      page->class_index != class_index) {
+    return 0;
+  }
+  bits &= hz5_midpagefront_slot_count_mask(page->slot_count);
+  if (bits == 0) {
+    return 1;
+  }
+  Hz5MidPageM8XferTls* xtls = &g_hz5_midpagefront_m8_xfer_tls;
+  uint16_t count = xtls->xfer_count[class_index];
+  for (uint16_t i = 0; i < count; ++i) {
+    if (xtls->xfer[class_index][i].page == page) {
+      xtls->xfer[class_index][i].bits |= bits;
+      return 1;
+    }
+  }
+  if (count >= HZ5_MIDPAGEFRONT_M8_XFER_PAGE_CAP) {
+    return 0;
+  }
+  xtls->xfer[class_index][count].page = page;
+  xtls->xfer[class_index][count].bits = bits;
+  xtls->xfer_count[class_index] = (uint16_t)(count + 1u);
+  return 1;
+}
+
+static int hz5_midpagefront_m8_refill_from_xfer(Hz5MidPageTls* tls,
+                                                uint32_t class_index) {
+  if (!tls || !hz5_midpagefront_class_valid(class_index)) {
+    return 0;
+  }
+  uint16_t cap = hz5_midpagefront_m4_mag_cap(class_index);
+  Hz5MidPageM8XferTls* xtls = &g_hz5_midpagefront_m8_xfer_tls;
+  while (tls->magazine_count[class_index] < cap &&
+         tls->magazine_count[class_index] <
+             HZ5_MIDPAGEFRONT_M4_MAG_CAP_MAX &&
+         xtls->xfer_count[class_index] != 0u) {
+    uint16_t idx = (uint16_t)(xtls->xfer_count[class_index] - 1u);
+    Hz5MidPageM8XferEntry* entry = &xtls->xfer[class_index][idx];
+    Hz5MidPage* page = entry->page;
+    uint64_t bits = entry->bits;
+    if (!page || page->magic != HZ5_MIDPAGEFRONT_MAGIC ||
+        page->class_index != class_index) {
+      xtls->xfer_count[class_index] = idx;
+      continue;
+    }
+    bits &= hz5_midpagefront_slot_count_mask(page->slot_count);
+    if (bits == 0) {
+      entry->page = NULL;
+      entry->bits = 0;
+      xtls->xfer_count[class_index] = idx;
+      continue;
+    }
+    uint64_t mask = bits & (UINT64_C(0) - bits);
+    uint32_t slot = (uint32_t)__builtin_ctzll(mask);
+    if (!hz5_midpagefront_m4_magazine_push(tls, class_index, page, slot)) {
+      break;
+    }
+    entry->bits = bits & ~mask;
+    if (entry->bits == 0) {
+      entry->page = NULL;
+      xtls->xfer_count[class_index] = idx;
+    }
+  }
+  return tls->magazine_count[class_index] != 0u;
+}
+
+static void hz5_midpagefront_m8_purge_xfer_page(Hz5MidPageTls* tls,
+                                                uint32_t class_index,
+                                                Hz5MidPage* page) {
+  if (!tls || !page || !hz5_midpagefront_class_valid(class_index)) {
+    return;
+  }
+  uint16_t out = 0;
+  Hz5MidPageM8XferTls* xtls = &g_hz5_midpagefront_m8_xfer_tls;
+  uint16_t count = xtls->xfer_count[class_index];
+  for (uint16_t i = 0; i < count; ++i) {
+    if (xtls->xfer[class_index][i].page != page) {
+      if (out != i) {
+        xtls->xfer[class_index][out] = xtls->xfer[class_index][i];
+      }
+      ++out;
+    }
+  }
+  for (uint16_t i = out; i < count; ++i) {
+    xtls->xfer[class_index][i].page = NULL;
+    xtls->xfer[class_index][i].bits = 0;
+  }
+  xtls->xfer_count[class_index] = out;
+}
+#endif
+
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_EMPTY_SLAB_RELEASE && \
     BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_MAGAZINE && \
     BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_REGION_ARRAY
@@ -1339,6 +1471,9 @@ static size_t hz5_midpagefront_m4_release_empty_owned_all(Hz5MidPageTls* tls) {
     while (page) {
       Hz5MidPage* next = page->next_owned;
       if (hz5_midpagefront_m4_page_is_empty_releasable(tls, page)) {
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M8_OWNER_XFER
+        hz5_midpagefront_m8_purge_xfer_page(tls, ci, page);
+#endif
         hz5_midpagefront_m4_purge_magazine_page(tls, ci, page);
         hz5_midpagefront_purge_free_head_page(tls, ci, page);
         hz5_midpagefront_remove_owned_page(tls, ci, page);
@@ -1386,6 +1521,9 @@ static void hz5_midpagefront_m4_try_release_empty_page(Hz5MidPageTls* tls,
     return;
   }
 
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M8_OWNER_XFER
+  hz5_midpagefront_m8_purge_xfer_page(tls, class_index, page);
+#endif
   hz5_midpagefront_m4_purge_magazine_page(tls, class_index, page);
   hz5_midpagefront_purge_free_head_page(tls, class_index, page);
   hz5_midpagefront_remove_owned_page(tls, class_index, page);
@@ -1526,6 +1664,7 @@ static uint32_t hz5_midpagefront_m4_remote_packet_drain_page(
                                            memory_order_acq_rel);
   bits &= hz5_midpagefront_slot_count_mask(page->slot_count);
   uint32_t drained = 0;
+  uint64_t claimed_bits = 0;
   while (bits != 0) {
     uint64_t mask = bits & (UINT64_C(0) - bits);
     bits &= ~mask;
@@ -1533,6 +1672,22 @@ static uint32_t hz5_midpagefront_m4_remote_packet_drain_page(
     if (hz5_midpagefront_m4_transition(page, slot,
                                        HZ5_MIDPAGE_SLOT_REMOTE,
                                        HZ5_MIDPAGE_SLOT_CACHE)) {
+      claimed_bits |= mask;
+    }
+  }
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M8_OWNER_XFER
+  if (claimed_bits != 0 &&
+      hz5_midpagefront_m8_xfer_add_bits(
+          tls, class_index, page, claimed_bits)) {
+    drained += (uint32_t)__builtin_popcountll(claimed_bits);
+  } else
+#endif
+  {
+    uint64_t cache_bits = claimed_bits;
+    while (cache_bits != 0) {
+      uint64_t mask = cache_bits & (UINT64_C(0) - cache_bits);
+      cache_bits &= ~mask;
+      uint32_t slot = (uint32_t)__builtin_ctzll(mask);
       hz5_midpagefront_m4_cache_slot(tls, class_index, page, slot);
       ++drained;
     }
@@ -2736,6 +2891,13 @@ static int hz5_midpagefront_m4_refill_magazine(Hz5MidPageTls* tls,
     return 1;
   }
 
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M8_OWNER_XFER
+  if (hz5_midpagefront_m8_xfer_has_class(class_index) &&
+      hz5_midpagefront_m8_refill_from_xfer(tls, class_index)) {
+    return 1;
+  }
+#endif
+
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_DEFERRED_FREE
   hz5_midpagefront_m6_flush_raw(tls);
   if (tls->magazine_count[class_index] != 0u) {
@@ -2747,6 +2909,14 @@ static int hz5_midpagefront_m4_refill_magazine(Hz5MidPageTls* tls,
 #endif
 
   (void)hz5_midpagefront_drain_remote_class(tls, class_index);
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M8_OWNER_XFER
+  if (hz5_midpagefront_m8_xfer_has_class(class_index) &&
+      hz5_midpagefront_m8_refill_from_xfer(tls, class_index)) {
+    hz5_midpagefront_m4_stat_inc_class(
+        g_hz5_midpagefront_m4_stat_refill_remote_hit, class_index);
+    return 1;
+  }
+#endif
   if (tls->magazine_count[class_index] != 0u) {
     hz5_midpagefront_m4_stat_inc_class(
         g_hz5_midpagefront_m4_stat_refill_remote_hit, class_index);

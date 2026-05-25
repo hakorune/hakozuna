@@ -256,5 +256,55 @@ Read:
   removes. Keep M7 as no-go diagnostic unless a later owner transfer cache
   changes the drain side.
 
+Next diagnostic:
+  M8 OwnerTransferCache.
+
+  Reason:
+    M4 remote packet drain currently expands each remote bit immediately into
+    the owner magazine/local list. When the magazine is full, that spills into
+    object-payload local nodes and loses the page+bitset compactness that made
+    the remote packet path attractive.
+
+  Target:
+    After REMOTE->CACHE, keep drained slots as owner-local page+bitset transfer
+    entries. On alloc refill, move only enough transfer bits into the magazine.
+    This tests whether owner-side drain/local-list churn, not producer-side
+    ticketing, is the remaining remote-heavy cost.
+
+  Keep:
+    M6 remote raw pointer split as producer-side profile
+    existing M4 remote packet publish path
+    exact slot state transitions
+    RSS checkpoint/release controls
+
+  First acceptance:
+    r0 no worse than m6remote by >5%
+    r50/r90 improves over m6remote smoke, or at least retains r90 RSS with
+    lower drain/list churn
+    no stale xfer entries when empty slabs are released
+
+M8 smoke:
+  M8 owner transfer cache was implemented as a diagnostic:
+    M6 remote producer path stays unchanged
+    drained REMOTE->CACHE slots can be kept as owner-local page+bitset xfer
+    refill moves xfer bits into the M4 magazine on demand
+    xfer cache lives in separate TLS so the hot MidPage TLS does not grow
+
+  Fair smoke against M6 remote split, with empty_retain_cap=4096:
+    M6 remote split: r0 47.08M, r50 23.43M, r90 18.80M
+    M8 xfer:         r0 45.76M, r50 21.09M, r90 17.55M
+
+  RSS:
+    M8 xfer stayed in the same RSS band:
+      r0 ~75.9MB
+      r50 ~129.7MB
+      r90 ~160.7MB
+
+Read:
+  M8 owner transfer cache does not beat current M6 remote. Keeping drained
+  slots as page+bitset xfer entries adds enough refill/cache-management cost
+  that it loses throughput while preserving RSS. The current M4 remote drain
+  behavior remains the better default for this row.
+
 Keep RSS checkpoint as a phase-boundary/control lane, not the next speed lever.
 ```
