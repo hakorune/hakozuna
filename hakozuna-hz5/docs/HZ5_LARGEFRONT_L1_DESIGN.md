@@ -447,6 +447,138 @@ stronger safety story than base-only
 needs broader matrix before becoming the lead LargeFront row
 ```
 
+## LargeFront-L3 Adaptive128 Candidate
+
+Motivation:
+
+```text
+PageRun64 moved ordinary malloc <=64K into MidPage and fixed the old
+32769..65536 gap. The remaining broad gap is now LargeFront 128K remote/free
+behavior in cross128 and large128 rows.
+
+Fixed source batch count is a real lever, but the best value reverses by
+workload:
+
+  cross128 r90, PageRun64+takefirst:
+    batch16 28.70M / 265MB
+    batch4  13.44M / 571MB
+
+  large128 r90, PageRun64+takefirst:
+    batch4  18.35M / 420MB
+    batch16  9.65M / 1153MB
+```
+
+Decision:
+
+```text
+Keep fixed profiles:
+  cross-size profile:
+    PageRun64 + takefirst + source_batch16
+
+  large-only profile:
+    PageRun64 + takefirst + source_batch4
+
+Next candidate:
+  LargeFront-L3 adaptive128
+```
+
+Design:
+
+```text
+Adaptive128 changes only the 128K LargeFront class.
+
+source refill:
+  low pressure  -> batch16
+  mid pressure  -> batch8
+  high pressure -> batch4
+
+pressure signal:
+  slow-path only
+  derived from mapped 128K bytes and source refill state
+  no per malloc/free hot-path atomic counters
+
+owner inbox:
+  keep existing takefirst behavior
+  do not add a full transfer-cache rewrite yet
+
+RSS control:
+  first phase: adaptive source batch only
+  later phase: pressure-only payload madvise for retained free spans
+```
+
+Minimal experiment:
+
+```text
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64-takefirst
+--linux-largefront-adaptive128
+--linux-midpagefront-empty-retain-cap 4096
+```
+
+First implementation:
+
+```text
+source refill count for the 128K class:
+  mapped bytes < 320MB:  batch16
+  mapped bytes >=320MB:  batch8
+  mapped bytes >=512MB:  batch4
+
+region map:
+  stores the actual refill span_count instead of the fixed macro
+
+hot path:
+  unchanged; no malloc/free counters
+```
+
+RUNS=5, r90, iters=500000:
+
+```text
+row       adaptive          fixed batch16      fixed batch4
+cross128  13.50M / 567MB    27.48M / 288MB    17.02M / 455MB
+large128   8.90M / 1070MB   13.04M / 779MB     8.20M / 1060MB
+```
+
+Decision:
+
+```text
+no-go in this first form
+
+Mapped-bytes-only pressure is too blunt. It lowers the source batch during
+phases where cross128 still wants batch16, and it does not rescue large128.
+
+Keep fixed profiles for now:
+  cross-size diagnostic:
+    PageRun64 + takefirst + source_batch16
+
+  large-only diagnostic:
+    PageRun64 + takefirst + source_batch4
+
+If L3 continues, the next attempt should add pressure-only retained-payload
+scavenging or a better phase signal. Do not keep tuning source batch alone.
+```
+
+Expected acceptance:
+
+```text
+cross128 r90:
+  weak keep: >=25.5M and RSS <=350MB
+  strong:    >=27.0M and RSS <=330MB
+
+large128 r90:
+  weak keep: >=16.5M and RSS <=550MB
+  strong:    >=18.0M and RSS <=500MB
+```
+
+No-go:
+
+```text
+cross128 r90 < 25.0M
+large128 r90 < 16.0M
+r0 regression > 5%
+RSS exceeds 350MB on cross128 r90 or 550MB on large128 r90
+adaptive policy adds hot-path atomic counters
+double-free/invalid ownership contract changes
+```
+
 ## Stop Rules
 
 Stop and redesign if:

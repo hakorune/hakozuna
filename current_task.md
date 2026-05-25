@@ -731,3 +731,39 @@ Read:
   Do not promote a single source-batch default from this alone. The next clean
   design would need phase-aware or pressure-aware LargeFront sourcing, or a
   separate large-only RSS/throughput profile.
+
+LargeFront-L3 adaptive128 first implementation:
+  Added:
+    --linux-largefront-adaptive128
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64-adaptive128
+
+  Implementation:
+    only the 128K LargeFront class is adaptive
+    source refill count uses mapped 128K bytes on source-refill slow path
+      <320MB: batch16
+      >=320MB: batch8
+      >=512MB: batch4
+    no malloc/free hot-path counters
+    region map now stores actual refill span_count instead of the fixed macro
+
+  RUNS=5, r90, iters=500000:
+    cross128:
+      adaptive 13.50M / 567MB
+      batch16  27.48M / 288MB
+      batch4   17.02M / 455MB
+
+    large128:
+      adaptive  8.90M / 1070MB
+      batch16  13.04M / 779MB
+      batch4    8.20M / 1060MB
+
+Read:
+  adaptive128 is no-go in this first form. Mapped-bytes-only pressure is too
+  blunt and appears to lower the source batch during phases where cross128
+  still wants batch16. Fixed split remains cleaner:
+    cross-size diagnostic: PageRun64 + takefirst + batch16
+    large-only diagnostic: PageRun64 + takefirst + batch4
+
+  If continuing LargeFront-L3, do not keep chasing source-batch policy alone.
+  The next adaptive attempt should add pressure-only retained-payload scavenging
+  or a better phase signal; otherwise preserve fixed profiles and move on.

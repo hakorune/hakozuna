@@ -51,8 +51,20 @@
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_LOWER_CLASSES 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_ADAPTIVE128
+#define BENCHLAB_HZ5_LINUX_LARGEFRONT_ADAPTIVE128 0
+#endif
+
 #ifndef HZ5_LARGEFRONT_REMOTE_BATCH_CAP
 #define HZ5_LARGEFRONT_REMOTE_BATCH_CAP 16u
+#endif
+
+#ifndef HZ5_LARGEFRONT_ADAPTIVE128_MID_BYTES
+#define HZ5_LARGEFRONT_ADAPTIVE128_MID_BYTES (320u * 1024u * 1024u)
+#endif
+
+#ifndef HZ5_LARGEFRONT_ADAPTIVE128_HIGH_BYTES
+#define HZ5_LARGEFRONT_ADAPTIVE128_HIGH_BYTES (512u * 1024u * 1024u)
 #endif
 
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_LARGEFRONT_L1
@@ -181,6 +193,9 @@ static pthread_mutex_t g_hz5_largefront_source_lock =
     PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t g_hz5_largefront_map_lock = PTHREAD_MUTEX_INITIALIZER;
 static _Thread_local Hz5LargeTls g_hz5_largefront_tls;
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_ADAPTIVE128
+static size_t g_hz5_largefront_mapped_spans[HZ5_LARGEFRONT_CLASS_COUNT];
+#endif
 
 static Hz5LargeTls* hz5_largefront_tls(void) {
   Hz5LargeTls* tls = &g_hz5_largefront_tls;
@@ -238,7 +253,8 @@ static size_t hz5_largefront_region_hash(uintptr_t key) {
 
 static int hz5_largefront_region_register(void* block,
                                           size_t bytes,
-                                          uint32_t class_index) {
+                                          uint32_t class_index,
+                                          uint32_t span_count) {
   if (!block || bytes == 0 || !hz5_largefront_class_valid(class_index)) {
     return 0;
   }
@@ -267,7 +283,7 @@ static int hz5_largefront_region_register(void* block,
   region->base = base;
   region->end = end;
   region->class_index = class_index;
-  region->span_count = HZ5_LARGEFRONT_SOURCE_BATCH_COUNT;
+  region->span_count = span_count;
   region->stride = hz5_largefront_span_stride(class_index);
 
   for (uintptr_t key = first_key; key <= last_key; ++key) {
@@ -321,16 +337,37 @@ static Hz5LargeSpan* hz5_largefront_lookup_region_ptr(uintptr_t p) {
 }
 #endif
 
+static uint32_t hz5_largefront_source_refill_count_locked(
+    uint32_t class_index) {
+  uint32_t batch_count = HZ5_LARGEFRONT_SOURCE_BATCH_COUNT;
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_ADAPTIVE128
+  if (hz5_largefront_class_valid(class_index) &&
+      hz5_largefront_class_bytes(class_index) == 131072u) {
+    size_t mapped_bytes = g_hz5_largefront_mapped_spans[class_index] *
+                          hz5_largefront_span_stride(class_index);
+    if (mapped_bytes >= HZ5_LARGEFRONT_ADAPTIVE128_HIGH_BYTES) {
+      batch_count = 4u;
+    } else if (mapped_bytes >= HZ5_LARGEFRONT_ADAPTIVE128_MID_BYTES) {
+      batch_count = 8u;
+    }
+  }
+#else
+  (void)class_index;
+#endif
+  return batch_count == 0u ? 1u : batch_count;
+}
+
 static int hz5_largefront_source_refill_locked(uint32_t class_index) {
   if (!hz5_largefront_class_valid(class_index)) {
     return 0;
   }
   size_t stride = hz5_largefront_span_stride(class_index);
+  uint32_t batch_count = hz5_largefront_source_refill_count_locked(class_index);
   if (stride == 0 ||
-      HZ5_LARGEFRONT_SOURCE_BATCH_COUNT > SIZE_MAX / stride) {
+      batch_count > SIZE_MAX / stride) {
     return 0;
   }
-  size_t bytes = stride * (size_t)HZ5_LARGEFRONT_SOURCE_BATCH_COUNT;
+  size_t bytes = stride * (size_t)batch_count;
   void* block = mmap(NULL,
                      bytes,
                      PROT_READ | PROT_WRITE,
@@ -342,18 +379,21 @@ static int hz5_largefront_source_refill_locked(uint32_t class_index) {
   }
 
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_MAP
-  if (!hz5_largefront_region_register(block, bytes, class_index)) {
+  if (!hz5_largefront_region_register(block, bytes, class_index, batch_count)) {
     (void)munmap(block, bytes);
     return 0;
   }
 #endif
 
   uintptr_t base = (uintptr_t)block;
-  for (uint32_t i = 0; i < HZ5_LARGEFRONT_SOURCE_BATCH_COUNT; ++i) {
+  for (uint32_t i = 0; i < batch_count; ++i) {
     Hz5LargeRawNode* node = (Hz5LargeRawNode*)(base + (uintptr_t)i * stride);
     node->next = g_hz5_largefront_source_free[class_index];
     g_hz5_largefront_source_free[class_index] = node;
   }
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_ADAPTIVE128
+  g_hz5_largefront_mapped_spans[class_index] += (size_t)batch_count;
+#endif
   return 1;
 }
 

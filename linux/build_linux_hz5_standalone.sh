@@ -133,6 +133,7 @@ LINUX_LARGEFRONT_DRAIN_EMPTY_GATED=0
 LINUX_LARGEFRONT_MAP_BASE_ONLY=0
 LINUX_LARGEFRONT_REGION_MAP=0
 LINUX_LARGEFRONT_LOWER_CLASSES=0
+LINUX_LARGEFRONT_ADAPTIVE128=0
 LINUX_LARGEFRONT_REMOTE_BATCH_CAP=16
 LINUX_LARGEFRONT_SOURCE_BATCH_COUNT=16
 HZ5_STANDALONE_EXACT_ONLY=1
@@ -344,6 +345,9 @@ Options:
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64-takefirst
                      remote-heavy diagnostic: PageRun64 plus LargeFront
                      drain-take-first for cross-size remote rows
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64-adaptive128
+                     remote-heavy diagnostic: PageRun64 plus LargeFront
+                     takefirst and adaptive 128K source refill
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-drainhit
                      remote-heavy diagnostic: band8/32 checkpoint lane with
                      periodic M4 remote packet drain restored on M5 alloc hits
@@ -551,6 +555,9 @@ Options:
                      candidate only: register LargeFront source regions instead
                      of every covered 4K page; keeps interior invalid-free
                      attribution without per-page insertion
+  --linux-largefront-adaptive128
+                     candidate only: choose LargeFront 128K source refill
+                     batch by slow-path mapped-span pressure
   --linux-largefront-lower-classes
                      candidate only: add 8K/16K/32K/64K classes to LargeFront
   --linux-p11-speed-core
@@ -814,6 +821,11 @@ enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pa
 enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_takefirst_base() {
   enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_base "$1"
   LINUX_LARGEFRONT_DRAIN_TAKE_FIRST=1
+}
+
+enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_adaptive128_base() {
+  enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_takefirst_base "$1"
+  LINUX_LARGEFRONT_ADAPTIVE128=1
 }
 
 enable_midpage_m4packet_freefirst_tlslink_tagfree_base() {
@@ -1388,6 +1400,10 @@ while [[ $# -gt 0 ]]; do
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_takefirst_base 2
       shift
       ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64-adaptive128)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_adaptive128_base 2
+      shift
+      ;;
     --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-drainhit)
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_drainhit_base 2
       shift
@@ -1909,6 +1925,18 @@ while [[ $# -gt 0 ]]; do
       LINUX_LARGEFRONT_L1=1
       LINUX_LARGEFRONT_OWNER_INBOX=1
       LINUX_LARGEFRONT_REGION_MAP=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
+    --linux-largefront-adaptive128)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDFRONT_M1=1
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      LINUX_LARGEFRONT_REGION_MAP=1
+      LINUX_LARGEFRONT_DRAIN_TAKE_FIRST=1
+      LINUX_LARGEFRONT_ADAPTIVE128=1
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
@@ -2548,6 +2576,12 @@ if [[ "$LINUX_LARGEFRONT_L1" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX=1)
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_MAP=1)
   fi
+  if [[ "$LINUX_LARGEFRONT_ADAPTIVE128" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX=1)
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_MAP=1)
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_TAKE_FIRST=1)
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_ADAPTIVE128=1)
+  fi
   if [[ "$LINUX_LARGEFRONT_LOWER_CLASSES" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_LOWER_CLASSES=1)
   fi
@@ -2675,6 +2709,7 @@ fi
   echo "linux_largefront_map_base_only=${LINUX_LARGEFRONT_MAP_BASE_ONLY}"
   echo "linux_largefront_region_map=${LINUX_LARGEFRONT_REGION_MAP}"
   echo "linux_largefront_lower_classes=${LINUX_LARGEFRONT_LOWER_CLASSES}"
+  echo "linux_largefront_adaptive128=${LINUX_LARGEFRONT_ADAPTIVE128}"
   echo "linux_largefront_remote_batch_cap=${LINUX_LARGEFRONT_REMOTE_BATCH_CAP}"
   echo "linux_largefront_source_batch_count=${LINUX_LARGEFRONT_SOURCE_BATCH_COUNT}"
   echo "standalone_exact_only=${HZ5_STANDALONE_EXACT_ONLY}"
