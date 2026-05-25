@@ -36,6 +36,51 @@ Primary registry:
 hakozuna-hz5/docs/HZ5_LINUX_PROFILE_MATRIX.md
 ```
 
+## Latest Policy-L0 Run
+
+Result root:
+
+```text
+private/raw-results/linux/hz5_largefront_policy_l0_r3
+RUNS=3
+profiles=batch4,batch16,rb64
+lanes=cross128,large128
+threads=2,4,8
+remote=50,90
+```
+
+Read:
+
+```text
+Best profile still changes by row:
+  cross128/t2:
+    batch16 wins r50/r90
+
+  cross128/t4:
+    rb64 wins r50
+    batch4 wins r90
+
+  cross128/t8:
+    rb64 wins r50
+    batch16 wins r90
+
+  large128:
+    batch16 wins t2/t4/t8 r50
+    rb64 wins t2/t8 r90
+    batch4 wins t4 r90
+
+Policy-L0 features are useful:
+  batch4 has high source_refill count but low source batch size.
+  batch16 lowers source_refill count but can overfetch large128.
+  rb64 exposes remote_flush/cap_hit pressure directly.
+
+Decision:
+  L1 cannot be a single static replacement.
+  Next L1 should start as a conservative slow-path selector:
+    source_batch = 4/8/16 from source/refill pressure and mapped proxy
+    remote cap adaptation remains diagnostic until the low-thread rows are safe
+```
+
 ## Saved Lanes
 
 ```text
