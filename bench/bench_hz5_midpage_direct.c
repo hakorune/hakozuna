@@ -1,5 +1,10 @@
 // Usage:
-//   bench_hz5_midpage_direct [threads] [iters] [working_set] [min_size] [max_size]
+//   bench_hz5_midpage_direct [threads] [iters] [working_set] [min_size] [max_size] [pattern] [phase_len]
+//
+// pattern:
+//   random: random size in [min_size, max_size] (default)
+//   phase:  stay in one MidPage class for phase_len allocations, then rotate
+//   cycle:  rotate MidPage classes every allocation
 
 #include "hz5_midpagefront.h"
 
@@ -7,7 +12,19 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
+
+typedef enum Hz5MidPageDirectPattern {
+  HZ5_MIDPAGE_DIRECT_RANDOM = 0,
+  HZ5_MIDPAGE_DIRECT_PHASE = 1,
+  HZ5_MIDPAGE_DIRECT_CYCLE = 2,
+} Hz5MidPageDirectPattern;
+
+typedef struct Hz5MidPageDirectRange {
+  size_t min_size;
+  size_t max_size;
+} Hz5MidPageDirectRange;
 
 typedef struct Hz5MidPageDirectArg {
   uint32_t seed;
@@ -15,9 +32,21 @@ typedef struct Hz5MidPageDirectArg {
   size_t working_set;
   size_t min_size;
   size_t max_size;
+  size_t phase_len;
+  size_t range_count;
+  Hz5MidPageDirectRange ranges[8];
+  Hz5MidPageDirectPattern pattern;
   uint64_t alloc_failures;
   uint64_t free_failures;
 } Hz5MidPageDirectArg;
+
+static const Hz5MidPageDirectRange k_hz5_midpage_direct_classes[] = {
+    {2049u, 3072u},
+    {3073u, 4096u},
+    {4097u, 8192u},
+    {8193u, 16384u},
+    {16385u, 32768u},
+};
 
 static inline uint32_t hz5_midpage_direct_lcg(uint32_t* state) {
   *state = (*state * 1664525u) + 1013904223u;
@@ -30,6 +59,88 @@ static uint64_t hz5_midpage_direct_now_ns(void) {
   return (uint64_t)ts.tv_sec * UINT64_C(1000000000) + (uint64_t)ts.tv_nsec;
 }
 
+static Hz5MidPageDirectPattern hz5_midpage_direct_parse_pattern(
+    const char* text) {
+  if (!text || strcmp(text, "random") == 0) {
+    return HZ5_MIDPAGE_DIRECT_RANDOM;
+  }
+  if (strcmp(text, "phase") == 0) {
+    return HZ5_MIDPAGE_DIRECT_PHASE;
+  }
+  if (strcmp(text, "cycle") == 0) {
+    return HZ5_MIDPAGE_DIRECT_CYCLE;
+  }
+  return HZ5_MIDPAGE_DIRECT_RANDOM;
+}
+
+static const char* hz5_midpage_direct_pattern_name(
+    Hz5MidPageDirectPattern pattern) {
+  switch (pattern) {
+    case HZ5_MIDPAGE_DIRECT_PHASE:
+      return "phase";
+    case HZ5_MIDPAGE_DIRECT_CYCLE:
+      return "cycle";
+    case HZ5_MIDPAGE_DIRECT_RANDOM:
+    default:
+      return "random";
+  }
+}
+
+static size_t hz5_midpage_direct_collect_ranges(
+    size_t min_size,
+    size_t max_size,
+    Hz5MidPageDirectRange* out,
+    size_t out_cap) {
+  size_t count = 0;
+  for (size_t i = 0;
+       i < sizeof(k_hz5_midpage_direct_classes) /
+               sizeof(k_hz5_midpage_direct_classes[0]);
+       ++i) {
+    size_t lo = k_hz5_midpage_direct_classes[i].min_size;
+    size_t hi = k_hz5_midpage_direct_classes[i].max_size;
+    if (lo < min_size) {
+      lo = min_size;
+    }
+    if (hi > max_size) {
+      hi = max_size;
+    }
+    if (lo <= hi && count < out_cap) {
+      out[count].min_size = lo;
+      out[count].max_size = hi;
+      ++count;
+    }
+  }
+  return count;
+}
+
+static size_t hz5_midpage_direct_next_size(Hz5MidPageDirectArg* ta,
+                                           size_t iter,
+                                           uint32_t* seed) {
+  size_t span = (ta->max_size > ta->min_size)
+                    ? (ta->max_size - ta->min_size + 1u)
+                    : 1u;
+  if (ta->pattern == HZ5_MIDPAGE_DIRECT_RANDOM) {
+    return ta->min_size + (hz5_midpage_direct_lcg(seed) % span);
+  }
+
+  if (ta->range_count == 0u) {
+    return ta->min_size + (hz5_midpage_direct_lcg(seed) % span);
+  }
+
+  size_t range_index = 0;
+  if (ta->pattern == HZ5_MIDPAGE_DIRECT_PHASE) {
+    size_t phase_len = ta->phase_len ? ta->phase_len : 4096u;
+    range_index = (iter / phase_len) % ta->range_count;
+  } else {
+    range_index = iter % ta->range_count;
+  }
+  Hz5MidPageDirectRange range = ta->ranges[range_index];
+  size_t range_span = (range.max_size > range.min_size)
+                          ? (range.max_size - range.min_size + 1u)
+                          : 1u;
+  return range.min_size + (hz5_midpage_direct_lcg(seed) % range_span);
+}
+
 static void* hz5_midpage_direct_thread(void* arg) {
   Hz5MidPageDirectArg* ta = (Hz5MidPageDirectArg*)arg;
   void** slots = (void**)calloc(ta->working_set, sizeof(void*));
@@ -39,9 +150,6 @@ static void* hz5_midpage_direct_thread(void* arg) {
   }
 
   uint32_t seed = ta->seed;
-  size_t span = (ta->max_size > ta->min_size)
-                    ? (ta->max_size - ta->min_size + 1u)
-                    : 1u;
 
   for (size_t i = 0; i < ta->iters; ++i) {
     size_t idx = (size_t)(hz5_midpage_direct_lcg(&seed) % ta->working_set);
@@ -54,7 +162,7 @@ static void* hz5_midpage_direct_thread(void* arg) {
       slots[idx] = NULL;
     }
 
-    size_t size = ta->min_size + (hz5_midpage_direct_lcg(&seed) % span);
+    size_t size = hz5_midpage_direct_next_size(ta, i, &seed);
     void* ptr = NULL;
     Hz5MidPageFrontAllocResult alloc_result =
         hz5_midpagefront_try_alloc(size, 16u, &ptr);
@@ -84,6 +192,8 @@ int main(int argc, char** argv) {
   size_t working_set = 100;
   size_t min_size = 2049;
   size_t max_size = 32768;
+  Hz5MidPageDirectPattern pattern = HZ5_MIDPAGE_DIRECT_RANDOM;
+  size_t phase_len = 4096;
 
   if (argc > 1) {
     threads = (size_t)strtoull(argv[1], NULL, 10);
@@ -100,6 +210,12 @@ int main(int argc, char** argv) {
   if (argc > 5) {
     max_size = (size_t)strtoull(argv[5], NULL, 10);
   }
+  if (argc > 6) {
+    pattern = hz5_midpage_direct_parse_pattern(argv[6]);
+  }
+  if (argc > 7) {
+    phase_len = (size_t)strtoull(argv[7], NULL, 10);
+  }
 
   if (threads == 0) {
     threads = 1;
@@ -113,6 +229,9 @@ int main(int argc, char** argv) {
   if (max_size < min_size) {
     max_size = min_size;
   }
+  Hz5MidPageDirectRange ranges[8];
+  size_t range_count = hz5_midpage_direct_collect_ranges(
+      min_size, max_size, ranges, sizeof(ranges) / sizeof(ranges[0]));
 
   pthread_t* tids = (pthread_t*)calloc(threads, sizeof(pthread_t));
   Hz5MidPageDirectArg* args =
@@ -131,6 +250,12 @@ int main(int argc, char** argv) {
     args[i].working_set = working_set;
     args[i].min_size = min_size;
     args[i].max_size = max_size;
+    args[i].pattern = pattern;
+    args[i].phase_len = phase_len;
+    args[i].range_count = range_count;
+    for (size_t j = 0; j < range_count; ++j) {
+      args[i].ranges[j] = ranges[j];
+    }
     if (pthread_create(&tids[i], NULL, hz5_midpage_direct_thread, &args[i]) !=
         0) {
       fprintf(stderr, "bench_hz5_midpage_direct: pthread_create failed\n");
@@ -154,12 +279,14 @@ int main(int argc, char** argv) {
   double ops_per_s = sec > 0.0 ? total_ops / sec : 0.0;
 
   printf("[BENCH_HZ5_MIDPAGE_DIRECT] threads=%zu iters=%zu ws=%zu "
-         "min_size=%zu max_size=%zu\n",
+         "min_size=%zu max_size=%zu pattern=%s phase_len=%zu\n",
          threads,
          iters,
          working_set,
          min_size,
-         max_size);
+         max_size,
+         hz5_midpage_direct_pattern_name(pattern),
+         phase_len);
   printf("bench_hz5_midpage_direct: threads=%zu ops=%.0f time=%.6f "
          "ops/s=%.2f\n",
          threads,

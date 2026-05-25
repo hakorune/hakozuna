@@ -207,6 +207,77 @@ whether a thin class-router/front-cache can avoid repeated cross-class miss
 and refill churn.
 ```
 
+## MidPage Class-Pattern Diagnostic
+
+Raw output:
+
+```text
+private/raw-results/linux/midpage_pattern_direct_sweep_20260525_164427
+```
+
+RUNS=5, direct MidPage API, threads=8, iters=300000, ws=100:
+
+```text
+pattern  mix_2_4k   mix_3_8k   mix_4_16k  mix_5_32k
+random   199.56M    134.21M    136.73M    127.15M
+phase    177.70M    162.84M    148.30M    123.17M
+cycle    185.46M    162.02M    142.42M    112.36M
+```
+
+Read:
+
+```text
+Class locality helps some 8K/16K mixes, but it does not close the 32K mixed
+gap. The next upper-bound test should intentionally collapse 2049..32768 to
+one 32K class. If that jumps to same-class speed, class dispersion is the
+dominant issue; if it does not, the bottleneck is elsewhere.
+```
+
+## Wide32K Speed Upper Bound
+
+Raw output:
+
+```text
+private/raw-results/linux/midpage_wide32k_direct_range_sweep_20260525_164606
+private/raw-results/linux/midpage_wide32k_hakmem_range_sweep_20260525_164642
+```
+
+Direct MidPage API, RUNS=5:
+
+```text
+case          base        wide32k
+mix_2_4k     182.86M     223.88M
+mix_3_8k     164.86M     254.27M
+mix_4_16k    126.67M     258.04M
+mix_5_32k    131.02M     258.60M
+r32768       232.23M     247.72M
+```
+
+Hakmem preload r0, RUNS=5:
+
+```text
+case          base        wide32k     tcmalloc
+mix_2_4k     167.47M     198.53M     245.12M
+mix_3_8k     143.23M     199.85M     235.59M
+mix_4_16k    128.36M     197.03M     232.08M
+mix_5_32k    121.27M     180.86M     225.99M
+r32768       167.66M     204.28M     239.88M
+```
+
+Read:
+
+```text
+Wide32K proves the direct MidPage class-dispersion hypothesis: collapsing
+2049..32768 to one class restores or exceeds tcmalloc-class direct throughput.
+In full preload it still improves 1.2x-1.6x, but remains below tcmalloc,
+meaning preload/free route and broader application-visible overhead remain.
+
+This is not a final allocator profile because it over-allocates smaller mid
+objects to 32K and will hurt RSS. It is a speed upper bound and points to the
+next real design: reduce class dispersion without a single wasteful 32K class,
+probably by coarser mid bands or adaptive class grouping.
+```
+
 ## Class-Mix Finding
 
 Raw output:

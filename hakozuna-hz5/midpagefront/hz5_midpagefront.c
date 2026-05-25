@@ -99,6 +99,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_OVERFLOW_ARRAY 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_WIDE_32K_CLASS
+#define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_WIDE_32K_CLASS 0
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_STATS
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_STATS 0
 #endif
@@ -526,6 +530,12 @@ static int hz5_midpagefront_class_valid(uint32_t class_index) {
 // Keep this range narrow: 64K exact/overaligned and LargeFront rows are separate
 // routes with different RSS and remote-free behavior.
 static int hz5_midpagefront_class_index(size_t size) {
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_WIDE_32K_CLASS
+  if (size <= 2048u || size > 32768u) {
+    return -1;
+  }
+  return 4;
+#else
   if (size <= 2048u || size > 32768u) {
     return -1;
   }
@@ -539,6 +549,7 @@ static int hz5_midpagefront_class_index(size_t size) {
     return 3;
   }
   return 4;
+#endif
 }
 
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_REGION_ARRAY
