@@ -37,6 +37,10 @@
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_EMPTY_GATED 0
 #endif
 
+#ifndef HZ5_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET
+#define HZ5_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET 0u
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN 0
 #endif
@@ -1102,7 +1106,15 @@ void* hz5_largefront_alloc(size_t size, size_t align) {
 
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX
   hz5_ownerhub_note_alloc_miss(tls->owner, HZ5_OWNERHUB_FRONT_LARGE, ci);
+#if HZ5_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET > 0u
+  span = hz5_largefront_drain_remote_class_budget(
+      tls,
+      ci,
+      HZ5_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET,
+      NULL);
+#else
   span = hz5_largefront_drain_remote_class(tls, ci);
+#endif
   if (span) {
     return span->base;
   }

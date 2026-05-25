@@ -141,6 +141,7 @@ LINUX_LARGEFRONT_OBSERVE=0
 LINUX_LARGEFRONT_REMOTE_BATCH_CAP=16
 LINUX_LARGEFRONT_SOURCE_BATCH_COUNT=16
 LINUX_LARGEFRONT_SCAVENGE_LOCAL_CAP=4
+LINUX_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET=0
 HZ5_STANDALONE_EXACT_ONLY=1
 
 usage() {
@@ -160,6 +161,15 @@ Options:
                      saved profile alias: PageRun64 + LargeFront takefirst
                      + source batch4 + Large-first free route for
                      large128-style rows
+  --linux-hz5-profile-pagerun64-large128-batch8
+                     diagnostic alias: same as pagerun64-large128 with
+                     LargeFront source batch8
+  --linux-hz5-profile-pagerun64-large128-batch16
+                     diagnostic alias: same as pagerun64-large128 with
+                     LargeFront source batch16
+  --linux-hz5-profile-pagerun64-large128-b16-drain1
+                     diagnostic alias: same as large128-batch16 with
+                     alloc-miss remote drain local budget 1
   --linux-local2p    enable Linux Local2P exact 64K/a8192 TLS span candidate
   --linux-local2p-tls-packed
                      pack Local2P TLS state into one TLS object
@@ -561,6 +571,9 @@ Options:
                      LargeFront remote batch flush threshold (default: 16)
   --linux-largefront-source-batch-count N
                      LargeFront source refill span count (default: 16)
+  --linux-largefront-alloc-drain-local-budget N
+                     candidate only: limit extra remote spans drained into
+                     owner-local LargeFront cache on alloc miss; 0 drains all
   --linux-largefront-drain-take-first
                      candidate only: activate and return the first requested-class
                      LargeFront remote span during owner-inbox drain
@@ -913,6 +926,22 @@ while [[ $# -gt 0 ]]; do
     --linux-hz5-profile-pagerun64-large128)
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_largefirst_base 2
       LINUX_LARGEFRONT_SOURCE_BATCH_COUNT=4
+      shift
+      ;;
+    --linux-hz5-profile-pagerun64-large128-batch8)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_largefirst_base 2
+      LINUX_LARGEFRONT_SOURCE_BATCH_COUNT=8
+      shift
+      ;;
+    --linux-hz5-profile-pagerun64-large128-batch16)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_largefirst_base 2
+      LINUX_LARGEFRONT_SOURCE_BATCH_COUNT=16
+      shift
+      ;;
+    --linux-hz5-profile-pagerun64-large128-b16-drain1)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_largefirst_base 2
+      LINUX_LARGEFRONT_SOURCE_BATCH_COUNT=16
+      LINUX_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET=1
       shift
       ;;
     --arch)
@@ -1961,6 +1990,17 @@ while [[ $# -gt 0 ]]; do
       BUILD_PRELOAD_FULL=1
       shift 2
       ;;
+    --linux-largefront-alloc-drain-local-budget)
+      require_value "$@"
+      LINUX_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET="$2"
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDFRONT_M1=1
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift 2
+      ;;
     --linux-largefront-drain-take-first)
       BUILD_PRELOAD_FULL=1
       LINUX_SMALLFRONT_S1=1
@@ -2646,6 +2686,7 @@ if [[ "$LINUX_LARGEFRONT_L1" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_L1=1)
   COMMON_FLAGS+=(
     -DHZ5_LARGEFRONT_SOURCE_BATCH_COUNT="${LINUX_LARGEFRONT_SOURCE_BATCH_COUNT}u"
+    -DHZ5_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET="${LINUX_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET}u"
   )
   if [[ "$LINUX_LARGEFRONT_OWNER_FAST_STATE" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_FAST_STATE=1)
@@ -2835,6 +2876,7 @@ fi
   echo "linux_largefront_remote_batch_cap=${LINUX_LARGEFRONT_REMOTE_BATCH_CAP}"
   echo "linux_largefront_source_batch_count=${LINUX_LARGEFRONT_SOURCE_BATCH_COUNT}"
   echo "linux_largefront_scavenge_local_cap=${LINUX_LARGEFRONT_SCAVENGE_LOCAL_CAP}"
+  echo "linux_largefront_alloc_drain_local_budget=${LINUX_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET}"
   echo "standalone_exact_only=${HZ5_STANDALONE_EXACT_ONLY}"
   echo "linux_p11_speed_core=${LINUX_P11_SPEED_CORE}"
   echo "linux_p25_bridge_attr=${LINUX_P25_BRIDGE_ATTR}"

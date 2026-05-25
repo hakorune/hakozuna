@@ -9,7 +9,7 @@ MidPage:
   PageRun64 is the current strong keep.
 
 LargeFront:
-  128K remote/free behavior is the remaining design target.
+  128K r50 remote/free behavior is the remaining design target.
 
 Adaptive128:
   first mapped-bytes-only source-batch policy is no-go.
@@ -54,7 +54,8 @@ Keep fixed split.
 Do not promote mapped-bytes adaptive128.
 Do not promote retained-payload scavenging.
 Do not build another adaptive source-batch policy without a stronger signal.
-Do not keep tuning fixed source-batch constants.
+Re-check fixed source-batch constants after the Large-first/free-map fix before
+designing a new adaptive policy.
 ```
 
 Reason:
@@ -105,25 +106,35 @@ Largest remaining gaps:
 First:
 
 ```text
-verify the three saved aliases build to the expected config
-run the broad matrix with HZ4 / tcmalloc / mimalloc / system
+add diagnostic LargeFront-L4 source-batch aliases:
+  large128-batch8
+  large128-batch16
+
+run large128 r50/r90 batch sweep after the Large-first/free-map fix:
+  batch4 saved profile
+  batch8 diagnostic
+  batch16 diagnostic
+
 keep speed lanes free of stats and observation counters
 ```
 
-If continuing LargeFront-L3 after the broad matrix:
+If batch sweep does not explain r50:
 
 ```text
-only continue with a colder phase signal than current LargeFront counters
-or a profile selector outside the allocator hot path
+prototype LargeFront-L4 drain-budget lane:
+  take-first remote span
+  drain only a bounded number of extra remote spans to local cache
+  avoid full inbox-to-local churn on r50
 ```
 
 Current likely attack order:
 
 ```text
-1. LargeFront 128K r50 remote handoff and source/refill behavior.
-2. main/mid_only r0 instruction-path reduction only if we decide to keep
+1. LargeFront-L4 source-batch sweep after Large-first/free-map.
+2. LargeFront-L4 remote drain budget if batch sweep is not enough.
+3. main/mid_only r0 instruction-path reduction only if we decide to keep
    chasing tcmalloc local-only throughput.
-3. cross128 r90 t=2 after LargeFront is understood.
+4. cross128 r90 t=2 after LargeFront is understood.
 ```
 
 Latest LargeFront fix:
@@ -142,6 +153,44 @@ read:
   large128 r50 remains the next LargeFront gap.
 ```
 
+LargeFront-L4 source-batch sweep:
+
+```text
+result:
+  private/raw-results/linux/hz5_large128_l4_batch_sweep_r3
+
+read:
+  batch16 helps several large128 r50/r90 rows after the Large-first/free-map
+  fix, especially high-thread rows.
+  batch8 is not consistently better than batch4/batch16.
+  source batch is still a real lever, but the row-to-row optimum remains noisy.
+```
+
+LargeFront-L4 drain-budget diagnostic:
+
+```text
+result:
+  private/raw-results/linux/hz5_large128_l4_drain1_r3
+
+lane:
+  hz5-pagerun64-large128-b16-drain1
+
+read:
+  no-go as a broad profile.
+  t=2 r50 improves, but r90 and t=8 regress badly.
+  Do not promote drain1.
+```
+
+LargeFront-L4 design rule:
+
+```text
+Do not replace the saved large128 profile until a diagnostic lane beats it
+broadly on r50/r90 without losing the RSS advantage.
+
+Use fixed diagnostic lanes first. Adaptive policy only comes after a clear
+source-batch or drain-budget signal.
+```
+
 Do not:
 
 ```text
@@ -155,28 +204,31 @@ change MidPage PageRun64 without a clear regression reason
 ## Active Implementation
 
 ```text
-LargeFront phase observation diagnostic:
+LargeFront-L4 source-batch diagnostic:
   flag:
-    --linux-largefront-observe
+    --linux-hz5-profile-pagerun64-large128-batch8
+    --linux-hz5-profile-pagerun64-large128-batch16
 
-  combined preset:
-    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64-observe
+  base:
+    PageRun64
+    LargeFront takefirst
+    Large-first free route
+    LargeFront exact-base fast map
 
   behavior:
-    compile-time counters only in the observation lane
-    print with HZ5_LARGEFRONT_OBSERVE=1
-    not for performance medians
+    source batch changes only for 128K LargeFront profile comparison
+    no runtime counters
+    no stats in speed lane
 
   reason:
-    adaptive128 and retained-payload scavenging were no-go
-    next question is whether cross128 vs large128 has a reliable slow-path
-    phase signal before source refill
+    old source-batch results were measured before the Large-first/free-map fix
+    r50 may now prefer a different batch than the saved batch4 profile
 
   first result:
-    no clear signal
-    cross128 and large128 differ mostly by volume, not by a clean reusable
-    slow-path ratio
-    fixed split remains the best current policy
+    batch16 is the only promising fixed diagnostic.
+    drain1 is no-go.
+    next confirmation should be RUNS=5/10 on batch4 vs batch16 vs tcmalloc/HZ4
+    before changing the saved profile.
 ```
 
 ## Reading Order
@@ -192,9 +244,9 @@ LargeFront phase observation diagnostic:
 ## Last Commits
 
 ```text
+7d45a08 Optimize LargeFront large128 free route
+4f6d157 Record PageRun64 broad comparison read
+41c0be8 Update hakmem runner for PageRun64 profiles
 f8b767d Add LargeFront adaptive128 diagnostic
 3a204d9 Expose LargeFront source batch tuning
-f51e82d Record PageRun64 takefirst verification
-650b2b3 Add PageRun64 takefirst diagnostic lane
-2f9a1d1 Extend MidPage PageRun to 64K class
 ```

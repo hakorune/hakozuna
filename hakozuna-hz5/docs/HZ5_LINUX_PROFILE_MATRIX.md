@@ -15,6 +15,7 @@ LargeFront 128K remote:
   remaining design target
   fixed source batch choices split by workload
   first targeted free-route/base-lookup fix improves large128 r0/r90
+  L4 source-batch sweep keeps batch16 as the only promising diagnostic
 
 Adaptive128:
   first mapped-bytes-only implementation is no-go
@@ -120,6 +121,86 @@ Status:
 saved fixed profile
 useful evidence for source-batch/RSS tradeoff
 current large128 r90 winner at t=8 in the latest focused check
+```
+
+### `hz5-linux-pagerun64-large-only-batch8`
+
+Role:
+
+```text
+LargeFront-L4 source-batch diagnostic after the Large-first/free-map fix
+```
+
+Build:
+
+```text
+--linux-hz5-profile-pagerun64-large128-batch8
+```
+
+Status:
+
+```text
+diagnostic only
+use to test whether large128 r50 wants a larger source batch than batch4
+```
+
+### `hz5-linux-pagerun64-large-only-batch16`
+
+Role:
+
+```text
+LargeFront-L4 source-batch diagnostic after the Large-first/free-map fix
+```
+
+Build:
+
+```text
+--linux-hz5-profile-pagerun64-large128-batch16
+```
+
+Status:
+
+```text
+diagnostic only
+use to test whether the old cross128 batch16 setting now helps large128 r50
+```
+
+### `hz5-linux-pagerun64-large-only-b16-drain1`
+
+Role:
+
+```text
+LargeFront-L4 remote drain-budget diagnostic
+```
+
+Build:
+
+```text
+--linux-hz5-profile-pagerun64-large128-b16-drain1
+```
+
+Status:
+
+```text
+diagnostic only
+uses source batch16 and limits extra remote spans drained to local cache on
+alloc miss
+no-go in first RUNS=3 broad check
+```
+
+Latest L4 source-batch/drain read:
+
+```text
+batch sweep:
+  private/raw-results/linux/hz5_large128_l4_batch_sweep_r3
+
+drain1:
+  private/raw-results/linux/hz5_large128_l4_drain1_r3
+
+read:
+  batch16 is promising in several high-thread r50/r90 rows.
+  batch8 is not a clear improvement.
+  b16-drain1 is no-go: it helps t=2 r50 but hurts r90 and t=8 badly.
 ```
 
 ## Diagnostic / No-Go Lanes
@@ -381,10 +462,12 @@ Recommended order:
 Current attack order:
 
 ```text
-1. LargeFront 128K r50 remote handoff and source/refill behavior.
-2. main/mid_only r0 instruction-path reduction against tcmalloc, only if
+1. LargeFront-L4 source-batch sweep after Large-first/free-map:
+   batch4 vs batch8 vs batch16.
+2. LargeFront-L4 remote drain budget if source-batch sweep is not enough.
+3. main/mid_only r0 instruction-path reduction against tcmalloc, only if
    local-only throughput remains a priority.
-3. cross128 r90 t=2 after LargeFront is understood.
+4. cross128 r90 t=2 after LargeFront is understood.
 ```
 
 ## Detailed Docs

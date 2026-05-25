@@ -44,6 +44,9 @@ scripts and reports instead of copying the long historical flag chains.
 | `--linux-hz5-profile-pagerun64-main` | PageRun64 + M6 remote + empty retain cap 4096 | main / mid_only / cross64 | default candidate |
 | `--linux-hz5-profile-pagerun64-cross128` | PageRun64 + LargeFront takefirst + source batch16 + exact-base LargeFront map + empty retain cap 4096 | cross128 remote-heavy | saved fixed profile |
 | `--linux-hz5-profile-pagerun64-large128` | PageRun64 + LargeFront takefirst + source batch4 + exact-base LargeFront map + Large-first free route + empty retain cap 4096 | large128 remote-heavy | saved fixed profile |
+| `--linux-hz5-profile-pagerun64-large128-batch8` | same as `large128` but source batch8 | large128 r50/r90 source-batch diagnostic | diagnostic only |
+| `--linux-hz5-profile-pagerun64-large128-batch16` | same as `large128` but source batch16 | large128 r50/r90 source-batch diagnostic | diagnostic only |
+| `--linux-hz5-profile-pagerun64-large128-b16-drain1` | same as `large128-batch16` but alloc-miss drain local budget 1 | large128 r50 drain-budget diagnostic | diagnostic only |
 
 Use the fixed cross128 and large128 aliases as separate profiles. The source
 batch optimum reverses between those workloads, so a single fixed value is not
@@ -62,6 +65,26 @@ large128 r90:
 
 large128 r50:
   still the next LargeFront gap.
+```
+
+Use `hz5-pagerun64-large128-b8`, `hz5-pagerun64-large128-b16`, and
+`hz5-pagerun64-large128-b16-drain1` in `linux/run_hz5_hakmem_compare.sh` only
+for LargeFront-L4 sweeps. Do not include them in broad default matrices unless
+they replace the saved batch4 profile.
+
+L4 first read:
+
+```text
+source batch sweep:
+  private/raw-results/linux/hz5_large128_l4_batch_sweep_r3
+
+drain budget:
+  private/raw-results/linux/hz5_large128_l4_drain1_r3
+
+decision:
+  batch16 remains candidate-watch.
+  batch8 is not clear.
+  b16-drain1 is no-go for broad promotion.
 ```
 
 ## MidPageFront Combination Chain
@@ -165,6 +188,8 @@ lanes:
   --linux-hz5-profile-pagerun64-main
   --linux-hz5-profile-pagerun64-cross128
   --linux-hz5-profile-pagerun64-large128
+  optional: --linux-hz5-profile-pagerun64-large128-batch8
+  optional: --linux-hz5-profile-pagerun64-large128-batch16
   HZ4
   tcmalloc
   mimalloc

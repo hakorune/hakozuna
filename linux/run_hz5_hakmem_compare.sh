@@ -32,6 +32,9 @@ HZ5_ALLGATE_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-hakmem-allgate"
 HZ5_PAGERUN64_MAIN_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-pagerun64-main"
 HZ5_PAGERUN64_CROSS_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-pagerun64-cross128"
 HZ5_PAGERUN64_LARGE_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-pagerun64-large128"
+HZ5_PAGERUN64_LARGE_B8_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-pagerun64-large128-batch8"
+HZ5_PAGERUN64_LARGE_B16_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-pagerun64-large128-batch16"
+HZ5_PAGERUN64_LARGE_B16_DRAIN1_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-pagerun64-large128-b16-drain1"
 
 usage() {
   cat <<'EOF'
@@ -47,6 +50,9 @@ Options:
   --lanes LIST         comma-separated lanes (default: guard,main,mid_only,cross128,large128)
   --allocators LIST    comma-separated allocators
                        (default: system,hz3,hz4,mimalloc,tcmalloc,hz5-pagerun64-main,hz5-pagerun64-cross128,hz5-pagerun64-large128)
+                       optional HZ5 diagnostics: hz5-pagerun64-large128-b8,
+                       hz5-pagerun64-large128-b16,
+                       hz5-pagerun64-large128-b16-drain1
   --outdir DIR         output directory
   --paper-root DIR     hakmem root (default: /mnt/workdisk/public_share/hakmem)
   --bench-bin PATH     benchmark binary
@@ -136,6 +142,21 @@ build_hz5() {
   "${ROOT_DIR}/linux/build_linux_hz5_standalone.sh" \
     --linux-hz5-profile-pagerun64-large128 \
     --out-dir "${HZ5_PAGERUN64_LARGE_OUT}" >/dev/null
+  if [[ ",${ALLOCATORS}," == *",hz5-pagerun64-large128-b8,"* ]]; then
+    "${ROOT_DIR}/linux/build_linux_hz5_standalone.sh" \
+      --linux-hz5-profile-pagerun64-large128-batch8 \
+      --out-dir "${HZ5_PAGERUN64_LARGE_B8_OUT}" >/dev/null
+  fi
+  if [[ ",${ALLOCATORS}," == *",hz5-pagerun64-large128-b16,"* ]]; then
+    "${ROOT_DIR}/linux/build_linux_hz5_standalone.sh" \
+      --linux-hz5-profile-pagerun64-large128-batch16 \
+      --out-dir "${HZ5_PAGERUN64_LARGE_B16_OUT}" >/dev/null
+  fi
+  if [[ ",${ALLOCATORS}," == *",hz5-pagerun64-large128-b16-drain1,"* ]]; then
+    "${ROOT_DIR}/linux/build_linux_hz5_standalone.sh" \
+      --linux-hz5-profile-pagerun64-large128-b16-drain1 \
+      --out-dir "${HZ5_PAGERUN64_LARGE_B16_DRAIN1_OUT}" >/dev/null
+  fi
 }
 
 build_hz5
@@ -145,6 +166,9 @@ HZ5_ALLGATE_SO="${HZ5_ALLGATE_OUT}/libhakozuna_hz5_preload_full.so"
 HZ5_PAGERUN64_MAIN_SO="${HZ5_PAGERUN64_MAIN_OUT}/libhakozuna_hz5_preload_full.so"
 HZ5_PAGERUN64_CROSS_SO="${HZ5_PAGERUN64_CROSS_OUT}/libhakozuna_hz5_preload_full.so"
 HZ5_PAGERUN64_LARGE_SO="${HZ5_PAGERUN64_LARGE_OUT}/libhakozuna_hz5_preload_full.so"
+HZ5_PAGERUN64_LARGE_B8_SO="${HZ5_PAGERUN64_LARGE_B8_OUT}/libhakozuna_hz5_preload_full.so"
+HZ5_PAGERUN64_LARGE_B16_SO="${HZ5_PAGERUN64_LARGE_B16_OUT}/libhakozuna_hz5_preload_full.so"
+HZ5_PAGERUN64_LARGE_B16_DRAIN1_SO="${HZ5_PAGERUN64_LARGE_B16_DRAIN1_OUT}/libhakozuna_hz5_preload_full.so"
 
 declare -A ALLOC_SO
 ALLOC_SO[system]=""
@@ -157,6 +181,9 @@ ALLOC_SO[hz5-allgate]="${HZ5_ALLGATE_SO}"
 ALLOC_SO[hz5-pagerun64-main]="${HZ5_PAGERUN64_MAIN_SO}"
 ALLOC_SO[hz5-pagerun64-cross128]="${HZ5_PAGERUN64_CROSS_SO}"
 ALLOC_SO[hz5-pagerun64-large128]="${HZ5_PAGERUN64_LARGE_SO}"
+ALLOC_SO[hz5-pagerun64-large128-b8]="${HZ5_PAGERUN64_LARGE_B8_SO}"
+ALLOC_SO[hz5-pagerun64-large128-b16]="${HZ5_PAGERUN64_LARGE_B16_SO}"
+ALLOC_SO[hz5-pagerun64-large128-b16-drain1]="${HZ5_PAGERUN64_LARGE_B16_DRAIN1_SO}"
 
 IFS=',' read -r -a alloc_list <<< "${ALLOCATORS}"
 for alloc in "${alloc_list[@]}"; do
@@ -232,6 +259,9 @@ extract_rss() {
   echo "hz5_pagerun64_main_so=${HZ5_PAGERUN64_MAIN_SO}"
   echo "hz5_pagerun64_cross128_so=${HZ5_PAGERUN64_CROSS_SO}"
   echo "hz5_pagerun64_large128_so=${HZ5_PAGERUN64_LARGE_SO}"
+  echo "hz5_pagerun64_large128_b8_so=${HZ5_PAGERUN64_LARGE_B8_SO}"
+  echo "hz5_pagerun64_large128_b16_so=${HZ5_PAGERUN64_LARGE_B16_SO}"
+  echo "hz5_pagerun64_large128_b16_drain1_so=${HZ5_PAGERUN64_LARGE_B16_DRAIN1_SO}"
 } > "${OUTDIR}/meta.txt"
 
 echo -e "thread\tlane\tremote_pct\talloc\trun\tops_per_sec\tru_maxrss_kb\talloc_failed\tstatus\tlog" \
