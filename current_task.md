@@ -455,5 +455,119 @@ Read:
   traffic. Next target should reduce per-slot state transitions on remote drain,
   not producer queue representation or RSS release policy.
 
+Pro design decision:
+  Implement MidPage-C8 / PageRun-R1 as the last major throughput-chase
+  experiment before freezing C7.
+
+Goal:
+  Keep C7/M6 remote as saved RSS-efficient profile, but test whether HZ4-style
+  page-local run allocation can remove M4 magazine/refill/slot_state2 path
+  length.
+
+Scope:
+  band8/32 only:
+    class 8192
+    class 32768
+  Linux MidPage only.
+  Do not touch Windows P43i/P45, Local2P, SmallFront, LargeFront.
+
+Design:
+  Add PageRun state under a compile flag:
+    live_bits:
+      canonical user-visible live slots
+    remote_bits:
+      remote-freed slots claimed by non-owner threads
+    owner_free_bits:
+      owner-local reusable slots
+    current_page[class]:
+      TLS current page for ctz alloc
+    partial_pages[class]:
+      owner-local pages with available bits
+
+  Alloc:
+    current page owner_free_bits pop
+    atomic live_bits set
+    return slab_base + slot * class_size
+    no M4 magazine pop
+    no M4 slot_state2 transition
+
+  Owner-local free:
+    page_for_ptr + slot_index
+    atomic live_bits clear test
+    owner_free_bits |= bit
+    partial push if not current
+    empty release check
+
+  Remote:
+    keep M6 remote deferred boundary
+    flush raw ptr -> page/slot
+    live_bits clear test
+    remote_bits |= bit
+    owner inbox gets page pointer
+    owner drain exchange(remote_bits) -> owner_free_bits
+    no M4 cache_slot
+    no M4 REMOTE->CACHE transition
+
+Acceptance:
+  weak keep:
+    r90 +10% over C7/M6 remote
+    r50 +8%
+    r0 regression <=5%
+    r90 RSS <=200MB
+  strong keep:
+    r90 near tcmalloc class
+    instr/op <180
+    branches/op <36
+    non_spec_lock/op <0.25
+  hard no-go:
+    r90 RSS >225MB
+    overflow returns
+    invalid/double-free can be promoted to owner_free_bits
+    empty release can free a page referenced by current/partial/remote
+
 Keep RSS checkpoint as a phase-boundary/control lane, not the next speed lever.
 ```
+
+Implementation result:
+  Lane:
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun
+    --linux-midpagefront-empty-retain-cap 4096
+
+  Build:
+    hakozuna-hz5/out/linux/x86_64-hz5-c8-band8-32-pagerun-r1-retain4096/libhakozuna_hz5_preload_full.so
+
+  Implementation:
+    PageRun reuses MidPage `active_bits` as live bits.
+    PageRun adds `pagerun_owner_free_bits` and owner-local current/partial page
+    lists.
+    PageRun bypasses M4 magazine/refill/cache_slot/slot_state2 on alloc,
+    owner-local free, M6 remote flush, and owner remote drain.
+    M4 remote inbox storage is reused only as the owner wakeup/list mechanism.
+
+  RUNS=5, same workload:
+    bench_random_mixed_mt_remote_malloc 8 500000 4000 2049 32768 r 65536
+
+    allocator       r0 ops/s    r50 ops/s   r90 ops/s   r90 maxrss
+    hz5-pagerun     92.55M      66.24M      66.01M      12.7MB
+    hz5-m6remote    61.23M      26.72M      19.74M      162.0MB
+    hz4             59.55M      41.30M      36.68M      304.6MB
+    tcmalloc        115.50M     32.84M      28.54M      737.7MB
+
+  Smoke:
+    preload payload-touch smoke passed
+    owner-local double-free-before-reuse did not duplicate a pointer
+    remote free smoke passed
+
+Read:
+  PageRun-R1 is a strong keep. It beats HZ4 and tcmalloc on r50/r90 throughput
+  in this MidPage band8/32 workload while preserving the RSS advantage. The
+  likely reason is exactly the intended one: removing M4 magazine/cache_slot and
+  packed slot_state2 from the hot owner-reuse path.
+
+Next:
+  1. Run perf counters for PageRun vs HZ4/tcmalloc.
+  2. Run broader main/mid_only/cross128 and ws sweep.
+  3. Check touched-payload RSS rows separately, because this benchmark does not
+     necessarily fault every allocated byte.
+  4. If broad rows hold, promote as C8 PageRun throughput/RSS profile and keep
+     C7 M6 remote as the conservative saved profile.

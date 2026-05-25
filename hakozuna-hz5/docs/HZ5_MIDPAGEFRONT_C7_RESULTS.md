@@ -739,3 +739,54 @@ cache misses than HZ4/tcmalloc. It is paying more instructions, branches,
 non-spec locks, and L2 exclusive traffic per op. The next real design target is
 not producer queue representation; it is reducing free/refill path length.
 ```
+
+## C8 PageRun-R1 Diagnostic
+
+Implementation:
+
+```text
+preset:
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun
+  --linux-midpagefront-empty-retain-cap 4096
+
+design:
+  band8/32 only
+  bypass M4 magazine/refill/cache_slot/slot_state2 for MidPage hot path
+  alloc pops owner-local page owner_free_bits with ctz
+  owner-local free clears active_bits and returns the bit to owner_free_bits
+  M6 remote flush clears active_bits, sets remote_bits, and wakes owner inbox
+  owner drain exchanges remote_bits into owner_free_bits
+```
+
+RUNS=5:
+
+```text
+workload:
+  bench_random_mixed_mt_remote_malloc 8 500000 4000 2049 32768 r 65536
+
+allocator       r0 ops/s    r50 ops/s   r90 ops/s   r90 maxrss
+hz5-pagerun     92.55M      66.24M      66.01M      12.7MB
+hz5-m6remote    61.23M      26.72M      19.74M      162.0MB
+hz4             59.55M      41.30M      36.68M      304.6MB
+tcmalloc        115.50M     32.84M      28.54M      737.7MB
+```
+
+Smoke:
+
+```text
+preload payload-touch smoke passed
+owner-local double-free-before-reuse did not duplicate a pointer
+remote free smoke passed
+```
+
+Read:
+
+```text
+PageRun-R1 is a strong keep. It removes the M4 magazine/cache_slot/slot_state2
+path from owner-local reuse and turns the previous RSS-efficient remote profile
+into a throughput winner on this band8/32 r50/r90 workload.
+
+The very low maxrss should be interpreted carefully: this benchmark does not
+necessarily fault every allocated byte. Keep touched-payload RSS rows separate
+before making a final memory-efficiency claim.
+```

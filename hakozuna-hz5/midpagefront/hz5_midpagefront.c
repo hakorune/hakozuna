@@ -130,6 +130,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M11_REMOTE_DIRECT_CACHE 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN
+#define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN 0
+#endif
+
 #define HZ5_MIDPAGEFRONT_M6_ANY_DEFERRED_FREE \
   (BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_DEFERRED_FREE || \
    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_REMOTE_DEFERRED_FREE)
@@ -216,6 +220,11 @@ void _aligned_free(void* ptr);
 #error "MidPageFront M11 remote direct-cache requires M4 remote packet"
 #endif
 
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN && \
+    !BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET
+#error "MidPageFront PageRun requires M4 remote packet inbox"
+#endif
+
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_OVERFLOW_ARRAY && \
     !BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_MAGAZINE
 #error "MidPageFront M4 overflow array requires M4 magazine"
@@ -289,6 +298,11 @@ typedef struct Hz5MidPage {
   _Atomic uint8_t remote_packet_queued;
   struct Hz5MidPage* remote_packet_next;
 #endif
+#endif
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN
+  uint64_t pagerun_owner_free_bits;
+  uint8_t pagerun_in_partial;
+  struct Hz5MidPage* pagerun_next_partial;
 #endif
   struct Hz5MidPage* next_owned;
   struct Hz5MidPage* source_next;
@@ -407,6 +421,10 @@ typedef struct Hz5MidPageTls {
   Hz5MidPageMagEntry magazine[HZ5_MIDPAGEFRONT_CLASS_COUNT]
                               [HZ5_MIDPAGEFRONT_M4_MAG_CAP_MAX];
   uint16_t magazine_count[HZ5_MIDPAGEFRONT_CLASS_COUNT];
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN
+  Hz5MidPage* pagerun_current[HZ5_MIDPAGEFRONT_CLASS_COUNT];
+  Hz5MidPage* pagerun_partial[HZ5_MIDPAGEFRONT_CLASS_COUNT];
+#endif
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_EMPTY_SLAB_RELEASE
   uint16_t empty_retained_count[HZ5_MIDPAGEFRONT_CLASS_COUNT];
   uint16_t retired_empty_count[HZ5_MIDPAGEFRONT_CLASS_COUNT];
@@ -1415,6 +1433,30 @@ static void hz5_midpagefront_remove_owned_page(Hz5MidPageTls* tls,
   }
 }
 
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN
+static void hz5_midpagefront_pagerun_purge_page(Hz5MidPageTls* tls,
+                                                uint32_t class_index,
+                                                Hz5MidPage* page) {
+  if (!tls || !page || !hz5_midpagefront_class_valid(class_index)) {
+    return;
+  }
+  if (tls->pagerun_current[class_index] == page) {
+    tls->pagerun_current[class_index] = NULL;
+  }
+  Hz5MidPage** link = &tls->pagerun_partial[class_index];
+  while (*link) {
+    Hz5MidPage* cur = *link;
+    if (cur == page) {
+      *link = cur->pagerun_next_partial;
+      cur->pagerun_next_partial = NULL;
+      cur->pagerun_in_partial = 0;
+      continue;
+    }
+    link = &cur->pagerun_next_partial;
+  }
+}
+#endif
+
 static int hz5_midpagefront_m4_page_is_empty_releasable(
     Hz5MidPageTls* tls,
     Hz5MidPage* page) {
@@ -1438,6 +1480,12 @@ static int hz5_midpagefront_m4_page_is_empty_releasable(
     return 0;
   }
 #endif
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN
+  uint64_t all_free = hz5_midpagefront_slot_count_mask(page->slot_count);
+  uint64_t live = atomic_load_explicit(&page->active_bits,
+                                       memory_order_acquire);
+  return live == 0 && page->pagerun_owner_free_bits == all_free;
+#else
   uint64_t field_mask = hz5_midpagefront_m4_state_field_mask(page->slot_count);
   uint64_t cache_state = hz5_midpagefront_m4_initial_state(page->slot_count);
   uint64_t state = atomic_load_explicit(&page->slot_state2,
@@ -1450,6 +1498,7 @@ static int hz5_midpagefront_m4_page_is_empty_releasable(
   (void)cache_state;
   (void)state;
   return 1;
+#endif
 #endif
 }
 
@@ -1517,6 +1566,9 @@ static size_t hz5_midpagefront_m4_release_empty_owned_all(Hz5MidPageTls* tls) {
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M8_OWNER_XFER
         hz5_midpagefront_m8_purge_xfer_page(tls, ci, page);
 #endif
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN
+        hz5_midpagefront_pagerun_purge_page(tls, ci, page);
+#endif
         hz5_midpagefront_m4_purge_magazine_page(tls, ci, page);
         hz5_midpagefront_purge_free_head_page(tls, ci, page);
         hz5_midpagefront_remove_owned_page(tls, ci, page);
@@ -1566,6 +1618,9 @@ static void hz5_midpagefront_m4_try_release_empty_page(Hz5MidPageTls* tls,
 
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M8_OWNER_XFER
   hz5_midpagefront_m8_purge_xfer_page(tls, class_index, page);
+#endif
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN
+  hz5_midpagefront_pagerun_purge_page(tls, class_index, page);
 #endif
   hz5_midpagefront_m4_purge_magazine_page(tls, class_index, page);
   hz5_midpagefront_purge_free_head_page(tls, class_index, page);
@@ -1796,6 +1851,201 @@ static void hz5_midpagefront_m4_remote_packet_drain_if_pending(
     (void)hz5_midpagefront_drain_remote_class(tls, class_index);
   }
 }
+
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN
+static void hz5_midpagefront_pagerun_partial_push_once(
+    Hz5MidPageTls* tls,
+    uint32_t class_index,
+    Hz5MidPage* page) {
+  if (!tls || !page || !hz5_midpagefront_class_valid(class_index) ||
+      page->pagerun_owner_free_bits == 0 || page->source_free ||
+      page->pagerun_in_partial) {
+    return;
+  }
+  page->pagerun_in_partial = 1;
+  page->pagerun_next_partial = tls->pagerun_partial[class_index];
+  tls->pagerun_partial[class_index] = page;
+}
+
+static Hz5MidPage* hz5_midpagefront_pagerun_partial_pop(
+    Hz5MidPageTls* tls,
+    uint32_t class_index) {
+  if (!tls || !hz5_midpagefront_class_valid(class_index)) {
+    return NULL;
+  }
+  while (tls->pagerun_partial[class_index]) {
+    Hz5MidPage* page = tls->pagerun_partial[class_index];
+    tls->pagerun_partial[class_index] = page->pagerun_next_partial;
+    page->pagerun_next_partial = NULL;
+    page->pagerun_in_partial = 0;
+    if (page->magic == HZ5_MIDPAGEFRONT_MAGIC &&
+        page->class_index == class_index &&
+        hz5_owner_equal(page->owner, tls->owner) &&
+        page->pagerun_owner_free_bits != 0) {
+      return page;
+    }
+  }
+  return NULL;
+}
+
+static int hz5_midpagefront_pagerun_live_to_cache(Hz5MidPage* page,
+                                                  uint64_t mask) {
+  if (!page || mask == 0) {
+    return 0;
+  }
+  uint64_t old = atomic_fetch_and_explicit(&page->active_bits,
+                                           ~mask,
+                                           memory_order_acq_rel);
+  if ((old & mask) == 0) {
+    return 0;
+  }
+  uint32_t n = (uint32_t)__builtin_popcountll(mask);
+  if (n != 0) {
+    atomic_fetch_sub_explicit(&page->live_count,
+                              n,
+                              memory_order_acq_rel);
+  }
+  return 1;
+}
+
+static int hz5_midpagefront_pagerun_cache_to_live(Hz5MidPage* page,
+                                                  uint64_t mask) {
+  if (!page || mask == 0) {
+    return 0;
+  }
+  uint64_t old = atomic_fetch_or_explicit(&page->active_bits,
+                                          mask,
+                                          memory_order_acq_rel);
+  if ((old & mask) != 0) {
+    return 0;
+  }
+  uint32_t n = (uint32_t)__builtin_popcountll(mask);
+  if (n != 0) {
+    atomic_fetch_add_explicit(&page->live_count,
+                              n,
+                              memory_order_acq_rel);
+  }
+  return 1;
+}
+
+static void hz5_midpagefront_pagerun_requeue_if_needed(Hz5MidPage* page) {
+  if (!page || !hz5_owner_is_alive(page->owner)) {
+    return;
+  }
+  uint64_t bits = atomic_load_explicit(&page->remote_bits,
+                                       memory_order_acquire);
+  if (bits == 0) {
+    return;
+  }
+  uint8_t expected = 0;
+  if (atomic_compare_exchange_strong_explicit(
+          &page->remote_packet_queued,
+          &expected,
+          1,
+          memory_order_acq_rel,
+          memory_order_acquire)) {
+    hz5_midpagefront_m4_remote_packet_publish(page->owner,
+                                              page->class_index,
+                                              page);
+  }
+}
+
+static void hz5_midpagefront_pagerun_remote_publish(Hz5MidPage* page) {
+  if (!page || !hz5_owner_is_alive(page->owner)) {
+    return;
+  }
+  uint8_t expected = 0;
+  if (atomic_compare_exchange_strong_explicit(
+          &page->remote_packet_queued,
+          &expected,
+          1,
+          memory_order_acq_rel,
+          memory_order_acquire)) {
+    hz5_midpagefront_m4_remote_packet_publish(page->owner,
+                                              page->class_index,
+                                              page);
+  }
+}
+
+static void hz5_midpagefront_pagerun_accept_cache_bits(
+    Hz5MidPageTls* tls,
+    uint32_t class_index,
+    Hz5MidPage* page,
+    uint64_t bits) {
+  if (!tls || !page || bits == 0 ||
+      !hz5_midpagefront_class_valid(class_index)) {
+    return;
+  }
+  page->pagerun_owner_free_bits |=
+      bits & hz5_midpagefront_slot_count_mask(page->slot_count);
+  if (tls->pagerun_current[class_index] != page) {
+    hz5_midpagefront_pagerun_partial_push_once(tls, class_index, page);
+  }
+}
+
+static uint32_t hz5_midpagefront_pagerun_remote_drain_page(
+    Hz5MidPageTls* tls,
+    uint32_t class_index,
+    Hz5MidPage* page) {
+  if (!tls || !page || !hz5_owner_equal(page->owner, tls->owner) ||
+      page->class_index != class_index) {
+    return 0;
+  }
+  uint64_t bits = atomic_exchange_explicit(&page->remote_bits,
+                                           0,
+                                           memory_order_acq_rel);
+  bits &= hz5_midpagefront_slot_count_mask(page->slot_count);
+  if (bits != 0) {
+    hz5_midpagefront_pagerun_accept_cache_bits(
+        tls, class_index, page, bits);
+  }
+  atomic_store_explicit(&page->remote_packet_queued,
+                        0,
+                        memory_order_release);
+  hz5_midpagefront_pagerun_requeue_if_needed(page);
+  hz5_midpagefront_m4_try_release_empty_page(tls, page);
+  return (uint32_t)__builtin_popcountll(bits);
+}
+
+static Hz5MidPageFrontFreeResult hz5_midpagefront_pagerun_free_local(
+    Hz5MidPageTls* tls,
+    Hz5MidPage* page,
+    uint32_t slot) {
+  if (!tls || !page || slot >= page->slot_count || slot >= 64u) {
+    return HZ5_MIDPAGEFRONT_FREE_INVALID;
+  }
+  uint64_t mask = hz5_midpagefront_slot_mask(slot);
+  if (!hz5_midpagefront_pagerun_live_to_cache(page, mask)) {
+    return HZ5_MIDPAGEFRONT_FREE_INVALID;
+  }
+  hz5_midpagefront_pagerun_accept_cache_bits(
+      tls, page->class_index, page, mask);
+  hz5_midpagefront_m4_try_release_empty_page(tls, page);
+  return HZ5_MIDPAGEFRONT_FREE_OK;
+}
+
+static void hz5_midpagefront_pagerun_flush_entry(Hz5MidPageTls* tls,
+                                                 Hz5MidPage* page,
+                                                 uint32_t slot) {
+  if (!tls || !page || slot >= page->slot_count || slot >= 64u) {
+    return;
+  }
+  uint64_t mask = hz5_midpagefront_slot_mask(slot);
+  if (!hz5_midpagefront_pagerun_live_to_cache(page, mask)) {
+    return;
+  }
+  if (hz5_owner_equal(page->owner, tls->owner)) {
+    hz5_midpagefront_pagerun_accept_cache_bits(
+        tls, page->class_index, page, mask);
+    hz5_midpagefront_m4_try_release_empty_page(tls, page);
+    return;
+  }
+  atomic_fetch_or_explicit(&page->remote_bits,
+                           mask,
+                           memory_order_release);
+  hz5_midpagefront_pagerun_remote_publish(page);
+}
+#endif
 
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_REMOTE_DRAIN_ON_HIT
 static int hz5_midpagefront_m4_should_drain_on_hit(Hz5MidPageTls* tls,
@@ -2334,6 +2584,10 @@ static void hz5_midpagefront_m6_flush_raw_entries(Hz5MidPageTls* tls,
     if (!hz5_midpagefront_slot_index(page, ptr, &slot)) {
       continue;
     }
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN
+    hz5_midpagefront_pagerun_flush_entry(tls, page, slot);
+    continue;
+#endif
     if (hz5_owner_equal(page->owner, tls->owner)) {
       (void)hz5_midpagefront_m6_batch_add(
           owner_batch,
@@ -2569,8 +2823,13 @@ static uint32_t hz5_midpagefront_drain_remote_class(Hz5MidPageTls* tls,
     Hz5MidPage* page = (Hz5MidPage*)head;
     head = page->remote_packet_next;
     page->remote_packet_next = NULL;
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN
+    drained += hz5_midpagefront_pagerun_remote_drain_page(
+        tls, class_index, page);
+#else
     drained += hz5_midpagefront_m4_remote_packet_drain_page(
         tls, class_index, page);
+#endif
   }
   return drained;
 #else
@@ -2990,6 +3249,12 @@ static Hz5MidPage* hz5_midpagefront_new_page(Hz5MidPageTls* tls,
   page->remote_packet_next = NULL;
 #endif
 #endif
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN
+  page->pagerun_owner_free_bits =
+      hz5_midpagefront_slot_count_mask(slot_count);
+  page->pagerun_in_partial = 0;
+  page->pagerun_next_partial = NULL;
+#endif
   page->next_owned = tls->owned_pages[class_index];
 
 #if !BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_REGION_ARRAY
@@ -3003,7 +3268,9 @@ static Hz5MidPage* hz5_midpagefront_new_page(Hz5MidPageTls* tls,
   tls->owned_pages[class_index] = page;
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_MAGAZINE
   (void)class_size;
+#if !BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN
   hz5_midpagefront_m4_seed_page(tls, class_index, page);
+#endif
 #elif BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_RUN
   (void)class_size;
 #else
@@ -3015,6 +3282,69 @@ static Hz5MidPage* hz5_midpagefront_new_page(Hz5MidPageTls* tls,
 #endif
   return page;
 }
+
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN
+static Hz5MidPage* hz5_midpagefront_pagerun_refill_current(
+    Hz5MidPageTls* tls,
+    uint32_t class_index) {
+  if (!tls || !hz5_midpagefront_class_valid(class_index)) {
+    return NULL;
+  }
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_EMPTY_SLAB_RELEASE && \
+    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_EMPTY_RELEASE_ON_REFILL
+  (void)hz5_midpagefront_m4_release_retired_one(tls, class_index);
+#endif
+
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_REMOTE_DEFERRED_FREE && \
+    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_REMOTE_FLUSH_ON_REFILL
+  hz5_midpagefront_m6_remote_flush_raw(tls);
+#endif
+
+  (void)hz5_midpagefront_drain_remote_class(tls, class_index);
+  Hz5MidPage* current = tls->pagerun_current[class_index];
+  if (current && current->magic == HZ5_MIDPAGEFRONT_MAGIC &&
+      hz5_owner_equal(current->owner, tls->owner) &&
+      current->pagerun_owner_free_bits != 0) {
+    return current;
+  }
+  Hz5MidPage* page =
+      hz5_midpagefront_pagerun_partial_pop(tls, class_index);
+  if (!page) {
+    page = hz5_midpagefront_new_page(tls, class_index);
+  }
+  if (!page || page->pagerun_owner_free_bits == 0) {
+    return NULL;
+  }
+  tls->pagerun_current[class_index] = page;
+  return page;
+}
+
+static void* hz5_midpagefront_pagerun_alloc_class(uint32_t class_index) {
+  if (!hz5_midpagefront_class_valid(class_index)) {
+    return NULL;
+  }
+  Hz5MidPageTls* tls = hz5_midpagefront_tls();
+  Hz5MidPage* page = tls->pagerun_current[class_index];
+  if (!page || page->magic != HZ5_MIDPAGEFRONT_MAGIC ||
+      !hz5_owner_equal(page->owner, tls->owner) ||
+      page->pagerun_owner_free_bits == 0) {
+    page = hz5_midpagefront_pagerun_refill_current(tls, class_index);
+    if (!page) {
+      return NULL;
+    }
+  }
+
+  uint64_t bits = page->pagerun_owner_free_bits;
+  uint64_t mask = bits & (UINT64_C(0) - bits);
+  uint32_t slot = (uint32_t)__builtin_ctzll(mask);
+  page->pagerun_owner_free_bits = bits & ~mask;
+  if (!hz5_midpagefront_pagerun_cache_to_live(page, mask)) {
+    return NULL;
+  }
+  return (void*)((uintptr_t)page->slab_base +
+                 (uintptr_t)slot * (uintptr_t)page->class_size);
+}
+#endif
 
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_MAGAZINE
 static int hz5_midpagefront_m4_refill_magazine(Hz5MidPageTls* tls,
@@ -3180,7 +3510,9 @@ static void* hz5_midpagefront_alloc_class(uint32_t ci) {
   if (!hz5_midpagefront_class_valid(ci)) {
     return NULL;
   }
-#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_MAGAZINE
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN
+  return hz5_midpagefront_pagerun_alloc_class(ci);
+#elif BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_MAGAZINE
   return hz5_midpagefront_m4_alloc_class(ci);
 #elif BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_RUN
   return hz5_midpagefront_nodeless_alloc_class(ci);
@@ -3262,7 +3594,9 @@ static Hz5MidPageFrontFreeResult hz5_midpagefront_free_page(
 
   Hz5MidPageTls* tls = hz5_midpagefront_tls();
   if (hz5_owner_equal(page->owner, tls->owner)) {
-#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_MAGAZINE
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN
+    return hz5_midpagefront_pagerun_free_local(tls, page, slot);
+#elif BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_MAGAZINE
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_FREE_ELIDE
     if (!hz5_midpagefront_m4_note_free(page)) {
       return HZ5_MIDPAGEFRONT_FREE_INVALID;
@@ -3315,7 +3649,19 @@ static Hz5MidPageFrontFreeResult hz5_midpagefront_free_page(
 #endif
 #endif
   } else {
-#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_MAGAZINE && \
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN && \
+    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_REMOTE_DEFERRED_FREE
+    hz5_midpagefront_m6_remote_defer_free(tls, ptr);
+#elif BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_PAGERUN
+    uint64_t mask = hz5_midpagefront_slot_mask(slot);
+    if (!hz5_midpagefront_pagerun_live_to_cache(page, mask)) {
+      return HZ5_MIDPAGEFRONT_FREE_INVALID;
+    }
+    atomic_fetch_or_explicit(&page->remote_bits,
+                             mask,
+                             memory_order_release);
+    hz5_midpagefront_pagerun_remote_publish(page);
+#elif BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_MAGAZINE && \
     BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M10_REMOTE_SLOT_RING
     return hz5_midpagefront_m10_remote_slot_defer(tls, page, slot);
 #elif BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_MAGAZINE && \
