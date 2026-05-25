@@ -438,3 +438,73 @@ Next useful work:
   compare against tcmalloc/HZ4 on the same hakmem rows
   decide whether remote-only M6 should become the C7 remote profile
 ```
+
+## C7 Remote Strength Check
+
+Raw output:
+
+```text
+private/raw-results/linux/hz5_c7_remote_strength_20260525_184341
+```
+
+Benchmark:
+
+```text
+bench_random_mixed_mt_remote_malloc
+threads=8
+iters=500000
+ws=4000
+size=2049..32768
+ring_slots=65536
+RUNS=5
+```
+
+Median ops/s:
+
+```text
+allocator       r0         r50        r90
+tcmalloc        116.50M    34.84M     27.65M
+hz4              59.51M    39.67M     33.81M
+hz5-m6remote     62.15M    26.53M     19.51M
+hz3              96.95M    21.71M     16.48M
+mimalloc         31.95M     5.18M      3.52M
+hz5-baseline     60.66M     3.24M      1.25M
+```
+
+Median maxrss:
+
+```text
+allocator       r0 KB      r50 KB     r90 KB
+hz5-m6remote     75904     127424     160452
+hz3              89472     200832     224512
+hz4             127232     219520     353920
+tcmalloc         87936     524416     725632
+mimalloc         94044     601892     884324
+hz5-baseline     75776     315312     598188
+```
+
+Median overflow_sent:
+
+```text
+allocator       r50        r90
+hz5-m6remote    0          0
+hz4             0          0
+hz3             0          0
+tcmalloc        0          998
+mimalloc        0          90290
+hz5-baseline    204753     999587
+```
+
+Read:
+
+```text
+HZ5 remote-only M6 is now a credible remote-heavy profile:
+  r0 is roughly HZ4-class in this row
+  r50/r90 are far above HZ5 baseline and mimalloc
+  r50/r90 still trail HZ4 and tcmalloc on throughput
+  RSS is much lower than HZ4/tcmalloc/mimalloc on remote-heavy rows
+  overflow is fixed
+
+This is not yet a clean HZ4/tcmalloc throughput win. The current strength is
+RSS-efficient remote robustness, not absolute remote throughput leadership.
+```

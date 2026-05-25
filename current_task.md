@@ -170,15 +170,52 @@ Remote-only M6 smoke:
 
   same current-code comparison on hakmem remote malloc:
     baseline band8/32: r0 46.87M, r50 2.36M, r90 3.92M
-    remote-only M6:    r0 50.40M, r50 22.33M, r90 19.31M
-    tcmalloc:          r50 31.56M
+  remote-only M6:    r0 50.40M, r50 22.33M, r90 19.31M
+  tcmalloc:          r50 31.56M
+
+RUNS=5 strength check:
+  hakmem remote malloc, threads=8, iters=500000, ws=4000,
+  size 2049..32768, ring=65536.
+
+  r0 median ops/s:
+    tcmalloc 116.50M
+    hz3 96.95M
+    hz5-m6remote 62.15M
+    hz5-baseline 60.66M
+    hz4 59.51M
+    mimalloc 31.95M
+
+  r50 median ops/s:
+    hz4 39.67M
+    tcmalloc 34.84M
+    hz5-m6remote 26.53M
+    hz3 21.71M
+    mimalloc 5.18M
+    hz5-baseline 3.24M
+
+  r90 median ops/s:
+    hz4 33.81M
+    tcmalloc 27.65M
+    hz5-m6remote 19.51M
+    hz3 16.48M
+    mimalloc 3.52M
+    hz5-baseline 1.25M
+
+  r90 median maxrss:
+    hz5-m6remote 160MB
+    hz3 225MB
+    hz4 354MB
+    tcmalloc 726MB
+    mimalloc 884MB
+    hz5-baseline 598MB
 
 Read:
   remote-only deferred-free keeps the key M6 r90 benefit without applying the
   classless quarantine to owner-local frees. With the remote raw buffer split
   out of the hot MidPage TLS, r0 is no longer worse than the current baseline.
-  This is now the main remote-heavy candidate, while the non-M6 C7 lane remains
-  the simpler local/RSS control.
+  This is now the main remote-heavy candidate. It is not yet HZ4/tcmalloc-class
+  on r50/r90 throughput, but it is already a strong RSS-efficient remote profile
+  and a large win over HZ5 baseline/mimalloc.
 
 Keep RSS checkpoint as a phase-boundary/control lane, not the next speed lever.
 ```
