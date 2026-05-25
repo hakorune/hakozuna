@@ -285,9 +285,18 @@ Options:
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band4-16-32
                      diagnostic preset: superfast-freeelide plus coarse
                      MidPage bands 4K/16K/32K
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band4-8-16-32
+                     diagnostic preset: superfast-freeelide plus coarse
+                     MidPage bands 4K/8K/16K/32K
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band4-8-32
+                     diagnostic preset: superfast-freeelide plus coarse
+                     MidPage bands 4K/8K/32K
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32
                      diagnostic preset: superfast-freeelide plus coarse
                      MidPage bands 8K/32K
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-16-32
+                     diagnostic preset: superfast-freeelide plus coarse
+                     MidPage bands 8K/16K/32K
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band16-32
                      diagnostic preset: superfast-freeelide plus coarse
                      MidPage bands 16K/32K
@@ -1158,8 +1167,20 @@ while [[ $# -gt 0 ]]; do
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_base 1
       shift
       ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band4-8-16-32)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_base 4
+      shift
+      ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band4-8-32)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_base 5
+      shift
+      ;;
     --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32)
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_base 2
+      shift
+      ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-16-32)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_base 6
       shift
       ;;
     --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band16-32)

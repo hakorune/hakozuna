@@ -2,72 +2,66 @@
 
 ## Active Goal
 
-HZ5 Linux general allocator work is still targeting `tcmalloc`, but the current
-MidPage bottleneck has moved from one safety check to class-mix cache topology.
+HZ5 Linux general allocator work is now in the MidPage-C7 profile-family phase.
+The speed gap is no longer a single hot-path check; it is a speed/RSS Pareto
+problem around mixed MidPage class dispersion.
 
 Immediate focus:
 
 ```text
-MidPageFront-M4 overflow-array diagnostic
+MidPage-C7 RSS-bounded coarse profiles
 ```
 
 Reason:
 
 ```text
-M6 deferred-free was no-go, and same-class MidPage is already tcmalloc-class.
-The large gap appears when random traffic crosses multiple MidPage classes.
-M4 stats show many magazine-full events followed by local_pop refills,
-especially in the 16K/32K classes. The next experiment should remove the
-payload linked-list overflow path from that class-mix case.
+Same-class MidPage direct API is already tcmalloc-class. wide32k proves class
+dispersion is the main direct-speed limiter, but it over-allocates too much for
+a default profile. band8/32 gives large mixed-mid speed gains and needs RSS /
+fragmentation validation before it can become more than a speed profile.
 ```
 
-Design doc:
+Current profile family:
 
 ```text
-hakozuna-hz5/docs/HZ5_MIDPAGEFRONT_M6_DEFERRED_FREE_DESIGN.md
+strict:
+  3072 / 4096 / 8192 / 16384 / 32768
+  low waste / default candidate
+
+coarse-pareto:
+  band4/8/16/32
+  band4/8/32
+  band8/16/32
+  band8/32
+  speed/RSS tradeoff candidates
+
+wide32k:
+  speed upper-bound diagnostic only
 ```
 
 Implementation order:
 
 ```text
-1. Record the tagged-free wrapper diagnostic as no-go. It wraps the same
-   page_for_ptr lookup and does not represent a real route-tag table.
-2. Add a MidPage M4 overflow array:
-   primary magazine full -> TLS secondary array {page, slot, ptr} instead of
-   writing node->page/node->next into user payload.
-3. Refill primary magazine from the overflow array before local_pop/new slab.
-4. Keep 64KiB slabs, class table, slot_state2, and M4 packet remote path
-   unchanged so the result isolates overflow topology.
-5. Measure direct range sweep and hakmem range sweep against the current
-   superfast-freeelide baseline and tcmalloc.
+1. Replace ad-hoc MidPage coarse-class branches with a small mapping table.
+2. Add band4/8/16/32, band4/8/32, and band8/16/32 build presets.
+3. Run speed + RSS matrix for strict, coarse candidates, wide32k, and tcmalloc.
+4. Keep strict as default unless coarse passes RSS thresholds.
+5. Promote at most one coarse-speed profile; keep wide32k as diagnostic only.
 ```
 
-M6 safety contract:
+Promotion thresholds:
 
 ```text
-raw_free quarantine:
-  untrusted, never allocated from directly
+default no-go:
+  peak RSS > strict * 1.30 on main/mid_only/cross128
+  final RSS > strict * 1.20 after drain
+  r50/r90 regression > 8%
+  cross128 regression > 10%
 
-validated magazine:
-  trusted, alloc may pop after CACHE -> LIVE transition
-
-invalid/double-free:
-  may not be reported inside free(); it must fail closed before reuse during
-  raw flush and must never be promoted to the validated magazine
-```
-
-Initial lane:
-
-```text
---linux-hz5-general-midpage-m6-deferred-free-direct
-
-compiled as:
-  M4 magazine
-  M4 remote packet
-  M5 hit-only
-  M6 deferred free
-  no alloc/free state-elision unsafe flags
-  no stats in speed lane
+speed-profile keep:
+  mixed r0 improves >= 20% over strict in at least 3/4 range rows
+  peak RSS <= strict * 1.8 on pathological rows
+  final RSS <= strict * 1.3 after drain
 ```
 
 ## M6 Deferred-Free Result
@@ -323,6 +317,61 @@ Next work should focus on turning this into an explicit profile family:
   wide32k: speed upper bound / diagnostic only
 
 Then measure RSS/memory overhead before promoting any coarse profile.
+```
+
+## C7 RSS-Bounded Sweep
+
+Raw output:
+
+```text
+private/raw-results/linux/midpage_c7_direct_rss_sweep_20260525_172138
+private/raw-results/linux/midpage_c7_preload_rss_sweep_20260525_172216
+```
+
+Direct API, ws=4000, RUNS=3:
+
+```text
+profile          mix_3_8k ops/RSS    mix_5_32k ops/RSS
+strict           53.11M /  76160KB   30.99M /  86912KB
+band4/8/16/32    52.40M /  74368KB   34.29M /  84096KB
+band4/8/32       59.27M /  74496KB   33.67M /  78080KB
+band8/16/32      72.12M /  65408KB   33.54M /  80384KB
+band8/32         71.95M /  65536KB   33.20M /  74496KB
+wide32k          40.98M /  67328KB   39.75M /  67328KB
+```
+
+Preload, ws=4000, RUNS=3:
+
+```text
+profile       row           r0 ops/RSS        r90 ops/RSS
+strict        mix_3_8k      46.89M /  84864   16.29M / 422784
+band8/16/32   mix_3_8k      56.42M /  81408   11.11M / 496384
+band8/32      mix_3_8k      57.36M /  81280   13.13M / 447616
+wide32k       mix_3_8k      36.38M /  77184   21.32M / 196096
+tcmalloc      mix_3_8k      66.64M /  80128   43.32M / 140672
+
+strict        mix_5_32k     32.03M /  91392   22.05M / 174208
+band8/16/32   mix_5_32k     36.71M /  84608   19.56M / 204032
+band8/32      mix_5_32k     37.18M /  78976   22.55M / 208384
+wide32k       mix_5_32k     35.92M /  77312   20.49M / 208512
+tcmalloc      mix_5_32k     50.96M /  84992   34.94M / 137728
+```
+
+Decision:
+
+```text
+C7 coarse bands are valid speed-profile candidates for r0, but they do not pass
+default/RSS promotion yet. band8/32 and band8/16/32 improve local mixed-mid
+speed, but r90 can retain substantially more RSS than strict and tcmalloc.
+
+wide32k is not a default or broad speed profile under high working set. It is
+still useful as a class-dispersion upper-bound diagnostic, but not as a profile.
+
+Next implementation target:
+  MidPage-C7 RSS governor / empty-slab release
+
+The needed mechanism is not another class mapping. It is reclaiming empty or
+mostly-empty 64KiB slabs, especially in coarse profiles and remote-heavy rows.
 ```
 
 ## Class-Mix Finding

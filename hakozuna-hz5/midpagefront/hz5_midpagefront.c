@@ -530,56 +530,66 @@ static int hz5_midpagefront_class_valid(uint32_t class_index) {
   return class_index < HZ5_MIDPAGEFRONT_CLASS_COUNT;
 }
 
-// MidPageFront owns the ordinary malloc gap between SmallFront and MidFront.
-// Keep this range narrow: 64K exact/overaligned and LargeFront rows are separate
-// routes with different RSS and remote-free behavior.
-static int hz5_midpagefront_class_index(size_t size) {
-#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_WIDE_32K_CLASS
+static int hz5_midpagefront_request_bucket(size_t size) {
   if (size <= 2048u || size > 32768u) {
     return -1;
   }
-  return 4;
-#elif BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_COARSE_BANDS == 1
-  if (size <= 2048u || size > 32768u) {
-    return -1;
+  if (size <= 3072u) {
+    return 0;
   }
   if (size <= 4096u) {
     return 1;
   }
+  if (size <= 8192u) {
+    return 2;
+  }
   if (size <= 16384u) {
     return 3;
   }
   return 4;
+}
+
+// MidPageFront owns the ordinary malloc gap between SmallFront and MidFront.
+// Keep this range narrow: 64K exact/overaligned and LargeFront rows are separate
+// routes with different RSS and remote-free behavior.
+static int hz5_midpagefront_class_index(size_t size) {
+  static const uint8_t strict_map[HZ5_MIDPAGEFRONT_CLASS_COUNT] = {
+      0u, 1u, 2u, 3u, 4u};
+  static const uint8_t band4_16_32_map[HZ5_MIDPAGEFRONT_CLASS_COUNT] = {
+      1u, 1u, 3u, 3u, 4u};
+  static const uint8_t band8_32_map[HZ5_MIDPAGEFRONT_CLASS_COUNT] = {
+      2u, 2u, 2u, 4u, 4u};
+  static const uint8_t band16_32_map[HZ5_MIDPAGEFRONT_CLASS_COUNT] = {
+      3u, 3u, 3u, 3u, 4u};
+  static const uint8_t band4_8_16_32_map[HZ5_MIDPAGEFRONT_CLASS_COUNT] = {
+      1u, 1u, 2u, 3u, 4u};
+  static const uint8_t band4_8_32_map[HZ5_MIDPAGEFRONT_CLASS_COUNT] = {
+      1u, 1u, 2u, 4u, 4u};
+  static const uint8_t band8_16_32_map[HZ5_MIDPAGEFRONT_CLASS_COUNT] = {
+      2u, 2u, 2u, 3u, 4u};
+  static const uint8_t wide32k_map[HZ5_MIDPAGEFRONT_CLASS_COUNT] = {
+      4u, 4u, 4u, 4u, 4u};
+
+  int bucket = hz5_midpagefront_request_bucket(size);
+  if (bucket < 0) {
+    return -1;
+  }
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_WIDE_32K_CLASS
+  return (int)wide32k_map[bucket];
+#elif BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_COARSE_BANDS == 1
+  return (int)band4_16_32_map[bucket];
 #elif BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_COARSE_BANDS == 2
-  if (size <= 2048u || size > 32768u) {
-    return -1;
-  }
-  if (size <= 8192u) {
-    return 2;
-  }
-  return 4;
+  return (int)band8_32_map[bucket];
 #elif BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_COARSE_BANDS == 3
-  if (size <= 2048u || size > 32768u) {
-    return -1;
-  }
-  if (size <= 16384u) {
-    return 3;
-  }
-  return 4;
+  return (int)band16_32_map[bucket];
+#elif BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_COARSE_BANDS == 4
+  return (int)band4_8_16_32_map[bucket];
+#elif BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_COARSE_BANDS == 5
+  return (int)band4_8_32_map[bucket];
+#elif BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_COARSE_BANDS == 6
+  return (int)band8_16_32_map[bucket];
 #else
-  if (size <= 2048u || size > 32768u) {
-    return -1;
-  }
-  if (size <= 4096u) {
-    return size <= 3072u ? 0 : 1;
-  }
-  if (size <= 8192u) {
-    return 2;
-  }
-  if (size <= 16384u) {
-    return 3;
-  }
-  return 4;
+  return (int)strict_map[bucket];
 #endif
 }
 
