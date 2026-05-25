@@ -306,5 +306,48 @@ Read:
   that it loses throughput while preserving RSS. The current M4 remote drain
   behavior remains the better default for this row.
 
+Worker audit after M7/M8:
+  HZ5 C7/M6 saved profile path:
+    malloc hit:
+      preload -> MidPage try_alloc -> M4 magazine pop -> pointer-mag return
+    owner-local free:
+      preload free -> MidPage first -> page_for_ptr + slot_index
+      freeelide skips slot-state transition, then caches slot
+    remote free:
+      free_page already knows page/slot, but M6 queues raw ptr in separate TLS
+      flush redoes page_for_ptr + slot_index, then LIVE->REMOTE and packet push
+      owner drain does REMOTE->CACHE per bit, then cache_slot per bit
+
+  Why M7/M8 lost:
+    M7 removed reclassification but added linear page-batch search and batch
+    state transition cost.
+    M8 avoided local-list expansion but added xfer indirection/refill management;
+    direct M4 drain is cheaper on this workload.
+
+  Next candidate ranking:
+    1. Budgeted owner drain using existing remote_packet_bits:
+       drain only enough slots to fill the magazine, leave remaining bits on
+       page and requeue. Acceptance: r50/r90 +10%, r0 regression <=3%,
+       overflow zero, r90 RSS <=225MB.
+    2. Flat M6 remote slot ring:
+       store {page,slot} from free_page without page aggregation. Acceptance:
+       r50/r90 +5%, r0 regression <=3%, RSS unchanged.
+    3. M6 remote cap/flush scheduling sweep:
+       no-code/low-code signal using cap 32/64/128/256 and no-refill-flush.
+
+Perf plan:
+  Run speed-lane perf separately for HZ5 M6 remote, HZ4, and tcmalloc on
+  r0/r50/r90. Do not enable HZ5 stats/counters in these medians.
+  Useful counters:
+    cycles, instructions, branches, branch-misses
+    cache-references/cache-misses
+    dTLB-loads/dTLB-load-misses
+    ls_locks.*, l2_request_g2.*, l2_cache_req_stat.*, l2_latency.*
+  Read:
+    high instructions/branches with similar misses => dispatch/state path
+    high ls_locks or L2 exclusive requests => atomics/remote handoff
+    high branch miss ratio => route/class dispatch
+    high cache/TLB misses => footprint/locality issue
+
 Keep RSS checkpoint as a phase-boundary/control lane, not the next speed lever.
 ```
