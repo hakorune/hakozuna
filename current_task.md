@@ -57,6 +57,10 @@ large128-base-directmap:
 large128-r50-drain-directmap:
   combines drain1 and base-directmap.
   current RUNS=3 no-go: it does not beat either parent and r90 RSS/ops regress.
+
+large128-ownerfast:
+  enables LargeFront same-owner load/store state transition.
+  current RUNS=3 no-go: t4/t8 r50 and t8/r90 regress versus source16.
 ```
 
 Recent result roots:
@@ -71,6 +75,7 @@ private/raw-results/linux/hz5_large128_t4r50_perf_current_20260526_053300
 private/raw-results/linux/hz5_large128_rb_current_r3_20260526_053400
 private/raw-results/linux/hz5_large128_batch32_smoke_20260526_053458
 private/raw-results/linux/hz5_large128_base_directmap4_r3_20260526_053547
+private/raw-results/linux/hz5_large128_ownerfast_r3_20260526_053858
 ```
 
 ## Next Engineering Direction
@@ -80,7 +85,8 @@ private/raw-results/linux/hz5_large128_base_directmap4_r3_20260526_053547
 2. Treat hold8/base-directmap/direct-header/drain-directmap as diagnostics.
 3. Current t4/r50 perf gap is instruction/branch count plus page-fault/refill
    pressure, not cache-miss rate alone.
-4. rb32/rb64 and batch32 do not fix t4/r50; keep them diagnostic/no-go.
+4. rb32/rb64, batch32, and ownerfast do not fix t4/r50; keep them
+   diagnostic/no-go.
 5. Do not add another policy until a concrete hotspot explains the row split.
 6. Keep speed lanes free of HZ5_PRELOAD_STATS and hot-path counters.
 ```

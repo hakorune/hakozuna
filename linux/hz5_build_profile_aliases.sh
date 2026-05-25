@@ -20,6 +20,10 @@ hz5_try_apply_profile_alias() {
     --linux-hz5-profile-pagerun64-large128-batch16|--linux-hz5-profile-large128-source16)
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 16
       ;;
+    --linux-hz5-profile-large128-ownerfast)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 16
+      LINUX_LARGEFRONT_OWNER_FAST_STATE=1
+      ;;
     --linux-hz5-profile-pagerun64-large128-b16-drain1|--linux-hz5-profile-large128-r50-drain)
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 16
       LINUX_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET=1

@@ -50,6 +50,7 @@ Latest focused reads:
   private/raw-results/linux/hz5_large128_base_directmap_r3_20260526_051731
   private/raw-results/linux/hz5_large128_t4r50_perf_current_20260526_053300
   private/raw-results/linux/hz5_large128_rb_current_r3_20260526_053400
+  private/raw-results/linux/hz5_large128_ownerfast_r3_20260526_053858
 ```
 
 ## Saved Profiles
@@ -65,6 +66,7 @@ Latest focused reads:
 | Lane | Build alias | Runner allocator | Current read |
 | --- | --- | --- | --- |
 | source16 | `--linux-hz5-profile-large128-source16` | `hz5-large128-source16` | best current r90/t8 direction; not universal |
+| ownerfast | `--linux-hz5-profile-large128-ownerfast` | `hz5-large128-ownerfast` | no-go; same-owner state fast path regresses broad rows |
 | r50-drain | `--linux-hz5-profile-large128-r50-drain` | `hz5-large128-r50-drain` | diagnostic only; broad no-promote |
 | r50-hold4 | `--linux-hz5-profile-large128-r50-hold` | `hz5-large128-r50-hold` | r50 diagnostic; loses source16 on r90 |
 | r50-hold8 | `--linux-hz5-profile-large128-r50-hold8` | `hz5-large128-r50-hold8` | wins t8/r50 in one run; loses source16 on r90 |
@@ -219,6 +221,30 @@ source batch32:
   no-go; source kept at the simpler 1-way diagnostic cache.
 ```
 
+### OwnerFast
+
+```text
+root:
+  private/raw-results/linux/hz5_large128_ownerfast_r3_20260526_053858
+
+t4/r50:
+  source16   19.84M / 43MB
+  ownerfast  17.06M / 56MB
+  tcmalloc   26.98M / 54MB
+
+t8/r90:
+  source16   32.94M /  63MB
+  ownerfast  14.47M / 150MB
+  tcmalloc   15.03M / 185MB
+```
+
+Decision:
+
+```text
+no-go diagnostic.
+Same-owner load/store state transition is not the broad LargeFront answer.
+```
+
 ## No-Promote Summary
 
 | Lane | Reason |
@@ -233,6 +259,7 @@ source batch32:
 | r50-drain-directmap | simple composition worsens r50 and r90 |
 | rb32/rb64 | high-thread r90 signal, but t4/r50 regression |
 | source batch32 | does not reduce t4/r50 gap; r90 regresses |
+| ownerfast | same-owner state fast path regresses broad rows |
 
 ## Next Work
 
