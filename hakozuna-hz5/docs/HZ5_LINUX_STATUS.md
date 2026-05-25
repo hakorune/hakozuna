@@ -67,12 +67,12 @@ ced9279 Add MidPageFront M4 cross-drain diagnostic
   cross128 r0/r50 in gated RUNS=5
 
 --linux-hz5-general-midpage-region-shadow-m4packet-freefirst
-  M4packet plus MidPageFront-first preload free dispatch; current incremental
-  candidate for the next MidPage matrix
+  M4packet plus MidPageFront-first preload free dispatch; current balanced
+  MidPage lead after RUNS=5
 
 --linux-hz5-general-midpage-region-shadow-m4packet-routefree
   M4packet plus MidPageFront -> LargeFront free dispatch; candidate-watch for
-  local r0 and cross128 r0, not a broad default yet
+  mid_only r90/free-route ordering, not a broad default
 
 --linux-hz5-general-midpage-region
   MidPageFront-M2.2 stable remote-heavy mid-size candidate
@@ -203,6 +203,7 @@ Latest lane-combination read:
 private/raw-results/linux/midpage_m4packet_freefirst_smoke_20260525_085727
 private/raw-results/linux/midpage_m4packet_crossdrain_smoke_20260525_085453
 private/raw-results/linux/midpage_m4packet_routefree_smoke_20260525_090830
+private/raw-results/linux/midpage_route_matrix_r5_20260525_091054
 ```
 
 Interpretation:
@@ -214,6 +215,22 @@ m4packet-crossdrain should not be promoted because it hurts cross128 r50/r90.
 routefree confirms free-route ordering matters for local r0, but it does not
 beat freefirst on cross128 r90.
 Use docs/HZ5_LINUX_LANE_COMBINATIONS.md for the next matrix set.
+```
+
+RUNS=5 update:
+
+```text
+freefirst is the balanced lead:
+  main r90 beats tcmalloc and is best HZ5
+  mid_only r0 is best HZ5
+  cross128 r90 is best HZ5 but still far below tcmalloc
+
+routefree:
+  best for mid_only r90
+  not broad; loses to freefirst on cross128 r90
+
+remaining gap:
+  local r0 and cross128 are structural, not just free dispatch order.
 ```
 
 Follow-up cleanup:

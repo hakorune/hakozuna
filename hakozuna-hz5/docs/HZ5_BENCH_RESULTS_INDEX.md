@@ -1177,6 +1177,69 @@ freefirst:  malloc_hz5=10049 malloc_real=0 free_hz5=10057 free_real=0 track_inse
 routefree:  malloc_hz5=10049 malloc_real=0 free_hz5=10057 free_real=0 track_insert_fail=0
 ```
 
+### `midpage_route_matrix_r5_20260525_091054`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_route_matrix_r5_20260525_091054
+```
+
+Purpose:
+
+```text
+RUNS=5 matrix for the current MidPage comparison set:
+allocfirst / m4packet / freefirst / routefree / tcmalloc.
+Performance runs keep HZ5_PRELOAD_STATS unset.
+```
+
+Decision:
+
+```text
+M4packet-freefirst is the balanced lead. Routefree is useful for mid_only r90
+but is not a broad default. The remaining local-r0 and cross128 gaps to
+tcmalloc are structural and not solved by free ordering.
+```
+
+Key rows:
+
+```text
+main r0:
+  allocfirst 35.62M, m4packet 35.79M, freefirst 36.23M, routefree 36.21M, tcmalloc 116.63M
+
+main r90:
+  allocfirst  7.78M, m4packet 11.27M, freefirst 11.65M, routefree 11.25M, tcmalloc 10.29M
+
+mid_only r0:
+  allocfirst 36.48M, m4packet 36.19M, freefirst 37.57M, routefree 35.64M, tcmalloc 115.21M
+
+mid_only r90:
+  allocfirst  6.68M, m4packet 12.44M, freefirst 11.86M, routefree 12.82M, tcmalloc  6.09M
+
+cross128 r0:
+  allocfirst 20.50M, m4packet 20.57M, freefirst 20.68M, routefree 20.17M, tcmalloc 61.49M
+
+cross128 r90:
+  allocfirst  5.10M, m4packet  6.43M, freefirst  6.57M, routefree  5.78M, tcmalloc 12.17M
+```
+
+### `midpage_route_matrix_attrib_20260525_091125`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_route_matrix_attrib_20260525_091125
+```
+
+Result:
+
+```text
+allocfirst: malloc_hz5=10049 malloc_real=0 free_hz5=10057 free_real=0 track_insert_fail=0
+m4packet:   malloc_hz5=10049 malloc_real=0 free_hz5=10057 free_real=0 track_insert_fail=0
+freefirst:  malloc_hz5=10049 malloc_real=0 free_hz5=10057 free_real=0 track_insert_fail=0
+routefree:  malloc_hz5=10049 malloc_real=0 free_hz5=10057 free_real=0 track_insert_fail=0
+```
+
 ## Older Results
 
 The full chronological result log remains in:

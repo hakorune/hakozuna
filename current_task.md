@@ -690,3 +690,40 @@ large-heavy cross128 r0. It is not the broad answer because cross128 r90 is
 below freefirst. Keep it as candidate-watch and run the next RUNS=5 matrix with
 allocfirst / m4packet / freefirst / routefree / tcmalloc.
 ```
+
+RUNS=5 MidPage route matrix:
+
+```text
+private/raw-results/linux/midpage_route_matrix_r5_20260525_091054
+private/raw-results/linux/midpage_route_matrix_attrib_20260525_091125
+```
+
+Result:
+
+```text
+main r0:
+  allocfirst 35.62M, m4packet 35.79M, freefirst 36.23M, routefree 36.21M, tcmalloc 116.63M
+
+main r90:
+  allocfirst  7.78M, m4packet 11.27M, freefirst 11.65M, routefree 11.25M, tcmalloc 10.29M
+
+mid_only r0:
+  allocfirst 36.48M, m4packet 36.19M, freefirst 37.57M, routefree 35.64M, tcmalloc 115.21M
+
+mid_only r90:
+  allocfirst  6.68M, m4packet 12.44M, freefirst 11.86M, routefree 12.82M, tcmalloc  6.09M
+
+cross128 r0:
+  allocfirst 20.50M, m4packet 20.57M, freefirst 20.68M, routefree 20.17M, tcmalloc 61.49M
+
+cross128 r90:
+  allocfirst  5.10M, m4packet  6.43M, freefirst  6.57M, routefree  5.78M, tcmalloc 12.17M
+```
+
+Decision:
+
+```text
+Freefirst is the balanced MidPage lead. Routefree is only a candidate-watch for
+mid_only r90. The local-r0 and cross128 gaps to tcmalloc are structural; free
+dispatch order is not enough.
+```
