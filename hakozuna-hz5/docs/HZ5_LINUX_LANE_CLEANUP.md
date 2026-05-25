@@ -40,6 +40,15 @@ shorter than the historical benchmark logs.
   candidate than crossdrain: improves local r0 and slightly improves
   main/cross128 r90, but does not close the tcmalloc local-r0 gap.
 
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink
+  M4packet-freefirst plus initial-exec TLS and speed link flags. RUNS=5 shows
+  strong local/r50 gains and main/mid_only r0 above 100M, but r90 still prefers
+  freefirst. Keep as local/r50 candidate-watch, not the balanced default.
+
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-absalloc
+  M4packet-freefirst-tlslink plus MidPageFront absolute-first malloc routing.
+  Small r0 gain only; keep as diagnostic.
+
 --linux-hz5-general-midpage-region-shadow-m4packet-routefree
   M4packet plus MidPageFront -> LargeFront -> SmallFront -> MidFront free
   dispatch. Candidate-watch: improves local r0 and cross128 r0, but does not
@@ -77,6 +86,17 @@ shorter than the historical benchmark logs.
 --linux-hz5-general-midpage-region-shadow-localunsafe
   Unsafe r0 upper-bound diagnostic. Skips owner-local MidPage bitmap state
   checks. Never use for safety, remote, or paper rows.
+
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-allocelide
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-ptrmag
+  Unsafe upper-bound diagnostics for M4 alloc-side slot-state transition and
+  pointer-only magazine pop. They do not close the tcmalloc gap and must not be
+  used for safety, remote, or paper rows.
+
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-regcache
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-slotswitch
+  M4/freefirst/tlslink combination diagnostics. Latest r0 smokes are no-go or
+  neutral; keep for reproducibility only.
 
 --linux-hz5-general-midpage-region-shadow-m4packet-crossdrain
   MidPageFront owner/class pending drain from other-front misses. Diagnostic

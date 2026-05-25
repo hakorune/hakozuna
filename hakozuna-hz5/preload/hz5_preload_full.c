@@ -30,6 +30,10 @@
 #ifndef BENCHLAB_HZ5_PRELOAD_MIDPAGE_ALLOC_FIRST
 #define BENCHLAB_HZ5_PRELOAD_MIDPAGE_ALLOC_FIRST 0
 #endif
+
+#ifndef BENCHLAB_HZ5_PRELOAD_MIDPAGE_ALLOC_ABS_FIRST
+#define BENCHLAB_HZ5_PRELOAD_MIDPAGE_ALLOC_ABS_FIRST 0
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -357,10 +361,19 @@ static void* hz5_preload_full_real_malloc(size_t size) {
 }
 
 static void* hz5_preload_full_hz5_malloc(size_t size, size_t align) {
+#if BENCHLAB_HZ5_PRELOAD_MIDPAGE_ALLOC_ABS_FIRST
+  void* midpage_ptr = NULL;
+  Hz5MidPageFrontAllocResult midpage_result =
+      hz5_midpagefront_try_alloc(size, align, &midpage_ptr);
+  if (midpage_result != HZ5_MIDPAGEFRONT_ALLOC_UNSUPPORTED) {
+    return midpage_ptr;
+  }
+#endif
   if (hz5_smallfront_can_handle(size, align)) {
     return hz5_smallfront_alloc(size, align);
   }
-#if BENCHLAB_HZ5_PRELOAD_MIDPAGE_ALLOC_FIRST
+#if BENCHLAB_HZ5_PRELOAD_MIDPAGE_ALLOC_FIRST && \
+    !BENCHLAB_HZ5_PRELOAD_MIDPAGE_ALLOC_ABS_FIRST
   // try_alloc avoids doing MidPageFront class lookup twice and lets unsupported
   // sizes continue to MidFront/LargeFront instead of being treated as OOM.
   void* midpage_ptr = NULL;

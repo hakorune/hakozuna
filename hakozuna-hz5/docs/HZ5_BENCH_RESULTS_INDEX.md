@@ -1314,6 +1314,246 @@ TLS/instruction overhead, but tcmalloc remains far ahead. It needs a broad
 RUNS=5 matrix before promotion.
 ```
 
+### `midpage_freefirst_tlslink_matrix_r5_20260525_093316`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_freefirst_tlslink_matrix_r5_20260525_093316
+```
+
+Purpose:
+
+```text
+Broad RUNS=5 matrix for the freefirst TLS/linkflags diagnostic. Performance
+runs keep HZ5_PRELOAD_STATS unset.
+```
+
+Result:
+
+```text
+main_r0:
+  allocfirst  87.62M
+  freefirst   89.98M
+  tlslink    100.90M
+  tcmalloc   226.17M
+
+main_r50:
+  allocfirst  31.15M
+  freefirst   36.47M
+  tlslink     43.22M
+  tcmalloc    26.04M
+
+main_r90:
+  allocfirst  21.12M
+  freefirst   33.05M
+  tlslink     30.66M
+  tcmalloc    30.43M
+
+mid_only_r0:
+  allocfirst  93.51M
+  freefirst   92.94M
+  tlslink    107.27M
+  tcmalloc   226.65M
+
+mid_only_r50:
+  allocfirst  30.01M
+  freefirst   35.20M
+  tlslink     40.68M
+  tcmalloc    24.28M
+
+mid_only_r90:
+  allocfirst  23.74M
+  freefirst   33.25M
+  tlslink     31.86M
+  tcmalloc    28.61M
+
+cross128_r0:
+  allocfirst  55.17M
+  freefirst   57.03M
+  tlslink     60.20M
+  tcmalloc    45.57M
+
+cross128_r50:
+  allocfirst  19.60M
+  freefirst   20.48M
+  tlslink     23.29M
+  tcmalloc    21.66M
+
+cross128_r90:
+  allocfirst  18.07M
+  freefirst   19.89M
+  tlslink     17.29M
+  tcmalloc    14.37M
+```
+
+Decision:
+
+```text
+tlslink is a strong local/r50 candidate and reduces the local instruction
+path, but it is not a balanced replacement for freefirst because main,
+mid_only, and cross128 r90 prefer freefirst. Next diagnostic should isolate the
+M4 magazine alloc-side descriptor transition cost.
+```
+
+### `midpage_allocelide_r0_smoke_20260525_093736`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_allocelide_r0_smoke_20260525_093736
+```
+
+Purpose:
+
+```text
+Unsafe upper-bound smoke for eliding the M4 owner-local alloc-side
+CACHE -> LIVE slot_state2 transition. Performance runs keep HZ5_PRELOAD_STATS
+unset.
+```
+
+Result:
+
+```text
+main_r0:
+  freefirst   90.45M
+  tlslink    105.97M
+  allocelide 108.76M
+  tcmalloc   220.60M
+
+mid_only_r0:
+  freefirst   94.38M
+  tlslink    100.81M
+  allocelide 114.85M
+  tcmalloc   225.86M
+```
+
+Decision:
+
+```text
+The alloc-side state transition is real cost, but not the main tcmalloc gap.
+Keep allocelide unsafe/diagnostic only because it weakens double-free-before-
+reuse attribution.
+```
+
+### `midpage_ptrmag_r0_smoke_20260525_093901`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_ptrmag_r0_smoke_20260525_093901
+```
+
+Purpose:
+
+```text
+Unsafe upper-bound smoke for pointer-only M4 local magazine pop, layered on
+freefirst-tlslink and allocelide.
+```
+
+Result:
+
+```text
+main_r0:
+  tlslink  103.29M
+  ptrmag   104.80M
+  tcmalloc 223.57M
+
+mid_only_r0:
+  tlslink  103.15M
+  ptrmag   114.58M
+  tcmalloc 222.91M
+```
+
+Decision:
+
+```text
+Pointer-only magazine pop does not close the gap. The missing performance is
+not just page/slot validation inside M4 alloc pop.
+```
+
+### `midpage_absalloc_r0_smoke_20260525_094053`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_absalloc_r0_smoke_20260525_094053
+```
+
+Purpose:
+
+```text
+Diagnostic for trying MidPageFront before SmallFront in malloc routing on top
+of freefirst-tlslink.
+```
+
+Result:
+
+```text
+main_r0:
+  tlslink  100.25M
+  absalloc 104.61M
+  tcmalloc 220.93M
+
+mid_only_r0:
+  tlslink  107.19M
+  absalloc 109.50M
+  tcmalloc 225.91M
+
+cross128_r0:
+  tlslink   58.31M
+  absalloc  62.14M
+  tcmalloc  45.12M
+```
+
+Decision:
+
+```text
+Absolute MidPage alloc-first gives only small local gains. Keep as diagnostic;
+it is not enough to justify changing the balanced routing policy.
+```
+
+### `midpage_regcache_r0_smoke_20260525_094151`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_regcache_r0_smoke_20260525_094151
+```
+
+Purpose:
+
+```text
+Diagnostic for adding MidPageFront TLS region lookup cache to freefirst-tlslink.
+```
+
+Decision:
+
+```text
+No-go. main_r0 and cross128_r0 regress versus tlslink, and mid_only_r0 is
+neutral.
+```
+
+### `midpage_slotswitch_r0_smoke_20260525_094257`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_slotswitch_r0_smoke_20260525_094257
+```
+
+Purpose:
+
+```text
+Diagnostic for adding fixed-class slot-index dispatch to freefirst-tlslink.
+```
+
+Decision:
+
+```text
+No-go. Slot arithmetic is not the remaining local-r0 bottleneck.
+```
+
 ## Older Results
 
 The full chronological result log remains in:

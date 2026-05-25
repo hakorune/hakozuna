@@ -75,6 +75,14 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_ALLOC_ELIDE
+#define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_ALLOC_ELIDE 0
+#endif
+
+#ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG
+#define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG 0
+#endif
+
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M2
 
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_RUN && \
@@ -186,6 +194,9 @@ typedef struct Hz5MidPagePtrCacheEntry {
 typedef struct Hz5MidPageMagEntry {
   Hz5MidPage* page;
   uint16_t slot;
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG
+  void* ptr;
+#endif
 } Hz5MidPageMagEntry;
 
 typedef struct Hz5MidPageTls {
@@ -690,6 +701,21 @@ static int hz5_midpagefront_m4_transition_owner_local(
   atomic_store_explicit(&page->slot_state2, next, memory_order_release);
   return 1;
 }
+
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_ALLOC_ELIDE
+static int hz5_midpagefront_m4_slot_state_is(Hz5MidPage* page,
+                                             uint32_t slot,
+                                             Hz5MidPageSlotState expected) {
+  if (!page || slot >= page->slot_count || slot >= 32u) {
+    return 0;
+  }
+  uint64_t shift = hz5_midpagefront_m4_state_shift(slot);
+  uint64_t mask = hz5_midpagefront_m4_state_mask(slot);
+  uint64_t old = atomic_load_explicit(&page->slot_state2,
+                                      memory_order_acquire);
+  return ((old & mask) >> shift) == (uint64_t)expected;
+}
+#endif
 #endif
 
 static void hz5_midpagefront_local_push(Hz5MidPageTls* tls,
@@ -718,6 +744,11 @@ static int hz5_midpagefront_m4_magazine_push(Hz5MidPageTls* tls,
   }
   tls->magazine[class_index][count].page = page;
   tls->magazine[class_index][count].slot = (uint16_t)slot;
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG
+  tls->magazine[class_index][count].ptr =
+      (void*)((uintptr_t)page->slab_base +
+              (uintptr_t)slot * (uintptr_t)page->class_size);
+#endif
   tls->magazine_count[class_index] = (uint16_t)(count + 1u);
   return 1;
 }
@@ -881,16 +912,29 @@ static void* hz5_midpagefront_m4_alloc_class(uint32_t class_index) {
     count = (uint16_t)(count - 1u);
     tls->magazine_count[class_index] = count;
     Hz5MidPageMagEntry entry = tls->magazine[class_index][count];
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG
+    if (entry.ptr) {
+      return entry.ptr;
+    }
+#endif
     Hz5MidPage* page = entry.page;
     uint32_t slot = entry.slot;
     if (!page || page->magic != HZ5_MIDPAGEFRONT_MAGIC ||
         page->class_index != class_index || slot >= page->slot_count) {
       continue;
     }
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_ALLOC_ELIDE
+    if (!hz5_midpagefront_m4_slot_state_is(page,
+                                           slot,
+                                           HZ5_MIDPAGE_SLOT_CACHE)) {
+      continue;
+    }
+#else
     if (!hz5_midpagefront_m4_transition_owner_local(
             page, slot, HZ5_MIDPAGE_SLOT_CACHE, HZ5_MIDPAGE_SLOT_LIVE)) {
       continue;
     }
+#endif
     return (void*)((uintptr_t)page->slab_base +
                    (uintptr_t)slot * (uintptr_t)page->class_size);
   }
@@ -1793,7 +1837,15 @@ Hz5MidPageFrontFreeResult hz5_midpagefront_free(void* ptr) {
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_MAGAZINE
     if (!hz5_midpagefront_m4_transition_owner_local(
             page, slot, HZ5_MIDPAGE_SLOT_LIVE, HZ5_MIDPAGE_SLOT_CACHE)) {
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_ALLOC_ELIDE
+      if (!hz5_midpagefront_m4_slot_state_is(page,
+                                             slot,
+                                             HZ5_MIDPAGE_SLOT_CACHE)) {
+        return HZ5_MIDPAGEFRONT_FREE_INVALID;
+      }
+#else
       return HZ5_MIDPAGEFRONT_FREE_INVALID;
+#endif
     }
     hz5_midpagefront_m4_cache_slot(tls, page->class_index, page, slot);
 #else
@@ -1827,7 +1879,16 @@ Hz5MidPageFrontFreeResult hz5_midpagefront_free(void* ptr) {
     if (!hz5_midpagefront_m4_transition(page, slot,
                                         HZ5_MIDPAGE_SLOT_LIVE,
                                         HZ5_MIDPAGE_SLOT_REMOTE)) {
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_ALLOC_ELIDE
+      if (!hz5_midpagefront_m4_transition(page,
+                                          slot,
+                                          HZ5_MIDPAGE_SLOT_CACHE,
+                                          HZ5_MIDPAGE_SLOT_REMOTE)) {
+        return HZ5_MIDPAGEFRONT_FREE_INVALID;
+      }
+#else
       return HZ5_MIDPAGEFRONT_FREE_INVALID;
+#endif
     }
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET
     hz5_midpagefront_m4_remote_packet_push(page, slot);

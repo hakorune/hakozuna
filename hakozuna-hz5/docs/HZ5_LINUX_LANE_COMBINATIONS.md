@@ -48,6 +48,9 @@ MidPageFront is the current tcmalloc chase track for ordinary malloc
 | `--linux-hz5-general-midpage-region-shadow-m4packet` | page-descriptor remote packet | M4b remote handoff | current remote-heavy candidate |
 | `--linux-hz5-general-midpage-region-shadow-m4packet-freefirst` | M4packet + MidPage-first preload free dispatch | balanced MidPage candidate | current lead |
 | `--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink` | M4packet-freefirst + initial-exec TLS/speed link flags | TLS overhead reduction | local-r0 candidate-watch |
+| `--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-absalloc` | freefirst-tlslink + MidPage absolute-first malloc routing | preload routing diagnostic | small r0 gain only |
+| `--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-regcache` | freefirst-tlslink + MidPage TLS region lookup cache | free classification diagnostic | no-go |
+| `--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-slotswitch` | freefirst-tlslink + fixed-class slot-index dispatch | slot arithmetic diagnostic | no-go |
 | `--linux-hz5-general-midpage-region-shadow-m4packet-routefree` | M4packet + MidPage/Large/Small/Mid free dispatch | free-route fixed-cost diagnostic | mid_only r90 candidate-watch; not broad default |
 | `--linux-hz5-general-midpage-region-shadow-m4packet-crossdrain` | M4packet + MidPage pending drain from other-front misses | fixed-cost diagnostic | no-promote |
 
@@ -80,6 +83,8 @@ Do not include crossdrain in broad candidate matrices by default.
 | `--linux-hz5-general-midpage-region-shadow-nodeless-ptrcache` | M3 ptrcache diagnostic, not broad lead |
 | `--linux-hz5-general-midpage-region-shadow-nodeless-stats` | observation only; contains counters |
 | `--linux-hz5-general-midpage-region-shadow-nodeless-ptrcache-stats` | observation only; contains counters |
+| `--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-allocelide` | unsafe M4 alloc-state upper bound only |
+| `--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-ptrmag` | unsafe pointer-only M4 magazine upper bound only |
 
 ## Do Not Combine
 
@@ -104,8 +109,16 @@ routefree + broad default:
   balanced lead.
 
 tlslink + final claim:
-  candidate-watch only until a broad RUNS=5 matrix proves r50/r90 and cross128
-  do not regress.
+  broad RUNS=5 confirms local/r50 gains, but main/mid_only/cross128 r90 still
+  prefer freefirst. Keep as a local/r50 candidate-watch.
+
+allocelide / ptrmag + paper rows:
+  unsafe upper-bound diagnostics. They weaken slot-state attribution and must
+  not be used as reportable allocator profiles.
+
+regcache / slotswitch + default:
+  latest M4/freefirst/tlslink smokes did not improve local-r0. Keep for
+  reproducibility only.
 ```
 
 ## Next Matrix

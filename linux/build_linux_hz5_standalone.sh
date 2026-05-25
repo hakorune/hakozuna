@@ -50,6 +50,7 @@ PRELOAD_FREE_MID_FIRST=0
 PRELOAD_FREE_MIDPAGE_FIRST=0
 PRELOAD_FREE_MIDPAGE_LARGE_FIRST=0
 PRELOAD_MIDPAGE_ALLOC_FIRST=0
+PRELOAD_MIDPAGE_ALLOC_ABS_FIRST=0
 PRELOAD_TLS_INITIAL_EXEC=0
 PRELOAD_SPEED_LINKFLAGS=0
 LINUX_OWNERHUB_R1=0
@@ -75,6 +76,8 @@ LINUX_MIDPAGEFRONT_UNSAFE_LOCAL_NOCHECK=0
 LINUX_MIDPAGEFRONT_M4_MAGAZINE=0
 LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET=0
 LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN=0
+LINUX_MIDPAGEFRONT_M4_UNSAFE_ALLOC_ELIDE=0
+LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG=0
 LINUX_MIDFRONT_M1=0
 LINUX_MIDFRONT_OWNER_FAST_STATE=0
 LINUX_MIDFRONT_MAX_BYTES=65536
@@ -232,6 +235,21 @@ Options:
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink
                      diagnostic preset: m4packet-freefirst plus preload
                      initial-exec TLS and speed link flags
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-allocelide
+                     unsafe diagnostic: freefirst-tlslink plus M4 owner-local
+                     alloc-side slot-state transition elision upper bound
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-ptrmag
+                     unsafe diagnostic: allocelide plus pointer-only M4 local
+                     magazine pop upper bound
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-absalloc
+                     diagnostic preset: freefirst-tlslink plus MidPageFront
+                     absolute-first malloc routing
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-regcache
+                     diagnostic preset: freefirst-tlslink plus MidPageFront
+                     TLS region lookup cache
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-slotswitch
+                     diagnostic preset: freefirst-tlslink plus fixed-class
+                     MidPageFront slot-index dispatch
   --linux-hz5-general-midpage-region-shadow-m4packet-routefree
                      diagnostic preset: m4packet plus MidPageFront then
                      LargeFront preload free dispatch
@@ -505,6 +523,31 @@ enable_midpage_m4packet_freefirst_tlslink_base() {
   enable_midpage_m4packet_freefirst_base
   PRELOAD_TLS_INITIAL_EXEC=1
   PRELOAD_SPEED_LINKFLAGS=1
+}
+
+enable_midpage_m4packet_freefirst_tlslink_allocelide_base() {
+  enable_midpage_m4packet_freefirst_tlslink_base
+  LINUX_MIDPAGEFRONT_M4_UNSAFE_ALLOC_ELIDE=1
+}
+
+enable_midpage_m4packet_freefirst_tlslink_ptrmag_base() {
+  enable_midpage_m4packet_freefirst_tlslink_allocelide_base
+  LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG=1
+}
+
+enable_midpage_m4packet_freefirst_tlslink_absalloc_base() {
+  enable_midpage_m4packet_freefirst_tlslink_base
+  PRELOAD_MIDPAGE_ALLOC_ABS_FIRST=1
+}
+
+enable_midpage_m4packet_freefirst_tlslink_regcache_base() {
+  enable_midpage_m4packet_freefirst_tlslink_base
+  LINUX_MIDPAGEFRONT_TLS_REGION_CACHE=1
+}
+
+enable_midpage_m4packet_freefirst_tlslink_slotswitch_base() {
+  enable_midpage_m4packet_freefirst_tlslink_base
+  LINUX_MIDPAGEFRONT_SLOT_SWITCH=1
 }
 
 enable_midpage_m4packet_routefree_base() {
@@ -959,6 +1002,26 @@ while [[ $# -gt 0 ]]; do
       ;;
     --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink)
       enable_midpage_m4packet_freefirst_tlslink_base
+      shift
+      ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-allocelide)
+      enable_midpage_m4packet_freefirst_tlslink_allocelide_base
+      shift
+      ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-ptrmag)
+      enable_midpage_m4packet_freefirst_tlslink_ptrmag_base
+      shift
+      ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-absalloc)
+      enable_midpage_m4packet_freefirst_tlslink_absalloc_base
+      shift
+      ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-regcache)
+      enable_midpage_m4packet_freefirst_tlslink_regcache_base
+      shift
+      ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-slotswitch)
+      enable_midpage_m4packet_freefirst_tlslink_slotswitch_base
       shift
       ;;
     --linux-hz5-general-midpage-region-shadow-m4packet-routefree)
@@ -1790,6 +1853,13 @@ if [[ "$LINUX_MIDPAGEFRONT_M2" -eq 1 ]]; then
   if [[ "$LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN=1)
   fi
+  if [[ "$LINUX_MIDPAGEFRONT_M4_UNSAFE_ALLOC_ELIDE" -eq 1 ]]; then
+    COMMON_FLAGS+=(
+      -DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_ALLOC_ELIDE=1)
+  fi
+  if [[ "$LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG=1)
+  fi
 fi
 if [[ "$LINUX_OWNERHUB_R1" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_OWNERHUB_R1=1)
@@ -1928,6 +1998,7 @@ fi
   echo "preload_free_midpage_first=${PRELOAD_FREE_MIDPAGE_FIRST}"
   echo "preload_free_midpage_large_first=${PRELOAD_FREE_MIDPAGE_LARGE_FIRST}"
   echo "preload_midpage_alloc_first=${PRELOAD_MIDPAGE_ALLOC_FIRST}"
+  echo "preload_midpage_alloc_abs_first=${PRELOAD_MIDPAGE_ALLOC_ABS_FIRST}"
   echo "preload_tls_initial_exec=${PRELOAD_TLS_INITIAL_EXEC}"
   echo "preload_speed_linkflags=${PRELOAD_SPEED_LINKFLAGS}"
   echo "linux_ownerhub_r1=${LINUX_OWNERHUB_R1}"
@@ -1953,6 +2024,8 @@ fi
   echo "linux_midpagefront_m4_magazine=${LINUX_MIDPAGEFRONT_M4_MAGAZINE}"
   echo "linux_midpagefront_m4_remote_packet=${LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET}"
   echo "linux_midpagefront_m4_cross_drain=${LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN}"
+  echo "linux_midpagefront_m4_unsafe_alloc_elide=${LINUX_MIDPAGEFRONT_M4_UNSAFE_ALLOC_ELIDE}"
+  echo "linux_midpagefront_m4_unsafe_ptr_mag=${LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG}"
   echo "linux_midfront_m1=${LINUX_MIDFRONT_M1}"
   echo "linux_midfront_owner_fast_state=${LINUX_MIDFRONT_OWNER_FAST_STATE}"
   echo "linux_midfront_max_bytes=${LINUX_MIDFRONT_MAX_BYTES}"
@@ -2006,6 +2079,9 @@ if [[ "$PRELOAD_FREE_MIDPAGE_LARGE_FIRST" -eq 1 ]]; then
 fi
 if [[ "$PRELOAD_MIDPAGE_ALLOC_FIRST" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_PRELOAD_MIDPAGE_ALLOC_FIRST=1)
+fi
+if [[ "$PRELOAD_MIDPAGE_ALLOC_ABS_FIRST" -eq 1 ]]; then
+  COMMON_FLAGS+=(-DBENCHLAB_HZ5_PRELOAD_MIDPAGE_ALLOC_ABS_FIRST=1)
 fi
 if [[ "$PRELOAD_TLS_INITIAL_EXEC" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_PRELOAD_TLS_INITIAL_EXEC=1)

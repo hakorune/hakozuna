@@ -25,14 +25,189 @@ bitmap checks, or a one-entry/current-page cache.
 codex/hz5-linux-p43-port
 ```
 
-Latest commits:
+Recent commits:
 
 ```text
-f3b287e Add MidPageFront nodeless pointer cache diagnostic
-1450c76 Add MidPageFront nodeless stats observation
-afc5317 Add MidPageFront nodeless run diagnostic
-dbf751e Document MidPageFront M3 nodeless run
-3e766ee Add MidPageFront tcmalloc consultation prompt
+5f5c9ff Add MidPageFront freefirst tlslink diagnostic
+5d2f414 Record MidPage route matrix results
+b13000b Add MidPageFront routefree diagnostic
+32b0777 Document HZ5 Linux lane combinations
+24e0631 Add MidPageFront M4 freefirst lane
+```
+
+## Current Result: Freefirst TLS/Link Matrix
+
+Raw output:
+
+```text
+private/raw-results/linux/midpage_freefirst_tlslink_matrix_r5_20260525_093316
+```
+
+RUNS=5, threads=8, HZ5_PRELOAD_STATS unset:
+
+```text
+main_r0:
+  allocfirst  87.62M
+  freefirst   89.98M
+  tlslink    100.90M
+  tcmalloc   226.17M
+
+main_r50:
+  allocfirst  31.15M
+  freefirst   36.47M
+  tlslink     43.22M
+  tcmalloc    26.04M
+
+main_r90:
+  allocfirst  21.12M
+  freefirst   33.05M
+  tlslink     30.66M
+  tcmalloc    30.43M
+
+mid_only_r0:
+  allocfirst  93.51M
+  freefirst   92.94M
+  tlslink    107.27M
+  tcmalloc   226.65M
+
+mid_only_r50:
+  allocfirst  30.01M
+  freefirst   35.20M
+  tlslink     40.68M
+  tcmalloc    24.28M
+
+mid_only_r90:
+  allocfirst  23.74M
+  freefirst   33.25M
+  tlslink     31.86M
+  tcmalloc    28.61M
+
+cross128_r0:
+  allocfirst  55.17M
+  freefirst   57.03M
+  tlslink     60.20M
+  tcmalloc    45.57M
+
+cross128_r50:
+  allocfirst  19.60M
+  freefirst   20.48M
+  tlslink     23.29M
+  tcmalloc    21.66M
+
+cross128_r90:
+  allocfirst  18.07M
+  freefirst   19.89M
+  tlslink     17.29M
+  tcmalloc    14.37M
+```
+
+Read:
+
+```text
+tlslink is a strong local/r50 candidate and pushes main/mid_only r0 over 100M,
+but r90 still prefers freefirst in main/mid_only/cross128. Do not replace
+freefirst as balanced default yet.
+```
+
+## Next Diagnostic
+
+```text
+MidPageFront / preload path-length upper-bound diagnostics.
+```
+
+Purpose:
+
+```text
+Measure whether the remaining local-r0 gap is dominated by isolated fixed
+costs in the M4 magazine and preload routing path.
+```
+
+Rules:
+
+```text
+1. Do not mix counters into raw speed runs.
+2. Keep unsafe lanes out of candidate/reporting rows.
+3. Compare against freefirst-tlslink and tcmalloc first on mid_only/main r0.
+4. Treat no-go diagnostics as evidence for the next structural design.
+```
+
+Results:
+
+```text
+allocelide r0 smoke:
+  private/raw-results/linux/midpage_allocelide_r0_smoke_20260525_093736
+
+  main:
+    tlslink    105.97M
+    allocelide 108.76M
+    tcmalloc   220.60M
+
+  mid_only:
+    tlslink    100.81M
+    allocelide 114.85M
+    tcmalloc   225.86M
+
+ptrmag r0 smoke:
+  private/raw-results/linux/midpage_ptrmag_r0_smoke_20260525_093901
+
+  main:
+    tlslink    103.29M
+    ptrmag     104.80M
+    tcmalloc   223.57M
+
+  mid_only:
+    tlslink    103.15M
+    ptrmag     114.58M
+    tcmalloc   222.91M
+
+absalloc r0 smoke:
+  private/raw-results/linux/midpage_absalloc_r0_smoke_20260525_094053
+
+  main:
+    tlslink    100.25M
+    absalloc   104.61M
+    tcmalloc   220.93M
+
+  mid_only:
+    tlslink    107.19M
+    absalloc   109.50M
+    tcmalloc   225.91M
+
+regcache r0 smoke:
+  private/raw-results/linux/midpage_regcache_r0_smoke_20260525_094151
+
+  main:
+    tlslink    106.23M
+    regcache    97.85M
+    tcmalloc   221.30M
+
+  mid_only:
+    tlslink    103.86M
+    regcache   103.72M
+    tcmalloc   224.91M
+
+slotswitch r0 smoke:
+  private/raw-results/linux/midpage_slotswitch_r0_smoke_20260525_094257
+
+  main:
+    tlslink    102.55M
+    slotswitch  97.22M
+    tcmalloc   222.33M
+
+  mid_only:
+    tlslink    100.71M
+    slotswitch 100.00M
+    tcmalloc   229.08M
+```
+
+Read:
+
+```text
+M4 alloc transition, pointer-only magazine pop, SmallFront-before-MidPage
+malloc routing, TLS region cache, and slot-index switch each explain only a
+small slice. The remaining tcmalloc gap is structural path length: interposer
+routing plus descriptor-owned free classification versus tcmalloc's compact
+front cache.
 ```
 
 ## Cleanup Pass
