@@ -1596,6 +1596,62 @@ No-go for the local-r0 tcmalloc gap. Do not run a broad matrix unless a later
 RouteTag/free-classifier experiment specifically needs this component.
 ```
 
+### `midpage_superfast_r0_smoke_20260525_103116`
+
+Raw output:
+
+```text
+private/raw-results/linux/midpage_superfast_r0_smoke_20260525_103116
+private/raw-results/linux/midpage_superfast_perf_20260525_103138
+```
+
+Purpose:
+
+```text
+Unsafe physical upper-bound lane: combine M4 pointer magazine, alloc-state
+elision, M5 hit-only, absolute MidPage malloc routing, and preload MidPage
+fast bypass. Performance runs keep HZ5_PRELOAD_STATS unset.
+```
+
+Result:
+
+```text
+main_r0:
+  tlslink   105.63M
+  superfast 114.37M
+  tcmalloc  221.12M
+
+mid_only_r0:
+  tlslink   105.72M
+  superfast 117.66M
+  tcmalloc  218.46M
+
+cross128_r0:
+  tlslink    61.26M
+  superfast  58.43M
+  tcmalloc   43.57M
+```
+
+Perf one-shot, mid_only_r0:
+
+```text
+tlslink:
+  114.84M ops/s, 596.3M instructions, 123.0M branches
+
+superfast:
+  109.13M ops/s, 533.6M instructions, 107.3M branches
+
+tcmalloc:
+  201.69M ops/s, 248.4M instructions, 46.3M branches
+```
+
+Decision:
+
+```text
+No-go for the 150M local-r0 upper-bound bar. Keep as unsafe diagnostic only.
+The remaining gap is not explained by the tested M4/M5 shortcut set.
+```
+
 ## Older Results
 
 The full chronological result log remains in:

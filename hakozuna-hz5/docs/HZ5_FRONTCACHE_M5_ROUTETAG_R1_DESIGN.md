@@ -221,3 +221,86 @@ The current r0 bottleneck is not remote-drain-on-hit or rich magazine-entry
 validation. RouteTag-R1 may still help free classification and cross-front
 workloads, but it should not be expected to solve mid_only_r0 alone.
 ```
+
+## SuperFast Upper-Bound Diagnostic
+
+M5a did not move the local-r0 ceiling. Before adding a full RouteTag table or a
+new descriptor state representation, use one deliberately unsafe upper-bound
+lane:
+
+```text
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-superfast
+```
+
+Compile-time composition:
+
+```text
+BENCHLAB_HZ5_PRELOAD_MIDPAGE_SUPERFAST=1
+BENCHLAB_HZ5_PRELOAD_MIDPAGE_ALLOC_ABS_FIRST=1
+BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M5_HIT_ONLY=1
+BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_ALLOC_ELIDE=1
+BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG=1
+```
+
+This lane is not safety preserving. It is only an upper-bound diagnostic for
+the MidPage local-r0 path. It bypasses preload accounting on successful MidPage
+malloc/free and allows pointer-only magazine pop without the normal
+`CACHE -> LIVE` transition.
+
+Decision rule:
+
+```text
+GO:
+  mid_only_r0 >= 150M or tlslink +35%
+
+NO-GO:
+  mid_only_r0 < 150M
+```
+
+If SuperFast is still far from tcmalloc, then the remaining gap is not explained
+by MidPage M4 validation, remote-drain-on-hit, preload stat calls, or
+pointer-only magazine entries. The next design should be a deeper front-path
+rewrite rather than more M4/M5 toggles.
+
+### SuperFast Result
+
+Raw output:
+
+```text
+private/raw-results/linux/midpage_superfast_r0_smoke_20260525_103116
+private/raw-results/linux/midpage_superfast_perf_20260525_103138
+```
+
+RUNS=5, threads=8, HZ5_PRELOAD_STATS unset:
+
+```text
+main_r0:
+  tlslink   105.63M
+  superfast 114.37M
+  tcmalloc  221.12M
+
+mid_only_r0:
+  tlslink   105.72M
+  superfast 117.66M
+  tcmalloc  218.46M
+
+cross128_r0:
+  tlslink    61.26M
+  superfast  58.43M
+  tcmalloc   43.57M
+```
+
+Decision:
+
+```text
+No-go. SuperFast does not clear the 150M upper-bound bar. It reduces
+instructions and branches versus tlslink in the perf one-shot, but remains
+around 2x tcmalloc's instruction and branch count on mid_only_r0.
+```
+
+Implication:
+
+```text
+The remaining tcmalloc gap is deeper than the tested M4/M5 toggles. Do not keep
+stacking unsafe shortcuts. Move to a real front-path representation change.
+```

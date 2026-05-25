@@ -28,10 +28,12 @@ hakozuna-hz5/docs/HZ5_FRONTCACHE_M5_ROUTETAG_R1_DESIGN.md
 Implementation order:
 
 ```text
-1. M5a MidPage hit-only front cache.
-2. RUNS=5 local r0 smoke vs tlslink/tcmalloc.
-3. If M5a clears 135M mid_only_r0, run r0/r50/r90 matrix.
-4. RouteTag-R1 MidPage-only free classifier.
+1. Record M5a hit-only as no-go.
+2. Add a deliberately unsafe SuperFast upper-bound lane.
+3. Run RUNS=5 local r0 smoke vs tlslink/tcmalloc.
+4. If SuperFast still misses 150M mid_only_r0, stop tuning individual M4/M5
+   pieces and redesign the front path.
+5. If SuperFast clears the bar, reintroduce safety checks one at a time.
 ```
 
 ## M5a Result
@@ -76,6 +78,125 @@ The next r0 problem is not M4 hit validation or remote-drain-on-hit. RouteTag
 can still help free classification/cross-front rows, but it is unlikely to
 solve mid_only_r0 by itself. The remaining r0 gap likely needs a thinner
 front ABI or a different slot-state/cache representation.
+```
+
+## SuperFast Upper-Bound Lane
+
+Lane:
+
+```text
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-superfast
+```
+
+Purpose:
+
+```text
+Find the physical local-r0 ceiling before spending more work on safety-shaped
+M5/RouteTag designs.
+```
+
+Composition:
+
+```text
+base:
+  m4packet-freefirst-tlslink
+
+extra:
+  BENCHLAB_HZ5_PRELOAD_MIDPAGE_SUPERFAST=1
+  BENCHLAB_HZ5_PRELOAD_MIDPAGE_ALLOC_ABS_FIRST=1
+  BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M5_HIT_ONLY=1
+  BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_ALLOC_ELIDE=1
+  BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG=1
+```
+
+Safety status:
+
+```text
+unsafe diagnostic only
+not paper/reportable
+not remote/RSS evidence
+do not use for invalid/double-free claims
+```
+
+What it removes from the hot path:
+
+```text
+MidPage successful malloc/free bypasses preload stat accounting and generic
+front routing. MidPage magazine pop may return the cached pointer without the
+normal CACHE->LIVE transition.
+```
+
+Go/no-go:
+
+```text
+GO:
+  mid_only_r0 >= 150M or tlslink +35%
+
+STRONG:
+  mid_only_r0 >= 170M and instructions/op materially closer to tcmalloc
+
+NO-GO:
+  mid_only_r0 < 150M
+  or main_r0/cross128_r0 regress enough to make the lane non-informative
+```
+
+## SuperFast Result
+
+Raw output:
+
+```text
+private/raw-results/linux/midpage_superfast_r0_smoke_20260525_103116
+private/raw-results/linux/midpage_superfast_perf_20260525_103138
+```
+
+RUNS=5, threads=8, HZ5_PRELOAD_STATS unset:
+
+```text
+main_r0:
+  tlslink   105.63M
+  superfast 114.37M
+  tcmalloc  221.12M
+
+mid_only_r0:
+  tlslink   105.72M
+  superfast 117.66M
+  tcmalloc  218.46M
+
+cross128_r0:
+  tlslink    61.26M
+  superfast  58.43M
+  tcmalloc   43.57M
+```
+
+Perf one-shot, mid_only_r0:
+
+```text
+tlslink:
+  114.84M ops/s, 596.3M instructions, 123.0M branches
+
+superfast:
+  109.13M ops/s, 533.6M instructions, 107.3M branches
+
+tcmalloc:
+  201.69M ops/s, 248.4M instructions, 46.3M branches
+```
+
+Decision:
+
+```text
+SuperFast is no-go for the 150M upper-bound bar. It removes some instructions
+and branches, but local-r0 is still roughly 2x tcmalloc in instructions and
+branches. The remaining gap is not explained by preload stat calls,
+remote-drain-on-hit, pointer-only magazine pop, or M4 CACHE->LIVE transition.
+```
+
+Next read:
+
+```text
+Stop combining M4/M5 toggles. The next tcmalloc-chase design needs a deeper
+front-path representation change: route-tag/free classifier plus a genuinely
+thin thread-cache ABI, or a tcmalloc-like batch pointer cache that moves more
+state work to refill/drain rather than the per-object path.
 ```
 
 ## Branch

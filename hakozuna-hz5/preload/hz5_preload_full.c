@@ -34,6 +34,10 @@
 #ifndef BENCHLAB_HZ5_PRELOAD_MIDPAGE_ALLOC_ABS_FIRST
 #define BENCHLAB_HZ5_PRELOAD_MIDPAGE_ALLOC_ABS_FIRST 0
 #endif
+
+#ifndef BENCHLAB_HZ5_PRELOAD_MIDPAGE_SUPERFAST
+#define BENCHLAB_HZ5_PRELOAD_MIDPAGE_SUPERFAST 0
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -458,6 +462,19 @@ void* malloc(size_t size) {
     return hz5_preload_full_real_malloc(size);
   }
 
+#if BENCHLAB_HZ5_PRELOAD_MIDPAGE_SUPERFAST
+  void* midpage_ptr = NULL;
+  Hz5MidPageFrontAllocResult midpage_result =
+      hz5_midpagefront_try_alloc(size, 16u, &midpage_ptr);
+  if (midpage_result == HZ5_MIDPAGEFRONT_ALLOC_OK) {
+    return midpage_ptr;
+  }
+  if (midpage_result == HZ5_MIDPAGEFRONT_ALLOC_OOM) {
+    errno = ENOMEM;
+    return NULL;
+  }
+#endif
+
   void* ptr = hz5_preload_full_hz5_malloc(size, 16u);
   if (ptr) {
     hz5_preload_full_stat_inc(&g_hz5_preload_full_malloc_hz5);
@@ -476,6 +493,15 @@ void free(void* ptr) {
   if (hz5_preload_full_is_bootstrap_ptr(ptr)) {
     return;
   }
+
+#if BENCHLAB_HZ5_PRELOAD_MIDPAGE_SUPERFAST
+  Hz5MidPageFrontFreeResult superfast_midpage_free =
+      hz5_midpagefront_free(ptr);
+  if (superfast_midpage_free == HZ5_MIDPAGEFRONT_FREE_OK ||
+      superfast_midpage_free == HZ5_MIDPAGEFRONT_FREE_INVALID) {
+    return;
+  }
+#endif
 
 #if BENCHLAB_HZ5_PRELOAD_FREE_MID_FIRST
   Hz5MidFrontFreeResult mid_free = hz5_midfront_free(ptr);

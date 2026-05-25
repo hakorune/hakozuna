@@ -98,6 +98,13 @@ shorter than the historical benchmark logs.
   pointer-only magazine pop. They do not close the tcmalloc gap and must not be
   used for safety, remote, or paper rows.
 
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-superfast
+  Unsafe physical upper-bound diagnostic. Combines pointer magazine,
+  alloc-state elision, M5 hit-only, absolute MidPage malloc routing, and a
+  preload MidPage fast bypass. Use only for local-r0 ceiling checks; never use
+  for safety, remote, RSS, or paper rows. First smoke is no-go for the 150M
+  local-r0 upper-bound bar.
+
 --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-regcache
 --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-slotswitch
   M4/freefirst/tlslink combination diagnostics. Latest r0 smokes are no-go or
