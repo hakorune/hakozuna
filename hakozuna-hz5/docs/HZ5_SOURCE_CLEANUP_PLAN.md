@@ -16,6 +16,7 @@ comparability.
 | File | Current role | Cleanup status |
 | --- | --- | --- |
 | `largefront/hz5_largefront.c` | active LargeFront 128K tcmalloc-chase surface | keep intact until drain/refill direction stabilizes |
+| `largefront/hz5_largefront_transfer128.inc` | isolated LargeFront L9 transfer128 diagnostic helpers | split out from `hz5_largefront.c`; keep include-local until the diagnostic stabilizes |
 | `midpagefront/hz5_midpagefront.c` | active PageRun64/MidPage history and saved profile implementation | defer behavior split; candidate for later archival of dead diagnostics |
 | `lowpage/hz5_lowpage64.c` | exact-route P25/P43/P45 historical hot path | do not touch during Linux general malloc work |
 | `policy/hz5_policy.c` | exact-route wrapper/policy control | do not touch unless exact-route work resumes |
@@ -75,6 +76,7 @@ hz5_midpagefront_magazine.c:
 
 ## Current Decision
 
-For this cleanup phase, source cleanup is documentation and boundary mapping
-only. The active C files remain unsplit to avoid mixing refactor risk with the
-LargeFront tcmalloc-chase measurements.
+For this cleanup phase, active C hot paths remain intact. Small diagnostic-only
+helpers may be split into include-local files when that reduces churn in the
+main implementation without changing build/link behavior. The first such split
+is `hz5_largefront_transfer128.inc`.
