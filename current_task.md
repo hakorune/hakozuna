@@ -74,6 +74,17 @@ LargeFront remote-first diagnostic:
     t8/r90 improves slightly, but t4/r90 collapses.
     owner-inbox early drain has too much low-thread fixed cost.
 
+LargeFront gated remote-first diagnostic:
+  implemented and measured.
+  128K alloc checks owner inbox before local free list only if inbox is
+  nonempty.
+  purpose:
+    preserve t8/r90 remote-first benefit while avoiding t4 fixed-cost collapse.
+  result:
+    private/raw-results/linux/hz5_large128_remote_first_gated_r90_r3
+    no-go.
+    worse than source16 on both t4/r90 and t8/r90.
+
 Lane naming cleanup:
   committed L7 as a diagnostic checkpoint.
   current cleanup adds human-facing aliases while preserving historical names:

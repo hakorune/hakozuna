@@ -548,6 +548,56 @@ Decision:
   remote-first helps t8/r90 a little, but the t4/r90 fixed cost is too high.
 ```
 
+### `hz5-linux-large128-remote-first-gated`
+
+Role:
+
+```text
+LargeFront gated remote-first alloc diagnostic
+```
+
+Build:
+
+```text
+--linux-hz5-profile-large128-remote-first-gated
+```
+
+Runner:
+
+```text
+hz5-large128-remote-first-gated
+```
+
+Status:
+
+```text
+diagnostic only
+source batch16 + takefirst
+128K alloc checks owner inbox before local free-list reuse only when the inbox
+is nonempty.
+
+Question:
+  can it keep the t8/r90 remote-first gain without the t4/r90 fixed-cost
+  collapse?
+
+RUNS=3 r90 smoke:
+  private/raw-results/linux/hz5_large128_remote_first_gated_r90_r3
+
+  t4/r90:
+    gated       9.26M / 127MB
+    source16   14.95M /  68MB
+    tcmalloc   27.65M /  59MB
+
+  t8/r90:
+    gated      12.81M / 164MB
+    source16   19.60M / 102MB
+    tcmalloc   16.21M / 129MB
+
+Decision:
+  no-go.
+  gating avoids none of the relevant cost; source16 remains the r90 direction.
+```
+
 Policy-L0 owner-drain detail after adding `owner_hold`, `owner_orphan`, and
 `owner_state_fail` counters:
 
