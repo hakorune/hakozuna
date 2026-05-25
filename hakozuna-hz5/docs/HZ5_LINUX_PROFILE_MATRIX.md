@@ -189,6 +189,73 @@ alloc miss
 no-go in first RUNS=3 broad check
 ```
 
+### `hz5-linux-pagerun64-large-only-b16-takeonly`
+
+Role:
+
+```text
+LargeFront-L4 take-first-only remote drain diagnostic
+```
+
+Build:
+
+```text
+--linux-hz5-profile-pagerun64-large128-b16-takeonly
+```
+
+Status:
+
+```text
+diagnostic only
+uses source batch16 and returns only the first remote span from an owner inbox
+drain, republishing the rest instead of converting them to local cache
+intended to isolate the b16-drain1 t4/r50 win from r90 local-cache churn
+
+RUNS=3 large128 smoke:
+  t4/r50  23.07M /  23MB, wins this short smoke
+  t4/r90   6.71M / 149MB, no-go
+  t8/r50  21.00M /  76MB, behind batch16/tcmalloc
+  t8/r90   7.49M / 273MB, no-go
+
+decision:
+  keep as diagnostic only
+  do not promote; take-first-only starves r90 reuse
+```
+
+### `hz5-linux-pagerun64-large-only-b16-popbudget1`
+
+Role:
+
+```text
+LargeFront-L4 CAS-pop budgeted remote drain diagnostic
+```
+
+Build:
+
+```text
+--linux-hz5-profile-pagerun64-large128-b16-popbudget1
+```
+
+Status:
+
+```text
+diagnostic only
+uses source batch16 and alloc-miss local budget 1, but pops only the needed
+remote spans from the owner inbox instead of exchanging the whole inbox and
+republishing the remainder
+
+RUNS=3 large128 smoke:
+  t4/r50  15.08M /  67MB, behind batch16/drain1/tcmalloc
+  t4/r90   8.90M / 126MB, no-go
+  t8/r50  16.57M / 110MB, no-go
+  t8/r90  15.21M / 156MB, behind batch16
+
+decision:
+  no-go
+  tail traversal/republication is not the main issue; small CAS-pop drains are
+  also too expensive and lose the strong batch16 r90 row
+```
+
 ### `hz5-linux-pagerun64-large-only-b16-rb32`
 
 Role:
@@ -566,6 +633,49 @@ large128:
   batch4   18.35M / 420MB
   batch8   11.31M / 864MB
   batch16   9.65M / 1153MB
+```
+
+Large128 source/remote sweep after L1b no-go, RUNS=3:
+
+```text
+result root:
+  private/raw-results/linux/hz5_large128_batch_sweep_after_l1b_nogo_r3
+
+large128/t4/r50:
+  tcmalloc            28.88M /  47MB
+  b16-drain1          24.36M /  27MB
+  b16-rb64            15.54M /  50MB
+  batch16             12.74M /  70MB
+  batch4              11.42M /  72MB
+
+large128/t4/r90:
+  batch4              22.25M /  39MB
+  b16-rb32            18.98M /  56MB
+  tcmalloc            15.30M /  91MB
+  batch16             11.92M /  88MB
+
+large128/t8/r50:
+  batch4              30.04M /  52MB
+  batch16             24.20M /  72MB
+  tcmalloc            23.45M /  93MB
+  b16-rb64            22.98M /  82MB
+
+large128/t8/r90:
+  batch16             24.53M /  89MB
+  b16-rb64            20.35M / 107MB
+  batch8              20.19M / 102MB
+  tcmalloc            14.73M / 185MB
+  batch4              10.26M / 190MB
+```
+
+Read:
+
+```text
+L1b remote-cap adaptation is not stable enough to promote.
+Fixed profiles remain more predictable:
+  batch4 is still the best large-only candidate for t4/r90 and t8/r50.
+  batch16 is the high-thread r90 diagnostic.
+  b16-drain1 is the only HZ5 lane close to tcmalloc on t4/r50.
 ```
 
 Adaptive128 first implementation, RUNS=5, r90:

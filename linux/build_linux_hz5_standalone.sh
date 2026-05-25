@@ -130,6 +130,8 @@ LINUX_LARGEFRONT_OWNER_FAST_STATE=0
 LINUX_LARGEFRONT_OWNER_INBOX=0
 LINUX_LARGEFRONT_REMOTE_BATCH=0
 LINUX_LARGEFRONT_DRAIN_TAKE_FIRST=0
+LINUX_LARGEFRONT_DRAIN_TAKE_ONLY=0
+LINUX_LARGEFRONT_DRAIN_POP_BUDGET=0
 LINUX_LARGEFRONT_DRAIN_EMPTY_GATED=0
 LINUX_LARGEFRONT_MAP_BASE_ONLY=0
 LINUX_LARGEFRONT_REGION_MAP=0
@@ -173,6 +175,12 @@ Options:
   --linux-hz5-profile-pagerun64-large128-b16-drain1
                      diagnostic alias: same as large128-batch16 with
                      alloc-miss remote drain local budget 1
+  --linux-hz5-profile-pagerun64-large128-b16-takeonly
+                     diagnostic alias: same as large128-batch16 with
+                     take-first-only remote drain
+  --linux-hz5-profile-pagerun64-large128-b16-popbudget1
+                     diagnostic alias: same as large128-batch16 with
+                     CAS-pop budgeted remote drain local budget 1
   --linux-hz5-profile-pagerun64-large128-b16-rb32
                      diagnostic alias: same as large128-batch16 with
                      LargeFront remote batch cap 32
@@ -994,6 +1002,17 @@ while [[ $# -gt 0 ]]; do
     --linux-hz5-profile-pagerun64-large128-b16-drain1)
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 16
       LINUX_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET=1
+      shift
+      ;;
+    --linux-hz5-profile-pagerun64-large128-b16-takeonly)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 16
+      LINUX_LARGEFRONT_DRAIN_TAKE_ONLY=1
+      shift
+      ;;
+    --linux-hz5-profile-pagerun64-large128-b16-popbudget1)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 16
+      LINUX_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET=1
+      LINUX_LARGEFRONT_DRAIN_POP_BUDGET=1
       shift
       ;;
     --linux-hz5-profile-pagerun64-large128-b16-rb32)
@@ -2813,6 +2832,16 @@ if [[ "$LINUX_LARGEFRONT_L1" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX=1)
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_TAKE_FIRST=1)
   fi
+  if [[ "$LINUX_LARGEFRONT_DRAIN_TAKE_ONLY" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX=1)
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_TAKE_FIRST=1)
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_TAKE_ONLY=1)
+  fi
+  if [[ "$LINUX_LARGEFRONT_DRAIN_POP_BUDGET" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX=1)
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_TAKE_FIRST=1)
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_POP_BUDGET=1)
+  fi
   if [[ "$LINUX_LARGEFRONT_DRAIN_EMPTY_GATED" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX=1)
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_EMPTY_GATED=1)
@@ -2991,6 +3020,8 @@ fi
   echo "linux_largefront_owner_inbox=${LINUX_LARGEFRONT_OWNER_INBOX}"
   echo "linux_largefront_remote_batch=${LINUX_LARGEFRONT_REMOTE_BATCH}"
   echo "linux_largefront_drain_take_first=${LINUX_LARGEFRONT_DRAIN_TAKE_FIRST}"
+  echo "linux_largefront_drain_take_only=${LINUX_LARGEFRONT_DRAIN_TAKE_ONLY}"
+  echo "linux_largefront_drain_pop_budget=${LINUX_LARGEFRONT_DRAIN_POP_BUDGET}"
   echo "linux_largefront_drain_empty_gated=${LINUX_LARGEFRONT_DRAIN_EMPTY_GATED}"
   echo "linux_largefront_map_base_only=${LINUX_LARGEFRONT_MAP_BASE_ONLY}"
   echo "linux_largefront_region_map=${LINUX_LARGEFRONT_REGION_MAP}"

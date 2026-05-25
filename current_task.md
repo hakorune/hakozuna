@@ -211,6 +211,24 @@ Decision:
   L1b is useful as a diagnostic, but not promotable yet.
   Remote cap selection needs a stronger guard before cap growth in cross-size
   high-thread rows.
+
+Follow-up guard variants:
+  cap32:
+    recovers cross128/t8/r90 versus initial L1b, but hurts cross128/t4/r90
+    and large128/t4/r90.
+
+  cap32 + two-hit growth:
+    cross128/t8/r90 improves to 26.14M, but large128/t4/r90 collapses
+    to 7.18M.
+
+Decision:
+  stop L1b micro-tuning for now.
+  Runtime remote-cap adaptation is too unstable with the current feature set.
+  Keep fixed rb32/rb64 lanes as diagnostics, not as an auto policy.
+
+Next attack:
+  either improve L0/L1 features before another L1b attempt, or return to the
+  stronger fixed profile split plus source-batch-only L1a.
 ```
 
 ## Saved Lanes
@@ -509,6 +527,203 @@ next:
 smoke:
   output includes source_empty/source_refill/mapped_spans_proxy and owner_drain
   without HZ5_LARGEFRONT_OBSERVE hot-path counters.
+```
+
+## Latest Large128 Source/Remote Sweep
+
+```text
+result root:
+  private/raw-results/linux/hz5_large128_batch_sweep_after_l1b_nogo_r3
+
+scope:
+  RUNS=3
+  threads=4,8
+  lane=large128
+  remote=50,90
+  allocators=hz4,tcmalloc,large128,b8,b16,b16-drain1,b16-rb32,b16-rb64
+```
+
+Read:
+
+```text
+large128/t4/r50:
+  tcmalloc wins at 28.88M.
+  HZ5 best is b16-drain1 at 24.36M with very low RSS.
+
+large128/t4/r90:
+  saved large128 batch4 wins at 22.25M.
+  tcmalloc is 15.30M.
+
+large128/t8/r50:
+  saved large128 batch4 wins at 30.04M.
+  tcmalloc is 23.45M.
+
+large128/t8/r90:
+  batch16 wins at 24.53M.
+  tcmalloc is 14.73M.
+```
+
+Decision:
+
+```text
+fixed source-batch profiles explain the remaining large128 rows better than
+L1b runtime remote-cap adaptation.
+
+Keep:
+  large128 batch4 as large-only default candidate
+  batch16 as high-thread/r90 diagnostic
+  b16-drain1 as t4/r50 diagnostic
+
+Do not:
+  promote L1b remote-cap auto policy yet
+  keep tuning cap16/32/64 without stronger features
+```
+
+Next attack:
+
+```text
+focus on the one remaining gap:
+  large128/t4/r50 versus tcmalloc.
+
+Candidate:
+  make drain1 less workload-specific:
+    source batch16
+    take-first remote span
+    bounded extra drain only when remote inbox is already hot
+    preserve r90 rows by avoiding extra local churn under r90
+```
+
+## LargeFront Take-Only Diagnostic
+
+```text
+lane:
+  --linux-hz5-profile-pagerun64-large128-b16-takeonly
+
+result root:
+  private/raw-results/linux/hz5_large128_b16_takeonly_smoke_r3
+
+scope:
+  RUNS=3
+  threads=4,8
+  lane=large128
+  remote=50,90
+```
+
+Read:
+
+```text
+large128/t4/r50:
+  takeonly wins at 23.07M with 23MB RSS.
+
+large128/t4/r90:
+  takeonly collapses to 6.71M.
+
+large128/t8/r50:
+  takeonly is behind batch16 and tcmalloc.
+
+large128/t8/r90:
+  takeonly collapses to 7.49M.
+```
+
+Decision:
+
+```text
+take-first-only confirms the t4/r50 drain direction, but it is not promotable.
+It starves r90 reuse and increases RSS in r90.
+
+Keep as diagnostic only.
+Do not add more take-only variants unless perf shows a specific t4/r50 paper
+claim needs it.
+```
+
+## LargeFront t4/r50 Perf Read
+
+```text
+result root:
+  private/raw-results/linux/hz5_large128_t4r50_perf_20260526_032727
+
+scope:
+  large128/t4/r50
+  tcmalloc vs batch16 vs b16-drain1 vs b16-takeonly
+```
+
+Perf stat read:
+
+```text
+tcmalloc:
+  27.70M ops/s
+  254.9 instructions/op
+  52.1 branches/op
+
+HZ5 b16-drain1:
+  19.40M ops/s
+  362.2 instructions/op
+  76.8 branches/op
+
+HZ5 b16-takeonly:
+  17.38M ops/s
+  397.9 instructions/op
+  86.2 branches/op
+
+HZ5 batch16:
+  12.14M ops/s
+  453.9 instructions/op
+  100.5 branches/op
+```
+
+Perf report read:
+
+```text
+largest HZ5 self hotspot:
+  hz5_largefront_drain_remote_class_budget
+
+next visible HZ5 costs:
+  hz5_largefront_free
+  hz5_largefront_alloc
+  hz5_largefront_span_for_ptr
+
+Interpretation:
+  the large128/t4/r50 gap is not primarily cache misses.
+  HZ5 still pays too much remote drain and ownership lookup path length.
+```
+
+## LargeFront PopBudget Diagnostic
+
+```text
+lane:
+  --linux-hz5-profile-pagerun64-large128-b16-popbudget1
+
+result root:
+  private/raw-results/linux/hz5_large128_b16_popbudget1_smoke_r3
+
+idea:
+  instead of exchange(NULL) + tail traversal + republish remainder, pop only
+  the needed remote spans from the owner inbox with CAS and leave the rest in
+  the inbox.
+```
+
+Read:
+
+```text
+large128/t4/r50:
+  popbudget1 15.08M
+  batch16    17.77M
+  drain1     17.20M
+  tcmalloc   25.27M
+
+large128/t8/r90:
+  popbudget1 15.21M
+  batch16    19.85M
+  tcmalloc   15.60M
+```
+
+Decision:
+
+```text
+no-go.
+Tail traversal/republication is not the main issue.
+Small CAS-pop drains are also too expensive and do not preserve the strong
+batch16/t8/r90 row.
 ```
 
 ## Reading Order
