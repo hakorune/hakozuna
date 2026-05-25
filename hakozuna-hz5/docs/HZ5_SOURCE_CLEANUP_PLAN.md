@@ -22,7 +22,8 @@ comparability.
 | `midpagefront/hz5_midpagefront_stats.inc` | MidPage nodeless/M4 cold stats helpers | split out from `hz5_midpagefront.c`; keep include-local until the diagnostics stabilize |
 | `lowpage/hz5_lowpage64.c` | exact-route P25/P43/P45 historical hot path | do not touch during Linux general malloc work |
 | `lowpage/hz5_lowpage64_p43g.inc` | LowPage P43g prepare/wrapper note helpers | split out from `hz5_lowpage64.c`; include-local to keep the hot file slimmer |
-| `policy/hz5_policy.c` | exact-route wrapper/policy control | do not touch unless exact-route work resumes |
+| `policy/hz5_policy.c` | exact-route wrapper/policy control | Local2P helpers moved to `hz5_policy_local2p.inc`; keep the main policy file slimmer |
+| `policy/hz5_policy_local2p.inc` | Local2P helper cluster | split out from `hz5_policy.c`; include-local to keep policy control readable |
 
 ## Safe Near-Term Cleanup
 
@@ -85,4 +86,5 @@ main implementation without changing build/link behavior. The current
 LargeFront splits are `hz5_largefront_transfer128.inc` and
 `hz5_largefront_policy.inc`. MidPage now also keeps cold stats in
 `hz5_midpagefront_stats.inc`, and LowPage now keeps P43g helpers in
-`hz5_lowpage64_p43g.inc`.
+`hz5_lowpage64_p43g.inc`. Policy now keeps Local2P helpers in
+`hz5_policy_local2p.inc`.
