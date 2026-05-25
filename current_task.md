@@ -139,5 +139,24 @@ Read:
   alloc hit path, likely via remote-free-side batching or owner-side drain
   checkpoints.
 
+M6 deferred-free coarse smoke:
+  M6 classless raw-free quarantine can be enabled on the C7 coarse profile.
+  It is not a local-speed lane, but it is a strong remote-heavy upper bound.
+
+  band8/32 + M6 raw cap 64:
+    r90 17.25M, overflow 0, maxrss 112MB
+
+  band8/32 + M6 raw cap 256:
+    r0 11.0M, r90 16.57M, overflow 0, maxrss 112MB
+
+  band8/32 + M6 raw cap 512:
+    r90 17.07M, overflow 0, maxrss 112MB
+
+Read:
+  deferred free fixes the producer/consumer overflow problem but destroys r0.
+  This supports a split design: local-speed profile keeps immediate local cache
+  return, while remote-heavy profile needs deferred/batched handoff. The next
+  real design should avoid applying classless deferred-free to owner-local r0.
+
 Keep RSS checkpoint as a phase-boundary/control lane, not the next speed lever.
 ```

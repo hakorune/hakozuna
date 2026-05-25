@@ -332,6 +332,9 @@ Options:
   --linux-midpagefront-m6-raw-cap N
                      M6 raw quarantine cap for deferred-free diagnostics
                      (default: 64)
+  --linux-midpagefront-m6-deferred-free
+                     enable M6 classless raw-free quarantine on the selected
+                     MidPageFront preset
   --linux-midpagefront-m4-remote-drain-hit-interval N
                      hit-count interval for drainhit diagnostics
                      (default: 64)
@@ -1273,6 +1276,10 @@ while [[ $# -gt 0 ]]; do
       require_value "$@"
       LINUX_MIDPAGEFRONT_M6_RAW_CAP="$2"
       shift 2
+      ;;
+    --linux-midpagefront-m6-deferred-free)
+      LINUX_MIDPAGEFRONT_M6_DEFERRED_FREE=1
+      shift
       ;;
     --linux-midpagefront-m4-remote-drain-hit-interval)
       require_value "$@"

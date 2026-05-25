@@ -333,3 +333,51 @@ should make remote progress without taxing owner-local alloc hits:
   owner checkpoint drain outside hit path
   transfer-cache style handoff
 ```
+
+## M6 Deferred-Free Coarse Smoke
+
+Implementation:
+
+```text
+build option:
+  --linux-midpagefront-m6-deferred-free
+
+raw cap option:
+  --linux-midpagefront-m6-raw-cap N
+```
+
+Purpose:
+
+```text
+M6 pushes free(ptr) into a classless raw-free quarantine and validates/promotes
+in batches. It was originally a direct proof lane; this smoke enables it on the
+band8/32 C7 coarse profile to test remote-heavy behavior.
+```
+
+Hakmem remote malloc smoke,
+`bench_random_mixed_mt_remote_malloc 8 500000 4000 2049 32768 <remote> 65536`:
+
+```text
+band8/32-rsscheckpoint + M6 raw cap 64:
+  r90: 17.25M ops/s, maxrss 112256 KB, overflow_sent 0
+
+band8/32-rsscheckpoint + M6 raw cap 256:
+  r0:  10.99M ops/s, maxrss 112384 KB
+  r90: 16.57M ops/s, maxrss 112512 KB, overflow_sent 0
+
+band8/32-rsscheckpoint + M6 raw cap 512:
+  r90: 17.07M ops/s, maxrss 112512 KB, overflow_sent 0
+```
+
+Interpretation:
+
+```text
+M6 solves the producer/consumer overflow symptom in this smoke and is roughly
+an order of magnitude faster than immediate remote packet handling on r90.
+The cost is severe local-r0 regression, because classless deferred-free also
+delays and batch-validates owner-local frees.
+
+Keep M6 as a remote-heavy upper-bound/control. Do not promote it as the default
+C7 lane. The next design should preserve owner-local immediate return while
+using deferred/batched handoff only for remote frees.
+```
