@@ -809,6 +809,81 @@ behavior mean the next real design should be a safe route/tag lookup, not this
 direct dereference.
 ```
 
+### `hz5-linux-large128-base-directmap`
+
+Role:
+
+```text
+LargeFront safe one-slot exact-base route-cache diagnostic
+```
+
+Build:
+
+```text
+--linux-hz5-profile-large128-base-directmap
+```
+
+Runner:
+
+```text
+hz5-large128-base-directmap
+```
+
+Status:
+
+```text
+diagnostic only
+source batch16 + safe direct-mapped exact-base cache before hash/region lookup
+```
+
+Question:
+
+```text
+can a fail-closed exact-base route cache recover the direct-header lookup
+signal without unsafe ptr-4096 dereference?
+```
+
+RUNS=3:
+
+```text
+private/raw-results/linux/hz5_large128_base_directmap_r3_20260526_051731
+
+t4/r50:
+  base-directmap 13.73M /  64MB
+  direct-header  14.48M /  58MB
+  source16       14.03M /  58MB
+  tcmalloc       18.76M /  65MB
+
+t4/r90:
+  base-directmap 21.57M /  47MB
+  direct-header  15.52M /  65MB
+  source16       10.96M /  92MB
+  tcmalloc       27.60M /  59MB
+
+t8/r50:
+  base-directmap 18.23M / 101MB
+  direct-header  17.53M /  98MB
+  source16       26.14M /  67MB
+  tcmalloc       27.37M /  71MB
+
+t8/r90:
+  base-directmap 19.35M / 119MB
+  direct-header  21.82M /  86MB
+  source16       29.49M /  64MB
+  tcmalloc       14.20M / 190MB
+```
+
+Decision:
+
+```text
+no-promote diagnostic.
+The safe directmap confirms lookup route changes can matter: t4/r90 improves
+strongly versus source16. It does not reproduce the unsafe direct-header r50
+signal and regresses t8 rows versus source16. Keep source16 as the r90/t8 lead
+and use directmap as evidence that a more selective route-tag design may be
+worth pursuing.
+```
+
 Policy-L0 owner-drain detail after adding `owner_hold`, `owner_orphan`, and
 `owner_state_fail` counters:
 

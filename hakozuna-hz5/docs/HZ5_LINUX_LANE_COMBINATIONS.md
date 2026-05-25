@@ -56,6 +56,7 @@ Use these names in new benchmark command lines and reports. The historical
 | `large128-remote-first-gated` | `--linux-hz5-profile-large128-remote-first-gated` | `hz5-large128-remote-first-gated` | source16 + owner inbox drain before local reuse only if inbox nonempty | diagnostic only |
 | `large128-chunk16` | `--linux-hz5-profile-large128-chunk16` | `hz5-large128-chunk16` | source16 + remote batch16 using 128K owner chunk inbox | diagnostic only |
 | `large128-direct-header` | `--linux-hz5-profile-large128-direct-header` | `hz5-large128-direct-header` | unsafe source16 + ptr-4096 adjacent header lookup upper bound | diagnostic only |
+| `large128-base-directmap` | `--linux-hz5-profile-large128-base-directmap` | `hz5-large128-base-directmap` | source16 + safe one-slot exact-base route cache | diagnostic only |
 | `large128-policy-l7` | `--linux-hz5-profile-large128-policy-l7` | `hz5-large128-policy-l7` | first remainder-size rule policy; no-go diagnostic | diagnostic only |
 | `large128-policy-l8-shadow` | `--linux-hz5-profile-large128-policy-l8-shadow` | `hz5-large128-policy-l8-shadow` | Policy-L0 plus owner-drain shadow classification; no behavior change | observation only |
 

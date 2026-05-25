@@ -148,6 +148,28 @@ LargeFront direct-header diagnostic:
     next real design should target a safe route/tag lookup for LargeFront
     frees rather than promoting direct header dereference.
 
+LargeFront base-directmap diagnostic:
+  implemented and measured.
+  human alias:
+    large128-base-directmap
+  purpose:
+    safe one-slot exact-base route-cache test. It uses the HZ5 map key instead
+    of unsafe ptr-4096 dereference, and falls back to the existing map/region
+    path on miss/collision.
+  result:
+    private/raw-results/linux/hz5_large128_base_directmap_r3_20260526_051731
+    t4/r90 improves versus source16:
+      base-directmap 21.57M / 47MB
+      source16       10.96M / 92MB
+      tcmalloc       27.60M / 59MB
+    t8 rows regress versus source16:
+      t8/r50 source16 26.14M versus base-directmap 18.23M
+      t8/r90 source16 29.49M versus base-directmap 19.35M
+  decision:
+    no-promote diagnostic.
+    safe route-cache changes can help specific low-thread r90 cases, but this
+    one-slot directmap is not broad enough to replace source16.
+
 Lane naming cleanup:
   committed L7 as a diagnostic checkpoint.
   current cleanup adds human-facing aliases while preserving historical names:
@@ -157,6 +179,7 @@ Lane naming cleanup:
     large128-r50-hold
     large128-r50-hold8
     large128-direct-header
+    large128-base-directmap
     large128-policy-l7
     large128-policy-l8-shadow
   use the human aliases in new commands and reports.

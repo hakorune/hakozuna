@@ -117,6 +117,10 @@
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_DIRECT_HEADER_LOOKUP 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_BASE_DIRECTMAP
+#define BENCHLAB_HZ5_LINUX_LARGEFRONT_BASE_DIRECTMAP 0
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_LOWER_CLASSES
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_LOWER_CLASSES 0
 #endif
@@ -303,6 +307,10 @@ static const uint32_t g_hz5_largefront_classes[HZ5_LARGEFRONT_CLASS_COUNT] = {
 static const Hz5OwnerToken k_hz5_largefront_no_owner = {0, 0};
 
 static Hz5LargeMapEntry g_hz5_largefront_map[HZ5_LARGEFRONT_MAP_CAP];
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_BASE_DIRECTMAP
+static Hz5LargeMapEntry
+    g_hz5_largefront_base_directmap[HZ5_LARGEFRONT_MAP_CAP];
+#endif
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_MAP
 static Hz5LargeRegion g_hz5_largefront_regions[HZ5_LARGEFRONT_REGION_CAP];
 static Hz5LargeRegionLink
@@ -1093,6 +1101,27 @@ static Hz5LargeSpan* hz5_largefront_lookup_page(uintptr_t page_base) {
   return NULL;
 }
 
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_BASE_DIRECTMAP
+static Hz5LargeSpan* hz5_largefront_lookup_base_direct(uintptr_t page_base) {
+  Hz5LargeMapEntry* entry =
+      &g_hz5_largefront_base_directmap[hz5_largefront_hash(page_base)];
+  uintptr_t current =
+      atomic_load_explicit(&entry->page_base, memory_order_acquire);
+  if (current != page_base) {
+    return NULL;
+  }
+  return atomic_load_explicit(&entry->span, memory_order_acquire);
+}
+
+static void hz5_largefront_base_direct_insert(uintptr_t page_base,
+                                              Hz5LargeSpan* span) {
+  Hz5LargeMapEntry* entry =
+      &g_hz5_largefront_base_directmap[hz5_largefront_hash(page_base)];
+  atomic_store_explicit(&entry->span, span, memory_order_relaxed);
+  atomic_store_explicit(&entry->page_base, page_base, memory_order_release);
+}
+#endif
+
 static int hz5_largefront_map_insert_one(uintptr_t page_base,
                                          Hz5LargeSpan* span) {
   size_t idx = hz5_largefront_hash(page_base);
@@ -1124,6 +1153,9 @@ static int hz5_largefront_map_insert(Hz5LargeSpan* span) {
   if (span && span->base) {
     uintptr_t base = (uintptr_t)span->base;
     pthread_mutex_lock(&g_hz5_largefront_map_lock);
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_BASE_DIRECTMAP
+    hz5_largefront_base_direct_insert(base, span);
+#endif
     (void)hz5_largefront_map_insert_one(base, span);
     pthread_mutex_unlock(&g_hz5_largefront_map_lock);
   }
@@ -1134,6 +1166,9 @@ static int hz5_largefront_map_insert(Hz5LargeSpan* span) {
 #else
   uintptr_t base = (uintptr_t)span->base;
   pthread_mutex_lock(&g_hz5_largefront_map_lock);
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_BASE_DIRECTMAP
+  hz5_largefront_base_direct_insert(base, span);
+#endif
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_MAP_BASE_ONLY
   if (!hz5_largefront_map_insert_one(base, span)) {
     pthread_mutex_unlock(&g_hz5_largefront_map_lock);
@@ -1173,6 +1208,13 @@ static Hz5LargeSpan* hz5_largefront_span_for_ptr(void* ptr) {
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_MAP
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_BASE_FASTMAP
   uintptr_t page_base = p & ~(uintptr_t)(HZ5_LARGEFRONT_PAGE_SIZE - 1u);
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_BASE_DIRECTMAP
+  Hz5LargeSpan* direct_span = hz5_largefront_lookup_base_direct(page_base);
+  if (direct_span && direct_span->magic == HZ5_LARGEFRONT_MAGIC &&
+      ptr == direct_span->base) {
+    return direct_span;
+  }
+#endif
   Hz5LargeSpan* base_span = hz5_largefront_lookup_page(page_base);
   if (base_span && base_span->magic == HZ5_LARGEFRONT_MAGIC &&
       ptr == base_span->base) {
