@@ -146,6 +146,7 @@ LINUX_LARGEFRONT_DRAIN_EMPTY_GATED=0
 LINUX_LARGEFRONT_MAP_BASE_ONLY=0
 LINUX_LARGEFRONT_REGION_MAP=0
 LINUX_LARGEFRONT_REGION_BASE_FASTMAP=0
+LINUX_LARGEFRONT_DIRECT_HEADER_LOOKUP=0
 LINUX_LARGEFRONT_LOWER_CLASSES=0
 LINUX_LARGEFRONT_ADAPTIVE128=0
 LINUX_LARGEFRONT_PAYLOAD_SCAVENGE=0
@@ -216,6 +217,9 @@ Options:
   --linux-hz5-profile-large128-r50-hold8
                      human alias for b16-drain1-hold8: wider r50
                      RemoteHold diagnostic
+  --linux-hz5-profile-large128-direct-header
+                     unsafe diagnostic alias: source16 plus direct
+                     ptr-4096 LargeFront header lookup
   --linux-hz5-profile-large128-global-remote
                      human alias: 128K remote frees go to global recycle
                      instead of owner inbox
@@ -1090,6 +1094,11 @@ while [[ $# -gt 0 ]]; do
       LINUX_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET=1
       LINUX_LARGEFRONT_REMOTE_HOLD=1
       LINUX_LARGEFRONT_REMOTE_HOLD_CAP=8
+      shift
+      ;;
+    --linux-hz5-profile-large128-direct-header)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 16
+      LINUX_LARGEFRONT_DIRECT_HEADER_LOOKUP=1
       shift
       ;;
     --linux-hz5-profile-large128-global-remote)
@@ -3026,6 +3035,9 @@ if [[ "$LINUX_LARGEFRONT_L1" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_MAP=1)
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_BASE_FASTMAP=1)
   fi
+  if [[ "$LINUX_LARGEFRONT_DIRECT_HEADER_LOOKUP" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_DIRECT_HEADER_LOOKUP=1)
+  fi
   if [[ "$LINUX_LARGEFRONT_ADAPTIVE128" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX=1)
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_MAP=1)
@@ -3203,6 +3215,7 @@ fi
   echo "linux_largefront_map_base_only=${LINUX_LARGEFRONT_MAP_BASE_ONLY}"
   echo "linux_largefront_region_map=${LINUX_LARGEFRONT_REGION_MAP}"
   echo "linux_largefront_region_base_fastmap=${LINUX_LARGEFRONT_REGION_BASE_FASTMAP}"
+  echo "linux_largefront_direct_header_lookup=${LINUX_LARGEFRONT_DIRECT_HEADER_LOOKUP}"
   echo "linux_largefront_lower_classes=${LINUX_LARGEFRONT_LOWER_CLASSES}"
   echo "linux_largefront_adaptive128=${LINUX_LARGEFRONT_ADAPTIVE128}"
   echo "linux_largefront_payload_scavenge=${LINUX_LARGEFRONT_PAYLOAD_SCAVENGE}"

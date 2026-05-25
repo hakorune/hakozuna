@@ -113,6 +113,10 @@
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_BASE_FASTMAP 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_DIRECT_HEADER_LOOKUP
+#define BENCHLAB_HZ5_LINUX_LARGEFRONT_DIRECT_HEADER_LOOKUP 0
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_LOWER_CLASSES
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_LOWER_CLASSES 0
 #endif
@@ -1154,6 +1158,18 @@ static Hz5LargeSpan* hz5_largefront_span_for_ptr(void* ptr) {
     return NULL;
   }
   uintptr_t p = (uintptr_t)ptr;
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_DIRECT_HEADER_LOOKUP
+  if ((p & (uintptr_t)(HZ5_LARGEFRONT_PAGE_SIZE - 1u)) == 0u &&
+      p >= HZ5_LARGEFRONT_PAGE_SIZE) {
+    Hz5LargeSpan* direct =
+        (Hz5LargeSpan*)(p - (uintptr_t)HZ5_LARGEFRONT_PAGE_SIZE);
+    if (direct->magic == HZ5_LARGEFRONT_MAGIC &&
+        direct->base == ptr &&
+        hz5_largefront_class_valid(direct->class_index)) {
+      return direct;
+    }
+  }
+#endif
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_MAP
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_BASE_FASTMAP
   uintptr_t page_base = p & ~(uintptr_t)(HZ5_LARGEFRONT_PAGE_SIZE - 1u);

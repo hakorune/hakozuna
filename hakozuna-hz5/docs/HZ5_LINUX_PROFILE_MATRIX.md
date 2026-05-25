@@ -732,6 +732,83 @@ source16 badly on r90. The data supports profile split rather than one broad
 RemoteHold policy.
 ```
 
+### `hz5-linux-large128-direct-header`
+
+Role:
+
+```text
+LargeFront direct adjacent-header lookup upper-bound diagnostic
+```
+
+Build:
+
+```text
+--linux-hz5-profile-large128-direct-header
+```
+
+Runner:
+
+```text
+hz5-large128-direct-header
+```
+
+Status:
+
+```text
+unsafe diagnostic only
+source batch16 + ptr-4096 LargeFront header lookup before map/region lookup
+```
+
+Question:
+
+```text
+how much of large128 r50/r90 is still free-side span_for_ptr lookup cost?
+```
+
+Safety note:
+
+```text
+This lane dereferences ptr-4096 before the normal ownership map. It is an
+upper-bound diagnostic for benchmark-owned LargeFront pointers, not a
+fail-closed profile candidate.
+```
+
+RUNS=3:
+
+```text
+private/raw-results/linux/hz5_large128_direct_header_r3_20260526_051345
+
+t4/r50:
+  source16       15.53M /  56MB
+  direct-header  22.46M /  39MB
+  tcmalloc       31.09M /  46MB
+
+t4/r90:
+  source16       16.95M /  55MB
+  direct-header  11.19M /  95MB
+  tcmalloc       27.22M /  55MB
+
+t8/r50:
+  source16       20.81M /  76MB
+  direct-header  21.66M /  80MB
+  tcmalloc       24.50M /  91MB
+
+t8/r90:
+  source16       20.50M /  99MB
+  direct-header  23.58M /  90MB
+  tcmalloc       16.44M / 141MB
+```
+
+Decision:
+
+```text
+use as evidence, not as a promotable lane.
+Direct header lookup shows the free/span lookup slice is real: t4/r50 improves
+substantially and t8/r90 wins. The t4/r90 regression and unsafe foreign-pointer
+behavior mean the next real design should be a safe route/tag lookup, not this
+direct dereference.
+```
+
 Policy-L0 owner-drain detail after adding `owner_hold`, `owner_orphan`, and
 `owner_state_fail` counters:
 

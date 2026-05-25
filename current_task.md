@@ -119,6 +119,35 @@ LargeFront RemoteHold cap8 diagnostic:
     RemoteHold cap tuning is not a broad solution; profile split remains
     cleaner than promoting hold as default.
 
+LargeFront direct-header diagnostic:
+  implemented and measured.
+  human alias:
+    large128-direct-header
+  purpose:
+    upper-bound test for free-side span_for_ptr lookup cost by checking the
+    adjacent LargeFront header at ptr-4096 before the normal map/region lookup.
+  safety:
+    unsafe diagnostic only.
+    it can dereference a non-HZ5 pointer's previous page and is not a
+    fail-closed profile candidate.
+  result:
+    private/raw-results/linux/hz5_large128_direct_header_r3_20260526_051345
+    t4/r50 improves:
+      direct-header 22.46M / 39MB
+      source16      15.53M / 56MB
+      tcmalloc      31.09M / 46MB
+    t8/r90 wins:
+      direct-header 23.58M / 90MB
+      tcmalloc      16.44M / 141MB
+    t4/r90 regresses:
+      direct-header 11.19M
+      source16      16.95M
+      tcmalloc      27.22M
+  decision:
+    keep as upper-bound evidence only.
+    next real design should target a safe route/tag lookup for LargeFront
+    frees rather than promoting direct header dereference.
+
 Lane naming cleanup:
   committed L7 as a diagnostic checkpoint.
   current cleanup adds human-facing aliases while preserving historical names:
@@ -127,6 +156,7 @@ Lane naming cleanup:
     large128-r50-drain
     large128-r50-hold
     large128-r50-hold8
+    large128-direct-header
     large128-policy-l7
     large128-policy-l8-shadow
   use the human aliases in new commands and reports.
