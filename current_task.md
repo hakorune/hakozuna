@@ -158,5 +158,18 @@ Read:
   return, while remote-heavy profile needs deferred/batched handoff. The next
   real design should avoid applying classless deferred-free to owner-local r0.
 
+Remote-only M6 smoke:
+  keeping owner-local immediate free and deferring only remote frees is the
+  first strong C7 remote profile candidate.
+
+  band8/32 + M6 remote-only raw cap 64:
+    r0 48.46M, r90 19.13M, overflow 0, maxrss 161MB
+
+Read:
+  remote-only deferred-free keeps the key M6 r90 benefit without applying the
+  classless quarantine to owner-local frees. r0 still regresses versus the
+  baseline 62.35M, so this is not a universal default yet, but it is a much
+  better split profile than alloc-hit polling.
+
 Keep RSS checkpoint as a phase-boundary/control lane, not the next speed lever.
 ```

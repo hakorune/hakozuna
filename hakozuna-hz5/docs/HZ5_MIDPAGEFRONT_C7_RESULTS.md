@@ -381,3 +381,43 @@ Keep M6 as a remote-heavy upper-bound/control. Do not promote it as the default
 C7 lane. The next design should preserve owner-local immediate return while
 using deferred/batched handoff only for remote frees.
 ```
+
+## M6 Remote-Only Deferred-Free Smoke
+
+Implementation:
+
+```text
+build option:
+  --linux-midpagefront-m6-remote-deferred-free
+
+meaning:
+  owner-local frees keep the normal immediate cache return path
+  remote frees are deferred through the M6 raw quarantine and batch-promoted
+```
+
+Hakmem remote malloc smoke,
+`bench_random_mixed_mt_remote_malloc 8 500000 4000 2049 32768 <remote> 65536`:
+
+```text
+band8/32-rsscheckpoint + M6 remote-only raw cap 64:
+  r0:  48.46M ops/s, maxrss  75648 KB
+  r90: 19.13M ops/s, maxrss 161120 KB, overflow_sent 0
+```
+
+Read:
+
+```text
+Remote-only deferred-free is the strongest C7 remote profile signal so far.
+It keeps overflow at zero and approaches tcmalloc-class r90 much more closely
+than immediate remote packet handling.
+
+Compared with full M6, it avoids applying the classless quarantine to
+owner-local frees and improves r90 from roughly 17M to 19M in this smoke.
+Compared with the baseline, r0 still drops from 62.35M to 48.46M, so this is a
+remote-heavy candidate rather than a universal default.
+
+Next useful work:
+  reduce the r0 tax of enabling remote-only M6
+  verify r50/r90 medians
+  compare against tcmalloc/HZ4 on the same hakmem rows
+```

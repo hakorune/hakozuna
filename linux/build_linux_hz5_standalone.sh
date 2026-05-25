@@ -85,6 +85,7 @@ LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG=0
 LINUX_MIDPAGEFRONT_M4_UNSAFE_FREE_ELIDE=0
 LINUX_MIDPAGEFRONT_M5_HIT_ONLY=0
 LINUX_MIDPAGEFRONT_M6_DEFERRED_FREE=0
+LINUX_MIDPAGEFRONT_M6_REMOTE_DEFERRED_FREE=0
 LINUX_MIDPAGEFRONT_M6_RAW_CAP=64
 LINUX_MIDPAGEFRONT_M4_FLAT_MAG_CAP=0
 LINUX_MIDPAGEFRONT_M4_OVERFLOW_ARRAY=0
@@ -335,6 +336,9 @@ Options:
   --linux-midpagefront-m6-deferred-free
                      enable M6 classless raw-free quarantine on the selected
                      MidPageFront preset
+  --linux-midpagefront-m6-remote-deferred-free
+                     defer only remote MidPage frees through the M6 raw
+                     quarantine while preserving owner-local immediate free
   --linux-midpagefront-m4-remote-drain-hit-interval N
                      hit-count interval for drainhit diagnostics
                      (default: 64)
@@ -1281,6 +1285,10 @@ while [[ $# -gt 0 ]]; do
       LINUX_MIDPAGEFRONT_M6_DEFERRED_FREE=1
       shift
       ;;
+    --linux-midpagefront-m6-remote-deferred-free)
+      LINUX_MIDPAGEFRONT_M6_REMOTE_DEFERRED_FREE=1
+      shift
+      ;;
     --linux-midpagefront-m4-remote-drain-hit-interval)
       require_value "$@"
       LINUX_MIDPAGEFRONT_M4_REMOTE_DRAIN_HIT_INTERVAL="$2"
@@ -2162,6 +2170,16 @@ if [[ "$LINUX_MIDPAGEFRONT_M2" -eq 1 ]]; then
   if [[ "$LINUX_MIDPAGEFRONT_M6_DEFERRED_FREE" -eq 1 ]]; then
     COMMON_FLAGS+=(
       -DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_DEFERRED_FREE=1
+    )
+  fi
+  if [[ "$LINUX_MIDPAGEFRONT_M6_REMOTE_DEFERRED_FREE" -eq 1 ]]; then
+    COMMON_FLAGS+=(
+      -DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_REMOTE_DEFERRED_FREE=1
+    )
+  fi
+  if [[ "$LINUX_MIDPAGEFRONT_M6_DEFERRED_FREE" -eq 1 || \
+        "$LINUX_MIDPAGEFRONT_M6_REMOTE_DEFERRED_FREE" -eq 1 ]]; then
+    COMMON_FLAGS+=(
       -DHZ5_MIDPAGEFRONT_M6_RAW_CAP="${LINUX_MIDPAGEFRONT_M6_RAW_CAP}u"
     )
   fi
@@ -2365,6 +2383,7 @@ fi
   echo "linux_midpagefront_m4_unsafe_free_elide=${LINUX_MIDPAGEFRONT_M4_UNSAFE_FREE_ELIDE}"
   echo "linux_midpagefront_m5_hit_only=${LINUX_MIDPAGEFRONT_M5_HIT_ONLY}"
   echo "linux_midpagefront_m6_deferred_free=${LINUX_MIDPAGEFRONT_M6_DEFERRED_FREE}"
+  echo "linux_midpagefront_m6_remote_deferred_free=${LINUX_MIDPAGEFRONT_M6_REMOTE_DEFERRED_FREE}"
   echo "linux_midpagefront_m6_raw_cap=${LINUX_MIDPAGEFRONT_M6_RAW_CAP}"
   echo "linux_midpagefront_m4_flat_mag_cap=${LINUX_MIDPAGEFRONT_M4_FLAT_MAG_CAP}"
   echo "linux_midpagefront_m4_overflow_array=${LINUX_MIDPAGEFRONT_M4_OVERFLOW_ARRAY}"

@@ -102,6 +102,14 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_DEFERRED_FREE 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_REMOTE_DEFERRED_FREE
+#define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_REMOTE_DEFERRED_FREE 0
+#endif
+
+#define HZ5_MIDPAGEFRONT_M6_ANY_DEFERRED_FREE \
+  (BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_DEFERRED_FREE || \
+   BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_REMOTE_DEFERRED_FREE)
+
 #ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_FLAT_MAG_CAP
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_FLAT_MAG_CAP 0
 #endif
@@ -305,7 +313,7 @@ typedef struct Hz5MidPageTls {
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_REMOTE_DRAIN_ON_HIT
   uint16_t remote_drain_hit_count[HZ5_MIDPAGEFRONT_CLASS_COUNT];
 #endif
-#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_DEFERRED_FREE
+#if HZ5_MIDPAGEFRONT_M6_ANY_DEFERRED_FREE
   void* m6_raw_free[HZ5_MIDPAGEFRONT_M6_RAW_CAP];
   uint16_t m6_raw_count;
 #endif
@@ -1836,7 +1844,7 @@ static void hz5_midpagefront_remote_batch_push(Hz5MidPageTls* tls,
 }
 
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_MAGAZINE && \
-    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_DEFERRED_FREE
+    HZ5_MIDPAGEFRONT_M6_ANY_DEFERRED_FREE
 typedef struct Hz5MidPageM6Batch {
   Hz5MidPage* page;
   uint64_t bits;
@@ -2474,7 +2482,7 @@ static int hz5_midpagefront_m4_refill_magazine(Hz5MidPageTls* tls,
     return 1;
   }
 
-#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_DEFERRED_FREE
+#if HZ5_MIDPAGEFRONT_M6_ANY_DEFERRED_FREE
   hz5_midpagefront_m6_flush_raw(tls);
   if (tls->magazine_count[class_index] != 0u) {
     return 1;
@@ -2736,6 +2744,10 @@ static Hz5MidPageFrontFreeResult hz5_midpagefront_free_page(
 #endif
 #endif
   } else {
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_MAGAZINE && \
+    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_REMOTE_DEFERRED_FREE
+    hz5_midpagefront_m6_defer_free(tls, ptr);
+#else
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_MAGAZINE
     if (!hz5_midpagefront_m4_transition(page, slot,
                                         HZ5_MIDPAGE_SLOT_LIVE,
@@ -2764,6 +2776,7 @@ static Hz5MidPageFrontFreeResult hz5_midpagefront_free_page(
       return HZ5_MIDPAGEFRONT_FREE_INVALID;
     }
     hz5_midpagefront_remote_batch_push(tls, page, ptr);
+#endif
 #endif
   }
   return HZ5_MIDPAGEFRONT_FREE_OK;
