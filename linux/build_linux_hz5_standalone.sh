@@ -140,6 +140,7 @@ LINUX_LARGEFRONT_PAYLOAD_SCAVENGE=0
 LINUX_LARGEFRONT_OBSERVE=0
 LINUX_LARGEFRONT_POLICY_L0=0
 LINUX_LARGEFRONT_POLICY_L1A=0
+LINUX_LARGEFRONT_POLICY_L1B=0
 LINUX_LARGEFRONT_REMOTE_BATCH_CAP=16
 LINUX_LARGEFRONT_SOURCE_BATCH_COUNT=16
 LINUX_LARGEFRONT_SCAVENGE_LOCAL_CAP=4
@@ -184,6 +185,9 @@ Options:
   --linux-hz5-profile-pagerun64-large128-policy-l1a
                      diagnostic alias: PageRun64 + LargeFront takefirst
                      + conservative LargeFront 128K source-batch selector
+  --linux-hz5-profile-pagerun64-large128-policy-l1b
+                     diagnostic alias: policy-l1a plus LargeFront remote
+                     batch cap selector 16/32/64 at flush boundaries
   --linux-local2p    enable Linux Local2P exact 64K/a8192 TLS span candidate
   --linux-local2p-tls-packed
                      pack Local2P TLS state into one TLS object
@@ -617,6 +621,9 @@ Options:
   --linux-largefront-policy-l1a
                      candidate only: choose LargeFront 128K source refill
                      batch 4/8/16 from slow-path mapped-span pressure
+  --linux-largefront-policy-l1b
+                     candidate only: adapt LargeFront 128K remote batch cap
+                     16/32/64 at remote-flush boundaries
   --linux-largefront-scavenge-local-cap N
                      retained 128K owner-local spans kept before payload
                      scavenging (default: 4)
@@ -934,6 +941,13 @@ enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pa
   LINUX_LARGEFRONT_POLICY_L1A=1
 }
 
+enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_policy_l1b_base() {
+  enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_policy_l1a_base
+  LINUX_LARGEFRONT_REMOTE_BATCH=1
+  LINUX_LARGEFRONT_REMOTE_BATCH_CAP=16
+  LINUX_LARGEFRONT_POLICY_L1B=1
+}
+
 enable_midpage_m4packet_freefirst_tlslink_tagfree_base() {
   enable_midpage_m4packet_freefirst_tlslink_superfast_freeelide_base
   PRELOAD_MIDPAGE_TAGGED_FREE=1
@@ -996,6 +1010,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --linux-hz5-profile-pagerun64-large128-policy-l1a)
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_policy_l1a_base 2
+      shift
+      ;;
+    --linux-hz5-profile-pagerun64-large128-policy-l1b)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_policy_l1b_base
       shift
       ;;
     --arch)
@@ -2152,6 +2170,19 @@ while [[ $# -gt 0 ]]; do
       HZ5_STANDALONE_EXACT_ONLY=0
       shift
       ;;
+    --linux-largefront-policy-l1b)
+      BUILD_PRELOAD_FULL=1
+      LINUX_SMALLFRONT_S1=1
+      LINUX_MIDFRONT_M1=1
+      LINUX_LARGEFRONT_L1=1
+      LINUX_LARGEFRONT_OWNER_INBOX=1
+      LINUX_LARGEFRONT_REGION_MAP=1
+      LINUX_LARGEFRONT_DRAIN_TAKE_FIRST=1
+      LINUX_LARGEFRONT_REMOTE_BATCH=1
+      LINUX_LARGEFRONT_POLICY_L1B=1
+      HZ5_STANDALONE_EXACT_ONLY=0
+      shift
+      ;;
     --linux-largefront-scavenge-local-cap)
       require_value "$@"
       LINUX_LARGEFRONT_SCAVENGE_LOCAL_CAP="$2"
@@ -2829,6 +2860,13 @@ if [[ "$LINUX_LARGEFRONT_L1" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_TAKE_FIRST=1)
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L1A=1)
   fi
+  if [[ "$LINUX_LARGEFRONT_POLICY_L1B" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX=1)
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_MAP=1)
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_TAKE_FIRST=1)
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_BATCH=1)
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L1B=1)
+  fi
   if [[ "$LINUX_LARGEFRONT_LOWER_CLASSES" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_LOWER_CLASSES=1)
   fi
@@ -2963,6 +3001,7 @@ fi
   echo "linux_largefront_observe=${LINUX_LARGEFRONT_OBSERVE}"
   echo "linux_largefront_policy_l0=${LINUX_LARGEFRONT_POLICY_L0}"
   echo "linux_largefront_policy_l1a=${LINUX_LARGEFRONT_POLICY_L1A}"
+  echo "linux_largefront_policy_l1b=${LINUX_LARGEFRONT_POLICY_L1B}"
   echo "linux_largefront_remote_batch_cap=${LINUX_LARGEFRONT_REMOTE_BATCH_CAP}"
   echo "linux_largefront_source_batch_count=${LINUX_LARGEFRONT_SOURCE_BATCH_COUNT}"
   echo "linux_largefront_scavenge_local_cap=${LINUX_LARGEFRONT_SCAVENGE_LOCAL_CAP}"

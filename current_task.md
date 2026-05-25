@@ -156,6 +156,63 @@ Read:
   still outside malloc/free hot paths.
 ```
 
+## Policy-L1b Prep
+
+```text
+Goal:
+  prepare remote batch cap control without adding a global hot-path policy read.
+
+Implementation step:
+  cache LargeFront remote batch cap in TLS.
+  initialize it from HZ5_LARGEFRONT_REMOTE_BATCH_CAP.
+  remote batch push checks the TLS value.
+
+Later selector:
+  update TLS cap only at slow boundaries:
+    batch flush
+    owner drain
+    source refill / checkpoint
+
+Still diagnostic:
+  actual rb32/rb64 automatic switching is not enabled until low-thread rows are
+  safe.
+```
+
+## Policy-L1b Scope
+
+```text
+Name:
+  LargeFront Policy-L1b
+
+Lane:
+  --linux-hz5-profile-pagerun64-large128-policy-l1b
+
+Scope:
+  Policy-L1a source selector plus 128K remote batch cap selector.
+
+Selector:
+  starts cap16.
+  cap-hit flush raises toward cap32/cap64.
+  small owner/class-switch flush lowers back toward cap16.
+
+Boundary:
+  cap is cached in TLS.
+  updates happen at remote flush boundaries.
+  malloc/free do not read a global policy object.
+
+Smoke:
+  private/raw-results/linux/hz5_policy_l1b_smoke_r2
+
+Read:
+  large128/t4/r90 improves versus L1a v2.
+  cross128/t8/r90 regresses badly.
+
+Decision:
+  L1b is useful as a diagnostic, but not promotable yet.
+  Remote cap selection needs a stronger guard before cap growth in cross-size
+  high-thread rows.
+```
+
 ## Saved Lanes
 
 ```text

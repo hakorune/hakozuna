@@ -51,6 +51,7 @@ scripts and reports instead of copying the long historical flag chains.
 | `--linux-hz5-profile-pagerun64-large128-b16-rb64` | same as `large128-batch16` but LargeFront remote batch enabled, cap 64 | large128 remote publish diagnostic | diagnostic only |
 | `--linux-hz5-profile-pagerun64-large128-policy-l0` | saved large128 profile + slow-path LargeFront Policy-L0 counters | control-plane feature observation | observation only |
 | `--linux-hz5-profile-pagerun64-large128-policy-l1a` | PageRun64 + LargeFront takefirst + 128K source batch selector 4/8/16 | source-batch policy candidate | diagnostic only |
+| `--linux-hz5-profile-pagerun64-large128-policy-l1b` | policy-l1a + 128K remote batch cap selector 16/32/64 | source + remote-cap policy candidate | diagnostic only |
 
 Use the fixed cross128 and large128 aliases as separate profiles. The source
 batch optimum reverses between those workloads, so a single fixed value is not
@@ -143,6 +144,20 @@ Limits:
   no remote batch cap adaptation.
   no malloc/free hot-path policy state.
   diagnostic until it beats fixed split rows without broad regressions.
+```
+
+Policy-L1b candidate:
+
+```text
+Use:
+  --linux-hz5-profile-pagerun64-large128-policy-l1b
+
+Purpose:
+  add 128K remote batch cap adaptation on top of Policy-L1a.
+
+Limits:
+  cap is TLS-cached and updates only at remote flush boundaries.
+  diagnostic until low-thread rows are safe.
 ```
 
 ## MidPageFront Combination Chain

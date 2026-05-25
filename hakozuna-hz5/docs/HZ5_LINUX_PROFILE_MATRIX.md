@@ -281,6 +281,28 @@ selects source batch 4/8/16 on source refill slow path
 does not adapt remote batch cap
 ```
 
+### `hz5-linux-pagerun64-large-only-policy-l1b`
+
+Role:
+
+```text
+LargeFront 128K source-batch plus remote-cap policy candidate
+```
+
+Build:
+
+```text
+--linux-hz5-profile-pagerun64-large128-policy-l1b
+```
+
+Status:
+
+```text
+diagnostic only
+extends Policy-L1a with TLS-cached remote cap 16/32/64
+updates cap only at remote-flush boundaries
+```
+
 Latest L4 source-batch/drain read:
 
 ```text

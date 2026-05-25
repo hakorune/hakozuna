@@ -81,6 +81,10 @@
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L1A 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L1B
+#define BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L1B 0
+#endif
+
 #ifndef HZ5_LARGEFRONT_REMOTE_BATCH_CAP
 #define HZ5_LARGEFRONT_REMOTE_BATCH_CAP 16u
 #endif
@@ -103,6 +107,14 @@
 
 #ifndef HZ5_LARGEFRONT_POLICY_L1A_HIGH_SPANS
 #define HZ5_LARGEFRONT_POLICY_L1A_HIGH_SPANS 8192u
+#endif
+
+#ifndef HZ5_LARGEFRONT_POLICY_L1B_MAX_CAP
+#define HZ5_LARGEFRONT_POLICY_L1B_MAX_CAP 64u
+#endif
+
+#ifndef HZ5_LARGEFRONT_POLICY_L1B_MIN_CAP
+#define HZ5_LARGEFRONT_POLICY_L1B_MIN_CAP 16u
 #endif
 
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_LARGEFRONT_L1
@@ -193,6 +205,7 @@ typedef struct Hz5LargeTls {
   Hz5OwnerToken remote_batch_owner;
   uint32_t remote_batch_class;
   uint32_t remote_batch_count;
+  uint32_t remote_batch_cap;
   Hz5LargeSpan* remote_batch_head;
   Hz5LargeSpan* remote_batch_tail;
 } Hz5LargeTls;
@@ -319,6 +332,9 @@ static Hz5LargeTls* hz5_largefront_tls(void) {
   Hz5LargeTls* tls = &g_hz5_largefront_tls;
   if (tls->owner.slot == 0) {
     tls->owner = hz5_owner_current();
+  }
+  if (tls->remote_batch_cap == 0u) {
+    tls->remote_batch_cap = HZ5_LARGEFRONT_REMOTE_BATCH_CAP;
   }
   return tls;
 }
@@ -498,7 +514,8 @@ static void hz5_largefront_policy_note_source_refill(uint32_t class_index,
 }
 
 static void hz5_largefront_policy_note_remote_flush(uint32_t class_index,
-                                                    uint32_t count) {
+                                                    uint32_t count,
+                                                    uint32_t cap) {
   if (!hz5_largefront_class_valid(class_index) || count == 0u) {
     return;
   }
@@ -506,7 +523,10 @@ static void hz5_largefront_policy_note_remote_flush(uint32_t class_index,
       &g_hz5_largefront_policy_remote_flush[class_index]);
   hz5_largefront_counter_add(
       &g_hz5_largefront_policy_remote_flush_spans[class_index], count);
-  if (count >= HZ5_LARGEFRONT_REMOTE_BATCH_CAP) {
+  if (cap == 0u) {
+    cap = HZ5_LARGEFRONT_REMOTE_BATCH_CAP;
+  }
+  if (count >= cap) {
     hz5_largefront_counter_inc(
         &g_hz5_largefront_policy_remote_flush_cap_hit[class_index]);
   }
@@ -599,6 +619,34 @@ __attribute__((destructor)) static void hz5_largefront_policy_l0_dump(void) {
                 &g_hz5_largefront_policy_owner_republish[i],
                 memory_order_relaxed));
   }
+}
+#endif
+
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L1B
+static uint32_t hz5_largefront_policy_l1b_clamp_cap(uint32_t cap) {
+  if (cap < HZ5_LARGEFRONT_POLICY_L1B_MIN_CAP) {
+    return HZ5_LARGEFRONT_POLICY_L1B_MIN_CAP;
+  }
+  if (cap > HZ5_LARGEFRONT_POLICY_L1B_MAX_CAP) {
+    return HZ5_LARGEFRONT_POLICY_L1B_MAX_CAP;
+  }
+  return cap;
+}
+
+static void hz5_largefront_policy_l1b_note_remote_flush(Hz5LargeTls* tls,
+                                                        uint32_t class_index,
+                                                        uint32_t count) {
+  if (!tls || !hz5_largefront_class_valid(class_index) ||
+      hz5_largefront_class_bytes(class_index) != 131072u || count == 0u) {
+    return;
+  }
+  uint32_t cap = hz5_largefront_policy_l1b_clamp_cap(tls->remote_batch_cap);
+  if (count >= cap && cap < HZ5_LARGEFRONT_POLICY_L1B_MAX_CAP) {
+    cap <<= 1;
+  } else if (count * 4u <= cap && cap > HZ5_LARGEFRONT_POLICY_L1B_MIN_CAP) {
+    cap >>= 1;
+  }
+  tls->remote_batch_cap = hz5_largefront_policy_l1b_clamp_cap(cap);
 }
 #endif
 
@@ -1127,7 +1175,13 @@ static void hz5_largefront_remote_batch_flush(Hz5LargeTls* tls) {
 
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L0
   hz5_largefront_policy_note_remote_flush(tls->remote_batch_class,
-                                          tls->remote_batch_count);
+                                          tls->remote_batch_count,
+                                          tls->remote_batch_cap);
+#endif
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L1B
+  hz5_largefront_policy_l1b_note_remote_flush(tls,
+                                              tls->remote_batch_class,
+                                              tls->remote_batch_count);
 #endif
   if (!hz5_largefront_remote_publish_list(tls->remote_batch_owner,
                                           tls->remote_batch_class,
@@ -1171,7 +1225,10 @@ static void hz5_largefront_remote_batch_push(Hz5LargeTls* tls,
   tls->remote_batch_tail = span;
   ++tls->remote_batch_count;
 
-  if (tls->remote_batch_count >= HZ5_LARGEFRONT_REMOTE_BATCH_CAP) {
+  uint32_t cap = tls->remote_batch_cap == 0u
+                     ? HZ5_LARGEFRONT_REMOTE_BATCH_CAP
+                     : tls->remote_batch_cap;
+  if (tls->remote_batch_count >= cap) {
     hz5_largefront_remote_batch_flush(tls);
   }
 }
