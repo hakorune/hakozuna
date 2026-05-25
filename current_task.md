@@ -169,6 +169,44 @@ therefore does not remove the actual ownership lookup. A real RouteTag/page-tag
 table remains a separate future design, but this wrapper should not be promoted.
 ```
 
+## M4 Overflow-Array Diagnostic
+
+Raw output:
+
+```text
+private/raw-results/linux/midpage_overarray_direct_range_sweep_20260525_164100
+```
+
+RUNS=5, direct MidPage API, threads=8, iters=300000, ws=100:
+
+```text
+case          base        overarray
+mix_2_4k     192.75M     173.89M
+mix_3_8k     149.73M     144.85M
+mix_4_16k    131.98M     120.70M
+mix_5_32k    128.30M     120.50M
+r32768       234.43M     227.21M
+```
+
+Decision:
+
+```text
+M4 overflow-array is no-go. Avoiding payload node overflow is not enough; the
+extra TLS secondary array and branch cost outweigh the saved local_pop path.
+This confirms that the main class-mix gap is not just magazine-full fallback.
+```
+
+Next read:
+
+```text
+Same-class and single-class variable ranges are already near tcmalloc-class.
+The big gap appears when one benchmark stream alternates between multiple
+MidPage size classes. The next useful diagnostic should measure class switch
+pressure directly: per-class sequence patterns, grouped-by-class phases, and
+whether a thin class-router/front-cache can avoid repeated cross-class miss
+and refill churn.
+```
+
 ## Class-Mix Finding
 
 Raw output:

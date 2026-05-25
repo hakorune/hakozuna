@@ -95,6 +95,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_FLAT_MAG_CAP 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_OVERFLOW_ARRAY
+#define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_OVERFLOW_ARRAY 0
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_STATS
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_STATS 0
 #endif
@@ -120,6 +124,11 @@ void _aligned_free(void* ptr);
 #error "MidPageFront M4 remote packet requires M4 magazine"
 #endif
 
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_OVERFLOW_ARRAY && \
+    !BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_MAGAZINE
+#error "MidPageFront M4 overflow array requires M4 magazine"
+#endif
+
 #define HZ5_MIDPAGEFRONT_MAGIC UINT64_C(0x485A354D50414732)
 #define HZ5_MIDPAGEFRONT_SLAB_BYTES ((size_t)65536)
 #define HZ5_MIDPAGEFRONT_CLASS_COUNT 5u
@@ -136,6 +145,7 @@ void _aligned_free(void* ptr);
 #define HZ5_MIDPAGEFRONT_TLS_REGION_CACHE_CAP 8u
 #define HZ5_MIDPAGEFRONT_NODELESS_PTRCACHE_CAP 64u
 #define HZ5_MIDPAGEFRONT_M4_MAG_CAP_MAX 64u
+#define HZ5_MIDPAGEFRONT_M4_OVERFLOW_CAP_MAX 128u
 #ifndef HZ5_MIDPAGEFRONT_M6_RAW_CAP
 #define HZ5_MIDPAGEFRONT_M6_RAW_CAP 64u
 #endif
@@ -218,7 +228,8 @@ typedef struct Hz5MidPageMagEntry {
   Hz5MidPage* page;
   uint16_t slot;
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG || \
-    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M5_HIT_ONLY
+    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M5_HIT_ONLY || \
+    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_OVERFLOW_ARRAY
   void* ptr;
 #endif
 } Hz5MidPageMagEntry;
@@ -244,6 +255,11 @@ typedef struct Hz5MidPageTls {
   Hz5MidPageMagEntry magazine[HZ5_MIDPAGEFRONT_CLASS_COUNT]
                               [HZ5_MIDPAGEFRONT_M4_MAG_CAP_MAX];
   uint16_t magazine_count[HZ5_MIDPAGEFRONT_CLASS_COUNT];
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_OVERFLOW_ARRAY
+  Hz5MidPageMagEntry overflow[HZ5_MIDPAGEFRONT_CLASS_COUNT]
+                             [HZ5_MIDPAGEFRONT_M4_OVERFLOW_CAP_MAX];
+  uint16_t overflow_count[HZ5_MIDPAGEFRONT_CLASS_COUNT];
+#endif
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_DEFERRED_FREE
   void* m6_raw_free[HZ5_MIDPAGEFRONT_M6_RAW_CAP];
   uint16_t m6_raw_count;
@@ -858,7 +874,8 @@ static int hz5_midpagefront_m4_magazine_push(Hz5MidPageTls* tls,
   tls->magazine[class_index][count].page = page;
   tls->magazine[class_index][count].slot = (uint16_t)slot;
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG || \
-    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M5_HIT_ONLY
+    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M5_HIT_ONLY || \
+    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_OVERFLOW_ARRAY
   tls->magazine[class_index][count].ptr =
       (void*)((uintptr_t)page->slab_base +
               (uintptr_t)slot * (uintptr_t)page->class_size);
@@ -866,6 +883,61 @@ static int hz5_midpagefront_m4_magazine_push(Hz5MidPageTls* tls,
   tls->magazine_count[class_index] = (uint16_t)(count + 1u);
   return 1;
 }
+
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_OVERFLOW_ARRAY
+static int hz5_midpagefront_m4_overflow_push(Hz5MidPageTls* tls,
+                                             uint32_t class_index,
+                                             Hz5MidPage* page,
+                                             uint32_t slot) {
+  if (!tls || !page || !hz5_midpagefront_class_valid(class_index) ||
+      slot >= page->slot_count) {
+    return 0;
+  }
+  uint16_t count = tls->overflow_count[class_index];
+  if (count >= HZ5_MIDPAGEFRONT_M4_OVERFLOW_CAP_MAX) {
+    return 0;
+  }
+  tls->overflow[class_index][count].page = page;
+  tls->overflow[class_index][count].slot = (uint16_t)slot;
+  tls->overflow[class_index][count].ptr =
+      (void*)((uintptr_t)page->slab_base +
+              (uintptr_t)slot * (uintptr_t)page->class_size);
+  tls->overflow_count[class_index] = (uint16_t)(count + 1u);
+  return 1;
+}
+
+static int hz5_midpagefront_m4_refill_from_overflow(Hz5MidPageTls* tls,
+                                                    uint32_t class_index) {
+  if (!tls || !hz5_midpagefront_class_valid(class_index)) {
+    return 0;
+  }
+  uint16_t cap = hz5_midpagefront_m4_mag_cap(class_index);
+  while (tls->magazine_count[class_index] < cap &&
+         tls->magazine_count[class_index] <
+             HZ5_MIDPAGEFRONT_M4_MAG_CAP_MAX &&
+         tls->overflow_count[class_index] != 0u) {
+    uint16_t next = (uint16_t)(tls->overflow_count[class_index] - 1u);
+    Hz5MidPageMagEntry entry = tls->overflow[class_index][next];
+    tls->overflow_count[class_index] = next;
+    if (!entry.page || entry.slot >= entry.page->slot_count ||
+        entry.page->magic != HZ5_MIDPAGEFRONT_MAGIC ||
+        entry.page->class_index != class_index) {
+      continue;
+    }
+    if (!hz5_midpagefront_m4_magazine_push(tls,
+                                           class_index,
+                                           entry.page,
+                                           entry.slot)) {
+      (void)hz5_midpagefront_m4_overflow_push(tls,
+                                              class_index,
+                                              entry.page,
+                                              entry.slot);
+      break;
+    }
+  }
+  return tls->magazine_count[class_index] != 0u;
+}
+#endif
 
 static void hz5_midpagefront_m4_cache_slot(Hz5MidPageTls* tls,
                                            uint32_t class_index,
@@ -882,6 +954,11 @@ static void hz5_midpagefront_m4_cache_slot(Hz5MidPageTls* tls,
   }
   hz5_midpagefront_m4_stat_inc_class(
       g_hz5_midpagefront_m4_stat_mag_full, class_index);
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_OVERFLOW_ARRAY
+  if (hz5_midpagefront_m4_overflow_push(tls, class_index, page, slot)) {
+    return;
+  }
+#endif
   void* ptr = (void*)((uintptr_t)page->slab_base +
                       (uintptr_t)slot * (uintptr_t)page->class_size);
   hz5_midpagefront_local_push(tls, class_index, ptr, page);
@@ -1961,6 +2038,12 @@ static int hz5_midpagefront_m4_refill_magazine(Hz5MidPageTls* tls,
         g_hz5_midpagefront_m4_stat_refill_remote_hit, class_index);
     return 1;
   }
+
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_OVERFLOW_ARRAY
+  if (hz5_midpagefront_m4_refill_from_overflow(tls, class_index)) {
+    return 1;
+  }
+#endif
 
   while (tls->magazine_count[class_index] <
          hz5_midpagefront_m4_mag_cap(class_index)) {
