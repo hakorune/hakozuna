@@ -65,6 +65,10 @@
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_BULK_LOCAL 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_TRUST_REMOTE_STATE
+#define BENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_TRUST_REMOTE_STATE 0
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_HOLD
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_HOLD 0
 #endif
@@ -348,6 +352,7 @@ static void hz5_largefront_mark_orphan(Hz5LargeSpan* span);
 static int hz5_largefront_state_cas(Hz5LargeSpan* span,
                                     unsigned char from,
                                     unsigned char to);
+static int hz5_largefront_remote_pending_to_local(Hz5LargeSpan* span);
 
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_ADAPTIVE128 || \
     BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L1A
@@ -1397,9 +1402,7 @@ static Hz5LargeSpan* hz5_largefront_remote_hold_drain_budget(
       continue;
     }
     if (budget != 0u && drained < budget &&
-        hz5_largefront_state_cas(span,
-                                 (unsigned char)HZ5_LARGESPAN_REMOTE_PENDING,
-                                 (unsigned char)HZ5_LARGESPAN_LOCAL_FREE)) {
+        hz5_largefront_remote_pending_to_local(span)) {
       hz5_largefront_local_push(tls, class_index, span);
       ++drained;
       span = tls->remote_hold_head[class_index];
@@ -1424,6 +1427,24 @@ static int hz5_largefront_state_cas(Hz5LargeSpan* span,
                                                  to,
                                                  memory_order_acq_rel,
                                                  memory_order_acquire);
+}
+
+static int hz5_largefront_remote_pending_to_local(Hz5LargeSpan* span) {
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_TRUST_REMOTE_STATE
+  if (atomic_load_explicit(&span->state, memory_order_acquire) !=
+      (unsigned char)HZ5_LARGESPAN_REMOTE_PENDING) {
+    return 0;
+  }
+  atomic_store_explicit(&span->state,
+                        (unsigned char)HZ5_LARGESPAN_LOCAL_FREE,
+                        memory_order_release);
+  return 1;
+#else
+  return hz5_largefront_state_cas(
+      span,
+      (unsigned char)HZ5_LARGESPAN_REMOTE_PENDING,
+      (unsigned char)HZ5_LARGESPAN_LOCAL_FREE);
+#endif
 }
 
 static int hz5_largefront_owner_local_state_transition(Hz5LargeSpan* span,
@@ -1732,9 +1753,7 @@ static Hz5LargeSpan* hz5_largefront_drain_remote_class_pop_budget(
       continue;
     }
     if (budget != 0u && drained < budget &&
-        hz5_largefront_state_cas(span,
-                                 (unsigned char)HZ5_LARGESPAN_REMOTE_PENDING,
-                                 (unsigned char)HZ5_LARGESPAN_LOCAL_FREE)) {
+        hz5_largefront_remote_pending_to_local(span)) {
       hz5_largefront_local_push(tls, class_index, span);
       ++drained;
       continue;
@@ -1790,9 +1809,7 @@ static Hz5LargeSpan* hz5_largefront_drain_chunk_inbox(
         taken = span;
         continue;
       }
-      if (hz5_largefront_state_cas(span,
-                                   (unsigned char)HZ5_LARGESPAN_REMOTE_PENDING,
-                                   (unsigned char)HZ5_LARGESPAN_LOCAL_FREE)) {
+      if (hz5_largefront_remote_pending_to_local(span)) {
         hz5_largefront_local_push(tls, class_index, span);
         ++drained;
       } else {
@@ -1946,10 +1963,7 @@ static Hz5LargeSpan* hz5_largefront_drain_remote_class_budget(
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L0
               ++policy_orphaned;
 #endif
-            } else if (hz5_largefront_state_cas(
-                           remainder,
-                           (unsigned char)HZ5_LARGESPAN_REMOTE_PENDING,
-                           (unsigned char)HZ5_LARGESPAN_LOCAL_FREE)) {
+            } else if (hz5_largefront_remote_pending_to_local(remainder)) {
               HZ5_LARGEFRONT_STAGE_LOCAL_SPAN(remainder);
               ++drained;
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L0
@@ -2083,9 +2097,7 @@ static Hz5LargeSpan* hz5_largefront_drain_remote_class_budget(
       continue;
     }
 #endif
-    if (hz5_largefront_state_cas(span,
-                                 (unsigned char)HZ5_LARGESPAN_REMOTE_PENDING,
-                                 (unsigned char)HZ5_LARGESPAN_LOCAL_FREE)) {
+    if (hz5_largefront_remote_pending_to_local(span)) {
       HZ5_LARGEFRONT_STAGE_LOCAL_SPAN(span);
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_OBSERVE
       hz5_largefront_counter_inc(

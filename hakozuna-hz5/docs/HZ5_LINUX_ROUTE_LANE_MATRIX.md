@@ -45,6 +45,7 @@ profile, run root, and comparison allocator.
 | Large128 source-batch16 throughput | `large128-source16` | comparison diagnostic |
 | Large128 r50 drain family | `large128-r50-*` | diagnostic only |
 | Large128 drain implementation | `large128-drainbulk` | diagnostic only |
+| Large128 drain state transition | `large128-draintrust` | diagnostic only |
 | Large128 policy family | `large128-policy-*` | observation/diagnostic only |
 
 ## Active Route Families
@@ -68,6 +69,7 @@ hz5-large128-rss
 hz5-large128-source16
 hz5-large128-r50-drain
 hz5-large128-drainbulk
+hz5-large128-draintrust
 hz5-large128-r50-hold
 hz5-large128-r50-hold8
 hz5-large128-policy-l8-shadow
@@ -91,6 +93,9 @@ large128-r50-*:
 
 large128-drainbulk:
   diagnostic only; t4 signal, t8 regression
+
+large128-draintrust:
+  diagnostic only; t8/r50 signal, r90 regression
 
 large128-policy-*:
   observation or diagnostic only; no hot-path counters in speed lanes

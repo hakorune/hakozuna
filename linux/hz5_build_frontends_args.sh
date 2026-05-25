@@ -413,6 +413,11 @@ hz5_try_parse_frontend_build_arg() {
         ;;
       --linux-largefront-drain-bulk-local)
         LINUX_LARGEFRONT_DRAIN_BULK_LOCAL=1
+        HZ5_PARSE_SHIFT=1
+        ;;
+      --linux-largefront-drain-trust-remote-state)
+        LINUX_LARGEFRONT_DRAIN_TRUST_REMOTE_STATE=1
+        HZ5_PARSE_SHIFT=1
         ;;
       --linux-largefront-policy-l1a)
         BUILD_PRELOAD_FULL=1

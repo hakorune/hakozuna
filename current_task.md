@@ -67,6 +67,12 @@ large128-drainbulk:
   diagnostic only: t4 rows show signal, but t8 rows regress versus source16.
   useful evidence that local_push overhead is only a slice of the remaining
   drain/refill gap.
+
+large128-draintrust:
+  source16 plus trusted load/store for owner-drained
+  REMOTE_PENDING->LOCAL_FREE transitions.
+  diagnostic only: t8/r50 beats tcmalloc in RUNS=3, but t8/r90 loses source16.
+  useful evidence that drain state CAS is a real slice, but not the broad fix.
 ```
 
 Recent result roots:
@@ -87,6 +93,8 @@ private/raw-results/linux/hz5_large128_source_populate_r3_20260526_055548
 private/raw-results/linux/hz5_large128_l0_compare_20260526_060606
 private/raw-results/linux/hz5_large128_drainbulk_r3_20260526_061000
 private/raw-results/linux/hz5_large128_drainbulk_tail_r3_20260526_061107
+private/raw-results/linux/hz5_large128_draintrust_r3_20260526_061614
+private/raw-results/linux/hz5_large128_draintrustbulk_manual_r3_20260526_061931
 ```
 
 ## Next Engineering Direction
@@ -107,8 +115,11 @@ private/raw-results/linux/hz5_large128_drainbulk_tail_r3_20260526_061107
    conversions.
 8. Drainbulk reduces part of that conversion overhead and can improve t4, but
    t8 regressions mean local-push batching is not the broad fix.
-9. Do not add another policy until a concrete hotspot explains the row split.
-10. Keep speed lanes free of HZ5_PRELOAD_STATS and hot-path counters.
+9. Draintrust shows the drain CAS cost matters, especially t8/r50, but r90
+   regressions mean trusted REMOTE_PENDING->LOCAL_FREE is not a broad profile.
+10. Draintrust+drainbulk composition is no-go in manual RUNS=3.
+11. Do not add another policy until a concrete hotspot explains the row split.
+12. Keep speed lanes free of HZ5_PRELOAD_STATS and hot-path counters.
 ```
 
 ## Cleanup Status

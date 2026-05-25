@@ -125,6 +125,7 @@ hz5_write_build_config() {
     echo "linux_largefront_drain_take_only=${LINUX_LARGEFRONT_DRAIN_TAKE_ONLY}"
     echo "linux_largefront_drain_pop_budget=${LINUX_LARGEFRONT_DRAIN_POP_BUDGET}"
     echo "linux_largefront_drain_bulk_local=${LINUX_LARGEFRONT_DRAIN_BULK_LOCAL}"
+    echo "linux_largefront_drain_trust_remote_state=${LINUX_LARGEFRONT_DRAIN_TRUST_REMOTE_STATE}"
     echo "linux_largefront_remote_hold=${LINUX_LARGEFRONT_REMOTE_HOLD}"
     echo "linux_largefront_remote_hold_cap=${LINUX_LARGEFRONT_REMOTE_HOLD_CAP}"
     echo "linux_largefront_remote_global_128k=${LINUX_LARGEFRONT_REMOTE_GLOBAL_128K}"
