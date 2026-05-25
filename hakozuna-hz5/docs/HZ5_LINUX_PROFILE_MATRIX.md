@@ -114,6 +114,7 @@ Build:
 
 ```text
 --linux-hz5-profile-pagerun64-large128
+--linux-hz5-profile-large128-rss
 ```
 
 Status:
@@ -157,6 +158,7 @@ Build:
 
 ```text
 --linux-hz5-profile-pagerun64-large128-batch16
+--linux-hz5-profile-large128-source16
 ```
 
 Status:
@@ -178,6 +180,7 @@ Build:
 
 ```text
 --linux-hz5-profile-pagerun64-large128-b16-drain1
+--linux-hz5-profile-large128-r50-drain
 ```
 
 Status:
@@ -296,6 +299,7 @@ Build:
 
 ```text
 --linux-hz5-profile-pagerun64-large128-b16-drain1-hold4
+--linux-hz5-profile-large128-r50-hold
 ```
 
 Status:
@@ -363,6 +367,7 @@ Build:
 
 ```text
 --linux-hz5-profile-pagerun64-large128-b16-policy-l7
+--linux-hz5-profile-large128-policy-l7
 ```
 
 Status:

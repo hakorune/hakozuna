@@ -39,6 +39,35 @@ being tested.
 These aliases are the current HZ5 Linux profile family. Prefer them in new
 scripts and reports instead of copying the long historical flag chains.
 
+### Human-Facing LargeFront Names
+
+Use these names in new benchmark command lines and reports. The historical
+`pagerun64-large128-*` aliases remain available for reproducibility.
+
+| Human name | Build alias | Runner allocator | Meaning | Status |
+| --- | --- | --- | --- | --- |
+| `large128-rss` | `--linux-hz5-profile-large128-rss` | `hz5-large128-rss` | saved source-batch4 profile; low RSS large128 baseline | saved fixed profile |
+| `large128-source16` | `--linux-hz5-profile-large128-source16` | `hz5-large128-source16` | source-batch16 throughput diagnostic | diagnostic only |
+| `large128-r50-drain` | `--linux-hz5-profile-large128-r50-drain` | `hz5-large128-r50-drain` | source16 + drain budget 1; r50 drain diagnostic | diagnostic only |
+| `large128-r50-hold` | `--linux-hz5-profile-large128-r50-hold` | `hz5-large128-r50-hold` | source16 + drain budget 1 + RemoteHold cap4; r50 candidate/diagnostic | diagnostic only |
+| `large128-policy-l7` | `--linux-hz5-profile-large128-policy-l7` | `hz5-large128-policy-l7` | first remainder-size rule policy; no-go diagnostic | diagnostic only |
+
+Naming rule:
+
+```text
+saved profiles:
+  large128-rss
+
+source/refill diagnostics:
+  large128-source16
+
+r50-specific diagnostics:
+  large128-r50-*
+
+policy experiments:
+  large128-policy-*
+```
+
 | Alias | Components | Primary rows | Status |
 | --- | --- | --- | --- |
 | `--linux-hz5-profile-pagerun64-main` | PageRun64 + M6 remote + empty retain cap 4096 | main / mid_only / cross64 | default candidate |
@@ -72,11 +101,12 @@ large128 r50:
   still the next LargeFront gap.
 ```
 
-Use `hz5-pagerun64-large128-b8`, `hz5-pagerun64-large128-b16`,
-`hz5-pagerun64-large128-b16-drain1`, `hz5-pagerun64-large128-b16-rb32`, and
-`hz5-pagerun64-large128-b16-rb64` in `linux/run_hz5_hakmem_compare.sh` only for
-LargeFront-L4 sweeps. Do not include them in broad default matrices unless they
-replace the saved batch4 profile.
+Use `hz5-large128-rss`, `hz5-large128-source16`,
+`hz5-large128-r50-drain`, and `hz5-large128-r50-hold` in new
+`linux/run_hz5_hakmem_compare.sh` invocations. Keep the older
+`hz5-pagerun64-large128-*` names only when reproducing old result directories.
+Do not include diagnostics in broad default matrices unless they replace the
+saved batch4 profile.
 
 L4 first read:
 
@@ -260,9 +290,9 @@ Use this small set before designing another allocator change:
 lanes:
   --linux-hz5-profile-pagerun64-main
   --linux-hz5-profile-pagerun64-cross128
-  --linux-hz5-profile-pagerun64-large128
-  optional: --linux-hz5-profile-pagerun64-large128-batch8
-  optional: --linux-hz5-profile-pagerun64-large128-batch16
+  --linux-hz5-profile-large128-rss
+  optional: --linux-hz5-profile-large128-source16
+  optional: --linux-hz5-profile-large128-r50-hold
   HZ4
   tcmalloc
   mimalloc

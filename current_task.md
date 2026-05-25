@@ -23,13 +23,25 @@ LargeFront Policy-L0:
   name is policy-l0, not auto, because it does not select policy yet.
 
 LargeFront Policy-L1a:
-  current implementation target.
+  implemented earlier as a diagnostic.
   128K source refill batch selector only.
   slow path only; no remote batch cap adaptation yet.
-  first version is conservative and diagnostic:
-    batch4 under high mapped/source pressure
-    batch16 under low mapped pressure
-    batch8 in the middle
+
+LargeFront Policy-L7:
+  implemented and measured as a first rule-based remainder policy.
+  no-go for promotion:
+    t4/r50 regressed hard.
+    r90 did not recover enough.
+
+Lane naming cleanup:
+  committed L7 as a diagnostic checkpoint.
+  current cleanup adds human-facing aliases while preserving historical names:
+    large128-rss
+    large128-source16
+    large128-r50-drain
+    large128-r50-hold
+    large128-policy-l7
+  use the human aliases in new commands and reports.
 
 Cleanup checkpoint:
   LargeFront observe and Policy-L0 are intentionally separate.
@@ -43,6 +55,7 @@ Primary registry:
 
 ```text
 hakozuna-hz5/docs/HZ5_LINUX_PROFILE_MATRIX.md
+hakozuna-hz5/docs/HZ5_LINUX_LANE_COMBINATIONS.md
 ```
 
 ## Latest Policy-L0 Run

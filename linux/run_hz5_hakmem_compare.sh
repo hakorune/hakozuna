@@ -67,6 +67,11 @@ Options:
                        hz5-pagerun64-large128-b16-policy-l7,
                        hz5-pagerun64-large128-b16-rb32,
                        hz5-pagerun64-large128-b16-rb64
+                       human aliases: hz5-large128-rss,
+                       hz5-large128-source16,
+                       hz5-large128-r50-drain,
+                       hz5-large128-r50-hold,
+                       hz5-large128-policy-l7
   --outdir DIR         output directory
   --paper-root DIR     hakmem root (default: /mnt/workdisk/public_share/hakmem)
   --bench-bin PATH     benchmark binary
@@ -161,12 +166,14 @@ build_hz5() {
       --linux-hz5-profile-pagerun64-large128-batch8 \
       --out-dir "${HZ5_PAGERUN64_LARGE_B8_OUT}" >/dev/null
   fi
-  if [[ ",${ALLOCATORS}," == *",hz5-pagerun64-large128-b16,"* ]]; then
+  if [[ ",${ALLOCATORS}," == *",hz5-pagerun64-large128-b16,"* ||
+        ",${ALLOCATORS}," == *",hz5-large128-source16,"* ]]; then
     "${ROOT_DIR}/linux/build_linux_hz5_standalone.sh" \
       --linux-hz5-profile-pagerun64-large128-batch16 \
       --out-dir "${HZ5_PAGERUN64_LARGE_B16_OUT}" >/dev/null
   fi
-  if [[ ",${ALLOCATORS}," == *",hz5-pagerun64-large128-b16-drain1,"* ]]; then
+  if [[ ",${ALLOCATORS}," == *",hz5-pagerun64-large128-b16-drain1,"* ||
+        ",${ALLOCATORS}," == *",hz5-large128-r50-drain,"* ]]; then
     "${ROOT_DIR}/linux/build_linux_hz5_standalone.sh" \
       --linux-hz5-profile-pagerun64-large128-b16-drain1 \
       --out-dir "${HZ5_PAGERUN64_LARGE_B16_DRAIN1_OUT}" >/dev/null
@@ -186,12 +193,14 @@ build_hz5() {
       --linux-hz5-profile-pagerun64-large128-b16-remotehold4 \
       --out-dir "${HZ5_PAGERUN64_LARGE_B16_REMOTEHOLD4_OUT}" >/dev/null
   fi
-  if [[ ",${ALLOCATORS}," == *",hz5-pagerun64-large128-b16-drain1-hold4,"* ]]; then
+  if [[ ",${ALLOCATORS}," == *",hz5-pagerun64-large128-b16-drain1-hold4,"* ||
+        ",${ALLOCATORS}," == *",hz5-large128-r50-hold,"* ]]; then
     "${ROOT_DIR}/linux/build_linux_hz5_standalone.sh" \
       --linux-hz5-profile-pagerun64-large128-b16-drain1-hold4 \
       --out-dir "${HZ5_PAGERUN64_LARGE_B16_DRAIN1_HOLD4_OUT}" >/dev/null
   fi
-  if [[ ",${ALLOCATORS}," == *",hz5-pagerun64-large128-b16-policy-l7,"* ]]; then
+  if [[ ",${ALLOCATORS}," == *",hz5-pagerun64-large128-b16-policy-l7,"* ||
+        ",${ALLOCATORS}," == *",hz5-large128-policy-l7,"* ]]; then
     "${ROOT_DIR}/linux/build_linux_hz5_standalone.sh" \
       --linux-hz5-profile-pagerun64-large128-b16-policy-l7 \
       --out-dir "${HZ5_PAGERUN64_LARGE_B16_POLICY_L7_OUT}" >/dev/null
@@ -237,14 +246,19 @@ ALLOC_SO[hz5-allgate]="${HZ5_ALLGATE_SO}"
 ALLOC_SO[hz5-pagerun64-main]="${HZ5_PAGERUN64_MAIN_SO}"
 ALLOC_SO[hz5-pagerun64-cross128]="${HZ5_PAGERUN64_CROSS_SO}"
 ALLOC_SO[hz5-pagerun64-large128]="${HZ5_PAGERUN64_LARGE_SO}"
+ALLOC_SO[hz5-large128-rss]="${HZ5_PAGERUN64_LARGE_SO}"
 ALLOC_SO[hz5-pagerun64-large128-b8]="${HZ5_PAGERUN64_LARGE_B8_SO}"
 ALLOC_SO[hz5-pagerun64-large128-b16]="${HZ5_PAGERUN64_LARGE_B16_SO}"
+ALLOC_SO[hz5-large128-source16]="${HZ5_PAGERUN64_LARGE_B16_SO}"
 ALLOC_SO[hz5-pagerun64-large128-b16-drain1]="${HZ5_PAGERUN64_LARGE_B16_DRAIN1_SO}"
+ALLOC_SO[hz5-large128-r50-drain]="${HZ5_PAGERUN64_LARGE_B16_DRAIN1_SO}"
 ALLOC_SO[hz5-pagerun64-large128-b16-takeonly]="${HZ5_PAGERUN64_LARGE_B16_TAKEONLY_SO}"
 ALLOC_SO[hz5-pagerun64-large128-b16-popbudget1]="${HZ5_PAGERUN64_LARGE_B16_POPBUDGET1_SO}"
 ALLOC_SO[hz5-pagerun64-large128-b16-remotehold4]="${HZ5_PAGERUN64_LARGE_B16_REMOTEHOLD4_SO}"
 ALLOC_SO[hz5-pagerun64-large128-b16-drain1-hold4]="${HZ5_PAGERUN64_LARGE_B16_DRAIN1_HOLD4_SO}"
+ALLOC_SO[hz5-large128-r50-hold]="${HZ5_PAGERUN64_LARGE_B16_DRAIN1_HOLD4_SO}"
 ALLOC_SO[hz5-pagerun64-large128-b16-policy-l7]="${HZ5_PAGERUN64_LARGE_B16_POLICY_L7_SO}"
+ALLOC_SO[hz5-large128-policy-l7]="${HZ5_PAGERUN64_LARGE_B16_POLICY_L7_SO}"
 ALLOC_SO[hz5-pagerun64-large128-b16-rb32]="${HZ5_PAGERUN64_LARGE_B16_RB32_SO}"
 ALLOC_SO[hz5-pagerun64-large128-b16-rb64]="${HZ5_PAGERUN64_LARGE_B16_RB64_SO}"
 

@@ -170,15 +170,23 @@ Options:
                      saved profile alias: PageRun64 + LargeFront takefirst
                      + source batch4 + Large-first free route for
                      large128-style rows
+  --linux-hz5-profile-large128-rss
+                     human alias for pagerun64-large128: large128 low-RSS
+                     fixed profile
   --linux-hz5-profile-pagerun64-large128-batch8
                      diagnostic alias: same as pagerun64-large128 with
                      LargeFront source batch8
   --linux-hz5-profile-pagerun64-large128-batch16
                      diagnostic alias: same as pagerun64-large128 with
                      LargeFront source batch16
+  --linux-hz5-profile-large128-source16
+                     human alias for large128-batch16: source-batch16
+                     throughput diagnostic
   --linux-hz5-profile-pagerun64-large128-b16-drain1
                      diagnostic alias: same as large128-batch16 with
                      alloc-miss remote drain local budget 1
+  --linux-hz5-profile-large128-r50-drain
+                     human alias for b16-drain1: r50 drain-budget diagnostic
   --linux-hz5-profile-pagerun64-large128-b16-takeonly
                      diagnostic alias: same as large128-batch16 with
                      take-first-only remote drain
@@ -191,9 +199,15 @@ Options:
   --linux-hz5-profile-pagerun64-large128-b16-drain1-hold4
                      diagnostic alias: same as b16-drain1 with
                      remote hold cap 4
+  --linux-hz5-profile-large128-r50-hold
+                     human alias for b16-drain1-hold4: r50 RemoteHold
+                     diagnostic
   --linux-hz5-profile-pagerun64-large128-b16-policy-l7
                      diagnostic alias: source batch16 with drain1-hold4 and
                      remainder-size local conversion policy
+  --linux-hz5-profile-large128-policy-l7
+                     human alias for b16-policy-l7: first rule policy
+                     diagnostic
   --linux-hz5-profile-pagerun64-large128-b16-rb32
                      diagnostic alias: same as large128-batch16 with
                      LargeFront remote batch cap 32
@@ -1000,7 +1014,7 @@ while [[ $# -gt 0 ]]; do
       LINUX_LARGEFRONT_SOURCE_BATCH_COUNT=16
       shift
       ;;
-    --linux-hz5-profile-pagerun64-large128)
+    --linux-hz5-profile-pagerun64-large128|--linux-hz5-profile-large128-rss)
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 4
       shift
       ;;
@@ -1008,11 +1022,11 @@ while [[ $# -gt 0 ]]; do
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 8
       shift
       ;;
-    --linux-hz5-profile-pagerun64-large128-batch16)
+    --linux-hz5-profile-pagerun64-large128-batch16|--linux-hz5-profile-large128-source16)
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 16
       shift
       ;;
-    --linux-hz5-profile-pagerun64-large128-b16-drain1)
+    --linux-hz5-profile-pagerun64-large128-b16-drain1|--linux-hz5-profile-large128-r50-drain)
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 16
       LINUX_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET=1
       shift
@@ -1035,14 +1049,14 @@ while [[ $# -gt 0 ]]; do
       LINUX_LARGEFRONT_REMOTE_HOLD_CAP=4
       shift
       ;;
-    --linux-hz5-profile-pagerun64-large128-b16-drain1-hold4)
+    --linux-hz5-profile-pagerun64-large128-b16-drain1-hold4|--linux-hz5-profile-large128-r50-hold)
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 16
       LINUX_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET=1
       LINUX_LARGEFRONT_REMOTE_HOLD=1
       LINUX_LARGEFRONT_REMOTE_HOLD_CAP=4
       shift
       ;;
-    --linux-hz5-profile-pagerun64-large128-b16-policy-l7)
+    --linux-hz5-profile-pagerun64-large128-b16-policy-l7|--linux-hz5-profile-large128-policy-l7)
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 16
       LINUX_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET=1
       LINUX_LARGEFRONT_REMOTE_HOLD=1
