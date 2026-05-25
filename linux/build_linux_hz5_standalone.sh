@@ -1638,6 +1638,7 @@ REMOTE_BENCH="${OUT_DIR}/bench_hz5_standalone_remote64k"
 RSS_BENCH="${OUT_DIR}/bench_hz5_standalone_rss_plateau"
 MIXED_BENCH="${OUT_DIR}/bench_hz5_standalone_mixed_prelude"
 SAFETY_BENCH="${OUT_DIR}/bench_hz5_standalone_safety"
+MIDPAGE_DIRECT_BENCH="${OUT_DIR}/bench_hz5_midpage_direct"
 GENERIC_BENCH="${ROOT_DIR}/bench/out/linux/${ARCH}/bench_aligned64k"
 GENERIC_REMOTE_BENCH="${ROOT_DIR}/bench/out/linux/${ARCH}/bench_remote64k"
 GENERIC_RSS_BENCH="${ROOT_DIR}/bench/out/linux/${ARCH}/bench_rss_plateau"
@@ -2209,6 +2210,15 @@ gcc "${COMMON_FLAGS[@]}" -Werror -D_POSIX_C_SOURCE=200809L \
   "${ROOT_DIR}/bench/bench_hz5_standalone_safety.c" \
   -L"${OUT_DIR}" -Wl,-rpath,"${OUT_DIR}" -lhakozuna_hz5_standalone \
   -pthread -o "$SAFETY_BENCH"
+
+echo "[linux][hz5] building MidPage direct benchmark: ${MIDPAGE_DIRECT_BENCH}"
+gcc -O3 -Wall -Wextra -Werror -std=c11 -D_POSIX_C_SOURCE=200809L \
+  "${SPEED_LINK_COMPILE_FLAGS[@]}" \
+  -I"${HZ5_DIR}/include" \
+  -I"${HZ5_DIR}/midpagefront" \
+  "${ROOT_DIR}/bench/bench_hz5_midpage_direct.c" \
+  -L"${OUT_DIR}" -Wl,-rpath,"${OUT_DIR}" -lhakozuna_hz5_standalone \
+  -pthread -o "$MIDPAGE_DIRECT_BENCH"
 
 mkdir -p "$(dirname "$GENERIC_BENCH")"
 echo "[linux][hz5] building generic aligned benchmark: ${GENERIC_BENCH}"

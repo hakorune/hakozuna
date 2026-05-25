@@ -199,6 +199,100 @@ thin thread-cache ABI, or a tcmalloc-like batch pointer cache that moves more
 state work to refill/drain rather than the per-object path.
 ```
 
+## Next Cut: Direct MidPage API Bench
+
+Question:
+
+```text
+Is the remaining local-r0 gap mostly in LD_PRELOAD/front dispatch, or inside
+MidPageFront itself?
+```
+
+Plan:
+
+```text
+1. Add a standalone direct benchmark that calls:
+     hz5_midpagefront_try_alloc(size, 16, &ptr)
+     hz5_midpagefront_free(ptr)
+
+2. Match the hakmem mid_only shape:
+     threads=8
+     iters=300000
+     ws=100
+     min_size=2049
+     max_size=32768
+     remote_pct=0
+
+3. Compare:
+     direct MidPage API
+     SuperFast preload
+     tcmalloc preload
+```
+
+Interpretation:
+
+```text
+direct >> SuperFast:
+  preload/free classification is still the main problem.
+
+direct ~= SuperFast:
+  MidPage internal state/cache representation is the main problem.
+
+direct still < 150M:
+  stop preload-focused work and redesign MidPage front-cache internals.
+```
+
+## Direct MidPage API Result
+
+Raw output:
+
+```text
+private/raw-results/linux/midpage_direct_api_smoke_20260525_153359
+private/raw-results/linux/midpage_direct_api_perf_20260525_153417
+```
+
+RUNS=5, threads=8, mid_only_r0 shape:
+
+```text
+direct:
+  122.13M
+
+superfast:
+  119.51M
+
+tcmalloc:
+  218.03M
+```
+
+Perf one-shot:
+
+```text
+direct:
+  122.11M ops/s, 689.2M instructions, 155.5M branches
+
+superfast:
+  121.20M ops/s, 526.2M instructions, 107.0M branches
+
+tcmalloc:
+  210.11M ops/s, 261.6M instructions, 46.0M branches
+```
+
+Decision:
+
+```text
+direct ~= SuperFast. The preload/front dispatch layer is not the main local-r0
+limit for mid_only. MidPageFront's internal alloc/free representation is the
+main problem.
+```
+
+Next design direction:
+
+```text
+Stop preload-first work for this gap. Build a new MidPage internal upper-bound:
+per-thread pointer-array/bin cache with batched refill/drain, and move slot
+state work out of the per-object hit path as much as the safety model allows.
+```
+
 ## Branch
 
 ```text

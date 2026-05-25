@@ -1652,6 +1652,52 @@ No-go for the 150M local-r0 upper-bound bar. Keep as unsafe diagnostic only.
 The remaining gap is not explained by the tested M4/M5 shortcut set.
 ```
 
+### `midpage_direct_api_smoke_20260525_153359`
+
+Raw output:
+
+```text
+private/raw-results/linux/midpage_direct_api_smoke_20260525_153359
+private/raw-results/linux/midpage_direct_api_perf_20260525_153417
+```
+
+Purpose:
+
+```text
+Split the local-r0 gap between LD_PRELOAD/front dispatch and MidPageFront
+internals by calling hz5_midpagefront_try_alloc/free directly.
+```
+
+Result:
+
+```text
+mid_only_r0:
+  direct    122.13M
+  superfast 119.51M
+  tcmalloc  218.03M
+```
+
+Perf one-shot:
+
+```text
+direct:
+  122.11M ops/s, 689.2M instructions, 155.5M branches
+
+superfast:
+  121.20M ops/s, 526.2M instructions, 107.0M branches
+
+tcmalloc:
+  210.11M ops/s, 261.6M instructions, 46.0M branches
+```
+
+Decision:
+
+```text
+direct ~= SuperFast. The remaining local-r0 gap is inside MidPageFront's
+internal alloc/free representation, not primarily in the preload dispatch
+layer.
+```
+
 ## Older Results
 
 The full chronological result log remains in:

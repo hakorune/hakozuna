@@ -304,3 +304,40 @@ Implication:
 The remaining tcmalloc gap is deeper than the tested M4/M5 toggles. Do not keep
 stacking unsafe shortcuts. Move to a real front-path representation change.
 ```
+
+### Direct MidPage API Result
+
+Raw output:
+
+```text
+private/raw-results/linux/midpage_direct_api_smoke_20260525_153359
+private/raw-results/linux/midpage_direct_api_perf_20260525_153417
+```
+
+RUNS=5, mid_only_r0 shape:
+
+```text
+direct:
+  122.13M
+
+superfast:
+  119.51M
+
+tcmalloc:
+  218.03M
+```
+
+Decision:
+
+```text
+direct ~= SuperFast. The MidPage local-r0 limit is not mainly LD_PRELOAD
+dispatch. It is MidPageFront internal path length.
+```
+
+Design implication:
+
+```text
+RouteTag may still simplify free classification for mixed/cross-front rows, but
+it is not the next answer for mid_only_r0. The next local-r0 design must change
+the MidPage internal cache/state representation.
+```
