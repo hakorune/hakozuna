@@ -48,8 +48,12 @@ Candidate presets:
 R1 smoke:
   RSS improves, but runtime madvise is too expensive for a speed profile.
 
+R2 smoke:
+  release on refill/miss avoids direct free-path madvise, but still does not
+  make rssgov a speed-profile candidate.
+
 Next:
-  batch or checkpoint empty-slab release outside the hot free path.
+  add explicit checkpoint / phase-boundary empty-slab release API.
 ```
 
 ## Recent Results

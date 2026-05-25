@@ -211,8 +211,10 @@ typedef struct Hz5MidPage {
 #endif
   struct Hz5MidPage* next_owned;
   struct Hz5MidPage* source_next;
+  struct Hz5MidPage* retired_next;
   uint8_t source_free;
   uint8_t empty_retained;
+  uint8_t retired_empty;
 } Hz5MidPage;
 
 typedef struct Hz5MidPageNode {
@@ -280,6 +282,8 @@ typedef struct Hz5MidPageTls {
   uint16_t magazine_count[HZ5_MIDPAGEFRONT_CLASS_COUNT];
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_EMPTY_SLAB_RELEASE
   uint16_t empty_retained_count[HZ5_MIDPAGEFRONT_CLASS_COUNT];
+  uint16_t retired_empty_count[HZ5_MIDPAGEFRONT_CLASS_COUNT];
+  Hz5MidPage* retired_empty[HZ5_MIDPAGEFRONT_CLASS_COUNT];
 #endif
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_OVERFLOW_ARRAY
   Hz5MidPageMagEntry overflow[HZ5_MIDPAGEFRONT_CLASS_COUNT]
@@ -1135,11 +1139,32 @@ static void hz5_midpagefront_source_free_slab(uint32_t class_index,
                 HZ5_MIDPAGEFRONT_SLAB_BYTES,
                 MADV_DONTNEED);
   pthread_mutex_lock(&g_hz5_midpagefront_region_lock);
-  page->source_free = 1;
-  page->empty_retained = 0;
-  page->source_next = g_hz5_midpagefront_source_free[class_index];
-  g_hz5_midpagefront_source_free[class_index] = page;
+    page->source_free = 1;
+    page->empty_retained = 0;
+    page->retired_empty = 0;
+    page->retired_next = NULL;
+    page->source_next = g_hz5_midpagefront_source_free[class_index];
+    g_hz5_midpagefront_source_free[class_index] = page;
   pthread_mutex_unlock(&g_hz5_midpagefront_region_lock);
+}
+
+static void hz5_midpagefront_m4_release_retired_one(Hz5MidPageTls* tls,
+                                                    uint32_t class_index) {
+  if (!tls || !hz5_midpagefront_class_valid(class_index)) {
+    return;
+  }
+  Hz5MidPage* page = tls->retired_empty[class_index];
+  if (!page) {
+    return;
+  }
+  tls->retired_empty[class_index] = page->retired_next;
+  page->retired_next = NULL;
+  page->retired_empty = 0;
+  if (tls->retired_empty_count[class_index] != 0u) {
+    --tls->retired_empty_count[class_index];
+  }
+  page->owner = k_hz5_midpagefront_no_owner;
+  hz5_midpagefront_source_free_slab(class_index, page);
 }
 
 static void hz5_midpagefront_m4_try_release_empty_page(Hz5MidPageTls* tls,
@@ -1197,8 +1222,12 @@ static void hz5_midpagefront_m4_try_release_empty_page(Hz5MidPageTls* tls,
     --tls->empty_retained_count[class_index];
   }
   page->empty_retained = 0;
-  page->owner = k_hz5_midpagefront_no_owner;
-  hz5_midpagefront_source_free_slab(class_index, page);
+  if (!page->retired_empty) {
+    page->retired_empty = 1;
+    page->retired_next = tls->retired_empty[class_index];
+    tls->retired_empty[class_index] = page;
+    ++tls->retired_empty_count[class_index];
+  }
 }
 #else
 static void hz5_midpagefront_m4_try_release_empty_page(Hz5MidPageTls* tls,
@@ -2183,6 +2212,8 @@ static void* hz5_midpagefront_source_alloc_slab(uint32_t class_index,
   page->source_next = NULL;
   page->source_free = 0;
   page->empty_retained = 0;
+  page->retired_empty = 0;
+  page->retired_next = NULL;
   pthread_mutex_unlock(&g_hz5_midpagefront_region_lock);
 
   uintptr_t slab_base = (uintptr_t)page->slab_base;
@@ -2238,6 +2269,8 @@ static Hz5MidPage* hz5_midpagefront_new_page(Hz5MidPageTls* tls,
   page->slot_count = slot_count;
   page->owner = tls->owner;
   page->empty_retained = 0;
+  page->retired_empty = 0;
+  page->retired_next = NULL;
   atomic_store_explicit(&page->active_bits, 0, memory_order_relaxed);
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_RUN
   atomic_store_explicit(
@@ -2294,6 +2327,9 @@ static int hz5_midpagefront_m4_refill_magazine(Hz5MidPageTls* tls,
   }
   hz5_midpagefront_m4_stat_inc_class(
       g_hz5_midpagefront_m4_stat_refill_call, class_index);
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_EMPTY_SLAB_RELEASE
+  hz5_midpagefront_m4_release_retired_one(tls, class_index);
+#endif
   if (tls->magazine_count[class_index] != 0u) {
     return 1;
   }

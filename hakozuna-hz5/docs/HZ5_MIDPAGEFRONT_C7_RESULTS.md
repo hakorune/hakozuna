@@ -87,13 +87,31 @@ band8/32-rssgov cap=64:
 
 band8/32-rssgov cap=512:
    67.20M ops/s, maxrss 62960 KB
+
+R2 changed release timing:
+
+```text
+free path:
+  mark slab retired only
+
+refill/miss path:
+  release one retired slab with madvise(DONTNEED)
+```
+
+Direct smoke after R2:
+
+```text
+band8/32-rssgov cap=512:
+   66.14M ops/s, maxrss 70124 KB
+```
 ```
 
 Read:
 
 ```text
 R1 proves empty-slab madvise can reduce RSS, but runtime madvise cost is too
-high for a speed profile. Keep it as an RSS diagnostic. The next design should
-separate release timing from the hot free path, for example by batching release
-or moving it to a checkpoint / phase boundary.
+high for a speed profile. R2 moves release to refill/miss, but the cost profile
+is still not a speed-profile candidate. Keep the lane as an RSS diagnostic.
+The next design should expose an explicit checkpoint / phase-boundary release
+API instead of releasing during allocator hot paths.
 ```

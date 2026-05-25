@@ -154,7 +154,8 @@ purpose:
 
 status:
   diagnostic only after R1 smoke; runtime madvise reduces RSS but costs too much
-  throughput for a speed profile
+  throughput for a speed profile. R2 moved actual release to refill/miss, but
+  this is still diagnostic rather than a promotion candidate.
 ```
 
 ## Latest Evidence
