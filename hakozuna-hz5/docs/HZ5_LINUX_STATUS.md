@@ -45,8 +45,9 @@ codex/hz5-linux-p43-port
 Recent commits:
 
 ```text
-0b9d632 Add MidPageFront M4 design checks
-9659944 Clean up HZ5 Linux lane organization
+24e0631 Add MidPageFront M4 freefirst lane
+ced9279 Add MidPageFront M4 cross-drain diagnostic
+3b25a0c Add MidPageFront M4 remote packet lane
 ```
 
 ## Lead Lanes
@@ -64,6 +65,10 @@ Recent commits:
 --linux-hz5-general-midpage-region-shadow-m4packet
   M4b page-descriptor remote packet candidate; wins mid/main r50/r90 and
   cross128 r0/r50 in gated RUNS=5
+
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst
+  M4packet plus MidPageFront-first preload free dispatch; current incremental
+  candidate for the next MidPage matrix
 
 --linux-hz5-general-midpage-region
   MidPageFront-M2.2 stable remote-heavy mid-size candidate
@@ -120,6 +125,10 @@ Recent commits:
 --linux-hz5-general-midpage-region-shadow-m4packet
   M4b page-packet diagnostic/candidate; strong mid/main remote signal,
   cross128_r90 still below allocfirst
+
+--linux-hz5-general-midpage-region-shadow-m4packet-crossdrain
+  no-promote diagnostic; improves MidPage-heavy r90 rows but hurts cross128
+  r50/r90
 ```
 
 ## Current tcmalloc Read
@@ -182,6 +191,22 @@ gap is structural. M4 magazine improves remote-heavy mid/main rows but does
 not close local r0. M4b page packets improve remote-heavy mid/main/cross rows.
 Treat `allocfirst` as the local baseline and `m4packet` as the current
 remote-heavy mid/main candidate. Cross128_r90 still needs separate recovery.
+```
+
+Latest lane-combination read:
+
+```text
+private/raw-results/linux/midpage_m4packet_freefirst_smoke_20260525_085727
+private/raw-results/linux/midpage_m4packet_crossdrain_smoke_20260525_085453
+```
+
+Interpretation:
+
+```text
+m4packet-freefirst is the cleaner incremental candidate: it improves local r0
+and slightly improves main/cross128 r90 without changing descriptor ownership.
+m4packet-crossdrain should not be promoted because it hurts cross128 r50/r90.
+Use docs/HZ5_LINUX_LANE_COMBINATIONS.md for the next matrix set.
 ```
 
 Follow-up cleanup:

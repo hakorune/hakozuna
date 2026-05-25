@@ -615,3 +615,43 @@ Do not count unsupported or libc-passthrough routes as HZ5 wins.
 Keep detailed run output under private/raw-results/linux/.
 Update HZ5_BENCH_RESULTS_INDEX.md after meaningful measurements.
 ```
+
+## Lane Combination Cleanup
+
+New source of truth:
+
+```text
+hakozuna-hz5/docs/HZ5_LINUX_LANE_COMBINATIONS.md
+```
+
+Current MidPage comparison set:
+
+```text
+allocfirst:
+  local-r0 comparison baseline
+
+m4packet:
+  current remote-heavy candidate
+
+m4packet-freefirst:
+  cleaner incremental candidate for next matrix
+
+tcmalloc:
+  target allocator
+```
+
+No-promote:
+
+```text
+m4packet-crossdrain:
+  improves MidPage-heavy r90 rows but hurts cross128 r50/r90
+
+localunsafe:
+  unsafe upper bound only
+
+nodeless-stats / ptrcache-stats:
+  observation counters only; not speed lanes
+
+OwnerHub-R2/R3:
+  historical generic cross-front drain experiments with fixed-cost failures
+```

@@ -34,6 +34,11 @@ shorter than the historical benchmark logs.
   MidPageFront-M4b remote packet candidate. Gated-drain RUNS=5 wins
   mid_only/main r50/r90 and cross128 r0/r50; cross128 r90 remains below
   allocfirst and local r0 remains unsolved.
+
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst
+  M4packet plus MidPageFront-first preload free dispatch. Cleaner incremental
+  candidate than crossdrain: improves local r0 and slightly improves
+  main/cross128 r90, but does not close the tcmalloc local-r0 gap.
 ```
 
 ## Keep As Diagnostics
@@ -67,6 +72,10 @@ shorter than the historical benchmark logs.
 --linux-hz5-general-midpage-region-shadow-localunsafe
   Unsafe r0 upper-bound diagnostic. Skips owner-local MidPage bitmap state
   checks. Never use for safety, remote, or paper rows.
+
+--linux-hz5-general-midpage-region-shadow-m4packet-crossdrain
+  MidPageFront owner/class pending drain from other-front misses. Diagnostic
+  only: improves MidPage-heavy r90 rows but hurts cross128 r50/r90.
 
 --linux-ownerhub-r1
 --linux-ownerhub-r2
@@ -145,6 +154,18 @@ Rules for new lanes:
    block.
 5. If a lane is no-go, document it here and in HZ5_BENCH_RESULTS_INDEX.md
    rather than deleting the preset immediately.
+```
+
+For exact route/profile naming, use:
+
+```text
+docs/HZ5_LINUX_ROUTE_LANE_MATRIX.md
+```
+
+For allowed combinations, use:
+
+```text
+docs/HZ5_LINUX_LANE_COMBINATIONS.md
 ```
 
 ## Source Cleanup Boundaries

@@ -15,6 +15,12 @@ For cleanup-oriented lane status, read:
 docs/HZ5_LINUX_LANE_CLEANUP.md
 ```
 
+For allowed lane combinations, read:
+
+```text
+docs/HZ5_LINUX_LANE_COMBINATIONS.md
+```
+
 ## Rule
 
 ```text
@@ -49,6 +55,7 @@ Current paper/appendix-facing HZ5 Linux rows are profile-specific:
 | MidPage local-r0 comparison baseline | `hz5-general-midpage-region-shadow-allocfirst` | M2/M3/M4 diagnostic baseline after removing duplicate preload class lookup |
 | MidPage remote-heavy magazine candidate | `hz5-general-midpage-region-shadow-m4mag` | M4 owner-local slot magazine; improves mid/main r90, not broad default |
 | MidPage remote-packet candidate | `hz5-general-midpage-region-shadow-m4packet` | M4b page-descriptor remote packet; first smoke wins remote-heavy rows |
+| MidPage free-dispatch candidate | `hz5-general-midpage-region-shadow-m4packet-freefirst` | M4packet plus MidPageFront-first free dispatch; incremental current candidate |
 | Large ordinary malloc candidate | `hz5-largefront-l1` | Linux full-preload route for ordinary malloc >64K..1M, cross128 local coverage candidate |
 | Remote-heavy large candidate | `hz5-largefront-inbox` | LargeFront owner-inbox candidate for remote-heavy large rows |
 | General remote-tail candidate | `hz5-general-region-outbox` | SmallFront outbox + MidFront rb16 + LargeFront region-map candidate |
