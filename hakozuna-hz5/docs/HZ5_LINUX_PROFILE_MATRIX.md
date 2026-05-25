@@ -10,6 +10,18 @@ hakozuna-hz5/docs/archive/HZ5_LINUX_PROFILE_MATRIX_HISTORY_2026-05.md
 Use this page to choose current lanes. Use the archive only when reproducing an
 old result directory or no-go decision.
 
+Build alias definitions live in:
+
+```text
+linux/hz5_build_profile_aliases.sh
+```
+
+Low-level feature flags are parsed in:
+
+```text
+linux/hz5_build_arg_parser.sh
+```
+
 ## Current Read
 
 ```text

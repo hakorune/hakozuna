@@ -88,6 +88,10 @@ current_task.md:
 
 build_linux_hz5_standalone.sh:
   argument parser moved to linux/hz5_build_arg_parser.sh.
+
+linux/hz5_build_arg_parser.sh:
+  human-facing profile aliases moved to linux/hz5_build_profile_aliases.sh.
+  parser now owns low-level feature flags and value parsing.
 ```
 
 Remaining cleanup candidates:
@@ -98,8 +102,8 @@ linux/build_linux_hz5_standalone.sh:
   are in one file.
 
 linux/hz5_build_arg_parser.sh:
-  parser is isolated but still long.
-  next split candidate is profile aliases vs low-level feature flags.
+  still long because all low-level feature flags are centralized.
+  next split candidate is Local2P / preload / front-end flag groups.
 
 hakozuna-hz5/largefront/hz5_largefront.c:
   large but acceptable during active optimization.
