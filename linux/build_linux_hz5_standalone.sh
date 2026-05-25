@@ -77,6 +77,8 @@ LINUX_MIDPAGEFRONT_NODELESS_PTRCACHE=0
 LINUX_MIDPAGEFRONT_UNSAFE_LOCAL_NOCHECK=0
 LINUX_MIDPAGEFRONT_M4_MAGAZINE=0
 LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET=0
+LINUX_MIDPAGEFRONT_M4_REMOTE_DRAIN_ON_HIT=0
+LINUX_MIDPAGEFRONT_M4_REMOTE_DRAIN_HIT_INTERVAL=64
 LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN=0
 LINUX_MIDPAGEFRONT_M4_UNSAFE_ALLOC_ELIDE=0
 LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG=0
@@ -303,6 +305,9 @@ Options:
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint
                      RSS diagnostic preset: band8/32 plus explicit checkpoint
                      release only; no release on allocator refill/miss
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-drainhit
+                     remote-heavy diagnostic: band8/32 checkpoint lane with
+                     periodic M4 remote packet drain restored on M5 alloc hits
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-16-32
                      diagnostic preset: superfast-freeelide plus coarse
                      MidPage bands 8K/16K/32K
@@ -312,6 +317,9 @@ Options:
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-16-32-rsscheckpoint
                      RSS diagnostic preset: band8/16/32 plus explicit
                      checkpoint release only; no release on refill/miss
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-16-32-rsscheckpoint-drainhit
+                     remote-heavy diagnostic: band8/16/32 checkpoint lane with
+                     periodic M4 remote packet drain restored on M5 alloc hits
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band16-32
                      diagnostic preset: superfast-freeelide plus coarse
                      MidPage bands 16K/32K
@@ -323,6 +331,9 @@ Options:
                      counters; not for performance medians
   --linux-midpagefront-m6-raw-cap N
                      M6 raw quarantine cap for deferred-free diagnostics
+                     (default: 64)
+  --linux-midpagefront-m4-remote-drain-hit-interval N
+                     hit-count interval for drainhit diagnostics
                      (default: 64)
   --linux-midpagefront-empty-slab-release
                      MidPageFront RSS diagnostic: return fully cached
@@ -683,6 +694,11 @@ enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rssgov_base() {
 enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_base() {
   enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rssgov_base "$1"
   LINUX_MIDPAGEFRONT_EMPTY_RELEASE_ON_REFILL=0
+}
+
+enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_drainhit_base() {
+  enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_base "$1"
+  LINUX_MIDPAGEFRONT_M4_REMOTE_DRAIN_ON_HIT=1
 }
 
 enable_midpage_m4packet_freefirst_tlslink_tagfree_base() {
@@ -1221,6 +1237,10 @@ while [[ $# -gt 0 ]]; do
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_base 2
       shift
       ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-drainhit)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_drainhit_base 2
+      shift
+      ;;
     --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-16-32)
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_base 6
       shift
@@ -1231,6 +1251,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-16-32-rsscheckpoint)
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_base 6
+      shift
+      ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-16-32-rsscheckpoint-drainhit)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_drainhit_base 6
       shift
       ;;
     --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band16-32)
@@ -1248,6 +1272,11 @@ while [[ $# -gt 0 ]]; do
     --linux-midpagefront-m6-raw-cap)
       require_value "$@"
       LINUX_MIDPAGEFRONT_M6_RAW_CAP="$2"
+      shift 2
+      ;;
+    --linux-midpagefront-m4-remote-drain-hit-interval)
+      require_value "$@"
+      LINUX_MIDPAGEFRONT_M4_REMOTE_DRAIN_HIT_INTERVAL="$2"
       shift 2
       ;;
     --linux-midpagefront-empty-slab-release)
@@ -2101,6 +2130,12 @@ if [[ "$LINUX_MIDPAGEFRONT_M2" -eq 1 ]]; then
   if [[ "$LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET=1)
   fi
+  if [[ "$LINUX_MIDPAGEFRONT_M4_REMOTE_DRAIN_ON_HIT" -eq 1 ]]; then
+    COMMON_FLAGS+=(
+      -DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_REMOTE_DRAIN_ON_HIT=1
+      -DHZ5_MIDPAGEFRONT_REMOTE_DRAIN_HIT_INTERVAL="${LINUX_MIDPAGEFRONT_M4_REMOTE_DRAIN_HIT_INTERVAL}u"
+    )
+  fi
   if [[ "$LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN=1)
   fi
@@ -2315,6 +2350,8 @@ fi
   echo "linux_midpagefront_unsafe_local_nocheck=${LINUX_MIDPAGEFRONT_UNSAFE_LOCAL_NOCHECK}"
   echo "linux_midpagefront_m4_magazine=${LINUX_MIDPAGEFRONT_M4_MAGAZINE}"
   echo "linux_midpagefront_m4_remote_packet=${LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET}"
+  echo "linux_midpagefront_m4_remote_drain_on_hit=${LINUX_MIDPAGEFRONT_M4_REMOTE_DRAIN_ON_HIT}"
+  echo "linux_midpagefront_m4_remote_drain_hit_interval=${LINUX_MIDPAGEFRONT_M4_REMOTE_DRAIN_HIT_INTERVAL}"
   echo "linux_midpagefront_m4_cross_drain=${LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN}"
   echo "linux_midpagefront_m4_unsafe_alloc_elide=${LINUX_MIDPAGEFRONT_M4_UNSAFE_ALLOC_ELIDE}"
   echo "linux_midpagefront_m4_unsafe_ptr_mag=${LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG}"

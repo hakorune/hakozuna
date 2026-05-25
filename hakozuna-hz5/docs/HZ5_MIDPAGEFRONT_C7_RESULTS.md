@@ -266,3 +266,70 @@ Next target is MidPage remote-handoff structure:
 Do not spend the next iteration on more RSS-governor tuning until r90 handoff
 is understood.
 ```
+
+## Remote Drain-On-Hit Diagnostic
+
+Implementation:
+
+```text
+flag:
+  BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_REMOTE_DRAIN_ON_HIT
+
+build option:
+  --linux-midpagefront-m4-remote-drain-hit-interval N
+
+presets:
+  band8/32-rsscheckpoint-drainhit
+  band8/16/32-rsscheckpoint-drainhit
+```
+
+Purpose:
+
+```text
+M5 hit-only intentionally moves remote packet drain out of the alloc-hit path.
+This is good for r0, but r90 suggested owner inbox starvation. The diagnostic
+restores periodic remote packet drain on alloc hits to test whether drain
+scheduling is a real lever.
+```
+
+Hakmem remote malloc smoke,
+`bench_random_mixed_mt_remote_malloc 8 500000 4000 2049 32768 <remote> 65536`:
+
+```text
+band8/32-rsscheckpoint cap=4096 baseline:
+  r0:  62.35M ops/s, maxrss  76032 KB
+  r90:  1.25M ops/s, maxrss 501708 KB, overflow_sent 777625
+
+band8/32-rsscheckpoint-drainhit interval=16:
+  r0:  47.87M ops/s, maxrss  75776 KB
+  r90:  1.86M ops/s, maxrss 387180 KB, overflow_sent 661633
+
+band8/32-rsscheckpoint-drainhit interval=64:
+  r0:  47.64M ops/s, maxrss  76032 KB
+  r90:  1.53M ops/s, maxrss 579692 KB, overflow_sent 782977
+
+band8/32-rsscheckpoint-drainhit interval=256:
+  r0:  46.14M ops/s, maxrss  75904 KB
+  r90:  1.97M ops/s, maxrss 547812 KB, overflow_sent 1066342
+
+band8/32-rsscheckpoint-drainhit every hit, earlier prototype:
+  r0:  40.09M ops/s, maxrss  75776 KB
+  r90:  1.96M ops/s, maxrss 445332 KB, overflow_sent 824502
+
+band8/16/32-rsscheckpoint-drainhit every hit, earlier prototype:
+  r90: 923K ops/s, maxrss 957020 KB, overflow_sent 816952
+```
+
+Read:
+
+```text
+Remote packet drain scheduling is a real r90 lever: band8/32 improves from
+1.25M to roughly 1.5-2.0M ops/s in these smoke rows. However, polling/draining
+from the alloc-hit path destroys too much local throughput, even when periodic.
+
+This is not a final lane. It is a diagnostic showing the next implementation
+should make remote progress without taxing owner-local alloc hits:
+  remote-free-side batching
+  owner checkpoint drain outside hit path
+  transfer-cache style handoff
+```

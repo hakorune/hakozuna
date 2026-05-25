@@ -114,5 +114,30 @@ First candidate:
   intentionally skips remote drain on alloc hits, which is good for r0 but may
   starve owner inboxes under r90.
 
+Remote-drain-on-hit smoke:
+  restoring remote packet drain on alloc hits improves r90 throughput, but it
+  damages r0 too much. Periodic intervals still pay a noticeable local cost.
+
+  band8/32 baseline on hakmem remote malloc:
+    r0 62.35M, r90 1.25M
+
+  drainhit interval=16:
+    r0 47.87M, r90 1.86M
+
+  drainhit interval=64:
+    r0 47.64M, r90 1.53M
+
+  drainhit interval=256:
+    r0 46.14M, r90 1.97M
+
+  every-hit earlier:
+    r0 40.09M, r90 1.96M
+
+Read:
+  remote packet drain scheduling is a real lever, but alloc-hit polling is not
+  the final shape. The next design should move remote progress out of the local
+  alloc hit path, likely via remote-free-side batching or owner-side drain
+  checkpoints.
+
 Keep RSS checkpoint as a phase-boundary/control lane, not the next speed lever.
 ```

@@ -74,6 +74,14 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_REMOTE_DRAIN_ON_HIT
+#define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_REMOTE_DRAIN_ON_HIT 0
+#endif
+
+#ifndef HZ5_MIDPAGEFRONT_REMOTE_DRAIN_HIT_INTERVAL
+#define HZ5_MIDPAGEFRONT_REMOTE_DRAIN_HIT_INTERVAL 64u
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN 0
 #endif
@@ -293,6 +301,9 @@ typedef struct Hz5MidPageTls {
   Hz5MidPageMagEntry overflow[HZ5_MIDPAGEFRONT_CLASS_COUNT]
                              [HZ5_MIDPAGEFRONT_M4_OVERFLOW_CAP_MAX];
   uint16_t overflow_count[HZ5_MIDPAGEFRONT_CLASS_COUNT];
+#endif
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_REMOTE_DRAIN_ON_HIT
+  uint16_t remote_drain_hit_count[HZ5_MIDPAGEFRONT_CLASS_COUNT];
 #endif
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M6_DEFERRED_FREE
   void* m6_raw_free[HZ5_MIDPAGEFRONT_M6_RAW_CAP];
@@ -1466,6 +1477,23 @@ static void hz5_midpagefront_m4_remote_packet_drain_if_pending(
     (void)hz5_midpagefront_drain_remote_class(tls, class_index);
   }
 }
+
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_REMOTE_DRAIN_ON_HIT
+static int hz5_midpagefront_m4_should_drain_on_hit(Hz5MidPageTls* tls,
+                                                   uint32_t class_index) {
+  if (!tls || !hz5_midpagefront_class_valid(class_index) ||
+      HZ5_MIDPAGEFRONT_REMOTE_DRAIN_HIT_INTERVAL == 0u) {
+    return 0;
+  }
+  uint16_t count = (uint16_t)(tls->remote_drain_hit_count[class_index] + 1u);
+  if (count < (uint16_t)HZ5_MIDPAGEFRONT_REMOTE_DRAIN_HIT_INTERVAL) {
+    tls->remote_drain_hit_count[class_index] = count;
+    return 0;
+  }
+  tls->remote_drain_hit_count[class_index] = 0;
+  return 1;
+}
+#endif
 #endif
 
 static void* hz5_midpagefront_m4_alloc_class(uint32_t class_index) {
@@ -1478,6 +1506,12 @@ static void* hz5_midpagefront_m4_alloc_class(uint32_t class_index) {
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET && \
     !BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M5_HIT_ONLY
   hz5_midpagefront_m4_remote_packet_drain_if_pending(tls, class_index);
+#elif BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET && \
+    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_REMOTE_DRAIN_ON_HIT
+  if (tls->magazine_count[class_index] != 0u &&
+      hz5_midpagefront_m4_should_drain_on_hit(tls, class_index)) {
+    hz5_midpagefront_m4_remote_packet_drain_if_pending(tls, class_index);
+  }
 #endif
   while (tls->magazine_count[class_index] != 0u ||
          hz5_midpagefront_m4_refill_magazine(tls, class_index)) {
