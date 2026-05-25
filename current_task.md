@@ -62,6 +62,18 @@ LargeFront global-remote diagnostic:
     no-go.
     global lock/recycle is much slower than owner inbox/source16 on r90.
 
+LargeFront remote-first diagnostic:
+  implemented and measured.
+  128K alloc checks owner inbox before local free list.
+  purpose:
+    test whether large128/t4/r90 is delayed by local-free reuse ahead of
+    remote inbox drain.
+  result:
+    private/raw-results/linux/hz5_large128_remote_first_r90_r3
+    no-go.
+    t8/r90 improves slightly, but t4/r90 collapses.
+    owner-inbox early drain has too much low-thread fixed cost.
+
 Lane naming cleanup:
   committed L7 as a diagnostic checkpoint.
   current cleanup adds human-facing aliases while preserving historical names:

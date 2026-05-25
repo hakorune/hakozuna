@@ -135,6 +135,7 @@ LINUX_LARGEFRONT_DRAIN_POP_BUDGET=0
 LINUX_LARGEFRONT_REMOTE_HOLD=0
 LINUX_LARGEFRONT_REMOTE_HOLD_CAP=0
 LINUX_LARGEFRONT_REMOTE_GLOBAL_128K=0
+LINUX_LARGEFRONT_REMOTE_FIRST_128K=0
 LINUX_LARGEFRONT_POLICY_L7=0
 LINUX_LARGEFRONT_POLICY_L7_REMAINDER_LOCAL_THRESHOLD=32
 LINUX_LARGEFRONT_POLICY_L8_SHADOW=0
@@ -208,6 +209,9 @@ Options:
   --linux-hz5-profile-large128-global-remote
                      human alias: 128K remote frees go to global recycle
                      instead of owner inbox
+  --linux-hz5-profile-large128-remote-first
+                     human alias: 128K alloc miss drains owner inbox before
+                     local free list
   --linux-hz5-profile-pagerun64-large128-b16-policy-l7
                      diagnostic alias: source batch16 with drain1-hold4 and
                      remainder-size local conversion policy
@@ -1068,6 +1072,11 @@ while [[ $# -gt 0 ]]; do
     --linux-hz5-profile-large128-global-remote)
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 16
       LINUX_LARGEFRONT_REMOTE_GLOBAL_128K=1
+      shift
+      ;;
+    --linux-hz5-profile-large128-remote-first)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 16
+      LINUX_LARGEFRONT_REMOTE_FIRST_128K=1
       shift
       ;;
     --linux-hz5-profile-pagerun64-large128-b16-policy-l7|--linux-hz5-profile-large128-policy-l7)
@@ -2928,6 +2937,11 @@ if [[ "$LINUX_LARGEFRONT_L1" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX=1)
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_GLOBAL_128K=1)
   fi
+  if [[ "$LINUX_LARGEFRONT_REMOTE_FIRST_128K" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX=1)
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_TAKE_FIRST=1)
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_FIRST_128K=1)
+  fi
   if [[ "$LINUX_LARGEFRONT_POLICY_L7" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX=1)
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_TAKE_FIRST=1)
@@ -3128,6 +3142,7 @@ fi
   echo "linux_largefront_remote_hold=${LINUX_LARGEFRONT_REMOTE_HOLD}"
   echo "linux_largefront_remote_hold_cap=${LINUX_LARGEFRONT_REMOTE_HOLD_CAP}"
   echo "linux_largefront_remote_global_128k=${LINUX_LARGEFRONT_REMOTE_GLOBAL_128K}"
+  echo "linux_largefront_remote_first_128k=${LINUX_LARGEFRONT_REMOTE_FIRST_128K}"
   echo "linux_largefront_policy_l7=${LINUX_LARGEFRONT_POLICY_L7}"
   echo "linux_largefront_policy_l7_remainder_local_threshold=${LINUX_LARGEFRONT_POLICY_L7_REMAINDER_LOCAL_THRESHOLD}"
   echo "linux_largefront_policy_l8_shadow=${LINUX_LARGEFRONT_POLICY_L8_SHADOW}"

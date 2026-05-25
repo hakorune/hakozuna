@@ -57,6 +57,10 @@
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_GLOBAL_128K 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_FIRST_128K
+#define BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_FIRST_128K 0
+#endif
+
 #ifndef HZ5_LARGEFRONT_REMOTE_HOLD_CAP
 #define HZ5_LARGEFRONT_REMOTE_HOLD_CAP 0u
 #endif
@@ -1866,7 +1870,29 @@ void* hz5_largefront_alloc(size_t size, size_t align) {
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_OBSERVE
   hz5_largefront_counter_inc(&g_hz5_largefront_obs_alloc_calls[ci]);
 #endif
-  Hz5LargeSpan* span = hz5_largefront_local_pop(tls, ci);
+  Hz5LargeSpan* span = NULL;
+
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_FIRST_128K && \
+    BENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX
+  if (hz5_largefront_class_bytes(ci) == 131072u) {
+    hz5_ownerhub_note_alloc_miss(tls->owner, HZ5_OWNERHUB_FRONT_LARGE, ci);
+#if HZ5_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET > 0u
+    span = hz5_largefront_drain_remote_class_budget(
+        tls,
+        ci,
+        HZ5_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET,
+        NULL);
+#else
+    span = hz5_largefront_drain_remote_class(tls, ci);
+#endif
+    if (span) {
+      return span->base;
+    }
+  }
+#endif
+
+  span = hz5_largefront_local_pop(tls, ci);
+
   if (span) {
     if (hz5_largefront_activate_local_for_owner(tls, span)) {
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_OBSERVE

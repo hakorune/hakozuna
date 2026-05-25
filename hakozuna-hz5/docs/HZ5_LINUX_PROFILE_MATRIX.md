@@ -499,6 +499,55 @@ Decision:
   Keep owner-inbox/source16 as the r90 direction.
 ```
 
+### `hz5-linux-large128-remote-first`
+
+Role:
+
+```text
+LargeFront remote-first alloc diagnostic
+```
+
+Build:
+
+```text
+--linux-hz5-profile-large128-remote-first
+```
+
+Runner:
+
+```text
+hz5-large128-remote-first
+```
+
+Status:
+
+```text
+diagnostic only
+source batch16 + takefirst
+128K alloc drains owner inbox before consuming local free-list spans.
+
+Question:
+  if this helps large128/t4/r90, the gap is delayed owner-inbox service.
+  if it fails, source16's r90 gap is not just local-first ordering.
+
+RUNS=3 r90 smoke:
+  private/raw-results/linux/hz5_large128_remote_first_r90_r3
+
+  t4/r90:
+    remote-first  5.44M / 201MB
+    source16     13.50M /  74MB
+    tcmalloc     25.77M /  61MB
+
+  t8/r90:
+    remote-first 18.15M / 116MB
+    source16     16.77M / 131MB
+    tcmalloc     15.50M / 163MB
+
+Decision:
+  no-go.
+  remote-first helps t8/r90 a little, but the t4/r90 fixed cost is too high.
+```
+
 Policy-L0 owner-drain detail after adding `owner_hold`, `owner_orphan`, and
 `owner_state_fail` counters:
 
