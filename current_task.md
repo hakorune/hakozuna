@@ -705,3 +705,29 @@ Read update:
   large128 versus PageRun64 base and reduces RSS. It still trails HZ4 on
   cross128 and tcmalloc on large128, so the remaining gap is LargeFront's
   128K remote/free path, not MidPage.
+
+LargeFront source batch sweep:
+  Added build option:
+    --linux-largefront-source-batch-count N
+
+  Reason:
+    LargeFront source refill was fixed at 16 spans. For the 128K class this is
+    roughly 2MB per refill, which can amplify RSS when remote reuse lags.
+
+  PageRun64+takefirst, RUNS=3, r90, iters=500000:
+    cross128:
+      batch4  13.44M / 571MB
+      batch8  22.12M / 345MB
+      batch16 28.70M / 265MB
+
+    large128:
+      batch4  18.35M / 420MB
+      batch8  11.31M / 864MB
+      batch16  9.65M / 1153MB
+
+Read:
+  Source batch count is a real lever but splits by workload. batch4 is better
+  for pure large128 remote, while batch16 is better for cross128 mixed rows.
+  Do not promote a single source-batch default from this alone. The next clean
+  design would need phase-aware or pressure-aware LargeFront sourcing, or a
+  separate large-only RSS/throughput profile.

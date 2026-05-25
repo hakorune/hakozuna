@@ -134,6 +134,7 @@ LINUX_LARGEFRONT_MAP_BASE_ONLY=0
 LINUX_LARGEFRONT_REGION_MAP=0
 LINUX_LARGEFRONT_LOWER_CLASSES=0
 LINUX_LARGEFRONT_REMOTE_BATCH_CAP=16
+LINUX_LARGEFRONT_SOURCE_BATCH_COUNT=16
 HZ5_STANDALONE_EXACT_ONLY=1
 
 usage() {
@@ -534,6 +535,8 @@ Options:
                      candidate only: batch LargeFront remote frees before owner inbox publish
   --linux-largefront-remote-batch-cap N
                      LargeFront remote batch flush threshold (default: 16)
+  --linux-largefront-source-batch-count N
+                     LargeFront source refill span count (default: 16)
   --linux-largefront-drain-take-first
                      candidate only: activate and return the first requested-class
                      LargeFront remote span during owner-inbox drain
@@ -1863,6 +1866,12 @@ while [[ $# -gt 0 ]]; do
       LINUX_LARGEFRONT_REMOTE_BATCH_CAP="$2"
       shift 2
       ;;
+    --linux-largefront-source-batch-count)
+      require_value "$@"
+      LINUX_LARGEFRONT_SOURCE_BATCH_COUNT="$2"
+      BUILD_PRELOAD_FULL=1
+      shift 2
+      ;;
     --linux-largefront-drain-take-first)
       BUILD_PRELOAD_FULL=1
       LINUX_SMALLFRONT_S1=1
@@ -2507,6 +2516,9 @@ if [[ "$LINUX_MIDFRONT_M1" -eq 1 ]]; then
 fi
 if [[ "$LINUX_LARGEFRONT_L1" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_L1=1)
+  COMMON_FLAGS+=(
+    -DHZ5_LARGEFRONT_SOURCE_BATCH_COUNT="${LINUX_LARGEFRONT_SOURCE_BATCH_COUNT}u"
+  )
   if [[ "$LINUX_LARGEFRONT_OWNER_FAST_STATE" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_FAST_STATE=1)
   fi
@@ -2664,6 +2676,7 @@ fi
   echo "linux_largefront_region_map=${LINUX_LARGEFRONT_REGION_MAP}"
   echo "linux_largefront_lower_classes=${LINUX_LARGEFRONT_LOWER_CLASSES}"
   echo "linux_largefront_remote_batch_cap=${LINUX_LARGEFRONT_REMOTE_BATCH_CAP}"
+  echo "linux_largefront_source_batch_count=${LINUX_LARGEFRONT_SOURCE_BATCH_COUNT}"
   echo "standalone_exact_only=${HZ5_STANDALONE_EXACT_ONLY}"
   echo "linux_p11_speed_core=${LINUX_P11_SPEED_CORE}"
   echo "linux_p25_bridge_attr=${LINUX_P25_BRIDGE_ATTR}"
