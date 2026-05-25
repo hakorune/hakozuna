@@ -23,10 +23,10 @@ LargeFront Policy-L0:
   name is policy-l0, not auto, because it does not select policy yet.
 
 LargeFront Policy-L1a:
-  next implementation target.
+  current implementation target.
   128K source refill batch selector only.
   slow path only; no remote batch cap adaptation yet.
-  starts conservative:
+  first version is conservative and diagnostic:
     batch4 under high mapped/source pressure
     batch16 under low mapped pressure
     batch8 in the middle
@@ -120,6 +120,40 @@ Still diagnostic:
 
 No hot-path policy:
   malloc/free must not read or update policy counters.
+```
+
+## Policy-L1a Next Step
+
+```text
+Problem:
+  first L1a smoke keeps cross128/t8/r90 healthy, but large128/t8/r90 is weak.
+
+Likely cause:
+  L1a falls from batch16 toward batch8/batch4 too early for high-thread
+  large128 remote-heavy rows.
+
+Next implementation:
+  raise L1a mapped-span thresholds before adding remote-cap adaptation.
+
+Still not doing:
+  rb32/rb64 automatic switching.
+  owner drain policy changes.
+  hot-path policy reads.
+
+Result:
+  raised thresholds:
+    mid spans 4096
+    high spans 8192
+
+  short r2 smoke:
+    large128/t8/r90 improves versus first L1a smoke.
+    cross128/t4/r90 regresses.
+
+Read:
+  source-batch-only L1a is useful as a diagnostic, but not enough for a
+  broad replacement.
+  Next attack should add remote-cap policy observation/selector separately,
+  still outside malloc/free hot paths.
 ```
 
 ## Saved Lanes
