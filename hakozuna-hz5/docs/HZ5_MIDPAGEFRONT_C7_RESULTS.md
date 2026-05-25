@@ -193,3 +193,76 @@ original direct baseline. Short preload smoke also stays around 104-105M ops/s
 with 72-75MB maxrss. The next useful check is r50/r90, where remote-heavy
 retention was the real problem.
 ```
+
+## R3 Teardown And Remote-Heavy Follow-Up
+
+Implementation follow-up:
+
+```text
+TLS destructor:
+  calls the MidPage release checkpoint for owner-local empty slabs at thread
+  teardown.
+
+checkpoint API:
+  now releases both retired empty slabs and still-owned fully empty slabs.
+```
+
+Direct smoke after full empty-owned release,
+`threads=8 iters=1000000 ws=4000 2049..32768 random checkpoint=1`:
+
+```text
+band8/32-rsscheckpoint cap=4096:
+   58.07M ops/s, current_rss 3716 KB, maxrss 70912 KB,
+   released_retired 7138
+
+band8/16/32-rsscheckpoint cap=4096:
+   60.56M ops/s, current_rss 3732 KB, maxrss 73984 KB,
+   released_retired 6295
+```
+
+Read:
+
+```text
+checkpoint=1 is a phase-boundary/final-RSS measurement, not a steady-state
+speed row. The release is intentionally timed inside the worker in this direct
+benchmark, so ops/s drops while current RSS proves reclamation works.
+Use checkpoint=0 for steady-state throughput comparisons.
+```
+
+Remote-heavy preload smoke,
+`bench_random_mixed_mt_remote_malloc 8 500000 4000 2049 32768 90 65536`:
+
+```text
+before full empty-owned release:
+  band8/32-rsscheckpoint cap=4096:
+      561847 ops/s, maxrss 832768 KB, overflow_sent 942872
+
+  band8/16/32-rsscheckpoint cap=4096:
+     1050729 ops/s, maxrss 1284096 KB, overflow_sent 744806
+
+after full empty-owned release:
+  band8/32-rsscheckpoint cap=4096:
+      651284 ops/s, maxrss 599256 KB, overflow_sent 740931
+
+  band8/16/32-rsscheckpoint cap=4096:
+      813170 ops/s, maxrss 928864 KB, overflow_sent 961385
+
+tcmalloc:
+    29276404 ops/s, maxrss 756352 KB, overflow_sent 5895
+```
+
+Interpretation:
+
+```text
+The teardown/checkpoint path improves RSS, especially for band8/32, but r90
+throughput is still dominated by remote handoff cost. The huge overflow_sent
+gap means HZ5 is not draining producer/consumer remote frees fast enough.
+
+Next target is MidPage remote-handoff structure:
+  remote packet drain scheduling
+  owner inbox starvation under M5 hit-only
+  batch/publish cost on remote free
+
+Do not spend the next iteration on more RSS-governor tuning until r90 handoff
+is understood.
+```

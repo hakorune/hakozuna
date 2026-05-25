@@ -63,6 +63,18 @@ R3 smoke:
 
   cap=4096 avoids retirement on direct r0 and restores band8/32-class speed
   with current RSS around 71MB.
+
+R3 teardown/checkpoint follow-up:
+  TLS destructor + explicit checkpoint can release all empty owned slabs at a
+  phase boundary. Direct checkpoint rows drop current RSS to roughly 3.7MB, but
+  the benchmark times the release inside worker threads, so use checkpoint=0
+  for steady-state speed and checkpoint=1 for final-RSS validation.
+
+Remote-heavy r90 smoke:
+  r90 is now a remote handoff bottleneck, not an RSS-governor-only problem.
+  HZ5 coarse profiles still produce massive benchmark ring overflow while
+  tcmalloc barely overflows. Empty-slab teardown reduces RSS but does not fix
+  r90 throughput.
 ```
 
 ## Recent Results
@@ -95,6 +107,12 @@ Class dispersion is a real speed lever, but RSS decides promotion.
 ## Next Step
 
 ```text
-Measure rsscheckpoint on r50/r90 or preload rows next. Direct r0 is not the
-problem case; remote-heavy retention is.
+Switch from RSS-governor tuning to MidPage remote-handoff diagnostics.
+
+First candidate:
+  test a remote-drain-on-hit lane for M4 packet profiles. The M5 hit-only path
+  intentionally skips remote drain on alloc hits, which is good for r0 but may
+  starve owner inboxes under r90.
+
+Keep RSS checkpoint as a phase-boundary/control lane, not the next speed lever.
 ```
