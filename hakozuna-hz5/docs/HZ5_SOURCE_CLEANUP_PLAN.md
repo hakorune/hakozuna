@@ -21,6 +21,7 @@ comparability.
 | `midpagefront/hz5_midpagefront.c` | active PageRun64/MidPage history and saved profile implementation | defer behavior split; candidate for later archival of dead diagnostics |
 | `midpagefront/hz5_midpagefront_stats.inc` | MidPage nodeless/M4 cold stats helpers | split out from `hz5_midpagefront.c`; keep include-local until the diagnostics stabilize |
 | `midpagefront/hz5_midpagefront_m4_pagerun.inc` | MidPage M4 remote packet and PageRun helper cluster | split out from `hz5_midpagefront.c`; keep include-local while the pagerun profile settles |
+| `midfront/hz5_midfront_remote_batch.inc` | MidFront remote batch helper cluster | split out from `hz5_midfront.c`; keep include-local while the remote-batch profile settles |
 | `lowpage/hz5_lowpage64.c` | exact-route P25/P43/P45 historical hot path | do not touch during Linux general malloc work |
 | `lowpage/hz5_lowpage64_p43g.inc` | LowPage P43g prepare/wrapper note helpers | split out from `hz5_lowpage64.c`; include-local to keep the hot file slimmer |
 | `lowpage/hz5_lowpage64_p45dr.inc` | LowPage P45 stage1 drain diagnostics | split out from `hz5_lowpage64.c`; keep the cold diagnostic block include-local |
@@ -92,5 +93,6 @@ LargeFront splits are `hz5_largefront_transfer128.inc` and
 `hz5_midpagefront_m4_pagerun.inc`, and LowPage now keeps P43g helpers in
 `hz5_lowpage64_p43g.inc` plus P45 drain diagnostics in
 `hz5_lowpage64_p45dr.inc`. Policy now keeps Local2P helpers in
-`hz5_policy_local2p.inc`, and the Linux build script now centralizes the
+`hz5_policy_local2p.inc`. MidFront now also keeps its remote batch helpers in
+`hz5_midfront_remote_batch.inc`, and the Linux build script now centralizes the
 repeated profile flag groups so the alias table stays readable.
