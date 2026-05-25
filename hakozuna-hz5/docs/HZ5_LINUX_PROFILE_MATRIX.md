@@ -1,1404 +1,153 @@
 # HZ5 Linux Profile Matrix
 
-This page is the short registry for the current HZ5 Linux general allocator
-lanes. Detailed measurements stay in the result/design documents linked below.
+This is the short registry for current HZ5 Linux allocator profiles. Historical
+diagnostic logs were moved to:
+
+```text
+hakozuna-hz5/docs/archive/HZ5_LINUX_PROFILE_MATRIX_HISTORY_2026-05.md
+```
+
+Use this page to choose current lanes. Use the archive only when reproducing an
+old result directory or no-go decision.
 
 ## Current Read
 
 ```text
-MidPage PageRun64:
-  strong keep
-  main / mid_only / cross64 are healthy
-  32769..65536 timeout gap is fixed
+MidPage:
+  PageRun64 remains the strong keep for main / mid_only / cross64.
 
-LargeFront 128K remote:
-  remaining design target
-  fixed source batch choices split by workload
-  first targeted free-route/base-lookup fix improves large128 r0/r90
-  L4 source-batch sweep keeps batch16 as the only promising diagnostic
-  Policy-L0 adds slow-path control-plane observation, not hot-path learning
+LargeFront 128K:
+  still the active tcmalloc chase area.
+  source16 is the best current r90/t8 direction.
+  r50 remains row-dependent.
 
-Adaptive128:
-  first mapped-bytes-only implementation is no-go
+Safety:
+  unsafe diagnostics are evidence only.
+  do not promote direct-header or other unsafe lanes.
+
+Control plane:
+  Policy-L0/L8 are observation lanes only.
+  no malloc/free hot-path counters in speed lanes.
 ```
 
-Latest broad check:
+Latest focused reads:
 
 ```text
-result root:
-  private/raw-results/linux/hz5_hakmem_compare_pagerun64_broad_r3
-
-RUNS=3:
-  HZ5 wins many main/mid_only r50/r90 rows at t=4/t=8.
-  HZ5 keeps strong RSS in MidPage rows.
-  main/mid_only r0 remains tcmalloc's clear local-fast-path win.
-  large128 r50/r90 is the largest actionable remaining gap.
-```
-
-Latest LargeFront targeted check:
-
-```text
-result root:
-  private/raw-results/linux/hz5_large128_largefirst_fastmap_r5
-
-change:
-  LargeFront exact-base fast map
-  pagerun64-large128 uses Large-first free route
-
-RUNS=5 read:
-  large128 r0 improves strongly.
-  large128 r90 is now a HZ5 win at t=8 with lower RSS than tcmalloc/HZ4.
-  large128 r50 remains the next LargeFront gap.
+private/raw-results/linux/hz5_large128_hold8_r3_20260526_050802
+private/raw-results/linux/hz5_large128_direct_header_r3_20260526_051345
+private/raw-results/linux/hz5_large128_base_directmap_r3_20260526_051731
 ```
 
 ## Saved Profiles
 
-These aliases are the canonical build handles for the current reportable HZ5
-Linux profile family. The expanded historical flags are kept only for
-reproducibility in older notes.
+| Profile | Build alias | Runner allocator | Status |
+| --- | --- | --- | --- |
+| pagerun64-main | `--linux-hz5-profile-pagerun64-main` | `hz5-pagerun64-main` | default candidate for main/mid/cross64 |
+| pagerun64-cross128 | `--linux-hz5-profile-pagerun64-cross128` | `hz5-pagerun64-cross128` | saved fixed cross-size profile |
+| large128-rss | `--linux-hz5-profile-large128-rss` | `hz5-large128-rss` | saved low-RSS large128 profile |
 
-### `hz5-linux-pagerun64-main`
+## Active LargeFront Diagnostics
 
-Role:
+| Lane | Build alias | Runner allocator | Current read |
+| --- | --- | --- | --- |
+| source16 | `--linux-hz5-profile-large128-source16` | `hz5-large128-source16` | best current r90/t8 direction; not universal |
+| r50-drain | `--linux-hz5-profile-large128-r50-drain` | `hz5-large128-r50-drain` | diagnostic only; broad no-promote |
+| r50-hold4 | `--linux-hz5-profile-large128-r50-hold` | `hz5-large128-r50-hold` | r50 diagnostic; loses source16 on r90 |
+| r50-hold8 | `--linux-hz5-profile-large128-r50-hold8` | `hz5-large128-r50-hold8` | wins t8/r50 in one run; loses source16 on r90 |
+| direct-header | `--linux-hz5-profile-large128-direct-header` | `hz5-large128-direct-header` | unsafe lookup upper bound only |
+| base-directmap | `--linux-hz5-profile-large128-base-directmap` | `hz5-large128-base-directmap` | safe exact-base cache; helps t4/r90 but not broad |
+| policy-l7 | `--linux-hz5-profile-large128-policy-l7` | `hz5-large128-policy-l7` | no-go broad policy |
+| policy-l8-shadow | `--linux-hz5-profile-large128-policy-l8-shadow` | `hz5-large128-policy-l8-shadow` | observation only |
 
-```text
-general MidPage throughput/RSS profile
-```
+## Latest LargeFront Focused Results
 
-Build:
-
-```text
---linux-hz5-profile-pagerun64-main
-```
-
-Status:
-
-```text
-keep
-best current default candidate for main/mid/cross64-style rows
-```
-
-### `hz5-linux-pagerun64-cross-size`
-
-Role:
+### RemoteHold cap8
 
 ```text
-cross-size remote-heavy diagnostic
-prioritizes cross128 mixed rows
-```
-
-Build:
-
-```text
---linux-hz5-profile-pagerun64-cross128
-```
-
-Status:
-
-```text
-saved fixed profile
-not a universal default
-```
-
-### `hz5-linux-pagerun64-large-only`
-
-Role:
-
-```text
-large128 remote-heavy diagnostic
-prioritizes pure 65537..131072 traffic
-uses Large-first free route and exact-base LargeFront lookup
-```
-
-Build:
-
-```text
---linux-hz5-profile-pagerun64-large128
---linux-hz5-profile-large128-rss
-```
-
-Status:
-
-```text
-saved fixed profile
-useful evidence for source-batch/RSS tradeoff
-current large128 r90 winner at t=8 in the latest focused check
-```
-
-### `hz5-linux-pagerun64-large-only-batch8`
-
-Role:
-
-```text
-LargeFront-L4 source-batch diagnostic after the Large-first/free-map fix
-```
-
-Build:
-
-```text
---linux-hz5-profile-pagerun64-large128-batch8
-```
-
-Status:
-
-```text
-diagnostic only
-use to test whether large128 r50 wants a larger source batch than batch4
-```
-
-### `hz5-linux-pagerun64-large-only-batch16`
-
-Role:
-
-```text
-LargeFront-L4 source-batch diagnostic after the Large-first/free-map fix
-```
-
-Build:
-
-```text
---linux-hz5-profile-pagerun64-large128-batch16
---linux-hz5-profile-large128-source16
-```
-
-Status:
-
-```text
-diagnostic only
-use to test whether the old cross128 batch16 setting now helps large128 r50
-```
-
-### `hz5-linux-pagerun64-large-only-b16-drain1`
-
-Role:
-
-```text
-LargeFront-L4 remote drain-budget diagnostic
-```
-
-Build:
-
-```text
---linux-hz5-profile-pagerun64-large128-b16-drain1
---linux-hz5-profile-large128-r50-drain
-```
-
-Status:
-
-```text
-diagnostic only
-uses source batch16 and limits extra remote spans drained to local cache on
-alloc miss
-no-go in first RUNS=3 broad check
-```
-
-### `hz5-linux-pagerun64-large-only-b16-takeonly`
-
-Role:
-
-```text
-LargeFront-L4 take-first-only remote drain diagnostic
-```
-
-Build:
-
-```text
---linux-hz5-profile-pagerun64-large128-b16-takeonly
-```
-
-Status:
-
-```text
-diagnostic only
-uses source batch16 and returns only the first remote span from an owner inbox
-drain, republishing the rest instead of converting them to local cache
-intended to isolate the b16-drain1 t4/r50 win from r90 local-cache churn
-
-RUNS=3 large128 smoke:
-  t4/r50  23.07M /  23MB, wins this short smoke
-  t4/r90   6.71M / 149MB, no-go
-  t8/r50  21.00M /  76MB, behind batch16/tcmalloc
-  t8/r90   7.49M / 273MB, no-go
-
-decision:
-  keep as diagnostic only
-  do not promote; take-first-only starves r90 reuse
-```
-
-### `hz5-linux-pagerun64-large-only-b16-popbudget1`
-
-Role:
-
-```text
-LargeFront-L4 CAS-pop budgeted remote drain diagnostic
-```
-
-Build:
-
-```text
---linux-hz5-profile-pagerun64-large128-b16-popbudget1
-```
-
-Status:
-
-```text
-diagnostic only
-uses source batch16 and alloc-miss local budget 1, but pops only the needed
-remote spans from the owner inbox instead of exchanging the whole inbox and
-republishing the remainder
-
-RUNS=3 large128 smoke:
-  t4/r50  15.08M /  67MB, behind batch16/drain1/tcmalloc
-  t4/r90   8.90M / 126MB, no-go
-  t8/r50  16.57M / 110MB, no-go
-  t8/r90  15.21M / 156MB, behind batch16
-
-decision:
-  no-go
-  tail traversal/republication is not the main issue; small CAS-pop drains are
-  also too expensive and lose the strong batch16 r90 row
-```
-
-### `hz5-linux-pagerun64-large-only-b16-remotehold4`
-
-Role:
-
-```text
-LargeFront-L6 RemoteHold diagnostic
-```
-
-Build:
-
-```text
---linux-hz5-profile-pagerun64-large128-b16-remotehold4
-```
-
-Status:
-
-```text
-diagnostic only
-uses source batch16, take-first remote drain, and a bounded owner TLS
-REMOTE_PENDING hold cap 4 for remaining inbox spans
-
-RUNS=3 large128 smoke:
-  t4/r50  12.97M /  56MB, no-go
-  t4/r90   8.42M / 110MB, no-go
-  t8/r50   8.52M / 210MB, no-go
-  t8/r90   9.21M / 235MB, no-go
-```
-
-### `hz5-linux-pagerun64-large-only-b16-drain1-hold4`
-
-Role:
-
-```text
-LargeFront-L6 RemoteHold + drain1 diagnostic
-```
-
-Build:
-
-```text
---linux-hz5-profile-pagerun64-large128-b16-drain1-hold4
---linux-hz5-profile-large128-r50-hold
-```
-
-Status:
-
-```text
-diagnostic only
-uses source batch16, take-first, one local-free conversion, then owner TLS
-REMOTE_PENDING hold cap 4 for remaining inbox spans
-
-RUNS=3 large128 smoke:
-  t4/r50  12.64M /  68MB, no-go
-  t4/r90   9.53M / 117MB, no-go
-  t8/r50  25.32M /  65MB, promising but narrow
-  t8/r90   8.95M / 234MB, no-go
-
-decision:
-  no promotion
-  remote hold can help one producer-pressure row, but r90 needs immediate
-  reusable local/free spans and the t4/r50 target regresses
-```
-
-Update after changing RemoteHold consumption to takefirst + local budget:
-
-```text
-result root:
-  private/raw-results/linux/hz5_large128_remotehold4_drainbudget_smoke_r3
-
-large128/t4/r50:
-  drain1-hold4 25.09M /  34MB
-  tcmalloc     26.53M /  53MB
-
-large128/t4/r90:
-  drain1-hold4  7.63M / 139MB
-  batch16      22.93M /  41MB
-  tcmalloc     25.41M /  59MB
-
-large128/t8/r50:
-  drain1-hold4 24.84M /  66MB
-  tcmalloc     23.66M /  93MB
-
-large128/t8/r90:
-  drain1-hold4 10.70M / 185MB
-  batch16      20.42M / 108MB
-  tcmalloc     14.12M / 163MB
-```
-
-Decision:
-
-```text
-keep drain1-hold4 as an r50 diagnostic/candidate only.
-It nearly closes t4/r50 and beats tcmalloc on t8/r50 with lower RSS.
-Do not use for r90; r90 still prefers immediate reusable local/free behavior
-from batch16/batch4 lanes.
-```
-
-### `hz5-linux-pagerun64-large-only-b16-policy-l7`
-
-Role:
-
-```text
-LargeFront-L7 first rule-based drain policy diagnostic
-```
-
-Build:
-
-```text
---linux-hz5-profile-pagerun64-large128-b16-policy-l7
---linux-hz5-profile-large128-policy-l7
-```
-
-Status:
-
-```text
-diagnostic only
-source batch16 + drain1-hold4 components
-if owner-inbox remainder >= 32 spans, convert remainder to LOCAL_FREE
-otherwise use hold4
-
-RUNS=3 large128 smoke:
-  t4/r50  11.36M /  81MB, no-go
-  t4/r90  14.64M /  63MB, no-go versus batch4/tcmalloc
-  t8/r50  24.42M /  74MB, modest signal
-  t8/r90  14.64M / 147MB, tcmalloc-class but behind batch16
-
-decision:
-  no promotion
-  remainder length alone is too crude for r50/r90 mode selection
-```
-
-### `hz5-linux-large128-policy-l8-shadow`
-
-Role:
-
-```text
-LargeFront-L8 shadow classifier
-```
-
-Build:
-
-```text
---linux-hz5-profile-large128-policy-l8-shadow
-```
-
-Runner:
-
-```text
-hz5-large128-policy-l8-shadow
-```
-
-Status:
-
-```text
-observation only
-source batch16 + drain1-hold4 behavior
-adds Policy-L0 owner-drain shadow classification counters:
-  l8_heavy_drain
-  l8_sparse_drain
-  l8_local_like
-  l8_hold_like
-  l8_republish_like
-  l8_mixed_like
-
-Use this before L9:
-  if r50 and r90 rows separate cleanly in L8 counters, implement a runtime
-  selector.
-  if they do not separate, keep fixed profile split.
-
-First smoke:
-  private/raw-results/linux/hz5_large128_policy_l8_shadow_smoke_r1
-
-  t4/r50 class0:
-    l8_heavy_drain=9402
-    l8_sparse_drain=8883
-    l8_republish_like=17928
-
-  t4/r90 class0:
-    l8_heavy_drain=20954
-    l8_sparse_drain=14793
-    l8_republish_like=35234
-
-  read:
-    counters are emitted correctly.
-    simple sink-dominance does not yet separate r50/r90 because both rows are
-    republish-dominated.
-```
-
-### `hz5-linux-large128-global-remote`
-
-Role:
-
-```text
-LargeFront global-recycle remote diagnostic
-```
-
-Build:
-
-```text
---linux-hz5-profile-large128-global-remote
-```
-
-Runner:
-
-```text
-hz5-large128-global-remote
-```
-
-Status:
-
-```text
-diagnostic only
-128K remote frees bypass owner inbox and become global LOCAL_FREE spans.
-
-Question:
-  if this helps large128/t4/r90, owner-inbox churn is the bottleneck.
-  if this fails, global lock / ownership transfer is not the right direction.
-
-Safety:
-  remote free still requires ACTIVE -> LOCAL_FREE CAS.
-  global reuse reassigns owner on activation.
-
-RUNS=3 r90 smoke:
-  private/raw-results/linux/hz5_large128_global_remote_r90_r3
-
-  t4/r90:
-    global-remote  7.24M /  85MB
-    source16      10.97M /  97MB
-    tcmalloc      24.52M /  63MB
-
-  t8/r90:
-    global-remote  5.40M / 204MB
-    source16      18.99M / 108MB
-    tcmalloc      14.54M / 161MB
-
-Decision:
-  no-go.
-  global lock/recycle is not the escape hatch for large128 r90.
-  Keep owner-inbox/source16 as the r90 direction.
-```
-
-### `hz5-linux-large128-remote-first`
-
-Role:
-
-```text
-LargeFront remote-first alloc diagnostic
-```
-
-Build:
-
-```text
---linux-hz5-profile-large128-remote-first
-```
-
-Runner:
-
-```text
-hz5-large128-remote-first
-```
-
-Status:
-
-```text
-diagnostic only
-source batch16 + takefirst
-128K alloc drains owner inbox before consuming local free-list spans.
-
-Question:
-  if this helps large128/t4/r90, the gap is delayed owner-inbox service.
-  if it fails, source16's r90 gap is not just local-first ordering.
-
-RUNS=3 r90 smoke:
-  private/raw-results/linux/hz5_large128_remote_first_r90_r3
-
-  t4/r90:
-    remote-first  5.44M / 201MB
-    source16     13.50M /  74MB
-    tcmalloc     25.77M /  61MB
-
-  t8/r90:
-    remote-first 18.15M / 116MB
-    source16     16.77M / 131MB
-    tcmalloc     15.50M / 163MB
-
-Decision:
-  no-go.
-  remote-first helps t8/r90 a little, but the t4/r90 fixed cost is too high.
-```
-
-### `hz5-linux-large128-remote-first-gated`
-
-Role:
-
-```text
-LargeFront gated remote-first alloc diagnostic
-```
-
-Build:
-
-```text
---linux-hz5-profile-large128-remote-first-gated
-```
-
-Runner:
-
-```text
-hz5-large128-remote-first-gated
-```
-
-Status:
-
-```text
-diagnostic only
-source batch16 + takefirst
-128K alloc checks owner inbox before local free-list reuse only when the inbox
-is nonempty.
-
-Question:
-  can it keep the t8/r90 remote-first gain without the t4/r90 fixed-cost
-  collapse?
-
-RUNS=3 r90 smoke:
-  private/raw-results/linux/hz5_large128_remote_first_gated_r90_r3
-
-  t4/r90:
-    gated       9.26M / 127MB
-    source16   14.95M /  68MB
-    tcmalloc   27.65M /  59MB
-
-  t8/r90:
-    gated      12.81M / 164MB
-    source16   19.60M / 102MB
-    tcmalloc   16.21M / 129MB
-
-Decision:
-  no-go.
-  gating avoids none of the relevant cost; source16 remains the r90 direction.
-```
-
-### `hz5-linux-large128-chunk16`
-
-Role:
-
-```text
-LargeFront 128K chunk owner-inbox diagnostic
-```
-
-Build:
-
-```text
---linux-hz5-profile-large128-chunk16
-```
-
-Runner:
-
-```text
-hz5-large128-chunk16
-```
-
-Status:
-
-```text
-diagnostic only
-source batch16 + remote batch16
-remote batch flush publishes fixed-size span pointer chunks to the owner
-instead of a linked span list.
-
-Question:
-  can a chunk/array owner inbox reduce source16's list traversal and
-  remainder pointer chasing on large128 r90?
-
-RUNS=3:
-  private/raw-results/linux/hz5_large128_chunk16_r3
-
-  t4/r50:
-    chunk16    9.71M /  97MB
-    source16  15.04M /  58MB
-    tcmalloc  31.17M /  47MB
-
-  t4/r90:
-    chunk16    6.35M / 207MB
-    source16  24.68M /  43MB
-    tcmalloc  25.55M /  56MB
-
-  t8/r50:
-    chunk16   21.58M /  84MB
-    source16  26.56M /  68MB
-    tcmalloc  26.03M /  79MB
-
-  t8/r90:
-    chunk16   12.68M / 204MB
-    source16  16.94M / 129MB
-    tcmalloc  16.17M / 136MB
-
-Decision:
-  no-go.
-  the naive chunk inbox adds more metadata/RSS overhead than it removes from
-  list traversal. Keep source16 as the r90 lane.
-```
-
-### `hz5-linux-large128-r50-hold8`
-
-Role:
-
-```text
-LargeFront 128K wider RemoteHold diagnostic
-```
-
-Build:
-
-```text
---linux-hz5-profile-large128-r50-hold8
-```
-
-Runner:
-
-```text
-hz5-large128-r50-hold8
-```
-
-Status:
-
-```text
-diagnostic only
-source batch16 + drain budget 1 + RemoteHold cap8
-```
-
-Question:
-
-```text
-does a wider owner-local REMOTE_PENDING hold improve the r50 rows without
-destroying source16's r90 behavior?
-```
-
-RUNS=3:
-
-```text
-private/raw-results/linux/hz5_large128_hold8_r3_20260526_050802
-
-t4/r50:
-  hold8    15.74M /  55MB
-  hold4    15.11M /  54MB
-  source16 15.41M /  56MB
-  tcmalloc 24.47M /  54MB
-
-t4/r90:
-  hold8    10.28M / 104MB
-  hold4     7.96M / 137MB
-  source16 12.38M /  89MB
-  tcmalloc 25.29M /  63MB
+root:
+  private/raw-results/linux/hz5_large128_hold8_r3_20260526_050802
 
 t8/r50:
   hold8    29.23M /  54MB
-  hold4    27.03M /  60MB
-  source16 19.92M /  89MB
   tcmalloc 25.66M /  91MB
 
 t8/r90:
-  hold8    15.75M / 126MB
-  hold4    14.66M / 138MB
   source16 36.14M /  56MB
-  tcmalloc 14.76M / 165MB
+  hold8    15.75M / 126MB
 ```
 
 Decision:
 
 ```text
-keep as r50 diagnostic, not a default.
-cap8 improves the hold family and wins t8/r50 in this run, but it still loses
-source16 badly on r90. The data supports profile split rather than one broad
-RemoteHold policy.
+keep hold8 as r50 diagnostic only.
+RemoteHold cap tuning is not a broad default.
 ```
 
-### `hz5-linux-large128-direct-header`
-
-Role:
+### Direct Header
 
 ```text
-LargeFront direct adjacent-header lookup upper-bound diagnostic
-```
-
-Build:
-
-```text
---linux-hz5-profile-large128-direct-header
-```
-
-Runner:
-
-```text
-hz5-large128-direct-header
-```
-
-Status:
-
-```text
-unsafe diagnostic only
-source batch16 + ptr-4096 LargeFront header lookup before map/region lookup
-```
-
-Question:
-
-```text
-how much of large128 r50/r90 is still free-side span_for_ptr lookup cost?
-```
-
-Safety note:
-
-```text
-This lane dereferences ptr-4096 before the normal ownership map. It is an
-upper-bound diagnostic for benchmark-owned LargeFront pointers, not a
-fail-closed profile candidate.
-```
-
-RUNS=3:
-
-```text
-private/raw-results/linux/hz5_large128_direct_header_r3_20260526_051345
+root:
+  private/raw-results/linux/hz5_large128_direct_header_r3_20260526_051345
 
 t4/r50:
-  source16       15.53M /  56MB
-  direct-header  22.46M /  39MB
-  tcmalloc       31.09M /  46MB
-
-t4/r90:
-  source16       16.95M /  55MB
-  direct-header  11.19M /  95MB
-  tcmalloc       27.22M /  55MB
-
-t8/r50:
-  source16       20.81M /  76MB
-  direct-header  21.66M /  80MB
-  tcmalloc       24.50M /  91MB
+  direct-header 22.46M / 39MB
+  source16      15.53M / 56MB
+  tcmalloc      31.09M / 46MB
 
 t8/r90:
-  source16       20.50M /  99MB
-  direct-header  23.58M /  90MB
-  tcmalloc       16.44M / 141MB
+  direct-header 23.58M /  90MB
+  tcmalloc      16.44M / 141MB
 ```
 
 Decision:
 
 ```text
-use as evidence, not as a promotable lane.
-Direct header lookup shows the free/span lookup slice is real: t4/r50 improves
-substantially and t8/r90 wins. The t4/r90 regression and unsafe foreign-pointer
-behavior mean the next real design should be a safe route/tag lookup, not this
-direct dereference.
+use as upper-bound evidence only.
+It is unsafe because it dereferences ptr-4096 before ownership lookup.
 ```
 
-### `hz5-linux-large128-base-directmap`
-
-Role:
+### Base Directmap
 
 ```text
-LargeFront safe one-slot exact-base route-cache diagnostic
-```
-
-Build:
-
-```text
---linux-hz5-profile-large128-base-directmap
-```
-
-Runner:
-
-```text
-hz5-large128-base-directmap
-```
-
-Status:
-
-```text
-diagnostic only
-source batch16 + safe direct-mapped exact-base cache before hash/region lookup
-```
-
-Question:
-
-```text
-can a fail-closed exact-base route cache recover the direct-header lookup
-signal without unsafe ptr-4096 dereference?
-```
-
-RUNS=3:
-
-```text
-private/raw-results/linux/hz5_large128_base_directmap_r3_20260526_051731
-
-t4/r50:
-  base-directmap 13.73M /  64MB
-  direct-header  14.48M /  58MB
-  source16       14.03M /  58MB
-  tcmalloc       18.76M /  65MB
+root:
+  private/raw-results/linux/hz5_large128_base_directmap_r3_20260526_051731
 
 t4/r90:
-  base-directmap 21.57M /  47MB
-  direct-header  15.52M /  65MB
-  source16       10.96M /  92MB
-  tcmalloc       27.60M /  59MB
-
-t8/r50:
-  base-directmap 18.23M / 101MB
-  direct-header  17.53M /  98MB
-  source16       26.14M /  67MB
-  tcmalloc       27.37M /  71MB
+  base-directmap 21.57M / 47MB
+  source16       10.96M / 92MB
+  tcmalloc       27.60M / 59MB
 
 t8/r90:
+  source16       29.49M / 64MB
   base-directmap 19.35M / 119MB
-  direct-header  21.82M /  86MB
-  source16       29.49M /  64MB
-  tcmalloc       14.20M / 190MB
 ```
 
 Decision:
 
 ```text
 no-promote diagnostic.
-The safe directmap confirms lookup route changes can matter: t4/r90 improves
-strongly versus source16. It does not reproduce the unsafe direct-header r50
-signal and regresses t8 rows versus source16. Keep source16 as the r90/t8 lead
-and use directmap as evidence that a more selective route-tag design may be
-worth pursuing.
+Safe route-cache changes can help specific low-thread r90 cases, but source16
+still leads the t8 rows.
 ```
 
-Policy-L0 owner-drain detail after adding `owner_hold`, `owner_orphan`, and
-`owner_state_fail` counters:
+## No-Promote Summary
+
+| Lane | Reason |
+| --- | --- |
+| global-remote | global lock/recycle slower than owner inbox/source16 |
+| remote-first | t8/r90 signal only; t4/r90 collapses |
+| remote-first-gated | does not avoid remote-first fixed cost |
+| chunk16 | chunk metadata/pool overhead beats list traversal savings |
+| policy-l7 | remainder threshold is too crude |
+| direct-header | unsafe foreign-pointer behavior |
+| base-directmap | row-specific improvement, not broad enough |
+
+## Next Work
 
 ```text
-result roots:
-  private/raw-results/linux/hz5_largefront_policy_l0_ownerdetail_20260526_041526
-  private/raw-results/linux/hz5_largefront_policy_l0_ownerdetail_variants_20260526_041555
-
-saved large128 batch4 t4/r50:
-  owner_drain=2998
-  owner_drain_spans=111632
-  owner_to_local=108634
-  owner_republish=0
-
-b16-drain1 t4/r50:
-  owner_drain=55161
-  owner_drain_spans=1821037
-  owner_to_local=55092
-  owner_republish=1710784
-
-b16-drain1 t4/r90:
-  owner_drain=99700
-  owner_drain_spans=5238351
-  owner_to_local=99623
-  owner_republish=5039028
-
-b16-drain1-hold4 t4/r50:
-  owner_drain=19402
-  owner_drain_spans=691535
-  owner_to_local=19361
-  owner_hold=77217
-  owner_republish=575555
-
-b16-drain1-hold4 t4/r90:
-  owner_drain=30156
-  owner_drain_spans=1686100
-  owner_to_local=30099
-  owner_hold=119935
-  owner_republish=1505910
-```
-
-Read:
-
-```text
-LargeFront t4/r50/r90 residual is dominated by repeated remote remainder
-churn. Drain1 repeatedly exchanges large inboxes, consumes one or two spans,
-and republishes most of the remainder. RemoteHold reduces but does not remove
-this churn and hurts r90 reuse.
-```
-
-### `hz5-linux-pagerun64-large-only-b16-rb32`
-
-Role:
-
-```text
-LargeFront-L4 remote publish batch-cap diagnostic
-```
-
-Build:
-
-```text
---linux-hz5-profile-pagerun64-large128-b16-rb32
-```
-
-Status:
-
-```text
-diagnostic only
-source batch16 with LargeFront remote batching enabled, cap 32
-```
-
-### `hz5-linux-pagerun64-large-only-b16-rb64`
-
-Role:
-
-```text
-LargeFront-L4 remote publish batch-cap diagnostic
-```
-
-Build:
-
-```text
---linux-hz5-profile-pagerun64-large128-b16-rb64
-```
-
-Status:
-
-```text
-diagnostic only
-source batch16 with LargeFront remote batching enabled, cap 64
-```
-
-### `hz5-linux-pagerun64-large-only-policy-l0`
-
-Role:
-
-```text
-LargeFront control-plane observation for future policy selector
-```
-
-Build:
-
-```text
---linux-hz5-profile-pagerun64-large128-policy-l0
-```
-
-Runtime:
-
-```text
-HZ5_LARGEFRONT_POLICY_L0=1
-```
-
-Status:
-
-```text
-observation only
-slow-path counters only
-not for speed medians
-```
-
-### `hz5-linux-pagerun64-large-only-policy-l1a`
-
-Role:
-
-```text
-LargeFront 128K source-batch policy candidate
-```
-
-Build:
-
-```text
---linux-hz5-profile-pagerun64-large128-policy-l1a
-```
-
-Status:
-
-```text
-diagnostic only
-selects source batch 4/8/16 on source refill slow path
-does not adapt remote batch cap
-```
-
-### `hz5-linux-pagerun64-large-only-policy-l1b`
-
-Role:
-
-```text
-LargeFront 128K source-batch plus remote-cap policy candidate
-```
-
-Build:
-
-```text
---linux-hz5-profile-pagerun64-large128-policy-l1b
-```
-
-Status:
-
-```text
-diagnostic only
-extends Policy-L1a with TLS-cached remote cap 16/32/64
-updates cap only at remote-flush boundaries
-```
-
-Latest L4 source-batch/drain read:
-
-```text
-batch sweep:
-  private/raw-results/linux/hz5_large128_l4_batch_sweep_r3
-  private/raw-results/linux/hz5_large128_l4_batch16_confirm_r5
-  private/raw-results/linux/hz5_large128_l4_batch16_r0_r5
-
-drain1:
-  private/raw-results/linux/hz5_large128_l4_drain1_r3
-
-read:
-  batch16 is promising in r90 and several lower-thread/high-thread rows.
-  batch8 is not a clear improvement.
-  b16-drain1 is no-go: it helps t=2 r50 but hurts r90 and t=8 badly.
-  batch4 remains the saved large128 profile because it still wins t=8 r50 and
-  is competitive on r0.
-```
-
-Latest L4 remote batch-cap read:
-
-```text
-result:
-  private/raw-results/linux/hz5_large128_l4_remote_batch_cap_r3
-  private/raw-results/linux/hz5_large128_l4_remote_batch_cap_fixed_r3
-
-read:
-  first result invalidated as a remote-batch-cap test because the aliases did
-  not enable LargeFront remote batching.
-  fixed rerun confirms remote batch cap is phase-sensitive:
-    rb64 wins t=4/t=8 r90.
-    rb32 wins t=8 r50.
-    lower-thread r50 remains weak.
-  not a broad replacement.
-```
-
-## Diagnostic / No-Go Lanes
-
-### `hz5-linux-pagerun64-adaptive128`
-
-Build:
-
-```text
---linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64-adaptive128
---linux-midpagefront-empty-retain-cap 4096
-```
-
-Result:
-
-```text
-no-go in first mapped-bytes-only form
-```
-
-Reason:
-
-```text
-Mapped bytes are too blunt as a phase signal. The policy lowers the 128K source
-batch during cross128 phases that still want batch16, and it does not rescue
-large128.
-```
-
-### `hz5-linux-pagerun64-scavenge`
-
-Build:
-
-```text
---linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64-scavenge
---linux-midpagefront-empty-retain-cap 4096
-```
-
-Intent:
-
-```text
-LargeFront-L3 diagnostic after adaptive128 no-go
-```
-
-Behavior:
-
-```text
-128K LargeFront spans only
-retained owner-local payload is madvise(DONTNEED) after a small cap
-span descriptor/prefix page remains mapped
-reuse clears the scavenged flag
-```
-
-Status:
-
-```text
-no-go as first retained-payload form
-```
-
-Smoke result:
-
-```text
-RUNS=3, threads=8, ws=100, r90, iters=120000:
-
-cross128:
-  base_b16   27.91M /  69MB
-  scav_b16    7.83M /  93MB
-  base_b4    19.22M / 101MB
-  scav_b4     7.14M /  66MB
-
-large128:
-  base_b16   18.35M / 128MB
-  scav_b16    4.11M / 185MB
-  base_b4     9.68M / 207MB
-  scav_b4     3.59M / 129MB
-```
-
-Cap64 spot check:
-
-```text
-RUNS=2, same shape:
-  scav64_b16 cross128  9.32M /  87MB
-  scav64_b16 large128  4.50M / 179MB
-  scav64_b4  cross128  8.96M /  69MB
-  scav64_b4  large128  3.87M / 124MB
-```
-
-Decision:
-
-```text
-Retained payload madvise is too close to the remote/free path. It can reduce
-RSS in some rows, but the throughput collapse is too large to promote.
-Keep fixed source-batch split.
-```
-
-### `hz5-linux-pagerun64-observe`
-
-Build:
-
-```text
---linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64-observe
---linux-midpagefront-empty-retain-cap 4096
-```
-
-Runtime:
-
-```text
-HZ5_LARGEFRONT_OBSERVE=1
-```
-
-Intent:
-
-```text
-LargeFront-L3 phase-signal observation
-not for speed medians
-```
-
-Counters:
-
-```text
-per LargeFront class:
-  alloc calls
-  local free-list hits
-  remote take-first returns
-  remote drains to local free list
-  global hits
-  new spans
-  local/remote/global frees
-  source refill count and batch histogram
-  owner-local free-list high water
-```
-
-Decision target:
-
-```text
-If cross128 and large128 differ cleanly in slow-path counters, adaptive source
-batching may be redesigned. If not, keep the fixed split.
-```
-
-First observation:
-
-```text
-RUNS=1 observation smoke, threads=8, ws=100, r90, iters=120000:
-
-cross128:
-  observe_b16  23.87M /  75MB
-  observe_b4   22.56M /  70MB
-
-large128:
-  observe_b16  15.54M / 134MB
-  observe_b4   17.22M / 101MB
-```
-
-Class 0, 128K counters:
-
-```text
-cross128 b16:
-  alloc_calls=239601 local_pop_hit=219683 remote_take_first=3461
-  remote_to_local=196025 new_span=16247 source_refill=1016
-  local_free_highwater=290
-
-cross128 b4:
-  alloc_calls=239601 local_pop_hit=220943 remote_take_first=3711
-  remote_to_local=197628 new_span=14875 source_refill=3719
-  local_free_highwater=398
-
-large128 b16:
-  alloc_calls=480202 local_pop_hit=444415 remote_take_first=2253
-  remote_to_local=397697 new_span=32856 source_refill=2054
-  local_free_highwater=842
-
-large128 b4:
-  alloc_calls=480202 local_pop_hit=451984 remote_take_first=3851
-  remote_to_local=405014 new_span=24322 source_refill=6081
-  local_free_highwater=907
-```
-
-Decision:
-
-```text
-The counter shape mostly scales with 128K traffic volume. It does not expose a
-clean slow-path phase signal that would safely choose batch16 for cross128 and
-batch4 for large128. Keep fixed split.
-```
-
-### LargeFront remote-batch
-
-Build flag:
-
-```text
---linux-largefront-remote-batch
-```
-
-Status:
-
-```text
-diagnostic only
-can help one cross128 sweep, but regresses large-only remote rows and increases
-RSS risk
-```
-
-## Key Results
-
-RUNS=5, r90, iters=500000:
-
-```text
-cross128:
-  pagerun64            21.53M / 421MB
-  pagerun64-takefirst  25.00M / 319MB
-  hz4                  28.01M / 333MB
-  tcmalloc             16.16M / 401MB
-
-large128:
-  pagerun64            11.48M / 929MB
-  pagerun64-takefirst  13.25M / 800MB
-  hz4                   3.93M / 1703MB
-  tcmalloc             17.35M / 500MB
-```
-
-Source batch sweep, PageRun64+takefirst, RUNS=3, r90:
-
-```text
-cross128:
-  batch4   13.44M / 571MB
-  batch8   22.12M / 345MB
-  batch16  28.70M / 265MB
-
-large128:
-  batch4   18.35M / 420MB
-  batch8   11.31M / 864MB
-  batch16   9.65M / 1153MB
-```
-
-Large128 source/remote sweep after L1b no-go, RUNS=3:
-
-```text
-result root:
-  private/raw-results/linux/hz5_large128_batch_sweep_after_l1b_nogo_r3
-
-large128/t4/r50:
-  tcmalloc            28.88M /  47MB
-  b16-drain1          24.36M /  27MB
-  b16-rb64            15.54M /  50MB
-  batch16             12.74M /  70MB
-  batch4              11.42M /  72MB
-
-large128/t4/r90:
-  batch4              22.25M /  39MB
-  b16-rb32            18.98M /  56MB
-  tcmalloc            15.30M /  91MB
-  batch16             11.92M /  88MB
-
-large128/t8/r50:
-  batch4              30.04M /  52MB
-  batch16             24.20M /  72MB
-  tcmalloc            23.45M /  93MB
-  b16-rb64            22.98M /  82MB
-
-large128/t8/r90:
-  batch16             24.53M /  89MB
-  b16-rb64            20.35M / 107MB
-  batch8              20.19M / 102MB
-  tcmalloc            14.73M / 185MB
-  batch4              10.26M / 190MB
-```
-
-Read:
-
-```text
-L1b remote-cap adaptation is not stable enough to promote.
-Fixed profiles remain more predictable:
-  batch4 is still the best large-only candidate for t4/r90 and t8/r50.
-  batch16 is the high-thread r90 diagnostic.
-  b16-drain1 is the only HZ5 lane close to tcmalloc on t4/r50.
-```
-
-Adaptive128 first implementation, RUNS=5, r90:
-
-```text
-cross128:
-  adaptive 13.50M / 567MB
-  batch16  27.48M / 288MB
-  batch4   17.02M / 455MB
-
-large128:
-  adaptive  8.90M / 1070MB
-  batch16  13.04M / 779MB
-  batch4    8.20M / 1060MB
-```
-
-## Next Design Options
-
-Recommended order:
-
-```text
-1. Preserve fixed profile split.
-2. Stop tuning fixed source-batch constants.
-3. Do not promote retained-payload scavenging in its current form.
-4. Do not redesign adaptive source batching without a colder/clearer phase
-   signal.
-5. Keep speed lanes free of HZ5_PRELOAD_STATS and diagnostic atomics.
-```
-
-Current attack order:
-
-```text
-1. LargeFront-L4 source-batch sweep after Large-first/free-map:
-   batch4 vs batch8 vs batch16.
-2. LargeFront-L4 remote drain budget if source-batch sweep is not enough.
-3. main/mid_only r0 instruction-path reduction against tcmalloc, only if
-   local-only throughput remains a priority.
-4. cross128 r90 t=2 after LargeFront is understood.
-```
-
-## Detailed Docs
-
-```text
-docs/HZ5_MIDPAGEFRONT_C7_LANES.md
-docs/HZ5_MIDPAGEFRONT_C7_RESULTS.md
-docs/HZ5_LARGEFRONT_L1_DESIGN.md
-docs/HZ5_MIDPAGEFRONT_NO_GO_LOG.md
+1. Keep source16 as the current r90/t8 comparison lane.
+2. Treat hold8 and base-directmap as diagnostics, not defaults.
+3. If continuing LargeFront speed work, focus on the t4/r50 residual with perf
+   evidence before adding another policy.
+4. Keep docs short; add long result details to archive or dedicated result docs.
 ```
