@@ -29,6 +29,7 @@ comparability.
 | `lowpage/hz5_lowpage64_p43o.inc` | LowPage P43O admission/projection diagnostics | split out from `hz5_lowpage64.c`; keep include-local while the admission probes settle |
 | `lowpage/hz5_lowpage64_p43_segment_helpers.inc` | LowPage P43 segment lookup/slot-mask helper cluster | split out from `hz5_lowpage64_p43_segment.c`; keep include-local while the segment-slot source stabilizes |
 | `lowpage/hz5_lowpage64_p43p_bridge.inc` | LowPage P43P/P44/P45 bridge diagnostics | split out from `hz5_lowpage64.c`; keep include-local while the bridge probes settle |
+| `lowpage/hz5_lowpage64_control.inc` | LowPage control-plane list / checkpoint / relbuf helpers | split out from `hz5_lowpage64.c`; keep include-local while the control-plane lanes settle |
 | `lowpage/hz5_lowpage64.c` | exact-route P25/P43/P45 historical hot path | do not touch during Linux general malloc work |
 | `lowpage/hz5_lowpage64_p43g.inc` | LowPage P43g prepare/wrapper note helpers | split out from `hz5_lowpage64.c`; include-local to keep the hot file slimmer |
 | `lowpage/hz5_lowpage64_p45dr.inc` | LowPage P45 stage1 drain diagnostics | split out from `hz5_lowpage64.c`; keep the cold diagnostic block include-local |
@@ -103,7 +104,8 @@ lane in `hz5_midpagefront_remote_experiments.inc`, and LowPage now keeps P43g he
 `hz5_lowpage64_p43g.inc`, P43O diagnostics in `hz5_lowpage64_p43o.inc`, plus
 P43 segment lookup/slot-mask helpers in `hz5_lowpage64_p43_segment_helpers.inc`,
 P43P/P44/P45 bridge diagnostics in `hz5_lowpage64_p43p_bridge.inc`, plus P45
-drain diagnostics in `hz5_lowpage64_p45dr.inc`. Policy now keeps Local2P
+drain diagnostics in `hz5_lowpage64_p45dr.inc`, plus lowpage control helpers in
+`hz5_lowpage64_control.inc`. Policy now keeps Local2P
 helpers in `hz5_policy_local2p.inc`. MidFront now also keeps its remote batch
 helpers in `hz5_midfront_remote_batch.inc`. Preload full now also keeps its
 bootstrap/stat/pointer-track support helpers in
