@@ -47,8 +47,9 @@ scripts and reports instead of copying the long historical flag chains.
 | `--linux-hz5-profile-pagerun64-large128-batch8` | same as `large128` but source batch8 | large128 r50/r90 source-batch diagnostic | diagnostic only |
 | `--linux-hz5-profile-pagerun64-large128-batch16` | same as `large128` but source batch16 | large128 r50/r90 source-batch diagnostic | diagnostic only |
 | `--linux-hz5-profile-pagerun64-large128-b16-drain1` | same as `large128-batch16` but alloc-miss drain local budget 1 | large128 r50 drain-budget diagnostic | diagnostic only |
-| `--linux-hz5-profile-pagerun64-large128-b16-rb32` | same as `large128-batch16` but remote batch cap 32 | large128 remote publish diagnostic | diagnostic only |
-| `--linux-hz5-profile-pagerun64-large128-b16-rb64` | same as `large128-batch16` but remote batch cap 64 | large128 remote publish diagnostic | diagnostic only |
+| `--linux-hz5-profile-pagerun64-large128-b16-rb32` | same as `large128-batch16` but LargeFront remote batch enabled, cap 32 | large128 remote publish diagnostic | diagnostic only |
+| `--linux-hz5-profile-pagerun64-large128-b16-rb64` | same as `large128-batch16` but LargeFront remote batch enabled, cap 64 | large128 remote publish diagnostic | diagnostic only |
+| `--linux-hz5-profile-pagerun64-large128-policy-l0` | saved large128 profile + slow-path LargeFront Policy-L0 counters | control-plane feature observation | observation only |
 
 Use the fixed cross128 and large128 aliases as separate profiles. The source
 batch optimum reverses between those workloads, so a single fixed value is not
@@ -98,10 +99,34 @@ Remote batch cap sweep:
 
 ```text
 private/raw-results/linux/hz5_large128_l4_remote_batch_cap_r3
+private/raw-results/linux/hz5_large128_l4_remote_batch_cap_fixed_r3
 
 decision:
-  rb32/rb64 remain high-thread diagnostics only.
-  They are not broad replacements because t=2/t=4 regress.
+  first result invalidated because the aliases did not enable LargeFront remote
+  batching.
+  fixed rerun keeps rb32/rb64 as phase-sensitive diagnostics:
+    rb64 wins t=4/t=8 r90.
+    rb32 wins t=8 r50.
+    lower-thread r50 remains weak.
+```
+
+Policy-L0 observation:
+
+```text
+Use:
+  --linux-hz5-profile-pagerun64-large128-policy-l0
+  HZ5_LARGEFRONT_POLICY_L0=1
+
+Purpose:
+  collect source/refill/remote/drain features for a future L1 selector.
+
+Rule:
+  observation only.
+  no speed medians.
+  no malloc/free hot-path counter updates.
+
+Smoke:
+  private/raw-results/linux/hz5_policy_l0_smoke.log
 ```
 
 ## MidPageFront Combination Chain

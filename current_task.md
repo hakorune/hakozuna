@@ -16,6 +16,11 @@ Adaptive128:
 
 LargeFront observe:
   phase counters did not show a clean cross128 vs large128 signal.
+
+LargeFront Policy-L0:
+  new control-plane observation lane.
+  slow-path only; no malloc/free hot-path counter updates.
+  name is policy-l0, not auto, because it does not select policy yet.
 ```
 
 Primary registry:
@@ -212,11 +217,46 @@ purpose:
 
 result:
   private/raw-results/linux/hz5_large128_l4_remote_batch_cap_r3
+  private/raw-results/linux/hz5_large128_l4_remote_batch_cap_fixed_r3
 
 read:
-  rb32/rb64 can improve t=8 r50, and rb64 slightly improves t=8 r90.
-  lower-thread rows regress heavily.
-  Do not promote remote batch cap 32/64 broadly.
+  first result invalidated as a remote-batch-cap test because the aliases did
+  not enable LargeFront remote batching.
+  fixed rerun:
+    rb64 wins t=4 r90 and t=8 r90.
+    rb32 wins t=8 r50.
+    lower-thread r50 remains weak.
+  conclusion:
+    remote batch cap is another phase-sensitive lever, not a broad replacement.
+```
+
+LargeFront Policy-L0 plan:
+
+```text
+purpose:
+  collect source/refill/remote/drain features needed for a future L1 selector
+  without adding learning or counters to malloc/free hot paths.
+
+build:
+  --linux-hz5-profile-pagerun64-large128-policy-l0
+
+runtime:
+  HZ5_LARGEFRONT_POLICY_L0=1
+
+smoke:
+  private/raw-results/linux/hz5_policy_l0_smoke.log
+
+features:
+  source_empty
+  source_refill / source_spans / batch4/8/16
+  mapped_spans_proxy
+  remote_batch_flush / spans / cap_hit
+  owner_drain / spans / takefirst / to_local / republish
+
+rule:
+  L0 is diagnostic only.
+  No speed medians from L0.
+  L1 source-batch selector only after L0 separates batch4 vs batch16 rows.
 ```
 
 Do not:
@@ -256,6 +296,27 @@ LargeFront-L4 source-batch diagnostic:
     batch16 is the only promising fixed diagnostic.
     drain1 is no-go.
     RUNS=5 confirms batch16 is useful but not broad enough to replace batch4.
+```
+
+LargeFront Policy-L0 observation:
+
+```text
+flag:
+  --linux-hz5-profile-pagerun64-large128-policy-l0
+
+behavior:
+  compile slow-path policy counters only
+  print with HZ5_LARGEFRONT_POLICY_L0=1
+  no alloc/free hot-path updates
+  not for performance medians
+
+next:
+  run L0 on batch4/batch16/rb64 style rows and compare shadow features against
+  measured best fixed profile.
+
+smoke:
+  output includes source_empty/source_refill/mapped_spans_proxy and owner_drain
+  without HZ5_LARGEFRONT_OBSERVE hot-path counters.
 ```
 
 ## Reading Order

@@ -16,6 +16,7 @@ LargeFront 128K remote:
   fixed source batch choices split by workload
   first targeted free-route/base-lookup fix improves large128 r0/r90
   L4 source-batch sweep keeps batch16 as the only promising diagnostic
+  Policy-L0 adds slow-path control-plane observation, not hot-path learning
 
 Adaptive128:
   first mapped-bytes-only implementation is no-go
@@ -206,7 +207,7 @@ Status:
 
 ```text
 diagnostic only
-source batch16 with LargeFront remote batch cap 32
+source batch16 with LargeFront remote batching enabled, cap 32
 ```
 
 ### `hz5-linux-pagerun64-large-only-b16-rb64`
@@ -227,7 +228,35 @@ Status:
 
 ```text
 diagnostic only
-source batch16 with LargeFront remote batch cap 64
+source batch16 with LargeFront remote batching enabled, cap 64
+```
+
+### `hz5-linux-pagerun64-large-only-policy-l0`
+
+Role:
+
+```text
+LargeFront control-plane observation for future policy selector
+```
+
+Build:
+
+```text
+--linux-hz5-profile-pagerun64-large128-policy-l0
+```
+
+Runtime:
+
+```text
+HZ5_LARGEFRONT_POLICY_L0=1
+```
+
+Status:
+
+```text
+observation only
+slow-path counters only
+not for speed medians
 ```
 
 Latest L4 source-batch/drain read:
@@ -254,11 +283,16 @@ Latest L4 remote batch-cap read:
 ```text
 result:
   private/raw-results/linux/hz5_large128_l4_remote_batch_cap_r3
+  private/raw-results/linux/hz5_large128_l4_remote_batch_cap_fixed_r3
 
 read:
-  rb32/rb64 help high-thread r50.
-  rb64 is close to neutral/slightly positive at t=8 r90.
-  t=2/t=4 regress too much for broad promotion.
+  first result invalidated as a remote-batch-cap test because the aliases did
+  not enable LargeFront remote batching.
+  fixed rerun confirms remote batch cap is phase-sensitive:
+    rb64 wins t=4/t=8 r90.
+    rb32 wins t=8 r50.
+    lower-thread r50 remains weak.
+  not a broad replacement.
 ```
 
 ## Diagnostic / No-Go Lanes
