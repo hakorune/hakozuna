@@ -67,6 +67,10 @@ private/raw-results/linux/hz5_large128_direct_header_r3_20260526_051345
 private/raw-results/linux/hz5_large128_base_directmap_r3_20260526_051731
 private/raw-results/linux/hz5_large128_current_focus_r3_20260526_052851
 private/raw-results/linux/hz5_large128_drain_directmap_r3_20260526_053047
+private/raw-results/linux/hz5_large128_t4r50_perf_current_20260526_053300
+private/raw-results/linux/hz5_large128_rb_current_r3_20260526_053400
+private/raw-results/linux/hz5_large128_batch32_smoke_20260526_053458
+private/raw-results/linux/hz5_large128_base_directmap4_r3_20260526_053547
 ```
 
 ## Next Engineering Direction
@@ -74,9 +78,11 @@ private/raw-results/linux/hz5_large128_drain_directmap_r3_20260526_053047
 ```text
 1. Keep source16 and large128-rss as the current comparison pair.
 2. Treat hold8/base-directmap/direct-header/drain-directmap as diagnostics.
-3. If continuing LargeFront optimization, focus on t4/r50 with perf evidence.
-4. Do not add another policy until a concrete hotspot explains the row split.
-5. Keep speed lanes free of HZ5_PRELOAD_STATS and hot-path counters.
+3. Current t4/r50 perf gap is instruction/branch count plus page-fault/refill
+   pressure, not cache-miss rate alone.
+4. rb32/rb64 and batch32 do not fix t4/r50; keep them diagnostic/no-go.
+5. Do not add another policy until a concrete hotspot explains the row split.
+6. Keep speed lanes free of HZ5_PRELOAD_STATS and hot-path counters.
 ```
 
 ## Cleanup Status

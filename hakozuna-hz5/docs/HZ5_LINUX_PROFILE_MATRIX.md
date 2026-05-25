@@ -45,9 +45,11 @@ Control plane:
 Latest focused reads:
 
 ```text
-private/raw-results/linux/hz5_large128_hold8_r3_20260526_050802
-private/raw-results/linux/hz5_large128_direct_header_r3_20260526_051345
-private/raw-results/linux/hz5_large128_base_directmap_r3_20260526_051731
+  private/raw-results/linux/hz5_large128_hold8_r3_20260526_050802
+  private/raw-results/linux/hz5_large128_direct_header_r3_20260526_051345
+  private/raw-results/linux/hz5_large128_base_directmap_r3_20260526_051731
+  private/raw-results/linux/hz5_large128_t4r50_perf_current_20260526_053300
+  private/raw-results/linux/hz5_large128_rb_current_r3_20260526_053400
 ```
 
 ## Saved Profiles
@@ -168,6 +170,55 @@ Combining drain1 with base-directmap does not compose; it worsens both parent
 lanes and should not be pursued without new perf evidence.
 ```
 
+### Current t4/r50 Perf Read
+
+```text
+root:
+  private/raw-results/linux/hz5_large128_t4r50_perf_current_20260526_053300
+
+large128/t4/r50, one perf-stat sample:
+  HZ5 source16:
+    13.98M ops/s
+    250.4M instructions
+    54.2M branches
+    1.92M cache misses
+
+  tcmalloc:
+    27.06M ops/s
+    155.7M instructions
+    30.1M branches
+    2.22M cache misses
+```
+
+Read:
+
+```text
+The gap is still path length and refill/page-fault pressure.
+HZ5 does not lose this sample because of cache misses alone.
+```
+
+### Remote Batch / Batch32 Checks
+
+```text
+roots:
+  private/raw-results/linux/hz5_large128_rb_current_r3_20260526_053400
+  private/raw-results/linux/hz5_large128_batch32_smoke_20260526_053458
+  private/raw-results/linux/hz5_large128_base_directmap4_r3_20260526_053547
+```
+
+Decision:
+
+```text
+rb32/rb64:
+  can help t8/r90, but regress t4/r50.
+
+source batch32:
+  no-go for t4/r50 and r90.
+
+4-way base-directmap:
+  no-go; source kept at the simpler 1-way diagnostic cache.
+```
+
 ## No-Promote Summary
 
 | Lane | Reason |
@@ -180,6 +231,8 @@ lanes and should not be pursued without new perf evidence.
 | direct-header | unsafe foreign-pointer behavior |
 | base-directmap | row-specific improvement, not broad enough |
 | r50-drain-directmap | simple composition worsens r50 and r90 |
+| rb32/rb64 | high-thread r90 signal, but t4/r50 regression |
+| source batch32 | does not reduce t4/r50 gap; r90 regresses |
 
 ## Next Work
 
