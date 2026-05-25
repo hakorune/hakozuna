@@ -49,6 +49,10 @@
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_MAP 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_BASE_FASTMAP
+#define BENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_BASE_FASTMAP 0
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_LOWER_CLASSES
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_LOWER_CLASSES 0
 #endif
@@ -645,7 +649,19 @@ static int hz5_largefront_map_insert_one(uintptr_t page_base,
 
 static int hz5_largefront_map_insert(Hz5LargeSpan* span) {
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_MAP
+  // Region lookup remains the ownership fallback. With the base fast map also
+  // enabled, keep a best-effort exact-base map so normal free(ptr) avoids the
+  // variable stride division in the region path.
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_BASE_FASTMAP
+  if (span && span->base) {
+    uintptr_t base = (uintptr_t)span->base;
+    pthread_mutex_lock(&g_hz5_largefront_map_lock);
+    (void)hz5_largefront_map_insert_one(base, span);
+    pthread_mutex_unlock(&g_hz5_largefront_map_lock);
+  }
+#else
   (void)span;
+#endif
   return 1;
 #else
   uintptr_t base = (uintptr_t)span->base;
@@ -675,6 +691,14 @@ static Hz5LargeSpan* hz5_largefront_span_for_ptr(void* ptr) {
   }
   uintptr_t p = (uintptr_t)ptr;
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_MAP
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_BASE_FASTMAP
+  uintptr_t page_base = p & ~(uintptr_t)(HZ5_LARGEFRONT_PAGE_SIZE - 1u);
+  Hz5LargeSpan* base_span = hz5_largefront_lookup_page(page_base);
+  if (base_span && base_span->magic == HZ5_LARGEFRONT_MAGIC &&
+      ptr == base_span->base) {
+    return base_span;
+  }
+#endif
   Hz5LargeSpan* span = hz5_largefront_lookup_region_ptr(p);
 #else
   uintptr_t page_base = p & ~(uintptr_t)(HZ5_LARGEFRONT_PAGE_SIZE - 1u);

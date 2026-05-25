@@ -14,6 +14,7 @@ MidPage PageRun64:
 LargeFront 128K remote:
   remaining design target
   fixed source batch choices split by workload
+  first targeted free-route/base-lookup fix improves large128 r0/r90
 
 Adaptive128:
   first mapped-bytes-only implementation is no-go
@@ -30,6 +31,22 @@ RUNS=3:
   HZ5 keeps strong RSS in MidPage rows.
   main/mid_only r0 remains tcmalloc's clear local-fast-path win.
   large128 r50/r90 is the largest actionable remaining gap.
+```
+
+Latest LargeFront targeted check:
+
+```text
+result root:
+  private/raw-results/linux/hz5_large128_largefirst_fastmap_r5
+
+change:
+  LargeFront exact-base fast map
+  pagerun64-large128 uses Large-first free route
+
+RUNS=5 read:
+  large128 r0 improves strongly.
+  large128 r90 is now a HZ5 win at t=8 with lower RSS than tcmalloc/HZ4.
+  large128 r50 remains the next LargeFront gap.
 ```
 
 ## Saved Profiles
@@ -88,6 +105,7 @@ Role:
 ```text
 large128 remote-heavy diagnostic
 prioritizes pure 65537..131072 traffic
+uses Large-first free route and exact-base LargeFront lookup
 ```
 
 Build:
@@ -101,6 +119,7 @@ Status:
 ```text
 saved fixed profile
 useful evidence for source-batch/RSS tradeoff
+current large128 r90 winner at t=8 in the latest focused check
 ```
 
 ## Diagnostic / No-Go Lanes
@@ -362,7 +381,7 @@ Recommended order:
 Current attack order:
 
 ```text
-1. LargeFront 128K source/refill and page-touch behavior.
+1. LargeFront 128K r50 remote handoff and source/refill behavior.
 2. main/mid_only r0 instruction-path reduction against tcmalloc, only if
    local-only throughput remains a priority.
 3. cross128 r90 t=2 after LargeFront is understood.

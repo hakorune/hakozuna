@@ -49,6 +49,7 @@ BUILD_PRELOAD_FULL=0
 PRELOAD_FREE_MID_FIRST=0
 PRELOAD_FREE_MIDPAGE_FIRST=0
 PRELOAD_FREE_MIDPAGE_LARGE_FIRST=0
+PRELOAD_FREE_LARGE_FIRST=0
 PRELOAD_MIDPAGE_ALLOC_FIRST=0
 PRELOAD_MIDPAGE_ALLOC_ABS_FIRST=0
 PRELOAD_MIDPAGE_SUPERFAST=0
@@ -132,6 +133,7 @@ LINUX_LARGEFRONT_DRAIN_TAKE_FIRST=0
 LINUX_LARGEFRONT_DRAIN_EMPTY_GATED=0
 LINUX_LARGEFRONT_MAP_BASE_ONLY=0
 LINUX_LARGEFRONT_REGION_MAP=0
+LINUX_LARGEFRONT_REGION_BASE_FASTMAP=0
 LINUX_LARGEFRONT_LOWER_CLASSES=0
 LINUX_LARGEFRONT_ADAPTIVE128=0
 LINUX_LARGEFRONT_PAYLOAD_SCAVENGE=0
@@ -156,7 +158,8 @@ Options:
                      + source batch16 for cross128-style rows
   --linux-hz5-profile-pagerun64-large128
                      saved profile alias: PageRun64 + LargeFront takefirst
-                     + source batch4 for large128-style rows
+                     + source batch4 + Large-first free route for
+                     large128-style rows
   --linux-local2p    enable Linux Local2P exact 64K/a8192 TLS span candidate
   --linux-local2p-tls-packed
                      pack Local2P TLS state into one TLS object
@@ -847,11 +850,18 @@ enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pa
   enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun_base "$1"
   LINUX_MIDPAGEFRONT_PAGERUN_64K=1
   LINUX_MIDPAGEFRONT_EMPTY_RETAIN_CAP=4096
+  LINUX_LARGEFRONT_REGION_BASE_FASTMAP=1
 }
 
 enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_takefirst_base() {
   enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_base "$1"
   LINUX_LARGEFRONT_DRAIN_TAKE_FIRST=1
+}
+
+enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_largefirst_base() {
+  enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_takefirst_base "$1"
+  PRELOAD_FREE_MIDPAGE_FIRST=0
+  PRELOAD_FREE_LARGE_FIRST=1
 }
 
 enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_adaptive128_base() {
@@ -901,7 +911,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --linux-hz5-profile-pagerun64-large128)
-      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_takefirst_base 2
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_largefirst_base 2
       LINUX_LARGEFRONT_SOURCE_BATCH_COUNT=4
       shift
       ;;
@@ -2666,6 +2676,11 @@ if [[ "$LINUX_LARGEFRONT_L1" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX=1)
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_MAP=1)
   fi
+  if [[ "$LINUX_LARGEFRONT_REGION_BASE_FASTMAP" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX=1)
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_MAP=1)
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_BASE_FASTMAP=1)
+  fi
   if [[ "$LINUX_LARGEFRONT_ADAPTIVE128" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX=1)
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_REGION_MAP=1)
@@ -2728,6 +2743,7 @@ fi
   echo "preload_free_mid_first=${PRELOAD_FREE_MID_FIRST}"
   echo "preload_free_midpage_first=${PRELOAD_FREE_MIDPAGE_FIRST}"
   echo "preload_free_midpage_large_first=${PRELOAD_FREE_MIDPAGE_LARGE_FIRST}"
+  echo "preload_free_large_first=${PRELOAD_FREE_LARGE_FIRST}"
   echo "preload_midpage_alloc_first=${PRELOAD_MIDPAGE_ALLOC_FIRST}"
   echo "preload_midpage_alloc_abs_first=${PRELOAD_MIDPAGE_ALLOC_ABS_FIRST}"
   echo "preload_midpage_superfast=${PRELOAD_MIDPAGE_SUPERFAST}"
@@ -2811,6 +2827,7 @@ fi
   echo "linux_largefront_drain_empty_gated=${LINUX_LARGEFRONT_DRAIN_EMPTY_GATED}"
   echo "linux_largefront_map_base_only=${LINUX_LARGEFRONT_MAP_BASE_ONLY}"
   echo "linux_largefront_region_map=${LINUX_LARGEFRONT_REGION_MAP}"
+  echo "linux_largefront_region_base_fastmap=${LINUX_LARGEFRONT_REGION_BASE_FASTMAP}"
   echo "linux_largefront_lower_classes=${LINUX_LARGEFRONT_LOWER_CLASSES}"
   echo "linux_largefront_adaptive128=${LINUX_LARGEFRONT_ADAPTIVE128}"
   echo "linux_largefront_payload_scavenge=${LINUX_LARGEFRONT_PAYLOAD_SCAVENGE}"
@@ -2839,6 +2856,9 @@ if [[ "$PRELOAD_FREE_MIDPAGE_FIRST" -eq 1 ]]; then
 fi
 if [[ "$PRELOAD_FREE_MIDPAGE_LARGE_FIRST" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_PRELOAD_FREE_MIDPAGE_LARGE_FIRST=1)
+fi
+if [[ "$PRELOAD_FREE_LARGE_FIRST" -eq 1 ]]; then
+  COMMON_FLAGS+=(-DBENCHLAB_HZ5_PRELOAD_FREE_LARGE_FIRST=1)
 fi
 if [[ "$PRELOAD_MIDPAGE_ALLOC_FIRST" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_PRELOAD_MIDPAGE_ALLOC_FIRST=1)

@@ -42,12 +42,27 @@ scripts and reports instead of copying the long historical flag chains.
 | Alias | Components | Primary rows | Status |
 | --- | --- | --- | --- |
 | `--linux-hz5-profile-pagerun64-main` | PageRun64 + M6 remote + empty retain cap 4096 | main / mid_only / cross64 | default candidate |
-| `--linux-hz5-profile-pagerun64-cross128` | PageRun64 + LargeFront takefirst + source batch16 + empty retain cap 4096 | cross128 remote-heavy | saved fixed profile |
-| `--linux-hz5-profile-pagerun64-large128` | PageRun64 + LargeFront takefirst + source batch4 + empty retain cap 4096 | large128 remote-heavy | saved fixed profile |
+| `--linux-hz5-profile-pagerun64-cross128` | PageRun64 + LargeFront takefirst + source batch16 + exact-base LargeFront map + empty retain cap 4096 | cross128 remote-heavy | saved fixed profile |
+| `--linux-hz5-profile-pagerun64-large128` | PageRun64 + LargeFront takefirst + source batch4 + exact-base LargeFront map + Large-first free route + empty retain cap 4096 | large128 remote-heavy | saved fixed profile |
 
 Use the fixed cross128 and large128 aliases as separate profiles. The source
 batch optimum reverses between those workloads, so a single fixed value is not
 the current design claim.
+
+Latest large128 focused check:
+
+```text
+private/raw-results/linux/hz5_large128_largefirst_fastmap_r5
+
+large128 r0:
+  improved strongly after exact-base lookup + Large-first free route.
+
+large128 r90:
+  HZ5 wins t=8 with lower RSS than tcmalloc/HZ4.
+
+large128 r50:
+  still the next LargeFront gap.
+```
 
 ## MidPageFront Combination Chain
 

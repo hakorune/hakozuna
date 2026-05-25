@@ -43,6 +43,7 @@ hz5-linux-pagerun64-large-only:
   build alias:
     --linux-hz5-profile-pagerun64-large128
   PageRun64 + LargeFront takefirst + source batch4
+  Large-first free route + LargeFront exact-base fast map
   large128 remote-heavy diagnostic
 ```
 
@@ -90,9 +91,10 @@ Largest remaining gaps:
     tcmalloc local fast path is still about 1.8x-2.0x faster.
 
   large128 r50/r90:
-    HZ5 is still behind HZ4/tcmalloc on several thread counts.
-    perf points at LargeFront source/refill and page fault/zero-clear cost,
-    not only remote queue shape.
+    first targeted fix improved large128 substantially.
+    remaining gap is mainly r50 vs tcmalloc/HZ4 depending on thread count.
+    perf still points at LargeFront source/refill, page touching, and remote
+    handoff shape.
 
   cross128 r90:
     mostly close at t=4/t=8, but t=2 still has a large HZ4 gap.
@@ -118,10 +120,26 @@ or a profile selector outside the allocator hot path
 Current likely attack order:
 
 ```text
-1. LargeFront 128K source/refill and page-touch behavior.
+1. LargeFront 128K r50 remote handoff and source/refill behavior.
 2. main/mid_only r0 instruction-path reduction only if we decide to keep
    chasing tcmalloc local-only throughput.
 3. cross128 r90 t=2 after LargeFront is understood.
+```
+
+Latest LargeFront fix:
+
+```text
+change:
+  LargeFront region exact-base fast map
+  pagerun64-large128 uses Large-first free route
+
+result:
+  private/raw-results/linux/hz5_large128_largefirst_fastmap_r5
+
+read:
+  large128 r0 improved strongly.
+  large128 r90 now wins at t=8 and is much closer at t=2/t=4.
+  large128 r50 remains the next LargeFront gap.
 ```
 
 Do not:
