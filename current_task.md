@@ -66,6 +66,38 @@ source batch is a real lever, but the best value reverses:
 The first adaptive policy used mapped bytes only and failed both rows.
 ```
 
+## Latest Broad Read
+
+Command/result root:
+
+```text
+private/raw-results/linux/hz5_hakmem_compare_pagerun64_broad_r3
+RUNS=3
+threads=2,4,8
+lanes=main,mid_only,cross128,large128
+remote=0,50,90
+allocators=system,hz4,mimalloc,tcmalloc,pagerun64-main,cross128,large128
+```
+
+Read:
+
+```text
+HZ5 wins many r50/r90 main and mid_only rows, especially at t=4/t=8.
+HZ5 keeps much lower RSS than tcmalloc/mimalloc in most MidPage rows.
+
+Largest remaining gaps:
+  main/mid_only r0:
+    tcmalloc local fast path is still about 1.8x-2.0x faster.
+
+  large128 r50/r90:
+    HZ5 is still behind HZ4/tcmalloc on several thread counts.
+    perf points at LargeFront source/refill and page fault/zero-clear cost,
+    not only remote queue shape.
+
+  cross128 r90:
+    mostly close at t=4/t=8, but t=2 still has a large HZ4 gap.
+```
+
 ## Next Work
 
 First:
@@ -81,6 +113,15 @@ If continuing LargeFront-L3 after the broad matrix:
 ```text
 only continue with a colder phase signal than current LargeFront counters
 or a profile selector outside the allocator hot path
+```
+
+Current likely attack order:
+
+```text
+1. LargeFront 128K source/refill and page-touch behavior.
+2. main/mid_only r0 instruction-path reduction only if we decide to keep
+   chasing tcmalloc local-only throughput.
+3. cross128 r90 t=2 after LargeFront is understood.
 ```
 
 Do not:

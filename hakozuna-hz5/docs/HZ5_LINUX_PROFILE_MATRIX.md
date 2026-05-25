@@ -19,6 +19,19 @@ Adaptive128:
   first mapped-bytes-only implementation is no-go
 ```
 
+Latest broad check:
+
+```text
+result root:
+  private/raw-results/linux/hz5_hakmem_compare_pagerun64_broad_r3
+
+RUNS=3:
+  HZ5 wins many main/mid_only r50/r90 rows at t=4/t=8.
+  HZ5 keeps strong RSS in MidPage rows.
+  main/mid_only r0 remains tcmalloc's clear local-fast-path win.
+  large128 r50/r90 is the largest actionable remaining gap.
+```
+
 ## Saved Profiles
 
 These aliases are the canonical build handles for the current reportable HZ5
@@ -344,6 +357,15 @@ Recommended order:
 4. Do not redesign adaptive source batching without a colder/clearer phase
    signal.
 5. Keep speed lanes free of HZ5_PRELOAD_STATS and diagnostic atomics.
+```
+
+Current attack order:
+
+```text
+1. LargeFront 128K source/refill and page-touch behavior.
+2. main/mid_only r0 instruction-path reduction against tcmalloc, only if
+   local-only throughput remains a priority.
+3. cross128 r90 t=2 after LargeFront is understood.
 ```
 
 ## Detailed Docs
