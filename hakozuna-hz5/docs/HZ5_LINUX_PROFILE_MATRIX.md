@@ -446,6 +446,59 @@ First smoke:
     republish-dominated.
 ```
 
+### `hz5-linux-large128-global-remote`
+
+Role:
+
+```text
+LargeFront global-recycle remote diagnostic
+```
+
+Build:
+
+```text
+--linux-hz5-profile-large128-global-remote
+```
+
+Runner:
+
+```text
+hz5-large128-global-remote
+```
+
+Status:
+
+```text
+diagnostic only
+128K remote frees bypass owner inbox and become global LOCAL_FREE spans.
+
+Question:
+  if this helps large128/t4/r90, owner-inbox churn is the bottleneck.
+  if this fails, global lock / ownership transfer is not the right direction.
+
+Safety:
+  remote free still requires ACTIVE -> LOCAL_FREE CAS.
+  global reuse reassigns owner on activation.
+
+RUNS=3 r90 smoke:
+  private/raw-results/linux/hz5_large128_global_remote_r90_r3
+
+  t4/r90:
+    global-remote  7.24M /  85MB
+    source16      10.97M /  97MB
+    tcmalloc      24.52M /  63MB
+
+  t8/r90:
+    global-remote  5.40M / 204MB
+    source16      18.99M / 108MB
+    tcmalloc      14.54M / 161MB
+
+Decision:
+  no-go.
+  global lock/recycle is not the escape hatch for large128 r90.
+  Keep owner-inbox/source16 as the r90 direction.
+```
+
 Policy-L0 owner-drain detail after adding `owner_hold`, `owner_orphan`, and
 `owner_state_fail` counters:
 

@@ -50,6 +50,7 @@ Use these names in new benchmark command lines and reports. The historical
 | `large128-source16` | `--linux-hz5-profile-large128-source16` | `hz5-large128-source16` | source-batch16 throughput diagnostic | diagnostic only |
 | `large128-r50-drain` | `--linux-hz5-profile-large128-r50-drain` | `hz5-large128-r50-drain` | source16 + drain budget 1; r50 drain diagnostic | diagnostic only |
 | `large128-r50-hold` | `--linux-hz5-profile-large128-r50-hold` | `hz5-large128-r50-hold` | source16 + drain budget 1 + RemoteHold cap4; r50 candidate/diagnostic | diagnostic only |
+| `large128-global-remote` | `--linux-hz5-profile-large128-global-remote` | `hz5-large128-global-remote` | 128K remote frees go to global recycle instead of owner inbox | diagnostic only |
 | `large128-policy-l7` | `--linux-hz5-profile-large128-policy-l7` | `hz5-large128-policy-l7` | first remainder-size rule policy; no-go diagnostic | diagnostic only |
 | `large128-policy-l8-shadow` | `--linux-hz5-profile-large128-policy-l8-shadow` | `hz5-large128-policy-l8-shadow` | Policy-L0 plus owner-drain shadow classification; no behavior change | observation only |
 

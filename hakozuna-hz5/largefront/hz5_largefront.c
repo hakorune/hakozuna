@@ -53,6 +53,10 @@
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_HOLD 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_GLOBAL_128K
+#define BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_GLOBAL_128K 0
+#endif
+
 #ifndef HZ5_LARGEFRONT_REMOTE_HOLD_CAP
 #define HZ5_LARGEFRONT_REMOTE_HOLD_CAP 0u
 #endif
@@ -1961,6 +1965,22 @@ Hz5LargeFrontFreeResult hz5_largefront_free(void* ptr) {
 #endif
   } else {
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_GLOBAL_128K
+    if (hz5_largefront_class_bytes(span->class_index) == 131072u) {
+      if (!hz5_largefront_state_cas(
+              span,
+              (unsigned char)HZ5_LARGESPAN_ACTIVE,
+              (unsigned char)HZ5_LARGESPAN_LOCAL_FREE)) {
+        return HZ5_LARGEFRONT_FREE_INVALID;
+      }
+      hz5_largefront_global_push(span->class_index, span);
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_OBSERVE
+      hz5_largefront_counter_inc(
+          &g_hz5_largefront_obs_free_global[span->class_index]);
+#endif
+      return HZ5_LARGEFRONT_FREE_OK;
+    }
+#endif
     if (hz5_owner_is_alive(span->owner)) {
       if (!hz5_largefront_state_cas(
               span,

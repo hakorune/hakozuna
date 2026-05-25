@@ -49,6 +49,19 @@ LargeFront Policy-L8 shadow:
     current L8 sink-dominance classifier is useful instrumentation, but not
     yet a clean selector.
 
+LargeFront global-remote diagnostic:
+  implemented and measured.
+  128K remote frees bypass owner inbox and go to global recycle as LOCAL_FREE.
+  purpose:
+    test whether large128/t4/r90 is fundamentally owner-inbox churn.
+  safety:
+    keep fail-closed ACTIVE -> LOCAL_FREE CAS.
+    global pop reassigns owner on reuse.
+  result:
+    private/raw-results/linux/hz5_large128_global_remote_r90_r3
+    no-go.
+    global lock/recycle is much slower than owner inbox/source16 on r90.
+
 Lane naming cleanup:
   committed L7 as a diagnostic checkpoint.
   current cleanup adds human-facing aliases while preserving historical names:
