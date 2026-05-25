@@ -83,6 +83,8 @@ LINUX_MIDPAGEFRONT_M4_UNSAFE_FREE_ELIDE=0
 LINUX_MIDPAGEFRONT_M5_HIT_ONLY=0
 LINUX_MIDPAGEFRONT_M6_DEFERRED_FREE=0
 LINUX_MIDPAGEFRONT_M6_RAW_CAP=64
+LINUX_MIDPAGEFRONT_M4_FLAT_MAG_CAP=0
+LINUX_MIDPAGEFRONT_M4_STATS=0
 LINUX_MIDFRONT_M1=0
 LINUX_MIDFRONT_OWNER_FAST_STATE=0
 LINUX_MIDFRONT_MAX_BYTES=65536
@@ -267,6 +269,12 @@ Options:
   --linux-hz5-general-midpage-m6-deferred-free-direct
                      diagnostic proof lane: M4 packet + M5 hit-only plus
                      M6 classless raw-free quarantine for direct MidPage API
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-flatcap
+                     diagnostic preset: freefirst-tlslink plus flat M4
+                     magazine cap 64 for every MidPage class
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-m4stats
+                     observation preset: freefirst-tlslink plus M4 class
+                     counters; not for performance medians
   --linux-midpagefront-m6-raw-cap N
                      M6 raw quarantine cap for deferred-free diagnostics
                      (default: 64)
@@ -590,6 +598,16 @@ enable_midpage_m4packet_freefirst_tlslink_superfast_freeelide_base() {
 enable_midpage_m6_deferred_free_direct_base() {
   enable_midpage_m4packet_freefirst_tlslink_m5hit_base
   LINUX_MIDPAGEFRONT_M6_DEFERRED_FREE=1
+}
+
+enable_midpage_m4packet_freefirst_tlslink_flatcap_base() {
+  enable_midpage_m4packet_freefirst_tlslink_base
+  LINUX_MIDPAGEFRONT_M4_FLAT_MAG_CAP=1
+}
+
+enable_midpage_m4packet_freefirst_tlslink_m4stats_base() {
+  enable_midpage_m4packet_freefirst_tlslink_base
+  LINUX_MIDPAGEFRONT_M4_STATS=1
 }
 
 enable_midpage_m4packet_routefree_base() {
@@ -1080,6 +1098,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --linux-hz5-general-midpage-m6-deferred-free-direct)
       enable_midpage_m6_deferred_free_direct_base
+      shift
+      ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-flatcap)
+      enable_midpage_m4packet_freefirst_tlslink_flatcap_base
+      shift
+      ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-m4stats)
+      enable_midpage_m4packet_freefirst_tlslink_m4stats_base
       shift
       ;;
     --linux-midpagefront-m6-raw-cap)
@@ -1941,6 +1967,12 @@ if [[ "$LINUX_MIDPAGEFRONT_M2" -eq 1 ]]; then
       -DHZ5_MIDPAGEFRONT_M6_RAW_CAP="${LINUX_MIDPAGEFRONT_M6_RAW_CAP}u"
     )
   fi
+  if [[ "$LINUX_MIDPAGEFRONT_M4_FLAT_MAG_CAP" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_FLAT_MAG_CAP=1)
+  fi
+  if [[ "$LINUX_MIDPAGEFRONT_M4_STATS" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_STATS=1)
+  fi
 fi
 if [[ "$LINUX_OWNERHUB_R1" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_OWNERHUB_R1=1)
@@ -2112,6 +2144,8 @@ fi
   echo "linux_midpagefront_m5_hit_only=${LINUX_MIDPAGEFRONT_M5_HIT_ONLY}"
   echo "linux_midpagefront_m6_deferred_free=${LINUX_MIDPAGEFRONT_M6_DEFERRED_FREE}"
   echo "linux_midpagefront_m6_raw_cap=${LINUX_MIDPAGEFRONT_M6_RAW_CAP}"
+  echo "linux_midpagefront_m4_flat_mag_cap=${LINUX_MIDPAGEFRONT_M4_FLAT_MAG_CAP}"
+  echo "linux_midpagefront_m4_stats=${LINUX_MIDPAGEFRONT_M4_STATS}"
   echo "linux_midfront_m1=${LINUX_MIDFRONT_M1}"
   echo "linux_midfront_owner_fast_state=${LINUX_MIDFRONT_OWNER_FAST_STATE}"
   echo "linux_midfront_max_bytes=${LINUX_MIDFRONT_MAX_BYTES}"

@@ -128,6 +128,191 @@ and whether the direct benchmark is stressing random class misses rather than
 same-class ThreadCache hits.
 ```
 
+## Class-Mix Finding
+
+Raw output:
+
+```text
+private/raw-results/linux/midpage_direct_class_sweep_20260525_162333
+private/raw-results/linux/midpage_direct_class_range_sweep_20260525_162444
+private/raw-results/linux/hakmem_tcmalloc_range_sweep_20260525_162557
+```
+
+Direct MidPage API using the `superfast-freeelide` binary:
+
+```text
+fixed class:
+  3072   239.21M
+  4096   240.61M
+  8192   220.88M
+  16384  227.18M
+  32768  224.80M
+
+same-class variable-size ranges:
+  2049..3072    200.37M
+  3073..4096    236.13M
+  4097..8192    234.03M
+  8193..16384   226.36M
+  16385..32768  228.08M
+
+multi-class ranges:
+  2049..4096    170.66M
+  2049..8192    145.88M
+  2049..16384   135.62M
+  2049..32768   127.68M
+```
+
+Hakmem preload comparison, RUNS=3:
+
+```text
+tcmalloc:
+  2049..4096    239.47M
+  2049..8192    235.13M
+  2049..16384   230.84M
+  2049..32768   230.07M
+  16385..32768  227.71M
+
+HZ5 superfast-freeelide preload:
+  2049..4096    162.86M
+  2049..8192    151.10M
+  2049..16384   132.90M
+  2049..32768   120.67M
+  16385..32768  168.25M
+```
+
+Decision:
+
+```text
+HZ5's same-class MidPage hit path is already tcmalloc-class in the direct API.
+The large gap comes from multi-class random traffic and, in preload mode, some
+remaining free/front routing cost. The next local-r0 experiment should tune
+cache capacity/refill behavior for class mismatch, not more state elision.
+```
+
+Next experiment:
+
+```text
+MidPage M4 high-cap diagnostic:
+  keep 64KiB slabs and current class table
+  set all M4 magazine caps to 64
+  compare direct class-mix and hakmem preload r0 vs current superfast-freeelide
+```
+
+## FlatCap / ClassIndex Follow-Up
+
+Flat M4 magazine cap result:
+
+```text
+private/raw-results/linux/midpage_flatcap_direct_range_sweep_20260525_162858
+```
+
+Direct MidPage API, RUNS=5:
+
+```text
+flatcap:
+  2049..4096    132.96M
+  2049..8192    112.91M
+  2049..16384   109.37M
+  2049..32768   108.35M
+  16385..32768  173.73M
+```
+
+Decision:
+
+```text
+flatcap is no-go. Increasing every class magazine to 64 worsens random ranges
+and same-class upper-mid. The problem is not simply "cap too small"; a larger
+front cache increases footprint/pressure without solving the class-mix path.
+```
+
+M4 stats lane:
+
+```text
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-m4stats
+```
+
+Observation output:
+
+```text
+private/raw-results/linux/midpage_m4stats_direct_20260525_163131
+```
+
+Key stats, direct mix 2049..32768, iters=100000:
+
+```text
+class 16384:
+  alloc_call=213373
+  mag_hit=213373
+  refill_call=329
+  refill_local_pop=1857
+  refill_new_page=56
+  mag_full=1953
+
+class 32768:
+  alloc_call=426699
+  mag_hit=426699
+  refill_call=4317
+  refill_local_pop=31777
+  refill_new_page=163
+  mag_full=32039
+```
+
+Read:
+
+```text
+allocs still hit the magazine, but wide random mix causes many 32K local-list
+overflows/refills. That contributes, but the count is not large enough to
+explain the whole fixed-class vs random-class gap by itself.
+```
+
+Class-index if-tree:
+
+```text
+Changed hz5_midpagefront_class_index from a linear class loop to an equivalent
+fixed threshold tree.
+```
+
+Direct result:
+
+```text
+private/raw-results/linux/midpage_classindex_direct_range_sweep_20260525_163412
+
+2049..4096    186.68M  (improves from 170.66M)
+2049..8192    144.19M  (neutral)
+2049..16384   121.70M  (worse/noise vs 135.62M)
+2049..32768   125.72M  (neutral vs 127.68M)
+16385..32768  223.29M  (same-class remains high)
+```
+
+Slotswitch recheck on top of class-index + superfast-freeelide:
+
+```text
+private/raw-results/linux/midpage_classindex_slotswitch_direct_range_sweep_20260525_163514
+
+2049..4096    155.94M
+2049..8192    124.97M
+2049..16384   111.01M
+2049..32768   104.52M
+16385..32768  214.52M
+```
+
+Decision:
+
+```text
+slot-index switch/shift remains no-go in this direct/freeelide context. Keep
+the class-index threshold tree because it is semantic-preserving and helps the
+smallest mixed range, but do not pursue slotswitch.
+```
+
+Next read:
+
+```text
+HZ5 can match tcmalloc on same-class direct MidPage, but not on random class
+mix. tcmalloc is stable across ranges, so its advantage is likely a broader
+front-cache transfer/cache policy and/or free route classifier that handles
+mixed classes without per-object page/slot work becoming unpredictable.
+```
+
 ## M5a Result
 
 Raw output:
