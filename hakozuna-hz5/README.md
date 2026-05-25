@@ -161,7 +161,9 @@ run16 follow-up.
 - BenchLab HZ5 lane registry:
   `allocator-bench-lab/docs/hakozuna-hz5-lane-registry.md`
 - Private implementation work log:
-  `hakozuna-hz5/docs/HZ5_P0_ALIGNED_RUN_8192.md`
+  `hakozuna-hz5/docs/HZ5_P0_ALIGNED_RUN_8192.md`. The full lifecycle history
+  is archived under
+  `hakozuna-hz5/docs/archive/HZ5_IMPLEMENTATION_LIFECYCLE_HISTORY_2026-05.md`.
 
 The private work-log filename is historical. It started as the P0 work order
 and now records the implementation lifecycle through P14.

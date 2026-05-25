@@ -1,0 +1,80 @@
+# HZ5 Source Cleanup Plan
+
+This note tracks cleanup targets without changing allocator behavior. Use it
+before splitting active hot-path files.
+
+## Rule
+
+```text
+Do not refactor active hot paths while a benchmark hypothesis is still open.
+Split code only when the boundary is stable enough to preserve measurement
+comparability.
+```
+
+## Current Large Files
+
+| File | Current role | Cleanup status |
+| --- | --- | --- |
+| `largefront/hz5_largefront.c` | active LargeFront 128K tcmalloc-chase surface | keep intact until drain/refill direction stabilizes |
+| `midpagefront/hz5_midpagefront.c` | active PageRun64/MidPage history and saved profile implementation | defer behavior split; candidate for later archival of dead diagnostics |
+| `lowpage/hz5_lowpage64.c` | exact-route P25/P43/P45 historical hot path | do not touch during Linux general malloc work |
+| `policy/hz5_policy.c` | exact-route wrapper/policy control | do not touch unless exact-route work resumes |
+
+## Safe Near-Term Cleanup
+
+```text
+1. Keep docs short and archive long history files.
+2. Keep build aliases human-readable.
+3. Do not add runner aliases for one-off diagnostics unless measured more than
+   once.
+4. Prefer deleting or archiving no-go documentation before splitting active C.
+5. When source split begins, start with cold diagnostics or policy observers,
+   not allocation/free hot paths.
+```
+
+## Future Source Split Candidates
+
+### LargeFront
+
+Potential stable split after the current t4/r50 investigation:
+
+```text
+hz5_largefront.c:
+  public alloc/free and hot path
+
+hz5_largefront_source.c:
+  source refill, region registration, source free list
+
+hz5_largefront_remote.c:
+  owner inbox, drain budget, remote batch diagnostics
+
+hz5_largefront_policy.c:
+  L0/L1 policy observation and selectors
+
+hz5_largefront_map.c:
+  page/base/region map helpers
+```
+
+### MidPageFront
+
+Potential stable split after PageRun64 is frozen:
+
+```text
+hz5_midpagefront.c:
+  public alloc/free and PageRun64 hot path
+
+hz5_midpagefront_region.c:
+  64MiB region array and page lookup
+
+hz5_midpagefront_remote.c:
+  remote packet/ticket historical diagnostics
+
+hz5_midpagefront_magazine.c:
+  M4/M5/M6 archived diagnostics if still kept
+```
+
+## Current Decision
+
+For this cleanup phase, source cleanup is documentation and boundary mapping
+only. The active C files remain unsplit to avoid mixing refactor risk with the
+LargeFront tcmalloc-chase measurements.

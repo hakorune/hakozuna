@@ -114,6 +114,31 @@ HZ5_LINUX_DEV_BRIEF.md:
   restored to a short entry point.
   history moved to docs/archive/HZ5_LINUX_DEV_BRIEF_HISTORY_2026-05.md.
 
+HZ5_LINUX_ROUTE_LANE_MATRIX.md:
+  shortened to current route/lane naming rules.
+  history moved to docs/archive/HZ5_LINUX_ROUTE_LANE_MATRIX_HISTORY_2026-05.md.
+
+HZ5_BENCH_RESULTS_INDEX.md:
+  shortened to current active evidence index.
+  history moved to docs/archive/HZ5_BENCH_RESULTS_INDEX_HISTORY_2026-05.md.
+
+HZ5_P0_ALIGNED_RUN_8192.md:
+  shortened to lifecycle index.
+  history moved to docs/archive/HZ5_IMPLEMENTATION_LIFECYCLE_HISTORY_2026-05.md.
+
+HZ5_LINUX_LOCAL2P_DESIGN.md:
+  shortened to current Local2P profile boundary.
+  history moved to docs/archive/HZ5_LINUX_LOCAL2P_DESIGN_HISTORY_2026-05.md.
+
+HZ5_P43I_P43O_ALGO_CONSULT.md:
+  shortened to current exact-route consultation summary.
+  history moved to docs/archive/HZ5_P43I_P43O_ALGO_CONSULT_HISTORY_2026-05.md.
+
+HZ5_SOURCE_CLEANUP_PLAN.md:
+  added source-code split plan.
+  active LargeFront/MidPageFront C files are intentionally not split until the
+  current LargeFront tcmalloc-chase measurement direction stabilizes.
+
 build_linux_hz5_standalone.sh:
   argument parser moved to linux/hz5_build_arg_parser.sh.
 
@@ -146,6 +171,7 @@ hakozuna-hz5/midpagefront/hz5_midpagefront.c:
 2. hakozuna-hz5/docs/HZ5_LINUX_PROFILE_MATRIX.md
 3. hakozuna-hz5/docs/HZ5_LINUX_LANE_COMBINATIONS.md
 4. linux/HZ5_BUILD_SCRIPT_LAYOUT.md
-5. hakozuna-hz5/docs/archive/HZ5_LINUX_PROFILE_MATRIX_HISTORY_2026-05.md
-6. hakozuna-hz5/docs/archive/current_task_2026-05-hz5-linux-post-largefront.md
+5. hakozuna-hz5/docs/HZ5_SOURCE_CLEANUP_PLAN.md
+6. hakozuna-hz5/docs/archive/HZ5_LINUX_PROFILE_MATRIX_HISTORY_2026-05.md
+7. hakozuna-hz5/docs/archive/current_task_2026-05-hz5-linux-post-largefront.md
 ```
