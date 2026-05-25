@@ -598,6 +598,67 @@ Decision:
   gating avoids none of the relevant cost; source16 remains the r90 direction.
 ```
 
+### `hz5-linux-large128-chunk16`
+
+Role:
+
+```text
+LargeFront 128K chunk owner-inbox diagnostic
+```
+
+Build:
+
+```text
+--linux-hz5-profile-large128-chunk16
+```
+
+Runner:
+
+```text
+hz5-large128-chunk16
+```
+
+Status:
+
+```text
+diagnostic only
+source batch16 + remote batch16
+remote batch flush publishes fixed-size span pointer chunks to the owner
+instead of a linked span list.
+
+Question:
+  can a chunk/array owner inbox reduce source16's list traversal and
+  remainder pointer chasing on large128 r90?
+
+RUNS=3:
+  private/raw-results/linux/hz5_large128_chunk16_r3
+
+  t4/r50:
+    chunk16    9.71M /  97MB
+    source16  15.04M /  58MB
+    tcmalloc  31.17M /  47MB
+
+  t4/r90:
+    chunk16    6.35M / 207MB
+    source16  24.68M /  43MB
+    tcmalloc  25.55M /  56MB
+
+  t8/r50:
+    chunk16   21.58M /  84MB
+    source16  26.56M /  68MB
+    tcmalloc  26.03M /  79MB
+
+  t8/r90:
+    chunk16   12.68M / 204MB
+    source16  16.94M / 129MB
+    tcmalloc  16.17M / 136MB
+
+Decision:
+  no-go.
+  the naive chunk inbox adds more metadata/RSS overhead than it removes from
+  list traversal. Keep source16 as the r90 lane.
+```
+
 Policy-L0 owner-drain detail after adding `owner_hold`, `owner_orphan`, and
 `owner_state_fail` counters:
 

@@ -85,6 +85,18 @@ LargeFront gated remote-first diagnostic:
     no-go.
     worse than source16 on both t4/r90 and t8/r90.
 
+LargeFront chunk inbox diagnostic:
+  implemented and measured.
+  128K remote batch publishes span pointers as owner-inbox chunks instead of
+  span linked lists.
+  purpose:
+    reduce source16 owner-inbox list traversal / remainder pointer chasing.
+  result:
+    private/raw-results/linux/hz5_large128_chunk16_r3
+    no-go.
+    chunk metadata/pool and drain overhead are heavier than source16 list
+    inbox; RSS also regresses.
+
 Lane naming cleanup:
   committed L7 as a diagnostic checkpoint.
   current cleanup adds human-facing aliases while preserving historical names:

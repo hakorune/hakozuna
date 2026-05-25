@@ -129,6 +129,7 @@ LINUX_LARGEFRONT_L1=0
 LINUX_LARGEFRONT_OWNER_FAST_STATE=0
 LINUX_LARGEFRONT_OWNER_INBOX=0
 LINUX_LARGEFRONT_REMOTE_BATCH=0
+LINUX_LARGEFRONT_REMOTE_CHUNK_INBOX=0
 LINUX_LARGEFRONT_DRAIN_TAKE_FIRST=0
 LINUX_LARGEFRONT_DRAIN_TAKE_ONLY=0
 LINUX_LARGEFRONT_DRAIN_POP_BUDGET=0
@@ -153,6 +154,8 @@ LINUX_LARGEFRONT_POLICY_L0=0
 LINUX_LARGEFRONT_POLICY_L1A=0
 LINUX_LARGEFRONT_POLICY_L1B=0
 LINUX_LARGEFRONT_REMOTE_BATCH_CAP=16
+LINUX_LARGEFRONT_REMOTE_CHUNK_CAP=16
+LINUX_LARGEFRONT_REMOTE_CHUNK_POOL_CAP=65536
 LINUX_LARGEFRONT_SOURCE_BATCH_COUNT=16
 LINUX_LARGEFRONT_SCAVENGE_LOCAL_CAP=4
 LINUX_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET=0
@@ -216,6 +219,9 @@ Options:
   --linux-hz5-profile-large128-remote-first-gated
                      human alias: 128K alloc checks owner inbox before local
                      free list only when inbox is nonempty
+  --linux-hz5-profile-large128-chunk16
+                     human alias: source batch16 + remote batch16 using
+                     128K owner chunk inbox
   --linux-hz5-profile-pagerun64-large128-b16-policy-l7
                      diagnostic alias: source batch16 with drain1-hold4 and
                      remainder-size local conversion policy
@@ -1086,6 +1092,14 @@ while [[ $# -gt 0 ]]; do
     --linux-hz5-profile-large128-remote-first-gated)
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 16
       LINUX_LARGEFRONT_REMOTE_FIRST_GATED_128K=1
+      shift
+      ;;
+    --linux-hz5-profile-large128-chunk16)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_large128_batch_base 16
+      LINUX_LARGEFRONT_REMOTE_BATCH=1
+      LINUX_LARGEFRONT_REMOTE_BATCH_CAP=16
+      LINUX_LARGEFRONT_REMOTE_CHUNK_INBOX=1
+      LINUX_LARGEFRONT_REMOTE_CHUNK_CAP=16
       shift
       ;;
     --linux-hz5-profile-pagerun64-large128-b16-policy-l7|--linux-hz5-profile-large128-policy-l7)
@@ -2920,6 +2934,15 @@ if [[ "$LINUX_LARGEFRONT_L1" -eq 1 ]]; then
       -DHZ5_LARGEFRONT_REMOTE_BATCH_CAP="${LINUX_LARGEFRONT_REMOTE_BATCH_CAP}u"
     )
   fi
+  if [[ "$LINUX_LARGEFRONT_REMOTE_CHUNK_INBOX" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX=1)
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_BATCH=1)
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_CHUNK_INBOX=1)
+    COMMON_FLAGS+=(
+      -DHZ5_LARGEFRONT_REMOTE_CHUNK_CAP="${LINUX_LARGEFRONT_REMOTE_CHUNK_CAP}u"
+      -DHZ5_LARGEFRONT_REMOTE_CHUNK_POOL_CAP="${LINUX_LARGEFRONT_REMOTE_CHUNK_POOL_CAP}u"
+    )
+  fi
   if [[ "$LINUX_LARGEFRONT_DRAIN_TAKE_FIRST" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX=1)
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_TAKE_FIRST=1)
@@ -3150,6 +3173,7 @@ fi
   echo "linux_largefront_owner_fast_state=${LINUX_LARGEFRONT_OWNER_FAST_STATE}"
   echo "linux_largefront_owner_inbox=${LINUX_LARGEFRONT_OWNER_INBOX}"
   echo "linux_largefront_remote_batch=${LINUX_LARGEFRONT_REMOTE_BATCH}"
+  echo "linux_largefront_remote_chunk_inbox=${LINUX_LARGEFRONT_REMOTE_CHUNK_INBOX}"
   echo "linux_largefront_drain_take_first=${LINUX_LARGEFRONT_DRAIN_TAKE_FIRST}"
   echo "linux_largefront_drain_take_only=${LINUX_LARGEFRONT_DRAIN_TAKE_ONLY}"
   echo "linux_largefront_drain_pop_budget=${LINUX_LARGEFRONT_DRAIN_POP_BUDGET}"
@@ -3174,6 +3198,8 @@ fi
   echo "linux_largefront_policy_l1a=${LINUX_LARGEFRONT_POLICY_L1A}"
   echo "linux_largefront_policy_l1b=${LINUX_LARGEFRONT_POLICY_L1B}"
   echo "linux_largefront_remote_batch_cap=${LINUX_LARGEFRONT_REMOTE_BATCH_CAP}"
+  echo "linux_largefront_remote_chunk_cap=${LINUX_LARGEFRONT_REMOTE_CHUNK_CAP}"
+  echo "linux_largefront_remote_chunk_pool_cap=${LINUX_LARGEFRONT_REMOTE_CHUNK_POOL_CAP}"
   echo "linux_largefront_source_batch_count=${LINUX_LARGEFRONT_SOURCE_BATCH_COUNT}"
   echo "linux_largefront_scavenge_local_cap=${LINUX_LARGEFRONT_SCAVENGE_LOCAL_CAP}"
   echo "linux_largefront_alloc_drain_local_budget=${LINUX_LARGEFRONT_ALLOC_DRAIN_LOCAL_BUDGET}"

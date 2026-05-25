@@ -29,6 +29,18 @@
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_BATCH 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_CHUNK_INBOX
+#define BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_CHUNK_INBOX 0
+#endif
+
+#ifndef HZ5_LARGEFRONT_REMOTE_CHUNK_CAP
+#define HZ5_LARGEFRONT_REMOTE_CHUNK_CAP 16u
+#endif
+
+#ifndef HZ5_LARGEFRONT_REMOTE_CHUNK_POOL_CAP
+#define HZ5_LARGEFRONT_REMOTE_CHUNK_POOL_CAP 65536u
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_TAKE_FIRST
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_DRAIN_TAKE_FIRST 0
 #endif
@@ -242,6 +254,16 @@ typedef struct Hz5LargeRegionLink {
   struct Hz5LargeRegionLink* next;
 } Hz5LargeRegionLink;
 
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_CHUNK_INBOX
+typedef struct Hz5LargeRemoteChunk {
+  struct Hz5LargeRemoteChunk* next;
+  uint16_t count;
+  uint16_t class_index;
+  Hz5OwnerToken owner;
+  Hz5LargeSpan* spans[HZ5_LARGEFRONT_REMOTE_CHUNK_CAP];
+} Hz5LargeRemoteChunk;
+#endif
+
 typedef struct Hz5LargeTls {
   Hz5OwnerToken owner;
   Hz5LargeSpan* free_head[HZ5_LARGEFRONT_CLASS_COUNT];
@@ -257,6 +279,11 @@ typedef struct Hz5LargeTls {
   uint32_t remote_batch_cap;
   Hz5LargeSpan* remote_batch_head;
   Hz5LargeSpan* remote_batch_tail;
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_CHUNK_INBOX
+  Hz5LargeRemoteChunk* chunk_pool;
+  uint32_t chunk_next;
+  uint32_t chunk_cap;
+#endif
 } Hz5LargeTls;
 
 typedef struct Hz5LargeRawNode {
@@ -286,6 +313,11 @@ static pthread_mutex_t g_hz5_largefront_region_lock =
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_OWNER_INBOX
 static _Atomic(void*) g_hz5_largefront_owner_inbox[UINT16_MAX + 1u]
                                                  [HZ5_LARGEFRONT_CLASS_COUNT];
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_CHUNK_INBOX
+static _Atomic(Hz5LargeRemoteChunk*)
+    g_hz5_largefront_owner_chunk_inbox[UINT16_MAX + 1u]
+                                      [HZ5_LARGEFRONT_CLASS_COUNT];
+#endif
 #endif
 static Hz5LargeSpan* g_hz5_largefront_global_free[HZ5_LARGEFRONT_CLASS_COUNT];
 static pthread_mutex_t g_hz5_largefront_global_lock =
@@ -1393,6 +1425,77 @@ static int hz5_largefront_remote_publish_list(Hz5OwnerToken owner,
   return 1;
 }
 
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_CHUNK_INBOX
+static Hz5LargeRemoteChunk* hz5_largefront_tls_chunk_alloc(Hz5LargeTls* tls) {
+  if (!tls) {
+    return NULL;
+  }
+  if (!tls->chunk_pool) {
+    size_t bytes = sizeof(Hz5LargeRemoteChunk) *
+                   (size_t)HZ5_LARGEFRONT_REMOTE_CHUNK_POOL_CAP;
+    void* mem = mmap(NULL,
+                     bytes,
+                     PROT_READ | PROT_WRITE,
+                     MAP_PRIVATE | MAP_ANONYMOUS,
+                     -1,
+                     0);
+    if (mem == MAP_FAILED) {
+      return NULL;
+    }
+    tls->chunk_pool = (Hz5LargeRemoteChunk*)mem;
+    tls->chunk_cap = HZ5_LARGEFRONT_REMOTE_CHUNK_POOL_CAP;
+    tls->chunk_next = 0;
+  }
+  if (tls->chunk_next >= tls->chunk_cap) {
+    return NULL;
+  }
+  return &tls->chunk_pool[tls->chunk_next++];
+}
+
+static int hz5_largefront_remote_publish_chunk(Hz5LargeTls* tls,
+                                               Hz5OwnerToken owner,
+                                               uint32_t class_index,
+                                               Hz5LargeSpan* head,
+                                               uint32_t count) {
+  if (!hz5_largefront_can_publish_to_owner(owner, class_index, head) ||
+      count == 0u || count > HZ5_LARGEFRONT_REMOTE_CHUNK_CAP ||
+      hz5_largefront_class_bytes(class_index) != 131072u) {
+    return 0;
+  }
+  Hz5LargeRemoteChunk* chunk = hz5_largefront_tls_chunk_alloc(tls);
+  if (!chunk) {
+    return 0;
+  }
+
+  chunk->next = NULL;
+  chunk->count = (uint16_t)count;
+  chunk->class_index = (uint16_t)class_index;
+  chunk->owner = owner;
+  Hz5LargeSpan* span = head;
+  for (uint32_t i = 0; i < count; ++i) {
+    if (!span) {
+      chunk->count = (uint16_t)i;
+      break;
+    }
+    Hz5LargeSpan* next = span->next;
+    span->next = NULL;
+    chunk->spans[i] = span;
+    span = next;
+  }
+
+  Hz5LargeRemoteChunk* old_head = NULL;
+  _Atomic(Hz5LargeRemoteChunk*)* inbox =
+      &g_hz5_largefront_owner_chunk_inbox[owner.slot][class_index];
+  do {
+    old_head = atomic_load_explicit(inbox, memory_order_acquire);
+    chunk->next = old_head;
+  } while (!atomic_compare_exchange_weak_explicit(
+      inbox, &old_head, chunk, memory_order_release, memory_order_acquire));
+  hz5_ownerhub_mark_pending(owner, HZ5_OWNERHUB_FRONT_LARGE, class_index);
+  return 1;
+}
+#endif
+
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_BATCH
 static void hz5_largefront_remote_batch_flush(Hz5LargeTls* tls) {
   if (!tls || tls->remote_batch_count == 0u) {
@@ -1408,6 +1511,20 @@ static void hz5_largefront_remote_batch_flush(Hz5LargeTls* tls) {
   hz5_largefront_policy_l1b_note_remote_flush(tls,
                                               tls->remote_batch_class,
                                               tls->remote_batch_count);
+#endif
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_CHUNK_INBOX
+  if (hz5_largefront_remote_publish_chunk(tls,
+                                          tls->remote_batch_owner,
+                                          tls->remote_batch_class,
+                                          tls->remote_batch_head,
+                                          tls->remote_batch_count)) {
+    tls->remote_batch_owner = k_hz5_largefront_no_owner;
+    tls->remote_batch_class = 0;
+    tls->remote_batch_count = 0;
+    tls->remote_batch_head = NULL;
+    tls->remote_batch_tail = NULL;
+    return;
+  }
 #endif
   if (!hz5_largefront_remote_publish_list(tls->remote_batch_owner,
                                           tls->remote_batch_class,
@@ -1536,6 +1653,65 @@ static Hz5LargeSpan* hz5_largefront_drain_remote_class_pop_budget(
 }
 #endif
 
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_CHUNK_INBOX
+static Hz5LargeSpan* hz5_largefront_drain_chunk_inbox(
+    Hz5LargeTls* tls,
+    uint32_t class_index,
+    uint32_t* drained_out) {
+  uint32_t drained = 0;
+  if (!tls || tls->owner.slot == 0 ||
+      class_index >= HZ5_LARGEFRONT_CLASS_COUNT) {
+    if (drained_out) {
+      *drained_out = 0;
+    }
+    return NULL;
+  }
+
+  _Atomic(Hz5LargeRemoteChunk*)* inbox =
+      &g_hz5_largefront_owner_chunk_inbox[tls->owner.slot][class_index];
+  hz5_ownerhub_clear_pending(tls->owner,
+                             HZ5_OWNERHUB_FRONT_LARGE,
+                             class_index);
+  Hz5LargeRemoteChunk* chunk =
+      atomic_exchange_explicit(inbox, NULL, memory_order_acq_rel);
+  Hz5LargeSpan* taken = NULL;
+  while (chunk) {
+    Hz5LargeRemoteChunk* next_chunk = chunk->next;
+    for (uint32_t i = 0; i < chunk->count; ++i) {
+      Hz5LargeSpan* span = chunk->spans[i];
+      if (!span) {
+        continue;
+      }
+      if (!hz5_owner_equal(span->owner, tls->owner)) {
+        hz5_largefront_mark_orphan(span);
+        continue;
+      }
+      if (!taken &&
+          hz5_largefront_state_cas(span,
+                                   (unsigned char)HZ5_LARGESPAN_REMOTE_PENDING,
+                                   (unsigned char)HZ5_LARGESPAN_ACTIVE)) {
+        hz5_largefront_payload_reactivate(span);
+        taken = span;
+        continue;
+      }
+      if (hz5_largefront_state_cas(span,
+                                   (unsigned char)HZ5_LARGESPAN_REMOTE_PENDING,
+                                   (unsigned char)HZ5_LARGESPAN_LOCAL_FREE)) {
+        hz5_largefront_local_push(tls, class_index, span);
+        ++drained;
+      } else {
+        hz5_largefront_mark_orphan(span);
+      }
+    }
+    chunk = next_chunk;
+  }
+  if (drained_out) {
+    *drained_out = drained;
+  }
+  return taken;
+}
+#endif
+
 static Hz5LargeSpan* hz5_largefront_drain_remote_class_budget(
     Hz5LargeTls* tls,
     uint32_t class_index,
@@ -1549,6 +1725,17 @@ static Hz5LargeSpan* hz5_largefront_drain_remote_class_budget(
     }
     return NULL;
   }
+
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_REMOTE_CHUNK_INBOX
+  Hz5LargeSpan* chunk_taken =
+      hz5_largefront_drain_chunk_inbox(tls, class_index, &drained);
+  if (chunk_taken) {
+    if (drained_out) {
+      *drained_out = drained;
+    }
+    return chunk_taken;
+  }
+#endif
 
   _Atomic(void*)* inbox =
       &g_hz5_largefront_owner_inbox[tls->owner.slot][class_index];

@@ -44,6 +44,7 @@ HZ5_PAGERUN64_LARGE_POLICY_L8_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5
 HZ5_PAGERUN64_LARGE_GLOBAL_REMOTE_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-large128-global-remote"
 HZ5_PAGERUN64_LARGE_REMOTE_FIRST_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-large128-remote-first"
 HZ5_PAGERUN64_LARGE_REMOTE_FIRST_GATED_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-large128-remote-first-gated"
+HZ5_PAGERUN64_LARGE_CHUNK16_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-large128-chunk16"
 HZ5_PAGERUN64_LARGE_B16_RB32_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-pagerun64-large128-b16-rb32"
 HZ5_PAGERUN64_LARGE_B16_RB64_OUT="${ROOT_DIR}/hakozuna-hz5/out/linux/x86_64-hz5-profile-pagerun64-large128-b16-rb64"
 
@@ -78,6 +79,7 @@ Options:
                        hz5-large128-global-remote,
                        hz5-large128-remote-first,
                        hz5-large128-remote-first-gated,
+                       hz5-large128-chunk16,
                        hz5-large128-policy-l7,
                        hz5-large128-policy-l8-shadow
   --outdir DIR         output directory
@@ -233,6 +235,11 @@ build_hz5() {
       --linux-hz5-profile-large128-remote-first-gated \
       --out-dir "${HZ5_PAGERUN64_LARGE_REMOTE_FIRST_GATED_OUT}" >/dev/null
   fi
+  if [[ ",${ALLOCATORS}," == *",hz5-large128-chunk16,"* ]]; then
+    "${ROOT_DIR}/linux/build_linux_hz5_standalone.sh" \
+      --linux-hz5-profile-large128-chunk16 \
+      --out-dir "${HZ5_PAGERUN64_LARGE_CHUNK16_OUT}" >/dev/null
+  fi
   if [[ ",${ALLOCATORS}," == *",hz5-pagerun64-large128-b16-rb32,"* ]]; then
     "${ROOT_DIR}/linux/build_linux_hz5_standalone.sh" \
       --linux-hz5-profile-pagerun64-large128-b16-rb32 \
@@ -264,6 +271,7 @@ HZ5_PAGERUN64_LARGE_POLICY_L8_SO="${HZ5_PAGERUN64_LARGE_POLICY_L8_OUT}/libhakozu
 HZ5_PAGERUN64_LARGE_GLOBAL_REMOTE_SO="${HZ5_PAGERUN64_LARGE_GLOBAL_REMOTE_OUT}/libhakozuna_hz5_preload_full.so"
 HZ5_PAGERUN64_LARGE_REMOTE_FIRST_SO="${HZ5_PAGERUN64_LARGE_REMOTE_FIRST_OUT}/libhakozuna_hz5_preload_full.so"
 HZ5_PAGERUN64_LARGE_REMOTE_FIRST_GATED_SO="${HZ5_PAGERUN64_LARGE_REMOTE_FIRST_GATED_OUT}/libhakozuna_hz5_preload_full.so"
+HZ5_PAGERUN64_LARGE_CHUNK16_SO="${HZ5_PAGERUN64_LARGE_CHUNK16_OUT}/libhakozuna_hz5_preload_full.so"
 HZ5_PAGERUN64_LARGE_B16_RB32_SO="${HZ5_PAGERUN64_LARGE_B16_RB32_OUT}/libhakozuna_hz5_preload_full.so"
 HZ5_PAGERUN64_LARGE_B16_RB64_SO="${HZ5_PAGERUN64_LARGE_B16_RB64_OUT}/libhakozuna_hz5_preload_full.so"
 
@@ -295,6 +303,7 @@ ALLOC_SO[hz5-large128-policy-l8-shadow]="${HZ5_PAGERUN64_LARGE_POLICY_L8_SO}"
 ALLOC_SO[hz5-large128-global-remote]="${HZ5_PAGERUN64_LARGE_GLOBAL_REMOTE_SO}"
 ALLOC_SO[hz5-large128-remote-first]="${HZ5_PAGERUN64_LARGE_REMOTE_FIRST_SO}"
 ALLOC_SO[hz5-large128-remote-first-gated]="${HZ5_PAGERUN64_LARGE_REMOTE_FIRST_GATED_SO}"
+ALLOC_SO[hz5-large128-chunk16]="${HZ5_PAGERUN64_LARGE_CHUNK16_SO}"
 ALLOC_SO[hz5-pagerun64-large128-b16-rb32]="${HZ5_PAGERUN64_LARGE_B16_RB32_SO}"
 ALLOC_SO[hz5-pagerun64-large128-b16-rb64]="${HZ5_PAGERUN64_LARGE_B16_RB64_SO}"
 
@@ -383,6 +392,7 @@ extract_rss() {
   echo "hz5_large128_global_remote_so=${HZ5_PAGERUN64_LARGE_GLOBAL_REMOTE_SO}"
   echo "hz5_large128_remote_first_so=${HZ5_PAGERUN64_LARGE_REMOTE_FIRST_SO}"
   echo "hz5_large128_remote_first_gated_so=${HZ5_PAGERUN64_LARGE_REMOTE_FIRST_GATED_SO}"
+  echo "hz5_large128_chunk16_so=${HZ5_PAGERUN64_LARGE_CHUNK16_SO}"
   echo "hz5_pagerun64_large128_b16_rb32_so=${HZ5_PAGERUN64_LARGE_B16_RB32_SO}"
   echo "hz5_pagerun64_large128_b16_rb64_so=${HZ5_PAGERUN64_LARGE_B16_RB64_SO}"
 } > "${OUTDIR}/meta.txt"
