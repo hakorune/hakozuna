@@ -36,14 +36,14 @@ Next implementation target is RSS governor / empty-slab release.
 ## Active Implementation
 
 ```text
-MidPage RSS Governor R1:
+MidPage RSS Governor R3:
   empty owner-local 64KiB slabs are purged from local caches,
   returned to the region source list,
-  and madvise(DONTNEED)'d before reuse.
+  and madvise(DONTNEED)'d outside the allocator hot path.
 
 Candidate presets:
-  band8/16/32-rssgov
-  band8/32-rssgov
+  band8/16/32-rsscheckpoint
+  band8/32-rsscheckpoint
 
 R1 smoke:
   RSS improves, but runtime madvise is too expensive for a speed profile.
@@ -52,8 +52,17 @@ R2 smoke:
   release on refill/miss avoids direct free-path madvise, but still does not
   make rssgov a speed-profile candidate.
 
-Next:
-  add explicit checkpoint / phase-boundary empty-slab release API.
+R3:
+  add hz5_midpagefront_release_retired() and benchmark-side
+  release_retired_at_end so worker TLS retired lists can be released at a
+  phase boundary.
+
+R3 smoke:
+  cap=512 proves checkpoint release can drop current RSS, but retirement during
+  the run still costs throughput.
+
+  cap=4096 avoids retirement on direct r0 and restores band8/32-class speed
+  with current RSS around 71MB.
 ```
 
 ## Recent Results
@@ -86,5 +95,6 @@ Class dispersion is a real speed lever, but RSS decides promotion.
 ## Next Step
 
 ```text
-Implement RSS governor / empty-slab release for coarse MidPage profiles.
+Measure rsscheckpoint on r50/r90 or preload rows next. Direct r0 is not the
+problem case; remote-heavy retention is.
 ```

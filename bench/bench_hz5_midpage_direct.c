@@ -1,5 +1,5 @@
 // Usage:
-//   bench_hz5_midpage_direct [threads] [iters] [working_set] [min_size] [max_size] [pattern] [phase_len]
+//   bench_hz5_midpage_direct [threads] [iters] [working_set] [min_size] [max_size] [pattern] [phase_len] [release_retired_at_end]
 //
 // pattern:
 //   random: random size in [min_size, max_size] (default)
@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 typedef enum Hz5MidPageDirectPattern {
   HZ5_MIDPAGE_DIRECT_RANDOM = 0,
@@ -36,8 +37,10 @@ typedef struct Hz5MidPageDirectArg {
   size_t range_count;
   Hz5MidPageDirectRange ranges[8];
   Hz5MidPageDirectPattern pattern;
+  int release_retired_at_end;
   uint64_t alloc_failures;
   uint64_t free_failures;
+  uint64_t released_retired;
 } Hz5MidPageDirectArg;
 
 static const Hz5MidPageDirectRange k_hz5_midpage_direct_classes[] = {
@@ -57,6 +60,24 @@ static uint64_t hz5_midpage_direct_now_ns(void) {
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
   return (uint64_t)ts.tv_sec * UINT64_C(1000000000) + (uint64_t)ts.tv_nsec;
+}
+
+static uint64_t hz5_midpage_direct_current_rss_kb(void) {
+  FILE* f = fopen("/proc/self/statm", "r");
+  if (!f) {
+    return 0;
+  }
+  unsigned long resident_pages = 0;
+  int scanned = fscanf(f, "%*s %lu", &resident_pages);
+  fclose(f);
+  if (scanned != 1) {
+    return 0;
+  }
+  long page_size = sysconf(_SC_PAGESIZE);
+  if (page_size <= 0) {
+    return 0;
+  }
+  return (uint64_t)resident_pages * (uint64_t)page_size / UINT64_C(1024);
 }
 
 static Hz5MidPageDirectPattern hz5_midpage_direct_parse_pattern(
@@ -182,6 +203,9 @@ static void* hz5_midpage_direct_thread(void* arg) {
       ++ta->free_failures;
     }
   }
+  if (ta->release_retired_at_end) {
+    ta->released_retired = hz5_midpagefront_release_retired();
+  }
   free(slots);
   return NULL;
 }
@@ -194,6 +218,7 @@ int main(int argc, char** argv) {
   size_t max_size = 32768;
   Hz5MidPageDirectPattern pattern = HZ5_MIDPAGE_DIRECT_RANDOM;
   size_t phase_len = 4096;
+  int release_retired_at_end = 0;
 
   if (argc > 1) {
     threads = (size_t)strtoull(argv[1], NULL, 10);
@@ -215,6 +240,9 @@ int main(int argc, char** argv) {
   }
   if (argc > 7) {
     phase_len = (size_t)strtoull(argv[7], NULL, 10);
+  }
+  if (argc > 8) {
+    release_retired_at_end = atoi(argv[8]) != 0;
   }
 
   if (threads == 0) {
@@ -251,6 +279,7 @@ int main(int argc, char** argv) {
     args[i].min_size = min_size;
     args[i].max_size = max_size;
     args[i].pattern = pattern;
+    args[i].release_retired_at_end = release_retired_at_end;
     args[i].phase_len = phase_len;
     args[i].range_count = range_count;
     for (size_t j = 0; j < range_count; ++j) {
@@ -267,35 +296,43 @@ int main(int argc, char** argv) {
 
   uint64_t alloc_failures = 0;
   uint64_t free_failures = 0;
+  uint64_t released_retired = 0;
   for (size_t i = 0; i < threads; ++i) {
     pthread_join(tids[i], NULL);
     alloc_failures += args[i].alloc_failures;
     free_failures += args[i].free_failures;
+    released_retired += args[i].released_retired;
   }
   uint64_t end = hz5_midpage_direct_now_ns();
+  uint64_t current_rss_kb = hz5_midpage_direct_current_rss_kb();
 
   double sec = (double)(end - start) / 1000000000.0;
   double total_ops = (double)threads * (double)iters;
   double ops_per_s = sec > 0.0 ? total_ops / sec : 0.0;
 
   printf("[BENCH_HZ5_MIDPAGE_DIRECT] threads=%zu iters=%zu ws=%zu "
-         "min_size=%zu max_size=%zu pattern=%s phase_len=%zu\n",
+         "min_size=%zu max_size=%zu pattern=%s phase_len=%zu "
+         "release_retired_at_end=%d\n",
          threads,
          iters,
          working_set,
          min_size,
          max_size,
          hz5_midpage_direct_pattern_name(pattern),
-         phase_len);
+         phase_len,
+         release_retired_at_end);
   printf("bench_hz5_midpage_direct: threads=%zu ops=%.0f time=%.6f "
          "ops/s=%.2f\n",
          threads,
          total_ops,
          sec,
          ops_per_s);
-  printf("[STATS] alloc_failures=%llu free_failures=%llu\n",
+  printf("[STATS] alloc_failures=%llu free_failures=%llu "
+         "released_retired=%llu current_rss_kb=%llu\n",
          (unsigned long long)alloc_failures,
-         (unsigned long long)free_failures);
+         (unsigned long long)free_failures,
+         (unsigned long long)released_retired,
+         (unsigned long long)current_rss_kb);
 
   free(tids);
   free(args);

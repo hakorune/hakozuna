@@ -36,6 +36,7 @@ int hz5_midpagefront_can_handle(size_t size, size_t align);
 int hz5_midpagefront_owns(void* ptr);
 size_t hz5_midpagefront_usable_size(void* ptr);
 void hz5_midpagefront_owner_drain_some(unsigned budget);
+size_t hz5_midpagefront_release_retired(void);
 
 #ifdef __cplusplus
 }

@@ -97,10 +97,12 @@ band4/8/32:
 band8/16/32:
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-16-32
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-16-32-rssgov
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-16-32-rsscheckpoint
 
 band8/32:
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rssgov
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint
 
 wide32k:
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-wide32k
@@ -137,16 +139,25 @@ Do not add more mappings before implementing RSS governor / empty-slab release.
 ```text
 flag:
   --linux-midpagefront-empty-slab-release
+  --linux-midpagefront-empty-release-checkpoint
   --linux-midpagefront-empty-retain-cap N
 
 coarse presets:
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-16-32-rssgov
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rssgov
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-16-32-rsscheckpoint
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint
 
 behavior:
   when an owner-local MidPage slab becomes fully cached, purge its local cache
   entries, return it to the region source list, and madvise the 64KiB slab with
   MADV_DONTNEED
+
+checkpoint behavior:
+  rsscheckpoint disables release-on-refill and requires an explicit
+  hz5_midpagefront_release_retired() call. The direct benchmark exposes this as
+  release_retired_at_end=1 so each worker can release its own TLS retired slabs
+  after its final frees.
 
 purpose:
   measure whether coarse speed profiles can pass final-RSS / retention gates
@@ -155,7 +166,8 @@ purpose:
 status:
   diagnostic only after R1 smoke; runtime madvise reduces RSS but costs too much
   throughput for a speed profile. R2 moved actual release to refill/miss, but
-  this is still diagnostic rather than a promotion candidate.
+  this is still diagnostic rather than a promotion candidate. R3 isolates the
+  release cost into an explicit phase-boundary checkpoint.
 ```
 
 ## Latest Evidence

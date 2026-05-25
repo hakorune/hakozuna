@@ -122,6 +122,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_EMPTY_SLAB_RELEASE 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_EMPTY_RELEASE_ON_REFILL
+#define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_EMPTY_RELEASE_ON_REFILL 1
+#endif
+
 #ifndef HZ5_MIDPAGEFRONT_EMPTY_RETAIN_CAP
 #define HZ5_MIDPAGEFRONT_EMPTY_RETAIN_CAP 64u
 #endif
@@ -1071,6 +1075,7 @@ static void hz5_midpagefront_m4_cache_slot(Hz5MidPageTls* tls,
 }
 
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_EMPTY_SLAB_RELEASE && \
+    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_MAGAZINE && \
     BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_REGION_ARRAY
 static void hz5_midpagefront_m4_purge_magazine_page(Hz5MidPageTls* tls,
                                                     uint32_t class_index,
@@ -1139,23 +1144,23 @@ static void hz5_midpagefront_source_free_slab(uint32_t class_index,
                 HZ5_MIDPAGEFRONT_SLAB_BYTES,
                 MADV_DONTNEED);
   pthread_mutex_lock(&g_hz5_midpagefront_region_lock);
-    page->source_free = 1;
-    page->empty_retained = 0;
-    page->retired_empty = 0;
-    page->retired_next = NULL;
-    page->source_next = g_hz5_midpagefront_source_free[class_index];
-    g_hz5_midpagefront_source_free[class_index] = page;
+  page->source_free = 1;
+  page->empty_retained = 0;
+  page->retired_empty = 0;
+  page->retired_next = NULL;
+  page->source_next = g_hz5_midpagefront_source_free[class_index];
+  g_hz5_midpagefront_source_free[class_index] = page;
   pthread_mutex_unlock(&g_hz5_midpagefront_region_lock);
 }
 
-static void hz5_midpagefront_m4_release_retired_one(Hz5MidPageTls* tls,
-                                                    uint32_t class_index) {
+static size_t hz5_midpagefront_m4_release_retired_one(Hz5MidPageTls* tls,
+                                                      uint32_t class_index) {
   if (!tls || !hz5_midpagefront_class_valid(class_index)) {
-    return;
+    return 0;
   }
   Hz5MidPage* page = tls->retired_empty[class_index];
   if (!page) {
-    return;
+    return 0;
   }
   tls->retired_empty[class_index] = page->retired_next;
   page->retired_next = NULL;
@@ -1165,6 +1170,20 @@ static void hz5_midpagefront_m4_release_retired_one(Hz5MidPageTls* tls,
   }
   page->owner = k_hz5_midpagefront_no_owner;
   hz5_midpagefront_source_free_slab(class_index, page);
+  return 1;
+}
+
+static size_t hz5_midpagefront_m4_release_retired_all(Hz5MidPageTls* tls) {
+  size_t released = 0;
+  if (!tls) {
+    return 0;
+  }
+  for (uint32_t ci = 0; ci < HZ5_MIDPAGEFRONT_CLASS_COUNT; ++ci) {
+    while (tls->retired_empty[ci]) {
+      released += hz5_midpagefront_m4_release_retired_one(tls, ci);
+    }
+  }
+  return released;
 }
 
 static void hz5_midpagefront_m4_try_release_empty_page(Hz5MidPageTls* tls,
@@ -2328,7 +2347,9 @@ static int hz5_midpagefront_m4_refill_magazine(Hz5MidPageTls* tls,
   hz5_midpagefront_m4_stat_inc_class(
       g_hz5_midpagefront_m4_stat_refill_call, class_index);
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_EMPTY_SLAB_RELEASE
-  hz5_midpagefront_m4_release_retired_one(tls, class_index);
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_EMPTY_RELEASE_ON_REFILL
+  (void)hz5_midpagefront_m4_release_retired_one(tls, class_index);
+#endif
 #endif
   if (tls->magazine_count[class_index] != 0u) {
     return 1;
@@ -2692,6 +2713,16 @@ void hz5_midpagefront_owner_drain_some(unsigned budget) {
 #endif
 }
 
+size_t hz5_midpagefront_release_retired(void) {
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_EMPTY_SLAB_RELEASE && \
+    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_MAGAZINE && \
+    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_REGION_ARRAY
+  return hz5_midpagefront_m4_release_retired_all(hz5_midpagefront_tls());
+#else
+  return 0;
+#endif
+}
+
 #else
 
 void* hz5_midpagefront_alloc(size_t size, size_t align) {
@@ -2734,6 +2765,10 @@ size_t hz5_midpagefront_usable_size(void* ptr) {
 
 void hz5_midpagefront_owner_drain_some(unsigned budget) {
   (void)budget;
+}
+
+size_t hz5_midpagefront_release_retired(void) {
+  return 0;
 }
 
 #endif

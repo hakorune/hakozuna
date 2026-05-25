@@ -87,6 +87,7 @@ band8/32-rssgov cap=64:
 
 band8/32-rssgov cap=512:
    67.20M ops/s, maxrss 62960 KB
+```
 
 R2 changed release timing:
 
@@ -114,4 +115,81 @@ high for a speed profile. R2 moves release to refill/miss, but the cost profile
 is still not a speed-profile candidate. Keep the lane as an RSS diagnostic.
 The next design should expose an explicit checkpoint / phase-boundary release
 API instead of releasing during allocator hot paths.
+```
+
+## RSS Governor R3 Checkpoint Lane
+
+Implementation:
+
+```text
+API:
+  hz5_midpagefront_release_retired()
+
+build:
+  --linux-midpagefront-empty-release-checkpoint
+
+coarse presets:
+  band8/16/32-rsscheckpoint
+  band8/32-rsscheckpoint
+
+benchmark:
+  bench_hz5_midpage_direct ... [release_retired_at_end]
+```
+
+Read:
+
+```text
+R3 tests phase-boundary release. The direct benchmark calls the release API
+inside each worker after final frees, because the retired empty slabs are
+thread-local. Report released_retired and current_rss_kb; maxrss alone does not
+show post-checkpoint reclamation.
+```
+
+Initial direct smoke, `threads=8 iters=1000000 ws=4000 2049..32768 random`:
+
+```text
+band8/32-rsscheckpoint cap=512, checkpoint=0:
+   94.07M ops/s, current_rss 182784 KB, maxrss 183040 KB,
+   released_retired 0
+
+band8/32-rsscheckpoint cap=512, checkpoint=1:
+   78.71M ops/s, current_rss 53624 KB, maxrss 181120 KB,
+   released_retired 20293
+
+band8/32-rsscheckpoint cap=4096, checkpoint=0:
+   98.16M ops/s, current_rss 71168 KB, maxrss 71296 KB,
+   released_retired 0
+
+band8/32-rsscheckpoint cap=4096, checkpoint=1:
+  105.44M ops/s, current_rss 71296 KB, maxrss 71552 KB,
+   released_retired 0
+
+band8/16/32-rsscheckpoint cap=4096, checkpoint=0:
+  102.46M ops/s, current_rss 74240 KB, maxrss 74368 KB,
+   released_retired 0
+
+band8/16/32-rsscheckpoint cap=4096, checkpoint=1:
+   98.23M ops/s, current_rss 74368 KB, maxrss 74496 KB,
+   released_retired 0
+```
+
+Preload mixed smoke, `bench_mixed_ws_crt 8 500000 4000 2049 32768`:
+
+```text
+band8/32-rsscheckpoint cap=4096:
+  105.19M ops/s, maxrss 72704 KB
+
+band8/16/32-rsscheckpoint cap=4096:
+  104.03M ops/s, maxrss 74624 KB
+```
+
+Read:
+
+```text
+checkpoint release works when slabs are retired, but cap=512 retires too many
+slabs during the run and hurts throughput. cap=4096 avoids retirement in this
+direct row, restores band8/32-class speed, and keeps current RSS near the
+original direct baseline. Short preload smoke also stays around 104-105M ops/s
+with 72-75MB maxrss. The next useful check is r50/r90, where remote-heavy
+retention was the real problem.
 ```

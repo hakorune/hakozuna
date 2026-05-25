@@ -89,6 +89,7 @@ LINUX_MIDPAGEFRONT_M4_OVERFLOW_ARRAY=0
 LINUX_MIDPAGEFRONT_WIDE_32K_CLASS=0
 LINUX_MIDPAGEFRONT_COARSE_BANDS=0
 LINUX_MIDPAGEFRONT_EMPTY_SLAB_RELEASE=0
+LINUX_MIDPAGEFRONT_EMPTY_RELEASE_ON_REFILL=1
 LINUX_MIDPAGEFRONT_EMPTY_RETAIN_CAP=64
 LINUX_MIDPAGEFRONT_M4_STATS=0
 LINUX_MIDFRONT_M1=0
@@ -299,12 +300,18 @@ Options:
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rssgov
                      RSS diagnostic preset: band8/32 plus empty MidPage
                      slab release
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint
+                     RSS diagnostic preset: band8/32 plus explicit checkpoint
+                     release only; no release on allocator refill/miss
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-16-32
                      diagnostic preset: superfast-freeelide plus coarse
                      MidPage bands 8K/16K/32K
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-16-32-rssgov
                      RSS diagnostic preset: band8/16/32 plus empty MidPage
                      slab release
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-16-32-rsscheckpoint
+                     RSS diagnostic preset: band8/16/32 plus explicit
+                     checkpoint release only; no release on refill/miss
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band16-32
                      diagnostic preset: superfast-freeelide plus coarse
                      MidPage bands 16K/32K
@@ -320,6 +327,9 @@ Options:
   --linux-midpagefront-empty-slab-release
                      MidPageFront RSS diagnostic: return fully cached
                      64KiB slabs to the region source and madvise them
+  --linux-midpagefront-empty-release-checkpoint
+                     with empty-slab release enabled, do not release retired
+                     slabs on refill; require hz5_midpagefront_release_retired
   --linux-midpagefront-empty-retain-cap N
                      number of fully cached MidPage slabs retained per
                      thread/class before empty-slab release (default: 64)
@@ -668,6 +678,11 @@ enable_midpage_m4packet_freefirst_tlslink_coarse_bands_base() {
 enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rssgov_base() {
   enable_midpage_m4packet_freefirst_tlslink_coarse_bands_base "$1"
   LINUX_MIDPAGEFRONT_EMPTY_SLAB_RELEASE=1
+}
+
+enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_base() {
+  enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rssgov_base "$1"
+  LINUX_MIDPAGEFRONT_EMPTY_RELEASE_ON_REFILL=0
 }
 
 enable_midpage_m4packet_freefirst_tlslink_tagfree_base() {
@@ -1202,12 +1217,20 @@ while [[ $# -gt 0 ]]; do
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rssgov_base 2
       shift
       ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_base 2
+      shift
+      ;;
     --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-16-32)
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_base 6
       shift
       ;;
     --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-16-32-rssgov)
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rssgov_base 6
+      shift
+      ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-16-32-rsscheckpoint)
+      enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_base 6
       shift
       ;;
     --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band16-32)
@@ -1229,6 +1252,11 @@ while [[ $# -gt 0 ]]; do
       ;;
     --linux-midpagefront-empty-slab-release)
       LINUX_MIDPAGEFRONT_EMPTY_SLAB_RELEASE=1
+      shift
+      ;;
+    --linux-midpagefront-empty-release-checkpoint)
+      LINUX_MIDPAGEFRONT_EMPTY_SLAB_RELEASE=1
+      LINUX_MIDPAGEFRONT_EMPTY_RELEASE_ON_REFILL=0
       shift
       ;;
     --linux-midpagefront-empty-retain-cap)
@@ -2114,6 +2142,10 @@ if [[ "$LINUX_MIDPAGEFRONT_M2" -eq 1 ]]; then
       -DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_EMPTY_SLAB_RELEASE=1
       -DHZ5_MIDPAGEFRONT_EMPTY_RETAIN_CAP="${LINUX_MIDPAGEFRONT_EMPTY_RETAIN_CAP}u"
     )
+    if [[ "$LINUX_MIDPAGEFRONT_EMPTY_RELEASE_ON_REFILL" -eq 0 ]]; then
+      COMMON_FLAGS+=(
+        -DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_EMPTY_RELEASE_ON_REFILL=0)
+    fi
   fi
   if [[ "$LINUX_MIDPAGEFRONT_M4_STATS" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_STATS=1)
@@ -2295,6 +2327,7 @@ fi
   echo "linux_midpagefront_wide_32k_class=${LINUX_MIDPAGEFRONT_WIDE_32K_CLASS}"
   echo "linux_midpagefront_coarse_bands=${LINUX_MIDPAGEFRONT_COARSE_BANDS}"
   echo "linux_midpagefront_empty_slab_release=${LINUX_MIDPAGEFRONT_EMPTY_SLAB_RELEASE}"
+  echo "linux_midpagefront_empty_release_on_refill=${LINUX_MIDPAGEFRONT_EMPTY_RELEASE_ON_REFILL}"
   echo "linux_midpagefront_empty_retain_cap=${LINUX_MIDPAGEFRONT_EMPTY_RETAIN_CAP}"
   echo "linux_midpagefront_m4_stats=${LINUX_MIDPAGEFRONT_M4_STATS}"
   echo "linux_midfront_m1=${LINUX_MIDFRONT_M1}"
