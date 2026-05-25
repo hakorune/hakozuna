@@ -81,4 +81,5 @@ For this cleanup phase, active C hot paths remain intact. Small diagnostic-only
 helpers may be split into include-local files when that reduces churn in the
 main implementation without changing build/link behavior. The current
 LargeFront splits are `hz5_largefront_transfer128.inc` and
-`hz5_largefront_policy.inc`.
+`hz5_largefront_policy.inc`. MidPage now also keeps cold stats in
+`hz5_midpagefront_stats.inc`.
