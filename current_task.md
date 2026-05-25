@@ -95,6 +95,7 @@ private/raw-results/linux/hz5_large128_drainbulk_r3_20260526_061000
 private/raw-results/linux/hz5_large128_drainbulk_tail_r3_20260526_061107
 private/raw-results/linux/hz5_large128_draintrust_r3_20260526_061614
 private/raw-results/linux/hz5_large128_draintrustbulk_manual_r3_20260526_061931
+private/raw-results/linux/hz5_large128_draintrust_budget1_manual_r3_20260526_062121
 ```
 
 ## Next Engineering Direction
@@ -118,8 +119,10 @@ private/raw-results/linux/hz5_large128_draintrustbulk_manual_r3_20260526_061931
 9. Draintrust shows the drain CAS cost matters, especially t8/r50, but r90
    regressions mean trusted REMOTE_PENDING->LOCAL_FREE is not a broad profile.
 10. Draintrust+drainbulk composition is no-go in manual RUNS=3.
-11. Do not add another policy until a concrete hotspot explains the row split.
-12. Keep speed lanes free of HZ5_PRELOAD_STATS and hot-path counters.
+11. Draintrust+budget1 is a t4/r50-only local optimum: 29.56M on manual RUNS=3,
+   but t4/r90 and t8 rows collapse. Do not add it as a named lane.
+12. Do not add another policy until a concrete hotspot explains the row split.
+13. Keep speed lanes free of HZ5_PRELOAD_STATS and hot-path counters.
 ```
 
 ## Cleanup Status
