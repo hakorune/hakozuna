@@ -594,3 +594,87 @@ page+bitset transfer cache.
 Keep M8 as diagnostic only. The saved remote profile remains C7 band8/32 +
 M6 remote-only deferred free.
 ```
+
+## M6 Cap / Flush Sweep
+
+RUNS=5 candidates, same hakmem row:
+
+```text
+cap32_refill:
+  r0 62.80M, r50 26.47M, r90 19.59M
+
+cap64_refill:
+  r0 63.25M, r50 26.57M, r90 19.68M
+
+cap128_refill:
+  r0 60.49M, r50 26.72M, r90 19.46M
+
+cap64_norefill:
+  r0 61.94M, r50 26.27M, r90 19.58M
+```
+
+Read:
+
+```text
+M6 raw cap / refill scheduling is not the remaining large lever. cap64/refill
+remains the simplest saved default. All tested variants kept overflow at zero.
+```
+
+## M9 Budgeted Owner Drain Diagnostic
+
+Implementation:
+
+```text
+preset:
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-m9budget
+
+design:
+  drain remote_packet_bits only until the current magazine can be filled
+  restore leftover remote bits to the page and requeue it
+```
+
+Smoke:
+
+```text
+M9 budget drain:
+  r0:  46.50M, maxrss  75904 KB
+  r50: 20.86M, maxrss 128088 KB
+  r90: 17.44M, maxrss 158660 KB
+```
+
+Read:
+
+```text
+M9 is no-go. Budgeting/requeueing the packet drain costs more than the current
+drain-all path on this workload.
+```
+
+## M10 Flat Remote Slot Ring Diagnostic
+
+Implementation:
+
+```text
+preset:
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m10slot
+
+design:
+  remote free stores {page, slot} in a flat TLS ring
+  no M7 page aggregation
+  flush uses page+slot directly, removing M6 raw pointer reclassification
+```
+
+Smoke:
+
+```text
+M10 flat slot ring:
+  r0:  45.62M, maxrss  75520 KB
+  r50: 21.32M, maxrss 128872 KB
+  r90: 17.49M, maxrss 161856 KB
+```
+
+Read:
+
+```text
+M10 is no-go. Removing the second page_for_ptr/slot_index is not enough to win;
+producer-side queue representation is unlikely to be the next large lever.
+```

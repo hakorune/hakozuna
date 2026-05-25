@@ -335,6 +335,51 @@ Worker audit after M7/M8:
     3. M6 remote cap/flush scheduling sweep:
        no-code/low-code signal using cap 32/64/128/256 and no-refill-flush.
 
+M6 cap/flush sweep:
+  Built cap 32/64/128/256 with refill and no-refill-flush variants.
+  Single-run scan:
+    all variants kept overflow_sent=0 and overflow_pending=0
+    r50/r90 differences were small
+  RUNS=5 candidates:
+    cap32_refill:
+      r0 62.80M, r50 26.47M, r90 19.59M
+    cap64_refill:
+      r0 63.25M, r50 26.57M, r90 19.68M
+    cap128_refill:
+      r0 60.49M, r50 26.72M, r90 19.46M
+    cap64_norefill:
+      r0 61.94M, r50 26.27M, r90 19.58M
+
+Read:
+  M6 cap/flush scheduling is not the main remaining lever. cap64/refill remains
+  the simplest saved default. Proceed to budgeted owner drain.
+
+M9 budgeted owner drain:
+  Implemented diagnostic:
+    remote_packet_bits are drained only up to current magazine capacity
+    remaining bits are restored to the page and requeued
+
+  Single smoke:
+    r0 46.50M, r50 20.86M, r90 17.44M
+    RSS stayed in band, overflow zero
+
+  Read:
+    no-go. Budget/requeue management loses to existing drain-all behavior.
+
+M10 flat remote slot ring:
+  Implemented diagnostic:
+    remote free stores {page, slot} in a flat TLS ring
+    no M7 page aggregation / linear page-batch search
+    flush uses page+slot directly, avoiding M6 raw pointer reclassification
+
+  Single smoke:
+    r0 45.62M, r50 21.32M, r90 17.49M
+    RSS stayed in band, overflow zero
+
+  Read:
+    no-go. Removing second page_for_ptr/slot_index does not recover throughput.
+    Producer-side queue representation is unlikely to be the next big lever.
+
 Perf plan:
   Run speed-lane perf separately for HZ5 M6 remote, HZ4, and tcmalloc on
   r0/r50/r90. Do not enable HZ5 stats/counters in these medians.
