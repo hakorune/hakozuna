@@ -194,6 +194,8 @@ static pthread_mutex_t g_hz5_largefront_source_lock =
 static pthread_mutex_t g_hz5_largefront_map_lock = PTHREAD_MUTEX_INITIALIZER;
 static _Thread_local Hz5LargeTls g_hz5_largefront_tls;
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_ADAPTIVE128
+// Diagnostic-only L3 policy state. This is intentionally updated only while
+// holding the source lock; do not move it into malloc/free hot paths.
 static size_t g_hz5_largefront_mapped_spans[HZ5_LARGEFRONT_CLASS_COUNT];
 #endif
 

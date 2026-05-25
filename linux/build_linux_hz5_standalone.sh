@@ -813,6 +813,10 @@ enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pa
   LINUX_MIDPAGEFRONT_PAGERUN=1
 }
 
+# Saved MidPage/LargeFront profile family:
+#   pagerun64           main/mid/cross64 candidate
+#   pagerun64-takefirst cross-size fixed profile base
+#   pagerun64-adaptive  diagnostic/no-go in mapped-bytes-only form
 enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_base() {
   enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun_base "$1"
   LINUX_MIDPAGEFRONT_PAGERUN_64K=1

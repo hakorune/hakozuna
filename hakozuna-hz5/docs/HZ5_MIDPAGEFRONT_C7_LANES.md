@@ -1,5 +1,11 @@
 # HZ5 MidPageFront C7 Lane Matrix
 
+Current high-level Linux profile registry:
+
+```text
+docs/HZ5_LINUX_PROFILE_MATRIX.md
+```
+
 MidPageFront-C7 is the current Linux general-allocator direction for ordinary
 malloc sizes `2049..32768`. The core finding is:
 
