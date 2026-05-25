@@ -21,6 +21,7 @@ comparability.
 | `midpagefront/hz5_midpagefront.c` | active PageRun64/MidPage history and saved profile implementation | defer behavior split; candidate for later archival of dead diagnostics |
 | `midpagefront/hz5_midpagefront_stats.inc` | MidPage nodeless/M4 cold stats helpers | split out from `hz5_midpagefront.c`; keep include-local until the diagnostics stabilize |
 | `midpagefront/hz5_midpagefront_m4_pagerun.inc` | MidPage M4 remote packet and PageRun helper cluster | split out from `hz5_midpagefront.c`; keep include-local while the pagerun profile settles |
+| `midpagefront/hz5_midpagefront_nodeless.inc` | MidPage nodeless partial / ptrcache / hot-slot helpers | split out from `hz5_midpagefront.c`; keep include-local while the nodeless diagnostic lane settles |
 | `midfront/hz5_midfront_remote_batch.inc` | MidFront remote batch helper cluster | split out from `hz5_midfront.c`; keep include-local while the remote-batch profile settles |
 | `lowpage/hz5_lowpage64_p43o.inc` | LowPage P43O admission/projection diagnostics | split out from `hz5_lowpage64.c`; keep include-local while the admission probes settle |
 | `lowpage/hz5_lowpage64_p43_segment_helpers.inc` | LowPage P43 segment lookup/slot-mask helper cluster | split out from `hz5_lowpage64_p43_segment.c`; keep include-local while the segment-slot source stabilizes |
@@ -92,8 +93,9 @@ helpers may be split into include-local files when that reduces churn in the
 main implementation without changing build/link behavior. The current
 LargeFront splits are `hz5_largefront_transfer128.inc` and
 `hz5_largefront_policy.inc`. MidPage now also keeps cold stats in
-`hz5_midpagefront_stats.inc` plus the M4 remote/PageRun cluster in
-`hz5_midpagefront_m4_pagerun.inc`, and LowPage now keeps P43g helpers in
+`hz5_midpagefront_stats.inc`, plus the M4 remote/PageRun cluster in
+`hz5_midpagefront_m4_pagerun.inc`, plus the nodeless diagnostic lane in
+`hz5_midpagefront_nodeless.inc`, and LowPage now keeps P43g helpers in
 `hz5_lowpage64_p43g.inc`, P43O diagnostics in `hz5_lowpage64_p43o.inc`, plus
 P43 segment lookup/slot-mask helpers in `hz5_lowpage64_p43_segment_helpers.inc`,
 P43P/P44/P45 bridge diagnostics in `hz5_lowpage64_p43p_bridge.inc`, plus P45
