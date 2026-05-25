@@ -802,6 +802,75 @@ Read:
   The remaining t4/r50 gap is not solved by a simple owner-local remote stash.
 ```
 
+## Latest Policy-L0 Owner Drain Detail
+
+```text
+code change:
+  Policy-L0 owner drain counters now include:
+    owner_hold
+    owner_orphan
+    owner_state_fail
+
+result roots:
+  private/raw-results/linux/hz5_largefront_policy_l0_ownerdetail_20260526_041526
+  private/raw-results/linux/hz5_largefront_policy_l0_ownerdetail_variants_20260526_041555
+```
+
+Key rows:
+
+```text
+saved large128 batch4, t4/r50:
+  owner_drain=2998
+  owner_drain_spans=111632
+  owner_take_first=2998
+  owner_to_local=108634
+  owner_republish=0
+
+b16-drain1, t4/r50:
+  owner_drain=55161
+  owner_drain_spans=1821037
+  owner_take_first=55161
+  owner_to_local=55092
+  owner_republish=1710784
+
+b16-drain1, t4/r90:
+  owner_drain=99700
+  owner_drain_spans=5238351
+  owner_take_first=99700
+  owner_to_local=99623
+  owner_republish=5039028
+
+b16-drain1-hold4, t4/r50:
+  owner_drain=19402
+  owner_drain_spans=691535
+  owner_take_first=19402
+  owner_to_local=19361
+  owner_hold=77217
+  owner_republish=575555
+
+b16-drain1-hold4, t4/r90:
+  owner_drain=30156
+  owner_drain_spans=1686100
+  owner_take_first=30156
+  owner_to_local=30099
+  owner_hold=119935
+  owner_republish=1505910
+```
+
+Read:
+
+```text
+The large128 drain hotspot is dominated by repeated remote remainder churn.
+b16-drain1 repeatedly exchanges large inboxes, takes/locals one or two spans,
+then republishes most of the list.
+
+RemoteHold reduces churn but does not eliminate it, and its REMOTE_PENDING hold
+starves r90 reuse.
+
+Next design should avoid repeatedly reprocessing the same remainder list.
+Do not keep tuning hold cap alone.
+```
+
 ## Reading Order
 
 ```text
