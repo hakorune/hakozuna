@@ -556,6 +556,63 @@ If L3 continues, the next attempt should add pressure-only retained-payload
 scavenging or a better phase signal. Do not keep tuning source batch alone.
 ```
 
+### L3 retained-payload scavenging diagnostic
+
+Build:
+
+```text
+--linux-largefront-payload-scavenge
+--linux-largefront-scavenge-local-cap N
+```
+
+Combined preset:
+
+```text
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64-scavenge
+```
+
+Design:
+
+```text
+target:
+  128K LargeFront class only
+
+retention:
+  owner-local free list keeps a small number of retained spans
+
+pressure action:
+  when retained count exceeds the cap, madvise(DONTNEED) the user payload
+  keep the prefix/descriptor page mapped
+
+reuse:
+  clear the scavenged flag on LOCAL_FREE->ACTIVE or global reuse
+```
+
+This is intentionally separate from adaptive128 source batching. The diagnostic
+keeps source batch selection fixed and asks whether retained payload RSS can be
+controlled without adding malloc/free hot-path counters.
+
+First result:
+
+```text
+no-go
+
+cap4 and cap64 both cut retained RSS in some rows, but they also collapse r90
+throughput. The madvise point is still too close to the active remote/free
+reuse path.
+```
+
+Next decision:
+
+```text
+Keep the fixed profile split:
+  cross-size: PageRun64 + takefirst + source_batch16
+  large-only: PageRun64 + takefirst + source_batch4
+
+Do not promote scavenging unless it is moved to a colder phase boundary than
+owner-local retained free-list insertion.
+```
+
 Expected acceptance:
 
 ```text

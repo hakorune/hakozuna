@@ -116,6 +116,72 @@ batch during cross128 phases that still want batch16, and it does not rescue
 large128.
 ```
 
+### `hz5-linux-pagerun64-scavenge`
+
+Build:
+
+```text
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64-scavenge
+--linux-midpagefront-empty-retain-cap 4096
+```
+
+Intent:
+
+```text
+LargeFront-L3 diagnostic after adaptive128 no-go
+```
+
+Behavior:
+
+```text
+128K LargeFront spans only
+retained owner-local payload is madvise(DONTNEED) after a small cap
+span descriptor/prefix page remains mapped
+reuse clears the scavenged flag
+```
+
+Status:
+
+```text
+no-go as first retained-payload form
+```
+
+Smoke result:
+
+```text
+RUNS=3, threads=8, ws=100, r90, iters=120000:
+
+cross128:
+  base_b16   27.91M /  69MB
+  scav_b16    7.83M /  93MB
+  base_b4    19.22M / 101MB
+  scav_b4     7.14M /  66MB
+
+large128:
+  base_b16   18.35M / 128MB
+  scav_b16    4.11M / 185MB
+  base_b4     9.68M / 207MB
+  scav_b4     3.59M / 129MB
+```
+
+Cap64 spot check:
+
+```text
+RUNS=2, same shape:
+  scav64_b16 cross128  9.32M /  87MB
+  scav64_b16 large128  4.50M / 179MB
+  scav64_b4  cross128  8.96M /  69MB
+  scav64_b4  large128  3.87M / 124MB
+```
+
+Decision:
+
+```text
+Retained payload madvise is too close to the remote/free path. It can reduce
+RSS in some rows, but the throughput collapse is too large to promote.
+Keep fixed source-batch split.
+```
+
 ### LargeFront remote-batch
 
 Build flag:
@@ -185,8 +251,7 @@ Recommended order:
 ```text
 1. Preserve fixed profile split.
 2. Stop tuning fixed source-batch constants.
-3. If continuing LargeFront-L3, try pressure-only retained-payload scavenging
-   or a better slow-path phase signal.
+3. Do not promote retained-payload scavenging in its current form.
 4. Keep speed lanes free of HZ5_PRELOAD_STATS and diagnostic atomics.
 ```
 

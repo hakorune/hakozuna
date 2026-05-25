@@ -60,8 +60,8 @@ The first adaptive policy used mapped bytes only and failed both rows.
 If continuing LargeFront-L3:
 
 ```text
-try pressure-only retained-payload scavenging
-or a better slow-path phase signal
+validate retained-payload scavenging
+then decide whether LargeFront-L3 continues or fixed split is final
 ```
 
 Do not:
@@ -72,6 +72,34 @@ mix HZ5_PRELOAD_STATS into speed runs
 enable unbounded per-owner span/object caches
 touch Windows P43i/P45
 change MidPage PageRun64 without a clear regression reason
+```
+
+## Active Implementation
+
+```text
+LargeFront retained-payload scavenging diagnostic:
+  flag:
+    --linux-largefront-payload-scavenge
+
+  combined preset:
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64-scavenge
+
+  behavior:
+    only 128K LargeFront spans
+    owner-local retained free list keeps a small cap
+    cap overflow madvise(DONTNEED)s payload only
+    descriptor/prefix page remains mapped
+    reuse clears the scavenged flag
+
+  reason:
+    adaptive128 source-batch policy was too blunt
+    scavenging tests whether RSS can be controlled without changing source
+    batch selection or adding hot-path counters
+
+  first result:
+    no-go
+    cap4 and cap64 both cut RSS but regress r90 throughput heavily
+    madvise on retained spans is too close to the remote/free hot path
 ```
 
 ## Reading Order

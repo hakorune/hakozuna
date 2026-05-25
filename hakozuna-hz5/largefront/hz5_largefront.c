@@ -55,8 +55,16 @@
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_ADAPTIVE128 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_PAYLOAD_SCAVENGE
+#define BENCHLAB_HZ5_LINUX_LARGEFRONT_PAYLOAD_SCAVENGE 0
+#endif
+
 #ifndef HZ5_LARGEFRONT_REMOTE_BATCH_CAP
 #define HZ5_LARGEFRONT_REMOTE_BATCH_CAP 16u
+#endif
+
+#ifndef HZ5_LARGEFRONT_SCAVENGE_LOCAL_CAP
+#define HZ5_LARGEFRONT_SCAVENGE_LOCAL_CAP 4u
 #endif
 
 #ifndef HZ5_LARGEFRONT_ADAPTIVE128_MID_BYTES
@@ -70,6 +78,7 @@
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_LARGEFRONT_L1
 
 #define HZ5_LARGEFRONT_MAGIC UINT64_C(0x485A354C41524731)
+#define HZ5_LARGEFRONT_SPAN_PAYLOAD_SCAVENGED 0x0001u
 #define HZ5_LARGEFRONT_PAGE_SIZE ((size_t)4096)
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_LOWER_CLASSES
 #define HZ5_LARGEFRONT_CLASS_COUNT 8u
@@ -150,6 +159,7 @@ typedef struct Hz5LargeRegionLink {
 typedef struct Hz5LargeTls {
   Hz5OwnerToken owner;
   Hz5LargeSpan* free_head[HZ5_LARGEFRONT_CLASS_COUNT];
+  uint32_t free_count[HZ5_LARGEFRONT_CLASS_COUNT];
   Hz5OwnerToken remote_batch_owner;
   uint32_t remote_batch_class;
   uint32_t remote_batch_count;
@@ -237,6 +247,33 @@ static size_t hz5_largefront_span_stride(uint32_t class_index) {
   return HZ5_LARGEFRONT_PAGE_SIZE +
          (size_t)hz5_largefront_class_bytes(class_index);
 }
+
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_PAYLOAD_SCAVENGE
+static int hz5_largefront_payload_scavenge_class(uint32_t class_index) {
+  return hz5_largefront_class_valid(class_index) &&
+         hz5_largefront_class_bytes(class_index) == 131072u;
+}
+
+static void hz5_largefront_payload_scavenge(Hz5LargeSpan* span) {
+  if (!span || !span->base || span->class_bytes == 0u ||
+      (span->flags & HZ5_LARGEFRONT_SPAN_PAYLOAD_SCAVENGED)) {
+    return;
+  }
+  (void)madvise(span->base, (size_t)span->class_bytes, MADV_DONTNEED);
+  span->flags |= HZ5_LARGEFRONT_SPAN_PAYLOAD_SCAVENGED;
+}
+
+static void hz5_largefront_payload_reactivate(Hz5LargeSpan* span) {
+  if (!span) {
+    return;
+  }
+  span->flags &= (uint16_t)~HZ5_LARGEFRONT_SPAN_PAYLOAD_SCAVENGED;
+}
+#else
+static void hz5_largefront_payload_reactivate(Hz5LargeSpan* span) {
+  (void)span;
+}
+#endif
 
 static size_t hz5_largefront_hash(uintptr_t page_base) {
   uintptr_t x = page_base >> 12;
@@ -518,6 +555,13 @@ static void hz5_largefront_local_push(Hz5LargeTls* tls,
                                       Hz5LargeSpan* span) {
   span->next = tls->free_head[class_index];
   tls->free_head[class_index] = span;
+  ++tls->free_count[class_index];
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_PAYLOAD_SCAVENGE
+  if (hz5_largefront_payload_scavenge_class(class_index) &&
+      tls->free_count[class_index] > HZ5_LARGEFRONT_SCAVENGE_LOCAL_CAP) {
+    hz5_largefront_payload_scavenge(span);
+  }
+#endif
 }
 
 static Hz5LargeSpan* hz5_largefront_local_pop(Hz5LargeTls* tls,
@@ -527,6 +571,9 @@ static Hz5LargeSpan* hz5_largefront_local_pop(Hz5LargeTls* tls,
     return NULL;
   }
   tls->free_head[class_index] = span->next;
+  if (tls->free_count[class_index] != 0u) {
+    --tls->free_count[class_index];
+  }
   span->next = NULL;
   return span;
 }
@@ -536,6 +583,11 @@ static void hz5_largefront_global_push(uint32_t class_index,
   if (!hz5_largefront_class_valid(class_index) || !span) {
     return;
   }
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_PAYLOAD_SCAVENGE
+  if (hz5_largefront_payload_scavenge_class(class_index)) {
+    hz5_largefront_payload_scavenge(span);
+  }
+#endif
   pthread_mutex_lock(&g_hz5_largefront_global_lock);
   span->next = g_hz5_largefront_global_free[class_index];
   g_hz5_largefront_global_free[class_index] = span;
@@ -590,6 +642,7 @@ static int hz5_largefront_activate_local_for_owner(Hz5LargeTls* tls,
     return 0;
   }
   span->owner = tls->owner;
+  hz5_largefront_payload_reactivate(span);
   return 1;
 }
 
@@ -601,6 +654,7 @@ static int hz5_largefront_activate_global_for_owner(Hz5LargeTls* tls,
     return 0;
   }
   span->owner = tls->owner;
+  hz5_largefront_payload_reactivate(span);
   return 1;
 }
 
@@ -770,6 +824,7 @@ static Hz5LargeSpan* hz5_largefront_drain_remote_class_budget(
                                  (unsigned char)HZ5_LARGESPAN_REMOTE_PENDING,
                                  (unsigned char)HZ5_LARGESPAN_ACTIVE)) {
       span->next = NULL;
+      hz5_largefront_payload_reactivate(span);
       taken = span;
       continue;
     }
