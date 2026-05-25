@@ -104,28 +104,33 @@ current_task.md:
   shortened to current state.
   history moved to docs/archive/current_task_2026-05-hz5-linux-post-largefront.md.
 
+HZ5_LINUX_DEV_BRIEF.md:
+  restored to a short entry point.
+  history moved to docs/archive/HZ5_LINUX_DEV_BRIEF_HISTORY_2026-05.md.
+
 build_linux_hz5_standalone.sh:
   argument parser moved to linux/hz5_build_arg_parser.sh.
 
 linux/hz5_build_arg_parser.sh:
   human-facing profile aliases moved to linux/hz5_build_profile_aliases.sh.
-  parser now owns low-level feature flags and value parsing.
+  parser is now a short dispatcher.
+  low-level feature flags split into exact/midpage/front-end groups.
+
+build_linux_hz5_standalone.sh:
+  reduced below 1000 lines.
+  long usage text, compound profile helpers, validation, and build-config
+  output moved to focused linux/hz5_build_*.sh helpers.
 ```
 
 Remaining cleanup candidates:
 
 ```text
-linux/build_linux_hz5_standalone.sh:
-  still large because defaults, flag emission, meta output, and build commands
-  are in one file.
-
-linux/hz5_build_arg_parser.sh:
-  still long because all low-level feature flags are centralized.
-  next split candidate is Local2P / preload / front-end flag groups.
-
 hakozuna-hz5/largefront/hz5_largefront.c:
   large but acceptable during active optimization.
   only refactor after measurements stabilize.
+
+hakozuna-hz5/midpagefront/hz5_midpagefront.c:
+  large but active/stable enough to defer until allocator behavior settles.
 ```
 
 ## Reading Order
@@ -134,6 +139,7 @@ hakozuna-hz5/largefront/hz5_largefront.c:
 1. current_task.md
 2. hakozuna-hz5/docs/HZ5_LINUX_PROFILE_MATRIX.md
 3. hakozuna-hz5/docs/HZ5_LINUX_LANE_COMBINATIONS.md
-4. hakozuna-hz5/docs/archive/HZ5_LINUX_PROFILE_MATRIX_HISTORY_2026-05.md
-5. hakozuna-hz5/docs/archive/current_task_2026-05-hz5-linux-post-largefront.md
+4. linux/HZ5_BUILD_SCRIPT_LAYOUT.md
+5. hakozuna-hz5/docs/archive/HZ5_LINUX_PROFILE_MATRIX_HISTORY_2026-05.md
+6. hakozuna-hz5/docs/archive/current_task_2026-05-hz5-linux-post-largefront.md
 ```

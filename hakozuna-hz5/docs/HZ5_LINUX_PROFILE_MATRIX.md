@@ -22,6 +22,12 @@ Low-level feature flags are parsed in:
 linux/hz5_build_arg_parser.sh
 ```
 
+Build script ownership is documented in:
+
+```text
+linux/HZ5_BUILD_SCRIPT_LAYOUT.md
+```
+
 ## Current Read
 
 ```text
