@@ -256,6 +256,67 @@ decision:
   also too expensive and lose the strong batch16 r90 row
 ```
 
+### `hz5-linux-pagerun64-large-only-b16-remotehold4`
+
+Role:
+
+```text
+LargeFront-L6 RemoteHold diagnostic
+```
+
+Build:
+
+```text
+--linux-hz5-profile-pagerun64-large128-b16-remotehold4
+```
+
+Status:
+
+```text
+diagnostic only
+uses source batch16, take-first remote drain, and a bounded owner TLS
+REMOTE_PENDING hold cap 4 for remaining inbox spans
+
+RUNS=3 large128 smoke:
+  t4/r50  12.97M /  56MB, no-go
+  t4/r90   8.42M / 110MB, no-go
+  t8/r50   8.52M / 210MB, no-go
+  t8/r90   9.21M / 235MB, no-go
+```
+
+### `hz5-linux-pagerun64-large-only-b16-drain1-hold4`
+
+Role:
+
+```text
+LargeFront-L6 RemoteHold + drain1 diagnostic
+```
+
+Build:
+
+```text
+--linux-hz5-profile-pagerun64-large128-b16-drain1-hold4
+```
+
+Status:
+
+```text
+diagnostic only
+uses source batch16, take-first, one local-free conversion, then owner TLS
+REMOTE_PENDING hold cap 4 for remaining inbox spans
+
+RUNS=3 large128 smoke:
+  t4/r50  12.64M /  68MB, no-go
+  t4/r90   9.53M / 117MB, no-go
+  t8/r50  25.32M /  65MB, promising but narrow
+  t8/r90   8.95M / 234MB, no-go
+
+decision:
+  no promotion
+  remote hold can help one producer-pressure row, but r90 needs immediate
+  reusable local/free spans and the t4/r50 target regresses
+```
+
 ### `hz5-linux-pagerun64-large-only-b16-rb32`
 
 Role:

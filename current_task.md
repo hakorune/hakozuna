@@ -726,6 +726,82 @@ Small CAS-pop drains are also too expensive and do not preserve the strong
 batch16/t8/r90 row.
 ```
 
+## Next Design: LargeFront-L6 RemoteHold
+
+```text
+Goal:
+  keep the takefirst win, but avoid both bad remainder choices:
+    republish remainder every miss
+    convert too many remote spans to LOCAL_FREE
+
+Design:
+  owner TLS keeps bounded remote_hold[class] list.
+  held spans remain REMOTE_PENDING.
+  alloc miss checks remote_hold before owner inbox.
+  inbox drain takes one span ACTIVE and stashes remainder up to a small cap.
+
+Why:
+  b16-drain1 is closest to tcmalloc on large128/t4/r50.
+  takeonly proves takefirst can be fast but r90 starves.
+  popbudget1 proves small CAS-pop from the inbox is not the answer.
+  remote_hold keeps exchange-based inbox drain but avoids hot republish/local
+  churn for the remainder.
+
+First lanes:
+  b16-remotehold4:
+    take first ACTIVE
+    stash remainder up to 4
+    no immediate local_free conversion
+
+  b16-drain1-hold4:
+    take first ACTIVE
+    convert one extra span to LOCAL_FREE
+    stash remainder up to 4
+```
+
+Result:
+
+```text
+root:
+  private/raw-results/linux/hz5_large128_remotehold4_smoke_r3
+
+large128/t4/r50:
+  remotehold4       12.97M
+  drain1-hold4      12.64M
+  batch16           16.41M
+  tcmalloc          29.45M
+
+large128/t4/r90:
+  remotehold4        8.42M
+  drain1-hold4       9.53M
+  batch16           22.11M
+  tcmalloc          23.25M
+
+large128/t8/r50:
+  drain1-hold4      25.32M
+  tcmalloc          24.30M
+  batch16           21.87M
+
+large128/t8/r90:
+  remotehold4        9.21M
+  drain1-hold4       8.95M
+  batch16           19.82M
+  batch4            23.00M
+```
+
+Decision:
+
+```text
+RemoteHold cap4 is not a broad answer.
+It helps t8/r50 in drain1-hold4, but it badly hurts t4/r50 and r90.
+Do not promote.
+
+Read:
+  keeping REMOTE_PENDING spans in owner TLS can help some producer pressure
+  rows, but r90 needs more immediate reusable local/free spans.
+  The remaining t4/r50 gap is not solved by a simple owner-local remote stash.
+```
+
 ## Reading Order
 
 ```text
