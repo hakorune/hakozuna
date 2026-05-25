@@ -78,6 +78,7 @@ LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET=0
 LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN=0
 LINUX_MIDPAGEFRONT_M4_UNSAFE_ALLOC_ELIDE=0
 LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG=0
+LINUX_MIDPAGEFRONT_M5_HIT_ONLY=0
 LINUX_MIDFRONT_M1=0
 LINUX_MIDFRONT_OWNER_FAST_STATE=0
 LINUX_MIDFRONT_MAX_BYTES=65536
@@ -250,6 +251,9 @@ Options:
   --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-slotswitch
                      diagnostic preset: freefirst-tlslink plus fixed-class
                      MidPageFront slot-index dispatch
+  --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-m5hit
+                     candidate diagnostic: FrontCache-M5a MidPage hit-only
+                     cache entry with remote drain moved to miss/refill path
   --linux-hz5-general-midpage-region-shadow-m4packet-routefree
                      diagnostic preset: m4packet plus MidPageFront then
                      LargeFront preload free dispatch
@@ -548,6 +552,11 @@ enable_midpage_m4packet_freefirst_tlslink_regcache_base() {
 enable_midpage_m4packet_freefirst_tlslink_slotswitch_base() {
   enable_midpage_m4packet_freefirst_tlslink_base
   LINUX_MIDPAGEFRONT_SLOT_SWITCH=1
+}
+
+enable_midpage_m4packet_freefirst_tlslink_m5hit_base() {
+  enable_midpage_m4packet_freefirst_tlslink_base
+  LINUX_MIDPAGEFRONT_M5_HIT_ONLY=1
 }
 
 enable_midpage_m4packet_routefree_base() {
@@ -1022,6 +1031,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-slotswitch)
       enable_midpage_m4packet_freefirst_tlslink_slotswitch_base
+      shift
+      ;;
+    --linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-m5hit)
+      enable_midpage_m4packet_freefirst_tlslink_m5hit_base
       shift
       ;;
     --linux-hz5-general-midpage-region-shadow-m4packet-routefree)
@@ -1860,6 +1873,9 @@ if [[ "$LINUX_MIDPAGEFRONT_M2" -eq 1 ]]; then
   if [[ "$LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG" -eq 1 ]]; then
     COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG=1)
   fi
+  if [[ "$LINUX_MIDPAGEFRONT_M5_HIT_ONLY" -eq 1 ]]; then
+    COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M5_HIT_ONLY=1)
+  fi
 fi
 if [[ "$LINUX_OWNERHUB_R1" -eq 1 ]]; then
   COMMON_FLAGS+=(-DBENCHLAB_HZ5_LINUX_OWNERHUB_R1=1)
@@ -2026,6 +2042,7 @@ fi
   echo "linux_midpagefront_m4_cross_drain=${LINUX_MIDPAGEFRONT_M4_CROSS_DRAIN}"
   echo "linux_midpagefront_m4_unsafe_alloc_elide=${LINUX_MIDPAGEFRONT_M4_UNSAFE_ALLOC_ELIDE}"
   echo "linux_midpagefront_m4_unsafe_ptr_mag=${LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG}"
+  echo "linux_midpagefront_m5_hit_only=${LINUX_MIDPAGEFRONT_M5_HIT_ONLY}"
   echo "linux_midfront_m1=${LINUX_MIDFRONT_M1}"
   echo "linux_midfront_owner_fast_state=${LINUX_MIDFRONT_OWNER_FAST_STATE}"
   echo "linux_midfront_max_bytes=${LINUX_MIDFRONT_MAX_BYTES}"

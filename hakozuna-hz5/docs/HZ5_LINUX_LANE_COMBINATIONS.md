@@ -51,6 +51,7 @@ MidPageFront is the current tcmalloc chase track for ordinary malloc
 | `--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-absalloc` | freefirst-tlslink + MidPage absolute-first malloc routing | preload routing diagnostic | small r0 gain only |
 | `--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-regcache` | freefirst-tlslink + MidPage TLS region lookup cache | free classification diagnostic | no-go |
 | `--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-slotswitch` | freefirst-tlslink + fixed-class slot-index dispatch | slot arithmetic diagnostic | no-go |
+| `--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-m5hit` | freefirst-tlslink + FrontCache-M5a hit-only MidPage cache | front-cache contract diagnostic | no-go for local-r0 |
 | `--linux-hz5-general-midpage-region-shadow-m4packet-routefree` | M4packet + MidPage/Large/Small/Mid free dispatch | free-route fixed-cost diagnostic | mid_only r90 candidate-watch; not broad default |
 | `--linux-hz5-general-midpage-region-shadow-m4packet-crossdrain` | M4packet + MidPage pending drain from other-front misses | fixed-cost diagnostic | no-promote |
 

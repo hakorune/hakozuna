@@ -7,16 +7,75 @@ HZ5 Linux general allocator work is now targeting `tcmalloc`, not `mimalloc`.
 Immediate focus:
 
 ```text
-MidPageFront-M4 owner-local magazine
+FrontCache-M5 / RouteTag-R1
 ```
 
 Reason:
 
 ```text
-shadow is already close to tcmalloc on main r0/r50/r90 and mid_only r90.
-The remaining large gap is ordinary mid-size local/front-cache throughput,
-especially mid_only_r0. M2/M3 tuning showed the issue is not just slot division,
-bitmap checks, or a one-entry/current-page cache.
+M4/freefirst/tlslink reaches about 100M-107M ops/s on main/mid_only r0, but
+tcmalloc is still about 226M. allocelide, ptrmag, absalloc, regcache, and
+slotswitch showed the remaining gap is structural path length, not one isolated
+state transition or slot arithmetic issue.
+```
+
+Design doc:
+
+```text
+hakozuna-hz5/docs/HZ5_FRONTCACHE_M5_ROUTETAG_R1_DESIGN.md
+```
+
+Implementation order:
+
+```text
+1. M5a MidPage hit-only front cache.
+2. RUNS=5 local r0 smoke vs tlslink/tcmalloc.
+3. If M5a clears 135M mid_only_r0, run r0/r50/r90 matrix.
+4. RouteTag-R1 MidPage-only free classifier.
+```
+
+## M5a Result
+
+Raw output:
+
+```text
+private/raw-results/linux/midpage_m5hit_r0_smoke_20260525_101247
+```
+
+RUNS=5, threads=8, HZ5_PRELOAD_STATS unset:
+
+```text
+main_r0:
+  tlslink  106.62M
+  m5hit    107.10M
+  tcmalloc 211.32M
+
+mid_only_r0:
+  tlslink  109.95M
+  m5hit    109.74M
+  tcmalloc 226.94M
+
+cross128_r0:
+  tlslink   58.96M
+  m5hit     60.89M
+  tcmalloc  44.59M
+```
+
+Decision:
+
+```text
+M5a hit-only cache is no-go for the local-r0 tcmalloc gap. Moving remote drain
+to miss/refill and trusting internal magazine entries does not move mid_only_r0.
+Do not proceed to broad r50/r90 matrix for M5a.
+```
+
+Read:
+
+```text
+The next r0 problem is not M4 hit validation or remote-drain-on-hit. RouteTag
+can still help free classification/cross-front rows, but it is unlikely to
+solve mid_only_r0 by itself. The remaining r0 gap likely needs a thinner
+front ABI or a different slot-state/cache representation.
 ```
 
 ## Branch

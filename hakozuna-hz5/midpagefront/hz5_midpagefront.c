@@ -83,6 +83,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M5_HIT_ONLY
+#define BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M5_HIT_ONLY 0
+#endif
+
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M2
 
 #if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_NODELESS_RUN && \
@@ -194,7 +198,8 @@ typedef struct Hz5MidPagePtrCacheEntry {
 typedef struct Hz5MidPageMagEntry {
   Hz5MidPage* page;
   uint16_t slot;
-#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG || \
+    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M5_HIT_ONLY
   void* ptr;
 #endif
 } Hz5MidPageMagEntry;
@@ -744,7 +749,8 @@ static int hz5_midpagefront_m4_magazine_push(Hz5MidPageTls* tls,
   }
   tls->magazine[class_index][count].page = page;
   tls->magazine[class_index][count].slot = (uint16_t)slot;
-#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_UNSAFE_PTR_MAG || \
+    BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M5_HIT_ONLY
   tls->magazine[class_index][count].ptr =
       (void*)((uintptr_t)page->slab_base +
               (uintptr_t)slot * (uintptr_t)page->class_size);
@@ -900,7 +906,8 @@ static void* hz5_midpagefront_m4_alloc_class(uint32_t class_index) {
     return NULL;
   }
   Hz5MidPageTls* tls = hz5_midpagefront_tls();
-#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M4_REMOTE_PACKET && \
+    !BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M5_HIT_ONLY
   hz5_midpagefront_m4_remote_packet_drain_if_pending(tls, class_index);
 #endif
   while (tls->magazine_count[class_index] != 0u ||
@@ -919,6 +926,17 @@ static void* hz5_midpagefront_m4_alloc_class(uint32_t class_index) {
 #endif
     Hz5MidPage* page = entry.page;
     uint32_t slot = entry.slot;
+#if BENCHLAB_HZ5_LINUX_MIDPAGEFRONT_M5_HIT_ONLY
+    if (!hz5_midpagefront_m4_transition_owner_local(
+            page, slot, HZ5_MIDPAGE_SLOT_CACHE, HZ5_MIDPAGE_SLOT_LIVE)) {
+      continue;
+    }
+    if (entry.ptr) {
+      return entry.ptr;
+    }
+    return (void*)((uintptr_t)page->slab_base +
+                   (uintptr_t)slot * (uintptr_t)page->class_size);
+#else
     if (!page || page->magic != HZ5_MIDPAGEFRONT_MAGIC ||
         page->class_index != class_index || slot >= page->slot_count) {
       continue;
@@ -937,6 +955,7 @@ static void* hz5_midpagefront_m4_alloc_class(uint32_t class_index) {
 #endif
     return (void*)((uintptr_t)page->slab_base +
                    (uintptr_t)slot * (uintptr_t)page->class_size);
+#endif
   }
   return NULL;
 }

@@ -1554,6 +1554,48 @@ Decision:
 No-go. Slot arithmetic is not the remaining local-r0 bottleneck.
 ```
 
+### `midpage_m5hit_r0_smoke_20260525_101247`
+
+Path:
+
+```text
+private/raw-results/linux/midpage_m5hit_r0_smoke_20260525_101247
+```
+
+Purpose:
+
+```text
+FrontCache-M5a smoke: move MidPage remote drain to miss/refill and use trusted
+internal {ptr,page,slot} entries on M4 magazine hit. Performance runs keep
+HZ5_PRELOAD_STATS unset.
+```
+
+Result:
+
+```text
+main_r0:
+  tlslink  106.62M
+  m5hit    107.10M
+  tcmalloc 211.32M
+
+mid_only_r0:
+  tlslink  109.95M
+  m5hit    109.74M
+  tcmalloc 226.94M
+
+cross128_r0:
+  tlslink   58.96M
+  m5hit     60.89M
+  tcmalloc  44.59M
+```
+
+Decision:
+
+```text
+No-go for the local-r0 tcmalloc gap. Do not run a broad matrix unless a later
+RouteTag/free-classifier experiment specifically needs this component.
+```
+
 ## Older Results
 
 The full chronological result log remains in:

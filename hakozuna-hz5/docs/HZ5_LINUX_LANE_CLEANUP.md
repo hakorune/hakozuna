@@ -49,6 +49,11 @@ shorter than the historical benchmark logs.
   M4packet-freefirst-tlslink plus MidPageFront absolute-first malloc routing.
   Small r0 gain only; keep as diagnostic.
 
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-m5hit
+  FrontCache-M5a diagnostic: M4/freefirst/tlslink with hit-only MidPage cache
+  entries and remote drain moved to miss/refill. No-go for local-r0: RUNS=5
+  stayed around 110M mid_only_r0, far below the 135M threshold.
+
 --linux-hz5-general-midpage-region-shadow-m4packet-routefree
   M4packet plus MidPageFront -> LargeFront -> SmallFront -> MidFront free
   dispatch. Candidate-watch: improves local r0 and cross128 r0, but does not
