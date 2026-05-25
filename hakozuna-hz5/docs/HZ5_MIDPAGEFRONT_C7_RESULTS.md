@@ -836,7 +836,7 @@ RUNS=5:
 
 ```text
 workload:
-  bench_random_mixed_mt_remote_malloc 8 500000 4000 min max r 65536
+  bench_random_mixed_mt_remote_malloc 8 500000 4000 min max <remote_pct> 65536
 
 case       r0 ops/s   r50 ops/s  r90 ops/s  r90 maxrss
 main       92.35M     60.68M     58.52M     44.7MB
@@ -864,4 +864,56 @@ remote while using slightly more RSS.
 
 Remaining broad work is no longer the MidPage owner-local path. It is
 LargeFront/cross-size behavior in 16..131072 remote-heavy rows.
+```
+
+## C8 PageRun64 + LargeFront TakeFirst Diagnostic
+
+Preset:
+
+```text
+--linux-hz5-general-midpage-region-shadow-m4packet-freefirst-tlslink-band8-32-rsscheckpoint-m6remote-pagerun64-takefirst
+--linux-midpagefront-empty-retain-cap 4096
+```
+
+Design:
+
+```text
+PageRun64 remains unchanged.
+LargeFront keeps owner inbox and region map.
+LargeFront remote inbox drain may return the first REMOTE_PENDING span directly
+as ACTIVE instead of always pushing it through the local free list.
+```
+
+Focused sweep, RUNS=3, cross128 r90, iters=500000:
+
+```text
+base      19.56M, maxrss 466MB
+rb8       17.98M, maxrss 506MB
+rb16      24.29M, maxrss 338MB
+rb32      22.76M, maxrss 394MB
+rb16take 32.70M, maxrss 222MB
+```
+
+Broad smoke, RUNS=3:
+
+```text
+row          pagerun64             pagerun64-takefirst     hz4                  tcmalloc
+main r90     60.65M /  37MB        59.59M /  41MB          42.01M / 319MB       27.46M / 754MB
+mid r90      66.48M /  13MB        65.15M /  12MB          38.03M / 287MB       26.71M / 751MB
+cross64 r90  56.64M /  31MB        57.23M /  32MB          37.71M / 263MB       36.54M / 324MB
+cross128 r90 23.68M / 364MB        25.34M / 315MB          27.69M / 330MB       15.95M / 417MB
+large128 r90 18.53M / 514MB         6.33M / 1777MB          3.84M / 1805MB      16.29M / 525MB
+```
+
+Read:
+
+```text
+LargeFront take-first is a useful diagnostic and a cross-size lever, but it is
+not a default yet. It improves cross128 r50/r90 and keeps main/mid/cross64
+healthy, but the broader large128 r90 row still has an unstable bad case.
+
+LargeFront remote-batch should not be promoted broadly. rb16 can improve one
+cross128 r90 sweep, but it regresses large-only remote rows and increases RSS
+risk. The next clean direction is either a safer take-first gate or a LargeFront
+remote path that avoids delayed publish without over-retaining spans.
 ```

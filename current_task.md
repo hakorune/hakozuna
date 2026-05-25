@@ -545,7 +545,7 @@ Implementation result:
     M4 remote inbox storage is reused only as the owner wakeup/list mechanism.
 
   RUNS=5, same workload:
-    bench_random_mixed_mt_remote_malloc 8 500000 4000 2049 32768 r 65536
+    bench_random_mixed_mt_remote_malloc 8 500000 4000 2049 32768 <remote_pct> 65536
 
     allocator       r0 ops/s    r50 ops/s   r90 ops/s   r90 maxrss
     hz5-pagerun     92.55M      66.24M      66.01M      12.7MB
@@ -627,3 +627,62 @@ Read:
   cross128 r90 recovers versus PageRun32 and beats tcmalloc, but still trails
   HZ4 and is roughly tied with old M6 remote while using slightly more RSS.
   The remaining broad gap is LargeFront/cross-size, not MidPage PageRun.
+
+LargeFront cross-size follow-up:
+  Existing PageRun64 config:
+    largefront owner inbox: on
+    largefront region map: on
+    largefront remote batch: off
+    largefront drain-take-first: off
+
+  No-code sweep, RUNS=3, cross128 r90, iters=500000:
+    base      19.56M, maxrss 466MB
+    rb8       17.98M, maxrss 506MB
+    rb16      24.29M, maxrss 338MB
+    rb32      22.76M, maxrss 394MB
+    rb16take 32.70M, maxrss 222MB
+
+  Broad smoke, RUNS=3, PageRun64 vs PageRun64+takefirst:
+    cross128 r50: base 31.47M / 181MB, takefirst 36.56M / 129MB
+    cross128 r90: base 19.34M / 418MB, takefirst 23.41M / 360MB
+    large128 r50: base 22.54M / 309MB, takefirst 21.67M / 340MB
+    large128 r90: base 11.95M / 877MB, takefirst 16.56M / 604MB
+
+  Broader allocator comparison, RUNS=3, iters=500000:
+    main r90:
+      pagerun64 60.65M / 37MB
+      pagerun64-takefirst 59.59M / 41MB
+      hz4 42.01M / 319MB
+      tcmalloc 27.46M / 754MB
+
+    mid_only r90:
+      pagerun64 66.48M / 13MB
+      pagerun64-takefirst 65.15M / 12MB
+      hz4 38.03M / 287MB
+      tcmalloc 26.71M / 751MB
+
+    cross64 r90:
+      pagerun64 56.64M / 31MB
+      pagerun64-takefirst 57.23M / 32MB
+      hz4 37.71M / 263MB
+      tcmalloc 36.54M / 324MB
+
+    cross128 r90:
+      pagerun64 23.68M / 364MB
+      pagerun64-takefirst 25.34M / 315MB
+      hz4 27.69M / 330MB
+      tcmalloc 15.95M / 417MB
+
+    large128 r90:
+      pagerun64 18.53M / 514MB
+      pagerun64-takefirst 6.33M / 1777MB
+      hz4 3.84M / 1805MB
+      tcmalloc 16.29M / 525MB
+
+Read:
+  LargeFront drain-take-first is a real cross-size lever and now has a named
+  preset, but it is not a clean broad default yet. The focused smoke shows it
+  can improve cross128 and large128, while the broad matrix still has a bad
+  large128 r90 outlier when combined with the full mixed run. Keep it as a
+  diagnostic candidate. Do not enable LargeFront remote-batch broadly; rb16 can
+  help cross128 but hurts large-only remote rows.
