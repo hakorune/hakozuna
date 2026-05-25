@@ -22,6 +22,15 @@ LargeFront Policy-L0:
   slow-path only; no malloc/free hot-path counter updates.
   name is policy-l0, not auto, because it does not select policy yet.
 
+LargeFront Policy-L1a:
+  next implementation target.
+  128K source refill batch selector only.
+  slow path only; no remote batch cap adaptation yet.
+  starts conservative:
+    batch4 under high mapped/source pressure
+    batch16 under low mapped pressure
+    batch8 in the middle
+
 Cleanup checkpoint:
   LargeFront observe and Policy-L0 are intentionally separate.
   shared atomic counter helpers are allowed.
@@ -79,6 +88,38 @@ Decision:
   Next L1 should start as a conservative slow-path selector:
     source_batch = 4/8/16 from source/refill pressure and mapped proxy
     remote cap adaptation remains diagnostic until the low-thread rows are safe
+```
+
+## Policy-L1a Scope
+
+```text
+Name:
+  LargeFront Policy-L1a
+
+Lane:
+  --linux-hz5-profile-pagerun64-large128-policy-l1a
+
+Scope:
+  LargeFront 128K class only.
+  Source refill batch count only.
+
+Selector:
+  high mapped/source pressure:
+    batch4
+
+  mid mapped/source pressure:
+    batch8
+
+  low mapped/source pressure:
+    batch16
+
+Still diagnostic:
+  remote batch cap rb32/rb64
+  owner drain policy
+  payload scavenging
+
+No hot-path policy:
+  malloc/free must not read or update policy counters.
 ```
 
 ## Saved Lanes

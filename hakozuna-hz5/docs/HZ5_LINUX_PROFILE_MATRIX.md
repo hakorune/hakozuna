@@ -259,6 +259,28 @@ slow-path counters only
 not for speed medians
 ```
 
+### `hz5-linux-pagerun64-large-only-policy-l1a`
+
+Role:
+
+```text
+LargeFront 128K source-batch policy candidate
+```
+
+Build:
+
+```text
+--linux-hz5-profile-pagerun64-large128-policy-l1a
+```
+
+Status:
+
+```text
+diagnostic only
+selects source batch 4/8/16 on source refill slow path
+does not adapt remote batch cap
+```
+
 Latest L4 source-batch/drain read:
 
 ```text

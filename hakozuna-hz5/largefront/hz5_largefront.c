@@ -77,6 +77,10 @@
 #define BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L0 0
 #endif
 
+#ifndef BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L1A
+#define BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L1A 0
+#endif
+
 #ifndef HZ5_LARGEFRONT_REMOTE_BATCH_CAP
 #define HZ5_LARGEFRONT_REMOTE_BATCH_CAP 16u
 #endif
@@ -91,6 +95,14 @@
 
 #ifndef HZ5_LARGEFRONT_ADAPTIVE128_HIGH_BYTES
 #define HZ5_LARGEFRONT_ADAPTIVE128_HIGH_BYTES (512u * 1024u * 1024u)
+#endif
+
+#ifndef HZ5_LARGEFRONT_POLICY_L1A_MID_SPANS
+#define HZ5_LARGEFRONT_POLICY_L1A_MID_SPANS 1536u
+#endif
+
+#ifndef HZ5_LARGEFRONT_POLICY_L1A_HIGH_SPANS
+#define HZ5_LARGEFRONT_POLICY_L1A_HIGH_SPANS 3072u
 #endif
 
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_LARGEFRONT_L1
@@ -221,7 +233,8 @@ static pthread_mutex_t g_hz5_largefront_source_lock =
     PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t g_hz5_largefront_map_lock = PTHREAD_MUTEX_INITIALIZER;
 static _Thread_local Hz5LargeTls g_hz5_largefront_tls;
-#if BENCHLAB_HZ5_LINUX_LARGEFRONT_ADAPTIVE128
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_ADAPTIVE128 || \
+    BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L1A
 // Diagnostic-only L3 policy state. This is intentionally updated only while
 // holding the source lock; do not move it into malloc/free hot paths.
 static size_t g_hz5_largefront_mapped_spans[HZ5_LARGEFRONT_CLASS_COUNT];
@@ -720,7 +733,19 @@ static Hz5LargeSpan* hz5_largefront_lookup_region_ptr(uintptr_t p) {
 static uint32_t hz5_largefront_source_refill_count_locked(
     uint32_t class_index) {
   uint32_t batch_count = HZ5_LARGEFRONT_SOURCE_BATCH_COUNT;
-#if BENCHLAB_HZ5_LINUX_LARGEFRONT_ADAPTIVE128
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L1A
+  if (hz5_largefront_class_valid(class_index) &&
+      hz5_largefront_class_bytes(class_index) == 131072u) {
+    size_t mapped_spans = g_hz5_largefront_mapped_spans[class_index];
+    if (mapped_spans >= HZ5_LARGEFRONT_POLICY_L1A_HIGH_SPANS) {
+      batch_count = 4u;
+    } else if (mapped_spans >= HZ5_LARGEFRONT_POLICY_L1A_MID_SPANS) {
+      batch_count = 8u;
+    } else {
+      batch_count = 16u;
+    }
+  }
+#elif BENCHLAB_HZ5_LINUX_LARGEFRONT_ADAPTIVE128
   if (hz5_largefront_class_valid(class_index) &&
       hz5_largefront_class_bytes(class_index) == 131072u) {
     size_t mapped_bytes = g_hz5_largefront_mapped_spans[class_index] *
@@ -777,7 +802,8 @@ static int hz5_largefront_source_refill_locked(uint32_t class_index) {
 #if BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L0
   hz5_largefront_policy_note_source_refill(class_index, batch_count);
 #endif
-#if BENCHLAB_HZ5_LINUX_LARGEFRONT_ADAPTIVE128
+#if BENCHLAB_HZ5_LINUX_LARGEFRONT_ADAPTIVE128 || \
+    BENCHLAB_HZ5_LINUX_LARGEFRONT_POLICY_L1A
   g_hz5_largefront_mapped_spans[class_index] += (size_t)batch_count;
 #endif
   return 1;
