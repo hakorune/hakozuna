@@ -71,6 +71,19 @@ state transitions (push/reset), while Linux and Windows still keep their own
 lock primitive and flush destination. The inbox CAS list splice itself is
 shared because both backends use the same C11 atomic handoff shape.
 
+Keep these Local2P seams backend-specific for now:
+
+* `raw_from_node` / `node_from_header`: Linux can use an object-node layout
+  where the reusable node is the aligned user pointer, while Windows currently
+  maps the node back to `header->raw`.
+* direct decode / try-free: Linux has exact-only and slim-check variants that
+  can bypass the generic wrapper decode in selected lanes; Windows uses the
+  normal wrapper decode contract.
+* local/remote recycle policy: both backends share the state vocabulary, inbox
+  splice, and remote-batch mechanics, but the build-option matrix decides
+  whether remote frees go through inbox, remote batch, global fallback, or an
+  OS-specific free path.
+
 ## Experimental Core
 
 These files contain the earlier page/run-first HZ5 core. They are useful for the
