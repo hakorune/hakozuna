@@ -564,14 +564,6 @@ hz5_policy_local2p_try_free_direct(void* ptr, Hz5FreeResult* result_out) {
 }
 
 static int hz5_policy_local2p_metadata_present(const Hz5WrapperHdr* header) {
-  if (!header) {
-    return 0;
-  }
-  return header->local2p_cookie != 0 ||
-         header->local2p_generation != 0 ||
-         header->local2p_owner != 0 ||
-         atomic_load_explicit(&header->local2p_state,
-                              memory_order_acquire) !=
-             HZ5_LOCAL2P_STATE_INVALID;
+  return hz5_policy_local2p_common_metadata_present(header);
 }
 #endif

@@ -106,6 +106,19 @@ static inline int hz5_policy_local2p_common_mark_freed(Hz5WrapperHdr* header) {
       memory_order_acq_rel);
   return old_state == HZ5_LOCAL2P_STATE_ACTIVE;
 }
+
+static inline int hz5_policy_local2p_common_metadata_present(
+    const Hz5WrapperHdr* header) {
+  if (!header) {
+    return 0;
+  }
+  return header->local2p_cookie != 0 ||
+         header->local2p_generation != 0 ||
+         header->local2p_owner != 0 ||
+         atomic_load_explicit(&header->local2p_state,
+                              memory_order_acquire) !=
+             HZ5_LOCAL2P_STATE_INVALID;
+}
 #endif
 
 static inline void hz5_policy_local2p_common_remote_batch_push(
