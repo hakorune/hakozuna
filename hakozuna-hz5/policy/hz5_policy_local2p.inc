@@ -33,18 +33,14 @@ static uint64_t hz5_policy_local2p_cookie(uintptr_t raw,
   (void)raw_bytes;
   (void)generation;
   (void)owner;
-  uint64_t mixed =
-      (uint64_t)(raw ^ aligned ^
-                 (uintptr_t)&g_hz5_policy_local2p_secret_anchor) ^
-      UINT64_C(0x2f125a8192c0ffee);
-  return mixed ? mixed : UINT64_C(0x2f12);
+  return hz5_policy_local2p_common_cookie_fast(
+      raw, aligned, (uintptr_t)&g_hz5_policy_local2p_secret_anchor,
+      UINT64_C(0x2f125a8192c0ffee), UINT64_C(0x2f12));
 #else
-  uint64_t mixed =
-      (uint64_t)(raw ^ aligned ^ owner ^
-                 (uintptr_t)&g_hz5_policy_local2p_secret_anchor) ^
-      ((uint64_t)raw_bytes << 17) ^ ((uint64_t)generation << 32) ^
-      UINT64_C(0x2f125a8192c0ffee);
-  return mixed ? mixed : UINT64_C(0x2f12);
+  return hz5_policy_local2p_common_cookie_full(
+      raw, aligned, raw_bytes, generation, owner,
+      (uintptr_t)&g_hz5_policy_local2p_secret_anchor,
+      UINT64_C(0x2f125a8192c0ffee), UINT64_C(0x2f12));
 #endif
 }
 

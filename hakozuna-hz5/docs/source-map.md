@@ -59,11 +59,11 @@ platform-specific:
 
 The first concrete step is `policy/hz5_policy_local2p_common.h`, which names
 the shared Local2P freelist node, exact-route predicate, user-pointer
-alignment/layout-fit checks, header field validation, freelist push/pop
-mechanics, generation wrap handling, owner-token initialization, header
-activation, and ACTIVE-to-FREED transition while leaving Linux and Windows
-allocation sources untouched. It also centralizes the Local2P metadata-present
-predicate used by lane probes.
+alignment/layout-fit checks, header field validation, cookie mixing, freelist
+push/pop mechanics, generation wrap handling, owner-token initialization,
+header activation, and ACTIVE-to-FREED transition while leaving Linux and
+Windows allocation sources untouched. It also centralizes the Local2P
+metadata-present predicate used by lane probes.
 Helpers that need Local2P wrapper tail fields are compiled only when a Local2P
 lane enables that wrapper layout, so P43i/P45 builds keep their smaller
 non-Local2P wrapper contract. The same header also owns the small remote-batch

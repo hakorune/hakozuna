@@ -49,6 +49,31 @@ static inline int hz5_policy_local2p_common_header_matches(
          header->raw_bytes == raw_bytes;
 }
 
+static inline uint64_t hz5_policy_local2p_common_cookie_full(
+    uintptr_t raw,
+    uintptr_t aligned,
+    size_t raw_bytes,
+    uint32_t generation,
+    uintptr_t owner,
+    uintptr_t anchor,
+    uint64_t salt,
+    uint64_t fallback) {
+  uint64_t mixed = (uint64_t)(raw ^ aligned ^ owner ^ anchor) ^
+                   ((uint64_t)raw_bytes << 17) ^
+                   ((uint64_t)generation << 32) ^ salt;
+  return mixed ? mixed : fallback;
+}
+
+static inline uint64_t hz5_policy_local2p_common_cookie_fast(
+    uintptr_t raw,
+    uintptr_t aligned,
+    uintptr_t anchor,
+    uint64_t salt,
+    uint64_t fallback) {
+  uint64_t mixed = (uint64_t)(raw ^ aligned ^ anchor) ^ salt;
+  return mixed ? mixed : fallback;
+}
+
 static inline Hz5PolicyLocal2PNode* hz5_policy_local2p_common_pop_node(
     void** head,
     size_t* count) {

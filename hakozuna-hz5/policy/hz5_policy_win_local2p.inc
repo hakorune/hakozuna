@@ -16,12 +16,10 @@ static uint64_t hz5_policy_win_local2p_cookie(uintptr_t raw,
                                               size_t raw_bytes,
                                               uint32_t generation,
                                               uintptr_t owner) {
-  uint64_t mixed =
-      (uint64_t)(raw ^ aligned ^ owner ^
-                 (uintptr_t)&g_hz5_policy_win_local2p_secret_anchor) ^
-      ((uint64_t)raw_bytes << 17) ^ ((uint64_t)generation << 32) ^
-      UINT64_C(0x77125a8192c0ffee);
-  return mixed ? mixed : UINT64_C(0x7712);
+  return hz5_policy_local2p_common_cookie_full(
+      raw, aligned, raw_bytes, generation, owner,
+      (uintptr_t)&g_hz5_policy_win_local2p_secret_anchor,
+      UINT64_C(0x77125a8192c0ffee), UINT64_C(0x7712));
 }
 
 static int hz5_policy_win_local2p_exact(size_t size, size_t align) {
