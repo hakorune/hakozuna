@@ -31,10 +31,12 @@ These files are the active 64K/a8192 path used by the P25/P33/P43i/P45 family.
 * `route/hz5_route.c`: size/alignment routing into HZ5 lowpage64 versus
   fallback/unsupported paths.
 * `contract/hz5_contract.c`: SpeedLane and diagnostic-lane contract descriptor.
-* `policy/hz5_policy_local2p_common.h`: cross-platform Local2P algorithm
-  vocabulary shared by Linux and Windows Local2P lanes. It intentionally stops
-  at common route/cache objects; OS raw allocation, lock primitives, and memory
-  return policy stay in the platform-specific Local2P implementations.
+* `policy/hz5_policy_local2p_common.h`: facade for cross-platform Local2P
+  algorithm vocabulary shared by Linux and Windows Local2P lanes. It includes
+  the smaller `policy/hz5_policy_local2p_{layout,cache,state,remote}.h`
+  helpers and intentionally stops at common route/cache objects; OS raw
+  allocation, lock primitives, and memory return policy stay in the
+  platform-specific Local2P implementations.
 
 ## Cross-Platform Commonization Boundary
 
@@ -57,13 +59,13 @@ platform-specific:
   backend-specific fast paths
 ```
 
-The first concrete step is `policy/hz5_policy_local2p_common.h`, which names
-the shared Local2P freelist node, 64KiB exact-size constant, exact-route
-predicate, user-pointer alignment/layout-fit checks, header field validation,
-cookie mixing, freelist push/pop mechanics, generation wrap handling,
-owner-token initialization, header activation, and ACTIVE-to-FREED transition
-while leaving Linux and Windows allocation sources untouched. It also
-centralizes the Local2P metadata-present predicate used by lane probes.
+The first concrete step is the `policy/hz5_policy_local2p_common.h` facade. Its
+subheaders name the shared Local2P freelist node, 64KiB exact-size constant,
+exact-route predicate, user-pointer alignment/layout-fit checks, header field
+validation, cookie mixing, freelist push/pop mechanics, generation wrap
+handling, owner-token initialization, header activation, and ACTIVE-to-FREED
+transition while leaving Linux and Windows allocation sources untouched. They
+also centralize the Local2P metadata-present predicate used by lane probes.
 Helpers that need Local2P wrapper tail fields are compiled only when a Local2P
 lane enables that wrapper layout, so P43i/P45 builds keep their smaller
 non-Local2P wrapper contract. The same header also owns the small remote-batch
