@@ -127,6 +127,7 @@ typedef enum Hz5WinLocal2PRemoteFlushReason {
   HZ5_WIN_LOCAL2P_REMOTE_FLUSH_EXPLICIT = 0,
   HZ5_WIN_LOCAL2P_REMOTE_FLUSH_OWNER = 1,
   HZ5_WIN_LOCAL2P_REMOTE_FLUSH_CAP = 2,
+  HZ5_WIN_LOCAL2P_REMOTE_FLUSH_SWITCH = 3,
 } Hz5WinLocal2PRemoteFlushReason;
 
 #if BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SLOTS > 1u
@@ -140,6 +141,8 @@ static void hz5_policy_win_local2p_note_remote_flush(
     hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_OWNER);
   } else if (reason == HZ5_WIN_LOCAL2P_REMOTE_FLUSH_CAP) {
     hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_CAP);
+  } else if (reason == HZ5_WIN_LOCAL2P_REMOTE_FLUSH_SWITCH) {
+    hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_SWITCH);
   }
 }
 
@@ -197,13 +200,37 @@ static size_t hz5_policy_win_local2p_remote_batch_slot(
   return victim;
 }
 
+#if BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SWITCH_FLUSH_MIN > 0u
+static void hz5_policy_win_local2p_remote_batch_flush_previous_owner(
+    Hz5PolicyWinLocal2PTls* tls,
+    uintptr_t owner) {
+  uintptr_t previous = tls ? tls->remote_batch_last_owner : 0;
+  if (!tls || !previous || previous == owner) {
+    return;
+  }
+  for (size_t i = 0; i < BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SLOTS; ++i) {
+    if (tls->remote_batch_owner[i] == previous &&
+        tls->remote_batch_count[i] >=
+            BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SWITCH_FLUSH_MIN) {
+      (void)hz5_policy_win_local2p_remote_batch_flush_slot(
+          tls, i, HZ5_WIN_LOCAL2P_REMOTE_FLUSH_SWITCH);
+      return;
+    }
+  }
+}
+#endif
+
 static int hz5_policy_win_local2p_remote_batch_push(uintptr_t owner,
                                                     void* node_ptr) {
   if (!owner || !node_ptr) {
     return 0;
   }
   Hz5PolicyWinLocal2PTls* tls = hz5_policy_win_local2p_tls();
+#if BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SWITCH_FLUSH_MIN > 0u
+  hz5_policy_win_local2p_remote_batch_flush_previous_owner(tls, owner);
+#endif
   size_t slot = hz5_policy_win_local2p_remote_batch_slot(tls, owner);
+  tls->remote_batch_last_owner = owner;
   Hz5WinLocal2PNode* node = (Hz5WinLocal2PNode*)node_ptr;
   node->next = NULL;
   if (tls->remote_batch_count[slot] == 0u) {
@@ -251,6 +278,8 @@ hz5_policy_win_local2p_remote_batch_flush(
     hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_OWNER);
   } else if (reason == HZ5_WIN_LOCAL2P_REMOTE_FLUSH_CAP) {
     hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_CAP);
+  } else if (reason == HZ5_WIN_LOCAL2P_REMOTE_FLUSH_SWITCH) {
+    hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_SWITCH);
   }
   hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INBOX);
   return 1;
