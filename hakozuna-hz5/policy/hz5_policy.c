@@ -258,6 +258,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_DIRECT_INDEX 0
 #endif
 
+#ifndef BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_ASSOC_LRU
+#define BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_ASSOC_LRU 0
+#endif
+
 #ifndef BENCHLAB_HZ5_WIN_LOCAL2P_INBOX_FAST_ACTIVATE
 #define BENCHLAB_HZ5_WIN_LOCAL2P_INBOX_FAST_ACTIVATE 0
 #endif
@@ -368,6 +372,8 @@ typedef struct Hz5PolicyWinLocal2PTls {
   void* remote_batch_tail[BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SLOTS];
   size_t remote_batch_count[BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SLOTS];
   size_t remote_batch_next_victim;
+  uint32_t remote_batch_age[BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SLOTS];
+  uint32_t remote_batch_clock;
   uintptr_t remote_batch_last_owner;
 #else
   uintptr_t remote_batch_owner;

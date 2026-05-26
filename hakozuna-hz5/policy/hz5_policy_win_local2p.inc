@@ -185,10 +185,39 @@ static int hz5_policy_win_local2p_remote_batch_flush_slot(
   tls->remote_batch_head[slot] = NULL;
   tls->remote_batch_tail[slot] = NULL;
   tls->remote_batch_count[slot] = 0;
+  tls->remote_batch_age[slot] = 0;
   hz5_policy_win_local2p_note_remote_flush(count, reason);
   hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INBOX);
   return 1;
 }
+
+#if BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_ASSOC_LRU
+static void hz5_policy_win_local2p_remote_batch_touch(
+    Hz5PolicyWinLocal2PTls* tls,
+    size_t slot) {
+  uint32_t next_age = tls->remote_batch_clock + 1u;
+  if (next_age == 0u) {
+    next_age = 1u;
+  }
+  tls->remote_batch_clock = next_age;
+  tls->remote_batch_age[slot] = next_age;
+}
+
+static size_t hz5_policy_win_local2p_remote_batch_oldest_slot(
+    Hz5PolicyWinLocal2PTls* tls) {
+  size_t victim = 0;
+  uint32_t oldest = tls->remote_batch_age[0];
+  for (size_t i = 1; i < BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SLOTS; ++i) {
+    uint32_t age = tls->remote_batch_age[i];
+    if (age < oldest) {
+      oldest = age;
+      victim = i;
+    }
+  }
+  hz5_trace_inc(HZ5_TRACE_LOCAL2P_REMOTE_ASSOC_LRU_VICTIM);
+  return victim;
+}
+#endif
 
 static size_t hz5_policy_win_local2p_remote_batch_slot(
     Hz5PolicyWinLocal2PTls* tls,
@@ -213,6 +242,9 @@ static size_t hz5_policy_win_local2p_remote_batch_slot(
   for (size_t i = 0; i < BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SLOTS; ++i) {
     if (tls->remote_batch_owner[i] == owner &&
         tls->remote_batch_count[i] != 0u) {
+#if BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_ASSOC_LRU
+      hz5_policy_win_local2p_remote_batch_touch(tls, i);
+#endif
       return i;
     }
     if (empty == BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SLOTS &&
@@ -221,6 +253,9 @@ static size_t hz5_policy_win_local2p_remote_batch_slot(
     }
   }
   if (empty != BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SLOTS) {
+#if BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_ASSOC_LRU
+    hz5_policy_win_local2p_remote_batch_touch(tls, empty);
+#endif
     return empty;
   }
 
@@ -231,12 +266,20 @@ static size_t hz5_policy_win_local2p_remote_batch_slot(
   return preferred;
 #endif
 
+#if BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_ASSOC_LRU
+  size_t victim = hz5_policy_win_local2p_remote_batch_oldest_slot(tls);
+  (void)hz5_policy_win_local2p_remote_batch_flush_slot(
+      tls, victim, HZ5_WIN_LOCAL2P_REMOTE_FLUSH_OWNER);
+  hz5_policy_win_local2p_remote_batch_touch(tls, victim);
+  return victim;
+#else
   size_t victim = tls->remote_batch_next_victim %
                   BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SLOTS;
   tls->remote_batch_next_victim = victim + 1u;
   (void)hz5_policy_win_local2p_remote_batch_flush_slot(
       tls, victim, HZ5_WIN_LOCAL2P_REMOTE_FLUSH_OWNER);
   return victim;
+#endif
 }
 
 static size_t hz5_policy_win_local2p_remote_batch_active_slots(
