@@ -150,6 +150,12 @@ static const char* hz5_trace_name(Hz5TraceCounter counter) {
       return "local2p_sidecar_miss";
     case HZ5_TRACE_LOCAL2P_SIDECAR_COLLISION:
       return "local2p_sidecar_collision";
+    case HZ5_TRACE_LOCAL2P_SIDECAR_FIRST_OK:
+      return "local2p_sidecar_first_ok";
+    case HZ5_TRACE_LOCAL2P_SIDECAR_FIRST_INVALID:
+      return "local2p_sidecar_first_invalid";
+    case HZ5_TRACE_LOCAL2P_SIDECAR_FIRST_MISS:
+      return "local2p_sidecar_first_miss";
     case HZ5_TRACE_P20_CRT_BYPASS_ALLOC:
       return "p20_crt_bypass_alloc";
     case HZ5_TRACE_P20_CRT_BYPASS_FREE:

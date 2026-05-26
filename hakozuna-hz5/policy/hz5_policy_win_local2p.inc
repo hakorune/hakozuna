@@ -40,6 +40,12 @@ static int hz5_policy_win_local2p_exact(size_t size, size_t align) {
 #if BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_ROUTE
 #define HZ5_WIN_LOCAL2P_SIDECAR_TOMBSTONE ((uintptr_t)UINTPTR_MAX)
 
+enum {
+  HZ5_WIN_LOCAL2P_SIDECAR_MISS = 0,
+  HZ5_WIN_LOCAL2P_SIDECAR_VALID = 1,
+  HZ5_WIN_LOCAL2P_SIDECAR_INVALID = 2
+};
+
 static size_t hz5_policy_win_local2p_sidecar_hash(uintptr_t aligned) {
   uint64_t x = (uint64_t)(aligned >> 13);
   x ^= x >> 33;
@@ -145,14 +151,19 @@ static void hz5_policy_win_local2p_sidecar_remove_raw(uintptr_t raw) {
   ReleaseSRWLockExclusive(&g_hz5_policy_win_local2p_sidecar_lock);
 }
 
-static int hz5_policy_win_local2p_sidecar_probe(uintptr_t aligned) {
+static int hz5_policy_win_local2p_sidecar_probe(uintptr_t aligned,
+                                                Hz5WrapperHdr** header_out) {
+  if (header_out) {
+    *header_out = NULL;
+  }
   if (!aligned) {
     hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_MISS);
-    return 0;
+    return HZ5_WIN_LOCAL2P_SIDECAR_MISS;
   }
 
   int found = 0;
   int valid = 0;
+  const Hz5WrapperHdr* found_header = NULL;
   size_t start = hz5_policy_win_local2p_sidecar_hash(aligned);
   AcquireSRWLockShared(&g_hz5_policy_win_local2p_sidecar_lock);
   for (size_t probe = 0; probe < BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_TABLE_SIZE;
@@ -170,6 +181,7 @@ static int hz5_policy_win_local2p_sidecar_probe(uintptr_t aligned) {
     if (entry->aligned == aligned) {
       const Hz5WrapperHdr* header = (const Hz5WrapperHdr*)entry->header;
       found = 1;
+      found_header = header;
       valid =
           hz5_policy_win_local2p_sidecar_header_valid(entry, header, aligned);
       break;
@@ -180,14 +192,17 @@ static int hz5_policy_win_local2p_sidecar_probe(uintptr_t aligned) {
 
   if (!found) {
     hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_MISS);
-    return 0;
+    return HZ5_WIN_LOCAL2P_SIDECAR_MISS;
   }
   if (valid) {
+    if (header_out) {
+      *header_out = (Hz5WrapperHdr*)found_header;
+    }
     hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_HIT_VALID);
-    return 1;
+    return HZ5_WIN_LOCAL2P_SIDECAR_VALID;
   }
   hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_HIT_INVALID);
-  return 0;
+  return HZ5_WIN_LOCAL2P_SIDECAR_INVALID;
 }
 #endif
 
@@ -876,7 +891,9 @@ static int hz5_policy_win_local2p_route_header_readable(uintptr_t aligned) {
 static int hz5_policy_win_local2p_direct_decode(void* ptr,
                                                 Hz5WrapperHdr** header_out) {
 #if BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_ROUTE
-  (void)hz5_policy_win_local2p_sidecar_probe((uintptr_t)ptr);
+#if !BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_FIRST
+  (void)hz5_policy_win_local2p_sidecar_probe((uintptr_t)ptr, NULL);
+#endif
 #endif
 #if BENCHLAB_HZ5_WIN_LOCAL2P_ROUTE_COOKIE
   if (!ptr) {
@@ -928,6 +945,26 @@ static int
 hz5_policy_win_local2p_try_free_direct(void* ptr,
                                        Hz5FreeResult* result_out) {
   Hz5WrapperHdr* wrapped = NULL;
+#if BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_ROUTE && \
+    BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_FIRST
+  int sidecar_kind =
+      hz5_policy_win_local2p_sidecar_probe((uintptr_t)ptr, &wrapped);
+  if (sidecar_kind == HZ5_WIN_LOCAL2P_SIDECAR_VALID) {
+    hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_FIRST_OK);
+    if (result_out) {
+      *result_out = hz5_policy_win_local2p_free(wrapped, (uintptr_t)ptr);
+    }
+    return 1;
+  }
+  if (sidecar_kind == HZ5_WIN_LOCAL2P_SIDECAR_INVALID) {
+    hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_FIRST_INVALID);
+    if (result_out) {
+      *result_out = HZ5_FREE_INVALID;
+    }
+    return 1;
+  }
+  hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_FIRST_MISS);
+#endif
   if (!hz5_policy_win_local2p_direct_decode(ptr, &wrapped)) {
     return 0;
   }
