@@ -136,6 +136,20 @@ static const char* hz5_trace_name(Hz5TraceCounter counter) {
       return "local2p_route_cookie_ok";
     case HZ5_TRACE_LOCAL2P_ROUTE_COOKIE_MISS:
       return "local2p_route_cookie_miss";
+    case HZ5_TRACE_LOCAL2P_SIDECAR_INSERT:
+      return "local2p_sidecar_insert";
+    case HZ5_TRACE_LOCAL2P_SIDECAR_INSERT_FAIL:
+      return "local2p_sidecar_insert_fail";
+    case HZ5_TRACE_LOCAL2P_SIDECAR_REMOVE:
+      return "local2p_sidecar_remove";
+    case HZ5_TRACE_LOCAL2P_SIDECAR_HIT_VALID:
+      return "local2p_sidecar_hit_valid";
+    case HZ5_TRACE_LOCAL2P_SIDECAR_HIT_INVALID:
+      return "local2p_sidecar_hit_invalid";
+    case HZ5_TRACE_LOCAL2P_SIDECAR_MISS:
+      return "local2p_sidecar_miss";
+    case HZ5_TRACE_LOCAL2P_SIDECAR_COLLISION:
+      return "local2p_sidecar_collision";
     case HZ5_TRACE_P20_CRT_BYPASS_ALLOC:
       return "p20_crt_bypass_alloc";
     case HZ5_TRACE_P20_CRT_BYPASS_FREE:

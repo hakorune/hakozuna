@@ -230,6 +230,14 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_WIN_LOCAL2P_ROUTE_HEADER_GUARD 0
 #endif
 
+#ifndef BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_ROUTE
+#define BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_ROUTE 0
+#endif
+
+#ifndef BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_TABLE_SIZE
+#define BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_TABLE_SIZE 4096u
+#endif
+
 #ifndef BENCHLAB_HZ5_WIN_LOCAL2P_REUSE_STATE_ONLY
 #define BENCHLAB_HZ5_WIN_LOCAL2P_REUSE_STATE_ONLY 0
 #endif
@@ -355,6 +363,19 @@ static uintptr_t g_hz5_policy_win_local2p_secret_anchor;
 static SRWLOCK g_hz5_policy_win_local2p_global_lock = SRWLOCK_INIT;
 static void* g_hz5_policy_win_local2p_global_head;
 static size_t g_hz5_policy_win_local2p_global_count;
+#if BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_ROUTE
+typedef struct Hz5PolicyWinLocal2PSidecarEntry {
+  uintptr_t aligned;
+  uintptr_t raw;
+  uintptr_t header;
+  uint32_t generation;
+  uint32_t state_snapshot;
+} Hz5PolicyWinLocal2PSidecarEntry;
+
+static SRWLOCK g_hz5_policy_win_local2p_sidecar_lock = SRWLOCK_INIT;
+static Hz5PolicyWinLocal2PSidecarEntry
+    g_hz5_policy_win_local2p_sidecar[BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_TABLE_SIZE];
+#endif
 typedef struct Hz5PolicyWinLocal2PTls {
   void* head;
   size_t count;
