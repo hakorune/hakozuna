@@ -432,14 +432,13 @@ static void* hz5_policy_local2p_alloc(size_t size, size_t align) {
 #if BENCHLAB_HZ5_LINUX_LOCAL2P_OBJECT_NODE
   uintptr_t aligned = node_ptr
                           ? (uintptr_t)node_ptr
-                          : ((raw + sizeof(Hz5WrapperHdr) + align - 1u) &
-                             ~(uintptr_t)(align - 1u));
+                          : hz5_policy_local2p_common_align_user(raw, align);
 #else
-  uintptr_t aligned =
-      (raw + sizeof(Hz5WrapperHdr) + align - 1u) & ~(uintptr_t)(align - 1u);
+  uintptr_t aligned = hz5_policy_local2p_common_align_user(raw, align);
 #endif
   if ((aligned & (align - 1u)) != 0 ||
-      aligned + size > raw + BENCHLAB_HZ5_LINUX_LOCAL2P_RAW_BYTES) {
+      !hz5_policy_local2p_common_layout_fits(
+          raw, aligned, size, BENCHLAB_HZ5_LINUX_LOCAL2P_RAW_BYTES)) {
     free(raw_ptr);
     return NULL;
   }

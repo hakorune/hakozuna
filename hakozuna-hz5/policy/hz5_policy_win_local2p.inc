@@ -253,12 +253,10 @@ static void* hz5_policy_win_local2p_alloc(size_t size, size_t align) {
   }
 
   uintptr_t raw = (uintptr_t)raw_ptr;
-  uintptr_t header_min = raw + sizeof(Hz5WrapperHdr);
-  uintptr_t aligned =
-      (header_min + (BENCHLAB_HZ5_WIN_LOCAL2P_ALIGN - 1u)) &
-      ~(uintptr_t)(BENCHLAB_HZ5_WIN_LOCAL2P_ALIGN - 1u);
-  if (aligned < header_min ||
-      aligned + size > raw + BENCHLAB_HZ5_WIN_LOCAL2P_RAW_BYTES) {
+  uintptr_t aligned = hz5_policy_local2p_common_align_user(
+      raw, BENCHLAB_HZ5_WIN_LOCAL2P_ALIGN);
+  if (!hz5_policy_local2p_common_layout_fits(
+          raw, aligned, size, BENCHLAB_HZ5_WIN_LOCAL2P_RAW_BYTES)) {
     hz5_policy_win_local2p_free_node(raw_ptr);
     return NULL;
   }

@@ -25,6 +25,21 @@ static inline int hz5_policy_local2p_common_exact(size_t size,
   return size == exact_size && align == exact_align;
 }
 
+static inline uintptr_t hz5_policy_local2p_common_align_user(uintptr_t raw,
+                                                             size_t align) {
+  uintptr_t header_min = raw + sizeof(Hz5WrapperHdr);
+  return (header_min + (uintptr_t)(align - 1u)) &
+         ~(uintptr_t)(align - 1u);
+}
+
+static inline int hz5_policy_local2p_common_layout_fits(uintptr_t raw,
+                                                        uintptr_t aligned,
+                                                        size_t size,
+                                                        size_t raw_bytes) {
+  uintptr_t header_min = raw + sizeof(Hz5WrapperHdr);
+  return aligned >= header_min && aligned + size <= raw + raw_bytes;
+}
+
 static inline uint32_t hz5_policy_local2p_common_next_generation(
     uint32_t* generation) {
   uint32_t next = ++(*generation);
