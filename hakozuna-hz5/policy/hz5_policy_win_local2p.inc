@@ -16,10 +16,19 @@ static uint64_t hz5_policy_win_local2p_cookie(uintptr_t raw,
                                               size_t raw_bytes,
                                               uint32_t generation,
                                               uintptr_t owner) {
+#if BENCHLAB_HZ5_WIN_LOCAL2P_FAST_COOKIE
+  (void)raw_bytes;
+  (void)generation;
+  (void)owner;
+  return hz5_policy_local2p_common_cookie_fast(
+      raw, aligned, (uintptr_t)&g_hz5_policy_win_local2p_secret_anchor,
+      UINT64_C(0x77125a8192c0ffee), UINT64_C(0x7712));
+#else
   return hz5_policy_local2p_common_cookie_full(
       raw, aligned, raw_bytes, generation, owner,
       (uintptr_t)&g_hz5_policy_win_local2p_secret_anchor,
       UINT64_C(0x77125a8192c0ffee), UINT64_C(0x7712));
+#endif
 }
 
 static int hz5_policy_win_local2p_exact(size_t size, size_t align) {
