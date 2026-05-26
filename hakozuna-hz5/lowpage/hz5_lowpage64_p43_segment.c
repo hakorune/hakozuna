@@ -1059,3 +1059,13 @@ void hz5_lowpage64_p43_stats_snapshot(
 }
 
 #endif  /* HZ5_LOWPAGE64_P43_SEGMENT_SLOTS */
+
+#if !HZ5_LOWPAGE64_P43_SEGMENT_SLOTS
+void hz5_lowpage64_p43_stats_snapshot(
+    Hz5Lowpage64P43StatsSnapshot* snapshot) {
+  if (!snapshot) {
+    return;
+  }
+  *snapshot = (Hz5Lowpage64P43StatsSnapshot){0};
+}
+#endif
