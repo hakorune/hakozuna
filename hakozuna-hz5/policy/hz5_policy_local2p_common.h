@@ -40,6 +40,15 @@ static inline int hz5_policy_local2p_common_layout_fits(uintptr_t raw,
   return aligned >= header_min && aligned + size <= raw + raw_bytes;
 }
 
+static inline int hz5_policy_local2p_common_header_matches(
+    const Hz5WrapperHdr* header,
+    uint32_t source,
+    size_t requested,
+    size_t raw_bytes) {
+  return header && header->source == source && header->requested == requested &&
+         header->raw_bytes == raw_bytes;
+}
+
 static inline Hz5PolicyLocal2PNode* hz5_policy_local2p_common_pop_node(
     void** head,
     size_t* count) {

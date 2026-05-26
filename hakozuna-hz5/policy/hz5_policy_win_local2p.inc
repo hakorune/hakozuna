@@ -209,9 +209,9 @@ static void hz5_policy_win_local2p_init_header(Hz5WrapperHdr* header,
 static int
 hz5_policy_win_local2p_validate_free_header(Hz5WrapperHdr* header,
                                             uintptr_t aligned) {
-  if (!header || header->source != HZ5_WRAPPER_SOURCE_WIN_LOCAL2P ||
-      header->requested != 65536u ||
-      header->raw_bytes != BENCHLAB_HZ5_WIN_LOCAL2P_RAW_BYTES) {
+  if (!hz5_policy_local2p_common_header_matches(
+          header, HZ5_WRAPPER_SOURCE_WIN_LOCAL2P, 65536u,
+          BENCHLAB_HZ5_WIN_LOCAL2P_RAW_BYTES)) {
     hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INVALID_COOKIE);
     return 0;
   }
