@@ -5,12 +5,12 @@
 #include "hz5_midpagefront.h"
 #include "hz5_ownerhub.h"
 
-#include <pthread.h>
 #include <stdint.h>
 #include <stdatomic.h>
 #include <stddef.h>
 
 #if !defined(_WIN32)
+#include <pthread.h>
 void* _aligned_malloc(size_t size, size_t alignment);
 void _aligned_free(void* ptr);
 #endif

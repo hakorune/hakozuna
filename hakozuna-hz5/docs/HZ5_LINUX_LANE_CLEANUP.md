@@ -3,6 +3,39 @@
 This is the cleanup-facing view of the Linux HZ5 lane set. It is intentionally
 shorter than the historical benchmark logs.
 
+## Cross-Platform Positioning
+
+Linux HZ5 lanes are backend implementations of the shared HZ5 core contract,
+not a separate allocator product. The BenchLab-side contract lives at:
+
+```text
+docs/hakozuna-hz5-cross-platform-contract.md
+```
+
+Use these role mappings when moving results into papers or cross-platform
+reports:
+
+```text
+hz5-core-speed:
+  --linux-local2p-speed-linkflags
+
+hz5-core-rss:
+  --linux-local2p-rssretain2048tls
+
+hz5-core-remote:
+  --linux-local2p-remotebatch
+
+hz5-general-backend-candidate:
+  MidPageFront-C7
+  SmallFront-S1 + MidFront-M1 + LargeFront-L1
+  PageRun64 / LargeFront 128K profile families
+```
+
+Do not collapse these Linux names onto Windows P43i/P45 aliases. Windows
+P43i/P45 remains the compatibility/control-plane backend family until a
+dedicated Windows port of the Linux Local2P/RemoteBatch/general frontend roles
+exists.
+
 ## Keep As Reporting / Candidate Rows
 
 ```text
