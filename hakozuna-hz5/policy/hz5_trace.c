@@ -70,6 +70,8 @@ static const char* hz5_trace_name(Hz5TraceCounter counter) {
       return "alloc_local2p_escape";
     case HZ5_TRACE_ALLOC_LOCAL2P_EXACT_HIT:
       return "alloc_local2p_exact_hit";
+    case HZ5_TRACE_ALLOC_LOCAL2P_INBOX_FAST_ACTIVATE:
+      return "alloc_local2p_inbox_fast_activate";
     case HZ5_TRACE_ALLOC_LOCAL2P_ESCAPE_SIZE:
       return "alloc_local2p_escape_size";
     case HZ5_TRACE_ALLOC_LOCAL2P_ESCAPE_ALIGN:
@@ -114,6 +116,8 @@ static const char* hz5_trace_name(Hz5TraceCounter counter) {
       return "free_local2p_remote_batch_flush_nodes";
     case HZ5_TRACE_LOCAL2P_REMOTE_OWNER_SWITCH:
       return "local2p_remote_owner_switch";
+    case HZ5_TRACE_LOCAL2P_REMOTE_OWNER_GATE_SKIP:
+      return "local2p_remote_owner_gate_skip";
     case HZ5_TRACE_LOCAL2P_REMOTE_ACTIVE_SLOTS_MAX:
       return "local2p_remote_active_slots_max";
     case HZ5_TRACE_LOCAL2P_REMOTE_BATCH_DEPTH_MAX:
