@@ -194,6 +194,22 @@ static size_t hz5_policy_win_local2p_remote_batch_slot(
     Hz5PolicyWinLocal2PTls* tls,
     uintptr_t owner) {
   size_t empty = BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SLOTS;
+#if BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_DIRECT_INDEX
+  uintptr_t h = owner >> 4u;
+  h ^= owner >> 12u;
+  h ^= owner >> 20u;
+  size_t preferred =
+      (size_t)(h % BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SLOTS);
+  if (tls->remote_batch_owner[preferred] == owner &&
+      tls->remote_batch_count[preferred] != 0u) {
+    hz5_trace_inc(HZ5_TRACE_LOCAL2P_REMOTE_DIRECT_INDEX_HIT);
+    return preferred;
+  }
+  if (tls->remote_batch_count[preferred] == 0u) {
+    hz5_trace_inc(HZ5_TRACE_LOCAL2P_REMOTE_DIRECT_INDEX_HIT);
+    return preferred;
+  }
+#endif
   for (size_t i = 0; i < BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SLOTS; ++i) {
     if (tls->remote_batch_owner[i] == owner &&
         tls->remote_batch_count[i] != 0u) {
@@ -207,6 +223,13 @@ static size_t hz5_policy_win_local2p_remote_batch_slot(
   if (empty != BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SLOTS) {
     return empty;
   }
+
+#if BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_DIRECT_INDEX
+  hz5_trace_inc(HZ5_TRACE_LOCAL2P_REMOTE_DIRECT_INDEX_COLLISION);
+  (void)hz5_policy_win_local2p_remote_batch_flush_slot(
+      tls, preferred, HZ5_WIN_LOCAL2P_REMOTE_FLUSH_OWNER);
+  return preferred;
+#endif
 
   size_t victim = tls->remote_batch_next_victim %
                   BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SLOTS;
@@ -466,7 +489,9 @@ static void* hz5_policy_win_local2p_alloc(size_t size, size_t align) {
 
   void* node_ptr = hz5_policy_win_local2p_pop();
   int tls_reuse = node_ptr != NULL;
+#if BENCHLAB_HZ5_WIN_LOCAL2P_INBOX_FAST_ACTIVATE
   int inbox_reuse = 0;
+#endif
   (void)tls_reuse;
 #if BENCHLAB_HZ5_WIN_LOCAL2P_TLS_FAST_RETURN && \
     BENCHLAB_HZ5_WIN_LOCAL2P_OBJECT_NODE && \
@@ -483,7 +508,9 @@ static void* hz5_policy_win_local2p_alloc(size_t size, size_t align) {
 #endif
   if (!node_ptr) {
     node_ptr = hz5_policy_win_local2p_inbox_pop();
+#if BENCHLAB_HZ5_WIN_LOCAL2P_INBOX_FAST_ACTIVATE
     inbox_reuse = node_ptr != NULL;
+#endif
   }
   if (!node_ptr) {
     node_ptr = hz5_policy_win_local2p_global_pop();
