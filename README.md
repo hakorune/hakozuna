@@ -89,23 +89,30 @@ This repository already includes public Windows-native allocator comparisons and
 - Changelog: `CHANGELOG.md` (BREAKING changes are explicitly listed per release)
 - GitHub Release body template: `docs/releases/GITHUB_RELEASE_v3.3.md`
 
-## Benchmark Snapshot (2026-02-18, Ubuntu native)
+## Benchmark Snapshot (Ubuntu native)
 
-Latest matrix (`RUNS=10`, MT lane x remote%) and redis-like (`RUNS=10`, memtier 15s) show a clear split:
+The MT table below is a `RUNS=10`, `T=16` unified rerun on 2026-05-26 using the
+same machine and runner for `hz3`, `hz4`, `mimalloc`, `tcmalloc`, and HZ5 rows.
+The redis-like row remains from the 2026-02-18 paper snapshot.
 
 - `hz3`: strongest in local-heavy and redis-like workloads.
 - `hz4`: strongest in remote-heavy and high-thread cross workloads.
+- `HZ5`: strong low-RSS profile-family rows for selected remote-pressure
+  workloads; not one default profile.
 - Full benchmark log: `docs/benchmarks/2026-02-18_PAPER_BENCH_RESULTS.md`
 
-### MT lane x remote% (median ops/s)
+### MT lane x remote% (median ops/s, RUNS=10, T=16)
 
-| Lane | hz3 | hz4 | mimalloc | tcmalloc |
-|------|-----|-----|----------|----------|
-| `main_r0` | **375.4M** | 137.4M | 224.2M | 232.7M |
-| `main_r50` | 66.5M | 78.1M | 17.9M | **84.3M** |
-| `main_r90` | 62.6M | **67.6M** | 13.0M | 54.9M |
-| `guard_r0` | **376.4M** | 266.7M | 310.0M | 372.0M |
-| `cross128_r90` | 1.80M | **50.65M** | 10.94M | 7.50M |
+| Lane | hz3 | hz4 | mimalloc | tcmalloc | Best HZ5 | HZ5 row |
+|------|-----|-----|----------|----------|----------|---------|
+| `main_r0` | 292.15M | 85.63M | 146.73M | **318.82M** | 157.44M | `hz5-pagerun64-main` |
+| `main_r50` | 31.46M | 62.32M | 14.26M | 64.87M | **79.43M** | `hz5-large128-transfer128` |
+| `main_r90` | 22.31M | **67.14M** | 7.72M | 45.42M | 62.31M | `hz5-pagerun64-cross128` |
+| `guard_r0` | 318.98M | 156.68M | 258.19M | **375.71M** | 149.00M | `hz5-pagerun64-main` |
+| `cross128_r90` | 2.78M | **27.66M** | 3.52M | 7.21M | 22.39M | `hz5-large128-transfer128` |
+
+HZ5 is shown as "Best HZ5" because it is a profile family. The selected HZ5 row
+is listed explicitly so the table does not hide profile dependence.
 
 Lane legend:
 

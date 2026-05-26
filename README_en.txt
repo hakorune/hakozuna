@@ -33,6 +33,7 @@ Latest benchmark and paper
 --------------------------
 
 - Benchmark snapshot: docs/benchmarks/2026-02-18_PAPER_BENCH_RESULTS.md
+- HZ5-inclusive MT snapshot: RUNS=10 / T=16 / Ubuntu native / 2026-05-26
 - Public paper PDF (English): docs/paper/main_en.pdf
 - Public paper PDF (Japanese): docs/paper/main_ja.pdf
 - Local paper workspace: private/paper/
@@ -41,6 +42,20 @@ Latest benchmark and paper
   ownership-routing bug fixes.
 - Latest archived Zenodo record (v3.3): https://zenodo.org/records/19139939
 - DOI (v3.3): https://doi.org/10.5281/zenodo.19139939
+
+Representative MT snapshot
+--------------------------
+
+The table uses a same-machine, same-runner RUNS=10 / T=16 rerun. HZ5 is shown
+as "Best HZ5" because it is a profile family, not one default allocator.
+
+| Lane | hz3 | hz4 | mimalloc | tcmalloc | Best HZ5 | HZ5 row |
+|------|-----|-----|----------|----------|----------|---------|
+| main_r0 | 292.15M | 85.63M | 146.73M | 318.82M | 157.44M | hz5-pagerun64-main |
+| main_r50 | 31.46M | 62.32M | 14.26M | 64.87M | 79.43M | hz5-large128-transfer128 |
+| main_r90 | 22.31M | 67.14M | 7.72M | 45.42M | 62.31M | hz5-pagerun64-cross128 |
+| guard_r0 | 318.98M | 156.68M | 258.19M | 375.71M | 149.00M | hz5-pagerun64-main |
+| cross128_r90 | 2.78M | 27.66M | 3.52M | 7.21M | 22.39M | hz5-large128-transfer128 |
 
 HZ5 Linux profile family
 ------------------------
