@@ -163,13 +163,8 @@ static int hz5_policy_local2p_inbox_push(uintptr_t owner, void* node_ptr) {
   }
   Hz5PolicyLocal2PTls* owner_tls = (Hz5PolicyLocal2PTls*)owner;
   Hz5LinuxLocal2PNode* node = (Hz5LinuxLocal2PNode*)node_ptr;
-  void* head = atomic_load_explicit(&owner_tls->inbox_head,
-                                    memory_order_acquire);
-  do {
-    node->next = (Hz5LinuxLocal2PNode*)head;
-  } while (!atomic_compare_exchange_weak_explicit(
-      &owner_tls->inbox_head, &head, node,
-      memory_order_acq_rel, memory_order_acquire));
+  hz5_policy_local2p_common_inbox_push_list(&owner_tls->inbox_head, node,
+                                            node);
   hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INBOX);
   return 1;
 }
@@ -186,13 +181,8 @@ static int hz5_policy_local2p_remote_batch_flush(Hz5PolicyLocal2PTls* tls) {
       (Hz5LinuxLocal2PNode*)tls->remote_batch_head;
   Hz5LinuxLocal2PNode* tail =
       (Hz5LinuxLocal2PNode*)tls->remote_batch_tail;
-  void* inbox_head =
-      atomic_load_explicit(&owner_tls->inbox_head, memory_order_acquire);
-  do {
-    tail->next = (Hz5LinuxLocal2PNode*)inbox_head;
-  } while (!atomic_compare_exchange_weak_explicit(
-      &owner_tls->inbox_head, &inbox_head, head,
-      memory_order_acq_rel, memory_order_acquire));
+  hz5_policy_local2p_common_inbox_push_list(&owner_tls->inbox_head, head,
+                                            tail);
 
   hz5_policy_local2p_common_remote_batch_reset(
       &tls->remote_batch_owner, &tls->remote_batch_head,

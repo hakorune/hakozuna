@@ -81,4 +81,16 @@ static inline void hz5_policy_local2p_common_remote_batch_reset(
   *batch_count = 0;
 }
 
+static inline void hz5_policy_local2p_common_inbox_push_list(
+    _Atomic(void*)* inbox_head,
+    Hz5PolicyLocal2PNode* head,
+    Hz5PolicyLocal2PNode* tail) {
+  void* old_head = atomic_load_explicit(inbox_head, memory_order_acquire);
+  do {
+    tail->next = (Hz5PolicyLocal2PNode*)old_head;
+  } while (!atomic_compare_exchange_weak_explicit(
+      inbox_head, &old_head, head, memory_order_acq_rel,
+      memory_order_acquire));
+}
+
 #endif

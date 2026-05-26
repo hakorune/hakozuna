@@ -64,8 +64,9 @@ and Windows allocation sources untouched. Helpers that need Local2P wrapper
 tail fields are compiled only when a Local2P lane enables that wrapper layout,
 so P43i/P45 builds keep their smaller non-Local2P wrapper contract. The same
 header also owns the small remote-batch state transitions (push/reset), while
-Linux and Windows still keep their own inbox CAS, lock primitive, and flush
-destination.
+Linux and Windows still keep their own lock primitive and flush destination.
+The inbox CAS list splice itself is shared because both backends use the same
+C11 atomic handoff shape.
 
 ## Experimental Core
 
