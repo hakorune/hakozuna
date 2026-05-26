@@ -298,10 +298,19 @@ static uintptr_t g_hz5_policy_win_local2p_secret_anchor;
 static SRWLOCK g_hz5_policy_win_local2p_global_lock = SRWLOCK_INIT;
 static void* g_hz5_policy_win_local2p_global_head;
 static size_t g_hz5_policy_win_local2p_global_count;
-static _Thread_local void* g_hz5_policy_win_local2p_head;
-static _Thread_local size_t g_hz5_policy_win_local2p_count;
-static _Thread_local uintptr_t g_hz5_policy_win_local2p_owner_token;
-static _Thread_local uint32_t g_hz5_policy_win_local2p_generation;
+typedef struct Hz5PolicyWinLocal2PTls {
+  void* head;
+  size_t count;
+  uintptr_t owner_token;
+  uint32_t generation;
+  _Atomic(void*) inbox_head;
+  void* inbox_cache;
+  uintptr_t remote_batch_owner;
+  void* remote_batch_head;
+  void* remote_batch_tail;
+  size_t remote_batch_count;
+} Hz5PolicyWinLocal2PTls;
+static _Thread_local Hz5PolicyWinLocal2PTls g_hz5_policy_win_local2p_tls;
 #endif
 
 static void hz5_policy_register_stats_once(void) {
