@@ -68,6 +68,14 @@ static const char* hz5_trace_name(Hz5TraceCounter counter) {
       return "alloc_local2p_os";
     case HZ5_TRACE_ALLOC_LOCAL2P_ESCAPE:
       return "alloc_local2p_escape";
+    case HZ5_TRACE_ALLOC_LOCAL2P_EXACT_HIT:
+      return "alloc_local2p_exact_hit";
+    case HZ5_TRACE_ALLOC_LOCAL2P_ESCAPE_SIZE:
+      return "alloc_local2p_escape_size";
+    case HZ5_TRACE_ALLOC_LOCAL2P_ESCAPE_ALIGN:
+      return "alloc_local2p_escape_align";
+    case HZ5_TRACE_ALLOC_LOCAL2P_ESCAPE_GUARD:
+      return "alloc_local2p_escape_guard";
     case HZ5_TRACE_FREE_LOCAL2P_TLS:
       return "free_local2p_tls";
     case HZ5_TRACE_FREE_LOCAL2P_INBOX:
@@ -104,6 +112,12 @@ static const char* hz5_trace_name(Hz5TraceCounter counter) {
       return "free_local2p_remote_batch_flush_switch";
     case HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_NODES:
       return "free_local2p_remote_batch_flush_nodes";
+    case HZ5_TRACE_LOCAL2P_REMOTE_OWNER_SWITCH:
+      return "local2p_remote_owner_switch";
+    case HZ5_TRACE_LOCAL2P_REMOTE_ACTIVE_SLOTS_MAX:
+      return "local2p_remote_active_slots_max";
+    case HZ5_TRACE_LOCAL2P_REMOTE_BATCH_DEPTH_MAX:
+      return "local2p_remote_batch_depth_max";
     case HZ5_TRACE_LOCAL2P_GLOBAL_POP_LOCK:
       return "local2p_global_pop_lock";
     case HZ5_TRACE_LOCAL2P_GLOBAL_PUSH_LOCK:
@@ -112,6 +126,18 @@ static const char* hz5_trace_name(Hz5TraceCounter counter) {
       return "local2p_route_cookie_ok";
     case HZ5_TRACE_LOCAL2P_ROUTE_COOKIE_MISS:
       return "local2p_route_cookie_miss";
+    case HZ5_TRACE_P20_CRT_BYPASS_ALLOC:
+      return "p20_crt_bypass_alloc";
+    case HZ5_TRACE_P20_CRT_BYPASS_FREE:
+      return "p20_crt_bypass_free";
+    case HZ5_TRACE_P20_CRT_BYPASS_ALLOC_BYTES:
+      return "p20_crt_bypass_alloc_bytes";
+    case HZ5_TRACE_P20_CRT_BYPASS_FREE_BYTES:
+      return "p20_crt_bypass_free_bytes";
+    case HZ5_TRACE_LOCAL2P_OS_ALLOC_BYTES:
+      return "local2p_os_alloc_bytes";
+    case HZ5_TRACE_LOCAL2P_OS_FREE_BYTES:
+      return "local2p_os_free_bytes";
     case HZ5_TRACE_COUNT:
       break;
   }
@@ -152,6 +178,19 @@ void hz5_trace_add(Hz5TraceCounter counter, uint64_t value) {
   }
   atomic_fetch_add_explicit(&g_hz5_trace[counter], value,
                             memory_order_relaxed);
+}
+
+void hz5_trace_max(Hz5TraceCounter counter, uint64_t value) {
+  if (counter >= HZ5_TRACE_COUNT) {
+    return;
+  }
+  uint64_t observed =
+      atomic_load_explicit(&g_hz5_trace[counter], memory_order_relaxed);
+  while (observed < value &&
+         !atomic_compare_exchange_weak_explicit(
+             &g_hz5_trace[counter], &observed, value, memory_order_relaxed,
+             memory_order_relaxed)) {
+  }
 }
 
 #endif

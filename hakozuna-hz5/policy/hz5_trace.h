@@ -44,6 +44,10 @@ typedef enum Hz5TraceCounter {
   HZ5_TRACE_ALLOC_LOCAL2P_GLOBAL_HIT,
   HZ5_TRACE_ALLOC_LOCAL2P_OS,
   HZ5_TRACE_ALLOC_LOCAL2P_ESCAPE,
+  HZ5_TRACE_ALLOC_LOCAL2P_EXACT_HIT,
+  HZ5_TRACE_ALLOC_LOCAL2P_ESCAPE_SIZE,
+  HZ5_TRACE_ALLOC_LOCAL2P_ESCAPE_ALIGN,
+  HZ5_TRACE_ALLOC_LOCAL2P_ESCAPE_GUARD,
   HZ5_TRACE_FREE_LOCAL2P_TLS,
   HZ5_TRACE_FREE_LOCAL2P_INBOX,
   HZ5_TRACE_FREE_LOCAL2P_GLOBAL,
@@ -62,10 +66,19 @@ typedef enum Hz5TraceCounter {
   HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_CAP,
   HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_SWITCH,
   HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_NODES,
+  HZ5_TRACE_LOCAL2P_REMOTE_OWNER_SWITCH,
+  HZ5_TRACE_LOCAL2P_REMOTE_ACTIVE_SLOTS_MAX,
+  HZ5_TRACE_LOCAL2P_REMOTE_BATCH_DEPTH_MAX,
   HZ5_TRACE_LOCAL2P_GLOBAL_POP_LOCK,
   HZ5_TRACE_LOCAL2P_GLOBAL_PUSH_LOCK,
   HZ5_TRACE_LOCAL2P_ROUTE_COOKIE_OK,
   HZ5_TRACE_LOCAL2P_ROUTE_COOKIE_MISS,
+  HZ5_TRACE_P20_CRT_BYPASS_ALLOC,
+  HZ5_TRACE_P20_CRT_BYPASS_FREE,
+  HZ5_TRACE_P20_CRT_BYPASS_ALLOC_BYTES,
+  HZ5_TRACE_P20_CRT_BYPASS_FREE_BYTES,
+  HZ5_TRACE_LOCAL2P_OS_ALLOC_BYTES,
+  HZ5_TRACE_LOCAL2P_OS_FREE_BYTES,
   HZ5_TRACE_COUNT
 } Hz5TraceCounter;
 
@@ -73,6 +86,7 @@ typedef enum Hz5TraceCounter {
 void hz5_trace_register_once(void);
 void hz5_trace_inc(Hz5TraceCounter counter);
 void hz5_trace_add(Hz5TraceCounter counter, uint64_t value);
+void hz5_trace_max(Hz5TraceCounter counter, uint64_t value);
 void hz5_trace_print_once(void);
 #else
 static inline void hz5_trace_register_once(void) {}
@@ -80,6 +94,10 @@ static inline void hz5_trace_inc(Hz5TraceCounter counter) {
   (void)counter;
 }
 static inline void hz5_trace_add(Hz5TraceCounter counter, uint64_t value) {
+  (void)counter;
+  (void)value;
+}
+static inline void hz5_trace_max(Hz5TraceCounter counter, uint64_t value) {
   (void)counter;
   (void)value;
 }

@@ -735,6 +735,8 @@ static void* hz5_policy_crt_wrapped_alloc(size_t size, size_t align) {
 #if BENCHLAB_HZ5_LAZY_HZ3_FALLBACK
   hz5_hz3_fallback_note_crt_bypass_alloc();
 #endif
+  hz5_trace_inc(HZ5_TRACE_P20_CRT_BYPASS_ALLOC);
+  hz5_trace_add(HZ5_TRACE_P20_CRT_BYPASS_ALLOC_BYTES, (uint64_t)raw_bytes);
   hz5_trace_inc(HZ5_TRACE_ALLOC_P25_BRIDGE);
   return (void*)aligned;
 }
@@ -774,10 +776,13 @@ void* hz5_policy_alloc_aligned(size_t size, size_t align,
 #if defined(_WIN32) && BENCHLAB_HZ5_WIN_LOCAL2P && \
     BENCHLAB_HZ5_WIN_LOCAL2P_DIRECT_ROUTE
   if (hz5_policy_win_local2p_exact(size, align)) {
+    hz5_trace_inc(HZ5_TRACE_ALLOC_LOCAL2P_EXACT_HIT);
     void* wrapped = hz5_policy_win_local2p_alloc(size, align);
     if (wrapped) {
       return wrapped;
     }
+  } else {
+    hz5_policy_win_local2p_note_escape(size, align);
   }
 #endif
 
@@ -1094,6 +1099,9 @@ Hz5FreeResult hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
 #if BENCHLAB_HZ5_LAZY_HZ3_FALLBACK
       hz5_hz3_fallback_note_crt_bypass_free();
 #endif
+      hz5_trace_inc(HZ5_TRACE_P20_CRT_BYPASS_FREE);
+      hz5_trace_add(HZ5_TRACE_P20_CRT_BYPASS_FREE_BYTES,
+                    (uint64_t)wrapped->raw_bytes);
       _aligned_free((void*)wrapped->raw);
       return HZ5_FREE_OK_FALLBACK;
     }
