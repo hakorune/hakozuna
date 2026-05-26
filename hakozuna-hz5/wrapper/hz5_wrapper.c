@@ -23,7 +23,7 @@ void hz5_wrapper_init(Hz5WrapperHdr* header, uintptr_t raw, uintptr_t aligned,
                         memory_order_relaxed);
   header->bridge_generation = 0;
 #endif
-#if BENCHLAB_HZ5_LINUX_LOCAL2P
+#if HZ5_WRAPPER_LOCAL2P_ENABLED
   header->local2p_cookie = 0;
   atomic_store_explicit(&header->local2p_state, HZ5_LOCAL2P_STATE_INVALID,
                         memory_order_relaxed);

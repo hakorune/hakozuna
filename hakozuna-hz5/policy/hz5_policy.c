@@ -16,6 +16,9 @@
 #if defined(__linux__)
 #include <pthread.h>
 #endif
+#if defined(_WIN32)
+#include <windows.h>
+#endif
 
 #if !defined(_WIN32)
 void* _aligned_malloc(size_t size, size_t alignment);
@@ -174,6 +177,38 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_LINUX_LOCAL2P_RETAIN_ARRAY 0
 #endif
 
+#ifndef BENCHLAB_HZ5_WIN_LOCAL2P
+#define BENCHLAB_HZ5_WIN_LOCAL2P 0
+#endif
+
+#ifndef BENCHLAB_HZ5_WIN_LOCAL2P_RAW_BYTES
+#define BENCHLAB_HZ5_WIN_LOCAL2P_RAW_BYTES ((size_t)131072)
+#endif
+
+#ifndef BENCHLAB_HZ5_WIN_LOCAL2P_ALIGN
+#define BENCHLAB_HZ5_WIN_LOCAL2P_ALIGN ((size_t)8192)
+#endif
+
+#ifndef BENCHLAB_HZ5_WIN_LOCAL2P_TLS_CAP
+#define BENCHLAB_HZ5_WIN_LOCAL2P_TLS_CAP ((size_t)1)
+#endif
+
+#ifndef BENCHLAB_HZ5_WIN_LOCAL2P_GLOBAL_CAP
+#define BENCHLAB_HZ5_WIN_LOCAL2P_GLOBAL_CAP ((size_t)1024)
+#endif
+
+#ifndef BENCHLAB_HZ5_WIN_LOCAL2P_DIRECT_ROUTE
+#define BENCHLAB_HZ5_WIN_LOCAL2P_DIRECT_ROUTE 1
+#endif
+
+#ifndef BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH
+#define BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH 0
+#endif
+
+#ifndef BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_CAP
+#define BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_CAP 16u
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS
 #define BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS 0
 #endif
@@ -256,6 +291,17 @@ static _Thread_local size_t g_hz5_policy_local2p_count;
 static _Thread_local uintptr_t g_hz5_policy_local2p_owner_token;
 static _Thread_local uint32_t g_hz5_policy_local2p_generation;
 #endif
+#endif
+
+#if defined(_WIN32) && BENCHLAB_HZ5_WIN_LOCAL2P
+static uintptr_t g_hz5_policy_win_local2p_secret_anchor;
+static SRWLOCK g_hz5_policy_win_local2p_global_lock = SRWLOCK_INIT;
+static void* g_hz5_policy_win_local2p_global_head;
+static size_t g_hz5_policy_win_local2p_global_count;
+static _Thread_local void* g_hz5_policy_win_local2p_head;
+static _Thread_local size_t g_hz5_policy_win_local2p_count;
+static _Thread_local uintptr_t g_hz5_policy_win_local2p_owner_token;
+static _Thread_local uint32_t g_hz5_policy_win_local2p_generation;
 #endif
 
 static void hz5_policy_register_stats_once(void) {
@@ -445,6 +491,7 @@ static int hz5_policy_bridge_attr_verify_and_mark_free(
 #endif
 
 #include "hz5_policy_local2p.inc"
+#include "hz5_policy_win_local2p.inc"
 
 #if BENCHLAB_HZ5_P43_WRAPPER_TOKEN
 static uint32_t hz5_policy_p43_token_cookie(uintptr_t raw,
@@ -515,6 +562,7 @@ static Hz5FreeResult hz5_policy_p43_release_wrapper_token(Hz5WrapperHdr* header,
 #if BENCHLAB_HZ5_P16_WRAPPER_64K_A8192 || BENCHLAB_HZ5_P17_PAGEBIN_64K_A8192 || \
     BENCHLAB_HZ5_P24_RAW64K_A8192 || BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || \
     BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192 || \
+    (defined(_WIN32) && BENCHLAB_HZ5_WIN_LOCAL2P) || \
     BENCHLAB_HZ5_LAZY_HZ3_FALLBACK
 static Hz5FreeResult hz5_policy_free_decoded_fallback_raw(void* raw) {
 #if BENCHLAB_HZ5_NO_HZ3_FALLBACK
@@ -664,12 +712,30 @@ void* hz5_policy_alloc_aligned(size_t size, size_t align,
     }
   }
 #endif
+#if defined(_WIN32) && BENCHLAB_HZ5_WIN_LOCAL2P && \
+    BENCHLAB_HZ5_WIN_LOCAL2P_DIRECT_ROUTE
+  if (hz5_policy_win_local2p_exact(size, align)) {
+    void* wrapped = hz5_policy_win_local2p_alloc(size, align);
+    if (wrapped) {
+      return wrapped;
+    }
+  }
+#endif
 
   if (hz5_route_exact_a8192(size, align)) {
 #if defined(__linux__) && BENCHLAB_HZ5_LINUX_LOCAL2P && \
     !BENCHLAB_HZ5_LINUX_LOCAL2P_DIRECT_ROUTE
     if (hz5_policy_local2p_exact(size, align)) {
       void* wrapped = hz5_policy_local2p_alloc(size, align);
+      if (wrapped) {
+        return wrapped;
+      }
+    }
+#endif
+#if defined(_WIN32) && BENCHLAB_HZ5_WIN_LOCAL2P && \
+    !BENCHLAB_HZ5_WIN_LOCAL2P_DIRECT_ROUTE
+    if (hz5_policy_win_local2p_exact(size, align)) {
+      void* wrapped = hz5_policy_win_local2p_alloc(size, align);
       if (wrapped) {
         return wrapped;
       }
@@ -744,6 +810,10 @@ void* hz5_policy_alloc_local2p_64k_a8192(void) {
   hz5_policy_register_observers_once();
   return hz5_policy_local2p_alloc(65536u,
                                   BENCHLAB_HZ5_LINUX_LOCAL2P_ALIGN);
+#elif defined(_WIN32) && BENCHLAB_HZ5_WIN_LOCAL2P
+  hz5_policy_register_observers_once();
+  return hz5_policy_win_local2p_alloc(65536u,
+                                      BENCHLAB_HZ5_WIN_LOCAL2P_ALIGN);
 #else
   return NULL;
 #endif
@@ -756,6 +826,15 @@ Hz5FreeResult hz5_policy_free_local2p_64k_a8192(void* ptr) {
   }
   Hz5FreeResult result = HZ5_FREE_INVALID;
   if (hz5_policy_local2p_try_free_direct(ptr, &result)) {
+    return result;
+  }
+  return HZ5_FREE_INVALID;
+#elif defined(_WIN32) && BENCHLAB_HZ5_WIN_LOCAL2P
+  if (!ptr) {
+    return HZ5_FREE_OK_HZ5;
+  }
+  Hz5FreeResult result = HZ5_FREE_INVALID;
+  if (hz5_policy_win_local2p_try_free_direct(ptr, &result)) {
     return result;
   }
   return HZ5_FREE_INVALID;
@@ -781,6 +860,12 @@ Hz5FreeResult hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
   Hz5FreeResult local2p_result = HZ5_FREE_INVALID;
   if (hz5_policy_local2p_try_free_direct(ptr, &local2p_result)) {
     return local2p_result;
+  }
+#endif
+#if defined(_WIN32) && BENCHLAB_HZ5_WIN_LOCAL2P
+  Hz5FreeResult win_local2p_result = HZ5_FREE_INVALID;
+  if (hz5_policy_win_local2p_try_free_direct(ptr, &win_local2p_result)) {
+    return win_local2p_result;
   }
 #endif
 
@@ -841,12 +926,15 @@ Hz5FreeResult hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
 #if BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || \
     BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192
   Hz5Lowpage64FreeCtx p25_lowpage_ctx = {0};
+#else
+  (void)p25_lowpage_lookup;
 #endif
 #endif
 
 #if BENCHLAB_HZ5_P16_WRAPPER_64K_A8192 || BENCHLAB_HZ5_P17_PAGEBIN_64K_A8192 || \
     BENCHLAB_HZ5_P24_RAW64K_A8192 || BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || \
     BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192 || \
+    (defined(_WIN32) && BENCHLAB_HZ5_WIN_LOCAL2P) || \
     BENCHLAB_HZ5_LAZY_HZ3_FALLBACK
 #if BENCHLAB_HZ5_P25_HZ4LOWPAGE64K_A8192 || \
     BENCHLAB_HZ5_P25_SPAN_CACHE64K_A8192
@@ -887,6 +975,15 @@ Hz5FreeResult hz5_policy_free(void* ptr, const Hz5PolicyHooks* hooks) {
       return hz5_policy_local2p_free(wrapped, (uintptr_t)ptr);
     }
     if (hz5_policy_local2p_metadata_present(wrapped)) {
+      hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INVALID_COOKIE);
+      return HZ5_FREE_INVALID;
+    }
+#endif
+#if defined(_WIN32) && BENCHLAB_HZ5_WIN_LOCAL2P
+    if (wrapped->source == HZ5_WRAPPER_SOURCE_WIN_LOCAL2P) {
+      return hz5_policy_win_local2p_free(wrapped, (uintptr_t)ptr);
+    }
+    if (hz5_policy_win_local2p_metadata_present(wrapped)) {
       hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INVALID_COOKIE);
       return HZ5_FREE_INVALID;
     }

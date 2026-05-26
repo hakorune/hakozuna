@@ -3,7 +3,20 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#if BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR || BENCHLAB_HZ5_LINUX_LOCAL2P
+#ifndef BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR
+#define BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR 0
+#endif
+#ifndef BENCHLAB_HZ5_LINUX_LOCAL2P
+#define BENCHLAB_HZ5_LINUX_LOCAL2P 0
+#endif
+#ifndef BENCHLAB_HZ5_WIN_LOCAL2P
+#define BENCHLAB_HZ5_WIN_LOCAL2P 0
+#endif
+
+#define HZ5_WRAPPER_LOCAL2P_ENABLED \
+  (BENCHLAB_HZ5_LINUX_LOCAL2P || BENCHLAB_HZ5_WIN_LOCAL2P)
+
+#if BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR || HZ5_WRAPPER_LOCAL2P_ENABLED
 #include <stdatomic.h>
 #endif
 
@@ -24,7 +37,8 @@ enum {
    * block. It is HZ4-inspired, but it is not an HZ4 or HZ3 fallback path.
    */
   HZ5_WRAPPER_SOURCE_P25_HZ4LOWPAGE = 5,
-  HZ5_WRAPPER_SOURCE_LINUX_LOCAL2P = 6
+  HZ5_WRAPPER_SOURCE_LINUX_LOCAL2P = 6,
+  HZ5_WRAPPER_SOURCE_WIN_LOCAL2P = 7
 };
 
 #if BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR
@@ -35,7 +49,7 @@ enum {
 };
 #endif
 
-#if BENCHLAB_HZ5_LINUX_LOCAL2P
+#if HZ5_WRAPPER_LOCAL2P_ENABLED
 enum {
   HZ5_LOCAL2P_STATE_INVALID = 0,
   HZ5_LOCAL2P_STATE_ACTIVE = 1,
@@ -68,7 +82,7 @@ typedef struct Hz5WrapperHdr {
   _Atomic uint32_t bridge_state;
   uint32_t bridge_generation;
 #endif
-#if BENCHLAB_HZ5_LINUX_LOCAL2P
+#if HZ5_WRAPPER_LOCAL2P_ENABLED
   uint64_t local2p_cookie;
   _Atomic uint32_t local2p_state;
   uint32_t local2p_generation;
