@@ -55,19 +55,17 @@ static size_t hz5_policy_win_local2p_sidecar_hash(uintptr_t aligned) {
 }
 
 static int hz5_policy_win_local2p_sidecar_header_valid(
-    const Hz5PolicyWinLocal2PSidecarEntry* entry,
     const Hz5WrapperHdr* header,
-    uintptr_t aligned) {
-  if (!entry || !header || entry->header != (uintptr_t)header ||
-      entry->raw != header->raw ||
+    uintptr_t raw,
+    uint32_t generation) {
+  if (!header || raw != header->raw ||
       header->magic != HZ5_WRAPPER_HDR_MAGIC ||
       header->layout_version != HZ5_WRAPPER_LAYOUT_VERSION ||
       header->layout_size != sizeof(Hz5WrapperHdr) ||
       header->source != HZ5_WRAPPER_SOURCE_WIN_LOCAL2P ||
       header->requested != HZ5_POLICY_LOCAL2P_EXACT_SIZE ||
       header->raw_bytes != BENCHLAB_HZ5_WIN_LOCAL2P_RAW_BYTES ||
-      header->local2p_generation != entry->generation) {
-    (void)aligned;
+      header->local2p_generation != generation) {
     return 0;
   }
   uint32_t state =
@@ -75,6 +73,99 @@ static int hz5_policy_win_local2p_sidecar_header_valid(
   return state == HZ5_LOCAL2P_STATE_ACTIVE;
 }
 
+#if BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_DIRECT_TABLE
+static void hz5_policy_win_local2p_sidecar_insert(
+    uintptr_t aligned,
+    Hz5WrapperHdr* header) {
+  if (!aligned || !header) {
+    hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_INSERT_FAIL);
+    return;
+  }
+
+  size_t index = hz5_policy_win_local2p_sidecar_hash(aligned);
+  Hz5PolicyWinLocal2PSidecarEntry* entry =
+      &g_hz5_policy_win_local2p_sidecar[index];
+  uintptr_t current =
+      atomic_load_explicit(&entry->aligned, memory_order_acquire);
+  if (current != 0u && current != aligned) {
+    hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_COLLISION);
+  }
+
+  atomic_store_explicit(&entry->raw, header->raw, memory_order_relaxed);
+  atomic_store_explicit(&entry->header, (uintptr_t)header,
+                        memory_order_relaxed);
+  atomic_store_explicit(&entry->generation, header->local2p_generation,
+                        memory_order_relaxed);
+  atomic_store_explicit(
+      &entry->state_snapshot,
+      atomic_load_explicit(&header->local2p_state, memory_order_relaxed),
+      memory_order_relaxed);
+  atomic_store_explicit(&entry->aligned, aligned, memory_order_release);
+  hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_INSERT);
+}
+
+static void hz5_policy_win_local2p_sidecar_remove_raw(uintptr_t raw) {
+  if (!raw) {
+    return;
+  }
+  for (size_t i = 0; i < BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_TABLE_SIZE; ++i) {
+    Hz5PolicyWinLocal2PSidecarEntry* entry =
+        &g_hz5_policy_win_local2p_sidecar[i];
+    uintptr_t entry_raw =
+        atomic_load_explicit(&entry->raw, memory_order_acquire);
+    if (entry_raw == raw) {
+      atomic_store_explicit(&entry->aligned, 0u, memory_order_release);
+      atomic_store_explicit(&entry->raw, 0u, memory_order_relaxed);
+      atomic_store_explicit(&entry->header, 0u, memory_order_relaxed);
+      atomic_store_explicit(&entry->generation, 0u, memory_order_relaxed);
+      atomic_store_explicit(&entry->state_snapshot, 0u, memory_order_relaxed);
+      hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_REMOVE);
+      return;
+    }
+  }
+}
+
+static int hz5_policy_win_local2p_sidecar_probe(uintptr_t aligned,
+                                                Hz5WrapperHdr** header_out) {
+  if (header_out) {
+    *header_out = NULL;
+  }
+  if (!aligned) {
+    hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_MISS);
+    return HZ5_WIN_LOCAL2P_SIDECAR_MISS;
+  }
+
+  size_t index = hz5_policy_win_local2p_sidecar_hash(aligned);
+  Hz5PolicyWinLocal2PSidecarEntry* entry =
+      &g_hz5_policy_win_local2p_sidecar[index];
+  uintptr_t entry_aligned =
+      atomic_load_explicit(&entry->aligned, memory_order_acquire);
+  if (entry_aligned != aligned) {
+    if (entry_aligned != 0u) {
+      hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_COLLISION);
+    }
+    hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_MISS);
+    return HZ5_WIN_LOCAL2P_SIDECAR_MISS;
+  }
+
+  uintptr_t raw = atomic_load_explicit(&entry->raw, memory_order_acquire);
+  uintptr_t header_addr =
+      atomic_load_explicit(&entry->header, memory_order_acquire);
+  uint32_t generation =
+      atomic_load_explicit(&entry->generation, memory_order_acquire);
+  Hz5WrapperHdr* header = (Hz5WrapperHdr*)header_addr;
+  if (hz5_policy_win_local2p_sidecar_header_valid(header, raw, generation)) {
+    if (header_out) {
+      *header_out = header;
+    }
+    hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_HIT_VALID);
+    return HZ5_WIN_LOCAL2P_SIDECAR_VALID;
+  }
+
+  hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_HIT_INVALID);
+  return HZ5_WIN_LOCAL2P_SIDECAR_INVALID;
+}
+#else
 static void hz5_policy_win_local2p_sidecar_insert(
     uintptr_t aligned,
     Hz5WrapperHdr* header) {
@@ -182,8 +273,8 @@ static int hz5_policy_win_local2p_sidecar_probe(uintptr_t aligned,
       const Hz5WrapperHdr* header = (const Hz5WrapperHdr*)entry->header;
       found = 1;
       found_header = header;
-      valid =
-          hz5_policy_win_local2p_sidecar_header_valid(entry, header, aligned);
+      valid = hz5_policy_win_local2p_sidecar_header_valid(
+          header, entry->raw, entry->generation);
       break;
     }
     hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_COLLISION);
@@ -204,6 +295,7 @@ static int hz5_policy_win_local2p_sidecar_probe(uintptr_t aligned,
   hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_HIT_INVALID);
   return HZ5_WIN_LOCAL2P_SIDECAR_INVALID;
 }
+#endif
 #endif
 
 static void hz5_policy_win_local2p_note_escape(size_t size, size_t align) {
