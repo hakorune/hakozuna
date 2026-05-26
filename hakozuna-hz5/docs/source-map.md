@@ -31,6 +31,35 @@ These files are the active 64K/a8192 path used by the P25/P33/P43i/P45 family.
 * `route/hz5_route.c`: size/alignment routing into HZ5 lowpage64 versus
   fallback/unsupported paths.
 * `contract/hz5_contract.c`: SpeedLane and diagnostic-lane contract descriptor.
+* `policy/hz5_policy_local2p_common.h`: cross-platform Local2P algorithm
+  vocabulary shared by Linux and Windows Local2P lanes. It intentionally stops
+  at common route/cache objects; OS raw allocation, lock primitives, and memory
+  return policy stay in the platform-specific Local2P implementations.
+
+## Cross-Platform Commonization Boundary
+
+HZ5 should commonize algorithms before it commonizes OS mechanics. Keep this
+split explicit:
+
+```text
+common:
+  route intent
+  wrapper/source tags
+  ownership state vocabulary
+  Local2P node/cache vocabulary
+  trace counter names
+  bridge/source/admission contract
+
+platform-specific:
+  mmap / VirtualAlloc / aligned allocation
+  pthread mutex / SRWLOCK and thread-local storage details
+  decommit / madvise / runtime release policy
+  backend-specific fast paths
+```
+
+The first concrete step is `policy/hz5_policy_local2p_common.h`, which names
+the shared Local2P freelist node and exact-route predicate while leaving Linux
+and Windows allocation sources untouched.
 
 ## Experimental Core
 

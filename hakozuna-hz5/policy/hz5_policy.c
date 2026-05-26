@@ -5,6 +5,7 @@
 #include "hz5_internal.h"
 #include "hz5_route.h"
 #include "hz5_smallfront.h"
+#include "hz5_policy_local2p_common.h"
 #include "hz5_trace.h"
 #include "hz5_wrapper.h"
 

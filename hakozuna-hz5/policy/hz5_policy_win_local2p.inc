@@ -1,7 +1,5 @@
 #if defined(_WIN32) && BENCHLAB_HZ5_WIN_LOCAL2P
-typedef struct Hz5WinLocal2PNode {
-  struct Hz5WinLocal2PNode* next;
-} Hz5WinLocal2PNode;
+typedef Hz5PolicyLocal2PNode Hz5WinLocal2PNode;
 
 static Hz5PolicyWinLocal2PTls* hz5_policy_win_local2p_tls(void) {
   return &g_hz5_policy_win_local2p_tls;
@@ -29,7 +27,8 @@ static uint64_t hz5_policy_win_local2p_cookie(uintptr_t raw,
 }
 
 static int hz5_policy_win_local2p_exact(size_t size, size_t align) {
-  return size == 65536u && align == BENCHLAB_HZ5_WIN_LOCAL2P_ALIGN;
+  return hz5_policy_local2p_common_exact(
+      size, align, 65536u, BENCHLAB_HZ5_WIN_LOCAL2P_ALIGN);
 }
 
 static uintptr_t hz5_policy_win_local2p_raw_from_node(void* node_ptr) {
