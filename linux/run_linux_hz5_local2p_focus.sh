@@ -57,6 +57,11 @@ Default allocator set:
   hz5-local2p-remotebatch    producer/consumer remote-free profile
   hz5-p25,hz4,tcmalloc,mimalloc,system controls
 
+HZ5 role aliases:
+  hz5-core-speed             alias for hz5-local2p-linkflags
+  hz5-core-rss               alias for hz5-local2p-rssretain2048tls
+  hz5-core-remote            alias for hz5-local2p-remotebatch
+
 Allocators:
   hz5-local2p-fast
   hz5-local2p-object
@@ -151,17 +156,20 @@ build_requested_hz5_lane() {
     hz5-local2p-tlsfast) build_hz5_lane hz5-local2p-tlsfast --linux-local2p-tls-fast-return ;;
     hz5-local2p-exactapi) build_hz5_lane hz5-local2p-exactapi --linux-local2p-exact-api ;;
     hz5-local2p-slot1) build_hz5_lane hz5-local2p-slot1 --linux-local2p-single-slot-tls ;;
+    hz5-core-speed) build_hz5_lane hz5-core-speed --hz5-core-speed ;;
     hz5-local2p-linkflags) build_hz5_lane hz5-local2p-linkflags --linux-local2p-speed-linkflags ;;
     hz5-local2p-rssretain256) build_hz5_lane hz5-local2p-rssretain256 --linux-local2p-rss-retain --linux-local2p-global-cap 256 ;;
     hz5-local2p-rssretain512) build_hz5_lane hz5-local2p-rssretain512 --linux-local2p-rss-retain --linux-local2p-global-cap 512 ;;
     hz5-local2p-rssretain) build_hz5_lane hz5-local2p-rssretain --linux-local2p-rss-retain ;;
     hz5-local2p-rssretain1536) build_hz5_lane hz5-local2p-rssretain1536 --linux-local2p-rss-retain --linux-local2p-global-cap 1536 ;;
     hz5-local2p-rssretain2048) build_hz5_lane hz5-local2p-rssretain2048 --linux-local2p-rss-retain --linux-local2p-global-cap 2048 ;;
+    hz5-core-rss) build_hz5_lane hz5-core-rss --hz5-core-rss ;;
     hz5-local2p-rssretain2048tls) build_hz5_lane hz5-local2p-rssretain2048tls --linux-local2p-rss-retain --linux-local2p-global-cap 2048 --linux-local2p-tls-cap 2048 ;;
     hz5-local2p-rssretain2048array) build_hz5_lane hz5-local2p-rssretain2048array --linux-local2p-rss-retain --linux-local2p-global-cap 2048 --linux-local2p-tls-cap 2048 --linux-local2p-retain-array ;;
     hz5-local2p-freefirst) build_hz5_lane hz5-local2p-freefirst --linux-local2p-free-first ;;
     hz5-local2p-freefirst-fastcookie) build_hz5_lane hz5-local2p-freefirst-fastcookie --linux-local2p-freefirst-fastcookie ;;
     hz5-local2p-inbox) build_hz5_lane hz5-local2p-inbox --linux-local2p-fast --linux-local2p-owner-inbox ;;
+    hz5-core-remote) build_hz5_lane hz5-core-remote --hz5-core-remote ;;
     hz5-local2p-remotebatch) build_hz5_lane hz5-local2p-remotebatch --linux-local2p-remote-batch ;;
     hz5-local2p-remotebatch8) build_hz5_lane hz5-local2p-remotebatch8 --linux-local2p-remote-batch --linux-local2p-remote-batch-cap 8 ;;
     hz5-local2p-remotebatch32) build_hz5_lane hz5-local2p-remotebatch32 --linux-local2p-remote-batch --linux-local2p-remote-batch-cap 32 ;;
@@ -240,17 +248,20 @@ is_hz5_focus_lane() {
     hz5-local2p-tlsfast|\
     hz5-local2p-exactapi|\
     hz5-local2p-slot1|\
+    hz5-core-speed|\
     hz5-local2p-linkflags|\
     hz5-local2p-rssretain256|\
     hz5-local2p-rssretain512|\
     hz5-local2p-rssretain|\
     hz5-local2p-rssretain1536|\
     hz5-local2p-rssretain2048|\
+    hz5-core-rss|\
     hz5-local2p-rssretain2048tls|\
     hz5-local2p-rssretain2048array|\
     hz5-local2p-freefirst|\
     hz5-local2p-freefirst-fastcookie|\
     hz5-local2p-inbox|\
+    hz5-core-remote|\
     hz5-local2p-remotebatch|\
     hz5-local2p-remotebatch8|\
     hz5-local2p-remotebatch32|\
@@ -386,6 +397,12 @@ write_allocator_metadata() {
         "appendix-reporting-row" "local-mixed-exact-64k-a8192-low-final-rss" \
         "low-final-rss-local-mixed-speed-profile"
       ;;
+    hz5-core-speed)
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$alloc" "hz5-core-speed" "local2p" \
+        "role-alias" "platform-speed-baseline" \
+        "linux-backend-alias-for-hz5-local2p-linkflags"
+      ;;
     hz5-local2p-rssretain)
       printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
         "$alloc" "hz5-linux-local2p-rss-retain" "local2p" \
@@ -403,6 +420,12 @@ write_allocator_metadata() {
         "$alloc" "hz5-linux-local2p-rss-retain-cap2048-tls2048" "local2p" \
         "appendix-reporting-row" "rss-throughput-retained-64k-a8192" \
         "retains-2048-block-working-set-in-owner-local-tls-cache"
+      ;;
+    hz5-core-rss)
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$alloc" "hz5-core-rss" "local2p" \
+        "role-alias" "platform-rss-baseline" \
+        "linux-backend-alias-for-hz5-local2p-rssretain2048tls"
       ;;
     hz5-local2p-rssretain2048array)
       printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
@@ -441,6 +464,12 @@ write_allocator_metadata() {
         "$alloc" "hz5-linux-local2p-remote-batch" "local2p" \
         "appendix-reporting-row" "producer-consumer-remote-free-64k-a8192" \
         "remote-free-batch-before-owner-inbox"
+      ;;
+    hz5-core-remote)
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$alloc" "hz5-core-remote" "local2p" \
+        "role-alias" "platform-remote-baseline" \
+        "linux-backend-alias-for-hz5-local2p-remotebatch"
       ;;
     hz5-local2p-remotebatch8)
       printf '%s\t%s\t%s\t%s\t%s\t%s\n' \

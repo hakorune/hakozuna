@@ -17,13 +17,16 @@ reports:
 
 ```text
 hz5-core-speed:
-  --linux-local2p-speed-linkflags
+  --hz5-core-speed
+  backend: --linux-local2p-speed-linkflags
 
 hz5-core-rss:
-  --linux-local2p-rssretain2048tls
+  --hz5-core-rss
+  backend: --linux-local2p-rss-retain --linux-local2p-global-cap 2048 --linux-local2p-tls-cap 2048
 
 hz5-core-remote:
-  --linux-local2p-remotebatch
+  --hz5-core-remote
+  backend: --linux-local2p-remote-batch
 
 hz5-general-backend-candidate:
   MidPageFront-C7

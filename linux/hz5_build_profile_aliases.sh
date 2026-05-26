@@ -4,6 +4,30 @@
 
 hz5_try_apply_profile_alias() {
   case "$1" in
+    --hz5-core-speed)
+      enable_local2p_speed_linkflags_base
+      ;;
+    --hz5-core-rss)
+      enable_local2p_speed_linkflags_base
+      LINUX_LOCAL2P_LOCAL_OVERFLOW_GLOBAL=1
+      LINUX_LOCAL2P_GLOBAL_CAP=2048
+      LINUX_LOCAL2P_TLS_CAP=2048
+      ;;
+    --hz5-core-remote)
+      LINUX_LOCAL2P=1
+      LINUX_LOCAL2P_TLS_PACKED=1
+      LINUX_LOCAL2P_TLS_INITIAL_EXEC=1
+      LINUX_LOCAL2P_OWNER_INBOX=1
+      LINUX_LOCAL2P_REMOTE_BATCH=1
+      LINUX_LOCAL2P_DIRECT_ROUTE=1
+      LINUX_LOCAL2P_DIRECT_INIT=1
+      LINUX_LOCAL2P_OBJECT_NODE=1
+      LINUX_LOCAL2P_SAME_OWNER_FAST_STATE=1
+      LINUX_LOCAL2P_ROUTE_COOKIE=1
+      LINUX_LOCAL2P_REUSE_STATE_ONLY=1
+      LINUX_LOCAL2P_SLIM_CHECK=1
+      LINUX_LOCAL2P_FAST_COOKIE=1
+      ;;
     --linux-hz5-profile-pagerun64-main)
       enable_midpage_m4packet_freefirst_tlslink_coarse_bands_rsscheckpoint_m6remote_pagerun64_base 2
       ;;
