@@ -48,8 +48,16 @@ hz5_policy_win_local2p_node_from_header(Hz5WrapperHdr* header,
 
 static void* hz5_policy_win_local2p_pop(void) {
   Hz5PolicyWinLocal2PTls* tls = hz5_policy_win_local2p_tls();
+#if BENCHLAB_HZ5_WIN_LOCAL2P_RETAIN_ARRAY
+  if (tls->count == 0u) {
+    return NULL;
+  }
+  Hz5WinLocal2PNode* node =
+      (Hz5WinLocal2PNode*)tls->retained[--tls->count];
+#else
   Hz5WinLocal2PNode* node = (Hz5WinLocal2PNode*)
       hz5_policy_local2p_common_pop_node(&tls->head, &tls->count);
+#endif
   if (!node) {
     return NULL;
   }
@@ -177,9 +185,13 @@ static int hz5_policy_win_local2p_push(void* node_ptr) {
     return hz5_policy_win_local2p_global_push(node_ptr);
   }
 
+#if BENCHLAB_HZ5_WIN_LOCAL2P_RETAIN_ARRAY
+  tls->retained[tls->count++] = node_ptr;
+#else
   Hz5WinLocal2PNode* node = (Hz5WinLocal2PNode*)node_ptr;
   (void)hz5_policy_local2p_common_push_node(
       &tls->head, &tls->count, BENCHLAB_HZ5_WIN_LOCAL2P_TLS_CAP, node);
+#endif
   hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_TLS);
   return 1;
 }

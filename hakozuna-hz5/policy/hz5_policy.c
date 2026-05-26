@@ -206,6 +206,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH 0
 #endif
 
+#ifndef BENCHLAB_HZ5_WIN_LOCAL2P_RETAIN_ARRAY
+#define BENCHLAB_HZ5_WIN_LOCAL2P_RETAIN_ARRAY 0
+#endif
+
 #ifndef BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_CAP
 #define BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_CAP 16u
 #endif
@@ -302,6 +306,9 @@ static size_t g_hz5_policy_win_local2p_global_count;
 typedef struct Hz5PolicyWinLocal2PTls {
   void* head;
   size_t count;
+#if BENCHLAB_HZ5_WIN_LOCAL2P_RETAIN_ARRAY
+  void* retained[BENCHLAB_HZ5_WIN_LOCAL2P_TLS_CAP];
+#endif
   uintptr_t owner_token;
   uint32_t generation;
   _Atomic(void*) inbox_head;
