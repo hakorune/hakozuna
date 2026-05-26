@@ -342,13 +342,37 @@ static Hz5FreeResult hz5_policy_win_local2p_free(Hz5WrapperHdr* header,
     return HZ5_FREE_INVALID;
   }
 
+  uintptr_t current_owner = hz5_policy_win_local2p_owner_token();
+  void* node_ptr = hz5_policy_win_local2p_node_from_header(header, aligned);
+
+#if BENCHLAB_HZ5_WIN_LOCAL2P_SAME_OWNER_FAST_STATE
+  if (header->local2p_owner == current_owner) {
+    uint32_t state =
+        atomic_load_explicit(&header->local2p_state, memory_order_acquire);
+    if (state != HZ5_LOCAL2P_STATE_ACTIVE) {
+      hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INVALID_STATE);
+      return HZ5_FREE_INVALID;
+    }
+    atomic_store_explicit(&header->local2p_state, HZ5_LOCAL2P_STATE_FREED,
+                          memory_order_release);
+    (void)hz5_policy_win_local2p_push(node_ptr);
+    return HZ5_FREE_OK_HZ5;
+  }
+
+  uint32_t old_state = atomic_exchange_explicit(
+      &header->local2p_state, HZ5_LOCAL2P_STATE_FREED,
+      memory_order_acq_rel);
+  if (old_state != HZ5_LOCAL2P_STATE_ACTIVE) {
+    hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INVALID_STATE);
+    return HZ5_FREE_INVALID;
+  }
+#else
   if (!hz5_policy_local2p_common_mark_freed(header)) {
     hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INVALID_STATE);
     return HZ5_FREE_INVALID;
   }
+#endif
 
-  uintptr_t current_owner = hz5_policy_win_local2p_owner_token();
-  void* node_ptr = hz5_policy_win_local2p_node_from_header(header, aligned);
   if (header->local2p_owner != current_owner) {
     hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_REMOTE);
 #if BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH
@@ -371,6 +395,28 @@ static Hz5FreeResult hz5_policy_win_local2p_free(Hz5WrapperHdr* header,
 
 static int hz5_policy_win_local2p_direct_decode(void* ptr,
                                                 Hz5WrapperHdr** header_out) {
+#if BENCHLAB_HZ5_WIN_LOCAL2P_ROUTE_COOKIE
+  if (!ptr) {
+    return 0;
+  }
+  uintptr_t aligned = (uintptr_t)ptr;
+  if (aligned < sizeof(Hz5WrapperHdr)) {
+    return 0;
+  }
+  Hz5WrapperHdr* header =
+      (Hz5WrapperHdr*)(aligned - sizeof(Hz5WrapperHdr));
+  if (header->magic != HZ5_WRAPPER_HDR_MAGIC ||
+      header->layout_version != HZ5_WRAPPER_LAYOUT_VERSION ||
+      header->layout_size != sizeof(Hz5WrapperHdr) ||
+      header->source != HZ5_WRAPPER_SOURCE_WIN_LOCAL2P ||
+      header->raw == 0) {
+    return 0;
+  }
+  if (header_out) {
+    *header_out = header;
+  }
+  return 1;
+#else
   Hz5WrapperHdr* header = NULL;
   if (!hz5_wrapper_decode(ptr, &header)) {
     return 0;
@@ -382,6 +428,7 @@ static int hz5_policy_win_local2p_direct_decode(void* ptr,
     *header_out = header;
   }
   return 1;
+#endif
 }
 
 static int
