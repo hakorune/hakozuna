@@ -38,7 +38,17 @@ static int hz5_policy_win_local2p_exact(size_t size, size_t align) {
 }
 
 static uintptr_t hz5_policy_win_local2p_raw_from_node(void* node_ptr) {
+#if BENCHLAB_HZ5_WIN_LOCAL2P_OBJECT_NODE
+  uintptr_t aligned = (uintptr_t)node_ptr;
+  if (aligned < sizeof(Hz5WrapperHdr)) {
+    return 0;
+  }
+  Hz5WrapperHdr* header =
+      (Hz5WrapperHdr*)(aligned - sizeof(Hz5WrapperHdr));
+  return header->raw;
+#else
   return (uintptr_t)node_ptr;
+#endif
 }
 
 static void hz5_policy_win_local2p_free_node(void* node_ptr) {
@@ -51,8 +61,13 @@ static void hz5_policy_win_local2p_free_node(void* node_ptr) {
 static void*
 hz5_policy_win_local2p_node_from_header(Hz5WrapperHdr* header,
                                         uintptr_t aligned) {
+#if BENCHLAB_HZ5_WIN_LOCAL2P_OBJECT_NODE
+  (void)header;
+  return (void*)aligned;
+#else
   (void)aligned;
   return (void*)header->raw;
+#endif
 }
 
 static void* hz5_policy_win_local2p_pop(void) {
@@ -253,6 +268,20 @@ static void* hz5_policy_win_local2p_alloc(size_t size, size_t align) {
   }
 
   void* node_ptr = hz5_policy_win_local2p_pop();
+  int tls_reuse = node_ptr != NULL;
+  (void)tls_reuse;
+#if BENCHLAB_HZ5_WIN_LOCAL2P_TLS_FAST_RETURN && \
+    BENCHLAB_HZ5_WIN_LOCAL2P_OBJECT_NODE && \
+    BENCHLAB_HZ5_WIN_LOCAL2P_REUSE_STATE_ONLY
+  if (tls_reuse) {
+    uintptr_t aligned = (uintptr_t)node_ptr;
+    Hz5WrapperHdr* header =
+        (Hz5WrapperHdr*)(aligned - sizeof(Hz5WrapperHdr));
+    atomic_store_explicit(&header->local2p_state, HZ5_LOCAL2P_STATE_ACTIVE,
+                          memory_order_release);
+    return (void*)aligned;
+  }
+#endif
   if (!node_ptr) {
     node_ptr = hz5_policy_win_local2p_inbox_pop();
   }
@@ -267,8 +296,15 @@ static void* hz5_policy_win_local2p_alloc(size_t size, size_t align) {
   }
 
   uintptr_t raw = (uintptr_t)raw_ptr;
+#if BENCHLAB_HZ5_WIN_LOCAL2P_OBJECT_NODE
+  uintptr_t aligned = node_ptr
+                          ? (uintptr_t)node_ptr
+                          : hz5_policy_local2p_common_align_user(
+                                raw, BENCHLAB_HZ5_WIN_LOCAL2P_ALIGN);
+#else
   uintptr_t aligned = hz5_policy_local2p_common_align_user(
       raw, BENCHLAB_HZ5_WIN_LOCAL2P_ALIGN);
+#endif
   if (!hz5_policy_local2p_common_layout_fits(
           raw, aligned, size, BENCHLAB_HZ5_WIN_LOCAL2P_RAW_BYTES)) {
     hz5_policy_win_local2p_free_node(raw_ptr);
@@ -276,10 +312,25 @@ static void* hz5_policy_win_local2p_alloc(size_t size, size_t align) {
   }
 
   Hz5WrapperHdr* header = (Hz5WrapperHdr*)(aligned - sizeof(Hz5WrapperHdr));
+#if BENCHLAB_HZ5_WIN_LOCAL2P_OBJECT_NODE
+  if (!node_ptr) {
+#endif
   hz5_wrapper_init(header, raw, aligned, size,
                    BENCHLAB_HZ5_WIN_LOCAL2P_RAW_BYTES,
                    HZ5_WRAPPER_SOURCE_WIN_LOCAL2P);
+#if BENCHLAB_HZ5_WIN_LOCAL2P_OBJECT_NODE
+  }
+#endif
+#if BENCHLAB_HZ5_WIN_LOCAL2P_REUSE_STATE_ONLY
+  if (tls_reuse) {
+    atomic_store_explicit(&header->local2p_state, HZ5_LOCAL2P_STATE_ACTIVE,
+                          memory_order_release);
+  } else {
+    hz5_policy_win_local2p_init_header(header, aligned);
+  }
+#else
   hz5_policy_win_local2p_init_header(header, aligned);
+#endif
   atomic_store_explicit(&g_hz5_policy_seen_allocation, 1,
                         memory_order_relaxed);
   return (void*)aligned;
