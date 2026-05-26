@@ -46,7 +46,8 @@ static uint64_t hz5_policy_local2p_cookie(uintptr_t raw,
 
 static int hz5_policy_local2p_exact(size_t size, size_t align) {
   return hz5_policy_local2p_common_exact(
-      size, align, 65536u, BENCHLAB_HZ5_LINUX_LOCAL2P_ALIGN);
+      size, align, HZ5_POLICY_LOCAL2P_EXACT_SIZE,
+      BENCHLAB_HZ5_LINUX_LOCAL2P_ALIGN);
 }
 
 static uintptr_t hz5_policy_local2p_raw_from_node(void* node_ptr) {
@@ -331,7 +332,8 @@ static inline int hz5_policy_local2p_validate_free_header(Hz5WrapperHdr* header,
   }
 #else
   if (!hz5_policy_local2p_common_header_matches(
-          header, HZ5_WRAPPER_SOURCE_LINUX_LOCAL2P, 65536u,
+          header, HZ5_WRAPPER_SOURCE_LINUX_LOCAL2P,
+          HZ5_POLICY_LOCAL2P_EXACT_SIZE,
           BENCHLAB_HZ5_LINUX_LOCAL2P_RAW_BYTES)) {
     hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INVALID_COOKIE);
     return 0;

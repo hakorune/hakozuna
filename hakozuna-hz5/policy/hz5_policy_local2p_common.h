@@ -18,6 +18,8 @@ typedef struct Hz5PolicyLocal2PNode {
   struct Hz5PolicyLocal2PNode* next;
 } Hz5PolicyLocal2PNode;
 
+#define HZ5_POLICY_LOCAL2P_EXACT_SIZE 65536u
+
 static inline int hz5_policy_local2p_common_exact(size_t size,
                                                   size_t align,
                                                   size_t exact_size,
