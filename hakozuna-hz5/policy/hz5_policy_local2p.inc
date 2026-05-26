@@ -194,10 +194,9 @@ static int hz5_policy_local2p_remote_batch_flush(Hz5PolicyLocal2PTls* tls) {
       &owner_tls->inbox_head, &inbox_head, head,
       memory_order_acq_rel, memory_order_acquire));
 
-  tls->remote_batch_owner = 0;
-  tls->remote_batch_head = NULL;
-  tls->remote_batch_tail = NULL;
-  tls->remote_batch_count = 0;
+  hz5_policy_local2p_common_remote_batch_reset(
+      &tls->remote_batch_owner, &tls->remote_batch_head,
+      &tls->remote_batch_tail, &tls->remote_batch_count);
   hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INBOX);
   return 1;
 }
@@ -212,13 +211,9 @@ static int hz5_policy_local2p_remote_batch_push(uintptr_t owner,
     (void)hz5_policy_local2p_remote_batch_flush(tls);
   }
   Hz5LinuxLocal2PNode* node = (Hz5LinuxLocal2PNode*)node_ptr;
-  node->next = (Hz5LinuxLocal2PNode*)tls->remote_batch_head;
-  tls->remote_batch_head = node;
-  if (!tls->remote_batch_tail) {
-    tls->remote_batch_tail = node;
-  }
-  tls->remote_batch_owner = owner;
-  ++tls->remote_batch_count;
+  hz5_policy_local2p_common_remote_batch_push(
+      owner, node, &tls->remote_batch_owner, &tls->remote_batch_head,
+      &tls->remote_batch_tail, &tls->remote_batch_count);
   if (tls->remote_batch_count >= BENCHLAB_HZ5_LINUX_LOCAL2P_REMOTE_BATCH_CAP) {
     return hz5_policy_local2p_remote_batch_flush(tls);
   }

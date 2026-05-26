@@ -54,4 +54,31 @@ static inline int hz5_policy_local2p_common_mark_freed(Hz5WrapperHdr* header) {
 }
 #endif
 
+static inline void hz5_policy_local2p_common_remote_batch_push(
+    uintptr_t owner,
+    Hz5PolicyLocal2PNode* node,
+    uintptr_t* batch_owner,
+    void** batch_head,
+    void** batch_tail,
+    size_t* batch_count) {
+  node->next = (Hz5PolicyLocal2PNode*)*batch_head;
+  *batch_head = node;
+  if (!*batch_tail) {
+    *batch_tail = node;
+  }
+  *batch_owner = owner;
+  ++(*batch_count);
+}
+
+static inline void hz5_policy_local2p_common_remote_batch_reset(
+    uintptr_t* batch_owner,
+    void** batch_head,
+    void** batch_tail,
+    size_t* batch_count) {
+  *batch_owner = 0;
+  *batch_head = NULL;
+  *batch_tail = NULL;
+  *batch_count = 0;
+}
+
 #endif
