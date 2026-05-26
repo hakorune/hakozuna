@@ -628,6 +628,45 @@ static Hz5FreeResult hz5_policy_win_local2p_free(Hz5WrapperHdr* header,
   return HZ5_FREE_OK_HZ5;
 }
 
+#if BENCHLAB_HZ5_WIN_LOCAL2P_ROUTE_HEADER_GUARD
+static int hz5_policy_win_local2p_route_header_readable(uintptr_t aligned) {
+  if (aligned < sizeof(Hz5WrapperHdr)) {
+    return 0;
+  }
+
+  /*
+   * HZ4's Windows wrapper guard only probes page-boundary cases so the hot
+   * exact route does not pay a VirtualQuery tax on every free. This optional
+   * guard gives Local2P the same protection when ptr-header would cross into
+   * the previous page before route-cookie direct decode touches the header.
+   */
+  if ((aligned & ((uintptr_t)HZ5_POLICY_PAGE_SIZE - 1u)) >=
+      sizeof(Hz5WrapperHdr)) {
+    return 1;
+  }
+
+  uintptr_t hdr_addr = aligned - sizeof(Hz5WrapperHdr);
+  MEMORY_BASIC_INFORMATION mbi;
+  if (VirtualQuery((const void*)hdr_addr, &mbi, sizeof(mbi)) == 0) {
+    return 0;
+  }
+  if (mbi.State != MEM_COMMIT) {
+    return 0;
+  }
+  if ((mbi.Protect & (PAGE_NOACCESS | PAGE_GUARD)) != 0) {
+    return 0;
+  }
+
+  uintptr_t region_start = (uintptr_t)mbi.BaseAddress;
+  uintptr_t region_end = region_start + (uintptr_t)mbi.RegionSize;
+  uintptr_t hdr_end = hdr_addr + sizeof(Hz5WrapperHdr);
+  if (region_end < region_start || hdr_end < hdr_addr) {
+    return 0;
+  }
+  return hdr_addr >= region_start && hdr_end <= region_end;
+}
+#endif
+
 static int hz5_policy_win_local2p_direct_decode(void* ptr,
                                                 Hz5WrapperHdr** header_out) {
 #if BENCHLAB_HZ5_WIN_LOCAL2P_ROUTE_COOKIE
@@ -640,6 +679,12 @@ static int hz5_policy_win_local2p_direct_decode(void* ptr,
     hz5_trace_inc(HZ5_TRACE_LOCAL2P_ROUTE_COOKIE_MISS);
     return 0;
   }
+#if BENCHLAB_HZ5_WIN_LOCAL2P_ROUTE_HEADER_GUARD
+  if (!hz5_policy_win_local2p_route_header_readable(aligned)) {
+    hz5_trace_inc(HZ5_TRACE_LOCAL2P_ROUTE_COOKIE_MISS);
+    return 0;
+  }
+#endif
   Hz5WrapperHdr* header =
       (Hz5WrapperHdr*)(aligned - sizeof(Hz5WrapperHdr));
   if (header->magic != HZ5_WRAPPER_HDR_MAGIC ||
