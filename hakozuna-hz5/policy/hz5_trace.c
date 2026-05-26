@@ -82,6 +82,28 @@ static const char* hz5_trace_name(Hz5TraceCounter counter) {
       return "free_local2p_invalid_state";
     case HZ5_TRACE_FREE_LOCAL2P_OVERFLOW:
       return "free_local2p_overflow";
+    case HZ5_TRACE_ALLOC_LOCAL2P_TLS_FAST_RETURN:
+      return "alloc_local2p_tls_fast_return";
+    case HZ5_TRACE_ALLOC_LOCAL2P_INBOX_CACHE_HIT:
+      return "alloc_local2p_inbox_cache_hit";
+    case HZ5_TRACE_ALLOC_LOCAL2P_INBOX_EXCHANGE:
+      return "alloc_local2p_inbox_exchange";
+    case HZ5_TRACE_ALLOC_LOCAL2P_HEADER_INIT:
+      return "alloc_local2p_header_init";
+    case HZ5_TRACE_FREE_LOCAL2P_SAME_OWNER_FAST:
+      return "free_local2p_same_owner_fast";
+    case HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_ENQUEUE:
+      return "free_local2p_remote_batch_enqueue";
+    case HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH:
+      return "free_local2p_remote_batch_flush";
+    case HZ5_TRACE_LOCAL2P_GLOBAL_POP_LOCK:
+      return "local2p_global_pop_lock";
+    case HZ5_TRACE_LOCAL2P_GLOBAL_PUSH_LOCK:
+      return "local2p_global_push_lock";
+    case HZ5_TRACE_LOCAL2P_ROUTE_COOKIE_OK:
+      return "local2p_route_cookie_ok";
+    case HZ5_TRACE_LOCAL2P_ROUTE_COOKIE_MISS:
+      return "local2p_route_cookie_miss";
     case HZ5_TRACE_COUNT:
       break;
   }

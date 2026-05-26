@@ -93,8 +93,11 @@ static void* hz5_policy_win_local2p_inbox_pop(void) {
   Hz5PolicyWinLocal2PTls* tls = hz5_policy_win_local2p_tls();
   Hz5WinLocal2PNode* node = (Hz5WinLocal2PNode*)tls->inbox_cache;
   if (!node) {
+    hz5_trace_inc(HZ5_TRACE_ALLOC_LOCAL2P_INBOX_EXCHANGE);
     node = (Hz5WinLocal2PNode*)atomic_exchange_explicit(
         &tls->inbox_head, NULL, memory_order_acq_rel);
+  } else {
+    hz5_trace_inc(HZ5_TRACE_ALLOC_LOCAL2P_INBOX_CACHE_HIT);
   }
   if (!node) {
     return NULL;
@@ -138,6 +141,7 @@ hz5_policy_win_local2p_remote_batch_flush(Hz5PolicyWinLocal2PTls* tls) {
   hz5_policy_local2p_common_remote_batch_reset(
       &tls->remote_batch_owner, &tls->remote_batch_head,
       &tls->remote_batch_tail, &tls->remote_batch_count);
+  hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH);
   hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INBOX);
   return 1;
 }
@@ -155,6 +159,7 @@ static int hz5_policy_win_local2p_remote_batch_push(uintptr_t owner,
   hz5_policy_local2p_common_remote_batch_push(
       owner, node, &tls->remote_batch_owner, &tls->remote_batch_head,
       &tls->remote_batch_tail, &tls->remote_batch_count);
+  hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_ENQUEUE);
   if (tls->remote_batch_count >= BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_CAP) {
     return hz5_policy_win_local2p_remote_batch_flush(tls);
   }
@@ -166,6 +171,7 @@ static void* hz5_policy_win_local2p_global_pop(void) {
   if (BENCHLAB_HZ5_WIN_LOCAL2P_GLOBAL_CAP == 0u) {
     return NULL;
   }
+  hz5_trace_inc(HZ5_TRACE_LOCAL2P_GLOBAL_POP_LOCK);
   AcquireSRWLockExclusive(&g_hz5_policy_win_local2p_global_lock);
   Hz5WinLocal2PNode* node = (Hz5WinLocal2PNode*)
       hz5_policy_local2p_common_pop_node(
@@ -186,6 +192,7 @@ static int hz5_policy_win_local2p_global_push(void* node_ptr) {
 
   int accepted = 0;
   Hz5WinLocal2PNode* node = (Hz5WinLocal2PNode*)node_ptr;
+  hz5_trace_inc(HZ5_TRACE_LOCAL2P_GLOBAL_PUSH_LOCK);
   AcquireSRWLockExclusive(&g_hz5_policy_win_local2p_global_lock);
   accepted = hz5_policy_local2p_common_push_node(
       &g_hz5_policy_win_local2p_global_head,
@@ -238,6 +245,7 @@ static void hz5_policy_win_local2p_init_header(Hz5WrapperHdr* header,
   uint64_t cookie =
       hz5_policy_win_local2p_cookie(header->raw, aligned, header->raw_bytes,
                                     generation, owner);
+  hz5_trace_inc(HZ5_TRACE_ALLOC_LOCAL2P_HEADER_INIT);
   hz5_policy_local2p_common_activate(header, owner, generation, cookie);
 }
 
@@ -279,6 +287,7 @@ static void* hz5_policy_win_local2p_alloc(size_t size, size_t align) {
         (Hz5WrapperHdr*)(aligned - sizeof(Hz5WrapperHdr));
     atomic_store_explicit(&header->local2p_state, HZ5_LOCAL2P_STATE_ACTIVE,
                           memory_order_release);
+    hz5_trace_inc(HZ5_TRACE_ALLOC_LOCAL2P_TLS_FAST_RETURN);
     return (void*)aligned;
   }
 #endif
@@ -355,6 +364,7 @@ static Hz5FreeResult hz5_policy_win_local2p_free(Hz5WrapperHdr* header,
     }
     atomic_store_explicit(&header->local2p_state, HZ5_LOCAL2P_STATE_FREED,
                           memory_order_release);
+    hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_SAME_OWNER_FAST);
     (void)hz5_policy_win_local2p_push(node_ptr);
     return HZ5_FREE_OK_HZ5;
   }
@@ -397,10 +407,12 @@ static int hz5_policy_win_local2p_direct_decode(void* ptr,
                                                 Hz5WrapperHdr** header_out) {
 #if BENCHLAB_HZ5_WIN_LOCAL2P_ROUTE_COOKIE
   if (!ptr) {
+    hz5_trace_inc(HZ5_TRACE_LOCAL2P_ROUTE_COOKIE_MISS);
     return 0;
   }
   uintptr_t aligned = (uintptr_t)ptr;
   if (aligned < sizeof(Hz5WrapperHdr)) {
+    hz5_trace_inc(HZ5_TRACE_LOCAL2P_ROUTE_COOKIE_MISS);
     return 0;
   }
   Hz5WrapperHdr* header =
@@ -410,8 +422,10 @@ static int hz5_policy_win_local2p_direct_decode(void* ptr,
       header->layout_size != sizeof(Hz5WrapperHdr) ||
       header->source != HZ5_WRAPPER_SOURCE_WIN_LOCAL2P ||
       header->raw == 0) {
+    hz5_trace_inc(HZ5_TRACE_LOCAL2P_ROUTE_COOKIE_MISS);
     return 0;
   }
+  hz5_trace_inc(HZ5_TRACE_LOCAL2P_ROUTE_COOKIE_OK);
   if (header_out) {
     *header_out = header;
   }
