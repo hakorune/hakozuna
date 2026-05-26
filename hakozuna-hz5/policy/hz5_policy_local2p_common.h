@@ -34,6 +34,15 @@ static inline uint32_t hz5_policy_local2p_common_next_generation(
   return next;
 }
 
+static inline uintptr_t hz5_policy_local2p_common_owner_token(
+    uintptr_t* token,
+    uintptr_t seed) {
+  if (!*token) {
+    *token = seed;
+  }
+  return *token;
+}
+
 #if HZ5_WRAPPER_LOCAL2P_ENABLED
 static inline void hz5_policy_local2p_common_activate(Hz5WrapperHdr* header,
                                                       uintptr_t owner,

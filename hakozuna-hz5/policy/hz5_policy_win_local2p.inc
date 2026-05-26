@@ -7,10 +7,8 @@ static Hz5PolicyWinLocal2PTls* hz5_policy_win_local2p_tls(void) {
 
 static uintptr_t hz5_policy_win_local2p_owner_token(void) {
   Hz5PolicyWinLocal2PTls* tls = hz5_policy_win_local2p_tls();
-  if (!tls->owner_token) {
-    tls->owner_token = (uintptr_t)tls;
-  }
-  return tls->owner_token;
+  return hz5_policy_local2p_common_owner_token(&tls->owner_token,
+                                               (uintptr_t)tls);
 }
 
 static uint64_t hz5_policy_win_local2p_cookie(uintptr_t raw,

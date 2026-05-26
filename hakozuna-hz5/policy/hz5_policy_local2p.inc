@@ -14,17 +14,13 @@ static uintptr_t hz5_policy_local2p_owner_token(void) {
   tls->owner_token = (uintptr_t)tls;
   return tls->owner_token;
 #else
-  if (!tls->owner_token) {
-    tls->owner_token = (uintptr_t)&tls->owner_token;
-  }
-  return tls->owner_token;
+  return hz5_policy_local2p_common_owner_token(&tls->owner_token,
+                                               (uintptr_t)&tls->owner_token);
 #endif
 #else
-  if (!g_hz5_policy_local2p_owner_token) {
-    g_hz5_policy_local2p_owner_token =
-        (uintptr_t)&g_hz5_policy_local2p_owner_token;
-  }
-  return g_hz5_policy_local2p_owner_token;
+  return hz5_policy_local2p_common_owner_token(
+      &g_hz5_policy_local2p_owner_token,
+      (uintptr_t)&g_hz5_policy_local2p_owner_token);
 #endif
 }
 
