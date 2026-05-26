@@ -238,6 +238,10 @@ void _aligned_free(void* ptr);
 #define BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_CAP 16u
 #endif
 
+#ifndef BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SLOTS
+#define BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SLOTS 1u
+#endif
+
 #ifndef BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS
 #define BENCHLAB_HZ5_LINUX_P25_BRIDGE_ATTR_NO_CAS 0
 #endif
@@ -337,10 +341,19 @@ typedef struct Hz5PolicyWinLocal2PTls {
   uint32_t generation;
   _Atomic(void*) inbox_head;
   void* inbox_cache;
+#if BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH && \
+    BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SLOTS > 1u
+  uintptr_t remote_batch_owner[BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SLOTS];
+  void* remote_batch_head[BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SLOTS];
+  void* remote_batch_tail[BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SLOTS];
+  size_t remote_batch_count[BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SLOTS];
+  size_t remote_batch_next_victim;
+#else
   uintptr_t remote_batch_owner;
   void* remote_batch_head;
   void* remote_batch_tail;
   size_t remote_batch_count;
+#endif
 } Hz5PolicyWinLocal2PTls;
 static _Thread_local Hz5PolicyWinLocal2PTls g_hz5_policy_win_local2p_tls;
 #endif

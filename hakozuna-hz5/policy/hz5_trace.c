@@ -96,6 +96,12 @@ static const char* hz5_trace_name(Hz5TraceCounter counter) {
       return "free_local2p_remote_batch_enqueue";
     case HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH:
       return "free_local2p_remote_batch_flush";
+    case HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_OWNER:
+      return "free_local2p_remote_batch_flush_owner";
+    case HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_CAP:
+      return "free_local2p_remote_batch_flush_cap";
+    case HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_NODES:
+      return "free_local2p_remote_batch_flush_nodes";
     case HZ5_TRACE_LOCAL2P_GLOBAL_POP_LOCK:
       return "local2p_global_pop_lock";
     case HZ5_TRACE_LOCAL2P_GLOBAL_PUSH_LOCK:
