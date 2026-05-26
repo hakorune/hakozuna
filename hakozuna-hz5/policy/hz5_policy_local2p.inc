@@ -335,28 +335,21 @@ static void hz5_policy_local2p_init_header(Hz5WrapperHdr* header,
                                            uintptr_t aligned) {
 #if BENCHLAB_HZ5_LINUX_LOCAL2P_TLS_PACKED
   Hz5PolicyLocal2PTls* tls = hz5_policy_local2p_tls();
-  uint32_t generation = ++tls->generation;
-  if (generation == 0u) {
-    generation = ++tls->generation;
-  }
+  uint32_t generation =
+      hz5_policy_local2p_common_next_generation(&tls->generation);
 #else
-  uint32_t generation = ++g_hz5_policy_local2p_generation;
-  if (generation == 0u) {
-    generation = ++g_hz5_policy_local2p_generation;
-  }
+  uint32_t generation = hz5_policy_local2p_common_next_generation(
+      &g_hz5_policy_local2p_generation);
 #endif
   uintptr_t owner = hz5_policy_local2p_owner_token();
-  header->local2p_owner = owner;
-  header->local2p_generation = generation;
 #if BENCHLAB_HZ5_LINUX_LOCAL2P_NO_COOKIE
-  header->local2p_cookie = UINT64_C(0x2f12);
+  uint64_t cookie = UINT64_C(0x2f12);
 #else
-  header->local2p_cookie =
+  uint64_t cookie =
       hz5_policy_local2p_cookie(header->raw, aligned, header->raw_bytes,
                                 generation, owner);
 #endif
-  atomic_store_explicit(&header->local2p_state, HZ5_LOCAL2P_STATE_ACTIVE,
-                        memory_order_release);
+  hz5_policy_local2p_common_activate(header, owner, generation, cookie);
 }
 
 static inline int hz5_policy_local2p_validate_free_header(Hz5WrapperHdr* header,
@@ -537,10 +530,7 @@ static Hz5FreeResult hz5_policy_local2p_free(Hz5WrapperHdr* header,
     return HZ5_FREE_INVALID;
   }
 #else
-  uint32_t old_state = atomic_exchange_explicit(
-      &header->local2p_state, HZ5_LOCAL2P_STATE_FREED,
-      memory_order_acq_rel);
-  if (old_state != HZ5_LOCAL2P_STATE_ACTIVE) {
+  if (!hz5_policy_local2p_common_mark_freed(header)) {
     hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INVALID_STATE);
     return HZ5_FREE_INVALID;
   }

@@ -221,18 +221,13 @@ static void* hz5_policy_win_local2p_os_alloc(void) {
 static void hz5_policy_win_local2p_init_header(Hz5WrapperHdr* header,
                                                uintptr_t aligned) {
   Hz5PolicyWinLocal2PTls* tls = hz5_policy_win_local2p_tls();
-  uint32_t generation = ++tls->generation;
-  if (!generation) {
-    generation = ++tls->generation;
-  }
+  uint32_t generation =
+      hz5_policy_local2p_common_next_generation(&tls->generation);
   uintptr_t owner = hz5_policy_win_local2p_owner_token();
-  header->local2p_owner = owner;
-  header->local2p_generation = generation;
-  header->local2p_cookie =
+  uint64_t cookie =
       hz5_policy_win_local2p_cookie(header->raw, aligned, header->raw_bytes,
                                     generation, owner);
-  atomic_store_explicit(&header->local2p_state, HZ5_LOCAL2P_STATE_ACTIVE,
-                        memory_order_release);
+  hz5_policy_local2p_common_activate(header, owner, generation, cookie);
 }
 
 static int
@@ -301,10 +296,7 @@ static Hz5FreeResult hz5_policy_win_local2p_free(Hz5WrapperHdr* header,
     return HZ5_FREE_INVALID;
   }
 
-  uint32_t old_state = atomic_exchange_explicit(
-      &header->local2p_state, HZ5_LOCAL2P_STATE_FREED,
-      memory_order_acq_rel);
-  if (old_state != HZ5_LOCAL2P_STATE_ACTIVE) {
+  if (!hz5_policy_local2p_common_mark_freed(header)) {
     hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INVALID_STATE);
     return HZ5_FREE_INVALID;
   }

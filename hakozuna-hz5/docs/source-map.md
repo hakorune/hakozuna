@@ -58,8 +58,11 @@ platform-specific:
 ```
 
 The first concrete step is `policy/hz5_policy_local2p_common.h`, which names
-the shared Local2P freelist node and exact-route predicate while leaving Linux
-and Windows allocation sources untouched.
+the shared Local2P freelist node, exact-route predicate, generation wrap
+handling, header activation, and ACTIVE-to-FREED transition while leaving Linux
+and Windows allocation sources untouched. Helpers that need Local2P wrapper
+tail fields are compiled only when a Local2P lane enables that wrapper layout,
+so P43i/P45 builds keep their smaller non-Local2P wrapper contract.
 
 ## Experimental Core
 
