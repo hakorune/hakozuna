@@ -49,12 +49,11 @@ hz5_policy_win_local2p_node_from_header(Hz5WrapperHdr* header,
 
 static void* hz5_policy_win_local2p_pop(void) {
   Hz5PolicyWinLocal2PTls* tls = hz5_policy_win_local2p_tls();
-  Hz5WinLocal2PNode* node = (Hz5WinLocal2PNode*)tls->head;
+  Hz5WinLocal2PNode* node = (Hz5WinLocal2PNode*)
+      hz5_policy_local2p_common_pop_node(&tls->head, &tls->count);
   if (!node) {
     return NULL;
   }
-  tls->head = node->next;
-  --tls->count;
   hz5_trace_inc(HZ5_TRACE_ALLOC_LOCAL2P_TLS_HIT);
   return (void*)node;
 }
@@ -137,12 +136,10 @@ static void* hz5_policy_win_local2p_global_pop(void) {
     return NULL;
   }
   AcquireSRWLockExclusive(&g_hz5_policy_win_local2p_global_lock);
-  Hz5WinLocal2PNode* node =
-      (Hz5WinLocal2PNode*)g_hz5_policy_win_local2p_global_head;
-  if (node) {
-    g_hz5_policy_win_local2p_global_head = node->next;
-    --g_hz5_policy_win_local2p_global_count;
-  }
+  Hz5WinLocal2PNode* node = (Hz5WinLocal2PNode*)
+      hz5_policy_local2p_common_pop_node(
+          &g_hz5_policy_win_local2p_global_head,
+          &g_hz5_policy_win_local2p_global_count);
   ReleaseSRWLockExclusive(&g_hz5_policy_win_local2p_global_lock);
   if (node) {
     hz5_trace_inc(HZ5_TRACE_ALLOC_LOCAL2P_GLOBAL_HIT);
@@ -159,13 +156,10 @@ static int hz5_policy_win_local2p_global_push(void* node_ptr) {
   int accepted = 0;
   Hz5WinLocal2PNode* node = (Hz5WinLocal2PNode*)node_ptr;
   AcquireSRWLockExclusive(&g_hz5_policy_win_local2p_global_lock);
-  if (g_hz5_policy_win_local2p_global_count <
-      BENCHLAB_HZ5_WIN_LOCAL2P_GLOBAL_CAP) {
-    node->next = (Hz5WinLocal2PNode*)g_hz5_policy_win_local2p_global_head;
-    g_hz5_policy_win_local2p_global_head = node;
-    ++g_hz5_policy_win_local2p_global_count;
-    accepted = 1;
-  }
+  accepted = hz5_policy_local2p_common_push_node(
+      &g_hz5_policy_win_local2p_global_head,
+      &g_hz5_policy_win_local2p_global_count,
+      BENCHLAB_HZ5_WIN_LOCAL2P_GLOBAL_CAP, node);
   ReleaseSRWLockExclusive(&g_hz5_policy_win_local2p_global_lock);
 
   if (accepted) {
@@ -185,9 +179,8 @@ static int hz5_policy_win_local2p_push(void* node_ptr) {
   }
 
   Hz5WinLocal2PNode* node = (Hz5WinLocal2PNode*)node_ptr;
-  node->next = (Hz5WinLocal2PNode*)tls->head;
-  tls->head = node;
-  ++tls->count;
+  (void)hz5_policy_local2p_common_push_node(
+      &tls->head, &tls->count, BENCHLAB_HZ5_WIN_LOCAL2P_TLS_CAP, node);
   hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_TLS);
   return 1;
 }

@@ -213,12 +213,9 @@ static void* hz5_policy_local2p_global_pop(void) {
     return NULL;
   }
   pthread_mutex_lock(&g_hz5_policy_local2p_global_lock);
-  Hz5LinuxLocal2PNode* node =
-      (Hz5LinuxLocal2PNode*)g_hz5_policy_local2p_global_head;
-  if (node) {
-    g_hz5_policy_local2p_global_head = node->next;
-    --g_hz5_policy_local2p_global_count;
-  }
+  Hz5LinuxLocal2PNode* node = (Hz5LinuxLocal2PNode*)
+      hz5_policy_local2p_common_pop_node(&g_hz5_policy_local2p_global_head,
+                                         &g_hz5_policy_local2p_global_count);
   pthread_mutex_unlock(&g_hz5_policy_local2p_global_lock);
   if (node) {
     hz5_trace_inc(HZ5_TRACE_ALLOC_LOCAL2P_GLOBAL_HIT);
@@ -283,14 +280,10 @@ static int hz5_policy_local2p_global_push(void* node_ptr) {
   }
   int pushed = 0;
   pthread_mutex_lock(&g_hz5_policy_local2p_global_lock);
-  if (g_hz5_policy_local2p_global_count <
-      BENCHLAB_HZ5_LINUX_LOCAL2P_GLOBAL_CAP) {
-    Hz5LinuxLocal2PNode* node = (Hz5LinuxLocal2PNode*)node_ptr;
-    node->next = (Hz5LinuxLocal2PNode*)g_hz5_policy_local2p_global_head;
-    g_hz5_policy_local2p_global_head = node;
-    ++g_hz5_policy_local2p_global_count;
-    pushed = 1;
-  }
+  Hz5LinuxLocal2PNode* node = (Hz5LinuxLocal2PNode*)node_ptr;
+  pushed = hz5_policy_local2p_common_push_node(
+      &g_hz5_policy_local2p_global_head, &g_hz5_policy_local2p_global_count,
+      BENCHLAB_HZ5_LINUX_LOCAL2P_GLOBAL_CAP, node);
   pthread_mutex_unlock(&g_hz5_policy_local2p_global_lock);
   if (pushed) {
     hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_GLOBAL);
