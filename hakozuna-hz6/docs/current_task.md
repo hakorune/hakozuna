@@ -89,7 +89,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    allocator owns system/Linux source selection
    fronts name source kind instead of including OS-specific source backends
 18. Local2P exact seed front. DONE:
-   fronts/local2p/hz6_local2p_front.*
+   fronts/local2p/hz6_local2p_front_alloc.c /
+   fronts/local2p/hz6_local2p_front_free.c /
+   fronts/local2p/hz6_local2p_front_prefill.c /
+   fronts/local2p/hz6_local2p_front_ops.c
    exact 64KiB requests route to HZ6_FRONT_LOCAL2P before Large128
    remote transfer reuse is covered by allocator smoke
 19. Route backend seam. DONE:
@@ -854,6 +857,14 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    api/hz6_allocator_ops.c was removed after the split
    linux/build_hz6_r1_smokes.sh registers the split public operation modules
    explicitly
+154. Local2P front split. DONE:
+   fronts/local2p/hz6_local2p_front_alloc.c now owns exact 64KiB can-allocate
+   and alloc selection
+   fronts/local2p/hz6_local2p_front_free.c now owns local/remote free routing
+   fronts/local2p/hz6_local2p_front_prefill.c now owns exact 64KiB prefill
+   fronts/local2p/hz6_local2p_front_ops.c now owns the FrontOps table
+   fronts/local2p/hz6_local2p_front.c was removed after the split
+   linux/build_hz6_r1_smokes.sh registers the split Local2P modules explicitly
 144. Descriptor state local-cache/remote-transfer split. DONE:
    api/hz6_allocator_descriptor_local_cache.c now owns cache-active
    transitions

@@ -129,8 +129,11 @@ hakozuna-hz6/
       hz6_toy_front.h
       hz6_toy_front.c
     local2p/
-      hz6_local2p.h
-      hz6_local2p.c
+      hz6_local2p_front.h
+      hz6_local2p_front_alloc.c
+      hz6_local2p_front_free.c
+      hz6_local2p_front_prefill.c
+      hz6_local2p_front_ops.c
     midpage/
       hz6_midpage.h
       hz6_midpage.c
@@ -277,7 +280,10 @@ fronts/large/hz6_large128_front_alloc.c
 fronts/large/hz6_large128_front_free.c
 fronts/large/hz6_large128_front_ops.c
 fronts/local2p/hz6_local2p_front.h
-fronts/local2p/hz6_local2p_front.c
+fronts/local2p/hz6_local2p_front_alloc.c
+fronts/local2p/hz6_local2p_front_free.c
+fronts/local2p/hz6_local2p_front_prefill.c
+fronts/local2p/hz6_local2p_front_ops.c
 fronts/midpage/hz6_midpage_front.h
 fronts/midpage/hz6_midpage_front_alloc.c
 fronts/midpage/hz6_midpage_front_free.c
@@ -374,8 +380,10 @@ MISS pointers.
 `fronts/large/hz6_large128_front.*` handles requests above the MidPage range up
 to 128KiB except exact 64KiB and exercises
 `ACTIVE -> TRANSFER_FREE -> ACTIVE` through the same front registry.
-`fronts/local2p/hz6_local2p_front.*` owns exact 64KiB requests first, so the
-Local2P contract can evolve independently from the broader Large128 seed.
+`fronts/local2p/hz6_local2p_front_alloc.c`, `hz6_local2p_front_free.c`,
+`hz6_local2p_front_prefill.c`, and `hz6_local2p_front_ops.c` own exact 64KiB
+requests first, so the Local2P contract can evolve independently from the
+broader Large128 seed.
 The toy front owns only requests up to 4KiB. Larger unsupported requests must
 miss all fronts instead of being rounded down into a smaller allocation.
 On Linux, this seed is backed by `source/linux_source_mmap.*`; on Windows, the

@@ -156,6 +156,8 @@ Fronts:
     exact 64KiB seed front
     exercises the Local2P route/front contract
     uses Linux mmap SourceLayer backing in the Linux R1 smoke
+    front alloc/free/prefill/ops helpers are split into separate units so exact
+    64KiB routing stays separate from reuse and prefill dispatch
 
   midpage:
     >4KiB..32KiB seed front
