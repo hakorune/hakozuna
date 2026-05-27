@@ -156,6 +156,8 @@ The API layer should call it rather than own class policy.
 
 The current allocation behavior lives in `fronts/toy/`. It exists only to
 exercise the contract while real fronts are still being selected.
+The API reaches it through `Hz6FrontOps`, so the next real front can replace
+the toy implementation without moving allocation policy back into `api/`.
 
 ## Boundaries
 

@@ -1,8 +1,31 @@
 #include "hz6_toy_front.h"
 
+#include "../../frontcache/hz6_size_class.h"
 #include "../../source/hz6_source.h"
 
-void* hz6_toy_front_alloc(Hz6Allocator* allocator, Hz6SizeClass size_class) {
+static int hz6_toy_front_can_allocate(size_t size,
+                                      size_t align,
+                                      uint16_t* class_id) {
+  if (align > 16 || !class_id) {
+    return 0;
+  }
+
+  Hz6SizeClass size_class = hz6_size_class_for_request(size);
+  if (!hz6_size_class_valid(size_class)) {
+    return 0;
+  }
+
+  *class_id = size_class.id;
+  return 1;
+}
+
+static void* hz6_toy_front_alloc_with_class(Hz6Allocator* allocator,
+                                            uint16_t class_id,
+                                            size_t size) {
+  Hz6SizeClass size_class = hz6_size_class_for_request(size);
+  if (size_class.id != class_id) {
+    return NULL;
+  }
   if (!allocator || !hz6_size_class_valid(size_class)) {
     return NULL;
   }
@@ -64,9 +87,9 @@ void* hz6_toy_front_alloc(Hz6Allocator* allocator, Hz6SizeClass size_class) {
   return ptr;
 }
 
-int hz6_toy_front_free_local(Hz6Allocator* allocator,
-                             void* ptr,
-                             Hz6RouteResult route) {
+static int hz6_toy_front_free_local(Hz6Allocator* allocator,
+                                    void* ptr,
+                                    Hz6RouteResult route) {
   if (!allocator || !ptr || route.kind != HZ6_ROUTE_VALID ||
       !route.descriptor) {
     return 0;
@@ -121,4 +144,15 @@ int hz6_toy_front_free_remote(Hz6Allocator* allocator,
 
   ++allocator->stats.transfer_push;
   return 1;
+}
+
+const Hz6FrontOps* hz6_toy_front_ops(void) {
+  static const Hz6FrontOps ops = {
+      HZ6_FRONT_LARGE,
+      "toy",
+      hz6_toy_front_can_allocate,
+      hz6_toy_front_alloc_with_class,
+      hz6_toy_front_free_local,
+  };
+  return &ops;
 }

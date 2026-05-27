@@ -1,5 +1,6 @@
 #include "hz6_allocator.h"
 
+#include "../fronts/hz6_front.h"
 #include "../fronts/toy/hz6_toy_front.h"
 #include "../source/hz6_source.h"
 
@@ -83,12 +84,14 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
     return NULL;
   }
 
-  Hz6SizeClass size_class = hz6_size_class_for_request(size);
-  if (!hz6_size_class_valid(size_class)) {
+  const Hz6FrontOps* front = hz6_toy_front_ops();
+  uint16_t class_id = 0;
+  if (!front || !front->can_allocate ||
+      !front->can_allocate(size, 16, &class_id) || !front->alloc) {
     return NULL;
   }
 
-  return hz6_toy_front_alloc(allocator, size_class);
+  return front->alloc(allocator, class_id, size);
 }
 
 void hz6_free(Hz6Allocator* allocator, void* ptr) {
@@ -100,8 +103,13 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
   switch (route.kind) {
     case HZ6_ROUTE_VALID:
       ++allocator->stats.route_valid;
-      if (!hz6_toy_front_free_local(allocator, ptr, route)) {
-        ++allocator->stats.route_invalid;
+      {
+        const Hz6FrontOps* front = hz6_toy_front_ops();
+        if (!front || route.front_id != front->front_id ||
+            !front->free_tagged ||
+            !front->free_tagged(allocator, ptr, route)) {
+          ++allocator->stats.route_invalid;
+        }
       }
       return;
     case HZ6_ROUTE_INVALID:

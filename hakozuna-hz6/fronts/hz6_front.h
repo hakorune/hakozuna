@@ -4,6 +4,7 @@
 #include "../include/hz6_contract.h"
 
 #include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -24,4 +25,3 @@ typedef struct Hz6FrontOps {
 #endif
 
 #endif
-
