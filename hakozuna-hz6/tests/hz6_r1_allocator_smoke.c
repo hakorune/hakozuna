@@ -42,9 +42,26 @@ int main(void) {
 
   Hz6Allocator allocator;
   hz6_allocator_init_with_profile(&allocator, HZ6_PROFILE_SPEED);
-  if (!expect(allocator.profile.transfer_first == 1, "allocator profile")) {
+  if (!expect(allocator.profile.transfer_first == 1, "allocator profile") ||
+      !expect(allocator.route_backend.kind == HZ6_ROUTE_BACKEND_PAGE_TABLE,
+              "speed profile page route backend")) {
     return 1;
   }
+
+  Hz6Allocator strict_route_allocator;
+  hz6_allocator_init_with_profile(&strict_route_allocator, HZ6_PROFILE_STRICT);
+  Hz6Allocator rss_route_allocator;
+  hz6_allocator_init_with_profile(&rss_route_allocator, HZ6_PROFILE_RSS);
+  if (!expect(strict_route_allocator.route_backend.kind ==
+                  HZ6_ROUTE_BACKEND_EXACT_TABLE,
+              "strict profile exact route backend") ||
+      !expect(rss_route_allocator.route_backend.kind ==
+                  HZ6_ROUTE_BACKEND_EXACT_TABLE,
+              "rss profile exact route backend")) {
+    return 1;
+  }
+  hz6_allocator_destroy(&strict_route_allocator);
+  hz6_allocator_destroy(&rss_route_allocator);
 
   unsigned char source_block[128];
   Hz6ObjectDescriptor source_descriptor;

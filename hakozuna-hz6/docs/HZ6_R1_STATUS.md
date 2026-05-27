@@ -60,6 +60,7 @@ route:
   PAGE_TABLE backend carries explicit page granularity and is covered by
   contract smoke, including invalid-range envelopes
   SPEED / REMOTE profiles select PAGE_TABLE through ProfileConfig
+  allocator smoke verifies SPEED / REMOTE PAGE_TABLE and STRICT / RSS EXACT_TABLE
 
 local free:
   ACTIVE -> LOCAL_FREE

@@ -244,6 +244,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    contract smoke verifies SPEED / REMOTE use page route granularity
    contract smoke verifies STRICT / RSS keep exact-table route selection
    status docs now describe profile-selected route backend rather than exact-only routing
+55. Allocator profile route init smoke. DONE:
+   allocator smoke verifies SPEED initializes PAGE_TABLE
+   allocator smoke verifies REMOTE initializes PAGE_TABLE
+   allocator smoke verifies STRICT / RSS initialize EXACT_TABLE
 ```
 
 Current R1 smoke:
