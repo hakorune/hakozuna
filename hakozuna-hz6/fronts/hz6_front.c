@@ -39,3 +39,13 @@ const Hz6FrontOps* hz6_front_for_id(uint16_t front_id) {
   }
   return NULL;
 }
+
+size_t hz6_front_prefill_by_id(Hz6Allocator* allocator,
+                               uint16_t front_id,
+                               size_t count) {
+  const Hz6FrontOps* front = hz6_front_for_id(front_id);
+  if (!front || !front->prefill) {
+    return 0;
+  }
+  return front->prefill(allocator, count);
+}

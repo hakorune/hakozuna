@@ -276,6 +276,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    Hz6FrontOps now carries an optional prefill hook
    Local2P and Large128 register front-specific prefill hooks
    allocator smoke calls Local2P / Large128 prefill through hz6_front_for_id()
+63. Front registry prefill helper. DONE:
+   hz6_front_prefill_by_id() invokes optional front prefill hooks by front id
+   allocator smoke uses the registry helper for Local2P / Large128 prefill
+   allocator smoke verifies fronts without a prefill hook return zero
 ```
 
 Current R1 smoke:

@@ -214,13 +214,19 @@ int main(void) {
 
   Hz6Allocator large_prefill_allocator;
   hz6_allocator_init_with_profile(&large_prefill_allocator, HZ6_PROFILE_RSS);
-  const Hz6FrontOps* large_prefill_front = hz6_front_for_id(HZ6_FRONT_LARGE);
-  if (!expect(large_prefill_front != NULL && large_prefill_front->prefill,
-              "large128 registry prefill hook")) {
+  if (!expect(hz6_front_for_id(HZ6_FRONT_LARGE) != NULL,
+              "large128 registry front")) {
     return 1;
   }
-  size_t large_prefilled = large_prefill_front->prefill(
-      &large_prefill_allocator, large_prefill_allocator.profile.source_batch);
+  size_t large_prefilled = hz6_front_prefill_by_id(
+      &large_prefill_allocator, HZ6_FRONT_LARGE,
+      large_prefill_allocator.profile.source_batch);
+  if (!expect(hz6_front_prefill_by_id(
+                  &large_prefill_allocator, HZ6_FRONT_MIDPAGE,
+                  large_prefill_allocator.profile.source_batch) == 0,
+              "midpage registry prefill hook absent")) {
+    return 1;
+  }
   if (!expect(large_prefilled ==
                   large_prefill_allocator.profile.source_batch,
               "large128 profile prefill count") ||
@@ -244,14 +250,12 @@ int main(void) {
   Hz6Allocator local2p_prefill_allocator;
   hz6_allocator_init_with_profile(&local2p_prefill_allocator,
                                   HZ6_PROFILE_RSS);
-  const Hz6FrontOps* local2p_prefill_front =
-      hz6_front_for_id(HZ6_FRONT_LOCAL2P);
-  if (!expect(local2p_prefill_front != NULL && local2p_prefill_front->prefill,
-              "local2p registry prefill hook")) {
+  if (!expect(hz6_front_for_id(HZ6_FRONT_LOCAL2P) != NULL,
+              "local2p registry front")) {
     return 1;
   }
-  size_t local2p_prefilled = local2p_prefill_front->prefill(
-      &local2p_prefill_allocator,
+  size_t local2p_prefilled = hz6_front_prefill_by_id(
+      &local2p_prefill_allocator, HZ6_FRONT_LOCAL2P,
       local2p_prefill_allocator.profile.source_batch);
   if (!expect(local2p_prefilled ==
                   local2p_prefill_allocator.profile.source_batch,

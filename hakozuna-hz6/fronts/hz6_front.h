@@ -30,6 +30,10 @@ const Hz6FrontOps* hz6_front_for_allocation(size_t size,
 
 const Hz6FrontOps* hz6_front_for_id(uint16_t front_id);
 
+size_t hz6_front_prefill_by_id(Hz6Allocator* allocator,
+                               uint16_t front_id,
+                               size_t count);
+
 #ifdef __cplusplus
 }
 #endif
