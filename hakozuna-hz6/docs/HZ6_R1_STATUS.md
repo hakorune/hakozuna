@@ -66,6 +66,8 @@ local free:
 
 remote free:
   ACTIVE -> TRANSFER_FREE
+  strict profile uses ACTIVE -> REMOTE_PENDING
+  explicit owner drain moves REMOTE_PENDING -> LOCAL_FREE
   remote free clears descriptor owner while object is in transfer
   transfer-first malloc consumes transfer before source allocation
   transfer pop restores descriptor owner to the consuming allocator

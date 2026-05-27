@@ -77,6 +77,8 @@ size_t hz6_allocator_scavenge_local_free(Hz6Allocator* allocator,
 
 size_t hz6_allocator_scavenge_profile(Hz6Allocator* allocator);
 
+size_t hz6_allocator_drain_remote_pending(Hz6Allocator* allocator);
+
 #ifdef __cplusplus
 }
 #endif

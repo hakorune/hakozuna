@@ -169,6 +169,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    HZ6_ROUTE_BACKEND_PAGE_TABLE
    shares MISS / VALID / INVALID result contract with exact-table backend
    contract smoke covers register, valid lookup, invalid interior, unregister
+37. Strict remote pending drain. DONE:
+   strict_owner_remote uses ACTIVE -> REMOTE_PENDING
+   hz6_allocator_drain_remote_pending() moves REMOTE_PENDING -> LOCAL_FREE
+   allocator and safety smoke cover strict remote reuse after explicit drain
 ```
 
 Current R1 smoke:

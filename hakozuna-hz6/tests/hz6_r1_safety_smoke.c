@@ -67,6 +67,28 @@ int main(void) {
   hz6_free(&remote_allocator, remote_reused);
   hz6_allocator_destroy(&remote_allocator);
 
+  Hz6Allocator strict_remote_allocator;
+  hz6_allocator_init_with_profile(&strict_remote_allocator,
+                                  HZ6_PROFILE_STRICT);
+  void* strict_remote = hz6_malloc(&strict_remote_allocator, 128);
+  if (!expect(strict_remote != NULL, "strict remote malloc") ||
+      !expect(hz6_free_remote(&strict_remote_allocator, strict_remote),
+              "strict remote free") ||
+      !expect(!hz6_free_remote(&strict_remote_allocator, strict_remote),
+              "strict remote double-free rejected") ||
+      !expect(hz6_allocator_drain_remote_pending(&strict_remote_allocator) ==
+                  1,
+              "strict remote drain")) {
+    return 1;
+  }
+  void* strict_remote_reused = hz6_malloc(&strict_remote_allocator, 128);
+  if (!expect(strict_remote_reused == strict_remote,
+              "strict remote reuse after drain")) {
+    return 1;
+  }
+  hz6_free(&strict_remote_allocator, strict_remote_reused);
+  hz6_allocator_destroy(&strict_remote_allocator);
+
   Hz6Allocator orphan_allocator;
   hz6_allocator_init_with_profile(&orphan_allocator, HZ6_PROFILE_SPEED);
   void* orphan = hz6_malloc(&orphan_allocator, 48);

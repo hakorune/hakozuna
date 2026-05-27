@@ -224,6 +224,14 @@ int hz6_front_free_remote_to_transfer(Hz6Allocator* allocator,
     return 0;
   }
 
+  if (allocator->profile.strict_owner_remote) {
+    if (!hz6_owner_equal(descriptor->owner, allocator->owner.token)) {
+      return 0;
+    }
+    descriptor->state = HZ6_STATE_REMOTE_PENDING;
+    return 1;
+  }
+
   Hz6TransferObject object;
   object.ptr = ptr;
   object.descriptor = descriptor;
