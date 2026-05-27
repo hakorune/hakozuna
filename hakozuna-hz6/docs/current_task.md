@@ -20,17 +20,17 @@ It should not directly port HZ3/HZ4/HZ5 internals.
 ## Benchmark Status
 
 ```text
-HZ6 has not been benchmarked yet.
-Current evidence is smoke-only.
+HZ6 has had its first benchmark run.
+Current evidence is HZ6-only and provisional.
 Do not treat R1 modularization as a performance result.
-Benchmark harnesses are now in place, but no benchmark table has been
-published yet.
+Benchmark harnesses are now in place, but no cross-family benchmark table has
+been published yet.
 Benchmark entrypoints:
   linux/build_hz6_benchmark.sh
   linux/run_hz6_benchmark.sh
   local / remote / reuse single-process lanes
-The first benchmark pass should compare a frozen HZ6 prototype against
-HZ3 / HZ4 / HZ5 on the same machine with the same runner.
+The next benchmark pass should compare HZ6 against HZ3 / HZ4 / HZ5 on the same
+machine with the same runner.
 ```
 
 ## Active Documents

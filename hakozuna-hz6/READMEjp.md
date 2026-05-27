@@ -3,8 +3,8 @@
 HZ6 は、HZ5 の sidecar allocator 研究を引き継ぐ transfer-first の後継です。
 いまは R1 の実行可能な seed まで進んでいて、契約モジュール、toy の contract
 validation front、Large128 の transfer-first front seed があります。
-ただし、まだ HZ6 のベンチマークは一度も実施していません。現状は smoke-only
-です。
+HZ6 の最初のベンチマーク実行は済ませましたが、HZ3/HZ4/HZ5 を含む
+横並び表はまだ出していません。
 
 英語版 README: [README.md](README.md)
 
@@ -64,9 +64,9 @@ hz6-r1-safety-smoke ok
 
 ## ベンチ状況
 
-HZ6 はまだベンチマークしていません。今の結果は smoke-only です。
-R1 seed から性能結論を出さず、まずは prototype path を固定してから、HZ3 / HZ4 /
-HZ5 と同じマシンで比較するのがよいです。
+HZ6 には最初の benchmark run がありますが、まだ HZ3 / HZ4 / HZ5 を含む
+比較表はありません。R1 seed から性能結論を出す段階ではないので、次は同じ
+マシン・同じ runner で横並び比較するのがよいです。
 
 ## 非目標
 
