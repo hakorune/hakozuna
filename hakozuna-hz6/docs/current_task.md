@@ -433,6 +433,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    registration through the allocator boundary
    shared FrontUtil and MidPage no longer call RouteBackend register/lookup
    helpers through allocator.route_backend directly
+89. Allocator stats note helpers. DONE:
+   hz6_allocator_note_source_alloc(), note_transfer_push(), and
+   note_transfer_pop() centralize front-originated stats updates in the
+   allocator API
+   shared FrontUtil and MidPage no longer mutate allocator.stats directly
 ```
 
 Current R1 smoke:

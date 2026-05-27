@@ -207,6 +207,12 @@ int hz6_allocator_transfer_pop(Hz6Allocator* allocator,
                                uint16_t class_id,
                                Hz6TransferObject* out);
 
+void hz6_allocator_note_source_alloc(Hz6Allocator* allocator);
+
+void hz6_allocator_note_transfer_push(Hz6Allocator* allocator);
+
+void hz6_allocator_note_transfer_pop(Hz6Allocator* allocator);
+
 #ifdef __cplusplus
 }
 #endif

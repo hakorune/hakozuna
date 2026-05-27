@@ -100,7 +100,7 @@ void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
     return NULL;
   }
 
-  ++allocator->stats.source_alloc;
+  hz6_allocator_note_source_alloc(allocator);
   return ptr;
 }
 
@@ -120,7 +120,7 @@ static void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
             transfer.generation, allocator->owner.token)) {
       continue;
     }
-    ++allocator->stats.transfer_pop;
+    hz6_allocator_note_transfer_pop(allocator);
     return transfer.ptr;
   }
 
@@ -243,7 +243,7 @@ void* hz6_front_source_slot_ops(Hz6Allocator* allocator,
     return NULL;
   }
 
-  ++allocator->stats.source_alloc;
+  hz6_allocator_note_source_alloc(allocator);
   return user_ptr;
 }
 
@@ -344,7 +344,7 @@ static int hz6_front_prefill_one(Hz6Allocator* allocator,
     return 0;
   }
 
-  ++allocator->stats.source_alloc;
+  hz6_allocator_note_source_alloc(allocator);
   return 1;
 }
 
@@ -447,6 +447,6 @@ int hz6_front_free_remote_to_transfer(Hz6Allocator* allocator,
     return 0;
   }
 
-  ++allocator->stats.transfer_push;
+  hz6_allocator_note_transfer_push(allocator);
   return 1;
 }

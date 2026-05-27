@@ -9,6 +9,7 @@ API:
   include/hz6.h
   api/hz6_allocator.*
   hz6_stats_snapshot() is the public stats observation boundary
+  allocator note helpers are the front-facing stats update boundary
 
 Contracts:
   route MISS / VALID / INVALID

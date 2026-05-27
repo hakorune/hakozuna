@@ -109,7 +109,7 @@ size_t hz6_midpage_prefill_run(Hz6Allocator* allocator, uint16_t class_id) {
   if (filled == 0) {
     hz6_allocator_release_source_block(block);
   } else {
-    ++allocator->stats.source_alloc;
+    hz6_allocator_note_source_alloc(allocator);
   }
   return filled;
 }

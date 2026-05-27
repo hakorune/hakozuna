@@ -644,6 +644,24 @@ int hz6_allocator_transfer_pop(Hz6Allocator* allocator,
                                              out);
 }
 
+void hz6_allocator_note_source_alloc(Hz6Allocator* allocator) {
+  if (allocator) {
+    ++allocator->stats.source_alloc;
+  }
+}
+
+void hz6_allocator_note_transfer_push(Hz6Allocator* allocator) {
+  if (allocator) {
+    ++allocator->stats.transfer_push;
+  }
+}
+
+void hz6_allocator_note_transfer_pop(Hz6Allocator* allocator) {
+  if (allocator) {
+    ++allocator->stats.transfer_pop;
+  }
+}
+
 void hz6_allocator_init(Hz6Allocator* allocator) {
   hz6_allocator_init_with_profile(allocator, HZ6_PROFILE_STRICT);
 }
