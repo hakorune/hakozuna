@@ -583,12 +583,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    api/hz6_allocator_facade.c was removed after all responsibilities moved to
    role-named API modules
 114. Allocator public ops split. DONE:
-   api/hz6_allocator_ops.c now owns hz6_malloc(), hz6_free(),
-   hz6_free_remote(), hz6_owns(), and hz6_stats_snapshot()
+   api/hz6_allocator_malloc.c now owns hz6_malloc()
+   api/hz6_allocator_free.c now owns hz6_free()
+   api/hz6_allocator_free_remote.c now owns hz6_free_remote()
    api/hz6_allocator.c now keeps allocator lifecycle, owner token helpers,
    initialization, and destruction separate from public operation dispatch
-   linux/build_hz6_r1_smokes.sh registers hz6_allocator_ops.c as an explicit
-   HZ6_LIB_SOURCE
+   linux/build_hz6_r1_smokes.sh registers the split public operation modules
+   explicitly
 115. Allocator scavenge split. DONE:
    api/hz6_allocator_scavenge.c now owns orphan/local-free/profile scavenge
    execution and descriptor scavenge cost accounting
@@ -716,7 +717,8 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
 132. Allocator query split. DONE:
    api/hz6_allocator_query.c now owns owns()/stats_snapshot() observation
    helpers
-   api/hz6_allocator_ops.c now keeps malloc/free/remote-free separate from
+   api/hz6_allocator_malloc.c / api/hz6_allocator_free.c /
+   api/hz6_allocator_free_remote.c keep malloc/free/remote-free separate from
    observation
    linux/build_hz6_r1_smokes.sh registers hz6_allocator_query.c as an
    explicit HZ6_LIB_SOURCE
@@ -845,6 +847,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    fronts/midpage/hz6_midpage_prefill.c now keeps the actual source-backed
    run fill loop separate from policy calculation
    fronts/midpage/hz6_midpage_front.h exposes the helper boundary explicitly
+153. Allocator public ops split. DONE:
+   api/hz6_allocator_malloc.c / api/hz6_allocator_free.c /
+   api/hz6_allocator_free_remote.c now own the public malloc/free/remote-free
+   entrypoints
+   api/hz6_allocator_ops.c was removed after the split
+   linux/build_hz6_r1_smokes.sh registers the split public operation modules
+   explicitly
 144. Descriptor state local-cache/remote-transfer split. DONE:
    api/hz6_allocator_descriptor_local_cache.c now owns cache-active
    transitions
