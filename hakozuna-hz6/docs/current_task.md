@@ -641,6 +641,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    dispatch separate from explicit run prefill
    linux/build_hz6_r1_smokes.sh registers hz6_midpage_prefill.c as an
    explicit HZ6_LIB_SOURCE
+122. Route backend page-table split. DONE:
+   route/hz6_route_backend_page_table.c now owns PAGE_TABLE init and lookup
+   route/hz6_route_backend.c now keeps exact-table init/register/unregister
+   and dispatch separate from PAGE_TABLE lookup
+   linux/build_hz6_r1_smokes.sh registers the page-table backend module
+   explicitly
 ```
 
 Current R1 smoke:

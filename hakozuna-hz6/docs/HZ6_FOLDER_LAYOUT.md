@@ -38,6 +38,7 @@ hakozuna-hz6/
     hz6_route.c
     hz6_route_backend.h
     hz6_route_backend.c
+    hz6_route_backend_page_table.c
     win_route_sidecar.c
     linux_route_region.c
 
@@ -157,6 +158,7 @@ route/hz6_route.h
 route/hz6_route.c
 route/hz6_route_backend.h
 route/hz6_route_backend.c
+route/hz6_route_backend_page_table.c
 frontcache/hz6_frontcache.h
 frontcache/hz6_frontcache.c
 frontcache/hz6_size_class.h

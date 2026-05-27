@@ -57,6 +57,7 @@ HZ6_LIB_SOURCES=(
   "${HZ6_DIR}/owner/hz6_owner.c"
   "${HZ6_DIR}/policy/hz6_profiles.c"
   "${HZ6_DIR}/route/hz6_route_backend.c"
+  "${HZ6_DIR}/route/hz6_route_backend_page_table.c"
   "${HZ6_DIR}/route/hz6_route.c"
   "${HZ6_DIR}/scavenge/hz6_scavenge.c"
   "${HZ6_DIR}/source/linux_source_mmap.c"

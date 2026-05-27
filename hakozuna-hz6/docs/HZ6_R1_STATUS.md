@@ -50,6 +50,8 @@ Contracts:
   route MISS / VALID / INVALID
   route smoke covers exact table, invalid envelopes, backend wrappers, and page
   route backend separately from the lower-level mixed contract smoke
+  route backend page-table variant is split into its own module so PAGE_TABLE
+  lookup stays separate from exact-table init/register helpers
   transfer contract smoke covers bounded single-cache and sharded backend
   push/pop, class filtering, shard preference, fallback, and uneven capacities
   source contract smoke covers source ops validation, Linux mmap source ops,
