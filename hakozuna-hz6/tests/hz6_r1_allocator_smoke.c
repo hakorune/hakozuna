@@ -148,6 +148,58 @@ int main(void) {
   }
   hz6_allocator_destroy(&rss_prefill_allocator);
 
+  Hz6MidPageRunPolicy midpage8_policy;
+  Hz6MidPageRunPolicy midpage32_policy;
+  if (!expect(hz6_midpage_policy_for_size(6000, 16, &midpage8_policy),
+              "midpage 8k policy") ||
+      !expect(midpage8_policy.class_id == HZ6_MIDPAGE_8K_CLASS_ID,
+              "midpage 8k class") ||
+      !expect(midpage8_policy.slot_bytes == HZ6_MIDPAGE_8K_BYTES,
+              "midpage 8k slot bytes") ||
+      !expect(midpage8_policy.slots_per_run == 8,
+              "midpage 8k slots per run") ||
+      !expect(hz6_midpage_policy_for_size(16384, 16, &midpage32_policy),
+              "midpage 32k policy") ||
+      !expect(midpage32_policy.class_id == HZ6_MIDPAGE_32K_CLASS_ID,
+              "midpage 32k class") ||
+      !expect(midpage32_policy.slot_bytes == HZ6_MIDPAGE_32K_BYTES,
+              "midpage 32k slot bytes") ||
+      !expect(midpage32_policy.slots_per_run == 2,
+              "midpage 32k slots per run")) {
+    return 1;
+  }
+
+  Hz6Allocator midpage8_allocator;
+  hz6_allocator_init_with_profile(&midpage8_allocator, HZ6_PROFILE_REMOTE);
+  void* midpage8_object = hz6_malloc(&midpage8_allocator, 6000);
+  if (!expect(midpage8_object != NULL, "midpage 8k malloc")) {
+    return 1;
+  }
+  Hz6RouteResult midpage8_route =
+      hz6_route_backend_lookup(&midpage8_allocator.route_backend,
+                               midpage8_object);
+  Hz6ObjectDescriptor* midpage8_descriptor =
+      (Hz6ObjectDescriptor*)midpage8_route.descriptor;
+  if (!expect(midpage8_route.kind == HZ6_ROUTE_VALID,
+              "midpage 8k route valid") ||
+      !expect(midpage8_route.front_id == HZ6_FRONT_MIDPAGE,
+              "midpage 8k route front") ||
+      !expect(midpage8_route.class_id == HZ6_MIDPAGE_8K_CLASS_ID,
+              "midpage 8k route class") ||
+      !expect(midpage8_descriptor != NULL, "midpage 8k descriptor") ||
+      !expect(midpage8_descriptor->bytes == HZ6_MIDPAGE_8K_BYTES,
+              "midpage 8k descriptor bytes")) {
+    return 1;
+  }
+  hz6_free(&midpage8_allocator, midpage8_object);
+  void* midpage8_reused = hz6_malloc(&midpage8_allocator, 6000);
+  if (!expect(midpage8_reused == midpage8_object,
+              "midpage 8k local reuse")) {
+    return 1;
+  }
+  hz6_free(&midpage8_allocator, midpage8_reused);
+  hz6_allocator_destroy(&midpage8_allocator);
+
   Hz6Allocator midpage_allocator;
   hz6_allocator_init_with_profile(&midpage_allocator, HZ6_PROFILE_REMOTE);
   void* midpage_object = hz6_malloc(&midpage_allocator, 16384);

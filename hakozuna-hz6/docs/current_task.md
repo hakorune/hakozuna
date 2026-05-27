@@ -181,6 +181,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    HZ6_ROUTE_BACKEND_PAGE_TABLE now carries an explicit page granularity
    lookup filters entries by page envelope before preserving VALID / INVALID / MISS
    contract smoke covers custom page granularity and object-end MISS
+40. MidPage page-run policy seed. DONE:
+   fronts/midpage/hz6_midpage_front.* now owns an 8K / 32K page-run geometry
+   hz6_midpage_policy_for_size() exposes class, slot bytes, run bytes, slots/run
+   allocator smoke covers 8K class routing, descriptor bytes, and local reuse
 ```
 
 Current R1 smoke:

@@ -34,6 +34,7 @@ Fronts:
 
   midpage:
     >4KiB..32KiB seed front
+    uses a front-local 8K / 32K page-run policy seed
     exercises the MidPage route/front contract
     uses OS-paged SourceLayer backing in the Linux R1 smoke
 
