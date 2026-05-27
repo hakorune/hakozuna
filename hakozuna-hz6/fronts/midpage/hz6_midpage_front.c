@@ -1,5 +1,6 @@
 #include "hz6_midpage_front.h"
 
+#include "../hz6_front_source_block.h"
 #include "../hz6_front_source.h"
 #include "../hz6_front_util.h"
 

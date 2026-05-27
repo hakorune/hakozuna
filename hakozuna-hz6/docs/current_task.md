@@ -553,6 +553,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    fronts/hz6_front_util.h now exposes reusable object and free-route helpers
    front implementations and source/prefill smokes include the narrower
    header that matches the helper family they use
+110. Front SourceBlock slot split. DONE:
+   fronts/hz6_front_source_block.c now owns shared SourceBlock-backed slot
+   creation and descriptor preparation
+   fronts/hz6_front_source.c now keeps direct SourceLayer reserve and prefill
+   helpers only
+   linux/build_hz6_r1_smokes.sh registers hz6_front_source_block.c as an
+   explicit HZ6_LIB_SOURCE
 ```
 
 Current R1 smoke:

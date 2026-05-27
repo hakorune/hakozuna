@@ -44,6 +44,9 @@ Contracts:
   front source helpers and their header are split from reuse/free helpers so
   SourceLayer-backed allocation and prefill stay out of the reusable/free-route
   helper unit
+  SourceBlock-backed front slots are split into their own helper unit so
+  shared source-block lifetime is not mixed with direct source reserve/prefill
+  helpers
   shared object states
   owner token equality/liveness helpers
   profile configuration

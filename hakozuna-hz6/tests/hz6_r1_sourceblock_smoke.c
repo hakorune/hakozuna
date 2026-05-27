@@ -1,5 +1,6 @@
 #include "../api/hz6_allocator.h"
 #include "../fronts/hz6_front_source.h"
+#include "../fronts/hz6_front_source_block.h"
 #include "../fronts/midpage/hz6_midpage_front.h"
 #include "../include/hz6_contract.h"
 #include "../route/hz6_route.h"
