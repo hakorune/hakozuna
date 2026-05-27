@@ -41,6 +41,8 @@ HZ6_LIB_SOURCES=(
   "${HZ6_DIR}/api/hz6_allocator_init_state_frontcache.c"
   "${HZ6_DIR}/api/hz6_allocator_init_state.c"
   "${HZ6_DIR}/api/hz6_allocator_init_backends.c"
+  "${HZ6_DIR}/api/hz6_allocator_destroy_descriptors.c"
+  "${HZ6_DIR}/api/hz6_allocator_destroy_source_blocks.c"
   "${HZ6_DIR}/api/hz6_allocator_destroy.c"
   "${HZ6_DIR}/api/hz6_allocator_descriptor_local_cache.c"
   "${HZ6_DIR}/api/hz6_allocator_descriptor_remote_transfer.c"

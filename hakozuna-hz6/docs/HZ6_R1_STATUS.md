@@ -10,7 +10,8 @@ API:
   api/hz6_allocator.*
   api/hz6_allocator.c owns owner token helpers and debug owner slot hooks
   api/hz6_allocator_init.c owns allocator initialization
-  api/hz6_allocator_destroy.c owns allocator destruction
+  api/hz6_allocator_destroy.c owns allocator destruction, with descriptor and
+  source-block cleanup split into helper units
   api/hz6_allocator_descriptor.c owns descriptor lifecycle helpers
   api/hz6_allocator_frontcache.c owns allocator-facing FrontCache wrappers
   api/hz6_allocator_malloc.c / api/hz6_allocator_free.c /
@@ -61,6 +62,9 @@ API:
   api/hz6_allocator_init_state_owner.c / source_blocks.c / descriptors.c /
   frontcache.c split allocator state initialization into owner, source-block,
   descriptor, and frontcache helpers
+  api/hz6_allocator_destroy_descriptors.c and
+  api/hz6_allocator_destroy_source_blocks.c split allocator destruction into
+  descriptor cleanup and source-block cleanup helpers
   hz6_stats_snapshot() is the public stats observation boundary
   allocator note helpers are the front-facing stats update boundary
   hz6_allocator_owner_token() is the front-facing owner token read boundary

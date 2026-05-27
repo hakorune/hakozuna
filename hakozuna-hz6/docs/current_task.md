@@ -947,6 +947,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    api/hz6_allocator_init_state.c now stays as a thin wrapper
    linux/build_hz6_r1_smokes.sh registers the split init-state helpers
    explicitly
+164. Allocator destroy helper split. DONE:
+   api/hz6_allocator_destroy_descriptors.c now owns descriptor cleanup
+   api/hz6_allocator_destroy_source_blocks.c now owns source-block cleanup
+   api/hz6_allocator_destroy.c now stays as a thin wrapper
+   linux/build_hz6_r1_smokes.sh registers the split destroy helpers
+   explicitly
 144. Descriptor state local-cache/remote-transfer split. DONE:
    api/hz6_allocator_descriptor_local_cache.c now owns cache-active
    transitions
