@@ -588,6 +588,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    initialization, and destruction separate from public operation dispatch
    linux/build_hz6_r1_smokes.sh registers hz6_allocator_ops.c as an explicit
    HZ6_LIB_SOURCE
+115. Allocator scavenge split. DONE:
+   api/hz6_allocator_scavenge.c now owns orphan/local-free/profile scavenge
+   execution and descriptor scavenge cost accounting
+   api/hz6_allocator_reclaim.c now keeps owner-dead orphan conversion, orphan
+   release/adoption, and strict remote-pending drain separate from scavenging
+   linux/build_hz6_r1_smokes.sh registers hz6_allocator_scavenge.c as an
+   explicit HZ6_LIB_SOURCE
 ```
 
 Current R1 smoke:
