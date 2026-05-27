@@ -98,6 +98,10 @@ static const char* hz5_trace_name(Hz5TraceCounter counter) {
       return "alloc_local2p_inbox_cache_hit";
     case HZ5_TRACE_ALLOC_LOCAL2P_INBOX_EXCHANGE:
       return "alloc_local2p_inbox_exchange";
+    case HZ5_TRACE_ALLOC_LOCAL2P_INBOX_EXCHANGE_NODES:
+      return "alloc_local2p_inbox_exchange_nodes";
+    case HZ5_TRACE_ALLOC_LOCAL2P_INBOX_CACHE_DEPTH_MAX:
+      return "alloc_local2p_inbox_cache_depth_max";
     case HZ5_TRACE_ALLOC_LOCAL2P_HEADER_INIT:
       return "alloc_local2p_header_init";
     case HZ5_TRACE_FREE_LOCAL2P_SAME_OWNER_FAST:
@@ -114,6 +118,12 @@ static const char* hz5_trace_name(Hz5TraceCounter counter) {
       return "free_local2p_remote_batch_flush_switch";
     case HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_NODES:
       return "free_local2p_remote_batch_flush_nodes";
+    case HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_OWNER_NODES:
+      return "free_local2p_remote_batch_flush_owner_nodes";
+    case HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_CAP_NODES:
+      return "free_local2p_remote_batch_flush_cap_nodes";
+    case HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_SWITCH_NODES:
+      return "free_local2p_remote_batch_flush_switch_nodes";
     case HZ5_TRACE_LOCAL2P_REMOTE_OWNER_SWITCH:
       return "local2p_remote_owner_switch";
     case HZ5_TRACE_LOCAL2P_REMOTE_OWNER_GATE_SKIP:

@@ -1,3 +1,14 @@
+#if BENCHLAB_HZ5_TRACE_LANE
+static size_t hz5_policy_win_local2p_trace_list_count(
+    Hz5WinLocal2PNode* node) {
+  size_t count = 0;
+  for (; node; node = node->next) {
+    ++count;
+  }
+  return count;
+}
+#endif
+
 static void* hz5_policy_win_local2p_inbox_pop(void) {
   Hz5PolicyWinLocal2PTls* tls = hz5_policy_win_local2p_tls();
   Hz5WinLocal2PNode* node = (Hz5WinLocal2PNode*)tls->inbox_cache;
@@ -5,6 +16,17 @@ static void* hz5_policy_win_local2p_inbox_pop(void) {
     hz5_trace_inc(HZ5_TRACE_ALLOC_LOCAL2P_INBOX_EXCHANGE);
     node = (Hz5WinLocal2PNode*)atomic_exchange_explicit(
         &tls->inbox_head, NULL, memory_order_acq_rel);
+#if BENCHLAB_HZ5_TRACE_LANE
+    if (node) {
+      size_t count = hz5_policy_win_local2p_trace_list_count(node);
+      hz5_trace_add(HZ5_TRACE_ALLOC_LOCAL2P_INBOX_EXCHANGE_NODES,
+                    (uint64_t)count);
+      if (count > 0u) {
+        hz5_trace_max(HZ5_TRACE_ALLOC_LOCAL2P_INBOX_CACHE_DEPTH_MAX,
+                      (uint64_t)(count - 1u));
+      }
+    }
+#endif
   } else {
     hz5_trace_inc(HZ5_TRACE_ALLOC_LOCAL2P_INBOX_CACHE_HIT);
   }
@@ -48,10 +70,16 @@ static void hz5_policy_win_local2p_note_remote_flush(
                 (uint64_t)count);
   if (reason == HZ5_WIN_LOCAL2P_REMOTE_FLUSH_OWNER) {
     hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_OWNER);
+    hz5_trace_add(HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_OWNER_NODES,
+                  (uint64_t)count);
   } else if (reason == HZ5_WIN_LOCAL2P_REMOTE_FLUSH_CAP) {
     hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_CAP);
+    hz5_trace_add(HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_CAP_NODES,
+                  (uint64_t)count);
   } else if (reason == HZ5_WIN_LOCAL2P_REMOTE_FLUSH_SWITCH) {
     hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_SWITCH);
+    hz5_trace_add(HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_SWITCH_NODES,
+                  (uint64_t)count);
   }
 }
 
@@ -280,10 +308,16 @@ hz5_policy_win_local2p_remote_batch_flush(
                 (uint64_t)count);
   if (reason == HZ5_WIN_LOCAL2P_REMOTE_FLUSH_OWNER) {
     hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_OWNER);
+    hz5_trace_add(HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_OWNER_NODES,
+                  (uint64_t)count);
   } else if (reason == HZ5_WIN_LOCAL2P_REMOTE_FLUSH_CAP) {
     hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_CAP);
+    hz5_trace_add(HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_CAP_NODES,
+                  (uint64_t)count);
   } else if (reason == HZ5_WIN_LOCAL2P_REMOTE_FLUSH_SWITCH) {
     hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_SWITCH);
+    hz5_trace_add(HZ5_TRACE_FREE_LOCAL2P_REMOTE_BATCH_FLUSH_SWITCH_NODES,
+                  (uint64_t)count);
   }
   hz5_trace_inc(HZ5_TRACE_FREE_LOCAL2P_INBOX);
   return 1;
