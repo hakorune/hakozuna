@@ -100,6 +100,8 @@ front registry:
   >128KiB is unsupported in R1 and returns NULL
   FrontOps carries an optional prefill hook for front-specific slow-path refill
   hz6_front_prefill_by_id() exposes prefill through the front registry
+  hz6_allocator_prefill_size() can select a prefillable front by allocation size
+  without exposing front ids to callers
 
 source:
   Linux mmap ops validate through SourceLayer
@@ -120,6 +122,7 @@ source:
   allocator destroy releases Large128 mappings through SourceLayer
   explicit front prefill can source objects into LOCAL_FREE cache using
   profile source_batch without changing the malloc hit path
+  allocator size prefill routes Large128 and Local2P through their front hooks
   Local2P exposes a front-specific prefill wrapper for profile source_batch
   Large128 exposes a front-specific prefill wrapper for profile source_batch
   MidPage 8K and 32K run prefill paths both share one 64KiB SourceBlock per run

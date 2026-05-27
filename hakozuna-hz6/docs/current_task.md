@@ -280,6 +280,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    hz6_front_prefill_by_id() invokes optional front prefill hooks by front id
    allocator smoke uses the registry helper for Local2P / Large128 prefill
    allocator smoke verifies fronts without a prefill hook return zero
+64. Size-based prefill helper. DONE:
+   hz6_front_prefill_for_allocation() selects a front through the allocation
+   registry and invokes its optional prefill hook
+   hz6_allocator_prefill_size() exposes the helper at the allocator layer
+   allocator smoke verifies size-based prefill for Large128 / Local2P and
+   verifies MidPage still returns zero because run prefill is class-specific
 ```
 
 Current R1 smoke:

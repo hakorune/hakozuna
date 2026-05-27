@@ -280,6 +280,51 @@ int main(void) {
   }
   hz6_allocator_destroy(&local2p_prefill_allocator);
 
+  Hz6Allocator size_prefill_allocator;
+  hz6_allocator_init_with_profile(&size_prefill_allocator, HZ6_PROFILE_RSS);
+  size_t size_large_prefilled = hz6_allocator_prefill_size(
+      &size_prefill_allocator, 70000,
+      size_prefill_allocator.profile.source_batch);
+  size_t size_local2p_prefilled = hz6_allocator_prefill_size(
+      &size_prefill_allocator, HZ6_LOCAL2P_BYTES,
+      size_prefill_allocator.profile.source_batch);
+  if (!expect(size_large_prefilled ==
+                  size_prefill_allocator.profile.source_batch,
+              "size prefill large128 count") ||
+      !expect(size_local2p_prefilled ==
+                  size_prefill_allocator.profile.source_batch,
+              "size prefill local2p count") ||
+      !expect(hz6_allocator_prefill_size(
+                  &size_prefill_allocator, 16384,
+                  size_prefill_allocator.profile.source_batch) == 0,
+              "size prefill midpage hook absent") ||
+      !expect(size_prefill_allocator.stats.source_alloc ==
+                  size_large_prefilled + size_local2p_prefilled,
+              "size prefill source alloc")) {
+    return 1;
+  }
+  for (size_t i = 0; i < size_large_prefilled; ++i) {
+    void* prefetched_large = hz6_malloc(&size_prefill_allocator, 70000);
+    if (!expect(prefetched_large != NULL,
+                "size prefill large128 malloc")) {
+      return 1;
+    }
+  }
+  for (size_t i = 0; i < size_local2p_prefilled; ++i) {
+    void* prefetched_local2p =
+        hz6_malloc(&size_prefill_allocator, HZ6_LOCAL2P_BYTES);
+    if (!expect(prefetched_local2p != NULL,
+                "size prefill local2p malloc")) {
+      return 1;
+    }
+  }
+  if (!expect(size_prefill_allocator.stats.source_alloc ==
+                  size_large_prefilled + size_local2p_prefilled,
+              "size prefill avoids refill")) {
+    return 1;
+  }
+  hz6_allocator_destroy(&size_prefill_allocator);
+
   Hz6MidPageRunPolicy midpage8_policy;
   Hz6MidPageRunPolicy midpage32_policy;
   if (!expect(hz6_midpage_policy_for_size(6000, 16, &midpage8_policy),

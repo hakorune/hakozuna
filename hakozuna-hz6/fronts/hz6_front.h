@@ -34,6 +34,11 @@ size_t hz6_front_prefill_by_id(Hz6Allocator* allocator,
                                uint16_t front_id,
                                size_t count);
 
+size_t hz6_front_prefill_for_allocation(Hz6Allocator* allocator,
+                                        size_t size,
+                                        size_t align,
+                                        size_t count);
+
 #ifdef __cplusplus
 }
 #endif

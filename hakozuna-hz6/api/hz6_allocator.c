@@ -391,6 +391,15 @@ size_t hz6_allocator_drain_remote_pending(Hz6Allocator* allocator) {
   return drained;
 }
 
+size_t hz6_allocator_prefill_size(Hz6Allocator* allocator,
+                                  size_t size,
+                                  size_t count) {
+  if (!allocator || size == 0 || count == 0) {
+    return 0;
+  }
+  return hz6_front_prefill_for_allocation(allocator, size, 16, count);
+}
+
 void hz6_allocator_init(Hz6Allocator* allocator) {
   hz6_allocator_init_with_profile(allocator, HZ6_PROFILE_STRICT);
 }
