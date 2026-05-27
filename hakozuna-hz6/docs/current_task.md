@@ -647,6 +647,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    and dispatch separate from PAGE_TABLE lookup
    linux/build_hz6_r1_smokes.sh registers the page-table backend module
    explicitly
+123. Transfer backend sharded split. DONE:
+   transfer/hz6_transfer_backend_sharded.c now owns sharded cache init and
+   shard-aware push/pop/count helpers
+   transfer/hz6_transfer_backend.c now keeps single-cache init and public
+   dispatch separate from sharded cache internals
+   linux/build_hz6_r1_smokes.sh registers the sharded transfer backend module
+   explicitly
 ```
 
 Current R1 smoke:

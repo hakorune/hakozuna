@@ -53,6 +53,7 @@ hakozuna-hz6/
     hz6_transfer.c
     hz6_transfer_backend.h
     hz6_transfer_backend.c
+    hz6_transfer_backend_sharded.c
     hz6_transfer_shard.h
     hz6_transfer_shard.c
 
@@ -167,6 +168,7 @@ transfer/hz6_transfer.h
 transfer/hz6_transfer.c
 transfer/hz6_transfer_backend.h
 transfer/hz6_transfer_backend.c
+transfer/hz6_transfer_backend_sharded.c
 owner/hz6_owner.h
 owner/hz6_owner.c
 scavenge/hz6_scavenge.h
