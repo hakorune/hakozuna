@@ -31,6 +31,14 @@ typedef struct Hz6ProfileConfig {
 
 Hz6ProfileConfig hz6_profile_config(Hz6ProfileId id);
 
+size_t hz6_profile_transfer_producer_shard(const Hz6ProfileConfig* config,
+                                           uint32_t owner_slot,
+                                           uint16_t class_id);
+
+size_t hz6_profile_transfer_consumer_shard(const Hz6ProfileConfig* config,
+                                           uint32_t owner_slot,
+                                           uint16_t class_id);
+
 #ifdef __cplusplus
 }
 #endif

@@ -339,6 +339,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    to hz6_transfer_backend_push_to_shard()
    allocator smoke verifies owner slot 1 remote frees land in shard 1 and are
    reused first by the same consumer home shard
+73. Transfer shard policy helpers. DONE:
+   hz6_profile_transfer_producer_shard() and
+   hz6_profile_transfer_consumer_shard() centralize producer/consumer shard
+   seed selection in PolicyLayer
+   FrontLayer transfer push/pop now asks PolicyLayer for shard seeds instead of
+   reading owner slot directly
+   contract smoke verifies remote profile shard seeds and single-shard profiles
 ```
 
 Current R1 smoke:

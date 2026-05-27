@@ -85,7 +85,7 @@ remote free:
   speed/remote profiles use sharded transfer
   sharded push can take an explicit producer shard through
   hz6_transfer_backend_push_to_shard()
-  FrontLayer remote free passes allocator owner slot as the producer shard for
+  FrontLayer remote free asks PolicyLayer for the producer shard before
   sharded transfer push
   backend wrapper preserves bounded push / class pop semantics
   sharded class pop retains non-target classes
@@ -94,8 +94,8 @@ remote free:
   sharded pop can steal from a non-home shard when the class home shard is empty
   sharded pop can also take an explicit consumer home shard through
   hz6_transfer_backend_pop_from_shard()
-  FrontLayer transfer reuse passes allocator owner slot as the consumer home
-  shard for sharded transfer pop
+  FrontLayer transfer reuse asks PolicyLayer for the consumer home shard before
+  sharded transfer pop
   uneven sharded capacity is filled without dropping remainder slots
   profile transfer capacity is applied during backend init and capped by
   `HZ6_TRANSFER_CACHE_CAPACITY`
@@ -157,6 +157,7 @@ scavenge:
 
 policy:
   profile config carries slow-path scavenge budgets
+  profile config owns transfer producer/consumer shard seed selection
   RSS profile can trigger explicit profile scavenging
   strict profile keeps automatic profile scavenging disabled
   policy-driven scavenging is covered by allocator and safety smoke

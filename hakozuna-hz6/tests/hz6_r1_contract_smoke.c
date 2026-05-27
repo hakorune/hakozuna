@@ -493,6 +493,16 @@ int main(void) {
               "remote page route")) {
     return 1;
   }
+  if (!expect(hz6_profile_transfer_producer_shard(&remote, 5, 7) == 1,
+              "remote producer shard policy") ||
+      !expect(hz6_profile_transfer_consumer_shard(&remote, 6, 7) == 2,
+              "remote consumer shard policy") ||
+      !expect(hz6_profile_transfer_producer_shard(&rss, 5, 7) == 0,
+              "rss producer shard policy single") ||
+      !expect(hz6_profile_transfer_consumer_shard(&strict, 6, 7) == 0,
+              "strict consumer shard policy single")) {
+    return 1;
+  }
 
   Hz6SizeClass class_zero = hz6_size_class_for_request(0);
   Hz6SizeClass class_mid = hz6_size_class_for_request(48);
