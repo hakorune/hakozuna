@@ -13,7 +13,9 @@ API:
   api/hz6_allocator_destroy.c owns allocator destruction, with descriptor and
   source-block cleanup split into helper units
   api/hz6_allocator_descriptor.c owns descriptor lifecycle helpers
-  api/hz6_allocator_frontcache.c owns allocator-facing FrontCache wrappers
+  api/hz6_allocator_frontcache_mutation.c and
+  api/hz6_allocator_frontcache_query.c own allocator-facing FrontCache
+  wrappers
   api/hz6_allocator_malloc.c / api/hz6_allocator_free.c /
   api/hz6_allocator_free_remote.c own public malloc/free/remote-free
   entrypoints

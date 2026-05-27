@@ -28,7 +28,8 @@ HZ6_INCLUDES=(
 HZ6_LIB_SOURCES=(
   "${HZ6_DIR}/api/hz6_allocator.c"
   "${HZ6_DIR}/api/hz6_allocator_descriptor.c"
-  "${HZ6_DIR}/api/hz6_allocator_frontcache.c"
+  "${HZ6_DIR}/api/hz6_allocator_frontcache_mutation.c"
+  "${HZ6_DIR}/api/hz6_allocator_frontcache_query.c"
   "${HZ6_DIR}/api/hz6_allocator_malloc.c"
   "${HZ6_DIR}/api/hz6_allocator_free.c"
   "${HZ6_DIR}/api/hz6_allocator_free_remote.c"
