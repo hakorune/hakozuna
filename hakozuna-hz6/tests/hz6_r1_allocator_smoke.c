@@ -341,6 +341,49 @@ int main(void) {
   }
   hz6_allocator_destroy(&size_prefill_allocator);
 
+  Hz6Allocator front_prefill_allocator;
+  hz6_allocator_init_with_profile(&front_prefill_allocator, HZ6_PROFILE_RSS);
+  size_t front_large_prefilled = hz6_allocator_prefill_front(
+      &front_prefill_allocator, HZ6_FRONT_LARGE,
+      front_prefill_allocator.profile.source_batch);
+  size_t front_midpage8_prefilled = hz6_allocator_prefill_front_class(
+      &front_prefill_allocator, HZ6_FRONT_MIDPAGE,
+      HZ6_MIDPAGE_8K_CLASS_ID, 1);
+  size_t front_midpage_bad_prefilled = hz6_allocator_prefill_front_class(
+      &front_prefill_allocator, HZ6_FRONT_MIDPAGE, HZ6_LARGE128_CLASS_ID, 1);
+  if (!expect(front_large_prefilled ==
+                  front_prefill_allocator.profile.source_batch,
+              "allocator front prefill large count") ||
+      !expect(front_midpage8_prefilled == 8,
+              "allocator front class prefill midpage8 count") ||
+      !expect(front_midpage_bad_prefilled == 0,
+              "allocator front class prefill rejects wrong class") ||
+      !expect(front_prefill_allocator.stats.source_alloc ==
+                  front_large_prefilled + 1,
+              "allocator front class prefill source alloc")) {
+    return 1;
+  }
+  for (size_t i = 0; i < front_large_prefilled; ++i) {
+    void* prefetched_large = hz6_malloc(&front_prefill_allocator, 70000);
+    if (!expect(prefetched_large != NULL,
+                "allocator front prefill large malloc")) {
+      return 1;
+    }
+  }
+  for (size_t i = 0; i < front_midpage8_prefilled; ++i) {
+    void* prefetched_midpage = hz6_malloc(&front_prefill_allocator, 6000);
+    if (!expect(prefetched_midpage != NULL,
+                "allocator front class prefill midpage malloc")) {
+      return 1;
+    }
+  }
+  if (!expect(front_prefill_allocator.stats.source_alloc ==
+                  front_large_prefilled + 1,
+              "allocator front class prefill avoids refill")) {
+    return 1;
+  }
+  hz6_allocator_destroy(&front_prefill_allocator);
+
   Hz6MidPageRunPolicy midpage8_policy;
   Hz6MidPageRunPolicy midpage32_policy;
   if (!expect(hz6_midpage_policy_for_size(6000, 16, &midpage8_policy),

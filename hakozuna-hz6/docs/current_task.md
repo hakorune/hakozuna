@@ -307,6 +307,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    single-class fronts
    MidPage registers a prefill hook that delegates to run prefill, so
    hz6_allocator_prefill_size() can now prefill MidPage by allocation size
+68. Allocator-level front prefill wrappers. DONE:
+   hz6_allocator_prefill_front() exposes front-id prefill without requiring
+   callers to include the FrontLayer registry header
+   hz6_allocator_prefill_front_class() exposes class-specific front prefill at
+   the allocator layer
+   allocator smoke verifies Large128 front prefill and MidPage 8K class prefill
+   through these wrappers
 ```
 
 Current R1 smoke:

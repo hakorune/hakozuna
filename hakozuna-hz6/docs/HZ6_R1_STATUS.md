@@ -103,6 +103,8 @@ front registry:
   hz6_front_prefill_by_id() exposes prefill through the front registry
   hz6_front_prefill_by_id_class() exposes class-specific prefill through the
   front registry
+  hz6_allocator_prefill_front() and hz6_allocator_prefill_front_class() expose
+  registry prefill through the allocator API
   hz6_allocator_prefill_size() can select a prefillable front by allocation size
   without exposing front ids to callers
 
