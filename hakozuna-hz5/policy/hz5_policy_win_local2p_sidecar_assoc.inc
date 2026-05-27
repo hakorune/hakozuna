@@ -21,6 +21,13 @@ static size_t hz5_policy_win_local2p_sidecar_hash(uintptr_t aligned) {
   return (size_t)(x % BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_TABLE_SIZE);
 }
 #endif
+#if BENCHLAB_HZ5_TRACE_LANE
+static void hz5_policy_win_local2p_sidecar_note_probe_steps(size_t steps) {
+  hz5_trace_add(HZ5_TRACE_LOCAL2P_SIDECAR_PROBE_STEPS, (uint64_t)steps);
+  hz5_trace_max(HZ5_TRACE_LOCAL2P_SIDECAR_PROBE_STEPS_MAX,
+                (uint64_t)steps);
+}
+#endif
 #if BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_ASSOC_TABLE
 #if (BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_ASSOC_WAYS == 0u) || \
     ((BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_ASSOC_WAYS & \
@@ -191,9 +198,11 @@ static int hz5_policy_win_local2p_sidecar_probe(uintptr_t aligned,
   }
 
   int saw_empty = 0;
+  size_t steps = 0u;
   size_t way_count = hz5_policy_win_local2p_sidecar_assoc_way_count();
   size_t base = hz5_policy_win_local2p_sidecar_assoc_entry_index(aligned, 0u);
   for (size_t way = 0; way < way_count; ++way) {
+    ++steps;
     Hz5PolicyWinLocal2PSidecarEntry* entry =
         &g_hz5_policy_win_local2p_sidecar[base + way];
     uintptr_t entry_aligned =
@@ -218,10 +227,12 @@ static int hz5_policy_win_local2p_sidecar_probe(uintptr_t aligned,
       if (header_out) {
         *header_out = header;
       }
+      hz5_policy_win_local2p_sidecar_note_probe_steps(steps);
       hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_HIT_VALID);
       return HZ5_WIN_LOCAL2P_SIDECAR_VALID;
     }
 
+    hz5_policy_win_local2p_sidecar_note_probe_steps(steps);
     hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_HIT_INVALID);
     return HZ5_WIN_LOCAL2P_SIDECAR_INVALID;
   }
@@ -229,6 +240,7 @@ static int hz5_policy_win_local2p_sidecar_probe(uintptr_t aligned,
   if (saw_empty) {
     hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_PROBE_EMPTY);
   }
+  hz5_policy_win_local2p_sidecar_note_probe_steps(steps);
   hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_MISS);
   return HZ5_WIN_LOCAL2P_SIDECAR_MISS;
 }
