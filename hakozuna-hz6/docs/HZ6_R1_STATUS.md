@@ -88,6 +88,12 @@ source:
   reserve / commit / decommit / release smoke passes
   Large128 descriptors carry source kind / release metadata
   allocator destroy releases Large128 mappings through SourceLayer
+
+scavenge:
+  `scavenge/hz6_scavenge.*` provides bounded release accounting
+  allocator-level scavenging releases ORPHAN descriptors only
+  over-budget ORPHAN descriptors remain owned by the scavenge boundary
+  route unregister + SourceLayer release is covered by safety smoke
 ```
 
 ## Verification Command

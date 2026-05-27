@@ -104,6 +104,34 @@ int main(void) {
   }
   hz6_allocator_destroy(&orphan_allocator);
 
+  Hz6Allocator scavenge_allocator;
+  hz6_allocator_init_with_profile(&scavenge_allocator, HZ6_PROFILE_SPEED);
+  void* scavenged = hz6_malloc(&scavenge_allocator, 48);
+  if (!expect(scavenged != NULL, "scavenge malloc")) {
+    return 1;
+  }
+  Hz6RouteResult scavenge_route =
+      hz6_route_backend_lookup(&scavenge_allocator.route_backend, scavenged);
+  Hz6ObjectDescriptor* scavenge_descriptor =
+      (Hz6ObjectDescriptor*)scavenge_route.descriptor;
+  if (!expect(scavenge_descriptor != NULL, "scavenge descriptor")) {
+    return 1;
+  }
+  hz6_allocator_mark_owner_dead(&scavenge_allocator);
+  if (!expect(hz6_allocator_scavenge_orphans(&scavenge_allocator, 1) == 0,
+              "scavenge budget too small") ||
+      !expect(scavenge_descriptor->state == HZ6_STATE_ORPHAN,
+              "scavenge keeps orphan over budget") ||
+      !expect(hz6_allocator_scavenge_orphans(&scavenge_allocator, 128) == 1,
+              "scavenge releases orphan") ||
+      !expect(!hz6_owns(&scavenge_allocator, scavenged),
+              "scavenge route gone") ||
+      !expect(scavenge_descriptor->state == HZ6_STATE_DEAD,
+              "scavenge descriptor dead")) {
+    return 1;
+  }
+  hz6_allocator_destroy(&scavenge_allocator);
+
   printf("hz6-r1-safety-smoke ok\n");
   return 0;
 }

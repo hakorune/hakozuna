@@ -5,6 +5,7 @@
 #include "../policy/hz6_profiles.h"
 #include "../route/hz6_route.h"
 #include "../route/hz6_route_backend.h"
+#include "../scavenge/hz6_scavenge.h"
 #include "../source/linux_source_mmap.h"
 #include "../source/hz6_source.h"
 #include "../source/hz6_source_registry.h"
@@ -277,6 +278,21 @@ int main(void) {
       !expect(hz6_source_registry_lookup(&source_registry,
                                          HZ6_SOURCE_NONE) == NULL,
               "source registry none miss")) {
+    return 1;
+  }
+
+  Hz6ScavengeBudget scavenge_budget;
+  hz6_scavenge_budget_init(&scavenge_budget, 96);
+  if (!expect(hz6_scavenge_remaining_bytes(&scavenge_budget) == 96,
+              "scavenge initial remaining") ||
+      !expect(hz6_scavenge_account_release(&scavenge_budget, 64),
+              "scavenge account first release") ||
+      !expect(scavenge_budget.objects_released == 1,
+              "scavenge object count") ||
+      !expect(!hz6_scavenge_account_release(&scavenge_budget, 64),
+              "scavenge bounded") ||
+      !expect(hz6_scavenge_remaining_bytes(&scavenge_budget) == 32,
+              "scavenge remaining")) {
     return 1;
   }
 

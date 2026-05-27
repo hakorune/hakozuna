@@ -9,6 +9,7 @@
 #include "../policy/hz6_profiles.h"
 #include "../route/hz6_route.h"
 #include "../route/hz6_route_backend.h"
+#include "../scavenge/hz6_scavenge.h"
 #include "../source/hz6_source.h"
 #include "../source/hz6_source_registry.h"
 #include "../transfer/hz6_transfer.h"
@@ -63,6 +64,9 @@ int hz6_allocator_release_descriptor_source(
 void hz6_allocator_mark_owner_dead(Hz6Allocator* allocator);
 
 int hz6_allocator_release_orphan(Hz6Allocator* allocator, void* ptr);
+
+size_t hz6_allocator_scavenge_orphans(Hz6Allocator* allocator,
+                                      size_t max_bytes);
 
 #ifdef __cplusplus
 }

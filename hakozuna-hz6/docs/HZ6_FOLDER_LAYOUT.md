@@ -130,6 +130,8 @@ transfer/hz6_transfer.c
 transfer/hz6_transfer_backend.h
 transfer/hz6_transfer_backend.c
 owner/hz6_owner.h
+scavenge/hz6_scavenge.h
+scavenge/hz6_scavenge.c
 source/hz6_source.h
 source/hz6_source.c
 source/hz6_source_registry.h
@@ -169,6 +171,8 @@ Windows VirtualAlloc source ops are present behind `_WIN32` and are registered
 as the same `HZ6_SOURCE_OS_PAGED` abstraction on Windows.
 The toy front still uses the system source path because it exists only as a
 contract-validation front.
+Scavenge is seeded as a bounded ORPHAN release contract only; it does not touch
+LOCAL_FREE cache entries yet because that requires frontcache invalidation.
 
 The current API path is intentionally small:
 
@@ -335,6 +339,7 @@ Owns RSS return.
 
 ```text
 Allowed:
+  bounded orphan release
   payload release
   empty span/slab release
   pressure thresholds
