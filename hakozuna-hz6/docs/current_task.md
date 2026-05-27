@@ -1036,9 +1036,21 @@ Route table shape:
   PAGE_TABLE backend is now seeded as a contract variant.
   Real Windows sidecar and Linux region/page maps still need implementation.
 
+LargeSpan 128K direction:
+  choose ownerless CentralSpanPool as the primary HZ6 LargeSpan path.
+  LargeSpan remote free should become ACTIVE -> CENTRAL_FREE(ownerless), not
+  owner-inbox-first and not a temporary TRANSFER_FREE add-on.
+  Owner inbox remains strict/debug/fallback only.
+
+LargeSpan rollout:
+  L1: stabilize 128K CentralSpanPool state transitions and RSS budget.
+  L2: add 256K / 512K / 1M classes on the same backend.
+  L3: run full preload comparison after broad large-size coverage exists.
+
 Transfer shard policy:
-  consumer-visible shard remains the default idea, but HZ5 variants were no-go
-  as patches. HZ6 must test it from a clean contract.
+  generic transfer shard remains useful for small/mid/exact transfer paths.
+  For LargeSpan, shard design belongs inside CentralSpanPool, not as a late
+  transfer128 patch.
 
 Fail-closed timing:
   strict profile uses immediate validation.

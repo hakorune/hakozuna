@@ -370,7 +370,8 @@ Design direction:
 
 ```text
 L1:
-  stabilize the 128K transfer-first front and keep double-return impossible.
+  stabilize the 128K ownerless CentralSpanPool and keep double-return
+  impossible.
 
 L2:
   add 256K / 512K / 1M LargeSpan classes using the same route, transfer,

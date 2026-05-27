@@ -166,6 +166,74 @@ old-owner shard:
 
 HZ6 should treat those as diagnostics, not default design.
 
+## LargeSpan CentralSpanPool Contract
+
+LargeSpan should not be owner-inbox-first and should not treat transfer as a
+temporary add-on. HZ5 LargeFront 128K showed that owner inbox, single global
+transfer, producer TLS retention, old-owner shards, and consumer shards all
+produce row-specific behavior when layered on top of an owner-centric design.
+
+For HZ6 LargeSpan, make ownerless central reuse a first-class state:
+
+```text
+remote free:
+  ACTIVE(owner=A) -> CENTRAL_FREE(ownerless)
+
+alloc miss:
+  tiny local cache
+  CentralSpanPool class pop
+  SourceDepot
+  OS source
+
+owner inbox:
+  strict/debug/fallback profile only
+```
+
+LargeSpan states:
+
+```text
+ACTIVE:
+  user owns the span
+
+LOCAL_FREE:
+  tiny owner/thread-local cache owns the span
+
+CENTRAL_FREE:
+  ownerless central class pool owns the span
+
+REMOTE_PENDING:
+  strict owner-inbox profile owns the span
+
+RELEASED:
+  descriptor retained, payload decommitted
+
+ORPHAN:
+  owner died, generation mismatched, or route became invalid
+```
+
+Rules:
+
+```text
+free requires ACTIVE
+CENTRAL_FREE -> ACTIVE assigns the consuming owner
+CENTRAL_FREE is bounded by bytes, not only span count
+source refill must check CentralSpanPool before SourceDepot / OS
+payload commit/decommit is controlled by SourceLayer and ScavengeLayer
+```
+
+Initial LargeSpan scope:
+
+```text
+L1:
+  stabilize 128K CentralSpanPool and state transitions
+
+L2:
+  add 256K / 512K / 1M classes behind the same LargeSpan backend
+
+L3:
+  add full preload coverage and compare against HZ3/HZ4/HZ5/tcmalloc
+```
+
 ## OwnerLayer Contract
 
 Owner inboxes are still needed, but they should not be the only fast remote
@@ -284,4 +352,3 @@ transfer is bounded
 source refill does not bypass reusable transfer supply
 RSS remains a reported first-class metric
 ```
-

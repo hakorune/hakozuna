@@ -189,6 +189,21 @@ DEAD:
   retired / released / debug poison
 ```
 
+LargeSpan specialization:
+
+```text
+CENTRAL_FREE:
+  ownerless reusable large span in a central class pool
+
+RELEASED:
+  descriptor retained, payload decommitted
+```
+
+For LargeSpan, `CENTRAL_FREE` is the primary fast remote-free state.
+`TRANSFER_FREE` remains the generic transfer-layer vocabulary for smaller
+fronts and exact-object transfer paths, but LargeSpan should not model remote
+reuse as a temporary owner-to-owner transfer.
+
 Allowed transitions:
 
 ```text
@@ -197,18 +212,27 @@ local alloc:
 
 local free:
   ACTIVE -> LOCAL_FREE
+  ACTIVE -> CENTRAL_FREE if the tiny local cache is full
 
 fast remote free:
   ACTIVE -> TRANSFER_FREE
+  ACTIVE -> CENTRAL_FREE for LargeSpan fast/rss/remote profiles
 
 strict remote free:
   ACTIVE -> REMOTE_PENDING
 
 transfer consume:
   TRANSFER_FREE -> ACTIVE
+  CENTRAL_FREE -> ACTIVE for LargeSpan central-pool reuse
 
 owner drain consume:
   REMOTE_PENDING -> ACTIVE or LOCAL_FREE
+
+scavenge:
+  CENTRAL_FREE -> RELEASED
+
+released reuse:
+  RELEASED -> ACTIVE after payload recommit/reactivation
 
 owner death:
   LOCAL_FREE / REMOTE_PENDING -> ORPHAN
@@ -276,6 +300,63 @@ producer TLS retention:
 
 old-owner shard:
   often misses next consumer
+```
+
+### LargeSpan CentralSpanPool
+
+LargeSpan is the first place where HZ6 should intentionally diverge from HZ5.
+HZ5 tried owner inbox, global transfer, producer TLS transfer, owner shards, and
+consumer shards as patches around LargeFront 128K. HZ6 should instead make the
+ownerless central pool the LargeSpan owner.
+
+```text
+remote free:
+  ACTIVE(owner=A) -> CENTRAL_FREE(ownerless)
+
+alloc miss:
+  tiny local cache
+  CentralSpanPool[class]
+  released CentralSpanPool[class]
+  SourceDepot
+  OS source
+
+strict/debug:
+  ACTIVE -> REMOTE_PENDING owner inbox
+```
+
+CentralSpanPool requirements:
+
+```text
+class-local
+sharded
+bounded by bytes
+nonempty mask for bounded consumer search
+payload decommit when hot bytes exceed budget
+source refill never bypasses central reusable spans
+```
+
+Source batch and RSS must be separate knobs:
+
+```text
+SourceDepot:
+  may reserve descriptors/address ranges in batches
+
+payload:
+  committed only for active/hot spans
+  decommitted for RELEASED spans under pressure
+```
+
+Initial LargeSpan rollout:
+
+```text
+L1:
+  128K CentralSpanPool
+
+L2:
+  256K / 512K / 1M classes on the same backend
+
+L3:
+  full preload comparison
 ```
 
 ## FrontCache Contract
@@ -527,4 +608,3 @@ HZ6_MIGRATION_FROM_HZ5.md:
 current_task.md:
   current work only, no long logs
 ```
-

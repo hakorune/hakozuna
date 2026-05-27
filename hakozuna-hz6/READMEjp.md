@@ -95,7 +95,7 @@ Large128 seed を LargeSpan family に育てるのが筋です。
 
 ```text
 L1:
-  128K transfer-first front を proof target として固める
+  128K ownerless CentralSpanPool を proof target として固める
 
 L2:
   256K / 512K / 1M span class を同じ RouteLayer,

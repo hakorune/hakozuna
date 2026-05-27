@@ -114,7 +114,7 @@ the Large128 seed into a real LargeSpan family:
 
 ```text
 L1:
-  keep the 128K transfer-first front as the proof target
+  stabilize the 128K ownerless CentralSpanPool as the proof target
 
 L2:
   add 256K / 512K / 1M span classes behind the same RouteLayer,
