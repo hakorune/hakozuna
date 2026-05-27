@@ -358,6 +358,7 @@ Allowed:
   choose source batch
   choose transfer cap
   choose scavenge threshold
+  apply profile policy only through explicit slow-path calls
 
 Forbidden:
   malloc/free hit-path updates

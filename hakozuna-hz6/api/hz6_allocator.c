@@ -173,6 +173,23 @@ size_t hz6_allocator_scavenge_local_free(Hz6Allocator* allocator,
   return budget.objects_released;
 }
 
+size_t hz6_allocator_scavenge_profile(Hz6Allocator* allocator) {
+  if (!allocator) {
+    return 0;
+  }
+
+  size_t released = 0;
+  if (allocator->profile.scavenge_orphan_bytes != 0) {
+    released += hz6_allocator_scavenge_orphans(
+        allocator, allocator->profile.scavenge_orphan_bytes);
+  }
+  if (allocator->profile.scavenge_local_free_bytes != 0) {
+    released += hz6_allocator_scavenge_local_free(
+        allocator, allocator->profile.scavenge_local_free_bytes);
+  }
+  return released;
+}
+
 void hz6_allocator_init(Hz6Allocator* allocator) {
   hz6_allocator_init_with_profile(allocator, HZ6_PROFILE_STRICT);
 }

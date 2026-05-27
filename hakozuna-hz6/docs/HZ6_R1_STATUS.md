@@ -96,6 +96,12 @@ scavenge:
   over-budget ORPHAN descriptors remain owned by the scavenge boundary
   over-budget LOCAL_FREE descriptors remain in the local cache
   route unregister + SourceLayer release is covered by safety smoke
+
+policy:
+  profile config carries slow-path scavenge budgets
+  RSS profile can trigger explicit profile scavenging
+  strict profile keeps automatic profile scavenging disabled
+  policy-driven scavenging is covered by allocator and safety smoke
 ```
 
 ## Verification Command

@@ -2,6 +2,7 @@
 #define HZ6_PROFILES_H
 
 #include <stdint.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,6 +22,8 @@ typedef struct Hz6ProfileConfig {
   uint32_t transfer_capacity;
   uint32_t transfer_shards;
   uint32_t source_batch;
+  size_t scavenge_local_free_bytes;
+  size_t scavenge_orphan_bytes;
 } Hz6ProfileConfig;
 
 Hz6ProfileConfig hz6_profile_config(Hz6ProfileId id);

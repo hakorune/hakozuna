@@ -143,6 +143,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    hz6_allocator_scavenge_local_free() removes stale cache entries before
    releasing LOCAL_FREE descriptors
    safety smoke covers over-budget local retention and route/source release
+31. Slow-path scavenge policy hook. DONE:
+   Hz6ProfileConfig carries scavenge_local_free_bytes / scavenge_orphan_bytes
+   hz6_allocator_scavenge_profile() applies profile budgets explicitly
+   RSS profile scavenges cached objects, strict profile keeps auto scavenge off
 ```
 
 Current R1 smoke:

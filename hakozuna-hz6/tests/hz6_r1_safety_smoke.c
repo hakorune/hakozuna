@@ -167,6 +167,29 @@ int main(void) {
   }
   hz6_allocator_destroy(&local_scavenge_allocator);
 
+  Hz6Allocator strict_scavenge_allocator;
+  hz6_allocator_init_with_profile(&strict_scavenge_allocator,
+                                  HZ6_PROFILE_STRICT);
+  void* strict_scavenged = hz6_malloc(&strict_scavenge_allocator, 48);
+  if (!expect(strict_scavenged != NULL, "strict profile scavenge malloc")) {
+    return 1;
+  }
+  Hz6RouteResult strict_scavenge_route =
+      hz6_route_backend_lookup(&strict_scavenge_allocator.route_backend,
+                               strict_scavenged);
+  Hz6ObjectDescriptor* strict_scavenge_descriptor =
+      (Hz6ObjectDescriptor*)strict_scavenge_route.descriptor;
+  hz6_free(&strict_scavenge_allocator, strict_scavenged);
+  if (!expect(strict_scavenge_descriptor != NULL,
+              "strict profile scavenge descriptor") ||
+      !expect(hz6_allocator_scavenge_profile(&strict_scavenge_allocator) == 0,
+              "strict profile does not scavenge automatically") ||
+      !expect(strict_scavenge_descriptor->state == HZ6_STATE_LOCAL_FREE,
+              "strict profile keeps local cache")) {
+    return 1;
+  }
+  hz6_allocator_destroy(&strict_scavenge_allocator);
+
   printf("hz6-r1-safety-smoke ok\n");
   return 0;
 }

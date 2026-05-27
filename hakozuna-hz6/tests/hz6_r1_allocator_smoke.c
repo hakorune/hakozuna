@@ -243,6 +243,33 @@ int main(void) {
   }
   hz6_allocator_destroy(&orphan_allocator);
 
+  Hz6Allocator profile_scavenge_allocator;
+  hz6_allocator_init_with_profile(&profile_scavenge_allocator,
+                                  HZ6_PROFILE_RSS);
+  void* profile_cached = hz6_malloc(&profile_scavenge_allocator, 48);
+  if (!expect(profile_cached != NULL, "profile scavenge malloc")) {
+    return 1;
+  }
+  Hz6RouteResult profile_scavenge_route =
+      hz6_route_backend_lookup(&profile_scavenge_allocator.route_backend,
+                               profile_cached);
+  Hz6ObjectDescriptor* profile_scavenge_descriptor =
+      (Hz6ObjectDescriptor*)profile_scavenge_route.descriptor;
+  hz6_free(&profile_scavenge_allocator, profile_cached);
+  if (!expect(profile_scavenge_descriptor != NULL,
+              "profile scavenge descriptor") ||
+      !expect(profile_scavenge_descriptor->state == HZ6_STATE_LOCAL_FREE,
+              "profile scavenge starts local free") ||
+      !expect(hz6_allocator_scavenge_profile(&profile_scavenge_allocator) == 1,
+              "profile scavenge local free") ||
+      !expect(!hz6_owns(&profile_scavenge_allocator, profile_cached),
+              "profile scavenge route gone") ||
+      !expect(profile_scavenge_descriptor->state == HZ6_STATE_DEAD,
+              "profile scavenge descriptor dead")) {
+    return 1;
+  }
+  hz6_allocator_destroy(&profile_scavenge_allocator);
+
   printf("hz6-r1-allocator-smoke ok\n");
   return 0;
 }
