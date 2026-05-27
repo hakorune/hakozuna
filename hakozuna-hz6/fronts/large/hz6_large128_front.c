@@ -1,7 +1,6 @@
 #include "hz6_large128_front.h"
 
 #include "../hz6_front_util.h"
-#include "../../source/linux_source_mmap.h"
 
 static int hz6_large128_can_allocate(size_t size,
                                      size_t align,
@@ -21,9 +20,8 @@ static void* hz6_large128_alloc(Hz6Allocator* allocator,
     return NULL;
   }
 
-  Hz6OsMemoryOps source_ops = hz6_linux_mmap_source_ops();
-  return hz6_front_reuse_or_source_ops(
-      allocator, HZ6_FRONT_LARGE, class_id, HZ6_LARGE128_BYTES, &source_ops,
+  return hz6_front_reuse_or_source_kind(
+      allocator, HZ6_FRONT_LARGE, class_id, HZ6_LARGE128_BYTES,
       HZ6_SOURCE_LINUX_MMAP);
 }
 

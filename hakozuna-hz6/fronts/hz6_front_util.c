@@ -6,9 +6,22 @@ void* hz6_front_reuse_or_source(Hz6Allocator* allocator,
                                 uint16_t front_id,
                                 uint16_t class_id,
                                 size_t bytes) {
-  Hz6OsMemoryOps source_ops = hz6_system_source_ops();
+  return hz6_front_reuse_or_source_kind(allocator, front_id, class_id, bytes,
+                                        HZ6_SOURCE_SYSTEM);
+}
+
+void* hz6_front_reuse_or_source_kind(Hz6Allocator* allocator,
+                                     uint16_t front_id,
+                                     uint16_t class_id,
+                                     size_t bytes,
+                                     Hz6SourceKind source_kind) {
+  if (!allocator) {
+    return NULL;
+  }
+  const Hz6OsMemoryOps* source_ops =
+      hz6_source_registry_lookup(&allocator->source_registry, source_kind);
   return hz6_front_reuse_or_source_ops(allocator, front_id, class_id, bytes,
-                                       &source_ops, HZ6_SOURCE_SYSTEM);
+                                       source_ops, source_kind);
 }
 
 void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,

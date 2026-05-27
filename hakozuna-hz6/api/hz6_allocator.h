@@ -9,6 +9,7 @@
 #include "../policy/hz6_profiles.h"
 #include "../route/hz6_route.h"
 #include "../source/hz6_source.h"
+#include "../source/hz6_source_registry.h"
 #include "../transfer/hz6_transfer.h"
 
 #ifdef __cplusplus
@@ -33,6 +34,7 @@ struct Hz6Allocator {
   Hz6TransferObject transfer_objects[HZ6_TRANSFER_CACHE_CAPACITY];
   Hz6TransferCache transfer_cache;
   Hz6ObjectDescriptor descriptors[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
+  Hz6SourceRegistry source_registry;
   Hz6FrontCacheEntry frontcache_entries[HZ6_FRONT_CACHE_CLASS_COUNT]
                                       [HZ6_FRONT_CACHE_BIN_CAPACITY];
   Hz6FrontCacheBin frontcache_bins[HZ6_FRONT_CACHE_CLASS_COUNT];

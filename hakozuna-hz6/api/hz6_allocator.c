@@ -68,6 +68,7 @@ void hz6_allocator_init_with_profile(Hz6Allocator* allocator,
   allocator->stats.transfer_push = 0;
   allocator->stats.transfer_pop = 0;
   allocator->stats.source_alloc = 0;
+  hz6_source_registry_init(&allocator->source_registry);
   for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
     allocator->descriptors[i].ptr = NULL;
     allocator->descriptors[i].bytes = 0;

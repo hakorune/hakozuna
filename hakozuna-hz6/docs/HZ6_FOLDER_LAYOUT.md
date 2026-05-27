@@ -48,6 +48,8 @@ hakozuna-hz6/
   source/
     hz6_source.h
     hz6_source.c
+    hz6_source_registry.h
+    hz6_source_registry.c
     linux_source_mmap.c
     win_source_virtualalloc.c
 
@@ -124,6 +126,8 @@ transfer/hz6_transfer.c
 owner/hz6_owner.h
 source/hz6_source.h
 source/hz6_source.c
+source/hz6_source_registry.h
+source/hz6_source_registry.c
 source/linux_source_mmap.h
 source/linux_source_mmap.c
 policy/hz6_profiles.h
@@ -146,8 +150,9 @@ arrays. Keep new modules visible there until a real build system is introduced.
 It builds both the low-level contract smoke and allocator/front integration
 smoke.
 Linux mmap source ops are present as SourceLayer contract code, but Large128
-now uses them in the Linux R1 smoke path. The toy front still uses the system
-source path because it exists only as a contract-validation front.
+now uses them in the Linux R1 smoke path through `source/hz6_source_registry.*`.
+The toy front still uses the system source path because it exists only as a
+contract-validation front.
 
 The current API path is intentionally small:
 
@@ -192,6 +197,8 @@ miss all fronts instead of being rounded down into a smaller allocation.
 On Linux, this seed is backed by `source/linux_source_mmap.*`. Descriptors
 store source kind and release metadata so allocator destroy and cache overflow
 release through the correct SourceLayer instead of assuming system `free()`.
+The Large128 front names only `HZ6_SOURCE_LINUX_MMAP`; it does not include the
+Linux mmap implementation directly.
 It is still a seed front, not a full LargeFront span policy.
 
 Shared descriptor/cache/transfer transitions live in

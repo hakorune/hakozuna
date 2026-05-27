@@ -83,6 +83,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    descriptors carry source kind / release metadata
    Large128 uses Linux mmap source ops in the Linux R1 smoke
    destroy and cache overflow release through descriptor SourceLayer metadata
+17. Allocator-level SourceRegistry. DONE:
+   source/hz6_source_registry.*
+   allocator owns system/Linux source selection
+   fronts name source kind instead of including OS-specific source backends
 ```
 
 Current R1 smoke:
