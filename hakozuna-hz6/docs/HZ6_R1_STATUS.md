@@ -128,6 +128,8 @@ front registry:
   registry prefill through the allocator API
   hz6_allocator_prefill_size() can select a prefillable front by allocation size
   without exposing front ids to callers
+  allocator frontcache helpers wrap push, pop, remove, count, and capacity so
+  fronts do not need to inspect allocator frontcache bins directly
 
 source:
   Linux mmap ops validate through SourceLayer

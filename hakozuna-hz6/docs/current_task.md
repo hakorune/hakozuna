@@ -417,6 +417,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    the allocator API boundary
    FrontUtil, MidPage, and allocator smoke no longer call exact route
    unregister through allocator.route_backend directly
+86. Allocator frontcache boundary helpers. DONE:
+   hz6_allocator_frontcache_push(), pop(), remove(), count(), and capacity()
+   expose front-cache operations through the allocator boundary
+   allocator internals, shared FrontUtil, and MidPage now avoid direct
+   frontcache_bins access outside allocator helper implementations and init
 ```
 
 Current R1 smoke:

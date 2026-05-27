@@ -83,6 +83,56 @@ int hz6_allocator_release_descriptor_source(
   return released;
 }
 
+int hz6_allocator_frontcache_push(Hz6Allocator* allocator,
+                                  uint16_t class_id,
+                                  Hz6FrontCacheEntry entry) {
+  if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
+    return 0;
+  }
+  return hz6_frontcache_push(&allocator->frontcache_bins[class_id], entry);
+}
+
+int hz6_allocator_frontcache_pop(Hz6Allocator* allocator,
+                                 uint16_t class_id,
+                                 Hz6FrontCacheEntry* out) {
+  if (!allocator || !out || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
+    return 0;
+  }
+  return hz6_frontcache_pop(&allocator->frontcache_bins[class_id], out);
+}
+
+int hz6_allocator_frontcache_remove(Hz6Allocator* allocator,
+                                    uint16_t class_id,
+                                    void* ptr,
+                                    void* descriptor,
+                                    uint32_t generation,
+                                    Hz6FrontCacheEntry* removed) {
+  if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
+    return 0;
+  }
+  return hz6_frontcache_remove(&allocator->frontcache_bins[class_id],
+                               ptr,
+                               descriptor,
+                               generation,
+                               removed);
+}
+
+size_t hz6_allocator_frontcache_count(const Hz6Allocator* allocator,
+                                      uint16_t class_id) {
+  if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
+    return 0;
+  }
+  return allocator->frontcache_bins[class_id].count;
+}
+
+size_t hz6_allocator_frontcache_capacity(const Hz6Allocator* allocator,
+                                         uint16_t class_id) {
+  if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
+    return 0;
+  }
+  return allocator->frontcache_bins[class_id].capacity;
+}
+
 Hz6SourceBlock* hz6_allocator_create_source_block(
     Hz6Allocator* allocator,
     size_t bytes,
@@ -194,7 +244,7 @@ int hz6_allocator_release_orphan(Hz6Allocator* allocator, void* ptr) {
     return 0;
   }
 
-  hz6_route_backend_unregister_exact(&allocator->route_backend, ptr);
+  hz6_allocator_route_unregister_exact(allocator, ptr);
   return hz6_allocator_release_descriptor_source(descriptor);
 }
 
@@ -250,14 +300,13 @@ int hz6_allocator_adopt_orphan(Hz6Allocator* adopter,
   entry.descriptor = adopted_descriptor;
   entry.class_id = adopted_descriptor->class_id;
   entry.generation = adopted_descriptor->generation;
-  if (!hz6_frontcache_push(&adopter->frontcache_bins[entry.class_id],
-                           entry)) {
-    hz6_route_backend_unregister_exact(&adopter->route_backend, ptr);
+  if (!hz6_allocator_frontcache_push(adopter, entry.class_id, entry)) {
+    hz6_allocator_route_unregister_exact(adopter, ptr);
     *adopted_descriptor = (Hz6ObjectDescriptor){0};
     return 0;
   }
 
-  hz6_route_backend_unregister_exact(&source->route_backend, ptr);
+  hz6_allocator_route_unregister_exact(source, ptr);
   source_descriptor->ptr = NULL;
   source_descriptor->bytes = 0;
   source_descriptor->source_ptr = NULL;
@@ -292,8 +341,7 @@ size_t hz6_allocator_scavenge_orphans(Hz6Allocator* allocator,
       continue;
     }
 
-    hz6_route_backend_unregister_exact(&allocator->route_backend,
-                                       descriptor->ptr);
+    hz6_allocator_route_unregister_exact(allocator, descriptor->ptr);
     hz6_allocator_release_descriptor_source(descriptor);
     hz6_scavenge_account_release(&budget, bytes);
   }
@@ -322,16 +370,16 @@ size_t hz6_allocator_scavenge_local_free(Hz6Allocator* allocator,
       continue;
     }
 
-    if (!hz6_frontcache_remove(&allocator->frontcache_bins[descriptor->class_id],
-                               descriptor->ptr,
-                               descriptor,
-                               descriptor->generation,
-                               NULL)) {
+    if (!hz6_allocator_frontcache_remove(allocator,
+                                         descriptor->class_id,
+                                         descriptor->ptr,
+                                         descriptor,
+                                         descriptor->generation,
+                                         NULL)) {
       continue;
     }
 
-    hz6_route_backend_unregister_exact(&allocator->route_backend,
-                                       descriptor->ptr);
+    hz6_allocator_route_unregister_exact(allocator, descriptor->ptr);
     hz6_allocator_release_descriptor_source(descriptor);
     hz6_scavenge_account_release(&budget, bytes);
   }
@@ -383,8 +431,7 @@ size_t hz6_allocator_drain_remote_pending(Hz6Allocator* allocator) {
     entry.descriptor = descriptor;
     entry.class_id = descriptor->class_id;
     entry.generation = descriptor->generation;
-    if (!hz6_frontcache_push(&allocator->frontcache_bins[entry.class_id],
-                             entry)) {
+    if (!hz6_allocator_frontcache_push(allocator, entry.class_id, entry)) {
       continue;
     }
 
@@ -617,8 +664,7 @@ void hz6_allocator_destroy(Hz6Allocator* allocator) {
     if (!descriptor->ptr) {
       continue;
     }
-    hz6_route_backend_unregister_exact(&allocator->route_backend,
-                                       descriptor->ptr);
+    hz6_allocator_route_unregister_exact(allocator, descriptor->ptr);
     hz6_allocator_release_descriptor_source(descriptor);
   }
   for (size_t i = 0; i < HZ6_SOURCE_BLOCK_CAPACITY; ++i) {

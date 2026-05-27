@@ -57,8 +57,8 @@ size_t hz6_midpage_prefill_run(Hz6Allocator* allocator, uint16_t class_id) {
     return 0;
   }
 
-  Hz6FrontCacheBin* bin = &allocator->frontcache_bins[class_id];
-  if (bin->count >= bin->capacity) {
+  if (hz6_allocator_frontcache_count(allocator, class_id) >=
+      hz6_allocator_frontcache_capacity(allocator, class_id)) {
     return 0;
   }
 
@@ -73,7 +73,9 @@ size_t hz6_midpage_prefill_run(Hz6Allocator* allocator, uint16_t class_id) {
   }
 
   size_t filled = 0;
-  while (filled < policy.slots_per_run && bin->count < bin->capacity) {
+  while (filled < policy.slots_per_run &&
+         hz6_allocator_frontcache_count(allocator, class_id) <
+             hz6_allocator_frontcache_capacity(allocator, class_id)) {
     size_t offset = filled * policy.slot_bytes;
     void* ptr = hz6_front_source_block_slot(
         allocator, HZ6_FRONT_MIDPAGE, class_id, policy.slot_bytes, offset,
@@ -96,7 +98,7 @@ size_t hz6_midpage_prefill_run(Hz6Allocator* allocator, uint16_t class_id) {
     entry.descriptor = descriptor;
     entry.class_id = class_id;
     entry.generation = descriptor->generation;
-    if (!hz6_frontcache_push(bin, entry)) {
+    if (!hz6_allocator_frontcache_push(allocator, class_id, entry)) {
       hz6_allocator_route_unregister_exact(allocator, ptr);
       hz6_allocator_release_descriptor_source(descriptor);
       break;

@@ -137,7 +137,7 @@ void* hz6_front_reuse_cached_or_transfer(Hz6Allocator* allocator,
   }
 
   Hz6FrontCacheEntry entry;
-  while (hz6_frontcache_pop(&allocator->frontcache_bins[class_id], &entry)) {
+  while (hz6_allocator_frontcache_pop(allocator, class_id, &entry)) {
     Hz6ObjectDescriptor* descriptor =
         (Hz6ObjectDescriptor*)entry.descriptor;
     if (hz6_allocator_activate_descriptor(
@@ -168,7 +168,7 @@ void* hz6_front_reuse_transfer_or_cached(Hz6Allocator* allocator,
   }
 
   Hz6FrontCacheEntry entry;
-  while (hz6_frontcache_pop(&allocator->frontcache_bins[class_id], &entry)) {
+  while (hz6_allocator_frontcache_pop(allocator, class_id, &entry)) {
     Hz6ObjectDescriptor* descriptor =
         (Hz6ObjectDescriptor*)entry.descriptor;
     if (hz6_allocator_activate_descriptor(
@@ -344,7 +344,7 @@ static int hz6_front_prefill_one(Hz6Allocator* allocator,
   entry.descriptor = descriptor;
   entry.class_id = class_id;
   entry.generation = descriptor->generation;
-  if (!hz6_frontcache_push(&allocator->frontcache_bins[class_id], entry)) {
+  if (!hz6_allocator_frontcache_push(allocator, class_id, entry)) {
     hz6_allocator_route_unregister_exact(allocator, ptr);
     hz6_allocator_release_descriptor_source(descriptor);
     return 0;
@@ -373,8 +373,8 @@ size_t hz6_front_prefill_source_kind(Hz6Allocator* allocator,
 
   size_t filled = 0;
   while (filled < count &&
-         allocator->frontcache_bins[class_id].count <
-             allocator->frontcache_bins[class_id].capacity) {
+         hz6_allocator_frontcache_count(allocator, class_id) <
+             hz6_allocator_frontcache_capacity(allocator, class_id)) {
     if (!hz6_front_prefill_one(allocator, front_id, class_id, bytes,
                                source_ops, source_kind)) {
       break;
@@ -407,8 +407,7 @@ int hz6_front_free_local_to_cache(Hz6Allocator* allocator,
   entry.descriptor = descriptor;
   entry.class_id = descriptor->class_id;
   entry.generation = descriptor->generation;
-  if (hz6_frontcache_push(&allocator->frontcache_bins[entry.class_id],
-                          entry)) {
+  if (hz6_allocator_frontcache_push(allocator, entry.class_id, entry)) {
     return 1;
   }
 

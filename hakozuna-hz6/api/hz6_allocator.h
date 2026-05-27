@@ -75,6 +75,27 @@ int hz6_allocator_activate_descriptor(Hz6ObjectDescriptor* descriptor,
 int hz6_allocator_release_descriptor_source(
     Hz6ObjectDescriptor* descriptor);
 
+int hz6_allocator_frontcache_push(Hz6Allocator* allocator,
+                                  uint16_t class_id,
+                                  Hz6FrontCacheEntry entry);
+
+int hz6_allocator_frontcache_pop(Hz6Allocator* allocator,
+                                 uint16_t class_id,
+                                 Hz6FrontCacheEntry* out);
+
+int hz6_allocator_frontcache_remove(Hz6Allocator* allocator,
+                                    uint16_t class_id,
+                                    void* ptr,
+                                    void* descriptor,
+                                    uint32_t generation,
+                                    Hz6FrontCacheEntry* removed);
+
+size_t hz6_allocator_frontcache_count(const Hz6Allocator* allocator,
+                                      uint16_t class_id);
+
+size_t hz6_allocator_frontcache_capacity(const Hz6Allocator* allocator,
+                                         uint16_t class_id);
+
 Hz6SourceBlock* hz6_allocator_create_source_block(
     Hz6Allocator* allocator,
     size_t bytes,
