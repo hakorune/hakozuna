@@ -36,6 +36,7 @@ Fronts:
     >4KiB..32KiB seed front
     uses a front-local 8K / 32K page-run policy seed
     can explicitly prefill one 64KiB SourceBlock into local-cache slots
+    alloc miss tries transfer/local first, then run prefill before one-off source
     exercises the MidPage route/front contract
     uses OS-paged SourceLayer backing in the Linux R1 smoke
 

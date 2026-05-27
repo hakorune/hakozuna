@@ -201,6 +201,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    hz6_midpage_prefill_run() creates one 64KiB SourceBlock for 8K / 32K classes
    prefilled slots enter the MidPage local cache as LOCAL_FREE descriptors
    allocator smoke verifies 8 slots share one SourceBlock and avoid source refill
+45. MidPage alloc miss run refill. DONE:
+   MidPage malloc now tries transfer cache and local cache before run prefill
+   only if both are empty, alloc miss pre-fills a 64KiB run into local cache
+   allocator smoke verifies normal 8K malloc now comes from a SourceBlock run
 ```
 
 Current R1 smoke:

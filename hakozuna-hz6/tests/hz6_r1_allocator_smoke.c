@@ -234,6 +234,8 @@ int main(void) {
       !expect(midpage8_route.class_id == HZ6_MIDPAGE_8K_CLASS_ID,
               "midpage 8k route class") ||
       !expect(midpage8_descriptor != NULL, "midpage 8k descriptor") ||
+      !expect(midpage8_descriptor->source_block != NULL,
+              "midpage 8k auto run source block") ||
       !expect(midpage8_descriptor->bytes == HZ6_MIDPAGE_8K_BYTES,
               "midpage 8k descriptor bytes")) {
     return 1;
@@ -245,6 +247,10 @@ int main(void) {
     return 1;
   }
   hz6_free(&midpage8_allocator, midpage8_reused);
+  if (!expect(midpage8_allocator.stats.source_alloc == 1,
+              "midpage 8k auto prefill source alloc")) {
+    return 1;
+  }
   hz6_allocator_destroy(&midpage8_allocator);
 
   Hz6Allocator midpage_slot_allocator;

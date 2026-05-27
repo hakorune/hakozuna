@@ -132,6 +132,18 @@ static void* hz6_midpage_alloc(Hz6Allocator* allocator,
     return NULL;
   }
 
+  void* reused = hz6_front_reuse_transfer_or_cached(allocator, class_id);
+  if (reused) {
+    return reused;
+  }
+
+  if (hz6_midpage_prefill_run(allocator, class_id) != 0) {
+    reused = hz6_front_reuse_transfer_or_cached(allocator, class_id);
+    if (reused) {
+      return reused;
+    }
+  }
+
   return hz6_front_reuse_or_source_kind(
       allocator, HZ6_FRONT_MIDPAGE, class_id, bytes, HZ6_SOURCE_OS_PAGED);
 }

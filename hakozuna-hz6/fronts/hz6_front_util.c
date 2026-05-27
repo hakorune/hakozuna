@@ -37,33 +37,9 @@ void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
     return NULL;
   }
 
-  Hz6FrontCacheEntry entry;
-  if (hz6_frontcache_pop(&allocator->frontcache_bins[class_id], &entry)) {
-    Hz6ObjectDescriptor* descriptor =
-        (Hz6ObjectDescriptor*)entry.descriptor;
-    if (!hz6_allocator_activate_descriptor(
-            descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr, entry.generation,
-            allocator->owner.token)) {
-      return hz6_front_reuse_or_source_ops(allocator, front_id, class_id,
-                                           bytes, source_ops, source_kind);
-    }
-    return entry.ptr;
-  }
-
-  if (allocator->profile.transfer_first) {
-    Hz6TransferObject transfer;
-    while (hz6_transfer_backend_pop(&allocator->transfer_backend, class_id,
-                                    &transfer)) {
-      Hz6ObjectDescriptor* descriptor =
-          (Hz6ObjectDescriptor*)transfer.descriptor;
-      if (!hz6_allocator_activate_descriptor(
-              descriptor, HZ6_STATE_TRANSFER_FREE, transfer.ptr,
-              transfer.generation, allocator->owner.token)) {
-        continue;
-      }
-      ++allocator->stats.transfer_pop;
-      return transfer.ptr;
-    }
+  void* reused = hz6_front_reuse_cached_or_transfer(allocator, class_id);
+  if (reused) {
+    return reused;
   }
 
   Hz6ObjectDescriptor* descriptor =
@@ -96,6 +72,80 @@ void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
 
   ++allocator->stats.source_alloc;
   return ptr;
+}
+
+void* hz6_front_reuse_cached_or_transfer(Hz6Allocator* allocator,
+                                         uint16_t class_id) {
+  if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
+    return NULL;
+  }
+
+  Hz6FrontCacheEntry entry;
+  while (hz6_frontcache_pop(&allocator->frontcache_bins[class_id], &entry)) {
+    Hz6ObjectDescriptor* descriptor =
+        (Hz6ObjectDescriptor*)entry.descriptor;
+    if (hz6_allocator_activate_descriptor(
+            descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr, entry.generation,
+            allocator->owner.token)) {
+      return entry.ptr;
+    }
+  }
+
+  if (!allocator->profile.transfer_first) {
+    return NULL;
+  }
+
+  Hz6TransferObject transfer;
+  while (hz6_transfer_backend_pop(&allocator->transfer_backend, class_id,
+                                  &transfer)) {
+    Hz6ObjectDescriptor* descriptor =
+        (Hz6ObjectDescriptor*)transfer.descriptor;
+    if (!hz6_allocator_activate_descriptor(
+            descriptor, HZ6_STATE_TRANSFER_FREE, transfer.ptr,
+            transfer.generation, allocator->owner.token)) {
+      continue;
+    }
+    ++allocator->stats.transfer_pop;
+    return transfer.ptr;
+  }
+
+  return NULL;
+}
+
+void* hz6_front_reuse_transfer_or_cached(Hz6Allocator* allocator,
+                                         uint16_t class_id) {
+  if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
+    return NULL;
+  }
+
+  if (allocator->profile.transfer_first) {
+    Hz6TransferObject transfer;
+    while (hz6_transfer_backend_pop(&allocator->transfer_backend, class_id,
+                                    &transfer)) {
+      Hz6ObjectDescriptor* descriptor =
+          (Hz6ObjectDescriptor*)transfer.descriptor;
+      if (!hz6_allocator_activate_descriptor(
+              descriptor, HZ6_STATE_TRANSFER_FREE, transfer.ptr,
+              transfer.generation, allocator->owner.token)) {
+        continue;
+      }
+      ++allocator->stats.transfer_pop;
+      return transfer.ptr;
+    }
+  }
+
+  Hz6FrontCacheEntry entry;
+  while (hz6_frontcache_pop(&allocator->frontcache_bins[class_id], &entry)) {
+    Hz6ObjectDescriptor* descriptor =
+        (Hz6ObjectDescriptor*)entry.descriptor;
+    if (hz6_allocator_activate_descriptor(
+            descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr, entry.generation,
+            allocator->owner.token)) {
+      return entry.ptr;
+    }
+  }
+
+  return NULL;
 }
 
 void* hz6_front_source_slot_kind(Hz6Allocator* allocator,

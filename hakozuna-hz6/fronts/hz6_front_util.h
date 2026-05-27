@@ -25,6 +25,12 @@ void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
                                     const Hz6OsMemoryOps* source_ops,
                                     Hz6SourceKind source_kind);
 
+void* hz6_front_reuse_cached_or_transfer(Hz6Allocator* allocator,
+                                         uint16_t class_id);
+
+void* hz6_front_reuse_transfer_or_cached(Hz6Allocator* allocator,
+                                         uint16_t class_id);
+
 void* hz6_front_source_slot_kind(Hz6Allocator* allocator,
                                  uint16_t front_id,
                                  uint16_t class_id,
