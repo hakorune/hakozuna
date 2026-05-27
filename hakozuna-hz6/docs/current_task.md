@@ -236,6 +236,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    SourceBlock refcount is restored after the failed registration path
    descriptor reuse is verified by registering the next SourceBlock slot after
    duplicate rejection without releasing the backing SourceBlock
+53. Profile-selected route backend seed. DONE:
+   Hz6ProfileConfig now carries route_page_granularity
+   allocator init selects PAGE_TABLE when profile route granularity is nonzero
+   REMOTE profile smoke verifies PAGE_TABLE route backend selection
 ```
 
 Current R1 smoke:

@@ -439,9 +439,15 @@ void hz6_allocator_init_with_profile(Hz6Allocator* allocator,
                             allocator->frontcache_entries[i],
                             HZ6_FRONT_CACHE_BIN_CAPACITY);
   }
-  hz6_route_backend_init_exact(&allocator->route_backend,
-                               allocator->route_entries,
-                               HZ6_ROUTE_TABLE_CAPACITY);
+  if (allocator->profile.route_page_granularity != 0) {
+    hz6_route_backend_init_page_table_with_granularity(
+        &allocator->route_backend, allocator->route_entries,
+        HZ6_ROUTE_TABLE_CAPACITY, allocator->profile.route_page_granularity);
+  } else {
+    hz6_route_backend_init_exact(&allocator->route_backend,
+                                 allocator->route_entries,
+                                 HZ6_ROUTE_TABLE_CAPACITY);
+  }
   size_t transfer_capacity = allocator->profile.transfer_capacity;
   if (transfer_capacity == 0 ||
       transfer_capacity > HZ6_TRANSFER_CACHE_CAPACITY) {

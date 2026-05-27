@@ -1,6 +1,8 @@
 #ifndef HZ6_PROFILES_H
 #define HZ6_PROFILES_H
 
+#include "../include/hz6_config.h"
+
 #include <stdint.h>
 #include <stddef.h>
 
@@ -21,6 +23,7 @@ typedef struct Hz6ProfileConfig {
   uint32_t strict_owner_remote;
   uint32_t transfer_capacity;
   uint32_t transfer_shards;
+  size_t route_page_granularity;
   uint32_t source_batch;
   size_t scavenge_local_free_bytes;
   size_t scavenge_orphan_bytes;

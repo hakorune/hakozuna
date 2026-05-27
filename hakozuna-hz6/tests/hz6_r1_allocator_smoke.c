@@ -513,6 +513,14 @@ int main(void) {
 
   Hz6Allocator midpage_allocator;
   hz6_allocator_init_with_profile(&midpage_allocator, HZ6_PROFILE_REMOTE);
+  if (!expect(midpage_allocator.route_backend.kind ==
+                  HZ6_ROUTE_BACKEND_PAGE_TABLE,
+              "remote profile page route backend") ||
+      !expect(midpage_allocator.route_backend.page_granularity ==
+                  HZ6_ROUTE_PAGE_GRANULARITY,
+              "remote profile page route granularity")) {
+    return 1;
+  }
   void* midpage_object = hz6_malloc(&midpage_allocator, 16384);
   if (!expect(midpage_object != NULL, "midpage malloc")) {
     return 1;

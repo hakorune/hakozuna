@@ -59,6 +59,7 @@ route:
   backend wrapper preserves VALID / INVALID / MISS contract
   PAGE_TABLE backend carries explicit page granularity and is covered by
   contract smoke, including invalid-range envelopes
+  SPEED / REMOTE profiles select PAGE_TABLE through ProfileConfig
 
 local free:
   ACTIVE -> LOCAL_FREE
