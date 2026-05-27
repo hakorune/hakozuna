@@ -158,6 +158,7 @@ scavenge:
 policy:
   profile config carries slow-path scavenge budgets
   profile config owns transfer producer/consumer shard seed selection
+  profile config names the transfer shard policy as OWNER_SLOT or CLASS_ID
   RSS profile can trigger explicit profile scavenging
   strict profile keeps automatic profile scavenging disabled
   policy-driven scavenging is covered by allocator and safety smoke

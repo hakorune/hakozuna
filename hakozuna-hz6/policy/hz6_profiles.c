@@ -7,6 +7,7 @@ Hz6ProfileConfig hz6_profile_config(Hz6ProfileId id) {
   config.strict_owner_remote = 1;
   config.transfer_capacity = 16;
   config.transfer_shards = 1;
+  config.transfer_shard_policy = HZ6_TRANSFER_SHARD_OWNER_SLOT;
   config.route_page_granularity = 0;
   config.source_batch = 1;
   config.scavenge_local_free_bytes = 0;
@@ -54,11 +55,16 @@ static size_t hz6_profile_transfer_owner_shard(
     const Hz6ProfileConfig* config,
     uint32_t owner_slot,
     uint16_t class_id) {
-  (void)class_id;
   if (!config || config->transfer_shards <= 1) {
     return 0;
   }
-  return ((size_t)owner_slot) % (size_t)config->transfer_shards;
+  switch (config->transfer_shard_policy) {
+    case HZ6_TRANSFER_SHARD_CLASS_ID:
+      return ((size_t)class_id) % (size_t)config->transfer_shards;
+    case HZ6_TRANSFER_SHARD_OWNER_SLOT:
+    default:
+      return ((size_t)owner_slot) % (size_t)config->transfer_shards;
+  }
 }
 
 size_t hz6_profile_transfer_producer_shard(const Hz6ProfileConfig* config,

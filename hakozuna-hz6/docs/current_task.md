@@ -346,6 +346,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    FrontLayer transfer push/pop now asks PolicyLayer for shard seeds instead of
    reading owner slot directly
    contract smoke verifies remote profile shard seeds and single-shard profiles
+74. Explicit transfer shard policy id. DONE:
+   Hz6ProfileConfig now carries transfer_shard_policy
+   HZ6_TRANSFER_SHARD_OWNER_SLOT is the default profile policy
+   HZ6_TRANSFER_SHARD_CLASS_ID is covered as a contract variant for future
+   class-oriented transfer experiments
 ```
 
 Current R1 smoke:

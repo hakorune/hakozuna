@@ -17,12 +17,18 @@ typedef enum Hz6ProfileId {
   HZ6_PROFILE_REMOTE = 3
 } Hz6ProfileId;
 
+typedef enum Hz6TransferShardPolicy {
+  HZ6_TRANSFER_SHARD_OWNER_SLOT = 1,
+  HZ6_TRANSFER_SHARD_CLASS_ID = 2
+} Hz6TransferShardPolicy;
+
 typedef struct Hz6ProfileConfig {
   Hz6ProfileId id;
   uint32_t transfer_first;
   uint32_t strict_owner_remote;
   uint32_t transfer_capacity;
   uint32_t transfer_shards;
+  Hz6TransferShardPolicy transfer_shard_policy;
   size_t route_page_granularity;
   uint32_t source_batch;
   size_t scavenge_local_free_bytes;

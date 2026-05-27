@@ -478,6 +478,8 @@ int main(void) {
   Hz6ProfileConfig remote = hz6_profile_config(HZ6_PROFILE_REMOTE);
   if (!expect(speed.transfer_first == 1, "speed transfer-first") ||
       !expect(speed.transfer_shards == 4, "speed transfer shards") ||
+      !expect(speed.transfer_shard_policy == HZ6_TRANSFER_SHARD_OWNER_SLOT,
+              "speed transfer owner shard policy") ||
       !expect(speed.route_page_granularity == HZ6_ROUTE_PAGE_GRANULARITY,
               "speed page route") ||
       !expect(rss.scavenge_local_free_bytes > speed.scavenge_local_free_bytes,
@@ -493,10 +495,16 @@ int main(void) {
               "remote page route")) {
     return 1;
   }
+  Hz6ProfileConfig class_shard = remote;
+  class_shard.transfer_shard_policy = HZ6_TRANSFER_SHARD_CLASS_ID;
   if (!expect(hz6_profile_transfer_producer_shard(&remote, 5, 7) == 1,
               "remote producer shard policy") ||
       !expect(hz6_profile_transfer_consumer_shard(&remote, 6, 7) == 2,
               "remote consumer shard policy") ||
+      !expect(hz6_profile_transfer_producer_shard(&class_shard, 5, 7) == 3,
+              "class producer shard policy") ||
+      !expect(hz6_profile_transfer_consumer_shard(&class_shard, 6, 10) == 2,
+              "class consumer shard policy") ||
       !expect(hz6_profile_transfer_producer_shard(&rss, 5, 7) == 0,
               "rss producer shard policy single") ||
       !expect(hz6_profile_transfer_consumer_shard(&strict, 6, 7) == 0,
