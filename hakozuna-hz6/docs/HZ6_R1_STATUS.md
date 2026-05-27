@@ -18,6 +18,8 @@ API:
   api/hz6_allocator_prefill.c owns allocator-facing front prefill wrappers
   api/hz6_allocator_profile.c owns allocator-facing profile/source policy
   queries and source allocation stats notes
+  policy/hz6_profiles_config.c and policy/hz6_profiles_policy.c split profile
+  construction from shard/batch/budget policy helpers
   api/hz6_allocator_descriptor_state.c owns descriptor cache and remote-free
   state transitions
   api/hz6_allocator_orphan_release.c and api/hz6_allocator_orphan_adopt.c own
@@ -58,8 +60,9 @@ Contracts:
   route backend separately from the lower-level mixed contract smoke
   route backend page-table variant is split into its own module so PAGE_TABLE
   lookup stays separate from exact-table init/register helpers
-  route table management is split into its own module so entry init/register
-  stays separate from route lookup
+  route table management is split into core/exact/invalid modules so entry
+  init/register stays separate from route lookup and invalid-envelope
+  handling
   transfer backend sharded variant is split into its own module so sharded
   push/pop and shard accounting stay separate from single-cache dispatch
   transfer backend observability is split into its own module so aggregate

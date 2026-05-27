@@ -45,7 +45,9 @@ hakozuna-hz6/
     hz6_route_backend.h
     hz6_route_backend.c
     hz6_route_backend_page_table.c
-    hz6_route_table.c
+    hz6_route_table_core.c
+    hz6_route_table_exact.c
+    hz6_route_table_invalid.c
     win_route_sidecar.c
     linux_route_region.c
 
@@ -117,7 +119,8 @@ hakozuna-hz6/
     hz6_policy.h
     hz6_policy.c
     hz6_profiles.h
-    hz6_profiles.c
+    hz6_profiles_config.c
+    hz6_profiles_policy.c
 
   preload/
     linux_preload.c
@@ -177,7 +180,9 @@ route/hz6_route.c
 route/hz6_route_backend.h
 route/hz6_route_backend.c
 route/hz6_route_backend_page_table.c
-route/hz6_route_table.c
+route/hz6_route_table_core.c
+route/hz6_route_table_exact.c
+route/hz6_route_table_invalid.c
 frontcache/hz6_frontcache.h
 frontcache/hz6_frontcache.c
 frontcache/hz6_size_class.h
@@ -199,7 +204,8 @@ source/hz6_source_registry.c
 source/linux_source_mmap.h
 source/linux_source_mmap.c
 policy/hz6_profiles.h
-policy/hz6_profiles.c
+policy/hz6_profiles_config.c
+policy/hz6_profiles_policy.c
 fronts/hz6_front.h
 fronts/hz6_front_registry.c
 fronts/hz6_front_prefill_dispatch.c

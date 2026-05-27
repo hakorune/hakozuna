@@ -731,6 +731,20 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    api/hz6_allocator_orphan.c was removed after the split
    linux/build_hz6_r1_smokes.sh registers the new orphan helper modules
    explicitly
+135. Profile config/policy split. DONE:
+   policy/hz6_profiles_config.c now owns profile construction
+   policy/hz6_profiles_policy.c now owns shard, batch, and scavenge policy
+   helpers
+   policy/hz6_profiles.c was removed after the split
+   linux/build_hz6_r1_smokes.sh registers the new policy modules explicitly
+136. Route table core/exact/invalid split. DONE:
+   route/hz6_route_table_core.c now owns table init
+   route/hz6_route_table_exact.c now owns exact register/unregister
+   route/hz6_route_table_invalid.c now owns invalid-envelope register/
+   unregister
+   route/hz6_route_table.c was removed after the split
+   linux/build_hz6_r1_smokes.sh registers the new route table modules
+   explicitly
 ```
 
 Current R1 smoke:
