@@ -15,6 +15,10 @@ hakozuna-hz6/
     hz6_config.h
     hz6_contract.h
 
+  api/
+    hz6_allocator.h
+    hz6_allocator.c
+
   route/
     hz6_route.h
     hz6_route.c
@@ -95,13 +99,22 @@ hakozuna-hz6/
 R1 currently starts with the contract-only subset:
 
 ```text
+include/hz6.h
+include/hz6_config.h
 include/hz6_contract.h
+api/hz6_allocator.h
+api/hz6_allocator.c
 route/hz6_route.h
 route/hz6_route.c
+frontcache/hz6_frontcache.h
+frontcache/hz6_frontcache.c
 transfer/hz6_transfer.h
 transfer/hz6_transfer.c
 owner/hz6_owner.h
 source/hz6_source.h
+source/hz6_source.c
+policy/hz6_profiles.h
+policy/hz6_profiles.c
 tests/hz6_r1_contract_smoke.c
 linux/build_hz6_r1_contract_smoke.sh
 ```

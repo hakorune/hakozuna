@@ -13,10 +13,16 @@ mkdir -p "$OUT_DIR"
   -I"${ROOT_DIR}/hakozuna-hz6/transfer" \
   -I"${ROOT_DIR}/hakozuna-hz6/owner" \
   -I"${ROOT_DIR}/hakozuna-hz6/source" \
+  -I"${ROOT_DIR}/hakozuna-hz6/frontcache" \
+  -I"${ROOT_DIR}/hakozuna-hz6/policy" \
+  -I"${ROOT_DIR}/hakozuna-hz6/api" \
+  "${ROOT_DIR}/hakozuna-hz6/api/hz6_allocator.c" \
+  "${ROOT_DIR}/hakozuna-hz6/frontcache/hz6_frontcache.c" \
+  "${ROOT_DIR}/hakozuna-hz6/policy/hz6_profiles.c" \
   "${ROOT_DIR}/hakozuna-hz6/route/hz6_route.c" \
+  "${ROOT_DIR}/hakozuna-hz6/source/hz6_source.c" \
   "${ROOT_DIR}/hakozuna-hz6/transfer/hz6_transfer.c" \
   "${ROOT_DIR}/hakozuna-hz6/tests/hz6_r1_contract_smoke.c" \
   -o "${OUT_DIR}/hz6_r1_contract_smoke"
 
 "${OUT_DIR}/hz6_r1_contract_smoke"
-

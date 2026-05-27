@@ -1,5 +1,8 @@
+#include "../api/hz6_allocator.h"
+#include "../frontcache/hz6_frontcache.h"
 #include "../include/hz6_contract.h"
 #include "../owner/hz6_owner.h"
+#include "../policy/hz6_profiles.h"
 #include "../route/hz6_route.h"
 #include "../source/hz6_source.h"
 #include "../transfer/hz6_transfer.h"
@@ -10,6 +13,18 @@
 typedef struct SmokeDescriptor {
   int marker;
 } SmokeDescriptor;
+
+static void* smoke_reserve(size_t bytes, size_t align) {
+  (void)bytes;
+  (void)align;
+  return (void*)1;
+}
+
+static int smoke_memory_op(void* p, size_t bytes) {
+  (void)p;
+  (void)bytes;
+  return 1;
+}
 
 static int expect(int condition, const char* label) {
   if (!condition) {
@@ -101,7 +116,73 @@ int main(void) {
     return 1;
   }
 
+  Hz6ProfileConfig speed = hz6_profile_config(HZ6_PROFILE_SPEED);
+  Hz6ProfileConfig strict = hz6_profile_config(HZ6_PROFILE_STRICT);
+  if (!expect(speed.transfer_first == 1, "speed transfer-first") ||
+      !expect(strict.strict_owner_remote == 1, "strict owner remote")) {
+    return 1;
+  }
+
+  Hz6FrontCacheEntry front_entries[1];
+  Hz6FrontCacheBin front_bin;
+  hz6_frontcache_bin_init(&front_bin, front_entries, 1);
+  Hz6FrontCacheEntry front_entry;
+  front_entry.ptr = base;
+  front_entry.descriptor = &descriptor;
+  front_entry.class_id = 7;
+  front_entry.generation = 11;
+  Hz6FrontCacheEntry front_popped;
+  if (!expect(hz6_frontcache_push(&front_bin, front_entry),
+              "frontcache push") ||
+      !expect(!hz6_frontcache_push(&front_bin, front_entry),
+              "frontcache bounded") ||
+      !expect(hz6_frontcache_pop(&front_bin, &front_popped),
+              "frontcache pop") ||
+      !expect(front_popped.ptr == base, "frontcache pointer")) {
+    return 1;
+  }
+
+  Hz6Allocator allocator;
+  hz6_allocator_init_with_profile(&allocator, HZ6_PROFILE_SPEED);
+  if (!expect(allocator.profile.transfer_first == 1, "allocator profile")) {
+    return 1;
+  }
+  if (!expect(hz6_route_register_exact(&allocator.route_table, base,
+                                       sizeof(object), HZ6_FRONT_LOCAL2P, 7,
+                                       12, &descriptor),
+              "allocator route register")) {
+    return 1;
+  }
+  if (!expect(hz6_owns(&allocator, base), "allocator owns exact") ||
+      !expect(hz6_owns(&allocator, object + 1),
+              "allocator owns invalid interior")) {
+    return 1;
+  }
+  hz6_free(&allocator, base);
+  hz6_free(&allocator, object + 1);
+  hz6_free(&allocator, &foreign);
+  Hz6StatsSnapshot stats = hz6_stats_snapshot(&allocator);
+  if (!expect(stats.route_valid == 1, "stats valid") ||
+      !expect(stats.route_invalid == 1, "stats invalid") ||
+      !expect(stats.route_miss == 1, "stats miss")) {
+    return 1;
+  }
+
+  Hz6OsMemoryOps ops;
+  ops.reserve = smoke_reserve;
+  ops.commit = smoke_memory_op;
+  ops.decommit = smoke_memory_op;
+  ops.release = smoke_memory_op;
+  ops.page_size = 4096;
+  ops.allocation_granularity = 65536;
+  if (!expect(hz6_source_ops_valid(&ops), "source ops valid")) {
+    return 1;
+  }
+  ops.allocation_granularity = 3000;
+  if (!expect(!hz6_source_ops_valid(&ops), "source granularity invalid")) {
+    return 1;
+  }
+
   printf("hz6-r1-contract-smoke ok\n");
   return 0;
 }
-

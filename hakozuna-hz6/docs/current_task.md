@@ -34,6 +34,8 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
 2. Review HZ6_BLUEPRINT.md and select the first prototype. DONE.
 3. Add only headers/contracts first. IN PROGRESS:
    include/hz6_contract.h
+   include/hz6.h
+   api/hz6_allocator.h
    route/hz6_route.h
    transfer/hz6_transfer.h
    source/hz6_source.h

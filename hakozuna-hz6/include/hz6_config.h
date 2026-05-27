@@ -1,0 +1,19 @@
+#ifndef HZ6_CONFIG_H
+#define HZ6_CONFIG_H
+
+#include <stddef.h>
+
+#ifndef HZ6_ROUTE_TABLE_CAPACITY
+#define HZ6_ROUTE_TABLE_CAPACITY ((size_t)64)
+#endif
+
+#ifndef HZ6_TRANSFER_CACHE_CAPACITY
+#define HZ6_TRANSFER_CACHE_CAPACITY ((size_t)64)
+#endif
+
+#ifndef HZ6_FRONT_CACHE_CLASS_COUNT
+#define HZ6_FRONT_CACHE_CLASS_COUNT 16u
+#endif
+
+#endif
+

@@ -16,9 +16,10 @@ typedef struct Hz6OsMemoryOps {
   size_t allocation_granularity;
 } Hz6OsMemoryOps;
 
+int hz6_source_ops_valid(const Hz6OsMemoryOps* ops);
+
 #ifdef __cplusplus
 }
 #endif
 
 #endif
-
