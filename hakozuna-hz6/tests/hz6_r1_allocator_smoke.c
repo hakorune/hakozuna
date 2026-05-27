@@ -55,7 +55,8 @@ int main(void) {
     return 1;
   }
   Hz6RouteResult local2p_route =
-      hz6_route_lookup(&local2p_allocator.route_table, local2p_object);
+      hz6_route_backend_lookup(&local2p_allocator.route_backend,
+                               local2p_object);
   if (!expect(local2p_route.kind == HZ6_ROUTE_VALID,
               "local2p route valid") ||
       !expect(local2p_route.front_id == HZ6_FRONT_LOCAL2P,
@@ -86,7 +87,7 @@ int main(void) {
     return 1;
   }
   Hz6RouteResult large_route =
-      hz6_route_lookup(&large_allocator.route_table, large_object);
+      hz6_route_backend_lookup(&large_allocator.route_backend, large_object);
   if (!expect(large_route.kind == HZ6_ROUTE_VALID, "large128 route valid") ||
       !expect(large_route.front_id == HZ6_FRONT_LARGE,
               "large128 route front") ||

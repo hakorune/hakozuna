@@ -82,9 +82,9 @@ void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
   descriptor->source_release = source_ops->release;
   descriptor->generation = 1;
   descriptor->state = HZ6_STATE_ACTIVE;
-  if (!hz6_route_register_exact(&allocator->route_table, ptr, bytes, front_id,
-                                class_id, descriptor->generation,
-                                descriptor)) {
+  if (!hz6_route_backend_register_exact(&allocator->route_backend, ptr, bytes,
+                                        front_id, class_id,
+                                        descriptor->generation, descriptor)) {
     hz6_allocator_release_descriptor_source(descriptor);
     return NULL;
   }
@@ -119,7 +119,7 @@ int hz6_front_free_local_to_cache(Hz6Allocator* allocator,
   }
 
   descriptor->state = HZ6_STATE_DEAD;
-  hz6_route_unregister_exact(&allocator->route_table, ptr);
+  hz6_route_backend_unregister_exact(&allocator->route_backend, ptr);
   hz6_allocator_release_descriptor_source(descriptor);
   return 1;
 }

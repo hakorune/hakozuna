@@ -33,6 +33,7 @@ HZ6_LIB_SOURCES=(
   "${HZ6_DIR}/fronts/local2p/hz6_local2p_front.c"
   "${HZ6_DIR}/fronts/toy/hz6_toy_front.c"
   "${HZ6_DIR}/policy/hz6_profiles.c"
+  "${HZ6_DIR}/route/hz6_route_backend.c"
   "${HZ6_DIR}/route/hz6_route.c"
   "${HZ6_DIR}/source/linux_source_mmap.c"
   "${HZ6_DIR}/source/hz6_source.c"

@@ -91,6 +91,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    fronts/local2p/hz6_local2p_front.*
    exact 64KiB requests route to HZ6_FRONT_LOCAL2P before Large128
    remote transfer reuse is covered by allocator smoke
+19. Route backend seam. DONE:
+   route/hz6_route_backend.*
+   allocator and front util use backend wrapper instead of direct table calls
+   exact table remains the only backend, covered by contract smoke
 ```
 
 Current R1 smoke:

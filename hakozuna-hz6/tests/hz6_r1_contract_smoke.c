@@ -4,6 +4,7 @@
 #include "../owner/hz6_owner.h"
 #include "../policy/hz6_profiles.h"
 #include "../route/hz6_route.h"
+#include "../route/hz6_route_backend.h"
 #include "../source/linux_source_mmap.h"
 #include "../source/hz6_source.h"
 #include "../source/hz6_source_registry.h"
@@ -70,6 +71,32 @@ int main(void) {
   int foreign = 0;
   Hz6RouteResult miss = hz6_route_lookup(&route_table, &foreign);
   if (!expect(miss.kind == HZ6_ROUTE_MISS, "foreign pointer miss")) {
+    return 1;
+  }
+
+  Hz6RouteEntry backend_entries[2];
+  Hz6RouteBackend route_backend;
+  hz6_route_backend_init_exact(&route_backend, backend_entries, 2);
+  if (!expect(hz6_route_backend_register_exact(
+                  &route_backend, base, sizeof(object), HZ6_FRONT_LOCAL2P, 7,
+                  12, &descriptor),
+              "route backend register")) {
+    return 1;
+  }
+  Hz6RouteResult backend_exact = hz6_route_backend_lookup(&route_backend, base);
+  Hz6RouteResult backend_interior =
+      hz6_route_backend_lookup(&route_backend, object + 8);
+  if (!expect(backend_exact.kind == HZ6_ROUTE_VALID,
+              "route backend valid") ||
+      !expect(backend_exact.generation == 12, "route backend generation") ||
+      !expect(backend_interior.kind == HZ6_ROUTE_INVALID,
+              "route backend invalid")) {
+    return 1;
+  }
+  hz6_route_backend_unregister_exact(&route_backend, base);
+  if (!expect(hz6_route_backend_lookup(&route_backend, base).kind ==
+                  HZ6_ROUTE_MISS,
+              "route backend unregister")) {
     return 1;
   }
 

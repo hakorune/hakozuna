@@ -84,8 +84,9 @@ void hz6_allocator_init_with_profile(Hz6Allocator* allocator,
                             allocator->frontcache_entries[i],
                             HZ6_FRONT_CACHE_BIN_CAPACITY);
   }
-  hz6_route_table_init(&allocator->route_table, allocator->route_entries,
-                       HZ6_ROUTE_TABLE_CAPACITY);
+  hz6_route_backend_init_exact(&allocator->route_backend,
+                               allocator->route_entries,
+                               HZ6_ROUTE_TABLE_CAPACITY);
   hz6_transfer_init(&allocator->transfer_cache, allocator->transfer_objects,
                     HZ6_TRANSFER_CACHE_CAPACITY);
 }
@@ -100,7 +101,8 @@ void hz6_allocator_destroy(Hz6Allocator* allocator) {
     if (!descriptor->ptr) {
       continue;
     }
-    hz6_route_unregister_exact(&allocator->route_table, descriptor->ptr);
+    hz6_route_backend_unregister_exact(&allocator->route_backend,
+                                       descriptor->ptr);
     hz6_allocator_release_descriptor_source(descriptor);
   }
 }
@@ -124,7 +126,8 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
     return;
   }
 
-  Hz6RouteResult route = hz6_route_lookup(&allocator->route_table, ptr);
+  Hz6RouteResult route =
+      hz6_route_backend_lookup(&allocator->route_backend, ptr);
   switch (route.kind) {
     case HZ6_ROUTE_VALID:
       ++allocator->stats.route_valid;
@@ -151,7 +154,8 @@ int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
     return 0;
   }
 
-  Hz6RouteResult route = hz6_route_lookup(&allocator->route_table, ptr);
+  Hz6RouteResult route =
+      hz6_route_backend_lookup(&allocator->route_backend, ptr);
   if (route.kind == HZ6_ROUTE_MISS) {
     ++allocator->stats.route_miss;
     return 0;
@@ -176,7 +180,8 @@ int hz6_owns(Hz6Allocator* allocator, const void* ptr) {
   if (!allocator || !ptr) {
     return 0;
   }
-  Hz6RouteResult route = hz6_route_lookup(&allocator->route_table, ptr);
+  Hz6RouteResult route =
+      hz6_route_backend_lookup(&allocator->route_backend, ptr);
   return route.kind == HZ6_ROUTE_VALID || route.kind == HZ6_ROUTE_INVALID;
 }
 

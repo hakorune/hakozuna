@@ -8,6 +8,7 @@
 #include "../owner/hz6_owner.h"
 #include "../policy/hz6_profiles.h"
 #include "../route/hz6_route.h"
+#include "../route/hz6_route_backend.h"
 #include "../source/hz6_source.h"
 #include "../source/hz6_source_registry.h"
 #include "../transfer/hz6_transfer.h"
@@ -30,7 +31,7 @@ typedef struct Hz6ObjectDescriptor {
 struct Hz6Allocator {
   Hz6ProfileConfig profile;
   Hz6RouteEntry route_entries[HZ6_ROUTE_TABLE_CAPACITY];
-  Hz6RouteTable route_table;
+  Hz6RouteBackend route_backend;
   Hz6TransferObject transfer_objects[HZ6_TRANSFER_CACHE_CAPACITY];
   Hz6TransferCache transfer_cache;
   Hz6ObjectDescriptor descriptors[HZ6_OBJECT_DESCRIPTOR_CAPACITY];

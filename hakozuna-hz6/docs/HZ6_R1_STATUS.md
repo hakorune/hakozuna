@@ -45,6 +45,8 @@ route:
   exact pointer -> VALID
   interior HZ6-owned pointer -> INVALID
   foreign pointer -> MISS
+  allocator routes through `Hz6RouteBackend`, currently exact-table backed
+  backend wrapper preserves VALID / INVALID / MISS contract
 
 local free:
   ACTIVE -> LOCAL_FREE

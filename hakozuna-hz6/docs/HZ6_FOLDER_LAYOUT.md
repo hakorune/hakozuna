@@ -22,8 +22,8 @@ hakozuna-hz6/
   route/
     hz6_route.h
     hz6_route.c
-    hz6_route_table.h
-    hz6_route_table.c
+    hz6_route_backend.h
+    hz6_route_backend.c
     win_route_sidecar.c
     linux_route_region.c
 
@@ -117,6 +117,8 @@ api/hz6_allocator.h
 api/hz6_allocator.c
 route/hz6_route.h
 route/hz6_route.c
+route/hz6_route_backend.h
+route/hz6_route_backend.c
 frontcache/hz6_frontcache.h
 frontcache/hz6_frontcache.c
 frontcache/hz6_size_class.h
@@ -166,13 +168,13 @@ hz6_malloc:
   exact route registration
 
 hz6_free:
-  route lookup
+  route backend lookup
   VALID exact pointer -> ACTIVE to LOCAL_FREE
   INVALID interior/double-free -> fail-closed stats
   MISS foreign pointer -> miss stats
 
 hz6_free_remote:
-  route lookup
+  route backend lookup
   VALID exact pointer -> ACTIVE to TRANSFER_FREE
   bounded transfer push
   duplicate remote free -> fail-closed stats
@@ -214,6 +216,11 @@ and front-specific policy locally.
 ### `route/`
 
 Owns pointer classification only.
+
+R1 uses `Hz6RouteBackend` as the allocator-facing seam. The only implemented
+backend is the exact-table backend, but allocator/front utility code should go
+through the backend wrapper so Linux region/page routing and Windows sidecar
+routing can replace it without changing front logic.
 
 ```text
 Allowed:
