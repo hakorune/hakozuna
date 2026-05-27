@@ -338,27 +338,57 @@ int main(void) {
               "source block duplicate slot keeps source alive")) {
     return 1;
   }
+  void* block_slot2 = hz6_front_source_block_slot(
+      &midpage_block_allocator, HZ6_FRONT_MIDPAGE,
+      HZ6_MIDPAGE_8K_CLASS_ID, HZ6_MIDPAGE_8K_BYTES,
+      2 * HZ6_MIDPAGE_8K_BYTES, block);
+  if (!expect(block_slot2 ==
+                  g_source_block_storage + (2 * HZ6_MIDPAGE_8K_BYTES),
+              "source block slot after duplicate failure") ||
+      !expect(block->ref_count == 3,
+              "source block duplicate failure descriptor reused")) {
+    return 1;
+  }
   Hz6RouteResult block_slot0_route =
       hz6_route_backend_lookup(&midpage_block_allocator.route_backend,
                                block_slot0);
   Hz6RouteResult block_slot1_route =
       hz6_route_backend_lookup(&midpage_block_allocator.route_backend,
                                block_slot1);
+  Hz6RouteResult block_slot2_route =
+      hz6_route_backend_lookup(&midpage_block_allocator.route_backend,
+                               block_slot2);
   Hz6ObjectDescriptor* block_slot0_descriptor =
       (Hz6ObjectDescriptor*)block_slot0_route.descriptor;
   Hz6ObjectDescriptor* block_slot1_descriptor =
       (Hz6ObjectDescriptor*)block_slot1_route.descriptor;
+  Hz6ObjectDescriptor* block_slot2_descriptor =
+      (Hz6ObjectDescriptor*)block_slot2_route.descriptor;
   if (!expect(block_slot0_descriptor != NULL, "block slot0 descriptor") ||
       !expect(block_slot1_descriptor != NULL, "block slot1 descriptor") ||
+      !expect(block_slot2_descriptor != NULL, "block slot2 descriptor") ||
       !expect(block_slot0_descriptor->source_block == block,
               "block slot0 source block") ||
       !expect(block_slot1_descriptor->source_block == block,
               "block slot1 source block") ||
+      !expect(block_slot2_descriptor->source_block == block,
+              "block slot2 source block") ||
       !expect(hz6_route_backend_lookup(
                   &midpage_block_allocator.route_backend,
-                  g_source_block_storage + (2 * HZ6_MIDPAGE_8K_BYTES)).kind ==
+                  g_source_block_storage + (3 * HZ6_MIDPAGE_8K_BYTES)).kind ==
                   HZ6_ROUTE_INVALID,
               "block unregistered slot invalid")) {
+    return 1;
+  }
+  hz6_route_backend_unregister_exact(&midpage_block_allocator.route_backend,
+                                     block_slot2);
+  if (!expect(hz6_allocator_release_descriptor_source(
+                  block_slot2_descriptor),
+              "source block extra slot release") ||
+      !expect(block->ref_count == 2,
+              "source block extra slot release decremented") ||
+      !expect(g_source_block_release_count == 0,
+              "source block extra slot release keeps source alive")) {
     return 1;
   }
   hz6_route_backend_unregister_exact(&midpage_block_allocator.route_backend,

@@ -234,7 +234,8 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
 52. SourceBlock duplicate-slot failure smoke. DONE:
    allocator smoke verifies duplicate exact slot registration is rejected
    SourceBlock refcount is restored after the failed registration path
-   the backing SourceBlock remains alive and unreleased after duplicate rejection
+   descriptor reuse is verified by registering the next SourceBlock slot after
+   duplicate rejection without releasing the backing SourceBlock
 ```
 
 Current R1 smoke:
