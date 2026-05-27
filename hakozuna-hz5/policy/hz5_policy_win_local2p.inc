@@ -52,6 +52,10 @@ static void hz5_policy_win_local2p_sidecar_note_probe_steps(size_t steps) {
   hz5_trace_max(HZ5_TRACE_LOCAL2P_SIDECAR_PROBE_STEPS_MAX,
                 (uint64_t)steps);
 }
+#else
+static void hz5_policy_win_local2p_sidecar_note_probe_steps(size_t steps) {
+  (void)steps;
+}
 #endif
 
 static int hz5_policy_win_local2p_sidecar_header_valid(
