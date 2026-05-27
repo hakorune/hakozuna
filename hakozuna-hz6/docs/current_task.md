@@ -634,6 +634,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    source release helpers separate from state transitions
    linux/build_hz6_r1_smokes.sh registers the descriptor state module
    explicitly
+121. MidPage prefill split. DONE:
+   fronts/midpage/hz6_midpage_prefill.c now owns explicit run-fill seeding
+   and the shared 64KiB source-block refill loop
+   fronts/midpage/hz6_midpage_front.c now keeps size policy and free/alloc
+   dispatch separate from explicit run prefill
+   linux/build_hz6_r1_smokes.sh registers hz6_midpage_prefill.c as an
+   explicit HZ6_LIB_SOURCE
 ```
 
 Current R1 smoke:
