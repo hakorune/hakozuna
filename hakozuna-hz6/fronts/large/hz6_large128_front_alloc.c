@@ -22,13 +22,20 @@ void* hz6_large128_alloc(Hz6Allocator* allocator,
     return NULL;
   }
 
-  size_t refill_batch = hz6_allocator_profile_source_refill_batch(
-      allocator, HZ6_FRONT_LARGE, class_id);
   Hz6SourceKind source_kind =
       hz6_allocator_profile_source_kind(allocator);
-  return hz6_front_reuse_or_prefill_source_kind(
-      allocator, HZ6_FRONT_LARGE, class_id, HZ6_LARGE128_BYTES,
-      source_kind, refill_batch);
+
+  void* reused = hz6_large128_reuse_cached_or_central(allocator, class_id);
+  if (reused) {
+    return reused;
+  }
+
+  if (source_kind == HZ6_SOURCE_NONE) {
+    return NULL;
+  }
+
+  return hz6_front_reuse_or_source_kind(allocator, HZ6_FRONT_LARGE, class_id,
+                                        HZ6_LARGE128_BYTES, source_kind);
 }
 
 size_t hz6_large128_prefill(Hz6Allocator* allocator,

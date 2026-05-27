@@ -14,14 +14,9 @@ static int expect(int condition, const char* label) {
   return 1;
 }
 
-static size_t smoke_profile_refill_batch(const Hz6Allocator* allocator) {
-  return hz6_allocator_profile_source_refill_batch(allocator, 0, 0);
-}
-
-static size_t smoke_frontcache_capped_batch(const Hz6Allocator* allocator) {
-  size_t batch = smoke_profile_refill_batch(allocator);
-  return batch < HZ6_FRONT_CACHE_BIN_CAPACITY ? batch
-                                              : HZ6_FRONT_CACHE_BIN_CAPACITY;
+static size_t smoke_large128_central_count(const Hz6Allocator* allocator) {
+  return hz6_allocator_large_span_pool_count(allocator,
+                                             HZ6_LARGE128_CLASS_ID);
 }
 
 int main(void) {
@@ -143,18 +138,26 @@ int main(void) {
               "large128 remote free")) {
     return 1;
   }
+  if (!expect(large_descriptor->state == HZ6_STATE_CENTRAL_FREE,
+              "large128 central free state") ||
+      !expect(smoke_large128_central_count(&large_allocator) == 1,
+              "large128 central pool count")) {
+    return 1;
+  }
   void* large_reused = hz6_malloc(&large_allocator, 70000);
   if (!expect(large_reused == large_object, "large128 transfer reuse")) {
     return 1;
   }
+  if (!expect(smoke_large128_central_count(&large_allocator) == 0,
+              "large128 central pool empty")) {
+    return 1;
+  }
   hz6_free(&large_allocator, large_reused);
   Hz6StatsSnapshot large_stats = hz6_stats_snapshot(&large_allocator);
-  size_t large_expected_source =
-      smoke_frontcache_capped_batch(&large_allocator);
-  if (!expect(large_stats.transfer_push == 1, "large128 transfer push") ||
-      !expect(large_stats.transfer_pop == 1, "large128 transfer pop") ||
-      !expect(large_stats.source_alloc == large_expected_source,
-              "large128 source batch alloc")) {
+  if (!expect(large_stats.transfer_push == 0, "large128 transfer push") ||
+      !expect(large_stats.transfer_pop == 0, "large128 transfer pop") ||
+      !expect(large_stats.source_alloc == 1,
+              "large128 source alloc")) {
     return 1;
   }
   if (!expect(hz6_malloc(&large_allocator, HZ6_LARGE128_BYTES + 1) == NULL,

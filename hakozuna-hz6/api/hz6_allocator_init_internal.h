@@ -19,6 +19,8 @@ void hz6_allocator_init_state_descriptors(Hz6Allocator* allocator);
 
 void hz6_allocator_init_state_frontcache(Hz6Allocator* allocator);
 
+void hz6_allocator_init_state_large_span_pool(Hz6Allocator* allocator);
+
 void hz6_allocator_init_backends(Hz6Allocator* allocator);
 
 #ifdef __cplusplus

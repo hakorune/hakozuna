@@ -44,6 +44,15 @@ typedef struct Hz6ObjectDescriptor {
   Hz6ObjectState state;
 } Hz6ObjectDescriptor;
 
+typedef struct Hz6LargeSpanPoolBin {
+  Hz6ObjectDescriptor* descriptors[HZ6_TRANSFER_CACHE_CAPACITY];
+  size_t count;
+} Hz6LargeSpanPoolBin;
+
+typedef struct Hz6LargeSpanPool {
+  Hz6LargeSpanPoolBin bins[HZ6_FRONT_CACHE_CLASS_COUNT];
+} Hz6LargeSpanPool;
+
 struct Hz6Allocator {
   Hz6ProfileConfig profile;
   Hz6OwnerRecord owner;
@@ -51,6 +60,7 @@ struct Hz6Allocator {
   Hz6RouteBackend route_backend;
   Hz6TransferObject transfer_objects[HZ6_TRANSFER_CACHE_CAPACITY];
   Hz6TransferBackend transfer_backend;
+  Hz6LargeSpanPool large_span_pool;
   Hz6SourceBlock source_blocks[HZ6_SOURCE_BLOCK_CAPACITY];
   Hz6ObjectDescriptor descriptors[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
   Hz6SourceRegistry source_registry;

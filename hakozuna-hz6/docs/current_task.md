@@ -33,6 +33,22 @@ The next benchmark pass should compare HZ6 against HZ3 / HZ4 / HZ5 on the same
 machine with the same runner.
 ```
 
+## Current Implementation Step
+
+```text
+HZ6 LargeSpan L1 is now being implemented as a modular CentralSpanPool.
+
+Current scope:
+  128K ownerless CENTRAL_FREE reuse
+  local frontcache reuse
+  single-source fallback when the central pool is empty
+
+Not yet in scope:
+  256K / 512K / 1M LargeSpan family
+  policy-layer adaptation
+  cross-family benchmark tables
+```
+
 ## Active Documents
 
 ```text

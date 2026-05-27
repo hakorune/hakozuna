@@ -5,13 +5,11 @@
 int hz6_large128_free_local(Hz6Allocator* allocator,
                             void* ptr,
                             Hz6RouteResult route) {
-  return hz6_front_free_local_to_cache(allocator, ptr, route,
-                                       HZ6_LARGE128_CLASS_ID);
+  return hz6_large128_free_local_or_central(allocator, ptr, route);
 }
 
 int hz6_large128_free_remote(Hz6Allocator* allocator,
                              void* ptr,
                              Hz6RouteResult route) {
-  return hz6_front_free_remote_to_transfer(allocator, ptr, route,
-                                           HZ6_LARGE128_CLASS_ID);
+  return hz6_large128_free_remote_or_central(allocator, ptr, route);
 }

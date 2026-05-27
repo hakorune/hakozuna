@@ -9,5 +9,6 @@ void hz6_allocator_init_state(Hz6Allocator* allocator,
   hz6_allocator_init_state_owner(allocator, profile_id);
   hz6_allocator_init_state_source_blocks(allocator);
   hz6_allocator_init_state_descriptors(allocator);
+  hz6_allocator_init_state_large_span_pool(allocator);
   hz6_allocator_init_state_frontcache(allocator);
 }

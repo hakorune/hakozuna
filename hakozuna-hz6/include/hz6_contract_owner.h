@@ -9,7 +9,9 @@ typedef enum Hz6ObjectState {
   HZ6_STATE_LOCAL_FREE = 2,
   HZ6_STATE_TRANSFER_FREE = 3,
   HZ6_STATE_REMOTE_PENDING = 4,
-  HZ6_STATE_ORPHAN = 5
+  HZ6_STATE_ORPHAN = 5,
+  HZ6_STATE_CENTRAL_FREE = 6,
+  HZ6_STATE_RELEASED = 7
 } Hz6ObjectState;
 
 typedef struct Hz6OwnerToken {
