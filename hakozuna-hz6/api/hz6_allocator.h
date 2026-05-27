@@ -60,6 +60,8 @@ int hz6_allocator_activate_descriptor(Hz6ObjectDescriptor* descriptor,
 int hz6_allocator_release_descriptor_source(
     Hz6ObjectDescriptor* descriptor);
 
+void hz6_allocator_mark_owner_dead(Hz6Allocator* allocator);
+
 #ifdef __cplusplus
 }
 #endif

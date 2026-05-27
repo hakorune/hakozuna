@@ -171,6 +171,37 @@ int main(void) {
   }
   hz6_allocator_destroy(&remote_allocator);
 
+  Hz6Allocator orphan_allocator;
+  hz6_allocator_init_with_profile(&orphan_allocator, HZ6_PROFILE_SPEED);
+  void* orphan_object = hz6_malloc(&orphan_allocator, 48);
+  if (!expect(orphan_object != NULL, "orphan allocator malloc")) {
+    return 1;
+  }
+  Hz6RouteResult orphan_route =
+      hz6_route_backend_lookup(&orphan_allocator.route_backend, orphan_object);
+  Hz6ObjectDescriptor* orphan_descriptor =
+      (Hz6ObjectDescriptor*)orphan_route.descriptor;
+  if (!expect(orphan_descriptor != NULL, "orphan descriptor") ||
+      !expect(orphan_descriptor->state == HZ6_STATE_ACTIVE,
+              "orphan starts active")) {
+    return 1;
+  }
+  hz6_allocator_mark_owner_dead(&orphan_allocator);
+  if (!expect(orphan_allocator.owner.state == HZ6_OWNER_DEAD,
+              "owner marked dead") ||
+      !expect(orphan_descriptor->state == HZ6_STATE_ORPHAN,
+              "owned descriptor marked orphan") ||
+      !expect(hz6_malloc(&orphan_allocator, 48) == NULL,
+              "dead owner malloc rejected")) {
+    return 1;
+  }
+  hz6_free(&orphan_allocator, orphan_object);
+  Hz6StatsSnapshot orphan_stats = hz6_stats_snapshot(&orphan_allocator);
+  if (!expect(orphan_stats.route_invalid == 1, "orphan free invalid")) {
+    return 1;
+  }
+  hz6_allocator_destroy(&orphan_allocator);
+
   printf("hz6-r1-allocator-smoke ok\n");
   return 0;
 }

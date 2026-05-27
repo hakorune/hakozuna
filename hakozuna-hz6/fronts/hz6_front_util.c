@@ -44,7 +44,8 @@ void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
     if (!hz6_allocator_activate_descriptor(
             descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr, entry.generation,
             allocator->owner.token)) {
-      return NULL;
+      return hz6_front_reuse_or_source_ops(allocator, front_id, class_id,
+                                           bytes, source_ops, source_kind);
     }
     return entry.ptr;
   }

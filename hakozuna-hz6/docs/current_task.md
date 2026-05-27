@@ -108,6 +108,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    descriptors carry owner tokens while ACTIVE / LOCAL_FREE
    remote transfer clears owner and transfer pop restores it
    allocator smoke covers owner assign / clear / restore
+23. Owner-dead orphan seed. DONE:
+   hz6_allocator_mark_owner_dead()
+   owned ACTIVE / LOCAL_FREE descriptors become ORPHAN
+   dead owner malloc is rejected
+   orphan free is fail-closed in allocator smoke
 ```
 
 Current R1 smoke:
@@ -150,5 +155,5 @@ Large128 has Linux mmap backing, but no full span/source refill policy yet.
 Local2P is an exact 64KiB seed front, not the final Windows Local2P profile.
 Sharded transfer is single-thread smoke coverage only; synchronization and
 real benchmark validation are still pending.
-Owner death / orphan handling is still not implemented.
+Cross-owner orphan rescue / adoption is still not implemented.
 ```

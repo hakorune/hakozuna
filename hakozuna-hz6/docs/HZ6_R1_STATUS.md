@@ -53,6 +53,7 @@ local free:
   local free requires descriptor owner == allocator owner
   second free before reuse is rejected
   local cache reuse returns the same pointer
+  owner-dead descriptors become ORPHAN and are not locally reusable
 
 remote free:
   ACTIVE -> TRANSFER_FREE
@@ -101,7 +102,7 @@ No preload integration.
 No Windows VirtualAlloc source path yet.
 No general span policy beyond the Local2P/Large128 mmap seeds.
 No threaded transfer synchronization or performance claim for sharded transfer yet.
-No owner-death/orphan path yet.
+No cross-owner orphan rescue / adoption path yet.
 No MidPage real front yet.
 No HZ5 source migration.
 No HZ3/HZ4/HZ5 implementation copy.
