@@ -264,6 +264,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    contract smoke verifies sharded class pop retains other classes
    retained class entries can be popped afterward
    this preserves class-specific transfer cache semantics in mixed-class shards
+60. Large128 profile prefill seed. DONE:
+   Large128 front exposes hz6_large128_prefill()
+   allocator smoke verifies RSS profile source_batch pre-fills Large128 cache
+   consuming the prefilled Large128 objects avoids additional source refill
 ```
 
 Current R1 smoke:

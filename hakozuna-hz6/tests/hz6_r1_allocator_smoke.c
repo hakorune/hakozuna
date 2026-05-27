@@ -212,6 +212,30 @@ int main(void) {
   }
   hz6_allocator_destroy(&rss_prefill_allocator);
 
+  Hz6Allocator large_prefill_allocator;
+  hz6_allocator_init_with_profile(&large_prefill_allocator, HZ6_PROFILE_RSS);
+  size_t large_prefilled = hz6_large128_prefill(
+      &large_prefill_allocator, large_prefill_allocator.profile.source_batch);
+  if (!expect(large_prefilled ==
+                  large_prefill_allocator.profile.source_batch,
+              "large128 profile prefill count") ||
+      !expect(large_prefill_allocator.stats.source_alloc == large_prefilled,
+              "large128 profile prefill source alloc")) {
+    return 1;
+  }
+  for (size_t i = 0; i < large_prefilled; ++i) {
+    void* prefetched_large = hz6_malloc(&large_prefill_allocator, 70000);
+    if (!expect(prefetched_large != NULL,
+                "large128 profile prefilled malloc")) {
+      return 1;
+    }
+  }
+  if (!expect(large_prefill_allocator.stats.source_alloc == large_prefilled,
+              "large128 profile prefill avoids refill")) {
+    return 1;
+  }
+  hz6_allocator_destroy(&large_prefill_allocator);
+
   Hz6MidPageRunPolicy midpage8_policy;
   Hz6MidPageRunPolicy midpage32_policy;
   if (!expect(hz6_midpage_policy_for_size(6000, 16, &midpage8_policy),
