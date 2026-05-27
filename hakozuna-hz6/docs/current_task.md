@@ -321,6 +321,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    the home seed
    contract smoke verifies explicit home shard pop prefers the requested shard
    and then steals from another non-empty shard for the same class
+70. Front reuse consumer shard connection. DONE:
+   FrontLayer transfer reuse now passes allocator owner slot as the consumer
+   home shard to hz6_transfer_backend_pop_from_shard()
+   cached-first and transfer-first reuse share one transfer activation helper
+   allocator smoke verifies a consumer with owner slot 1 pops the same-class
+   object from shard 1 before shard 0
 ```
 
 Current R1 smoke:
