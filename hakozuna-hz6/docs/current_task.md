@@ -189,6 +189,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    Hz6ObjectDescriptor now stores user ptr and source_ptr separately
    release uses source_ptr/source_bytes while route/cache still use user ptr
    allocator smoke covers user ptr != source_ptr release behavior
+42. Source-block slot helper. DONE:
+   hz6_front_source_slot_kind()/ops() allocate a source block and expose one user slot
+   descriptor records user bytes separately from source bytes
+   allocator smoke covers MidPage 8K slot inside a 64KiB source block
 ```
 
 Current R1 smoke:

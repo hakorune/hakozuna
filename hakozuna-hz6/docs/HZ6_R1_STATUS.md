@@ -99,6 +99,7 @@ source:
   Large128 descriptors carry source kind / release metadata
   descriptors keep user ptr and source ptr separate
   SourceLayer release uses source ptr / source bytes
+  front util can expose one user slot inside a larger source block
   allocator destroy releases Large128 mappings through SourceLayer
   explicit front prefill can source objects into LOCAL_FREE cache using
   profile source_batch without changing the malloc hit path

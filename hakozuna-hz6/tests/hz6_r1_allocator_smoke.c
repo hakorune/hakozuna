@@ -231,6 +231,49 @@ int main(void) {
   hz6_free(&midpage8_allocator, midpage8_reused);
   hz6_allocator_destroy(&midpage8_allocator);
 
+  Hz6Allocator midpage_slot_allocator;
+  hz6_allocator_init_with_profile(&midpage_slot_allocator,
+                                  HZ6_PROFILE_REMOTE);
+  void* midpage_slot = hz6_front_source_slot_kind(
+      &midpage_slot_allocator, HZ6_FRONT_MIDPAGE, HZ6_MIDPAGE_8K_CLASS_ID,
+      HZ6_MIDPAGE_8K_BYTES, HZ6_MIDPAGE_RUN_BYTES, HZ6_MIDPAGE_8K_BYTES,
+      HZ6_SOURCE_OS_PAGED);
+  if (!expect(midpage_slot != NULL, "midpage source slot malloc")) {
+    return 1;
+  }
+  Hz6RouteResult midpage_slot_route =
+      hz6_route_backend_lookup(&midpage_slot_allocator.route_backend,
+                               midpage_slot);
+  Hz6ObjectDescriptor* midpage_slot_descriptor =
+      (Hz6ObjectDescriptor*)midpage_slot_route.descriptor;
+  if (!expect(midpage_slot_route.kind == HZ6_ROUTE_VALID,
+              "midpage source slot route valid") ||
+      !expect(midpage_slot_descriptor != NULL,
+              "midpage source slot descriptor") ||
+      !expect(midpage_slot_descriptor->ptr == midpage_slot,
+              "midpage source slot user pointer") ||
+      !expect(midpage_slot_descriptor->source_ptr != midpage_slot,
+              "midpage source slot source pointer split") ||
+      !expect(midpage_slot_descriptor->bytes == HZ6_MIDPAGE_8K_BYTES,
+              "midpage source slot user bytes") ||
+      !expect(midpage_slot_descriptor->source_bytes == HZ6_MIDPAGE_RUN_BYTES,
+              "midpage source slot source bytes") ||
+      !expect(hz6_route_backend_lookup(
+                  &midpage_slot_allocator.route_backend,
+                  (unsigned char*)midpage_slot + 16).kind ==
+                  HZ6_ROUTE_INVALID,
+              "midpage source slot interior invalid")) {
+    return 1;
+  }
+  hz6_free(&midpage_slot_allocator, midpage_slot);
+  void* midpage_slot_reused = hz6_malloc(&midpage_slot_allocator, 6000);
+  if (!expect(midpage_slot_reused == midpage_slot,
+              "midpage source slot local reuse")) {
+    return 1;
+  }
+  hz6_free(&midpage_slot_allocator, midpage_slot_reused);
+  hz6_allocator_destroy(&midpage_slot_allocator);
+
   Hz6Allocator midpage_allocator;
   hz6_allocator_init_with_profile(&midpage_allocator, HZ6_PROFILE_REMOTE);
   void* midpage_object = hz6_malloc(&midpage_allocator, 16384);
