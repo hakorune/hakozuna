@@ -776,6 +776,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    api/hz6_allocator_transfer.c was removed after the split
    linux/build_hz6_r1_smokes.sh registers the new transfer API modules
    explicitly
+141. Route backend init/dispatch split. DONE:
+   route/hz6_route_backend_init.c now owns exact/page-table initialization
+   route/hz6_route_backend_dispatch.c now owns register/unregister/lookup
+   route/hz6_route_backend.c was removed after the split
+   linux/build_hz6_r1_smokes.sh registers the new route backend modules
+   explicitly
 ```
 
 Current R1 smoke:

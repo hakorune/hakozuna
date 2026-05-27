@@ -61,6 +61,8 @@ Contracts:
   route backend separately from the lower-level mixed contract smoke
   route backend page-table variant is split into its own module so PAGE_TABLE
   lookup stays separate from exact-table init/register helpers
+  route backend init/dispatch helpers are split into separate helper units so
+  table setup stays separate from register/lookup dispatch
   route table management is split into core/exact/invalid modules so entry
   init/register stays separate from route lookup and invalid-envelope
   handling

@@ -4,18 +4,6 @@ Hz6RouteResult hz6_route_backend_lookup_page_table(
     const Hz6RouteBackend* backend,
     const void* ptr);
 
-void hz6_route_backend_init_exact(Hz6RouteBackend* backend,
-                                  Hz6RouteEntry* entries,
-                                  size_t capacity) {
-  if (!backend) {
-    return;
-  }
-  backend->kind = HZ6_ROUTE_BACKEND_EXACT_TABLE;
-  backend->exact_entries = entries;
-  backend->page_granularity = 0;
-  hz6_route_table_init(&backend->exact_table, entries, capacity);
-}
-
 int hz6_route_backend_register_exact(Hz6RouteBackend* backend,
                                      void* base,
                                      size_t bytes,
