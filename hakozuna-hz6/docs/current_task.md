@@ -485,6 +485,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    scavenge, and cross-owner orphan adoption coverage
    allocator smoke keeps allocator/front integration coverage and no longer
    carries reclaim-specific scenarios
+98. Prefill smoke split. DONE:
+   tests/hz6_r1_prefill_smoke.c now owns source-kind, front-registry,
+   size-based, and allocator-front prefill coverage
+   allocator smoke keeps hot allocation/front integration coverage and no
+   longer carries slow-path prefill scenarios
 ```
 
 Current R1 smoke:
@@ -498,6 +503,8 @@ Expected:
 ```text
 hz6-r1-contract-smoke ok
 hz6-r1-allocator-smoke ok
+hz6-r1-prefill-smoke ok
+hz6-r1-reclaim-smoke ok
 hz6-r1-safety-smoke ok
 ```
 
