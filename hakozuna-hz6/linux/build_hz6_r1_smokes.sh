@@ -40,6 +40,7 @@ HZ6_LIB_SOURCES=(
   "${HZ6_DIR}/api/hz6_allocator_orphan.c"
   "${HZ6_DIR}/api/hz6_allocator_remote_pending.c"
   "${HZ6_DIR}/api/hz6_allocator_route.c"
+  "${HZ6_DIR}/api/hz6_allocator_query.c"
   "${HZ6_DIR}/api/hz6_allocator_scavenge_orphans.c"
   "${HZ6_DIR}/api/hz6_allocator_scavenge_local_free.c"
   "${HZ6_DIR}/api/hz6_allocator_scavenge_profile.c"

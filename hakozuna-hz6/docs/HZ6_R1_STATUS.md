@@ -13,8 +13,8 @@ API:
   api/hz6_allocator_destroy.c owns allocator destruction
   api/hz6_allocator_descriptor.c owns descriptor lifecycle helpers
   api/hz6_allocator_frontcache.c owns allocator-facing FrontCache wrappers
-  api/hz6_allocator_ops.c owns public malloc/free/remote-free/owns/stats
-  entrypoints
+  api/hz6_allocator_ops.c owns public malloc/free/remote-free entrypoints
+  api/hz6_allocator_query.c owns owns/stats observation entrypoints
   api/hz6_allocator_prefill.c owns allocator-facing front prefill wrappers
   api/hz6_allocator_profile.c owns allocator-facing profile/source policy
   queries and source allocation stats notes
