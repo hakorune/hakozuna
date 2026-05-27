@@ -18,7 +18,8 @@ Toy transfer-first path:
   hz6_malloc() consumes transfer before source refill in transfer-first profiles
 
 Real front target:
-  not selected yet
+  Linux Large128 seed selected
+  implemented for modular/front-registry validation, not performance
 ```
 
 ## R1 Scope
@@ -29,8 +30,8 @@ Preferred order:
 
 ```text
 1. Route contract smoke
-2. Windows Local2P exact route proof
-3. Linux Large 128K transfer proof
+2. Linux Large 128K transfer proof
+3. Windows Local2P exact route proof
 ```
 
 Do not attempt all fronts in R1.

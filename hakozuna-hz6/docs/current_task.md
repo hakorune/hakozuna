@@ -51,18 +51,18 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    hz6_free_remote()
    ACTIVE -> TRANSFER_FREE
    transfer pop before source allocation
-8. Choose first real target:
-   Windows Local2P exact route, or Linux LargeFront 128K transfer.
+8. Choose first real target. DONE:
+   Linux LargeFront 128K transfer seed was selected first.
 9. Keep modular cleanup moving before real target:
    size-class mapping moved to frontcache/hz6_size_class.*
    toy allocation/free transitions moved to fronts/toy/
    allocator API calls toy front through Hz6FrontOps
    front selection moved to fronts/hz6_front.*
-10. First real-front seed. IN PROGRESS:
+10. First real-front seed. DONE:
    fronts/large/hz6_large128_front.*
    handles >4KiB..128KiB through the front registry
    uses transfer-first reuse in HZ6_PROFILE_REMOTE
-11. Front utility common path. IN PROGRESS:
+11. Front utility common path. DONE:
    fronts/hz6_front_util.*
    removes duplicated descriptor/cache/transfer transitions from toy/large
 12. Front range correctness. DONE:
@@ -112,4 +112,5 @@ No HZ5 code copy.
 No new performance claim.
 No benchmark table until an HZ6 prototype exists.
 Toy allocation and transfer paths are for contract validation only.
+Large128 is still a seed front, not a performance claim.
 ```

@@ -184,6 +184,8 @@ requests above the toy/small range up to 128KiB and exercises
 `ACTIVE -> TRANSFER_FREE -> ACTIVE` through the same front registry.
 The toy front owns only requests up to 4KiB. Larger unsupported requests must
 miss all fronts instead of being rounded down into a smaller allocation.
+This seed uses the shared source allocator for now; it is not yet an mmap /
+VirtualAlloc backed LargeFront implementation.
 
 Shared descriptor/cache/transfer transitions live in
 `fronts/hz6_front_util.*`. Real fronts should keep only range/class decisions
