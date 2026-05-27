@@ -614,11 +614,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    api/hz6_allocator_reclaim.c was removed after the split
    linux/build_hz6_r1_smokes.sh registers the new API modules explicitly
 118. Allocator lifecycle split. DONE:
-   api/hz6_allocator_lifecycle.c now owns allocator initialization and
-   destruction
+   api/hz6_allocator_init.c now owns allocator initialization
+   api/hz6_allocator_destroy.c now owns allocator destruction
    api/hz6_allocator.c now keeps owner token helpers and debug owner slot
    hooks separate from lifecycle
-   linux/build_hz6_r1_smokes.sh registers the lifecycle module explicitly
+   linux/build_hz6_r1_smokes.sh registers the lifecycle modules explicitly
 119. Front source slot split. DONE:
    fronts/hz6_front_source_slot.c now owns direct source-backed user-slot
    creation helpers

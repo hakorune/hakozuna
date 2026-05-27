@@ -23,7 +23,8 @@ hakozuna-hz6/
     hz6_allocator_ops.c
     hz6_allocator_prefill.c
     hz6_allocator_profile.c
-    hz6_allocator_lifecycle.c
+    hz6_allocator_init.c
+    hz6_allocator_destroy.c
     hz6_allocator_orphan.c
     hz6_allocator_remote_pending.c
     hz6_allocator_route.c
@@ -141,7 +142,8 @@ api/hz6_allocator_frontcache.c
 api/hz6_allocator_ops.c
 api/hz6_allocator_prefill.c
 api/hz6_allocator_profile.c
-api/hz6_allocator_lifecycle.c
+api/hz6_allocator_init.c
+api/hz6_allocator_destroy.c
 api/hz6_allocator_orphan.c
 api/hz6_allocator_remote_pending.c
 api/hz6_allocator_route.c

@@ -9,8 +9,8 @@ API:
   include/hz6.h
   api/hz6_allocator.*
   api/hz6_allocator.c owns owner token helpers and debug owner slot hooks
-  api/hz6_allocator_lifecycle.c owns allocator initialization and
-  destruction
+  api/hz6_allocator_init.c owns allocator initialization
+  api/hz6_allocator_destroy.c owns allocator destruction
   api/hz6_allocator_descriptor.c owns descriptor lifecycle helpers
   api/hz6_allocator_frontcache.c owns allocator-facing FrontCache wrappers
   api/hz6_allocator_ops.c owns public malloc/free/remote-free/owns/stats
