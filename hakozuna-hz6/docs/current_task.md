@@ -763,6 +763,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    fronts/large/hz6_large128_front.c was removed after the split
    linux/build_hz6_r1_smokes.sh registers the new Large128 front modules
    explicitly
+139. Transfer backend sharded init/ops split. DONE:
+   transfer/hz6_transfer_backend_sharded_init.c now owns sharded backend init
+   transfer/hz6_transfer_backend_sharded_ops.c now owns shard push/pop
+   transfer/hz6_transfer_backend_sharded.c was removed after the split
+   linux/build_hz6_r1_smokes.sh registers the new sharded transfer modules
+   explicitly
 ```
 
 Current R1 smoke:

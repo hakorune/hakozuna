@@ -67,6 +67,8 @@ Contracts:
   push/pop and shard accounting stay separate from single-cache dispatch
   transfer backend observability is split into its own module so aggregate
   count/capacity helpers stay separate from sharded push/pop
+  transfer backend sharded init/ops helpers are split into separate helper
+  units so shard creation stays separate from shard push/pop dispatch
   transfer contract smoke covers bounded single-cache and sharded backend
   push/pop, class filtering, shard preference, fallback, and uneven capacities
   source contract smoke covers source ops validation, Linux mmap source ops,
