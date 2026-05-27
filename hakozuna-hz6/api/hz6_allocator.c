@@ -419,6 +419,26 @@ size_t hz6_allocator_prefill_front_class(Hz6Allocator* allocator,
   return hz6_front_prefill_by_id_class(allocator, front_id, class_id, count);
 }
 
+Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
+                                          const void* ptr) {
+  if (!allocator || !ptr) {
+    return hz6_route_miss();
+  }
+  return hz6_route_backend_lookup(&allocator->route_backend, ptr);
+}
+
+Hz6RouteBackendKind hz6_allocator_route_backend_kind(
+    const Hz6Allocator* allocator) {
+  if (!allocator) {
+    return HZ6_ROUTE_BACKEND_EXACT_TABLE;
+  }
+  return allocator->route_backend.kind;
+}
+
+size_t hz6_allocator_route_page_granularity(const Hz6Allocator* allocator) {
+  return allocator ? allocator->route_backend.page_granularity : 0;
+}
+
 Hz6TransferBackendKind hz6_allocator_transfer_backend_kind(
     const Hz6Allocator* allocator) {
   if (!allocator) {

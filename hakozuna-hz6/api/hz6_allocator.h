@@ -116,6 +116,14 @@ size_t hz6_allocator_prefill_front_class(Hz6Allocator* allocator,
                                          uint16_t class_id,
                                          size_t count);
 
+Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
+                                          const void* ptr);
+
+Hz6RouteBackendKind hz6_allocator_route_backend_kind(
+    const Hz6Allocator* allocator);
+
+size_t hz6_allocator_route_page_granularity(const Hz6Allocator* allocator);
+
 Hz6TransferBackendKind hz6_allocator_transfer_backend_kind(
     const Hz6Allocator* allocator);
 

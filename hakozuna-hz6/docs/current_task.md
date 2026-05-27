@@ -382,6 +382,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    allocator API boundary
    allocator smoke now checks profile transfer shape and producer shard routing
    without reaching into allocator.transfer_backend directly
+80. Allocator route observability wrappers. DONE:
+   hz6_allocator_route_lookup(), route_backend_kind(), and
+   route_page_granularity() expose route diagnostics through the allocator API
+   boundary
+   allocator and safety smoke now use allocator route lookup for descriptor
+   validation instead of directly calling hz6_route_backend_lookup()
 ```
 
 Current R1 smoke:

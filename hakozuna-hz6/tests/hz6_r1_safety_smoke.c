@@ -103,8 +103,7 @@ int main(void) {
     return 1;
   }
   Hz6RouteResult strict_remote_orphan_route =
-      hz6_route_backend_lookup(&strict_remote_dead_allocator.route_backend,
-                               strict_remote_orphan);
+      hz6_allocator_route_lookup(&strict_remote_dead_allocator, strict_remote_orphan);
   Hz6ObjectDescriptor* strict_remote_orphan_descriptor =
       (Hz6ObjectDescriptor*)strict_remote_orphan_route.descriptor;
   if (!expect(strict_remote_orphan_descriptor != NULL,
@@ -134,7 +133,7 @@ int main(void) {
     return 1;
   }
   Hz6RouteResult route =
-      hz6_route_backend_lookup(&orphan_allocator.route_backend, orphan);
+      hz6_allocator_route_lookup(&orphan_allocator, orphan);
   Hz6ObjectDescriptor* descriptor = (Hz6ObjectDescriptor*)route.descriptor;
   if (!expect(route.kind == HZ6_ROUTE_VALID, "orphan route valid") ||
       !expect(descriptor != NULL, "orphan descriptor")) {
@@ -171,7 +170,7 @@ int main(void) {
     return 1;
   }
   Hz6RouteResult scavenge_route =
-      hz6_route_backend_lookup(&scavenge_allocator.route_backend, scavenged);
+      hz6_allocator_route_lookup(&scavenge_allocator, scavenged);
   Hz6ObjectDescriptor* scavenge_descriptor =
       (Hz6ObjectDescriptor*)scavenge_route.descriptor;
   if (!expect(scavenge_descriptor != NULL, "scavenge descriptor")) {
@@ -200,8 +199,7 @@ int main(void) {
     return 1;
   }
   Hz6RouteResult local_scavenge_route =
-      hz6_route_backend_lookup(&local_scavenge_allocator.route_backend,
-                               local_scavenged);
+      hz6_allocator_route_lookup(&local_scavenge_allocator, local_scavenged);
   Hz6ObjectDescriptor* local_scavenge_descriptor =
       (Hz6ObjectDescriptor*)local_scavenge_route.descriptor;
   if (!expect(local_scavenge_descriptor != NULL,
@@ -239,8 +237,7 @@ int main(void) {
   }
   void* run_scavenged = hz6_malloc(&run_scavenge_allocator, 6000);
   Hz6RouteResult run_scavenge_route =
-      hz6_route_backend_lookup(&run_scavenge_allocator.route_backend,
-                               run_scavenged);
+      hz6_allocator_route_lookup(&run_scavenge_allocator, run_scavenged);
   Hz6ObjectDescriptor* run_scavenge_descriptor =
       (Hz6ObjectDescriptor*)run_scavenge_route.descriptor;
   Hz6SourceBlock* run_scavenge_block =
@@ -272,8 +269,7 @@ int main(void) {
     return 1;
   }
   Hz6RouteResult strict_scavenge_route =
-      hz6_route_backend_lookup(&strict_scavenge_allocator.route_backend,
-                               strict_scavenged);
+      hz6_allocator_route_lookup(&strict_scavenge_allocator, strict_scavenged);
   Hz6ObjectDescriptor* strict_scavenge_descriptor =
       (Hz6ObjectDescriptor*)strict_scavenge_route.descriptor;
   hz6_free(&strict_scavenge_allocator, strict_scavenged);

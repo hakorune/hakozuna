@@ -43,7 +43,8 @@ int main(void) {
   Hz6Allocator allocator;
   hz6_allocator_init_with_profile(&allocator, HZ6_PROFILE_SPEED);
   if (!expect(allocator.profile.transfer_first == 1, "allocator profile") ||
-      !expect(allocator.route_backend.kind == HZ6_ROUTE_BACKEND_PAGE_TABLE,
+      !expect(hz6_allocator_route_backend_kind(&allocator) ==
+                  HZ6_ROUTE_BACKEND_PAGE_TABLE,
               "speed profile page route backend")) {
     return 1;
   }
@@ -52,10 +53,10 @@ int main(void) {
   hz6_allocator_init_with_profile(&strict_route_allocator, HZ6_PROFILE_STRICT);
   Hz6Allocator rss_route_allocator;
   hz6_allocator_init_with_profile(&rss_route_allocator, HZ6_PROFILE_RSS);
-  if (!expect(strict_route_allocator.route_backend.kind ==
+  if (!expect(hz6_allocator_route_backend_kind(&strict_route_allocator) ==
                   HZ6_ROUTE_BACKEND_EXACT_TABLE,
               "strict profile exact route backend") ||
-      !expect(rss_route_allocator.route_backend.kind ==
+      !expect(hz6_allocator_route_backend_kind(&rss_route_allocator) ==
                   HZ6_ROUTE_BACKEND_EXACT_TABLE,
               "rss profile exact route backend")) {
     return 1;
@@ -131,8 +132,7 @@ int main(void) {
     return 1;
   }
   Hz6RouteResult local2p_route =
-      hz6_route_backend_lookup(&local2p_allocator.route_backend,
-                               local2p_object);
+      hz6_allocator_route_lookup(&local2p_allocator, local2p_object);
   Hz6ObjectDescriptor* local2p_descriptor =
       (Hz6ObjectDescriptor*)local2p_route.descriptor;
   if (!expect(local2p_route.kind == HZ6_ROUTE_VALID,
@@ -418,8 +418,7 @@ int main(void) {
     return 1;
   }
   Hz6RouteResult midpage8_route =
-      hz6_route_backend_lookup(&midpage8_allocator.route_backend,
-                               midpage8_object);
+      hz6_allocator_route_lookup(&midpage8_allocator, midpage8_object);
   Hz6ObjectDescriptor* midpage8_descriptor =
       (Hz6ObjectDescriptor*)midpage8_route.descriptor;
   if (!expect(midpage8_route.kind == HZ6_ROUTE_VALID,
@@ -459,8 +458,7 @@ int main(void) {
     return 1;
   }
   Hz6RouteResult midpage_slot_route =
-      hz6_route_backend_lookup(&midpage_slot_allocator.route_backend,
-                               midpage_slot);
+      hz6_allocator_route_lookup(&midpage_slot_allocator, midpage_slot);
   Hz6ObjectDescriptor* midpage_slot_descriptor =
       (Hz6ObjectDescriptor*)midpage_slot_route.descriptor;
   if (!expect(midpage_slot_route.kind == HZ6_ROUTE_VALID,
@@ -475,8 +473,8 @@ int main(void) {
               "midpage source slot user bytes") ||
       !expect(midpage_slot_descriptor->source_bytes == HZ6_MIDPAGE_RUN_BYTES,
               "midpage source slot source bytes") ||
-      !expect(hz6_route_backend_lookup(
-                  &midpage_slot_allocator.route_backend,
+      !expect(hz6_allocator_route_lookup(
+                  &midpage_slot_allocator,
                   (unsigned char*)midpage_slot + 16).kind ==
                   HZ6_ROUTE_INVALID,
               "midpage source slot interior invalid")) {
@@ -545,14 +543,11 @@ int main(void) {
     return 1;
   }
   Hz6RouteResult block_slot0_route =
-      hz6_route_backend_lookup(&midpage_block_allocator.route_backend,
-                               block_slot0);
+      hz6_allocator_route_lookup(&midpage_block_allocator, block_slot0);
   Hz6RouteResult block_slot1_route =
-      hz6_route_backend_lookup(&midpage_block_allocator.route_backend,
-                               block_slot1);
+      hz6_allocator_route_lookup(&midpage_block_allocator, block_slot1);
   Hz6RouteResult block_slot2_route =
-      hz6_route_backend_lookup(&midpage_block_allocator.route_backend,
-                               block_slot2);
+      hz6_allocator_route_lookup(&midpage_block_allocator, block_slot2);
   Hz6ObjectDescriptor* block_slot0_descriptor =
       (Hz6ObjectDescriptor*)block_slot0_route.descriptor;
   Hz6ObjectDescriptor* block_slot1_descriptor =
@@ -568,8 +563,8 @@ int main(void) {
               "block slot1 source block") ||
       !expect(block_slot2_descriptor->source_block == block,
               "block slot2 source block") ||
-      !expect(hz6_route_backend_lookup(
-                  &midpage_block_allocator.route_backend,
+      !expect(hz6_allocator_route_lookup(
+                  &midpage_block_allocator,
                   g_source_block_storage + (3 * HZ6_MIDPAGE_8K_BYTES)).kind ==
                   HZ6_ROUTE_INVALID,
               "block unregistered slot invalid")) {
@@ -605,8 +600,8 @@ int main(void) {
       !expect(!block->active, "source block inactive after final release") ||
       !expect(g_source_block_release_count == 1,
               "source block released once") ||
-      !expect(hz6_route_backend_lookup(
-                  &midpage_block_allocator.route_backend,
+      !expect(hz6_allocator_route_lookup(
+                  &midpage_block_allocator,
                   g_source_block_storage + (2 * HZ6_MIDPAGE_8K_BYTES)).kind ==
                   HZ6_ROUTE_MISS,
               "block envelope unregistered after final release")) {
@@ -630,8 +625,7 @@ int main(void) {
   for (size_t i = 0; i < run_prefilled; ++i) {
     run_slots[i] = hz6_malloc(&midpage_run_allocator, 6000);
     Hz6RouteResult run_route =
-        hz6_route_backend_lookup(&midpage_run_allocator.route_backend,
-                                 run_slots[i]);
+        hz6_allocator_route_lookup(&midpage_run_allocator, run_slots[i]);
     Hz6ObjectDescriptor* run_descriptor =
         (Hz6ObjectDescriptor*)run_route.descriptor;
     if (!expect(run_slots[i] != NULL, "midpage run malloc") ||
@@ -676,8 +670,7 @@ int main(void) {
   for (size_t i = 0; i < run32_prefilled; ++i) {
     run32_slots[i] = hz6_malloc(&midpage_32k_run_allocator, 20000);
     Hz6RouteResult run32_route =
-        hz6_route_backend_lookup(&midpage_32k_run_allocator.route_backend,
-                                 run32_slots[i]);
+        hz6_allocator_route_lookup(&midpage_32k_run_allocator, run32_slots[i]);
     Hz6ObjectDescriptor* run32_descriptor =
         (Hz6ObjectDescriptor*)run32_route.descriptor;
     if (!expect(run32_slots[i] != NULL, "midpage 32k run malloc") ||
@@ -708,10 +701,10 @@ int main(void) {
 
   Hz6Allocator midpage_allocator;
   hz6_allocator_init_with_profile(&midpage_allocator, HZ6_PROFILE_REMOTE);
-  if (!expect(midpage_allocator.route_backend.kind ==
+  if (!expect(hz6_allocator_route_backend_kind(&midpage_allocator) ==
                   HZ6_ROUTE_BACKEND_PAGE_TABLE,
               "remote profile page route backend") ||
-      !expect(midpage_allocator.route_backend.page_granularity ==
+      !expect(hz6_allocator_route_page_granularity(&midpage_allocator) ==
                   HZ6_ROUTE_PAGE_GRANULARITY,
               "remote profile page route granularity")) {
     return 1;
@@ -721,8 +714,7 @@ int main(void) {
     return 1;
   }
   Hz6RouteResult midpage_route =
-      hz6_route_backend_lookup(&midpage_allocator.route_backend,
-                               midpage_object);
+      hz6_allocator_route_lookup(&midpage_allocator, midpage_object);
   if (!expect(midpage_route.kind == HZ6_ROUTE_VALID,
               "midpage route valid") ||
       !expect(midpage_route.front_id == HZ6_FRONT_MIDPAGE,
@@ -753,7 +745,7 @@ int main(void) {
     return 1;
   }
   Hz6RouteResult large_route =
-      hz6_route_backend_lookup(&large_allocator.route_backend, large_object);
+      hz6_allocator_route_lookup(&large_allocator, large_object);
   if (!expect(large_route.kind == HZ6_ROUTE_VALID, "large128 route valid") ||
       !expect(large_route.front_id == HZ6_FRONT_LARGE,
               "large128 route front") ||
@@ -859,8 +851,7 @@ int main(void) {
     return 1;
   }
   Hz6RouteResult strict_remote_route =
-      hz6_route_backend_lookup(&strict_remote_allocator.route_backend,
-                               strict_remote);
+      hz6_allocator_route_lookup(&strict_remote_allocator, strict_remote);
   Hz6ObjectDescriptor* strict_remote_descriptor =
       (Hz6ObjectDescriptor*)strict_remote_route.descriptor;
   if (!expect(strict_remote_descriptor != NULL,
@@ -889,7 +880,7 @@ int main(void) {
     return 1;
   }
   Hz6RouteResult orphan_route =
-      hz6_route_backend_lookup(&orphan_allocator.route_backend, orphan_object);
+      hz6_allocator_route_lookup(&orphan_allocator, orphan_object);
   Hz6ObjectDescriptor* orphan_descriptor =
       (Hz6ObjectDescriptor*)orphan_route.descriptor;
   if (!expect(orphan_descriptor != NULL, "orphan descriptor") ||
@@ -929,8 +920,7 @@ int main(void) {
     return 1;
   }
   Hz6RouteResult profile_scavenge_route =
-      hz6_route_backend_lookup(&profile_scavenge_allocator.route_backend,
-                               profile_cached);
+      hz6_allocator_route_lookup(&profile_scavenge_allocator, profile_cached);
   Hz6ObjectDescriptor* profile_scavenge_descriptor =
       (Hz6ObjectDescriptor*)profile_scavenge_route.descriptor;
   hz6_free(&profile_scavenge_allocator, profile_cached);
@@ -957,7 +947,7 @@ int main(void) {
     return 1;
   }
   Hz6RouteResult adopt_source_route =
-      hz6_route_backend_lookup(&adopt_source.route_backend, adopt_object);
+      hz6_allocator_route_lookup(&adopt_source, adopt_object);
   Hz6ObjectDescriptor* adopt_source_descriptor =
       (Hz6ObjectDescriptor*)adopt_source_route.descriptor;
   hz6_allocator_mark_owner_dead(&adopt_source);
