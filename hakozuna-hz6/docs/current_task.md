@@ -197,6 +197,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    Hz6SourceBlock tracks source block release metadata and descriptor references
    hz6_front_source_block_slot() registers multiple user slots against one block
    allocator smoke verifies first slot release does not release the shared source block
+44. MidPage run prefill seed. DONE:
+   hz6_midpage_prefill_run() creates one 64KiB SourceBlock for 8K / 32K classes
+   prefilled slots enter the MidPage local cache as LOCAL_FREE descriptors
+   allocator smoke verifies 8 slots share one SourceBlock and avoid source refill
 ```
 
 Current R1 smoke:

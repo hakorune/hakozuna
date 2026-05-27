@@ -362,6 +362,52 @@ int main(void) {
   }
   hz6_allocator_destroy(&midpage_block_allocator);
 
+  Hz6Allocator midpage_run_allocator;
+  hz6_allocator_init_with_profile(&midpage_run_allocator,
+                                  HZ6_PROFILE_REMOTE);
+  size_t run_prefilled =
+      hz6_midpage_prefill_run(&midpage_run_allocator,
+                              HZ6_MIDPAGE_8K_CLASS_ID);
+  if (!expect(run_prefilled == 8, "midpage run prefill count") ||
+      !expect(midpage_run_allocator.stats.source_alloc == 1,
+              "midpage run source allocation count")) {
+    return 1;
+  }
+  void* run_slots[8];
+  Hz6SourceBlock* run_block = NULL;
+  for (size_t i = 0; i < run_prefilled; ++i) {
+    run_slots[i] = hz6_malloc(&midpage_run_allocator, 6000);
+    Hz6RouteResult run_route =
+        hz6_route_backend_lookup(&midpage_run_allocator.route_backend,
+                                 run_slots[i]);
+    Hz6ObjectDescriptor* run_descriptor =
+        (Hz6ObjectDescriptor*)run_route.descriptor;
+    if (!expect(run_slots[i] != NULL, "midpage run malloc") ||
+        !expect(run_route.kind == HZ6_ROUTE_VALID,
+                "midpage run route valid") ||
+        !expect(run_route.class_id == HZ6_MIDPAGE_8K_CLASS_ID,
+                "midpage run route class") ||
+        !expect(run_descriptor != NULL, "midpage run descriptor") ||
+        !expect(run_descriptor->source_block != NULL,
+                "midpage run source block")) {
+      return 1;
+    }
+    if (i == 0) {
+      run_block = run_descriptor->source_block;
+    } else if (!expect(run_descriptor->source_block == run_block,
+                       "midpage run shared source block")) {
+      return 1;
+    }
+  }
+  if (!expect(midpage_run_allocator.stats.source_alloc == 1,
+              "midpage run prefill avoids refill")) {
+    return 1;
+  }
+  for (size_t i = 0; i < run_prefilled; ++i) {
+    hz6_free(&midpage_run_allocator, run_slots[i]);
+  }
+  hz6_allocator_destroy(&midpage_run_allocator);
+
   Hz6Allocator midpage_allocator;
   hz6_allocator_init_with_profile(&midpage_allocator, HZ6_PROFILE_REMOTE);
   void* midpage_object = hz6_malloc(&midpage_allocator, 16384);

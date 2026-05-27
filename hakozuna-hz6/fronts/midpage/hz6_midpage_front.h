@@ -30,6 +30,8 @@ int hz6_midpage_policy_for_size(size_t size,
 
 int hz6_midpage_class_bytes(uint16_t class_id, size_t* bytes);
 
+size_t hz6_midpage_prefill_run(Hz6Allocator* allocator, uint16_t class_id);
+
 const Hz6FrontOps* hz6_midpage_front_ops(void);
 
 #ifdef __cplusplus

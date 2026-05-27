@@ -218,6 +218,8 @@ specific real front.
 `fronts/midpage/hz6_midpage_front.*` owns requests above the toy/small range up
 to 32KiB. Its R1 policy maps requests to 8K / 32K page-run geometry inside the
 front module. It is a contract seed, not the final shared-run allocator.
+`hz6_midpage_prefill_run()` is the first explicit run-fill seed: one 64KiB
+`Hz6SourceBlock` can be split into local-cache MidPage slots.
 `hz6_front_source_slot_kind()` is the shared helper for source-block-backed
 slots where the route/cache user pointer differs from the SourceLayer release
 pointer.

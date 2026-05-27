@@ -116,11 +116,13 @@ int hz6_allocator_retain_source_block(Hz6SourceBlock* block) {
 }
 
 int hz6_allocator_release_source_block(Hz6SourceBlock* block) {
-  if (!block || !block->active || !block->ptr || block->ref_count == 0) {
+  if (!block || !block->active || !block->ptr) {
     return 0;
   }
 
-  --block->ref_count;
+  if (block->ref_count != 0) {
+    --block->ref_count;
+  }
   if (block->ref_count != 0) {
     return 1;
   }
