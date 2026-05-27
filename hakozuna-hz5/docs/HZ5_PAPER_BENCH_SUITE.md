@@ -330,6 +330,11 @@ The paper tables map to the following Linux/hakmem workloads:
 | Redis workload / redis-like | synthetic Redis or memtier Redis lane | `benchmarks/scripts/run_redis_matrix.sh`, `benchmarks/redis/redis_final_comparison.sh`, or `hakozuna/scripts/run_realworld_4pack.sh` | Mostly small-object/app-like; current HZ5 Local2P exact lane should not be mixed in as a general result. |
 | HZ5 Linux supplement | exact `64K/a8192` local/mixed/RSS/remote | `linux/run_linux_hz5_local2p_focus.sh` | Valid HZ5 appendix evidence; compare to hz4/tcmalloc/mimalloc/system as exact-overaligned controls, not as paper-main default allocator evidence. |
 
+The standalone exact-lane compare runner,
+`linux/run_linux_hz5_standalone_compare.sh`,
+is exact-only. Keep it on exact `4K/8K/64K align=8192` rows and use
+`linux/run_hz5_hakmem_compare.sh` for `cross128` / `large128` rows.
+
 ### HZ5 Full-Preload Hakmem Compare
 
 Use the HZ5-aware compare runner from this repository:

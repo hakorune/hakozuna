@@ -30,6 +30,10 @@ Options:
   --iters N                  iterations per thread
   --cases LIST               comma-separated size:align list
                              (default: 4096:8192,8192:8192,65536:8192)
+                             standalone exact-only phase; use only exact
+                             4K/8K/64K align=8192 rows here
+                             use linux/run_hz5_hakmem_compare.sh for
+                             cross128/large128 rows
   --size N                   single allocation size; requires --align
   --align N                  single allocation alignment; requires --size
   --allocators LIST          comma-separated allocator list
@@ -82,6 +86,25 @@ if [[ -n "$SIZE" || -n "$ALIGN" ]]; then
   fi
   CASES="${SIZE}:${ALIGN}"
 fi
+
+validate_case_spec() {
+  local spec="$1"
+  if [[ "$spec" != *:* ]]; then
+    echo "[ERR] invalid case spec: ${spec}; expected size:align" >&2
+    exit 2
+  fi
+  local case_size="${spec%%:*}"
+  local case_align="${spec##*:}"
+  if [[ ! "$case_size" =~ ^[0-9]+$ || ! "$case_align" =~ ^[0-9]+$ ]]; then
+    echo "[ERR] invalid numeric case spec: ${spec}" >&2
+    exit 2
+  fi
+  if (( case_size > 65536 )); then
+    echo "[ERR] standalone exact-only compare does not support size=${case_size}" >&2
+    echo "      use linux/run_hz5_hakmem_compare.sh for cross128/large128 rows" >&2
+    exit 2
+  fi
+}
 
 mkdir -p "$OUTDIR"
 
@@ -145,6 +168,10 @@ require_file() {
 
 IFS=',' read -r -a allocator_list <<< "$ALLOCATORS"
 IFS=',' read -r -a case_list <<< "$CASES"
+
+for case_spec in "${case_list[@]}"; do
+  validate_case_spec "$case_spec"
+done
 
 for alloc in "${allocator_list[@]}"; do
   case "$alloc" in
