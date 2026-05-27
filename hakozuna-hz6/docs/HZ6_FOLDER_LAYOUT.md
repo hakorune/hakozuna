@@ -18,6 +18,7 @@ hakozuna-hz6/
   api/
     hz6_allocator.h
     hz6_allocator.c
+    hz6_allocator_descriptor.c
 
   route/
     hz6_route.h
@@ -117,6 +118,7 @@ include/hz6_config.h
 include/hz6_contract.h
 api/hz6_allocator.h
 api/hz6_allocator.c
+api/hz6_allocator_descriptor.c
 route/hz6_route.h
 route/hz6_route.c
 route/hz6_route_backend.h

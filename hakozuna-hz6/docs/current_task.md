@@ -458,6 +458,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    TRANSFER_FREE / REMOTE_PENDING transitions and transfer push rollback
    FrontUtil and MidPage no longer hand-write free-path descriptor state
    transitions
+93. Allocator descriptor implementation split. DONE:
+   api/hz6_allocator_descriptor.c now owns descriptor pool lookup,
+   descriptor preparation, activation, source release, and active-descriptor
+   cache/remote transitions
+   api/hz6_allocator.c is smaller and keeps allocator lifecycle, route,
+   transfer, source block, scavenge, and public API orchestration
 ```
 
 Current R1 smoke:
