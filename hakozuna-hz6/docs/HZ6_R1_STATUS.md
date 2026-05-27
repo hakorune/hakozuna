@@ -52,6 +52,7 @@ route:
   foreign pointer -> MISS
   allocator routes through `Hz6RouteBackend`, currently exact-table backed
   backend wrapper preserves VALID / INVALID / MISS contract
+  PAGE_TABLE backend kind is seeded and covered by contract smoke
 
 local free:
   ACTIVE -> LOCAL_FREE
@@ -143,8 +144,8 @@ No HZ3/HZ4/HZ5 implementation copy.
 
 ```text
 1. Add route backend variants:
-   Linux region/page route
+   Linux region/page route implementation
    Windows sidecar route
 
-2. Add MidPage real front seed.
+2. Add MidPage page-run front policy.
 ```

@@ -8,7 +8,8 @@ extern "C" {
 #endif
 
 typedef enum Hz6RouteBackendKind {
-  HZ6_ROUTE_BACKEND_EXACT_TABLE = 1
+  HZ6_ROUTE_BACKEND_EXACT_TABLE = 1,
+  HZ6_ROUTE_BACKEND_PAGE_TABLE = 2
 } Hz6RouteBackendKind;
 
 typedef struct Hz6RouteBackend {
@@ -20,6 +21,10 @@ typedef struct Hz6RouteBackend {
 void hz6_route_backend_init_exact(Hz6RouteBackend* backend,
                                   Hz6RouteEntry* entries,
                                   size_t capacity);
+
+void hz6_route_backend_init_page_table(Hz6RouteBackend* backend,
+                                       Hz6RouteEntry* entries,
+                                       size_t capacity);
 
 int hz6_route_backend_register_exact(Hz6RouteBackend* backend,
                                      void* base,

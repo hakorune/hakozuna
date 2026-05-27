@@ -102,6 +102,34 @@ int main(void) {
     return 1;
   }
 
+  Hz6RouteEntry page_backend_entries[2];
+  Hz6RouteBackend page_backend;
+  hz6_route_backend_init_page_table(&page_backend, page_backend_entries, 2);
+  if (!expect(page_backend.kind == HZ6_ROUTE_BACKEND_PAGE_TABLE,
+              "page route backend kind") ||
+      !expect(hz6_route_backend_register_exact(
+                  &page_backend, base, sizeof(object), HZ6_FRONT_LOCAL2P, 7,
+                  13, &descriptor),
+              "page route backend register")) {
+    return 1;
+  }
+  Hz6RouteResult page_exact = hz6_route_backend_lookup(&page_backend, base);
+  Hz6RouteResult page_interior =
+      hz6_route_backend_lookup(&page_backend, object + 24);
+  if (!expect(page_exact.kind == HZ6_ROUTE_VALID,
+              "page route backend valid") ||
+      !expect(page_exact.generation == 13, "page route backend generation") ||
+      !expect(page_interior.kind == HZ6_ROUTE_INVALID,
+              "page route backend invalid")) {
+    return 1;
+  }
+  hz6_route_backend_unregister_exact(&page_backend, base);
+  if (!expect(hz6_route_backend_lookup(&page_backend, base).kind ==
+                  HZ6_ROUTE_MISS,
+              "page route backend unregister")) {
+    return 1;
+  }
+
   Hz6TransferObject transfer_objects[2];
   Hz6TransferCache transfer;
   hz6_transfer_init(&transfer, transfer_objects, 2);

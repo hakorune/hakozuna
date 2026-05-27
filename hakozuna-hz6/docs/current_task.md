@@ -165,6 +165,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    hz6_front_prefill_source_kind()
    uses profile.source_batch from slow-path tests without changing malloc hit path
    allocator smoke covers RSS profile source_batch prefill and no hidden refill
+36. Route backend variant seed. DONE:
+   HZ6_ROUTE_BACKEND_PAGE_TABLE
+   shares MISS / VALID / INVALID result contract with exact-table backend
+   contract smoke covers register, valid lookup, invalid interior, unregister
 ```
 
 Current R1 smoke:
@@ -185,8 +189,8 @@ hz6-r1-safety-smoke ok
 
 ```text
 Route table shape:
-  Windows sidecar table and Linux region/page map should share result contract,
-  not implementation.
+  PAGE_TABLE backend is now seeded as a contract variant.
+  Real Windows sidecar and Linux region/page maps still need implementation.
 
 Transfer shard policy:
   consumer-visible shard remains the default idea, but HZ5 variants were no-go
