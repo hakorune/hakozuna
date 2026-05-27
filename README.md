@@ -87,7 +87,9 @@ This repository already includes public Windows-native allocator comparisons and
 - GitHub Releases: https://github.com/hakorune/hakozuna/releases
 - Citation metadata: `CITATION.cff`
 - Changelog: `CHANGELOG.md` (BREAKING changes are explicitly listed per release)
-- GitHub Release body template: `docs/releases/GITHUB_RELEASE_v3.3.md`
+- Distribution policy: `docs/DISTRIBUTION.md`
+- Latest published GitHub Release body template: `docs/releases/GITHUB_RELEASE_v3.3.md`
+- Next source/artifact release draft: `docs/releases/GITHUB_RELEASE_v3.4.md`
 
 ## Benchmark Snapshot (Ubuntu native)
 
@@ -187,6 +189,7 @@ Current interpretation:
 - [Windows Memcached Shim](docs/WINDOWS_MEMCACHED_SHIM.md)
 - [Windows Memcached Minimal Main](docs/WINDOWS_MEMCACHED_MIN_MAIN.md)
 - [Build Flags Index](docs/BUILD_FLAGS_INDEX.md)
+- [Distribution Policy](docs/DISTRIBUTION.md)
 - [Paper Notes](docs/HAKMEM_HZ3_PAPER_NOTES.md)
 - [Repro Report Template](docs/REPRO_REPORT_TEMPLATE.md)
 - [Profile Guide](PROFILE_GUIDE.md)
@@ -211,4 +214,4 @@ Apache License 2.0
 
 ---
 
-Version: 2026.02.18 (release anchor: 3.0)
+Version: 2026.05.26 (latest archived release anchor: v3.3; next source/artifact draft: v3.4)

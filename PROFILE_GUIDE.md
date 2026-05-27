@@ -28,9 +28,12 @@ one mixed profiling ledger.
 - Freeze workload shape before changing allocator code.
 - Keep profile names comparable across OSes, but keep allocator knobs OS-specific.
 - Record raw traces and logs under `private/` and publish only summary-grade results.
+- Use [docs/DISTRIBUTION.md](docs/DISTRIBUTION.md) before preparing a public
+  source/artifact release. HZ5 rows must stay profile-scoped in release notes.
 
 ## Related Docs
 
 - [Repo Structure](docs/REPO_STRUCTURE.md)
 - [Linux Entrypoints](linux/README.md)
 - [Benchmarks](docs/benchmarks/README.md)
+- [Distribution Policy](docs/DISTRIBUTION.md)

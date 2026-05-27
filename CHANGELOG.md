@@ -7,13 +7,35 @@ This project follows a release-tag workflow (`vX.Y.Z`) and keeps BREAKING change
 ## [Unreleased]
 
 ### Added
-- `CHANGELOG.md` as release anchor for GitHub Releases and tags.
-- `docs/SAFE_DEFAULTS.md` for stable default profiles and research-only flags.
-- `docs/COMPATIBILITY.md` for runtime/loader compatibility notes.
-- Minimal Linux CI workflow (`.github/workflows/ci.yml`) for build and smoke checks.
+- HZ5 distribution guidance for the Linux profile family and Windows
+  experimental/control lanes.
+- Draft v3.4 GitHub Release and Zenodo templates for the next source/artifact
+  release.
+- `docs/DISTRIBUTION.md` as the release-shape hub for source archives,
+  paper/artifact snapshots, and optional local build outputs.
+
+### Changed
+- Clarified that HZ5 is a profile family and paper-facing source/artifact
+  track, not a default general allocator or prebuilt binary package.
 
 ### BREAKING
 - None.
+
+## [3.3.0] - 2026-05-26
+
+### Added
+- Source/artifact release for Linux arm64 coverage and cross-platform
+  follow-up lanes.
+- Public HZ5 Linux profile-family summaries, including exact Local2P appendix
+  rows and broader full-preload profile rows.
+- Windows HZ4 ownership-routing fix notes and Mac follow-up lane notes.
+
+### Changed
+- Public paper PDFs remain aligned with the v3.2 paper revision; v3.3 is a
+  source/artifact release, not a new paper revision.
+
+### BREAKING
+- None recorded for this release.
 
 ## [3.0.0] - 2026-02-18
 
@@ -24,5 +46,6 @@ This project follows a release-tag workflow (`vX.Y.Z`) and keeps BREAKING change
 ### BREAKING
 - None recorded for this release.
 
-[Unreleased]: https://github.com/hakorune/hakozuna/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/hakorune/hakozuna/compare/v3.3.0...HEAD
+[3.3.0]: https://github.com/hakorune/hakozuna/releases/tag/v3.3.0
 [3.0.0]: https://github.com/hakorune/hakozuna/releases/tag/v3.0.0
