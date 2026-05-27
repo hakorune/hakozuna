@@ -21,6 +21,9 @@ API:
   remote-transfer state changes
   prefill smoke covers slow-path source/front/size prefill separately from
   allocator/front integration smoke
+  SourceBlock smoke covers descriptor source release, shared source block
+  slots, route envelopes, and MidPage run prefill separately from
+  allocator/front integration smoke
   reclaim smoke covers orphan release/adoption and profile scavenge separately
   from allocator/front integration smoke
 

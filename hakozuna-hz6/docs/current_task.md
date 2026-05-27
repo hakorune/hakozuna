@@ -490,6 +490,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    size-based, and allocator-front prefill coverage
    allocator smoke keeps hot allocation/front integration coverage and no
    longer carries slow-path prefill scenarios
+99. SourceBlock smoke split. DONE:
+   tests/hz6_r1_sourceblock_smoke.c now owns descriptor source release,
+   single-slot source backing, shared SourceBlock refcount/route envelope,
+   and MidPage 8K/32K run prefill coverage
+   allocator smoke keeps front integration and no longer carries SourceBlock
+   lifecycle-specific scenarios
 ```
 
 Current R1 smoke:
@@ -504,6 +510,7 @@ Expected:
 hz6-r1-contract-smoke ok
 hz6-r1-allocator-smoke ok
 hz6-r1-prefill-smoke ok
+hz6-r1-sourceblock-smoke ok
 hz6-r1-reclaim-smoke ok
 hz6-r1-safety-smoke ok
 ```
