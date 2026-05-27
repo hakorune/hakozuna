@@ -29,6 +29,8 @@ Benchmark entrypoints:
   linux/build_hz6_benchmark.sh
   linux/run_hz6_benchmark.sh
   local / remote / reuse single-process lanes
+Current snapshot:
+  docs/HZ6_R1_BENCHMARK_20260528.md
 The next benchmark pass should compare HZ6 against HZ3 / HZ4 / HZ5 on the same
 machine with the same runner.
 ```
@@ -55,6 +57,7 @@ Not yet in scope:
 hakozuna-hz6/README.md
 hakozuna-hz6/READMEjp.md
 hakozuna-hz6/docs/HZ6_BLUEPRINT.md
+hakozuna-hz6/docs/HZ6_R1_BENCHMARK_20260528.md
 hakozuna-hz6/docs/HZ6_R1_STATUS.md
 hakozuna-hz6/docs/HZ6_R1_MINIMUM_CONTRACT_BLUEPRINT.md
 hakozuna-hz6/docs/HZ6_ARCHITECTURE_DRAFT.md

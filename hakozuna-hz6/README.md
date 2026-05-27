@@ -47,6 +47,7 @@ HZ6 starts from these rules:
 ```text
 docs/HZ6_BLUEPRINT.md
 docs/HZ6_R1_STATUS.md
+docs/HZ6_R1_BENCHMARK_20260528.md
 docs/HZ6_R1_MINIMUM_CONTRACT_BLUEPRINT.md
 docs/HZ6_ARCHITECTURE_DRAFT.md
 docs/HZ6_FOLDER_LAYOUT.md
@@ -83,6 +84,12 @@ hz6-r1-safety-smoke ok
 HZ6 now has a first HZ6-only benchmark run. The current evidence is still
 provisional and does not include a cross-family HZ3/HZ4/HZ5 comparison table.
 No performance claim should be made from the R1 seed yet.
+
+Snapshot:
+
+```text
+docs/HZ6_R1_BENCHMARK_20260528.md
+```
 
 The next benchmark pass should compare HZ6 against HZ3 / HZ4 / HZ5 on the same
 machine.
