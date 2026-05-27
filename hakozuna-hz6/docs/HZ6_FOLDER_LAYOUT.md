@@ -14,6 +14,8 @@ hakozuna-hz6/
     hz6.h
     hz6_config.h
     hz6_contract.h
+    hz6_contract_owner.h
+    hz6_contract_route.h
 
   api/
     hz6_allocator_types.h

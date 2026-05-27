@@ -826,6 +826,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    include the shared utility header instead of duplicating the math helpers
    route/backend lookup and init responsibilities stay separated, but the
    common math no longer lives in the lookup source
+150. Public contract route/owner split. DONE:
+   include/hz6_contract_route.h now owns route kinds/result constructors
+   include/hz6_contract_owner.h now owns owner token and object state enums
+   include/hz6_contract.h is reduced to a thin umbrella over the public
+   contract pieces
 144. Descriptor state local-cache/remote-transfer split. DONE:
    api/hz6_allocator_descriptor_local_cache.c now owns cache-active
    transitions
