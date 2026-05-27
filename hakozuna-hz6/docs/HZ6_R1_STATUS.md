@@ -9,6 +9,7 @@ API:
   include/hz6.h
   api/hz6_allocator.*
   api/hz6_allocator_descriptor.c owns descriptor lifecycle helpers
+  api/hz6_allocator_reclaim.c owns orphan/scavenge/remote-pending reclaim
   api/hz6_allocator_source_block.c owns SourceBlock lifecycle helpers
   hz6_stats_snapshot() is the public stats observation boundary
   allocator note helpers are the front-facing stats update boundary

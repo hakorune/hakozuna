@@ -469,6 +469,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    release, and invalid route envelope registration
    api/hz6_allocator.c no longer carries the MidPage run SourceBlock helper
    implementation
+95. Allocator reclaim implementation split. DONE:
+   api/hz6_allocator_reclaim.c now owns owner-dead orphan conversion, orphan
+   release/adoption, scavenge budget execution, and strict remote-pending drain
+   api/hz6_allocator.c now keeps lifecycle plus front/policy/route/transfer API
+   orchestration separate from reclaim logic
 ```
 
 Current R1 smoke:
