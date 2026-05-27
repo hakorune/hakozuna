@@ -102,6 +102,8 @@ static const char* hz5_trace_name(Hz5TraceCounter counter) {
       return "alloc_local2p_inbox_exchange_nodes";
     case HZ5_TRACE_ALLOC_LOCAL2P_INBOX_CACHE_DEPTH_MAX:
       return "alloc_local2p_inbox_cache_depth_max";
+    case HZ5_TRACE_ALLOC_LOCAL2P_INBOX_CACHE_HIT_STREAK_MAX:
+      return "alloc_local2p_inbox_cache_hit_streak_max";
     case HZ5_TRACE_ALLOC_LOCAL2P_HEADER_INIT:
       return "alloc_local2p_header_init";
     case HZ5_TRACE_FREE_LOCAL2P_SAME_OWNER_FAST:

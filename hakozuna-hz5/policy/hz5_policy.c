@@ -110,6 +110,7 @@ typedef struct Hz5PolicyWinLocal2PTls {
   uint32_t generation;
   _Atomic(void*) inbox_head;
   void* inbox_cache;
+  size_t inbox_cache_hit_streak;
 #if BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH && \
     BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SLOTS > 1u
   uintptr_t remote_batch_owner[BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SLOTS];

@@ -27,8 +27,12 @@ static void* hz5_policy_win_local2p_inbox_pop(void) {
       }
     }
 #endif
+    tls->inbox_cache_hit_streak = 0;
   } else {
     hz5_trace_inc(HZ5_TRACE_ALLOC_LOCAL2P_INBOX_CACHE_HIT);
+    ++tls->inbox_cache_hit_streak;
+    hz5_trace_max(HZ5_TRACE_ALLOC_LOCAL2P_INBOX_CACHE_HIT_STREAK_MAX,
+                  (uint64_t)tls->inbox_cache_hit_streak);
   }
   if (!node) {
     return NULL;
