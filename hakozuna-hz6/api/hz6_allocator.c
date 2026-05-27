@@ -140,13 +140,13 @@ int hz6_allocator_release_source_block(Hz6SourceBlock* block) {
     return 1;
   }
 
-  int released = block->source_release
-                     ? block->source_release(block->ptr, block->bytes)
-                     : hz6_source_system_release(block->ptr, block->bytes);
   if (block->route_registered && block->route_backend) {
     hz6_route_backend_unregister_invalid_range(block->route_backend,
                                                block->ptr);
   }
+  int released = block->source_release
+                     ? block->source_release(block->ptr, block->bytes)
+                     : hz6_source_system_release(block->ptr, block->bytes);
   block->ptr = NULL;
   block->bytes = 0;
   block->source_kind = HZ6_SOURCE_NONE;

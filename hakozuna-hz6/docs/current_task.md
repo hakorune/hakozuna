@@ -217,6 +217,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    contract smoke verifies invalid-range registration and unregister
    exact-valid entries take priority over invalid-range envelopes
    backend wrapper exposes the same invalid-range contract
+49. SourceBlock route teardown order. DONE:
+   shared SourceBlock release now unregisters the invalid route envelope before
+   SourceLayer release
+   allocator destroy already follows the same route-before-source teardown order
+   allocator smoke covers final SourceBlock release turning the envelope back to MISS
 ```
 
 Current R1 smoke:

@@ -105,6 +105,8 @@ source:
   SourceLayer release uses source ptr / source bytes
   front util can expose one user slot inside a larger source block
   `Hz6SourceBlock` can retain one source block across multiple slot descriptors
+  and unregisters its invalid route envelope before releasing the backing source
+  block
   allocator destroy releases Large128 mappings through SourceLayer
   explicit front prefill can source objects into LOCAL_FREE cache using
   profile source_batch without changing the malloc hit path
