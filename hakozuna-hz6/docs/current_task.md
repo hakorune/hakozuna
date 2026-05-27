@@ -213,6 +213,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    route table supports invalid-range entries alongside exact-valid slot entries
    SourceBlock slot registration installs an invalid envelope for the whole run
    allocator smoke verifies unregistered run slots are INVALID and become MISS after final release
+48. Route invalid-range contract smoke. DONE:
+   contract smoke verifies invalid-range registration and unregister
+   exact-valid entries take priority over invalid-range envelopes
+   backend wrapper exposes the same invalid-range contract
 ```
 
 Current R1 smoke:

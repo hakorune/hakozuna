@@ -102,6 +102,44 @@ int main(void) {
     return 1;
   }
 
+  unsigned char route_run[512];
+  SmokeDescriptor route_run_descriptor;
+  route_run_descriptor.marker = 77;
+  Hz6RouteEntry range_entries[4];
+  Hz6RouteTable range_table;
+  hz6_route_table_init(&range_table, range_entries, 4);
+  if (!expect(hz6_route_register_invalid_range(
+                  &range_table, route_run, sizeof(route_run),
+                  HZ6_FRONT_MIDPAGE, 4),
+              "route invalid range register") ||
+      !expect(hz6_route_lookup(&range_table, route_run + 128).kind ==
+                  HZ6_ROUTE_INVALID,
+              "route invalid range lookup") ||
+      !expect(hz6_route_register_exact(
+                  &range_table, route_run + 128, 64, HZ6_FRONT_MIDPAGE, 4,
+                  21, &route_run_descriptor),
+              "route exact inside invalid range") ||
+      !expect(hz6_route_lookup(&range_table, route_run + 128).kind ==
+                  HZ6_ROUTE_VALID,
+              "route exact wins over invalid range") ||
+      !expect(hz6_route_lookup(&range_table, route_run + 129).kind ==
+                  HZ6_ROUTE_INVALID,
+              "route exact interior remains invalid")) {
+    return 1;
+  }
+  hz6_route_unregister_exact(&range_table, route_run + 128);
+  if (!expect(hz6_route_lookup(&range_table, route_run + 128).kind ==
+                  HZ6_ROUTE_INVALID,
+              "route invalid range remains after exact unregister")) {
+    return 1;
+  }
+  hz6_route_unregister_invalid_range(&range_table, route_run);
+  if (!expect(hz6_route_lookup(&range_table, route_run + 128).kind ==
+                  HZ6_ROUTE_MISS,
+              "route invalid range unregister")) {
+    return 1;
+  }
+
   Hz6RouteEntry page_backend_entries[2];
   Hz6RouteBackend page_backend;
   hz6_route_backend_init_page_table_with_granularity(
@@ -134,6 +172,33 @@ int main(void) {
   if (!expect(hz6_route_backend_lookup(&page_backend, base).kind ==
                   HZ6_ROUTE_MISS,
               "page route backend unregister")) {
+    return 1;
+  }
+
+  Hz6RouteEntry range_backend_entries[4];
+  Hz6RouteBackend range_backend;
+  hz6_route_backend_init_exact(&range_backend, range_backend_entries, 4);
+  if (!expect(hz6_route_backend_register_invalid_range(
+                  &range_backend, route_run, sizeof(route_run),
+                  HZ6_FRONT_MIDPAGE, 4),
+              "route backend invalid range register") ||
+      !expect(hz6_route_backend_register_exact(
+                  &range_backend, route_run + 256, 64, HZ6_FRONT_MIDPAGE, 4,
+                  22, &route_run_descriptor),
+              "route backend exact inside invalid range") ||
+      !expect(hz6_route_backend_lookup(&range_backend, route_run + 256).kind ==
+                  HZ6_ROUTE_VALID,
+              "route backend exact range priority") ||
+      !expect(hz6_route_backend_lookup(&range_backend, route_run + 320).kind ==
+                  HZ6_ROUTE_INVALID,
+              "route backend range end invalid")) {
+    return 1;
+  }
+  hz6_route_backend_unregister_invalid_range(&range_backend, route_run);
+  hz6_route_backend_unregister_exact(&range_backend, route_run + 256);
+  if (!expect(hz6_route_backend_lookup(&range_backend, route_run + 256).kind ==
+                  HZ6_ROUTE_MISS,
+              "route backend invalid range cleanup")) {
     return 1;
   }
 
