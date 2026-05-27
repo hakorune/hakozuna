@@ -70,6 +70,8 @@ build_smoke() {
 
 build_smoke "${HZ6_DIR}/tests/hz6_r1_contract_smoke.c" \
   "hz6_r1_contract_smoke"
+build_smoke "${HZ6_DIR}/tests/hz6_r1_route_smoke.c" \
+  "hz6_r1_route_smoke"
 build_smoke "${HZ6_DIR}/tests/hz6_r1_allocator_smoke.c" \
   "hz6_r1_allocator_smoke"
 build_smoke "${HZ6_DIR}/tests/hz6_r1_prefill_smoke.c" \

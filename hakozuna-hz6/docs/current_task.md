@@ -502,6 +502,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    producer/consumer shard behavior, and strict REMOTE_PENDING drain coverage
    allocator smoke keeps basic allocator/front integration and no longer
    carries transfer-backend-specific scenarios
+101. Route smoke split. DONE:
+   tests/hz6_r1_route_smoke.c now owns exact route, invalid range envelope,
+   exact/table backend, and page-table backend contract coverage
+   contract smoke keeps transfer, owner, profile, frontcache, source, and
+   scavenge low-level module coverage without RouteLayer bulk
 ```
 
 Current R1 smoke:
@@ -514,6 +519,7 @@ Expected:
 
 ```text
 hz6-r1-contract-smoke ok
+hz6-r1-route-smoke ok
 hz6-r1-allocator-smoke ok
 hz6-r1-prefill-smoke ok
 hz6-r1-sourceblock-smoke ok

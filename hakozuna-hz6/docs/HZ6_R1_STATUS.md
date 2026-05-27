@@ -32,6 +32,8 @@ API:
 
 Contracts:
   route MISS / VALID / INVALID
+  route smoke covers exact table, invalid envelopes, backend wrappers, and page
+  route backend separately from the lower-level mixed contract smoke
   shared object states
   owner token/liveness helper
   profile configuration
