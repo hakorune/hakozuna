@@ -4,6 +4,7 @@
 #include "../owner/hz6_owner.h"
 #include "../policy/hz6_profiles.h"
 #include "../route/hz6_route.h"
+#include "../source/linux_source_mmap.h"
 #include "../source/hz6_source.h"
 #include "../transfer/hz6_transfer.h"
 
@@ -166,6 +167,21 @@ int main(void) {
   }
   ops.allocation_granularity = 3000;
   if (!expect(!hz6_source_ops_valid(&ops), "source granularity invalid")) {
+    return 1;
+  }
+
+  Hz6OsMemoryOps linux_ops = hz6_linux_mmap_source_ops();
+  if (!expect(hz6_source_ops_valid(&linux_ops), "linux mmap ops valid")) {
+    return 1;
+  }
+  void* mapped = linux_ops.reserve(linux_ops.page_size, linux_ops.page_size);
+  if (!expect(mapped != NULL, "linux mmap reserve") ||
+      !expect(linux_ops.commit(mapped, linux_ops.page_size),
+              "linux mmap commit") ||
+      !expect(linux_ops.decommit(mapped, linux_ops.page_size),
+              "linux mmap decommit") ||
+      !expect(linux_ops.release(mapped, linux_ops.page_size),
+              "linux mmap release")) {
     return 1;
   }
 

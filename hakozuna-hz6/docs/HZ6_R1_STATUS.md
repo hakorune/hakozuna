@@ -54,6 +54,10 @@ front registry:
   toy handles <=4KiB
   large128 handles >4KiB..128KiB
   >128KiB is unsupported in R1 and returns NULL
+
+source:
+  Linux mmap ops validate through SourceLayer
+  reserve / commit / decommit / release smoke passes
 ```
 
 ## Verification Command
@@ -74,7 +78,7 @@ hz6-r1-allocator-smoke ok
 ```text
 No performance claim.
 No preload integration.
-No OS-backed mmap / VirtualAlloc source path yet.
+No allocator integration with OS-backed mmap / VirtualAlloc source path yet.
 No Local2P or MidPage real front yet.
 No HZ5 source migration.
 No HZ3/HZ4/HZ5 implementation copy.
@@ -83,14 +87,13 @@ No HZ3/HZ4/HZ5 implementation copy.
 ## Next Engineering Targets
 
 ```text
-1. Add an OS-backed source module:
-   Linux mmap first, Windows VirtualAlloc later.
+1. Replace the Large128 seed source with SourceLayer-backed spans.
 
-2. Replace the Large128 seed source with SourceLayer-backed spans.
-
-3. Add route backend variants:
+2. Add route backend variants:
    Linux region/page route
    Windows sidecar route
 
-4. Add Local2P exact route/front as the next real profile seed.
+3. Add Local2P exact route/front as the next real profile seed.
+
+4. Add Windows VirtualAlloc source ops.
 ```

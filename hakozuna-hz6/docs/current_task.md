@@ -76,6 +76,9 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
 14. Smoke split. DONE:
    tests/hz6_r1_contract_smoke.c covers route/transfer/owner/profile/source
    tests/hz6_r1_allocator_smoke.c covers allocator/front integration
+15. Linux SourceLayer seed. DONE:
+   source/linux_source_mmap.*
+   reserve/commit/decommit/release covered by contract smoke
 ```
 
 Current R1 smoke:

@@ -124,6 +124,8 @@ transfer/hz6_transfer.c
 owner/hz6_owner.h
 source/hz6_source.h
 source/hz6_source.c
+source/linux_source_mmap.h
+source/linux_source_mmap.c
 policy/hz6_profiles.h
 policy/hz6_profiles.c
 fronts/hz6_front.h
@@ -143,6 +145,8 @@ The Linux R1 smoke script uses explicit `HZ6_SOURCES` and `HZ6_INCLUDES`
 arrays. Keep new modules visible there until a real build system is introduced.
 It builds both the low-level contract smoke and allocator/front integration
 smoke.
+Linux mmap source ops are present as SourceLayer contract code, but Large128
+still uses the temporary system source path until span backing is introduced.
 
 The current API path is intentionally small:
 
