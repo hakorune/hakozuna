@@ -3,6 +3,19 @@
 HZ6-R1 is the smallest implementation milestone. It must prove the contracts
 compose before any broad allocator behavior is attempted.
 
+Current implementation status:
+
+```text
+R1 contract skeleton:
+  implemented
+
+Toy modular allocation path:
+  implemented for smoke testing only
+
+Real front target:
+  not selected yet
+```
+
 ## R1 Scope
 
 R1 should implement one narrow target first.
@@ -265,4 +278,3 @@ source refill before transfer check
 double-free becoming reusable
 hot-path policy counters
 ```
-

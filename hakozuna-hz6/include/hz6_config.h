@@ -11,9 +11,16 @@
 #define HZ6_TRANSFER_CACHE_CAPACITY ((size_t)64)
 #endif
 
+#ifndef HZ6_OBJECT_DESCRIPTOR_CAPACITY
+#define HZ6_OBJECT_DESCRIPTOR_CAPACITY ((size_t)64)
+#endif
+
 #ifndef HZ6_FRONT_CACHE_CLASS_COUNT
 #define HZ6_FRONT_CACHE_CLASS_COUNT 16u
 #endif
 
+#ifndef HZ6_FRONT_CACHE_BIN_CAPACITY
+#define HZ6_FRONT_CACHE_BIN_CAPACITY ((size_t)8)
 #endif
 
+#endif

@@ -96,7 +96,7 @@ hakozuna-hz6/
     current_task.md
 ```
 
-R1 currently starts with the contract-only subset:
+R1 currently starts with this modular subset:
 
 ```text
 include/hz6.h
@@ -118,6 +118,25 @@ policy/hz6_profiles.c
 tests/hz6_r1_contract_smoke.c
 linux/build_hz6_r1_contract_smoke.sh
 ```
+
+The current API path is intentionally small:
+
+```text
+hz6_malloc:
+  size -> coarse class
+  frontcache pop
+  source allocation through source/
+  exact route registration
+
+hz6_free:
+  route lookup
+  VALID exact pointer -> ACTIVE to LOCAL_FREE
+  INVALID interior/double-free -> fail-closed stats
+  MISS foreign pointer -> miss stats
+```
+
+This is not a performance allocator yet. It is the first executable contract
+that proves the module boundaries compose.
 
 ## Boundaries
 

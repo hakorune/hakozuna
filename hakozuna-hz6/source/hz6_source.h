@@ -18,6 +18,10 @@ typedef struct Hz6OsMemoryOps {
 
 int hz6_source_ops_valid(const Hz6OsMemoryOps* ops);
 
+void* hz6_source_system_alloc(size_t bytes);
+
+void hz6_source_system_free(void* ptr);
+
 #ifdef __cplusplus
 }
 #endif

@@ -1,7 +1,8 @@
 # HZ6 Current Task
 
-HZ6 is in documentation-first design. Do not start implementation until the
-contracts and folder layout are accepted.
+HZ6 is now in R1 implementation. Keep the implementation modular from the
+start: API, route, frontcache, transfer, source, owner, policy, and future
+fronts should stay separated.
 
 ## Current Claim
 
@@ -32,16 +33,21 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
 ```text
 1. Review and tighten HZ6 folder layout. DONE.
 2. Review HZ6_BLUEPRINT.md and select the first prototype. DONE.
-3. Add only headers/contracts first. IN PROGRESS:
+3. Add headers/contracts first. DONE:
    include/hz6_contract.h
    include/hz6.h
    api/hz6_allocator.h
    route/hz6_route.h
    transfer/hz6_transfer.h
    source/hz6_source.h
-4. Add route smoke before allocator behavior.
-5. Add transfer smoke before full malloc/free integration.
-6. Choose first target:
+4. Add route smoke before allocator behavior. DONE.
+5. Add transfer smoke before full malloc/free integration. DONE.
+6. Add first toy allocation path. IN PROGRESS:
+   api/hz6_allocator.c
+   source/hz6_source.c
+   frontcache/hz6_frontcache.c
+   route/hz6_route.c
+7. Choose first real target:
    Windows Local2P exact route, or Linux LargeFront 128K transfer.
 ```
 
@@ -75,7 +81,7 @@ Profile names:
 ## Not Yet
 
 ```text
-No source file migration.
+No HZ5 source file migration.
 No HZ5 code copy.
 No new performance claim.
 No benchmark table until an HZ6 prototype exists.

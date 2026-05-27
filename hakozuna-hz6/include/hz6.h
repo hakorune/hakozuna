@@ -22,6 +22,8 @@ typedef struct Hz6StatsSnapshot {
 
 void hz6_allocator_init(Hz6Allocator* allocator);
 
+void hz6_allocator_destroy(Hz6Allocator* allocator);
+
 void* hz6_malloc(Hz6Allocator* allocator, size_t size);
 
 void hz6_free(Hz6Allocator* allocator, void* ptr);
@@ -35,4 +37,3 @@ Hz6StatsSnapshot hz6_stats_snapshot(const Hz6Allocator* allocator);
 #endif
 
 #endif
-

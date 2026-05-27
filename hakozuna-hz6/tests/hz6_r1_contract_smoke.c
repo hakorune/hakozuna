@@ -147,26 +147,31 @@ int main(void) {
   if (!expect(allocator.profile.transfer_first == 1, "allocator profile")) {
     return 1;
   }
-  if (!expect(hz6_route_register_exact(&allocator.route_table, base,
-                                       sizeof(object), HZ6_FRONT_LOCAL2P, 7,
-                                       12, &descriptor),
-              "allocator route register")) {
-    return 1;
-  }
-  if (!expect(hz6_owns(&allocator, base), "allocator owns exact") ||
-      !expect(hz6_owns(&allocator, object + 1),
+
+  void* allocated = hz6_malloc(&allocator, 48);
+  if (!expect(allocated != NULL, "allocator malloc") ||
+      !expect(hz6_owns(&allocator, allocated), "allocator owns exact") ||
+      !expect(hz6_owns(&allocator, (unsigned char*)allocated + 1),
               "allocator owns invalid interior")) {
     return 1;
   }
-  hz6_free(&allocator, base);
-  hz6_free(&allocator, object + 1);
+  hz6_free(&allocator, (unsigned char*)allocated + 1);
+  hz6_free(&allocator, allocated);
+  hz6_free(&allocator, allocated);
   hz6_free(&allocator, &foreign);
-  Hz6StatsSnapshot stats = hz6_stats_snapshot(&allocator);
-  if (!expect(stats.route_valid == 1, "stats valid") ||
-      !expect(stats.route_invalid == 1, "stats invalid") ||
-      !expect(stats.route_miss == 1, "stats miss")) {
+  void* reused = hz6_malloc(&allocator, 48);
+  if (!expect(reused == allocated, "allocator frontcache reuse")) {
     return 1;
   }
+  hz6_free(&allocator, reused);
+  Hz6StatsSnapshot stats = hz6_stats_snapshot(&allocator);
+  if (!expect(stats.route_valid == 3, "stats valid") ||
+      !expect(stats.route_invalid == 2, "stats invalid") ||
+      !expect(stats.route_miss == 1, "stats miss") ||
+      !expect(stats.source_alloc == 1, "stats source alloc")) {
+    return 1;
+  }
+  hz6_allocator_destroy(&allocator);
 
   Hz6OsMemoryOps ops;
   ops.reserve = smoke_reserve;
