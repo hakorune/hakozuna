@@ -719,6 +719,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    observation
    linux/build_hz6_r1_smokes.sh registers hz6_allocator_query.c as an
    explicit HZ6_LIB_SOURCE
+133. Front registry split. DONE:
+   fronts/hz6_front_registry.c now owns front selection lookup
+   fronts/hz6_front_prefill_dispatch.c now owns prefill dispatch wrappers
+   fronts/hz6_front.c was removed after the split
+   linux/build_hz6_r1_smokes.sh registers the new front registry modules
+   explicitly
 ```
 
 Current R1 smoke:

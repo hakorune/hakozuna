@@ -84,7 +84,8 @@ hakozuna-hz6/
 
   fronts/
     hz6_front.h
-    hz6_front.c
+    hz6_front_registry.c
+    hz6_front_prefill_dispatch.c
     hz6_front_util.h
     hz6_front_source.h
     hz6_front_source_prefill.h
@@ -200,7 +201,8 @@ source/linux_source_mmap.c
 policy/hz6_profiles.h
 policy/hz6_profiles.c
 fronts/hz6_front.h
-fronts/hz6_front.c
+fronts/hz6_front_registry.c
+fronts/hz6_front_prefill_dispatch.c
 fronts/hz6_front_util.h
 fronts/hz6_front_source.h
 fronts/hz6_front_source_prefill.h
