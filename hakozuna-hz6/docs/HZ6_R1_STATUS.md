@@ -57,7 +57,10 @@ API:
   api/hz6_allocator_source_block_lifetime.c split SourceBlock creation from
   retain/release lifetime helpers
   api/hz6_allocator_init_state.c and api/hz6_allocator_init_backends.c split
-  allocator state initialization from backend initialization
+  allocator state initialization from backend initialization, and
+  api/hz6_allocator_init_state_owner.c / source_blocks.c / descriptors.c /
+  frontcache.c split allocator state initialization into owner, source-block,
+  descriptor, and frontcache helpers
   hz6_stats_snapshot() is the public stats observation boundary
   allocator note helpers are the front-facing stats update boundary
   hz6_allocator_owner_token() is the front-facing owner token read boundary

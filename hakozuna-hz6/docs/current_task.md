@@ -935,6 +935,18 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    the monolithic sharded ops file was removed after the split
    linux/build_hz6_r1_smokes.sh registers the split sharded transfer backend
    ops explicitly
+163. Allocator init state helper split. DONE:
+   api/hz6_allocator_init_state_owner.c now owns owner/profile/stats/source
+   registry seeding
+   api/hz6_allocator_init_state_source_blocks.c now owns source block
+   initialization
+   api/hz6_allocator_init_state_descriptors.c now owns descriptor
+   initialization
+   api/hz6_allocator_init_state_frontcache.c now owns frontcache
+   initialization
+   api/hz6_allocator_init_state.c now stays as a thin wrapper
+   linux/build_hz6_r1_smokes.sh registers the split init-state helpers
+   explicitly
 144. Descriptor state local-cache/remote-transfer split. DONE:
    api/hz6_allocator_descriptor_local_cache.c now owns cache-active
    transitions

@@ -10,6 +10,15 @@ extern "C" {
 void hz6_allocator_init_state(Hz6Allocator* allocator,
                               Hz6ProfileId profile_id);
 
+void hz6_allocator_init_state_owner(Hz6Allocator* allocator,
+                                    Hz6ProfileId profile_id);
+
+void hz6_allocator_init_state_source_blocks(Hz6Allocator* allocator);
+
+void hz6_allocator_init_state_descriptors(Hz6Allocator* allocator);
+
+void hz6_allocator_init_state_frontcache(Hz6Allocator* allocator);
+
 void hz6_allocator_init_backends(Hz6Allocator* allocator);
 
 #ifdef __cplusplus
