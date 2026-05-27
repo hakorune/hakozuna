@@ -672,6 +672,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    dispatch separate from class-size policy
    linux/build_hz6_r1_smokes.sh registers hz6_midpage_policy.c as an explicit
    HZ6_LIB_SOURCE
+126. Transfer backend observability split. DONE:
+   transfer/hz6_transfer_backend_stats.c now owns aggregate count/capacity
+   helpers for single-cache and sharded transfer backends
+   transfer/hz6_transfer_backend_sharded.c now keeps shard init and push/pop
+   separate from observability helpers
+   linux/build_hz6_r1_smokes.sh registers hz6_transfer_backend_stats.c as an
+   explicit HZ6_LIB_SOURCE
 ```
 
 Current R1 smoke:
