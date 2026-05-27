@@ -101,11 +101,13 @@ hakozuna-hz6/
 
   source/
     hz6_source.h
-    hz6_source.c
+    hz6_source_system_ops.c
+    hz6_source_system_memory.c
     hz6_source_registry.h
     hz6_source_registry_init.c
     hz6_source_registry_lookup.c
-    linux_source_mmap.c
+    linux_source_mmap_ops.c
+    linux_source_mmap_memory.c
     win_source_virtualalloc.c
 
   scavenge/
@@ -257,12 +259,14 @@ owner/hz6_owner.c
 scavenge/hz6_scavenge.h
 scavenge/hz6_scavenge.c
 source/hz6_source.h
-source/hz6_source.c
+source/hz6_source_system_ops.c
+source/hz6_source_system_memory.c
 source/hz6_source_registry.h
 source/hz6_source_registry_init.c
 source/hz6_source_registry_lookup.c
 source/linux_source_mmap.h
-source/linux_source_mmap.c
+source/linux_source_mmap_ops.c
+source/linux_source_mmap_memory.c
 policy/hz6_profiles.h
 policy/hz6_profiles_config.c
 policy/hz6_profiles_policy.c
@@ -323,8 +327,10 @@ smoke, allocator prefill smoke, SourceBlock/MidPage run smoke, allocator
 reclaim smoke, transfer/strict-remote smoke, and fail-closed safety smoke.
 `linux/build_hz6_r1_contract_smoke.sh` remains as a compatibility wrapper for
 the older command name.
-Linux mmap source ops are present as SourceLayer contract code, but Large128
-now uses them in the Linux R1 smoke path through `source/hz6_source_registry.*`.
+Linux mmap source ops are present as SourceLayer contract code split across
+`source/linux_source_mmap_ops.c` and `source/linux_source_mmap_memory.c`, but
+Large128 now uses them in the Linux R1 smoke path through
+`source/hz6_source_registry.*`.
 Windows VirtualAlloc source ops are present behind `_WIN32` and are registered
 as the same `HZ6_SOURCE_OS_PAGED` abstraction on Windows.
 The toy front still uses the system source path because it exists only as a
@@ -396,11 +402,12 @@ requests first, so the Local2P contract can evolve independently from the
 broader Large128 seed.
 The toy front owns only requests up to 4KiB. Larger unsupported requests must
 miss all fronts instead of being rounded down into a smaller allocation.
-On Linux, this seed is backed by `source/linux_source_mmap.*`; on Windows, the
-same source kind is backed by `source/win_source_virtualalloc.*`. Descriptors
-store user pointer, source pointer, source kind, and release metadata so
-allocator destroy and cache overflow release through the correct SourceLayer
-instead of assuming system `free()`.
+On Linux, this seed is backed by `source/linux_source_mmap_ops.c` and
+`source/linux_source_mmap_memory.c`; on Windows, the same source kind is
+backed by `source/win_source_virtualalloc.*`. Descriptors store user pointer,
+source pointer, source kind, and release metadata so allocator destroy and
+cache overflow release through the correct SourceLayer instead of assuming
+system `free()`.
 The Large128 and Local2P fronts name only `HZ6_SOURCE_OS_PAGED`; they do not
 include OS-specific source implementations directly.
 It is still a seed front, not a full LargeFront span policy.

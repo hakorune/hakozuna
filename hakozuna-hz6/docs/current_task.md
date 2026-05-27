@@ -45,7 +45,8 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
 5. Add transfer smoke before full malloc/free integration. DONE.
 6. Add first toy allocation path. DONE:
    api/hz6_allocator.c
-   source/hz6_source.c
+   source/hz6_source_system_ops.c
+   source/hz6_source_system_memory.c
    frontcache/hz6_frontcache.c
    route/hz6_route.c
 7. Add first transfer-first toy path. DONE:
@@ -888,6 +889,21 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    the monolithic route backend dispatch file was removed after the split
    linux/build_hz6_r1_smokes.sh registers the split route backend dispatch
    modules explicitly
+157. Source system split. DONE:
+   source/hz6_source_system_ops.c now owns source ops validation and system
+   ops assembly
+   source/hz6_source_system_memory.c now owns system alloc/free/release
+   helpers
+   source/hz6_source.c was removed after the split
+   linux/build_hz6_r1_smokes.sh registers the split source system modules
+   explicitly
+158. Linux mmap source split. DONE:
+   source/linux_source_mmap_ops.c now owns Linux mmap source ops assembly
+   source/linux_source_mmap_memory.c now owns Linux mmap reserve/commit/
+   decommit/release helpers
+   source/linux_source_mmap.c was removed after the split
+   linux/build_hz6_r1_smokes.sh registers the split Linux mmap modules
+   explicitly
 144. Descriptor state local-cache/remote-transfer split. DONE:
    api/hz6_allocator_descriptor_local_cache.c now owns cache-active
    transitions

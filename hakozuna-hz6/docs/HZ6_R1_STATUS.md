@@ -35,6 +35,10 @@ API:
   api/hz6_allocator_source_block.c owns SourceBlock lifecycle helpers
   api/hz6_allocator_descriptor_prepare.c / api/hz6_allocator_descriptor_release.c
   own descriptor source setup and release helpers
+  source/hz6_source_system_ops.c and source/hz6_source_system_memory.c own
+  source-system validation and malloc/free/release backing
+  source/linux_source_mmap_ops.c and source/linux_source_mmap_memory.c own
+  Linux mmap source ops assembly and reserve/commit/decommit/release backing
   fronts/hz6_front_source_kind.c and fronts/hz6_front_source_ops.c own
   source-kind wrappers and direct source-ops allocation
   api/hz6_allocator_owner_dead.c owns owner-dead transitions
@@ -112,6 +116,11 @@ Contracts:
   descriptor source setup and release helpers are split into their own helper
   units so descriptor lifecycle state stays separate from source-backed
   initialization and release
+  SourceLayer system ops and system memory helpers are split into separate
+  helper units so validation stays separate from malloc/free/release backing
+  Linux mmap source ops and Linux mmap memory helpers are split into separate
+  helper units so page-size / ops assembly stays separate from reserve /
+  commit / decommit / release
   owner-dead transition helper is split into its own helper unit so owner
   shutdown state stays separate from orphan release/adoption flows
   source block route-envelope registration is split from source block lifecycle
