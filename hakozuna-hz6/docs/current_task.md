@@ -865,6 +865,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    fronts/local2p/hz6_local2p_front_ops.c now owns the FrontOps table
    fronts/local2p/hz6_local2p_front.c was removed after the split
    linux/build_hz6_r1_smokes.sh registers the split Local2P modules explicitly
+155. Source registry split. DONE:
+   source/hz6_source_registry_init.c now owns platform source registry seeding
+   source/hz6_source_registry_lookup.c now owns source kind lookup
+   source/hz6_source_registry.c was removed after the split
+   linux/build_hz6_r1_smokes.sh registers the split source registry modules
+   explicitly
 144. Descriptor state local-cache/remote-transfer split. DONE:
    api/hz6_allocator_descriptor_local_cache.c now owns cache-active
    transitions

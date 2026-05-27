@@ -100,7 +100,8 @@ hakozuna-hz6/
     hz6_source.h
     hz6_source.c
     hz6_source_registry.h
-    hz6_source_registry.c
+    hz6_source_registry_init.c
+    hz6_source_registry_lookup.c
     linux_source_mmap.c
     win_source_virtualalloc.c
 
@@ -251,7 +252,8 @@ scavenge/hz6_scavenge.c
 source/hz6_source.h
 source/hz6_source.c
 source/hz6_source_registry.h
-source/hz6_source_registry.c
+source/hz6_source_registry_init.c
+source/hz6_source_registry_lookup.c
 source/linux_source_mmap.h
 source/linux_source_mmap.c
 policy/hz6_profiles.h

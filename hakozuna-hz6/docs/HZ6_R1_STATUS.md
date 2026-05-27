@@ -266,6 +266,8 @@ source:
   Linux mmap ops validate through SourceLayer
   Windows VirtualAlloc ops are present behind _WIN32
   allocator-level source registry selects system vs OS-paged source
+  source registry init and lookup are split into separate units so platform
+  seeding stays separate from registry lookup
   hz6_allocator_source_ops() is the front-facing source ops lookup boundary
   OS-paged source maps to mmap on Linux and VirtualAlloc on Windows
   source registry lookup is covered by contract smoke
