@@ -132,6 +132,20 @@ static const char* hz5_trace_name(Hz5TraceCounter counter) {
       return "local2p_global_pop_lock";
     case HZ5_TRACE_LOCAL2P_GLOBAL_PUSH_LOCK:
       return "local2p_global_push_lock";
+    case HZ5_TRACE_LOCAL2P_GLOBAL_PUSH_ACCEPT:
+      return "local2p_global_push_accept";
+    case HZ5_TRACE_LOCAL2P_GLOBAL_PUSH_REJECT:
+      return "local2p_global_push_reject";
+    case HZ5_TRACE_LOCAL2P_GLOBAL_COUNT_MAX:
+      return "local2p_global_count_max";
+    case HZ5_TRACE_LOCAL2P_TLS_COUNT_MAX:
+      return "local2p_tls_count_max";
+    case HZ5_TRACE_LOCAL2P_REMOTE_SLOT_MATCH:
+      return "local2p_remote_slot_match";
+    case HZ5_TRACE_LOCAL2P_REMOTE_SLOT_EMPTY:
+      return "local2p_remote_slot_empty";
+    case HZ5_TRACE_LOCAL2P_REMOTE_SLOT_VICTIM:
+      return "local2p_remote_slot_victim";
     case HZ5_TRACE_LOCAL2P_ROUTE_COOKIE_OK:
       return "local2p_route_cookie_ok";
     case HZ5_TRACE_LOCAL2P_ROUTE_COOKIE_MISS:
