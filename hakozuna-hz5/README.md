@@ -57,6 +57,7 @@ the stated stop rules.
 HZ6 is the possible future branch if this work continues toward a
 transfer-first allocator: class transfer caches and RSS governance would become
 primary design boxes instead of diagnostics layered on top of owner inboxes.
+The documentation-first HZ6 design seed lives in `../hakozuna-hz6/`.
 
 Implementation split:
 

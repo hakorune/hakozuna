@@ -10,6 +10,7 @@ Hakozuna 公開リポジトリ案内 (日本語)
 
 HZ6 は現時点では future work の名前です。より広い tcmalloc-like な
 class-transfer throughput を追う場合の transfer-first 後継線として扱います。
+ドキュメントファーストの設計メモは hakozuna-hz6/ に置いています。
 
 対応プラットフォーム
 --------------------
@@ -97,6 +98,7 @@ HZ6 は future work としての transfer-first 設計案です。
 - RSS governor を control plane の一部にする
 - 学習 / policy layer は malloc/free hot path に入れない
 - strict-safety profile と speed profile の契約分離が必要かを検証する
+- 現在の設計メモは hakozuna-hz6/ に置く
 
 最小実行例
 ----------

@@ -1,6 +1,8 @@
 # Current Task
 
 HZ5 Linux is in profile-stabilization plus targeted tcmalloc-chase mode.
+HZ6 is now in documentation-first design as the possible transfer-first
+successor.
 
 Long historical task notes were archived here:
 
@@ -21,6 +23,47 @@ LargeFront:
 Documentation:
   keep current_task short.
   put long result logs in docs/archive or dedicated result docs.
+
+HZ6:
+  keep separate from HZ5 implementation.
+  design route-safe / transfer-first / RSS-aware contracts before writing code.
+```
+
+## HZ6 Design Seed
+
+HZ6 docs now live under:
+
+```text
+hakozuna-hz6/
+```
+
+Read in this order:
+
+```text
+hakozuna-hz6/README.md
+hakozuna-hz6/docs/HZ6_BLUEPRINT.md
+hakozuna-hz6/docs/HZ6_R1_MINIMUM_CONTRACT_BLUEPRINT.md
+hakozuna-hz6/docs/HZ6_ARCHITECTURE_DRAFT.md
+hakozuna-hz6/docs/HZ6_FOLDER_LAYOUT.md
+hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
+hakozuna-hz6/docs/current_task.md
+```
+
+Current HZ6 position:
+
+```text
+HZ3 lesson:
+  thin local/TLS cache
+
+HZ4 lesson:
+  remote grouping and page/span reuse
+
+HZ5 lesson:
+  fail-closed descriptor ownership and low-RSS profile discipline
+
+HZ6 plan:
+  make RouteLayer, FrontCache, TransferLayer, SourceLayer, ScavengeLayer,
+  OwnerLayer, and PolicyLayer explicit from the first implementation.
 ```
 
 ## Current LargeFront Read

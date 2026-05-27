@@ -18,7 +18,8 @@ Part of the [hakorune](https://github.com/hakorune) project.
 - **HZ5 (hakozuna-hz5)**: Linux research sidecar for low-RSS, fail-closed,
   descriptor-owned profile families. It is not the default general allocator.
 - **HZ6 (future work)**: possible transfer-first successor line; not an
-  evaluated allocator in this repository yet.
+  evaluated allocator in this repository yet. The documentation-first design
+  seed lives under `hakozuna-hz6/`.
 - Profile selection guide: [PROFILE_GUIDE.md](PROFILE_GUIDE.md)
 
 ## Platform Support
@@ -181,7 +182,7 @@ Current interpretation:
   explicit route specialization.
 - Treat HZ6 only as future work: a possible transfer-first line with
   consumer-visible class transfer caches and an RSS governor, without hot-path
-  learning counters.
+  learning counters. Current design notes are in `hakozuna-hz6/`.
 
 ## Documentation
 

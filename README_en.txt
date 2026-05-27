@@ -10,7 +10,8 @@ research sidecar:
                  descriptor-owned profile families
 
 HZ6 is a future-work name only. It would be a transfer-first successor line if
-we decide to pursue broader tcmalloc-like class-transfer throughput.
+we decide to pursue broader tcmalloc-like class-transfer throughput. The
+documentation-first design seed lives under hakozuna-hz6/.
 
 Platform support
 ----------------
@@ -97,6 +98,7 @@ HZ6 is a possible future transfer-first design:
 - RSS governance is part of the control plane
 - any learning/policy layer must stay off the malloc/free hot path
 - strict-safety and speed-profile contracts may need to be separated explicitly
+- current design notes live under hakozuna-hz6/
 
 Minimal usage examples
 ----------------------
