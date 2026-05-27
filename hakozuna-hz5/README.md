@@ -48,6 +48,13 @@ paper-facing status is a profile family with two scopes:
 - `hz5-large128-source16`: broad LargeFront 128K throughput comparison lane.
 - `hz5-large128-transfer128`: transfer-cache diagnostic lane, not a default.
 
+The working ordinary `malloc`/`free` Linux lanes are the PageRun64 full-preload
+family: `hz5-pagerun64-main`, `hz5-pagerun64-cross128`, and
+`hz5-pagerun64-large128` / `hz5-large128-rss`. The standalone exact runner is
+only for exact `4K/8K/64K align=8192` appendix rows; use
+`linux/run_hz5_hakmem_compare.sh` for `main`, `cross128`, and `large128`
+same-binary preload rows.
+
 These Linux profiles are deliberately separate. HZ5 should be presented as a
 low-RSS, fail-closed, descriptor-owned profile family, not as one universal
 tcmalloc replacement. Unsupported routes fail closed, and diagnostic lanes stay

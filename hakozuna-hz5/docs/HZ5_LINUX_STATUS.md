@@ -33,6 +33,36 @@ LargeFront transfer128-shard16 is no-go: consumer-visible shard stealing loses
 the global transfer128 t4/r50 signal and does not recover t8 rows.
 ```
 
+Working preload lane check:
+
+```text
+HZ5 has working full-preload lanes for ordinary malloc/free smoke:
+  hz5-pagerun64-main
+  hz5-pagerun64-cross128
+  hz5-pagerun64-large128 / hz5-large128-rss
+
+Recent smoke:
+  /mnt/workdisk/public_share/bench-results/hz5_lane_smoke_20260528_070159
+  /mnt/workdisk/public_share/bench-results/hz5_hakmem_lane_smoke_20260528_070208
+
+Result:
+  representative 2K/4K/64K/128K/256K aligned allocations completed under
+  full preload, and hakmem main/cross128/large128 r0/r90 smoke completed with
+  alloc_failed_runs=0 and bad_status_runs=0.
+```
+
+Boundary:
+
+```text
+standalone exact:
+  exact 4K/8K/64K align=8192 appendix only
+
+full preload:
+  normal malloc/free coverage and hakmem profile rows
+
+Do not use the standalone exact runner for 128K cross/large rows.
+```
+
 Primary lane matrix:
 
 ```text

@@ -34,6 +34,43 @@ front-end claims.
 Use this as the broad ordinary malloc baseline when a MidPage experiment is not
 being tested.
 
+## Working Full-Preload Lanes
+
+These lanes are the current "normal malloc/free can run" HZ5 Linux set. They
+are not the same as standalone exact Local2P profiles.
+
+| Runner allocator | Build alias | Intended rows | Status |
+| --- | --- | --- | --- |
+| `hz5-pagerun64-main` | `--linux-hz5-profile-pagerun64-main` | `main`, `mid_only`, cross64-style rows | working full-preload profile |
+| `hz5-pagerun64-cross128` | `--linux-hz5-profile-pagerun64-cross128` | `cross128` mixed-size rows | working full-preload profile |
+| `hz5-pagerun64-large128` / `hz5-large128-rss` | `--linux-hz5-profile-pagerun64-large128` / `--linux-hz5-profile-large128-rss` | `large128` remote-heavy rows | working full-preload profile |
+| `hz5-preload-full` | `--linux-preload-full` | attribution/control smoke | control lane, not a speed claim |
+
+Smoke evidence:
+
+```text
+/mnt/workdisk/public_share/bench-results/hz5_lane_smoke_20260528_070159
+  preload-full, pagerun64-main, pagerun64-cross128, and pagerun64-large128
+  completed 2048, 4096, 65536, 131072, and 262144 byte aligned-allocation
+  smoke rows.
+
+/mnt/workdisk/public_share/bench-results/hz5_hakmem_lane_smoke_20260528_070208
+  pagerun64-main, pagerun64-cross128, and pagerun64-large128 completed
+  main/cross128/large128 r0/r90 hakmem smoke with alloc_failed_runs=0 and
+  bad_status_runs=0.
+```
+
+Interpretation:
+
+```text
+If the question is "does HZ5 have a normal preload lane that accepts broad
+sizes?", yes: use the PageRun64 full-preload family.
+
+If the question is "is there one universal HZ5 default that should replace all
+profiles?", no: keep main/cross128/large128 profiles separate until a later HZ6
+or policy layer unifies them.
+```
+
 ## Saved PageRun64 Profile Aliases
 
 These aliases are the current HZ5 Linux profile family. Prefer them in new

@@ -26,23 +26,37 @@ Do not mix benchmark tiers in one claim.
 
 ## Current HZ5 Constraint
 
-The existing HZ5 Linux lanes are standalone/direct-API lanes:
+HZ5 Linux now has two different evaluation families. Keep them separate:
+
+```text
+standalone exact:
+  hz5_aligned_alloc(size, align)
+  hz5_free(ptr)
+  exact appendix only
+
+full preload:
+  same benchmark binary
+  malloc/free/posix_memalign/aligned_alloc interposition
+  hakmem/general-profile smoke and comparison
+```
+
+The standalone exact lanes are direct-API lanes:
 
 ```text
 hz5_aligned_alloc(size, align)
 hz5_free(ptr)
 ```
 
-The existing paper main suite is LD_PRELOAD based:
+The paper main suite is LD_PRELOAD based:
 
 ```text
 same benchmark binary + malloc/free/posix_memalign interposition
 ```
 
 Therefore HZ5 Local2P results are comparable as a controlled appendix profile,
-but they must not be inserted into the paper main tables until HZ5 has an
-LD_PRELOAD-compatible general allocator lane or an equivalent same-binary
-adapter.
+but they must not be inserted into paper-main tables as a general allocator
+row. Use the full-preload PageRun64/LargeFront profile family for HZ5
+same-binary rows.
 
 ## Tiers
 
@@ -68,7 +82,7 @@ Required workloads:
    - recorded from the paper-main runner when available
    - used to reject speed-only wins that retain too much memory
 
-Current paper-main allocators:
+Current paper-main external allocators:
 
 ```text
 hz3
@@ -78,7 +92,9 @@ tcmalloc
 system optional
 ```
 
-HZ5 enters this tier only after a general LD_PRELOAD lane exists.
+HZ5 paper-facing rows must use an explicit full-preload profile name such as
+`hz5-pagerun64-main`, `hz5-pagerun64-cross128`, or `hz5-pagerun64-large128`.
+Do not report standalone exact Local2P rows as paper-main HZ5 rows.
 
 Current Linux general allocator coverage under full preload:
 
@@ -97,6 +113,44 @@ LargeFront-L1:
 LargeFront-L1 is a retained-span coverage lane, not an RSS-return claim. It is
 the first step required before `cross128` can be interpreted as an HZ5 general
 allocator row instead of a wrapped/fallback-path result.
+
+Current working-lane smoke:
+
+```text
+/mnt/workdisk/public_share/bench-results/hz5_lane_smoke_20260528_070159
+
+checked:
+  x86_64-hz5-preload-full
+  x86_64-hz5-profile-pagerun64-main
+  x86_64-hz5-profile-pagerun64-cross128
+  x86_64-hz5-profile-pagerun64-large128
+
+sizes:
+  2048:64
+  4096:8192
+  65536:8192
+  131072:8192
+  262144:8192
+
+result:
+  all checked full-preload lanes completed the short aligned-allocation smoke.
+```
+
+Hakmem integration smoke:
+
+```text
+/mnt/workdisk/public_share/bench-results/hz5_hakmem_lane_smoke_20260528_070208
+
+runs=1
+threads=2
+lanes=main,cross128,large128
+remote_pcts=0,90
+allocators=system,tcmalloc,hz5-pagerun64-main,hz5-pagerun64-cross128,hz5-pagerun64-large128
+
+result:
+  all HZ5 PageRun64 full-preload rows completed with
+  alloc_failed_runs=0 and bad_status_runs=0.
+```
 
 ### HZ5 Preload Hybrid Bridge
 
