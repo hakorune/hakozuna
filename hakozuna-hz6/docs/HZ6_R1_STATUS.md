@@ -125,6 +125,8 @@ source:
   allocator size prefill routes Large128 and Local2P through their front hooks
   Large128 alloc miss uses profile source_batch as a slow-path refill policy
   capped by the frontcache bin capacity
+  Local2P alloc miss uses profile source_batch as a slow-path refill policy
+  capped by the frontcache bin capacity
   Local2P exposes a front-specific prefill wrapper for profile source_batch
   Large128 exposes a front-specific prefill wrapper for profile source_batch
   MidPage 8K and 32K run prefill paths both share one 64KiB SourceBlock per run

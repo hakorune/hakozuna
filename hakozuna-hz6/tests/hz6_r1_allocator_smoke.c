@@ -168,9 +168,14 @@ int main(void) {
   }
   hz6_free(&local2p_allocator, local2p_reused);
   Hz6StatsSnapshot local2p_stats = hz6_stats_snapshot(&local2p_allocator);
+  size_t local2p_expected_source =
+      local2p_allocator.profile.source_batch < HZ6_FRONT_CACHE_BIN_CAPACITY
+          ? local2p_allocator.profile.source_batch
+          : HZ6_FRONT_CACHE_BIN_CAPACITY;
   if (!expect(local2p_stats.transfer_push == 1, "local2p transfer push") ||
       !expect(local2p_stats.transfer_pop == 1, "local2p transfer pop") ||
-      !expect(local2p_stats.source_alloc == 1, "local2p source alloc")) {
+      !expect(local2p_stats.source_alloc == local2p_expected_source,
+              "local2p source batch alloc")) {
     return 1;
   }
   hz6_allocator_destroy(&local2p_allocator);

@@ -293,6 +293,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    LOCAL_FREE spans after a batch refill
    allocator smoke verifies Large128 source allocation is batched up to the
    frontcache bin capacity
+66. Local2P profile batch refill. DONE:
+   Local2P exact 64K alloc miss now uses the same profile.source_batch prefill
+   helper as Large128
+   transfer-first profiles keep TRANSFER_FREE reuse ahead of cached LOCAL_FREE
+   slots after the batch refill
+   allocator smoke verifies Local2P source allocation is batched up to the
+   frontcache bin capacity
 ```
 
 Current R1 smoke:
