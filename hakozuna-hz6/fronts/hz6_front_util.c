@@ -34,7 +34,7 @@ void* hz6_front_reuse_or_prefill_source_kind(Hz6Allocator* allocator,
     return NULL;
   }
 
-  void* reused = allocator->profile.transfer_first
+  void* reused = hz6_allocator_profile_transfer_first(allocator)
                      ? hz6_front_reuse_transfer_or_cached(allocator, class_id)
                      : hz6_front_reuse_cached_or_transfer(allocator,
                                                           class_id);
@@ -49,7 +49,7 @@ void* hz6_front_reuse_or_prefill_source_kind(Hz6Allocator* allocator,
                                           bytes, source_kind);
   }
 
-  return allocator->profile.transfer_first
+  return hz6_allocator_profile_transfer_first(allocator)
              ? hz6_front_reuse_transfer_or_cached(allocator, class_id)
              : hz6_front_reuse_cached_or_transfer(allocator, class_id);
 }
@@ -107,7 +107,7 @@ void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
 static void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
                                       uint16_t class_id) {
   if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT ||
-      !allocator->profile.transfer_first) {
+      !hz6_allocator_profile_transfer_first(allocator)) {
     return NULL;
   }
 
@@ -147,7 +147,7 @@ void* hz6_front_reuse_cached_or_transfer(Hz6Allocator* allocator,
     }
   }
 
-  if (!allocator->profile.transfer_first) {
+  if (!hz6_allocator_profile_transfer_first(allocator)) {
     return NULL;
   }
 
@@ -160,7 +160,7 @@ void* hz6_front_reuse_transfer_or_cached(Hz6Allocator* allocator,
     return NULL;
   }
 
-  if (allocator->profile.transfer_first) {
+  if (hz6_allocator_profile_transfer_first(allocator)) {
     void* reused = hz6_front_reuse_transfer(allocator, class_id);
     if (reused) {
       return reused;
@@ -432,7 +432,7 @@ int hz6_front_free_remote_to_transfer(Hz6Allocator* allocator,
     return 0;
   }
 
-  if (allocator->profile.strict_owner_remote) {
+  if (hz6_allocator_profile_strict_owner_remote(allocator)) {
     if (!hz6_owner_equal(descriptor->owner, allocator->owner.token)) {
       return 0;
     }

@@ -107,6 +107,8 @@ remote free:
   `HZ6_TRANSFER_CACHE_CAPACITY`
   allocator API wraps profile id, transfer-first mode, strict remote mode,
   source kind, source refill batch, and profile transfer capacity diagnostics
+  fronts and shared front utilities use allocator/profile helper APIs for
+  profile decisions instead of reading allocator profile fields directly
 
 front registry:
   toy handles <=4KiB

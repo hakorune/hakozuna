@@ -20,11 +20,13 @@ static void* hz6_large128_alloc(Hz6Allocator* allocator,
     return NULL;
   }
 
-  size_t refill_batch = hz6_profile_source_refill_batch(
-      &allocator->profile, HZ6_FRONT_LARGE, class_id);
+  size_t refill_batch = hz6_allocator_profile_source_refill_batch(
+      allocator, HZ6_FRONT_LARGE, class_id);
+  Hz6SourceKind source_kind =
+      hz6_allocator_profile_source_kind(allocator);
   return hz6_front_reuse_or_prefill_source_kind(
       allocator, HZ6_FRONT_LARGE, class_id, HZ6_LARGE128_BYTES,
-      allocator->profile.source_kind, refill_batch);
+      source_kind, refill_batch);
 }
 
 static int hz6_large128_free_local(Hz6Allocator* allocator,
@@ -49,7 +51,7 @@ size_t hz6_large128_prefill(Hz6Allocator* allocator,
   }
   return hz6_front_prefill_source_kind(
       allocator, HZ6_FRONT_LARGE, HZ6_LARGE128_CLASS_ID, HZ6_LARGE128_BYTES,
-      allocator->profile.source_kind, count);
+      hz6_allocator_profile_source_kind(allocator), count);
 }
 
 const Hz6FrontOps* hz6_large128_front_ops(void) {

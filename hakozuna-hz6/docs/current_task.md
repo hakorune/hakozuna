@@ -395,6 +395,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    profile decisions through the allocator API boundary
    allocator smoke now checks transfer-first and source refill batch behavior
    without reading allocator.profile fields directly
+82. Front profile access boundary cleanup. DONE:
+   Large128, Local2P, MidPage, and shared FrontUtil now obtain source kind,
+   source refill batch, transfer-first, and strict-remote policy through
+   allocator/profile helper APIs instead of reading allocator.profile fields
+   directly
+   rg confirms tests/fronts/api no longer contain allocator.profile field
+   accesses outside allocator internals
 ```
 
 Current R1 smoke:
