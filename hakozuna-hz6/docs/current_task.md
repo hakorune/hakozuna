@@ -798,6 +798,15 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    api/hz6_allocator_init_backends.c now owns backend initialization
    api/hz6_allocator_init.c now stays as a thin wrapper
    linux/build_hz6_r1_smokes.sh registers the new init modules explicitly
+145. Allocator public API declaration split. DONE:
+   api/hz6_allocator_api_front.h / profile.h / route_transfer.h /
+   scavenge.h / state.h split the public declarations by concern
+   api/hz6_allocator_api.h was reduced to a thin include wrapper
+146. Front source prefill one-shot split. DONE:
+   fronts/hz6_front_source_prefill_one.c now owns the one-shot source-backed
+   prefill helper
+   fronts/hz6_front_source_prefill.c now keeps the repeated batching loop
+   front source prefill helper header exposes the helper boundary explicitly
 144. Descriptor state local-cache/remote-transfer split. DONE:
    api/hz6_allocator_descriptor_local_cache.c now owns cache-active
    transitions

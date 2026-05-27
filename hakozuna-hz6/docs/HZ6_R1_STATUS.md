@@ -40,6 +40,9 @@ API:
   split allocator-facing TransferLayer observation from dispatch helpers
   api/hz6_allocator_types.h and api/hz6_allocator_api.h split allocator type
   definitions from public API declarations
+  api/hz6_allocator_api_front.h, api/hz6_allocator_api_profile.h,
+  api/hz6_allocator_api_route_transfer.h, api/hz6_allocator_api_scavenge.h,
+  and api/hz6_allocator_api_state.h split public declarations by concern
   api/hz6_allocator_source_block_create.c and
   api/hz6_allocator_source_block_lifetime.c split SourceBlock creation from
   retain/release lifetime helpers
@@ -115,6 +118,8 @@ Contracts:
   page-run selection stays separate from reuse and transfer dispatch
   front source prefill helpers are split into their own helper unit and header
   so direct source reserve logic stays separate from slow-path prefill loops
+  front source prefill one-shot helper is split from the loop wrapper so
+  descriptor setup stays separate from repeated source prefill batching
   Large128 front alloc/free/ops helpers are split into separate helper units so
   source refill stays separate from reuse and free-path dispatch
   shared object states

@@ -7,6 +7,13 @@
 extern "C" {
 #endif
 
+int hz6_front_prefill_one(Hz6Allocator* allocator,
+                          uint16_t front_id,
+                          uint16_t class_id,
+                          size_t bytes,
+                          const Hz6OsMemoryOps* source_ops,
+                          Hz6SourceKind source_kind);
+
 size_t hz6_front_prefill_source_kind(Hz6Allocator* allocator,
                                      uint16_t front_id,
                                      uint16_t class_id,

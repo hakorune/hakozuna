@@ -60,6 +60,7 @@ HZ6_LIB_SOURCES=(
   "${HZ6_DIR}/fronts/hz6_front_source_kind.c"
   "${HZ6_DIR}/fronts/hz6_front_source_ops.c"
   "${HZ6_DIR}/fronts/hz6_front_source_block.c"
+  "${HZ6_DIR}/fronts/hz6_front_source_prefill_one.c"
   "${HZ6_DIR}/fronts/hz6_front_source_prefill.c"
   "${HZ6_DIR}/fronts/hz6_front_source_slot.c"
   "${HZ6_DIR}/fronts/hz6_front_reuse.c"

@@ -18,6 +18,11 @@ hakozuna-hz6/
   api/
     hz6_allocator_types.h
     hz6_allocator_api.h
+    hz6_allocator_api_front.h
+    hz6_allocator_api_profile.h
+    hz6_allocator_api_route_transfer.h
+    hz6_allocator_api_scavenge.h
+    hz6_allocator_api_state.h
     hz6_allocator.h
     hz6_allocator.c
     hz6_allocator_descriptor.c
@@ -103,6 +108,7 @@ hakozuna-hz6/
     hz6_front_source_ops.c
     hz6_front_source_block.h
     hz6_front_source_block.c
+    hz6_front_source_prefill_one.c
     hz6_front_source_prefill.c
     hz6_front_source_slot.c
     hz6_front_reuse.c
@@ -165,6 +171,11 @@ include/hz6_config.h
 include/hz6_contract.h
 api/hz6_allocator_types.h
 api/hz6_allocator_api.h
+api/hz6_allocator_api_front.h
+api/hz6_allocator_api_profile.h
+api/hz6_allocator_api_route_transfer.h
+api/hz6_allocator_api_scavenge.h
+api/hz6_allocator_api_state.h
 api/hz6_allocator.h
 api/hz6_allocator.c
 api/hz6_allocator_descriptor.c
@@ -236,6 +247,7 @@ fronts/hz6_front_source_kind.c
 fronts/hz6_front_source_ops.c
 fronts/hz6_front_source_block.h
 fronts/hz6_front_source_block.c
+fronts/hz6_front_source_prefill_one.c
 fronts/hz6_front_source_prefill.c
 fronts/hz6_front_source_slot.c
 fronts/hz6_front_reuse.c
