@@ -2,6 +2,7 @@
 #define HZ6_PROFILES_H
 
 #include "../include/hz6_config.h"
+#include "../source/hz6_source.h"
 
 #include <stdint.h>
 #include <stddef.h>
@@ -36,6 +37,7 @@ typedef struct Hz6ProfileConfig {
   Hz6TransferShardPolicy transfer_shard_policy;
   Hz6RouteBackendPolicy route_backend_policy;
   size_t route_page_granularity;
+  Hz6SourceKind source_kind;
   uint32_t source_batch;
   size_t scavenge_local_free_bytes;
   size_t scavenge_orphan_bytes;

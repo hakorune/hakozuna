@@ -133,6 +133,7 @@ source:
   duplicate SourceBlock slot registration is rejected without leaking refcount
   or poisoning the descriptor pool
   allocator destroy releases Large128 mappings through SourceLayer
+  profile config owns the default source kind used by source-backed fronts
   explicit front prefill can source objects into LOCAL_FREE cache using
   profile source_batch without changing the malloc hit path
   allocator size prefill routes Large128, Local2P, and MidPage through their
@@ -157,6 +158,7 @@ scavenge:
 
 policy:
   profile config carries slow-path scavenge budgets
+  profile config carries source kind for source-backed fronts
   profile config names the route backend policy as EXACT_TABLE or PAGE_TABLE
   profile config owns transfer producer/consumer shard seed selection
   profile config names the transfer shard policy as OWNER_SLOT or CLASS_ID

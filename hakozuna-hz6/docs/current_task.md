@@ -357,6 +357,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    backend selection explicit instead of inferring it from page granularity
    allocator init selects the route backend from route_backend_policy
    contract smoke verifies strict/rss exact policy and speed/remote page policy
+76. Profile source kind policy. DONE:
+   Hz6ProfileConfig now carries source_kind
+   Large128, Local2P, and MidPage source/refill paths use profile.source_kind
+   instead of hard-coding HZ6_SOURCE_OS_PAGED in each front
+   contract smoke verifies speed/remote source_kind is HZ6_SOURCE_OS_PAGED
 ```
 
 Current R1 smoke:

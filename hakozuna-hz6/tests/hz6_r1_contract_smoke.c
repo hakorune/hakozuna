@@ -484,6 +484,8 @@ int main(void) {
               "speed page route policy") ||
       !expect(speed.route_page_granularity == HZ6_ROUTE_PAGE_GRANULARITY,
               "speed page route") ||
+      !expect(speed.source_kind == HZ6_SOURCE_OS_PAGED,
+              "speed source kind") ||
       !expect(rss.scavenge_local_free_bytes > speed.scavenge_local_free_bytes,
               "rss stronger local scavenge") ||
       !expect(rss.scavenge_orphan_bytes > speed.scavenge_orphan_bytes,
@@ -500,7 +502,9 @@ int main(void) {
       !expect(remote.route_backend_policy == HZ6_ROUTE_POLICY_PAGE_TABLE,
               "remote page route policy") ||
       !expect(remote.route_page_granularity == HZ6_ROUTE_PAGE_GRANULARITY,
-              "remote page route")) {
+              "remote page route") ||
+      !expect(remote.source_kind == HZ6_SOURCE_OS_PAGED,
+              "remote source kind")) {
     return 1;
   }
   Hz6ProfileConfig class_shard = remote;

@@ -64,9 +64,9 @@ size_t hz6_midpage_prefill_run(Hz6Allocator* allocator, uint16_t class_id) {
 
   const Hz6OsMemoryOps* source_ops =
       hz6_source_registry_lookup(&allocator->source_registry,
-                                 HZ6_SOURCE_OS_PAGED);
+                                 allocator->profile.source_kind);
   Hz6SourceBlock* block = hz6_allocator_create_source_block(
-      allocator, policy.run_bytes, source_ops, HZ6_SOURCE_OS_PAGED);
+      allocator, policy.run_bytes, source_ops, allocator->profile.source_kind);
   if (!block) {
     return 0;
   }
@@ -159,7 +159,8 @@ static void* hz6_midpage_alloc(Hz6Allocator* allocator,
   }
 
   return hz6_front_reuse_or_source_kind(
-      allocator, HZ6_FRONT_MIDPAGE, class_id, bytes, HZ6_SOURCE_OS_PAGED);
+      allocator, HZ6_FRONT_MIDPAGE, class_id, bytes,
+      allocator->profile.source_kind);
 }
 
 static int hz6_midpage_free_local(Hz6Allocator* allocator,

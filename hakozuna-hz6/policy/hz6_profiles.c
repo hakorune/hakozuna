@@ -10,6 +10,7 @@ Hz6ProfileConfig hz6_profile_config(Hz6ProfileId id) {
   config.transfer_shard_policy = HZ6_TRANSFER_SHARD_OWNER_SLOT;
   config.route_backend_policy = HZ6_ROUTE_POLICY_EXACT_TABLE;
   config.route_page_granularity = 0;
+  config.source_kind = HZ6_SOURCE_OS_PAGED;
   config.source_batch = 1;
   config.scavenge_local_free_bytes = 0;
   config.scavenge_orphan_bytes = 0;

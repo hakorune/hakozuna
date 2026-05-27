@@ -22,7 +22,7 @@ static void* hz6_local2p_alloc(Hz6Allocator* allocator,
 
   return hz6_front_reuse_or_prefill_source_kind(
       allocator, HZ6_FRONT_LOCAL2P, class_id, HZ6_LOCAL2P_BYTES,
-      HZ6_SOURCE_OS_PAGED, allocator->profile.source_batch);
+      allocator->profile.source_kind, allocator->profile.source_batch);
 }
 
 static int hz6_local2p_free_local(Hz6Allocator* allocator,
@@ -47,7 +47,7 @@ size_t hz6_local2p_prefill(Hz6Allocator* allocator,
   }
   return hz6_front_prefill_source_kind(
       allocator, HZ6_FRONT_LOCAL2P, HZ6_LOCAL2P_CLASS_ID, HZ6_LOCAL2P_BYTES,
-      HZ6_SOURCE_OS_PAGED, count);
+      allocator->profile.source_kind, count);
 }
 
 const Hz6FrontOps* hz6_local2p_front_ops(void) {
