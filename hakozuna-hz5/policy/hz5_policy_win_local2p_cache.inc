@@ -12,11 +12,27 @@ static uintptr_t hz5_policy_win_local2p_raw_from_node(void* node_ptr) {
 #endif
 }
 
+#if BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_ROUTE
+static uintptr_t hz5_policy_win_local2p_aligned_from_node(void* node_ptr) {
+#if BENCHLAB_HZ5_WIN_LOCAL2P_OBJECT_NODE
+  return (uintptr_t)node_ptr;
+#else
+  uintptr_t raw = hz5_policy_win_local2p_raw_from_node(node_ptr);
+  if (raw == 0u) {
+    return 0u;
+  }
+  return hz5_policy_local2p_common_align_user(
+      raw, BENCHLAB_HZ5_WIN_LOCAL2P_ALIGN);
+#endif
+}
+#endif
+
 static void hz5_policy_win_local2p_free_node(void* node_ptr) {
   uintptr_t raw = hz5_policy_win_local2p_raw_from_node(node_ptr);
   if (raw) {
 #if BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_ROUTE
-    hz5_policy_win_local2p_sidecar_remove_raw(raw);
+    uintptr_t aligned = hz5_policy_win_local2p_aligned_from_node(node_ptr);
+    hz5_policy_win_local2p_sidecar_remove_raw(raw, aligned);
 #endif
     hz5_trace_add(HZ5_TRACE_LOCAL2P_OS_FREE_BYTES,
                   (uint64_t)BENCHLAB_HZ5_WIN_LOCAL2P_RAW_BYTES);

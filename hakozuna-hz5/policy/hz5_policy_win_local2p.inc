@@ -37,7 +37,11 @@ static int hz5_policy_win_local2p_exact(size_t size, size_t align) {
       BENCHLAB_HZ5_WIN_LOCAL2P_ALIGN);
 }
 
+#if BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_ASSOC_TABLE
+#include "hz5_policy_win_local2p_sidecar_assoc.inc"
+#else
 #include "hz5_policy_win_local2p_sidecar.inc"
+#endif
 
 static void hz5_policy_win_local2p_note_escape(size_t size, size_t align) {
   hz5_trace_inc(HZ5_TRACE_ALLOC_LOCAL2P_ESCAPE);

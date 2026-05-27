@@ -70,31 +70,28 @@ static void hz5_policy_win_local2p_sidecar_insert(
   hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_INSERT);
 }
 
-static void hz5_policy_win_local2p_sidecar_remove_raw(uintptr_t raw) {
-  if (!raw) {
+static void hz5_policy_win_local2p_sidecar_remove_raw(uintptr_t raw,
+                                                      uintptr_t aligned) {
+  if (!raw || !aligned) {
     return;
   }
-  size_t scanned = 0u;
-  for (size_t i = 0; i < BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_TABLE_SIZE; ++i) {
-    ++scanned;
-    Hz5PolicyWinLocal2PSidecarEntry* entry =
-        &g_hz5_policy_win_local2p_sidecar[i];
-    uintptr_t entry_raw =
-        atomic_load_explicit(&entry->raw, memory_order_acquire);
-    if (entry_raw == raw) {
-      atomic_store_explicit(&entry->aligned, 0u, memory_order_release);
-      atomic_store_explicit(&entry->raw, 0u, memory_order_relaxed);
-      atomic_store_explicit(&entry->header, 0u, memory_order_relaxed);
-      atomic_store_explicit(&entry->generation, 0u, memory_order_relaxed);
-      atomic_store_explicit(&entry->state_snapshot, 0u, memory_order_relaxed);
-      hz5_trace_add(HZ5_TRACE_LOCAL2P_SIDECAR_REMOVE_SCAN_STEPS,
-                    (uint64_t)scanned);
-      hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_REMOVE);
-      return;
-    }
+  size_t index = hz5_policy_win_local2p_sidecar_hash(aligned);
+  Hz5PolicyWinLocal2PSidecarEntry* entry =
+      &g_hz5_policy_win_local2p_sidecar[index];
+  uintptr_t entry_aligned =
+      atomic_load_explicit(&entry->aligned, memory_order_acquire);
+  uintptr_t entry_raw = atomic_load_explicit(&entry->raw, memory_order_acquire);
+  if (entry_aligned == aligned || entry_raw == raw) {
+    atomic_store_explicit(&entry->aligned, 0u, memory_order_release);
+    atomic_store_explicit(&entry->raw, 0u, memory_order_relaxed);
+    atomic_store_explicit(&entry->header, 0u, memory_order_relaxed);
+    atomic_store_explicit(&entry->generation, 0u, memory_order_relaxed);
+    atomic_store_explicit(&entry->state_snapshot, 0u, memory_order_relaxed);
+    hz5_trace_add(HZ5_TRACE_LOCAL2P_SIDECAR_REMOVE_SCAN_STEPS, 1u);
+    hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_REMOVE);
+    return;
   }
-  hz5_trace_add(HZ5_TRACE_LOCAL2P_SIDECAR_REMOVE_SCAN_STEPS,
-                (uint64_t)scanned);
+  hz5_trace_add(HZ5_TRACE_LOCAL2P_SIDECAR_REMOVE_SCAN_STEPS, 1u);
   hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_REMOVE_MISS);
 }
 
@@ -194,8 +191,9 @@ static void hz5_policy_win_local2p_sidecar_insert(
   hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_INSERT_FAIL);
 }
 
-static void hz5_policy_win_local2p_sidecar_remove_raw(uintptr_t raw) {
-  if (!raw) {
+static void hz5_policy_win_local2p_sidecar_remove_raw(uintptr_t raw,
+                                                      uintptr_t aligned) {
+  if (!raw && !aligned) {
     return;
   }
   AcquireSRWLockExclusive(&g_hz5_policy_win_local2p_sidecar_lock);

@@ -12,6 +12,9 @@ static size_t hz5_policy_win_local2p_trace_list_count(
 static void* hz5_policy_win_local2p_inbox_pop(void) {
   Hz5PolicyWinLocal2PTls* tls = hz5_policy_win_local2p_tls();
   Hz5WinLocal2PNode* node = (Hz5WinLocal2PNode*)tls->inbox_cache;
+  if (tls->inbox_post_flush_reuse_pending) {
+    ++tls->inbox_post_flush_reuse_wait;
+  }
   if (!node) {
     hz5_trace_inc(HZ5_TRACE_ALLOC_LOCAL2P_INBOX_EXCHANGE);
     node = (Hz5WinLocal2PNode*)atomic_exchange_explicit(
@@ -38,6 +41,12 @@ static void* hz5_policy_win_local2p_inbox_pop(void) {
     return NULL;
   }
   tls->inbox_cache = node->next;
+  if (tls->inbox_post_flush_reuse_pending) {
+    hz5_trace_max(HZ5_TRACE_ALLOC_LOCAL2P_INBOX_POST_FLUSH_REUSE_MAX,
+                  (uint64_t)tls->inbox_post_flush_reuse_wait);
+    tls->inbox_post_flush_reuse_pending = 0u;
+    tls->inbox_post_flush_reuse_wait = 0u;
+  }
   hz5_trace_inc(HZ5_TRACE_ALLOC_LOCAL2P_INBOX_HIT);
   return (void*)node;
 }
@@ -105,6 +114,8 @@ static int hz5_policy_win_local2p_remote_batch_flush_slot(
   size_t count = tls->remote_batch_count[slot];
   hz5_policy_local2p_common_inbox_push_list(&owner_tls->inbox_head, head,
                                             tail);
+  owner_tls->inbox_post_flush_reuse_pending = 1u;
+  owner_tls->inbox_post_flush_reuse_wait = 0u;
 
   tls->remote_batch_owner[slot] = 0;
   tls->remote_batch_head[slot] = NULL;
@@ -303,6 +314,8 @@ hz5_policy_win_local2p_remote_batch_flush(
   size_t count = tls->remote_batch_count;
   hz5_policy_local2p_common_inbox_push_list(&owner_tls->inbox_head, head,
                                             tail);
+  owner_tls->inbox_post_flush_reuse_pending = 1u;
+  owner_tls->inbox_post_flush_reuse_wait = 0u;
 
   hz5_policy_local2p_common_remote_batch_reset(
       &tls->remote_batch_owner, &tls->remote_batch_head,

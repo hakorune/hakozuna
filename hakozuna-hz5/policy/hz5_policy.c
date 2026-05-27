@@ -79,7 +79,8 @@ static void* g_hz5_policy_win_local2p_global_head;
 static size_t g_hz5_policy_win_local2p_global_count;
 #if BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_ROUTE
 typedef struct Hz5PolicyWinLocal2PSidecarEntry {
-#if BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_DIRECT_TABLE
+#if BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_DIRECT_TABLE || \
+    BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_ASSOC_TABLE
   _Atomic uintptr_t aligned;
   _Atomic uintptr_t raw;
   _Atomic uintptr_t header;
@@ -94,7 +95,8 @@ typedef struct Hz5PolicyWinLocal2PSidecarEntry {
 #endif
 } Hz5PolicyWinLocal2PSidecarEntry;
 
-#if !BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_DIRECT_TABLE
+#if !BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_DIRECT_TABLE && \
+    !BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_ASSOC_TABLE
 static SRWLOCK g_hz5_policy_win_local2p_sidecar_lock = SRWLOCK_INIT;
 #endif
 static Hz5PolicyWinLocal2PSidecarEntry
@@ -111,6 +113,8 @@ typedef struct Hz5PolicyWinLocal2PTls {
   _Atomic(void*) inbox_head;
   void* inbox_cache;
   size_t inbox_cache_hit_streak;
+  size_t inbox_post_flush_reuse_wait;
+  uint32_t inbox_post_flush_reuse_pending;
 #if BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH && \
     BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SLOTS > 1u
   uintptr_t remote_batch_owner[BENCHLAB_HZ5_WIN_LOCAL2P_REMOTE_BATCH_SLOTS];
