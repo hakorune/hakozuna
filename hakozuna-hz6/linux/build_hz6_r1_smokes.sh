@@ -39,6 +39,7 @@ HZ6_LIB_SOURCES=(
   "${HZ6_DIR}/fronts/local2p/hz6_local2p_front.c"
   "${HZ6_DIR}/fronts/midpage/hz6_midpage_front.c"
   "${HZ6_DIR}/fronts/toy/hz6_toy_front.c"
+  "${HZ6_DIR}/owner/hz6_owner.c"
   "${HZ6_DIR}/policy/hz6_profiles.c"
   "${HZ6_DIR}/route/hz6_route_backend.c"
   "${HZ6_DIR}/route/hz6_route.c"

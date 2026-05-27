@@ -531,6 +531,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    addition to HZ6_INCLUDES and HZ6_LIB_SOURCES
    adding a new R1 smoke now means adding one registry entry instead of
    appending another build_smoke call at the bottom of the script
+106. OwnerLayer implementation split. DONE:
+   owner/hz6_owner.c now owns hz6_owner_is_alive()
+   owner/hz6_owner.h exposes the OwnerLayer contract without keeping liveness
+   logic header-only
+   linux/build_hz6_r1_smokes.sh registers owner/hz6_owner.c as an explicit
+   HZ6_LIB_SOURCE
 ```
 
 Current R1 smoke:
