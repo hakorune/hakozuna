@@ -567,6 +567,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    frontcache, prefill, profile, source, and route wrappers
    linux/build_hz6_r1_smokes.sh registers hz6_allocator_transfer.c as an
    explicit HZ6_LIB_SOURCE
+112. Allocator route facade split. DONE:
+   api/hz6_allocator_route.c now owns allocator-facing RouteLayer lookup,
+   register/unregister, backend diagnostics, and page granularity accessors
+   api/hz6_allocator_facade.c no longer mixes route wrappers with frontcache,
+   prefill, profile, source, and stats wrappers
+   linux/build_hz6_r1_smokes.sh registers hz6_allocator_route.c as an explicit
+   HZ6_LIB_SOURCE
 ```
 
 Current R1 smoke:

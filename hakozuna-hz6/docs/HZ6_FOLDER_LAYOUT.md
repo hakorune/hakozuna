@@ -21,6 +21,7 @@ hakozuna-hz6/
     hz6_allocator_descriptor.c
     hz6_allocator_facade.c
     hz6_allocator_reclaim.c
+    hz6_allocator_route.c
     hz6_allocator_source_block.c
     hz6_allocator_transfer.c
 
@@ -129,6 +130,7 @@ api/hz6_allocator.c
 api/hz6_allocator_descriptor.c
 api/hz6_allocator_facade.c
 api/hz6_allocator_reclaim.c
+api/hz6_allocator_route.c
 api/hz6_allocator_source_block.c
 api/hz6_allocator_transfer.c
 route/hz6_route.h
