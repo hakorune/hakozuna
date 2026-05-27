@@ -116,6 +116,23 @@ size_t hz6_allocator_prefill_front_class(Hz6Allocator* allocator,
                                          uint16_t class_id,
                                          size_t count);
 
+Hz6TransferBackendKind hz6_allocator_transfer_backend_kind(
+    const Hz6Allocator* allocator);
+
+size_t hz6_allocator_transfer_capacity(const Hz6Allocator* allocator);
+
+size_t hz6_allocator_transfer_count(const Hz6Allocator* allocator);
+
+size_t hz6_allocator_transfer_count_class(const Hz6Allocator* allocator,
+                                          uint16_t class_id);
+
+size_t hz6_allocator_transfer_shard_count_at(const Hz6Allocator* allocator,
+                                             size_t shard_index);
+
+size_t hz6_allocator_transfer_shard_capacity_at(
+    const Hz6Allocator* allocator,
+    size_t shard_index);
+
 #ifdef __cplusplus
 }
 #endif

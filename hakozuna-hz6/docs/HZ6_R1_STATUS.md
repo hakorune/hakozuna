@@ -91,6 +91,9 @@ remote free:
   sharded class pop retains non-target classes
   backend exposes class counts, per-shard counts, and per-shard capacity for
   smoke diagnostics
+  allocator API wraps backend kind, capacity, count, class count, shard count,
+  and shard capacity diagnostics so callers do not need to inspect the backend
+  field directly
   sharded pop can steal from a non-home shard when the class home shard is empty
   sharded pop can also take an explicit consumer home shard through
   hz6_transfer_backend_pop_from_shard()

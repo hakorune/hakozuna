@@ -375,6 +375,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    hz6_allocator_scavenge_profile() now asks PolicyLayer for budgets instead
    of reading profile scavenge fields directly
    contract smoke verifies rss budgets and strict zero-budget policy
+79. Allocator transfer observability wrappers. DONE:
+   hz6_allocator_transfer_backend_kind(), transfer_capacity(), transfer_count(),
+   transfer_count_class(), transfer_shard_count_at(), and
+   transfer_shard_capacity_at() expose transfer diagnostics through the
+   allocator API boundary
+   allocator smoke now checks profile transfer shape and producer shard routing
+   without reaching into allocator.transfer_backend directly
 ```
 
 Current R1 smoke:

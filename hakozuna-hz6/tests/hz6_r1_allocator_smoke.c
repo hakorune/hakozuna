@@ -116,13 +116,12 @@ int main(void) {
 
   Hz6Allocator local2p_allocator;
   hz6_allocator_init_with_profile(&local2p_allocator, HZ6_PROFILE_REMOTE);
-  if (!expect(local2p_allocator.transfer_backend.kind ==
+  if (!expect(hz6_allocator_transfer_backend_kind(&local2p_allocator) ==
                   HZ6_TRANSFER_BACKEND_SHARDED_CACHE,
               "remote profile sharded transfer")) {
     return 1;
   }
-  if (!expect(hz6_transfer_backend_capacity(
-                  &local2p_allocator.transfer_backend) ==
+  if (!expect(hz6_allocator_transfer_capacity(&local2p_allocator) ==
                   HZ6_TRANSFER_CACHE_CAPACITY,
               "remote profile transfer capacity")) {
     return 1;
@@ -154,7 +153,15 @@ int main(void) {
               "local2p transfer state") ||
       !expect(local2p_descriptor->owner.slot == 0 &&
                   local2p_descriptor->owner.generation == 0,
-              "local2p transfer owner clear")) {
+              "local2p transfer owner clear") ||
+      !expect(hz6_allocator_transfer_count(&local2p_allocator) == 1,
+              "local2p transfer count") ||
+      !expect(hz6_allocator_transfer_count_class(
+                  &local2p_allocator, HZ6_LOCAL2P_CLASS_ID) == 1,
+              "local2p transfer class count") ||
+      !expect(hz6_allocator_transfer_shard_capacity_at(
+                  &local2p_allocator, 0) != 0,
+              "local2p transfer shard capacity")) {
     return 1;
   }
   void* local2p_reused = hz6_malloc(&local2p_allocator, HZ6_LOCAL2P_BYTES);
@@ -182,11 +189,10 @@ int main(void) {
 
   Hz6Allocator rss_capacity_allocator;
   hz6_allocator_init_with_profile(&rss_capacity_allocator, HZ6_PROFILE_RSS);
-  if (!expect(hz6_transfer_backend_capacity(
-                  &rss_capacity_allocator.transfer_backend) ==
+  if (!expect(hz6_allocator_transfer_capacity(&rss_capacity_allocator) ==
                   rss_capacity_allocator.profile.transfer_capacity,
               "rss profile transfer capacity") ||
-      !expect(rss_capacity_allocator.transfer_backend.kind ==
+      !expect(hz6_allocator_transfer_backend_kind(&rss_capacity_allocator) ==
                   HZ6_TRANSFER_BACKEND_SINGLE_CACHE,
               "rss profile single transfer")) {
     return 1;
@@ -827,11 +833,11 @@ int main(void) {
               "consumer shard remote free a") ||
       !expect(hz6_free_remote(&consumer_shard_allocator, consumer_shard_b),
               "consumer shard remote free b") ||
-      !expect(hz6_transfer_backend_shard_count_at(
-                  &consumer_shard_allocator.transfer_backend, 0) == 0,
+      !expect(hz6_allocator_transfer_shard_count_at(
+                  &consumer_shard_allocator, 0) == 0,
               "consumer shard fallback shard empty") ||
-      !expect(hz6_transfer_backend_shard_count_at(
-                  &consumer_shard_allocator.transfer_backend, 1) == 2,
+      !expect(hz6_allocator_transfer_shard_count_at(
+                  &consumer_shard_allocator, 1) == 2,
               "consumer shard producer shard count")) {
     return 1;
   }
