@@ -633,7 +633,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    from direct source-slot creation
    linux/build_hz6_r1_smokes.sh registers the split front source slot modules
    explicitly
-120. Allocator descriptor state split. DONE:
+120. Allocator descriptor source split. DONE:
+   api/hz6_allocator_descriptor_prepare.c now owns descriptor source setup
+   api/hz6_allocator_descriptor_release.c now owns descriptor source release
+   api/hz6_allocator_descriptor_source.c was replaced by the split helpers
+   linux/build_hz6_r1_smokes.sh registers the split descriptor source modules
+   explicitly
+121. Allocator descriptor state split. DONE:
    api/hz6_allocator_descriptor_state.c now owns descriptor cache and
    remote-free state transitions
    api/hz6_allocator_descriptor.c now keeps descriptor lookup, prepare, and
@@ -694,12 +700,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    linux/build_hz6_r1_smokes.sh registers hz6_allocator_source_block_route.c
    as an explicit HZ6_LIB_SOURCE
 128. Descriptor source split. DONE:
-   api/hz6_allocator_descriptor_source.c now owns descriptor source setup and
+   api/hz6_allocator_descriptor_prepare.c and
+   api/hz6_allocator_descriptor_release.c now own descriptor source setup and
    release helpers
    api/hz6_allocator_descriptor.c now keeps descriptor lookup and activation
    separate from source-backed initialization/release
-   linux/build_hz6_r1_smokes.sh registers hz6_allocator_descriptor_source.c as
-   an explicit HZ6_LIB_SOURCE
+   linux/build_hz6_r1_smokes.sh registers the split descriptor source helpers
+   explicitly
 129. Owner-dead split. DONE:
    api/hz6_allocator_owner_dead.c now owns owner-dead transitions
    api/hz6_allocator_orphan.c now keeps orphan release/adoption separate from
@@ -871,7 +878,7 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
 155. Source registry split. DONE:
    source/hz6_source_registry_init.c now owns platform source registry seeding
    source/hz6_source_registry_lookup.c now owns source kind lookup
-   source/hz6_source_registry.c was removed after the split
+   source/hz6_source_registry.c was replaced by the split helpers
    linux/build_hz6_r1_smokes.sh registers the split source registry modules
    explicitly
 156. Route backend dispatch split. DONE:

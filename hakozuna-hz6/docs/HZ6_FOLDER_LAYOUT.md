@@ -45,7 +45,8 @@ hakozuna-hz6/
     hz6_allocator_destroy.c
     hz6_allocator_descriptor_local_cache.c
     hz6_allocator_descriptor_remote_transfer.c
-    hz6_allocator_descriptor_source.c
+    hz6_allocator_descriptor_prepare.c
+    hz6_allocator_descriptor_release.c
     hz6_allocator_owner_dead.c
     hz6_allocator_orphan_release.c
     hz6_allocator_orphan_adopt.c
@@ -211,7 +212,8 @@ api/hz6_allocator_init_backends.c
 api/hz6_allocator_destroy.c
 api/hz6_allocator_descriptor_local_cache.c
 api/hz6_allocator_descriptor_remote_transfer.c
-api/hz6_allocator_descriptor_source.c
+api/hz6_allocator_descriptor_prepare.c
+api/hz6_allocator_descriptor_release.c
 api/hz6_allocator_owner_dead.c
 api/hz6_allocator_orphan_release.c
 api/hz6_allocator_orphan_adopt.c

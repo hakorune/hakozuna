@@ -33,8 +33,8 @@ API:
   and api/hz6_allocator_scavenge_profile.c own allocator-facing bounded
   scavenge execution
   api/hz6_allocator_source_block.c owns SourceBlock lifecycle helpers
-  api/hz6_allocator_descriptor_source.c owns descriptor source setup and
-  release helpers
+  api/hz6_allocator_descriptor_prepare.c / api/hz6_allocator_descriptor_release.c
+  own descriptor source setup and release helpers
   fronts/hz6_front_source_kind.c and fronts/hz6_front_source_ops.c own
   source-kind wrappers and direct source-ops allocation
   api/hz6_allocator_owner_dead.c owns owner-dead transitions
@@ -110,7 +110,7 @@ Contracts:
   shared source-block lifetime is not mixed with direct source reserve/prefill
   helpers
   descriptor source setup and release helpers are split into their own helper
-  unit so descriptor lifecycle state stays separate from source-backed
+  units so descriptor lifecycle state stays separate from source-backed
   initialization and release
   owner-dead transition helper is split into its own helper unit so owner
   shutdown state stays separate from orphan release/adoption flows
