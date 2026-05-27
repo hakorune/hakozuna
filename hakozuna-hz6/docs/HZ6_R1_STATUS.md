@@ -17,7 +17,8 @@ API:
   api/hz6_allocator_malloc.c / api/hz6_allocator_free.c /
   api/hz6_allocator_free_remote.c own public malloc/free/remote-free
   entrypoints
-  api/hz6_allocator_query.c owns owns/stats observation entrypoints
+  api/hz6_allocator_owns.c and api/hz6_allocator_stats_snapshot.c own
+  owns/stats observation entrypoints
   api/hz6_allocator_prefill.c owns allocator-facing front prefill wrappers
   api/hz6_allocator_profile_query.c and api/hz6_allocator_profile_source.c own
   allocator-facing profile/source policy queries and source allocation stats

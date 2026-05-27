@@ -40,6 +40,8 @@ hakozuna-hz6/
     hz6_allocator_prefill.c
     hz6_allocator_profile_query.c
     hz6_allocator_profile_source.c
+    hz6_allocator_owns.c
+    hz6_allocator_stats_snapshot.c
     hz6_allocator_init.c
     hz6_allocator_init_state.c
     hz6_allocator_init_state_owner.c
@@ -61,7 +63,8 @@ hakozuna-hz6/
     hz6_allocator_orphan_adopt.c
     hz6_allocator_remote_pending.c
     hz6_allocator_route.c
-    hz6_allocator_query.c
+    hz6_allocator_owns.c
+    hz6_allocator_stats_snapshot.c
     hz6_allocator_scavenge_orphans.c
     hz6_allocator_scavenge_local_free.c
     hz6_allocator_scavenge_profile.c
@@ -222,6 +225,8 @@ api/hz6_allocator_frontcache.c
 api/hz6_allocator_prefill.c
 api/hz6_allocator_profile_query.c
 api/hz6_allocator_profile_source.c
+api/hz6_allocator_owns.c
+api/hz6_allocator_stats_snapshot.c
 api/hz6_allocator_init.c
 api/hz6_allocator_init_state.c
 api/hz6_allocator_init_state_owner.c
@@ -243,7 +248,8 @@ api/hz6_allocator_orphan_adopt_commit.c
 api/hz6_allocator_orphan_adopt.c
 api/hz6_allocator_remote_pending.c
 api/hz6_allocator_route.c
-api/hz6_allocator_query.c
+api/hz6_allocator_owns.c
+api/hz6_allocator_stats_snapshot.c
 api/hz6_allocator_scavenge_orphans.c
 api/hz6_allocator_scavenge_local_free.c
 api/hz6_allocator_scavenge_profile.c

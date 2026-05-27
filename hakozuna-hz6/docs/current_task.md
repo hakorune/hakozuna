@@ -729,13 +729,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    api/hz6_allocator_scavenge.c was removed after the split
    linux/build_hz6_r1_smokes.sh registers the new scavenge modules explicitly
 132. Allocator query split. DONE:
-   api/hz6_allocator_query.c now owns owns()/stats_snapshot() observation
-   helpers
+   api/hz6_allocator_owns.c now owns allocator owns() observation
+   api/hz6_allocator_stats_snapshot.c now owns stats_snapshot() observation
    api/hz6_allocator_malloc.c / api/hz6_allocator_free.c /
    api/hz6_allocator_free_remote.c keep malloc/free/remote-free separate from
    observation
-   linux/build_hz6_r1_smokes.sh registers hz6_allocator_query.c as an
-   explicit HZ6_LIB_SOURCE
+   linux/build_hz6_r1_smokes.sh registers the split query helpers explicitly
 133. Front registry split. DONE:
    fronts/hz6_front_registry.c now owns front selection lookup
    fronts/hz6_front_prefill_dispatch.c now owns prefill dispatch wrappers
