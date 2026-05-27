@@ -20,6 +20,12 @@ typedef struct Hz6FrontOps {
   int (*free_tagged)(Hz6Allocator* allocator, void* ptr, Hz6RouteResult route);
 } Hz6FrontOps;
 
+const Hz6FrontOps* hz6_front_for_allocation(size_t size,
+                                            size_t align,
+                                            uint16_t* class_id);
+
+const Hz6FrontOps* hz6_front_for_id(uint16_t front_id);
+
 #ifdef __cplusplus
 }
 #endif

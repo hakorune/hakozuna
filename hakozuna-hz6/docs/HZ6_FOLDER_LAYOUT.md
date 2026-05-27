@@ -56,6 +56,8 @@ hakozuna-hz6/
     hz6_scavenge.c
 
   fronts/
+    hz6_front.h
+    hz6_front.c
     toy/
       hz6_toy_front.h
       hz6_toy_front.c
@@ -120,6 +122,8 @@ source/hz6_source.h
 source/hz6_source.c
 policy/hz6_profiles.h
 policy/hz6_profiles.c
+fronts/hz6_front.h
+fronts/hz6_front.c
 fronts/toy/hz6_toy_front.h
 fronts/toy/hz6_toy_front.c
 tests/hz6_r1_contract_smoke.c
@@ -158,6 +162,8 @@ The current allocation behavior lives in `fronts/toy/`. It exists only to
 exercise the contract while real fronts are still being selected.
 The API reaches it through `Hz6FrontOps`, so the next real front can replace
 the toy implementation without moving allocation policy back into `api/`.
+Front selection lives in `fronts/hz6_front.*`; the API should not name a
+specific real front.
 
 ## Boundaries
 

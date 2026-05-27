@@ -57,6 +57,7 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    size-class mapping moved to frontcache/hz6_size_class.*
    toy allocation/free transitions moved to fronts/toy/
    allocator API calls toy front through Hz6FrontOps
+   front selection moved to fronts/hz6_front.*
 ```
 
 Current R1 smoke:

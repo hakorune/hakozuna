@@ -19,6 +19,7 @@ mkdir -p "$OUT_DIR"
   "${ROOT_DIR}/hakozuna-hz6/api/hz6_allocator.c" \
   "${ROOT_DIR}/hakozuna-hz6/frontcache/hz6_frontcache.c" \
   "${ROOT_DIR}/hakozuna-hz6/frontcache/hz6_size_class.c" \
+  "${ROOT_DIR}/hakozuna-hz6/fronts/hz6_front.c" \
   "${ROOT_DIR}/hakozuna-hz6/fronts/toy/hz6_toy_front.c" \
   "${ROOT_DIR}/hakozuna-hz6/policy/hz6_profiles.c" \
   "${ROOT_DIR}/hakozuna-hz6/route/hz6_route.c" \
