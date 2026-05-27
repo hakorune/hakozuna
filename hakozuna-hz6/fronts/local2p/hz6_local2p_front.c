@@ -1,5 +1,6 @@
 #include "hz6_local2p_front.h"
 
+#include "../hz6_front_source.h"
 #include "../hz6_front_util.h"
 
 static int hz6_local2p_can_allocate(size_t size,

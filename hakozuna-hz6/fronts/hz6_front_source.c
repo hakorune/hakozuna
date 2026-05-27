@@ -1,5 +1,6 @@
-#include "hz6_front_util.h"
+#include "hz6_front_source.h"
 
+#include "hz6_front_util.h"
 #include "../source/hz6_source.h"
 
 void* hz6_front_reuse_or_source(Hz6Allocator* allocator,

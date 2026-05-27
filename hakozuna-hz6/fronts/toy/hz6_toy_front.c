@@ -1,6 +1,7 @@
 #include "hz6_toy_front.h"
 
 #include "../../frontcache/hz6_size_class.h"
+#include "../hz6_front_source.h"
 #include "../hz6_front_util.h"
 
 static int hz6_toy_front_can_allocate(size_t size,

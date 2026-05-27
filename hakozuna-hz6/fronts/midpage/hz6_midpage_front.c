@@ -1,5 +1,6 @@
 #include "hz6_midpage_front.h"
 
+#include "../hz6_front_source.h"
 #include "../hz6_front_util.h"
 
 int hz6_midpage_class_bytes(uint16_t class_id, size_t* bytes) {
