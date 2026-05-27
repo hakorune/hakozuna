@@ -388,6 +388,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    boundary
    allocator and safety smoke now use allocator route lookup for descriptor
    validation instead of directly calling hz6_route_backend_lookup()
+81. Allocator profile observability wrappers. DONE:
+   hz6_allocator_profile_id(), profile_transfer_first(),
+   profile_strict_owner_remote(), profile_source_kind(),
+   profile_source_refill_batch(), and profile_transfer_capacity() expose
+   profile decisions through the allocator API boundary
+   allocator smoke now checks transfer-first and source refill batch behavior
+   without reading allocator.profile fields directly
 ```
 
 Current R1 smoke:

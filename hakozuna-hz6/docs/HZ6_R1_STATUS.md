@@ -14,6 +14,7 @@ Contracts:
   shared object states
   owner token/liveness helper
   profile configuration
+  allocator-level profile queries for front/profile smoke diagnostics
 
 Modules:
   route/
@@ -104,6 +105,8 @@ remote free:
   uneven sharded capacity is filled without dropping remainder slots
   profile transfer capacity is applied during backend init and capped by
   `HZ6_TRANSFER_CACHE_CAPACITY`
+  allocator API wraps profile id, transfer-first mode, strict remote mode,
+  source kind, source refill batch, and profile transfer capacity diagnostics
 
 front registry:
   toy handles <=4KiB

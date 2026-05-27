@@ -37,12 +37,22 @@ static int smoke_memory_ok(void* ptr, size_t bytes) {
   return ptr != NULL && bytes != 0;
 }
 
+static size_t smoke_profile_refill_batch(const Hz6Allocator* allocator) {
+  return hz6_allocator_profile_source_refill_batch(allocator, 0, 0);
+}
+
+static size_t smoke_frontcache_capped_batch(const Hz6Allocator* allocator) {
+  size_t batch = smoke_profile_refill_batch(allocator);
+  return batch < HZ6_FRONT_CACHE_BIN_CAPACITY ? batch
+                                              : HZ6_FRONT_CACHE_BIN_CAPACITY;
+}
+
 int main(void) {
   int foreign = 0;
 
   Hz6Allocator allocator;
   hz6_allocator_init_with_profile(&allocator, HZ6_PROFILE_SPEED);
-  if (!expect(allocator.profile.transfer_first == 1, "allocator profile") ||
+  if (!expect(hz6_allocator_profile_transfer_first(&allocator), "allocator profile") ||
       !expect(hz6_allocator_route_backend_kind(&allocator) ==
                   HZ6_ROUTE_BACKEND_PAGE_TABLE,
               "speed profile page route backend")) {
@@ -176,9 +186,7 @@ int main(void) {
   hz6_free(&local2p_allocator, local2p_reused);
   Hz6StatsSnapshot local2p_stats = hz6_stats_snapshot(&local2p_allocator);
   size_t local2p_expected_source =
-      local2p_allocator.profile.source_batch < HZ6_FRONT_CACHE_BIN_CAPACITY
-          ? local2p_allocator.profile.source_batch
-          : HZ6_FRONT_CACHE_BIN_CAPACITY;
+      smoke_frontcache_capped_batch(&local2p_allocator);
   if (!expect(local2p_stats.transfer_push == 1, "local2p transfer push") ||
       !expect(local2p_stats.transfer_pop == 1, "local2p transfer pop") ||
       !expect(local2p_stats.source_alloc == local2p_expected_source,
@@ -190,7 +198,7 @@ int main(void) {
   Hz6Allocator rss_capacity_allocator;
   hz6_allocator_init_with_profile(&rss_capacity_allocator, HZ6_PROFILE_RSS);
   if (!expect(hz6_allocator_transfer_capacity(&rss_capacity_allocator) ==
-                  rss_capacity_allocator.profile.transfer_capacity,
+                  hz6_allocator_profile_transfer_capacity(&rss_capacity_allocator),
               "rss profile transfer capacity") ||
       !expect(hz6_allocator_transfer_backend_kind(&rss_capacity_allocator) ==
                   HZ6_TRANSFER_BACKEND_SINGLE_CACHE,
@@ -201,11 +209,12 @@ int main(void) {
 
   Hz6Allocator rss_prefill_allocator;
   hz6_allocator_init_with_profile(&rss_prefill_allocator, HZ6_PROFILE_RSS);
+  size_t rss_refill_batch = smoke_profile_refill_batch(
+      &rss_prefill_allocator);
   size_t prefilled = hz6_front_prefill_source_kind(
       &rss_prefill_allocator, HZ6_FRONT_MIDPAGE, HZ6_MIDPAGE_CLASS_ID,
-      HZ6_MIDPAGE_BYTES, HZ6_SOURCE_OS_PAGED,
-      rss_prefill_allocator.profile.source_batch);
-  if (!expect(prefilled == rss_prefill_allocator.profile.source_batch,
+      HZ6_MIDPAGE_BYTES, HZ6_SOURCE_OS_PAGED, rss_refill_batch);
+  if (!expect(prefilled == rss_refill_batch,
               "rss profile source prefill count") ||
       !expect(rss_prefill_allocator.stats.source_alloc == prefilled,
               "rss profile prefill source alloc")) {
@@ -229,17 +238,17 @@ int main(void) {
               "large128 registry front")) {
     return 1;
   }
+  size_t large_refill_batch = smoke_profile_refill_batch(
+      &large_prefill_allocator);
   size_t large_prefilled = hz6_front_prefill_by_id(
-      &large_prefill_allocator, HZ6_FRONT_LARGE,
-      large_prefill_allocator.profile.source_batch);
+      &large_prefill_allocator, HZ6_FRONT_LARGE, large_refill_batch);
   if (!expect(hz6_front_prefill_by_id(
                   &large_prefill_allocator, HZ6_FRONT_MIDPAGE,
-                  large_prefill_allocator.profile.source_batch) == 0,
+                  large_refill_batch) == 0,
               "midpage registry prefill hook absent")) {
     return 1;
   }
-  if (!expect(large_prefilled ==
-                  large_prefill_allocator.profile.source_batch,
+  if (!expect(large_prefilled == large_refill_batch,
               "large128 profile prefill count") ||
       !expect(large_prefill_allocator.stats.source_alloc == large_prefilled,
               "large128 profile prefill source alloc")) {
@@ -265,11 +274,11 @@ int main(void) {
               "local2p registry front")) {
     return 1;
   }
+  size_t local2p_refill_batch = smoke_profile_refill_batch(
+      &local2p_prefill_allocator);
   size_t local2p_prefilled = hz6_front_prefill_by_id(
-      &local2p_prefill_allocator, HZ6_FRONT_LOCAL2P,
-      local2p_prefill_allocator.profile.source_batch);
-  if (!expect(local2p_prefilled ==
-                  local2p_prefill_allocator.profile.source_batch,
+      &local2p_prefill_allocator, HZ6_FRONT_LOCAL2P, local2p_refill_batch);
+  if (!expect(local2p_prefilled == local2p_refill_batch,
               "local2p profile prefill count") ||
       !expect(local2p_prefill_allocator.stats.source_alloc ==
                   local2p_prefilled,
@@ -293,23 +302,19 @@ int main(void) {
 
   Hz6Allocator size_prefill_allocator;
   hz6_allocator_init_with_profile(&size_prefill_allocator, HZ6_PROFILE_RSS);
+  size_t size_refill_batch = smoke_profile_refill_batch(
+      &size_prefill_allocator);
   size_t size_large_prefilled = hz6_allocator_prefill_size(
-      &size_prefill_allocator, 70000,
-      size_prefill_allocator.profile.source_batch);
+      &size_prefill_allocator, 70000, size_refill_batch);
   size_t size_local2p_prefilled = hz6_allocator_prefill_size(
-      &size_prefill_allocator, HZ6_LOCAL2P_BYTES,
-      size_prefill_allocator.profile.source_batch);
+      &size_prefill_allocator, HZ6_LOCAL2P_BYTES, size_refill_batch);
   size_t size_midpage_prefilled = hz6_allocator_prefill_size(
-      &size_prefill_allocator, 16384,
-      size_prefill_allocator.profile.source_batch);
-  if (!expect(size_large_prefilled ==
-                  size_prefill_allocator.profile.source_batch,
+      &size_prefill_allocator, 16384, size_refill_batch);
+  if (!expect(size_large_prefilled == size_refill_batch,
               "size prefill large128 count") ||
-      !expect(size_local2p_prefilled ==
-                  size_prefill_allocator.profile.source_batch,
+      !expect(size_local2p_prefilled == size_refill_batch,
               "size prefill local2p count") ||
-      !expect(size_midpage_prefilled ==
-                  size_prefill_allocator.profile.source_batch,
+      !expect(size_midpage_prefilled == size_refill_batch,
               "size prefill midpage count") ||
       !expect(size_prefill_allocator.stats.source_alloc ==
                   size_large_prefilled + size_local2p_prefilled +
@@ -349,16 +354,16 @@ int main(void) {
 
   Hz6Allocator front_prefill_allocator;
   hz6_allocator_init_with_profile(&front_prefill_allocator, HZ6_PROFILE_RSS);
+  size_t front_refill_batch = smoke_profile_refill_batch(
+      &front_prefill_allocator);
   size_t front_large_prefilled = hz6_allocator_prefill_front(
-      &front_prefill_allocator, HZ6_FRONT_LARGE,
-      front_prefill_allocator.profile.source_batch);
+      &front_prefill_allocator, HZ6_FRONT_LARGE, front_refill_batch);
   size_t front_midpage8_prefilled = hz6_allocator_prefill_front_class(
       &front_prefill_allocator, HZ6_FRONT_MIDPAGE,
       HZ6_MIDPAGE_8K_CLASS_ID, 1);
   size_t front_midpage_bad_prefilled = hz6_allocator_prefill_front_class(
       &front_prefill_allocator, HZ6_FRONT_MIDPAGE, HZ6_LARGE128_CLASS_ID, 1);
-  if (!expect(front_large_prefilled ==
-                  front_prefill_allocator.profile.source_batch,
+  if (!expect(front_large_prefilled == front_refill_batch,
               "allocator front prefill large count") ||
       !expect(front_midpage8_prefilled == 8,
               "allocator front class prefill midpage8 count") ||
@@ -773,9 +778,7 @@ int main(void) {
   hz6_free(&large_allocator, large_reused);
   Hz6StatsSnapshot large_stats = hz6_stats_snapshot(&large_allocator);
   size_t large_expected_source =
-      large_allocator.profile.source_batch < HZ6_FRONT_CACHE_BIN_CAPACITY
-          ? large_allocator.profile.source_batch
-          : HZ6_FRONT_CACHE_BIN_CAPACITY;
+      smoke_frontcache_capped_batch(&large_allocator);
   if (!expect(large_stats.transfer_push == 1, "large128 transfer push") ||
       !expect(large_stats.transfer_pop == 1, "large128 transfer pop") ||
       !expect(large_stats.source_alloc == large_expected_source,

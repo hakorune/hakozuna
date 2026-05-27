@@ -116,6 +116,23 @@ size_t hz6_allocator_prefill_front_class(Hz6Allocator* allocator,
                                          uint16_t class_id,
                                          size_t count);
 
+Hz6ProfileId hz6_allocator_profile_id(const Hz6Allocator* allocator);
+
+int hz6_allocator_profile_transfer_first(const Hz6Allocator* allocator);
+
+int hz6_allocator_profile_strict_owner_remote(const Hz6Allocator* allocator);
+
+Hz6SourceKind hz6_allocator_profile_source_kind(
+    const Hz6Allocator* allocator);
+
+size_t hz6_allocator_profile_source_refill_batch(
+    const Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id);
+
+size_t hz6_allocator_profile_transfer_capacity(
+    const Hz6Allocator* allocator);
+
 Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
                                           const void* ptr);
 
