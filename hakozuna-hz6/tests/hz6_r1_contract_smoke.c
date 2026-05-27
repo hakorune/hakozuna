@@ -173,6 +173,31 @@ int main(void) {
   }
   hz6_allocator_destroy(&allocator);
 
+  Hz6Allocator remote_allocator;
+  hz6_allocator_init_with_profile(&remote_allocator, HZ6_PROFILE_REMOTE);
+  void* remote_object = hz6_malloc(&remote_allocator, 128);
+  if (!expect(remote_object != NULL, "remote allocator malloc") ||
+      !expect(hz6_free_remote(&remote_allocator, remote_object),
+              "remote transfer free") ||
+      !expect(!hz6_free_remote(&remote_allocator, remote_object),
+              "remote double-free rejected")) {
+    return 1;
+  }
+  void* transfer_reused = hz6_malloc(&remote_allocator, 128);
+  if (!expect(transfer_reused == remote_object, "transfer reuse")) {
+    return 1;
+  }
+  hz6_free(&remote_allocator, transfer_reused);
+  Hz6StatsSnapshot remote_stats = hz6_stats_snapshot(&remote_allocator);
+  if (!expect(remote_stats.route_valid == 3, "remote stats valid") ||
+      !expect(remote_stats.route_invalid == 1, "remote stats invalid") ||
+      !expect(remote_stats.transfer_push == 1, "remote stats push") ||
+      !expect(remote_stats.transfer_pop == 1, "remote stats pop") ||
+      !expect(remote_stats.source_alloc == 1, "remote stats source alloc")) {
+    return 1;
+  }
+  hz6_allocator_destroy(&remote_allocator);
+
   Hz6OsMemoryOps ops;
   ops.reserve = smoke_reserve;
   ops.commit = smoke_memory_op;

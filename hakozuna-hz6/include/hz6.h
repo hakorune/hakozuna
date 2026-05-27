@@ -28,6 +28,8 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size);
 
 void hz6_free(Hz6Allocator* allocator, void* ptr);
 
+int hz6_free_remote(Hz6Allocator* allocator, void* ptr);
+
 int hz6_owns(Hz6Allocator* allocator, const void* ptr);
 
 Hz6StatsSnapshot hz6_stats_snapshot(const Hz6Allocator* allocator);

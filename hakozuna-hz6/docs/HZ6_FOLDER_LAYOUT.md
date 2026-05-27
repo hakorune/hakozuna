@@ -133,6 +133,12 @@ hz6_free:
   VALID exact pointer -> ACTIVE to LOCAL_FREE
   INVALID interior/double-free -> fail-closed stats
   MISS foreign pointer -> miss stats
+
+hz6_free_remote:
+  route lookup
+  VALID exact pointer -> ACTIVE to TRANSFER_FREE
+  bounded transfer push
+  duplicate remote free -> fail-closed stats
 ```
 
 This is not a performance allocator yet. It is the first executable contract

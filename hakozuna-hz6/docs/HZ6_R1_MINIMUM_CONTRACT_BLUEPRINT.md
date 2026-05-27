@@ -12,6 +12,11 @@ R1 contract skeleton:
 Toy modular allocation path:
   implemented for smoke testing only
 
+Toy transfer-first path:
+  implemented for smoke testing only
+  hz6_free_remote() moves ACTIVE to TRANSFER_FREE
+  hz6_malloc() consumes transfer before source refill in transfer-first profiles
+
 Real front target:
   not selected yet
 ```

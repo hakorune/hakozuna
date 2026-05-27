@@ -42,12 +42,16 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    source/hz6_source.h
 4. Add route smoke before allocator behavior. DONE.
 5. Add transfer smoke before full malloc/free integration. DONE.
-6. Add first toy allocation path. IN PROGRESS:
+6. Add first toy allocation path. DONE:
    api/hz6_allocator.c
    source/hz6_source.c
    frontcache/hz6_frontcache.c
    route/hz6_route.c
-7. Choose first real target:
+7. Add first transfer-first toy path. DONE:
+   hz6_free_remote()
+   ACTIVE -> TRANSFER_FREE
+   transfer pop before source allocation
+8. Choose first real target:
    Windows Local2P exact route, or Linux LargeFront 128K transfer.
 ```
 
@@ -85,4 +89,5 @@ No HZ5 source file migration.
 No HZ5 code copy.
 No new performance claim.
 No benchmark table until an HZ6 prototype exists.
+Toy allocation and transfer paths are for contract validation only.
 ```

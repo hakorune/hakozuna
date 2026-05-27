@@ -46,6 +46,20 @@ static Hz6ObjectDescriptor* hz6_find_free_descriptor(Hz6Allocator* allocator) {
   return NULL;
 }
 
+static int hz6_descriptor_activate(Hz6ObjectDescriptor* descriptor,
+                                   Hz6ObjectState expected,
+                                   void* ptr,
+                                   uint32_t generation) {
+  if (!descriptor || descriptor->state != expected) {
+    return 0;
+  }
+  if (descriptor->ptr != ptr || descriptor->generation != generation) {
+    return 0;
+  }
+  descriptor->state = HZ6_STATE_ACTIVE;
+  return 1;
+}
+
 void hz6_allocator_init(Hz6Allocator* allocator) {
   hz6_allocator_init_with_profile(allocator, HZ6_PROFILE_STRICT);
 }
@@ -112,11 +126,25 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
   if (hz6_frontcache_pop(&allocator->frontcache_bins[class_id], &entry)) {
     Hz6ObjectDescriptor* descriptor =
         (Hz6ObjectDescriptor*)entry.descriptor;
-    if (!descriptor || descriptor->state != HZ6_STATE_LOCAL_FREE) {
+    if (!hz6_descriptor_activate(descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr,
+                                 entry.generation)) {
       return NULL;
     }
-    descriptor->state = HZ6_STATE_ACTIVE;
     return entry.ptr;
+  }
+
+  if (allocator->profile.transfer_first) {
+    Hz6TransferObject transfer;
+    while (hz6_transfer_pop(&allocator->transfer_cache, class_id, &transfer)) {
+      Hz6ObjectDescriptor* descriptor =
+          (Hz6ObjectDescriptor*)transfer.descriptor;
+      if (!hz6_descriptor_activate(descriptor, HZ6_STATE_TRANSFER_FREE,
+                                   transfer.ptr, transfer.generation)) {
+        continue;
+      }
+      ++allocator->stats.transfer_pop;
+      return transfer.ptr;
+    }
   }
 
   Hz6ObjectDescriptor* descriptor = hz6_find_free_descriptor(allocator);
@@ -191,6 +219,43 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
       ++allocator->stats.route_miss;
       return;
   }
+}
+
+int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
+  if (!allocator || !ptr) {
+    return 0;
+  }
+
+  Hz6RouteResult route = hz6_route_lookup(&allocator->route_table, ptr);
+  if (route.kind == HZ6_ROUTE_MISS) {
+    ++allocator->stats.route_miss;
+    return 0;
+  }
+  if (route.kind == HZ6_ROUTE_INVALID || !route.descriptor) {
+    ++allocator->stats.route_invalid;
+    return 0;
+  }
+
+  ++allocator->stats.route_valid;
+  Hz6ObjectDescriptor* descriptor = (Hz6ObjectDescriptor*)route.descriptor;
+  if (descriptor->state != HZ6_STATE_ACTIVE || descriptor->ptr != ptr) {
+    ++allocator->stats.route_invalid;
+    return 0;
+  }
+
+  Hz6TransferObject object;
+  object.ptr = ptr;
+  object.descriptor = descriptor;
+  object.class_id = descriptor->class_id;
+  object.generation = descriptor->generation;
+  descriptor->state = HZ6_STATE_TRANSFER_FREE;
+  if (!hz6_transfer_push(&allocator->transfer_cache, object)) {
+    descriptor->state = HZ6_STATE_ACTIVE;
+    return 0;
+  }
+
+  ++allocator->stats.transfer_push;
+  return 1;
 }
 
 int hz6_owns(Hz6Allocator* allocator, const void* ptr) {
