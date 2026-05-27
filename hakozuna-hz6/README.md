@@ -87,6 +87,46 @@ No performance claim should be made from the R1 seed yet.
 The next benchmark pass should compare HZ6 against HZ3 / HZ4 / HZ5 on the same
 machine.
 
+## Size Coverage Boundary
+
+R1 is not a complete large-object allocator yet. The current code is an
+executable architecture seed with these front boundaries:
+
+```text
+toy:
+  <= 4KiB contract-validation front
+
+midpage:
+  >4KiB..32KiB seed front
+
+local2p:
+  exact 64KiB seed front
+
+large128:
+  >32KiB..128KiB except exact 64KiB seed front
+
+>128KiB:
+  unsupported in R1
+```
+
+So the next HZ6 design step is not "tune every large size." It is to promote
+the Large128 seed into a real LargeSpan family:
+
+```text
+L1:
+  keep the 128K transfer-first front as the proof target
+
+L2:
+  add 256K / 512K / 1M span classes behind the same RouteLayer,
+  TransferLayer, SourceLayer, and ScavengeLayer contracts
+
+L3:
+  add full ordinary-malloc preload coverage and compare against HZ3/HZ4/HZ5
+```
+
+Until L2 exists, HZ6 large-size results should be reported as `Large128 seed`
+results, not as a broad large-object allocator claim.
+
 ## Non-Goals
 
 - Do not copy HZ3/HZ4/HZ5 implementation files into HZ6 as a starting point.

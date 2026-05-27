@@ -273,7 +273,7 @@ remote free:
   fronts and shared front utilities use allocator/profile helper APIs for
   profile decisions instead of reading allocator profile fields directly
 
-front registry:
+  front registry:
   toy handles <=4KiB
   midpage handles >4KiB..32KiB
   local2p handles exact 64KiB
@@ -350,6 +350,42 @@ policy:
   RSS profile can trigger explicit profile scavenging
   strict profile keeps automatic profile scavenging disabled
   policy-driven scavenging is covered by allocator and safety smoke
+```
+
+## Large-Size Boundary
+
+HZ6-R1 has a Large128 seed, not a complete large-object family.
+
+```text
+implemented:
+  >32KiB..128KiB except exact 64KiB
+
+not implemented yet:
+  >128KiB broad large-object classes
+  ordinary-malloc preload coverage for all large sizes
+  HZ3/HZ4/HZ5/tcmalloc cross-family large-size comparison
+```
+
+Design direction:
+
+```text
+L1:
+  stabilize the 128K transfer-first front and keep double-return impossible.
+
+L2:
+  add 256K / 512K / 1M LargeSpan classes using the same route, transfer,
+  source, and scavenge contracts instead of adding a separate large allocator.
+
+L3:
+  run a full same-machine comparison against HZ3/HZ4/HZ5/tcmalloc after broad
+  large-size coverage exists.
+```
+
+Reporting rule:
+
+```text
+Until L2 lands, describe HZ6 large results as Large128 seed results.
+Do not claim broad large-object allocator coverage from R1.
 ```
 
 ## Verification Command

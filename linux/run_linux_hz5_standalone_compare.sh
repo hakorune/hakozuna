@@ -30,10 +30,11 @@ Options:
   --iters N                  iterations per thread
   --cases LIST               comma-separated size:align list
                              (default: 4096:8192,8192:8192,65536:8192)
-                             standalone exact-only phase; use only exact
-                             4K/8K/64K align=8192 rows here
-                             use linux/run_hz5_hakmem_compare.sh for
-                             cross128/large128 rows
+                             standalone exact-only phase:
+                               use exact 4K/8K/64K align=8192 rows here
+                               do not use this runner for cross128/large128
+                               use linux/run_hz5_hakmem_compare.sh for
+                               ordinary malloc/free preload rows
   --size N                   single allocation size; requires --align
   --align N                  single allocation alignment; requires --size
   --allocators LIST          comma-separated allocator list
@@ -100,8 +101,26 @@ validate_case_spec() {
     exit 2
   fi
   if (( case_size > 65536 )); then
-    echo "[ERR] standalone exact-only compare does not support size=${case_size}" >&2
-    echo "      use linux/run_hz5_hakmem_compare.sh for cross128/large128 rows" >&2
+    cat >&2 <<EOF
+[ERR] Unsupported HZ5 standalone exact case: ${spec}
+
+This runner is intentionally exact-only. It calls the standalone HZ5 direct API
+and is only for appendix-style exact rows such as:
+
+  4096:8192
+  8192:8192
+  65536:8192
+
+Do not use this runner for 128K, cross128, large128, or ordinary malloc/free
+profile rows. Those require the full-preload HZ5 profile family:
+
+  ./linux/run_hz5_hakmem_compare.sh \\
+    --lanes main,cross128,large128 \\
+    --allocators hz5-pagerun64-main,hz5-pagerun64-cross128,hz5-pagerun64-large128
+
+If you intended an exact Local2P appendix row, keep size <= 65536 and use
+align=8192.
+EOF
     exit 2
   fi
 }
