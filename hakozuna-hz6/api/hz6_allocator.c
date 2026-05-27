@@ -78,7 +78,8 @@ void hz6_allocator_mark_owner_dead(Hz6Allocator* allocator) {
       continue;
     }
     if (descriptor->state == HZ6_STATE_ACTIVE ||
-        descriptor->state == HZ6_STATE_LOCAL_FREE) {
+        descriptor->state == HZ6_STATE_LOCAL_FREE ||
+        descriptor->state == HZ6_STATE_REMOTE_PENDING) {
       descriptor->state = HZ6_STATE_ORPHAN;
     }
   }
@@ -263,6 +264,9 @@ size_t hz6_allocator_scavenge_profile(Hz6Allocator* allocator) {
 
 size_t hz6_allocator_drain_remote_pending(Hz6Allocator* allocator) {
   if (!allocator) {
+    return 0;
+  }
+  if (!hz6_owner_is_alive(&allocator->owner, allocator->owner.token)) {
     return 0;
   }
 

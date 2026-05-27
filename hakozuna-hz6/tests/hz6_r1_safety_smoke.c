@@ -89,6 +89,43 @@ int main(void) {
   hz6_free(&strict_remote_allocator, strict_remote_reused);
   hz6_allocator_destroy(&strict_remote_allocator);
 
+  Hz6Allocator strict_remote_dead_allocator;
+  hz6_allocator_init_with_profile(&strict_remote_dead_allocator,
+                                  HZ6_PROFILE_STRICT);
+  void* strict_remote_orphan =
+      hz6_malloc(&strict_remote_dead_allocator, 128);
+  if (!expect(strict_remote_orphan != NULL,
+              "strict remote orphan malloc") ||
+      !expect(hz6_free_remote(&strict_remote_dead_allocator,
+                              strict_remote_orphan),
+              "strict remote orphan remote free")) {
+    return 1;
+  }
+  Hz6RouteResult strict_remote_orphan_route =
+      hz6_route_backend_lookup(&strict_remote_dead_allocator.route_backend,
+                               strict_remote_orphan);
+  Hz6ObjectDescriptor* strict_remote_orphan_descriptor =
+      (Hz6ObjectDescriptor*)strict_remote_orphan_route.descriptor;
+  if (!expect(strict_remote_orphan_descriptor != NULL,
+              "strict remote orphan descriptor") ||
+      !expect(strict_remote_orphan_descriptor->state ==
+                  HZ6_STATE_REMOTE_PENDING,
+              "strict remote orphan starts pending")) {
+    return 1;
+  }
+  hz6_allocator_mark_owner_dead(&strict_remote_dead_allocator);
+  if (!expect(strict_remote_orphan_descriptor->state == HZ6_STATE_ORPHAN,
+              "remote pending owner death orphan") ||
+      !expect(hz6_allocator_drain_remote_pending(
+                  &strict_remote_dead_allocator) == 0,
+              "dead owner cannot drain remote pending") ||
+      !expect(hz6_allocator_release_orphan(&strict_remote_dead_allocator,
+                                           strict_remote_orphan),
+              "remote pending orphan release")) {
+    return 1;
+  }
+  hz6_allocator_destroy(&strict_remote_dead_allocator);
+
   Hz6Allocator orphan_allocator;
   hz6_allocator_init_with_profile(&orphan_allocator, HZ6_PROFILE_SPEED);
   void* orphan = hz6_malloc(&orphan_allocator, 48);

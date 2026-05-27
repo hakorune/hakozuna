@@ -173,6 +173,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    strict_owner_remote uses ACTIVE -> REMOTE_PENDING
    hz6_allocator_drain_remote_pending() moves REMOTE_PENDING -> LOCAL_FREE
    allocator and safety smoke cover strict remote reuse after explicit drain
+38. Remote-pending owner-death safety. DONE:
+   hz6_allocator_mark_owner_dead() now converts REMOTE_PENDING to ORPHAN
+   hz6_allocator_drain_remote_pending() rejects dead owners
+   safety smoke covers pending remote orphan release after owner death
 ```
 
 Current R1 smoke:
