@@ -222,6 +222,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    SourceLayer release
    allocator destroy already follows the same route-before-source teardown order
    allocator smoke covers final SourceBlock release turning the envelope back to MISS
+50. Page-table invalid-range smoke. DONE:
+   PAGE_TABLE backend now has direct invalid-range smoke coverage
+   exact-valid entries inside a page-range envelope still take priority
+   unregistering the exact entry falls back to INVALID until the envelope is removed
 ```
 
 Current R1 smoke:

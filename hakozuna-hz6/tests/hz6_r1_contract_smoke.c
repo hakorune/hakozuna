@@ -140,10 +140,10 @@ int main(void) {
     return 1;
   }
 
-  Hz6RouteEntry page_backend_entries[2];
+  Hz6RouteEntry page_backend_entries[4];
   Hz6RouteBackend page_backend;
   hz6_route_backend_init_page_table_with_granularity(
-      &page_backend, page_backend_entries, 2, 64);
+      &page_backend, page_backend_entries, 4, 64);
   if (!expect(page_backend.kind == HZ6_ROUTE_BACKEND_PAGE_TABLE,
               "page route backend kind") ||
       !expect(page_backend.page_granularity == 64,
@@ -172,6 +172,37 @@ int main(void) {
   if (!expect(hz6_route_backend_lookup(&page_backend, base).kind ==
                   HZ6_ROUTE_MISS,
               "page route backend unregister")) {
+    return 1;
+  }
+  if (!expect(hz6_route_backend_register_invalid_range(
+                  &page_backend, route_run, sizeof(route_run),
+                  HZ6_FRONT_MIDPAGE, 4),
+              "page route backend invalid range register") ||
+      !expect(hz6_route_backend_lookup(&page_backend, route_run + 192).kind ==
+                  HZ6_ROUTE_INVALID,
+              "page route backend invalid range lookup") ||
+      !expect(hz6_route_backend_register_exact(
+                  &page_backend, route_run + 192, 64, HZ6_FRONT_MIDPAGE, 4,
+                  23, &route_run_descriptor),
+              "page route backend exact inside invalid range") ||
+      !expect(hz6_route_backend_lookup(&page_backend, route_run + 192).kind ==
+                  HZ6_ROUTE_VALID,
+              "page route backend exact range priority") ||
+      !expect(hz6_route_backend_lookup(&page_backend, route_run + 193).kind ==
+                  HZ6_ROUTE_INVALID,
+              "page route backend exact interior invalid")) {
+    return 1;
+  }
+  hz6_route_backend_unregister_exact(&page_backend, route_run + 192);
+  if (!expect(hz6_route_backend_lookup(&page_backend, route_run + 192).kind ==
+                  HZ6_ROUTE_INVALID,
+              "page route backend invalid range remains after exact unregister")) {
+    return 1;
+  }
+  hz6_route_backend_unregister_invalid_range(&page_backend, route_run);
+  if (!expect(hz6_route_backend_lookup(&page_backend, route_run + 192).kind ==
+                  HZ6_ROUTE_MISS,
+              "page route backend invalid range unregister")) {
     return 1;
   }
 

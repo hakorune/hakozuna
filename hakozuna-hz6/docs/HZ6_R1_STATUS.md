@@ -58,7 +58,7 @@ route:
   allocator routes through `Hz6RouteBackend`, currently exact-table backed
   backend wrapper preserves VALID / INVALID / MISS contract
   PAGE_TABLE backend carries explicit page granularity and is covered by
-  contract smoke
+  contract smoke, including invalid-range envelopes
 
 local free:
   ACTIVE -> LOCAL_FREE
