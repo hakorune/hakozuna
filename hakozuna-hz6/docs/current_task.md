@@ -782,6 +782,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    route/hz6_route_backend.c was removed after the split
    linux/build_hz6_r1_smokes.sh registers the new route backend modules
    explicitly
+142. Allocator header types/api split. DONE:
+   api/hz6_allocator_types.h now owns allocator type definitions
+   api/hz6_allocator_api.h now owns public allocator declarations
+   api/hz6_allocator.h was reduced to a thin wrapper
+   allocator sources still include the wrapper for compatibility
 ```
 
 Current R1 smoke:

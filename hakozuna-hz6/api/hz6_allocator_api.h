@@ -1,0 +1,194 @@
+#ifndef HZ6_ALLOCATOR_API_H
+#define HZ6_ALLOCATOR_API_H
+
+#include "hz6_allocator_types.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void hz6_allocator_init_with_profile(Hz6Allocator* allocator,
+                                     Hz6ProfileId profile_id);
+
+Hz6ObjectDescriptor* hz6_allocator_find_free_descriptor(
+    Hz6Allocator* allocator);
+
+int hz6_allocator_activate_descriptor(Hz6ObjectDescriptor* descriptor,
+                                      Hz6ObjectState expected,
+                                      void* ptr,
+                                      uint32_t generation,
+                                      Hz6OwnerToken owner);
+
+int hz6_allocator_prepare_descriptor(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor,
+    void* ptr,
+    size_t bytes,
+    void* source_ptr,
+    size_t source_bytes,
+    Hz6SourceBlock* source_block,
+    uint16_t class_id,
+    Hz6SourceKind source_kind,
+    int (*source_release)(void* ptr, size_t bytes),
+    Hz6ObjectState state);
+
+int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
+                                          Hz6ObjectDescriptor* descriptor,
+                                          void* ptr);
+
+int hz6_allocator_remote_free_active_descriptor(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor,
+    void* ptr);
+
+Hz6OwnerToken hz6_allocator_owner_token(const Hz6Allocator* allocator);
+
+int hz6_allocator_debug_set_owner_slot(Hz6Allocator* allocator,
+                                       uint32_t slot);
+
+int hz6_allocator_release_descriptor_source(
+    Hz6ObjectDescriptor* descriptor);
+
+int hz6_allocator_frontcache_push(Hz6Allocator* allocator,
+                                  uint16_t class_id,
+                                  Hz6FrontCacheEntry entry);
+
+int hz6_allocator_frontcache_pop(Hz6Allocator* allocator,
+                                 uint16_t class_id,
+                                 Hz6FrontCacheEntry* out);
+
+int hz6_allocator_frontcache_remove(Hz6Allocator* allocator,
+                                    uint16_t class_id,
+                                    void* ptr,
+                                    void* descriptor,
+                                    uint32_t generation,
+                                    Hz6FrontCacheEntry* removed);
+
+size_t hz6_allocator_frontcache_count(const Hz6Allocator* allocator,
+                                      uint16_t class_id);
+
+size_t hz6_allocator_frontcache_capacity(const Hz6Allocator* allocator,
+                                         uint16_t class_id);
+
+Hz6SourceBlock* hz6_allocator_create_source_block(
+    Hz6Allocator* allocator,
+    size_t bytes,
+    const Hz6OsMemoryOps* source_ops,
+    Hz6SourceKind source_kind);
+
+int hz6_allocator_retain_source_block(Hz6SourceBlock* block);
+
+int hz6_allocator_release_source_block(Hz6SourceBlock* block);
+
+void hz6_allocator_mark_owner_dead(Hz6Allocator* allocator);
+
+int hz6_allocator_release_orphan(Hz6Allocator* allocator, void* ptr);
+
+int hz6_allocator_adopt_orphan(Hz6Allocator* adopter,
+                               Hz6Allocator* source,
+                               void* ptr);
+
+size_t hz6_allocator_scavenge_orphans(Hz6Allocator* allocator,
+                                      size_t max_bytes);
+
+size_t hz6_allocator_scavenge_local_free(Hz6Allocator* allocator,
+                                         size_t max_bytes);
+
+size_t hz6_allocator_scavenge_profile(Hz6Allocator* allocator);
+
+size_t hz6_allocator_drain_remote_pending(Hz6Allocator* allocator);
+
+size_t hz6_allocator_prefill_size(Hz6Allocator* allocator,
+                                  size_t size,
+                                  size_t count);
+
+size_t hz6_allocator_prefill_front(Hz6Allocator* allocator,
+                                   uint16_t front_id,
+                                   size_t count);
+
+size_t hz6_allocator_prefill_front_class(Hz6Allocator* allocator,
+                                         uint16_t front_id,
+                                         uint16_t class_id,
+                                         size_t count);
+
+Hz6ProfileId hz6_allocator_profile_id(const Hz6Allocator* allocator);
+
+int hz6_allocator_profile_transfer_first(const Hz6Allocator* allocator);
+
+int hz6_allocator_profile_strict_owner_remote(const Hz6Allocator* allocator);
+
+Hz6SourceKind hz6_allocator_profile_source_kind(
+    const Hz6Allocator* allocator);
+
+size_t hz6_allocator_profile_source_refill_batch(
+    const Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id);
+
+size_t hz6_allocator_profile_transfer_capacity(
+    const Hz6Allocator* allocator);
+
+const Hz6OsMemoryOps* hz6_allocator_source_ops(
+    const Hz6Allocator* allocator,
+    Hz6SourceKind source_kind);
+
+Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
+                                          const void* ptr);
+
+void hz6_allocator_route_unregister_exact(Hz6Allocator* allocator,
+                                          void* ptr);
+
+int hz6_allocator_route_register_exact(Hz6Allocator* allocator,
+                                       void* base,
+                                       size_t bytes,
+                                       uint16_t front_id,
+                                       uint16_t class_id,
+                                       uint32_t generation,
+                                       void* descriptor);
+
+int hz6_allocator_source_block_register_invalid_range(
+    Hz6Allocator* allocator,
+    Hz6SourceBlock* block,
+    uint16_t front_id,
+    uint16_t class_id);
+
+Hz6RouteBackendKind hz6_allocator_route_backend_kind(
+    const Hz6Allocator* allocator);
+
+size_t hz6_allocator_route_page_granularity(const Hz6Allocator* allocator);
+
+Hz6TransferBackendKind hz6_allocator_transfer_backend_kind(
+    const Hz6Allocator* allocator);
+
+size_t hz6_allocator_transfer_capacity(const Hz6Allocator* allocator);
+
+size_t hz6_allocator_transfer_count(const Hz6Allocator* allocator);
+
+size_t hz6_allocator_transfer_count_class(const Hz6Allocator* allocator,
+                                          uint16_t class_id);
+
+size_t hz6_allocator_transfer_shard_count_at(const Hz6Allocator* allocator,
+                                             size_t shard_index);
+
+size_t hz6_allocator_transfer_shard_capacity_at(
+    const Hz6Allocator* allocator,
+    size_t shard_index);
+
+int hz6_allocator_transfer_push(Hz6Allocator* allocator,
+                                Hz6TransferObject object);
+
+int hz6_allocator_transfer_pop(Hz6Allocator* allocator,
+                               uint16_t class_id,
+                               Hz6TransferObject* out);
+
+void hz6_allocator_note_source_alloc(Hz6Allocator* allocator);
+
+void hz6_allocator_note_transfer_push(Hz6Allocator* allocator);
+
+void hz6_allocator_note_transfer_pop(Hz6Allocator* allocator);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

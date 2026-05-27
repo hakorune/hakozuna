@@ -37,6 +37,8 @@ API:
   api/hz6_allocator_owner_dead.c owns owner-dead transitions
   api/hz6_allocator_transfer_query.c and api/hz6_allocator_transfer_dispatch.c
   split allocator-facing TransferLayer observation from dispatch helpers
+  api/hz6_allocator_types.h and api/hz6_allocator_api.h split allocator type
+  definitions from public API declarations
   hz6_stats_snapshot() is the public stats observation boundary
   allocator note helpers are the front-facing stats update boundary
   hz6_allocator_owner_token() is the front-facing owner token read boundary

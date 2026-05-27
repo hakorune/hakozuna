@@ -16,6 +16,8 @@ hakozuna-hz6/
     hz6_contract.h
 
   api/
+    hz6_allocator_types.h
+    hz6_allocator_api.h
     hz6_allocator.h
     hz6_allocator.c
     hz6_allocator_descriptor.c
@@ -157,6 +159,8 @@ R1 currently starts with this modular subset:
 include/hz6.h
 include/hz6_config.h
 include/hz6_contract.h
+api/hz6_allocator_types.h
+api/hz6_allocator_api.h
 api/hz6_allocator.h
 api/hz6_allocator.c
 api/hz6_allocator_descriptor.c
