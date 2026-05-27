@@ -57,6 +57,8 @@ remote free:
   ACTIVE -> TRANSFER_FREE
   transfer-first malloc consumes transfer before source allocation
   second remote free before reuse is rejected
+  allocator routes through `Hz6TransferBackend`, currently single-cache backed
+  backend wrapper preserves bounded push / class pop semantics
 
 front registry:
   toy handles <=4KiB

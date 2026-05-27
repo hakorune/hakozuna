@@ -95,6 +95,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    route/hz6_route_backend.*
    allocator and front util use backend wrapper instead of direct table calls
    exact table remains the only backend, covered by contract smoke
+20. Transfer backend seam. DONE:
+   transfer/hz6_transfer_backend.*
+   allocator and front util use backend wrapper instead of direct cache calls
+   single-cache remains the only backend, covered by contract smoke
 ```
 
 Current R1 smoke:

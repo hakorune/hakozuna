@@ -38,6 +38,7 @@ HZ6_LIB_SOURCES=(
   "${HZ6_DIR}/source/linux_source_mmap.c"
   "${HZ6_DIR}/source/hz6_source.c"
   "${HZ6_DIR}/source/hz6_source_registry.c"
+  "${HZ6_DIR}/transfer/hz6_transfer_backend.c"
   "${HZ6_DIR}/transfer/hz6_transfer.c"
 )
 

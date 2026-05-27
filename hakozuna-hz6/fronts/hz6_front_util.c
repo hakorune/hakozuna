@@ -50,7 +50,8 @@ void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
 
   if (allocator->profile.transfer_first) {
     Hz6TransferObject transfer;
-    while (hz6_transfer_pop(&allocator->transfer_cache, class_id, &transfer)) {
+    while (hz6_transfer_backend_pop(&allocator->transfer_backend, class_id,
+                                    &transfer)) {
       Hz6ObjectDescriptor* descriptor =
           (Hz6ObjectDescriptor*)transfer.descriptor;
       if (!hz6_allocator_activate_descriptor(
@@ -144,7 +145,7 @@ int hz6_front_free_remote_to_transfer(Hz6Allocator* allocator,
   object.class_id = descriptor->class_id;
   object.generation = descriptor->generation;
   descriptor->state = HZ6_STATE_TRANSFER_FREE;
-  if (!hz6_transfer_push(&allocator->transfer_cache, object)) {
+  if (!hz6_transfer_backend_push(&allocator->transfer_backend, object)) {
     descriptor->state = HZ6_STATE_ACTIVE;
     return 0;
   }

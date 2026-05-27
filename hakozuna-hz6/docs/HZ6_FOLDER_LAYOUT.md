@@ -36,6 +36,8 @@ hakozuna-hz6/
   transfer/
     hz6_transfer.h
     hz6_transfer.c
+    hz6_transfer_backend.h
+    hz6_transfer_backend.c
     hz6_transfer_shard.h
     hz6_transfer_shard.c
 
@@ -125,6 +127,8 @@ frontcache/hz6_size_class.h
 frontcache/hz6_size_class.c
 transfer/hz6_transfer.h
 transfer/hz6_transfer.c
+transfer/hz6_transfer_backend.h
+transfer/hz6_transfer_backend.c
 owner/hz6_owner.h
 source/hz6_source.h
 source/hz6_source.c
@@ -176,7 +180,7 @@ hz6_free:
 hz6_free_remote:
   route backend lookup
   VALID exact pointer -> ACTIVE to TRANSFER_FREE
-  bounded transfer push
+  bounded transfer backend push
   duplicate remote free -> fail-closed stats
 ```
 
@@ -238,6 +242,15 @@ Forbidden:
 ### `frontcache/`
 
 Owns class bins and hot cache hit/miss shape.
+
+### `transfer/`
+
+Owns cross-thread handoff shape.
+
+R1 uses `Hz6TransferBackend` as the allocator-facing seam. The only
+implemented backend is the single-cache backend, but front utility code should
+go through the backend wrapper so consumer-visible sharded transfer can replace
+it without moving transfer policy into individual fronts.
 
 ```text
 Allowed:

@@ -9,6 +9,7 @@
 #include "../source/hz6_source.h"
 #include "../source/hz6_source_registry.h"
 #include "../transfer/hz6_transfer.h"
+#include "../transfer/hz6_transfer_backend.h"
 
 #include <stdio.h>
 
@@ -124,6 +125,28 @@ int main(void) {
   if (!expect(hz6_transfer_pop(&transfer, 7, &popped), "transfer pop class") ||
       !expect(popped.ptr == base, "transfer pop pointer") ||
       !expect(hz6_transfer_count(&transfer) == 1, "transfer count")) {
+    return 1;
+  }
+
+  Hz6TransferObject backend_objects[2];
+  Hz6TransferBackend transfer_backend;
+  hz6_transfer_backend_init_single(&transfer_backend, backend_objects, 2);
+  if (!expect(hz6_transfer_backend_push(&transfer_backend, object_a),
+              "transfer backend push a") ||
+      !expect(hz6_transfer_backend_push(&transfer_backend, object_b),
+              "transfer backend push b") ||
+      !expect(!hz6_transfer_backend_push(&transfer_backend, object_a),
+              "transfer backend bounded")) {
+    return 1;
+  }
+  Hz6TransferObject backend_popped;
+  if (!expect(hz6_transfer_backend_pop(&transfer_backend, 8,
+                                       &backend_popped),
+              "transfer backend pop class") ||
+      !expect(backend_popped.ptr == object_b.ptr,
+              "transfer backend pop pointer") ||
+      !expect(hz6_transfer_backend_count(&transfer_backend) == 1,
+              "transfer backend count")) {
     return 1;
   }
 
