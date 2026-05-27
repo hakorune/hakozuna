@@ -743,7 +743,9 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    explicitly
 134. Orphan release/adoption split. DONE:
    api/hz6_allocator_orphan_release.c now owns orphan release
-   api/hz6_allocator_orphan_adopt.c now owns cross-owner orphan adoption
+   api/hz6_allocator_orphan_adopt_prepare.c and
+   api/hz6_allocator_orphan_adopt_commit.c now own cross-owner orphan
+   adoption
    api/hz6_allocator_orphan.c was removed after the split
    linux/build_hz6_r1_smokes.sh registers the new orphan helper modules
    explicitly
@@ -911,6 +913,14 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    reserve/commit/decommit/release helpers
    source/win_source_virtualalloc.c was removed after the split
    Windows source split is documented in the HZ6 folder layout
+160. Orphan adoption helper split. DONE:
+   api/hz6_allocator_orphan_adopt_prepare.c now owns orphan adoption
+   validation
+   api/hz6_allocator_orphan_adopt_commit.c now owns orphan adoption commit and
+   cleanup
+   api/hz6_allocator_orphan_adopt.c now stays as a thin wrapper
+   linux/build_hz6_r1_smokes.sh registers the split orphan adoption modules
+   explicitly
 144. Descriptor state local-cache/remote-transfer split. DONE:
    api/hz6_allocator_descriptor_local_cache.c now owns cache-active
    transitions

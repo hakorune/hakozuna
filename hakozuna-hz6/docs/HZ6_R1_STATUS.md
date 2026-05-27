@@ -25,7 +25,8 @@ API:
   api/hz6_allocator_descriptor_local_cache.c and
   api/hz6_allocator_descriptor_remote_transfer.c split descriptor cache and
   remote-free state transitions
-  api/hz6_allocator_orphan_release.c and api/hz6_allocator_orphan_adopt.c own
+  api/hz6_allocator_orphan_release.c and
+  api/hz6_allocator_orphan_adopt_prepare.c / api/hz6_allocator_orphan_adopt_commit.c own
   orphan release and cross-owner adoption separately
   api/hz6_allocator_remote_pending.c owns strict remote-pending drain
   api/hz6_allocator_route.c owns allocator-facing RouteLayer wrappers
@@ -129,6 +130,9 @@ Contracts:
   commit / decommit / release
   owner-dead transition helper is split into its own helper unit so owner
   shutdown state stays separate from orphan release/adoption flows
+  cross-owner orphan adoption is split into prepare and commit helper units so
+  source validation stays separate from route registration / front-cache
+  adoption / source cleanup
   source block route-envelope registration is split from source block lifecycle
   helpers so route-backed invalid range setup stays separate from source block
   allocation and release

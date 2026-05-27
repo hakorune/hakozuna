@@ -49,6 +49,8 @@ hakozuna-hz6/
     hz6_allocator_descriptor_release.c
     hz6_allocator_owner_dead.c
     hz6_allocator_orphan_release.c
+    hz6_allocator_orphan_adopt_prepare.c
+    hz6_allocator_orphan_adopt_commit.c
     hz6_allocator_orphan_adopt.c
     hz6_allocator_remote_pending.c
     hz6_allocator_route.c
@@ -219,6 +221,8 @@ api/hz6_allocator_descriptor_prepare.c
 api/hz6_allocator_descriptor_release.c
 api/hz6_allocator_owner_dead.c
 api/hz6_allocator_orphan_release.c
+api/hz6_allocator_orphan_adopt_prepare.c
+api/hz6_allocator_orphan_adopt_commit.c
 api/hz6_allocator_orphan_adopt.c
 api/hz6_allocator_remote_pending.c
 api/hz6_allocator_route.c
