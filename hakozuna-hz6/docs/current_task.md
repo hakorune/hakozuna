@@ -679,6 +679,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    separate from observability helpers
    linux/build_hz6_r1_smokes.sh registers hz6_transfer_backend_stats.c as an
    explicit HZ6_LIB_SOURCE
+127. Source block route split. DONE:
+   api/hz6_allocator_source_block_route.c now owns invalid-range route
+   registration for source blocks
+   api/hz6_allocator_source_block.c now keeps source block create/retain/release
+   separate from route-envelope registration
+   linux/build_hz6_r1_smokes.sh registers hz6_allocator_source_block_route.c
+   as an explicit HZ6_LIB_SOURCE
 ```
 
 Current R1 smoke:

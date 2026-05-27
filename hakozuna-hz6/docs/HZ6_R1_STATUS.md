@@ -73,6 +73,9 @@ Contracts:
   SourceBlock-backed front slots are split into their own helper unit so
   shared source-block lifetime is not mixed with direct source reserve/prefill
   helpers
+  source block route-envelope registration is split from source block lifecycle
+  helpers so route-backed invalid range setup stays separate from source block
+  allocation and release
   front reuse/free helpers are split into separate helper units so transfer
   cache reuse and free-path dispatch stop sharing one utility module
   MidPage prefill helpers are split into their own helper unit so run-fill

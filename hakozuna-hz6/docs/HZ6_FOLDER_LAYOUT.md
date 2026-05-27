@@ -158,6 +158,7 @@ api/hz6_allocator_remote_pending.c
 api/hz6_allocator_route.c
 api/hz6_allocator_scavenge.c
 api/hz6_allocator_source_block.c
+api/hz6_allocator_source_block_route.c
 api/hz6_allocator_transfer.c
 route/hz6_route.h
 route/hz6_route.c
