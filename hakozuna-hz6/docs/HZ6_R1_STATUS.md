@@ -19,6 +19,8 @@ API:
   setup boundary
   allocator active-descriptor transition helpers centralize local-cache and
   remote-transfer state changes
+  reclaim smoke covers orphan release/adoption and profile scavenge separately
+  from allocator/front integration smoke
 
 Contracts:
   route MISS / VALID / INVALID

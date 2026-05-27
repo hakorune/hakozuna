@@ -480,6 +480,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    stats note wrappers
    api/hz6_allocator.c is now focused on allocator lifecycle and public
    malloc/free/owns/stats entrypoints
+97. Reclaim smoke split. DONE:
+   tests/hz6_r1_reclaim_smoke.c now owns owner-dead orphan release, profile
+   scavenge, and cross-owner orphan adoption coverage
+   allocator smoke keeps allocator/front integration coverage and no longer
+   carries reclaim-specific scenarios
 ```
 
 Current R1 smoke:

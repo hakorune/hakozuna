@@ -162,6 +162,7 @@ fronts/midpage/hz6_midpage_front.h
 fronts/midpage/hz6_midpage_front.c
 tests/hz6_r1_contract_smoke.c
 tests/hz6_r1_allocator_smoke.c
+tests/hz6_r1_reclaim_smoke.c
 tests/hz6_r1_safety_smoke.c
 linux/build_hz6_r1_smokes.sh
 linux/build_hz6_r1_contract_smoke.sh
@@ -169,8 +170,8 @@ linux/build_hz6_r1_contract_smoke.sh
 
 The Linux R1 smoke runner uses explicit `HZ6_SOURCES` and `HZ6_INCLUDES`
 arrays. Keep new modules visible there until a real build system is introduced.
-It builds the low-level contract smoke, allocator/front integration smoke, and
-fail-closed safety smoke.
+It builds the low-level contract smoke, allocator/front integration smoke,
+allocator reclaim smoke, and fail-closed safety smoke.
 `linux/build_hz6_r1_contract_smoke.sh` remains as a compatibility wrapper for
 the older command name.
 Linux mmap source ops are present as SourceLayer contract code, but Large128
