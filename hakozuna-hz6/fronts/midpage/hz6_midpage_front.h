@@ -30,6 +30,9 @@ int hz6_midpage_policy_for_size(size_t size,
 
 int hz6_midpage_class_bytes(uint16_t class_id, size_t* bytes);
 
+int hz6_midpage_prefill_policy_for_class(uint16_t class_id,
+                                         Hz6MidPageRunPolicy* policy);
+
 int hz6_midpage_can_allocate(size_t size,
                              size_t align,
                              uint16_t* class_id);

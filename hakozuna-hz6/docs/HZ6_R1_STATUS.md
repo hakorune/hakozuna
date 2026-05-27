@@ -123,6 +123,8 @@ Contracts:
   mapping stays separate from run-fill and alloc/free dispatch
   MidPage front alloc/free/ops helpers are split into separate helper units so
   page-run selection stays separate from reuse and transfer dispatch
+  MidPage prefill policy helper is split into its own helper unit so run
+  geometry stays separate from the source-backed run-fill loop
   front source prefill helpers are split into their own helper unit and header
   so direct source reserve logic stays separate from slow-path prefill loops
   front source prefill one-shot helper is split from the loop wrapper so

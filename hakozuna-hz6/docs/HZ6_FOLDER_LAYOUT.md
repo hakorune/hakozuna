@@ -132,8 +132,9 @@ hakozuna-hz6/
     midpage/
       hz6_midpage.h
       hz6_midpage.c
-      hz6_midpage_prefill.c
-      hz6_midpage_policy.c
+    hz6_midpage_prefill.c
+    hz6_midpage_prefill_policy.c
+    hz6_midpage_policy.c
     large/
     hz6_large128_front.h
     hz6_large128_front_alloc.c

@@ -839,6 +839,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    api/hz6_allocator_api_orphan.h now owns orphan release/adopt helpers
    api/hz6_allocator_api_state.h is reduced to a thin umbrella over the
    specialized API headers
+152. MidPage prefill policy split. DONE:
+   fronts/midpage/hz6_midpage_prefill_policy.c now owns the per-class run
+   geometry helper
+   fronts/midpage/hz6_midpage_prefill.c now keeps the actual source-backed
+   run fill loop separate from policy calculation
+   fronts/midpage/hz6_midpage_front.h exposes the helper boundary explicitly
 144. Descriptor state local-cache/remote-transfer split. DONE:
    api/hz6_allocator_descriptor_local_cache.c now owns cache-active
    transitions

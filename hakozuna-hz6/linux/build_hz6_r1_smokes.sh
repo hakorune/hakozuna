@@ -67,6 +67,7 @@ HZ6_LIB_SOURCES=(
   "${HZ6_DIR}/fronts/hz6_front_reuse.c"
   "${HZ6_DIR}/fronts/hz6_front_free.c"
   "${HZ6_DIR}/fronts/midpage/hz6_midpage_prefill.c"
+  "${HZ6_DIR}/fronts/midpage/hz6_midpage_prefill_policy.c"
   "${HZ6_DIR}/fronts/midpage/hz6_midpage_policy.c"
   "${HZ6_DIR}/fronts/large/hz6_large128_front_alloc.c"
   "${HZ6_DIR}/fronts/large/hz6_large128_front_free.c"
