@@ -22,7 +22,7 @@ HZ6_INCLUDES=(
   "${HZ6_DIR}/api"
 )
 
-HZ6_SOURCES=(
+HZ6_LIB_SOURCES=(
   "${HZ6_DIR}/api/hz6_allocator.c"
   "${HZ6_DIR}/frontcache/hz6_frontcache.c"
   "${HZ6_DIR}/frontcache/hz6_size_class.c"
@@ -34,7 +34,6 @@ HZ6_SOURCES=(
   "${HZ6_DIR}/route/hz6_route.c"
   "${HZ6_DIR}/source/hz6_source.c"
   "${HZ6_DIR}/transfer/hz6_transfer.c"
-  "${HZ6_DIR}/tests/hz6_r1_contract_smoke.c"
 )
 
 HZ6_INCLUDE_FLAGS=()
@@ -42,9 +41,20 @@ for include_dir in "${HZ6_INCLUDES[@]}"; do
   HZ6_INCLUDE_FLAGS+=("-I${include_dir}")
 done
 
-"$CC_BIN" -std=c11 -Wall -Wextra -Werror -O2 \
-  "${HZ6_INCLUDE_FLAGS[@]}" \
-  "${HZ6_SOURCES[@]}" \
-  -o "${OUT_DIR}/hz6_r1_contract_smoke"
+build_smoke() {
+  local test_source="$1"
+  local output_name="$2"
 
-"${OUT_DIR}/hz6_r1_contract_smoke"
+  "$CC_BIN" -std=c11 -Wall -Wextra -Werror -O2 \
+    "${HZ6_INCLUDE_FLAGS[@]}" \
+    "${HZ6_LIB_SOURCES[@]}" \
+    "$test_source" \
+    -o "${OUT_DIR}/${output_name}"
+
+  "${OUT_DIR}/${output_name}"
+}
+
+build_smoke "${HZ6_DIR}/tests/hz6_r1_contract_smoke.c" \
+  "hz6_r1_contract_smoke"
+build_smoke "${HZ6_DIR}/tests/hz6_r1_allocator_smoke.c" \
+  "hz6_r1_allocator_smoke"

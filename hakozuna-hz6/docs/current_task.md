@@ -72,6 +72,9 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
 13. Build script hygiene. DONE:
    linux/build_hz6_r1_contract_smoke.sh uses source/include arrays
    new modules should be added to HZ6_SOURCES/HZ6_INCLUDES explicitly
+14. Smoke split. DONE:
+   tests/hz6_r1_contract_smoke.c covers route/transfer/owner/profile/source
+   tests/hz6_r1_allocator_smoke.c covers allocator/front integration
 ```
 
 Current R1 smoke:

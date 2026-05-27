@@ -135,11 +135,14 @@ fronts/toy/hz6_toy_front.c
 fronts/large/hz6_large128_front.h
 fronts/large/hz6_large128_front.c
 tests/hz6_r1_contract_smoke.c
+tests/hz6_r1_allocator_smoke.c
 linux/build_hz6_r1_contract_smoke.sh
 ```
 
 The Linux R1 smoke script uses explicit `HZ6_SOURCES` and `HZ6_INCLUDES`
 arrays. Keep new modules visible there until a real build system is introduced.
+It builds both the low-level contract smoke and allocator/front integration
+smoke.
 
 The current API path is intentionally small:
 
