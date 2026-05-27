@@ -93,12 +93,12 @@ Contracts:
   route table management is split into core/exact/invalid modules so entry
   init/register stays separate from route lookup and invalid-envelope
   handling
-  transfer backend sharded variant is split into its own module so sharded
+  transfer backend sharded variant is split into push/pop helpers so sharded
   push/pop and shard accounting stay separate from single-cache dispatch
   transfer backend observability is split into its own module so aggregate
   count/capacity helpers stay separate from sharded push/pop
-  transfer backend sharded init/ops helpers are split into separate helper
-  units so shard creation stays separate from shard push/pop dispatch
+  transfer backend sharded init/push/pop helpers are split into separate
+  helper units so shard creation stays separate from shard push/pop dispatch
   transfer backend stats aggregate/shard helpers are split into separate helper
   units so aggregate count/capacity stays separate from shard indexing
   transfer contract smoke covers bounded single-cache and sharded backend

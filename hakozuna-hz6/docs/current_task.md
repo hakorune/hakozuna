@@ -783,8 +783,9 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    explicitly
 139. Transfer backend sharded init/ops split. DONE:
    transfer/hz6_transfer_backend_sharded_init.c now owns sharded backend init
-   transfer/hz6_transfer_backend_sharded_ops.c now owns shard push/pop
-   transfer/hz6_transfer_backend_sharded.c was removed after the split
+   transfer/hz6_transfer_backend_sharded_push.c now owns shard push dispatch
+   transfer/hz6_transfer_backend_sharded_pop.c now owns shard pop dispatch
+   the monolithic sharded backend file was removed after the split
    linux/build_hz6_r1_smokes.sh registers the new sharded transfer modules
    explicitly
 140. Allocator transfer query/dispatch split. DONE:
@@ -928,6 +929,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    the monolithic page-table lookup body was removed after the split
    linux/build_hz6_r1_smokes.sh registers the split route backend page-table
    modules explicitly
+162. Transfer backend sharded ops split. DONE:
+   transfer/hz6_transfer_backend_sharded_push.c now owns sharded push dispatch
+   transfer/hz6_transfer_backend_sharded_pop.c now owns sharded pop dispatch
+   the monolithic sharded ops file was removed after the split
+   linux/build_hz6_r1_smokes.sh registers the split sharded transfer backend
+   ops explicitly
 144. Descriptor state local-cache/remote-transfer split. DONE:
    api/hz6_allocator_descriptor_local_cache.c now owns cache-active
    transitions
