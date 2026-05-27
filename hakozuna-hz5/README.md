@@ -4,6 +4,13 @@ HZ5 is a sidecar allocator prototype that starts from a page/run-first design.
 It lives next to HZ3 (`hakozuna/`) and HZ4 (`hakozuna-mt/`) so the HZ3 S276
 default can remain stable while HZ5 explores a different classification model.
 
+## Archive / DOI
+
+- Zenodo record (3.5-hz5): https://zenodo.org/records/20411598
+- DOI (3.5-hz5): https://doi.org/10.5281/zenodo.20411598
+- All-version DOI for the HZ5 sidecar allocator series:
+  https://doi.org/10.5281/zenodo.20411597
+
 ## Direction
 
 HZ5 is intended to combine:

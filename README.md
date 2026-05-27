@@ -1,6 +1,7 @@
 # hakozuna (hz3) / hakozuna-mt (hz4) / hakozuna-hz5
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19139939.svg)](https://doi.org/10.5281/zenodo.19139939)
+[![hz3/hz4 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20411402.svg)](https://doi.org/10.5281/zenodo.20411402)
+[![HZ5 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20411598.svg)](https://doi.org/10.5281/zenodo.20411598)
 
 **High-performance memory allocators competitive with mimalloc and tcmalloc**
 
@@ -79,11 +80,18 @@ This repository already includes public Windows-native allocator comparisons and
 - ACE-Alloc Paper (English): `docs/paper/main_en.pdf`
 - ACE-Alloc Paper (Japanese): `docs/paper/main_ja.pdf`
 - Local paper workspace: `private/paper/`
-- Public paper PDFs currently match the `v3.2` paper revision; `v3.3` is a
-  source/artifact release focused on Linux arm64 coverage and ownership-routing
-  bug fixes
-- Latest archived Zenodo record (v3.3): https://zenodo.org/records/19139939
-- DOI (v3.3): https://doi.org/10.5281/zenodo.19139939
+- Latest hz3/hz4 archived Zenodo record (v3.4):
+  https://zenodo.org/records/20411402
+- DOI for hz3/hz4 v3.4:
+  https://doi.org/10.5281/zenodo.20411402
+- All-version DOI for the hz3/hz4 ACE-Alloc artifact series:
+  https://doi.org/10.5281/zenodo.18305952
+- HZ5 archived Zenodo record (3.5-hz5):
+  https://zenodo.org/records/20411598
+- DOI for HZ5 3.5-hz5:
+  https://doi.org/10.5281/zenodo.20411598
+- All-version DOI for the HZ5 sidecar allocator series:
+  https://doi.org/10.5281/zenodo.20411597
 - GitHub Releases: https://github.com/hakorune/hakozuna/releases
 - Citation metadata: `CITATION.cff`
 - Changelog: `CHANGELOG.md` (BREAKING changes are explicitly listed per release)
