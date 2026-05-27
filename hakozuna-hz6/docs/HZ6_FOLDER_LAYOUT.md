@@ -176,6 +176,8 @@ specific real front.
 `fronts/large/hz6_large128_front.*` is the first real-front seed. It handles
 requests above the toy/small range up to 128KiB and exercises
 `ACTIVE -> TRANSFER_FREE -> ACTIVE` through the same front registry.
+The toy front owns only requests up to 4KiB. Larger unsupported requests must
+miss all fronts instead of being rounded down into a smaller allocation.
 
 Shared descriptor/cache/transfer transitions live in
 `fronts/hz6_front_util.*`. Real fronts should keep only range/class decisions

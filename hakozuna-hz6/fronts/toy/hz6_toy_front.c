@@ -6,7 +6,7 @@
 static int hz6_toy_front_can_allocate(size_t size,
                                       size_t align,
                                       uint16_t* class_id) {
-  if (align > 16 || !class_id) {
+  if (align > 16 || !class_id || size > 4096) {
     return 0;
   }
 

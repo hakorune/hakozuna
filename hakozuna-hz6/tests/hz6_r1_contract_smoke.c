@@ -216,6 +216,10 @@ int main(void) {
       !expect(large_stats.source_alloc == 1, "large128 source alloc")) {
     return 1;
   }
+  if (!expect(hz6_malloc(&large_allocator, HZ6_LARGE128_BYTES + 1) == NULL,
+              "unsupported over-large allocation")) {
+    return 1;
+  }
   hz6_allocator_destroy(&large_allocator);
 
   Hz6Allocator remote_allocator;

@@ -65,6 +65,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
 11. Front utility common path. IN PROGRESS:
    fronts/hz6_front_util.*
    removes duplicated descriptor/cache/transfer transitions from toy/large
+12. Front range correctness. DONE:
+   toy front limited to <=4KiB
+   Large128 front handles >4KiB..128KiB
+   unsupported >128KiB allocation returns NULL in R1 smoke
 ```
 
 Current R1 smoke:
