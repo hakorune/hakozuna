@@ -84,9 +84,10 @@ Contracts:
   separate headers under include/
   allocator api state is now a thin umbrella over init/descriptor/owner/source
   /orphan helper headers
-  route backend page-table variant is split into its own module so PAGE_TABLE
-  lookup stays separate from exact-table init/register helpers, while shared
-  page-alignment math lives in route/hz6_route_backend_util.h
+  route backend page-table variant is split into page-table wrapper, exact
+  scan, and invalid scan helper units so PAGE_TABLE lookup stays separate from
+  exact-table init/register helpers, while shared page-alignment math lives in
+  route/hz6_route_backend_util.h
   route backend init/register/unregister/lookup helpers are split into separate
   helper units so table setup stays separate from route dispatch
   route table management is split into core/exact/invalid modules so entry

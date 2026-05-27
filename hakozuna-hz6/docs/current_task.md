@@ -921,6 +921,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    api/hz6_allocator_orphan_adopt.c now stays as a thin wrapper
    linux/build_hz6_r1_smokes.sh registers the split orphan adoption modules
    explicitly
+161. Route backend page-table split. DONE:
+   route/hz6_route_backend_page_table.c now owns PAGE_TABLE wrapper dispatch
+   route/hz6_route_backend_page_table_exact.c now owns exact-entry scans
+   route/hz6_route_backend_page_table_invalid.c now owns invalid-entry scans
+   the monolithic page-table lookup body was removed after the split
+   linux/build_hz6_r1_smokes.sh registers the split route backend page-table
+   modules explicitly
 144. Descriptor state local-cache/remote-transfer split. DONE:
    api/hz6_allocator_descriptor_local_cache.c now owns cache-active
    transitions

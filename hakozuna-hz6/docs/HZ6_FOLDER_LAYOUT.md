@@ -73,6 +73,8 @@ hakozuna-hz6/
     hz6_route_backend_unregister.c
     hz6_route_backend_lookup.c
     hz6_route_backend_page_table.c
+    hz6_route_backend_page_table_exact.c
+    hz6_route_backend_page_table_invalid.c
     hz6_route_table_core.c
     hz6_route_table_exact.c
     hz6_route_table_invalid.c
@@ -244,6 +246,8 @@ route/hz6_route_backend_register.c
 route/hz6_route_backend_unregister.c
 route/hz6_route_backend_lookup.c
 route/hz6_route_backend_page_table.c
+route/hz6_route_backend_page_table_exact.c
+route/hz6_route_backend_page_table_invalid.c
 route/hz6_route_table_core.c
 route/hz6_route_table_exact.c
 route/hz6_route_table_invalid.c

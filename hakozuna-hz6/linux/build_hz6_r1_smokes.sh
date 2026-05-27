@@ -94,6 +94,8 @@ HZ6_LIB_SOURCES=(
   "${HZ6_DIR}/route/hz6_route_backend_unregister.c"
   "${HZ6_DIR}/route/hz6_route_backend_lookup.c"
   "${HZ6_DIR}/route/hz6_route_backend_page_table.c"
+  "${HZ6_DIR}/route/hz6_route_backend_page_table_exact.c"
+  "${HZ6_DIR}/route/hz6_route_backend_page_table_invalid.c"
   "${HZ6_DIR}/route/hz6_route_table_core.c"
   "${HZ6_DIR}/route/hz6_route_table_exact.c"
   "${HZ6_DIR}/route/hz6_route_table_invalid.c"
