@@ -3,6 +3,9 @@
 HZ6 is the planned transfer-first successor to the HZ5 sidecar allocator
 research. It now has an R1 executable seed: modular contracts, a toy
 contract-validation front, and a first Large128 transfer-first front seed.
+This tree is smoke-only so far; no HZ6 benchmark table has been run yet.
+
+Japanese README: [READMEjp.md](READMEjp.md)
 
 ## Positioning
 
@@ -73,6 +76,14 @@ hz6-r1-transfer-smoke ok
 hz6-r1-reclaim-smoke ok
 hz6-r1-safety-smoke ok
 ```
+
+## Benchmark Status
+
+HZ6 has not been benchmarked yet. The current evidence is smoke-only, so no
+performance claim should be made from the R1 seed.
+
+The first benchmark pass should happen after the prototype path is frozen and
+should compare HZ6 against HZ3 / HZ4 / HZ5 on the same machine.
 
 ## Non-Goals
 

@@ -17,10 +17,21 @@ It should promote:
 It should not directly port HZ3/HZ4/HZ5 internals.
 ```
 
+## Benchmark Status
+
+```text
+HZ6 has not been benchmarked yet.
+Current evidence is smoke-only.
+Do not treat R1 modularization as a performance result.
+The first benchmark pass should compare a frozen HZ6 prototype against
+HZ3 / HZ4 / HZ5 on the same machine with the same runner.
+```
+
 ## Active Documents
 
 ```text
 hakozuna-hz6/README.md
+hakozuna-hz6/READMEjp.md
 hakozuna-hz6/docs/HZ6_BLUEPRINT.md
 hakozuna-hz6/docs/HZ6_R1_STATUS.md
 hakozuna-hz6/docs/HZ6_R1_MINIMUM_CONTRACT_BLUEPRINT.md
@@ -999,6 +1010,17 @@ hz6-r1-sourceblock-smoke ok
 hz6-r1-transfer-smoke ok
 hz6-r1-reclaim-smoke ok
 hz6-r1-safety-smoke ok
+```
+
+## Next Benchmark Plan
+
+```text
+Keep the current smoke-only status while module boundaries settle.
+Once the first HZ6 prototype path is frozen, add a benchmark lane that uses:
+  - the same machine as HZ3 / HZ4 / HZ5
+  - the same runner settings for all families
+  - explicit HZ6 profile names instead of one universal default
+  - benchmark tables only after the prototype path stops moving
 ```
 
 ## Open Decisions

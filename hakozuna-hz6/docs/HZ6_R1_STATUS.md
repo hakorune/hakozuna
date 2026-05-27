@@ -376,6 +376,7 @@ hz6-r1-safety-smoke ok
 ## Current Non-Claims
 
 ```text
+No HZ6 benchmark has been run yet; R1 evidence is smoke-only.
 No performance claim.
 No preload integration.
 No general span policy beyond the Local2P/Large128 mmap seeds.

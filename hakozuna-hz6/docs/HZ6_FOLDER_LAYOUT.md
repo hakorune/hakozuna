@@ -9,6 +9,7 @@ contract.
 ```text
 hakozuna-hz6/
   README.md
+  READMEjp.md
 
   include/
     hz6.h
