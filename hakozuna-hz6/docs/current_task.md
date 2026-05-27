@@ -407,6 +407,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    of direct allocator.stats field access
    rg confirms tests/fronts/api no longer contain allocator.stats field access
    outside allocator/front internals
+84. Allocator source registry boundary helper. DONE:
+   hz6_allocator_source_ops() exposes SourceLayer ops lookup through the
+   allocator API boundary
+   shared FrontUtil and MidPage now obtain source ops through the allocator
+   helper instead of directly reading allocator.source_registry
 ```
 
 Current R1 smoke:

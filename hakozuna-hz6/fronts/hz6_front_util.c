@@ -19,7 +19,7 @@ void* hz6_front_reuse_or_source_kind(Hz6Allocator* allocator,
     return NULL;
   }
   const Hz6OsMemoryOps* source_ops =
-      hz6_source_registry_lookup(&allocator->source_registry, source_kind);
+      hz6_allocator_source_ops(allocator, source_kind);
   return hz6_front_reuse_or_source_ops(allocator, front_id, class_id, bytes,
                                        source_ops, source_kind);
 }
@@ -192,7 +192,7 @@ void* hz6_front_source_slot_kind(Hz6Allocator* allocator,
     return NULL;
   }
   const Hz6OsMemoryOps* source_ops =
-      hz6_source_registry_lookup(&allocator->source_registry, source_kind);
+      hz6_allocator_source_ops(allocator, source_kind);
   return hz6_front_source_slot_ops(allocator, front_id, class_id, user_bytes,
                                    source_bytes, source_offset, source_ops,
                                    source_kind);
@@ -366,7 +366,7 @@ size_t hz6_front_prefill_source_kind(Hz6Allocator* allocator,
   }
 
   const Hz6OsMemoryOps* source_ops =
-      hz6_source_registry_lookup(&allocator->source_registry, source_kind);
+      hz6_allocator_source_ops(allocator, source_kind);
   if (!hz6_source_ops_valid(source_ops) || source_kind == HZ6_SOURCE_NONE) {
     return 0;
   }

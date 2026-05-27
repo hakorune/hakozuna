@@ -133,6 +133,10 @@ size_t hz6_allocator_profile_source_refill_batch(
 size_t hz6_allocator_profile_transfer_capacity(
     const Hz6Allocator* allocator);
 
+const Hz6OsMemoryOps* hz6_allocator_source_ops(
+    const Hz6Allocator* allocator,
+    Hz6SourceKind source_kind);
+
 Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
                                           const void* ptr);
 

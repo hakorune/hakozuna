@@ -450,6 +450,14 @@ size_t hz6_allocator_profile_transfer_capacity(
   return allocator ? allocator->profile.transfer_capacity : 0;
 }
 
+const Hz6OsMemoryOps* hz6_allocator_source_ops(
+    const Hz6Allocator* allocator,
+    Hz6SourceKind source_kind) {
+  return allocator ? hz6_source_registry_lookup(&allocator->source_registry,
+                                                source_kind)
+                   : NULL;
+}
+
 Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
                                           const void* ptr) {
   if (!allocator || !ptr) {
