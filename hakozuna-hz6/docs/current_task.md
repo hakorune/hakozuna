@@ -286,6 +286,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    hz6_allocator_prefill_size() exposes the helper at the allocator layer
    allocator smoke verifies size-based prefill for Large128 / Local2P and
    verifies MidPage still returns zero because run prefill is class-specific
+65. Large128 profile batch refill. DONE:
+   Large128 alloc miss now uses profile.source_batch through the shared
+   prefill helper before falling back to one-off source allocation
+   transfer-first profiles still consume TRANSFER_FREE spans before cached
+   LOCAL_FREE spans after a batch refill
+   allocator smoke verifies Large128 source allocation is batched up to the
+   frontcache bin capacity
 ```
 
 Current R1 smoke:

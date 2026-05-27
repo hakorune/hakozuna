@@ -715,9 +715,14 @@ int main(void) {
   }
   hz6_free(&large_allocator, large_reused);
   Hz6StatsSnapshot large_stats = hz6_stats_snapshot(&large_allocator);
+  size_t large_expected_source =
+      large_allocator.profile.source_batch < HZ6_FRONT_CACHE_BIN_CAPACITY
+          ? large_allocator.profile.source_batch
+          : HZ6_FRONT_CACHE_BIN_CAPACITY;
   if (!expect(large_stats.transfer_push == 1, "large128 transfer push") ||
       !expect(large_stats.transfer_pop == 1, "large128 transfer pop") ||
-      !expect(large_stats.source_alloc == 1, "large128 source alloc")) {
+      !expect(large_stats.source_alloc == large_expected_source,
+              "large128 source batch alloc")) {
     return 1;
   }
   if (!expect(hz6_malloc(&large_allocator, HZ6_LARGE128_BYTES + 1) == NULL,

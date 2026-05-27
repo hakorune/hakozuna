@@ -20,9 +20,9 @@ static void* hz6_large128_alloc(Hz6Allocator* allocator,
     return NULL;
   }
 
-  return hz6_front_reuse_or_source_kind(
+  return hz6_front_reuse_or_prefill_source_kind(
       allocator, HZ6_FRONT_LARGE, class_id, HZ6_LARGE128_BYTES,
-      HZ6_SOURCE_OS_PAGED);
+      HZ6_SOURCE_OS_PAGED, allocator->profile.source_batch);
 }
 
 static int hz6_large128_free_local(Hz6Allocator* allocator,

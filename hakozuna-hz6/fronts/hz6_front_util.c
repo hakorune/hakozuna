@@ -24,6 +24,36 @@ void* hz6_front_reuse_or_source_kind(Hz6Allocator* allocator,
                                        source_ops, source_kind);
 }
 
+void* hz6_front_reuse_or_prefill_source_kind(Hz6Allocator* allocator,
+                                             uint16_t front_id,
+                                             uint16_t class_id,
+                                             size_t bytes,
+                                             Hz6SourceKind source_kind,
+                                             size_t count) {
+  if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT || bytes == 0) {
+    return NULL;
+  }
+
+  void* reused = allocator->profile.transfer_first
+                     ? hz6_front_reuse_transfer_or_cached(allocator, class_id)
+                     : hz6_front_reuse_cached_or_transfer(allocator,
+                                                          class_id);
+  if (reused) {
+    return reused;
+  }
+
+  size_t refill_count = count ? count : 1;
+  if (hz6_front_prefill_source_kind(allocator, front_id, class_id, bytes,
+                                    source_kind, refill_count) == 0) {
+    return hz6_front_reuse_or_source_kind(allocator, front_id, class_id,
+                                          bytes, source_kind);
+  }
+
+  return allocator->profile.transfer_first
+             ? hz6_front_reuse_transfer_or_cached(allocator, class_id)
+             : hz6_front_reuse_cached_or_transfer(allocator, class_id);
+}
+
 void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
                                     uint16_t front_id,
                                     uint16_t class_id,
