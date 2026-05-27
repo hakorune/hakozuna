@@ -36,6 +36,9 @@ Contracts:
   route backend separately from the lower-level mixed contract smoke
   transfer contract smoke covers bounded single-cache and sharded backend
   push/pop, class filtering, shard preference, fallback, and uneven capacities
+  source contract smoke covers source ops validation, Linux mmap source ops,
+  source registry lookup, and ScavengeLayer budget accounting separately from
+  the lower-level mixed contract smoke
   shared object states
   owner token/liveness helper
   profile configuration

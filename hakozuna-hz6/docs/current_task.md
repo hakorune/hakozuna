@@ -513,6 +513,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    explicit push/pop shard, and uneven shard capacity coverage
    contract smoke keeps owner, profile, frontcache, source, and scavenge
    low-level module coverage without TransferLayer bulk
+103. Source contract smoke split. DONE:
+   tests/hz6_r1_source_contract_smoke.c now owns source ops validation,
+   Linux mmap source ops, source registry lookup, and ScavengeLayer budget
+   accounting coverage
+   contract smoke keeps owner, profile, and frontcache low-level module
+   coverage without SourceLayer/ScavengeLayer bulk
 ```
 
 Current R1 smoke:
@@ -527,6 +533,7 @@ Expected:
 hz6-r1-contract-smoke ok
 hz6-r1-route-smoke ok
 hz6-r1-transfer-contract-smoke ok
+hz6-r1-source-contract-smoke ok
 hz6-r1-allocator-smoke ok
 hz6-r1-prefill-smoke ok
 hz6-r1-sourceblock-smoke ok
