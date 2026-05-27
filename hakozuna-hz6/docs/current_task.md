@@ -157,6 +157,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    hz6_transfer_backend_count_class()
    hz6_transfer_backend_shard_count_at()
    contract smoke verifies class visibility and shard distribution
+34. Profile transfer capacity wiring. DONE:
+   Hz6ProfileConfig.transfer_capacity now selects transfer backend capacity
+   capacity is capped by HZ6_TRANSFER_CACHE_CAPACITY
+   allocator smoke covers RSS profile capacity and capped remote profile capacity
 ```
 
 Current R1 smoke:

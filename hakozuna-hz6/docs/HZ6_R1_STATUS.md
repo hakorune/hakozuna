@@ -74,6 +74,8 @@ remote free:
   speed/remote profiles use sharded transfer
   backend wrapper preserves bounded push / class pop semantics
   backend exposes class counts and per-shard counts for smoke diagnostics
+  profile transfer capacity is applied during backend init and capped by
+  `HZ6_TRANSFER_CACHE_CAPACITY`
 
 front registry:
   toy handles <=4KiB

@@ -269,6 +269,8 @@ transfer can replace the smoke-only shard backend without moving transfer
 policy into individual fronts.
 R1 also exposes class-count and per-shard-count helpers for smoke diagnostics;
 these are observability helpers, not hot-path policy.
+Profile transfer capacity is applied when the backend is initialized and capped
+by the compile-time backing array.
 
 ```text
 Allowed:

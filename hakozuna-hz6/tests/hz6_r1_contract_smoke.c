@@ -140,6 +140,8 @@ int main(void) {
               "transfer backend push a") ||
       !expect(hz6_transfer_backend_push(&transfer_backend, object_b),
               "transfer backend push b") ||
+      !expect(hz6_transfer_backend_capacity(&transfer_backend) == 2,
+              "transfer backend capacity") ||
       !expect(hz6_transfer_backend_count_class(&transfer_backend, 7) == 1,
               "transfer backend class count a") ||
       !expect(!hz6_transfer_backend_push(&transfer_backend, object_a),
@@ -166,6 +168,8 @@ int main(void) {
               "transfer sharded push a") ||
       !expect(hz6_transfer_backend_push(&sharded_backend, object_b),
               "transfer sharded push b") ||
+      !expect(hz6_transfer_backend_capacity(&sharded_backend) == 4,
+              "transfer sharded capacity") ||
       !expect(hz6_transfer_backend_shard_count_at(&sharded_backend, 0) == 1,
               "transfer sharded shard zero count") ||
       !expect(hz6_transfer_backend_shard_count_at(&sharded_backend, 1) == 1,

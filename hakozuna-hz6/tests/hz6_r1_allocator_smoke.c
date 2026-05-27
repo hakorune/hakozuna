@@ -56,6 +56,12 @@ int main(void) {
               "remote profile sharded transfer")) {
     return 1;
   }
+  if (!expect(hz6_transfer_backend_capacity(
+                  &local2p_allocator.transfer_backend) ==
+                  HZ6_TRANSFER_CACHE_CAPACITY,
+              "remote profile transfer capacity")) {
+    return 1;
+  }
   void* local2p_object = hz6_malloc(&local2p_allocator, HZ6_LOCAL2P_BYTES);
   if (!expect(local2p_object != NULL, "local2p malloc")) {
     return 1;
@@ -103,6 +109,19 @@ int main(void) {
     return 1;
   }
   hz6_allocator_destroy(&local2p_allocator);
+
+  Hz6Allocator rss_capacity_allocator;
+  hz6_allocator_init_with_profile(&rss_capacity_allocator, HZ6_PROFILE_RSS);
+  if (!expect(hz6_transfer_backend_capacity(
+                  &rss_capacity_allocator.transfer_backend) ==
+                  rss_capacity_allocator.profile.transfer_capacity,
+              "rss profile transfer capacity") ||
+      !expect(rss_capacity_allocator.transfer_backend.kind ==
+                  HZ6_TRANSFER_BACKEND_SINGLE_CACHE,
+              "rss profile single transfer")) {
+    return 1;
+  }
+  hz6_allocator_destroy(&rss_capacity_allocator);
 
   Hz6Allocator midpage_allocator;
   hz6_allocator_init_with_profile(&midpage_allocator, HZ6_PROFILE_REMOTE);
