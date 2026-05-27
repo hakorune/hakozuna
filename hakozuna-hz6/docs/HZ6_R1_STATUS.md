@@ -67,6 +67,8 @@ route:
   diagnostics so callers do not need to inspect the route backend field directly
   hz6_allocator_route_unregister_exact() is the front-facing exact route
   removal boundary
+  allocator route registration helpers wrap exact route registration and
+  SourceBlock invalid-range registration for fronts
 
 local free:
   ACTIVE -> LOCAL_FREE

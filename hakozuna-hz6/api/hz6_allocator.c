@@ -521,6 +521,49 @@ void hz6_allocator_route_unregister_exact(Hz6Allocator* allocator,
   hz6_route_backend_unregister_exact(&allocator->route_backend, ptr);
 }
 
+int hz6_allocator_route_register_exact(Hz6Allocator* allocator,
+                                       void* base,
+                                       size_t bytes,
+                                       uint16_t front_id,
+                                       uint16_t class_id,
+                                       uint32_t generation,
+                                       void* descriptor) {
+  if (!allocator || !base || bytes == 0) {
+    return 0;
+  }
+  return hz6_route_backend_register_exact(&allocator->route_backend,
+                                          base,
+                                          bytes,
+                                          front_id,
+                                          class_id,
+                                          generation,
+                                          descriptor);
+}
+
+int hz6_allocator_source_block_register_invalid_range(
+    Hz6Allocator* allocator,
+    Hz6SourceBlock* block,
+    uint16_t front_id,
+    uint16_t class_id) {
+  if (!allocator || !block || !block->active || !block->ptr ||
+      block->bytes == 0) {
+    return 0;
+  }
+  if (block->route_registered) {
+    return 1;
+  }
+  if (!hz6_route_backend_register_invalid_range(&allocator->route_backend,
+                                                block->ptr,
+                                                block->bytes,
+                                                front_id,
+                                                class_id)) {
+    return 0;
+  }
+  block->route_backend = &allocator->route_backend;
+  block->route_registered = 1;
+  return 1;
+}
+
 Hz6RouteBackendKind hz6_allocator_route_backend_kind(
     const Hz6Allocator* allocator) {
   if (!allocator) {

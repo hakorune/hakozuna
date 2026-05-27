@@ -427,6 +427,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    profile shard selection plus TransferBackend push/pop
    shared FrontUtil no longer calls TransferBackend push/pop or transfer shard
    policy helpers directly
+88. Allocator route registration boundary helpers. DONE:
+   hz6_allocator_route_register_exact() and
+   hz6_allocator_source_block_register_invalid_range() expose route
+   registration through the allocator boundary
+   shared FrontUtil and MidPage no longer call RouteBackend register/lookup
+   helpers through allocator.route_backend directly
 ```
 
 Current R1 smoke:

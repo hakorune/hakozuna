@@ -164,6 +164,20 @@ Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
 void hz6_allocator_route_unregister_exact(Hz6Allocator* allocator,
                                           void* ptr);
 
+int hz6_allocator_route_register_exact(Hz6Allocator* allocator,
+                                       void* base,
+                                       size_t bytes,
+                                       uint16_t front_id,
+                                       uint16_t class_id,
+                                       uint32_t generation,
+                                       void* descriptor);
+
+int hz6_allocator_source_block_register_invalid_range(
+    Hz6Allocator* allocator,
+    Hz6SourceBlock* block,
+    uint16_t front_id,
+    uint16_t class_id);
+
 Hz6RouteBackendKind hz6_allocator_route_backend_kind(
     const Hz6Allocator* allocator);
 

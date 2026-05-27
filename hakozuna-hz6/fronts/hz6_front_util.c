@@ -93,9 +93,9 @@ void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
   descriptor->owner = allocator->owner.token;
   descriptor->generation = 1;
   descriptor->state = HZ6_STATE_ACTIVE;
-  if (!hz6_route_backend_register_exact(&allocator->route_backend, ptr, bytes,
-                                        front_id, class_id,
-                                        descriptor->generation, descriptor)) {
+  if (!hz6_allocator_route_register_exact(allocator, ptr, bytes,
+                                          front_id, class_id,
+                                          descriptor->generation, descriptor)) {
     hz6_allocator_release_descriptor_source(descriptor);
     return NULL;
   }
@@ -236,8 +236,8 @@ void* hz6_front_source_slot_ops(Hz6Allocator* allocator,
   descriptor->generation = 1;
   descriptor->state = HZ6_STATE_ACTIVE;
 
-  if (!hz6_route_backend_register_exact(
-          &allocator->route_backend, user_ptr, user_bytes, front_id, class_id,
+  if (!hz6_allocator_route_register_exact(
+          allocator, user_ptr, user_bytes, front_id, class_id,
           descriptor->generation, descriptor)) {
     hz6_allocator_release_descriptor_source(descriptor);
     return NULL;
@@ -266,13 +266,10 @@ void* hz6_front_source_block_slot(Hz6Allocator* allocator,
     return NULL;
   }
   if (!source_block->route_registered) {
-    if (!hz6_route_backend_register_invalid_range(
-            &allocator->route_backend, source_block->ptr, source_block->bytes,
-            front_id, class_id)) {
+    if (!hz6_allocator_source_block_register_invalid_range(
+            allocator, source_block, front_id, class_id)) {
       return NULL;
     }
-    source_block->route_backend = &allocator->route_backend;
-    source_block->route_registered = 1;
   }
   if (!hz6_allocator_retain_source_block(source_block)) {
     return NULL;
@@ -291,8 +288,8 @@ void* hz6_front_source_block_slot(Hz6Allocator* allocator,
   descriptor->generation = 1;
   descriptor->state = HZ6_STATE_ACTIVE;
 
-  if (!hz6_route_backend_register_exact(
-          &allocator->route_backend, user_ptr, user_bytes, front_id, class_id,
+  if (!hz6_allocator_route_register_exact(
+          allocator, user_ptr, user_bytes, front_id, class_id,
           descriptor->generation, descriptor)) {
     hz6_allocator_release_descriptor_source(descriptor);
     return NULL;
@@ -329,9 +326,9 @@ static int hz6_front_prefill_one(Hz6Allocator* allocator,
   descriptor->generation = 1;
   descriptor->state = HZ6_STATE_LOCAL_FREE;
 
-  if (!hz6_route_backend_register_exact(&allocator->route_backend, ptr, bytes,
-                                        front_id, class_id,
-                                        descriptor->generation, descriptor)) {
+  if (!hz6_allocator_route_register_exact(allocator, ptr, bytes,
+                                          front_id, class_id,
+                                          descriptor->generation, descriptor)) {
     hz6_allocator_release_descriptor_source(descriptor);
     return 0;
   }

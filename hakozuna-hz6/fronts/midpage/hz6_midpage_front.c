@@ -84,8 +84,7 @@ size_t hz6_midpage_prefill_run(Hz6Allocator* allocator, uint16_t class_id) {
       break;
     }
 
-    Hz6RouteResult route =
-        hz6_route_backend_lookup(&allocator->route_backend, ptr);
+    Hz6RouteResult route = hz6_allocator_route_lookup(allocator, ptr);
     Hz6ObjectDescriptor* descriptor =
         (Hz6ObjectDescriptor*)route.descriptor;
     if (route.kind != HZ6_ROUTE_VALID || !descriptor) {
