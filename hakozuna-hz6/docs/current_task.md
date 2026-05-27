@@ -904,6 +904,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    source/linux_source_mmap.c was removed after the split
    linux/build_hz6_r1_smokes.sh registers the split Linux mmap modules
    explicitly
+159. Windows source split. DONE:
+   source/win_source_virtualalloc_ops.c now owns Windows VirtualAlloc source
+   ops assembly
+   source/win_source_virtualalloc_memory.c now owns Windows VirtualAlloc
+   reserve/commit/decommit/release helpers
+   source/win_source_virtualalloc.c was removed after the split
+   Windows source split is documented in the HZ6 folder layout
 144. Descriptor state local-cache/remote-transfer split. DONE:
    api/hz6_allocator_descriptor_local_cache.c now owns cache-active
    transitions

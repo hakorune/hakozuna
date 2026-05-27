@@ -39,6 +39,9 @@ API:
   source-system validation and malloc/free/release backing
   source/linux_source_mmap_ops.c and source/linux_source_mmap_memory.c own
   Linux mmap source ops assembly and reserve/commit/decommit/release backing
+  source/win_source_virtualalloc_ops.c and source/win_source_virtualalloc_memory.c
+  own Windows VirtualAlloc source ops assembly and reserve/commit/decommit/
+  release backing
   fronts/hz6_front_source_kind.c and fronts/hz6_front_source_ops.c own
   source-kind wrappers and direct source-ops allocation
   api/hz6_allocator_owner_dead.c owns owner-dead transitions
@@ -119,6 +122,9 @@ Contracts:
   SourceLayer system ops and system memory helpers are split into separate
   helper units so validation stays separate from malloc/free/release backing
   Linux mmap source ops and Linux mmap memory helpers are split into separate
+  helper units so page-size / ops assembly stays separate from reserve /
+  commit / decommit / release
+  Windows VirtualAlloc source ops and memory helpers are split into separate
   helper units so page-size / ops assembly stays separate from reserve /
   commit / decommit / release
   owner-dead transition helper is split into its own helper unit so owner

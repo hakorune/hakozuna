@@ -108,7 +108,8 @@ hakozuna-hz6/
     hz6_source_registry_lookup.c
     linux_source_mmap_ops.c
     linux_source_mmap_memory.c
-    win_source_virtualalloc.c
+    win_source_virtualalloc_ops.c
+    win_source_virtualalloc_memory.c
 
   scavenge/
     hz6_scavenge.h
