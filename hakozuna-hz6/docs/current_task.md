@@ -122,6 +122,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    Linux maps OS-paged to mmap
    Windows maps OS-paged to VirtualAlloc behind _WIN32
    Local2P/Large128 fronts no longer name Linux-specific source kind
+26. MidPage seed front. DONE:
+   fronts/midpage/hz6_midpage_front.*
+   >4KiB..32KiB requests route to HZ6_FRONT_MIDPAGE
+   remote transfer reuse is covered by allocator smoke
 ```
 
 Current R1 smoke:
@@ -162,6 +166,7 @@ Toy allocation and transfer paths are for contract validation only.
 Large128 is still a seed front, not a performance claim.
 Large128 has Linux mmap backing, but no full span/source refill policy yet.
 Local2P is an exact 64KiB seed front, not the final Windows Local2P profile.
+MidPage is a seed front, not the final page-run allocator.
 Sharded transfer is single-thread smoke coverage only; synchronization and
 real benchmark validation are still pending.
 Cross-owner orphan rescue / adoption is still not implemented.

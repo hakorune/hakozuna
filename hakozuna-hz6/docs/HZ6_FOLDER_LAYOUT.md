@@ -148,6 +148,8 @@ fronts/large/hz6_large128_front.h
 fronts/large/hz6_large128_front.c
 fronts/local2p/hz6_local2p_front.h
 fronts/local2p/hz6_local2p_front.c
+fronts/midpage/hz6_midpage_front.h
+fronts/midpage/hz6_midpage_front.c
 tests/hz6_r1_contract_smoke.c
 tests/hz6_r1_allocator_smoke.c
 linux/build_hz6_r1_contract_smoke.sh
@@ -199,8 +201,10 @@ the toy implementation without moving allocation policy back into `api/`.
 Front selection lives in `fronts/hz6_front.*`; the API should not name a
 specific real front.
 
-`fronts/large/hz6_large128_front.*` is the first real-front seed. It handles
-requests above the toy/small range up to 128KiB except exact 64KiB and exercises
+`fronts/midpage/hz6_midpage_front.*` owns requests above the toy/small range up
+to 32KiB. It is a contract seed, not the final page-run allocator.
+`fronts/large/hz6_large128_front.*` handles requests above the MidPage range up
+to 128KiB except exact 64KiB and exercises
 `ACTIVE -> TRANSFER_FREE -> ACTIVE` through the same front registry.
 `fronts/local2p/hz6_local2p_front.*` owns exact 64KiB requests first, so the
 Local2P contract can evolve independently from the broader Large128 seed.

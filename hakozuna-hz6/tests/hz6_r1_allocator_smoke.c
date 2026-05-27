@@ -1,6 +1,7 @@
 #include "../api/hz6_allocator.h"
 #include "../fronts/large/hz6_large128_front.h"
 #include "../fronts/local2p/hz6_local2p_front.h"
+#include "../fronts/midpage/hz6_midpage_front.h"
 #include "../include/hz6_contract.h"
 #include "../route/hz6_route.h"
 
@@ -102,6 +103,38 @@ int main(void) {
     return 1;
   }
   hz6_allocator_destroy(&local2p_allocator);
+
+  Hz6Allocator midpage_allocator;
+  hz6_allocator_init_with_profile(&midpage_allocator, HZ6_PROFILE_REMOTE);
+  void* midpage_object = hz6_malloc(&midpage_allocator, 16384);
+  if (!expect(midpage_object != NULL, "midpage malloc")) {
+    return 1;
+  }
+  Hz6RouteResult midpage_route =
+      hz6_route_backend_lookup(&midpage_allocator.route_backend,
+                               midpage_object);
+  if (!expect(midpage_route.kind == HZ6_ROUTE_VALID,
+              "midpage route valid") ||
+      !expect(midpage_route.front_id == HZ6_FRONT_MIDPAGE,
+              "midpage route front") ||
+      !expect(midpage_route.class_id == HZ6_MIDPAGE_CLASS_ID,
+              "midpage route class") ||
+      !expect(hz6_free_remote(&midpage_allocator, midpage_object),
+              "midpage remote free")) {
+    return 1;
+  }
+  void* midpage_reused = hz6_malloc(&midpage_allocator, 16384);
+  if (!expect(midpage_reused == midpage_object, "midpage transfer reuse")) {
+    return 1;
+  }
+  hz6_free(&midpage_allocator, midpage_reused);
+  Hz6StatsSnapshot midpage_stats = hz6_stats_snapshot(&midpage_allocator);
+  if (!expect(midpage_stats.transfer_push == 1, "midpage transfer push") ||
+      !expect(midpage_stats.transfer_pop == 1, "midpage transfer pop") ||
+      !expect(midpage_stats.source_alloc == 1, "midpage source alloc")) {
+    return 1;
+  }
+  hz6_allocator_destroy(&midpage_allocator);
 
   Hz6Allocator large_allocator;
   hz6_allocator_init_with_profile(&large_allocator, HZ6_PROFILE_REMOTE);

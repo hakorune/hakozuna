@@ -32,6 +32,11 @@ Fronts:
     exercises the Local2P route/front contract
     uses Linux mmap SourceLayer backing in the Linux R1 smoke
 
+  midpage:
+    >4KiB..32KiB seed front
+    exercises the MidPage route/front contract
+    uses OS-paged SourceLayer backing in the Linux R1 smoke
+
   large128:
     >4KiB..128KiB except exact 64KiB seed front
     exercises transfer-first reuse
@@ -69,8 +74,9 @@ remote free:
 
 front registry:
   toy handles <=4KiB
+  midpage handles >4KiB..32KiB
   local2p handles exact 64KiB
-  large128 handles >4KiB..128KiB except exact 64KiB
+  large128 handles >32KiB..128KiB except exact 64KiB
   >128KiB is unsupported in R1 and returns NULL
 
 source:
@@ -105,7 +111,7 @@ No preload integration.
 No general span policy beyond the Local2P/Large128 mmap seeds.
 No threaded transfer synchronization or performance claim for sharded transfer yet.
 No cross-owner orphan rescue / adoption path yet.
-No MidPage real front yet.
+No real MidPage page-run/span policy yet.
 No HZ5 source migration.
 No HZ3/HZ4/HZ5 implementation copy.
 ```
