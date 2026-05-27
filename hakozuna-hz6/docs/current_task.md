@@ -787,7 +787,8 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
 141. Route backend init/dispatch split. DONE:
    route/hz6_route_backend_init.c now owns exact/page-table initialization and
    shares route granularity helpers with the lookup module
-   route/hz6_route_backend_dispatch.c now owns register/unregister/lookup
+   route backend dispatch responsibilities now live in role-named register /
+   unregister / lookup modules
    route/hz6_route_backend.c was removed after the split
    linux/build_hz6_r1_smokes.sh registers the new route backend modules
    explicitly
@@ -873,6 +874,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    source/hz6_source_registry.c was removed after the split
    linux/build_hz6_r1_smokes.sh registers the split source registry modules
    explicitly
+156. Route backend dispatch split. DONE:
+   route/hz6_route_backend_register.c now owns backend register helpers
+   route/hz6_route_backend_unregister.c now owns backend unregister helpers
+   route/hz6_route_backend_lookup.c now owns backend lookup dispatch
+   the monolithic route backend dispatch file was removed after the split
+   linux/build_hz6_r1_smokes.sh registers the split route backend dispatch
+   modules explicitly
 144. Descriptor state local-cache/remote-transfer split. DONE:
    api/hz6_allocator_descriptor_local_cache.c now owns cache-active
    transitions

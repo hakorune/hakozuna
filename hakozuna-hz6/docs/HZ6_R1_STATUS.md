@@ -79,8 +79,8 @@ Contracts:
   route backend page-table variant is split into its own module so PAGE_TABLE
   lookup stays separate from exact-table init/register helpers, while shared
   page-alignment math lives in route/hz6_route_backend_util.h
-  route backend init/dispatch helpers are split into separate helper units so
-  table setup stays separate from register/lookup dispatch
+  route backend init/register/unregister/lookup helpers are split into separate
+  helper units so table setup stays separate from route dispatch
   route table management is split into core/exact/invalid modules so entry
   init/register stays separate from route lookup and invalid-envelope
   handling

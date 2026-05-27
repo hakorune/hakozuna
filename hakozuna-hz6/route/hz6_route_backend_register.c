@@ -1,9 +1,5 @@
 #include "hz6_route_backend.h"
 
-Hz6RouteResult hz6_route_backend_lookup_page_table(
-    const Hz6RouteBackend* backend,
-    const void* ptr);
-
 int hz6_route_backend_register_exact(Hz6RouteBackend* backend,
                                      void* base,
                                      size_t bytes,
@@ -20,16 +16,6 @@ int hz6_route_backend_register_exact(Hz6RouteBackend* backend,
                                   class_id, generation, descriptor);
 }
 
-void hz6_route_backend_unregister_exact(Hz6RouteBackend* backend,
-                                        void* base) {
-  if (!backend ||
-      (backend->kind != HZ6_ROUTE_BACKEND_EXACT_TABLE &&
-       backend->kind != HZ6_ROUTE_BACKEND_PAGE_TABLE)) {
-    return;
-  }
-  hz6_route_unregister_exact(&backend->exact_table, base);
-}
-
 int hz6_route_backend_register_invalid_range(Hz6RouteBackend* backend,
                                              void* base,
                                              size_t bytes,
@@ -42,27 +28,4 @@ int hz6_route_backend_register_invalid_range(Hz6RouteBackend* backend,
   }
   return hz6_route_register_invalid_range(&backend->exact_table, base, bytes,
                                           front_id, class_id);
-}
-
-void hz6_route_backend_unregister_invalid_range(Hz6RouteBackend* backend,
-                                                void* base) {
-  if (!backend ||
-      (backend->kind != HZ6_ROUTE_BACKEND_EXACT_TABLE &&
-       backend->kind != HZ6_ROUTE_BACKEND_PAGE_TABLE)) {
-    return;
-  }
-  hz6_route_unregister_invalid_range(&backend->exact_table, base);
-}
-
-Hz6RouteResult hz6_route_backend_lookup(const Hz6RouteBackend* backend,
-                                        const void* ptr) {
-  if (!backend ||
-      (backend->kind != HZ6_ROUTE_BACKEND_EXACT_TABLE &&
-       backend->kind != HZ6_ROUTE_BACKEND_PAGE_TABLE)) {
-    return hz6_route_miss();
-  }
-  if (backend->kind == HZ6_ROUTE_BACKEND_PAGE_TABLE) {
-    return hz6_route_backend_lookup_page_table(backend, ptr);
-  }
-  return hz6_route_lookup(&backend->exact_table, ptr);
 }
