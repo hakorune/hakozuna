@@ -174,8 +174,9 @@ linux/build_hz6_r1_smokes.sh
 linux/build_hz6_r1_contract_smoke.sh
 ```
 
-The Linux R1 smoke runner uses explicit `HZ6_SOURCES` and `HZ6_INCLUDES`
-arrays. Keep new modules visible there until a real build system is introduced.
+The Linux R1 smoke runner uses explicit `HZ6_SOURCES`, `HZ6_INCLUDES`, and
+`HZ6_SMOKES` arrays. Keep new modules and new smoke files visible there until a
+real build system is introduced.
 It builds the core contract smoke, route contract smoke, transfer backend
 contract smoke, source/scavenge contract smoke, allocator/front integration
 smoke, allocator prefill smoke, SourceBlock/MidPage run smoke, allocator

@@ -50,6 +50,19 @@ HZ6_LIB_SOURCES=(
   "${HZ6_DIR}/transfer/hz6_transfer.c"
 )
 
+HZ6_SMOKES=(
+  "tests/hz6_r1_core_contract_smoke.c:hz6_r1_core_contract_smoke"
+  "tests/hz6_r1_route_smoke.c:hz6_r1_route_smoke"
+  "tests/hz6_r1_transfer_contract_smoke.c:hz6_r1_transfer_contract_smoke"
+  "tests/hz6_r1_source_contract_smoke.c:hz6_r1_source_contract_smoke"
+  "tests/hz6_r1_allocator_smoke.c:hz6_r1_allocator_smoke"
+  "tests/hz6_r1_prefill_smoke.c:hz6_r1_prefill_smoke"
+  "tests/hz6_r1_sourceblock_smoke.c:hz6_r1_sourceblock_smoke"
+  "tests/hz6_r1_transfer_smoke.c:hz6_r1_transfer_smoke"
+  "tests/hz6_r1_reclaim_smoke.c:hz6_r1_reclaim_smoke"
+  "tests/hz6_r1_safety_smoke.c:hz6_r1_safety_smoke"
+)
+
 HZ6_INCLUDE_FLAGS=()
 for include_dir in "${HZ6_INCLUDES[@]}"; do
   HZ6_INCLUDE_FLAGS+=("-I${include_dir}")
@@ -68,23 +81,8 @@ build_smoke() {
   "${OUT_DIR}/${output_name}"
 }
 
-build_smoke "${HZ6_DIR}/tests/hz6_r1_core_contract_smoke.c" \
-  "hz6_r1_core_contract_smoke"
-build_smoke "${HZ6_DIR}/tests/hz6_r1_route_smoke.c" \
-  "hz6_r1_route_smoke"
-build_smoke "${HZ6_DIR}/tests/hz6_r1_transfer_contract_smoke.c" \
-  "hz6_r1_transfer_contract_smoke"
-build_smoke "${HZ6_DIR}/tests/hz6_r1_source_contract_smoke.c" \
-  "hz6_r1_source_contract_smoke"
-build_smoke "${HZ6_DIR}/tests/hz6_r1_allocator_smoke.c" \
-  "hz6_r1_allocator_smoke"
-build_smoke "${HZ6_DIR}/tests/hz6_r1_prefill_smoke.c" \
-  "hz6_r1_prefill_smoke"
-build_smoke "${HZ6_DIR}/tests/hz6_r1_sourceblock_smoke.c" \
-  "hz6_r1_sourceblock_smoke"
-build_smoke "${HZ6_DIR}/tests/hz6_r1_transfer_smoke.c" \
-  "hz6_r1_transfer_smoke"
-build_smoke "${HZ6_DIR}/tests/hz6_r1_reclaim_smoke.c" \
-  "hz6_r1_reclaim_smoke"
-build_smoke "${HZ6_DIR}/tests/hz6_r1_safety_smoke.c" \
-  "hz6_r1_safety_smoke"
+for smoke in "${HZ6_SMOKES[@]}"; do
+  test_source="${smoke%%:*}"
+  output_name="${smoke##*:}"
+  build_smoke "${HZ6_DIR}/${test_source}" "$output_name"
+done

@@ -526,6 +526,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    reclaim, safety, and SourceBlock coverage each have dedicated smoke files
    the remaining core contract smoke covers owner token, profile policy,
    size-class, and FrontCache primitives
+105. Smoke runner registry cleanup. DONE:
+   linux/build_hz6_r1_smokes.sh now has explicit HZ6_SMOKES entries in
+   addition to HZ6_INCLUDES and HZ6_LIB_SOURCES
+   adding a new R1 smoke now means adding one registry entry instead of
+   appending another build_smoke call at the bottom of the script
 ```
 
 Current R1 smoke:
