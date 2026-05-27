@@ -87,6 +87,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    source/hz6_source_registry.*
    allocator owns system/Linux source selection
    fronts name source kind instead of including OS-specific source backends
+18. Local2P exact seed front. DONE:
+   fronts/local2p/hz6_local2p_front.*
+   exact 64KiB requests route to HZ6_FRONT_LOCAL2P before Large128
+   remote transfer reuse is covered by allocator smoke
 ```
 
 Current R1 smoke:
@@ -126,4 +130,5 @@ No benchmark table until an HZ6 prototype exists.
 Toy allocation and transfer paths are for contract validation only.
 Large128 is still a seed front, not a performance claim.
 Large128 has Linux mmap backing, but no full span/source refill policy yet.
+Local2P is an exact 64KiB seed front, not the final Windows Local2P profile.
 ```

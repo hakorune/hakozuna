@@ -140,6 +140,8 @@ fronts/toy/hz6_toy_front.h
 fronts/toy/hz6_toy_front.c
 fronts/large/hz6_large128_front.h
 fronts/large/hz6_large128_front.c
+fronts/local2p/hz6_local2p_front.h
+fronts/local2p/hz6_local2p_front.c
 tests/hz6_r1_contract_smoke.c
 tests/hz6_r1_allocator_smoke.c
 linux/build_hz6_r1_contract_smoke.sh
@@ -190,8 +192,10 @@ Front selection lives in `fronts/hz6_front.*`; the API should not name a
 specific real front.
 
 `fronts/large/hz6_large128_front.*` is the first real-front seed. It handles
-requests above the toy/small range up to 128KiB and exercises
+requests above the toy/small range up to 128KiB except exact 64KiB and exercises
 `ACTIVE -> TRANSFER_FREE -> ACTIVE` through the same front registry.
+`fronts/local2p/hz6_local2p_front.*` owns exact 64KiB requests first, so the
+Local2P contract can evolve independently from the broader Large128 seed.
 The toy front owns only requests up to 4KiB. Larger unsupported requests must
 miss all fronts instead of being rounded down into a smaller allocation.
 On Linux, this seed is backed by `source/linux_source_mmap.*`. Descriptors

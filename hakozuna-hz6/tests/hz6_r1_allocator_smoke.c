@@ -1,5 +1,6 @@
 #include "../api/hz6_allocator.h"
 #include "../fronts/large/hz6_large128_front.h"
+#include "../fronts/local2p/hz6_local2p_front.h"
 #include "../include/hz6_contract.h"
 #include "../route/hz6_route.h"
 
@@ -47,9 +48,40 @@ int main(void) {
   }
   hz6_allocator_destroy(&allocator);
 
+  Hz6Allocator local2p_allocator;
+  hz6_allocator_init_with_profile(&local2p_allocator, HZ6_PROFILE_REMOTE);
+  void* local2p_object = hz6_malloc(&local2p_allocator, HZ6_LOCAL2P_BYTES);
+  if (!expect(local2p_object != NULL, "local2p malloc")) {
+    return 1;
+  }
+  Hz6RouteResult local2p_route =
+      hz6_route_lookup(&local2p_allocator.route_table, local2p_object);
+  if (!expect(local2p_route.kind == HZ6_ROUTE_VALID,
+              "local2p route valid") ||
+      !expect(local2p_route.front_id == HZ6_FRONT_LOCAL2P,
+              "local2p route front") ||
+      !expect(local2p_route.class_id == HZ6_LOCAL2P_CLASS_ID,
+              "local2p route class") ||
+      !expect(hz6_free_remote(&local2p_allocator, local2p_object),
+              "local2p remote free")) {
+    return 1;
+  }
+  void* local2p_reused = hz6_malloc(&local2p_allocator, HZ6_LOCAL2P_BYTES);
+  if (!expect(local2p_reused == local2p_object, "local2p transfer reuse")) {
+    return 1;
+  }
+  hz6_free(&local2p_allocator, local2p_reused);
+  Hz6StatsSnapshot local2p_stats = hz6_stats_snapshot(&local2p_allocator);
+  if (!expect(local2p_stats.transfer_push == 1, "local2p transfer push") ||
+      !expect(local2p_stats.transfer_pop == 1, "local2p transfer pop") ||
+      !expect(local2p_stats.source_alloc == 1, "local2p source alloc")) {
+    return 1;
+  }
+  hz6_allocator_destroy(&local2p_allocator);
+
   Hz6Allocator large_allocator;
   hz6_allocator_init_with_profile(&large_allocator, HZ6_PROFILE_REMOTE);
-  void* large_object = hz6_malloc(&large_allocator, 65536);
+  void* large_object = hz6_malloc(&large_allocator, 70000);
   if (!expect(large_object != NULL, "large128 malloc")) {
     return 1;
   }
@@ -73,7 +105,7 @@ int main(void) {
               "large128 remote free")) {
     return 1;
   }
-  void* large_reused = hz6_malloc(&large_allocator, 65536);
+  void* large_reused = hz6_malloc(&large_allocator, 70000);
   if (!expect(large_reused == large_object, "large128 transfer reuse")) {
     return 1;
   }

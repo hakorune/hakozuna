@@ -27,8 +27,13 @@ Fronts:
   toy:
     <= 4KiB contract-validation front
 
+  local2p:
+    exact 64KiB seed front
+    exercises the Local2P route/front contract
+    uses Linux mmap SourceLayer backing in the Linux R1 smoke
+
   large128:
-    >4KiB..128KiB seed front
+    >4KiB..128KiB except exact 64KiB seed front
     exercises transfer-first reuse
     uses Linux mmap SourceLayer backing in the Linux R1 smoke
 ```
@@ -53,7 +58,8 @@ remote free:
 
 front registry:
   toy handles <=4KiB
-  large128 handles >4KiB..128KiB
+  local2p handles exact 64KiB
+  large128 handles >4KiB..128KiB except exact 64KiB
   >128KiB is unsupported in R1 and returns NULL
 
 source:
@@ -84,8 +90,8 @@ hz6-r1-allocator-smoke ok
 No performance claim.
 No preload integration.
 No Windows VirtualAlloc source path yet.
-No general span policy beyond the Large128 mmap seed.
-No Local2P or MidPage real front yet.
+No general span policy beyond the Local2P/Large128 mmap seeds.
+No MidPage real front yet.
 No HZ5 source migration.
 No HZ3/HZ4/HZ5 implementation copy.
 ```
@@ -97,7 +103,7 @@ No HZ3/HZ4/HZ5 implementation copy.
    Linux region/page route
    Windows sidecar route
 
-2. Add Local2P exact route/front as the next real profile seed.
+2. Add Windows VirtualAlloc source ops.
 
-3. Add Windows VirtualAlloc source ops.
+3. Add MidPage real front seed.
 ```
