@@ -6,6 +6,7 @@
 #include "../route/hz6_route.h"
 #include "../source/linux_source_mmap.h"
 #include "../source/hz6_source.h"
+#include "../source/hz6_source_registry.h"
 #include "../transfer/hz6_transfer.h"
 
 #include <stdio.h>
@@ -182,6 +183,20 @@ int main(void) {
               "linux mmap decommit") ||
       !expect(linux_ops.release(mapped, linux_ops.page_size),
               "linux mmap release")) {
+    return 1;
+  }
+
+  Hz6SourceRegistry source_registry;
+  hz6_source_registry_init(&source_registry);
+  const Hz6OsMemoryOps* system_lookup =
+      hz6_source_registry_lookup(&source_registry, HZ6_SOURCE_SYSTEM);
+  const Hz6OsMemoryOps* mmap_lookup =
+      hz6_source_registry_lookup(&source_registry, HZ6_SOURCE_LINUX_MMAP);
+  if (!expect(system_lookup != NULL, "source registry system") ||
+      !expect(mmap_lookup != NULL, "source registry linux mmap") ||
+      !expect(hz6_source_registry_lookup(&source_registry,
+                                         HZ6_SOURCE_NONE) == NULL,
+              "source registry none miss")) {
     return 1;
   }
 

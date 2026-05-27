@@ -59,6 +59,7 @@ front registry:
 source:
   Linux mmap ops validate through SourceLayer
   allocator-level source registry selects system vs Linux mmap source
+  source registry lookup is covered by contract smoke
   reserve / commit / decommit / release smoke passes
   Large128 descriptors carry source kind / release metadata
   allocator destroy releases Large128 mappings through SourceLayer
