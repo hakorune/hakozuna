@@ -2,6 +2,7 @@
 #define HZ6_ALLOCATOR_H
 
 #include "../frontcache/hz6_frontcache.h"
+#include "../frontcache/hz6_size_class.h"
 #include "../include/hz6.h"
 #include "../include/hz6_config.h"
 #include "../owner/hz6_owner.h"
@@ -36,6 +37,14 @@ struct Hz6Allocator {
 
 void hz6_allocator_init_with_profile(Hz6Allocator* allocator,
                                      Hz6ProfileId profile_id);
+
+Hz6ObjectDescriptor* hz6_allocator_find_free_descriptor(
+    Hz6Allocator* allocator);
+
+int hz6_allocator_activate_descriptor(Hz6ObjectDescriptor* descriptor,
+                                      Hz6ObjectState expected,
+                                      void* ptr,
+                                      uint32_t generation);
 
 #ifdef __cplusplus
 }

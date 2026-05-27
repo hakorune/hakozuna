@@ -55,6 +55,7 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    Windows Local2P exact route, or Linux LargeFront 128K transfer.
 9. Keep modular cleanup moving before real target:
    size-class mapping moved to frontcache/hz6_size_class.*
+   toy allocation/free transitions moved to fronts/toy/
 ```
 
 Current R1 smoke:

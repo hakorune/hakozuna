@@ -56,6 +56,9 @@ hakozuna-hz6/
     hz6_scavenge.c
 
   fronts/
+    toy/
+      hz6_toy_front.h
+      hz6_toy_front.c
     local2p/
       hz6_local2p.h
       hz6_local2p.c
@@ -117,6 +120,8 @@ source/hz6_source.h
 source/hz6_source.c
 policy/hz6_profiles.h
 policy/hz6_profiles.c
+fronts/toy/hz6_toy_front.h
+fronts/toy/hz6_toy_front.c
 tests/hz6_r1_contract_smoke.c
 linux/build_hz6_r1_contract_smoke.sh
 ```
@@ -148,6 +153,9 @@ that proves the module boundaries compose.
 
 Size-class mapping lives in `frontcache/hz6_size_class.*`, not in `api/`.
 The API layer should call it rather than own class policy.
+
+The current allocation behavior lives in `fronts/toy/`. It exists only to
+exercise the contract while real fronts are still being selected.
 
 ## Boundaries
 
