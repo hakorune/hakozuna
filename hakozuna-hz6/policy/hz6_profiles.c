@@ -8,6 +8,7 @@ Hz6ProfileConfig hz6_profile_config(Hz6ProfileId id) {
   config.transfer_capacity = 16;
   config.transfer_shards = 1;
   config.transfer_shard_policy = HZ6_TRANSFER_SHARD_OWNER_SLOT;
+  config.route_backend_policy = HZ6_ROUTE_POLICY_EXACT_TABLE;
   config.route_page_granularity = 0;
   config.source_batch = 1;
   config.scavenge_local_free_bytes = 0;
@@ -19,6 +20,7 @@ Hz6ProfileConfig hz6_profile_config(Hz6ProfileId id) {
       config.strict_owner_remote = 0;
       config.transfer_capacity = 64;
       config.transfer_shards = 4;
+      config.route_backend_policy = HZ6_ROUTE_POLICY_PAGE_TABLE;
       config.route_page_granularity = HZ6_ROUTE_PAGE_GRANULARITY;
       config.source_batch = 16;
       config.scavenge_local_free_bytes = 4096;
@@ -38,6 +40,7 @@ Hz6ProfileConfig hz6_profile_config(Hz6ProfileId id) {
       config.strict_owner_remote = 0;
       config.transfer_capacity = 128;
       config.transfer_shards = 4;
+      config.route_backend_policy = HZ6_ROUTE_POLICY_PAGE_TABLE;
       config.route_page_granularity = HZ6_ROUTE_PAGE_GRANULARITY;
       config.source_batch = 16;
       config.scavenge_local_free_bytes = 8192;

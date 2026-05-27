@@ -480,17 +480,25 @@ int main(void) {
       !expect(speed.transfer_shards == 4, "speed transfer shards") ||
       !expect(speed.transfer_shard_policy == HZ6_TRANSFER_SHARD_OWNER_SLOT,
               "speed transfer owner shard policy") ||
+      !expect(speed.route_backend_policy == HZ6_ROUTE_POLICY_PAGE_TABLE,
+              "speed page route policy") ||
       !expect(speed.route_page_granularity == HZ6_ROUTE_PAGE_GRANULARITY,
               "speed page route") ||
       !expect(rss.scavenge_local_free_bytes > speed.scavenge_local_free_bytes,
               "rss stronger local scavenge") ||
       !expect(rss.scavenge_orphan_bytes > speed.scavenge_orphan_bytes,
               "rss stronger orphan scavenge") ||
+      !expect(rss.route_backend_policy == HZ6_ROUTE_POLICY_EXACT_TABLE,
+              "rss exact route policy") ||
       !expect(rss.route_page_granularity == 0, "rss exact route") ||
       !expect(strict.strict_owner_remote == 1, "strict owner remote") ||
       !expect(strict.scavenge_local_free_bytes == 0,
               "strict no profile scavenge") ||
+      !expect(strict.route_backend_policy == HZ6_ROUTE_POLICY_EXACT_TABLE,
+              "strict exact route policy") ||
       !expect(strict.route_page_granularity == 0, "strict exact route") ||
+      !expect(remote.route_backend_policy == HZ6_ROUTE_POLICY_PAGE_TABLE,
+              "remote page route policy") ||
       !expect(remote.route_page_granularity == HZ6_ROUTE_PAGE_GRANULARITY,
               "remote page route")) {
     return 1;

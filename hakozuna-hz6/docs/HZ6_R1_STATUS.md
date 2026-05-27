@@ -157,6 +157,7 @@ scavenge:
 
 policy:
   profile config carries slow-path scavenge budgets
+  profile config names the route backend policy as EXACT_TABLE or PAGE_TABLE
   profile config owns transfer producer/consumer shard seed selection
   profile config names the transfer shard policy as OWNER_SLOT or CLASS_ID
   RSS profile can trigger explicit profile scavenging

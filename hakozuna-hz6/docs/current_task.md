@@ -351,6 +351,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    HZ6_TRANSFER_SHARD_OWNER_SLOT is the default profile policy
    HZ6_TRANSFER_SHARD_CLASS_ID is covered as a contract variant for future
    class-oriented transfer experiments
+75. Explicit route backend policy id. DONE:
+   Hz6ProfileConfig now carries route_backend_policy
+   HZ6_ROUTE_POLICY_EXACT_TABLE and HZ6_ROUTE_POLICY_PAGE_TABLE make route
+   backend selection explicit instead of inferring it from page granularity
+   allocator init selects the route backend from route_backend_policy
+   contract smoke verifies strict/rss exact policy and speed/remote page policy
 ```
 
 Current R1 smoke:
