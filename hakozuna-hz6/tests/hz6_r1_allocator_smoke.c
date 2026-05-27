@@ -50,6 +50,11 @@ int main(void) {
 
   Hz6Allocator local2p_allocator;
   hz6_allocator_init_with_profile(&local2p_allocator, HZ6_PROFILE_REMOTE);
+  if (!expect(local2p_allocator.transfer_backend.kind ==
+                  HZ6_TRANSFER_BACKEND_SHARDED_CACHE,
+              "remote profile sharded transfer")) {
+    return 1;
+  }
   void* local2p_object = hz6_malloc(&local2p_allocator, HZ6_LOCAL2P_BYTES);
   if (!expect(local2p_object != NULL, "local2p malloc")) {
     return 1;

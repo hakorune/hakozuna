@@ -19,6 +19,7 @@ typedef struct Hz6ProfileConfig {
   uint32_t transfer_first;
   uint32_t strict_owner_remote;
   uint32_t transfer_capacity;
+  uint32_t transfer_shards;
   uint32_t source_batch;
 } Hz6ProfileConfig;
 
@@ -29,4 +30,3 @@ Hz6ProfileConfig hz6_profile_config(Hz6ProfileId id);
 #endif
 
 #endif
-

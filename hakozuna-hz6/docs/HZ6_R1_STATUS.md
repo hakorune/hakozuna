@@ -57,7 +57,9 @@ remote free:
   ACTIVE -> TRANSFER_FREE
   transfer-first malloc consumes transfer before source allocation
   second remote free before reuse is rejected
-  allocator routes through `Hz6TransferBackend`, currently single-cache backed
+  allocator routes through `Hz6TransferBackend`
+  strict/rss profiles use single-cache transfer
+  speed/remote profiles use sharded transfer
   backend wrapper preserves bounded push / class pop semantics
 
 front registry:
@@ -95,6 +97,7 @@ No performance claim.
 No preload integration.
 No Windows VirtualAlloc source path yet.
 No general span policy beyond the Local2P/Large128 mmap seeds.
+No threaded transfer synchronization or performance claim for sharded transfer yet.
 No MidPage real front yet.
 No HZ5 source migration.
 No HZ3/HZ4/HZ5 implementation copy.

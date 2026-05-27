@@ -87,9 +87,16 @@ void hz6_allocator_init_with_profile(Hz6Allocator* allocator,
   hz6_route_backend_init_exact(&allocator->route_backend,
                                allocator->route_entries,
                                HZ6_ROUTE_TABLE_CAPACITY);
-  hz6_transfer_backend_init_single(&allocator->transfer_backend,
-                                   allocator->transfer_objects,
-                                   HZ6_TRANSFER_CACHE_CAPACITY);
+  if (allocator->profile.transfer_shards > 1) {
+    hz6_transfer_backend_init_sharded(&allocator->transfer_backend,
+                                      allocator->transfer_objects,
+                                      HZ6_TRANSFER_CACHE_CAPACITY,
+                                      allocator->profile.transfer_shards);
+  } else {
+    hz6_transfer_backend_init_single(&allocator->transfer_backend,
+                                     allocator->transfer_objects,
+                                     HZ6_TRANSFER_CACHE_CAPACITY);
+  }
 }
 
 void hz6_allocator_destroy(Hz6Allocator* allocator) {

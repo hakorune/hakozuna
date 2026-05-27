@@ -99,6 +99,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    transfer/hz6_transfer_backend.*
    allocator and front util use backend wrapper instead of direct cache calls
    single-cache remains the only backend, covered by contract smoke
+21. Sharded transfer backend seed. DONE:
+   transfer backend can split one object buffer into fixed shards
+   speed/remote profiles select sharded transfer
+   contract smoke covers bounded push, class pop, and aggregate count
 ```
 
 Current R1 smoke:
@@ -139,4 +143,6 @@ Toy allocation and transfer paths are for contract validation only.
 Large128 is still a seed front, not a performance claim.
 Large128 has Linux mmap backing, but no full span/source refill policy yet.
 Local2P is an exact 64KiB seed front, not the final Windows Local2P profile.
+Sharded transfer is single-thread smoke coverage only; synchronization and
+real benchmark validation are still pending.
 ```

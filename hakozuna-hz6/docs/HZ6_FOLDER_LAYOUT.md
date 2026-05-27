@@ -248,9 +248,10 @@ Owns class bins and hot cache hit/miss shape.
 Owns cross-thread handoff shape.
 
 R1 uses `Hz6TransferBackend` as the allocator-facing seam. The only
-implemented backend is the single-cache backend, but front utility code should
-go through the backend wrapper so consumer-visible sharded transfer can replace
-it without moving transfer policy into individual fronts.
+implemented backends are single-cache and fixed-shard cache. Front utility code
+must go through the backend wrapper so later consumer-visible synchronized
+transfer can replace the smoke-only shard backend without moving transfer
+policy into individual fronts.
 
 ```text
 Allowed:

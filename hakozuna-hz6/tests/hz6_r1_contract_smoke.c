@@ -150,6 +150,30 @@ int main(void) {
     return 1;
   }
 
+  Hz6TransferObject sharded_objects[4];
+  Hz6TransferBackend sharded_backend;
+  hz6_transfer_backend_init_sharded(&sharded_backend, sharded_objects, 4, 2);
+  if (!expect(sharded_backend.kind == HZ6_TRANSFER_BACKEND_SHARDED_CACHE,
+              "transfer sharded kind") ||
+      !expect(hz6_transfer_backend_push(&sharded_backend, object_a),
+              "transfer sharded push a") ||
+      !expect(hz6_transfer_backend_push(&sharded_backend, object_b),
+              "transfer sharded push b") ||
+      !expect(hz6_transfer_backend_count(&sharded_backend) == 2,
+              "transfer sharded count")) {
+    return 1;
+  }
+  Hz6TransferObject sharded_popped;
+  if (!expect(hz6_transfer_backend_pop(&sharded_backend, 7,
+                                       &sharded_popped),
+              "transfer sharded pop class") ||
+      !expect(sharded_popped.ptr == object_a.ptr,
+              "transfer sharded pop pointer") ||
+      !expect(hz6_transfer_backend_count(&sharded_backend) == 1,
+              "transfer sharded count after pop")) {
+    return 1;
+  }
+
   Hz6OwnerRecord owner;
   owner.token.slot = 3;
   owner.token.generation = 5;
@@ -170,6 +194,7 @@ int main(void) {
   Hz6ProfileConfig speed = hz6_profile_config(HZ6_PROFILE_SPEED);
   Hz6ProfileConfig strict = hz6_profile_config(HZ6_PROFILE_STRICT);
   if (!expect(speed.transfer_first == 1, "speed transfer-first") ||
+      !expect(speed.transfer_shards == 4, "speed transfer shards") ||
       !expect(strict.strict_owner_remote == 1, "strict owner remote")) {
     return 1;
   }

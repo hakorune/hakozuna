@@ -11,6 +11,10 @@
 #define HZ6_TRANSFER_CACHE_CAPACITY ((size_t)64)
 #endif
 
+#ifndef HZ6_TRANSFER_SHARD_COUNT
+#define HZ6_TRANSFER_SHARD_COUNT ((size_t)4)
+#endif
+
 #ifndef HZ6_OBJECT_DESCRIPTOR_CAPACITY
 #define HZ6_OBJECT_DESCRIPTOR_CAPACITY ((size_t)64)
 #endif
