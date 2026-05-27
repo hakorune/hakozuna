@@ -236,6 +236,35 @@ int main(void) {
   }
   hz6_allocator_destroy(&large_prefill_allocator);
 
+  Hz6Allocator local2p_prefill_allocator;
+  hz6_allocator_init_with_profile(&local2p_prefill_allocator,
+                                  HZ6_PROFILE_RSS);
+  size_t local2p_prefilled = hz6_local2p_prefill(
+      &local2p_prefill_allocator,
+      local2p_prefill_allocator.profile.source_batch);
+  if (!expect(local2p_prefilled ==
+                  local2p_prefill_allocator.profile.source_batch,
+              "local2p profile prefill count") ||
+      !expect(local2p_prefill_allocator.stats.source_alloc ==
+                  local2p_prefilled,
+              "local2p profile prefill source alloc")) {
+    return 1;
+  }
+  for (size_t i = 0; i < local2p_prefilled; ++i) {
+    void* prefetched_local2p =
+        hz6_malloc(&local2p_prefill_allocator, HZ6_LOCAL2P_BYTES);
+    if (!expect(prefetched_local2p != NULL,
+                "local2p profile prefilled malloc")) {
+      return 1;
+    }
+  }
+  if (!expect(local2p_prefill_allocator.stats.source_alloc ==
+                  local2p_prefilled,
+              "local2p profile prefill avoids refill")) {
+    return 1;
+  }
+  hz6_allocator_destroy(&local2p_prefill_allocator);
+
   Hz6MidPageRunPolicy midpage8_policy;
   Hz6MidPageRunPolicy midpage32_policy;
   if (!expect(hz6_midpage_policy_for_size(6000, 16, &midpage8_policy),

@@ -268,6 +268,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    Large128 front exposes hz6_large128_prefill()
    allocator smoke verifies RSS profile source_batch pre-fills Large128 cache
    consuming the prefilled Large128 objects avoids additional source refill
+61. Local2P profile prefill seed. DONE:
+   Local2P front exposes hz6_local2p_prefill()
+   allocator smoke verifies RSS profile source_batch pre-fills Local2P cache
+   consuming the prefilled Local2P objects avoids additional source refill
 ```
 
 Current R1 smoke:
