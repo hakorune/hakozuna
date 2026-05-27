@@ -828,16 +828,16 @@ int main(void) {
       !expect(hz6_free_remote(&consumer_shard_allocator, consumer_shard_b),
               "consumer shard remote free b") ||
       !expect(hz6_transfer_backend_shard_count_at(
-                  &consumer_shard_allocator.transfer_backend, 0) == 1,
-              "consumer shard zero count") ||
+                  &consumer_shard_allocator.transfer_backend, 0) == 0,
+              "consumer shard fallback shard empty") ||
       !expect(hz6_transfer_backend_shard_count_at(
-                  &consumer_shard_allocator.transfer_backend, 1) == 1,
-              "consumer shard one count")) {
+                  &consumer_shard_allocator.transfer_backend, 1) == 2,
+              "consumer shard producer shard count")) {
     return 1;
   }
   void* consumer_shard_reused = hz6_malloc(&consumer_shard_allocator, 128);
   if (!expect(consumer_shard_reused == consumer_shard_b,
-              "consumer shard home pop")) {
+              "consumer shard producer home pop")) {
     return 1;
   }
   hz6_free(&consumer_shard_allocator, consumer_shard_reused);

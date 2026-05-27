@@ -447,7 +447,8 @@ int hz6_front_free_remote_to_transfer(Hz6Allocator* allocator,
   descriptor->state = HZ6_STATE_TRANSFER_FREE;
   descriptor->owner.slot = 0;
   descriptor->owner.generation = 0;
-  if (!hz6_transfer_backend_push(&allocator->transfer_backend, object)) {
+  if (!hz6_transfer_backend_push_to_shard(&allocator->transfer_backend, object,
+                                          (size_t)allocator->owner.token.slot)) {
     descriptor->state = HZ6_STATE_ACTIVE;
     descriptor->owner = allocator->owner.token;
     return 0;

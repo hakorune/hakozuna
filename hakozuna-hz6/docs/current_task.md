@@ -334,6 +334,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    next_push_shard
    contract smoke verifies explicit push prefers the requested shard and falls
    back to another shard when the requested shard is full
+72. Remote free producer shard connection. DONE:
+   FrontLayer remote free now passes allocator owner slot as the producer shard
+   to hz6_transfer_backend_push_to_shard()
+   allocator smoke verifies owner slot 1 remote frees land in shard 1 and are
+   reused first by the same consumer home shard
 ```
 
 Current R1 smoke:
