@@ -267,8 +267,13 @@ int main(void) {
       hz6_source_registry_lookup(&source_registry, HZ6_SOURCE_SYSTEM);
   const Hz6OsMemoryOps* mmap_lookup =
       hz6_source_registry_lookup(&source_registry, HZ6_SOURCE_LINUX_MMAP);
+  const Hz6OsMemoryOps* os_paged_lookup =
+      hz6_source_registry_lookup(&source_registry, HZ6_SOURCE_OS_PAGED);
   if (!expect(system_lookup != NULL, "source registry system") ||
       !expect(mmap_lookup != NULL, "source registry linux mmap") ||
+      !expect(os_paged_lookup != NULL, "source registry os paged") ||
+      !expect(os_paged_lookup->page_size == mmap_lookup->page_size,
+              "source registry os paged maps to linux mmap") ||
       !expect(hz6_source_registry_lookup(&source_registry,
                                          HZ6_SOURCE_NONE) == NULL,
               "source registry none miss")) {

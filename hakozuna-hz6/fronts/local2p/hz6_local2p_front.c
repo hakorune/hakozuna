@@ -22,7 +22,7 @@ static void* hz6_local2p_alloc(Hz6Allocator* allocator,
 
   return hz6_front_reuse_or_source_kind(
       allocator, HZ6_FRONT_LOCAL2P, class_id, HZ6_LOCAL2P_BYTES,
-      HZ6_SOURCE_LINUX_MMAP);
+      HZ6_SOURCE_OS_PAGED);
 }
 
 static int hz6_local2p_free_local(Hz6Allocator* allocator,

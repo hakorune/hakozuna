@@ -75,7 +75,9 @@ front registry:
 
 source:
   Linux mmap ops validate through SourceLayer
-  allocator-level source registry selects system vs Linux mmap source
+  Windows VirtualAlloc ops are present behind _WIN32
+  allocator-level source registry selects system vs OS-paged source
+  OS-paged source maps to mmap on Linux and VirtualAlloc on Windows
   source registry lookup is covered by contract smoke
   reserve / commit / decommit / release smoke passes
   Large128 descriptors carry source kind / release metadata
@@ -100,7 +102,6 @@ hz6-r1-allocator-smoke ok
 ```text
 No performance claim.
 No preload integration.
-No Windows VirtualAlloc source path yet.
 No general span policy beyond the Local2P/Large128 mmap seeds.
 No threaded transfer synchronization or performance claim for sharded transfer yet.
 No cross-owner orphan rescue / adoption path yet.
@@ -116,7 +117,5 @@ No HZ3/HZ4/HZ5 implementation copy.
    Linux region/page route
    Windows sidecar route
 
-2. Add Windows VirtualAlloc source ops.
-
-3. Add MidPage real front seed.
+2. Add MidPage real front seed.
 ```

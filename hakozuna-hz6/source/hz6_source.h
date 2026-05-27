@@ -19,7 +19,9 @@ typedef struct Hz6OsMemoryOps {
 typedef enum Hz6SourceKind {
   HZ6_SOURCE_NONE = 0,
   HZ6_SOURCE_SYSTEM = 1,
-  HZ6_SOURCE_LINUX_MMAP = 2
+  HZ6_SOURCE_LINUX_MMAP = 2,
+  HZ6_SOURCE_WIN_VIRTUALALLOC = 3,
+  HZ6_SOURCE_OS_PAGED = 4
 } Hz6SourceKind;
 
 int hz6_source_ops_valid(const Hz6OsMemoryOps* ops);

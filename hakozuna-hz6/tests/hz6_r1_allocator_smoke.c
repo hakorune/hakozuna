@@ -121,8 +121,8 @@ int main(void) {
   Hz6ObjectDescriptor* large_descriptor =
       (Hz6ObjectDescriptor*)large_route.descriptor;
   if (!expect(large_descriptor != NULL, "large128 descriptor") ||
-      !expect(large_descriptor->source_kind == HZ6_SOURCE_LINUX_MMAP,
-              "large128 mmap source kind") ||
+      !expect(large_descriptor->source_kind == HZ6_SOURCE_OS_PAGED,
+              "large128 os paged source kind") ||
       !expect(large_descriptor->source_bytes == HZ6_LARGE128_BYTES,
               "large128 source bytes") ||
       !expect(hz6_free_remote(&large_allocator, large_object),

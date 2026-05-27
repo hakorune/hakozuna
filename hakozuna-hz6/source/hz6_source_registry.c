@@ -4,6 +4,10 @@
 #include "linux_source_mmap.h"
 #endif
 
+#if defined(_WIN32)
+#include "win_source_virtualalloc.h"
+#endif
+
 static void hz6_source_registry_add(Hz6SourceRegistry* registry,
                                     Hz6SourceKind kind,
                                     Hz6OsMemoryOps ops) {
@@ -36,8 +40,15 @@ void hz6_source_registry_init(Hz6SourceRegistry* registry) {
                           hz6_system_source_ops());
 
 #if defined(__linux__)
-  hz6_source_registry_add(registry, HZ6_SOURCE_LINUX_MMAP,
-                          hz6_linux_mmap_source_ops());
+  Hz6OsMemoryOps linux_ops = hz6_linux_mmap_source_ops();
+  hz6_source_registry_add(registry, HZ6_SOURCE_LINUX_MMAP, linux_ops);
+  hz6_source_registry_add(registry, HZ6_SOURCE_OS_PAGED, linux_ops);
+#endif
+
+#if defined(_WIN32)
+  Hz6OsMemoryOps win_ops = hz6_win_virtualalloc_source_ops();
+  hz6_source_registry_add(registry, HZ6_SOURCE_WIN_VIRTUALALLOC, win_ops);
+  hz6_source_registry_add(registry, HZ6_SOURCE_OS_PAGED, win_ops);
 #endif
 }
 

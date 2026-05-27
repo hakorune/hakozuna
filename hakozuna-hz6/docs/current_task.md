@@ -117,6 +117,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    hz6_allocator_release_orphan()
    unregisters route and releases descriptor SourceLayer backing
    allocator smoke verifies route miss and descriptor DEAD after release
+25. OS-paged SourceLayer abstraction. DONE:
+   HZ6_SOURCE_OS_PAGED
+   Linux maps OS-paged to mmap
+   Windows maps OS-paged to VirtualAlloc behind _WIN32
+   Local2P/Large128 fronts no longer name Linux-specific source kind
 ```
 
 Current R1 smoke:

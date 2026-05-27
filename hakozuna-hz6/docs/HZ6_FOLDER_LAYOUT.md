@@ -159,6 +159,8 @@ It builds both the low-level contract smoke and allocator/front integration
 smoke.
 Linux mmap source ops are present as SourceLayer contract code, but Large128
 now uses them in the Linux R1 smoke path through `source/hz6_source_registry.*`.
+Windows VirtualAlloc source ops are present behind `_WIN32` and are registered
+as the same `HZ6_SOURCE_OS_PAGED` abstraction on Windows.
 The toy front still uses the system source path because it exists only as a
 contract-validation front.
 
@@ -204,11 +206,12 @@ requests above the toy/small range up to 128KiB except exact 64KiB and exercises
 Local2P contract can evolve independently from the broader Large128 seed.
 The toy front owns only requests up to 4KiB. Larger unsupported requests must
 miss all fronts instead of being rounded down into a smaller allocation.
-On Linux, this seed is backed by `source/linux_source_mmap.*`. Descriptors
+On Linux, this seed is backed by `source/linux_source_mmap.*`; on Windows, the
+same source kind is backed by `source/win_source_virtualalloc.*`. Descriptors
 store source kind and release metadata so allocator destroy and cache overflow
 release through the correct SourceLayer instead of assuming system `free()`.
-The Large128 front names only `HZ6_SOURCE_LINUX_MMAP`; it does not include the
-Linux mmap implementation directly.
+The Large128 and Local2P fronts name only `HZ6_SOURCE_OS_PAGED`; they do not
+include OS-specific source implementations directly.
 It is still a seed front, not a full LargeFront span policy.
 
 Shared descriptor/cache/transfer transitions live in
