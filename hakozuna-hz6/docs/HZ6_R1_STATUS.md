@@ -29,6 +29,8 @@ API:
   api/hz6_allocator_source_block.c owns SourceBlock lifecycle helpers
   api/hz6_allocator_descriptor_source.c owns descriptor source setup and
   release helpers
+  fronts/hz6_front_source_kind.c and fronts/hz6_front_source_ops.c own
+  source-kind wrappers and direct source-ops allocation
   api/hz6_allocator_owner_dead.c owns owner-dead transitions
   api/hz6_allocator_transfer.c owns allocator-facing TransferLayer wrappers
   hz6_stats_snapshot() is the public stats observation boundary

@@ -1,0 +1,49 @@
+#include "hz6_front_source.h"
+
+#include "hz6_front_util.h"
+
+void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
+                                    uint16_t front_id,
+                                    uint16_t class_id,
+                                    size_t bytes,
+                                    const Hz6OsMemoryOps* source_ops,
+                                    Hz6SourceKind source_kind) {
+  if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT || bytes == 0) {
+    return NULL;
+  }
+  if (!hz6_source_ops_valid(source_ops) || source_kind == HZ6_SOURCE_NONE) {
+    return NULL;
+  }
+
+  void* reused = hz6_front_reuse_cached_or_transfer(allocator, class_id);
+  if (reused) {
+    return reused;
+  }
+
+  Hz6ObjectDescriptor* descriptor =
+      hz6_allocator_find_free_descriptor(allocator);
+  if (!descriptor) {
+    return NULL;
+  }
+
+  void* ptr = source_ops->reserve(bytes, source_ops->allocation_granularity);
+  if (!ptr) {
+    return NULL;
+  }
+
+  if (!hz6_allocator_prepare_descriptor(
+          allocator, descriptor, ptr, bytes, ptr, bytes, NULL, class_id,
+          source_kind, source_ops->release, HZ6_STATE_ACTIVE)) {
+    hz6_allocator_release_descriptor_source(descriptor);
+    return NULL;
+  }
+  if (!hz6_allocator_route_register_exact(allocator, ptr, bytes,
+                                          front_id, class_id,
+                                          descriptor->generation, descriptor)) {
+    hz6_allocator_release_descriptor_source(descriptor);
+    return NULL;
+  }
+
+  hz6_allocator_note_source_alloc(allocator);
+  return ptr;
+}

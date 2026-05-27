@@ -699,6 +699,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    owner shutdown state changes
    linux/build_hz6_r1_smokes.sh registers hz6_allocator_owner_dead.c as an
    explicit HZ6_LIB_SOURCE
+130. Front source kind/ops split. DONE:
+   fronts/hz6_front_source_kind.c now owns source-kind wrappers
+   fronts/hz6_front_source_ops.c now owns direct source-ops allocation
+   fronts/hz6_front_source.c was removed after the split
+   linux/build_hz6_r1_smokes.sh registers the new front source modules
+   explicitly
 ```
 
 Current R1 smoke:

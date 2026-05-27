@@ -85,7 +85,8 @@ hakozuna-hz6/
     hz6_front_util.h
     hz6_front_source.h
     hz6_front_source_prefill.h
-    hz6_front_source.c
+    hz6_front_source_kind.c
+    hz6_front_source_ops.c
     hz6_front_source_block.h
     hz6_front_source_block.c
     hz6_front_source_prefill.c
@@ -197,7 +198,8 @@ fronts/hz6_front.c
 fronts/hz6_front_util.h
 fronts/hz6_front_source.h
 fronts/hz6_front_source_prefill.h
-fronts/hz6_front_source.c
+fronts/hz6_front_source_kind.c
+fronts/hz6_front_source_ops.c
 fronts/hz6_front_source_block.h
 fronts/hz6_front_source_block.c
 fronts/hz6_front_source_prefill.c
