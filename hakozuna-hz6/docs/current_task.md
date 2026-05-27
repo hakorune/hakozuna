@@ -793,6 +793,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    api/hz6_allocator_source_block.c was removed after the split
    linux/build_hz6_r1_smokes.sh registers the new source block modules
    explicitly
+144. Allocator init state/backends split. DONE:
+   api/hz6_allocator_init_state.c now owns allocator state initialization
+   api/hz6_allocator_init_backends.c now owns backend initialization
+   api/hz6_allocator_init.c now stays as a thin wrapper
+   linux/build_hz6_r1_smokes.sh registers the new init modules explicitly
 144. Descriptor state local-cache/remote-transfer split. DONE:
    api/hz6_allocator_descriptor_local_cache.c now owns cache-active
    transitions
