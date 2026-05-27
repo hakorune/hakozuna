@@ -71,7 +71,8 @@ Contracts:
   route smoke covers exact table, invalid envelopes, backend wrappers, and page
   route backend separately from the lower-level mixed contract smoke
   route backend page-table variant is split into its own module so PAGE_TABLE
-  lookup stays separate from exact-table init/register helpers
+  lookup stays separate from exact-table init/register helpers, while shared
+  page-alignment math lives in route/hz6_route_backend_util.h
   route backend init/dispatch helpers are split into separate helper units so
   table setup stays separate from register/lookup dispatch
   route table management is split into core/exact/invalid modules so entry

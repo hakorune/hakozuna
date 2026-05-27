@@ -1,8 +1,5 @@
 #include "hz6_route_backend.h"
-
-static int hz6_route_backend_valid_granularity(size_t granularity) {
-  return granularity != 0 && (granularity & (granularity - (size_t)1)) == 0;
-}
+#include "hz6_route_backend_util.h"
 
 void hz6_route_backend_init_exact(Hz6RouteBackend* backend,
                                   Hz6RouteEntry* entries,

@@ -1,19 +1,5 @@
 #include "hz6_route_backend.h"
-
-static uintptr_t hz6_route_backend_align_down(uintptr_t value,
-                                              size_t granularity) {
-  return value & ~((uintptr_t)granularity - (uintptr_t)1);
-}
-
-static uintptr_t hz6_route_backend_align_up(uintptr_t value,
-                                            size_t granularity) {
-  return (value + (uintptr_t)granularity - (uintptr_t)1) &
-         ~((uintptr_t)granularity - (uintptr_t)1);
-}
-
-static int hz6_route_backend_valid_granularity(size_t granularity) {
-  return granularity != 0 && (granularity & (granularity - (size_t)1)) == 0;
-}
+#include "hz6_route_backend_util.h"
 
 static Hz6RouteResult hz6_route_backend_lookup_page_table_impl(
     const Hz6RouteBackend* backend,

@@ -642,7 +642,8 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    linux/build_hz6_r1_smokes.sh registers hz6_midpage_prefill.c as an
    explicit HZ6_LIB_SOURCE
 122. Route backend page-table split. DONE:
-   route/hz6_route_backend_page_table.c now owns PAGE_TABLE init and lookup
+   route/hz6_route_backend_page_table.c now owns PAGE_TABLE lookup and shares
+   granularity helpers via route/hz6_route_backend_util.h
    route/hz6_route_backend.c now keeps exact-table init/register/unregister
    and dispatch separate from PAGE_TABLE lookup
    linux/build_hz6_r1_smokes.sh registers the page-table backend module
@@ -777,7 +778,8 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    linux/build_hz6_r1_smokes.sh registers the new transfer API modules
    explicitly
 141. Route backend init/dispatch split. DONE:
-   route/hz6_route_backend_init.c now owns exact/page-table initialization
+   route/hz6_route_backend_init.c now owns exact/page-table initialization and
+   shares route granularity helpers with the lookup module
    route/hz6_route_backend_dispatch.c now owns register/unregister/lookup
    route/hz6_route_backend.c was removed after the split
    linux/build_hz6_r1_smokes.sh registers the new route backend modules
@@ -817,6 +819,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    transfer/hz6_transfer_backend_stats_shards.c now owns shard access helpers
    transfer/hz6_transfer_backend_stats.c was removed after the split
    linux/build_hz6_r1_smokes.sh registers the new stats modules explicitly
+149. Route backend utility split. DONE:
+   route/hz6_route_backend_util.h now owns shared granularity and page-alignment
+   helpers
+   route/hz6_route_backend_init.c and route/hz6_route_backend_page_table.c now
+   include the shared utility header instead of duplicating the math helpers
+   route/backend lookup and init responsibilities stay separated, but the
+   common math no longer lives in the lookup source
 144. Descriptor state local-cache/remote-transfer split. DONE:
    api/hz6_allocator_descriptor_local_cache.c now owns cache-active
    transitions

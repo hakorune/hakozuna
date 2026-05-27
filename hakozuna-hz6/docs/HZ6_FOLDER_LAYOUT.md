@@ -55,6 +55,7 @@ hakozuna-hz6/
     hz6_route.h
     hz6_route.c
     hz6_route_backend.h
+    hz6_route_backend_util.h
     hz6_route_backend_init.c
     hz6_route_backend_dispatch.c
     hz6_route_backend_page_table.c
@@ -209,6 +210,7 @@ api/hz6_allocator_transfer_dispatch.c
 route/hz6_route.h
 route/hz6_route.c
 route/hz6_route_backend.h
+route/hz6_route_backend_util.h
 route/hz6_route_backend_init.c
 route/hz6_route_backend_dispatch.c
 route/hz6_route_backend_page_table.c
