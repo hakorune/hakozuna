@@ -39,7 +39,12 @@ static int hz6_large128_free_remote(Hz6Allocator* allocator,
                                            HZ6_LARGE128_CLASS_ID);
 }
 
-size_t hz6_large128_prefill(Hz6Allocator* allocator, size_t count) {
+size_t hz6_large128_prefill(Hz6Allocator* allocator,
+                            uint16_t class_id,
+                            size_t count) {
+  if (class_id != 0 && class_id != HZ6_LARGE128_CLASS_ID) {
+    return 0;
+  }
   return hz6_front_prefill_source_kind(
       allocator, HZ6_FRONT_LARGE, HZ6_LARGE128_CLASS_ID, HZ6_LARGE128_BYTES,
       HZ6_SOURCE_OS_PAGED, count);

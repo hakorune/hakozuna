@@ -39,7 +39,12 @@ static int hz6_local2p_free_remote(Hz6Allocator* allocator,
                                            HZ6_LOCAL2P_CLASS_ID);
 }
 
-size_t hz6_local2p_prefill(Hz6Allocator* allocator, size_t count) {
+size_t hz6_local2p_prefill(Hz6Allocator* allocator,
+                           uint16_t class_id,
+                           size_t count) {
+  if (class_id != 0 && class_id != HZ6_LOCAL2P_CLASS_ID) {
+    return 0;
+  }
   return hz6_front_prefill_source_kind(
       allocator, HZ6_FRONT_LOCAL2P, HZ6_LOCAL2P_CLASS_ID, HZ6_LOCAL2P_BYTES,
       HZ6_SOURCE_OS_PAGED, count);

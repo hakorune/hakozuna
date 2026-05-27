@@ -11,7 +11,9 @@ extern "C" {
 #define HZ6_LARGE128_CLASS_ID ((uint16_t)8)
 #define HZ6_LARGE128_BYTES ((size_t)131072)
 
-size_t hz6_large128_prefill(Hz6Allocator* allocator, size_t count);
+size_t hz6_large128_prefill(Hz6Allocator* allocator,
+                            uint16_t class_id,
+                            size_t count);
 
 const Hz6FrontOps* hz6_large128_front_ops(void);
 

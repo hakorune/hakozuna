@@ -17,7 +17,9 @@ typedef struct Hz6FrontOps {
   const char* name;
   int (*can_allocate)(size_t size, size_t align, uint16_t* class_id);
   void* (*alloc)(Hz6Allocator* allocator, uint16_t class_id, size_t size);
-  size_t (*prefill)(Hz6Allocator* allocator, size_t count);
+  size_t (*prefill)(Hz6Allocator* allocator,
+                    uint16_t class_id,
+                    size_t count);
   int (*free_tagged)(Hz6Allocator* allocator, void* ptr, Hz6RouteResult route);
   int (*remote_free_tagged)(Hz6Allocator* allocator,
                             void* ptr,
@@ -33,6 +35,11 @@ const Hz6FrontOps* hz6_front_for_id(uint16_t front_id);
 size_t hz6_front_prefill_by_id(Hz6Allocator* allocator,
                                uint16_t front_id,
                                size_t count);
+
+size_t hz6_front_prefill_by_id_class(Hz6Allocator* allocator,
+                                     uint16_t front_id,
+                                     uint16_t class_id,
+                                     size_t count);
 
 size_t hz6_front_prefill_for_allocation(Hz6Allocator* allocator,
                                         size_t size,

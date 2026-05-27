@@ -112,6 +112,20 @@ size_t hz6_midpage_prefill_run(Hz6Allocator* allocator, uint16_t class_id) {
   return filled;
 }
 
+static size_t hz6_midpage_prefill(Hz6Allocator* allocator,
+                                  uint16_t class_id,
+                                  size_t count) {
+  size_t filled = 0;
+  while (filled < count) {
+    size_t run_filled = hz6_midpage_prefill_run(allocator, class_id);
+    if (run_filled == 0) {
+      break;
+    }
+    filled += run_filled;
+  }
+  return filled;
+}
+
 static int hz6_midpage_can_allocate(size_t size,
                                     size_t align,
                                     uint16_t* class_id) {
@@ -177,7 +191,7 @@ const Hz6FrontOps* hz6_midpage_front_ops(void) {
       "midpage",
       hz6_midpage_can_allocate,
       hz6_midpage_alloc,
-      NULL,
+      hz6_midpage_prefill,
       hz6_midpage_free_local,
       hz6_midpage_free_remote,
   };

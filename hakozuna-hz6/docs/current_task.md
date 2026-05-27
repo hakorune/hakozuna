@@ -285,7 +285,7 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    registry and invokes its optional prefill hook
    hz6_allocator_prefill_size() exposes the helper at the allocator layer
    allocator smoke verifies size-based prefill for Large128 / Local2P and
-   verifies MidPage still returns zero because run prefill is class-specific
+   originally kept MidPage out until prefill became class-aware
 65. Large128 profile batch refill. DONE:
    Large128 alloc miss now uses profile.source_batch through the shared
    prefill helper before falling back to one-off source allocation
@@ -300,6 +300,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    slots after the batch refill
    allocator smoke verifies Local2P source allocation is batched up to the
    frontcache bin capacity
+67. Class-aware FrontOps prefill. DONE:
+   Hz6FrontOps prefill hooks now receive the selected class id
+   hz6_front_prefill_by_id_class() exposes class-specific front prefill through
+   the registry while hz6_front_prefill_by_id() remains compatible for
+   single-class fronts
+   MidPage registers a prefill hook that delegates to run prefill, so
+   hz6_allocator_prefill_size() can now prefill MidPage by allocation size
 ```
 
 Current R1 smoke:

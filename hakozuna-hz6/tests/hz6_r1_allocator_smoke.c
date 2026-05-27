@@ -293,18 +293,21 @@ int main(void) {
   size_t size_local2p_prefilled = hz6_allocator_prefill_size(
       &size_prefill_allocator, HZ6_LOCAL2P_BYTES,
       size_prefill_allocator.profile.source_batch);
+  size_t size_midpage_prefilled = hz6_allocator_prefill_size(
+      &size_prefill_allocator, 16384,
+      size_prefill_allocator.profile.source_batch);
   if (!expect(size_large_prefilled ==
                   size_prefill_allocator.profile.source_batch,
               "size prefill large128 count") ||
       !expect(size_local2p_prefilled ==
                   size_prefill_allocator.profile.source_batch,
               "size prefill local2p count") ||
-      !expect(hz6_allocator_prefill_size(
-                  &size_prefill_allocator, 16384,
-                  size_prefill_allocator.profile.source_batch) == 0,
-              "size prefill midpage hook absent") ||
+      !expect(size_midpage_prefilled ==
+                  size_prefill_allocator.profile.source_batch,
+              "size prefill midpage count") ||
       !expect(size_prefill_allocator.stats.source_alloc ==
-                  size_large_prefilled + size_local2p_prefilled,
+                  size_large_prefilled + size_local2p_prefilled +
+                      (size_midpage_prefilled / 2),
               "size prefill source alloc")) {
     return 1;
   }
@@ -323,8 +326,16 @@ int main(void) {
       return 1;
     }
   }
+  for (size_t i = 0; i < size_midpage_prefilled; ++i) {
+    void* prefetched_midpage = hz6_malloc(&size_prefill_allocator, 16384);
+    if (!expect(prefetched_midpage != NULL,
+                "size prefill midpage malloc")) {
+      return 1;
+    }
+  }
   if (!expect(size_prefill_allocator.stats.source_alloc ==
-                  size_large_prefilled + size_local2p_prefilled,
+                  size_large_prefilled + size_local2p_prefilled +
+                      (size_midpage_prefilled / 2),
               "size prefill avoids refill")) {
     return 1;
   }
