@@ -24,8 +24,10 @@ typedef struct Hz6SourceBlock {
   size_t bytes;
   Hz6SourceKind source_kind;
   int (*source_release)(void* ptr, size_t bytes);
+  Hz6RouteBackend* route_backend;
   size_t ref_count;
   int active;
+  int route_registered;
 } Hz6SourceBlock;
 
 typedef struct Hz6ObjectDescriptor {

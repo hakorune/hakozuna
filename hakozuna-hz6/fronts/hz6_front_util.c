@@ -235,6 +235,15 @@ void* hz6_front_source_block_slot(Hz6Allocator* allocator,
   if (!descriptor) {
     return NULL;
   }
+  if (!source_block->route_registered) {
+    if (!hz6_route_backend_register_invalid_range(
+            &allocator->route_backend, source_block->ptr, source_block->bytes,
+            front_id, class_id)) {
+      return NULL;
+    }
+    source_block->route_backend = &allocator->route_backend;
+    source_block->route_registered = 1;
+  }
   if (!hz6_allocator_retain_source_block(source_block)) {
     return NULL;
   }

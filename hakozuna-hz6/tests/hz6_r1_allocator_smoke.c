@@ -342,7 +342,12 @@ int main(void) {
       !expect(block_slot0_descriptor->source_block == block,
               "block slot0 source block") ||
       !expect(block_slot1_descriptor->source_block == block,
-              "block slot1 source block")) {
+              "block slot1 source block") ||
+      !expect(hz6_route_backend_lookup(
+                  &midpage_block_allocator.route_backend,
+                  g_source_block_storage + (2 * HZ6_MIDPAGE_8K_BYTES)).kind ==
+                  HZ6_ROUTE_INVALID,
+              "block unregistered slot invalid")) {
     return 1;
   }
   hz6_route_backend_unregister_exact(&midpage_block_allocator.route_backend,
@@ -363,7 +368,12 @@ int main(void) {
               "source block final release") ||
       !expect(!block->active, "source block inactive after final release") ||
       !expect(g_source_block_release_count == 1,
-              "source block released once")) {
+              "source block released once") ||
+      !expect(hz6_route_backend_lookup(
+                  &midpage_block_allocator.route_backend,
+                  g_source_block_storage + (2 * HZ6_MIDPAGE_8K_BYTES)).kind ==
+                  HZ6_ROUTE_MISS,
+              "block envelope unregistered after final release")) {
     return 1;
   }
   hz6_allocator_destroy(&midpage_block_allocator);

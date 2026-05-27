@@ -209,6 +209,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    scavenge charges shared SourceBlock descriptors by user slot bytes
    non-shared descriptors still charge source bytes
    safety smoke verifies one 8K slot can be scavenged without releasing the 64KiB run
+47. SourceBlock route envelope. DONE:
+   route table supports invalid-range entries alongside exact-valid slot entries
+   SourceBlock slot registration installs an invalid envelope for the whole run
+   allocator smoke verifies unregistered run slots are INVALID and become MISS after final release
 ```
 
 Current R1 smoke:

@@ -14,6 +14,7 @@ typedef struct Hz6RouteEntry {
   uint16_t class_id;
   uint32_t generation;
   void* descriptor;
+  int exact_valid;
   int active;
 } Hz6RouteEntry;
 
@@ -34,7 +35,15 @@ int hz6_route_register_exact(Hz6RouteTable* table,
                              uint32_t generation,
                              void* descriptor);
 
+int hz6_route_register_invalid_range(Hz6RouteTable* table,
+                                     void* base,
+                                     size_t bytes,
+                                     uint16_t front_id,
+                                     uint16_t class_id);
+
 void hz6_route_unregister_exact(Hz6RouteTable* table, void* base);
+
+void hz6_route_unregister_invalid_range(Hz6RouteTable* table, void* base);
 
 Hz6RouteResult hz6_route_lookup(const Hz6RouteTable* table, const void* ptr);
 
@@ -43,4 +52,3 @@ Hz6RouteResult hz6_route_lookup(const Hz6RouteTable* table, const void* ptr);
 #endif
 
 #endif
-

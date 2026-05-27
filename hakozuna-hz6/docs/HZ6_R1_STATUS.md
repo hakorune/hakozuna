@@ -52,6 +52,7 @@ Fronts:
 route:
   exact pointer -> VALID
   interior HZ6-owned pointer -> INVALID
+  source block envelope pointer without exact slot descriptor -> INVALID
   foreign pointer -> MISS
   allocator routes through `Hz6RouteBackend`, currently exact-table backed
   backend wrapper preserves VALID / INVALID / MISS contract

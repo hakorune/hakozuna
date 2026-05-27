@@ -113,8 +113,10 @@ Hz6SourceBlock* hz6_allocator_create_source_block(
   block->bytes = bytes;
   block->source_kind = source_kind;
   block->source_release = source_ops->release;
+  block->route_backend = NULL;
   block->ref_count = 0;
   block->active = 1;
+  block->route_registered = 0;
   return block;
 }
 
@@ -141,11 +143,17 @@ int hz6_allocator_release_source_block(Hz6SourceBlock* block) {
   int released = block->source_release
                      ? block->source_release(block->ptr, block->bytes)
                      : hz6_source_system_release(block->ptr, block->bytes);
+  if (block->route_registered && block->route_backend) {
+    hz6_route_backend_unregister_invalid_range(block->route_backend,
+                                               block->ptr);
+  }
   block->ptr = NULL;
   block->bytes = 0;
   block->source_kind = HZ6_SOURCE_NONE;
   block->source_release = NULL;
+  block->route_backend = NULL;
   block->active = 0;
+  block->route_registered = 0;
   return released;
 }
 
@@ -408,8 +416,10 @@ void hz6_allocator_init_with_profile(Hz6Allocator* allocator,
     allocator->source_blocks[i].bytes = 0;
     allocator->source_blocks[i].source_kind = HZ6_SOURCE_NONE;
     allocator->source_blocks[i].source_release = NULL;
+    allocator->source_blocks[i].route_backend = NULL;
     allocator->source_blocks[i].ref_count = 0;
     allocator->source_blocks[i].active = 0;
+    allocator->source_blocks[i].route_registered = 0;
   }
   for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
     allocator->descriptors[i].ptr = NULL;
@@ -469,6 +479,10 @@ void hz6_allocator_destroy(Hz6Allocator* allocator) {
     if (!block->active || !block->ptr) {
       continue;
     }
+    if (block->route_registered && block->route_backend) {
+      hz6_route_backend_unregister_invalid_range(block->route_backend,
+                                                 block->ptr);
+    }
     if (block->source_release) {
       block->source_release(block->ptr, block->bytes);
     } else {
@@ -478,8 +492,10 @@ void hz6_allocator_destroy(Hz6Allocator* allocator) {
     block->bytes = 0;
     block->source_kind = HZ6_SOURCE_NONE;
     block->source_release = NULL;
+    block->route_backend = NULL;
     block->ref_count = 0;
     block->active = 0;
+    block->route_registered = 0;
   }
   allocator->owner.state = HZ6_OWNER_DEAD;
 }

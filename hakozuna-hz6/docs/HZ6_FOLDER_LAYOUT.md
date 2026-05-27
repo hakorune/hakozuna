@@ -226,7 +226,9 @@ slots where the route/cache user pointer differs from the SourceLayer release
 pointer.
 `Hz6SourceBlock` is the seed owner for shared source blocks; descriptors retain
 it so releasing one slot does not release the whole run while sibling slots
-remain registered.
+remain registered. Source blocks also install an invalid route envelope so
+owned-but-unregistered run addresses fail closed instead of becoming foreign
+MISS pointers.
 `fronts/large/hz6_large128_front.*` handles requests above the MidPage range up
 to 128KiB except exact 64KiB and exercises
 `ACTIVE -> TRANSFER_FREE -> ACTIVE` through the same front registry.
