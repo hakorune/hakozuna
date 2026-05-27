@@ -693,6 +693,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    separate from source-backed initialization/release
    linux/build_hz6_r1_smokes.sh registers hz6_allocator_descriptor_source.c as
    an explicit HZ6_LIB_SOURCE
+129. Owner-dead split. DONE:
+   api/hz6_allocator_owner_dead.c now owns owner-dead transitions
+   api/hz6_allocator_orphan.c now keeps orphan release/adoption separate from
+   owner shutdown state changes
+   linux/build_hz6_r1_smokes.sh registers hz6_allocator_owner_dead.c as an
+   explicit HZ6_LIB_SOURCE
 ```
 
 Current R1 smoke:

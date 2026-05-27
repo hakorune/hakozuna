@@ -36,6 +36,7 @@ HZ6_LIB_SOURCES=(
   "${HZ6_DIR}/api/hz6_allocator_destroy.c"
   "${HZ6_DIR}/api/hz6_allocator_descriptor_state.c"
   "${HZ6_DIR}/api/hz6_allocator_descriptor_source.c"
+  "${HZ6_DIR}/api/hz6_allocator_owner_dead.c"
   "${HZ6_DIR}/api/hz6_allocator_orphan.c"
   "${HZ6_DIR}/api/hz6_allocator_remote_pending.c"
   "${HZ6_DIR}/api/hz6_allocator_route.c"
