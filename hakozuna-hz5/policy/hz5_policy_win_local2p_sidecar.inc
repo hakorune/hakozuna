@@ -29,9 +29,13 @@ static int hz5_policy_win_local2p_sidecar_header_valid(
       header->local2p_generation != generation) {
     return 0;
   }
+#if BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_METADATA_ONLY
+  return 1;
+#else
   uint32_t state =
       atomic_load_explicit(&header->local2p_state, memory_order_acquire);
   return state == HZ5_LOCAL2P_STATE_ACTIVE;
+#endif
 }
 
 #if BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_DIRECT_TABLE
@@ -50,6 +54,7 @@ static void hz5_policy_win_local2p_sidecar_insert(
       atomic_load_explicit(&entry->aligned, memory_order_acquire);
   if (current != 0u && current != aligned) {
     hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_COLLISION);
+    hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_INSERT_COLLISION);
   }
 
   atomic_store_explicit(&entry->raw, header->raw, memory_order_relaxed);
@@ -69,7 +74,9 @@ static void hz5_policy_win_local2p_sidecar_remove_raw(uintptr_t raw) {
   if (!raw) {
     return;
   }
+  size_t scanned = 0u;
   for (size_t i = 0; i < BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_TABLE_SIZE; ++i) {
+    ++scanned;
     Hz5PolicyWinLocal2PSidecarEntry* entry =
         &g_hz5_policy_win_local2p_sidecar[i];
     uintptr_t entry_raw =
@@ -80,10 +87,15 @@ static void hz5_policy_win_local2p_sidecar_remove_raw(uintptr_t raw) {
       atomic_store_explicit(&entry->header, 0u, memory_order_relaxed);
       atomic_store_explicit(&entry->generation, 0u, memory_order_relaxed);
       atomic_store_explicit(&entry->state_snapshot, 0u, memory_order_relaxed);
+      hz5_trace_add(HZ5_TRACE_LOCAL2P_SIDECAR_REMOVE_SCAN_STEPS,
+                    (uint64_t)scanned);
       hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_REMOVE);
       return;
     }
   }
+  hz5_trace_add(HZ5_TRACE_LOCAL2P_SIDECAR_REMOVE_SCAN_STEPS,
+                (uint64_t)scanned);
+  hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_REMOVE_MISS);
 }
 
 static int hz5_policy_win_local2p_sidecar_probe(uintptr_t aligned,
@@ -104,6 +116,9 @@ static int hz5_policy_win_local2p_sidecar_probe(uintptr_t aligned,
   if (entry_aligned != aligned) {
     if (entry_aligned != 0u) {
       hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_COLLISION);
+      hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_PROBE_COLLISION);
+    } else {
+      hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_PROBE_EMPTY);
     }
     hz5_trace_inc(HZ5_TRACE_LOCAL2P_SIDECAR_MISS);
     return HZ5_WIN_LOCAL2P_SIDECAR_MISS;

@@ -150,6 +150,16 @@ static const char* hz5_trace_name(Hz5TraceCounter counter) {
       return "local2p_sidecar_miss";
     case HZ5_TRACE_LOCAL2P_SIDECAR_COLLISION:
       return "local2p_sidecar_collision";
+    case HZ5_TRACE_LOCAL2P_SIDECAR_INSERT_COLLISION:
+      return "local2p_sidecar_insert_collision";
+    case HZ5_TRACE_LOCAL2P_SIDECAR_PROBE_COLLISION:
+      return "local2p_sidecar_probe_collision";
+    case HZ5_TRACE_LOCAL2P_SIDECAR_PROBE_EMPTY:
+      return "local2p_sidecar_probe_empty";
+    case HZ5_TRACE_LOCAL2P_SIDECAR_REMOVE_MISS:
+      return "local2p_sidecar_remove_miss";
+    case HZ5_TRACE_LOCAL2P_SIDECAR_REMOVE_SCAN_STEPS:
+      return "local2p_sidecar_remove_scan_steps";
     case HZ5_TRACE_LOCAL2P_SIDECAR_FIRST_OK:
       return "local2p_sidecar_first_ok";
     case HZ5_TRACE_LOCAL2P_SIDECAR_FIRST_INVALID:
