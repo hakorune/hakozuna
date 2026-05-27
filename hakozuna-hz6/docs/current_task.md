@@ -412,6 +412,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    allocator API boundary
    shared FrontUtil and MidPage now obtain source ops through the allocator
    helper instead of directly reading allocator.source_registry
+85. Allocator route unregister boundary helper. DONE:
+   hz6_allocator_route_unregister_exact() exposes exact route removal through
+   the allocator API boundary
+   FrontUtil, MidPage, and allocator smoke no longer call exact route
+   unregister through allocator.route_backend directly
 ```
 
 Current R1 smoke:

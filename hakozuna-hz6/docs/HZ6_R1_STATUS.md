@@ -65,6 +65,8 @@ route:
   allocator smoke verifies SPEED / REMOTE PAGE_TABLE and STRICT / RSS EXACT_TABLE
   allocator API wraps route lookup, backend kind, and page granularity
   diagnostics so callers do not need to inspect the route backend field directly
+  hz6_allocator_route_unregister_exact() is the front-facing exact route
+  removal boundary
 
 local free:
   ACTIVE -> LOCAL_FREE

@@ -579,8 +579,7 @@ int main(void) {
               "block unregistered slot invalid")) {
     return 1;
   }
-  hz6_route_backend_unregister_exact(&midpage_block_allocator.route_backend,
-                                     block_slot2);
+  hz6_allocator_route_unregister_exact(&midpage_block_allocator, block_slot2);
   if (!expect(hz6_allocator_release_descriptor_source(
                   block_slot2_descriptor),
               "source block extra slot release") ||
@@ -590,8 +589,7 @@ int main(void) {
               "source block extra slot release keeps source alive")) {
     return 1;
   }
-  hz6_route_backend_unregister_exact(&midpage_block_allocator.route_backend,
-                                     block_slot0);
+  hz6_allocator_route_unregister_exact(&midpage_block_allocator, block_slot0);
   if (!expect(hz6_allocator_release_descriptor_source(
                   block_slot0_descriptor),
               "source block first release") ||
@@ -601,8 +599,7 @@ int main(void) {
               "source block not released early")) {
     return 1;
   }
-  hz6_route_backend_unregister_exact(&midpage_block_allocator.route_backend,
-                                     block_slot1);
+  hz6_allocator_route_unregister_exact(&midpage_block_allocator, block_slot1);
   if (!expect(hz6_allocator_release_descriptor_source(
                   block_slot1_descriptor),
               "source block final release") ||

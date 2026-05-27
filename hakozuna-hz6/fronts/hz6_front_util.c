@@ -345,7 +345,7 @@ static int hz6_front_prefill_one(Hz6Allocator* allocator,
   entry.class_id = class_id;
   entry.generation = descriptor->generation;
   if (!hz6_frontcache_push(&allocator->frontcache_bins[class_id], entry)) {
-    hz6_route_backend_unregister_exact(&allocator->route_backend, ptr);
+    hz6_allocator_route_unregister_exact(allocator, ptr);
     hz6_allocator_release_descriptor_source(descriptor);
     return 0;
   }
@@ -413,7 +413,7 @@ int hz6_front_free_local_to_cache(Hz6Allocator* allocator,
   }
 
   descriptor->state = HZ6_STATE_DEAD;
-  hz6_route_backend_unregister_exact(&allocator->route_backend, ptr);
+  hz6_allocator_route_unregister_exact(allocator, ptr);
   hz6_allocator_release_descriptor_source(descriptor);
   return 1;
 }

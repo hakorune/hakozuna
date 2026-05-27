@@ -466,6 +466,14 @@ Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
   return hz6_route_backend_lookup(&allocator->route_backend, ptr);
 }
 
+void hz6_allocator_route_unregister_exact(Hz6Allocator* allocator,
+                                          void* ptr) {
+  if (!allocator || !ptr) {
+    return;
+  }
+  hz6_route_backend_unregister_exact(&allocator->route_backend, ptr);
+}
+
 Hz6RouteBackendKind hz6_allocator_route_backend_kind(
     const Hz6Allocator* allocator) {
   if (!allocator) {

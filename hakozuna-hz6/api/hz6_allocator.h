@@ -140,6 +140,9 @@ const Hz6OsMemoryOps* hz6_allocator_source_ops(
 Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
                                           const void* ptr);
 
+void hz6_allocator_route_unregister_exact(Hz6Allocator* allocator,
+                                          void* ptr);
+
 Hz6RouteBackendKind hz6_allocator_route_backend_kind(
     const Hz6Allocator* allocator);
 

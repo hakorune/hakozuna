@@ -97,7 +97,7 @@ size_t hz6_midpage_prefill_run(Hz6Allocator* allocator, uint16_t class_id) {
     entry.class_id = class_id;
     entry.generation = descriptor->generation;
     if (!hz6_frontcache_push(bin, entry)) {
-      hz6_route_backend_unregister_exact(&allocator->route_backend, ptr);
+      hz6_allocator_route_unregister_exact(allocator, ptr);
       hz6_allocator_release_descriptor_source(descriptor);
       break;
     }
