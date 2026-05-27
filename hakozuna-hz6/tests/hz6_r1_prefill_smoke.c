@@ -2,6 +2,7 @@
 #include "../fronts/large/hz6_large128_front.h"
 #include "../fronts/hz6_front.h"
 #include "../fronts/hz6_front_source.h"
+#include "../fronts/hz6_front_source_prefill.h"
 #include "../fronts/local2p/hz6_local2p_front.h"
 #include "../fronts/midpage/hz6_midpage_front.h"
 #include "../include/hz6_contract.h"

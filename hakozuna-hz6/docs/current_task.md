@@ -595,6 +595,15 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    release/adoption, and strict remote-pending drain separate from scavenging
    linux/build_hz6_r1_smokes.sh registers hz6_allocator_scavenge.c as an
    explicit HZ6_LIB_SOURCE
+116. Front source prefill split. DONE:
+   fronts/hz6_front_source_prefill.c now owns slow-path prefill loops and
+   source-backed fill helpers
+   fronts/hz6_front_source.c now keeps direct source reserve and source-slot
+   creation separate from prefill loops
+   fronts/hz6_front_source_prefill.h provides the narrower prefill API for
+   large/local2p front implementations and prefill smoke
+   linux/build_hz6_r1_smokes.sh registers hz6_front_source_prefill.c as an
+   explicit HZ6_LIB_SOURCE
 ```
 
 Current R1 smoke:

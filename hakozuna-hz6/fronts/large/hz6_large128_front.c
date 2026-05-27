@@ -1,6 +1,7 @@
 #include "hz6_large128_front.h"
 
 #include "../hz6_front_source.h"
+#include "../hz6_front_source_prefill.h"
 #include "../hz6_front_util.h"
 
 static int hz6_large128_can_allocate(size_t size,

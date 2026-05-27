@@ -59,6 +59,8 @@ Contracts:
   SourceBlock-backed front slots are split into their own helper unit so
   shared source-block lifetime is not mixed with direct source reserve/prefill
   helpers
+  front source prefill helpers are split into their own helper unit and header
+  so direct source reserve logic stays separate from slow-path prefill loops
   shared object states
   owner token equality/liveness helpers
   profile configuration
