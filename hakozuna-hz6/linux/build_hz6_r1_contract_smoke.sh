@@ -4,30 +4,47 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 OUT_DIR="${ROOT_DIR}/hakozuna-hz6/out/linux"
 CC_BIN="${CC:-cc}"
+HZ6_DIR="${ROOT_DIR}/hakozuna-hz6"
 
 mkdir -p "$OUT_DIR"
 
+HZ6_INCLUDES=(
+  "${HZ6_DIR}/include"
+  "${HZ6_DIR}/route"
+  "${HZ6_DIR}/transfer"
+  "${HZ6_DIR}/owner"
+  "${HZ6_DIR}/source"
+  "${HZ6_DIR}/frontcache"
+  "${HZ6_DIR}/fronts"
+  "${HZ6_DIR}/fronts/large"
+  "${HZ6_DIR}/fronts/toy"
+  "${HZ6_DIR}/policy"
+  "${HZ6_DIR}/api"
+)
+
+HZ6_SOURCES=(
+  "${HZ6_DIR}/api/hz6_allocator.c"
+  "${HZ6_DIR}/frontcache/hz6_frontcache.c"
+  "${HZ6_DIR}/frontcache/hz6_size_class.c"
+  "${HZ6_DIR}/fronts/hz6_front.c"
+  "${HZ6_DIR}/fronts/hz6_front_util.c"
+  "${HZ6_DIR}/fronts/large/hz6_large128_front.c"
+  "${HZ6_DIR}/fronts/toy/hz6_toy_front.c"
+  "${HZ6_DIR}/policy/hz6_profiles.c"
+  "${HZ6_DIR}/route/hz6_route.c"
+  "${HZ6_DIR}/source/hz6_source.c"
+  "${HZ6_DIR}/transfer/hz6_transfer.c"
+  "${HZ6_DIR}/tests/hz6_r1_contract_smoke.c"
+)
+
+HZ6_INCLUDE_FLAGS=()
+for include_dir in "${HZ6_INCLUDES[@]}"; do
+  HZ6_INCLUDE_FLAGS+=("-I${include_dir}")
+done
+
 "$CC_BIN" -std=c11 -Wall -Wextra -Werror -O2 \
-  -I"${ROOT_DIR}/hakozuna-hz6/include" \
-  -I"${ROOT_DIR}/hakozuna-hz6/route" \
-  -I"${ROOT_DIR}/hakozuna-hz6/transfer" \
-  -I"${ROOT_DIR}/hakozuna-hz6/owner" \
-  -I"${ROOT_DIR}/hakozuna-hz6/source" \
-  -I"${ROOT_DIR}/hakozuna-hz6/frontcache" \
-  -I"${ROOT_DIR}/hakozuna-hz6/policy" \
-  -I"${ROOT_DIR}/hakozuna-hz6/api" \
-  "${ROOT_DIR}/hakozuna-hz6/api/hz6_allocator.c" \
-  "${ROOT_DIR}/hakozuna-hz6/frontcache/hz6_frontcache.c" \
-  "${ROOT_DIR}/hakozuna-hz6/frontcache/hz6_size_class.c" \
-  "${ROOT_DIR}/hakozuna-hz6/fronts/hz6_front.c" \
-  "${ROOT_DIR}/hakozuna-hz6/fronts/hz6_front_util.c" \
-  "${ROOT_DIR}/hakozuna-hz6/fronts/large/hz6_large128_front.c" \
-  "${ROOT_DIR}/hakozuna-hz6/fronts/toy/hz6_toy_front.c" \
-  "${ROOT_DIR}/hakozuna-hz6/policy/hz6_profiles.c" \
-  "${ROOT_DIR}/hakozuna-hz6/route/hz6_route.c" \
-  "${ROOT_DIR}/hakozuna-hz6/source/hz6_source.c" \
-  "${ROOT_DIR}/hakozuna-hz6/transfer/hz6_transfer.c" \
-  "${ROOT_DIR}/hakozuna-hz6/tests/hz6_r1_contract_smoke.c" \
+  "${HZ6_INCLUDE_FLAGS[@]}" \
+  "${HZ6_SOURCES[@]}" \
   -o "${OUT_DIR}/hz6_r1_contract_smoke"
 
 "${OUT_DIR}/hz6_r1_contract_smoke"

@@ -138,6 +138,9 @@ tests/hz6_r1_contract_smoke.c
 linux/build_hz6_r1_contract_smoke.sh
 ```
 
+The Linux R1 smoke script uses explicit `HZ6_SOURCES` and `HZ6_INCLUDES`
+arrays. Keep new modules visible there until a real build system is introduced.
+
 The current API path is intentionally small:
 
 ```text
