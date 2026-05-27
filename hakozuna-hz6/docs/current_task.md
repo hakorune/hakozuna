@@ -686,6 +686,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    separate from route-envelope registration
    linux/build_hz6_r1_smokes.sh registers hz6_allocator_source_block_route.c
    as an explicit HZ6_LIB_SOURCE
+128. Descriptor source split. DONE:
+   api/hz6_allocator_descriptor_source.c now owns descriptor source setup and
+   release helpers
+   api/hz6_allocator_descriptor.c now keeps descriptor lookup and activation
+   separate from source-backed initialization/release
+   linux/build_hz6_r1_smokes.sh registers hz6_allocator_descriptor_source.c as
+   an explicit HZ6_LIB_SOURCE
 ```
 
 Current R1 smoke:

@@ -26,6 +26,7 @@ hakozuna-hz6/
     hz6_allocator_init.c
     hz6_allocator_destroy.c
     hz6_allocator_descriptor_state.c
+    hz6_allocator_descriptor_source.c
     hz6_allocator_orphan.c
     hz6_allocator_remote_pending.c
     hz6_allocator_route.c
@@ -153,6 +154,7 @@ api/hz6_allocator_profile.c
 api/hz6_allocator_init.c
 api/hz6_allocator_destroy.c
 api/hz6_allocator_descriptor_state.c
+api/hz6_allocator_descriptor_source.c
 api/hz6_allocator_orphan.c
 api/hz6_allocator_remote_pending.c
 api/hz6_allocator_route.c

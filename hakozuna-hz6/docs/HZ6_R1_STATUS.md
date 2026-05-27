@@ -27,6 +27,8 @@ API:
   api/hz6_allocator_scavenge.c owns allocator-facing bounded scavenge
   execution
   api/hz6_allocator_source_block.c owns SourceBlock lifecycle helpers
+  api/hz6_allocator_descriptor_source.c owns descriptor source setup and
+  release helpers
   api/hz6_allocator_transfer.c owns allocator-facing TransferLayer wrappers
   hz6_stats_snapshot() is the public stats observation boundary
   allocator note helpers are the front-facing stats update boundary
@@ -73,6 +75,9 @@ Contracts:
   SourceBlock-backed front slots are split into their own helper unit so
   shared source-block lifetime is not mixed with direct source reserve/prefill
   helpers
+  descriptor source setup and release helpers are split into their own helper
+  unit so descriptor lifecycle state stays separate from source-backed
+  initialization and release
   source block route-envelope registration is split from source block lifecycle
   helpers so route-backed invalid range setup stays separate from source block
   allocation and release
