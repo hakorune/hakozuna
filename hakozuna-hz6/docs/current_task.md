@@ -581,8 +581,9 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    HZ6_LIB_SOURCE
 113. Allocator facade removal. DONE:
    api/hz6_allocator_frontcache.c now owns allocator-facing FrontCache wrappers
-   api/hz6_allocator_profile.c now owns profile/source policy queries,
-   source ops lookup, and source allocation stats notes
+   api/hz6_allocator_profile_query.c and api/hz6_allocator_profile_source.c
+   now own profile/source policy queries, source ops lookup, and source
+   allocation stats notes
    api/hz6_allocator_prefill.c now owns allocator-facing prefill wrappers
    api/hz6_allocator_facade.c was removed after all responsibilities moved to
    role-named API modules
@@ -952,6 +953,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    api/hz6_allocator_destroy_source_blocks.c now owns source-block cleanup
    api/hz6_allocator_destroy.c now stays as a thin wrapper
    linux/build_hz6_r1_smokes.sh registers the split destroy helpers
+   explicitly
+165. Allocator profile helper split. DONE:
+   api/hz6_allocator_profile_query.c now owns profile/query helpers
+   api/hz6_allocator_profile_source.c now owns source ops lookup and source
+   allocation stats note helpers
+   api/hz6_allocator_profile.c was removed after the split
+   linux/build_hz6_r1_smokes.sh registers the split profile helpers
    explicitly
 144. Descriptor state local-cache/remote-transfer split. DONE:
    api/hz6_allocator_descriptor_local_cache.c now owns cache-active

@@ -38,7 +38,8 @@ hakozuna-hz6/
     hz6_allocator_descriptor.c
     hz6_allocator_frontcache.c
     hz6_allocator_prefill.c
-    hz6_allocator_profile.c
+    hz6_allocator_profile_query.c
+    hz6_allocator_profile_source.c
     hz6_allocator_init.c
     hz6_allocator_init_state.c
     hz6_allocator_init_state_owner.c
@@ -219,7 +220,8 @@ api/hz6_allocator_free_remote.c
 api/hz6_allocator_descriptor.c
 api/hz6_allocator_frontcache.c
 api/hz6_allocator_prefill.c
-api/hz6_allocator_profile.c
+api/hz6_allocator_profile_query.c
+api/hz6_allocator_profile_source.c
 api/hz6_allocator_init.c
 api/hz6_allocator_init_state.c
 api/hz6_allocator_init_state_owner.c

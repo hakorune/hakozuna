@@ -19,8 +19,9 @@ API:
   entrypoints
   api/hz6_allocator_query.c owns owns/stats observation entrypoints
   api/hz6_allocator_prefill.c owns allocator-facing front prefill wrappers
-  api/hz6_allocator_profile.c owns allocator-facing profile/source policy
-  queries and source allocation stats notes
+  api/hz6_allocator_profile_query.c and api/hz6_allocator_profile_source.c own
+  allocator-facing profile/source policy queries and source allocation stats
+  notes
   policy/hz6_profiles_config.c and policy/hz6_profiles_policy.c split profile
   construction from shard/batch/budget policy helpers
   api/hz6_allocator_descriptor_local_cache.c and
