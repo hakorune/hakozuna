@@ -39,10 +39,10 @@ Contracts:
   source contract smoke covers source ops validation, Linux mmap source ops,
   source registry lookup, and ScavengeLayer budget accounting separately from
   the lower-level mixed contract smoke
-  core contract smoke covers OwnerLayer liveness, profile policy, size classes,
-  and FrontCache primitives
+  core contract smoke covers OwnerLayer equality/liveness, profile policy,
+  size classes, and FrontCache primitives
   shared object states
-  owner token/liveness helper
+  owner token equality/liveness helpers
   profile configuration
   allocator-level profile queries for front/profile smoke diagnostics
 

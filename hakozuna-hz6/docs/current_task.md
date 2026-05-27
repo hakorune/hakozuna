@@ -537,6 +537,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    logic header-only
    linux/build_hz6_r1_smokes.sh registers owner/hz6_owner.c as an explicit
    HZ6_LIB_SOURCE
+107. Owner equality implementation split. DONE:
+   owner/hz6_owner.c now owns hz6_owner_equal()
+   owner/hz6_owner.h exposes equality and liveness as the OwnerLayer API
+   include/hz6_contract.h keeps shared token/result types and route result
+   constructors only
 ```
 
 Current R1 smoke:

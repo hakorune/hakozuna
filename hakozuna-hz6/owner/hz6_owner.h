@@ -19,6 +19,7 @@ typedef struct Hz6OwnerRecord {
   Hz6OwnerState state;
 } Hz6OwnerRecord;
 
+int hz6_owner_equal(Hz6OwnerToken a, Hz6OwnerToken b);
 int hz6_owner_is_alive(const Hz6OwnerRecord* record, Hz6OwnerToken token);
 
 #ifdef __cplusplus

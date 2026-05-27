@@ -78,10 +78,6 @@ static inline Hz6RouteResult hz6_route_valid(uint16_t front_id,
   return result;
 }
 
-static inline int hz6_owner_equal(Hz6OwnerToken a, Hz6OwnerToken b) {
-  return a.slot == b.slot && a.generation == b.generation;
-}
-
 #ifdef __cplusplus
 }
 #endif
