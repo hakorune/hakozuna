@@ -110,6 +110,7 @@ source:
   allocator destroy releases Large128 mappings through SourceLayer
   explicit front prefill can source objects into LOCAL_FREE cache using
   profile source_batch without changing the malloc hit path
+  MidPage 8K and 32K run prefill paths both share one 64KiB SourceBlock per run
 
 scavenge:
   `scavenge/hz6_scavenge.*` provides bounded release accounting

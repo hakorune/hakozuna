@@ -226,6 +226,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    PAGE_TABLE backend now has direct invalid-range smoke coverage
    exact-valid entries inside a page-range envelope still take priority
    unregistering the exact entry falls back to INVALID until the envelope is removed
+51. MidPage 32K run prefill smoke. DONE:
+   allocator smoke now verifies 32K class prefill creates two slots from one
+   64KiB SourceBlock
+   both 32K slots route as HZ6_FRONT_MIDPAGE / HZ6_MIDPAGE_32K_CLASS_ID
+   the shared SourceBlock avoids a second source refill while both slots are consumed
 ```
 
 Current R1 smoke:
