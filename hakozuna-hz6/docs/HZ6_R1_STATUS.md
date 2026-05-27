@@ -248,6 +248,8 @@ front registry:
   local2p handles exact 64KiB
   large128 handles >32KiB..128KiB except exact 64KiB
   >128KiB is unsupported in R1 and returns NULL
+  front source slot creation is split into kind/ops helpers so source-kind
+  lookup stays separate from direct source-backed slot creation
   FrontOps carries an optional class-aware prefill hook for front-specific
   slow-path refill
   hz6_front_prefill_by_id() exposes prefill through the front registry

@@ -123,7 +123,8 @@ hakozuna-hz6/
     hz6_front_source_prefill_one.c
     hz6_front_source_prefill.c
     hz6_front_reuse_transfer.c
-    hz6_front_source_slot.c
+    hz6_front_source_slot_kind.c
+    hz6_front_source_slot_ops.c
     hz6_front_reuse.c
     hz6_front_free.c
     toy/
@@ -272,7 +273,8 @@ fronts/hz6_front_source_block.c
 fronts/hz6_front_source_prefill_one.c
 fronts/hz6_front_source_prefill.c
 fronts/hz6_front_reuse_transfer.c
-fronts/hz6_front_source_slot.c
+fronts/hz6_front_source_slot_kind.c
+fronts/hz6_front_source_slot_ops.c
 fronts/hz6_front_reuse.c
 fronts/hz6_front_free.c
 fronts/toy/hz6_toy_front.h
