@@ -126,12 +126,24 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    fronts/midpage/hz6_midpage_front.*
    >4KiB..32KiB requests route to HZ6_FRONT_MIDPAGE
    remote transfer reuse is covered by allocator smoke
+27. Dedicated safety smoke. DONE:
+   tests/hz6_r1_safety_smoke.c
+   covers interior invalid, foreign miss, local/remote double-free, owner-dead
+   orphan rejection, and orphan release
 ```
 
 Current R1 smoke:
 
 ```bash
 ./hakozuna-hz6/linux/build_hz6_r1_contract_smoke.sh
+```
+
+Expected:
+
+```text
+hz6-r1-contract-smoke ok
+hz6-r1-allocator-smoke ok
+hz6-r1-safety-smoke ok
 ```
 
 ## Open Decisions

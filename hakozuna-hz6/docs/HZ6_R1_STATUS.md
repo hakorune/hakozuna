@@ -101,6 +101,7 @@ Expected output:
 ```text
 hz6-r1-contract-smoke ok
 hz6-r1-allocator-smoke ok
+hz6-r1-safety-smoke ok
 ```
 
 ## Current Non-Claims
