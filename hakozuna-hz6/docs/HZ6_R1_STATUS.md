@@ -97,6 +97,8 @@ source:
   source registry lookup is covered by contract smoke
   reserve / commit / decommit / release smoke passes
   Large128 descriptors carry source kind / release metadata
+  descriptors keep user ptr and source ptr separate
+  SourceLayer release uses source ptr / source bytes
   allocator destroy releases Large128 mappings through SourceLayer
   explicit front prefill can source objects into LOCAL_FREE cache using
   profile source_batch without changing the malloc hit path

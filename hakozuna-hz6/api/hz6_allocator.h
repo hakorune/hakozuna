@@ -22,6 +22,7 @@ extern "C" {
 typedef struct Hz6ObjectDescriptor {
   void* ptr;
   size_t bytes;
+  void* source_ptr;
   size_t source_bytes;
   uint16_t class_id;
   Hz6SourceKind source_kind;

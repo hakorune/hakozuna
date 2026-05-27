@@ -79,6 +79,7 @@ void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
 
   descriptor->ptr = ptr;
   descriptor->bytes = bytes;
+  descriptor->source_ptr = ptr;
   descriptor->source_bytes = bytes;
   descriptor->class_id = class_id;
   descriptor->source_kind = source_kind;
@@ -116,6 +117,7 @@ static int hz6_front_prefill_one(Hz6Allocator* allocator,
 
   descriptor->ptr = ptr;
   descriptor->bytes = bytes;
+  descriptor->source_ptr = ptr;
   descriptor->source_bytes = bytes;
   descriptor->class_id = class_id;
   descriptor->source_kind = source_kind;

@@ -16,12 +16,43 @@ static int expect(int condition, const char* label) {
   return 1;
 }
 
+static void* g_expected_release_source_ptr;
+static size_t g_expected_release_source_bytes;
+
+static int smoke_release_source(void* ptr, size_t bytes) {
+  return ptr == g_expected_release_source_ptr &&
+         bytes == g_expected_release_source_bytes;
+}
+
 int main(void) {
   int foreign = 0;
 
   Hz6Allocator allocator;
   hz6_allocator_init_with_profile(&allocator, HZ6_PROFILE_SPEED);
   if (!expect(allocator.profile.transfer_first == 1, "allocator profile")) {
+    return 1;
+  }
+
+  unsigned char source_block[128];
+  Hz6ObjectDescriptor source_descriptor;
+  source_descriptor.ptr = source_block + 16;
+  source_descriptor.bytes = 32;
+  source_descriptor.source_ptr = source_block;
+  source_descriptor.source_bytes = sizeof(source_block);
+  source_descriptor.class_id = 1;
+  source_descriptor.source_kind = HZ6_SOURCE_SYSTEM;
+  source_descriptor.source_release = smoke_release_source;
+  source_descriptor.owner = allocator.owner.token;
+  source_descriptor.generation = 1;
+  source_descriptor.state = HZ6_STATE_LOCAL_FREE;
+  g_expected_release_source_ptr = source_block;
+  g_expected_release_source_bytes = sizeof(source_block);
+  if (!expect(hz6_allocator_release_descriptor_source(&source_descriptor),
+              "descriptor release uses source pointer") ||
+      !expect(source_descriptor.ptr == NULL,
+              "descriptor release clears user pointer") ||
+      !expect(source_descriptor.source_ptr == NULL,
+              "descriptor release clears source pointer")) {
     return 1;
   }
 
@@ -252,6 +283,8 @@ int main(void) {
   if (!expect(large_descriptor != NULL, "large128 descriptor") ||
       !expect(large_descriptor->source_kind == HZ6_SOURCE_OS_PAGED,
               "large128 os paged source kind") ||
+      !expect(large_descriptor->source_ptr == large_object,
+              "large128 source pointer") ||
       !expect(large_descriptor->source_bytes == HZ6_LARGE128_BYTES,
               "large128 source bytes") ||
       !expect(hz6_free_remote(&large_allocator, large_object),

@@ -227,8 +227,9 @@ The toy front owns only requests up to 4KiB. Larger unsupported requests must
 miss all fronts instead of being rounded down into a smaller allocation.
 On Linux, this seed is backed by `source/linux_source_mmap.*`; on Windows, the
 same source kind is backed by `source/win_source_virtualalloc.*`. Descriptors
-store source kind and release metadata so allocator destroy and cache overflow
-release through the correct SourceLayer instead of assuming system `free()`.
+store user pointer, source pointer, source kind, and release metadata so
+allocator destroy and cache overflow release through the correct SourceLayer
+instead of assuming system `free()`.
 The Large128 and Local2P fronts name only `HZ6_SOURCE_OS_PAGED`; they do not
 include OS-specific source implementations directly.
 It is still a seed front, not a full LargeFront span policy.

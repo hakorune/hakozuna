@@ -185,6 +185,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    fronts/midpage/hz6_midpage_front.* now owns an 8K / 32K page-run geometry
    hz6_midpage_policy_for_size() exposes class, slot bytes, run bytes, slots/run
    allocator smoke covers 8K class routing, descriptor bytes, and local reuse
+41. Descriptor source pointer split. DONE:
+   Hz6ObjectDescriptor now stores user ptr and source_ptr separately
+   release uses source_ptr/source_bytes while route/cache still use user ptr
+   allocator smoke covers user ptr != source_ptr release behavior
 ```
 
 Current R1 smoke:

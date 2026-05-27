@@ -44,16 +44,19 @@ int hz6_allocator_release_descriptor_source(
     return 0;
   }
 
+  void* source_ptr = descriptor->source_ptr ? descriptor->source_ptr
+                                            : descriptor->ptr;
   int released = 0;
   if (descriptor->source_release) {
     released =
-        descriptor->source_release(descriptor->ptr, descriptor->source_bytes);
+        descriptor->source_release(source_ptr, descriptor->source_bytes);
   } else {
-    released = hz6_source_system_release(descriptor->ptr, descriptor->bytes);
+    released = hz6_source_system_release(source_ptr, descriptor->bytes);
   }
 
   descriptor->ptr = NULL;
   descriptor->bytes = 0;
+  descriptor->source_ptr = NULL;
   descriptor->source_bytes = 0;
   descriptor->class_id = 0;
   descriptor->source_kind = HZ6_SOURCE_NONE;
@@ -166,6 +169,7 @@ int hz6_allocator_adopt_orphan(Hz6Allocator* adopter,
   hz6_route_backend_unregister_exact(&source->route_backend, ptr);
   source_descriptor->ptr = NULL;
   source_descriptor->bytes = 0;
+  source_descriptor->source_ptr = NULL;
   source_descriptor->source_bytes = 0;
   source_descriptor->class_id = 0;
   source_descriptor->source_kind = HZ6_SOURCE_NONE;
@@ -320,6 +324,7 @@ void hz6_allocator_init_with_profile(Hz6Allocator* allocator,
   for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
     allocator->descriptors[i].ptr = NULL;
     allocator->descriptors[i].bytes = 0;
+    allocator->descriptors[i].source_ptr = NULL;
     allocator->descriptors[i].source_bytes = 0;
     allocator->descriptors[i].class_id = 0;
     allocator->descriptors[i].source_kind = HZ6_SOURCE_NONE;
