@@ -248,6 +248,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    allocator smoke verifies SPEED initializes PAGE_TABLE
    allocator smoke verifies REMOTE initializes PAGE_TABLE
    allocator smoke verifies STRICT / RSS initialize EXACT_TABLE
+56. Transfer shard capacity observability. DONE:
+   transfer backend exposes per-shard capacity for diagnostics
+   contract smoke verifies uneven capacity is preserved across shards
+   inactive shard capacity reports zero
 ```
 
 Current R1 smoke:

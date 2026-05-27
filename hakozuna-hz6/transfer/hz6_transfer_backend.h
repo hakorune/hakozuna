@@ -47,6 +47,10 @@ size_t hz6_transfer_backend_count_class(const Hz6TransferBackend* backend,
 size_t hz6_transfer_backend_shard_count_at(const Hz6TransferBackend* backend,
                                            size_t shard_index);
 
+size_t hz6_transfer_backend_shard_capacity_at(
+    const Hz6TransferBackend* backend,
+    size_t shard_index);
+
 #ifdef __cplusplus
 }
 #endif

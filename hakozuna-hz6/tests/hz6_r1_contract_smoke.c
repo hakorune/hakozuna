@@ -321,6 +321,21 @@ int main(void) {
               "transfer sharded count after pop")) {
     return 1;
   }
+  Hz6TransferObject uneven_objects[5];
+  Hz6TransferBackend uneven_backend;
+  hz6_transfer_backend_init_sharded(&uneven_backend, uneven_objects, 5, 2);
+  if (!expect(uneven_backend.kind == HZ6_TRANSFER_BACKEND_SHARDED_CACHE,
+              "transfer uneven sharded kind") ||
+      !expect(hz6_transfer_backend_capacity(&uneven_backend) == 5,
+              "transfer uneven sharded capacity") ||
+      !expect(hz6_transfer_backend_shard_capacity_at(&uneven_backend, 0) == 3,
+              "transfer uneven shard zero capacity") ||
+      !expect(hz6_transfer_backend_shard_capacity_at(&uneven_backend, 1) == 2,
+              "transfer uneven shard one capacity") ||
+      !expect(hz6_transfer_backend_shard_capacity_at(&uneven_backend, 2) == 0,
+              "transfer uneven inactive shard capacity")) {
+    return 1;
+  }
 
   Hz6OwnerRecord owner;
   owner.token.slot = 3;
