@@ -103,6 +103,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    transfer backend can split one object buffer into fixed shards
    speed/remote profiles select sharded transfer
    contract smoke covers bounded push, class pop, and aggregate count
+22. Descriptor owner token lifecycle seed. DONE:
+   allocator has an owner record
+   descriptors carry owner tokens while ACTIVE / LOCAL_FREE
+   remote transfer clears owner and transfer pop restores it
+   allocator smoke covers owner assign / clear / restore
 ```
 
 Current R1 smoke:
@@ -145,4 +150,5 @@ Large128 has Linux mmap backing, but no full span/source refill policy yet.
 Local2P is an exact 64KiB seed front, not the final Windows Local2P profile.
 Sharded transfer is single-thread smoke coverage only; synchronization and
 real benchmark validation are still pending.
+Owner death / orphan handling is still not implemented.
 ```

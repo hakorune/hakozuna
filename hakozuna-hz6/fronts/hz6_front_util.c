@@ -42,7 +42,8 @@ void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
     Hz6ObjectDescriptor* descriptor =
         (Hz6ObjectDescriptor*)entry.descriptor;
     if (!hz6_allocator_activate_descriptor(
-            descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr, entry.generation)) {
+            descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr, entry.generation,
+            allocator->owner.token)) {
       return NULL;
     }
     return entry.ptr;
@@ -56,7 +57,7 @@ void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
           (Hz6ObjectDescriptor*)transfer.descriptor;
       if (!hz6_allocator_activate_descriptor(
               descriptor, HZ6_STATE_TRANSFER_FREE, transfer.ptr,
-              transfer.generation)) {
+              transfer.generation, allocator->owner.token)) {
         continue;
       }
       ++allocator->stats.transfer_pop;
@@ -81,6 +82,7 @@ void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
   descriptor->class_id = class_id;
   descriptor->source_kind = source_kind;
   descriptor->source_release = source_ops->release;
+  descriptor->owner = allocator->owner.token;
   descriptor->generation = 1;
   descriptor->state = HZ6_STATE_ACTIVE;
   if (!hz6_route_backend_register_exact(&allocator->route_backend, ptr, bytes,
@@ -105,6 +107,9 @@ int hz6_front_free_local_to_cache(Hz6Allocator* allocator,
 
   Hz6ObjectDescriptor* descriptor = (Hz6ObjectDescriptor*)route.descriptor;
   if (descriptor->state != HZ6_STATE_ACTIVE || descriptor->ptr != ptr) {
+    return 0;
+  }
+  if (!hz6_owner_equal(descriptor->owner, allocator->owner.token)) {
     return 0;
   }
 
@@ -145,8 +150,11 @@ int hz6_front_free_remote_to_transfer(Hz6Allocator* allocator,
   object.class_id = descriptor->class_id;
   object.generation = descriptor->generation;
   descriptor->state = HZ6_STATE_TRANSFER_FREE;
+  descriptor->owner.slot = 0;
+  descriptor->owner.generation = 0;
   if (!hz6_transfer_backend_push(&allocator->transfer_backend, object)) {
     descriptor->state = HZ6_STATE_ACTIVE;
+    descriptor->owner = allocator->owner.token;
     return 0;
   }
 

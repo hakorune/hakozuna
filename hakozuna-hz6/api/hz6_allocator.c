@@ -3,6 +3,15 @@
 #include "../fronts/hz6_front.h"
 #include "../fronts/toy/hz6_toy_front.h"
 
+static uint32_t g_hz6_allocator_owner_slot_seed = 1;
+
+static Hz6OwnerToken hz6_owner_token_none(void) {
+  Hz6OwnerToken token;
+  token.slot = 0;
+  token.generation = 0;
+  return token;
+}
+
 Hz6ObjectDescriptor* hz6_allocator_find_free_descriptor(
     Hz6Allocator* allocator) {
   for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
@@ -16,7 +25,8 @@ Hz6ObjectDescriptor* hz6_allocator_find_free_descriptor(
 int hz6_allocator_activate_descriptor(Hz6ObjectDescriptor* descriptor,
                                       Hz6ObjectState expected,
                                       void* ptr,
-                                      uint32_t generation) {
+                                      uint32_t generation,
+                                      Hz6OwnerToken owner) {
   if (!descriptor || descriptor->state != expected) {
     return 0;
   }
@@ -24,6 +34,7 @@ int hz6_allocator_activate_descriptor(Hz6ObjectDescriptor* descriptor,
     return 0;
   }
   descriptor->state = HZ6_STATE_ACTIVE;
+  descriptor->owner = owner;
   return 1;
 }
 
@@ -47,6 +58,7 @@ int hz6_allocator_release_descriptor_source(
   descriptor->class_id = 0;
   descriptor->source_kind = HZ6_SOURCE_NONE;
   descriptor->source_release = NULL;
+  descriptor->owner = hz6_owner_token_none();
   descriptor->generation = 0;
   descriptor->state = HZ6_STATE_DEAD;
   return released;
@@ -62,6 +74,9 @@ void hz6_allocator_init_with_profile(Hz6Allocator* allocator,
     return;
   }
   allocator->profile = hz6_profile_config(profile_id);
+  allocator->owner.token.slot = g_hz6_allocator_owner_slot_seed++;
+  allocator->owner.token.generation = 1;
+  allocator->owner.state = HZ6_OWNER_ALIVE;
   allocator->stats.route_valid = 0;
   allocator->stats.route_invalid = 0;
   allocator->stats.route_miss = 0;
@@ -76,6 +91,7 @@ void hz6_allocator_init_with_profile(Hz6Allocator* allocator,
     allocator->descriptors[i].class_id = 0;
     allocator->descriptors[i].source_kind = HZ6_SOURCE_NONE;
     allocator->descriptors[i].source_release = NULL;
+    allocator->descriptors[i].owner = hz6_owner_token_none();
     allocator->descriptors[i].generation = 0;
     allocator->descriptors[i].state = HZ6_STATE_DEAD;
   }

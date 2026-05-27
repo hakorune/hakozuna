@@ -62,18 +62,36 @@ int main(void) {
   Hz6RouteResult local2p_route =
       hz6_route_backend_lookup(&local2p_allocator.route_backend,
                                local2p_object);
+  Hz6ObjectDescriptor* local2p_descriptor =
+      (Hz6ObjectDescriptor*)local2p_route.descriptor;
   if (!expect(local2p_route.kind == HZ6_ROUTE_VALID,
               "local2p route valid") ||
       !expect(local2p_route.front_id == HZ6_FRONT_LOCAL2P,
               "local2p route front") ||
       !expect(local2p_route.class_id == HZ6_LOCAL2P_CLASS_ID,
               "local2p route class") ||
+      !expect(local2p_descriptor != NULL, "local2p descriptor") ||
+      !expect(hz6_owner_equal(local2p_descriptor->owner,
+                              local2p_allocator.owner.token),
+              "local2p owner assigned") ||
       !expect(hz6_free_remote(&local2p_allocator, local2p_object),
               "local2p remote free")) {
     return 1;
   }
+  if (!expect(local2p_descriptor->state == HZ6_STATE_TRANSFER_FREE,
+              "local2p transfer state") ||
+      !expect(local2p_descriptor->owner.slot == 0 &&
+                  local2p_descriptor->owner.generation == 0,
+              "local2p transfer owner clear")) {
+    return 1;
+  }
   void* local2p_reused = hz6_malloc(&local2p_allocator, HZ6_LOCAL2P_BYTES);
   if (!expect(local2p_reused == local2p_object, "local2p transfer reuse")) {
+    return 1;
+  }
+  if (!expect(hz6_owner_equal(local2p_descriptor->owner,
+                              local2p_allocator.owner.token),
+              "local2p owner restored")) {
     return 1;
   }
   hz6_free(&local2p_allocator, local2p_reused);

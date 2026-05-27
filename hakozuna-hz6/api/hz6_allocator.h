@@ -25,12 +25,14 @@ typedef struct Hz6ObjectDescriptor {
   uint16_t class_id;
   Hz6SourceKind source_kind;
   int (*source_release)(void* ptr, size_t bytes);
+  Hz6OwnerToken owner;
   uint32_t generation;
   Hz6ObjectState state;
 } Hz6ObjectDescriptor;
 
 struct Hz6Allocator {
   Hz6ProfileConfig profile;
+  Hz6OwnerRecord owner;
   Hz6RouteEntry route_entries[HZ6_ROUTE_TABLE_CAPACITY];
   Hz6RouteBackend route_backend;
   Hz6TransferObject transfer_objects[HZ6_TRANSFER_CACHE_CAPACITY];
@@ -52,7 +54,8 @@ Hz6ObjectDescriptor* hz6_allocator_find_free_descriptor(
 int hz6_allocator_activate_descriptor(Hz6ObjectDescriptor* descriptor,
                                       Hz6ObjectState expected,
                                       void* ptr,
-                                      uint32_t generation);
+                                      uint32_t generation,
+                                      Hz6OwnerToken owner);
 
 int hz6_allocator_release_descriptor_source(
     Hz6ObjectDescriptor* descriptor);
