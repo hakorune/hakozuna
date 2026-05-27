@@ -445,6 +445,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    allocator internals
    shared FrontUtil and allocator smoke no longer read allocator.owner.token
    directly
+91. Allocator descriptor preparation boundary helper. DONE:
+   hz6_allocator_prepare_descriptor() centralizes descriptor user/source
+   pointer, SourceBlock, owner token, generation, class, and initial state
+   setup
+   shared FrontUtil no longer hand-initializes descriptor source fields for
+   one-off, slot-offset, SourceBlock, or prefill allocations
 ```
 
 Current R1 smoke:

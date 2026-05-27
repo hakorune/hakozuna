@@ -83,16 +83,12 @@ void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
     return NULL;
   }
 
-  descriptor->ptr = ptr;
-  descriptor->bytes = bytes;
-  descriptor->source_ptr = ptr;
-  descriptor->source_bytes = bytes;
-  descriptor->class_id = class_id;
-  descriptor->source_kind = source_kind;
-  descriptor->source_release = source_ops->release;
-  descriptor->owner = hz6_allocator_owner_token(allocator);
-  descriptor->generation = 1;
-  descriptor->state = HZ6_STATE_ACTIVE;
+  if (!hz6_allocator_prepare_descriptor(
+          allocator, descriptor, ptr, bytes, ptr, bytes, NULL, class_id,
+          source_kind, source_ops->release, HZ6_STATE_ACTIVE)) {
+    hz6_allocator_release_descriptor_source(descriptor);
+    return NULL;
+  }
   if (!hz6_allocator_route_register_exact(allocator, ptr, bytes,
                                           front_id, class_id,
                                           descriptor->generation, descriptor)) {
@@ -225,16 +221,13 @@ void* hz6_front_source_slot_ops(Hz6Allocator* allocator,
   }
 
   void* user_ptr = (void*)((unsigned char*)source_ptr + source_offset);
-  descriptor->ptr = user_ptr;
-  descriptor->bytes = user_bytes;
-  descriptor->source_ptr = source_ptr;
-  descriptor->source_bytes = source_bytes;
-  descriptor->class_id = class_id;
-  descriptor->source_kind = source_kind;
-  descriptor->source_release = source_ops->release;
-  descriptor->owner = hz6_allocator_owner_token(allocator);
-  descriptor->generation = 1;
-  descriptor->state = HZ6_STATE_ACTIVE;
+  if (!hz6_allocator_prepare_descriptor(
+          allocator, descriptor, user_ptr, user_bytes, source_ptr,
+          source_bytes, NULL, class_id, source_kind, source_ops->release,
+          HZ6_STATE_ACTIVE)) {
+    hz6_allocator_release_descriptor_source(descriptor);
+    return NULL;
+  }
 
   if (!hz6_allocator_route_register_exact(
           allocator, user_ptr, user_bytes, front_id, class_id,
@@ -276,17 +269,14 @@ void* hz6_front_source_block_slot(Hz6Allocator* allocator,
   }
 
   void* user_ptr = (void*)((unsigned char*)source_block->ptr + source_offset);
-  descriptor->ptr = user_ptr;
-  descriptor->bytes = user_bytes;
-  descriptor->source_ptr = source_block->ptr;
-  descriptor->source_bytes = source_block->bytes;
-  descriptor->source_block = source_block;
-  descriptor->class_id = class_id;
-  descriptor->source_kind = source_block->source_kind;
-  descriptor->source_release = source_block->source_release;
-  descriptor->owner = hz6_allocator_owner_token(allocator);
-  descriptor->generation = 1;
-  descriptor->state = HZ6_STATE_ACTIVE;
+  if (!hz6_allocator_prepare_descriptor(
+          allocator, descriptor, user_ptr, user_bytes, source_block->ptr,
+          source_block->bytes, source_block, class_id,
+          source_block->source_kind, source_block->source_release,
+          HZ6_STATE_ACTIVE)) {
+    hz6_allocator_release_descriptor_source(descriptor);
+    return NULL;
+  }
 
   if (!hz6_allocator_route_register_exact(
           allocator, user_ptr, user_bytes, front_id, class_id,
@@ -315,16 +305,12 @@ static int hz6_front_prefill_one(Hz6Allocator* allocator,
     return 0;
   }
 
-  descriptor->ptr = ptr;
-  descriptor->bytes = bytes;
-  descriptor->source_ptr = ptr;
-  descriptor->source_bytes = bytes;
-  descriptor->class_id = class_id;
-  descriptor->source_kind = source_kind;
-  descriptor->source_release = source_ops->release;
-  descriptor->owner = hz6_allocator_owner_token(allocator);
-  descriptor->generation = 1;
-  descriptor->state = HZ6_STATE_LOCAL_FREE;
+  if (!hz6_allocator_prepare_descriptor(
+          allocator, descriptor, ptr, bytes, ptr, bytes, NULL, class_id,
+          source_kind, source_ops->release, HZ6_STATE_LOCAL_FREE)) {
+    hz6_allocator_release_descriptor_source(descriptor);
+    return 0;
+  }
 
   if (!hz6_allocator_route_register_exact(allocator, ptr, bytes,
                                           front_id, class_id,
