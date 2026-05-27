@@ -24,6 +24,9 @@ API:
   SourceBlock smoke covers descriptor source release, shared source block
   slots, route envelopes, and MidPage run prefill separately from
   allocator/front integration smoke
+  transfer smoke covers transfer backend profile wiring, Local2P transfer
+  reuse, generic remote transfer reuse, producer/consumer shard behavior, and
+  strict remote-pending drain separately from allocator/front integration smoke
   reclaim smoke covers orphan release/adoption and profile scavenge separately
   from allocator/front integration smoke
 

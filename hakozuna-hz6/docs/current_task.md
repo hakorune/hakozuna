@@ -496,6 +496,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    and MidPage 8K/32K run prefill coverage
    allocator smoke keeps front integration and no longer carries SourceBlock
    lifecycle-specific scenarios
+100. Transfer smoke split. DONE:
+   tests/hz6_r1_transfer_smoke.c now owns Local2P transfer reuse, profile
+   transfer capacity/backend checks, generic remote transfer reuse,
+   producer/consumer shard behavior, and strict REMOTE_PENDING drain coverage
+   allocator smoke keeps basic allocator/front integration and no longer
+   carries transfer-backend-specific scenarios
 ```
 
 Current R1 smoke:
@@ -511,6 +517,7 @@ hz6-r1-contract-smoke ok
 hz6-r1-allocator-smoke ok
 hz6-r1-prefill-smoke ok
 hz6-r1-sourceblock-smoke ok
+hz6-r1-transfer-smoke ok
 hz6-r1-reclaim-smoke ok
 hz6-r1-safety-smoke ok
 ```
