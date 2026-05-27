@@ -205,6 +205,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    MidPage malloc now tries transfer cache and local cache before run prefill
    only if both are empty, alloc miss pre-fills a 64KiB run into local cache
    allocator smoke verifies normal 8K malloc now comes from a SourceBlock run
+46. Shared SourceBlock scavenge budget. DONE:
+   scavenge charges shared SourceBlock descriptors by user slot bytes
+   non-shared descriptors still charge source bytes
+   safety smoke verifies one 8K slot can be scavenged without releasing the 64KiB run
 ```
 
 Current R1 smoke:

@@ -1,4 +1,5 @@
 #include "../api/hz6_allocator.h"
+#include "../fronts/midpage/hz6_midpage_front.h"
 #include "../include/hz6_contract.h"
 
 #include <stdio.h>
@@ -225,6 +226,43 @@ int main(void) {
     return 1;
   }
   hz6_allocator_destroy(&local_scavenge_allocator);
+
+  Hz6Allocator run_scavenge_allocator;
+  hz6_allocator_init_with_profile(&run_scavenge_allocator,
+                                  HZ6_PROFILE_REMOTE);
+  size_t run_scavenge_prefilled =
+      hz6_midpage_prefill_run(&run_scavenge_allocator,
+                              HZ6_MIDPAGE_8K_CLASS_ID);
+  if (!expect(run_scavenge_prefilled == 8,
+              "run scavenge prefill count")) {
+    return 1;
+  }
+  void* run_scavenged = hz6_malloc(&run_scavenge_allocator, 6000);
+  Hz6RouteResult run_scavenge_route =
+      hz6_route_backend_lookup(&run_scavenge_allocator.route_backend,
+                               run_scavenged);
+  Hz6ObjectDescriptor* run_scavenge_descriptor =
+      (Hz6ObjectDescriptor*)run_scavenge_route.descriptor;
+  Hz6SourceBlock* run_scavenge_block =
+      run_scavenge_descriptor ? run_scavenge_descriptor->source_block : NULL;
+  hz6_free(&run_scavenge_allocator, run_scavenged);
+  if (!expect(run_scavenge_descriptor != NULL,
+              "run scavenge descriptor") ||
+      !expect(run_scavenge_block != NULL, "run scavenge source block") ||
+      !expect(hz6_allocator_scavenge_local_free(&run_scavenge_allocator,
+                                                HZ6_MIDPAGE_8K_BYTES - 1) ==
+                  0,
+              "run scavenge budget too small") ||
+      !expect(hz6_allocator_scavenge_local_free(&run_scavenge_allocator,
+                                                HZ6_MIDPAGE_8K_BYTES) == 1,
+              "run scavenge releases one slot") ||
+      !expect(run_scavenge_block->active,
+              "run scavenge keeps shared block") ||
+      !expect(run_scavenge_block->ref_count == 7,
+              "run scavenge decrements block refcount")) {
+    return 1;
+  }
+  hz6_allocator_destroy(&run_scavenge_allocator);
 
   Hz6Allocator strict_scavenge_allocator;
   hz6_allocator_init_with_profile(&strict_scavenge_allocator,

@@ -111,6 +111,7 @@ scavenge:
   `scavenge/hz6_scavenge.*` provides bounded release accounting
   frontcache supports exact removal before LOCAL_FREE release
   allocator-level scavenging releases ORPHAN and LOCAL_FREE descriptors
+  shared SourceBlock descriptors are budgeted by user slot bytes
   over-budget ORPHAN descriptors remain owned by the scavenge boundary
   over-budget LOCAL_FREE descriptors remain in the local cache
   route unregister + SourceLayer release is covered by safety smoke

@@ -12,6 +12,17 @@ static Hz6OwnerToken hz6_owner_token_none(void) {
   return token;
 }
 
+static size_t hz6_allocator_descriptor_scavenge_cost(
+    const Hz6ObjectDescriptor* descriptor) {
+  if (!descriptor) {
+    return 0;
+  }
+  return descriptor->source_block ? descriptor->bytes
+                                  : (descriptor->source_bytes
+                                         ? descriptor->source_bytes
+                                         : descriptor->bytes);
+}
+
 Hz6ObjectDescriptor* hz6_allocator_find_free_descriptor(
     Hz6Allocator* allocator) {
   for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
@@ -268,8 +279,7 @@ size_t hz6_allocator_scavenge_orphans(Hz6Allocator* allocator,
       continue;
     }
 
-    size_t bytes = descriptor->source_bytes ? descriptor->source_bytes
-                                            : descriptor->bytes;
+    size_t bytes = hz6_allocator_descriptor_scavenge_cost(descriptor);
     if (!hz6_scavenge_can_release(&budget, bytes)) {
       continue;
     }
@@ -299,8 +309,7 @@ size_t hz6_allocator_scavenge_local_free(Hz6Allocator* allocator,
       continue;
     }
 
-    size_t bytes = descriptor->source_bytes ? descriptor->source_bytes
-                                            : descriptor->bytes;
+    size_t bytes = hz6_allocator_descriptor_scavenge_cost(descriptor);
     if (!hz6_scavenge_can_release(&budget, bytes)) {
       continue;
     }
