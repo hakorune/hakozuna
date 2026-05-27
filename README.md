@@ -22,6 +22,29 @@ Part of the [hakorune](https://github.com/hakorune) project.
   seed lives under `hakozuna-hz6/`.
 - Profile selection guide: [PROFILE_GUIDE.md](PROFILE_GUIDE.md)
 
+## Allocator Profile Map
+
+Hakozuna currently contains three allocator lines with deliberately different
+metadata and ownership models:
+
+| Line | Focus | Metadata / routing model | Best read as |
+|---|---|---|---|
+| HZ3 / ACE-Alloc | local-heavy allocation, compact fast path | lookup-first: PTAG32 / table-oriented pointer-to-bin routing | the main ACE-Alloc line |
+| HZ4 | remote-heavy / message-passing workloads | remote-free-first: page-local metadata, remote queues, pending collect | the remote-free experiment line |
+| HZ5 | page/run-first sidecar allocator prototype | ownership/policy-first: page/run descriptors route owner, profile, and dispatch policy | the low-RSS fail-closed research line |
+
+In short:
+
+- **HZ3 is lookup-first.**
+- **HZ4 is remote-free-first.**
+- **HZ5 is ownership/policy-first.**
+
+The API is still `malloc` / `free`, but allocator behavior changes sharply
+depending on how `free(ptr)` recovers pointer identity and where ownership is
+sent next. HZ5 is not a drop-in replacement for HZ3/HZ4 yet; it is an
+experimental sidecar line for page/run descriptors, fail-closed ownership, and
+profile-specific dispatch.
+
 ## Platform Support
 
 - **Ubuntu/Linux**: public build and preload entrypoints under `linux/` (x86_64 and arm64 lanes)

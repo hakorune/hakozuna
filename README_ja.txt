@@ -12,6 +12,26 @@ HZ6 は現時点では future work の名前です。より広い tcmalloc-like 
 class-transfer throughput を追う場合の transfer-first 後継線として扱います。
 ドキュメントファーストの設計メモは hakozuna-hz6/ に置いています。
 
+allocator profile map
+---------------------
+
+Hakozuna には、metadata と ownership の流し方が違う3つの allocator line があります。
+
+| Line | Focus | Metadata / routing model | 読み方 |
+|------|-------|--------------------------|--------|
+| HZ3 / ACE-Alloc | local-heavy allocation / compact fast path | lookup-first: PTAG32 / table-oriented pointer-to-bin routing | ACE-Alloc の本線 |
+| HZ4 | remote-heavy / message-passing workload | remote-free-first: page-local metadata / remote queue / pending collect | remote-free 実験線 |
+| HZ5 | page/run-first sidecar allocator prototype | ownership/policy-first: page/run descriptor が owner / profile / dispatch policy を決める | 低 RSS / fail-closed 研究線 |
+
+短く言うと:
+
+- HZ3 は lookup-first。
+- HZ4 は remote-free-first。
+- HZ5 は ownership/policy-first。
+
+同じ malloc/free API でも、free(ptr) のときに pointer の正体をどう復元するか、
+そして ownership をどこへ流すかで allocator の性格は大きく変わります。
+
 対応プラットフォーム
 --------------------
 
