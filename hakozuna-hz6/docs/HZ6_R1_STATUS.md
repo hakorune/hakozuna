@@ -54,6 +54,7 @@ local free:
   second free before reuse is rejected
   local cache reuse returns the same pointer
   owner-dead descriptors become ORPHAN and are not locally reusable
+  explicit orphan release unregisters route and releases SourceLayer memory
 
 remote free:
   ACTIVE -> TRANSFER_FREE

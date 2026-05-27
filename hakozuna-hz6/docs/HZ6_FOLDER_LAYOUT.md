@@ -289,7 +289,9 @@ R1 seeds owner identity in `Hz6Allocator` and stores owner tokens on
 descriptors. Local free requires the current owner, remote transfer clears the
 owner while the object is `TRANSFER_FREE`, and transfer pop restores ownership
 to the consuming allocator. Owner-dead marking moves owned `ACTIVE` /
-`LOCAL_FREE` descriptors to `ORPHAN`; rescue/adoption is still future work.
+`LOCAL_FREE` descriptors to `ORPHAN`. Explicit orphan release unregisters route
+metadata and releases SourceLayer backing; rescue/adoption is still future
+work.
 
 ```text
 Allowed:

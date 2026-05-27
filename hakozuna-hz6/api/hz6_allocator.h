@@ -62,6 +62,8 @@ int hz6_allocator_release_descriptor_source(
 
 void hz6_allocator_mark_owner_dead(Hz6Allocator* allocator);
 
+int hz6_allocator_release_orphan(Hz6Allocator* allocator, void* ptr);
+
 #ifdef __cplusplus
 }
 #endif

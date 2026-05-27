@@ -200,6 +200,14 @@ int main(void) {
   if (!expect(orphan_stats.route_invalid == 1, "orphan free invalid")) {
     return 1;
   }
+  if (!expect(hz6_allocator_release_orphan(&orphan_allocator, orphan_object),
+              "orphan release") ||
+      !expect(!hz6_owns(&orphan_allocator, orphan_object),
+              "orphan route released") ||
+      !expect(orphan_descriptor->state == HZ6_STATE_DEAD,
+              "orphan descriptor dead")) {
+    return 1;
+  }
   hz6_allocator_destroy(&orphan_allocator);
 
   printf("hz6-r1-allocator-smoke ok\n");

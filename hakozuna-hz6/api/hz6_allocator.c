@@ -84,6 +84,26 @@ void hz6_allocator_mark_owner_dead(Hz6Allocator* allocator) {
   }
 }
 
+int hz6_allocator_release_orphan(Hz6Allocator* allocator, void* ptr) {
+  if (!allocator || !ptr) {
+    return 0;
+  }
+
+  Hz6RouteResult route =
+      hz6_route_backend_lookup(&allocator->route_backend, ptr);
+  if (route.kind != HZ6_ROUTE_VALID || !route.descriptor) {
+    return 0;
+  }
+
+  Hz6ObjectDescriptor* descriptor = (Hz6ObjectDescriptor*)route.descriptor;
+  if (descriptor->ptr != ptr || descriptor->state != HZ6_STATE_ORPHAN) {
+    return 0;
+  }
+
+  hz6_route_backend_unregister_exact(&allocator->route_backend, ptr);
+  return hz6_allocator_release_descriptor_source(descriptor);
+}
+
 void hz6_allocator_init(Hz6Allocator* allocator) {
   hz6_allocator_init_with_profile(allocator, HZ6_PROFILE_STRICT);
 }

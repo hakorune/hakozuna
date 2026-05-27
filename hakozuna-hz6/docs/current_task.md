@@ -113,6 +113,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    owned ACTIVE / LOCAL_FREE descriptors become ORPHAN
    dead owner malloc is rejected
    orphan free is fail-closed in allocator smoke
+24. Orphan release path. DONE:
+   hz6_allocator_release_orphan()
+   unregisters route and releases descriptor SourceLayer backing
+   allocator smoke verifies route miss and descriptor DEAD after release
 ```
 
 Current R1 smoke:
