@@ -24,8 +24,9 @@ API:
   release/adoption
   api/hz6_allocator_remote_pending.c owns strict remote-pending drain
   api/hz6_allocator_route.c owns allocator-facing RouteLayer wrappers
-  api/hz6_allocator_scavenge.c owns allocator-facing bounded scavenge
-  execution
+  api/hz6_allocator_scavenge_orphans.c, api/hz6_allocator_scavenge_local_free.c,
+  and api/hz6_allocator_scavenge_profile.c own allocator-facing bounded
+  scavenge execution
   api/hz6_allocator_source_block.c owns SourceBlock lifecycle helpers
   api/hz6_allocator_descriptor_source.c owns descriptor source setup and
   release helpers

@@ -705,6 +705,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    fronts/hz6_front_source.c was removed after the split
    linux/build_hz6_r1_smokes.sh registers the new front source modules
    explicitly
+131. Allocator scavenge split. DONE:
+   api/hz6_allocator_scavenge_orphans.c now owns ORPHAN scavenging
+   api/hz6_allocator_scavenge_local_free.c now owns LOCAL_FREE scavenging
+   api/hz6_allocator_scavenge_profile.c now owns profile-level scavenge
+   composition
+   api/hz6_allocator_scavenge.c was removed after the split
+   linux/build_hz6_r1_smokes.sh registers the new scavenge modules explicitly
 ```
 
 Current R1 smoke:
