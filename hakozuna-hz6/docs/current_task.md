@@ -831,6 +831,14 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    include/hz6_contract_owner.h now owns owner token and object state enums
    include/hz6_contract.h is reduced to a thin umbrella over the public
    contract pieces
+151. Allocator API state split. DONE:
+   api/hz6_allocator_api_init.h now owns init profile declaration
+   api/hz6_allocator_api_descriptor.h now owns descriptor lifecycle helpers
+   api/hz6_allocator_api_owner.h now owns owner token / debug / owner-dead
+   api/hz6_allocator_api_source.h now owns source block creation and lifetime
+   api/hz6_allocator_api_orphan.h now owns orphan release/adopt helpers
+   api/hz6_allocator_api_state.h is reduced to a thin umbrella over the
+   specialized API headers
 144. Descriptor state local-cache/remote-transfer split. DONE:
    api/hz6_allocator_descriptor_local_cache.c now owns cache-active
    transitions

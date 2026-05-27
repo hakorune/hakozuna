@@ -72,6 +72,8 @@ Contracts:
   route backend separately from the lower-level mixed contract smoke
   public contract split keeps owner state and route result constructors in
   separate headers under include/
+  allocator api state is now a thin umbrella over init/descriptor/owner/source
+  /orphan helper headers
   route backend page-table variant is split into its own module so PAGE_TABLE
   lookup stays separate from exact-table init/register helpers, while shared
   page-alignment math lives in route/hz6_route_backend_util.h

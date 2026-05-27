@@ -24,6 +24,11 @@ hakozuna-hz6/
     hz6_allocator_api_profile.h
     hz6_allocator_api_route_transfer.h
     hz6_allocator_api_scavenge.h
+    hz6_allocator_api_init.h
+    hz6_allocator_api_descriptor.h
+    hz6_allocator_api_owner.h
+    hz6_allocator_api_source.h
+    hz6_allocator_api_orphan.h
     hz6_allocator_api_state.h
     hz6_allocator.h
     hz6_allocator.c
