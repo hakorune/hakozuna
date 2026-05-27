@@ -10,6 +10,7 @@ API:
   api/hz6_allocator.*
   hz6_stats_snapshot() is the public stats observation boundary
   allocator note helpers are the front-facing stats update boundary
+  hz6_allocator_owner_token() is the front-facing owner token read boundary
 
 Contracts:
   route MISS / VALID / INVALID

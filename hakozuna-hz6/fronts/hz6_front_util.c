@@ -90,7 +90,7 @@ void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
   descriptor->class_id = class_id;
   descriptor->source_kind = source_kind;
   descriptor->source_release = source_ops->release;
-  descriptor->owner = allocator->owner.token;
+  descriptor->owner = hz6_allocator_owner_token(allocator);
   descriptor->generation = 1;
   descriptor->state = HZ6_STATE_ACTIVE;
   if (!hz6_allocator_route_register_exact(allocator, ptr, bytes,
@@ -117,7 +117,7 @@ static void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
         (Hz6ObjectDescriptor*)transfer.descriptor;
     if (!hz6_allocator_activate_descriptor(
             descriptor, HZ6_STATE_TRANSFER_FREE, transfer.ptr,
-            transfer.generation, allocator->owner.token)) {
+            transfer.generation, hz6_allocator_owner_token(allocator))) {
       continue;
     }
     hz6_allocator_note_transfer_pop(allocator);
@@ -139,7 +139,7 @@ void* hz6_front_reuse_cached_or_transfer(Hz6Allocator* allocator,
         (Hz6ObjectDescriptor*)entry.descriptor;
     if (hz6_allocator_activate_descriptor(
             descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr, entry.generation,
-            allocator->owner.token)) {
+            hz6_allocator_owner_token(allocator))) {
       return entry.ptr;
     }
   }
@@ -170,7 +170,7 @@ void* hz6_front_reuse_transfer_or_cached(Hz6Allocator* allocator,
         (Hz6ObjectDescriptor*)entry.descriptor;
     if (hz6_allocator_activate_descriptor(
             descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr, entry.generation,
-            allocator->owner.token)) {
+            hz6_allocator_owner_token(allocator))) {
       return entry.ptr;
     }
   }
@@ -232,7 +232,7 @@ void* hz6_front_source_slot_ops(Hz6Allocator* allocator,
   descriptor->class_id = class_id;
   descriptor->source_kind = source_kind;
   descriptor->source_release = source_ops->release;
-  descriptor->owner = allocator->owner.token;
+  descriptor->owner = hz6_allocator_owner_token(allocator);
   descriptor->generation = 1;
   descriptor->state = HZ6_STATE_ACTIVE;
 
@@ -284,7 +284,7 @@ void* hz6_front_source_block_slot(Hz6Allocator* allocator,
   descriptor->class_id = class_id;
   descriptor->source_kind = source_block->source_kind;
   descriptor->source_release = source_block->source_release;
-  descriptor->owner = allocator->owner.token;
+  descriptor->owner = hz6_allocator_owner_token(allocator);
   descriptor->generation = 1;
   descriptor->state = HZ6_STATE_ACTIVE;
 
@@ -322,7 +322,7 @@ static int hz6_front_prefill_one(Hz6Allocator* allocator,
   descriptor->class_id = class_id;
   descriptor->source_kind = source_kind;
   descriptor->source_release = source_ops->release;
-  descriptor->owner = allocator->owner.token;
+  descriptor->owner = hz6_allocator_owner_token(allocator);
   descriptor->generation = 1;
   descriptor->state = HZ6_STATE_LOCAL_FREE;
 
@@ -391,7 +391,8 @@ int hz6_front_free_local_to_cache(Hz6Allocator* allocator,
   if (descriptor->state != HZ6_STATE_ACTIVE || descriptor->ptr != ptr) {
     return 0;
   }
-  if (!hz6_owner_equal(descriptor->owner, allocator->owner.token)) {
+  if (!hz6_owner_equal(descriptor->owner,
+                       hz6_allocator_owner_token(allocator))) {
     return 0;
   }
 
@@ -426,7 +427,8 @@ int hz6_front_free_remote_to_transfer(Hz6Allocator* allocator,
   }
 
   if (hz6_allocator_profile_strict_owner_remote(allocator)) {
-    if (!hz6_owner_equal(descriptor->owner, allocator->owner.token)) {
+    if (!hz6_owner_equal(descriptor->owner,
+                         hz6_allocator_owner_token(allocator))) {
       return 0;
     }
     descriptor->state = HZ6_STATE_REMOTE_PENDING;
@@ -443,7 +445,7 @@ int hz6_front_free_remote_to_transfer(Hz6Allocator* allocator,
   descriptor->owner.generation = 0;
   if (!hz6_allocator_transfer_push(allocator, object)) {
     descriptor->state = HZ6_STATE_ACTIVE;
-    descriptor->owner = allocator->owner.token;
+    descriptor->owner = hz6_allocator_owner_token(allocator);
     return 0;
   }
 

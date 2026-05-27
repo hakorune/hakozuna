@@ -87,7 +87,7 @@ int main(void) {
   source_descriptor.class_id = 1;
   source_descriptor.source_kind = HZ6_SOURCE_SYSTEM;
   source_descriptor.source_release = smoke_release_source;
-  source_descriptor.owner = allocator.owner.token;
+  source_descriptor.owner = hz6_allocator_owner_token(&allocator);
   source_descriptor.generation = 1;
   source_descriptor.state = HZ6_STATE_LOCAL_FREE;
   g_expected_release_source_ptr = source_block;
@@ -156,8 +156,9 @@ int main(void) {
       !expect(local2p_route.class_id == HZ6_LOCAL2P_CLASS_ID,
               "local2p route class") ||
       !expect(local2p_descriptor != NULL, "local2p descriptor") ||
-      !expect(hz6_owner_equal(local2p_descriptor->owner,
-                              local2p_allocator.owner.token),
+      !expect(hz6_owner_equal(
+                  local2p_descriptor->owner,
+                  hz6_allocator_owner_token(&local2p_allocator)),
               "local2p owner assigned") ||
       !expect(hz6_free_remote(&local2p_allocator, local2p_object),
               "local2p remote free")) {
@@ -182,8 +183,9 @@ int main(void) {
   if (!expect(local2p_reused == local2p_object, "local2p transfer reuse")) {
     return 1;
   }
-  if (!expect(hz6_owner_equal(local2p_descriptor->owner,
-                              local2p_allocator.owner.token),
+  if (!expect(hz6_owner_equal(
+                  local2p_descriptor->owner,
+                  hz6_allocator_owner_token(&local2p_allocator)),
               "local2p owner restored")) {
     return 1;
   }
@@ -820,7 +822,10 @@ int main(void) {
   Hz6Allocator consumer_shard_allocator;
   hz6_allocator_init_with_profile(&consumer_shard_allocator,
                                   HZ6_PROFILE_REMOTE);
-  consumer_shard_allocator.owner.token.slot = 1;
+  if (!expect(hz6_allocator_debug_set_owner_slot(&consumer_shard_allocator, 1),
+              "consumer shard owner slot setup")) {
+    return 1;
+  }
   void* consumer_shard_a = hz6_malloc(&consumer_shard_allocator, 128);
   void* consumer_shard_b = hz6_malloc(&consumer_shard_allocator, 128);
   if (!expect(consumer_shard_a != NULL, "consumer shard malloc a") ||

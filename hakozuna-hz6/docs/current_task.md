@@ -438,6 +438,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    note_transfer_pop() centralize front-originated stats updates in the
    allocator API
    shared FrontUtil and MidPage no longer mutate allocator.stats directly
+90. Allocator owner token boundary helper. DONE:
+   hz6_allocator_owner_token() exposes owner token reads through the allocator
+   API boundary
+   hz6_allocator_debug_set_owner_slot() keeps smoke-only shard setup out of
+   allocator internals
+   shared FrontUtil and allocator smoke no longer read allocator.owner.token
+   directly
 ```
 
 Current R1 smoke:

@@ -72,6 +72,11 @@ int hz6_allocator_activate_descriptor(Hz6ObjectDescriptor* descriptor,
                                       uint32_t generation,
                                       Hz6OwnerToken owner);
 
+Hz6OwnerToken hz6_allocator_owner_token(const Hz6Allocator* allocator);
+
+int hz6_allocator_debug_set_owner_slot(Hz6Allocator* allocator,
+                                       uint32_t slot);
+
 int hz6_allocator_release_descriptor_source(
     Hz6ObjectDescriptor* descriptor);
 

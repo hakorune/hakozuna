@@ -49,6 +49,19 @@ int hz6_allocator_activate_descriptor(Hz6ObjectDescriptor* descriptor,
   return 1;
 }
 
+Hz6OwnerToken hz6_allocator_owner_token(const Hz6Allocator* allocator) {
+  return allocator ? allocator->owner.token : hz6_owner_token_none();
+}
+
+int hz6_allocator_debug_set_owner_slot(Hz6Allocator* allocator,
+                                       uint32_t slot) {
+  if (!allocator) {
+    return 0;
+  }
+  allocator->owner.token.slot = slot;
+  return 1;
+}
+
 int hz6_allocator_release_descriptor_source(
     Hz6ObjectDescriptor* descriptor) {
   if (!descriptor || !descriptor->ptr) {
