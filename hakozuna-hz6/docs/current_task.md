@@ -252,6 +252,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    transfer backend exposes per-shard capacity for diagnostics
    contract smoke verifies uneven capacity is preserved across shards
    inactive shard capacity reports zero
+57. Transfer uneven shard fill smoke. DONE:
+   contract smoke fills an uneven sharded backend to full capacity
+   shard counts match the 3/2 capacity split
+   one extra push is rejected after all shard capacity is consumed
 ```
 
 Current R1 smoke:

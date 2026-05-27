@@ -246,6 +246,15 @@ int main(void) {
   Hz6TransferObject object_b = object_a;
   object_b.ptr = object + 128;
   object_b.class_id = 8;
+  Hz6TransferObject object_c = object_a;
+  object_c.ptr = object + 32;
+  object_c.class_id = 7;
+  Hz6TransferObject object_d = object_a;
+  object_d.ptr = object + 64;
+  object_d.class_id = 7;
+  Hz6TransferObject object_e = object_a;
+  object_e.ptr = object + 96;
+  object_e.class_id = 7;
 
   if (!expect(hz6_transfer_push(&transfer, object_a), "transfer push a") ||
       !expect(hz6_transfer_push(&transfer, object_b), "transfer push b") ||
@@ -334,6 +343,26 @@ int main(void) {
               "transfer uneven shard one capacity") ||
       !expect(hz6_transfer_backend_shard_capacity_at(&uneven_backend, 2) == 0,
               "transfer uneven inactive shard capacity")) {
+    return 1;
+  }
+  if (!expect(hz6_transfer_backend_push(&uneven_backend, object_a),
+              "transfer uneven push a") ||
+      !expect(hz6_transfer_backend_push(&uneven_backend, object_b),
+              "transfer uneven push b") ||
+      !expect(hz6_transfer_backend_push(&uneven_backend, object_c),
+              "transfer uneven push c") ||
+      !expect(hz6_transfer_backend_push(&uneven_backend, object_d),
+              "transfer uneven push d") ||
+      !expect(hz6_transfer_backend_push(&uneven_backend, object_e),
+              "transfer uneven push e") ||
+      !expect(hz6_transfer_backend_count(&uneven_backend) == 5,
+              "transfer uneven full count") ||
+      !expect(hz6_transfer_backend_shard_count_at(&uneven_backend, 0) == 3,
+              "transfer uneven shard zero full") ||
+      !expect(hz6_transfer_backend_shard_count_at(&uneven_backend, 1) == 2,
+              "transfer uneven shard one full") ||
+      !expect(!hz6_transfer_backend_push(&uneven_backend, object_a),
+              "transfer uneven bounded after full")) {
     return 1;
   }
 
