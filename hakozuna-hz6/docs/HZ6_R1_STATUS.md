@@ -83,6 +83,8 @@ Contracts:
   count/capacity helpers stay separate from sharded push/pop
   transfer backend sharded init/ops helpers are split into separate helper
   units so shard creation stays separate from shard push/pop dispatch
+  transfer backend stats aggregate/shard helpers are split into separate helper
+  units so aggregate count/capacity stays separate from shard indexing
   transfer contract smoke covers bounded single-cache and sharded backend
   push/pop, class filtering, shard preference, fallback, and uneven capacities
   source contract smoke covers source ops validation, Linux mmap source ops,

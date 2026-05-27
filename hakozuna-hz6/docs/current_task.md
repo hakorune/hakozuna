@@ -811,6 +811,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    fronts/hz6_front_reuse_transfer.c now owns transfer-first reuse probing
    fronts/hz6_front_reuse.c now keeps the cached/transfer wrappers
    fronts/hz6_front_reuse.c no longer owns the transfer helper directly
+148. Transfer backend stats aggregate/shards split. DONE:
+   transfer/hz6_transfer_backend_stats_aggregate.c now owns aggregate
+   count/capacity helpers
+   transfer/hz6_transfer_backend_stats_shards.c now owns shard access helpers
+   transfer/hz6_transfer_backend_stats.c was removed after the split
+   linux/build_hz6_r1_smokes.sh registers the new stats modules explicitly
 144. Descriptor state local-cache/remote-transfer split. DONE:
    api/hz6_allocator_descriptor_local_cache.c now owns cache-active
    transitions

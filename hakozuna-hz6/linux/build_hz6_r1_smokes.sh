@@ -93,7 +93,8 @@ HZ6_LIB_SOURCES=(
   "${HZ6_DIR}/transfer/hz6_transfer_backend.c"
   "${HZ6_DIR}/transfer/hz6_transfer_backend_sharded_init.c"
   "${HZ6_DIR}/transfer/hz6_transfer_backend_sharded_ops.c"
-  "${HZ6_DIR}/transfer/hz6_transfer_backend_stats.c"
+  "${HZ6_DIR}/transfer/hz6_transfer_backend_stats_aggregate.c"
+  "${HZ6_DIR}/transfer/hz6_transfer_backend_stats_shards.c"
   "${HZ6_DIR}/transfer/hz6_transfer.c"
 )
 

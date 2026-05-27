@@ -77,7 +77,8 @@ hakozuna-hz6/
     hz6_transfer_backend.c
     hz6_transfer_backend_sharded_init.c
     hz6_transfer_backend_sharded_ops.c
-    hz6_transfer_backend_stats.c
+    hz6_transfer_backend_stats_aggregate.c
+    hz6_transfer_backend_stats_shards.c
     hz6_transfer_shard.h
     hz6_transfer_shard.c
 
@@ -224,7 +225,8 @@ transfer/hz6_transfer_backend.h
 transfer/hz6_transfer_backend.c
 transfer/hz6_transfer_backend_sharded_init.c
 transfer/hz6_transfer_backend_sharded_ops.c
-transfer/hz6_transfer_backend_stats.c
+transfer/hz6_transfer_backend_stats_aggregate.c
+transfer/hz6_transfer_backend_stats_shards.c
 owner/hz6_owner.h
 owner/hz6_owner.c
 scavenge/hz6_scavenge.h
