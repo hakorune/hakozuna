@@ -62,6 +62,9 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    fronts/large/hz6_large128_front.*
    handles >4KiB..128KiB through the front registry
    uses transfer-first reuse in HZ6_PROFILE_REMOTE
+11. Front utility common path. IN PROGRESS:
+   fronts/hz6_front_util.*
+   removes duplicated descriptor/cache/transfer transitions from toy/large
 ```
 
 Current R1 smoke:

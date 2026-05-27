@@ -58,6 +58,8 @@ hakozuna-hz6/
   fronts/
     hz6_front.h
     hz6_front.c
+    hz6_front_util.h
+    hz6_front_util.c
     toy/
       hz6_toy_front.h
       hz6_toy_front.c
@@ -126,6 +128,8 @@ policy/hz6_profiles.h
 policy/hz6_profiles.c
 fronts/hz6_front.h
 fronts/hz6_front.c
+fronts/hz6_front_util.h
+fronts/hz6_front_util.c
 fronts/toy/hz6_toy_front.h
 fronts/toy/hz6_toy_front.c
 fronts/large/hz6_large128_front.h
@@ -172,6 +176,10 @@ specific real front.
 `fronts/large/hz6_large128_front.*` is the first real-front seed. It handles
 requests above the toy/small range up to 128KiB and exercises
 `ACTIVE -> TRANSFER_FREE -> ACTIVE` through the same front registry.
+
+Shared descriptor/cache/transfer transitions live in
+`fronts/hz6_front_util.*`. Real fronts should keep only range/class decisions
+and front-specific policy locally.
 
 ## Boundaries
 
