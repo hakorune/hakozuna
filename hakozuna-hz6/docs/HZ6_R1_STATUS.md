@@ -98,6 +98,7 @@ front registry:
   local2p handles exact 64KiB
   large128 handles >32KiB..128KiB except exact 64KiB
   >128KiB is unsupported in R1 and returns NULL
+  FrontOps carries an optional prefill hook for front-specific slow-path refill
 
 source:
   Linux mmap ops validate through SourceLayer

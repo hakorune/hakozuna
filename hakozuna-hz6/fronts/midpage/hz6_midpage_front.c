@@ -177,6 +177,7 @@ const Hz6FrontOps* hz6_midpage_front_ops(void) {
       "midpage",
       hz6_midpage_can_allocate,
       hz6_midpage_alloc,
+      NULL,
       hz6_midpage_free_local,
       hz6_midpage_free_remote,
   };

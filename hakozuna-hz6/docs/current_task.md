@@ -272,6 +272,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    Local2P front exposes hz6_local2p_prefill()
    allocator smoke verifies RSS profile source_batch pre-fills Local2P cache
    consuming the prefilled Local2P objects avoids additional source refill
+62. FrontOps prefill hook seed. DONE:
+   Hz6FrontOps now carries an optional prefill hook
+   Local2P and Large128 register front-specific prefill hooks
+   allocator smoke calls Local2P / Large128 prefill through hz6_front_for_id()
 ```
 
 Current R1 smoke:

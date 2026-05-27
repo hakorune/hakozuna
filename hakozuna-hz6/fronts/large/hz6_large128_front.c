@@ -51,6 +51,7 @@ const Hz6FrontOps* hz6_large128_front_ops(void) {
       "large128",
       hz6_large128_can_allocate,
       hz6_large128_alloc,
+      hz6_large128_prefill,
       hz6_large128_free_local,
       hz6_large128_free_remote,
   };

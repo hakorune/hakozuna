@@ -53,6 +53,7 @@ const Hz6FrontOps* hz6_toy_front_ops(void) {
       "toy",
       hz6_toy_front_can_allocate,
       hz6_toy_front_alloc_with_class,
+      NULL,
       hz6_toy_front_free_local,
       hz6_toy_front_free_remote,
   };
