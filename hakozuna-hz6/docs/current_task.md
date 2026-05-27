@@ -474,6 +474,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    release/adoption, scavenge budget execution, and strict remote-pending drain
    api/hz6_allocator.c now keeps lifecycle plus front/policy/route/transfer API
    orchestration separate from reclaim logic
+96. Allocator facade implementation split. DONE:
+   api/hz6_allocator_facade.c now owns frontcache, front prefill, profile,
+   source ops, route diagnostics/registration, transfer diagnostics/ops, and
+   stats note wrappers
+   api/hz6_allocator.c is now focused on allocator lifecycle and public
+   malloc/free/owns/stats entrypoints
 ```
 
 Current R1 smoke:
