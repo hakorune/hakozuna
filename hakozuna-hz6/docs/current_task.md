@@ -161,6 +161,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    Hz6ProfileConfig.transfer_capacity now selects transfer backend capacity
    capacity is capped by HZ6_TRANSFER_CACHE_CAPACITY
    allocator smoke covers RSS profile capacity and capped remote profile capacity
+35. Explicit source prefill seed. DONE:
+   hz6_front_prefill_source_kind()
+   uses profile.source_batch from slow-path tests without changing malloc hit path
+   allocator smoke covers RSS profile source_batch prefill and no hidden refill
 ```
 
 Current R1 smoke:

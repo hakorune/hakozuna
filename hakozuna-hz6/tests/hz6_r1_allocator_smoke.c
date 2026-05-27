@@ -1,5 +1,6 @@
 #include "../api/hz6_allocator.h"
 #include "../fronts/large/hz6_large128_front.h"
+#include "../fronts/hz6_front_util.h"
 #include "../fronts/local2p/hz6_local2p_front.h"
 #include "../fronts/midpage/hz6_midpage_front.h"
 #include "../include/hz6_contract.h"
@@ -122,6 +123,30 @@ int main(void) {
     return 1;
   }
   hz6_allocator_destroy(&rss_capacity_allocator);
+
+  Hz6Allocator rss_prefill_allocator;
+  hz6_allocator_init_with_profile(&rss_prefill_allocator, HZ6_PROFILE_RSS);
+  size_t prefilled = hz6_front_prefill_source_kind(
+      &rss_prefill_allocator, HZ6_FRONT_MIDPAGE, HZ6_MIDPAGE_CLASS_ID,
+      HZ6_MIDPAGE_BYTES, HZ6_SOURCE_OS_PAGED,
+      rss_prefill_allocator.profile.source_batch);
+  if (!expect(prefilled == rss_prefill_allocator.profile.source_batch,
+              "rss profile source prefill count") ||
+      !expect(rss_prefill_allocator.stats.source_alloc == prefilled,
+              "rss profile prefill source alloc")) {
+    return 1;
+  }
+  for (size_t i = 0; i < prefilled; ++i) {
+    void* prefetched = hz6_malloc(&rss_prefill_allocator, 16384);
+    if (!expect(prefetched != NULL, "rss profile prefilled malloc")) {
+      return 1;
+    }
+  }
+  if (!expect(rss_prefill_allocator.stats.source_alloc == prefilled,
+              "rss profile prefill avoids refill")) {
+    return 1;
+  }
+  hz6_allocator_destroy(&rss_prefill_allocator);
 
   Hz6Allocator midpage_allocator;
   hz6_allocator_init_with_profile(&midpage_allocator, HZ6_PROFILE_REMOTE);

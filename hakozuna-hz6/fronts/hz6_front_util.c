@@ -97,6 +97,85 @@ void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
   return ptr;
 }
 
+static int hz6_front_prefill_one(Hz6Allocator* allocator,
+                                 uint16_t front_id,
+                                 uint16_t class_id,
+                                 size_t bytes,
+                                 const Hz6OsMemoryOps* source_ops,
+                                 Hz6SourceKind source_kind) {
+  Hz6ObjectDescriptor* descriptor =
+      hz6_allocator_find_free_descriptor(allocator);
+  if (!descriptor) {
+    return 0;
+  }
+
+  void* ptr = source_ops->reserve(bytes, source_ops->allocation_granularity);
+  if (!ptr) {
+    return 0;
+  }
+
+  descriptor->ptr = ptr;
+  descriptor->bytes = bytes;
+  descriptor->source_bytes = bytes;
+  descriptor->class_id = class_id;
+  descriptor->source_kind = source_kind;
+  descriptor->source_release = source_ops->release;
+  descriptor->owner = allocator->owner.token;
+  descriptor->generation = 1;
+  descriptor->state = HZ6_STATE_LOCAL_FREE;
+
+  if (!hz6_route_backend_register_exact(&allocator->route_backend, ptr, bytes,
+                                        front_id, class_id,
+                                        descriptor->generation, descriptor)) {
+    hz6_allocator_release_descriptor_source(descriptor);
+    return 0;
+  }
+
+  Hz6FrontCacheEntry entry;
+  entry.ptr = ptr;
+  entry.descriptor = descriptor;
+  entry.class_id = class_id;
+  entry.generation = descriptor->generation;
+  if (!hz6_frontcache_push(&allocator->frontcache_bins[class_id], entry)) {
+    hz6_route_backend_unregister_exact(&allocator->route_backend, ptr);
+    hz6_allocator_release_descriptor_source(descriptor);
+    return 0;
+  }
+
+  ++allocator->stats.source_alloc;
+  return 1;
+}
+
+size_t hz6_front_prefill_source_kind(Hz6Allocator* allocator,
+                                     uint16_t front_id,
+                                     uint16_t class_id,
+                                     size_t bytes,
+                                     Hz6SourceKind source_kind,
+                                     size_t count) {
+  if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT || bytes == 0 ||
+      count == 0) {
+    return 0;
+  }
+
+  const Hz6OsMemoryOps* source_ops =
+      hz6_source_registry_lookup(&allocator->source_registry, source_kind);
+  if (!hz6_source_ops_valid(source_ops) || source_kind == HZ6_SOURCE_NONE) {
+    return 0;
+  }
+
+  size_t filled = 0;
+  while (filled < count &&
+         allocator->frontcache_bins[class_id].count <
+             allocator->frontcache_bins[class_id].capacity) {
+    if (!hz6_front_prefill_one(allocator, front_id, class_id, bytes,
+                               source_ops, source_kind)) {
+      break;
+    }
+    ++filled;
+  }
+  return filled;
+}
+
 int hz6_front_free_local_to_cache(Hz6Allocator* allocator,
                                   void* ptr,
                                   Hz6RouteResult route,

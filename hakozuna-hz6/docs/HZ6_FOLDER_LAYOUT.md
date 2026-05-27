@@ -183,6 +183,12 @@ hz6_malloc:
   source allocation through source/
   exact route registration
 
+hz6_front_prefill_source_kind:
+  explicit slow-path source prefill
+  source allocation through source/
+  LOCAL_FREE cache population
+  no implicit malloc hot-path policy
+
 hz6_free:
   route backend lookup
   VALID exact pointer -> ACTIVE to LOCAL_FREE

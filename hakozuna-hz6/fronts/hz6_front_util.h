@@ -25,6 +25,13 @@ void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
                                     const Hz6OsMemoryOps* source_ops,
                                     Hz6SourceKind source_kind);
 
+size_t hz6_front_prefill_source_kind(Hz6Allocator* allocator,
+                                     uint16_t front_id,
+                                     uint16_t class_id,
+                                     size_t bytes,
+                                     Hz6SourceKind source_kind,
+                                     size_t count);
+
 int hz6_front_free_local_to_cache(Hz6Allocator* allocator,
                                   void* ptr,
                                   Hz6RouteResult route,

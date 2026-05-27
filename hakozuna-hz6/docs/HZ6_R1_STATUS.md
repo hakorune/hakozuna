@@ -93,6 +93,8 @@ source:
   reserve / commit / decommit / release smoke passes
   Large128 descriptors carry source kind / release metadata
   allocator destroy releases Large128 mappings through SourceLayer
+  explicit front prefill can source objects into LOCAL_FREE cache using
+  profile source_batch without changing the malloc hit path
 
 scavenge:
   `scavenge/hz6_scavenge.*` provides bounded release accounting
