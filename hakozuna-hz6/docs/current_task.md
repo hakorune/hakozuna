@@ -754,6 +754,15 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    fronts/midpage/hz6_midpage_front.c was removed after the split
    linux/build_hz6_r1_smokes.sh registers the new MidPage front modules
    explicitly
+138. Large128 front alloc/free/ops split. DONE:
+   fronts/large/hz6_large128_front_alloc.c now owns source refill and
+   allocation selection
+   fronts/large/hz6_large128_front_free.c now owns local/remote free
+   dispatch
+   fronts/large/hz6_large128_front_ops.c now owns the front ops table
+   fronts/large/hz6_large128_front.c was removed after the split
+   linux/build_hz6_r1_smokes.sh registers the new Large128 front modules
+   explicitly
 ```
 
 Current R1 smoke:

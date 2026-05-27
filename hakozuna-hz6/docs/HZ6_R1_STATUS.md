@@ -102,6 +102,8 @@ Contracts:
   page-run selection stays separate from reuse and transfer dispatch
   front source prefill helpers are split into their own helper unit and header
   so direct source reserve logic stays separate from slow-path prefill loops
+  Large128 front alloc/free/ops helpers are split into separate helper units so
+  source refill stays separate from reuse and free-path dispatch
   shared object states
   owner token equality/liveness helpers
   profile configuration
