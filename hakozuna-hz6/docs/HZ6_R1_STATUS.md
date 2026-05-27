@@ -73,6 +73,8 @@ Contracts:
   cache reuse and free-path dispatch stop sharing one utility module
   MidPage prefill helpers are split into their own helper unit so run-fill
   seeding stays separate from front policy and free-path dispatch
+  MidPage policy helpers are split into their own helper unit so class-size
+  mapping stays separate from run-fill and alloc/free dispatch
   front source prefill helpers are split into their own helper unit and header
   so direct source reserve logic stays separate from slow-path prefill loops
   shared object states

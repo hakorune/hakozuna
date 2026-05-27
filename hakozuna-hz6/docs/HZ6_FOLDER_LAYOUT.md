@@ -98,6 +98,7 @@ hakozuna-hz6/
       hz6_midpage.h
       hz6_midpage.c
       hz6_midpage_prefill.c
+      hz6_midpage_policy.c
     large/
       hz6_large128_front.h
       hz6_large128_front.c
@@ -203,6 +204,7 @@ fronts/local2p/hz6_local2p_front.c
 fronts/midpage/hz6_midpage_front.h
 fronts/midpage/hz6_midpage_front.c
 fronts/midpage/hz6_midpage_prefill.c
+fronts/midpage/hz6_midpage_policy.c
 tests/hz6_r1_core_contract_smoke.c
 tests/hz6_r1_route_smoke.c
 tests/hz6_r1_transfer_contract_smoke.c
