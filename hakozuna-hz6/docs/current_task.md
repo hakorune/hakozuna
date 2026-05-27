@@ -618,7 +618,8 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    api/hz6_allocator_destroy.c now owns allocator destruction
    api/hz6_allocator.c now keeps owner token helpers and debug owner slot
    hooks separate from lifecycle
-   linux/build_hz6_r1_smokes.sh registers the lifecycle modules explicitly
+   linux/build_hz6_r1_smokes.sh registers the init/destroy lifecycle modules
+   explicitly
 119. Front source slot split. DONE:
    fronts/hz6_front_source_slot.c now owns direct source-backed user-slot
    creation helpers
@@ -626,6 +627,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    from direct source-slot creation
    linux/build_hz6_r1_smokes.sh registers hz6_front_source_slot.c as an
    explicit HZ6_LIB_SOURCE
+120. Allocator descriptor state split. DONE:
+   api/hz6_allocator_descriptor_state.c now owns descriptor cache and
+   remote-free state transitions
+   api/hz6_allocator_descriptor.c now keeps descriptor lookup, prepare, and
+   source release helpers separate from state transitions
+   linux/build_hz6_r1_smokes.sh registers the descriptor state module
+   explicitly
 ```
 
 Current R1 smoke:

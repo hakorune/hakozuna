@@ -18,6 +18,8 @@ API:
   api/hz6_allocator_prefill.c owns allocator-facing front prefill wrappers
   api/hz6_allocator_profile.c owns allocator-facing profile/source policy
   queries and source allocation stats notes
+  api/hz6_allocator_descriptor_state.c owns descriptor cache and remote-free
+  state transitions
   api/hz6_allocator_orphan.c owns owner-dead orphan conversion and orphan
   release/adoption
   api/hz6_allocator_remote_pending.c owns strict remote-pending drain
