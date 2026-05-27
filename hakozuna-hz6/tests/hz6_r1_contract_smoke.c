@@ -342,15 +342,22 @@ int main(void) {
   Hz6ProfileConfig speed = hz6_profile_config(HZ6_PROFILE_SPEED);
   Hz6ProfileConfig rss = hz6_profile_config(HZ6_PROFILE_RSS);
   Hz6ProfileConfig strict = hz6_profile_config(HZ6_PROFILE_STRICT);
+  Hz6ProfileConfig remote = hz6_profile_config(HZ6_PROFILE_REMOTE);
   if (!expect(speed.transfer_first == 1, "speed transfer-first") ||
       !expect(speed.transfer_shards == 4, "speed transfer shards") ||
+      !expect(speed.route_page_granularity == HZ6_ROUTE_PAGE_GRANULARITY,
+              "speed page route") ||
       !expect(rss.scavenge_local_free_bytes > speed.scavenge_local_free_bytes,
               "rss stronger local scavenge") ||
       !expect(rss.scavenge_orphan_bytes > speed.scavenge_orphan_bytes,
               "rss stronger orphan scavenge") ||
+      !expect(rss.route_page_granularity == 0, "rss exact route") ||
       !expect(strict.strict_owner_remote == 1, "strict owner remote") ||
       !expect(strict.scavenge_local_free_bytes == 0,
-              "strict no profile scavenge")) {
+              "strict no profile scavenge") ||
+      !expect(strict.route_page_granularity == 0, "strict exact route") ||
+      !expect(remote.route_page_granularity == HZ6_ROUTE_PAGE_GRANULARITY,
+              "remote page route")) {
     return 1;
   }
 

@@ -55,7 +55,7 @@ route:
   source block envelope pointer without exact slot descriptor -> INVALID
   exact slot route takes priority over source block invalid envelope
   foreign pointer -> MISS
-  allocator routes through `Hz6RouteBackend`, currently exact-table backed
+  allocator routes through profile-selected `Hz6RouteBackend`
   backend wrapper preserves VALID / INVALID / MISS contract
   PAGE_TABLE backend carries explicit page granularity and is covered by
   contract smoke, including invalid-range envelopes

@@ -240,6 +240,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    Hz6ProfileConfig now carries route_page_granularity
    allocator init selects PAGE_TABLE when profile route granularity is nonzero
    REMOTE profile smoke verifies PAGE_TABLE route backend selection
+54. Profile route contract smoke. DONE:
+   contract smoke verifies SPEED / REMOTE use page route granularity
+   contract smoke verifies STRICT / RSS keep exact-table route selection
+   status docs now describe profile-selected route backend rather than exact-only routing
 ```
 
 Current R1 smoke:
