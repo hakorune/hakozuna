@@ -112,10 +112,7 @@ static void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
   }
 
   Hz6TransferObject transfer;
-  size_t home_shard = hz6_profile_transfer_consumer_shard(
-      &allocator->profile, allocator->owner.token.slot, class_id);
-  while (hz6_transfer_backend_pop_from_shard(
-      &allocator->transfer_backend, class_id, home_shard, &transfer)) {
+  while (hz6_allocator_transfer_pop(allocator, class_id, &transfer)) {
     Hz6ObjectDescriptor* descriptor =
         (Hz6ObjectDescriptor*)transfer.descriptor;
     if (!hz6_allocator_activate_descriptor(
@@ -447,10 +444,7 @@ int hz6_front_free_remote_to_transfer(Hz6Allocator* allocator,
   descriptor->state = HZ6_STATE_TRANSFER_FREE;
   descriptor->owner.slot = 0;
   descriptor->owner.generation = 0;
-  size_t producer_shard = hz6_profile_transfer_producer_shard(
-      &allocator->profile, allocator->owner.token.slot, descriptor->class_id);
-  if (!hz6_transfer_backend_push_to_shard(&allocator->transfer_backend, object,
-                                          producer_shard)) {
+  if (!hz6_allocator_transfer_push(allocator, object)) {
     descriptor->state = HZ6_STATE_ACTIVE;
     descriptor->owner = allocator->owner.token;
     return 0;

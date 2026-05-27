@@ -422,6 +422,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    expose front-cache operations through the allocator boundary
    allocator internals, shared FrontUtil, and MidPage now avoid direct
    frontcache_bins access outside allocator helper implementations and init
+87. Allocator transfer operation boundary helpers. DONE:
+   hz6_allocator_transfer_push() and hz6_allocator_transfer_pop() centralize
+   profile shard selection plus TransferBackend push/pop
+   shared FrontUtil no longer calls TransferBackend push/pop or transfer shard
+   policy helpers directly
 ```
 
 Current R1 smoke:

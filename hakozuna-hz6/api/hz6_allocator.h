@@ -186,6 +186,13 @@ size_t hz6_allocator_transfer_shard_capacity_at(
     const Hz6Allocator* allocator,
     size_t shard_index);
 
+int hz6_allocator_transfer_push(Hz6Allocator* allocator,
+                                Hz6TransferObject object);
+
+int hz6_allocator_transfer_pop(Hz6Allocator* allocator,
+                               uint16_t class_id,
+                               Hz6TransferObject* out);
+
 #ifdef __cplusplus
 }
 #endif

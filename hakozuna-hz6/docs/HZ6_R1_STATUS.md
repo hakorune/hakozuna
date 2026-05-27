@@ -130,6 +130,8 @@ front registry:
   without exposing front ids to callers
   allocator frontcache helpers wrap push, pop, remove, count, and capacity so
   fronts do not need to inspect allocator frontcache bins directly
+  allocator transfer helpers wrap transfer push/pop and profile shard selection
+  so fronts do not need to inspect transfer backend or shard policy directly
 
 source:
   Linux mmap ops validate through SourceLayer
