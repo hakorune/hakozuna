@@ -471,8 +471,9 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    api/hz6_allocator.c no longer carries the MidPage run SourceBlock helper
    implementation
 95. Allocator reclaim implementation split. DONE:
-   api/hz6_allocator_reclaim.c now owns owner-dead orphan conversion, orphan
-   release/adoption, scavenge budget execution, and strict remote-pending drain
+   api/hz6_allocator_orphan.c now owns owner-dead orphan conversion and orphan
+   release/adoption
+   api/hz6_allocator_remote_pending.c now owns strict remote-pending drain
    api/hz6_allocator.c now keeps lifecycle plus front/policy/route/transfer API
    orchestration separate from reclaim logic
 96. Allocator facade implementation split. DONE:
@@ -591,8 +592,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
 115. Allocator scavenge split. DONE:
    api/hz6_allocator_scavenge.c now owns orphan/local-free/profile scavenge
    execution and descriptor scavenge cost accounting
-   api/hz6_allocator_reclaim.c now keeps owner-dead orphan conversion, orphan
-   release/adoption, and strict remote-pending drain separate from scavenging
+   api/hz6_allocator_orphan.c now keeps owner-dead orphan conversion and
+   orphan release/adoption separate from scavenging
+   api/hz6_allocator_remote_pending.c now keeps strict remote-pending drain
+   separate from scavenging
    linux/build_hz6_r1_smokes.sh registers hz6_allocator_scavenge.c as an
    explicit HZ6_LIB_SOURCE
 116. Front source prefill split. DONE:
@@ -604,6 +607,18 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    large/local2p front implementations and prefill smoke
    linux/build_hz6_r1_smokes.sh registers hz6_front_source_prefill.c as an
    explicit HZ6_LIB_SOURCE
+117. Allocator orphan/remote-pending split. DONE:
+   api/hz6_allocator_orphan.c now owns owner-dead orphan conversion and
+   orphan release/adoption
+   api/hz6_allocator_remote_pending.c now owns strict remote-pending drain
+   api/hz6_allocator_reclaim.c was removed after the split
+   linux/build_hz6_r1_smokes.sh registers the new API modules explicitly
+118. Allocator lifecycle split. DONE:
+   api/hz6_allocator_lifecycle.c now owns allocator initialization and
+   destruction
+   api/hz6_allocator.c now keeps owner token helpers and debug owner slot
+   hooks separate from lifecycle
+   linux/build_hz6_r1_smokes.sh registers the lifecycle module explicitly
 ```
 
 Current R1 smoke:

@@ -1,12 +1,5 @@
 #include "hz6_allocator.h"
 
-static Hz6OwnerToken hz6_allocator_reclaim_owner_none(void) {
-  Hz6OwnerToken token;
-  token.slot = 0;
-  token.generation = 0;
-  return token;
-}
-
 void hz6_allocator_mark_owner_dead(Hz6Allocator* allocator) {
   if (!allocator) {
     return;
@@ -115,42 +108,8 @@ int hz6_allocator_adopt_orphan(Hz6Allocator* adopter,
   source_descriptor->class_id = 0;
   source_descriptor->source_kind = HZ6_SOURCE_NONE;
   source_descriptor->source_release = NULL;
-  source_descriptor->owner = hz6_allocator_reclaim_owner_none();
+  source_descriptor->owner = (Hz6OwnerToken){0};
   source_descriptor->generation = 0;
   source_descriptor->state = HZ6_STATE_DEAD;
   return 1;
-}
-
-size_t hz6_allocator_drain_remote_pending(Hz6Allocator* allocator) {
-  if (!allocator) {
-    return 0;
-  }
-  if (!hz6_owner_is_alive(&allocator->owner, allocator->owner.token)) {
-    return 0;
-  }
-
-  size_t drained = 0;
-  for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
-    Hz6ObjectDescriptor* descriptor = &allocator->descriptors[i];
-    if (!descriptor->ptr || descriptor->state != HZ6_STATE_REMOTE_PENDING ||
-        descriptor->class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
-      continue;
-    }
-    if (!hz6_owner_equal(descriptor->owner, allocator->owner.token)) {
-      continue;
-    }
-
-    Hz6FrontCacheEntry entry;
-    entry.ptr = descriptor->ptr;
-    entry.descriptor = descriptor;
-    entry.class_id = descriptor->class_id;
-    entry.generation = descriptor->generation;
-    if (!hz6_allocator_frontcache_push(allocator, entry.class_id, entry)) {
-      continue;
-    }
-
-    descriptor->state = HZ6_STATE_LOCAL_FREE;
-    ++drained;
-  }
-  return drained;
 }

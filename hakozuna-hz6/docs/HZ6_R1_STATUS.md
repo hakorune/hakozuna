@@ -8,8 +8,9 @@ HZ6-R1 is now an executable modular seed, not only a design note.
 API:
   include/hz6.h
   api/hz6_allocator.*
-  api/hz6_allocator.c owns allocator lifecycle, initialization, destruction,
-  and owner token helpers
+  api/hz6_allocator.c owns owner token helpers and debug owner slot hooks
+  api/hz6_allocator_lifecycle.c owns allocator initialization and
+  destruction
   api/hz6_allocator_descriptor.c owns descriptor lifecycle helpers
   api/hz6_allocator_frontcache.c owns allocator-facing FrontCache wrappers
   api/hz6_allocator_ops.c owns public malloc/free/remote-free/owns/stats
@@ -17,8 +18,9 @@ API:
   api/hz6_allocator_prefill.c owns allocator-facing front prefill wrappers
   api/hz6_allocator_profile.c owns allocator-facing profile/source policy
   queries and source allocation stats notes
-  api/hz6_allocator_reclaim.c owns owner-dead orphan conversion, orphan
-  release/adoption, and remote-pending drain
+  api/hz6_allocator_orphan.c owns owner-dead orphan conversion and orphan
+  release/adoption
+  api/hz6_allocator_remote_pending.c owns strict remote-pending drain
   api/hz6_allocator_route.c owns allocator-facing RouteLayer wrappers
   api/hz6_allocator_scavenge.c owns allocator-facing bounded scavenge
   execution
@@ -39,8 +41,8 @@ API:
   transfer smoke covers transfer backend profile wiring, Local2P transfer
   reuse, generic remote transfer reuse, producer/consumer shard behavior, and
   strict remote-pending drain separately from allocator/front integration smoke
-  reclaim smoke covers orphan release/adoption and profile scavenge separately
-  from allocator/front integration smoke
+  reclaim smoke covers orphan release/adoption, strict remote-pending drain,
+  and profile scavenge separately from allocator/front integration smoke
 
 Contracts:
   route MISS / VALID / INVALID
