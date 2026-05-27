@@ -34,6 +34,8 @@ Contracts:
   route MISS / VALID / INVALID
   route smoke covers exact table, invalid envelopes, backend wrappers, and page
   route backend separately from the lower-level mixed contract smoke
+  transfer contract smoke covers bounded single-cache and sharded backend
+  push/pop, class filtering, shard preference, fallback, and uneven capacities
   shared object states
   owner token/liveness helper
   profile configuration

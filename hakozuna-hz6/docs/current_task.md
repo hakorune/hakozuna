@@ -507,6 +507,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    exact/table backend, and page-table backend contract coverage
    contract smoke keeps transfer, owner, profile, frontcache, source, and
    scavenge low-level module coverage without RouteLayer bulk
+102. Transfer contract smoke split. DONE:
+   tests/hz6_r1_transfer_contract_smoke.c now owns bounded transfer cache,
+   transfer backend, sharded backend class filtering, shard preference,
+   explicit push/pop shard, and uneven shard capacity coverage
+   contract smoke keeps owner, profile, frontcache, source, and scavenge
+   low-level module coverage without TransferLayer bulk
 ```
 
 Current R1 smoke:
@@ -520,6 +526,7 @@ Expected:
 ```text
 hz6-r1-contract-smoke ok
 hz6-r1-route-smoke ok
+hz6-r1-transfer-contract-smoke ok
 hz6-r1-allocator-smoke ok
 hz6-r1-prefill-smoke ok
 hz6-r1-sourceblock-smoke ok
