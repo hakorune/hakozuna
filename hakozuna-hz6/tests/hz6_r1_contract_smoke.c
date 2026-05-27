@@ -1,5 +1,6 @@
 #include "../api/hz6_allocator.h"
 #include "../frontcache/hz6_frontcache.h"
+#include "../frontcache/hz6_size_class.h"
 #include "../include/hz6_contract.h"
 #include "../owner/hz6_owner.h"
 #include "../policy/hz6_profiles.h"
@@ -120,6 +121,19 @@ int main(void) {
   Hz6ProfileConfig strict = hz6_profile_config(HZ6_PROFILE_STRICT);
   if (!expect(speed.transfer_first == 1, "speed transfer-first") ||
       !expect(strict.strict_owner_remote == 1, "strict owner remote")) {
+    return 1;
+  }
+
+  Hz6SizeClass class_zero = hz6_size_class_for_request(0);
+  Hz6SizeClass class_mid = hz6_size_class_for_request(48);
+  Hz6SizeClass class_large = hz6_size_class_for_request(2000);
+  if (!expect(class_zero.id == 0 && class_zero.bytes == 16,
+              "size class zero") ||
+      !expect(class_mid.id == 1 && class_mid.bytes == 64,
+              "size class mid") ||
+      !expect(class_large.id == 4 && class_large.bytes == 4096,
+              "size class large") ||
+      !expect(hz6_size_class_valid(class_large), "size class valid")) {
     return 1;
   }
 

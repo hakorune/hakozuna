@@ -108,6 +108,8 @@ route/hz6_route.h
 route/hz6_route.c
 frontcache/hz6_frontcache.h
 frontcache/hz6_frontcache.c
+frontcache/hz6_size_class.h
+frontcache/hz6_size_class.c
 transfer/hz6_transfer.h
 transfer/hz6_transfer.c
 owner/hz6_owner.h
@@ -143,6 +145,9 @@ hz6_free_remote:
 
 This is not a performance allocator yet. It is the first executable contract
 that proves the module boundaries compose.
+
+Size-class mapping lives in `frontcache/hz6_size_class.*`, not in `api/`.
+The API layer should call it rather than own class policy.
 
 ## Boundaries
 

@@ -1,41 +1,7 @@
 #include "hz6_allocator.h"
 
+#include "../frontcache/hz6_size_class.h"
 #include "../source/hz6_source.h"
-
-static size_t hz6_round_class_bytes(size_t size) {
-  if (size == 0) {
-    return 16;
-  }
-  if (size <= 16) {
-    return 16;
-  }
-  if (size <= 64) {
-    return 64;
-  }
-  if (size <= 256) {
-    return 256;
-  }
-  if (size <= 1024) {
-    return 1024;
-  }
-  return 4096;
-}
-
-static uint16_t hz6_class_id_for_bytes(size_t bytes) {
-  if (bytes <= 16) {
-    return 0;
-  }
-  if (bytes <= 64) {
-    return 1;
-  }
-  if (bytes <= 256) {
-    return 2;
-  }
-  if (bytes <= 1024) {
-    return 3;
-  }
-  return 4;
-}
 
 static Hz6ObjectDescriptor* hz6_find_free_descriptor(Hz6Allocator* allocator) {
   for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
@@ -116,14 +82,13 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
     return NULL;
   }
 
-  size_t class_bytes = hz6_round_class_bytes(size);
-  uint16_t class_id = hz6_class_id_for_bytes(class_bytes);
-  if (class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
+  Hz6SizeClass size_class = hz6_size_class_for_request(size);
+  if (!hz6_size_class_valid(size_class)) {
     return NULL;
   }
 
   Hz6FrontCacheEntry entry;
-  if (hz6_frontcache_pop(&allocator->frontcache_bins[class_id], &entry)) {
+  if (hz6_frontcache_pop(&allocator->frontcache_bins[size_class.id], &entry)) {
     Hz6ObjectDescriptor* descriptor =
         (Hz6ObjectDescriptor*)entry.descriptor;
     if (!hz6_descriptor_activate(descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr,
@@ -135,7 +100,8 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
 
   if (allocator->profile.transfer_first) {
     Hz6TransferObject transfer;
-    while (hz6_transfer_pop(&allocator->transfer_cache, class_id, &transfer)) {
+    while (hz6_transfer_pop(&allocator->transfer_cache, size_class.id,
+                            &transfer)) {
       Hz6ObjectDescriptor* descriptor =
           (Hz6ObjectDescriptor*)transfer.descriptor;
       if (!hz6_descriptor_activate(descriptor, HZ6_STATE_TRANSFER_FREE,
@@ -152,18 +118,19 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
     return NULL;
   }
 
-  void* ptr = hz6_source_system_alloc(class_bytes);
+  void* ptr = hz6_source_system_alloc(size_class.bytes);
   if (!ptr) {
     return NULL;
   }
 
   descriptor->ptr = ptr;
-  descriptor->bytes = class_bytes;
-  descriptor->class_id = class_id;
+  descriptor->bytes = size_class.bytes;
+  descriptor->class_id = size_class.id;
   descriptor->generation = 1;
   descriptor->state = HZ6_STATE_ACTIVE;
-  if (!hz6_route_register_exact(&allocator->route_table, ptr, class_bytes,
-                                HZ6_FRONT_LARGE, class_id,
+  if (!hz6_route_register_exact(&allocator->route_table, ptr,
+                                size_class.bytes, HZ6_FRONT_LARGE,
+                                size_class.id,
                                 descriptor->generation, descriptor)) {
     hz6_source_system_free(ptr);
     descriptor->ptr = NULL;

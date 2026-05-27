@@ -53,6 +53,8 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    transfer pop before source allocation
 8. Choose first real target:
    Windows Local2P exact route, or Linux LargeFront 128K transfer.
+9. Keep modular cleanup moving before real target:
+   size-class mapping moved to frontcache/hz6_size_class.*
 ```
 
 Current R1 smoke:
