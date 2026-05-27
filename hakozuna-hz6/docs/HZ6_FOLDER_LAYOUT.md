@@ -110,6 +110,7 @@ hakozuna-hz6/
     hz6_front_source_block.c
     hz6_front_source_prefill_one.c
     hz6_front_source_prefill.c
+    hz6_front_reuse_transfer.c
     hz6_front_source_slot.c
     hz6_front_reuse.c
     hz6_front_free.c
@@ -249,6 +250,7 @@ fronts/hz6_front_source_block.h
 fronts/hz6_front_source_block.c
 fronts/hz6_front_source_prefill_one.c
 fronts/hz6_front_source_prefill.c
+fronts/hz6_front_reuse_transfer.c
 fronts/hz6_front_source_slot.c
 fronts/hz6_front_reuse.c
 fronts/hz6_front_free.c

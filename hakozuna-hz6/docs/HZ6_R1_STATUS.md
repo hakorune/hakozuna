@@ -120,6 +120,8 @@ Contracts:
   so direct source reserve logic stays separate from slow-path prefill loops
   front source prefill one-shot helper is split from the loop wrapper so
   descriptor setup stays separate from repeated source prefill batching
+  front reuse transfer helper is split from the cached/transfer wrappers so
+  transfer-first reuse stays separate from wrapper selection
   Large128 front alloc/free/ops helpers are split into separate helper units so
   source refill stays separate from reuse and free-path dispatch
   shared object states

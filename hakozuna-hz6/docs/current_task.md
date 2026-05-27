@@ -807,6 +807,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    prefill helper
    fronts/hz6_front_source_prefill.c now keeps the repeated batching loop
    front source prefill helper header exposes the helper boundary explicitly
+147. Front reuse transfer helper split. DONE:
+   fronts/hz6_front_reuse_transfer.c now owns transfer-first reuse probing
+   fronts/hz6_front_reuse.c now keeps the cached/transfer wrappers
+   fronts/hz6_front_reuse.c no longer owns the transfer helper directly
 144. Descriptor state local-cache/remote-transfer split. DONE:
    api/hz6_allocator_descriptor_local_cache.c now owns cache-active
    transitions

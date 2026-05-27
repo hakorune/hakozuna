@@ -7,6 +7,9 @@
 extern "C" {
 #endif
 
+void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
+                               uint16_t class_id);
+
 void* hz6_front_reuse_cached_or_transfer(Hz6Allocator* allocator,
                                          uint16_t class_id);
 
