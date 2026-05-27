@@ -451,6 +451,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    setup
    shared FrontUtil no longer hand-initializes descriptor source fields for
    one-off, slot-offset, SourceBlock, or prefill allocations
+92. Allocator active-descriptor transition helpers. DONE:
+   hz6_allocator_cache_active_descriptor() centralizes ACTIVE -> LOCAL_FREE
+   plus frontcache push / overflow release
+   hz6_allocator_remote_free_active_descriptor() centralizes ACTIVE ->
+   TRANSFER_FREE / REMOTE_PENDING transitions and transfer push rollback
+   FrontUtil and MidPage no longer hand-write free-path descriptor state
+   transitions
 ```
 
 Current R1 smoke:

@@ -13,6 +13,8 @@ API:
   hz6_allocator_owner_token() is the front-facing owner token read boundary
   hz6_allocator_prepare_descriptor() is the front-facing descriptor source
   setup boundary
+  allocator active-descriptor transition helpers centralize local-cache and
+  remote-transfer state changes
 
 Contracts:
   route MISS / VALID / INVALID
@@ -77,6 +79,7 @@ route:
 local free:
   ACTIVE -> LOCAL_FREE
   local free requires descriptor owner == allocator owner
+  hz6_allocator_cache_active_descriptor() owns the local cache transition
   second free before reuse is rejected
   local cache reuse returns the same pointer
   owner-dead descriptors become ORPHAN and are not locally reusable
@@ -87,6 +90,7 @@ local free:
 remote free:
   ACTIVE -> TRANSFER_FREE
   strict profile uses ACTIVE -> REMOTE_PENDING
+  hz6_allocator_remote_free_active_descriptor() owns the remote free transition
   explicit owner drain moves REMOTE_PENDING -> LOCAL_FREE
   remote free clears descriptor owner while object is in transfer
   transfer-first malloc consumes transfer before source allocation

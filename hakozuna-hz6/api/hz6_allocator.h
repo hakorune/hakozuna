@@ -85,6 +85,15 @@ int hz6_allocator_prepare_descriptor(
     int (*source_release)(void* ptr, size_t bytes),
     Hz6ObjectState state);
 
+int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
+                                          Hz6ObjectDescriptor* descriptor,
+                                          void* ptr);
+
+int hz6_allocator_remote_free_active_descriptor(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor,
+    void* ptr);
+
 Hz6OwnerToken hz6_allocator_owner_token(const Hz6Allocator* allocator);
 
 int hz6_allocator_debug_set_owner_slot(Hz6Allocator* allocator,
