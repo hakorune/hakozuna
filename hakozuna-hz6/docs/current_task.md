@@ -581,6 +581,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    api/hz6_allocator_prefill.c now owns allocator-facing prefill wrappers
    api/hz6_allocator_facade.c was removed after all responsibilities moved to
    role-named API modules
+114. Allocator public ops split. DONE:
+   api/hz6_allocator_ops.c now owns hz6_malloc(), hz6_free(),
+   hz6_free_remote(), hz6_owns(), and hz6_stats_snapshot()
+   api/hz6_allocator.c now keeps allocator lifecycle, owner token helpers,
+   initialization, and destruction separate from public operation dispatch
+   linux/build_hz6_r1_smokes.sh registers hz6_allocator_ops.c as an explicit
+   HZ6_LIB_SOURCE
 ```
 
 Current R1 smoke:

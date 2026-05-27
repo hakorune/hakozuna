@@ -8,8 +8,12 @@ HZ6-R1 is now an executable modular seed, not only a design note.
 API:
   include/hz6.h
   api/hz6_allocator.*
+  api/hz6_allocator.c owns allocator lifecycle, initialization, destruction,
+  and owner token helpers
   api/hz6_allocator_descriptor.c owns descriptor lifecycle helpers
   api/hz6_allocator_frontcache.c owns allocator-facing FrontCache wrappers
+  api/hz6_allocator_ops.c owns public malloc/free/remote-free/owns/stats
+  entrypoints
   api/hz6_allocator_prefill.c owns allocator-facing front prefill wrappers
   api/hz6_allocator_profile.c owns allocator-facing profile/source policy
   queries and source allocation stats notes
