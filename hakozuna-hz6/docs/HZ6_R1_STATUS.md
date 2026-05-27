@@ -69,6 +69,8 @@ Contracts:
   SourceBlock-backed front slots are split into their own helper unit so
   shared source-block lifetime is not mixed with direct source reserve/prefill
   helpers
+  front reuse/free helpers are split into separate helper units so transfer
+  cache reuse and free-path dispatch stop sharing one utility module
   MidPage prefill helpers are split into their own helper unit so run-fill
   seeding stays separate from front policy and free-path dispatch
   front source prefill helpers are split into their own helper unit and header

@@ -654,6 +654,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    dispatch separate from sharded cache internals
    linux/build_hz6_r1_smokes.sh registers the sharded transfer backend module
    explicitly
+124. Front reuse/free split. DONE:
+   fronts/hz6_front_reuse.c now owns transfer/cache reuse helpers
+   fronts/hz6_front_free.c now owns free-path descriptor transition helpers
+   fronts/hz6_front_util.c was removed after the split
+   linux/build_hz6_r1_smokes.sh registers the reuse/free helper modules
+   explicitly
 ```
 
 Current R1 smoke:

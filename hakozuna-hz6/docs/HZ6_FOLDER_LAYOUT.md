@@ -86,7 +86,8 @@ hakozuna-hz6/
     hz6_front_source_block.c
     hz6_front_source_prefill.c
     hz6_front_source_slot.c
-    hz6_front_util.c
+    hz6_front_reuse.c
+    hz6_front_free.c
     toy/
       hz6_toy_front.h
       hz6_toy_front.c
@@ -191,7 +192,8 @@ fronts/hz6_front_source_block.h
 fronts/hz6_front_source_block.c
 fronts/hz6_front_source_prefill.c
 fronts/hz6_front_source_slot.c
-fronts/hz6_front_util.c
+fronts/hz6_front_reuse.c
+fronts/hz6_front_free.c
 fronts/toy/hz6_toy_front.h
 fronts/toy/hz6_toy_front.c
 fronts/large/hz6_large128_front.h
