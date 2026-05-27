@@ -41,6 +41,8 @@ Contracts:
   the lower-level mixed contract smoke
   core contract smoke covers OwnerLayer equality/liveness, profile policy,
   size classes, and FrontCache primitives
+  front source helpers are split from reuse/free helpers so SourceLayer-backed
+  allocation and prefill stay out of the reusable/free-route helper unit
   shared object states
   owner token equality/liveness helpers
   profile configuration

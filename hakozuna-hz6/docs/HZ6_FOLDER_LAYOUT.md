@@ -67,6 +67,7 @@ hakozuna-hz6/
     hz6_front.h
     hz6_front.c
     hz6_front_util.h
+    hz6_front_source.c
     hz6_front_util.c
     toy/
       hz6_toy_front.h
@@ -152,6 +153,7 @@ policy/hz6_profiles.c
 fronts/hz6_front.h
 fronts/hz6_front.c
 fronts/hz6_front_util.h
+fronts/hz6_front_source.c
 fronts/hz6_front_util.c
 fronts/toy/hz6_toy_front.h
 fronts/toy/hz6_toy_front.c

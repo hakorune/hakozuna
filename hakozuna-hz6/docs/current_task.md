@@ -542,6 +542,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    owner/hz6_owner.h exposes equality and liveness as the OwnerLayer API
    include/hz6_contract.h keeps shared token/result types and route result
    constructors only
+108. Front source utility split. DONE:
+   fronts/hz6_front_source.c now owns source-backed front allocation,
+   source-block slot creation, and prefill helpers
+   fronts/hz6_front_util.c now keeps reuse and free-route helpers only
+   linux/build_hz6_r1_smokes.sh registers hz6_front_source.c as an explicit
+   HZ6_LIB_SOURCE
 ```
 
 Current R1 smoke:
