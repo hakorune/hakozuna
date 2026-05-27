@@ -660,6 +660,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    fronts/hz6_front_util.c was removed after the split
    linux/build_hz6_r1_smokes.sh registers the reuse/free helper modules
    explicitly
+125. Route table split. DONE:
+   route/hz6_route_table.c now owns table init/register/unregister helpers
+   route/hz6_route.c now keeps lookup separate from table management
+   linux/build_hz6_r1_smokes.sh registers hz6_route_table.c as an explicit
+   HZ6_LIB_SOURCE
 125. MidPage policy split. DONE:
    fronts/midpage/hz6_midpage_policy.c now owns class-size mapping and size
    policy helpers

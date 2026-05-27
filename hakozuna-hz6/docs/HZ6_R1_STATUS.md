@@ -52,6 +52,8 @@ Contracts:
   route backend separately from the lower-level mixed contract smoke
   route backend page-table variant is split into its own module so PAGE_TABLE
   lookup stays separate from exact-table init/register helpers
+  route table management is split into its own module so entry init/register
+  stays separate from route lookup
   transfer backend sharded variant is split into its own module so sharded
   push/pop and shard accounting stay separate from single-cache dispatch
   transfer contract smoke covers bounded single-cache and sharded backend
