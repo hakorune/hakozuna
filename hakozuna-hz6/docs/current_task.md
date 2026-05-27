@@ -23,6 +23,12 @@ It should not directly port HZ3/HZ4/HZ5 internals.
 HZ6 has not been benchmarked yet.
 Current evidence is smoke-only.
 Do not treat R1 modularization as a performance result.
+Benchmark harnesses are now in place, but no benchmark table has been
+published yet.
+Benchmark entrypoints:
+  linux/build_hz6_benchmark.sh
+  linux/run_hz6_benchmark.sh
+  local / remote / reuse single-process lanes
 The first benchmark pass should compare a frozen HZ6 prototype against
 HZ3 / HZ4 / HZ5 on the same machine with the same runner.
 ```

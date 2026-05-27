@@ -132,6 +132,9 @@ hakozuna-hz6/
     hz6_scavenge.h
     hz6_scavenge.c
 
+  bench/
+    hz6_allocator_bench.c
+
   fronts/
     hz6_front.h
     hz6_front_registry.c
@@ -187,6 +190,10 @@ hakozuna-hz6/
     build scripts and Windows adapter entrypoints
 
   linux/
+    build_hz6_r1_smokes.sh
+    build_hz6_contract_smoke.sh
+    build_hz6_benchmark.sh
+    run_hz6_benchmark.sh
     build scripts and Linux runners
 
   tests/
