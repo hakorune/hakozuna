@@ -49,6 +49,15 @@ docs/HZ6_MIGRATION_FROM_HZ5.md
 docs/current_task.md
 ```
 
+## R1 Contract Smoke
+
+The first code is intentionally contract-only. It does not implement allocator
+behavior.
+
+```bash
+./hakozuna-hz6/linux/build_hz6_r1_contract_smoke.sh
+```
+
 ## Non-Goals
 
 - Do not copy HZ3/HZ4/HZ5 implementation files into HZ6 as a starting point.

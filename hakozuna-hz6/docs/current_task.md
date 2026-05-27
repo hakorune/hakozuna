@@ -30,9 +30,9 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
 ## Proposed First Engineering Steps
 
 ```text
-1. Review and tighten HZ6 folder layout.
-2. Review HZ6_BLUEPRINT.md and select the first prototype.
-3. Add only headers/contracts first:
+1. Review and tighten HZ6 folder layout. DONE.
+2. Review HZ6_BLUEPRINT.md and select the first prototype. DONE.
+3. Add only headers/contracts first. IN PROGRESS:
    include/hz6_contract.h
    route/hz6_route.h
    transfer/hz6_transfer.h
@@ -41,6 +41,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
 5. Add transfer smoke before full malloc/free integration.
 6. Choose first target:
    Windows Local2P exact route, or Linux LargeFront 128K transfer.
+```
+
+Current R1 smoke:
+
+```bash
+./hakozuna-hz6/linux/build_hz6_r1_contract_smoke.sh
 ```
 
 ## Open Decisions

@@ -92,6 +92,20 @@ hakozuna-hz6/
     current_task.md
 ```
 
+R1 currently starts with the contract-only subset:
+
+```text
+include/hz6_contract.h
+route/hz6_route.h
+route/hz6_route.c
+transfer/hz6_transfer.h
+transfer/hz6_transfer.c
+owner/hz6_owner.h
+source/hz6_source.h
+tests/hz6_r1_contract_smoke.c
+linux/build_hz6_r1_contract_smoke.sh
+```
+
 ## Boundaries
 
 ### `route/`
