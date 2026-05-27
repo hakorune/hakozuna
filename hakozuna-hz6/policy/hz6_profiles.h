@@ -53,6 +53,10 @@ size_t hz6_profile_transfer_consumer_shard(const Hz6ProfileConfig* config,
                                            uint32_t owner_slot,
                                            uint16_t class_id);
 
+size_t hz6_profile_source_refill_batch(const Hz6ProfileConfig* config,
+                                       uint16_t front_id,
+                                       uint16_t class_id);
+
 #ifdef __cplusplus
 }
 #endif

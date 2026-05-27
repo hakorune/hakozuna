@@ -20,9 +20,11 @@ static void* hz6_local2p_alloc(Hz6Allocator* allocator,
     return NULL;
   }
 
+  size_t refill_batch = hz6_profile_source_refill_batch(
+      &allocator->profile, HZ6_FRONT_LOCAL2P, class_id);
   return hz6_front_reuse_or_prefill_source_kind(
       allocator, HZ6_FRONT_LOCAL2P, class_id, HZ6_LOCAL2P_BYTES,
-      allocator->profile.source_kind, allocator->profile.source_batch);
+      allocator->profile.source_kind, refill_batch);
 }
 
 static int hz6_local2p_free_local(Hz6Allocator* allocator,

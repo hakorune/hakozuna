@@ -1,5 +1,7 @@
 #include "hz6_profiles.h"
 
+#include "../include/hz6_contract.h"
+
 Hz6ProfileConfig hz6_profile_config(Hz6ProfileId id) {
   Hz6ProfileConfig config;
   config.id = id;
@@ -81,4 +83,15 @@ size_t hz6_profile_transfer_consumer_shard(const Hz6ProfileConfig* config,
                                            uint32_t owner_slot,
                                            uint16_t class_id) {
   return hz6_profile_transfer_owner_shard(config, owner_slot, class_id);
+}
+
+size_t hz6_profile_source_refill_batch(const Hz6ProfileConfig* config,
+                                       uint16_t front_id,
+                                       uint16_t class_id) {
+  (void)front_id;
+  (void)class_id;
+  if (!config || config->source_batch == 0) {
+    return 1;
+  }
+  return (size_t)config->source_batch;
 }

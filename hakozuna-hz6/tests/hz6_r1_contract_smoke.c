@@ -520,7 +520,13 @@ int main(void) {
       !expect(hz6_profile_transfer_producer_shard(&rss, 5, 7) == 0,
               "rss producer shard policy single") ||
       !expect(hz6_profile_transfer_consumer_shard(&strict, 6, 7) == 0,
-              "strict consumer shard policy single")) {
+              "strict consumer shard policy single") ||
+      !expect(hz6_profile_source_refill_batch(&speed, HZ6_FRONT_LARGE, 8) ==
+                  speed.source_batch,
+              "speed source refill batch policy") ||
+      !expect(hz6_profile_source_refill_batch(&rss, HZ6_FRONT_LOCAL2P, 6) ==
+                  rss.source_batch,
+              "rss source refill batch policy")) {
     return 1;
   }
 

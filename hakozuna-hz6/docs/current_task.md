@@ -362,6 +362,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    Large128, Local2P, and MidPage source/refill paths use profile.source_kind
    instead of hard-coding HZ6_SOURCE_OS_PAGED in each front
    contract smoke verifies speed/remote source_kind is HZ6_SOURCE_OS_PAGED
+77. Source refill batch policy helper. DONE:
+   hz6_profile_source_refill_batch() centralizes source refill batch selection
+   in PolicyLayer
+   Large128 and Local2P alloc miss paths call the helper instead of reading
+   profile.source_batch directly
+   contract smoke verifies speed/rss refill batch policy values
 ```
 
 Current R1 smoke:
