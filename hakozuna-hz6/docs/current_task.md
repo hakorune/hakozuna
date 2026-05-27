@@ -464,6 +464,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    cache/remote transitions
    api/hz6_allocator.c is smaller and keeps allocator lifecycle, route,
    transfer, source block, scavenge, and public API orchestration
+94. Allocator SourceBlock implementation split. DONE:
+   api/hz6_allocator_source_block.c now owns SourceBlock allocation, retain,
+   release, and invalid route envelope registration
+   api/hz6_allocator.c no longer carries the MidPage run SourceBlock helper
+   implementation
 ```
 
 Current R1 smoke:
