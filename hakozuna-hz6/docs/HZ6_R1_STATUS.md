@@ -12,6 +12,7 @@ API:
   api/hz6_allocator_facade.c owns allocator-facing module wrapper helpers
   api/hz6_allocator_reclaim.c owns orphan/scavenge/remote-pending reclaim
   api/hz6_allocator_source_block.c owns SourceBlock lifecycle helpers
+  api/hz6_allocator_transfer.c owns allocator-facing TransferLayer wrappers
   hz6_stats_snapshot() is the public stats observation boundary
   allocator note helpers are the front-facing stats update boundary
   hz6_allocator_owner_token() is the front-facing owner token read boundary

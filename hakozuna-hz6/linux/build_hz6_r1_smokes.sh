@@ -31,6 +31,7 @@ HZ6_LIB_SOURCES=(
   "${HZ6_DIR}/api/hz6_allocator_facade.c"
   "${HZ6_DIR}/api/hz6_allocator_reclaim.c"
   "${HZ6_DIR}/api/hz6_allocator_source_block.c"
+  "${HZ6_DIR}/api/hz6_allocator_transfer.c"
   "${HZ6_DIR}/frontcache/hz6_frontcache.c"
   "${HZ6_DIR}/frontcache/hz6_size_class.c"
   "${HZ6_DIR}/fronts/hz6_front.c"

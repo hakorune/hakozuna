@@ -560,6 +560,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    helpers only
    linux/build_hz6_r1_smokes.sh registers hz6_front_source_block.c as an
    explicit HZ6_LIB_SOURCE
+111. Allocator transfer facade split. DONE:
+   api/hz6_allocator_transfer.c now owns allocator-facing TransferLayer
+   diagnostics, push/pop wrappers, shard selection, and transfer stats notes
+   api/hz6_allocator_facade.c no longer mixes transfer wrappers with
+   frontcache, prefill, profile, source, and route wrappers
+   linux/build_hz6_r1_smokes.sh registers hz6_allocator_transfer.c as an
+   explicit HZ6_LIB_SOURCE
 ```
 
 Current R1 smoke:
