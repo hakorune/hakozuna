@@ -7,6 +7,10 @@
 #define HZ6_ROUTE_TABLE_CAPACITY ((size_t)64)
 #endif
 
+#ifndef HZ6_ROUTE_PAGE_GRANULARITY
+#define HZ6_ROUTE_PAGE_GRANULARITY ((size_t)4096)
+#endif
+
 #ifndef HZ6_TRANSFER_CACHE_CAPACITY
 #define HZ6_TRANSFER_CACHE_CAPACITY ((size_t)64)
 #endif

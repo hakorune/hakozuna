@@ -243,9 +243,10 @@ and front-specific policy locally.
 Owns pointer classification only.
 
 R1 uses `Hz6RouteBackend` as the allocator-facing seam. The implemented
-backends are exact-table and a PAGE_TABLE contract seed, and allocator/front
-utility code goes through the backend wrapper so Linux region/page routing and
-Windows sidecar routing can replace it without changing front logic.
+backends are exact-table and a PAGE_TABLE contract seed with explicit
+granularity, and allocator/front utility code goes through the backend wrapper
+so Linux region/page routing and Windows sidecar routing can replace it without
+changing front logic.
 
 ```text
 Allowed:

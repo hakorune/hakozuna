@@ -104,9 +104,12 @@ int main(void) {
 
   Hz6RouteEntry page_backend_entries[2];
   Hz6RouteBackend page_backend;
-  hz6_route_backend_init_page_table(&page_backend, page_backend_entries, 2);
+  hz6_route_backend_init_page_table_with_granularity(
+      &page_backend, page_backend_entries, 2, 64);
   if (!expect(page_backend.kind == HZ6_ROUTE_BACKEND_PAGE_TABLE,
               "page route backend kind") ||
+      !expect(page_backend.page_granularity == 64,
+              "page route backend granularity") ||
       !expect(hz6_route_backend_register_exact(
                   &page_backend, base, sizeof(object), HZ6_FRONT_LOCAL2P, 7,
                   13, &descriptor),
@@ -116,11 +119,15 @@ int main(void) {
   Hz6RouteResult page_exact = hz6_route_backend_lookup(&page_backend, base);
   Hz6RouteResult page_interior =
       hz6_route_backend_lookup(&page_backend, object + 24);
+  Hz6RouteResult page_end =
+      hz6_route_backend_lookup(&page_backend, object + sizeof(object));
   if (!expect(page_exact.kind == HZ6_ROUTE_VALID,
               "page route backend valid") ||
       !expect(page_exact.generation == 13, "page route backend generation") ||
       !expect(page_interior.kind == HZ6_ROUTE_INVALID,
-              "page route backend invalid")) {
+              "page route backend invalid") ||
+      !expect(page_end.kind == HZ6_ROUTE_MISS,
+              "page route backend end miss")) {
     return 1;
   }
   hz6_route_backend_unregister_exact(&page_backend, base);

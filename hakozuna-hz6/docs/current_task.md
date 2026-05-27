@@ -177,6 +177,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    hz6_allocator_mark_owner_dead() now converts REMOTE_PENDING to ORPHAN
    hz6_allocator_drain_remote_pending() rejects dead owners
    safety smoke covers pending remote orphan release after owner death
+39. Page route granularity contract. DONE:
+   HZ6_ROUTE_BACKEND_PAGE_TABLE now carries an explicit page granularity
+   lookup filters entries by page envelope before preserving VALID / INVALID / MISS
+   contract smoke covers custom page granularity and object-end MISS
 ```
 
 Current R1 smoke:

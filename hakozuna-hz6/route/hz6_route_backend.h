@@ -1,6 +1,7 @@
 #ifndef HZ6_ROUTE_BACKEND_H
 #define HZ6_ROUTE_BACKEND_H
 
+#include "../include/hz6_config.h"
 #include "hz6_route.h"
 
 #ifdef __cplusplus
@@ -16,6 +17,7 @@ typedef struct Hz6RouteBackend {
   Hz6RouteBackendKind kind;
   Hz6RouteEntry* exact_entries;
   Hz6RouteTable exact_table;
+  size_t page_granularity;
 } Hz6RouteBackend;
 
 void hz6_route_backend_init_exact(Hz6RouteBackend* backend,
@@ -25,6 +27,12 @@ void hz6_route_backend_init_exact(Hz6RouteBackend* backend,
 void hz6_route_backend_init_page_table(Hz6RouteBackend* backend,
                                        Hz6RouteEntry* entries,
                                        size_t capacity);
+
+void hz6_route_backend_init_page_table_with_granularity(
+    Hz6RouteBackend* backend,
+    Hz6RouteEntry* entries,
+    size_t capacity,
+    size_t page_granularity);
 
 int hz6_route_backend_register_exact(Hz6RouteBackend* backend,
                                      void* base,
