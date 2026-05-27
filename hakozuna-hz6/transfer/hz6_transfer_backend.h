@@ -33,6 +33,10 @@ void hz6_transfer_backend_init_sharded(Hz6TransferBackend* backend,
 int hz6_transfer_backend_push(Hz6TransferBackend* backend,
                               Hz6TransferObject object);
 
+int hz6_transfer_backend_push_to_shard(Hz6TransferBackend* backend,
+                                       Hz6TransferObject object,
+                                       size_t producer_shard);
+
 int hz6_transfer_backend_pop(Hz6TransferBackend* backend,
                              uint16_t class_id,
                              Hz6TransferObject* out);

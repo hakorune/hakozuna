@@ -83,6 +83,8 @@ remote free:
   allocator routes through `Hz6TransferBackend`
   strict/rss profiles use single-cache transfer
   speed/remote profiles use sharded transfer
+  sharded push can take an explicit producer shard through
+  hz6_transfer_backend_push_to_shard()
   backend wrapper preserves bounded push / class pop semantics
   sharded class pop retains non-target classes
   backend exposes class counts, per-shard counts, and per-shard capacity for

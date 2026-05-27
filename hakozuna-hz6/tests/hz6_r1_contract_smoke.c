@@ -396,6 +396,29 @@ int main(void) {
               "transfer explicit home empty")) {
     return 1;
   }
+  Hz6TransferObject push_home_objects[4];
+  Hz6TransferBackend push_home_backend;
+  hz6_transfer_backend_init_sharded(&push_home_backend, push_home_objects, 4,
+                                    2);
+  if (!expect(hz6_transfer_backend_push_to_shard(&push_home_backend,
+                                                 object_home0, 1),
+              "transfer explicit push shard one") ||
+      !expect(hz6_transfer_backend_shard_count_at(&push_home_backend, 0) == 0,
+              "transfer explicit push keeps shard zero empty") ||
+      !expect(hz6_transfer_backend_shard_count_at(&push_home_backend, 1) == 1,
+              "transfer explicit push shard one count") ||
+      !expect(hz6_transfer_backend_push_to_shard(&push_home_backend,
+                                                 object_home1, 1),
+              "transfer explicit push shard one second") ||
+      !expect(hz6_transfer_backend_push_to_shard(&push_home_backend,
+                                                 object_home0, 1),
+              "transfer explicit push fallback shard zero") ||
+      !expect(hz6_transfer_backend_shard_count_at(&push_home_backend, 0) == 1,
+              "transfer explicit push fallback count") ||
+      !expect(hz6_transfer_backend_shard_count_at(&push_home_backend, 1) == 2,
+              "transfer explicit push filled home count")) {
+    return 1;
+  }
   Hz6TransferObject uneven_objects[5];
   Hz6TransferBackend uneven_backend;
   hz6_transfer_backend_init_sharded(&uneven_backend, uneven_objects, 5, 2);

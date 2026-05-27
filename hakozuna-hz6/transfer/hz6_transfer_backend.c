@@ -56,6 +56,16 @@ int hz6_transfer_backend_push(Hz6TransferBackend* backend,
   if (!backend) {
     return 0;
   }
+  return hz6_transfer_backend_push_to_shard(backend, object,
+                                            backend->next_push_shard);
+}
+
+int hz6_transfer_backend_push_to_shard(Hz6TransferBackend* backend,
+                                       Hz6TransferObject object,
+                                       size_t producer_shard) {
+  if (!backend) {
+    return 0;
+  }
   if (backend->kind == HZ6_TRANSFER_BACKEND_SINGLE_CACHE) {
     return hz6_transfer_push(&backend->single_cache, object);
   }
@@ -64,7 +74,7 @@ int hz6_transfer_backend_push(Hz6TransferBackend* backend,
     return 0;
   }
 
-  size_t start = backend->next_push_shard % backend->shard_count;
+  size_t start = producer_shard % backend->shard_count;
   for (size_t i = 0; i < backend->shard_count; ++i) {
     size_t shard_index = (start + i) % backend->shard_count;
     if (hz6_transfer_push(&backend->shard[shard_index], object)) {

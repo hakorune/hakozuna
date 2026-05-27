@@ -327,6 +327,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    cached-first and transfer-first reuse share one transfer activation helper
    allocator smoke verifies a consumer with owner slot 1 pops the same-class
    object from shard 1 before shard 0
+71. Transfer explicit producer shard push. DONE:
+   hz6_transfer_backend_push_to_shard() lets a caller provide the producer
+   shard instead of relying only on backend round-robin state
+   hz6_transfer_backend_push() remains a compatibility wrapper using
+   next_push_shard
+   contract smoke verifies explicit push prefers the requested shard and falls
+   back to another shard when the requested shard is full
 ```
 
 Current R1 smoke:
