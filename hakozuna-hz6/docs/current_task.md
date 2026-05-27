@@ -402,6 +402,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    directly
    rg confirms tests/fronts/api no longer contain allocator.profile field
    accesses outside allocator internals
+83. Allocator stats snapshot boundary cleanup. DONE:
+   allocator smoke now reads source_alloc through hz6_stats_snapshot() instead
+   of direct allocator.stats field access
+   rg confirms tests/fronts/api no longer contain allocator.stats field access
+   outside allocator/front internals
 ```
 
 Current R1 smoke:

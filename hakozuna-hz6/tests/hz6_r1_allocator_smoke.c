@@ -47,6 +47,10 @@ static size_t smoke_frontcache_capped_batch(const Hz6Allocator* allocator) {
                                               : HZ6_FRONT_CACHE_BIN_CAPACITY;
 }
 
+static size_t smoke_source_alloc_count(const Hz6Allocator* allocator) {
+  return hz6_stats_snapshot(allocator).source_alloc;
+}
+
 int main(void) {
   int foreign = 0;
 
@@ -216,7 +220,7 @@ int main(void) {
       HZ6_MIDPAGE_BYTES, HZ6_SOURCE_OS_PAGED, rss_refill_batch);
   if (!expect(prefilled == rss_refill_batch,
               "rss profile source prefill count") ||
-      !expect(rss_prefill_allocator.stats.source_alloc == prefilled,
+      !expect(smoke_source_alloc_count(&rss_prefill_allocator) == prefilled,
               "rss profile prefill source alloc")) {
     return 1;
   }
@@ -226,7 +230,7 @@ int main(void) {
       return 1;
     }
   }
-  if (!expect(rss_prefill_allocator.stats.source_alloc == prefilled,
+  if (!expect(smoke_source_alloc_count(&rss_prefill_allocator) == prefilled,
               "rss profile prefill avoids refill")) {
     return 1;
   }
@@ -250,7 +254,7 @@ int main(void) {
   }
   if (!expect(large_prefilled == large_refill_batch,
               "large128 profile prefill count") ||
-      !expect(large_prefill_allocator.stats.source_alloc == large_prefilled,
+      !expect(smoke_source_alloc_count(&large_prefill_allocator) == large_prefilled,
               "large128 profile prefill source alloc")) {
     return 1;
   }
@@ -261,7 +265,7 @@ int main(void) {
       return 1;
     }
   }
-  if (!expect(large_prefill_allocator.stats.source_alloc == large_prefilled,
+  if (!expect(smoke_source_alloc_count(&large_prefill_allocator) == large_prefilled,
               "large128 profile prefill avoids refill")) {
     return 1;
   }
@@ -280,7 +284,7 @@ int main(void) {
       &local2p_prefill_allocator, HZ6_FRONT_LOCAL2P, local2p_refill_batch);
   if (!expect(local2p_prefilled == local2p_refill_batch,
               "local2p profile prefill count") ||
-      !expect(local2p_prefill_allocator.stats.source_alloc ==
+      !expect(smoke_source_alloc_count(&local2p_prefill_allocator) ==
                   local2p_prefilled,
               "local2p profile prefill source alloc")) {
     return 1;
@@ -293,7 +297,7 @@ int main(void) {
       return 1;
     }
   }
-  if (!expect(local2p_prefill_allocator.stats.source_alloc ==
+  if (!expect(smoke_source_alloc_count(&local2p_prefill_allocator) ==
                   local2p_prefilled,
               "local2p profile prefill avoids refill")) {
     return 1;
@@ -316,7 +320,7 @@ int main(void) {
               "size prefill local2p count") ||
       !expect(size_midpage_prefilled == size_refill_batch,
               "size prefill midpage count") ||
-      !expect(size_prefill_allocator.stats.source_alloc ==
+      !expect(smoke_source_alloc_count(&size_prefill_allocator) ==
                   size_large_prefilled + size_local2p_prefilled +
                       (size_midpage_prefilled / 2),
               "size prefill source alloc")) {
@@ -344,7 +348,7 @@ int main(void) {
       return 1;
     }
   }
-  if (!expect(size_prefill_allocator.stats.source_alloc ==
+  if (!expect(smoke_source_alloc_count(&size_prefill_allocator) ==
                   size_large_prefilled + size_local2p_prefilled +
                       (size_midpage_prefilled / 2),
               "size prefill avoids refill")) {
@@ -369,7 +373,7 @@ int main(void) {
               "allocator front class prefill midpage8 count") ||
       !expect(front_midpage_bad_prefilled == 0,
               "allocator front class prefill rejects wrong class") ||
-      !expect(front_prefill_allocator.stats.source_alloc ==
+      !expect(smoke_source_alloc_count(&front_prefill_allocator) ==
                   front_large_prefilled + 1,
               "allocator front class prefill source alloc")) {
     return 1;
@@ -388,7 +392,7 @@ int main(void) {
       return 1;
     }
   }
-  if (!expect(front_prefill_allocator.stats.source_alloc ==
+  if (!expect(smoke_source_alloc_count(&front_prefill_allocator) ==
                   front_large_prefilled + 1,
               "allocator front class prefill avoids refill")) {
     return 1;
@@ -446,7 +450,7 @@ int main(void) {
     return 1;
   }
   hz6_free(&midpage8_allocator, midpage8_reused);
-  if (!expect(midpage8_allocator.stats.source_alloc == 1,
+  if (!expect(smoke_source_alloc_count(&midpage8_allocator) == 1,
               "midpage 8k auto prefill source alloc")) {
     return 1;
   }
@@ -621,7 +625,7 @@ int main(void) {
       hz6_midpage_prefill_run(&midpage_run_allocator,
                               HZ6_MIDPAGE_8K_CLASS_ID);
   if (!expect(run_prefilled == 8, "midpage run prefill count") ||
-      !expect(midpage_run_allocator.stats.source_alloc == 1,
+      !expect(smoke_source_alloc_count(&midpage_run_allocator) == 1,
               "midpage run source allocation count")) {
     return 1;
   }
@@ -650,7 +654,7 @@ int main(void) {
       return 1;
     }
   }
-  if (!expect(midpage_run_allocator.stats.source_alloc == 1,
+  if (!expect(smoke_source_alloc_count(&midpage_run_allocator) == 1,
               "midpage run prefill avoids refill")) {
     return 1;
   }
@@ -666,7 +670,7 @@ int main(void) {
       hz6_midpage_prefill_run(&midpage_32k_run_allocator,
                               HZ6_MIDPAGE_32K_CLASS_ID);
   if (!expect(run32_prefilled == 2, "midpage 32k run prefill count") ||
-      !expect(midpage_32k_run_allocator.stats.source_alloc == 1,
+      !expect(smoke_source_alloc_count(&midpage_32k_run_allocator) == 1,
               "midpage 32k run source allocation count")) {
     return 1;
   }
@@ -695,7 +699,7 @@ int main(void) {
       return 1;
     }
   }
-  if (!expect(midpage_32k_run_allocator.stats.source_alloc == 1,
+  if (!expect(smoke_source_alloc_count(&midpage_32k_run_allocator) == 1,
               "midpage 32k run prefill avoids refill")) {
     return 1;
   }

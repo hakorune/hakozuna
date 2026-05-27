@@ -8,6 +8,7 @@ HZ6-R1 is now an executable modular seed, not only a design note.
 API:
   include/hz6.h
   api/hz6_allocator.*
+  hz6_stats_snapshot() is the public stats observation boundary
 
 Contracts:
   route MISS / VALID / INVALID
