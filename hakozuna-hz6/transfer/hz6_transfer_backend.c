@@ -78,6 +78,14 @@ int hz6_transfer_backend_push(Hz6TransferBackend* backend,
 int hz6_transfer_backend_pop(Hz6TransferBackend* backend,
                              uint16_t class_id,
                              Hz6TransferObject* out) {
+  return hz6_transfer_backend_pop_from_shard(backend, class_id,
+                                             (size_t)class_id, out);
+}
+
+int hz6_transfer_backend_pop_from_shard(Hz6TransferBackend* backend,
+                                        uint16_t class_id,
+                                        size_t home_shard,
+                                        Hz6TransferObject* out) {
   if (!backend) {
     return 0;
   }
@@ -89,7 +97,7 @@ int hz6_transfer_backend_pop(Hz6TransferBackend* backend,
     return 0;
   }
 
-  size_t start = ((size_t)class_id) % backend->shard_count;
+  size_t start = home_shard % backend->shard_count;
   for (size_t i = 0; i < backend->shard_count; ++i) {
     size_t shard_index = (start + i) % backend->shard_count;
     if (hz6_transfer_pop(&backend->shard[shard_index], class_id, out)) {

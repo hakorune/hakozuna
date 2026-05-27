@@ -362,6 +362,40 @@ int main(void) {
               "transfer steal empty after pop")) {
     return 1;
   }
+  Hz6TransferObject home_objects[4];
+  Hz6TransferBackend home_backend;
+  hz6_transfer_backend_init_sharded(&home_backend, home_objects, 4, 2);
+  Hz6TransferObject object_home0 = object_a;
+  object_home0.ptr = object + 16;
+  object_home0.class_id = 10;
+  Hz6TransferObject object_home1 = object_a;
+  object_home1.ptr = object + 48;
+  object_home1.class_id = 10;
+  if (!expect(hz6_transfer_backend_push(&home_backend, object_home0),
+              "transfer home push first") ||
+      !expect(hz6_transfer_backend_push(&home_backend, object_home1),
+              "transfer home push second") ||
+      !expect(hz6_transfer_backend_shard_count_at(&home_backend, 0) == 1,
+              "transfer home shard zero seeded") ||
+      !expect(hz6_transfer_backend_shard_count_at(&home_backend, 1) == 1,
+              "transfer home shard one seeded")) {
+    return 1;
+  }
+  Hz6TransferObject home_popped;
+  if (!expect(hz6_transfer_backend_pop_from_shard(&home_backend, 10, 1,
+                                                  &home_popped),
+              "transfer explicit home pop") ||
+      !expect(home_popped.ptr == object_home1.ptr,
+              "transfer explicit home pointer") ||
+      !expect(hz6_transfer_backend_pop_from_shard(&home_backend, 10, 1,
+                                                  &home_popped),
+              "transfer explicit home steal") ||
+      !expect(home_popped.ptr == object_home0.ptr,
+              "transfer explicit home steal pointer") ||
+      !expect(hz6_transfer_backend_count(&home_backend) == 0,
+              "transfer explicit home empty")) {
+    return 1;
+  }
   Hz6TransferObject uneven_objects[5];
   Hz6TransferBackend uneven_backend;
   hz6_transfer_backend_init_sharded(&uneven_backend, uneven_objects, 5, 2);

@@ -88,6 +88,8 @@ remote free:
   backend exposes class counts, per-shard counts, and per-shard capacity for
   smoke diagnostics
   sharded pop can steal from a non-home shard when the class home shard is empty
+  sharded pop can also take an explicit consumer home shard through
+  hz6_transfer_backend_pop_from_shard()
   uneven sharded capacity is filled without dropping remainder slots
   profile transfer capacity is applied during backend init and capped by
   `HZ6_TRANSFER_CACHE_CAPACITY`

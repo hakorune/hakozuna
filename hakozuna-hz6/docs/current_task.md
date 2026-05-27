@@ -314,6 +314,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    the allocator layer
    allocator smoke verifies Large128 front prefill and MidPage 8K class prefill
    through these wrappers
+69. Transfer explicit home shard pop. DONE:
+   hz6_transfer_backend_pop_from_shard() lets a caller provide the consumer
+   home shard instead of deriving it only from class id
+   hz6_transfer_backend_pop() remains a compatibility wrapper using class id as
+   the home seed
+   contract smoke verifies explicit home shard pop prefers the requested shard
+   and then steals from another non-empty shard for the same class
 ```
 
 Current R1 smoke:
