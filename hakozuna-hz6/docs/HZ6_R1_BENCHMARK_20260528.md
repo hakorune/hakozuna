@@ -133,6 +133,16 @@ CentralSpanPool path is already reusing 128K spans consistently in the R1
 runner. The `reuse` rows report 100000 / 100000 reuse hits for every measured
 profile.
 
+A broader HZ6-only R1 sweep was also recorded after this first snapshot:
+
+```text
+docs/HZ6_R1_BROAD_TRENDS_20260528.md
+```
+
+That sweep covers 1024, 4096, 8192, 32768, 65536, and 131072 byte rows across
+local, remote, and reuse modes. Its current trend is that `strict` wins most
+local-only rows while `rss` wins every remote/reuse row in the R1 runner.
+
 The `ru_maxrss` values are very small and nearly flat because this is a short
 single-process microbenchmark. Treat them as a smoke-level RSS check only. RSS
 claims still need the hakmem-style matrix or a dedicated retention test.

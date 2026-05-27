@@ -48,6 +48,7 @@ HZ6 starts from these rules:
 docs/HZ6_BLUEPRINT.md
 docs/HZ6_R1_STATUS.md
 docs/HZ6_R1_BENCHMARK_20260528.md
+docs/HZ6_R1_BROAD_TRENDS_20260528.md
 docs/HZ6_R1_MINIMUM_CONTRACT_BLUEPRINT.md
 docs/HZ6_ARCHITECTURE_DRAFT.md
 docs/HZ6_FOLDER_LAYOUT.md
@@ -89,10 +90,25 @@ Snapshot:
 
 ```text
 docs/HZ6_R1_BENCHMARK_20260528.md
+docs/HZ6_R1_BROAD_TRENDS_20260528.md
 ```
 
 The next benchmark pass should compare HZ6 against HZ3 / HZ4 / HZ5 on the same
 machine.
+
+Current R1 trend:
+
+```text
+strict:
+  strongest local-only profile in the HZ6-only runner
+
+rss:
+  strongest remote/reuse profile in the HZ6-only runner
+
+speed / remote:
+  profile intent is documented, but the current R1 knobs are not yet faster
+  than rss in the broad single-process sweep
+```
 
 ## Size Coverage Boundary
 

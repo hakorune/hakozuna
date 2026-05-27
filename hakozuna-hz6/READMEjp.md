@@ -72,6 +72,21 @@ Snapshot:
 
 ```text
 docs/HZ6_R1_BENCHMARK_20260528.md
+docs/HZ6_R1_BROAD_TRENDS_20260528.md
+```
+
+いまの R1 傾向:
+
+```text
+strict:
+  HZ6-only runner の local-only では一番強い
+
+rss:
+  HZ6-only runner の remote / reuse では全サイズで一番強い
+
+speed / remote:
+  profile の意図は残すが、現 R1 の knob では broad single-process sweep で
+  rss をまだ超えていない
 ```
 
 ## サイズ対応の境界

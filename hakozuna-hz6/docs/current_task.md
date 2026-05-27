@@ -31,8 +31,27 @@ Benchmark entrypoints:
   local / remote / reuse single-process lanes
 Current snapshot:
   docs/HZ6_R1_BENCHMARK_20260528.md
+Broad trend snapshot:
+  docs/HZ6_R1_BROAD_TRENDS_20260528.md
 The next benchmark pass should compare HZ6 against HZ3 / HZ4 / HZ5 on the same
 machine with the same runner.
+```
+
+Current broad R1 read:
+
+```text
+strict:
+  strongest local-only profile in the HZ6-only runner
+
+rss:
+  strongest remote/reuse profile across 1024..131072 in the HZ6-only runner
+
+speed / remote:
+  still profile intents, not validated winners
+
+128K:
+  CentralSpanPool is the cleanest current signal, with local/remote/reuse
+  around 39M ops/s in the best profile and full reuse hits in the reuse lane
 ```
 
 ## Current Implementation Step
@@ -58,6 +77,7 @@ hakozuna-hz6/README.md
 hakozuna-hz6/READMEjp.md
 hakozuna-hz6/docs/HZ6_BLUEPRINT.md
 hakozuna-hz6/docs/HZ6_R1_BENCHMARK_20260528.md
+hakozuna-hz6/docs/HZ6_R1_BROAD_TRENDS_20260528.md
 hakozuna-hz6/docs/HZ6_R1_STATUS.md
 hakozuna-hz6/docs/HZ6_R1_MINIMUM_CONTRACT_BLUEPRINT.md
 hakozuna-hz6/docs/HZ6_ARCHITECTURE_DRAFT.md
