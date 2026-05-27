@@ -68,6 +68,9 @@ int hz6_allocator_release_orphan(Hz6Allocator* allocator, void* ptr);
 size_t hz6_allocator_scavenge_orphans(Hz6Allocator* allocator,
                                       size_t max_bytes);
 
+size_t hz6_allocator_scavenge_local_free(Hz6Allocator* allocator,
+                                         size_t max_bytes);
+
 #ifdef __cplusplus
 }
 #endif

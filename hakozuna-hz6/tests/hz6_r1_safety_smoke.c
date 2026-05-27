@@ -132,6 +132,41 @@ int main(void) {
   }
   hz6_allocator_destroy(&scavenge_allocator);
 
+  Hz6Allocator local_scavenge_allocator;
+  hz6_allocator_init_with_profile(&local_scavenge_allocator,
+                                  HZ6_PROFILE_SPEED);
+  void* local_scavenged = hz6_malloc(&local_scavenge_allocator, 48);
+  if (!expect(local_scavenged != NULL, "local scavenge malloc")) {
+    return 1;
+  }
+  Hz6RouteResult local_scavenge_route =
+      hz6_route_backend_lookup(&local_scavenge_allocator.route_backend,
+                               local_scavenged);
+  Hz6ObjectDescriptor* local_scavenge_descriptor =
+      (Hz6ObjectDescriptor*)local_scavenge_route.descriptor;
+  if (!expect(local_scavenge_descriptor != NULL,
+              "local scavenge descriptor")) {
+    return 1;
+  }
+  hz6_free(&local_scavenge_allocator, local_scavenged);
+  if (!expect(local_scavenge_descriptor->state == HZ6_STATE_LOCAL_FREE,
+              "local scavenge starts local free") ||
+      !expect(hz6_allocator_scavenge_local_free(&local_scavenge_allocator,
+                                                1) == 0,
+              "local scavenge budget too small") ||
+      !expect(local_scavenge_descriptor->state == HZ6_STATE_LOCAL_FREE,
+              "local scavenge keeps over-budget cache") ||
+      !expect(hz6_allocator_scavenge_local_free(&local_scavenge_allocator,
+                                                128) == 1,
+              "local scavenge releases cache") ||
+      !expect(!hz6_owns(&local_scavenge_allocator, local_scavenged),
+              "local scavenge route gone") ||
+      !expect(local_scavenge_descriptor->state == HZ6_STATE_DEAD,
+              "local scavenge descriptor dead")) {
+    return 1;
+  }
+  hz6_allocator_destroy(&local_scavenge_allocator);
+
   printf("hz6-r1-safety-smoke ok\n");
   return 0;
 }

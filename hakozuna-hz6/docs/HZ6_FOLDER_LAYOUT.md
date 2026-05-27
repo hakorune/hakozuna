@@ -171,8 +171,8 @@ Windows VirtualAlloc source ops are present behind `_WIN32` and are registered
 as the same `HZ6_SOURCE_OS_PAGED` abstraction on Windows.
 The toy front still uses the system source path because it exists only as a
 contract-validation front.
-Scavenge is seeded as a bounded ORPHAN release contract only; it does not touch
-LOCAL_FREE cache entries yet because that requires frontcache invalidation.
+Scavenge is seeded as a bounded release contract for ORPHAN descriptors and
+LOCAL_FREE descriptors that can be invalidated from frontcache first.
 
 The current API path is intentionally small:
 
@@ -340,6 +340,7 @@ Owns RSS return.
 ```text
 Allowed:
   bounded orphan release
+  bounded local-free release after frontcache invalidation
   payload release
   empty span/slab release
   pressure thresholds

@@ -138,6 +138,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    bounded release accounting is covered by contract smoke
    hz6_allocator_scavenge_orphans() releases ORPHAN descriptors only
    safety smoke covers over-budget retention and route/source release
+30. Frontcache invalidation for scavenging. DONE:
+   hz6_frontcache_remove()
+   hz6_allocator_scavenge_local_free() removes stale cache entries before
+   releasing LOCAL_FREE descriptors
+   safety smoke covers over-budget local retention and route/source release
 ```
 
 Current R1 smoke:
@@ -183,7 +188,6 @@ No HZ5 code copy.
 No new performance claim.
 No benchmark table until an HZ6 prototype exists.
 Toy allocation and transfer paths are for contract validation only.
-No LOCAL_FREE scavenging until frontcache invalidation exists.
 Large128 is still a seed front, not a performance claim.
 Large128 has Linux mmap backing, but no full span/source refill policy yet.
 Local2P is an exact 64KiB seed front, not the final Windows Local2P profile.

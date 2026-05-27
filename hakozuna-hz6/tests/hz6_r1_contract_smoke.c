@@ -226,6 +226,12 @@ int main(void) {
               "frontcache push") ||
       !expect(!hz6_frontcache_push(&front_bin, front_entry),
               "frontcache bounded") ||
+      !expect(hz6_frontcache_remove(&front_bin, base, &descriptor, 11, NULL),
+              "frontcache remove") ||
+      !expect(!hz6_frontcache_pop(&front_bin, &front_popped),
+              "frontcache empty after remove") ||
+      !expect(hz6_frontcache_push(&front_bin, front_entry),
+              "frontcache push after remove") ||
       !expect(hz6_frontcache_pop(&front_bin, &front_popped),
               "frontcache pop") ||
       !expect(front_popped.ptr == base, "frontcache pointer")) {

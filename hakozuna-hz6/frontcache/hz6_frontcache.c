@@ -27,3 +27,28 @@ int hz6_frontcache_pop(Hz6FrontCacheBin* bin, Hz6FrontCacheEntry* out) {
   return 1;
 }
 
+int hz6_frontcache_remove(Hz6FrontCacheBin* bin,
+                          void* ptr,
+                          void* descriptor,
+                          uint32_t generation,
+                          Hz6FrontCacheEntry* out) {
+  if (!bin || !bin->entries || !ptr || !descriptor) {
+    return 0;
+  }
+
+  for (size_t i = 0; i < bin->count; ++i) {
+    Hz6FrontCacheEntry entry = bin->entries[i];
+    if (entry.ptr != ptr || entry.descriptor != descriptor ||
+        entry.generation != generation) {
+      continue;
+    }
+
+    if (out) {
+      *out = entry;
+    }
+    bin->entries[i] = bin->entries[--bin->count];
+    return 1;
+  }
+
+  return 0;
+}

@@ -134,6 +134,45 @@ size_t hz6_allocator_scavenge_orphans(Hz6Allocator* allocator,
   return budget.objects_released;
 }
 
+size_t hz6_allocator_scavenge_local_free(Hz6Allocator* allocator,
+                                         size_t max_bytes) {
+  if (!allocator || max_bytes == 0) {
+    return 0;
+  }
+
+  Hz6ScavengeBudget budget;
+  hz6_scavenge_budget_init(&budget, max_bytes);
+
+  for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
+    Hz6ObjectDescriptor* descriptor = &allocator->descriptors[i];
+    if (!descriptor->ptr || descriptor->state != HZ6_STATE_LOCAL_FREE ||
+        descriptor->class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
+      continue;
+    }
+
+    size_t bytes = descriptor->source_bytes ? descriptor->source_bytes
+                                            : descriptor->bytes;
+    if (!hz6_scavenge_can_release(&budget, bytes)) {
+      continue;
+    }
+
+    if (!hz6_frontcache_remove(&allocator->frontcache_bins[descriptor->class_id],
+                               descriptor->ptr,
+                               descriptor,
+                               descriptor->generation,
+                               NULL)) {
+      continue;
+    }
+
+    hz6_route_backend_unregister_exact(&allocator->route_backend,
+                                       descriptor->ptr);
+    hz6_allocator_release_descriptor_source(descriptor);
+    hz6_scavenge_account_release(&budget, bytes);
+  }
+
+  return budget.objects_released;
+}
+
 void hz6_allocator_init(Hz6Allocator* allocator) {
   hz6_allocator_init_with_profile(allocator, HZ6_PROFILE_STRICT);
 }

@@ -31,9 +31,14 @@ int hz6_frontcache_push(Hz6FrontCacheBin* bin, Hz6FrontCacheEntry entry);
 
 int hz6_frontcache_pop(Hz6FrontCacheBin* bin, Hz6FrontCacheEntry* out);
 
+int hz6_frontcache_remove(Hz6FrontCacheBin* bin,
+                          void* ptr,
+                          void* descriptor,
+                          uint32_t generation,
+                          Hz6FrontCacheEntry* out);
+
 #ifdef __cplusplus
 }
 #endif
 
 #endif
-
