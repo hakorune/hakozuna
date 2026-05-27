@@ -7,45 +7,6 @@ enum {
   HZ5_WIN_LOCAL2P_SIDECAR_INVALID = 2
 };
 
-static size_t hz5_policy_win_local2p_sidecar_hash(uintptr_t aligned) {
-  uint64_t x = (uint64_t)(aligned >> 13);
-  x ^= x >> 33;
-  x *= UINT64_C(0xff51afd7ed558ccd);
-  x ^= x >> 33;
-  return (size_t)(x % BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_TABLE_SIZE);
-}
-
-#if BENCHLAB_HZ5_TRACE_LANE
-static void hz5_policy_win_local2p_sidecar_note_probe_steps(size_t steps) {
-  hz5_trace_add(HZ5_TRACE_LOCAL2P_SIDECAR_PROBE_STEPS, (uint64_t)steps);
-  hz5_trace_max(HZ5_TRACE_LOCAL2P_SIDECAR_PROBE_STEPS_MAX,
-                (uint64_t)steps);
-}
-#endif
-
-static int hz5_policy_win_local2p_sidecar_header_valid(
-    const Hz5WrapperHdr* header,
-    uintptr_t raw,
-    uint32_t generation) {
-  if (!header || raw != header->raw ||
-      header->magic != HZ5_WRAPPER_HDR_MAGIC ||
-      header->layout_version != HZ5_WRAPPER_LAYOUT_VERSION ||
-      header->layout_size != sizeof(Hz5WrapperHdr) ||
-      header->source != HZ5_WRAPPER_SOURCE_WIN_LOCAL2P ||
-      header->requested != HZ5_POLICY_LOCAL2P_EXACT_SIZE ||
-      header->raw_bytes != BENCHLAB_HZ5_WIN_LOCAL2P_RAW_BYTES ||
-      header->local2p_generation != generation) {
-    return 0;
-  }
-#if BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_METADATA_ONLY
-  return 1;
-#else
-  uint32_t state =
-      atomic_load_explicit(&header->local2p_state, memory_order_acquire);
-  return state == HZ5_LOCAL2P_STATE_ACTIVE;
-#endif
-}
-
 #if BENCHLAB_HZ5_WIN_LOCAL2P_SIDECAR_DIRECT_TABLE
 static void hz5_policy_win_local2p_sidecar_insert(
     uintptr_t aligned,
