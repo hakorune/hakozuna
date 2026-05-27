@@ -84,6 +84,7 @@ remote free:
   strict/rss profiles use single-cache transfer
   speed/remote profiles use sharded transfer
   backend wrapper preserves bounded push / class pop semantics
+  sharded class pop retains non-target classes
   backend exposes class counts, per-shard counts, and per-shard capacity for
   smoke diagnostics
   sharded pop can steal from a non-home shard when the class home shard is empty

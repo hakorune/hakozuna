@@ -260,6 +260,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    contract smoke verifies pop checks the class home shard first
    if the home shard is empty, pop steals from a later non-empty shard
    this keeps consumer-visible transfer reuse from depending on producer shard locality
+59. Transfer sharded class-filter smoke. DONE:
+   contract smoke verifies sharded class pop retains other classes
+   retained class entries can be popped afterward
+   this preserves class-specific transfer cache semantics in mixed-class shards
 ```
 
 Current R1 smoke:

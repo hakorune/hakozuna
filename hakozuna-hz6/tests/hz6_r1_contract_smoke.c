@@ -327,6 +327,18 @@ int main(void) {
       !expect(sharded_popped.ptr == object_a.ptr,
               "transfer sharded pop pointer") ||
       !expect(hz6_transfer_backend_count(&sharded_backend) == 1,
+              "transfer sharded count after pop") ||
+      !expect(hz6_transfer_backend_count_class(&sharded_backend, 8) == 1,
+              "transfer sharded other class retained")) {
+    return 1;
+  }
+  Hz6TransferObject sharded_other_popped;
+  if (!expect(hz6_transfer_backend_pop(&sharded_backend, 8,
+                                       &sharded_other_popped),
+              "transfer sharded other class pop") ||
+      !expect(sharded_other_popped.ptr == object_b.ptr,
+              "transfer sharded other class pointer") ||
+      !expect(hz6_transfer_backend_count(&sharded_backend) == 0,
               "transfer sharded count after pop")) {
     return 1;
   }
