@@ -86,6 +86,7 @@ remote free:
   backend wrapper preserves bounded push / class pop semantics
   backend exposes class counts, per-shard counts, and per-shard capacity for
   smoke diagnostics
+  sharded pop can steal from a non-home shard when the class home shard is empty
   uneven sharded capacity is filled without dropping remainder slots
   profile transfer capacity is applied during backend init and capped by
   `HZ6_TRANSFER_CACHE_CAPACITY`

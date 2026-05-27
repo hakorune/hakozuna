@@ -256,6 +256,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    contract smoke fills an uneven sharded backend to full capacity
    shard counts match the 3/2 capacity split
    one extra push is rejected after all shard capacity is consumed
+58. Transfer shard steal smoke. DONE:
+   contract smoke verifies pop checks the class home shard first
+   if the home shard is empty, pop steals from a later non-empty shard
+   this keeps consumer-visible transfer reuse from depending on producer shard locality
 ```
 
 Current R1 smoke:

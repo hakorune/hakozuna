@@ -330,6 +330,26 @@ int main(void) {
               "transfer sharded count after pop")) {
     return 1;
   }
+  Hz6TransferObject steal_objects[4];
+  Hz6TransferBackend steal_backend;
+  hz6_transfer_backend_init_sharded(&steal_backend, steal_objects, 4, 2);
+  if (!expect(hz6_transfer_backend_push(&steal_backend, object_a),
+              "transfer steal push") ||
+      !expect(hz6_transfer_backend_shard_count_at(&steal_backend, 0) == 1,
+              "transfer steal producer shard") ||
+      !expect(hz6_transfer_backend_shard_count_at(&steal_backend, 1) == 0,
+              "transfer steal empty home shard")) {
+    return 1;
+  }
+  Hz6TransferObject steal_popped;
+  if (!expect(hz6_transfer_backend_pop(&steal_backend, 7, &steal_popped),
+              "transfer steal pop from non-home shard") ||
+      !expect(steal_popped.ptr == object_a.ptr,
+              "transfer steal pop pointer") ||
+      !expect(hz6_transfer_backend_count(&steal_backend) == 0,
+              "transfer steal empty after pop")) {
+    return 1;
+  }
   Hz6TransferObject uneven_objects[5];
   Hz6TransferBackend uneven_backend;
   hz6_transfer_backend_init_sharded(&uneven_backend, uneven_objects, 5, 2);
