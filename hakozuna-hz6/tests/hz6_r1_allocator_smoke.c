@@ -270,6 +270,40 @@ int main(void) {
   }
   hz6_allocator_destroy(&profile_scavenge_allocator);
 
+  Hz6Allocator adopt_source;
+  Hz6Allocator adopt_target;
+  hz6_allocator_init_with_profile(&adopt_source, HZ6_PROFILE_SPEED);
+  hz6_allocator_init_with_profile(&adopt_target, HZ6_PROFILE_SPEED);
+  void* adopt_object = hz6_malloc(&adopt_source, 48);
+  if (!expect(adopt_object != NULL, "adopt source malloc")) {
+    return 1;
+  }
+  Hz6RouteResult adopt_source_route =
+      hz6_route_backend_lookup(&adopt_source.route_backend, adopt_object);
+  Hz6ObjectDescriptor* adopt_source_descriptor =
+      (Hz6ObjectDescriptor*)adopt_source_route.descriptor;
+  hz6_allocator_mark_owner_dead(&adopt_source);
+  if (!expect(adopt_source_descriptor != NULL, "adopt source descriptor") ||
+      !expect(adopt_source_descriptor->state == HZ6_STATE_ORPHAN,
+              "adopt source orphan") ||
+      !expect(hz6_allocator_adopt_orphan(&adopt_target,
+                                         &adopt_source,
+                                         adopt_object),
+              "adopt orphan")) {
+    return 1;
+  }
+  void* adopted_reuse = hz6_malloc(&adopt_target, 48);
+  if (!expect(adopted_reuse == adopt_object, "adopted reuse") ||
+      !expect(!hz6_owns(&adopt_source, adopt_object),
+              "adopt source route gone") ||
+      !expect(hz6_owns(&adopt_target, adopt_object),
+              "adopt target owns object")) {
+    return 1;
+  }
+  hz6_free(&adopt_target, adopted_reuse);
+  hz6_allocator_destroy(&adopt_target);
+  hz6_allocator_destroy(&adopt_source);
+
   printf("hz6-r1-allocator-smoke ok\n");
   return 0;
 }

@@ -147,6 +147,11 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    Hz6ProfileConfig carries scavenge_local_free_bytes / scavenge_orphan_bytes
    hz6_allocator_scavenge_profile() applies profile budgets explicitly
    RSS profile scavenges cached objects, strict profile keeps auto scavenge off
+32. Cross-owner orphan adoption. DONE:
+   hz6_allocator_adopt_orphan()
+   dead-owner ORPHAN descriptors can move to a live allocator as LOCAL_FREE
+   ACTIVE descriptors cannot be adopted
+   allocator smoke covers adoption reuse and source-route removal
 ```
 
 Current R1 smoke:
@@ -198,5 +203,6 @@ Local2P is an exact 64KiB seed front, not the final Windows Local2P profile.
 MidPage is a seed front, not the final page-run allocator.
 Sharded transfer is single-thread smoke coverage only; synchronization and
 real benchmark validation are still pending.
-Cross-owner orphan rescue / adoption is still not implemented.
+Cross-owner orphan adoption is a seed contract only; no shared route table or
+thread-safe owner registry exists yet.
 ```

@@ -65,6 +65,10 @@ void hz6_allocator_mark_owner_dead(Hz6Allocator* allocator);
 
 int hz6_allocator_release_orphan(Hz6Allocator* allocator, void* ptr);
 
+int hz6_allocator_adopt_orphan(Hz6Allocator* adopter,
+                               Hz6Allocator* source,
+                               void* ptr);
+
 size_t hz6_allocator_scavenge_orphans(Hz6Allocator* allocator,
                                       size_t max_bytes);
 

@@ -190,6 +190,22 @@ int main(void) {
   }
   hz6_allocator_destroy(&strict_scavenge_allocator);
 
+  Hz6Allocator live_adopt_source;
+  Hz6Allocator live_adopt_target;
+  hz6_allocator_init_with_profile(&live_adopt_source, HZ6_PROFILE_SPEED);
+  hz6_allocator_init_with_profile(&live_adopt_target, HZ6_PROFILE_SPEED);
+  void* live_adopt = hz6_malloc(&live_adopt_source, 48);
+  if (!expect(live_adopt != NULL, "live adopt malloc") ||
+      !expect(!hz6_allocator_adopt_orphan(&live_adopt_target,
+                                          &live_adopt_source,
+                                          live_adopt),
+              "cannot adopt active object")) {
+    return 1;
+  }
+  hz6_free(&live_adopt_source, live_adopt);
+  hz6_allocator_destroy(&live_adopt_target);
+  hz6_allocator_destroy(&live_adopt_source);
+
   printf("hz6-r1-safety-smoke ok\n");
   return 0;
 }

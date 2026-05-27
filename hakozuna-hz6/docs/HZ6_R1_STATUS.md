@@ -60,6 +60,8 @@ local free:
   local cache reuse returns the same pointer
   owner-dead descriptors become ORPHAN and are not locally reusable
   explicit orphan release unregisters route and releases SourceLayer memory
+  ORPHAN descriptors can be adopted by a live allocator as LOCAL_FREE
+  ACTIVE descriptors cannot be adopted
 
 remote free:
   ACTIVE -> TRANSFER_FREE
@@ -125,7 +127,7 @@ No performance claim.
 No preload integration.
 No general span policy beyond the Local2P/Large128 mmap seeds.
 No threaded transfer synchronization or performance claim for sharded transfer yet.
-No cross-owner orphan rescue / adoption path yet.
+Cross-owner orphan adoption is seed-only and not a shared owner registry yet.
 No real MidPage page-run/span policy yet.
 No HZ5 source migration.
 No HZ3/HZ4/HZ5 implementation copy.
