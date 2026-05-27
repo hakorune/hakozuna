@@ -56,7 +56,7 @@ The first code is intentionally small. It validates module boundaries and
 transfer-first state transitions, not performance.
 
 ```bash
-./hakozuna-hz6/linux/build_hz6_r1_contract_smoke.sh
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
 ```
 
 Expected output:
@@ -64,6 +64,7 @@ Expected output:
 ```text
 hz6-r1-contract-smoke ok
 hz6-r1-allocator-smoke ok
+hz6-r1-safety-smoke ok
 ```
 
 ## Non-Goals

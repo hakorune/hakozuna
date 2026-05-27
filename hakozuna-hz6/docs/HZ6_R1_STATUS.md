@@ -93,7 +93,7 @@ source:
 ## Verification Command
 
 ```bash
-./hakozuna-hz6/linux/build_hz6_r1_contract_smoke.sh
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
 ```
 
 Expected output:

@@ -71,7 +71,7 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    Large128 front handles >4KiB..128KiB
    unsupported >128KiB allocation returns NULL in R1 smoke
 13. Build script hygiene. DONE:
-   linux/build_hz6_r1_contract_smoke.sh uses source/include arrays
+   linux/build_hz6_r1_smokes.sh uses source/include arrays
    new modules should be added to HZ6_SOURCES/HZ6_INCLUDES explicitly
 14. Smoke split. DONE:
    tests/hz6_r1_contract_smoke.c covers route/transfer/owner/profile/source
@@ -130,12 +130,15 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    tests/hz6_r1_safety_smoke.c
    covers interior invalid, foreign miss, local/remote double-free, owner-dead
    orphan rejection, and orphan release
+28. R1 smoke runner naming. DONE:
+   linux/build_hz6_r1_smokes.sh is the canonical R1 runner
+   linux/build_hz6_r1_contract_smoke.sh remains as a compatibility wrapper
 ```
 
 Current R1 smoke:
 
 ```bash
-./hakozuna-hz6/linux/build_hz6_r1_contract_smoke.sh
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
 ```
 
 Expected:
