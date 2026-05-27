@@ -95,3 +95,12 @@ size_t hz6_profile_source_refill_batch(const Hz6ProfileConfig* config,
   }
   return (size_t)config->source_batch;
 }
+
+size_t hz6_profile_scavenge_orphan_budget(const Hz6ProfileConfig* config) {
+  return config ? config->scavenge_orphan_bytes : 0;
+}
+
+size_t hz6_profile_scavenge_local_free_budget(
+    const Hz6ProfileConfig* config) {
+  return config ? config->scavenge_local_free_bytes : 0;
+}

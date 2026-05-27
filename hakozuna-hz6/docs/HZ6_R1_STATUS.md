@@ -158,6 +158,7 @@ scavenge:
 
 policy:
   profile config carries slow-path scavenge budgets
+  profile config exposes scavenge budgets through PolicyLayer helpers
   profile config carries source kind for source-backed fronts
   profile config owns source refill batch selection through
   hz6_profile_source_refill_batch()

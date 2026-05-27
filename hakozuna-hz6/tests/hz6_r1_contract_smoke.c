@@ -526,7 +526,17 @@ int main(void) {
               "speed source refill batch policy") ||
       !expect(hz6_profile_source_refill_batch(&rss, HZ6_FRONT_LOCAL2P, 6) ==
                   rss.source_batch,
-              "rss source refill batch policy")) {
+              "rss source refill batch policy") ||
+      !expect(hz6_profile_scavenge_local_free_budget(&rss) ==
+                  rss.scavenge_local_free_bytes,
+              "rss local free scavenge budget policy") ||
+      !expect(hz6_profile_scavenge_orphan_budget(&rss) ==
+                  rss.scavenge_orphan_bytes,
+              "rss orphan scavenge budget policy") ||
+      !expect(hz6_profile_scavenge_local_free_budget(&strict) == 0,
+              "strict local free scavenge budget policy") ||
+      !expect(hz6_profile_scavenge_orphan_budget(&strict) == 0,
+              "strict orphan scavenge budget policy")) {
     return 1;
   }
 

@@ -368,6 +368,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    Large128 and Local2P alloc miss paths call the helper instead of reading
    profile.source_batch directly
    contract smoke verifies speed/rss refill batch policy values
+78. Scavenge budget policy helpers. DONE:
+   hz6_profile_scavenge_orphan_budget() and
+   hz6_profile_scavenge_local_free_budget() centralize explicit profile
+   scavenge budgets in PolicyLayer
+   hz6_allocator_scavenge_profile() now asks PolicyLayer for budgets instead
+   of reading profile scavenge fields directly
+   contract smoke verifies rss budgets and strict zero-budget policy
 ```
 
 Current R1 smoke:

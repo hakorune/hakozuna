@@ -57,6 +57,10 @@ size_t hz6_profile_source_refill_batch(const Hz6ProfileConfig* config,
                                        uint16_t front_id,
                                        uint16_t class_id);
 
+size_t hz6_profile_scavenge_orphan_budget(const Hz6ProfileConfig* config);
+
+size_t hz6_profile_scavenge_local_free_budget(const Hz6ProfileConfig* config);
+
 #ifdef __cplusplus
 }
 #endif
