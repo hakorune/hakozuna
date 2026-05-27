@@ -42,6 +42,13 @@ void* hz6_front_source_slot_ops(Hz6Allocator* allocator,
                                 const Hz6OsMemoryOps* source_ops,
                                 Hz6SourceKind source_kind);
 
+void* hz6_front_source_block_slot(Hz6Allocator* allocator,
+                                  uint16_t front_id,
+                                  uint16_t class_id,
+                                  size_t user_bytes,
+                                  size_t source_offset,
+                                  Hz6SourceBlock* source_block);
+
 size_t hz6_front_prefill_source_kind(Hz6Allocator* allocator,
                                      uint16_t front_id,
                                      uint16_t class_id,

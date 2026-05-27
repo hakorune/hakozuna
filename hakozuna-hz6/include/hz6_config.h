@@ -23,6 +23,10 @@
 #define HZ6_OBJECT_DESCRIPTOR_CAPACITY ((size_t)64)
 #endif
 
+#ifndef HZ6_SOURCE_BLOCK_CAPACITY
+#define HZ6_SOURCE_BLOCK_CAPACITY ((size_t)16)
+#endif
+
 #ifndef HZ6_FRONT_CACHE_CLASS_COUNT
 #define HZ6_FRONT_CACHE_CLASS_COUNT 16u
 #endif

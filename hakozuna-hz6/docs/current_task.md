@@ -193,6 +193,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    hz6_front_source_slot_kind()/ops() allocate a source block and expose one user slot
    descriptor records user bytes separately from source bytes
    allocator smoke covers MidPage 8K slot inside a 64KiB source block
+43. Shared SourceBlock ownership seed. DONE:
+   Hz6SourceBlock tracks source block release metadata and descriptor references
+   hz6_front_source_block_slot() registers multiple user slots against one block
+   allocator smoke verifies first slot release does not release the shared source block
 ```
 
 Current R1 smoke:

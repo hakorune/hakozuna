@@ -100,6 +100,7 @@ source:
   descriptors keep user ptr and source ptr separate
   SourceLayer release uses source ptr / source bytes
   front util can expose one user slot inside a larger source block
+  `Hz6SourceBlock` can retain one source block across multiple slot descriptors
   allocator destroy releases Large128 mappings through SourceLayer
   explicit front prefill can source objects into LOCAL_FREE cache using
   profile source_batch without changing the malloc hit path

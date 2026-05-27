@@ -221,6 +221,9 @@ front module. It is a contract seed, not the final shared-run allocator.
 `hz6_front_source_slot_kind()` is the shared helper for source-block-backed
 slots where the route/cache user pointer differs from the SourceLayer release
 pointer.
+`Hz6SourceBlock` is the seed owner for shared source blocks; descriptors retain
+it so releasing one slot does not release the whole run while sibling slots
+remain registered.
 `fronts/large/hz6_large128_front.*` handles requests above the MidPage range up
 to 128KiB except exact 64KiB and exercises
 `ACTIVE -> TRANSFER_FREE -> ACTIVE` through the same front registry.

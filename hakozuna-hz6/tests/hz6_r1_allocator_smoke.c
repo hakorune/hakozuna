@@ -18,10 +18,23 @@ static int expect(int condition, const char* label) {
 
 static void* g_expected_release_source_ptr;
 static size_t g_expected_release_source_bytes;
+static unsigned char g_source_block_storage[HZ6_MIDPAGE_RUN_BYTES];
+static size_t g_source_block_release_count;
 
 static int smoke_release_source(void* ptr, size_t bytes) {
+  ++g_source_block_release_count;
   return ptr == g_expected_release_source_ptr &&
          bytes == g_expected_release_source_bytes;
+}
+
+static void* smoke_reserve_source(size_t bytes, size_t align) {
+  (void)align;
+  return bytes <= sizeof(g_source_block_storage) ? g_source_block_storage
+                                                : NULL;
+}
+
+static int smoke_memory_ok(void* ptr, size_t bytes) {
+  return ptr != NULL && bytes != 0;
 }
 
 int main(void) {
@@ -49,12 +62,15 @@ int main(void) {
   g_expected_release_source_bytes = sizeof(source_block);
   if (!expect(hz6_allocator_release_descriptor_source(&source_descriptor),
               "descriptor release uses source pointer") ||
+      !expect(g_source_block_release_count == 1,
+              "descriptor direct release count") ||
       !expect(source_descriptor.ptr == NULL,
               "descriptor release clears user pointer") ||
       !expect(source_descriptor.source_ptr == NULL,
               "descriptor release clears source pointer")) {
     return 1;
   }
+  g_source_block_release_count = 0;
 
   void* allocated = hz6_malloc(&allocator, 48);
   if (!expect(allocated != NULL, "allocator malloc") ||
@@ -273,6 +289,78 @@ int main(void) {
   }
   hz6_free(&midpage_slot_allocator, midpage_slot_reused);
   hz6_allocator_destroy(&midpage_slot_allocator);
+
+  Hz6Allocator midpage_block_allocator;
+  hz6_allocator_init_with_profile(&midpage_block_allocator,
+                                  HZ6_PROFILE_REMOTE);
+  Hz6OsMemoryOps smoke_source_ops;
+  smoke_source_ops.reserve = smoke_reserve_source;
+  smoke_source_ops.commit = smoke_memory_ok;
+  smoke_source_ops.decommit = smoke_memory_ok;
+  smoke_source_ops.release = smoke_release_source;
+  smoke_source_ops.page_size = 16;
+  smoke_source_ops.allocation_granularity = 16;
+  g_expected_release_source_ptr = g_source_block_storage;
+  g_expected_release_source_bytes = sizeof(g_source_block_storage);
+  g_source_block_release_count = 0;
+  Hz6SourceBlock* block = hz6_allocator_create_source_block(
+      &midpage_block_allocator, sizeof(g_source_block_storage),
+      &smoke_source_ops, HZ6_SOURCE_SYSTEM);
+  void* block_slot0 = hz6_front_source_block_slot(
+      &midpage_block_allocator, HZ6_FRONT_MIDPAGE,
+      HZ6_MIDPAGE_8K_CLASS_ID, HZ6_MIDPAGE_8K_BYTES, 0, block);
+  void* block_slot1 = hz6_front_source_block_slot(
+      &midpage_block_allocator, HZ6_FRONT_MIDPAGE,
+      HZ6_MIDPAGE_8K_CLASS_ID, HZ6_MIDPAGE_8K_BYTES,
+      HZ6_MIDPAGE_8K_BYTES, block);
+  if (!expect(block != NULL, "source block create") ||
+      !expect(block_slot0 == g_source_block_storage,
+              "source block slot zero") ||
+      !expect(block_slot1 == g_source_block_storage + HZ6_MIDPAGE_8K_BYTES,
+              "source block slot one") ||
+      !expect(block->ref_count == 2, "source block refcount")) {
+    return 1;
+  }
+  Hz6RouteResult block_slot0_route =
+      hz6_route_backend_lookup(&midpage_block_allocator.route_backend,
+                               block_slot0);
+  Hz6RouteResult block_slot1_route =
+      hz6_route_backend_lookup(&midpage_block_allocator.route_backend,
+                               block_slot1);
+  Hz6ObjectDescriptor* block_slot0_descriptor =
+      (Hz6ObjectDescriptor*)block_slot0_route.descriptor;
+  Hz6ObjectDescriptor* block_slot1_descriptor =
+      (Hz6ObjectDescriptor*)block_slot1_route.descriptor;
+  if (!expect(block_slot0_descriptor != NULL, "block slot0 descriptor") ||
+      !expect(block_slot1_descriptor != NULL, "block slot1 descriptor") ||
+      !expect(block_slot0_descriptor->source_block == block,
+              "block slot0 source block") ||
+      !expect(block_slot1_descriptor->source_block == block,
+              "block slot1 source block")) {
+    return 1;
+  }
+  hz6_route_backend_unregister_exact(&midpage_block_allocator.route_backend,
+                                     block_slot0);
+  if (!expect(hz6_allocator_release_descriptor_source(
+                  block_slot0_descriptor),
+              "source block first release") ||
+      !expect(block->active, "source block retained after first release") ||
+      !expect(block->ref_count == 1, "source block decremented") ||
+      !expect(g_source_block_release_count == 0,
+              "source block not released early")) {
+    return 1;
+  }
+  hz6_route_backend_unregister_exact(&midpage_block_allocator.route_backend,
+                                     block_slot1);
+  if (!expect(hz6_allocator_release_descriptor_source(
+                  block_slot1_descriptor),
+              "source block final release") ||
+      !expect(!block->active, "source block inactive after final release") ||
+      !expect(g_source_block_release_count == 1,
+              "source block released once")) {
+    return 1;
+  }
+  hz6_allocator_destroy(&midpage_block_allocator);
 
   Hz6Allocator midpage_allocator;
   hz6_allocator_init_with_profile(&midpage_allocator, HZ6_PROFILE_REMOTE);

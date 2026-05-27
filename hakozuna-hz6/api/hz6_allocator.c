@@ -44,26 +44,95 @@ int hz6_allocator_release_descriptor_source(
     return 0;
   }
 
-  void* source_ptr = descriptor->source_ptr ? descriptor->source_ptr
-                                            : descriptor->ptr;
   int released = 0;
-  if (descriptor->source_release) {
-    released =
-        descriptor->source_release(source_ptr, descriptor->source_bytes);
+  if (descriptor->source_block) {
+    released = hz6_allocator_release_source_block(descriptor->source_block);
   } else {
-    released = hz6_source_system_release(source_ptr, descriptor->bytes);
+    void* source_ptr = descriptor->source_ptr ? descriptor->source_ptr
+                                              : descriptor->ptr;
+    if (descriptor->source_release) {
+      released =
+          descriptor->source_release(source_ptr, descriptor->source_bytes);
+    } else {
+      released = hz6_source_system_release(source_ptr, descriptor->bytes);
+    }
   }
 
   descriptor->ptr = NULL;
   descriptor->bytes = 0;
   descriptor->source_ptr = NULL;
   descriptor->source_bytes = 0;
+  descriptor->source_block = NULL;
   descriptor->class_id = 0;
   descriptor->source_kind = HZ6_SOURCE_NONE;
   descriptor->source_release = NULL;
   descriptor->owner = hz6_owner_token_none();
   descriptor->generation = 0;
   descriptor->state = HZ6_STATE_DEAD;
+  return released;
+}
+
+Hz6SourceBlock* hz6_allocator_create_source_block(
+    Hz6Allocator* allocator,
+    size_t bytes,
+    const Hz6OsMemoryOps* source_ops,
+    Hz6SourceKind source_kind) {
+  if (!allocator || bytes == 0 || !hz6_source_ops_valid(source_ops) ||
+      source_kind == HZ6_SOURCE_NONE) {
+    return NULL;
+  }
+
+  Hz6SourceBlock* block = NULL;
+  for (size_t i = 0; i < HZ6_SOURCE_BLOCK_CAPACITY; ++i) {
+    if (!allocator->source_blocks[i].active) {
+      block = &allocator->source_blocks[i];
+      break;
+    }
+  }
+  if (!block) {
+    return NULL;
+  }
+
+  void* ptr = source_ops->reserve(bytes, source_ops->allocation_granularity);
+  if (!ptr) {
+    return NULL;
+  }
+
+  block->ptr = ptr;
+  block->bytes = bytes;
+  block->source_kind = source_kind;
+  block->source_release = source_ops->release;
+  block->ref_count = 0;
+  block->active = 1;
+  return block;
+}
+
+int hz6_allocator_retain_source_block(Hz6SourceBlock* block) {
+  if (!block || !block->active || !block->ptr) {
+    return 0;
+  }
+  ++block->ref_count;
+  return 1;
+}
+
+int hz6_allocator_release_source_block(Hz6SourceBlock* block) {
+  if (!block || !block->active || !block->ptr || block->ref_count == 0) {
+    return 0;
+  }
+
+  --block->ref_count;
+  if (block->ref_count != 0) {
+    return 1;
+  }
+
+  int released = block->source_release
+                     ? block->source_release(block->ptr, block->bytes)
+                     : hz6_source_system_release(block->ptr, block->bytes);
+  block->ptr = NULL;
+  block->bytes = 0;
+  block->source_kind = HZ6_SOURCE_NONE;
+  block->source_release = NULL;
+  block->active = 0;
   return released;
 }
 
@@ -128,6 +197,7 @@ int hz6_allocator_adopt_orphan(Hz6Allocator* adopter,
       (Hz6ObjectDescriptor*)source_route.descriptor;
   if (source_descriptor->ptr != ptr ||
       source_descriptor->state != HZ6_STATE_ORPHAN ||
+      source_descriptor->source_block ||
       source_descriptor->class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
     return 0;
   }
@@ -171,6 +241,7 @@ int hz6_allocator_adopt_orphan(Hz6Allocator* adopter,
   source_descriptor->bytes = 0;
   source_descriptor->source_ptr = NULL;
   source_descriptor->source_bytes = 0;
+  source_descriptor->source_block = NULL;
   source_descriptor->class_id = 0;
   source_descriptor->source_kind = HZ6_SOURCE_NONE;
   source_descriptor->source_release = NULL;
@@ -321,11 +392,20 @@ void hz6_allocator_init_with_profile(Hz6Allocator* allocator,
   allocator->stats.transfer_pop = 0;
   allocator->stats.source_alloc = 0;
   hz6_source_registry_init(&allocator->source_registry);
+  for (size_t i = 0; i < HZ6_SOURCE_BLOCK_CAPACITY; ++i) {
+    allocator->source_blocks[i].ptr = NULL;
+    allocator->source_blocks[i].bytes = 0;
+    allocator->source_blocks[i].source_kind = HZ6_SOURCE_NONE;
+    allocator->source_blocks[i].source_release = NULL;
+    allocator->source_blocks[i].ref_count = 0;
+    allocator->source_blocks[i].active = 0;
+  }
   for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
     allocator->descriptors[i].ptr = NULL;
     allocator->descriptors[i].bytes = 0;
     allocator->descriptors[i].source_ptr = NULL;
     allocator->descriptors[i].source_bytes = 0;
+    allocator->descriptors[i].source_block = NULL;
     allocator->descriptors[i].class_id = 0;
     allocator->descriptors[i].source_kind = HZ6_SOURCE_NONE;
     allocator->descriptors[i].source_release = NULL;
@@ -372,6 +452,23 @@ void hz6_allocator_destroy(Hz6Allocator* allocator) {
     hz6_route_backend_unregister_exact(&allocator->route_backend,
                                        descriptor->ptr);
     hz6_allocator_release_descriptor_source(descriptor);
+  }
+  for (size_t i = 0; i < HZ6_SOURCE_BLOCK_CAPACITY; ++i) {
+    Hz6SourceBlock* block = &allocator->source_blocks[i];
+    if (!block->active || !block->ptr) {
+      continue;
+    }
+    if (block->source_release) {
+      block->source_release(block->ptr, block->bytes);
+    } else {
+      hz6_source_system_release(block->ptr, block->bytes);
+    }
+    block->ptr = NULL;
+    block->bytes = 0;
+    block->source_kind = HZ6_SOURCE_NONE;
+    block->source_release = NULL;
+    block->ref_count = 0;
+    block->active = 0;
   }
   allocator->owner.state = HZ6_OWNER_DEAD;
 }

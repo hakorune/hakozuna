@@ -19,11 +19,21 @@
 extern "C" {
 #endif
 
+typedef struct Hz6SourceBlock {
+  void* ptr;
+  size_t bytes;
+  Hz6SourceKind source_kind;
+  int (*source_release)(void* ptr, size_t bytes);
+  size_t ref_count;
+  int active;
+} Hz6SourceBlock;
+
 typedef struct Hz6ObjectDescriptor {
   void* ptr;
   size_t bytes;
   void* source_ptr;
   size_t source_bytes;
+  Hz6SourceBlock* source_block;
   uint16_t class_id;
   Hz6SourceKind source_kind;
   int (*source_release)(void* ptr, size_t bytes);
@@ -39,6 +49,7 @@ struct Hz6Allocator {
   Hz6RouteBackend route_backend;
   Hz6TransferObject transfer_objects[HZ6_TRANSFER_CACHE_CAPACITY];
   Hz6TransferBackend transfer_backend;
+  Hz6SourceBlock source_blocks[HZ6_SOURCE_BLOCK_CAPACITY];
   Hz6ObjectDescriptor descriptors[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
   Hz6SourceRegistry source_registry;
   Hz6FrontCacheEntry frontcache_entries[HZ6_FRONT_CACHE_CLASS_COUNT]
@@ -61,6 +72,16 @@ int hz6_allocator_activate_descriptor(Hz6ObjectDescriptor* descriptor,
 
 int hz6_allocator_release_descriptor_source(
     Hz6ObjectDescriptor* descriptor);
+
+Hz6SourceBlock* hz6_allocator_create_source_block(
+    Hz6Allocator* allocator,
+    size_t bytes,
+    const Hz6OsMemoryOps* source_ops,
+    Hz6SourceKind source_kind);
+
+int hz6_allocator_retain_source_block(Hz6SourceBlock* block);
+
+int hz6_allocator_release_source_block(Hz6SourceBlock* block);
 
 void hz6_allocator_mark_owner_dead(Hz6Allocator* allocator);
 
