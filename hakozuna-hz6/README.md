@@ -62,8 +62,15 @@ transfer-first state transitions, not performance.
 Expected output:
 
 ```text
-hz6-r1-contract-smoke ok
+hz6-r1-core-contract-smoke ok
+hz6-r1-route-smoke ok
+hz6-r1-transfer-contract-smoke ok
+hz6-r1-source-contract-smoke ok
 hz6-r1-allocator-smoke ok
+hz6-r1-prefill-smoke ok
+hz6-r1-sourceblock-smoke ok
+hz6-r1-transfer-smoke ok
+hz6-r1-reclaim-smoke ok
 hz6-r1-safety-smoke ok
 ```
 

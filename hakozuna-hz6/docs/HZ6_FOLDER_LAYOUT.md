@@ -160,7 +160,7 @@ fronts/local2p/hz6_local2p_front.h
 fronts/local2p/hz6_local2p_front.c
 fronts/midpage/hz6_midpage_front.h
 fronts/midpage/hz6_midpage_front.c
-tests/hz6_r1_contract_smoke.c
+tests/hz6_r1_core_contract_smoke.c
 tests/hz6_r1_route_smoke.c
 tests/hz6_r1_transfer_contract_smoke.c
 tests/hz6_r1_source_contract_smoke.c
@@ -176,7 +176,7 @@ linux/build_hz6_r1_contract_smoke.sh
 
 The Linux R1 smoke runner uses explicit `HZ6_SOURCES` and `HZ6_INCLUDES`
 arrays. Keep new modules visible there until a real build system is introduced.
-It builds the low-level contract smoke, route contract smoke, transfer backend
+It builds the core contract smoke, route contract smoke, transfer backend
 contract smoke, source/scavenge contract smoke, allocator/front integration
 smoke, allocator prefill smoke, SourceBlock/MidPage run smoke, allocator
 reclaim smoke, transfer/strict-remote smoke, and fail-closed safety smoke.

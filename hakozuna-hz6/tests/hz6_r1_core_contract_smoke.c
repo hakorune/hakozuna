@@ -12,7 +12,7 @@ typedef struct SmokeDescriptor {
 
 static int expect(int condition, const char* label) {
   if (!condition) {
-    fprintf(stderr, "hz6-r1-contract-smoke failed: %s\n", label);
+    fprintf(stderr, "hz6-r1-core-contract-smoke failed: %s\n", label);
     return 0;
   }
   return 1;
@@ -148,6 +148,6 @@ int main(void) {
     return 1;
   }
 
-  printf("hz6-r1-contract-smoke ok\n");
+  printf("hz6-r1-core-contract-smoke ok\n");
   return 0;
 }

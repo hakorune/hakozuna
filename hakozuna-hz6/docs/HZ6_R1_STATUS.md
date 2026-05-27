@@ -39,6 +39,8 @@ Contracts:
   source contract smoke covers source ops validation, Linux mmap source ops,
   source registry lookup, and ScavengeLayer budget accounting separately from
   the lower-level mixed contract smoke
+  core contract smoke covers owner tokens, profile policy, size classes, and
+  FrontCache primitives
   shared object states
   owner token/liveness helper
   profile configuration
@@ -228,8 +230,15 @@ policy:
 Expected output:
 
 ```text
-hz6-r1-contract-smoke ok
+hz6-r1-core-contract-smoke ok
+hz6-r1-route-smoke ok
+hz6-r1-transfer-contract-smoke ok
+hz6-r1-source-contract-smoke ok
 hz6-r1-allocator-smoke ok
+hz6-r1-prefill-smoke ok
+hz6-r1-sourceblock-smoke ok
+hz6-r1-transfer-smoke ok
+hz6-r1-reclaim-smoke ok
 hz6-r1-safety-smoke ok
 ```
 

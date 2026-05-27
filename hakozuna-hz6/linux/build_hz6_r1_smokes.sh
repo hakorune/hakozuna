@@ -68,8 +68,8 @@ build_smoke() {
   "${OUT_DIR}/${output_name}"
 }
 
-build_smoke "${HZ6_DIR}/tests/hz6_r1_contract_smoke.c" \
-  "hz6_r1_contract_smoke"
+build_smoke "${HZ6_DIR}/tests/hz6_r1_core_contract_smoke.c" \
+  "hz6_r1_core_contract_smoke"
 build_smoke "${HZ6_DIR}/tests/hz6_r1_route_smoke.c" \
   "hz6_r1_route_smoke"
 build_smoke "${HZ6_DIR}/tests/hz6_r1_transfer_contract_smoke.c" \

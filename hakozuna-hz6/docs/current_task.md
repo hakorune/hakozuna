@@ -74,7 +74,8 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    linux/build_hz6_r1_smokes.sh uses source/include arrays
    new modules should be added to HZ6_SOURCES/HZ6_INCLUDES explicitly
 14. Smoke split. DONE:
-   tests/hz6_r1_contract_smoke.c covers route/transfer/owner/profile/source
+   tests/hz6_r1_core_contract_smoke.c now covers owner/profile/frontcache
+   after later route/transfer/source smoke splits
    tests/hz6_r1_allocator_smoke.c covers allocator/front integration
 15. Linux SourceLayer seed. DONE:
    source/linux_source_mmap.*
@@ -517,8 +518,14 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    tests/hz6_r1_source_contract_smoke.c now owns source ops validation,
    Linux mmap source ops, source registry lookup, and ScavengeLayer budget
    accounting coverage
-   contract smoke keeps owner, profile, and frontcache low-level module
+   core contract smoke keeps owner, profile, and frontcache low-level module
    coverage without SourceLayer/ScavengeLayer bulk
+104. Core contract smoke rename. DONE:
+   tests/hz6_r1_core_contract_smoke.c replaces the generic
+   hz6_r1_contract_smoke.c name now that route, transfer, source, prefill,
+   reclaim, safety, and SourceBlock coverage each have dedicated smoke files
+   the remaining core contract smoke covers owner token, profile policy,
+   size-class, and FrontCache primitives
 ```
 
 Current R1 smoke:
@@ -530,7 +537,7 @@ Current R1 smoke:
 Expected:
 
 ```text
-hz6-r1-contract-smoke ok
+hz6-r1-core-contract-smoke ok
 hz6-r1-route-smoke ok
 hz6-r1-transfer-contract-smoke ok
 hz6-r1-source-contract-smoke ok
