@@ -39,6 +39,12 @@ int hz6_transfer_backend_pop(Hz6TransferBackend* backend,
 
 size_t hz6_transfer_backend_count(const Hz6TransferBackend* backend);
 
+size_t hz6_transfer_backend_count_class(const Hz6TransferBackend* backend,
+                                        uint16_t class_id);
+
+size_t hz6_transfer_backend_shard_count_at(const Hz6TransferBackend* backend,
+                                           size_t shard_index);
+
 #ifdef __cplusplus
 }
 #endif

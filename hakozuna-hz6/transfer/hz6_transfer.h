@@ -32,9 +32,11 @@ int hz6_transfer_pop(Hz6TransferCache* cache,
 
 size_t hz6_transfer_count(const Hz6TransferCache* cache);
 
+size_t hz6_transfer_count_class(const Hz6TransferCache* cache,
+                                uint16_t class_id);
+
 #ifdef __cplusplus
 }
 #endif
 
 #endif
-

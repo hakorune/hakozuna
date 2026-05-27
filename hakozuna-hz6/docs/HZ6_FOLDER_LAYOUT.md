@@ -267,6 +267,8 @@ implemented backends are single-cache and fixed-shard cache. Front utility code
 must go through the backend wrapper so later consumer-visible synchronized
 transfer can replace the smoke-only shard backend without moving transfer
 policy into individual fronts.
+R1 also exposes class-count and per-shard-count helpers for smoke diagnostics;
+these are observability helpers, not hot-path policy.
 
 ```text
 Allowed:

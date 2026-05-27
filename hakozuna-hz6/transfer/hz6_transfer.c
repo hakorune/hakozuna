@@ -44,3 +44,17 @@ size_t hz6_transfer_count(const Hz6TransferCache* cache) {
   return cache ? cache->count : 0;
 }
 
+size_t hz6_transfer_count_class(const Hz6TransferCache* cache,
+                                uint16_t class_id) {
+  if (!cache || !cache->objects) {
+    return 0;
+  }
+
+  size_t count = 0;
+  for (size_t i = 0; i < cache->count; ++i) {
+    if (cache->objects[i].class_id == class_id) {
+      ++count;
+    }
+  }
+  return count;
+}

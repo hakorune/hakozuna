@@ -118,6 +118,10 @@ int main(void) {
 
   if (!expect(hz6_transfer_push(&transfer, object_a), "transfer push a") ||
       !expect(hz6_transfer_push(&transfer, object_b), "transfer push b") ||
+      !expect(hz6_transfer_count_class(&transfer, 7) == 1,
+              "transfer class count a") ||
+      !expect(hz6_transfer_count_class(&transfer, 8) == 1,
+              "transfer class count b") ||
       !expect(!hz6_transfer_push(&transfer, object_a), "transfer bounded")) {
     return 1;
   }
@@ -136,6 +140,8 @@ int main(void) {
               "transfer backend push a") ||
       !expect(hz6_transfer_backend_push(&transfer_backend, object_b),
               "transfer backend push b") ||
+      !expect(hz6_transfer_backend_count_class(&transfer_backend, 7) == 1,
+              "transfer backend class count a") ||
       !expect(!hz6_transfer_backend_push(&transfer_backend, object_a),
               "transfer backend bounded")) {
     return 1;
@@ -160,6 +166,12 @@ int main(void) {
               "transfer sharded push a") ||
       !expect(hz6_transfer_backend_push(&sharded_backend, object_b),
               "transfer sharded push b") ||
+      !expect(hz6_transfer_backend_shard_count_at(&sharded_backend, 0) == 1,
+              "transfer sharded shard zero count") ||
+      !expect(hz6_transfer_backend_shard_count_at(&sharded_backend, 1) == 1,
+              "transfer sharded shard one count") ||
+      !expect(hz6_transfer_backend_count_class(&sharded_backend, 7) == 1,
+              "transfer sharded class count") ||
       !expect(hz6_transfer_backend_count(&sharded_backend) == 2,
               "transfer sharded count")) {
     return 1;

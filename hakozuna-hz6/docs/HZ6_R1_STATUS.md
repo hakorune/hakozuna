@@ -73,6 +73,7 @@ remote free:
   strict/rss profiles use single-cache transfer
   speed/remote profiles use sharded transfer
   backend wrapper preserves bounded push / class pop semantics
+  backend exposes class counts and per-shard counts for smoke diagnostics
 
 front registry:
   toy handles <=4KiB
@@ -127,6 +128,7 @@ No performance claim.
 No preload integration.
 No general span policy beyond the Local2P/Large128 mmap seeds.
 No threaded transfer synchronization or performance claim for sharded transfer yet.
+Sharded transfer observability is single-thread diagnostic only.
 Cross-owner orphan adoption is seed-only and not a shared owner registry yet.
 No real MidPage page-run/span policy yet.
 No HZ5 source migration.
