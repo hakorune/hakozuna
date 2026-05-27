@@ -1,6 +1,7 @@
 #include "../api/hz6_allocator.h"
 #include "../frontcache/hz6_frontcache.h"
 #include "../frontcache/hz6_size_class.h"
+#include "../fronts/large/hz6_large128_front.h"
 #include "../include/hz6_contract.h"
 #include "../owner/hz6_owner.h"
 #include "../policy/hz6_profiles.h"
@@ -186,6 +187,36 @@ int main(void) {
     return 1;
   }
   hz6_allocator_destroy(&allocator);
+
+  Hz6Allocator large_allocator;
+  hz6_allocator_init_with_profile(&large_allocator, HZ6_PROFILE_REMOTE);
+  void* large_object = hz6_malloc(&large_allocator, 65536);
+  if (!expect(large_object != NULL, "large128 malloc")) {
+    return 1;
+  }
+  Hz6RouteResult large_route =
+      hz6_route_lookup(&large_allocator.route_table, large_object);
+  if (!expect(large_route.kind == HZ6_ROUTE_VALID, "large128 route valid") ||
+      !expect(large_route.front_id == HZ6_FRONT_LARGE,
+              "large128 route front") ||
+      !expect(large_route.class_id == HZ6_LARGE128_CLASS_ID,
+              "large128 route class") ||
+      !expect(hz6_free_remote(&large_allocator, large_object),
+              "large128 remote free")) {
+    return 1;
+  }
+  void* large_reused = hz6_malloc(&large_allocator, 65536);
+  if (!expect(large_reused == large_object, "large128 transfer reuse")) {
+    return 1;
+  }
+  hz6_free(&large_allocator, large_reused);
+  Hz6StatsSnapshot large_stats = hz6_stats_snapshot(&large_allocator);
+  if (!expect(large_stats.transfer_push == 1, "large128 transfer push") ||
+      !expect(large_stats.transfer_pop == 1, "large128 transfer pop") ||
+      !expect(large_stats.source_alloc == 1, "large128 source alloc")) {
+    return 1;
+  }
+  hz6_allocator_destroy(&large_allocator);
 
   Hz6Allocator remote_allocator;
   hz6_allocator_init_with_profile(&remote_allocator, HZ6_PROFILE_REMOTE);

@@ -1,37 +1,27 @@
-#include "hz6_toy_front.h"
+#include "hz6_large128_front.h"
 
-#include "../../frontcache/hz6_size_class.h"
 #include "../../source/hz6_source.h"
 
-static int hz6_toy_front_can_allocate(size_t size,
-                                      size_t align,
-                                      uint16_t* class_id) {
-  if (align > 16 || !class_id) {
+static int hz6_large128_can_allocate(size_t size,
+                                     size_t align,
+                                     uint16_t* class_id) {
+  if (!class_id || align > 16 || size <= 4096 || size > HZ6_LARGE128_BYTES) {
     return 0;
   }
-
-  Hz6SizeClass size_class = hz6_size_class_for_request(size);
-  if (!hz6_size_class_valid(size_class)) {
-    return 0;
-  }
-
-  *class_id = size_class.id;
+  *class_id = HZ6_LARGE128_CLASS_ID;
   return 1;
 }
 
-static void* hz6_toy_front_alloc_with_class(Hz6Allocator* allocator,
-                                            uint16_t class_id,
-                                            size_t size) {
-  Hz6SizeClass size_class = hz6_size_class_for_request(size);
-  if (size_class.id != class_id) {
-    return NULL;
-  }
-  if (!allocator || !hz6_size_class_valid(size_class)) {
+static void* hz6_large128_alloc(Hz6Allocator* allocator,
+                                uint16_t class_id,
+                                size_t size) {
+  (void)size;
+  if (!allocator || class_id != HZ6_LARGE128_CLASS_ID) {
     return NULL;
   }
 
   Hz6FrontCacheEntry entry;
-  if (hz6_frontcache_pop(&allocator->frontcache_bins[size_class.id], &entry)) {
+  if (hz6_frontcache_pop(&allocator->frontcache_bins[class_id], &entry)) {
     Hz6ObjectDescriptor* descriptor =
         (Hz6ObjectDescriptor*)entry.descriptor;
     if (!hz6_allocator_activate_descriptor(
@@ -43,8 +33,7 @@ static void* hz6_toy_front_alloc_with_class(Hz6Allocator* allocator,
 
   if (allocator->profile.transfer_first) {
     Hz6TransferObject transfer;
-    while (hz6_transfer_pop(&allocator->transfer_cache, size_class.id,
-                            &transfer)) {
+    while (hz6_transfer_pop(&allocator->transfer_cache, class_id, &transfer)) {
       Hz6ObjectDescriptor* descriptor =
           (Hz6ObjectDescriptor*)transfer.descriptor;
       if (!hz6_allocator_activate_descriptor(
@@ -63,19 +52,19 @@ static void* hz6_toy_front_alloc_with_class(Hz6Allocator* allocator,
     return NULL;
   }
 
-  void* ptr = hz6_source_system_alloc(size_class.bytes);
+  void* ptr = hz6_source_system_alloc(HZ6_LARGE128_BYTES);
   if (!ptr) {
     return NULL;
   }
 
   descriptor->ptr = ptr;
-  descriptor->bytes = size_class.bytes;
-  descriptor->class_id = size_class.id;
+  descriptor->bytes = HZ6_LARGE128_BYTES;
+  descriptor->class_id = class_id;
   descriptor->generation = 1;
   descriptor->state = HZ6_STATE_ACTIVE;
   if (!hz6_route_register_exact(&allocator->route_table, ptr,
-                                size_class.bytes, HZ6_FRONT_TOY,
-                                size_class.id, descriptor->generation,
+                                HZ6_LARGE128_BYTES, HZ6_FRONT_LARGE,
+                                class_id, descriptor->generation,
                                 descriptor)) {
     hz6_source_system_free(ptr);
     descriptor->ptr = NULL;
@@ -87,11 +76,11 @@ static void* hz6_toy_front_alloc_with_class(Hz6Allocator* allocator,
   return ptr;
 }
 
-static int hz6_toy_front_free_local(Hz6Allocator* allocator,
-                                    void* ptr,
-                                    Hz6RouteResult route) {
+static int hz6_large128_free_local(Hz6Allocator* allocator,
+                                   void* ptr,
+                                   Hz6RouteResult route) {
   if (!allocator || !ptr || route.kind != HZ6_ROUTE_VALID ||
-      !route.descriptor) {
+      !route.descriptor || route.class_id != HZ6_LARGE128_CLASS_ID) {
     return 0;
   }
 
@@ -118,11 +107,11 @@ static int hz6_toy_front_free_local(Hz6Allocator* allocator,
   return 1;
 }
 
-int hz6_toy_front_free_remote(Hz6Allocator* allocator,
-                              void* ptr,
-                              Hz6RouteResult route) {
+static int hz6_large128_free_remote(Hz6Allocator* allocator,
+                                    void* ptr,
+                                    Hz6RouteResult route) {
   if (!allocator || !ptr || route.kind != HZ6_ROUTE_VALID ||
-      !route.descriptor) {
+      !route.descriptor || route.class_id != HZ6_LARGE128_CLASS_ID) {
     return 0;
   }
 
@@ -146,14 +135,14 @@ int hz6_toy_front_free_remote(Hz6Allocator* allocator,
   return 1;
 }
 
-const Hz6FrontOps* hz6_toy_front_ops(void) {
+const Hz6FrontOps* hz6_large128_front_ops(void) {
   static const Hz6FrontOps ops = {
-      HZ6_FRONT_TOY,
-      "toy",
-      hz6_toy_front_can_allocate,
-      hz6_toy_front_alloc_with_class,
-      hz6_toy_front_free_local,
-      hz6_toy_front_free_remote,
+      HZ6_FRONT_LARGE,
+      "large128",
+      hz6_large128_can_allocate,
+      hz6_large128_alloc,
+      hz6_large128_free_local,
+      hz6_large128_free_remote,
   };
   return &ops;
 }

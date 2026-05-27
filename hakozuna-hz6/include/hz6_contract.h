@@ -27,7 +27,8 @@ typedef enum Hz6FrontId {
   HZ6_FRONT_NONE = 0,
   HZ6_FRONT_LOCAL2P = 1,
   HZ6_FRONT_MIDPAGE = 2,
-  HZ6_FRONT_LARGE = 3
+  HZ6_FRONT_LARGE = 3,
+  HZ6_FRONT_TOY = 250
 } Hz6FrontId;
 
 typedef struct Hz6RouteResult {
@@ -86,4 +87,3 @@ static inline int hz6_owner_equal(Hz6OwnerToken a, Hz6OwnerToken b) {
 #endif
 
 #endif
-

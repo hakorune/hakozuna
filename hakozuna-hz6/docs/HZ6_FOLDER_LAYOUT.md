@@ -68,6 +68,8 @@ hakozuna-hz6/
       hz6_midpage.h
       hz6_midpage.c
     large/
+      hz6_large128_front.h
+      hz6_large128_front.c
       hz6_large.h
       hz6_large.c
 
@@ -126,6 +128,8 @@ fronts/hz6_front.h
 fronts/hz6_front.c
 fronts/toy/hz6_toy_front.h
 fronts/toy/hz6_toy_front.c
+fronts/large/hz6_large128_front.h
+fronts/large/hz6_large128_front.c
 tests/hz6_r1_contract_smoke.c
 linux/build_hz6_r1_contract_smoke.sh
 ```
@@ -164,6 +168,10 @@ The API reaches it through `Hz6FrontOps`, so the next real front can replace
 the toy implementation without moving allocation policy back into `api/`.
 Front selection lives in `fronts/hz6_front.*`; the API should not name a
 specific real front.
+
+`fronts/large/hz6_large128_front.*` is the first real-front seed. It handles
+requests above the toy/small range up to 128KiB and exercises
+`ACTIVE -> TRANSFER_FREE -> ACTIVE` through the same front registry.
 
 ## Boundaries
 

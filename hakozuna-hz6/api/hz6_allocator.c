@@ -135,8 +135,10 @@ int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
     return 0;
   }
 
+  const Hz6FrontOps* front = hz6_front_for_id(route.front_id);
   ++allocator->stats.route_valid;
-  if (!hz6_toy_front_free_remote(allocator, ptr, route)) {
+  if (!front || !front->remote_free_tagged ||
+      !front->remote_free_tagged(allocator, ptr, route)) {
     ++allocator->stats.route_invalid;
     return 0;
   }

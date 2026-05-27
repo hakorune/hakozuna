@@ -10,10 +10,6 @@ extern "C" {
 
 const Hz6FrontOps* hz6_toy_front_ops(void);
 
-int hz6_toy_front_free_remote(Hz6Allocator* allocator,
-                              void* ptr,
-                              Hz6RouteResult route);
-
 #ifdef __cplusplus
 }
 #endif

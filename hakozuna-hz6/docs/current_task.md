@@ -58,6 +58,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    toy allocation/free transitions moved to fronts/toy/
    allocator API calls toy front through Hz6FrontOps
    front selection moved to fronts/hz6_front.*
+10. First real-front seed. IN PROGRESS:
+   fronts/large/hz6_large128_front.*
+   handles >4KiB..128KiB through the front registry
+   uses transfer-first reuse in HZ6_PROFILE_REMOTE
 ```
 
 Current R1 smoke:
