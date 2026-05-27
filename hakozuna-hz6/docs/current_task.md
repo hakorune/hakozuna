@@ -231,6 +231,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    64KiB SourceBlock
    both 32K slots route as HZ6_FRONT_MIDPAGE / HZ6_MIDPAGE_32K_CLASS_ID
    the shared SourceBlock avoids a second source refill while both slots are consumed
+52. SourceBlock duplicate-slot failure smoke. DONE:
+   allocator smoke verifies duplicate exact slot registration is rejected
+   SourceBlock refcount is restored after the failed registration path
+   the backing SourceBlock remains alive and unreleased after duplicate rejection
 ```
 
 Current R1 smoke:

@@ -327,6 +327,17 @@ int main(void) {
       !expect(block->ref_count == 2, "source block refcount")) {
     return 1;
   }
+  void* duplicate_block_slot = hz6_front_source_block_slot(
+      &midpage_block_allocator, HZ6_FRONT_MIDPAGE,
+      HZ6_MIDPAGE_8K_CLASS_ID, HZ6_MIDPAGE_8K_BYTES, 0, block);
+  if (!expect(duplicate_block_slot == NULL,
+              "source block duplicate slot rejected") ||
+      !expect(block->ref_count == 2,
+              "source block duplicate slot refcount restored") ||
+      !expect(g_source_block_release_count == 0,
+              "source block duplicate slot keeps source alive")) {
+    return 1;
+  }
   Hz6RouteResult block_slot0_route =
       hz6_route_backend_lookup(&midpage_block_allocator.route_backend,
                                block_slot0);
