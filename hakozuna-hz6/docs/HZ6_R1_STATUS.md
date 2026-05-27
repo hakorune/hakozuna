@@ -30,6 +30,7 @@ Fronts:
   large128:
     >4KiB..128KiB seed front
     exercises transfer-first reuse
+    uses Linux mmap SourceLayer backing in the Linux R1 smoke
 ```
 
 ## Verified Behaviors
@@ -58,6 +59,8 @@ front registry:
 source:
   Linux mmap ops validate through SourceLayer
   reserve / commit / decommit / release smoke passes
+  Large128 descriptors carry source kind / release metadata
+  allocator destroy releases Large128 mappings through SourceLayer
 ```
 
 ## Verification Command
@@ -78,7 +81,8 @@ hz6-r1-allocator-smoke ok
 ```text
 No performance claim.
 No preload integration.
-No allocator integration with OS-backed mmap / VirtualAlloc source path yet.
+No Windows VirtualAlloc source path yet.
+No general span policy beyond the Large128 mmap seed.
 No Local2P or MidPage real front yet.
 No HZ5 source migration.
 No HZ3/HZ4/HZ5 implementation copy.
@@ -87,13 +91,11 @@ No HZ3/HZ4/HZ5 implementation copy.
 ## Next Engineering Targets
 
 ```text
-1. Replace the Large128 seed source with SourceLayer-backed spans.
-
-2. Add route backend variants:
+1. Add route backend variants:
    Linux region/page route
    Windows sidecar route
 
-3. Add Local2P exact route/front as the next real profile seed.
+2. Add Local2P exact route/front as the next real profile seed.
 
-4. Add Windows VirtualAlloc source ops.
+3. Add Windows VirtualAlloc source ops.
 ```

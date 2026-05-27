@@ -79,6 +79,10 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
 15. Linux SourceLayer seed. DONE:
    source/linux_source_mmap.*
    reserve/commit/decommit/release covered by contract smoke
+16. Large128 SourceLayer backing. DONE:
+   descriptors carry source kind / release metadata
+   Large128 uses Linux mmap source ops in the Linux R1 smoke
+   destroy and cache overflow release through descriptor SourceLayer metadata
 ```
 
 Current R1 smoke:
@@ -117,4 +121,5 @@ No new performance claim.
 No benchmark table until an HZ6 prototype exists.
 Toy allocation and transfer paths are for contract validation only.
 Large128 is still a seed front, not a performance claim.
+Large128 has Linux mmap backing, but no full span/source refill policy yet.
 ```

@@ -6,7 +6,21 @@ void* hz6_front_reuse_or_source(Hz6Allocator* allocator,
                                 uint16_t front_id,
                                 uint16_t class_id,
                                 size_t bytes) {
+  Hz6OsMemoryOps source_ops = hz6_system_source_ops();
+  return hz6_front_reuse_or_source_ops(allocator, front_id, class_id, bytes,
+                                       &source_ops, HZ6_SOURCE_SYSTEM);
+}
+
+void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
+                                    uint16_t front_id,
+                                    uint16_t class_id,
+                                    size_t bytes,
+                                    const Hz6OsMemoryOps* source_ops,
+                                    Hz6SourceKind source_kind) {
   if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT || bytes == 0) {
+    return NULL;
+  }
+  if (!hz6_source_ops_valid(source_ops) || source_kind == HZ6_SOURCE_NONE) {
     return NULL;
   }
 
@@ -42,22 +56,23 @@ void* hz6_front_reuse_or_source(Hz6Allocator* allocator,
     return NULL;
   }
 
-  void* ptr = hz6_source_system_alloc(bytes);
+  void* ptr = source_ops->reserve(bytes, source_ops->allocation_granularity);
   if (!ptr) {
     return NULL;
   }
 
   descriptor->ptr = ptr;
   descriptor->bytes = bytes;
+  descriptor->source_bytes = bytes;
   descriptor->class_id = class_id;
+  descriptor->source_kind = source_kind;
+  descriptor->source_release = source_ops->release;
   descriptor->generation = 1;
   descriptor->state = HZ6_STATE_ACTIVE;
   if (!hz6_route_register_exact(&allocator->route_table, ptr, bytes, front_id,
                                 class_id, descriptor->generation,
                                 descriptor)) {
-    hz6_source_system_free(ptr);
-    descriptor->ptr = NULL;
-    descriptor->state = HZ6_STATE_DEAD;
+    hz6_allocator_release_descriptor_source(descriptor);
     return NULL;
   }
 
@@ -92,8 +107,7 @@ int hz6_front_free_local_to_cache(Hz6Allocator* allocator,
 
   descriptor->state = HZ6_STATE_DEAD;
   hz6_route_unregister_exact(&allocator->route_table, ptr);
-  hz6_source_system_free(ptr);
-  descriptor->ptr = NULL;
+  hz6_allocator_release_descriptor_source(descriptor);
   return 1;
 }
 

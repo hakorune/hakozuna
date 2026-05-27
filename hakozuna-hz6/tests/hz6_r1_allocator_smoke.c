@@ -59,7 +59,16 @@ int main(void) {
       !expect(large_route.front_id == HZ6_FRONT_LARGE,
               "large128 route front") ||
       !expect(large_route.class_id == HZ6_LARGE128_CLASS_ID,
-              "large128 route class") ||
+              "large128 route class")) {
+    return 1;
+  }
+  Hz6ObjectDescriptor* large_descriptor =
+      (Hz6ObjectDescriptor*)large_route.descriptor;
+  if (!expect(large_descriptor != NULL, "large128 descriptor") ||
+      !expect(large_descriptor->source_kind == HZ6_SOURCE_LINUX_MMAP,
+              "large128 mmap source kind") ||
+      !expect(large_descriptor->source_bytes == HZ6_LARGE128_BYTES,
+              "large128 source bytes") ||
       !expect(hz6_free_remote(&large_allocator, large_object),
               "large128 remote free")) {
     return 1;

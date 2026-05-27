@@ -8,6 +8,7 @@
 #include "../owner/hz6_owner.h"
 #include "../policy/hz6_profiles.h"
 #include "../route/hz6_route.h"
+#include "../source/hz6_source.h"
 #include "../transfer/hz6_transfer.h"
 
 #ifdef __cplusplus
@@ -17,7 +18,10 @@ extern "C" {
 typedef struct Hz6ObjectDescriptor {
   void* ptr;
   size_t bytes;
+  size_t source_bytes;
   uint16_t class_id;
+  Hz6SourceKind source_kind;
+  int (*source_release)(void* ptr, size_t bytes);
   uint32_t generation;
   Hz6ObjectState state;
 } Hz6ObjectDescriptor;
@@ -45,6 +49,9 @@ int hz6_allocator_activate_descriptor(Hz6ObjectDescriptor* descriptor,
                                       Hz6ObjectState expected,
                                       void* ptr,
                                       uint32_t generation);
+
+int hz6_allocator_release_descriptor_source(
+    Hz6ObjectDescriptor* descriptor);
 
 #ifdef __cplusplus
 }

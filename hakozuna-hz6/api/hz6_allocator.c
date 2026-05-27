@@ -2,7 +2,6 @@
 
 #include "../fronts/hz6_front.h"
 #include "../fronts/toy/hz6_toy_front.h"
-#include "../source/hz6_source.h"
 
 Hz6ObjectDescriptor* hz6_allocator_find_free_descriptor(
     Hz6Allocator* allocator) {
@@ -28,6 +27,31 @@ int hz6_allocator_activate_descriptor(Hz6ObjectDescriptor* descriptor,
   return 1;
 }
 
+int hz6_allocator_release_descriptor_source(
+    Hz6ObjectDescriptor* descriptor) {
+  if (!descriptor || !descriptor->ptr) {
+    return 0;
+  }
+
+  int released = 0;
+  if (descriptor->source_release) {
+    released =
+        descriptor->source_release(descriptor->ptr, descriptor->source_bytes);
+  } else {
+    released = hz6_source_system_release(descriptor->ptr, descriptor->bytes);
+  }
+
+  descriptor->ptr = NULL;
+  descriptor->bytes = 0;
+  descriptor->source_bytes = 0;
+  descriptor->class_id = 0;
+  descriptor->source_kind = HZ6_SOURCE_NONE;
+  descriptor->source_release = NULL;
+  descriptor->generation = 0;
+  descriptor->state = HZ6_STATE_DEAD;
+  return released;
+}
+
 void hz6_allocator_init(Hz6Allocator* allocator) {
   hz6_allocator_init_with_profile(allocator, HZ6_PROFILE_STRICT);
 }
@@ -47,7 +71,10 @@ void hz6_allocator_init_with_profile(Hz6Allocator* allocator,
   for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
     allocator->descriptors[i].ptr = NULL;
     allocator->descriptors[i].bytes = 0;
+    allocator->descriptors[i].source_bytes = 0;
     allocator->descriptors[i].class_id = 0;
+    allocator->descriptors[i].source_kind = HZ6_SOURCE_NONE;
+    allocator->descriptors[i].source_release = NULL;
     allocator->descriptors[i].generation = 0;
     allocator->descriptors[i].state = HZ6_STATE_DEAD;
   }
@@ -73,9 +100,7 @@ void hz6_allocator_destroy(Hz6Allocator* allocator) {
       continue;
     }
     hz6_route_unregister_exact(&allocator->route_table, descriptor->ptr);
-    hz6_source_system_free(descriptor->ptr);
-    descriptor->ptr = NULL;
-    descriptor->state = HZ6_STATE_DEAD;
+    hz6_allocator_release_descriptor_source(descriptor);
   }
 }
 

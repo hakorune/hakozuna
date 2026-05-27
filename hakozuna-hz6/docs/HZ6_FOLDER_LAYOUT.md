@@ -146,7 +146,8 @@ arrays. Keep new modules visible there until a real build system is introduced.
 It builds both the low-level contract smoke and allocator/front integration
 smoke.
 Linux mmap source ops are present as SourceLayer contract code, but Large128
-still uses the temporary system source path until span backing is introduced.
+now uses them in the Linux R1 smoke path. The toy front still uses the system
+source path because it exists only as a contract-validation front.
 
 The current API path is intentionally small:
 
@@ -188,8 +189,10 @@ requests above the toy/small range up to 128KiB and exercises
 `ACTIVE -> TRANSFER_FREE -> ACTIVE` through the same front registry.
 The toy front owns only requests up to 4KiB. Larger unsupported requests must
 miss all fronts instead of being rounded down into a smaller allocation.
-This seed uses the shared source allocator for now; it is not yet an mmap /
-VirtualAlloc backed LargeFront implementation.
+On Linux, this seed is backed by `source/linux_source_mmap.*`. Descriptors
+store source kind and release metadata so allocator destroy and cache overflow
+release through the correct SourceLayer instead of assuming system `free()`.
+It is still a seed front, not a full LargeFront span policy.
 
 Shared descriptor/cache/transfer transitions live in
 `fronts/hz6_front_util.*`. Real fronts should keep only range/class decisions

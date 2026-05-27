@@ -16,11 +16,21 @@ typedef struct Hz6OsMemoryOps {
   size_t allocation_granularity;
 } Hz6OsMemoryOps;
 
+typedef enum Hz6SourceKind {
+  HZ6_SOURCE_NONE = 0,
+  HZ6_SOURCE_SYSTEM = 1,
+  HZ6_SOURCE_LINUX_MMAP = 2
+} Hz6SourceKind;
+
 int hz6_source_ops_valid(const Hz6OsMemoryOps* ops);
+
+Hz6OsMemoryOps hz6_system_source_ops(void);
 
 void* hz6_source_system_alloc(size_t bytes);
 
 void hz6_source_system_free(void* ptr);
+
+int hz6_source_system_release(void* ptr, size_t bytes);
 
 #ifdef __cplusplus
 }
