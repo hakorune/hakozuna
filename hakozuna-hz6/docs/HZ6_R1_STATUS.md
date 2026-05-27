@@ -98,6 +98,8 @@ Contracts:
   seeding stays separate from front policy and free-path dispatch
   MidPage policy helpers are split into their own helper unit so class-size
   mapping stays separate from run-fill and alloc/free dispatch
+  MidPage front alloc/free/ops helpers are split into separate helper units so
+  page-run selection stays separate from reuse and transfer dispatch
   front source prefill helpers are split into their own helper unit and header
   so direct source reserve logic stays separate from slow-path prefill loops
   shared object states

@@ -745,6 +745,15 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    route/hz6_route_table.c was removed after the split
    linux/build_hz6_r1_smokes.sh registers the new route table modules
    explicitly
+137. MidPage front alloc/free/ops split. DONE:
+   fronts/midpage/hz6_midpage_front_alloc.c now owns page-run selection and
+   alloc/prefill reuse
+   fronts/midpage/hz6_midpage_front_free.c now owns local/remote free
+   dispatch
+   fronts/midpage/hz6_midpage_front_ops.c now owns the front ops table
+   fronts/midpage/hz6_midpage_front.c was removed after the split
+   linux/build_hz6_r1_smokes.sh registers the new MidPage front modules
+   explicitly
 ```
 
 Current R1 smoke:

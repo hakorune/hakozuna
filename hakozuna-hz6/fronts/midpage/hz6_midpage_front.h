@@ -30,6 +30,26 @@ int hz6_midpage_policy_for_size(size_t size,
 
 int hz6_midpage_class_bytes(uint16_t class_id, size_t* bytes);
 
+int hz6_midpage_can_allocate(size_t size,
+                             size_t align,
+                             uint16_t* class_id);
+
+void* hz6_midpage_alloc(Hz6Allocator* allocator,
+                        uint16_t class_id,
+                        size_t size);
+
+size_t hz6_midpage_prefill(Hz6Allocator* allocator,
+                           uint16_t class_id,
+                           size_t count);
+
+int hz6_midpage_free_local(Hz6Allocator* allocator,
+                           void* ptr,
+                           Hz6RouteResult route);
+
+int hz6_midpage_free_remote(Hz6Allocator* allocator,
+                            void* ptr,
+                            Hz6RouteResult route);
+
 size_t hz6_midpage_prefill_run(Hz6Allocator* allocator, uint16_t class_id);
 
 const Hz6FrontOps* hz6_midpage_front_ops(void);
