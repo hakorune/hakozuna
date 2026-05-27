@@ -39,6 +39,9 @@ API:
   split allocator-facing TransferLayer observation from dispatch helpers
   api/hz6_allocator_types.h and api/hz6_allocator_api.h split allocator type
   definitions from public API declarations
+  api/hz6_allocator_source_block_create.c and
+  api/hz6_allocator_source_block_lifetime.c split SourceBlock creation from
+  retain/release lifetime helpers
   hz6_stats_snapshot() is the public stats observation boundary
   allocator note helpers are the front-facing stats update boundary
   hz6_allocator_owner_token() is the front-facing owner token read boundary

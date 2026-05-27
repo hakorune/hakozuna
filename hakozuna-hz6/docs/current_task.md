@@ -787,6 +787,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    api/hz6_allocator_api.h now owns public allocator declarations
    api/hz6_allocator.h was reduced to a thin wrapper
    allocator sources still include the wrapper for compatibility
+143. SourceBlock create/lifetime split. DONE:
+   api/hz6_allocator_source_block_create.c now owns source block creation
+   api/hz6_allocator_source_block_lifetime.c now owns retain/release lifetime
+   api/hz6_allocator_source_block.c was removed after the split
+   linux/build_hz6_r1_smokes.sh registers the new source block modules
+   explicitly
 ```
 
 Current R1 smoke:
