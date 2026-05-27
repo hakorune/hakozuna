@@ -1,8 +1,8 @@
 # Hakozuna HZ6
 
 HZ6 is the planned transfer-first successor to the HZ5 sidecar allocator
-research. It is not an implementation branch yet. This directory records the
-design contracts, folder plan, and migration rules before code is added.
+research. It now has an R1 executable seed: modular contracts, a toy
+contract-validation front, and a first Large128 transfer-first front seed.
 
 ## Positioning
 
@@ -42,6 +42,7 @@ HZ6 starts from these rules:
 
 ```text
 docs/HZ6_BLUEPRINT.md
+docs/HZ6_R1_STATUS.md
 docs/HZ6_R1_MINIMUM_CONTRACT_BLUEPRINT.md
 docs/HZ6_ARCHITECTURE_DRAFT.md
 docs/HZ6_FOLDER_LAYOUT.md
@@ -49,13 +50,20 @@ docs/HZ6_MIGRATION_FROM_HZ5.md
 docs/current_task.md
 ```
 
-## R1 Contract Smoke
+## R1 Smoke
 
-The first code is intentionally contract-only. It does not implement allocator
-behavior.
+The first code is intentionally small. It validates module boundaries and
+transfer-first state transitions, not performance.
 
 ```bash
 ./hakozuna-hz6/linux/build_hz6_r1_contract_smoke.sh
+```
+
+Expected output:
+
+```text
+hz6-r1-contract-smoke ok
+hz6-r1-allocator-smoke ok
 ```
 
 ## Non-Goals

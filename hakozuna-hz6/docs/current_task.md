@@ -22,6 +22,7 @@ It should not directly port HZ3/HZ4/HZ5 internals.
 ```text
 hakozuna-hz6/README.md
 hakozuna-hz6/docs/HZ6_BLUEPRINT.md
+hakozuna-hz6/docs/HZ6_R1_STATUS.md
 hakozuna-hz6/docs/HZ6_R1_MINIMUM_CONTRACT_BLUEPRINT.md
 hakozuna-hz6/docs/HZ6_ARCHITECTURE_DRAFT.md
 hakozuna-hz6/docs/HZ6_FOLDER_LAYOUT.md
