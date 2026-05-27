@@ -9,7 +9,10 @@ API:
   include/hz6.h
   api/hz6_allocator.*
   api/hz6_allocator_descriptor.c owns descriptor lifecycle helpers
-  api/hz6_allocator_facade.c owns allocator-facing module wrapper helpers
+  api/hz6_allocator_frontcache.c owns allocator-facing FrontCache wrappers
+  api/hz6_allocator_prefill.c owns allocator-facing front prefill wrappers
+  api/hz6_allocator_profile.c owns allocator-facing profile/source policy
+  queries and source allocation stats notes
   api/hz6_allocator_reclaim.c owns orphan/scavenge/remote-pending reclaim
   api/hz6_allocator_route.c owns allocator-facing RouteLayer wrappers
   api/hz6_allocator_source_block.c owns SourceBlock lifecycle helpers

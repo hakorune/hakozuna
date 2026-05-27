@@ -574,6 +574,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    prefill, profile, source, and stats wrappers
    linux/build_hz6_r1_smokes.sh registers hz6_allocator_route.c as an explicit
    HZ6_LIB_SOURCE
+113. Allocator facade removal. DONE:
+   api/hz6_allocator_frontcache.c now owns allocator-facing FrontCache wrappers
+   api/hz6_allocator_profile.c now owns profile/source policy queries,
+   source ops lookup, and source allocation stats notes
+   api/hz6_allocator_prefill.c now owns allocator-facing prefill wrappers
+   api/hz6_allocator_facade.c was removed after all responsibilities moved to
+   role-named API modules
 ```
 
 Current R1 smoke:
