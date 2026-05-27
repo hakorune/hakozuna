@@ -20,8 +20,8 @@ API:
   queries and source allocation stats notes
   api/hz6_allocator_descriptor_state.c owns descriptor cache and remote-free
   state transitions
-  api/hz6_allocator_orphan.c owns owner-dead orphan conversion and orphan
-  release/adoption
+  api/hz6_allocator_orphan_release.c and api/hz6_allocator_orphan_adopt.c own
+  orphan release and cross-owner adoption separately
   api/hz6_allocator_remote_pending.c owns strict remote-pending drain
   api/hz6_allocator_route.c owns allocator-facing RouteLayer wrappers
   api/hz6_allocator_scavenge_orphans.c, api/hz6_allocator_scavenge_local_free.c,

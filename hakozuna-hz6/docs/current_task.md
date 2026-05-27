@@ -725,6 +725,12 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    fronts/hz6_front.c was removed after the split
    linux/build_hz6_r1_smokes.sh registers the new front registry modules
    explicitly
+134. Orphan release/adoption split. DONE:
+   api/hz6_allocator_orphan_release.c now owns orphan release
+   api/hz6_allocator_orphan_adopt.c now owns cross-owner orphan adoption
+   api/hz6_allocator_orphan.c was removed after the split
+   linux/build_hz6_r1_smokes.sh registers the new orphan helper modules
+   explicitly
 ```
 
 Current R1 smoke:
