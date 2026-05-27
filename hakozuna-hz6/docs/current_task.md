@@ -619,6 +619,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    api/hz6_allocator.c now keeps owner token helpers and debug owner slot
    hooks separate from lifecycle
    linux/build_hz6_r1_smokes.sh registers the lifecycle module explicitly
+119. Front source slot split. DONE:
+   fronts/hz6_front_source_slot.c now owns direct source-backed user-slot
+   creation helpers
+   fronts/hz6_front_source.c now keeps reuse and prefill helpers separate
+   from direct source-slot creation
+   linux/build_hz6_r1_smokes.sh registers hz6_front_source_slot.c as an
+   explicit HZ6_LIB_SOURCE
 ```
 
 Current R1 smoke:
