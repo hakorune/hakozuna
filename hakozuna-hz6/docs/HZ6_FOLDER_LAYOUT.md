@@ -37,7 +37,8 @@ hakozuna-hz6/
     hz6_allocator_scavenge_local_free.c
     hz6_allocator_scavenge_profile.c
     hz6_allocator_source_block.c
-    hz6_allocator_transfer.c
+    hz6_allocator_transfer_query.c
+    hz6_allocator_transfer_dispatch.c
 
   route/
     hz6_route.h
@@ -177,7 +178,8 @@ api/hz6_allocator_scavenge_local_free.c
 api/hz6_allocator_scavenge_profile.c
 api/hz6_allocator_source_block.c
 api/hz6_allocator_source_block_route.c
-api/hz6_allocator_transfer.c
+api/hz6_allocator_transfer_query.c
+api/hz6_allocator_transfer_dispatch.c
 route/hz6_route.h
 route/hz6_route.c
 route/hz6_route_backend.h

@@ -769,6 +769,13 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    transfer/hz6_transfer_backend_sharded.c was removed after the split
    linux/build_hz6_r1_smokes.sh registers the new sharded transfer modules
    explicitly
+140. Allocator transfer query/dispatch split. DONE:
+   api/hz6_allocator_transfer_query.c now owns transfer observation helpers
+   api/hz6_allocator_transfer_dispatch.c now owns transfer push/pop and
+   stats note helpers
+   api/hz6_allocator_transfer.c was removed after the split
+   linux/build_hz6_r1_smokes.sh registers the new transfer API modules
+   explicitly
 ```
 
 Current R1 smoke:

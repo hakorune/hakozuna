@@ -35,7 +35,8 @@ API:
   fronts/hz6_front_source_kind.c and fronts/hz6_front_source_ops.c own
   source-kind wrappers and direct source-ops allocation
   api/hz6_allocator_owner_dead.c owns owner-dead transitions
-  api/hz6_allocator_transfer.c owns allocator-facing TransferLayer wrappers
+  api/hz6_allocator_transfer_query.c and api/hz6_allocator_transfer_dispatch.c
+  split allocator-facing TransferLayer observation from dispatch helpers
   hz6_stats_snapshot() is the public stats observation boundary
   allocator note helpers are the front-facing stats update boundary
   hz6_allocator_owner_token() is the front-facing owner token read boundary
