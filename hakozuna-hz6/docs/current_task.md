@@ -793,6 +793,14 @@ hakozuna-hz6/docs/HZ6_MIGRATION_FROM_HZ5.md
    api/hz6_allocator_source_block.c was removed after the split
    linux/build_hz6_r1_smokes.sh registers the new source block modules
    explicitly
+144. Descriptor state local-cache/remote-transfer split. DONE:
+   api/hz6_allocator_descriptor_local_cache.c now owns cache-active
+   transitions
+   api/hz6_allocator_descriptor_remote_transfer.c now owns remote-free active
+   transitions
+   api/hz6_allocator_descriptor_state.c was removed after the split
+   linux/build_hz6_r1_smokes.sh registers the new descriptor state modules
+   explicitly
 ```
 
 Current R1 smoke:
