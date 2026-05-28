@@ -102,6 +102,43 @@ HZ6 already has a credible mid-range shape on Windows.
 The current weakness is large sizes, not the balanced or wide working-set rows.
 ```
 
+## Large128 Counter Read
+
+```text
+latest Linux large128 counter run at 131072:
+  local:
+    strict/rss around 40M ops/s
+    source_alloc=1
+    large_span_source_alloc=1
+    no central push/pop
+    no transfer push/pop
+
+  remote:
+    about 34M-35M ops/s
+    source_alloc=1
+    large_span_source_alloc=1
+    central_push=200000
+    central_pop=199999
+    no transfer push/pop
+
+  reuse:
+    about 34M-38M ops/s
+    reuse_hits=100000
+    source_alloc=1
+    large_span_source_alloc=1
+    central_push=100000
+    central_pop=100000
+    no transfer push/pop
+```
+
+Working read:
+
+```text
+The current 128K path is not spending time in transfer dispatch.
+It is using the central large-span pool as intended, and the remaining work
+for "larger_sizes" is more likely outside the 128K central reuse seed.
+```
+
 ## Current Implementation Step
 
 ```text
