@@ -76,6 +76,32 @@ speed / remote:
   around 39M ops/s in the best profile and full reuse hits in the reuse lane
 ```
 
+## Windows Comparison Read
+
+```text
+recent Windows matrix:
+  smoke:
+    hz6 is behind hz3 / mimalloc / tcmalloc, but still in the viable range
+
+  balanced:
+    hz6-strict and hz6-rss are stronger than hz4 and tcmalloc
+
+  wide_ws:
+    hz6-strict is stronger than hz4 / mimalloc / tcmalloc
+    but still below hz3
+
+  larger_sizes:
+    hz6 is the clear gap
+    this is the next concrete hole to attack
+```
+
+Working read:
+
+```text
+HZ6 already has a credible mid-range shape on Windows.
+The current weakness is large sizes, not the balanced or wide working-set rows.
+```
+
 ## Current Implementation Step
 
 ```text
