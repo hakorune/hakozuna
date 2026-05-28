@@ -17,6 +17,23 @@ It should promote:
 It should not directly port HZ3/HZ4/HZ5 internals.
 ```
 
+## Windows Build Seed
+
+```text
+Windows HZ6 build entrypoint:
+  win/build_win_hz6_r1_smokes.ps1
+  win/build_win_hz6_benchmark.ps1
+  win/run_win_hz6_benchmark.ps1
+
+Current role:
+  build-environment seed for the R1 smoke suite
+  Windows HZ6-only benchmark wiring seed
+  Windows VirtualAlloc source backing via source/win_source_virtualalloc.*
+  verified locally with clang-cl by building and running the R1 smoke suite
+  benchmark runner mirrors the Linux local / remote / reuse HZ6-only matrix
+  no cross-family benchmark claim yet
+```
+
 ## Benchmark Status
 
 ```text
@@ -28,7 +45,12 @@ been published yet.
 Benchmark entrypoints:
   linux/build_hz6_benchmark.sh
   linux/run_hz6_benchmark.sh
+  win/build_win_hz6_benchmark.ps1
+  win/run_win_hz6_benchmark.ps1
   local / remote / reuse single-process lanes
+Windows note:
+  win/run_win_hz6_benchmark.ps1 writes a Linux-compatible results.tsv shape
+  but fills ru_maxrss_kb from Windows PeakWorkingSet64 / 1024
 Current snapshot:
   docs/HZ6_R1_BENCHMARK_20260528.md
 Broad trend snapshot:
@@ -75,6 +97,7 @@ Not yet in scope:
 ```text
 hakozuna-hz6/README.md
 hakozuna-hz6/READMEjp.md
+hakozuna-hz6/docs/HZ6_WINDOWS_BUILD.md
 hakozuna-hz6/docs/HZ6_BLUEPRINT.md
 hakozuna-hz6/docs/HZ6_R1_BENCHMARK_20260528.md
 hakozuna-hz6/docs/HZ6_R1_BROAD_TRENDS_20260528.md

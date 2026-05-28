@@ -7,7 +7,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#else
 #include <time.h>
+#endif
 
 typedef enum Hz6BenchMode {
   HZ6_BENCH_LOCAL = 0,
@@ -16,9 +23,17 @@ typedef enum Hz6BenchMode {
 } Hz6BenchMode;
 
 static double now_sec(void) {
+#if defined(_WIN32)
+  LARGE_INTEGER freq;
+  LARGE_INTEGER counter;
+  QueryPerformanceFrequency(&freq);
+  QueryPerformanceCounter(&counter);
+  return (double)counter.QuadPart / (double)freq.QuadPart;
+#else
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
   return (double)ts.tv_sec + (double)ts.tv_nsec / 1000000000.0;
+#endif
 }
 
 static const char* mode_name(Hz6BenchMode mode) {

@@ -19,6 +19,9 @@ $Executables = @(
     @{ Name = "crt"; Path = (Join-Path $SuiteDir "bench_mixed_ws_crt.exe") },
     @{ Name = "hz3"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz3.exe") },
     @{ Name = "hz4"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz4.exe") },
+    @{ Name = "hz6-strict"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_strict.exe") },
+    @{ Name = "hz6-speed"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_speed.exe") },
+    @{ Name = "hz6-rss"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_rss.exe") },
     @{ Name = "mimalloc"; Path = (Join-Path $SuiteDir "bench_mixed_ws_mimalloc.exe") },
     @{ Name = "tcmalloc"; Path = (Join-Path $SuiteDir "bench_mixed_ws_tcmalloc.exe") }
 )
@@ -33,13 +36,13 @@ if ($Executables | Where-Object { -not (Test-Path $_.Path) }) {
 function Invoke-BenchProcess {
     param(
         [string]$Path,
-        [string[]]$Args
+        [string[]]$BenchArgs
     )
 
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
     try {
-        $output = & $Path @Args 2>&1
+        $output = & $Path @BenchArgs 2>&1
         $rc = $LASTEXITCODE
         return [pscustomobject]@{
             Output    = $output
@@ -59,8 +62,12 @@ $AllProfiles = @(
 )
 
 if ($Profiles -and $Profiles.Count -gt 0) {
-    $Selected = @()
+    $ProfileNames = @()
     foreach ($name in $Profiles) {
+        $ProfileNames += @($name -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne "" })
+    }
+    $Selected = @()
+    foreach ($name in $ProfileNames) {
         $match = $AllProfiles | Where-Object { $_.Name -eq $name }
         if (-not $match) {
             throw "Unknown profile: $name"
@@ -95,20 +102,20 @@ foreach ($profile in $Selected) {
     $LogLines = New-Object System.Collections.Generic.List[string]
 
     foreach ($exe in $Executables) {
-        $args = @(
+        $benchArgs = @(
             [string]$profile.Threads,
             [string]$profile.ItersPerThread,
             [string]$profile.WorkingSet,
             [string]$profile.MinSize,
             [string]$profile.MaxSize
         )
-        $result = Invoke-BenchProcess -Path $exe.Path -Args $args
+        $result = Invoke-BenchProcess -Path $exe.Path -BenchArgs $benchArgs
         $raw = (($result.Output | ForEach-Object { $_.ToString().Trim() }) -join " ").Trim()
         if (-not $raw) {
             $raw = "(no output)"
         }
         $LogLines.Add("=== " + $profile.Name + " / " + $exe.Name + " ===")
-        $LogLines.Add("cmd: " + $exe.Path + " " + ($args -join " "))
+        $LogLines.Add("cmd: " + $exe.Path + " " + ($benchArgs -join " "))
         $LogLines.Add("rc: " + $result.ExitCode)
         $LogLines.Add($raw)
         $LogLines.Add("")

@@ -62,6 +62,31 @@ hz6-r1-reclaim-smoke ok
 hz6-r1-safety-smoke ok
 ```
 
+## Windows ビルド seed
+
+HZ6 には、同じ R1 smoke suite と HZ6-only allocator benchmark を対象にした
+Windows 側の build / measurement 入口もあります。これはまだ HZ3/HZ4/HZ5
+との横並び性能主張ではありません。
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\hakozuna-hz6\win\build_win_hz6_r1_smokes.ps1
+```
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\hakozuna-hz6\win\run_win_hz6_benchmark.ps1
+```
+
+補足:
+
+- Windows 側の source backing は `source/win_source_virtualalloc.*`
+  です。
+- smoke の並びは Linux R1 と同じです。
+- benchmark runner は Linux の HZ6-only local / remote / reuse の
+  mode/profile/size matrix を Windows 側でなぞります。
+- TSV の `ru_maxrss_kb` は Windows では peak working set を入れています。
+- `-SkipRun` で smoke 実行を省いて build のみ行えます。
+- 詳細は `docs/HZ6_WINDOWS_BUILD.md` にまとめています。
+
 ## ベンチ状況
 
 HZ6 には最初の benchmark run がありますが、まだ HZ3 / HZ4 / HZ5 を含む

@@ -80,6 +80,30 @@ hz6-r1-reclaim-smoke ok
 hz6-r1-safety-smoke ok
 ```
 
+## Windows Build Seed
+
+HZ6 now also has Windows build entrypoints for the same R1 smoke suite and the
+HZ6-only allocator benchmark. This is the Windows build/measurement seed, not a
+cross-family benchmark claim.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\hakozuna-hz6\win\build_win_hz6_r1_smokes.ps1
+```
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\hakozuna-hz6\win\run_win_hz6_benchmark.ps1
+```
+
+Details:
+
+- Windows source backing uses `source/win_source_virtualalloc.*`.
+- The smoke list matches the Linux R1 suite.
+- The benchmark runner mirrors the Linux HZ6-only local / remote / reuse
+  mode/profile/size matrix.
+- Windows RSS output uses peak working set in the `ru_maxrss_kb` TSV column.
+- `-SkipRun` builds without executing the smoke binaries.
+- `docs/HZ6_WINDOWS_BUILD.md` records the current Windows build seed.
+
 ## Benchmark Status
 
 HZ6 now has a first HZ6-only benchmark run. The current evidence is still

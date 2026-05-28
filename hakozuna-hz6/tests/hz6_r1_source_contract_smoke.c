@@ -1,8 +1,13 @@
 #include "../include/hz6_contract.h"
 #include "../scavenge/hz6_scavenge.h"
-#include "../source/linux_source_mmap.h"
 #include "../source/hz6_source.h"
 #include "../source/hz6_source_registry.h"
+
+#if defined(_WIN32)
+#include "../source/win_source_virtualalloc.h"
+#else
+#include "../source/linux_source_mmap.h"
+#endif
 
 #include <stdio.h>
 
@@ -42,18 +47,35 @@ int main(void) {
     return 1;
   }
 
-  Hz6OsMemoryOps linux_ops = hz6_linux_mmap_source_ops();
-  if (!expect(hz6_source_ops_valid(&linux_ops), "linux mmap ops valid")) {
+  Hz6OsMemoryOps platform_ops;
+#if defined(_WIN32)
+  platform_ops = hz6_win_virtualalloc_source_ops();
+  if (!expect(hz6_source_ops_valid(&platform_ops), "win virtualalloc ops valid")) {
+#else
+  platform_ops = hz6_linux_mmap_source_ops();
+  if (!expect(hz6_source_ops_valid(&platform_ops), "linux mmap ops valid")) {
+#endif
     return 1;
   }
-  void* mapped = linux_ops.reserve(linux_ops.page_size, linux_ops.page_size);
+  void* mapped =
+      platform_ops.reserve(platform_ops.page_size, platform_ops.page_size);
+#if defined(_WIN32)
+  if (!expect(mapped != NULL, "win virtualalloc reserve") ||
+      !expect(platform_ops.commit(mapped, platform_ops.page_size),
+              "win virtualalloc commit") ||
+      !expect(platform_ops.decommit(mapped, platform_ops.page_size),
+              "win virtualalloc decommit") ||
+      !expect(platform_ops.release(mapped, platform_ops.page_size),
+              "win virtualalloc release")) {
+#else
   if (!expect(mapped != NULL, "linux mmap reserve") ||
-      !expect(linux_ops.commit(mapped, linux_ops.page_size),
+      !expect(platform_ops.commit(mapped, platform_ops.page_size),
               "linux mmap commit") ||
-      !expect(linux_ops.decommit(mapped, linux_ops.page_size),
+      !expect(platform_ops.decommit(mapped, platform_ops.page_size),
               "linux mmap decommit") ||
-      !expect(linux_ops.release(mapped, linux_ops.page_size),
+      !expect(platform_ops.release(mapped, platform_ops.page_size),
               "linux mmap release")) {
+#endif
     return 1;
   }
 
@@ -62,14 +84,27 @@ int main(void) {
   const Hz6OsMemoryOps* system_lookup =
       hz6_source_registry_lookup(&source_registry, HZ6_SOURCE_SYSTEM);
   const Hz6OsMemoryOps* mmap_lookup =
-      hz6_source_registry_lookup(&source_registry, HZ6_SOURCE_LINUX_MMAP);
+      hz6_source_registry_lookup(&source_registry,
+#if defined(_WIN32)
+                                 HZ6_SOURCE_WIN_VIRTUALALLOC);
+#else
+                                 HZ6_SOURCE_LINUX_MMAP);
+#endif
   const Hz6OsMemoryOps* os_paged_lookup =
       hz6_source_registry_lookup(&source_registry, HZ6_SOURCE_OS_PAGED);
+#if defined(_WIN32)
+  const Hz6SourceKind expected_source_kind = HZ6_SOURCE_WIN_VIRTUALALLOC;
+#else
+  const Hz6SourceKind expected_source_kind = HZ6_SOURCE_LINUX_MMAP;
+#endif
   if (!expect(system_lookup != NULL, "source registry system") ||
-      !expect(mmap_lookup != NULL, "source registry linux mmap") ||
+      !expect(mmap_lookup != NULL, "source registry platform source") ||
       !expect(os_paged_lookup != NULL, "source registry os paged") ||
       !expect(os_paged_lookup->page_size == mmap_lookup->page_size,
-              "source registry os paged maps to linux mmap") ||
+              "source registry os paged maps to platform source") ||
+      !expect(hz6_source_registry_lookup(&source_registry,
+                                         expected_source_kind) != NULL,
+              "source registry platform kind") ||
       !expect(hz6_source_registry_lookup(&source_registry,
                                          HZ6_SOURCE_NONE) == NULL,
               "source registry none miss")) {

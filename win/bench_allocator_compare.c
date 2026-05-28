@@ -10,6 +10,10 @@
 #include "hz3.h"
 #elif defined(HZ_BENCH_USE_HZ4)
 #include "hz4_win_api.h"
+#elif defined(HZ_BENCH_USE_HZ6)
+#include "hz6_allocator.h"
+#include "hz6_allocator_api_init.h"
+#include "hz6_profiles.h"
 #elif defined(HZ_BENCH_USE_MIMALLOC)
 #include <mimalloc.h>
 #elif defined(HZ_BENCH_USE_TCMALLOC)
@@ -17,7 +21,9 @@
 #endif
 
 #if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #include <process.h>
 #else
@@ -25,50 +31,10 @@
 #include <time.h>
 #endif
 
-static inline void* bench_alloc(size_t size) {
-#if defined(HZ_BENCH_USE_HZ3)
-    return hz3_malloc(size);
-#elif defined(HZ_BENCH_USE_HZ4)
-    return hz4_win_malloc(size);
-#elif defined(HZ_BENCH_USE_MIMALLOC)
-    return mi_malloc(size);
-#elif defined(HZ_BENCH_USE_TCMALLOC)
-    return tc_malloc(size);
-#else
-    return malloc(size);
+#if defined(HZ_BENCH_USE_HZ6)
+#ifndef HZ_BENCH_HZ6_PROFILE
+#define HZ_BENCH_HZ6_PROFILE HZ6_PROFILE_STRICT
 #endif
-}
-
-static inline void* bench_realloc(void* ptr, size_t size) {
-#if defined(HZ_BENCH_USE_HZ3)
-    return hz3_realloc(ptr, size);
-#elif defined(HZ_BENCH_USE_HZ4)
-    return hz4_win_realloc(ptr, size);
-#elif defined(HZ_BENCH_USE_MIMALLOC)
-    return mi_realloc(ptr, size);
-#elif defined(HZ_BENCH_USE_TCMALLOC)
-    return tc_realloc(ptr, size);
-#else
-    return realloc(ptr, size);
-#endif
-}
-
-static inline void bench_free(void* ptr) {
-#if defined(HZ_BENCH_USE_HZ3)
-    hz3_free(ptr);
-#elif defined(HZ_BENCH_USE_HZ4)
-    hz4_win_free(ptr);
-#elif defined(HZ_BENCH_USE_MIMALLOC)
-    mi_free(ptr);
-#elif defined(HZ_BENCH_USE_TCMALLOC)
-    tc_free(ptr);
-#else
-    free(ptr);
-#endif
-}
-
-#ifndef HZ_BENCH_DISABLE_REALLOC
-#define HZ_BENCH_DISABLE_REALLOC 0
 #endif
 
 typedef struct {
@@ -77,7 +43,96 @@ typedef struct {
     size_t ws;
     size_t min_size;
     size_t max_size;
+#if defined(HZ_BENCH_USE_HZ6)
+    Hz6Allocator hz6_allocator;
+#endif
 } ThreadArg;
+
+static inline void bench_thread_setup(ThreadArg* ta) {
+#if defined(HZ_BENCH_USE_HZ6)
+    hz6_allocator_init_with_profile(&ta->hz6_allocator, HZ_BENCH_HZ6_PROFILE);
+#else
+    (void)ta;
+#endif
+}
+
+static inline void bench_thread_teardown(ThreadArg* ta) {
+#if defined(HZ_BENCH_USE_HZ6)
+    hz6_allocator_destroy(&ta->hz6_allocator);
+#else
+    (void)ta;
+#endif
+}
+
+static inline void* bench_alloc(ThreadArg* ta, size_t size) {
+#if defined(HZ_BENCH_USE_HZ3)
+    (void)ta;
+    return hz3_malloc(size);
+#elif defined(HZ_BENCH_USE_HZ4)
+    (void)ta;
+    return hz4_win_malloc(size);
+#elif defined(HZ_BENCH_USE_HZ6)
+    return hz6_malloc(&ta->hz6_allocator, size);
+#elif defined(HZ_BENCH_USE_MIMALLOC)
+    (void)ta;
+    return mi_malloc(size);
+#elif defined(HZ_BENCH_USE_TCMALLOC)
+    (void)ta;
+    return tc_malloc(size);
+#else
+    (void)ta;
+    return malloc(size);
+#endif
+}
+
+static inline void* bench_realloc(ThreadArg* ta, void* ptr, size_t size) {
+#if defined(HZ_BENCH_USE_HZ3)
+    (void)ta;
+    return hz3_realloc(ptr, size);
+#elif defined(HZ_BENCH_USE_HZ4)
+    (void)ta;
+    return hz4_win_realloc(ptr, size);
+#elif defined(HZ_BENCH_USE_HZ6)
+    (void)ta;
+    (void)ptr;
+    (void)size;
+    return NULL;
+#elif defined(HZ_BENCH_USE_MIMALLOC)
+    (void)ta;
+    return mi_realloc(ptr, size);
+#elif defined(HZ_BENCH_USE_TCMALLOC)
+    (void)ta;
+    return tc_realloc(ptr, size);
+#else
+    (void)ta;
+    return realloc(ptr, size);
+#endif
+}
+
+static inline void bench_free(ThreadArg* ta, void* ptr) {
+#if defined(HZ_BENCH_USE_HZ3)
+    (void)ta;
+    hz3_free(ptr);
+#elif defined(HZ_BENCH_USE_HZ4)
+    (void)ta;
+    hz4_win_free(ptr);
+#elif defined(HZ_BENCH_USE_HZ6)
+    hz6_free(&ta->hz6_allocator, ptr);
+#elif defined(HZ_BENCH_USE_MIMALLOC)
+    (void)ta;
+    mi_free(ptr);
+#elif defined(HZ_BENCH_USE_TCMALLOC)
+    (void)ta;
+    tc_free(ptr);
+#else
+    (void)ta;
+    free(ptr);
+#endif
+}
+
+#ifndef HZ_BENCH_DISABLE_REALLOC
+#define HZ_BENCH_DISABLE_REALLOC 0
+#endif
 
 static inline uint32_t lcg_next(uint32_t* state) {
     *state = (*state * 1664525u) + 1013904223u;
@@ -110,24 +165,25 @@ static unsigned __stdcall bench_thread(void* arg) {
     if (!slots) {
         return 0;
     }
+    bench_thread_setup(ta);
 
     for (size_t i = 0; i < ta->iters; i++) {
         uint32_t r = lcg_next(&seed);
         size_t idx = (size_t)(r % (uint32_t)ws);
         if (slots[idx]) {
-            bench_free(slots[idx]);
+            bench_free(ta, slots[idx]);
             slots[idx] = NULL;
             continue;
         }
 
         size_t size = pick_size(r, ta->min_size, ta->max_size);
-        void* p = bench_alloc(size);
+        void* p = bench_alloc(ta, size);
         if (!p) {
             continue;
         }
         if (!HZ_BENCH_DISABLE_REALLOC && ((i & 0x3fu) == 0)) {
             size_t new_size = size + 16;
-            void* p2 = bench_realloc(p, new_size);
+            void* p2 = bench_realloc(ta, p, new_size);
             if (p2) {
                 p = p2;
                 size = new_size;
@@ -139,9 +195,10 @@ static unsigned __stdcall bench_thread(void* arg) {
 
     for (size_t i = 0; i < ws; i++) {
         if (slots[i]) {
-            bench_free(slots[i]);
+            bench_free(ta, slots[i]);
         }
     }
+    bench_thread_teardown(ta);
     free(slots);
     return 0;
 }
@@ -160,24 +217,25 @@ static void* bench_thread(void* arg) {
     if (!slots) {
         return NULL;
     }
+    bench_thread_setup(ta);
 
     for (size_t i = 0; i < ta->iters; i++) {
         uint32_t r = lcg_next(&seed);
         size_t idx = (size_t)(r % (uint32_t)ws);
         if (slots[idx]) {
-            bench_free(slots[idx]);
+            bench_free(ta, slots[idx]);
             slots[idx] = NULL;
             continue;
         }
 
         size_t size = pick_size(r, ta->min_size, ta->max_size);
-        void* p = bench_alloc(size);
+        void* p = bench_alloc(ta, size);
         if (!p) {
             continue;
         }
         if (!HZ_BENCH_DISABLE_REALLOC && ((i & 0x3fu) == 0)) {
             size_t new_size = size + 16;
-            void* p2 = bench_realloc(p, new_size);
+            void* p2 = bench_realloc(ta, p, new_size);
             if (p2) {
                 p = p2;
                 size = new_size;
@@ -189,9 +247,10 @@ static void* bench_thread(void* arg) {
 
     for (size_t i = 0; i < ws; i++) {
         if (slots[i]) {
-            bench_free(slots[i]);
+            bench_free(ta, slots[i]);
         }
     }
+    bench_thread_teardown(ta);
     free(slots);
     return NULL;
 }

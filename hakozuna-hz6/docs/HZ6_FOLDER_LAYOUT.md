@@ -187,6 +187,10 @@ hakozuna-hz6/
     linux_preload.c
 
   win/
+    hz6_win_build_common.ps1
+    build_win_hz6_r1_smokes.ps1
+    build_win_hz6_benchmark.ps1
+    run_win_hz6_benchmark.ps1
     build scripts and Windows adapter entrypoints
 
   linux/
