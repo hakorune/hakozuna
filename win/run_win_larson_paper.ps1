@@ -1,7 +1,9 @@
 param(
     [string]$OutputDir,
     [int]$Runs = 5,
-    [int[]]$ThreadCounts
+    [int[]]$ThreadCounts,
+    [int]$TimeoutSeconds = 120,
+    [switch]$ContinueOnFailure
 )
 
 $ErrorActionPreference = "Stop"
@@ -20,6 +22,16 @@ $Executables = @(
     @{ Name = "crt"; Path = (Join-Path $SuiteDir "bench_larson_crt.exe") },
     @{ Name = "hz3"; Path = (Join-Path $SuiteDir "bench_larson_hz3.exe") },
     @{ Name = "hz4"; Path = (Join-Path $SuiteDir "bench_larson_hz4.exe") },
+    @{ Name = "hz5-policy"; Path = (Join-Path $SuiteDir "bench_larson_hz5_policy.exe") },
+    @{ Name = "hz6-strict"; Path = (Join-Path $SuiteDir "bench_larson_hz6_strict.exe") },
+    @{ Name = "hz6-speed"; Path = (Join-Path $SuiteDir "bench_larson_hz6_speed.exe") },
+    @{ Name = "hz6-rss"; Path = (Join-Path $SuiteDir "bench_larson_hz6_rss.exe") },
+    @{ Name = "hz6-strict-broad"; Path = (Join-Path $SuiteDir "bench_larson_hz6_strict_broad.exe") },
+    @{ Name = "hz6-speed-broad"; Path = (Join-Path $SuiteDir "bench_larson_hz6_speed_broad.exe") },
+    @{ Name = "hz6-rss-broad"; Path = (Join-Path $SuiteDir "bench_larson_hz6_rss_broad.exe") },
+    @{ Name = "hz6-strict-appcap"; Path = (Join-Path $SuiteDir "bench_larson_hz6_strict_appcap.exe") },
+    @{ Name = "hz6-speed-appcap"; Path = (Join-Path $SuiteDir "bench_larson_hz6_speed_appcap.exe") },
+    @{ Name = "hz6-rss-appcap"; Path = (Join-Path $SuiteDir "bench_larson_hz6_rss_appcap.exe") },
     @{ Name = "mimalloc"; Path = (Join-Path $SuiteDir "bench_larson_mimalloc.exe") },
     @{ Name = "tcmalloc"; Path = (Join-Path $SuiteDir "bench_larson_tcmalloc.exe") }
 )
@@ -33,7 +45,7 @@ if ($Executables | Where-Object { -not (Test-Path $_.Path) }) {
 
 function Get-Median {
     param([double[]]$Values)
-    if (-not $Values -or $Values.Count -eq 0) {
+    if ($null -eq $Values -or $Values.Length -eq 0) {
         return [double]::NaN
     }
     $sorted = $Values | Sort-Object
@@ -42,6 +54,52 @@ function Get-Median {
         return [double]$sorted[$mid]
     }
     return ([double]$sorted[$mid - 1] + [double]$sorted[$mid]) / 2.0
+}
+
+function Invoke-CapturedProcess {
+    param(
+        [string]$FilePath,
+        [string[]]$Arguments,
+        [int]$TimeoutSeconds = 120
+    )
+
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = $FilePath
+    $psi.UseShellExecute = $false
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+    $psi.Arguments = ($Arguments | ForEach-Object {
+        if ($_ -match '[\s"]') { '"' + ($_ -replace '"', '\"') + '"' } else { $_ }
+    }) -join ' '
+
+    $proc = New-Object System.Diagnostics.Process
+    $proc.StartInfo = $psi
+    [void]$proc.Start()
+    if (-not $proc.WaitForExit($TimeoutSeconds * 1000)) {
+        try {
+            $proc.Kill($true)
+        } catch {
+            try { $proc.Kill() } catch {}
+        }
+        $proc.WaitForExit()
+        return @{
+            ExitCode = 124
+            Lines = @("[TIMEOUT] exceeded ${TimeoutSeconds}s")
+        }
+    }
+    $stdout = $proc.StandardOutput.ReadToEnd()
+    $stderr = $proc.StandardError.ReadToEnd()
+
+    $lines = New-Object System.Collections.Generic.List[string]
+    foreach ($chunk in @($stdout, $stderr)) {
+        if (-not [string]::IsNullOrEmpty($chunk)) {
+            foreach ($line in ($chunk -split "`r?`n")) {
+                if ($line -ne "") { $lines.Add($line) }
+            }
+        }
+    }
+
+    return @{ ExitCode = $proc.ExitCode; Lines = $lines }
 }
 
 if (-not $ThreadCounts -or $ThreadCounts.Count -eq 0) {
@@ -73,7 +131,8 @@ $Summary.Add("Windows native note:")
 $Summary.Add('- benchmark: `bench_larson_compare`')
 $Summary.Add('- params: `runtime=10s min=8 max=1024 chunks=10000 rounds=1 seed=12345`')
 $Summary.Add('- thread sweep: `1, 4, 8, 16`')
-$Summary.Add('- runs: `5`')
+$Summary.Add(('- runs: `{0}`' -f $Runs))
+$Summary.Add(('- timeout: `{0}s` per allocator row' -f $TimeoutSeconds))
 $Summary.Add('- statistic: `median alloc/s` from the benchmark''s `Throughput = ...` line')
 $Summary.Add('- note: paper originally reports `system / hz3 / mimalloc / tcmalloc`; this runner also records `hz4`')
 $Summary.Add("")
@@ -98,8 +157,9 @@ foreach ($threads in $ThreadCounts) {
                 [string]$Seed,
                 [string]$threads
             )
-            $output = & $exe.Path @args 2>&1
-            $rc = $LASTEXITCODE
+            $result = Invoke-CapturedProcess -FilePath $exe.Path -Arguments $args -TimeoutSeconds $TimeoutSeconds
+            $output = $result.Lines
+            $rc = $result.ExitCode
 
             $RawLines.Add("=== T=" + $threads + " / " + $exe.Name + " / run " + $run + " ===")
             $RawLines.Add("cmd: " + $exe.Path + " " + ($args -join " "))
@@ -110,16 +170,29 @@ foreach ($threads in $ThreadCounts) {
             $RawLines.Add("")
 
             if ($rc -ne 0) {
+                if ($ContinueOnFailure) {
+                    $runTexts.Add(("failed:rc{0}" -f $rc))
+                    continue
+                }
                 throw "Larson runner allocator $($exe.Name) failed at T=$threads with exit code $rc"
             }
 
             $raw = (($output | ForEach-Object { $_.ToString().Trim() }) -join " ").Trim()
             if ($raw -notmatch "Throughput = ([0-9.]+) operations per second") {
+                if ($ContinueOnFailure) {
+                    $runTexts.Add("failed:parse")
+                    continue
+                }
                 throw "Could not parse throughput for allocator $($exe.Name) at T=$threads"
             }
             $ops = [double]$Matches[1]
             $opsRuns.Add($ops)
             $runTexts.Add(("{0:N3}M" -f ($ops / 1000000.0)))
+        }
+
+        if ($opsRuns.Count -eq 0) {
+            $Summary.Add(('| {0} | failed | `{1}` |' -f $exe.Name, ($runTexts -join ", ")))
+            continue
         }
 
         $medianOps = Get-Median -Values $opsRuns.ToArray()
