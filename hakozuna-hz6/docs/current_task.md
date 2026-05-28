@@ -4,6 +4,166 @@ HZ6 is now in R1 implementation. Keep the implementation modular from the
 start: API, route, frontcache, transfer, source, owner, policy, and future
 fronts should stay separated.
 
+## Current Windows Engineering Position
+
+```text
+Latest app-like matrix:
+  results/windows-benchmark-suite/20260528_115721/app-like
+
+Status:
+  HZ6 Windows broad comparison is now split into small-cap controls and
+  fixed broad-cap rows.
+
+Default rows:
+  hz6-strict
+  hz6-speed
+  hz6-rss
+
+Broad rows:
+  hz6-strict-broad
+  hz6-speed-broad
+  hz6-rss-broad
+
+Appcap rows:
+  hz6-strict-appcap
+  hz6-speed-appcap
+  hz6-rss-appcap
+  fixed-cap app-like live-set controls, not production defaults
+```
+
+App-like repeat-3 signal:
+
+```text
+Larson:
+  all HZ6 rows currently fail during warmup / parse.
+  HZ6 stats show descriptor exhaustion for default 64 and broad 4096.
+  appcap rows run at T=1 with no alloc_fail, but throughput remains well below
+  HZ3/tcmalloc/mimalloc. Treat this as lifecycle/front-source behavior after
+  capacity is satisfied.
+
+Random mixed:
+  small-cap rows fail as capacity controls.
+  broad-cap rows run and keep low peak working set, but throughput is below
+  HZ3/HZ4/tcmalloc.
+
+MT remote:
+  legacy remote runner makes HZ6 extremely slow.
+  Do not judge HZ6 remote performance from this runner; build an
+  owner/remote-aware HZ6 runner.
+
+Redis workload:
+  HZ6 default rows are strong on SET / GET / LPUSH.
+  HZ6 broad rows are weak, so broad-cap policy is not a Redis default.
+```
+
+Latest HZ6 standalone Windows benchmark:
+
+```text
+results:
+  private/allocators/hakozuna/hakozuna-hz6/private/raw-results/windows/
+    hz6_benchmark_20260528_124050
+
+local:
+  strict 8192   ~60.16M ops/s
+  strict 65536  ~68.05M ops/s
+  speed  8192   ~47.57M ops/s
+  rss    8192   ~52.44M ops/s
+
+remote 131072:
+  strict/speed/rss ~57.49M..60.44M ops/s
+
+reuse 131072:
+  strict/speed/rss ~58.30M..63.88M ops/s
+```
+
+Read:
+
+```text
+The standalone runner is a stable contract baseline for local/remote/reuse.
+Remote/reuse are usable, but still profile-sensitive.
+
+Treat the legacy mt_remote runner as contract-mismatched until the HZ6 owner-
+aware remote runner exists.
+The mt_remote paper runner is now timeout-bounded and skips HZ6 rows by
+default. Use `-IncludeHz6Legacy` only to debug the mismatch; HZ6 remote verdicts
+should come from the HZ6 standalone local/remote/reuse runner or the owner-
+aware HZ6 mt-remote runner.
+```
+
+Interpretation:
+
+```text
+Default rows keep the small R1 capacities and are useful as controls.
+If broad matrix raw output shows high alloc_fail, do not interpret that row as
+a fair throughput result.
+
+Broad rows keep the same HZ6 policy profiles but raise descriptor, route,
+transfer, source-block, and front-cache capacities for working-set matrix
+profiles. They are fixed-capacity benchmark lanes, not yet production defaults.
+```
+
+Latest Windows large-slice read after exact-route hash probing:
+
+```text
+8K:
+  hz6-strict-broad ~54.7M ops/s
+  tcmalloc         ~57.1M ops/s
+
+16K:
+  hz6-strict-broad ~51.4M ops/s
+  tcmalloc         ~46.7M ops/s
+
+32K:
+  hz6-strict-broad ~58.7M ops/s
+  tcmalloc         ~48.6M ops/s
+
+64K:
+  hz6-strict-broad ~58.1M ops/s
+  tcmalloc         ~50.2M ops/s
+
+128K:
+  hz6-speed-broad  ~69.6M ops/s
+  tcmalloc         ~46.7M ops/s
+```
+
+Current decision:
+
+```text
+Keep:
+  fixed broad-cap rows for reproducible Windows broad comparison
+  small-cap rows as capacity controls
+  exact-route hash probing with fail-closed scan fallback
+
+Do not yet:
+  replace fixed-cap rows with adaptive capacity
+  call broad-cap rows production/default
+  remove small-cap control rows
+
+Next possible research:
+  keep appcap rows as Larson capacity-separation evidence
+  compare the HZ6 standalone runner against HZ3/HZ4/HZ5 on the same machine
+  then build an HZ6 owner/remote-aware remote runner
+  then inspect Larson lifecycle/front-source behavior
+  then consider hz6-adaptive-cap-dryrun
+```
+
+Capacity-breakdown checkpoint:
+
+```text
+Windows matrix:
+  results/windows-hz6-capacity-breakdown/20260528_105215_allocator_matrix.md
+
+8K default HZ6:
+  route_register_fail dominates allocation failure.
+
+64K default HZ6:
+  descriptor_exhausted dominates allocation failure.
+
+Broad-cap HZ6:
+  alloc_fail, descriptor_exhausted, route_register_fail, and
+  source_block_exhausted are all zero in the checked 8K/64K slices.
+```
+
 ## Current Claim
 
 ```text

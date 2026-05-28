@@ -18,6 +18,7 @@ without mixing:
 - [`build_win_allocator_suite.ps1`](build_win_allocator_suite.ps1): full `crt` / `hz3` / `hz4` / `mimalloc` / `tcmalloc` suite builder
 - [`build_win_larson_suite.ps1`](build_win_larson_suite.ps1): Windows Larson suite builder
 - [`build_win_mt_remote_suite.ps1`](build_win_mt_remote_suite.ps1): Windows MT remote suite builder
+- [`build_win_mt_remote_hz6_owner_suite.ps1`](build_win_mt_remote_hz6_owner_suite.ps1): HZ6 owner-aware MT remote suite builder
 - [`build_win_random_mixed_suite.ps1`](build_win_random_mixed_suite.ps1): Windows `random_mixed` suite builder
 - [`build_win_redis_workload_suite.ps1`](build_win_redis_workload_suite.ps1): Windows Redis-workload suite builder
 - [`run_win_allocator_suite.ps1`](run_win_allocator_suite.ps1): run the full allocator suite
@@ -25,6 +26,7 @@ without mixing:
 - [`run_win_paper_windows.ps1`](run_win_paper_windows.ps1): paper-aligned Windows allocator summary
 - [`run_win_larson_paper.ps1`](run_win_larson_paper.ps1): paper-aligned Larson lane
 - [`run_win_mt_remote_paper.ps1`](run_win_mt_remote_paper.ps1): paper-aligned MT remote lane
+- [`run_win_mt_remote_hz6_owner_paper.ps1`](run_win_mt_remote_hz6_owner_paper.ps1): HZ6 owner-aware MT remote lane
 - [`run_win_random_mixed_paper.ps1`](run_win_random_mixed_paper.ps1): paper-aligned `random_mixed` lane
 - [`run_win_redis_workload_paper.ps1`](run_win_redis_workload_paper.ps1): paper-aligned Redis-workload lane
 - [`run_win_redis_real_profile_matrix.ps1`](run_win_redis_real_profile_matrix.ps1): real Redis profile matrix

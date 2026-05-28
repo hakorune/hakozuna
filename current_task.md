@@ -1,8 +1,152 @@
 # Current Task
 
-HZ5 Linux is in profile-stabilization plus targeted tcmalloc-chase mode.
-HZ6 is now in documentation-first design as the possible transfer-first
-successor.
+HZ6 is now in active Windows/Linux implementation and benchmarking. HZ5 Linux
+remains profile-stabilized; new HZ5 work should not blur the HZ6 contract.
+
+## HZ6 Windows Current Read
+
+```text
+Latest app-like matrix:
+  results/windows-benchmark-suite/20260528_115721/app-like
+
+Default HZ6 rows:
+  hz6-strict / hz6-speed / hz6-rss
+  small R1 capacities
+  keep as smoke/control rows
+
+Broad HZ6 rows:
+  hz6-strict-broad / hz6-speed-broad / hz6-rss-broad
+  same profiles with larger fixed capacities for broad working-set matrix rows
+  use for large_slices and same-runner broad comparison
+
+Appcap HZ6 rows:
+  hz6-strict-appcap / hz6-speed-appcap / hz6-rss-appcap
+  app-like fixed capacity rows for Larson/live-set separation
+
+Capacity finding:
+  the earlier 8K..64K Windows weakness was dominated by alloc_fail from
+  descriptor/route/source capacity exhaustion.
+
+Route finding:
+  exact-route hash probing before fail-closed scan fallback restores much of
+  the mid/large working-set performance while preserving invalid/interior
+  pointer scan checks.
+```
+
+App-like repeat-3 read:
+
+```text
+Larson:
+  HZ6 default and broad rows fail during warmup.
+  HZ6 stats show descriptor exhaustion at default 64 and broad 4096.
+  appcap rows run at T=1 with no alloc_fail, but throughput remains far below
+  HZ3/tcmalloc/mimalloc, so the remaining issue is lifecycle/front-source
+  behavior rather than raw live-set capacity.
+
+Random mixed:
+  small-cap HZ6 rows fail as capacity controls.
+  broad-cap HZ6 rows run with low RSS but are slower than HZ3/HZ4/tcmalloc.
+
+MT remote:
+  HZ6 rows are extremely slow under the legacy remote runner.
+  Treat as remote-contract mismatch until an HZ6 owner/remote-aware runner is
+  available.
+
+Redis workload:
+  HZ6 default rows are strong on SET / GET / LPUSH.
+  HZ6 broad rows are weak, so broad-cap is not a Redis default.
+```
+
+Latest HZ6 standalone Windows benchmark:
+
+```text
+results:
+  private/allocators/hakozuna/hakozuna-hz6/private/raw-results/windows/
+    hz6_benchmark_20260528_124050
+
+local:
+  strict 8192   ~60.16M ops/s
+  strict 65536  ~68.05M ops/s
+  speed  8192   ~47.57M ops/s
+  rss    8192   ~52.44M ops/s
+
+remote 131072:
+  strict/speed/rss ~57.49M..60.44M ops/s
+
+reuse 131072:
+  strict/speed/rss ~58.30M..63.88M ops/s
+```
+
+Read:
+
+```text
+The standalone runner is a stable contract baseline for local/remote/reuse.
+Remote/reuse are usable, but still profile-sensitive.
+
+Treat the legacy mt_remote runner as contract-mismatched until the HZ6 owner-
+aware remote runner exists.
+The mt_remote paper runner is now timeout-bounded and skips HZ6 rows by
+default. Use `-IncludeHz6Legacy` only to debug the mismatch; HZ6 remote verdicts
+should come from the HZ6 standalone local/remote/reuse runner or the owner-
+aware HZ6 mt-remote runner.
+```
+
+Post-route-hash large-slice signal on Windows:
+
+```text
+8K:
+  hz6-strict-broad ~54.7M ops/s, near tcmalloc ~57.1M
+
+16K / 32K / 64K:
+  hz6-strict-broad beats or roughly matches tcmalloc in the latest local run
+
+128K:
+  hz6-speed-broad ~69.6M ops/s, above tcmalloc ~46.7M
+```
+
+Next HZ6 rule:
+
+```text
+Do:
+  keep fixed broad-cap rows for reproducible broad comparison
+  keep small-cap rows as controls
+  inspect alloc_fail before interpreting a row
+  expose HZ6 stats in app-like failure rows before adding new knobs
+
+Do not:
+  call hz6-*-broad the production/default lane yet
+  hide small-cap controls
+  add adaptive capacity to comparison rows before a dry-run/growth policy exists
+
+Next order:
+  1. Keep the HZ6 standalone local/remote/reuse runner as the first contract
+     baseline.
+  2. Compare HZ6 against HZ3 / HZ4 / HZ5 on the same machine and same runner.
+  3. Keep HZ6 appcap rows as Larson capacity-separation evidence.
+  4. Build an HZ6 owner/remote-aware runner for MT remote.
+  5. Larson lifecycle/front-source diagnostic.
+  6. Redis default-row mechanism readout.
+  7. hz6-adaptive-cap-dryrun only after the above evidence is clean.
+
+Research candidate:
+  hz6-adaptive-cap-dryrun
+  then hz6-adaptive-cap only if growth counters justify it
+```
+
+Latest capacity-breakdown read:
+
+```text
+results/windows-hz6-capacity-breakdown/20260528_105215_allocator_matrix.md
+
+8K default HZ6:
+  route_register_fail dominates alloc_fail.
+
+64K default HZ6:
+  descriptor_exhausted dominates alloc_fail.
+
+Broad-cap rows:
+  clear all three tracked exhaustion counters in the checked 8K/64K slices.
+```
 
 Long historical task notes were archived here:
 
