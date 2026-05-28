@@ -47,6 +47,6 @@ void* hz6_front_source_slot_ops(Hz6Allocator* allocator,
     return NULL;
   }
 
-  hz6_allocator_note_source_alloc(allocator);
+  hz6_allocator_note_source_alloc_for_front(allocator, front_id);
   return user_ptr;
 }

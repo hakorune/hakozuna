@@ -38,6 +38,7 @@ int hz6_allocator_large_span_pool_push(Hz6Allocator* allocator,
   }
 
   bin->descriptors[bin->count++] = descriptor;
+  hz6_allocator_note_large_span_central_push(allocator);
   return 1;
 }
 
@@ -54,5 +55,6 @@ int hz6_allocator_large_span_pool_pop(Hz6Allocator* allocator,
   }
 
   *out = bin->descriptors[--bin->count];
+  hz6_allocator_note_large_span_central_pop(allocator);
   return 1;
 }

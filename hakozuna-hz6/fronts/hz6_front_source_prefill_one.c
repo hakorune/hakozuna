@@ -42,6 +42,6 @@ int hz6_front_prefill_one(Hz6Allocator* allocator,
     return 0;
   }
 
-  hz6_allocator_note_source_alloc(allocator);
+  hz6_allocator_note_source_alloc_for_front(allocator, front_id);
   return 1;
 }

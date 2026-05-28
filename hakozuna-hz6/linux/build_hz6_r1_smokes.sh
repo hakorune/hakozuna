@@ -36,6 +36,7 @@ HZ6_LIB_SOURCES=(
   "${HZ6_DIR}/api/hz6_allocator_prefill.c"
   "${HZ6_DIR}/api/hz6_allocator_profile_query.c"
   "${HZ6_DIR}/api/hz6_allocator_profile_source.c"
+  "${HZ6_DIR}/api/hz6_allocator_large_span_stats.c"
   "${HZ6_DIR}/api/hz6_allocator_owns.c"
   "${HZ6_DIR}/api/hz6_allocator_stats_snapshot.c"
   "${HZ6_DIR}/api/hz6_allocator_init.c"

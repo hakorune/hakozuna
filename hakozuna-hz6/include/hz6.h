@@ -18,6 +18,9 @@ typedef struct Hz6StatsSnapshot {
   size_t transfer_push;
   size_t transfer_pop;
   size_t source_alloc;
+  size_t large_span_central_push;
+  size_t large_span_central_pop;
+  size_t large_span_source_alloc;
 } Hz6StatsSnapshot;
 
 void hz6_allocator_init(Hz6Allocator* allocator);

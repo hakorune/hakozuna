@@ -14,5 +14,8 @@ void hz6_allocator_init_state_owner(Hz6Allocator* allocator,
   allocator->stats.transfer_push = 0;
   allocator->stats.transfer_pop = 0;
   allocator->stats.source_alloc = 0;
+  allocator->stats.large_span_central_push = 0;
+  allocator->stats.large_span_central_pop = 0;
+  allocator->stats.large_span_source_alloc = 0;
   hz6_source_registry_init(&allocator->source_registry);
 }

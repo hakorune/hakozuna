@@ -8,5 +8,8 @@ Hz6StatsSnapshot hz6_stats_snapshot(const Hz6Allocator* allocator) {
   empty.transfer_push = 0;
   empty.transfer_pop = 0;
   empty.source_alloc = 0;
+  empty.large_span_central_push = 0;
+  empty.large_span_central_pop = 0;
+  empty.large_span_source_alloc = 0;
   return allocator ? allocator->stats : empty;
 }

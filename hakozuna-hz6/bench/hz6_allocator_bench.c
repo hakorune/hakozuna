@@ -119,9 +119,13 @@ static void touch_payload(void* ptr, size_t size) {
 static void print_stats(const Hz6Allocator* allocator) {
   Hz6StatsSnapshot stats = hz6_stats_snapshot(allocator);
   printf("stats route_valid=%zu route_invalid=%zu route_miss=%zu "
-         "transfer_push=%zu transfer_pop=%zu source_alloc=%zu\n",
+         "transfer_push=%zu transfer_pop=%zu source_alloc=%zu "
+         "large_span_central_push=%zu large_span_central_pop=%zu "
+         "large_span_source_alloc=%zu\n",
          stats.route_valid, stats.route_invalid, stats.route_miss,
-         stats.transfer_push, stats.transfer_pop, stats.source_alloc);
+         stats.transfer_push, stats.transfer_pop, stats.source_alloc,
+         stats.large_span_central_push, stats.large_span_central_pop,
+         stats.large_span_source_alloc);
 }
 
 static int run_local(Hz6ProfileId profile, uint64_t iters, size_t size) {
