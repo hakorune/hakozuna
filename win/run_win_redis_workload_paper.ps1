@@ -2,6 +2,7 @@ param(
     [string]$OutputDir,
     [int]$Runs = 5,
     [int]$TimeoutSeconds = 60,
+    [switch]$IncludeHz6CapacityControls,
     [switch]$ContinueOnFailure
 )
 
@@ -22,18 +23,32 @@ $Executables = @(
     @{ Name = "hz3"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz3.exe") },
     @{ Name = "hz4"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz4.exe") },
     @{ Name = "hz5-policy"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz5_policy.exe") },
-    @{ Name = "hz6-strict"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz6_strict.exe") },
-    @{ Name = "hz6-speed"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz6_speed.exe") },
-    @{ Name = "hz6-rss"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz6_rss.exe") },
-    @{ Name = "hz6-strict-broad"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz6_strict_broad.exe") },
-    @{ Name = "hz6-speed-broad"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz6_speed_broad.exe") },
-    @{ Name = "hz6-rss-broad"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz6_rss_broad.exe") },
     @{ Name = "hz6-strict-appcap"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz6_strict_appcap.exe") },
     @{ Name = "hz6-speed-appcap"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz6_speed_appcap.exe") },
     @{ Name = "hz6-rss-appcap"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz6_rss_appcap.exe") },
     @{ Name = "mimalloc"; Path = (Join-Path $SuiteDir "bench_redis_workload_mimalloc.exe") },
     @{ Name = "tcmalloc"; Path = (Join-Path $SuiteDir "bench_redis_workload_tcmalloc.exe") }
 )
+
+if ($IncludeHz6CapacityControls) {
+    $Executables = @(
+        @{ Name = "crt"; Path = (Join-Path $SuiteDir "bench_redis_workload_crt.exe") },
+        @{ Name = "hz3"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz3.exe") },
+        @{ Name = "hz4"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz4.exe") },
+        @{ Name = "hz5-policy"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz5_policy.exe") },
+        @{ Name = "hz6-strict"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz6_strict.exe") },
+        @{ Name = "hz6-speed"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz6_speed.exe") },
+        @{ Name = "hz6-rss"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz6_rss.exe") },
+        @{ Name = "hz6-strict-broad"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz6_strict_broad.exe") },
+        @{ Name = "hz6-speed-broad"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz6_speed_broad.exe") },
+        @{ Name = "hz6-rss-broad"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz6_rss_broad.exe") },
+        @{ Name = "hz6-strict-appcap"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz6_strict_appcap.exe") },
+        @{ Name = "hz6-speed-appcap"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz6_speed_appcap.exe") },
+        @{ Name = "hz6-rss-appcap"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz6_rss_appcap.exe") },
+        @{ Name = "mimalloc"; Path = (Join-Path $SuiteDir "bench_redis_workload_mimalloc.exe") },
+        @{ Name = "tcmalloc"; Path = (Join-Path $SuiteDir "bench_redis_workload_tcmalloc.exe") }
+    )
+}
 
 if ($Executables | Where-Object { -not (Test-Path $_.Path) }) {
     & $BuildScript

@@ -62,6 +62,7 @@ struct Hz6Allocator {
   Hz6TransferBackend transfer_backend;
   Hz6LargeSpanPool large_span_pool;
   Hz6SourceBlock source_blocks[HZ6_SOURCE_BLOCK_CAPACITY];
+  size_t next_descriptor_index;
   Hz6ObjectDescriptor descriptors[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
   Hz6SourceRegistry source_registry;
   Hz6FrontCacheEntry frontcache_entries[HZ6_FRONT_CACHE_CLASS_COUNT]

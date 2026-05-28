@@ -12,15 +12,13 @@ int hz6_route_register_exact(Hz6RouteTable* table,
   }
 
   uintptr_t base_addr = (uintptr_t)base;
+  size_t start = hz6_route_hash_index(base_addr, table->capacity);
   for (size_t i = 0; i < table->capacity; ++i) {
-    Hz6RouteEntry* entry = &table->entries[i];
+    size_t index = (start + i) % table->capacity;
+    Hz6RouteEntry* entry = &table->entries[index];
     if (entry->active && entry->exact_valid && entry->base == base_addr) {
       return 0;
     }
-  }
-
-  for (size_t i = 0; i < table->capacity; ++i) {
-    Hz6RouteEntry* entry = &table->entries[i];
     if (!entry->active) {
       entry->base = base_addr;
       entry->bytes = bytes;
@@ -42,8 +40,10 @@ void hz6_route_unregister_exact(Hz6RouteTable* table, void* base) {
     return;
   }
   uintptr_t base_addr = (uintptr_t)base;
+  size_t start = hz6_route_hash_index(base_addr, table->capacity);
   for (size_t i = 0; i < table->capacity; ++i) {
-    Hz6RouteEntry* entry = &table->entries[i];
+    size_t index = (start + i) % table->capacity;
+    Hz6RouteEntry* entry = &table->entries[index];
     if (entry->active && entry->exact_valid && entry->base == base_addr) {
       entry->active = 0;
       return;

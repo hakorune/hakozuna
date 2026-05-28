@@ -5,11 +5,24 @@ Hz6ObjectDescriptor* hz6_allocator_find_free_descriptor(
   if (!allocator) {
     return NULL;
   }
-  for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
+  size_t start = allocator->next_descriptor_index;
+  if (start >= HZ6_OBJECT_DESCRIPTOR_CAPACITY) {
+    start = 0;
+  }
+  for (size_t offset = 0; offset < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++offset) {
+    size_t i = start + offset;
+    if (i >= HZ6_OBJECT_DESCRIPTOR_CAPACITY) {
+      i -= HZ6_OBJECT_DESCRIPTOR_CAPACITY;
+    }
     if (!allocator->descriptors[i].ptr) {
+      allocator->next_descriptor_index = i + 1;
+      if (allocator->next_descriptor_index >= HZ6_OBJECT_DESCRIPTOR_CAPACITY) {
+        allocator->next_descriptor_index = 0;
+      }
       return &allocator->descriptors[i];
     }
   }
+  ++allocator->stats.descriptor_exhausted;
   return NULL;
 }
 

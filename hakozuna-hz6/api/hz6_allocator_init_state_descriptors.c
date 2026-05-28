@@ -1,6 +1,7 @@
 #include "hz6_allocator_init_internal.h"
 
 void hz6_allocator_init_state_descriptors(Hz6Allocator* allocator) {
+  allocator->next_descriptor_index = 0;
   for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
     allocator->descriptors[i].ptr = NULL;
     allocator->descriptors[i].bytes = 0;
