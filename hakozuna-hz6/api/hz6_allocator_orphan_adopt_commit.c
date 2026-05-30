@@ -12,17 +12,41 @@ int hz6_allocator_orphan_adopt_commit(
     return 0;
   }
 
-  if (!hz6_route_backend_register_exact(
-          &adopter->route_backend,
-          ptr,
-          adopted_descriptor->bytes,
-          source_route->front_id,
-          source_route->class_id,
-          adopted_descriptor->generation,
-          adopted_descriptor)) {
+#if HZ6_DIAGNOSTIC_PROBES
+  size_t adopt_register_probes = 0;
+  if (!hz6_route_backend_register_exact(&adopter->route_backend,
+                                        ptr,
+                                        adopted_descriptor->bytes,
+                                        source_route->front_id,
+                                        source_route->class_id,
+                                        adopted_descriptor->generation,
+                                        adopted_descriptor,
+                                        &adopt_register_probes)) {
     *adopted_descriptor = (Hz6ObjectDescriptor){0};
     return 0;
   }
+  adopter->stats.route_register_probe_total += adopt_register_probes;
+  if (adopt_register_probes > adopter->stats.route_register_probe_max) {
+    adopter->stats.route_register_probe_max = adopt_register_probes;
+  }
+  adopter->stats.route_active_current =
+      adopter->route_backend.exact_table.active_count;
+  if (adopter->stats.route_active_current > adopter->stats.route_active_max) {
+    adopter->stats.route_active_max = adopter->stats.route_active_current;
+  }
+#else
+  if (!hz6_route_backend_register_exact(&adopter->route_backend,
+                                        ptr,
+                                        adopted_descriptor->bytes,
+                                        source_route->front_id,
+                                        source_route->class_id,
+                                        adopted_descriptor->generation,
+                                        adopted_descriptor,
+                                        NULL)) {
+    *adopted_descriptor = (Hz6ObjectDescriptor){0};
+    return 0;
+  }
+#endif
 
   Hz6FrontCacheEntry entry;
   entry.ptr = ptr;

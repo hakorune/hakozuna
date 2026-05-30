@@ -13,7 +13,23 @@ void hz6_allocator_route_unregister_exact(Hz6Allocator* allocator,
   if (!allocator || !ptr) {
     return;
   }
-  hz6_route_backend_unregister_exact(&allocator->route_backend, ptr);
+#if HZ6_DIAGNOSTIC_PROBES
+  size_t probes = 0;
+  hz6_route_backend_unregister_exact(&allocator->route_backend, ptr, &probes);
+  allocator->stats.route_unregister_probe_total += probes;
+  if (probes > allocator->stats.route_unregister_probe_max) {
+    allocator->stats.route_unregister_probe_max = probes;
+  }
+  allocator->stats.route_active_current =
+      allocator->route_backend.exact_table.active_count;
+  if (allocator->stats.route_active_current >
+      allocator->stats.route_active_max) {
+    allocator->stats.route_active_max =
+        allocator->stats.route_active_current;
+  }
+#else
+  hz6_route_backend_unregister_exact(&allocator->route_backend, ptr, NULL);
+#endif
 }
 
 int hz6_allocator_route_register_exact(Hz6Allocator* allocator,
@@ -26,13 +42,41 @@ int hz6_allocator_route_register_exact(Hz6Allocator* allocator,
   if (!allocator || !base || bytes == 0) {
     return 0;
   }
+#if HZ6_DIAGNOSTIC_PROBES
+  size_t probes = 0;
+  int ok = hz6_route_backend_register_exact(&allocator->route_backend,
+                                            base,
+                                            bytes,
+                                            front_id,
+                                            class_id,
+                                            generation,
+                                            descriptor,
+                                            &probes);
+  allocator->stats.route_register_probe_total += probes;
+  if (probes > allocator->stats.route_register_probe_max) {
+    allocator->stats.route_register_probe_max = probes;
+  }
+  allocator->stats.route_active_current =
+      allocator->route_backend.exact_table.active_count;
+  if (allocator->stats.route_active_current >
+      allocator->stats.route_active_max) {
+    allocator->stats.route_active_max =
+        allocator->stats.route_active_current;
+  }
+  if (!ok) {
+    ++allocator->stats.route_register_fail;
+  }
+  return ok;
+#else
   return hz6_route_backend_register_exact(&allocator->route_backend,
                                           base,
                                           bytes,
                                           front_id,
                                           class_id,
                                           generation,
-                                          descriptor);
+                                          descriptor,
+                                          NULL);
+#endif
 }
 
 Hz6RouteBackendKind hz6_allocator_route_backend_kind(

@@ -12,7 +12,8 @@ void hz6_allocator_destroy_source_blocks(Hz6Allocator* allocator) {
     }
     if (block->route_registered && block->route_backend) {
       hz6_route_backend_unregister_invalid_range(block->route_backend,
-                                                 block->ptr);
+                                                 block->ptr,
+                                                 NULL);
     }
     if (block->source_release) {
       block->source_release(block->ptr, block->bytes);

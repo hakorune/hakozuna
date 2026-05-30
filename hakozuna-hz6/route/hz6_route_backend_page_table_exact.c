@@ -15,6 +15,22 @@ Hz6RouteResult hz6_route_backend_lookup_page_table_exact(
     return hz6_route_miss();
   }
 
+  size_t start = hz6_route_hash_index(addr, backend->exact_table.capacity);
+  for (size_t i = 0; i < backend->exact_table.capacity; ++i) {
+    size_t index = (start + i) % backend->exact_table.capacity;
+    const Hz6RouteEntry* entry = &backend->exact_table.entries[index];
+    if (!entry->active || !entry->exact_valid) {
+      if (!entry->active && !entry->tombstone) {
+        break;
+      }
+      continue;
+    }
+    if (addr == entry->base) {
+      return hz6_route_valid(entry->front_id, entry->class_id,
+                             entry->generation, entry->descriptor);
+    }
+  }
+
   for (size_t i = 0; i < backend->exact_table.capacity; ++i) {
     const Hz6RouteEntry* entry = &backend->exact_table.entries[i];
     if (!entry->active || !entry->exact_valid) {

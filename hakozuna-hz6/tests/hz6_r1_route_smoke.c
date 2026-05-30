@@ -29,7 +29,7 @@ int main(void) {
 
   if (!expect(hz6_route_register_exact(&route_table, base, sizeof(object),
                                        HZ6_FRONT_LOCAL2P, 7, 11,
-                                       &descriptor),
+                                       &descriptor, NULL),
               "route register")) {
     return 1;
   }
@@ -60,7 +60,7 @@ int main(void) {
   hz6_route_backend_init_exact(&route_backend, backend_entries, 2);
   if (!expect(hz6_route_backend_register_exact(
                   &route_backend, base, sizeof(object), HZ6_FRONT_LOCAL2P, 7,
-                  12, &descriptor),
+                  12, &descriptor, NULL),
               "route backend register")) {
     return 1;
   }
@@ -75,7 +75,7 @@ int main(void) {
               "route backend invalid")) {
     return 1;
   }
-  hz6_route_backend_unregister_exact(&route_backend, base);
+  hz6_route_backend_unregister_exact(&route_backend, base, NULL);
   if (!expect(hz6_route_backend_lookup(&route_backend, base).kind ==
                   HZ6_ROUTE_MISS,
               "route backend unregister")) {
@@ -90,14 +90,14 @@ int main(void) {
   hz6_route_table_init(&range_table, range_entries, 4);
   if (!expect(hz6_route_register_invalid_range(
                   &range_table, route_run, sizeof(route_run),
-                  HZ6_FRONT_MIDPAGE, 4),
+                  HZ6_FRONT_MIDPAGE, 4, NULL),
               "route invalid range register") ||
       !expect(hz6_route_lookup(&range_table, route_run + 128).kind ==
                   HZ6_ROUTE_INVALID,
               "route invalid range lookup") ||
       !expect(hz6_route_register_exact(
                   &range_table, route_run + 128, 64, HZ6_FRONT_MIDPAGE, 4,
-                  21, &route_run_descriptor),
+                  21, &route_run_descriptor, NULL),
               "route exact inside invalid range") ||
       !expect(hz6_route_lookup(&range_table, route_run + 128).kind ==
                   HZ6_ROUTE_VALID,
@@ -107,13 +107,13 @@ int main(void) {
               "route exact interior remains invalid")) {
     return 1;
   }
-  hz6_route_unregister_exact(&range_table, route_run + 128);
+  hz6_route_unregister_exact(&range_table, route_run + 128, NULL);
   if (!expect(hz6_route_lookup(&range_table, route_run + 128).kind ==
                   HZ6_ROUTE_INVALID,
               "route invalid range remains after exact unregister")) {
     return 1;
   }
-  hz6_route_unregister_invalid_range(&range_table, route_run);
+  hz6_route_unregister_invalid_range(&range_table, route_run, NULL);
   if (!expect(hz6_route_lookup(&range_table, route_run + 128).kind ==
                   HZ6_ROUTE_MISS,
               "route invalid range unregister")) {
@@ -130,7 +130,7 @@ int main(void) {
               "page route backend granularity") ||
       !expect(hz6_route_backend_register_exact(
                   &page_backend, base, sizeof(object), HZ6_FRONT_LOCAL2P, 7,
-                  13, &descriptor),
+                  13, &descriptor, NULL),
               "page route backend register")) {
     return 1;
   }
@@ -148,7 +148,7 @@ int main(void) {
               "page route backend end miss")) {
     return 1;
   }
-  hz6_route_backend_unregister_exact(&page_backend, base);
+  hz6_route_backend_unregister_exact(&page_backend, base, NULL);
   if (!expect(hz6_route_backend_lookup(&page_backend, base).kind ==
                   HZ6_ROUTE_MISS,
               "page route backend unregister")) {
@@ -156,14 +156,14 @@ int main(void) {
   }
   if (!expect(hz6_route_backend_register_invalid_range(
                   &page_backend, route_run, sizeof(route_run),
-                  HZ6_FRONT_MIDPAGE, 4),
+                  HZ6_FRONT_MIDPAGE, 4, NULL),
               "page route backend invalid range register") ||
       !expect(hz6_route_backend_lookup(&page_backend, route_run + 192).kind ==
                   HZ6_ROUTE_INVALID,
               "page route backend invalid range lookup") ||
       !expect(hz6_route_backend_register_exact(
                   &page_backend, route_run + 192, 64, HZ6_FRONT_MIDPAGE, 4,
-                  23, &route_run_descriptor),
+                  23, &route_run_descriptor, NULL),
               "page route backend exact inside invalid range") ||
       !expect(hz6_route_backend_lookup(&page_backend, route_run + 192).kind ==
                   HZ6_ROUTE_VALID,
@@ -173,13 +173,13 @@ int main(void) {
               "page route backend exact interior invalid")) {
     return 1;
   }
-  hz6_route_backend_unregister_exact(&page_backend, route_run + 192);
+  hz6_route_backend_unregister_exact(&page_backend, route_run + 192, NULL);
   if (!expect(hz6_route_backend_lookup(&page_backend, route_run + 192).kind ==
                   HZ6_ROUTE_INVALID,
               "page route backend invalid range remains after exact unregister")) {
     return 1;
   }
-  hz6_route_backend_unregister_invalid_range(&page_backend, route_run);
+  hz6_route_backend_unregister_invalid_range(&page_backend, route_run, NULL);
   if (!expect(hz6_route_backend_lookup(&page_backend, route_run + 192).kind ==
                   HZ6_ROUTE_MISS,
               "page route backend invalid range unregister")) {
@@ -191,11 +191,11 @@ int main(void) {
   hz6_route_backend_init_exact(&range_backend, range_backend_entries, 4);
   if (!expect(hz6_route_backend_register_invalid_range(
                   &range_backend, route_run, sizeof(route_run),
-                  HZ6_FRONT_MIDPAGE, 4),
+                  HZ6_FRONT_MIDPAGE, 4, NULL),
               "route backend invalid range register") ||
       !expect(hz6_route_backend_register_exact(
                   &range_backend, route_run + 256, 64, HZ6_FRONT_MIDPAGE, 4,
-                  22, &route_run_descriptor),
+                  22, &route_run_descriptor, NULL),
               "route backend exact inside invalid range") ||
       !expect(hz6_route_backend_lookup(&range_backend, route_run + 256).kind ==
                   HZ6_ROUTE_VALID,
@@ -205,8 +205,8 @@ int main(void) {
               "route backend range end invalid")) {
     return 1;
   }
-  hz6_route_backend_unregister_invalid_range(&range_backend, route_run);
-  hz6_route_backend_unregister_exact(&range_backend, route_run + 256);
+  hz6_route_backend_unregister_invalid_range(&range_backend, route_run, NULL);
+  hz6_route_backend_unregister_exact(&range_backend, route_run + 256, NULL);
   if (!expect(hz6_route_backend_lookup(&range_backend, route_run + 256).kind ==
                   HZ6_ROUTE_MISS,
               "route backend invalid range cleanup")) {

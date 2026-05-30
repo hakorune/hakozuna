@@ -6,6 +6,22 @@ Hz6RouteResult hz6_route_lookup(const Hz6RouteTable* table, const void* ptr) {
   }
 
   uintptr_t addr = (uintptr_t)ptr;
+  size_t start = hz6_route_hash_index(addr, table->capacity);
+  for (size_t i = 0; i < table->capacity; ++i) {
+    size_t index = (start + i) % table->capacity;
+    const Hz6RouteEntry* entry = &table->entries[index];
+    if (!entry->active) {
+      if (!entry->tombstone) {
+        break;
+      }
+      continue;
+    }
+    if (entry->exact_valid && addr == entry->base) {
+      return hz6_route_valid(entry->front_id, entry->class_id,
+                             entry->generation, entry->descriptor);
+    }
+  }
+
   for (size_t i = 0; i < table->capacity; ++i) {
     const Hz6RouteEntry* entry = &table->entries[i];
     if (!entry->active || !entry->exact_valid) {

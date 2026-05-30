@@ -22,7 +22,8 @@ int hz6_allocator_release_source_block(Hz6SourceBlock* block) {
 
   if (block->route_registered && block->route_backend) {
     hz6_route_backend_unregister_invalid_range(block->route_backend,
-                                               block->ptr);
+                                               block->ptr,
+                                               NULL);
   }
   int released = block->source_release
                      ? block->source_release(block->ptr, block->bytes)

@@ -5,11 +5,17 @@ Hz6ObjectDescriptor* hz6_allocator_find_free_descriptor(
   if (!allocator) {
     return NULL;
   }
+#if HZ6_DIAGNOSTIC_PROBES
+  size_t probes = 0;
+#endif
   size_t start = allocator->next_descriptor_index;
   if (start >= HZ6_OBJECT_DESCRIPTOR_CAPACITY) {
     start = 0;
   }
   for (size_t offset = 0; offset < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++offset) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++probes;
+#endif
     size_t i = start + offset;
     if (i >= HZ6_OBJECT_DESCRIPTOR_CAPACITY) {
       i -= HZ6_OBJECT_DESCRIPTOR_CAPACITY;
@@ -19,9 +25,21 @@ Hz6ObjectDescriptor* hz6_allocator_find_free_descriptor(
       if (allocator->next_descriptor_index >= HZ6_OBJECT_DESCRIPTOR_CAPACITY) {
         allocator->next_descriptor_index = 0;
       }
+#if HZ6_DIAGNOSTIC_PROBES
+      allocator->stats.descriptor_probe_total += probes;
+      if (probes > allocator->stats.descriptor_probe_max) {
+        allocator->stats.descriptor_probe_max = probes;
+      }
+#endif
       return &allocator->descriptors[i];
     }
   }
+#if HZ6_DIAGNOSTIC_PROBES
+  allocator->stats.descriptor_probe_total += probes;
+  if (probes > allocator->stats.descriptor_probe_max) {
+    allocator->stats.descriptor_probe_max = probes;
+  }
+#endif
   ++allocator->stats.descriptor_exhausted;
   return NULL;
 }

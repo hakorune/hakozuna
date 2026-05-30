@@ -40,19 +40,23 @@ int hz6_route_backend_register_exact(Hz6RouteBackend* backend,
                                      uint16_t front_id,
                                      uint16_t class_id,
                                      uint32_t generation,
-                                     void* descriptor);
+                                     void* descriptor,
+                                     size_t* probe_count);
 
 int hz6_route_backend_register_invalid_range(Hz6RouteBackend* backend,
                                              void* base,
                                              size_t bytes,
                                              uint16_t front_id,
-                                             uint16_t class_id);
+                                             uint16_t class_id,
+                                             size_t* probe_count);
 
 void hz6_route_backend_unregister_exact(Hz6RouteBackend* backend,
-                                        void* base);
+                                        void* base,
+                                        size_t* probe_count);
 
 void hz6_route_backend_unregister_invalid_range(Hz6RouteBackend* backend,
-                                                void* base);
+                                                void* base,
+                                                size_t* probe_count);
 
 Hz6RouteResult hz6_route_backend_lookup(const Hz6RouteBackend* backend,
                                         const void* ptr);

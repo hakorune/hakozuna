@@ -35,4 +35,8 @@
 #define HZ6_FRONT_CACHE_BIN_CAPACITY ((size_t)8)
 #endif
 
+#ifndef HZ6_DIAGNOSTIC_PROBES
+#define HZ6_DIAGNOSTIC_PROBES 0
+#endif
+
 #endif

@@ -13,8 +13,13 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
   uint16_t class_id = 0;
   const Hz6FrontOps* front = hz6_front_for_allocation(size, 16, &class_id);
   if (!front || !front->alloc) {
+    ++allocator->stats.alloc_fail;
     return NULL;
   }
 
-  return front->alloc(allocator, class_id, size);
+  void* ptr = front->alloc(allocator, class_id, size);
+  if (!ptr) {
+    ++allocator->stats.alloc_fail;
+  }
+  return ptr;
 }

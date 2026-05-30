@@ -120,10 +120,22 @@ static void print_stats(const Hz6Allocator* allocator) {
   Hz6StatsSnapshot stats = hz6_stats_snapshot(allocator);
   printf("stats route_valid=%zu route_invalid=%zu route_miss=%zu "
          "transfer_push=%zu transfer_pop=%zu source_alloc=%zu "
+         "alloc_fail=%zu descriptor_exhausted=%zu route_register_fail=%zu "
+         "source_block_exhausted=%zu descriptor_probe_total=%zu "
+         "descriptor_probe_max=%zu route_register_probe_total=%zu "
+         "route_register_probe_max=%zu route_unregister_probe_total=%zu "
+         "route_unregister_probe_max=%zu source_block_probe_total=%zu "
+         "source_block_probe_max=%zu "
          "large_span_central_push=%zu large_span_central_pop=%zu "
          "large_span_source_alloc=%zu\n",
          stats.route_valid, stats.route_invalid, stats.route_miss,
          stats.transfer_push, stats.transfer_pop, stats.source_alloc,
+         stats.alloc_fail, stats.descriptor_exhausted,
+         stats.route_register_fail, stats.source_block_exhausted,
+         stats.descriptor_probe_total, stats.descriptor_probe_max,
+         stats.route_register_probe_total, stats.route_register_probe_max,
+         stats.route_unregister_probe_total, stats.route_unregister_probe_max,
+         stats.source_block_probe_total, stats.source_block_probe_max,
          stats.large_span_central_push, stats.large_span_central_pop,
          stats.large_span_source_alloc);
 }
