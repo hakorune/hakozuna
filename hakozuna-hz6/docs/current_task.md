@@ -4,6 +4,221 @@ HZ6 is now in R1 implementation. Keep the implementation modular from the
 start: API, route, frontcache, transfer, source, owner, policy, and future
 fronts should stay separated.
 
+## Current Direction Freeze
+
+```text
+Decision:
+  HZ6 is no longer judged as a single "fast or slow" lane.
+
+Evaluation split:
+  compact control:
+    shows the raw strength of route / transfer / front-cache hot paths
+
+  stress:
+    shows how source admission, cache retention, remote backlog, scavenge,
+    and OS backing fail or recover under pressure
+
+Main next design target:
+  HZ6-ControlPlane-L1-admission
+
+Role:
+  stress-aware source / transfer / scavenge governor
+
+Do not mix:
+  hot path probe/atomic counters into production benchmark lanes
+```
+
+## Shared Contract And OS Backing
+
+```text
+Shared core contract:
+  RouteLayer:
+    MISS / VALID / INVALID
+
+  OwnerLayer:
+    owner token
+    generation
+    alive/dead
+    stale owner publish forbidden
+
+  StateLayer:
+    ACTIVE
+    LOCAL_FREE
+    CENTRAL_FREE / TRANSFER_FREE
+    REMOTE_PENDING
+    RELEASED
+    ORPHAN
+
+  TransferLayer:
+    bounded
+    consumer-visible
+    checked before source refill
+    no unbounded backlog
+
+  SourceLayer:
+    reserve
+    commit
+    decommit
+    release
+
+  ScavengeLayer:
+    byte budget
+    pressure checkpoint
+    payload decommit
+
+  PolicyLayer:
+    no hot path counters
+    slow path / epoch / checkpoint only
+```
+
+```text
+Shared:
+  allocator semantics
+  route result contract
+  state transition
+  transfer/refill/scavenge ordering
+  profile names
+  benchmark attribution rules
+
+Windows-specific backing:
+  VirtualAlloc / VirtualFree
+  CRT bridge
+  sidecar route table
+  no VirtualQuery in the hot path
+  allocation granularity
+  TLS/FLS behavior
+  page-boundary handling
+
+Linux-specific backing:
+  mmap / munmap
+  madvise
+  rseq/per-cpu candidates
+  region/slab map
+  preload route order
+  ELF/TLS/linkage behavior
+```
+
+## Benchmark Interpretation Freeze
+
+```text
+compact control:
+  Use smaller working-set controls such as Larson chunks=400.
+  Purpose is hot-path and front-cache comparison.
+
+stress:
+  Use Larson T=16 / high chunks and similar pressure rows.
+  Purpose is ControlPlane evaluation, not hot-path ranking.
+
+paper wording:
+  HZ6 compact profile:
+    fast route / transfer / front-cache path evidence
+
+  HZ6 stress profile:
+    source admission and scavenge policy stress evidence
+
+  HZ6 RSS profile:
+    low-RSS / bounded-backlog / fail-closed evidence
+
+Do not conclude:
+  stress regression alone means the HZ6 hot path is weak
+
+Do conclude:
+  stress regression points at ControlPlane-L1 admission/scavenge work
+```
+
+## Next Attack: HZ6-ControlPlane-L1
+
+```text
+Goal:
+  Reduce stress collapse without hurting compact control.
+
+Core rule:
+  before source refill, check reusable layers in this order:
+    local cache
+    transfer cache
+    released pool
+    central free
+    source refill
+
+Signals are slow-path only:
+  source refill:
+    refill_count
+    batch_size
+    mapped_bytes
+    committed_bytes
+
+  transfer overflow:
+    transfer_push_fail
+    transfer_spill
+    transfer_bytes
+
+  scavenge checkpoint:
+    free_bytes
+    released_bytes
+    retained_bytes
+
+  epoch:
+    worker aggregate allocation pressure
+    remote backlog proxy
+```
+
+```text
+Initial pressure modes:
+  NORMAL:
+    regular transfer/source caps
+
+  PRESSURE:
+    source refill batch down
+    transfer cap down
+    local cache cap down
+    released pool preferred
+
+  SCAVENGE:
+    decommit payload aggressively
+    source refill only after transfer/released miss
+
+Mode transitions:
+  NORMAL -> PRESSURE:
+    committed_bytes > class_soft_limit
+    or transfer overflow observed
+    or source refill too frequent
+
+  PRESSURE -> SCAVENGE:
+    committed_bytes > class_hard_limit
+
+  PRESSURE -> NORMAL:
+    two epochs below low watermark
+```
+
+Acceptance:
+
+```text
+Compact control:
+  accept if compact local/remote is within -3%
+  no-go if compact local/remote drops more than 5%
+
+Larson stress:
+  accept if T=16 improves by at least 15%
+  strong if T=16 improves by at least 25%
+  no-go if alloc failure / fallback increases
+
+RSS:
+  no-go if rows that previously matched or beat tcmalloc now exceed tcmalloc RSS
+  no-go if retained bytes grow across epochs
+
+Safety:
+  no owned-looking invalid pointer may escape to CRT/libc fallback
+  INVALID must not become MISS
+  double-free must not become reusable
+  remote backlog must stay bounded
+  transfer overflow must not drop objects
+
+Design:
+  no production hot-path probe/atomic counters
+  no VirtualQuery or OS query in the hot path
+  do not force Windows and Linux into the same backing implementation
+```
+
 ## Frozen Windows Ledger
 
 ```text
