@@ -1,9 +1,11 @@
 #include "../frontcache/hz6_frontcache.h"
 #include "../frontcache/hz6_size_class.h"
+#include "../api/hz6_allocator.h"
 #include "../include/hz6_contract.h"
 #include "../owner/hz6_owner.h"
 #include "../policy/hz6_profiles.h"
 
+#include <string.h>
 #include <stdio.h>
 
 typedef struct SmokeDescriptor {
@@ -107,6 +109,22 @@ int main(void) {
               "strict local free scavenge budget policy") ||
       !expect(hz6_profile_scavenge_orphan_budget(&strict) == 0,
               "strict orphan scavenge budget policy")) {
+    return 1;
+  }
+
+  Hz6Allocator pressure_allocator;
+  memset(&pressure_allocator, 0, sizeof(pressure_allocator));
+  pressure_allocator.profile = speed;
+  if (!expect(hz6_allocator_control_source_refill_batch(
+                  &pressure_allocator, HZ6_FRONT_LOCAL2P, 8) == speed.source_batch,
+              "control batch follows profile without pressure")) {
+    return 1;
+  }
+  pressure_allocator.stats.alloc_fail = 1;
+  if (!expect(hz6_allocator_control_source_refill_batch(
+                  &pressure_allocator, HZ6_FRONT_LOCAL2P, 8) ==
+                  (speed.source_batch / 2u ? speed.source_batch / 2u : 1u),
+              "control batch halves under pressure")) {
     return 1;
   }
 

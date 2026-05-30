@@ -21,6 +21,11 @@ size_t hz6_allocator_profile_source_refill_batch(
     uint16_t front_id,
     uint16_t class_id);
 
+size_t hz6_allocator_control_source_refill_batch(
+    const Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id);
+
 size_t hz6_allocator_profile_transfer_capacity(
     const Hz6Allocator* allocator);
 

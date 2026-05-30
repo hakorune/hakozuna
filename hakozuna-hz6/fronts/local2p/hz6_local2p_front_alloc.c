@@ -22,7 +22,7 @@ void* hz6_local2p_alloc(Hz6Allocator* allocator,
     return NULL;
   }
 
-  size_t refill_batch = hz6_allocator_profile_source_refill_batch(
+  size_t refill_batch = hz6_allocator_control_source_refill_batch(
       allocator, HZ6_FRONT_LOCAL2P, class_id);
   Hz6SourceKind source_kind =
       hz6_allocator_profile_source_kind(allocator);
