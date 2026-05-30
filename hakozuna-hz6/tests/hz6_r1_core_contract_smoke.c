@@ -127,6 +127,13 @@ int main(void) {
               "control batch halves under pressure")) {
     return 1;
   }
+  if (!expect(hz6_allocator_control_source_prefill_count(
+                  &pressure_allocator, HZ6_FRONT_LOCAL2P, 8,
+                  speed.source_batch * 2u) ==
+                  (speed.source_batch / 2u ? speed.source_batch / 2u : 1u),
+              "control prefill count caps under pressure")) {
+    return 1;
+  }
 
   Hz6SizeClass class_zero = hz6_size_class_for_request(0);
   Hz6SizeClass class_mid = hz6_size_class_for_request(48);

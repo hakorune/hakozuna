@@ -81,6 +81,23 @@ size_t hz6_allocator_control_source_refill_batch(
   return hz6_control_pressure_scale(base, pressure);
 }
 
+size_t hz6_allocator_control_source_prefill_count(
+    const Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id,
+    size_t requested) {
+  if (!allocator || requested == 0) {
+    return 0;
+  }
+
+  size_t refill_batch = hz6_allocator_control_source_refill_batch(
+      allocator, front_id, class_id);
+  if (refill_batch == 0) {
+    return 0;
+  }
+  return requested < refill_batch ? requested : refill_batch;
+}
+
 size_t hz6_allocator_profile_transfer_capacity(
     const Hz6Allocator* allocator) {
   return allocator ? allocator->profile.transfer_capacity : 0;

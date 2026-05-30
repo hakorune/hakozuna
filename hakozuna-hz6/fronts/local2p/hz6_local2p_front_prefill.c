@@ -9,6 +9,8 @@ size_t hz6_local2p_prefill(Hz6Allocator* allocator,
   if (class_id != 0 && class_id != HZ6_LOCAL2P_CLASS_ID) {
     return 0;
   }
+  count = hz6_allocator_control_source_prefill_count(
+      allocator, HZ6_FRONT_LOCAL2P, HZ6_LOCAL2P_CLASS_ID, count);
   return hz6_front_prefill_source_kind(
       allocator, HZ6_FRONT_LOCAL2P, HZ6_LOCAL2P_CLASS_ID, HZ6_LOCAL2P_BYTES,
       hz6_allocator_profile_source_kind(allocator), count);

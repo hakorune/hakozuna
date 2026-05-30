@@ -44,6 +44,8 @@ size_t hz6_large128_prefill(Hz6Allocator* allocator,
   if (class_id != 0 && class_id != HZ6_LARGE128_CLASS_ID) {
     return 0;
   }
+  count = hz6_allocator_control_source_prefill_count(
+      allocator, HZ6_FRONT_LARGE, HZ6_LARGE128_CLASS_ID, count);
   return hz6_front_prefill_source_kind(
       allocator, HZ6_FRONT_LARGE, HZ6_LARGE128_CLASS_ID, HZ6_LARGE128_BYTES,
       hz6_allocator_profile_source_kind(allocator), count);

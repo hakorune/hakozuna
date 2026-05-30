@@ -6,6 +6,8 @@
 size_t hz6_midpage_prefill(Hz6Allocator* allocator,
                            uint16_t class_id,
                            size_t count) {
+  count = hz6_allocator_control_source_prefill_count(
+      allocator, HZ6_FRONT_MIDPAGE, class_id, count);
   size_t filled = 0;
   while (filled < count) {
     size_t run_filled = hz6_midpage_prefill_run(allocator, class_id);
