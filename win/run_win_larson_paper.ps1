@@ -119,6 +119,39 @@ function Invoke-CapturedProcess {
     return @{ ExitCode = $proc.ExitCode; Lines = $lines }
 }
 
+function Parse-Hz6Stats {
+    param([string[]]$Lines)
+
+    $result = @{
+        RouteMiss = "NA"
+        SourceAlloc = "NA"
+        TransferPush = "NA"
+        TransferPop = "NA"
+        AllocFail = "NA"
+    }
+
+    $statsLine = $Lines | Where-Object { $_.StartsWith("[HZ6_STATS]") } | Select-Object -Last 1
+    if (-not $statsLine) {
+        return $result
+    }
+
+    foreach ($part in $statsLine.Split(" ")) {
+        if ($part -like "route_miss=*") {
+            $result.RouteMiss = $part.Substring(11)
+        } elseif ($part -like "source_alloc=*") {
+            $result.SourceAlloc = $part.Substring(13)
+        } elseif ($part -like "transfer_push=*") {
+            $result.TransferPush = $part.Substring(14)
+        } elseif ($part -like "transfer_pop=*") {
+            $result.TransferPop = $part.Substring(13)
+        } elseif ($part -like "alloc_fail=*") {
+            $result.AllocFail = $part.Substring(11)
+        }
+    }
+
+    return $result
+}
+
 if (-not $ThreadCounts -or $ThreadCounts.Count -eq 0) {
     $ThreadCounts = @(1, 4, 8, 16)
 }
@@ -164,12 +197,19 @@ function Invoke-LarsonSweep {
     foreach ($threads in $ThreadCounts) {
         $Summary.Add("## " + $SectionTitle + " T=" + $threads)
         $Summary.Add("")
-        $Summary.Add("| allocator | median ops/s | runs |")
-        $Summary.Add("| --- | ---: | --- |")
+        $Summary.Add("| allocator | median ops/s | route_miss | source_alloc | transfer_push | transfer_pop | alloc_fail | runs |")
+        $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
 
         foreach ($exe in $Executables) {
             $opsRuns = New-Object System.Collections.Generic.List[double]
             $runTexts = New-Object System.Collections.Generic.List[string]
+            $lastStats = @{
+                RouteMiss = "NA"
+                SourceAlloc = "NA"
+                TransferPush = "NA"
+                TransferPop = "NA"
+                AllocFail = "NA"
+            }
 
             for ($run = 1; $run -le $Runs; $run++) {
                 $args = @(
@@ -212,15 +252,26 @@ function Invoke-LarsonSweep {
                 $ops = [double]$Matches[1]
                 $opsRuns.Add($ops)
                 $runTexts.Add(("{0:N3}M" -f ($ops / 1000000.0)))
+                $parsedStats = Parse-Hz6Stats -Lines $output
+                if ($exe.Name -like "hz6-*") {
+                    $lastStats = $parsedStats
+                }
             }
 
             if ($opsRuns.Count -eq 0) {
-                $Summary.Add(('| {0} | failed | `{1}` |' -f $exe.Name, ($runTexts -join ", ")))
+                $Summary.Add(('| {0} | failed | NA | NA | NA | NA | NA | `{1}` |' -f $exe.Name, ($runTexts -join ", ")))
                 continue
             }
 
             $medianOps = Get-Median -Values $opsRuns.ToArray()
-            $Summary.Add(('| {0} | {1:N3}M | `{2}` |' -f $exe.Name, ($medianOps / 1000000.0), ($runTexts -join ", ")))
+            $Summary.Add(('| {0} | {1:N3}M | {2} | {3} | {4} | {5} | {6} | `{7}` |' -f $exe.Name,
+                ($medianOps / 1000000.0),
+                $lastStats.RouteMiss,
+                $lastStats.SourceAlloc,
+                $lastStats.TransferPush,
+                $lastStats.TransferPop,
+                $lastStats.AllocFail,
+                ($runTexts -join ", ")))
         }
 
         $Summary.Add("")

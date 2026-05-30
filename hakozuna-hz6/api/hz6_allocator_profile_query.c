@@ -61,21 +61,35 @@ size_t hz6_allocator_control_source_refill_batch(
   size_t source_alloc = allocator->stats.source_alloc;
   size_t transfer_push = allocator->stats.transfer_push;
   size_t transfer_pop = allocator->stats.transfer_pop;
+  int starvation = 0;
+  int saturation = 0;
 
   if (allocator->stats.alloc_fail > 0) {
-    pressure += 2;
+    starvation = 1;
   }
   if (allocator->stats.route_miss > source_alloc + transfer_pop) {
-    pressure += 1;
+    starvation = 1;
   }
   if (transfer_capacity > 0 && transfer_count * 2 >= transfer_capacity) {
-    pressure += 1;
+    saturation = 1;
   }
   if (front_capacity > 0 && front_count * 2 >= front_capacity) {
-    pressure += 1;
+    saturation = 1;
   }
   if (transfer_push > transfer_pop + 128) {
-    pressure += 1;
+    saturation = 1;
+  }
+
+  if (starvation && !saturation) {
+    size_t boosted = base < 16 ? 16 : base * 2;
+    if (boosted < base) {
+      boosted = base;
+    }
+    return boosted;
+  }
+
+  if (saturation) {
+    pressure += 2;
   }
 
   return hz6_control_pressure_scale(base, pressure);

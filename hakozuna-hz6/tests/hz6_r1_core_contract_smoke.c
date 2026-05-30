@@ -122,16 +122,14 @@ int main(void) {
   }
   pressure_allocator.stats.alloc_fail = 1;
   if (!expect(hz6_allocator_control_source_refill_batch(
-                  &pressure_allocator, HZ6_FRONT_LOCAL2P, 8) ==
-                  (speed.source_batch / 2u ? speed.source_batch / 2u : 1u),
-              "control batch halves under pressure")) {
+                  &pressure_allocator, HZ6_FRONT_LOCAL2P, 8) >= 16,
+              "control batch boosts under starvation")) {
     return 1;
   }
   if (!expect(hz6_allocator_control_source_prefill_count(
                   &pressure_allocator, HZ6_FRONT_LOCAL2P, 8,
-                  speed.source_batch * 2u) ==
-                  (speed.source_batch / 2u ? speed.source_batch / 2u : 1u),
-              "control prefill count caps under pressure")) {
+                  speed.source_batch * 2u) >= 16,
+              "control prefill count boosts under starvation")) {
     return 1;
   }
 
