@@ -5,17 +5,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#if defined(HZ_BENCH_USE_HZ3)
-#include "hz3.h"
-#elif defined(HZ_BENCH_USE_HZ4)
-#include "hz4_win_api.h"
-#elif defined(HZ_BENCH_USE_MIMALLOC)
-#include <mimalloc.h>
-#elif defined(HZ_BENCH_USE_TCMALLOC)
-#include <gperftools/tcmalloc.h>
-#endif
+#include "bench_modern_allocator_adapter.h"
 
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #include <process.h>
 
@@ -44,6 +38,7 @@ typedef struct ThreadState {
     uint64_t remote_sends;
     uint64_t remote_received_frees;
     uint64_t remote_fallback_frees;
+    uint64_t alloc_failures;
 } ThreadState;
 
 static uint32_t parse_u32(const char* s, uint32_t def) {
@@ -86,31 +81,11 @@ static inline size_t pick_size(uint32_t r, size_t min_size, size_t max_size) {
 }
 
 static inline void* bench_alloc(size_t size) {
-#if defined(HZ_BENCH_USE_HZ3)
-    return hz3_malloc(size);
-#elif defined(HZ_BENCH_USE_HZ4)
-    return hz4_win_malloc(size);
-#elif defined(HZ_BENCH_USE_MIMALLOC)
-    return mi_malloc(size);
-#elif defined(HZ_BENCH_USE_TCMALLOC)
-    return tc_malloc(size);
-#else
-    return malloc(size);
-#endif
+    return hz_bench_alloc(size);
 }
 
 static inline void bench_free(void* ptr) {
-#if defined(HZ_BENCH_USE_HZ3)
-    hz3_free(ptr);
-#elif defined(HZ_BENCH_USE_HZ4)
-    hz4_win_free(ptr);
-#elif defined(HZ_BENCH_USE_MIMALLOC)
-    mi_free(ptr);
-#elif defined(HZ_BENCH_USE_TCMALLOC)
-    tc_free(ptr);
-#else
-    free(ptr);
-#endif
+    hz_bench_free(ptr);
 }
 
 static int ring_init(RemoteRing* ring, uint32_t capacity) {
@@ -174,6 +149,8 @@ static unsigned __stdcall bench_thread(void* arg) {
     uint32_t seed = ts->seed;
     uint32_t i;
 
+    hz_bench_allocator_thread_setup();
+
     for (i = 0; i < ts->iters; ++i) {
         uint32_t r;
         uint32_t idx;
@@ -206,6 +183,10 @@ static unsigned __stdcall bench_thread(void* arg) {
 
         ptr = bench_alloc(size);
         if (!ptr) {
+            ts->alloc_failures++;
+            if (ts->alloc_failures <= 3u) {
+                hz_bench_dump_stats(stderr, "mt_remote_alloc_fail");
+            }
             continue;
         }
         ts->slots[idx] = ptr;
@@ -214,6 +195,7 @@ static unsigned __stdcall bench_thread(void* arg) {
     }
 
     drain_remote(ts);
+    hz_bench_allocator_thread_teardown();
     return 0;
 }
 
@@ -237,6 +219,7 @@ int main(int argc, char** argv) {
     uint64_t total_remote_fallbacks = 0;
     uint64_t total_remote_received = 0;
     uint64_t total_local_frees = 0;
+    uint64_t total_alloc_failures = 0;
     uint32_t i;
     int rc = 1;
 
@@ -301,6 +284,7 @@ int main(int argc, char** argv) {
         total_remote_fallbacks += states[i].remote_fallback_frees;
         total_remote_received += states[i].remote_received_frees;
         total_local_frees += states[i].local_frees;
+        total_alloc_failures += states[i].alloc_failures;
     }
 
     for (i = 0; i < threads; ++i) {
@@ -325,6 +309,9 @@ int main(int argc, char** argv) {
            (total_remote_sends + total_local_frees + total_remote_fallbacks > 0) ? (100.0 * (double)total_remote_sends / (double)(total_remote_sends + total_local_frees + total_remote_fallbacks)) : 0.0,
            (total_remote_sends + total_remote_fallbacks > 0) ? (100.0 * (double)total_remote_fallbacks / (double)(total_remote_sends + total_remote_fallbacks)) : 0.0,
            (unsigned long long)total_remote_received);
+    printf("[ALLOC_FAILURES] count=%llu\n",
+           (unsigned long long)total_alloc_failures);
+    hz_bench_dump_stats(stdout, "mt_remote_main_final");
     rc = 0;
 
 cleanup:
@@ -348,5 +335,6 @@ cleanup:
     free(rings);
     free(handles);
     free(states);
+    hz_bench_allocator_thread_teardown();
     return rc;
 }

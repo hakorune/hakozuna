@@ -1,6 +1,9 @@
 param(
     [string]$OutputDir,
-    [int]$Runs = 10
+    [int]$Runs = 10,
+    [int]$TimeoutSeconds = 900,
+    [switch]$IncludeHz6Legacy,
+    [switch]$ContinueOnFailure
 )
 
 $ErrorActionPreference = "Stop"
@@ -15,13 +18,31 @@ if (-not $OutputDir) {
 
 New-Item -ItemType Directory -Force $OutputDir | Out-Null
 
-$Executables = @(
+$LegacyExecutables = @(
     @{ Name = "crt"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_crt.exe") },
     @{ Name = "hz3"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz3.exe") },
     @{ Name = "hz4"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz4.exe") },
+    @{ Name = "hz5-policy"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz5_policy.exe") },
     @{ Name = "mimalloc"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_mimalloc.exe") },
     @{ Name = "tcmalloc"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_tcmalloc.exe") }
 )
+
+$Hz6LegacyExecutables = @(
+    @{ Name = "hz6-strict"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz6_strict.exe") },
+    @{ Name = "hz6-speed"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz6_speed.exe") },
+    @{ Name = "hz6-rss"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz6_rss.exe") },
+    @{ Name = "hz6-strict-broad"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz6_strict_broad.exe") },
+    @{ Name = "hz6-speed-broad"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz6_speed_broad.exe") },
+    @{ Name = "hz6-rss-broad"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz6_rss_broad.exe") },
+    @{ Name = "hz6-strict-appcap"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz6_strict_appcap.exe") },
+    @{ Name = "hz6-speed-appcap"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz6_speed_appcap.exe") },
+    @{ Name = "hz6-rss-appcap"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz6_rss_appcap.exe") }
+)
+
+$Executables = $LegacyExecutables
+if ($IncludeHz6Legacy) {
+    $Executables = $LegacyExecutables + $Hz6LegacyExecutables
+}
 
 if ($Executables | Where-Object { -not (Test-Path $_.Path) }) {
     & $BuildScript
@@ -32,7 +53,7 @@ if ($Executables | Where-Object { -not (Test-Path $_.Path) }) {
 
 function Get-Median {
     param([double[]]$Values)
-    if (-not $Values -or $Values.Count -eq 0) {
+    if ($null -eq $Values -or $Values.Length -eq 0) {
         return [double]::NaN
     }
     $sorted = $Values | Sort-Object
@@ -46,7 +67,8 @@ function Get-Median {
 function Invoke-CapturedProcess {
     param(
         [string]$FilePath,
-        [string[]]$Arguments
+        [string[]]$Arguments,
+        [int]$TimeoutSeconds
     )
 
     $psi = New-Object System.Diagnostics.ProcessStartInfo
@@ -66,9 +88,21 @@ function Invoke-CapturedProcess {
     $proc = New-Object System.Diagnostics.Process
     $proc.StartInfo = $psi
     [void]$proc.Start()
+    $timedOut = $false
+    if (-not $proc.WaitForExit($TimeoutSeconds * 1000)) {
+        $timedOut = $true
+        try {
+            Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+        } catch {
+            # Best-effort timeout kill.
+        }
+        $proc.WaitForExit()
+    }
     $stdout = $proc.StandardOutput.ReadToEnd()
     $stderr = $proc.StandardError.ReadToEnd()
-    $proc.WaitForExit()
+    if (-not $timedOut) {
+        $proc.WaitForExit()
+    }
 
     $lines = New-Object System.Collections.Generic.List[string]
     foreach ($chunk in @($stdout, $stderr)) {
@@ -83,6 +117,7 @@ function Invoke-CapturedProcess {
 
     return @{
         ExitCode = $proc.ExitCode
+        TimedOut = $timedOut
         Lines = $lines
     }
 }
@@ -112,10 +147,14 @@ $Summary.Add("")
 $Summary.Add("Windows native note:")
 $Summary.Add('- benchmark: `bench_random_mixed_mt_remote_compare`')
 $Summary.Add('- params: `threads=16 iters=2000000 ws=400 size=16..2048 remote_pct=90 ring_slots=65536`')
-$Summary.Add('- runs: `10`')
+$Summary.Add(('- runs: `{0}`' -f $Runs))
+$Summary.Add(('- timeout_seconds: `{0}`' -f $TimeoutSeconds))
 $Summary.Add('- statistic: `median ops/s`')
 $Summary.Add('- hz3 profile: `scale + S97-2 direct-map bucketize + skip_tail_null`')
 $Summary.Add('- note: paper originally reports `hz3 / mimalloc / tcmalloc`; this runner also records `crt` and `hz4`')
+if (-not $IncludeHz6Legacy) {
+    $Summary.Add('- hz6 note: HZ6 rows are skipped by default because this legacy benchmark frees cross-thread pointers through per-thread allocator instances; use `-IncludeHz6Legacy` only for debugging the mismatch, and use the HZ6 standalone remote/reuse runner for HZ6 contract numbers.')
+}
 $Summary.Add("")
 $Summary.Add("| allocator | median ops/s | median actual remote % | median fallback % | runs |")
 $Summary.Add("| --- | ---: | ---: | ---: | --- |")
@@ -136,7 +175,7 @@ foreach ($exe in $Executables) {
             [string]$RemotePct,
             [string]$RingSlots
         )
-        $result = Invoke-CapturedProcess -FilePath $exe.Path -Arguments $args
+        $result = Invoke-CapturedProcess -FilePath $exe.Path -Arguments $args -TimeoutSeconds $TimeoutSeconds
         $output = $result.Lines
         $rc = $result.ExitCode
         $raw = (($output | ForEach-Object { $_.ToString().Trim() }) -join " ").Trim()
@@ -147,12 +186,26 @@ foreach ($exe in $Executables) {
         $RawLines.Add("=== " + $exe.Name + " / run " + $run + " ===")
         $RawLines.Add("cmd: " + $exe.Path + " " + ($args -join " "))
         $RawLines.Add("rc: " + $rc)
+        if ($result.TimedOut) {
+            $RawLines.Add("timeout: " + $TimeoutSeconds)
+        }
         foreach ($line in $output) {
             $RawLines.Add($line.ToString())
         }
         $RawLines.Add("")
 
         if ($rc -ne 0) {
+            if ($result.TimedOut) {
+                if ($ContinueOnFailure) {
+                    $runTexts.Add(("failed:timeout{0}" -f $TimeoutSeconds))
+                    continue
+                }
+                throw "MT remote runner allocator $($exe.Name) timed out after $TimeoutSeconds seconds"
+            }
+            if ($ContinueOnFailure) {
+                $runTexts.Add(("failed:rc{0}" -f $rc))
+                continue
+            }
             throw "MT remote runner allocator $($exe.Name) failed with exit code $rc"
         }
         if ($raw -notmatch "ops/s=([0-9.]+)") {
@@ -172,6 +225,11 @@ foreach ($exe in $Executables) {
             $fallbackRuns.Add($fallback)
         }
         $runTexts.Add(("{0:N3}M / actual {1:N2}% / fallback {2:N2}%" -f ($ops / 1000000.0), $actual, $fallback))
+    }
+
+    if ($opsRuns.Count -eq 0) {
+        $Summary.Add(('| {0} | failed | n/a | n/a | `{1}` |' -f $exe.Name, ($runTexts -join ", ")))
+        continue
     }
 
     $medianOps = Get-Median -Values $opsRuns.ToArray()

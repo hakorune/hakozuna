@@ -1,7 +1,8 @@
 param(
     [string]$OutputDir,
     [int]$Runs = 10,
-    [string[]]$Profiles
+    [string[]]$Profiles,
+    [switch]$ContinueOnFailure
 )
 
 $ErrorActionPreference = "Stop"
@@ -20,6 +21,16 @@ $Executables = @(
     @{ Name = "crt"; Path = (Join-Path $SuiteDir "bench_random_mixed_crt.exe") },
     @{ Name = "hz3"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz3.exe") },
     @{ Name = "hz4"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz4.exe") },
+    @{ Name = "hz5-policy"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz5_policy.exe") },
+    @{ Name = "hz6-strict"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_strict.exe") },
+    @{ Name = "hz6-speed"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_speed.exe") },
+    @{ Name = "hz6-rss"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_rss.exe") },
+    @{ Name = "hz6-strict-broad"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_strict_broad.exe") },
+    @{ Name = "hz6-speed-broad"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_speed_broad.exe") },
+    @{ Name = "hz6-rss-broad"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_rss_broad.exe") },
+    @{ Name = "hz6-strict-appcap"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_strict_appcap.exe") },
+    @{ Name = "hz6-speed-appcap"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_speed_appcap.exe") },
+    @{ Name = "hz6-rss-appcap"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_rss_appcap.exe") },
     @{ Name = "mimalloc"; Path = (Join-Path $SuiteDir "bench_random_mixed_mimalloc.exe") },
     @{ Name = "tcmalloc"; Path = (Join-Path $SuiteDir "bench_random_mixed_tcmalloc.exe") }
 )
@@ -33,7 +44,7 @@ if ($Executables | Where-Object { -not (Test-Path $_.Path) }) {
 
 function Get-Median {
     param([double[]]$Values)
-    if (-not $Values -or $Values.Count -eq 0) {
+    if ($null -eq $Values -or $Values.Length -eq 0) {
         return [double]::NaN
     }
     $sorted = $Values | Sort-Object
@@ -42,6 +53,40 @@ function Get-Median {
         return [double]$sorted[$mid]
     }
     return ([double]$sorted[$mid - 1] + [double]$sorted[$mid]) / 2.0
+}
+
+function Invoke-CapturedProcess {
+    param(
+        [string]$FilePath,
+        [string[]]$Arguments
+    )
+
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = $FilePath
+    $psi.UseShellExecute = $false
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+    $psi.Arguments = ($Arguments | ForEach-Object {
+        if ($_ -match '[\s"]') { '"' + ($_ -replace '"', '\"') + '"' } else { $_ }
+    }) -join ' '
+
+    $proc = New-Object System.Diagnostics.Process
+    $proc.StartInfo = $psi
+    [void]$proc.Start()
+    $stdout = $proc.StandardOutput.ReadToEnd()
+    $stderr = $proc.StandardError.ReadToEnd()
+    $proc.WaitForExit()
+
+    $lines = New-Object System.Collections.Generic.List[string]
+    foreach ($chunk in @($stdout, $stderr)) {
+        if (-not [string]::IsNullOrEmpty($chunk)) {
+            foreach ($line in ($chunk -split "`r?`n")) {
+                if ($line -ne "") { $lines.Add($line) }
+            }
+        }
+    }
+
+    return @{ ExitCode = $proc.ExitCode; Lines = $lines }
 }
 
 $AllProfiles = @(
@@ -82,7 +127,7 @@ $Summary.Add('- benchmark: `bench_random_mixed_compare`')
 $Summary.Add('- allocator model: per-allocator link-mode executables, no `LD_PRELOAD`')
 $Summary.Add('- throughput statistic: `median ops/s`')
 $Summary.Add('- memory note: Windows reports `PeakWorkingSetSize` as `[RSS] peak_kb`, which is not identical to Linux `ru_maxrss`')
-$Summary.Add('- profiles: `small`, `medium`, `mixed` with `RUNS=10`, `ITERS=20,000,000`, `WS=400`')
+$Summary.Add(('- profiles: `small`, `medium`, `mixed` with `RUNS={0}`, `ITERS=20,000,000`, `WS=400`' -f $Runs))
 $Summary.Add("")
 
 foreach ($profile in $Selected) {
@@ -107,8 +152,9 @@ foreach ($profile in $Selected) {
                 [string]$profile.MinSize,
                 [string]$profile.MaxSize
             )
-            $output = & $exe.Path @args 2>&1
-            $rc = $LASTEXITCODE
+            $result = Invoke-CapturedProcess -FilePath $exe.Path -Arguments $args
+            $output = $result.Lines
+            $rc = $result.ExitCode
             $raw = (($output | ForEach-Object { $_.ToString().Trim() }) -join " ").Trim()
             if (-not $raw) {
                 $raw = "(no output)"
@@ -123,9 +169,17 @@ foreach ($profile in $Selected) {
             $RawLines.Add("")
 
             if ($rc -ne 0) {
+                if ($ContinueOnFailure) {
+                    $runTexts.Add(("failed:rc{0}" -f $rc))
+                    continue
+                }
                 throw "Profile $($profile.Name) allocator $($exe.Name) failed with exit code $rc"
             }
             if ($raw -notmatch "ops/s=([0-9.]+)") {
+                if ($ContinueOnFailure) {
+                    $runTexts.Add("failed:parse")
+                    continue
+                }
                 throw "Could not parse ops/s for profile $($profile.Name) allocator $($exe.Name)"
             }
             $ops = [double]$Matches[1]
@@ -139,6 +193,11 @@ foreach ($profile in $Selected) {
             } else {
                 $runTexts.Add(("{0:N3}M" -f ($ops / 1000000.0)))
             }
+        }
+
+        if ($opsRuns.Count -eq 0) {
+            $Summary.Add(('| {0} | failed | n/a | `{1}` |' -f $exe.Name, ($runTexts -join ", ")))
+            continue
         }
 
         $medianOps = Get-Median -Values $opsRuns.ToArray()

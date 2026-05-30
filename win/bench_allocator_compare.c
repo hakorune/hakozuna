@@ -14,6 +14,8 @@
 #include "hz6_allocator.h"
 #include "hz6_allocator_api_init.h"
 #include "hz6_profiles.h"
+#elif defined(HZ_BENCH_USE_HZ5_POLICY)
+#include "hz5_policy.h"
 #elif defined(HZ_BENCH_USE_MIMALLOC)
 #include <mimalloc.h>
 #elif defined(HZ_BENCH_USE_TCMALLOC)
@@ -37,14 +39,25 @@
 #endif
 #endif
 
+#if defined(HZ_BENCH_USE_HZ5_POLICY)
+#ifndef HZ_BENCH_HZ5_ALIGN
+#define HZ_BENCH_HZ5_ALIGN 16u
+#endif
+#endif
+
 typedef struct {
     uint32_t seed;
     size_t iters;
     size_t ws;
     size_t min_size;
     size_t max_size;
+    size_t alloc_attempts;
+    size_t alloc_successes;
+    size_t alloc_failures;
+    size_t frees;
 #if defined(HZ_BENCH_USE_HZ6)
     Hz6Allocator hz6_allocator;
+    Hz6StatsSnapshot hz6_stats_after;
 #endif
 } ThreadArg;
 
@@ -73,6 +86,10 @@ static inline void* bench_alloc(ThreadArg* ta, size_t size) {
     return hz4_win_malloc(size);
 #elif defined(HZ_BENCH_USE_HZ6)
     return hz6_malloc(&ta->hz6_allocator, size);
+#elif defined(HZ_BENCH_USE_HZ5_POLICY)
+    (void)ta;
+    static const Hz5PolicyHooks hooks = {0};
+    return hz5_policy_alloc_aligned(size, (size_t)HZ_BENCH_HZ5_ALIGN, &hooks);
 #elif defined(HZ_BENCH_USE_MIMALLOC)
     (void)ta;
     return mi_malloc(size);
@@ -93,6 +110,11 @@ static inline void* bench_realloc(ThreadArg* ta, void* ptr, size_t size) {
     (void)ta;
     return hz4_win_realloc(ptr, size);
 #elif defined(HZ_BENCH_USE_HZ6)
+    (void)ta;
+    (void)ptr;
+    (void)size;
+    return NULL;
+#elif defined(HZ_BENCH_USE_HZ5_POLICY)
     (void)ta;
     (void)ptr;
     (void)size;
@@ -118,6 +140,10 @@ static inline void bench_free(ThreadArg* ta, void* ptr) {
     hz4_win_free(ptr);
 #elif defined(HZ_BENCH_USE_HZ6)
     hz6_free(&ta->hz6_allocator, ptr);
+#elif defined(HZ_BENCH_USE_HZ5_POLICY)
+    (void)ta;
+    static const Hz5PolicyHooks hooks = {0};
+    (void)hz5_policy_free(ptr, &hooks);
 #elif defined(HZ_BENCH_USE_MIMALLOC)
     (void)ta;
     mi_free(ptr);
@@ -172,15 +198,19 @@ static unsigned __stdcall bench_thread(void* arg) {
         size_t idx = (size_t)(r % (uint32_t)ws);
         if (slots[idx]) {
             bench_free(ta, slots[idx]);
+            ++ta->frees;
             slots[idx] = NULL;
             continue;
         }
 
         size_t size = pick_size(r, ta->min_size, ta->max_size);
+        ++ta->alloc_attempts;
         void* p = bench_alloc(ta, size);
         if (!p) {
+            ++ta->alloc_failures;
             continue;
         }
+        ++ta->alloc_successes;
         if (!HZ_BENCH_DISABLE_REALLOC && ((i & 0x3fu) == 0)) {
             size_t new_size = size + 16;
             void* p2 = bench_realloc(ta, p, new_size);
@@ -196,8 +226,12 @@ static unsigned __stdcall bench_thread(void* arg) {
     for (size_t i = 0; i < ws; i++) {
         if (slots[i]) {
             bench_free(ta, slots[i]);
+            ++ta->frees;
         }
     }
+#if defined(HZ_BENCH_USE_HZ6)
+    ta->hz6_stats_after = hz6_stats_snapshot(&ta->hz6_allocator);
+#endif
     bench_thread_teardown(ta);
     free(slots);
     return 0;
@@ -224,15 +258,19 @@ static void* bench_thread(void* arg) {
         size_t idx = (size_t)(r % (uint32_t)ws);
         if (slots[idx]) {
             bench_free(ta, slots[idx]);
+            ++ta->frees;
             slots[idx] = NULL;
             continue;
         }
 
         size_t size = pick_size(r, ta->min_size, ta->max_size);
+        ++ta->alloc_attempts;
         void* p = bench_alloc(ta, size);
         if (!p) {
+            ++ta->alloc_failures;
             continue;
         }
+        ++ta->alloc_successes;
         if (!HZ_BENCH_DISABLE_REALLOC && ((i & 0x3fu) == 0)) {
             size_t new_size = size + 16;
             void* p2 = bench_realloc(ta, p, new_size);
@@ -248,8 +286,12 @@ static void* bench_thread(void* arg) {
     for (size_t i = 0; i < ws; i++) {
         if (slots[i]) {
             bench_free(ta, slots[i]);
+            ++ta->frees;
         }
     }
+#if defined(HZ_BENCH_USE_HZ6)
+    ta->hz6_stats_after = hz6_stats_snapshot(&ta->hz6_allocator);
+#endif
     bench_thread_teardown(ta);
     free(slots);
     return NULL;
@@ -328,8 +370,106 @@ int main(int argc, char** argv) {
     double total_ops = (double)threads * (double)iters;
     double ops_sec = sec > 0.0 ? (total_ops / sec) : 0.0;
 
-    printf("threads=%zu iters=%zu ws=%zu size=%zu..%zu time=%.3f ops/s=%.3f\n",
-           threads, iters, ws, min_size, max_size, sec, ops_sec);
+    size_t alloc_attempts = 0;
+    size_t alloc_successes = 0;
+    size_t alloc_failures = 0;
+    size_t frees = 0;
+#if defined(HZ_BENCH_USE_HZ6)
+    Hz6StatsSnapshot hz6_stats;
+    memset(&hz6_stats, 0, sizeof(hz6_stats));
+#endif
+    for (size_t i = 0; i < threads; i++) {
+        alloc_attempts += args[i].alloc_attempts;
+        alloc_successes += args[i].alloc_successes;
+        alloc_failures += args[i].alloc_failures;
+        frees += args[i].frees;
+#if defined(HZ_BENCH_USE_HZ6)
+        hz6_stats.route_valid += args[i].hz6_stats_after.route_valid;
+        hz6_stats.route_invalid += args[i].hz6_stats_after.route_invalid;
+        hz6_stats.route_miss += args[i].hz6_stats_after.route_miss;
+        hz6_stats.transfer_push += args[i].hz6_stats_after.transfer_push;
+        hz6_stats.transfer_pop += args[i].hz6_stats_after.transfer_pop;
+        hz6_stats.source_alloc += args[i].hz6_stats_after.source_alloc;
+        hz6_stats.alloc_fail += args[i].hz6_stats_after.alloc_fail;
+        hz6_stats.descriptor_exhausted +=
+            args[i].hz6_stats_after.descriptor_exhausted;
+        hz6_stats.route_register_fail +=
+            args[i].hz6_stats_after.route_register_fail;
+        hz6_stats.source_block_exhausted +=
+            args[i].hz6_stats_after.source_block_exhausted;
+        hz6_stats.descriptor_probe_total +=
+            args[i].hz6_stats_after.descriptor_probe_total;
+        if (args[i].hz6_stats_after.descriptor_probe_max >
+            hz6_stats.descriptor_probe_max) {
+            hz6_stats.descriptor_probe_max =
+                args[i].hz6_stats_after.descriptor_probe_max;
+        }
+        hz6_stats.route_register_probe_total +=
+            args[i].hz6_stats_after.route_register_probe_total;
+        if (args[i].hz6_stats_after.route_register_probe_max >
+            hz6_stats.route_register_probe_max) {
+            hz6_stats.route_register_probe_max =
+                args[i].hz6_stats_after.route_register_probe_max;
+        }
+        hz6_stats.route_unregister_probe_total +=
+            args[i].hz6_stats_after.route_unregister_probe_total;
+        if (args[i].hz6_stats_after.route_unregister_probe_max >
+            hz6_stats.route_unregister_probe_max) {
+            hz6_stats.route_unregister_probe_max =
+                args[i].hz6_stats_after.route_unregister_probe_max;
+        }
+        hz6_stats.source_block_probe_total +=
+            args[i].hz6_stats_after.source_block_probe_total;
+        if (args[i].hz6_stats_after.source_block_probe_max >
+            hz6_stats.source_block_probe_max) {
+            hz6_stats.source_block_probe_max =
+                args[i].hz6_stats_after.source_block_probe_max;
+        }
+        hz6_stats.large_span_central_push +=
+            args[i].hz6_stats_after.large_span_central_push;
+        hz6_stats.large_span_central_pop +=
+            args[i].hz6_stats_after.large_span_central_pop;
+        hz6_stats.large_span_source_alloc +=
+            args[i].hz6_stats_after.large_span_source_alloc;
+#endif
+    }
+
+    printf("threads=%zu iters=%zu ws=%zu size=%zu..%zu time=%.3f ops/s=%.3f "
+           "alloc_attempts=%zu alloc_success=%zu alloc_fail=%zu frees=%zu",
+           threads, iters, ws, min_size, max_size, sec, ops_sec,
+           alloc_attempts, alloc_successes, alloc_failures, frees);
+#if defined(HZ_BENCH_USE_HZ6)
+    printf(" hz6_route_valid=%zu hz6_route_invalid=%zu hz6_route_miss=%zu "
+           "hz6_transfer_push=%zu hz6_transfer_pop=%zu "
+           "hz6_source_alloc=%zu hz6_alloc_fail=%zu "
+           "hz6_descriptor_exhausted=%zu hz6_route_register_fail=%zu "
+           "hz6_source_block_exhausted=%zu hz6_descriptor_probe_total=%zu "
+           "hz6_descriptor_probe_max=%zu "
+           "hz6_route_register_probe_total=%zu "
+           "hz6_route_register_probe_max=%zu "
+           "hz6_route_unregister_probe_total=%zu "
+           "hz6_route_unregister_probe_max=%zu "
+           "hz6_source_block_probe_total=%zu "
+           "hz6_source_block_probe_max=%zu "
+           "hz6_large_central_push=%zu hz6_large_central_pop=%zu "
+           "hz6_large_source_alloc=%zu",
+           hz6_stats.route_valid, hz6_stats.route_invalid,
+           hz6_stats.route_miss, hz6_stats.transfer_push,
+           hz6_stats.transfer_pop, hz6_stats.source_alloc,
+           hz6_stats.alloc_fail, hz6_stats.descriptor_exhausted,
+           hz6_stats.route_register_fail, hz6_stats.source_block_exhausted,
+           hz6_stats.descriptor_probe_total, hz6_stats.descriptor_probe_max,
+           hz6_stats.route_register_probe_total,
+           hz6_stats.route_register_probe_max,
+           hz6_stats.route_unregister_probe_total,
+           hz6_stats.route_unregister_probe_max,
+           hz6_stats.source_block_probe_total,
+           hz6_stats.source_block_probe_max,
+           hz6_stats.large_span_central_push,
+           hz6_stats.large_span_central_pop,
+           hz6_stats.large_span_source_alloc);
+#endif
+    printf("\n");
 
     free(args);
     return 0;

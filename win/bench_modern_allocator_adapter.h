@@ -1,0 +1,164 @@
+#ifndef HZ_BENCH_MODERN_ALLOCATOR_ADAPTER_H
+#define HZ_BENCH_MODERN_ALLOCATOR_ADAPTER_H
+
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#if defined(HZ_BENCH_USE_HZ3)
+#include "hz3.h"
+#elif defined(HZ_BENCH_USE_HZ4)
+#include "hz4_win_api.h"
+#elif defined(HZ_BENCH_USE_HZ6)
+#include "hz6_allocator.h"
+#include "hz6_allocator_api_init.h"
+#include "hz6_profiles.h"
+#elif defined(HZ_BENCH_USE_HZ5_POLICY)
+#include "hz5_policy.h"
+#elif defined(HZ_BENCH_USE_MIMALLOC)
+#include <mimalloc.h>
+#elif defined(HZ_BENCH_USE_TCMALLOC)
+#include <gperftools/tcmalloc.h>
+#endif
+
+#if defined(HZ_BENCH_USE_HZ6)
+#ifndef HZ_BENCH_HZ6_PROFILE
+#define HZ_BENCH_HZ6_PROFILE HZ6_PROFILE_STRICT
+#endif
+
+__declspec(thread) static Hz6Allocator hz_bench_tls_hz6_allocator;
+__declspec(thread) static int hz_bench_tls_hz6_initialized;
+#endif
+
+#if defined(HZ_BENCH_USE_HZ5_POLICY)
+#ifndef HZ_BENCH_HZ5_ALIGN
+#define HZ_BENCH_HZ5_ALIGN 16u
+#endif
+#endif
+
+static inline void hz_bench_allocator_thread_setup(void) {
+#if defined(HZ_BENCH_USE_HZ6)
+    if (!hz_bench_tls_hz6_initialized) {
+        hz6_allocator_init_with_profile(&hz_bench_tls_hz6_allocator, HZ_BENCH_HZ6_PROFILE);
+        hz_bench_tls_hz6_initialized = 1;
+    }
+#endif
+}
+
+static inline void hz_bench_allocator_thread_teardown(void) {
+#if defined(HZ_BENCH_USE_HZ6)
+    if (hz_bench_tls_hz6_initialized) {
+        hz6_allocator_destroy(&hz_bench_tls_hz6_allocator);
+        hz_bench_tls_hz6_initialized = 0;
+    }
+#endif
+}
+
+static inline void* hz_bench_alloc(size_t size) {
+#if defined(HZ_BENCH_USE_HZ3)
+    return hz3_malloc(size);
+#elif defined(HZ_BENCH_USE_HZ4)
+    return hz4_win_malloc(size);
+#elif defined(HZ_BENCH_USE_HZ6)
+    hz_bench_allocator_thread_setup();
+    return hz6_malloc(&hz_bench_tls_hz6_allocator, size);
+#elif defined(HZ_BENCH_USE_HZ5_POLICY)
+    static const Hz5PolicyHooks hooks = {0};
+    return hz5_policy_alloc_aligned(size, (size_t)HZ_BENCH_HZ5_ALIGN, &hooks);
+#elif defined(HZ_BENCH_USE_MIMALLOC)
+    return mi_malloc(size);
+#elif defined(HZ_BENCH_USE_TCMALLOC)
+    return tc_malloc(size);
+#else
+    return malloc(size);
+#endif
+}
+
+static inline void hz_bench_free(void* ptr) {
+#if defined(HZ_BENCH_USE_HZ3)
+    hz3_free(ptr);
+#elif defined(HZ_BENCH_USE_HZ4)
+    hz4_win_free(ptr);
+#elif defined(HZ_BENCH_USE_HZ6)
+    hz_bench_allocator_thread_setup();
+    hz6_free(&hz_bench_tls_hz6_allocator, ptr);
+#elif defined(HZ_BENCH_USE_HZ5_POLICY)
+    static const Hz5PolicyHooks hooks = {0};
+    (void)hz5_policy_free(ptr, &hooks);
+#elif defined(HZ_BENCH_USE_MIMALLOC)
+    mi_free(ptr);
+#elif defined(HZ_BENCH_USE_TCMALLOC)
+    tc_free(ptr);
+#else
+    free(ptr);
+#endif
+}
+
+static inline void hz_bench_dump_stats(FILE* out, const char* label) {
+#if defined(HZ_BENCH_USE_HZ6)
+    if (hz_bench_tls_hz6_initialized) {
+        Hz6StatsSnapshot s = hz6_stats_snapshot(&hz_bench_tls_hz6_allocator);
+#if HZ6_DIAGNOSTIC_PROBES
+        fprintf(out,
+                "[HZ6_STATS] label=%s route_valid=%zu route_invalid=%zu route_miss=%zu "
+                "transfer_push=%zu transfer_pop=%zu source_alloc=%zu alloc_fail=%zu "
+                "descriptor_exhausted=%zu route_register_fail=%zu source_block_exhausted=%zu "
+                "route_active_current=%zu route_active_max=%zu "
+                "descriptor_probe_total=%zu descriptor_probe_max=%zu "
+                "route_register_probe_total=%zu route_register_probe_max=%zu "
+                "route_unregister_probe_total=%zu route_unregister_probe_max=%zu "
+                "source_block_probe_total=%zu source_block_probe_max=%zu "
+                "large_span_central_push=%zu large_span_central_pop=%zu large_span_source_alloc=%zu\n",
+                label ? label : "unknown",
+                s.route_valid,
+                s.route_invalid,
+                s.route_miss,
+                s.transfer_push,
+                s.transfer_pop,
+                s.source_alloc,
+                s.alloc_fail,
+                s.descriptor_exhausted,
+                s.route_register_fail,
+                s.source_block_exhausted,
+                s.route_active_current,
+                s.route_active_max,
+                s.descriptor_probe_total,
+                s.descriptor_probe_max,
+                s.route_register_probe_total,
+                s.route_register_probe_max,
+                s.route_unregister_probe_total,
+                s.route_unregister_probe_max,
+                s.source_block_probe_total,
+                s.source_block_probe_max,
+                s.large_span_central_push,
+                s.large_span_central_pop,
+                s.large_span_source_alloc);
+#else
+        fprintf(out,
+                "[HZ6_STATS] label=%s route_valid=%zu route_invalid=%zu route_miss=%zu "
+                "transfer_push=%zu transfer_pop=%zu source_alloc=%zu alloc_fail=%zu "
+                "descriptor_exhausted=%zu route_register_fail=%zu source_block_exhausted=%zu "
+                "large_span_central_push=%zu large_span_central_pop=%zu large_span_source_alloc=%zu\n",
+                label ? label : "unknown",
+                s.route_valid,
+                s.route_invalid,
+                s.route_miss,
+                s.transfer_push,
+                s.transfer_pop,
+                s.source_alloc,
+                s.alloc_fail,
+                s.descriptor_exhausted,
+                s.route_register_fail,
+                s.source_block_exhausted,
+                s.large_span_central_push,
+                s.large_span_central_pop,
+                s.large_span_source_alloc);
+#endif
+    }
+#else
+    (void)out;
+    (void)label;
+#endif
+}
+
+#endif

@@ -8,6 +8,7 @@ $RepoRoot = Split-Path -Parent $PSScriptRoot
 $OutDir = Join-Path $RepoRoot "out_win_mt_remote"
 $ObjDir = Join-Path $OutDir "obj"
 $SuiteBuild = Join-Path $PSScriptRoot "build_win_allocator_suite.ps1"
+$ModernBuildCommon = Join-Path $PSScriptRoot "bench_app_like_allocator_build_common.ps1"
 $Hz3BuildScript = Join-Path $RepoRoot "hakozuna\win\build_win_min.ps1"
 
 New-Item -ItemType Directory -Force $OutDir | Out-Null
@@ -35,6 +36,8 @@ if (-not $VcpkgRoot) {
 if (-not $VcpkgRoot) {
     $VcpkgRoot = "C:\vcpkg"
 }
+
+. $ModernBuildCommon
 
 & $SuiteBuild
 if ($LASTEXITCODE -ne 0) {
@@ -68,6 +71,7 @@ $BaseFlags = @(
     "/std:c11",
     "/W3",
     "/MD",
+    "/I$PSScriptRoot",
     "/I$Hz3Dir\include",
     "/I$Hz3Dir\win\include",
     "/I$Hz4Dir\core",
@@ -125,6 +129,21 @@ if ((Test-Path $TcHeader) -and (Test-Path $TcLib)) {
 } else {
     Write-Warning "tcmalloc not found in $VcpkgRoot; skipping tcmalloc mt_remote bench."
 }
+
+Invoke-AppLikeHz5BenchBuild `
+    -Compiler $Cc `
+    -BaseFlags $BaseFlags `
+    -RepoRoot $RepoRoot `
+    -BenchSrc $BenchSrc `
+    -OutputPath (Join-Path $OutDir "bench_random_mixed_mt_remote_hz5_policy.exe")
+
+Invoke-AppLikeHz6BenchBuilds `
+    -Compiler $Cc `
+    -BaseFlags $BaseFlags `
+    -RepoRoot $RepoRoot `
+    -BenchSrc $BenchSrc `
+    -OutDir $OutDir `
+    -OutputPrefix "bench_random_mixed_mt_remote"
 
 $RuntimeDlls = @(
     (Join-Path $VcpkgBin "mimalloc.dll"),

@@ -5,17 +5,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#if defined(HZ_BENCH_USE_HZ3)
-#include "hz3.h"
-#elif defined(HZ_BENCH_USE_HZ4)
-#include "hz4_win_api.h"
-#elif defined(HZ_BENCH_USE_MIMALLOC)
-#include <mimalloc.h>
-#elif defined(HZ_BENCH_USE_TCMALLOC)
-#include <gperftools/tcmalloc.h>
-#endif
+#include "bench_modern_allocator_adapter.h"
 
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #include <psapi.h>
 
@@ -60,31 +54,11 @@ static size_t peak_working_set_kb(void) {
 }
 
 static inline void* bench_alloc(size_t size) {
-#if defined(HZ_BENCH_USE_HZ3)
-    return hz3_malloc(size);
-#elif defined(HZ_BENCH_USE_HZ4)
-    return hz4_win_malloc(size);
-#elif defined(HZ_BENCH_USE_MIMALLOC)
-    return mi_malloc(size);
-#elif defined(HZ_BENCH_USE_TCMALLOC)
-    return tc_malloc(size);
-#else
-    return malloc(size);
-#endif
+    return hz_bench_alloc(size);
 }
 
 static inline void bench_free(void* ptr) {
-#if defined(HZ_BENCH_USE_HZ3)
-    hz3_free(ptr);
-#elif defined(HZ_BENCH_USE_HZ4)
-    hz4_win_free(ptr);
-#elif defined(HZ_BENCH_USE_MIMALLOC)
-    mi_free(ptr);
-#elif defined(HZ_BENCH_USE_TCMALLOC)
-    tc_free(ptr);
-#else
-    free(ptr);
-#endif
+    hz_bench_free(ptr);
 }
 
 int main(int argc, char** argv) {
@@ -103,14 +77,18 @@ int main(int argc, char** argv) {
     printf("[BENCH_ARGS] iters=%u ws=%u min=%u max=%u seed=%u\n",
            iters, ws, min_size, max_size, seed);
 
-    void** slots = (void**)calloc(ws, sizeof(void*));
-    if (!slots) {
-        fprintf(stderr, "bench_random_mixed_compare: slots alloc failed\n");
-        return 1;
-    }
+    hz_bench_allocator_thread_setup();
 
     uint64_t ops = 0;
     uint64_t t0 = now_ns();
+    int rc = 0;
+
+    void** slots = (void**)calloc(ws, sizeof(void*));
+    if (!slots) {
+        fprintf(stderr, "bench_random_mixed_compare: slots alloc failed\n");
+        hz_bench_allocator_thread_teardown();
+        return 1;
+    }
 
     for (uint32_t i = 0; i < iters; i++) {
         uint32_t r = rng_next(&seed);
@@ -125,8 +103,9 @@ int main(int argc, char** argv) {
             void* p = bench_alloc(sz);
             if (!p) {
                 fprintf(stderr, "bench_random_mixed_compare: alloc failed at iter=%u size=%zu\n", i, sz);
-                free(slots);
-                return 1;
+                hz_bench_dump_stats(stderr, "random_mixed_alloc_fail");
+                rc = 1;
+                break;
             }
             slots[idx] = p;
             ops++;
@@ -149,7 +128,9 @@ int main(int argc, char** argv) {
     printf("bench_random_mixed_compare: ops=%llu time=%.6f ops/s=%.2f\n",
            (unsigned long long)ops, dt, ops_s);
     printf("[RSS] peak_kb=%zu\n", peak_kb);
+    hz_bench_dump_stats(stdout, "random_mixed_final");
 
     free(slots);
-    return 0;
+    hz_bench_allocator_thread_teardown();
+    return rc;
 }

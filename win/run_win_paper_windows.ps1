@@ -19,6 +19,13 @@ $Executables = @(
     @{ Name = "crt"; Path = (Join-Path $SuiteDir "bench_mixed_ws_crt.exe") },
     @{ Name = "hz3"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz3.exe") },
     @{ Name = "hz4"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz4.exe") },
+    @{ Name = "hz5-policy"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz5_policy.exe") },
+    @{ Name = "hz6-strict"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_strict.exe") },
+    @{ Name = "hz6-speed"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_speed.exe") },
+    @{ Name = "hz6-rss"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_rss.exe") },
+    @{ Name = "hz6-strict-broad"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_strict_broad.exe") },
+    @{ Name = "hz6-speed-broad"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_speed_broad.exe") },
+    @{ Name = "hz6-rss-broad"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_rss_broad.exe") },
     @{ Name = "mimalloc"; Path = (Join-Path $SuiteDir "bench_mixed_ws_mimalloc.exe") },
     @{ Name = "tcmalloc"; Path = (Join-Path $SuiteDir "bench_mixed_ws_tcmalloc.exe") }
 )
@@ -52,7 +59,7 @@ function Invoke-BenchProcess {
 
 function Get-Median {
     param([double[]]$Values)
-    if (-not $Values -or $Values.Count -eq 0) {
+    if ($null -eq $Values -or $Values.Length -eq 0) {
         return [double]::NaN
     }
     $sorted = $Values | Sort-Object

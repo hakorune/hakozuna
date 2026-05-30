@@ -6,17 +6,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(HZ_BENCH_USE_HZ3)
-#include "hz3.h"
-#elif defined(HZ_BENCH_USE_HZ4)
-#include "hz4_win_api.h"
-#elif defined(HZ_BENCH_USE_MIMALLOC)
-#include <mimalloc.h>
-#elif defined(HZ_BENCH_USE_TCMALLOC)
-#include <gperftools/tcmalloc.h>
-#endif
+#include "bench_modern_allocator_adapter.h"
 
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #include <process.h>
 
@@ -86,37 +80,18 @@ static inline size_t pick_size(uint32_t r, size_t min_size, size_t max_size) {
 }
 
 static inline void* bench_alloc(size_t size) {
-#if defined(HZ_BENCH_USE_HZ3)
-    return hz3_malloc(size);
-#elif defined(HZ_BENCH_USE_HZ4)
-    return hz4_win_malloc(size);
-#elif defined(HZ_BENCH_USE_MIMALLOC)
-    return mi_malloc(size);
-#elif defined(HZ_BENCH_USE_TCMALLOC)
-    return tc_malloc(size);
-#else
-    return malloc(size);
-#endif
+    return hz_bench_alloc(size);
 }
 
 static inline void bench_free(void* ptr) {
-#if defined(HZ_BENCH_USE_HZ3)
-    hz3_free(ptr);
-#elif defined(HZ_BENCH_USE_HZ4)
-    hz4_win_free(ptr);
-#elif defined(HZ_BENCH_USE_MIMALLOC)
-    mi_free(ptr);
-#elif defined(HZ_BENCH_USE_TCMALLOC)
-    tc_free(ptr);
-#else
-    free(ptr);
-#endif
+    hz_bench_free(ptr);
 }
 
 static char* alloc_string(uint32_t* seed, size_t min_size, size_t max_size, uint32_t ordinal) {
     size_t size = pick_size(rng_next(seed), min_size, max_size);
     char* ptr = (char*)bench_alloc(size);
     if (!ptr) {
+        hz_bench_dump_stats(stderr, "redis_alloc_string_fail");
         return NULL;
     }
     _snprintf(ptr, size, "key-%u", ordinal);
@@ -134,8 +109,11 @@ static unsigned __stdcall redis_worker(void* raw_arg) {
     uint32_t i;
     uint32_t cycle;
 
+    hz_bench_allocator_thread_setup();
+
     pool = (char**)calloc(g_pool_capacity, sizeof(char*));
     if (!pool) {
+        hz_bench_allocator_thread_teardown();
         return 0;
     }
 
@@ -221,6 +199,7 @@ static unsigned __stdcall redis_worker(void* raw_arg) {
         }
     }
     free(pool);
+    hz_bench_allocator_thread_teardown();
     return 0;
 }
 
