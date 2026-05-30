@@ -3,6 +3,8 @@ param(
     [int]$Runs = 5,
     [int[]]$ThreadCounts,
     [int]$TimeoutSeconds = 120,
+    [switch]$IncludeCompactControl,
+    [int]$CompactChunksPerThread = 400,
     [switch]$IncludeHz6CapacityControls,
     [switch]$ContinueOnFailure
 )
@@ -145,6 +147,7 @@ $Summary.Add("")
 $Summary.Add("Windows native note:")
 $Summary.Add('- benchmark: `bench_larson_compare`')
 $Summary.Add('- params: `runtime=10s min=8 max=1024 chunks=10000 rounds=1 seed=12345`')
+$Summary.Add(('- compact control (optional): `chunks={0}`' -f $CompactChunksPerThread))
 $Summary.Add('- thread sweep: `1, 4, 8, 16`')
 $Summary.Add(('- runs: `{0}`' -f $Runs))
 $Summary.Add(('- timeout: `{0}s` per allocator row' -f $TimeoutSeconds))
@@ -152,69 +155,85 @@ $Summary.Add('- statistic: `median alloc/s` from the benchmark''s `Throughput = 
 $Summary.Add('- note: paper originally reports `system / hz3 / mimalloc / tcmalloc`; this runner also records `hz4`')
 $Summary.Add("")
 
-foreach ($threads in $ThreadCounts) {
-    $Summary.Add("## T=" + $threads)
-    $Summary.Add("")
-    $Summary.Add("| allocator | median ops/s | runs |")
-    $Summary.Add("| --- | ---: | --- |")
+function Invoke-LarsonSweep {
+    param(
+        [string]$SectionTitle,
+        [int]$ChunksPerThreadValue
+    )
 
-    foreach ($exe in $Executables) {
-        $opsRuns = New-Object System.Collections.Generic.List[double]
-        $runTexts = New-Object System.Collections.Generic.List[string]
+    foreach ($threads in $ThreadCounts) {
+        $Summary.Add("## " + $SectionTitle + " T=" + $threads)
+        $Summary.Add("")
+        $Summary.Add("| allocator | median ops/s | runs |")
+        $Summary.Add("| --- | ---: | --- |")
 
-        for ($run = 1; $run -le $Runs; $run++) {
-            $args = @(
-                [string]$RuntimeSec,
-                [string]$MinSize,
-                [string]$MaxSize,
-                [string]$ChunksPerThread,
-                [string]$Rounds,
-                [string]$Seed,
-                [string]$threads
-            )
-            $result = Invoke-CapturedProcess -FilePath $exe.Path -Arguments $args -TimeoutSeconds $TimeoutSeconds
-            $output = $result.Lines
-            $rc = $result.ExitCode
+        foreach ($exe in $Executables) {
+            $opsRuns = New-Object System.Collections.Generic.List[double]
+            $runTexts = New-Object System.Collections.Generic.List[string]
 
-            $RawLines.Add("=== T=" + $threads + " / " + $exe.Name + " / run " + $run + " ===")
-            $RawLines.Add("cmd: " + $exe.Path + " " + ($args -join " "))
-            $RawLines.Add("rc: " + $rc)
-            foreach ($line in $output) {
-                $RawLines.Add($line.ToString())
-            }
-            $RawLines.Add("")
+            for ($run = 1; $run -le $Runs; $run++) {
+                $args = @(
+                    [string]$RuntimeSec,
+                    [string]$MinSize,
+                    [string]$MaxSize,
+                    [string]$ChunksPerThreadValue,
+                    [string]$Rounds,
+                    [string]$Seed,
+                    [string]$threads
+                )
+                $result = Invoke-CapturedProcess -FilePath $exe.Path -Arguments $args -TimeoutSeconds $TimeoutSeconds
+                $output = $result.Lines
+                $rc = $result.ExitCode
 
-            if ($rc -ne 0) {
-                if ($ContinueOnFailure) {
-                    $runTexts.Add(("failed:rc{0}" -f $rc))
-                    continue
+                $RawLines.Add("=== " + $SectionTitle + " / T=" + $threads + " / " + $exe.Name + " / run " + $run + " ===")
+                $RawLines.Add("cmd: " + $exe.Path + " " + ($args -join " "))
+                $RawLines.Add("rc: " + $rc)
+                foreach ($line in $output) {
+                    $RawLines.Add($line.ToString())
                 }
-                throw "Larson runner allocator $($exe.Name) failed at T=$threads with exit code $rc"
+                $RawLines.Add("")
+
+                if ($rc -ne 0) {
+                    if ($ContinueOnFailure) {
+                        $runTexts.Add(("failed:rc{0}" -f $rc))
+                        continue
+                    }
+                    throw "Larson runner allocator $($exe.Name) failed at T=$threads with exit code $rc"
+                }
+
+                $raw = (($output | ForEach-Object { $_.ToString().Trim() }) -join " ").Trim()
+                if ($raw -notmatch "Throughput = ([0-9.]+) operations per second") {
+                    if ($ContinueOnFailure) {
+                        $runTexts.Add("failed:parse")
+                        continue
+                    }
+                    throw "Could not parse throughput for allocator $($exe.Name) at T=$threads"
+                }
+                $ops = [double]$Matches[1]
+                $opsRuns.Add($ops)
+                $runTexts.Add(("{0:N3}M" -f ($ops / 1000000.0)))
             }
 
-            $raw = (($output | ForEach-Object { $_.ToString().Trim() }) -join " ").Trim()
-            if ($raw -notmatch "Throughput = ([0-9.]+) operations per second") {
-                if ($ContinueOnFailure) {
-                    $runTexts.Add("failed:parse")
-                    continue
-                }
-                throw "Could not parse throughput for allocator $($exe.Name) at T=$threads"
+            if ($opsRuns.Count -eq 0) {
+                $Summary.Add(('| {0} | failed | `{1}` |' -f $exe.Name, ($runTexts -join ", ")))
+                continue
             }
-            $ops = [double]$Matches[1]
-            $opsRuns.Add($ops)
-            $runTexts.Add(("{0:N3}M" -f ($ops / 1000000.0)))
+
+            $medianOps = Get-Median -Values $opsRuns.ToArray()
+            $Summary.Add(('| {0} | {1:N3}M | `{2}` |' -f $exe.Name, ($medianOps / 1000000.0), ($runTexts -join ", ")))
         }
 
-        if ($opsRuns.Count -eq 0) {
-            $Summary.Add(('| {0} | failed | `{1}` |' -f $exe.Name, ($runTexts -join ", ")))
-            continue
-        }
-
-        $medianOps = Get-Median -Values $opsRuns.ToArray()
-        $Summary.Add(('| {0} | {1:N3}M | `{2}` |' -f $exe.Name, ($medianOps / 1000000.0), ($runTexts -join ", ")))
+        $Summary.Add("")
     }
+}
 
+Invoke-LarsonSweep -SectionTitle "Larson stress" -ChunksPerThreadValue $ChunksPerThread
+if ($IncludeCompactControl) {
+    $Summary.Add("## Compact control note")
     $Summary.Add("")
+    $Summary.Add(("- HZ6-friendly compact control uses `chunks={0}` while keeping the same runtime/size/seed settings." -f $CompactChunksPerThread))
+    $Summary.Add("")
+    Invoke-LarsonSweep -SectionTitle "Larson compact control" -ChunksPerThreadValue $CompactChunksPerThread
 }
 
 $Summary.Add("Artifacts: [out_win_larson](/C:/git/hakozuna-win/out_win_larson)")

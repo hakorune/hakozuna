@@ -6,17 +6,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(HZ_BENCH_USE_HZ3)
-#include "hz3.h"
-#elif defined(HZ_BENCH_USE_HZ4)
-#include "hz4_win_api.h"
-#elif defined(HZ_BENCH_USE_MIMALLOC)
-#include <mimalloc.h>
-#elif defined(HZ_BENCH_USE_TCMALLOC)
-#include <gperftools/tcmalloc.h>
-#endif
+#include "bench_modern_allocator_adapter.h"
 
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #include <process.h>
 
@@ -30,6 +24,9 @@ typedef struct LarsonThreadData {
     uint32_t seed;
     uint64_t alloc_count;
     uint64_t free_count;
+#if defined(HZ_BENCH_USE_HZ6)
+    Hz6StatsSnapshot hz6_stats_after;
+#endif
 } LarsonThreadData;
 
 static volatile LONG g_stop_flag = 0;
@@ -74,31 +71,11 @@ static uint64_t now_ns(void) {
 }
 
 static inline void* bench_alloc(size_t size) {
-#if defined(HZ_BENCH_USE_HZ3)
-    return hz3_malloc(size);
-#elif defined(HZ_BENCH_USE_HZ4)
-    return hz4_win_malloc(size);
-#elif defined(HZ_BENCH_USE_MIMALLOC)
-    return mi_malloc(size);
-#elif defined(HZ_BENCH_USE_TCMALLOC)
-    return tc_malloc(size);
-#else
-    return malloc(size);
-#endif
+    return hz_bench_alloc(size);
 }
 
 static inline void bench_free(void* ptr) {
-#if defined(HZ_BENCH_USE_HZ3)
-    hz3_free(ptr);
-#elif defined(HZ_BENCH_USE_HZ4)
-    hz4_win_free(ptr);
-#elif defined(HZ_BENCH_USE_MIMALLOC)
-    mi_free(ptr);
-#elif defined(HZ_BENCH_USE_TCMALLOC)
-    tc_free(ptr);
-#else
-    free(ptr);
-#endif
+    hz_bench_free(ptr);
 }
 
 static inline void touch_allocation(void* ptr, size_t size, uint32_t tag) {
@@ -115,6 +92,8 @@ static inline void touch_allocation(void* ptr, size_t size, uint32_t tag) {
 static unsigned __stdcall larson_thread(void* arg) {
     LarsonThreadData* td = (LarsonThreadData*)arg;
     uint32_t seed = td->seed;
+
+    hz_bench_allocator_thread_setup();
 
     while (InterlockedCompareExchange(&g_stop_flag, 0, 0) == 0) {
         size_t i;
@@ -140,6 +119,7 @@ static unsigned __stdcall larson_thread(void* arg) {
             new_size = pick_size(rng_next(&seed), td->min_size, td->max_size);
             next = bench_alloc(new_size);
             if (!next) {
+                hz_bench_dump_stats(stderr, "larson_thread_alloc_fail");
                 continue;
             }
             touch_allocation(next, new_size, r);
@@ -149,6 +129,12 @@ static unsigned __stdcall larson_thread(void* arg) {
         }
     }
 
+#if defined(HZ_BENCH_USE_HZ6)
+    td->hz6_stats_after = hz6_stats_snapshot(hz_bench_tls_hz6_initialized
+                                                 ? &hz_bench_tls_hz6_allocator
+                                                 : NULL);
+#endif
+    hz_bench_allocator_thread_teardown();
     return 0;
 }
 
@@ -172,6 +158,10 @@ int main(int argc, char** argv) {
     uint64_t total_allocs = 0;
     uint64_t total_frees = 0;
     size_t t;
+#if defined(HZ_BENCH_USE_HZ6)
+    Hz6StatsSnapshot hz6_stats;
+    memset(&hz6_stats, 0, sizeof(hz6_stats));
+#endif
 
     if (runtime_sec == 0 || chunks_per_thread == 0 || rounds == 0 || threads == 0 || min_size == 0 || max_size < min_size) {
         fprintf(stderr, "bench_larson_compare: invalid args\n");
@@ -183,6 +173,8 @@ int main(int argc, char** argv) {
 
     printf("[BENCH_ARGS] runtime=%u min=%u max=%u chunks=%u rounds=%u seed=%u threads=%u\n",
            runtime_sec, min_size, max_size, chunks_per_thread, rounds, seed, threads);
+
+    hz_bench_allocator_thread_setup();
 
     tds = (LarsonThreadData*)calloc(threads, sizeof(LarsonThreadData));
     handles = (HANDLE*)calloc(threads, sizeof(HANDLE));
@@ -207,6 +199,7 @@ int main(int argc, char** argv) {
             void* p = bench_alloc(size);
             if (!p) {
                 fprintf(stderr, "bench_larson_compare: warmup alloc failed at thread=%zu slot=%zu size=%zu\n", t, i, size);
+                hz_bench_dump_stats(stderr, "larson_warmup_alloc_fail");
                 goto cleanup;
             }
             touch_allocation(p, size, local_seed);
@@ -251,6 +244,55 @@ int main(int argc, char** argv) {
     for (t = 0; t < threads; ++t) {
         total_allocs += tds[t].alloc_count;
         total_frees += tds[t].free_count;
+#if defined(HZ_BENCH_USE_HZ6)
+        hz6_stats.route_valid += tds[t].hz6_stats_after.route_valid;
+        hz6_stats.route_invalid += tds[t].hz6_stats_after.route_invalid;
+        hz6_stats.route_miss += tds[t].hz6_stats_after.route_miss;
+        hz6_stats.transfer_push += tds[t].hz6_stats_after.transfer_push;
+        hz6_stats.transfer_pop += tds[t].hz6_stats_after.transfer_pop;
+        hz6_stats.source_alloc += tds[t].hz6_stats_after.source_alloc;
+        hz6_stats.alloc_fail += tds[t].hz6_stats_after.alloc_fail;
+        hz6_stats.descriptor_exhausted +=
+            tds[t].hz6_stats_after.descriptor_exhausted;
+        hz6_stats.route_register_fail +=
+            tds[t].hz6_stats_after.route_register_fail;
+        hz6_stats.source_block_exhausted +=
+            tds[t].hz6_stats_after.source_block_exhausted;
+        hz6_stats.descriptor_probe_total +=
+            tds[t].hz6_stats_after.descriptor_probe_total;
+        if (tds[t].hz6_stats_after.descriptor_probe_max >
+            hz6_stats.descriptor_probe_max) {
+            hz6_stats.descriptor_probe_max =
+                tds[t].hz6_stats_after.descriptor_probe_max;
+        }
+        hz6_stats.route_register_probe_total +=
+            tds[t].hz6_stats_after.route_register_probe_total;
+        if (tds[t].hz6_stats_after.route_register_probe_max >
+            hz6_stats.route_register_probe_max) {
+            hz6_stats.route_register_probe_max =
+                tds[t].hz6_stats_after.route_register_probe_max;
+        }
+        hz6_stats.route_unregister_probe_total +=
+            tds[t].hz6_stats_after.route_unregister_probe_total;
+        if (tds[t].hz6_stats_after.route_unregister_probe_max >
+            hz6_stats.route_unregister_probe_max) {
+            hz6_stats.route_unregister_probe_max =
+                tds[t].hz6_stats_after.route_unregister_probe_max;
+        }
+        hz6_stats.source_block_probe_total +=
+            tds[t].hz6_stats_after.source_block_probe_total;
+        if (tds[t].hz6_stats_after.source_block_probe_max >
+            hz6_stats.source_block_probe_max) {
+            hz6_stats.source_block_probe_max =
+                tds[t].hz6_stats_after.source_block_probe_max;
+        }
+        hz6_stats.large_span_central_push +=
+            tds[t].hz6_stats_after.large_span_central_push;
+        hz6_stats.large_span_central_pop +=
+            tds[t].hz6_stats_after.large_span_central_pop;
+        hz6_stats.large_span_source_alloc +=
+            tds[t].hz6_stats_after.large_span_source_alloc;
+#endif
         CloseHandle(handles[t]);
     }
 
@@ -261,6 +303,40 @@ int main(int argc, char** argv) {
     printf("[OPS] allocs=%llu frees=%llu\n",
            (unsigned long long)total_allocs,
            (unsigned long long)total_frees);
+#if defined(HZ_BENCH_USE_HZ6)
+    printf("[HZ6_STATS] label=%s route_valid=%zu route_invalid=%zu route_miss=%zu "
+           "transfer_push=%zu transfer_pop=%zu source_alloc=%zu alloc_fail=%zu "
+           "descriptor_exhausted=%zu route_register_fail=%zu source_block_exhausted=%zu "
+           "descriptor_probe_total=%zu descriptor_probe_max=%zu "
+           "route_register_probe_total=%zu route_register_probe_max=%zu "
+           "route_unregister_probe_total=%zu route_unregister_probe_max=%zu "
+           "source_block_probe_total=%zu source_block_probe_max=%zu "
+           "large_span_central_push=%zu large_span_central_pop=%zu large_span_source_alloc=%zu\n",
+           "larson_main_final",
+           hz6_stats.route_valid,
+           hz6_stats.route_invalid,
+           hz6_stats.route_miss,
+           hz6_stats.transfer_push,
+           hz6_stats.transfer_pop,
+           hz6_stats.source_alloc,
+           hz6_stats.alloc_fail,
+           hz6_stats.descriptor_exhausted,
+           hz6_stats.route_register_fail,
+           hz6_stats.source_block_exhausted,
+           hz6_stats.descriptor_probe_total,
+           hz6_stats.descriptor_probe_max,
+           hz6_stats.route_register_probe_total,
+           hz6_stats.route_register_probe_max,
+           hz6_stats.route_unregister_probe_total,
+           hz6_stats.route_unregister_probe_max,
+           hz6_stats.source_block_probe_total,
+           hz6_stats.source_block_probe_max,
+           hz6_stats.large_span_central_push,
+           hz6_stats.large_span_central_pop,
+           hz6_stats.large_span_source_alloc);
+#else
+    hz_bench_dump_stats(stdout, "larson_main_final");
+#endif
     printf("Done sleeping...\n");
 
 cleanup:
@@ -276,5 +352,6 @@ cleanup:
     free(all_blocks);
     free(handles);
     free(tds);
+    hz_bench_allocator_thread_teardown();
     return 0;
 }
