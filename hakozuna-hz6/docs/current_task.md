@@ -4,56 +4,85 @@ HZ6 is now in R1 implementation. Keep the implementation modular from the
 start: API, route, frontcache, transfer, source, owner, policy, and future
 fronts should stay separated.
 
+## Frozen Windows Ledger
+
+```text
+Reference summaries:
+  results/debug-larson-hz6-appcap-default/20260528_162426_paper_larson_windows.md
+  results/debug-redis-hz6-appcap-default/20260528_162416_paper_redis_workload_windows.md
+
+Fixed comparison policy:
+  appcap rows are the main HZ6 comparison lane
+  default and broad rows are control lanes only
+  do not treat control-row failures as production defaults
+```
+
+```text
+Larson appcap:
+  T=1:
+    hz6-strict-appcap  11.251M ops/s
+    hz6-speed-appcap   10.625M ops/s
+    hz6-rss-appcap     11.484M ops/s
+  T=16:
+    hz6-strict-appcap   0.003M ops/s
+    hz6-speed-appcap    0.003M ops/s
+    hz6-rss-appcap      0.003M ops/s
+
+Redis appcap:
+  SET:
+    hz6-strict-appcap  29.34 M ops/s
+    hz6-speed-appcap   33.44 M ops/s
+    hz6-rss-appcap     33.75 M ops/s
+  GET:
+    hz6-strict-appcap  84.73 M ops/s
+    hz6-speed-appcap  116.36 M ops/s
+    hz6-rss-appcap    104.01 M ops/s
+  LPUSH:
+    hz6-strict-appcap  21.49 M ops/s
+    hz6-speed-appcap   26.04 M ops/s
+    hz6-rss-appcap     28.72 M ops/s
+  LPOP:
+    hz6-strict-appcap 117.24 M ops/s
+    hz6-speed-appcap  167.28 M ops/s
+    hz6-rss-appcap    146.60 M ops/s
+  RANDOM:
+    hz6-strict-appcap  47.82 M ops/s
+    hz6-speed-appcap   65.06 M ops/s
+    hz6-rss-appcap     72.09 M ops/s
+```
+
+## Next Attack
+
+```text
+Primary next target:
+  Larson T=16 appcap speed
+
+Why:
+  the lane is measurable now, but still far behind the rest of the matrix
+
+Secondary follow-up:
+  keep Redis appcap as the fixed comparison lane
+  do not widen broad/default rows until the appcap lane is steadier
+```
+
 ## Current Windows Engineering Position
 
 ```text
-Latest app-like matrix:
-  results/windows-benchmark-suite/20260528_115721/app-like
-
 Status:
-  HZ6 Windows broad comparison is now split into small-cap controls and
-  fixed broad-cap rows.
+  HZ6 Windows comparison is split into fixed appcap rows and control rows.
 
-Default rows:
+Control rows:
   hz6-strict
   hz6-speed
   hz6-rss
-
-Broad rows:
   hz6-strict-broad
   hz6-speed-broad
   hz6-rss-broad
 
-Appcap rows:
+Main rows:
   hz6-strict-appcap
   hz6-speed-appcap
   hz6-rss-appcap
-  fixed-cap app-like live-set controls, not production defaults
-```
-
-App-like repeat-3 signal:
-
-```text
-Larson:
-  all HZ6 rows currently fail during warmup / parse.
-  HZ6 stats show descriptor exhaustion for default 64 and broad 4096.
-  appcap rows run at T=1 with no alloc_fail, but throughput remains well below
-  HZ3/tcmalloc/mimalloc. Treat this as lifecycle/front-source behavior after
-  capacity is satisfied.
-
-Random mixed:
-  small-cap rows fail as capacity controls.
-  broad-cap rows run and keep low peak working set, but throughput is below
-  HZ3/HZ4/tcmalloc.
-
-MT remote:
-  legacy remote runner makes HZ6 extremely slow.
-  Do not judge HZ6 remote performance from this runner; build an
-  owner/remote-aware HZ6 runner.
-
-Redis workload:
-  HZ6 default rows are strong on SET / GET / LPUSH.
-  HZ6 broad rows are weak, so broad-cap policy is not a Redis default.
 ```
 
 Latest HZ6 standalone Windows benchmark:
@@ -130,14 +159,14 @@ Current decision:
 
 ```text
 Keep:
-  fixed broad-cap rows for reproducible Windows broad comparison
-  small-cap rows as capacity controls
+  fixed appcap rows as the frozen HZ6 comparison lane
+  small-cap and broad-cap rows as controls only
   exact-route hash probing with fail-closed scan fallback
 
 Do not yet:
-  replace fixed-cap rows with adaptive capacity
-  call broad-cap rows production/default
-  remove small-cap control rows
+  promote broad/default rows to production defaults
+  remove control rows
+  widen the lane set before Larson T=16 appcap is cleaned up
 
 Next possible research:
   keep appcap rows as Larson capacity-separation evidence
