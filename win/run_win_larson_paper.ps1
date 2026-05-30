@@ -128,6 +128,14 @@ function Parse-Hz6Stats {
         TransferPush = "NA"
         TransferPop = "NA"
         AllocFail = "NA"
+        DescriptorProbeTotal = "NA"
+        DescriptorProbeMax = "NA"
+        RouteRegisterProbeTotal = "NA"
+        RouteRegisterProbeMax = "NA"
+        RouteUnregisterProbeTotal = "NA"
+        RouteUnregisterProbeMax = "NA"
+        SourceBlockProbeTotal = "NA"
+        SourceBlockProbeMax = "NA"
     }
 
     $statsLine = $Lines | Where-Object { $_.StartsWith("[HZ6_STATS]") } | Select-Object -Last 1
@@ -136,16 +144,20 @@ function Parse-Hz6Stats {
     }
 
     foreach ($part in $statsLine.Split(" ")) {
-        if ($part -like "route_miss=*") {
-            $result.RouteMiss = $part.Substring(11)
-        } elseif ($part -like "source_alloc=*") {
-            $result.SourceAlloc = $part.Substring(13)
-        } elseif ($part -like "transfer_push=*") {
-            $result.TransferPush = $part.Substring(14)
-        } elseif ($part -like "transfer_pop=*") {
-            $result.TransferPop = $part.Substring(13)
-        } elseif ($part -like "alloc_fail=*") {
-            $result.AllocFail = $part.Substring(11)
+        switch -Regex ($part) {
+            '^route_miss=(.*)$' { $result.RouteMiss = $Matches[1]; continue }
+            '^source_alloc=(.*)$' { $result.SourceAlloc = $Matches[1]; continue }
+            '^transfer_push=(.*)$' { $result.TransferPush = $Matches[1]; continue }
+            '^transfer_pop=(.*)$' { $result.TransferPop = $Matches[1]; continue }
+            '^alloc_fail=(.*)$' { $result.AllocFail = $Matches[1]; continue }
+            '^descriptor_probe_total=(.*)$' { $result.DescriptorProbeTotal = $Matches[1]; continue }
+            '^descriptor_probe_max=(.*)$' { $result.DescriptorProbeMax = $Matches[1]; continue }
+            '^route_register_probe_total=(.*)$' { $result.RouteRegisterProbeTotal = $Matches[1]; continue }
+            '^route_register_probe_max=(.*)$' { $result.RouteRegisterProbeMax = $Matches[1]; continue }
+            '^route_unregister_probe_total=(.*)$' { $result.RouteUnregisterProbeTotal = $Matches[1]; continue }
+            '^route_unregister_probe_max=(.*)$' { $result.RouteUnregisterProbeMax = $Matches[1]; continue }
+            '^source_block_probe_total=(.*)$' { $result.SourceBlockProbeTotal = $Matches[1]; continue }
+            '^source_block_probe_max=(.*)$' { $result.SourceBlockProbeMax = $Matches[1]; continue }
         }
     }
 
@@ -197,8 +209,8 @@ function Invoke-LarsonSweep {
     foreach ($threads in $ThreadCounts) {
         $Summary.Add("## " + $SectionTitle + " T=" + $threads)
         $Summary.Add("")
-        $Summary.Add("| allocator | median ops/s | route_miss | source_alloc | transfer_push | transfer_pop | alloc_fail | runs |")
-        $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
+        $Summary.Add("| allocator | median ops/s | route_miss | source_alloc | transfer_push | transfer_pop | alloc_fail | desc_probe | reg_probe | unreg_probe | srcblk_probe | runs |")
+        $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
 
         foreach ($exe in $Executables) {
             $opsRuns = New-Object System.Collections.Generic.List[double]
@@ -209,6 +221,10 @@ function Invoke-LarsonSweep {
                 TransferPush = "NA"
                 TransferPop = "NA"
                 AllocFail = "NA"
+                DescriptorProbeTotal = "NA"
+                RouteRegisterProbeTotal = "NA"
+                RouteUnregisterProbeTotal = "NA"
+                SourceBlockProbeTotal = "NA"
             }
 
             for ($run = 1; $run -le $Runs; $run++) {
@@ -259,18 +275,22 @@ function Invoke-LarsonSweep {
             }
 
             if ($opsRuns.Count -eq 0) {
-                $Summary.Add(('| {0} | failed | NA | NA | NA | NA | NA | `{1}` |' -f $exe.Name, ($runTexts -join ", ")))
+                $Summary.Add(('| {0} | failed | NA | NA | NA | NA | NA | NA | NA | NA | NA | `{1}` |' -f $exe.Name, ($runTexts -join ", ")))
                 continue
             }
 
             $medianOps = Get-Median -Values $opsRuns.ToArray()
-            $Summary.Add(('| {0} | {1:N3}M | {2} | {3} | {4} | {5} | {6} | `{7}` |' -f $exe.Name,
+            $Summary.Add(('| {0} | {1:N3}M | {2} | {3} | {4} | {5} | {6} | {7} | {8} | {9} | {10} | `{11}` |' -f $exe.Name,
                 ($medianOps / 1000000.0),
                 $lastStats.RouteMiss,
                 $lastStats.SourceAlloc,
                 $lastStats.TransferPush,
                 $lastStats.TransferPop,
                 $lastStats.AllocFail,
+                $lastStats.DescriptorProbeTotal,
+                $lastStats.RouteRegisterProbeTotal,
+                $lastStats.RouteUnregisterProbeTotal,
+                $lastStats.SourceBlockProbeTotal,
                 ($runTexts -join ", ")))
         }
 

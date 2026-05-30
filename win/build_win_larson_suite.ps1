@@ -1,5 +1,6 @@
 param(
-    [string]$VcpkgRoot
+    [string]$VcpkgRoot,
+    [switch]$DiagnosticHz6Probes
 )
 
 $ErrorActionPreference = "Stop"
@@ -132,7 +133,8 @@ Invoke-AppLikeHz6BenchBuilds `
     -RepoRoot $RepoRoot `
     -BenchSrc $BenchSrc `
     -OutDir $OutDir `
-    -OutputPrefix "bench_larson"
+    -OutputPrefix "bench_larson" `
+    -DiagnosticHz6Probes:$DiagnosticHz6Probes
 
 $RuntimeDlls = @(
     (Join-Path $VcpkgBin "mimalloc.dll"),

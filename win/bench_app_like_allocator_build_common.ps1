@@ -103,7 +103,8 @@ function Invoke-AppLikeHz6BenchBuilds {
         [Parameter(Mandatory = $true)][string]$RepoRoot,
         [Parameter(Mandatory = $true)][string]$BenchSrc,
         [Parameter(Mandatory = $true)][string]$OutDir,
-        [Parameter(Mandatory = $true)][string]$OutputPrefix
+        [Parameter(Mandatory = $true)][string]$OutputPrefix,
+        [switch]$DiagnosticHz6Probes
     )
 
     $hz6Root = Join-Path $RepoRoot "hakozuna-hz6"
@@ -136,6 +137,9 @@ function Invoke-AppLikeHz6BenchBuilds {
             $args += $commonFlags
             $args += "/DHZ_BENCH_USE_HZ6"
             $args += ("/DHZ_BENCH_HZ6_PROFILE={0}" -f $profile.Define)
+            if ($DiagnosticHz6Probes) {
+                $args += "/DHZ6_DIAGNOSTIC_PROBES=1"
+            }
             $args += $variant.ExtraFlags
             $args += $includeFlags
             $args += $libSources

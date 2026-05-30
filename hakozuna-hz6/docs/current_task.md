@@ -126,6 +126,23 @@ Do conclude:
   stress regression points at ControlPlane-L1 admission/scavenge work
 ```
 
+## Diagnostic Checkpoint 2026-05-31
+
+```text
+Larson T=16 diagnostic read:
+  stress stays near zero throughput
+  compact control stays around 60M ops/s
+
+Probe readout:
+  route_register_probe_total tracks source_alloc closely
+  descriptor_probe_total tracks source_alloc closely
+  source_block_probe_total stays 0
+
+Current read:
+  route lookup / source_block search are not the main hot spot
+  the next attack should be source reuse / admission, not more search knobs
+```
+
 ## Next Attack: HZ6-ControlPlane-L1
 
 ```text
