@@ -88,13 +88,69 @@ HZ6 owner-aware MT remote:
   clean win lane.
 ```
 
+Failure-row diagnosis:
+
+```text
+random_mixed 20260601_070706:
+  small strict/speed/rss:
+    fails at iter 79, size 1428
+    source_alloc = 64
+    descriptor_exhausted = 1
+    route_register_fail = 0
+    source_block_exhausted = 0
+
+  medium strict/speed/rss:
+    fails at iter 57, size 21472
+    source_alloc = 26
+    descriptor_exhausted = 0
+    route_register_fail = 1
+    source_block_exhausted = 11
+
+  mixed strict/speed/rss:
+    fails at iter 55, size 17001
+    source_alloc = 26
+    descriptor_exhausted = 0
+    route_register_fail = 1
+    source_block_exhausted = 8
+```
+
+Read:
+
+```text
+The strict/speed/rss failures are capacity-control failures, not a pure speed
+verdict:
+  default descriptor capacity is 64
+  default route capacity is 64
+  default source-block capacity is 16
+  random_mixed uses WS=400
+
+small fails first on descriptor capacity.
+medium/mixed fail first on source-block plus route registration capacity.
+
+The actual performance problem is the passing broad/appcap rows:
+  they survive with low-to-moderate RSS
+  but remain far behind HZ3 / HZ4 / mimalloc / tcmalloc
+```
+
 Next step:
 
 ```text
-1. Keep the RSS-aware matrix as the current Windows comparison baseline.
-2. Use the balanced / wide_ws weakness as the main low-ROI warning.
-3. Treat large_slice_64k / 128k as the strong HZ6 proof points.
-4. Add dedicated RSS sweeps only where the matrix still leaves ambiguity.
+1. Fix from failure rows outward:
+   first separate default capacity-control failures from passing-row slowness.
+
+2. Add a random_mixed diagnostic/control lane before changing production
+   defaults:
+   enough descriptor / route / source-block capacity for WS=400,
+   but smaller than appcap, so capacity and throughput can be separated.
+
+3. For passing broad/appcap rows, diagnose front/source/route cost:
+   source_alloc count
+   descriptor probe pressure
+   route register probe pressure
+   source-block probe pressure
+
+4. Keep large_slice_64k / 128k as the current strong proof points.
+5. Do not tune Redis or Larson until random_mixed failure rows are explained.
 ```
 
 ## HZ6 Windows Current Read
