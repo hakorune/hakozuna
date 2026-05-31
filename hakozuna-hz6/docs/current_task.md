@@ -416,6 +416,34 @@ Interpretation:
   route_register_probe_total still tracks source_alloc closely
 ```
 
+## Design Decision 2026-05-31f
+
+```text
+Decision:
+  do not grow toy as a special route
+  keep toy as the minimal reference front for the shared HZ6 front contract
+
+Next design:
+  reuse -> transfer/prefill reuse -> source prefill -> direct source
+  should be represented as a common front-source flow
+
+Attribution:
+  replace toy-specific witness counters with common front_id x alloc_path
+  attribution in diagnostic lanes only
+
+Rationale:
+  front_source_prefill_alloc and source_prefill_attempt/filled are active
+  toy_source_prefill_call is a weak witness because it is tied to one wrapper
+  the useful question is which front took which allocation path, not whether a
+  toy-specific hook fired
+
+Minimum next implementation:
+  add Hz6AllocPath enum
+  add common diagnostic path counters keyed by front_id and path
+  make common source acquire/prefill helpers own path attribution
+  keep speed lanes free of diagnostic atomics/counters
+```
+
 Read:
 
 ```text
