@@ -193,6 +193,10 @@ Evaluation:
   worker-warmup should improve or keep its current level without RSS blow-up
   main-warmup remains cross-owner stress evidence, not the acceptance lane for
   this step
+
+Immediate follow-up:
+  repeat worker-warmup and compact control a few times to confirm the
+  block-backed toy path is stable before touching the cross-owner lane again
 ```
 
 ## Diagnostic Checkpoint 2026-05-31

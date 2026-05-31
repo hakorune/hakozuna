@@ -47,11 +47,78 @@ function Invoke-BenchProcess {
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
     try {
-        $output = & $Path @BenchArgs 2>&1
-        $rc = $LASTEXITCODE
+        $psi = New-Object System.Diagnostics.ProcessStartInfo
+        $psi.FileName = $Path
+        $psi.UseShellExecute = $false
+        $psi.RedirectStandardOutput = $true
+        $psi.RedirectStandardError = $true
+        $psi.Arguments = ($BenchArgs | ForEach-Object {
+            if ($_ -match '[\s"]') { '"' + ($_ -replace '"', '\"') + '"' } else { $_ }
+        }) -join ' '
+
+        $proc = New-Object System.Diagnostics.Process
+        $proc.StartInfo = $psi
+        [void]$proc.Start()
+
+        $peakWorkingSetBytes = [Int64]0
+        try {
+            $proc.Refresh()
+            if ($proc.WorkingSet64 -gt $peakWorkingSetBytes) {
+                $peakWorkingSetBytes = $proc.WorkingSet64
+            }
+            if ($proc.PeakWorkingSet64 -gt $peakWorkingSetBytes) {
+                $peakWorkingSetBytes = $proc.PeakWorkingSet64
+            }
+        } catch {
+        }
+
+        while (-not $proc.HasExited) {
+            try {
+                $proc.Refresh()
+                if ($proc.WorkingSet64 -gt $peakWorkingSetBytes) {
+                    $peakWorkingSetBytes = $proc.WorkingSet64
+                }
+                if ($proc.PeakWorkingSet64 -gt $peakWorkingSetBytes) {
+                    $peakWorkingSetBytes = $proc.PeakWorkingSet64
+                }
+            } catch {
+            }
+            Start-Sleep -Milliseconds 1
+        }
+
+        $stdout = $proc.StandardOutput.ReadToEnd()
+        $stderr = $proc.StandardError.ReadToEnd()
+        $proc.WaitForExit()
+
+        try {
+            $proc.Refresh()
+            if ($proc.WorkingSet64 -gt $peakWorkingSetBytes) {
+                $peakWorkingSetBytes = $proc.WorkingSet64
+            }
+            if ($proc.PeakWorkingSet64 -gt $peakWorkingSetBytes) {
+                $peakWorkingSetBytes = $proc.PeakWorkingSet64
+            }
+        } catch {
+        }
+
+        $output = @()
+        if ($stdout) {
+            $output += $stdout
+        }
+        if ($stderr) {
+            $output += $stderr
+        }
+        $rc = $proc.ExitCode
+        $peakKb = if ($peakWorkingSetBytes -gt 0) { [string][UInt64]([Math]::Ceiling($peakWorkingSetBytes / 1024.0)) } else { "NA" }
+        if ($stdout -match 'peak_kb=([0-9]+)') {
+            $peakKb = $Matches[1]
+        } elseif ($stderr -match 'peak_kb=([0-9]+)') {
+            $peakKb = $Matches[1]
+        }
         return [pscustomobject]@{
             Output    = $output
             ExitCode  = $rc
+            PeakKb    = $peakKb
         }
     } finally {
         $ErrorActionPreference = $prevEap
@@ -135,8 +202,8 @@ foreach ($profile in $Selected) {
     $Summary.Add("- Note: " + $profile.Note)
     $Summary.Add("- Args: threads=$($profile.Threads) iters=$($profile.ItersPerThread) ws=$($profile.WorkingSet) size=$($profile.MinSize)..$($profile.MaxSize)")
     $Summary.Add("")
-    $Summary.Add("| allocator | ops/s | raw |")
-    $Summary.Add("| --- | ---: | --- |")
+$Summary.Add("| allocator | ops/s | peak RSS KB | raw |")
+$Summary.Add("| --- | ---: | ---: | --- |")
 
     $ProfileLog = Join-Path $OutputDir ($Stamp + "_" + $profile.Name + ".log")
     $LogLines = New-Object System.Collections.Generic.List[string]
@@ -160,7 +227,7 @@ foreach ($profile in $Selected) {
         $LogLines.Add($raw)
         $LogLines.Add("")
         if ($result.ExitCode -ne 0) {
-            $Summary.Add(('| {0} | failed:{1} | `{2}` |' -f $exe.Name, $result.ExitCode, $raw))
+            $Summary.Add(('| {0} | failed:{1} | {2} | `{3}` |' -f $exe.Name, $result.ExitCode, $result.PeakKb, $raw))
             if (-not $ContinueOnFailure) {
                 throw "Profile $($profile.Name) allocator $($exe.Name) failed with exit code $($result.ExitCode)"
             }
@@ -173,7 +240,7 @@ foreach ($profile in $Selected) {
         } else {
             $ops = "n/a"
         }
-        $Summary.Add(('| {0} | {1} | `{2}` |' -f $exe.Name, $ops, $raw))
+        $Summary.Add(('| {0} | {1} | {2} | `{3}` |' -f $exe.Name, $ops, $result.PeakKb, $raw))
     }
 
     Set-Content -Path $ProfileLog -Value $LogLines -Encoding UTF8

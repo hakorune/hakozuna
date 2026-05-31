@@ -85,6 +85,7 @@ if (Test-Path $Hz5Root) {
     $Hz5Args += $Hz5IncludeFlags
     $Hz5Args += $Hz5LibSources
     $Hz5Args += $CompareSource
+    $Hz5Args += "psapi.lib"
     $Hz5Args += "/Fe:$Hz5Output"
     Write-Host "[hz5-win] building bench_mixed_ws_hz5_policy.exe"
     & $Compiler.Source @Hz5Args
@@ -133,6 +134,7 @@ if (Test-Path $Hz6Common) {
             $args += $Hz6IncludeFlags
             $args += $Hz6LibSources
             $args += $CompareSource
+            $args += "psapi.lib"
             $args += "/Fe:$output"
             Write-Host ("[hz6-win] building {0}" -f (Split-Path -Leaf $output))
             & $Compiler.Source @args

@@ -17,6 +17,7 @@
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <psapi.h>
 #include <process.h>
 #endif
 
@@ -85,6 +86,14 @@ static uint64_t now_ns(void) {
     QueryPerformanceFrequency(&freq);
     QueryPerformanceCounter(&counter);
     return (uint64_t)((counter.QuadPart * 1000000000ULL) / freq.QuadPart);
+}
+
+static size_t peak_working_set_kb(void) {
+    PROCESS_MEMORY_COUNTERS pmc;
+    if (!GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc))) {
+        return 0;
+    }
+    return (size_t)(pmc.PeakWorkingSetSize / 1024u);
 }
 
 static unsigned __stdcall bench_thread(void* arg) {
@@ -256,9 +265,10 @@ int main(int argc, char** argv) {
     double sec = (double)(end - start) / 1000000000.0;
     double total_ops = (double)threads * (double)iters;
     double ops_sec = sec > 0.0 ? (total_ops / sec) : 0.0;
+    size_t peak_kb = peak_working_set_kb();
 
-    printf("threads=%zu iters=%zu ws=%zu size=%zu..%zu time=%.3f ops/s=%.3f\n",
-           threads, iters, ws, min_size, max_size, sec, ops_sec);
+    printf("threads=%zu iters=%zu ws=%zu size=%zu..%zu time=%.3f ops/s=%.3f peak_kb=%zu\n",
+           threads, iters, ws, min_size, max_size, sec, ops_sec, peak_kb);
 
     free(args);
     return 0;

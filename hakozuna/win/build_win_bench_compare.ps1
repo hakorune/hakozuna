@@ -62,7 +62,7 @@ $BenchSrc = Join-Path $RepoRoot "bench\\bench_mixed_ws.c"
 
 Write-Host "Building: bench_mixed_ws (CRT baseline)"
 $BenchCrtOut = Join-Path $OutDir "bench_mixed_ws_crt.exe"
-Invoke-Checked $Cc ($BaseFlags + @("/DHZ3_BENCH_USE_CRT=1", $BenchSrc, "/link", "/out:$BenchCrtOut"))
+Invoke-Checked $Cc ($BaseFlags + @("/DHZ3_BENCH_USE_CRT=1", $BenchSrc, "psapi.lib", "/link", "/out:$BenchCrtOut"))
 
 $Hz3Lib = Join-Path $Hz3Dir "out_win\\hz3_win.lib"
 if (-not $SkipHz3Build) {
@@ -86,7 +86,7 @@ if (-not $SkipHz3Build) {
 if (Test-Path $Hz3Lib) {
     Write-Host "Building: bench_mixed_ws (hz3)"
     $BenchHz3Out = Join-Path $OutDir "bench_mixed_ws_hz3.exe"
-    Invoke-Checked $Cc ($BaseFlags + @($BenchSrc, $Hz3Lib, "/link", "/out:$BenchHz3Out"))
+    Invoke-Checked $Cc ($BaseFlags + @($BenchSrc, $Hz3Lib, "psapi.lib", "/link", "/out:$BenchHz3Out"))
 } else {
     Write-Warning "hz3_win.lib not found; skipping hz3 bench."
 }
@@ -96,7 +96,7 @@ $MiLib = Join-Path $VcpkgLib "mimalloc.dll.lib"
 if ((Test-Path $MiHeader) -and (Test-Path $MiLib)) {
     Write-Host "Building: bench_mixed_ws (mimalloc)"
     $BenchMiOut = Join-Path $OutDir "bench_mixed_ws_mimalloc.exe"
-    Invoke-Checked $Cc ($BaseFlags + @("/I$VcpkgInclude", "/DHZ3_BENCH_USE_MIMALLOC=1", $BenchSrc, $MiLib, "/link", "/out:$BenchMiOut"))
+    Invoke-Checked $Cc ($BaseFlags + @("/I$VcpkgInclude", "/DHZ3_BENCH_USE_MIMALLOC=1", $BenchSrc, $MiLib, "psapi.lib", "/link", "/out:$BenchMiOut"))
 } else {
     Write-Warning "mimalloc not found in $VcpkgRoot; skipping mimalloc bench."
 }
@@ -106,7 +106,7 @@ $TcLib = Join-Path $VcpkgLib "tcmalloc_minimal.lib"
 if ((Test-Path $TcHeader) -and (Test-Path $TcLib)) {
     Write-Host "Building: bench_mixed_ws (tcmalloc)"
     $BenchTcOut = Join-Path $OutDir "bench_mixed_ws_tcmalloc.exe"
-    Invoke-Checked $Cc ($BaseFlags + @("/I$VcpkgInclude", "/DHZ3_BENCH_USE_TCMALLOC=1", $BenchSrc, $TcLib, "/link", "/out:$BenchTcOut"))
+    Invoke-Checked $Cc ($BaseFlags + @("/I$VcpkgInclude", "/DHZ3_BENCH_USE_TCMALLOC=1", $BenchSrc, $TcLib, "psapi.lib", "/link", "/out:$BenchTcOut"))
 } else {
     Write-Warning "tcmalloc not found in $VcpkgRoot; skipping tcmalloc bench."
 }

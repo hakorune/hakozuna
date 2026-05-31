@@ -27,6 +27,7 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
+#include <psapi.h>
 #include <process.h>
 #else
 #include <pthread.h>
@@ -181,6 +182,14 @@ static uint64_t now_ns(void) {
         uint64_t rem = (uint64_t)(counter.QuadPart % freq.QuadPart);
         return (whole * 1000000000ULL) + ((rem * 1000000000ULL) / (uint64_t)freq.QuadPart);
     }
+}
+
+static size_t peak_working_set_kb(void) {
+    PROCESS_MEMORY_COUNTERS pmc;
+    if (!GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc))) {
+        return 0;
+    }
+    return (size_t)(pmc.PeakWorkingSetSize / 1024u);
 }
 
 static unsigned __stdcall bench_thread(void* arg) {
@@ -369,6 +378,7 @@ int main(int argc, char** argv) {
     double sec = (double)(end - start) / 1000000000.0;
     double total_ops = (double)threads * (double)iters;
     double ops_sec = sec > 0.0 ? (total_ops / sec) : 0.0;
+    size_t peak_kb = peak_working_set_kb();
 
     size_t alloc_attempts = 0;
     size_t alloc_successes = 0;
@@ -469,7 +479,7 @@ int main(int argc, char** argv) {
            hz6_stats.large_span_central_pop,
            hz6_stats.large_span_source_alloc);
 #endif
-    printf("\n");
+    printf(" peak_kb=%zu\n", peak_kb);
 
     free(args);
     return 0;

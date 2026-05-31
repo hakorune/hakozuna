@@ -3,6 +3,62 @@
 HZ6 is now in active Windows/Linux implementation and benchmarking. HZ5 Linux
 remains profile-stabilized; new HZ5 work should not blur the HZ6 contract.
 
+## Latest Windows Matrix Read
+
+Latest full matrix:
+
+```text
+private/allocators/hakozuna/docs/benchmarks/windows/20260601_045004_allocator_matrix.md
+```
+
+Read:
+
+```text
+balanced / wide_ws:
+  HZ6 strict/speed/rss are far below HZ3 / HZ4 / mimalloc / tcmalloc.
+  broad-cap rows improve throughput but raise RSS substantially.
+
+larger_sizes:
+  HZ6 strict/speed/rss stay very low-RSS and are still throughput weak.
+  broad-cap rows recover throughput well and stay well below the mixed-row RSS
+  blow-up seen on balanced / wide_ws.
+
+large_slice_64k / 128k:
+  HZ6 strict/speed/rss are strong and low-RSS on the exact large-slice rows.
+  128k is particularly strong in the broad lanes and beats tcmalloc in the
+  current run.
+
+RSS:
+  the matrix now carries peak RSS KB for every allocator row, including
+  HZ3 / HZ4 / mimalloc / tcmalloc.
+```
+
+Current interpretation:
+
+```text
+strong:
+  large_slice_64k
+  large_slice_128k
+  exact large-slice low-RSS lanes
+
+weak:
+  balanced
+  wide_ws
+  small/mixed rows under strict/speed/rss controls
+
+tradeoff:
+  broad-cap HZ6 lifts throughput on many rows, but it also raises RSS.
+```
+
+Next step:
+
+```text
+1. Keep the RSS-aware matrix as the current Windows comparison baseline.
+2. Use the balanced / wide_ws weakness as the main low-ROI warning.
+3. Treat large_slice_64k / 128k as the strong HZ6 proof points.
+4. Add dedicated RSS sweeps only where the matrix still leaves ambiguity.
+```
+
 ## HZ6 Windows Current Read
 
 ```text

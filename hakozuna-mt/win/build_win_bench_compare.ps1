@@ -144,7 +144,7 @@ Invoke-Checked $Cc ($BaseFlags + @("/c", (Join-Path $Hz4Dir "win\\hz4_win_api.c"
 
 $BenchSrc = Join-Path $RepoRoot "win\\bench_allocator_compare.c"
 $BenchOut = Join-Path $OutDir "bench_mixed_ws_hz4.exe"
-Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ4=1", "/DHZ_BENCH_DISABLE_REALLOC=1", $BenchSrc, $Hz4ApiObj, $LibOut, "/link", "/out:$BenchOut"))
+Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ4=1", "/DHZ_BENCH_DISABLE_REALLOC=1", $BenchSrc, $Hz4ApiObj, $LibOut, "psapi.lib", "/link", "/out:$BenchOut"))
 
 $MiDll = Join-Path $VcpkgBin "mimalloc.dll"
 if (Test-Path $MiDll) {
