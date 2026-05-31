@@ -195,19 +195,62 @@ Read:
   but still far behind HZ3 / mimalloc / tcmalloc.
 ```
 
+Route4k lane read:
+
+```text
+Implementation:
+  route4k keeps the control capacities for descriptor / transfer /
+  source-block / front-cache, but raises only HZ6_ROUTE_TABLE_CAPACITY to
+  4096.
+
+random_mixed mixed RUNS=1 diagnostic:
+  docs/benchmarks/windows/paper/20260601_075023_paper_random_mixed_windows.md
+
+Throughput / RSS:
+  hz6-strict-route4k:
+    32.752M ops/s, 5.008 MB peak
+  hz6-speed-route4k:
+    28.102M ops/s, 5.016 MB peak
+  hz6-rss-route4k:
+    30.577M ops/s, 5.008 MB peak
+
+Compared with control:
+  strict route4k is about +18% throughput for about +0.8 MB RSS.
+  speed route4k is about +21% throughput for about +0.8 MB RSS.
+  rss route4k is about +20% throughput for about +0.8 MB RSS.
+
+Probe read:
+  route4k reduces lookup probe totals back to broad-like levels:
+    route4k ~14.8M..15.4M
+    control ~41.6M..71.1M
+
+  route4k keeps appcap's lookup benefit without appcap RSS:
+    appcap RSS ~195.7 MB
+    route4k RSS ~5.0 MB
+
+  route4k still has broad-like register probe totals:
+    ~0.44M..0.50M
+  but this is far below appcap's ~28M..32M register probe totals.
+
+Read:
+  route4k is the current best HZ6 random_mixed capacity shape:
+  broad-class throughput, near-control RSS, and no appcap blow-up.
+```
+
 Next step:
 
 ```text
 1. Keep the new random_mixed control lane as the diagnostic bridge:
    it removes the capacity failures and keeps RSS low.
 
-2. Next optimization target is route lookup shape, not another capacity bump:
-   reduce control-lane lookup probes without jumping to appcap-sized tables.
+2. Promote route4k to the primary random_mixed HZ6 candidate-control lane.
+   It isolates route-table capacity as the main cause of the control/broad
+   throughput split.
 
-3. Candidate next lane:
-   random_mixed route-locality / compact-route experiment.
-   Try a middle route capacity or page-table route policy for control-like RSS,
-   then compare route_lookup_probe_total/max and route_register_probe_total/max.
+3. Next measurement:
+   run small / medium / mixed repeat-3 for route4k vs broad vs control.
+   If route4k stays stable, use it as the HZ6 Windows app-like default
+   capacity shape for random_mixed-style rows.
 
 4. Keep large_slice_64k / 128k as the current strong proof points.
 5. Leave Redis and Larson untouched until the random_mixed throughput gap is

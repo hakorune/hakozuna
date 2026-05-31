@@ -37,6 +37,9 @@ $Executables = @(
     @{ Name = "hz6-strict-control"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_strict_control.exe") },
     @{ Name = "hz6-speed-control"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_speed_control.exe") },
     @{ Name = "hz6-rss-control"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_rss_control.exe") },
+    @{ Name = "hz6-strict-route4k"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_strict_route4k.exe") },
+    @{ Name = "hz6-speed-route4k"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_speed_route4k.exe") },
+    @{ Name = "hz6-rss-route4k"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_rss_route4k.exe") },
     @{ Name = "hz6-strict-appcap"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_strict_appcap.exe") },
     @{ Name = "hz6-speed-appcap"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_speed_appcap.exe") },
     @{ Name = "hz6-rss-appcap"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_rss_appcap.exe") },
@@ -137,7 +140,7 @@ $Summary.Add('- allocator model: per-allocator link-mode executables, no `LD_PRE
 $Summary.Add('- throughput statistic: `median ops/s`')
 $Summary.Add('- memory note: Windows reports `PeakWorkingSetSize` as `[RSS] peak_kb`, which is not identical to Linux `ru_maxrss`')
 $Summary.Add(('- profiles: `small`, `medium`, `mixed` with `RUNS={0}`, `ITERS=20,000,000`, `WS=400`' -f $Runs))
-$Summary.Add('- HZ6 rows now include `broad`, `control`, and `appcap` capacity lanes; `control` is the new diagnostic bridge between default capacity controls and appcap.')
+$Summary.Add('- HZ6 rows now include `broad`, `control`, `route4k`, and `appcap` capacity lanes; `route4k` isolates route-table capacity while keeping the other control capacities.')
 $Summary.Add("")
 
 foreach ($profile in $Selected) {

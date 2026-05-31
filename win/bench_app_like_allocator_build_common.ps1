@@ -67,6 +67,16 @@ function Get-Hz6WinControlCapacityFlags {
     )
 }
 
+function Get-Hz6WinRoute4kCapacityFlags {
+    @(
+        "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)512)",
+        "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)4096)",
+        "/DHZ6_TRANSFER_CACHE_CAPACITY=((size_t)512)",
+        "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)128)",
+        "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)256)"
+    )
+}
+
 function Get-Hz6WinAppLikeCapacityFlags {
     @(
         "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)262144)",
@@ -136,6 +146,7 @@ function Invoke-AppLikeHz6BenchBuilds {
     )
     $broadFlags = Get-Hz6WinBroadCapacityFlags
     $controlFlags = Get-Hz6WinControlCapacityFlags
+    $route4kFlags = Get-Hz6WinRoute4kCapacityFlags
     $appLikeFlags = Get-Hz6WinAppLikeCapacityFlags
 
     foreach ($profile in $profiles) {
@@ -149,6 +160,7 @@ function Invoke-AppLikeHz6BenchBuilds {
                 @{ Suffix = ""; ExtraFlags = @() },
                 @{ Suffix = "_broad"; ExtraFlags = $broadFlags },
                 @{ Suffix = "_control"; ExtraFlags = $controlFlags },
+                @{ Suffix = "_route4k"; ExtraFlags = $route4kFlags },
                 @{ Suffix = "_appcap"; ExtraFlags = $appLikeFlags }
             )
         }
