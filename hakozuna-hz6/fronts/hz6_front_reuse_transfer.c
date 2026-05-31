@@ -14,8 +14,14 @@ void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
     if (!hz6_allocator_activate_descriptor(
             descriptor, HZ6_STATE_TRANSFER_FREE, transfer.ptr,
             transfer.generation, hz6_allocator_owner_token(allocator))) {
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.transfer_reuse_invalid;
+#endif
       continue;
     }
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.transfer_reuse_hit;
+#endif
     hz6_allocator_note_transfer_pop(allocator);
     return transfer.ptr;
   }

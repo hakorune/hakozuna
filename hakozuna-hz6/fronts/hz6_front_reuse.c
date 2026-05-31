@@ -13,8 +13,14 @@ void* hz6_front_reuse_cached_or_transfer(Hz6Allocator* allocator,
     if (hz6_allocator_activate_descriptor(
             descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr, entry.generation,
             hz6_allocator_owner_token(allocator))) {
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.frontcache_reuse_hit;
+#endif
       return entry.ptr;
     }
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.frontcache_reuse_invalid;
+#endif
   }
 
   if (!hz6_allocator_profile_transfer_first(allocator)) {
@@ -44,8 +50,14 @@ void* hz6_front_reuse_transfer_or_cached(Hz6Allocator* allocator,
     if (hz6_allocator_activate_descriptor(
             descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr, entry.generation,
             hz6_allocator_owner_token(allocator))) {
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.frontcache_reuse_hit;
+#endif
       return entry.ptr;
     }
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.frontcache_reuse_invalid;
+#endif
   }
 
   return NULL;

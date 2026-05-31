@@ -18,6 +18,10 @@ typedef struct Hz6StatsSnapshot {
   size_t transfer_push;
   size_t transfer_pop;
   size_t source_alloc;
+  size_t frontcache_reuse_hit;
+  size_t frontcache_reuse_invalid;
+  size_t transfer_reuse_hit;
+  size_t transfer_reuse_invalid;
   size_t alloc_fail;
   size_t descriptor_exhausted;
   size_t route_register_fail;

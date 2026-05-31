@@ -143,6 +143,26 @@ Current read:
   the next attack should be source reuse / admission, not more search knobs
 ```
 
+## Diagnostic Checkpoint 2026-05-31b
+
+```text
+Larson T=16 with reuse probes:
+  stress still collapses
+  compact control stays healthy
+
+Reuse readout:
+  frontcache_reuse_hit is high in compact rows
+  frontcache_reuse_invalid stays 0
+  transfer_reuse_hit stays 0
+  transfer_reuse_invalid stays 0
+  route_miss and source_alloc still move together under stress
+
+Current read:
+  frontcache reuse is not the missing piece
+  transfer reuse is not the missing piece
+  the next attack should be stress admission / source refill pressure
+```
+
 ## Next Attack: HZ6-ControlPlane-L1
 
 ```text

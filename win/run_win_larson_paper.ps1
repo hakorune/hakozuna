@@ -127,6 +127,10 @@ function Parse-Hz6Stats {
         SourceAlloc = "NA"
         TransferPush = "NA"
         TransferPop = "NA"
+        FrontcacheReuseHit = "NA"
+        FrontcacheReuseInvalid = "NA"
+        TransferReuseHit = "NA"
+        TransferReuseInvalid = "NA"
         AllocFail = "NA"
         DescriptorProbeTotal = "NA"
         DescriptorProbeMax = "NA"
@@ -149,6 +153,10 @@ function Parse-Hz6Stats {
             '^source_alloc=(.*)$' { $result.SourceAlloc = $Matches[1]; continue }
             '^transfer_push=(.*)$' { $result.TransferPush = $Matches[1]; continue }
             '^transfer_pop=(.*)$' { $result.TransferPop = $Matches[1]; continue }
+            '^frontcache_reuse_hit=(.*)$' { $result.FrontcacheReuseHit = $Matches[1]; continue }
+            '^frontcache_reuse_invalid=(.*)$' { $result.FrontcacheReuseInvalid = $Matches[1]; continue }
+            '^transfer_reuse_hit=(.*)$' { $result.TransferReuseHit = $Matches[1]; continue }
+            '^transfer_reuse_invalid=(.*)$' { $result.TransferReuseInvalid = $Matches[1]; continue }
             '^alloc_fail=(.*)$' { $result.AllocFail = $Matches[1]; continue }
             '^descriptor_probe_total=(.*)$' { $result.DescriptorProbeTotal = $Matches[1]; continue }
             '^descriptor_probe_max=(.*)$' { $result.DescriptorProbeMax = $Matches[1]; continue }
@@ -209,8 +217,8 @@ function Invoke-LarsonSweep {
     foreach ($threads in $ThreadCounts) {
         $Summary.Add("## " + $SectionTitle + " T=" + $threads)
         $Summary.Add("")
-        $Summary.Add("| allocator | median ops/s | route_miss | source_alloc | transfer_push | transfer_pop | alloc_fail | desc_probe | reg_probe | unreg_probe | srcblk_probe | runs |")
-        $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
+        $Summary.Add("| allocator | median ops/s | route_miss | source_alloc | transfer_push | transfer_pop | frontcache_reuse_hit | frontcache_reuse_invalid | transfer_reuse_hit | transfer_reuse_invalid | alloc_fail | desc_probe | reg_probe | unreg_probe | srcblk_probe | runs |")
+        $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
 
         foreach ($exe in $Executables) {
             $opsRuns = New-Object System.Collections.Generic.List[double]
@@ -220,6 +228,10 @@ function Invoke-LarsonSweep {
                 SourceAlloc = "NA"
                 TransferPush = "NA"
                 TransferPop = "NA"
+                FrontcacheReuseHit = "NA"
+                FrontcacheReuseInvalid = "NA"
+                TransferReuseHit = "NA"
+                TransferReuseInvalid = "NA"
                 AllocFail = "NA"
                 DescriptorProbeTotal = "NA"
                 RouteRegisterProbeTotal = "NA"
@@ -275,17 +287,21 @@ function Invoke-LarsonSweep {
             }
 
             if ($opsRuns.Count -eq 0) {
-                $Summary.Add(('| {0} | failed | NA | NA | NA | NA | NA | NA | NA | NA | NA | `{1}` |' -f $exe.Name, ($runTexts -join ", ")))
+                $Summary.Add(('| {0} | failed | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | `{1}` |' -f $exe.Name, ($runTexts -join ", ")))
                 continue
             }
 
             $medianOps = Get-Median -Values $opsRuns.ToArray()
-            $Summary.Add(('| {0} | {1:N3}M | {2} | {3} | {4} | {5} | {6} | {7} | {8} | {9} | {10} | `{11}` |' -f $exe.Name,
+            $Summary.Add(('| {0} | {1:N3}M | {2} | {3} | {4} | {5} | {6} | {7} | {8} | {9} | {10} | {11} | {12} | {13} | {14} | `{15}` |' -f $exe.Name,
                 ($medianOps / 1000000.0),
                 $lastStats.RouteMiss,
                 $lastStats.SourceAlloc,
                 $lastStats.TransferPush,
                 $lastStats.TransferPop,
+                $lastStats.FrontcacheReuseHit,
+                $lastStats.FrontcacheReuseInvalid,
+                $lastStats.TransferReuseHit,
+                $lastStats.TransferReuseInvalid,
                 $lastStats.AllocFail,
                 $lastStats.DescriptorProbeTotal,
                 $lastStats.RouteRegisterProbeTotal,

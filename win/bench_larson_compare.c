@@ -251,6 +251,14 @@ int main(int argc, char** argv) {
         hz6_stats.transfer_push += tds[t].hz6_stats_after.transfer_push;
         hz6_stats.transfer_pop += tds[t].hz6_stats_after.transfer_pop;
         hz6_stats.source_alloc += tds[t].hz6_stats_after.source_alloc;
+        hz6_stats.frontcache_reuse_hit +=
+            tds[t].hz6_stats_after.frontcache_reuse_hit;
+        hz6_stats.frontcache_reuse_invalid +=
+            tds[t].hz6_stats_after.frontcache_reuse_invalid;
+        hz6_stats.transfer_reuse_hit +=
+            tds[t].hz6_stats_after.transfer_reuse_hit;
+        hz6_stats.transfer_reuse_invalid +=
+            tds[t].hz6_stats_after.transfer_reuse_invalid;
         hz6_stats.alloc_fail += tds[t].hz6_stats_after.alloc_fail;
         hz6_stats.descriptor_exhausted +=
             tds[t].hz6_stats_after.descriptor_exhausted;
@@ -305,7 +313,9 @@ int main(int argc, char** argv) {
            (unsigned long long)total_frees);
 #if defined(HZ_BENCH_USE_HZ6)
     printf("[HZ6_STATS] label=%s route_valid=%zu route_invalid=%zu route_miss=%zu "
-           "transfer_push=%zu transfer_pop=%zu source_alloc=%zu alloc_fail=%zu "
+           "transfer_push=%zu transfer_pop=%zu source_alloc=%zu "
+           "frontcache_reuse_hit=%zu frontcache_reuse_invalid=%zu "
+           "transfer_reuse_hit=%zu transfer_reuse_invalid=%zu alloc_fail=%zu "
            "descriptor_exhausted=%zu route_register_fail=%zu source_block_exhausted=%zu "
            "descriptor_probe_total=%zu descriptor_probe_max=%zu "
            "route_register_probe_total=%zu route_register_probe_max=%zu "
@@ -319,6 +329,10 @@ int main(int argc, char** argv) {
            hz6_stats.transfer_push,
            hz6_stats.transfer_pop,
            hz6_stats.source_alloc,
+           hz6_stats.frontcache_reuse_hit,
+           hz6_stats.frontcache_reuse_invalid,
+           hz6_stats.transfer_reuse_hit,
+           hz6_stats.transfer_reuse_invalid,
            hz6_stats.alloc_fail,
            hz6_stats.descriptor_exhausted,
            hz6_stats.route_register_fail,

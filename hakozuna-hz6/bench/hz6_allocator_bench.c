@@ -118,8 +118,12 @@ static void touch_payload(void* ptr, size_t size) {
 
 static void print_stats(const Hz6Allocator* allocator) {
   Hz6StatsSnapshot stats = hz6_stats_snapshot(allocator);
-  printf("stats route_valid=%zu route_invalid=%zu route_miss=%zu "
+  printf("[HZ6_STATS] route_valid=%zu route_invalid=%zu route_miss=%zu "
          "transfer_push=%zu transfer_pop=%zu source_alloc=%zu "
+#if HZ6_DIAGNOSTIC_PROBES
+         "frontcache_reuse_hit=%zu frontcache_reuse_invalid=%zu "
+         "transfer_reuse_hit=%zu transfer_reuse_invalid=%zu "
+#endif
          "alloc_fail=%zu descriptor_exhausted=%zu route_register_fail=%zu "
          "source_block_exhausted=%zu descriptor_probe_total=%zu "
          "descriptor_probe_max=%zu route_register_probe_total=%zu "
@@ -130,6 +134,10 @@ static void print_stats(const Hz6Allocator* allocator) {
          "large_span_source_alloc=%zu\n",
          stats.route_valid, stats.route_invalid, stats.route_miss,
          stats.transfer_push, stats.transfer_pop, stats.source_alloc,
+#if HZ6_DIAGNOSTIC_PROBES
+         stats.frontcache_reuse_hit, stats.frontcache_reuse_invalid,
+         stats.transfer_reuse_hit, stats.transfer_reuse_invalid,
+#endif
          stats.alloc_fail, stats.descriptor_exhausted,
          stats.route_register_fail, stats.source_block_exhausted,
          stats.descriptor_probe_total, stats.descriptor_probe_max,
