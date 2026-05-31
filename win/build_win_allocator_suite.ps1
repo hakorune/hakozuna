@@ -1,5 +1,6 @@
 param(
-    [string]$VcpkgRoot
+    [string]$VcpkgRoot,
+    [switch]$DiagnosticHz6Probes
 )
 
 $ErrorActionPreference = "Stop"
@@ -99,6 +100,10 @@ if (Test-Path $Hz6Common) {
     $Hz6IncludeFlags = Get-Hz6WinIncludeFlags -Hz6Root $Hz6Root -ExtraIncludeRoots @("win")
     $Hz6LibSources = Get-Hz6WinLibSources -Hz6Root $Hz6Root
     $Hz6CommonFlags = Get-Hz6WinClangCommonFlags
+    $Hz6DiagnosticFlags = @()
+    if ($DiagnosticHz6Probes) {
+        $Hz6DiagnosticFlags += "/DHZ6_DIAGNOSTIC_PROBES=1"
+    }
     $Hz6Profiles = @(
         @{ Name = "strict"; Define = "HZ6_PROFILE_STRICT" },
         @{ Name = "speed"; Define = "HZ6_PROFILE_SPEED" },
@@ -120,6 +125,7 @@ if (Test-Path $Hz6Common) {
             $output = Join-Path $OutDir ("bench_mixed_ws_hz6_{0}{1}.exe" -f $profile.Name, $variant.Suffix)
             $args = @()
             $args += $Hz6CommonFlags
+            $args += $Hz6DiagnosticFlags
             $args += "/DHZ_BENCH_USE_HZ6"
             $args += "/DHZ_BENCH_DISABLE_REALLOC=1"
             $args += ("/DHZ_BENCH_HZ6_PROFILE={0}" -f $profile.Define)

@@ -395,6 +395,27 @@ Current read:
   next attack should stay on source admission before refill and front routing
 ```
 
+## Diagnostic Checkpoint 2026-05-31e
+
+```text
+Larson T=16 diagnostic rerun after toy-front prefill split:
+  source_prefill_attempt = 21735
+  source_prefill_filled = 29610
+  source_prefill_fallback = 0
+  front_source_prefill_alloc = 29610
+  frontcache_reuse_hit = 37064
+  source_refill_starvation = 525
+  source_refill_boost = 525
+
+Interpretation:
+  the source prefill path is active in the diagnostic build
+  the next bottleneck is not more prefill but how the source/front path is
+  registered and attributed under toy stress
+  toy_source_prefill_call stayed 0 in the current readout, so the toy wrapper
+  is not yet the right witness for the active prefill path
+  route_register_probe_total still tracks source_alloc closely
+```
+
 Read:
 
 ```text

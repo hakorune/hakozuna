@@ -21,6 +21,10 @@ void hz6_allocator_init_state_owner(Hz6Allocator* allocator,
   allocator->stats.source_prefill_attempt = 0;
   allocator->stats.source_prefill_filled = 0;
   allocator->stats.source_prefill_fallback = 0;
+  allocator->stats.front_source_ops_alloc = 0;
+  allocator->stats.front_source_slot_alloc = 0;
+  allocator->stats.front_source_prefill_alloc = 0;
+  allocator->stats.toy_source_prefill_call = 0;
   allocator->stats.local2p_source_alloc = 0;
   allocator->stats.midpage_source_alloc = 0;
   allocator->stats.large_source_alloc = 0;

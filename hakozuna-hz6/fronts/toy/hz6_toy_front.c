@@ -2,6 +2,7 @@
 
 #include "../../frontcache/hz6_size_class.h"
 #include "../hz6_front_source.h"
+#include "../hz6_front_source_prefill.h"
 #include "../hz6_front_util.h"
 
 static int hz6_toy_front_can_allocate(size_t size,
@@ -31,8 +32,14 @@ static void* hz6_toy_front_alloc_with_class(Hz6Allocator* allocator,
     return NULL;
   }
 
-  return hz6_front_reuse_or_source(allocator, HZ6_FRONT_TOY, size_class.id,
-                                   size_class.bytes);
+  size_t refill_batch = hz6_allocator_control_source_refill_batch(
+      allocator, HZ6_FRONT_TOY, size_class.id);
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.toy_source_prefill_call;
+#endif
+  return hz6_front_reuse_or_prefill_source_kind(
+      allocator, HZ6_FRONT_TOY, size_class.id, size_class.bytes,
+      hz6_allocator_profile_source_kind(allocator), refill_batch);
 }
 
 static int hz6_toy_front_free_local(Hz6Allocator* allocator,

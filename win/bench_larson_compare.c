@@ -280,6 +280,12 @@ int main(int argc, char** argv) {
             tds[t].hz6_stats_after.source_prefill_filled;
         hz6_stats.source_prefill_fallback +=
             tds[t].hz6_stats_after.source_prefill_fallback;
+        hz6_stats.front_source_ops_alloc +=
+            tds[t].hz6_stats_after.front_source_ops_alloc;
+        hz6_stats.front_source_slot_alloc +=
+            tds[t].hz6_stats_after.front_source_slot_alloc;
+        hz6_stats.front_source_prefill_alloc +=
+            tds[t].hz6_stats_after.front_source_prefill_alloc;
         hz6_stats.alloc_fail += tds[t].hz6_stats_after.alloc_fail;
         hz6_stats.descriptor_exhausted +=
             tds[t].hz6_stats_after.descriptor_exhausted;
@@ -337,6 +343,8 @@ int main(int argc, char** argv) {
            "transfer_push=%zu transfer_pop=%zu source_alloc=%zu "
            "local2p_source_alloc=%zu midpage_source_alloc=%zu "
            "large_source_alloc=%zu toy_source_alloc=%zu "
+           "front_source_ops_alloc=%zu front_source_slot_alloc=%zu "
+           "front_source_prefill_alloc=%zu toy_source_prefill_call=%zu "
            "frontcache_reuse_hit=%zu frontcache_reuse_invalid=%zu "
            "transfer_reuse_hit=%zu transfer_reuse_invalid=%zu "
            "source_refill_starvation=%zu source_refill_saturation=%zu "
@@ -360,6 +368,10 @@ int main(int argc, char** argv) {
            hz6_stats.midpage_source_alloc,
            hz6_stats.large_source_alloc,
            hz6_stats.toy_source_alloc,
+           hz6_stats.front_source_ops_alloc,
+           hz6_stats.front_source_slot_alloc,
+           hz6_stats.front_source_prefill_alloc,
+           hz6_stats.toy_source_prefill_call,
            hz6_stats.frontcache_reuse_hit,
            hz6_stats.frontcache_reuse_invalid,
            hz6_stats.transfer_reuse_hit,

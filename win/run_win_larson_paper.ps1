@@ -138,6 +138,10 @@ function Parse-Hz6Stats {
         SourcePrefillAttempt = "NA"
         SourcePrefillFilled = "NA"
         SourcePrefillFallback = "NA"
+        FrontSourceOpsAlloc = "NA"
+        FrontSourceSlotAlloc = "NA"
+        FrontSourcePrefillAlloc = "NA"
+        ToySourcePrefillCall = "NA"
         Local2pSourceAlloc = "NA"
         MidpageSourceAlloc = "NA"
         LargeSourceAlloc = "NA"
@@ -175,6 +179,10 @@ function Parse-Hz6Stats {
             '^source_prefill_attempt=(.*)$' { $result.SourcePrefillAttempt = $Matches[1]; continue }
             '^source_prefill_filled=(.*)$' { $result.SourcePrefillFilled = $Matches[1]; continue }
             '^source_prefill_fallback=(.*)$' { $result.SourcePrefillFallback = $Matches[1]; continue }
+            '^front_source_ops_alloc=(.*)$' { $result.FrontSourceOpsAlloc = $Matches[1]; continue }
+            '^front_source_slot_alloc=(.*)$' { $result.FrontSourceSlotAlloc = $Matches[1]; continue }
+            '^front_source_prefill_alloc=(.*)$' { $result.FrontSourcePrefillAlloc = $Matches[1]; continue }
+            '^toy_source_prefill_call=(.*)$' { $result.ToySourcePrefillCall = $Matches[1]; continue }
             '^local2p_source_alloc=(.*)$' { $result.Local2pSourceAlloc = $Matches[1]; continue }
             '^midpage_source_alloc=(.*)$' { $result.MidpageSourceAlloc = $Matches[1]; continue }
             '^large_source_alloc=(.*)$' { $result.LargeSourceAlloc = $Matches[1]; continue }
@@ -239,8 +247,8 @@ function Invoke-LarsonSweep {
     foreach ($threads in $ThreadCounts) {
         $Summary.Add("## " + $SectionTitle + " T=" + $threads)
         $Summary.Add("")
-        $Summary.Add("| allocator | median ops/s | route_miss | source_alloc | local2p_source_alloc | midpage_source_alloc | large_source_alloc | toy_source_alloc | transfer_push | transfer_pop | frontcache_reuse_hit | frontcache_reuse_invalid | transfer_reuse_hit | transfer_reuse_invalid | source_refill_starvation | source_refill_saturation | source_refill_boost | source_refill_clamp | source_prefill_attempt | source_prefill_filled | source_prefill_fallback | alloc_fail | desc_probe | reg_probe | unreg_probe | srcblk_probe | runs |")
-        $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
+        $Summary.Add("| allocator | median ops/s | route_miss | source_alloc | local2p_source_alloc | midpage_source_alloc | large_source_alloc | toy_source_alloc | front_source_ops_alloc | front_source_slot_alloc | front_source_prefill_alloc | toy_source_prefill_call | transfer_push | transfer_pop | frontcache_reuse_hit | frontcache_reuse_invalid | transfer_reuse_hit | transfer_reuse_invalid | source_refill_starvation | source_refill_saturation | source_refill_boost | source_refill_clamp | source_prefill_attempt | source_prefill_filled | source_prefill_fallback | alloc_fail | desc_probe | reg_probe | unreg_probe | srcblk_probe | runs |")
+        $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
 
         foreach ($exe in $Executables) {
             $opsRuns = New-Object System.Collections.Generic.List[double]
@@ -261,6 +269,10 @@ function Invoke-LarsonSweep {
                 SourcePrefillAttempt = "NA"
                 SourcePrefillFilled = "NA"
                 SourcePrefillFallback = "NA"
+                FrontSourceOpsAlloc = "NA"
+                FrontSourceSlotAlloc = "NA"
+                FrontSourcePrefillAlloc = "NA"
+                ToySourcePrefillCall = "NA"
                 Local2pSourceAlloc = "NA"
                 MidpageSourceAlloc = "NA"
                 LargeSourceAlloc = "NA"
@@ -326,8 +338,8 @@ function Invoke-LarsonSweep {
             }
 
             $medianOps = Get-Median -Values $opsRuns.ToArray()
-            $Summary.Add((
-                '| {0} | {1:N3}M | {2} | {3} | {4} | {5} | {6} | {7} | {8} | {9} | {10} | {11} | {12} | {13} | {14} | {15} | {16} | {17} | {18} | {19} | {20} | {21} | {22} | {23} | {24} | {25} | `{26}` |' -f
+                $Summary.Add((
+                '| {0} | {1:N3}M | {2} | {3} | {4} | {5} | {6} | {7} | {8} | {9} | {10} | {11} | {12} | {13} | {14} | {15} | {16} | {17} | {18} | {19} | {20} | {21} | {22} | {23} | {24} | {25} | {26} | {27} | {28} | {29} | `{30}` |' -f
                 $exe.Name,
                 ($medianOps / 1000000.0),
                 $lastStats.RouteMiss,
@@ -336,6 +348,10 @@ function Invoke-LarsonSweep {
                 $lastStats.MidpageSourceAlloc,
                 $lastStats.LargeSourceAlloc,
                 $lastStats.ToySourceAlloc,
+                $lastStats.FrontSourceOpsAlloc,
+                $lastStats.FrontSourceSlotAlloc,
+                $lastStats.FrontSourcePrefillAlloc,
+                $lastStats.ToySourcePrefillCall,
                 $lastStats.TransferPush,
                 $lastStats.TransferPop,
                 $lastStats.FrontcacheReuseHit,

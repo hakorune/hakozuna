@@ -39,7 +39,11 @@ if (-not $VcpkgRoot) {
 
 . $ModernBuildCommon
 
-& $SuiteBuild
+if ($DiagnosticHz6Probes) {
+    & $SuiteBuild -DiagnosticHz6Probes
+} else {
+    & $SuiteBuild
+}
 if ($LASTEXITCODE -ne 0) {
     throw "build_win_allocator_suite.ps1 failed with exit code $LASTEXITCODE"
 }
