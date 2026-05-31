@@ -481,6 +481,29 @@ Observed stress profile:
   tightened first under stress
 ```
 
+## Diagnostic Checkpoint 2026-05-31i
+
+```text
+Larson admission mode columns:
+  source_admission_open / boosted / clamped are now surfaced
+
+Observed stress profile:
+  source_admission_open dominates
+  source_admission_boosted is small
+  source_admission_clamped stays 0
+  source_admission is therefore not obviously the main blocker
+
+Observed front/path profile:
+  front=toy remains the active attributed front
+  local_reuse still dominates
+  prefill_reuse and source_prefill stay visible
+  direct_source stays 0
+
+Next read:
+  stress collapse may now be more about front-source reuse placement
+  or another downstream pressure point than admission gating alone
+```
+
 Read:
 
 ```text

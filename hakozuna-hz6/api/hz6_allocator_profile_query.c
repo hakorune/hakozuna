@@ -88,6 +88,13 @@ size_t hz6_allocator_control_source_refill_batch(
   if (saturation) {
     ++diag_allocator->stats.source_refill_saturation;
   }
+  if (starvation && !saturation) {
+    ++diag_allocator->stats.source_admission_boosted;
+  } else if (saturation) {
+    ++diag_allocator->stats.source_admission_clamped;
+  } else {
+    ++diag_allocator->stats.source_admission_open;
+  }
 #endif
 
   if (starvation && !saturation) {

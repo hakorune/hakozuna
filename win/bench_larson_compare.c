@@ -333,6 +333,12 @@ int main(int argc, char** argv) {
             tds[t].hz6_stats_after.source_refill_boost;
         hz6_stats.source_refill_clamp +=
             tds[t].hz6_stats_after.source_refill_clamp;
+        hz6_stats.source_admission_open +=
+            tds[t].hz6_stats_after.source_admission_open;
+        hz6_stats.source_admission_boosted +=
+            tds[t].hz6_stats_after.source_admission_boosted;
+        hz6_stats.source_admission_clamped +=
+            tds[t].hz6_stats_after.source_admission_clamped;
         hz6_stats.source_prefill_attempt +=
             tds[t].hz6_stats_after.source_prefill_attempt;
         hz6_stats.source_prefill_filled +=
@@ -408,6 +414,8 @@ int main(int argc, char** argv) {
            "transfer_reuse_hit=%zu transfer_reuse_invalid=%zu "
            "source_refill_starvation=%zu source_refill_saturation=%zu "
            "source_refill_boost=%zu source_refill_clamp=%zu "
+           "source_admission_open=%zu source_admission_boosted=%zu "
+           "source_admission_clamped=%zu "
            "source_prefill_attempt=%zu source_prefill_filled=%zu "
            "source_prefill_fallback=%zu alloc_fail=%zu "
            "descriptor_exhausted=%zu route_register_fail=%zu source_block_exhausted=%zu "
@@ -439,6 +447,9 @@ int main(int argc, char** argv) {
            hz6_stats.source_refill_saturation,
            hz6_stats.source_refill_boost,
            hz6_stats.source_refill_clamp,
+           hz6_stats.source_admission_open,
+           hz6_stats.source_admission_boosted,
+           hz6_stats.source_admission_clamped,
            hz6_stats.source_prefill_attempt,
            hz6_stats.source_prefill_filled,
            hz6_stats.source_prefill_fallback,
