@@ -30,6 +30,9 @@ $Executables = @(
     @{ Name = "hz6-strict-appcap"; Path = (Join-Path $SuiteDir "bench_larson_hz6_strict_appcap.exe") },
     @{ Name = "hz6-speed-appcap"; Path = (Join-Path $SuiteDir "bench_larson_hz6_speed_appcap.exe") },
     @{ Name = "hz6-rss-appcap"; Path = (Join-Path $SuiteDir "bench_larson_hz6_rss_appcap.exe") },
+    @{ Name = "hz6-strict-route4k"; Path = (Join-Path $SuiteDir "bench_larson_hz6_strict_route4k.exe") },
+    @{ Name = "hz6-speed-route4k"; Path = (Join-Path $SuiteDir "bench_larson_hz6_speed_route4k.exe") },
+    @{ Name = "hz6-rss-route4k"; Path = (Join-Path $SuiteDir "bench_larson_hz6_rss_route4k.exe") },
     @{ Name = "mimalloc"; Path = (Join-Path $SuiteDir "bench_larson_mimalloc.exe") },
     @{ Name = "tcmalloc"; Path = (Join-Path $SuiteDir "bench_larson_tcmalloc.exe") }
 )
@@ -46,6 +49,9 @@ if ($IncludeHz6CapacityControls) {
         @{ Name = "hz6-strict-broad"; Path = (Join-Path $SuiteDir "bench_larson_hz6_strict_broad.exe") },
         @{ Name = "hz6-speed-broad"; Path = (Join-Path $SuiteDir "bench_larson_hz6_speed_broad.exe") },
         @{ Name = "hz6-rss-broad"; Path = (Join-Path $SuiteDir "bench_larson_hz6_rss_broad.exe") },
+        @{ Name = "hz6-strict-route4k"; Path = (Join-Path $SuiteDir "bench_larson_hz6_strict_route4k.exe") },
+        @{ Name = "hz6-speed-route4k"; Path = (Join-Path $SuiteDir "bench_larson_hz6_speed_route4k.exe") },
+        @{ Name = "hz6-rss-route4k"; Path = (Join-Path $SuiteDir "bench_larson_hz6_rss_route4k.exe") },
         @{ Name = "hz6-strict-appcap"; Path = (Join-Path $SuiteDir "bench_larson_hz6_strict_appcap.exe") },
         @{ Name = "hz6-speed-appcap"; Path = (Join-Path $SuiteDir "bench_larson_hz6_speed_appcap.exe") },
         @{ Name = "hz6-rss-appcap"; Path = (Join-Path $SuiteDir "bench_larson_hz6_rss_appcap.exe") },

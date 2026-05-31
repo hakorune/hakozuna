@@ -132,7 +132,8 @@ Invoke-AppLikeHz6BenchBuilds `
     -RepoRoot $RepoRoot `
     -BenchSrc $BenchSrc `
     -OutDir $OutDir `
-    -OutputPrefix "bench_redis_workload"
+    -OutputPrefix "bench_redis_workload" `
+    -IncludeControlCapacity
 
 $RuntimeDlls = @(
     (Join-Path $VcpkgBin "mimalloc.dll"),

@@ -138,6 +138,7 @@ Invoke-AppLikeHz6BenchBuilds `
     -BenchSrc $BenchSrc `
     -OutDir $OutDir `
     -OutputPrefix "bench_larson" `
+    -IncludeControlCapacity `
     -DiagnosticHz6Probes:$DiagnosticHz6Probes
 
 $RuntimeDlls = @(

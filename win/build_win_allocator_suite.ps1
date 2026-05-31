@@ -117,11 +117,19 @@ if (Test-Path $Hz6Common) {
         "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)512)",
         "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)1024)"
     )
+    $Hz6Route4kCapacityFlags = @(
+        "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)512)",
+        "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)4096)",
+        "/DHZ6_TRANSFER_CACHE_CAPACITY=((size_t)512)",
+        "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)128)",
+        "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)256)"
+    )
 
     foreach ($profile in $Hz6Profiles) {
         foreach ($variant in @(
             @{ Suffix = ""; ExtraFlags = @() },
-            @{ Suffix = "_broad"; ExtraFlags = $Hz6BroadCapacityFlags }
+            @{ Suffix = "_broad"; ExtraFlags = $Hz6BroadCapacityFlags },
+            @{ Suffix = "_route4k"; ExtraFlags = $Hz6Route4kCapacityFlags }
         )) {
             $output = Join-Path $OutDir ("bench_mixed_ws_hz6_{0}{1}.exe" -f $profile.Name, $variant.Suffix)
             $args = @()

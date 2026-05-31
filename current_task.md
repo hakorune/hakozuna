@@ -276,6 +276,11 @@ Read:
   route4k stays stable across small / medium / mixed.
   It keeps RSS near the control lane while preserving broad-like throughput.
   This is strong enough to treat route4k as the current candidate-control lane.
+
+Cross-family wiring:
+  route4k is now also built into the mixed_ws allocator matrix plus the
+  Larson and Redis app-like HZ6 matrices, so the same route-table-only
+  capacity shape can be checked outside random_mixed.
 ```
 
 Next step:
@@ -290,8 +295,9 @@ Next step:
 
 3. Next measurement:
    run small / medium / mixed repeat-3 for route4k vs broad vs control.
-   If route4k stays stable, use it as the HZ6 Windows app-like default
-   capacity shape for random_mixed-style rows.
+   Then carry the same route4k shape into Larson and Redis app-like rows.
+   If route4k stays stable, use it as the HZ6 Windows candidate-control
+   capacity shape for random_mixed-style and app-like rows.
 
 4. Keep large_slice_64k / 128k as the current strong proof points.
 5. Leave Redis and Larson untouched until the random_mixed throughput gap is
