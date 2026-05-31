@@ -237,6 +237,47 @@ Read:
   broad-class throughput, near-control RSS, and no appcap blow-up.
 ```
 
+Route4k repeat-3 read:
+
+```text
+Source:
+  small:
+    docs/benchmarks/windows/paper/20260601_081612_paper_random_mixed_windows.md
+  medium:
+    docs/benchmarks/windows/paper/20260601_081924_paper_random_mixed_windows.md
+  mixed:
+    docs/benchmarks/windows/paper/20260601_082153_paper_random_mixed_windows.md
+
+small:
+  strict:
+    33.013M ops/s, 4,556 KB
+  speed:
+    26.879M ops/s, 4,556 KB
+  rss:
+    28.921M ops/s, 4,560 KB
+
+medium:
+  strict:
+    35.254M ops/s, 4,556 KB
+  speed:
+    30.282M ops/s, 4,556 KB
+  rss:
+    32.581M ops/s, 4,560 KB
+
+mixed:
+  strict:
+    32.851M ops/s, 4,556 KB
+  speed:
+    28.399M ops/s, 4,552 KB
+  rss:
+    30.424M ops/s, 4,556 KB
+
+Read:
+  route4k stays stable across small / medium / mixed.
+  It keeps RSS near the control lane while preserving broad-like throughput.
+  This is strong enough to treat route4k as the current candidate-control lane.
+```
+
 Next step:
 
 ```text
