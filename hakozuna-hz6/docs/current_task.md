@@ -200,6 +200,78 @@ Current read:
   and on why the toy path is the only one reaching source-prefill
 ```
 
+## Design Checkpoint 2026-05-31e
+
+```text
+Pro review:
+  Larson min=8 max=1024 is currently a toy-only workload.
+  local2p / midpage / large prefill at zero is expected because their fronts
+  do not accept this size range.
+
+Important distinction:
+  current Larson stress:
+    main thread owns the warmup allocations
+    workers free and replace them from worker-local allocators
+    this is also a cross-owner warmup / route-lifecycle stress
+
+  worker-warmup stress:
+    each worker creates its own initial live set before the timer starts
+    this isolates same-owner toy/small source placement
+
+Next implementation order:
+  Step 0:
+    add worker-warmup control to the Larson runner
+
+  Step 1:
+    if worker-warmup still collapses, add toy/small source-block prefill
+    instead of per-object source-prefill
+
+  Step 2:
+    if worker-warmup recovers but current stress still collapses, move next to
+    owner-aware remote free / shared route visibility
+
+Do not:
+  treat appcap capacity as the sole cause yet
+  add more admission clamp before the worker-warmup split
+  turn toy into a special route outside the common FrontSource contract
+```
+
+## Diagnostic Checkpoint 2026-05-31f
+
+```text
+Worker-warmup control smoke:
+  command:
+    bench_larson_hz6_speed_appcap.exe 2 8 1024 10000 1 12345 16 <mode>
+
+main-warmup mode:
+  throughput:
+    0.002M ops/s
+  route_miss:
+    4751
+  source_alloc:
+    5312
+
+worker-warmup mode:
+  throughput:
+    11.653M ops/s
+  route_miss:
+    0
+  source_alloc:
+    165008
+
+Current read:
+  worker-warmup recovers the catastrophic stress collapse by orders of
+  magnitude
+  current Larson stress is primarily a cross-owner warmup / route-lifecycle
+  stress, not just a toy source-prefill placement failure
+
+Next:
+  keep current stress as cross-owner stress evidence
+  use worker-warmup stress to evaluate toy/small source-block placement
+  move owner-aware free / shared route visibility up in priority for the
+  current stress lane
+```
+
 ## Next Attack: HZ6-ControlPlane-L1
 
 ```text

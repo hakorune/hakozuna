@@ -1,5 +1,5 @@
 // Windows-native Larson-style allocator comparison bench.
-// Usage: bench_larson_compare [runtime_sec] [min_size] [max_size] [chunks_per_thread] [rounds] [seed] [threads]
+// Usage: bench_larson_compare [runtime_sec] [min_size] [max_size] [chunks_per_thread] [rounds] [seed] [threads] [warmup_mode]
 
 #include <stdint.h>
 #include <stdio.h>
@@ -22,6 +22,7 @@ typedef struct LarsonThreadData {
     size_t min_size;
     size_t max_size;
     uint32_t seed;
+    int warmup_in_worker;
     uint64_t alloc_count;
     uint64_t free_count;
 #if defined(HZ_BENCH_USE_HZ6)
@@ -30,6 +31,8 @@ typedef struct LarsonThreadData {
 } LarsonThreadData;
 
 static volatile LONG g_stop_flag = 0;
+static volatile LONG g_start_flag = 1;
+static volatile LONG g_ready_count = 0;
 
 static uint32_t parse_u32(const char* s, uint32_t def) {
     if (!s) {
@@ -86,6 +89,39 @@ static inline void touch_allocation(void* ptr, size_t size, uint32_t tag) {
     p[0] = (unsigned char)(tag & 0xFFu);
     if (size > 1) {
     p[size - 1] = (unsigned char)((tag >> 8) & 0xFFu);
+    }
+}
+
+static int warmup_thread_blocks(LarsonThreadData* td) {
+    uint32_t local_seed = td->seed ^ 0x9E3779B9u;
+    size_t i;
+
+    for (i = 0; i < td->live_count; ++i) {
+        size_t size = pick_size(rng_next(&local_seed), td->min_size, td->max_size);
+        void* p = bench_alloc(size);
+        if (!p) {
+            hz_bench_dump_stats(stderr, "larson_worker_warmup_alloc_fail");
+            return 0;
+        }
+        touch_allocation(p, size, local_seed);
+        td->blocks[i] = p;
+        td->sizes[i] = size;
+    }
+    return 1;
+}
+
+static void free_thread_blocks(LarsonThreadData* td) {
+    size_t i;
+
+    if (!td || !td->blocks) {
+        return;
+    }
+    for (i = 0; i < td->live_count; ++i) {
+        if (td->blocks[i]) {
+            bench_free(td->blocks[i]);
+            td->blocks[i] = NULL;
+            td->sizes[i] = 0;
+        }
     }
 }
 
@@ -177,6 +213,17 @@ static unsigned __stdcall larson_thread(void* arg) {
 
     hz_bench_allocator_thread_setup();
 
+    if (td->warmup_in_worker) {
+        if (!warmup_thread_blocks(td)) {
+            InterlockedExchange(&g_stop_flag, 1);
+        }
+        InterlockedIncrement(&g_ready_count);
+        while (InterlockedCompareExchange(&g_start_flag, 0, 0) == 0 &&
+               InterlockedCompareExchange(&g_stop_flag, 0, 0) == 0) {
+            Sleep(0);
+        }
+    }
+
     while (InterlockedCompareExchange(&g_stop_flag, 0, 0) == 0) {
         size_t i;
         for (i = 0; i < td->iterations_per_check; ++i) {
@@ -216,6 +263,9 @@ static unsigned __stdcall larson_thread(void* arg) {
                                                  ? &hz_bench_tls_hz6_allocator
                                                  : NULL);
 #endif
+    if (td->warmup_in_worker) {
+        free_thread_blocks(td);
+    }
     hz_bench_allocator_thread_teardown();
     return 0;
 }
@@ -228,6 +278,8 @@ int main(int argc, char** argv) {
     uint32_t rounds = (argc > 5) ? parse_u32(argv[5], 1u) : 1u;
     uint32_t seed = (argc > 6) ? parse_u32(argv[6], 12345u) : 12345u;
     uint32_t threads = (argc > 7) ? parse_u32(argv[7], 4u) : 4u;
+    uint32_t warmup_mode = (argc > 8) ? parse_u32(argv[8], 0u) : 0u;
+    int worker_warmup = (warmup_mode != 0u);
 
     LarsonThreadData* tds = NULL;
     HANDLE* handles = NULL;
@@ -240,6 +292,7 @@ int main(int argc, char** argv) {
     uint64_t total_allocs = 0;
     uint64_t total_frees = 0;
     size_t t;
+    int exit_code = 0;
 #if defined(HZ_BENCH_USE_HZ6)
     Hz6StatsSnapshot hz6_stats;
     memset(&hz6_stats, 0, sizeof(hz6_stats));
@@ -247,14 +300,15 @@ int main(int argc, char** argv) {
 
     if (runtime_sec == 0 || chunks_per_thread == 0 || rounds == 0 || threads == 0 || min_size == 0 || max_size < min_size) {
         fprintf(stderr, "bench_larson_compare: invalid args\n");
-        fprintf(stderr, "usage: %s <runtime_sec> <min> <max> <chunks_per_thread> <rounds> <seed> <threads>\n", argv[0]);
+        fprintf(stderr, "usage: %s <runtime_sec> <min> <max> <chunks_per_thread> <rounds> <seed> <threads> <warmup_mode>\n", argv[0]);
         return 2;
     }
 
     total_slots = (size_t)threads * (size_t)chunks_per_thread;
 
-    printf("[BENCH_ARGS] runtime=%u min=%u max=%u chunks=%u rounds=%u seed=%u threads=%u\n",
-           runtime_sec, min_size, max_size, chunks_per_thread, rounds, seed, threads);
+    printf("[BENCH_ARGS] runtime=%u min=%u max=%u chunks=%u rounds=%u seed=%u threads=%u warmup=%s\n",
+           runtime_sec, min_size, max_size, chunks_per_thread, rounds, seed,
+           threads, worker_warmup ? "worker" : "main");
 
     hz_bench_allocator_thread_setup();
 
@@ -275,18 +329,21 @@ int main(int argc, char** argv) {
         size_t base = t * (size_t)chunks_per_thread;
         size_t i;
         uint32_t local_seed = seed + (uint32_t)(t * 977u);
-        for (i = 0; i < chunks_per_thread; ++i) {
-            size_t slot = base + i;
-            size_t size = pick_size(rng_next(&local_seed), min_size, max_size);
-            void* p = bench_alloc(size);
-            if (!p) {
-                fprintf(stderr, "bench_larson_compare: warmup alloc failed at thread=%zu slot=%zu size=%zu\n", t, i, size);
-                hz_bench_dump_stats(stderr, "larson_warmup_alloc_fail");
-                goto cleanup;
+        if (!worker_warmup) {
+            for (i = 0; i < chunks_per_thread; ++i) {
+                size_t slot = base + i;
+                size_t size = pick_size(rng_next(&local_seed), min_size, max_size);
+                void* p = bench_alloc(size);
+                if (!p) {
+                    fprintf(stderr, "bench_larson_compare: warmup alloc failed at thread=%zu slot=%zu size=%zu\n", t, i, size);
+                    hz_bench_dump_stats(stderr, "larson_warmup_alloc_fail");
+                    exit_code = 1;
+                    goto cleanup;
+                }
+                touch_allocation(p, size, local_seed);
+                all_blocks[slot] = p;
+                all_sizes[slot] = size;
             }
-            touch_allocation(p, size, local_seed);
-            all_blocks[slot] = p;
-            all_sizes[slot] = size;
         }
 
         tds[t].blocks = all_blocks + base;
@@ -296,27 +353,54 @@ int main(int argc, char** argv) {
         tds[t].min_size = min_size;
         tds[t].max_size = max_size;
         tds[t].seed = seed + (uint32_t)(t * 131u) + 1u;
+        tds[t].warmup_in_worker = worker_warmup;
         tds[t].alloc_count = 0;
         tds[t].free_count = 0;
     }
 
     InterlockedExchange(&g_stop_flag, 0);
-    start_ns = now_ns();
+    InterlockedExchange(&g_ready_count, 0);
+    InterlockedExchange(&g_start_flag, worker_warmup ? 0 : 1);
 
     for (t = 0; t < threads; ++t) {
         uintptr_t h = _beginthreadex(NULL, 0, larson_thread, &tds[t], 0, NULL);
         if (h == 0) {
             fprintf(stderr, "bench_larson_compare: thread start failed at thread=%zu\n", t);
             InterlockedExchange(&g_stop_flag, 1);
+            InterlockedExchange(&g_start_flag, 1);
             for (size_t j = 0; j < t; ++j) {
                 WaitForSingleObject(handles[j], INFINITE);
                 CloseHandle(handles[j]);
+                handles[j] = NULL;
             }
+            exit_code = 1;
             goto cleanup;
         }
         handles[t] = (HANDLE)h;
     }
 
+    if (worker_warmup) {
+        while (InterlockedCompareExchange(&g_ready_count, 0, 0) < (LONG)threads &&
+               InterlockedCompareExchange(&g_stop_flag, 0, 0) == 0) {
+            Sleep(1);
+        }
+        if (InterlockedCompareExchange(&g_stop_flag, 0, 0) != 0) {
+            InterlockedExchange(&g_start_flag, 1);
+            WaitForMultipleObjects((DWORD)threads, handles, TRUE, INFINITE);
+            for (size_t j = 0; j < threads; ++j) {
+                if (handles[j]) {
+                    CloseHandle(handles[j]);
+                    handles[j] = NULL;
+                }
+            }
+            fprintf(stderr, "bench_larson_compare: worker warmup failed\n");
+            exit_code = 1;
+            goto cleanup;
+        }
+    }
+
+    start_ns = now_ns();
+    InterlockedExchange(&g_start_flag, 1);
     Sleep(runtime_sec * 1000u);
     InterlockedExchange(&g_stop_flag, 1);
 
@@ -431,6 +515,7 @@ int main(int argc, char** argv) {
             tds[t].hz6_stats_after.large_span_source_alloc;
 #endif
         CloseHandle(handles[t]);
+        handles[t] = NULL;
     }
 
     duration_sec = (double)(end_ns - start_ns) / 1e9;
@@ -515,6 +600,14 @@ int main(int argc, char** argv) {
     printf("Done sleeping...\n");
 
 cleanup:
+    if (handles) {
+        for (size_t i = 0; i < threads; ++i) {
+            if (handles[i]) {
+                CloseHandle(handles[i]);
+                handles[i] = NULL;
+            }
+        }
+    }
     if (all_blocks) {
         for (size_t i = 0; i < total_slots; ++i) {
             if (all_blocks[i]) {
@@ -528,5 +621,5 @@ cleanup:
     free(handles);
     free(tds);
     hz_bench_allocator_thread_teardown();
-    return 0;
+    return exit_code;
 }

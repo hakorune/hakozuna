@@ -4,6 +4,7 @@ param(
     [int[]]$ThreadCounts,
     [int]$TimeoutSeconds = 120,
     [switch]$IncludeCompactControl,
+    [switch]$IncludeWorkerWarmupControl,
     [int]$CompactChunksPerThread = 400,
     [switch]$IncludeHz6CapacityControls,
     [switch]$ContinueOnFailure
@@ -292,6 +293,7 @@ $Summary.Add("Windows native note:")
 $Summary.Add('- benchmark: `bench_larson_compare`')
 $Summary.Add('- params: `runtime=10s min=8 max=1024 chunks=10000 rounds=1 seed=12345`')
 $Summary.Add(('- compact control (optional): `chunks={0}`' -f $CompactChunksPerThread))
+$Summary.Add('- worker-warmup control (optional): same chunks, but each worker owns its warmup allocations before the timer starts')
 $Summary.Add('- thread sweep: `1, 4, 8, 16`')
 $Summary.Add(('- runs: `{0}`' -f $Runs))
 $Summary.Add(('- timeout: `{0}s` per allocator row' -f $TimeoutSeconds))
@@ -302,7 +304,8 @@ $Summary.Add("")
 function Invoke-LarsonSweep {
     param(
         [string]$SectionTitle,
-        [int]$ChunksPerThreadValue
+        [int]$ChunksPerThreadValue,
+        [int]$WarmupMode = 0
     )
 
     foreach ($threads in $ThreadCounts) {
@@ -372,7 +375,8 @@ function Invoke-LarsonSweep {
                     [string]$ChunksPerThreadValue,
                     [string]$Rounds,
                     [string]$Seed,
-                    [string]$threads
+                    [string]$threads,
+                    [string]$WarmupMode
                 )
                 $result = Invoke-CapturedProcess -FilePath $exe.Path -Arguments $args -TimeoutSeconds $TimeoutSeconds
                 $output = $result.Lines
@@ -482,6 +486,14 @@ function Invoke-LarsonSweep {
 }
 
 Invoke-LarsonSweep -SectionTitle "Larson stress" -ChunksPerThreadValue $ChunksPerThread
+if ($IncludeWorkerWarmupControl) {
+    $Summary.Add("## Worker-warmup control note")
+    $Summary.Add("")
+    $Summary.Add("- Worker-warmup mode allocates the initial live set inside each worker thread after allocator thread setup and before the timer starts.")
+    $Summary.Add("- This separates cross-owner warmup stress from same-owner small-object source placement.")
+    $Summary.Add("")
+    Invoke-LarsonSweep -SectionTitle "Larson worker-warmup stress" -ChunksPerThreadValue $ChunksPerThread -WarmupMode 1
+}
 if ($IncludeCompactControl) {
     $Summary.Add("## Compact control note")
     $Summary.Add("")
