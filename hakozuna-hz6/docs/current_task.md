@@ -751,6 +751,45 @@ No-go:
   rehome failure escapes as MISS/fallback
 ```
 
+## Diagnostic Checkpoint 2026-05-31l
+
+```text
+RemoteHandoff-L1 owner split:
+  main-warmup:
+    throughput = 1630 ops/s
+    route_visibility_lookup = 4968
+    route_visibility_hit = 4968
+    route_visibility_hit_local_owner = 207
+    route_visibility_hit_foreign_owner = 4761
+    route_visibility_probe_max = 1
+    remote_free_attempt = 4761
+    route_rehome_attempt = 4761
+    route_rehome_success = 4761
+    route_rehome_fail = 0
+    transfer_push = 4761
+    transfer_pop = 4546
+    transfer_current = 215
+
+  worker-warmup:
+    throughput = 11.049M ops/s
+    route_visibility_lookup = 0
+    route_visibility_hit = 0
+    route_visibility_hit_local_owner = 0
+    route_visibility_hit_foreign_owner = 0
+    route_rehome_attempt = 0
+    route_rehome_success = 0
+    route_rehome_fail = 0
+    transfer_push = 0
+    transfer_pop = 0
+    transfer_current = 0
+
+Current read:
+  the new owner split is visible and safe
+  foreign visibility dominates main-warmup
+  same-owner worker-warmup remains the healthy control lane
+  next follow-up should be route/transfer rehome locality, not deeper scan depth
+```
+
 Read:
 
 ```text

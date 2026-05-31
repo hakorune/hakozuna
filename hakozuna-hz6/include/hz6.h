@@ -17,6 +17,8 @@ typedef struct Hz6StatsSnapshot {
   size_t route_miss;
   size_t route_visibility_lookup;
   size_t route_visibility_hit;
+  size_t route_visibility_hit_local_owner;
+  size_t route_visibility_hit_foreign_owner;
   size_t route_visibility_miss;
   size_t route_visibility_probe_total;
   size_t route_visibility_probe_max;
@@ -27,6 +29,9 @@ typedef struct Hz6StatsSnapshot {
   size_t remote_free_attempt;
   size_t remote_free_strict_owner_block;
   size_t remote_free_transfer_fail;
+  size_t route_rehome_attempt;
+  size_t route_rehome_success;
+  size_t route_rehome_fail;
   size_t source_alloc;
   size_t frontcache_reuse_hit;
   size_t frontcache_reuse_invalid;

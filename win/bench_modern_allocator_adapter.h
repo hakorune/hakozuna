@@ -102,12 +102,16 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
         fprintf(out,
                 "[HZ6_STATS] label=%s route_valid=%zu route_invalid=%zu route_miss=%zu "
                 "route_visibility_lookup=%zu route_visibility_hit=%zu "
+                "route_visibility_hit_local_owner=%zu "
+                "route_visibility_hit_foreign_owner=%zu "
                 "route_visibility_miss=%zu route_visibility_probe_total=%zu "
                 "route_visibility_probe_max=%zu "
                 "transfer_push=%zu transfer_pop=%zu transfer_current=%zu "
                 "transfer_current_max=%zu remote_free_attempt=%zu "
                 "remote_free_strict_owner_block=%zu "
-                "remote_free_transfer_fail=%zu source_alloc=%zu alloc_fail=%zu "
+                "remote_free_transfer_fail=%zu "
+                "route_rehome_attempt=%zu route_rehome_success=%zu "
+                "route_rehome_fail=%zu source_alloc=%zu alloc_fail=%zu "
                 "descriptor_exhausted=%zu route_register_fail=%zu source_block_exhausted=%zu "
                 "route_active_current=%zu route_active_max=%zu "
                 "descriptor_probe_total=%zu descriptor_probe_max=%zu "
@@ -121,6 +125,8 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 s.route_miss,
                 s.route_visibility_lookup,
                 s.route_visibility_hit,
+                s.route_visibility_hit_local_owner,
+                s.route_visibility_hit_foreign_owner,
                 s.route_visibility_miss,
                 s.route_visibility_probe_total,
                 s.route_visibility_probe_max,
@@ -131,6 +137,9 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 s.remote_free_attempt,
                 s.remote_free_strict_owner_block,
                 s.remote_free_transfer_fail,
+                s.route_rehome_attempt,
+                s.route_rehome_success,
+                s.route_rehome_fail,
                 s.source_alloc,
                 s.alloc_fail,
                 s.descriptor_exhausted,
@@ -153,12 +162,16 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
         fprintf(out,
                 "[HZ6_STATS] label=%s route_valid=%zu route_invalid=%zu route_miss=%zu "
                 "route_visibility_lookup=%zu route_visibility_hit=%zu "
+                "route_visibility_hit_local_owner=%zu "
+                "route_visibility_hit_foreign_owner=%zu "
                 "route_visibility_miss=%zu route_visibility_probe_total=%zu "
                 "route_visibility_probe_max=%zu "
                 "transfer_push=%zu transfer_pop=%zu transfer_current=%zu "
                 "transfer_current_max=%zu remote_free_attempt=%zu "
                 "remote_free_strict_owner_block=%zu "
-                "remote_free_transfer_fail=%zu source_alloc=%zu alloc_fail=%zu "
+                "remote_free_transfer_fail=%zu "
+                "route_rehome_attempt=%zu route_rehome_success=%zu "
+                "route_rehome_fail=%zu source_alloc=%zu alloc_fail=%zu "
                 "descriptor_exhausted=%zu route_register_fail=%zu source_block_exhausted=%zu "
                 "large_span_central_push=%zu large_span_central_pop=%zu large_span_source_alloc=%zu\n",
                 label ? label : "unknown",
@@ -170,8 +183,11 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 0u,
                 0u,
                 0u,
+                0u,
+                0u,
                 s.transfer_push,
                 s.transfer_pop,
+                0u,
                 0u,
                 0u,
                 0u,

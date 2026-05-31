@@ -7,11 +7,13 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
     return;
   }
 
+  int visible_hit = 0;
   Hz6RouteResult route =
       hz6_route_backend_lookup(&allocator->route_backend, ptr);
   if (route.kind == HZ6_ROUTE_MISS &&
       !hz6_allocator_profile_strict_owner_remote(allocator)) {
     route = hz6_allocator_route_lookup_visible(allocator, ptr);
+    visible_hit = (route.kind != HZ6_ROUTE_MISS);
   }
   switch (route.kind) {
     case HZ6_ROUTE_VALID:
@@ -30,8 +32,22 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
           ok = front->free_tagged &&
                front->free_tagged(allocator, ptr, route);
         } else {
+          if (visible_hit) {
+#if HZ6_DIAGNOSTIC_PROBES
+            ++allocator->stats.route_rehome_attempt;
+#endif
+          }
           ok = front->remote_free_tagged &&
                front->remote_free_tagged(allocator, ptr, route);
+        }
+        if (visible_hit && !local_owner) {
+#if HZ6_DIAGNOSTIC_PROBES
+          if (ok) {
+            ++allocator->stats.route_rehome_success;
+          } else {
+            ++allocator->stats.route_rehome_fail;
+          }
+#endif
         }
         if (!ok) {
           ++allocator->stats.route_invalid;

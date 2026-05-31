@@ -7,11 +7,13 @@ int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
     return 0;
   }
 
+  int visible_hit = 0;
   Hz6RouteResult route =
       hz6_route_backend_lookup(&allocator->route_backend, ptr);
   if (route.kind == HZ6_ROUTE_MISS &&
       !hz6_allocator_profile_strict_owner_remote(allocator)) {
     route = hz6_allocator_route_lookup_visible(allocator, ptr);
+    visible_hit = (route.kind != HZ6_ROUTE_MISS);
   }
   if (route.kind == HZ6_ROUTE_MISS) {
     ++allocator->stats.route_miss;
@@ -24,10 +26,40 @@ int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
 
   const Hz6FrontOps* front = hz6_front_for_id(route.front_id);
   ++allocator->stats.route_valid;
+  if (visible_hit) {
+    const Hz6ObjectDescriptor* descriptor =
+        (const Hz6ObjectDescriptor*)route.descriptor;
+    if (descriptor &&
+        !hz6_owner_equal(descriptor->owner, allocator->owner.token)) {
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.route_rehome_attempt;
+#endif
+    }
+  }
   if (!front || !front->remote_free_tagged ||
       !front->remote_free_tagged(allocator, ptr, route)) {
+    if (visible_hit) {
+      const Hz6ObjectDescriptor* descriptor =
+          (const Hz6ObjectDescriptor*)route.descriptor;
+      if (descriptor &&
+          !hz6_owner_equal(descriptor->owner, allocator->owner.token)) {
+#if HZ6_DIAGNOSTIC_PROBES
+        ++allocator->stats.route_rehome_fail;
+#endif
+      }
+    }
     ++allocator->stats.route_invalid;
     return 0;
+  }
+  if (visible_hit) {
+    const Hz6ObjectDescriptor* descriptor =
+        (const Hz6ObjectDescriptor*)route.descriptor;
+    if (descriptor &&
+        !hz6_owner_equal(descriptor->owner, allocator->owner.token)) {
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.route_rehome_success;
+#endif
+    }
   }
 
   return 1;

@@ -127,6 +127,8 @@ function Parse-Hz6Stats {
         RouteMiss = "NA"
         RouteVisibilityLookup = "NA"
         RouteVisibilityHit = "NA"
+        RouteVisibilityHitLocalOwner = "NA"
+        RouteVisibilityHitForeignOwner = "NA"
         RouteVisibilityMiss = "NA"
         RouteVisibilityProbeTotal = "NA"
         RouteVisibilityProbeMax = "NA"
@@ -138,6 +140,9 @@ function Parse-Hz6Stats {
         RemoteFreeAttempt = "NA"
         RemoteFreeStrictOwnerBlock = "NA"
         RemoteFreeTransferFail = "NA"
+        RouteRehomeAttempt = "NA"
+        RouteRehomeSuccess = "NA"
+        RouteRehomeFail = "NA"
         FrontcacheReuseHit = "NA"
         FrontcacheReuseInvalid = "NA"
         TransferReuseHit = "NA"
@@ -194,6 +199,8 @@ function Parse-Hz6Stats {
                     '^route_miss=(.*)$' { $result.RouteMiss = $Matches[1]; continue }
                     '^route_visibility_lookup=(.*)$' { $result.RouteVisibilityLookup = $Matches[1]; continue }
                     '^route_visibility_hit=(.*)$' { $result.RouteVisibilityHit = $Matches[1]; continue }
+                    '^route_visibility_hit_local_owner=(.*)$' { $result.RouteVisibilityHitLocalOwner = $Matches[1]; continue }
+                    '^route_visibility_hit_foreign_owner=(.*)$' { $result.RouteVisibilityHitForeignOwner = $Matches[1]; continue }
                     '^route_visibility_miss=(.*)$' { $result.RouteVisibilityMiss = $Matches[1]; continue }
                     '^route_visibility_probe_total=(.*)$' { $result.RouteVisibilityProbeTotal = $Matches[1]; continue }
                     '^route_visibility_probe_max=(.*)$' { $result.RouteVisibilityProbeMax = $Matches[1]; continue }
@@ -205,6 +212,9 @@ function Parse-Hz6Stats {
                     '^remote_free_attempt=(.*)$' { $result.RemoteFreeAttempt = $Matches[1]; continue }
                     '^remote_free_strict_owner_block=(.*)$' { $result.RemoteFreeStrictOwnerBlock = $Matches[1]; continue }
                     '^remote_free_transfer_fail=(.*)$' { $result.RemoteFreeTransferFail = $Matches[1]; continue }
+                    '^route_rehome_attempt=(.*)$' { $result.RouteRehomeAttempt = $Matches[1]; continue }
+                    '^route_rehome_success=(.*)$' { $result.RouteRehomeSuccess = $Matches[1]; continue }
+                    '^route_rehome_fail=(.*)$' { $result.RouteRehomeFail = $Matches[1]; continue }
                     '^frontcache_reuse_hit=(.*)$' { $result.FrontcacheReuseHit = $Matches[1]; continue }
                     '^frontcache_reuse_invalid=(.*)$' { $result.FrontcacheReuseInvalid = $Matches[1]; continue }
                     '^transfer_reuse_hit=(.*)$' { $result.TransferReuseHit = $Matches[1]; continue }
@@ -315,8 +325,9 @@ $Summary.Add('- params: `runtime=10s min=8 max=1024 chunks=10000 rounds=1 seed=1
 $Summary.Add(('- compact control (optional): `chunks={0}`' -f $CompactChunksPerThread))
 $Summary.Add('- worker-warmup control (optional): same chunks, but each worker owns its warmup allocations before the timer starts')
 $Summary.Add('- shared route visibility diagnostics: `route_visibility_lookup / hit / miss / probe_total / probe_max`')
+$Summary.Add('- shared route owner diagnostics: `route_visibility_hit_local_owner / route_visibility_hit_foreign_owner`')
 $Summary.Add('- transfer backlog diagnostics: `transfer_current / transfer_current_max`')
-$Summary.Add('- remote free diagnostics: `remote_free_attempt / strict_owner_block / transfer_fail`')
+$Summary.Add('- remote free diagnostics: `remote_free_attempt / strict_owner_block / transfer_fail / route_rehome_attempt / route_rehome_success / route_rehome_fail`')
 $Summary.Add('- thread sweep: `1, 4, 8, 16`')
 $Summary.Add(('- runs: `{0}`' -f $Runs))
 $Summary.Add(('- timeout: `{0}s` per allocator row' -f $TimeoutSeconds))
@@ -334,8 +345,8 @@ function Invoke-LarsonSweep {
     foreach ($threads in $ThreadCounts) {
         $Summary.Add("## " + $SectionTitle + " T=" + $threads)
         $Summary.Add("")
-        $Summary.Add("| allocator | median ops/s | route_miss | route_vis_lookup | route_vis_hit | route_vis_miss | route_vis_probe_total | route_vis_probe_max | source_alloc | local2p_source_alloc | midpage_source_alloc | large_source_alloc | toy_source_alloc | front_source_ops_alloc | front_source_slot_alloc | front_source_prefill_alloc | toy_source_prefill_call | front_path_local2p | front_path_midpage | front_path_large | front_path_toy | transfer_push | transfer_pop | transfer_current | transfer_current_max | frontcache_reuse_hit | frontcache_reuse_invalid | transfer_reuse_hit | transfer_reuse_invalid | source_refill_starvation | source_refill_saturation | source_refill_boost | source_refill_clamp | source_admission_open | source_admission_boosted | source_admission_clamped | source_prefill_attempt | source_prefill_filled | source_prefill_fallback | alloc_fail | desc_probe | reg_probe | unreg_probe | srcblk_probe | runs |")
-        $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
+        $Summary.Add("| allocator | median ops/s | route_miss | route_vis_lookup | route_vis_hit | route_vis_hit_local_owner | route_vis_hit_foreign_owner | route_vis_miss | route_vis_probe_total | route_vis_probe_max | source_alloc | local2p_source_alloc | midpage_source_alloc | large_source_alloc | toy_source_alloc | front_source_ops_alloc | front_source_slot_alloc | front_source_prefill_alloc | toy_source_prefill_call | front_path_local2p | front_path_midpage | front_path_large | front_path_toy | transfer_push | transfer_pop | transfer_current | transfer_current_max | remote_free_attempt | remote_free_strict_block | remote_free_transfer_fail | route_rehome_attempt | route_rehome_success | route_rehome_fail | frontcache_reuse_hit | frontcache_reuse_invalid | transfer_reuse_hit | transfer_reuse_invalid | source_refill_starvation | source_refill_saturation | source_refill_boost | source_refill_clamp | source_admission_open | source_admission_boosted | source_admission_clamped | source_prefill_attempt | source_prefill_filled | source_prefill_fallback | alloc_fail | desc_probe | reg_probe | unreg_probe | srcblk_probe | runs |")
+        $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
 
         foreach ($exe in $Executables) {
             $opsRuns = New-Object System.Collections.Generic.List[double]
@@ -344,6 +355,8 @@ function Invoke-LarsonSweep {
                 RouteMiss = "NA"
                 RouteVisibilityLookup = "NA"
                 RouteVisibilityHit = "NA"
+                RouteVisibilityHitLocalOwner = "NA"
+                RouteVisibilityHitForeignOwner = "NA"
                 RouteVisibilityMiss = "NA"
                 RouteVisibilityProbeTotal = "NA"
                 RouteVisibilityProbeMax = "NA"
@@ -355,6 +368,9 @@ function Invoke-LarsonSweep {
                 RemoteFreeAttempt = "NA"
                 RemoteFreeStrictOwnerBlock = "NA"
                 RemoteFreeTransferFail = "NA"
+                RouteRehomeAttempt = "NA"
+                RouteRehomeSuccess = "NA"
+                RouteRehomeFail = "NA"
                 FrontcacheReuseHit = "NA"
                 FrontcacheReuseInvalid = "NA"
                 TransferReuseHit = "NA"
@@ -449,7 +465,7 @@ function Invoke-LarsonSweep {
             }
 
             if ($opsRuns.Count -eq 0) {
-                $failedMetrics = ((@('NA') * 42) -join ' | ')
+                $failedMetrics = ((@('NA') * 50) -join ' | ')
                 $Summary.Add(('| {0} | failed | {1} | `{2}` |' -f $exe.Name, $failedMetrics, ($runTexts -join ", ")))
                 continue
             }
@@ -459,6 +475,8 @@ function Invoke-LarsonSweep {
                 $lastStats.RouteMiss,
                 $lastStats.RouteVisibilityLookup,
                 $lastStats.RouteVisibilityHit,
+                $lastStats.RouteVisibilityHitLocalOwner,
+                $lastStats.RouteVisibilityHitForeignOwner,
                 $lastStats.RouteVisibilityMiss,
                 $lastStats.RouteVisibilityProbeTotal,
                 $lastStats.RouteVisibilityProbeMax,
@@ -482,6 +500,9 @@ function Invoke-LarsonSweep {
                 $lastStats.RemoteFreeAttempt,
                 $lastStats.RemoteFreeStrictOwnerBlock,
                 $lastStats.RemoteFreeTransferFail,
+                $lastStats.RouteRehomeAttempt,
+                $lastStats.RouteRehomeSuccess,
+                $lastStats.RouteRehomeFail,
                 $lastStats.FrontcacheReuseHit,
                 $lastStats.FrontcacheReuseInvalid,
                 $lastStats.TransferReuseHit,
@@ -529,13 +550,19 @@ function Invoke-LarsonSweep {
                     $lastStats.RouteVisibilityMiss,
                     $lastStats.RouteVisibilityProbeTotal,
                     $lastStats.RouteVisibilityProbeMax))
+                $Summary.Add(('  visibility owner: local={0} foreign={1}' -f
+                    $lastStats.RouteVisibilityHitLocalOwner,
+                    $lastStats.RouteVisibilityHitForeignOwner))
                 $Summary.Add(('  transfer: current={0} max={1}' -f
                     $lastStats.TransferCurrent,
                     $lastStats.TransferCurrentMax))
-                $Summary.Add(('  remote_free: attempt={0} strict_block={1} transfer_fail={2}' -f
+                $Summary.Add(('  remote_free: attempt={0} strict_block={1} transfer_fail={2} rehome_attempt={3} rehome_success={4} rehome_fail={5}' -f
                     $lastStats.RemoteFreeAttempt,
                     $lastStats.RemoteFreeStrictOwnerBlock,
-                    $lastStats.RemoteFreeTransferFail))
+                    $lastStats.RemoteFreeTransferFail,
+                    $lastStats.RouteRehomeAttempt,
+                    $lastStats.RouteRehomeSuccess,
+                    $lastStats.RouteRehomeFail))
             }
         }
 

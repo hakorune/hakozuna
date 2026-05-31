@@ -418,6 +418,10 @@ int main(int argc, char** argv) {
             tds[t].hz6_stats_after.route_visibility_lookup;
         hz6_stats.route_visibility_hit +=
             tds[t].hz6_stats_after.route_visibility_hit;
+        hz6_stats.route_visibility_hit_local_owner +=
+            tds[t].hz6_stats_after.route_visibility_hit_local_owner;
+        hz6_stats.route_visibility_hit_foreign_owner +=
+            tds[t].hz6_stats_after.route_visibility_hit_foreign_owner;
         hz6_stats.route_visibility_miss +=
             tds[t].hz6_stats_after.route_visibility_miss;
         hz6_stats.route_visibility_probe_total +=
@@ -442,6 +446,12 @@ int main(int argc, char** argv) {
             tds[t].hz6_stats_after.remote_free_strict_owner_block;
         hz6_stats.remote_free_transfer_fail +=
             tds[t].hz6_stats_after.remote_free_transfer_fail;
+        hz6_stats.route_rehome_attempt +=
+            tds[t].hz6_stats_after.route_rehome_attempt;
+        hz6_stats.route_rehome_success +=
+            tds[t].hz6_stats_after.route_rehome_success;
+        hz6_stats.route_rehome_fail +=
+            tds[t].hz6_stats_after.route_rehome_fail;
         hz6_stats.source_alloc += tds[t].hz6_stats_after.source_alloc;
         hz6_stats.local2p_source_alloc +=
             tds[t].hz6_stats_after.local2p_source_alloc;
@@ -554,12 +564,15 @@ int main(int argc, char** argv) {
 #if defined(HZ_BENCH_USE_HZ6)
     printf("[HZ6_STATS] label=%s route_valid=%zu route_invalid=%zu route_miss=%zu "
            "route_visibility_lookup=%zu route_visibility_hit=%zu "
+           "route_visibility_hit_local_owner=%zu "
+           "route_visibility_hit_foreign_owner=%zu "
            "route_visibility_miss=%zu route_visibility_probe_total=%zu "
            "route_visibility_probe_max=%zu "
            "transfer_push=%zu transfer_pop=%zu transfer_current=%zu "
            "transfer_current_max=%zu remote_free_attempt=%zu "
            "remote_free_strict_owner_block=%zu remote_free_transfer_fail=%zu "
-           "source_alloc=%zu "
+           "route_rehome_attempt=%zu route_rehome_success=%zu "
+           "route_rehome_fail=%zu source_alloc=%zu "
            "local2p_source_alloc=%zu midpage_source_alloc=%zu "
            "large_source_alloc=%zu toy_source_alloc=%zu "
            "front_source_ops_alloc=%zu front_source_slot_alloc=%zu "
@@ -584,6 +597,8 @@ int main(int argc, char** argv) {
            hz6_stats.route_miss,
            hz6_stats.route_visibility_lookup,
            hz6_stats.route_visibility_hit,
+           hz6_stats.route_visibility_hit_local_owner,
+           hz6_stats.route_visibility_hit_foreign_owner,
            hz6_stats.route_visibility_miss,
            hz6_stats.route_visibility_probe_total,
            hz6_stats.route_visibility_probe_max,
@@ -594,6 +609,9 @@ int main(int argc, char** argv) {
            hz6_stats.remote_free_attempt,
            hz6_stats.remote_free_strict_owner_block,
            hz6_stats.remote_free_transfer_fail,
+           hz6_stats.route_rehome_attempt,
+           hz6_stats.route_rehome_success,
+           hz6_stats.route_rehome_fail,
            hz6_stats.source_alloc,
            hz6_stats.local2p_source_alloc,
            hz6_stats.midpage_source_alloc,
