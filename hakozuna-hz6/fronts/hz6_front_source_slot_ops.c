@@ -36,6 +36,11 @@ void* hz6_front_source_slot_ops(Hz6Allocator* allocator,
           allocator, descriptor, user_ptr, user_bytes, source_ptr,
           source_bytes, NULL, class_id, source_kind, source_ops->release,
           HZ6_STATE_ACTIVE)) {
+#if HZ6_DIAGNOSTIC_PROBES
+    if (source_ops->release) {
+      ++allocator->stats.source_owned_release;
+    }
+#endif
     hz6_allocator_release_descriptor_source(descriptor);
     return NULL;
   }
@@ -43,6 +48,11 @@ void* hz6_front_source_slot_ops(Hz6Allocator* allocator,
   if (!hz6_allocator_route_register_exact(
           allocator, user_ptr, user_bytes, front_id, class_id,
           descriptor->generation, descriptor)) {
+#if HZ6_DIAGNOSTIC_PROBES
+    if (descriptor->source_release) {
+      ++allocator->stats.source_owned_release;
+    }
+#endif
     hz6_allocator_release_descriptor_source(descriptor);
     return NULL;
   }

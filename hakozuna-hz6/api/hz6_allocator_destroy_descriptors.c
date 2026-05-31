@@ -11,6 +11,11 @@ void hz6_allocator_destroy_descriptors(Hz6Allocator* allocator) {
       continue;
     }
     hz6_allocator_route_unregister_exact(allocator, descriptor->ptr);
+#if HZ6_DIAGNOSTIC_PROBES
+    if (descriptor->source_release) {
+      ++allocator->stats.source_owned_release;
+    }
+#endif
     hz6_allocator_release_descriptor_source(descriptor);
   }
 }

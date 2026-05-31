@@ -22,6 +22,11 @@ int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
 
   descriptor->state = HZ6_STATE_DEAD;
   hz6_allocator_route_unregister_exact(allocator, ptr);
+#if HZ6_DIAGNOSTIC_PROBES
+  if (descriptor->source_release) {
+    ++allocator->stats.source_owned_release;
+  }
+#endif
   hz6_allocator_release_descriptor_source(descriptor);
   return 1;
 }

@@ -864,6 +864,76 @@ Current read:
   scan depth
 ```
 
+## Diagnostic Checkpoint 2026-06-01c
+
+```text
+Descriptor/source ownership L2 diagnostics:
+  main-warmup:
+    throughput = 997 ops/s
+    source_owned_prepare = 848
+    source_owned_route_hit_local_owner = 0
+    source_owned_visibility_hit_local_owner = 0
+    source_owned_visibility_hit_foreign_owner = 2973
+    source_owned_remote_free_attempt = 2973
+    source_owned_release = 0
+    route_rehome_success = 2973
+    transfer_current = 196
+
+  worker-warmup:
+    throughput = 14.987M ops/s
+    source_owned_prepare = 165392
+    source_owned_route_hit_local_owner = 0
+    source_owned_visibility_hit_local_owner = 0
+    source_owned_visibility_hit_foreign_owner = 0
+    source_owned_remote_free_attempt = 0
+    source_owned_release = 0
+    route_rehome_success = 0
+    transfer_current = 0
+
+Current read:
+  the new source-owned counters are diagnostic-only and stay out of the
+  production benchmark lane
+  main-warmup is still foreign-visibility dominated, and the source-owned
+  descriptors are the ones taking the remote handoff path
+  worker-warmup stays healthy with source-owned allocations but no visibility
+  or remote handoff pressure
+  next question is whether descriptor/source ownership needs a behavior L2,
+  or whether this should now be frozen as evidence
+```
+
+## Diagnostic Checkpoint 2026-06-01d
+
+```text
+Descriptor/source ownership L2 repeat:
+  main-warmup:
+    throughput = 1187 ops/s
+    source_owned_prepare = 848
+    source_owned_route_hit_local_owner = 109
+    source_owned_visibility_hit_local_owner = 0
+    source_owned_visibility_hit_foreign_owner = 3495
+    source_owned_remote_free_attempt = 3495
+    route_rehome_success = 3495
+    transfer_current = 206
+
+  worker-warmup:
+    throughput = 13.455M ops/s
+    source_owned_prepare = 165296
+    source_owned_route_hit_local_owner = 48098278
+    source_owned_visibility_hit_local_owner = 0
+    source_owned_visibility_hit_foreign_owner = 0
+    source_owned_remote_free_attempt = 0
+    route_rehome_success = 0
+    transfer_current = 0
+
+Current read:
+  the direct local source-owned route hit is now visible in the worker lane
+  the main-warmup shape is still foreign-visibility dominated
+  this is enough evidence for descriptor/source ownership L2, without any
+  production atomic counter path
+  next decision is whether to freeze this as evidence or turn it into a
+  behavior experiment
+```
+
 Read:
 
 ```text

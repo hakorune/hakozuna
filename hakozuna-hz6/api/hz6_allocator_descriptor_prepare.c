@@ -28,5 +28,10 @@ int hz6_allocator_prepare_descriptor(
   descriptor->owner = allocator->owner.token;
   descriptor->generation = 1;
   descriptor->state = state;
+#if HZ6_DIAGNOSTIC_PROBES
+  if (source_release) {
+    ++allocator->stats.source_owned_prepare;
+  }
+#endif
   return 1;
 }

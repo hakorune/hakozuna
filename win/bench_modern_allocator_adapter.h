@@ -111,7 +111,12 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 "remote_free_strict_owner_block=%zu "
                 "remote_free_transfer_fail=%zu "
                 "route_rehome_attempt=%zu route_rehome_success=%zu "
-                "route_rehome_fail=%zu source_alloc=%zu alloc_fail=%zu "
+                "route_rehome_fail=%zu source_owned_prepare=%zu "
+                "source_owned_route_hit_local_owner=%zu "
+                "source_owned_visibility_hit_local_owner=%zu "
+                "source_owned_visibility_hit_foreign_owner=%zu "
+                "source_owned_remote_free_attempt=%zu "
+                "source_owned_release=%zu source_alloc=%zu alloc_fail=%zu "
                 "descriptor_exhausted=%zu route_register_fail=%zu source_block_exhausted=%zu "
                 "route_active_current=%zu route_active_max=%zu "
                 "descriptor_probe_total=%zu descriptor_probe_max=%zu "
@@ -140,6 +145,12 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 s.route_rehome_attempt,
                 s.route_rehome_success,
                 s.route_rehome_fail,
+                s.source_owned_prepare,
+                s.source_owned_route_hit_local_owner,
+                s.source_owned_visibility_hit_local_owner,
+                s.source_owned_visibility_hit_foreign_owner,
+                s.source_owned_remote_free_attempt,
+                s.source_owned_release,
                 s.source_alloc,
                 s.alloc_fail,
                 s.descriptor_exhausted,
@@ -171,7 +182,12 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 "remote_free_strict_owner_block=%zu "
                 "remote_free_transfer_fail=%zu "
                 "route_rehome_attempt=%zu route_rehome_success=%zu "
-                "route_rehome_fail=%zu source_alloc=%zu alloc_fail=%zu "
+                "route_rehome_fail=%zu source_owned_prepare=%zu "
+                "source_owned_route_hit_local_owner=%zu "
+                "source_owned_visibility_hit_local_owner=%zu "
+                "source_owned_visibility_hit_foreign_owner=%zu "
+                "source_owned_remote_free_attempt=%zu "
+                "source_owned_release=%zu source_alloc=%zu alloc_fail=%zu "
                 "descriptor_exhausted=%zu route_register_fail=%zu source_block_exhausted=%zu "
                 "large_span_central_push=%zu large_span_central_pop=%zu large_span_source_alloc=%zu\n",
                 label ? label : "unknown",
@@ -187,6 +203,12 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 0u,
                 s.transfer_push,
                 s.transfer_pop,
+                0u,
+                0u,
+                0u,
+                0u,
+                0u,
+                0u,
                 0u,
                 0u,
                 0u,

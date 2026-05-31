@@ -46,6 +46,11 @@ int hz6_front_prefill_one(Hz6Allocator* allocator,
   if (!hz6_allocator_prepare_descriptor(
           allocator, descriptor, ptr, bytes, ptr, bytes, NULL, class_id,
           source_kind, source_ops->release, HZ6_STATE_LOCAL_FREE)) {
+#if HZ6_DIAGNOSTIC_PROBES
+    if (source_ops->release) {
+      ++allocator->stats.source_owned_release;
+    }
+#endif
     hz6_allocator_release_descriptor_source(descriptor);
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.source_prefill_fallback;
@@ -59,6 +64,11 @@ int hz6_front_prefill_one(Hz6Allocator* allocator,
   if (!hz6_allocator_route_register_exact(allocator, ptr, bytes,
                                           front_id, class_id,
                                           descriptor->generation, descriptor)) {
+#if HZ6_DIAGNOSTIC_PROBES
+    if (descriptor->source_release) {
+      ++allocator->stats.source_owned_release;
+    }
+#endif
     hz6_allocator_release_descriptor_source(descriptor);
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.source_prefill_fallback;
@@ -76,6 +86,11 @@ int hz6_front_prefill_one(Hz6Allocator* allocator,
   entry.generation = descriptor->generation;
   if (!hz6_allocator_frontcache_push(allocator, class_id, entry)) {
     hz6_allocator_route_unregister_exact(allocator, ptr);
+#if HZ6_DIAGNOSTIC_PROBES
+    if (descriptor->source_release) {
+      ++allocator->stats.source_owned_release;
+    }
+#endif
     hz6_allocator_release_descriptor_source(descriptor);
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.source_prefill_fallback;

@@ -62,6 +62,15 @@ Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
   Hz6RouteResult route = hz6_route_backend_lookup(&allocator->route_backend, ptr);
   if (route.kind != HZ6_ROUTE_MISS) {
     route.route_allocator = (Hz6Allocator*)allocator;
+#if HZ6_DIAGNOSTIC_PROBES
+    if (route.descriptor) {
+      const Hz6ObjectDescriptor* descriptor =
+          (const Hz6ObjectDescriptor*)route.descriptor;
+      if (descriptor->source_release) {
+        ++((Hz6Allocator*)allocator)->stats.source_owned_route_hit_local_owner;
+      }
+    }
+#endif
   }
   return route;
 }
@@ -103,8 +112,14 @@ Hz6RouteResult hz6_allocator_route_lookup_visible(Hz6Allocator* allocator,
             (const Hz6ObjectDescriptor*)route.descriptor;
         if (hz6_owner_equal(descriptor->owner, allocator->owner.token)) {
           ++allocator->stats.route_visibility_hit_local_owner;
+          if (descriptor->source_release) {
+            ++allocator->stats.source_owned_visibility_hit_local_owner;
+          }
         } else {
           ++allocator->stats.route_visibility_hit_foreign_owner;
+          if (descriptor->source_release) {
+            ++allocator->stats.source_owned_visibility_hit_foreign_owner;
+          }
         }
       }
       allocator->stats.route_visibility_probe_total += probes;

@@ -452,6 +452,18 @@ int main(int argc, char** argv) {
             tds[t].hz6_stats_after.route_rehome_success;
         hz6_stats.route_rehome_fail +=
             tds[t].hz6_stats_after.route_rehome_fail;
+        hz6_stats.source_owned_prepare +=
+            tds[t].hz6_stats_after.source_owned_prepare;
+        hz6_stats.source_owned_route_hit_local_owner +=
+            tds[t].hz6_stats_after.source_owned_route_hit_local_owner;
+        hz6_stats.source_owned_visibility_hit_local_owner +=
+            tds[t].hz6_stats_after.source_owned_visibility_hit_local_owner;
+        hz6_stats.source_owned_visibility_hit_foreign_owner +=
+            tds[t].hz6_stats_after.source_owned_visibility_hit_foreign_owner;
+        hz6_stats.source_owned_remote_free_attempt +=
+            tds[t].hz6_stats_after.source_owned_remote_free_attempt;
+        hz6_stats.source_owned_release +=
+            tds[t].hz6_stats_after.source_owned_release;
         hz6_stats.source_alloc += tds[t].hz6_stats_after.source_alloc;
         hz6_stats.local2p_source_alloc +=
             tds[t].hz6_stats_after.local2p_source_alloc;
@@ -572,7 +584,12 @@ int main(int argc, char** argv) {
            "transfer_current_max=%zu remote_free_attempt=%zu "
            "remote_free_strict_owner_block=%zu remote_free_transfer_fail=%zu "
            "route_rehome_attempt=%zu route_rehome_success=%zu "
-           "route_rehome_fail=%zu source_alloc=%zu "
+           "route_rehome_fail=%zu source_owned_prepare=%zu "
+           "source_owned_route_hit_local_owner=%zu "
+           "source_owned_visibility_hit_local_owner=%zu "
+           "source_owned_visibility_hit_foreign_owner=%zu "
+           "source_owned_remote_free_attempt=%zu "
+           "source_owned_release=%zu source_alloc=%zu "
            "local2p_source_alloc=%zu midpage_source_alloc=%zu "
            "large_source_alloc=%zu toy_source_alloc=%zu "
            "front_source_ops_alloc=%zu front_source_slot_alloc=%zu "
@@ -612,6 +629,12 @@ int main(int argc, char** argv) {
            hz6_stats.route_rehome_attempt,
            hz6_stats.route_rehome_success,
            hz6_stats.route_rehome_fail,
+           hz6_stats.source_owned_prepare,
+           hz6_stats.source_owned_route_hit_local_owner,
+           hz6_stats.source_owned_visibility_hit_local_owner,
+           hz6_stats.source_owned_visibility_hit_foreign_owner,
+           hz6_stats.source_owned_remote_free_attempt,
+           hz6_stats.source_owned_release,
            hz6_stats.source_alloc,
            hz6_stats.local2p_source_alloc,
            hz6_stats.midpage_source_alloc,
