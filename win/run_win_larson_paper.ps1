@@ -155,47 +155,60 @@ function Parse-Hz6Stats {
         RouteUnregisterProbeMax = "NA"
         SourceBlockProbeTotal = "NA"
         SourceBlockProbeMax = "NA"
+        FrontPathLocal2p = "NA"
+        FrontPathMidpage = "NA"
+        FrontPathLarge = "NA"
+        FrontPathToy = "NA"
     }
 
-    $statsLine = $Lines | Where-Object { $_.StartsWith("[HZ6_STATS]") } | Select-Object -Last 1
-    if (-not $statsLine) {
-        return $result
-    }
+    foreach ($line in $Lines) {
+        if ($line.StartsWith("[HZ6_STATS]")) {
+            foreach ($part in $line.Split(" ")) {
+                switch -Regex ($part) {
+                    '^route_miss=(.*)$' { $result.RouteMiss = $Matches[1]; continue }
+                    '^source_alloc=(.*)$' { $result.SourceAlloc = $Matches[1]; continue }
+                    '^transfer_push=(.*)$' { $result.TransferPush = $Matches[1]; continue }
+                    '^transfer_pop=(.*)$' { $result.TransferPop = $Matches[1]; continue }
+                    '^frontcache_reuse_hit=(.*)$' { $result.FrontcacheReuseHit = $Matches[1]; continue }
+                    '^frontcache_reuse_invalid=(.*)$' { $result.FrontcacheReuseInvalid = $Matches[1]; continue }
+                    '^transfer_reuse_hit=(.*)$' { $result.TransferReuseHit = $Matches[1]; continue }
+                    '^transfer_reuse_invalid=(.*)$' { $result.TransferReuseInvalid = $Matches[1]; continue }
+                    '^source_refill_starvation=(.*)$' { $result.SourceRefillStarvation = $Matches[1]; continue }
+                    '^source_refill_saturation=(.*)$' { $result.SourceRefillSaturation = $Matches[1]; continue }
+                    '^source_refill_boost=(.*)$' { $result.SourceRefillBoost = $Matches[1]; continue }
+                    '^source_refill_clamp=(.*)$' { $result.SourceRefillClamp = $Matches[1]; continue }
+                    '^source_prefill_attempt=(.*)$' { $result.SourcePrefillAttempt = $Matches[1]; continue }
+                    '^source_prefill_filled=(.*)$' { $result.SourcePrefillFilled = $Matches[1]; continue }
+                    '^source_prefill_fallback=(.*)$' { $result.SourcePrefillFallback = $Matches[1]; continue }
+                    '^front_source_ops_alloc=(.*)$' { $result.FrontSourceOpsAlloc = $Matches[1]; continue }
+                    '^front_source_slot_alloc=(.*)$' { $result.FrontSourceSlotAlloc = $Matches[1]; continue }
+                    '^front_source_prefill_alloc=(.*)$' { $result.FrontSourcePrefillAlloc = $Matches[1]; continue }
+                    '^toy_source_prefill_call=(.*)$' { $result.ToySourcePrefillCall = $Matches[1]; continue }
+                    '^local2p_source_alloc=(.*)$' { $result.Local2pSourceAlloc = $Matches[1]; continue }
+                    '^midpage_source_alloc=(.*)$' { $result.MidpageSourceAlloc = $Matches[1]; continue }
+                    '^large_source_alloc=(.*)$' { $result.LargeSourceAlloc = $Matches[1]; continue }
+                    '^toy_source_alloc=(.*)$' { $result.ToySourceAlloc = $Matches[1]; continue }
+                    '^alloc_fail=(.*)$' { $result.AllocFail = $Matches[1]; continue }
+                    '^descriptor_probe_total=(.*)$' { $result.DescriptorProbeTotal = $Matches[1]; continue }
+                    '^descriptor_probe_max=(.*)$' { $result.DescriptorProbeMax = $Matches[1]; continue }
+                    '^route_register_probe_total=(.*)$' { $result.RouteRegisterProbeTotal = $Matches[1]; continue }
+                    '^route_register_probe_max=(.*)$' { $result.RouteRegisterProbeMax = $Matches[1]; continue }
+                    '^route_unregister_probe_total=(.*)$' { $result.RouteUnregisterProbeTotal = $Matches[1]; continue }
+                    '^route_unregister_probe_max=(.*)$' { $result.RouteUnregisterProbeMax = $Matches[1]; continue }
+                    '^source_block_probe_total=(.*)$' { $result.SourceBlockProbeTotal = $Matches[1]; continue }
+                    '^source_block_probe_max=(.*)$' { $result.SourceBlockProbeMax = $Matches[1]; continue }
+                }
+            }
+            continue
+        }
 
-    foreach ($part in $statsLine.Split(" ")) {
-        switch -Regex ($part) {
-            '^route_miss=(.*)$' { $result.RouteMiss = $Matches[1]; continue }
-            '^source_alloc=(.*)$' { $result.SourceAlloc = $Matches[1]; continue }
-            '^transfer_push=(.*)$' { $result.TransferPush = $Matches[1]; continue }
-            '^transfer_pop=(.*)$' { $result.TransferPop = $Matches[1]; continue }
-            '^frontcache_reuse_hit=(.*)$' { $result.FrontcacheReuseHit = $Matches[1]; continue }
-            '^frontcache_reuse_invalid=(.*)$' { $result.FrontcacheReuseInvalid = $Matches[1]; continue }
-            '^transfer_reuse_hit=(.*)$' { $result.TransferReuseHit = $Matches[1]; continue }
-            '^transfer_reuse_invalid=(.*)$' { $result.TransferReuseInvalid = $Matches[1]; continue }
-            '^source_refill_starvation=(.*)$' { $result.SourceRefillStarvation = $Matches[1]; continue }
-            '^source_refill_saturation=(.*)$' { $result.SourceRefillSaturation = $Matches[1]; continue }
-            '^source_refill_boost=(.*)$' { $result.SourceRefillBoost = $Matches[1]; continue }
-            '^source_refill_clamp=(.*)$' { $result.SourceRefillClamp = $Matches[1]; continue }
-            '^source_prefill_attempt=(.*)$' { $result.SourcePrefillAttempt = $Matches[1]; continue }
-            '^source_prefill_filled=(.*)$' { $result.SourcePrefillFilled = $Matches[1]; continue }
-            '^source_prefill_fallback=(.*)$' { $result.SourcePrefillFallback = $Matches[1]; continue }
-            '^front_source_ops_alloc=(.*)$' { $result.FrontSourceOpsAlloc = $Matches[1]; continue }
-            '^front_source_slot_alloc=(.*)$' { $result.FrontSourceSlotAlloc = $Matches[1]; continue }
-            '^front_source_prefill_alloc=(.*)$' { $result.FrontSourcePrefillAlloc = $Matches[1]; continue }
-            '^toy_source_prefill_call=(.*)$' { $result.ToySourcePrefillCall = $Matches[1]; continue }
-            '^local2p_source_alloc=(.*)$' { $result.Local2pSourceAlloc = $Matches[1]; continue }
-            '^midpage_source_alloc=(.*)$' { $result.MidpageSourceAlloc = $Matches[1]; continue }
-            '^large_source_alloc=(.*)$' { $result.LargeSourceAlloc = $Matches[1]; continue }
-            '^toy_source_alloc=(.*)$' { $result.ToySourceAlloc = $Matches[1]; continue }
-            '^alloc_fail=(.*)$' { $result.AllocFail = $Matches[1]; continue }
-            '^descriptor_probe_total=(.*)$' { $result.DescriptorProbeTotal = $Matches[1]; continue }
-            '^descriptor_probe_max=(.*)$' { $result.DescriptorProbeMax = $Matches[1]; continue }
-            '^route_register_probe_total=(.*)$' { $result.RouteRegisterProbeTotal = $Matches[1]; continue }
-            '^route_register_probe_max=(.*)$' { $result.RouteRegisterProbeMax = $Matches[1]; continue }
-            '^route_unregister_probe_total=(.*)$' { $result.RouteUnregisterProbeTotal = $Matches[1]; continue }
-            '^route_unregister_probe_max=(.*)$' { $result.RouteUnregisterProbeMax = $Matches[1]; continue }
-            '^source_block_probe_total=(.*)$' { $result.SourceBlockProbeTotal = $Matches[1]; continue }
-            '^source_block_probe_max=(.*)$' { $result.SourceBlockProbeMax = $Matches[1]; continue }
+        if ($line.StartsWith("[HZ6_PATH]")) {
+            switch -Regex ($line) {
+                '^\[HZ6_PATH\] front=local2p (.*)$' { $result.FrontPathLocal2p = $Matches[1]; continue }
+                '^\[HZ6_PATH\] front=midpage (.*)$' { $result.FrontPathMidpage = $Matches[1]; continue }
+                '^\[HZ6_PATH\] front=large (.*)$' { $result.FrontPathLarge = $Matches[1]; continue }
+                '^\[HZ6_PATH\] front=toy (.*)$' { $result.FrontPathToy = $Matches[1]; continue }
+            }
         }
     }
 
@@ -247,7 +260,7 @@ function Invoke-LarsonSweep {
     foreach ($threads in $ThreadCounts) {
         $Summary.Add("## " + $SectionTitle + " T=" + $threads)
         $Summary.Add("")
-        $Summary.Add("| allocator | median ops/s | route_miss | source_alloc | local2p_source_alloc | midpage_source_alloc | large_source_alloc | toy_source_alloc | front_source_ops_alloc | front_source_slot_alloc | front_source_prefill_alloc | toy_source_prefill_call | transfer_push | transfer_pop | frontcache_reuse_hit | frontcache_reuse_invalid | transfer_reuse_hit | transfer_reuse_invalid | source_refill_starvation | source_refill_saturation | source_refill_boost | source_refill_clamp | source_prefill_attempt | source_prefill_filled | source_prefill_fallback | alloc_fail | desc_probe | reg_probe | unreg_probe | srcblk_probe | runs |")
+        $Summary.Add("| allocator | median ops/s | route_miss | source_alloc | local2p_source_alloc | midpage_source_alloc | large_source_alloc | toy_source_alloc | front_source_ops_alloc | front_source_slot_alloc | front_source_prefill_alloc | toy_source_prefill_call | front_path_local2p | front_path_midpage | front_path_large | front_path_toy | transfer_push | transfer_pop | frontcache_reuse_hit | frontcache_reuse_invalid | transfer_reuse_hit | transfer_reuse_invalid | source_refill_starvation | source_refill_saturation | source_refill_boost | source_refill_clamp | source_prefill_attempt | source_prefill_filled | source_prefill_fallback | alloc_fail | desc_probe | reg_probe | unreg_probe | srcblk_probe | runs |")
         $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
 
         foreach ($exe in $Executables) {
@@ -332,14 +345,14 @@ function Invoke-LarsonSweep {
             }
 
             if ($opsRuns.Count -eq 0) {
-                $failedMetrics = ((@('NA') * 24) -join ' | ')
+                $failedMetrics = ((@('NA') * 32) -join ' | ')
                 $Summary.Add(('| {0} | failed | {1} | `{2}` |' -f $exe.Name, $failedMetrics, ($runTexts -join ", ")))
                 continue
             }
 
             $medianOps = Get-Median -Values $opsRuns.ToArray()
                 $Summary.Add((
-                '| {0} | {1:N3}M | {2} | {3} | {4} | {5} | {6} | {7} | {8} | {9} | {10} | {11} | {12} | {13} | {14} | {15} | {16} | {17} | {18} | {19} | {20} | {21} | {22} | {23} | {24} | {25} | {26} | {27} | {28} | {29} | `{30}` |' -f
+                '| {0} | {1:N3}M | {2} | {3} | {4} | {5} | {6} | {7} | {8} | {9} | {10} | {11} | {12} | {13} | {14} | {15} | {16} | {17} | {18} | {19} | {20} | {21} | {22} | {23} | {24} | {25} | {26} | {27} | {28} | {29} | {30} | {31} | {32} | `{33}` |' -f
                 $exe.Name,
                 ($medianOps / 1000000.0),
                 $lastStats.RouteMiss,
@@ -352,6 +365,10 @@ function Invoke-LarsonSweep {
                 $lastStats.FrontSourceSlotAlloc,
                 $lastStats.FrontSourcePrefillAlloc,
                 $lastStats.ToySourcePrefillCall,
+                $lastStats.FrontPathLocal2p,
+                $lastStats.FrontPathMidpage,
+                $lastStats.FrontPathLarge,
+                $lastStats.FrontPathToy,
                 $lastStats.TransferPush,
                 $lastStats.TransferPop,
                 $lastStats.FrontcacheReuseHit,

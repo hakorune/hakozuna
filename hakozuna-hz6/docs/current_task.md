@@ -459,6 +459,24 @@ Next:
   source admission is the next pressure point
 ```
 
+## Diagnostic Checkpoint 2026-05-31h
+
+```text
+Larson diagnostic runner with front/path columns:
+  compact control rows now surface [HZ6_PATH] lines
+
+Observed compact profile:
+  front=toy is the active attributed front in the appcap rows
+  local_reuse dominates
+  prefill_reuse and source_prefill are present
+  direct_source stays 0
+
+Observed stress profile:
+  hz6 appcap stress rows still time out under the short diagnostic timeout
+  the next run should use a longer timeout or a narrower stress slice
+  so the same path attribution can be inspected under real stress
+```
+
 Read:
 
 ```text
