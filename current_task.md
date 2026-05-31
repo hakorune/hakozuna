@@ -65,6 +65,24 @@ Next validation order:
   3. keep large_slice_64k / 128k as the strong proof points
 ```
 
+Latest weakness read:
+
+```text
+Larson:
+  worker-warmup is good.
+  stress and appcap are still the weak lanes, with HZ6 failing or
+  underperforming on the heavier T=8/T=16 rows.
+
+Redis:
+  HZ6 appcap is weak across SET / GET / LPUSH / LPOP / RANDOM.
+  mimalloc and tcmalloc stay ahead on every Redis pattern in the latest run.
+
+HZ6 owner-aware MT remote:
+  throughput is usable and RSS is low.
+  alloc_failures are still huge, so this remains a pressure lane rather than a
+  clean win lane.
+```
+
 Next step:
 
 ```text
