@@ -123,6 +123,8 @@ static void print_stats(const Hz6Allocator* allocator) {
 #if HZ6_DIAGNOSTIC_PROBES
          "frontcache_reuse_hit=%zu frontcache_reuse_invalid=%zu "
          "transfer_reuse_hit=%zu transfer_reuse_invalid=%zu "
+         "source_refill_starvation=%zu source_refill_saturation=%zu "
+         "source_refill_boost=%zu source_refill_clamp=%zu "
 #endif
          "alloc_fail=%zu descriptor_exhausted=%zu route_register_fail=%zu "
          "source_block_exhausted=%zu descriptor_probe_total=%zu "
@@ -137,6 +139,8 @@ static void print_stats(const Hz6Allocator* allocator) {
 #if HZ6_DIAGNOSTIC_PROBES
          stats.frontcache_reuse_hit, stats.frontcache_reuse_invalid,
          stats.transfer_reuse_hit, stats.transfer_reuse_invalid,
+         stats.source_refill_starvation, stats.source_refill_saturation,
+         stats.source_refill_boost, stats.source_refill_clamp,
 #endif
          stats.alloc_fail, stats.descriptor_exhausted,
          stats.route_register_fail, stats.source_block_exhausted,

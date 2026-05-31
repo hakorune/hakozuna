@@ -80,17 +80,38 @@ size_t hz6_allocator_control_source_refill_batch(
     saturation = 1;
   }
 
+#if HZ6_DIAGNOSTIC_PROBES
+  Hz6Allocator* diag_allocator = (Hz6Allocator*)allocator;
+  if (starvation) {
+    ++diag_allocator->stats.source_refill_starvation;
+  }
+  if (saturation) {
+    ++diag_allocator->stats.source_refill_saturation;
+  }
+#endif
+
   if (starvation && !saturation) {
     size_t boosted = base < 16 ? 16 : base * 2;
     if (boosted < base) {
       boosted = base;
     }
+#if HZ6_DIAGNOSTIC_PROBES
+    if (boosted > base) {
+      ++diag_allocator->stats.source_refill_boost;
+    }
+#endif
     return boosted;
   }
 
   if (saturation) {
     pressure += 2;
   }
+
+#if HZ6_DIAGNOSTIC_PROBES
+  if (pressure > 0) {
+    ++diag_allocator->stats.source_refill_clamp;
+  }
+#endif
 
   return hz6_control_pressure_scale(base, pressure);
 }

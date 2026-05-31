@@ -131,6 +131,10 @@ function Parse-Hz6Stats {
         FrontcacheReuseInvalid = "NA"
         TransferReuseHit = "NA"
         TransferReuseInvalid = "NA"
+        SourceRefillStarvation = "NA"
+        SourceRefillSaturation = "NA"
+        SourceRefillBoost = "NA"
+        SourceRefillClamp = "NA"
         AllocFail = "NA"
         DescriptorProbeTotal = "NA"
         DescriptorProbeMax = "NA"
@@ -157,6 +161,10 @@ function Parse-Hz6Stats {
             '^frontcache_reuse_invalid=(.*)$' { $result.FrontcacheReuseInvalid = $Matches[1]; continue }
             '^transfer_reuse_hit=(.*)$' { $result.TransferReuseHit = $Matches[1]; continue }
             '^transfer_reuse_invalid=(.*)$' { $result.TransferReuseInvalid = $Matches[1]; continue }
+            '^source_refill_starvation=(.*)$' { $result.SourceRefillStarvation = $Matches[1]; continue }
+            '^source_refill_saturation=(.*)$' { $result.SourceRefillSaturation = $Matches[1]; continue }
+            '^source_refill_boost=(.*)$' { $result.SourceRefillBoost = $Matches[1]; continue }
+            '^source_refill_clamp=(.*)$' { $result.SourceRefillClamp = $Matches[1]; continue }
             '^alloc_fail=(.*)$' { $result.AllocFail = $Matches[1]; continue }
             '^descriptor_probe_total=(.*)$' { $result.DescriptorProbeTotal = $Matches[1]; continue }
             '^descriptor_probe_max=(.*)$' { $result.DescriptorProbeMax = $Matches[1]; continue }
@@ -217,8 +225,8 @@ function Invoke-LarsonSweep {
     foreach ($threads in $ThreadCounts) {
         $Summary.Add("## " + $SectionTitle + " T=" + $threads)
         $Summary.Add("")
-        $Summary.Add("| allocator | median ops/s | route_miss | source_alloc | transfer_push | transfer_pop | frontcache_reuse_hit | frontcache_reuse_invalid | transfer_reuse_hit | transfer_reuse_invalid | alloc_fail | desc_probe | reg_probe | unreg_probe | srcblk_probe | runs |")
-        $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
+        $Summary.Add("| allocator | median ops/s | route_miss | source_alloc | transfer_push | transfer_pop | frontcache_reuse_hit | frontcache_reuse_invalid | transfer_reuse_hit | transfer_reuse_invalid | source_refill_starvation | source_refill_saturation | source_refill_boost | source_refill_clamp | alloc_fail | desc_probe | reg_probe | unreg_probe | srcblk_probe | runs |")
+        $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
 
         foreach ($exe in $Executables) {
             $opsRuns = New-Object System.Collections.Generic.List[double]
@@ -232,6 +240,10 @@ function Invoke-LarsonSweep {
                 FrontcacheReuseInvalid = "NA"
                 TransferReuseHit = "NA"
                 TransferReuseInvalid = "NA"
+                SourceRefillStarvation = "NA"
+                SourceRefillSaturation = "NA"
+                SourceRefillBoost = "NA"
+                SourceRefillClamp = "NA"
                 AllocFail = "NA"
                 DescriptorProbeTotal = "NA"
                 RouteRegisterProbeTotal = "NA"
@@ -287,12 +299,12 @@ function Invoke-LarsonSweep {
             }
 
             if ($opsRuns.Count -eq 0) {
-                $Summary.Add(('| {0} | failed | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | `{1}` |' -f $exe.Name, ($runTexts -join ", ")))
+                $Summary.Add(('| {0} | failed | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | `{1}` |' -f $exe.Name, ($runTexts -join ", ")))
                 continue
             }
 
             $medianOps = Get-Median -Values $opsRuns.ToArray()
-            $Summary.Add(('| {0} | {1:N3}M | {2} | {3} | {4} | {5} | {6} | {7} | {8} | {9} | {10} | {11} | {12} | {13} | {14} | `{15}` |' -f $exe.Name,
+            $Summary.Add(('| {0} | {1:N3}M | {2} | {3} | {4} | {5} | {6} | {7} | {8} | {9} | {10} | {11} | {12} | {13} | {14} | {15} | {16} | {17} | {18} | `{19}` |' -f $exe.Name,
                 ($medianOps / 1000000.0),
                 $lastStats.RouteMiss,
                 $lastStats.SourceAlloc,
@@ -302,6 +314,10 @@ function Invoke-LarsonSweep {
                 $lastStats.FrontcacheReuseInvalid,
                 $lastStats.TransferReuseHit,
                 $lastStats.TransferReuseInvalid,
+                $lastStats.SourceRefillStarvation,
+                $lastStats.SourceRefillSaturation,
+                $lastStats.SourceRefillBoost,
+                $lastStats.SourceRefillClamp,
                 $lastStats.AllocFail,
                 $lastStats.DescriptorProbeTotal,
                 $lastStats.RouteRegisterProbeTotal,

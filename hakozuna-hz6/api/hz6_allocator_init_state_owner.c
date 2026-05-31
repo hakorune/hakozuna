@@ -14,6 +14,10 @@ void hz6_allocator_init_state_owner(Hz6Allocator* allocator,
   allocator->stats.transfer_push = 0;
   allocator->stats.transfer_pop = 0;
   allocator->stats.source_alloc = 0;
+  allocator->stats.source_refill_starvation = 0;
+  allocator->stats.source_refill_saturation = 0;
+  allocator->stats.source_refill_boost = 0;
+  allocator->stats.source_refill_clamp = 0;
   allocator->stats.alloc_fail = 0;
   allocator->stats.descriptor_exhausted = 0;
   allocator->stats.route_register_fail = 0;

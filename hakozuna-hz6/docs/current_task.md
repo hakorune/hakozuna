@@ -163,6 +163,25 @@ Current read:
   the next attack should be stress admission / source refill pressure
 ```
 
+## Diagnostic Checkpoint 2026-05-31c
+
+```text
+Larson T=16 with source refill probes:
+  stress still collapses
+  compact control stays healthy
+
+Source refill readout:
+  source_refill_starvation = 0
+  source_refill_saturation = 0
+  source_refill_boost = 0
+  source_refill_clamp = 0
+
+Current read:
+  source refill control is not the limiting factor
+  the next attack should be source admission before refill,
+  not more batch scaling inside refill itself
+```
+
 ## Next Attack: HZ6-ControlPlane-L1
 
 ```text
