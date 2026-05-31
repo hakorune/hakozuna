@@ -15,7 +15,8 @@ void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
     return NULL;
   }
 
-  void* reused = hz6_front_reuse_cached_or_transfer(allocator, class_id);
+  void* reused = hz6_front_reuse_cached_or_transfer(allocator, front_id,
+                                                    class_id, NULL);
   if (reused) {
     return reused;
   }
@@ -48,5 +49,7 @@ void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
   ++allocator->stats.front_source_ops_alloc;
 #endif
   hz6_allocator_note_source_alloc_for_front(allocator, front_id);
+  hz6_allocator_note_front_alloc_path(allocator, front_id,
+                                      HZ6_ALLOC_PATH_DIRECT_SOURCE);
   return ptr;
 }

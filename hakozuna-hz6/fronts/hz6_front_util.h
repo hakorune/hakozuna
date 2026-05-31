@@ -8,13 +8,19 @@ extern "C" {
 #endif
 
 void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
-                               uint16_t class_id);
+                               uint16_t front_id,
+                               uint16_t class_id,
+                               Hz6AllocPath* path);
 
 void* hz6_front_reuse_cached_or_transfer(Hz6Allocator* allocator,
-                                         uint16_t class_id);
+                                         uint16_t front_id,
+                                         uint16_t class_id,
+                                         Hz6AllocPath* path);
 
 void* hz6_front_reuse_transfer_or_cached(Hz6Allocator* allocator,
-                                         uint16_t class_id);
+                                         uint16_t front_id,
+                                         uint16_t class_id,
+                                         Hz6AllocPath* path);
 
 int hz6_front_free_local_to_cache(Hz6Allocator* allocator,
                                   void* ptr,

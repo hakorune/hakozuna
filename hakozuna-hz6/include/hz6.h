@@ -37,6 +37,7 @@ typedef struct Hz6StatsSnapshot {
   size_t midpage_source_alloc;
   size_t large_source_alloc;
   size_t toy_source_alloc;
+  size_t front_alloc_path[HZ6_FRONT_ATTR_COUNT][HZ6_ALLOC_PATH_COUNT];
   size_t alloc_fail;
   size_t descriptor_exhausted;
   size_t route_register_fail;

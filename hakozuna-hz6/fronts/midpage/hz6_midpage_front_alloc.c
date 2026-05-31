@@ -39,13 +39,19 @@ void* hz6_midpage_alloc(Hz6Allocator* allocator,
     return NULL;
   }
 
-  void* reused = hz6_front_reuse_transfer_or_cached(allocator, class_id);
+  void* reused = hz6_front_reuse_transfer_or_cached(allocator,
+                                                    HZ6_FRONT_MIDPAGE,
+                                                    class_id,
+                                                    NULL);
   if (reused) {
     return reused;
   }
 
   if (hz6_midpage_prefill_run(allocator, class_id) != 0) {
-    reused = hz6_front_reuse_transfer_or_cached(allocator, class_id);
+    reused = hz6_front_reuse_transfer_or_cached(allocator,
+                                                HZ6_FRONT_MIDPAGE,
+                                                class_id,
+                                                NULL);
     if (reused) {
       return reused;
     }

@@ -39,3 +39,23 @@ void hz6_allocator_note_source_alloc_for_front(Hz6Allocator* allocator,
       break;
   }
 }
+
+void hz6_allocator_note_front_alloc_path(Hz6Allocator* allocator,
+                                         uint16_t front_id,
+                                         Hz6AllocPath path) {
+  size_t front_index = 0;
+
+  if (!allocator || path >= HZ6_ALLOC_PATH_COUNT) {
+    return;
+  }
+  if (!hz6_front_attr_index_from_id(front_id, &front_index) ||
+      front_index >= HZ6_FRONT_ATTR_COUNT) {
+    return;
+  }
+
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.front_alloc_path[front_index][path];
+#else
+  (void)front_index;
+#endif
+}

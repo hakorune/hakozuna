@@ -16,6 +16,10 @@ void hz6_allocator_note_large_span_central_pop(Hz6Allocator* allocator);
 void hz6_allocator_note_source_alloc_for_front(Hz6Allocator* allocator,
                                                uint16_t front_id);
 
+void hz6_allocator_note_front_alloc_path(Hz6Allocator* allocator,
+                                         uint16_t front_id,
+                                         Hz6AllocPath path);
+
 int hz6_allocator_large_span_pool_push(Hz6Allocator* allocator,
                                        Hz6ObjectDescriptor* descriptor);
 

@@ -1,7 +1,9 @@
 #include "hz6_front_util.h"
 
 void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
-                               uint16_t class_id) {
+                               uint16_t front_id,
+                               uint16_t class_id,
+                               Hz6AllocPath* path) {
   if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT ||
       !hz6_allocator_profile_transfer_first(allocator)) {
     return NULL;
@@ -22,6 +24,12 @@ void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.transfer_reuse_hit;
 #endif
+    if (path) {
+      *path = HZ6_ALLOC_PATH_TRANSFER_REUSE;
+    } else {
+      hz6_allocator_note_front_alloc_path(allocator, front_id,
+                                          HZ6_ALLOC_PATH_TRANSFER_REUSE);
+    }
     hz6_allocator_note_transfer_pop(allocator);
     return transfer.ptr;
   }

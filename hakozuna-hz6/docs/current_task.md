@@ -444,6 +444,21 @@ Minimum next implementation:
   keep speed lanes free of diagnostic atomics/counters
 ```
 
+## Implementation Checkpoint 2026-05-31g
+
+```text
+Status:
+  front_id x alloc_path diagnostic counters are now in the tree
+  attribution is owned by the common front/source helper path
+  source-prefill, direct-source, and reuse notes are being recorded in
+  diagnostic lanes only
+
+Next:
+  expose the new path counters in the Windows Larson diagnostic output
+  then use the common attribution to decide whether toy/front routing or
+  source admission is the next pressure point
+```
+
 Read:
 
 ```text

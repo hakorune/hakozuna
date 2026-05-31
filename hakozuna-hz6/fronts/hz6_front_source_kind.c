@@ -36,11 +36,20 @@ void* hz6_front_reuse_or_prefill_source_kind(Hz6Allocator* allocator,
     return NULL;
   }
 
+  Hz6AllocPath reuse_path = HZ6_ALLOC_PATH_UNSUPPORTED;
   void* reused = hz6_allocator_profile_transfer_first(allocator)
-                     ? hz6_front_reuse_transfer_or_cached(allocator, class_id)
+                     ? hz6_front_reuse_transfer_or_cached(allocator,
+                                                          front_id,
+                                                          class_id,
+                                                          &reuse_path)
                      : hz6_front_reuse_cached_or_transfer(allocator,
-                                                          class_id);
+                                                          front_id,
+                                                          class_id,
+                                                          &reuse_path);
   if (reused) {
+#if HZ6_DIAGNOSTIC_PROBES
+    hz6_allocator_note_front_alloc_path(allocator, front_id, reuse_path);
+#endif
     return reused;
   }
 
@@ -62,7 +71,23 @@ void* hz6_front_reuse_or_prefill_source_kind(Hz6Allocator* allocator,
                                           bytes, source_kind);
   }
 
-  return hz6_allocator_profile_transfer_first(allocator)
-             ? hz6_front_reuse_transfer_or_cached(allocator, class_id)
-             : hz6_front_reuse_cached_or_transfer(allocator, class_id);
+  reused = hz6_allocator_profile_transfer_first(allocator)
+               ? hz6_front_reuse_transfer_or_cached(allocator,
+                                                    front_id,
+                                                    class_id,
+                                                    &reuse_path)
+               : hz6_front_reuse_cached_or_transfer(allocator,
+                                                    front_id,
+                                                    class_id,
+                                                    &reuse_path);
+  if (reused) {
+#if HZ6_DIAGNOSTIC_PROBES
+    hz6_allocator_note_front_alloc_path(allocator, front_id,
+                                        HZ6_ALLOC_PATH_PREFILL_REUSE);
+#endif
+    return reused;
+  }
+
+  return hz6_front_reuse_or_source_kind(allocator, front_id, class_id,
+                                        bytes, source_kind);
 }

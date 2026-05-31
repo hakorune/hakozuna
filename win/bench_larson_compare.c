@@ -85,9 +85,62 @@ static inline void touch_allocation(void* ptr, size_t size, uint32_t tag) {
     }
     p[0] = (unsigned char)(tag & 0xFFu);
     if (size > 1) {
-        p[size - 1] = (unsigned char)((tag >> 8) & 0xFFu);
+    p[size - 1] = (unsigned char)((tag >> 8) & 0xFFu);
     }
 }
+
+#if defined(HZ_BENCH_USE_HZ6) && HZ6_DIAGNOSTIC_PROBES
+static const char* hz6_front_attr_name(size_t index) {
+    switch (index) {
+        case HZ6_FRONT_ATTR_LOCAL2P:
+            return "local2p";
+        case HZ6_FRONT_ATTR_MIDPAGE:
+            return "midpage";
+        case HZ6_FRONT_ATTR_LARGE:
+            return "large";
+        case HZ6_FRONT_ATTR_TOY:
+            return "toy";
+        default:
+            return "unknown";
+    }
+}
+
+static const char* hz6_alloc_path_name(Hz6AllocPath path) {
+    switch (path) {
+        case HZ6_ALLOC_PATH_LOCAL_REUSE:
+            return "local_reuse";
+        case HZ6_ALLOC_PATH_TRANSFER_REUSE:
+            return "transfer_reuse";
+        case HZ6_ALLOC_PATH_PREFILL_REUSE:
+            return "prefill_reuse";
+        case HZ6_ALLOC_PATH_SOURCE_PREFILL:
+            return "source_prefill";
+        case HZ6_ALLOC_PATH_DIRECT_SOURCE:
+            return "direct_source";
+        case HZ6_ALLOC_PATH_RELEASED_REUSE:
+            return "released_reuse";
+        case HZ6_ALLOC_PATH_OOM:
+            return "oom";
+        case HZ6_ALLOC_PATH_UNSUPPORTED:
+            return "unsupported";
+        default:
+            return "unknown";
+    }
+}
+
+static void print_hz6_front_alloc_paths(const Hz6StatsSnapshot* stats) {
+    size_t front;
+    size_t path;
+    for (front = 0; front < HZ6_FRONT_ATTR_COUNT; ++front) {
+        printf("[HZ6_PATH] front=%s", hz6_front_attr_name(front));
+        for (path = 0; path < HZ6_ALLOC_PATH_COUNT; ++path) {
+            printf(" %s=%zu", hz6_alloc_path_name((Hz6AllocPath)path),
+                   stats->front_alloc_path[front][path]);
+        }
+        printf("\n");
+    }
+}
+#endif
 
 static unsigned __stdcall larson_thread(void* arg) {
     LarsonThreadData* td = (LarsonThreadData*)arg;
@@ -258,6 +311,12 @@ int main(int argc, char** argv) {
         hz6_stats.large_source_alloc +=
             tds[t].hz6_stats_after.large_source_alloc;
         hz6_stats.toy_source_alloc += tds[t].hz6_stats_after.toy_source_alloc;
+        for (size_t front = 0; front < HZ6_FRONT_ATTR_COUNT; ++front) {
+            for (size_t path = 0; path < HZ6_ALLOC_PATH_COUNT; ++path) {
+                hz6_stats.front_alloc_path[front][path] +=
+                    tds[t].hz6_stats_after.front_alloc_path[front][path];
+            }
+        }
         hz6_stats.frontcache_reuse_hit +=
             tds[t].hz6_stats_after.frontcache_reuse_hit;
         hz6_stats.frontcache_reuse_invalid +=
@@ -398,6 +457,9 @@ int main(int argc, char** argv) {
            hz6_stats.large_span_central_push,
            hz6_stats.large_span_central_pop,
            hz6_stats.large_span_source_alloc);
+#if defined(HZ_BENCH_USE_HZ6) && HZ6_DIAGNOSTIC_PROBES
+    print_hz6_front_alloc_paths(&hz6_stats);
+#endif
 #else
     hz_bench_dump_stats(stdout, "larson_main_final");
 #endif

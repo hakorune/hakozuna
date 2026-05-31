@@ -1,7 +1,9 @@
 #include "hz6_front_util.h"
 
 void* hz6_front_reuse_cached_or_transfer(Hz6Allocator* allocator,
-                                         uint16_t class_id) {
+                                         uint16_t front_id,
+                                         uint16_t class_id,
+                                         Hz6AllocPath* path) {
   if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
     return NULL;
   }
@@ -16,6 +18,12 @@ void* hz6_front_reuse_cached_or_transfer(Hz6Allocator* allocator,
 #if HZ6_DIAGNOSTIC_PROBES
       ++allocator->stats.frontcache_reuse_hit;
 #endif
+      if (path) {
+        *path = HZ6_ALLOC_PATH_LOCAL_REUSE;
+      } else {
+        hz6_allocator_note_front_alloc_path(allocator, front_id,
+                                            HZ6_ALLOC_PATH_LOCAL_REUSE);
+      }
       return entry.ptr;
     }
 #if HZ6_DIAGNOSTIC_PROBES
@@ -27,17 +35,20 @@ void* hz6_front_reuse_cached_or_transfer(Hz6Allocator* allocator,
     return NULL;
   }
 
-  return hz6_front_reuse_transfer(allocator, class_id);
+  return hz6_front_reuse_transfer(allocator, front_id, class_id, path);
 }
 
 void* hz6_front_reuse_transfer_or_cached(Hz6Allocator* allocator,
-                                         uint16_t class_id) {
+                                         uint16_t front_id,
+                                         uint16_t class_id,
+                                         Hz6AllocPath* path) {
   if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
     return NULL;
   }
 
   if (hz6_allocator_profile_transfer_first(allocator)) {
-    void* reused = hz6_front_reuse_transfer(allocator, class_id);
+    void* reused = hz6_front_reuse_transfer(allocator, front_id, class_id,
+                                            path);
     if (reused) {
       return reused;
     }
@@ -53,6 +64,12 @@ void* hz6_front_reuse_transfer_or_cached(Hz6Allocator* allocator,
 #if HZ6_DIAGNOSTIC_PROBES
       ++allocator->stats.frontcache_reuse_hit;
 #endif
+      if (path) {
+        *path = HZ6_ALLOC_PATH_LOCAL_REUSE;
+      } else {
+        hz6_allocator_note_front_alloc_path(allocator, front_id,
+                                            HZ6_ALLOC_PATH_LOCAL_REUSE);
+      }
       return entry.ptr;
     }
 #if HZ6_DIAGNOSTIC_PROBES

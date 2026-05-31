@@ -51,5 +51,7 @@ void* hz6_front_source_slot_ops(Hz6Allocator* allocator,
   ++allocator->stats.front_source_slot_alloc;
 #endif
   hz6_allocator_note_source_alloc_for_front(allocator, front_id);
+  hz6_allocator_note_front_alloc_path(allocator, front_id,
+                                      HZ6_ALLOC_PATH_DIRECT_SOURCE);
   return user_ptr;
 }
