@@ -93,7 +93,36 @@ function Invoke-CapturedProcess {
     $proc = New-Object System.Diagnostics.Process
     $proc.StartInfo = $psi
     [void]$proc.Start()
-    if (-not $proc.WaitForExit($TimeoutSeconds * 1000)) {
+    $peakWorkingSetBytes = [Int64]0
+    $timedOut = $false
+    $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
+    try {
+        $proc.Refresh()
+        if ($proc.WorkingSet64 -gt $peakWorkingSetBytes) {
+            $peakWorkingSetBytes = $proc.WorkingSet64
+        }
+        if ($proc.PeakWorkingSet64 -gt $peakWorkingSetBytes) {
+            $peakWorkingSetBytes = $proc.PeakWorkingSet64
+        }
+    } catch {
+    }
+
+    while (-not $proc.HasExited -and [DateTime]::UtcNow -lt $deadline) {
+        try {
+            $proc.Refresh()
+            if ($proc.WorkingSet64 -gt $peakWorkingSetBytes) {
+                $peakWorkingSetBytes = $proc.WorkingSet64
+            }
+            if ($proc.PeakWorkingSet64 -gt $peakWorkingSetBytes) {
+                $peakWorkingSetBytes = $proc.PeakWorkingSet64
+            }
+        } catch {
+        }
+        Start-Sleep -Milliseconds 1
+    }
+
+    if (-not $proc.HasExited) {
+        $timedOut = $true
         try {
             $proc.Kill($true)
         } catch {
@@ -102,12 +131,26 @@ function Invoke-CapturedProcess {
         $proc.WaitForExit()
         return @{
             ExitCode = 124
+            TimedOut = $true
             Lines = @("[TIMEOUT] exceeded ${TimeoutSeconds}s")
+            PeakKb = "NA"
         }
     }
+
+    try {
+        $proc.Refresh()
+        if ($proc.WorkingSet64 -gt $peakWorkingSetBytes) {
+            $peakWorkingSetBytes = $proc.WorkingSet64
+        }
+        if ($proc.PeakWorkingSet64 -gt $peakWorkingSetBytes) {
+            $peakWorkingSetBytes = $proc.PeakWorkingSet64
+        }
+    } catch {
+    }
+
     $stdout = $proc.StandardOutput.ReadToEnd()
     $stderr = $proc.StandardError.ReadToEnd()
-
+    $proc.WaitForExit()
     $lines = New-Object System.Collections.Generic.List[string]
     foreach ($chunk in @($stdout, $stderr)) {
         if (-not [string]::IsNullOrEmpty($chunk)) {
@@ -117,7 +160,14 @@ function Invoke-CapturedProcess {
         }
     }
 
-    return @{ ExitCode = $proc.ExitCode; Lines = $lines }
+    $peakKb = if ($peakWorkingSetBytes -gt 0) { [string][UInt64]([Math]::Ceiling($peakWorkingSetBytes / 1024.0)) } else { "NA" }
+    if ($stdout -match 'peak_kb=([0-9]+)') {
+        $peakKb = $Matches[1]
+    } elseif ($stderr -match 'peak_kb=([0-9]+)') {
+        $peakKb = $Matches[1]
+    }
+
+    return @{ ExitCode = $proc.ExitCode; TimedOut = $timedOut; Lines = $lines; PeakKb = $peakKb }
 }
 
 function Parse-Hz6Stats {
@@ -354,14 +404,15 @@ function Invoke-LarsonSweep {
         [int]$WarmupMode = 0
     )
 
-    foreach ($threads in $ThreadCounts) {
+foreach ($threads in $ThreadCounts) {
         $Summary.Add("## " + $SectionTitle + " T=" + $threads)
         $Summary.Add("")
-        $Summary.Add("| allocator | median ops/s | route_miss | route_vis_lookup | route_vis_hit | route_vis_hit_local_owner | route_vis_hit_foreign_owner | route_vis_miss | route_vis_probe_total | route_vis_probe_max | source_alloc | source_owned_prepare | source_owned_route_hit_local_owner | source_owned_visibility_hit_local_owner | source_owned_visibility_hit_foreign_owner | source_owned_remote_free_attempt | source_owned_release | local2p_source_alloc | midpage_source_alloc | large_source_alloc | toy_source_alloc | front_source_ops_alloc | front_source_slot_alloc | front_source_prefill_alloc | toy_source_prefill_call | front_path_local2p | front_path_midpage | front_path_large | front_path_toy | transfer_push | transfer_pop | transfer_current | transfer_current_max | remote_free_attempt | remote_free_strict_block | remote_free_transfer_fail | route_rehome_attempt | route_rehome_success | route_rehome_fail | frontcache_reuse_hit | frontcache_reuse_invalid | transfer_reuse_hit | transfer_reuse_invalid | source_refill_starvation | source_refill_saturation | source_refill_boost | source_refill_clamp | source_admission_open | source_admission_boosted | source_admission_clamped | source_prefill_attempt | source_prefill_filled | source_prefill_fallback | alloc_fail | desc_probe | reg_probe | unreg_probe | srcblk_probe | runs |")
-        $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
+        $Summary.Add("| allocator | median ops/s | median peak_kb | route_miss | route_vis_lookup | route_vis_hit | route_vis_hit_local_owner | route_vis_hit_foreign_owner | route_vis_miss | route_vis_probe_total | route_vis_probe_max | source_alloc | source_owned_prepare | source_owned_route_hit_local_owner | source_owned_visibility_hit_local_owner | source_owned_visibility_hit_foreign_owner | source_owned_remote_free_attempt | source_owned_release | local2p_source_alloc | midpage_source_alloc | large_source_alloc | toy_source_alloc | front_source_ops_alloc | front_source_slot_alloc | front_source_prefill_alloc | toy_source_prefill_call | front_path_local2p | front_path_midpage | front_path_large | front_path_toy | transfer_push | transfer_pop | transfer_current | transfer_current_max | remote_free_attempt | remote_free_strict_block | remote_free_transfer_fail | route_rehome_attempt | route_rehome_success | route_rehome_fail | frontcache_reuse_hit | frontcache_reuse_invalid | transfer_reuse_hit | transfer_reuse_invalid | source_refill_starvation | source_refill_saturation | source_refill_boost | source_refill_clamp | source_admission_open | source_admission_boosted | source_admission_clamped | source_prefill_attempt | source_prefill_filled | source_prefill_fallback | alloc_fail | desc_probe | reg_probe | unreg_probe | srcblk_probe | runs |")
+        $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
 
         foreach ($exe in $Executables) {
             $opsRuns = New-Object System.Collections.Generic.List[double]
+            $peakRuns = New-Object System.Collections.Generic.List[double]
             $runTexts = New-Object System.Collections.Generic.List[string]
             $lastStats = @{
                 RouteMiss = "NA"
@@ -475,7 +526,10 @@ function Invoke-LarsonSweep {
                 }
                 $ops = [double]$Matches[1]
                 $opsRuns.Add($ops)
-                $runTexts.Add(("{0:N3}M" -f ($ops / 1000000.0)))
+                if ($result.PeakKb -match '^[0-9]+$') {
+                    $peakRuns.Add([double]$result.PeakKb)
+                }
+                $runTexts.Add(("{0:N3}M / {1} KB" -f ($ops / 1000000.0), $result.PeakKb))
                 $parsedStats = Parse-Hz6Stats -Lines $output
                 if ($exe.Name -like "hz6-*") {
                     $lastStats = $parsedStats
@@ -484,11 +538,12 @@ function Invoke-LarsonSweep {
 
             if ($opsRuns.Count -eq 0) {
                 $failedMetrics = ((@('NA') * 50) -join ' | ')
-                $Summary.Add(('| {0} | failed | {1} | `{2}` |' -f $exe.Name, $failedMetrics, ($runTexts -join ", ")))
+                $Summary.Add(('| {0} | failed | n/a | {1} | `{2}` |' -f $exe.Name, $failedMetrics, ($runTexts -join ", ")))
                 continue
             }
 
             $medianOps = Get-Median -Values $opsRuns.ToArray()
+            $medianPeak = if ($peakRuns.Count -gt 0) { Get-Median -Values $peakRuns.ToArray() } else { [double]::NaN }
             $metricCells = @(
                 $lastStats.RouteMiss,
                 $lastStats.RouteVisibilityLookup,
@@ -549,7 +604,8 @@ function Invoke-LarsonSweep {
             )
             $rowCells = @(
                 $exe.Name,
-                ("{0:N3}M" -f ($medianOps / 1000000.0))
+                ("{0:N3}M" -f ($medianOps / 1000000.0)),
+                ("{0:N0}" -f $medianPeak)
             ) + $metricCells + @(($runTexts -join ", "))
             $Summary.Add(("| " + ($rowCells -join " | ") + " |"))
 

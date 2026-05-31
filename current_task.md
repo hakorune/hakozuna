@@ -50,6 +50,21 @@ tradeoff:
   broad-cap HZ6 lifts throughput on many rows, but it also raises RSS.
 ```
 
+Paper runner coverage:
+
+```text
+RSS-aware summaries now cover:
+  allocator matrix
+  Larson paper runner
+  Redis workload paper runner
+  MT remote paper runner
+
+Next validation order:
+  1. rerun the RSS-aware paper runners with the new peak_kb columns
+  2. keep the balanced / wide_ws weakness as the main HZ6 warning
+  3. keep large_slice_64k / 128k as the strong proof points
+```
+
 Next step:
 
 ```text

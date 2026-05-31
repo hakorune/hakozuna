@@ -89,7 +89,34 @@ function Invoke-CapturedProcess {
     $proc.StartInfo = $psi
     [void]$proc.Start()
     $timedOut = $false
-    if (-not $proc.WaitForExit($TimeoutSeconds * 1000)) {
+    $peakWorkingSetBytes = [Int64]0
+    $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
+    try {
+        $proc.Refresh()
+        if ($proc.WorkingSet64 -gt $peakWorkingSetBytes) {
+            $peakWorkingSetBytes = $proc.WorkingSet64
+        }
+        if ($proc.PeakWorkingSet64 -gt $peakWorkingSetBytes) {
+            $peakWorkingSetBytes = $proc.PeakWorkingSet64
+        }
+    } catch {
+    }
+
+    while (-not $proc.HasExited -and [DateTime]::UtcNow -lt $deadline) {
+        try {
+            $proc.Refresh()
+            if ($proc.WorkingSet64 -gt $peakWorkingSetBytes) {
+                $peakWorkingSetBytes = $proc.WorkingSet64
+            }
+            if ($proc.PeakWorkingSet64 -gt $peakWorkingSetBytes) {
+                $peakWorkingSetBytes = $proc.PeakWorkingSet64
+            }
+        } catch {
+        }
+        Start-Sleep -Milliseconds 1
+    }
+
+    if (-not $proc.HasExited) {
         $timedOut = $true
         try {
             Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
@@ -97,12 +124,28 @@ function Invoke-CapturedProcess {
             # Best-effort timeout kill.
         }
         $proc.WaitForExit()
+        return @{
+            ExitCode = 124
+            TimedOut = $true
+            Lines = @("[TIMEOUT] exceeded ${TimeoutSeconds}s")
+            PeakKb = "NA"
+        }
     }
+
+    try {
+        $proc.Refresh()
+        if ($proc.WorkingSet64 -gt $peakWorkingSetBytes) {
+            $peakWorkingSetBytes = $proc.WorkingSet64
+        }
+        if ($proc.PeakWorkingSet64 -gt $peakWorkingSetBytes) {
+            $peakWorkingSetBytes = $proc.PeakWorkingSet64
+        }
+    } catch {
+    }
+
     $stdout = $proc.StandardOutput.ReadToEnd()
     $stderr = $proc.StandardError.ReadToEnd()
-    if (-not $timedOut) {
-        $proc.WaitForExit()
-    }
+    $proc.WaitForExit()
 
     $lines = New-Object System.Collections.Generic.List[string]
     foreach ($chunk in @($stdout, $stderr)) {
@@ -119,6 +162,7 @@ function Invoke-CapturedProcess {
         ExitCode = $proc.ExitCode
         TimedOut = $timedOut
         Lines = $lines
+        PeakKb = if ($peakWorkingSetBytes -gt 0) { [string][UInt64]([Math]::Ceiling($peakWorkingSetBytes / 1024.0)) } else { "NA" }
     }
 }
 
@@ -156,13 +200,14 @@ if (-not $IncludeHz6Legacy) {
     $Summary.Add('- hz6 note: HZ6 rows are skipped by default because this legacy benchmark frees cross-thread pointers through per-thread allocator instances; use `-IncludeHz6Legacy` only for debugging the mismatch, and use the HZ6 standalone remote/reuse runner for HZ6 contract numbers.')
 }
 $Summary.Add("")
-$Summary.Add("| allocator | median ops/s | median actual remote % | median fallback % | runs |")
-$Summary.Add("| --- | ---: | ---: | ---: | --- |")
+$Summary.Add("| allocator | median ops/s | median actual remote % | median fallback % | median peak_kb | runs |")
+$Summary.Add("| --- | ---: | ---: | ---: | ---: | --- |")
 
 foreach ($exe in $Executables) {
     $opsRuns = New-Object System.Collections.Generic.List[double]
     $actualRuns = New-Object System.Collections.Generic.List[double]
     $fallbackRuns = New-Object System.Collections.Generic.List[double]
+    $peakRuns = New-Object System.Collections.Generic.List[double]
     $runTexts = New-Object System.Collections.Generic.List[string]
 
     for ($run = 1; $run -le $Runs; $run++) {
@@ -224,18 +269,22 @@ foreach ($exe in $Executables) {
             $fallback = [double]$Matches[1]
             $fallbackRuns.Add($fallback)
         }
-        $runTexts.Add(("{0:N3}M / actual {1:N2}% / fallback {2:N2}%" -f ($ops / 1000000.0), $actual, $fallback))
+        if ($result.PeakKb -match '^[0-9]+$') {
+            $peakRuns.Add([double]$result.PeakKb)
+        }
+        $runTexts.Add(("{0:N3}M / actual {1:N2}% / fallback {2:N2}% / {3} KB" -f ($ops / 1000000.0), $actual, $fallback, $result.PeakKb))
     }
 
     if ($opsRuns.Count -eq 0) {
-        $Summary.Add(('| {0} | failed | n/a | n/a | `{1}` |' -f $exe.Name, ($runTexts -join ", ")))
+        $Summary.Add(('| {0} | failed | n/a | n/a | n/a | `{1}` |' -f $exe.Name, ($runTexts -join ", ")))
         continue
     }
 
     $medianOps = Get-Median -Values $opsRuns.ToArray()
     $medianActual = Get-Median -Values $actualRuns.ToArray()
     $medianFallback = Get-Median -Values $fallbackRuns.ToArray()
-    $Summary.Add(('| {0} | {1:N3}M | {2:N2} | {3:N2} | `{4}` |' -f $exe.Name, ($medianOps / 1000000.0), $medianActual, $medianFallback, ($runTexts -join ", ")))
+    $medianPeak = if ($peakRuns.Count -gt 0) { Get-Median -Values $peakRuns.ToArray() } else { [double]::NaN }
+    $Summary.Add(('| {0} | {1:N3}M | {2:N2} | {3:N2} | {4:N0} | `{5}` |' -f $exe.Name, ($medianOps / 1000000.0), $medianActual, $medianFallback, $medianPeak, ($runTexts -join ", ")))
 }
 
 $Summary.Add("")

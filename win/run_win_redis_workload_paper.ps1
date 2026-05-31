@@ -89,7 +89,36 @@ function Invoke-CapturedProcess {
     $proc = New-Object System.Diagnostics.Process
     $proc.StartInfo = $psi
     [void]$proc.Start()
-    if (-not $proc.WaitForExit($TimeoutSeconds * 1000)) {
+    $peakWorkingSetBytes = [Int64]0
+    $timedOut = $false
+    $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
+    try {
+        $proc.Refresh()
+        if ($proc.WorkingSet64 -gt $peakWorkingSetBytes) {
+            $peakWorkingSetBytes = $proc.WorkingSet64
+        }
+        if ($proc.PeakWorkingSet64 -gt $peakWorkingSetBytes) {
+            $peakWorkingSetBytes = $proc.PeakWorkingSet64
+        }
+    } catch {
+    }
+
+    while (-not $proc.HasExited -and [DateTime]::UtcNow -lt $deadline) {
+        try {
+            $proc.Refresh()
+            if ($proc.WorkingSet64 -gt $peakWorkingSetBytes) {
+                $peakWorkingSetBytes = $proc.WorkingSet64
+            }
+            if ($proc.PeakWorkingSet64 -gt $peakWorkingSetBytes) {
+                $peakWorkingSetBytes = $proc.PeakWorkingSet64
+            }
+        } catch {
+        }
+        Start-Sleep -Milliseconds 1
+    }
+
+    if (-not $proc.HasExited) {
+        $timedOut = $true
         try {
             $proc.Kill($true)
         } catch {
@@ -98,11 +127,26 @@ function Invoke-CapturedProcess {
         $proc.WaitForExit()
         return @{
             ExitCode = 124
+            TimedOut = $true
             Lines = @("[TIMEOUT] exceeded ${TimeoutSeconds}s")
+            PeakKb = "NA"
         }
     }
+
+    try {
+        $proc.Refresh()
+        if ($proc.WorkingSet64 -gt $peakWorkingSetBytes) {
+            $peakWorkingSetBytes = $proc.WorkingSet64
+        }
+        if ($proc.PeakWorkingSet64 -gt $peakWorkingSetBytes) {
+            $peakWorkingSetBytes = $proc.PeakWorkingSet64
+        }
+    } catch {
+    }
+
     $stdout = $proc.StandardOutput.ReadToEnd()
     $stderr = $proc.StandardError.ReadToEnd()
+    $proc.WaitForExit()
 
     $lines = New-Object System.Collections.Generic.List[string]
     foreach ($chunk in @($stdout, $stderr)) {
@@ -113,7 +157,12 @@ function Invoke-CapturedProcess {
         }
     }
 
-    return @{ ExitCode = $proc.ExitCode; Lines = $lines }
+    return @{
+        ExitCode = $proc.ExitCode
+        TimedOut = $timedOut
+        Lines = $lines
+        PeakKb = if ($peakWorkingSetBytes -gt 0) { [string][UInt64]([Math]::Ceiling($peakWorkingSetBytes / 1024.0)) } else { "NA" }
+    }
 }
 
 $Threads = 4
@@ -147,11 +196,14 @@ $Summary.Add('- note: paper originally compares `hz3` and `tcmalloc`; this runne
 $Summary.Add("")
 
 $PatternResults = @{}
+$PatternPeakResults = @{}
 $Failures = New-Object System.Collections.Generic.List[string]
 foreach ($pattern in $Patterns) {
     $PatternResults[$pattern] = @{}
+    $PatternPeakResults[$pattern] = @{}
     foreach ($exe in $Executables) {
         $PatternResults[$pattern][$exe.Name] = New-Object System.Collections.Generic.List[double]
+        $PatternPeakResults[$pattern][$exe.Name] = New-Object System.Collections.Generic.List[double]
     }
 }
 
@@ -200,6 +252,9 @@ foreach ($exe in $Executables) {
                     throw "Unknown pattern parsed: $currentPattern"
                 }
                 $PatternResults[$currentPattern][$exe.Name].Add([double]$Matches[1])
+                if ($captured.PeakKb -match '^[0-9]+$') {
+                    $PatternPeakResults[$currentPattern][$exe.Name].Add([double]$captured.PeakKb)
+                }
             }
         }
     }
@@ -208,13 +263,15 @@ foreach ($exe in $Executables) {
 foreach ($pattern in $Patterns) {
     $Summary.Add("## " + $pattern)
     $Summary.Add("")
-    $Summary.Add("| allocator | median M ops/sec | runs |")
-    $Summary.Add("| --- | ---: | --- |")
+    $Summary.Add("| allocator | median M ops/sec | median peak_kb | runs |")
+    $Summary.Add("| --- | ---: | ---: | --- |")
     foreach ($exe in $Executables) {
         $runsList = $PatternResults[$pattern][$exe.Name]
+        $peakList = $PatternPeakResults[$pattern][$exe.Name]
         $median = Get-Median -Values $runsList.ToArray()
+        $medianPeak = if ($peakList.Count -gt 0) { Get-Median -Values $peakList.ToArray() } else { [double]::NaN }
         $runText = ($runsList | ForEach-Object { ('{0:N2}' -f $_) }) -join ", "
-        $Summary.Add(('| {0} | {1:N2} | `{2}` |' -f $exe.Name, $median, $runText))
+        $Summary.Add(('| {0} | {1:N2} | {2} | `{3}` |' -f $exe.Name, $median, ("{0:N0}" -f $medianPeak), $runText))
     }
     $Summary.Add("")
 }
