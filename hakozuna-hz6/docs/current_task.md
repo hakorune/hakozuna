@@ -830,6 +830,40 @@ Current read:
   descriptor/source ownership L2 is still needed
 ```
 
+## Diagnostic Checkpoint 2026-06-01b
+
+```text
+RemoteHandoff-L1 repeat-3:
+  main-warmup:
+    throughput = 1323 / 1570 / 1600 ops/s
+    route_visibility_lookup = 3911 / 4596 / 4694
+    route_visibility_hit_local_owner = 0 / 0 / 0
+    route_visibility_hit_foreign_owner = 3911 / 4596 / 4694
+    route_rehome_attempt = 3911 / 4596 / 4694
+    route_rehome_success = 3911 / 4596 / 4694
+    route_rehome_fail = 0 / 0 / 0
+    transfer_current = 210 / 233 / 237
+
+  worker-warmup:
+    throughput = 10.975M / 29.478M / 29.283M ops/s
+    route_visibility_lookup = 0 / 0 / 0
+    route_visibility_hit = 0 / 0 / 0
+    route_visibility_hit_local_owner = 0 / 0 / 0
+    route_visibility_hit_foreign_owner = 0 / 0 / 0
+    route_rehome_attempt = 0 / 0 / 0
+    route_rehome_success = 0 / 0 / 0
+    route_rehome_fail = 0 / 0 / 0
+    transfer_current = 0 / 0 / 0
+
+Current read:
+  route rehome is stable and safe, but it does not close the main-warmup
+  collapse
+  foreign visibility still dominates main-warmup across repeats
+  worker-warmup remains the healthy same-owner control lane
+  next step should be descriptor/source ownership L2, not deeper visibility
+  scan depth
+```
+
 Read:
 
 ```text
