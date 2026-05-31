@@ -126,6 +126,49 @@ Do conclude:
   stress regression points at ControlPlane-L1 admission/scavenge work
 ```
 
+## Lane Map Freeze
+
+```text
+Active lanes:
+  compact control:
+    same runtime/size/seed settings with reduced working-set pressure
+    use this for hot-path and front-cache comparison
+
+  Larson main-warmup:
+    main thread seeds warmup allocations; workers free/replace them
+    use this as cross-owner warmup / route-lifecycle stress evidence
+
+  Larson worker-warmup:
+    each worker seeds its own live set before the timer starts
+    use this as same-owner control for toy/small source placement
+
+  descriptor/source ownership L2:
+    diagnostic evidence only
+    do not turn this into a production atomic/probe lane
+
+Frozen lane intent:
+  main-warmup:
+    cross-owner stress lane
+
+  worker-warmup:
+    same-owner control lane
+
+  compact control:
+    hot-path control lane
+
+  stress:
+    control-plane evidence lane
+
+Do not mix:
+  diagnostics / atomic counters / probe-only paths into production benchmark
+  summaries
+
+Canonical summary rule:
+  keep one representative summary per active lane
+  archive dated summaries after the lane is frozen
+  do not promote raw results into paper-facing sources
+```
+
 ## Diagnostic Checkpoint 2026-05-31
 
 ```text
