@@ -472,9 +472,13 @@ Observed compact profile:
   direct_source stays 0
 
 Observed stress profile:
-  hz6 appcap stress rows still time out under the short diagnostic timeout
-  the next run should use a longer timeout or a narrower stress slice
-  so the same path attribution can be inspected under real stress
+  longer timeout captured stress rows
+  throughput still collapses under stress
+  front=toy remains the active attributed front
+  local_reuse, prefill_reuse, and source_prefill are all visible
+  direct_source still stays 0
+  next step is to decide whether source admission or front routing should be
+  tightened first under stress
 ```
 
 Read:
