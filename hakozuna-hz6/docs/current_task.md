@@ -272,6 +272,42 @@ Next:
   current stress lane
 ```
 
+## Diagnostic Checkpoint 2026-05-31g
+
+```text
+Shared route visibility + safety smoke:
+  smoke:
+    hz6_r1_* all ok
+
+Targeted Larson speed appcap T=16:
+  main-warmup 3s:
+    throughput:
+      4.293K ops/s
+    route_miss:
+      11431
+    source_alloc:
+      11968
+
+  worker-warmup 10s:
+    throughput:
+      13.717M ops/s
+    route_miss:
+      0
+    source_alloc:
+      165728
+
+Current read:
+  shared route visibility is now proven safe at the smoke level, but it does
+  not yet close the main-warmup cross-owner route miss collapse
+  worker-warmup remains the strong control lane
+
+Next:
+  keep shared route visibility
+  keep worker-warmup as control
+  continue toward owner-aware free / shared route lifecycle, because the
+  main-warmup route miss is still the real stress bottleneck
+```
+
 ## Next Attack: HZ6-ControlPlane-L1
 
 ```text

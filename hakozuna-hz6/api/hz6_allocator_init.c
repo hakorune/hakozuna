@@ -14,4 +14,5 @@ void hz6_allocator_init_with_profile(Hz6Allocator* allocator,
 
   hz6_allocator_init_state(allocator, profile_id);
   hz6_allocator_init_backends(allocator);
+  hz6_allocator_route_visibility_register(allocator);
 }

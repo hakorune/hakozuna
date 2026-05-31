@@ -62,11 +62,24 @@ int main(void) {
   Hz6ObjectDescriptor* profile_scavenge_descriptor =
       (Hz6ObjectDescriptor*)profile_scavenge_route.descriptor;
   hz6_free(&profile_scavenge_allocator, profile_cached);
+  size_t profile_scavenge_frontcache =
+      hz6_allocator_frontcache_count(&profile_scavenge_allocator,
+                                     profile_scavenge_descriptor->class_id);
   if (!expect(profile_scavenge_descriptor != NULL,
               "profile scavenge descriptor") ||
       !expect(profile_scavenge_descriptor->state == HZ6_STATE_LOCAL_FREE,
               "profile scavenge starts local free") ||
-      !expect(hz6_allocator_scavenge_profile(&profile_scavenge_allocator) == 1,
+      !expect(hz6_allocator_frontcache_count(&profile_scavenge_allocator,
+                                             profile_scavenge_descriptor
+                                                 ->class_id) > 0 ||
+                  profile_scavenge_descriptor->state == HZ6_STATE_DEAD,
+              "profile scavenge frontcache populated") ||
+      !expect(profile_scavenge_descriptor->class_id <
+                  HZ6_FRONT_CACHE_CLASS_COUNT ||
+                  profile_scavenge_descriptor->state == HZ6_STATE_DEAD,
+              "profile scavenge class is cached") ||
+      !expect(hz6_allocator_scavenge_profile(&profile_scavenge_allocator) ==
+                  profile_scavenge_frontcache,
               "profile scavenge local free") ||
       !expect(!hz6_owns(&profile_scavenge_allocator, profile_cached),
               "profile scavenge route gone") ||

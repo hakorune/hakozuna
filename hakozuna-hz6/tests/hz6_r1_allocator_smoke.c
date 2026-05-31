@@ -66,7 +66,8 @@ int main(void) {
   if (!expect(stats.route_valid == 3, "stats valid") ||
       !expect(stats.route_invalid == 2, "stats invalid") ||
       !expect(stats.route_miss == 1, "stats miss") ||
-      !expect(stats.source_alloc == 1, "stats source alloc")) {
+      !expect(stats.source_alloc == HZ6_FRONT_CACHE_BIN_CAPACITY,
+              "stats source alloc")) {
     return 1;
   }
   hz6_allocator_destroy(&allocator);

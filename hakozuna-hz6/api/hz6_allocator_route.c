@@ -1,11 +1,97 @@
 #include "hz6_allocator.h"
 
+#include <stdatomic.h>
+
+static _Atomic(Hz6Allocator*) g_hz6_visible_allocators
+    [HZ6_ALLOCATOR_VISIBILITY_CAPACITY];
+
+void hz6_allocator_route_visibility_register(Hz6Allocator* allocator) {
+  if (!allocator) {
+    return;
+  }
+
+  for (size_t i = 0; i < HZ6_ALLOCATOR_VISIBILITY_CAPACITY; ++i) {
+    Hz6Allocator* visible =
+        atomic_load_explicit(&g_hz6_visible_allocators[i],
+                             memory_order_acquire);
+    if (visible == allocator) {
+      return;
+    }
+  }
+
+  for (size_t i = 0; i < HZ6_ALLOCATOR_VISIBILITY_CAPACITY; ++i) {
+    Hz6Allocator* expected = NULL;
+    if (atomic_compare_exchange_strong_explicit(
+            &g_hz6_visible_allocators[i],
+            &expected,
+            allocator,
+            memory_order_release,
+            memory_order_relaxed)) {
+      return;
+    }
+  }
+}
+
+void hz6_allocator_route_visibility_unregister(Hz6Allocator* allocator) {
+  if (!allocator) {
+    return;
+  }
+
+  for (size_t i = 0; i < HZ6_ALLOCATOR_VISIBILITY_CAPACITY; ++i) {
+    Hz6Allocator* visible =
+        atomic_load_explicit(&g_hz6_visible_allocators[i],
+                             memory_order_acquire);
+    if (visible != allocator) {
+      continue;
+    }
+    Hz6Allocator* expected = allocator;
+    (void)atomic_compare_exchange_strong_explicit(
+        &g_hz6_visible_allocators[i],
+        &expected,
+        NULL,
+        memory_order_release,
+        memory_order_relaxed);
+  }
+}
+
 Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
                                           const void* ptr) {
   if (!allocator || !ptr) {
     return hz6_route_miss();
   }
   return hz6_route_backend_lookup(&allocator->route_backend, ptr);
+}
+
+Hz6RouteResult hz6_allocator_route_lookup_visible(
+    const Hz6Allocator* allocator,
+    const void* ptr) {
+  if (!allocator || !ptr) {
+    return hz6_route_miss();
+  }
+
+  Hz6RouteResult route = hz6_allocator_route_lookup(allocator, ptr);
+  if (route.kind != HZ6_ROUTE_MISS) {
+    return route;
+  }
+
+  for (size_t i = 0; i < HZ6_ALLOCATOR_VISIBILITY_CAPACITY; ++i) {
+    Hz6Allocator* visible =
+        atomic_load_explicit(&g_hz6_visible_allocators[i],
+                             memory_order_acquire);
+    if (!visible || visible == allocator) {
+      continue;
+    }
+    if (!hz6_owner_is_alive(&visible->owner, visible->owner.token)) {
+      continue;
+    }
+
+    route = hz6_route_backend_lookup(&visible->route_backend, ptr);
+    if (route.kind != HZ6_ROUTE_MISS) {
+      return route;
+    }
+  }
+
+  return hz6_route_miss();
 }
 
 void hz6_allocator_route_unregister_exact(Hz6Allocator* allocator,

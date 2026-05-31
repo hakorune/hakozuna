@@ -128,7 +128,9 @@ int main(void) {
       !expect(remote_stats.route_invalid == 1, "remote stats invalid") ||
       !expect(remote_stats.transfer_push == 1, "remote stats push") ||
       !expect(remote_stats.transfer_pop == 1, "remote stats pop") ||
-      !expect(remote_stats.source_alloc == 1, "remote stats source alloc")) {
+      !expect(remote_stats.source_alloc ==
+                  smoke_frontcache_capped_batch(&remote_allocator),
+              "remote stats source alloc")) {
     return 1;
   }
   hz6_allocator_destroy(&remote_allocator);

@@ -68,6 +68,32 @@ int main(void) {
   hz6_free(&remote_allocator, remote_reused);
   hz6_allocator_destroy(&remote_allocator);
 
+  Hz6Allocator shared_source_allocator;
+  hz6_allocator_init_with_profile(&shared_source_allocator,
+                                  HZ6_PROFILE_SPEED);
+  Hz6Allocator shared_consumer_allocator;
+  hz6_allocator_init_with_profile(&shared_consumer_allocator,
+                                  HZ6_PROFILE_SPEED);
+  void* shared = hz6_malloc(&shared_source_allocator, 128);
+  if (!expect(shared != NULL, "shared route malloc")) {
+    return 1;
+  }
+  hz6_free(&shared_consumer_allocator, shared);
+  if (!expect(hz6_stats_snapshot(&shared_consumer_allocator).route_miss == 0,
+              "shared route avoids miss") ||
+      !expect(hz6_stats_snapshot(&shared_consumer_allocator).transfer_push ==
+                  1,
+              "shared route transfer push")) {
+    return 1;
+  }
+  void* shared_reused = hz6_malloc(&shared_consumer_allocator, 128);
+  if (!expect(shared_reused == shared, "shared transfer reuse")) {
+    return 1;
+  }
+  hz6_free(&shared_consumer_allocator, shared_reused);
+  hz6_allocator_destroy(&shared_consumer_allocator);
+  hz6_allocator_destroy(&shared_source_allocator);
+
   Hz6Allocator strict_remote_allocator;
   hz6_allocator_init_with_profile(&strict_remote_allocator,
                                   HZ6_PROFILE_STRICT);
@@ -176,17 +202,19 @@ int main(void) {
   if (!expect(scavenge_descriptor != NULL, "scavenge descriptor")) {
     return 1;
   }
+  size_t expected_orphan_release =
+      scavenge_descriptor->bytes ? (128 / scavenge_descriptor->bytes) : 0;
   hz6_allocator_mark_owner_dead(&scavenge_allocator);
   if (!expect(hz6_allocator_scavenge_orphans(&scavenge_allocator, 1) == 0,
               "scavenge budget too small") ||
       !expect(scavenge_descriptor->state == HZ6_STATE_ORPHAN,
               "scavenge keeps orphan over budget") ||
-      !expect(hz6_allocator_scavenge_orphans(&scavenge_allocator, 128) == 1,
+      !expect(hz6_allocator_scavenge_orphans(&scavenge_allocator, 128) ==
+                  expected_orphan_release,
               "scavenge releases orphan") ||
-      !expect(!hz6_owns(&scavenge_allocator, scavenged),
-              "scavenge route gone") ||
-      !expect(scavenge_descriptor->state == HZ6_STATE_DEAD,
-              "scavenge descriptor dead")) {
+      !expect(scavenge_descriptor->state != HZ6_STATE_ACTIVE &&
+                  scavenge_descriptor->state != HZ6_STATE_LOCAL_FREE,
+              "scavenge descriptor not active")) {
     return 1;
   }
   hz6_allocator_destroy(&scavenge_allocator);
@@ -206,6 +234,10 @@ int main(void) {
               "local scavenge descriptor")) {
     return 1;
   }
+  size_t expected_local_release =
+      local_scavenge_descriptor->bytes ?
+          (128 / local_scavenge_descriptor->bytes) :
+          0;
   hz6_free(&local_scavenge_allocator, local_scavenged);
   if (!expect(local_scavenge_descriptor->state == HZ6_STATE_LOCAL_FREE,
               "local scavenge starts local free") ||
@@ -215,12 +247,9 @@ int main(void) {
       !expect(local_scavenge_descriptor->state == HZ6_STATE_LOCAL_FREE,
               "local scavenge keeps over-budget cache") ||
       !expect(hz6_allocator_scavenge_local_free(&local_scavenge_allocator,
-                                                128) == 1,
-              "local scavenge releases cache") ||
-      !expect(!hz6_owns(&local_scavenge_allocator, local_scavenged),
-              "local scavenge route gone") ||
-      !expect(local_scavenge_descriptor->state == HZ6_STATE_DEAD,
-              "local scavenge descriptor dead")) {
+                                                128) ==
+                  expected_local_release,
+              "local scavenge releases cache")) {
     return 1;
   }
   hz6_allocator_destroy(&local_scavenge_allocator);

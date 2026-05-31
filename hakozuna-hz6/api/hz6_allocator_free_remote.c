@@ -9,6 +9,10 @@ int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
 
   Hz6RouteResult route =
       hz6_route_backend_lookup(&allocator->route_backend, ptr);
+  if (route.kind == HZ6_ROUTE_MISS &&
+      !hz6_allocator_profile_strict_owner_remote(allocator)) {
+    route = hz6_allocator_route_lookup_visible(allocator, ptr);
+  }
   if (route.kind == HZ6_ROUTE_MISS) {
     ++allocator->stats.route_miss;
     return 0;
