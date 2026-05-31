@@ -414,8 +414,34 @@ int main(int argc, char** argv) {
         hz6_stats.route_valid += tds[t].hz6_stats_after.route_valid;
         hz6_stats.route_invalid += tds[t].hz6_stats_after.route_invalid;
         hz6_stats.route_miss += tds[t].hz6_stats_after.route_miss;
+        hz6_stats.route_visibility_lookup +=
+            tds[t].hz6_stats_after.route_visibility_lookup;
+        hz6_stats.route_visibility_hit +=
+            tds[t].hz6_stats_after.route_visibility_hit;
+        hz6_stats.route_visibility_miss +=
+            tds[t].hz6_stats_after.route_visibility_miss;
+        hz6_stats.route_visibility_probe_total +=
+            tds[t].hz6_stats_after.route_visibility_probe_total;
+        if (tds[t].hz6_stats_after.route_visibility_probe_max >
+            hz6_stats.route_visibility_probe_max) {
+            hz6_stats.route_visibility_probe_max =
+                tds[t].hz6_stats_after.route_visibility_probe_max;
+        }
         hz6_stats.transfer_push += tds[t].hz6_stats_after.transfer_push;
         hz6_stats.transfer_pop += tds[t].hz6_stats_after.transfer_pop;
+        hz6_stats.transfer_current +=
+            tds[t].hz6_stats_after.transfer_current;
+        if (tds[t].hz6_stats_after.transfer_current_max >
+            hz6_stats.transfer_current_max) {
+            hz6_stats.transfer_current_max =
+                tds[t].hz6_stats_after.transfer_current_max;
+        }
+        hz6_stats.remote_free_attempt +=
+            tds[t].hz6_stats_after.remote_free_attempt;
+        hz6_stats.remote_free_strict_owner_block +=
+            tds[t].hz6_stats_after.remote_free_strict_owner_block;
+        hz6_stats.remote_free_transfer_fail +=
+            tds[t].hz6_stats_after.remote_free_transfer_fail;
         hz6_stats.source_alloc += tds[t].hz6_stats_after.source_alloc;
         hz6_stats.local2p_source_alloc +=
             tds[t].hz6_stats_after.local2p_source_alloc;
@@ -527,7 +553,13 @@ int main(int argc, char** argv) {
            (unsigned long long)total_frees);
 #if defined(HZ_BENCH_USE_HZ6)
     printf("[HZ6_STATS] label=%s route_valid=%zu route_invalid=%zu route_miss=%zu "
-           "transfer_push=%zu transfer_pop=%zu source_alloc=%zu "
+           "route_visibility_lookup=%zu route_visibility_hit=%zu "
+           "route_visibility_miss=%zu route_visibility_probe_total=%zu "
+           "route_visibility_probe_max=%zu "
+           "transfer_push=%zu transfer_pop=%zu transfer_current=%zu "
+           "transfer_current_max=%zu remote_free_attempt=%zu "
+           "remote_free_strict_owner_block=%zu remote_free_transfer_fail=%zu "
+           "source_alloc=%zu "
            "local2p_source_alloc=%zu midpage_source_alloc=%zu "
            "large_source_alloc=%zu toy_source_alloc=%zu "
            "front_source_ops_alloc=%zu front_source_slot_alloc=%zu "
@@ -550,8 +582,18 @@ int main(int argc, char** argv) {
            hz6_stats.route_valid,
            hz6_stats.route_invalid,
            hz6_stats.route_miss,
+           hz6_stats.route_visibility_lookup,
+           hz6_stats.route_visibility_hit,
+           hz6_stats.route_visibility_miss,
+           hz6_stats.route_visibility_probe_total,
+           hz6_stats.route_visibility_probe_max,
            hz6_stats.transfer_push,
            hz6_stats.transfer_pop,
+           hz6_stats.transfer_current,
+           hz6_stats.transfer_current_max,
+           hz6_stats.remote_free_attempt,
+           hz6_stats.remote_free_strict_owner_block,
+           hz6_stats.remote_free_transfer_fail,
            hz6_stats.source_alloc,
            hz6_stats.local2p_source_alloc,
            hz6_stats.midpage_source_alloc,

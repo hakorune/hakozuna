@@ -62,9 +62,8 @@ Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
   return hz6_route_backend_lookup(&allocator->route_backend, ptr);
 }
 
-Hz6RouteResult hz6_allocator_route_lookup_visible(
-    const Hz6Allocator* allocator,
-    const void* ptr) {
+Hz6RouteResult hz6_allocator_route_lookup_visible(Hz6Allocator* allocator,
+                                                  const void* ptr) {
   if (!allocator || !ptr) {
     return hz6_route_miss();
   }
@@ -74,6 +73,10 @@ Hz6RouteResult hz6_allocator_route_lookup_visible(
     return route;
   }
 
+  size_t probes = 0;
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.route_visibility_lookup;
+#endif
   for (size_t i = 0; i < HZ6_ALLOCATOR_VISIBILITY_CAPACITY; ++i) {
     Hz6Allocator* visible =
         atomic_load_explicit(&g_hz6_visible_allocators[i],
@@ -85,12 +88,27 @@ Hz6RouteResult hz6_allocator_route_lookup_visible(
       continue;
     }
 
+    ++probes;
     route = hz6_route_backend_lookup(&visible->route_backend, ptr);
     if (route.kind != HZ6_ROUTE_MISS) {
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.route_visibility_hit;
+      allocator->stats.route_visibility_probe_total += probes;
+      if (probes > allocator->stats.route_visibility_probe_max) {
+        allocator->stats.route_visibility_probe_max = probes;
+      }
+#endif
       return route;
     }
   }
 
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.route_visibility_miss;
+  allocator->stats.route_visibility_probe_total += probes;
+  if (probes > allocator->stats.route_visibility_probe_max) {
+    allocator->stats.route_visibility_probe_max = probes;
+  }
+#endif
   return hz6_route_miss();
 }
 

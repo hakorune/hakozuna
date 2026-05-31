@@ -630,6 +630,58 @@ Next read:
   or another downstream pressure point than admission gating alone
 ```
 
+## Diagnostic Checkpoint 2026-05-31j
+
+```text
+Larson shared visibility and transfer backlog columns:
+  route_visibility_lookup / hit / miss / probe_total / probe_max
+  transfer_current / transfer_current_max
+
+Observed main-warmup profile:
+  route_miss = 0
+  route_visibility_lookup = 3934
+  route_visibility_hit = 3934
+  route_visibility_probe_max = 1
+  transfer_push = 3803
+  transfer_pop = 3610
+  transfer_current = 193
+  transfer_current_max = 25
+  remote_free_attempt = 3803
+  remote_free_transfer_fail = 0
+  source_admission_open = 3943
+  source_admission_clamped = 0
+  source_refill_saturation = 0
+  source_refill_clamp = 0
+  source_prefill_attempt = 864
+  source_prefill_filled = 864
+  front=toy remains the active attributed front
+
+Observed worker-warmup profile:
+  route_miss = 0
+  route_visibility_lookup = 0
+  route_visibility_probe_total = 0
+  transfer_push = 0
+  transfer_pop = 0
+  transfer_current = 0
+  remote_free_attempt = 0
+  source_admission_open = 337416007
+  source_admission_clamped = 0
+  source_refill_saturation = 0
+  source_refill_clamp = 0
+  source_prefill_attempt = 166016
+  source_prefill_filled = 166016
+
+Read:
+  shared route visibility is working and is shallow (one probe max)
+  the main-warmup collapse is not explained by visibility depth alone
+  transfer backlog stays bounded but nonzero in main-warmup
+  remote free attempts match transfer pushes in main-warmup
+  transfer failures stay zero
+  source admission clamp is not the blocker in the current build
+  next pressure point is cross-owner transfer / handoff policy, not
+  visibility scanning
+```
+
 Read:
 
 ```text

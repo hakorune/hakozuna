@@ -125,9 +125,19 @@ function Parse-Hz6Stats {
 
     $result = @{
         RouteMiss = "NA"
+        RouteVisibilityLookup = "NA"
+        RouteVisibilityHit = "NA"
+        RouteVisibilityMiss = "NA"
+        RouteVisibilityProbeTotal = "NA"
+        RouteVisibilityProbeMax = "NA"
         SourceAlloc = "NA"
         TransferPush = "NA"
         TransferPop = "NA"
+        TransferCurrent = "NA"
+        TransferCurrentMax = "NA"
+        RemoteFreeAttempt = "NA"
+        RemoteFreeStrictOwnerBlock = "NA"
+        RemoteFreeTransferFail = "NA"
         FrontcacheReuseHit = "NA"
         FrontcacheReuseInvalid = "NA"
         TransferReuseHit = "NA"
@@ -182,9 +192,19 @@ function Parse-Hz6Stats {
             foreach ($part in $line.Split(" ")) {
                 switch -Regex ($part) {
                     '^route_miss=(.*)$' { $result.RouteMiss = $Matches[1]; continue }
+                    '^route_visibility_lookup=(.*)$' { $result.RouteVisibilityLookup = $Matches[1]; continue }
+                    '^route_visibility_hit=(.*)$' { $result.RouteVisibilityHit = $Matches[1]; continue }
+                    '^route_visibility_miss=(.*)$' { $result.RouteVisibilityMiss = $Matches[1]; continue }
+                    '^route_visibility_probe_total=(.*)$' { $result.RouteVisibilityProbeTotal = $Matches[1]; continue }
+                    '^route_visibility_probe_max=(.*)$' { $result.RouteVisibilityProbeMax = $Matches[1]; continue }
                     '^source_alloc=(.*)$' { $result.SourceAlloc = $Matches[1]; continue }
                     '^transfer_push=(.*)$' { $result.TransferPush = $Matches[1]; continue }
                     '^transfer_pop=(.*)$' { $result.TransferPop = $Matches[1]; continue }
+                    '^transfer_current=(.*)$' { $result.TransferCurrent = $Matches[1]; continue }
+                    '^transfer_current_max=(.*)$' { $result.TransferCurrentMax = $Matches[1]; continue }
+                    '^remote_free_attempt=(.*)$' { $result.RemoteFreeAttempt = $Matches[1]; continue }
+                    '^remote_free_strict_owner_block=(.*)$' { $result.RemoteFreeStrictOwnerBlock = $Matches[1]; continue }
+                    '^remote_free_transfer_fail=(.*)$' { $result.RemoteFreeTransferFail = $Matches[1]; continue }
                     '^frontcache_reuse_hit=(.*)$' { $result.FrontcacheReuseHit = $Matches[1]; continue }
                     '^frontcache_reuse_invalid=(.*)$' { $result.FrontcacheReuseInvalid = $Matches[1]; continue }
                     '^transfer_reuse_hit=(.*)$' { $result.TransferReuseHit = $Matches[1]; continue }
@@ -294,6 +314,9 @@ $Summary.Add('- benchmark: `bench_larson_compare`')
 $Summary.Add('- params: `runtime=10s min=8 max=1024 chunks=10000 rounds=1 seed=12345`')
 $Summary.Add(('- compact control (optional): `chunks={0}`' -f $CompactChunksPerThread))
 $Summary.Add('- worker-warmup control (optional): same chunks, but each worker owns its warmup allocations before the timer starts')
+$Summary.Add('- shared route visibility diagnostics: `route_visibility_lookup / hit / miss / probe_total / probe_max`')
+$Summary.Add('- transfer backlog diagnostics: `transfer_current / transfer_current_max`')
+$Summary.Add('- remote free diagnostics: `remote_free_attempt / strict_owner_block / transfer_fail`')
 $Summary.Add('- thread sweep: `1, 4, 8, 16`')
 $Summary.Add(('- runs: `{0}`' -f $Runs))
 $Summary.Add(('- timeout: `{0}s` per allocator row' -f $TimeoutSeconds))
@@ -311,17 +334,27 @@ function Invoke-LarsonSweep {
     foreach ($threads in $ThreadCounts) {
         $Summary.Add("## " + $SectionTitle + " T=" + $threads)
         $Summary.Add("")
-        $Summary.Add("| allocator | median ops/s | route_miss | source_alloc | local2p_source_alloc | midpage_source_alloc | large_source_alloc | toy_source_alloc | front_source_ops_alloc | front_source_slot_alloc | front_source_prefill_alloc | toy_source_prefill_call | front_path_local2p | front_path_midpage | front_path_large | front_path_toy | transfer_push | transfer_pop | frontcache_reuse_hit | frontcache_reuse_invalid | transfer_reuse_hit | transfer_reuse_invalid | source_refill_starvation | source_refill_saturation | source_refill_boost | source_refill_clamp | source_admission_open | source_admission_boosted | source_admission_clamped | source_prefill_attempt | source_prefill_filled | source_prefill_fallback | alloc_fail | desc_probe | reg_probe | unreg_probe | srcblk_probe | runs |")
-        $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
+        $Summary.Add("| allocator | median ops/s | route_miss | route_vis_lookup | route_vis_hit | route_vis_miss | route_vis_probe_total | route_vis_probe_max | source_alloc | local2p_source_alloc | midpage_source_alloc | large_source_alloc | toy_source_alloc | front_source_ops_alloc | front_source_slot_alloc | front_source_prefill_alloc | toy_source_prefill_call | front_path_local2p | front_path_midpage | front_path_large | front_path_toy | transfer_push | transfer_pop | transfer_current | transfer_current_max | frontcache_reuse_hit | frontcache_reuse_invalid | transfer_reuse_hit | transfer_reuse_invalid | source_refill_starvation | source_refill_saturation | source_refill_boost | source_refill_clamp | source_admission_open | source_admission_boosted | source_admission_clamped | source_prefill_attempt | source_prefill_filled | source_prefill_fallback | alloc_fail | desc_probe | reg_probe | unreg_probe | srcblk_probe | runs |")
+        $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
 
         foreach ($exe in $Executables) {
             $opsRuns = New-Object System.Collections.Generic.List[double]
             $runTexts = New-Object System.Collections.Generic.List[string]
             $lastStats = @{
                 RouteMiss = "NA"
+                RouteVisibilityLookup = "NA"
+                RouteVisibilityHit = "NA"
+                RouteVisibilityMiss = "NA"
+                RouteVisibilityProbeTotal = "NA"
+                RouteVisibilityProbeMax = "NA"
                 SourceAlloc = "NA"
                 TransferPush = "NA"
                 TransferPop = "NA"
+                TransferCurrent = "NA"
+                TransferCurrentMax = "NA"
+                RemoteFreeAttempt = "NA"
+                RemoteFreeStrictOwnerBlock = "NA"
+                RemoteFreeTransferFail = "NA"
                 FrontcacheReuseHit = "NA"
                 FrontcacheReuseInvalid = "NA"
                 TransferReuseHit = "NA"
@@ -416,17 +449,19 @@ function Invoke-LarsonSweep {
             }
 
             if ($opsRuns.Count -eq 0) {
-                $failedMetrics = ((@('NA') * 35) -join ' | ')
+                $failedMetrics = ((@('NA') * 42) -join ' | ')
                 $Summary.Add(('| {0} | failed | {1} | `{2}` |' -f $exe.Name, $failedMetrics, ($runTexts -join ", ")))
                 continue
             }
 
             $medianOps = Get-Median -Values $opsRuns.ToArray()
-                $Summary.Add((
-                '| {0} | {1:N3}M | {2} | {3} | {4} | {5} | {6} | {7} | {8} | {9} | {10} | {11} | {12} | {13} | {14} | {15} | {16} | {17} | {18} | {19} | {20} | {21} | {22} | {23} | {24} | {25} | {26} | {27} | {28} | {29} | {30} | {31} | {32} | {33} | {34} | {35} | `{36}` |' -f
-                $exe.Name,
-                ($medianOps / 1000000.0),
+            $metricCells = @(
                 $lastStats.RouteMiss,
+                $lastStats.RouteVisibilityLookup,
+                $lastStats.RouteVisibilityHit,
+                $lastStats.RouteVisibilityMiss,
+                $lastStats.RouteVisibilityProbeTotal,
+                $lastStats.RouteVisibilityProbeMax,
                 $lastStats.SourceAlloc,
                 $lastStats.Local2pSourceAlloc,
                 $lastStats.MidpageSourceAlloc,
@@ -442,6 +477,11 @@ function Invoke-LarsonSweep {
                 $lastStats.FrontPathToy,
                 $lastStats.TransferPush,
                 $lastStats.TransferPop,
+                $lastStats.TransferCurrent,
+                $lastStats.TransferCurrentMax,
+                $lastStats.RemoteFreeAttempt,
+                $lastStats.RemoteFreeStrictOwnerBlock,
+                $lastStats.RemoteFreeTransferFail,
                 $lastStats.FrontcacheReuseHit,
                 $lastStats.FrontcacheReuseInvalid,
                 $lastStats.TransferReuseHit,
@@ -460,8 +500,13 @@ function Invoke-LarsonSweep {
                 $lastStats.DescriptorProbeTotal,
                 $lastStats.RouteRegisterProbeTotal,
                 $lastStats.RouteUnregisterProbeTotal,
-                $lastStats.SourceBlockProbeTotal,
-                ($runTexts -join ", ")))
+                $lastStats.SourceBlockProbeTotal
+            )
+            $rowCells = @(
+                $exe.Name,
+                ("{0:N3}M" -f ($medianOps / 1000000.0))
+            ) + $metricCells + @(($runTexts -join ", "))
+            $Summary.Add(("| " + ($rowCells -join " | ") + " |"))
 
             if ($exe.Name -like "hz6-*") {
                 $Summary.Add((
@@ -478,6 +523,19 @@ function Invoke-LarsonSweep {
                     $lastStats.FrontPrefillAttemptToy,
                     $lastStats.FrontPrefillFilledToy,
                     $lastStats.FrontPrefillFallbackToy))
+                $Summary.Add(('  visibility: lookup={0} hit={1} miss={2} probe_total={3} probe_max={4}' -f
+                    $lastStats.RouteVisibilityLookup,
+                    $lastStats.RouteVisibilityHit,
+                    $lastStats.RouteVisibilityMiss,
+                    $lastStats.RouteVisibilityProbeTotal,
+                    $lastStats.RouteVisibilityProbeMax))
+                $Summary.Add(('  transfer: current={0} max={1}' -f
+                    $lastStats.TransferCurrent,
+                    $lastStats.TransferCurrentMax))
+                $Summary.Add(('  remote_free: attempt={0} strict_block={1} transfer_fail={2}' -f
+                    $lastStats.RemoteFreeAttempt,
+                    $lastStats.RemoteFreeStrictOwnerBlock,
+                    $lastStats.RemoteFreeTransferFail))
             }
         }
 

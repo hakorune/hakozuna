@@ -15,7 +15,7 @@ void hz6_allocator_route_visibility_register(Hz6Allocator* allocator);
 void hz6_allocator_route_visibility_unregister(Hz6Allocator* allocator);
 
 Hz6RouteResult hz6_allocator_route_lookup_visible(
-    const Hz6Allocator* allocator,
+    Hz6Allocator* allocator,
     const void* ptr);
 
 void hz6_allocator_route_unregister_exact(Hz6Allocator* allocator,

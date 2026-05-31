@@ -101,7 +101,13 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
 #if HZ6_DIAGNOSTIC_PROBES
         fprintf(out,
                 "[HZ6_STATS] label=%s route_valid=%zu route_invalid=%zu route_miss=%zu "
-                "transfer_push=%zu transfer_pop=%zu source_alloc=%zu alloc_fail=%zu "
+                "route_visibility_lookup=%zu route_visibility_hit=%zu "
+                "route_visibility_miss=%zu route_visibility_probe_total=%zu "
+                "route_visibility_probe_max=%zu "
+                "transfer_push=%zu transfer_pop=%zu transfer_current=%zu "
+                "transfer_current_max=%zu remote_free_attempt=%zu "
+                "remote_free_strict_owner_block=%zu "
+                "remote_free_transfer_fail=%zu source_alloc=%zu alloc_fail=%zu "
                 "descriptor_exhausted=%zu route_register_fail=%zu source_block_exhausted=%zu "
                 "route_active_current=%zu route_active_max=%zu "
                 "descriptor_probe_total=%zu descriptor_probe_max=%zu "
@@ -113,8 +119,18 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 s.route_valid,
                 s.route_invalid,
                 s.route_miss,
+                s.route_visibility_lookup,
+                s.route_visibility_hit,
+                s.route_visibility_miss,
+                s.route_visibility_probe_total,
+                s.route_visibility_probe_max,
                 s.transfer_push,
                 s.transfer_pop,
+                s.transfer_current,
+                s.transfer_current_max,
+                s.remote_free_attempt,
+                s.remote_free_strict_owner_block,
+                s.remote_free_transfer_fail,
                 s.source_alloc,
                 s.alloc_fail,
                 s.descriptor_exhausted,
@@ -136,15 +152,31 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
 #else
         fprintf(out,
                 "[HZ6_STATS] label=%s route_valid=%zu route_invalid=%zu route_miss=%zu "
-                "transfer_push=%zu transfer_pop=%zu source_alloc=%zu alloc_fail=%zu "
+                "route_visibility_lookup=%zu route_visibility_hit=%zu "
+                "route_visibility_miss=%zu route_visibility_probe_total=%zu "
+                "route_visibility_probe_max=%zu "
+                "transfer_push=%zu transfer_pop=%zu transfer_current=%zu "
+                "transfer_current_max=%zu remote_free_attempt=%zu "
+                "remote_free_strict_owner_block=%zu "
+                "remote_free_transfer_fail=%zu source_alloc=%zu alloc_fail=%zu "
                 "descriptor_exhausted=%zu route_register_fail=%zu source_block_exhausted=%zu "
                 "large_span_central_push=%zu large_span_central_pop=%zu large_span_source_alloc=%zu\n",
                 label ? label : "unknown",
                 s.route_valid,
                 s.route_invalid,
                 s.route_miss,
+                0u,
+                0u,
+                0u,
+                0u,
+                0u,
                 s.transfer_push,
                 s.transfer_pop,
+                0u,
+                0u,
+                0u,
+                0u,
+                0u,
                 s.source_alloc,
                 s.alloc_fail,
                 s.descriptor_exhausted,

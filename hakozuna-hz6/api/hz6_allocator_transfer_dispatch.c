@@ -29,11 +29,25 @@ int hz6_allocator_transfer_pop(Hz6Allocator* allocator,
 void hz6_allocator_note_transfer_push(Hz6Allocator* allocator) {
   if (allocator) {
     ++allocator->stats.transfer_push;
+    allocator->stats.transfer_current =
+        hz6_allocator_transfer_count(allocator);
+    if (allocator->stats.transfer_current >
+        allocator->stats.transfer_current_max) {
+      allocator->stats.transfer_current_max =
+          allocator->stats.transfer_current;
+    }
   }
 }
 
 void hz6_allocator_note_transfer_pop(Hz6Allocator* allocator) {
   if (allocator) {
     ++allocator->stats.transfer_pop;
+    allocator->stats.transfer_current =
+        hz6_allocator_transfer_count(allocator);
+    if (allocator->stats.transfer_current >
+        allocator->stats.transfer_current_max) {
+      allocator->stats.transfer_current_max =
+          allocator->stats.transfer_current;
+    }
   }
 }
