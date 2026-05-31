@@ -169,6 +169,32 @@ Canonical summary rule:
   do not promote raw results into paper-facing sources
 ```
 
+## Next Implementation Order 2026-06-01
+
+```text
+Primary next target:
+  toy/small source-block prefill in the worker-warmup lane
+
+Why:
+  worker-warmup is the same-owner control lane and already proves the small
+  hot path is viable without cross-owner route lifecycle pressure
+  Larson 8..1024 is toy-only, so toy is the clean witness for small-source
+  placement
+  source_block_probe_total staying at zero means the toy path is still not
+  using SourceBlock/run-style placement
+
+Implementation rule:
+  keep toy inside the common FrontSource contract
+  change only miss/refill placement
+  keep local reuse / transfer reuse hot paths unchanged
+
+Evaluation:
+  compact control should stay within the existing noise band
+  worker-warmup should improve or keep its current level without RSS blow-up
+  main-warmup remains cross-owner stress evidence, not the acceptance lane for
+  this step
+```
+
 ## Diagnostic Checkpoint 2026-05-31
 
 ```text

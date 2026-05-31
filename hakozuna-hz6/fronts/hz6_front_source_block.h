@@ -14,6 +14,14 @@ void* hz6_front_source_block_slot(Hz6Allocator* allocator,
                                   size_t source_offset,
                                   Hz6SourceBlock* source_block);
 
+size_t hz6_front_prefill_source_block_kind(Hz6Allocator* allocator,
+                                           uint16_t front_id,
+                                           uint16_t class_id,
+                                           size_t slot_bytes,
+                                           size_t block_bytes,
+                                           Hz6SourceKind source_kind,
+                                           size_t count);
+
 #ifdef __cplusplus
 }
 #endif

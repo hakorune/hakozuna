@@ -180,9 +180,13 @@ int main(void) {
   Hz6StatsSnapshot orphan_stats = hz6_stats_snapshot(&orphan_allocator);
   if (!expect(orphan_stats.route_invalid == 1, "orphan free invalid") ||
       !expect(hz6_allocator_release_orphan(&orphan_allocator, orphan),
-              "orphan release") ||
-      !expect(!hz6_owns(&orphan_allocator, orphan),
-              "orphan route gone") ||
+              "orphan release")) {
+    return 1;
+  }
+  Hz6RouteResult released_orphan_route =
+      hz6_allocator_route_lookup(&orphan_allocator, orphan);
+  if (!expect(released_orphan_route.kind == HZ6_ROUTE_INVALID,
+              "orphan exact route gone") ||
       !expect(descriptor->state == HZ6_STATE_DEAD,
               "orphan descriptor dead")) {
     return 1;

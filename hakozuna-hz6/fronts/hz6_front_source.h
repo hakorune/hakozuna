@@ -25,6 +25,14 @@ void* hz6_front_reuse_or_prefill_source_kind(Hz6Allocator* allocator,
                                              Hz6SourceKind source_kind,
                                              size_t count);
 
+void* hz6_front_reuse_or_block_prefill_source_kind(Hz6Allocator* allocator,
+                                                   uint16_t front_id,
+                                                   uint16_t class_id,
+                                                   size_t bytes,
+                                                   size_t block_bytes,
+                                                   Hz6SourceKind source_kind,
+                                                   size_t count);
+
 void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
                                     uint16_t front_id,
                                     uint16_t class_id,

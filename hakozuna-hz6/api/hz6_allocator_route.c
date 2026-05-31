@@ -86,8 +86,8 @@ Hz6RouteResult hz6_allocator_route_lookup_visible(Hz6Allocator* allocator,
     return route;
   }
 
-  size_t probes = 0;
 #if HZ6_DIAGNOSTIC_PROBES
+  size_t probes = 0;
   ++allocator->stats.route_visibility_lookup;
 #endif
   for (size_t i = 0; i < HZ6_ALLOCATOR_VISIBILITY_CAPACITY; ++i) {
@@ -101,7 +101,9 @@ Hz6RouteResult hz6_allocator_route_lookup_visible(Hz6Allocator* allocator,
       continue;
     }
 
+#if HZ6_DIAGNOSTIC_PROBES
     ++probes;
+#endif
     route = hz6_route_backend_lookup(&visible->route_backend, ptr);
     if (route.kind != HZ6_ROUTE_MISS) {
       route.route_allocator = visible;

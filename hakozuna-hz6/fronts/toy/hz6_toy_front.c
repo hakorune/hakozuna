@@ -5,6 +5,8 @@
 #include "../hz6_front_source_prefill.h"
 #include "../hz6_front_util.h"
 
+#define HZ6_TOY_SOURCE_BLOCK_BYTES ((size_t)65536)
+
 static int hz6_toy_front_can_allocate(size_t size,
                                       size_t align,
                                       uint16_t* class_id) {
@@ -37,6 +39,13 @@ static void* hz6_toy_front_alloc_with_class(Hz6Allocator* allocator,
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.toy_source_prefill_call;
 #endif
+  if (refill_batch > 1) {
+    return hz6_front_reuse_or_block_prefill_source_kind(
+        allocator, HZ6_FRONT_TOY, size_class.id, size_class.bytes,
+        HZ6_TOY_SOURCE_BLOCK_BYTES, hz6_allocator_profile_source_kind(allocator),
+        refill_batch);
+  }
+
   return hz6_front_reuse_or_prefill_source_kind(
       allocator, HZ6_FRONT_TOY, size_class.id, size_class.bytes,
       hz6_allocator_profile_source_kind(allocator), refill_batch);

@@ -41,9 +41,13 @@ int main(void) {
     return 1;
   }
   if (!expect(hz6_allocator_release_orphan(&orphan_allocator, orphan_object),
-              "orphan release") ||
-      !expect(!hz6_owns(&orphan_allocator, orphan_object),
-              "orphan route released") ||
+              "orphan release")) {
+    return 1;
+  }
+  Hz6RouteResult orphan_released_route =
+      hz6_allocator_route_lookup(&orphan_allocator, orphan_object);
+  if (!expect(orphan_released_route.kind == HZ6_ROUTE_INVALID,
+              "orphan exact route released") ||
       !expect(orphan_descriptor->state == HZ6_STATE_DEAD,
               "orphan descriptor dead")) {
     return 1;
@@ -91,8 +95,8 @@ int main(void) {
 
   Hz6Allocator adopt_source;
   Hz6Allocator adopt_target;
-  hz6_allocator_init_with_profile(&adopt_source, HZ6_PROFILE_SPEED);
-  hz6_allocator_init_with_profile(&adopt_target, HZ6_PROFILE_SPEED);
+  hz6_allocator_init_with_profile(&adopt_source, HZ6_PROFILE_STRICT);
+  hz6_allocator_init_with_profile(&adopt_target, HZ6_PROFILE_STRICT);
   void* adopt_object = hz6_malloc(&adopt_source, 48);
   if (!expect(adopt_object != NULL, "adopt source malloc")) {
     return 1;
