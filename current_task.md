@@ -77,6 +77,11 @@ Redis:
   HZ6 appcap is weak across SET / GET / LPUSH / LPOP / RANDOM.
   mimalloc and tcmalloc stay ahead on every Redis pattern in the latest run.
 
+Random mixed:
+  strict / speed / rss controls still fail on the small and medium/mixed rows.
+  broad and appcap survive, but they remain far behind mimalloc / tcmalloc on
+  throughput, so mixed throughput is still a weak lane.
+
 HZ6 owner-aware MT remote:
   throughput is usable and RSS is low.
   alloc_failures are still huge, so this remains a pressure lane rather than a
@@ -133,8 +138,9 @@ Larson:
   behavior rather than raw live-set capacity.
 
 Random mixed:
-  small-cap HZ6 rows fail as capacity controls.
-  broad-cap HZ6 rows run with low RSS but are slower than HZ3/HZ4/tcmalloc.
+  small and medium/mixed rows still fail on the strict / speed / rss controls.
+  broad and appcap rows survive, but they remain far behind HZ3/HZ4/mimalloc/
+  tcmalloc on throughput.
 
 MT remote:
   HZ6 rows are extremely slow under the legacy remote runner.
