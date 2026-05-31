@@ -59,7 +59,11 @@ Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
   if (!allocator || !ptr) {
     return hz6_route_miss();
   }
-  return hz6_route_backend_lookup(&allocator->route_backend, ptr);
+  Hz6RouteResult route = hz6_route_backend_lookup(&allocator->route_backend, ptr);
+  if (route.kind != HZ6_ROUTE_MISS) {
+    route.route_allocator = (Hz6Allocator*)allocator;
+  }
+  return route;
 }
 
 Hz6RouteResult hz6_allocator_route_lookup_visible(Hz6Allocator* allocator,
@@ -91,6 +95,7 @@ Hz6RouteResult hz6_allocator_route_lookup_visible(Hz6Allocator* allocator,
     ++probes;
     route = hz6_route_backend_lookup(&visible->route_backend, ptr);
     if (route.kind != HZ6_ROUTE_MISS) {
+      route.route_allocator = visible;
 #if HZ6_DIAGNOSTIC_PROBES
       ++allocator->stats.route_visibility_hit;
       if (route.descriptor) {
@@ -119,6 +124,40 @@ Hz6RouteResult hz6_allocator_route_lookup_visible(Hz6Allocator* allocator,
   }
 #endif
   return hz6_route_miss();
+}
+
+int hz6_allocator_route_rehome_exact(Hz6Allocator* allocator,
+                                     const Hz6RouteResult* route) {
+  if (!allocator || !route || route->kind != HZ6_ROUTE_VALID ||
+      !route->descriptor || !route->route_allocator ||
+      route->route_allocator == allocator) {
+    return 0;
+  }
+
+  const Hz6ObjectDescriptor* descriptor =
+      (const Hz6ObjectDescriptor*)route->descriptor;
+  Hz6Allocator* origin = route->route_allocator;
+  void* ptr = descriptor->ptr;
+  size_t bytes = descriptor->bytes;
+  hz6_allocator_route_unregister_exact(origin, ptr);
+  if (!hz6_allocator_route_register_exact(allocator,
+                                          ptr,
+                                          bytes,
+                                          route->front_id,
+                                          route->class_id,
+                                          route->generation,
+                                          (void*)descriptor)) {
+    hz6_allocator_route_register_exact(origin,
+                                      ptr,
+                                      bytes,
+                                      route->front_id,
+                                      route->class_id,
+                                      route->generation,
+                                      (void*)descriptor);
+    return 0;
+  }
+
+  return 1;
 }
 
 void hz6_allocator_route_unregister_exact(Hz6Allocator* allocator,

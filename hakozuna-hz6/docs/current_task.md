@@ -790,6 +790,46 @@ Current read:
   next follow-up should be route/transfer rehome locality, not deeper scan depth
 ```
 
+## Diagnostic Checkpoint 2026-06-01
+
+```text
+RemoteHandoff-L1 route rehome enabled:
+  main-warmup:
+    throughput = 2073 ops/s
+    route_visibility_lookup = 5899
+    route_visibility_hit = 5899
+    route_visibility_hit_local_owner = 0
+    route_visibility_hit_foreign_owner = 5899
+    route_visibility_probe_max = 1
+    remote_free_attempt = 5899
+    route_rehome_attempt = 5899
+    route_rehome_success = 5899
+    route_rehome_fail = 0
+    transfer_push = 5899
+    transfer_pop = 5718
+    transfer_current = 181
+
+  worker-warmup:
+    throughput = 12.426M ops/s
+    route_visibility_lookup = 0
+    route_visibility_hit = 0
+    route_visibility_hit_local_owner = 0
+    route_visibility_hit_foreign_owner = 0
+    route_rehome_attempt = 0
+    route_rehome_success = 0
+    route_rehome_fail = 0
+    transfer_push = 0
+    transfer_pop = 0
+    transfer_current = 0
+
+Current read:
+  rehome is now an actual route locality move, not only a counter
+  foreign visibility is still the dominant main-warmup shape
+  worker-warmup remains the healthy same-owner control lane
+  next question is whether route locality rehome is enough, or whether
+  descriptor/source ownership L2 is still needed
+```
+
 Read:
 
 ```text

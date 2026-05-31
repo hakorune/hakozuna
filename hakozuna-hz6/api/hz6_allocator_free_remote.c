@@ -26,40 +26,31 @@ int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
 
   const Hz6FrontOps* front = hz6_front_for_id(route.front_id);
   ++allocator->stats.route_valid;
-  if (visible_hit) {
-    const Hz6ObjectDescriptor* descriptor =
-        (const Hz6ObjectDescriptor*)route.descriptor;
-    if (descriptor &&
-        !hz6_owner_equal(descriptor->owner, allocator->owner.token)) {
+  const Hz6ObjectDescriptor* descriptor =
+      (const Hz6ObjectDescriptor*)route.descriptor;
+  int needs_rehome = visible_hit && descriptor &&
+                     !hz6_owner_equal(descriptor->owner, allocator->owner.token);
+  if (needs_rehome) {
 #if HZ6_DIAGNOSTIC_PROBES
-      ++allocator->stats.route_rehome_attempt;
+    ++allocator->stats.route_rehome_attempt;
 #endif
-    }
   }
   if (!front || !front->remote_free_tagged ||
       !front->remote_free_tagged(allocator, ptr, route)) {
-    if (visible_hit) {
-      const Hz6ObjectDescriptor* descriptor =
-          (const Hz6ObjectDescriptor*)route.descriptor;
-      if (descriptor &&
-          !hz6_owner_equal(descriptor->owner, allocator->owner.token)) {
-#if HZ6_DIAGNOSTIC_PROBES
-        ++allocator->stats.route_rehome_fail;
-#endif
-      }
-    }
     ++allocator->stats.route_invalid;
     return 0;
   }
-  if (visible_hit) {
-    const Hz6ObjectDescriptor* descriptor =
-        (const Hz6ObjectDescriptor*)route.descriptor;
-    if (descriptor &&
-        !hz6_owner_equal(descriptor->owner, allocator->owner.token)) {
+  if (needs_rehome) {
 #if HZ6_DIAGNOSTIC_PROBES
+    int rehome_ok = hz6_allocator_route_rehome_exact(allocator, &route);
+    if (rehome_ok) {
       ++allocator->stats.route_rehome_success;
-#endif
+    } else {
+      ++allocator->stats.route_rehome_fail;
     }
+#else
+    (void)hz6_allocator_route_rehome_exact(allocator, &route);
+#endif
   }
 
   return 1;

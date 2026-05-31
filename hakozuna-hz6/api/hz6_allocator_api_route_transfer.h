@@ -18,6 +18,9 @@ Hz6RouteResult hz6_allocator_route_lookup_visible(
     Hz6Allocator* allocator,
     const void* ptr);
 
+int hz6_allocator_route_rehome_exact(Hz6Allocator* allocator,
+                                     const Hz6RouteResult* route);
+
 void hz6_allocator_route_unregister_exact(Hz6Allocator* allocator,
                                           void* ptr);
 

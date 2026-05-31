@@ -8,6 +8,8 @@
 extern "C" {
 #endif
 
+typedef struct Hz6Allocator Hz6Allocator;
+
 typedef enum Hz6RouteKind {
   HZ6_ROUTE_MISS = 0,
   HZ6_ROUTE_VALID = 1,
@@ -70,6 +72,7 @@ typedef struct Hz6RouteResult {
   uint16_t front_id;
   uint16_t class_id;
   uint32_t generation;
+  Hz6Allocator* route_allocator;
   void* descriptor;
 } Hz6RouteResult;
 
@@ -79,6 +82,7 @@ static inline Hz6RouteResult hz6_route_miss(void) {
   result.front_id = HZ6_FRONT_NONE;
   result.class_id = 0;
   result.generation = 0;
+  result.route_allocator = NULL;
   result.descriptor = NULL;
   return result;
 }
@@ -90,6 +94,7 @@ static inline Hz6RouteResult hz6_route_invalid(uint16_t front_id,
   result.front_id = front_id;
   result.class_id = class_id;
   result.generation = 0;
+  result.route_allocator = NULL;
   result.descriptor = NULL;
   return result;
 }
@@ -103,6 +108,7 @@ static inline Hz6RouteResult hz6_route_valid(uint16_t front_id,
   result.front_id = front_id;
   result.class_id = class_id;
   result.generation = generation;
+  result.route_allocator = NULL;
   result.descriptor = descriptor;
   return result;
 }
