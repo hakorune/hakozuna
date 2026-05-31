@@ -59,7 +59,20 @@ Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
   if (!allocator || !ptr) {
     return hz6_route_miss();
   }
+#if HZ6_DIAGNOSTIC_PROBES
+  size_t lookup_probes = 0;
+  Hz6RouteResult route =
+      hz6_route_backend_lookup_probe(&allocator->route_backend,
+                                     ptr,
+                                     &lookup_probes);
+  ((Hz6Allocator*)allocator)->stats.route_lookup_probe_total += lookup_probes;
+  if (lookup_probes >
+      ((Hz6Allocator*)allocator)->stats.route_lookup_probe_max) {
+    ((Hz6Allocator*)allocator)->stats.route_lookup_probe_max = lookup_probes;
+  }
+#else
   Hz6RouteResult route = hz6_route_backend_lookup(&allocator->route_backend, ptr);
+#endif
   if (route.kind != HZ6_ROUTE_MISS) {
     route.route_allocator = (Hz6Allocator*)allocator;
 #if HZ6_DIAGNOSTIC_PROBES

@@ -6,12 +6,23 @@ Hz6RouteResult hz6_route_backend_lookup_page_table_invalid(
     uintptr_t addr,
     uintptr_t page_addr);
 
-Hz6RouteResult hz6_route_backend_lookup_page_table_exact(
+Hz6RouteResult hz6_route_backend_lookup_page_table_invalid_probe(
     const Hz6RouteBackend* backend,
     uintptr_t addr,
-    uintptr_t page_addr) {
+    uintptr_t page_addr,
+    size_t* probe_count);
+
+Hz6RouteResult hz6_route_backend_lookup_page_table_exact_probe(
+    const Hz6RouteBackend* backend,
+    uintptr_t addr,
+    uintptr_t page_addr,
+    size_t* probe_count) {
+  size_t probes = 0;
   if (!backend || !backend->exact_table.entries ||
       !hz6_route_backend_valid_granularity(backend->page_granularity)) {
+    if (probe_count) {
+      *probe_count = probes;
+    }
     return hz6_route_miss();
   }
 
@@ -19,6 +30,7 @@ Hz6RouteResult hz6_route_backend_lookup_page_table_exact(
   for (size_t i = 0; i < backend->exact_table.capacity; ++i) {
     size_t index = (start + i) % backend->exact_table.capacity;
     const Hz6RouteEntry* entry = &backend->exact_table.entries[index];
+    ++probes;
     if (!entry->active || !entry->exact_valid) {
       if (!entry->active && !entry->tombstone) {
         break;
@@ -26,6 +38,9 @@ Hz6RouteResult hz6_route_backend_lookup_page_table_exact(
       continue;
     }
     if (addr == entry->base) {
+      if (probe_count) {
+        *probe_count = probes;
+      }
       return hz6_route_valid(entry->front_id, entry->class_id,
                              entry->generation, entry->descriptor);
     }
@@ -33,6 +48,7 @@ Hz6RouteResult hz6_route_backend_lookup_page_table_exact(
 
   for (size_t i = 0; i < backend->exact_table.capacity; ++i) {
     const Hz6RouteEntry* entry = &backend->exact_table.entries[i];
+    ++probes;
     if (!entry->active || !entry->exact_valid) {
       continue;
     }
@@ -49,14 +65,35 @@ Hz6RouteResult hz6_route_backend_lookup_page_table_exact(
 
     uintptr_t object_end = entry->base + entry->bytes;
     if (addr == entry->base) {
+      if (probe_count) {
+        *probe_count = probes;
+      }
       return hz6_route_valid(entry->front_id, entry->class_id,
                              entry->generation, entry->descriptor);
     }
     if (addr > entry->base && addr < object_end) {
+      if (probe_count) {
+        *probe_count = probes;
+      }
       return hz6_route_invalid(entry->front_id, entry->class_id);
     }
   }
 
-  return hz6_route_backend_lookup_page_table_invalid(backend, addr,
-                                                     page_addr);
+  if (probe_count) {
+    *probe_count = probes;
+  }
+  return hz6_route_backend_lookup_page_table_invalid_probe(backend,
+                                                          addr,
+                                                          page_addr,
+                                                          probe_count);
+}
+
+Hz6RouteResult hz6_route_backend_lookup_page_table_exact(
+    const Hz6RouteBackend* backend,
+    uintptr_t addr,
+    uintptr_t page_addr) {
+  return hz6_route_backend_lookup_page_table_exact_probe(backend,
+                                                        addr,
+                                                        page_addr,
+                                                        NULL);
 }

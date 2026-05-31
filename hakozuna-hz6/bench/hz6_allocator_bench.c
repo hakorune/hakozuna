@@ -164,7 +164,8 @@ static void print_stats(const Hz6Allocator* allocator) {
 #endif
          "alloc_fail=%zu descriptor_exhausted=%zu route_register_fail=%zu "
          "source_block_exhausted=%zu descriptor_probe_total=%zu "
-         "descriptor_probe_max=%zu route_register_probe_total=%zu "
+         "descriptor_probe_max=%zu route_lookup_probe_total=%zu "
+         "route_lookup_probe_max=%zu route_register_probe_total=%zu "
          "route_register_probe_max=%zu route_unregister_probe_total=%zu "
          "route_unregister_probe_max=%zu source_block_probe_total=%zu "
          "source_block_probe_max=%zu "
@@ -190,6 +191,7 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.alloc_fail, stats.descriptor_exhausted,
          stats.route_register_fail, stats.source_block_exhausted,
          stats.descriptor_probe_total, stats.descriptor_probe_max,
+         stats.route_lookup_probe_total, stats.route_lookup_probe_max,
          stats.route_register_probe_total, stats.route_register_probe_max,
          stats.route_unregister_probe_total, stats.route_unregister_probe_max,
          stats.source_block_probe_total, stats.source_block_probe_max,

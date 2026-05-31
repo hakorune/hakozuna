@@ -73,6 +73,8 @@ typedef struct Hz6StatsSnapshot {
   size_t route_active_max;
   size_t descriptor_probe_total;
   size_t descriptor_probe_max;
+  size_t route_lookup_probe_total;
+  size_t route_lookup_probe_max;
   size_t route_register_probe_total;
   size_t route_register_probe_max;
   size_t route_unregister_probe_total;

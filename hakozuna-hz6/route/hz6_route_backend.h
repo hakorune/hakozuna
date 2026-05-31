@@ -61,6 +61,10 @@ void hz6_route_backend_unregister_invalid_range(Hz6RouteBackend* backend,
 Hz6RouteResult hz6_route_backend_lookup(const Hz6RouteBackend* backend,
                                         const void* ptr);
 
+Hz6RouteResult hz6_route_backend_lookup_probe(const Hz6RouteBackend* backend,
+                                              const void* ptr,
+                                              size_t* probe_count);
+
 #ifdef __cplusplus
 }
 #endif

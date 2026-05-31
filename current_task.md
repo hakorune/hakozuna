@@ -151,21 +151,63 @@ random_mixed 20260601_072659:
     peak RSS ~196 MB
 ```
 
+Route lookup diagnostic read:
+
+```text
+Implementation:
+  route_lookup_probe_total / route_lookup_probe_max added under
+  HZ6_DIAGNOSTIC_PROBES only.
+  random_mixed diagnostic builds now write to out_win_random_mixed_diag so
+  real benchmark executables in out_win_random_mixed are not overwritten.
+
+random_mixed mixed RUNS=1 diagnostic:
+  docs/benchmarks/windows/paper/20260601_074225_paper_random_mixed_windows.md
+
+Passing HZ6 rows:
+  broad:
+    lookup probe total ~14.9M to 15.0M
+    lookup max 5..6
+    register probe total ~0.44M to 0.50M
+    throughput ~28.4M to 33.1M ops/s
+    RSS ~7.2 MB
+
+  control:
+    lookup probe total ~38.7M to 55.0M
+    lookup max 55..144
+    register probe total ~57K to 64K
+    throughput ~24.0M to 30.9M ops/s
+    RSS ~4.7 MB
+
+  appcap:
+    lookup probe total ~14.0M to 14.2M
+    lookup max 2..4
+    register probe total ~28.3M to 32.0M
+    throughput ~27.5M to 32.2M ops/s
+    RSS ~196 MB
+
+Read:
+  control is low-RSS and capacity-clean, but pays a repeated free-route lookup
+  cost.
+
+  appcap makes lookup cheap but burns huge registration probe work and RSS.
+
+  broad is currently the best throughput/RSS compromise among HZ6 mixed rows,
+  but still far behind HZ3 / mimalloc / tcmalloc.
+```
+
 Next step:
 
 ```text
 1. Keep the new random_mixed control lane as the diagnostic bridge:
    it removes the capacity failures and keeps RSS low.
 
-2. Now diagnose the remaining throughput gap:
-   broad is still faster than control on mixed,
-   while appcap spends a lot more RSS for little extra throughput.
+2. Next optimization target is route lookup shape, not another capacity bump:
+   reduce control-lane lookup probes without jumping to appcap-sized tables.
 
-3. Use the new probe counters to compare:
-   route_register_probe_total
-   source_block_probe_total
-   descriptor_probe_total
-   source_owned_route_hit_local_owner
+3. Candidate next lane:
+   random_mixed route-locality / compact-route experiment.
+   Try a middle route capacity or page-table route policy for control-like RSS,
+   then compare route_lookup_probe_total/max and route_register_probe_total/max.
 
 4. Keep large_slice_64k / 128k as the current strong proof points.
 5. Leave Redis and Larson untouched until the random_mixed throughput gap is

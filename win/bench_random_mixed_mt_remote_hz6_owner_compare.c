@@ -168,6 +168,10 @@ static void print_stats_total(const ThreadState* states, uint32_t threads) {
         if (s.descriptor_probe_max > total.descriptor_probe_max) {
             total.descriptor_probe_max = s.descriptor_probe_max;
         }
+        total.route_lookup_probe_total += s.route_lookup_probe_total;
+        if (s.route_lookup_probe_max > total.route_lookup_probe_max) {
+            total.route_lookup_probe_max = s.route_lookup_probe_max;
+        }
         total.route_register_probe_total += s.route_register_probe_total;
         if (s.route_register_probe_max > total.route_register_probe_max) {
             total.route_register_probe_max = s.route_register_probe_max;
@@ -199,7 +203,7 @@ static void print_stats_total(const ThreadState* states, uint32_t threads) {
            (unsigned long long)remote_fallback_frees,
            (unsigned long long)alloc_failures,
            (unsigned long long)owner_switch_failures);
-    printf("[HZ6_STATS] label=mt_remote_hz6_owner_final route_valid=%zu route_invalid=%zu route_miss=%zu transfer_push=%zu transfer_pop=%zu source_alloc=%zu alloc_fail=%zu descriptor_exhausted=%zu route_register_fail=%zu source_block_exhausted=%zu descriptor_probe_total=%zu descriptor_probe_max=%zu route_register_probe_total=%zu route_register_probe_max=%zu route_unregister_probe_total=%zu route_unregister_probe_max=%zu source_block_probe_total=%zu source_block_probe_max=%zu large_span_central_push=%zu large_span_central_pop=%zu large_span_source_alloc=%zu\n",
+    printf("[HZ6_STATS] label=mt_remote_hz6_owner_final route_valid=%zu route_invalid=%zu route_miss=%zu transfer_push=%zu transfer_pop=%zu source_alloc=%zu alloc_fail=%zu descriptor_exhausted=%zu route_register_fail=%zu source_block_exhausted=%zu descriptor_probe_total=%zu descriptor_probe_max=%zu route_lookup_probe_total=%zu route_lookup_probe_max=%zu route_register_probe_total=%zu route_register_probe_max=%zu route_unregister_probe_total=%zu route_unregister_probe_max=%zu source_block_probe_total=%zu source_block_probe_max=%zu large_span_central_push=%zu large_span_central_pop=%zu large_span_source_alloc=%zu\n",
            total.route_valid,
            total.route_invalid,
            total.route_miss,
@@ -212,6 +216,8 @@ static void print_stats_total(const ThreadState* states, uint32_t threads) {
            total.source_block_exhausted,
            total.descriptor_probe_total,
            total.descriptor_probe_max,
+           total.route_lookup_probe_total,
+           total.route_lookup_probe_max,
            total.route_register_probe_total,
            total.route_register_probe_max,
            total.route_unregister_probe_total,

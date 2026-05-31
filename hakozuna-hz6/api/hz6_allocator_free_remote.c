@@ -8,17 +8,7 @@ int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
   }
 
   int visible_hit = 0;
-  Hz6RouteResult route =
-      hz6_route_backend_lookup(&allocator->route_backend, ptr);
-  if (route.kind == HZ6_ROUTE_VALID && route.descriptor) {
-#if HZ6_DIAGNOSTIC_PROBES
-    const Hz6ObjectDescriptor* descriptor =
-        (const Hz6ObjectDescriptor*)route.descriptor;
-    if (descriptor->source_release) {
-      ++allocator->stats.source_owned_route_hit_local_owner;
-    }
-#endif
-  }
+  Hz6RouteResult route = hz6_allocator_route_lookup(allocator, ptr);
   if (route.kind == HZ6_ROUTE_MISS &&
       !hz6_allocator_profile_strict_owner_remote(allocator)) {
     route = hz6_allocator_route_lookup_visible(allocator, ptr);

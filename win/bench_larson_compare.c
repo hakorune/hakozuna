@@ -534,6 +534,13 @@ int main(int argc, char** argv) {
             hz6_stats.descriptor_probe_max =
                 tds[t].hz6_stats_after.descriptor_probe_max;
         }
+        hz6_stats.route_lookup_probe_total +=
+            tds[t].hz6_stats_after.route_lookup_probe_total;
+        if (tds[t].hz6_stats_after.route_lookup_probe_max >
+            hz6_stats.route_lookup_probe_max) {
+            hz6_stats.route_lookup_probe_max =
+                tds[t].hz6_stats_after.route_lookup_probe_max;
+        }
         hz6_stats.route_register_probe_total +=
             tds[t].hz6_stats_after.route_register_probe_total;
         if (tds[t].hz6_stats_after.route_register_probe_max >
@@ -604,6 +611,7 @@ int main(int argc, char** argv) {
            "source_prefill_fallback=%zu alloc_fail=%zu "
            "descriptor_exhausted=%zu route_register_fail=%zu source_block_exhausted=%zu "
            "descriptor_probe_total=%zu descriptor_probe_max=%zu "
+           "route_lookup_probe_total=%zu route_lookup_probe_max=%zu "
            "route_register_probe_total=%zu route_register_probe_max=%zu "
            "route_unregister_probe_total=%zu route_unregister_probe_max=%zu "
            "source_block_probe_total=%zu source_block_probe_max=%zu "
@@ -664,6 +672,8 @@ int main(int argc, char** argv) {
            hz6_stats.source_block_exhausted,
            hz6_stats.descriptor_probe_total,
            hz6_stats.descriptor_probe_max,
+           hz6_stats.route_lookup_probe_total,
+           hz6_stats.route_lookup_probe_max,
            hz6_stats.route_register_probe_total,
            hz6_stats.route_register_probe_max,
            hz6_stats.route_unregister_probe_total,

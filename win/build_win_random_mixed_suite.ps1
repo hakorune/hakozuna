@@ -1,12 +1,13 @@
 param(
     [string]$VcpkgRoot,
-    [switch]$DiagnosticHz6Probes
+    [switch]$DiagnosticHz6Probes,
+    [string]$OutDirName = "out_win_random_mixed"
 )
 
 $ErrorActionPreference = "Stop"
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
-$OutDir = Join-Path $RepoRoot "out_win_random_mixed"
+$OutDir = Join-Path $RepoRoot $OutDirName
 $ObjDir = Join-Path $OutDir "obj"
 $SuiteBuild = Join-Path $PSScriptRoot "build_win_allocator_suite.ps1"
 $ModernBuildCommon = Join-Path $PSScriptRoot "bench_app_like_allocator_build_common.ps1"

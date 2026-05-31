@@ -9,7 +9,12 @@ param(
 $ErrorActionPreference = "Stop"
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
-$SuiteDir = Join-Path $RepoRoot "out_win_random_mixed"
+$SuiteDirName = if ($DiagnosticHz6Probes) {
+    "out_win_random_mixed_diag"
+} else {
+    "out_win_random_mixed"
+}
+$SuiteDir = Join-Path $RepoRoot $SuiteDirName
 $BuildScript = Join-Path $PSScriptRoot "build_win_random_mixed_suite.ps1"
 
 if (-not $OutputDir) {
@@ -39,8 +44,8 @@ $Executables = @(
     @{ Name = "tcmalloc"; Path = (Join-Path $SuiteDir "bench_random_mixed_tcmalloc.exe") }
 )
 
-if ($Executables | Where-Object { -not (Test-Path $_.Path) }) {
-    & $BuildScript -DiagnosticHz6Probes:$DiagnosticHz6Probes
+if ($DiagnosticHz6Probes -or ($Executables | Where-Object { -not (Test-Path $_.Path) })) {
+    & $BuildScript -DiagnosticHz6Probes:$DiagnosticHz6Probes -OutDirName $SuiteDirName
     if ($LASTEXITCODE -ne 0) {
         throw "build_win_random_mixed_suite.ps1 failed with exit code $LASTEXITCODE"
     }
@@ -219,7 +224,7 @@ foreach ($profile in $Selected) {
     $Summary.Add("")
 }
 
-$Summary.Add("Artifacts: [out_win_random_mixed](/C:/git/hakozuna-win/out_win_random_mixed)")
+$Summary.Add(("Artifacts: [{0}](/C:/git/hakozuna-win/{0})" -f $SuiteDirName))
 
 Set-Content -Path $SummaryPath -Value $Summary -Encoding UTF8
 Set-Content -Path $RawLogPath -Value $RawLines -Encoding UTF8
