@@ -518,6 +518,28 @@ should come from the HZ6 standalone local/remote/reuse runner or the owner-
 aware HZ6 mt-remote runner.
 ```
 
+## Repo Hygiene
+
+```text
+Keep:
+  docs/ZENN_HZ5_SIDECAR_ALLOCATOR_DRAFT.md
+  one canonical benchmark summary per active lane
+
+Archive:
+  dated docs/benchmarks/windows/**/*.md files that are no longer the current
+  representative summary
+
+Ignore for now:
+  results/ raw outputs
+  regenerated logs / TSVs / scratch artifacts
+
+Modified-but-noisy files:
+  hakozuna-hz6/api/hz6_allocator_init_state_source_blocks.c
+  hakozuna-hz6/api/hz6_allocator_types.h
+  hakozuna-hz6/policy/hz6_profiles_config.c
+  these are currently line-ending noise only and should stay untouched
+```
+
 Interpretation:
 
 ```text
