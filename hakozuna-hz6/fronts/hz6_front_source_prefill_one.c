@@ -42,6 +42,9 @@ int hz6_front_prefill_one(Hz6Allocator* allocator,
     return 0;
   }
 
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.front_source_prefill_alloc;
+#endif
   hz6_allocator_note_source_alloc_for_front(allocator, front_id);
   return 1;
 }
