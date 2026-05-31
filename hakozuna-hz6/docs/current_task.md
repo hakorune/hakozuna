@@ -182,6 +182,24 @@ Current read:
   not more batch scaling inside refill itself
 ```
 
+## Diagnostic Checkpoint 2026-05-31d
+
+```text
+Larson T=16 front-prefill read:
+  front-prefill is active only on toy
+  local2p / midpage / large stay at zero
+
+Prefill readout:
+  toy front_source_prefill_attempt/fill is non-zero
+  toy front_source_prefill_fallback stays 0
+  front_source_prefill_alloc is now visible in the aggregated snapshot
+
+Current read:
+  the missing piece is not a general prefill helper
+  the next attack should focus on toy/front-specific source placement
+  and on why the toy path is the only one reaching source-prefill
+```
+
 ## Next Attack: HZ6-ControlPlane-L1
 
 ```text

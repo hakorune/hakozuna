@@ -32,6 +32,9 @@ typedef struct Hz6StatsSnapshot {
   size_t source_prefill_attempt;
   size_t source_prefill_filled;
   size_t source_prefill_fallback;
+  size_t front_source_prefill_attempt[HZ6_FRONT_ATTR_COUNT];
+  size_t front_source_prefill_filled[HZ6_FRONT_ATTR_COUNT];
+  size_t front_source_prefill_fallback[HZ6_FRONT_ATTR_COUNT];
   size_t front_source_ops_alloc;
   size_t front_source_slot_alloc;
   size_t front_source_prefill_alloc;

@@ -162,6 +162,18 @@ function Parse-Hz6Stats {
         FrontPathMidpage = "NA"
         FrontPathLarge = "NA"
         FrontPathToy = "NA"
+        FrontPrefillAttemptLocal2p = "NA"
+        FrontPrefillAttemptMidpage = "NA"
+        FrontPrefillAttemptLarge = "NA"
+        FrontPrefillAttemptToy = "NA"
+        FrontPrefillFilledLocal2p = "NA"
+        FrontPrefillFilledMidpage = "NA"
+        FrontPrefillFilledLarge = "NA"
+        FrontPrefillFilledToy = "NA"
+        FrontPrefillFallbackLocal2p = "NA"
+        FrontPrefillFallbackMidpage = "NA"
+        FrontPrefillFallbackLarge = "NA"
+        FrontPrefillFallbackToy = "NA"
     }
 
     foreach ($line in $Lines) {
@@ -214,6 +226,36 @@ function Parse-Hz6Stats {
                 '^\[HZ6_PATH\] front=midpage (.*)$' { $result.FrontPathMidpage = $Matches[1]; continue }
                 '^\[HZ6_PATH\] front=large (.*)$' { $result.FrontPathLarge = $Matches[1]; continue }
                 '^\[HZ6_PATH\] front=toy (.*)$' { $result.FrontPathToy = $Matches[1]; continue }
+            }
+            continue
+        }
+
+        if ($line.StartsWith("[HZ6_PREFILL]")) {
+            switch -Regex ($line) {
+                '^\[HZ6_PREFILL\] front=local2p attempt=(\d+) filled=(\d+) fallback=(\d+)$' {
+                    $result.FrontPrefillAttemptLocal2p = $Matches[1]
+                    $result.FrontPrefillFilledLocal2p = $Matches[2]
+                    $result.FrontPrefillFallbackLocal2p = $Matches[3]
+                    continue
+                }
+                '^\[HZ6_PREFILL\] front=midpage attempt=(\d+) filled=(\d+) fallback=(\d+)$' {
+                    $result.FrontPrefillAttemptMidpage = $Matches[1]
+                    $result.FrontPrefillFilledMidpage = $Matches[2]
+                    $result.FrontPrefillFallbackMidpage = $Matches[3]
+                    continue
+                }
+                '^\[HZ6_PREFILL\] front=large attempt=(\d+) filled=(\d+) fallback=(\d+)$' {
+                    $result.FrontPrefillAttemptLarge = $Matches[1]
+                    $result.FrontPrefillFilledLarge = $Matches[2]
+                    $result.FrontPrefillFallbackLarge = $Matches[3]
+                    continue
+                }
+                '^\[HZ6_PREFILL\] front=toy attempt=(\d+) filled=(\d+) fallback=(\d+)$' {
+                    $result.FrontPrefillAttemptToy = $Matches[1]
+                    $result.FrontPrefillFilledToy = $Matches[2]
+                    $result.FrontPrefillFallbackToy = $Matches[3]
+                    continue
+                }
             }
         }
     }
@@ -304,6 +346,22 @@ function Invoke-LarsonSweep {
                 RouteRegisterProbeTotal = "NA"
                 RouteUnregisterProbeTotal = "NA"
                 SourceBlockProbeTotal = "NA"
+                FrontPathLocal2p = "NA"
+                FrontPathMidpage = "NA"
+                FrontPathLarge = "NA"
+                FrontPathToy = "NA"
+                FrontPrefillAttemptLocal2p = "NA"
+                FrontPrefillAttemptMidpage = "NA"
+                FrontPrefillAttemptLarge = "NA"
+                FrontPrefillAttemptToy = "NA"
+                FrontPrefillFilledLocal2p = "NA"
+                FrontPrefillFilledMidpage = "NA"
+                FrontPrefillFilledLarge = "NA"
+                FrontPrefillFilledToy = "NA"
+                FrontPrefillFallbackLocal2p = "NA"
+                FrontPrefillFallbackMidpage = "NA"
+                FrontPrefillFallbackLarge = "NA"
+                FrontPrefillFallbackToy = "NA"
             }
 
             for ($run = 1; $run -le $Runs; $run++) {
@@ -400,6 +458,23 @@ function Invoke-LarsonSweep {
                 $lastStats.RouteUnregisterProbeTotal,
                 $lastStats.SourceBlockProbeTotal,
                 ($runTexts -join ", ")))
+
+            if ($exe.Name -like "hz6-*") {
+                $Summary.Add((
+                    '  prefill: local2p a={0} f={1} fb={2}; midpage a={3} f={4} fb={5}; large a={6} f={7} fb={8}; toy a={9} f={10} fb={11}' -f
+                    $lastStats.FrontPrefillAttemptLocal2p,
+                    $lastStats.FrontPrefillFilledLocal2p,
+                    $lastStats.FrontPrefillFallbackLocal2p,
+                    $lastStats.FrontPrefillAttemptMidpage,
+                    $lastStats.FrontPrefillFilledMidpage,
+                    $lastStats.FrontPrefillFallbackMidpage,
+                    $lastStats.FrontPrefillAttemptLarge,
+                    $lastStats.FrontPrefillFilledLarge,
+                    $lastStats.FrontPrefillFallbackLarge,
+                    $lastStats.FrontPrefillAttemptToy,
+                    $lastStats.FrontPrefillFilledToy,
+                    $lastStats.FrontPrefillFallbackToy))
+            }
         }
 
         $Summary.Add("")

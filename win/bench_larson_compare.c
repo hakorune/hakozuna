@@ -140,6 +140,35 @@ static void print_hz6_front_alloc_paths(const Hz6StatsSnapshot* stats) {
         printf("\n");
     }
 }
+
+static void print_hz6_front_prefill_paths(const Hz6StatsSnapshot* stats) {
+    size_t front;
+    const char* front_name;
+    for (front = 0; front < HZ6_FRONT_ATTR_COUNT; ++front) {
+        switch (front) {
+            case HZ6_FRONT_ATTR_LOCAL2P:
+                front_name = "local2p";
+                break;
+            case HZ6_FRONT_ATTR_MIDPAGE:
+                front_name = "midpage";
+                break;
+            case HZ6_FRONT_ATTR_LARGE:
+                front_name = "large";
+                break;
+            case HZ6_FRONT_ATTR_TOY:
+                front_name = "toy";
+                break;
+            default:
+                front_name = "unknown";
+                break;
+        }
+        printf("[HZ6_PREFILL] front=%s attempt=%zu filled=%zu fallback=%zu\n",
+               front_name,
+               stats->front_source_prefill_attempt[front],
+               stats->front_source_prefill_filled[front],
+               stats->front_source_prefill_fallback[front]);
+    }
+}
 #endif
 
 static unsigned __stdcall larson_thread(void* arg) {
@@ -345,6 +374,14 @@ int main(int argc, char** argv) {
             tds[t].hz6_stats_after.source_prefill_filled;
         hz6_stats.source_prefill_fallback +=
             tds[t].hz6_stats_after.source_prefill_fallback;
+        for (size_t front = 0; front < HZ6_FRONT_ATTR_COUNT; ++front) {
+            hz6_stats.front_source_prefill_attempt[front] +=
+                tds[t].hz6_stats_after.front_source_prefill_attempt[front];
+            hz6_stats.front_source_prefill_filled[front] +=
+                tds[t].hz6_stats_after.front_source_prefill_filled[front];
+            hz6_stats.front_source_prefill_fallback[front] +=
+                tds[t].hz6_stats_after.front_source_prefill_fallback[front];
+        }
         hz6_stats.front_source_ops_alloc +=
             tds[t].hz6_stats_after.front_source_ops_alloc;
         hz6_stats.front_source_slot_alloc +=
@@ -470,6 +507,7 @@ int main(int argc, char** argv) {
            hz6_stats.large_span_source_alloc);
 #if defined(HZ_BENCH_USE_HZ6) && HZ6_DIAGNOSTIC_PROBES
     print_hz6_front_alloc_paths(&hz6_stats);
+    print_hz6_front_prefill_paths(&hz6_stats);
 #endif
 #else
     hz_bench_dump_stats(stdout, "larson_main_final");

@@ -64,6 +64,34 @@ static const char* profile_name(Hz6ProfileId profile) {
   }
 }
 
+#if HZ6_DIAGNOSTIC_PROBES
+static const char* front_name(size_t index) {
+  switch (index) {
+    case HZ6_FRONT_ATTR_LOCAL2P:
+      return "local2p";
+    case HZ6_FRONT_ATTR_MIDPAGE:
+      return "midpage";
+    case HZ6_FRONT_ATTR_LARGE:
+      return "large";
+    case HZ6_FRONT_ATTR_TOY:
+      return "toy";
+    default:
+      return "unknown";
+  }
+}
+
+static void print_front_prefill_stats(const Hz6Allocator* allocator) {
+  size_t front;
+  for (front = 0; front < HZ6_FRONT_ATTR_COUNT; ++front) {
+    printf("[HZ6_PREFILL] front=%s attempt=%zu filled=%zu fallback=%zu\n",
+           front_name(front),
+           allocator->stats.front_source_prefill_attempt[front],
+           allocator->stats.front_source_prefill_filled[front],
+           allocator->stats.front_source_prefill_fallback[front]);
+  }
+}
+#endif
+
 static int parse_mode(const char* value, Hz6BenchMode* mode) {
   if (!value || !mode) {
     return 0;
@@ -167,6 +195,9 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.source_block_probe_total, stats.source_block_probe_max,
          stats.large_span_central_push, stats.large_span_central_pop,
          stats.large_span_source_alloc);
+#if HZ6_DIAGNOSTIC_PROBES
+  print_front_prefill_stats(allocator);
+#endif
 }
 
 static int run_local(Hz6ProfileId profile, uint64_t iters, size_t size) {
