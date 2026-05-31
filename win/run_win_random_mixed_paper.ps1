@@ -2,7 +2,8 @@ param(
     [string]$OutputDir,
     [int]$Runs = 10,
     [string[]]$Profiles,
-    [switch]$ContinueOnFailure
+    [switch]$ContinueOnFailure,
+    [switch]$DiagnosticHz6Probes
 )
 
 $ErrorActionPreference = "Stop"
@@ -28,6 +29,9 @@ $Executables = @(
     @{ Name = "hz6-strict-broad"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_strict_broad.exe") },
     @{ Name = "hz6-speed-broad"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_speed_broad.exe") },
     @{ Name = "hz6-rss-broad"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_rss_broad.exe") },
+    @{ Name = "hz6-strict-control"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_strict_control.exe") },
+    @{ Name = "hz6-speed-control"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_speed_control.exe") },
+    @{ Name = "hz6-rss-control"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_rss_control.exe") },
     @{ Name = "hz6-strict-appcap"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_strict_appcap.exe") },
     @{ Name = "hz6-speed-appcap"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_speed_appcap.exe") },
     @{ Name = "hz6-rss-appcap"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_rss_appcap.exe") },
@@ -36,7 +40,7 @@ $Executables = @(
 )
 
 if ($Executables | Where-Object { -not (Test-Path $_.Path) }) {
-    & $BuildScript
+    & $BuildScript -DiagnosticHz6Probes:$DiagnosticHz6Probes
     if ($LASTEXITCODE -ne 0) {
         throw "build_win_random_mixed_suite.ps1 failed with exit code $LASTEXITCODE"
     }
@@ -128,6 +132,7 @@ $Summary.Add('- allocator model: per-allocator link-mode executables, no `LD_PRE
 $Summary.Add('- throughput statistic: `median ops/s`')
 $Summary.Add('- memory note: Windows reports `PeakWorkingSetSize` as `[RSS] peak_kb`, which is not identical to Linux `ru_maxrss`')
 $Summary.Add(('- profiles: `small`, `medium`, `mixed` with `RUNS={0}`, `ITERS=20,000,000`, `WS=400`' -f $Runs))
+$Summary.Add('- HZ6 rows now include `broad`, `control`, and `appcap` capacity lanes; `control` is the new diagnostic bridge between default capacity controls and appcap.')
 $Summary.Add("")
 
 foreach ($profile in $Selected) {

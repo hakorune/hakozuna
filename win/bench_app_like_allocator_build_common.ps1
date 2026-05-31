@@ -57,6 +57,16 @@ function Get-Hz6WinBroadCapacityFlags {
     )
 }
 
+function Get-Hz6WinControlCapacityFlags {
+    @(
+        "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)512)",
+        "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)512)",
+        "/DHZ6_TRANSFER_CACHE_CAPACITY=((size_t)512)",
+        "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)128)",
+        "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)256)"
+    )
+}
+
 function Get-Hz6WinAppLikeCapacityFlags {
     @(
         "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)262144)",
@@ -104,7 +114,8 @@ function Invoke-AppLikeHz6BenchBuilds {
         [Parameter(Mandatory = $true)][string]$BenchSrc,
         [Parameter(Mandatory = $true)][string]$OutDir,
         [Parameter(Mandatory = $true)][string]$OutputPrefix,
-        [switch]$DiagnosticHz6Probes
+        [switch]$DiagnosticHz6Probes,
+        [switch]$IncludeControlCapacity
     )
 
     $hz6Root = Join-Path $RepoRoot "hakozuna-hz6"
@@ -124,14 +135,25 @@ function Invoke-AppLikeHz6BenchBuilds {
         @{ Name = "rss"; Define = "HZ6_PROFILE_RSS" }
     )
     $broadFlags = Get-Hz6WinBroadCapacityFlags
+    $controlFlags = Get-Hz6WinControlCapacityFlags
     $appLikeFlags = Get-Hz6WinAppLikeCapacityFlags
 
     foreach ($profile in $profiles) {
-        foreach ($variant in @(
+        $variants = @(
             @{ Suffix = ""; ExtraFlags = @() },
             @{ Suffix = "_broad"; ExtraFlags = $broadFlags },
             @{ Suffix = "_appcap"; ExtraFlags = $appLikeFlags }
-        )) {
+        )
+        if ($IncludeControlCapacity) {
+            $variants = @(
+                @{ Suffix = ""; ExtraFlags = @() },
+                @{ Suffix = "_broad"; ExtraFlags = $broadFlags },
+                @{ Suffix = "_control"; ExtraFlags = $controlFlags },
+                @{ Suffix = "_appcap"; ExtraFlags = $appLikeFlags }
+            )
+        }
+
+        foreach ($variant in $variants) {
             $output = Join-Path $OutDir ("{0}_hz6_{1}{2}.exe" -f $OutputPrefix, $profile.Name, $variant.Suffix)
             $args = @()
             $args += $commonFlags

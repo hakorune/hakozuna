@@ -132,25 +132,44 @@ The actual performance problem is the passing broad/appcap rows:
   but remain far behind HZ3 / HZ4 / mimalloc / tcmalloc
 ```
 
+Control lane read:
+
+```text
+random_mixed 20260601_072659:
+  hz6-strict-control / speed-control / rss-control
+    pass on small, medium, and mixed
+    peak RSS ~4.8 MB
+    route_register_probe_total is much smaller than broad/appcap
+    throughput is still below broad, but the capacity failures are gone
+
+  broad:
+    still the faster HZ6 lane on mixed
+    peak RSS ~7.3 MB
+
+  appcap:
+    still similar on throughput to broad in some rows
+    peak RSS ~196 MB
+```
+
 Next step:
 
 ```text
-1. Fix from failure rows outward:
-   first separate default capacity-control failures from passing-row slowness.
+1. Keep the new random_mixed control lane as the diagnostic bridge:
+   it removes the capacity failures and keeps RSS low.
 
-2. Add a random_mixed diagnostic/control lane before changing production
-   defaults:
-   enough descriptor / route / source-block capacity for WS=400,
-   but smaller than appcap, so capacity and throughput can be separated.
+2. Now diagnose the remaining throughput gap:
+   broad is still faster than control on mixed,
+   while appcap spends a lot more RSS for little extra throughput.
 
-3. For passing broad/appcap rows, diagnose front/source/route cost:
-   source_alloc count
-   descriptor probe pressure
-   route register probe pressure
-   source-block probe pressure
+3. Use the new probe counters to compare:
+   route_register_probe_total
+   source_block_probe_total
+   descriptor_probe_total
+   source_owned_route_hit_local_owner
 
 4. Keep large_slice_64k / 128k as the current strong proof points.
-5. Do not tune Redis or Larson until random_mixed failure rows are explained.
+5. Leave Redis and Larson untouched until the random_mixed throughput gap is
+   clearer.
 ```
 
 ## HZ6 Windows Current Read
