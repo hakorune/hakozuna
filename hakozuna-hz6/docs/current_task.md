@@ -376,6 +376,25 @@ reuse 131072:
   strict/speed/rss ~58.30M..63.88M ops/s
 ```
 
+## Diagnostic Checkpoint 2026-05-31d
+
+```text
+Larson front-specific source_alloc read:
+  front-specific source_alloc counters are now wired into the paper runner
+  compact control keeps frontcache reuse healthy
+  transfer reuse remains 0 in the observed rows
+  source_refill_* remains 0
+  source_prefill_* remains 0 in Larson
+
+Current read:
+  Larson stress is not asking for more refill scaling
+  the new counter split points at source admission / front-specific source alloc
+  local2p is the visible source consumer in the current Larson rows
+  in the observed stress rows, local2p_source_alloc matches source_alloc and the
+  other front buckets stay 0
+  next attack should stay on source admission before refill and front routing
+```
+
 Read:
 
 ```text

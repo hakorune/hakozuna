@@ -251,6 +251,13 @@ int main(int argc, char** argv) {
         hz6_stats.transfer_push += tds[t].hz6_stats_after.transfer_push;
         hz6_stats.transfer_pop += tds[t].hz6_stats_after.transfer_pop;
         hz6_stats.source_alloc += tds[t].hz6_stats_after.source_alloc;
+        hz6_stats.local2p_source_alloc +=
+            tds[t].hz6_stats_after.local2p_source_alloc;
+        hz6_stats.midpage_source_alloc +=
+            tds[t].hz6_stats_after.midpage_source_alloc;
+        hz6_stats.large_source_alloc +=
+            tds[t].hz6_stats_after.large_source_alloc;
+        hz6_stats.toy_source_alloc += tds[t].hz6_stats_after.toy_source_alloc;
         hz6_stats.frontcache_reuse_hit +=
             tds[t].hz6_stats_after.frontcache_reuse_hit;
         hz6_stats.frontcache_reuse_invalid +=
@@ -267,6 +274,12 @@ int main(int argc, char** argv) {
             tds[t].hz6_stats_after.source_refill_boost;
         hz6_stats.source_refill_clamp +=
             tds[t].hz6_stats_after.source_refill_clamp;
+        hz6_stats.source_prefill_attempt +=
+            tds[t].hz6_stats_after.source_prefill_attempt;
+        hz6_stats.source_prefill_filled +=
+            tds[t].hz6_stats_after.source_prefill_filled;
+        hz6_stats.source_prefill_fallback +=
+            tds[t].hz6_stats_after.source_prefill_fallback;
         hz6_stats.alloc_fail += tds[t].hz6_stats_after.alloc_fail;
         hz6_stats.descriptor_exhausted +=
             tds[t].hz6_stats_after.descriptor_exhausted;
@@ -322,10 +335,14 @@ int main(int argc, char** argv) {
 #if defined(HZ_BENCH_USE_HZ6)
     printf("[HZ6_STATS] label=%s route_valid=%zu route_invalid=%zu route_miss=%zu "
            "transfer_push=%zu transfer_pop=%zu source_alloc=%zu "
+           "local2p_source_alloc=%zu midpage_source_alloc=%zu "
+           "large_source_alloc=%zu toy_source_alloc=%zu "
            "frontcache_reuse_hit=%zu frontcache_reuse_invalid=%zu "
            "transfer_reuse_hit=%zu transfer_reuse_invalid=%zu "
            "source_refill_starvation=%zu source_refill_saturation=%zu "
-           "source_refill_boost=%zu source_refill_clamp=%zu alloc_fail=%zu "
+           "source_refill_boost=%zu source_refill_clamp=%zu "
+           "source_prefill_attempt=%zu source_prefill_filled=%zu "
+           "source_prefill_fallback=%zu alloc_fail=%zu "
            "descriptor_exhausted=%zu route_register_fail=%zu source_block_exhausted=%zu "
            "descriptor_probe_total=%zu descriptor_probe_max=%zu "
            "route_register_probe_total=%zu route_register_probe_max=%zu "
@@ -339,6 +356,10 @@ int main(int argc, char** argv) {
            hz6_stats.transfer_push,
            hz6_stats.transfer_pop,
            hz6_stats.source_alloc,
+           hz6_stats.local2p_source_alloc,
+           hz6_stats.midpage_source_alloc,
+           hz6_stats.large_source_alloc,
+           hz6_stats.toy_source_alloc,
            hz6_stats.frontcache_reuse_hit,
            hz6_stats.frontcache_reuse_invalid,
            hz6_stats.transfer_reuse_hit,
@@ -347,6 +368,9 @@ int main(int argc, char** argv) {
            hz6_stats.source_refill_saturation,
            hz6_stats.source_refill_boost,
            hz6_stats.source_refill_clamp,
+           hz6_stats.source_prefill_attempt,
+           hz6_stats.source_prefill_filled,
+           hz6_stats.source_prefill_fallback,
            hz6_stats.alloc_fail,
            hz6_stats.descriptor_exhausted,
            hz6_stats.route_register_fail,

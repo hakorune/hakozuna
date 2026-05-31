@@ -125,6 +125,9 @@ static void print_stats(const Hz6Allocator* allocator) {
          "transfer_reuse_hit=%zu transfer_reuse_invalid=%zu "
          "source_refill_starvation=%zu source_refill_saturation=%zu "
          "source_refill_boost=%zu source_refill_clamp=%zu "
+         "source_prefill_attempt=%zu source_prefill_filled=%zu "
+         "source_prefill_fallback=%zu local2p_source_alloc=%zu "
+         "midpage_source_alloc=%zu large_source_alloc=%zu toy_source_alloc=%zu "
 #endif
          "alloc_fail=%zu descriptor_exhausted=%zu route_register_fail=%zu "
          "source_block_exhausted=%zu descriptor_probe_total=%zu "
@@ -141,6 +144,10 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.transfer_reuse_hit, stats.transfer_reuse_invalid,
          stats.source_refill_starvation, stats.source_refill_saturation,
          stats.source_refill_boost, stats.source_refill_clamp,
+         stats.source_prefill_attempt, stats.source_prefill_filled,
+         stats.source_prefill_fallback, stats.local2p_source_alloc,
+         stats.midpage_source_alloc, stats.large_source_alloc,
+         stats.toy_source_alloc,
 #endif
          stats.alloc_fail, stats.descriptor_exhausted,
          stats.route_register_fail, stats.source_block_exhausted,

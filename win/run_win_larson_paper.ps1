@@ -135,6 +135,13 @@ function Parse-Hz6Stats {
         SourceRefillSaturation = "NA"
         SourceRefillBoost = "NA"
         SourceRefillClamp = "NA"
+        SourcePrefillAttempt = "NA"
+        SourcePrefillFilled = "NA"
+        SourcePrefillFallback = "NA"
+        Local2pSourceAlloc = "NA"
+        MidpageSourceAlloc = "NA"
+        LargeSourceAlloc = "NA"
+        ToySourceAlloc = "NA"
         AllocFail = "NA"
         DescriptorProbeTotal = "NA"
         DescriptorProbeMax = "NA"
@@ -165,6 +172,13 @@ function Parse-Hz6Stats {
             '^source_refill_saturation=(.*)$' { $result.SourceRefillSaturation = $Matches[1]; continue }
             '^source_refill_boost=(.*)$' { $result.SourceRefillBoost = $Matches[1]; continue }
             '^source_refill_clamp=(.*)$' { $result.SourceRefillClamp = $Matches[1]; continue }
+            '^source_prefill_attempt=(.*)$' { $result.SourcePrefillAttempt = $Matches[1]; continue }
+            '^source_prefill_filled=(.*)$' { $result.SourcePrefillFilled = $Matches[1]; continue }
+            '^source_prefill_fallback=(.*)$' { $result.SourcePrefillFallback = $Matches[1]; continue }
+            '^local2p_source_alloc=(.*)$' { $result.Local2pSourceAlloc = $Matches[1]; continue }
+            '^midpage_source_alloc=(.*)$' { $result.MidpageSourceAlloc = $Matches[1]; continue }
+            '^large_source_alloc=(.*)$' { $result.LargeSourceAlloc = $Matches[1]; continue }
+            '^toy_source_alloc=(.*)$' { $result.ToySourceAlloc = $Matches[1]; continue }
             '^alloc_fail=(.*)$' { $result.AllocFail = $Matches[1]; continue }
             '^descriptor_probe_total=(.*)$' { $result.DescriptorProbeTotal = $Matches[1]; continue }
             '^descriptor_probe_max=(.*)$' { $result.DescriptorProbeMax = $Matches[1]; continue }
@@ -225,8 +239,8 @@ function Invoke-LarsonSweep {
     foreach ($threads in $ThreadCounts) {
         $Summary.Add("## " + $SectionTitle + " T=" + $threads)
         $Summary.Add("")
-        $Summary.Add("| allocator | median ops/s | route_miss | source_alloc | transfer_push | transfer_pop | frontcache_reuse_hit | frontcache_reuse_invalid | transfer_reuse_hit | transfer_reuse_invalid | source_refill_starvation | source_refill_saturation | source_refill_boost | source_refill_clamp | alloc_fail | desc_probe | reg_probe | unreg_probe | srcblk_probe | runs |")
-        $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
+        $Summary.Add("| allocator | median ops/s | route_miss | source_alloc | local2p_source_alloc | midpage_source_alloc | large_source_alloc | toy_source_alloc | transfer_push | transfer_pop | frontcache_reuse_hit | frontcache_reuse_invalid | transfer_reuse_hit | transfer_reuse_invalid | source_refill_starvation | source_refill_saturation | source_refill_boost | source_refill_clamp | source_prefill_attempt | source_prefill_filled | source_prefill_fallback | alloc_fail | desc_probe | reg_probe | unreg_probe | srcblk_probe | runs |")
+        $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
 
         foreach ($exe in $Executables) {
             $opsRuns = New-Object System.Collections.Generic.List[double]
@@ -244,6 +258,13 @@ function Invoke-LarsonSweep {
                 SourceRefillSaturation = "NA"
                 SourceRefillBoost = "NA"
                 SourceRefillClamp = "NA"
+                SourcePrefillAttempt = "NA"
+                SourcePrefillFilled = "NA"
+                SourcePrefillFallback = "NA"
+                Local2pSourceAlloc = "NA"
+                MidpageSourceAlloc = "NA"
+                LargeSourceAlloc = "NA"
+                ToySourceAlloc = "NA"
                 AllocFail = "NA"
                 DescriptorProbeTotal = "NA"
                 RouteRegisterProbeTotal = "NA"
@@ -299,15 +320,22 @@ function Invoke-LarsonSweep {
             }
 
             if ($opsRuns.Count -eq 0) {
-                $Summary.Add(('| {0} | failed | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | NA | `{1}` |' -f $exe.Name, ($runTexts -join ", ")))
+                $failedMetrics = ((@('NA') * 24) -join ' | ')
+                $Summary.Add(('| {0} | failed | {1} | `{2}` |' -f $exe.Name, $failedMetrics, ($runTexts -join ", ")))
                 continue
             }
 
             $medianOps = Get-Median -Values $opsRuns.ToArray()
-            $Summary.Add(('| {0} | {1:N3}M | {2} | {3} | {4} | {5} | {6} | {7} | {8} | {9} | {10} | {11} | {12} | {13} | {14} | {15} | {16} | {17} | {18} | `{19}` |' -f $exe.Name,
+            $Summary.Add((
+                '| {0} | {1:N3}M | {2} | {3} | {4} | {5} | {6} | {7} | {8} | {9} | {10} | {11} | {12} | {13} | {14} | {15} | {16} | {17} | {18} | {19} | {20} | {21} | {22} | {23} | {24} | {25} | `{26}` |' -f
+                $exe.Name,
                 ($medianOps / 1000000.0),
                 $lastStats.RouteMiss,
                 $lastStats.SourceAlloc,
+                $lastStats.Local2pSourceAlloc,
+                $lastStats.MidpageSourceAlloc,
+                $lastStats.LargeSourceAlloc,
+                $lastStats.ToySourceAlloc,
                 $lastStats.TransferPush,
                 $lastStats.TransferPop,
                 $lastStats.FrontcacheReuseHit,
@@ -318,6 +346,9 @@ function Invoke-LarsonSweep {
                 $lastStats.SourceRefillSaturation,
                 $lastStats.SourceRefillBoost,
                 $lastStats.SourceRefillClamp,
+                $lastStats.SourcePrefillAttempt,
+                $lastStats.SourcePrefillFilled,
+                $lastStats.SourcePrefillFallback,
                 $lastStats.AllocFail,
                 $lastStats.DescriptorProbeTotal,
                 $lastStats.RouteRegisterProbeTotal,

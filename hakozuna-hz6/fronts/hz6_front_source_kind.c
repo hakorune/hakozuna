@@ -45,8 +45,19 @@ void* hz6_front_reuse_or_prefill_source_kind(Hz6Allocator* allocator,
   }
 
   size_t refill_count = count ? count : 1;
-  if (hz6_front_prefill_source_kind(allocator, front_id, class_id, bytes,
-                                    source_kind, refill_count) == 0) {
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.source_prefill_attempt;
+#endif
+  size_t filled = hz6_front_prefill_source_kind(allocator, front_id, class_id,
+                                                bytes, source_kind,
+                                                refill_count);
+#if HZ6_DIAGNOSTIC_PROBES
+  allocator->stats.source_prefill_filled += filled;
+#endif
+  if (filled == 0) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.source_prefill_fallback;
+#endif
     return hz6_front_reuse_or_source_kind(allocator, front_id, class_id,
                                           bytes, source_kind);
   }

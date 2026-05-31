@@ -26,6 +26,13 @@ typedef struct Hz6StatsSnapshot {
   size_t source_refill_saturation;
   size_t source_refill_boost;
   size_t source_refill_clamp;
+  size_t source_prefill_attempt;
+  size_t source_prefill_filled;
+  size_t source_prefill_fallback;
+  size_t local2p_source_alloc;
+  size_t midpage_source_alloc;
+  size_t large_source_alloc;
+  size_t toy_source_alloc;
   size_t alloc_fail;
   size_t descriptor_exhausted;
   size_t route_register_fail;
