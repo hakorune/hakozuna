@@ -682,6 +682,75 @@ Read:
   visibility scanning
 ```
 
+## Design Checkpoint 2026-05-31k
+
+```text
+Selected next lane:
+  RemoteHandoff-L1
+  owner-aware transfer / remote handoff lifecycle
+
+Lane split:
+  Larson worker-warmup:
+    same-owner lifecycle control
+    use this to verify toy/small hot path, frontcache, and source prefill
+    without cross-owner route visibility or remote_free
+
+  Larson main-warmup:
+    cross-owner handoff stress
+    use this to evaluate shared route visibility, remote_free, transfer
+    handoff, and ownership lifecycle
+
+Decision:
+  do not deepen shared route visibility as the next optimization
+  do not add source admission clamps as the next optimization
+  keep toy/small source-block placement for a later isolated lane
+
+Why:
+  route_visibility_probe_max is already 1
+  route_visibility_lookup hits cleanly
+  remote_free_attempt tracks transfer_push in main-warmup
+  remote_free_transfer_fail stays 0
+  worker-warmup keeps high throughput with visibility/transfer/remote_free all
+  at 0
+```
+
+```text
+Minimum next counters:
+  route_visibility_hit_local_owner
+  route_visibility_hit_foreign_owner
+  route_rehome_attempt
+  route_rehome_success
+  route_rehome_fail
+
+RemoteHandoff-L1 experiment:
+  visible foreign route hit records the origin allocator
+  remote free or transfer pop attempts route locality rehome into the consumer
+  allocator
+  successful rehome should reduce future visibility lookups for the same
+  worker-owned objects
+
+Acceptance:
+  weak accept:
+    main-warmup throughput improves at least 10x
+    worker-warmup stays within -3%
+    route_rehome_fail = 0
+    remote_free_transfer_fail = 0
+
+  strong accept:
+    main-warmup reaches at least 1M ops/s
+    route visibility hits fall after rehome
+    transfer_current remains bounded
+    worker-warmup remains around the current 30M ops/s class
+
+No-go:
+  route_miss or route_visibility_miss appears
+  route_invalid increases
+  route_rehome_fail is nonzero
+  transfer_current grows with runtime/chunks
+  worker-warmup or compact control regresses by more than 5%
+  rehome failure escapes as MISS/fallback
+```
+
 Read:
 
 ```text
