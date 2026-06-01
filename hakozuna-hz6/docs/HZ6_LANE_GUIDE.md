@@ -16,6 +16,9 @@ Low-capacity / low-RSS baseline:
 Capacity / completion control:
   appcap
 
+Route-lifecycle diagnostic:
+  visiblefirst-appcap
+
 Evidence-only source-run controls:
   sourcerun-route4k
   sourcerun-sameclass-route4k
@@ -41,6 +44,12 @@ promotion claim. It is the cleanest candidate-control shape so far.
 descriptor / route / transfer / source-block / front-cache capacities. It is a
 diagnostic capacity control, not the default production shape.
 
+`visiblefirst-appcap` is a diagnostic-only route-lifecycle upper-bound test.
+It uses appcap capacity plus `HZ6_VISIBLE_FIRST_FREE_L1=1` and must be built
+with `HZ6_DIAGNOSTIC_PROBES=1`. Use it to measure whether skipping expensive
+worker-local route MISS scans can recover Larson main-warmup; do not use it as
+a production or paper-facing lane.
+
 ## Capacity Lanes
 
 ```text
@@ -62,6 +71,12 @@ route4k:
 appcap:
   High-capacity application-like control. Use it to separate capacity failure
   from policy failure. Do not treat it as the HZ6 default lane.
+
+visiblefirst-appcap:
+  Diagnostic-only appcap variant. In non-strict `free()`, visible/shared route
+  lookup is tried before local route lookup; visible MISS falls back to local
+  lookup so local INVALID is not converted to MISS. This is an upper-bound
+  probe for cross-owner warmup, not a promotion lane.
 ```
 
 ## Focused Mechanism Lanes

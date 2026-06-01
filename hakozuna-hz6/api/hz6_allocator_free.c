@@ -8,10 +8,41 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
   }
 
   int visible_hit = 0;
-  Hz6RouteResult route = hz6_allocator_route_lookup(allocator, ptr);
-  if (route.kind == HZ6_ROUTE_MISS &&
+  int visible_lookup_done = 0;
+  Hz6RouteResult route = hz6_route_miss();
+#if HZ6_VISIBLE_FIRST_FREE_L1 && HZ6_DIAGNOSTIC_PROBES
+  if (!hz6_allocator_profile_strict_owner_remote(allocator)) {
+    Hz6RouteResult visible_route;
+    ++allocator->stats.visible_first_attempt;
+    visible_route = hz6_allocator_route_lookup_visible_only(allocator, ptr);
+    visible_lookup_done = 1;
+    if (visible_route.kind == HZ6_ROUTE_VALID) {
+      route = visible_route;
+      visible_hit = 1;
+      ++allocator->stats.visible_first_hit;
+      ++allocator->stats.visible_first_local_lookup_skipped;
+    } else {
+      if (visible_route.kind == HZ6_ROUTE_INVALID) {
+        ++allocator->stats.visible_first_visible_invalid;
+      } else {
+        ++allocator->stats.visible_first_miss;
+      }
+      ++allocator->stats.visible_first_local_fallback;
+      route = hz6_allocator_route_lookup(allocator, ptr);
+      if (route.kind == HZ6_ROUTE_INVALID) {
+        ++allocator->stats.visible_first_local_fallback_invalid;
+      } else if (route.kind == HZ6_ROUTE_MISS) {
+        route = visible_route;
+      }
+    }
+  } else
+#endif
+  {
+    route = hz6_allocator_route_lookup(allocator, ptr);
+  }
+  if (!visible_lookup_done && route.kind == HZ6_ROUTE_MISS &&
       !hz6_allocator_profile_strict_owner_remote(allocator)) {
-    route = hz6_allocator_route_lookup_visible(allocator, ptr);
+    route = hz6_allocator_route_lookup_visible_after_local_miss(allocator, ptr);
     visible_hit = (route.kind != HZ6_ROUTE_MISS);
   }
   switch (route.kind) {

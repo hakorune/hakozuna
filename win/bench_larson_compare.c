@@ -475,6 +475,19 @@ int main(int argc, char** argv) {
             tds[t].hz6_stats_after.lifecycle_foreign_free_handled;
         hz6_stats.lifecycle_foreign_free_invalid +=
             tds[t].hz6_stats_after.lifecycle_foreign_free_invalid;
+        hz6_stats.visible_first_attempt +=
+            tds[t].hz6_stats_after.visible_first_attempt;
+        hz6_stats.visible_first_hit += tds[t].hz6_stats_after.visible_first_hit;
+        hz6_stats.visible_first_miss +=
+            tds[t].hz6_stats_after.visible_first_miss;
+        hz6_stats.visible_first_visible_invalid +=
+            tds[t].hz6_stats_after.visible_first_visible_invalid;
+        hz6_stats.visible_first_local_fallback +=
+            tds[t].hz6_stats_after.visible_first_local_fallback;
+        hz6_stats.visible_first_local_fallback_invalid +=
+            tds[t].hz6_stats_after.visible_first_local_fallback_invalid;
+        hz6_stats.visible_first_local_lookup_skipped +=
+            tds[t].hz6_stats_after.visible_first_local_lookup_skipped;
         hz6_stats.source_owned_prepare +=
             tds[t].hz6_stats_after.source_owned_prepare;
         hz6_stats.source_owned_route_hit_local_owner +=
@@ -624,7 +637,13 @@ int main(int argc, char** argv) {
            "route_rehome_fail=%zu lifecycle_owner_mismatch=%zu "
            "lifecycle_foreign_free_attempt=%zu "
            "lifecycle_foreign_free_handled=%zu "
-           "lifecycle_foreign_free_invalid=%zu source_owned_prepare=%zu "
+           "lifecycle_foreign_free_invalid=%zu "
+           "visible_first_attempt=%zu visible_first_hit=%zu "
+           "visible_first_miss=%zu visible_first_visible_invalid=%zu "
+           "visible_first_local_fallback=%zu "
+           "visible_first_local_fallback_invalid=%zu "
+           "visible_first_local_lookup_skipped=%zu "
+           "source_owned_prepare=%zu "
            "source_owned_route_hit_local_owner=%zu "
            "source_owned_visibility_hit_local_owner=%zu "
            "source_owned_visibility_hit_foreign_owner=%zu "
@@ -674,6 +693,13 @@ int main(int argc, char** argv) {
            hz6_stats.lifecycle_foreign_free_attempt,
            hz6_stats.lifecycle_foreign_free_handled,
            hz6_stats.lifecycle_foreign_free_invalid,
+           hz6_stats.visible_first_attempt,
+           hz6_stats.visible_first_hit,
+           hz6_stats.visible_first_miss,
+           hz6_stats.visible_first_visible_invalid,
+           hz6_stats.visible_first_local_fallback,
+           hz6_stats.visible_first_local_fallback_invalid,
+           hz6_stats.visible_first_local_lookup_skipped,
            hz6_stats.source_owned_prepare,
            hz6_stats.source_owned_route_hit_local_owner,
            hz6_stats.source_owned_visibility_hit_local_owner,

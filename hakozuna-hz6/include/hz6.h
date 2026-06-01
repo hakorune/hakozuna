@@ -40,6 +40,13 @@ typedef struct Hz6StatsSnapshot {
   size_t lifecycle_foreign_free_attempt;
   size_t lifecycle_foreign_free_handled;
   size_t lifecycle_foreign_free_invalid;
+  size_t visible_first_attempt;
+  size_t visible_first_hit;
+  size_t visible_first_miss;
+  size_t visible_first_visible_invalid;
+  size_t visible_first_local_fallback;
+  size_t visible_first_local_fallback_invalid;
+  size_t visible_first_local_lookup_skipped;
   size_t source_owned_prepare;
   size_t source_owned_route_hit_local_owner;
   size_t source_owned_visibility_hit_local_owner;

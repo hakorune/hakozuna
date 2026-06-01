@@ -11,7 +11,7 @@ int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
   Hz6RouteResult route = hz6_allocator_route_lookup(allocator, ptr);
   if (route.kind == HZ6_ROUTE_MISS &&
       !hz6_allocator_profile_strict_owner_remote(allocator)) {
-    route = hz6_allocator_route_lookup_visible(allocator, ptr);
+    route = hz6_allocator_route_lookup_visible_after_local_miss(allocator, ptr);
     visible_hit = (route.kind != HZ6_ROUTE_MISS);
   }
   if (route.kind == HZ6_ROUTE_MISS) {

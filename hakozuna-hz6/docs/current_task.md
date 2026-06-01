@@ -1088,6 +1088,133 @@ Next:
     shared route directory keyed by source block or route envelope
 ```
 
+## Design Checkpoint 2026-06-01f
+
+```text
+Pro review:
+  do L0 before VisibleFirstFree-L1.
+
+L0:
+  VisibleAfterLocalMiss refactor
+  Existing hz6_allocator_route_lookup_visible() includes a local lookup first.
+  hz6_free() already performed a local lookup before calling it, so
+  main-warmup was doing:
+    worker-local route MISS
+    visible helper worker-local route MISS again
+    shared visibility hit
+
+Implementation:
+  add hz6_allocator_route_lookup_visible_only()
+  add hz6_allocator_route_lookup_visible_after_local_miss()
+  keep hz6_allocator_route_lookup_visible() as the compatibility helper that
+  still does local lookup first
+  change hz6_free() and hz6_free_remote() to call visible_after_local_miss()
+  after a local MISS
+
+Expected:
+  semantics unchanged
+  local INVALID remains local INVALID
+  visible-only MISS is not treated as final MISS without local fallback
+  route_lookup_probe_total should drop because the duplicate local MISS is gone
+
+Next after L0:
+  A. VisibleFirstFree-L1 diagnostic:
+     in non-strict diagnostic lane, try visible-only before local route lookup
+     to measure the upper bound of avoiding local MISS scans
+
+  B. NegativeFilter-L1:
+     production-near conservative filter with DEFINITELY_NOT_LOCAL /
+     MAYBE_LOCAL and shadow verification
+
+  C. SharedRouteDirectory-L1:
+     long-term design if B cannot recover enough of A
+```
+
+## Diagnostic Checkpoint 2026-06-01g
+
+```text
+L0 VisibleAfterLocalMiss refactor:
+  build:
+    build_win_larson_suite.ps1 -DiagnosticHz6Probes
+
+  main-warmup smoke:
+    bench_larson_hz6_speed_appcap.exe 2 8 1024 10000 1 12345 16 0
+    throughput = 4651 ops/s
+    route_invalid = 0
+    route_miss = 0
+    route_visibility_probe_max = 1
+    lifecycle_foreign_free_invalid = 0
+    route_rehome_fail = 0
+    route_lookup_probe_total = 4656736489
+    route_lookup_probe_max = 524290
+
+  worker-warmup smoke:
+    bench_larson_hz6_speed_appcap.exe 2 8 1024 10000 1 12345 16 1
+    throughput = 42.430M ops/s
+    lifecycle/visibility/transfer counters stay 0
+    route_lookup_probe_total = 94911023
+    route_lookup_probe_max = 7
+
+Read:
+  L0 is safe and removes the known duplicate local lookup path, but main-warmup
+  remains dominated by expensive local route MISS scans.
+  Per operation, main-warmup route lookup probes are roughly halved versus the
+  prior smoke, but the absolute local MISS scan remains the bottleneck.
+```
+
+## Diagnostic Checkpoint 2026-06-01h
+
+```text
+VisibleFirstFree-L1 diagnostic:
+  lane:
+    visiblefirst-appcap
+  build:
+    build_win_hz6_capacity_suite.ps1 -Families larson -Hz6Profiles speed
+      -CapacityLanes appcap,visiblefirst-appcap -DiagnosticHz6Probes
+      -OutDirName out_win_hz6_visiblefirst_diag
+
+Safety adjustment:
+  visible-first accepts only visible VALID as an early hit.
+  visible INVALID falls back to local lookup first; if local also MISSes,
+  the visible INVALID can still be returned.
+
+Small live-set smoke:
+  bench_larson_hz6_speed_visiblefirst_appcap.exe 1 8 1024 1000 1 12345 16 0
+    throughput = 6862 ops/s
+    route_invalid = 0
+    route_miss = 0
+    visible_first_attempt = 7102
+    visible_first_hit = 4677
+    visible_first_visible_invalid = 2250
+    visible_first_local_fallback = 2425
+    visible_first_local_lookup_skipped = 4677
+    route_lookup_probe_total = 3481
+    route_lookup_probe_max = 2
+
+Full appcap live-set smoke:
+  bench_larson_hz6_speed_visiblefirst_appcap.exe 1 8 1024 10000 1 12345 16 0
+    exit = -1073741819
+
+Read:
+  visible-first proves the upper-bound hypothesis on a smaller live set:
+    local route lookup probes collapse when visible VALID is accepted first.
+
+  However, full appcap main-warmup is not safe as a behavior lane.
+  The diagnostic also reveals frequent visible INVALID before local fallback,
+  so visible-first can observe foreign invalid envelopes ahead of the local
+  exact route.
+
+Decision:
+  keep visiblefirst-appcap as no-go / upper-bound diagnostic evidence.
+  Do not promote visible-first behavior.
+
+Next:
+  move to B NegativeFilter-L1:
+    skip local lookup only when a conservative local owned-range hint says
+    DEFINITELY_NOT_LOCAL
+    use diagnostic shadow verification before treating it as production-near
+```
+
 Read:
 
 ```text

@@ -164,6 +164,55 @@ Next:
   experiment before adding more remote handoff capacity.
 ```
 
+Next HZ6 route-lifecycle order:
+
+```text
+1. L0 VisibleAfterLocalMiss refactor:
+   remove the duplicate worker-local route MISS inside visible lookup after
+   hz6_free() has already missed locally.
+
+2. A VisibleFirstFree-L1 diagnostic:
+   non-strict diagnostic lane only.
+   Try visible-only lookup before local lookup to measure the upper bound of
+   skipping expensive local MISS scans.
+
+3. B NegativeFilter-L1:
+   production-near conservative local owned-range filter.
+   Only skip local lookup for DEFINITELY_NOT_LOCAL; shadow-verify first.
+
+4. C SharedRouteDirectory-L1:
+   larger design if B cannot recover enough of A.
+```
+
+Latest route-lifecycle result:
+
+```text
+L0 VisibleAfterLocalMiss:
+  safe refactor.
+  main-warmup throughput improved in smoke, but expensive local route MISS
+  remains the dominant cost.
+
+VisibleFirstFree-L1 diagnostic:
+  added visiblefirst-appcap as explicit diagnostic lane.
+  small live-set T=16 shows the expected upper-bound:
+    route_lookup_probe_total drops to 3481
+    visible_first_local_lookup_skipped = 4677
+    route_invalid = 0
+
+  full appcap live-set T=16 crashes with exit -1073741819.
+  The lane also sees many visible invalid envelopes before local fallback:
+    visible_first_visible_invalid = 2250 in the small live-set smoke.
+
+Decision:
+  visiblefirst-appcap is no-go / upper-bound evidence.
+  Do not promote visible-first behavior.
+
+Next:
+  B NegativeFilter-L1.
+  Use conservative local owned-range hints plus shadow verification, rather
+  than trying visible-first as a production policy.
+```
+
 Failure-row diagnosis:
 
 ```text

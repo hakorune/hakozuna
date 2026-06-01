@@ -99,6 +99,16 @@ Hz6RouteResult hz6_allocator_route_lookup_visible(Hz6Allocator* allocator,
     return route;
   }
 
+  return hz6_allocator_route_lookup_visible_after_local_miss(allocator, ptr);
+}
+
+Hz6RouteResult hz6_allocator_route_lookup_visible_only(Hz6Allocator* allocator,
+                                                       const void* ptr) {
+  if (!allocator || !ptr) {
+    return hz6_route_miss();
+  }
+
+  Hz6RouteResult route = hz6_route_miss();
 #if HZ6_DIAGNOSTIC_PROBES
   size_t probes = 0;
   ++allocator->stats.route_visibility_lookup;
@@ -154,6 +164,12 @@ Hz6RouteResult hz6_allocator_route_lookup_visible(Hz6Allocator* allocator,
   }
 #endif
   return hz6_route_miss();
+}
+
+Hz6RouteResult hz6_allocator_route_lookup_visible_after_local_miss(
+    Hz6Allocator* allocator,
+    const void* ptr) {
+  return hz6_allocator_route_lookup_visible_only(allocator, ptr);
 }
 
 int hz6_allocator_route_rehome_exact(Hz6Allocator* allocator,

@@ -205,6 +205,13 @@ function Get-Hz6WinAppLikeCapacityFlags {
     )
 }
 
+function Get-Hz6WinVisibleFirstAppLikeCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinAppLikeCapacityFlags
+    $flags += "/DHZ6_VISIBLE_FIRST_FREE_L1=1"
+    $flags
+}
+
 function Invoke-AppLikeHz5BenchBuild {
     param(
         [Parameter(Mandatory = $true)][string]$Compiler,
@@ -283,6 +290,7 @@ function Invoke-AppLikeHz6BenchBuilds {
     $desc4kSource512Route4kFlags = Get-Hz6WinDesc4kSource512Route4kCapacityFlags
     $front1kDesc4kSource512Route4kFlags = Get-Hz6WinFront1kDesc4kSource512Route4kCapacityFlags
     $appLikeFlags = Get-Hz6WinAppLikeCapacityFlags
+    $visibleFirstAppLikeFlags = Get-Hz6WinVisibleFirstAppLikeCapacityFlags
     $laneMap = @{
         "default" = @{ Suffix = ""; ExtraFlags = @() }
         "broad" = @{ Suffix = "_broad"; ExtraFlags = $broadFlags }
@@ -304,6 +312,7 @@ function Invoke-AppLikeHz6BenchBuilds {
         "desc4k-source512-route4k" = @{ Suffix = "_desc4k_source512_route4k"; ExtraFlags = $desc4kSource512Route4kFlags }
         "front1k-desc4k-source512-route4k" = @{ Suffix = "_front1k_desc4k_source512_route4k"; ExtraFlags = $front1kDesc4kSource512Route4kFlags }
         "appcap" = @{ Suffix = "_appcap"; ExtraFlags = $appLikeFlags }
+        "visiblefirst-appcap" = @{ Suffix = "_visiblefirst_appcap"; ExtraFlags = $visibleFirstAppLikeFlags }
     }
 
     function Split-Hz6BuildList {
