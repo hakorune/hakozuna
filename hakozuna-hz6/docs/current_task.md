@@ -259,6 +259,66 @@ Read:
   worker-warmup remains healthy either way
 ```
 
+## Owner Locality Lifecycle Fix 2026-06-02
+
+```text
+Problem:
+  ownerlocality-appcap recovered main-warmup throughput and removed the local
+  MISS scan, but the process could crash after printing stats.
+
+Root cause:
+  Larson captured worker stats, then let worker allocators tear down while the
+  shared live-set still contained objects rehomed to those worker allocators.
+  The later main-thread cleanup could then touch routes/descriptors whose owner
+  allocator lifetime had ended.
+
+Fix:
+  each Larson worker now releases its live set after taking the measured stats
+  snapshot and before hz_bench_allocator_thread_teardown().
+
+Why the snapshot stays valid:
+  cleanup remains outside the measured interval and outside the printed HZ6
+  worker stats, so the benchmark row still describes the timed phase.
+
+Smoke after fix:
+  ownerlocality-appcap main-warmup chunks=1000/T=16:
+    exit = 0
+    throughput = 37.0M ops/s
+    route_invalid = 0
+    route_miss = 0
+    owner_locality_hit_foreign_allocator = 8000
+    shared_dir_first_hit = 8000
+    route_rehome_success = 8000
+    route_rehome_fail = 0
+    route_lookup_probe_total = 2504
+    Done sleeping... printed
+
+  ownerlocality-appcap worker-warmup chunks=1000/T=16:
+    exit = 0
+    throughput = 49.7M ops/s
+    owner_locality_lookup = 0
+    route_rehome_attempt = 0
+    route_invalid = 0
+    route_miss = 0
+
+  ownerlocality-appcap main-warmup chunks=4000/T=16:
+    exit = 0
+    throughput = 14.1M ops/s
+    owner_locality_hit_foreign_allocator = 32000
+    shared_dir_first_hit = 32000
+    route_rehome_success = 32000
+    route_rehome_fail = 0
+    route_lookup_probe_total = 3688
+
+Read:
+  OwnerLocalityIndex-L1 is now a valid mechanism-evidence lane rather than a
+  crashy lifecycle artifact.
+  It converts main-warmup from a worker-local route MISS scan problem into a
+  bounded exact-route rehome/transfer path.
+  It is still not a default promotion lane; next evaluation should compare
+  ownerlocality-appcap against appcap on repeat rows and RSS/cleanup behavior.
+```
+
 ## Next Implementation Order 2026-06-01
 
 ```text

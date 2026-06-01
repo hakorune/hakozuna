@@ -278,9 +278,12 @@ static unsigned __stdcall larson_thread(void* arg) {
                                                  ? &hz_bench_tls_hz6_allocator
                                                  : NULL);
 #endif
-    if (td->warmup_in_worker) {
-        free_thread_blocks(td);
-    }
+    /*
+     * Cleanup is intentionally after the measured snapshot: main-warmup rows
+     * can rehome objects to worker-local allocators during the timed phase, so
+     * each worker must release its live set before tearing that allocator down.
+     */
+    free_thread_blocks(td);
     hz_bench_allocator_thread_teardown();
     return 0;
 }

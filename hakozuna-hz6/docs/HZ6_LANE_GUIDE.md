@@ -111,7 +111,10 @@ ownerlocality-appcap:
   route directory backend for foreign exact lookup before falling back to the
   ordinary local route path. Use it to measure whether a low-cost locality hint
   can prune worker-local MISS scans without turning source-block ownership into
-  the only truth source.
+  the only truth source. The Larson runner now releases each worker live set
+  before worker allocator teardown, so main-warmup no longer adds an accidental
+  post-measurement owner-death cleanup stress on top of the timed cross-owner
+  handoff lane.
 ```
 
 ## Focused Mechanism Lanes
