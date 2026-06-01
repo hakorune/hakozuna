@@ -130,6 +130,10 @@ control:
 route4k:
   current Windows candidate-control lane
 
+noboost-route4k:
+  route4k with starvation source-refill boost disabled. Use this as the
+  current mixed_ws candidate-control lane after the latest wide_ws repeat-3.
+
 appcap:
   high-capacity completion/control lane, not a default
 

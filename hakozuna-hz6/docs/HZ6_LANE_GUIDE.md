@@ -9,6 +9,7 @@ which?" before running or comparing benchmarks.
 ```text
 Primary candidate-control:
   route4k
+  noboost-route4k
 
 Low-capacity / low-RSS baseline:
   control
@@ -72,6 +73,13 @@ control:
 route4k:
   control plus a 4096-entry route table. This isolates route capacity while
   keeping other capacities near control values.
+
+noboost-route4k:
+  route4k plus `HZ6_SOURCE_ADMISSION_NO_STARVATION_BOOST=1`. This keeps the
+  low-capacity shape but prevents alloc-fail pressure from increasing source
+  refill batch size. Latest repeat-3 strongly improves balanced and wide_ws
+  while preserving larger_sizes, so treat it as the current Windows mixed_ws
+  candidate-control lane.
 
 appcap:
   High-capacity application-like control. Use it to separate capacity failure
@@ -187,9 +195,8 @@ descriptorcoldgov-widews-route4k:
   Budget-expanded descriptor governor variant for wide_ws probing. It keeps the
   same class gate as descriptorcoldgov-route4k but raises the detach budget to
   test whether wide_ws is limited by detached-slot budget saturation rather
-  than by the class gate itself. Evidence only; do not promote until the
-  repeat matrix confirms that balanced stays strong, wide_ws improves, and
-  larger_sizes remains protected.
+  than by the class gate itself. Latest repeat-3 did not improve wide_ws and
+  badly regressed balanced, so keep it as no-go/control evidence.
 ```
 
 ## Frozen No-Go Lanes

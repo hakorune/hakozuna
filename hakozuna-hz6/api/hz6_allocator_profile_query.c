@@ -97,7 +97,7 @@ size_t hz6_allocator_control_source_refill_batch(
   }
 #endif
 
-  if (starvation && !saturation) {
+  if (starvation && !saturation && !HZ6_SOURCE_ADMISSION_NO_STARVATION_BOOST) {
     size_t boosted = base < 16 ? 16 : base * 2;
     if (boosted < base) {
       boosted = base;

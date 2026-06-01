@@ -528,6 +528,86 @@ Read:
   re-running the diagnostic lane by default.
 ```
 
+## Wide Working Set Source Admission Probe 2026-06-02
+
+```text
+Problem:
+  route4k is safe and low-RSS, but wide_ws remains weak.
+
+Baseline repeat-3:
+  hz6-rss-route4k balanced     = 3.439M ops/s, 18,016 KB
+  hz6-rss-route4k wide_ws      = 0.400M ops/s, 12,800 KB
+  hz6-rss-route4k larger_sizes = 0.744M ops/s, 14,888 KB
+
+Capacity probes:
+  desc4k-route4k:
+    wide_ws = 0.268M ops/s, 125,936 KB
+    descriptor exhaustion disappears, but source allocation and RSS explode.
+
+  source512-route4k:
+    wide_ws = 0.362M ops/s, 14,588 KB
+    source-block exhaustion disappears, but descriptor pressure remains.
+
+  desc4k-source512-route4k:
+    wide_ws = 0.223M ops/s, 77,760 KB
+
+  front1k-desc4k-source512-route4k:
+    wide_ws = 0.217M ops/s, 77,820 KB
+
+Read:
+  wide_ws is not fixed by raw capacity widening.
+  More descriptors increase success count but drive source allocation and RSS
+  too high.
+  The problem is source admission / refill policy under alloc-fail pressure.
+```
+
+```text
+No-go probes:
+  descriptorcoldgov-route4k:
+    balanced = 0.403M
+    wide_ws = 0.344M
+    larger_sizes = 0.733M
+
+  descriptorcoldgov-widews-route4k:
+    balanced = 0.394M
+    wide_ws = 0.334M
+    larger_sizes = 0.750M
+
+  sourcerun-sameclass-route4k:
+    balanced = 0.408M
+    wide_ws = 0.383M
+    larger_sizes = 0.784M
+
+Read:
+  descriptorless/cold-governor and source-run reclaim variants do not solve
+  wide_ws. Keep them as evidence/control lanes, not next promotion candidates.
+```
+
+```text
+New candidate-control:
+  noboost-route4k
+
+Change:
+  route4k + HZ6_SOURCE_ADMISSION_NO_STARVATION_BOOST=1
+
+Repeat-3:
+  hz6-rss-noboost-route4k balanced     = 23.602M ops/s, 18,440 KB
+  hz6-rss-noboost-route4k wide_ws      = 17.188M ops/s, 13,124 KB
+  hz6-rss-noboost-route4k larger_sizes = 0.738M ops/s, 14,876 KB
+
+Safety:
+  route_invalid = 0
+  route_miss = 0
+  route_register_fail = 0
+
+Read:
+  starvation boost is harmful for mixed_ws route4k on Windows.
+  noboost-route4k is now the best Windows mixed_ws candidate-control lane.
+  Next checks should compare it against ownerlocalityfast-appcap and broader
+  app-like rows, then decide whether to make no-boost profile policy rather
+  than a capacity lane flag.
+```
+
 ## Next Implementation Order 2026-06-01
 
 ```text
