@@ -128,6 +128,9 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 "descriptor_fail_released_max=%zu "
                 "descriptor_fail_orphan_max=%zu "
                 "descriptor_fail_dead_with_ptr_max=%zu "
+                "descriptor_fail_frontcache_total_max=%zu "
+                "descriptor_fail_frontcache_largest_bin_max=%zu "
+                "descriptor_fail_frontcache_nonempty_bins_max=%zu "
                 "route_lookup_probe_total=%zu route_lookup_probe_max=%zu "
                 "route_register_probe_total=%zu route_register_probe_max=%zu "
                 "route_unregister_probe_total=%zu route_unregister_probe_max=%zu "
@@ -181,6 +184,9 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 s.descriptor_fail_released_max,
                 s.descriptor_fail_orphan_max,
                 s.descriptor_fail_dead_with_ptr_max,
+                s.descriptor_fail_frontcache_total_max,
+                s.descriptor_fail_frontcache_largest_bin_max,
+                s.descriptor_fail_frontcache_nonempty_bins_max,
                 s.route_lookup_probe_total,
                 s.route_lookup_probe_max,
                 s.route_register_probe_total,

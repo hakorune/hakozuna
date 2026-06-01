@@ -81,6 +81,9 @@ typedef struct Hz6StatsSnapshot {
   size_t descriptor_fail_released_max;
   size_t descriptor_fail_orphan_max;
   size_t descriptor_fail_dead_with_ptr_max;
+  size_t descriptor_fail_frontcache_total_max;
+  size_t descriptor_fail_frontcache_largest_bin_max;
+  size_t descriptor_fail_frontcache_nonempty_bins_max;
   size_t route_lookup_probe_total;
   size_t route_lookup_probe_max;
   size_t route_register_probe_total;

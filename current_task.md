@@ -725,6 +725,7 @@ HZ6 lifetime-state diagnostic:
 ```text
 Source:
   docs/benchmarks/windows/paper/20260601_102002_hz6_capacity_matrix_windows.md
+  docs/benchmarks/windows/paper/20260601_102217_hz6_capacity_matrix_windows.md
 
 Implementation:
   added diagnostic-only failure-state snapshots under HZ6_DIAGNOSTIC_PROBES.
@@ -742,6 +743,11 @@ mixed_ws / balanced / route4k:
     registered_max = 128
     ref_nonzero_max = 128
     ref_zero_max = 0
+
+  frontcache distribution at descriptor failure:
+    frontcache_total_max = 457
+    largest_bin_max = 236
+    nonempty_bins_max = 5
 
 mixed_ws / balanced / front1k-desc4k-source512-route4k:
   descriptor failure state:
@@ -763,9 +769,14 @@ Read:
     descriptors are full of live or locally cached objects.
     source blocks are all active, route-registered, and still referenced.
 
+  For route4k, local_free_max and frontcache_total_max match. The allocator has
+  plenty of cached objects, but they are concentrated in a few size classes.
+  Current-class misses then fall through to source allocation and descriptor
+  lookup even though other classes are hoarding descriptors/source-block refs.
+
   Next behavior should avoid fixed capacity growth and instead reduce lifetime
   retention:
-    class/run reuse before new source blocks
+    class-aware frontcache spill or rebalance before new source blocks
     source-block slot reuse or partial-run reuse
     descriptor recycling only when route/fail-closed ownership remains valid
 

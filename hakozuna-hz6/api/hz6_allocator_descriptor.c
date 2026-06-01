@@ -11,6 +11,9 @@ static void hz6_allocator_record_descriptor_failure_state(
   size_t released = 0;
   size_t orphan = 0;
   size_t dead_with_ptr = 0;
+  size_t frontcache_total = 0;
+  size_t frontcache_largest_bin = 0;
+  size_t frontcache_nonempty_bins = 0;
 
   for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
     const Hz6ObjectDescriptor* descriptor = &allocator->descriptors[i];
@@ -45,6 +48,16 @@ static void hz6_allocator_record_descriptor_failure_state(
         break;
     }
   }
+  for (size_t i = 0; i < HZ6_FRONT_CACHE_CLASS_COUNT; ++i) {
+    size_t count = allocator->frontcache_bins[i].count;
+    frontcache_total += count;
+    if (count > frontcache_largest_bin) {
+      frontcache_largest_bin = count;
+    }
+    if (count != 0) {
+      ++frontcache_nonempty_bins;
+    }
+  }
 
   if (active > allocator->stats.descriptor_fail_active_max) {
     allocator->stats.descriptor_fail_active_max = active;
@@ -69,6 +82,20 @@ static void hz6_allocator_record_descriptor_failure_state(
   }
   if (dead_with_ptr > allocator->stats.descriptor_fail_dead_with_ptr_max) {
     allocator->stats.descriptor_fail_dead_with_ptr_max = dead_with_ptr;
+  }
+  if (frontcache_total >
+      allocator->stats.descriptor_fail_frontcache_total_max) {
+    allocator->stats.descriptor_fail_frontcache_total_max = frontcache_total;
+  }
+  if (frontcache_largest_bin >
+      allocator->stats.descriptor_fail_frontcache_largest_bin_max) {
+    allocator->stats.descriptor_fail_frontcache_largest_bin_max =
+        frontcache_largest_bin;
+  }
+  if (frontcache_nonempty_bins >
+      allocator->stats.descriptor_fail_frontcache_nonempty_bins_max) {
+    allocator->stats.descriptor_fail_frontcache_nonempty_bins_max =
+        frontcache_nonempty_bins;
   }
 }
 #endif
