@@ -434,6 +434,17 @@ Additional focused lanes:
     Purpose: test whether Redis / medium-mixed failures are source-block
     driven without moving to appcap RSS.
 
+  desc4k-source512-route4k:
+    raises descriptor capacity to 4096 and source-block capacity to 512 while
+    keeping route4k plus control transfer/front-cache capacities.
+    Purpose: test the smallest combined non-route shape before broad/appcap.
+
+  front1k-desc4k-source512-route4k:
+    raises front-cache bin capacity to 1024 on top of the combined descriptor /
+    source / route lane, while keeping transfer capacity at 512.
+    Purpose: isolate whether broad's win comes from front-cache capacity rather
+    than transfer capacity.
+
 Notes:
   Existing full comparison runners remain the source for allocator-vs-allocator
   tables. The HZ6-only runner is the fast iteration tool for capacity/admission
@@ -494,6 +505,91 @@ Read:
     source_block_exhausted = 0
   The next useful reads are medium/mixed, mixed_ws balanced/wide_ws, Redis,
   and Larson where route4k alone still failed or timed out.
+```
+
+Focused capacity read:
+
+```text
+Source:
+  docs/benchmarks/windows/paper/20260601_093251_hz6_capacity_matrix_windows.md
+  docs/benchmarks/windows/paper/20260601_093323_hz6_capacity_matrix_windows.md
+
+random_mixed medium/mixed:
+  route4k remains the cleanest lane.
+  desc4k-route4k and source512-route4k do not improve speed and add RSS.
+  alloc_fail and descriptor/source/route exhaustion are already 0 on route4k.
+
+mixed_ws balanced/wide_ws/larger_sizes:
+  source512-route4k alone does not help while descriptor capacity remains 512.
+
+  desc4k-route4k reduces alloc_fail dramatically, but moves pressure into
+  source allocation and RSS:
+    balanced:
+      route4k 3.195M ops/s, 17.7 MB, alloc_fail 1.51M
+      desc4k-route4k 0.469M ops/s, 130.2 MB, alloc_fail 11K
+    wide_ws:
+      route4k 0.388M ops/s, 12.2 MB, alloc_fail 1.50M
+      desc4k-route4k 0.181M ops/s, 129.1 MB, alloc_fail 982K
+    larger_sizes:
+      route4k 0.747M ops/s, 14.6 MB, alloc_fail 459K
+      desc4k-route4k 0.558M ops/s, 70.3 MB, alloc_fail 3K
+
+Read:
+  Descriptor capacity is a real blocker on mixed_ws, but lifting it alone
+  exposes source-placement/RSS pressure. The next lane is the combined
+  desc4k-source512-route4k check, not a broad/appcap jump.
+
+Follow-up:
+  desc4k-source512-route4k still trails broad and has broad-like RSS.
+  Since mixed_ws rows report transfer_push/pop = 0, the broad delta is likely
+  front-cache capacity rather than transfer capacity.
+  Next check:
+    front1k-desc4k-source512-route4k vs broad
+
+Front-cache isolation read:
+
+```text
+Source:
+  docs/benchmarks/windows/paper/20260601_093548_hz6_capacity_matrix_windows.md
+  docs/benchmarks/windows/paper/20260601_093735_hz6_capacity_matrix_windows.md
+
+mixed_ws / rss / RUNS=1:
+  balanced:
+    desc4k-source512-route4k:
+      0.564M ops/s, 122.1 MB, source_alloc 703K
+    front1k-desc4k-source512-route4k:
+      1.736M ops/s, 100.3 MB, source_alloc 191K
+    broad:
+      1.701M ops/s, 99.8 MB, source_alloc 191K
+
+  wide_ws:
+    front1k-desc4k-source512-route4k:
+      0.191M ops/s, 93.4 MB
+    broad:
+      0.145M ops/s, 93.4 MB
+
+  larger_sizes:
+    front1k-desc4k-source512-route4k:
+      0.728M ops/s, 65.3 MB
+    broad:
+      0.747M ops/s, 65.2 MB
+
+Read:
+  front1k-desc4k-source512-route4k reproduces broad behavior while keeping
+  transfer capacity at 512. In these mixed_ws rows, transfer_push/pop remain 0,
+  so broad's improvement is explained by front-cache capacity rather than
+  transfer capacity.
+
+  This is a good mechanistic result, but it is not a promotion lane:
+    route4k is low-RSS but capacity-failing.
+    broad/front1k shape is capacity-cleaner but RSS-heavy.
+
+Next:
+  attack front-cache/source placement rather than raising fixed capacities:
+    reuse source-block slots more efficiently
+    reduce source_alloc per successful object
+    avoid broad-like RSS for balanced/wide_ws
+```
 ```
 
 ## HZ6 Windows Current Read
