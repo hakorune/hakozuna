@@ -319,6 +319,86 @@ Read:
   ownerlocality-appcap against appcap on repeat rows and RSS/cleanup behavior.
 ```
 
+## Owner Locality Appcap 1-Run Comparison 2026-06-02
+
+```text
+Runner:
+  bench_larson_hz6_speed_*_appcap.exe
+  args:
+    runtime=1
+    min=8
+    max=1024
+    rounds=1
+    seed=12345
+    threads=16
+
+chunks=1000:
+  appcap main-warmup:
+    exit = 0
+    throughput = 455 ops/s
+    route_lookup_probe_total = 1267732241
+
+  ownerlocality main-warmup:
+    exit = 0
+    throughput = 51.4M ops/s
+    route_lookup_probe_total = 2503
+    route_exact_lookup_probe_total = 53670289
+    owner_locality_lookup = 8000
+    shared_dir_first_hit = 8000
+    route_rehome_fail = 0
+    route_invalid = 0
+    route_miss = 0
+
+  appcap worker-warmup:
+    exit = 0
+    throughput = 54.8M ops/s
+
+  ownerlocality worker-warmup:
+    exit = 0
+    throughput = 55.6M ops/s
+    owner_locality_lookup = 0
+    route_rehome_fail = 0
+    route_invalid = 0
+    route_miss = 0
+
+chunks=4000:
+  appcap main-warmup:
+    exit = 0
+    throughput = 95 ops/s
+    route_lookup_probe_total = 1269828992
+
+  ownerlocality main-warmup:
+    exit = 0
+    throughput = 44.3M ops/s
+    route_lookup_probe_total = 4066
+    route_exact_lookup_probe_total = 46060427
+    owner_locality_lookup = 32000
+    shared_dir_first_hit = 32000
+    route_rehome_fail = 0
+    route_invalid = 0
+    route_miss = 0
+
+  appcap worker-warmup:
+    exit = 0
+    throughput = 45.7M ops/s
+
+  ownerlocality worker-warmup:
+    exit = 0
+    throughput = 46.5M ops/s
+    owner_locality_lookup = 0
+    route_rehome_fail = 0
+    route_invalid = 0
+    route_miss = 0
+
+Read:
+  ownerlocality-appcap cleanly closes the appcap main-warmup collapse in this
+  1-run matrix.
+  The same-owner worker-warmup control is not harmed.
+  The remaining production question is not "does the mechanism work"; it is
+  whether the owner-locality/shared-directory exact path can be made
+  non-diagnostic, lifecycle-safe, and RSS-neutral across the wider suite.
+```
+
 ## Next Implementation Order 2026-06-01
 
 ```text
