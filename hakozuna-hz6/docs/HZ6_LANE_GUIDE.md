@@ -99,10 +99,10 @@ sharedir-appcap:
 
 sharedirfirst-appcap:
   Experimental behavior variant. After the allocator has observed a foreign
-  visibility hit, it tries the shared directory first and only skips local
-  lookup when the directory points to a foreign allocator. Compact main-warmup
-  can recover strongly, but stress main-warmup currently times out because
-  local/rehome fallback dominates. Keep it evidence-only.
+  visibility hit, it tries the shared directory first and reconstructs exact
+  route results from the directory. Compact/moderate main-warmup can recover
+  strongly, but 10k-chunk stress main-warmup currently times out. Keep it
+  evidence-only until large live-set scaling is fixed.
 ```
 
 ## Focused Mechanism Lanes

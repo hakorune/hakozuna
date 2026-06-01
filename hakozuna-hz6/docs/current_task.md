@@ -1407,16 +1407,16 @@ SharedRouteDirectoryFirst-L1:
     lookup
     only foreign allocator hits skip local lookup
 
-Compact main-warmup control:
+Compact / moderate main-warmup control:
   command:
-    bench_larson_hz6_speed_sharedirfirst_appcap.exe 1 8 1024 400 1 12345 16 0
-  throughput = 47.90M ops/s
+    bench_larson_hz6_speed_sharedirfirst_appcap.exe 1 8 1024 1000 1 12345 16 0
+  throughput = 49.98M ops/s
   route_invalid = 0
   route_miss = 0
   route_visibility_lookup = 16
-  shared_dir_first_attempt = 49678187
-  shared_dir_first_hit = 3184
-  shared_dir_first_fallback = 49675003
+  shared_dir_first_attempt = 51462711
+  shared_dir_first_hit = 51462711
+  shared_dir_first_fallback = 0
 
 Stress main-warmup:
   command:
@@ -1426,10 +1426,11 @@ Stress main-warmup:
 
 Decision:
   sharedir-appcap is KEEP as dry-run direction evidence.
-  sharedirfirst-appcap is no-go as a broad stress behavior.
-  The missing piece is not shared directory existence; it is a cheap local /
-  rehomed-object classifier so directory-first does not fall back on most
-  already-local objects.
+  sharedirfirst-appcap is promising on compact/moderate main-warmup but no-go
+  as a broad stress behavior until large live-set scaling is explained.
+  The missing piece is not shared directory existence; it is a scalable exact
+  route directory / owner-locality design that keeps the 10k-chunk live-set
+  from collapsing.
 
 Next:
   avoid more visible/negative-filter knobs.

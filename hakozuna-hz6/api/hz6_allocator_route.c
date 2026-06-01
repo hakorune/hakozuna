@@ -11,6 +11,9 @@ typedef struct Hz6SharedRouteDirectoryEntry {
   _Atomic(uintptr_t) base;
   _Atomic(Hz6Allocator*) allocator;
   _Atomic(uintptr_t) descriptor;
+  _Atomic(unsigned int) front_id;
+  _Atomic(unsigned int) class_id;
+  _Atomic(unsigned int) generation;
 } Hz6SharedRouteDirectoryEntry;
 
 static Hz6SharedRouteDirectoryEntry g_hz6_shared_route_directory
@@ -28,6 +31,9 @@ static size_t hz6_shared_route_directory_index(uintptr_t base) {
 
 static void hz6_shared_route_directory_register(Hz6Allocator* allocator,
                                                 void* base,
+                                                uint16_t front_id,
+                                                uint16_t class_id,
+                                                uint32_t generation,
                                                 void* descriptor) {
   if (!allocator || !base || !descriptor) {
     return;
@@ -56,6 +62,9 @@ static void hz6_shared_route_directory_register(Hz6Allocator* allocator,
     atomic_store_explicit(&entry->descriptor,
                           (uintptr_t)descriptor,
                           memory_order_release);
+    atomic_store_explicit(&entry->front_id, front_id, memory_order_release);
+    atomic_store_explicit(&entry->class_id, class_id, memory_order_release);
+    atomic_store_explicit(&entry->generation, generation, memory_order_release);
     atomic_store_explicit(&entry->allocator, allocator, memory_order_release);
     ++allocator->stats.shared_dir_register;
     return;
@@ -87,6 +96,9 @@ static void hz6_shared_route_directory_unregister(Hz6Allocator* allocator,
     }
     atomic_store_explicit(&entry->allocator, NULL, memory_order_release);
     atomic_store_explicit(&entry->descriptor, 0, memory_order_release);
+    atomic_store_explicit(&entry->front_id, 0, memory_order_release);
+    atomic_store_explicit(&entry->class_id, 0, memory_order_release);
+    atomic_store_explicit(&entry->generation, 0, memory_order_release);
     atomic_store_explicit(&entry->base, 0, memory_order_release);
     ++allocator->stats.shared_dir_unregister;
     return;
@@ -357,7 +369,7 @@ void hz6_allocator_route_shared_directory_dryrun(Hz6Allocator* allocator,
 #endif
 }
 
-Hz6RouteResult hz6_allocator_route_shared_directory_lookup_foreign(
+Hz6RouteResult hz6_allocator_route_shared_directory_lookup_exact(
     Hz6Allocator* allocator,
     const void* ptr) {
 #if HZ6_SHARED_ROUTE_DIRECTORY_FIRST_L1 && HZ6_DIAGNOSTIC_PROBES
@@ -385,20 +397,23 @@ Hz6RouteResult hz6_allocator_route_shared_directory_lookup_foreign(
         atomic_load_explicit(&entry->allocator, memory_order_acquire);
     uintptr_t descriptor_value =
         atomic_load_explicit(&entry->descriptor, memory_order_acquire);
-    if (!route_allocator || descriptor_value == 0 ||
-        route_allocator == allocator) {
+    if (!route_allocator || descriptor_value == 0) {
       ++allocator->stats.shared_dir_first_fallback;
       return hz6_route_miss();
     }
-    Hz6RouteResult route =
-        hz6_route_backend_lookup(&route_allocator->route_backend, ptr);
+    unsigned int front_id =
+        atomic_load_explicit(&entry->front_id, memory_order_acquire);
+    unsigned int class_id =
+        atomic_load_explicit(&entry->class_id, memory_order_acquire);
+    unsigned int generation =
+        atomic_load_explicit(&entry->generation, memory_order_acquire);
+    Hz6RouteResult route = hz6_route_valid((uint16_t)front_id,
+                                           (uint16_t)class_id,
+                                           (uint32_t)generation,
+                                           (void*)descriptor_value);
     route.route_allocator = route_allocator;
     if (route.kind == HZ6_ROUTE_VALID) {
       ++allocator->stats.shared_dir_first_hit;
-    } else if (route.kind == HZ6_ROUTE_INVALID) {
-      ++allocator->stats.shared_dir_first_invalid;
-    } else {
-      ++allocator->stats.shared_dir_first_fallback;
     }
     return route;
   }
@@ -508,7 +523,12 @@ int hz6_allocator_route_register_exact(Hz6Allocator* allocator,
   }
 #if HZ6_SHARED_ROUTE_DIRECTORY_L1
   if (ok) {
-    hz6_shared_route_directory_register(allocator, base, descriptor);
+    hz6_shared_route_directory_register(allocator,
+                                        base,
+                                        front_id,
+                                        class_id,
+                                        generation,
+                                        descriptor);
   }
 #endif
   return ok;

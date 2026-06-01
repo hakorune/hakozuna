@@ -13,10 +13,10 @@ int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
 #if HZ6_SHARED_ROUTE_DIRECTORY_FIRST_L1 && HZ6_DIAGNOSTIC_PROBES
   if (!hz6_allocator_profile_strict_owner_remote(allocator) &&
       allocator->stats.route_visibility_hit_foreign_owner > 0) {
-    route = hz6_allocator_route_shared_directory_lookup_foreign(allocator, ptr);
+    route = hz6_allocator_route_shared_directory_lookup_exact(allocator, ptr);
     if (route.kind != HZ6_ROUTE_MISS) {
       visible_lookup_done = 1;
-      visible_hit = 1;
+      visible_hit = (route.route_allocator != allocator);
     }
   }
 #endif
