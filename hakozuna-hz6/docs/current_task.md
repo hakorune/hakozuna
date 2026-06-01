@@ -717,6 +717,101 @@ Interpretation:
   tuning.
 ```
 
+## Redis LowRSS Design 2026-06-02
+
+```text
+Observation sufficiency:
+  Enough:
+    noboost is not the Redis fix.
+    route4k/noboost low-capacity Redis failures are descriptor/source-block
+    supply failures, not route-safety failures.
+    appcap proves the workload can complete when capacity is abundant, but its
+    peak working set is far too high for the low-RSS lane.
+
+  Not enough yet:
+    whether Redis wants more descriptors, more source blocks, or a small
+    coordinated increase in both.
+    whether a behavior governor is needed, or whether a narrow capacity shape
+    is enough.
+```
+
+```text
+Design target:
+  HZ6 RedisLowRSS-L1
+
+Goal:
+  Keep route4k/noboost-style low RSS, but avoid SET/LPUSH collapse by giving
+  Redis-like string/list churn enough descriptor/source-block supply.
+
+Non-goals:
+  Do not use appcap as the answer.
+  Do not tune starvation source-refill boost further for Redis.
+  Do not add diagnostic atomics to speed rows.
+  Do not reopen broad descriptorless/frontcache knobs unless a new diagnostic
+  points there.
+```
+
+```text
+L0 first:
+  Use existing capacity-axis lanes on redis_short before adding new behavior:
+    route4k
+    noboost-route4k
+    desc4k-route4k
+    source512-route4k
+    desc4k-source512-route4k
+    front1k-desc4k-source512-route4k
+    appcap
+
+Read:
+  desc4k helps, source512 does not:
+    descriptor supply is the primary Redis bottleneck.
+
+  source512 helps, desc4k does not:
+    source-block supply / run lifetime is primary.
+
+  combined helps but each alone does not:
+    Redis needs a coordinated descriptor+source-block budget.
+
+  only appcap helps:
+    low-RSS Redis needs behavior, not just fixed capacities.
+```
+
+```text
+L1 candidate if L0 shows a clear axis:
+  redislowrss-route4k:
+    start from noboost-route4k
+    keep route table at 4096
+    raise only the winning supply axis, not every capacity
+    keep frontcache modest
+
+  possible shapes:
+    desc2k-source128-route4k
+    desc1k-source256-route4k
+    desc2k-source256-route4k
+
+Acceptance:
+  redis_short:
+    zero or sharply reduced redis_alloc_string_fail
+    SET/LPUSH materially above route4k/noboost
+    peak working set much closer to route4k than appcap
+
+  mixed_ws/random_mixed guard:
+    noboost gains must not regress materially
+    larger_sizes must remain within route4k noise band
+
+No-go:
+  peak working set moves toward appcap
+  route_invalid/route_miss/route_register_fail become nonzero
+  Redis improves only by turning the lane into broad/appcap in disguise
+```
+
+```text
+Implementation order:
+  1. Run redis_short L0 capacity-axis matrix with existing lanes.
+  2. If a single axis is clear, add one narrow redislowrss-route4k lane.
+  3. If no axis is clear, ask for design review before adding behavior.
+```
+
 ## Next Implementation Order 2026-06-01
 
 ```text
