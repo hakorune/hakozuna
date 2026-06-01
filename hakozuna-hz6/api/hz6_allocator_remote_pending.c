@@ -19,9 +19,11 @@ size_t hz6_allocator_drain_remote_pending(Hz6Allocator* allocator) {
       continue;
     }
 
-    Hz6FrontCacheEntry entry;
+    Hz6FrontCacheEntry entry = {0};
     entry.ptr = descriptor->ptr;
     entry.descriptor = descriptor;
+    entry.bytes = descriptor->bytes;
+    entry.source_block = descriptor->source_block;
     entry.class_id = descriptor->class_id;
     entry.generation = descriptor->generation;
     if (!hz6_allocator_frontcache_push(allocator, entry.class_id, entry)) {

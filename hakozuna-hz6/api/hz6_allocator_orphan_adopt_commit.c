@@ -48,9 +48,11 @@ int hz6_allocator_orphan_adopt_commit(
   }
 #endif
 
-  Hz6FrontCacheEntry entry;
+  Hz6FrontCacheEntry entry = {0};
   entry.ptr = ptr;
   entry.descriptor = adopted_descriptor;
+  entry.bytes = adopted_descriptor->bytes;
+  entry.source_block = adopted_descriptor->source_block;
   entry.class_id = adopted_descriptor->class_id;
   entry.generation = adopted_descriptor->generation;
   if (!hz6_allocator_frontcache_push(adopter, entry.class_id, entry)) {

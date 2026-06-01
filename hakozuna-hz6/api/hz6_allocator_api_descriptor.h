@@ -41,6 +41,13 @@ int hz6_allocator_remote_free_active_descriptor(
 int hz6_allocator_release_descriptor_source(
     Hz6ObjectDescriptor* descriptor);
 
+int hz6_allocator_detach_descriptor_keep_source_slot(
+    Hz6ObjectDescriptor* descriptor);
+
+void hz6_allocator_note_descriptor_frontcache_reuse_dryrun(
+    Hz6Allocator* allocator,
+    uint16_t requested_class_id);
+
 #ifdef __cplusplus
 }
 #endif

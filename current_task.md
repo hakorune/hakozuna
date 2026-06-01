@@ -1260,6 +1260,119 @@ Decision:
   next ROI remains descriptor lifecycle / frontcache-visible descriptor reuse.
 ```
 
+HZ6 DescriptorFrontcacheReuse dry-run:
+
+```text
+Implementation:
+  added diagnostic-only descriptor/frontcache reuse projection.
+  On final descriptor allocation failure, count whether the requested class
+  already has cached descriptors and how many descriptors are held by donor
+  frontcache bins.
+
+Validation:
+  diagnostic mixed_ws route4k matrix:
+    docs/benchmarks/windows/paper/20260601_121841_hz6_capacity_matrix_windows.md
+
+mixed_ws / balanced / route4k:
+  descriptor_frontcache_reuse_dryrun_calls = 4.53M
+  requested_nonempty = 7
+  requested_total = 39
+  donor_total = 6.89M
+  largest_donor_max = 239
+
+mixed_ws / wide_ws / route4k:
+  descriptor_frontcache_reuse_dryrun_calls = 4.51M
+  requested_nonempty = 50
+  donor_total = 16.1M
+
+mixed_ws / larger_sizes / route4k:
+  descriptor_frontcache_reuse_dryrun_calls = 1.14M
+  requested_nonempty = 61
+  donor_total = 6.08M
+
+Read:
+  Same-class cached descriptor reuse is not enough. Descriptor failures usually
+  happen when the requested class is empty while other classes hold many
+  cached descriptors.
+
+  Cross-class destructive donor reclaim already regressed via route churn, so
+  the next promising shape is not another spill/reclaim knob. The allocator
+  needs cached physical slots to stop pinning descriptor capacity, or it needs
+  a descriptor materialization reserve/admission rule.
+```
+
+HZ6 DescriptorlessFrontcache-L1 check:
+
+```text
+Implementation:
+  added descriptorless-route4k as a source-run metadata prototype lane.
+  Source-run cached frontcache entries may detach their descriptor and exact
+  route while keeping the physical source slot retained. Reuse materializes a
+  fresh descriptor and exact route before returning the object.
+
+  Guard:
+    descriptorless detach is restricted to source-run blocks whose class_id and
+    slot_bytes match the frontcache entry. Non-source-run cached entries keep
+    the normal descriptor-backed path.
+
+Validation:
+  HZ6 Windows capacity build passes for route4k and descriptorless-route4k.
+  Latest diagnostic matrix:
+    docs/benchmarks/windows/paper/20260601_122758_hz6_capacity_matrix_windows.md
+
+mixed_ws / balanced:
+  route4k:
+    0.443M ops/s, 24.3 MB
+  descriptorless-route4k:
+    0.382M ops/s, 24.4 MB
+    descriptorless_push = 3.3K
+    descriptorless_pop = 3.0K
+    descriptorless_descriptor_fail = 2.16M
+    descriptorless_invalid = 0
+
+mixed_ws / wide_ws:
+  route4k:
+    0.392M ops/s, 24.9 MB
+  descriptorless-route4k:
+    0.415M ops/s, 25.0 MB
+    descriptorless_push = 14.0K
+    descriptorless_pop = 12.7K
+    descriptorless_descriptor_fail = 3.84M
+    descriptorless_invalid = 0
+
+mixed_ws / larger_sizes:
+  route4k:
+    0.701M ops/s, 15.6 MB
+  descriptorless-route4k:
+    0.653M ops/s, 14.6 MB
+    descriptorless_push = 13.8K
+    descriptorless_pop = 13.5K
+    descriptorless_descriptor_fail = 499K
+    descriptorless_invalid = 0
+
+Read:
+  The descriptorless source-run contract is viable as safety evidence:
+    route_miss = 0
+    route_invalid = 0
+    route_register_fail = 0
+    descriptorless_invalid = 0
+
+  It is not a promotion lane. Descriptor materialization often happens while
+  the descriptor table is still full, so descriptor_exhausted increases and
+  balanced/larger_sizes regress. Wide_ws shows a small positive signal, but it
+  is not enough to offset the descriptor_fail pressure.
+
+Decision:
+  keep descriptorless-route4k as evidence/control.
+  do not promote it.
+  next likely ROI:
+    descriptor materialization reserve
+    or admission that only pops descriptorless entries when a descriptor can be
+    acquired without full-table failure loops.
+
+  Do not mix this with spill/borrow/cap or cross-class donor reclaim.
+```
+
 ## HZ6 Windows Current Read
 
 ```text

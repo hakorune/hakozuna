@@ -84,6 +84,17 @@ typedef struct Hz6StatsSnapshot {
   size_t descriptor_fail_frontcache_total_max;
   size_t descriptor_fail_frontcache_largest_bin_max;
   size_t descriptor_fail_frontcache_nonempty_bins_max;
+  size_t descriptor_frontcache_reuse_dryrun_calls;
+  size_t descriptor_frontcache_reuse_requested_nonempty;
+  size_t descriptor_frontcache_reuse_requested_total;
+  size_t descriptor_frontcache_reuse_donor_total;
+  size_t descriptor_frontcache_reuse_largest_donor_max;
+  size_t descriptor_frontcache_reuse_donor_bins_max;
+  size_t descriptorless_frontcache_push;
+  size_t descriptorless_frontcache_pop;
+  size_t descriptorless_frontcache_descriptor_fail;
+  size_t descriptorless_frontcache_route_fail;
+  size_t descriptorless_frontcache_invalid;
   size_t frontcache_spill_dryrun_calls;
   size_t frontcache_spill_dryrun_requested_empty;
   size_t frontcache_spill_dryrun_candidate_calls;

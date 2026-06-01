@@ -170,6 +170,17 @@ static void print_stats(const Hz6Allocator* allocator) {
          "source_run_reuse_same_class_reclaim_attempt=%zu "
          "source_run_reuse_same_class_reclaim_success=%zu "
          "source_run_reuse_same_class_reclaim_no_candidate=%zu "
+         "descriptor_frontcache_reuse_dryrun_calls=%zu "
+         "descriptor_frontcache_reuse_requested_nonempty=%zu "
+         "descriptor_frontcache_reuse_requested_total=%zu "
+         "descriptor_frontcache_reuse_donor_total=%zu "
+         "descriptor_frontcache_reuse_largest_donor_max=%zu "
+         "descriptor_frontcache_reuse_donor_bins_max=%zu "
+         "descriptorless_frontcache_push=%zu "
+         "descriptorless_frontcache_pop=%zu "
+         "descriptorless_frontcache_descriptor_fail=%zu "
+         "descriptorless_frontcache_route_fail=%zu "
+         "descriptorless_frontcache_invalid=%zu "
          "source_run_reuse_route_fail=%zu "
          "source_run_reuse_prepare_fail=%zu "
          "local2p_source_alloc=%zu "
@@ -208,6 +219,17 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.source_run_reuse_same_class_reclaim_attempt,
          stats.source_run_reuse_same_class_reclaim_success,
          stats.source_run_reuse_same_class_reclaim_no_candidate,
+         stats.descriptor_frontcache_reuse_dryrun_calls,
+         stats.descriptor_frontcache_reuse_requested_nonempty,
+         stats.descriptor_frontcache_reuse_requested_total,
+         stats.descriptor_frontcache_reuse_donor_total,
+         stats.descriptor_frontcache_reuse_largest_donor_max,
+         stats.descriptor_frontcache_reuse_donor_bins_max,
+         stats.descriptorless_frontcache_push,
+         stats.descriptorless_frontcache_pop,
+         stats.descriptorless_frontcache_descriptor_fail,
+         stats.descriptorless_frontcache_route_fail,
+         stats.descriptorless_frontcache_invalid,
          stats.source_run_reuse_route_fail,
          stats.source_run_reuse_prepare_fail,
          stats.local2p_source_alloc,

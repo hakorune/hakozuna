@@ -42,6 +42,8 @@ int hz6_front_prefill_one(Hz6Allocator* allocator,
       ++allocator->stats.front_source_prefill_fallback[front_index];
     }
 #endif
+    hz6_allocator_note_descriptor_frontcache_reuse_dryrun(allocator,
+                                                          class_id);
     return 0;
   }
 
@@ -92,9 +94,10 @@ int hz6_front_prefill_one(Hz6Allocator* allocator,
     return 0;
   }
 
-  Hz6FrontCacheEntry entry;
+  Hz6FrontCacheEntry entry = {0};
   entry.ptr = ptr;
   entry.descriptor = descriptor;
+  entry.bytes = bytes;
   entry.class_id = class_id;
   entry.generation = descriptor->generation;
   if (!hz6_allocator_frontcache_push(allocator, class_id, entry)) {

@@ -20,6 +20,9 @@ Evidence-only source-run controls:
   sourcerun-route4k
   sourcerun-sameclass-route4k
 
+Descriptor lifecycle prototype:
+  descriptorless-route4k
+
 Frozen no-go controls:
   spill-route4k
   borrow-route4k
@@ -82,6 +85,16 @@ sourcerun-sameclass-route4k:
   Narrower same-class source-run reclaim evidence lane. Safer than broad donor
   reclaim and mildly positive on the latest rows, but still not a promotion
   lane.
+
+descriptorless-route4k:
+  Descriptor lifecycle prototype. Source-block cached slots can drop their
+  descriptor while staying in frontcache; reuse materializes a fresh descriptor
+  and exact route. This lane includes source-run metadata because descriptorless
+  cached slots need a physical slot owner after the descriptor is detached. Use
+  it to test whether cached slots should stop pinning descriptor capacity. The
+  current L1 is evidence/control only: it preserves route safety in the latest
+  checks, but descriptor materialization can still fail under a full descriptor
+  table, so it is not a promotion lane.
 ```
 
 ## Frozen No-Go Lanes

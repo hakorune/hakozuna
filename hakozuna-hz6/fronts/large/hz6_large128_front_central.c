@@ -49,9 +49,11 @@ int hz6_large128_free_local_or_central(Hz6Allocator* allocator,
   }
 
   descriptor->state = HZ6_STATE_LOCAL_FREE;
-  Hz6FrontCacheEntry entry;
+  Hz6FrontCacheEntry entry = {0};
   entry.ptr = ptr;
   entry.descriptor = descriptor;
+  entry.bytes = descriptor->bytes;
+  entry.source_block = descriptor->source_block;
   entry.class_id = descriptor->class_id;
   entry.generation = descriptor->generation;
   if (hz6_allocator_frontcache_push(allocator, entry.class_id, entry)) {

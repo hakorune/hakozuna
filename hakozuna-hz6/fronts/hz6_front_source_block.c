@@ -32,6 +32,8 @@ static void* hz6_front_source_block_reserved_slot(
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.source_run_reuse_descriptor_fail;
 #endif
+    hz6_allocator_note_descriptor_frontcache_reuse_dryrun(allocator,
+                                                          class_id);
     return NULL;
   }
 
@@ -184,6 +186,8 @@ void* hz6_front_source_block_slot(Hz6Allocator* allocator,
     }
   }
   if (!descriptor) {
+    hz6_allocator_note_descriptor_frontcache_reuse_dryrun(allocator,
+                                                          class_id);
     return NULL;
   }
   if (!source_block->route_registered) {

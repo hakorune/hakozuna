@@ -432,6 +432,30 @@ int main(int argc, char** argv) {
         HZ6_MAX_STAT(descriptor_fail_frontcache_total_max);
         HZ6_MAX_STAT(descriptor_fail_frontcache_largest_bin_max);
         HZ6_MAX_STAT(descriptor_fail_frontcache_nonempty_bins_max);
+        hz6_stats.descriptor_frontcache_reuse_dryrun_calls +=
+            args[i].hz6_stats_after
+                .descriptor_frontcache_reuse_dryrun_calls;
+        hz6_stats.descriptor_frontcache_reuse_requested_nonempty +=
+            args[i].hz6_stats_after
+                .descriptor_frontcache_reuse_requested_nonempty;
+        hz6_stats.descriptor_frontcache_reuse_requested_total +=
+            args[i].hz6_stats_after
+                .descriptor_frontcache_reuse_requested_total;
+        hz6_stats.descriptor_frontcache_reuse_donor_total +=
+            args[i].hz6_stats_after.descriptor_frontcache_reuse_donor_total;
+        HZ6_MAX_STAT(descriptor_frontcache_reuse_largest_donor_max);
+        HZ6_MAX_STAT(descriptor_frontcache_reuse_donor_bins_max);
+        hz6_stats.descriptorless_frontcache_push +=
+            args[i].hz6_stats_after.descriptorless_frontcache_push;
+        hz6_stats.descriptorless_frontcache_pop +=
+            args[i].hz6_stats_after.descriptorless_frontcache_pop;
+        hz6_stats.descriptorless_frontcache_descriptor_fail +=
+            args[i].hz6_stats_after
+                .descriptorless_frontcache_descriptor_fail;
+        hz6_stats.descriptorless_frontcache_route_fail +=
+            args[i].hz6_stats_after.descriptorless_frontcache_route_fail;
+        hz6_stats.descriptorless_frontcache_invalid +=
+            args[i].hz6_stats_after.descriptorless_frontcache_invalid;
         hz6_stats.frontcache_spill_dryrun_calls +=
             args[i].hz6_stats_after.frontcache_spill_dryrun_calls;
         hz6_stats.frontcache_spill_dryrun_requested_empty +=
@@ -603,6 +627,17 @@ int main(int argc, char** argv) {
            "hz6_descriptor_fail_frontcache_total_max=%zu "
            "hz6_descriptor_fail_frontcache_largest_bin_max=%zu "
            "hz6_descriptor_fail_frontcache_nonempty_bins_max=%zu "
+           "hz6_descriptor_frontcache_reuse_dryrun_calls=%zu "
+           "hz6_descriptor_frontcache_reuse_requested_nonempty=%zu "
+           "hz6_descriptor_frontcache_reuse_requested_total=%zu "
+           "hz6_descriptor_frontcache_reuse_donor_total=%zu "
+           "hz6_descriptor_frontcache_reuse_largest_donor_max=%zu "
+           "hz6_descriptor_frontcache_reuse_donor_bins_max=%zu "
+           "hz6_descriptorless_frontcache_push=%zu "
+           "hz6_descriptorless_frontcache_pop=%zu "
+           "hz6_descriptorless_frontcache_descriptor_fail=%zu "
+           "hz6_descriptorless_frontcache_route_fail=%zu "
+           "hz6_descriptorless_frontcache_invalid=%zu "
            "hz6_frontcache_spill_dryrun_calls=%zu "
            "hz6_frontcache_spill_dryrun_requested_empty=%zu "
            "hz6_frontcache_spill_dryrun_candidate_calls=%zu "
@@ -682,6 +717,17 @@ int main(int argc, char** argv) {
            hz6_stats.descriptor_fail_frontcache_total_max,
            hz6_stats.descriptor_fail_frontcache_largest_bin_max,
            hz6_stats.descriptor_fail_frontcache_nonempty_bins_max,
+           hz6_stats.descriptor_frontcache_reuse_dryrun_calls,
+           hz6_stats.descriptor_frontcache_reuse_requested_nonempty,
+           hz6_stats.descriptor_frontcache_reuse_requested_total,
+           hz6_stats.descriptor_frontcache_reuse_donor_total,
+           hz6_stats.descriptor_frontcache_reuse_largest_donor_max,
+           hz6_stats.descriptor_frontcache_reuse_donor_bins_max,
+           hz6_stats.descriptorless_frontcache_push,
+           hz6_stats.descriptorless_frontcache_pop,
+           hz6_stats.descriptorless_frontcache_descriptor_fail,
+           hz6_stats.descriptorless_frontcache_route_fail,
+           hz6_stats.descriptorless_frontcache_invalid,
            hz6_stats.frontcache_spill_dryrun_calls,
            hz6_stats.frontcache_spill_dryrun_requested_empty,
            hz6_stats.frontcache_spill_dryrun_candidate_calls,

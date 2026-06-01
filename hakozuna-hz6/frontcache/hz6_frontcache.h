@@ -13,6 +13,8 @@ extern "C" {
 typedef struct Hz6FrontCacheEntry {
   void* ptr;
   void* descriptor;
+  void* source_block;
+  size_t bytes;
   uint16_t class_id;
   uint32_t generation;
 } Hz6FrontCacheEntry;

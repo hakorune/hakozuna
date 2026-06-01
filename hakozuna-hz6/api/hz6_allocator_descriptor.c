@@ -147,6 +147,55 @@ Hz6ObjectDescriptor* hz6_allocator_find_free_descriptor(
   return NULL;
 }
 
+void hz6_allocator_note_descriptor_frontcache_reuse_dryrun(
+    Hz6Allocator* allocator,
+    uint16_t requested_class_id) {
+#if HZ6_DIAGNOSTIC_PROBES
+  if (!allocator || requested_class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
+    return;
+  }
+
+  size_t requested_count =
+      allocator->frontcache_bins[requested_class_id].count;
+  size_t donor_total = 0;
+  size_t largest_donor = 0;
+  size_t donor_bins = 0;
+
+  for (size_t i = 0; i < HZ6_FRONT_CACHE_CLASS_COUNT; ++i) {
+    if (i == requested_class_id) {
+      continue;
+    }
+    size_t count = allocator->frontcache_bins[i].count;
+    donor_total += count;
+    if (count != 0) {
+      ++donor_bins;
+    }
+    if (count > largest_donor) {
+      largest_donor = count;
+    }
+  }
+
+  ++allocator->stats.descriptor_frontcache_reuse_dryrun_calls;
+  if (requested_count != 0) {
+    ++allocator->stats.descriptor_frontcache_reuse_requested_nonempty;
+  }
+  allocator->stats.descriptor_frontcache_reuse_requested_total +=
+      requested_count;
+  allocator->stats.descriptor_frontcache_reuse_donor_total += donor_total;
+  if (largest_donor >
+      allocator->stats.descriptor_frontcache_reuse_largest_donor_max) {
+    allocator->stats.descriptor_frontcache_reuse_largest_donor_max =
+        largest_donor;
+  }
+  if (donor_bins > allocator->stats.descriptor_frontcache_reuse_donor_bins_max) {
+    allocator->stats.descriptor_frontcache_reuse_donor_bins_max = donor_bins;
+  }
+#else
+  (void)allocator;
+  (void)requested_class_id;
+#endif
+}
+
 int hz6_allocator_activate_descriptor(Hz6ObjectDescriptor* descriptor,
                                       Hz6ObjectState expected,
                                       void* ptr,
