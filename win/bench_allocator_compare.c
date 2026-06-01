@@ -442,6 +442,16 @@ int main(int argc, char** argv) {
             args[i].hz6_stats_after.frontcache_spill_dryrun_reclaimable_total;
         HZ6_MAX_STAT(frontcache_spill_dryrun_largest_donor_max);
         HZ6_MAX_STAT(frontcache_spill_dryrun_donor_bins_max);
+        hz6_stats.frontcache_spill_attempt +=
+            args[i].hz6_stats_after.frontcache_spill_attempt;
+        hz6_stats.frontcache_spill_success +=
+            args[i].hz6_stats_after.frontcache_spill_success;
+        hz6_stats.frontcache_spill_no_candidate +=
+            args[i].hz6_stats_after.frontcache_spill_no_candidate;
+        hz6_stats.frontcache_spill_invalid +=
+            args[i].hz6_stats_after.frontcache_spill_invalid;
+        hz6_stats.frontcache_spill_retry_success +=
+            args[i].hz6_stats_after.frontcache_spill_retry_success;
 #undef HZ6_MAX_STAT
 #endif
         hz6_stats.route_lookup_probe_total +=
@@ -522,6 +532,11 @@ int main(int argc, char** argv) {
            "hz6_frontcache_spill_dryrun_reclaimable_total=%zu "
            "hz6_frontcache_spill_dryrun_largest_donor_max=%zu "
            "hz6_frontcache_spill_dryrun_donor_bins_max=%zu "
+           "hz6_frontcache_spill_attempt=%zu "
+           "hz6_frontcache_spill_success=%zu "
+           "hz6_frontcache_spill_no_candidate=%zu "
+           "hz6_frontcache_spill_invalid=%zu "
+           "hz6_frontcache_spill_retry_success=%zu "
            "hz6_route_lookup_probe_total=%zu "
            "hz6_route_lookup_probe_max=%zu "
            "hz6_route_register_probe_total=%zu "
@@ -559,6 +574,11 @@ int main(int argc, char** argv) {
            hz6_stats.frontcache_spill_dryrun_reclaimable_total,
            hz6_stats.frontcache_spill_dryrun_largest_donor_max,
            hz6_stats.frontcache_spill_dryrun_donor_bins_max,
+           hz6_stats.frontcache_spill_attempt,
+           hz6_stats.frontcache_spill_success,
+           hz6_stats.frontcache_spill_no_candidate,
+           hz6_stats.frontcache_spill_invalid,
+           hz6_stats.frontcache_spill_retry_success,
            hz6_stats.route_lookup_probe_total,
            hz6_stats.route_lookup_probe_max,
            hz6_stats.route_register_probe_total,

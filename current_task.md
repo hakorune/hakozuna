@@ -798,6 +798,53 @@ Read:
   descriptors.
 ```
 
+HZ6 spill-route4k behavior check:
+
+```text
+Sources:
+  docs/benchmarks/windows/paper/20260601_102900_hz6_capacity_matrix_windows.md
+  docs/benchmarks/windows/paper/20260601_102927_hz6_capacity_matrix_windows.md
+
+Implementation:
+  added spill-route4k as an explicit experiment lane.
+  route4k remains unchanged.
+  behavior:
+    on descriptor exhaustion, pop one cached object from the largest
+    non-requested class bin, release its descriptor/source ownership, and retry
+    descriptor allocation once.
+
+Diagnostic run:
+  route4k:
+    2.47M ops/s, 17.3 MB
+  spill-route4k:
+    1.06M ops/s, 27.3 MB
+    spill_success = 26.5K
+    retry_success = 26.5K
+    source_alloc = 11.4K versus route4k 1.0K
+
+Non-diagnostic run:
+  route4k:
+    3.29M ops/s, 17.3 MB
+  spill-route4k:
+    1.32M ops/s, 27.3 MB
+
+Decision:
+  spill-route4k is no-go/control evidence.
+
+Read:
+  The dry-run hypothesis was real, but destructive donor spill is the wrong
+  behavior. It frees descriptors, but increases source allocation,
+  route unregister/register churn, and RSS. The issue is not just descriptor
+  scarcity; it is retaining the wrong reusable objects in a way that preserves
+  their source/run locality.
+
+Next:
+  do not promote spill-route4k.
+  next experiment should be non-destructive reuse/rebalance:
+    reuse donor source/run capacity without releasing and reallocating
+    or add class/run-level partial reuse that can serve nearby classes
+```
+
 ## HZ6 Windows Current Read
 
 ```text

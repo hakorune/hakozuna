@@ -23,6 +23,16 @@ void* hz6_front_source_slot_ops(Hz6Allocator* allocator,
       hz6_allocator_find_free_descriptor(allocator);
   if (!descriptor) {
     hz6_allocator_note_frontcache_spill_dryrun(allocator, class_id);
+    if (hz6_allocator_spill_frontcache_for_descriptor(allocator, class_id)) {
+      descriptor = hz6_allocator_find_free_descriptor(allocator);
+#if HZ6_DIAGNOSTIC_PROBES
+      if (descriptor) {
+        ++allocator->stats.frontcache_spill_retry_success;
+      }
+#endif
+    }
+  }
+  if (!descriptor) {
     return NULL;
   }
 
