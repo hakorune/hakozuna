@@ -467,6 +467,16 @@ int main(int argc, char** argv) {
             args[i].hz6_stats_after.frontcache_borrow_no_candidate;
         hz6_stats.frontcache_borrow_invalid +=
             args[i].hz6_stats_after.frontcache_borrow_invalid;
+        hz6_stats.frontcache_cap_dryrun_push +=
+            args[i].hz6_stats_after.frontcache_cap_dryrun_push;
+        hz6_stats.frontcache_cap_dryrun_over_cap +=
+            args[i].hz6_stats_after.frontcache_cap_dryrun_over_cap;
+        hz6_stats.frontcache_cap_dryrun_would_release +=
+            args[i].hz6_stats_after.frontcache_cap_dryrun_would_release;
+        HZ6_MAX_STAT(frontcache_cap_dryrun_soft_cap_max);
+        HZ6_MAX_STAT(frontcache_cap_dryrun_bin_count_max);
+        hz6_stats.frontcache_cap_release +=
+            args[i].hz6_stats_after.frontcache_cap_release;
 #undef HZ6_MAX_STAT
 #endif
         hz6_stats.route_lookup_probe_total +=
@@ -560,6 +570,12 @@ int main(int argc, char** argv) {
            "hz6_frontcache_borrow_success=%zu "
            "hz6_frontcache_borrow_no_candidate=%zu "
            "hz6_frontcache_borrow_invalid=%zu "
+           "hz6_frontcache_cap_dryrun_push=%zu "
+           "hz6_frontcache_cap_dryrun_over_cap=%zu "
+           "hz6_frontcache_cap_dryrun_would_release=%zu "
+           "hz6_frontcache_cap_dryrun_soft_cap_max=%zu "
+           "hz6_frontcache_cap_dryrun_bin_count_max=%zu "
+           "hz6_frontcache_cap_release=%zu "
            "hz6_route_lookup_probe_total=%zu "
            "hz6_route_lookup_probe_max=%zu "
            "hz6_route_register_probe_total=%zu "
@@ -610,6 +626,12 @@ int main(int argc, char** argv) {
            hz6_stats.frontcache_borrow_success,
            hz6_stats.frontcache_borrow_no_candidate,
            hz6_stats.frontcache_borrow_invalid,
+           hz6_stats.frontcache_cap_dryrun_push,
+           hz6_stats.frontcache_cap_dryrun_over_cap,
+           hz6_stats.frontcache_cap_dryrun_would_release,
+           hz6_stats.frontcache_cap_dryrun_soft_cap_max,
+           hz6_stats.frontcache_cap_dryrun_bin_count_max,
+           hz6_stats.frontcache_cap_release,
            hz6_stats.route_lookup_probe_total,
            hz6_stats.route_lookup_probe_max,
            hz6_stats.route_register_probe_total,

@@ -895,6 +895,62 @@ Next:
     prefill allocation that avoids overfilling a few bins in the first place
 ```
 
+HZ6 cap-route4k behavior check:
+
+```text
+Source:
+  docs/benchmarks/windows/paper/20260601_104024_hz6_capacity_matrix_windows.md
+  docs/benchmarks/windows/paper/20260601_104157_hz6_capacity_matrix_windows.md
+
+Dry-run:
+  soft cap = frontcache bin capacity / 8, minimum 4.
+  route4k / balanced:
+    cap_dryrun_push = 251K
+    over_cap / would_release = 33K
+    bin_count_max = 256
+  route4k / larger_sizes:
+    cap_dryrun_push = 81K
+    over_cap / would_release = 32.6K
+    bin_count_max = 256
+
+Behavior:
+  added cap-route4k as an explicit experiment lane.
+  route4k remains unchanged.
+  behavior:
+    when a class bin is at soft cap, release the returned object instead of
+    keeping it in frontcache.
+
+Diagnostic run:
+  balanced:
+    route4k 2.53M ops/s, 17.3 MB
+    cap-route4k 0.44M ops/s, 36.6 MB
+    cap_release = 42.7K
+
+  larger_sizes:
+    route4k 0.82M ops/s, 14.6 MB
+    cap-route4k 0.67M ops/s, 17.2 MB
+    cap_release = 44.1K
+
+Decision:
+  cap-route4k is no-go/control evidence.
+
+Read:
+  Per-class over-retention is real, but releasing over-cap objects directly
+  causes source allocation and route register/unregister churn. This confirms
+  the next fix must be at source/run lifecycle or prefill placement, not
+  frontcache eviction after the fact.
+
+Next:
+  stop single-object frontcache knobs:
+    spill-route4k
+    borrow-route4k
+    cap-route4k
+
+  Next promising direction:
+    source/run-local free-slot reuse and prefill placement, so bins do not
+    over-retain source refs and descriptor ownership in the first place.
+```
+
 ## HZ6 Windows Current Read
 
 ```text

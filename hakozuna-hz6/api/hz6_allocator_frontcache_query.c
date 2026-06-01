@@ -123,3 +123,64 @@ void hz6_allocator_note_frontcache_borrow_dryrun(
   (void)requested_bytes;
 #endif
 }
+
+void hz6_allocator_note_frontcache_cap_dryrun(Hz6Allocator* allocator,
+                                              uint16_t class_id) {
+#if HZ6_DIAGNOSTIC_PROBES
+  if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
+    return;
+  }
+
+  size_t capacity = allocator->frontcache_bins[class_id].capacity;
+  if (capacity == 0) {
+    return;
+  }
+
+  size_t soft_cap = capacity / 8;
+  if (soft_cap < 4) {
+    soft_cap = capacity < 4 ? capacity : 4;
+  }
+  if (soft_cap == 0) {
+    soft_cap = 1;
+  }
+
+  size_t count = allocator->frontcache_bins[class_id].count;
+  ++allocator->stats.frontcache_cap_dryrun_push;
+  if (soft_cap > allocator->stats.frontcache_cap_dryrun_soft_cap_max) {
+    allocator->stats.frontcache_cap_dryrun_soft_cap_max = soft_cap;
+  }
+  if (count > allocator->stats.frontcache_cap_dryrun_bin_count_max) {
+    allocator->stats.frontcache_cap_dryrun_bin_count_max = count;
+  }
+  if (count >= soft_cap) {
+    ++allocator->stats.frontcache_cap_dryrun_over_cap;
+    ++allocator->stats.frontcache_cap_dryrun_would_release;
+  }
+#else
+  (void)allocator;
+  (void)class_id;
+#endif
+}
+
+int hz6_allocator_frontcache_should_cap_release(Hz6Allocator* allocator,
+                                                uint16_t class_id) {
+  if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
+    return 0;
+  }
+#if !HZ6_FRONTCACHE_CAP_ON_FREE
+  return 0;
+#else
+  size_t capacity = allocator->frontcache_bins[class_id].capacity;
+  if (capacity == 0) {
+    return 0;
+  }
+  size_t soft_cap = capacity / 8;
+  if (soft_cap < 4) {
+    soft_cap = capacity < 4 ? capacity : 4;
+  }
+  if (soft_cap == 0) {
+    soft_cap = 1;
+  }
+  return allocator->frontcache_bins[class_id].count >= soft_cap;
+#endif
+}

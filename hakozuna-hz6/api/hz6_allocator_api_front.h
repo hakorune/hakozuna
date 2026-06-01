@@ -45,6 +45,12 @@ void* hz6_allocator_borrow_larger_frontcache(Hz6Allocator* allocator,
                                              uint16_t requested_class_id,
                                              size_t requested_bytes);
 
+void hz6_allocator_note_frontcache_cap_dryrun(Hz6Allocator* allocator,
+                                              uint16_t class_id);
+
+int hz6_allocator_frontcache_should_cap_release(Hz6Allocator* allocator,
+                                                uint16_t class_id);
+
 size_t hz6_allocator_prefill_size(Hz6Allocator* allocator,
                                   size_t size,
                                   size_t count);
