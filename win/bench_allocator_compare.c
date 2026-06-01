@@ -487,6 +487,24 @@ int main(int argc, char** argv) {
         hz6_stats.source_run_reuse_dryrun_free_slots_total +=
             args[i].hz6_stats_after.source_run_reuse_dryrun_free_slots_total;
         HZ6_MAX_STAT(source_run_reuse_dryrun_largest_free_slots_max);
+        hz6_stats.source_run_reuse_attempt +=
+            args[i].hz6_stats_after.source_run_reuse_attempt;
+        hz6_stats.source_run_reuse_candidate +=
+            args[i].hz6_stats_after.source_run_reuse_candidate;
+        hz6_stats.source_run_reuse_hit +=
+            args[i].hz6_stats_after.source_run_reuse_hit;
+        hz6_stats.source_run_reuse_miss_no_block +=
+            args[i].hz6_stats_after.source_run_reuse_miss_no_block;
+        hz6_stats.source_run_reuse_miss_no_slot +=
+            args[i].hz6_stats_after.source_run_reuse_miss_no_slot;
+        hz6_stats.source_run_reuse_reserved +=
+            args[i].hz6_stats_after.source_run_reuse_reserved;
+        hz6_stats.source_run_reuse_slot_fail +=
+            args[i].hz6_stats_after.source_run_reuse_slot_fail;
+        hz6_stats.source_run_reuse_rollback +=
+            args[i].hz6_stats_after.source_run_reuse_rollback;
+        hz6_stats.source_run_reuse_used_count_mismatch +=
+            args[i].hz6_stats_after.source_run_reuse_used_count_mismatch;
 #undef HZ6_MAX_STAT
 #endif
         hz6_stats.route_lookup_probe_total +=
@@ -591,6 +609,15 @@ int main(int argc, char** argv) {
            "hz6_source_run_reuse_dryrun_candidate_blocks_total=%zu "
            "hz6_source_run_reuse_dryrun_free_slots_total=%zu "
            "hz6_source_run_reuse_dryrun_largest_free_slots_max=%zu "
+           "hz6_source_run_reuse_attempt=%zu "
+           "hz6_source_run_reuse_candidate=%zu "
+           "hz6_source_run_reuse_hit=%zu "
+           "hz6_source_run_reuse_miss_no_block=%zu "
+           "hz6_source_run_reuse_miss_no_slot=%zu "
+           "hz6_source_run_reuse_reserved=%zu "
+           "hz6_source_run_reuse_slot_fail=%zu "
+           "hz6_source_run_reuse_rollback=%zu "
+           "hz6_source_run_reuse_used_count_mismatch=%zu "
            "hz6_route_lookup_probe_total=%zu "
            "hz6_route_lookup_probe_max=%zu "
            "hz6_route_register_probe_total=%zu "
@@ -652,6 +679,15 @@ int main(int argc, char** argv) {
            hz6_stats.source_run_reuse_dryrun_candidate_blocks_total,
            hz6_stats.source_run_reuse_dryrun_free_slots_total,
            hz6_stats.source_run_reuse_dryrun_largest_free_slots_max,
+           hz6_stats.source_run_reuse_attempt,
+           hz6_stats.source_run_reuse_candidate,
+           hz6_stats.source_run_reuse_hit,
+           hz6_stats.source_run_reuse_miss_no_block,
+           hz6_stats.source_run_reuse_miss_no_slot,
+           hz6_stats.source_run_reuse_reserved,
+           hz6_stats.source_run_reuse_slot_fail,
+           hz6_stats.source_run_reuse_rollback,
+           hz6_stats.source_run_reuse_used_count_mismatch,
            hz6_stats.route_lookup_probe_total,
            hz6_stats.route_lookup_probe_max,
            hz6_stats.route_register_probe_total,

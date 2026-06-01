@@ -114,6 +114,15 @@ typedef struct Hz6StatsSnapshot {
   size_t source_run_reuse_dryrun_candidate_blocks_total;
   size_t source_run_reuse_dryrun_free_slots_total;
   size_t source_run_reuse_dryrun_largest_free_slots_max;
+  size_t source_run_reuse_attempt;
+  size_t source_run_reuse_candidate;
+  size_t source_run_reuse_hit;
+  size_t source_run_reuse_miss_no_block;
+  size_t source_run_reuse_miss_no_slot;
+  size_t source_run_reuse_reserved;
+  size_t source_run_reuse_slot_fail;
+  size_t source_run_reuse_rollback;
+  size_t source_run_reuse_used_count_mismatch;
   size_t route_lookup_probe_total;
   size_t route_lookup_probe_max;
   size_t route_register_probe_total;

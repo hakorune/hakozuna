@@ -1,6 +1,8 @@
 #ifndef HZ6_ALLOCATOR_TYPES_H
 #define HZ6_ALLOCATOR_TYPES_H
 
+#include <stdint.h>
+
 #include "../frontcache/hz6_frontcache.h"
 #include "../frontcache/hz6_size_class.h"
 #include "../include/hz6.h"
@@ -26,8 +28,15 @@ typedef struct Hz6SourceBlock {
   int (*source_release)(void* ptr, size_t bytes);
   Hz6RouteBackend* route_backend;
   size_t ref_count;
+  size_t run_slot_bytes;
+  uint16_t run_class_id;
+  uint16_t run_slot_count;
+  uint16_t run_used_count;
+  uint16_t run_next_hint;
+  uint64_t run_used_bits[HZ6_SOURCE_RUN_BITMAP_WORDS];
   int active;
   int route_registered;
+  int run_active;
 } Hz6SourceBlock;
 
 typedef struct Hz6ObjectDescriptor {

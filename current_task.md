@@ -1009,6 +1009,124 @@ Design-consult trigger:
   implementing behavior.
 ```
 
+HZ6 SourceRunReuse-L1 implementation plan:
+
+```text
+Decision:
+  proceed with SourceRunReuse-L1.
+
+Shape:
+  Store lightweight slot metadata on Hz6SourceBlock itself.
+  Rationale:
+    descriptor release currently only has the descriptor/source_block pair,
+    so block-owned metadata keeps slot release rollback local and avoids
+    threading allocator-side parallel arrays through every release path.
+
+Metadata:
+  class_id
+  slot_bytes
+  slot_count
+  used_count
+  next_hint
+  used bitmap capped by HZ6_SOURCE_RUN_MAX_SLOTS
+
+Note:
+  Pro suggested free_stack as the easiest L1 shape. The Windows implementation
+  uses a bitmap instead because appcap source-block capacities can be large;
+  bitmap keeps per-block metadata bounded while preserving the same source-run
+  reuse contract.
+
+L1 scope:
+  route4k mixed_ws first.
+  same source_kind / block_bytes / slot_bytes / class_id only.
+  no frontcache spill / borrow / cap composition.
+
+Safety contract:
+  invalid range owns the source block boundary.
+  exact route owns live/cached slot validity.
+  slot USED commit only after descriptor prepare and exact route register
+  succeed.
+  rollback returns the slot to free stack.
+  source block release requires used_count == 0 and invalid range unregister.
+
+First lane:
+  sourcerun-route4k
+
+First acceptance:
+  mixed_ws route4k balanced improves at least 10%.
+  source_alloc and source_block_exhausted decrease.
+  route_miss / route_invalid / route_register_fail do not increase.
+  compact/control rows do not regress more than 5%.
+
+No-go:
+  used_count mismatch.
+  route safety counters increase.
+  source_alloc or route churn increases like spill/borrow/cap.
+```
+
+HZ6 SourceRunReuse-L1 smoke result:
+
+```text
+Implementation:
+  added sourcerun-route4k lane with HZ6_SOURCE_RUN_REUSE_L1=1.
+  source-run metadata is block-owned bitmap metadata, not production default.
+  route4k remains unchanged.
+
+Validation:
+  HZ6 Windows R1 smoke suite passes.
+  Results:
+    results/hz6-sourcerun-probe/20260601_110611_hz6_capacity_matrix_windows.md
+    results/hz6-sourcerun-probe/20260601_110745_hz6_capacity_matrix_windows.md
+
+mixed_ws / balanced / speed:
+  route4k:
+    0.517M ops/s, 17.4 MB
+  sourcerun-route4k:
+    0.511M ops/s, 17.4 MB
+    source_alloc 166
+    source_run_reuse_attempt 1.51M
+    source_run_reuse_candidate 409K
+    source_run_reuse_hit 1.45K
+    source_run_reuse_reserved 1.92M
+    source_run_reuse_slot_fail 1.92M
+    source_run_reuse_miss_no_slot 0
+    source_run_reuse_used_count_mismatch 0
+
+mixed_ws / larger_sizes:
+  strict route4k:
+    0.782M ops/s, 15.5 MB
+  strict sourcerun-route4k:
+    0.804M ops/s, 14.3 MB
+  speed route4k:
+    0.791M ops/s, 14.5 MB
+  speed sourcerun-route4k:
+    0.797M ops/s, 13.5 MB
+  rss route4k:
+    0.794M ops/s, 14.8 MB
+  rss sourcerun-route4k:
+    0.800M ops/s, 13.7 MB
+
+Read:
+  SourceRunReuse-L1 is safe enough as an evidence lane:
+    route_miss = 0
+    route_invalid = 0
+    route_register_fail = 0
+    source_block_exhausted = 0
+    used_count_mismatch = 0
+
+  It does not solve balanced route4k:
+    source-run candidates exist, but most reserved slots fail at
+    descriptor/route activation time.
+    The next dominant pressure is still descriptor/frontcache lifecycle,
+    not physical source-block slot availability.
+
+Decision:
+  keep sourcerun-route4k as evidence/control.
+  do not promote SourceRunReuse-L1 yet.
+  next likely ROI is descriptor lifecycle / frontcache-visible descriptor
+  reuse, not more source-run placement.
+```
+
 ## HZ6 Windows Current Read
 
 ```text

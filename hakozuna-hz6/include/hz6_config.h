@@ -31,6 +31,19 @@
 #define HZ6_SOURCE_BLOCK_CAPACITY ((size_t)16)
 #endif
 
+#ifndef HZ6_SOURCE_RUN_MAX_SLOTS
+#define HZ6_SOURCE_RUN_MAX_SLOTS ((size_t)4096)
+#endif
+
+#ifndef HZ6_SOURCE_RUN_BITMAP_WORDS
+#define HZ6_SOURCE_RUN_BITMAP_WORDS \
+  ((size_t)((HZ6_SOURCE_RUN_MAX_SLOTS + 63u) / 64u))
+#endif
+
+#ifndef HZ6_SOURCE_RUN_REUSE_L1
+#define HZ6_SOURCE_RUN_REUSE_L1 0
+#endif
+
 #ifndef HZ6_FRONT_CACHE_CLASS_COUNT
 #define HZ6_FRONT_CACHE_CLASS_COUNT 16u
 #endif

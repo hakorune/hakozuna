@@ -34,7 +34,16 @@ int hz6_allocator_release_source_block(Hz6SourceBlock* block) {
   block->source_release = NULL;
   block->route_backend = NULL;
   block->ref_count = 0;
+  block->run_slot_bytes = 0;
+  block->run_class_id = 0;
+  block->run_slot_count = 0;
+  block->run_used_count = 0;
+  block->run_next_hint = 0;
+  for (size_t i = 0; i < HZ6_SOURCE_RUN_BITMAP_WORDS; ++i) {
+    block->run_used_bits[i] = 0;
+  }
   block->active = 0;
   block->route_registered = 0;
+  block->run_active = 0;
   return released;
 }

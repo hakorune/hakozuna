@@ -8,6 +8,8 @@ int hz6_allocator_release_descriptor_source(
 
   int released = 0;
   if (descriptor->source_block) {
+    hz6_allocator_source_run_release_slot(descriptor->source_block,
+                                          descriptor->ptr);
     released = hz6_allocator_release_source_block(descriptor->source_block);
   } else {
     void* source_ptr = descriptor->source_ptr ? descriptor->source_ptr

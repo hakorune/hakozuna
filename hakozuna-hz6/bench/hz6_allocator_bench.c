@@ -159,6 +159,10 @@ static void print_stats(const Hz6Allocator* allocator) {
          "source_prefill_fallback=%zu front_source_ops_alloc=%zu "
          "front_source_slot_alloc=%zu front_source_prefill_alloc=%zu "
          "toy_source_prefill_call=%zu "
+         "source_run_reuse_attempt=%zu source_run_reuse_candidate=%zu "
+         "source_run_reuse_hit=%zu source_run_reuse_miss_no_block=%zu "
+         "source_run_reuse_miss_no_slot=%zu source_run_reuse_rollback=%zu "
+         "source_run_reuse_reserved=%zu source_run_reuse_slot_fail=%zu "
          "local2p_source_alloc=%zu "
          "midpage_source_alloc=%zu large_source_alloc=%zu toy_source_alloc=%zu "
 #endif
@@ -184,6 +188,10 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.source_prefill_fallback, stats.front_source_ops_alloc,
          stats.front_source_slot_alloc, stats.front_source_prefill_alloc,
          stats.toy_source_prefill_call,
+         stats.source_run_reuse_attempt, stats.source_run_reuse_candidate,
+         stats.source_run_reuse_hit, stats.source_run_reuse_miss_no_block,
+         stats.source_run_reuse_miss_no_slot, stats.source_run_reuse_rollback,
+         stats.source_run_reuse_reserved, stats.source_run_reuse_slot_fail,
          stats.local2p_source_alloc,
          stats.midpage_source_alloc, stats.large_source_alloc,
          stats.toy_source_alloc,

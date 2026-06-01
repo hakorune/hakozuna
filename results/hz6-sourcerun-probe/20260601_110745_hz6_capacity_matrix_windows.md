@@ -1,0 +1,20 @@
+﻿# Windows HZ6 Capacity Matrix
+
+Generated: 2026-06-01 11:07:45 +09:00
+
+- artifacts: [out_win_hz6_capacity_diag](Z:\TextureVoice_local\git\allocator-bench-lab\private\allocators\hakozuna\out_win_hz6_capacity_diag)
+- families: `mixed_ws`
+- HZ6 profiles: `speed`
+- capacity lanes: `sourcerun-route4k`
+- diagnostic probes: `True`
+
+## mixed_ws / balanced
+
+- Note: larger mixed run for first Windows compare
+- Args: `8 250000 4096 16 2048`
+- Runs: `1`
+
+| allocator | median ops/s | median peak_kb | runs |
+| --- | ---: | ---: | --- |
+| hz6-speed-sourcerun-route4k | 0.511M | 17,416 | `threads=8 iters=250000 ws=4096 size=16..2048 time=3.914 ops/s=510992.574 alloc_attempts=1756491 alloc_success=247603 alloc_fail=1508888 frees=247603 hz6_route_valid=247603 hz6_route_invalid=0 hz6_route_miss=0 hz6_transfer_push=0 hz6_transfer_pop=0 hz6_source_alloc=166 hz6_alloc_fail=1508888 hz6_descriptor_exhausted=4934774 hz6_route_register_fail=0 hz6_source_block_exhausted=0 hz6_descriptor_probe_total=2526608896 hz6_descriptor_probe_max=512 hz6_descriptor_fail_active_max=512 hz6_descriptor_fail_local_free_max=429 hz6_descriptor_fail_transfer_free_max=0 hz6_descriptor_fail_remote_pending_max=0 hz6_descriptor_fail_central_free_max=0 hz6_descriptor_fail_released_max=0 hz6_descriptor_fail_orphan_max=0 hz6_descriptor_fail_dead_with_ptr_max=0 hz6_descriptor_fail_frontcache_total_max=429 hz6_descriptor_fail_frontcache_largest_bin_max=220 hz6_descriptor_fail_frontcache_nonempty_bins_max=4 hz6_frontcache_spill_dryrun_calls=4934774 hz6_frontcache_spill_dryrun_requested_empty=4934773 hz6_frontcache_spill_dryrun_candidate_calls=580398 hz6_frontcache_spill_dryrun_reclaimable_total=1702181 hz6_frontcache_spill_dryrun_largest_donor_max=219 hz6_frontcache_spill_dryrun_donor_bins_max=4 hz6_frontcache_spill_attempt=4934774 hz6_frontcache_spill_success=0 hz6_frontcache_spill_no_candidate=4934774 hz6_frontcache_spill_invalid=0 hz6_frontcache_spill_retry_success=0 hz6_frontcache_borrow_dryrun_calls=4934774 hz6_frontcache_borrow_dryrun_candidate_calls=332584 hz6_frontcache_borrow_dryrun_candidate_total=568174 hz6_frontcache_borrow_dryrun_largest_candidate_max=220 hz6_frontcache_borrow_attempt=4526921 hz6_frontcache_borrow_success=0 hz6_frontcache_borrow_no_candidate=4526921 hz6_frontcache_borrow_invalid=0 hz6_frontcache_cap_dryrun_push=251712 hz6_frontcache_cap_dryrun_over_cap=32365 hz6_frontcache_cap_dryrun_would_release=32365 hz6_frontcache_cap_dryrun_soft_cap_max=32 hz6_frontcache_cap_dryrun_bin_count_max=256 hz6_frontcache_cap_release=0 hz6_source_run_reuse_dryrun_calls=1509145 hz6_source_run_reuse_dryrun_candidate_calls=837699 hz6_source_run_reuse_dryrun_candidate_blocks_total=13688231 hz6_source_run_reuse_dryrun_free_slots_total=1905620035 hz6_source_run_reuse_dryrun_largest_free_slots_max=4093 hz6_source_run_reuse_attempt=1510508 hz6_source_run_reuse_candidate=409563 hz6_source_run_reuse_hit=1453 hz6_source_run_reuse_miss_no_block=1100945 hz6_source_run_reuse_miss_no_slot=0 hz6_source_run_reuse_reserved=1921107 hz6_source_run_reuse_slot_fail=1916998 hz6_source_run_reuse_rollback=0 hz6_source_run_reuse_used_count_mismatch=0 hz6_route_lookup_probe_total=925390 hz6_route_lookup_probe_max=7 hz6_route_register_probe_total=684729 hz6_route_register_probe_max=4099 hz6_route_unregister_probe_total=20 hz6_route_unregister_probe_max=3 hz6_source_block_probe_total=32821096 hz6_source_block_probe_max=23 hz6_source_block_fail_active_max=0 hz6_source_block_fail_registered_max=0 hz6_source_block_fail_ref_nonzero_max=0 hz6_source_block_fail_ref_zero_max=0 hz6_large_central_push=0 hz6_large_central_pop=0 hz6_large_source_alloc=0 peak_kb=17416` |
+

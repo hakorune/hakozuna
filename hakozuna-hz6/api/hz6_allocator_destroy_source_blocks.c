@@ -26,7 +26,16 @@ void hz6_allocator_destroy_source_blocks(Hz6Allocator* allocator) {
     block->source_release = NULL;
     block->route_backend = NULL;
     block->ref_count = 0;
+    block->run_slot_bytes = 0;
+    block->run_class_id = 0;
+    block->run_slot_count = 0;
+    block->run_used_count = 0;
+    block->run_next_hint = 0;
+    for (size_t word = 0; word < HZ6_SOURCE_RUN_BITMAP_WORDS; ++word) {
+      block->run_used_bits[word] = 0;
+    }
     block->active = 0;
     block->route_registered = 0;
+    block->run_active = 0;
   }
 }

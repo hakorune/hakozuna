@@ -161,6 +161,15 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 "source_run_reuse_dryrun_candidate_blocks_total=%zu "
                 "source_run_reuse_dryrun_free_slots_total=%zu "
                 "source_run_reuse_dryrun_largest_free_slots_max=%zu "
+                "source_run_reuse_attempt=%zu "
+                "source_run_reuse_candidate=%zu "
+                "source_run_reuse_hit=%zu "
+                "source_run_reuse_miss_no_block=%zu "
+                "source_run_reuse_miss_no_slot=%zu "
+                "source_run_reuse_reserved=%zu "
+                "source_run_reuse_slot_fail=%zu "
+                "source_run_reuse_rollback=%zu "
+                "source_run_reuse_used_count_mismatch=%zu "
                 "route_lookup_probe_total=%zu route_lookup_probe_max=%zu "
                 "route_register_probe_total=%zu route_register_probe_max=%zu "
                 "route_unregister_probe_total=%zu route_unregister_probe_max=%zu "
@@ -247,6 +256,15 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 s.source_run_reuse_dryrun_candidate_blocks_total,
                 s.source_run_reuse_dryrun_free_slots_total,
                 s.source_run_reuse_dryrun_largest_free_slots_max,
+                s.source_run_reuse_attempt,
+                s.source_run_reuse_candidate,
+                s.source_run_reuse_hit,
+                s.source_run_reuse_miss_no_block,
+                s.source_run_reuse_miss_no_slot,
+                s.source_run_reuse_reserved,
+                s.source_run_reuse_slot_fail,
+                s.source_run_reuse_rollback,
+                s.source_run_reuse_used_count_mismatch,
                 s.route_lookup_probe_total,
                 s.route_lookup_probe_max,
                 s.route_register_probe_total,
