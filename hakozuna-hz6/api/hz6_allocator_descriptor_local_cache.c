@@ -40,10 +40,20 @@ int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
     Hz6FrontCacheEntry descriptorless_entry = entry;
     descriptorless_entry.descriptor = NULL;
     descriptorless_entry.generation = 0;
+#if HZ6_DESCRIPTOR_MATERIALIZE_RESERVE_L1
+    descriptorless_entry.reserved_descriptor = descriptor;
+#endif
     if (hz6_allocator_frontcache_push(allocator, entry.class_id,
                                       descriptorless_entry)) {
       hz6_allocator_route_unregister_exact(allocator, ptr);
+#if HZ6_DESCRIPTOR_MATERIALIZE_RESERVE_L1
+      hz6_allocator_reserve_descriptor_keep_source_slot(descriptor);
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.descriptorreserve_frontcache_push;
+#endif
+#else
       hz6_allocator_detach_descriptor_keep_source_slot(descriptor);
+#endif
 #if HZ6_DIAGNOSTIC_PROBES
       ++allocator->stats.descriptorless_frontcache_push;
 #endif

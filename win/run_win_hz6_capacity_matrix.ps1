@@ -189,6 +189,7 @@ $laneSuffix = @{
     "sourcerun-reclaim-route4k" = "_sourcerun_reclaim_route4k"
     "sourcerun-sameclass-route4k" = "_sourcerun_sameclass_route4k"
     "descriptorless-route4k" = "_descriptorless_route4k"
+    "descriptorreserve-route4k" = "_descriptorreserve_route4k"
     "desc4k-route4k" = "_desc4k_route4k"
     "source512-route4k" = "_source512_route4k"
     "desc4k-source512-route4k" = "_desc4k_source512_route4k"

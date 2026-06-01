@@ -21,8 +21,19 @@ static void* hz6_front_materialize_descriptorless_entry(
     return NULL;
   }
 
-  Hz6ObjectDescriptor* descriptor =
-      hz6_allocator_find_free_descriptor(allocator);
+  Hz6ObjectDescriptor* descriptor = NULL;
+#if HZ6_DESCRIPTOR_MATERIALIZE_RESERVE_L1
+  descriptor = (Hz6ObjectDescriptor*)entry.reserved_descriptor;
+  if (!descriptor || descriptor->ptr ||
+      descriptor->state != HZ6_STATE_DESCRIPTOR_RESERVED) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.descriptorreserve_frontcache_missing;
+#endif
+    return NULL;
+  }
+#else
+  descriptor = hz6_allocator_find_free_descriptor(allocator);
+#endif
   if (!descriptor) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.descriptorless_frontcache_descriptor_fail;
@@ -46,12 +57,19 @@ static void* hz6_front_materialize_descriptorless_entry(
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.descriptorless_frontcache_route_fail;
 #endif
+#if HZ6_DESCRIPTOR_MATERIALIZE_RESERVE_L1
+    hz6_allocator_reserve_descriptor_keep_source_slot(descriptor);
+#else
     hz6_allocator_detach_descriptor_keep_source_slot(descriptor);
+#endif
     return NULL;
   }
 
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.descriptorless_frontcache_pop;
+#if HZ6_DESCRIPTOR_MATERIALIZE_RESERVE_L1
+  ++allocator->stats.descriptorreserve_frontcache_pop;
+#endif
   ++allocator->stats.frontcache_reuse_hit;
 #endif
   if (path) {

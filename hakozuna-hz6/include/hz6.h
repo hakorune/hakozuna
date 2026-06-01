@@ -95,6 +95,10 @@ typedef struct Hz6StatsSnapshot {
   size_t descriptorless_frontcache_descriptor_fail;
   size_t descriptorless_frontcache_route_fail;
   size_t descriptorless_frontcache_invalid;
+  size_t descriptorreserve_frontcache_push;
+  size_t descriptorreserve_frontcache_pop;
+  size_t descriptorreserve_frontcache_missing;
+  size_t descriptorreserve_frontcache_invalid;
   size_t frontcache_spill_dryrun_calls;
   size_t frontcache_spill_dryrun_requested_empty;
   size_t frontcache_spill_dryrun_candidate_calls;

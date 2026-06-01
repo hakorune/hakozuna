@@ -55,3 +55,23 @@ int hz6_allocator_detach_descriptor_keep_source_slot(
   descriptor->state = HZ6_STATE_DEAD;
   return 1;
 }
+
+int hz6_allocator_reserve_descriptor_keep_source_slot(
+    Hz6ObjectDescriptor* descriptor) {
+  if (!descriptor || !descriptor->ptr || !descriptor->source_block) {
+    return 0;
+  }
+
+  descriptor->ptr = NULL;
+  descriptor->bytes = 0;
+  descriptor->source_ptr = NULL;
+  descriptor->source_bytes = 0;
+  descriptor->source_block = NULL;
+  descriptor->class_id = 0;
+  descriptor->source_kind = HZ6_SOURCE_NONE;
+  descriptor->source_release = NULL;
+  descriptor->owner = (Hz6OwnerToken){0};
+  descriptor->generation = 0;
+  descriptor->state = HZ6_STATE_DESCRIPTOR_RESERVED;
+  return 1;
+}

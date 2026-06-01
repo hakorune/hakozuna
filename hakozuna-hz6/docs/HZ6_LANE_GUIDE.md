@@ -22,6 +22,7 @@ Evidence-only source-run controls:
 
 Descriptor lifecycle prototype:
   descriptorless-route4k
+  descriptorreserve-route4k
 
 Frozen no-go controls:
   spill-route4k
@@ -95,6 +96,14 @@ descriptorless-route4k:
   current L1 is evidence/control only: it preserves route safety in the latest
   checks, but descriptor materialization can still fail under a full descriptor
   table, so it is not a promotion lane.
+
+descriptorreserve-route4k:
+  Descriptor materialization-reserve prototype. Extends descriptorless-route4k
+  by reserving the detached descriptor for the same cached physical slot, so
+  reuse can materialize without a fresh descriptor-table search. Evidence only:
+  it removes descriptorless materialization failures in the latest checks, but
+  it does not solve balanced / wide_ws and can reduce the descriptor pool
+  available to normal allocation.
 ```
 
 ## Frozen No-Go Lanes

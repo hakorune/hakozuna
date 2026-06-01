@@ -1373,6 +1373,83 @@ Decision:
   Do not mix this with spill/borrow/cap or cross-class donor reclaim.
 ```
 
+HZ6 DescriptorMaterializationReserve-L1 check:
+
+```text
+Implementation:
+  added descriptorreserve-route4k as a descriptorless extension lane.
+  A descriptorless cached source-run slot can reserve its detached descriptor
+  for later materialization. The reserved descriptor is skipped by normal
+  descriptor allocation and reused only when that cached physical slot is
+  popped.
+
+Validation:
+  HZ6 Windows capacity build passes for:
+    route4k
+    descriptorless-route4k
+    descriptorreserve-route4k
+
+  Diagnostic matrix:
+    docs/benchmarks/windows/paper/20260601_124121_hz6_capacity_matrix_windows.md
+
+mixed_ws / balanced:
+  route4k:
+    0.362M ops/s, 24.2 MB
+  descriptorless-route4k:
+    0.436M ops/s, 24.3 MB
+    descriptorless_descriptor_fail = 2.16M
+  descriptorreserve-route4k:
+    0.357M ops/s, 24.6 MB
+    descriptorless_descriptor_fail = 0
+    descriptorreserve_push/pop = 1.5K / 1.5K
+
+mixed_ws / wide_ws:
+  route4k:
+    0.304M ops/s, 24.8 MB
+  descriptorless-route4k:
+    0.286M ops/s, 24.8 MB
+    descriptorless_descriptor_fail = 3.84M
+  descriptorreserve-route4k:
+    0.282M ops/s, 24.8 MB
+    descriptorless_descriptor_fail = 0
+    descriptorreserve_push/pop = 12.7K / 11.9K
+
+mixed_ws / larger_sizes:
+  route4k:
+    0.719M ops/s, 15.5 MB
+  descriptorless-route4k:
+    0.668M ops/s, 14.5 MB
+    descriptorless_descriptor_fail = 499K
+  descriptorreserve-route4k:
+    0.717M ops/s, 14.3 MB
+    descriptorless_descriptor_fail = 0
+    descriptorreserve_push/pop = 14.3K / 14.1K
+
+Read:
+  The reserve mechanism works mechanically:
+    descriptorless materialization failures drop to 0
+    route_miss = 0
+    route_invalid = 0
+    route_register_fail = 0
+    descriptorreserve_missing = 0
+
+  It is not a promotion lane. Reserving a descriptor for a cached physical slot
+  removes the materialization failure loop, but it also withholds descriptors
+  from normal allocation. Balanced and wide_ws do not improve, while
+  larger_sizes only returns near route4k with slightly lower RSS.
+
+Decision:
+  keep descriptorreserve-route4k as evidence/control.
+  do not promote it.
+
+  The useful lesson is that the next design must be more selective than
+  per-slot descriptor reservation:
+    descriptorless only for cold / over-retained bins
+    materialization admission based on class pressure
+    or a separate descriptor credit policy that does not starve normal
+    allocation.
+```
+
 ## HZ6 Windows Current Read
 
 ```text

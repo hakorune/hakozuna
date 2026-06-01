@@ -42,6 +42,8 @@ static void hz6_allocator_record_descriptor_failure_state(
       case HZ6_STATE_ORPHAN:
         ++orphan;
         break;
+      case HZ6_STATE_DESCRIPTOR_RESERVED:
+        break;
       case HZ6_STATE_DEAD:
       default:
         ++dead_with_ptr;
@@ -120,7 +122,11 @@ Hz6ObjectDescriptor* hz6_allocator_find_free_descriptor(
     if (i >= HZ6_OBJECT_DESCRIPTOR_CAPACITY) {
       i -= HZ6_OBJECT_DESCRIPTOR_CAPACITY;
     }
-    if (!allocator->descriptors[i].ptr) {
+    if (!allocator->descriptors[i].ptr
+#if HZ6_DESCRIPTOR_MATERIALIZE_RESERVE_L1
+        && allocator->descriptors[i].state == HZ6_STATE_DEAD
+#endif
+    ) {
       allocator->next_descriptor_index = i + 1;
       if (allocator->next_descriptor_index >= HZ6_OBJECT_DESCRIPTOR_CAPACITY) {
         allocator->next_descriptor_index = 0;

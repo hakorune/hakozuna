@@ -181,6 +181,10 @@ static void print_stats(const Hz6Allocator* allocator) {
          "descriptorless_frontcache_descriptor_fail=%zu "
          "descriptorless_frontcache_route_fail=%zu "
          "descriptorless_frontcache_invalid=%zu "
+         "descriptorreserve_frontcache_push=%zu "
+         "descriptorreserve_frontcache_pop=%zu "
+         "descriptorreserve_frontcache_missing=%zu "
+         "descriptorreserve_frontcache_invalid=%zu "
          "source_run_reuse_route_fail=%zu "
          "source_run_reuse_prepare_fail=%zu "
          "local2p_source_alloc=%zu "
@@ -230,6 +234,10 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.descriptorless_frontcache_descriptor_fail,
          stats.descriptorless_frontcache_route_fail,
          stats.descriptorless_frontcache_invalid,
+         stats.descriptorreserve_frontcache_push,
+         stats.descriptorreserve_frontcache_pop,
+         stats.descriptorreserve_frontcache_missing,
+         stats.descriptorreserve_frontcache_invalid,
          stats.source_run_reuse_route_fail,
          stats.source_run_reuse_prepare_fail,
          stats.local2p_source_alloc,
