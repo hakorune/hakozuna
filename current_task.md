@@ -118,9 +118,10 @@ Random mixed:
   throughput, so mixed throughput is still a weak lane.
 
 HZ6 owner-aware MT remote:
-  throughput is usable and RSS is low.
-  alloc_failures are still huge, so this remains a pressure lane rather than a
-  clean win lane.
+  3-run median is 17.388M to 19.471M ops/s depending on profile.
+  peak RSS stays low at about 7.9 to 8.1 MB.
+  alloc_failures are still huge at 21.9M, so this remains a pressure lane
+  rather than a clean win lane.
 ```
 
 Failure-row diagnosis:
@@ -1832,7 +1833,8 @@ Next order:
      baseline.
   2. Compare HZ6 against HZ3 / HZ4 / HZ5 on the same machine and same runner.
   3. Keep HZ6 appcap rows as Larson capacity-separation evidence.
-  4. Build an HZ6 owner/remote-aware runner for MT remote.
+  4. Keep the HZ6 owner/remote-aware runner for MT remote as the contract-
+     matched pressure lane.
   5. Larson lifecycle/front-source diagnostic.
   6. Redis default-row mechanism readout.
   7. hz6-adaptive-cap-dryrun only after the above evidence is clean.
