@@ -23,6 +23,7 @@ int hz6_front_prefill_one(Hz6Allocator* allocator,
   Hz6ObjectDescriptor* descriptor =
       hz6_allocator_find_free_descriptor(allocator);
   if (!descriptor) {
+    hz6_allocator_note_frontcache_spill_dryrun(allocator, class_id);
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.source_prefill_fallback;
     if (has_front_index) {

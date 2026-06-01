@@ -726,6 +726,7 @@ HZ6 lifetime-state diagnostic:
 Source:
   docs/benchmarks/windows/paper/20260601_102002_hz6_capacity_matrix_windows.md
   docs/benchmarks/windows/paper/20260601_102217_hz6_capacity_matrix_windows.md
+  docs/benchmarks/windows/paper/20260601_102558_hz6_capacity_matrix_windows.md
 
 Implementation:
   added diagnostic-only failure-state snapshots under HZ6_DIAGNOSTIC_PROBES.
@@ -748,6 +749,14 @@ mixed_ws / balanced / route4k:
     frontcache_total_max = 457
     largest_bin_max = 236
     nonempty_bins_max = 5
+
+  class-aware spill dry-run:
+    calls = 3.39M
+    requested_empty = 3.39M
+    candidate_calls = 834.9K
+    reclaimable_total = 3.98M
+    largest_donor_max = 235
+    donor_bins_max = 4
 
 mixed_ws / balanced / front1k-desc4k-source512-route4k:
   descriptor failure state:
@@ -773,6 +782,10 @@ Read:
   plenty of cached objects, but they are concentrated in a few size classes.
   Current-class misses then fall through to source allocation and descriptor
   lookup even though other classes are hoarding descriptors/source-block refs.
+
+  The dry-run confirms the route4k failure is often class-imbalance, not global
+  object scarcity: the requested class is almost always empty, while other
+  bins have spill candidates on a large minority of descriptor failures.
 
   Next behavior should avoid fixed capacity growth and instead reduce lifetime
   retention:

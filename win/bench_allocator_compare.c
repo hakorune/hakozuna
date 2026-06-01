@@ -432,6 +432,16 @@ int main(int argc, char** argv) {
         HZ6_MAX_STAT(descriptor_fail_frontcache_total_max);
         HZ6_MAX_STAT(descriptor_fail_frontcache_largest_bin_max);
         HZ6_MAX_STAT(descriptor_fail_frontcache_nonempty_bins_max);
+        hz6_stats.frontcache_spill_dryrun_calls +=
+            args[i].hz6_stats_after.frontcache_spill_dryrun_calls;
+        hz6_stats.frontcache_spill_dryrun_requested_empty +=
+            args[i].hz6_stats_after.frontcache_spill_dryrun_requested_empty;
+        hz6_stats.frontcache_spill_dryrun_candidate_calls +=
+            args[i].hz6_stats_after.frontcache_spill_dryrun_candidate_calls;
+        hz6_stats.frontcache_spill_dryrun_reclaimable_total +=
+            args[i].hz6_stats_after.frontcache_spill_dryrun_reclaimable_total;
+        HZ6_MAX_STAT(frontcache_spill_dryrun_largest_donor_max);
+        HZ6_MAX_STAT(frontcache_spill_dryrun_donor_bins_max);
 #undef HZ6_MAX_STAT
 #endif
         hz6_stats.route_lookup_probe_total +=
@@ -506,6 +516,12 @@ int main(int argc, char** argv) {
            "hz6_descriptor_fail_frontcache_total_max=%zu "
            "hz6_descriptor_fail_frontcache_largest_bin_max=%zu "
            "hz6_descriptor_fail_frontcache_nonempty_bins_max=%zu "
+           "hz6_frontcache_spill_dryrun_calls=%zu "
+           "hz6_frontcache_spill_dryrun_requested_empty=%zu "
+           "hz6_frontcache_spill_dryrun_candidate_calls=%zu "
+           "hz6_frontcache_spill_dryrun_reclaimable_total=%zu "
+           "hz6_frontcache_spill_dryrun_largest_donor_max=%zu "
+           "hz6_frontcache_spill_dryrun_donor_bins_max=%zu "
            "hz6_route_lookup_probe_total=%zu "
            "hz6_route_lookup_probe_max=%zu "
            "hz6_route_register_probe_total=%zu "
@@ -537,6 +553,12 @@ int main(int argc, char** argv) {
            hz6_stats.descriptor_fail_frontcache_total_max,
            hz6_stats.descriptor_fail_frontcache_largest_bin_max,
            hz6_stats.descriptor_fail_frontcache_nonempty_bins_max,
+           hz6_stats.frontcache_spill_dryrun_calls,
+           hz6_stats.frontcache_spill_dryrun_requested_empty,
+           hz6_stats.frontcache_spill_dryrun_candidate_calls,
+           hz6_stats.frontcache_spill_dryrun_reclaimable_total,
+           hz6_stats.frontcache_spill_dryrun_largest_donor_max,
+           hz6_stats.frontcache_spill_dryrun_donor_bins_max,
            hz6_stats.route_lookup_probe_total,
            hz6_stats.route_lookup_probe_max,
            hz6_stats.route_register_probe_total,

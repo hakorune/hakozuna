@@ -28,6 +28,9 @@ size_t hz6_allocator_frontcache_count(const Hz6Allocator* allocator,
 size_t hz6_allocator_frontcache_capacity(const Hz6Allocator* allocator,
                                          uint16_t class_id);
 
+void hz6_allocator_note_frontcache_spill_dryrun(Hz6Allocator* allocator,
+                                                uint16_t requested_class_id);
+
 size_t hz6_allocator_prefill_size(Hz6Allocator* allocator,
                                   size_t size,
                                   size_t count);

@@ -131,6 +131,12 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 "descriptor_fail_frontcache_total_max=%zu "
                 "descriptor_fail_frontcache_largest_bin_max=%zu "
                 "descriptor_fail_frontcache_nonempty_bins_max=%zu "
+                "frontcache_spill_dryrun_calls=%zu "
+                "frontcache_spill_dryrun_requested_empty=%zu "
+                "frontcache_spill_dryrun_candidate_calls=%zu "
+                "frontcache_spill_dryrun_reclaimable_total=%zu "
+                "frontcache_spill_dryrun_largest_donor_max=%zu "
+                "frontcache_spill_dryrun_donor_bins_max=%zu "
                 "route_lookup_probe_total=%zu route_lookup_probe_max=%zu "
                 "route_register_probe_total=%zu route_register_probe_max=%zu "
                 "route_unregister_probe_total=%zu route_unregister_probe_max=%zu "
@@ -187,6 +193,12 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 s.descriptor_fail_frontcache_total_max,
                 s.descriptor_fail_frontcache_largest_bin_max,
                 s.descriptor_fail_frontcache_nonempty_bins_max,
+                s.frontcache_spill_dryrun_calls,
+                s.frontcache_spill_dryrun_requested_empty,
+                s.frontcache_spill_dryrun_candidate_calls,
+                s.frontcache_spill_dryrun_reclaimable_total,
+                s.frontcache_spill_dryrun_largest_donor_max,
+                s.frontcache_spill_dryrun_donor_bins_max,
                 s.route_lookup_probe_total,
                 s.route_lookup_probe_max,
                 s.route_register_probe_total,

@@ -24,6 +24,7 @@ void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
   Hz6ObjectDescriptor* descriptor =
       hz6_allocator_find_free_descriptor(allocator);
   if (!descriptor) {
+    hz6_allocator_note_frontcache_spill_dryrun(allocator, class_id);
     return NULL;
   }
 

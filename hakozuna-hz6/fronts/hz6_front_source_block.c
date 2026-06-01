@@ -17,6 +17,7 @@ void* hz6_front_source_block_slot(Hz6Allocator* allocator,
   Hz6ObjectDescriptor* descriptor =
       hz6_allocator_find_free_descriptor(allocator);
   if (!descriptor) {
+    hz6_allocator_note_frontcache_spill_dryrun(allocator, class_id);
     return NULL;
   }
   if (!source_block->route_registered) {
