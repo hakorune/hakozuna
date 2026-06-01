@@ -182,6 +182,8 @@ $laneSuffix = @{
     "broad" = "_broad"
     "control" = "_control"
     "route4k" = "_route4k"
+    "desc4k-route4k" = "_desc4k_route4k"
+    "source512-route4k" = "_source512_route4k"
     "appcap" = "_appcap"
 }
 

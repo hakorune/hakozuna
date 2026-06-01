@@ -421,6 +421,19 @@ Default capacity lanes:
   route4k
   appcap
 
+Additional focused lanes:
+  desc4k-route4k:
+    raises descriptor capacity to 4096 while keeping route4k and the other
+    route4k/control capacities.
+    Purpose: test whether balanced / Larson failures are descriptor-driven
+    without moving to broad/appcap RSS.
+
+  source512-route4k:
+    raises source-block capacity to 512 while keeping route4k and the other
+    route4k/control capacities.
+    Purpose: test whether Redis / medium-mixed failures are source-block
+    driven without moving to appcap RSS.
+
 Notes:
   Existing full comparison runners remain the source for allocator-vs-allocator
   tables. The HZ6-only runner is the fast iteration tool for capacity/admission
@@ -436,6 +449,51 @@ Example:
     -Hz6Profiles speed,rss \
     -CapacityLanes control,route4k,appcap \
     -Runs 3
+```
+
+Next focused capacity tests:
+
+```text
+1. random_mixed:
+   route4k vs desc4k-route4k vs source512-route4k
+   profiles:
+     small, medium, mixed
+
+2. mixed_ws:
+   balanced / wide_ws / larger_sizes
+   check whether desc4k-route4k removes alloc_fail without broad RSS.
+
+3. Redis:
+   source512-route4k first.
+   If it still times out, route-only and source-block-only are insufficient.
+
+4. Larson:
+   desc4k-route4k first on compact/worker controls.
+```
+
+New lane smoke:
+
+```text
+Source:
+  docs/benchmarks/windows/paper/20260601_093158_hz6_capacity_matrix_windows.md
+
+random_mixed small / speed / RUNS=1:
+  route4k:
+    27.082M ops/s, 4,548 KB
+  desc4k-route4k:
+    27.320M ops/s, 5,516 KB
+  source512-route4k:
+    27.415M ops/s, 5,048 KB
+
+Read:
+  Both focused non-route lanes build and run cleanly.
+  On small, neither lane is needed for capacity correctness:
+    alloc_fail = 0
+    descriptor_exhausted = 0
+    route_register_fail = 0
+    source_block_exhausted = 0
+  The next useful reads are medium/mixed, mixed_ws balanced/wide_ws, Redis,
+  and Larson where route4k alone still failed or timed out.
 ```
 
 ## HZ6 Windows Current Read
