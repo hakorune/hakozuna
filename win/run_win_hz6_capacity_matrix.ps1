@@ -312,7 +312,7 @@ foreach ($family in $selectedFamilies) {
         $cases = Expand-ProfileSelection -AllProfiles $mixedProfiles -Requested $BenchmarkProfiles
     } elseif ($family -eq "random_mixed") {
         $cases = Expand-ProfileSelection -AllProfiles $randomProfiles -Requested $BenchmarkProfiles
-} elseif ($family -eq "larson") {
+    } elseif ($family -eq "larson") {
         $larsonProfiles = @()
         foreach ($threads in $ThreadCounts) {
             $larsonProfiles += @{ Name = "larson_T$threads"; Args = @("10", "8", "1024", "10000", "1", "12345", [string]$threads, "0"); Note = "Larson stress T=$threads, main-warmup, chunks=10000" }
@@ -325,7 +325,17 @@ foreach ($family in $selectedFamilies) {
         )
         $cases = Expand-ProfileSelection -AllProfiles $larsonProfiles -Requested $BenchmarkProfiles
     } elseif ($family -eq "redis") {
-        $cases += @{ Name = "redis_workload"; Args = @("4", "500", "2000", "16", "256"); Note = "paper-aligned Redis-like workload" }
+        $redisProfiles = @(
+            @{ Name = "redis_workload"; Args = @("4", "500", "2000", "16", "256"); Note = "paper-aligned Redis-like workload" },
+            @{ Name = "redis_short"; Args = @("2", "100", "200", "16", "256"); Note = "short Redis-like timeout triage row" },
+            @{ Name = "redis_tiny"; Args = @("1", "50", "100", "16", "256"); Note = "tiny Redis-like smoke row" }
+        )
+        $requestedRedisProfiles = Split-List -Values $BenchmarkProfiles
+        if (-not $requestedRedisProfiles -or $requestedRedisProfiles.Count -eq 0) {
+            $cases += ($redisProfiles | Where-Object { $_.Name -eq "redis_workload" })
+        } else {
+            $cases = Expand-ProfileSelection -AllProfiles $redisProfiles -Requested $BenchmarkProfiles
+        }
     }
 
     foreach ($case in $cases) {
@@ -410,7 +420,11 @@ foreach ($family in $selectedFamilies) {
                 if ($result.PeakKb -match '^[0-9]+$') {
                     $peakRuns.Add([double]$result.PeakKb)
                 }
-                $runTexts.Add($raw)
+                if ($family -eq "redis") {
+                    $runTexts.Add(("run{0}:ok" -f $run))
+                } else {
+                    $runTexts.Add($raw)
+                }
             }
 
             $medianPeak = if ($peakRuns.Count -gt 0) { "{0:N0}" -f (Get-Median -Values $peakRuns.ToArray()) } else { "n/a" }

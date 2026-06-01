@@ -651,6 +651,72 @@ Next:
   dominate the result.
 ```
 
+## Redis Short Triage 2026-06-02
+
+```text
+Runner change:
+  win/run_win_hz6_capacity_matrix.ps1 now supports focused Redis-like profiles:
+    redis_workload = 4 500 2000 16 256
+    redis_short    = 2 100 200 16 256
+    redis_tiny     = 1 50 100 16 256
+
+  Default Redis behavior is unchanged:
+    no BenchmarkProfiles => redis_workload
+
+  Redis summaries now keep stdout/stderr in the raw log but write only
+  runN:ok / failed markers into the markdown table, so repeated HZ6 stats lines
+  do not make the summary unreadable.
+```
+
+```text
+redis_short run-1:
+  route4k:
+    SET    0.02 M ops/s
+    GET   22.25 M ops/s
+    LPUSH  0.01 M ops/s
+    LPOP  30.83 M ops/s
+    RANDOM 0.29 M ops/s
+    peak  7.7 MiB
+
+  noboost-route4k:
+    SET    0.01 M ops/s
+    GET   27.61 M ops/s
+    LPUSH  0.01 M ops/s
+    LPOP  21.19 M ops/s
+    RANDOM 0.31 M ops/s
+    peak  7.8 MiB
+
+  appcap:
+    SET    0.91 M ops/s
+    GET    0.90 M ops/s
+    LPUSH  0.59 M ops/s
+    LPOP   0.96 M ops/s
+    RANDOM 0.74 M ops/s
+    peak  381.3 MiB
+```
+
+```text
+Failure read:
+  route4k and noboost-route4k have the same Redis failure shape:
+    redis_alloc_string_fail lines = 77560
+    source_alloc                 = 128
+    alloc_fail                   = 1638
+    descriptor_exhausted         = 3276
+    source_block_exhausted       = 1638
+    route_invalid                = 0
+    route_miss                   = 0
+
+  appcap completes with zero redis_alloc_string_fail lines but high peak working
+  set.
+
+Interpretation:
+  The default Redis row timeout is not primarily a noboost policy question.
+  Redis SET/LPUSH stresses low-capacity descriptor/source-block supply in
+  route4k/noboost-route4k. noboost remains good for mixed_ws, but Redis needs a
+  separate low-RSS capacity/admission design rather than more starvation-boost
+  tuning.
+```
+
 ## Next Implementation Order 2026-06-01
 
 ```text
