@@ -1440,6 +1440,42 @@ Next:
     expensive fallback
 ```
 
+## Diagnostic Checkpoint 2026-06-01n
+
+```text
+Route invalid-range register fix:
+  hz6_route_register_invalid_range previously did a full-table duplicate scan
+  before insertion.
+  appcap route capacity is 262144, so every source-block invalid envelope could
+  cost ~262k probes during main-warmup.
+
+Change:
+  use the same hash/probe path as exact registration.
+  track tombstones in the same pass.
+
+Smoke:
+  bench_larson_hz6_speed_appcap.exe 1 8 1024 10000 1 12345 16 0
+
+Result:
+  command completes quickly again.
+  route_invalid = 0
+  route_miss = 0
+  route_register_probe_total = 3593
+  route_register_probe_max = 2
+
+Remaining blocker:
+  route_lookup_probe_total is still huge:
+    1401949714
+  This is the worker-local MISS scan on foreign/rehome objects, not route
+  register anymore.
+
+Decision:
+  keep the invalid-range register fix as a safe route-table improvement.
+  continue route-locality work separately:
+    shared directory / owner-locality index must eliminate local MISS scans
+    without making cleanup or same-owner free unsafe.
+```
+
 Read:
 
 ```text

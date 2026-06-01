@@ -11,14 +11,17 @@ int hz6_route_register_invalid_range(Hz6RouteTable* table,
   }
 
   uintptr_t base_addr = (uintptr_t)base;
+  size_t start = hz6_route_hash_index(base_addr, table->capacity);
 #if HZ6_DIAGNOSTIC_PROBES
   size_t probes = 0;
 #endif
+  size_t tombstone_index = (size_t)-1;
   for (size_t i = 0; i < table->capacity; ++i) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++probes;
 #endif
-    Hz6RouteEntry* entry = &table->entries[i];
+    size_t index = (start + i) % table->capacity;
+    Hz6RouteEntry* entry = &table->entries[index];
     if (entry->active && !entry->exact_valid && entry->base == base_addr) {
 #if HZ6_DIAGNOSTIC_PROBES
       if (probe_count) {
@@ -31,37 +34,15 @@ int hz6_route_register_invalid_range(Hz6RouteTable* table,
 #endif
       return 0;
     }
-  }
-
-  size_t start = hz6_route_hash_index(base_addr, table->capacity);
-  for (size_t i = 0; i < table->capacity; ++i) {
-#if HZ6_DIAGNOSTIC_PROBES
-    ++probes;
-#endif
-    size_t index = (start + i) % table->capacity;
-    Hz6RouteEntry* entry = &table->entries[index];
     if (!entry->active) {
       if (entry->tombstone) {
+        if (tombstone_index == (size_t)-1) {
+          tombstone_index = index;
+        }
         continue;
       }
-      entry->base = base_addr;
-      entry->bytes = bytes;
-      entry->front_id = front_id;
-      entry->class_id = class_id;
-      entry->generation = 0;
-      entry->descriptor = NULL;
-      entry->exact_valid = 0;
-      entry->active = 1;
-      entry->tombstone = 0;
-#if HZ6_DIAGNOSTIC_PROBES
-      ++table->active_count;
-      if (probe_count) {
-        *probe_count = probes;
-      }
-#else
-      (void)probe_count;
-#endif
-      return 1;
+      tombstone_index = index;
+      break;
     }
   }
 
@@ -74,7 +55,24 @@ int hz6_route_register_invalid_range(Hz6RouteTable* table,
     *probe_count = 0;
   }
 #endif
-  return 0;
+  if (tombstone_index == (size_t)-1) {
+    return 0;
+  }
+
+  Hz6RouteEntry* entry = &table->entries[tombstone_index];
+  entry->base = base_addr;
+  entry->bytes = bytes;
+  entry->front_id = front_id;
+  entry->class_id = class_id;
+  entry->generation = 0;
+  entry->descriptor = NULL;
+  entry->exact_valid = 0;
+  entry->active = 1;
+  entry->tombstone = 0;
+#if HZ6_DIAGNOSTIC_PROBES
+  ++table->active_count;
+#endif
+  return 1;
 }
 
 void hz6_route_unregister_invalid_range(Hz6RouteTable* table,
