@@ -167,6 +167,9 @@ static void print_stats(const Hz6Allocator* allocator) {
          "source_run_reuse_descriptor_reclaim_attempt=%zu "
          "source_run_reuse_descriptor_reclaim_success=%zu "
          "source_run_reuse_descriptor_reclaim_no_candidate=%zu "
+         "source_run_reuse_same_class_reclaim_attempt=%zu "
+         "source_run_reuse_same_class_reclaim_success=%zu "
+         "source_run_reuse_same_class_reclaim_no_candidate=%zu "
          "source_run_reuse_route_fail=%zu "
          "source_run_reuse_prepare_fail=%zu "
          "local2p_source_alloc=%zu "
@@ -202,6 +205,9 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.source_run_reuse_descriptor_reclaim_attempt,
          stats.source_run_reuse_descriptor_reclaim_success,
          stats.source_run_reuse_descriptor_reclaim_no_candidate,
+         stats.source_run_reuse_same_class_reclaim_attempt,
+         stats.source_run_reuse_same_class_reclaim_success,
+         stats.source_run_reuse_same_class_reclaim_no_candidate,
          stats.source_run_reuse_route_fail,
          stats.source_run_reuse_prepare_fail,
          stats.local2p_source_alloc,

@@ -125,6 +125,9 @@ typedef struct Hz6StatsSnapshot {
   size_t source_run_reuse_descriptor_reclaim_attempt;
   size_t source_run_reuse_descriptor_reclaim_success;
   size_t source_run_reuse_descriptor_reclaim_no_candidate;
+  size_t source_run_reuse_same_class_reclaim_attempt;
+  size_t source_run_reuse_same_class_reclaim_success;
+  size_t source_run_reuse_same_class_reclaim_no_candidate;
   size_t source_run_reuse_route_fail;
   size_t source_run_reuse_prepare_fail;
   size_t source_run_reuse_rollback;

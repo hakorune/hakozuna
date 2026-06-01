@@ -174,6 +174,64 @@ int hz6_allocator_reclaim_frontcache_descriptor_for_source_run(
 #endif
 }
 
+int hz6_allocator_reclaim_frontcache_descriptor_for_source_run_same_class(
+    Hz6Allocator* allocator,
+    uint16_t requested_class_id) {
+  if (!allocator || requested_class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
+    return 0;
+  }
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.source_run_reuse_same_class_reclaim_attempt;
+#endif
+
+#if !HZ6_SOURCE_RUN_RECLAIM_SAME_CLASS_L1
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.source_run_reuse_same_class_reclaim_no_candidate;
+#endif
+  return 0;
+#else
+  Hz6FrontCacheBin* bin = &allocator->frontcache_bins[requested_class_id];
+  if (!bin->entries || bin->count <= 1) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.source_run_reuse_same_class_reclaim_no_candidate;
+#endif
+    return 0;
+  }
+
+  Hz6FrontCacheEntry entry = bin->entries[bin->count - 1];
+  Hz6ObjectDescriptor* descriptor =
+      (Hz6ObjectDescriptor*)entry.descriptor;
+  if (!descriptor || descriptor->ptr != entry.ptr ||
+      descriptor->generation != entry.generation ||
+      descriptor->state != HZ6_STATE_LOCAL_FREE ||
+      descriptor->class_id != requested_class_id) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.source_run_reuse_same_class_reclaim_no_candidate;
+#endif
+    return 0;
+  }
+
+  if (!hz6_allocator_frontcache_pop(allocator, requested_class_id, &entry)) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.source_run_reuse_same_class_reclaim_no_candidate;
+#endif
+    return 0;
+  }
+
+  hz6_allocator_route_unregister_exact(allocator, entry.ptr);
+#if HZ6_DIAGNOSTIC_PROBES
+  if (descriptor->source_release) {
+    ++allocator->stats.source_owned_release;
+  }
+#endif
+  hz6_allocator_release_descriptor_source(descriptor);
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.source_run_reuse_same_class_reclaim_success;
+#endif
+  return 1;
+#endif
+}
+
 void* hz6_allocator_borrow_larger_frontcache(Hz6Allocator* allocator,
                                              uint16_t front_id,
                                              uint16_t requested_class_id,

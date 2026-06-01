@@ -1176,6 +1176,55 @@ Decision:
     not cross-class donor reclaim.
 ```
 
+HZ6 SourceRunSameClassReclaim-L1 check:
+
+```text
+Implementation:
+  added sourcerun-sameclass-route4k as a narrower reclaim lane.
+  It only reclaims from the same class frontcache bin, and only when the bin
+  has more than one entry.
+  donor cross-class reclaim remains off in this lane.
+
+Validation:
+  Windows HZ6 capacity matrix run:
+    docs/benchmarks/windows/paper/20260601_120116_hz6_capacity_matrix_windows.md
+  Comparison route4k run:
+    docs/benchmarks/windows/paper/20260601_120346_hz6_capacity_matrix_windows.md
+
+mixed_ws / balanced:
+  route4k:
+    0.511M ops/s, 24.2 MB
+  sourcerun-sameclass-route4k:
+    0.539M ops/s, 24.2 MB
+    source_run_reuse_same_class_reclaim_success 73
+
+mixed_ws / wide_ws:
+  route4k:
+    0.397M ops/s, 24.9 MB
+  sourcerun-sameclass-route4k:
+    0.409M ops/s, 24.9 MB
+    source_run_reuse_same_class_reclaim_success 274
+
+mixed_ws / larger_sizes:
+  route4k:
+    0.777M ops/s, 15.6 MB
+  sourcerun-sameclass-route4k:
+    0.796M ops/s, 14.4 MB
+
+Read:
+  Same-class reclaim is a much safer evidence lane than donor reclaim.
+  It preserves route safety and gives a small throughput lift on balanced and
+  wide_ws, but the reclaimed-descriptor success count is still tiny relative to
+  the number of attempts.
+  The main bottleneck still looks like descriptor/frontcache lifecycle pressure,
+  not cross-class reuse.
+
+Decision:
+  keep same-class reclaim as evidence/control.
+  do not promote it yet.
+  next ROI remains descriptor lifecycle / frontcache-visible descriptor reuse.
+```
+
 ## HZ6 Windows Current Read
 
 ```text

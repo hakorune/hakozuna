@@ -16,10 +16,17 @@ static void* hz6_front_source_block_reserved_slot(
   Hz6ObjectDescriptor* descriptor =
       hz6_allocator_find_free_descriptor(allocator);
   if (!descriptor) {
+#if HZ6_SOURCE_RUN_RECLAIM_SAME_CLASS_L1
+    if (hz6_allocator_reclaim_frontcache_descriptor_for_source_run_same_class(
+            allocator, class_id)) {
+      descriptor = hz6_allocator_find_free_descriptor(allocator);
+    }
+#elif HZ6_SOURCE_RUN_RECLAIM_DESCRIPTOR_L1
     if (hz6_allocator_reclaim_frontcache_descriptor_for_source_run(
             allocator, class_id)) {
       descriptor = hz6_allocator_find_free_descriptor(allocator);
     }
+#endif
   }
   if (!descriptor) {
 #if HZ6_DIAGNOSTIC_PROBES

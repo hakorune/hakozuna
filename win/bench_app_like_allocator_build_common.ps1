@@ -112,6 +112,13 @@ function Get-Hz6WinSourceRunReclaimRoute4kCapacityFlags {
     $flags
 }
 
+function Get-Hz6WinSourceRunSameClassReclaimRoute4kCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinSourceRunRoute4kCapacityFlags
+    $flags += "/DHZ6_SOURCE_RUN_RECLAIM_SAME_CLASS_L1=1"
+    $flags
+}
+
 function Get-Hz6WinDesc4kRoute4kCapacityFlags {
     @(
         "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)4096)",
@@ -229,6 +236,7 @@ function Invoke-AppLikeHz6BenchBuilds {
     $capRoute4kFlags = Get-Hz6WinCapRoute4kCapacityFlags
     $sourceRunRoute4kFlags = Get-Hz6WinSourceRunRoute4kCapacityFlags
     $sourceRunReclaimRoute4kFlags = Get-Hz6WinSourceRunReclaimRoute4kCapacityFlags
+    $sourceRunSameClassReclaimRoute4kFlags = Get-Hz6WinSourceRunSameClassReclaimRoute4kCapacityFlags
     $desc4kRoute4kFlags = Get-Hz6WinDesc4kRoute4kCapacityFlags
     $source512Route4kFlags = Get-Hz6WinSource512Route4kCapacityFlags
     $desc4kSource512Route4kFlags = Get-Hz6WinDesc4kSource512Route4kCapacityFlags
@@ -244,6 +252,7 @@ function Invoke-AppLikeHz6BenchBuilds {
         "cap-route4k" = @{ Suffix = "_cap_route4k"; ExtraFlags = $capRoute4kFlags }
         "sourcerun-route4k" = @{ Suffix = "_sourcerun_route4k"; ExtraFlags = $sourceRunRoute4kFlags }
         "sourcerun-reclaim-route4k" = @{ Suffix = "_sourcerun_reclaim_route4k"; ExtraFlags = $sourceRunReclaimRoute4kFlags }
+        "sourcerun-sameclass-route4k" = @{ Suffix = "_sourcerun_sameclass_route4k"; ExtraFlags = $sourceRunSameClassReclaimRoute4kFlags }
         "desc4k-route4k" = @{ Suffix = "_desc4k_route4k"; ExtraFlags = $desc4kRoute4kFlags }
         "source512-route4k" = @{ Suffix = "_source512_route4k"; ExtraFlags = $source512Route4kFlags }
         "desc4k-source512-route4k" = @{ Suffix = "_desc4k_source512_route4k"; ExtraFlags = $desc4kSource512Route4kFlags }

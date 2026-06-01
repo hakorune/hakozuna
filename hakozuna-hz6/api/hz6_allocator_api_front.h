@@ -39,6 +39,10 @@ int hz6_allocator_reclaim_frontcache_descriptor_for_source_run(
     Hz6Allocator* allocator,
     uint16_t requested_class_id);
 
+int hz6_allocator_reclaim_frontcache_descriptor_for_source_run_same_class(
+    Hz6Allocator* allocator,
+    uint16_t requested_class_id);
+
 void hz6_allocator_note_frontcache_borrow_dryrun(Hz6Allocator* allocator,
                                                  uint16_t front_id,
                                                  uint16_t requested_class_id,

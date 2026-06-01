@@ -512,6 +512,15 @@ int main(int argc, char** argv) {
         hz6_stats.source_run_reuse_descriptor_reclaim_no_candidate +=
             args[i].hz6_stats_after
                 .source_run_reuse_descriptor_reclaim_no_candidate;
+        hz6_stats.source_run_reuse_same_class_reclaim_attempt +=
+            args[i].hz6_stats_after
+                .source_run_reuse_same_class_reclaim_attempt;
+        hz6_stats.source_run_reuse_same_class_reclaim_success +=
+            args[i].hz6_stats_after
+                .source_run_reuse_same_class_reclaim_success;
+        hz6_stats.source_run_reuse_same_class_reclaim_no_candidate +=
+            args[i].hz6_stats_after
+                .source_run_reuse_same_class_reclaim_no_candidate;
         hz6_stats.source_run_reuse_route_fail +=
             args[i].hz6_stats_after.source_run_reuse_route_fail;
         hz6_stats.source_run_reuse_prepare_fail +=
@@ -635,6 +644,9 @@ int main(int argc, char** argv) {
            "hz6_source_run_reuse_descriptor_reclaim_attempt=%zu "
            "hz6_source_run_reuse_descriptor_reclaim_success=%zu "
            "hz6_source_run_reuse_descriptor_reclaim_no_candidate=%zu "
+           "hz6_source_run_reuse_same_class_reclaim_attempt=%zu "
+           "hz6_source_run_reuse_same_class_reclaim_success=%zu "
+           "hz6_source_run_reuse_same_class_reclaim_no_candidate=%zu "
            "hz6_source_run_reuse_route_fail=%zu "
            "hz6_source_run_reuse_prepare_fail=%zu "
            "hz6_source_run_reuse_rollback=%zu "
@@ -711,6 +723,9 @@ int main(int argc, char** argv) {
            hz6_stats.source_run_reuse_descriptor_reclaim_attempt,
            hz6_stats.source_run_reuse_descriptor_reclaim_success,
            hz6_stats.source_run_reuse_descriptor_reclaim_no_candidate,
+           hz6_stats.source_run_reuse_same_class_reclaim_attempt,
+           hz6_stats.source_run_reuse_same_class_reclaim_success,
+           hz6_stats.source_run_reuse_same_class_reclaim_no_candidate,
            hz6_stats.source_run_reuse_route_fail,
            hz6_stats.source_run_reuse_prepare_fail,
            hz6_stats.source_run_reuse_rollback,
