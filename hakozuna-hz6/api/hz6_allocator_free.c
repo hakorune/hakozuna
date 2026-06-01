@@ -10,6 +10,35 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
   int visible_hit = 0;
   int visible_lookup_done = 0;
   Hz6RouteResult route = hz6_route_miss();
+#if HZ6_NEGATIVE_FILTER_L1 && HZ6_DIAGNOSTIC_PROBES
+  if (!hz6_allocator_profile_strict_owner_remote(allocator)) {
+    ++allocator->stats.negative_filter_attempt;
+    if (hz6_allocator_route_negative_filter_skip_local(allocator, ptr)) {
+      ++allocator->stats.negative_filter_skip_local;
+      route = hz6_allocator_route_lookup_visible_after_local_miss(allocator,
+                                                                  ptr);
+      visible_lookup_done = 1;
+      if (route.kind != HZ6_ROUTE_MISS) {
+        visible_hit = 1;
+      }
+      if (route.kind == HZ6_ROUTE_MISS) {
+        Hz6RouteResult shadow = hz6_allocator_route_lookup(allocator, ptr);
+        if (shadow.kind == HZ6_ROUTE_VALID) {
+          ++allocator->stats.negative_filter_shadow_false_skip;
+          ++allocator->stats.negative_filter_shadow_local_valid;
+          route = shadow;
+        } else if (shadow.kind == HZ6_ROUTE_INVALID) {
+          ++allocator->stats.negative_filter_shadow_false_skip;
+          ++allocator->stats.negative_filter_shadow_local_invalid;
+          route = shadow;
+        }
+      }
+    } else {
+      ++allocator->stats.negative_filter_maybe_local;
+      route = hz6_allocator_route_lookup(allocator, ptr);
+    }
+  } else
+#endif
 #if HZ6_VISIBLE_FIRST_FREE_L1 && HZ6_DIAGNOSTIC_PROBES
   if (!hz6_allocator_profile_strict_owner_remote(allocator)) {
     Hz6RouteResult visible_route;

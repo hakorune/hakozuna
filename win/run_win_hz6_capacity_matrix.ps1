@@ -199,6 +199,7 @@ $laneSuffix = @{
     "front1k-desc4k-source512-route4k" = "_front1k_desc4k_source512_route4k"
     "appcap" = "_appcap"
     "visiblefirst-appcap" = "_visiblefirst_appcap"
+    "negativefilter-appcap" = "_negativefilter_appcap"
 }
 
 $familyPrefixes = @{

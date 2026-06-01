@@ -18,6 +18,7 @@ Capacity / completion control:
 
 Route-lifecycle diagnostic:
   visiblefirst-appcap
+  negativefilter-appcap
 
 Evidence-only source-run controls:
   sourcerun-route4k
@@ -76,7 +77,14 @@ visiblefirst-appcap:
   Diagnostic-only appcap variant. In non-strict `free()`, visible/shared route
   lookup is tried before local route lookup; visible MISS falls back to local
   lookup so local INVALID is not converted to MISS. This is an upper-bound
-  probe for cross-owner warmup, not a promotion lane.
+  probe for cross-owner warmup, not a promotion lane. It is now treated as
+  no-go evidence rather than a production candidate.
+
+negativefilter-appcap:
+  Diagnostic-only appcap variant. It uses a conservative local owned-range hint
+  to skip local route lookup only when the pointer is definitely not local.
+  Diagnostic builds shadow-verify the skip and record false-skip counters.
+  This is the current next step after visiblefirst-appcap.
 ```
 
 ## Focused Mechanism Lanes

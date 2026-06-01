@@ -1215,6 +1215,60 @@ Next:
     use diagnostic shadow verification before treating it as production-near
 ```
 
+## Diagnostic Checkpoint 2026-06-01i
+
+```text
+NegativeFilter-L1:
+  lane:
+    negativefilter-appcap
+  build:
+    appcap with /DHZ6_NEGATIVE_FILTER_L1=1 and diagnostic probes enabled
+
+Shape:
+  use a conservative local owned-range hint
+  only skip local lookup when the pointer is definitely not inside any active
+  local source block
+  shadow verify skipped cases in diagnostic builds
+
+Expected counters:
+  negative_filter_attempt
+  negative_filter_skip_local
+  negative_filter_maybe_local
+  negative_filter_shadow_false_skip
+  negative_filter_shadow_local_valid
+  negative_filter_shadow_local_invalid
+
+Goal:
+  reduce the worker-local route MISS scan without reintroducing the visible-
+  first crash behavior
+  keep route_invalid / route_miss at zero
+  keep worker-warmup unchanged
+```
+
+## Diagnostic Checkpoint 2026-06-01j
+
+```text
+NegativeFilter-L1 smoke:
+  bench_larson_hz6_speed_negativefilter_appcap.exe 2 8 1024 10000 1 12345 16 0
+
+Read:
+  throughput = 32403 ops/s
+  route_invalid = 0
+  route_miss = 0
+  negative_filter_attempt = 66054
+  negative_filter_skip_local = 60954
+  negative_filter_maybe_local = 5100
+  negative_filter_shadow_false_skip = 0
+  route_lookup_probe_total = 23303
+  route_lookup_probe_max = 3
+
+Interpretation:
+  the conservative filter is now visible in diagnostics.
+  it skips local lookup on the majority of free attempts and has no shadow
+  false-skip so far.
+  this is still diagnostic evidence, not promotion.
+```
+
 Read:
 
 ```text

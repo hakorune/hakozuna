@@ -212,6 +212,13 @@ function Get-Hz6WinVisibleFirstAppLikeCapacityFlags {
     $flags
 }
 
+function Get-Hz6WinNegativeFilterAppLikeCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinAppLikeCapacityFlags
+    $flags += "/DHZ6_NEGATIVE_FILTER_L1=1"
+    $flags
+}
+
 function Invoke-AppLikeHz5BenchBuild {
     param(
         [Parameter(Mandatory = $true)][string]$Compiler,
@@ -291,6 +298,7 @@ function Invoke-AppLikeHz6BenchBuilds {
     $front1kDesc4kSource512Route4kFlags = Get-Hz6WinFront1kDesc4kSource512Route4kCapacityFlags
     $appLikeFlags = Get-Hz6WinAppLikeCapacityFlags
     $visibleFirstAppLikeFlags = Get-Hz6WinVisibleFirstAppLikeCapacityFlags
+    $negativeFilterAppLikeFlags = Get-Hz6WinNegativeFilterAppLikeCapacityFlags
     $laneMap = @{
         "default" = @{ Suffix = ""; ExtraFlags = @() }
         "broad" = @{ Suffix = "_broad"; ExtraFlags = $broadFlags }
@@ -313,6 +321,7 @@ function Invoke-AppLikeHz6BenchBuilds {
         "front1k-desc4k-source512-route4k" = @{ Suffix = "_front1k_desc4k_source512_route4k"; ExtraFlags = $front1kDesc4kSource512Route4kFlags }
         "appcap" = @{ Suffix = "_appcap"; ExtraFlags = $appLikeFlags }
         "visiblefirst-appcap" = @{ Suffix = "_visiblefirst_appcap"; ExtraFlags = $visibleFirstAppLikeFlags }
+        "negativefilter-appcap" = @{ Suffix = "_negativefilter_appcap"; ExtraFlags = $negativeFilterAppLikeFlags }
     }
 
     function Split-Hz6BuildList {

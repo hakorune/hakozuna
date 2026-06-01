@@ -1,6 +1,7 @@
 #include "hz6_allocator.h"
 
 #include <stdatomic.h>
+#include <stdint.h>
 
 static _Atomic(Hz6Allocator*) g_hz6_visible_allocators
     [HZ6_ALLOCATOR_VISIBILITY_CAPACITY];
@@ -170,6 +171,29 @@ Hz6RouteResult hz6_allocator_route_lookup_visible_after_local_miss(
     Hz6Allocator* allocator,
     const void* ptr) {
   return hz6_allocator_route_lookup_visible_only(allocator, ptr);
+}
+
+int hz6_allocator_route_negative_filter_skip_local(
+    const Hz6Allocator* allocator,
+    const void* ptr) {
+  if (!allocator || !ptr) {
+    return 0;
+  }
+
+  uintptr_t probe = (uintptr_t)ptr;
+  for (size_t i = 0; i < HZ6_SOURCE_BLOCK_CAPACITY; ++i) {
+    const Hz6SourceBlock* block = &allocator->source_blocks[i];
+    if (!block->active || !block->ptr || block->bytes == 0) {
+      continue;
+    }
+    uintptr_t base = (uintptr_t)block->ptr;
+    uintptr_t limit = base + (uintptr_t)block->bytes;
+    if (probe >= base && probe < limit) {
+      return 0;
+    }
+  }
+
+  return 1;
 }
 
 int hz6_allocator_route_rehome_exact(Hz6Allocator* allocator,

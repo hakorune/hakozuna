@@ -210,6 +210,12 @@ function Parse-Hz6Stats {
         VisibleFirstLocalFallback = "NA"
         VisibleFirstLocalFallbackInvalid = "NA"
         VisibleFirstLocalLookupSkipped = "NA"
+        NegativeFilterAttempt = "NA"
+        NegativeFilterSkipLocal = "NA"
+        NegativeFilterMaybeLocal = "NA"
+        NegativeFilterShadowFalseSkip = "NA"
+        NegativeFilterShadowLocalValid = "NA"
+        NegativeFilterShadowLocalInvalid = "NA"
         SourceOwnedPrepare = "NA"
         SourceOwnedRouteHitLocalOwner = "NA"
         SourceOwnedVisibilityHitLocalOwner = "NA"
@@ -300,6 +306,12 @@ function Parse-Hz6Stats {
                     '^visible_first_local_fallback=(.*)$' { $result.VisibleFirstLocalFallback = $Matches[1]; continue }
                     '^visible_first_local_fallback_invalid=(.*)$' { $result.VisibleFirstLocalFallbackInvalid = $Matches[1]; continue }
                     '^visible_first_local_lookup_skipped=(.*)$' { $result.VisibleFirstLocalLookupSkipped = $Matches[1]; continue }
+                    '^negative_filter_attempt=(.*)$' { $result.NegativeFilterAttempt = $Matches[1]; continue }
+                    '^negative_filter_skip_local=(.*)$' { $result.NegativeFilterSkipLocal = $Matches[1]; continue }
+                    '^negative_filter_maybe_local=(.*)$' { $result.NegativeFilterMaybeLocal = $Matches[1]; continue }
+                    '^negative_filter_shadow_false_skip=(.*)$' { $result.NegativeFilterShadowFalseSkip = $Matches[1]; continue }
+                    '^negative_filter_shadow_local_valid=(.*)$' { $result.NegativeFilterShadowLocalValid = $Matches[1]; continue }
+                    '^negative_filter_shadow_local_invalid=(.*)$' { $result.NegativeFilterShadowLocalInvalid = $Matches[1]; continue }
                     '^source_owned_prepare=(.*)$' { $result.SourceOwnedPrepare = $Matches[1]; continue }
                     '^source_owned_route_hit_local_owner=(.*)$' { $result.SourceOwnedRouteHitLocalOwner = $Matches[1]; continue }
                     '^source_owned_visibility_hit_local_owner=(.*)$' { $result.SourceOwnedVisibilityHitLocalOwner = $Matches[1]; continue }
@@ -493,6 +505,12 @@ foreach ($threads in $ThreadCounts) {
                 VisibleFirstLocalFallback = "NA"
                 VisibleFirstLocalFallbackInvalid = "NA"
                 VisibleFirstLocalLookupSkipped = "NA"
+                NegativeFilterAttempt = "NA"
+                NegativeFilterSkipLocal = "NA"
+                NegativeFilterMaybeLocal = "NA"
+                NegativeFilterShadowFalseSkip = "NA"
+                NegativeFilterShadowLocalValid = "NA"
+                NegativeFilterShadowLocalInvalid = "NA"
                 SourceOwnedPrepare = "NA"
                 SourceOwnedRouteHitLocalOwner = "NA"
                 SourceOwnedVisibilityHitLocalOwner = "NA"
@@ -647,6 +665,12 @@ foreach ($threads in $ThreadCounts) {
                 $lastStats.VisibleFirstLocalFallback,
                 $lastStats.VisibleFirstLocalFallbackInvalid,
                 $lastStats.VisibleFirstLocalLookupSkipped,
+                $lastStats.NegativeFilterAttempt,
+                $lastStats.NegativeFilterSkipLocal,
+                $lastStats.NegativeFilterMaybeLocal,
+                $lastStats.NegativeFilterShadowFalseSkip,
+                $lastStats.NegativeFilterShadowLocalValid,
+                $lastStats.NegativeFilterShadowLocalInvalid,
                 $lastStats.SourceOwnedPrepare,
                 $lastStats.SourceOwnedRouteHitLocalOwner,
                 $lastStats.SourceOwnedVisibilityHitLocalOwner,
@@ -727,6 +751,13 @@ foreach ($threads in $ThreadCounts) {
                     $lastStats.VisibleFirstLocalFallback,
                     $lastStats.VisibleFirstLocalFallbackInvalid,
                     $lastStats.VisibleFirstLocalLookupSkipped))
+                $Summary.Add(('  negative_filter: attempt={0} skip_local={1} maybe_local={2} false_skip={3} shadow_local_valid={4} shadow_local_invalid={5}' -f
+                    $lastStats.NegativeFilterAttempt,
+                    $lastStats.NegativeFilterSkipLocal,
+                    $lastStats.NegativeFilterMaybeLocal,
+                    $lastStats.NegativeFilterShadowFalseSkip,
+                    $lastStats.NegativeFilterShadowLocalValid,
+                    $lastStats.NegativeFilterShadowLocalInvalid))
                 $Summary.Add(('  frontcache_class: {0}' -f $lastStats.FrontcacheClass))
             }
         }
