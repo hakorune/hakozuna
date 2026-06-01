@@ -414,6 +414,23 @@ int main(int argc, char** argv) {
             hz6_stats.descriptor_probe_max =
                 args[i].hz6_stats_after.descriptor_probe_max;
         }
+#if HZ6_DIAGNOSTIC_PROBES
+#define HZ6_MAX_STAT(field) \
+        do { \
+            if (args[i].hz6_stats_after.field > hz6_stats.field) { \
+                hz6_stats.field = args[i].hz6_stats_after.field; \
+            } \
+        } while (0)
+        HZ6_MAX_STAT(descriptor_fail_active_max);
+        HZ6_MAX_STAT(descriptor_fail_local_free_max);
+        HZ6_MAX_STAT(descriptor_fail_transfer_free_max);
+        HZ6_MAX_STAT(descriptor_fail_remote_pending_max);
+        HZ6_MAX_STAT(descriptor_fail_central_free_max);
+        HZ6_MAX_STAT(descriptor_fail_released_max);
+        HZ6_MAX_STAT(descriptor_fail_orphan_max);
+        HZ6_MAX_STAT(descriptor_fail_dead_with_ptr_max);
+#undef HZ6_MAX_STAT
+#endif
         hz6_stats.route_lookup_probe_total +=
             args[i].hz6_stats_after.route_lookup_probe_total;
         if (args[i].hz6_stats_after.route_lookup_probe_max >
@@ -442,6 +459,19 @@ int main(int argc, char** argv) {
             hz6_stats.source_block_probe_max =
                 args[i].hz6_stats_after.source_block_probe_max;
         }
+#if HZ6_DIAGNOSTIC_PROBES
+#define HZ6_MAX_STAT(field) \
+        do { \
+            if (args[i].hz6_stats_after.field > hz6_stats.field) { \
+                hz6_stats.field = args[i].hz6_stats_after.field; \
+            } \
+        } while (0)
+        HZ6_MAX_STAT(source_block_fail_active_max);
+        HZ6_MAX_STAT(source_block_fail_registered_max);
+        HZ6_MAX_STAT(source_block_fail_ref_nonzero_max);
+        HZ6_MAX_STAT(source_block_fail_ref_zero_max);
+#undef HZ6_MAX_STAT
+#endif
         hz6_stats.large_span_central_push +=
             args[i].hz6_stats_after.large_span_central_push;
         hz6_stats.large_span_central_pop +=
@@ -462,6 +492,14 @@ int main(int argc, char** argv) {
            "hz6_descriptor_exhausted=%zu hz6_route_register_fail=%zu "
            "hz6_source_block_exhausted=%zu hz6_descriptor_probe_total=%zu "
            "hz6_descriptor_probe_max=%zu "
+           "hz6_descriptor_fail_active_max=%zu "
+           "hz6_descriptor_fail_local_free_max=%zu "
+           "hz6_descriptor_fail_transfer_free_max=%zu "
+           "hz6_descriptor_fail_remote_pending_max=%zu "
+           "hz6_descriptor_fail_central_free_max=%zu "
+           "hz6_descriptor_fail_released_max=%zu "
+           "hz6_descriptor_fail_orphan_max=%zu "
+           "hz6_descriptor_fail_dead_with_ptr_max=%zu "
            "hz6_route_lookup_probe_total=%zu "
            "hz6_route_lookup_probe_max=%zu "
            "hz6_route_register_probe_total=%zu "
@@ -470,6 +508,10 @@ int main(int argc, char** argv) {
            "hz6_route_unregister_probe_max=%zu "
            "hz6_source_block_probe_total=%zu "
            "hz6_source_block_probe_max=%zu "
+           "hz6_source_block_fail_active_max=%zu "
+           "hz6_source_block_fail_registered_max=%zu "
+           "hz6_source_block_fail_ref_nonzero_max=%zu "
+           "hz6_source_block_fail_ref_zero_max=%zu "
            "hz6_large_central_push=%zu hz6_large_central_pop=%zu "
            "hz6_large_source_alloc=%zu",
            hz6_stats.route_valid, hz6_stats.route_invalid,
@@ -478,6 +520,14 @@ int main(int argc, char** argv) {
            hz6_stats.alloc_fail, hz6_stats.descriptor_exhausted,
            hz6_stats.route_register_fail, hz6_stats.source_block_exhausted,
            hz6_stats.descriptor_probe_total, hz6_stats.descriptor_probe_max,
+           hz6_stats.descriptor_fail_active_max,
+           hz6_stats.descriptor_fail_local_free_max,
+           hz6_stats.descriptor_fail_transfer_free_max,
+           hz6_stats.descriptor_fail_remote_pending_max,
+           hz6_stats.descriptor_fail_central_free_max,
+           hz6_stats.descriptor_fail_released_max,
+           hz6_stats.descriptor_fail_orphan_max,
+           hz6_stats.descriptor_fail_dead_with_ptr_max,
            hz6_stats.route_lookup_probe_total,
            hz6_stats.route_lookup_probe_max,
            hz6_stats.route_register_probe_total,
@@ -486,6 +536,10 @@ int main(int argc, char** argv) {
            hz6_stats.route_unregister_probe_max,
            hz6_stats.source_block_probe_total,
            hz6_stats.source_block_probe_max,
+           hz6_stats.source_block_fail_active_max,
+           hz6_stats.source_block_fail_registered_max,
+           hz6_stats.source_block_fail_ref_nonzero_max,
+           hz6_stats.source_block_fail_ref_zero_max,
            hz6_stats.large_span_central_push,
            hz6_stats.large_span_central_pop,
            hz6_stats.large_span_source_alloc);

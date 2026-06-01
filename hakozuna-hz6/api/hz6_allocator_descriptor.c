@@ -1,5 +1,78 @@
 #include "hz6_allocator.h"
 
+#if HZ6_DIAGNOSTIC_PROBES
+static void hz6_allocator_record_descriptor_failure_state(
+    Hz6Allocator* allocator) {
+  size_t active = 0;
+  size_t local_free = 0;
+  size_t transfer_free = 0;
+  size_t remote_pending = 0;
+  size_t central_free = 0;
+  size_t released = 0;
+  size_t orphan = 0;
+  size_t dead_with_ptr = 0;
+
+  for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
+    const Hz6ObjectDescriptor* descriptor = &allocator->descriptors[i];
+    if (!descriptor->ptr) {
+      continue;
+    }
+    switch (descriptor->state) {
+      case HZ6_STATE_ACTIVE:
+        ++active;
+        break;
+      case HZ6_STATE_LOCAL_FREE:
+        ++local_free;
+        break;
+      case HZ6_STATE_TRANSFER_FREE:
+        ++transfer_free;
+        break;
+      case HZ6_STATE_REMOTE_PENDING:
+        ++remote_pending;
+        break;
+      case HZ6_STATE_CENTRAL_FREE:
+        ++central_free;
+        break;
+      case HZ6_STATE_RELEASED:
+        ++released;
+        break;
+      case HZ6_STATE_ORPHAN:
+        ++orphan;
+        break;
+      case HZ6_STATE_DEAD:
+      default:
+        ++dead_with_ptr;
+        break;
+    }
+  }
+
+  if (active > allocator->stats.descriptor_fail_active_max) {
+    allocator->stats.descriptor_fail_active_max = active;
+  }
+  if (local_free > allocator->stats.descriptor_fail_local_free_max) {
+    allocator->stats.descriptor_fail_local_free_max = local_free;
+  }
+  if (transfer_free > allocator->stats.descriptor_fail_transfer_free_max) {
+    allocator->stats.descriptor_fail_transfer_free_max = transfer_free;
+  }
+  if (remote_pending > allocator->stats.descriptor_fail_remote_pending_max) {
+    allocator->stats.descriptor_fail_remote_pending_max = remote_pending;
+  }
+  if (central_free > allocator->stats.descriptor_fail_central_free_max) {
+    allocator->stats.descriptor_fail_central_free_max = central_free;
+  }
+  if (released > allocator->stats.descriptor_fail_released_max) {
+    allocator->stats.descriptor_fail_released_max = released;
+  }
+  if (orphan > allocator->stats.descriptor_fail_orphan_max) {
+    allocator->stats.descriptor_fail_orphan_max = orphan;
+  }
+  if (dead_with_ptr > allocator->stats.descriptor_fail_dead_with_ptr_max) {
+    allocator->stats.descriptor_fail_dead_with_ptr_max = dead_with_ptr;
+  }
+}
+#endif
+
 Hz6ObjectDescriptor* hz6_allocator_find_free_descriptor(
     Hz6Allocator* allocator) {
   if (!allocator) {
@@ -41,6 +114,9 @@ Hz6ObjectDescriptor* hz6_allocator_find_free_descriptor(
   }
 #endif
   ++allocator->stats.descriptor_exhausted;
+#if HZ6_DIAGNOSTIC_PROBES
+  hz6_allocator_record_descriptor_failure_state(allocator);
+#endif
   return NULL;
 }
 

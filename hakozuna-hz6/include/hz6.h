@@ -73,6 +73,14 @@ typedef struct Hz6StatsSnapshot {
   size_t route_active_max;
   size_t descriptor_probe_total;
   size_t descriptor_probe_max;
+  size_t descriptor_fail_active_max;
+  size_t descriptor_fail_local_free_max;
+  size_t descriptor_fail_transfer_free_max;
+  size_t descriptor_fail_remote_pending_max;
+  size_t descriptor_fail_central_free_max;
+  size_t descriptor_fail_released_max;
+  size_t descriptor_fail_orphan_max;
+  size_t descriptor_fail_dead_with_ptr_max;
   size_t route_lookup_probe_total;
   size_t route_lookup_probe_max;
   size_t route_register_probe_total;
@@ -81,6 +89,10 @@ typedef struct Hz6StatsSnapshot {
   size_t route_unregister_probe_max;
   size_t source_block_probe_total;
   size_t source_block_probe_max;
+  size_t source_block_fail_active_max;
+  size_t source_block_fail_registered_max;
+  size_t source_block_fail_ref_nonzero_max;
+  size_t source_block_fail_ref_zero_max;
   size_t large_span_central_push;
   size_t large_span_central_pop;
   size_t large_span_source_alloc;

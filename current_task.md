@@ -720,6 +720,60 @@ Do not:
   add another large fixed capacity lane without a lifetime hypothesis.
 ```
 
+HZ6 lifetime-state diagnostic:
+
+```text
+Source:
+  docs/benchmarks/windows/paper/20260601_102002_hz6_capacity_matrix_windows.md
+
+Implementation:
+  added diagnostic-only failure-state snapshots under HZ6_DIAGNOSTIC_PROBES.
+  normal speed artifacts are not rebuilt with these counters unless
+  -DiagnosticHz6Probes is requested.
+
+mixed_ws / balanced / route4k:
+  descriptor failure state:
+    active_max = 512
+    local_free_max = 457
+    transfer/free/remote/orphan/released = 0
+
+  source-block failure state:
+    active_max = 128
+    registered_max = 128
+    ref_nonzero_max = 128
+    ref_zero_max = 0
+
+mixed_ws / balanced / front1k-desc4k-source512-route4k:
+  descriptor failure state:
+    all zero because descriptor capacity no longer fails.
+
+  source-block failure state:
+    active_max = 512
+    registered_max = 512
+    ref_nonzero_max = 512
+    ref_zero_max = 0
+
+larger_sizes:
+  route4k still descriptor-fails with active_max = 512.
+  front1k-desc4k-source512-route4k still source-block-fails with
+  active/registered/ref_nonzero = 512.
+
+Read:
+  The failure is real lifetime retention, not just a poor free-slot search:
+    descriptors are full of live or locally cached objects.
+    source blocks are all active, route-registered, and still referenced.
+
+  Next behavior should avoid fixed capacity growth and instead reduce lifetime
+  retention:
+    class/run reuse before new source blocks
+    source-block slot reuse or partial-run reuse
+    descriptor recycling only when route/fail-closed ownership remains valid
+
+  A blind descriptor free-list alone is not enough because the route4k failure
+  snapshot shows the table is full of ptr-backed descriptors, not missed null
+  descriptors.
+```
+
 ## HZ6 Windows Current Read
 
 ```text

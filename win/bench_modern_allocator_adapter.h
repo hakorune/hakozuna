@@ -120,10 +120,22 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 "descriptor_exhausted=%zu route_register_fail=%zu source_block_exhausted=%zu "
                 "route_active_current=%zu route_active_max=%zu "
                 "descriptor_probe_total=%zu descriptor_probe_max=%zu "
+                "descriptor_fail_active_max=%zu "
+                "descriptor_fail_local_free_max=%zu "
+                "descriptor_fail_transfer_free_max=%zu "
+                "descriptor_fail_remote_pending_max=%zu "
+                "descriptor_fail_central_free_max=%zu "
+                "descriptor_fail_released_max=%zu "
+                "descriptor_fail_orphan_max=%zu "
+                "descriptor_fail_dead_with_ptr_max=%zu "
                 "route_lookup_probe_total=%zu route_lookup_probe_max=%zu "
                 "route_register_probe_total=%zu route_register_probe_max=%zu "
                 "route_unregister_probe_total=%zu route_unregister_probe_max=%zu "
                 "source_block_probe_total=%zu source_block_probe_max=%zu "
+                "source_block_fail_active_max=%zu "
+                "source_block_fail_registered_max=%zu "
+                "source_block_fail_ref_nonzero_max=%zu "
+                "source_block_fail_ref_zero_max=%zu "
                 "large_span_central_push=%zu large_span_central_pop=%zu large_span_source_alloc=%zu\n",
                 label ? label : "unknown",
                 s.route_valid,
@@ -161,6 +173,14 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 s.route_active_max,
                 s.descriptor_probe_total,
                 s.descriptor_probe_max,
+                s.descriptor_fail_active_max,
+                s.descriptor_fail_local_free_max,
+                s.descriptor_fail_transfer_free_max,
+                s.descriptor_fail_remote_pending_max,
+                s.descriptor_fail_central_free_max,
+                s.descriptor_fail_released_max,
+                s.descriptor_fail_orphan_max,
+                s.descriptor_fail_dead_with_ptr_max,
                 s.route_lookup_probe_total,
                 s.route_lookup_probe_max,
                 s.route_register_probe_total,
@@ -169,6 +189,10 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 s.route_unregister_probe_max,
                 s.source_block_probe_total,
                 s.source_block_probe_max,
+                s.source_block_fail_active_max,
+                s.source_block_fail_registered_max,
+                s.source_block_fail_ref_nonzero_max,
+                s.source_block_fail_ref_zero_max,
                 s.large_span_central_push,
                 s.large_span_central_pop,
                 s.large_span_source_alloc);
