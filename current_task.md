@@ -951,6 +951,64 @@ Next:
     over-retain source refs and descriptor ownership in the first place.
 ```
 
+HZ6 source/run reuse dry-run:
+
+```text
+Source:
+  docs/benchmarks/windows/paper/20260601_104527_hz6_capacity_matrix_windows.md
+
+Implementation:
+  added diagnostic-only source/run reuse projection.
+  Before creating a new source block/run, count active source blocks with:
+    same source kind
+    same block size
+    ref_count < slots_per_block
+
+  No behavior change. Existing speed lanes remain unchanged unless
+  -DiagnosticHz6Probes is requested.
+
+mixed_ws / balanced / route4k:
+  source_run_reuse_dryrun_calls = 1.51M
+  candidate_calls = 1.51M
+  candidate_blocks_total = 193.0M
+  free_slots_total = 15.0B
+  largest_free_slots_max = 4094
+
+mixed_ws / balanced / front1k-desc4k-source512-route4k:
+  source_run_reuse_dryrun_calls = 64.0K
+  candidate_calls = 64.0K
+  candidate_blocks_total = 31.6M
+  free_slots_total = 1.42B
+  largest_free_slots_max = 4095
+
+mixed_ws / larger_sizes / route4k:
+  source_run_reuse_dryrun_calls = 459.6K
+  candidate_calls = 459.6K
+  candidate_blocks_total = 25.7M
+  free_slots_total = 359.5M
+  largest_free_slots_max = 255
+
+Read:
+  This is the strongest signal so far. HZ6 is repeatedly trying to create new
+  source blocks even though existing source blocks appear to have ref-count
+  slack.
+
+  The current source-block model only has ref_count and does not have slot
+  occupancy metadata. Therefore behavior cannot safely reuse a projected free
+  slot yet.
+
+Next:
+  design source-run slot metadata before behavior:
+    per-source-block slot bitmap or free index stack
+    front/class ownership for each run
+    route/fail-closed invariants for reused slots
+    release only when all slots dead and route invalid range is safe
+
+Design-consult trigger:
+  This is enough evidence to ask for a source-run reuse design review before
+  implementing behavior.
+```
+
 ## HZ6 Windows Current Read
 
 ```text

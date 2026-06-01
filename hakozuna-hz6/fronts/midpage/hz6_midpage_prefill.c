@@ -20,6 +20,9 @@ size_t hz6_midpage_prefill_run(Hz6Allocator* allocator, uint16_t class_id) {
       hz6_allocator_profile_source_kind(allocator);
   const Hz6OsMemoryOps* source_ops =
       hz6_allocator_source_ops(allocator, source_kind);
+  hz6_allocator_note_source_run_reuse_dryrun(allocator, source_kind,
+                                             policy.run_bytes,
+                                             policy.slot_bytes);
   Hz6SourceBlock* block = hz6_allocator_create_source_block(
       allocator, policy.run_bytes, source_ops, source_kind);
   if (!block) {

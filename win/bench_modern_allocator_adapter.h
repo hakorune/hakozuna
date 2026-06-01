@@ -156,6 +156,11 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 "frontcache_cap_dryrun_soft_cap_max=%zu "
                 "frontcache_cap_dryrun_bin_count_max=%zu "
                 "frontcache_cap_release=%zu "
+                "source_run_reuse_dryrun_calls=%zu "
+                "source_run_reuse_dryrun_candidate_calls=%zu "
+                "source_run_reuse_dryrun_candidate_blocks_total=%zu "
+                "source_run_reuse_dryrun_free_slots_total=%zu "
+                "source_run_reuse_dryrun_largest_free_slots_max=%zu "
                 "route_lookup_probe_total=%zu route_lookup_probe_max=%zu "
                 "route_register_probe_total=%zu route_register_probe_max=%zu "
                 "route_unregister_probe_total=%zu route_unregister_probe_max=%zu "
@@ -237,6 +242,11 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 s.frontcache_cap_dryrun_soft_cap_max,
                 s.frontcache_cap_dryrun_bin_count_max,
                 s.frontcache_cap_release,
+                s.source_run_reuse_dryrun_calls,
+                s.source_run_reuse_dryrun_candidate_calls,
+                s.source_run_reuse_dryrun_candidate_blocks_total,
+                s.source_run_reuse_dryrun_free_slots_total,
+                s.source_run_reuse_dryrun_largest_free_slots_max,
                 s.route_lookup_probe_total,
                 s.route_lookup_probe_max,
                 s.route_register_probe_total,

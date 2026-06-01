@@ -93,6 +93,8 @@ size_t hz6_front_prefill_source_block_kind(Hz6Allocator* allocator,
   if (block_bytes < slot_bytes) {
     block_bytes = slot_bytes;
   }
+  hz6_allocator_note_source_run_reuse_dryrun(allocator, source_kind,
+                                             block_bytes, slot_bytes);
 
   size_t front_index = 0;
   int has_front_index =

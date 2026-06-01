@@ -109,6 +109,11 @@ typedef struct Hz6StatsSnapshot {
   size_t frontcache_cap_dryrun_soft_cap_max;
   size_t frontcache_cap_dryrun_bin_count_max;
   size_t frontcache_cap_release;
+  size_t source_run_reuse_dryrun_calls;
+  size_t source_run_reuse_dryrun_candidate_calls;
+  size_t source_run_reuse_dryrun_candidate_blocks_total;
+  size_t source_run_reuse_dryrun_free_slots_total;
+  size_t source_run_reuse_dryrun_largest_free_slots_max;
   size_t route_lookup_probe_total;
   size_t route_lookup_probe_max;
   size_t route_register_probe_total;

@@ -477,6 +477,16 @@ int main(int argc, char** argv) {
         HZ6_MAX_STAT(frontcache_cap_dryrun_bin_count_max);
         hz6_stats.frontcache_cap_release +=
             args[i].hz6_stats_after.frontcache_cap_release;
+        hz6_stats.source_run_reuse_dryrun_calls +=
+            args[i].hz6_stats_after.source_run_reuse_dryrun_calls;
+        hz6_stats.source_run_reuse_dryrun_candidate_calls +=
+            args[i].hz6_stats_after.source_run_reuse_dryrun_candidate_calls;
+        hz6_stats.source_run_reuse_dryrun_candidate_blocks_total +=
+            args[i].hz6_stats_after
+                .source_run_reuse_dryrun_candidate_blocks_total;
+        hz6_stats.source_run_reuse_dryrun_free_slots_total +=
+            args[i].hz6_stats_after.source_run_reuse_dryrun_free_slots_total;
+        HZ6_MAX_STAT(source_run_reuse_dryrun_largest_free_slots_max);
 #undef HZ6_MAX_STAT
 #endif
         hz6_stats.route_lookup_probe_total +=
@@ -576,6 +586,11 @@ int main(int argc, char** argv) {
            "hz6_frontcache_cap_dryrun_soft_cap_max=%zu "
            "hz6_frontcache_cap_dryrun_bin_count_max=%zu "
            "hz6_frontcache_cap_release=%zu "
+           "hz6_source_run_reuse_dryrun_calls=%zu "
+           "hz6_source_run_reuse_dryrun_candidate_calls=%zu "
+           "hz6_source_run_reuse_dryrun_candidate_blocks_total=%zu "
+           "hz6_source_run_reuse_dryrun_free_slots_total=%zu "
+           "hz6_source_run_reuse_dryrun_largest_free_slots_max=%zu "
            "hz6_route_lookup_probe_total=%zu "
            "hz6_route_lookup_probe_max=%zu "
            "hz6_route_register_probe_total=%zu "
@@ -632,6 +647,11 @@ int main(int argc, char** argv) {
            hz6_stats.frontcache_cap_dryrun_soft_cap_max,
            hz6_stats.frontcache_cap_dryrun_bin_count_max,
            hz6_stats.frontcache_cap_release,
+           hz6_stats.source_run_reuse_dryrun_calls,
+           hz6_stats.source_run_reuse_dryrun_candidate_calls,
+           hz6_stats.source_run_reuse_dryrun_candidate_blocks_total,
+           hz6_stats.source_run_reuse_dryrun_free_slots_total,
+           hz6_stats.source_run_reuse_dryrun_largest_free_slots_max,
            hz6_stats.route_lookup_probe_total,
            hz6_stats.route_lookup_probe_max,
            hz6_stats.route_register_probe_total,
