@@ -501,6 +501,21 @@ int main(int argc, char** argv) {
             args[i].hz6_stats_after.source_run_reuse_reserved;
         hz6_stats.source_run_reuse_slot_fail +=
             args[i].hz6_stats_after.source_run_reuse_slot_fail;
+        hz6_stats.source_run_reuse_descriptor_fail +=
+            args[i].hz6_stats_after.source_run_reuse_descriptor_fail;
+        hz6_stats.source_run_reuse_descriptor_reclaim_attempt +=
+            args[i].hz6_stats_after
+                .source_run_reuse_descriptor_reclaim_attempt;
+        hz6_stats.source_run_reuse_descriptor_reclaim_success +=
+            args[i].hz6_stats_after
+                .source_run_reuse_descriptor_reclaim_success;
+        hz6_stats.source_run_reuse_descriptor_reclaim_no_candidate +=
+            args[i].hz6_stats_after
+                .source_run_reuse_descriptor_reclaim_no_candidate;
+        hz6_stats.source_run_reuse_route_fail +=
+            args[i].hz6_stats_after.source_run_reuse_route_fail;
+        hz6_stats.source_run_reuse_prepare_fail +=
+            args[i].hz6_stats_after.source_run_reuse_prepare_fail;
         hz6_stats.source_run_reuse_rollback +=
             args[i].hz6_stats_after.source_run_reuse_rollback;
         hz6_stats.source_run_reuse_used_count_mismatch +=
@@ -616,6 +631,12 @@ int main(int argc, char** argv) {
            "hz6_source_run_reuse_miss_no_slot=%zu "
            "hz6_source_run_reuse_reserved=%zu "
            "hz6_source_run_reuse_slot_fail=%zu "
+           "hz6_source_run_reuse_descriptor_fail=%zu "
+           "hz6_source_run_reuse_descriptor_reclaim_attempt=%zu "
+           "hz6_source_run_reuse_descriptor_reclaim_success=%zu "
+           "hz6_source_run_reuse_descriptor_reclaim_no_candidate=%zu "
+           "hz6_source_run_reuse_route_fail=%zu "
+           "hz6_source_run_reuse_prepare_fail=%zu "
            "hz6_source_run_reuse_rollback=%zu "
            "hz6_source_run_reuse_used_count_mismatch=%zu "
            "hz6_route_lookup_probe_total=%zu "
@@ -686,6 +707,12 @@ int main(int argc, char** argv) {
            hz6_stats.source_run_reuse_miss_no_slot,
            hz6_stats.source_run_reuse_reserved,
            hz6_stats.source_run_reuse_slot_fail,
+           hz6_stats.source_run_reuse_descriptor_fail,
+           hz6_stats.source_run_reuse_descriptor_reclaim_attempt,
+           hz6_stats.source_run_reuse_descriptor_reclaim_success,
+           hz6_stats.source_run_reuse_descriptor_reclaim_no_candidate,
+           hz6_stats.source_run_reuse_route_fail,
+           hz6_stats.source_run_reuse_prepare_fail,
            hz6_stats.source_run_reuse_rollback,
            hz6_stats.source_run_reuse_used_count_mismatch,
            hz6_stats.route_lookup_probe_total,

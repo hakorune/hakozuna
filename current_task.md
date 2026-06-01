@@ -1127,6 +1127,55 @@ Decision:
   reuse, not more source-run placement.
 ```
 
+HZ6 SourceRunDescriptorReclaim-L1 check:
+
+```text
+Implementation:
+  added sourcerun-reclaim-route4k as an explicit experiment lane.
+  It only reclaims a donor frontcache descriptor when source-run reuse has a
+  candidate block but no free descriptor.
+  route4k and sourcerun-route4k remain unchanged.
+
+Validation:
+  HZ6 Windows R1 smoke suite passes.
+  Results:
+    results/hz6-sourcerun-probe/20260601_113631_hz6_capacity_matrix_windows.md
+
+mixed_ws / balanced / speed:
+  route4k:
+    0.530M ops/s, 17.6 MB
+  sourcerun-route4k:
+    0.494M ops/s, 17.5 MB
+  sourcerun-reclaim-route4k:
+    0.420M ops/s, 19.9 MB
+    source_run_reuse_hit 65.5K
+    descriptor_reclaim_success 64.5K
+    route_register_probe_total 154.1M
+    route_unregister_probe_total 3.91M
+
+mixed_ws / larger_sizes:
+  speed route4k:
+    0.748M ops/s, 14.6 MB
+  speed sourcerun-route4k:
+    0.783M ops/s, 13.6 MB
+  speed sourcerun-reclaim-route4k:
+    0.746M ops/s, 14.4 MB
+
+Read:
+  Reclaiming donor descriptors proves the descriptor bottleneck, but it
+  converts the bottleneck into route churn.
+  The route register/unregister cost dominates and RSS does not improve.
+
+Decision:
+  sourcerun-reclaim-route4k is no-go/control evidence.
+  do not promote descriptor reclaim.
+  next ROI should avoid donor route unregister churn.
+  Candidate directions:
+    descriptor recycle within same class/source-run only
+    or descriptor accounting/lifecycle redesign
+    not cross-class donor reclaim.
+```
+
 ## HZ6 Windows Current Read
 
 ```text

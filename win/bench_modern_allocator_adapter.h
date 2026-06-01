@@ -168,6 +168,12 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 "source_run_reuse_miss_no_slot=%zu "
                 "source_run_reuse_reserved=%zu "
                 "source_run_reuse_slot_fail=%zu "
+                "source_run_reuse_descriptor_fail=%zu "
+                "source_run_reuse_descriptor_reclaim_attempt=%zu "
+                "source_run_reuse_descriptor_reclaim_success=%zu "
+                "source_run_reuse_descriptor_reclaim_no_candidate=%zu "
+                "source_run_reuse_route_fail=%zu "
+                "source_run_reuse_prepare_fail=%zu "
                 "source_run_reuse_rollback=%zu "
                 "source_run_reuse_used_count_mismatch=%zu "
                 "route_lookup_probe_total=%zu route_lookup_probe_max=%zu "
@@ -263,6 +269,12 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 s.source_run_reuse_miss_no_slot,
                 s.source_run_reuse_reserved,
                 s.source_run_reuse_slot_fail,
+                s.source_run_reuse_descriptor_fail,
+                s.source_run_reuse_descriptor_reclaim_attempt,
+                s.source_run_reuse_descriptor_reclaim_success,
+                s.source_run_reuse_descriptor_reclaim_no_candidate,
+                s.source_run_reuse_route_fail,
+                s.source_run_reuse_prepare_fail,
                 s.source_run_reuse_rollback,
                 s.source_run_reuse_used_count_mismatch,
                 s.route_lookup_probe_total,

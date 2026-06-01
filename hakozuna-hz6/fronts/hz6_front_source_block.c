@@ -9,8 +9,26 @@ static void* hz6_front_source_block_reserved_slot(
     size_t slot_bytes,
     Hz6SourceBlock* block,
     size_t* slot_index) {
-  if (!slot_index ||
-      !hz6_allocator_source_run_reserve_slot(block, slot_index)) {
+  if (!slot_index) {
+    return NULL;
+  }
+
+  Hz6ObjectDescriptor* descriptor =
+      hz6_allocator_find_free_descriptor(allocator);
+  if (!descriptor) {
+    if (hz6_allocator_reclaim_frontcache_descriptor_for_source_run(
+            allocator, class_id)) {
+      descriptor = hz6_allocator_find_free_descriptor(allocator);
+    }
+  }
+  if (!descriptor) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.source_run_reuse_descriptor_fail;
+#endif
+    return NULL;
+  }
+
+  if (!hz6_allocator_source_run_reserve_slot(block, slot_index)) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.source_run_reuse_miss_no_slot;
 #endif
@@ -20,10 +38,18 @@ static void* hz6_front_source_block_reserved_slot(
   ++allocator->stats.source_run_reuse_reserved;
 #endif
 
-  void* ptr = hz6_front_source_block_slot(
-      allocator, front_id, class_id, slot_bytes, (*slot_index) * slot_bytes,
-      block);
-  if (!ptr) {
+  if (!block->route_registered) {
+    if (!hz6_allocator_source_block_register_invalid_range(
+            allocator, block, front_id, class_id)) {
+      hz6_allocator_source_run_rollback_slot(block, *slot_index);
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.source_run_reuse_route_fail;
+      ++allocator->stats.source_run_reuse_slot_fail;
+#endif
+      return NULL;
+    }
+  }
+  if (!hz6_allocator_retain_source_block(block)) {
     hz6_allocator_source_run_rollback_slot(block, *slot_index);
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.source_run_reuse_slot_fail;
@@ -31,8 +57,34 @@ static void* hz6_front_source_block_reserved_slot(
     return NULL;
   }
 
+  void* user_ptr =
+      (void*)((unsigned char*)block->ptr + ((*slot_index) * slot_bytes));
+  if (!hz6_allocator_prepare_descriptor(
+          allocator, descriptor, user_ptr, slot_bytes, block->ptr,
+          block->bytes, block, class_id, block->source_kind,
+          block->source_release, HZ6_STATE_ACTIVE)) {
+    hz6_allocator_source_run_rollback_slot(block, *slot_index);
+    hz6_allocator_release_source_block(block);
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.source_run_reuse_prepare_fail;
+    ++allocator->stats.source_run_reuse_slot_fail;
+#endif
+    return NULL;
+  }
+
+  if (!hz6_allocator_route_register_exact(
+          allocator, user_ptr, slot_bytes, front_id, class_id,
+          descriptor->generation, descriptor)) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.source_run_reuse_route_fail;
+    ++allocator->stats.source_run_reuse_slot_fail;
+#endif
+    hz6_allocator_release_descriptor_source(descriptor);
+    return NULL;
+  }
+
   hz6_allocator_source_run_commit_slot(block, *slot_index);
-  return ptr;
+  return user_ptr;
 }
 #endif
 

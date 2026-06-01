@@ -163,6 +163,12 @@ static void print_stats(const Hz6Allocator* allocator) {
          "source_run_reuse_hit=%zu source_run_reuse_miss_no_block=%zu "
          "source_run_reuse_miss_no_slot=%zu source_run_reuse_rollback=%zu "
          "source_run_reuse_reserved=%zu source_run_reuse_slot_fail=%zu "
+         "source_run_reuse_descriptor_fail=%zu "
+         "source_run_reuse_descriptor_reclaim_attempt=%zu "
+         "source_run_reuse_descriptor_reclaim_success=%zu "
+         "source_run_reuse_descriptor_reclaim_no_candidate=%zu "
+         "source_run_reuse_route_fail=%zu "
+         "source_run_reuse_prepare_fail=%zu "
          "local2p_source_alloc=%zu "
          "midpage_source_alloc=%zu large_source_alloc=%zu toy_source_alloc=%zu "
 #endif
@@ -192,6 +198,12 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.source_run_reuse_hit, stats.source_run_reuse_miss_no_block,
          stats.source_run_reuse_miss_no_slot, stats.source_run_reuse_rollback,
          stats.source_run_reuse_reserved, stats.source_run_reuse_slot_fail,
+         stats.source_run_reuse_descriptor_fail,
+         stats.source_run_reuse_descriptor_reclaim_attempt,
+         stats.source_run_reuse_descriptor_reclaim_success,
+         stats.source_run_reuse_descriptor_reclaim_no_candidate,
+         stats.source_run_reuse_route_fail,
+         stats.source_run_reuse_prepare_fail,
          stats.local2p_source_alloc,
          stats.midpage_source_alloc, stats.large_source_alloc,
          stats.toy_source_alloc,
