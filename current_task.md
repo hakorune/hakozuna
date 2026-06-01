@@ -1787,6 +1787,35 @@ reuse 131072:
   strict/speed/rss ~58.30M..63.88M ops/s
 ```
 
+Larson lifecycle/front-source diagnostic refresh:
+
+```text
+Source:
+  docs/benchmarks/windows/paper/20260601_140855_paper_larson_windows.md
+
+Stress T=16:
+  hz6-strict / speed / rss / route4k / broad all fail during warmup.
+  failures happen at tiny source_alloc counts, with no route visibility or
+  transfer traffic yet, which keeps pointing at lifecycle/front-source rather
+  than raw live-set capacity.
+
+  appcap rows do run, but they stay tiny:
+    strict-appcap 0.003M
+    speed-appcap  0.001M
+    rss-appcap    0.001M
+  and remain far below HZ3/HZ4/mimalloc/tcmalloc.
+
+Worker-warmup T=16:
+  hz6-strict-appcap 37.475M
+  hz6-speed-appcap  47.763M
+  hz6-rss-appcap    41.689M
+  same-owner control is viable, but still below HZ3/HZ4/mimalloc/tcmalloc.
+
+Read:
+  same-owner small-object placement is okay.
+  the remaining weakness is the main-warmup / lifecycle / front-source path.
+```
+
 Read:
 
 ```text
