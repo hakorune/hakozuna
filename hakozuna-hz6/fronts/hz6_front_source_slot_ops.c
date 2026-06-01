@@ -37,6 +37,7 @@ void* hz6_front_source_slot_ops(Hz6Allocator* allocator,
   if (!descriptor) {
     hz6_allocator_note_descriptor_frontcache_reuse_dryrun(allocator,
                                                           class_id);
+    hz6_allocator_note_descgov_descriptor_fail(allocator, class_id);
     return NULL;
   }
 

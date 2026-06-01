@@ -24,6 +24,7 @@ Descriptor lifecycle prototype:
   descriptorless-route4k
   descriptorreserve-route4k
   descriptorcold-route4k
+  descriptorcoldgov-route4k
 
 Frozen no-go controls:
   spill-route4k
@@ -111,6 +112,14 @@ descriptorcold-route4k:
   descriptors, reducing the broad descriptorless failure loop. Evidence only:
   it has a small balanced / wide_ws signal, but larger_sizes regresses, so the
   simple soft-cap gate is not a promotion policy.
+
+descriptorcoldgov-route4k:
+  Class/pressure-aware descriptor governor prototype. Descriptorless is treated
+  as cold-cache descriptor compression, not as a hot reuse path. The first L1
+  gates detach to small/mixed classes, limits detached entries, and admits
+  materialization only when a descriptor is available. Latest repeat-3 is
+  promising on balanced and preserves larger_sizes, but wide_ws is still weak,
+  so keep it as candidate-control evidence rather than default promotion.
 ```
 
 ## Frozen No-Go Lanes

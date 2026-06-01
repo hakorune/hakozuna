@@ -464,6 +464,25 @@ int main(int argc, char** argv) {
             args[i].hz6_stats_after.descriptorreserve_frontcache_missing;
         hz6_stats.descriptorreserve_frontcache_invalid +=
             args[i].hz6_stats_after.descriptorreserve_frontcache_invalid;
+        hz6_stats.descgov_trigger_descriptor_fail +=
+            args[i].hz6_stats_after.descgov_trigger_descriptor_fail;
+        hz6_stats.descgov_detach_attempt +=
+            args[i].hz6_stats_after.descgov_detach_attempt;
+        hz6_stats.descgov_detach_success +=
+            args[i].hz6_stats_after.descgov_detach_success;
+        hz6_stats.descgov_detach_budget_denied +=
+            args[i].hz6_stats_after.descgov_detach_budget_denied;
+        hz6_stats.descgov_detach_class_denied +=
+            args[i].hz6_stats_after.descgov_detach_class_denied;
+        hz6_stats.descgov_materialize_admit +=
+            args[i].hz6_stats_after.descgov_materialize_admit;
+        hz6_stats.descgov_materialize_block_no_descriptor +=
+            args[i].hz6_stats_after.descgov_materialize_block_no_descriptor;
+        hz6_stats.descgov_materialize_fail +=
+            args[i].hz6_stats_after.descgov_materialize_fail;
+        hz6_stats.descgov_detached_current +=
+            args[i].hz6_stats_after.descgov_detached_current;
+        HZ6_MAX_STAT(descgov_detached_max);
         hz6_stats.frontcache_spill_dryrun_calls +=
             args[i].hz6_stats_after.frontcache_spill_dryrun_calls;
         hz6_stats.frontcache_spill_dryrun_requested_empty +=
@@ -650,6 +669,16 @@ int main(int argc, char** argv) {
            "hz6_descriptorreserve_frontcache_pop=%zu "
            "hz6_descriptorreserve_frontcache_missing=%zu "
            "hz6_descriptorreserve_frontcache_invalid=%zu "
+           "hz6_descgov_trigger_descriptor_fail=%zu "
+           "hz6_descgov_detach_attempt=%zu "
+           "hz6_descgov_detach_success=%zu "
+           "hz6_descgov_detach_budget_denied=%zu "
+           "hz6_descgov_detach_class_denied=%zu "
+           "hz6_descgov_materialize_admit=%zu "
+           "hz6_descgov_materialize_block_no_descriptor=%zu "
+           "hz6_descgov_materialize_fail=%zu "
+           "hz6_descgov_detached_current=%zu "
+           "hz6_descgov_detached_max=%zu "
            "hz6_frontcache_spill_dryrun_calls=%zu "
            "hz6_frontcache_spill_dryrun_requested_empty=%zu "
            "hz6_frontcache_spill_dryrun_candidate_calls=%zu "
@@ -744,6 +773,16 @@ int main(int argc, char** argv) {
            hz6_stats.descriptorreserve_frontcache_pop,
            hz6_stats.descriptorreserve_frontcache_missing,
            hz6_stats.descriptorreserve_frontcache_invalid,
+           hz6_stats.descgov_trigger_descriptor_fail,
+           hz6_stats.descgov_detach_attempt,
+           hz6_stats.descgov_detach_success,
+           hz6_stats.descgov_detach_budget_denied,
+           hz6_stats.descgov_detach_class_denied,
+           hz6_stats.descgov_materialize_admit,
+           hz6_stats.descgov_materialize_block_no_descriptor,
+           hz6_stats.descgov_materialize_fail,
+           hz6_stats.descgov_detached_current,
+           hz6_stats.descgov_detached_max,
            hz6_stats.frontcache_spill_dryrun_calls,
            hz6_stats.frontcache_spill_dryrun_requested_empty,
            hz6_stats.frontcache_spill_dryrun_candidate_calls,

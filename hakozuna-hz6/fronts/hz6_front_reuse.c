@@ -32,11 +32,34 @@ static void* hz6_front_materialize_descriptorless_entry(
     return NULL;
   }
 #else
+#if HZ6_DESCRIPTOR_COLD_GOV_L1
+  if (entry.descgov_detached &&
+      !hz6_allocator_descgov_descriptor_available(allocator)) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.descgov_materialize_block_no_descriptor;
+    if (class_id < HZ6_STATS_CLASS_COUNT) {
+      ++allocator->stats.descgov_materialize_fail_class[class_id];
+    }
+#endif
+    return NULL;
+  }
+#if HZ6_DIAGNOSTIC_PROBES
+  if (entry.descgov_detached) {
+    ++allocator->stats.descgov_materialize_admit;
+  }
+#endif
+#endif
   descriptor = hz6_allocator_find_free_descriptor(allocator);
 #endif
   if (!descriptor) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.descriptorless_frontcache_descriptor_fail;
+#if HZ6_DESCRIPTOR_COLD_GOV_L1
+    ++allocator->stats.descgov_materialize_fail;
+    if (class_id < HZ6_STATS_CLASS_COUNT) {
+      ++allocator->stats.descgov_materialize_fail_class[class_id];
+    }
+#endif
 #endif
     return NULL;
   }
@@ -47,6 +70,12 @@ static void* hz6_front_materialize_descriptorless_entry(
           block->source_release, HZ6_STATE_ACTIVE)) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.descriptorless_frontcache_invalid;
+#if HZ6_DESCRIPTOR_COLD_GOV_L1
+    ++allocator->stats.descgov_materialize_fail;
+    if (class_id < HZ6_STATS_CLASS_COUNT) {
+      ++allocator->stats.descgov_materialize_fail_class[class_id];
+    }
+#endif
 #endif
     return NULL;
   }
@@ -56,6 +85,12 @@ static void* hz6_front_materialize_descriptorless_entry(
           descriptor->generation, descriptor)) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.descriptorless_frontcache_route_fail;
+#if HZ6_DESCRIPTOR_COLD_GOV_L1
+    ++allocator->stats.descgov_materialize_fail;
+    if (class_id < HZ6_STATS_CLASS_COUNT) {
+      ++allocator->stats.descgov_materialize_fail_class[class_id];
+    }
+#endif
 #endif
 #if HZ6_DESCRIPTOR_MATERIALIZE_RESERVE_L1
     hz6_allocator_reserve_descriptor_keep_source_slot(descriptor);
@@ -67,6 +102,11 @@ static void* hz6_front_materialize_descriptorless_entry(
 
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.descriptorless_frontcache_pop;
+#if HZ6_DESCRIPTOR_COLD_GOV_L1
+  if (entry.descgov_detached && allocator->stats.descgov_detached_current > 0) {
+    --allocator->stats.descgov_detached_current;
+  }
+#endif
 #if HZ6_DESCRIPTOR_MATERIALIZE_RESERVE_L1
   ++allocator->stats.descriptorreserve_frontcache_pop;
 #endif

@@ -18,6 +18,7 @@ typedef struct Hz6FrontCacheEntry {
   size_t bytes;
   uint16_t class_id;
   uint32_t generation;
+  uint8_t descgov_detached;
 } Hz6FrontCacheEntry;
 
 typedef struct Hz6FrontCacheBin {

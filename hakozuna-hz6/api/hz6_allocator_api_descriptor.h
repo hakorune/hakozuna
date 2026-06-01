@@ -51,6 +51,13 @@ void hz6_allocator_note_descriptor_frontcache_reuse_dryrun(
     Hz6Allocator* allocator,
     uint16_t requested_class_id);
 
+void hz6_allocator_note_descgov_descriptor_fail(
+    Hz6Allocator* allocator,
+    uint16_t requested_class_id);
+
+int hz6_allocator_descgov_descriptor_available(
+    const Hz6Allocator* allocator);
+
 #ifdef __cplusplus
 }
 #endif

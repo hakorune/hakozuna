@@ -44,6 +44,7 @@ int hz6_front_prefill_one(Hz6Allocator* allocator,
 #endif
     hz6_allocator_note_descriptor_frontcache_reuse_dryrun(allocator,
                                                           class_id);
+    hz6_allocator_note_descgov_descriptor_fail(allocator, class_id);
     return 0;
   }
 

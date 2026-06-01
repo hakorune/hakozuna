@@ -11,6 +11,10 @@ extern "C" {
 
 typedef struct Hz6Allocator Hz6Allocator;
 
+#ifndef HZ6_STATS_CLASS_COUNT
+#define HZ6_STATS_CLASS_COUNT 16u
+#endif
+
 typedef struct Hz6StatsSnapshot {
   size_t route_valid;
   size_t route_invalid;
@@ -99,6 +103,19 @@ typedef struct Hz6StatsSnapshot {
   size_t descriptorreserve_frontcache_pop;
   size_t descriptorreserve_frontcache_missing;
   size_t descriptorreserve_frontcache_invalid;
+  size_t descgov_trigger_descriptor_fail;
+  size_t descgov_detach_attempt;
+  size_t descgov_detach_success;
+  size_t descgov_detach_budget_denied;
+  size_t descgov_detach_class_denied;
+  size_t descgov_materialize_admit;
+  size_t descgov_materialize_block_no_descriptor;
+  size_t descgov_materialize_fail;
+  size_t descgov_detached_current;
+  size_t descgov_detached_max;
+  size_t descgov_requested_class[HZ6_STATS_CLASS_COUNT];
+  size_t descgov_donor_class[HZ6_STATS_CLASS_COUNT];
+  size_t descgov_materialize_fail_class[HZ6_STATS_CLASS_COUNT];
   size_t frontcache_spill_dryrun_calls;
   size_t frontcache_spill_dryrun_requested_empty;
   size_t frontcache_spill_dryrun_candidate_calls;

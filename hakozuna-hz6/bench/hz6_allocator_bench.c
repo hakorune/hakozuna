@@ -185,6 +185,16 @@ static void print_stats(const Hz6Allocator* allocator) {
          "descriptorreserve_frontcache_pop=%zu "
          "descriptorreserve_frontcache_missing=%zu "
          "descriptorreserve_frontcache_invalid=%zu "
+         "descgov_trigger_descriptor_fail=%zu "
+         "descgov_detach_attempt=%zu "
+         "descgov_detach_success=%zu "
+         "descgov_detach_budget_denied=%zu "
+         "descgov_detach_class_denied=%zu "
+         "descgov_materialize_admit=%zu "
+         "descgov_materialize_block_no_descriptor=%zu "
+         "descgov_materialize_fail=%zu "
+         "descgov_detached_current=%zu "
+         "descgov_detached_max=%zu "
          "source_run_reuse_route_fail=%zu "
          "source_run_reuse_prepare_fail=%zu "
          "local2p_source_alloc=%zu "
@@ -238,6 +248,16 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.descriptorreserve_frontcache_pop,
          stats.descriptorreserve_frontcache_missing,
          stats.descriptorreserve_frontcache_invalid,
+         stats.descgov_trigger_descriptor_fail,
+         stats.descgov_detach_attempt,
+         stats.descgov_detach_success,
+         stats.descgov_detach_budget_denied,
+         stats.descgov_detach_class_denied,
+         stats.descgov_materialize_admit,
+         stats.descgov_materialize_block_no_descriptor,
+         stats.descgov_materialize_fail,
+         stats.descgov_detached_current,
+         stats.descgov_detached_max,
          stats.source_run_reuse_route_fail,
          stats.source_run_reuse_prepare_fail,
          stats.local2p_source_alloc,

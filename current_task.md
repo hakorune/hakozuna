@@ -1510,6 +1510,176 @@ Decision:
     or introduce an epoch/budgeted class pressure governor.
 ```
 
+HZ6 DescriptorColdGovernor-L1 plan:
+
+```text
+Decision:
+  descriptorless knobs are frozen as evidence/control.
+  Do not promote:
+    descriptorless-route4k
+    descriptorreserve-route4k
+    descriptorcold-route4k
+
+  Proceed with one narrow governor experiment:
+    descriptorcoldgov-route4k
+
+Interpretation shift:
+  descriptorless cached slots are not a hot reuse path.
+  They are cold-cache descriptor compression for over-retained source-run
+  physical slots.
+
+Required L1 properties:
+  failure-attributed detach:
+    detach only when descriptor pressure identifies a requested class and a
+    donor class/bin is over-retained.
+
+  class-aware:
+    avoid larger_sizes-sensitive classes in the first lane.
+    start with small/mixed-heavy classes only.
+
+  budgeted:
+    limit descriptorless detach per class and globally.
+    no unbounded detached backlog.
+
+  materialization admission:
+    do not reserve descriptors.
+    do not pop descriptorless entries while descriptor pressure is high.
+    if no descriptor can be acquired cheaply, leave detached slots cold.
+
+First implementation order:
+  1. Add diagnostic class attribution counters:
+       descgov_requested_class[16]
+       descgov_donor_class[16]
+       descgov_materialize_fail_class[16]
+
+  2. Add materialization admission:
+       descriptorless pop only when descriptor availability/probe budget is
+       acceptable.
+
+  3. Add failure-attributed detach gate:
+       requested class empty/failed and donor bin over-retained.
+
+  4. Add class mask and budget:
+       larger_sizes-sensitive classes off by default.
+
+Acceptance:
+  experimental:
+    route_invalid = 0
+    route_miss = 0
+    route_register_fail = 0
+    descriptorless_invalid = 0
+    balanced >= route4k + 3%
+    wide_ws >= route4k + 3%
+    larger_sizes >= route4k - 3%
+    descriptorless_descriptor_fail <= broad descriptorless / 10
+    RSS <= route4k + 1 MiB
+
+  promotion:
+    balanced / wide_ws >= route4k + 5%
+    larger_sizes >= route4k - 3%
+    descriptor probe pressure improves vs route4k
+    repeat-3 stable
+
+No-go:
+  any route safety counter nonzero
+  larger_sizes regression > 5%
+  descriptor_exhausted > route4k
+  descriptor_probe_total > route4k + 5%
+  route register/unregister probe per op > route4k + 10%
+  detached_current grows across epochs
+
+If descriptorcoldgov-route4k is no-go:
+  stop descriptorless knob track.
+  return to core descriptor pool / cached physical slot contract redesign.
+```
+
+HZ6 DescriptorColdGovernor-L1 result:
+
+```text
+Implementation:
+  added descriptorcoldgov-route4k.
+  It composes descriptorless source-run cached slots with:
+    small/mixed class allow rule: bytes <= 2048
+    detached slot budget
+    materialization admission without descriptor reserve
+    diagnostic class/pressure counters
+
+Validation:
+  diagnostic RUNS=1:
+    docs/benchmarks/windows/paper/20260601_130901_hz6_capacity_matrix_windows.md
+
+  non-diagnostic repeat-3:
+    docs/benchmarks/windows/paper/20260601_130953_hz6_capacity_matrix_windows.md
+
+Diagnostic read:
+  balanced:
+    descriptorless_push/pop = 29 / 26
+    descriptorless_descriptor_fail = 0
+    descgov_trigger_descriptor_fail = 4.78M
+    descgov_detach_success = 29
+    descgov_materialize_admit = 26
+    descgov_materialize_fail = 0
+
+  wide_ws:
+    descriptorless_push/pop = 2048 / 1908
+    descriptorless_descriptor_fail = 0
+    descgov_detach_budget_denied = 1313
+    descgov_materialize_fail = 0
+
+  larger_sizes:
+    descriptorless_push/pop = 497 / 458
+    descriptorless_descriptor_fail = 0
+    descgov_detach_class_denied = 18079
+    descgov_materialize_block_no_descriptor = 14100
+    descgov_materialize_fail = 0
+
+repeat-3 non-diagnostic medians:
+  balanced:
+    route4k = 0.446M ops/s, 24.2 MB
+    descriptorcoldgov-route4k = 0.469M ops/s, 24.7 MB
+    read: about +5%, reaches the promotion-line signal for this row.
+
+  wide_ws:
+    route4k = 0.402M ops/s, 24.8 MB
+    descriptorcoldgov-route4k = 0.407M ops/s, 24.8 MB
+    read: only a small positive signal.
+
+  larger_sizes:
+    route4k = 0.784M ops/s, 15.5 MB
+    descriptorcoldgov-route4k = 0.766M ops/s, 14.5 MB
+    read: within -3% while lowering RSS, so the larger_sizes guard is held.
+
+Safety:
+  route_invalid = 0
+  route_miss = 0
+  route_register_fail = 0
+  descriptorless_invalid = 0
+  descgov_materialize_fail = 0
+
+Read:
+  This is the first descriptorless-family lane that looks structurally sane:
+    broad materialization failure loop is gone
+    reserve starvation is avoided
+    larger_sizes is protected
+    balanced has a real positive signal
+
+  It is not default promotion yet:
+    wide_ws improvement is weak
+    alloc_fail remains high
+    descriptor_exhausted can still exceed route4k
+    detached budget/current accounting still needs repeat and guard review
+
+Decision:
+  keep descriptorcoldgov-route4k as the current HZ6 descriptor lifecycle
+  candidate-control evidence lane.
+
+  Next:
+    repeat-5 or add one more guard slice if we want confidence.
+    Then either:
+      refine class/budget policy for wide_ws
+      or stop and ask for design review before adding another knob.
+```
+
 ## HZ6 Windows Current Read
 
 ```text

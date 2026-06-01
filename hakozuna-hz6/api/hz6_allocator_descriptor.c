@@ -202,6 +202,42 @@ void hz6_allocator_note_descriptor_frontcache_reuse_dryrun(
 #endif
 }
 
+void hz6_allocator_note_descgov_descriptor_fail(
+    Hz6Allocator* allocator,
+    uint16_t requested_class_id) {
+#if HZ6_DESCRIPTOR_COLD_GOV_L1 && HZ6_DIAGNOSTIC_PROBES
+  if (!allocator || requested_class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
+    return;
+  }
+  ++allocator->stats.descgov_trigger_descriptor_fail;
+  if (requested_class_id < HZ6_STATS_CLASS_COUNT) {
+    ++allocator->stats.descgov_requested_class[requested_class_id];
+  }
+#else
+  (void)allocator;
+  (void)requested_class_id;
+#endif
+}
+
+int hz6_allocator_descgov_descriptor_available(
+    const Hz6Allocator* allocator) {
+#if HZ6_DESCRIPTOR_COLD_GOV_L1
+  if (!allocator) {
+    return 0;
+  }
+  for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
+    if (!allocator->descriptors[i].ptr &&
+        allocator->descriptors[i].state == HZ6_STATE_DEAD) {
+      return 1;
+    }
+  }
+  return 0;
+#else
+  (void)allocator;
+  return 1;
+#endif
+}
+
 int hz6_allocator_activate_descriptor(Hz6ObjectDescriptor* descriptor,
                                       Hz6ObjectState expected,
                                       void* ptr,
