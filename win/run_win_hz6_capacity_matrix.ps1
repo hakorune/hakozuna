@@ -204,6 +204,7 @@ $laneSuffix = @{
     "sharedir-appcap" = "_sharedir_appcap"
     "sharedirfirst-appcap" = "_sharedirfirst_appcap"
     "ownerlocality-appcap" = "_ownerlocality_appcap"
+    "ownerlocalityfast-appcap" = "_ownerlocalityfast_appcap"
 }
 
 $familyPrefixes = @{

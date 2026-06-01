@@ -448,6 +448,63 @@ Read:
   target while appcap is known to collapse.
 ```
 
+## Owner Locality Fast Lane 2026-06-02
+
+```text
+Change:
+  split the owner-locality mechanism from diagnostic probes.
+
+  ownerlocality-appcap:
+    diagnostic evidence lane
+    forces HZ6_DIAGNOSTIC_PROBES=1
+
+  ownerlocalityfast-appcap:
+    non-diagnostic behavior lane
+    enables:
+      HZ6_SHARED_ROUTE_DIRECTORY_L1=1
+      HZ6_OWNER_LOCALITY_INDEX_L1=1
+    does not force HZ6_DIAGNOSTIC_PROBES=1
+
+Implementation:
+  shared route directory storage/register/unregister/exact lookup now compile
+  under HZ6_SHARED_ROUTE_DIRECTORY_L1 without requiring diagnostic probes.
+  Diagnostic counters remain behind HZ6_DIAGNOSTIC_PROBES.
+
+Build checks:
+  non-diagnostic:
+    build_win_hz6_capacity_suite.ps1
+      -Families larson
+      -Hz6Profiles speed
+      -CapacityLanes ownerlocalityfast-appcap
+      -OutDirName out_win_hz6_capacity_fastprobe
+    OK
+
+  diagnostic:
+    build_win_hz6_capacity_suite.ps1
+      -Families larson
+      -Hz6Profiles speed
+      -CapacityLanes ownerlocality-appcap
+      -OutDirName out_win_hz6_capacity_diag_check
+      -DiagnosticHz6Probes
+    OK
+
+Smoke:
+  ownerlocalityfast-appcap:
+    main_1k   = 47.1M..51.5M ops/s
+    worker_1k = 53.1M..57.0M ops/s
+    main_4k   = 41.5M ops/s
+    worker_4k = 44.8M ops/s
+    route_invalid = 0
+    route_miss = 0
+    Done sleeping... printed
+
+Read:
+  the owner-locality/shared-directory exact-route mechanism no longer depends
+  on diagnostic probes to work.
+  The diagnostic lane remains the place to validate hit/rehome counters.
+  The fast lane is now the better candidate for throughput/RSS comparison.
+```
+
 ## Next Implementation Order 2026-06-01
 
 ```text

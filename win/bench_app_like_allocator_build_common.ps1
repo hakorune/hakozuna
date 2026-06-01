@@ -242,6 +242,13 @@ function Get-Hz6WinOwnerLocalityAppLikeCapacityFlags {
     $flags
 }
 
+function Get-Hz6WinOwnerLocalityFastAppLikeCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinSharedRouteDirectoryAppLikeCapacityFlags
+    $flags += "/DHZ6_OWNER_LOCALITY_INDEX_L1=1"
+    $flags
+}
+
 function Invoke-AppLikeHz5BenchBuild {
     param(
         [Parameter(Mandatory = $true)][string]$Compiler,
@@ -325,6 +332,7 @@ function Invoke-AppLikeHz6BenchBuilds {
     $sharedRouteDirectoryAppLikeFlags = Get-Hz6WinSharedRouteDirectoryAppLikeCapacityFlags
     $sharedRouteDirectoryFirstAppLikeFlags = Get-Hz6WinSharedRouteDirectoryFirstAppLikeCapacityFlags
     $ownerLocalityAppLikeFlags = Get-Hz6WinOwnerLocalityAppLikeCapacityFlags
+    $ownerLocalityFastAppLikeFlags = Get-Hz6WinOwnerLocalityFastAppLikeCapacityFlags
     $laneMap = @{
         "default" = @{ Suffix = ""; ExtraFlags = @() }
         "broad" = @{ Suffix = "_broad"; ExtraFlags = $broadFlags }
@@ -351,6 +359,7 @@ function Invoke-AppLikeHz6BenchBuilds {
         "sharedir-appcap" = @{ Suffix = "_sharedir_appcap"; ExtraFlags = $sharedRouteDirectoryAppLikeFlags }
         "sharedirfirst-appcap" = @{ Suffix = "_sharedirfirst_appcap"; ExtraFlags = $sharedRouteDirectoryFirstAppLikeFlags }
         "ownerlocality-appcap" = @{ Suffix = "_ownerlocality_appcap"; ExtraFlags = $ownerLocalityAppLikeFlags }
+        "ownerlocalityfast-appcap" = @{ Suffix = "_ownerlocalityfast_appcap"; ExtraFlags = $ownerLocalityFastAppLikeFlags }
     }
 
     function Split-Hz6BuildList {

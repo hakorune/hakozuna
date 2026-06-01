@@ -22,6 +22,7 @@ Route-lifecycle diagnostic:
   sharedir-appcap
   sharedirfirst-appcap
   ownerlocality-appcap
+  ownerlocalityfast-appcap
 
 Evidence-only source-run controls:
   sourcerun-route4k
@@ -115,6 +116,13 @@ ownerlocality-appcap:
   before worker allocator teardown, so main-warmup no longer adds an accidental
   post-measurement owner-death cleanup stress on top of the timed cross-owner
   handoff lane.
+
+ownerlocalityfast-appcap:
+  Non-diagnostic owner-locality behavior lane. It uses the same owner-locality
+  index and shared-directory exact backend as `ownerlocality-appcap`, but does
+  not force `HZ6_DIAGNOSTIC_PROBES=1`. Use it after the diagnostic lane has
+  shown clean counters to check whether the route-lifecycle fix is still fast
+  without diagnostic probe overhead.
 ```
 
 ## Focused Mechanism Lanes

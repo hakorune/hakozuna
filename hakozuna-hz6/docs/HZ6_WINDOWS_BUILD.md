@@ -137,6 +137,10 @@ ownerlocality-appcap:
   appcap plus the owner-locality/shared-directory exact route probe. Use this
   only for cross-owner Larson route-lifecycle evidence unless it is explicitly
   promoted later.
+
+ownerlocalityfast-appcap:
+  non-diagnostic owner-locality/shared-directory exact route lane. Use this for
+  throughput/RSS checks after `ownerlocality-appcap` has validated the counters.
 ```
 
 Research lanes such as `sourcerun-route4k`,
