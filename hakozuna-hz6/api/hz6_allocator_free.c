@@ -13,7 +13,13 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
 #if HZ6_NEGATIVE_FILTER_L1 && HZ6_DIAGNOSTIC_PROBES
   if (!hz6_allocator_profile_strict_owner_remote(allocator)) {
     ++allocator->stats.negative_filter_attempt;
-    if (hz6_allocator_route_negative_filter_skip_local(allocator, ptr)) {
+    if (allocator->stats.route_visibility_hit_foreign_owner == 0) {
+      ++allocator->stats.negative_filter_not_armed;
+      route = hz6_allocator_route_lookup(allocator, ptr);
+    } else if (allocator->stats.route_rehome_success > 0) {
+      ++allocator->stats.negative_filter_rehome_blocked;
+      route = hz6_allocator_route_lookup(allocator, ptr);
+    } else if (hz6_allocator_route_negative_filter_skip_local(allocator, ptr)) {
       ++allocator->stats.negative_filter_skip_local;
       route = hz6_allocator_route_lookup_visible_after_local_miss(allocator,
                                                                   ptr);

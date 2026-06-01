@@ -159,11 +159,15 @@ static void print_stats(const Hz6Allocator* allocator) {
          "source_prefill_fallback=%zu front_source_ops_alloc=%zu "
          "front_source_slot_alloc=%zu front_source_prefill_alloc=%zu "
          "toy_source_prefill_call=%zu "
-         "negative_filter_attempt=%zu negative_filter_skip_local=%zu "
+         "negative_filter_attempt=%zu negative_filter_not_armed=%zu "
+         "negative_filter_rehome_blocked=%zu "
+         "negative_filter_skip_local=%zu "
          "negative_filter_maybe_local=%zu "
          "negative_filter_shadow_false_skip=%zu "
          "negative_filter_shadow_local_valid=%zu "
          "negative_filter_shadow_local_invalid=%zu "
+         "negative_filter_range_probe_total=%zu "
+         "negative_filter_range_probe_max=%zu "
          "source_run_reuse_attempt=%zu source_run_reuse_candidate=%zu "
          "source_run_reuse_hit=%zu source_run_reuse_miss_no_block=%zu "
          "source_run_reuse_miss_no_slot=%zu source_run_reuse_rollback=%zu "
@@ -227,11 +231,15 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.source_prefill_fallback, stats.front_source_ops_alloc,
          stats.front_source_slot_alloc, stats.front_source_prefill_alloc,
          stats.toy_source_prefill_call,
-         stats.negative_filter_attempt, stats.negative_filter_skip_local,
+         stats.negative_filter_attempt, stats.negative_filter_not_armed,
+         stats.negative_filter_rehome_blocked,
+         stats.negative_filter_skip_local,
          stats.negative_filter_maybe_local,
          stats.negative_filter_shadow_false_skip,
          stats.negative_filter_shadow_local_valid,
          stats.negative_filter_shadow_local_invalid,
+         stats.negative_filter_range_probe_total,
+         stats.negative_filter_range_probe_max,
          stats.source_run_reuse_attempt, stats.source_run_reuse_candidate,
          stats.source_run_reuse_hit, stats.source_run_reuse_miss_no_block,
          stats.source_run_reuse_miss_no_slot, stats.source_run_reuse_rollback,

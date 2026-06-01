@@ -490,6 +490,10 @@ int main(int argc, char** argv) {
             tds[t].hz6_stats_after.visible_first_local_lookup_skipped;
         hz6_stats.negative_filter_attempt +=
             tds[t].hz6_stats_after.negative_filter_attempt;
+        hz6_stats.negative_filter_not_armed +=
+            tds[t].hz6_stats_after.negative_filter_not_armed;
+        hz6_stats.negative_filter_rehome_blocked +=
+            tds[t].hz6_stats_after.negative_filter_rehome_blocked;
         hz6_stats.negative_filter_skip_local +=
             tds[t].hz6_stats_after.negative_filter_skip_local;
         hz6_stats.negative_filter_maybe_local +=
@@ -500,6 +504,13 @@ int main(int argc, char** argv) {
             tds[t].hz6_stats_after.negative_filter_shadow_local_valid;
         hz6_stats.negative_filter_shadow_local_invalid +=
             tds[t].hz6_stats_after.negative_filter_shadow_local_invalid;
+        hz6_stats.negative_filter_range_probe_total +=
+            tds[t].hz6_stats_after.negative_filter_range_probe_total;
+        if (tds[t].hz6_stats_after.negative_filter_range_probe_max >
+            hz6_stats.negative_filter_range_probe_max) {
+            hz6_stats.negative_filter_range_probe_max =
+                tds[t].hz6_stats_after.negative_filter_range_probe_max;
+        }
         hz6_stats.source_owned_prepare +=
             tds[t].hz6_stats_after.source_owned_prepare;
         hz6_stats.source_owned_route_hit_local_owner +=
@@ -655,11 +666,15 @@ int main(int argc, char** argv) {
            "visible_first_local_fallback=%zu "
            "visible_first_local_fallback_invalid=%zu "
            "visible_first_local_lookup_skipped=%zu "
-           "negative_filter_attempt=%zu negative_filter_skip_local=%zu "
+           "negative_filter_attempt=%zu negative_filter_not_armed=%zu "
+           "negative_filter_rehome_blocked=%zu "
+           "negative_filter_skip_local=%zu "
            "negative_filter_maybe_local=%zu "
            "negative_filter_shadow_false_skip=%zu "
            "negative_filter_shadow_local_valid=%zu "
            "negative_filter_shadow_local_invalid=%zu "
+           "negative_filter_range_probe_total=%zu "
+           "negative_filter_range_probe_max=%zu "
            "source_owned_prepare=%zu "
            "source_owned_route_hit_local_owner=%zu "
            "source_owned_visibility_hit_local_owner=%zu "
@@ -718,11 +733,15 @@ int main(int argc, char** argv) {
            hz6_stats.visible_first_local_fallback_invalid,
            hz6_stats.visible_first_local_lookup_skipped,
            hz6_stats.negative_filter_attempt,
+           hz6_stats.negative_filter_not_armed,
+           hz6_stats.negative_filter_rehome_blocked,
            hz6_stats.negative_filter_skip_local,
            hz6_stats.negative_filter_maybe_local,
            hz6_stats.negative_filter_shadow_false_skip,
            hz6_stats.negative_filter_shadow_local_valid,
            hz6_stats.negative_filter_shadow_local_invalid,
+           hz6_stats.negative_filter_range_probe_total,
+           hz6_stats.negative_filter_range_probe_max,
            hz6_stats.source_owned_prepare,
            hz6_stats.source_owned_route_hit_local_owner,
            hz6_stats.source_owned_visibility_hit_local_owner,

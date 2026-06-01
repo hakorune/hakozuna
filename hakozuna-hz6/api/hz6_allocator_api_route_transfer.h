@@ -27,7 +27,7 @@ Hz6RouteResult hz6_allocator_route_lookup_visible_after_local_miss(
     const void* ptr);
 
 int hz6_allocator_route_negative_filter_skip_local(
-    const Hz6Allocator* allocator,
+    Hz6Allocator* allocator,
     const void* ptr);
 
 int hz6_allocator_route_rehome_exact(Hz6Allocator* allocator,

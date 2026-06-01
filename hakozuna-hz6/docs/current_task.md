@@ -1269,6 +1269,106 @@ Interpretation:
   this is still diagnostic evidence, not promotion.
 ```
 
+## Diagnostic Checkpoint 2026-06-01k
+
+```text
+Pro design read:
+  do not jump to SharedRouteDirectory-L1 yet.
+  move NegativeFilter-L1 into a validation phase first.
+
+Current decision:
+  negativefilter-appcap is promoted from smoke-only evidence to validation
+  candidate, not to production/default.
+
+Validation order:
+  1. main-warmup repeat-5
+  2. worker-warmup repeat-5
+  3. compact control repeat-3
+  4. full appcap T=16 check
+
+New diagnostic counters:
+  negative_filter_range_probe_total
+  negative_filter_range_probe_max
+
+Why:
+  route_lookup_probe_total collapsed, but the source-block range scan inside
+  the negative filter could become the next cost.
+
+Production-near rule:
+  HZ6_NEGATIVE_FILTER_L1 should eventually control behavior.
+  HZ6_DIAGNOSTIC_PROBES should control counters and shadow verification only.
+  Before that split, false-skip must stay zero across guards.
+
+Coverage rule:
+  source-block-only hints are valid for this Larson small/source-block
+  diagnostic lane.
+  do not generalize to every HZ6 free path until unindexed local exact,
+  local2p, large, and direct source ranges are covered or force MAYBE_LOCAL.
+```
+
+## Diagnostic Checkpoint 2026-06-01l
+
+```text
+NegativeFilter-L1 validation:
+  added negative_filter_range_probe_total / max to see the hidden cost of the
+  source-block range scan.
+  added an armed gate so same-owner worker-warmup does not scan source blocks
+  before any foreign visibility hit.
+
+Smoke before rehome safety block:
+  main-warmup negativefilter:
+    throughput = 28735 ops/s
+    route_invalid = 13504
+    negative_filter_skip_local = 55141
+    negative_filter_range_probe_max = 32768
+  worker-warmup negativefilter:
+    throughput = 37.20M ops/s after arming gate
+    negative_filter_not_armed = all attempts
+    negative_filter_range_probe_total = 0
+
+Safety finding:
+  source-block-only negative filtering is not compatible with route rehome.
+  After rehome, exact routes can live in the consumer allocator while the
+  physical SourceBlock envelope remains in the origin allocator. A filter that
+  only checks local source block ranges can incorrectly skip local exact routes
+  and hit the origin invalid envelope instead.
+
+Rehome safety block:
+  negative_filter_rehome_blocked disables local-skip once route_rehome_success
+  is nonzero for that allocator.
+
+Smoke after rehome safety block:
+  main-warmup negativefilter:
+    throughput = 4613 ops/s
+    route_invalid = 0
+    route_miss = 0
+    negative_filter_not_armed = 16
+    negative_filter_rehome_blocked = 9346
+    negative_filter_skip_local = 0
+  worker-warmup negativefilter:
+    throughput = 38.55M ops/s
+    route_invalid = 0
+    route_miss = 0
+    negative_filter_not_armed = all attempts
+    negative_filter_range_probe_total = 0
+
+Baseline appcap smoke:
+  main-warmup appcap = 5426 ops/s
+  worker-warmup appcap = 39.24M ops/s
+
+Decision:
+  NegativeFilter-L1 is no-go as an optimization lane.
+  Keep it as control evidence:
+    local MISS scan is real,
+    same-owner arming is necessary,
+    source-block-only hints are insufficient after rehome.
+
+Next:
+  do not deepen NegativeFilter knobs.
+  move to a route-locality design that accounts for rehomed exact routes:
+    owner-range hint with rehome coverage, or SharedRouteDirectory-L1.
+```
+
 Read:
 
 ```text

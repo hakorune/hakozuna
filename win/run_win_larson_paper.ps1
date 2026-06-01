@@ -211,11 +211,15 @@ function Parse-Hz6Stats {
         VisibleFirstLocalFallbackInvalid = "NA"
         VisibleFirstLocalLookupSkipped = "NA"
         NegativeFilterAttempt = "NA"
+        NegativeFilterNotArmed = "NA"
+        NegativeFilterRehomeBlocked = "NA"
         NegativeFilterSkipLocal = "NA"
         NegativeFilterMaybeLocal = "NA"
         NegativeFilterShadowFalseSkip = "NA"
         NegativeFilterShadowLocalValid = "NA"
         NegativeFilterShadowLocalInvalid = "NA"
+        NegativeFilterRangeProbeTotal = "NA"
+        NegativeFilterRangeProbeMax = "NA"
         SourceOwnedPrepare = "NA"
         SourceOwnedRouteHitLocalOwner = "NA"
         SourceOwnedVisibilityHitLocalOwner = "NA"
@@ -307,11 +311,15 @@ function Parse-Hz6Stats {
                     '^visible_first_local_fallback_invalid=(.*)$' { $result.VisibleFirstLocalFallbackInvalid = $Matches[1]; continue }
                     '^visible_first_local_lookup_skipped=(.*)$' { $result.VisibleFirstLocalLookupSkipped = $Matches[1]; continue }
                     '^negative_filter_attempt=(.*)$' { $result.NegativeFilterAttempt = $Matches[1]; continue }
+                    '^negative_filter_not_armed=(.*)$' { $result.NegativeFilterNotArmed = $Matches[1]; continue }
+                    '^negative_filter_rehome_blocked=(.*)$' { $result.NegativeFilterRehomeBlocked = $Matches[1]; continue }
                     '^negative_filter_skip_local=(.*)$' { $result.NegativeFilterSkipLocal = $Matches[1]; continue }
                     '^negative_filter_maybe_local=(.*)$' { $result.NegativeFilterMaybeLocal = $Matches[1]; continue }
                     '^negative_filter_shadow_false_skip=(.*)$' { $result.NegativeFilterShadowFalseSkip = $Matches[1]; continue }
                     '^negative_filter_shadow_local_valid=(.*)$' { $result.NegativeFilterShadowLocalValid = $Matches[1]; continue }
                     '^negative_filter_shadow_local_invalid=(.*)$' { $result.NegativeFilterShadowLocalInvalid = $Matches[1]; continue }
+                    '^negative_filter_range_probe_total=(.*)$' { $result.NegativeFilterRangeProbeTotal = $Matches[1]; continue }
+                    '^negative_filter_range_probe_max=(.*)$' { $result.NegativeFilterRangeProbeMax = $Matches[1]; continue }
                     '^source_owned_prepare=(.*)$' { $result.SourceOwnedPrepare = $Matches[1]; continue }
                     '^source_owned_route_hit_local_owner=(.*)$' { $result.SourceOwnedRouteHitLocalOwner = $Matches[1]; continue }
                     '^source_owned_visibility_hit_local_owner=(.*)$' { $result.SourceOwnedVisibilityHitLocalOwner = $Matches[1]; continue }
@@ -463,8 +471,9 @@ function Invoke-LarsonSweep {
 foreach ($threads in $ThreadCounts) {
         $Summary.Add("## " + $SectionTitle + " T=" + $threads)
         $Summary.Add("")
-        $tableHeader = "| allocator | median ops/s | median peak_kb | route_miss | route_vis_lookup | route_vis_hit | route_vis_hit_local_owner | route_vis_hit_foreign_owner | route_vis_miss | route_vis_probe_total | route_vis_probe_max | source_alloc | local2p_source_alloc | midpage_source_alloc | large_source_alloc | toy_source_alloc | front_source_ops_alloc | front_source_slot_alloc | front_source_prefill_alloc | toy_source_prefill_call | front_path_local2p | front_path_midpage | front_path_large | front_path_toy | transfer_push | transfer_pop | transfer_current | transfer_current_max | remote_free_attempt | remote_free_strict_block | remote_free_transfer_fail | route_rehome_attempt | route_rehome_success | route_rehome_fail | lifecycle_owner_mismatch | foreign_free_attempt | foreign_free_handled | foreign_free_invalid | visible_first_attempt | visible_first_hit | visible_first_miss | visible_first_visible_invalid | visible_first_local_fallback | visible_first_fallback_invalid | visible_first_local_lookup_skipped | source_owned_prepare | source_owned_route_hit_local_owner | source_owned_visibility_hit_local_owner | source_owned_visibility_hit_foreign_owner | source_owned_remote_free_attempt | source_owned_release | frontcache_reuse_hit | frontcache_reuse_invalid | transfer_reuse_hit | transfer_reuse_invalid | source_refill_starvation | source_refill_saturation | source_refill_boost | source_refill_clamp | source_admission_open | source_admission_boosted | source_admission_clamped | source_prefill_attempt | source_prefill_filled | source_prefill_fallback | alloc_fail | desc_probe | reg_probe | unreg_probe | srcblk_probe | runs |"
+        $tableHeader = "| allocator | median ops/s | median peak_kb | route_miss | route_vis_lookup | route_vis_hit | route_vis_hit_local_owner | route_vis_hit_foreign_owner | route_vis_miss | route_vis_probe_total | route_vis_probe_max | source_alloc | local2p_source_alloc | midpage_source_alloc | large_source_alloc | toy_source_alloc | front_source_ops_alloc | front_source_slot_alloc | front_source_prefill_alloc | toy_source_prefill_call | front_path_local2p | front_path_midpage | front_path_large | front_path_toy | transfer_push | transfer_pop | transfer_current | transfer_current_max | remote_free_attempt | remote_free_strict_block | remote_free_transfer_fail | route_rehome_attempt | route_rehome_success | route_rehome_fail | lifecycle_owner_mismatch | foreign_free_attempt | foreign_free_handled | foreign_free_invalid | visible_first_attempt | visible_first_hit | visible_first_miss | visible_first_visible_invalid | visible_first_local_fallback | visible_first_fallback_invalid | visible_first_local_lookup_skipped | negative_filter_attempt | negative_filter_not_armed | negative_filter_rehome_blocked | negative_filter_skip_local | negative_filter_maybe_local | negative_filter_false_skip | negative_filter_shadow_local_valid | negative_filter_shadow_local_invalid | negative_filter_range_probe_total | negative_filter_range_probe_max | source_owned_prepare | source_owned_route_hit_local_owner | source_owned_visibility_hit_local_owner | source_owned_visibility_hit_foreign_owner | source_owned_remote_free_attempt | source_owned_release | frontcache_reuse_hit | frontcache_reuse_invalid | transfer_reuse_hit | transfer_reuse_invalid | source_refill_starvation | source_refill_saturation | source_refill_boost | source_refill_clamp | source_admission_open | source_admission_boosted | source_admission_clamped | source_prefill_attempt | source_prefill_filled | source_prefill_fallback | alloc_fail | desc_probe | reg_probe | unreg_probe | srcblk_probe | runs |"
         $Summary.Add($tableHeader)
+        $metricColumnCount = (($tableHeader -split '\|' | Where-Object { $_.Trim() -ne "" }).Count - 4)
         $tableSeparators = ($tableHeader -split '\|' | Where-Object { $_.Trim() -ne "" } | ForEach-Object {
             if ($_.Trim() -eq "allocator" -or $_.Trim() -eq "runs") { "---" } else { "---:" }
         })
@@ -506,11 +515,15 @@ foreach ($threads in $ThreadCounts) {
                 VisibleFirstLocalFallbackInvalid = "NA"
                 VisibleFirstLocalLookupSkipped = "NA"
                 NegativeFilterAttempt = "NA"
+                NegativeFilterNotArmed = "NA"
+                NegativeFilterRehomeBlocked = "NA"
                 NegativeFilterSkipLocal = "NA"
                 NegativeFilterMaybeLocal = "NA"
                 NegativeFilterShadowFalseSkip = "NA"
                 NegativeFilterShadowLocalValid = "NA"
                 NegativeFilterShadowLocalInvalid = "NA"
+                NegativeFilterRangeProbeTotal = "NA"
+                NegativeFilterRangeProbeMax = "NA"
                 SourceOwnedPrepare = "NA"
                 SourceOwnedRouteHitLocalOwner = "NA"
                 SourceOwnedVisibilityHitLocalOwner = "NA"
@@ -615,7 +628,7 @@ foreach ($threads in $ThreadCounts) {
             }
 
             if ($opsRuns.Count -eq 0) {
-                $failedMetrics = ((@('NA') * 69) -join ' | ')
+                $failedMetrics = ((@('NA') * $metricColumnCount) -join ' | ')
                 $Summary.Add(('| {0} | failed | n/a | {1} | `{2}` |' -f $exe.Name, $failedMetrics, ($runTexts -join ", ")))
                 continue
             }
@@ -666,11 +679,15 @@ foreach ($threads in $ThreadCounts) {
                 $lastStats.VisibleFirstLocalFallbackInvalid,
                 $lastStats.VisibleFirstLocalLookupSkipped,
                 $lastStats.NegativeFilterAttempt,
+                $lastStats.NegativeFilterNotArmed,
+                $lastStats.NegativeFilterRehomeBlocked,
                 $lastStats.NegativeFilterSkipLocal,
                 $lastStats.NegativeFilterMaybeLocal,
                 $lastStats.NegativeFilterShadowFalseSkip,
                 $lastStats.NegativeFilterShadowLocalValid,
                 $lastStats.NegativeFilterShadowLocalInvalid,
+                $lastStats.NegativeFilterRangeProbeTotal,
+                $lastStats.NegativeFilterRangeProbeMax,
                 $lastStats.SourceOwnedPrepare,
                 $lastStats.SourceOwnedRouteHitLocalOwner,
                 $lastStats.SourceOwnedVisibilityHitLocalOwner,
@@ -751,13 +768,17 @@ foreach ($threads in $ThreadCounts) {
                     $lastStats.VisibleFirstLocalFallback,
                     $lastStats.VisibleFirstLocalFallbackInvalid,
                     $lastStats.VisibleFirstLocalLookupSkipped))
-                $Summary.Add(('  negative_filter: attempt={0} skip_local={1} maybe_local={2} false_skip={3} shadow_local_valid={4} shadow_local_invalid={5}' -f
+                $Summary.Add(('  negative_filter: attempt={0} not_armed={1} rehome_blocked={2} skip_local={3} maybe_local={4} false_skip={5} shadow_local_valid={6} shadow_local_invalid={7} range_probe_total={8} range_probe_max={9}' -f
                     $lastStats.NegativeFilterAttempt,
+                    $lastStats.NegativeFilterNotArmed,
+                    $lastStats.NegativeFilterRehomeBlocked,
                     $lastStats.NegativeFilterSkipLocal,
                     $lastStats.NegativeFilterMaybeLocal,
                     $lastStats.NegativeFilterShadowFalseSkip,
                     $lastStats.NegativeFilterShadowLocalValid,
-                    $lastStats.NegativeFilterShadowLocalInvalid))
+                    $lastStats.NegativeFilterShadowLocalInvalid,
+                    $lastStats.NegativeFilterRangeProbeTotal,
+                    $lastStats.NegativeFilterRangeProbeMax))
                 $Summary.Add(('  frontcache_class: {0}' -f $lastStats.FrontcacheClass))
             }
         }

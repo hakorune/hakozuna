@@ -174,14 +174,20 @@ Hz6RouteResult hz6_allocator_route_lookup_visible_after_local_miss(
 }
 
 int hz6_allocator_route_negative_filter_skip_local(
-    const Hz6Allocator* allocator,
+    Hz6Allocator* allocator,
     const void* ptr) {
   if (!allocator || !ptr) {
     return 0;
   }
 
   uintptr_t probe = (uintptr_t)ptr;
+#if HZ6_DIAGNOSTIC_PROBES
+  size_t range_probes = 0;
+#endif
   for (size_t i = 0; i < HZ6_SOURCE_BLOCK_CAPACITY; ++i) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++range_probes;
+#endif
     const Hz6SourceBlock* block = &allocator->source_blocks[i];
     if (!block->active || !block->ptr || block->bytes == 0) {
       continue;
@@ -189,10 +195,23 @@ int hz6_allocator_route_negative_filter_skip_local(
     uintptr_t base = (uintptr_t)block->ptr;
     uintptr_t limit = base + (uintptr_t)block->bytes;
     if (probe >= base && probe < limit) {
+#if HZ6_DIAGNOSTIC_PROBES
+      allocator->stats.negative_filter_range_probe_total += range_probes;
+      if (range_probes >
+          allocator->stats.negative_filter_range_probe_max) {
+        allocator->stats.negative_filter_range_probe_max = range_probes;
+      }
+#endif
       return 0;
     }
   }
 
+#if HZ6_DIAGNOSTIC_PROBES
+  allocator->stats.negative_filter_range_probe_total += range_probes;
+  if (range_probes > allocator->stats.negative_filter_range_probe_max) {
+    allocator->stats.negative_filter_range_probe_max = range_probes;
+  }
+#endif
   return 1;
 }
 

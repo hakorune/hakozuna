@@ -48,11 +48,15 @@ typedef struct Hz6StatsSnapshot {
   size_t visible_first_local_fallback_invalid;
   size_t visible_first_local_lookup_skipped;
   size_t negative_filter_attempt;
+  size_t negative_filter_not_armed;
+  size_t negative_filter_rehome_blocked;
   size_t negative_filter_skip_local;
   size_t negative_filter_maybe_local;
   size_t negative_filter_shadow_false_skip;
   size_t negative_filter_shadow_local_valid;
   size_t negative_filter_shadow_local_invalid;
+  size_t negative_filter_range_probe_total;
+  size_t negative_filter_range_probe_max;
   size_t source_owned_prepare;
   size_t source_owned_route_hit_local_owner;
   size_t source_owned_visibility_hit_local_owner;

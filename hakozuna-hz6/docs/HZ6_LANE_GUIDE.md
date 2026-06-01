@@ -84,7 +84,10 @@ negativefilter-appcap:
   Diagnostic-only appcap variant. It uses a conservative local owned-range hint
   to skip local route lookup only when the pointer is definitely not local.
   Diagnostic builds shadow-verify the skip and record false-skip counters.
-  This is the current next step after visiblefirst-appcap.
+  The source-block-only hint is now no-go as an optimization lane because
+  route rehome can create local exact routes without local source-block
+  ownership. Keep this lane as evidence that the next design needs rehome-aware
+  owner ranges or a shared route directory.
 ```
 
 ## Focused Mechanism Lanes
