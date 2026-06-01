@@ -103,3 +103,62 @@ int hz6_allocator_spill_frontcache_for_descriptor(
   return 1;
 #endif
 }
+
+void* hz6_allocator_borrow_larger_frontcache(Hz6Allocator* allocator,
+                                             uint16_t front_id,
+                                             uint16_t requested_class_id,
+                                             size_t requested_bytes) {
+  if (!allocator || requested_class_id >= HZ6_FRONT_CACHE_CLASS_COUNT ||
+      requested_bytes == 0) {
+    return NULL;
+  }
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.frontcache_borrow_attempt;
+#endif
+
+#if !HZ6_FRONTCACHE_BORROW_LARGER_ON_CLASS_MISS
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.frontcache_borrow_no_candidate;
+#endif
+  return NULL;
+#else
+  for (size_t i = requested_class_id + 1; i < HZ6_FRONT_CACHE_CLASS_COUNT;
+       ++i) {
+    Hz6FrontCacheBin* bin = &allocator->frontcache_bins[i];
+    for (size_t j = bin->count; j > 0; --j) {
+      size_t index = j - 1;
+      Hz6FrontCacheEntry entry = bin->entries[index];
+      Hz6ObjectDescriptor* descriptor =
+          (Hz6ObjectDescriptor*)entry.descriptor;
+      if (!descriptor || descriptor->state != HZ6_STATE_LOCAL_FREE ||
+          descriptor->ptr != entry.ptr || descriptor->bytes < requested_bytes ||
+          descriptor->generation != entry.generation) {
+        continue;
+      }
+      Hz6RouteResult route = hz6_allocator_route_lookup(allocator, entry.ptr);
+      if (route.kind != HZ6_ROUTE_VALID || route.front_id != front_id) {
+        continue;
+      }
+
+      bin->entries[index] = bin->entries[--bin->count];
+      if (!hz6_allocator_activate_descriptor(
+              descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr, entry.generation,
+              hz6_allocator_owner_token(allocator))) {
+#if HZ6_DIAGNOSTIC_PROBES
+        ++allocator->stats.frontcache_borrow_invalid;
+#endif
+        return NULL;
+      }
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.frontcache_borrow_success;
+#endif
+      return entry.ptr;
+    }
+  }
+
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.frontcache_borrow_no_candidate;
+#endif
+  return NULL;
+#endif
+}

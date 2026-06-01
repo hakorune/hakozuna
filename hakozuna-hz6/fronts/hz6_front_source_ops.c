@@ -20,11 +20,20 @@ void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
   if (reused) {
     return reused;
   }
+  reused = hz6_allocator_borrow_larger_frontcache(allocator, front_id,
+                                                  class_id, bytes);
+  if (reused) {
+    hz6_allocator_note_front_alloc_path(allocator, front_id,
+                                        HZ6_ALLOC_PATH_LOCAL_REUSE);
+    return reused;
+  }
 
   Hz6ObjectDescriptor* descriptor =
       hz6_allocator_find_free_descriptor(allocator);
   if (!descriptor) {
     hz6_allocator_note_frontcache_spill_dryrun(allocator, class_id);
+    hz6_allocator_note_frontcache_borrow_dryrun(allocator, front_id,
+                                                class_id, bytes);
     if (hz6_allocator_spill_frontcache_for_descriptor(allocator, class_id)) {
       descriptor = hz6_allocator_find_free_descriptor(allocator);
 #if HZ6_DIAGNOSTIC_PROBES

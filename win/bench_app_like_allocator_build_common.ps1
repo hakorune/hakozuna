@@ -84,6 +84,13 @@ function Get-Hz6WinSpillRoute4kCapacityFlags {
     $flags
 }
 
+function Get-Hz6WinBorrowRoute4kCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinRoute4kCapacityFlags
+    $flags += "/DHZ6_FRONTCACHE_BORROW_LARGER_ON_CLASS_MISS=1"
+    $flags
+}
+
 function Get-Hz6WinDesc4kRoute4kCapacityFlags {
     @(
         "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)4096)",
@@ -197,6 +204,7 @@ function Invoke-AppLikeHz6BenchBuilds {
     $controlFlags = Get-Hz6WinControlCapacityFlags
     $route4kFlags = Get-Hz6WinRoute4kCapacityFlags
     $spillRoute4kFlags = Get-Hz6WinSpillRoute4kCapacityFlags
+    $borrowRoute4kFlags = Get-Hz6WinBorrowRoute4kCapacityFlags
     $desc4kRoute4kFlags = Get-Hz6WinDesc4kRoute4kCapacityFlags
     $source512Route4kFlags = Get-Hz6WinSource512Route4kCapacityFlags
     $desc4kSource512Route4kFlags = Get-Hz6WinDesc4kSource512Route4kCapacityFlags
@@ -208,6 +216,7 @@ function Invoke-AppLikeHz6BenchBuilds {
         "control" = @{ Suffix = "_control"; ExtraFlags = $controlFlags }
         "route4k" = @{ Suffix = "_route4k"; ExtraFlags = $route4kFlags }
         "spill-route4k" = @{ Suffix = "_spill_route4k"; ExtraFlags = $spillRoute4kFlags }
+        "borrow-route4k" = @{ Suffix = "_borrow_route4k"; ExtraFlags = $borrowRoute4kFlags }
         "desc4k-route4k" = @{ Suffix = "_desc4k_route4k"; ExtraFlags = $desc4kRoute4kFlags }
         "source512-route4k" = @{ Suffix = "_source512_route4k"; ExtraFlags = $source512Route4kFlags }
         "desc4k-source512-route4k" = @{ Suffix = "_desc4k_source512_route4k"; ExtraFlags = $desc4kSource512Route4kFlags }

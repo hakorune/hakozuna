@@ -95,6 +95,14 @@ typedef struct Hz6StatsSnapshot {
   size_t frontcache_spill_no_candidate;
   size_t frontcache_spill_invalid;
   size_t frontcache_spill_retry_success;
+  size_t frontcache_borrow_dryrun_calls;
+  size_t frontcache_borrow_dryrun_candidate_calls;
+  size_t frontcache_borrow_dryrun_candidate_total;
+  size_t frontcache_borrow_dryrun_largest_candidate_max;
+  size_t frontcache_borrow_attempt;
+  size_t frontcache_borrow_success;
+  size_t frontcache_borrow_no_candidate;
+  size_t frontcache_borrow_invalid;
   size_t route_lookup_probe_total;
   size_t route_lookup_probe_max;
   size_t route_register_probe_total;

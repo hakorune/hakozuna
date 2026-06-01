@@ -54,6 +54,13 @@ void* hz6_front_reuse_or_prefill_source_kind(Hz6Allocator* allocator,
 #endif
     return reused;
   }
+  reused = hz6_allocator_borrow_larger_frontcache(allocator, front_id,
+                                                  class_id, bytes);
+  if (reused) {
+    hz6_allocator_note_front_alloc_path(allocator, front_id,
+                                        HZ6_ALLOC_PATH_LOCAL_REUSE);
+    return reused;
+  }
 
   size_t refill_count = count ? count : 1;
   size_t filled = hz6_front_prefill_source_kind(allocator, front_id, class_id,
@@ -110,6 +117,13 @@ void* hz6_front_reuse_or_block_prefill_source_kind(Hz6Allocator* allocator,
 #if HZ6_DIAGNOSTIC_PROBES
     hz6_allocator_note_front_alloc_path(allocator, front_id, reuse_path);
 #endif
+    return reused;
+  }
+  reused = hz6_allocator_borrow_larger_frontcache(allocator, front_id,
+                                                  class_id, bytes);
+  if (reused) {
+    hz6_allocator_note_front_alloc_path(allocator, front_id,
+                                        HZ6_ALLOC_PATH_LOCAL_REUSE);
     return reused;
   }
 

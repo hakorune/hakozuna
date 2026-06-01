@@ -35,6 +35,16 @@ int hz6_allocator_spill_frontcache_for_descriptor(
     Hz6Allocator* allocator,
     uint16_t requested_class_id);
 
+void hz6_allocator_note_frontcache_borrow_dryrun(Hz6Allocator* allocator,
+                                                 uint16_t front_id,
+                                                 uint16_t requested_class_id,
+                                                 size_t requested_bytes);
+
+void* hz6_allocator_borrow_larger_frontcache(Hz6Allocator* allocator,
+                                             uint16_t front_id,
+                                             uint16_t requested_class_id,
+                                             size_t requested_bytes);
+
 size_t hz6_allocator_prefill_size(Hz6Allocator* allocator,
                                   size_t size,
                                   size_t count);

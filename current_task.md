@@ -845,6 +845,56 @@ Next:
     or add class/run-level partial reuse that can serve nearby classes
 ```
 
+HZ6 borrow-route4k behavior check:
+
+```text
+Sources:
+  docs/benchmarks/windows/paper/20260601_103209_hz6_capacity_matrix_windows.md
+  docs/benchmarks/windows/paper/20260601_103410_hz6_capacity_matrix_windows.md
+  docs/benchmarks/windows/paper/20260601_103437_hz6_capacity_matrix_windows.md
+
+Dry-run:
+  same-front larger cached-object candidates exist:
+    borrow_dryrun_candidate_calls = 213K
+    borrow_dryrun_candidate_total = 414K
+
+Behavior:
+  added borrow-route4k as an explicit experiment lane.
+  route4k remains unchanged.
+  behavior:
+    after exact-class cache miss, borrow a larger same-front cached object
+    instead of allocating a new object.
+
+Diagnostic run:
+  route4k:
+    2.53M ops/s, 17.3 MB
+  borrow-route4k:
+    0.52M ops/s, 19.9 MB
+    borrow_success = 29.9K
+
+Non-diagnostic run:
+  route4k:
+    3.37M ops/s, 17.3 MB
+  borrow-route4k:
+    0.51M ops/s, 19.9 MB
+
+Decision:
+  borrow-route4k is no-go/control evidence.
+
+Read:
+  Reusing larger cached objects is non-destructive, but it still damages the
+  mixed_ws route4k shape. It reduces some source-block exhaustion, but it
+  increases descriptor exhaustion and collapses throughput. The likely issue is
+  class-locality and repeated borrow scanning, not just object availability.
+
+Next:
+  stop one-object spill/borrow knobs.
+  move to a cleaner front-cache policy:
+    adaptive per-class cache caps
+    source/run-level reuse accounting
+    prefill allocation that avoids overfilling a few bins in the first place
+```
+
 ## HZ6 Windows Current Read
 
 ```text

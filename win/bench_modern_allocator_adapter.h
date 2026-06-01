@@ -142,6 +142,14 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 "frontcache_spill_no_candidate=%zu "
                 "frontcache_spill_invalid=%zu "
                 "frontcache_spill_retry_success=%zu "
+                "frontcache_borrow_dryrun_calls=%zu "
+                "frontcache_borrow_dryrun_candidate_calls=%zu "
+                "frontcache_borrow_dryrun_candidate_total=%zu "
+                "frontcache_borrow_dryrun_largest_candidate_max=%zu "
+                "frontcache_borrow_attempt=%zu "
+                "frontcache_borrow_success=%zu "
+                "frontcache_borrow_no_candidate=%zu "
+                "frontcache_borrow_invalid=%zu "
                 "route_lookup_probe_total=%zu route_lookup_probe_max=%zu "
                 "route_register_probe_total=%zu route_register_probe_max=%zu "
                 "route_unregister_probe_total=%zu route_unregister_probe_max=%zu "
@@ -209,6 +217,14 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 s.frontcache_spill_no_candidate,
                 s.frontcache_spill_invalid,
                 s.frontcache_spill_retry_success,
+                s.frontcache_borrow_dryrun_calls,
+                s.frontcache_borrow_dryrun_candidate_calls,
+                s.frontcache_borrow_dryrun_candidate_total,
+                s.frontcache_borrow_dryrun_largest_candidate_max,
+                s.frontcache_borrow_attempt,
+                s.frontcache_borrow_success,
+                s.frontcache_borrow_no_candidate,
+                s.frontcache_borrow_invalid,
                 s.route_lookup_probe_total,
                 s.route_lookup_probe_max,
                 s.route_register_probe_total,
