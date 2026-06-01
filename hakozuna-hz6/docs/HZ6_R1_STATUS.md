@@ -2,6 +2,10 @@
 
 HZ6-R1 is now an executable modular seed, not only a design note.
 
+For current Windows capacity lane names and promotion status, use
+`HZ6_LANE_GUIDE.md` as the short reference. This file remains the longer R1
+implementation/status record.
+
 ## Implemented
 
 ```text

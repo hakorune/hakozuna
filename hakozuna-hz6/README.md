@@ -1,10 +1,10 @@
 # Hakozuna HZ6
 
 HZ6 is the planned transfer-first successor to the HZ5 sidecar allocator
-research. It now has an R1 executable seed: modular contracts, a toy
-contract-validation front, and a first Large128 transfer-first front seed.
-The first HZ6-only benchmark harness has now been run, but no cross-family
-HZ3/HZ4/HZ5 comparison table has been published yet.
+research. It now has an executable R1 family: modular contracts, Windows and
+Linux build entrypoints, capacity lanes, and application-like benchmark
+runners. Current Windows work is focused on lane discipline and control-plane
+evidence rather than a single default promotion.
 
 Japanese README: [READMEjp.md](READMEjp.md)
 
@@ -47,6 +47,7 @@ HZ6 starts from these rules:
 ```text
 docs/HZ6_BLUEPRINT.md
 docs/HZ6_R1_STATUS.md
+docs/HZ6_LANE_GUIDE.md
 docs/HZ6_R1_BENCHMARK_20260528.md
 docs/HZ6_R1_BROAD_TRENDS_20260528.md
 docs/HZ6_R1_MINIMUM_CONTRACT_BLUEPRINT.md
@@ -106,9 +107,25 @@ Details:
 
 ## Benchmark Status
 
-HZ6 now has a first HZ6-only benchmark run. The current evidence is still
-provisional and does not include a cross-family HZ3/HZ4/HZ5 comparison table.
-No performance claim should be made from the R1 seed yet.
+HZ6 now has HZ6-only, legacy allocator matrix, and app-like Windows benchmark
+entrypoints. The lane map is intentionally explicit:
+
+```text
+route4k:
+  current Windows candidate-control lane
+
+control:
+  low-capacity / low-RSS baseline
+
+appcap:
+  high-capacity completion/control lane, not a default
+
+sourcerun-*:
+  source-layer mechanism evidence, not promotion
+```
+
+Use `docs/HZ6_LANE_GUIDE.md` before interpreting new HZ6 numbers. No broad
+performance claim should be made from a single lane or a single row.
 
 Snapshot:
 

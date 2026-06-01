@@ -21,8 +21,10 @@ without mixing:
 - [`build_win_mt_remote_hz6_owner_suite.ps1`](build_win_mt_remote_hz6_owner_suite.ps1): HZ6 owner-aware MT remote suite builder
 - [`build_win_random_mixed_suite.ps1`](build_win_random_mixed_suite.ps1): Windows `random_mixed` suite builder
 - [`build_win_redis_workload_suite.ps1`](build_win_redis_workload_suite.ps1): Windows Redis-workload suite builder
+- [`build_win_hz6_capacity_suite.ps1`](build_win_hz6_capacity_suite.ps1): HZ6 capacity-lane suite builder
 - [`run_win_allocator_suite.ps1`](run_win_allocator_suite.ps1): run the full allocator suite
 - [`run_win_allocator_matrix.ps1`](run_win_allocator_matrix.ps1): reusable Windows allocator profile matrix
+- [`run_win_hz6_capacity_matrix.ps1`](run_win_hz6_capacity_matrix.ps1): HZ6 capacity-lane matrix runner
 - [`run_win_paper_windows.ps1`](run_win_paper_windows.ps1): paper-aligned Windows allocator summary
 - [`run_win_larson_paper.ps1`](run_win_larson_paper.ps1): paper-aligned Larson lane
 - [`run_win_mt_remote_paper.ps1`](run_win_mt_remote_paper.ps1): paper-aligned MT remote lane
@@ -56,6 +58,7 @@ powershell -ExecutionPolicy Bypass -File .\win\run_win_allocator_suite.ps1
 - Keep Windows-only allocator knobs in named suite scripts or `hakozuna-mt/Makefile` lane presets
 - Keep profile boundaries documented in [docs/WINDOWS_PROFILE_BOUNDARIES.md](../docs/WINDOWS_PROFILE_BOUNDARIES.md)
 - Keep build and lane guidance in [docs/WINDOWS_BUILD.md](../docs/WINDOWS_BUILD.md)
+- Keep HZ6 capacity lane meanings in [hakozuna-hz6/docs/HZ6_LANE_GUIDE.md](../hakozuna-hz6/docs/HZ6_LANE_GUIDE.md)
 - Keep public benchmark summaries under `docs/benchmarks/windows/`
 - Keep private raw assets and recovered trees under `private/`
 
@@ -71,5 +74,6 @@ powershell -ExecutionPolicy Bypass -File .\win\run_win_allocator_suite.ps1
 - [mac/README.md](../mac/README.md)
 - [docs/WINDOWS_BUILD.md](../docs/WINDOWS_BUILD.md)
 - [docs/WINDOWS_PROFILE_BOUNDARIES.md](../docs/WINDOWS_PROFILE_BOUNDARIES.md)
+- [hakozuna-hz6/docs/HZ6_LANE_GUIDE.md](../hakozuna-hz6/docs/HZ6_LANE_GUIDE.md)
 - [bench/README.md](../bench/README.md)
 - [docs/REPO_STRUCTURE.md](../docs/REPO_STRUCTURE.md)

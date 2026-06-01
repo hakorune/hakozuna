@@ -4,6 +4,9 @@ HZ6 is now in R1 implementation. Keep the implementation modular from the
 start: API, route, frontcache, transfer, source, owner, policy, and future
 fronts should stay separated.
 
+Current Windows capacity lane names and promotion status are summarized in
+`HZ6_LANE_GUIDE.md`. Keep this file as the longer investigation log.
+
 ## Current Direction Freeze
 
 ```text

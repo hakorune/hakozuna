@@ -83,10 +83,53 @@ it should be compared as a Windows peak working-set measurement rather than a
 literal POSIX `ru_maxrss` value. Very short runs may report `NA` if Windows
 does not expose a nonzero working-set sample before the process exits.
 
+## Capacity Lane Commands
+
+HZ6 Windows capacity lanes are built through the shared app-like benchmark
+builder. See `docs/HZ6_LANE_GUIDE.md` for lane meanings before comparing rows.
+
+Build a focused suite:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\win\build_win_hz6_capacity_suite.ps1 `
+  -Families mixed_ws `
+  -Hz6Profiles strict `
+  -CapacityLanes control,route4k,appcap
+```
+
+Run the focused matrix:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\win\run_win_hz6_capacity_matrix.ps1 `
+  -Families mixed_ws `
+  -Hz6Profiles strict `
+  -CapacityLanes control,route4k,appcap `
+  -Runs 1
+```
+
+Default capacity matrix lanes:
+
+```text
+control:
+  low-capacity / low-RSS baseline
+
+route4k:
+  current Windows candidate-control lane
+
+appcap:
+  high-capacity completion/control lane, not a default
+```
+
+Research lanes such as `sourcerun-route4k`,
+`sourcerun-sameclass-route4k`, `spill-route4k`, `borrow-route4k`,
+`cap-route4k`, and `sourcerun-reclaim-route4k` should be requested
+explicitly. Do not mix diagnostic-only research lanes into speed or paper
+runs unless the row is labelled as a research/control row.
+
 ## Status
 
 This is a build-environment seed only, but it is now verified locally with
 `clang-cl` by compiling and running the full R1 smoke set. The benchmark
-entrypoint is wired so Windows can run the same HZ6-only mode/profile/size
-matrix as Linux. Cross-family claims still need a separate fair benchmark
-pass.
+entrypoints are wired so Windows can run HZ6-only, capacity-lane, and
+app-like matrices. Cross-family claims still need fair row-by-row benchmark
+attribution.

@@ -3,6 +3,41 @@
 HZ6 is now in active Windows/Linux implementation and benchmarking. HZ5 Linux
 remains profile-stabilized; new HZ5 work should not blur the HZ6 contract.
 
+## HZ6 Lane Dashboard
+
+Canonical lane guide:
+
+```text
+hakozuna-hz6/docs/HZ6_LANE_GUIDE.md
+```
+
+Current lane read:
+
+```text
+route4k:
+  current Windows candidate-control lane.
+  Use first for low-RSS HZ6 capacity checks.
+
+control:
+  low-capacity / low-RSS baseline.
+
+appcap:
+  high-capacity completion/control lane.
+  Do not treat as the production/default shape.
+
+sourcerun-route4k:
+  source-run reuse evidence/control.
+
+sourcerun-sameclass-route4k:
+  safer same-class reclaim evidence/control.
+
+spill-route4k / borrow-route4k / cap-route4k / sourcerun-reclaim-route4k:
+  frozen no-go controls.
+```
+
+Next design pressure remains descriptor lifecycle / frontcache-visible
+descriptor reuse, not another frontcache spill/borrow/cap knob.
+
 ## Latest Windows Matrix Read
 
 Latest full matrix:
