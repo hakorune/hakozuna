@@ -124,6 +124,46 @@ HZ6 owner-aware MT remote:
   rather than a clean win lane.
 ```
 
+Latest Larson lifecycle diagnostic:
+
+```text
+Diagnostic-only counters added:
+  lifecycle_owner_mismatch
+  lifecycle_foreign_free_attempt / handled / invalid
+  frontcache_push_by_class[16]
+  frontcache_pop_empty_by_class[16]
+
+Smoke:
+  bench_larson_hz6_speed_appcap.exe 2 8 1024 10000 1 12345 16 <mode>
+
+main-warmup:
+  throughput = 1249 ops/s
+  foreign_free_attempt = 2499
+  foreign_free_handled = 2499
+  foreign_free_invalid = 0
+  route_rehome_success = 2499
+  route_rehome_fail = 0
+  route_visibility_probe_max = 1
+  route_lookup_probe_total = 2620397339
+  route_lookup_probe_max = 524290
+
+worker-warmup:
+  throughput = 44.044M ops/s
+  lifecycle/visibility/transfer counters stay 0
+  route_lookup_probe_total = 99234056
+  route_lookup_probe_max = 5
+
+Read:
+  remote handoff is safe in this smoke but not fast enough.
+  visibility depth is not the current blocker.
+  the main-warmup collapse is now dominated by the expensive worker-local
+  route MISS before shared visibility.
+
+Next:
+  try a route negative-filter / visible-first diagnostic / shared directory
+  experiment before adding more remote handoff capacity.
+```
+
 Failure-row diagnosis:
 
 ```text

@@ -26,6 +26,14 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
                                           allocator->owner.token);
         int needs_rehome = visible_hit && !local_owner;
         int ok = 0;
+#if HZ6_DIAGNOSTIC_PROBES
+        if (!local_owner) {
+          ++allocator->stats.lifecycle_foreign_free_attempt;
+          if (visible_hit) {
+            ++allocator->stats.lifecycle_owner_mismatch;
+          }
+        }
+#endif
         if (needs_rehome && descriptor && descriptor->source_release) {
 #if HZ6_DIAGNOSTIC_PROBES
           ++allocator->stats.source_owned_remote_free_attempt;
@@ -57,6 +65,15 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
           (void)hz6_allocator_route_rehome_exact(allocator, &route);
 #endif
         }
+#if HZ6_DIAGNOSTIC_PROBES
+        if (!local_owner) {
+          if (ok) {
+            ++allocator->stats.lifecycle_foreign_free_handled;
+          } else {
+            ++allocator->stats.lifecycle_foreign_free_invalid;
+          }
+        }
+#endif
         if (!ok) {
           ++allocator->stats.route_invalid;
         }

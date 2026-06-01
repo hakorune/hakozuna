@@ -1010,6 +1010,84 @@ Current read:
   behavior experiment
 ```
 
+## Diagnostic Checkpoint 2026-06-01e
+
+```text
+Larson lifecycle/frontcache class diagnostic smoke:
+  build:
+    build_win_larson_suite.ps1 -DiagnosticHz6Probes
+
+  command:
+    bench_larson_hz6_speed_appcap.exe 2 8 1024 10000 1 12345 16 <mode>
+
+  added diagnostic-only counters:
+    lifecycle_owner_mismatch
+    lifecycle_foreign_free_attempt
+    lifecycle_foreign_free_handled
+    lifecycle_foreign_free_invalid
+    frontcache_push_by_class[16]
+    frontcache_pop_empty_by_class[16]
+
+main-warmup:
+  throughput = 1249 ops/s
+  route_visibility_lookup = 2499
+  route_visibility_hit_foreign_owner = 2499
+  route_visibility_probe_max = 1
+  remote_free_attempt = 2499
+  route_rehome_attempt = 2499
+  route_rehome_success = 2499
+  route_rehome_fail = 0
+  lifecycle_owner_mismatch = 2499
+  lifecycle_foreign_free_attempt = 2499
+  lifecycle_foreign_free_handled = 2499
+  lifecycle_foreign_free_invalid = 0
+  transfer_push = 2499
+  transfer_pop = 2302
+  transfer_current = 197
+  route_lookup_probe_total = 2620397339
+  route_lookup_probe_max = 524290
+
+worker-warmup:
+  throughput = 44.044M ops/s
+  route_visibility_lookup = 0
+  remote_free_attempt = 0
+  route_rehome_attempt = 0
+  lifecycle_owner_mismatch = 0
+  lifecycle_foreign_free_attempt = 0
+  lifecycle_foreign_free_handled = 0
+  lifecycle_foreign_free_invalid = 0
+  transfer_push = 0
+  transfer_pop = 0
+  transfer_current = 0
+  route_lookup_probe_total = 99234056
+  route_lookup_probe_max = 5
+
+Current read:
+  foreign handoff itself is not failing:
+    handled == attempt
+    route_rehome_success == route_rehome_attempt
+    route_rehome_fail == 0
+    lifecycle_foreign_free_invalid == 0
+
+  route visibility remains shallow:
+    route_visibility_probe_max == 1
+
+  the new main-warmup bottleneck signal is the worker-local route MISS before
+  visibility:
+    local route lookup probes explode to 2.62B with max 524290
+
+  worker-warmup stays healthy and keeps lifecycle/visibility/transfer at zero.
+
+Next:
+  do not add more remote handoff capacity yet
+  next high-ROI experiment should avoid the expensive local-route miss before
+  shared visibility on cross-owner warmup pointers
+  candidates:
+    route negative filter / owned-range hint
+    visible-first diagnostic lane for non-strict cross-owner stress
+    shared route directory keyed by source block or route envelope
+```
+
 Read:
 
 ```text

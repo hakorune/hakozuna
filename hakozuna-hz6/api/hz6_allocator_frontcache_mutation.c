@@ -6,7 +6,15 @@ int hz6_allocator_frontcache_push(Hz6Allocator* allocator,
   if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
     return 0;
   }
-  return hz6_frontcache_push(&allocator->frontcache_bins[class_id], entry);
+  {
+    int ok = hz6_frontcache_push(&allocator->frontcache_bins[class_id], entry);
+#if HZ6_DIAGNOSTIC_PROBES
+    if (ok && class_id < HZ6_STATS_CLASS_COUNT) {
+      ++allocator->stats.frontcache_push_by_class[class_id];
+    }
+#endif
+    return ok;
+  }
 }
 
 int hz6_allocator_frontcache_pop(Hz6Allocator* allocator,
@@ -15,7 +23,15 @@ int hz6_allocator_frontcache_pop(Hz6Allocator* allocator,
   if (!allocator || !out || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
     return 0;
   }
-  return hz6_frontcache_pop(&allocator->frontcache_bins[class_id], out);
+  {
+    int ok = hz6_frontcache_pop(&allocator->frontcache_bins[class_id], out);
+#if HZ6_DIAGNOSTIC_PROBES
+    if (!ok && class_id < HZ6_STATS_CLASS_COUNT) {
+      ++allocator->stats.frontcache_pop_empty_by_class[class_id];
+    }
+#endif
+    return ok;
+  }
 }
 
 int hz6_allocator_frontcache_remove(Hz6Allocator* allocator,

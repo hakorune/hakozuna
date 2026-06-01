@@ -36,6 +36,10 @@ typedef struct Hz6StatsSnapshot {
   size_t route_rehome_attempt;
   size_t route_rehome_success;
   size_t route_rehome_fail;
+  size_t lifecycle_owner_mismatch;
+  size_t lifecycle_foreign_free_attempt;
+  size_t lifecycle_foreign_free_handled;
+  size_t lifecycle_foreign_free_invalid;
   size_t source_owned_prepare;
   size_t source_owned_route_hit_local_owner;
   size_t source_owned_visibility_hit_local_owner;
@@ -45,6 +49,8 @@ typedef struct Hz6StatsSnapshot {
   size_t source_alloc;
   size_t frontcache_reuse_hit;
   size_t frontcache_reuse_invalid;
+  size_t frontcache_push_by_class[HZ6_STATS_CLASS_COUNT];
+  size_t frontcache_pop_empty_by_class[HZ6_STATS_CLASS_COUNT];
   size_t transfer_reuse_hit;
   size_t transfer_reuse_invalid;
   size_t source_refill_starvation;

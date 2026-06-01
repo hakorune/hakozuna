@@ -205,6 +205,21 @@ static void print_hz6_front_prefill_paths(const Hz6StatsSnapshot* stats) {
                stats->front_source_prefill_fallback[front]);
     }
 }
+
+static void print_hz6_frontcache_class_diag(const Hz6StatsSnapshot* stats) {
+    size_t class_id;
+    for (class_id = 0; class_id < HZ6_STATS_CLASS_COUNT; ++class_id) {
+        size_t push = stats->frontcache_push_by_class[class_id];
+        size_t pop_empty = stats->frontcache_pop_empty_by_class[class_id];
+        if (push == 0 && pop_empty == 0) {
+            continue;
+        }
+        printf("[HZ6_FRONTCACHE_CLASS] class=%zu push=%zu pop_empty=%zu\n",
+               class_id,
+               push,
+               pop_empty);
+    }
+}
 #endif
 
 static unsigned __stdcall larson_thread(void* arg) {
@@ -452,6 +467,14 @@ int main(int argc, char** argv) {
             tds[t].hz6_stats_after.route_rehome_success;
         hz6_stats.route_rehome_fail +=
             tds[t].hz6_stats_after.route_rehome_fail;
+        hz6_stats.lifecycle_owner_mismatch +=
+            tds[t].hz6_stats_after.lifecycle_owner_mismatch;
+        hz6_stats.lifecycle_foreign_free_attempt +=
+            tds[t].hz6_stats_after.lifecycle_foreign_free_attempt;
+        hz6_stats.lifecycle_foreign_free_handled +=
+            tds[t].hz6_stats_after.lifecycle_foreign_free_handled;
+        hz6_stats.lifecycle_foreign_free_invalid +=
+            tds[t].hz6_stats_after.lifecycle_foreign_free_invalid;
         hz6_stats.source_owned_prepare +=
             tds[t].hz6_stats_after.source_owned_prepare;
         hz6_stats.source_owned_route_hit_local_owner +=
@@ -482,6 +505,13 @@ int main(int argc, char** argv) {
             tds[t].hz6_stats_after.frontcache_reuse_hit;
         hz6_stats.frontcache_reuse_invalid +=
             tds[t].hz6_stats_after.frontcache_reuse_invalid;
+        for (size_t class_id = 0; class_id < HZ6_STATS_CLASS_COUNT;
+             ++class_id) {
+            hz6_stats.frontcache_push_by_class[class_id] +=
+                tds[t].hz6_stats_after.frontcache_push_by_class[class_id];
+            hz6_stats.frontcache_pop_empty_by_class[class_id] +=
+                tds[t].hz6_stats_after.frontcache_pop_empty_by_class[class_id];
+        }
         hz6_stats.transfer_reuse_hit +=
             tds[t].hz6_stats_after.transfer_reuse_hit;
         hz6_stats.transfer_reuse_invalid +=
@@ -591,7 +621,10 @@ int main(int argc, char** argv) {
            "transfer_current_max=%zu remote_free_attempt=%zu "
            "remote_free_strict_owner_block=%zu remote_free_transfer_fail=%zu "
            "route_rehome_attempt=%zu route_rehome_success=%zu "
-           "route_rehome_fail=%zu source_owned_prepare=%zu "
+           "route_rehome_fail=%zu lifecycle_owner_mismatch=%zu "
+           "lifecycle_foreign_free_attempt=%zu "
+           "lifecycle_foreign_free_handled=%zu "
+           "lifecycle_foreign_free_invalid=%zu source_owned_prepare=%zu "
            "source_owned_route_hit_local_owner=%zu "
            "source_owned_visibility_hit_local_owner=%zu "
            "source_owned_visibility_hit_foreign_owner=%zu "
@@ -637,6 +670,10 @@ int main(int argc, char** argv) {
            hz6_stats.route_rehome_attempt,
            hz6_stats.route_rehome_success,
            hz6_stats.route_rehome_fail,
+           hz6_stats.lifecycle_owner_mismatch,
+           hz6_stats.lifecycle_foreign_free_attempt,
+           hz6_stats.lifecycle_foreign_free_handled,
+           hz6_stats.lifecycle_foreign_free_invalid,
            hz6_stats.source_owned_prepare,
            hz6_stats.source_owned_route_hit_local_owner,
            hz6_stats.source_owned_visibility_hit_local_owner,
@@ -686,6 +723,7 @@ int main(int argc, char** argv) {
 #if defined(HZ_BENCH_USE_HZ6) && HZ6_DIAGNOSTIC_PROBES
     print_hz6_front_alloc_paths(&hz6_stats);
     print_hz6_front_prefill_paths(&hz6_stats);
+    print_hz6_frontcache_class_diag(&hz6_stats);
 #endif
 #else
     hz_bench_dump_stats(stdout, "larson_main_final");

@@ -199,6 +199,10 @@ function Parse-Hz6Stats {
         RouteRehomeAttempt = "NA"
         RouteRehomeSuccess = "NA"
         RouteRehomeFail = "NA"
+        LifecycleOwnerMismatch = "NA"
+        LifecycleForeignFreeAttempt = "NA"
+        LifecycleForeignFreeHandled = "NA"
+        LifecycleForeignFreeInvalid = "NA"
         SourceOwnedPrepare = "NA"
         SourceOwnedRouteHitLocalOwner = "NA"
         SourceOwnedVisibilityHitLocalOwner = "NA"
@@ -252,6 +256,7 @@ function Parse-Hz6Stats {
         FrontPrefillFallbackMidpage = "NA"
         FrontPrefillFallbackLarge = "NA"
         FrontPrefillFallbackToy = "NA"
+        FrontcacheClass = "NA"
     }
 
     foreach ($line in $Lines) {
@@ -277,6 +282,10 @@ function Parse-Hz6Stats {
                     '^route_rehome_attempt=(.*)$' { $result.RouteRehomeAttempt = $Matches[1]; continue }
                     '^route_rehome_success=(.*)$' { $result.RouteRehomeSuccess = $Matches[1]; continue }
                     '^route_rehome_fail=(.*)$' { $result.RouteRehomeFail = $Matches[1]; continue }
+                    '^lifecycle_owner_mismatch=(.*)$' { $result.LifecycleOwnerMismatch = $Matches[1]; continue }
+                    '^lifecycle_foreign_free_attempt=(.*)$' { $result.LifecycleForeignFreeAttempt = $Matches[1]; continue }
+                    '^lifecycle_foreign_free_handled=(.*)$' { $result.LifecycleForeignFreeHandled = $Matches[1]; continue }
+                    '^lifecycle_foreign_free_invalid=(.*)$' { $result.LifecycleForeignFreeInvalid = $Matches[1]; continue }
                     '^source_owned_prepare=(.*)$' { $result.SourceOwnedPrepare = $Matches[1]; continue }
                     '^source_owned_route_hit_local_owner=(.*)$' { $result.SourceOwnedRouteHitLocalOwner = $Matches[1]; continue }
                     '^source_owned_visibility_hit_local_owner=(.*)$' { $result.SourceOwnedVisibilityHitLocalOwner = $Matches[1]; continue }
@@ -357,6 +366,18 @@ function Parse-Hz6Stats {
                 }
             }
         }
+
+        if ($line.StartsWith("[HZ6_FRONTCACHE_CLASS]")) {
+            if ($line -match '^\[HZ6_FRONTCACHE_CLASS\] class=(\d+) push=(\d+) pop_empty=(\d+)$') {
+                $entry = ('c{0}:push={1},empty={2}' -f $Matches[1], $Matches[2], $Matches[3])
+                if ($result.FrontcacheClass -eq "NA") {
+                    $result.FrontcacheClass = $entry
+                } else {
+                    $result.FrontcacheClass = $result.FrontcacheClass + "; " + $entry
+                }
+            }
+            continue
+        }
     }
 
     return $result
@@ -396,6 +417,8 @@ $Summary.Add('- shared route visibility diagnostics: `route_visibility_lookup / 
 $Summary.Add('- shared route owner diagnostics: `route_visibility_hit_local_owner / route_visibility_hit_foreign_owner`')
 $Summary.Add('- transfer backlog diagnostics: `transfer_current / transfer_current_max`')
 $Summary.Add('- remote free diagnostics: `remote_free_attempt / strict_owner_block / transfer_fail / route_rehome_attempt / route_rehome_success / route_rehome_fail`')
+$Summary.Add('- lifecycle diagnostics: `lifecycle_owner_mismatch / foreign_free_attempt / foreign_free_handled / foreign_free_invalid`')
+$Summary.Add('- diagnostic-only frontcache class lines: `[HZ6_FRONTCACHE_CLASS] class=<id> push=<n> pop_empty=<n>`')
 $Summary.Add('- thread sweep: `1, 4, 8, 16`')
 $Summary.Add(('- runs: `{0}`' -f $Runs))
 $Summary.Add(('- timeout: `{0}s` per allocator row' -f $TimeoutSeconds))
@@ -413,8 +436,12 @@ function Invoke-LarsonSweep {
 foreach ($threads in $ThreadCounts) {
         $Summary.Add("## " + $SectionTitle + " T=" + $threads)
         $Summary.Add("")
-        $Summary.Add("| allocator | median ops/s | median peak_kb | route_miss | route_vis_lookup | route_vis_hit | route_vis_hit_local_owner | route_vis_hit_foreign_owner | route_vis_miss | route_vis_probe_total | route_vis_probe_max | source_alloc | source_owned_prepare | source_owned_route_hit_local_owner | source_owned_visibility_hit_local_owner | source_owned_visibility_hit_foreign_owner | source_owned_remote_free_attempt | source_owned_release | local2p_source_alloc | midpage_source_alloc | large_source_alloc | toy_source_alloc | front_source_ops_alloc | front_source_slot_alloc | front_source_prefill_alloc | toy_source_prefill_call | front_path_local2p | front_path_midpage | front_path_large | front_path_toy | transfer_push | transfer_pop | transfer_current | transfer_current_max | remote_free_attempt | remote_free_strict_block | remote_free_transfer_fail | route_rehome_attempt | route_rehome_success | route_rehome_fail | frontcache_reuse_hit | frontcache_reuse_invalid | transfer_reuse_hit | transfer_reuse_invalid | source_refill_starvation | source_refill_saturation | source_refill_boost | source_refill_clamp | source_admission_open | source_admission_boosted | source_admission_clamped | source_prefill_attempt | source_prefill_filled | source_prefill_fallback | alloc_fail | desc_probe | reg_probe | unreg_probe | srcblk_probe | runs |")
-        $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
+        $tableHeader = "| allocator | median ops/s | median peak_kb | route_miss | route_vis_lookup | route_vis_hit | route_vis_hit_local_owner | route_vis_hit_foreign_owner | route_vis_miss | route_vis_probe_total | route_vis_probe_max | source_alloc | local2p_source_alloc | midpage_source_alloc | large_source_alloc | toy_source_alloc | front_source_ops_alloc | front_source_slot_alloc | front_source_prefill_alloc | toy_source_prefill_call | front_path_local2p | front_path_midpage | front_path_large | front_path_toy | transfer_push | transfer_pop | transfer_current | transfer_current_max | remote_free_attempt | remote_free_strict_block | remote_free_transfer_fail | route_rehome_attempt | route_rehome_success | route_rehome_fail | lifecycle_owner_mismatch | foreign_free_attempt | foreign_free_handled | foreign_free_invalid | source_owned_prepare | source_owned_route_hit_local_owner | source_owned_visibility_hit_local_owner | source_owned_visibility_hit_foreign_owner | source_owned_remote_free_attempt | source_owned_release | frontcache_reuse_hit | frontcache_reuse_invalid | transfer_reuse_hit | transfer_reuse_invalid | source_refill_starvation | source_refill_saturation | source_refill_boost | source_refill_clamp | source_admission_open | source_admission_boosted | source_admission_clamped | source_prefill_attempt | source_prefill_filled | source_prefill_fallback | alloc_fail | desc_probe | reg_probe | unreg_probe | srcblk_probe | runs |"
+        $Summary.Add($tableHeader)
+        $tableSeparators = ($tableHeader -split '\|' | Where-Object { $_.Trim() -ne "" } | ForEach-Object {
+            if ($_.Trim() -eq "allocator" -or $_.Trim() -eq "runs") { "---" } else { "---:" }
+        })
+        $Summary.Add("| " + ($tableSeparators -join " | ") + " |")
 
         foreach ($exe in $Executables) {
             $opsRuns = New-Object System.Collections.Generic.List[double]
@@ -440,6 +467,10 @@ foreach ($threads in $ThreadCounts) {
                 RouteRehomeAttempt = "NA"
                 RouteRehomeSuccess = "NA"
                 RouteRehomeFail = "NA"
+                LifecycleOwnerMismatch = "NA"
+                LifecycleForeignFreeAttempt = "NA"
+                LifecycleForeignFreeHandled = "NA"
+                LifecycleForeignFreeInvalid = "NA"
                 SourceOwnedPrepare = "NA"
                 SourceOwnedRouteHitLocalOwner = "NA"
                 SourceOwnedVisibilityHitLocalOwner = "NA"
@@ -489,6 +520,7 @@ foreach ($threads in $ThreadCounts) {
                 FrontPrefillFallbackMidpage = "NA"
                 FrontPrefillFallbackLarge = "NA"
                 FrontPrefillFallbackToy = "NA"
+                FrontcacheClass = "NA"
             }
 
             for ($run = 1; $run -le $Runs; $run++) {
@@ -543,7 +575,7 @@ foreach ($threads in $ThreadCounts) {
             }
 
             if ($opsRuns.Count -eq 0) {
-                $failedMetrics = ((@('NA') * 50) -join ' | ')
+                $failedMetrics = ((@('NA') * 62) -join ' | ')
                 $Summary.Add(('| {0} | failed | n/a | {1} | `{2}` |' -f $exe.Name, $failedMetrics, ($runTexts -join ", ")))
                 continue
             }
@@ -582,6 +614,10 @@ foreach ($threads in $ThreadCounts) {
                 $lastStats.RouteRehomeAttempt,
                 $lastStats.RouteRehomeSuccess,
                 $lastStats.RouteRehomeFail,
+                $lastStats.LifecycleOwnerMismatch,
+                $lastStats.LifecycleForeignFreeAttempt,
+                $lastStats.LifecycleForeignFreeHandled,
+                $lastStats.LifecycleForeignFreeInvalid,
                 $lastStats.SourceOwnedPrepare,
                 $lastStats.SourceOwnedRouteHitLocalOwner,
                 $lastStats.SourceOwnedVisibilityHitLocalOwner,
@@ -649,6 +685,12 @@ foreach ($threads in $ThreadCounts) {
                     $lastStats.RouteRehomeAttempt,
                     $lastStats.RouteRehomeSuccess,
                     $lastStats.RouteRehomeFail))
+                $Summary.Add(('  lifecycle: owner_mismatch={0} foreign_attempt={1} foreign_handled={2} foreign_invalid={3}' -f
+                    $lastStats.LifecycleOwnerMismatch,
+                    $lastStats.LifecycleForeignFreeAttempt,
+                    $lastStats.LifecycleForeignFreeHandled,
+                    $lastStats.LifecycleForeignFreeInvalid))
+                $Summary.Add(('  frontcache_class: {0}' -f $lastStats.FrontcacheClass))
             }
         }
 
