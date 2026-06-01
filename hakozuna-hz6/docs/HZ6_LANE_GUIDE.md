@@ -78,8 +78,9 @@ noboost-route4k:
   route4k plus `HZ6_SOURCE_ADMISSION_NO_STARVATION_BOOST=1`. This keeps the
   low-capacity shape but prevents alloc-fail pressure from increasing source
   refill batch size. Latest repeat-3 strongly improves balanced and wide_ws
-  while preserving larger_sizes, so treat it as the current Windows mixed_ws
-  candidate-control lane.
+  while preserving larger_sizes, and random_mixed repeat-3 is neutral to
+  positive. Treat it as the current Windows low-capacity candidate-control
+  lane.
 
 appcap:
   High-capacity application-like control. Use it to separate capacity failure
@@ -235,7 +236,10 @@ Larson main-warmup:
 
 Redis workload:
   App-like pattern control. Useful for detecting whether HZ6 capacity changes
-  actually survive more realistic access mixes.
+  actually survive more realistic access mixes. Current route4k/noboost rows
+  need a focused shorter profile before they are useful for candidate ranking,
+  because the default Redis-like row can timeout while emitting many allocation
+  failure stats lines.
 ```
 
 ## Commands

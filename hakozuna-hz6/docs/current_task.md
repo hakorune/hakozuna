@@ -608,6 +608,49 @@ Read:
   than a capacity lane flag.
 ```
 
+## NoBoost Cross-Family Check 2026-06-02
+
+```text
+random_mixed repeat-3:
+  small:
+    route4k  = 26.607M ops/s
+    noboost  = 29.238M ops/s
+
+  medium:
+    route4k  = 32.243M ops/s
+    noboost  = 32.127M ops/s
+
+  mixed:
+    route4k  = 30.040M ops/s
+    noboost  = 30.700M ops/s
+
+Read:
+  noboost-route4k is not only a mixed_ws/wide_ws rescue.
+  It improves random_mixed small, is neutral on medium, and is slightly better
+  on mixed while keeping peak working set in the same range.
+  Keep it as the current Windows low-capacity candidate-control lane.
+```
+
+```text
+redis check:
+  default redis_workload row timed out on route4k before a matrix summary could
+  be written.
+
+  short direct smoke:
+    args = 2 100 200 16 256
+    route4k and noboost both complete.
+
+  observation:
+    Redis-like SET/LPUSH still emits many redis_alloc_string_fail stats lines
+    as descriptor/source-block pressure accumulates.
+
+Next:
+  split Redis-like investigation from noboost validation.
+  First make the Redis row shorter or add a focused profile in the matrix
+  runner, then compare route4k vs noboost without letting timeout/output volume
+  dominate the result.
+```
+
 ## Next Implementation Order 2026-06-01
 
 ```text
