@@ -304,6 +304,96 @@ Next step:
    clearer.
 ```
 
+Route4k cross-benchmark check:
+
+```text
+Sources:
+  mixed_ws matrix:
+    docs/benchmarks/windows/20260601_085515_allocator_matrix.md
+  Redis workload:
+    docs/benchmarks/windows/paper/20260601_085933_paper_redis_workload_windows.md
+  Larson T=1 / compact / worker-warmup:
+    docs/benchmarks/windows/paper/20260601_091055_paper_larson_windows.md
+
+mixed_ws balanced:
+  route4k improves over tiny control but still has heavy alloc_fail.
+  rss-route4k is the best HZ6 route4k row:
+    3.51M ops/s, 17.3 MB
+  rss-broad:
+    1.71M ops/s, 99.8 MB
+  Read:
+    route4k helps RSS/throughput balance, but balanced is not solved by route
+    capacity alone.
+
+mixed_ws wide_ws:
+  route4k stays low-RSS and roughly broad-class for HZ6, but alloc_fail remains
+  large.
+  rss-route4k:
+    0.437M ops/s, 12.1 MB
+  strict-broad:
+    0.452M ops/s, 141.5 MB
+  Read:
+    route4k is a better capacity shape than broad for RSS, but it does not fix
+    wide working-set capacity.
+
+mixed_ws larger_sizes:
+  route4k is the strongest route4k proof point.
+  strict-route4k:
+    0.786M ops/s, 15.2 MB
+  speed-route4k:
+    0.762M ops/s, 14.2 MB
+  rss-route4k:
+    0.752M ops/s, 14.6 MB
+  broad:
+    0.751M..0.800M ops/s, 65..70 MB
+  Read:
+    route4k matches broad-class HZ6 throughput with far lower RSS for larger
+    size matrix rows.
+
+Redis workload:
+  strict / broad / route4k all timed out at 60s.
+  only appcap rows completed, but with very high RSS:
+    ~584..647 MB
+  Read:
+    Redis is not a route-table-only problem. It needs descriptor/source/front
+    capacity or a more adaptive admission shape before route4k matters.
+
+Larson T=1:
+  stress and worker-warmup:
+    default / broad / route4k fail with rc1
+    appcap runs, but at ~293..337 MB RSS
+  compact control:
+    route4k runs and matches broad/appcap throughput with far lower RSS.
+    strict-route4k:
+      16.25M ops/s, 7.2 MB
+    speed-route4k:
+      12.91M ops/s, 5.7 MB
+    rss-route4k:
+      14.97M ops/s, 5.9 MB
+  Read:
+    route4k is good for compact HZ6 controls, but Larson stress needs a
+    non-route capacity or lifecycle fix.
+
+Conclusion:
+  route4k is a valid candidate-control capacity shape for compact/random_mixed
+  and larger-size matrix checks.
+
+  It is not enough for Redis or Larson stress. The next HZ6 work should attack
+  non-route capacity/admission:
+    descriptor capacity
+    source block capacity
+    front cache capacity
+    adaptive source/front budget
+
+  Start with a small fixed experiment:
+    desc4k-route4k
+  or:
+    source512-route4k
+
+  The goal is to find the minimum non-route capacity that removes alloc_fail
+  without appcap's huge RSS footprint.
+```
+
 ## HZ6 Windows Current Read
 
 ```text
