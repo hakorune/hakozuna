@@ -122,7 +122,8 @@ ownerlocalityfast-appcap:
   index and shared-directory exact backend as `ownerlocality-appcap`, but does
   not force `HZ6_DIAGNOSTIC_PROBES=1`. Use it after the diagnostic lane has
   shown clean counters to check whether the route-lifecycle fix is still fast
-  without diagnostic probe overhead.
+  without diagnostic probe overhead. Repeat-3 now makes this the preferred
+  candidate-control lane for the fast Larson owner-locality comparison rows.
 ```
 
 ## Focused Mechanism Lanes

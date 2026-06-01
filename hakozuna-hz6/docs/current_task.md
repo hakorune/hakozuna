@@ -505,6 +505,29 @@ Read:
   The fast lane is now the better candidate for throughput/RSS comparison.
 ```
 
+## Owner Locality Fast Lane Repeat-3 2026-06-02
+
+```text
+Repeat-3 median results:
+  ownerlocalityfast-appcap main_1k   = 52.783M ops/s
+  ownerlocalityfast-appcap worker_1k = 57.274M ops/s
+  ownerlocalityfast-appcap main_4k   = 46.329M ops/s
+  ownerlocalityfast-appcap worker_4k = 49.091M ops/s
+
+Safety:
+  route_invalid = 0
+  route_miss = 0
+  Done sleeping... printed on every row
+
+Read:
+  ownerlocalityfast-appcap is now stable enough to treat as the non-diagnostic
+  candidate-control lane for Larson owner-locality checks.
+  Keep ownerlocality-appcap as the diagnostic evidence lane for counter
+  validation and route-rehome inspection.
+  Use the fast lane for the next throughput/RSS comparisons instead of
+  re-running the diagnostic lane by default.
+```
+
 ## Next Implementation Order 2026-06-01
 
 ```text
