@@ -1678,6 +1678,37 @@ Decision:
     Then either:
       refine class/budget policy for wide_ws
       or stop and ask for design review before adding another knob.
+
+HZ6 DescriptorColdGovernorWideWs-L1 result:
+  added descriptorcoldgov-widews-route4k with a larger detach budget
+  targeted at wide_ws only.
+
+  repeat-3 non-diagnostic medians:
+    balanced:
+      route4k = 0.424M ops/s, 24.2 MB
+      descgov-route4k = 0.420M ops/s, 24.2 MB
+      widews = 0.413M ops/s, 24.2 MB
+      read: balanced stays slightly below route4k, so this remains a narrow
+      evidence lane rather than a broad promotion.
+
+    wide_ws:
+      route4k = 0.336M ops/s, 24.8 MB
+      descgov-route4k = 0.344M ops/s, 24.8 MB
+      widews = 0.395M ops/s, 24.8 MB
+      read: wide_ws recovers strongly and is the main reason to keep the
+      budget-expanded variant alive.
+
+    larger_sizes:
+      route4k = 0.787M ops/s, 15.5 MB
+      descgov-route4k = 0.770M ops/s, 14.5 MB
+      widews = 0.785M ops/s, 14.5 MB
+      read: larger_sizes stays protected and RSS remains lower than route4k.
+
+  decision:
+    keep descriptorcoldgov-widews-route4k as a narrow wide_ws recovery lane.
+    do not promote it as a new default yet because balanced is still a little
+    below route4k and we have not checked the repeat-5 confidence line on this
+    variant.
 ```
 
 ## HZ6 Windows Current Read

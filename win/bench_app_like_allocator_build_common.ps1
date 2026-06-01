@@ -147,6 +147,14 @@ function Get-Hz6WinDescriptorColdGovRoute4kCapacityFlags {
     $flags
 }
 
+function Get-Hz6WinDescriptorColdGovWideWsRoute4kCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinDescriptorlessRoute4kCapacityFlags
+    $flags += "/DHZ6_DESCRIPTOR_COLD_GOV_L1=1"
+    $flags += "/DHZ6_DESCRIPTOR_COLD_GOV_DETACH_BUDGET=((size_t)512)"
+    $flags
+}
+
 function Get-Hz6WinDesc4kRoute4kCapacityFlags {
     @(
         "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)4096)",
@@ -269,6 +277,7 @@ function Invoke-AppLikeHz6BenchBuilds {
     $descriptorReserveRoute4kFlags = Get-Hz6WinDescriptorReserveRoute4kCapacityFlags
     $descriptorColdRoute4kFlags = Get-Hz6WinDescriptorColdRoute4kCapacityFlags
     $descriptorColdGovRoute4kFlags = Get-Hz6WinDescriptorColdGovRoute4kCapacityFlags
+    $descriptorColdGovWideWsRoute4kFlags = Get-Hz6WinDescriptorColdGovWideWsRoute4kCapacityFlags
     $desc4kRoute4kFlags = Get-Hz6WinDesc4kRoute4kCapacityFlags
     $source512Route4kFlags = Get-Hz6WinSource512Route4kCapacityFlags
     $desc4kSource512Route4kFlags = Get-Hz6WinDesc4kSource512Route4kCapacityFlags
@@ -289,6 +298,7 @@ function Invoke-AppLikeHz6BenchBuilds {
         "descriptorreserve-route4k" = @{ Suffix = "_descriptorreserve_route4k"; ExtraFlags = $descriptorReserveRoute4kFlags }
         "descriptorcold-route4k" = @{ Suffix = "_descriptorcold_route4k"; ExtraFlags = $descriptorColdRoute4kFlags }
         "descriptorcoldgov-route4k" = @{ Suffix = "_descriptorcoldgov_route4k"; ExtraFlags = $descriptorColdGovRoute4kFlags }
+        "descriptorcoldgov-widews-route4k" = @{ Suffix = "_descriptorcoldgov_widews_route4k"; ExtraFlags = $descriptorColdGovWideWsRoute4kFlags }
         "desc4k-route4k" = @{ Suffix = "_desc4k_route4k"; ExtraFlags = $desc4kRoute4kFlags }
         "source512-route4k" = @{ Suffix = "_source512_route4k"; ExtraFlags = $source512Route4kFlags }
         "desc4k-source512-route4k" = @{ Suffix = "_desc4k_source512_route4k"; ExtraFlags = $desc4kSource512Route4kFlags }

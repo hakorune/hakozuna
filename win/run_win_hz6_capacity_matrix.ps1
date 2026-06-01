@@ -192,6 +192,7 @@ $laneSuffix = @{
     "descriptorreserve-route4k" = "_descriptorreserve_route4k"
     "descriptorcold-route4k" = "_descriptorcold_route4k"
     "descriptorcoldgov-route4k" = "_descriptorcoldgov_route4k"
+    "descriptorcoldgov-widews-route4k" = "_descriptorcoldgov_widews_route4k"
     "desc4k-route4k" = "_desc4k_route4k"
     "source512-route4k" = "_source512_route4k"
     "desc4k-source512-route4k" = "_desc4k_source512_route4k"

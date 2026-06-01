@@ -120,6 +120,14 @@ descriptorcoldgov-route4k:
   materialization only when a descriptor is available. Latest repeat-3 is
   promising on balanced and preserves larger_sizes, but wide_ws is still weak,
   so keep it as candidate-control evidence rather than default promotion.
+
+descriptorcoldgov-widews-route4k:
+  Budget-expanded descriptor governor variant for wide_ws probing. It keeps the
+  same class gate as descriptorcoldgov-route4k but raises the detach budget to
+  test whether wide_ws is limited by detached-slot budget saturation rather
+  than by the class gate itself. Evidence only; do not promote until the
+  repeat matrix confirms that balanced stays strong, wide_ws improves, and
+  larger_sizes remains protected.
 ```
 
 ## Frozen No-Go Lanes
