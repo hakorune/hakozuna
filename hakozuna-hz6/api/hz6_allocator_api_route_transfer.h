@@ -30,6 +30,13 @@ int hz6_allocator_route_negative_filter_skip_local(
     Hz6Allocator* allocator,
     const void* ptr);
 
+void hz6_allocator_route_shared_directory_dryrun(Hz6Allocator* allocator,
+                                                 const void* ptr);
+
+Hz6RouteResult hz6_allocator_route_shared_directory_lookup_foreign(
+    Hz6Allocator* allocator,
+    const void* ptr);
+
 int hz6_allocator_route_rehome_exact(Hz6Allocator* allocator,
                                      const Hz6RouteResult* route);
 

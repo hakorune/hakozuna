@@ -511,6 +511,39 @@ int main(int argc, char** argv) {
             hz6_stats.negative_filter_range_probe_max =
                 tds[t].hz6_stats_after.negative_filter_range_probe_max;
         }
+        hz6_stats.shared_dir_lookup +=
+            tds[t].hz6_stats_after.shared_dir_lookup;
+        hz6_stats.shared_dir_hit +=
+            tds[t].hz6_stats_after.shared_dir_hit;
+        hz6_stats.shared_dir_miss +=
+            tds[t].hz6_stats_after.shared_dir_miss;
+        hz6_stats.shared_dir_stale +=
+            tds[t].hz6_stats_after.shared_dir_stale;
+        hz6_stats.shared_dir_hit_local_allocator +=
+            tds[t].hz6_stats_after.shared_dir_hit_local_allocator;
+        hz6_stats.shared_dir_hit_foreign_allocator +=
+            tds[t].hz6_stats_after.shared_dir_hit_foreign_allocator;
+        hz6_stats.shared_dir_would_skip_local +=
+            tds[t].hz6_stats_after.shared_dir_would_skip_local;
+        hz6_stats.shared_dir_register +=
+            tds[t].hz6_stats_after.shared_dir_register;
+        hz6_stats.shared_dir_unregister +=
+            tds[t].hz6_stats_after.shared_dir_unregister;
+        hz6_stats.shared_dir_probe_total +=
+            tds[t].hz6_stats_after.shared_dir_probe_total;
+        if (tds[t].hz6_stats_after.shared_dir_probe_max >
+            hz6_stats.shared_dir_probe_max) {
+            hz6_stats.shared_dir_probe_max =
+                tds[t].hz6_stats_after.shared_dir_probe_max;
+        }
+        hz6_stats.shared_dir_first_attempt +=
+            tds[t].hz6_stats_after.shared_dir_first_attempt;
+        hz6_stats.shared_dir_first_hit +=
+            tds[t].hz6_stats_after.shared_dir_first_hit;
+        hz6_stats.shared_dir_first_fallback +=
+            tds[t].hz6_stats_after.shared_dir_first_fallback;
+        hz6_stats.shared_dir_first_invalid +=
+            tds[t].hz6_stats_after.shared_dir_first_invalid;
         hz6_stats.source_owned_prepare +=
             tds[t].hz6_stats_after.source_owned_prepare;
         hz6_stats.source_owned_route_hit_local_owner +=
@@ -675,6 +708,14 @@ int main(int argc, char** argv) {
            "negative_filter_shadow_local_invalid=%zu "
            "negative_filter_range_probe_total=%zu "
            "negative_filter_range_probe_max=%zu "
+           "shared_dir_lookup=%zu shared_dir_hit=%zu shared_dir_miss=%zu "
+           "shared_dir_stale=%zu shared_dir_hit_local_allocator=%zu "
+           "shared_dir_hit_foreign_allocator=%zu "
+           "shared_dir_would_skip_local=%zu shared_dir_register=%zu "
+           "shared_dir_unregister=%zu shared_dir_probe_total=%zu "
+           "shared_dir_probe_max=%zu "
+           "shared_dir_first_attempt=%zu shared_dir_first_hit=%zu "
+           "shared_dir_first_fallback=%zu shared_dir_first_invalid=%zu "
            "source_owned_prepare=%zu "
            "source_owned_route_hit_local_owner=%zu "
            "source_owned_visibility_hit_local_owner=%zu "
@@ -742,6 +783,21 @@ int main(int argc, char** argv) {
            hz6_stats.negative_filter_shadow_local_invalid,
            hz6_stats.negative_filter_range_probe_total,
            hz6_stats.negative_filter_range_probe_max,
+           hz6_stats.shared_dir_lookup,
+           hz6_stats.shared_dir_hit,
+           hz6_stats.shared_dir_miss,
+           hz6_stats.shared_dir_stale,
+           hz6_stats.shared_dir_hit_local_allocator,
+           hz6_stats.shared_dir_hit_foreign_allocator,
+           hz6_stats.shared_dir_would_skip_local,
+           hz6_stats.shared_dir_register,
+           hz6_stats.shared_dir_unregister,
+           hz6_stats.shared_dir_probe_total,
+           hz6_stats.shared_dir_probe_max,
+           hz6_stats.shared_dir_first_attempt,
+           hz6_stats.shared_dir_first_hit,
+           hz6_stats.shared_dir_first_fallback,
+           hz6_stats.shared_dir_first_invalid,
            hz6_stats.source_owned_prepare,
            hz6_stats.source_owned_route_hit_local_owner,
            hz6_stats.source_owned_visibility_hit_local_owner,

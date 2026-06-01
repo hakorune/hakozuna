@@ -219,6 +219,21 @@ function Get-Hz6WinNegativeFilterAppLikeCapacityFlags {
     $flags
 }
 
+function Get-Hz6WinSharedRouteDirectoryAppLikeCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinAppLikeCapacityFlags
+    $flags += "/DHZ6_SHARED_ROUTE_DIRECTORY_L1=1"
+    $flags
+}
+
+function Get-Hz6WinSharedRouteDirectoryFirstAppLikeCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinAppLikeCapacityFlags
+    $flags += "/DHZ6_SHARED_ROUTE_DIRECTORY_L1=1"
+    $flags += "/DHZ6_SHARED_ROUTE_DIRECTORY_FIRST_L1=1"
+    $flags
+}
+
 function Invoke-AppLikeHz5BenchBuild {
     param(
         [Parameter(Mandatory = $true)][string]$Compiler,
@@ -299,6 +314,8 @@ function Invoke-AppLikeHz6BenchBuilds {
     $appLikeFlags = Get-Hz6WinAppLikeCapacityFlags
     $visibleFirstAppLikeFlags = Get-Hz6WinVisibleFirstAppLikeCapacityFlags
     $negativeFilterAppLikeFlags = Get-Hz6WinNegativeFilterAppLikeCapacityFlags
+    $sharedRouteDirectoryAppLikeFlags = Get-Hz6WinSharedRouteDirectoryAppLikeCapacityFlags
+    $sharedRouteDirectoryFirstAppLikeFlags = Get-Hz6WinSharedRouteDirectoryFirstAppLikeCapacityFlags
     $laneMap = @{
         "default" = @{ Suffix = ""; ExtraFlags = @() }
         "broad" = @{ Suffix = "_broad"; ExtraFlags = $broadFlags }
@@ -322,6 +339,8 @@ function Invoke-AppLikeHz6BenchBuilds {
         "appcap" = @{ Suffix = "_appcap"; ExtraFlags = $appLikeFlags }
         "visiblefirst-appcap" = @{ Suffix = "_visiblefirst_appcap"; ExtraFlags = $visibleFirstAppLikeFlags }
         "negativefilter-appcap" = @{ Suffix = "_negativefilter_appcap"; ExtraFlags = $negativeFilterAppLikeFlags }
+        "sharedir-appcap" = @{ Suffix = "_sharedir_appcap"; ExtraFlags = $sharedRouteDirectoryAppLikeFlags }
+        "sharedirfirst-appcap" = @{ Suffix = "_sharedirfirst_appcap"; ExtraFlags = $sharedRouteDirectoryFirstAppLikeFlags }
     }
 
     function Split-Hz6BuildList {

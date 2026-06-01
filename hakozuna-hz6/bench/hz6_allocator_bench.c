@@ -168,6 +168,14 @@ static void print_stats(const Hz6Allocator* allocator) {
          "negative_filter_shadow_local_invalid=%zu "
          "negative_filter_range_probe_total=%zu "
          "negative_filter_range_probe_max=%zu "
+         "shared_dir_lookup=%zu shared_dir_hit=%zu shared_dir_miss=%zu "
+         "shared_dir_stale=%zu shared_dir_hit_local_allocator=%zu "
+         "shared_dir_hit_foreign_allocator=%zu "
+         "shared_dir_would_skip_local=%zu shared_dir_register=%zu "
+         "shared_dir_unregister=%zu shared_dir_probe_total=%zu "
+         "shared_dir_probe_max=%zu "
+         "shared_dir_first_attempt=%zu shared_dir_first_hit=%zu "
+         "shared_dir_first_fallback=%zu shared_dir_first_invalid=%zu "
          "source_run_reuse_attempt=%zu source_run_reuse_candidate=%zu "
          "source_run_reuse_hit=%zu source_run_reuse_miss_no_block=%zu "
          "source_run_reuse_miss_no_slot=%zu source_run_reuse_rollback=%zu "
@@ -240,6 +248,15 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.negative_filter_shadow_local_invalid,
          stats.negative_filter_range_probe_total,
          stats.negative_filter_range_probe_max,
+         stats.shared_dir_lookup, stats.shared_dir_hit,
+         stats.shared_dir_miss, stats.shared_dir_stale,
+         stats.shared_dir_hit_local_allocator,
+         stats.shared_dir_hit_foreign_allocator,
+         stats.shared_dir_would_skip_local, stats.shared_dir_register,
+         stats.shared_dir_unregister, stats.shared_dir_probe_total,
+         stats.shared_dir_probe_max,
+         stats.shared_dir_first_attempt, stats.shared_dir_first_hit,
+         stats.shared_dir_first_fallback, stats.shared_dir_first_invalid,
          stats.source_run_reuse_attempt, stats.source_run_reuse_candidate,
          stats.source_run_reuse_hit, stats.source_run_reuse_miss_no_block,
          stats.source_run_reuse_miss_no_slot, stats.source_run_reuse_rollback,

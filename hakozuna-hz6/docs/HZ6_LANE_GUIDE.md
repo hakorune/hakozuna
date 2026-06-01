@@ -19,6 +19,8 @@ Capacity / completion control:
 Route-lifecycle diagnostic:
   visiblefirst-appcap
   negativefilter-appcap
+  sharedir-appcap
+  sharedirfirst-appcap
 
 Evidence-only source-run controls:
   sourcerun-route4k
@@ -88,6 +90,19 @@ negativefilter-appcap:
   route rehome can create local exact routes without local source-block
   ownership. Keep this lane as evidence that the next design needs rehome-aware
   owner ranges or a shared route directory.
+
+sharedir-appcap:
+  Diagnostic-only appcap variant. It publishes exact routes into a process-wide
+  shared route directory and probes it only after local MISS. Behavior is
+  unchanged. Use it to measure whether a shared directory could avoid the
+  worker-local route MISS scan in cross-owner warmup.
+
+sharedirfirst-appcap:
+  Experimental behavior variant. After the allocator has observed a foreign
+  visibility hit, it tries the shared directory first and only skips local
+  lookup when the directory points to a foreign allocator. Compact main-warmup
+  can recover strongly, but stress main-warmup currently times out because
+  local/rehome fallback dominates. Keep it evidence-only.
 ```
 
 ## Focused Mechanism Lanes

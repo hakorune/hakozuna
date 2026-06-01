@@ -10,8 +10,19 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
   int visible_hit = 0;
   int visible_lookup_done = 0;
   Hz6RouteResult route = hz6_route_miss();
+#if HZ6_SHARED_ROUTE_DIRECTORY_FIRST_L1 && HZ6_DIAGNOSTIC_PROBES
+  if (!hz6_allocator_profile_strict_owner_remote(allocator) &&
+      allocator->stats.route_visibility_hit_foreign_owner > 0) {
+    route = hz6_allocator_route_shared_directory_lookup_foreign(allocator, ptr);
+    if (route.kind != HZ6_ROUTE_MISS) {
+      visible_lookup_done = 1;
+      visible_hit = 1;
+    }
+  }
+#endif
 #if HZ6_NEGATIVE_FILTER_L1 && HZ6_DIAGNOSTIC_PROBES
-  if (!hz6_allocator_profile_strict_owner_remote(allocator)) {
+  if (route.kind == HZ6_ROUTE_MISS &&
+      !hz6_allocator_profile_strict_owner_remote(allocator)) {
     ++allocator->stats.negative_filter_attempt;
     if (allocator->stats.route_visibility_hit_foreign_owner == 0) {
       ++allocator->stats.negative_filter_not_armed;
@@ -46,7 +57,8 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
   } else
 #endif
 #if HZ6_VISIBLE_FIRST_FREE_L1 && HZ6_DIAGNOSTIC_PROBES
-  if (!hz6_allocator_profile_strict_owner_remote(allocator)) {
+  if (route.kind == HZ6_ROUTE_MISS &&
+      !hz6_allocator_profile_strict_owner_remote(allocator)) {
     Hz6RouteResult visible_route;
     ++allocator->stats.visible_first_attempt;
     visible_route = hz6_allocator_route_lookup_visible_only(allocator, ptr);
@@ -73,10 +85,15 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
   } else
 #endif
   {
-    route = hz6_allocator_route_lookup(allocator, ptr);
+    if (route.kind == HZ6_ROUTE_MISS) {
+      route = hz6_allocator_route_lookup(allocator, ptr);
+    }
   }
   if (!visible_lookup_done && route.kind == HZ6_ROUTE_MISS &&
       !hz6_allocator_profile_strict_owner_remote(allocator)) {
+#if HZ6_SHARED_ROUTE_DIRECTORY_L1 && HZ6_DIAGNOSTIC_PROBES
+    hz6_allocator_route_shared_directory_dryrun(allocator, ptr);
+#endif
     route = hz6_allocator_route_lookup_visible_after_local_miss(allocator, ptr);
     visible_hit = (route.kind != HZ6_ROUTE_MISS);
   }

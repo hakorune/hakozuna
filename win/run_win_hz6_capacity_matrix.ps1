@@ -200,6 +200,8 @@ $laneSuffix = @{
     "appcap" = "_appcap"
     "visiblefirst-appcap" = "_visiblefirst_appcap"
     "negativefilter-appcap" = "_negativefilter_appcap"
+    "sharedir-appcap" = "_sharedir_appcap"
+    "sharedirfirst-appcap" = "_sharedirfirst_appcap"
 }
 
 $familyPrefixes = @{

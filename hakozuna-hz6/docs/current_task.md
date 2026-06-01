@@ -1369,6 +1369,76 @@ Next:
     owner-range hint with rehome coverage, or SharedRouteDirectory-L1.
 ```
 
+## Diagnostic Checkpoint 2026-06-01m
+
+```text
+SharedRouteDirectory-L1:
+  added sharedir-appcap as dry-run:
+    exact route register publishes ptr -> allocator/descriptor
+    exact route unregister removes it
+    free probes the directory only after local MISS
+    behavior unchanged
+
+Dry-run stress main-warmup:
+  throughput = 2296 ops/s
+  route_invalid = 0
+  route_miss = 0
+  shared_dir_lookup = 4534
+  shared_dir_hit = 4534
+  shared_dir_hit_foreign_allocator = 4534
+  shared_dir_would_skip_local = 4534
+  shared_dir_probe_total = 8235
+  shared_dir_probe_max = 30
+
+Dry-run worker-warmup:
+  throughput = 37.91M ops/s
+  shared_dir_lookup = 0
+  route_invalid = 0
+  route_miss = 0
+
+Read:
+  shared directory direction is confirmed:
+    every post-local-MISS main-warmup lookup is a foreign exact-route hit.
+  worker-warmup is not polluted because dry-run happens only after local MISS.
+
+SharedRouteDirectoryFirst-L1:
+  added sharedirfirst-appcap as behavior evidence:
+    after first foreign visibility hit, try shared directory before local route
+    lookup
+    only foreign allocator hits skip local lookup
+
+Compact main-warmup control:
+  command:
+    bench_larson_hz6_speed_sharedirfirst_appcap.exe 1 8 1024 400 1 12345 16 0
+  throughput = 47.90M ops/s
+  route_invalid = 0
+  route_miss = 0
+  route_visibility_lookup = 16
+  shared_dir_first_attempt = 49678187
+  shared_dir_first_hit = 3184
+  shared_dir_first_fallback = 49675003
+
+Stress main-warmup:
+  command:
+    bench_larson_hz6_speed_sharedirfirst_appcap.exe 2 8 1024 10000 1 12345 16 0
+  result:
+    timeout > 120s
+
+Decision:
+  sharedir-appcap is KEEP as dry-run direction evidence.
+  sharedirfirst-appcap is no-go as a broad stress behavior.
+  The missing piece is not shared directory existence; it is a cheap local /
+  rehomed-object classifier so directory-first does not fall back on most
+  already-local objects.
+
+Next:
+  avoid more visible/negative-filter knobs.
+  design OwnerLocalityIndex-L1:
+    cheap local exact ownership hint for rehomed routes
+    or a shared directory lookup mode that can distinguish foreign-only before
+    expensive fallback
+```
+
 Read:
 
 ```text

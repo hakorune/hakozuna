@@ -220,6 +220,21 @@ function Parse-Hz6Stats {
         NegativeFilterShadowLocalInvalid = "NA"
         NegativeFilterRangeProbeTotal = "NA"
         NegativeFilterRangeProbeMax = "NA"
+        SharedDirLookup = "NA"
+        SharedDirHit = "NA"
+        SharedDirMiss = "NA"
+        SharedDirStale = "NA"
+        SharedDirHitLocalAllocator = "NA"
+        SharedDirHitForeignAllocator = "NA"
+        SharedDirWouldSkipLocal = "NA"
+        SharedDirRegister = "NA"
+        SharedDirUnregister = "NA"
+        SharedDirProbeTotal = "NA"
+        SharedDirProbeMax = "NA"
+        SharedDirFirstAttempt = "NA"
+        SharedDirFirstHit = "NA"
+        SharedDirFirstFallback = "NA"
+        SharedDirFirstInvalid = "NA"
         SourceOwnedPrepare = "NA"
         SourceOwnedRouteHitLocalOwner = "NA"
         SourceOwnedVisibilityHitLocalOwner = "NA"
@@ -320,6 +335,21 @@ function Parse-Hz6Stats {
                     '^negative_filter_shadow_local_invalid=(.*)$' { $result.NegativeFilterShadowLocalInvalid = $Matches[1]; continue }
                     '^negative_filter_range_probe_total=(.*)$' { $result.NegativeFilterRangeProbeTotal = $Matches[1]; continue }
                     '^negative_filter_range_probe_max=(.*)$' { $result.NegativeFilterRangeProbeMax = $Matches[1]; continue }
+                    '^shared_dir_lookup=(.*)$' { $result.SharedDirLookup = $Matches[1]; continue }
+                    '^shared_dir_hit=(.*)$' { $result.SharedDirHit = $Matches[1]; continue }
+                    '^shared_dir_miss=(.*)$' { $result.SharedDirMiss = $Matches[1]; continue }
+                    '^shared_dir_stale=(.*)$' { $result.SharedDirStale = $Matches[1]; continue }
+                    '^shared_dir_hit_local_allocator=(.*)$' { $result.SharedDirHitLocalAllocator = $Matches[1]; continue }
+                    '^shared_dir_hit_foreign_allocator=(.*)$' { $result.SharedDirHitForeignAllocator = $Matches[1]; continue }
+                    '^shared_dir_would_skip_local=(.*)$' { $result.SharedDirWouldSkipLocal = $Matches[1]; continue }
+                    '^shared_dir_register=(.*)$' { $result.SharedDirRegister = $Matches[1]; continue }
+                    '^shared_dir_unregister=(.*)$' { $result.SharedDirUnregister = $Matches[1]; continue }
+                    '^shared_dir_probe_total=(.*)$' { $result.SharedDirProbeTotal = $Matches[1]; continue }
+                    '^shared_dir_probe_max=(.*)$' { $result.SharedDirProbeMax = $Matches[1]; continue }
+                    '^shared_dir_first_attempt=(.*)$' { $result.SharedDirFirstAttempt = $Matches[1]; continue }
+                    '^shared_dir_first_hit=(.*)$' { $result.SharedDirFirstHit = $Matches[1]; continue }
+                    '^shared_dir_first_fallback=(.*)$' { $result.SharedDirFirstFallback = $Matches[1]; continue }
+                    '^shared_dir_first_invalid=(.*)$' { $result.SharedDirFirstInvalid = $Matches[1]; continue }
                     '^source_owned_prepare=(.*)$' { $result.SourceOwnedPrepare = $Matches[1]; continue }
                     '^source_owned_route_hit_local_owner=(.*)$' { $result.SourceOwnedRouteHitLocalOwner = $Matches[1]; continue }
                     '^source_owned_visibility_hit_local_owner=(.*)$' { $result.SourceOwnedVisibilityHitLocalOwner = $Matches[1]; continue }
@@ -471,7 +501,7 @@ function Invoke-LarsonSweep {
 foreach ($threads in $ThreadCounts) {
         $Summary.Add("## " + $SectionTitle + " T=" + $threads)
         $Summary.Add("")
-        $tableHeader = "| allocator | median ops/s | median peak_kb | route_miss | route_vis_lookup | route_vis_hit | route_vis_hit_local_owner | route_vis_hit_foreign_owner | route_vis_miss | route_vis_probe_total | route_vis_probe_max | source_alloc | local2p_source_alloc | midpage_source_alloc | large_source_alloc | toy_source_alloc | front_source_ops_alloc | front_source_slot_alloc | front_source_prefill_alloc | toy_source_prefill_call | front_path_local2p | front_path_midpage | front_path_large | front_path_toy | transfer_push | transfer_pop | transfer_current | transfer_current_max | remote_free_attempt | remote_free_strict_block | remote_free_transfer_fail | route_rehome_attempt | route_rehome_success | route_rehome_fail | lifecycle_owner_mismatch | foreign_free_attempt | foreign_free_handled | foreign_free_invalid | visible_first_attempt | visible_first_hit | visible_first_miss | visible_first_visible_invalid | visible_first_local_fallback | visible_first_fallback_invalid | visible_first_local_lookup_skipped | negative_filter_attempt | negative_filter_not_armed | negative_filter_rehome_blocked | negative_filter_skip_local | negative_filter_maybe_local | negative_filter_false_skip | negative_filter_shadow_local_valid | negative_filter_shadow_local_invalid | negative_filter_range_probe_total | negative_filter_range_probe_max | source_owned_prepare | source_owned_route_hit_local_owner | source_owned_visibility_hit_local_owner | source_owned_visibility_hit_foreign_owner | source_owned_remote_free_attempt | source_owned_release | frontcache_reuse_hit | frontcache_reuse_invalid | transfer_reuse_hit | transfer_reuse_invalid | source_refill_starvation | source_refill_saturation | source_refill_boost | source_refill_clamp | source_admission_open | source_admission_boosted | source_admission_clamped | source_prefill_attempt | source_prefill_filled | source_prefill_fallback | alloc_fail | desc_probe | reg_probe | unreg_probe | srcblk_probe | runs |"
+        $tableHeader = "| allocator | median ops/s | median peak_kb | route_miss | route_vis_lookup | route_vis_hit | route_vis_hit_local_owner | route_vis_hit_foreign_owner | route_vis_miss | route_vis_probe_total | route_vis_probe_max | source_alloc | local2p_source_alloc | midpage_source_alloc | large_source_alloc | toy_source_alloc | front_source_ops_alloc | front_source_slot_alloc | front_source_prefill_alloc | toy_source_prefill_call | front_path_local2p | front_path_midpage | front_path_large | front_path_toy | transfer_push | transfer_pop | transfer_current | transfer_current_max | remote_free_attempt | remote_free_strict_block | remote_free_transfer_fail | route_rehome_attempt | route_rehome_success | route_rehome_fail | lifecycle_owner_mismatch | foreign_free_attempt | foreign_free_handled | foreign_free_invalid | visible_first_attempt | visible_first_hit | visible_first_miss | visible_first_visible_invalid | visible_first_local_fallback | visible_first_fallback_invalid | visible_first_local_lookup_skipped | negative_filter_attempt | negative_filter_not_armed | negative_filter_rehome_blocked | negative_filter_skip_local | negative_filter_maybe_local | negative_filter_false_skip | negative_filter_shadow_local_valid | negative_filter_shadow_local_invalid | negative_filter_range_probe_total | negative_filter_range_probe_max | shared_dir_lookup | shared_dir_hit | shared_dir_miss | shared_dir_stale | shared_dir_hit_local_allocator | shared_dir_hit_foreign_allocator | shared_dir_would_skip_local | shared_dir_register | shared_dir_unregister | shared_dir_probe_total | shared_dir_probe_max | shared_dir_first_attempt | shared_dir_first_hit | shared_dir_first_fallback | shared_dir_first_invalid | source_owned_prepare | source_owned_route_hit_local_owner | source_owned_visibility_hit_local_owner | source_owned_visibility_hit_foreign_owner | source_owned_remote_free_attempt | source_owned_release | frontcache_reuse_hit | frontcache_reuse_invalid | transfer_reuse_hit | transfer_reuse_invalid | source_refill_starvation | source_refill_saturation | source_refill_boost | source_refill_clamp | source_admission_open | source_admission_boosted | source_admission_clamped | source_prefill_attempt | source_prefill_filled | source_prefill_fallback | alloc_fail | desc_probe | reg_probe | unreg_probe | srcblk_probe | runs |"
         $Summary.Add($tableHeader)
         $metricColumnCount = (($tableHeader -split '\|' | Where-Object { $_.Trim() -ne "" }).Count - 4)
         $tableSeparators = ($tableHeader -split '\|' | Where-Object { $_.Trim() -ne "" } | ForEach-Object {
@@ -524,6 +554,21 @@ foreach ($threads in $ThreadCounts) {
                 NegativeFilterShadowLocalInvalid = "NA"
                 NegativeFilterRangeProbeTotal = "NA"
                 NegativeFilterRangeProbeMax = "NA"
+                SharedDirLookup = "NA"
+                SharedDirHit = "NA"
+                SharedDirMiss = "NA"
+                SharedDirStale = "NA"
+                SharedDirHitLocalAllocator = "NA"
+                SharedDirHitForeignAllocator = "NA"
+                SharedDirWouldSkipLocal = "NA"
+                SharedDirRegister = "NA"
+                SharedDirUnregister = "NA"
+                SharedDirProbeTotal = "NA"
+                SharedDirProbeMax = "NA"
+                SharedDirFirstAttempt = "NA"
+                SharedDirFirstHit = "NA"
+                SharedDirFirstFallback = "NA"
+                SharedDirFirstInvalid = "NA"
                 SourceOwnedPrepare = "NA"
                 SourceOwnedRouteHitLocalOwner = "NA"
                 SourceOwnedVisibilityHitLocalOwner = "NA"
@@ -688,6 +733,21 @@ foreach ($threads in $ThreadCounts) {
                 $lastStats.NegativeFilterShadowLocalInvalid,
                 $lastStats.NegativeFilterRangeProbeTotal,
                 $lastStats.NegativeFilterRangeProbeMax,
+                $lastStats.SharedDirLookup,
+                $lastStats.SharedDirHit,
+                $lastStats.SharedDirMiss,
+                $lastStats.SharedDirStale,
+                $lastStats.SharedDirHitLocalAllocator,
+                $lastStats.SharedDirHitForeignAllocator,
+                $lastStats.SharedDirWouldSkipLocal,
+                $lastStats.SharedDirRegister,
+                $lastStats.SharedDirUnregister,
+                $lastStats.SharedDirProbeTotal,
+                $lastStats.SharedDirProbeMax,
+                $lastStats.SharedDirFirstAttempt,
+                $lastStats.SharedDirFirstHit,
+                $lastStats.SharedDirFirstFallback,
+                $lastStats.SharedDirFirstInvalid,
                 $lastStats.SourceOwnedPrepare,
                 $lastStats.SourceOwnedRouteHitLocalOwner,
                 $lastStats.SourceOwnedVisibilityHitLocalOwner,
@@ -779,6 +839,22 @@ foreach ($threads in $ThreadCounts) {
                     $lastStats.NegativeFilterShadowLocalInvalid,
                     $lastStats.NegativeFilterRangeProbeTotal,
                     $lastStats.NegativeFilterRangeProbeMax))
+                $Summary.Add(('  shared_dir: lookup={0} hit={1} miss={2} stale={3} local_alloc={4} foreign_alloc={5} would_skip_local={6} register={7} unregister={8} probe_total={9} probe_max={10} first_attempt={11} first_hit={12} first_fallback={13} first_invalid={14}' -f
+                    $lastStats.SharedDirLookup,
+                    $lastStats.SharedDirHit,
+                    $lastStats.SharedDirMiss,
+                    $lastStats.SharedDirStale,
+                    $lastStats.SharedDirHitLocalAllocator,
+                    $lastStats.SharedDirHitForeignAllocator,
+                    $lastStats.SharedDirWouldSkipLocal,
+                    $lastStats.SharedDirRegister,
+                    $lastStats.SharedDirUnregister,
+                    $lastStats.SharedDirProbeTotal,
+                    $lastStats.SharedDirProbeMax,
+                    $lastStats.SharedDirFirstAttempt,
+                    $lastStats.SharedDirFirstHit,
+                    $lastStats.SharedDirFirstFallback,
+                    $lastStats.SharedDirFirstInvalid))
                 $Summary.Add(('  frontcache_class: {0}' -f $lastStats.FrontcacheClass))
             }
         }
