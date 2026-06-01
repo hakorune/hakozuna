@@ -234,6 +234,14 @@ function Get-Hz6WinSharedRouteDirectoryFirstAppLikeCapacityFlags {
     $flags
 }
 
+function Get-Hz6WinOwnerLocalityAppLikeCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinSharedRouteDirectoryAppLikeCapacityFlags
+    $flags += "/DHZ6_OWNER_LOCALITY_INDEX_L1=1"
+    $flags += "/DHZ6_DIAGNOSTIC_PROBES=1"
+    $flags
+}
+
 function Invoke-AppLikeHz5BenchBuild {
     param(
         [Parameter(Mandatory = $true)][string]$Compiler,
@@ -316,6 +324,7 @@ function Invoke-AppLikeHz6BenchBuilds {
     $negativeFilterAppLikeFlags = Get-Hz6WinNegativeFilterAppLikeCapacityFlags
     $sharedRouteDirectoryAppLikeFlags = Get-Hz6WinSharedRouteDirectoryAppLikeCapacityFlags
     $sharedRouteDirectoryFirstAppLikeFlags = Get-Hz6WinSharedRouteDirectoryFirstAppLikeCapacityFlags
+    $ownerLocalityAppLikeFlags = Get-Hz6WinOwnerLocalityAppLikeCapacityFlags
     $laneMap = @{
         "default" = @{ Suffix = ""; ExtraFlags = @() }
         "broad" = @{ Suffix = "_broad"; ExtraFlags = $broadFlags }
@@ -341,6 +350,7 @@ function Invoke-AppLikeHz6BenchBuilds {
         "negativefilter-appcap" = @{ Suffix = "_negativefilter_appcap"; ExtraFlags = $negativeFilterAppLikeFlags }
         "sharedir-appcap" = @{ Suffix = "_sharedir_appcap"; ExtraFlags = $sharedRouteDirectoryAppLikeFlags }
         "sharedirfirst-appcap" = @{ Suffix = "_sharedirfirst_appcap"; ExtraFlags = $sharedRouteDirectoryFirstAppLikeFlags }
+        "ownerlocality-appcap" = @{ Suffix = "_ownerlocality_appcap"; ExtraFlags = $ownerLocalityAppLikeFlags }
     }
 
     function Split-Hz6BuildList {
@@ -362,7 +372,7 @@ function Invoke-AppLikeHz6BenchBuilds {
     $selectedLaneNames = Split-Hz6BuildList -Values $CapacityLanes
     if (-not $selectedLaneNames -or $selectedLaneNames.Count -eq 0) {
         if ($IncludeControlCapacity) {
-            $selectedLaneNames = @("default", "broad", "control", "route4k", "appcap")
+            $selectedLaneNames = @("default", "broad", "control", "route4k", "appcap", "ownerlocality-appcap")
         } else {
             $selectedLaneNames = @("default", "broad", "appcap")
         }

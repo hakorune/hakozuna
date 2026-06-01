@@ -10,6 +10,10 @@ extern "C" {
 Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
                                           const void* ptr);
 
+Hz6RouteResult hz6_allocator_route_lookup_exact(
+    const Hz6Allocator* allocator,
+    const void* ptr);
+
 void hz6_allocator_route_visibility_register(Hz6Allocator* allocator);
 
 void hz6_allocator_route_visibility_unregister(Hz6Allocator* allocator);
@@ -28,6 +32,10 @@ Hz6RouteResult hz6_allocator_route_lookup_visible_after_local_miss(
 
 int hz6_allocator_route_negative_filter_skip_local(
     Hz6Allocator* allocator,
+    const void* ptr);
+
+Hz6OwnerLocalityKind hz6_allocator_route_owner_locality_hint(
+    const Hz6Allocator* allocator,
     const void* ptr);
 
 void hz6_allocator_route_shared_directory_dryrun(Hz6Allocator* allocator,

@@ -57,6 +57,13 @@ void hz6_route_unregister_invalid_range(Hz6RouteTable* table,
 
 Hz6RouteResult hz6_route_lookup(const Hz6RouteTable* table, const void* ptr);
 
+Hz6RouteResult hz6_route_lookup_exact_probe(const Hz6RouteTable* table,
+                                            const void* ptr,
+                                            size_t* probe_count);
+
+Hz6RouteResult hz6_route_lookup_exact(const Hz6RouteTable* table,
+                                      const void* ptr);
+
 Hz6RouteResult hz6_route_lookup_probe(const Hz6RouteTable* table,
                                       const void* ptr,
                                       size_t* probe_count);

@@ -202,6 +202,16 @@ typedef struct Hz6StatsSnapshot {
   size_t source_run_reuse_prepare_fail;
   size_t source_run_reuse_rollback;
   size_t source_run_reuse_used_count_mismatch;
+  size_t route_exact_lookup_probe_total;
+  size_t route_exact_lookup_probe_max;
+  size_t owner_locality_lookup;
+  size_t owner_locality_hit_local_allocator;
+  size_t owner_locality_hit_foreign_allocator;
+  size_t owner_locality_miss;
+  size_t owner_locality_register;
+  size_t owner_locality_unregister;
+  size_t owner_locality_probe_total;
+  size_t owner_locality_probe_max;
   size_t route_lookup_probe_total;
   size_t route_lookup_probe_max;
   size_t route_register_probe_total;

@@ -176,6 +176,15 @@ static void print_stats(const Hz6Allocator* allocator) {
          "shared_dir_probe_max=%zu "
          "shared_dir_first_attempt=%zu shared_dir_first_hit=%zu "
          "shared_dir_first_fallback=%zu shared_dir_first_invalid=%zu "
+         "route_exact_lookup_probe_total=%zu route_exact_lookup_probe_max=%zu "
+         "owner_locality_lookup=%zu "
+         "owner_locality_hit_local_allocator=%zu "
+         "owner_locality_hit_foreign_allocator=%zu "
+         "owner_locality_miss=%zu "
+         "owner_locality_register=%zu "
+         "owner_locality_unregister=%zu "
+         "owner_locality_probe_total=%zu "
+         "owner_locality_probe_max=%zu "
          "source_run_reuse_attempt=%zu source_run_reuse_candidate=%zu "
          "source_run_reuse_hit=%zu source_run_reuse_miss_no_block=%zu "
          "source_run_reuse_miss_no_slot=%zu source_run_reuse_rollback=%zu "
@@ -257,6 +266,16 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.shared_dir_probe_max,
          stats.shared_dir_first_attempt, stats.shared_dir_first_hit,
          stats.shared_dir_first_fallback, stats.shared_dir_first_invalid,
+         stats.route_exact_lookup_probe_total,
+         stats.route_exact_lookup_probe_max,
+         stats.owner_locality_lookup,
+         stats.owner_locality_hit_local_allocator,
+         stats.owner_locality_hit_foreign_allocator,
+         stats.owner_locality_miss,
+         stats.owner_locality_register,
+         stats.owner_locality_unregister,
+         stats.owner_locality_probe_total,
+         stats.owner_locality_probe_max,
          stats.source_run_reuse_attempt, stats.source_run_reuse_candidate,
          stats.source_run_reuse_hit, stats.source_run_reuse_miss_no_block,
          stats.source_run_reuse_miss_no_slot, stats.source_run_reuse_rollback,

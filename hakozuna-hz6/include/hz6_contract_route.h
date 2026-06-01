@@ -16,6 +16,11 @@ typedef enum Hz6RouteKind {
   HZ6_ROUTE_INVALID = 2
 } Hz6RouteKind;
 
+typedef enum Hz6OwnerLocalityKind {
+  HZ6_OWNER_LOCALITY_MAYBE_LOCAL = 0,
+  HZ6_OWNER_LOCALITY_DEFINITELY_FOREIGN = 1
+} Hz6OwnerLocalityKind;
+
 typedef enum Hz6AllocPath {
   HZ6_ALLOC_PATH_LOCAL_REUSE = 0,
   HZ6_ALLOC_PATH_TRANSFER_REUSE = 1,

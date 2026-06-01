@@ -172,34 +172,122 @@ Canonical summary rule:
   do not promote raw results into paper-facing sources
 ```
 
+## Route Locality Checkpoint 2026-06-01
+
+```text
+Decision:
+  stop deepening negative_filter knobs
+  stop treating visible-first as the main answer
+
+Current next lane:
+  OwnerLocalityIndex-L1
+
+Shape:
+  truth:
+    exact route / descriptor state
+
+  hint:
+    cheap local exact ownership hint
+
+  backend:
+    shared route directory exact lookup
+
+Why:
+  source-block-only locality hints were no-go
+  shared directory proved foreign exact routes can be recovered
+  the remaining hurt is the worker-local MISS scan around rehomed exact routes
+  owner locality is the narrowest next step that keeps hint/backend separation
+  clean
+
+Implementation rule:
+  keep owner locality diagnostic-backed
+  keep shared directory as the backend exact path
+  keep the ordinary local route path as fallback, not as a replacement for the
+  truth source
+```
+
+## Owner Locality Smoke 2026-06-01
+
+```text
+Build:
+  build_win_larson_suite.ps1 -DiagnosticHz6Probes
+  succeeded, including ownerlocality-appcap
+
+Smoke readback:
+  worker-warmup:
+    throughput = 49.3M ops/s
+    route_exact_lookup_probe_total = 52.9M
+    owner_locality_lookup = 0
+    owner_locality_hit_foreign_allocator = 0
+    shared_dir_first_hit = 0
+
+  main-warmup:
+    throughput = 43.6M ops/s
+    route_exact_lookup_probe_total = 44.7M
+    owner_locality_lookup = 200
+    owner_locality_hit_foreign_allocator = 200
+    owner_locality_probe_total = 200
+    shared_dir_register = 488
+    route_rehome_success = 200
+
+Read:
+  the owner-locality lane is alive and the hint/backend split is visible in the
+  stats
+  worker-warmup stays clean
+  main-warmup now exposes the rehomed foreign exact route path instead of a
+  blind local MISS scan
+```
+
+## Owner Locality Comparison 2026-06-01
+
+```text
+Same small smoke, main-warmup:
+  ownerlocality-appcap:
+    throughput = 43.6M ops/s
+    route_lookup_probe_total = 44.7M
+    route_exact_lookup_probe_total = 44.7M
+    owner_locality_lookup = 200
+
+  appcap:
+    throughput = 47.7M ops/s
+    route_lookup_probe_total = 153.8M
+    route_visibility_lookup = 200
+
+Read:
+  owner locality is not a pure speed win yet
+  but it cuts the worker-local MISS scan by a large factor
+  worker-warmup remains healthy either way
+```
+
 ## Next Implementation Order 2026-06-01
 
 ```text
 Primary next target:
-  toy/small source-block prefill in the worker-warmup lane
+  OwnerLocalityIndex-L1 in the Larson main-warmup lane
 
 Why:
-  worker-warmup is the same-owner control lane and already proves the small
-  hot path is viable without cross-owner route lifecycle pressure
-  Larson 8..1024 is toy-only, so toy is the clean witness for small-source
-  placement
-  source_block_probe_total staying at zero means the toy path is still not
-  using SourceBlock/run-style placement
+  source-block-only hints were no-go
+  shared directory recovered foreign exact routes
+  the remaining pain is the worker-local MISS scan around rehomed exact routes
+  owner locality is the narrowest next step that keeps hint/backend separation
+  clean
 
 Implementation rule:
-  keep toy inside the common FrontSource contract
-  change only miss/refill placement
-  keep local reuse / transfer reuse hot paths unchanged
+  keep the owner-locality lane diagnostic-backed
+  keep shared directory as the backend exact path
+  keep the ordinary local route path as fallback, not as a replacement for the
+  truth source
 
 Evaluation:
   compact control should stay within the existing noise band
-  worker-warmup should improve or keep its current level without RSS blow-up
-  main-warmup remains cross-owner stress evidence, not the acceptance lane for
-  this step
+  worker-warmup should stay unchanged
+  main-warmup should recover if local MISS scans were the dominant blocker
+  do not treat the lane as a promotion claim yet
 
 Immediate follow-up:
-  repeat worker-warmup and compact control a few times to confirm the
-  block-backed toy path is stable before touching the cross-owner lane again
+  run the new ownerlocality-appcap lane with the existing Larson matrix
+  repeat a few times and watch route_exact / owner_locality / route_lookup
+  totals before deciding whether to deepen the directory or stop at evidence
 ```
 
 ## Diagnostic Checkpoint 2026-05-31

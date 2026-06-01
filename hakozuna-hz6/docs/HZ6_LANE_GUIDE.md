@@ -21,6 +21,7 @@ Route-lifecycle diagnostic:
   negativefilter-appcap
   sharedir-appcap
   sharedirfirst-appcap
+  ownerlocality-appcap
 
 Evidence-only source-run controls:
   sourcerun-route4k
@@ -103,6 +104,14 @@ sharedirfirst-appcap:
   route results from the directory. Compact/moderate main-warmup can recover
   strongly, but 10k-chunk stress main-warmup currently times out. Keep it
   evidence-only until large live-set scaling is fixed.
+
+ownerlocality-appcap:
+  Diagnostic-only hint/backend lane. It uses a cheap owner-locality index to
+  decide whether a pointer is definitely foreign, then consults the shared
+  route directory backend for foreign exact lookup before falling back to the
+  ordinary local route path. Use it to measure whether a low-cost locality hint
+  can prune worker-local MISS scans without turning source-block ownership into
+  the only truth source.
 ```
 
 ## Focused Mechanism Lanes

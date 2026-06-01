@@ -633,6 +633,32 @@ int main(int argc, char** argv) {
             hz6_stats.descriptor_probe_max =
                 tds[t].hz6_stats_after.descriptor_probe_max;
         }
+        hz6_stats.route_exact_lookup_probe_total +=
+            tds[t].hz6_stats_after.route_exact_lookup_probe_total;
+        if (tds[t].hz6_stats_after.route_exact_lookup_probe_max >
+            hz6_stats.route_exact_lookup_probe_max) {
+            hz6_stats.route_exact_lookup_probe_max =
+                tds[t].hz6_stats_after.route_exact_lookup_probe_max;
+        }
+        hz6_stats.owner_locality_lookup +=
+            tds[t].hz6_stats_after.owner_locality_lookup;
+        hz6_stats.owner_locality_hit_local_allocator +=
+            tds[t].hz6_stats_after.owner_locality_hit_local_allocator;
+        hz6_stats.owner_locality_hit_foreign_allocator +=
+            tds[t].hz6_stats_after.owner_locality_hit_foreign_allocator;
+        hz6_stats.owner_locality_miss +=
+            tds[t].hz6_stats_after.owner_locality_miss;
+        hz6_stats.owner_locality_register +=
+            tds[t].hz6_stats_after.owner_locality_register;
+        hz6_stats.owner_locality_unregister +=
+            tds[t].hz6_stats_after.owner_locality_unregister;
+        hz6_stats.owner_locality_probe_total +=
+            tds[t].hz6_stats_after.owner_locality_probe_total;
+        if (tds[t].hz6_stats_after.owner_locality_probe_max >
+            hz6_stats.owner_locality_probe_max) {
+            hz6_stats.owner_locality_probe_max =
+                tds[t].hz6_stats_after.owner_locality_probe_max;
+        }
         hz6_stats.route_lookup_probe_total +=
             tds[t].hz6_stats_after.route_lookup_probe_total;
         if (tds[t].hz6_stats_after.route_lookup_probe_max >
@@ -686,6 +712,16 @@ int main(int argc, char** argv) {
            "route_visibility_hit_foreign_owner=%zu "
            "route_visibility_miss=%zu route_visibility_probe_total=%zu "
            "route_visibility_probe_max=%zu "
+           "route_exact_lookup_probe_total=%zu "
+           "route_exact_lookup_probe_max=%zu "
+           "owner_locality_lookup=%zu "
+           "owner_locality_hit_local_allocator=%zu "
+           "owner_locality_hit_foreign_allocator=%zu "
+           "owner_locality_miss=%zu "
+           "owner_locality_register=%zu "
+           "owner_locality_unregister=%zu "
+           "owner_locality_probe_total=%zu "
+           "owner_locality_probe_max=%zu "
            "transfer_push=%zu transfer_pop=%zu transfer_current=%zu "
            "transfer_current_max=%zu remote_free_attempt=%zu "
            "remote_free_strict_owner_block=%zu remote_free_transfer_fail=%zu "
@@ -752,6 +788,16 @@ int main(int argc, char** argv) {
            hz6_stats.route_visibility_miss,
            hz6_stats.route_visibility_probe_total,
            hz6_stats.route_visibility_probe_max,
+           hz6_stats.route_exact_lookup_probe_total,
+           hz6_stats.route_exact_lookup_probe_max,
+           hz6_stats.owner_locality_lookup,
+           hz6_stats.owner_locality_hit_local_allocator,
+           hz6_stats.owner_locality_hit_foreign_allocator,
+           hz6_stats.owner_locality_miss,
+           hz6_stats.owner_locality_register,
+           hz6_stats.owner_locality_unregister,
+           hz6_stats.owner_locality_probe_total,
+           hz6_stats.owner_locality_probe_max,
            hz6_stats.transfer_push,
            hz6_stats.transfer_pop,
            hz6_stats.transfer_current,

@@ -106,6 +106,16 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 "route_visibility_hit_foreign_owner=%zu "
                 "route_visibility_miss=%zu route_visibility_probe_total=%zu "
                 "route_visibility_probe_max=%zu "
+                "route_exact_lookup_probe_total=%zu "
+                "route_exact_lookup_probe_max=%zu "
+                "owner_locality_lookup=%zu "
+                "owner_locality_hit_local_allocator=%zu "
+                "owner_locality_hit_foreign_allocator=%zu "
+                "owner_locality_miss=%zu "
+                "owner_locality_register=%zu "
+                "owner_locality_unregister=%zu "
+                "owner_locality_probe_total=%zu "
+                "owner_locality_probe_max=%zu "
                 "transfer_push=%zu transfer_pop=%zu transfer_current=%zu "
                 "transfer_current_max=%zu remote_free_attempt=%zu "
                 "remote_free_strict_owner_block=%zu "
@@ -199,6 +209,16 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 s.route_visibility_miss,
                 s.route_visibility_probe_total,
                 s.route_visibility_probe_max,
+                s.route_exact_lookup_probe_total,
+                s.route_exact_lookup_probe_max,
+                s.owner_locality_lookup,
+                s.owner_locality_hit_local_allocator,
+                s.owner_locality_hit_foreign_allocator,
+                s.owner_locality_miss,
+                s.owner_locality_register,
+                s.owner_locality_unregister,
+                s.owner_locality_probe_total,
+                s.owner_locality_probe_max,
                 s.transfer_push,
                 s.transfer_pop,
                 s.transfer_current,
