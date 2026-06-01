@@ -140,7 +140,9 @@ ownerlocality-appcap:
 
 ownerlocalityfast-appcap:
   non-diagnostic owner-locality/shared-directory exact route lane. Use this for
-  throughput/RSS checks after `ownerlocality-appcap` has validated the counters.
+  throughput/RSS checks after `ownerlocality-appcap` has validated the
+  counters. Repeat-3 is now enough to treat it as the preferred
+  candidate-control lane for fast owner-locality comparisons.
 ```
 
 Research lanes such as `sourcerun-route4k`,

@@ -381,7 +381,7 @@ function Invoke-AppLikeHz6BenchBuilds {
     $selectedLaneNames = Split-Hz6BuildList -Values $CapacityLanes
     if (-not $selectedLaneNames -or $selectedLaneNames.Count -eq 0) {
         if ($IncludeControlCapacity) {
-            $selectedLaneNames = @("default", "broad", "control", "route4k", "appcap", "ownerlocality-appcap")
+            $selectedLaneNames = @("default", "broad", "control", "route4k", "appcap", "ownerlocality-appcap", "ownerlocalityfast-appcap")
         } else {
             $selectedLaneNames = @("default", "broad", "appcap")
         }
