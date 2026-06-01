@@ -625,6 +625,99 @@ Decision:
   descriptor recycling policy that does not scan/release on the allocation
   slow path.
 ```
+
+HZ6 diagnostic follow-up:
+
+```text
+Source:
+  docs/benchmarks/windows/paper/20260601_101314_hz6_capacity_matrix_windows.md
+
+mixed_ws / rss / diagnostic probes / RUNS=1:
+  route4k / balanced:
+    3.223M ops/s, 17.7 MB
+    alloc_fail 1.51M
+    descriptor_exhausted 3.39M
+    descriptor_probe_total 1.736B
+    source_block_probe_total 193.2M
+
+  front1k-desc4k-source512-route4k / balanced:
+    1.698M ops/s, 100.5 MB
+    alloc_fail 45.8K
+    route_register_fail 91.9K
+    source_block_exhausted 31.9K
+    route_register_probe_total 1.109B
+    route_unregister_probe_total 25.3M
+
+  broad / balanced:
+    same shape as front1k-desc4k-source512-route4k.
+
+Read:
+  route4k is not bottlenecked by route capacity anymore. It is dominated by
+  descriptor exhaustion and descriptor full-scan pressure.
+
+  front1k/broad removes descriptor exhaustion, but shifts the cost into
+  source allocation, route register/unregister probe pressure, and RSS.
+
+  The next useful work is not another fixed capacity lane. It needs
+  descriptor/source lifetime diagnostics and then a design that reuses
+  descriptors/source slots without putting scan/release work on the allocation
+  slow path.
+```
+
+HZ6 Redis focused read:
+
+```text
+Source:
+  docs/benchmarks/windows/paper/20260601_101345_hz6_capacity_matrix_windows.md
+
+redis / rss / RUNS=1 / TimeoutSeconds=20:
+  source512-route4k:
+    all patterns timeout with rc124.
+
+  front1k-desc4k-source512-route4k:
+    all patterns timeout with rc124.
+
+  appcap:
+    completes all patterns, but peak RSS is about 597 MB.
+    SET 12.06M
+    GET 14.44M
+    LPUSH 6.40M
+    LPOP 15.98M
+    RANDOM 7.63M
+
+Read:
+  Redis needs appcap-scale descriptor/source/front capacity or a smarter
+  lifetime/source strategy. The focused non-route lanes are still too small,
+  while appcap proves completion at unacceptable RSS.
+```
+
+Current HZ6 Windows direction:
+
+```text
+Stop:
+  fixed capacity lane proliferation.
+
+Keep:
+  route4k as the low-RSS candidate-control for random_mixed and compact rows.
+  broad/front1k as mechanism evidence for front-cache capacity.
+  appcap as completion/control evidence only.
+
+Next:
+  add diagnostic-only state/lifetime attribution before behavior:
+    descriptor state counts at failure/checkpoint
+    source-block state counts at failure/checkpoint
+    route register/unregister pressure by source/front if practical
+
+  Then attack:
+    descriptor recycling without full descriptor scans
+    source-block/slot reuse by class or run
+    route registration lifetime so broad-like completion does not require
+    appcap-like RSS.
+
+Do not:
+  add hot-path atomics to real benchmark lanes.
+  hide route4k failures with appcap defaulting.
+  add another large fixed capacity lane without a lifetime hypothesis.
 ```
 
 ## HZ6 Windows Current Read
