@@ -1450,6 +1450,66 @@ Decision:
     allocation.
 ```
 
+HZ6 DescriptorCold-L1 check:
+
+```text
+Implementation:
+  added descriptorcold-route4k as a selective descriptorless lane.
+  It keeps descriptorless source-run slots, but only detaches descriptors from
+  frontcache bins that are already at the same soft cap used by cap-route4k's
+  dry-run. It does not reserve descriptors.
+
+Validation:
+  diagnostic matrix:
+    docs/benchmarks/windows/paper/20260601_124434_hz6_capacity_matrix_windows.md
+
+mixed_ws / balanced:
+  route4k:
+    0.384M ops/s, 24.2 MB
+  descriptorless-route4k:
+    0.398M ops/s, 24.3 MB
+    descriptorless_descriptor_fail = 2.16M
+  descriptorcold-route4k:
+    0.407M ops/s, 24.6 MB
+    descriptorless_push/pop = 107 / 89
+    descriptorless_descriptor_fail = 232K
+
+mixed_ws / wide_ws:
+  route4k:
+    0.322M ops/s, 24.8 MB
+  descriptorcold-route4k:
+    0.326M ops/s, 24.8 MB
+    descriptorless_push/pop = 2.5K / 2.0K
+    descriptorless_descriptor_fail = 0
+
+mixed_ws / larger_sizes:
+  route4k:
+    0.777M ops/s, 15.5 MB
+  descriptorcold-route4k:
+    0.635M ops/s, 14.5 MB
+    descriptorless_push/pop = 4.5K / 4.1K
+    descriptorless_descriptor_fail = 181K
+
+Read:
+  Selective descriptorless is a better shape than broad descriptorless for
+  balanced / wide_ws. It sharply reduces the descriptorless materialization
+  failure loop and gives a small throughput signal.
+
+  It is still not a promotion lane. The simple over-soft-cap gate hurts
+  larger_sizes and does not materially reduce alloc_fail. The pressure is
+  workload/class dependent, so one global soft-cap rule is too blunt.
+
+Decision:
+  keep descriptorcold-route4k as evidence/control.
+  do not promote it.
+
+  Next useful design is not more one-bit descriptorless gating. It should
+  separate front/class policy:
+    allow descriptorless only for small/mixed classes
+    or drive descriptorless by descriptor-failure attribution per class
+    or introduce an epoch/budgeted class pressure governor.
+```
+
 ## HZ6 Windows Current Read
 
 ```text

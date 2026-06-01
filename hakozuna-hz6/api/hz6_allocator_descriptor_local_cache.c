@@ -1,5 +1,27 @@
 #include "hz6_allocator.h"
 
+#if HZ6_DESCRIPTORLESS_OVER_CAP_ONLY_L1
+static int hz6_allocator_frontcache_class_over_soft_cap(
+    Hz6Allocator* allocator,
+    uint16_t class_id) {
+  if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
+    return 0;
+  }
+  size_t capacity = hz6_allocator_frontcache_capacity(allocator, class_id);
+  if (capacity == 0) {
+    return 0;
+  }
+  size_t soft_cap = capacity / 8;
+  if (soft_cap < 4) {
+    soft_cap = capacity < 4 ? capacity : 4;
+  }
+  if (soft_cap == 0) {
+    soft_cap = 1;
+  }
+  return hz6_allocator_frontcache_count(allocator, class_id) >= soft_cap;
+}
+#endif
+
 int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
                                           Hz6ObjectDescriptor* descriptor,
                                           void* ptr) {
@@ -35,6 +57,9 @@ int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
   if (descriptor->source_block && descriptor->source_block->run_active &&
       descriptor->source_block->run_class_id == entry.class_id &&
       descriptor->source_block->run_slot_bytes == entry.bytes &&
+#if HZ6_DESCRIPTORLESS_OVER_CAP_ONLY_L1
+      hz6_allocator_frontcache_class_over_soft_cap(allocator, entry.class_id) &&
+#endif
       hz6_allocator_frontcache_count(allocator, entry.class_id) <
           hz6_allocator_frontcache_capacity(allocator, entry.class_id)) {
     Hz6FrontCacheEntry descriptorless_entry = entry;

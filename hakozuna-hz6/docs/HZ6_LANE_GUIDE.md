@@ -23,6 +23,7 @@ Evidence-only source-run controls:
 Descriptor lifecycle prototype:
   descriptorless-route4k
   descriptorreserve-route4k
+  descriptorcold-route4k
 
 Frozen no-go controls:
   spill-route4k
@@ -104,6 +105,12 @@ descriptorreserve-route4k:
   it removes descriptorless materialization failures in the latest checks, but
   it does not solve balanced / wide_ws and can reduce the descriptor pool
   available to normal allocation.
+
+descriptorcold-route4k:
+  Selective descriptorless prototype. Only over-soft-cap frontcache bins detach
+  descriptors, reducing the broad descriptorless failure loop. Evidence only:
+  it has a small balanced / wide_ws signal, but larger_sizes regresses, so the
+  simple soft-cap gate is not a promotion policy.
 ```
 
 ## Frozen No-Go Lanes
