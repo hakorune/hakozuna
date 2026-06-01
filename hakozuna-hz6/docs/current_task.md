@@ -399,6 +399,55 @@ Read:
   non-diagnostic, lifecycle-safe, and RSS-neutral across the wider suite.
 ```
 
+## Owner Locality Matrix Runner Wiring 2026-06-02
+
+```text
+Change:
+  run_win_hz6_capacity_matrix.ps1 now accepts:
+    ownerlocality-appcap
+
+  Larson benchmark profile selection now includes focused short rows:
+    larson_t16_main_1k
+    larson_t16_worker_1k
+    larson_t16_main_4k
+    larson_t16_worker_4k
+
+Why:
+  the default larson_T16 row uses chunks=10000 main-warmup and can be too slow
+  for the broken appcap baseline.
+  The focused rows let us compare route-lifecycle mechanisms without waiting
+  for the known appcap local-MISS scan collapse.
+
+Runner fix:
+  capacity matrix output capture now redirects stdout/stderr to temporary files
+  while monitoring PeakWorkingSet.
+  This avoids pipe back-pressure when diagnostic HZ6 stats are long.
+
+Focused ownerlocality run:
+  command:
+    run_win_hz6_capacity_matrix.ps1
+      -Families larson
+      -Hz6Profiles speed
+      -CapacityLanes ownerlocality-appcap
+      -BenchmarkProfiles larson_t16_main_1k,larson_t16_worker_1k,
+                         larson_t16_main_4k,larson_t16_worker_4k
+      -Runs 1
+      -DiagnosticHz6Probes
+      -SkipBuild
+
+  ownerlocality-appcap:
+    main_1k   = 50.8M ops/s
+    worker_1k = 56.8M ops/s
+    main_4k   = 45.2M ops/s
+    worker_4k = 50.8M ops/s
+
+Read:
+  the HZ6 capacity matrix can now run the owner-locality Larson rows directly.
+  Use the short focused rows for route-lifecycle iteration.
+  Keep chunks=10000 main-warmup as a stress row, not as the default iteration
+  target while appcap is known to collapse.
+```
+
 ## Next Implementation Order 2026-06-01
 
 ```text

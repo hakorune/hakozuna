@@ -56,18 +56,15 @@ function Invoke-CapturedProcess {
         [int]$TimeoutSeconds = 120
     )
 
-    $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName = $FilePath
-    $psi.UseShellExecute = $false
-    $psi.RedirectStandardOutput = $true
-    $psi.RedirectStandardError = $true
-    $psi.Arguments = ($Arguments | ForEach-Object {
-        if ($_ -match '[\s"]') { '"' + ($_ -replace '"', '\"') + '"' } else { $_ }
-    }) -join ' '
-
-    $proc = New-Object System.Diagnostics.Process
-    $proc.StartInfo = $psi
-    [void]$proc.Start()
+    $stdoutPath = [System.IO.Path]::GetTempFileName()
+    $stderrPath = [System.IO.Path]::GetTempFileName()
+    $argumentList = ($Arguments | ForEach-Object { [string]$_ })
+    $proc = Start-Process -FilePath $FilePath `
+        -ArgumentList $argumentList `
+        -RedirectStandardOutput $stdoutPath `
+        -RedirectStandardError $stderrPath `
+        -NoNewWindow `
+        -PassThru
     $peakWorkingSetBytes = [Int64]0
     $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
 
@@ -92,6 +89,7 @@ function Invoke-CapturedProcess {
             try { $proc.Kill() } catch {}
         }
         $proc.WaitForExit()
+        Remove-Item -LiteralPath $stdoutPath, $stderrPath -Force -ErrorAction SilentlyContinue
         return @{
             ExitCode = 124
             Lines = @("[TIMEOUT] exceeded ${TimeoutSeconds}s")
@@ -110,18 +108,17 @@ function Invoke-CapturedProcess {
     } catch {
     }
 
-    $stdout = $proc.StandardOutput.ReadToEnd()
-    $stderr = $proc.StandardError.ReadToEnd()
     $proc.WaitForExit()
 
     $lines = New-Object System.Collections.Generic.List[string]
-    foreach ($chunk in @($stdout, $stderr)) {
-        if (-not [string]::IsNullOrEmpty($chunk)) {
-            foreach ($line in ($chunk -split "`r?`n")) {
+    foreach ($path in @($stdoutPath, $stderrPath)) {
+        if (Test-Path $path) {
+            foreach ($line in (Get-Content -LiteralPath $path -ErrorAction SilentlyContinue)) {
                 if ($line -ne "") { $lines.Add($line) }
             }
         }
     }
+    Remove-Item -LiteralPath $stdoutPath, $stderrPath -Force -ErrorAction SilentlyContinue
 
     $peakKb = if ($peakWorkingSetBytes -gt 0) { [string][UInt64]([Math]::Ceiling($peakWorkingSetBytes / 1024.0)) } else { "NA" }
     $text = ($lines -join " ")
@@ -129,7 +126,11 @@ function Invoke-CapturedProcess {
         $peakKb = $Matches[1]
     }
 
-    return @{ ExitCode = $proc.ExitCode; Lines = $lines; PeakKb = $peakKb }
+    $exitCode = $proc.ExitCode
+    if ($null -eq $exitCode -or "$exitCode" -eq "") {
+        $exitCode = 0
+    }
+    return @{ ExitCode = $exitCode; Lines = $lines; PeakKb = $peakKb }
 }
 
 function Expand-ProfileSelection {
@@ -202,6 +203,7 @@ $laneSuffix = @{
     "negativefilter-appcap" = "_negativefilter_appcap"
     "sharedir-appcap" = "_sharedir_appcap"
     "sharedirfirst-appcap" = "_sharedirfirst_appcap"
+    "ownerlocality-appcap" = "_ownerlocality_appcap"
 }
 
 $familyPrefixes = @{
@@ -308,10 +310,18 @@ foreach ($family in $selectedFamilies) {
         $cases = Expand-ProfileSelection -AllProfiles $mixedProfiles -Requested $BenchmarkProfiles
     } elseif ($family -eq "random_mixed") {
         $cases = Expand-ProfileSelection -AllProfiles $randomProfiles -Requested $BenchmarkProfiles
-    } elseif ($family -eq "larson") {
+} elseif ($family -eq "larson") {
+        $larsonProfiles = @()
         foreach ($threads in $ThreadCounts) {
-            $cases += @{ Name = "larson_T$threads"; Args = @("10", "8", "1024", "10000", "1", "12345", [string]$threads, "0"); Note = "Larson stress T=$threads" }
+            $larsonProfiles += @{ Name = "larson_T$threads"; Args = @("10", "8", "1024", "10000", "1", "12345", [string]$threads, "0"); Note = "Larson stress T=$threads, main-warmup, chunks=10000" }
         }
+        $larsonProfiles += @(
+            @{ Name = "larson_t16_main_1k"; Args = @("1", "8", "1024", "1000", "1", "12345", "16", "0"); Note = "Larson T=16 cross-owner main-warmup, chunks=1000" },
+            @{ Name = "larson_t16_worker_1k"; Args = @("1", "8", "1024", "1000", "1", "12345", "16", "1"); Note = "Larson T=16 same-owner worker-warmup, chunks=1000" },
+            @{ Name = "larson_t16_main_4k"; Args = @("1", "8", "1024", "4000", "1", "12345", "16", "0"); Note = "Larson T=16 cross-owner main-warmup, chunks=4000" },
+            @{ Name = "larson_t16_worker_4k"; Args = @("1", "8", "1024", "4000", "1", "12345", "16", "1"); Note = "Larson T=16 same-owner worker-warmup, chunks=4000" }
+        )
+        $cases = Expand-ProfileSelection -AllProfiles $larsonProfiles -Requested $BenchmarkProfiles
     } elseif ($family -eq "redis") {
         $cases += @{ Name = "redis_workload"; Args = @("4", "500", "2000", "16", "256"); Note = "paper-aligned Redis-like workload" }
     }

@@ -107,6 +107,20 @@ powershell -ExecutionPolicy Bypass -File .\win\run_win_hz6_capacity_matrix.ps1 `
   -Runs 1
 ```
 
+Run the focused Larson owner-locality comparison:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\win\run_win_hz6_capacity_matrix.ps1 `
+  -Families larson `
+  -Hz6Profiles speed `
+  -CapacityLanes appcap,ownerlocality-appcap `
+  -ThreadCounts 16 `
+  -BenchmarkProfiles larson_t16_main_1k,larson_t16_worker_1k,larson_t16_main_4k,larson_t16_worker_4k `
+  -Runs 1 `
+  -DiagnosticHz6Probes `
+  -SkipBuild
+```
+
 Default capacity matrix lanes:
 
 ```text
@@ -118,6 +132,11 @@ route4k:
 
 appcap:
   high-capacity completion/control lane, not a default
+
+ownerlocality-appcap:
+  appcap plus the owner-locality/shared-directory exact route probe. Use this
+  only for cross-owner Larson route-lifecycle evidence unless it is explicitly
+  promoted later.
 ```
 
 Research lanes such as `sourcerun-route4k`,
