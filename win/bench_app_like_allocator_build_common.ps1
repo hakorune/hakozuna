@@ -124,6 +124,8 @@ function Invoke-AppLikeHz6BenchBuilds {
         [Parameter(Mandatory = $true)][string]$BenchSrc,
         [Parameter(Mandatory = $true)][string]$OutDir,
         [Parameter(Mandatory = $true)][string]$OutputPrefix,
+        [string[]]$Hz6Profiles,
+        [string[]]$CapacityLanes,
         [switch]$DiagnosticHz6Probes,
         [switch]$IncludeControlCapacity
     )
@@ -139,33 +141,66 @@ function Invoke-AppLikeHz6BenchBuilds {
     $includeFlags = Get-Hz6WinIncludeFlags -Hz6Root $hz6Root -ExtraIncludeRoots @("win")
     $libSources = Get-Hz6WinLibSources -Hz6Root $hz6Root
     $commonFlags = Get-Hz6WinClangCommonFlags
-    $profiles = @(
-        @{ Name = "strict"; Define = "HZ6_PROFILE_STRICT" },
-        @{ Name = "speed"; Define = "HZ6_PROFILE_SPEED" },
-        @{ Name = "rss"; Define = "HZ6_PROFILE_RSS" }
-    )
+    $profileMap = @{
+        "strict" = @{ Name = "strict"; Define = "HZ6_PROFILE_STRICT" }
+        "speed" = @{ Name = "speed"; Define = "HZ6_PROFILE_SPEED" }
+        "rss" = @{ Name = "rss"; Define = "HZ6_PROFILE_RSS" }
+    }
     $broadFlags = Get-Hz6WinBroadCapacityFlags
     $controlFlags = Get-Hz6WinControlCapacityFlags
     $route4kFlags = Get-Hz6WinRoute4kCapacityFlags
     $appLikeFlags = Get-Hz6WinAppLikeCapacityFlags
+    $laneMap = @{
+        "default" = @{ Suffix = ""; ExtraFlags = @() }
+        "broad" = @{ Suffix = "_broad"; ExtraFlags = $broadFlags }
+        "control" = @{ Suffix = "_control"; ExtraFlags = $controlFlags }
+        "route4k" = @{ Suffix = "_route4k"; ExtraFlags = $route4kFlags }
+        "appcap" = @{ Suffix = "_appcap"; ExtraFlags = $appLikeFlags }
+    }
+
+    function Split-Hz6BuildList {
+        param([string[]]$Values)
+        $items = @()
+        foreach ($value in @($Values)) {
+            foreach ($part in @($value -split ',' | ForEach-Object { $_.Trim().ToLowerInvariant() } | Where-Object { $_ -ne "" })) {
+                $items += $part
+            }
+        }
+        $items
+    }
+
+    $selectedProfileNames = Split-Hz6BuildList -Values $Hz6Profiles
+    if (-not $selectedProfileNames -or $selectedProfileNames.Count -eq 0) {
+        $selectedProfileNames = @("strict", "speed", "rss")
+    }
+
+    $selectedLaneNames = Split-Hz6BuildList -Values $CapacityLanes
+    if (-not $selectedLaneNames -or $selectedLaneNames.Count -eq 0) {
+        if ($IncludeControlCapacity) {
+            $selectedLaneNames = @("default", "broad", "control", "route4k", "appcap")
+        } else {
+            $selectedLaneNames = @("default", "broad", "appcap")
+        }
+    }
+
+    $profiles = @()
+    foreach ($profileName in $selectedProfileNames) {
+        if (-not $profileMap.ContainsKey($profileName)) {
+            throw "Unknown HZ6 profile: $profileName"
+        }
+        $profiles += $profileMap[$profileName]
+    }
+
+    $selectedLanes = @()
+    foreach ($laneName in $selectedLaneNames) {
+        if (-not $laneMap.ContainsKey($laneName)) {
+            throw "Unknown HZ6 capacity lane: $laneName"
+        }
+        $selectedLanes += $laneMap[$laneName]
+    }
 
     foreach ($profile in $profiles) {
-        $variants = @(
-            @{ Suffix = ""; ExtraFlags = @() },
-            @{ Suffix = "_broad"; ExtraFlags = $broadFlags },
-            @{ Suffix = "_appcap"; ExtraFlags = $appLikeFlags }
-        )
-        if ($IncludeControlCapacity) {
-            $variants = @(
-                @{ Suffix = ""; ExtraFlags = @() },
-                @{ Suffix = "_broad"; ExtraFlags = $broadFlags },
-                @{ Suffix = "_control"; ExtraFlags = $controlFlags },
-                @{ Suffix = "_route4k"; ExtraFlags = $route4kFlags },
-                @{ Suffix = "_appcap"; ExtraFlags = $appLikeFlags }
-            )
-        }
-
-        foreach ($variant in $variants) {
+        foreach ($variant in $selectedLanes) {
             $output = Join-Path $OutDir ("{0}_hz6_{1}{2}.exe" -f $OutputPrefix, $profile.Name, $variant.Suffix)
             $args = @()
             $args += $commonFlags

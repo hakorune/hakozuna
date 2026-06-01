@@ -394,6 +394,50 @@ Conclusion:
   without appcap's huge RSS footprint.
 ```
 
+HZ6-only runner status:
+
+```text
+Implemented:
+  win/build_win_hz6_capacity_suite.ps1
+  win/run_win_hz6_capacity_matrix.ps1
+
+Purpose:
+  Run HZ6 capacity/profile lanes without rebuilding or executing
+  HZ3 / HZ4 / HZ5 / mimalloc / tcmalloc every time.
+
+Supported app-like families:
+  mixed_ws
+  random_mixed
+  larson
+  redis
+
+Default HZ6 profiles:
+  strict
+  speed
+  rss
+
+Default capacity lanes:
+  control
+  route4k
+  appcap
+
+Notes:
+  Existing full comparison runners remain the source for allocator-vs-allocator
+  tables. The HZ6-only runner is the fast iteration tool for capacity/admission
+  experiments on the stable Windows machine.
+
+  Diagnostic counters stay separate through -DiagnosticHz6Probes, which builds
+  into out_win_hz6_capacity_diag instead of the normal speed artifacts.
+
+Example:
+  powershell -NoProfile -ExecutionPolicy Bypass -File .\win\run_win_hz6_capacity_matrix.ps1 \
+    -Families random_mixed \
+    -BenchmarkProfiles small,mixed \
+    -Hz6Profiles speed,rss \
+    -CapacityLanes control,route4k,appcap \
+    -Runs 3
+```
+
 ## HZ6 Windows Current Read
 
 ```text
