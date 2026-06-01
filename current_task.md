@@ -590,6 +590,41 @@ Next:
     reduce source_alloc per successful object
     avoid broad-like RSS for balanced/wide_ws
 ```
+
+HZ6 no-go checks after cleanup:
+
+```text
+Sources:
+  docs/benchmarks/windows/paper/20260601_100622_hz6_capacity_matrix_windows.md
+  docs/benchmarks/windows/paper/20260601_100945_hz6_capacity_matrix_windows.md
+
+Toy block prefill minimum:
+  attempt:
+    force non-strict toy block prefill to keep a minimum refill count instead
+    of dropping to per-object source when source admission clamps to 1.
+
+  result:
+    smoke required strict opt-out.
+    mixed_ws route4k lost throughput and did not solve descriptor exhaustion.
+
+Descriptor-exhaustion scavenge-on-refill:
+  attempt:
+    call profile scavenge once when source/refill cannot find a free
+    descriptor, then retry descriptor lookup.
+
+  result:
+    route4k still descriptor-exhausts on balanced/wide_ws/larger_sizes.
+    balanced route4k regressed sharply:
+      old route4k: ~3.2M ops/s, ~17 MB
+      scavenge-on-refill route4k: 0.461M ops/s, 25.2 MB
+
+Decision:
+  Both behavior changes are no-go and were reverted.
+  The remaining problem is not a one-shot refill tweak. It needs a clearer
+  front-cache/source-lifetime design, likely class/run reuse or a bounded
+  descriptor recycling policy that does not scan/release on the allocation
+  slow path.
+```
 ```
 
 ## HZ6 Windows Current Read
