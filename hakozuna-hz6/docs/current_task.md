@@ -1076,6 +1076,27 @@ Decision:
   Redis capacity lane, unless redis_workload reveals a new collapse phase.
 ```
 
+```text
+ControlPlane-R1 dry-run smoke:
+  Diagnostic redis_short now emits:
+    control_plane_normal
+    control_plane_burst_supply_would_open
+    control_plane_close_would_start
+
+  short-row read:
+    noboost-route4k stays NORMAL-dominant.
+    redislowrss-slim-route4k begins surfacing BURST_SUPPLY projections under
+    Redis-like pressure.
+    CLOSE stays 0 in this short smoke, so the next useful check is the same
+    diagnostic build on redis_medium and redis_long.
+
+  note:
+    the current matrix runner can OOM if we ask it to buffer the heavy
+    diagnostic redis_medium/redis_long output as-is. For the next staged
+    inspection, use a capped-tail parser or run the heavy rows directly so the
+    control-plane counters can be read without buffering the full stream.
+```
+
 ## Next Implementation Order 2026-06-01
 
 ```text

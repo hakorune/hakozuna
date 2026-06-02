@@ -16,6 +16,17 @@ int hz6_allocator_profile_strict_owner_remote(const Hz6Allocator* allocator);
 Hz6SourceKind hz6_allocator_profile_source_kind(
     const Hz6Allocator* allocator);
 
+typedef enum Hz6ControlPlaneState {
+  HZ6_CONTROL_PLANE_NORMAL = 0,
+  HZ6_CONTROL_PLANE_BURST_SUPPLY_WOULD_OPEN = 1,
+  HZ6_CONTROL_PLANE_CLOSE_WOULD_START = 2
+} Hz6ControlPlaneState;
+
+Hz6ControlPlaneState hz6_allocator_control_plane_state(
+    const Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id);
+
 size_t hz6_allocator_profile_source_refill_batch(
     const Hz6Allocator* allocator,
     uint16_t front_id,

@@ -92,6 +92,9 @@ typedef struct Hz6StatsSnapshot {
   size_t source_admission_open;
   size_t source_admission_boosted;
   size_t source_admission_clamped;
+  size_t control_plane_normal;
+  size_t control_plane_burst_supply_would_open;
+  size_t control_plane_close_would_start;
   size_t source_prefill_attempt;
   size_t source_prefill_filled;
   size_t source_prefill_fallback;

@@ -155,6 +155,9 @@ static void print_stats(const Hz6Allocator* allocator) {
          "source_refill_boost=%zu source_refill_clamp=%zu "
          "source_admission_open=%zu source_admission_boosted=%zu "
          "source_admission_clamped=%zu "
+         "control_plane_normal=%zu "
+         "control_plane_burst_supply_would_open=%zu "
+         "control_plane_close_would_start=%zu "
          "source_prefill_attempt=%zu source_prefill_filled=%zu "
          "source_prefill_fallback=%zu front_source_ops_alloc=%zu "
          "front_source_slot_alloc=%zu front_source_prefill_alloc=%zu "
@@ -244,6 +247,9 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.source_refill_boost, stats.source_refill_clamp,
          stats.source_admission_open, stats.source_admission_boosted,
          stats.source_admission_clamped,
+         stats.control_plane_normal,
+         stats.control_plane_burst_supply_would_open,
+         stats.control_plane_close_would_start,
          stats.source_prefill_attempt, stats.source_prefill_filled,
          stats.source_prefill_fallback, stats.front_source_ops_alloc,
          stats.front_source_slot_alloc, stats.front_source_prefill_alloc,

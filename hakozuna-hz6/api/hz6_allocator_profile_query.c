@@ -17,6 +17,84 @@ Hz6SourceKind hz6_allocator_profile_source_kind(
   return allocator ? allocator->profile.source_kind : HZ6_SOURCE_NONE;
 }
 
+static void hz6_control_pressure_flags(
+    const Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id,
+    int* starvation_out,
+    int* saturation_out) {
+  size_t transfer_capacity;
+  size_t transfer_count;
+  size_t front_count;
+  size_t front_capacity;
+  size_t source_alloc;
+  size_t transfer_push;
+  size_t transfer_pop;
+  int starvation = 0;
+  int saturation = 0;
+
+  if (!allocator) {
+    if (starvation_out) {
+      *starvation_out = 0;
+    }
+    if (saturation_out) {
+      *saturation_out = 0;
+    }
+    return;
+  }
+
+  transfer_capacity = hz6_allocator_transfer_capacity(allocator);
+  transfer_count = hz6_allocator_transfer_count(allocator);
+  front_count = hz6_allocator_frontcache_count(allocator, class_id);
+  front_capacity = hz6_allocator_frontcache_capacity(allocator, class_id);
+  source_alloc = allocator->stats.source_alloc;
+  transfer_push = allocator->stats.transfer_push;
+  transfer_pop = allocator->stats.transfer_pop;
+
+  (void)front_id;
+
+  if (allocator->stats.alloc_fail > 0) {
+    starvation = 1;
+  }
+  if (allocator->stats.route_miss > source_alloc + transfer_pop) {
+    starvation = 1;
+  }
+  if (transfer_capacity > 0 && transfer_count * 2 >= transfer_capacity) {
+    saturation = 1;
+  }
+  if (front_capacity > 0 && front_count * 2 >= front_capacity) {
+    saturation = 1;
+  }
+  if (transfer_push > transfer_pop + 128) {
+    saturation = 1;
+  }
+
+  if (starvation_out) {
+    *starvation_out = starvation;
+  }
+  if (saturation_out) {
+    *saturation_out = saturation;
+  }
+}
+
+Hz6ControlPlaneState hz6_allocator_control_plane_state(
+    const Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id) {
+  int starvation = 0;
+  int saturation = 0;
+
+  hz6_control_pressure_flags(allocator, front_id, class_id, &starvation,
+                             &saturation);
+  if (saturation) {
+    return HZ6_CONTROL_PLANE_CLOSE_WOULD_START;
+  }
+  if (starvation) {
+    return HZ6_CONTROL_PLANE_BURST_SUPPLY_WOULD_OPEN;
+  }
+  return HZ6_CONTROL_PLANE_NORMAL;
+}
+
 size_t hz6_allocator_profile_source_refill_batch(
     const Hz6Allocator* allocator,
     uint16_t front_id,
@@ -49,36 +127,14 @@ size_t hz6_allocator_control_source_refill_batch(
     return 0;
   }
 
-  size_t base = hz6_allocator_profile_source_refill_batch(allocator,
-                                                          front_id,
-                                                          class_id);
+  size_t base = hz6_profile_source_refill_batch(&allocator->profile,
+                                                front_id, class_id);
   size_t pressure = 0;
-  size_t transfer_capacity = hz6_allocator_transfer_capacity(allocator);
-  size_t transfer_count = hz6_allocator_transfer_count(allocator);
-  size_t front_count = hz6_allocator_frontcache_count(allocator, class_id);
-  size_t front_capacity = hz6_allocator_frontcache_capacity(allocator,
-                                                           class_id);
-  size_t source_alloc = allocator->stats.source_alloc;
-  size_t transfer_push = allocator->stats.transfer_push;
-  size_t transfer_pop = allocator->stats.transfer_pop;
   int starvation = 0;
   int saturation = 0;
 
-  if (allocator->stats.alloc_fail > 0) {
-    starvation = 1;
-  }
-  if (allocator->stats.route_miss > source_alloc + transfer_pop) {
-    starvation = 1;
-  }
-  if (transfer_capacity > 0 && transfer_count * 2 >= transfer_capacity) {
-    saturation = 1;
-  }
-  if (front_capacity > 0 && front_count * 2 >= front_capacity) {
-    saturation = 1;
-  }
-  if (transfer_push > transfer_pop + 128) {
-    saturation = 1;
-  }
+  hz6_control_pressure_flags(allocator, front_id, class_id, &starvation,
+                             &saturation);
 
 #if HZ6_DIAGNOSTIC_PROBES
   Hz6Allocator* diag_allocator = (Hz6Allocator*)allocator;
@@ -94,6 +150,13 @@ size_t hz6_allocator_control_source_refill_batch(
     ++diag_allocator->stats.source_admission_clamped;
   } else {
     ++diag_allocator->stats.source_admission_open;
+  }
+  if (saturation) {
+    ++diag_allocator->stats.control_plane_close_would_start;
+  } else if (starvation) {
+    ++diag_allocator->stats.control_plane_burst_supply_would_open;
+  } else {
+    ++diag_allocator->stats.control_plane_normal;
   }
 #endif
 

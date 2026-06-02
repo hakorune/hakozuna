@@ -127,6 +127,9 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 "source_owned_visibility_hit_foreign_owner=%zu "
                 "source_owned_remote_free_attempt=%zu "
                 "source_owned_release=%zu source_alloc=%zu alloc_fail=%zu "
+                "control_plane_normal=%zu "
+                "control_plane_burst_supply_would_open=%zu "
+                "control_plane_close_would_start=%zu "
                 "descriptor_exhausted=%zu route_register_fail=%zu source_block_exhausted=%zu "
                 "route_active_current=%zu route_active_max=%zu "
                 "descriptor_probe_total=%zu descriptor_probe_max=%zu "
@@ -237,6 +240,9 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 s.source_owned_release,
                 s.source_alloc,
                 s.alloc_fail,
+                s.control_plane_normal,
+                s.control_plane_burst_supply_would_open,
+                s.control_plane_close_would_start,
                 s.descriptor_exhausted,
                 s.route_register_fail,
                 s.source_block_exhausted,

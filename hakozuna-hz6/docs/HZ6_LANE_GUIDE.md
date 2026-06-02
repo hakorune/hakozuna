@@ -106,7 +106,9 @@ redislowrss-slim-route4k:
   The staged `redis_long` row completed on this lane at 29.0 MiB peak working
   set while `noboost-route4k` timed out, so treat this as BURST_SUPPLY
   upper-shape evidence for the future control plane rather than as a new
-  general default.
+  general default. Diagnostic builds now also surface ControlPlane-R1 dry-run
+  counters on Redis rows, which is the bridge to the next behavior-gated
+  experiment.
 
 appcap:
   High-capacity application-like control. Use it to separate capacity failure
