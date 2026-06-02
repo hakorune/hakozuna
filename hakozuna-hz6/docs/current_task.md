@@ -282,6 +282,80 @@ Read:
   tombstone cleanup alone.
 ```
 
+## RouteRetainedOverflow-L1 2026-06-02
+
+```text
+Lane:
+  redislowrss-sourcerun-desc8k-route8k-retainedoverflow
+
+Scope:
+  Redis frontcache-overflow behavior probe.
+  Not combined with tombcompact at first.
+  Not a new unbounded retained list.
+
+Behavior:
+  On free:
+    ACTIVE -> LOCAL_FREE
+    frontcache push fails
+    instead of exact unregister + descriptor/source release:
+      set descriptor state to TRANSFER_FREE
+      push the object into the existing bounded transfer cache
+      keep exact route registered
+
+  If transfer push fails:
+    fall back to existing exact unregister + release path.
+
+Why:
+  RedisRouteChurnDiag-L1 showed unregister reason is dominated by
+  frontcache_overflow. Tombcompact fixes RANDOM's tombstone full-probe, but it
+  does not reduce the overflow churn itself. RetainedOverflow-L1 tests whether
+  a small bounded cold-retain layer can reduce SET/LPUSH/RANDOM churn without
+  introducing a new cache structure.
+
+Counters:
+  route_retained_overflow_attempt
+  route_retained_overflow_success
+  route_retained_overflow_fail
+  transfer_push / transfer_pop / transfer_current_max
+
+Acceptance:
+  frontcache_overflow unregisters fall materially.
+  route_tombstone_current and register/lookup probes fall.
+  SET/LPUSH/RANDOM improve versus the candidate-control.
+  transfer_current remains bounded and transfer fail stays zero.
+
+No-go:
+  transfer_current grows toward capacity and stops draining.
+  stale double-free becomes reusable.
+  route_invalid / route_miss safety counters worsen.
+  Redis peak working set rises materially.
+  GET/LPOP or compact control regress more than the RANDOM/LPUSH gain.
+
+Observed:
+  results/hz6-retainedoverflow-l1-paper-diag
+  diagnostic run1, redis_workload paper row:
+    SET 39.10M, GET 400.35M, LPUSH 34.35M, LPOP 1313.50M, RANDOM 40.72M
+    peak 17,760 KB
+
+  RANDOM:
+    route_retained_overflow_attempt = 414340
+    route_retained_overflow_success = 373728
+    route_retained_overflow_fail = 40612
+    route_unregister_reason_frontcache_overflow = 40612
+    route_register_full_probe_with_tombstone = 10106
+    route_tombstone_current = 30507
+    route_lookup_probe_total = 65624334
+    route_register_probe_total = 85531512
+
+Read:
+  NO-GO as the next Redis fix. Bounded transfer retention does work
+  mechanically, but it does not reduce the final overflow-unregister count
+  enough to prevent tombstone/full-probe collapse. It also leaves RANDOM near
+  the candidate-control speed. Keep as evidence that a simple transfer-backed
+  retained overflow layer is not sufficient; tombstone compact remains the
+  cleaner Redis RANDOM behavior lane.
+```
+
 ## Shared Contract And OS Backing
 
 ```text

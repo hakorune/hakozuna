@@ -149,6 +149,24 @@ int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
     return 1;
   }
 
+#if HZ6_ROUTE_RETAINED_OVERFLOW_L1
+  ++allocator->stats.route_retained_overflow_attempt;
+  descriptor->state = HZ6_STATE_TRANSFER_FREE;
+  {
+    Hz6TransferObject object = {0};
+    object.ptr = ptr;
+    object.descriptor = descriptor;
+    object.class_id = entry.class_id;
+    object.generation = descriptor->generation;
+    if (hz6_allocator_transfer_push(allocator, object)) {
+      ++allocator->stats.route_retained_overflow_success;
+      hz6_allocator_note_transfer_push(allocator);
+      return 1;
+    }
+  }
+  ++allocator->stats.route_retained_overflow_fail;
+#endif
+
   descriptor->state = HZ6_STATE_DEAD;
   hz6_allocator_route_unregister_exact_reason(
       allocator, ptr, HZ6_ROUTE_UNREGISTER_REASON_FRONTCACHE_OVERFLOW);

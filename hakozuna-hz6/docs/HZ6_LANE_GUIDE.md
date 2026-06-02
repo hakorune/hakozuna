@@ -216,6 +216,16 @@ redislowrss-sourcerun-desc8k-route8k-tombcompact:
   RANDOM and modestly improves LPUSH with a small peak increase, but SET/GET
   are slightly lower, so keep it Redis-specific.
 
+redislowrss-sourcerun-desc8k-route8k-retainedoverflow:
+  redislowrss-sourcerun-desc8k-route8k plus RouteRetainedOverflow-L1. When a
+  LOCAL_FREE object cannot enter frontcache, it is retained in the bounded
+  transfer cache as TRANSFER_FREE instead of immediately unregistering its
+  exact route and releasing its descriptor/source. This tests whether Redis
+  SET/LPUSH/RANDOM are losing time to overflow unregister churn before we add a
+  larger retained-overflow data structure. First diagnostic row is no-go as a
+  Redis fix: transfer retention succeeds mechanically but final
+  frontcache-overflow unregisters and RANDOM tombstone full-probes remain.
+
 redislowrss-slim-route4k:
   noboost plus descriptor 2048 and source-block 256. This is the slimmer Redis
   follow-up lane. Use it only if we need to reduce peak / retention further

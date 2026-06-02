@@ -163,6 +163,11 @@ static void print_hz6_redis_stats(RedisOp op,
             s->route_tombstone_compact_fail_alloc;
         total.route_tombstone_compact_moved +=
             s->route_tombstone_compact_moved;
+        total.route_retained_overflow_attempt +=
+            s->route_retained_overflow_attempt;
+        total.route_retained_overflow_success +=
+            s->route_retained_overflow_success;
+        total.route_retained_overflow_fail += s->route_retained_overflow_fail;
         total.source_block_probe_total += s->source_block_probe_total;
         if (s->source_block_probe_max > total.source_block_probe_max) {
             total.source_block_probe_max = s->source_block_probe_max;
@@ -202,6 +207,9 @@ static void print_hz6_redis_stats(RedisOp op,
            "route_tombstone_compact_success=%zu "
            "route_tombstone_compact_fail_alloc=%zu "
            "route_tombstone_compact_moved=%zu "
+           "route_retained_overflow_attempt=%zu "
+           "route_retained_overflow_success=%zu "
+           "route_retained_overflow_fail=%zu "
            "source_block_probe_total=%zu source_block_probe_max=%zu "
            "descriptor_probe_total=%zu descriptor_probe_max=%zu\n",
            kOpNames[op],
@@ -246,6 +254,9 @@ static void print_hz6_redis_stats(RedisOp op,
            total.route_tombstone_compact_success,
            total.route_tombstone_compact_fail_alloc,
            total.route_tombstone_compact_moved,
+           total.route_retained_overflow_attempt,
+           total.route_retained_overflow_success,
+           total.route_retained_overflow_fail,
            total.source_block_probe_total,
            total.source_block_probe_max,
            total.descriptor_probe_total,
