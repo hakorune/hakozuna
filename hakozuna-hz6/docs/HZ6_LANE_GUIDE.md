@@ -16,6 +16,7 @@ Low-capacity / low-RSS baseline:
 
 Redis-like candidate-control:
   redislowrss-route4k
+  redislowrss-slim-route4k
 
 Capacity / completion control:
   appcap
@@ -94,6 +95,15 @@ redislowrss-route4k:
   without moving all the way to appcap. Mixed_ws guard strongly regresses, so
   keep this lane Redis-like only; do not use it as a general HZ6 primary lane.
 
+redislowrss-slim-route4k:
+  Redis-like slim candidate-control. It keeps the same 4096 route table and
+  starvation-boost disable, but trims descriptor capacity to 2048 and
+  source-block capacity to 256. Use this as the next narrow Redis experiment
+  after `redislowrss-route4k` if we want a smaller RSS footprint or less
+  retention pressure while keeping Redis-like completion behavior. Latest L0
+  checks made it the better Redis-like balance than `redislowrss-route4k`,
+  while mixed_ws/random_mixed still remain guards rather than adoption targets.
+
 appcap:
   High-capacity application-like control. Use it to separate capacity failure
   from policy failure. Do not treat it as the HZ6 default lane.
@@ -166,6 +176,13 @@ redislowrss-route4k:
   lower peak working set than appcap. Evidence-only outside Redis-like rows:
   mixed_ws guard shows the capacity shape over-retains and slows broad mixed
   profiles.
+
+redislowrss-slim-route4k:
+  noboost plus descriptor 2048 and source-block 256. This is the slimmer Redis
+  follow-up lane. Use it only if we need to reduce peak / retention further
+  than `redislowrss-route4k` while checking that Redis SET/LPUSH remains
+  usable. Latest run made it the better Redis-like balance than
+  `redislowrss-route4k`, but mixed_ws guard still prefers `noboost-route4k`.
 
 front1k-desc4k-source512-route4k:
   route4k plus descriptor/source/front-cache widening. Reproduces broad-like

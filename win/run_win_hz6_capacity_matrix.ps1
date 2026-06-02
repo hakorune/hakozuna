@@ -199,6 +199,7 @@ $laneSuffix = @{
     "source512-route4k" = "_source512_route4k"
     "desc4k-source512-route4k" = "_desc4k_source512_route4k"
     "redislowrss-route4k" = "_redislowrss_route4k"
+    "redislowrss-slim-route4k" = "_redislowrss_slim_route4k"
     "front1k-desc4k-source512-route4k" = "_front1k_desc4k_source512_route4k"
     "appcap" = "_appcap"
     "visiblefirst-appcap" = "_visiblefirst_appcap"

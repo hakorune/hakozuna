@@ -876,6 +876,22 @@ redislowrss-route4k implementation:
 ```
 
 ```text
+Next narrow candidate:
+  redislowrss-slim-route4k
+    descriptor capacity 2048
+    route table capacity 4096
+    transfer capacity 512
+    source-block capacity 256
+    frontcache capacity 256
+    HZ6_SOURCE_ADMISSION_NO_STARVATION_BOOST=1
+
+Purpose:
+  Try to keep the Redis completion gain of redislowrss-route4k while lowering
+  retention / peak working set and checking whether mixed_ws guard becomes less
+  hostile.
+```
+
+```text
 redis_short run-1:
   noboost-route4k:
     SET    0.02M
@@ -901,11 +917,35 @@ Read:
 ```
 
 ```text
+slim follow-up run:
+  redislowrss-slim-route4k:
+    Redis short:
+      SET    9.55M
+      GET   19.50M
+      LPUSH  7.45M
+      LPOP  22.62M
+      RANDOM 14.96M
+      peak  10.0 MiB
+
+    mixed guard:
+      balanced     2.047M, peak 61.3 MiB
+      wide_ws      2.779M, peak 51.1 MiB
+      larger_sizes 1.276M, peak 40.4 MiB
+
+Read:
+  slim is the better Redis-like balance than redislowrss-route4k.
+  It keeps Redis completion strong, lowers mixed guard damage a lot, and keeps
+  peak working set far below appcap.
+  It is still not a general mixed_ws lane, but it is the best Redis-like
+  candidate-control lane so far.
+```
+
+```text
 mixed_ws guard run-1:
   noboost-route4k:
     balanced     21.768M, peak 17.6 MiB
-    wide_ws      17.078M, peak 12.8 MiB
-    larger_sizes  0.708M, peak 14.5 MiB
+      wide_ws      17.078M, peak 12.8 MiB
+      larger_sizes  0.708M, peak 14.5 MiB
 
   redislowrss-route4k:
     balanced      0.533M, peak 104.4 MiB
@@ -916,6 +956,9 @@ Read:
   redislowrss-route4k is not a general mixed_ws lane.
   It fixes Redis-like descriptor/source-block collapse but over-retains and
   slows broad mixed profiles.
+  redislowrss-slim-route4k is materially better than redislowrss-route4k on
+  mixed guard, but noboost-route4k still owns the general mixed_ws low-capacity
+  lane.
 
 Decision:
   KEEP as Redis-like candidate-control.
