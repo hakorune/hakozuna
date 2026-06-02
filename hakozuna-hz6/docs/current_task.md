@@ -344,27 +344,43 @@ Safety:
   route_register_fail = 0
 ```
 
+Repeat-3 guard:
+
+```text
+mixed_ws balanced:
+  noboost-route4k               23.409M, 24,844 KB
+  directlocalfree-noboost       24.194M, 24,852 KB
+
+mixed_ws wide_ws:
+  noboost-route4k               16.017M, 25,536 KB
+  directlocalfree-noboost       16.697M, 25,536 KB
+
+mixed_ws larger_sizes:
+  noboost-route4k                1.419M, 16,204 KB
+  directlocalfree-noboost        1.448M, 16,200 KB
+```
+
 Read:
 
 ```text
 DirectLocalFree-L1 is strong random_mixed mechanism evidence:
   same-owner front dispatch / wrapper validation cost is real.
 
-But:
-  wide_ws and larger_sizes guard rows regress, so do not promote it as a
-  universal low-RSS lane.
+Repeat-3 guard:
+  removes the initial run1 concern.
+  balanced / wide_ws / larger_sizes all improve modestly while RSS stays flat.
 
 Current status:
-  KEEP as same-owner hot-path evidence.
-  NO universal promotion.
+  KEEP as same-owner hot-path candidate-control.
+  Promotion is still not automatic because it bypasses the generic front
+  contract for TOY/MIDPAGE/LOCAL2P, but it is now a real candidate direction
+  rather than only a mechanism witness.
 
 Next:
-  understand why wide_ws/larger_sizes regress:
-    size/front mix differs
-    Large is excluded, but midpage pressure and allocation-failure behavior
-    may interact with the faster free path
-  if pursuing this track, make the direct path class/front gated rather than
-  blanket TOY/MIDPAGE/LOCAL2P.
+  repeat against the selected HZ6 lane set or make the direct path a named
+  profile component.
+  keep LARGE excluded.
+  keep exact MISS / foreign / remote paths on the normal contract.
 ```
 
 ## Windows Profile Family Freeze 2026-06-02

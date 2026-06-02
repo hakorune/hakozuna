@@ -324,6 +324,29 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 s.large_span_central_push,
                 s.large_span_central_pop,
                 s.large_span_source_alloc);
+        for (size_t front = 0; front < HZ6_FRONT_ATTR_COUNT; ++front) {
+            for (size_t path = 0; path < HZ6_ALLOC_PATH_COUNT; ++path) {
+                size_t count = s.front_alloc_path[front][path];
+                if (count != 0) {
+                    fprintf(out,
+                            "[HZ6_FRONT_ALLOC_PATH] front=%zu path=%zu count=%zu\n",
+                            front,
+                            path,
+                            count);
+                }
+            }
+        }
+        for (size_t class_id = 0; class_id < HZ6_STATS_CLASS_COUNT; ++class_id) {
+            size_t push = s.frontcache_push_by_class[class_id];
+            size_t pop_empty = s.frontcache_pop_empty_by_class[class_id];
+            if (push != 0 || pop_empty != 0) {
+                fprintf(out,
+                        "[HZ6_FRONTCACHE_CLASS] class=%zu push=%zu pop_empty=%zu\n",
+                        class_id,
+                        push,
+                        pop_empty);
+            }
+        }
 #else
         fprintf(out,
                 "[HZ6_STATS] label=%s route_valid=%zu route_invalid=%zu route_miss=%zu "

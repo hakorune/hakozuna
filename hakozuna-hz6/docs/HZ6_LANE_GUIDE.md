@@ -375,9 +375,10 @@ directlocalfree-noboost-route4k:
   frees bypass front lookup / function-pointer dispatch / wrapper validation
   and call descriptor-to-frontcache directly. LARGE and all remote/foreign
   paths remain on the normal front contract. Use as a narrow same-owner
-  free-path overhead probe. Repeat-3 strongly improves random_mixed, but
-  wide_ws/larger_sizes guard rows regress, so keep it as mechanism evidence
-  rather than a broad low-RSS promotion.
+  free-path overhead probe. Repeat-3 strongly improves random_mixed and
+  modestly improves mixed_ws balanced / wide_ws / larger_sizes with flat RSS.
+  Treat as candidate-control evidence, but keep it named explicitly because it
+  bypasses the generic front contract for selected local-owner fronts.
 
 desc4k-route4k:
   route4k plus descriptor capacity 4096. Descriptor-pressure probe only.
