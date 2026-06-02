@@ -264,6 +264,64 @@ Next:
   LargeSpan-specific counters are not the next bottleneck for this row.
 ```
 
+## OwnerLocalityFast RSSCap Read 2026-06-02
+
+```text
+Lane definitions:
+  ownerlocalityfast-rsscap-1:
+    ownerlocalityfast-appcap behavior
+    transfer/frontcache trimmed:
+      transfer = 4096
+      frontcache bin = 8192
+    descriptor / route / source-block stay appcap-sized
+
+  ownerlocalityfast-rsscap-2:
+    rsscap-1 plus source-block trimmed:
+      source-block = 8192
+
+larger_sizes / mixed_ws / run1:
+  rsscap-1:
+    performance preserved, but peak working set is essentially unchanged.
+    This suggests transfer/frontcache capacity is not the main peak driver for
+    this row.
+
+  rsscap-2:
+    strict:
+      appcap 15.509M ops/s, 289,944 KB
+      rsscap-2 18.058M ops/s, 232,980 KB
+    speed:
+      appcap 19.962M ops/s, 284,740 KB
+      rsscap-2 20.420M ops/s, 227,880 KB
+    rss:
+      appcap 17.933M ops/s, 284,824 KB
+      rsscap-2 20.669M ops/s, 227,928 KB
+
+Safety counters checked in the rsscap-2 run:
+  descriptor_exhausted = 0
+  route_register_fail = 0
+  source_block_exhausted = 0
+  route_invalid = 0
+  route_miss = 0
+  large_span_* = 0
+
+Interpretation:
+  source-block capacity / retention is a major peak contributor for
+  larger_sizes. Trimming source-block capacity from 32768 to 8192 lowers peak
+  by roughly 57 MiB while preserving or improving throughput in this run.
+
+Status:
+  ownerlocalityfast-rsscap-1:
+    no-op evidence for transfer/frontcache trimming.
+
+  ownerlocalityfast-rsscap-2:
+    promising perf-recovery RSSCap candidate-control.
+    Not promotion yet; needs repeat and guard rows.
+
+Next:
+  try ownerlocalityfast-rsscap-3 by trimming descriptor capacity while keeping
+  route capacity and source-block=8192.
+```
+
 ## Redis ControlPlane Checkpoint 2026-06-02
 
 ```text

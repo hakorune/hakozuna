@@ -268,6 +268,8 @@ $laneSuffix = @{
     "sharedirfirst-appcap" = "_sharedirfirst_appcap"
     "ownerlocality-appcap" = "_ownerlocality_appcap"
     "ownerlocalityfast-appcap" = "_ownerlocalityfast_appcap"
+    "ownerlocalityfast-rsscap-1" = "_ownerlocalityfast_rsscap_1"
+    "ownerlocalityfast-rsscap-2" = "_ownerlocalityfast_rsscap_2"
 }
 
 $familyPrefixes = @{

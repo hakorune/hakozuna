@@ -39,6 +39,8 @@ Route-lifecycle diagnostic:
   sharedirfirst-appcap
   ownerlocality-appcap
   ownerlocalityfast-appcap
+  ownerlocalityfast-rsscap-1
+  ownerlocalityfast-rsscap-2
 
 Evidence-only source-run controls:
   sourcerun-route4k
@@ -71,7 +73,7 @@ Wide / mixed profiles:
   ownerlocalityfast-appcap
 
 Next experiment:
-  D-lite larger_sizes attribution, then ownerlocalityfast-rsscap.
+  ownerlocalityfast-rsscap-3 descriptor trim after rsscap-2 repeat/guards.
 
 Do not:
   reopen Redis capacity tuning as the next broad HZ6 track
@@ -79,11 +81,24 @@ Do not:
   appcap-sized
 ```
 
-`ownerlocalityfast-rsscap` is the next planned family member, not an existing
-promotion lane. The first larger_sizes D-lite read shows that the row is
-`256..8192` mid/source-block pressure, not the LargeSpan front:
-`large_span_central_push/pop/source_alloc` stay at zero. Start capacity
-reduction from frontcache / transfer, then source-block, descriptor, and route.
+`ownerlocalityfast-rsscap-*` is the perf-recovery RSS reduction family, not an
+existing promotion lane. The first larger_sizes D-lite read shows that the row
+is `256..8192` mid/source-block pressure, not the LargeSpan front:
+`large_span_central_push/pop/source_alloc` stay at zero.
+
+```text
+ownerlocalityfast-rsscap-1:
+  transfer/frontcache trim only.
+  Performance is preserved, but peak is essentially unchanged.
+  Keep as no-op evidence.
+
+ownerlocalityfast-rsscap-2:
+  rsscap-1 plus source-block capacity 8192.
+  larger_sizes run1 drops peak by roughly 57 MiB versus appcap and preserves
+  or improves throughput with safety counters clean.
+  Current promising perf-recovery RSSCap candidate-control; repeat and guard
+  before promotion.
+```
 
 `route4k` is the current HZ6 Windows lane to use first when checking whether
 HZ6 remains low-RSS while avoiding tiny-route-table artifacts. It is not a
@@ -200,6 +215,19 @@ ownerlocalityfast-appcap:
   shown clean counters to check whether the route-lifecycle fix is still fast
   without diagnostic probe overhead. Repeat-3 now makes this the preferred
   candidate-control lane for the fast Larson owner-locality comparison rows.
+
+ownerlocalityfast-rsscap-1:
+  Non-diagnostic owner-locality behavior lane with appcap descriptor / route /
+  source-block capacity, but reduced transfer and frontcache capacity. Use it
+  as evidence that larger_sizes peak is not primarily transfer/frontcache
+  capacity.
+
+ownerlocalityfast-rsscap-2:
+  Non-diagnostic owner-locality behavior lane with reduced transfer,
+  frontcache, and source-block capacity. Current larger_sizes run1 keeps or
+  improves throughput while cutting peak working set by about 57 MiB versus
+  ownerlocalityfast-appcap. Treat as the current RSSCap candidate-control, not
+  a promotion lane until repeat/guard rows are clean.
 ```
 
 ## Focused Mechanism Lanes

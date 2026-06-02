@@ -326,6 +326,32 @@ function Get-Hz6WinOwnerLocalityFastAppLikeCapacityFlags {
     $flags
 }
 
+function Get-Hz6WinOwnerLocalityFastRssCap1CapacityFlags {
+    $flags = @(
+        "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)262144)",
+        "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)262144)",
+        "/DHZ6_TRANSFER_CACHE_CAPACITY=((size_t)4096)",
+        "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)32768)",
+        "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)8192)",
+        "/DHZ6_SHARED_ROUTE_DIRECTORY_L1=1",
+        "/DHZ6_OWNER_LOCALITY_INDEX_L1=1"
+    )
+    $flags
+}
+
+function Get-Hz6WinOwnerLocalityFastRssCap2CapacityFlags {
+    $flags = @(
+        "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)262144)",
+        "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)262144)",
+        "/DHZ6_TRANSFER_CACHE_CAPACITY=((size_t)4096)",
+        "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)8192)",
+        "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)8192)",
+        "/DHZ6_SHARED_ROUTE_DIRECTORY_L1=1",
+        "/DHZ6_OWNER_LOCALITY_INDEX_L1=1"
+    )
+    $flags
+}
+
 function Invoke-AppLikeHz5BenchBuild {
     param(
         [Parameter(Mandatory = $true)][string]$Compiler,
@@ -419,6 +445,8 @@ function Invoke-AppLikeHz6BenchBuilds {
     $sharedRouteDirectoryFirstAppLikeFlags = Get-Hz6WinSharedRouteDirectoryFirstAppLikeCapacityFlags
     $ownerLocalityAppLikeFlags = Get-Hz6WinOwnerLocalityAppLikeCapacityFlags
     $ownerLocalityFastAppLikeFlags = Get-Hz6WinOwnerLocalityFastAppLikeCapacityFlags
+    $ownerLocalityFastRssCap1Flags = Get-Hz6WinOwnerLocalityFastRssCap1CapacityFlags
+    $ownerLocalityFastRssCap2Flags = Get-Hz6WinOwnerLocalityFastRssCap2CapacityFlags
     $laneMap = @{
         "default" = @{ Suffix = ""; ExtraFlags = @() }
         "broad" = @{ Suffix = "_broad"; ExtraFlags = $broadFlags }
@@ -455,6 +483,8 @@ function Invoke-AppLikeHz6BenchBuilds {
         "sharedirfirst-appcap" = @{ Suffix = "_sharedirfirst_appcap"; ExtraFlags = $sharedRouteDirectoryFirstAppLikeFlags }
         "ownerlocality-appcap" = @{ Suffix = "_ownerlocality_appcap"; ExtraFlags = $ownerLocalityAppLikeFlags }
         "ownerlocalityfast-appcap" = @{ Suffix = "_ownerlocalityfast_appcap"; ExtraFlags = $ownerLocalityFastAppLikeFlags }
+        "ownerlocalityfast-rsscap-1" = @{ Suffix = "_ownerlocalityfast_rsscap_1"; ExtraFlags = $ownerLocalityFastRssCap1Flags }
+        "ownerlocalityfast-rsscap-2" = @{ Suffix = "_ownerlocalityfast_rsscap_2"; ExtraFlags = $ownerLocalityFastRssCap2Flags }
     }
 
     function Split-Hz6BuildList {
