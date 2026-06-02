@@ -11,7 +11,13 @@ Windows profile family:
   strict-lowrss:
     noboost-route4k
 
-  perf-recovery:
+  wide_ws-rss-speed:
+    ownerlocalityfast-widecap-4
+
+  larger_sizes-rss-speed:
+    ownerlocalityfast-rsscap-4
+
+  perf-recovery upper-bound:
     ownerlocalityfast-appcap
 
   redis-evidence:
@@ -65,22 +71,65 @@ Frozen no-go controls:
   sourcerun-reclaim-route4k
 ```
 
+## Recommended Lane Sets
+
+Use these sets before opening another capacity sweep. They keep HZ6 as a
+profile family and avoid accidentally promoting an evidence lane outside the
+row where it was measured.
+
+```text
+strict low-RSS mixed_ws:
+  noboost-route4k
+
+wide_ws RSS/speed:
+  ownerlocalityfast-widecap-4
+
+larger_sizes RSS/speed:
+  ownerlocalityfast-rsscap-4
+
+performance upper-bound / completion control:
+  ownerlocalityfast-appcap
+
+generic safety/control baseline:
+  route4k
+
+capacity completion control:
+  appcap
+
+Redis evidence only:
+  redislowrss-sourcerun-desc8k-route8k
+  redislowrss-sourcerun-desc8k-route8k-tombcompact
+  redislowrss-sourcerun-desc8k-route8k-slotlookup
+```
+
+Recommended comparison matrix for Windows HZ6 mixed profiles:
+
+```powershell
+.\win\run_win_hz6_capacity_matrix.ps1 `
+  -Families mixed_ws `
+  -BenchmarkProfiles balanced,wide_ws,larger_sizes `
+  -CapacityLanes noboost-route4k,ownerlocalityfast-widecap-4,ownerlocalityfast-rsscap-4,ownerlocalityfast-appcap
+```
+
 Next Windows focus:
 
 ```text
 Profile-family read:
   noboost-route4k is the strict-lowrss lane.
-  ownerlocalityfast-appcap is the perf-recovery upper-bound.
+  ownerlocalityfast-widecap-4 is the wide_ws RSS/speed candidate-control.
+  ownerlocalityfast-rsscap-4 is the larger_sizes RSS/speed candidate-control.
+  ownerlocalityfast-appcap is the perf-recovery upper-bound / completion
+  control, not the default.
   Redis lanes are frozen as evidence-only.
 
 Wide / mixed profiles:
   noboost-route4k
-  ownerlocality-appcap
-  ownerlocalityfast-appcap
+  ownerlocalityfast-widecap-4
+  ownerlocalityfast-rsscap-4
 
 Next experiment:
-  keep ownerlocalityfast-rsscap-4 profile-scoped for larger_sizes, and use
-  ownerlocalityfast-widecap-* only as the wide_ws RSS/speed capacity sweep.
+  do not start another static capacity sweep until the profile-family matrix
+  above is enough for the paper/dev comparison table.
 
 Do not:
   reopen Redis capacity tuning as the next broad HZ6 track

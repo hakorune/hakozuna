@@ -38,19 +38,38 @@ Frozen evidence:
   Redis lanes are now evidence-only.
   Do not widen Redis further before the Windows mixed profiles are checked.
 
+Current lane organization:
+  HZ6 Windows is a profile family.
+
+  strict-lowrss:
+    noboost-route4k
+
+  wide_ws RSS/speed:
+    ownerlocalityfast-widecap-4
+
+  larger_sizes RSS/speed:
+    ownerlocalityfast-rsscap-4
+
+  performance upper-bound / completion control:
+    ownerlocalityfast-appcap
+
+  generic route/capacity controls:
+    route4k
+    appcap
+
 Next attack surface:
-  Windows wide_ws / mixed_ws
-
-Baseline:
-  noboost-route4k
-
-Comparators:
-  ownerlocality-appcap
-  ownerlocalityfast-appcap
+  profile selection / naming, not another static capacity sweep.
 
 Goal:
-  find the weakest remaining Windows general-purpose profile gap without
-  re-opening the Redis control-plane branch
+  make the HZ6 comparison table easy to read:
+    low-RSS strict lane
+    wide_ws lane
+    larger_sizes lane
+    upper-bound lane
+
+Do not:
+  collapse widecap-4 and rsscap-4 into a single broad default yet
+  re-open Redis control-plane branch as the next broad HZ6 track
 ```
 
 ## Windows Profile Family Freeze 2026-06-02
