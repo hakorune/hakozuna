@@ -90,11 +90,29 @@ Diagnostic lane run:
     noboost-route4k      5.253M ops/s, 13,704 KB
     ownerlocality-appcap 6.864M ops/s, 562,480 KB
 
+Balanced lane run:
+  strict:
+    route4k              0.523M ops/s, 24,808 KB
+    noboost-route4k     23.790M ops/s, 24,848 KB
+    ownerlocalityfast   14.625M ops/s, 560,900 KB
+
+  speed:
+    route4k              0.510M ops/s, 18,156 KB
+    noboost-route4k      0.553M ops/s, 18,148 KB
+    ownerlocalityfast   44.525M ops/s, 506,168 KB
+
+  rss:
+    route4k              3.273M ops/s, 18,568 KB
+    noboost-route4k     16.397M ops/s, 18,552 KB
+    ownerlocalityfast   32.424M ops/s, 509,404 KB
+
 Interpretation:
   noboost-route4k still owns strict wide_ws as the current candidate-control.
   ownerlocalityfast-appcap is the speed / rss recovery lane.
   ownerlocality-appcap does not beat noboost on strict, but remains useful
   as diagnostic evidence for route-locality and cross-owner lifecycle fixes.
+  balanced confirms the same split: noboost wins strict, while
+  ownerlocalityfast dominates speed/rss.
 
 Next attack:
   separate strict wide_ws from speed/rss recovery instead of assuming one lane
