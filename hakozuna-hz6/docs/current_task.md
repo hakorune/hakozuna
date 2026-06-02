@@ -72,6 +72,97 @@ Do not:
   re-open Redis control-plane branch as the next broad HZ6 track
 ```
 
+## RandomMixed Selected-Lane Read 2026-06-02
+
+```text
+Context:
+  HZ5 already has paper coverage.
+  HZ6 now needs weakness-driven engineering.
+  App-like random_mixed is the clearest current same-owner weakness row.
+
+Runner fix:
+  win/run_win_hz6_capacity_matrix.ps1 now captures generic bench_* ops/s
+  lines plus [RSS] and [HZ6_STATS] lines.
+  This lets the HZ6 capacity runner parse random_mixed rows instead of
+  failing after a successful benchmark run.
+```
+
+Command:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\win\run_win_hz6_capacity_matrix.ps1 `
+  -OutputDir Z:\TextureVoice_local\git\allocator-bench-lab\results\windows-hz6-selected-random-mixed `
+  -Runs 1 `
+  -Families random_mixed `
+  -BenchmarkProfiles small,medium,mixed `
+  -CapacityLanes noboost-route4k,ownerlocalityfast-widecap-4,ownerlocalityfast-rsscap-4,ownerlocalityfast-appcap `
+  -SkipBuild
+```
+
+Result file:
+
+```text
+Z:\TextureVoice_local\git\allocator-bench-lab\results\windows-hz6-selected-random-mixed\20260602_195941_hz6_capacity_matrix_windows.md
+```
+
+Run1 read:
+
+```text
+random_mixed / small:
+  strict noboost-route4k              33.798M ops/s,   5,540 KB
+  strict ownerlocalityfast-widecap-4  33.268M ops/s,  92,804 KB
+  strict ownerlocalityfast-rsscap-4   34.325M ops/s,  62,544 KB
+  strict ownerlocalityfast-appcap     33.424M ops/s, 298,620 KB
+
+random_mixed / medium:
+  strict noboost-route4k              34.261M ops/s,   5,540 KB
+  strict ownerlocalityfast-widecap-4  34.156M ops/s,  92,456 KB
+  strict ownerlocalityfast-rsscap-4   34.621M ops/s,  62,180 KB
+  strict ownerlocalityfast-appcap     33.673M ops/s, 298,316 KB
+
+random_mixed / mixed:
+  strict noboost-route4k              32.352M ops/s,   5,540 KB
+  strict ownerlocalityfast-widecap-4  31.732M ops/s,  92,756 KB
+  strict ownerlocalityfast-rsscap-4   32.392M ops/s,  62,492 KB
+  strict ownerlocalityfast-appcap     31.512M ops/s, 298,556 KB
+```
+
+Interpretation:
+
+```text
+Safety:
+  clean.
+  route_invalid = 0
+  route_miss = 0
+  route_register_fail = 0
+  descriptor_exhausted = 0
+  source_block_exhausted = 0
+
+Capacity:
+  not the blocker.
+  appcap uses much more RSS but is not faster.
+  widecap/rsscap add memory without a meaningful random_mixed speed win.
+
+Current random_mixed lane:
+  noboost-route4k is the useful low-RSS control:
+    roughly the same speed as larger capacity lanes
+    far lower RSS
+
+Weakness:
+  HZ6 selected lanes are around 28M-34M ops/s here.
+  Existing-data app-like baselines put HZ3/tcmalloc/mimalloc much higher on
+  random_mixed, so HZ6 is not yet a speed candidate for this family.
+
+Next attack:
+  do not add another capacity lane first.
+  attack same-owner hot-path overhead:
+    route lookup / route registration churn
+    descriptor activation/state transitions
+    wrapper/front dispatch cost
+    source-run/frontcache local reuse overhead
+  keep diagnostic counters out of speed lanes.
+```
+
 ## Windows Profile Family Freeze 2026-06-02
 
 ```text

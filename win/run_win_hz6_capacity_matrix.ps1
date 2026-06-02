@@ -72,7 +72,7 @@ function Get-LogCapture {
                 }
                 [void]$tail.Enqueue($line)
             }
-            if ($line -match '^(\[BENCH_ARGS\]|\[HZ6_REDIS_STATS\]|Pattern:|Throughput:|Ops:|---)') {
+            if ($line -match '^(\[BENCH_ARGS\]|\[RSS\]|\[HZ6_STATS\]|\[HZ6_REDIS_STATS\]|bench_[^:]+:.*ops/s=|Pattern:|Throughput:|Ops:|---)') {
                 [void]$captured.Add($line)
             } elseif ($IncludeStatsTail -and $line -match '^\[HZ6_STATS\]\s+label=redis_alloc_string_fail') {
                 if ($statsTail.Count -ge $TailLimit) {

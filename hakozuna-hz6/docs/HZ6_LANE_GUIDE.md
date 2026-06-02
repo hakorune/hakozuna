@@ -515,6 +515,10 @@ optimization target unless a new diagnostic specifically reopens the question.
 ```text
 mixed_ws / random_mixed:
   Best for capacity-shape and low-RSS tradeoff checks.
+  Latest selected-lane random_mixed run shows capacity is not the blocker:
+  `noboost-route4k` is roughly as fast as widecap/rsscap/appcap while using
+  far less RSS. Treat `noboost-route4k` as the random_mixed low-RSS control
+  and attack same-owner hot-path overhead before adding more capacity lanes.
 
 Larson worker-warmup:
   Same-owner small-object control. This is the lane for hot-path / toy-small
