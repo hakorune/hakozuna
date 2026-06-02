@@ -1,10 +1,11 @@
 #include "hz6_allocator.h"
+#include "hz6_allocator_same_owner_fast_inline.h"
 
 #include "../fronts/hz6_front.h"
 #include "../fronts/hz6_front_util.h"
 
-#if HZ6_SAME_OWNER_FAST_L1 || HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1 || \
-    HZ6_LOCAL_CACHE_DIRECT_REUSE_L1
+#if !HZ6_SAME_OWNER_FAST_L1 && \
+    (HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1 || HZ6_LOCAL_CACHE_DIRECT_REUSE_L1)
 static int hz6_allocator_direct_local_alloc_front_eligible(
     uint16_t front_id) {
   return front_id == HZ6_FRONT_TOY || front_id == HZ6_FRONT_MIDPAGE ||
@@ -12,7 +13,7 @@ static int hz6_allocator_direct_local_alloc_front_eligible(
 }
 #endif
 
-#if HZ6_SAME_OWNER_FAST_L1 || HZ6_LOCAL_CACHE_DIRECT_REUSE_L1
+#if !HZ6_SAME_OWNER_FAST_L1 && HZ6_LOCAL_CACHE_DIRECT_REUSE_L1
 static void* hz6_allocator_direct_local_reuse(Hz6Allocator* allocator,
                                               uint16_t class_id) {
   if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
@@ -46,14 +47,14 @@ static void* hz6_allocator_direct_local_reuse(Hz6Allocator* allocator,
 }
 #endif
 
-#if HZ6_SAME_OWNER_FAST_L1 || HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1
+#if !HZ6_SAME_OWNER_FAST_L1 && HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1
 static void* hz6_allocator_direct_local_alloc(Hz6Allocator* allocator,
                                               uint16_t front_id,
                                               uint16_t class_id) {
   if (!hz6_allocator_direct_local_alloc_front_eligible(front_id)) {
     return NULL;
   }
-#if HZ6_SAME_OWNER_FAST_L1 || HZ6_LOCAL_CACHE_DIRECT_REUSE_L1
+#if HZ6_LOCAL_CACHE_DIRECT_REUSE_L1
   return hz6_allocator_direct_local_reuse(allocator, class_id);
 #else
   return hz6_front_reuse_cached_or_transfer(allocator, front_id, class_id,
@@ -78,8 +79,13 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
   }
 
 #if HZ6_SAME_OWNER_FAST_L1 || HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1
+#if HZ6_SAME_OWNER_FAST_L1
+  void* direct_ptr = hz6_allocator_same_owner_fast_alloc_inline(
+      allocator, front->front_id, class_id);
+#else
   void* direct_ptr = hz6_allocator_direct_local_alloc(
       allocator, front->front_id, class_id);
+#endif
   if (direct_ptr) {
     return direct_ptr;
   }

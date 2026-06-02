@@ -1,4 +1,5 @@
 #include "hz6_allocator.h"
+#include "hz6_allocator_same_owner_fast_inline.h"
 
 #include "../fronts/hz6_front.h"
 
@@ -147,11 +148,10 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
           ok = 0;
 #if HZ6_SAME_OWNER_FAST_L1
         } else if (local_owner &&
-                   (route.front_id == HZ6_FRONT_TOY ||
-                    route.front_id == HZ6_FRONT_MIDPAGE ||
-                    route.front_id == HZ6_FRONT_LOCAL2P)) {
-          ok = hz6_allocator_cache_active_descriptor(allocator, descriptor,
-                                                     ptr);
+                   hz6_allocator_same_owner_fast_front_eligible_inline(
+                       route.front_id)) {
+          ok = hz6_allocator_same_owner_fast_free_inline(allocator, ptr,
+                                                         route);
 #elif HZ6_LOCAL_CACHE_DIRECT_FREE_L1
         } else if (local_owner &&
                    (route.front_id == HZ6_FRONT_TOY ||
