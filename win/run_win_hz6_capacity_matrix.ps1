@@ -72,7 +72,7 @@ function Get-LogCapture {
                 }
                 [void]$tail.Enqueue($line)
             }
-            if ($line -match '^(\[BENCH_ARGS\]|Pattern:|Throughput:|Ops:|---)') {
+            if ($line -match '^(\[BENCH_ARGS\]|\[HZ6_REDIS_STATS\]|Pattern:|Throughput:|Ops:|---)') {
                 [void]$captured.Add($line)
             } elseif ($IncludeStatsTail -and $line -match '^\[HZ6_STATS\]\s+label=redis_alloc_string_fail') {
                 if ($statsTail.Count -ge $TailLimit) {
@@ -253,6 +253,7 @@ $laneSuffix = @{
     "source512-route4k" = "_source512_route4k"
     "desc4k-source512-route4k" = "_desc4k_source512_route4k"
     "redislowrss-route4k" = "_redislowrss_route4k"
+    "redislowrss-sourcerun-route4k" = "_redislowrss_sourcerun_route4k"
     "redislowrss-slim-route4k" = "_redislowrss_slim_route4k"
     "front1k-desc4k-source512-route4k" = "_front1k_desc4k_source512_route4k"
     "appcap" = "_appcap"

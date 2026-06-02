@@ -31,6 +31,9 @@ typedef struct ThreadArg {
     uint32_t max_size;
     uint32_t seed;
     uint64_t ops_done;
+#if defined(HZ_BENCH_USE_HZ6) && HZ6_DIAGNOSTIC_PROBES
+    Hz6StatsSnapshot hz6_stats_after;
+#endif
 } ThreadArg;
 
 static const char* kOpNames[REDIS_OP_COUNT] = {
@@ -86,6 +89,96 @@ static inline void* bench_alloc(size_t size) {
 static inline void bench_free(void* ptr) {
     hz_bench_free(ptr);
 }
+
+#if defined(HZ_BENCH_USE_HZ6) && HZ6_DIAGNOSTIC_PROBES
+static void print_hz6_redis_stats(RedisOp op,
+                                  const ThreadArg* args,
+                                  uint32_t threads) {
+    Hz6StatsSnapshot total;
+    memset(&total, 0, sizeof(total));
+
+    for (uint32_t i = 0; i < threads; ++i) {
+        const Hz6StatsSnapshot* s = &args[i].hz6_stats_after;
+        total.source_alloc += s->source_alloc;
+        total.alloc_fail += s->alloc_fail;
+        total.control_plane_normal += s->control_plane_normal;
+        total.control_plane_burst_supply_would_open +=
+            s->control_plane_burst_supply_would_open;
+        total.control_plane_close_would_start +=
+            s->control_plane_close_would_start;
+        total.descriptor_exhausted += s->descriptor_exhausted;
+        total.route_register_fail += s->route_register_fail;
+        total.source_block_exhausted += s->source_block_exhausted;
+        total.source_prefill_attempt += s->source_prefill_attempt;
+        total.source_prefill_filled += s->source_prefill_filled;
+        total.source_prefill_fallback += s->source_prefill_fallback;
+        total.source_refill_starvation += s->source_refill_starvation;
+        total.source_refill_saturation += s->source_refill_saturation;
+        total.source_refill_boost += s->source_refill_boost;
+        total.source_refill_clamp += s->source_refill_clamp;
+        total.source_admission_open += s->source_admission_open;
+        total.source_admission_boosted += s->source_admission_boosted;
+        total.source_admission_clamped += s->source_admission_clamped;
+        total.route_lookup_probe_total += s->route_lookup_probe_total;
+        if (s->route_lookup_probe_max > total.route_lookup_probe_max) {
+            total.route_lookup_probe_max = s->route_lookup_probe_max;
+        }
+        total.route_register_probe_total += s->route_register_probe_total;
+        if (s->route_register_probe_max > total.route_register_probe_max) {
+            total.route_register_probe_max = s->route_register_probe_max;
+        }
+        total.source_block_probe_total += s->source_block_probe_total;
+        if (s->source_block_probe_max > total.source_block_probe_max) {
+            total.source_block_probe_max = s->source_block_probe_max;
+        }
+        total.descriptor_probe_total += s->descriptor_probe_total;
+        if (s->descriptor_probe_max > total.descriptor_probe_max) {
+            total.descriptor_probe_max = s->descriptor_probe_max;
+        }
+    }
+
+    printf("[HZ6_REDIS_STATS] pattern=%s source_alloc=%zu alloc_fail=%zu "
+           "control_plane_normal=%zu control_plane_burst_supply_would_open=%zu "
+           "control_plane_close_would_start=%zu descriptor_exhausted=%zu "
+           "route_register_fail=%zu source_block_exhausted=%zu "
+           "source_prefill_attempt=%zu source_prefill_filled=%zu "
+           "source_prefill_fallback=%zu source_refill_starvation=%zu "
+           "source_refill_saturation=%zu source_refill_boost=%zu "
+           "source_refill_clamp=%zu source_admission_open=%zu "
+           "source_admission_boosted=%zu source_admission_clamped=%zu "
+           "route_lookup_probe_total=%zu route_lookup_probe_max=%zu "
+           "route_register_probe_total=%zu route_register_probe_max=%zu "
+           "source_block_probe_total=%zu source_block_probe_max=%zu "
+           "descriptor_probe_total=%zu descriptor_probe_max=%zu\n",
+           kOpNames[op],
+           total.source_alloc,
+           total.alloc_fail,
+           total.control_plane_normal,
+           total.control_plane_burst_supply_would_open,
+           total.control_plane_close_would_start,
+           total.descriptor_exhausted,
+           total.route_register_fail,
+           total.source_block_exhausted,
+           total.source_prefill_attempt,
+           total.source_prefill_filled,
+           total.source_prefill_fallback,
+           total.source_refill_starvation,
+           total.source_refill_saturation,
+           total.source_refill_boost,
+           total.source_refill_clamp,
+           total.source_admission_open,
+           total.source_admission_boosted,
+           total.source_admission_clamped,
+           total.route_lookup_probe_total,
+           total.route_lookup_probe_max,
+           total.route_register_probe_total,
+           total.route_register_probe_max,
+           total.source_block_probe_total,
+           total.source_block_probe_max,
+           total.descriptor_probe_total,
+           total.descriptor_probe_max);
+}
+#endif
 
 static char* alloc_string(uint32_t* seed, size_t min_size, size_t max_size, uint32_t ordinal) {
     size_t size = pick_size(rng_next(seed), min_size, max_size);
@@ -198,6 +291,11 @@ static unsigned __stdcall redis_worker(void* raw_arg) {
             bench_free(pool[i]);
         }
     }
+#if defined(HZ_BENCH_USE_HZ6) && HZ6_DIAGNOSTIC_PROBES
+    if (hz_bench_tls_hz6_initialized) {
+        arg->hz6_stats_after = hz6_stats_snapshot(&hz_bench_tls_hz6_allocator);
+    }
+#endif
     free(pool);
     hz_bench_allocator_thread_teardown();
     return 0;
@@ -257,6 +355,9 @@ static void run_pattern(RedisOp op, uint32_t threads, uint32_t cycles, uint32_t 
     printf("Pattern: %s\n", kOpNames[op]);
     printf("Throughput: %.2f M ops/sec\n", (dt > 0.0) ? ((double)total_ops / dt) / 1000000.0 : 0.0);
     printf("Ops: %llu\n", (unsigned long long)total_ops);
+#if defined(HZ_BENCH_USE_HZ6) && HZ6_DIAGNOSTIC_PROBES
+    print_hz6_redis_stats(op, args, threads);
+#endif
     printf("---\n");
 
     free(handles);

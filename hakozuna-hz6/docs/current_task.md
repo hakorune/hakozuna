@@ -31,6 +31,63 @@ Do not mix:
   hot path probe/atomic counters into production benchmark lanes
 ```
 
+## Redis ControlPlane Checkpoint 2026-06-02
+
+```text
+Observation:
+  redis_long diagnostics now capture completed-run HZ6_REDIS_STATS.
+
+  noboost-route4k:
+    remains a timeout / low-capacity control on Redis long.
+
+  redislowrss-slim-route4k:
+    completes, but LPUSH collapses under descriptor/source-block exhaustion:
+      descriptor_exhausted > 0
+      source_block_exhausted > 0
+      alloc_fail > 0
+
+  redislowrss-route4k:
+    completes Redis long with LPUSH materially recovered and alloc_fail = 0.
+    It is the current Redis-like candidate-control, not a general mixed_ws
+    promotion lane.
+
+Next narrow lane:
+  redislowrss-sourcerun-route4k
+
+Purpose:
+  Keep the redislowrss descriptor/source-block capacity shape, add
+  SourceRunReuse-L1, and check whether RANDOM source_block_exhausted /
+  source_prefill_fallback can fall without widening capacity again.
+
+Observed:
+  redis_long / rss / run1:
+    redislowrss-route4k:
+      SET 30.33M, GET 249.81M, LPUSH 29.75M, LPOP 368.55M, RANDOM 43.19M
+      peak 23,260 KB
+      RANDOM source_block_exhausted = 488
+
+    redislowrss-sourcerun-route4k:
+      SET 40.24M, GET 547.00M, LPUSH 35.47M, LPOP 727.36M, RANDOM 92.20M
+      peak 13,116 KB
+      source_block_exhausted = 0 in checked Redis patterns
+      source_alloc falls sharply, e.g. RANDOM 4744 -> 36
+
+  mixed_ws guard / rss / run1:
+    noboost-route4k remains the general low-capacity mixed_ws lane.
+    redislowrss-sourcerun-route4k is not a general promotion lane.
+    It improves some redislowrss source pressure, but still over-retains for
+    balanced/wide_ws relative to noboost.
+
+Decision:
+  Keep redislowrss-sourcerun-route4k as Redis-like SourceRun candidate-control.
+  Keep noboost-route4k as general mixed_ws low-capacity candidate-control.
+
+Do not:
+  treat slim as the current Redis candidate
+  widen beyond redislowrss before trying source-run reuse
+  mix diagnostic stats into non-diagnostic benchmark lanes
+```
+
 ## Shared Contract And OS Backing
 
 ```text

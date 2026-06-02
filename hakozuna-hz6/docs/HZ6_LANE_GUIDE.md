@@ -181,14 +181,24 @@ redislowrss-route4k:
   `desc4k-source512-route4k` avoids Redis allocation-failure spam at a much
   lower peak working set than appcap. Evidence-only outside Redis-like rows:
   mixed_ws guard shows the capacity shape over-retains and slows broad mixed
-  profiles.
+  profiles. Redis long diagnostics now show this lane is the stronger
+  completion/LPUSH shape than the slim lane.
+
+redislowrss-sourcerun-route4k:
+  redislowrss-route4k plus SourceRunReuse-L1. This is a narrow follow-up for
+  Redis-like rows where redislowrss-route4k completes but still reports
+  source_block_exhausted/source_prefill_fallback in RANDOM. It tests whether
+  reusing physical slots inside existing source blocks can reduce Redis source
+  pressure without widening capacity again. Latest redis_long run strongly
+  improved all Redis patterns and lowered peak working set, but mixed_ws guard
+  still keeps this outside general promotion.
 
 redislowrss-slim-route4k:
   noboost plus descriptor 2048 and source-block 256. This is the slimmer Redis
   follow-up lane. Use it only if we need to reduce peak / retention further
-  than `redislowrss-route4k` while checking that Redis SET/LPUSH remains
-  usable. Latest run made it the better Redis-like balance than
-  `redislowrss-route4k`, but mixed_ws guard still prefers `noboost-route4k`.
+  than `redislowrss-route4k`. Redis long diagnostics showed this can collapse
+  LPUSH through descriptor/source-block exhaustion, so keep it as a control
+  rather than the current Redis candidate.
 
 front1k-desc4k-source512-route4k:
   route4k plus descriptor/source/front-cache widening. Reproduces broad-like
