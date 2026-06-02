@@ -67,14 +67,12 @@ Current lane organization:
     appcap
 
 Next attack surface:
-  profile selection / naming, not another static capacity sweep.
+  random_mixed per-operation contract cost.
 
 Goal:
-  make the HZ6 comparison table easy to read:
-    balanced / wide_ws low-RSS speed lane
-    random_mixed low-RSS speed lane
-    larger_sizes lane
-    upper-bound lane
+  keep the selected-family table readable while isolating whether the
+  same-owner weakness is front dispatch, local-cache reuse, or the remaining
+  generic route/front contract cost.
 
 Cross-allocator summary:
   HZ6_CROSS_ALLOCATOR_COMPARISON.md
@@ -84,6 +82,166 @@ Cross-allocator summary:
 Do not:
   collapse widecap-4 and rsscap-4 into a single broad default yet
   re-open Redis control-plane branch as the next broad HZ6 track
+  add diagnostic atomics/counters to production speed lanes
+```
+
+## RandomMixed A/B Fast-Path Plan 2026-06-03
+
+```text
+Decision from design review:
+  Start with A, then move to B only if the ablation signal is real.
+
+A:
+  Per-operation contract cost ablation ladder.
+  This is not promotion. It tests which part of the same-owner cost is still
+  visible after directlocalfree + descavail.
+
+Base:
+  strict + directlocalfree-descavail-noboost-route4k
+
+New ablation lanes:
+  directlocalalloc-descavail-noboost-route4k:
+    Dispatch-bypass alloc probe.
+    TOY/MIDPAGE/LOCAL2P malloc tries the existing cached/transfer reuse helper
+    before calling the front function pointer.
+
+  directlocalreuse-descavail-noboost-route4k:
+    Narrow local-cache reuse probe.
+    TOY/MIDPAGE/LOCAL2P malloc tries only materialized LOCAL_FREE frontcache
+    descriptors before the normal front path.
+
+  directlocalfreealloc-descavail-noboost-route4k:
+    Composition probe.
+    DirectLocalFree-L1 plus DirectLocalAlloc-L1 plus DescriptorAvailCount-L1.
+
+B:
+  Small/medium same-owner fast path as a shared front contract.
+  Do not jump here until A shows at least one +5% ablation signal.
+
+Safety contract:
+  eligible fronts:
+    HZ6_FRONT_TOY
+    HZ6_FRONT_MIDPAGE
+    HZ6_FRONT_LOCAL2P
+
+  excluded:
+    HZ6_FRONT_LARGE
+    foreign / visible / remote handoff
+    shared route directory path
+    descriptorless / descgov materialization as the narrow reuse probe
+
+Acceptance:
+  weak A signal:
+    any ablation >= base + 5%
+
+  strong A signal:
+    any ablation >= base + 10%
+
+  B candidate:
+    random_mixed medium/mixed >= base + 10%
+    RSS flat
+    route_miss / route_invalid / route_register_fail stay zero
+
+No-go:
+  speed lane gets diagnostic atomics/counters
+  large front is pulled into the direct local fast path
+  MISS/INVALID route semantics are weakened
+  random_mixed gains only by hurting balanced / wide_ws / larger_sizes guards
+```
+
+Initial repeat-1 read:
+
+```text
+Command:
+  powershell -ExecutionPolicy Bypass -File .\win\run_win_hz6_capacity_matrix.ps1 `
+    -OutputDir Z:\TextureVoice_local\git\allocator-bench-lab\results\windows-hz6-randommixed-ablation-r1 `
+    -Runs 1 `
+    -Families random_mixed `
+    -BenchmarkProfiles small,medium,mixed `
+    -Hz6Profiles strict `
+    -CapacityLanes directlocalfree-descavail-noboost-route4k,`
+      directlocalalloc-descavail-noboost-route4k,`
+      directlocalreuse-descavail-noboost-route4k,`
+      directlocalfreealloc-descavail-noboost-route4k
+
+Result:
+  random_mixed small:
+    base directlocalfree-descavail  34.867M, 5,020 KB
+    directlocalalloc                41.336M, 5,004 KB
+    directlocalreuse                43.642M, 5,052 KB
+    directlocalfreealloc            43.580M, 5,024 KB
+
+  random_mixed medium:
+    base directlocalfree-descavail  37.919M, 4,972 KB
+    directlocalalloc                36.662M, 5,016 KB
+    directlocalreuse                38.632M, 5,080 KB
+    directlocalfreealloc            38.405M, 4,984 KB
+
+  random_mixed mixed:
+    base directlocalfree-descavail  34.439M, 5,032 KB
+    directlocalalloc                34.189M, 4,980 KB
+    directlocalreuse                36.676M, 4,972 KB
+    directlocalfreealloc            38.451M, 5,072 KB
+
+Safety:
+  route_invalid = 0
+  route_miss = 0
+  route_register_fail = 0
+  remote / visibility / transfer counters stay 0 in same-owner random_mixed.
+
+Read:
+  A has a real signal, especially small and mixed.
+  DirectLocalReuse is the cleanest narrow local-cache signal.
+  DirectLocalFreeAlloc composes best on mixed.
+  Medium is not yet decisive; repeat-3 plus balanced/wide_ws/larger_sizes guards
+  are needed before B becomes a design target.
+```
+
+Guard repeat-1 read:
+
+```text
+Command:
+  powershell -ExecutionPolicy Bypass -File .\win\run_win_hz6_capacity_matrix.ps1 `
+    -OutputDir Z:\TextureVoice_local\git\allocator-bench-lab\results\windows-hz6-randommixed-ablation-guards-r1 `
+    -Runs 1 `
+    -Families mixed_ws `
+    -BenchmarkProfiles balanced,wide_ws,larger_sizes `
+    -Hz6Profiles strict,rss `
+    -CapacityLanes descavail-noboost-route4k,`
+      directlocalfree-descavail-noboost-route4k,`
+      directlocalreuse-descavail-noboost-route4k,`
+      directlocalfreealloc-descavail-noboost-route4k
+
+Result:
+  mixed_ws balanced:
+    strict descavail         55.228M, 24,400 KB
+    strict directlocalreuse  63.329M, 24,804 KB
+    strict freealloc         57.659M, 24,832 KB
+    rss descavail            74.094M, 18,160 KB
+    rss freealloc            71.935M, 18,544 KB
+
+  mixed_ws wide_ws:
+    strict descavail         26.759M, 25,108 KB
+    strict directlocalreuse  27.413M, 25,124 KB
+    strict freealloc         27.511M, 24,988 KB
+    rss descavail            52.769M, 13,220 KB
+    rss directlocalreuse     45.830M, 13,292 KB
+    rss freealloc            46.204M, 13,264 KB
+
+  mixed_ws larger_sizes:
+    strict descavail          1.369M, 15,744 KB
+    strict directlocalreuse   1.166M, 15,788 KB
+    strict freealloc          1.258M, 15,760 KB
+    rss descavail             0.711M, 15,024 KB
+    rss directlocalreuse      0.730M, 15,008 KB
+    rss freealloc             0.711M, 15,000 KB
+
+Read:
+  A-ladder remains a random_mixed/same-owner investigation, not a selected
+  default. Strict balanced/wide_ws tolerate it, but strict larger_sizes and rss
+  wide_ws guard against broad promotion.
+  Keep rss + descavail-noboost-route4k as selected balanced/wide_ws low-RSS
+  lane until repeat evidence says otherwise.
 ```
 
 ## RandomMixed Selected-Lane Read 2026-06-02

@@ -113,6 +113,32 @@ function Get-Hz6WinDirectLocalFreeDescAvailNoBoostRoute4kCapacityFlags {
     $flags
 }
 
+function Get-Hz6WinDirectLocalAllocDescAvailNoBoostRoute4kCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinNoBoostRoute4kCapacityFlags
+    $flags += "/DHZ6_LOCAL_CACHE_DIRECT_ALLOC_L1=1"
+    $flags += "/DHZ6_DESCRIPTOR_AVAIL_COUNT_L1=1"
+    $flags
+}
+
+function Get-Hz6WinDirectLocalReuseDescAvailNoBoostRoute4kCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinNoBoostRoute4kCapacityFlags
+    $flags += "/DHZ6_LOCAL_CACHE_DIRECT_ALLOC_L1=1"
+    $flags += "/DHZ6_LOCAL_CACHE_DIRECT_REUSE_L1=1"
+    $flags += "/DHZ6_DESCRIPTOR_AVAIL_COUNT_L1=1"
+    $flags
+}
+
+function Get-Hz6WinDirectLocalFreeAllocDescAvailNoBoostRoute4kCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinNoBoostRoute4kCapacityFlags
+    $flags += "/DHZ6_LOCAL_CACHE_DIRECT_FREE_L1=1"
+    $flags += "/DHZ6_LOCAL_CACHE_DIRECT_ALLOC_L1=1"
+    $flags += "/DHZ6_DESCRIPTOR_AVAIL_COUNT_L1=1"
+    $flags
+}
+
 function Get-Hz6WinSpillRoute4kCapacityFlags {
     $flags = @()
     $flags += Get-Hz6WinRoute4kCapacityFlags
@@ -586,6 +612,9 @@ function Invoke-AppLikeHz6BenchBuilds {
     $directLocalFreeNoBoostRoute4kFlags = Get-Hz6WinDirectLocalFreeNoBoostRoute4kCapacityFlags
     $descAvailNoBoostRoute4kFlags = Get-Hz6WinDescAvailNoBoostRoute4kCapacityFlags
     $directLocalFreeDescAvailNoBoostRoute4kFlags = Get-Hz6WinDirectLocalFreeDescAvailNoBoostRoute4kCapacityFlags
+    $directLocalAllocDescAvailNoBoostRoute4kFlags = Get-Hz6WinDirectLocalAllocDescAvailNoBoostRoute4kCapacityFlags
+    $directLocalReuseDescAvailNoBoostRoute4kFlags = Get-Hz6WinDirectLocalReuseDescAvailNoBoostRoute4kCapacityFlags
+    $directLocalFreeAllocDescAvailNoBoostRoute4kFlags = Get-Hz6WinDirectLocalFreeAllocDescAvailNoBoostRoute4kCapacityFlags
     $spillRoute4kFlags = Get-Hz6WinSpillRoute4kCapacityFlags
     $borrowRoute4kFlags = Get-Hz6WinBorrowRoute4kCapacityFlags
     $capRoute4kFlags = Get-Hz6WinCapRoute4kCapacityFlags
@@ -640,6 +669,9 @@ function Invoke-AppLikeHz6BenchBuilds {
         "directlocalfree-noboost-route4k" = @{ Suffix = "_directlocalfree_noboost_route4k"; ExtraFlags = $directLocalFreeNoBoostRoute4kFlags }
         "descavail-noboost-route4k" = @{ Suffix = "_descavail_noboost_route4k"; ExtraFlags = $descAvailNoBoostRoute4kFlags }
         "directlocalfree-descavail-noboost-route4k" = @{ Suffix = "_directlocalfree_descavail_noboost_route4k"; ExtraFlags = $directLocalFreeDescAvailNoBoostRoute4kFlags }
+        "directlocalalloc-descavail-noboost-route4k" = @{ Suffix = "_directlocalalloc_descavail_noboost_route4k"; ExtraFlags = $directLocalAllocDescAvailNoBoostRoute4kFlags }
+        "directlocalreuse-descavail-noboost-route4k" = @{ Suffix = "_directlocalreuse_descavail_noboost_route4k"; ExtraFlags = $directLocalReuseDescAvailNoBoostRoute4kFlags }
+        "directlocalfreealloc-descavail-noboost-route4k" = @{ Suffix = "_directlocalfreealloc_descavail_noboost_route4k"; ExtraFlags = $directLocalFreeAllocDescAvailNoBoostRoute4kFlags }
         "spill-route4k" = @{ Suffix = "_spill_route4k"; ExtraFlags = $spillRoute4kFlags }
         "borrow-route4k" = @{ Suffix = "_borrow_route4k"; ExtraFlags = $borrowRoute4kFlags }
         "cap-route4k" = @{ Suffix = "_cap_route4k"; ExtraFlags = $capRoute4kFlags }

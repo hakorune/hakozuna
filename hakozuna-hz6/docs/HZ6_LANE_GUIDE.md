@@ -81,6 +81,9 @@ Evidence-only source-run controls:
 Descriptor lifecycle prototype:
   descavail-noboost-route4k
   directlocalfree-descavail-noboost-route4k
+  directlocalalloc-descavail-noboost-route4k
+  directlocalreuse-descavail-noboost-route4k
+  directlocalfreealloc-descavail-noboost-route4k
   descriptorless-route4k
   descriptorreserve-route4k
   descriptorcold-route4k
@@ -448,6 +451,26 @@ directlocalfree-descavail-noboost-route4k:
   mixed_ws wide_ws/larger_sizes, but it loses to descavail alone in mixed_ws
   balanced. Keep it as a named candidate-control lane, not a silent replacement
   for either parent mechanism.
+
+directlocalalloc-descavail-noboost-route4k:
+  noboost-route4k plus DirectLocalAlloc-L1 and DescriptorAvailCount-L1. This is
+  a random_mixed ablation lane: TOY/MIDPAGE/LOCAL2P malloc tries the existing
+  cached/transfer reuse helper before the generic front function-pointer path.
+  LARGE and cross-owner paths stay on the normal front contract.
+
+directlocalreuse-descavail-noboost-route4k:
+  noboost-route4k plus DirectLocalAlloc-L1, DirectLocalReuse-L1, and
+  DescriptorAvailCount-L1. This is the narrower local-cache reuse ablation:
+  malloc only activates materialized LOCAL_FREE frontcache descriptors before
+  falling back to the normal front path. Descriptorless materialization and
+  transfer reuse are intentionally excluded from the direct probe.
+
+directlocalfreealloc-descavail-noboost-route4k:
+  noboost-route4k plus DirectLocalFree-L1, DirectLocalAlloc-L1, and
+  DescriptorAvailCount-L1. This composition tests whether the existing
+  free-path win and the new alloc dispatch-bypass compose on random_mixed.
+  Keep it as A-ladder evidence until repeat data justifies a shared
+  same-owner front fast path.
 
 largerlowrss-front8k-sourcerun-desc8k-route8k:
   Larger_sizes-targeted low-RSS lane: descriptor 8K, route 8K, source-block
