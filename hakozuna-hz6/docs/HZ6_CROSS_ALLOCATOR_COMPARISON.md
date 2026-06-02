@@ -66,9 +66,9 @@ Source:
 | --- | --- | ---: | ---: | --- |
 | balanced | `rss + descavail-noboost-route4k` | 78.412M | 18,472 | current low-RSS balanced winner |
 | wide_ws | `rss + descavail-noboost-route4k` | 57.183M | 13,164 | current low-RSS wide_ws winner |
-| random_mixed small | `strict + directlocalfree-descavail-noboost-route4k` | 36.120M | 5,408 | current same-owner / descriptor-cost winner |
-| random_mixed medium | `strict + directlocalfree-descavail-noboost-route4k` | 38.598M | 4,972 | current same-owner / descriptor-cost winner |
-| random_mixed mixed | `strict + directlocalfree-descavail-noboost-route4k` | 36.924M | 4,968 | current same-owner / descriptor-cost winner |
+| random_mixed small | `strict + sameownerfast-descavail-noboost-route4k` | 46.128M | 5,432 | current same-owner fast winner |
+| random_mixed medium | `strict + sameownerfast-descavail-noboost-route4k` | 42.299M | 5,040 | current same-owner fast winner |
+| random_mixed mixed | `strict + sameownerfast-descavail-noboost-route4k` | 41.352M | 5,072 | current same-owner fast winner |
 | larger_sizes rss | `speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k` | 34.286M | 72,836 | current larger_sizes RSS winner |
 | larger_sizes speed | `speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k` | 35.353M | 72,792 | current larger_sizes speed winner |
 

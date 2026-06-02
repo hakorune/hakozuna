@@ -9,7 +9,7 @@ which?" before running or comparing benchmarks.
 | Profile family | Selected HZ6 profile | Selected capacity lane | Why this lane now |
 | --- | --- | --- | --- |
 | balanced / wide_ws low-RSS speed | `rss` | `descavail-noboost-route4k` | Best balanced and wide_ws low-RSS speed lane; descriptor exhaustion cost is removed without changing capacity. |
-| random_mixed low-RSS speed | `strict` | `directlocalfree-descavail-noboost-route4k` | Best same-owner hot-path plus descriptor-cost composition for random_mixed medium/mixed. |
+| random_mixed same-owner speed | `strict` | `sameownerfast-descavail-noboost-route4k` | Selected same-owner fast lane: DirectLocalFree + DirectLocalReuse + descriptor availability, promoted from the A-ladder. |
 | larger_sizes RSS/speed | `speed` or `rss` | `largerlowrss-front8k-sourcerun-desc8k-route8k` | Best larger_sizes lane; needs larger front retention, not more descriptor-failure cleanup. |
 | perf-recovery upper-bound | `strict` / `speed` / `rss` | `ownerlocalityfast-appcap` | Upper-bound / completion control only; too much RSS for default use. |
 
@@ -24,11 +24,11 @@ Windows profile family:
     capacity lane:
       descavail-noboost-route4k
 
-  random_mixed low-RSS speed:
+  random_mixed same-owner speed:
     HZ6 profile:
       strict
     capacity lane:
-      directlocalfree-descavail-noboost-route4k
+      sameownerfast-descavail-noboost-route4k
 
   larger_sizes-rss-speed:
     HZ6 profiles:
@@ -80,11 +80,16 @@ Evidence-only source-run controls:
 
 Descriptor lifecycle prototype:
   descavail-noboost-route4k
+  sameownerfast-descavail-noboost-route4k
+
+Same-owner A-ladder evidence:
   directlocalfree-descavail-noboost-route4k
   directlocalalloc-descavail-noboost-route4k
   directlocalreuse-descavail-noboost-route4k
   directlocalfreealloc-descavail-noboost-route4k
   directlocalfreereuse-descavail-noboost-route4k
+
+Descriptor lifecycle evidence:
   descriptorless-route4k
   descriptorreserve-route4k
   descriptorcold-route4k
@@ -110,11 +115,11 @@ balanced / wide_ws low-RSS speed:
   capacity lane:
     descavail-noboost-route4k
 
-random_mixed low-RSS speed:
+random_mixed same-owner speed:
   HZ6 profile:
     strict
   capacity lane:
-    directlocalfree-descavail-noboost-route4k
+    sameownerfast-descavail-noboost-route4k
 
 larger_sizes RSS/speed:
   HZ6 profile:
@@ -144,7 +149,7 @@ Recommended comparison matrix for Windows HZ6 mixed profiles:
   -Families mixed_ws `
   -BenchmarkProfiles balanced,wide_ws,larger_sizes `
   -Hz6Profiles strict,speed,rss `
-  -CapacityLanes noboost-route4k,descavail-noboost-route4k,directlocalfree-descavail-noboost-route4k,largerlowrss-front8k-sourcerun-desc8k-route8k,ownerlocalityfast-rsscap-4,ownerlocalityfast-appcap
+  -CapacityLanes noboost-route4k,descavail-noboost-route4k,sameownerfast-descavail-noboost-route4k,largerlowrss-front8k-sourcerun-desc8k-route8k,ownerlocalityfast-rsscap-4,ownerlocalityfast-appcap
 ```
 
 Next Windows focus:
@@ -153,8 +158,8 @@ Next Windows focus:
 Profile-family read:
   rss + descavail-noboost-route4k is the current balanced / wide_ws low-RSS
   speed candidate-control.
-  strict + directlocalfree-descavail-noboost-route4k is the current
-  random_mixed low-RSS speed candidate-control.
+  strict + sameownerfast-descavail-noboost-route4k is the current
+  random_mixed same-owner speed candidate-control.
   largerlowrss-front8k-sourcerun-desc8k-route8k is the current larger_sizes
   RSS/speed candidate-control.
   ownerlocalityfast-rsscap-4 is now a historical larger_sizes high-RSS
@@ -166,7 +171,7 @@ Profile-family read:
 Wide / mixed profiles:
   noboost-route4k
   descavail-noboost-route4k
-  directlocalfree-descavail-noboost-route4k
+  sameownerfast-descavail-noboost-route4k
   largerlowrss-front8k-sourcerun-desc8k-route8k
   ownerlocalityfast-rsscap-4
 
@@ -452,6 +457,13 @@ directlocalfree-descavail-noboost-route4k:
   mixed_ws wide_ws/larger_sizes, but it loses to descavail alone in mixed_ws
   balanced. Keep it as a named candidate-control lane, not a silent replacement
   for either parent mechanism.
+
+sameownerfast-descavail-noboost-route4k:
+  Selected random_mixed same-owner lane. This is the readable alias for the
+  strong A-ladder composition: DirectLocalFree-L1, DirectLocalAlloc-L1,
+  DirectLocalReuse-L1, and DescriptorAvailCount-L1 on the noboost-route4k
+  capacity shape. Use this name for current comparisons; keep the longer
+  directlocal* names as evidence/control lanes.
 
 directlocalalloc-descavail-noboost-route4k:
   noboost-route4k plus DirectLocalAlloc-L1 and DescriptorAvailCount-L1. This is

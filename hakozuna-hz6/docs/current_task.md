@@ -47,11 +47,11 @@ Current lane organization:
     capacity lane:
       descavail-noboost-route4k
 
-  random_mixed low-RSS speed:
+  random_mixed same-owner speed:
     HZ6 profile:
       strict
     capacity lane:
-      directlocalfree-descavail-noboost-route4k
+      sameownerfast-descavail-noboost-route4k
 
   larger_sizes RSS/speed:
     HZ6 profiles:
@@ -67,12 +67,13 @@ Current lane organization:
     appcap
 
 Next attack surface:
-  random_mixed per-operation contract cost.
+  promote the random_mixed A-ladder result into a shared same-owner front
+  fast contract.
 
 Goal:
-  keep the selected-family table readable while isolating whether the
-  same-owner weakness is front dispatch, local-cache reuse, or the remaining
-  generic route/front contract cost.
+  keep sameownerfast as the selected random_mixed lane while designing a clean
+  TOY/MIDPAGE/LOCAL2P contract so the strong flags do not remain an ad-hoc
+  pile of ablation switches.
 
 Cross-allocator summary:
   HZ6_CROSS_ALLOCATOR_COMPARISON.md
@@ -88,6 +89,17 @@ Do not:
 ## RandomMixed A/B Fast-Path Plan 2026-06-03
 
 ```text
+Flag lane cleanup:
+  sameownerfast-descavail-noboost-route4k is now the selected readable alias
+  for the strong DirectLocalFree + DirectLocalAlloc + DirectLocalReuse +
+  DescriptorAvailCount composition.
+
+  The longer directlocal* names remain A-ladder evidence/control lanes.
+
+  Do not make the flags global compile defaults:
+    rss balanced / wide_ws still prefer descavail-noboost-route4k
+    larger_sizes still uses largerlowrss-front8k-sourcerun-desc8k-route8k
+
 Decision from design review:
   Start with A, then move to B only if the ablation signal is real.
 

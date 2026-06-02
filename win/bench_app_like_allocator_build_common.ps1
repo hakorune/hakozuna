@@ -149,6 +149,10 @@ function Get-Hz6WinDirectLocalFreeReuseDescAvailNoBoostRoute4kCapacityFlags {
     $flags
 }
 
+function Get-Hz6WinSameOwnerFastDescAvailNoBoostRoute4kCapacityFlags {
+    Get-Hz6WinDirectLocalFreeReuseDescAvailNoBoostRoute4kCapacityFlags
+}
+
 function Get-Hz6WinSpillRoute4kCapacityFlags {
     $flags = @()
     $flags += Get-Hz6WinRoute4kCapacityFlags
@@ -626,6 +630,7 @@ function Invoke-AppLikeHz6BenchBuilds {
     $directLocalReuseDescAvailNoBoostRoute4kFlags = Get-Hz6WinDirectLocalReuseDescAvailNoBoostRoute4kCapacityFlags
     $directLocalFreeAllocDescAvailNoBoostRoute4kFlags = Get-Hz6WinDirectLocalFreeAllocDescAvailNoBoostRoute4kCapacityFlags
     $directLocalFreeReuseDescAvailNoBoostRoute4kFlags = Get-Hz6WinDirectLocalFreeReuseDescAvailNoBoostRoute4kCapacityFlags
+    $sameOwnerFastDescAvailNoBoostRoute4kFlags = Get-Hz6WinSameOwnerFastDescAvailNoBoostRoute4kCapacityFlags
     $spillRoute4kFlags = Get-Hz6WinSpillRoute4kCapacityFlags
     $borrowRoute4kFlags = Get-Hz6WinBorrowRoute4kCapacityFlags
     $capRoute4kFlags = Get-Hz6WinCapRoute4kCapacityFlags
@@ -684,6 +689,7 @@ function Invoke-AppLikeHz6BenchBuilds {
         "directlocalreuse-descavail-noboost-route4k" = @{ Suffix = "_directlocalreuse_descavail_noboost_route4k"; ExtraFlags = $directLocalReuseDescAvailNoBoostRoute4kFlags }
         "directlocalfreealloc-descavail-noboost-route4k" = @{ Suffix = "_directlocalfreealloc_descavail_noboost_route4k"; ExtraFlags = $directLocalFreeAllocDescAvailNoBoostRoute4kFlags }
         "directlocalfreereuse-descavail-noboost-route4k" = @{ Suffix = "_directlocalfreereuse_descavail_noboost_route4k"; ExtraFlags = $directLocalFreeReuseDescAvailNoBoostRoute4kFlags }
+        "sameownerfast-descavail-noboost-route4k" = @{ Suffix = "_sameownerfast_descavail_noboost_route4k"; ExtraFlags = $sameOwnerFastDescAvailNoBoostRoute4kFlags }
         "spill-route4k" = @{ Suffix = "_spill_route4k"; ExtraFlags = $spillRoute4kFlags }
         "borrow-route4k" = @{ Suffix = "_borrow_route4k"; ExtraFlags = $borrowRoute4kFlags }
         "cap-route4k" = @{ Suffix = "_cap_route4k"; ExtraFlags = $capRoute4kFlags }
