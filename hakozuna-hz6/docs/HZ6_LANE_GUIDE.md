@@ -103,6 +103,10 @@ redislowrss-slim-route4k:
   retention pressure while keeping Redis-like completion behavior. Latest L0
   checks made it the better Redis-like balance than `redislowrss-route4k`,
   while mixed_ws/random_mixed still remain guards rather than adoption targets.
+  The staged `redis_long` row completed on this lane at 29.0 MiB peak working
+  set while `noboost-route4k` timed out, so treat this as BURST_SUPPLY
+  upper-shape evidence for the future control plane rather than as a new
+  general default.
 
 appcap:
   High-capacity application-like control. Use it to separate capacity failure

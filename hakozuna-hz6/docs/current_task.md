@@ -1039,6 +1039,43 @@ Read:
   Next staged check is redis_long before returning to redis_workload.
 ```
 
+```text
+redis_long check:
+  args = 4 300 1000 16 256
+  timeout = 180s
+
+  noboost-route4k:
+    SET/GET/LPUSH/LPOP/RANDOM all timed out as failed:rc124.
+    Timeout tail shows the same descriptor/source-block exhaustion shape:
+      source_alloc           = 128
+      alloc_fail             grows past 235k
+      descriptor_exhausted   grows past 470k
+      source_block_exhausted grows past 235k
+      route_register_fail    = 0
+      route_invalid/miss     = 0
+
+  redislowrss-slim-route4k:
+    SET    35.97M
+    GET   253.08M
+    LPUSH   3.09M
+    LPOP  355.10M
+    RANDOM 37.77M
+    peak  29.0 MiB
+    result = all patterns completed
+
+Read:
+  redis_long confirms the staged direction strongly:
+    noboost-route4k is not a Redis-like pressure answer.
+    redislowrss-slim-route4k is the current BURST_SUPPLY upper-shape evidence.
+    LPUSH remains the next Redis pressure point even after slim completes.
+
+Decision:
+  Freeze redislowrss-slim-route4k as Redis-like candidate-control.
+  Do not promote it to mixed_ws/general HZ6.
+  Next useful implementation is ControlPlane-R1 dry-run, not another static
+  Redis capacity lane, unless redis_workload reveals a new collapse phase.
+```
+
 ## Next Implementation Order 2026-06-01
 
 ```text
