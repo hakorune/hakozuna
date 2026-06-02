@@ -41,14 +41,23 @@ Frozen evidence:
 Current lane organization:
   HZ6 Windows is a profile family.
 
-  strict-lowrss:
-    noboost-route4k
+  balanced / wide_ws low-RSS speed:
+    HZ6 profile:
+      rss
+    capacity lane:
+      descavail-noboost-route4k
 
-  wide_ws RSS/speed:
-    ownerlocalityfast-widecap-4
+  random_mixed low-RSS speed:
+    HZ6 profile:
+      strict
+    capacity lane:
+      directlocalfree-descavail-noboost-route4k
 
   larger_sizes RSS/speed:
-    ownerlocalityfast-rsscap-4
+    HZ6 profiles:
+      speed or rss
+    capacity lane:
+      ownerlocalityfast-rsscap-4
 
   performance upper-bound / completion control:
     ownerlocalityfast-appcap
@@ -62,8 +71,8 @@ Next attack surface:
 
 Goal:
   make the HZ6 comparison table easy to read:
-    low-RSS strict lane
-    wide_ws lane
+    balanced / wide_ws low-RSS speed lane
+    random_mixed low-RSS speed lane
     larger_sizes lane
     upper-bound lane
 
@@ -676,6 +685,91 @@ Next:
     wide_ws/larger_sizes -> compare descavail vs composition in closeout
 ```
 
+## MixedWs Profile Family Closeout 2026-06-02
+
+```text
+Command:
+  powershell -NoProfile -ExecutionPolicy Bypass `
+    -File win/run_win_hz6_capacity_matrix.ps1 `
+    -Families mixed_ws `
+    -BenchmarkProfiles balanced,wide_ws,larger_sizes `
+    -Hz6Profiles strict,speed,rss `
+    -CapacityLanes `
+      noboost-route4k,`
+      descavail-noboost-route4k,`
+      directlocalfree-descavail-noboost-route4k,`
+      ownerlocalityfast-rsscap-4,`
+      ownerlocalityfast-widecap-4,`
+      ownerlocalityfast-appcap `
+    -Runs 3
+```
+
+Best reads from repeat-3:
+
+```text
+balanced:
+  rss + directlocalfree-descavail-noboost-route4k:
+    78.527M ops/s, 18,464 KB
+
+  rss + descavail-noboost-route4k:
+    78.412M ops/s, 18,472 KB
+
+  strict + descavail-noboost-route4k:
+    75.792M ops/s, 24,316 KB
+
+wide_ws:
+  rss + descavail-noboost-route4k:
+    57.183M ops/s, 13,164 KB
+
+  rss + directlocalfree-descavail-noboost-route4k:
+    55.279M ops/s, 13,160 KB
+
+  speed + ownerlocalityfast-widecap-4:
+    24.624M ops/s, 358,904 KB
+
+larger_sizes:
+  speed + ownerlocalityfast-rsscap-4:
+    27.063M ops/s, 169,976 KB
+
+  rss + ownerlocalityfast-rsscap-4:
+    24.155M ops/s, 169,996 KB
+
+  rss + descavail-noboost-route4k:
+     0.793M ops/s, 14,896 KB
+```
+
+Read:
+
+```text
+descavail changes the profile family:
+  balanced / wide_ws no longer need ownerlocalityfast-widecap-4 as the primary
+  RSS/speed answer. rss profile + descavail-noboost-route4k is faster and far
+  lower RSS.
+
+larger_sizes is still different:
+  descavail fixes descriptor failure cost, but it does not solve larger object
+  supply/backend pressure. ownerlocalityfast-rsscap-4 remains the larger_sizes
+  performance candidate-control, with much higher RSS.
+
+Status:
+  rss + descavail-noboost-route4k:
+    selected balanced / wide_ws low-RSS speed candidate-control
+
+  strict + directlocalfree-descavail-noboost-route4k:
+    selected random_mixed low-RSS speed candidate-control
+
+  speed/rss + ownerlocalityfast-rsscap-4:
+    selected larger_sizes performance candidate-control
+
+  ownerlocalityfast-widecap-4:
+    demoted from current wide_ws selected lane to historical control/evidence
+
+Next:
+  larger_sizes is the remaining obvious weakness:
+    it needs a low-RSS supply/backend design, not more descriptor-failure
+    cleanup.
+```
+
 ## Windows Profile Family Freeze 2026-06-02
 
 ```text
@@ -684,29 +778,46 @@ Decision:
   lane.
 
 Family:
-  strict-lowrss:
+  balanced-widews-lowrss-speed:
     lane:
-      noboost-route4k
+      rss + descavail-noboost-route4k
     role:
-      low-RSS strict / mixed_ws control
+      low-RSS speed candidate-control for balanced / wide_ws
     strong:
-      strict balanced
-      strict wide_ws
+      balanced
+      wide_ws
     weak:
       larger_sizes performance
-      speed recovery
 
-  perf-recovery:
+  randommixed-lowrss-speed:
+    lane:
+      strict + directlocalfree-descavail-noboost-route4k
+    role:
+      random_mixed same-owner hot-path + descriptor-failure cost control
+    strong:
+      random_mixed medium / mixed
+    weak:
+      small row has a small RSS jump
+
+  larger-sizes-perf:
+    lane:
+      speed/rss + ownerlocalityfast-rsscap-4
+    role:
+      larger_sizes performance candidate-control
+    strong:
+      larger_sizes
+    weak:
+      RSS remains much higher than descavail/noboost
+
+  perf-recovery-upper-bound:
     lane:
       ownerlocalityfast-appcap
     role:
-      owner-locality / high-capacity performance upper-bound
+      owner-locality / high-capacity completion upper-bound
     strong:
-      speed balanced / wide_ws
-      rss balanced
-      strict/speed/rss larger_sizes
+      completion / capacity stress
     weak:
-      peak working set is too high for promotion
+      peak working set is appcap-sized
 
   redis-evidence:
     lanes:
@@ -719,19 +830,19 @@ Family:
       frozen / evidence-only
 
 Next design step:
-  D-lite -> A
+  larger_sizes low-RSS supply/backend track
 
   D-lite:
-    explain why ownerlocalityfast-appcap wins larger_sizes using existing
+    explain why ownerlocalityfast-rsscap-4 wins larger_sizes using existing
     route / descriptor / source / large-span counters first
 
   A:
-    introduce ownerlocalityfast-rsscap variants only after D-lite identifies
-    which capacities can likely be reduced
+    reduce larger_sizes RSS without falling back to appcap-sized retention
 
 Do not:
-  blur noboost-route4k by adding broad large-size capacity before the
-  ownerlocalityfast capacity upper-bound has been reduced
+  blur descavail-noboost-route4k by adding broad large-size capacity.
+  Balanced / wide_ws already have a low-RSS speed answer; larger_sizes needs a
+  separate supply/backend design.
 ```
 
 ## Windows Wide-WS First Pass 2026-06-02

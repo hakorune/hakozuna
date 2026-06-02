@@ -8,14 +8,23 @@ which?" before running or comparing benchmarks.
 
 ```text
 Windows profile family:
-  strict-lowrss:
-    noboost-route4k
+  balanced / wide_ws low-RSS speed:
+    HZ6 profile:
+      rss
+    capacity lane:
+      descavail-noboost-route4k
 
-  wide_ws-rss-speed:
-    ownerlocalityfast-widecap-4
+  random_mixed low-RSS speed:
+    HZ6 profile:
+      strict
+    capacity lane:
+      directlocalfree-descavail-noboost-route4k
 
   larger_sizes-rss-speed:
-    ownerlocalityfast-rsscap-4
+    HZ6 profiles:
+      speed or rss
+    capacity lane:
+      ownerlocalityfast-rsscap-4
 
   perf-recovery upper-bound:
     ownerlocalityfast-appcap
@@ -27,6 +36,7 @@ Windows profile family:
 Primary controls:
   route4k
   noboost-route4k
+  descavail-noboost-route4k
 
 Low-capacity / low-RSS baseline:
   control
@@ -59,6 +69,8 @@ Evidence-only source-run controls:
   sourcerun-sameclass-route4k
 
 Descriptor lifecycle prototype:
+  descavail-noboost-route4k
+  directlocalfree-descavail-noboost-route4k
   descriptorless-route4k
   descriptorreserve-route4k
   descriptorcold-route4k
@@ -78,14 +90,23 @@ profile family and avoid accidentally promoting an evidence lane outside the
 row where it was measured.
 
 ```text
-strict low-RSS mixed_ws:
-  noboost-route4k
+balanced / wide_ws low-RSS speed:
+  HZ6 profile:
+    rss
+  capacity lane:
+    descavail-noboost-route4k
 
-wide_ws RSS/speed:
-  ownerlocalityfast-widecap-4
+random_mixed low-RSS speed:
+  HZ6 profile:
+    strict
+  capacity lane:
+    directlocalfree-descavail-noboost-route4k
 
 larger_sizes RSS/speed:
-  ownerlocalityfast-rsscap-4
+  HZ6 profile:
+    speed for throughput, rss for lower RSS
+  capacity lane:
+    ownerlocalityfast-rsscap-4
 
 performance upper-bound / completion control:
   ownerlocalityfast-appcap
@@ -108,23 +129,28 @@ Recommended comparison matrix for Windows HZ6 mixed profiles:
 .\win\run_win_hz6_capacity_matrix.ps1 `
   -Families mixed_ws `
   -BenchmarkProfiles balanced,wide_ws,larger_sizes `
-  -CapacityLanes noboost-route4k,ownerlocalityfast-widecap-4,ownerlocalityfast-rsscap-4,ownerlocalityfast-appcap
+  -Hz6Profiles strict,speed,rss `
+  -CapacityLanes noboost-route4k,descavail-noboost-route4k,directlocalfree-descavail-noboost-route4k,ownerlocalityfast-rsscap-4,ownerlocalityfast-widecap-4,ownerlocalityfast-appcap
 ```
 
 Next Windows focus:
 
 ```text
 Profile-family read:
-  noboost-route4k is the strict-lowrss lane.
-  ownerlocalityfast-widecap-4 is the wide_ws RSS/speed candidate-control.
-  ownerlocalityfast-rsscap-4 is the larger_sizes RSS/speed candidate-control.
+  rss + descavail-noboost-route4k is the current balanced / wide_ws low-RSS
+  speed candidate-control.
+  strict + directlocalfree-descavail-noboost-route4k is the current
+  random_mixed low-RSS speed candidate-control.
+  ownerlocalityfast-rsscap-4 remains the larger_sizes RSS/speed
+  candidate-control.
   ownerlocalityfast-appcap is the perf-recovery upper-bound / completion
   control, not the default.
   Redis lanes are frozen as evidence-only.
 
 Wide / mixed profiles:
   noboost-route4k
-  ownerlocalityfast-widecap-4
+  descavail-noboost-route4k
+  directlocalfree-descavail-noboost-route4k
   ownerlocalityfast-rsscap-4
 
 Next experiment:
