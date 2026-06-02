@@ -163,6 +163,104 @@ Next attack:
   keep diagnostic counters out of speed lanes.
 ```
 
+## LocalExactFirstFree-L1 2026-06-02
+
+```text
+Hypothesis:
+  random_mixed same-owner frees are exact-valid almost every time.
+  A full route lookup on every free preserves safety, but may be too heavy for
+  the app-like hot path.
+
+Experiment:
+  localexactfree-noboost-route4k
+
+Change:
+  free/free_remote first try exact route lookup.
+  exact HIT:
+    proceed with the normal tagged free path.
+  exact MISS:
+    fall back to the existing full route lookup, so invalid range detection
+    and foreign/visible fallback semantics remain intact.
+
+Do not:
+  promote by default.
+  skip full lookup after exact MISS.
+  convert owned-looking invalid into MISS.
+  combine this with capacity expansion or remote handoff changes.
+```
+
+Acceptance:
+
+```text
+Safety:
+  route_invalid = 0
+  route_miss = 0
+  route_register_fail = 0
+
+Performance:
+  random_mixed selected rows improve vs noboost-route4k.
+  strong signal is +5% or better without RSS increase.
+
+Probe read:
+  route_exact_lookup_probe_total should replace most of route_lookup_probe_total.
+  route_lookup_probe_total should drop on exact-valid rows.
+
+No-go:
+  speed does not improve.
+  route_lookup_probe_total remains dominant.
+  any INVALID/MISS safety counter appears.
+```
+
+First run:
+
+```text
+normal build:
+  random_mixed small:
+    noboost-route4k                 32.879M, 5,540 KB
+    localexactfree-noboost-route4k  33.673M, 5,548 KB
+
+  random_mixed medium:
+    noboost-route4k                 33.905M, 5,540 KB
+    localexactfree-noboost-route4k  33.785M, 5,540 KB
+
+  random_mixed mixed:
+    noboost-route4k                 32.612M, 5,544 KB
+    localexactfree-noboost-route4k  32.431M, 5,540 KB
+
+diagnostic build:
+  exact-first works mechanically:
+    small route_lookup_probe_total:
+      10,305,315 -> 0
+    medium route_lookup_probe_total:
+      15,710,042 -> 433
+    mixed route_lookup_probe_total:
+      14,958,421 -> 401
+
+  safety remains clean:
+    route_invalid = 0
+    route_miss = 0
+```
+
+Read:
+
+```text
+LocalExactFirstFree-L1 is good mechanism evidence but not a promotion lane.
+It proves exact-first can remove full route lookup probes on same-owner
+random_mixed frees without breaking safety, but normal-build throughput does
+not improve enough. The remaining random_mixed weakness is not only full route
+lookup; it is likely the broader HZ6 per-operation contract cost:
+  front dispatch
+  descriptor activation/cache transitions
+  frontcache push/pop
+  route/descriptor generation checks
+
+Next:
+  keep this lane buildable as a control.
+  do not add more route lookup ordering knobs first.
+  attack local reuse/free object-state overhead or compare a stripped
+  same-owner toy fast path against the full contract path.
+```
+
 ## Windows Profile Family Freeze 2026-06-02
 
 ```text

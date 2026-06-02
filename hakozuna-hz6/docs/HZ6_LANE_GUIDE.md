@@ -361,6 +361,15 @@ ownerlocalityfast-widecap-4:
 ## Focused Mechanism Lanes
 
 ```text
+localexactfree-noboost-route4k:
+  noboost-route4k plus LocalExactFirstFree-L1. Same low-RSS capacity shape,
+  but free/free_remote try exact route lookup before the full route lookup.
+  Exact MISS still falls back to the normal full lookup, so invalid-range and
+  foreign/fallback safety semantics are preserved. Use as a random_mixed
+  same-owner hot-path probe, not as a default lane. First random_mixed run
+  confirms full lookup probes are removed on exact-valid frees, but normal
+  throughput is not materially better, so keep it as mechanism evidence.
+
 desc4k-route4k:
   route4k plus descriptor capacity 4096. Descriptor-pressure probe only.
 

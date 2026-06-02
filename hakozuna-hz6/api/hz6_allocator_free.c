@@ -27,6 +27,9 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
     }
   }
 #else
+#if HZ6_LOCAL_EXACT_FIRST_FREE_L1
+  route = hz6_allocator_route_lookup_exact(allocator, ptr);
+#endif
 #if HZ6_SHARED_ROUTE_DIRECTORY_FIRST_L1 && HZ6_DIAGNOSTIC_PROBES
   if (!hz6_allocator_profile_strict_owner_remote(allocator) &&
       allocator->stats.route_visibility_hit_foreign_owner > 0) {

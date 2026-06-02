@@ -84,6 +84,13 @@ function Get-Hz6WinNoBoostRoute4kCapacityFlags {
     $flags
 }
 
+function Get-Hz6WinLocalExactFreeNoBoostRoute4kCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinNoBoostRoute4kCapacityFlags
+    $flags += "/DHZ6_LOCAL_EXACT_FIRST_FREE_L1=1"
+    $flags
+}
+
 function Get-Hz6WinSpillRoute4kCapacityFlags {
     $flags = @()
     $flags += Get-Hz6WinRoute4kCapacityFlags
@@ -493,6 +500,7 @@ function Invoke-AppLikeHz6BenchBuilds {
     $controlFlags = Get-Hz6WinControlCapacityFlags
     $route4kFlags = Get-Hz6WinRoute4kCapacityFlags
     $noBoostRoute4kFlags = Get-Hz6WinNoBoostRoute4kCapacityFlags
+    $localExactFreeNoBoostRoute4kFlags = Get-Hz6WinLocalExactFreeNoBoostRoute4kCapacityFlags
     $spillRoute4kFlags = Get-Hz6WinSpillRoute4kCapacityFlags
     $borrowRoute4kFlags = Get-Hz6WinBorrowRoute4kCapacityFlags
     $capRoute4kFlags = Get-Hz6WinCapRoute4kCapacityFlags
@@ -537,6 +545,7 @@ function Invoke-AppLikeHz6BenchBuilds {
         "control" = @{ Suffix = "_control"; ExtraFlags = $controlFlags }
         "route4k" = @{ Suffix = "_route4k"; ExtraFlags = $route4kFlags }
         "noboost-route4k" = @{ Suffix = "_noboost_route4k"; ExtraFlags = $noBoostRoute4kFlags }
+        "localexactfree-noboost-route4k" = @{ Suffix = "_localexactfree_noboost_route4k"; ExtraFlags = $localExactFreeNoBoostRoute4kFlags }
         "spill-route4k" = @{ Suffix = "_spill_route4k"; ExtraFlags = $spillRoute4kFlags }
         "borrow-route4k" = @{ Suffix = "_borrow_route4k"; ExtraFlags = $borrowRoute4kFlags }
         "cap-route4k" = @{ Suffix = "_cap_route4k"; ExtraFlags = $capRoute4kFlags }
