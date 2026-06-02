@@ -206,6 +206,16 @@ redislowrss-sourcerun-desc8k-route8k:
   appcap while restoring LPUSH into a usable range. Keep this Redis-specific;
   do not promote it as the general mixed_ws lane.
 
+redislowrss-sourcerun-desc8k-route8k-tombcompact:
+  redislowrss-sourcerun-desc8k-route8k plus RouteTombstoneCompact-L1. Narrow
+  Redis RANDOM route-churn behavior lane. It compacts exact-route tombstones
+  after overflow unregisters cross a threshold, without changing descriptor or
+  source retention policy. Use it to test whether RANDOM's full-table
+  tombstone probes are the remaining bottleneck before attempting retained
+  overflow or source-run slot lookup. First paper-row repeat-3 roughly doubles
+  RANDOM and modestly improves LPUSH with a small peak increase, but SET/GET
+  are slightly lower, so keep it Redis-specific.
+
 redislowrss-slim-route4k:
   noboost plus descriptor 2048 and source-block 256. This is the slimmer Redis
   follow-up lane. Use it only if we need to reduce peak / retention further

@@ -707,8 +707,8 @@ int hz6_allocator_route_rehome_exact(Hz6Allocator* allocator,
   return 1;
 }
 
-static void hz6_allocator_note_route_tombstones(Hz6Allocator* allocator) {
 #if HZ6_DIAGNOSTIC_PROBES
+static void hz6_allocator_note_route_tombstones(Hz6Allocator* allocator) {
   if (!allocator) {
     return;
   }
@@ -721,6 +721,54 @@ static void hz6_allocator_note_route_tombstones(Hz6Allocator* allocator) {
       table->register_used_tombstone;
   allocator->stats.route_register_full_probe_with_tombstone =
       table->register_full_probe_with_tombstone;
+}
+#endif
+
+#if HZ6_ROUTE_TOMBSTONE_COMPACT_L1
+static size_t hz6_allocator_route_tombstone_compact_threshold(
+    const Hz6RouteTable* table) {
+  if (!table || table->capacity == 0) {
+    return (size_t)-1;
+  }
+  size_t threshold = HZ6_ROUTE_TOMBSTONE_COMPACT_MIN;
+  size_t half = table->capacity / 2;
+  if (threshold < half) {
+    threshold = half;
+  }
+  if (threshold >= table->capacity) {
+    threshold = table->capacity - 1;
+  }
+  return threshold == 0 ? 1 : threshold;
+}
+#endif
+
+static void hz6_allocator_route_maybe_compact_tombstones(
+    Hz6Allocator* allocator) {
+#if HZ6_ROUTE_TOMBSTONE_COMPACT_L1
+  if (!allocator) {
+    return;
+  }
+  Hz6RouteTable* table = &allocator->route_backend.exact_table;
+  size_t threshold =
+      hz6_allocator_route_tombstone_compact_threshold(table);
+  if (table->tombstone_count < threshold) {
+    return;
+  }
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.route_tombstone_compact_attempt;
+#endif
+  size_t moved = 0;
+  if (hz6_route_backend_compact_tombstones(&allocator->route_backend,
+                                           &moved)) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.route_tombstone_compact_success;
+    allocator->stats.route_tombstone_compact_moved += moved;
+#endif
+  } else {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.route_tombstone_compact_fail_alloc;
+#endif
+  }
 #else
   (void)allocator;
 #endif
@@ -808,6 +856,7 @@ void hz6_allocator_route_unregister_exact_reason(
 #if HZ6_DIAGNOSTIC_PROBES
   size_t probes = 0;
   hz6_route_backend_unregister_exact(&allocator->route_backend, ptr, &probes);
+  hz6_allocator_route_maybe_compact_tombstones(allocator);
   allocator->stats.route_unregister_probe_total += probes;
   if (probes > allocator->stats.route_unregister_probe_max) {
     allocator->stats.route_unregister_probe_max = probes;
@@ -822,6 +871,7 @@ void hz6_allocator_route_unregister_exact_reason(
   hz6_allocator_note_route_tombstones(allocator);
 #else
   hz6_route_backend_unregister_exact(&allocator->route_backend, ptr, NULL);
+  hz6_allocator_route_maybe_compact_tombstones(allocator);
 #endif
 }
 

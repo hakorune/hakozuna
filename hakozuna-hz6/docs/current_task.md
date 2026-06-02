@@ -218,6 +218,70 @@ Interpretation:
   remains the follow-up if compacting helps RANDOM but LPUSH/SET stay behind.
 ```
 
+## RouteTombstoneCompact-L1 2026-06-02
+
+```text
+Lane:
+  redislowrss-sourcerun-desc8k-route8k-tombcompact
+
+Scope:
+  Redis paper-row route-churn behavior probe.
+  Not a promotion lane.
+  Not a descriptor/source retention change.
+
+Behavior:
+  After exact-route unregister, if route tombstones exceed:
+    max(HZ6_ROUTE_TOMBSTONE_COMPACT_MIN, route_capacity / 2)
+  rebuild the route table from active entries and clear tombstones.
+
+Why first:
+  RANDOM has route_register_probe_max = 8192 and
+  route_register_full_probe_with_tombstone = 10252.
+  LPUSH has overflow unregisters but no tombstone full-probe, so retained
+  overflow may still be needed later, but tombstone compact is the smallest
+  direct fix for the measured RANDOM collapse.
+
+Counters:
+  route_tombstone_compact_attempt
+  route_tombstone_compact_success
+  route_tombstone_compact_fail_alloc
+  route_tombstone_compact_moved
+
+Acceptance:
+  RANDOM route_register_full_probe_with_tombstone drops near zero.
+  RANDOM route_register_probe_total / route_lookup_probe_total fall materially.
+  RANDOM throughput improves without route_register_fail, route_miss, or
+  descriptor/source exhaustion.
+  LPUSH/SET do not regress materially.
+
+No-go:
+  compact_fail_alloc > 0
+  route_register_fail > 0
+  route_miss / route_invalid safety counters worsen
+  Redis peak working set rises beyond the current candidate-control envelope
+  compact overhead erases RANDOM/LPUSH gains
+
+Observed:
+  results/hz6-tombcompact-l1-paper-repeat3b
+  non-diagnostic repeat-3, redis_workload paper row:
+
+  redislowrss-sourcerun-desc8k-route8k:
+    SET 38.40M, GET 281.19M, LPUSH 29.13M, LPOP 767.67M, RANDOM 41.70M
+    peak 17,288 KB
+
+  redislowrss-sourcerun-desc8k-route8k-tombcompact:
+    SET 36.72M, GET 275.75M, LPUSH 31.81M, LPOP 769.75M, RANDOM 81.58M
+    peak 17,428 KB
+
+Read:
+  KEEP as Redis RANDOM route-churn behavior evidence.
+  RANDOM improves about 96% and LPUSH improves about 9%, with only a small
+  peak increase. SET/GET are modestly lower, so this is still Redis-specific
+  evidence rather than general promotion. Next candidate after this is
+  RouteRetainedOverflow-L1 if we want to recover SET/LPUSH without relying on
+  tombstone cleanup alone.
+```
+
 ## Shared Contract And OS Backing
 
 ```text

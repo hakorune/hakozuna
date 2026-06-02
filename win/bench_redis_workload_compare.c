@@ -155,6 +155,14 @@ static void print_hz6_redis_stats(RedisOp op,
         if (s->route_tombstone_max > total.route_tombstone_max) {
             total.route_tombstone_max = s->route_tombstone_max;
         }
+        total.route_tombstone_compact_attempt +=
+            s->route_tombstone_compact_attempt;
+        total.route_tombstone_compact_success +=
+            s->route_tombstone_compact_success;
+        total.route_tombstone_compact_fail_alloc +=
+            s->route_tombstone_compact_fail_alloc;
+        total.route_tombstone_compact_moved +=
+            s->route_tombstone_compact_moved;
         total.source_block_probe_total += s->source_block_probe_total;
         if (s->source_block_probe_max > total.source_block_probe_max) {
             total.source_block_probe_max = s->source_block_probe_max;
@@ -190,6 +198,10 @@ static void print_hz6_redis_stats(RedisOp op,
            "route_register_used_tombstone=%zu "
            "route_register_full_probe_with_tombstone=%zu "
            "route_tombstone_current=%zu route_tombstone_max=%zu "
+           "route_tombstone_compact_attempt=%zu "
+           "route_tombstone_compact_success=%zu "
+           "route_tombstone_compact_fail_alloc=%zu "
+           "route_tombstone_compact_moved=%zu "
            "source_block_probe_total=%zu source_block_probe_max=%zu "
            "descriptor_probe_total=%zu descriptor_probe_max=%zu\n",
            kOpNames[op],
@@ -230,6 +242,10 @@ static void print_hz6_redis_stats(RedisOp op,
            total.route_register_full_probe_with_tombstone,
            total.route_tombstone_current,
            total.route_tombstone_max,
+           total.route_tombstone_compact_attempt,
+           total.route_tombstone_compact_success,
+           total.route_tombstone_compact_fail_alloc,
+           total.route_tombstone_compact_moved,
            total.source_block_probe_total,
            total.source_block_probe_max,
            total.descriptor_probe_total,

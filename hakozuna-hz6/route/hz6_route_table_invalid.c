@@ -63,17 +63,21 @@ int hz6_route_register_invalid_range(Hz6RouteTable* table,
   }
 
   Hz6RouteEntry* entry = &table->entries[tombstone_index];
-#if HZ6_DIAGNOSTIC_PROBES
   if (tombstone_reused) {
+#if HZ6_DIAGNOSTIC_PROBES
     ++table->register_used_tombstone;
+#endif
+#if HZ6_DIAGNOSTIC_PROBES || HZ6_ROUTE_TOMBSTONE_COMPACT_L1
     if (table->tombstone_count != 0) {
       --table->tombstone_count;
     }
+#endif
+#if HZ6_DIAGNOSTIC_PROBES
     if (probes >= table->capacity) {
       ++table->register_full_probe_with_tombstone;
     }
-  }
 #endif
+  }
   entry->base = base_addr;
   entry->bytes = bytes;
   entry->front_id = front_id;
@@ -83,7 +87,7 @@ int hz6_route_register_invalid_range(Hz6RouteTable* table,
   entry->exact_valid = 0;
   entry->active = 1;
   entry->tombstone = 0;
-#if HZ6_DIAGNOSTIC_PROBES
+#if HZ6_DIAGNOSTIC_PROBES || HZ6_ROUTE_TOMBSTONE_COMPACT_L1
   ++table->active_count;
 #endif
   return 1;
@@ -109,11 +113,13 @@ void hz6_route_unregister_invalid_range(Hz6RouteTable* table,
     if (entry->active && !entry->exact_valid && entry->base == base_addr) {
       entry->active = 0;
       entry->tombstone = 1;
-#if HZ6_DIAGNOSTIC_PROBES
+#if HZ6_DIAGNOSTIC_PROBES || HZ6_ROUTE_TOMBSTONE_COMPACT_L1
       if (table->active_count != 0) {
         --table->active_count;
       }
       ++table->tombstone_count;
+#endif
+#if HZ6_DIAGNOSTIC_PROBES
       if (probe_count) {
         *probe_count = probes;
       }

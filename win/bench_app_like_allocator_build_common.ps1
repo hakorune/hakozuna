@@ -230,6 +230,13 @@ function Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kCapacityFlags {
     )
 }
 
+function Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kTombCompactCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kCapacityFlags
+    $flags += "/DHZ6_ROUTE_TOMBSTONE_COMPACT_L1=1"
+    $flags
+}
+
 function Get-Hz6WinRedisLowRssSlimRoute4kCapacityFlags {
     @(
         "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)2048)",
@@ -386,6 +393,7 @@ function Invoke-AppLikeHz6BenchBuilds {
     $redisLowRssSourceRunRoute4kFlags = Get-Hz6WinRedisLowRssSourceRunRoute4kCapacityFlags
     $redisLowRssSourceRunRoute8kFlags = Get-Hz6WinRedisLowRssSourceRunRoute8kCapacityFlags
     $redisLowRssSourceRunDesc8kRoute8kFlags = Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kCapacityFlags
+    $redisLowRssSourceRunDesc8kRoute8kTombCompactFlags = Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kTombCompactCapacityFlags
     $redisLowRssSlimRoute4kFlags = Get-Hz6WinRedisLowRssSlimRoute4kCapacityFlags
     $front1kDesc4kSource512Route4kFlags = Get-Hz6WinFront1kDesc4kSource512Route4kCapacityFlags
     $appLikeFlags = Get-Hz6WinAppLikeCapacityFlags
@@ -419,6 +427,7 @@ function Invoke-AppLikeHz6BenchBuilds {
         "redislowrss-sourcerun-route4k" = @{ Suffix = "_redislowrss_sourcerun_route4k"; ExtraFlags = $redisLowRssSourceRunRoute4kFlags }
         "redislowrss-sourcerun-route8k" = @{ Suffix = "_redislowrss_sourcerun_route8k"; ExtraFlags = $redisLowRssSourceRunRoute8kFlags }
         "redislowrss-sourcerun-desc8k-route8k" = @{ Suffix = "_redislowrss_sourcerun_desc8k_route8k"; ExtraFlags = $redisLowRssSourceRunDesc8kRoute8kFlags }
+        "redislowrss-sourcerun-desc8k-route8k-tombcompact" = @{ Suffix = "_redislowrss_sourcerun_desc8k_route8k_tombcompact"; ExtraFlags = $redisLowRssSourceRunDesc8kRoute8kTombCompactFlags }
         "redislowrss-slim-route4k" = @{ Suffix = "_redislowrss_slim_route4k"; ExtraFlags = $redisLowRssSlimRoute4kFlags }
         "front1k-desc4k-source512-route4k" = @{ Suffix = "_front1k_desc4k_source512_route4k"; ExtraFlags = $front1kDesc4kSource512Route4kFlags }
         "appcap" = @{ Suffix = "_appcap"; ExtraFlags = $appLikeFlags }

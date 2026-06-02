@@ -58,6 +58,9 @@ void hz6_route_backend_unregister_invalid_range(Hz6RouteBackend* backend,
                                                 void* base,
                                                 size_t* probe_count);
 
+int hz6_route_backend_compact_tombstones(Hz6RouteBackend* backend,
+                                         size_t* moved_count);
+
 Hz6RouteResult hz6_route_backend_lookup(const Hz6RouteBackend* backend,
                                         const void* ptr);
 

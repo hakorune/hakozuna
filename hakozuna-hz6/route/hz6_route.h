@@ -34,6 +34,9 @@ void hz6_route_table_init(Hz6RouteTable* table,
                           Hz6RouteEntry* entries,
                           size_t capacity);
 
+int hz6_route_table_compact_tombstones(Hz6RouteTable* table,
+                                       size_t* moved_count);
+
 int hz6_route_register_exact(Hz6RouteTable* table,
                              void* base,
                              size_t bytes,

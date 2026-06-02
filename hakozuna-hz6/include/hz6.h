@@ -236,6 +236,10 @@ typedef struct Hz6StatsSnapshot {
   size_t route_tombstone_max;
   size_t route_register_used_tombstone;
   size_t route_register_full_probe_with_tombstone;
+  size_t route_tombstone_compact_attempt;
+  size_t route_tombstone_compact_success;
+  size_t route_tombstone_compact_fail_alloc;
+  size_t route_tombstone_compact_moved;
   size_t source_block_probe_total;
   size_t source_block_probe_max;
   size_t source_block_fail_active_max;
