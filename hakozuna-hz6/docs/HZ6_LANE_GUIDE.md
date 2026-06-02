@@ -6,6 +6,13 @@ which?" before running or comparing benchmarks.
 
 ## Current Recommendation
 
+| Profile family | Selected HZ6 profile | Selected capacity lane | Why this lane now |
+| --- | --- | --- | --- |
+| balanced / wide_ws low-RSS speed | `rss` | `descavail-noboost-route4k` | Best balanced and wide_ws low-RSS speed lane; descriptor exhaustion cost is removed without changing capacity. |
+| random_mixed low-RSS speed | `strict` | `directlocalfree-descavail-noboost-route4k` | Best same-owner hot-path plus descriptor-cost composition for random_mixed medium/mixed. |
+| larger_sizes RSS/speed | `speed` or `rss` | `largerlowrss-front8k-sourcerun-desc8k-route8k` | Best larger_sizes lane; needs larger front retention, not more descriptor-failure cleanup. |
+| perf-recovery upper-bound | `strict` / `speed` / `rss` | `ownerlocalityfast-appcap` | Upper-bound / completion control only; too much RSS for default use. |
+
 ```text
 Windows profile family:
   balanced / wide_ws low-RSS speed:
