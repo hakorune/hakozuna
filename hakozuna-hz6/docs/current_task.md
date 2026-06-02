@@ -53,6 +53,64 @@ Goal:
   re-opening the Redis control-plane branch
 ```
 
+## Windows Profile Family Freeze 2026-06-02
+
+```text
+Decision:
+  HZ6 Windows is now treated as a profile family, not as one universal best
+  lane.
+
+Family:
+  strict-lowrss:
+    lane:
+      noboost-route4k
+    role:
+      low-RSS strict / mixed_ws control
+    strong:
+      strict balanced
+      strict wide_ws
+    weak:
+      larger_sizes performance
+      speed recovery
+
+  perf-recovery:
+    lane:
+      ownerlocalityfast-appcap
+    role:
+      owner-locality / high-capacity performance upper-bound
+    strong:
+      speed balanced / wide_ws
+      rss balanced
+      strict/speed/rss larger_sizes
+    weak:
+      peak working set is too high for promotion
+
+  redis-evidence:
+    lanes:
+      redislowrss-sourcerun-desc8k-route8k
+      redislowrss-sourcerun-desc8k-route8k-tombcompact
+      redislowrss-sourcerun-desc8k-route8k-slotlookup
+    role:
+      Redis paper-row evidence
+    status:
+      frozen / evidence-only
+
+Next design step:
+  D-lite -> A
+
+  D-lite:
+    explain why ownerlocalityfast-appcap wins larger_sizes using existing
+    route / descriptor / source / large-span counters first
+
+  A:
+    introduce ownerlocalityfast-rsscap variants only after D-lite identifies
+    which capacities can likely be reduced
+
+Do not:
+  blur noboost-route4k by adding broad large-size capacity before the
+  ownerlocalityfast capacity upper-bound has been reduced
+```
+
 ## Windows Wide-WS First Pass 2026-06-02
 
 ```text
@@ -164,6 +222,46 @@ Interpretation:
 Next attack:
   treat larger_sizes as a capacity / owner-locality recovery profile.
   Do not use strict noboost as the large-size performance lane.
+```
+
+## Larger-Sizes D-lite Read 2026-06-02
+
+```text
+Important correction:
+  mixed_ws larger_sizes is size=256..8192.
+  It is larger than balanced/wide_ws, but it is not the LargeSpan front.
+
+Observed:
+  ownerlocalityfast-appcap wins larger_sizes, but:
+    large_span_central_push = 0
+    large_span_central_pop = 0
+    large_span_source_alloc = 0
+
+  noboost-route4k fails performance with:
+    descriptor_exhausted > 0
+    alloc_fail > 0
+    route_register_fail = 0
+    source_block_exhausted = 0
+
+  ownerlocalityfast-appcap removes:
+    descriptor_exhausted
+    alloc_fail
+    source_block_exhausted
+    route_register_fail
+
+Interpretation:
+  larger_sizes is a mid/source-block capacity and owner-locality profile, not a
+  LargeSpan / large central pool profile.
+
+Next:
+  ownerlocalityfast-rsscap should trim appcap capacity in stages while keeping
+  owner-locality behavior:
+    1. frontcache / transfer
+    2. source-block
+    3. descriptor
+    4. route
+
+  LargeSpan-specific counters are not the next bottleneck for this row.
 ```
 
 ## Redis ControlPlane Checkpoint 2026-06-02

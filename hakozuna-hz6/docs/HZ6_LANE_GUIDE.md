@@ -7,7 +7,18 @@ which?" before running or comparing benchmarks.
 ## Current Recommendation
 
 ```text
-Primary candidate-control:
+Windows profile family:
+  strict-lowrss:
+    noboost-route4k
+
+  perf-recovery:
+    ownerlocalityfast-appcap
+
+  redis-evidence:
+    redislowrss-sourcerun-desc8k-route8k
+    redislowrss-sourcerun-desc8k-route8k-tombcompact
+
+Primary controls:
   route4k
   noboost-route4k
 
@@ -49,17 +60,30 @@ Frozen no-go controls:
 Next Windows focus:
 
 ```text
+Profile-family read:
+  noboost-route4k is the strict-lowrss lane.
+  ownerlocalityfast-appcap is the perf-recovery upper-bound.
+  Redis lanes are frozen as evidence-only.
+
 Wide / mixed profiles:
   noboost-route4k
   ownerlocality-appcap
   ownerlocalityfast-appcap
 
-Use this trio to check whether the remaining Windows general-purpose gap is
-route-locality, cross-owner lifecycle, or broad profile pressure.
+Next experiment:
+  D-lite larger_sizes attribution, then ownerlocalityfast-rsscap.
 
 Do not:
   reopen Redis capacity tuning as the next broad HZ6 track
+  treat ownerlocalityfast-appcap as promotion while peak working set remains
+  appcap-sized
 ```
+
+`ownerlocalityfast-rsscap` is the next planned family member, not an existing
+promotion lane. The first larger_sizes D-lite read shows that the row is
+`256..8192` mid/source-block pressure, not the LargeSpan front:
+`large_span_central_push/pop/source_alloc` stay at zero. Start capacity
+reduction from frontcache / transfer, then source-block, descriptor, and route.
 
 `route4k` is the current HZ6 Windows lane to use first when checking whether
 HZ6 remains low-RSS while avoiding tiny-route-table artifacts. It is not a
