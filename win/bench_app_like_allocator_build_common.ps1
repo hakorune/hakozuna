@@ -150,7 +150,11 @@ function Get-Hz6WinDirectLocalFreeReuseDescAvailNoBoostRoute4kCapacityFlags {
 }
 
 function Get-Hz6WinSameOwnerFastDescAvailNoBoostRoute4kCapacityFlags {
-    Get-Hz6WinDirectLocalFreeReuseDescAvailNoBoostRoute4kCapacityFlags
+    $flags = @()
+    $flags += Get-Hz6WinNoBoostRoute4kCapacityFlags
+    $flags += "/DHZ6_SAME_OWNER_FAST_L1=1"
+    $flags += "/DHZ6_DESCRIPTOR_AVAIL_COUNT_L1=1"
+    $flags
 }
 
 function Get-Hz6WinSpillRoute4kCapacityFlags {

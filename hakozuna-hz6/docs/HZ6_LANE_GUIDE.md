@@ -9,7 +9,7 @@ which?" before running or comparing benchmarks.
 | Profile family | Selected HZ6 profile | Selected capacity lane | Why this lane now |
 | --- | --- | --- | --- |
 | balanced / wide_ws low-RSS speed | `rss` | `descavail-noboost-route4k` | Best balanced and wide_ws low-RSS speed lane; descriptor exhaustion cost is removed without changing capacity. |
-| random_mixed same-owner speed | `strict` | `sameownerfast-descavail-noboost-route4k` | Selected same-owner fast lane: DirectLocalFree + DirectLocalReuse + descriptor availability, promoted from the A-ladder. |
+| random_mixed same-owner speed | `strict` | `sameownerfast-descavail-noboost-route4k` | Selected same-owner fast lane: `HZ6_SAME_OWNER_FAST_L1` + descriptor availability, promoted from the A-ladder. |
 | larger_sizes RSS/speed | `speed` or `rss` | `largerlowrss-front8k-sourcerun-desc8k-route8k` | Best larger_sizes lane; needs larger front retention, not more descriptor-failure cleanup. |
 | perf-recovery upper-bound | `strict` / `speed` / `rss` | `ownerlocalityfast-appcap` | Upper-bound / completion control only; too much RSS for default use. |
 
@@ -459,11 +459,13 @@ directlocalfree-descavail-noboost-route4k:
   for either parent mechanism.
 
 sameownerfast-descavail-noboost-route4k:
-  Selected random_mixed same-owner lane. This is the readable alias for the
-  strong A-ladder composition: DirectLocalFree-L1, DirectLocalAlloc-L1,
-  DirectLocalReuse-L1, and DescriptorAvailCount-L1 on the noboost-route4k
-  capacity shape. Use this name for current comparisons; keep the longer
-  directlocal* names as evidence/control lanes.
+  Selected random_mixed same-owner lane. This is the cleaned-up contract flag:
+  HZ6_SAME_OWNER_FAST_L1 plus DescriptorAvailCount-L1 on the noboost-route4k
+  capacity shape. It encodes the strong A-ladder composition
+  (DirectLocalFree-L1 + DirectLocalAlloc-L1 + DirectLocalReuse-L1) without
+  forcing benchmark scripts to carry a pile of mechanism flags. Use this name
+  for current comparisons; keep the longer directlocal* names as
+  evidence/control lanes.
 
 directlocalalloc-descavail-noboost-route4k:
   noboost-route4k plus DirectLocalAlloc-L1 and DescriptorAvailCount-L1. This is

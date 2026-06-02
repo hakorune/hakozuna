@@ -94,6 +94,15 @@ Flag lane cleanup:
   for the strong DirectLocalFree + DirectLocalAlloc + DirectLocalReuse +
   DescriptorAvailCount composition.
 
+  Implementation cleanup:
+    sameownerfast now uses a single contract flag:
+      HZ6_SAME_OWNER_FAST_L1
+
+    The A-ladder flags remain available only as evidence/control switches:
+      HZ6_LOCAL_CACHE_DIRECT_FREE_L1
+      HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1
+      HZ6_LOCAL_CACHE_DIRECT_REUSE_L1
+
   The longer directlocal* names remain A-ladder evidence/control lanes.
 
   Do not make the flags global compile defaults:
