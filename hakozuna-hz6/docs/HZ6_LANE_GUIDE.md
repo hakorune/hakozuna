@@ -135,9 +135,11 @@ ownerlocalityfast-widecap-3:
 
 ownerlocalityfast-widecap-4:
   widecap-3 plus descriptor capacity 131072. Wide_ws drops peak further
-  while keeping clean safety counters; speed can vary by profile, but rss and
-  strict stay competitive with appcap/widecap-2. Current wide_ws RSS/speed
-  candidate-control; not broad promotion until repeat/guard rows confirm.
+  while keeping clean safety counters. Wide_ws repeat-3 keeps or improves
+  throughput versus appcap / widecap-2 and lowers peak to about 351..773 MiB
+  depending on strict/speed/rss profile. Balanced guard is acceptable.
+  Larger_sizes guard is weaker than rsscap-4, so this is the current wide_ws
+  RSS/speed candidate-control, not a broad promotion.
 ```
 
 `route4k` is the current HZ6 Windows lane to use first when checking whether
@@ -301,8 +303,10 @@ ownerlocalityfast-widecap-3:
 
 ownerlocalityfast-widecap-4:
   widecap-3 plus descriptor capacity 131072. Current wide_ws run1 cuts peak
-  further and keeps safety counters clean. Treat as wide_ws candidate-control
-  evidence, not a universal ownerlocalityfast replacement.
+  further and keeps safety counters clean. Repeat-3 confirms the wide_ws shape:
+  speed/rss improve versus appcap while peak drops substantially. Balanced is
+  acceptable, but larger_sizes remains worse than rsscap-4. Treat as wide_ws
+  candidate-control evidence, not a universal ownerlocalityfast replacement.
 ```
 
 ## Focused Mechanism Lanes

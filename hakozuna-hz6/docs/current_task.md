@@ -463,6 +463,22 @@ wide_ws / mixed_ws / run1:
     widecap-3  8.235M ops/s, 449,116 KB
     widecap-4  9.540M ops/s, 375,304 KB
 
+wide_ws / mixed_ws / repeat-3:
+  strict:
+    appcap     2.646M ops/s, 960,448 KB
+    widecap-2  2.807M ops/s, 960,032 KB
+    widecap-4  2.789M ops/s, 772,956 KB
+
+  speed:
+    appcap    20.622M ops/s, 538,500 KB
+    widecap-2 21.089M ops/s, 538,592 KB
+    widecap-4 22.115M ops/s, 351,104 KB
+
+  rss:
+    appcap     9.019M ops/s, 562,752 KB
+    widecap-2  9.663M ops/s, 562,748 KB
+    widecap-4 10.742M ops/s, 375,384 KB
+
 Safety counters checked in the widecap-3/widecap-4 run:
   descriptor_exhausted = 0
   route_register_fail = 0
@@ -483,10 +499,36 @@ Interpretation:
   Do not collapse them into one lane yet. widecap-4 needs repeat/guard rows,
   while rsscap-4 remains the stronger larger_sizes profile-scoped lane.
 
+Guard read:
+  balanced:
+    widecap-4 stays competitive and lowers peak versus appcap:
+      strict 14.081M ops/s, 373,240 KB
+      speed  50.230M ops/s, 318,800 KB
+      rss    32.246M ops/s, 321,880 KB
+    rsscap-4 still has the lowest peak, but widecap-4 is not a balanced no-go.
+
+  larger_sizes:
+    rsscap-4 remains clearly better than widecap-4:
+      rsscap-4 speed/rss 25.504M / 23.536M ops/s, about 166 MiB
+      widecap-4 speed/rss 20.190M / 17.049M ops/s, about 191 MiB
+
+Status:
+  ownerlocalityfast-widecap-4:
+    current strongest wide_ws RSS/speed candidate-control.
+    Also acceptable as balanced guard evidence.
+    Not a larger_sizes replacement; keep rsscap-4 for larger_sizes.
+
 Next:
-  run repeat-3 for widecap-4 on wide_ws, then guard against balanced and
-  larger_sizes before deciding whether widecap-4 should replace widecap-2 as
-  the wide_ws candidate-control.
+  freeze the split:
+    wide_ws:
+      ownerlocalityfast-widecap-4
+    larger_sizes:
+      ownerlocalityfast-rsscap-4
+    strict-lowrss:
+      noboost-route4k
+
+  If optimizing further, attack policy selection / profile naming, not another
+  static capacity sweep.
 ```
 
 ## Redis ControlPlane Checkpoint 2026-06-02
