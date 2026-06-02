@@ -61,9 +61,10 @@ void* hz6_front_source_slot_ops(Hz6Allocator* allocator,
     return NULL;
   }
 
-  if (!hz6_allocator_route_register_exact(
+  if (!hz6_allocator_route_register_exact_reason(
           allocator, user_ptr, user_bytes, front_id, class_id,
-          descriptor->generation, descriptor)) {
+          descriptor->generation, descriptor,
+          HZ6_ROUTE_REGISTER_REASON_DIRECT_SOURCE)) {
 #if HZ6_DIAGNOSTIC_PROBES
     if (descriptor->source_release) {
       ++allocator->stats.source_owned_release;

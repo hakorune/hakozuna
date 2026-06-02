@@ -18,6 +18,7 @@ int hz6_route_register_exact(Hz6RouteTable* table,
   size_t probes = 0;
 #endif
   size_t tombstone_index = (size_t)-1;
+  int tombstone_reused = 0;
   for (size_t i = 0; i < table->capacity; ++i) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++probes;
@@ -40,10 +41,12 @@ int hz6_route_register_exact(Hz6RouteTable* table,
       if (entry->tombstone) {
         if (tombstone_index == (size_t)-1) {
           tombstone_index = index;
+          tombstone_reused = 1;
         }
         continue;
       }
       tombstone_index = index;
+      tombstone_reused = 0;
       break;
     }
   }
@@ -62,6 +65,17 @@ int hz6_route_register_exact(Hz6RouteTable* table,
   }
 
   Hz6RouteEntry* entry = &table->entries[tombstone_index];
+#if HZ6_DIAGNOSTIC_PROBES
+  if (tombstone_reused) {
+    ++table->register_used_tombstone;
+    if (table->tombstone_count != 0) {
+      --table->tombstone_count;
+    }
+    if (probes >= table->capacity) {
+      ++table->register_full_probe_with_tombstone;
+    }
+  }
+#endif
   entry->base = base_addr;
   entry->bytes = bytes;
   entry->front_id = front_id;
@@ -101,6 +115,7 @@ void hz6_route_unregister_exact(Hz6RouteTable* table,
       if (table->active_count != 0) {
         --table->active_count;
       }
+      ++table->tombstone_count;
       if (probe_count) {
         *probe_count = probes;
       }

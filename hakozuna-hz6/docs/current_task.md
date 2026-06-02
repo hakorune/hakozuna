@@ -126,6 +126,98 @@ Do not:
   mix diagnostic stats into non-diagnostic benchmark lanes
 ```
 
+## RedisRouteChurnDiag-L1 2026-06-02
+
+```text
+Decision:
+  Next step is route/register churn attribution, not immediate behavior.
+
+Why:
+  redislowrss-sourcerun-desc8k-route8k removes allocation capacity failures:
+    alloc_fail = 0
+    descriptor_exhausted = 0
+    route_register_fail = 0
+    source_block_exhausted = 0
+
+  Remaining paper-row gap is LPUSH/RANDOM throughput. RANDOM still shows large
+  route lookup/register probe totals, so classify route churn before changing
+  retention policy.
+
+Implemented diagnostic shape:
+  register reasons:
+    source_run_slot
+    direct_source
+    materialize
+    rehome
+    unknown
+
+  unregister reasons:
+    frontcache_overflow
+    cap_release
+    descriptorless_detach
+    source_slot_release
+    rehome
+    unknown
+
+  tombstone:
+    route_tombstone_current
+    route_tombstone_max
+    route_register_used_tombstone
+    route_register_full_probe_with_tombstone
+
+Next read:
+  If unregister is dominated by overflow/source_slot_release, try
+  RouteRetainedOverflow-L1.
+
+  If tombstone/full-probe dominates, try RouteTombstoneCompact-L1.
+
+  Do not jump to SourceRunSlotLookup until exact-route retention and tombstone
+  evidence are exhausted.
+
+Observed run:
+  results/hz6-routechurn-diag-l1-paper
+  redis_workload paper row:
+    threads=4 cycles=500 ops=2000 size=16..256
+
+  redislowrss-sourcerun-desc8k-route8k / rss / diagnostic / run1:
+    SET 38.23M, GET 400.24M, LPUSH 34.19M, LPOP 1682.30M, RANDOM 41.25M
+    peak 17,324 KB
+
+  SET:
+    source_run_slot registers = 8032
+    frontcache_overflow unregisters = 5936
+    route_register_full_probe_with_tombstone = 0
+    route_tombstone_current = 5956
+
+  LPUSH:
+    source_run_slot registers = 16608
+    frontcache_overflow unregisters = 14444
+    route_register_full_probe_with_tombstone = 0
+    route_tombstone_current = 14444
+    route_register_probe_max = 23
+
+  RANDOM:
+    source_run_slot registers = 42960
+    frontcache_overflow unregisters = 40824
+    route_register_probe_total = 86406606
+    route_register_probe_max = 8192
+    route_lookup_probe_total = 58634916
+    route_lookup_probe_max = 8128
+    route_register_used_tombstone = 10252
+    route_register_full_probe_with_tombstone = 10252
+    route_tombstone_current = 30572
+    route_tombstone_max = 7645
+
+Interpretation:
+  Route unregister churn is almost entirely frontcache overflow. LPUSH has many
+  overflow unregisters but no tombstone full-probe. RANDOM is the route-table
+  collapse row: tombstones accumulate and exact register/lookup hit full-table
+  probes. The next safest behavior experiment is RouteTombstoneCompact-L1,
+  because it targets RANDOM's measured full-probe/tombstone failure without
+  changing descriptor/source retention policy yet. RouteRetainedOverflow-L1
+  remains the follow-up if compacting helps RANDOM but LPUSH/SET stay behind.
+```
+
 ## Shared Contract And OS Backing
 
 ```text

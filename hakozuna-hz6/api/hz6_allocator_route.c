@@ -691,32 +691,114 @@ int hz6_allocator_route_rehome_exact(Hz6Allocator* allocator,
   Hz6Allocator* origin = route->route_allocator;
   void* ptr = descriptor->ptr;
   size_t bytes = descriptor->bytes;
-  hz6_allocator_route_unregister_exact(origin, ptr);
-  if (!hz6_allocator_route_register_exact(allocator,
-                                          ptr,
-                                          bytes,
-                                          route->front_id,
-                                          route->class_id,
-                                          route->generation,
-                                          (void*)descriptor)) {
-    hz6_allocator_route_register_exact(origin,
-                                      ptr,
-                                      bytes,
-                                      route->front_id,
-                                      route->class_id,
-                                      route->generation,
-                                      (void*)descriptor);
+  hz6_allocator_route_unregister_exact_reason(
+      origin, ptr, HZ6_ROUTE_UNREGISTER_REASON_REHOME);
+  if (!hz6_allocator_route_register_exact_reason(
+          allocator, ptr, bytes, route->front_id, route->class_id,
+          route->generation, (void*)descriptor,
+          HZ6_ROUTE_REGISTER_REASON_REHOME)) {
+    hz6_allocator_route_register_exact_reason(
+        origin, ptr, bytes, route->front_id, route->class_id,
+        route->generation, (void*)descriptor,
+        HZ6_ROUTE_REGISTER_REASON_REHOME);
     return 0;
   }
 
   return 1;
 }
 
-void hz6_allocator_route_unregister_exact(Hz6Allocator* allocator,
-                                          void* ptr) {
+static void hz6_allocator_note_route_tombstones(Hz6Allocator* allocator) {
+#if HZ6_DIAGNOSTIC_PROBES
+  if (!allocator) {
+    return;
+  }
+  Hz6RouteTable* table = &allocator->route_backend.exact_table;
+  allocator->stats.route_tombstone_current = table->tombstone_count;
+  if (table->tombstone_count > allocator->stats.route_tombstone_max) {
+    allocator->stats.route_tombstone_max = table->tombstone_count;
+  }
+  allocator->stats.route_register_used_tombstone =
+      table->register_used_tombstone;
+  allocator->stats.route_register_full_probe_with_tombstone =
+      table->register_full_probe_with_tombstone;
+#else
+  (void)allocator;
+#endif
+}
+
+static void hz6_allocator_note_route_register_reason(
+    Hz6Allocator* allocator,
+    Hz6RouteRegisterReason reason) {
+#if HZ6_DIAGNOSTIC_PROBES
+  if (!allocator) {
+    return;
+  }
+  switch (reason) {
+    case HZ6_ROUTE_REGISTER_REASON_SOURCE_RUN_SLOT:
+      ++allocator->stats.route_register_reason_source_run_slot;
+      break;
+    case HZ6_ROUTE_REGISTER_REASON_DIRECT_SOURCE:
+      ++allocator->stats.route_register_reason_direct_source;
+      break;
+    case HZ6_ROUTE_REGISTER_REASON_MATERIALIZE:
+      ++allocator->stats.route_register_reason_materialize;
+      break;
+    case HZ6_ROUTE_REGISTER_REASON_REHOME:
+      ++allocator->stats.route_register_reason_rehome;
+      break;
+    case HZ6_ROUTE_REGISTER_REASON_UNKNOWN:
+    default:
+      ++allocator->stats.route_register_reason_unknown;
+      break;
+  }
+#else
+  (void)allocator;
+  (void)reason;
+#endif
+}
+
+static void hz6_allocator_note_route_unregister_reason(
+    Hz6Allocator* allocator,
+    Hz6RouteUnregisterReason reason) {
+#if HZ6_DIAGNOSTIC_PROBES
+  if (!allocator) {
+    return;
+  }
+  switch (reason) {
+    case HZ6_ROUTE_UNREGISTER_REASON_FRONTCACHE_OVERFLOW:
+      ++allocator->stats.route_unregister_reason_frontcache_overflow;
+      break;
+    case HZ6_ROUTE_UNREGISTER_REASON_CAP_RELEASE:
+      ++allocator->stats.route_unregister_reason_cap_release;
+      break;
+    case HZ6_ROUTE_UNREGISTER_REASON_DESCRIPTORLESS_DETACH:
+      ++allocator->stats.route_unregister_reason_descriptorless_detach;
+      break;
+    case HZ6_ROUTE_UNREGISTER_REASON_SOURCE_SLOT_RELEASE:
+      ++allocator->stats.route_unregister_reason_source_slot_release;
+      break;
+    case HZ6_ROUTE_UNREGISTER_REASON_REHOME:
+      ++allocator->stats.route_unregister_reason_rehome;
+      break;
+    case HZ6_ROUTE_UNREGISTER_REASON_UNKNOWN:
+    default:
+      ++allocator->stats.route_unregister_reason_unknown;
+      break;
+  }
+#else
+  (void)allocator;
+  (void)reason;
+#endif
+}
+
+void hz6_allocator_route_unregister_exact_reason(
+    Hz6Allocator* allocator,
+    void* ptr,
+    Hz6RouteUnregisterReason reason) {
   if (!allocator || !ptr) {
     return;
   }
+  hz6_allocator_note_route_unregister_reason(allocator, reason);
 #if HZ6_SHARED_ROUTE_DIRECTORY_L1
   hz6_shared_route_directory_unregister(allocator, ptr);
 #endif
@@ -737,22 +819,32 @@ void hz6_allocator_route_unregister_exact(Hz6Allocator* allocator,
     allocator->stats.route_active_max =
         allocator->stats.route_active_current;
   }
+  hz6_allocator_note_route_tombstones(allocator);
 #else
   hz6_route_backend_unregister_exact(&allocator->route_backend, ptr, NULL);
 #endif
 }
 
-int hz6_allocator_route_register_exact(Hz6Allocator* allocator,
-                                       void* base,
-                                       size_t bytes,
-                                       uint16_t front_id,
-                                       uint16_t class_id,
-                                       uint32_t generation,
-                                       void* descriptor) {
+void hz6_allocator_route_unregister_exact(Hz6Allocator* allocator,
+                                          void* ptr) {
+  hz6_allocator_route_unregister_exact_reason(
+      allocator, ptr, HZ6_ROUTE_UNREGISTER_REASON_UNKNOWN);
+}
+
+int hz6_allocator_route_register_exact_reason(
+    Hz6Allocator* allocator,
+    void* base,
+    size_t bytes,
+    uint16_t front_id,
+    uint16_t class_id,
+    uint32_t generation,
+    void* descriptor,
+    Hz6RouteRegisterReason reason) {
   if (!allocator || !base || bytes == 0) {
     return 0;
   }
   int ok = 0;
+  hz6_allocator_note_route_register_reason(allocator, reason);
 #if HZ6_DIAGNOSTIC_PROBES
   size_t probes = 0;
   ok = hz6_route_backend_register_exact(&allocator->route_backend,
@@ -777,6 +869,7 @@ int hz6_allocator_route_register_exact(Hz6Allocator* allocator,
   if (!ok) {
     ++allocator->stats.route_register_fail;
   }
+  hz6_allocator_note_route_tombstones(allocator);
 #else
   ok = hz6_route_backend_register_exact(&allocator->route_backend,
                                         base,
@@ -803,6 +896,18 @@ int hz6_allocator_route_register_exact(Hz6Allocator* allocator,
   }
 #endif
   return ok;
+}
+
+int hz6_allocator_route_register_exact(Hz6Allocator* allocator,
+                                       void* base,
+                                       size_t bytes,
+                                       uint16_t front_id,
+                                       uint16_t class_id,
+                                       uint32_t generation,
+                                       void* descriptor) {
+  return hz6_allocator_route_register_exact_reason(
+      allocator, base, bytes, front_id, class_id, generation, descriptor,
+      HZ6_ROUTE_REGISTER_REASON_UNKNOWN);
 }
 
 Hz6RouteBackendKind hz6_allocator_route_backend_kind(

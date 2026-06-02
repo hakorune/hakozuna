@@ -48,8 +48,30 @@ Hz6RouteResult hz6_allocator_route_shared_directory_lookup_exact(
 int hz6_allocator_route_rehome_exact(Hz6Allocator* allocator,
                                      const Hz6RouteResult* route);
 
+typedef enum Hz6RouteRegisterReason {
+  HZ6_ROUTE_REGISTER_REASON_UNKNOWN = 0,
+  HZ6_ROUTE_REGISTER_REASON_SOURCE_RUN_SLOT = 1,
+  HZ6_ROUTE_REGISTER_REASON_DIRECT_SOURCE = 2,
+  HZ6_ROUTE_REGISTER_REASON_MATERIALIZE = 3,
+  HZ6_ROUTE_REGISTER_REASON_REHOME = 4
+} Hz6RouteRegisterReason;
+
+typedef enum Hz6RouteUnregisterReason {
+  HZ6_ROUTE_UNREGISTER_REASON_UNKNOWN = 0,
+  HZ6_ROUTE_UNREGISTER_REASON_FRONTCACHE_OVERFLOW = 1,
+  HZ6_ROUTE_UNREGISTER_REASON_CAP_RELEASE = 2,
+  HZ6_ROUTE_UNREGISTER_REASON_DESCRIPTORLESS_DETACH = 3,
+  HZ6_ROUTE_UNREGISTER_REASON_SOURCE_SLOT_RELEASE = 4,
+  HZ6_ROUTE_UNREGISTER_REASON_REHOME = 5
+} Hz6RouteUnregisterReason;
+
 void hz6_allocator_route_unregister_exact(Hz6Allocator* allocator,
                                           void* ptr);
+
+void hz6_allocator_route_unregister_exact_reason(
+    Hz6Allocator* allocator,
+    void* ptr,
+    Hz6RouteUnregisterReason reason);
 
 int hz6_allocator_route_register_exact(Hz6Allocator* allocator,
                                        void* base,
@@ -58,6 +80,16 @@ int hz6_allocator_route_register_exact(Hz6Allocator* allocator,
                                        uint16_t class_id,
                                        uint32_t generation,
                                        void* descriptor);
+
+int hz6_allocator_route_register_exact_reason(
+    Hz6Allocator* allocator,
+    void* base,
+    size_t bytes,
+    uint16_t front_id,
+    uint16_t class_id,
+    uint32_t generation,
+    void* descriptor,
+    Hz6RouteRegisterReason reason);
 
 int hz6_allocator_source_block_register_invalid_range(
     Hz6Allocator* allocator,

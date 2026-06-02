@@ -80,9 +80,10 @@ static void* hz6_front_materialize_descriptorless_entry(
     return NULL;
   }
 
-  if (!hz6_allocator_route_register_exact(
+  if (!hz6_allocator_route_register_exact_reason(
           allocator, entry.ptr, entry.bytes, front_id, class_id,
-          descriptor->generation, descriptor)) {
+          descriptor->generation, descriptor,
+          HZ6_ROUTE_REGISTER_REASON_MATERIALIZE)) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.descriptorless_frontcache_route_fail;
 #if HZ6_DESCRIPTOR_COLD_GOV_L1

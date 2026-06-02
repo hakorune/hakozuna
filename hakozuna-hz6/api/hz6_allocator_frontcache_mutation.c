@@ -106,7 +106,8 @@ int hz6_allocator_spill_frontcache_for_descriptor(
     return 0;
   }
 
-  hz6_allocator_route_unregister_exact(allocator, entry.ptr);
+  hz6_allocator_route_unregister_exact_reason(
+      allocator, entry.ptr, HZ6_ROUTE_UNREGISTER_REASON_FRONTCACHE_OVERFLOW);
 #if HZ6_DIAGNOSTIC_PROBES
   if (descriptor->source_release) {
     ++allocator->stats.source_owned_release;
@@ -176,7 +177,8 @@ int hz6_allocator_reclaim_frontcache_descriptor_for_source_run(
     return 0;
   }
 
-  hz6_allocator_route_unregister_exact(allocator, entry.ptr);
+  hz6_allocator_route_unregister_exact_reason(
+      allocator, entry.ptr, HZ6_ROUTE_UNREGISTER_REASON_SOURCE_SLOT_RELEASE);
 #if HZ6_DIAGNOSTIC_PROBES
   if (descriptor->source_release) {
     ++allocator->stats.source_owned_release;
@@ -234,7 +236,8 @@ int hz6_allocator_reclaim_frontcache_descriptor_for_source_run_same_class(
     return 0;
   }
 
-  hz6_allocator_route_unregister_exact(allocator, entry.ptr);
+  hz6_allocator_route_unregister_exact_reason(
+      allocator, entry.ptr, HZ6_ROUTE_UNREGISTER_REASON_SOURCE_SLOT_RELEASE);
 #if HZ6_DIAGNOSTIC_PROBES
   if (descriptor->source_release) {
     ++allocator->stats.source_owned_release;

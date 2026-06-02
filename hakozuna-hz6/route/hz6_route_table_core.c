@@ -22,6 +22,9 @@ void hz6_route_table_init(Hz6RouteTable* table,
   table->entries = entries;
   table->capacity = capacity;
   table->active_count = 0;
+  table->tombstone_count = 0;
+  table->register_used_tombstone = 0;
+  table->register_full_probe_with_tombstone = 0;
   for (size_t i = 0; entries && i < capacity; ++i) {
     entries[i].active = 0;
     entries[i].exact_valid = 0;

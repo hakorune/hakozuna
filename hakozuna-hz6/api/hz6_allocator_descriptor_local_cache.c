@@ -74,7 +74,8 @@ int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
   hz6_allocator_note_frontcache_cap_dryrun(allocator, entry.class_id);
   if (hz6_allocator_frontcache_should_cap_release(allocator, entry.class_id)) {
     descriptor->state = HZ6_STATE_DEAD;
-    hz6_allocator_route_unregister_exact(allocator, ptr);
+    hz6_allocator_route_unregister_exact_reason(
+        allocator, ptr, HZ6_ROUTE_UNREGISTER_REASON_CAP_RELEASE);
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.frontcache_cap_release;
     if (descriptor->source_release) {
@@ -111,7 +112,8 @@ int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
 #endif
     if (hz6_allocator_frontcache_push(allocator, entry.class_id,
                                       descriptorless_entry)) {
-      hz6_allocator_route_unregister_exact(allocator, ptr);
+      hz6_allocator_route_unregister_exact_reason(
+          allocator, ptr, HZ6_ROUTE_UNREGISTER_REASON_DESCRIPTORLESS_DETACH);
 #if HZ6_DESCRIPTOR_COLD_GOV_L1
       ++allocator->descgov_detached_budget_used;
 #if HZ6_DIAGNOSTIC_PROBES
@@ -148,7 +150,8 @@ int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
   }
 
   descriptor->state = HZ6_STATE_DEAD;
-  hz6_allocator_route_unregister_exact(allocator, ptr);
+  hz6_allocator_route_unregister_exact_reason(
+      allocator, ptr, HZ6_ROUTE_UNREGISTER_REASON_FRONTCACHE_OVERFLOW);
 #if HZ6_DIAGNOSTIC_PROBES
   if (descriptor->source_release) {
     ++allocator->stats.source_owned_release;

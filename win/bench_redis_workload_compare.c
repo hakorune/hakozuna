@@ -127,6 +127,34 @@ static void print_hz6_redis_stats(RedisOp op,
         if (s->route_register_probe_max > total.route_register_probe_max) {
             total.route_register_probe_max = s->route_register_probe_max;
         }
+        total.route_register_reason_source_run_slot +=
+            s->route_register_reason_source_run_slot;
+        total.route_register_reason_direct_source +=
+            s->route_register_reason_direct_source;
+        total.route_register_reason_materialize +=
+            s->route_register_reason_materialize;
+        total.route_register_reason_rehome += s->route_register_reason_rehome;
+        total.route_register_reason_unknown +=
+            s->route_register_reason_unknown;
+        total.route_unregister_reason_frontcache_overflow +=
+            s->route_unregister_reason_frontcache_overflow;
+        total.route_unregister_reason_cap_release +=
+            s->route_unregister_reason_cap_release;
+        total.route_unregister_reason_descriptorless_detach +=
+            s->route_unregister_reason_descriptorless_detach;
+        total.route_unregister_reason_source_slot_release +=
+            s->route_unregister_reason_source_slot_release;
+        total.route_unregister_reason_rehome +=
+            s->route_unregister_reason_rehome;
+        total.route_unregister_reason_unknown +=
+            s->route_unregister_reason_unknown;
+        total.route_register_used_tombstone += s->route_register_used_tombstone;
+        total.route_register_full_probe_with_tombstone +=
+            s->route_register_full_probe_with_tombstone;
+        total.route_tombstone_current += s->route_tombstone_current;
+        if (s->route_tombstone_max > total.route_tombstone_max) {
+            total.route_tombstone_max = s->route_tombstone_max;
+        }
         total.source_block_probe_total += s->source_block_probe_total;
         if (s->source_block_probe_max > total.source_block_probe_max) {
             total.source_block_probe_max = s->source_block_probe_max;
@@ -148,6 +176,20 @@ static void print_hz6_redis_stats(RedisOp op,
            "source_admission_boosted=%zu source_admission_clamped=%zu "
            "route_lookup_probe_total=%zu route_lookup_probe_max=%zu "
            "route_register_probe_total=%zu route_register_probe_max=%zu "
+           "route_register_reason_source_run_slot=%zu "
+           "route_register_reason_direct_source=%zu "
+           "route_register_reason_materialize=%zu "
+           "route_register_reason_rehome=%zu "
+           "route_register_reason_unknown=%zu "
+           "route_unregister_reason_frontcache_overflow=%zu "
+           "route_unregister_reason_cap_release=%zu "
+           "route_unregister_reason_descriptorless_detach=%zu "
+           "route_unregister_reason_source_slot_release=%zu "
+           "route_unregister_reason_rehome=%zu "
+           "route_unregister_reason_unknown=%zu "
+           "route_register_used_tombstone=%zu "
+           "route_register_full_probe_with_tombstone=%zu "
+           "route_tombstone_current=%zu route_tombstone_max=%zu "
            "source_block_probe_total=%zu source_block_probe_max=%zu "
            "descriptor_probe_total=%zu descriptor_probe_max=%zu\n",
            kOpNames[op],
@@ -173,6 +215,21 @@ static void print_hz6_redis_stats(RedisOp op,
            total.route_lookup_probe_max,
            total.route_register_probe_total,
            total.route_register_probe_max,
+           total.route_register_reason_source_run_slot,
+           total.route_register_reason_direct_source,
+           total.route_register_reason_materialize,
+           total.route_register_reason_rehome,
+           total.route_register_reason_unknown,
+           total.route_unregister_reason_frontcache_overflow,
+           total.route_unregister_reason_cap_release,
+           total.route_unregister_reason_descriptorless_detach,
+           total.route_unregister_reason_source_slot_release,
+           total.route_unregister_reason_rehome,
+           total.route_unregister_reason_unknown,
+           total.route_register_used_tombstone,
+           total.route_register_full_probe_with_tombstone,
+           total.route_tombstone_current,
+           total.route_tombstone_max,
            total.source_block_probe_total,
            total.source_block_probe_max,
            total.descriptor_probe_total,

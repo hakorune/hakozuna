@@ -82,9 +82,10 @@ static void* hz6_front_source_block_reserved_slot(
     return NULL;
   }
 
-  if (!hz6_allocator_route_register_exact(
+  if (!hz6_allocator_route_register_exact_reason(
           allocator, user_ptr, slot_bytes, front_id, class_id,
-          descriptor->generation, descriptor)) {
+          descriptor->generation, descriptor,
+          HZ6_ROUTE_REGISTER_REASON_SOURCE_RUN_SLOT)) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.source_run_reuse_route_fail;
     ++allocator->stats.source_run_reuse_slot_fail;
@@ -217,9 +218,10 @@ void* hz6_front_source_block_slot(Hz6Allocator* allocator,
     return NULL;
   }
 
-  if (!hz6_allocator_route_register_exact(
+  if (!hz6_allocator_route_register_exact_reason(
           allocator, user_ptr, user_bytes, front_id, class_id,
-          descriptor->generation, descriptor)) {
+          descriptor->generation, descriptor,
+          HZ6_ROUTE_REGISTER_REASON_SOURCE_RUN_SLOT)) {
 #if HZ6_DIAGNOSTIC_PROBES
     if (descriptor->source_release) {
       ++allocator->stats.source_owned_release;

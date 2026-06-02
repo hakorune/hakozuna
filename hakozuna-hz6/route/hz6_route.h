@@ -23,6 +23,9 @@ typedef struct Hz6RouteTable {
   Hz6RouteEntry* entries;
   size_t capacity;
   size_t active_count;
+  size_t tombstone_count;
+  size_t register_used_tombstone;
+  size_t register_full_probe_with_tombstone;
 } Hz6RouteTable;
 
 size_t hz6_route_hash_index(uintptr_t base, size_t capacity);
