@@ -119,6 +119,53 @@ Next attack:
   should win everywhere
 ```
 
+## Windows Larger-Sizes First Pass 2026-06-02
+
+```text
+Fast lane run:
+  larger_sizes / mixed_ws / run1
+
+  strict:
+    route4k              0.745M ops/s, 16,148 KB
+    noboost-route4k      1.316M ops/s, 16,276 KB
+    ownerlocalityfast   14.943M ops/s, 289,864 KB
+
+  speed:
+    route4k              0.523M ops/s, 15,168 KB
+    noboost-route4k      0.544M ops/s, 15,240 KB
+    ownerlocalityfast   19.014M ops/s, 284,680 KB
+
+  rss:
+    route4k              0.620M ops/s, 15,472 KB
+    noboost-route4k      0.615M ops/s, 15,444 KB
+    ownerlocalityfast   18.659M ops/s, 284,652 KB
+
+Diagnostic lane run:
+  strict:
+    route4k              0.704M ops/s, 16,184 KB
+    noboost-route4k      1.038M ops/s, 16,244 KB
+    ownerlocality-appcap 11.984M ops/s, 289,944 KB
+
+  speed:
+    route4k              0.753M ops/s, 15,184 KB
+    noboost-route4k      0.715M ops/s, 15,256 KB
+    ownerlocality-appcap 16.170M ops/s, 284,788 KB
+
+  rss:
+    route4k              0.731M ops/s, 15,476 KB
+    noboost-route4k      0.728M ops/s, 15,504 KB
+    ownerlocality-appcap 13.218M ops/s, 284,724 KB
+
+Interpretation:
+  larger_sizes does not follow the balanced/wide_ws split.
+  ownerlocalityfast-appcap wins strict/speed/rss, while noboost-route4k only
+  preserves low peak working set.
+
+Next attack:
+  treat larger_sizes as a capacity / owner-locality recovery profile.
+  Do not use strict noboost as the large-size performance lane.
+```
+
 ## Redis ControlPlane Checkpoint 2026-06-02
 
 ```text
