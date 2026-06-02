@@ -193,6 +193,19 @@ redislowrss-sourcerun-route4k:
   improved all Redis patterns and lowered peak working set, but mixed_ws guard
   still keeps this outside general promotion.
 
+redislowrss-sourcerun-route8k:
+  redislowrss-sourcerun-route4k with route capacity 8192. Evidence lane for
+  paper-aligned Redis LPUSH, where route4k showed route_register_fail. Route8k
+  removes route register failure but exposes descriptor pressure, so it is not
+  the final paper-row candidate.
+
+redislowrss-sourcerun-desc8k-route8k:
+  redislowrss-sourcerun with descriptor 8192 and route 8192. Current
+  paper-aligned Redis candidate-control: removes route/descriptor/source-block
+  exhaustion in the checked diagnostic row and keeps peak working set far below
+  appcap while restoring LPUSH into a usable range. Keep this Redis-specific;
+  do not promote it as the general mixed_ws lane.
+
 redislowrss-slim-route4k:
   noboost plus descriptor 2048 and source-block 256. This is the slimmer Redis
   follow-up lane. Use it only if we need to reduce peak / retention further

@@ -79,8 +79,46 @@ Observed:
     balanced/wide_ws relative to noboost.
 
 Decision:
-  Keep redislowrss-sourcerun-route4k as Redis-like SourceRun candidate-control.
+  Keep redislowrss-sourcerun-route4k as Redis-long SourceRun evidence.
+  Keep redislowrss-sourcerun-desc8k-route8k as paper-aligned Redis
+  candidate-control.
   Keep noboost-route4k as general mixed_ws low-capacity candidate-control.
+
+Follow-up:
+  paper-aligned Redis row uses a larger live set:
+    threads=4 cycles=500 ops=2000 size=16..256
+
+  redislowrss-sourcerun-route4k:
+    repeat-3:
+      SET 38.04M, GET 276.90M, LPUSH 8.12M, LPOP 827.92M, RANDOM 41.41M
+      peak 14,444 KB
+    Diagnostic:
+      LPUSH route_register_fail > 0
+      route_register_probe_max = 4096
+    Meaning:
+      source-run fixed source pressure, but route4k is too small for paper
+      LPUSH.
+
+  redislowrss-sourcerun-route8k:
+    Diagnostic:
+      route_register_fail = 0
+      LPUSH descriptor_exhausted > 0
+    Meaning:
+      route pressure is fixed, descriptor capacity becomes the next bottleneck.
+
+  redislowrss-sourcerun-desc8k-route8k:
+    repeat-3:
+      SET 36.62M, GET 297.81M, LPUSH 32.48M, LPOP 1101.11M, RANDOM 39.97M
+      peak 17,704 KB
+    Diagnostic:
+      route_register_fail = 0
+      descriptor_exhausted = 0
+      source_block_exhausted = 0
+      alloc_fail = 0
+    Meaning:
+      current paper-aligned Redis candidate-control. It does not beat
+      mimalloc/tcmalloc on SET/LPUSH/RANDOM, but it beats the older HZ6 appcap
+      shape on GET/LPOP and keeps much lower peak working set.
 
 Do not:
   treat slim as the current Redis candidate
