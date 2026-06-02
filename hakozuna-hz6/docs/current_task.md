@@ -383,6 +383,99 @@ Next:
   keep exact MISS / foreign / remote paths on the normal contract.
 ```
 
+## DirectLocalFree Selected-Family Lanes 2026-06-02
+
+```text
+Lane organization:
+  directlocalfree-noboost-route4k:
+    low-RSS route4k evidence/control.
+
+  directlocalfree-ownerlocalityfast-rsscap-4:
+    larger_sizes selected-family candidate-control.
+    Same capacity shape as ownerlocalityfast-rsscap-4, plus
+    DirectLocalFree-L1.
+
+  directlocalfree-ownerlocalityfast-widecap-4:
+    wide_ws selected-family candidate-control.
+    Same capacity shape as ownerlocalityfast-widecap-4, plus
+    DirectLocalFree-L1.
+
+Reason:
+  DirectLocalFree-L1 improved same-owner random_mixed and repeat-3 mixed_ws
+  guard rows while preserving safety. The next question is whether it also
+  lifts the existing selected-family lanes instead of only the low-RSS
+  noboost route4k control.
+
+Acceptance:
+  rsscap-4 direct variant improves larger_sizes or keeps it within noise while
+  preserving RSS and clean safety counters.
+  widecap-4 direct variant improves wide_ws or keeps it within noise while
+  preserving RSS and clean safety counters.
+
+No-go:
+  safety counter appears.
+  selected-family RSS shape worsens materially.
+  the direct variant only helps noboost but not selected-family lanes.
+```
+
+First selected-family read:
+
+```text
+run1:
+  directlocalfree-ownerlocalityfast-rsscap-4:
+    strict balanced     +25.0%
+    strict wide_ws      +13.0%
+    strict larger_sizes  +6.0%
+    speed/rss mixed results, some rows negative
+
+  directlocalfree-ownerlocalityfast-widecap-4:
+    helps some balanced/larger_sizes rows
+    regresses wide_ws in strict/speed/rss
+```
+
+Repeat-3 for rsscap-4 direct:
+
+```text
+balanced:
+  strict  14.124M -> 12.363M  (-12.5%)
+  speed   51.598M -> 53.438M  (+3.6%)
+  rss     37.397M -> 36.958M  (-1.2%)
+
+wide_ws:
+  strict   1.243M ->  1.282M  (+3.1%)
+  speed   14.939M -> 13.601M  (-9.0%)
+  rss      4.685M ->  4.924M  (+5.1%)
+
+larger_sizes:
+  strict  21.043M -> 21.542M  (+2.4%)
+  speed   27.745M -> 27.295M  (-1.6%)
+  rss     24.005M -> 24.797M  (+3.3%)
+```
+
+Read:
+
+```text
+Selected-family directlocalfree is not clean enough for promotion.
+The noboost-route4k direct lane remains strong same-owner hot-path evidence,
+but adding the same behavior to ownerlocalityfast rsscap/widecap does not
+produce a stable broad-selected improvement.
+
+Status:
+  directlocalfree-noboost-route4k:
+    KEEP candidate-control / hot-path evidence
+
+  directlocalfree-ownerlocalityfast-rsscap-4:
+    KEEP as control evidence, not promotion
+
+  directlocalfree-ownerlocalityfast-widecap-4:
+    no-go/control for selected-family wide_ws
+
+Next:
+  do not blindly mix directlocalfree into all selected-family lanes.
+  If continuing this path, make the direct local free behavior profile-aware
+  or class/front gated.
+```
+
 ## Windows Profile Family Freeze 2026-06-02
 
 ```text

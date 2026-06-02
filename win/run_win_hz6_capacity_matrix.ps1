@@ -274,10 +274,12 @@ $laneSuffix = @{
     "ownerlocalityfast-rsscap-2" = "_ownerlocalityfast_rsscap_2"
     "ownerlocalityfast-rsscap-3" = "_ownerlocalityfast_rsscap_3"
     "ownerlocalityfast-rsscap-4" = "_ownerlocalityfast_rsscap_4"
+    "directlocalfree-ownerlocalityfast-rsscap-4" = "_directlocalfree_ownerlocalityfast_rsscap_4"
     "ownerlocalityfast-widecap-1" = "_ownerlocalityfast_widecap_1"
     "ownerlocalityfast-widecap-2" = "_ownerlocalityfast_widecap_2"
     "ownerlocalityfast-widecap-3" = "_ownerlocalityfast_widecap_3"
     "ownerlocalityfast-widecap-4" = "_ownerlocalityfast_widecap_4"
+    "directlocalfree-ownerlocalityfast-widecap-4" = "_directlocalfree_ownerlocalityfast_widecap_4"
 }
 
 $familyPrefixes = @{

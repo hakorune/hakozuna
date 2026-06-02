@@ -392,6 +392,13 @@ function Get-Hz6WinOwnerLocalityFastRssCap4CapacityFlags {
     $flags
 }
 
+function Get-Hz6WinDirectLocalFreeOwnerLocalityFastRssCap4CapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinOwnerLocalityFastRssCap4CapacityFlags
+    $flags += "/DHZ6_LOCAL_CACHE_DIRECT_FREE_L1=1"
+    $flags
+}
+
 function Get-Hz6WinOwnerLocalityFastWideCap1CapacityFlags {
     $flags = @(
         "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)262144)",
@@ -441,6 +448,13 @@ function Get-Hz6WinOwnerLocalityFastWideCap4CapacityFlags {
         "/DHZ6_SHARED_ROUTE_DIRECTORY_L1=1",
         "/DHZ6_OWNER_LOCALITY_INDEX_L1=1"
     )
+    $flags
+}
+
+function Get-Hz6WinDirectLocalFreeOwnerLocalityFastWideCap4CapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinOwnerLocalityFastWideCap4CapacityFlags
+    $flags += "/DHZ6_LOCAL_CACHE_DIRECT_FREE_L1=1"
     $flags
 }
 
@@ -543,10 +557,12 @@ function Invoke-AppLikeHz6BenchBuilds {
     $ownerLocalityFastRssCap2Flags = Get-Hz6WinOwnerLocalityFastRssCap2CapacityFlags
     $ownerLocalityFastRssCap3Flags = Get-Hz6WinOwnerLocalityFastRssCap3CapacityFlags
     $ownerLocalityFastRssCap4Flags = Get-Hz6WinOwnerLocalityFastRssCap4CapacityFlags
+    $directLocalFreeOwnerLocalityFastRssCap4Flags = Get-Hz6WinDirectLocalFreeOwnerLocalityFastRssCap4CapacityFlags
     $ownerLocalityFastWideCap1Flags = Get-Hz6WinOwnerLocalityFastWideCap1CapacityFlags
     $ownerLocalityFastWideCap2Flags = Get-Hz6WinOwnerLocalityFastWideCap2CapacityFlags
     $ownerLocalityFastWideCap3Flags = Get-Hz6WinOwnerLocalityFastWideCap3CapacityFlags
     $ownerLocalityFastWideCap4Flags = Get-Hz6WinOwnerLocalityFastWideCap4CapacityFlags
+    $directLocalFreeOwnerLocalityFastWideCap4Flags = Get-Hz6WinDirectLocalFreeOwnerLocalityFastWideCap4CapacityFlags
     $laneMap = @{
         "default" = @{ Suffix = ""; ExtraFlags = @() }
         "broad" = @{ Suffix = "_broad"; ExtraFlags = $broadFlags }
@@ -589,10 +605,12 @@ function Invoke-AppLikeHz6BenchBuilds {
         "ownerlocalityfast-rsscap-2" = @{ Suffix = "_ownerlocalityfast_rsscap_2"; ExtraFlags = $ownerLocalityFastRssCap2Flags }
         "ownerlocalityfast-rsscap-3" = @{ Suffix = "_ownerlocalityfast_rsscap_3"; ExtraFlags = $ownerLocalityFastRssCap3Flags }
         "ownerlocalityfast-rsscap-4" = @{ Suffix = "_ownerlocalityfast_rsscap_4"; ExtraFlags = $ownerLocalityFastRssCap4Flags }
+        "directlocalfree-ownerlocalityfast-rsscap-4" = @{ Suffix = "_directlocalfree_ownerlocalityfast_rsscap_4"; ExtraFlags = $directLocalFreeOwnerLocalityFastRssCap4Flags }
         "ownerlocalityfast-widecap-1" = @{ Suffix = "_ownerlocalityfast_widecap_1"; ExtraFlags = $ownerLocalityFastWideCap1Flags }
         "ownerlocalityfast-widecap-2" = @{ Suffix = "_ownerlocalityfast_widecap_2"; ExtraFlags = $ownerLocalityFastWideCap2Flags }
         "ownerlocalityfast-widecap-3" = @{ Suffix = "_ownerlocalityfast_widecap_3"; ExtraFlags = $ownerLocalityFastWideCap3Flags }
         "ownerlocalityfast-widecap-4" = @{ Suffix = "_ownerlocalityfast_widecap_4"; ExtraFlags = $ownerLocalityFastWideCap4Flags }
+        "directlocalfree-ownerlocalityfast-widecap-4" = @{ Suffix = "_directlocalfree_ownerlocalityfast_widecap_4"; ExtraFlags = $directLocalFreeOwnerLocalityFastWideCap4Flags }
     }
 
     function Split-Hz6BuildList {

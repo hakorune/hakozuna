@@ -335,6 +335,13 @@ ownerlocalityfast-rsscap-4:
   larger_sizes RSSCap candidate-control only; wide_ws guard regresses versus
   ownerlocalityfast-appcap.
 
+directlocalfree-ownerlocalityfast-rsscap-4:
+  ownerlocalityfast-rsscap-4 plus DirectLocalFree-L1. Use this to test whether
+  the same-owner free-path improvement also helps the larger_sizes selected
+  lane without changing its RSS-capacity shape. This is a selected-family
+  control lane, not a default replacement. Repeat-3 is mixed: larger_sizes and
+  some rss rows improve, but balanced strict and wide_ws speed regress.
+
 ownerlocalityfast-widecap-1:
   Non-diagnostic owner-locality behavior lane for wide_ws. It keeps appcap
   descriptor / route / source-block capacity, but sets transfer/frontcache to
@@ -356,6 +363,13 @@ ownerlocalityfast-widecap-4:
   speed/rss improve versus appcap while peak drops substantially. Balanced is
   acceptable, but larger_sizes remains worse than rsscap-4. Treat as wide_ws
   candidate-control evidence, not a universal ownerlocalityfast replacement.
+
+directlocalfree-ownerlocalityfast-widecap-4:
+  ownerlocalityfast-widecap-4 plus DirectLocalFree-L1. Use this to test whether
+  the same-owner free-path improvement lifts the wide_ws selected lane while
+  preserving its existing RSS profile. First selected-family read regressed
+  wide_ws, so keep it as no-go/control evidence unless a later class/front gate
+  reopens the question.
 ```
 
 ## Focused Mechanism Lanes
