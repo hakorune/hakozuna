@@ -67,13 +67,14 @@ Current lane organization:
     appcap
 
 Next attack surface:
-  promote the random_mixed A-ladder result into a shared same-owner front
-  fast contract.
+  larger_sizes front-retention tightening, then decide whether the selected
+  front8k lane should remain the default or whether front6k is a cleaner
+  lower-retention replacement.
 
 Goal:
-  keep sameownerfast as the selected random_mixed lane while designing a clean
-  TOY/MIDPAGE/LOCAL2P contract so the strong flags do not remain an ad-hoc
-  pile of ablation switches.
+  keep sameownerfast fixed as the selected random_mixed lane, and tighten the
+  larger_sizes lane without widening capacity or adding diagnostic counters to
+  production benchmark lanes.
 
 Cross-allocator summary:
   HZ6_CROSS_ALLOCATOR_COMPARISON.md
@@ -84,6 +85,103 @@ Do not:
   collapse widecap-4 and rsscap-4 into a single broad default yet
   re-open Redis control-plane branch as the next broad HZ6 track
   add diagnostic atomics/counters to production speed lanes
+```
+
+## LargerSizes Front Retention Ladder 2026-06-03
+
+```text
+Purpose:
+  front8k fixed the larger_sizes source/route churn problem, but it also sets
+  a fairly high front-retention budget. Test whether a smaller front budget
+  keeps the larger_sizes speed/RSS shape without returning to allocation
+  failure or route/source churn.
+
+New production-capacity lanes:
+  largerlowrss-front6k-sourcerun-desc8k-route8k:
+    descriptor 8K
+    route 8K
+    source-block 512
+    frontcache 6144
+    SourceRunReuse-L1
+
+  largerlowrss-front4k-sourcerun-desc8k-route8k:
+    same as front6k, but frontcache 4096
+
+No diagnostic counters:
+  These are capacity-shape lanes only. They do not enable probe atomics or
+  diagnostic-only instrumentation.
+```
+
+Run1:
+
+```text
+larger_sizes / speed:
+  front4k:
+    21.015M ops/s, 72,744 KB
+  front6k:
+    31.813M ops/s, 72,832 KB
+  front8k:
+    33.836M ops/s, 72,356 KB
+
+larger_sizes / rss:
+  front4k:
+    30.020M ops/s, 72,776 KB
+  front6k:
+    33.299M ops/s, 72,824 KB
+  front8k:
+    31.768M ops/s, 72,404 KB
+
+Safety:
+  route_invalid=0
+  route_miss=0
+  route_register_fail=0
+  alloc_fail=0
+  descriptor_exhausted=0
+  source_block_exhausted=0
+```
+
+Repeat-3 front6k vs front8k:
+
+```text
+larger_sizes / speed:
+  front6k:
+    34.744M ops/s, 72,348 KB
+  front8k:
+    33.855M ops/s, 72,412 KB
+
+larger_sizes / rss:
+  front6k:
+    34.249M ops/s, 72,364 KB
+  front8k:
+    34.727M ops/s, 72,424 KB
+
+Safety:
+  both lanes keep route_invalid/route_miss/route_register_fail/alloc_fail at 0.
+  source_alloc remains profile-stable:
+    speed: 1329
+    rss:   1652
+```
+
+Read:
+
+```text
+front4k:
+  no-go as a larger_sizes replacement. It is too small for the speed profile.
+
+front6k:
+  keep as a tighter larger_sizes candidate-control. It matches front8k within
+  noise, is slightly better in the speed repeat-3, and keeps peak RSS in the
+  same 72MB band.
+
+front8k:
+  keep as the selected larger_sizes lane for now because the earlier repeat-3
+  remains the documented selection baseline and the new repeat-3 does not show
+  a decisive RSS reduction from front6k.
+
+Next:
+  If more larger_sizes tuning is needed, compare front6k/front8k on large_slice
+  rows before changing the selected lane table. Do not re-open frontcache
+  spill/borrow/cap knobs.
 ```
 
 ## RandomMixed A/B Fast-Path Plan 2026-06-03

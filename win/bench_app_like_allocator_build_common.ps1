@@ -370,6 +370,28 @@ function Get-Hz6WinLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags {
     )
 }
 
+function Get-Hz6WinLargerLowRssFront6kSourceRunDesc8kRoute8kCapacityFlags {
+    @(
+        "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)8192)",
+        "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)8192)",
+        "/DHZ6_TRANSFER_CACHE_CAPACITY=((size_t)512)",
+        "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)512)",
+        "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)6144)",
+        "/DHZ6_SOURCE_RUN_REUSE_L1=1"
+    )
+}
+
+function Get-Hz6WinLargerLowRssFront4kSourceRunDesc8kRoute8kCapacityFlags {
+    @(
+        "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)8192)",
+        "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)8192)",
+        "/DHZ6_TRANSFER_CACHE_CAPACITY=((size_t)512)",
+        "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)512)",
+        "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)4096)",
+        "/DHZ6_SOURCE_RUN_REUSE_L1=1"
+    )
+}
+
 function Get-Hz6WinRedisLowRssSlimRoute4kCapacityFlags {
     @(
         "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)2048)",
@@ -660,6 +682,8 @@ function Invoke-AppLikeHz6BenchBuilds {
     $largerLowRssSourceRunDesc8kRoute64kFlags = Get-Hz6WinLargerLowRssSourceRunDesc8kRoute64kCapacityFlags
     $largerLowRssSourceRunDesc8kSource2kRoute64kFlags = Get-Hz6WinLargerLowRssSourceRunDesc8kSource2kRoute64kCapacityFlags
     $largerLowRssFront8kSourceRunDesc8kRoute8kFlags = Get-Hz6WinLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
+    $largerLowRssFront6kSourceRunDesc8kRoute8kFlags = Get-Hz6WinLargerLowRssFront6kSourceRunDesc8kRoute8kCapacityFlags
+    $largerLowRssFront4kSourceRunDesc8kRoute8kFlags = Get-Hz6WinLargerLowRssFront4kSourceRunDesc8kRoute8kCapacityFlags
     $redisLowRssSlimRoute4kFlags = Get-Hz6WinRedisLowRssSlimRoute4kCapacityFlags
     $front1kDesc4kSource512Route4kFlags = Get-Hz6WinFront1kDesc4kSource512Route4kCapacityFlags
     $appLikeFlags = Get-Hz6WinAppLikeCapacityFlags
@@ -719,6 +743,8 @@ function Invoke-AppLikeHz6BenchBuilds {
         "largerlowrss-sourcerun-desc8k-route64k" = @{ Suffix = "_largerlowrss_sourcerun_desc8k_route64k"; ExtraFlags = $largerLowRssSourceRunDesc8kRoute64kFlags }
         "largerlowrss-sourcerun-desc8k-source2k-route64k" = @{ Suffix = "_largerlowrss_sourcerun_desc8k_source2k_route64k"; ExtraFlags = $largerLowRssSourceRunDesc8kSource2kRoute64kFlags }
         "largerlowrss-front8k-sourcerun-desc8k-route8k" = @{ Suffix = "_largerlowrss_front8k_sourcerun_desc8k_route8k"; ExtraFlags = $largerLowRssFront8kSourceRunDesc8kRoute8kFlags }
+        "largerlowrss-front6k-sourcerun-desc8k-route8k" = @{ Suffix = "_largerlowrss_front6k_sourcerun_desc8k_route8k"; ExtraFlags = $largerLowRssFront6kSourceRunDesc8kRoute8kFlags }
+        "largerlowrss-front4k-sourcerun-desc8k-route8k" = @{ Suffix = "_largerlowrss_front4k_sourcerun_desc8k_route8k"; ExtraFlags = $largerLowRssFront4kSourceRunDesc8kRoute8kFlags }
         "redislowrss-slim-route4k" = @{ Suffix = "_redislowrss_slim_route4k"; ExtraFlags = $redisLowRssSlimRoute4kFlags }
         "front1k-desc4k-source512-route4k" = @{ Suffix = "_front1k_desc4k_source512_route4k"; ExtraFlags = $front1kDesc4kSource512Route4kFlags }
         "appcap" = @{ Suffix = "_appcap"; ExtraFlags = $appLikeFlags }

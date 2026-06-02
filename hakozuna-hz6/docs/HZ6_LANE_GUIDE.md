@@ -35,6 +35,8 @@ Windows profile family:
       speed or rss
     capacity lane:
       largerlowrss-front8k-sourcerun-desc8k-route8k
+    close candidate-control:
+      largerlowrss-front6k-sourcerun-desc8k-route8k
 
   perf-recovery upper-bound:
     ownerlocalityfast-appcap
@@ -126,6 +128,8 @@ larger_sizes RSS/speed:
     speed for throughput, rss for lower RSS
   capacity lane:
     largerlowrss-front8k-sourcerun-desc8k-route8k
+  tighter-retention candidate-control:
+    largerlowrss-front6k-sourcerun-desc8k-route8k
 
 performance upper-bound / completion control:
   ownerlocalityfast-appcap
@@ -149,7 +153,7 @@ Recommended comparison matrix for Windows HZ6 mixed profiles:
   -Families mixed_ws `
   -BenchmarkProfiles balanced,wide_ws,larger_sizes `
   -Hz6Profiles strict,speed,rss `
-  -CapacityLanes noboost-route4k,descavail-noboost-route4k,sameownerfast-descavail-noboost-route4k,largerlowrss-front8k-sourcerun-desc8k-route8k,ownerlocalityfast-rsscap-4,ownerlocalityfast-appcap
+  -CapacityLanes noboost-route4k,descavail-noboost-route4k,sameownerfast-descavail-noboost-route4k,largerlowrss-front8k-sourcerun-desc8k-route8k,largerlowrss-front6k-sourcerun-desc8k-route8k,ownerlocalityfast-rsscap-4,ownerlocalityfast-appcap
 ```
 
 Next Windows focus:
@@ -504,6 +508,19 @@ largerlowrss-front8k-sourcerun-desc8k-route8k:
   ownerlocalityfast-rsscap-4 while using less than half the peak RSS. Do not
   use it as a universal mixed_ws lane: wide_ws guard regresses badly and
   balanced uses much more RSS than descavail.
+
+largerlowrss-front6k-sourcerun-desc8k-route8k:
+  Tighter larger_sizes front-retention candidate-control: descriptor 8K, route
+  8K, source-block 512, frontcache 6144, and SourceRunReuse-L1. Repeat-3
+  larger_sizes is effectively tied with front8k while keeping the same 72MB
+  peak band. Keep as a close control until large_slice rows confirm it can
+  replace front8k without losing the wider larger_sizes envelope.
+
+largerlowrss-front4k-sourcerun-desc8k-route8k:
+  Front-retention lower-bound control: descriptor 8K, route 8K, source-block
+  512, frontcache 4096, and SourceRunReuse-L1. Run1 larger_sizes speed drops
+  sharply, so keep it as no-go evidence that front retention below 6K is too
+  small for this profile.
 
 desc4k-route4k:
   route4k plus descriptor capacity 4096. Descriptor-pressure probe only.
