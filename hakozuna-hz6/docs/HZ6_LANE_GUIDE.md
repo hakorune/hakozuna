@@ -109,9 +109,10 @@ ownerlocalityfast-rsscap-3:
 
 ownerlocalityfast-rsscap-4:
   rsscap-3 plus route capacity 131072.
-  larger_sizes run1 drops peak again to about 166..172 MiB and keeps safety
-  counters clean. Current strongest larger_sizes RSSCap candidate-control, but
-  not broad promotion: wide_ws guard regresses versus ownerlocalityfast-appcap.
+  larger_sizes run1 and repeat-3 drop peak again to about 166..172 MiB and
+  keep safety counters clean. Current strongest larger_sizes RSSCap
+  candidate-control, but not broad promotion: wide_ws guard regresses versus
+  ownerlocalityfast-appcap.
 ```
 
 `route4k` is the current HZ6 Windows lane to use first when checking whether

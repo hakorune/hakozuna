@@ -328,6 +328,12 @@ larger_sizes / mixed_ws / run1:
     rss:
       rsscap-3 23.554M ops/s, 191,040 KB
       rsscap-4 23.693M ops/s, 166,464 KB
+    repeat-3:
+      appcap median peak 289,856 KB
+      rsscap-4 median peak 166,480 KB
+      strict 20.573M ops/s
+      speed 23.221M ops/s
+      rss 23.693M ops/s
 
 Safety counters checked in the rsscap-2/rsscap-3 runs:
   descriptor_exhausted = 0
@@ -349,6 +355,8 @@ Interpretation:
   Route capacity can also be trimmed for larger_sizes. Trimming route capacity
   from 262144 to 131072 on top of rsscap-3 lowers peak again to about
   166..172 MiB with clean safety counters in the current larger_sizes run.
+  The repeat-3 run confirms the same shape: peak stays around 166 MiB and
+  throughput remains strong.
 
 Guard read:
   balanced:
