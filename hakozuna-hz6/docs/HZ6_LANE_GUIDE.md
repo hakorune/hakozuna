@@ -46,6 +46,21 @@ Frozen no-go controls:
   sourcerun-reclaim-route4k
 ```
 
+Next Windows focus:
+
+```text
+Wide / mixed profiles:
+  noboost-route4k
+  ownerlocality-appcap
+  ownerlocalityfast-appcap
+
+Use this trio to check whether the remaining Windows general-purpose gap is
+route-locality, cross-owner lifecycle, or broad profile pressure.
+
+Do not:
+  reopen Redis capacity tuning as the next broad HZ6 track
+```
+
 `route4k` is the current HZ6 Windows lane to use first when checking whether
 HZ6 remains low-RSS while avoiding tiny-route-table artifacts. It is not a
 promotion claim. It is the cleanest candidate-control shape so far.

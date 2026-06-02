@@ -31,6 +31,76 @@ Do not mix:
   hot path probe/atomic counters into production benchmark lanes
 ```
 
+## Next Windows Focus
+
+```text
+Frozen evidence:
+  Redis lanes are now evidence-only.
+  Do not widen Redis further before the Windows mixed profiles are checked.
+
+Next attack surface:
+  Windows wide_ws / mixed_ws
+
+Baseline:
+  noboost-route4k
+
+Comparators:
+  ownerlocality-appcap
+  ownerlocalityfast-appcap
+
+Goal:
+  find the weakest remaining Windows general-purpose profile gap without
+  re-opening the Redis control-plane branch
+```
+
+## Windows Wide-WS First Pass 2026-06-02
+
+```text
+Fast lane run:
+  wide_ws / mixed_ws / run1
+
+  strict:
+    route4k              0.330M ops/s, 25,376 KB
+    noboost-route4k     15.618M ops/s, 25,512 KB
+    ownerlocalityfast    1.801M ops/s, 958,204 KB
+
+  speed:
+    route4k              0.311M ops/s, 12,952 KB
+    noboost-route4k      0.337M ops/s, 12,648 KB
+    ownerlocalityfast   21.475M ops/s, 538,548 KB
+
+  rss:
+    route4k              0.378M ops/s, 13,356 KB
+    noboost-route4k     18.877M ops/s, 13,692 KB
+    ownerlocalityfast    9.002M ops/s, 562,680 KB
+
+Diagnostic lane run:
+  strict:
+    route4k              0.286M ops/s, 25,392 KB
+    noboost-route4k      5.875M ops/s, 25,536 KB
+    ownerlocality-appcap 2.512M ops/s, 960,516 KB
+
+  speed:
+    route4k              0.289M ops/s, 12,964 KB
+    noboost-route4k      0.348M ops/s, 12,664 KB
+    ownerlocality-appcap 16.877M ops/s, 538,488 KB
+
+  rss:
+    route4k              0.362M ops/s, 13,372 KB
+    noboost-route4k      5.253M ops/s, 13,704 KB
+    ownerlocality-appcap 6.864M ops/s, 562,480 KB
+
+Interpretation:
+  noboost-route4k still owns strict wide_ws as the current candidate-control.
+  ownerlocalityfast-appcap is the speed / rss recovery lane.
+  ownerlocality-appcap does not beat noboost on strict, but remains useful
+  as diagnostic evidence for route-locality and cross-owner lifecycle fixes.
+
+Next attack:
+  separate strict wide_ws from speed/rss recovery instead of assuming one lane
+  should win everywhere
+```
+
 ## Redis ControlPlane Checkpoint 2026-06-02
 
 ```text
