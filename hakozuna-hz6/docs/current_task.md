@@ -392,6 +392,103 @@ Next:
   broadly.
 ```
 
+## OwnerLocalityFast WideCap Read 2026-06-02
+
+```text
+Why:
+  rsscap-4 is strong for larger_sizes, but wide_ws regresses versus
+  ownerlocalityfast-appcap. The wide_ws sweep separates hot-cache capacity
+  from source-block / descriptor retention.
+
+First sweep:
+  ownerlocalityfast-rsscap-1:
+    transfer/frontcache = 4096 / 8192
+
+  ownerlocalityfast-widecap-1:
+    transfer/frontcache = 32768 / 32768
+    descriptor / route / source-block stay appcap-sized
+
+  ownerlocalityfast-widecap-2:
+    transfer/frontcache = 16384 / 16384
+    descriptor / route / source-block stay appcap-sized
+
+wide_ws / mixed_ws / run1:
+  strict:
+    appcap     2.891M ops/s, 959,264 KB
+    rsscap-1   1.087M ops/s, 951,220 KB
+    widecap-1  2.583M ops/s, 959,888 KB
+    widecap-2  2.694M ops/s, 960,116 KB
+
+  speed:
+    appcap    20.277M ops/s, 538,484 KB
+    rsscap-1  12.621M ops/s, 531,720 KB
+    widecap-1 20.756M ops/s, 538,672 KB
+    widecap-2 18.951M ops/s, 538,424 KB
+
+  rss:
+    appcap     9.172M ops/s, 562,816 KB
+    rsscap-1   4.166M ops/s, 555,984 KB
+    widecap-1  9.414M ops/s, 562,756 KB
+    widecap-2  9.410M ops/s, 562,644 KB
+
+Interpretation:
+  wide_ws is hot-cache sensitive. rsscap-1 trims transfer/frontcache too far:
+  source_alloc rises from appcap-class 132,617 / 8,302 / 33,165 to
+  302,863 / 75,737 / 75,737 in strict/speed/rss. widecap-1/2 restore the
+  source_alloc shape and appcap-class throughput, but peak remains appcap-sized.
+
+Second sweep:
+  ownerlocalityfast-widecap-3:
+    widecap-2 plus source-block = 8192
+
+  ownerlocalityfast-widecap-4:
+    widecap-3 plus descriptor = 131072
+
+wide_ws / mixed_ws / run1:
+  strict:
+    appcap     2.591M ops/s, 959,912 KB
+    widecap-2  2.394M ops/s, 960,012 KB
+    widecap-3  2.518M ops/s, 846,688 KB
+    widecap-4  2.727M ops/s, 772,980 KB
+
+  speed:
+    appcap    18.375M ops/s, 538,388 KB
+    widecap-2 20.601M ops/s, 538,440 KB
+    widecap-3 20.603M ops/s, 424,876 KB
+    widecap-4 18.620M ops/s, 351,076 KB
+
+  rss:
+    appcap     7.218M ops/s, 562,824 KB
+    widecap-2  8.907M ops/s, 562,528 KB
+    widecap-3  8.235M ops/s, 449,116 KB
+    widecap-4  9.540M ops/s, 375,304 KB
+
+Safety counters checked in the widecap-3/widecap-4 run:
+  descriptor_exhausted = 0
+  route_register_fail = 0
+  source_block_exhausted = 0
+  route_invalid = 0
+  route_miss = 0
+
+Interpretation:
+  wide_ws can keep a larger hot cache while trimming source-block and
+  descriptor capacity. This gives a distinct profile from rsscap-4:
+
+    rsscap-4:
+      larger_sizes RSSCap candidate-control
+
+    widecap-4:
+      wide_ws RSS/speed candidate-control
+
+  Do not collapse them into one lane yet. widecap-4 needs repeat/guard rows,
+  while rsscap-4 remains the stronger larger_sizes profile-scoped lane.
+
+Next:
+  run repeat-3 for widecap-4 on wide_ws, then guard against balanced and
+  larger_sizes before deciding whether widecap-4 should replace widecap-2 as
+  the wide_ws candidate-control.
+```
+
 ## Redis ControlPlane Checkpoint 2026-06-02
 
 ```text

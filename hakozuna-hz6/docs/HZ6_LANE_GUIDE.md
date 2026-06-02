@@ -43,6 +43,10 @@ Route-lifecycle diagnostic:
   ownerlocalityfast-rsscap-2
   ownerlocalityfast-rsscap-3
   ownerlocalityfast-rsscap-4
+  ownerlocalityfast-widecap-1
+  ownerlocalityfast-widecap-2
+  ownerlocalityfast-widecap-3
+  ownerlocalityfast-widecap-4
 
 Evidence-only source-run controls:
   sourcerun-route4k
@@ -75,8 +79,8 @@ Wide / mixed profiles:
   ownerlocalityfast-appcap
 
 Next experiment:
-  repeat larger_sizes for ownerlocalityfast-rsscap-4, then keep it
-  profile-scoped unless wide_ws recovers.
+  keep ownerlocalityfast-rsscap-4 profile-scoped for larger_sizes, and use
+  ownerlocalityfast-widecap-* only as the wide_ws RSS/speed capacity sweep.
 
 Do not:
   reopen Redis capacity tuning as the next broad HZ6 track
@@ -113,6 +117,27 @@ ownerlocalityfast-rsscap-4:
   keep safety counters clean. Current strongest larger_sizes RSSCap
   candidate-control, but not broad promotion: wide_ws guard regresses versus
   ownerlocalityfast-appcap.
+
+ownerlocalityfast-widecap-1:
+  appcap descriptor / route / source-block capacity, with transfer/frontcache
+  kept wide at 32768. Wide_ws restores appcap-class speed, but peak remains
+  appcap-sized. Keep as wide hot-cache evidence.
+
+ownerlocalityfast-widecap-2:
+  appcap descriptor / route / source-block capacity, with transfer/frontcache
+  at 16384. Wide_ws still restores most appcap-class speed with appcap-sized
+  peak. Use as the narrow hot-cache baseline for further wide_ws RSS trims.
+
+ownerlocalityfast-widecap-3:
+  widecap-2 plus source-block capacity 8192. Wide_ws keeps speed near
+  widecap-2 while dropping peak by roughly 110 MiB in speed/rss profiles.
+  Current source-block trim evidence for wide_ws.
+
+ownerlocalityfast-widecap-4:
+  widecap-3 plus descriptor capacity 131072. Wide_ws drops peak further
+  while keeping clean safety counters; speed can vary by profile, but rss and
+  strict stay competitive with appcap/widecap-2. Current wide_ws RSS/speed
+  candidate-control; not broad promotion until repeat/guard rows confirm.
 ```
 
 `route4k` is the current HZ6 Windows lane to use first when checking whether
@@ -258,6 +283,26 @@ ownerlocalityfast-rsscap-4:
   versus rsscap-3, with safety counters clean. Treat as the current
   larger_sizes RSSCap candidate-control only; wide_ws guard regresses versus
   ownerlocalityfast-appcap.
+
+ownerlocalityfast-widecap-1:
+  Non-diagnostic owner-locality behavior lane for wide_ws. It keeps appcap
+  descriptor / route / source-block capacity, but sets transfer/frontcache to
+  32768. It shows that wide_ws needs a larger hot cache than rsscap-1.
+
+ownerlocalityfast-widecap-2:
+  Same as widecap-1, but transfer/frontcache are 16384. It preserves
+  appcap-like source allocation behavior for wide_ws and is the baseline for
+  trimming source-block / descriptor capacity without reverting to rsscap-1.
+
+ownerlocalityfast-widecap-3:
+  widecap-2 plus source-block capacity 8192. Current wide_ws run1 cuts peak
+  versus widecap-2 while keeping clean safety counters and largely preserving
+  throughput.
+
+ownerlocalityfast-widecap-4:
+  widecap-3 plus descriptor capacity 131072. Current wide_ws run1 cuts peak
+  further and keeps safety counters clean. Treat as wide_ws candidate-control
+  evidence, not a universal ownerlocalityfast replacement.
 ```
 
 ## Focused Mechanism Lanes
