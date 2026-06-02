@@ -24,7 +24,7 @@ Windows profile family:
     HZ6 profiles:
       speed or rss
     capacity lane:
-      ownerlocalityfast-rsscap-4
+      largerlowrss-front8k-sourcerun-desc8k-route8k
 
   perf-recovery upper-bound:
     ownerlocalityfast-appcap
@@ -106,7 +106,7 @@ larger_sizes RSS/speed:
   HZ6 profile:
     speed for throughput, rss for lower RSS
   capacity lane:
-    ownerlocalityfast-rsscap-4
+    largerlowrss-front8k-sourcerun-desc8k-route8k
 
 performance upper-bound / completion control:
   ownerlocalityfast-appcap
@@ -130,7 +130,7 @@ Recommended comparison matrix for Windows HZ6 mixed profiles:
   -Families mixed_ws `
   -BenchmarkProfiles balanced,wide_ws,larger_sizes `
   -Hz6Profiles strict,speed,rss `
-  -CapacityLanes noboost-route4k,descavail-noboost-route4k,directlocalfree-descavail-noboost-route4k,ownerlocalityfast-rsscap-4,ownerlocalityfast-widecap-4,ownerlocalityfast-appcap
+  -CapacityLanes noboost-route4k,descavail-noboost-route4k,directlocalfree-descavail-noboost-route4k,largerlowrss-front8k-sourcerun-desc8k-route8k,ownerlocalityfast-rsscap-4,ownerlocalityfast-appcap
 ```
 
 Next Windows focus:
@@ -141,8 +141,10 @@ Profile-family read:
   speed candidate-control.
   strict + directlocalfree-descavail-noboost-route4k is the current
   random_mixed low-RSS speed candidate-control.
-  ownerlocalityfast-rsscap-4 remains the larger_sizes RSS/speed
-  candidate-control.
+  largerlowrss-front8k-sourcerun-desc8k-route8k is the current larger_sizes
+  RSS/speed candidate-control.
+  ownerlocalityfast-rsscap-4 is now a historical larger_sizes high-RSS
+  comparison control.
   ownerlocalityfast-appcap is the perf-recovery upper-bound / completion
   control, not the default.
   Redis lanes are frozen as evidence-only.
@@ -151,6 +153,7 @@ Wide / mixed profiles:
   noboost-route4k
   descavail-noboost-route4k
   directlocalfree-descavail-noboost-route4k
+  largerlowrss-front8k-sourcerun-desc8k-route8k
   ownerlocalityfast-rsscap-4
 
 Next experiment:
@@ -435,6 +438,15 @@ directlocalfree-descavail-noboost-route4k:
   mixed_ws wide_ws/larger_sizes, but it loses to descavail alone in mixed_ws
   balanced. Keep it as a named candidate-control lane, not a silent replacement
   for either parent mechanism.
+
+largerlowrss-front8k-sourcerun-desc8k-route8k:
+  Larger_sizes-targeted low-RSS lane: descriptor 8K, route 8K, source-block
+  512, frontcache 8K, and SourceRunReuse-L1. It keeps allocation failures at
+  zero and reduces source/route churn by retaining larger object slots long
+  enough to avoid constant source recreation. Repeat-3 larger_sizes beats
+  ownerlocalityfast-rsscap-4 while using less than half the peak RSS. Do not
+  use it as a universal mixed_ws lane: wide_ws guard regresses badly and
+  balanced uses much more RSS than descavail.
 
 desc4k-route4k:
   route4k plus descriptor capacity 4096. Descriptor-pressure probe only.

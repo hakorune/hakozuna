@@ -57,7 +57,7 @@ Current lane organization:
     HZ6 profiles:
       speed or rss
     capacity lane:
-      ownerlocalityfast-rsscap-4
+      largerlowrss-front8k-sourcerun-desc8k-route8k
 
   performance upper-bound / completion control:
     ownerlocalityfast-appcap
@@ -759,15 +759,154 @@ Status:
     selected random_mixed low-RSS speed candidate-control
 
   speed/rss + ownerlocalityfast-rsscap-4:
-    selected larger_sizes performance candidate-control
+    superseded as larger_sizes selected lane by largerlowrss-front8k
 
   ownerlocalityfast-widecap-4:
     demoted from current wide_ws selected lane to historical control/evidence
 
 Next:
-  larger_sizes is the remaining obvious weakness:
-    it needs a low-RSS supply/backend design, not more descriptor-failure
-    cleanup.
+  test a larger_sizes low-RSS supply/backend lane:
+    front retention should be raised without appcap-sized source/route caps.
+```
+
+## LargerLowRss Front8k SourceRun 2026-06-02
+
+```text
+Problem:
+  descavail fixes descriptor failure cost, but larger_sizes remained slow.
+
+Diagnostic read:
+  descavail larger_sizes:
+    allocation failures remain high
+    descriptor exhaustion remains high
+    source_block probes remain high
+
+  desc8k/source512/route8k:
+    allocation failures reach 0
+    but route register probes remain around 2B
+    source_alloc remains about 22K..27K
+
+  ownerlocalityfast-rsscap-4:
+    source_alloc falls to about 1.4K..2.8K
+    route register probes fall to about 20K
+    but RSS is about 170MB
+
+Hypothesis:
+  larger_sizes needs more front retention for larger object slots. Without it,
+  HZ6 keeps recreating source blocks and exact routes. The issue is not
+  descriptor failure cost anymore.
+```
+
+Target lane:
+
+```text
+largerlowrss-front8k-sourcerun-desc8k-route8k:
+  descriptor capacity: 8192
+  route capacity: 8192
+  source block capacity: 512
+  frontcache bin capacity: 8192
+  SourceRunReuse-L1: on
+```
+
+Diagnostic run1:
+
+```text
+rss:
+  largerlowrss-sourcerun-desc8k-route8k:
+     0.706M ops/s, 70,800 KB
+     source_alloc=27869
+     route_register_probe_total=2.162B
+
+  largerlowrss-front8k-sourcerun-desc8k-route8k:
+    32.560M ops/s, 72,892 KB
+    source_alloc=1652
+    route_register_probe_total=33K
+
+  ownerlocalityfast-rsscap-4:
+    21.552M ops/s, 170,028 KB
+    source_alloc=2795
+    route_register_probe_total=22K
+
+speed:
+  largerlowrss-sourcerun-desc8k-route8k:
+     0.737M ops/s, 70,036 KB
+     source_alloc=22475
+     route_register_probe_total=2.125B
+
+  largerlowrss-front8k-sourcerun-desc8k-route8k:
+    34.107M ops/s, 72,768 KB
+    source_alloc=1329
+    route_register_probe_total=32K
+
+  ownerlocalityfast-rsscap-4:
+    24.043M ops/s, 169,968 KB
+    source_alloc=1409
+    route_register_probe_total=20K
+```
+
+Repeat-3 larger_sizes:
+
+```text
+rss:
+  largerlowrss-front8k-sourcerun-desc8k-route8k:
+    34.286M ops/s, 72,836 KB
+
+  ownerlocalityfast-rsscap-4:
+    23.842M ops/s, 169,972 KB
+
+speed:
+  largerlowrss-front8k-sourcerun-desc8k-route8k:
+    35.353M ops/s, 72,792 KB
+
+  ownerlocalityfast-rsscap-4:
+    27.041M ops/s, 170,012 KB
+```
+
+Guard:
+
+```text
+balanced / run1:
+  rss + descavail-noboost-route4k:
+    77.222M ops/s, 18,040 KB
+
+  rss + largerlowrss-front8k-sourcerun-desc8k-route8k:
+    66.387M ops/s, 100,036 KB
+
+  speed + largerlowrss-front8k-sourcerun-desc8k-route8k:
+    81.704M ops/s, 100,084 KB
+
+wide_ws / run1:
+  rss + descavail-noboost-route4k:
+    60.546M ops/s, 13,164 KB
+
+  rss + largerlowrss-front8k-sourcerun-desc8k-route8k:
+     0.337M ops/s, 72,984 KB
+
+  speed + largerlowrss-front8k-sourcerun-desc8k-route8k:
+     0.367M ops/s, 72,912 KB
+```
+
+Read:
+
+```text
+largerlowrss-front8k is a strong larger_sizes-specific candidate-control.
+It is not a universal mixed_ws lane.
+
+Status:
+  larger_sizes:
+    SELECT speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k
+
+  balanced:
+    keep rss + descavail-noboost-route4k as lower-RSS default
+    largerlowrss-front8k can be an upper-speed control only
+
+  wide_ws:
+    largerlowrss-front8k is no-go
+
+Next:
+  larger_sizes is no longer the obvious weak row in this matrix. The remaining
+  cleanup is lane naming / selection table and then broader benchmark
+  comparison against HZ3/HZ4/HZ5/mimalloc/tcmalloc using the selected HZ6 rows.
 ```
 
 ## Windows Profile Family Freeze 2026-06-02
@@ -801,13 +940,13 @@ Family:
 
   larger-sizes-perf:
     lane:
-      speed/rss + ownerlocalityfast-rsscap-4
+      speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k
     role:
       larger_sizes performance candidate-control
     strong:
       larger_sizes
     weak:
-      RSS remains much higher than descavail/noboost
+      not suitable for wide_ws; balanced RSS is higher than descavail
 
   perf-recovery-upper-bound:
     lane:
@@ -833,11 +972,12 @@ Next design step:
   larger_sizes low-RSS supply/backend track
 
   D-lite:
-    explain why ownerlocalityfast-rsscap-4 wins larger_sizes using existing
-    route / descriptor / source / large-span counters first
+    explain why largerlowrss-front8k wins larger_sizes using existing
+    route / descriptor / source / frontcache counters first
 
   A:
-    reduce larger_sizes RSS without falling back to appcap-sized retention
+    reduce largerlowrss-front8k RSS further without returning to route/source
+    churn
 
 Do not:
   blur descavail-noboost-route4k by adding broad large-size capacity.

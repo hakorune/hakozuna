@@ -91,8 +91,10 @@ Hz6SourceBlock* hz6_allocator_source_run_find_reusable(
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.source_run_reuse_attempt;
 #endif
+#if HZ6_SOURCE_RUN_SLOT_LOOKUP_L1
   Hz6SourceBlock* best_block = NULL;
   uint16_t best_free_slots = 0;
+#endif
   for (size_t i = 0; i < HZ6_SOURCE_BLOCK_CAPACITY; ++i) {
     Hz6SourceBlock* block = &allocator->source_blocks[i];
     if (!block->active || !block->ptr || !block->run_active ||
