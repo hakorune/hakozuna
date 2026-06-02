@@ -1095,6 +1095,12 @@ ControlPlane-R1 dry-run smoke:
     diagnostic redis_medium/redis_long output as-is. For the next staged
     inspection, use a capped-tail parser or run the heavy rows directly so the
     control-plane counters can be read without buffering the full stream.
+
+  follow-up:
+    win/run_win_hz6_capacity_matrix.ps1 now streams raw logs to disk and keeps
+    only capped capture lines in memory. A redis_medium diagnostic verify row
+    now completes again, so the next step is to read the heavy-row counters
+    rather than to rework the runner further.
 ```
 
 ## Next Implementation Order 2026-06-01

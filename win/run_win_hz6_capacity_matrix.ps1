@@ -49,6 +49,56 @@ function Get-Median {
     return ([double]$sorted[$mid - 1] + [double]$sorted[$mid]) / 2.0
 }
 
+function Get-LogCapture {
+    param(
+        [Parameter(Mandatory = $true)][string[]]$Paths,
+        [int]$TailLimit = 200,
+        [switch]$IncludeStatsTail
+    )
+
+    $captured = New-Object System.Collections.Generic.List[string]
+    $tail = New-Object System.Collections.Generic.Queue[string]
+    $statsTail = New-Object System.Collections.Generic.Queue[string]
+
+    foreach ($path in $Paths) {
+        if (-not (Test-Path $path)) {
+            continue
+        }
+        foreach ($line in [System.IO.File]::ReadLines($path)) {
+            if ($null -eq $line) { continue }
+            if ($line -ne "") {
+                if ($tail.Count -ge $TailLimit) {
+                    [void]$tail.Dequeue()
+                }
+                [void]$tail.Enqueue($line)
+            }
+            if ($line -match '^(\[BENCH_ARGS\]|Pattern:|Throughput:|Ops:|---)') {
+                [void]$captured.Add($line)
+            } elseif ($IncludeStatsTail -and $line -match '^\[HZ6_STATS\]\s+label=redis_alloc_string_fail') {
+                if ($statsTail.Count -ge $TailLimit) {
+                    [void]$statsTail.Dequeue()
+                }
+                [void]$statsTail.Enqueue($line)
+            }
+        }
+    }
+
+    if ($captured.Count -eq 0 -and $tail.Count -gt 0) {
+        foreach ($line in $tail) {
+            [void]$captured.Add($line)
+        }
+    }
+
+    if ($IncludeStatsTail -and $statsTail.Count -gt 0) {
+        [void]$captured.Add("[TIMEOUT_CAPTURED_STATS_TAIL] last $($statsTail.Count) redis_alloc_string_fail stats lines")
+        foreach ($line in $statsTail) {
+            [void]$captured.Add($line)
+        }
+    }
+
+    return ,$captured.ToArray()
+}
+
 function Invoke-CapturedProcess {
     param(
         [Parameter(Mandatory = $true)][string]$FilePath,
@@ -91,27 +141,9 @@ function Invoke-CapturedProcess {
         $proc.WaitForExit()
         $lines = New-Object System.Collections.Generic.List[string]
         $lines.Add("[TIMEOUT] exceeded ${TimeoutSeconds}s")
-        $statsTail = New-Object System.Collections.Generic.List[string]
-        foreach ($path in @($stdoutPath, $stderrPath)) {
-            if (Test-Path $path) {
-                foreach ($line in (Get-Content -LiteralPath $path -ErrorAction SilentlyContinue)) {
-                    if ($line -eq "") { continue }
-                    if ($line -match '^(\[BENCH_ARGS\]|Pattern:|Throughput:|Ops:|---)') {
-                        $lines.Add($line)
-                    } elseif ($line -match '^\[HZ6_STATS\]\s+label=redis_alloc_string_fail') {
-                        $statsTail.Add($line)
-                        if ($statsTail.Count -gt 200) {
-                            $statsTail.RemoveAt(0)
-                        }
-                    }
-                }
-            }
-        }
-        if ($statsTail.Count -gt 0) {
-            $lines.Add("[TIMEOUT_CAPTURED_STATS_TAIL] last $($statsTail.Count) redis_alloc_string_fail stats lines")
-            foreach ($line in $statsTail) {
-                $lines.Add($line)
-            }
+        $captured = Get-LogCapture -Paths @($stdoutPath, $stderrPath) -TailLimit 200 -IncludeStatsTail
+        foreach ($line in $captured) {
+            $lines.Add($line)
         }
         Remove-Item -LiteralPath $stdoutPath, $stderrPath -Force -ErrorAction SilentlyContinue
         $peakKb = if ($peakWorkingSetBytes -gt 0) { [string][UInt64]([Math]::Ceiling($peakWorkingSetBytes / 1024.0)) } else { "NA" }
@@ -136,12 +168,9 @@ function Invoke-CapturedProcess {
     $proc.WaitForExit()
 
     $lines = New-Object System.Collections.Generic.List[string]
-    foreach ($path in @($stdoutPath, $stderrPath)) {
-        if (Test-Path $path) {
-            foreach ($line in (Get-Content -LiteralPath $path -ErrorAction SilentlyContinue)) {
-                if ($line -ne "") { $lines.Add($line) }
-            }
-        }
+    $captured = Get-LogCapture -Paths @($stdoutPath, $stderrPath) -TailLimit 200
+    foreach ($line in $captured) {
+        if ($line -ne "") { $lines.Add($line) }
     }
     Remove-Item -LiteralPath $stdoutPath, $stderrPath -Force -ErrorAction SilentlyContinue
 
@@ -296,7 +325,9 @@ $Stamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $SummaryPath = Join-Path $OutputDir ($Stamp + "_hz6_capacity_matrix_windows.md")
 $RawLogPath = Join-Path $OutputDir ($Stamp + "_hz6_capacity_matrix_windows.log")
 $Summary = New-Object System.Collections.Generic.List[string]
-$RawLines = New-Object System.Collections.Generic.List[string]
+$Utf8BomEncoding = New-Object System.Text.UTF8Encoding $true
+$RawLogWriter = New-Object System.IO.StreamWriter($RawLogPath, $false, $Utf8BomEncoding)
+$RawLogWriter.AutoFlush = $true
 
 $Summary.Add("# Windows HZ6 Capacity Matrix")
 $Summary.Add("")
@@ -396,13 +427,13 @@ foreach ($family in $selectedFamilies) {
                 $output = $result.Lines
                 $raw = (($output | ForEach-Object { $_.ToString().Trim() }) -join " ").Trim()
 
-                $RawLines.Add("=== $family / $($case.Name) / $($exe.Name) / run $run ===")
-                $RawLines.Add("cmd: $($exe.Path) " + ($case.Args -join " "))
-                $RawLines.Add("rc: " + $result.ExitCode)
+                $RawLogWriter.WriteLine("=== $family / $($case.Name) / $($exe.Name) / run $run ===")
+                $RawLogWriter.WriteLine("cmd: $($exe.Path) " + ($case.Args -join " "))
+                $RawLogWriter.WriteLine("rc: " + $result.ExitCode)
                 foreach ($line in $output) {
-                    $RawLines.Add($line.ToString())
+                    $RawLogWriter.WriteLine($line.ToString())
                 }
-                $RawLines.Add("")
+                $RawLogWriter.WriteLine("")
 
                 if ($result.ExitCode -ne 0) {
                     if ($ContinueOnFailure) {
@@ -472,6 +503,10 @@ foreach ($family in $selectedFamilies) {
     }
 }
 
+if ($RawLogWriter) {
+    $RawLogWriter.Flush()
+    $RawLogWriter.Dispose()
+}
+
 Set-Content -Path $SummaryPath -Value $Summary -Encoding UTF8
-Set-Content -Path $RawLogPath -Value $RawLines -Encoding UTF8
 Write-Host "Wrote summary: $SummaryPath"
