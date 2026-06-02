@@ -966,6 +966,79 @@ Decision:
   Use noboost-route4k for mixed_ws/random_mixed low-capacity checks.
 ```
 
+## ControlPlane Direction 2026-06-02
+
+```text
+Design read:
+  HZ6 is not failing because the hot path / route safety design is bad.
+  The current evidence shows the limit of static capacity lanes:
+    noboost-route4k fits mixed_ws / random_mixed.
+    redislowrss-slim-route4k fits Redis-like string/list churn.
+    one static lane cannot yet cover both without hurting one side.
+
+Interpretation:
+  redislowrss-slim-route4k is the BURST_SUPPLY upper-shape evidence.
+  noboost-route4k is the NORMAL low-RSS shape.
+  The next design target is a runtime control plane with hard capacity above
+  NORMAL and soft budgets that open only under Redis-like pressure.
+```
+
+```text
+Recommended order:
+  1. Freeze redislowrss-slim-route4k as Redis-like candidate-control.
+  2. Add staged Redis profiles before default redis_workload:
+       redis_tiny
+       redis_short
+       redis_medium
+       redis_long
+       redis_workload
+  3. Use staged rows to find the first collapse phase.
+  4. Add ControlPlane-R1 dry-run:
+       NORMAL
+       BURST_SUPPLY_WOULD_OPEN
+       CLOSE_WOULD_START
+  5. Only after dry-run, add behavior:
+       NORMAL soft budget roughly noboost-route4k
+       BURST_SUPPLY soft budget roughly redislowrss-slim-route4k
+       CLOSE returns retention toward NORMAL
+```
+
+```text
+Runner update:
+  The HZ6 capacity matrix now supports:
+    redis_medium = 2 200 500 16 256
+    redis_long   = 4 300 1000 16 256
+
+  Timeout capture now preserves BENCH_ARGS / Pattern / Throughput / Ops lines
+  and the last 200 redis_alloc_string_fail stats lines. This keeps default-row
+  timeouts useful without dumping the entire stats stream into the summary.
+```
+
+```text
+redis_medium smoke:
+  noboost-route4k:
+    SET    0.01M
+    GET   63.82M
+    LPUSH  0.01M
+    LPOP 106.45M
+    RANDOM 0.16M
+    peak  8.1 MiB
+
+  redislowrss-slim-route4k:
+    SET    16.32M
+    GET   112.32M
+    LPUSH  12.96M
+    LPOP  161.20M
+    RANDOM 34.36M
+    peak   9.8 MiB
+    redis_alloc_string_fail lines = 0
+
+Read:
+  redis_medium confirms the short-row read: slim remains the Redis-like
+  candidate-control lane, while noboost still collapses on writer/list phases.
+  Next staged check is redis_long before returning to redis_workload.
+```
+
 ## Next Implementation Order 2026-06-01
 
 ```text

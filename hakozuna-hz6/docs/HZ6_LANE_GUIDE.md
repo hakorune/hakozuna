@@ -276,8 +276,9 @@ Redis workload:
   actually survive more realistic access mixes. Current route4k/noboost rows
   need a focused shorter profile before they are useful for candidate ranking,
   because the default Redis-like row can timeout while emitting many allocation
-  failure stats lines. Use `redis_short` or `redis_tiny` first when debugging
-  Redis-like timeout behavior.
+  failure stats lines. Use `redis_tiny`, `redis_short`, `redis_medium`, and
+  `redis_long` before returning to `redis_workload`, so collapse phases are
+  visible before the paper-sized row times out.
 ```
 
 ## Commands
@@ -321,6 +322,19 @@ powershell -ExecutionPolicy Bypass -File .\win\run_win_hz6_capacity_matrix.ps1 `
   -BenchmarkProfiles redis_short `
   -Runs 1 `
   -SkipBuild
+```
+
+Run staged Redis-like pressure rows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\win\run_win_hz6_capacity_matrix.ps1 `
+  -Families redis `
+  -Hz6Profiles rss `
+  -CapacityLanes noboost-route4k,redislowrss-slim-route4k `
+  -BenchmarkProfiles redis_short,redis_medium,redis_long `
+  -Runs 1 `
+  -SkipBuild `
+  -ContinueOnFailure
 ```
 
 ## Lane Rules

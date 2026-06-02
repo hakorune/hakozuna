@@ -89,11 +89,36 @@ function Invoke-CapturedProcess {
             try { $proc.Kill() } catch {}
         }
         $proc.WaitForExit()
+        $lines = New-Object System.Collections.Generic.List[string]
+        $lines.Add("[TIMEOUT] exceeded ${TimeoutSeconds}s")
+        $statsTail = New-Object System.Collections.Generic.List[string]
+        foreach ($path in @($stdoutPath, $stderrPath)) {
+            if (Test-Path $path) {
+                foreach ($line in (Get-Content -LiteralPath $path -ErrorAction SilentlyContinue)) {
+                    if ($line -eq "") { continue }
+                    if ($line -match '^(\[BENCH_ARGS\]|Pattern:|Throughput:|Ops:|---)') {
+                        $lines.Add($line)
+                    } elseif ($line -match '^\[HZ6_STATS\]\s+label=redis_alloc_string_fail') {
+                        $statsTail.Add($line)
+                        if ($statsTail.Count -gt 200) {
+                            $statsTail.RemoveAt(0)
+                        }
+                    }
+                }
+            }
+        }
+        if ($statsTail.Count -gt 0) {
+            $lines.Add("[TIMEOUT_CAPTURED_STATS_TAIL] last $($statsTail.Count) redis_alloc_string_fail stats lines")
+            foreach ($line in $statsTail) {
+                $lines.Add($line)
+            }
+        }
         Remove-Item -LiteralPath $stdoutPath, $stderrPath -Force -ErrorAction SilentlyContinue
+        $peakKb = if ($peakWorkingSetBytes -gt 0) { [string][UInt64]([Math]::Ceiling($peakWorkingSetBytes / 1024.0)) } else { "NA" }
         return @{
             ExitCode = 124
-            Lines = @("[TIMEOUT] exceeded ${TimeoutSeconds}s")
-            PeakKb = "NA"
+            Lines = $lines
+            PeakKb = $peakKb
         }
     }
 
@@ -330,6 +355,8 @@ foreach ($family in $selectedFamilies) {
         $redisProfiles = @(
             @{ Name = "redis_workload"; Args = @("4", "500", "2000", "16", "256"); Note = "paper-aligned Redis-like workload" },
             @{ Name = "redis_short"; Args = @("2", "100", "200", "16", "256"); Note = "short Redis-like timeout triage row" },
+            @{ Name = "redis_medium"; Args = @("2", "200", "500", "16", "256"); Note = "medium Redis-like staged pressure row" },
+            @{ Name = "redis_long"; Args = @("4", "300", "1000", "16", "256"); Note = "long Redis-like staged pressure row below paper default" },
             @{ Name = "redis_tiny"; Args = @("1", "50", "100", "16", "256"); Note = "tiny Redis-like smoke row" }
         )
         $requestedRedisProfiles = Split-List -Values $BenchmarkProfiles
