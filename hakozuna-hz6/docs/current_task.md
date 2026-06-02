@@ -261,6 +261,112 @@ Next:
   same-owner toy fast path against the full contract path.
 ```
 
+## DirectLocalFree-L1 2026-06-02
+
+```text
+Small free-path cleanup:
+  When both diagnostic probes and FRONTCACHE_CAP_ON_FREE are off, skip the
+  frontcache cap dry-run / cap-release function calls entirely.
+  This is semantics-preserving for speed lanes because the cap code is
+  behavior-off and diagnostics-off in those builds.
+
+Experiment:
+  directlocalfree-noboost-route4k
+
+Change:
+  For local-owner HZ6_FRONT_TOY / HZ6_FRONT_MIDPAGE / HZ6_FRONT_LOCAL2P frees,
+  bypass:
+    hz6_front_for_id
+    front->free_tagged
+    hz6_front_free_local_to_cache
+
+  and call:
+    hz6_allocator_cache_active_descriptor()
+
+  directly from hz6_free().
+
+Safety boundary:
+  HZ6_FRONT_LARGE is excluded because it can route through CentralSpanPool.
+  foreign-owner, MISS, INVALID, and visible/remote paths stay unchanged.
+```
+
+Acceptance:
+
+```text
+Safety:
+  route_invalid = 0
+  route_miss = 0
+  route_register_fail = 0
+
+Performance:
+  random_mixed improves vs noboost-route4k after cap-call skip.
+  strong signal is +5% without RSS increase.
+
+No-go:
+  no speed gain.
+  larger/front guard rows break.
+  any safety counter appears.
+```
+
+First result:
+
+```text
+random_mixed repeat-3:
+  small:
+    noboost-route4k             34.522M, 5,548 KB
+    directlocalfree-noboost     35.805M, 5,548 KB
+
+  medium:
+    noboost-route4k             34.730M, 5,544 KB
+    directlocalfree-noboost     38.037M, 5,540 KB
+
+  mixed:
+    noboost-route4k             32.947M, 5,544 KB
+    directlocalfree-noboost     36.433M, 5,544 KB
+
+mixed_ws guard run1:
+  balanced:
+    noboost-route4k             17.609M, 24,836 KB
+    directlocalfree-noboost     23.196M, 24,848 KB
+
+  wide_ws:
+    noboost-route4k             14.861M, 25,536 KB
+    directlocalfree-noboost     14.290M, 25,532 KB
+
+  larger_sizes:
+    noboost-route4k              1.407M, 16,200 KB
+    directlocalfree-noboost      1.250M, 16,184 KB
+
+Safety:
+  clean in checked rows.
+  route_invalid = 0
+  route_miss = 0
+  route_register_fail = 0
+```
+
+Read:
+
+```text
+DirectLocalFree-L1 is strong random_mixed mechanism evidence:
+  same-owner front dispatch / wrapper validation cost is real.
+
+But:
+  wide_ws and larger_sizes guard rows regress, so do not promote it as a
+  universal low-RSS lane.
+
+Current status:
+  KEEP as same-owner hot-path evidence.
+  NO universal promotion.
+
+Next:
+  understand why wide_ws/larger_sizes regress:
+    size/front mix differs
+    Large is excluded, but midpage pressure and allocation-failure behavior
+    may interact with the faster free path
+  if pursuing this track, make the direct path class/front gated rather than
+  blanket TOY/MIDPAGE/LOCAL2P.
+```
+
 ## Windows Profile Family Freeze 2026-06-02
 
 ```text

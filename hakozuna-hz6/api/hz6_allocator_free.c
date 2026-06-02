@@ -145,6 +145,14 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
         }
         if (!front) {
           ok = 0;
+#if HZ6_LOCAL_CACHE_DIRECT_FREE_L1
+        } else if (local_owner &&
+                   (route.front_id == HZ6_FRONT_TOY ||
+                    route.front_id == HZ6_FRONT_MIDPAGE ||
+                    route.front_id == HZ6_FRONT_LOCAL2P)) {
+          ok = hz6_allocator_cache_active_descriptor(allocator, descriptor,
+                                                     ptr);
+#endif
         } else if (local_owner) {
           ok = front->free_tagged &&
                front->free_tagged(allocator, ptr, route);

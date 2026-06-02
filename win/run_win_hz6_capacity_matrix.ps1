@@ -239,6 +239,7 @@ $laneSuffix = @{
     "route4k" = "_route4k"
     "noboost-route4k" = "_noboost_route4k"
     "localexactfree-noboost-route4k" = "_localexactfree_noboost_route4k"
+    "directlocalfree-noboost-route4k" = "_directlocalfree_noboost_route4k"
     "spill-route4k" = "_spill_route4k"
     "borrow-route4k" = "_borrow_route4k"
     "cap-route4k" = "_cap_route4k"

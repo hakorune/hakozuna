@@ -370,6 +370,15 @@ localexactfree-noboost-route4k:
   confirms full lookup probes are removed on exact-valid frees, but normal
   throughput is not materially better, so keep it as mechanism evidence.
 
+directlocalfree-noboost-route4k:
+  noboost-route4k plus DirectLocalFree-L1. Local-owner TOY/MIDPAGE/LOCAL2P
+  frees bypass front lookup / function-pointer dispatch / wrapper validation
+  and call descriptor-to-frontcache directly. LARGE and all remote/foreign
+  paths remain on the normal front contract. Use as a narrow same-owner
+  free-path overhead probe. Repeat-3 strongly improves random_mixed, but
+  wide_ws/larger_sizes guard rows regress, so keep it as mechanism evidence
+  rather than a broad low-RSS promotion.
+
 desc4k-route4k:
   route4k plus descriptor capacity 4096. Descriptor-pressure probe only.
 

@@ -71,6 +71,7 @@ int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
   entry.bytes = descriptor->bytes;
   entry.class_id = descriptor->class_id;
   entry.generation = descriptor->generation;
+#if HZ6_DIAGNOSTIC_PROBES || HZ6_FRONTCACHE_CAP_ON_FREE
   hz6_allocator_note_frontcache_cap_dryrun(allocator, entry.class_id);
   if (hz6_allocator_frontcache_should_cap_release(allocator, entry.class_id)) {
     descriptor->state = HZ6_STATE_DEAD;
@@ -85,6 +86,7 @@ int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
     hz6_allocator_release_descriptor_source(descriptor);
     return 1;
   }
+#endif
 #if HZ6_DESCRIPTORLESS_FRONTCACHE_L1
   if (descriptor->source_block && descriptor->source_block->run_active &&
       descriptor->source_block->run_class_id == entry.class_id &&
