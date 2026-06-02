@@ -279,6 +279,14 @@ Lane definitions:
     rsscap-1 plus source-block trimmed:
       source-block = 8192
 
+  ownerlocalityfast-rsscap-3:
+    rsscap-2 plus descriptor trimmed:
+      descriptor = 131072
+
+  ownerlocalityfast-rsscap-4:
+    rsscap-3 plus route trimmed:
+      route = 131072
+
 larger_sizes / mixed_ws / run1:
   rsscap-1:
     performance preserved, but peak working set is essentially unchanged.
@@ -296,7 +304,32 @@ larger_sizes / mixed_ws / run1:
       appcap 17.933M ops/s, 284,824 KB
       rsscap-2 20.669M ops/s, 227,928 KB
 
-Safety counters checked in the rsscap-2 run:
+  rsscap-3:
+    strict:
+      appcap 16.600M ops/s, 289,916 KB
+      rsscap-2 17.530M ops/s, 233,012 KB
+      rsscap-3 19.053M ops/s, 196,152 KB
+    speed:
+      appcap 19.132M ops/s, 284,776 KB
+      rsscap-2 22.983M ops/s, 227,920 KB
+      rsscap-3 20.889M ops/s, 191,096 KB
+    rss:
+      appcap 17.730M ops/s, 284,756 KB
+      rsscap-2 21.117M ops/s, 227,888 KB
+      rsscap-3 21.846M ops/s, 191,088 KB
+
+  rsscap-4:
+    strict:
+      rsscap-3 18.171M ops/s, 196,196 KB
+      rsscap-4 20.340M ops/s, 171,636 KB
+    speed:
+      rsscap-3 23.315M ops/s, 191,040 KB
+      rsscap-4 26.260M ops/s, 166,472 KB
+    rss:
+      rsscap-3 23.554M ops/s, 191,040 KB
+      rsscap-4 23.693M ops/s, 166,464 KB
+
+Safety counters checked in the rsscap-2/rsscap-3 runs:
   descriptor_exhausted = 0
   route_register_fail = 0
   source_block_exhausted = 0
@@ -309,17 +342,46 @@ Interpretation:
   larger_sizes. Trimming source-block capacity from 32768 to 8192 lowers peak
   by roughly 57 MiB while preserving or improving throughput in this run.
 
+  Descriptor capacity is also a major peak contributor. Trimming descriptor
+  capacity from 262144 to 131072 on top of rsscap-2 lowers peak again to about
+  191..196 MiB with clean safety counters in the current larger_sizes run.
+
+  Route capacity can also be trimmed for larger_sizes. Trimming route capacity
+  from 262144 to 131072 on top of rsscap-3 lowers peak again to about
+  166..172 MiB with clean safety counters in the current larger_sizes run.
+
+Guard read:
+  balanced:
+    rsscap-4 cuts appcap peak roughly in half and improves speed/rss profiles,
+    but strict noboost-route4k remains the low-RSS strict lane.
+
+  wide_ws:
+    rsscap-4 cuts appcap peak, but throughput regresses versus
+    ownerlocalityfast-appcap in strict/speed/rss.
+    Keep rsscap-4 as larger_sizes-specific candidate-control.
+
 Status:
   ownerlocalityfast-rsscap-1:
     no-op evidence for transfer/frontcache trimming.
 
   ownerlocalityfast-rsscap-2:
     promising perf-recovery RSSCap candidate-control.
+    Superseded by rsscap-3 for peak reduction if guard rows stay clean.
+
+  ownerlocalityfast-rsscap-3:
+    strong larger_sizes RSSCap evidence, superseded by rsscap-4 for this row
+    if guard rows stay acceptable.
     Not promotion yet; needs repeat and guard rows.
 
+  ownerlocalityfast-rsscap-4:
+    current strongest larger_sizes RSSCap candidate-control.
+    Not a universal mixed_ws promotion because wide_ws guard regresses versus
+    appcap throughput.
+
 Next:
-  try ownerlocalityfast-rsscap-3 by trimming descriptor capacity while keeping
-  route capacity and source-block=8192.
+  repeat larger_sizes for rsscap-4 and keep wide_ws guarded by
+  ownerlocalityfast-appcap / noboost-route4k instead of promoting rsscap-4
+  broadly.
 ```
 
 ## Redis ControlPlane Checkpoint 2026-06-02
