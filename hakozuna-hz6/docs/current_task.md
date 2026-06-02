@@ -184,6 +184,60 @@ Next:
   spill/borrow/cap knobs.
 ```
 
+Promotion check:
+
+```text
+Run:
+  mixed_ws larger_sizes + large_slices
+  speed/rss
+  front6k vs front8k
+  repeat-3
+
+larger_sizes:
+  speed:
+    front6k 33.361M ops/s, 72,328 KB
+    front8k 31.945M ops/s, 72,432 KB
+
+  rss:
+    front6k 32.481M ops/s, 72,424 KB
+    front8k 32.550M ops/s, 72,460 KB
+
+large_slice read:
+  front6k wins or ties some rows:
+    speed 2k / 16k / 64k / 128k
+    rss 4k / 16k / 64k / 128k
+
+  front8k remains stronger on important slice rows:
+    speed 4k / 8k / 32k
+    rss 256 / 512 / 1k / 8k / 32k
+
+Safety:
+  route_invalid=0
+  route_miss=0
+  route_register_fail=0
+  alloc_fail=0
+  descriptor_exhausted=0
+  source_block_exhausted=0
+```
+
+Final decision:
+
+```text
+Do not promote front6k yet.
+
+front6k:
+  keep as close candidate-control and evidence that front retention can be
+  tightened without breaking larger_sizes itself.
+
+front8k:
+  remains selected larger_sizes RSS/speed lane because it covers the wider
+  large_slice envelope more consistently.
+
+Next:
+  larger_sizes front-retention capacity tuning is closed for now. Move to a
+  different weak row or to selected-lane documentation / comparison cleanup.
+```
+
 ## RandomMixed A/B Fast-Path Plan 2026-06-03
 
 ```text

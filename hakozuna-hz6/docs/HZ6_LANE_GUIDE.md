@@ -513,8 +513,9 @@ largerlowrss-front6k-sourcerun-desc8k-route8k:
   Tighter larger_sizes front-retention candidate-control: descriptor 8K, route
   8K, source-block 512, frontcache 6144, and SourceRunReuse-L1. Repeat-3
   larger_sizes is effectively tied with front8k while keeping the same 72MB
-  peak band. Keep as a close control until large_slice rows confirm it can
-  replace front8k without losing the wider larger_sizes envelope.
+  peak band. Promotion check across large_slice rows did not justify replacing
+  front8k: front6k is good for larger_sizes itself, but front8k covers 4K/8K
+  and 32K slice rows more consistently. Keep front6k as close candidate-control.
 
 largerlowrss-front4k-sourcerun-desc8k-route8k:
   Front-retention lower-bound control: descriptor 8K, route 8K, source-block
