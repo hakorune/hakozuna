@@ -91,6 +91,8 @@ Hz6SourceBlock* hz6_allocator_source_run_find_reusable(
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.source_run_reuse_attempt;
 #endif
+  Hz6SourceBlock* best_block = NULL;
+  uint16_t best_free_slots = 0;
   for (size_t i = 0; i < HZ6_SOURCE_BLOCK_CAPACITY; ++i) {
     Hz6SourceBlock* block = &allocator->source_blocks[i];
     if (!block->active || !block->ptr || !block->run_active ||
@@ -115,8 +117,24 @@ Hz6SourceBlock* hz6_allocator_source_run_find_reusable(
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.source_run_reuse_candidate;
 #endif
+#if HZ6_SOURCE_RUN_SLOT_LOOKUP_L1
+    {
+      uint16_t free_slots =
+          (uint16_t)(block->run_slot_count - block->run_used_count);
+      if (!best_block || free_slots > best_free_slots) {
+        best_block = block;
+        best_free_slots = free_slots;
+      }
+    }
+#else
     return block;
+#endif
   }
+#if HZ6_SOURCE_RUN_SLOT_LOOKUP_L1
+  if (best_block) {
+    return best_block;
+  }
+#endif
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.source_run_reuse_miss_no_block;
 #endif

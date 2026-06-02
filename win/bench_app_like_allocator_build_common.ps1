@@ -244,6 +244,13 @@ function Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kRetainedOverflowCapacityFlag
     $flags
 }
 
+function Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kSlotLookupCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kCapacityFlags
+    $flags += "/DHZ6_SOURCE_RUN_SLOT_LOOKUP_L1=1"
+    $flags
+}
+
 function Get-Hz6WinRedisLowRssSlimRoute4kCapacityFlags {
     @(
         "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)2048)",
@@ -402,6 +409,7 @@ function Invoke-AppLikeHz6BenchBuilds {
     $redisLowRssSourceRunDesc8kRoute8kFlags = Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kCapacityFlags
     $redisLowRssSourceRunDesc8kRoute8kTombCompactFlags = Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kTombCompactCapacityFlags
     $redisLowRssSourceRunDesc8kRoute8kRetainedOverflowFlags = Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kRetainedOverflowCapacityFlags
+    $redisLowRssSourceRunDesc8kRoute8kSlotLookupFlags = Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kSlotLookupCapacityFlags
     $redisLowRssSlimRoute4kFlags = Get-Hz6WinRedisLowRssSlimRoute4kCapacityFlags
     $front1kDesc4kSource512Route4kFlags = Get-Hz6WinFront1kDesc4kSource512Route4kCapacityFlags
     $appLikeFlags = Get-Hz6WinAppLikeCapacityFlags
@@ -437,6 +445,7 @@ function Invoke-AppLikeHz6BenchBuilds {
         "redislowrss-sourcerun-desc8k-route8k" = @{ Suffix = "_redislowrss_sourcerun_desc8k_route8k"; ExtraFlags = $redisLowRssSourceRunDesc8kRoute8kFlags }
         "redislowrss-sourcerun-desc8k-route8k-tombcompact" = @{ Suffix = "_redislowrss_sourcerun_desc8k_route8k_tombcompact"; ExtraFlags = $redisLowRssSourceRunDesc8kRoute8kTombCompactFlags }
         "redislowrss-sourcerun-desc8k-route8k-retainedoverflow" = @{ Suffix = "_redislowrss_sourcerun_desc8k_route8k_retainedoverflow"; ExtraFlags = $redisLowRssSourceRunDesc8kRoute8kRetainedOverflowFlags }
+        "redislowrss-sourcerun-desc8k-route8k-slotlookup" = @{ Suffix = "_redislowrss_sourcerun_desc8k_route8k_slotlookup"; ExtraFlags = $redisLowRssSourceRunDesc8kRoute8kSlotLookupFlags }
         "redislowrss-slim-route4k" = @{ Suffix = "_redislowrss_slim_route4k"; ExtraFlags = $redisLowRssSlimRoute4kFlags }
         "front1k-desc4k-source512-route4k" = @{ Suffix = "_front1k_desc4k_source512_route4k"; ExtraFlags = $front1kDesc4kSource512Route4kFlags }
         "appcap" = @{ Suffix = "_appcap"; ExtraFlags = $appLikeFlags }

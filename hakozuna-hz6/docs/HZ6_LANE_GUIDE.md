@@ -226,6 +226,15 @@ redislowrss-sourcerun-desc8k-route8k-retainedoverflow:
   Redis fix: transfer retention succeeds mechanically but final
   frontcache-overflow unregisters and RANDOM tombstone full-probes remain.
 
+redislowrss-sourcerun-desc8k-route8k-slotlookup:
+  redislowrss-sourcerun-desc8k-route8k plus SourceRunSlotLookup-L1. It keeps
+  the same source-run reuse contract but prefers the reusable block with the
+  most free slots instead of the first reusable block found. Narrow lookup
+  policy probe for Redis paper rows after tombstones and retained overflow have
+  already been measured. Repeat-3 showed it is a useful source-run witness but
+  not a promotion lane: SET is slightly better, RANDOM is roughly neutral, GET
+  and peak are a bit worse.
+
 redislowrss-slim-route4k:
   noboost plus descriptor 2048 and source-block 256. This is the slimmer Redis
   follow-up lane. Use it only if we need to reduce peak / retention further

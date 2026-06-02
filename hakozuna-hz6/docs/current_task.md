@@ -356,6 +356,58 @@ Read:
   cleaner Redis RANDOM behavior lane.
 ```
 
+## SourceRunSlotLookup-L1 2026-06-02
+
+```text
+Lane:
+  redislowrss-sourcerun-desc8k-route8k-slotlookup
+
+Scope:
+  Redis source-run lookup policy probe.
+  Same SourceRunReuse-L1 contract.
+  No new retention or route-table behavior.
+
+Behavior:
+  When SourceRunReuse-L1 scans reusable run blocks, prefer the block with the
+  most free slots instead of returning the first reusable block.
+
+Why:
+  TombstoneCompact fixed the route-table collapse row, and RetainedOverflow was
+  no-go. The remaining way to improve SET/LPUSH without widening capacities is
+  to see whether source-run slot selection can pick a better reusable block.
+
+Counters:
+  existing source_run_reuse_* counters only
+
+Acceptance:
+  SET and LPUSH recover versus the current source-run evidence lane.
+  RANDOM does not regress materially.
+  source_run_reuse_candidate remains bounded and safe counters stay zero.
+
+No-go:
+  source_run_reuse_used_count_mismatch appears.
+  source_run_reuse_route_fail / prepare_fail / rollback rise.
+  RANDOM or peak working set regresses materially.
+
+Observed:
+  results/hz6-slotlookup-l1-paper-repeat3
+  non-diagnostic repeat-3, redis_workload paper row:
+
+  redislowrss-sourcerun-desc8k-route8k:
+    SET 37.22M, GET 282.89M, LPUSH 32.89M, LPOP 929.65M, RANDOM 40.69M
+    peak 17,312 KB
+
+  redislowrss-sourcerun-desc8k-route8k-slotlookup:
+    SET 37.62M, GET 267.12M, LPUSH 32.29M, LPOP 1052.55M, RANDOM 39.16M
+    peak 17,776 KB
+
+Read:
+  KEEP as source-run lookup evidence, not promotion.
+  Slot lookup is mildly better on SET and roughly neutral on RANDOM, but it
+  lowers GET, leaves LPUSH basically flat, and raises peak modestly. This is a
+  useful lookup-policy witness, but not the new Redis candidate-control.
+```
+
 ## Shared Contract And OS Backing
 
 ```text

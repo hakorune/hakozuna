@@ -258,6 +258,7 @@ $laneSuffix = @{
     "redislowrss-sourcerun-desc8k-route8k" = "_redislowrss_sourcerun_desc8k_route8k"
     "redislowrss-sourcerun-desc8k-route8k-tombcompact" = "_redislowrss_sourcerun_desc8k_route8k_tombcompact"
     "redislowrss-sourcerun-desc8k-route8k-retainedoverflow" = "_redislowrss_sourcerun_desc8k_route8k_retainedoverflow"
+    "redislowrss-sourcerun-desc8k-route8k-slotlookup" = "_redislowrss_sourcerun_desc8k_route8k_slotlookup"
     "redislowrss-slim-route4k" = "_redislowrss_slim_route4k"
     "front1k-desc4k-source512-route4k" = "_front1k_desc4k_source512_route4k"
     "appcap" = "_appcap"
