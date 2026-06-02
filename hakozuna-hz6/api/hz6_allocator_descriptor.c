@@ -107,6 +107,15 @@ Hz6ObjectDescriptor* hz6_allocator_find_free_descriptor(
   if (!allocator) {
     return NULL;
   }
+#if HZ6_DESCRIPTOR_AVAIL_COUNT_L1
+  if (allocator->descriptor_available_count == 0) {
+    ++allocator->stats.descriptor_exhausted;
+#if HZ6_DIAGNOSTIC_PROBES
+    hz6_allocator_record_descriptor_failure_state(allocator);
+#endif
+    return NULL;
+  }
+#endif
 #if HZ6_DIAGNOSTIC_PROBES
   size_t probes = 0;
 #endif
@@ -131,6 +140,11 @@ Hz6ObjectDescriptor* hz6_allocator_find_free_descriptor(
       if (allocator->next_descriptor_index >= HZ6_OBJECT_DESCRIPTOR_CAPACITY) {
         allocator->next_descriptor_index = 0;
       }
+#if HZ6_DESCRIPTOR_AVAIL_COUNT_L1
+      if (allocator->descriptor_available_count != 0) {
+        --allocator->descriptor_available_count;
+      }
+#endif
 #if HZ6_DIAGNOSTIC_PROBES
       allocator->stats.descriptor_probe_total += probes;
       if (probes > allocator->stats.descriptor_probe_max) {
@@ -225,6 +239,9 @@ int hz6_allocator_descgov_descriptor_available(
   if (!allocator) {
     return 0;
   }
+#if HZ6_DESCRIPTOR_AVAIL_COUNT_L1
+  return allocator->descriptor_available_count != 0;
+#else
   for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
     if (!allocator->descriptors[i].ptr &&
         allocator->descriptors[i].state == HZ6_STATE_DEAD) {
@@ -232,6 +249,7 @@ int hz6_allocator_descgov_descriptor_available(
     }
   }
   return 0;
+#endif
 #else
   (void)allocator;
   return 1;

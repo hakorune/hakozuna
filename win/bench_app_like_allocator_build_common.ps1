@@ -98,6 +98,21 @@ function Get-Hz6WinDirectLocalFreeNoBoostRoute4kCapacityFlags {
     $flags
 }
 
+function Get-Hz6WinDescAvailNoBoostRoute4kCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinNoBoostRoute4kCapacityFlags
+    $flags += "/DHZ6_DESCRIPTOR_AVAIL_COUNT_L1=1"
+    $flags
+}
+
+function Get-Hz6WinDirectLocalFreeDescAvailNoBoostRoute4kCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinNoBoostRoute4kCapacityFlags
+    $flags += "/DHZ6_LOCAL_CACHE_DIRECT_FREE_L1=1"
+    $flags += "/DHZ6_DESCRIPTOR_AVAIL_COUNT_L1=1"
+    $flags
+}
+
 function Get-Hz6WinSpillRoute4kCapacityFlags {
     $flags = @()
     $flags += Get-Hz6WinRoute4kCapacityFlags
@@ -523,6 +538,8 @@ function Invoke-AppLikeHz6BenchBuilds {
     $noBoostRoute4kFlags = Get-Hz6WinNoBoostRoute4kCapacityFlags
     $localExactFreeNoBoostRoute4kFlags = Get-Hz6WinLocalExactFreeNoBoostRoute4kCapacityFlags
     $directLocalFreeNoBoostRoute4kFlags = Get-Hz6WinDirectLocalFreeNoBoostRoute4kCapacityFlags
+    $descAvailNoBoostRoute4kFlags = Get-Hz6WinDescAvailNoBoostRoute4kCapacityFlags
+    $directLocalFreeDescAvailNoBoostRoute4kFlags = Get-Hz6WinDirectLocalFreeDescAvailNoBoostRoute4kCapacityFlags
     $spillRoute4kFlags = Get-Hz6WinSpillRoute4kCapacityFlags
     $borrowRoute4kFlags = Get-Hz6WinBorrowRoute4kCapacityFlags
     $capRoute4kFlags = Get-Hz6WinCapRoute4kCapacityFlags
@@ -571,6 +588,8 @@ function Invoke-AppLikeHz6BenchBuilds {
         "noboost-route4k" = @{ Suffix = "_noboost_route4k"; ExtraFlags = $noBoostRoute4kFlags }
         "localexactfree-noboost-route4k" = @{ Suffix = "_localexactfree_noboost_route4k"; ExtraFlags = $localExactFreeNoBoostRoute4kFlags }
         "directlocalfree-noboost-route4k" = @{ Suffix = "_directlocalfree_noboost_route4k"; ExtraFlags = $directLocalFreeNoBoostRoute4kFlags }
+        "descavail-noboost-route4k" = @{ Suffix = "_descavail_noboost_route4k"; ExtraFlags = $descAvailNoBoostRoute4kFlags }
+        "directlocalfree-descavail-noboost-route4k" = @{ Suffix = "_directlocalfree_descavail_noboost_route4k"; ExtraFlags = $directLocalFreeDescAvailNoBoostRoute4kFlags }
         "spill-route4k" = @{ Suffix = "_spill_route4k"; ExtraFlags = $spillRoute4kFlags }
         "borrow-route4k" = @{ Suffix = "_borrow_route4k"; ExtraFlags = $borrowRoute4kFlags }
         "cap-route4k" = @{ Suffix = "_cap_route4k"; ExtraFlags = $capRoute4kFlags }

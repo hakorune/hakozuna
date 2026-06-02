@@ -10,6 +10,9 @@ extern "C" {
 Hz6ObjectDescriptor* hz6_allocator_find_free_descriptor(
     Hz6Allocator* allocator);
 
+void hz6_allocator_reset_descriptor_available(
+    Hz6ObjectDescriptor* descriptor);
+
 int hz6_allocator_activate_descriptor(Hz6ObjectDescriptor* descriptor,
                                       Hz6ObjectState expected,
                                       void* ptr,

@@ -476,6 +476,206 @@ Next:
   or class/front gated.
 ```
 
+## DescriptorAvailCount-L1 2026-06-02
+
+```text
+Context:
+  mixed_ws noboost-route4k spends a large amount of time failing descriptor
+  acquisition. Diagnostic runs showed descriptor_exhausted in the millions
+  and descriptor_probe_total in the billions:
+    balanced     1.546B probes
+    wide_ws      1.541B probes
+    larger_sizes 0.472B probes
+
+Change:
+  HZ6_DESCRIPTOR_AVAIL_COUNT_L1 adds descriptor_available_count and a
+  descriptor->allocator back-pointer.
+
+  find_free_descriptor:
+    if descriptor_available_count == 0:
+      return exhausted immediately
+    else:
+      scan normally and decrement the count when a descriptor is claimed
+
+  release / detach / orphan adopt:
+    reset the descriptor through hz6_allocator_reset_descriptor_available()
+    so the count is restored exactly when a descriptor returns to DEAD/free.
+
+Lane:
+  descavail-noboost-route4k
+
+Contract:
+  capacity unchanged
+  RSS intent unchanged
+  no frontcache behavior change
+  no source/admission behavior change
+  no production diagnostic atomics/counters
+```
+
+Repeat-3 mixed_ws strict:
+
+```text
+balanced:
+  noboost-route4k             21.631M, 24,312 KB
+  descavail-noboost-route4k   70.746M, 24,320 KB
+
+wide_ws:
+  noboost-route4k             15.376M, 25,004 KB
+  descavail-noboost-route4k   37.250M, 25,000 KB
+
+larger_sizes:
+  noboost-route4k              1.441M, 15,660 KB
+  descavail-noboost-route4k    1.468M, 15,660 KB
+```
+
+Diagnostic mechanism check, run1:
+
+```text
+balanced:
+  descriptor_probe_total 1,546,434,546 -> 7,154
+
+wide_ws:
+  descriptor_probe_total 1,540,957,689 -> 44,537
+
+larger_sizes:
+  descriptor_probe_total   471,693,810 -> 54,258
+
+Safety:
+  route_invalid = 0
+  route_miss = 0
+  route_register_fail = 0
+```
+
+Random_mixed guard repeat-3:
+
+```text
+small:
+  noboost-route4k             34.124M, 4,964 KB
+  descavail-noboost-route4k   34.118M, 5,416 KB
+
+medium:
+  noboost-route4k             34.190M, 4,960 KB
+  descavail-noboost-route4k   34.836M, 4,968 KB
+
+mixed:
+  noboost-route4k             32.836M, 4,960 KB
+  descavail-noboost-route4k   33.160M, 4,968 KB
+```
+
+Read:
+
+```text
+DescriptorAvailCount-L1 is a strong mechanism fix for descriptor-failure
+heavy mixed_ws rows. It does not change the number of failures; it changes
+failure cost from "scan the entire descriptor table every time" to "known full,
+fail immediately".
+
+Status:
+  descavail-noboost-route4k:
+    KEEP as mixed_ws candidate-control / descriptor-failure cost fix
+
+  random_mixed:
+    neutral guard; do not claim this as the primary random_mixed speed lane
+
+Next:
+  test whether descavail composes with directlocalfree-noboost-route4k.
+  If it composes, the next lane should be explicitly named rather than silently
+  replacing either mechanism.
+```
+
+## DirectLocalFree + DescriptorAvail Composition 2026-06-02
+
+```text
+Lane:
+  directlocalfree-descavail-noboost-route4k
+
+Purpose:
+  Check whether the local-owner free fast path and descriptor failure-cost fix
+  compose cleanly under the same low-RSS noboost-route4k capacity shape.
+
+Important:
+  This is not a silent replacement for either parent lane. DirectLocalFree-L1
+  bypasses the generic front contract for TOY/MIDPAGE/LOCAL2P local-owner frees,
+  while DescriptorAvailCount-L1 changes descriptor exhaustion cost. Keep the
+  composition explicitly named.
+```
+
+Repeat-3 mixed_ws strict:
+
+```text
+balanced:
+  noboost-route4k                         22.483M, 24,324 KB
+  directlocalfree-noboost-route4k         21.863M, 24,316 KB
+  descavail-noboost-route4k               74.332M, 24,312 KB
+  directlocalfree-descavail-noboost-route4k
+                                             62.531M, 24,760 KB
+
+wide_ws:
+  noboost-route4k                         15.413M, 25,004 KB
+  directlocalfree-noboost-route4k         14.660M, 25,008 KB
+  descavail-noboost-route4k               31.559M, 25,000 KB
+  directlocalfree-descavail-noboost-route4k
+                                             33.910M, 24,996 KB
+
+larger_sizes:
+  noboost-route4k                          1.428M, 15,656 KB
+  directlocalfree-noboost-route4k          1.446M, 15,656 KB
+  descavail-noboost-route4k                1.496M, 15,652 KB
+  directlocalfree-descavail-noboost-route4k
+                                              1.511M, 15,652 KB
+```
+
+Repeat-3 random_mixed strict:
+
+```text
+small:
+  noboost-route4k                         34.687M, 4,972 KB
+  directlocalfree-noboost-route4k         35.089M, 4,968 KB
+  descavail-noboost-route4k               34.523M, 4,968 KB
+  directlocalfree-descavail-noboost-route4k
+                                             36.120M, 5,408 KB
+
+medium:
+  noboost-route4k                         34.505M, 4,968 KB
+  directlocalfree-noboost-route4k         37.531M, 4,964 KB
+  descavail-noboost-route4k               34.986M, 4,968 KB
+  directlocalfree-descavail-noboost-route4k
+                                             38.598M, 4,972 KB
+
+mixed:
+  noboost-route4k                         32.960M, 4,968 KB
+  directlocalfree-noboost-route4k         36.126M, 4,964 KB
+  descavail-noboost-route4k               32.924M, 4,968 KB
+  directlocalfree-descavail-noboost-route4k
+                                             36.924M, 4,968 KB
+```
+
+Read:
+
+```text
+Composition is workload-shaped:
+  mixed_ws balanced:
+    descavail alone wins. DirectLocalFree adds overhead/noise here.
+
+  mixed_ws wide_ws / larger_sizes:
+    composition edges out descavail.
+
+  random_mixed:
+    composition is the strongest strict low-RSS speed lane, especially medium
+    and mixed. Small improves speed but has a small RSS jump.
+
+Status:
+  directlocalfree-descavail-noboost-route4k:
+    KEEP as explicit composition candidate-control
+    not universal promotion
+
+Next:
+  if continuing low-RSS speed recovery, consider profile selection:
+    mixed_ws balanced -> descavail-noboost-route4k
+    random_mixed -> directlocalfree-descavail-noboost-route4k
+    wide_ws/larger_sizes -> compare descavail vs composition in closeout
+```
+
 ## Windows Profile Family Freeze 2026-06-02
 
 ```text

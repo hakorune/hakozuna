@@ -34,6 +34,7 @@ int hz6_allocator_orphan_adopt_prepare(Hz6Allocator* adopter,
   }
 
   **adopted_descriptor = **source_descriptor;
+  (**adopted_descriptor).allocator = adopter;
   (**adopted_descriptor).owner = adopter->owner.token;
   (**adopted_descriptor).state = HZ6_STATE_LOCAL_FREE;
   return 1;

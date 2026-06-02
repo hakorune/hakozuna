@@ -22,7 +22,7 @@ int hz6_allocator_orphan_adopt_commit(
                                         adopted_descriptor->generation,
                                         adopted_descriptor,
                                         &adopt_register_probes)) {
-    *adopted_descriptor = (Hz6ObjectDescriptor){0};
+    hz6_allocator_reset_descriptor_available(adopted_descriptor);
     return 0;
   }
   adopter->stats.route_register_probe_total += adopt_register_probes;
@@ -43,7 +43,7 @@ int hz6_allocator_orphan_adopt_commit(
                                         adopted_descriptor->generation,
                                         adopted_descriptor,
                                         NULL)) {
-    *adopted_descriptor = (Hz6ObjectDescriptor){0};
+    hz6_allocator_reset_descriptor_available(adopted_descriptor);
     return 0;
   }
 #endif
@@ -57,21 +57,11 @@ int hz6_allocator_orphan_adopt_commit(
   entry.generation = adopted_descriptor->generation;
   if (!hz6_allocator_frontcache_push(adopter, entry.class_id, entry)) {
     hz6_allocator_route_unregister_exact(adopter, ptr);
-    *adopted_descriptor = (Hz6ObjectDescriptor){0};
+    hz6_allocator_reset_descriptor_available(adopted_descriptor);
     return 0;
   }
 
   hz6_allocator_route_unregister_exact(source, ptr);
-  source_descriptor->ptr = NULL;
-  source_descriptor->bytes = 0;
-  source_descriptor->source_ptr = NULL;
-  source_descriptor->source_bytes = 0;
-  source_descriptor->source_block = NULL;
-  source_descriptor->class_id = 0;
-  source_descriptor->source_kind = HZ6_SOURCE_NONE;
-  source_descriptor->source_release = NULL;
-  source_descriptor->owner = (Hz6OwnerToken){0};
-  source_descriptor->generation = 0;
-  source_descriptor->state = HZ6_STATE_DEAD;
+  hz6_allocator_reset_descriptor_available(source_descriptor);
   return 1;
 }

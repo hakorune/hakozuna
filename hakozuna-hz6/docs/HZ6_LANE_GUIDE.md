@@ -394,6 +394,22 @@ directlocalfree-noboost-route4k:
   Treat as candidate-control evidence, but keep it named explicitly because it
   bypasses the generic front contract for selected local-owner fronts.
 
+descavail-noboost-route4k:
+  noboost-route4k plus DescriptorAvailCount-L1. It keeps the same low-RSS
+  capacity shape but avoids full descriptor-table scans once the allocator
+  knows no descriptor is available. Repeat-3 strongly improves mixed_ws
+  balanced and wide_ws and keeps larger_sizes slightly positive, with route
+  safety counters clean. Random_mixed is mostly neutral, so this is a
+  descriptor-failure cost candidate-control rather than the primary
+  same-owner hot-path lane.
+
+directlocalfree-descavail-noboost-route4k:
+  noboost-route4k plus DirectLocalFree-L1 and DescriptorAvailCount-L1. This
+  explicit composition is strongest in random_mixed and edges out descavail in
+  mixed_ws wide_ws/larger_sizes, but it loses to descavail alone in mixed_ws
+  balanced. Keep it as a named candidate-control lane, not a silent replacement
+  for either parent mechanism.
+
 desc4k-route4k:
   route4k plus descriptor capacity 4096. Descriptor-pressure probe only.
 

@@ -40,6 +40,7 @@ typedef struct Hz6SourceBlock {
 } Hz6SourceBlock;
 
 typedef struct Hz6ObjectDescriptor {
+  struct Hz6Allocator* allocator;
   void* ptr;
   size_t bytes;
   void* source_ptr;
@@ -72,6 +73,7 @@ struct Hz6Allocator {
   Hz6LargeSpanPool large_span_pool;
   Hz6SourceBlock source_blocks[HZ6_SOURCE_BLOCK_CAPACITY];
   size_t next_descriptor_index;
+  size_t descriptor_available_count;
   Hz6ObjectDescriptor descriptors[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
   size_t descgov_detached_budget_used;
   Hz6SourceRegistry source_registry;
