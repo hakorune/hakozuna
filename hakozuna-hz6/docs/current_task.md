@@ -76,6 +76,11 @@ Goal:
     larger_sizes lane
     upper-bound lane
 
+Cross-allocator summary:
+  HZ6_CROSS_ALLOCATOR_COMPARISON.md
+  keeps the paper-aligned HZ3/HZ4/HZ5/HZ6/mimalloc/tcmalloc rows together
+  and keeps the current HZ6 selected-family snapshot in one place.
+
 Do not:
   collapse widecap-4 and rsscap-4 into a single broad default yet
   re-open Redis control-plane branch as the next broad HZ6 track

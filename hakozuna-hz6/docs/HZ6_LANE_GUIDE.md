@@ -13,6 +13,9 @@ which?" before running or comparing benchmarks.
 | larger_sizes RSS/speed | `speed` or `rss` | `largerlowrss-front8k-sourcerun-desc8k-route8k` | Best larger_sizes lane; needs larger front retention, not more descriptor-failure cleanup. |
 | perf-recovery upper-bound | `strict` / `speed` / `rss` | `ownerlocalityfast-appcap` | Upper-bound / completion control only; too much RSS for default use. |
 
+For a cross-allocator side-by-side summary using past data only, see
+[`HZ6_CROSS_ALLOCATOR_COMPARISON.md`](HZ6_CROSS_ALLOCATOR_COMPARISON.md).
+
 ```text
 Windows profile family:
   balanced / wide_ws low-RSS speed:
