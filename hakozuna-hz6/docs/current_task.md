@@ -59,6 +59,14 @@ Current lane organization:
     capacity lane:
       largerlowrss-front8k-sourcerun-desc8k-route8k
 
+  Larson cross-owner full 10k:
+    HZ6 profile:
+      speed
+    capacity lane:
+      ownerlocalityfast-rsscap-1
+    lower-RSS sibling:
+      ownerlocalityfast-rsscap-2
+
   performance upper-bound / completion control:
     ownerlocalityfast-appcap
 
@@ -67,14 +75,15 @@ Current lane organization:
     appcap
 
 Next attack surface:
-  larger_sizes front-retention tightening, then decide whether the selected
-  front8k lane should remain the default or whether front6k is a cleaner
-  lower-retention replacement.
+  Larson cross-owner full-10k RSS/capacity boundary. ownerlocalityfast-rsscap-1
+  now matches appcap-class throughput with far lower RSS, while rsscap-3/4 are
+  too tight for full 10k warmup. If optimizing further, reduce rsscap-1 peak
+  without crossing the rsscap-3/4 allocation-failure boundary.
 
 Goal:
   keep sameownerfast fixed as the selected random_mixed lane, and tighten the
-  larger_sizes lane without widening capacity or adding diagnostic counters to
-  production benchmark lanes.
+  Larson cross-owner lane without widening capacity or adding diagnostic
+  counters to production benchmark lanes.
 
 Cross-allocator summary:
   HZ6_CROSS_ALLOCATOR_COMPARISON.md
@@ -236,6 +245,128 @@ front8k:
 Next:
   larger_sizes front-retention capacity tuning is closed for now. Move to a
   different weak row or to selected-lane documentation / comparison cleanup.
+```
+
+## Larson CrossOwner Current Check 2026-06-03
+
+```text
+Runner fix:
+  run_win_hz6_capacity_matrix.ps1 now captures Larson's
+  "Throughput = ... operations per second" and [OPS] lines as important output.
+  Without this, large [HZ6_STATS] lines could push throughput out of the
+  captured output and create false parse failures.
+
+Scope:
+  HZ6 capacity runner only.
+  No allocator behavior change.
+```
+
+Compact / moderate live-set check:
+
+```text
+Run:
+  larson_t16_main_1k / worker_1k
+  larson_t16_main_4k / worker_4k
+  speed profile
+  appcap / ownerlocalityfast-appcap / ownerlocalityfast-rsscap-4
+  run1
+
+main_1k:
+  appcap:
+    0.001M ops/s, 2,681,612 KB
+  ownerlocalityfast-appcap:
+    53.025M ops/s, 2,700,844 KB
+  ownerlocalityfast-rsscap-4:
+    56.446M ops/s, 557,968 KB
+
+worker_1k:
+  appcap:
+    57.536M ops/s, 2,682,416 KB
+  ownerlocalityfast-appcap:
+    57.015M ops/s, 2,700,840 KB
+  ownerlocalityfast-rsscap-4:
+    57.852M ops/s, 557,548 KB
+
+main_4k:
+  appcap:
+    near-zero / parseable but effectively collapsed
+  ownerlocalityfast-appcap:
+    46.258M ops/s, 2,741,636 KB
+  ownerlocalityfast-rsscap-4:
+    50.481M ops/s, 598,336 KB
+
+worker_4k:
+  appcap:
+    50.237M ops/s, 2,723,132 KB
+  ownerlocalityfast-appcap:
+    51.066M ops/s, 2,741,580 KB
+  ownerlocalityfast-rsscap-4:
+    53.432M ops/s, 598,280 KB
+
+Read:
+  ownerlocalityfast closes the main-vs-worker cross-owner gap for compact and
+  moderate live sets.
+  rsscap-4 is especially strong for 1k/4k live-set checks.
+```
+
+Full 10k live-set check:
+
+```text
+Run:
+  larson_T16
+  speed profile
+  ownerlocalityfast-rsscap-1/2/3/4 and ownerlocalityfast-appcap
+  run1
+
+ownerlocalityfast-rsscap-1:
+  43.570M ops/s, 1,230,552 KB
+  source_alloc=381
+  safety clean
+
+ownerlocalityfast-rsscap-2:
+  41.700M ops/s, 1,066,896 KB
+  source_alloc=381
+  safety clean
+
+ownerlocalityfast-rsscap-3:
+  failed warmup allocation
+  source_alloc=8192
+  alloc_fail=1
+  descriptor_exhausted=2
+  source_block_exhausted=1
+
+ownerlocalityfast-rsscap-4:
+  failed warmup allocation
+  source_alloc=7711
+  alloc_fail=1
+
+ownerlocalityfast-appcap:
+  43.511M ops/s, 2,822,756 KB
+  source_alloc=381
+  safety clean
+```
+
+Read:
+
+```text
+ownerlocalityfast-rsscap-1:
+  best full-10k speed/RSS balance in this check.
+  Matches appcap throughput while cutting peak from ~2.82GB to ~1.23GB.
+
+ownerlocalityfast-rsscap-2:
+  lower RSS than rsscap-1, still 41.7M ops/s and safety clean.
+  Candidate if RSS priority is stronger than the last few percent of speed.
+
+rsscap-3/4:
+  too tight for full 10k main-warmup.
+  Keep as compact/moderate live-set evidence only.
+
+Next:
+  Do not add more visible/negative-filter knobs.
+  Treat ownerlocalityfast-rsscap-1 as the current full Larson cross-owner
+  candidate-control, and rsscap-2 as the lower-RSS sibling.
+  If optimizing further, reduce rsscap-1 peak without crossing the rsscap-3/4
+  warmup-failure boundary.
 ```
 
 ## RandomMixed A/B Fast-Path Plan 2026-06-03

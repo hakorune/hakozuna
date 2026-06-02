@@ -11,6 +11,7 @@ which?" before running or comparing benchmarks.
 | balanced / wide_ws low-RSS speed | `rss` | `descavail-noboost-route4k` | Best balanced and wide_ws low-RSS speed lane; descriptor exhaustion cost is removed without changing capacity. |
 | random_mixed same-owner speed | `strict` | `sameownerfast-descavail-noboost-route4k` | Selected same-owner fast lane: `HZ6_SAME_OWNER_FAST_L1` + descriptor availability, promoted from the A-ladder. |
 | larger_sizes RSS/speed | `speed` or `rss` | `largerlowrss-front8k-sourcerun-desc8k-route8k` | Best larger_sizes lane; needs larger front retention, not more descriptor-failure cleanup. |
+| Larson cross-owner full 10k | `speed` | `ownerlocalityfast-rsscap-1` | Current full Larson cross-owner candidate-control; appcap-class throughput with much lower peak RSS. |
 | perf-recovery upper-bound | `strict` / `speed` / `rss` | `ownerlocalityfast-appcap` | Upper-bound / completion control only; too much RSS for default use. |
 
 For a cross-allocator side-by-side summary using past data only, see
@@ -37,6 +38,16 @@ Windows profile family:
       largerlowrss-front8k-sourcerun-desc8k-route8k
     close candidate-control:
       largerlowrss-front6k-sourcerun-desc8k-route8k
+
+  Larson cross-owner full 10k:
+    HZ6 profile:
+      speed
+    capacity lane:
+      ownerlocalityfast-rsscap-1
+    lower-RSS sibling:
+      ownerlocalityfast-rsscap-2
+    compact/moderate live-set evidence:
+      ownerlocalityfast-rsscap-4
 
   perf-recovery upper-bound:
     ownerlocalityfast-appcap
@@ -131,6 +142,16 @@ larger_sizes RSS/speed:
   tighter-retention candidate-control:
     largerlowrss-front6k-sourcerun-desc8k-route8k
 
+Larson cross-owner full 10k:
+  HZ6 profile:
+    speed
+  capacity lane:
+    ownerlocalityfast-rsscap-1
+  lower-RSS sibling:
+    ownerlocalityfast-rsscap-2
+  compact/moderate live-set only:
+    ownerlocalityfast-rsscap-4
+
 performance upper-bound / completion control:
   ownerlocalityfast-appcap
 
@@ -166,6 +187,10 @@ Profile-family read:
   random_mixed same-owner speed candidate-control.
   largerlowrss-front8k-sourcerun-desc8k-route8k is the current larger_sizes
   RSS/speed candidate-control.
+  ownerlocalityfast-rsscap-1 is the current full Larson cross-owner
+  candidate-control; ownerlocalityfast-rsscap-2 is the lower-RSS sibling.
+  ownerlocalityfast-rsscap-3/4 are too tight for full 10k Larson and should be
+  used only for compact/moderate live-set evidence.
   ownerlocalityfast-rsscap-4 is now a historical larger_sizes high-RSS
   comparison control.
   ownerlocalityfast-appcap is the perf-recovery upper-bound / completion
@@ -362,22 +387,26 @@ ownerlocalityfast-appcap:
 ownerlocalityfast-rsscap-1:
   Non-diagnostic owner-locality behavior lane with appcap descriptor / route /
   source-block capacity, but reduced transfer and frontcache capacity. Use it
-  as evidence that larger_sizes peak is not primarily transfer/frontcache
-  capacity.
+  as the current full 10k Larson cross-owner candidate-control. Latest run1
+  matches `ownerlocalityfast-appcap` throughput while cutting peak from
+  roughly 2.82GB to roughly 1.23GB. It is also evidence that larger_sizes peak
+  is not primarily transfer/frontcache capacity.
 
 ownerlocalityfast-rsscap-2:
   Non-diagnostic owner-locality behavior lane with reduced transfer,
   frontcache, and source-block capacity. Current larger_sizes run1 keeps or
   improves throughput while cutting peak working set by about 57 MiB versus
-  ownerlocalityfast-appcap. Treat as source-block trim evidence; rsscap-3 is
-  the stronger follow-up when descriptor trim is safe.
+  ownerlocalityfast-appcap. In full 10k Larson it is the lower-RSS sibling of
+  rsscap-1: lower peak, slightly lower throughput, safety clean. Treat as
+  source-block trim evidence; rsscap-3 is the stronger follow-up only when
+  descriptor trim is safe for the target row.
 
 ownerlocalityfast-rsscap-3:
   Non-diagnostic owner-locality behavior lane with reduced transfer,
   frontcache, source-block, and descriptor capacity. Current larger_sizes run1
   keeps safety counters clean and lowers peak to about 191..196 MiB while
-  preserving appcap-class throughput. Treat as the current RSSCap
-  evidence lane if rsscap-4 is too narrow.
+  preserving appcap-class throughput. It fails full 10k Larson warmup, so treat
+  it as RSSCap evidence only, not as the cross-owner full-stress lane.
 
 ownerlocalityfast-rsscap-4:
   Non-diagnostic owner-locality behavior lane with reduced transfer,
@@ -385,7 +414,8 @@ ownerlocalityfast-rsscap-4:
   larger_sizes run1 lowers peak to about 166..172 MiB and improves throughput
   versus rsscap-3, with safety counters clean. Treat as the current
   larger_sizes RSSCap candidate-control only; wide_ws guard regresses versus
-  ownerlocalityfast-appcap.
+  ownerlocalityfast-appcap. It is excellent for compact/moderate Larson
+  live-set checks, but too tight for full 10k Larson warmup.
 
 directlocalfree-ownerlocalityfast-rsscap-4:
   ownerlocalityfast-rsscap-4 plus DirectLocalFree-L1. Use this to test whether
@@ -689,6 +719,9 @@ Larson worker-warmup:
 Larson main-warmup:
   Cross-owner handoff stress. Treat failures here as route visibility /
   remote-free / transfer ownership evidence, not as a pure hot-path verdict.
+  For full 10k T16, use `speed + ownerlocalityfast-rsscap-1` as the current
+  candidate-control and `speed + ownerlocalityfast-rsscap-2` as the lower-RSS
+  sibling. Use rsscap-3/4 only for compact/moderate live-set checks.
 
 Redis workload:
   App-like pattern control. Useful for detecting whether HZ6 capacity changes
