@@ -14,6 +14,9 @@ Primary candidate-control:
 Low-capacity / low-RSS baseline:
   control
 
+Redis-like candidate-control:
+  redislowrss-route4k
+
 Capacity / completion control:
   appcap
 
@@ -82,6 +85,15 @@ noboost-route4k:
   positive. Treat it as the current Windows low-capacity candidate-control
   lane.
 
+redislowrss-route4k:
+  Redis-like low-RSS candidate-control. It keeps the route table at 4096,
+  combines descriptor capacity 4096 with source-block capacity 512, keeps
+  frontcache/transfer modest, and disables starvation source-refill boost.
+  L0 redis_short showed descriptor capacity is the main collapse point and
+  descriptor+source-block capacity gives a better Redis SET/LPUSH/RANDOM shape
+  without moving all the way to appcap. Mixed_ws guard strongly regresses, so
+  keep this lane Redis-like only; do not use it as a general HZ6 primary lane.
+
 appcap:
   High-capacity application-like control. Use it to separate capacity failure
   from policy failure. Do not treat it as the HZ6 default lane.
@@ -146,6 +158,14 @@ source512-route4k:
 
 desc4k-source512-route4k:
   route4k plus descriptor 4096 and source-block 512. Combined pressure probe.
+
+redislowrss-route4k:
+  noboost plus descriptor 4096 and source-block 512. This is the named
+  Redis-like low-RSS candidate-control lane after redis_short L0 showed
+  `desc4k-source512-route4k` avoids Redis allocation-failure spam at a much
+  lower peak working set than appcap. Evidence-only outside Redis-like rows:
+  mixed_ws guard shows the capacity shape over-retains and slows broad mixed
+  profiles.
 
 front1k-desc4k-source512-route4k:
   route4k plus descriptor/source/front-cache widening. Reproduces broad-like

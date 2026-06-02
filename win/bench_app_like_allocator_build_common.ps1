@@ -192,6 +192,13 @@ function Get-Hz6WinDesc4kSource512Route4kCapacityFlags {
     )
 }
 
+function Get-Hz6WinRedisLowRssRoute4kCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinDesc4kSource512Route4kCapacityFlags
+    $flags += "/DHZ6_SOURCE_ADMISSION_NO_STARVATION_BOOST=1"
+    $flags
+}
+
 function Get-Hz6WinFront1kDesc4kSource512Route4kCapacityFlags {
     @(
         "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)4096)",
@@ -333,6 +340,7 @@ function Invoke-AppLikeHz6BenchBuilds {
     $desc4kRoute4kFlags = Get-Hz6WinDesc4kRoute4kCapacityFlags
     $source512Route4kFlags = Get-Hz6WinSource512Route4kCapacityFlags
     $desc4kSource512Route4kFlags = Get-Hz6WinDesc4kSource512Route4kCapacityFlags
+    $redisLowRssRoute4kFlags = Get-Hz6WinRedisLowRssRoute4kCapacityFlags
     $front1kDesc4kSource512Route4kFlags = Get-Hz6WinFront1kDesc4kSource512Route4kCapacityFlags
     $appLikeFlags = Get-Hz6WinAppLikeCapacityFlags
     $visibleFirstAppLikeFlags = Get-Hz6WinVisibleFirstAppLikeCapacityFlags
@@ -361,6 +369,7 @@ function Invoke-AppLikeHz6BenchBuilds {
         "desc4k-route4k" = @{ Suffix = "_desc4k_route4k"; ExtraFlags = $desc4kRoute4kFlags }
         "source512-route4k" = @{ Suffix = "_source512_route4k"; ExtraFlags = $source512Route4kFlags }
         "desc4k-source512-route4k" = @{ Suffix = "_desc4k_source512_route4k"; ExtraFlags = $desc4kSource512Route4kFlags }
+        "redislowrss-route4k" = @{ Suffix = "_redislowrss_route4k"; ExtraFlags = $redisLowRssRoute4kFlags }
         "front1k-desc4k-source512-route4k" = @{ Suffix = "_front1k_desc4k_source512_route4k"; ExtraFlags = $front1kDesc4kSource512Route4kFlags }
         "appcap" = @{ Suffix = "_appcap"; ExtraFlags = $appLikeFlags }
         "visiblefirst-appcap" = @{ Suffix = "_visiblefirst_appcap"; ExtraFlags = $visibleFirstAppLikeFlags }

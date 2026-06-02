@@ -812,6 +812,117 @@ Implementation order:
   3. If no axis is clear, ask for design review before adding behavior.
 ```
 
+## Redis L0 Capacity-Axis Result 2026-06-02
+
+```text
+redis_short run-1:
+  route4k:
+    SET 0.01M, LPUSH 0.01M, RANDOM 0.31M, peak 7.5 MiB
+    redis_alloc_string_fail lines = 77560
+
+  noboost-route4k:
+    SET 0.02M, LPUSH 0.01M, RANDOM 0.29M, peak 7.5 MiB
+    redis_alloc_string_fail lines = 77560
+
+  desc4k-route4k:
+    SET 11.31M, LPUSH 6.08M, RANDOM 14.66M, peak 13.3 MiB
+    redis_alloc_string_fail lines = 0
+
+  source512-route4k:
+    SET 0.01M, LPUSH 0.01M, RANDOM 0.29M, peak 8.4 MiB
+    redis_alloc_string_fail lines = 77560
+
+  desc4k-source512-route4k:
+    SET 11.93M, LPUSH 9.82M, RANDOM 18.26M, peak 10.9 MiB
+    redis_alloc_string_fail lines = 0
+
+  front1k-desc4k-source512-route4k:
+    SET 11.52M, LPUSH 9.74M, RANDOM 19.29M, peak 13.1 MiB
+    redis_alloc_string_fail lines = 0
+
+  appcap:
+    SET 1.64M, LPUSH 1.54M, RANDOM 1.67M, peak 576.3 MiB
+    redis_alloc_string_fail lines = 0
+```
+
+```text
+Read:
+  descriptor supply is the primary Redis collapse point.
+  source512 alone does not help, but descriptor+source-block capacity improves
+  LPUSH/RANDOM and peak working set versus desc4k-only in this run.
+  frontcache widening is unnecessary for the Redis fix.
+  appcap completes but is too high-RSS and slower on this short row.
+
+Implementation:
+  Add redislowrss-route4k:
+    base = desc4k-source512-route4k
+    plus HZ6_SOURCE_ADMISSION_NO_STARVATION_BOOST=1
+
+  This is a named capacity-shape lane, not a new behavior governor.
+  Next guard it against mixed_ws/random_mixed before using it beyond Redis-like
+  rows.
+```
+
+## RedisLowRSS Lane Check 2026-06-02
+
+```text
+redislowrss-route4k implementation:
+  descriptor capacity 4096
+  route table capacity 4096
+  transfer capacity 512
+  source-block capacity 512
+  frontcache capacity 256
+  HZ6_SOURCE_ADMISSION_NO_STARVATION_BOOST=1
+```
+
+```text
+redis_short run-1:
+  noboost-route4k:
+    SET    0.02M
+    GET   27.52M
+    LPUSH  0.01M
+    LPOP  27.41M
+    RANDOM 0.35M
+    peak  7.5 MiB
+    redis_alloc_string_fail lines = 77560
+
+  redislowrss-route4k:
+    SET   11.17M
+    GET   30.53M
+    LPUSH 10.11M
+    LPOP  32.76M
+    RANDOM 20.10M
+    peak  10.9 MiB
+    redis_alloc_string_fail lines = 0
+
+Read:
+  redislowrss-route4k is a strong Redis-like completion/throughput fix versus
+  noboost-route4k while staying far below appcap peak working set.
+```
+
+```text
+mixed_ws guard run-1:
+  noboost-route4k:
+    balanced     21.768M, peak 17.6 MiB
+    wide_ws      17.078M, peak 12.8 MiB
+    larger_sizes  0.708M, peak 14.5 MiB
+
+  redislowrss-route4k:
+    balanced      0.533M, peak 104.4 MiB
+    wide_ws       0.243M, peak 80.6 MiB
+    larger_sizes  0.847M, peak 62.1 MiB
+
+Read:
+  redislowrss-route4k is not a general mixed_ws lane.
+  It fixes Redis-like descriptor/source-block collapse but over-retains and
+  slows broad mixed profiles.
+
+Decision:
+  KEEP as Redis-like candidate-control.
+  DO NOT promote to primary HZ6 Windows lane.
+  Use noboost-route4k for mixed_ws/random_mixed low-capacity checks.
+```
+
 ## Next Implementation Order 2026-06-01
 
 ```text
