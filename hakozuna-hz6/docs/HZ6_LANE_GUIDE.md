@@ -84,6 +84,7 @@ Descriptor lifecycle prototype:
   directlocalalloc-descavail-noboost-route4k
   directlocalreuse-descavail-noboost-route4k
   directlocalfreealloc-descavail-noboost-route4k
+  directlocalfreereuse-descavail-noboost-route4k
   descriptorless-route4k
   descriptorreserve-route4k
   descriptorcold-route4k
@@ -471,6 +472,15 @@ directlocalfreealloc-descavail-noboost-route4k:
   free-path win and the new alloc dispatch-bypass compose on random_mixed.
   Keep it as A-ladder evidence until repeat data justifies a shared
   same-owner front fast path.
+
+directlocalfreereuse-descavail-noboost-route4k:
+  noboost-route4k plus DirectLocalFree-L1, DirectLocalAlloc-L1,
+  DirectLocalReuse-L1, and DescriptorAvailCount-L1. This closes the A-ladder:
+  free goes through the direct local cache helper and malloc first tries only
+  materialized LOCAL_FREE frontcache descriptors for TOY/MIDPAGE/LOCAL2P.
+  Repeat-3 random_mixed gives the cleanest broad same-owner signal, so use it
+  as B-design input. It is still not the selected balanced/wide_ws low-RSS
+  default because rss + descavail remains stronger there.
 
 largerlowrss-front8k-sourcerun-desc8k-route8k:
   Larger_sizes-targeted low-RSS lane: descriptor 8K, route 8K, source-block

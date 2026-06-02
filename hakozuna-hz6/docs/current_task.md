@@ -114,6 +114,11 @@ New ablation lanes:
     Composition probe.
     DirectLocalFree-L1 plus DirectLocalAlloc-L1 plus DescriptorAvailCount-L1.
 
+  directlocalfreereuse-descavail-noboost-route4k:
+    Closing composition probe.
+    DirectLocalFree-L1 plus DirectLocalAlloc-L1 plus DirectLocalReuse-L1 plus
+    DescriptorAvailCount-L1.
+
 B:
   Small/medium same-owner fast path as a shared front contract.
   Do not jump here until A shows at least one +5% ablation signal.
@@ -242,6 +247,108 @@ Read:
   wide_ws guard against broad promotion.
   Keep rss + descavail-noboost-route4k as selected balanced/wide_ws low-RSS
   lane until repeat evidence says otherwise.
+```
+
+Closing A-ladder repeat-3:
+
+```text
+Command:
+  powershell -ExecutionPolicy Bypass -File .\win\run_win_hz6_capacity_matrix.ps1 `
+    -OutputDir Z:\TextureVoice_local\git\allocator-bench-lab\results\windows-hz6-randommixed-freereuse-r3 `
+    -Runs 3 `
+    -Families random_mixed `
+    -BenchmarkProfiles small,medium,mixed `
+    -Hz6Profiles strict `
+    -CapacityLanes directlocalfree-descavail-noboost-route4k,`
+      directlocalreuse-descavail-noboost-route4k,`
+      directlocalfreealloc-descavail-noboost-route4k,`
+      directlocalfreereuse-descavail-noboost-route4k
+
+Result:
+  random_mixed small:
+    base directlocalfree-descavail  35.526M, 5,080 KB
+    directlocalreuse                43.951M, 5,036 KB
+    directlocalfreealloc            43.562M, 5,040 KB
+    directlocalfreereuse            46.128M, 5,432 KB
+
+  random_mixed medium:
+    base directlocalfree-descavail  37.642M, 5,112 KB
+    directlocalreuse                39.564M, 4,984 KB
+    directlocalfreealloc            40.994M, 5,056 KB
+    directlocalfreereuse            42.299M, 5,040 KB
+
+  random_mixed mixed:
+    base directlocalfree-descavail  36.455M, 5,052 KB
+    directlocalreuse                37.581M, 5,016 KB
+    directlocalfreealloc            39.571M, 5,048 KB
+    directlocalfreereuse            41.352M, 5,072 KB
+
+Safety:
+  route_invalid nonzero search: none
+  route_miss nonzero search: none
+  route_register_fail nonzero search: none
+
+Read:
+  directlocalfreereuse clears the B-candidate speed threshold on all three
+  random_mixed rows:
+    small  +29.2% vs base
+    medium +12.4% vs base
+    mixed  +16.4% vs base
+
+  This is the strongest evidence yet that same-owner small/medium allocation
+  needs a shared fast contract. However, the slightly higher small RSS and the
+  mixed_ws guard mean this should feed B design rather than become the broad
+  selected lane.
+```
+
+Closing A-ladder guard:
+
+```text
+Command:
+  powershell -ExecutionPolicy Bypass -File .\win\run_win_hz6_capacity_matrix.ps1 `
+    -OutputDir Z:\TextureVoice_local\git\allocator-bench-lab\results\windows-hz6-freereuse-guards-r1 `
+    -Runs 1 `
+    -Families mixed_ws `
+    -BenchmarkProfiles balanced,wide_ws,larger_sizes `
+    -Hz6Profiles strict,rss `
+    -CapacityLanes descavail-noboost-route4k,`
+      directlocalfree-descavail-noboost-route4k,`
+      directlocalfreereuse-descavail-noboost-route4k
+
+Result:
+  strict balanced:
+    descavail        58.160M, 24,412 KB
+    directlocalfree  70.671M, 24,428 KB
+    freereuse        70.386M, 24,800 KB
+
+  strict wide_ws:
+    descavail        25.379M, 25,084 KB
+    directlocalfree  32.168M, 25,092 KB
+    freereuse        28.222M, 25,148 KB
+
+  strict larger_sizes:
+    descavail         1.273M, 15,772 KB
+    directlocalfree   1.250M, 15,788 KB
+    freereuse         1.428M, 15,756 KB
+
+  rss balanced:
+    descavail        78.340M, 18,184 KB
+    freereuse        71.885M, 18,528 KB
+
+  rss wide_ws:
+    descavail        57.580M, 13,280 KB
+    freereuse        47.020M, 13,280 KB
+
+Read:
+  strict guards are acceptable and larger_sizes even improves in this run.
+  rss balanced/wide_ws still prefer descavail. Keep the selected low-RSS
+  mixed_ws lane unchanged.
+
+Next:
+  Move to B design:
+    a shared same-owner fast contract for TOY/MIDPAGE/LOCAL2P based on the
+    directlocalfreereuse signal.
+  Do not broaden to LARGE or remote/cross-owner paths.
 ```
 
 ## RandomMixed Selected-Lane Read 2026-06-02
