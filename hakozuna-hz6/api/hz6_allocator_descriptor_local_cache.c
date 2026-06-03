@@ -67,7 +67,9 @@ int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
   Hz6FrontCacheEntry entry = {0};
   entry.ptr = ptr;
   entry.descriptor = descriptor;
+#if HZ6_DESCRIPTORLESS_FRONTCACHE_L1
   entry.source_block = descriptor->source_block;
+#endif
   entry.bytes = descriptor->bytes;
   entry.class_id = descriptor->class_id;
   entry.generation = descriptor->generation;

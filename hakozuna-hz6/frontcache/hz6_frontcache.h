@@ -17,11 +17,15 @@ typedef struct Hz6FrontCacheEntry {
 #if HZ6_DESCRIPTOR_MATERIALIZE_RESERVE_L1
   void* reserved_descriptor;
 #endif
+#if HZ6_DESCRIPTORLESS_FRONTCACHE_L1
   void* source_block;
+#endif
   size_t bytes;
-  uint16_t class_id;
   uint32_t generation;
+  uint16_t class_id;
+#if HZ6_DESCRIPTOR_COLD_GOV_L1
   uint8_t descgov_detached;
+#endif
 } Hz6FrontCacheEntry;
 
 typedef struct Hz6FrontCacheBin {

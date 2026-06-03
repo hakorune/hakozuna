@@ -7081,3 +7081,52 @@ Decision:
   KEEP as source cleanup / metadata hygiene.
   This is not a new promotion lane.
 ```
+
+## HZ6 FrontCacheEntry SourceBlock Pack
+
+FrontCacheEntry packing follow-up:
+
+```text
+Change:
+  Hz6FrontCacheEntry.source_block now exists only when
+  HZ6_DESCRIPTORLESS_FRONTCACHE_L1 is enabled.
+
+  Hz6FrontCacheEntry.descgov_detached now exists only when
+  HZ6_DESCRIPTOR_COLD_GOV_L1 is enabled.
+
+  Field order was tightened so the selected non-descriptorless lanes reach the
+  slim candidate size.
+
+Why:
+  Normal materialized frontcache entries already carry descriptor.
+  SourceBlock can be reached from the descriptor when needed.
+  source_block is only required for descriptorless materialization.
+
+Validation:
+  ownerlocalityfast-rsscap-2-desc160k-front4k diagnostic smoke:
+    larson_t16_main_1k
+    throughput = 55.552M ops/s
+    peak RSS = 502340 KB
+    alloc_fail = 0
+    descriptor_exhausted = 0
+    route_register_fail = 0
+    source_block_exhausted = 0
+    route_invalid = 0
+    route_miss = 0
+
+  Metadata read:
+    frontcache_entry_bytes = 32
+    frontcache_table_bytes = 33560576
+    frontcache_slim_entry_bytes = 32
+    frontcache_slim_savings_bytes = 6144
+
+  Descriptorless/reserve/coldgov build smoke:
+    descriptorless-route4k
+    descriptorreserve-route4k
+    descriptorcoldgov-route4k
+    build/run OK
+
+Decision:
+  KEEP as MetadataSlim frontcache packing.
+  This captures the earlier FrontCacheSlim estimate for selected lanes.
+```
