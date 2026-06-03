@@ -56,8 +56,11 @@ selected-family repeat-3:
     Treat these as capacity-failure pressure rows, not selected clean rows.
 
 next HZ6 attack:
-  find or build a clean balanced / wide_ws low-RSS lane, while keeping
-  random_mixed, larger_sizes, and Larson selected families frozen.
+  clean balanced / wide_ws low-RSS lane is now found and selected.
+  next step is selected-family refresh + cross-allocator table cleanup, then
+  choose one focused optimization target:
+    A. wide_ws throughput while preserving desc17 safety/RSS
+    B. Larson RSS metadata/static-table reduction
 
 thindesc broad default:
   no
@@ -66,9 +69,9 @@ thindesc selected-family role:
   source16k variant is the selected Larson / owner-locality low-RSS sibling
 
 next order:
-  A. selected-family runner/docs cleanup
-  C. thindesc Larson full 10k repeat-3
-  B. ownerlocality + largerlowrss/source-run retention exploration
+  A. selected-family refresh using desc17 mixed lane
+  B. selected-family / cross-allocator table cleanup
+  C. pick next optimization target from wide_ws throughput or Larson RSS
 ```
 
 Latest selected-family result:

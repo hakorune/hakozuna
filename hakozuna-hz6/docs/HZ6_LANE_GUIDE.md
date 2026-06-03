@@ -4,6 +4,9 @@ This document is the compact lane map for HZ6 Windows benchmarking. Keep long
 experiment notes in `current_task.md`; use this file to answer "which lane is
 which?" before running or comparing benchmarks.
 
+For the short selected-row readout, see
+[`HZ6_SELECTED_FAMILY_SUMMARY.md`](HZ6_SELECTED_FAMILY_SUMMARY.md).
+
 ## Current Recommendation
 
 | Profile family | Selected HZ6 profile | Selected capacity lane | Why this lane now |

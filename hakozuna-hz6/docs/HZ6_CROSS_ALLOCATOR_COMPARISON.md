@@ -60,6 +60,7 @@ work. They are not a full paper matrix, but they show where HZ6 is currently
 strong.
 
 Source:
+- [HZ6 Selected Family Summary](HZ6_SELECTED_FAMILY_SUMMARY.md)
 - [HZ6 Lane Guide](HZ6_LANE_GUIDE.md)
 
 | Profile family | Selected HZ6 lane | Median ops/s | Median peak_kb | Read |

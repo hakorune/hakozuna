@@ -185,9 +185,14 @@ Script update:
     selected-mixed-pressure preserves descavail pressure evidence.
 
 Next:
-  finish docs/preset cleanup and commit this lane freeze.
-  Then attack the next HZ6 weakness from clean selected rows, not from
-  descavail pressure numbers.
+  refresh the selected-family matrix with the desc17 mixed lane.
+  then update the cross-allocator table so paper-facing rows separate:
+    clean selected rows
+    pressure evidence rows
+    control/no-go rows
+  after that, choose one focused optimization target:
+    A. wide_ws throughput while preserving desc17 safety/RSS
+    B. Larson RSS metadata/static-table reduction
 ```
 
 ThinDescriptor-L1 is now implemented behind a profile flag. Plain
@@ -201,21 +206,31 @@ profile family where peak RSS is the priority.
 Latest design freeze:
 
 ```text
-ThinDescriptor-L1:
-  do not promote to broad default.
-  keep as compact/moderate Larson / owner-locality lowest-RSS evidence.
-  full 10k repeat did not pass, so no paper-facing full-10k claim yet.
+Selected-family state:
+  mixed balanced/wide:
+    desc17/source2k/route17 is selected clean low-RSS.
+    descavail is pressure evidence only.
+
+  random_mixed:
+    sameownerfast-descavail remains selected.
+
+  larger_sizes:
+    largerlowrss-front8k remains selected.
+
+  Larson:
+    desc160k remains throughput/RSS selected.
+    front4k-thindesc-source16k remains selected low-RSS sibling.
 
 Next order:
-  A. selected-family / profile selector runner and docs cleanup
-  C. thindesc Larson full 10k repeat-3
-  B. then consider bringing largerlowrss/source-run retention into
-     owner-locality Larson lanes
+  A. selected-family refresh with desc17
+  B. cross-allocator selected/control table cleanup
+  C. pick one next optimization lane:
+     wide_ws throughput or Larson RSS
 
 Do not yet:
   make thindesc broad default
-  add another metadata packing pass before the selected-family runner is clear
-  introduce runtime adaptive profile selection
+  promote descavail pressure rows as clean rows
+  add runtime adaptive profile selection
 ```
 
 Latest selected-family measurement:
