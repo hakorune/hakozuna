@@ -92,6 +92,8 @@ selected-family-guard:
 larson-thindesc-sourcecap:
   larson_t16_main_10k
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source12k
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source14k
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k
   use only as a source-block recovery experiment after thindesc full-10k
@@ -131,6 +133,9 @@ Windows profile family:
       ownerlocalityfast-rsscap-2-desc160k-front4k
     selected low-RSS sibling:
       ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k
+    lower-RSS / lower-throughput source-cap control:
+      ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source12k
+      ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source14k
     source-block over-retention control:
       ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k
     compact/moderate thindesc evidence:
@@ -257,6 +262,14 @@ Larson cross-owner full 10k:
     ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k
     repeat-3 full 10k clean; current median is about 46.819M ops/s and
     665704 KB peak RSS, improving both speed and RSS versus front4k
+  lower-RSS / lower-throughput source-cap control:
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source12k
+    repeat-3 full 10k clean; current median is about 44.308M ops/s and
+    623084 KB peak RSS. Keep as a lowest-RSS control, not the selected
+    throughput/RSS sibling.
+  source-cap interpolation control:
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source14k
+    run-1 full 10k clean at about 44.471M ops/s and 644836 KB peak RSS.
   source-block over-retention control:
     ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k
     passes, but raises peak RSS and is not selected

@@ -135,6 +135,42 @@ Decision:
   promote source16k to selected-family low-RSS Larson sibling.
   keep plain thindesc as compact/moderate evidence only.
   keep source32k as over-retention control.
+
+Source-cap tightening:
+  run:
+    docs/benchmarks/windows/paper/hz6_selected_family/
+      larson-thindesc-source-tighten/
+        20260603_190043_hz6_capacity_matrix_windows.md
+  repeat:
+    docs/benchmarks/windows/paper/hz6_selected_family/
+      larson-thindesc-source12k-repeat/
+        20260603_190401_hz6_capacity_matrix_windows.md
+
+  source12k:
+    repeat-3 median:
+      44.308M ops/s
+      623084 KB peak
+    safety:
+      clean
+    read:
+      lower RSS than source16k, but lower throughput.
+      Keep as lowest-RSS control, not selected default.
+
+  source14k:
+    run-1:
+      44.471M ops/s
+      644836 KB peak
+    safety:
+      clean
+    read:
+      interpolation control; no repeat needed unless we want a mid-point table.
+
+  source16k:
+    repeat-3 in same comparison:
+      47.040M ops/s
+      665712 KB peak
+    read:
+      remains selected throughput/RSS sibling.
 ```
 
 ## Current Direction Freeze

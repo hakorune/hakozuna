@@ -89,7 +89,7 @@ $presetMap = [ordered]@{
         -Families @("larson") `
         -BenchmarkProfiles @("larson_t16_main_10k") `
         -Hz6Profiles @("speed") `
-        -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k") `
+        -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source12k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source14k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k") `
         -Note "thindesc source-block capacity recovery check after full-10k warmup failure"
 
     "selected-family-guard" = New-Preset `

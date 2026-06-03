@@ -66,6 +66,24 @@ Result:
       836644 KB peak
     read:
       over-retention control, not selected.
+
+Source-cap tighten:
+  source12k:
+    repeat-3:
+      44.308M ops/s
+      623084 KB peak
+      safety clean
+    read:
+      lowest-RSS control; throughput below source16k.
+  source14k:
+    run-1:
+      44.471M ops/s
+      644836 KB peak
+      safety clean
+  source16k:
+    remains selected:
+      47.040M ops/s
+      665712 KB peak in the tighten repeat.
 ```
 
 ## HZ6 Lane Dashboard
