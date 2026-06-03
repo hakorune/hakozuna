@@ -26,6 +26,7 @@ Source:
 - `docs/benchmarks/windows/paper/hz6_selected_family/selected-family-desc17-refresh/`
 - `docs/benchmarks/windows/paper/hz6_selected_family/larson-metadata-slim-route192-repeat/`
 - `docs/benchmarks/windows/paper/hz6_selected_family/larson-sourcerun-metaslim-repeat/`
+- `docs/benchmarks/windows/paper/hz6_selected_family/larson-lowest-rss-default-check/`
 
 ## Evidence Rows
 
@@ -37,6 +38,7 @@ Source:
 | Larson lower-RSS control | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source12k` | Lower RSS than source16k but lower throughput; useful control, not selected. |
 | Larson route boundary | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route160k/128k` | No-go: route table saturates during full-10k warmup. Route192k is the current clean route lower bound. |
 | Larson source-run metadata slim | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512` | Selected lowest-RSS sibling: repeat-3 clean at `48.512M / 499820 KB`. Run1024 is clean control at `44.396M / 518256 KB`. |
+| Larson lowest-RSS preset check | `larson-cross-owner-lowest-rss` | Default check includes front4k, route192k, and route192k-run512. Run512 stayed clean at `40.688M / 499812 KB` in the one-run confirmation. |
 | Larson over-retention control | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k` | Passes but over-retains RSS; no promotion. |
 
 ## Current Read

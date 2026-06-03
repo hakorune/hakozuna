@@ -413,6 +413,24 @@ Decision:
   Keep route192k as route-capacity control.
   Keep run1024 as source-run metadata control.
 
+Default check:
+  docs/benchmarks/windows/paper/hz6_selected_family/
+    larson-lowest-rss-default-check/
+
+  larson-cross-owner-lowest-rss now includes:
+    front4k
+    route192k
+    route192k-run512
+
+  one-run confirmation:
+    front4k:
+      40.157M / 716312 KB
+    route192k:
+      40.755M / 628836 KB
+    route192k-run512:
+      40.688M / 499812 KB
+      safety clean
+
 Next:
   SourceBlock table is no longer the same dominant gap. Re-run metadata
   attribution before choosing the next table/layout target.

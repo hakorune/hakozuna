@@ -646,12 +646,16 @@ ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k:
   reduced further without losing completion.
 
 ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k:
-  Selected Larson lowest-RSS sibling. Same as thindesc-source16k, but route
-  capacity is trimmed from 262144 to 196608. Repeat-3:
-  `40.260M / 628828 KB`, safety clean. Same-run baseline was
-  `40.267M / 665700 KB`, so route192k keeps throughput parity while saving
-  about 36 MiB peak RSS. Route160k and route128k are no-go boundary controls:
-  both fail warmup from route-table saturation.
+  Clean route-capacity control. Same as thindesc-source16k, but route capacity
+  is trimmed from 262144 to 196608. Latest repeat-3:
+  `44.610M / 628844 KB`, safety clean. SourceBlockMetaSlim-L1 superseded it
+  as the lowest-RSS sibling with route192k-run512. Route160k and route128k are
+  no-go boundary controls: both fail warmup from route-table saturation.
+
+ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512:
+  Selected Larson lowest-RSS sibling. Same route capacity as route192k, but
+  `HZ6_SOURCE_RUN_MAX_SLOTS` is reduced to 512. Repeat-3:
+  `48.512M / 499820 KB`, safety clean.
 
 ownerlocalityfast-rsscap-2-desc144k:
   Descriptor-boundary probe for full 10k Larson cross-owner. Same shape as

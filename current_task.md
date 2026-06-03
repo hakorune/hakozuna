@@ -95,6 +95,9 @@ next HZ6 attack:
       descriptor_exhausted = 0
       route_register_fail = 0
       source_block_exhausted = 0
+    default-check one-run:
+      40.688M / 499812 KB
+      safety clean
     same-run thindesc16k baseline:
       40.267M / 665700 KB
     route160k/route128k:

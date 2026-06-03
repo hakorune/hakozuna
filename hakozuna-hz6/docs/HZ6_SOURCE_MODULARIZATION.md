@@ -52,13 +52,14 @@ route224k:
   clean control
 
 route192k:
-  clean selected lowest-RSS sibling
+  clean route-capacity control
 
 route160k / route128k:
   warmup no-go from route saturation
 ```
 
-Do not trim route capacity again until the source-block metadata shape changes.
+Do not trim route capacity again. SourceBlockMetaSlim-L1 moved the selected
+lowest-RSS sibling to route192k-run512.
 
 ## Next Refactor Candidate
 
