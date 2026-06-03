@@ -64,8 +64,10 @@ Source:
 
 | Profile family | Selected HZ6 lane | Median ops/s | Median peak_kb | Read |
 | --- | --- | ---: | ---: | --- |
-| balanced | `rss + descavail-noboost-route4k` | 78.412M | 18,472 | current low-RSS balanced winner |
-| wide_ws | `rss + descavail-noboost-route4k` | 57.183M | 13,164 | current low-RSS wide_ws winner |
+| balanced clean | `rss + mixedclean-front16k-sourcerun-desc32k-source2k-route32k` | 56.937M | 122,108 | current safety-clean balanced selected row |
+| wide_ws clean | `rss + mixedclean-front16k-sourcerun-desc32k-source2k-route32k` | 20.636M | 151,820 | current safety-clean wide_ws selected row |
+| balanced pressure | `rss + descavail-noboost-route4k` | 75.467M | 17,376 | pressure evidence only; not safety-clean because allocation failures are large |
+| wide_ws pressure | `rss + descavail-noboost-route4k` | 57.144M | 12,524 | pressure evidence only; not safety-clean because allocation failures are large |
 | random_mixed small | `strict + sameownerfast-descavail-noboost-route4k` | 46.128M | 5,432 | current same-owner fast winner |
 | random_mixed medium | `strict + sameownerfast-descavail-noboost-route4k` | 42.299M | 5,040 | current same-owner fast winner |
 | random_mixed mixed | `strict + sameownerfast-descavail-noboost-route4k` | 41.352M | 5,072 | current same-owner fast winner |
@@ -80,7 +82,7 @@ Source:
 ```text
 HZ6 is not a universal one-row winner.
 It is a family allocator:
-  balanced / wide_ws -> low-RSS speed
+  balanced / wide_ws -> clean low-RSS selected rows plus separate pressure evidence
   random_mixed -> same-owner hot path plus descriptor-cost reduction
   larger_sizes -> front retention plus low-RSS large handling
 

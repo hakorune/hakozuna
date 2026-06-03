@@ -7,6 +7,65 @@ fronts should stay separated.
 Current Windows capacity lane names and promotion status are summarized in
 `HZ6_LANE_GUIDE.md`. Keep this file as the longer investigation log.
 
+Latest mixed clean-lane decision:
+
+```text
+Goal:
+  replace the old balanced / wide_ws descavail pressure row with a
+  safety-clean selected lane.
+
+New capacity lanes:
+  mixedclean-front16k-sourcerun-desc32k-source2k-route32k
+  mixedclean-front16k-sourcerun-desc32k-source4k-route32k
+
+Repeat-3:
+  docs/benchmarks/windows/paper/hz6_selected_family/
+    mixed-clean-l1-repeat/
+      20260603_195317_hz6_capacity_matrix_windows.md
+
+Result:
+  source2k:
+    balanced:
+      56.937M ops/s
+      122108 KB peak
+    wide_ws:
+      20.636M ops/s
+      151820 KB peak
+    safety:
+      alloc_fail = 0
+      descriptor_exhausted = 0
+      route_register_fail = 0
+      source_block_exhausted = 0
+
+  source4k:
+    balanced:
+      64.129M ops/s
+      131952 KB peak
+    wide_ws:
+      21.312M ops/s
+      161248 KB peak
+    safety:
+      clean
+
+Decision:
+  promote rss + mixedclean-front16k-sourcerun-desc32k-source2k-route32k
+  as the selected balanced / wide_ws clean low-RSS lane.
+  Keep source4k as the speed/control sibling.
+  Keep descavail-noboost-route4k as pressure evidence only: it is much faster
+  and lower RSS, but not safety-clean because it finishes with large
+  alloc_fail / source-block-exhaustion counts.
+
+Script update:
+  win/run_win_hz6_selected_family.ps1:
+    selected-mixed-lowrss now uses the clean mixedclean source2k lane.
+    selected-mixed-pressure preserves descavail pressure evidence.
+
+Next:
+  finish docs/preset cleanup and commit this lane freeze.
+  Then attack the next HZ6 weakness from clean selected rows, not from
+  descavail pressure numbers.
+```
+
 ThinDescriptor-L1 is now implemented behind a profile flag. Plain
 `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc` stays compact/moderate
 evidence because it fails full-10k warmup, while

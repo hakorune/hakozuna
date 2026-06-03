@@ -6,6 +6,26 @@ remains profile-stabilized; new HZ5 work should not blur the HZ6 contract.
 Latest HZ6 selected-family decision:
 
 ```text
+mixed clean-lane update:
+  selected-mixed-lowrss is now clean:
+    rss + mixedclean-front16k-sourcerun-desc32k-source2k-route32k
+
+  repeat-3:
+    balanced 56.937M / 122108 KB
+    wide_ws  20.636M / 151820 KB
+    alloc_fail = 0
+    descriptor_exhausted = 0
+    route_register_fail = 0
+    source_block_exhausted = 0
+
+  source4k sibling:
+    balanced 64.129M / 131952 KB
+    wide_ws  21.312M / 161248 KB
+    clean but higher RSS, so keep as speed/control.
+
+  descavail-noboost-route4k:
+    demoted to pressure evidence only.
+
 selected-family repeat-3:
   random_mixed:
     clean and stable:

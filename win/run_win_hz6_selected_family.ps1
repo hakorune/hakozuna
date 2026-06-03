@@ -49,8 +49,16 @@ $presetMap = [ordered]@{
         -Families @("mixed_ws") `
         -BenchmarkProfiles @("balanced", "wide_ws") `
         -Hz6Profiles @("rss") `
+        -CapacityLanes @("mixedclean-front16k-sourcerun-desc32k-source2k-route32k") `
+        -Note "selected balanced / wide_ws clean low-RSS lane"
+
+    "selected-mixed-pressure" = New-Preset `
+        -Name "selected-mixed-pressure" `
+        -Families @("mixed_ws") `
+        -BenchmarkProfiles @("balanced", "wide_ws") `
+        -Hz6Profiles @("rss") `
         -CapacityLanes @("descavail-noboost-route4k") `
-        -Note "selected balanced / wide_ws low-RSS speed lane"
+        -Note "balanced / wide_ws low-RSS pressure row; fast but not safety-clean"
 
     "selected-random-sameowner" = New-Preset `
         -Name "selected-random-sameowner" `
@@ -97,7 +105,7 @@ $presetMap = [ordered]@{
         -Families @("mixed_ws") `
         -BenchmarkProfiles @("smoke", "balanced", "wide_ws", "larger_sizes") `
         -Hz6Profiles @("rss") `
-        -CapacityLanes @("route4k", "descavail-noboost-route4k", "largerlowrss-front8k-sourcerun-desc8k-route8k") `
+        -CapacityLanes @("route4k", "mixedclean-front16k-sourcerun-desc32k-source2k-route32k", "descavail-noboost-route4k", "largerlowrss-front8k-sourcerun-desc8k-route8k") `
         -Note "short guard/control slice before a broader selected-family run"
 }
 

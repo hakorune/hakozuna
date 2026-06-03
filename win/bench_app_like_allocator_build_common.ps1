@@ -392,6 +392,72 @@ function Get-Hz6WinLargerLowRssFront4kSourceRunDesc8kRoute8kCapacityFlags {
     )
 }
 
+function Get-Hz6WinMixedCleanFront8kSourceRunDesc16kSource2kRoute16kCapacityFlags {
+    @(
+        "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)16384)",
+        "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)16384)",
+        "/DHZ6_TRANSFER_CACHE_CAPACITY=((size_t)1024)",
+        "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)2048)",
+        "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)8192)",
+        "/DHZ6_SOURCE_RUN_REUSE_L1=1"
+    )
+}
+
+function Get-Hz6WinMixedCleanFront16kSourceRunDesc16kSource2kRoute16kCapacityFlags {
+    @(
+        "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)16384)",
+        "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)16384)",
+        "/DHZ6_TRANSFER_CACHE_CAPACITY=((size_t)2048)",
+        "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)2048)",
+        "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)16384)",
+        "/DHZ6_SOURCE_RUN_REUSE_L1=1"
+    )
+}
+
+function Get-Hz6WinMixedCleanFront16kSourceRunDesc32kSource4kRoute32kCapacityFlags {
+    @(
+        "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)32768)",
+        "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)32768)",
+        "/DHZ6_TRANSFER_CACHE_CAPACITY=((size_t)4096)",
+        "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)4096)",
+        "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)16384)",
+        "/DHZ6_SOURCE_RUN_REUSE_L1=1"
+    )
+}
+
+function Get-Hz6WinMixedCleanFront8kSourceRunDesc32kSource4kRoute32kCapacityFlags {
+    @(
+        "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)32768)",
+        "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)32768)",
+        "/DHZ6_TRANSFER_CACHE_CAPACITY=((size_t)2048)",
+        "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)4096)",
+        "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)8192)",
+        "/DHZ6_SOURCE_RUN_REUSE_L1=1"
+    )
+}
+
+function Get-Hz6WinMixedCleanFront12kSourceRunDesc32kSource4kRoute32kCapacityFlags {
+    @(
+        "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)32768)",
+        "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)32768)",
+        "/DHZ6_TRANSFER_CACHE_CAPACITY=((size_t)3072)",
+        "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)4096)",
+        "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)12288)",
+        "/DHZ6_SOURCE_RUN_REUSE_L1=1"
+    )
+}
+
+function Get-Hz6WinMixedCleanFront16kSourceRunDesc32kSource2kRoute32kCapacityFlags {
+    @(
+        "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)32768)",
+        "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)32768)",
+        "/DHZ6_TRANSFER_CACHE_CAPACITY=((size_t)4096)",
+        "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)2048)",
+        "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)16384)",
+        "/DHZ6_SOURCE_RUN_REUSE_L1=1"
+    )
+}
+
 function Get-Hz6WinRedisLowRssSlimRoute4kCapacityFlags {
     @(
         "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)2048)",
@@ -830,6 +896,12 @@ function Invoke-AppLikeHz6BenchBuilds {
     $largerLowRssFront8kSourceRunDesc8kRoute8kFlags = Get-Hz6WinLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
     $largerLowRssFront6kSourceRunDesc8kRoute8kFlags = Get-Hz6WinLargerLowRssFront6kSourceRunDesc8kRoute8kCapacityFlags
     $largerLowRssFront4kSourceRunDesc8kRoute8kFlags = Get-Hz6WinLargerLowRssFront4kSourceRunDesc8kRoute8kCapacityFlags
+    $mixedCleanFront8kSourceRunDesc16kSource2kRoute16kFlags = Get-Hz6WinMixedCleanFront8kSourceRunDesc16kSource2kRoute16kCapacityFlags
+    $mixedCleanFront16kSourceRunDesc16kSource2kRoute16kFlags = Get-Hz6WinMixedCleanFront16kSourceRunDesc16kSource2kRoute16kCapacityFlags
+    $mixedCleanFront16kSourceRunDesc32kSource4kRoute32kFlags = Get-Hz6WinMixedCleanFront16kSourceRunDesc32kSource4kRoute32kCapacityFlags
+    $mixedCleanFront8kSourceRunDesc32kSource4kRoute32kFlags = Get-Hz6WinMixedCleanFront8kSourceRunDesc32kSource4kRoute32kCapacityFlags
+    $mixedCleanFront12kSourceRunDesc32kSource4kRoute32kFlags = Get-Hz6WinMixedCleanFront12kSourceRunDesc32kSource4kRoute32kCapacityFlags
+    $mixedCleanFront16kSourceRunDesc32kSource2kRoute32kFlags = Get-Hz6WinMixedCleanFront16kSourceRunDesc32kSource2kRoute32kCapacityFlags
     $redisLowRssSlimRoute4kFlags = Get-Hz6WinRedisLowRssSlimRoute4kCapacityFlags
     $front1kDesc4kSource512Route4kFlags = Get-Hz6WinFront1kDesc4kSource512Route4kCapacityFlags
     $appLikeFlags = Get-Hz6WinAppLikeCapacityFlags
@@ -902,6 +974,12 @@ function Invoke-AppLikeHz6BenchBuilds {
         "largerlowrss-front8k-sourcerun-desc8k-route8k" = @{ Suffix = "_largerlowrss_front8k_sourcerun_desc8k_route8k"; ExtraFlags = $largerLowRssFront8kSourceRunDesc8kRoute8kFlags }
         "largerlowrss-front6k-sourcerun-desc8k-route8k" = @{ Suffix = "_largerlowrss_front6k_sourcerun_desc8k_route8k"; ExtraFlags = $largerLowRssFront6kSourceRunDesc8kRoute8kFlags }
         "largerlowrss-front4k-sourcerun-desc8k-route8k" = @{ Suffix = "_largerlowrss_front4k_sourcerun_desc8k_route8k"; ExtraFlags = $largerLowRssFront4kSourceRunDesc8kRoute8kFlags }
+        "mixedclean-front8k-sourcerun-desc16k-source2k-route16k" = @{ Suffix = "_mixedclean_front8k_sourcerun_desc16k_source2k_route16k"; ExtraFlags = $mixedCleanFront8kSourceRunDesc16kSource2kRoute16kFlags }
+        "mixedclean-front16k-sourcerun-desc16k-source2k-route16k" = @{ Suffix = "_mixedclean_front16k_sourcerun_desc16k_source2k_route16k"; ExtraFlags = $mixedCleanFront16kSourceRunDesc16kSource2kRoute16kFlags }
+        "mixedclean-front16k-sourcerun-desc32k-source4k-route32k" = @{ Suffix = "_mixedclean_front16k_sourcerun_desc32k_source4k_route32k"; ExtraFlags = $mixedCleanFront16kSourceRunDesc32kSource4kRoute32kFlags }
+        "mixedclean-front8k-sourcerun-desc32k-source4k-route32k" = @{ Suffix = "_mixedclean_front8k_sourcerun_desc32k_source4k_route32k"; ExtraFlags = $mixedCleanFront8kSourceRunDesc32kSource4kRoute32kFlags }
+        "mixedclean-front12k-sourcerun-desc32k-source4k-route32k" = @{ Suffix = "_mixedclean_front12k_sourcerun_desc32k_source4k_route32k"; ExtraFlags = $mixedCleanFront12kSourceRunDesc32kSource4kRoute32kFlags }
+        "mixedclean-front16k-sourcerun-desc32k-source2k-route32k" = @{ Suffix = "_mixedclean_front16k_sourcerun_desc32k_source2k_route32k"; ExtraFlags = $mixedCleanFront16kSourceRunDesc32kSource2kRoute32kFlags }
         "redislowrss-slim-route4k" = @{ Suffix = "_redislowrss_slim_route4k"; ExtraFlags = $redisLowRssSlimRoute4kFlags }
         "front1k-desc4k-source512-route4k" = @{ Suffix = "_front1k_desc4k_source512_route4k"; ExtraFlags = $front1kDesc4kSource512Route4kFlags }
         "appcap" = @{ Suffix = "_appcap"; ExtraFlags = $appLikeFlags }
