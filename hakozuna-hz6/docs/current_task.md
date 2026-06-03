@@ -7051,3 +7051,33 @@ Next natural checks:
   3. consider cold-source-capacity attribution only if cold record exhaustion
      appears in later stress lanes
 ```
+
+## HZ6 FrontCacheEntry Reserve Field Pack
+
+Small source cleanup:
+
+```text
+Change:
+  Hz6FrontCacheEntry.reserved_descriptor now exists only when
+  HZ6_DESCRIPTOR_MATERIALIZE_RESERVE_L1 is enabled.
+
+Why:
+  reserved_descriptor is used only by the descriptorreserve evidence lane.
+  Selected production-like lanes do not need the field in every frontcache
+  table entry.
+
+Validation:
+  ownerlocalityfast-rsscap-2-desc160k-front4k smoke:
+    larson_t16_main_1k
+    throughput = 56.817M ops/s
+    peak RSS = 520752 KB
+    safety clean
+
+  descriptorreserve-route4k smoke:
+    mixed_ws balanced
+    build/run OK
+
+Decision:
+  KEEP as source cleanup / metadata hygiene.
+  This is not a new promotion lane.
+```

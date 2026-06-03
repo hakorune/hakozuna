@@ -1,6 +1,7 @@
 #ifndef HZ6_FRONTCACHE_H
 #define HZ6_FRONTCACHE_H
 
+#include "../include/hz6_config.h"
 #include "../include/hz6_contract.h"
 
 #include <stddef.h>
@@ -13,7 +14,9 @@ extern "C" {
 typedef struct Hz6FrontCacheEntry {
   void* ptr;
   void* descriptor;
+#if HZ6_DESCRIPTOR_MATERIALIZE_RESERVE_L1
   void* reserved_descriptor;
+#endif
   void* source_block;
   size_t bytes;
   uint16_t class_id;
