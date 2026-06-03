@@ -10,8 +10,9 @@ Current Windows capacity lane names and promotion status are summarized in
 ThinDescriptor-L1 is now implemented behind a profile flag as an experimental
 lower-RSS sibling. Keep `ownerlocalityfast-rsscap-2-desc160k-front4k` as the
 selected lower-RSS sibling and treat
-`ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc` as evidence-only unless
-future repeat/full-row data clearly justifies promotion.
+`ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc` as the selected
+lowest-RSS sibling candidate after the post-pack repeat-3. It is still not a
+universal default; use it where peak RSS is the priority.
 
 ## Current Direction Freeze
 
