@@ -42,16 +42,16 @@ typedef struct Hz6SourceBlock {
 typedef struct Hz6ObjectDescriptor {
   struct Hz6Allocator* allocator;
   void* ptr;
-  size_t bytes;
   void* source_ptr;
-  size_t source_bytes;
   Hz6SourceBlock* source_block;
-  uint16_t class_id;
-  Hz6SourceKind source_kind;
   int (*source_release)(void* ptr, size_t bytes);
   Hz6OwnerToken owner;
+  uint32_t bytes;
+  uint32_t source_bytes;
   uint32_t generation;
-  Hz6ObjectState state;
+  uint16_t class_id;
+  uint8_t source_kind;
+  uint8_t state;
 } Hz6ObjectDescriptor;
 
 typedef struct Hz6LargeSpanPoolBin {

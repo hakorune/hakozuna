@@ -305,6 +305,79 @@ Next:
     estimated table saving = 83886080 bytes
 ```
 
+DescriptorPack-L1 implementation read:
+
+```text
+Why:
+  Full ThinDescriptor hot/cold split touches source lifetime APIs. Before that,
+  pack the safe descriptor fields that already have bounded HZ6 contracts.
+
+Change:
+  Hz6ObjectDescriptor packed from 80 bytes to 64 bytes:
+    bytes as uint32_t
+    source_bytes as uint32_t
+    source_kind as uint8_t
+    state as uint8_t
+
+  prepare_descriptor now rejects:
+    bytes > UINT32_MAX
+    effective source_bytes > UINT32_MAX
+    source_kind / state values outside uint8_t range
+
+Diagnostic smoke:
+  Run:
+    speed + ownerlocalityfast-rsscap-2-desc160k-front4k
+    Larson T=16 main-warmup chunks=1000
+    diagnostic probes only
+
+  Result:
+    throughput = 56.832M ops/s
+    safety clean:
+      alloc_fail = 0
+      descriptor_exhausted = 0
+      route_register_fail = 0
+      source_block_exhausted = 0
+      route_invalid = 0
+      route_miss = 0
+
+    descriptor_table_bytes = 167772160
+    descriptor_entry_bytes = 64
+    descriptor_thin_hot_entry_bytes = 48
+    descriptor_thin_hot_savings_bytes = 41943040
+
+  Read:
+    DescriptorPack-L1 captured the first safe descriptor saving:
+      pre-pack descriptor table bytes  = 209715200
+      post-pack descriptor table bytes = 167772160
+      structural saving                = 41943040 bytes
+
+Non-diagnostic smoke:
+  Run:
+    same lane, no DiagnosticHz6Probes
+
+  Result:
+    throughput = 56.953M ops/s
+    no [HZ6_MEMORY_ATTR] line
+    no [HZ6_METADATA_SLIM] line
+    safety clean
+
+Status:
+  DescriptorPack-L1 is implemented and smoke-clean.
+  It is a low-risk metadata reduction, not the full ThinDescriptor hot/cold
+  split.
+
+Next:
+  For more descriptor reduction, do not blindly pack pointers. The remaining
+  64 -> 48 target requires a true cold-source side table or a source-block-only
+  descriptor profile:
+    allocator / ptr / source_block / source_release / owner are pointer-sized
+    or lifetime-sensitive.
+    direct-source descriptors still need source_ptr/source_bytes/release
+    semantics.
+
+  Full repeat/full-row data is still required before claiming RSS promotion.
+```
+
 ## LargerSizes Front Retention Ladder 2026-06-03
 
 ```text
