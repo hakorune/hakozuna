@@ -9,14 +9,14 @@ extern "C" {
 
 typedef struct Hz6RouteEntry {
   uintptr_t base;
-  size_t bytes;
+  void* descriptor;
+  uint32_t bytes;
+  uint32_t generation;
   uint16_t front_id;
   uint16_t class_id;
-  uint32_t generation;
-  void* descriptor;
-  int exact_valid;
-  int active;
-  int tombstone;
+  unsigned exact_valid : 1;
+  unsigned active : 1;
+  unsigned tombstone : 1;
 } Hz6RouteEntry;
 
 typedef struct Hz6RouteTable {

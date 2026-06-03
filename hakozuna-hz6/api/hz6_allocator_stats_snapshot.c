@@ -1,6 +1,53 @@
 #include "hz6_allocator.h"
 
 #if HZ6_DIAGNOSTIC_PROBES
+typedef struct Hz6ThinDescriptorHotCandidate {
+  void* ptr;
+  size_t bytes;
+  Hz6SourceBlock* source_block;
+  Hz6OwnerToken owner;
+  uint32_t generation;
+  Hz6ObjectState state;
+  uint16_t class_id;
+  uint16_t flags;
+} Hz6ThinDescriptorHotCandidate;
+
+typedef struct Hz6SlimRouteEntryCandidate {
+  uintptr_t base;
+  void* descriptor;
+  uint32_t generation;
+  uint32_t bytes32;
+  uint16_t front_id;
+  uint16_t class_id;
+  uint16_t flags;
+} Hz6SlimRouteEntryCandidate;
+
+typedef struct Hz6SlimSourceBlockCandidate {
+  void* ptr;
+  size_t bytes;
+  size_t ref_count;
+  size_t run_slot_bytes;
+  uint64_t run_used_bits[HZ6_SOURCE_RUN_BITMAP_WORDS];
+  uint16_t run_class_id;
+  uint16_t run_slot_count;
+  uint16_t run_used_count;
+  uint16_t run_next_hint;
+  uint16_t flags;
+} Hz6SlimSourceBlockCandidate;
+
+typedef struct Hz6SlimFrontCacheEntryCandidate {
+  void* ptr;
+  void* descriptor;
+  size_t bytes;
+  uint32_t generation;
+  uint16_t class_id;
+  uint16_t flags;
+} Hz6SlimFrontCacheEntryCandidate;
+
+static size_t hz6_sub_saturating_size(size_t a, size_t b) {
+  return a > b ? a - b : 0;
+}
+
 static void hz6_stats_snapshot_memory_attribution(
     const Hz6Allocator* allocator,
     Hz6StatsSnapshot* snapshot) {
@@ -93,6 +140,43 @@ static void hz6_stats_snapshot_memory_attribution(
   }
   snapshot->memory_frontcache_total = frontcache_total;
   snapshot->memory_frontcache_largest_bin = frontcache_largest_bin;
+
+  snapshot->metadata_descriptor_entry_bytes = sizeof(Hz6ObjectDescriptor);
+  snapshot->metadata_descriptor_thin_hot_entry_bytes =
+      sizeof(Hz6ThinDescriptorHotCandidate);
+  snapshot->metadata_descriptor_thin_hot_table_bytes =
+      sizeof(Hz6ThinDescriptorHotCandidate) * HZ6_OBJECT_DESCRIPTOR_CAPACITY;
+  snapshot->metadata_descriptor_thin_hot_savings_bytes =
+      hz6_sub_saturating_size(snapshot->memory_descriptor_table_bytes,
+                              snapshot->metadata_descriptor_thin_hot_table_bytes);
+
+  snapshot->metadata_route_entry_bytes = sizeof(Hz6RouteEntry);
+  snapshot->metadata_route_slim_entry_bytes =
+      sizeof(Hz6SlimRouteEntryCandidate);
+  snapshot->metadata_route_slim_table_bytes =
+      sizeof(Hz6SlimRouteEntryCandidate) * HZ6_ROUTE_TABLE_CAPACITY;
+  snapshot->metadata_route_slim_savings_bytes =
+      hz6_sub_saturating_size(snapshot->memory_route_table_bytes,
+                              snapshot->metadata_route_slim_table_bytes);
+
+  snapshot->metadata_source_block_entry_bytes = sizeof(Hz6SourceBlock);
+  snapshot->metadata_source_block_slim_entry_bytes =
+      sizeof(Hz6SlimSourceBlockCandidate);
+  snapshot->metadata_source_block_slim_table_bytes =
+      sizeof(Hz6SlimSourceBlockCandidate) * HZ6_SOURCE_BLOCK_CAPACITY;
+  snapshot->metadata_source_block_slim_savings_bytes =
+      hz6_sub_saturating_size(snapshot->memory_source_block_table_bytes,
+                              snapshot->metadata_source_block_slim_table_bytes);
+
+  snapshot->metadata_frontcache_entry_bytes = sizeof(Hz6FrontCacheEntry);
+  snapshot->metadata_frontcache_slim_entry_bytes =
+      sizeof(Hz6SlimFrontCacheEntryCandidate);
+  snapshot->metadata_frontcache_slim_table_bytes =
+      sizeof(Hz6SlimFrontCacheEntryCandidate) *
+      HZ6_FRONT_CACHE_CLASS_COUNT * HZ6_FRONT_CACHE_BIN_CAPACITY;
+  snapshot->metadata_frontcache_slim_savings_bytes =
+      hz6_sub_saturating_size(snapshot->memory_frontcache_table_bytes,
+                              snapshot->metadata_frontcache_slim_table_bytes);
 }
 #endif
 

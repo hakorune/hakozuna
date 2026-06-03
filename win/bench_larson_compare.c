@@ -744,6 +744,62 @@ int main(int argc, char** argv) {
             hz6_stats.memory_frontcache_largest_bin =
                 tds[t].hz6_stats_after.memory_frontcache_largest_bin;
         }
+        if (tds[t].hz6_stats_after.metadata_descriptor_entry_bytes >
+            hz6_stats.metadata_descriptor_entry_bytes) {
+            hz6_stats.metadata_descriptor_entry_bytes =
+                tds[t].hz6_stats_after.metadata_descriptor_entry_bytes;
+        }
+        if (tds[t].hz6_stats_after.metadata_descriptor_thin_hot_entry_bytes >
+            hz6_stats.metadata_descriptor_thin_hot_entry_bytes) {
+            hz6_stats.metadata_descriptor_thin_hot_entry_bytes =
+                tds[t].hz6_stats_after.metadata_descriptor_thin_hot_entry_bytes;
+        }
+        hz6_stats.metadata_descriptor_thin_hot_table_bytes +=
+            tds[t].hz6_stats_after.metadata_descriptor_thin_hot_table_bytes;
+        hz6_stats.metadata_descriptor_thin_hot_savings_bytes +=
+            tds[t].hz6_stats_after.metadata_descriptor_thin_hot_savings_bytes;
+        if (tds[t].hz6_stats_after.metadata_route_entry_bytes >
+            hz6_stats.metadata_route_entry_bytes) {
+            hz6_stats.metadata_route_entry_bytes =
+                tds[t].hz6_stats_after.metadata_route_entry_bytes;
+        }
+        if (tds[t].hz6_stats_after.metadata_route_slim_entry_bytes >
+            hz6_stats.metadata_route_slim_entry_bytes) {
+            hz6_stats.metadata_route_slim_entry_bytes =
+                tds[t].hz6_stats_after.metadata_route_slim_entry_bytes;
+        }
+        hz6_stats.metadata_route_slim_table_bytes +=
+            tds[t].hz6_stats_after.metadata_route_slim_table_bytes;
+        hz6_stats.metadata_route_slim_savings_bytes +=
+            tds[t].hz6_stats_after.metadata_route_slim_savings_bytes;
+        if (tds[t].hz6_stats_after.metadata_source_block_entry_bytes >
+            hz6_stats.metadata_source_block_entry_bytes) {
+            hz6_stats.metadata_source_block_entry_bytes =
+                tds[t].hz6_stats_after.metadata_source_block_entry_bytes;
+        }
+        if (tds[t].hz6_stats_after.metadata_source_block_slim_entry_bytes >
+            hz6_stats.metadata_source_block_slim_entry_bytes) {
+            hz6_stats.metadata_source_block_slim_entry_bytes =
+                tds[t].hz6_stats_after.metadata_source_block_slim_entry_bytes;
+        }
+        hz6_stats.metadata_source_block_slim_table_bytes +=
+            tds[t].hz6_stats_after.metadata_source_block_slim_table_bytes;
+        hz6_stats.metadata_source_block_slim_savings_bytes +=
+            tds[t].hz6_stats_after.metadata_source_block_slim_savings_bytes;
+        if (tds[t].hz6_stats_after.metadata_frontcache_entry_bytes >
+            hz6_stats.metadata_frontcache_entry_bytes) {
+            hz6_stats.metadata_frontcache_entry_bytes =
+                tds[t].hz6_stats_after.metadata_frontcache_entry_bytes;
+        }
+        if (tds[t].hz6_stats_after.metadata_frontcache_slim_entry_bytes >
+            hz6_stats.metadata_frontcache_slim_entry_bytes) {
+            hz6_stats.metadata_frontcache_slim_entry_bytes =
+                tds[t].hz6_stats_after.metadata_frontcache_slim_entry_bytes;
+        }
+        hz6_stats.metadata_frontcache_slim_table_bytes +=
+            tds[t].hz6_stats_after.metadata_frontcache_slim_table_bytes;
+        hz6_stats.metadata_frontcache_slim_savings_bytes +=
+            tds[t].hz6_stats_after.metadata_frontcache_slim_savings_bytes;
         hz6_stats.large_span_central_push +=
             tds[t].hz6_stats_after.large_span_central_push;
         hz6_stats.large_span_central_pop +=
@@ -997,6 +1053,39 @@ int main(int argc, char** argv) {
            hz6_stats.route_tombstone_current,
            hz6_stats.memory_frontcache_total,
            hz6_stats.memory_frontcache_largest_bin);
+    printf("[HZ6_METADATA_SLIM] "
+           "descriptor_entry_bytes=%zu "
+           "descriptor_thin_hot_entry_bytes=%zu "
+           "descriptor_thin_hot_table_bytes=%zu "
+           "descriptor_thin_hot_savings_bytes=%zu "
+           "route_entry_bytes=%zu "
+           "route_slim_entry_bytes=%zu "
+           "route_slim_table_bytes=%zu "
+           "route_slim_savings_bytes=%zu "
+           "source_block_entry_bytes=%zu "
+           "source_block_slim_entry_bytes=%zu "
+           "source_block_slim_table_bytes=%zu "
+           "source_block_slim_savings_bytes=%zu "
+           "frontcache_entry_bytes=%zu "
+           "frontcache_slim_entry_bytes=%zu "
+           "frontcache_slim_table_bytes=%zu "
+           "frontcache_slim_savings_bytes=%zu\n",
+           hz6_stats.metadata_descriptor_entry_bytes,
+           hz6_stats.metadata_descriptor_thin_hot_entry_bytes,
+           hz6_stats.metadata_descriptor_thin_hot_table_bytes,
+           hz6_stats.metadata_descriptor_thin_hot_savings_bytes,
+           hz6_stats.metadata_route_entry_bytes,
+           hz6_stats.metadata_route_slim_entry_bytes,
+           hz6_stats.metadata_route_slim_table_bytes,
+           hz6_stats.metadata_route_slim_savings_bytes,
+           hz6_stats.metadata_source_block_entry_bytes,
+           hz6_stats.metadata_source_block_slim_entry_bytes,
+           hz6_stats.metadata_source_block_slim_table_bytes,
+           hz6_stats.metadata_source_block_slim_savings_bytes,
+           hz6_stats.metadata_frontcache_entry_bytes,
+           hz6_stats.metadata_frontcache_slim_entry_bytes,
+           hz6_stats.metadata_frontcache_slim_table_bytes,
+           hz6_stats.metadata_frontcache_slim_savings_bytes);
     print_hz6_front_alloc_paths(&hz6_stats);
     print_hz6_front_prefill_paths(&hz6_stats);
     print_hz6_frontcache_class_diag(&hz6_stats);

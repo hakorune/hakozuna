@@ -386,6 +386,39 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.route_tombstone_current,
          stats.memory_frontcache_total,
          stats.memory_frontcache_largest_bin);
+  printf("[HZ6_METADATA_SLIM] "
+         "descriptor_entry_bytes=%zu "
+         "descriptor_thin_hot_entry_bytes=%zu "
+         "descriptor_thin_hot_table_bytes=%zu "
+         "descriptor_thin_hot_savings_bytes=%zu "
+         "route_entry_bytes=%zu "
+         "route_slim_entry_bytes=%zu "
+         "route_slim_table_bytes=%zu "
+         "route_slim_savings_bytes=%zu "
+         "source_block_entry_bytes=%zu "
+         "source_block_slim_entry_bytes=%zu "
+         "source_block_slim_table_bytes=%zu "
+         "source_block_slim_savings_bytes=%zu "
+         "frontcache_entry_bytes=%zu "
+         "frontcache_slim_entry_bytes=%zu "
+         "frontcache_slim_table_bytes=%zu "
+         "frontcache_slim_savings_bytes=%zu\n",
+         stats.metadata_descriptor_entry_bytes,
+         stats.metadata_descriptor_thin_hot_entry_bytes,
+         stats.metadata_descriptor_thin_hot_table_bytes,
+         stats.metadata_descriptor_thin_hot_savings_bytes,
+         stats.metadata_route_entry_bytes,
+         stats.metadata_route_slim_entry_bytes,
+         stats.metadata_route_slim_table_bytes,
+         stats.metadata_route_slim_savings_bytes,
+         stats.metadata_source_block_entry_bytes,
+         stats.metadata_source_block_slim_entry_bytes,
+         stats.metadata_source_block_slim_table_bytes,
+         stats.metadata_source_block_slim_savings_bytes,
+         stats.metadata_frontcache_entry_bytes,
+         stats.metadata_frontcache_slim_entry_bytes,
+         stats.metadata_frontcache_slim_table_bytes,
+         stats.metadata_frontcache_slim_savings_bytes);
 #endif
 }
 

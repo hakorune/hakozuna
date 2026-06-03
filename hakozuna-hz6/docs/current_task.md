@@ -136,14 +136,14 @@ Why now:
   metadata still dominate.
 
 Primary target order:
-  1. ThinDescriptor-L1 dry-run/design:
+  1. SlimRouteEntry-L1:
+     reduce route entry bytes without changing VALID / INVALID / MISS
+     semantics. This is the cleanest first implementation because route table
+     capacity reduction already failed, while route payload packing is local.
+
+  2. ThinDescriptor-L1 dry-run/design:
      split hot fields required for route/free/activate from cold fields needed
      only for source release, owner teardown, diagnostics, and uncommon fronts.
-
-  2. SlimRouteEntry-L1 design:
-     route table currently keeps a descriptor pointer plus route payload in
-     every entry. Route128k failed, so lower capacity is unsafe; reduce bytes
-     per entry or move cold payload behind an index instead.
 
   3. SourceBlockSlim-L1:
      source-block table is large because each slot stores run bitmap / source
@@ -165,6 +165,144 @@ No-go:
   making owned-looking invalid fall through as MISS.
   adding production hot-path counters or atomics.
   turning selected HZ6 into a single universal lane again.
+```
+
+MetadataSlim-L1 diagnostic implementation:
+
+```text
+Added:
+  diagnostic-only [HZ6_METADATA_SLIM] output.
+
+Scope:
+  Reports current entry bytes and proposed hot/slim entry bytes for:
+    descriptor
+    route
+    source-block
+    frontcache
+
+  Reports estimated table bytes and savings for the current build capacity.
+
+Non-diagnostic:
+  No [HZ6_METADATA_SLIM] line.
+  No production hot-path counters/atomics added.
+```
+
+MetadataSlim-L1 first read:
+
+```text
+Run:
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k
+  Larson T=16 main-warmup chunks=1000
+  diagnostic probes only
+
+Result:
+  safety clean:
+    alloc_fail = 0
+    descriptor_exhausted = 0
+    route_register_fail = 0
+    source_block_exhausted = 0
+
+  current table bytes:
+    descriptor_table_bytes   = 209715200
+    route_table_bytes        = 201326592
+    source_block_table_bytes = 77594624
+    frontcache_table_bytes   = 58726400
+
+  candidate entry sizes:
+    descriptor:
+      current = 80
+      thin hot candidate = 48
+      estimated savings = 83886080 bytes
+
+    route:
+      current = 48
+      slim candidate = 32
+      estimated savings = 67108864 bytes
+
+    source-block:
+      current = 592
+      slim candidate = 560
+      estimated savings = 4194304 bytes
+
+    frontcache:
+      current = 56
+      slim candidate = 32
+      estimated savings = 25171968 bytes
+
+Interpretation:
+  SourceBlockSlim is low ROI for the current selected Larson row.
+  FrontcacheSlim is useful but already partly addressed by front4k.
+  The next real layout work should prioritize:
+    1. ThinDescriptor-L1
+    2. SlimRouteEntry-L1
+
+  ThinDescriptor has the largest single savings estimate, but it touches
+  descriptor lifetime APIs. SlimRouteEntry is slightly smaller but may be
+  cleaner if route payload can be packed without changing VALID / INVALID /
+  MISS semantics.
+```
+
+SlimRouteEntry-L1 implementation read:
+
+```text
+Change:
+  Hz6RouteEntry packed route payload from 48 bytes to 32 bytes:
+    base
+    descriptor
+    bytes as uint32_t
+    generation as uint32_t
+    front_id / class_id
+    exact_valid / active / tombstone bit flags
+
+  Exact and invalid-range registration now reject ranges larger than UINT32_MAX
+  before storing the packed byte count.
+
+Diagnostic smoke:
+  Run:
+    speed + ownerlocalityfast-rsscap-2-desc160k-front4k
+    Larson T=16 main-warmup chunks=1000
+    diagnostic probes only
+
+  Result:
+    throughput = 56.430M ops/s
+    safety clean:
+      alloc_fail = 0
+      descriptor_exhausted = 0
+      route_register_fail = 0
+      source_block_exhausted = 0
+      route_invalid = 0
+      route_miss = 0
+
+    route_table_bytes = 134217728
+    route_entry_bytes = 32
+    route_slim_entry_bytes = 32
+    route_slim_savings_bytes = 0
+
+  Read:
+    SlimRouteEntry-L1 captured the earlier estimated route saving:
+      pre-slim route table bytes  = 201326592
+      post-slim route table bytes = 134217728
+      structural saving           = 67108864 bytes
+
+Non-diagnostic smoke:
+  Run:
+    same lane, no DiagnosticHz6Probes
+
+  Result:
+    throughput = 56.844M ops/s
+    no [HZ6_MEMORY_ATTR] line
+    no [HZ6_METADATA_SLIM] line
+    safety clean
+
+Status:
+  SlimRouteEntry-L1 is implemented and smoke-clean.
+  Do not promote full Larson RSS/performance yet without repeat/full-row data.
+
+Next:
+  ThinDescriptor-L1 is now the largest remaining metadata target:
+    descriptor_entry_bytes = 80
+    descriptor_thin_hot_entry_bytes = 48
+    estimated table saving = 83886080 bytes
 ```
 
 ## LargerSizes Front Retention Ladder 2026-06-03

@@ -6,7 +6,8 @@ int hz6_route_register_invalid_range(Hz6RouteTable* table,
                                      uint16_t front_id,
                                      uint16_t class_id,
                                      size_t* probe_count) {
-  if (!table || !table->entries || !base || bytes == 0) {
+  if (!table || !table->entries || !base || bytes == 0 ||
+      bytes > (size_t)UINT32_MAX) {
     return 0;
   }
 
@@ -79,7 +80,7 @@ int hz6_route_register_invalid_range(Hz6RouteTable* table,
 #endif
   }
   entry->base = base_addr;
-  entry->bytes = bytes;
+  entry->bytes = (uint32_t)bytes;
   entry->front_id = front_id;
   entry->class_id = class_id;
   entry->generation = 0;
