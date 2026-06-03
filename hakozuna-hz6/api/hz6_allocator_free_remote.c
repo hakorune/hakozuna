@@ -104,7 +104,7 @@ int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
                      !hz6_owner_equal(descriptor->owner, allocator->owner.token);
   if (needs_rehome) {
 #if HZ6_DIAGNOSTIC_PROBES
-    if (descriptor->source_release) {
+    if (hz6_allocator_descriptor_has_source_release(descriptor)) {
       ++allocator->stats.source_owned_remote_free_attempt;
     }
     ++allocator->stats.route_rehome_attempt;

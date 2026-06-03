@@ -5,10 +5,16 @@ static size_t hz6_allocator_scavenge_cost(
   if (!descriptor) {
     return 0;
   }
-  return descriptor->source_block ? descriptor->bytes
-                                  : (descriptor->source_bytes
-                                         ? descriptor->source_bytes
-                                         : descriptor->bytes);
+  if (descriptor->source_block) {
+    return descriptor->bytes;
+  }
+  size_t source_bytes = 0;
+  if (hz6_allocator_descriptor_source_meta(descriptor, NULL, &source_bytes,
+                                           NULL) &&
+      source_bytes != 0) {
+    return source_bytes;
+  }
+  return descriptor->bytes;
 }
 
 size_t hz6_allocator_scavenge_local_free(Hz6Allocator* allocator,
@@ -43,7 +49,7 @@ size_t hz6_allocator_scavenge_local_free(Hz6Allocator* allocator,
 
     hz6_allocator_route_unregister_exact(allocator, descriptor->ptr);
 #if HZ6_DIAGNOSTIC_PROBES
-    if (descriptor->source_release) {
+    if (hz6_allocator_descriptor_has_source_release(descriptor)) {
       ++allocator->stats.source_owned_release;
     }
 #endif

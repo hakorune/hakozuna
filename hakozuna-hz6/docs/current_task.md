@@ -6910,3 +6910,135 @@ synchronization and real benchmark validation are still pending.
 Cross-owner orphan adoption is a seed contract only; no shared route table or
 thread-safe owner registry exists yet.
 ```
+
+## HZ6 ThinDescriptor-L1 Closeout
+
+ThinDescriptor-L1 implementation:
+
+```text
+Status:
+  implemented behind profile/capacity flag only
+
+Lane:
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc
+
+Compile flags:
+  HZ6_THIN_DESCRIPTOR_L1=1
+  HZ6_DESCRIPTOR_COLD_SOURCE_CAPACITY=4096
+
+Shape:
+  hot Hz6ObjectDescriptor removes direct source_ptr/source_bytes/source_release
+  direct-source metadata moves to a sparse cold source table
+  SourceBlock-backed descriptors read source metadata from SourceBlock
+  direct-source descriptors carry cold_index with generation check
+```
+
+Safety contract:
+
+```text
+SourceBlock-backed descriptor:
+  descriptor.source_block is the source lifetime owner
+  no cold source record is allocated
+  source metadata comes from SourceBlock
+
+Direct-source descriptor:
+  cold source record owns source_ptr/source_bytes/source_release metadata
+  cold record is generation-checked before use
+  descriptor reset/release clears the cold record first
+  cold record allocation failure restores descriptor availability
+
+Scavenge/release users:
+  use hz6_allocator_descriptor_source_meta()
+  do not read source_ptr/source_bytes/source_release directly
+
+Real benchmark lanes:
+  ThinDescriptor is opt-in
+  diagnostic metadata output remains gated by DiagnosticHz6Probes
+```
+
+Validation:
+
+```text
+Existing non-thin smoke:
+  lane:
+    ownerlocalityfast-rsscap-2-desc160k-front4k
+  profile:
+    larson_t16_main_1k
+  result:
+    build/run OK
+
+Thin diagnostic smoke:
+  lane:
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc
+  profile:
+    larson_t16_main_1k
+  result:
+    throughput = 56.520M ops/s
+    descriptor_entry_bytes = 48
+    descriptor_table_bytes = 127926272
+    descriptor_thin_hot_table_bytes = 127926272
+    alloc_fail = 0
+    descriptor_exhausted = 0
+    route_register_fail = 0
+    source_block_exhausted = 0
+    route_invalid = 0
+    route_miss = 0
+    remote_free_transfer_fail = 0
+
+Thin non-diagnostic smoke:
+  profile:
+    larson_t16_main_1k
+  result:
+    throughput = 57.505M ops/s
+    safety clean
+    no diagnostic metadata output
+
+Thin larger_sizes smoke:
+  profile:
+    larger_sizes
+  result:
+    throughput = 22.585M ops/s
+    peak RSS = 168900 KB
+    safety clean
+```
+
+Selected repeat-3 read:
+
+```text
+Profile:
+  larson_t16_main_4k
+
+ownerlocalityfast-rsscap-2-desc160k-front4k:
+  throughput = 49.883M ops/s
+  peak RSS = 570756 KB
+
+ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc:
+  throughput = 49.288M ops/s
+  peak RSS = 526988 KB
+
+Read:
+  ThinDescriptor-L1 is about -1.2% throughput vs same-run front4k
+  ThinDescriptor-L1 saves about 43.8 MB peak RSS vs same-run front4k
+  safety counters stay clean
+```
+
+Decision:
+
+```text
+KEEP:
+  ThinDescriptor-L1 as an experimental lower-RSS sibling candidate.
+
+Do not default yet:
+  It needs broader repeat/full-row validation before promotion.
+
+Do not close MetadataSlim:
+  ThinDescriptor confirms that descriptor hot/cold split is viable,
+  but MetadataSlim still has route/source/frontcache/table-level levers.
+
+Next natural checks:
+  1. run a selected larger_sizes repeat if large/direct-source pressure becomes
+     a promotion concern
+  2. run full 10k Larson only when preparing paper-grade tables
+  3. consider cold-source-capacity attribution only if cold record exhaustion
+     appears in later stress lanes
+```

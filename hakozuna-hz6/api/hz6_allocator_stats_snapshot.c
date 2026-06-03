@@ -12,6 +12,16 @@ typedef struct Hz6ThinDescriptorHotCandidate {
   uint16_t flags;
 } Hz6ThinDescriptorHotCandidate;
 
+typedef struct Hz6ThinDescriptorColdCandidate {
+  void* source_ptr;
+  Hz6SourceReleaseFn source_release;
+  uint32_t source_bytes;
+  uint32_t generation;
+  uint8_t source_kind;
+  uint8_t active;
+  uint16_t flags;
+} Hz6ThinDescriptorColdCandidate;
+
 typedef struct Hz6SlimRouteEntryCandidate {
   uintptr_t base;
   void* descriptor;
@@ -57,6 +67,10 @@ static void hz6_stats_snapshot_memory_attribution(
 
   snapshot->memory_descriptor_table_bytes =
       sizeof(allocator->descriptors);
+#if HZ6_THIN_DESCRIPTOR_L1
+  snapshot->memory_descriptor_table_bytes +=
+      sizeof(allocator->descriptor_cold_sources);
+#endif
   snapshot->memory_route_table_bytes =
       sizeof(allocator->route_entries);
   snapshot->memory_source_block_table_bytes =
@@ -146,6 +160,11 @@ static void hz6_stats_snapshot_memory_attribution(
       sizeof(Hz6ThinDescriptorHotCandidate);
   snapshot->metadata_descriptor_thin_hot_table_bytes =
       sizeof(Hz6ThinDescriptorHotCandidate) * HZ6_OBJECT_DESCRIPTOR_CAPACITY;
+#if HZ6_THIN_DESCRIPTOR_L1
+  snapshot->metadata_descriptor_thin_hot_table_bytes +=
+      sizeof(Hz6ThinDescriptorColdCandidate) *
+      HZ6_DESCRIPTOR_COLD_SOURCE_CAPACITY;
+#endif
   snapshot->metadata_descriptor_thin_hot_savings_bytes =
       hz6_sub_saturating_size(snapshot->memory_descriptor_table_bytes,
                               snapshot->metadata_descriptor_thin_hot_table_bytes);

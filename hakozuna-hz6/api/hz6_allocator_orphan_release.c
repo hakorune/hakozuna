@@ -18,7 +18,7 @@ int hz6_allocator_release_orphan(Hz6Allocator* allocator, void* ptr) {
 
   hz6_allocator_route_unregister_exact(allocator, ptr);
 #if HZ6_DIAGNOSTIC_PROBES
-  if (descriptor->source_release) {
+  if (hz6_allocator_descriptor_has_source_release(descriptor)) {
     ++allocator->stats.source_owned_release;
   }
 #endif

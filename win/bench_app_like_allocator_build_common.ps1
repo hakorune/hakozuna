@@ -558,6 +558,14 @@ function Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kCapacityFlags {
     $flags
 }
 
+function Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kCapacityFlags
+    $flags += "/DHZ6_THIN_DESCRIPTOR_L1=1"
+    $flags += "/DHZ6_DESCRIPTOR_COLD_SOURCE_CAPACITY=((size_t)4096)"
+    $flags
+}
+
 function Get-Hz6WinOwnerLocalityFastRssCap2Desc144kCapacityFlags {
     $flags = @(
         "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)147456)",
@@ -778,6 +786,7 @@ function Invoke-AppLikeHz6BenchBuilds {
     $ownerLocalityFastRssCap2Desc160kRoute128kFlags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kRoute128kCapacityFlags
     $ownerLocalityFastRssCap2Desc160kSource2kFlags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kSource2kCapacityFlags
     $ownerLocalityFastRssCap2Desc160kFront4kFlags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kCapacityFlags
+    $ownerLocalityFastRssCap2Desc160kFront4kThinDescFlags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescCapacityFlags
     $ownerLocalityFastRssCap2Desc144kFlags = Get-Hz6WinOwnerLocalityFastRssCap2Desc144kCapacityFlags
     $ownerLocalityFastRssCap3Flags = Get-Hz6WinOwnerLocalityFastRssCap3CapacityFlags
     $ownerLocalityFastRssCap4Flags = Get-Hz6WinOwnerLocalityFastRssCap4CapacityFlags
@@ -845,6 +854,7 @@ function Invoke-AppLikeHz6BenchBuilds {
         "ownerlocalityfast-rsscap-2-desc160k-route128k" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_route128k"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kRoute128kFlags }
         "ownerlocalityfast-rsscap-2-desc160k-source2k" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_source2k"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kSource2kFlags }
         "ownerlocalityfast-rsscap-2-desc160k-front4k" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kFlags }
+        "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescFlags }
         "ownerlocalityfast-rsscap-2-desc144k" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc144k"; ExtraFlags = $ownerLocalityFastRssCap2Desc144kFlags }
         "ownerlocalityfast-rsscap-3" = @{ Suffix = "_ownerlocalityfast_rsscap_3"; ExtraFlags = $ownerLocalityFastRssCap3Flags }
         "ownerlocalityfast-rsscap-4" = @{ Suffix = "_ownerlocalityfast_rsscap_4"; ExtraFlags = $ownerLocalityFastRssCap4Flags }

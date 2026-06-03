@@ -330,7 +330,7 @@ Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
     if (route.descriptor) {
       const Hz6ObjectDescriptor* descriptor =
           (const Hz6ObjectDescriptor*)route.descriptor;
-      if (descriptor->source_release) {
+      if (hz6_allocator_descriptor_has_source_release(descriptor)) {
         ++((Hz6Allocator*)allocator)->stats.source_owned_route_hit_local_owner;
       }
     }
@@ -365,7 +365,7 @@ Hz6RouteResult hz6_allocator_route_lookup_exact(const Hz6Allocator* allocator,
     if (route.descriptor) {
       const Hz6ObjectDescriptor* descriptor =
           (const Hz6ObjectDescriptor*)route.descriptor;
-      if (descriptor->source_release) {
+      if (hz6_allocator_descriptor_has_source_release(descriptor)) {
         ++((Hz6Allocator*)allocator)->stats.source_owned_route_hit_local_owner;
       }
     }
@@ -496,12 +496,12 @@ Hz6RouteResult hz6_allocator_route_lookup_visible_only(Hz6Allocator* allocator,
             (const Hz6ObjectDescriptor*)route.descriptor;
         if (hz6_owner_equal(descriptor->owner, allocator->owner.token)) {
           ++allocator->stats.route_visibility_hit_local_owner;
-          if (descriptor->source_release) {
+          if (hz6_allocator_descriptor_has_source_release(descriptor)) {
             ++allocator->stats.source_owned_visibility_hit_local_owner;
           }
         } else {
           ++allocator->stats.route_visibility_hit_foreign_owner;
-          if (descriptor->source_release) {
+          if (hz6_allocator_descriptor_has_source_release(descriptor)) {
             ++allocator->stats.source_owned_visibility_hit_foreign_owner;
           }
         }

@@ -223,7 +223,7 @@ void* hz6_front_source_block_slot(Hz6Allocator* allocator,
           descriptor->generation, descriptor,
           HZ6_ROUTE_REGISTER_REASON_SOURCE_RUN_SLOT)) {
 #if HZ6_DIAGNOSTIC_PROBES
-    if (descriptor->source_release) {
+    if (hz6_allocator_descriptor_has_source_release(descriptor)) {
       ++allocator->stats.source_owned_release;
     }
 #endif

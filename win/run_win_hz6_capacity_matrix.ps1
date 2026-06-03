@@ -291,6 +291,7 @@ $laneSuffix = @{
     "ownerlocalityfast-rsscap-2-desc160k-route128k" = "_ownerlocalityfast_rsscap_2_desc160k_route128k"
     "ownerlocalityfast-rsscap-2-desc160k-source2k" = "_ownerlocalityfast_rsscap_2_desc160k_source2k"
     "ownerlocalityfast-rsscap-2-desc160k-front4k" = "_ownerlocalityfast_rsscap_2_desc160k_front4k"
+    "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc" = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc"
     "ownerlocalityfast-rsscap-2-desc144k" = "_ownerlocalityfast_rsscap_2_desc144k"
     "ownerlocalityfast-rsscap-3" = "_ownerlocalityfast_rsscap_3"
     "ownerlocalityfast-rsscap-4" = "_ownerlocalityfast_rsscap_4"

@@ -81,7 +81,7 @@ int hz6_front_prefill_one(Hz6Allocator* allocator,
           allocator, ptr, bytes, front_id, class_id, descriptor->generation,
           descriptor, HZ6_ROUTE_REGISTER_REASON_DIRECT_SOURCE)) {
 #if HZ6_DIAGNOSTIC_PROBES
-    if (descriptor->source_release) {
+    if (hz6_allocator_descriptor_has_source_release(descriptor)) {
       ++allocator->stats.source_owned_release;
     }
 #endif
@@ -105,7 +105,7 @@ int hz6_front_prefill_one(Hz6Allocator* allocator,
     hz6_allocator_route_unregister_exact_reason(
         allocator, ptr, HZ6_ROUTE_UNREGISTER_REASON_SOURCE_SLOT_RELEASE);
 #if HZ6_DIAGNOSTIC_PROBES
-    if (descriptor->source_release) {
+    if (hz6_allocator_descriptor_has_source_release(descriptor)) {
       ++allocator->stats.source_owned_release;
     }
 #endif

@@ -139,7 +139,8 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
           }
         }
 #endif
-        if (needs_rehome && descriptor && descriptor->source_release) {
+        if (needs_rehome && descriptor &&
+            hz6_allocator_descriptor_has_source_release(descriptor)) {
 #if HZ6_DIAGNOSTIC_PROBES
           ++allocator->stats.source_owned_remote_free_attempt;
 #endif

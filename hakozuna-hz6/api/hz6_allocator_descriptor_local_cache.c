@@ -79,7 +79,7 @@ int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
         allocator, ptr, HZ6_ROUTE_UNREGISTER_REASON_CAP_RELEASE);
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.frontcache_cap_release;
-    if (descriptor->source_release) {
+    if (hz6_allocator_descriptor_has_source_release(descriptor)) {
       ++allocator->stats.source_owned_release;
     }
 #endif
@@ -173,7 +173,7 @@ int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
   hz6_allocator_route_unregister_exact_reason(
       allocator, ptr, HZ6_ROUTE_UNREGISTER_REASON_FRONTCACHE_OVERFLOW);
 #if HZ6_DIAGNOSTIC_PROBES
-  if (descriptor->source_release) {
+  if (hz6_allocator_descriptor_has_source_release(descriptor)) {
     ++allocator->stats.source_owned_release;
   }
 #endif

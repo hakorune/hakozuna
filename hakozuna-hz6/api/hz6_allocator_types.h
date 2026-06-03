@@ -21,11 +21,13 @@
 extern "C" {
 #endif
 
+typedef int (*Hz6SourceReleaseFn)(void* ptr, size_t bytes);
+
 typedef struct Hz6SourceBlock {
   void* ptr;
   size_t bytes;
   Hz6SourceKind source_kind;
-  int (*source_release)(void* ptr, size_t bytes);
+  Hz6SourceReleaseFn source_release;
   Hz6RouteBackend* route_backend;
   size_t ref_count;
   size_t run_slot_bytes;
@@ -42,17 +44,38 @@ typedef struct Hz6SourceBlock {
 typedef struct Hz6ObjectDescriptor {
   struct Hz6Allocator* allocator;
   void* ptr;
+#if !HZ6_THIN_DESCRIPTOR_L1
   void* source_ptr;
+#endif
   Hz6SourceBlock* source_block;
-  int (*source_release)(void* ptr, size_t bytes);
+#if !HZ6_THIN_DESCRIPTOR_L1
+  Hz6SourceReleaseFn source_release;
+#endif
   Hz6OwnerToken owner;
   uint32_t bytes;
+#if !HZ6_THIN_DESCRIPTOR_L1
   uint32_t source_bytes;
+#endif
   uint32_t generation;
+#if HZ6_THIN_DESCRIPTOR_L1
+  uint32_t cold_index;
+#endif
   uint16_t class_id;
   uint8_t source_kind;
   uint8_t state;
 } Hz6ObjectDescriptor;
+
+#if HZ6_THIN_DESCRIPTOR_L1
+typedef struct Hz6DescriptorColdSource {
+  void* source_ptr;
+  Hz6SourceReleaseFn source_release;
+  uint32_t source_bytes;
+  uint32_t generation;
+  uint8_t source_kind;
+  uint8_t active;
+  uint16_t reserved;
+} Hz6DescriptorColdSource;
+#endif
 
 typedef struct Hz6LargeSpanPoolBin {
   Hz6ObjectDescriptor* descriptors[HZ6_TRANSFER_CACHE_CAPACITY];
@@ -75,6 +98,12 @@ struct Hz6Allocator {
   size_t next_descriptor_index;
   size_t descriptor_available_count;
   Hz6ObjectDescriptor descriptors[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
+#if HZ6_THIN_DESCRIPTOR_L1
+  size_t next_descriptor_cold_index;
+  size_t descriptor_cold_source_current;
+  size_t descriptor_cold_source_max;
+  Hz6DescriptorColdSource descriptor_cold_sources[HZ6_DESCRIPTOR_COLD_SOURCE_CAPACITY];
+#endif
   size_t descgov_detached_budget_used;
   Hz6SourceRegistry source_registry;
   Hz6FrontCacheEntry frontcache_entries[HZ6_FRONT_CACHE_CLASS_COUNT]
