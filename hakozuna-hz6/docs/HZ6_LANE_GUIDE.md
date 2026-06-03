@@ -11,7 +11,8 @@ which?" before running or comparing benchmarks.
 | balanced / wide_ws low-RSS speed | `rss` | `descavail-noboost-route4k` | Best balanced and wide_ws low-RSS speed lane; descriptor exhaustion cost is removed without changing capacity. |
 | random_mixed same-owner speed | `strict` | `sameownerfast-descavail-noboost-route4k` | Selected same-owner fast lane: `HZ6_SAME_OWNER_FAST_L1` + descriptor availability, promoted from the A-ladder. |
 | larger_sizes RSS/speed | `speed` or `rss` | `largerlowrss-front8k-sourcerun-desc8k-route8k` | Best larger_sizes lane; needs larger front retention, not more descriptor-failure cleanup. |
-| Larson cross-owner full 10k | `speed` | `ownerlocalityfast-rsscap-2-desc160k` | Current full Larson cross-owner candidate-control; appcap-class throughput with sub-1GB peak RSS. |
+| Larson cross-owner full 10k | `speed` | `ownerlocalityfast-rsscap-2-desc160k` | Current full Larson cross-owner throughput/RSS balance lane; appcap-class throughput with sub-1GB peak RSS. |
+| Larson cross-owner lower RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k` | Selected lower-RSS sibling: about -3.5% throughput for about 64MB lower peak RSS vs desc160k. |
 | perf-recovery upper-bound | `strict` / `speed` / `rss` | `ownerlocalityfast-appcap` | Upper-bound / completion control only; too much RSS for default use. |
 
 For a cross-allocator side-by-side summary using past data only, see
@@ -46,7 +47,7 @@ Windows profile family:
       ownerlocalityfast-rsscap-2-desc160k
     stable near-capacity sibling:
       ownerlocalityfast-rsscap-2-desc192k
-    tighter-RSS candidate-control:
+    selected lower-RSS sibling:
       ownerlocalityfast-rsscap-2-desc160k-front4k
     stable controls:
       ownerlocalityfast-rsscap-1
@@ -160,9 +161,10 @@ Larson cross-owner full 10k:
     ownerlocalityfast-rsscap-2-desc160k
   stable near-capacity sibling:
     ownerlocalityfast-rsscap-2-desc192k
-  tighter-RSS candidate-control:
+  selected lower-RSS sibling:
     ownerlocalityfast-rsscap-2-desc160k-front4k
-    one-run signal only; not selected until bounded repeat is stable
+    repeat-3 full 10k clean; use when -3.5% throughput is acceptable for
+    about 64MB lower peak RSS
   no-go static-table controls:
     ownerlocalityfast-rsscap-2-desc160k-route128k
     ownerlocalityfast-rsscap-2-desc160k-source2k

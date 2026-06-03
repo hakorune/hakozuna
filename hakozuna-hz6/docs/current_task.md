@@ -769,17 +769,41 @@ R1 one-run read:
     Lower source-block table capacity did not reduce RSS and worsened speed.
 
   front4k:
-    candidate-control only.
-    42.361M ops/s, peak 864216 KB.
-    This is the first clean one-axis static trim that reduces RSS below
-    desc160k, but repeat-3 timed out and left an orphan benchmark process.
-    Do not promote until a bounded repeat or shorter confirmation lane is
-    stable.
+    low-RSS selected sibling.
+    Initial 1-run: 42.361M ops/s, peak 864216 KB.
+    Bounded 4k repeat-3:
+      main-warmup:   49.425M ops/s, peak 690560 KB
+      worker-warmup: 51.631M ops/s, peak 690496 KB
+    Full 10k repeat-3:
+      42.191M ops/s, peak 863772 KB
+
+    Compared with desc160k repeat-3:
+      desc160k:
+        43.721M ops/s, peak 928228 KB
+      front4k:
+        42.191M ops/s, peak 863772 KB
+
+    Interpretation:
+      front4k trades about 3.5% throughput for about 64MB lower peak RSS.
+      Safety counters stay clean:
+        alloc_fail = 0
+        descriptor_exhausted = 0
+        route_register_fail = 0
+        source_block_exhausted = 0
 
 Next read:
   frontcache trim is the only promising R1 axis.
-  Investigate whether the repeat timeout is a benchmark/runtime issue or a
-  real front4k retention/stress stability issue before promotion.
+  The earlier repeat timeout was caused by the outer command timeout over a
+  two-lane repeat-3 run, not by front4k itself. Full front4k-only repeat-3
+  completes when the outer timeout is long enough.
+
+Promotion status:
+  ownerlocalityfast-rsscap-2-desc160k:
+    selected throughput/RSS balance for full Larson cross-owner.
+
+  ownerlocalityfast-rsscap-2-desc160k-front4k:
+    selected lower-RSS sibling for full Larson cross-owner.
+    Use when -3.5% throughput is acceptable for about 64MB lower peak RSS.
 ```
 
 ThinDescriptor-L1 sketch:
