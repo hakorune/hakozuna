@@ -367,15 +367,134 @@ Status:
   split.
 
 Next:
-  For more descriptor reduction, do not blindly pack pointers. The remaining
-  64 -> 48 target requires a true cold-source side table or a source-block-only
-  descriptor profile:
+  First freeze SlimRouteEntry-L1 + DescriptorPack-L1 with repeat/full-row data.
+  Do not start ThinDescriptor-L1 until the post-slim selected rows show:
+    throughput within selected-lane tolerance
+    material RSS reduction
+    safety clean
+    no diagnostic output in non-diagnostic runs
+
+  After that, for more descriptor reduction, do not blindly pack pointers.
+  The remaining 64 -> 48 target requires a true cold-source side table or a
+  source-block-only descriptor profile:
     allocator / ptr / source_block / source_release / owner are pointer-sized
     or lifetime-sensitive.
     direct-source descriptors still need source_ptr/source_bytes/release
     semantics.
+```
 
-  Full repeat/full-row data is still required before claiming RSS promotion.
+ThinDescriptor decision checkpoint:
+
+```text
+External design read:
+  Do not jump directly from smoke-clean SlimRoute/DescriptorPack into
+  ThinDescriptor. First run selected Larson repeat/full-row so the RSS and
+  throughput deltas are attributable to the low-risk structural changes.
+
+Immediate next:
+  post-slim repeat for:
+    ownerlocalityfast-rsscap-2-desc160k
+    ownerlocalityfast-rsscap-2-desc160k-front4k
+
+  Suggested row:
+    Larson T=16 main-warmup
+    start with the capacity runner full connected row:
+      larson_t16_main_4k
+    use repeat-3
+
+Keep criteria:
+  throughput within -3% of pre-slim selected baseline
+  peak RSS materially lower
+  safety clean:
+    alloc_fail = 0
+    descriptor_exhausted = 0
+    route_register_fail = 0
+    source_block_exhausted = 0
+    route_invalid = 0
+    route_miss = 0
+    remote_free_transfer_fail = 0
+
+If post-slim repeat passes:
+  MetadataSlim remains open.
+  ThinDescriptor-L1 can start behind a profile flag.
+
+ThinDescriptor-L1 shape if pursued:
+  scope:
+    SourceBlock-backed descriptors first.
+
+  implementation:
+    hot descriptor table + sparse cold source side table.
+
+  direct-source:
+    cold record required.
+    cold generation must match hot generation.
+    cold source metadata missing or mismatched is fail-closed / no-go, never
+    external fallback.
+
+  L2 only:
+    source_release handle / source registry replacement.
+
+No-go:
+  route_invalid > 0
+  route_miss > 0
+  route_register_fail > 0
+  descriptor_exhausted increases
+  direct-source or source-block smoke fails
+  cold source missing/mismatch is accepted
+  owned-looking invalid falls through to MISS/fallback
+  diagnostic atomics/output leaks into real bench
+```
+
+Post-slim selected-row repeat:
+
+```text
+Run:
+  windows-hz6-postslim-repeat3
+  family = larson
+  profile = larson_t16_main_4k
+  hz6 profile = speed
+  runs = 3
+  diagnostic probes = off
+
+Lanes:
+  ownerlocalityfast-rsscap-2-desc160k
+  ownerlocalityfast-rsscap-2-desc160k-front4k
+
+Result:
+  desc160k:
+    median ops/s   = 51.299M
+    median peak KB = 635272
+
+  desc160k-front4k:
+    median ops/s   = 52.382M
+    median peak KB = 570772
+
+Safety:
+  all runs clean:
+    alloc_fail = 0
+    descriptor_exhausted = 0
+    route_register_fail = 0
+    source_block_exhausted = 0
+    route_invalid = 0
+    route_miss = 0
+    remote_free_transfer_fail = 0
+
+Read:
+  SlimRouteEntry-L1 + DescriptorPack-L1 pass the connected 4k repeat-3 row.
+  Compared with the earlier front4k bounded 4k read:
+    old front4k bounded 4k:
+      49.425M ops/s, peak 690560 KB
+    post-slim front4k 4k:
+      52.382M ops/s, peak 570772 KB
+
+  This supports keeping the low-risk structural metadata reductions.
+  It is enough to continue design toward ThinDescriptor-L1, but not enough to
+  claim every full Larson 10k/paper row without a dedicated final run.
+
+Next:
+  Begin ThinDescriptor-L1 design behind a profile flag:
+    hot descriptor table + sparse cold source side table.
+  Keep direct-source semantics via cold record generation checks.
 ```
 
 ## LargerSizes Front Retention Ladder 2026-06-03
