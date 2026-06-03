@@ -64,8 +64,8 @@ Source:
 
 | Profile family | Selected HZ6 lane | Median ops/s | Median peak_kb | Read |
 | --- | --- | ---: | ---: | --- |
-| balanced clean | `rss + mixedclean-front16k-sourcerun-desc24k-source2k-route24k` | 64.796M | 116,188 | current safety-clean balanced selected row |
-| wide_ws clean | `rss + mixedclean-front16k-sourcerun-desc24k-source2k-route24k` | 21.161M | 145,564 | current safety-clean wide_ws selected row |
+| balanced clean | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k` | 64.117M | 110,976 | current safety-clean balanced selected row |
+| wide_ws clean | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k` | 21.119M | 140,256 | current safety-clean wide_ws selected row |
 | balanced pressure | `rss + descavail-noboost-route4k` | 75.467M | 17,376 | pressure evidence only; not safety-clean because allocation failures are large |
 | wide_ws pressure | `rss + descavail-noboost-route4k` | 57.144M | 12,524 | pressure evidence only; not safety-clean because allocation failures are large |
 | random_mixed small | `strict + sameownerfast-descavail-noboost-route4k` | 46.128M | 5,432 | current same-owner fast winner |

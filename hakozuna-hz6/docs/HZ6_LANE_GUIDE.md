@@ -8,7 +8,7 @@ which?" before running or comparing benchmarks.
 
 | Profile family | Selected HZ6 profile | Selected capacity lane | Why this lane now |
 | --- | --- | --- | --- |
-| balanced / wide_ws clean low-RSS | `rss` | `mixedclean-front16k-sourcerun-desc24k-source2k-route24k` | Clean repeat-3 replacement for the old `descavail` pressure row: balanced `64.796M / 116188 KB`, wide_ws `21.161M / 145564 KB`, with `alloc_fail = 0`, `descriptor_exhausted = 0`, `route_register_fail = 0`, and `source_block_exhausted = 0`. |
+| balanced / wide_ws clean low-RSS | `rss` | `mixedclean-front16k-sourcerun-desc17k-source2k-route17k` | Clean repeat-3 replacement for the old `descavail` pressure row: balanced `64.117M / 110976 KB`, wide_ws `21.119M / 140256 KB`, with `alloc_fail = 0`, `descriptor_exhausted = 0`, `route_register_fail = 0`, and `source_block_exhausted = 0`. |
 | balanced / wide_ws pressure evidence | `rss` | `descavail-noboost-route4k` | Very fast and very low-RSS, but not safety-clean for paper/default claims: it completes by hitting large `alloc_fail` / source-block exhaustion counts. Keep it as pressure evidence only. |
 | random_mixed same-owner speed | `strict` | `sameownerfast-descavail-noboost-route4k` | Selected same-owner fast lane: `HZ6_SAME_OWNER_FAST_L1` + descriptor availability, promoted from the A-ladder. |
 | larger_sizes RSS/speed | `speed` or `rss` | `largerlowrss-front8k-sourcerun-desc8k-route8k` | Best larger_sizes lane; needs larger front retention, not more descriptor-failure cleanup. |
@@ -71,9 +71,9 @@ Preset intent:
 ```text
 selected-mixed-lowrss:
   mixed_ws balanced / wide_ws
-  rss + mixedclean-front16k-sourcerun-desc24k-source2k-route24k
+  rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k
   status:
-    clean selected row after the 2026-06-03 desc24 repeat-3.
+    clean selected row after the 2026-06-03 desc17 repeat-3.
 
 selected-mixed-pressure:
   mixed_ws balanced / wide_ws
@@ -127,14 +127,17 @@ Windows profile family:
     HZ6 profile:
       rss
     capacity lane:
-      mixedclean-front16k-sourcerun-desc24k-source2k-route24k
+      mixedclean-front16k-sourcerun-desc17k-source2k-route17k
     speed sibling/control:
+      mixedclean-front16k-sourcerun-desc18k-source2k-route18k
+      mixedclean-front16k-sourcerun-desc20k-source2k-route20k
       mixedclean-front16k-sourcerun-desc32k-source2k-route32k
       mixedclean-front16k-sourcerun-desc32k-source4k-route32k
     read:
-      selected clean mixed row. Desc24/route24 keeps the lower RSS band while
-      staying safety-clean across balanced and wide_ws; desc32/source2k and
-      source4k remain controls for extra capacity / speed shape.
+      selected clean mixed row. Desc17/route17 is the current safety-clean
+      lower bound: desc16 remains wide_ws no-go even when transfer capacity is
+      widened. Desc18/20/24/32 remain controls for extra capacity / speed
+      shape.
 
   random_mixed same-owner speed:
     HZ6 profile:
@@ -186,7 +189,7 @@ Primary controls:
   route4k
   noboost-route4k
   descavail-noboost-route4k
-  mixedclean-front16k-sourcerun-desc24k-source2k-route24k
+  mixedclean-front16k-sourcerun-desc17k-source2k-route17k
 
 Low-capacity / low-RSS baseline:
   control
@@ -338,14 +341,14 @@ Recommended comparison matrix for Windows HZ6 mixed profiles:
   -Families mixed_ws `
   -BenchmarkProfiles balanced,wide_ws,larger_sizes `
   -Hz6Profiles strict,speed,rss `
-  -CapacityLanes noboost-route4k,mixedclean-front16k-sourcerun-desc24k-source2k-route24k,descavail-noboost-route4k,sameownerfast-descavail-noboost-route4k,largerlowrss-front8k-sourcerun-desc8k-route8k,largerlowrss-front6k-sourcerun-desc8k-route8k,ownerlocalityfast-rsscap-4,ownerlocalityfast-appcap
+  -CapacityLanes noboost-route4k,mixedclean-front16k-sourcerun-desc17k-source2k-route17k,descavail-noboost-route4k,sameownerfast-descavail-noboost-route4k,largerlowrss-front8k-sourcerun-desc8k-route8k,largerlowrss-front6k-sourcerun-desc8k-route8k,ownerlocalityfast-rsscap-4,ownerlocalityfast-appcap
 ```
 
 Next Windows focus:
 
 ```text
 Profile-family read:
-  rss + mixedclean-front16k-sourcerun-desc24k-source2k-route24k is the
+  rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k is the
   current balanced / wide_ws clean low-RSS selected lane.
   rss + descavail-noboost-route4k is still useful as a very fast low-RSS
   pressure row, but it is not paper/default clean because it relies on large
@@ -760,20 +763,50 @@ mixedclean-front16k-sourcerun-desc16k-source2k-route16k:
   Mixed_ws clean-lane boundary probe with frontcache 16K but descriptor/route
   still 16K. It improves wide_ws substantially versus front8K but still leaves
   allocation failures. It shows wide_ws needs more than the 16K
-  descriptor/route band; desc24/route24 is the current clean lower bound.
+  descriptor/route band.
+
+mixedclean-front16k-sourcerun-desc16k-transfer2304-source2k-route16k:
+  Transfer-isolation control for the desc16 no-go. Increasing transfer cache
+  from 2048 to 2304 does not remove the wide_ws allocation failures, so the
+  desc16 failure is not just a too-small transfer cache.
+
+mixedclean-front16k-sourcerun-desc16k-transfer2560-source2k-route16k:
+  Wider transfer-isolation control for the desc16 no-go. It still reports the
+  same wide_ws allocation-failure count as the base desc16 lane, so keep it as
+  no-go evidence.
+
+mixedclean-front16k-sourcerun-desc17k-source2k-route17k:
+  Selected mixed_ws clean low-RSS lane: frontcache 16K, descriptor 17K,
+  source-block 2K, route 17K, and SourceRunReuse-L1. Repeat-3 balanced and
+  wide_ws are safety-clean, with the lowest RSS among the clean boundary
+  lanes: balanced `64.117M / 110976 KB`, wide_ws `21.119M / 140256 KB`.
+
+mixedclean-front16k-sourcerun-desc18k-source2k-route18k:
+  Clean boundary control above the selected desc17 lane. Repeat-3 is
+  safety-clean, but it uses slightly more RSS and does not improve wide_ws
+  enough to replace desc17: balanced `64.979M / 111524 KB`, wide_ws
+  `20.398M / 140860 KB`.
+
+mixedclean-front16k-sourcerun-desc20k-source2k-route20k:
+  Clean wide-speed sibling/control. Repeat-3 gives a little more wide_ws speed
+  than desc17 but with more RSS: balanced `59.888M / 113076 KB`, wide_ws
+  `21.498M / 142676 KB`. Keep desc17 as the low-RSS selected lane.
+
+mixedclean-front16k-sourcerun-desc22k-source2k-route22k:
+  Boundary control between desc20 and desc24. Run-1 was clean but repeat did
+  not beat desc17/20 enough to justify promotion.
 
 mixedclean-front16k-sourcerun-desc24k-source2k-route24k:
-  Selected mixed_ws clean low-RSS lane: frontcache 16K, descriptor 24K,
-  source-block 2K, route 24K, and SourceRunReuse-L1. Repeat-3 balanced and
-  wide_ws are safety-clean and improve both speed and RSS versus the previous
-  desc32/source2K selected lane: balanced `64.796M / 116188 KB`, wide_ws
-  `21.161M / 145564 KB`.
+  Previous mixed_ws clean low-RSS lane / extra-capacity control: frontcache
+  16K, descriptor 24K, source-block 2K, route 24K, and SourceRunReuse-L1.
+  Superseded by desc17 after the desc17 repeat-3 lowered RSS further while
+  staying safety-clean.
 
 mixedclean-front16k-sourcerun-desc32k-source2k-route32k:
   Previous mixed_ws clean low-RSS lane / extra-capacity control: frontcache
   16K, descriptor 32K, source-block 2K, route 32K, and SourceRunReuse-L1.
-  Desc24/route24 supersedes it with lower RSS and slightly better repeat-3
-  speed, so keep this as a control.
+  Desc24 and then desc17 superseded it with lower RSS and comparable or better
+  repeat-3 speed, so keep this as a control.
 
 mixedclean-front16k-sourcerun-desc32k-source3k-route32k:
   Source-capacity midpoint control between source2K and source4K. Run-1 stayed
@@ -783,9 +816,9 @@ mixedclean-front16k-sourcerun-desc32k-source3k-route32k:
 
 mixedclean-front16k-sourcerun-desc32k-source4k-route32k:
   Speed/control sibling for mixed_ws clean rows: same front/descriptor/route
-  shape as the selected lane but source-block capacity 4K. Repeat-3 is
-  safety-clean and slightly faster on balanced / wide_ws, but uses roughly
-  9-10MB more peak RSS, so keep source2K as the selected low-RSS default.
+  shape as the old desc32/source2K lane but source-block capacity 4K.
+  Repeat-3 is safety-clean and can be faster in balanced rows, but uses much
+  more peak RSS than desc17, so keep it as speed/control only.
 
 mixedclean-front8k-sourcerun-desc32k-source4k-route32k:
   Tightening control for the clean mixed lane. Descriptor/route/source are

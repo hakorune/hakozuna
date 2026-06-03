@@ -15,6 +15,10 @@ Goal:
   safety-clean selected lane.
 
 New capacity lanes:
+  mixedclean-front16k-sourcerun-desc17k-source2k-route17k
+  mixedclean-front16k-sourcerun-desc18k-source2k-route18k
+  mixedclean-front16k-sourcerun-desc20k-source2k-route20k
+  mixedclean-front16k-sourcerun-desc22k-source2k-route22k
   mixedclean-front16k-sourcerun-desc24k-source2k-route24k
   mixedclean-front16k-sourcerun-desc32k-source2k-route32k
   mixedclean-front16k-sourcerun-desc32k-source3k-route32k
@@ -107,18 +111,77 @@ Desc/route lower-bound scan:
       clean
 
 Decision:
-  promote rss + mixedclean-front16k-sourcerun-desc24k-source2k-route24k as the
+  superseded by desc20/18/17 scans below.
+
+Desc20/22 lower-bound scan:
+  docs/benchmarks/windows/paper/hz6_selected_family/
+    mixed-clean-desc20-22-repeat/
+      20260603_201344_hz6_capacity_matrix_windows.md
+
+  desc20/source2k/route20:
+    balanced 66.395M / 112976 KB
+    wide_ws  22.410M / 142596 KB
+    safety clean
+
+  desc22/source2k/route22:
+    balanced 66.078M / 114692 KB
+    wide_ws  21.183M / 144124 KB
+    safety clean
+
+  desc24/source2k/route24:
+    balanced 64.493M / 116300 KB
+    wide_ws  22.262M / 145644 KB
+    safety clean
+
+Desc18/17 lower-bound scan:
+  docs/benchmarks/windows/paper/hz6_selected_family/
+    mixed-clean-desc17-repeat/
+      20260603_201715_hz6_capacity_matrix_windows.md
+
+  desc17/source2k/route17:
+    balanced 64.117M / 110976 KB
+    wide_ws  21.119M / 140256 KB
+    safety clean
+
+  desc18/source2k/route18:
+    balanced 64.979M / 111524 KB
+    wide_ws  20.398M / 140860 KB
+    safety clean
+
+  desc20/source2k/route20:
+    balanced 59.888M / 113076 KB
+    wide_ws  21.498M / 142676 KB
+    safety clean
+
+Desc16 transfer isolation:
+  docs/benchmarks/windows/paper/hz6_selected_family/
+    mixed-clean-desc16-transfer-scan/
+      20260603_201856_hz6_capacity_matrix_windows.md
+
+  result:
+    desc16 base:
+      wide_ws alloc_fail = 6943
+    desc16 transfer2304:
+      wide_ws alloc_fail = 6943
+    desc16 transfer2560:
+      wide_ws alloc_fail = 6943
+
+  read:
+    desc16 failure is not fixed by transfer-cache widening.
+    desc17 is the current clean lower bound.
+
+Decision:
+  promote rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k as the
   selected balanced / wide_ws clean low-RSS lane.
-  It improves both speed and RSS versus the previous desc32/source2k selected
-  row.
-  Keep desc32/source2k and source4k as controls.
+  Keep desc20 as the wide-speed sibling/control.
+  Keep desc18/22/24/32/source3/source4 as controls.
   Keep descavail-noboost-route4k as pressure evidence only: it is much faster
   and lower RSS, but not safety-clean because it finishes with large
   alloc_fail / source-block-exhaustion counts.
 
 Script update:
   win/run_win_hz6_selected_family.ps1:
-    selected-mixed-lowrss now uses the clean mixedclean desc24/source2k lane.
+    selected-mixed-lowrss now uses the clean mixedclean desc17/source2k lane.
     selected-mixed-pressure preserves descavail pressure evidence.
 
 Next:

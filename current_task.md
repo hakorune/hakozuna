@@ -8,23 +8,26 @@ Latest HZ6 selected-family decision:
 ```text
 mixed clean-lane update:
   selected-mixed-lowrss is now clean:
-    rss + mixedclean-front16k-sourcerun-desc24k-source2k-route24k
+    rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k
 
   repeat-3:
-    balanced 64.796M / 116188 KB
-    wide_ws  21.161M / 145564 KB
+    balanced 64.117M / 110976 KB
+    wide_ws  21.119M / 140256 KB
     alloc_fail = 0
     descriptor_exhausted = 0
     route_register_fail = 0
     source_block_exhausted = 0
 
-  previous desc32/source2k selected row:
-    balanced 63.037M / 122304 KB
-    wide_ws  20.399M / 151636 KB
-    superseded by desc24/source2k.
+  boundary:
+    desc16 remains no-go for wide_ws:
+      alloc_fail = 6943
+    desc16 transfer2304/2560 still reports the same alloc_fail.
+    desc17 is the current clean lower bound.
 
-  source3k/source4k siblings:
-    clean but higher RSS without enough wide_ws gain, so keep as controls.
+  siblings:
+    desc20 is a clean wide-speed sibling:
+      wide_ws 21.498M / 142676 KB
+    desc18/22/24/32 and source3/source4 remain controls.
 
   descavail-noboost-route4k:
     demoted to pressure evidence only.
