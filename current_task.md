@@ -6,6 +6,33 @@ remains profile-stabilized; new HZ5 work should not blur the HZ6 contract.
 Latest HZ6 selected-family decision:
 
 ```text
+selected-family repeat-3:
+  random_mixed:
+    clean and stable:
+      small 45.788M / 4964 KB
+      medium 42.895M / 4964 KB
+      mixed 41.541M / 4968 KB
+
+  larger_sizes:
+    clean:
+      speed 31.899M / 70928 KB
+      rss   32.260M / 70952 KB
+
+  Larson full 10k:
+    desc160k     45.122M / 808484 KB, clean
+    front4k      45.138M / 716324 KB, clean
+    thindesc16k  44.549M / 665712 KB, clean
+
+  mixed balanced / wide_ws:
+    descavail-noboost-route4k is fast and very low RSS, but not clean:
+      balanced 75.467M / 17376 KB with alloc_fail 1509729
+      wide_ws  57.144M / 12524 KB with alloc_fail 1504489
+    Treat these as capacity-failure pressure rows, not selected clean rows.
+
+next HZ6 attack:
+  find or build a clean balanced / wide_ws low-RSS lane, while keeping
+  random_mixed, larger_sizes, and Larson selected families frozen.
+
 thindesc broad default:
   no
 

@@ -8,7 +8,7 @@ which?" before running or comparing benchmarks.
 
 | Profile family | Selected HZ6 profile | Selected capacity lane | Why this lane now |
 | --- | --- | --- | --- |
-| balanced / wide_ws low-RSS speed | `rss` | `descavail-noboost-route4k` | Best balanced and wide_ws low-RSS speed lane; descriptor exhaustion cost is removed without changing capacity. |
+| balanced / wide_ws low-RSS pressure row | `rss` | `descavail-noboost-route4k` | Very fast and very low-RSS in the selected-family repeat, but not safety-clean for paper/default claims: it completes by hitting large `alloc_fail` / source-block exhaustion counts. Treat as pressure evidence until a clean mixed lane replaces it. |
 | random_mixed same-owner speed | `strict` | `sameownerfast-descavail-noboost-route4k` | Selected same-owner fast lane: `HZ6_SAME_OWNER_FAST_L1` + descriptor availability, promoted from the A-ladder. |
 | larger_sizes RSS/speed | `speed` or `rss` | `largerlowrss-front8k-sourcerun-desc8k-route8k` | Best larger_sizes lane; needs larger front retention, not more descriptor-failure cleanup. |
 | Larson cross-owner full 10k | `speed` | `ownerlocalityfast-rsscap-2-desc160k` | Full Larson cross-owner throughput/RSS balance lane; appcap-class throughput with sub-1GB peak RSS. |
@@ -71,6 +71,10 @@ Preset intent:
 selected-mixed-lowrss:
   mixed_ws balanced / wide_ws
   rss + descavail-noboost-route4k
+  status:
+    pressure row only after the 2026-06-03 repeat-3 because alloc_fail and
+    source_block_exhausted are intentionally large under this low-capacity
+    shape.
 
 selected-random-sameowner:
   random_mixed small / medium / mixed
@@ -102,11 +106,15 @@ larson-thindesc-sourcecap:
 
 ```text
 Windows profile family:
-  balanced / wide_ws low-RSS speed:
+  balanced / wide_ws low-RSS pressure row:
     HZ6 profile:
       rss
     capacity lane:
       descavail-noboost-route4k
+    caveat:
+      fast/low-RSS but not safety-clean under the selected-family repeat.
+      Do not use as the clean default or paper row without the alloc-fail
+      caveat.
 
   random_mixed same-owner speed:
     HZ6 profile:

@@ -39,6 +39,64 @@ Latest selected-family measurement:
 
 ```text
 Run:
+  win/run_win_hz6_selected_family.ps1 -SelectedFamily -Runs 3
+  outputs:
+    docs/benchmarks/windows/paper/hz6_selected_family/
+      selected-mixed-lowrss/
+        20260603_192651_hz6_capacity_matrix_windows.md
+      selected-random-sameowner/
+        20260603_192652_hz6_capacity_matrix_windows.md
+      selected-larger-lowrss/
+        20260603_192657_hz6_capacity_matrix_windows.md
+      larson-cross-owner-selected/
+        20260603_192657_hz6_capacity_matrix_windows.md
+
+Selected-family repeat-3 read:
+  mixed_ws balanced / rss + descavail-noboost-route4k:
+    75.467M ops/s
+    17376 KB peak
+    not safety-clean:
+      alloc_fail = 1509729
+      descriptor_exhausted = 3019459
+      source_block_exhausted = 1509730
+
+  mixed_ws wide_ws / rss + descavail-noboost-route4k:
+    57.144M ops/s
+    12524 KB peak
+    not safety-clean:
+      alloc_fail = 1504489
+      descriptor_exhausted = 3009031
+      source_block_exhausted = 1504644
+
+  random_mixed / strict + sameownerfast-descavail-noboost-route4k:
+    small  = 45.788M ops/s, 4964 KB peak, safety clean
+    medium = 42.895M ops/s, 4964 KB peak, safety clean
+    mixed  = 41.541M ops/s, 4968 KB peak, safety clean
+
+  larger_sizes / largerlowrss-front8k-sourcerun-desc8k-route8k:
+    speed = 31.899M ops/s, 70928 KB peak, safety clean
+    rss   = 32.260M ops/s, 70952 KB peak, safety clean
+
+  larson_t16_main_10k / speed:
+    desc160k       = 45.122M ops/s, 808484 KB peak, safety clean
+    front4k        = 45.138M ops/s, 716324 KB peak, safety clean
+    thindesc-16k   = 44.549M ops/s, 665712 KB peak, safety clean
+
+Decision:
+  random_mixed, larger_sizes, and Larson selected families are clean enough to
+  keep as current profile-family rows.
+  mixed balanced / wide_ws descavail remains valuable pressure evidence but is
+  not a clean selected/default row because the high speed comes with massive
+  allocation failure and source-block exhaustion.
+
+Next:
+  freeze this selected-family snapshot.
+  attack a clean balanced / wide_ws low-RSS lane next, or relabel those rows
+  explicitly as capacity-failure pressure rows in paper-facing tables.
+
+Historical Larson source-block recovery:
+
+Run:
   win/run_win_hz6_selected_family.ps1 -LarsonCrossOwnerSelected -Runs 3
   profile:
     larson_t16_main_10k
