@@ -7,6 +7,12 @@ fronts should stay separated.
 Current Windows capacity lane names and promotion status are summarized in
 `HZ6_LANE_GUIDE.md`. Keep this file as the longer investigation log.
 
+ThinDescriptor-L1 is now implemented behind a profile flag as an experimental
+lower-RSS sibling. Keep `ownerlocalityfast-rsscap-2-desc160k-front4k` as the
+selected lower-RSS sibling and treat
+`ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc` as evidence-only unless
+future repeat/full-row data clearly justifies promotion.
+
 ## Current Direction Freeze
 
 ```text
@@ -77,7 +83,10 @@ Current lane organization:
     appcap
 
 Next attack surface:
-  HZ6 MetadataSlim-L1.
+  HZ6 MetadataSlim-L1 continues, but the first descriptor hot/cold split is
+  now done. The remaining work is to decide whether the next gain should come
+  from SlimRouteEntry, deeper source-block slimming, or a broader paper-grade
+  repeat before any promotion.
 
   The Larson desc160/front4k work closed the simple static-capacity trim:
     descriptor lower than 160k crosses the live-object floor.
