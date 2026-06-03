@@ -46,6 +46,8 @@ Windows profile family:
       ownerlocalityfast-rsscap-2-desc160k
     stable near-capacity sibling:
       ownerlocalityfast-rsscap-2-desc192k
+    tighter-RSS candidate-control:
+      ownerlocalityfast-rsscap-2-desc160k-front4k
     stable controls:
       ownerlocalityfast-rsscap-1
       ownerlocalityfast-rsscap-2
@@ -85,6 +87,9 @@ Route-lifecycle diagnostic:
   ownerlocalityfast-rsscap-2
   ownerlocalityfast-rsscap-2-desc192k
   ownerlocalityfast-rsscap-2-desc160k
+  ownerlocalityfast-rsscap-2-desc160k-front4k
+  ownerlocalityfast-rsscap-2-desc160k-route128k
+  ownerlocalityfast-rsscap-2-desc160k-source2k
   ownerlocalityfast-rsscap-2-desc144k
   ownerlocalityfast-rsscap-3
   ownerlocalityfast-rsscap-4
@@ -155,6 +160,12 @@ Larson cross-owner full 10k:
     ownerlocalityfast-rsscap-2-desc160k
   stable near-capacity sibling:
     ownerlocalityfast-rsscap-2-desc192k
+  tighter-RSS candidate-control:
+    ownerlocalityfast-rsscap-2-desc160k-front4k
+    one-run signal only; not selected until bounded repeat is stable
+  no-go static-table controls:
+    ownerlocalityfast-rsscap-2-desc160k-route128k
+    ownerlocalityfast-rsscap-2-desc160k-source2k
   stable controls:
     ownerlocalityfast-rsscap-1
     ownerlocalityfast-rsscap-2

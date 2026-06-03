@@ -730,6 +730,58 @@ Next attack:
   with route/source/frontcache table trimming.
 ```
 
+StaticBackingTrim-R1:
+
+```text
+Purpose:
+  Keep the desc160k live-object floor fixed and trim one static backing table
+  at a time.
+
+New lanes:
+  ownerlocalityfast-rsscap-2-desc160k-route128k:
+    descriptor = 163840
+    route = 131072
+    source-block = 8192
+    frontcache = 8192
+
+  ownerlocalityfast-rsscap-2-desc160k-source2k:
+    descriptor = 163840
+    route = 262144
+    source-block = 2048
+    frontcache = 8192
+
+  ownerlocalityfast-rsscap-2-desc160k-front4k:
+    descriptor = 163840
+    route = 262144
+    source-block = 8192
+    frontcache = 4096
+
+R1 one-run read:
+  route128k:
+    no-go / boundary.
+    Warmup alloc_fail after source_alloc=7711.
+    Route capacity cannot be halved under the current main-warmup route
+    lifecycle without a different route ownership contract.
+
+  source2k:
+    no-go / control.
+    39.951M ops/s, peak 1177676 KB.
+    Lower source-block table capacity did not reduce RSS and worsened speed.
+
+  front4k:
+    candidate-control only.
+    42.361M ops/s, peak 864216 KB.
+    This is the first clean one-axis static trim that reduces RSS below
+    desc160k, but repeat-3 timed out and left an orphan benchmark process.
+    Do not promote until a bounded repeat or shorter confirmation lane is
+    stable.
+
+Next read:
+  frontcache trim is the only promising R1 axis.
+  Investigate whether the repeat timeout is a benchmark/runtime issue or a
+  real front4k retention/stress stability issue before promotion.
+```
+
 ThinDescriptor-L1 sketch:
 
 ```text

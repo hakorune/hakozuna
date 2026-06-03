@@ -519,6 +519,45 @@ function Get-Hz6WinOwnerLocalityFastRssCap2Desc160kCapacityFlags {
     $flags
 }
 
+function Get-Hz6WinOwnerLocalityFastRssCap2Desc160kRoute128kCapacityFlags {
+    $flags = @(
+        "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)163840)",
+        "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)131072)",
+        "/DHZ6_TRANSFER_CACHE_CAPACITY=((size_t)4096)",
+        "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)8192)",
+        "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)8192)",
+        "/DHZ6_SHARED_ROUTE_DIRECTORY_L1=1",
+        "/DHZ6_OWNER_LOCALITY_INDEX_L1=1"
+    )
+    $flags
+}
+
+function Get-Hz6WinOwnerLocalityFastRssCap2Desc160kSource2kCapacityFlags {
+    $flags = @(
+        "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)163840)",
+        "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)262144)",
+        "/DHZ6_TRANSFER_CACHE_CAPACITY=((size_t)4096)",
+        "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)2048)",
+        "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)8192)",
+        "/DHZ6_SHARED_ROUTE_DIRECTORY_L1=1",
+        "/DHZ6_OWNER_LOCALITY_INDEX_L1=1"
+    )
+    $flags
+}
+
+function Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kCapacityFlags {
+    $flags = @(
+        "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)163840)",
+        "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)262144)",
+        "/DHZ6_TRANSFER_CACHE_CAPACITY=((size_t)4096)",
+        "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)8192)",
+        "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)4096)",
+        "/DHZ6_SHARED_ROUTE_DIRECTORY_L1=1",
+        "/DHZ6_OWNER_LOCALITY_INDEX_L1=1"
+    )
+    $flags
+}
+
 function Get-Hz6WinOwnerLocalityFastRssCap2Desc144kCapacityFlags {
     $flags = @(
         "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)147456)",
@@ -736,6 +775,9 @@ function Invoke-AppLikeHz6BenchBuilds {
     $ownerLocalityFastRssCap2Flags = Get-Hz6WinOwnerLocalityFastRssCap2CapacityFlags
     $ownerLocalityFastRssCap2Desc192kFlags = Get-Hz6WinOwnerLocalityFastRssCap2Desc192kCapacityFlags
     $ownerLocalityFastRssCap2Desc160kFlags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kCapacityFlags
+    $ownerLocalityFastRssCap2Desc160kRoute128kFlags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kRoute128kCapacityFlags
+    $ownerLocalityFastRssCap2Desc160kSource2kFlags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kSource2kCapacityFlags
+    $ownerLocalityFastRssCap2Desc160kFront4kFlags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kCapacityFlags
     $ownerLocalityFastRssCap2Desc144kFlags = Get-Hz6WinOwnerLocalityFastRssCap2Desc144kCapacityFlags
     $ownerLocalityFastRssCap3Flags = Get-Hz6WinOwnerLocalityFastRssCap3CapacityFlags
     $ownerLocalityFastRssCap4Flags = Get-Hz6WinOwnerLocalityFastRssCap4CapacityFlags
@@ -800,6 +842,9 @@ function Invoke-AppLikeHz6BenchBuilds {
         "ownerlocalityfast-rsscap-2" = @{ Suffix = "_ownerlocalityfast_rsscap_2"; ExtraFlags = $ownerLocalityFastRssCap2Flags }
         "ownerlocalityfast-rsscap-2-desc192k" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc192k"; ExtraFlags = $ownerLocalityFastRssCap2Desc192kFlags }
         "ownerlocalityfast-rsscap-2-desc160k" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFlags }
+        "ownerlocalityfast-rsscap-2-desc160k-route128k" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_route128k"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kRoute128kFlags }
+        "ownerlocalityfast-rsscap-2-desc160k-source2k" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_source2k"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kSource2kFlags }
+        "ownerlocalityfast-rsscap-2-desc160k-front4k" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kFlags }
         "ownerlocalityfast-rsscap-2-desc144k" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc144k"; ExtraFlags = $ownerLocalityFastRssCap2Desc144kFlags }
         "ownerlocalityfast-rsscap-3" = @{ Suffix = "_ownerlocalityfast_rsscap_3"; ExtraFlags = $ownerLocalityFastRssCap3Flags }
         "ownerlocalityfast-rsscap-4" = @{ Suffix = "_ownerlocalityfast_rsscap_4"; ExtraFlags = $ownerLocalityFastRssCap4Flags }
