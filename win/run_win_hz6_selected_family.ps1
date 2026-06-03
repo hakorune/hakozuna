@@ -150,24 +150,23 @@ foreach ($presetName in $selectedPresetNames) {
 
     $preset = $presetMap[$presetName]
     $presetOutputDir = Join-Path $OutputDir $preset.Name
-    $args = @(
-        "-OutputDir", $presetOutputDir,
-        "-Runs", [string]$Runs,
-        "-Families", ($preset.Families -join ","),
-        "-BenchmarkProfiles", ($preset.BenchmarkProfiles -join ","),
-        "-Hz6Profiles", ($preset.Hz6Profiles -join ","),
-        "-CapacityLanes", ($preset.CapacityLanes -join ","),
-        "-TimeoutSeconds", [string]$TimeoutSeconds
-    )
-
-    if ($SkipBuild) { $args += "-SkipBuild" }
-    if ($ForceBuild) { $args += "-ForceBuild" }
-    if ($DiagnosticHz6Probes) { $args += "-DiagnosticHz6Probes" }
-    if ($ContinueOnFailure) { $args += "-ContinueOnFailure" }
+    $matrixArgs = @{
+        OutputDir = $presetOutputDir
+        Runs = $Runs
+        Families = $preset.Families
+        BenchmarkProfiles = $preset.BenchmarkProfiles
+        Hz6Profiles = $preset.Hz6Profiles
+        CapacityLanes = $preset.CapacityLanes
+        TimeoutSeconds = $TimeoutSeconds
+        SkipBuild = [bool]$SkipBuild
+        ForceBuild = [bool]$ForceBuild
+        DiagnosticHz6Probes = [bool]$DiagnosticHz6Probes
+        ContinueOnFailure = [bool]$ContinueOnFailure
+    }
 
     Write-Host ("[selected-family] {0}: {1}" -f $preset.Name, $preset.Note)
-    & $MatrixScript @args
-    if ($LASTEXITCODE -ne 0) {
+    & $MatrixScript @matrixArgs
+    if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
         throw "run_win_hz6_capacity_matrix.ps1 failed for preset $($preset.Name) with exit code $LASTEXITCODE"
     }
 }
