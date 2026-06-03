@@ -64,6 +64,8 @@ Current lane organization:
       speed
     capacity lane:
       ownerlocalityfast-rsscap-2-desc160k
+    lower-RSS sibling:
+      ownerlocalityfast-rsscap-2-desc160k-front4k
     stable near-capacity sibling:
       ownerlocalityfast-rsscap-2-desc192k
 
@@ -75,16 +77,36 @@ Current lane organization:
     appcap
 
 Next attack surface:
-  Larson cross-owner full-10k RSS/capacity boundary.
-  ownerlocalityfast-rsscap-2-desc160k now matches appcap-class throughput with
-  sub-1GB peak RSS, while rsscap-3/4 are too tight for full 10k warmup. If
-  optimizing further, add one narrower descriptor boundary lane without
-  crossing the rsscap-3/4 allocation-failure boundary.
+  HZ6 MetadataSlim-L1.
+
+  The Larson desc160/front4k work closed the simple static-capacity trim:
+    descriptor lower than 160k crosses the live-object floor.
+    route128k fails warmup.
+    source2k worsens RSS and speed.
+    front4k is the only clean static trim and is now a lower-RSS sibling.
+
+  Remaining Larson RSS is dominated by bytes per backing-table slot rather
+  than by payload bytes. The next high-ROI direction is therefore to keep
+  selected capacities stable and reduce metadata bytes per slot.
 
 Goal:
-  keep sameownerfast fixed as the selected random_mixed lane, and tighten the
-  Larson cross-owner lane without widening capacity or adding diagnostic
-  counters to production benchmark lanes.
+  keep selected profile-family lanes fixed, then attack metadata layout:
+    descriptor table:
+      200 MiB across workers in desc160k.
+      Candidate: ThinDescriptor / hot-cold descriptor split.
+
+    route table:
+      192 MiB across workers in desc160k.
+      Candidate: SlimRouteEntry or index/handle route payload split.
+
+    source-block table:
+      74 MiB across workers in desc160k.
+      Candidate: SourceBlockSlim metadata split for run bitmap / cold fields.
+
+  Do not:
+    lower descriptor capacity below the live-object floor.
+    halve route capacity again without changing route ownership/layout.
+    add diagnostic atomics/counters to production speed lanes.
 
 Cross-allocator summary:
   HZ6_CROSS_ALLOCATOR_COMPARISON.md
@@ -95,6 +117,54 @@ Do not:
   collapse widecap-4 and rsscap-4 into a single broad default yet
   re-open Redis control-plane branch as the next broad HZ6 track
   add diagnostic atomics/counters to production speed lanes
+```
+
+## Next Attack: MetadataSlim-L1
+
+```text
+Why now:
+  Static capacity trimming reached its useful boundary.
+  front4k is the only clean capacity trim. The remaining peak is not payload:
+    desc160k diagnostic final snapshot:
+      descriptor_table_bytes    = 209715200
+      route_table_bytes         = 201326592
+      source_block_table_bytes  = 77594624
+      frontcache_table_bytes    = 117446656  # front8k baseline
+      source_block_payload      = ~25 MiB
+
+  front4k lowers the frontcache table, but descriptor/route/source-block
+  metadata still dominate.
+
+Primary target order:
+  1. ThinDescriptor-L1 dry-run/design:
+     split hot fields required for route/free/activate from cold fields needed
+     only for source release, owner teardown, diagnostics, and uncommon fronts.
+
+  2. SlimRouteEntry-L1 design:
+     route table currently keeps a descriptor pointer plus route payload in
+     every entry. Route128k failed, so lower capacity is unsafe; reduce bytes
+     per entry or move cold payload behind an index instead.
+
+  3. SourceBlockSlim-L1:
+     source-block table is large because each slot stores run bitmap / source
+     release metadata inline. Split active run metadata from cold source backing
+     fields if descriptor/route slimming is insufficient.
+
+Acceptance:
+  Larson full 10k:
+    selected desc160/front4k speed stays within -3%.
+    RSS drops materially without new alloc_fail, descriptor_exhausted,
+    route_register_fail, or source_block_exhausted.
+
+  mixed profiles:
+    balanced / wide_ws / larger_sizes selected-family rows do not regress
+    beyond existing profile variance.
+
+No-go:
+  changing the route VALID / INVALID / MISS contract.
+  making owned-looking invalid fall through as MISS.
+  adding production hot-path counters or atomics.
+  turning selected HZ6 into a single universal lane again.
 ```
 
 ## LargerSizes Front Retention Ladder 2026-06-03

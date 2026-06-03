@@ -71,7 +71,8 @@ Source:
 | random_mixed mixed | `strict + sameownerfast-descavail-noboost-route4k` | 41.352M | 5,072 | current same-owner fast winner |
 | larger_sizes rss | `speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k` | 34.286M | 72,836 | current larger_sizes RSS winner |
 | larger_sizes speed | `speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k` | 35.353M | 72,792 | current larger_sizes speed winner |
-| Larson T16 cross-owner full 10k | `speed + ownerlocalityfast-rsscap-2-desc160k` | 43.721M | 928,228 | current cross-owner candidate-control; appcap-like throughput with sub-1GB peak |
+| Larson T16 cross-owner full 10k | `speed + ownerlocalityfast-rsscap-2-desc160k` | 43.721M | 928,228 | current cross-owner throughput/RSS balance lane; appcap-like throughput with sub-1GB peak |
+| Larson T16 cross-owner lower RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k` | 42.191M | 863,772 | lower-RSS sibling; about -3.5% throughput for about 64MB lower peak |
 | Larson T16 cross-owner full 10k near-capacity sibling | `speed + ownerlocalityfast-rsscap-2-desc192k` | 43.679M | 974,296 | stable sibling with more descriptor headroom |
 
 ## Readout
@@ -83,11 +84,18 @@ It is a family allocator:
   random_mixed -> same-owner hot path plus descriptor-cost reduction
   larger_sizes -> front retention plus low-RSS large handling
 
-The weakest family remains Larson-style cross-owner stress.
-That is the place where HZ6 still needs lifecycle / handoff work, but the
-current owner-locality lane has recovered a useful full-10k candidate-control:
-`ownerlocalityfast-rsscap-2-desc160k` keeps appcap-class throughput while
-cutting peak RSS to under 1GB.
+The weakest family remains Larson-style cross-owner stress, but the failure mode
+has changed. HZ6 now has two useful full-10k lanes:
+
+  throughput/RSS balance:
+    `ownerlocalityfast-rsscap-2-desc160k`
+
+  lower RSS sibling:
+    `ownerlocalityfast-rsscap-2-desc160k-front4k`
+
+The remaining Larson RSS is dominated by descriptor / route / source-block
+metadata tables, not by payload. The next likely HZ6 attack is metadata layout
+slimming rather than another static capacity trim.
 ```
 
 ## Sources
