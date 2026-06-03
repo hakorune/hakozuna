@@ -63,9 +63,9 @@ Current lane organization:
     HZ6 profile:
       speed
     capacity lane:
-      ownerlocalityfast-rsscap-2-desc192k
-    lower-RSS sibling:
       ownerlocalityfast-rsscap-2-desc160k
+    stable near-capacity sibling:
+      ownerlocalityfast-rsscap-2-desc192k
 
   performance upper-bound / completion control:
     ownerlocalityfast-appcap
@@ -76,10 +76,10 @@ Current lane organization:
 
 Next attack surface:
   Larson cross-owner full-10k RSS/capacity boundary.
-  ownerlocalityfast-rsscap-2-desc192k now matches appcap-class throughput with
+  ownerlocalityfast-rsscap-2-desc160k now matches appcap-class throughput with
   sub-1GB peak RSS, while rsscap-3/4 are too tight for full 10k warmup. If
-  optimizing further, repeat-check desc160k or add one narrower descriptor
-  boundary lane without crossing the rsscap-3/4 allocation-failure boundary.
+  optimizing further, add one narrower descriptor boundary lane without
+  crossing the rsscap-3/4 allocation-failure boundary.
 
 Goal:
   keep sameownerfast fixed as the selected random_mixed lane, and tighten the
@@ -446,16 +446,40 @@ Safety:
   source_alloc=381..382.
 ```
 
+Desc160 repeat-3:
+
+```text
+Run:
+  larson_T16
+  speed profile
+  ownerlocalityfast-rsscap-2-desc160k
+  repeat-3
+
+ownerlocalityfast-rsscap-2-desc160k:
+  corrected median:
+    43.721M ops/s, 928,228 KB
+  runner summary before numeric median fix printed the max-like 48.108M value;
+  the run lines are 42.305M / 43.721M / 48.108M, so the median is 43.721M.
+
+Safety:
+  route_invalid=0
+  route_miss=0
+  route_register_fail=0
+  alloc_fail=0
+  descriptor_exhausted=0
+  remote_free_transfer_fail=0
+  transfer_current=0
+```
+
 Decision:
 
 ```text
-ownerlocalityfast-rsscap-2-desc192k:
-  promote to current full Larson cross-owner candidate-control.
-  It improves speed over rsscap-2 while cutting another ~92 MiB of peak RSS.
-
 ownerlocalityfast-rsscap-2-desc160k:
-  keep as lower-RSS sibling / boundary evidence.
-  First run is safety clean, but it has not yet had repeat-3.
+  promote to current full Larson cross-owner candidate-control.
+  It keeps desc192k-class throughput while cutting peak to ~928 MiB.
+
+ownerlocalityfast-rsscap-2-desc192k:
+  keep as stable near-capacity sibling / control.
 
 ownerlocalityfast-rsscap-1/2:
   keep as stable controls.

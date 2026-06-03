@@ -41,8 +41,9 @@ function Get-Median {
     if ($null -eq $Values -or $Values.Length -eq 0) {
         return [double]::NaN
     }
-    $sorted = $Values | Sort-Object
-    $mid = [int]($sorted.Count / 2)
+    $sorted = [double[]]$Values.Clone()
+    [Array]::Sort($sorted)
+    $mid = [int][Math]::Floor($sorted.Count / 2.0)
     if (($sorted.Count % 2) -eq 1) {
         return [double]$sorted[$mid]
     }
