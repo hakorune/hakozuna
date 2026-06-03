@@ -7130,3 +7130,40 @@ Decision:
   KEEP as MetadataSlim frontcache packing.
   This captures the earlier FrontCacheSlim estimate for selected lanes.
 ```
+
+Post-pack ThinDescriptor repeat-3:
+
+```text
+Run:
+  larson_t16_main_4k
+  speed profile
+  capacity lanes:
+    ownerlocalityfast-rsscap-2-desc160k-front4k
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc
+  runs = 3
+
+ownerlocalityfast-rsscap-2-desc160k-front4k:
+  throughput = 49.537M ops/s
+  peak RSS = 543108 KB
+
+ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc:
+  throughput = 48.695M ops/s
+  peak RSS = 499328 KB
+
+Safety:
+  alloc_fail = 0
+  descriptor_exhausted = 0
+  route_register_fail = 0
+  source_block_exhausted = 0
+  route_invalid = 0
+  route_miss = 0
+
+Read:
+  thindesc is about -1.7% throughput versus front4k
+  thindesc saves about 43780 KB peak RSS versus front4k
+
+Decision:
+  KEEP front4k as the selected lower-RSS sibling.
+  KEEP front4k-thindesc as the selected lowest-RSS sibling candidate.
+  It is still not a universal default; use it where peak RSS is the priority.
+```
