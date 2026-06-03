@@ -40,8 +40,11 @@ Current selected Larson lowest-RSS lane:
 ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512
 ```
 
-Route capacity is now at the clean lower bound, so further RSS work should
-target SourceBlock metadata layout rather than another static route cut.
+Route capacity is now at the clean lower bound. The run512 route re-check found
+that route160k-run512 and route128k-run512 saturate during full-10k warmup:
+`route_active_current` reaches table capacity, with `route_register_fail=3` and
+`alloc_fail=1`. Further RSS work should target descriptor table/lifecycle or a
+new route representation, not another static route cut.
 
 ### Route Table Is Already Capacity-Bounded
 
@@ -58,8 +61,9 @@ route160k / route128k:
   warmup no-go from route saturation
 ```
 
-Do not trim route capacity again. SourceBlockMetaSlim-L1 moved the selected
-lowest-RSS sibling to route192k-run512.
+Do not trim route capacity again under the current representation.
+SourceBlockMetaSlim-L1 moved the selected lowest-RSS sibling to
+route192k-run512; route160k-run512 and route128k-run512 remain no-go controls.
 
 ## Next Refactor Candidate
 
@@ -133,8 +137,9 @@ Read:
 
 ```text
 SourceBlockMetaSlim-L1 succeeded.
-The next layout target is no longer SourceBlock; inspect route capacity under
-the run512 shape, then descriptor table/lifecycle.
+The next layout target is no longer SourceBlock or static route capacity.
+Route192k is the clean lower bound under run512; inspect descriptor
+table/lifecycle next.
 ```
 
 Before the metadata-layout experiment, keep small shared helpers out of the

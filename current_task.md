@@ -103,13 +103,29 @@ next HZ6 attack:
       descriptor_table_bytes    = 127926272
       route_table_bytes         = 100663296
       source_block_table_bytes  = 37748736
+    route under run512 one-run:
+      route192k-run512:
+        45.997M / 499824 KB, safety clean
+      route160k-run512:
+        warmup no-go
+        route_active_current = 163840
+        route_register_fail = 3
+        alloc_fail = 1
+      route128k-run512:
+        warmup no-go
+        route_active_current = 131072
+        route_register_fail = 3
+        alloc_fail = 1
 
   next:
     SourceBlock is no longer the dominant table after run512.
-    Check route-capacity under run512, then descriptor table/lifecycle.
+    Route is capacity-bounded under run512; route192k remains the clean lower
+    bound. Do not trim route capacity again without a new route representation.
+    The next Larson RSS target is descriptor table/lifecycle or another
+    metadata representation, not route128/160.
     same-run thindesc16k baseline:
       40.267M / 665700 KB
-    route160k/route128k:
+    route160k/route128k and route160k-run512/route128k-run512:
       warmup no-go due route-table saturation.
 
   next step is cross-allocator table cleanup, then choose the next focused

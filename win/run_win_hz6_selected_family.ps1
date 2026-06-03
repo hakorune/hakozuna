@@ -12,6 +12,7 @@ param(
     [switch]$LarsonCrossOwnerLowestRss,
     [switch]$LarsonMetadataSlim,
     [switch]$LarsonSourceRunMetaSlim,
+    [switch]$LarsonRun512RouteSlim,
     [switch]$LarsonThinDescSourceCap,
     [switch]$ListPresets
 )
@@ -118,6 +119,14 @@ $presetMap = [ordered]@{
         -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run2048", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run1024", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512") `
         -Note "SourceBlockMetaSlim-L1 run-slot bitmap ladder on top of the selected route192k Larson lane"
 
+    "larson-run512-routeslim" = New-Preset `
+        -Name "larson-run512-routeslim" `
+        -Families @("larson") `
+        -BenchmarkProfiles @("larson_t16_main_10k") `
+        -Hz6Profiles @("speed") `
+        -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route160k-run512", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route128k-run512") `
+        -Note "Route-table capacity re-check after the selected run512 source-run metadata slim lane"
+
     "selected-family-guard" = New-Preset `
         -Name "selected-family-guard" `
         -Families @("mixed_ws") `
@@ -158,6 +167,10 @@ if ($LarsonMetadataSlim) {
 
 if ($LarsonSourceRunMetaSlim) {
     [void]$selectedPresetNames.Add("larson-sourcerun-metaslim")
+}
+
+if ($LarsonRun512RouteSlim) {
+    [void]$selectedPresetNames.Add("larson-run512-routeslim")
 }
 
 if ($LarsonCrossOwnerSelected) {

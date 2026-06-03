@@ -80,6 +80,14 @@ separate by output subdirectory.
   -Runs 1 `
   -TimeoutSeconds 300 `
   -ContinueOnFailure
+
+# Route-capacity re-check after run512; evidence/no-go boundary only.
+.\win\run_win_hz6_selected_family.ps1 `
+  -LarsonRun512RouteSlim `
+  -Runs 1 `
+  -TimeoutSeconds 300 `
+  -DiagnosticHz6Probes `
+  -ContinueOnFailure
 ```
 
 Preset intent:
@@ -134,6 +142,16 @@ larson-sourcerun-metaslim:
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512
   run512 is the selected lowest-RSS sibling after the repeat-3 clean result;
   run2048/run1024 remain SourceBlockMetaSlim-L1 controls
+
+larson-run512-routeslim:
+  larson_t16_main_10k
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route160k-run512
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route128k-run512
+  status:
+    evidence/no-go boundary only. Route192k-run512 stays clean; route160k-run512
+    and route128k-run512 saturate during warmup (`route_register_fail=3`,
+    `alloc_fail=1`). Do not promote these route-trim siblings.
 ```
 
 ```text
@@ -193,6 +211,9 @@ Windows profile family:
       ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k
     source16k route-capacity control:
       ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k
+    route-capacity no-go controls:
+      ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route160k-run512
+      ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route128k-run512
     lower-RSS / lower-throughput source-cap control:
       ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source12k
       ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source14k
