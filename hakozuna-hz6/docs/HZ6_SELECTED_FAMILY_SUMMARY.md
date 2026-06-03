@@ -20,11 +20,12 @@ For cleanup rules and the next source modularization target, see
 | mixed_ws larger_sizes rss | `speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k` | 27.178M | 71,012 | clean selected |
 | Larson T16 full 10k throughput/RSS | `speed + ownerlocalityfast-rsscap-2-desc160k` | 44.754M | 808,488 | clean selected |
 | Larson T16 full 10k lower RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k` | 45.092M | 716,324 | clean selected sibling |
-| Larson T16 full 10k lowest RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k` | 40.260M | 628,828 | clean selected sibling |
+| Larson T16 full 10k lowest RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512` | 48.512M | 499,820 | clean selected sibling |
 
 Source:
 - `docs/benchmarks/windows/paper/hz6_selected_family/selected-family-desc17-refresh/`
 - `docs/benchmarks/windows/paper/hz6_selected_family/larson-metadata-slim-route192-repeat/`
+- `docs/benchmarks/windows/paper/hz6_selected_family/larson-sourcerun-metaslim-repeat/`
 
 ## Evidence Rows
 
@@ -34,7 +35,8 @@ Source:
 | mixed_ws wide-speed sibling | `rss + mixedclean-front16k-sourcerun-desc20k-source2k-route20k` | Clean sibling: wide_ws `21.498M / 142676 KB`, but higher RSS than desc17. |
 | mixed_ws desc16 boundary | `mixedclean-front16k-sourcerun-desc16k-*` | No-go for wide_ws. Transfer2304/2560 does not remove `alloc_fail=6943`; desc17 is the current clean lower bound. |
 | Larson lower-RSS control | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source12k` | Lower RSS than source16k but lower throughput; useful control, not selected. |
-| Larson route boundary | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route160k/128k` | No-go: route table saturates during full-10k warmup. Route192k is the current clean lower bound. |
+| Larson route boundary | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route160k/128k` | No-go: route table saturates during full-10k warmup. Route192k is the current clean route lower bound. |
+| Larson source-run metadata slim | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512` | Selected lowest-RSS sibling: repeat-3 clean at `48.512M / 499820 KB`. Run1024 is clean control at `44.396M / 518256 KB`. |
 | Larson over-retention control | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k` | Passes but over-retains RSS; no promotion. |
 
 ## Current Read
@@ -56,8 +58,9 @@ HZ6 is now a profile-family allocator:
 
   Larson cross-owner:
     full-10k now has clean selected rows,
-    and route192k cuts the lowest-RSS sibling to about 629 MB.
-    RSS is still much higher than system/mimalloc/tcmalloc references.
+    and route192k-run512 cuts the lowest-RSS sibling to about 500 MB.
+    RSS is still higher than system/mimalloc/tcmalloc references, but the
+    metadata table gap is now much smaller than the previous route192k row.
 ```
 
 ## Next Attack Order
@@ -71,5 +74,6 @@ HZ6 is now a profile-family allocator:
    A. wide_ws throughput:
       keep desc17 safety/RSS and look for hot-path/profile improvements.
    B. Larson RSS:
-      continue metadata layout slimming beyond static capacity trimming.
+      continue metadata layout slimming beyond the run512 compile-time bitmap
+      shrink only if another table dominates.
 ```

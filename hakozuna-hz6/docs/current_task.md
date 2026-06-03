@@ -273,7 +273,8 @@ Selected-family repeat-3 read:
     desc160k       = 44.754M ops/s, 808488 KB peak, safety clean
     front4k        = 45.092M ops/s, 716324 KB peak, safety clean
     thindesc-16k   = 44.609M ops/s, 665704 KB peak, safety clean
-    route192k      = 40.260M ops/s, 628828 KB peak, safety clean
+    route192k      = 44.610M ops/s, 628844 KB peak, safety clean control
+    route192k-run512 = 48.512M ops/s, 499820 KB peak, safety clean selected
 
 Safety:
   checked selected rows keep:
@@ -287,13 +288,15 @@ Decision:
   The earlier isolated mixed boundary and larger_sizes snapshots remain useful
   evidence, but paper-facing selected tables should use this refreshed matrix.
   Larson route192k is a later MetadataSlim-L1 improvement over the refresh
-  snapshot and is now the selected lowest-RSS Larson sibling.
+  snapshot. SourceBlockMetaSlim-L1 route192k-run512 is now the selected
+  lowest-RSS Larson sibling.
 
 Next:
   update cross-allocator selected/control tables, then choose one focused
   optimization target:
     A. wide_ws throughput while preserving desc17 safety/RSS
-    B. Larson metadata layout slimming beyond static capacity trimming
+    B. Larson metadata layout slimming only after checking the next table
+       bottleneck
 ```
 
 Larson MetadataSlim-L1:
@@ -344,7 +347,8 @@ Repeat-3:
     safety clean
 
 Decision:
-  promote route192k as the selected Larson lowest-RSS sibling.
+  superseded by SourceBlockMetaSlim-L1 run512 below.
+  Keep route192k as a clean route-capacity control.
   Keep route224k as a clean control.
   Keep route160k/route128k as no-go boundary evidence: full-10k warmup needs
   more than 160K route capacity under this static-table design.
@@ -353,6 +357,65 @@ Next:
   no more static route trimming for Larson.
   Further RSS reduction should come from metadata layout slimming, not another
   capacity cut.
+```
+
+SourceBlockMetaSlim-L1:
+
+```text
+Goal:
+  reduce full-10k Larson RSS by shrinking source-run bitmap metadata rather
+  than trimming route capacity further.
+
+Implementation:
+  added `HZ6_SOURCE_RUN_MAX_SLOTS` ladder on top of route192k:
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run2048
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run1024
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512
+
+Diagnostic run:
+  docs/benchmarks/windows/paper/hz6_selected_family/
+    larson-sourcerun-metaslim-l1/
+
+  route192k:
+    47.649M / 628852 KB
+    source_block_table_bytes = 155189248
+
+  run2048:
+    44.677M / 555568 KB
+    source_block_table_bytes = 88080384
+
+  run1024:
+    45.686M / 518708 KB
+    source_block_table_bytes = 54525952
+
+  run512:
+    43.742M / 500264 KB
+    source_block_table_bytes = 37748736
+
+Repeat-3:
+  docs/benchmarks/windows/paper/hz6_selected_family/
+    larson-sourcerun-metaslim-repeat/
+
+  route192k:
+    44.610M / 628844 KB
+    safety clean
+
+  route192k-run1024:
+    44.396M / 518256 KB
+    safety clean
+
+  route192k-run512:
+    48.512M / 499820 KB
+    safety clean
+
+Decision:
+  promote route192k-run512 as the selected Larson lowest-RSS sibling.
+  Keep route192k as route-capacity control.
+  Keep run1024 as source-run metadata control.
+
+Next:
+  SourceBlock table is no longer the same dominant gap. Re-run metadata
+  attribution before choosing the next table/layout target.
 ```
 
 Historical selected-family measurement before desc17 refresh:

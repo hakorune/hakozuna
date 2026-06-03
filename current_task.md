@@ -65,7 +65,8 @@ selected-family repeat-3:
     desc160k     44.754M / 808488 KB, clean
     front4k      45.092M / 716324 KB, clean
     thindesc16k  44.609M / 665704 KB, clean
-    route192k    40.260M / 628828 KB, clean
+    route192k    44.610M / 628844 KB, clean control
+    run512       48.512M / 499820 KB, clean selected lowest-RSS sibling
 
   mixed balanced / wide_ws:
     descavail-noboost-route4k is fast and very low RSS, but not clean:
@@ -78,11 +79,18 @@ next HZ6 attack:
   selected-family refresh is done under:
     docs/benchmarks/windows/paper/hz6_selected_family/
       selected-family-desc17-refresh/
-  Larson MetadataSlim-L1 route192k is now found:
+  Larson MetadataSlim-L1 route192k and SourceBlockMetaSlim-L1 run512 are now
+  found:
     docs/benchmarks/windows/paper/hz6_selected_family/
       larson-metadata-slim-route192-repeat/
     route192k repeat-3:
-      40.260M / 628828 KB
+      44.610M / 628844 KB
+      alloc_fail = 0
+      descriptor_exhausted = 0
+      route_register_fail = 0
+      source_block_exhausted = 0
+    route192k-run512 repeat-3:
+      48.512M / 499820 KB
       alloc_fail = 0
       descriptor_exhausted = 0
       route_register_fail = 0
@@ -95,15 +103,16 @@ next HZ6 attack:
   next step is cross-allocator table cleanup, then choose the next focused
   optimization target:
     A. wide_ws throughput while preserving desc17 safety/RSS
-    B. Larson metadata layout slimming beyond capacity trimming
+    B. Larson metadata layout slimming only after checking the next table
+       bottleneck
 
 thindesc broad default:
   no
 
 thindesc selected-family role:
-  source16k-route192k variant is the selected Larson / owner-locality
-  lowest-RSS sibling. source16k without route trimming remains its baseline
-  control.
+  source16k-route192k-run512 variant is the selected Larson / owner-locality
+  lowest-RSS sibling. source16k-route192k remains its route-capacity control;
+  source16k without route trimming remains its baseline control.
 
 next order:
   A. selected-family / cross-allocator table cleanup

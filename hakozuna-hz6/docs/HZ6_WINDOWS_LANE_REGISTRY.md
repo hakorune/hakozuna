@@ -40,11 +40,11 @@ A future `Get-Hz6WinCapacityLaneRegistry` helper should return records like:
 
 ```powershell
 @{
-  Name = "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k"
-  Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_source16k_route192k"
+  Name = "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512"
+  Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_source16k_route192k_run512"
   Status = "selected sibling"
   Family = "larson"
-  Tags = @("owner-locality", "thindesc", "source16k", "route192k", "lowest-rss")
+  Tags = @("owner-locality", "thindesc", "source16k", "route192k", "run512", "lowest-rss")
   ExtraFlags = @(
     "/DHZ6_OWNER_LOCALITY_FAST_L1=1",
     "/DHZ6_THIN_DESCRIPTOR_L1=1",
@@ -52,6 +52,7 @@ A future `Get-Hz6WinCapacityLaneRegistry` helper should return records like:
     "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)4096)",
     "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)16384)",
     "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)196608)"
+    "/DHZ6_SOURCE_RUN_MAX_SLOTS=((size_t)512)"
   )
 }
 ```
@@ -82,6 +83,7 @@ Examples:
 ```text
 mixedclean-front16k-sourcerun-desc17k-source2k-route17k
 ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k
+ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run1024
 largerlowrss-front8k-sourcerun-desc8k-route8k
 ```
 

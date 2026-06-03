@@ -19,7 +19,8 @@ For repo cleanup rules and the source modularization backlog, see
 | random_mixed same-owner speed | `strict` | `sameownerfast-descavail-noboost-route4k` | Selected same-owner fast lane: `HZ6_SAME_OWNER_FAST_L1` + descriptor availability, promoted from the A-ladder. |
 | larger_sizes RSS/speed | `speed` or `rss` | `largerlowrss-front8k-sourcerun-desc8k-route8k` | Best larger_sizes lane; needs larger front retention, not more descriptor-failure cleanup. |
 | Larson cross-owner full 10k | `speed` | `ownerlocalityfast-rsscap-2-desc160k` | Full Larson cross-owner throughput/RSS balance lane; appcap-class throughput with sub-1GB peak RSS. |
-| Larson cross-owner low RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k` | Selected low-RSS Larson sibling. It keeps the thindesc/source16k shape and trims route capacity to 192K; repeat-3 is safety-clean and cuts peak to about `628828 KB`. |
+| Larson cross-owner low RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k` | Clean route-capacity control. It keeps the thindesc/source16k shape and trims route capacity to 192K; repeat-3 is safety-clean at about `44.610M / 628844 KB`. |
+| Larson cross-owner lowest RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512` | Current selected lowest-RSS sibling. It keeps route192k and reduces `HZ6_SOURCE_RUN_MAX_SLOTS` to 512; repeat-3 is safety-clean at `48.512M / 499820 KB`. |
 | perf-recovery upper-bound | `strict` / `speed` / `rss` | `ownerlocalityfast-appcap` | Upper-bound / completion control only; too much RSS for default use. |
 
 For a cross-allocator side-by-side summary using past data only, see
@@ -72,6 +73,15 @@ separate by output subdirectory.
   -ContinueOnFailure
 ```
 
+```powershell
+# SourceBlockMetaSlim-L1 run bitmap ladder on the selected route192k lane.
+.\win\run_win_hz6_selected_family.ps1 `
+  -LarsonSourceRunMetaSlim `
+  -Runs 1 `
+  -TimeoutSeconds 300 `
+  -ContinueOnFailure
+```
+
 Preset intent:
 
 ```text
@@ -101,7 +111,7 @@ larson-cross-owner-selected:
   larson_t16_main_10k
   speed + ownerlocalityfast-rsscap-2-desc160k
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k
-  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512
 
 selected-family-guard:
   short mixed_ws smoke/control guard before a longer selected-family run
@@ -115,6 +125,15 @@ larson-thindesc-sourcecap:
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k
   use only as a source-block recovery experiment after thindesc full-10k
   warmup failure
+
+larson-sourcerun-metaslim:
+  larson_t16_main_10k
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run2048
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run1024
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512
+  run512 is the selected lowest-RSS sibling after the repeat-3 clean result;
+  run2048/run1024 remain SourceBlockMetaSlim-L1 controls
 ```
 
 ```text
@@ -169,6 +188,8 @@ Windows profile family:
     selected lower-RSS sibling:
       ownerlocalityfast-rsscap-2-desc160k-front4k
     selected low-RSS sibling:
+      ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512
+    route192k source16k control:
       ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k
     source16k route-capacity control:
       ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k
@@ -302,9 +323,12 @@ Larson cross-owner full 10k:
     repeat-3 full 10k clean; use when about -1.3% throughput is acceptable for
     about 90MB lower peak RSS versus desc160k
   selected low-RSS sibling:
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512
+    repeat-3 full 10k clean; current median is about 48.512M ops/s and
+    499820 KB peak RSS. Use this as the current lowest-RSS sibling.
+  route192k control:
     ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k
-    repeat-3 full 10k clean; current median is about 40.260M ops/s and
-    628828 KB peak RSS. Use this as the current lowest-RSS sibling.
+    repeat-3 clean at about 44.610M ops/s and 628844 KB peak RSS.
   source16k baseline control:
     ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k
     repeat-3 full 10k clean; keep as the route-capacity control for the
@@ -323,6 +347,12 @@ Larson cross-owner full 10k:
     ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route128k
     route224k is clean control; route160k/128k fail warmup and define the
     current no-go lower bound.
+  source-run metadata ladder:
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run2048
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run1024
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512
+    run512 is now the selected lowest-RSS sibling. Run2048/run1024 remain
+    source-run metadata controls.
   source-block over-retention control:
     ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k
     passes, but raises peak RSS and is not selected

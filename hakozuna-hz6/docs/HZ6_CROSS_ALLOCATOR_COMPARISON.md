@@ -77,7 +77,7 @@ Source:
 | larger_sizes rss | `speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k` | 27.178M | 71,012 | current larger_sizes RSS selected row |
 | Larson T16 cross-owner full 10k | `speed + ownerlocalityfast-rsscap-2-desc160k` | 44.754M | 808,488 | current cross-owner throughput/RSS balance lane |
 | Larson T16 cross-owner lower RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k` | 45.092M | 716,324 | lower-RSS sibling with similar throughput |
-| Larson T16 cross-owner lowest RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k` | 40.260M | 628,828 | lowest-RSS selected sibling |
+| Larson T16 cross-owner lowest RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512` | 48.512M | 499,820 | lowest-RSS selected sibling |
 | Larson T16 cross-owner full 10k near-capacity sibling | `speed + ownerlocalityfast-rsscap-2-desc192k` | 43.679M | 974,296 | stable sibling with more descriptor headroom |
 
 ## Readout
@@ -98,10 +98,11 @@ has changed. HZ6 now has three useful full-10k lanes:
   lower RSS siblings:
     `ownerlocalityfast-rsscap-2-desc160k-front4k`
     `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k`
+    `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512`
 
-The remaining Larson RSS is dominated by descriptor / route / source-block
-metadata tables, not by payload. The next likely HZ6 attack is metadata layout
-slimming rather than another static capacity trim.
+The remaining Larson RSS is still dominated by metadata tables, not by payload,
+but source-run bitmap trimming has already moved the selected low-RSS sibling
+from about 629 MB to about 500 MB.
 ```
 
 ## Sources

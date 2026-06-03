@@ -37,7 +37,7 @@ the run bitmap is present in every static source-block entry.
 Current selected Larson lowest-RSS lane:
 
 ```text
-ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k
+ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512
 ```
 
 Route capacity is now at the clean lower bound, so further RSS work should
@@ -84,6 +84,37 @@ Safe first experiments:
 
 3. lazy run metadata:
    allocate or attach run metadata only when a block becomes a source-run block
+```
+
+Implemented experiment lanes:
+
+```text
+ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run2048
+ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run1024
+ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512
+```
+
+Runner:
+
+```powershell
+.\win\run_win_hz6_selected_family.ps1 -LarsonSourceRunMetaSlim
+```
+
+Initial repeat-3 result:
+
+```text
+route192k:
+  44.610M ops/s
+  628844 KB
+
+route192k-run1024:
+  44.396M ops/s
+  518256 KB
+
+route192k-run512:
+  48.512M ops/s
+  499820 KB
+  clean selected lowest-RSS sibling
 ```
 
 Before the metadata-layout experiment, keep small shared helpers out of the

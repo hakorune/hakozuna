@@ -56,7 +56,7 @@ Larson lower RSS:
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k
 
 Larson lowest RSS:
-  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512
 ```
 
 Do not add new lanes to the selected family unless they pass:
@@ -134,9 +134,11 @@ Current Larson RSS read:
 ```text
 route192k is the clean static route lower bound.
 route160k/128k fail warmup because route capacity saturates.
+route192k-run512 is the current selected lowest-RSS sibling.
 ```
 
-So the next RSS reduction should not be another route-capacity cut.
+So the next RSS reduction should not be another route-capacity cut or another
+blind source-run slot cut.
 
 Next source cleanup target:
 
