@@ -98,6 +98,15 @@ next HZ6 attack:
     default-check one-run:
       40.688M / 499812 KB
       safety clean
+    attribution-check one-run:
+      40.978M / 499820 KB
+      descriptor_table_bytes    = 127926272
+      route_table_bytes         = 100663296
+      source_block_table_bytes  = 37748736
+
+  next:
+    SourceBlock is no longer the dominant table after run512.
+    Check route-capacity under run512, then descriptor table/lifecycle.
     same-run thindesc16k baseline:
       40.267M / 665700 KB
     route160k/route128k:

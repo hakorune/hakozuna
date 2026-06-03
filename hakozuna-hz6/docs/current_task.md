@@ -436,6 +436,37 @@ Next:
   attribution before choosing the next table/layout target.
 ```
 
+Run512 attribution check:
+
+```text
+Run:
+  docs/benchmarks/windows/paper/hz6_selected_family/
+    larson-run512-attribution-check/
+
+Result:
+  route192k-run512:
+    40.978M / 499820 KB
+    safety clean
+
+Memory attribution:
+  descriptor_table_bytes       = 127926272
+  route_table_bytes            = 100663296
+  source_block_table_bytes     = 37748736
+  frontcache_table_bytes       = 33560576
+  ownerlocality_index_bytes    = 18874368
+  transfer_table_bytes         = 1572864
+  source_block_payload_bytes   = 24969216
+
+Read:
+  SourceBlock metadata is no longer the main static-table gap after run512.
+  The next candidates are descriptor table and route table.
+
+Next:
+  do not continue blind source-run slot cuts.
+  First check whether route capacity can be retested under the run512 shape,
+  then consider descriptor table/lifecycle work.
+```
+
 Historical selected-family measurement before desc17 refresh:
 
 ```text

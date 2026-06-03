@@ -118,6 +118,25 @@ route192k-run512:
   clean selected lowest-RSS sibling
 ```
 
+Run512 attribution check:
+
+```text
+descriptor_table_bytes       = 127926272
+route_table_bytes            = 100663296
+source_block_table_bytes     = 37748736
+frontcache_table_bytes       = 33560576
+ownerlocality_index_bytes    = 18874368
+source_block_payload_bytes   = 24969216
+```
+
+Read:
+
+```text
+SourceBlockMetaSlim-L1 succeeded.
+The next layout target is no longer SourceBlock; inspect route capacity under
+the run512 shape, then descriptor table/lifecycle.
+```
+
 Before the metadata-layout experiment, keep small shared helpers out of the
 platform files:
 
