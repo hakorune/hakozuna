@@ -7,6 +7,20 @@ fronts should stay separated.
 Current Windows capacity lane names and promotion status are summarized in
 `HZ6_LANE_GUIDE.md`. Keep this file as the longer investigation log.
 
+Repo hygiene note:
+
+```text
+Use these orientation docs before reading this long ledger:
+  HZ6_SELECTED_FAMILY_SUMMARY.md
+  HZ6_LANE_GUIDE.md
+  HZ6_REPO_HYGIENE.md
+  HZ6_SOURCE_MODULARIZATION.md
+```
+
+This file is intentionally the historical experiment ledger. Stable decisions
+should be copied into the selected summary or lane guide instead of being left
+only in this file.
+
 Latest mixed clean-lane decision:
 
 ```text
@@ -571,10 +585,12 @@ Frozen evidence:
 Current lane organization:
   HZ6 Windows is a profile family.
 
-  balanced / wide_ws low-RSS speed:
+  balanced / wide_ws clean low-RSS:
     HZ6 profile:
       rss
     capacity lane:
+      mixedclean-front16k-sourcerun-desc17k-source2k-route17k
+    superseded pressure evidence:
       descavail-noboost-route4k
 
   random_mixed same-owner speed:
@@ -594,6 +610,8 @@ Current lane organization:
       speed
     capacity lane:
       ownerlocalityfast-rsscap-2-desc160k
+    lowest-RSS sibling:
+      ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k
     lower-RSS sibling:
       ownerlocalityfast-rsscap-2-desc160k-front4k
     stable near-capacity sibling:
@@ -2727,7 +2745,9 @@ larger_sizes is still different:
 
 Status:
   rss + descavail-noboost-route4k:
-    selected balanced / wide_ws low-RSS speed candidate-control
+    historical balanced / wide_ws pressure evidence.
+    Superseded as the clean selected row by:
+      rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k
 
   strict + directlocalfree-descavail-noboost-route4k:
     selected random_mixed low-RSS speed candidate-control

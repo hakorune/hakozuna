@@ -6,6 +6,9 @@ which?" before running or comparing benchmarks.
 
 For the short selected-row readout, see
 [`HZ6_SELECTED_FAMILY_SUMMARY.md`](HZ6_SELECTED_FAMILY_SUMMARY.md).
+For repo cleanup rules and the source modularization backlog, see
+[`HZ6_REPO_HYGIENE.md`](HZ6_REPO_HYGIENE.md) and
+[`HZ6_SOURCE_MODULARIZATION.md`](HZ6_SOURCE_MODULARIZATION.md).
 
 ## Current Recommendation
 
@@ -98,7 +101,7 @@ larson-cross-owner-selected:
   larson_t16_main_10k
   speed + ownerlocalityfast-rsscap-2-desc160k
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k
-  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k
 
 selected-family-guard:
   short mixed_ws smoke/control guard before a longer selected-family run
@@ -166,6 +169,8 @@ Windows profile family:
     selected lower-RSS sibling:
       ownerlocalityfast-rsscap-2-desc160k-front4k
     selected low-RSS sibling:
+      ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k
+    source16k route-capacity control:
       ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k
     lower-RSS / lower-throughput source-cap control:
       ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source12k
@@ -217,6 +222,7 @@ Route-lifecycle diagnostic:
   ownerlocalityfast-rsscap-2-desc160k
   ownerlocalityfast-rsscap-2-desc160k-front4k
   ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k
+  ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k
   ownerlocalityfast-rsscap-2-desc160k-route128k
   ownerlocalityfast-rsscap-2-desc160k-source2k
   ownerlocalityfast-rsscap-2-desc144k
@@ -262,10 +268,12 @@ profile family and avoid accidentally promoting an evidence lane outside the
 row where it was measured.
 
 ```text
-balanced / wide_ws low-RSS speed:
+balanced / wide_ws clean low-RSS:
   HZ6 profile:
     rss
   capacity lane:
+    mixedclean-front16k-sourcerun-desc17k-source2k-route17k
+  pressure evidence, not selected:
     descavail-noboost-route4k
 
 random_mixed same-owner speed:
@@ -294,9 +302,13 @@ Larson cross-owner full 10k:
     repeat-3 full 10k clean; use when about -1.3% throughput is acceptable for
     about 90MB lower peak RSS versus desc160k
   selected low-RSS sibling:
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k
+    repeat-3 full 10k clean; current median is about 40.260M ops/s and
+    628828 KB peak RSS. Use this as the current lowest-RSS sibling.
+  source16k baseline control:
     ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k
-    repeat-3 full 10k clean; current median is about 46.819M ops/s and
-    665704 KB peak RSS, improving both speed and RSS versus front4k
+    repeat-3 full 10k clean; keep as the route-capacity control for the
+    route192k metadata-slim result.
   lower-RSS / lower-throughput source-cap control:
     ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source12k
     repeat-3 full 10k clean; current median is about 44.308M ops/s and
@@ -305,6 +317,12 @@ Larson cross-owner full 10k:
   source-cap interpolation control:
     ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source14k
     run-1 full 10k clean at about 44.471M ops/s and 644836 KB peak RSS.
+  route-capacity boundary controls:
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route224k
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route160k
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route128k
+    route224k is clean control; route160k/128k fail warmup and define the
+    current no-go lower bound.
   source-block over-retention control:
     ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k
     passes, but raises peak RSS and is not selected

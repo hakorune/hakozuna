@@ -1,5 +1,18 @@
 # Current Task
 
+HZ6 orientation note:
+
+```text
+Before adding another HZ6 lane or benchmark row, read:
+  hakozuna-hz6/docs/HZ6_SELECTED_FAMILY_SUMMARY.md
+  hakozuna-hz6/docs/HZ6_LANE_GUIDE.md
+  hakozuna-hz6/docs/HZ6_REPO_HYGIENE.md
+  hakozuna-hz6/docs/HZ6_SOURCE_MODULARIZATION.md
+```
+
+Keep this root file as a top-level project ledger. HZ6-specific stable lane
+decisions should be mirrored into the HZ6 docs above.
+
 HZ6 is now in active Windows/Linux implementation and benchmarking. HZ5 Linux
 remains profile-stabilized; new HZ5 work should not blur the HZ6 contract.
 

@@ -1,21 +1,5 @@
 #include "hz6_allocator.h"
-
-static size_t hz6_allocator_scavenge_cost(
-    const Hz6ObjectDescriptor* descriptor) {
-  if (!descriptor) {
-    return 0;
-  }
-  if (descriptor->source_block) {
-    return descriptor->bytes;
-  }
-  size_t source_bytes = 0;
-  if (hz6_allocator_descriptor_source_meta(descriptor, NULL, &source_bytes,
-                                           NULL) &&
-      source_bytes != 0) {
-    return source_bytes;
-  }
-  return descriptor->bytes;
-}
+#include "hz6_allocator_scavenge_internal.h"
 
 size_t hz6_allocator_scavenge_local_free(Hz6Allocator* allocator,
                                          size_t max_bytes) {
@@ -33,7 +17,7 @@ size_t hz6_allocator_scavenge_local_free(Hz6Allocator* allocator,
       continue;
     }
 
-    size_t bytes = hz6_allocator_scavenge_cost(descriptor);
+    size_t bytes = hz6_allocator_scavenge_descriptor_cost(descriptor);
     if (!hz6_scavenge_can_release(&budget, bytes)) {
       continue;
     }

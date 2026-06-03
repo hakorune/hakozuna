@@ -4,6 +4,9 @@ This is the short, paper-facing map of the current HZ6 Windows lanes. Use
 `HZ6_LANE_GUIDE.md` as the detailed lane dictionary and `current_task.md` as the
 experiment ledger.
 
+For cleanup rules and the next source modularization target, see
+`HZ6_REPO_HYGIENE.md` and `HZ6_SOURCE_MODULARIZATION.md`.
+
 ## Selected Rows
 
 | Family | Selected lane | Median ops/s | Peak KB | Status |

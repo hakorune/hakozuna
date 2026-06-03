@@ -1,4 +1,5 @@
 #include "win_source_virtualalloc.h"
+#include "hz6_source_util.h"
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -15,18 +16,10 @@ size_t hz6_win_page_size(void) {
   return (size_t)info.dwPageSize;
 }
 
-static size_t hz6_round_up(size_t value, size_t alignment) {
-  if (alignment == 0) {
-    return value;
-  }
-  size_t mask = alignment - (size_t)1;
-  return (value + mask) & ~mask;
-}
-
 void* hz6_win_virtualalloc_reserve(size_t bytes, size_t align) {
   size_t granularity = hz6_win_allocation_granularity();
   size_t effective_align = align > granularity ? align : granularity;
-  size_t rounded = hz6_round_up(bytes, effective_align);
+  size_t rounded = hz6_source_round_up(bytes, effective_align);
   if (rounded == 0) {
     return NULL;
   }

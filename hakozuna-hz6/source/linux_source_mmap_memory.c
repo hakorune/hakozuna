@@ -3,6 +3,7 @@
 #endif
 
 #include "linux_source_mmap.h"
+#include "hz6_source_util.h"
 
 #include <errno.h>
 #include <stdint.h>
@@ -14,18 +15,10 @@ size_t hz6_linux_page_size(void) {
   return value > 0 ? (size_t)value : (size_t)4096;
 }
 
-static size_t hz6_round_up(size_t value, size_t alignment) {
-  if (alignment == 0) {
-    return value;
-  }
-  size_t mask = alignment - (size_t)1;
-  return (value + mask) & ~mask;
-}
-
 void* hz6_linux_mmap_reserve(size_t bytes, size_t align) {
   size_t page_size = hz6_linux_page_size();
   size_t effective_align = align > page_size ? align : page_size;
-  size_t rounded = hz6_round_up(bytes, effective_align);
+  size_t rounded = hz6_source_round_up(bytes, effective_align);
   if (rounded == 0) {
     errno = EINVAL;
     return NULL;

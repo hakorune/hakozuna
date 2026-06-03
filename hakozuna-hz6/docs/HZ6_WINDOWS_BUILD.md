@@ -128,11 +128,12 @@ control:
   low-capacity / low-RSS baseline
 
 route4k:
-  current Windows candidate-control lane
+  historical low-capacity candidate-control lane. Use `HZ6_LANE_GUIDE.md` for
+  the current selected profile-family rows.
 
 noboost-route4k:
-  route4k with starvation source-refill boost disabled. Use this as the
-  current mixed_ws candidate-control lane after the latest wide_ws repeat-3.
+  route4k with starvation source-refill boost disabled. This is now a
+  mechanism/control lane, not the current mixed_ws selected row.
 
 appcap:
   high-capacity completion/control lane, not a default
@@ -147,6 +148,13 @@ ownerlocalityfast-appcap:
   throughput/RSS checks after `ownerlocality-appcap` has validated the
   counters. Repeat-3 is now enough to treat it as the preferred
   candidate-control lane for fast owner-locality comparisons.
+```
+
+Current selected HZ6 rows are maintained in:
+
+```text
+hakozuna-hz6/docs/HZ6_SELECTED_FAMILY_SUMMARY.md
+hakozuna-hz6/docs/HZ6_LANE_GUIDE.md
 ```
 
 Research lanes such as `sourcerun-route4k`,
