@@ -10,7 +10,7 @@ thindesc broad default:
   no
 
 thindesc selected-family role:
-  yes, Larson / owner-locality lowest-RSS sibling candidate
+  source16k variant is the selected Larson / owner-locality low-RSS sibling
 
 next order:
   A. selected-family runner/docs cleanup
@@ -52,7 +52,7 @@ Result:
       665704 KB peak
       safety clean
     read:
-      selected low-RSS Larson sibling candidate.
+      selected low-RSS Larson sibling.
 
   front4k:
     repeat-3 full 10k:

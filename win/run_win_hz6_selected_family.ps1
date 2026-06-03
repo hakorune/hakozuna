@@ -73,23 +73,23 @@ $presetMap = [ordered]@{
         -Families @("larson") `
         -BenchmarkProfiles @("larson_t16_main_10k") `
         -Hz6Profiles @("speed") `
-        -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k", "ownerlocalityfast-rsscap-2-desc160k-front4k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc") `
-        -Note "Larson full 10k selected lane plus lower-RSS siblings"
+        -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k", "ownerlocalityfast-rsscap-2-desc160k-front4k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k") `
+        -Note "Larson full 10k selected lane plus low-RSS siblings"
 
     "larson-cross-owner-lowest-rss" = New-Preset `
         -Name "larson-cross-owner-lowest-rss" `
         -Families @("larson") `
         -BenchmarkProfiles @("larson_t16_main_10k") `
         -Hz6Profiles @("speed") `
-        -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k-front4k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc") `
-        -Note "front4k versus thindesc lowest-RSS Larson sibling check"
+        -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k-front4k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k") `
+        -Note "front4k versus selected thindesc-source16k low-RSS Larson sibling check"
 
     "larson-thindesc-sourcecap" = New-Preset `
         -Name "larson-thindesc-sourcecap" `
         -Families @("larson") `
         -BenchmarkProfiles @("larson_t16_main_10k") `
         -Hz6Profiles @("speed") `
-        -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k-front4k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k") `
+        -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k") `
         -Note "thindesc source-block capacity recovery check after full-10k warmup failure"
 
     "selected-family-guard" = New-Preset `

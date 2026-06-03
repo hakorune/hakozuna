@@ -7,12 +7,13 @@ fronts should stay separated.
 Current Windows capacity lane names and promotion status are summarized in
 `HZ6_LANE_GUIDE.md`. Keep this file as the longer investigation log.
 
-ThinDescriptor-L1 is now implemented behind a profile flag as an experimental
-lower-RSS sibling. Keep `ownerlocalityfast-rsscap-2-desc160k-front4k` as the
-selected lower-RSS sibling and treat
-`ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc` as the selected
-lowest-RSS sibling candidate after the post-pack repeat-3. It is still not a
-universal default; use it where peak RSS is the priority.
+ThinDescriptor-L1 is now implemented behind a profile flag. Plain
+`ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc` stays compact/moderate
+evidence because it fails full-10k warmup, while
+`ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k` is promoted to
+the selected low-RSS Larson sibling after the source-block recovery repeat-3.
+It is still not a universal default; use it only for the Larson/owner-locality
+profile family where peak RSS is the priority.
 
 Latest design freeze:
 
@@ -119,7 +120,7 @@ Source-block recovery result:
     safety:
       clean
     read:
-      GO as selected low-RSS Larson sibling candidate.
+      GO as selected low-RSS Larson sibling.
       It fixes the thindesc full-10k source-block failure and improves both
       throughput and RSS versus front4k in this repeat.
 
@@ -131,7 +132,7 @@ Source-block recovery result:
       no-go / over-retention control.
 
 Decision:
-  promote source16k to selected-family candidate-control.
+  promote source16k to selected-family low-RSS Larson sibling.
   keep plain thindesc as compact/moderate evidence only.
   keep source32k as over-retention control.
 ```

@@ -11,8 +11,8 @@ which?" before running or comparing benchmarks.
 | balanced / wide_ws low-RSS speed | `rss` | `descavail-noboost-route4k` | Best balanced and wide_ws low-RSS speed lane; descriptor exhaustion cost is removed without changing capacity. |
 | random_mixed same-owner speed | `strict` | `sameownerfast-descavail-noboost-route4k` | Selected same-owner fast lane: `HZ6_SAME_OWNER_FAST_L1` + descriptor availability, promoted from the A-ladder. |
 | larger_sizes RSS/speed | `speed` or `rss` | `largerlowrss-front8k-sourcerun-desc8k-route8k` | Best larger_sizes lane; needs larger front retention, not more descriptor-failure cleanup. |
-| Larson cross-owner full 10k | `speed` | `ownerlocalityfast-rsscap-2-desc160k` | Current full Larson cross-owner throughput/RSS balance lane; appcap-class throughput with sub-1GB peak RSS. |
-| Larson cross-owner low RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k` | Selected low-RSS Larson sibling candidate. Full-10k repeat-3 is safety-clean and improves both throughput and RSS versus `front4k`; `source32k` is a control that over-retains RSS. |
+| Larson cross-owner full 10k | `speed` | `ownerlocalityfast-rsscap-2-desc160k` | Full Larson cross-owner throughput/RSS balance lane; appcap-class throughput with sub-1GB peak RSS. |
+| Larson cross-owner low RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k` | Selected low-RSS Larson sibling. Full-10k repeat-3 is safety-clean and improves both throughput and RSS versus `front4k`; `source32k` is a control that over-retains RSS. |
 | perf-recovery upper-bound | `strict` / `speed` / `rss` | `ownerlocalityfast-appcap` | Upper-bound / completion control only; too much RSS for default use. |
 
 For a cross-allocator side-by-side summary using past data only, see
@@ -39,7 +39,7 @@ separate by output subdirectory.
 ```
 
 ```powershell
-# Larson full-10k selected lane plus front4k / thindesc siblings.
+# Larson full-10k selected lane plus low-RSS siblings.
 .\win\run_win_hz6_selected_family.ps1 `
   -LarsonCrossOwnerSelected `
   -Runs 3 `
@@ -48,7 +48,7 @@ separate by output subdirectory.
 ```
 
 ```powershell
-# Narrow lowest-RSS sibling check: front4k versus thindesc.
+# Narrow low-RSS sibling check: front4k versus thindesc-source16k.
 .\win\run_win_hz6_selected_family.ps1 `
   -LarsonCrossOwnerLowestRss `
   -Runs 3 `
@@ -84,14 +84,14 @@ larson-cross-owner-selected:
   larson_t16_main_10k
   speed + ownerlocalityfast-rsscap-2-desc160k
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k
-  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k
 
 selected-family-guard:
   short mixed_ws smoke/control guard before a longer selected-family run
 
 larson-thindesc-sourcecap:
   larson_t16_main_10k
-  speed + ownerlocalityfast-rsscap-2-desc160k-front4k
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k
   use only as a source-block recovery experiment after thindesc full-10k
@@ -127,18 +127,15 @@ Windows profile family:
       ownerlocalityfast-rsscap-2-desc160k
     stable near-capacity sibling:
       ownerlocalityfast-rsscap-2-desc192k
-  selected lower-RSS sibling:
-    ownerlocalityfast-rsscap-2-desc160k-front4k
-  selected low-RSS sibling candidate:
-    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k
-  source-block over-retention control:
-    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k
-  compact/moderate thindesc evidence:
-    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc
-    full 10k no-go until source-block capacity / retention is fixed
-    source-block recovery experiments:
+    selected lower-RSS sibling:
+      ownerlocalityfast-rsscap-2-desc160k-front4k
+    selected low-RSS sibling:
       ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k
+    source-block over-retention control:
       ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k
+    compact/moderate thindesc evidence:
+      ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc
+      full 10k no-go until source-block capacity / retention is fixed
     stable controls:
       ownerlocalityfast-rsscap-1
       ownerlocalityfast-rsscap-2
@@ -179,6 +176,7 @@ Route-lifecycle diagnostic:
   ownerlocalityfast-rsscap-2-desc192k
   ownerlocalityfast-rsscap-2-desc160k
   ownerlocalityfast-rsscap-2-desc160k-front4k
+  ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k
   ownerlocalityfast-rsscap-2-desc160k-route128k
   ownerlocalityfast-rsscap-2-desc160k-source2k
   ownerlocalityfast-rsscap-2-desc144k
@@ -255,7 +253,7 @@ Larson cross-owner full 10k:
     ownerlocalityfast-rsscap-2-desc160k-front4k
     repeat-3 full 10k clean; use when about -1.3% throughput is acceptable for
     about 90MB lower peak RSS versus desc160k
-  selected low-RSS sibling candidate:
+  selected low-RSS sibling:
     ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k
     repeat-3 full 10k clean; current median is about 46.819M ops/s and
     665704 KB peak RSS, improving both speed and RSS versus front4k
@@ -314,6 +312,8 @@ Profile-family read:
   ownerlocalityfast-rsscap-2-desc160k is the current full Larson cross-owner
   candidate-control; ownerlocalityfast-rsscap-2-desc192k is the stable
   near-capacity sibling.
+  ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k is the
+  selected low-RSS Larson sibling after the source-block recovery run.
   ownerlocalityfast-rsscap-3/4 are too tight for full 10k Larson and should be
   used only for compact/moderate live-set evidence.
   ownerlocalityfast-rsscap-4 is now a historical larger_sizes high-RSS
