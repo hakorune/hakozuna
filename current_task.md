@@ -37,6 +37,35 @@ Read:
   thindesc remains compact/moderate evidence only until source-block
   capacity/retention is addressed.
   next attack is B: ownerlocality + largerlowrss/source-run retention.
+
+Next experiment:
+  add source16k/source32k thindesc siblings:
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k
+  use:
+    win/run_win_hz6_selected_family.ps1 -LarsonThinDescSourceCap
+
+Result:
+  thindesc-source16k:
+    repeat-3 full 10k:
+      46.819M ops/s
+      665704 KB peak
+      safety clean
+    read:
+      selected low-RSS Larson sibling candidate.
+
+  front4k:
+    repeat-3 full 10k:
+      44.887M ops/s
+      716328 KB peak
+      safety clean
+
+  thindesc-source32k:
+    run-1:
+      42.029M ops/s
+      836644 KB peak
+    read:
+      over-retention control, not selected.
 ```
 
 ## HZ6 Lane Dashboard

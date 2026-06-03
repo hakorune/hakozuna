@@ -10,6 +10,7 @@ param(
     [switch]$SelectedFamilyGuard,
     [switch]$LarsonCrossOwnerSelected,
     [switch]$LarsonCrossOwnerLowestRss,
+    [switch]$LarsonThinDescSourceCap,
     [switch]$ListPresets
 )
 
@@ -83,6 +84,14 @@ $presetMap = [ordered]@{
         -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k-front4k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc") `
         -Note "front4k versus thindesc lowest-RSS Larson sibling check"
 
+    "larson-thindesc-sourcecap" = New-Preset `
+        -Name "larson-thindesc-sourcecap" `
+        -Families @("larson") `
+        -BenchmarkProfiles @("larson_t16_main_10k") `
+        -Hz6Profiles @("speed") `
+        -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k-front4k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k") `
+        -Note "thindesc source-block capacity recovery check after full-10k warmup failure"
+
     "selected-family-guard" = New-Preset `
         -Name "selected-family-guard" `
         -Families @("mixed_ws") `
@@ -111,6 +120,10 @@ $selectedPresetNames = New-Object System.Collections.Generic.List[string]
 
 if ($LarsonCrossOwnerLowestRss) {
     [void]$selectedPresetNames.Add("larson-cross-owner-lowest-rss")
+}
+
+if ($LarsonThinDescSourceCap) {
+    [void]$selectedPresetNames.Add("larson-thindesc-sourcecap")
 }
 
 if ($LarsonCrossOwnerSelected) {

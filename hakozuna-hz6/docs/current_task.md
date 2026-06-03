@@ -79,6 +79,61 @@ Decision:
   front4k is the current lower-RSS full-10k sibling.
   Next design pressure is not descriptor thinness; it is source-block
   capacity / retention when thin descriptors are combined with owner-locality.
+
+Next source-block recovery experiment:
+  ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k
+  ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k
+
+Purpose:
+  check whether thindesc full-10k failure is only source-block capacity, while
+  keeping frontcache at 4k and descriptor capacity at 160k.
+
+Acceptance:
+  warmup passes
+  alloc_fail = 0
+  source_block_exhausted = 0
+  throughput >= front4k - 5%
+  peak RSS is below or near front4k
+
+Source-block recovery result:
+  run:
+    docs/benchmarks/windows/paper/hz6_selected_family/
+      larson-thindesc-sourcecap/
+        20260603_180307_hz6_capacity_matrix_windows.md
+  repeat:
+    docs/benchmarks/windows/paper/hz6_selected_family/
+      larson-thindesc-source16k-repeat/
+        20260603_180630_hz6_capacity_matrix_windows.md
+
+  front4k:
+    repeat-3 median:
+      44.887M ops/s
+      716328 KB peak
+    safety:
+      clean
+
+  thindesc-source16k:
+    repeat-3 median:
+      46.819M ops/s
+      665704 KB peak
+    safety:
+      clean
+    read:
+      GO as selected low-RSS Larson sibling candidate.
+      It fixes the thindesc full-10k source-block failure and improves both
+      throughput and RSS versus front4k in this repeat.
+
+  thindesc-source32k:
+    run-1:
+      42.029M ops/s
+      836644 KB peak
+    read:
+      no-go / over-retention control.
+
+Decision:
+  promote source16k to selected-family candidate-control.
+  keep plain thindesc as compact/moderate evidence only.
+  keep source32k as over-retention control.
 ```
 
 ## Current Direction Freeze
