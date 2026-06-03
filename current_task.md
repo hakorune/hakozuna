@@ -116,13 +116,23 @@ next HZ6 attack:
         route_active_current = 131072
         route_register_fail = 3
         alloc_fail = 1
+    descriptor under run512:
+      desc158k-route192k-run512 repeat-3:
+        40.400M / 498080 KB, safety clean
+      desc160k-route192k-run512 same repeat:
+        40.578M / 499804 KB, safety clean
+      desc156k-route192k-run512 and below:
+        warmup no-go
+        descriptor_exhausted = 3
+        alloc_fail = 1
 
   next:
     SourceBlock is no longer the dominant table after run512.
     Route is capacity-bounded under run512; route192k remains the clean lower
     bound. Do not trim route capacity again without a new route representation.
-    The next Larson RSS target is descriptor table/lifecycle or another
-    metadata representation, not route128/160.
+    Static descriptor capacity can be trimmed only to desc158k under the current
+    lifecycle, and the win is small. The next Larson RSS target is a descriptor
+    lifecycle/reuse representation change, not another static capacity cut.
     same-run thindesc16k baseline:
       40.267M / 665700 KB
     route160k/route128k and route160k-run512/route128k-run512:

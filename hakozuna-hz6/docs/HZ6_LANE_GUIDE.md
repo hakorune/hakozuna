@@ -21,6 +21,7 @@ For repo cleanup rules and the source modularization backlog, see
 | Larson cross-owner full 10k | `speed` | `ownerlocalityfast-rsscap-2-desc160k` | Full Larson cross-owner throughput/RSS balance lane; appcap-class throughput with sub-1GB peak RSS. |
 | Larson cross-owner low RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k` | Clean route-capacity control. It keeps the thindesc/source16k shape and trims route capacity to 192K; repeat-3 is safety-clean at about `44.610M / 628844 KB`. |
 | Larson cross-owner lowest RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512` | Current selected lowest-RSS sibling. It keeps route192k and reduces `HZ6_SOURCE_RUN_MAX_SLOTS` to 512; repeat-3 is safety-clean at `48.512M / 499820 KB`. |
+| Larson descriptor boundary | `speed` | `ownerlocalityfast-rsscap-2-desc158k-front4k-thindesc-source16k-route192k-run512` | Clean tiny-RSS sibling/control after run512. Repeat-3 is `40.400M / 498080 KB`; desc156k and below are warmup no-go from `descriptor_exhausted=3` / `alloc_fail=1`. |
 | perf-recovery upper-bound | `strict` / `speed` / `rss` | `ownerlocalityfast-appcap` | Upper-bound / completion control only; too much RSS for default use. |
 
 For a cross-allocator side-by-side summary using past data only, see
@@ -84,6 +85,14 @@ separate by output subdirectory.
 # Route-capacity re-check after run512; evidence/no-go boundary only.
 .\win\run_win_hz6_selected_family.ps1 `
   -LarsonRun512RouteSlim `
+  -Runs 1 `
+  -TimeoutSeconds 300 `
+  -DiagnosticHz6Probes `
+  -ContinueOnFailure
+
+# Descriptor-capacity re-check after run512; evidence/no-go boundary only.
+.\win\run_win_hz6_selected_family.ps1 `
+  -LarsonRun512DescSlim `
   -Runs 1 `
   -TimeoutSeconds 300 `
   -DiagnosticHz6Probes `
@@ -152,6 +161,21 @@ larson-run512-routeslim:
     evidence/no-go boundary only. Route192k-run512 stays clean; route160k-run512
     and route128k-run512 saturate during warmup (`route_register_fail=3`,
     `alloc_fail=1`). Do not promote these route-trim siblings.
+
+larson-run512-descslim:
+  larson_t16_main_10k
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512
+  speed + ownerlocalityfast-rsscap-2-desc158k-front4k-thindesc-source16k-route192k-run512
+  speed + ownerlocalityfast-rsscap-2-desc156k-front4k-thindesc-source16k-route192k-run512
+  speed + ownerlocalityfast-rsscap-2-desc152k-front4k-thindesc-source16k-route192k-run512
+  speed + ownerlocalityfast-rsscap-2-desc148k-front4k-thindesc-source16k-route192k-run512
+  speed + ownerlocalityfast-rsscap-2-desc144k-front4k-thindesc-source16k-route192k-run512
+  speed + ownerlocalityfast-rsscap-2-desc128k-front4k-thindesc-source16k-route192k-run512
+  status:
+    evidence/no-go boundary only. Desc158k is clean and saves only about
+    1.7MB median peak versus desc160k; desc156k and below fail warmup with
+    descriptor exhaustion. Do not continue static descriptor-capacity trimming
+    under the current representation.
 ```
 
 ```text
@@ -207,6 +231,8 @@ Windows profile family:
       ownerlocalityfast-rsscap-2-desc160k-front4k
     selected low-RSS sibling:
       ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512
+    descriptor-capacity boundary control:
+      ownerlocalityfast-rsscap-2-desc158k-front4k-thindesc-source16k-route192k-run512
     route192k source16k control:
       ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k
     source16k route-capacity control:
@@ -214,6 +240,12 @@ Windows profile family:
     route-capacity no-go controls:
       ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route160k-run512
       ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route128k-run512
+    descriptor-capacity no-go controls:
+      ownerlocalityfast-rsscap-2-desc156k-front4k-thindesc-source16k-route192k-run512
+      ownerlocalityfast-rsscap-2-desc152k-front4k-thindesc-source16k-route192k-run512
+      ownerlocalityfast-rsscap-2-desc148k-front4k-thindesc-source16k-route192k-run512
+      ownerlocalityfast-rsscap-2-desc144k-front4k-thindesc-source16k-route192k-run512
+      ownerlocalityfast-rsscap-2-desc128k-front4k-thindesc-source16k-route192k-run512
     lower-RSS / lower-throughput source-cap control:
       ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source12k
       ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source14k
@@ -347,6 +379,12 @@ Larson cross-owner full 10k:
     ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512
     repeat-3 full 10k clean; current median is about 48.512M ops/s and
     499820 KB peak RSS. Use this as the current lowest-RSS sibling.
+  descriptor-capacity boundary control:
+    ownerlocalityfast-rsscap-2-desc158k-front4k-thindesc-source16k-route192k-run512
+    repeat-3 full 10k clean at about 40.400M ops/s and 498080 KB peak RSS.
+    Keep it as a tiny-RSS sibling/control, not a default replacement, because
+    the RSS win versus desc160k is small and the next lower descriptor caps
+    fail warmup.
   route192k control:
     ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k
     repeat-3 clean at about 44.610M ops/s and 628844 KB peak RSS.
@@ -368,6 +406,15 @@ Larson cross-owner full 10k:
     ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route128k
     route224k is clean control; route160k/128k fail warmup and define the
     current no-go lower bound.
+  descriptor-capacity boundary controls:
+    ownerlocalityfast-rsscap-2-desc156k-front4k-thindesc-source16k-route192k-run512
+    ownerlocalityfast-rsscap-2-desc152k-front4k-thindesc-source16k-route192k-run512
+    ownerlocalityfast-rsscap-2-desc148k-front4k-thindesc-source16k-route192k-run512
+    ownerlocalityfast-rsscap-2-desc144k-front4k-thindesc-source16k-route192k-run512
+    ownerlocalityfast-rsscap-2-desc128k-front4k-thindesc-source16k-route192k-run512
+    desc156k and below fail warmup with `descriptor_exhausted=3` and
+    `alloc_fail=1`; static descriptor capacity cuts are closed under the
+    current descriptor representation.
   source-run metadata ladder:
     ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run2048
     ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run1024

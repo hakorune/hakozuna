@@ -46,6 +46,34 @@ that route160k-run512 and route128k-run512 saturate during full-10k warmup:
 `alloc_fail=1`. Further RSS work should target descriptor table/lifecycle or a
 new route representation, not another static route cut.
 
+Static descriptor-capacity trimming is also effectively at the lower bound for
+the current representation:
+
+```text
+desc160k route192k run512:
+  40.578M ops/s
+  499804 KB
+  clean repeat-3 control
+
+desc158k route192k run512:
+  40.400M ops/s
+  498080 KB
+  clean tiny-RSS sibling/control
+
+desc156k and below:
+  warmup no-go
+  descriptor_exhausted=3
+  alloc_fail=1
+```
+
+Read:
+
+```text
+Static descriptor cuts can save only about 1.7MB more before warmup failure.
+The next Larson RSS target is descriptor lifecycle / reuse representation, not
+another compile-time descriptor capacity cut.
+```
+
 ### Route Table Is Already Capacity-Bounded
 
 The route capacity ladder found:
@@ -138,8 +166,9 @@ Read:
 ```text
 SourceBlockMetaSlim-L1 succeeded.
 The next layout target is no longer SourceBlock or static route capacity.
-Route192k is the clean lower bound under run512; inspect descriptor
-table/lifecycle next.
+Route192k is the clean lower bound under run512; desc158k is the clean
+descriptor boundary and desc156k/below fail. Inspect descriptor table/lifecycle
+or route/descriptor ownership representation next.
 ```
 
 Before the metadata-layout experiment, keep small shared helpers out of the

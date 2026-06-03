@@ -13,6 +13,7 @@ param(
     [switch]$LarsonMetadataSlim,
     [switch]$LarsonSourceRunMetaSlim,
     [switch]$LarsonRun512RouteSlim,
+    [switch]$LarsonRun512DescSlim,
     [switch]$LarsonThinDescSourceCap,
     [switch]$ListPresets
 )
@@ -127,6 +128,14 @@ $presetMap = [ordered]@{
         -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route160k-run512", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route128k-run512") `
         -Note "Route-table capacity re-check after the selected run512 source-run metadata slim lane"
 
+    "larson-run512-descslim" = New-Preset `
+        -Name "larson-run512-descslim" `
+        -Families @("larson") `
+        -BenchmarkProfiles @("larson_t16_main_10k") `
+        -Hz6Profiles @("speed") `
+        -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc158k-front4k-thindesc-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc156k-front4k-thindesc-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc152k-front4k-thindesc-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc148k-front4k-thindesc-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc144k-front4k-thindesc-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc128k-front4k-thindesc-source16k-route192k-run512") `
+        -Note "Descriptor-table capacity re-check after route192k-run512 closed the static route trim path"
+
     "selected-family-guard" = New-Preset `
         -Name "selected-family-guard" `
         -Families @("mixed_ws") `
@@ -171,6 +180,10 @@ if ($LarsonSourceRunMetaSlim) {
 
 if ($LarsonRun512RouteSlim) {
     [void]$selectedPresetNames.Add("larson-run512-routeslim")
+}
+
+if ($LarsonRun512DescSlim) {
+    [void]$selectedPresetNames.Add("larson-run512-descslim")
 }
 
 if ($LarsonCrossOwnerSelected) {
