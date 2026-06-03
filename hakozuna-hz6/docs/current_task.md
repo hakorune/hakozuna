@@ -478,6 +478,12 @@ ownerlocalityfast-rsscap-2-desc160k:
   promote to current full Larson cross-owner candidate-control.
   It keeps desc192k-class throughput while cutting peak to ~928 MiB.
 
+ownerlocalityfast-rsscap-2-desc144k:
+  next narrow descriptor-boundary probe.
+  Same rsscap-2 shape, but descriptor capacity 147456.
+  Use it to check whether desc160k can be tightened one more step before the
+  known rsscap-3/131k warmup-failure boundary.
+
 ownerlocalityfast-rsscap-2-desc192k:
   keep as stable near-capacity sibling / control.
 
@@ -486,6 +492,32 @@ ownerlocalityfast-rsscap-1/2:
 
 rsscap-3/4:
   still too tight for full 10k Larson.
+```
+
+Desc144 run1:
+
+```text
+Run:
+  larson_T16
+  speed profile
+  ownerlocalityfast-rsscap-2-desc144k
+  run1
+
+Result:
+  warmup allocation failed
+
+Stats:
+  source_alloc=24576
+  alloc_fail=1
+  descriptor_exhausted=2
+  source_block_exhausted=1025
+  route_register_fail=0
+
+Decision:
+  desc144k is no-go / boundary evidence.
+  desc160k remains the selected full Larson cross-owner candidate-control.
+  The next step is not to continue static descriptor trimming unless a new
+  source-block/admission design changes this boundary.
 ```
 
 ## RandomMixed A/B Fast-Path Plan 2026-06-03

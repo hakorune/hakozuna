@@ -85,6 +85,7 @@ Route-lifecycle diagnostic:
   ownerlocalityfast-rsscap-2
   ownerlocalityfast-rsscap-2-desc192k
   ownerlocalityfast-rsscap-2-desc160k
+  ownerlocalityfast-rsscap-2-desc144k
   ownerlocalityfast-rsscap-3
   ownerlocalityfast-rsscap-4
   ownerlocalityfast-widecap-1
@@ -424,6 +425,15 @@ ownerlocalityfast-rsscap-2-desc160k:
   not as a route/source behavior verdict. Repeat-3 promotes it to the current
   full 10k Larson candidate-control: corrected median is about 43.721M ops/s
   and 928,228 KB peak, with safety counters clean.
+
+ownerlocalityfast-rsscap-2-desc144k:
+  Descriptor-boundary probe for full 10k Larson cross-owner. Same shape as
+  rsscap-2, but descriptor capacity is 147456. It is the narrow probe between
+  selected desc160k and failing rsscap-3/131k. Use only to test whether the
+  descriptor budget can be tightened one more step; failures are boundary
+  evidence, not a route/source behavior verdict. First full 10k Larson run
+  fails warmup allocation with `alloc_fail=1` and source-block exhaustion, so
+  keep it as no-go/boundary evidence.
 
 ownerlocalityfast-rsscap-3:
   Non-diagnostic owner-locality behavior lane with reduced transfer,
