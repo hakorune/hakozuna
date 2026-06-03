@@ -16,7 +16,7 @@ For the short selected-row readout, see
 | random_mixed same-owner speed | `strict` | `sameownerfast-descavail-noboost-route4k` | Selected same-owner fast lane: `HZ6_SAME_OWNER_FAST_L1` + descriptor availability, promoted from the A-ladder. |
 | larger_sizes RSS/speed | `speed` or `rss` | `largerlowrss-front8k-sourcerun-desc8k-route8k` | Best larger_sizes lane; needs larger front retention, not more descriptor-failure cleanup. |
 | Larson cross-owner full 10k | `speed` | `ownerlocalityfast-rsscap-2-desc160k` | Full Larson cross-owner throughput/RSS balance lane; appcap-class throughput with sub-1GB peak RSS. |
-| Larson cross-owner low RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k` | Selected low-RSS Larson sibling. Full-10k repeat-3 is safety-clean and improves both throughput and RSS versus `front4k`; `source32k` is a control that over-retains RSS. |
+| Larson cross-owner low RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k` | Selected low-RSS Larson sibling. It keeps the thindesc/source16k shape and trims route capacity to 192K; repeat-3 is safety-clean and cuts peak to about `628828 KB`. |
 | perf-recovery upper-bound | `strict` / `speed` / `rss` | `ownerlocalityfast-appcap` | Upper-bound / completion control only; too much RSS for default use. |
 
 For a cross-allocator side-by-side summary using past data only, see
@@ -591,6 +591,19 @@ ownerlocalityfast-rsscap-2-desc160k:
   not as a route/source behavior verdict. Repeat-3 promotes it to the current
   full 10k Larson candidate-control: corrected median is about 43.721M ops/s
   and 928,228 KB peak, with safety counters clean.
+
+ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k:
+  ThinDescriptor/source16k Larson low-RSS baseline. It completes full-10k and
+  remains a useful control, but MetadataSlim-L1 showed route capacity can be
+  reduced further without losing completion.
+
+ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k:
+  Selected Larson lowest-RSS sibling. Same as thindesc-source16k, but route
+  capacity is trimmed from 262144 to 196608. Repeat-3:
+  `40.260M / 628828 KB`, safety clean. Same-run baseline was
+  `40.267M / 665700 KB`, so route192k keeps throughput parity while saving
+  about 36 MiB peak RSS. Route160k and route128k are no-go boundary controls:
+  both fail warmup from route-table saturation.
 
 ownerlocalityfast-rsscap-2-desc144k:
   Descriptor-boundary probe for full 10k Larson cross-owner. Same shape as

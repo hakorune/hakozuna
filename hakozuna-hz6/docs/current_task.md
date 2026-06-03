@@ -259,6 +259,7 @@ Selected-family repeat-3 read:
     desc160k       = 44.754M ops/s, 808488 KB peak, safety clean
     front4k        = 45.092M ops/s, 716324 KB peak, safety clean
     thindesc-16k   = 44.609M ops/s, 665704 KB peak, safety clean
+    route192k      = 40.260M ops/s, 628828 KB peak, safety clean
 
 Safety:
   checked selected rows keep:
@@ -271,12 +272,73 @@ Decision:
   freeze this as the current paper-facing HZ6 selected-family snapshot.
   The earlier isolated mixed boundary and larger_sizes snapshots remain useful
   evidence, but paper-facing selected tables should use this refreshed matrix.
+  Larson route192k is a later MetadataSlim-L1 improvement over the refresh
+  snapshot and is now the selected lowest-RSS Larson sibling.
 
 Next:
   update cross-allocator selected/control tables, then choose one focused
   optimization target:
     A. wide_ws throughput while preserving desc17 safety/RSS
-    B. Larson RSS metadata/static-table reduction
+    B. Larson metadata layout slimming beyond static capacity trimming
+```
+
+Larson MetadataSlim-L1:
+
+```text
+Goal:
+  reduce full-10k Larson RSS without losing completion or adding hot-path
+  behavior.
+
+Implementation:
+  added route-capacity siblings for the selected thindesc/source16k shape:
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route224k
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route160k
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route128k
+    route96k / route64k are available as no-go controls but not in the default
+    MetadataSlim preset.
+
+Diagnostic run:
+  docs/benchmarks/windows/paper/hz6_selected_family/
+    larson-metadata-slim-l1b/
+
+  baseline thindesc-source16k:
+    39.908M / 665708 KB, safety clean
+  route224k:
+    38.916M / 647728 KB, safety clean
+  route192k:
+    39.919M / 629272 KB, safety clean
+  route160k:
+    failed warmup; route table saturated
+  route128k:
+    failed warmup; route table saturated
+
+Repeat-3:
+  docs/benchmarks/windows/paper/hz6_selected_family/
+    larson-metadata-slim-route192-repeat/
+
+  thindesc-source16k baseline:
+    40.267M / 665700 KB
+    safety clean
+
+  route224k:
+    40.168M / 647264 KB
+    safety clean
+
+  route192k:
+    40.260M / 628828 KB
+    safety clean
+
+Decision:
+  promote route192k as the selected Larson lowest-RSS sibling.
+  Keep route224k as a clean control.
+  Keep route160k/route128k as no-go boundary evidence: full-10k warmup needs
+  more than 160K route capacity under this static-table design.
+
+Next:
+  no more static route trimming for Larson.
+  Further RSS reduction should come from metadata layout slimming, not another
+  capacity cut.
 ```
 
 Historical selected-family measurement before desc17 refresh:

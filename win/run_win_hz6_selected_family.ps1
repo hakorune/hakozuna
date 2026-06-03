@@ -10,6 +10,7 @@ param(
     [switch]$SelectedFamilyGuard,
     [switch]$LarsonCrossOwnerSelected,
     [switch]$LarsonCrossOwnerLowestRss,
+    [switch]$LarsonMetadataSlim,
     [switch]$LarsonThinDescSourceCap,
     [switch]$ListPresets
 )
@@ -81,7 +82,7 @@ $presetMap = [ordered]@{
         -Families @("larson") `
         -BenchmarkProfiles @("larson_t16_main_10k") `
         -Hz6Profiles @("speed") `
-        -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k", "ownerlocalityfast-rsscap-2-desc160k-front4k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k") `
+        -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k", "ownerlocalityfast-rsscap-2-desc160k-front4k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k") `
         -Note "Larson full 10k selected lane plus low-RSS siblings"
 
     "larson-cross-owner-lowest-rss" = New-Preset `
@@ -89,8 +90,8 @@ $presetMap = [ordered]@{
         -Families @("larson") `
         -BenchmarkProfiles @("larson_t16_main_10k") `
         -Hz6Profiles @("speed") `
-        -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k-front4k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k") `
-        -Note "front4k versus selected thindesc-source16k low-RSS Larson sibling check"
+        -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k-front4k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k") `
+        -Note "front4k versus selected thindesc-source16k and route192k low-RSS Larson siblings"
 
     "larson-thindesc-sourcecap" = New-Preset `
         -Name "larson-thindesc-sourcecap" `
@@ -99,6 +100,14 @@ $presetMap = [ordered]@{
         -Hz6Profiles @("speed") `
         -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source12k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source14k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k") `
         -Note "thindesc source-block capacity recovery check after full-10k warmup failure"
+
+    "larson-metadata-slim" = New-Preset `
+        -Name "larson-metadata-slim" `
+        -Families @("larson") `
+        -BenchmarkProfiles @("larson_t16_main_10k") `
+        -Hz6Profiles @("speed") `
+        -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route224k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route160k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route128k") `
+        -Note "MetadataSlim-L1 route-table capacity ladder for the selected thindesc-source16k Larson lane"
 
     "selected-family-guard" = New-Preset `
         -Name "selected-family-guard" `
@@ -132,6 +141,10 @@ if ($LarsonCrossOwnerLowestRss) {
 
 if ($LarsonThinDescSourceCap) {
     [void]$selectedPresetNames.Add("larson-thindesc-sourcecap")
+}
+
+if ($LarsonMetadataSlim) {
+    [void]$selectedPresetNames.Add("larson-metadata-slim")
 }
 
 if ($LarsonCrossOwnerSelected) {
