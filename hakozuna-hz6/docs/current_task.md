@@ -15,10 +15,12 @@ Goal:
   safety-clean selected lane.
 
 New capacity lanes:
+  mixedclean-front16k-sourcerun-desc24k-source2k-route24k
   mixedclean-front16k-sourcerun-desc32k-source2k-route32k
+  mixedclean-front16k-sourcerun-desc32k-source3k-route32k
   mixedclean-front16k-sourcerun-desc32k-source4k-route32k
 
-Repeat-3:
+Initial repeat-3:
   docs/benchmarks/windows/paper/hz6_selected_family/
     mixed-clean-l1-repeat/
       20260603_195317_hz6_capacity_matrix_windows.md
@@ -48,16 +50,75 @@ Result:
       clean
 
 Decision:
-  promote rss + mixedclean-front16k-sourcerun-desc32k-source2k-route32k
-  as the selected balanced / wide_ws clean low-RSS lane.
-  Keep source4k as the speed/control sibling.
+  superseded by the desc24 repeat below.
+  Keep desc32/source2k and source4k as extra-capacity / speed controls.
+
+Profile scan:
+  docs/benchmarks/windows/paper/hz6_selected_family/
+    mixed-clean-profile-scan/
+      20260603_200404_hz6_capacity_matrix_windows.md
+
+  read:
+    strict is no-go for mixed clean rows:
+      wide_ws RSS jumps to about 575-584 MB.
+    speed is effectively the same as rss for wide_ws.
+    next improvement should come from capacity/source-retention shape, not
+    from switching HZ6 profile flags.
+
+Source capacity scan:
+  docs/benchmarks/windows/paper/hz6_selected_family/
+    mixed-clean-source3k-scan/
+      20260603_200610_hz6_capacity_matrix_windows.md
+
+  source3k:
+    balanced 60.420M / 127648 KB
+    wide_ws  20.113M / 156504 KB
+    clean
+    read:
+      no promotion. It is between source2k/source4k but does not improve
+      wide_ws enough to justify the extra RSS.
+
+Desc/route lower-bound scan:
+  docs/benchmarks/windows/paper/hz6_selected_family/
+    mixed-clean-desc24-repeat/
+      20260603_200812_hz6_capacity_matrix_windows.md
+
+  desc24/source2k/route24:
+    balanced:
+      64.796M ops/s
+      116188 KB peak
+    wide_ws:
+      21.161M ops/s
+      145564 KB peak
+    safety:
+      alloc_fail = 0
+      descriptor_exhausted = 0
+      route_register_fail = 0
+      source_block_exhausted = 0
+
+  desc32/source2k/route32:
+    balanced:
+      63.037M ops/s
+      122304 KB peak
+    wide_ws:
+      20.399M ops/s
+      151636 KB peak
+    safety:
+      clean
+
+Decision:
+  promote rss + mixedclean-front16k-sourcerun-desc24k-source2k-route24k as the
+  selected balanced / wide_ws clean low-RSS lane.
+  It improves both speed and RSS versus the previous desc32/source2k selected
+  row.
+  Keep desc32/source2k and source4k as controls.
   Keep descavail-noboost-route4k as pressure evidence only: it is much faster
   and lower RSS, but not safety-clean because it finishes with large
   alloc_fail / source-block-exhaustion counts.
 
 Script update:
   win/run_win_hz6_selected_family.ps1:
-    selected-mixed-lowrss now uses the clean mixedclean source2k lane.
+    selected-mixed-lowrss now uses the clean mixedclean desc24/source2k lane.
     selected-mixed-pressure preserves descavail pressure evidence.
 
 Next:
