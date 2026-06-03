@@ -19,8 +19,8 @@ Latest design freeze:
 ```text
 ThinDescriptor-L1:
   do not promote to broad default.
-  keep as Larson / owner-locality lowest-RSS sibling candidate.
-  require full 10k repeat/full-row before paper-facing claim.
+  keep as compact/moderate Larson / owner-locality lowest-RSS evidence.
+  full 10k repeat did not pass, so no paper-facing full-10k claim yet.
 
 Next order:
   A. selected-family / profile selector runner and docs cleanup
@@ -32,6 +32,53 @@ Do not yet:
   make thindesc broad default
   add another metadata packing pass before the selected-family runner is clear
   introduce runtime adaptive profile selection
+```
+
+Latest selected-family measurement:
+
+```text
+Run:
+  win/run_win_hz6_selected_family.ps1 -LarsonCrossOwnerSelected -Runs 3
+  profile:
+    larson_t16_main_10k
+  output:
+    docs/benchmarks/windows/paper/hz6_selected_family/
+      larson-cross-owner-selected/
+        20260603_174948_hz6_capacity_matrix_windows.md
+
+Results:
+  ownerlocalityfast-rsscap-2-desc160k:
+    43.506M ops/s
+    808484 KB peak
+    safety clean
+
+  ownerlocalityfast-rsscap-2-desc160k-front4k:
+    42.925M ops/s
+    716332 KB peak
+    safety clean
+    read:
+      selected full-10k lower-RSS sibling
+
+  ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc:
+    failed 3/3 before timed run
+    label:
+      larson_warmup_alloc_fail
+    source_alloc:
+      12288
+    alloc_fail:
+      1
+    descriptor_exhausted:
+      0
+    route_register_fail:
+      0
+    source_block_exhausted:
+      257
+
+Decision:
+  thindesc does not become the full-10k Larson paper lane.
+  front4k is the current lower-RSS full-10k sibling.
+  Next design pressure is not descriptor thinness; it is source-block
+  capacity / retention when thin descriptors are combined with owner-locality.
 ```
 
 ## Current Direction Freeze

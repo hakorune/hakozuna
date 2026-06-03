@@ -18,6 +18,27 @@ next order:
   B. ownerlocality + largerlowrss/source-run retention exploration
 ```
 
+Latest selected-family result:
+
+```text
+Larson full 10k repeat-3:
+  desc160k:
+    43.506M ops/s, 808484 KB, safety clean
+  front4k:
+    42.925M ops/s, 716332 KB, safety clean
+  front4k-thindesc:
+    failed 3/3 during warmup
+    source_alloc=12288
+    alloc_fail=1
+    source_block_exhausted=257
+
+Read:
+  front4k is the current full-10k lower-RSS sibling.
+  thindesc remains compact/moderate evidence only until source-block
+  capacity/retention is addressed.
+  next attack is B: ownerlocality + largerlowrss/source-run retention.
+```
+
 ## HZ6 Lane Dashboard
 
 Canonical lane guide:
