@@ -71,8 +71,8 @@ Source:
 | random_mixed mixed | `strict + sameownerfast-descavail-noboost-route4k` | 41.352M | 5,072 | current same-owner fast winner |
 | larger_sizes rss | `speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k` | 34.286M | 72,836 | current larger_sizes RSS winner |
 | larger_sizes speed | `speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k` | 35.353M | 72,792 | current larger_sizes speed winner |
-| Larson T16 cross-owner full 10k | `speed + ownerlocalityfast-rsscap-1` | 43.570M | 1,230,552 | current cross-owner candidate-control; appcap-like throughput at much lower RSS |
-| Larson T16 cross-owner full 10k lower RSS | `speed + ownerlocalityfast-rsscap-2` | 41.700M | 1,066,896 | lower-RSS sibling; still safety clean |
+| Larson T16 cross-owner full 10k | `speed + ownerlocalityfast-rsscap-2-desc192k` | 43.679M | 974,296 | current cross-owner candidate-control; appcap-like throughput with sub-1GB peak |
+| Larson T16 cross-owner full 10k lower RSS | `speed + ownerlocalityfast-rsscap-2-desc160k` | 41.257M | 928,652 | lower-RSS sibling from run1; repeat pending |
 
 ## Readout
 
@@ -86,8 +86,8 @@ It is a family allocator:
 The weakest family remains Larson-style cross-owner stress.
 That is the place where HZ6 still needs lifecycle / handoff work, but the
 current owner-locality lane has recovered a useful full-10k candidate-control:
-`ownerlocalityfast-rsscap-1` keeps appcap-class throughput while cutting peak
-RSS by more than half versus `ownerlocalityfast-appcap`.
+`ownerlocalityfast-rsscap-2-desc192k` keeps appcap-class throughput while
+cutting peak RSS to under 1GB.
 ```
 
 ## Sources

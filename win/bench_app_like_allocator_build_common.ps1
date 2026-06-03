@@ -493,6 +493,32 @@ function Get-Hz6WinOwnerLocalityFastRssCap2CapacityFlags {
     $flags
 }
 
+function Get-Hz6WinOwnerLocalityFastRssCap2Desc192kCapacityFlags {
+    $flags = @(
+        "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)196608)",
+        "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)262144)",
+        "/DHZ6_TRANSFER_CACHE_CAPACITY=((size_t)4096)",
+        "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)8192)",
+        "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)8192)",
+        "/DHZ6_SHARED_ROUTE_DIRECTORY_L1=1",
+        "/DHZ6_OWNER_LOCALITY_INDEX_L1=1"
+    )
+    $flags
+}
+
+function Get-Hz6WinOwnerLocalityFastRssCap2Desc160kCapacityFlags {
+    $flags = @(
+        "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)163840)",
+        "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)262144)",
+        "/DHZ6_TRANSFER_CACHE_CAPACITY=((size_t)4096)",
+        "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)8192)",
+        "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)8192)",
+        "/DHZ6_SHARED_ROUTE_DIRECTORY_L1=1",
+        "/DHZ6_OWNER_LOCALITY_INDEX_L1=1"
+    )
+    $flags
+}
+
 function Get-Hz6WinOwnerLocalityFastRssCap3CapacityFlags {
     $flags = @(
         "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)131072)",
@@ -695,6 +721,8 @@ function Invoke-AppLikeHz6BenchBuilds {
     $ownerLocalityFastAppLikeFlags = Get-Hz6WinOwnerLocalityFastAppLikeCapacityFlags
     $ownerLocalityFastRssCap1Flags = Get-Hz6WinOwnerLocalityFastRssCap1CapacityFlags
     $ownerLocalityFastRssCap2Flags = Get-Hz6WinOwnerLocalityFastRssCap2CapacityFlags
+    $ownerLocalityFastRssCap2Desc192kFlags = Get-Hz6WinOwnerLocalityFastRssCap2Desc192kCapacityFlags
+    $ownerLocalityFastRssCap2Desc160kFlags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kCapacityFlags
     $ownerLocalityFastRssCap3Flags = Get-Hz6WinOwnerLocalityFastRssCap3CapacityFlags
     $ownerLocalityFastRssCap4Flags = Get-Hz6WinOwnerLocalityFastRssCap4CapacityFlags
     $directLocalFreeOwnerLocalityFastRssCap4Flags = Get-Hz6WinDirectLocalFreeOwnerLocalityFastRssCap4CapacityFlags
@@ -756,6 +784,8 @@ function Invoke-AppLikeHz6BenchBuilds {
         "ownerlocalityfast-appcap" = @{ Suffix = "_ownerlocalityfast_appcap"; ExtraFlags = $ownerLocalityFastAppLikeFlags }
         "ownerlocalityfast-rsscap-1" = @{ Suffix = "_ownerlocalityfast_rsscap_1"; ExtraFlags = $ownerLocalityFastRssCap1Flags }
         "ownerlocalityfast-rsscap-2" = @{ Suffix = "_ownerlocalityfast_rsscap_2"; ExtraFlags = $ownerLocalityFastRssCap2Flags }
+        "ownerlocalityfast-rsscap-2-desc192k" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc192k"; ExtraFlags = $ownerLocalityFastRssCap2Desc192kFlags }
+        "ownerlocalityfast-rsscap-2-desc160k" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFlags }
         "ownerlocalityfast-rsscap-3" = @{ Suffix = "_ownerlocalityfast_rsscap_3"; ExtraFlags = $ownerLocalityFastRssCap3Flags }
         "ownerlocalityfast-rsscap-4" = @{ Suffix = "_ownerlocalityfast_rsscap_4"; ExtraFlags = $ownerLocalityFastRssCap4Flags }
         "directlocalfree-ownerlocalityfast-rsscap-4" = @{ Suffix = "_directlocalfree_ownerlocalityfast_rsscap_4"; ExtraFlags = $directLocalFreeOwnerLocalityFastRssCap4Flags }

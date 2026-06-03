@@ -63,9 +63,9 @@ Current lane organization:
     HZ6 profile:
       speed
     capacity lane:
-      ownerlocalityfast-rsscap-1
+      ownerlocalityfast-rsscap-2-desc192k
     lower-RSS sibling:
-      ownerlocalityfast-rsscap-2
+      ownerlocalityfast-rsscap-2-desc160k
 
   performance upper-bound / completion control:
     ownerlocalityfast-appcap
@@ -75,10 +75,11 @@ Current lane organization:
     appcap
 
 Next attack surface:
-  Larson cross-owner full-10k RSS/capacity boundary. ownerlocalityfast-rsscap-1
-  now matches appcap-class throughput with far lower RSS, while rsscap-3/4 are
-  too tight for full 10k warmup. If optimizing further, reduce rsscap-1 peak
-  without crossing the rsscap-3/4 allocation-failure boundary.
+  Larson cross-owner full-10k RSS/capacity boundary.
+  ownerlocalityfast-rsscap-2-desc192k now matches appcap-class throughput with
+  sub-1GB peak RSS, while rsscap-3/4 are too tight for full 10k warmup. If
+  optimizing further, repeat-check desc160k or add one narrower descriptor
+  boundary lane without crossing the rsscap-3/4 allocation-failure boundary.
 
 Goal:
   keep sameownerfast fixed as the selected random_mixed lane, and tighten the
@@ -367,6 +368,100 @@ Next:
   candidate-control, and rsscap-2 as the lower-RSS sibling.
   If optimizing further, reduce rsscap-1 peak without crossing the rsscap-3/4
   warmup-failure boundary.
+```
+
+Descriptor-boundary probes:
+
+```text
+Purpose:
+  rsscap-2 succeeds at full 10k Larson with descriptor capacity 262144.
+  rsscap-3 fails after lowering descriptor capacity to 131072 while keeping
+  route/source/frontcache shape mostly aligned with rsscap-2.
+
+New non-diagnostic capacity lanes:
+  ownerlocalityfast-rsscap-2-desc192k:
+    descriptor 196608
+    route 262144
+    source-block 8192
+    transfer/frontcache 4096/8192
+
+  ownerlocalityfast-rsscap-2-desc160k:
+    descriptor 163840
+    route 262144
+    source-block 8192
+    transfer/frontcache 4096/8192
+
+Read:
+  These are capacity-boundary probes only. They do not enable diagnostic
+  counters or change allocator behavior. Use them to find whether full 10k
+  Larson can reduce peak below rsscap-2 without falling into the rsscap-3/4
+  warmup-allocation failure.
+```
+
+Boundary run1:
+
+```text
+Run:
+  larson_T16
+  speed profile
+  ownerlocalityfast-rsscap-1/2/2-desc192k/2-desc160k
+  run1
+
+ownerlocalityfast-rsscap-1:
+  42.082M ops/s, 1,230,116 KB
+
+ownerlocalityfast-rsscap-2:
+  42.365M ops/s, 1,066,456 KB
+
+ownerlocalityfast-rsscap-2-desc192k:
+  42.593M ops/s, 974,740 KB
+
+ownerlocalityfast-rsscap-2-desc160k:
+  41.257M ops/s, 928,652 KB
+
+Safety:
+  all rows keep route_invalid/route_miss/route_register_fail/alloc_fail at 0.
+  source_alloc stays 381.
+```
+
+Repeat-3:
+
+```text
+Run:
+  larson_T16
+  speed profile
+  ownerlocalityfast-rsscap-2 vs ownerlocalityfast-rsscap-2-desc192k
+  repeat-3
+
+ownerlocalityfast-rsscap-2:
+  42.808M ops/s, 1,066,448 KB
+
+ownerlocalityfast-rsscap-2-desc192k:
+  43.679M ops/s, 974,296 KB
+
+Safety:
+  both lanes keep route_invalid/route_miss/route_register_fail/alloc_fail at 0.
+  remote_free_transfer_fail=0.
+  transfer_current=0.
+  source_alloc=381..382.
+```
+
+Decision:
+
+```text
+ownerlocalityfast-rsscap-2-desc192k:
+  promote to current full Larson cross-owner candidate-control.
+  It improves speed over rsscap-2 while cutting another ~92 MiB of peak RSS.
+
+ownerlocalityfast-rsscap-2-desc160k:
+  keep as lower-RSS sibling / boundary evidence.
+  First run is safety clean, but it has not yet had repeat-3.
+
+ownerlocalityfast-rsscap-1/2:
+  keep as stable controls.
+
+rsscap-3/4:
+  still too tight for full 10k Larson.
 ```
 
 ## RandomMixed A/B Fast-Path Plan 2026-06-03
