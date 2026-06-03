@@ -222,9 +222,8 @@ Selected-family state:
     front4k-thindesc-source16k remains selected low-RSS sibling.
 
 Next order:
-  A. selected-family refresh with desc17
-  B. cross-allocator selected/control table cleanup
-  C. pick one next optimization lane:
+  A. cross-allocator selected/control table cleanup
+  B. pick one next optimization lane:
      wide_ws throughput or Larson RSS
 
 Do not yet:
@@ -233,7 +232,54 @@ Do not yet:
   add runtime adaptive profile selection
 ```
 
-Latest selected-family measurement:
+Latest selected-family desc17 refresh:
+
+```text
+Run:
+  win/run_win_hz6_selected_family.ps1 -SelectedFamily -Runs 3
+  output root:
+    docs/benchmarks/windows/paper/hz6_selected_family/
+      selected-family-desc17-refresh/
+
+Selected-family repeat-3 read:
+  mixed_ws / rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k:
+    balanced = 55.504M ops/s, 110780 KB peak, safety clean
+    wide_ws  = 19.978M ops/s, 140236 KB peak, safety clean
+
+  random_mixed / strict + sameownerfast-descavail-noboost-route4k:
+    small  = 45.755M ops/s, 4968 KB peak, safety clean
+    medium = 42.408M ops/s, 4964 KB peak, safety clean
+    mixed  = 41.306M ops/s, 4964 KB peak, safety clean
+
+  larger_sizes / largerlowrss-front8k-sourcerun-desc8k-route8k:
+    speed = 26.404M ops/s, 71040 KB peak, safety clean
+    rss   = 27.178M ops/s, 71012 KB peak, safety clean
+
+  larson_t16_main_10k / speed:
+    desc160k       = 44.754M ops/s, 808488 KB peak, safety clean
+    front4k        = 45.092M ops/s, 716324 KB peak, safety clean
+    thindesc-16k   = 44.609M ops/s, 665704 KB peak, safety clean
+
+Safety:
+  checked selected rows keep:
+    alloc_fail = 0
+    descriptor_exhausted = 0
+    route_register_fail = 0
+    source_block_exhausted = 0
+
+Decision:
+  freeze this as the current paper-facing HZ6 selected-family snapshot.
+  The earlier isolated mixed boundary and larger_sizes snapshots remain useful
+  evidence, but paper-facing selected tables should use this refreshed matrix.
+
+Next:
+  update cross-allocator selected/control tables, then choose one focused
+  optimization target:
+    A. wide_ws throughput while preserving desc17 safety/RSS
+    B. Larson RSS metadata/static-table reduction
+```
+
+Historical selected-family measurement before desc17 refresh:
 
 ```text
 Run:

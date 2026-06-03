@@ -10,13 +10,17 @@ mixed clean-lane update:
   selected-mixed-lowrss is now clean:
     rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k
 
-  repeat-3:
-    balanced 64.117M / 110976 KB
-    wide_ws  21.119M / 140256 KB
+  selected-family refresh repeat-3:
+    balanced 55.504M / 110780 KB
+    wide_ws  19.978M / 140236 KB
     alloc_fail = 0
     descriptor_exhausted = 0
     route_register_fail = 0
     source_block_exhausted = 0
+
+  boundary scan reference:
+    balanced 64.117M / 110976 KB
+    wide_ws  21.119M / 140256 KB
 
   boundary:
     desc16 remains no-go for wide_ws:
@@ -35,19 +39,19 @@ mixed clean-lane update:
 selected-family repeat-3:
   random_mixed:
     clean and stable:
-      small 45.788M / 4964 KB
-      medium 42.895M / 4964 KB
-      mixed 41.541M / 4968 KB
+      small 45.755M / 4968 KB
+      medium 42.408M / 4964 KB
+      mixed 41.306M / 4964 KB
 
   larger_sizes:
     clean:
-      speed 31.899M / 70928 KB
-      rss   32.260M / 70952 KB
+      speed 26.404M / 71040 KB
+      rss   27.178M / 71012 KB
 
   Larson full 10k:
-    desc160k     45.122M / 808484 KB, clean
-    front4k      45.138M / 716324 KB, clean
-    thindesc16k  44.549M / 665712 KB, clean
+    desc160k     44.754M / 808488 KB, clean
+    front4k      45.092M / 716324 KB, clean
+    thindesc16k  44.609M / 665704 KB, clean
 
   mixed balanced / wide_ws:
     descavail-noboost-route4k is fast and very low RSS, but not clean:
@@ -57,8 +61,11 @@ selected-family repeat-3:
 
 next HZ6 attack:
   clean balanced / wide_ws low-RSS lane is now found and selected.
-  next step is selected-family refresh + cross-allocator table cleanup, then
-  choose one focused optimization target:
+  selected-family refresh is done under:
+    docs/benchmarks/windows/paper/hz6_selected_family/
+      selected-family-desc17-refresh/
+  next step is cross-allocator table cleanup, then choose one focused
+  optimization target:
     A. wide_ws throughput while preserving desc17 safety/RSS
     B. Larson RSS metadata/static-table reduction
 
@@ -69,12 +76,11 @@ thindesc selected-family role:
   source16k variant is the selected Larson / owner-locality low-RSS sibling
 
 next order:
-  A. selected-family refresh using desc17 mixed lane
-  B. selected-family / cross-allocator table cleanup
-  C. pick next optimization target from wide_ws throughput or Larson RSS
+  A. selected-family / cross-allocator table cleanup
+  B. pick next optimization target from wide_ws throughput or Larson RSS
 ```
 
-Latest selected-family result:
+Historical selected-family result before desc17 refresh:
 
 ```text
 Larson full 10k repeat-3:

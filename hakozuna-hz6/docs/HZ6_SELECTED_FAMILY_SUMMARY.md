@@ -8,15 +8,19 @@ experiment ledger.
 
 | Family | Selected lane | Median ops/s | Peak KB | Status |
 | --- | --- | ---: | ---: | --- |
-| mixed_ws balanced | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k` | 64.117M | 110,976 | clean selected |
-| mixed_ws wide_ws | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k` | 21.119M | 140,256 | clean selected |
-| random_mixed small | `strict + sameownerfast-descavail-noboost-route4k` | 45.788M | 4,964 | clean selected |
-| random_mixed medium | `strict + sameownerfast-descavail-noboost-route4k` | 42.895M | 4,964 | clean selected |
-| random_mixed mixed | `strict + sameownerfast-descavail-noboost-route4k` | 41.541M | 4,968 | clean selected |
-| mixed_ws larger_sizes speed | `speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k` | 31.899M | 70,928 | clean selected |
-| mixed_ws larger_sizes rss | `speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k` | 32.260M | 70,952 | clean selected |
-| Larson T16 full 10k throughput/RSS | `speed + ownerlocalityfast-rsscap-2-desc160k` | 45.122M | 808,484 | clean selected |
-| Larson T16 full 10k low RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k` | 44.549M | 665,712 | clean selected sibling |
+| mixed_ws balanced | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k` | 55.504M | 110,780 | clean selected |
+| mixed_ws wide_ws | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k` | 19.978M | 140,236 | clean selected |
+| random_mixed small | `strict + sameownerfast-descavail-noboost-route4k` | 45.755M | 4,968 | clean selected |
+| random_mixed medium | `strict + sameownerfast-descavail-noboost-route4k` | 42.408M | 4,964 | clean selected |
+| random_mixed mixed | `strict + sameownerfast-descavail-noboost-route4k` | 41.306M | 4,964 | clean selected |
+| mixed_ws larger_sizes speed | `speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k` | 26.404M | 71,040 | clean selected |
+| mixed_ws larger_sizes rss | `speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k` | 27.178M | 71,012 | clean selected |
+| Larson T16 full 10k throughput/RSS | `speed + ownerlocalityfast-rsscap-2-desc160k` | 44.754M | 808,488 | clean selected |
+| Larson T16 full 10k lower RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k` | 45.092M | 716,324 | clean selected sibling |
+| Larson T16 full 10k lowest RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k` | 44.609M | 665,704 | clean selected sibling |
+
+Source:
+- `docs/benchmarks/windows/paper/hz6_selected_family/selected-family-desc17-refresh/`
 
 ## Evidence Rows
 
@@ -42,6 +46,8 @@ HZ6 is now a profile-family allocator:
 
   larger_sizes:
     selected largerlowrss lane is clean and relatively low-RSS.
+    The latest selected-family refresh is slower than the earlier isolated
+    larger_sizes snapshot, so use the refresh values in paper-facing tables.
 
   Larson cross-owner:
     full-10k now has clean selected rows,
@@ -51,18 +57,13 @@ HZ6 is now a profile-family allocator:
 ## Next Attack Order
 
 ```text
-1. Re-run the selected-family matrix with the desc17 mixed lane.
-   Purpose:
-     refresh the top-level selected-family snapshot after the desc17 promotion.
-
-2. Build a compact cross-allocator comparison table using the selected rows.
+1. Build a compact cross-allocator comparison table using the selected rows.
    Purpose:
      separate clean HZ6 rows from pressure/control rows before paper work.
 
-3. Attack one of two remaining weaknesses:
+2. Attack one of two remaining weaknesses:
    A. wide_ws throughput:
       keep desc17 safety/RSS and look for hot-path/profile improvements.
    B. Larson RSS:
       reduce metadata/static table cost without losing full-10k completion.
 ```
-

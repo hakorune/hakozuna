@@ -62,20 +62,22 @@ strong.
 Source:
 - [HZ6 Selected Family Summary](HZ6_SELECTED_FAMILY_SUMMARY.md)
 - [HZ6 Lane Guide](HZ6_LANE_GUIDE.md)
+- `../../docs/benchmarks/windows/paper/hz6_selected_family/selected-family-desc17-refresh/`
 
 | Profile family | Selected HZ6 lane | Median ops/s | Median peak_kb | Read |
 | --- | --- | ---: | ---: | --- |
-| balanced clean | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k` | 64.117M | 110,976 | current safety-clean balanced selected row |
-| wide_ws clean | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k` | 21.119M | 140,256 | current safety-clean wide_ws selected row |
+| balanced clean | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k` | 55.504M | 110,780 | current safety-clean balanced selected row |
+| wide_ws clean | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k` | 19.978M | 140,236 | current safety-clean wide_ws selected row |
 | balanced pressure | `rss + descavail-noboost-route4k` | 75.467M | 17,376 | pressure evidence only; not safety-clean because allocation failures are large |
 | wide_ws pressure | `rss + descavail-noboost-route4k` | 57.144M | 12,524 | pressure evidence only; not safety-clean because allocation failures are large |
-| random_mixed small | `strict + sameownerfast-descavail-noboost-route4k` | 46.128M | 5,432 | current same-owner fast winner |
-| random_mixed medium | `strict + sameownerfast-descavail-noboost-route4k` | 42.299M | 5,040 | current same-owner fast winner |
-| random_mixed mixed | `strict + sameownerfast-descavail-noboost-route4k` | 41.352M | 5,072 | current same-owner fast winner |
-| larger_sizes rss | `speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k` | 34.286M | 72,836 | current larger_sizes RSS winner |
-| larger_sizes speed | `speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k` | 35.353M | 72,792 | current larger_sizes speed winner |
-| Larson T16 cross-owner full 10k | `speed + ownerlocalityfast-rsscap-2-desc160k` | 43.721M | 928,228 | current cross-owner throughput/RSS balance lane; appcap-like throughput with sub-1GB peak |
-| Larson T16 cross-owner lower RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k` | 42.191M | 863,772 | lower-RSS sibling; about -3.5% throughput for about 64MB lower peak |
+| random_mixed small | `strict + sameownerfast-descavail-noboost-route4k` | 45.755M | 4,968 | current same-owner selected row |
+| random_mixed medium | `strict + sameownerfast-descavail-noboost-route4k` | 42.408M | 4,964 | current same-owner selected row |
+| random_mixed mixed | `strict + sameownerfast-descavail-noboost-route4k` | 41.306M | 4,964 | current same-owner selected row |
+| larger_sizes speed | `speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k` | 26.404M | 71,040 | current larger_sizes speed selected row |
+| larger_sizes rss | `speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k` | 27.178M | 71,012 | current larger_sizes RSS selected row |
+| Larson T16 cross-owner full 10k | `speed + ownerlocalityfast-rsscap-2-desc160k` | 44.754M | 808,488 | current cross-owner throughput/RSS balance lane |
+| Larson T16 cross-owner lower RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k` | 45.092M | 716,324 | lower-RSS sibling with similar throughput |
+| Larson T16 cross-owner lowest RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k` | 44.609M | 665,704 | lowest-RSS selected sibling |
 | Larson T16 cross-owner full 10k near-capacity sibling | `speed + ownerlocalityfast-rsscap-2-desc192k` | 43.679M | 974,296 | stable sibling with more descriptor headroom |
 
 ## Readout
@@ -88,13 +90,14 @@ It is a family allocator:
   larger_sizes -> front retention plus low-RSS large handling
 
 The weakest family remains Larson-style cross-owner stress, but the failure mode
-has changed. HZ6 now has two useful full-10k lanes:
+has changed. HZ6 now has three useful full-10k lanes:
 
   throughput/RSS balance:
     `ownerlocalityfast-rsscap-2-desc160k`
 
-  lower RSS sibling:
+  lower RSS siblings:
     `ownerlocalityfast-rsscap-2-desc160k-front4k`
+    `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k`
 
 The remaining Larson RSS is dominated by descriptor / route / source-block
 metadata tables, not by payload. The next likely HZ6 attack is metadata layout

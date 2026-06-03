@@ -11,7 +11,7 @@ For the short selected-row readout, see
 
 | Profile family | Selected HZ6 profile | Selected capacity lane | Why this lane now |
 | --- | --- | --- | --- |
-| balanced / wide_ws clean low-RSS | `rss` | `mixedclean-front16k-sourcerun-desc17k-source2k-route17k` | Clean repeat-3 replacement for the old `descavail` pressure row: balanced `64.117M / 110976 KB`, wide_ws `21.119M / 140256 KB`, with `alloc_fail = 0`, `descriptor_exhausted = 0`, `route_register_fail = 0`, and `source_block_exhausted = 0`. |
+| balanced / wide_ws clean low-RSS | `rss` | `mixedclean-front16k-sourcerun-desc17k-source2k-route17k` | Clean repeat-3 replacement for the old `descavail` pressure row. Latest selected-family refresh: balanced `55.504M / 110780 KB`, wide_ws `19.978M / 140236 KB`, with `alloc_fail = 0`, `descriptor_exhausted = 0`, `route_register_fail = 0`, and `source_block_exhausted = 0`. |
 | balanced / wide_ws pressure evidence | `rss` | `descavail-noboost-route4k` | Very fast and very low-RSS, but not safety-clean for paper/default claims: it completes by hitting large `alloc_fail` / source-block exhaustion counts. Keep it as pressure evidence only. |
 | random_mixed same-owner speed | `strict` | `sameownerfast-descavail-noboost-route4k` | Selected same-owner fast lane: `HZ6_SAME_OWNER_FAST_L1` + descriptor availability, promoted from the A-ladder. |
 | larger_sizes RSS/speed | `speed` or `rss` | `largerlowrss-front8k-sourcerun-desc8k-route8k` | Best larger_sizes lane; needs larger front retention, not more descriptor-failure cleanup. |
@@ -782,7 +782,9 @@ mixedclean-front16k-sourcerun-desc17k-source2k-route17k:
   Selected mixed_ws clean low-RSS lane: frontcache 16K, descriptor 17K,
   source-block 2K, route 17K, and SourceRunReuse-L1. Repeat-3 balanced and
   wide_ws are safety-clean, with the lowest RSS among the clean boundary
-  lanes: balanced `64.117M / 110976 KB`, wide_ws `21.119M / 140256 KB`.
+  lanes. Boundary scan: balanced `64.117M / 110976 KB`, wide_ws
+  `21.119M / 140256 KB`. Selected-family refresh:
+  balanced `55.504M / 110780 KB`, wide_ws `19.978M / 140236 KB`.
 
 mixedclean-front16k-sourcerun-desc18k-source2k-route18k:
   Clean boundary control above the selected desc17 lane. Repeat-3 is
