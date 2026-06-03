@@ -31,6 +31,10 @@ typedef struct Hz6SharedRouteDirectoryEntry {
 static Hz6SharedRouteDirectoryEntry g_hz6_shared_route_directory
     [HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY];
 
+size_t hz6_allocator_shared_route_directory_bytes(void) {
+  return sizeof(g_hz6_shared_route_directory);
+}
+
 static void hz6_shared_route_directory_register(Hz6Allocator* allocator,
                                                 void* base,
                                                 uint16_t front_id,
@@ -110,6 +114,10 @@ static void hz6_shared_route_directory_unregister(Hz6Allocator* allocator,
     return;
   }
 }
+#else
+size_t hz6_allocator_shared_route_directory_bytes(void) {
+  return 0;
+}
 #endif
 
 #if HZ6_OWNER_LOCALITY_INDEX_L1
@@ -123,6 +131,10 @@ typedef struct Hz6OwnerLocalityIndexEntry {
 
 static Hz6OwnerLocalityIndexEntry g_hz6_owner_locality_index
     [HZ6_OWNER_LOCALITY_INDEX_CAPACITY];
+
+size_t hz6_allocator_owner_locality_index_bytes(void) {
+  return sizeof(g_hz6_owner_locality_index);
+}
 
 static void hz6_owner_locality_index_register(Hz6Allocator* allocator,
                                               void* base,
@@ -237,6 +249,10 @@ static void hz6_owner_locality_index_unregister(Hz6Allocator* allocator,
 #endif
     return;
   }
+}
+#else
+size_t hz6_allocator_owner_locality_index_bytes(void) {
+  return 0;
 }
 #endif
 

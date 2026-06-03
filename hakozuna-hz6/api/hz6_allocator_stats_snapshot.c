@@ -1,6 +1,109 @@
 #include "hz6_allocator.h"
 
+#if HZ6_DIAGNOSTIC_PROBES
+static void hz6_stats_snapshot_memory_attribution(
+    const Hz6Allocator* allocator,
+    Hz6StatsSnapshot* snapshot) {
+  if (!allocator || !snapshot) {
+    return;
+  }
+
+  snapshot->memory_descriptor_table_bytes =
+      sizeof(allocator->descriptors);
+  snapshot->memory_route_table_bytes =
+      sizeof(allocator->route_entries);
+  snapshot->memory_source_block_table_bytes =
+      sizeof(allocator->source_blocks);
+  snapshot->memory_frontcache_table_bytes =
+      sizeof(allocator->frontcache_entries) +
+      sizeof(allocator->frontcache_bins);
+  snapshot->memory_transfer_table_bytes =
+      sizeof(allocator->transfer_objects);
+  snapshot->memory_ownerlocality_index_bytes =
+      hz6_allocator_shared_route_directory_bytes() +
+      hz6_allocator_owner_locality_index_bytes();
+
+  size_t active_descriptors = 0;
+  size_t local_free_descriptors = 0;
+  size_t transfer_free_descriptors = 0;
+  size_t remote_pending_descriptors = 0;
+  size_t dead_with_ptr_descriptors = 0;
+  for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
+    const Hz6ObjectDescriptor* descriptor = &allocator->descriptors[i];
+    switch (descriptor->state) {
+      case HZ6_STATE_ACTIVE:
+        ++active_descriptors;
+        break;
+      case HZ6_STATE_LOCAL_FREE:
+        ++local_free_descriptors;
+        break;
+      case HZ6_STATE_TRANSFER_FREE:
+        ++transfer_free_descriptors;
+        break;
+      case HZ6_STATE_REMOTE_PENDING:
+        ++remote_pending_descriptors;
+        break;
+      case HZ6_STATE_DEAD:
+        if (descriptor->ptr) {
+          ++dead_with_ptr_descriptors;
+        }
+        break;
+      default:
+        break;
+    }
+  }
+  snapshot->memory_active_descriptors = active_descriptors;
+  snapshot->memory_local_free_descriptors = local_free_descriptors;
+  snapshot->memory_transfer_free_descriptors = transfer_free_descriptors;
+  snapshot->memory_remote_pending_descriptors = remote_pending_descriptors;
+  snapshot->memory_dead_with_ptr_descriptors = dead_with_ptr_descriptors;
+
+  size_t active_source_blocks = 0;
+  size_t registered_source_blocks = 0;
+  size_t ref_nonzero_source_blocks = 0;
+  size_t source_block_payload_bytes = 0;
+  for (size_t i = 0; i < HZ6_SOURCE_BLOCK_CAPACITY; ++i) {
+    const Hz6SourceBlock* block = &allocator->source_blocks[i];
+    if (!block->active) {
+      continue;
+    }
+    ++active_source_blocks;
+    source_block_payload_bytes += block->bytes;
+    if (block->route_registered) {
+      ++registered_source_blocks;
+    }
+    if (block->ref_count != 0) {
+      ++ref_nonzero_source_blocks;
+    }
+  }
+  snapshot->memory_active_source_blocks = active_source_blocks;
+  snapshot->memory_registered_source_blocks = registered_source_blocks;
+  snapshot->memory_ref_nonzero_source_blocks = ref_nonzero_source_blocks;
+  snapshot->memory_source_block_payload_bytes = source_block_payload_bytes;
+  snapshot->memory_source_block_committed_estimate = source_block_payload_bytes;
+
+  size_t frontcache_total = 0;
+  size_t frontcache_largest_bin = 0;
+  for (size_t i = 0; i < HZ6_FRONT_CACHE_CLASS_COUNT; ++i) {
+    size_t count = allocator->frontcache_bins[i].count;
+    frontcache_total += count;
+    if (count > frontcache_largest_bin) {
+      frontcache_largest_bin = count;
+    }
+  }
+  snapshot->memory_frontcache_total = frontcache_total;
+  snapshot->memory_frontcache_largest_bin = frontcache_largest_bin;
+}
+#endif
+
 Hz6StatsSnapshot hz6_stats_snapshot(const Hz6Allocator* allocator) {
   Hz6StatsSnapshot empty = {0};
-  return allocator ? allocator->stats : empty;
+  if (!allocator) {
+    return empty;
+  }
+  Hz6StatsSnapshot snapshot = allocator->stats;
+#if HZ6_DIAGNOSTIC_PROBES
+  hz6_stats_snapshot_memory_attribution(allocator, &snapshot);
+#endif
+  return snapshot;
 }

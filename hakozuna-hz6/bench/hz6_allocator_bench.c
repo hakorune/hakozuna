@@ -343,6 +343,49 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.large_span_source_alloc);
 #if HZ6_DIAGNOSTIC_PROBES
   print_front_prefill_stats(allocator);
+  printf("[HZ6_MEMORY_ATTR] "
+         "descriptor_table_bytes=%zu "
+         "route_table_bytes=%zu "
+         "source_block_table_bytes=%zu "
+         "frontcache_table_bytes=%zu "
+         "transfer_table_bytes=%zu "
+         "ownerlocality_index_bytes=%zu "
+         "active_descriptors=%zu "
+         "local_free_descriptors=%zu "
+         "transfer_free_descriptors=%zu "
+         "remote_pending_descriptors=%zu "
+         "dead_with_ptr_descriptors=%zu "
+         "active_source_blocks=%zu "
+         "registered_source_blocks=%zu "
+         "ref_nonzero_source_blocks=%zu "
+         "source_block_payload_bytes=%zu "
+         "source_block_committed_estimate=%zu "
+         "route_active_current=%zu "
+         "route_active_max=%zu "
+         "route_tombstone_current=%zu "
+         "frontcache_total=%zu "
+         "frontcache_largest_bin=%zu\n",
+         stats.memory_descriptor_table_bytes,
+         stats.memory_route_table_bytes,
+         stats.memory_source_block_table_bytes,
+         stats.memory_frontcache_table_bytes,
+         stats.memory_transfer_table_bytes,
+         stats.memory_ownerlocality_index_bytes,
+         stats.memory_active_descriptors,
+         stats.memory_local_free_descriptors,
+         stats.memory_transfer_free_descriptors,
+         stats.memory_remote_pending_descriptors,
+         stats.memory_dead_with_ptr_descriptors,
+         stats.memory_active_source_blocks,
+         stats.memory_registered_source_blocks,
+         stats.memory_ref_nonzero_source_blocks,
+         stats.memory_source_block_payload_bytes,
+         stats.memory_source_block_committed_estimate,
+         stats.route_active_current,
+         stats.route_active_max,
+         stats.route_tombstone_current,
+         stats.memory_frontcache_total,
+         stats.memory_frontcache_largest_bin);
 #endif
 }
 

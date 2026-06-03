@@ -589,17 +589,32 @@ Do not:
   object floor.
 ```
 
-Next design order:
+Completed design order:
 
 ```text
-Recommended:
-  D first:
-    freeze desc160k as the current selected Larson cross-owner lane.
+Done:
+  D:
+    desc160k is frozen as the current selected Larson cross-owner lane.
 
-  Then E-lite:
-    add LarsonMemoryAttribution-L1 as diagnostic-only.
+  E-lite:
+    LarsonMemoryAttribution-L1 was added as diagnostic-only.
 
-  Then C if attribution supports it:
+Result:
+  ThinDescriptor is not the only next lever. The desc160k RSS is dominated by
+  per-worker static backing tables across descriptor, route, frontcache, and
+  source-block metadata.
+
+Next:
+  static backing-table trim controls before changing descriptor layout.
+
+  Candidate axes:
+    route table trim with desc160k held fixed.
+    source-block table trim with desc160k held fixed.
+    frontcache table trim with desc160k held fixed.
+    owner-locality/shared-directory trim is lower priority after corrected
+    attribution because it is global, not per-worker.
+
+  Then C if static-table trims are insufficient:
     ThinDescriptor / hot-cold descriptor split.
 
   Then B only if C is insufficient:
@@ -649,7 +664,7 @@ Report route/frontcache:
   frontcache_largest_bin
 
 Decision after attribution:
-  descriptor table is dominant:
+  descriptor table is dominant alone:
     proceed to ThinDescriptor-L1.
 
   source payload / committed source blocks are dominant:
@@ -657,6 +672,62 @@ Decision after attribution:
 
   route / ownerlocality / frontcache static tables dominate:
     trim those backing tables before touching descriptor layout.
+```
+
+LarsonMemoryAttribution-L1 read:
+
+```text
+Run:
+  speed + ownerlocalityfast-rsscap-2-desc160k
+  Larson T=16 / chunks=10000
+  diagnostic probes only
+
+Result:
+  throughput:
+    44.134M ops/s
+
+  safety:
+    route_invalid = 0
+    route_miss = 0
+    route_register_fail = 0
+    remote_free_transfer_fail = 0
+    route_rehome_fail = 0
+    lifecycle_foreign_free_invalid = 0
+
+  static table bytes across worker allocators:
+    descriptor_table_bytes    = 209715200
+    route_table_bytes         = 201326592
+    frontcache_table_bytes    = 117446656
+    source_block_table_bytes  = 77594624
+    transfer_table_bytes      = 1572864
+
+  global static bytes:
+    ownerlocality_index_bytes = 18874368   # shared directory + owner-locality
+
+  dynamic/final state:
+    source_block_payload_bytes = 24969216
+    active_source_blocks       = 381
+    registered_source_blocks   = 381
+    ref_nonzero_source_blocks  = 381
+    active_descriptors         = 4806
+    local_free_descriptors     = 1250
+    route_active_current       = 86437
+    route_tombstone_current    = 0
+    frontcache_total           = 6056
+    frontcache_largest_bin     = 187
+
+Interpretation:
+  The successful desc160k row is not payload-heavy at final snapshot. RSS is
+  dominated by per-worker static metadata capacity. Descriptor compression can
+  help, but route, frontcache, and source-block table sizing have equal or
+  better immediate ROI. The owner-locality/shared directory is still measurable,
+  but it is global and much smaller than the per-worker tables after corrected
+  aggregation.
+
+Next attack:
+  add one-axis static-table trim controls around the selected desc160k lane.
+  Keep descriptor capacity at 160k first so the live-object floor is not mixed
+  with route/source/frontcache table trimming.
 ```
 
 ThinDescriptor-L1 sketch:

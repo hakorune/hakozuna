@@ -119,6 +119,10 @@ size_t hz6_allocator_transfer_shard_capacity_at(
     const Hz6Allocator* allocator,
     size_t shard_index);
 
+size_t hz6_allocator_shared_route_directory_bytes(void);
+
+size_t hz6_allocator_owner_locality_index_bytes(void);
+
 int hz6_allocator_transfer_push(Hz6Allocator* allocator,
                                 Hz6TransferObject object);
 

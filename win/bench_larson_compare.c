@@ -696,6 +696,54 @@ int main(int argc, char** argv) {
             hz6_stats.source_block_probe_max =
                 tds[t].hz6_stats_after.source_block_probe_max;
         }
+        hz6_stats.memory_descriptor_table_bytes +=
+            tds[t].hz6_stats_after.memory_descriptor_table_bytes;
+        hz6_stats.memory_route_table_bytes +=
+            tds[t].hz6_stats_after.memory_route_table_bytes;
+        hz6_stats.memory_source_block_table_bytes +=
+            tds[t].hz6_stats_after.memory_source_block_table_bytes;
+        hz6_stats.memory_frontcache_table_bytes +=
+            tds[t].hz6_stats_after.memory_frontcache_table_bytes;
+        hz6_stats.memory_transfer_table_bytes +=
+            tds[t].hz6_stats_after.memory_transfer_table_bytes;
+        if (tds[t].hz6_stats_after.memory_ownerlocality_index_bytes >
+            hz6_stats.memory_ownerlocality_index_bytes) {
+            hz6_stats.memory_ownerlocality_index_bytes =
+                tds[t].hz6_stats_after.memory_ownerlocality_index_bytes;
+        }
+        hz6_stats.memory_active_descriptors +=
+            tds[t].hz6_stats_after.memory_active_descriptors;
+        hz6_stats.memory_local_free_descriptors +=
+            tds[t].hz6_stats_after.memory_local_free_descriptors;
+        hz6_stats.memory_transfer_free_descriptors +=
+            tds[t].hz6_stats_after.memory_transfer_free_descriptors;
+        hz6_stats.memory_remote_pending_descriptors +=
+            tds[t].hz6_stats_after.memory_remote_pending_descriptors;
+        hz6_stats.memory_dead_with_ptr_descriptors +=
+            tds[t].hz6_stats_after.memory_dead_with_ptr_descriptors;
+        hz6_stats.memory_active_source_blocks +=
+            tds[t].hz6_stats_after.memory_active_source_blocks;
+        hz6_stats.memory_registered_source_blocks +=
+            tds[t].hz6_stats_after.memory_registered_source_blocks;
+        hz6_stats.memory_ref_nonzero_source_blocks +=
+            tds[t].hz6_stats_after.memory_ref_nonzero_source_blocks;
+        hz6_stats.memory_source_block_payload_bytes +=
+            tds[t].hz6_stats_after.memory_source_block_payload_bytes;
+        hz6_stats.memory_source_block_committed_estimate +=
+            tds[t].hz6_stats_after.memory_source_block_committed_estimate;
+        hz6_stats.route_active_current +=
+            tds[t].hz6_stats_after.route_active_current;
+        hz6_stats.route_active_max +=
+            tds[t].hz6_stats_after.route_active_max;
+        hz6_stats.route_tombstone_current +=
+            tds[t].hz6_stats_after.route_tombstone_current;
+        hz6_stats.memory_frontcache_total +=
+            tds[t].hz6_stats_after.memory_frontcache_total;
+        if (tds[t].hz6_stats_after.memory_frontcache_largest_bin >
+            hz6_stats.memory_frontcache_largest_bin) {
+            hz6_stats.memory_frontcache_largest_bin =
+                tds[t].hz6_stats_after.memory_frontcache_largest_bin;
+        }
         hz6_stats.large_span_central_push +=
             tds[t].hz6_stats_after.large_span_central_push;
         hz6_stats.large_span_central_pop +=
@@ -906,6 +954,49 @@ int main(int argc, char** argv) {
            hz6_stats.large_span_central_pop,
            hz6_stats.large_span_source_alloc);
 #if defined(HZ_BENCH_USE_HZ6) && HZ6_DIAGNOSTIC_PROBES
+    printf("[HZ6_MEMORY_ATTR] "
+           "descriptor_table_bytes=%zu "
+           "route_table_bytes=%zu "
+           "source_block_table_bytes=%zu "
+           "frontcache_table_bytes=%zu "
+           "transfer_table_bytes=%zu "
+           "ownerlocality_index_bytes=%zu "
+           "active_descriptors=%zu "
+           "local_free_descriptors=%zu "
+           "transfer_free_descriptors=%zu "
+           "remote_pending_descriptors=%zu "
+           "dead_with_ptr_descriptors=%zu "
+           "active_source_blocks=%zu "
+           "registered_source_blocks=%zu "
+           "ref_nonzero_source_blocks=%zu "
+           "source_block_payload_bytes=%zu "
+           "source_block_committed_estimate=%zu "
+           "route_active_current=%zu "
+           "route_active_max=%zu "
+           "route_tombstone_current=%zu "
+           "frontcache_total=%zu "
+           "frontcache_largest_bin=%zu\n",
+           hz6_stats.memory_descriptor_table_bytes,
+           hz6_stats.memory_route_table_bytes,
+           hz6_stats.memory_source_block_table_bytes,
+           hz6_stats.memory_frontcache_table_bytes,
+           hz6_stats.memory_transfer_table_bytes,
+           hz6_stats.memory_ownerlocality_index_bytes,
+           hz6_stats.memory_active_descriptors,
+           hz6_stats.memory_local_free_descriptors,
+           hz6_stats.memory_transfer_free_descriptors,
+           hz6_stats.memory_remote_pending_descriptors,
+           hz6_stats.memory_dead_with_ptr_descriptors,
+           hz6_stats.memory_active_source_blocks,
+           hz6_stats.memory_registered_source_blocks,
+           hz6_stats.memory_ref_nonzero_source_blocks,
+           hz6_stats.memory_source_block_payload_bytes,
+           hz6_stats.memory_source_block_committed_estimate,
+           hz6_stats.route_active_current,
+           hz6_stats.route_active_max,
+           hz6_stats.route_tombstone_current,
+           hz6_stats.memory_frontcache_total,
+           hz6_stats.memory_frontcache_largest_bin);
     print_hz6_front_alloc_paths(&hz6_stats);
     print_hz6_front_prefill_paths(&hz6_stats);
     print_hz6_frontcache_class_diag(&hz6_stats);
