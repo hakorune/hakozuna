@@ -562,6 +562,133 @@ Decision:
   a smaller descriptor capacity flag.
 ```
 
+Design review decision:
+
+```text
+Accept the current interpretation:
+  static descriptor capacity trim is closed.
+
+Selected:
+  speed + ownerlocalityfast-rsscap-2-desc160k
+
+Role:
+  HZ6 current cross-owner full-10k candidate-control.
+  HZ6-internal low-RSS / high-throughput selected lane for Larson
+  cross-owner stress, not a universal production default.
+
+Boundary:
+  ownerlocalityfast-rsscap-2-desc144k
+
+Role:
+  no-go / lower-bound evidence.
+  It demonstrates the one-live-object-one-descriptor floor for this workload.
+
+Do not:
+  keep slicing static descriptor flags such as desc152k / desc148k.
+  The ROI is low because T=16 * chunks=10000 is already around the 160k live
+  object floor.
+```
+
+Next design order:
+
+```text
+Recommended:
+  D first:
+    freeze desc160k as the current selected Larson cross-owner lane.
+
+  Then E-lite:
+    add LarsonMemoryAttribution-L1 as diagnostic-only.
+
+  Then C if attribution supports it:
+    ThinDescriptor / hot-cold descriptor split.
+
+  Then B only if C is insufficient:
+    compact handle table / live descriptor indirection.
+
+Lower priority:
+  A descriptor lifecycle compression for cold/free/cached objects.
+  It is useful for other rows, but this Larson full-10k row is dominated by
+  ACTIVE live descriptors, not cached/free descriptors.
+```
+
+LarsonMemoryAttribution-L1 scope:
+
+```text
+Diagnostic-only. Do not mix into production benchmark lanes.
+
+Purpose:
+  Explain the 928MB desc160k peak before changing descriptor layout.
+
+Report static capacity bytes:
+  descriptor_table_bytes
+  route_table_bytes
+  source_block_table_bytes
+  frontcache_table_bytes
+  transfer_table_bytes
+  ownerlocality_index_bytes
+
+Report dynamic state:
+  active_descriptors
+  local_free_descriptors
+  transfer_free_descriptors
+  remote_pending_descriptors
+  dead_with_ptr_descriptors
+
+Report source memory:
+  active_source_blocks
+  registered_source_blocks
+  ref_nonzero_source_blocks
+  source_block_payload_bytes
+  source_block_committed_estimate
+
+Report route/frontcache:
+  route_active_current
+  route_active_max
+  route_tombstone_current if available
+  frontcache_total
+  frontcache_largest_bin
+
+Decision after attribution:
+  descriptor table is dominant:
+    proceed to ThinDescriptor-L1.
+
+  source payload / committed source blocks are dominant:
+    work on SourceBlock/RSS policy instead of descriptor compression.
+
+  route / ownerlocality / frontcache static tables dominate:
+    trim those backing tables before touching descriptor layout.
+```
+
+ThinDescriptor-L1 sketch:
+
+```text
+Goal:
+  reduce bytes per live object without changing route safety semantics.
+
+Keep:
+  one live object = one stable descriptor core.
+  route VALID / INVALID / MISS contract.
+  generation check.
+  state transition.
+  owner token.
+  source block lifetime/ref safety.
+
+Move to SourceBlock/cold metadata where possible:
+  source_ptr
+  source_bytes
+  source_kind
+  source_release
+  run geometry
+  block bytes
+  slot bytes
+
+No-go:
+  INVALID becomes MISS.
+  owned-looking invalid falls back.
+  source block releases while a live core still references it.
+  route result becomes ambiguous between descriptor pointer and handle.
+```
+
 ## RandomMixed A/B Fast-Path Plan 2026-06-03
 
 ```text
