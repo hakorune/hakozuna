@@ -3,6 +3,21 @@
 HZ6 is now in active Windows/Linux implementation and benchmarking. HZ5 Linux
 remains profile-stabilized; new HZ5 work should not blur the HZ6 contract.
 
+Latest HZ6 selected-family decision:
+
+```text
+thindesc broad default:
+  no
+
+thindesc selected-family role:
+  yes, Larson / owner-locality lowest-RSS sibling candidate
+
+next order:
+  A. selected-family runner/docs cleanup
+  C. thindesc Larson full 10k repeat-3
+  B. ownerlocality + largerlowrss/source-run retention exploration
+```
+
 ## HZ6 Lane Dashboard
 
 Canonical lane guide:

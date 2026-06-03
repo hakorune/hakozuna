@@ -18,6 +18,69 @@ which?" before running or comparing benchmarks.
 For a cross-allocator side-by-side summary using past data only, see
 [`HZ6_CROSS_ALLOCATOR_COMPARISON.md`](HZ6_CROSS_ALLOCATOR_COMPARISON.md).
 
+## Selected-Family Runner Presets
+
+Use `win/run_win_hz6_selected_family.ps1` when the goal is to measure HZ6 as a
+profile family instead of opening another broad capacity sweep. The wrapper
+delegates to `win/run_win_hz6_capacity_matrix.ps1` and keeps selected lanes
+separate by output subdirectory.
+
+```powershell
+.\win\run_win_hz6_selected_family.ps1 -ListPresets
+```
+
+```powershell
+# Paper/development selected-family slice.
+.\win\run_win_hz6_selected_family.ps1 `
+  -SelectedFamily `
+  -Runs 3 `
+  -TimeoutSeconds 240 `
+  -ContinueOnFailure
+```
+
+```powershell
+# Larson full-10k selected lane plus front4k / thindesc siblings.
+.\win\run_win_hz6_selected_family.ps1 `
+  -LarsonCrossOwnerSelected `
+  -Runs 3 `
+  -TimeoutSeconds 240 `
+  -ContinueOnFailure
+```
+
+```powershell
+# Narrow lowest-RSS sibling check: front4k versus thindesc.
+.\win\run_win_hz6_selected_family.ps1 `
+  -LarsonCrossOwnerLowestRss `
+  -Runs 3 `
+  -TimeoutSeconds 240 `
+  -ContinueOnFailure
+```
+
+Preset intent:
+
+```text
+selected-mixed-lowrss:
+  mixed_ws balanced / wide_ws
+  rss + descavail-noboost-route4k
+
+selected-random-sameowner:
+  random_mixed small / medium / mixed
+  strict + sameownerfast-descavail-noboost-route4k
+
+selected-larger-lowrss:
+  mixed_ws larger_sizes
+  speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k
+
+larson-cross-owner-selected:
+  larson_t16_main_10k
+  speed + ownerlocalityfast-rsscap-2-desc160k
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc
+
+selected-family-guard:
+  short mixed_ws smoke/control guard before a longer selected-family run
+```
+
 ```text
 Windows profile family:
   balanced / wide_ws low-RSS speed:

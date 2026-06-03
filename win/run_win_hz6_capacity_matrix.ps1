@@ -415,6 +415,8 @@ foreach ($family in $selectedFamilies) {
             $larsonProfiles += @{ Name = "larson_T$threads"; Args = @("10", "8", "1024", "10000", "1", "12345", [string]$threads, "0"); Note = "Larson stress T=$threads, main-warmup, chunks=10000" }
         }
         $larsonProfiles += @(
+            @{ Name = "larson_t16_main_10k"; Args = @("10", "8", "1024", "10000", "1", "12345", "16", "0"); Note = "Larson T=16 cross-owner main-warmup, chunks=10000" },
+            @{ Name = "larson_t16_worker_10k"; Args = @("10", "8", "1024", "10000", "1", "12345", "16", "1"); Note = "Larson T=16 same-owner worker-warmup, chunks=10000" },
             @{ Name = "larson_t16_main_1k"; Args = @("1", "8", "1024", "1000", "1", "12345", "16", "0"); Note = "Larson T=16 cross-owner main-warmup, chunks=1000" },
             @{ Name = "larson_t16_worker_1k"; Args = @("1", "8", "1024", "1000", "1", "12345", "16", "1"); Note = "Larson T=16 same-owner worker-warmup, chunks=1000" },
             @{ Name = "larson_t16_main_4k"; Args = @("1", "8", "1024", "4000", "1", "12345", "16", "0"); Note = "Larson T=16 cross-owner main-warmup, chunks=4000" },

@@ -14,6 +14,26 @@ selected lower-RSS sibling and treat
 lowest-RSS sibling candidate after the post-pack repeat-3. It is still not a
 universal default; use it where peak RSS is the priority.
 
+Latest design freeze:
+
+```text
+ThinDescriptor-L1:
+  do not promote to broad default.
+  keep as Larson / owner-locality lowest-RSS sibling candidate.
+  require full 10k repeat/full-row before paper-facing claim.
+
+Next order:
+  A. selected-family / profile selector runner and docs cleanup
+  C. thindesc Larson full 10k repeat-3
+  B. then consider bringing largerlowrss/source-run retention into
+     owner-locality Larson lanes
+
+Do not yet:
+  make thindesc broad default
+  add another metadata packing pass before the selected-family runner is clear
+  introduce runtime adaptive profile selection
+```
+
 ## Current Direction Freeze
 
 ```text
