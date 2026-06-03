@@ -7168,3 +7168,58 @@ Decision:
   KEEP front4k-thindesc as the selected lowest-RSS sibling candidate.
   It is still not a universal default; use it where peak RSS is the priority.
 ```
+
+ThinDescriptor broad smoke:
+
+```text
+Run:
+  mixed_ws
+  profiles:
+    speed, rss
+  benchmark profiles:
+    balanced, wide_ws, larger_sizes
+  capacity lanes:
+    ownerlocalityfast-rsscap-2-desc160k-front4k
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc
+    descavail-noboost-route4k
+    largerlowrss-front8k-sourcerun-desc8k-route8k
+  runs = 1
+
+Balanced:
+  speed front4k:
+    44.434M ops/s, 292748 KB
+  speed front4k-thindesc:
+    44.554M ops/s, 273012 KB
+  rss descavail-noboost-route4k:
+    75.640M ops/s, 17360 KB
+  rss largerlowrss-front8k-sourcerun-desc8k-route8k:
+    79.115M ops/s, 97036 KB
+
+Wide_ws:
+  speed front4k:
+    9.113M ops/s, 315604 KB
+  speed front4k-thindesc:
+    9.115M ops/s, 294784 KB
+  rss descavail-noboost-route4k:
+    55.840M ops/s, 12520 KB
+
+Larger_sizes:
+  speed front4k:
+    25.398M ops/s, 177820 KB
+  speed front4k-thindesc:
+    27.221M ops/s, 168088 KB
+  speed largerlowrss-front8k-sourcerun-desc8k-route8k:
+    26.932M ops/s, 70884 KB
+  rss largerlowrss-front8k-sourcerun-desc8k-route8k:
+    33.798M ops/s, 71008 KB
+
+Read:
+  thindesc stays safety-clean and generally reduces RSS versus front4k.
+  thindesc is not the mixed_ws broad default because existing selected lanes
+  remain stronger for balanced / wide_ws / larger_sizes.
+
+Decision:
+  KEEP thindesc as a Larson/owner-locality lowest-RSS sibling candidate.
+  Do not promote thindesc to the mixed_ws default lane.
+  Keep the existing mixed_ws recommendations in HZ6_LANE_GUIDE.md.
+```
