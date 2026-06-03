@@ -226,6 +226,10 @@ static void print_stats(const Hz6Allocator* allocator) {
          "descgov_detached_max=%zu "
          "source_run_reuse_route_fail=%zu "
          "source_run_reuse_prepare_fail=%zu "
+         "source_block_fail_active_max=%zu "
+         "source_block_fail_registered_max=%zu "
+         "source_block_fail_ref_nonzero_max=%zu "
+         "source_block_fail_ref_zero_max=%zu "
          "local2p_source_alloc=%zu "
          "midpage_source_alloc=%zu large_source_alloc=%zu toy_source_alloc=%zu "
 #endif
@@ -320,6 +324,10 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.descgov_detached_max,
          stats.source_run_reuse_route_fail,
          stats.source_run_reuse_prepare_fail,
+         stats.source_block_fail_active_max,
+         stats.source_block_fail_registered_max,
+         stats.source_block_fail_ref_nonzero_max,
+         stats.source_block_fail_ref_zero_max,
          stats.local2p_source_alloc,
          stats.midpage_source_alloc, stats.large_source_alloc,
          stats.toy_source_alloc,

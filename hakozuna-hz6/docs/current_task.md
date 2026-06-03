@@ -520,6 +520,48 @@ Decision:
   source-block/admission design changes this boundary.
 ```
 
+Desc144 diagnostic read:
+
+```text
+Run:
+  larson_T16
+  speed profile
+  ownerlocalityfast-rsscap-2-desc144k
+  diagnostic probes
+  run1
+
+Key stats:
+  owner_locality_register=147456
+  source_owned_prepare=147456
+  descriptor_exhausted=2
+  descriptor_fail_active_max=147422
+  descriptor_fail_local_free_max=34
+  source_block_exhausted=1025
+  source_block_fail_active_max=8192
+  source_block_fail_registered_max=8192
+  source_block_fail_ref_nonzero_max=8192
+  source_block_fail_ref_zero_max=0
+  source_run_reuse_dryrun_candidate_calls=9216
+  source_run_reuse_dryrun_largest_free_slots_max=4080
+
+Read:
+  The source-run dry-run sees many free physical slots, but the failure is not
+  primarily missing physical slot reuse. The descriptor table is effectively
+  full of active objects.
+
+  Larson T=16 chunks=10000 has about 160k live objects. A one-descriptor-per
+  live-object contract therefore has a hard descriptor floor around 160k.
+
+  desc144k fails because it is below that live-set floor. desc160k succeeds
+  because 163840 descriptors is barely above the workload floor.
+
+Decision:
+  Static descriptor trimming is closed for full 10k Larson.
+  desc160k is close to the one-descriptor-per-live-object lower bound.
+  Further RSS reduction would require a different lifecycle contract, not just
+  a smaller descriptor capacity flag.
+```
+
 ## RandomMixed A/B Fast-Path Plan 2026-06-03
 
 ```text

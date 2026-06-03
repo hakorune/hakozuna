@@ -433,7 +433,10 @@ ownerlocalityfast-rsscap-2-desc144k:
   descriptor budget can be tightened one more step; failures are boundary
   evidence, not a route/source behavior verdict. First full 10k Larson run
   fails warmup allocation with `alloc_fail=1` and source-block exhaustion, so
-  keep it as no-go/boundary evidence.
+  keep it as no-go/boundary evidence. Diagnostic read confirms the descriptor
+  table is effectively full of active objects; because T=16 and chunks=10000
+  imply roughly 160k live objects, desc160k is close to the
+  one-descriptor-per-live-object lower bound.
 
 ownerlocalityfast-rsscap-3:
   Non-diagnostic owner-locality behavior lane with reduced transfer,
