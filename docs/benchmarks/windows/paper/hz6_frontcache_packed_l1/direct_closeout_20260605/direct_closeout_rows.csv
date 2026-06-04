@@ -1,0 +1,7 @@
+"lane","run","timed_out","stopped_after_result","ops_s","peak_kb","route_invalid","route_miss","remote_free_transfer_fail","alloc_fail"
+"baseline_l2","1","True","False","46467192","439912","0","0","0","0"
+"baseline_l2","2","True","False","46486410","439912","0","0","0","0"
+"baseline_l2","3","True","False","45307563","439916","0","0","0","0"
+"frontcachepacked","1","True","False","44830898","430708","0","0","0","0"
+"frontcachepacked","2","True","False","48208137","430708","0","0","0","0"
+"frontcachepacked","3","True","False","44354107","430700","0","0","0","0"

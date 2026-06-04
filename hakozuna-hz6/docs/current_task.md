@@ -61,10 +61,22 @@ Latest candidate:
     Larson T16 main-warmup full 10k direct non-diagnostic, run=1:
       41.660M ops/s
       safety counters = 0
+    Larson T16 main-warmup full 10k direct closeout, same exe pair:
+      baseline OwnerSourceSideMeta-L2 median:
+        46.467M ops/s
+        peak_kb = 439912
+        safety counters = 0
+      FrontCachePackedMeta-L1 median:
+        44.831M ops/s
+        peak_kb = 430708
+        safety counters = 0
 
   Read:
-    promising candidate evidence.
-    Do not promote until repeat-3 matrix with RSS succeeds.
+    promising lowest-RSS sibling evidence.
+    It cuts about 9 MiB versus OwnerSourceSideMeta-L2 in the direct closeout,
+    but costs about 3.5% median throughput in that same comparison.
+    Keep OwnerSourceSideMeta-L2 as the selected throughput/RSS balance lane;
+    keep FrontCachePackedMeta-L1 as the current lowest-RSS candidate/sibling.
     The matrix runner can overrun because Larson runtime is fixed at 10s and
     process output has a trailing sleep; direct runs were used for this first
     check.
