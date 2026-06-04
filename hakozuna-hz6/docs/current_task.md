@@ -74,8 +74,9 @@ Decision:
 Next:
   do not continue static route-capacity trimming.
   if Larson RSS is reopened, attack owner-source-aware descriptor side metadata
-  or a broader route/descriptor ownership representation; otherwise refresh
-  the selected-family / cross-allocator tables with the routepacked row.
+  or a broader route/descriptor ownership representation.
+  selected-family / cross-allocator docs have been refreshed with the
+  routepacked row in commit 1c3a802.
 ```
 
 Latest mixed clean-lane decision:
