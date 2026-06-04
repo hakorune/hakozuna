@@ -21,8 +21,8 @@ For repo cleanup rules and the source modularization backlog, see
 | larger_sizes RSS/speed | `speed` or `rss` | `largerlowrss-front8k-sourcerun-desc8k-route8k` | Best larger_sizes lane; needs larger front retention, not more descriptor-failure cleanup. |
 | Larson cross-owner full 10k | `speed` | `ownerlocalityfast-rsscap-2-desc160k` | Full Larson cross-owner throughput/RSS balance lane; appcap-class throughput with sub-1GB peak RSS. |
 | Larson cross-owner low RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k` | Clean route-capacity control. It keeps the thindesc/source16k shape and trims route capacity to 192K; repeat-3 is safety-clean at about `44.610M / 628844 KB`. |
-| Larson cross-owner lowest RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-source16k-route192k-run512` | Current selected lowest-RSS sibling candidate. It combines descriptor no-backptr, SourceBlock no-route-backptr, dir192k, route192k/run512, and RoutePackedMeta-L1; repeat-3 is clean at `47.616M / 456048 KB`. |
-| Larson cross-owner routebytes16 candidate | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-source16k-route192k-run512` | RoutePackedMeta-L2 candidate-control. It keeps RoutePackedMeta-L1 and stores the route bytes side array as `uint16_t(bytes - 1)`. Same-run full-10k A/B, runs=1: routepacked `44.140M / 456040 KB`, routebytes16 `44.392M / 449132 KB`, safety clean. Needs repeat-3 before replacing the selected routepacked row. |
+| Larson cross-owner lowest RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-source16k-route192k-run512` | Current selected lowest-RSS sibling. It combines descriptor no-backptr, SourceBlock no-route-backptr, dir192k, route192k/run512, RoutePackedMeta-L1, and RoutePackedMeta-L2 routebytes16. Same-run full-10k A/B repeat-3: routepacked `45.079M / 456040 KB`, routebytes16 `48.367M / 449144 KB`, safety clean. |
+| Larson cross-owner routepacked control | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-source16k-route192k-run512` | RoutePackedMeta-L1 comparison control. Repeat-3 historical full 10k was `47.616M / 456048 KB`; same-run L2 A/B repeat-3 is `45.079M / 456040 KB`, safety clean. Superseded by routebytes16 for selected lowest-RSS comparisons. |
 | Larson cross-owner RSS-first descriptor evidence | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-storageowner16-noroutebackptr-dir192k-routepacked-source16k-route192k-run512` | StorageOwner16-L1 evidence/control. It is safety-clean and reaches `42.024M / 444520 KB`, but does not replace routepacked because the RSS gain costs about 12% throughput. |
 | Larson cross-owner minimum RSS control | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-source16k-route192k-run512` | Clean SourceBlockNoRouteBackptr-L1 control. It removes the SourceBlock route-backend back-pointer and reaches `41.107M / 469868 KB`; superseded by routepacked for both speed and RSS, but useful as an isolation control. |
 | Larson cross-owner no-backptr control | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-source16k-route192k-run512` | Comparison control for dir192k. It keeps route192k/run512 and removes the descriptor allocator back-pointer; repeat-3 is safety-clean at `40.710M / 476784 KB`, and same-run repeat-3 against dir192k is `45.310M / 476788 KB`. |
@@ -144,7 +144,7 @@ larson-cross-owner-selected:
   larson_t16_main_10k
   speed + ownerlocalityfast-rsscap-2-desc160k
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k
-  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-source16k-route192k-run512
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-source16k-route192k-run512
 
 selected-family-guard:
   short mixed_ws smoke/control guard before a longer selected-family run
@@ -174,8 +174,8 @@ larson-sourcerun-metaslim:
   SourceBlockMetaSlim-L1 repeat-3 clean result; no-backptr run512 superseded
   it as a descriptor-layout control. dir192k/no-backptr is now a
   directory-capacity comparison control, no-route-backptr/dir192k is an
-  isolation control, and routepacked/no-routebackptr/dir192k is the selected
-  lowest-RSS sibling candidate. Run2048/run1024 remain
+  isolation control, and routebytes16/routepacked/no-routebackptr/dir192k is
+  the selected lowest-RSS sibling. Run2048/run1024 remain
   SourceBlockMetaSlim-L1 controls.
 
 larson-run512-routeslim:
@@ -446,10 +446,10 @@ Larson cross-owner full 10k:
     repeat-3 full 10k clean; use when about -1.3% throughput is acceptable for
     about 90MB lower peak RSS versus desc160k
   current selected low-RSS sibling:
-    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-source16k-route192k-run512
-    repeat-3 full 10k clean at about 47.616M ops/s and 456048 KB peak RSS.
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-source16k-route192k-run512
+    repeat-3 full 10k clean at about 48.367M ops/s and 449144 KB peak RSS.
     It combines dir192k, descriptor no-backptr, SourceBlock no-route-backptr,
-    and RoutePackedMeta-L1.
+    RoutePackedMeta-L1, and RoutePackedMeta-L2 routebytes16.
   directory-capacity control:
     ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-dir192k-source16k-route192k-run512
     repeat-3 full 10k clean at about 44.580M ops/s and 472176 KB peak RSS.
@@ -518,9 +518,9 @@ Larson cross-owner full 10k:
     ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512
     run512 is the previous selected lowest-RSS sibling/control. Run2048/run1024
     remain source-run metadata controls; no-backptr run512 is the descriptor
-    layout control, dir192k/no-backptr is a directory-capacity control, and
-    routepacked/no-routebackptr/dir192k is the current selected low-RSS
-    candidate.
+    layout control, dir192k/no-backptr is a directory-capacity control,
+    routepacked/no-routebackptr/dir192k is the L1 control, and
+    routebytes16 is the current selected low-RSS sibling.
   source-block over-retention control:
     ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k
     passes, but raises peak RSS and is not selected
@@ -851,24 +851,25 @@ ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-di
   lowest-RSS comparisons.
 
 ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-source16k-route192k-run512:
-  Current Larson lowest-RSS sibling candidate. Same descriptor no-backptr /
+  RoutePackedMeta-L1 comparison control. Same descriptor no-backptr /
   SourceBlock no-route-backptr / dir192k / route192k / run512 shape, plus
   `HZ6_ROUTE_PACKED_META_L1=1`. It packs route entry front/class/state into a
   32-bit meta word and moves bytes to a side array. Repeat-3 full 10k:
   `47.616M / 456048 KB`, safety clean. The 1k diagnostic smoke reports
   `route_entry_bytes=24`, `route_invalid=0`, `route_miss=0`, and
-  `route_register_fail=0`.
+  `route_register_fail=0`. Superseded by RoutePackedMeta-L2 routebytes16 for
+  the selected Larson lowest-RSS sibling.
 
 ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-source16k-route192k-run512:
-  RoutePackedMeta-L2 candidate-control. It keeps the RoutePackedMeta-L1
+  Current Larson lowest-RSS selected sibling. It keeps the RoutePackedMeta-L1
   shape and stores route bytes as `uint16_t(bytes - 1)` behind the route
   accessor boundary. The L2 dry-run showed raw uint16 overflow only at 64KiB
   source-block envelopes (`route_bytes16_overflow=147`,
   `route_bytes16_max=65536`), while biased16 was clean
   (`route_bytes16_minus1_overflow=0`, `route_bytes16_minus1_zero=0`,
-  `route_bytes16_minus1_max_stored=65535`). Same-run full-10k A/B, runs=1:
-  routepacked `44.140M / 456040 KB`, routebytes16 `44.392M / 449132 KB`,
-  safety clean. Needs repeat-3 before selected-row promotion.
+  `route_bytes16_minus1_max_stored=65535`). Same-run full-10k A/B repeat-3:
+  routepacked `45.079M / 456040 KB`, routebytes16 `48.367M / 449144 KB`,
+  safety clean.
 
 ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-storageowner16-noroutebackptr-dir192k-routepacked-source16k-route192k-run512:
   StorageOwner16-L1 RSS-first descriptor side metadata evidence/control. It

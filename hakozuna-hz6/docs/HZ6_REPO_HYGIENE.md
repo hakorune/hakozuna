@@ -56,7 +56,7 @@ Larson lower RSS:
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k
 
 Larson lowest RSS:
-  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-source16k-route192k-run512
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-source16k-route192k-run512
 ```
 
 The side-owner16 descriptor layout lane is not selected. It is buildable as
@@ -147,8 +147,10 @@ control.
 dir192k + descriptor no-backptr is a directory-capacity control.
 dir192k + descriptor no-backptr + SourceBlock no-route-backptr is a clean
 isolation control.
-routepacked + dir192k + both no-backptr lanes is the current selected
-lowest-RSS sibling candidate.
+routepacked + dir192k + both no-backptr lanes is the RoutePackedMeta-L1
+control.
+routebytes16 + routepacked + dir192k + both no-backptr lanes is the current
+selected lowest-RSS sibling.
 ```
 
 So the next RSS reduction should not be another route-capacity cut or another
@@ -160,7 +162,9 @@ Next source cleanup target:
 Descriptor layout:
   guard no-backptr as the descriptor-layout comparison control
   guard dir192k/no-backptr as the directory-capacity comparison control
-  guard routepacked/no-routebackptr/dir192k as the selected low-RSS sibling
+  guard routepacked/no-routebackptr/dir192k as the L1 control
+  guard routebytes16/routepacked/no-routebackptr/dir192k as the selected
+  low-RSS sibling
   do not promote allocator-local side-owner16
   keep storageowner16 as RSS-first evidence/control unless its lookup cost is
   reduced

@@ -37,7 +37,7 @@ Recent RSS-first evidence:
     not selected because throughput drops about 12%
 
 Next:
-  RoutePackedMeta-L2 routebytes16 repeat-3.
+  RoutePackedMeta-L2 routebytes16 selected-lane guard.
 
 Goal:
   keep the selected routepacked hot path and measure whether remaining route
@@ -84,16 +84,25 @@ Behavior lane:
       449132 KB peak
       safety clean
 
+  Larson T=16 main-warmup full 10k A/B, runs=3:
+    routepacked:
+      45.079M ops/s
+      456040 KB peak
+      safety clean
+    routepacked-routebytes16:
+      48.367M ops/s
+      449144 KB peak
+      safety clean
+
   Read:
-    candidate-control / repeat-3 next.
-    Same-run signal is slightly faster and about 6.9 MiB lower RSS, but keep
-    RoutePackedMeta-L1 selected until routebytes16 passes repeat-3.
+    RoutePackedMeta-L2 routebytes16 is now the selected Larson lowest-RSS
+    sibling. RoutePackedMeta-L1 remains the comparison control.
 
 Acceptance to proceed to behavior:
-  achieved for L2 implementation; next acceptance is repeat-3 promotion:
+  achieved for L2 implementation and repeat-3 promotion:
     routebytes16 safety clean
     median RSS below RoutePackedMeta-L1
-    median throughput >= RoutePackedMeta-L1 - 3%
+    median throughput above RoutePackedMeta-L1 in same-run repeat-3
 
 Do not:
   continue static route-capacity trimming
