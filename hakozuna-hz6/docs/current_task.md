@@ -8505,3 +8505,96 @@ Next:
     2. move to a source/route payload layout split, or
     3. design descriptor-storage-owned side metadata as a larger clean track.
 ```
+
+### 2026-06-04: SourceBlockNoRouteBackptr-L1
+
+Goal:
+
+```text
+Reduce Larson full-10k static RSS by removing the SourceBlock route-backend
+back-pointer from the selected no-backptr/run512 shape.
+
+This is a narrow metadata layout experiment:
+  keep SourceBlock source_release inline
+  remove only route_backend from SourceBlock under a build flag
+  pass allocator explicitly to SourceBlock release/unregister helpers
+```
+
+Implementation:
+
+```text
+Flag:
+  HZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1
+
+API change:
+  hz6_allocator_release_source_block(allocator, block)
+
+Why allocator is now explicit:
+  invalid-range unregister belongs to the owning allocator route backend.
+  Storing that route backend pointer in every SourceBlock is avoidable for
+  same-allocator SourceBlock lifetime.
+
+Why source_release stays in SourceBlock:
+  source-block smoke uses custom source ops. Inferring release from allocator
+  source registry was unsafe for custom source backing, so only route_backend
+  was removed in L1.
+```
+
+Validation:
+
+```text
+Default Windows HZ6 smokes:
+  build_win_hz6_r1_smokes.ps1
+  result: all pass
+
+Repeat-3:
+  docs/benchmarks/windows/paper/hz6_selected_family/
+    larson-sourceblock-noroutebackptr-dir192k-repeat/
+      larson-cross-owner-lowest-rss/
+      20260604_164022_hz6_capacity_matrix_windows.md
+
+Rows:
+  front4k:
+    45.680M ops/s, 716344 KB, safety clean
+
+  thindesc-source16k-route192k:
+    48.575M ops/s, 628868 KB, safety clean
+
+  no-backptr-route192k-run512:
+    40.355M ops/s, 476792 KB, safety clean
+
+  no-backptr-dir192k-route192k-run512:
+    40.790M ops/s, 472184 KB, safety clean
+
+  no-backptr-noroutebackptr-dir192k-route192k-run512:
+    41.107M ops/s, 469868 KB, safety clean
+    source_block_entry_bytes = 136
+    source_block_table_bytes = 35651584
+    ownerlocality_index_bytes = 14155776
+```
+
+Decision:
+
+```text
+KEEP:
+  SourceBlockNoRouteBackptr-L1 is clean source-block metadata slimming.
+
+Use:
+  lowest-RSS Larson sibling/control.
+
+Do not replace:
+  the existing dir192k/no-backptr selected sibling when throughput/RSS balance
+  matters. The repeat-3 no-route-backptr combo is the lowest RSS row in this
+  run, but it is not a broad speed promotion.
+
+No-go boundary:
+  do not remove SourceBlock source_release in this track. Custom source ops
+  need the block-owned release pointer.
+
+Next:
+  static SourceBlock route-backptr slimming is done.
+  Further Larson RSS work should move to:
+    1. route/source payload layout split,
+    2. descriptor-storage-owned side metadata as a larger redesign, or
+    3. non-static policy only if it preserves selected safety.
+```

@@ -28,7 +28,9 @@ typedef struct Hz6SourceBlock {
   size_t bytes;
   Hz6SourceKind source_kind;
   Hz6SourceReleaseFn source_release;
+#if !HZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1
   Hz6RouteBackend* route_backend;
+#endif
   size_t ref_count;
   size_t run_slot_bytes;
   uint16_t run_class_id;

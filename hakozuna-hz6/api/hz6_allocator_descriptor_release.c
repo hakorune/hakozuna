@@ -155,7 +155,8 @@ int hz6_allocator_release_descriptor_source(
   if (descriptor->source_block) {
     hz6_allocator_source_run_release_slot(descriptor->source_block,
                                           descriptor->ptr);
-    released = hz6_allocator_release_source_block(descriptor->source_block);
+    released =
+        hz6_allocator_release_source_block(allocator, descriptor->source_block);
   } else {
     void* source_ptr = NULL;
     size_t source_bytes = 0;

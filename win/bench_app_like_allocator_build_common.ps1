@@ -878,9 +878,23 @@ function Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrSourc
     $flags
 }
 
+function Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrSource16kRoute192kRun512CapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrSource16kRoute192kRun512CapacityFlags
+    $flags += "/DHZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1=1"
+    $flags
+}
+
 function Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrDir192kSource16kRoute192kRun512CapacityFlags {
     $flags = @()
     $flags += Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrSource16kRoute192kRun512CapacityFlags
+    $flags += "/DHZ6_SHARED_ROUTE_DIRECTORY_CAPACITY=((size_t)196608)"
+    $flags
+}
+
+function Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrDir192kSource16kRoute192kRun512CapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrSource16kRoute192kRun512CapacityFlags
     $flags += "/DHZ6_SHARED_ROUTE_DIRECTORY_CAPACITY=((size_t)196608)"
     $flags
 }
@@ -1359,7 +1373,9 @@ function Invoke-AppLikeHz6BenchBuilds {
     $ownerLocalityFastRssCap2Desc160kFront4kThinDescSource16kRoute192kRun1024Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescSource16kRoute192kRun1024CapacityFlags
     $ownerLocalityFastRssCap2Desc160kFront4kThinDescSource16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescSource16kRoute192kRun512CapacityFlags
     $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrSource16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrSource16kRoute192kRun512CapacityFlags
+    $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrSource16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrSource16kRoute192kRun512CapacityFlags
     $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrDir192kSource16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrDir192kSource16kRoute192kRun512CapacityFlags
+    $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrDir192kSource16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrDir192kSource16kRoute192kRun512CapacityFlags
     $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrDir128kSource16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrDir128kSource16kRoute192kRun512CapacityFlags
     $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrDir96kSource16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrDir96kSource16kRoute192kRun512CapacityFlags
     $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrSideOwner16Source16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrSideOwner16Source16kRoute192kRun512CapacityFlags
@@ -1475,7 +1491,9 @@ function Invoke-AppLikeHz6BenchBuilds {
         "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run1024" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_source16k_route192k_run1024"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescSource16kRoute192kRun1024Flags }
         "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_source16k_route192k_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescSource16kRoute192kRun512Flags }
         "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-source16k-route192k-run512" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_nobackptr_source16k_route192k_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrSource16kRoute192kRun512Flags }
+        "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-source16k-route192k-run512" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_nobackptr_noroutebackptr_source16k_route192k_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrSource16kRoute192kRun512Flags }
         "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-dir192k-source16k-route192k-run512" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_nobackptr_dir192k_source16k_route192k_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrDir192kSource16kRoute192kRun512Flags }
+        "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-source16k-route192k-run512" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_nobackptr_noroutebackptr_dir192k_source16k_route192k_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrDir192kSource16kRoute192kRun512Flags }
         "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-dir128k-source16k-route192k-run512" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_nobackptr_dir128k_source16k_route192k_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrDir128kSource16kRoute192kRun512Flags }
         "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-dir96k-source16k-route192k-run512" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_nobackptr_dir96k_source16k_route192k_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrDir96kSource16kRoute192kRun512Flags }
         "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-sideowner16-source16k-route192k-run512" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_nobackptr_sideowner16_source16k_route192k_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrSideOwner16Source16kRoute192kRun512Flags }

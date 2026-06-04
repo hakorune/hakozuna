@@ -6,7 +6,9 @@ void hz6_allocator_init_state_source_blocks(Hz6Allocator* allocator) {
     allocator->source_blocks[i].bytes = 0;
     allocator->source_blocks[i].source_kind = HZ6_SOURCE_NONE;
     allocator->source_blocks[i].source_release = NULL;
+#if !HZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1
     allocator->source_blocks[i].route_backend = NULL;
+#endif
     allocator->source_blocks[i].ref_count = 0;
     allocator->source_blocks[i].run_slot_bytes = 0;
     allocator->source_blocks[i].run_class_id = 0;

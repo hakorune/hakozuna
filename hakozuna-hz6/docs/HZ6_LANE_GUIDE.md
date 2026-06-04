@@ -22,6 +22,7 @@ For repo cleanup rules and the source modularization backlog, see
 | Larson cross-owner full 10k | `speed` | `ownerlocalityfast-rsscap-2-desc160k` | Full Larson cross-owner throughput/RSS balance lane; appcap-class throughput with sub-1GB peak RSS. |
 | Larson cross-owner low RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k` | Clean route-capacity control. It keeps the thindesc/source16k shape and trims route capacity to 192K; repeat-3 is safety-clean at about `44.610M / 628844 KB`. |
 | Larson cross-owner lowest RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-dir192k-source16k-route192k-run512` | Current selected lowest-RSS sibling candidate. It keeps the no-backptr route192k/run512 shape but trims shared-directory / owner-locality capacity to dir192k; repeat-3 is safety-clean at `44.580M / 472176 KB`. |
+| Larson cross-owner minimum RSS control | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-source16k-route192k-run512` | Clean SourceBlockNoRouteBackptr-L1 control. It removes the SourceBlock route-backend back-pointer and reaches `41.107M / 469868 KB`; use only when minimum RSS is the priority. |
 | Larson cross-owner no-backptr control | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-source16k-route192k-run512` | Comparison control for dir192k. It keeps route192k/run512 and removes the descriptor allocator back-pointer; repeat-3 is safety-clean at `40.710M / 476784 KB`, and same-run repeat-3 against dir192k is `45.310M / 476788 KB`. |
 | Larson cross-owner run512 control | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512` | Previous selected lowest-RSS sibling/control. Repeat-3 is safety-clean at `48.512M / 499820 KB`; same-run no-backptr cuts another about 23 MB. |
 | Larson descriptor boundary | `speed` | `ownerlocalityfast-rsscap-2-desc158k-front4k-thindesc-source16k-route192k-run512` | Clean tiny-RSS sibling/control after run512. Repeat-3 is `40.400M / 498080 KB`; desc156k and below are warmup no-go from `descriptor_exhausted=3` / `alloc_fail=1`. |
@@ -170,8 +171,9 @@ larson-sourcerun-metaslim:
   run512 is the previous selected lowest-RSS sibling/control after the
   SourceBlockMetaSlim-L1 repeat-3 clean result; no-backptr run512 superseded
   it as a descriptor-layout control, and dir192k/no-backptr now supersedes
-  no-backptr for selected-family lowest-RSS comparisons. Run2048/run1024
-  remain SourceBlockMetaSlim-L1 controls.
+  no-backptr for selected-family lowest-RSS comparisons. no-route-backptr
+  dir192k is the minimum-RSS control, not the throughput/RSS selected sibling.
+  Run2048/run1024 remain SourceBlockMetaSlim-L1 controls.
 
 larson-run512-routeslim:
   larson_t16_main_10k
@@ -828,6 +830,16 @@ ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-dir192k-source16k
   `45.310M / 476788 KB`, so dir192k trades about -1.6% throughput for about
   4.6 MB lower peak RSS. Dir128k/dir96k are no-go controls because
   owner-locality misses and full-table probes appear.
+
+ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-source16k-route192k-run512:
+  SourceBlockNoRouteBackptr-L1 minimum-RSS Larson control. Same no-backptr /
+  dir192k / route192k / run512 shape, but `HZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1`
+  removes the SourceBlock route-backend pointer and relies on allocator-explicit
+  SourceBlock release/unregister. Repeat-3:
+  `41.107M / 469868 KB`, safety clean, `source_block_entry_bytes=136`.
+  Keep it as a minimum-RSS sibling/control; do not replace the dir192k
+  throughput/RSS selected sibling unless the comparison is explicitly
+  RSS-first.
 
 ownerlocalityfast-rsscap-2-desc144k:
   Descriptor-boundary probe for full 10k Larson cross-owner. Same shape as

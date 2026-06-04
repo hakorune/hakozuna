@@ -21,6 +21,7 @@ For cleanup rules and the next source modularization target, see
 | Larson T16 full 10k throughput/RSS | `speed + ownerlocalityfast-rsscap-2-desc160k` | 44.754M | 808,488 | clean selected |
 | Larson T16 full 10k lower RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k` | 45.092M | 716,324 | clean selected sibling |
 | Larson T16 full 10k lowest RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-dir192k-source16k-route192k-run512` | 44.580M | 472,176 | clean selected sibling candidate |
+| Larson T16 full 10k minimum RSS control | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-source16k-route192k-run512` | 41.107M | 469,868 | clean lowest-RSS control |
 
 Source:
 - `docs/benchmarks/windows/paper/hz6_selected_family/selected-family-desc17-refresh/`
@@ -35,6 +36,7 @@ Source:
 - `docs/benchmarks/windows/paper/hz6_selected_family/larson-nobackptr-selected-guard/`
 - `docs/benchmarks/windows/paper/hz6_selected_family/larson-descriptor-layout-l2-dryrun-clean/`
 - `docs/benchmarks/windows/paper/hz6_selected_family/larson-directory-cap-l1-repeat/`
+- `docs/benchmarks/windows/paper/hz6_selected_family/larson-sourceblock-noroutebackptr-dir192k-repeat/`
 - `docs/benchmarks/windows/paper/hz6_route_linearwrap_l1_guard/`
 - `docs/benchmarks/windows/paper/hz6_route_loopcarry_l1_repeat/`
 
@@ -58,6 +60,7 @@ Source:
 | Larson descriptor-source diagnostic | diagnostic only | Confirms why side-owner16 is unsafe: no-backptr run512 is safety-clean while `descriptor_source_route_allocator_mismatch` is about `447.5M`. Route rehome makes route owner and descriptor-storage owner diverge heavily, so owner side metadata cannot be keyed by current or route allocator alone. |
 | Larson descriptor-storage diagnostic | diagnostic only | Confirms the storage owner is discoverable but often foreign to both the route allocator and current allocator. In the 2026-06-04 recheck, no-backptr stayed safety-clean with `descriptor_storage_miss=0`, while `descriptor_storage_route_allocator_mismatch=420.2M` and `descriptor_storage_current_allocator_mismatch=420.3M`. Sideowner16 still produced `route_invalid=11626` and `remote_free_transfer_fail=11626`, so no-backptr remains selected. |
 | Larson directory capacity L1 | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-dir192k-source16k-route192k-run512` | Selected lowest-RSS sibling candidate. Repeat-3 clean at `44.580M / 472176 KB`, reducing owner-locality/shared-directory bytes from `18874368` to `14155776`. Same-run no-backptr control is `45.310M / 476788 KB`; dir192k trades about 1.6% speed for about 4.6 MB lower peak RSS. `dir128k` and `dir96k` are no-go controls: lower RSS but owner locality misses and full-table probes appear. |
+| Larson SourceBlock no-route-backptr L1 | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-source16k-route192k-run512` | Clean minimum-RSS sibling/control. It removes only the SourceBlock route-backend back-pointer and passes allocator explicitly to SourceBlock release/unregister helpers. Repeat-3: `41.107M / 469868 KB`, `source_block_entry_bytes=136`, safety clean. Keep as lowest-RSS control; do not replace the dir192k/no-backptr selected sibling when throughput/RSS balance matters. |
 | Larson lowest-RSS preset check | `larson-cross-owner-lowest-rss` | Default check now includes front4k, route192k, no-backptr route192k-run512, and dir192k no-backptr route192k-run512. Latest guard before dir192k promotion: front4k `42.460M / 716340 KB`, route192k `44.583M / 628848 KB`, no-backptr `42.324M / 476868 KB`, all safety clean. |
 | Larson over-retention control | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k` | Passes but over-retains RSS; no promotion. |
 
@@ -97,6 +100,10 @@ HZ6 is now a profile-family allocator:
     `dir192k` repeat-3 stays safety-clean, saves about 4.6 MB versus
     no-backptr, and is now the selected lowest-RSS sibling candidate. The
     cost is about -1.6% throughput versus the same-run no-backptr control.
+    SourceBlockNoRouteBackptr-L1 removes the SourceBlock route-backend
+    back-pointer and creates an even lower-RSS control at about 470 MB, but
+    this row is a minimum-RSS sibling rather than the throughput/RSS selected
+    replacement.
     `dir128k` and `dir96k` over-tighten the owner-locality/shared-directory
     tables and regress speed.
     The route table cannot be statically trimmed below route192k under the
@@ -124,12 +131,14 @@ HZ6 is now a profile-family allocator:
       blind descriptor capacity; it should look at route representation or
       class-specific route load.
    B. Larson RSS:
-      keep dir192k/no-backptr as the selected lowest-RSS sibling. Side-owner16
-      L1 proves the 32-byte entry is possible, but allocator-local owner side
+      keep dir192k/no-backptr as the selected throughput/RSS sibling and keep
+      no-route-backptr/dir192k as the minimum-RSS control. Side-owner16 L1
+      proves the 32-byte entry is possible, but allocator-local owner side
       metadata is unsafe for cross-owner lifecycle. The next descriptor RSS
       attempt needs owner-source-aware side metadata or a broader route /
       descriptor ownership representation rewrite. Static route trimming is
       closed unless the route representation changes; static descriptor-cap
-      trimming is nearly exhausted at desc158k, and static directory trimming
-      below dir192k is no-go under the current index representation.
+      trimming is nearly exhausted at desc158k, static directory trimming below
+      dir192k is no-go under the current index representation, and SourceBlock
+      route-backptr slimming is now done.
 ```

@@ -74,7 +74,7 @@ static void* hz6_front_source_block_reserved_slot(
           block->bytes, block, class_id, block->source_kind,
           block->source_release, HZ6_STATE_ACTIVE)) {
     hz6_allocator_source_run_rollback_slot(block, *slot_index);
-    hz6_allocator_release_source_block(block);
+    hz6_allocator_release_source_block(allocator, block);
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.source_run_reuse_prepare_fail;
     ++allocator->stats.source_run_reuse_slot_fail;
@@ -298,7 +298,7 @@ size_t hz6_front_prefill_source_block_kind(Hz6Allocator* allocator,
   }
 #if HZ6_SOURCE_RUN_REUSE_L1
   if (!hz6_allocator_source_run_init(block, class_id, slot_bytes)) {
-    hz6_allocator_release_source_block(block);
+    hz6_allocator_release_source_block(allocator, block);
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.source_prefill_fallback;
     if (has_front_index) {
@@ -343,7 +343,7 @@ size_t hz6_front_prefill_source_block_kind(Hz6Allocator* allocator,
   }
 
   if (filled == 0) {
-    hz6_allocator_release_source_block(block);
+    hz6_allocator_release_source_block(allocator, block);
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.source_prefill_fallback;
     if (has_front_index) {

@@ -15,7 +15,8 @@ Hz6SourceBlock* hz6_allocator_create_source_block(
 
 int hz6_allocator_retain_source_block(Hz6SourceBlock* block);
 
-int hz6_allocator_release_source_block(Hz6SourceBlock* block);
+int hz6_allocator_release_source_block(Hz6Allocator* allocator,
+                                       Hz6SourceBlock* block);
 
 int hz6_allocator_source_run_init(Hz6SourceBlock* block,
                                   uint16_t class_id,

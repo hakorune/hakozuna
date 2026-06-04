@@ -38,7 +38,9 @@ int hz6_allocator_source_block_register_invalid_range(
         allocator->stats.route_active_current;
   }
 #endif
+#if !HZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1
   block->route_backend = &allocator->route_backend;
+#endif
   block->route_registered = 1;
   return 1;
 }

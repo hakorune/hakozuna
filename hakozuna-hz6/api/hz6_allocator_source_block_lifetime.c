@@ -8,8 +8,9 @@ int hz6_allocator_retain_source_block(Hz6SourceBlock* block) {
   return 1;
 }
 
-int hz6_allocator_release_source_block(Hz6SourceBlock* block) {
-  if (!block || !block->active || !block->ptr) {
+int hz6_allocator_release_source_block(Hz6Allocator* allocator,
+                                       Hz6SourceBlock* block) {
+  if (!allocator || !block || !block->active || !block->ptr) {
     return 0;
   }
 
@@ -20,8 +21,8 @@ int hz6_allocator_release_source_block(Hz6SourceBlock* block) {
     return 1;
   }
 
-  if (block->route_registered && block->route_backend) {
-    hz6_route_backend_unregister_invalid_range(block->route_backend,
+  if (block->route_registered) {
+    hz6_route_backend_unregister_invalid_range(&allocator->route_backend,
                                                block->ptr,
                                                NULL);
   }
@@ -32,7 +33,9 @@ int hz6_allocator_release_source_block(Hz6SourceBlock* block) {
   block->bytes = 0;
   block->source_kind = HZ6_SOURCE_NONE;
   block->source_release = NULL;
+#if !HZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1
   block->route_backend = NULL;
+#endif
   block->ref_count = 0;
   block->run_slot_bytes = 0;
   block->run_class_id = 0;

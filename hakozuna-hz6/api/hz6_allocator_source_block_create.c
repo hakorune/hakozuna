@@ -362,7 +362,9 @@ Hz6SourceBlock* hz6_allocator_create_source_block(
   block->bytes = bytes;
   block->source_kind = source_kind;
   block->source_release = source_ops->release;
+#if !HZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1
   block->route_backend = NULL;
+#endif
   block->ref_count = 0;
   hz6_source_run_reset(block);
   block->active = 1;

@@ -10,8 +10,8 @@ void hz6_allocator_destroy_source_blocks(Hz6Allocator* allocator) {
     if (!block->active || !block->ptr) {
       continue;
     }
-    if (block->route_registered && block->route_backend) {
-      hz6_route_backend_unregister_invalid_range(block->route_backend,
+    if (block->route_registered) {
+      hz6_route_backend_unregister_invalid_range(&allocator->route_backend,
                                                  block->ptr,
                                                  NULL);
     }
@@ -24,7 +24,9 @@ void hz6_allocator_destroy_source_blocks(Hz6Allocator* allocator) {
     block->bytes = 0;
     block->source_kind = HZ6_SOURCE_NONE;
     block->source_release = NULL;
+#if !HZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1
     block->route_backend = NULL;
+#endif
     block->ref_count = 0;
     block->run_slot_bytes = 0;
     block->run_class_id = 0;
