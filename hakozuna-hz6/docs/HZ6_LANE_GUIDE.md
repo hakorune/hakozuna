@@ -835,7 +835,7 @@ ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-dir192k-source16k
   Larson directory-capacity comparison control. Same no-backptr route/run512
   shape, but `HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY` is trimmed to 196608 so the
   owner-locality/shared-directory index is smaller. It is superseded by the
-  routepacked/no-routebackptr/dir192k selected sibling. Repeat-3:
+  routebytes16/routepacked/no-routebackptr/dir192k selected sibling. Repeat-3:
   `44.580M / 472176 KB`, safety clean. Same-run no-backptr control is
   `45.310M / 476788 KB`, so dir192k trades about -1.6% throughput for about
   4.6 MB lower peak RSS. Dir128k/dir96k are no-go controls because
@@ -847,8 +847,8 @@ ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-di
   removes the SourceBlock route-backend pointer and relies on allocator-explicit
   SourceBlock release/unregister. Repeat-3:
   `41.107M / 469868 KB`, safety clean, `source_block_entry_bytes=136`.
-  Keep it as a clean isolation control; routepacked supersedes it for selected
-  lowest-RSS comparisons.
+  Keep it as a clean isolation control; routebytes16/routepacked supersedes it
+  for selected lowest-RSS comparisons.
 
 ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-source16k-route192k-run512:
   RoutePackedMeta-L1 comparison control. Same descriptor no-backptr /

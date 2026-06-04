@@ -141,8 +141,9 @@ HZ6 is now a profile-family allocator:
       blind descriptor capacity; it should look at route representation or
       class-specific route load.
    B. Larson RSS:
-      routepacked/no-routebackptr/dir192k is the selected lowest-RSS sibling
-      candidate. Keep plain no-routebackptr/dir192k as a clean control.
+      routebytes16/routepacked/no-routebackptr/dir192k is the selected
+      lowest-RSS sibling. Keep plain no-routebackptr/dir192k and
+      routepacked/no-routebackptr/dir192k as clean controls.
       Side-owner16 L1 proves a 32-byte descriptor hot entry is possible, but
       allocator-local owner side metadata is unsafe for cross-owner lifecycle.
       Further RSS work should not be more static route/descriptor/directory
