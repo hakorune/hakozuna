@@ -66,7 +66,8 @@ selected-family repeat-3:
     front4k      45.092M / 716324 KB, clean
     thindesc16k  44.609M / 665704 KB, clean
     route192k    44.610M / 628844 KB, clean control
-    run512       48.512M / 499820 KB, clean selected lowest-RSS sibling
+    run512       48.512M / 499820 KB, clean previous lowest-RSS sibling/control
+    no-backptr   40.710M / 476784 KB, clean selected lowest-RSS sibling candidate
 
   mixed balanced / wide_ws:
     descavail-noboost-route4k is fast and very low RSS, but not clean:
@@ -143,6 +144,10 @@ next HZ6 attack:
         baseline without hurting throughput. Treat no-backptr run512 as the
         new selected Larson lowest-RSS sibling candidate; keep desc158k as a
         tiny static-capacity control, not the main direction.
+      runner:
+        larson-cross-owner-selected and larson-cross-owner-lowest-rss now use
+        the no-backptr lane as the selected low-RSS sibling. The old run512
+        lane remains in larson-run512-descriptorlayout as the direct control.
 
   next:
     SourceBlock is no longer the dominant table after run512.
@@ -170,9 +175,11 @@ thindesc broad default:
   no
 
 thindesc selected-family role:
-  source16k-route192k-run512 variant is the selected Larson / owner-locality
-  lowest-RSS sibling. source16k-route192k remains its route-capacity control;
-  source16k without route trimming remains its baseline control.
+  source16k-route192k-run512 is now the previous Larson / owner-locality
+  lowest-RSS control. The selected lowest-RSS sibling candidate is the
+  no-backptr source16k-route192k-run512 variant. source16k-route192k remains
+  its route-capacity control; source16k without route trimming remains its
+  baseline control.
 
 next order:
   A. selected-family / cross-allocator table cleanup

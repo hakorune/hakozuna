@@ -37,7 +37,7 @@ the run bitmap is present in every static source-block entry.
 Current selected Larson lowest-RSS lane:
 
 ```text
-ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512
+ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-source16k-route192k-run512
 ```
 
 Route capacity is now at the clean lower bound. The run512 route re-check found
@@ -112,8 +112,10 @@ route160k / route128k:
 ```
 
 Do not trim route capacity again under the current representation.
-SourceBlockMetaSlim-L1 moved the selected lowest-RSS sibling to
-route192k-run512; route160k-run512 and route128k-run512 remain no-go controls.
+SourceBlockMetaSlim-L1 moved the previous selected lowest-RSS sibling to
+route192k-run512; DescriptorNoBackptr-L1 now supersedes it as the current
+lowest-RSS sibling candidate. Route160k-run512 and route128k-run512 remain
+no-go controls.
 
 ## Next Refactor Candidate
 
@@ -169,7 +171,12 @@ route192k-run1024:
 route192k-run512:
   48.512M ops/s
   499820 KB
-  clean selected lowest-RSS sibling
+  clean previous selected lowest-RSS sibling/control
+
+route192k-run512-no-backptr:
+  40.710M ops/s
+  476784 KB
+  clean current selected lowest-RSS sibling candidate
 ```
 
 Run512 attribution check:

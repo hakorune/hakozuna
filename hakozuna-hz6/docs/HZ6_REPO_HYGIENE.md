@@ -56,7 +56,7 @@ Larson lower RSS:
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k
 
 Larson lowest RSS:
-  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-source16k-route192k-run512
 ```
 
 Do not add new lanes to the selected family unless they pass:
@@ -134,7 +134,9 @@ Current Larson RSS read:
 ```text
 route192k is the clean static route lower bound.
 route160k/128k fail warmup because route capacity saturates.
-route192k-run512 is the current selected lowest-RSS sibling.
+route192k-run512 is the previous selected lowest-RSS sibling/control.
+route192k-run512 + descriptor no-backptr is the current selected lowest-RSS
+sibling candidate.
 ```
 
 So the next RSS reduction should not be another route-capacity cut or another
@@ -143,8 +145,13 @@ blind source-run slot cut.
 Next source cleanup target:
 
 ```text
+Descriptor layout:
+  guard no-backptr as the selected low-RSS sibling
+  then consider descriptor owner/token compression or side metadata
+
 SourceBlock metadata layout:
-  split or compress run bitmap / run metadata
+  split or compress run bitmap / run metadata only after descriptor layout
+  guard work
   keep route/source lifetime semantics unchanged
   keep safety counters clean
 ```
