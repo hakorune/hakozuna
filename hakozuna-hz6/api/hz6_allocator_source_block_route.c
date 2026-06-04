@@ -5,11 +5,11 @@ int hz6_allocator_source_block_register_invalid_range(
     Hz6SourceBlock* block,
     uint16_t front_id,
     uint16_t class_id) {
-  if (!allocator || !block || !block->active || !block->ptr ||
+  if (!allocator || !block || !hz6_source_block_active(block) || !block->ptr ||
       block->bytes == 0) {
     return 0;
   }
-  if (block->route_registered) {
+  if (hz6_source_block_route_registered(block)) {
     return 1;
   }
   size_t* probe_ptr = NULL;
@@ -41,6 +41,6 @@ int hz6_allocator_source_block_register_invalid_range(
 #if !HZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1
   block->route_backend = &allocator->route_backend;
 #endif
-  block->route_registered = 1;
+  hz6_source_block_set_route_registered(block, 1);
   return 1;
 }

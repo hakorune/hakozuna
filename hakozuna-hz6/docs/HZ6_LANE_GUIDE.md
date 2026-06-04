@@ -23,6 +23,7 @@ For repo cleanup rules and the source modularization backlog, see
 | Larson cross-owner low RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k` | Clean route-capacity control. It keeps the thindesc/source16k shape and trims route capacity to 192K; repeat-3 is safety-clean at about `44.610M / 628844 KB`. |
 | Larson cross-owner lowest RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-source16k-route192k-run512` | Current selected lowest-RSS sibling. It combines routebytes16 with StorageOwner16 ownerless descriptors and OwnerSourceSideMeta-L2 source-block storage hints. Same-run full-10k repeat-3: routebytes16 control `40.750M / 449128 KB`, L2 `40.754M / 439912 KB`, safety clean. Worker-warmup run=1: routebytes16 `40.126M / 448948 KB`, L2 `40.787M / 439740 KB`. |
 | Larson frontcache packed meta candidate | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-source16k-route192k-run512` | Lowest-RSS candidate/sibling, not broad throughput promotion. `HZ6_FRONTCACHE_PACKED_META_L1` shrinks `Hz6FrontCacheEntry` from 32 to 24 bytes by packing bytes-minus-one, class id, and descriptor-cold-governor detached flag into a 32-bit meta word. Direct 1k diagnostic: `56.245M`, `frontcache_table_bytes=25171968`, safety clean; baseline L2 diagnostic frontcache table was `33560576`. Direct full-10k closeout versus OwnerSourceSideMeta-L2: baseline `46.467M / 439912 KB`, packed `44.831M / 430708 KB`, safety clean. Keep OwnerSourceSideMeta-L2 as selected balance lane; use packed when the extra about 9 MiB RSS reduction is worth about 3.5% throughput. |
+| Larson sourceblock packed flags candidate | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-sourceblockpacked-source16k-route192k-run512` | Lower-RSS SourceBlock metadata candidate over OwnerSourceSideMeta-L2. `HZ6_SOURCE_BLOCK_PACKED_FLAGS_L1` packs SourceBlock `source_kind / active / route_registered / run_active` into one flag word while keeping `source_release` and OwnerSourceSideMeta-L2 inline. Smoke/build clean; diagnostic sizeof check: `source_block_entry_bytes=144 -> 128`. Larson T16 main 10k run=1: `47.620M / 435768 KB`. Needs repeat-3 closeout before promotion. |
 | Larson owner-source side metadata dry-run | `speed + diagnostic` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-ownersourcedryrun-source16k-route192k-run512` | Diagnostic-only follow-up to the routebytes16 comparison-control lane. Full 10k run=1: `46.202M / 449164 KB`, safety clean, `owner_source_side_meta_foreign=871979714`, `miss=0`, `probe_max=1`. The next owner-side design must be O(1), not StorageOwner16 scan-based. |
 | Larson routebytes16 control | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-source16k-route192k-run512` | Superseded clean control. Same-run full-10k repeat-3 against OwnerSourceSideMeta-L2: routebytes16 `40.750M / 449128 KB`, L2 `40.754M / 439912 KB`. Keep as the main comparison control for L2. |
 | Larson cross-owner routepacked control | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-source16k-route192k-run512` | RoutePackedMeta-L1 comparison control. Repeat-3 historical full 10k was `47.616M / 456048 KB`; same-run L2 A/B repeat-3 is `45.079M / 456040 KB`, safety clean. Superseded first by routebytes16 as the route-entry comparison control, then by OwnerSourceSideMeta-L2 for selected lowest-RSS comparisons. |
@@ -921,6 +922,18 @@ ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-di
   OwnerSourceSideMeta-L2 baseline `46.467M / 439912 KB`, FrontCachePacked
   `44.831M / 430708 KB`, safety clean. Keep as the lower-RSS sibling/candidate,
   not as the selected throughput/RSS balance lane.
+
+ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-sourceblockpacked-source16k-route192k-run512:
+  SourceBlockPackedFlags-L1 lower-RSS candidate over OwnerSourceSideMeta-L2.
+  It adds `HZ6_SOURCE_BLOCK_PACKED_FLAGS_L1=1`, packing SourceBlock
+  `source_kind`, `active`, `route_registered`, and `run_active` into one
+  state flag word. It keeps `source_release`, OwnerSourceSideMeta-L2, and
+  source-run bitmap/slot metadata inline. Build/smoke is clean; diagnostic
+  sizeof check for the selected routepacked/routebytes16/L2 shape shows
+  `source_block_entry_bytes=144 -> 128`. Larson T16 main 10k run=1:
+  `47.620M / 435768 KB`, safety clean. Needs repeat-3 closeout before
+  promotion; do not combine with FrontCachePackedMeta-L1 until the isolated
+  SourceBlockPackedFlags candidate is closed.
 
 ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2dryrun-source16k-route192k-run512:
   Validation lane for OwnerSourceSideMeta-L2. Same L2 behavior plus

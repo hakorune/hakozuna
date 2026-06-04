@@ -91,7 +91,7 @@ static inline Hz6Allocator* hz6_allocator_owner_source_side_meta_storage(
 #endif
     return NULL;
   }
-  if (!descriptor->source_block->active ||
+  if (!hz6_source_block_active(descriptor->source_block) ||
       !descriptor->source_block->owner_source_storage_allocator) {
 #if HZ6_DIAGNOSTIC_PROBES
     if (mutable_allocator) {

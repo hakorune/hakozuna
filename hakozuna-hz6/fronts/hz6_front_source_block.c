@@ -48,7 +48,7 @@ static void* hz6_front_source_block_reserved_slot(
   ++allocator->stats.source_run_reuse_reserved;
 #endif
 
-  if (!block->route_registered) {
+  if (!hz6_source_block_route_registered(block)) {
     if (!hz6_allocator_source_block_register_invalid_range(
             allocator, block, front_id, class_id)) {
       hz6_allocator_source_run_rollback_slot(block, *slot_index);
@@ -71,7 +71,7 @@ static void* hz6_front_source_block_reserved_slot(
       (void*)((unsigned char*)block->ptr + ((*slot_index) * slot_bytes));
   if (!hz6_allocator_prepare_descriptor(
           allocator, descriptor, user_ptr, slot_bytes, block->ptr,
-          block->bytes, block, class_id, block->source_kind,
+          block->bytes, block, class_id, hz6_source_block_source_kind(block),
           block->source_release, HZ6_STATE_ACTIVE)) {
     hz6_allocator_source_run_rollback_slot(block, *slot_index);
     hz6_allocator_release_source_block(allocator, block);
@@ -165,7 +165,7 @@ void* hz6_front_source_block_slot(Hz6Allocator* allocator,
                                   size_t user_bytes,
                                   size_t source_offset,
                                   Hz6SourceBlock* source_block) {
-  if (!allocator || !source_block || !source_block->active ||
+  if (!allocator || !source_block || !hz6_source_block_active(source_block) ||
       !source_block->ptr || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT ||
       user_bytes == 0 || source_offset > source_block->bytes ||
       user_bytes > source_block->bytes - source_offset) {
@@ -193,7 +193,7 @@ void* hz6_front_source_block_slot(Hz6Allocator* allocator,
     hz6_allocator_note_descgov_descriptor_fail(allocator, class_id);
     return NULL;
   }
-  if (!source_block->route_registered) {
+  if (!hz6_source_block_route_registered(source_block)) {
     if (!hz6_allocator_source_block_register_invalid_range(
             allocator, source_block, front_id, class_id)) {
       return NULL;
@@ -207,7 +207,8 @@ void* hz6_front_source_block_slot(Hz6Allocator* allocator,
   if (!hz6_allocator_prepare_descriptor(
           allocator, descriptor, user_ptr, user_bytes, source_block->ptr,
           source_block->bytes, source_block, class_id,
-          source_block->source_kind, source_block->source_release,
+          hz6_source_block_source_kind(source_block),
+          source_block->source_release,
           HZ6_STATE_ACTIVE)) {
 #if HZ6_DIAGNOSTIC_PROBES
     if (source_block->source_release) {

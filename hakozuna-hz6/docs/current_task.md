@@ -17,6 +17,128 @@ Use these orientation docs before reading this long ledger:
   HZ6_SOURCE_MODULARIZATION.md
 ```
 
+### 2026-06-05: SourceBlockPackedFlags-L1 candidate
+
+Goal:
+
+```text
+Continue HZ6 Larson lowest-RSS lane cleanup after FrontCachePackedMeta-L1.
+
+Observation:
+  OwnerSourceSideMeta-L2 already removes the descriptor-storage owner scan in
+  the selected lane. The next clean static RSS target is SourceBlock entry
+  shape, not another owner lookup knob.
+```
+
+Implementation:
+
+```text
+Flag:
+  HZ6_SOURCE_BLOCK_PACKED_FLAGS_L1
+
+Change:
+  SourceBlock now has accessor helpers for:
+    source_kind
+    active
+    route_registered
+    run_active
+
+  With the flag enabled, those four values are packed into
+  `source_state_flags`.
+
+Preserved:
+  source_release stays inline
+  OwnerSourceSideMeta-L2 pointer stays inline
+  source-run bitmap/slot metadata stays inline
+  source-run reuse / route invalid-envelope / release semantics unchanged
+```
+
+Validation:
+
+```text
+Default Windows HZ6 smoke build:
+  hakozuna-hz6/win/build_win_hz6_r1_smokes.ps1 -SkipRun
+  result: build OK
+
+Packed SourceBlock smoke:
+  flags:
+    HZ6_SOURCE_BLOCK_PACKED_FLAGS_L1=1
+    HZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1=1
+    HZ6_SOURCE_RUN_REUSE_L1=1
+    HZ6_SOURCE_RUN_SLOT_LOOKUP_L1=1
+  result:
+    hz6-r1-sourceblock-smoke ok
+
+Packed safety smoke:
+  plus:
+    HZ6_ROUTE_PACKED_META_L1=1
+    HZ6_DESCRIPTOR_STORAGE_OWNER16_L1=1
+    HZ6_OWNER_SOURCE_SIDE_META_L2=1
+  result:
+    hz6-r1-safety-smoke ok
+```
+
+Metadata check:
+
+```text
+Same diagnostic bench flags except packed on/off:
+
+unpacked:
+  source_block_entry_bytes = 144
+  source_block_table_bytes = 2304  # small-cap diagnostic
+
+packed:
+  source_block_entry_bytes = 128
+  source_block_table_bytes = 2048  # small-cap diagnostic
+
+Projected selected source16k / 16-thread effect:
+  16 bytes * 16384 source blocks * 16 allocators ~= 4 MiB metadata reduction
+```
+
+Smoke result:
+
+```text
+Command:
+  win/run_win_hz6_capacity_matrix.ps1
+    -Families larson
+    -BenchmarkProfiles larson_t16_main_10k
+    -Hz6Profiles speed
+    -CapacityLanes ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-sourceblockpacked-source16k-route192k-run512
+    -Runs 1
+
+Result:
+  47.620M ops/s
+  435768 KB
+
+Source:
+  docs/benchmarks/windows/paper/20260605_042827_hz6_capacity_matrix_windows.md
+```
+
+Decision:
+
+```text
+KEEP as lower-RSS candidate:
+  SourceBlockPackedFlags-L1 is safety/build clean and produces the expected
+  `144 -> 128` SourceBlock entry reduction.
+
+Not promoted yet:
+  Needs repeat-3 closeout against:
+    OwnerSourceSideMeta-L2 baseline
+    FrontCachePackedMeta-L1 candidate
+
+Do not yet combine:
+  FrontCachePackedMeta-L1 + SourceBlockPackedFlags-L1.
+  Isolate SourceBlockPackedFlags first.
+
+Next:
+  Run repeat-3 closeout for:
+    larson-cross-owner-selected
+    or a smaller explicit A/B:
+      ownersourcel2
+      ownersourcel2-frontcachepacked
+      ownersourcel2-sourceblockpacked
+```
+
 This file is intentionally the historical experiment ledger. Stable decisions
 should be copied into the selected summary or lane guide instead of being left
 only in this file.

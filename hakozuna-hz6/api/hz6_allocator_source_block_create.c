@@ -9,7 +9,7 @@ static void hz6_source_run_reset(Hz6SourceBlock* block) {
   block->run_slot_count = 0;
   block->run_used_count = 0;
   block->run_next_hint = 0;
-  block->run_active = 0;
+  hz6_source_block_set_run_active(block, 0);
   for (size_t i = 0; i < HZ6_SOURCE_RUN_BITMAP_WORDS; ++i) {
     block->run_used_bits[i] = 0;
   }
@@ -38,7 +38,7 @@ static void hz6_source_run_bit_clear(Hz6SourceBlock* block,
 
 #if HZ6_SOURCE_RUN_REUSE_L1
 static uint16_t hz6_source_run_count_used_bits(const Hz6SourceBlock* block) {
-  if (!block || !block->run_active) {
+  if (!block || !hz6_source_block_run_active(block)) {
     return 0;
   }
   size_t count = 0;
@@ -59,7 +59,8 @@ static uint16_t hz6_source_run_count_used_bits(const Hz6SourceBlock* block) {
 int hz6_allocator_source_run_init(Hz6SourceBlock* block,
                                   uint16_t class_id,
                                   size_t slot_bytes) {
-  if (!block || !block->active || !block->ptr || slot_bytes == 0 ||
+  if (!block || !hz6_source_block_active(block) || !block->ptr ||
+      slot_bytes == 0 ||
       block->bytes < slot_bytes) {
     return 0;
   }
@@ -73,7 +74,7 @@ int hz6_allocator_source_run_init(Hz6SourceBlock* block,
   block->run_slot_bytes = slot_bytes;
   block->run_class_id = class_id;
   block->run_slot_count = (uint16_t)slots;
-  block->run_active = 1;
+  hz6_source_block_set_run_active(block, 1);
   return 1;
 }
 
@@ -97,8 +98,10 @@ Hz6SourceBlock* hz6_allocator_source_run_find_reusable(
 #endif
   for (size_t i = 0; i < HZ6_SOURCE_BLOCK_CAPACITY; ++i) {
     Hz6SourceBlock* block = &allocator->source_blocks[i];
-    if (!block->active || !block->ptr || !block->run_active ||
-        block->source_kind != source_kind || block->bytes != block_bytes ||
+    if (!hz6_source_block_active(block) || !block->ptr ||
+        !hz6_source_block_run_active(block) ||
+        hz6_source_block_source_kind(block) != source_kind ||
+        block->bytes != block_bytes ||
         block->run_class_id != class_id ||
         block->run_slot_bytes != slot_bytes) {
       continue;
@@ -152,7 +155,7 @@ Hz6SourceBlock* hz6_allocator_source_run_find_reusable(
 
 int hz6_allocator_source_run_reserve_slot(Hz6SourceBlock* block,
                                           size_t* slot_index) {
-  if (!block || !slot_index || !block->run_active ||
+  if (!block || !slot_index || !hz6_source_block_run_active(block) ||
       block->run_used_count >= block->run_slot_count) {
     return 0;
   }
@@ -186,7 +189,8 @@ void hz6_allocator_source_run_commit_slot(Hz6SourceBlock* block,
 
 void hz6_allocator_source_run_rollback_slot(Hz6SourceBlock* block,
                                             size_t slot_index) {
-  if (!block || !block->run_active || slot_index >= block->run_slot_count ||
+  if (!block || !hz6_source_block_run_active(block) ||
+      slot_index >= block->run_slot_count ||
       !hz6_source_run_bit_get(block, slot_index)) {
     return;
   }
@@ -199,7 +203,7 @@ void hz6_allocator_source_run_rollback_slot(Hz6SourceBlock* block,
 
 void hz6_allocator_source_run_release_slot(Hz6SourceBlock* block,
                                            void* ptr) {
-  if (!block || !ptr || !block->run_active || !block->ptr ||
+  if (!block || !ptr || !hz6_source_block_run_active(block) || !block->ptr ||
       block->run_slot_bytes == 0) {
     return;
   }
@@ -234,11 +238,11 @@ static void hz6_allocator_record_source_block_failure_state(
 
   for (size_t i = 0; i < HZ6_SOURCE_BLOCK_CAPACITY; ++i) {
     const Hz6SourceBlock* block = &allocator->source_blocks[i];
-    if (!block->active) {
+    if (!hz6_source_block_active(block)) {
       continue;
     }
     ++active;
-    if (block->route_registered) {
+    if (hz6_source_block_route_registered(block)) {
       ++registered;
     }
     if (block->ref_count != 0) {
@@ -284,7 +288,8 @@ void hz6_allocator_note_source_run_reuse_dryrun(Hz6Allocator* allocator,
   size_t largest_free_slots = 0;
   for (size_t i = 0; i < HZ6_SOURCE_BLOCK_CAPACITY; ++i) {
     const Hz6SourceBlock* block = &allocator->source_blocks[i];
-    if (!block->active || !block->ptr || block->source_kind != source_kind ||
+    if (!hz6_source_block_active(block) || !block->ptr ||
+        hz6_source_block_source_kind(block) != source_kind ||
         block->bytes != block_bytes || block->ref_count >= slots_per_block) {
       continue;
     }
@@ -334,7 +339,7 @@ Hz6SourceBlock* hz6_allocator_create_source_block(
 #if HZ6_DIAGNOSTIC_PROBES
     ++probes;
 #endif
-    if (!allocator->source_blocks[i].active) {
+    if (!hz6_source_block_active(&allocator->source_blocks[i])) {
       block = &allocator->source_blocks[i];
       break;
     }
@@ -360,7 +365,7 @@ Hz6SourceBlock* hz6_allocator_create_source_block(
 
   block->ptr = ptr;
   block->bytes = bytes;
-  block->source_kind = source_kind;
+  hz6_source_block_set_source_kind(block, source_kind);
   block->source_release = source_ops->release;
 #if !HZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1
   block->route_backend = NULL;
@@ -370,7 +375,7 @@ Hz6SourceBlock* hz6_allocator_create_source_block(
 #if HZ6_OWNER_SOURCE_SIDE_META_L2
   block->owner_source_storage_allocator = allocator;
 #endif
-  block->active = 1;
-  block->route_registered = 0;
+  hz6_source_block_set_active(block, 1);
+  hz6_source_block_set_route_registered(block, 0);
   return block;
 }

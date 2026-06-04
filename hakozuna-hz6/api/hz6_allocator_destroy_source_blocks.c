@@ -7,10 +7,10 @@ void hz6_allocator_destroy_source_blocks(Hz6Allocator* allocator) {
 
   for (size_t i = 0; i < HZ6_SOURCE_BLOCK_CAPACITY; ++i) {
     Hz6SourceBlock* block = &allocator->source_blocks[i];
-    if (!block->active || !block->ptr) {
+    if (!hz6_source_block_active(block) || !block->ptr) {
       continue;
     }
-    if (block->route_registered) {
+    if (hz6_source_block_route_registered(block)) {
       hz6_route_backend_unregister_invalid_range(&allocator->route_backend,
                                                  block->ptr,
                                                  NULL);
@@ -22,7 +22,7 @@ void hz6_allocator_destroy_source_blocks(Hz6Allocator* allocator) {
     }
     block->ptr = NULL;
     block->bytes = 0;
-    block->source_kind = HZ6_SOURCE_NONE;
+    hz6_source_block_set_source_kind(block, HZ6_SOURCE_NONE);
     block->source_release = NULL;
 #if !HZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1
     block->route_backend = NULL;
@@ -36,8 +36,8 @@ void hz6_allocator_destroy_source_blocks(Hz6Allocator* allocator) {
     for (size_t word = 0; word < HZ6_SOURCE_RUN_BITMAP_WORDS; ++word) {
       block->run_used_bits[word] = 0;
     }
-    block->active = 0;
-    block->route_registered = 0;
-    block->run_active = 0;
+    hz6_source_block_set_active(block, 0);
+    hz6_source_block_set_route_registered(block, 0);
+    hz6_source_block_set_run_active(block, 0);
   }
 }

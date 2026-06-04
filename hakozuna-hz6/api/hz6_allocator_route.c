@@ -599,7 +599,8 @@ int hz6_allocator_route_negative_filter_skip_local(
     ++range_probes;
 #endif
     const Hz6SourceBlock* block = &allocator->source_blocks[i];
-    if (!block->active || !block->ptr || block->bytes == 0) {
+    if (!hz6_source_block_active(block) || !block->ptr ||
+        block->bytes == 0) {
       continue;
     }
     uintptr_t base = (uintptr_t)block->ptr;

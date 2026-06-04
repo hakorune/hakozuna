@@ -4,7 +4,11 @@ void hz6_allocator_init_state_source_blocks(Hz6Allocator* allocator) {
   for (size_t i = 0; i < HZ6_SOURCE_BLOCK_CAPACITY; ++i) {
     allocator->source_blocks[i].ptr = NULL;
     allocator->source_blocks[i].bytes = 0;
-    allocator->source_blocks[i].source_kind = HZ6_SOURCE_NONE;
+#if HZ6_SOURCE_BLOCK_PACKED_FLAGS_L1
+    allocator->source_blocks[i].source_state_flags = 0;
+#endif
+    hz6_source_block_set_source_kind(&allocator->source_blocks[i],
+                                     HZ6_SOURCE_NONE);
     allocator->source_blocks[i].source_release = NULL;
 #if !HZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1
     allocator->source_blocks[i].route_backend = NULL;
@@ -21,8 +25,8 @@ void hz6_allocator_init_state_source_blocks(Hz6Allocator* allocator) {
 #if HZ6_OWNER_SOURCE_SIDE_META_L2
     allocator->source_blocks[i].owner_source_storage_allocator = NULL;
 #endif
-    allocator->source_blocks[i].active = 0;
-    allocator->source_blocks[i].route_registered = 0;
-    allocator->source_blocks[i].run_active = 0;
+    hz6_source_block_set_active(&allocator->source_blocks[i], 0);
+    hz6_source_block_set_route_registered(&allocator->source_blocks[i], 0);
+    hz6_source_block_set_run_active(&allocator->source_blocks[i], 0);
   }
 }

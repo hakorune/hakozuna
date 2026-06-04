@@ -93,7 +93,8 @@ int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
 #endif
 #if HZ6_DESCRIPTORLESS_FRONTCACHE_L1
   const size_t entry_bytes = hz6_frontcache_entry_bytes(&entry);
-  if (descriptor->source_block && descriptor->source_block->run_active &&
+  if (descriptor->source_block &&
+      hz6_source_block_run_active(descriptor->source_block) &&
       descriptor->source_block->run_class_id == entry_class_id &&
       descriptor->source_block->run_slot_bytes == entry_bytes &&
 #if HZ6_DESCRIPTOR_COLD_GOV_L1

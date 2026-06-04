@@ -286,7 +286,7 @@ int main(void) {
       !expect(hz6_allocator_scavenge_local_free(&run_scavenge_allocator,
                                                 HZ6_MIDPAGE_8K_BYTES) == 1,
               "run scavenge releases one slot") ||
-      !expect(run_scavenge_block->active,
+      !expect(hz6_source_block_active(run_scavenge_block),
               "run scavenge keeps shared block") ||
       !expect(run_scavenge_block->ref_count == 7,
               "run scavenge decrements block refcount")) {

@@ -28,7 +28,11 @@ typedef int (*Hz6SourceReleaseFn)(void* ptr, size_t bytes);
 typedef struct Hz6SourceBlock {
   void* ptr;
   size_t bytes;
+#if HZ6_SOURCE_BLOCK_PACKED_FLAGS_L1
+  uint16_t source_state_flags;
+#else
   Hz6SourceKind source_kind;
+#endif
   Hz6SourceReleaseFn source_release;
 #if !HZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1
   Hz6RouteBackend* route_backend;
@@ -43,10 +47,141 @@ typedef struct Hz6SourceBlock {
 #if HZ6_OWNER_SOURCE_SIDE_META_L2
   struct Hz6Allocator* owner_source_storage_allocator;
 #endif
+#if !HZ6_SOURCE_BLOCK_PACKED_FLAGS_L1
   int active;
   int route_registered;
   int run_active;
+#endif
 } Hz6SourceBlock;
+
+#if HZ6_SOURCE_BLOCK_PACKED_FLAGS_L1
+#define HZ6_SOURCE_BLOCK_FLAG_ACTIVE ((uint16_t)0x0100u)
+#define HZ6_SOURCE_BLOCK_FLAG_ROUTE_REGISTERED ((uint16_t)0x0200u)
+#define HZ6_SOURCE_BLOCK_FLAG_RUN_ACTIVE ((uint16_t)0x0400u)
+#define HZ6_SOURCE_BLOCK_SOURCE_KIND_MASK ((uint16_t)0x00ffu)
+
+static inline Hz6SourceKind hz6_source_block_source_kind(
+    const Hz6SourceBlock* block) {
+  return block ? (Hz6SourceKind)(block->source_state_flags &
+                                HZ6_SOURCE_BLOCK_SOURCE_KIND_MASK)
+               : HZ6_SOURCE_NONE;
+}
+
+static inline void hz6_source_block_set_source_kind(Hz6SourceBlock* block,
+                                                    Hz6SourceKind kind) {
+  if (!block) {
+    return;
+  }
+  block->source_state_flags =
+      (uint16_t)((block->source_state_flags &
+                  (uint16_t)~HZ6_SOURCE_BLOCK_SOURCE_KIND_MASK) |
+                 ((uint16_t)kind & HZ6_SOURCE_BLOCK_SOURCE_KIND_MASK));
+}
+
+static inline int hz6_source_block_active(const Hz6SourceBlock* block) {
+  return block &&
+         (block->source_state_flags & HZ6_SOURCE_BLOCK_FLAG_ACTIVE) != 0;
+}
+
+static inline void hz6_source_block_set_active(Hz6SourceBlock* block,
+                                               int active) {
+  if (!block) {
+    return;
+  }
+  if (active) {
+    block->source_state_flags |= HZ6_SOURCE_BLOCK_FLAG_ACTIVE;
+  } else {
+    block->source_state_flags &=
+        (uint16_t)~HZ6_SOURCE_BLOCK_FLAG_ACTIVE;
+  }
+}
+
+static inline int hz6_source_block_route_registered(
+    const Hz6SourceBlock* block) {
+  return block &&
+         (block->source_state_flags &
+          HZ6_SOURCE_BLOCK_FLAG_ROUTE_REGISTERED) != 0;
+}
+
+static inline void hz6_source_block_set_route_registered(
+    Hz6SourceBlock* block,
+    int registered) {
+  if (!block) {
+    return;
+  }
+  if (registered) {
+    block->source_state_flags |= HZ6_SOURCE_BLOCK_FLAG_ROUTE_REGISTERED;
+  } else {
+    block->source_state_flags &=
+        (uint16_t)~HZ6_SOURCE_BLOCK_FLAG_ROUTE_REGISTERED;
+  }
+}
+
+static inline int hz6_source_block_run_active(const Hz6SourceBlock* block) {
+  return block &&
+         (block->source_state_flags & HZ6_SOURCE_BLOCK_FLAG_RUN_ACTIVE) != 0;
+}
+
+static inline void hz6_source_block_set_run_active(Hz6SourceBlock* block,
+                                                   int active) {
+  if (!block) {
+    return;
+  }
+  if (active) {
+    block->source_state_flags |= HZ6_SOURCE_BLOCK_FLAG_RUN_ACTIVE;
+  } else {
+    block->source_state_flags &=
+        (uint16_t)~HZ6_SOURCE_BLOCK_FLAG_RUN_ACTIVE;
+  }
+}
+#else
+static inline Hz6SourceKind hz6_source_block_source_kind(
+    const Hz6SourceBlock* block) {
+  return block ? block->source_kind : HZ6_SOURCE_NONE;
+}
+
+static inline void hz6_source_block_set_source_kind(Hz6SourceBlock* block,
+                                                    Hz6SourceKind kind) {
+  if (block) {
+    block->source_kind = kind;
+  }
+}
+
+static inline int hz6_source_block_active(const Hz6SourceBlock* block) {
+  return block && block->active;
+}
+
+static inline void hz6_source_block_set_active(Hz6SourceBlock* block,
+                                               int active) {
+  if (block) {
+    block->active = active ? 1 : 0;
+  }
+}
+
+static inline int hz6_source_block_route_registered(
+    const Hz6SourceBlock* block) {
+  return block && block->route_registered;
+}
+
+static inline void hz6_source_block_set_route_registered(
+    Hz6SourceBlock* block,
+    int registered) {
+  if (block) {
+    block->route_registered = registered ? 1 : 0;
+  }
+}
+
+static inline int hz6_source_block_run_active(const Hz6SourceBlock* block) {
+  return block && block->run_active;
+}
+
+static inline void hz6_source_block_set_run_active(Hz6SourceBlock* block,
+                                                   int active) {
+  if (block) {
+    block->run_active = active ? 1 : 0;
+  }
+}
+#endif
 
 typedef struct Hz6ObjectDescriptor {
 #if !HZ6_DESCRIPTOR_NO_BACKPTR_L1

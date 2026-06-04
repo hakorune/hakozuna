@@ -156,12 +156,12 @@ static void hz6_stats_snapshot_memory_attribution(
   size_t source_block_payload_bytes = 0;
   for (size_t i = 0; i < HZ6_SOURCE_BLOCK_CAPACITY; ++i) {
     const Hz6SourceBlock* block = &allocator->source_blocks[i];
-    if (!block->active) {
+    if (!hz6_source_block_active(block)) {
       continue;
     }
     ++active_source_blocks;
     source_block_payload_bytes += block->bytes;
-    if (block->route_registered) {
+    if (hz6_source_block_route_registered(block)) {
       ++registered_source_blocks;
     }
     if (block->ref_count != 0) {

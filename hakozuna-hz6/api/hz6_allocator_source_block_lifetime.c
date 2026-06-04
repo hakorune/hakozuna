@@ -1,7 +1,7 @@
 #include "hz6_allocator.h"
 
 int hz6_allocator_retain_source_block(Hz6SourceBlock* block) {
-  if (!block || !block->active || !block->ptr) {
+  if (!block || !hz6_source_block_active(block) || !block->ptr) {
     return 0;
   }
   ++block->ref_count;
@@ -10,7 +10,8 @@ int hz6_allocator_retain_source_block(Hz6SourceBlock* block) {
 
 int hz6_allocator_release_source_block(Hz6Allocator* allocator,
                                        Hz6SourceBlock* block) {
-  if (!allocator || !block || !block->active || !block->ptr) {
+  if (!allocator || !block || !hz6_source_block_active(block) ||
+      !block->ptr) {
     return 0;
   }
 
@@ -21,7 +22,7 @@ int hz6_allocator_release_source_block(Hz6Allocator* allocator,
     return 1;
   }
 
-  if (block->route_registered) {
+  if (hz6_source_block_route_registered(block)) {
     hz6_route_backend_unregister_invalid_range(&allocator->route_backend,
                                                block->ptr,
                                                NULL);
@@ -31,7 +32,7 @@ int hz6_allocator_release_source_block(Hz6Allocator* allocator,
                      : hz6_source_system_release(block->ptr, block->bytes);
   block->ptr = NULL;
   block->bytes = 0;
-  block->source_kind = HZ6_SOURCE_NONE;
+  hz6_source_block_set_source_kind(block, HZ6_SOURCE_NONE);
   block->source_release = NULL;
 #if !HZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1
   block->route_backend = NULL;
@@ -48,8 +49,8 @@ int hz6_allocator_release_source_block(Hz6Allocator* allocator,
 #if HZ6_OWNER_SOURCE_SIDE_META_L2
   block->owner_source_storage_allocator = NULL;
 #endif
-  block->active = 0;
-  block->route_registered = 0;
-  block->run_active = 0;
+  hz6_source_block_set_active(block, 0);
+  hz6_source_block_set_route_registered(block, 0);
+  hz6_source_block_set_run_active(block, 0);
   return released;
 }

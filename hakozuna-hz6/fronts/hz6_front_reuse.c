@@ -15,7 +15,8 @@ static void* hz6_front_materialize_descriptorless_entry(
   }
 
   Hz6SourceBlock* block = (Hz6SourceBlock*)entry.source_block;
-  if (!block->active || !block->ptr || entry_class_id != class_id ||
+  if (!hz6_source_block_active(block) || !block->ptr ||
+      entry_class_id != class_id ||
       class_id != block->run_class_id) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.descriptorless_frontcache_invalid;
@@ -68,7 +69,7 @@ static void* hz6_front_materialize_descriptorless_entry(
 
   if (!hz6_allocator_prepare_descriptor(
           allocator, descriptor, entry.ptr, entry_bytes, block->ptr,
-          block->bytes, block, class_id, block->source_kind,
+          block->bytes, block, class_id, hz6_source_block_source_kind(block),
           block->source_release, HZ6_STATE_ACTIVE)) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.descriptorless_frontcache_invalid;

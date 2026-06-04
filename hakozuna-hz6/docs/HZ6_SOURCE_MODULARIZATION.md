@@ -37,7 +37,7 @@ the run bitmap is present in every static source-block entry.
 Current selected Larson lowest-RSS lane:
 
 ```text
-ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-source16k-route192k-run512
+ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-source16k-route192k-run512
 ```
 
 Route capacity is now at the clean lower bound for the selected run512 shape.
@@ -49,6 +49,35 @@ stores route bytes as `uint16_t(bytes - 1)` and moves the selected lowest-RSS
 row to `48.367M / 449144 KB` in same-run repeat-3. Further RSS work should
 target descriptor table/lifecycle or a broader route/descriptor ownership
 representation, not another static route cut.
+
+SourceBlockPackedFlags-L1 is the current small source-block layout candidate:
+
+```text
+flag:
+  HZ6_SOURCE_BLOCK_PACKED_FLAGS_L1
+
+change:
+  pack source_kind / active / route_registered / run_active into one flag word
+  keep source_release inline
+  keep OwnerSourceSideMeta-L2 storage-owner pointer inline
+
+diagnostic sizeof check:
+  selected routepacked/routebytes16/L2 shape:
+    source_block_entry_bytes 144 -> 128
+
+Larson T16 main 10k smoke:
+  47.620M ops/s
+  435768 KB
+```
+
+Read:
+
+```text
+This is a low-risk RSS candidate before a larger source-run side-table split.
+It does not change source-run slot semantics, route invalid-range ordering, or
+source release ownership. It needs repeat-3 closeout before promotion and
+should be evaluated before combining with FrontCachePackedMeta-L1.
+```
 
 Static descriptor-capacity trimming is also effectively at the lower bound for
 the current representation:

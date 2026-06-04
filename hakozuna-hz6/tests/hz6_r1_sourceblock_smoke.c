@@ -268,7 +268,8 @@ int main(void) {
   if (!expect(hz6_allocator_release_descriptor_source(
                   &midpage_block_allocator, block_slot0_descriptor),
               "source block first release") ||
-      !expect(block->active, "source block retained after first release") ||
+      !expect(hz6_source_block_active(block),
+              "source block retained after first release") ||
       !expect(block->ref_count == 1, "source block decremented") ||
       !expect(g_source_block_release_count == 0,
               "source block not released early")) {
@@ -278,7 +279,8 @@ int main(void) {
   if (!expect(hz6_allocator_release_descriptor_source(
                   &midpage_block_allocator, block_slot1_descriptor),
               "source block final release") ||
-      !expect(!block->active, "source block inactive after final release") ||
+      !expect(!hz6_source_block_active(block),
+              "source block inactive after final release") ||
       !expect(g_source_block_release_count == 1,
               "source block released once") ||
       !expect(hz6_allocator_route_lookup(
