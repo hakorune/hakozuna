@@ -101,6 +101,9 @@ static void hz6_stats_snapshot_memory_attribution(
 #endif
   snapshot->memory_route_table_bytes =
       sizeof(allocator->route_entries);
+#if HZ6_ROUTE_PACKED_META_L1
+  snapshot->memory_route_table_bytes += sizeof(allocator->route_bytes);
+#endif
   snapshot->memory_source_block_table_bytes =
       sizeof(allocator->source_blocks);
   snapshot->memory_frontcache_table_bytes =

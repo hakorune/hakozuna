@@ -21,8 +21,8 @@ For repo cleanup rules and the source modularization backlog, see
 | larger_sizes RSS/speed | `speed` or `rss` | `largerlowrss-front8k-sourcerun-desc8k-route8k` | Best larger_sizes lane; needs larger front retention, not more descriptor-failure cleanup. |
 | Larson cross-owner full 10k | `speed` | `ownerlocalityfast-rsscap-2-desc160k` | Full Larson cross-owner throughput/RSS balance lane; appcap-class throughput with sub-1GB peak RSS. |
 | Larson cross-owner low RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k` | Clean route-capacity control. It keeps the thindesc/source16k shape and trims route capacity to 192K; repeat-3 is safety-clean at about `44.610M / 628844 KB`. |
-| Larson cross-owner lowest RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-dir192k-source16k-route192k-run512` | Current selected lowest-RSS sibling candidate. It keeps the no-backptr route192k/run512 shape but trims shared-directory / owner-locality capacity to dir192k; repeat-3 is safety-clean at `44.580M / 472176 KB`. |
-| Larson cross-owner minimum RSS control | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-source16k-route192k-run512` | Clean SourceBlockNoRouteBackptr-L1 control. It removes the SourceBlock route-backend back-pointer and reaches `41.107M / 469868 KB`; use only when minimum RSS is the priority. |
+| Larson cross-owner lowest RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-source16k-route192k-run512` | Current selected lowest-RSS sibling candidate. It combines descriptor no-backptr, SourceBlock no-route-backptr, dir192k, route192k/run512, and RoutePackedMeta-L1; repeat-3 is clean at `47.616M / 456048 KB`. |
+| Larson cross-owner minimum RSS control | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-source16k-route192k-run512` | Clean SourceBlockNoRouteBackptr-L1 control. It removes the SourceBlock route-backend back-pointer and reaches `41.107M / 469868 KB`; superseded by routepacked for both speed and RSS, but useful as an isolation control. |
 | Larson cross-owner no-backptr control | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-source16k-route192k-run512` | Comparison control for dir192k. It keeps route192k/run512 and removes the descriptor allocator back-pointer; repeat-3 is safety-clean at `40.710M / 476784 KB`, and same-run repeat-3 against dir192k is `45.310M / 476788 KB`. |
 | Larson cross-owner run512 control | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512` | Previous selected lowest-RSS sibling/control. Repeat-3 is safety-clean at `48.512M / 499820 KB`; same-run no-backptr cuts another about 23 MB. |
 | Larson descriptor boundary | `speed` | `ownerlocalityfast-rsscap-2-desc158k-front4k-thindesc-source16k-route192k-run512` | Clean tiny-RSS sibling/control after run512. Repeat-3 is `40.400M / 498080 KB`; desc156k and below are warmup no-go from `descriptor_exhausted=3` / `alloc_fail=1`. |
@@ -61,7 +61,7 @@ separate by output subdirectory.
 ```
 
 ```powershell
-# Narrow low-RSS sibling check: front4k versus thindesc-source16k.
+# Narrow low-RSS sibling check: front4k / route192k / no-backptr / routepacked.
 .\win\run_win_hz6_selected_family.ps1 `
   -LarsonCrossOwnerLowestRss `
   -Runs 3 `
@@ -172,8 +172,9 @@ larson-sourcerun-metaslim:
   SourceBlockMetaSlim-L1 repeat-3 clean result; no-backptr run512 superseded
   it as a descriptor-layout control, and dir192k/no-backptr now supersedes
   no-backptr for selected-family lowest-RSS comparisons. no-route-backptr
-  dir192k is the minimum-RSS control, not the throughput/RSS selected sibling.
-  Run2048/run1024 remain SourceBlockMetaSlim-L1 controls.
+  dir192k is now an isolation control; routepacked/no-routebackptr/dir192k is
+  the selected lowest-RSS sibling candidate. Run2048/run1024 remain
+  SourceBlockMetaSlim-L1 controls.
 
 larson-run512-routeslim:
   larson_t16_main_10k

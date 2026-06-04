@@ -29,18 +29,20 @@ Hz6RouteResult hz6_route_lookup_exact_probe(const Hz6RouteTable* table,
 #endif
     const Hz6RouteEntry* entry = &table->entries[index];
     ++probes;
-    if (!entry->active) {
-      if (!entry->tombstone) {
+    if (!hz6_route_entry_active(entry)) {
+      if (!hz6_route_entry_tombstone(entry)) {
         break;
       }
       continue;
     }
-    if (entry->exact_valid && addr == entry->base) {
+    if (hz6_route_entry_exact_valid(entry) && addr == entry->base) {
       if (probe_count) {
         *probe_count = probes;
       }
-      return hz6_route_valid(entry->front_id, entry->class_id,
-                             entry->generation, entry->descriptor);
+      return hz6_route_valid(hz6_route_entry_front_id(entry),
+                             hz6_route_entry_class_id(entry),
+                             hz6_route_entry_generation(table, index),
+                             entry->descriptor);
     }
   }
 
@@ -84,55 +86,63 @@ Hz6RouteResult hz6_route_lookup_probe(const Hz6RouteTable* table,
 #endif
     const Hz6RouteEntry* entry = &table->entries[index];
     ++probes;
-    if (!entry->active) {
-      if (!entry->tombstone) {
+    if (!hz6_route_entry_active(entry)) {
+      if (!hz6_route_entry_tombstone(entry)) {
         break;
       }
       continue;
     }
-    if (entry->exact_valid && addr == entry->base) {
+    if (hz6_route_entry_exact_valid(entry) && addr == entry->base) {
       if (probe_count) {
         *probe_count = probes;
       }
-      return hz6_route_valid(entry->front_id, entry->class_id,
-                             entry->generation, entry->descriptor);
+      return hz6_route_valid(hz6_route_entry_front_id(entry),
+                             hz6_route_entry_class_id(entry),
+                             hz6_route_entry_generation(table, index),
+                             entry->descriptor);
     }
   }
 
   for (size_t i = 0; i < table->capacity; ++i) {
     const Hz6RouteEntry* entry = &table->entries[i];
     ++probes;
-    if (!entry->active || !entry->exact_valid) {
+    if (!hz6_route_entry_active(entry) ||
+        !hz6_route_entry_exact_valid(entry)) {
       continue;
     }
-    uintptr_t end = entry->base + entry->bytes;
+    uintptr_t end = entry->base + hz6_route_entry_bytes(table, i);
     if (addr == entry->base) {
       if (probe_count) {
         *probe_count = probes;
       }
-      return hz6_route_valid(entry->front_id, entry->class_id,
-                             entry->generation, entry->descriptor);
+      return hz6_route_valid(hz6_route_entry_front_id(entry),
+                             hz6_route_entry_class_id(entry),
+                             hz6_route_entry_generation(table, i),
+                             entry->descriptor);
     }
     if (addr > entry->base && addr < end) {
       if (probe_count) {
         *probe_count = probes;
       }
-      return hz6_route_invalid(entry->front_id, entry->class_id);
+      return hz6_route_invalid(hz6_route_entry_front_id(entry),
+                               hz6_route_entry_class_id(entry));
     }
   }
 
   for (size_t i = 0; i < table->capacity; ++i) {
     const Hz6RouteEntry* entry = &table->entries[i];
     ++probes;
-    if (!entry->active || entry->exact_valid) {
+    if (!hz6_route_entry_active(entry) ||
+        hz6_route_entry_exact_valid(entry)) {
       continue;
     }
-    uintptr_t end = entry->base + entry->bytes;
+    uintptr_t end = entry->base + hz6_route_entry_bytes(table, i);
     if (addr >= entry->base && addr < end) {
       if (probe_count) {
         *probe_count = probes;
       }
-      return hz6_route_invalid(entry->front_id, entry->class_id);
+      return hz6_route_invalid(hz6_route_entry_front_id(entry),
+                               hz6_route_entry_class_id(entry));
     }
   }
 

@@ -21,6 +21,63 @@ This file is intentionally the historical experiment ledger. Stable decisions
 should be copied into the selected summary or lane guide instead of being left
 only in this file.
 
+Latest Larson RoutePackedMeta-L1 decision:
+
+```text
+Goal:
+  reduce full-10k Larson cross-owner static route metadata without touching
+  remote handoff behavior or descriptor ownership semantics.
+
+Implementation:
+  HZ6_ROUTE_PACKED_META_L1
+    Hz6RouteEntry hot payload:
+      base
+      descriptor
+      generation
+      packed meta(front_id, class_id, active, exact_valid, tombstone)
+
+    route bytes:
+      moved to allocator-owned side array route_bytes[].
+
+  Keep descriptor in the hot entry.
+  Keep generation in the hot entry.
+  Do not move route ownership or descriptor ownership in this lane.
+
+Safety / build:
+  default Windows HZ6 R1 smokes: PASS
+  packed lane 1k diagnostic smoke:
+    route_invalid = 0
+    route_miss = 0
+    route_register_fail = 0
+    route_entry_bytes = 24
+
+Results:
+  docs/benchmarks/windows/paper/hz6_selected_family/
+    larson-routepacked-l1-smoke/
+      20260604_174821_hz6_capacity_matrix_windows.md
+    larson-routepacked-l1-full10k/
+      20260604_174858_hz6_capacity_matrix_windows.md
+    larson-routepacked-l1-repeat/
+      20260604_175016_hz6_capacity_matrix_windows.md
+
+  repeat-3 full 10k:
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-
+    noroutebackptr-dir192k-routepacked-source16k-route192k-run512:
+      47.616M ops/s
+      456048 KB peak
+
+Decision:
+  PROMOTE as current Larson cross-owner lowest-RSS sibling candidate.
+  Supersedes plain SourceBlockNoRouteBackptr-L1 for both speed and RSS.
+  Keep plain no-routebackptr/dir192k as an isolation control.
+
+Next:
+  do not continue static route-capacity trimming.
+  if Larson RSS is reopened, attack owner-source-aware descriptor side metadata
+  or a broader route/descriptor ownership representation; otherwise refresh
+  the selected-family / cross-allocator tables with the routepacked row.
+```
+
 Latest mixed clean-lane decision:
 
 ```text

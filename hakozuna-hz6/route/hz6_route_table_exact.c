@@ -41,7 +41,8 @@ int hz6_route_register_exact(Hz6RouteTable* table,
     size_t index = HZ6_ROUTE_PROBE_INDEX(start, step, table->capacity, i);
 #endif
     Hz6RouteEntry* entry = &table->entries[index];
-    if (entry->active && entry->exact_valid && entry->base == base_addr) {
+    if (hz6_route_entry_active(entry) &&
+        hz6_route_entry_exact_valid(entry) && entry->base == base_addr) {
 #if HZ6_DIAGNOSTIC_PROBES
       if (probe_count) {
         *probe_count = probes;
@@ -53,8 +54,8 @@ int hz6_route_register_exact(Hz6RouteTable* table,
 #endif
       return 0;
     }
-    if (!entry->active) {
-      if (entry->tombstone) {
+    if (!hz6_route_entry_active(entry)) {
+      if (hz6_route_entry_tombstone(entry)) {
         if (tombstone_index == (size_t)-1) {
           tombstone_index = index;
           tombstone_reused = 1;
@@ -97,14 +98,12 @@ int hz6_route_register_exact(Hz6RouteTable* table,
 #endif
   }
   entry->base = base_addr;
-  entry->bytes = (uint32_t)bytes;
-  entry->front_id = front_id;
-  entry->class_id = class_id;
-  entry->generation = generation;
   entry->descriptor = descriptor;
-  entry->exact_valid = 1;
-  entry->active = 1;
-  entry->tombstone = 0;
+  hz6_route_entry_set_bytes(table, tombstone_index, (uint32_t)bytes);
+  hz6_route_entry_set_generation(table, tombstone_index, generation);
+  hz6_route_entry_set_meta(entry, front_id, class_id,
+                           HZ6_ROUTE_META_EXACT_VALID |
+                               HZ6_ROUTE_META_ACTIVE);
 #if HZ6_DIAGNOSTIC_PROBES || HZ6_ROUTE_TOMBSTONE_COMPACT_L1
   ++table->active_count;
 #endif
@@ -143,9 +142,11 @@ void hz6_route_unregister_exact(Hz6RouteTable* table,
     size_t index = HZ6_ROUTE_PROBE_INDEX(start, step, table->capacity, i);
 #endif
     Hz6RouteEntry* entry = &table->entries[index];
-    if (entry->active && entry->exact_valid && entry->base == base_addr) {
-      entry->active = 0;
-      entry->tombstone = 1;
+    if (hz6_route_entry_active(entry) &&
+        hz6_route_entry_exact_valid(entry) && entry->base == base_addr) {
+      hz6_route_entry_set_generation(table, index, 0);
+      hz6_route_entry_set_bytes(table, index, 0);
+      hz6_route_entry_mark_tombstone(entry);
 #if HZ6_DIAGNOSTIC_PROBES || HZ6_ROUTE_TOMBSTONE_COMPACT_L1
       if (table->active_count != 0) {
         --table->active_count;

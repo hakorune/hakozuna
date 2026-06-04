@@ -14,6 +14,10 @@ void hz6_allocator_init_backends(Hz6Allocator* allocator) {
                                    HZ6_ROUTE_TABLE_CAPACITY);
       break;
   }
+#if HZ6_ROUTE_PACKED_META_L1
+  hz6_route_table_attach_bytes(&allocator->route_backend.exact_table,
+                               allocator->route_bytes);
+#endif
 
   size_t transfer_capacity = allocator->profile.transfer_capacity;
   if (transfer_capacity == 0 ||

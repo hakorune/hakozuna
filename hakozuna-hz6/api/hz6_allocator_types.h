@@ -96,6 +96,9 @@ struct Hz6Allocator {
   Hz6ProfileConfig profile;
   Hz6OwnerRecord owner;
   Hz6RouteEntry route_entries[HZ6_ROUTE_TABLE_CAPACITY];
+#if HZ6_ROUTE_PACKED_META_L1
+  uint32_t route_bytes[HZ6_ROUTE_TABLE_CAPACITY];
+#endif
   Hz6RouteBackend route_backend;
   Hz6TransferObject transfer_objects[HZ6_TRANSFER_CACHE_CAPACITY];
   Hz6TransferBackend transfer_backend;

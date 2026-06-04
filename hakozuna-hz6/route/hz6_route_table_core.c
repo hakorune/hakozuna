@@ -58,14 +58,27 @@ void hz6_route_table_init(Hz6RouteTable* table,
     return;
   }
   table->entries = entries;
+#if HZ6_ROUTE_PACKED_META_L1
+  table->bytes = NULL;
+#endif
   table->capacity = capacity;
   table->active_count = 0;
   table->tombstone_count = 0;
   table->register_used_tombstone = 0;
   table->register_full_probe_with_tombstone = 0;
   for (size_t i = 0; entries && i < capacity; ++i) {
-    entries[i].active = 0;
-    entries[i].exact_valid = 0;
-    entries[i].tombstone = 0;
+    hz6_route_entry_clear(&entries[i]);
   }
 }
+
+#if HZ6_ROUTE_PACKED_META_L1
+void hz6_route_table_attach_bytes(Hz6RouteTable* table, uint32_t* bytes) {
+  if (!table) {
+    return;
+  }
+  table->bytes = bytes;
+  for (size_t i = 0; bytes && i < table->capacity; ++i) {
+    bytes[i] = 0;
+  }
+}
+#endif
