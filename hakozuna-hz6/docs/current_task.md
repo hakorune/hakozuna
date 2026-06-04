@@ -7946,3 +7946,72 @@ Next if reopened:
   or redesign route / descriptor ownership so the helper always has the
   descriptor's owning allocator
 ```
+
+## HZ6 Descriptor Source Owner Diagnostic
+
+Implementation:
+
+```text
+Diagnostic-only counters:
+  descriptor_source_route_allocator_match
+  descriptor_source_route_allocator_mismatch
+  descriptor_source_current_allocator_match
+  descriptor_source_current_allocator_mismatch
+
+Meaning:
+  route_allocator:
+    allocator that currently owns the route entry / backend
+
+  descriptor source:
+    allocator whose descriptors[] array physically contains the descriptor
+```
+
+Observation:
+
+```text
+Run:
+  larson-run512-descriptorlayout
+  runs = 1
+  diagnostic probes on
+
+baseline run512:
+  47.764M ops/s
+  499836 KB
+  descriptor_source_route_allocator_match = 27915843
+  descriptor_source_route_allocator_mismatch = 450639936
+  route_invalid = 0
+
+no-backptr run512:
+  47.416M ops/s
+  476784 KB
+  descriptor_source_route_allocator_match = 27714890
+  descriptor_source_route_allocator_mismatch = 447517319
+  route_invalid = 0
+
+sideowner16 run512:
+  45.352M ops/s
+  475196 KB
+  descriptor_source_route_allocator_match = 61033450
+  descriptor_source_route_allocator_mismatch = 393294292
+  route_invalid = 11731
+  remote_free_transfer_fail = 11731
+```
+
+Read:
+
+```text
+Route rehome makes route ownership and descriptor-storage ownership diverge
+for most frees in the Larson cross-owner run512 lane. This is safe while the
+owner token lives in the descriptor itself, but unsafe when owner metadata is
+stored in an allocator-local side table indexed by descriptor pointer.
+
+Decision:
+  descriptor-source diagnostic KEEP
+  sideowner16 remains no-go
+  no-backptr remains selected lowest-RSS sibling
+
+Next:
+  do not try another allocator-local owner side table
+  either add first-class descriptor_storage_allocator metadata
+  or switch to another RSS target outside descriptor owner side metadata
+```

@@ -470,6 +470,14 @@ int main(int argc, char** argv) {
             tds[t].hz6_stats_after.route_rehome_success;
         hz6_stats.route_rehome_fail +=
             tds[t].hz6_stats_after.route_rehome_fail;
+        hz6_stats.descriptor_source_route_allocator_match +=
+            tds[t].hz6_stats_after.descriptor_source_route_allocator_match;
+        hz6_stats.descriptor_source_route_allocator_mismatch +=
+            tds[t].hz6_stats_after.descriptor_source_route_allocator_mismatch;
+        hz6_stats.descriptor_source_current_allocator_match +=
+            tds[t].hz6_stats_after.descriptor_source_current_allocator_match;
+        hz6_stats.descriptor_source_current_allocator_mismatch +=
+            tds[t].hz6_stats_after.descriptor_source_current_allocator_mismatch;
         hz6_stats.lifecycle_owner_mismatch +=
             tds[t].hz6_stats_after.lifecycle_owner_mismatch;
         hz6_stats.lifecycle_foreign_free_attempt +=
@@ -855,10 +863,15 @@ int main(int argc, char** argv) {
            "owner_locality_probe_max=%zu "
            "transfer_push=%zu transfer_pop=%zu transfer_current=%zu "
            "transfer_current_max=%zu remote_free_attempt=%zu "
-           "remote_free_strict_owner_block=%zu remote_free_transfer_fail=%zu "
-           "route_rehome_attempt=%zu route_rehome_success=%zu "
-           "route_rehome_fail=%zu lifecycle_owner_mismatch=%zu "
-           "lifecycle_foreign_free_attempt=%zu "
+            "remote_free_strict_owner_block=%zu remote_free_transfer_fail=%zu "
+            "route_rehome_attempt=%zu route_rehome_success=%zu "
+            "route_rehome_fail=%zu "
+            "descriptor_source_route_allocator_match=%zu "
+            "descriptor_source_route_allocator_mismatch=%zu "
+            "descriptor_source_current_allocator_match=%zu "
+            "descriptor_source_current_allocator_mismatch=%zu "
+            "lifecycle_owner_mismatch=%zu "
+            "lifecycle_foreign_free_attempt=%zu "
            "lifecycle_foreign_free_handled=%zu "
            "lifecycle_foreign_free_invalid=%zu "
            "visible_first_attempt=%zu visible_first_hit=%zu "
@@ -939,10 +952,14 @@ int main(int argc, char** argv) {
            hz6_stats.remote_free_attempt,
            hz6_stats.remote_free_strict_owner_block,
            hz6_stats.remote_free_transfer_fail,
-           hz6_stats.route_rehome_attempt,
-           hz6_stats.route_rehome_success,
-           hz6_stats.route_rehome_fail,
-           hz6_stats.lifecycle_owner_mismatch,
+            hz6_stats.route_rehome_attempt,
+            hz6_stats.route_rehome_success,
+            hz6_stats.route_rehome_fail,
+            hz6_stats.descriptor_source_route_allocator_match,
+            hz6_stats.descriptor_source_route_allocator_mismatch,
+            hz6_stats.descriptor_source_current_allocator_match,
+            hz6_stats.descriptor_source_current_allocator_mismatch,
+            hz6_stats.lifecycle_owner_mismatch,
            hz6_stats.lifecycle_foreign_free_attempt,
            hz6_stats.lifecycle_foreign_free_handled,
            hz6_stats.lifecycle_foreign_free_invalid,

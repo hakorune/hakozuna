@@ -126,6 +126,23 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
         const Hz6FrontOps* front = hz6_front_for_id(route.front_id);
         Hz6ObjectDescriptor* descriptor =
             (Hz6ObjectDescriptor*)route.descriptor;
+#if HZ6_DIAGNOSTIC_PROBES
+        if (descriptor) {
+          Hz6Allocator* route_allocator =
+              route.route_allocator ? route.route_allocator : allocator;
+          if (hz6_allocator_descriptor_belongs_to(route_allocator,
+                                                  descriptor)) {
+            ++allocator->stats.descriptor_source_route_allocator_match;
+          } else {
+            ++allocator->stats.descriptor_source_route_allocator_mismatch;
+          }
+          if (hz6_allocator_descriptor_belongs_to(allocator, descriptor)) {
+            ++allocator->stats.descriptor_source_current_allocator_match;
+          } else {
+            ++allocator->stats.descriptor_source_current_allocator_mismatch;
+          }
+        }
+#endif
         int local_owner = descriptor &&
                           hz6_allocator_descriptor_owner_equal(
                               allocator, descriptor, allocator->owner.token);

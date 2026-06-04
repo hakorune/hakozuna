@@ -36,6 +36,10 @@ typedef struct Hz6StatsSnapshot {
   size_t route_rehome_attempt;
   size_t route_rehome_success;
   size_t route_rehome_fail;
+  size_t descriptor_source_route_allocator_match;
+  size_t descriptor_source_route_allocator_mismatch;
+  size_t descriptor_source_current_allocator_match;
+  size_t descriptor_source_current_allocator_mismatch;
   size_t lifecycle_owner_mismatch;
   size_t lifecycle_foreign_free_attempt;
   size_t lifecycle_foreign_free_handled;

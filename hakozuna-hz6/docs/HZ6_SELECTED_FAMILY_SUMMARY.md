@@ -48,6 +48,7 @@ Source:
 | Larson descriptor layout | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-source16k-route192k-run512` | Descriptor no-backptr L1 removes the per-descriptor allocator pointer and passes allocator explicitly through lifecycle helpers. Repeat-3 clean at `40.710M / 476784 KB`; diagnostic entry size is `48 -> 40` bytes and descriptor table bytes are `127926272 -> 106954752`. Strong keep / selected lowest-RSS sibling candidate. |
 | Larson descriptor L2 dry-run | diagnostic only | Owner packing to 16-bit does not shrink the no-backptr descriptor: `descriptor_owner16_hot_entry_bytes=40`, savings `0`. Ownerless hot descriptor projects `32` bytes and about `20971520` bytes additional table savings versus no-backptr. Next candidate is side-owner / ownerless hot descriptor metadata, not owner16 packing. |
 | Larson side-owner16 L1 | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-sideowner16-source16k-route192k-run512` | No-go / evidence. It reaches a 32-byte hot descriptor entry and lowers descriptor-table bytes to `96468992`, but the allocator-local side-owner table breaks cross-owner lifecycle: `route_invalid=11739`, `remote_free_transfer_fail=11739`, and `lifecycle_foreign_free_invalid=11739`. Keep no-backptr selected; a future side-owner design must be owner-source-aware. |
+| Larson descriptor-source diagnostic | diagnostic only | Confirms why side-owner16 is unsafe: no-backptr run512 is safety-clean while `descriptor_source_route_allocator_mismatch` is about `447.5M`. Route rehome makes route owner and descriptor-storage owner diverge heavily, so owner side metadata cannot be keyed by current or route allocator alone. |
 | Larson lowest-RSS preset check | `larson-cross-owner-lowest-rss` | Default check now includes front4k, route192k, and no-backptr route192k-run512. Latest one-run guard: front4k `42.460M / 716340 KB`, route192k `44.583M / 628848 KB`, no-backptr `42.324M / 476868 KB`, all safety clean. |
 | Larson over-retention control | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k` | Passes but over-retains RSS; no promotion. |
 
@@ -77,6 +78,9 @@ HZ6 is now a profile-family allocator:
     allocator-local side-table implementation is no-go because foreign
     descriptor ownership is read from the wrong owner source and creates
     invalid remote-transfer events.
+    Descriptor-source diagnostics confirm the design issue: after route
+    rehome, route owner and descriptor-storage owner diverge on hundreds of
+    millions of frees in the Larson cross-owner row.
     The route table cannot be statically trimmed below route192k under the
     current representation; route160k-run512 and route128k-run512 fail warmup.
     Static descriptor capacity can be trimmed only to desc158k, which saves

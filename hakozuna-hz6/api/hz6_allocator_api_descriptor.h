@@ -23,6 +23,13 @@ static inline size_t hz6_allocator_descriptor_index(
   return (size_t)(descriptor - allocator->descriptors);
 }
 
+static inline int hz6_allocator_descriptor_belongs_to(
+    const Hz6Allocator* allocator,
+    const Hz6ObjectDescriptor* descriptor) {
+  return hz6_allocator_descriptor_index(allocator, descriptor) <
+         HZ6_OBJECT_DESCRIPTOR_CAPACITY;
+}
+
 static inline uint32_t hz6_descriptor_pack_owner16(Hz6OwnerToken owner) {
   if (owner.slot > UINT16_MAX || owner.generation > UINT16_MAX) {
     return 0;

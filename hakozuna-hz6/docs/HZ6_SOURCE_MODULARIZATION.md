@@ -100,6 +100,14 @@ side-owner16 L1 behavior:
     route_invalid = 11739
     remote_free_transfer_fail = 11739
     lifecycle_foreign_free_invalid = 11739
+
+descriptor-source diagnostic:
+  no-backptr run512:
+    descriptor_source_route_allocator_mismatch ~= 447.5M
+    safety clean
+  side-owner16 run512:
+    descriptor_source_route_allocator_mismatch ~= 393.3M
+    safety no-go
 ```
 
 Read:
@@ -115,6 +123,10 @@ behavior lane confirms that a 32-byte hot descriptor is mechanically possible,
 but allocator-local side-owner metadata is not a safe cross-owner
 representation. A future side-owner attempt needs owner-source-aware owner
 metadata, or the route/descriptor ownership model must be redesigned.
+The descriptor-source diagnostic confirms that route rehome intentionally makes
+route owner and descriptor-storage owner diverge at very high frequency. Side
+owner metadata therefore needs a descriptor-storage owner source, not merely
+the current allocator or `route.route_allocator`.
 ```
 ```
 
