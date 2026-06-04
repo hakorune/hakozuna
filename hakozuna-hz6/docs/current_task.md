@@ -361,7 +361,6 @@ Source:
   docs/benchmarks/windows/paper/hz6_rss_residual_audit_l1/
     larson-rss-residual-audit/
       20260605_084006_hz6_capacity_matrix_windows.md
-      20260605_084006_hz6_capacity_matrix_windows.log
 ```
 
 Residual read, run=1:
