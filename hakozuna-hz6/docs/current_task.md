@@ -139,6 +139,92 @@ Next:
       ownersourcel2-sourceblockpacked
 ```
 
+### 2026-06-05: SourceBlockPackedFlags closeout and combined packed candidate
+
+Closeout:
+
+```text
+Command:
+  win/run_win_hz6_selected_family.ps1
+    -LarsonCrossOwnerSelected
+    -Runs 3
+    -ForceBuild
+
+Source:
+  docs/benchmarks/windows/paper/hz6_selected_family/
+    larson-sourceblockpacked-closeout/
+      larson-cross-owner-selected/
+        20260605_045708_hz6_capacity_matrix_windows.md
+
+Rows:
+  desc160k:
+    46.721M / 753204 KB
+
+  front4k:
+    42.731M / 716328 KB
+
+  OwnerSourceSideMeta-L2:
+    44.355M / 439916 KB
+
+  FrontCachePackedMeta-L1:
+    41.131M / 430692 KB
+
+  SourceBlockPackedFlags-L1:
+    41.070M / 435304 KB
+```
+
+Read:
+
+```text
+SourceBlockPackedFlags-L1 is clean and reduces RSS versus OwnerSourceSideMeta-L2,
+but FrontCachePackedMeta-L1 is still lower RSS by itself. Because the two
+packed candidates target separate metadata tables, test the combined lane.
+```
+
+Combined lane:
+
+```text
+Lane:
+  ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source16k-route192k-run512
+
+Flags:
+  HZ6_FRONTCACHE_PACKED_META_L1=1
+  HZ6_SOURCE_BLOCK_PACKED_FLAGS_L1=1
+  plus the OwnerSourceSideMeta-L2 selected-lane flags
+```
+
+Validation:
+
+```text
+1-run smoke:
+  40.521M / 426536 KB
+  safety clean
+
+Repeat-3:
+  docs/benchmarks/windows/paper/20260605_051427_hz6_capacity_matrix_windows.md
+
+  40.837M / 426084 KB
+  safety clean
+```
+
+Decision:
+
+```text
+KEEP:
+  Combined packed is the current clean Larson minimum-RSS candidate/sibling.
+
+Do not claim:
+  broad throughput promotion.
+
+Use:
+  paper/ledger as the minimum-RSS HZ6 Larson full-10k row.
+
+Next:
+  If we continue static RSS work, the next target is no longer frontcache or
+  SourceBlock flags. Move to a larger SourceRun side-table or source_release
+  derivation design only if the safety contract stays clean.
+```
+
 This file is intentionally the historical experiment ledger. Stable decisions
 should be copied into the selected summary or lane guide instead of being left
 only in this file.
