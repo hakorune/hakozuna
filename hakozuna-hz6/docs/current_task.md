@@ -8340,14 +8340,53 @@ Decision:
     first keep it as an explicit selected lane, then verify broader families.
 ```
 
+LoopCarry-L1:
+
+```text
+Change:
+  Build on LinearWrap-L1, but carry the hot exact-route probe index in the loop
+  instead of recomputing HZ6_ROUTE_PROBE_INDEX each iteration.
+
+  Scope:
+    exact lookup first pass
+    exact register
+    exact unregister
+
+  Contract:
+    VALID / INVALID / MISS unchanged
+    linear probing semantics unchanged
+    no production counters/atomics added
+
+Repeat-3:
+  mixed_ws balanced / wide_ws / larger_sizes:
+    route17-linearwrap            balanced     = 62.124M / 110756 KB
+    route17-linearwrap-loopcarry  balanced     = 67.462M / 110888 KB
+
+    route17-linearwrap            wide_ws      = 21.882M / 140264 KB
+    route17-linearwrap-loopcarry  wide_ws      = 22.674M / 140320 KB
+
+    route17-linearwrap            larger_sizes = 33.594M / 77976 KB
+    route17-linearwrap-loopcarry  larger_sizes = 34.032M / 78008 KB
+
+Safety:
+  HZ6 Windows R1 smokes all pass.
+
+Decision:
+  PROMOTE route17-linearwrap-loopcarry as the selected mixed_ws clean low-RSS
+  row.
+
+  Keep route17-linearwrap as the previous selected control.
+  Keep route18 / route18-linearwrap as route-capacity siblings, not selected.
+```
+
 Current selected mixed_ws lanes:
 
 ```text
 balanced low-RSS:
-  rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap
+  rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap-loopcarry
 
 wide_ws low-RSS:
-  rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap
+  rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap-loopcarry
 
 controls:
   route20
@@ -8355,6 +8394,7 @@ controls:
   hashxor
   route18
   route18-linearwrap
+  route17-linearwrap
 ```
 
 Next:

@@ -14,8 +14,8 @@ For repo cleanup rules and the source modularization backlog, see
 
 | Profile family | Selected HZ6 profile | Selected capacity lane | Why this lane now |
 | --- | --- | --- | --- |
-| balanced clean low-RSS | `rss` | `mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap` | Selected mixed_ws clean low-RSS row. LinearWrap-L1 preserves linear probing semantics but avoids per-probe modulo in the route probe macro. Guard repeat-3: balanced `69.821M / 110836 KB`, safety clean. |
-| wide_ws clean low-RSS | `rss` | `mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap` | Same selected mixed_ws row now also beats the previous route18 sibling in the guard repeat-3: wide_ws `22.964M / 140280 KB`, safety clean and lower RSS than route18. |
+| balanced clean low-RSS | `rss` | `mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap-loopcarry` | Selected mixed_ws clean low-RSS row. LinearWrap-L1 preserves linear probing semantics, and LoopCarry-L1 keeps the probe index loop-carried in hot exact route paths. Repeat-3: balanced `67.462M / 110888 KB`, safety clean. |
+| wide_ws clean low-RSS | `rss` | `mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap-loopcarry` | Same selected mixed_ws row also improves wide_ws in the loopcarry repeat-3: `22.674M / 140320 KB`, safety clean and still lower RSS than the old route18 sibling. |
 | balanced / wide_ws pressure evidence | `rss` | `descavail-noboost-route4k` | Very fast and very low-RSS, but not safety-clean for paper/default claims: it completes by hitting large `alloc_fail` / source-block exhaustion counts. Keep it as pressure evidence only. |
 | random_mixed same-owner speed | `strict` | `sameownerfast-descavail-noboost-route4k` | Selected same-owner fast lane: `HZ6_SAME_OWNER_FAST_L1` + descriptor availability, promoted from the A-ladder. |
 | larger_sizes RSS/speed | `speed` or `rss` | `largerlowrss-front8k-sourcerun-desc8k-route8k` | Best larger_sizes lane; needs larger front retention, not more descriptor-failure cleanup. |
@@ -114,10 +114,12 @@ Preset intent:
 ```text
 selected-mixed-lowrss:
   mixed_ws balanced / wide_ws
-  rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap
+  rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap-loopcarry
   status:
-    LinearWrap-L1 keeps the desc17/route17 RSS shape while improving balanced,
-    wide_ws, and larger_sizes guard rows.
+    LinearWrap-L1 keeps the desc17/route17 RSS shape while improving route
+    arithmetic. LoopCarry-L1 is the current selected refinement because it
+    improves balanced, wide_ws, and larger_sizes against linearwrap in the
+    same repeat-3 comparison.
 
 selected-mixed-pressure:
   mixed_ws balanced / wide_ws
@@ -145,7 +147,7 @@ selected-family-guard:
   short mixed_ws smoke/control guard before a longer selected-family run
   includes:
     route4k control
-    mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap
+    mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap-loopcarry
     descavail-noboost-route4k pressure evidence
     largerlowrss-front8k-sourcerun-desc8k-route8k larger_sizes selected row
 

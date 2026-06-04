@@ -25,11 +25,21 @@ int hz6_route_register_exact(Hz6RouteTable* table,
 #endif
   size_t tombstone_index = (size_t)-1;
   int tombstone_reused = 0;
+#if HZ6_ROUTE_LOOP_CARRY_L1 && HZ6_ROUTE_LINEAR_WRAP_L1 && \
+    !HZ6_ROUTE_DOUBLE_HASH_L1
+  (void)step;
+  for (size_t i = 0, index = start; i < table->capacity;
+       ++i, index = hz6_route_linear_next_index(index, table->capacity)) {
+#else
   for (size_t i = 0; i < table->capacity; ++i) {
+#endif
 #if HZ6_DIAGNOSTIC_PROBES
     ++probes;
 #endif
+#if !(HZ6_ROUTE_LOOP_CARRY_L1 && HZ6_ROUTE_LINEAR_WRAP_L1 && \
+      !HZ6_ROUTE_DOUBLE_HASH_L1)
     size_t index = HZ6_ROUTE_PROBE_INDEX(start, step, table->capacity, i);
+#endif
     Hz6RouteEntry* entry = &table->entries[index];
     if (entry->active && entry->exact_valid && entry->base == base_addr) {
 #if HZ6_DIAGNOSTIC_PROBES
@@ -117,11 +127,21 @@ void hz6_route_unregister_exact(Hz6RouteTable* table,
 #if HZ6_DIAGNOSTIC_PROBES
   size_t probes = 0;
 #endif
+#if HZ6_ROUTE_LOOP_CARRY_L1 && HZ6_ROUTE_LINEAR_WRAP_L1 && \
+    !HZ6_ROUTE_DOUBLE_HASH_L1
+  (void)step;
+  for (size_t i = 0, index = start; i < table->capacity;
+       ++i, index = hz6_route_linear_next_index(index, table->capacity)) {
+#else
   for (size_t i = 0; i < table->capacity; ++i) {
+#endif
 #if HZ6_DIAGNOSTIC_PROBES
     ++probes;
 #endif
+#if !(HZ6_ROUTE_LOOP_CARRY_L1 && HZ6_ROUTE_LINEAR_WRAP_L1 && \
+      !HZ6_ROUTE_DOUBLE_HASH_L1)
     size_t index = HZ6_ROUTE_PROBE_INDEX(start, step, table->capacity, i);
+#endif
     Hz6RouteEntry* entry = &table->entries[index];
     if (entry->active && entry->exact_valid && entry->base == base_addr) {
       entry->active = 0;
