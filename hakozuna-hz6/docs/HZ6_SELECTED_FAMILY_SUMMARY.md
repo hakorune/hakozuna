@@ -12,7 +12,7 @@ For cleanup rules and the next source modularization target, see
 | Family | Selected lane | Median ops/s | Peak KB | Status |
 | --- | --- | ---: | ---: | --- |
 | mixed_ws balanced | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k` | 55.504M | 110,780 | clean selected |
-| mixed_ws wide_ws | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k` | 19.978M | 140,236 | clean selected |
+| mixed_ws wide_ws | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route18k` | 22.184M | 140,456 | clean selected sibling |
 | random_mixed small | `strict + sameownerfast-descavail-noboost-route4k` | 45.755M | 4,968 | clean selected |
 | random_mixed medium | `strict + sameownerfast-descavail-noboost-route4k` | 42.408M | 4,964 | clean selected |
 | random_mixed mixed | `strict + sameownerfast-descavail-noboost-route4k` | 41.306M | 4,964 | clean selected |
@@ -24,6 +24,7 @@ For cleanup rules and the next source modularization target, see
 
 Source:
 - `docs/benchmarks/windows/paper/hz6_selected_family/selected-family-desc17-refresh/`
+- `docs/benchmarks/windows/paper/hz6_selected_family/widews-routeonly-repeat/`
 - `docs/benchmarks/windows/paper/hz6_selected_family/larson-metadata-slim-route192-repeat/`
 - `docs/benchmarks/windows/paper/hz6_selected_family/larson-sourcerun-metaslim-repeat/`
 - `docs/benchmarks/windows/paper/hz6_selected_family/larson-lowest-rss-default-check/`
@@ -41,6 +42,7 @@ Source:
 | --- | --- | --- |
 | mixed_ws balanced/wide_ws pressure | `rss + descavail-noboost-route4k` | Very fast and very low RSS, but not clean: high `alloc_fail` / source-block exhaustion. Keep as pressure evidence only. |
 | mixed_ws wide-speed sibling | `rss + mixedclean-front16k-sourcerun-desc20k-source2k-route20k` | Clean sibling: wide_ws `21.498M / 142676 KB`, but higher RSS than desc17. |
+| mixed_ws route-only wide_ws L1 | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route18k` | Selected wide_ws sibling. Keeps descriptor/transfer/source/frontcache at desc17 but raises route capacity to 18K. Repeat-3: balanced `64.923M / 111248 KB`, wide_ws `22.184M / 140456 KB`. It improves wide_ws versus desc17-route17 with about +284 KB peak RSS; route20 is not better enough. |
 | mixed_ws desc16 boundary | `mixedclean-front16k-sourcerun-desc16k-*` | No-go for wide_ws. Transfer2304/2560 does not remove `alloc_fail=6943`; desc17 is the current clean lower bound. |
 | Larson lower-RSS control | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source12k` | Lower RSS than source16k but lower throughput; useful control, not selected. |
 | Larson route boundary | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route160k/128k`, plus `route160k-run512` / `route128k-run512` | No-go: route table saturates during full-10k warmup. Under run512, route160k and route128k still hit `route_register_fail=3` / `alloc_fail=1`, so route192k is the current clean route lower bound. |
@@ -59,8 +61,11 @@ Source:
 ```text
 HZ6 is now a profile-family allocator:
   mixed balanced/wide:
-    clean low-RSS selected row exists.
-    desc17/route17 is the current lower bound.
+    clean low-RSS selected rows exist.
+    desc17/route17 remains the balanced lower-RSS row.
+    desc17/route18 is now the selected wide_ws sibling: it keeps descriptor and
+    transfer capacity at desc17 while adding only route slots, lifting wide_ws
+    with a very small RSS increase.
 
   random_mixed:
     selected same-owner lane is stable and low-RSS,
@@ -108,7 +113,11 @@ HZ6 is now a profile-family allocator:
 
 2. Attack one of two remaining weaknesses:
    A. wide_ws throughput:
-      keep desc17 safety/RSS and look for hot-path/profile improvements.
+      route-only L1 found a clean answer: desc17/route18 keeps desc17
+      descriptor/source/frontcache shape and improves wide_ws with about
+      +284 KB RSS versus desc17/route17. Next wide_ws work should not be more
+      blind descriptor capacity; it should look at route representation or
+      class-specific route load.
    B. Larson RSS:
       keep dir192k/no-backptr as the selected lowest-RSS sibling. Side-owner16
       L1 proves the 32-byte entry is possible, but allocator-local owner side

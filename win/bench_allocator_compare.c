@@ -580,6 +580,14 @@ int main(int argc, char** argv) {
             args[i].hz6_stats_after.source_run_reuse_rollback;
         hz6_stats.source_run_reuse_used_count_mismatch +=
             args[i].hz6_stats_after.source_run_reuse_used_count_mismatch;
+        for (size_t class_id = 0; class_id < HZ6_STATS_CLASS_COUNT;
+             ++class_id) {
+            hz6_stats.frontcache_push_by_class[class_id] +=
+                args[i].hz6_stats_after.frontcache_push_by_class[class_id];
+            hz6_stats.frontcache_pop_empty_by_class[class_id] +=
+                args[i].hz6_stats_after
+                    .frontcache_pop_empty_by_class[class_id];
+        }
 #undef HZ6_MAX_STAT
 #endif
         hz6_stats.route_lookup_probe_total +=
@@ -848,6 +856,17 @@ int main(int argc, char** argv) {
            hz6_stats.large_span_source_alloc);
 #endif
     printf(" peak_kb=%zu\n", peak_kb);
+#if defined(HZ_BENCH_USE_HZ6) && HZ6_DIAGNOSTIC_PROBES
+    for (size_t class_id = 0; class_id < HZ6_STATS_CLASS_COUNT; ++class_id) {
+        size_t push = hz6_stats.frontcache_push_by_class[class_id];
+        size_t pop_empty = hz6_stats.frontcache_pop_empty_by_class[class_id];
+        if (push == 0 && pop_empty == 0) {
+            continue;
+        }
+        printf("[HZ6_FRONTCACHE_CLASS] class=%zu push=%zu pop_empty=%zu\n",
+               class_id, push, pop_empty);
+    }
+#endif
 
     free(args);
     return 0;

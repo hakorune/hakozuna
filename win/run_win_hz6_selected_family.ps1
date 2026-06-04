@@ -54,8 +54,8 @@ $presetMap = [ordered]@{
         -Families @("mixed_ws") `
         -BenchmarkProfiles @("balanced", "wide_ws") `
         -Hz6Profiles @("rss") `
-        -CapacityLanes @("mixedclean-front16k-sourcerun-desc17k-source2k-route17k") `
-        -Note "selected balanced / wide_ws clean low-RSS lane"
+        -CapacityLanes @("mixedclean-front16k-sourcerun-desc17k-source2k-route17k", "mixedclean-front16k-sourcerun-desc17k-source2k-route18k") `
+        -Note "selected balanced desc17/route17 plus wide_ws route18 low-RSS sibling"
 
     "selected-mixed-pressure" = New-Preset `
         -Name "selected-mixed-pressure" `

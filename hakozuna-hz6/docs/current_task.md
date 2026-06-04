@@ -8108,3 +8108,81 @@ Decision:
   dir128k / dir96k KEEP as no-go boundary controls
   do not trim shared directory below dir192k without a representation change
 ```
+
+## HZ6 mixed_ws wide_ws RouteOnly-L1
+
+Question:
+
+```text
+Can wide_ws regain throughput without moving from the desc17 low-RSS descriptor
+shape to the broader desc20 capacity shape?
+```
+
+Observation:
+
+```text
+Diagnostic frontcache-class run:
+  lanes:
+    desc17/route17
+    desc18/route18
+    desc20/route20
+
+  frontcache class push/pop_empty is identical across the lanes:
+    class0 push=1047   pop_empty=49
+    class1 push=45232  pop_empty=1645
+    class2 push=180659 pop_empty=6386
+    class3 push=719290 pop_empty=25085
+
+  source_alloc = 1692 for all lanes
+  alloc_fail = 0
+  descriptor_exhausted = 0
+  route_register_fail = 0
+  source_block_exhausted = 0
+
+Read:
+  frontcache/source shape is not the differentiator.
+  route pressure is the visible differentiator.
+```
+
+Route-only repeat-3:
+
+```text
+Run:
+  mixed_ws balanced, wide_ws
+  profile = rss
+  runs = 3
+
+desc17/route17:
+  balanced = 66.308M / 110940 KB
+  wide_ws  = 20.155M / 140172 KB
+  safety clean
+
+desc17/route18:
+  balanced = 64.923M / 111248 KB
+  wide_ws  = 22.184M / 140456 KB
+  safety clean
+
+desc17/route20:
+  balanced = 65.484M / 111552 KB
+  wide_ws  = 21.907M / 141084 KB
+  safety clean
+
+desc20/route20:
+  balanced = 68.561M / 113252 KB
+  wide_ws  = 21.253M / 142488 KB
+  safety clean
+```
+
+Decision:
+
+```text
+Promote desc17/route18 as the selected wide_ws low-RSS sibling.
+Keep desc17/route17 as the selected balanced low-RSS row.
+Keep desc20/route20 as speed/control evidence, not selected: it costs more RSS
+and does not beat desc17/route18 on wide_ws in the repeat-3 route-only run.
+
+Next:
+  do not keep increasing descriptor capacity blindly for wide_ws
+  if more wide_ws speed is needed, attack route representation / route load
+  rather than frontcache or source placement
+```

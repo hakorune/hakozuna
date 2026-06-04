@@ -73,7 +73,7 @@ function Get-LogCapture {
                 }
                 [void]$tail.Enqueue($line)
             }
-            if ($line -match '^(\[BENCH_ARGS\]|\[RSS\]|\[OPS\]|\[HZ6_STATS\]|\[HZ6_MEMORY_ATTR\]|\[HZ6_METADATA_SLIM\]|\[HZ6_FRONT_ALLOC_PATH\]|\[HZ6_FRONTCACHE_CLASS\]|\[HZ6_REDIS_STATS\]|bench_[^:]+:.*ops/s=|Pattern:|Throughput:|Throughput = |Ops:|---)') {
+            if ($line -match '^(\[BENCH_ARGS\]|\[RSS\]|\[OPS\]|\[HZ6_STATS\]|\[HZ6_MEMORY_ATTR\]|\[HZ6_METADATA_SLIM\]|\[HZ6_FRONT_ALLOC_PATH\]|\[HZ6_FRONTCACHE_CLASS\]|\[HZ6_REDIS_STATS\]|threads=.*ops/s=|bench_[^:]+:.*ops/s=|Pattern:|Throughput:|Throughput = |Ops:|---)') {
                 [void]$captured.Add($line)
             } elseif ($IncludeStatsTail -and $line -match '^\[HZ6_STATS\]\s+label=redis_alloc_string_fail') {
                 if ($statsTail.Count -ge $TailLimit) {
@@ -285,6 +285,8 @@ $laneSuffix = @{
     "mixedclean-front16k-sourcerun-desc19k-source2k-route19k" = "_mixedclean_front16k_sourcerun_desc19k_source2k_route19k"
     "mixedclean-front16k-sourcerun-desc18k-source2k-route18k" = "_mixedclean_front16k_sourcerun_desc18k_source2k_route18k"
     "mixedclean-front16k-sourcerun-desc17k-source2k-route17k" = "_mixedclean_front16k_sourcerun_desc17k_source2k_route17k"
+    "mixedclean-front16k-sourcerun-desc17k-source2k-route18k" = "_mixedclean_front16k_sourcerun_desc17k_source2k_route18k"
+    "mixedclean-front16k-sourcerun-desc17k-source2k-route20k" = "_mixedclean_front16k_sourcerun_desc17k_source2k_route20k"
     "mixedclean-front16k-sourcerun-desc32k-source4k-route32k" = "_mixedclean_front16k_sourcerun_desc32k_source4k_route32k"
     "mixedclean-front16k-sourcerun-desc32k-source3k-route32k" = "_mixedclean_front16k_sourcerun_desc32k_source3k_route32k"
     "mixedclean-front8k-sourcerun-desc32k-source4k-route32k" = "_mixedclean_front8k_sourcerun_desc32k_source4k_route32k"
