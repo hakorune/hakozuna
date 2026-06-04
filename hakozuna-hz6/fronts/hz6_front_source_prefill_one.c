@@ -98,9 +98,9 @@ int hz6_front_prefill_one(Hz6Allocator* allocator,
   Hz6FrontCacheEntry entry = {0};
   entry.ptr = ptr;
   entry.descriptor = descriptor;
-  entry.bytes = bytes;
-  entry.class_id = class_id;
   entry.generation = descriptor->generation;
+  hz6_frontcache_entry_set_bytes(&entry, bytes);
+  hz6_frontcache_entry_set_class_id(&entry, class_id);
   if (!hz6_allocator_frontcache_push(allocator, class_id, entry)) {
     hz6_allocator_route_unregister_exact_reason(
         allocator, ptr, HZ6_ROUTE_UNREGISTER_REASON_SOURCE_SLOT_RELEASE);

@@ -152,8 +152,9 @@ int main(void) {
   Hz6FrontCacheEntry front_entry;
   front_entry.ptr = base;
   front_entry.descriptor = &descriptor;
-  front_entry.class_id = 7;
   front_entry.generation = 11;
+  hz6_frontcache_entry_set_class_id(&front_entry, 7);
+  hz6_frontcache_entry_set_bytes(&front_entry, 64);
   Hz6FrontCacheEntry front_popped;
   if (!expect(hz6_frontcache_push(&front_bin, front_entry),
               "frontcache push") ||

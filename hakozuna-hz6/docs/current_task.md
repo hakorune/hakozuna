@@ -24,6 +24,51 @@ only in this file.
 Current attack plan:
 
 ```text
+Latest candidate:
+  FrontCachePackedMeta-L1 over OwnerSourceSideMeta-L2.
+
+  Purpose:
+    reduce the remaining Larson metadata gap by shrinking
+    Hz6FrontCacheEntry from 32 bytes to 24 bytes.
+
+  Lane:
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-
+    noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-
+    ownersourcel2-frontcachepacked-source16k-route192k-run512
+
+  Implementation:
+    HZ6_FRONTCACHE_PACKED_META_L1=1
+    packs frontcache bytes-minus-one, class id, and descgov detached flag
+    into a 32-bit entry meta word.
+
+  Validation so far:
+    HZ6 R1 Windows smokes pass.
+    tiny direct diagnostic:
+      frontcache_entry_bytes = 24
+      safety counters = 0
+    Larson T16 main-warmup 1k direct diagnostic:
+      56.245M ops/s
+      frontcache_table_bytes = 25171968
+      baseline L2 diagnostic frontcache_table_bytes was 33560576
+      descriptor_table_bytes = 96468992
+      route_table_bytes = 81788928
+      source_block_table_bytes = 37748736
+      ownerlocality_index_bytes = 14155776
+      route_invalid = 0
+      route_miss = 0
+      remote_free_transfer_fail = 0
+      alloc_fail = 0
+    Larson T16 main-warmup full 10k direct non-diagnostic, run=1:
+      41.660M ops/s
+      safety counters = 0
+
+  Read:
+    promising candidate evidence.
+    Do not promote until repeat-3 matrix with RSS succeeds.
+    The matrix runner can overrun because Larson runtime is fixed at 10s and
+    process output has a trailing sleep; direct runs were used for this first
+    check.
+
 Selected lane to preserve:
   OwnerSourceSideMeta-L2 over routebytes16/routepacked/no-routebackptr/dir192k
     same-run repeat-3 Larson T16 main-warmup:

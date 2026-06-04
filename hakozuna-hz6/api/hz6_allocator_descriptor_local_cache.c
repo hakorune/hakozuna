@@ -71,12 +71,13 @@ int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
 #if HZ6_DESCRIPTORLESS_FRONTCACHE_L1
   entry.source_block = descriptor->source_block;
 #endif
-  entry.bytes = descriptor->bytes;
-  entry.class_id = descriptor->class_id;
   entry.generation = descriptor->generation;
+  hz6_frontcache_entry_set_bytes(&entry, descriptor->bytes);
+  hz6_frontcache_entry_set_class_id(&entry, descriptor->class_id);
+  const uint16_t entry_class_id = hz6_frontcache_entry_class_id(&entry);
 #if HZ6_DIAGNOSTIC_PROBES || HZ6_FRONTCACHE_CAP_ON_FREE
-  hz6_allocator_note_frontcache_cap_dryrun(allocator, entry.class_id);
-  if (hz6_allocator_frontcache_should_cap_release(allocator, entry.class_id)) {
+  hz6_allocator_note_frontcache_cap_dryrun(allocator, entry_class_id);
+  if (hz6_allocator_frontcache_should_cap_release(allocator, entry_class_id)) {
     descriptor->state = HZ6_STATE_DEAD;
     hz6_allocator_route_unregister_exact_reason(
         allocator, ptr, HZ6_ROUTE_UNREGISTER_REASON_CAP_RELEASE);
@@ -91,18 +92,19 @@ int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
   }
 #endif
 #if HZ6_DESCRIPTORLESS_FRONTCACHE_L1
+  const size_t entry_bytes = hz6_frontcache_entry_bytes(&entry);
   if (descriptor->source_block && descriptor->source_block->run_active &&
-      descriptor->source_block->run_class_id == entry.class_id &&
-      descriptor->source_block->run_slot_bytes == entry.bytes &&
+      descriptor->source_block->run_class_id == entry_class_id &&
+      descriptor->source_block->run_slot_bytes == entry_bytes &&
 #if HZ6_DESCRIPTOR_COLD_GOV_L1
-      hz6_allocator_descgov_should_detach(allocator, entry.class_id,
-                                          entry.bytes) &&
+      hz6_allocator_descgov_should_detach(allocator, entry_class_id,
+                                          entry_bytes) &&
 #endif
 #if HZ6_DESCRIPTORLESS_OVER_CAP_ONLY_L1
-      hz6_allocator_frontcache_class_over_soft_cap(allocator, entry.class_id) &&
+      hz6_allocator_frontcache_class_over_soft_cap(allocator, entry_class_id) &&
 #endif
-      hz6_allocator_frontcache_count(allocator, entry.class_id) <
-          hz6_allocator_frontcache_capacity(allocator, entry.class_id)) {
+      hz6_allocator_frontcache_count(allocator, entry_class_id) <
+          hz6_allocator_frontcache_capacity(allocator, entry_class_id)) {
 #if HZ6_DESCRIPTOR_COLD_GOV_L1 && HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.descgov_detach_attempt;
 #endif
@@ -110,12 +112,12 @@ int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
     descriptorless_entry.descriptor = NULL;
     descriptorless_entry.generation = 0;
 #if HZ6_DESCRIPTOR_COLD_GOV_L1
-    descriptorless_entry.descgov_detached = 1;
+    hz6_frontcache_entry_set_descgov_detached(&descriptorless_entry, 1);
 #endif
 #if HZ6_DESCRIPTOR_MATERIALIZE_RESERVE_L1
     descriptorless_entry.reserved_descriptor = descriptor;
 #endif
-    if (hz6_allocator_frontcache_push(allocator, entry.class_id,
+    if (hz6_allocator_frontcache_push(allocator, entry_class_id,
                                       descriptorless_entry)) {
       hz6_allocator_route_unregister_exact_reason(
           allocator, ptr, HZ6_ROUTE_UNREGISTER_REASON_DESCRIPTORLESS_DETACH);
@@ -123,8 +125,8 @@ int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
       ++allocator->descgov_detached_budget_used;
 #if HZ6_DIAGNOSTIC_PROBES
       ++allocator->stats.descgov_detach_success;
-      if (entry.class_id < HZ6_STATS_CLASS_COUNT) {
-        ++allocator->stats.descgov_donor_class[entry.class_id];
+      if (entry_class_id < HZ6_STATS_CLASS_COUNT) {
+        ++allocator->stats.descgov_donor_class[entry_class_id];
       }
       ++allocator->stats.descgov_detached_current;
       if (allocator->stats.descgov_detached_current >
@@ -150,7 +152,7 @@ int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
   }
 #endif
 
-  if (hz6_allocator_frontcache_push(allocator, entry.class_id, entry)) {
+  if (hz6_allocator_frontcache_push(allocator, entry_class_id, entry)) {
     return 1;
   }
 
@@ -161,7 +163,7 @@ int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
     Hz6TransferObject object = {0};
     object.ptr = ptr;
     object.descriptor = descriptor;
-    object.class_id = entry.class_id;
+    object.class_id = entry_class_id;
     object.generation = descriptor->generation;
     if (hz6_allocator_transfer_push(allocator, object)) {
       ++allocator->stats.route_retained_overflow_success;

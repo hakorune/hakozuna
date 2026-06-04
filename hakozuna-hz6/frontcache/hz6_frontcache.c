@@ -12,7 +12,9 @@ void hz6_frontcache_bin_init(Hz6FrontCacheBin* bin,
 }
 
 int hz6_frontcache_push(Hz6FrontCacheBin* bin, Hz6FrontCacheEntry entry) {
-  if (!bin || !bin->entries || !entry.ptr || bin->count >= bin->capacity) {
+  if (!bin || !bin->entries || !entry.ptr ||
+      hz6_frontcache_entry_bytes_overflow(&entry) ||
+      bin->count >= bin->capacity) {
     return 0;
   }
   bin->entries[bin->count++] = entry;

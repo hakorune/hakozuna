@@ -228,4 +228,8 @@
 #define HZ6_FRONTCACHE_CAP_ON_FREE 0
 #endif
 
+#ifndef HZ6_FRONTCACHE_PACKED_META_L1
+#define HZ6_FRONTCACHE_PACKED_META_L1 0
+#endif
+
 #endif

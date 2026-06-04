@@ -51,13 +51,14 @@ int hz6_large128_free_local_or_central(Hz6Allocator* allocator,
   Hz6FrontCacheEntry entry = {0};
   entry.ptr = ptr;
   entry.descriptor = descriptor;
-  entry.bytes = descriptor->bytes;
 #if HZ6_DESCRIPTORLESS_FRONTCACHE_L1
   entry.source_block = descriptor->source_block;
 #endif
-  entry.class_id = descriptor->class_id;
   entry.generation = descriptor->generation;
-  if (hz6_allocator_frontcache_push(allocator, entry.class_id, entry)) {
+  hz6_frontcache_entry_set_bytes(&entry, descriptor->bytes);
+  hz6_frontcache_entry_set_class_id(&entry, descriptor->class_id);
+  const uint16_t entry_class_id = hz6_frontcache_entry_class_id(&entry);
+  if (hz6_allocator_frontcache_push(allocator, entry_class_id, entry)) {
     return 1;
   }
 

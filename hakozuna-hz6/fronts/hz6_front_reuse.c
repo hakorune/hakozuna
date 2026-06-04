@@ -7,13 +7,15 @@ static void* hz6_front_materialize_descriptorless_entry(
     Hz6FrontCacheEntry entry,
     Hz6AllocPath* path) {
 #if HZ6_DESCRIPTORLESS_FRONTCACHE_L1
+  const size_t entry_bytes = hz6_frontcache_entry_bytes(&entry);
+  const uint16_t entry_class_id = hz6_frontcache_entry_class_id(&entry);
   if (!allocator || entry.descriptor || !entry.ptr || !entry.source_block ||
-      entry.bytes == 0 || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
+      entry_bytes == 0 || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
     return NULL;
   }
 
   Hz6SourceBlock* block = (Hz6SourceBlock*)entry.source_block;
-  if (!block->active || !block->ptr || entry.class_id != class_id ||
+  if (!block->active || !block->ptr || entry_class_id != class_id ||
       class_id != block->run_class_id) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.descriptorless_frontcache_invalid;
@@ -33,7 +35,7 @@ static void* hz6_front_materialize_descriptorless_entry(
   }
 #else
 #if HZ6_DESCRIPTOR_COLD_GOV_L1
-  if (entry.descgov_detached &&
+  if (hz6_frontcache_entry_descgov_detached(&entry) &&
       !hz6_allocator_descgov_descriptor_available(allocator)) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.descgov_materialize_block_no_descriptor;
@@ -44,7 +46,7 @@ static void* hz6_front_materialize_descriptorless_entry(
     return NULL;
   }
 #if HZ6_DIAGNOSTIC_PROBES
-  if (entry.descgov_detached) {
+  if (hz6_frontcache_entry_descgov_detached(&entry)) {
     ++allocator->stats.descgov_materialize_admit;
   }
 #endif
@@ -65,7 +67,7 @@ static void* hz6_front_materialize_descriptorless_entry(
   }
 
   if (!hz6_allocator_prepare_descriptor(
-          allocator, descriptor, entry.ptr, entry.bytes, block->ptr,
+          allocator, descriptor, entry.ptr, entry_bytes, block->ptr,
           block->bytes, block, class_id, block->source_kind,
           block->source_release, HZ6_STATE_ACTIVE)) {
 #if HZ6_DIAGNOSTIC_PROBES
@@ -81,7 +83,7 @@ static void* hz6_front_materialize_descriptorless_entry(
   }
 
   if (!hz6_allocator_route_register_exact_reason(
-          allocator, entry.ptr, entry.bytes, front_id, class_id,
+          allocator, entry.ptr, entry_bytes, front_id, class_id,
           descriptor->generation, descriptor,
           HZ6_ROUTE_REGISTER_REASON_MATERIALIZE)) {
 #if HZ6_DIAGNOSTIC_PROBES
@@ -104,7 +106,8 @@ static void* hz6_front_materialize_descriptorless_entry(
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.descriptorless_frontcache_pop;
 #if HZ6_DESCRIPTOR_COLD_GOV_L1
-  if (entry.descgov_detached && allocator->stats.descgov_detached_current > 0) {
+  if (hz6_frontcache_entry_descgov_detached(&entry) &&
+      allocator->stats.descgov_detached_current > 0) {
     --allocator->stats.descgov_detached_current;
   }
 #endif
