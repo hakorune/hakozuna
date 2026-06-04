@@ -27,7 +27,7 @@ Current attack plan:
 Selected lane to preserve:
   OwnerSourceSideMeta-L2 over routebytes16/routepacked/no-routebackptr/dir192k
     same-run repeat-3 Larson T16 main-warmup:
-      routebytes16 selected control:
+      routebytes16 comparison control:
         40.750M ops/s
         449128 KB peak
       storageowner16 + ownersourcel2:
@@ -42,15 +42,15 @@ RSS reference:
       183180 KB peak
 
 Current HZ6 gap:
-  HZ6 matches/slightly beats HZ5 throughput on the selected Larson lane, but
-  uses about 2.45x HZ5 peak RSS. The remaining gap is metadata/lifecycle
+  HZ6 is now within about 14% of HZ5 throughput on the selected Larson lane,
+  but uses about 2.40x HZ5 peak RSS. The remaining gap is metadata/lifecycle
   dominated, not payload dominated.
 
 Next:
   HZ6 OwnerSourceSideMeta-L2 selected-lane closeout and commit.
 
 Goal:
-  keep the routebytes16 selected hot path and test whether descriptor owner
+  keep the routebytes16 comparison-control hot path and test whether descriptor owner
   side metadata can be made owner-source-aware without paying the StorageOwner16
   lookup cost on every hot owner read.
 
@@ -73,7 +73,7 @@ Validation lane:
 
 Initial results:
   Larson T16 main-warmup 1k diagnostic, run=1:
-    selected routebytes16:
+    routebytes16 comparison control:
       55.881M ops/s
       327248 KB peak
     storageowner16 + ownersourcel2:
@@ -86,7 +86,7 @@ Initial results:
       l2_storage_mismatch = 0
 
   Larson T16 main-warmup full 10k non-diagnostic, run=1:
-    selected routebytes16:
+    routebytes16 comparison control:
       43.911M ops/s
       449128 KB peak
     storageowner16 + ownersourcel2:
@@ -116,7 +116,7 @@ Read:
 
 Promotion evidence:
   Larson T16 main-warmup full 10k non-diagnostic, repeat-3:
-    selected routebytes16 control:
+    routebytes16 comparison control:
       40.750M ops/s
       449128 KB peak
     storageowner16 + ownersourcel2:
@@ -124,7 +124,7 @@ Promotion evidence:
       439912 KB peak
 
   Larson T16 worker-warmup full 10k non-diagnostic, run=1:
-    selected routebytes16 control:
+    routebytes16 comparison control:
       40.126M ops/s
       448948 KB peak
     storageowner16 + ownersourcel2:
@@ -190,8 +190,9 @@ Promoted behavior lane:
       safety clean
 
   Read:
-    RoutePackedMeta-L2 routebytes16 is now the selected Larson lowest-RSS
-    sibling. RoutePackedMeta-L1 remains the comparison control.
+    RoutePackedMeta-L2 routebytes16 became the clean comparison-control
+    sibling. OwnerSourceSideMeta-L2 later superseded it for selected Larson
+    lowest RSS. RoutePackedMeta-L1 remains the lower-level comparison control.
 
 Acceptance to proceed to behavior:
   achieved for L2 implementation and repeat-3 promotion:

@@ -123,9 +123,10 @@ Read:
 
 ```text
 Static descriptor cuts are exhausted, but descriptor layout still has useful
-RSS headroom. No-backptr is a strong comparison control, but the current
-selected lowest-RSS sibling is the routebytes16/routepacked/no-routebackptr/
-dir192k lane.
+RSS headroom. No-backptr is a strong comparison control, routebytes16 is the
+clean route-entry comparison control, and the current selected lowest-RSS
+sibling is OwnerSourceSideMeta-L2 over the routebytes16/routepacked/
+no-routebackptr/dir192k lane.
 Packing owner slot/generation into 16-bit fields is not useful by itself
 because alignment keeps the entry at 40 bytes. The first side-owner16 behavior
 lane confirms that a 32-byte hot descriptor is mechanically possible, but
@@ -259,8 +260,9 @@ The next layout target is no longer SourceBlock or static route capacity.
 Route192k is the clean lower bound under run512; desc158k is the clean static
 descriptor-capacity boundary and desc156k/below fail. Descriptor no-backptr L1
 succeeded as the next layout target by reducing descriptor entry size from 48
-to 40 bytes. RoutePackedMeta-L2 routebytes16 is now the selected low-RSS
-route/metadata shape. Descriptor layout L2 dry-run shows owner16 packing is a dead end without
+to 40 bytes. RoutePackedMeta-L2 routebytes16 is now the clean route-entry
+comparison control, and OwnerSourceSideMeta-L2 supersedes it as the selected
+low-RSS route/descriptor metadata shape. Descriptor layout L2 dry-run shows owner16 packing is a dead end without
 another field move, while ownerless hot descriptor metadata projects a 32-byte
 entry. Side-owner16 L1 reached the 32-byte entry but failed safety because the
 side owner table is allocator-local and does not reliably read foreign

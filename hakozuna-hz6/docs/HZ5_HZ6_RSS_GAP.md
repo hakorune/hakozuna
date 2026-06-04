@@ -27,8 +27,8 @@ in the repository.
 | Family | HZ5 policy | HZ6 selected/control | Read |
 | --- | ---: | ---: | --- |
 | `random_mixed / medium` | `6.612M / 10,184 KB` | `42.408M / 4,964 KB` selected same-owner | HZ6 is clearly better on RSS and throughput after the same-owner selected lane work. |
-| `Larson T16 main-warmup` | `47.485M / 183,180 KB` | `48.367M / 449,144 KB` selected lowest-RSS | HZ6 matches/slightly beats HZ5 throughput, but uses about 2.45x HZ5 RSS. |
-| `Larson T16 worker-warmup` | `42.987M / 155,640 KB` | no current selected-family HZ6 worker row | HZ5 remains a useful RSS reference for same-owner warmup too. HZ6 work has focused on main-warmup cross-owner completion. |
+| `Larson T16 main-warmup` | `47.485M / 183,180 KB` | `40.754M / 439,912 KB` OwnerSourceSideMeta-L2 | HZ6 L2 preserves the routebytes16 comparison-control throughput shape in same-run repeat-3 while cutting RSS, but still uses about 2.40x HZ5 RSS. |
+| `Larson T16 worker-warmup` | `42.987M / 155,640 KB` | `40.787M / 439,740 KB` OwnerSourceSideMeta-L2 run=1 | HZ6 L2 does not break same-owner warmup and lowers RSS versus routebytes16, but HZ5 remains the stronger RSS reference. |
 
 Sources:
 - `docs/benchmarks/windows/paper/20260601_081924_paper_random_mixed_windows.md`
@@ -46,7 +46,8 @@ metadata dominated.
 | `ownerlocalityfast-rsscap-2-desc160k-front4k` | 45.092M | 716,324 | Lower-RSS sibling, similar throughput. |
 | `...front4k-thindesc-source16k-route192k-run512` | 48.512M | 499,820 | Previous lowest-RSS sibling/control. |
 | `...nobackptr-noroutebackptr-dir192k-source16k-route192k-run512` | 41.107M | 469,868 | Clean minimum-RSS isolation control. |
-| `...routepacked-routebytes16-source16k-route192k-run512` | 48.367M | 449,144 | Current selected lowest-RSS sibling. |
+| `...routepacked-routebytes16-source16k-route192k-run512` | 40.750M | 449,128 | Superseded routebytes16 comparison control in same-run L2 repeat-3. |
+| `...routepacked-routebytes16-storageowner16-ownersourcel2-source16k-route192k-run512` | 40.754M | 439,912 | Current selected lowest-RSS sibling. |
 | `...storageowner16-noroutebackptr-dir192k-routepacked-source16k-route192k-run512` | 42.024M | 444,520 | RSS-first evidence/control; lower RSS than selected, but too much throughput cost. |
 
 ## Design Consequence
@@ -70,11 +71,13 @@ owner/shared directory:
 The remaining RSS path is layout / ownership, not blind capacity:
 
 ```text
-1. Keep routebytes16 as the selected low-RSS sibling.
-2. Keep storageowner16 as RSS-first evidence/control.
-3. Reopen descriptor-side metadata only with owner-source awareness.
-4. Avoid allocator-local side-owner metadata; it already failed cross-owner safety.
-5. Avoid another route/descriptor/directory static trim unless a new
+1. Keep OwnerSourceSideMeta-L2 as the selected low-RSS sibling.
+2. Keep routebytes16 as the comparison control under the selected L2 lane.
+3. Keep storageowner16 as RSS-first evidence/control.
+4. Reopen descriptor-side metadata only with owner-source awareness or a
+   broader ownership representation.
+5. Avoid allocator-local side-owner metadata; it already failed cross-owner safety.
+6. Avoid another route/descriptor/directory static trim unless a new
    representation changes the pressure source.
 ```
 
@@ -104,7 +107,7 @@ ownersourcel2-source16k-route192k-run512
 Larson T16 main-warmup full 10k, non-diagnostic, run=1:
 
 ```text
-selected routebytes16:
+routebytes16 comparison control:
   43.911M ops/s
   449128 KB peak
 
@@ -198,7 +201,7 @@ HZ6_OWNER_SOURCE_SIDE_META_DRYRUN=1
 diagnostic-only
 no side-owner behavior change
 no StorageOwner16 behavior change
-selected routebytes16 hot path preserved
+routebytes16 comparison-control hot path preserved
 ```
 
 Lane:
@@ -256,5 +259,5 @@ OwnerSourceSideMeta-L2 design:
   cache or encode descriptor storage/source owner without allocator-local state
   keep descriptor hot entry ownerless or owner16-side capable
   avoid per-owner-read visibility scans
-  preserve routebytes16 selected throughput/RSS safety
+  preserve routebytes16 comparison-control throughput/RSS safety
 ```

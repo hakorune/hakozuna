@@ -163,8 +163,10 @@ Descriptor layout:
   guard no-backptr as the descriptor-layout comparison control
   guard dir192k/no-backptr as the directory-capacity comparison control
   guard routepacked/no-routebackptr/dir192k as the L1 control
-  guard routebytes16/routepacked/no-routebackptr/dir192k as the selected
-  low-RSS sibling
+  guard routebytes16/routepacked/no-routebackptr/dir192k as the clean
+  route-entry comparison control
+  guard OwnerSourceSideMeta-L2 over routebytes16/routepacked/no-routebackptr/
+  dir192k as the selected low-RSS sibling
   do not promote allocator-local side-owner16
   keep storageowner16 as RSS-first evidence/control unless its lookup cost is
   reduced

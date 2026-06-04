@@ -22,9 +22,9 @@ For repo cleanup rules and the source modularization backlog, see
 | Larson cross-owner full 10k | `speed` | `ownerlocalityfast-rsscap-2-desc160k` | Full Larson cross-owner throughput/RSS balance lane; appcap-class throughput with sub-1GB peak RSS. |
 | Larson cross-owner low RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k` | Clean route-capacity control. It keeps the thindesc/source16k shape and trims route capacity to 192K; repeat-3 is safety-clean at about `44.610M / 628844 KB`. |
 | Larson cross-owner lowest RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-source16k-route192k-run512` | Current selected lowest-RSS sibling. It combines routebytes16 with StorageOwner16 ownerless descriptors and OwnerSourceSideMeta-L2 source-block storage hints. Same-run full-10k repeat-3: routebytes16 control `40.750M / 449128 KB`, L2 `40.754M / 439912 KB`, safety clean. Worker-warmup run=1: routebytes16 `40.126M / 448948 KB`, L2 `40.787M / 439740 KB`. |
-| Larson owner-source side metadata dry-run | `speed + diagnostic` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-ownersourcedryrun-source16k-route192k-run512` | Diagnostic-only follow-up to the selected routebytes16 lane. Full 10k run=1: `46.202M / 449164 KB`, safety clean, `owner_source_side_meta_foreign=871979714`, `miss=0`, `probe_max=1`. The next owner-side design must be O(1), not StorageOwner16 scan-based. |
+| Larson owner-source side metadata dry-run | `speed + diagnostic` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-ownersourcedryrun-source16k-route192k-run512` | Diagnostic-only follow-up to the routebytes16 comparison-control lane. Full 10k run=1: `46.202M / 449164 KB`, safety clean, `owner_source_side_meta_foreign=871979714`, `miss=0`, `probe_max=1`. The next owner-side design must be O(1), not StorageOwner16 scan-based. |
 | Larson routebytes16 control | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-source16k-route192k-run512` | Superseded clean control. Same-run full-10k repeat-3 against OwnerSourceSideMeta-L2: routebytes16 `40.750M / 449128 KB`, L2 `40.754M / 439912 KB`. Keep as the main comparison control for L2. |
-| Larson cross-owner routepacked control | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-source16k-route192k-run512` | RoutePackedMeta-L1 comparison control. Repeat-3 historical full 10k was `47.616M / 456048 KB`; same-run L2 A/B repeat-3 is `45.079M / 456040 KB`, safety clean. Superseded by routebytes16 for selected lowest-RSS comparisons. |
+| Larson cross-owner routepacked control | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-source16k-route192k-run512` | RoutePackedMeta-L1 comparison control. Repeat-3 historical full 10k was `47.616M / 456048 KB`; same-run L2 A/B repeat-3 is `45.079M / 456040 KB`, safety clean. Superseded first by routebytes16 as the route-entry comparison control, then by OwnerSourceSideMeta-L2 for selected lowest-RSS comparisons. |
 | Larson cross-owner RSS-first descriptor evidence | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-storageowner16-noroutebackptr-dir192k-routepacked-source16k-route192k-run512` | StorageOwner16-L1 evidence/control. It is safety-clean and reaches `42.024M / 444520 KB`, but does not replace routepacked because the RSS gain costs about 12% throughput. |
 | Larson cross-owner minimum RSS control | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-source16k-route192k-run512` | Clean SourceBlockNoRouteBackptr-L1 control. It removes the SourceBlock route-backend back-pointer and reaches `41.107M / 469868 KB`; superseded by routepacked for both speed and RSS, but useful as an isolation control. |
 | Larson cross-owner no-backptr control | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-source16k-route192k-run512` | Comparison control for dir192k. It keeps route192k/run512 and removes the descriptor allocator back-pointer; repeat-3 is safety-clean at `40.710M / 476784 KB`, and same-run repeat-3 against dir192k is `45.310M / 476788 KB`. |
@@ -522,7 +522,8 @@ Larson cross-owner full 10k:
     remain source-run metadata controls; no-backptr run512 is the descriptor
     layout control, dir192k/no-backptr is a directory-capacity control,
     routepacked/no-routebackptr/dir192k is the L1 control, and
-    routebytes16 is the current selected low-RSS sibling.
+    routebytes16 is the clean comparison-control sibling; OwnerSourceSideMeta-L2
+    is the current selected low-RSS sibling.
   source-block over-retention control:
     ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k
     passes, but raises peak RSS and is not selected
@@ -837,7 +838,8 @@ ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-dir192k-source16k
   Larson directory-capacity comparison control. Same no-backptr route/run512
   shape, but `HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY` is trimmed to 196608 so the
   owner-locality/shared-directory index is smaller. It is superseded by the
-  routebytes16/routepacked/no-routebackptr/dir192k selected sibling. Repeat-3:
+  routebytes16 comparison-control sibling and the later OwnerSourceSideMeta-L2
+  selected sibling. Repeat-3:
   `44.580M / 472176 KB`, safety clean. Same-run no-backptr control is
   `45.310M / 476788 KB`, so dir192k trades about -1.6% throughput for about
   4.6 MB lower peak RSS. Dir128k/dir96k are no-go controls because
@@ -875,7 +877,7 @@ ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-di
   repeat-3.
 
 ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-ownersourcedryrun-source16k-route192k-run512:
-  OwnerSourceSideMeta-L1 dry-run. Same selected routebytes16 lane, plus
+  OwnerSourceSideMeta-L1 dry-run. Same routebytes16 comparison-control lane, plus
   `HZ6_OWNER_SOURCE_SIDE_META_DRYRUN=1` in diagnostic builds only. It projects
   whether descriptor owner side metadata can be made owner-source-aware without
   changing behavior. Full 10k run=1:
@@ -889,7 +891,7 @@ ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-di
   Current Larson lowest-RSS selected sibling. It combines routebytes16 with
   StorageOwner16 ownerless descriptors and stores an O(1) descriptor-storage
   hint on each SourceBlock. Full 10k non-diagnostic repeat-3:
-  selected routebytes16 control `40.750M / 449128 KB`, L2
+  routebytes16 comparison control `40.750M / 449128 KB`, L2
   `40.754M / 439912 KB`. Worker-warmup 10k run=1: routebytes16
   `40.126M / 448948 KB`, L2 `40.787M / 439740 KB`.
   Full 10k diagnostic dry-run comparison:
