@@ -150,7 +150,7 @@ $presetMap = [ordered]@{
         -Families @("mixed_ws") `
         -BenchmarkProfiles @("smoke", "balanced", "wide_ws", "larger_sizes") `
         -Hz6Profiles @("rss") `
-        -CapacityLanes @("route4k", "mixedclean-front16k-sourcerun-desc17k-source2k-route17k", "descavail-noboost-route4k", "largerlowrss-front8k-sourcerun-desc8k-route8k") `
+        -CapacityLanes @("route4k", "mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap", "descavail-noboost-route4k", "largerlowrss-front8k-sourcerun-desc8k-route8k") `
         -Note "short guard/control slice before a broader selected-family run"
 }
 

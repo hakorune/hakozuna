@@ -114,11 +114,10 @@ Preset intent:
 ```text
 selected-mixed-lowrss:
   mixed_ws balanced / wide_ws
-  rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k
-  rss + mixedclean-front16k-sourcerun-desc17k-source2k-route18k
+  rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap
   status:
-    balanced uses desc17/route17 as the lower-RSS row.
-    wide_ws uses desc17/route18 after the route-only L1 repeat-3.
+    LinearWrap-L1 keeps the desc17/route17 RSS shape while improving balanced,
+    wide_ws, and larger_sizes guard rows.
 
 selected-mixed-pressure:
   mixed_ws balanced / wide_ws
@@ -144,6 +143,11 @@ larson-cross-owner-selected:
 
 selected-family-guard:
   short mixed_ws smoke/control guard before a longer selected-family run
+  includes:
+    route4k control
+    mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap
+    descavail-noboost-route4k pressure evidence
+    largerlowrss-front8k-sourcerun-desc8k-route8k larger_sizes selected row
 
 larson-thindesc-sourcecap:
   larson_t16_main_10k
