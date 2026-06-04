@@ -5,6 +5,10 @@ size_t hz6_route_hash_index(uintptr_t base, size_t capacity) {
     return 0;
   }
   uintptr_t x = base >> 4u;
+#if HZ6_ROUTE_HASH_XOR_FOLD_L1
+  x ^= base >> 12u;
+  x ^= base >> 20u;
+#endif
   x ^= x >> 33u;
   x *= (uintptr_t)0xff51afd7ed558ccdULL;
   x ^= x >> 33u;

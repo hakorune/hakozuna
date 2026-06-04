@@ -8186,3 +8186,125 @@ Next:
   if more wide_ws speed is needed, attack route representation / route load
   rather than frontcache or source placement
 ```
+
+## HZ6 mixed_ws RouteHashShape-L1
+
+Question:
+
+```text
+Can wide_ws route pressure be improved by changing probe shape or the initial
+route hash without raising route capacity or weakening the selected low-RSS
+family?
+```
+
+RouteProbeShape evidence:
+
+```text
+Diagnostic repeat-3 showed:
+  balanced:
+    desc17/route17 and desc17/route18 have small probe tails.
+
+  wide_ws:
+    desc17/route17 has large route lookup/register tails.
+    desc17/route18 reduces the tail and remains the selected wide_ws sibling.
+    desc17/route20 reduces probe totals further, but does not beat route18 in
+    non-diagnostic speed and costs more route RSS.
+
+Read:
+  route pressure is real in wide_ws, but simply making the table larger is not
+  the next clean answer.
+```
+
+DoubleHash-L1:
+
+```text
+Change:
+  Secondary hash step for open-addressing probes.
+
+Result:
+  Diagnostic smoke:
+    wide_ws route18 lookup_probe_total drops from ~5.6M to ~2.5M.
+    b65+ tails almost disappear.
+
+  Non-diagnostic repeat-3:
+    route18 wide_ws     = 21.401M / 140496 KB
+    route18 doublehash  = 20.886M / 140564 KB
+
+Decision:
+  KEEP as control/no-go evidence.
+  DoubleHash removes probe tails, but the per-probe step / non-linear memory
+  walk does not return as throughput.
+```
+
+HashXorFold-L1:
+
+```text
+Change:
+  Keep linear probing, but xor-fold page/higher address bits into the initial
+  hash:
+    x = (base >> 4) ^ (base >> 12) ^ (base >> 20)
+
+Diagnostic 1-run:
+  route18 balanced:
+    route18      = 57.099M / 111012 KB
+    hashxor      = 47.529M / 111340 KB
+    doublehash   = 47.602M / 111280 KB
+
+  route18 wide_ws:
+    route18      = 19.252M / 140576 KB
+    hashxor      = 20.699M / 140536 KB
+    doublehash   = 17.284M / 140560 KB
+
+Non-diagnostic repeat-3:
+  route18 compare:
+    route18      balanced = 65.223M / 111208 KB
+    hashxor      balanced = 73.433M / 111232 KB
+    route18      wide_ws  = 21.545M / 140464 KB
+    hashxor      wide_ws  = 21.792M / 140480 KB
+
+  selected compare:
+    route17      balanced = 67.767M / 110820 KB
+    hashxor      balanced = 67.107M / 111140 KB
+    route17      wide_ws  = 21.148M / 140296 KB
+    hashxor      wide_ws  = 20.701M / 140332 KB
+
+Safety:
+  HZ6 Windows R1 smokes all pass.
+  route_invalid = 0
+  route_miss = 0
+  route_register_fail = 0
+
+Decision:
+  KEEP as route-hash evidence/control.
+  Do not promote HashXorFold-L1 over the selected family yet.
+
+  HashXorFold can help a route18-only comparison, but it does not beat the
+  selected desc17/route17 balanced row in same-run repeat-3, and it does not
+  clearly beat selected wide_ws either.
+```
+
+Current selected mixed_ws lanes:
+
+```text
+balanced low-RSS:
+  rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k
+
+wide_ws low-RSS sibling:
+  rss + mixedclean-front16k-sourcerun-desc17k-source2k-route18k
+
+controls:
+  route20
+  doublehash
+  hashxor
+```
+
+Next:
+
+```text
+Do not promote another hash/probe knob yet.
+If wide_ws still needs speed, the likely next clean targets are:
+  1. reduce route lookup/register cost while keeping linear locality
+     (e.g. wrap-increment loop or payload split),
+  2. route payload/layout split,
+  3. profile-level table policy only if it beats selected rows repeatably.
+```
