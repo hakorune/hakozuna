@@ -21,6 +21,8 @@
 extern "C" {
 #endif
 
+struct Hz6Allocator;
+
 typedef int (*Hz6SourceReleaseFn)(void* ptr, size_t bytes);
 
 typedef struct Hz6SourceBlock {
@@ -38,6 +40,9 @@ typedef struct Hz6SourceBlock {
   uint16_t run_used_count;
   uint16_t run_next_hint;
   uint64_t run_used_bits[HZ6_SOURCE_RUN_BITMAP_WORDS];
+#if HZ6_OWNER_SOURCE_SIDE_META_L2
+  struct Hz6Allocator* owner_source_storage_allocator;
+#endif
   int active;
   int route_registered;
   int run_active;

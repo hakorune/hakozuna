@@ -45,6 +45,9 @@ int hz6_allocator_release_source_block(Hz6Allocator* allocator,
   for (size_t i = 0; i < HZ6_SOURCE_RUN_BITMAP_WORDS; ++i) {
     block->run_used_bits[i] = 0;
   }
+#if HZ6_OWNER_SOURCE_SIDE_META_L2
+  block->owner_source_storage_allocator = NULL;
+#endif
   block->active = 0;
   block->route_registered = 0;
   block->run_active = 0;

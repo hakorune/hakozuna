@@ -25,9 +25,14 @@ Current attack plan:
 
 ```text
 Selected lane to preserve:
-  routebytes16/routepacked/no-routebackptr/dir192k
-    48.367M ops/s
-    449144 KB peak
+  OwnerSourceSideMeta-L2 over routebytes16/routepacked/no-routebackptr/dir192k
+    same-run repeat-3 Larson T16 main-warmup:
+      routebytes16 selected control:
+        40.750M ops/s
+        449128 KB peak
+      storageowner16 + ownersourcel2:
+        40.754M ops/s
+        439912 KB peak
     safety clean
 
 RSS reference:
@@ -42,12 +47,97 @@ Current HZ6 gap:
   dominated, not payload dominated.
 
 Next:
-  HZ6 OwnerSourceSideMeta-L2 design.
+  HZ6 OwnerSourceSideMeta-L2 selected-lane closeout and commit.
 
 Goal:
   keep the routebytes16 selected hot path and test whether descriptor owner
   side metadata can be made owner-source-aware without paying the StorageOwner16
   lookup cost on every hot owner read.
+
+OwnerSourceSideMeta-L2 implementation:
+  HZ6_OWNER_SOURCE_SIDE_META_L2=1
+  HZ6_DESCRIPTOR_STORAGE_OWNER16_L1=1
+  source blocks carry owner_source_storage_allocator
+  descriptor owner reads use descriptor->source_block as an O(1) descriptor
+  storage hint before falling back to the StorageOwner16 scan
+
+Lane:
+  ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-
+  noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-
+  ownersourcel2-source16k-route192k-run512
+
+Validation lane:
+  same lane plus HZ6_OWNER_SOURCE_SIDE_META_DRYRUN=1
+  suffix:
+    ownersourcel2dryrun-source16k-route192k-run512
+
+Initial results:
+  Larson T16 main-warmup 1k diagnostic, run=1:
+    selected routebytes16:
+      55.881M ops/s
+      327248 KB peak
+    storageowner16 + ownersourcel2:
+      56.348M ops/s
+      318488 KB peak
+      owner_source_side_meta_l2_lookup = 145018652
+      owner_source_side_meta_l2_hit = 145018652
+      l2_miss_no_block = 0
+      l2_miss_inactive = 0
+      l2_storage_mismatch = 0
+
+  Larson T16 main-warmup full 10k non-diagnostic, run=1:
+    selected routebytes16:
+      43.911M ops/s
+      449128 KB peak
+    storageowner16 + ownersourcel2:
+      44.546M ops/s
+      440364 KB peak
+
+  Larson T16 main-warmup full 10k diagnostic dry-run comparison, run=1:
+    44.239M ops/s
+    439936 KB peak
+    owner_source_side_meta_l2_lookup = 1253200849
+    owner_source_side_meta_l2_hit = 1253200849
+    owner_source_side_meta_l2_miss_no_block = 0
+    owner_source_side_meta_l2_miss_inactive = 0
+    owner_source_side_meta_l2_storage_mismatch = 0
+    route_invalid = 0
+    route_miss = 0
+    route_register_fail = 0
+    remote_free_transfer_fail = 0
+    lifecycle_foreign_free_invalid = 0
+    alloc_fail = 0
+    descriptor_exhausted = 0
+
+Read:
+  OwnerSourceSideMeta-L2 is promoted to the current Larson lowest-RSS selected
+  sibling. It preserves the StorageOwner16 ownerless descriptor shape while
+  avoiding the scan-based hot read on source-block descriptors.
+
+Promotion evidence:
+  Larson T16 main-warmup full 10k non-diagnostic, repeat-3:
+    selected routebytes16 control:
+      40.750M ops/s
+      449128 KB peak
+    storageowner16 + ownersourcel2:
+      40.754M ops/s
+      439912 KB peak
+
+  Larson T16 worker-warmup full 10k non-diagnostic, run=1:
+    selected routebytes16 control:
+      40.126M ops/s
+      448948 KB peak
+    storageowner16 + ownersourcel2:
+      40.787M ops/s
+      439740 KB peak
+
+  Diagnostic validation:
+    owner_source_side_meta_l2_lookup = 1253200849
+    owner_source_side_meta_l2_hit = 1253200849
+    owner_source_side_meta_l2_miss_no_block = 0
+    owner_source_side_meta_l2_miss_inactive = 0
+    owner_source_side_meta_l2_storage_mismatch = 0
+    safety counters = 0
 
 Closed L2 dry-run:
   route_bytes side array:

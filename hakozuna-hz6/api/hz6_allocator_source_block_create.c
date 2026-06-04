@@ -367,6 +367,9 @@ Hz6SourceBlock* hz6_allocator_create_source_block(
 #endif
   block->ref_count = 0;
   hz6_source_run_reset(block);
+#if HZ6_OWNER_SOURCE_SIDE_META_L2
+  block->owner_source_storage_allocator = allocator;
+#endif
   block->active = 1;
   block->route_registered = 0;
   return block;

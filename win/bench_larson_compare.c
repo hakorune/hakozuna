@@ -514,6 +514,16 @@ int main(int argc, char** argv) {
             hz6_stats.owner_source_side_meta_probe_max =
                 tds[t].hz6_stats_after.owner_source_side_meta_probe_max;
         }
+        hz6_stats.owner_source_side_meta_l2_lookup +=
+            tds[t].hz6_stats_after.owner_source_side_meta_l2_lookup;
+        hz6_stats.owner_source_side_meta_l2_hit +=
+            tds[t].hz6_stats_after.owner_source_side_meta_l2_hit;
+        hz6_stats.owner_source_side_meta_l2_miss_no_block +=
+            tds[t].hz6_stats_after.owner_source_side_meta_l2_miss_no_block;
+        hz6_stats.owner_source_side_meta_l2_miss_inactive +=
+            tds[t].hz6_stats_after.owner_source_side_meta_l2_miss_inactive;
+        hz6_stats.owner_source_side_meta_l2_storage_mismatch +=
+            tds[t].hz6_stats_after.owner_source_side_meta_l2_storage_mismatch;
         hz6_stats.lifecycle_owner_mismatch +=
             tds[t].hz6_stats_after.lifecycle_owner_mismatch;
         hz6_stats.lifecycle_foreign_free_attempt +=
@@ -944,6 +954,11 @@ int main(int argc, char** argv) {
             "owner_source_side_meta_miss=%zu "
             "owner_source_side_meta_probe_total=%zu "
             "owner_source_side_meta_probe_max=%zu "
+            "owner_source_side_meta_l2_lookup=%zu "
+            "owner_source_side_meta_l2_hit=%zu "
+            "owner_source_side_meta_l2_miss_no_block=%zu "
+            "owner_source_side_meta_l2_miss_inactive=%zu "
+            "owner_source_side_meta_l2_storage_mismatch=%zu "
             "lifecycle_owner_mismatch=%zu "
             "lifecycle_foreign_free_attempt=%zu "
            "lifecycle_foreign_free_handled=%zu "
@@ -1048,6 +1063,11 @@ int main(int argc, char** argv) {
             hz6_stats.owner_source_side_meta_miss,
             hz6_stats.owner_source_side_meta_probe_total,
             hz6_stats.owner_source_side_meta_probe_max,
+            hz6_stats.owner_source_side_meta_l2_lookup,
+            hz6_stats.owner_source_side_meta_l2_hit,
+            hz6_stats.owner_source_side_meta_l2_miss_no_block,
+            hz6_stats.owner_source_side_meta_l2_miss_inactive,
+            hz6_stats.owner_source_side_meta_l2_storage_mismatch,
             hz6_stats.lifecycle_owner_mismatch,
            hz6_stats.lifecycle_foreign_free_attempt,
            hz6_stats.lifecycle_foreign_free_handled,

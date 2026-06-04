@@ -59,6 +59,11 @@ typedef struct Hz6StatsSnapshot {
   size_t owner_source_side_meta_miss;
   size_t owner_source_side_meta_probe_total;
   size_t owner_source_side_meta_probe_max;
+  size_t owner_source_side_meta_l2_lookup;
+  size_t owner_source_side_meta_l2_hit;
+  size_t owner_source_side_meta_l2_miss_no_block;
+  size_t owner_source_side_meta_l2_miss_inactive;
+  size_t owner_source_side_meta_l2_storage_mismatch;
   size_t lifecycle_owner_mismatch;
   size_t lifecycle_foreign_free_attempt;
   size_t lifecycle_foreign_free_handled;

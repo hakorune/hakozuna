@@ -12,7 +12,8 @@ extern "C" {
 Hz6ObjectDescriptor* hz6_allocator_find_free_descriptor(
     Hz6Allocator* allocator);
 
-#if HZ6_DESCRIPTOR_STORAGE_OWNER16_L1 || HZ6_OWNER_SOURCE_SIDE_META_DRYRUN
+#if HZ6_DESCRIPTOR_STORAGE_OWNER16_L1 || HZ6_OWNER_SOURCE_SIDE_META_DRYRUN || \
+    HZ6_OWNER_SOURCE_SIDE_META_L2
 Hz6Allocator* hz6_allocator_descriptor_storage_owner(
     Hz6Allocator* observer,
     const Hz6ObjectDescriptor* descriptor,
@@ -69,6 +70,61 @@ static inline void hz6_allocator_owner_source_side_meta_dryrun(
 #endif
 }
 
+static inline Hz6Allocator* hz6_allocator_owner_source_side_meta_storage(
+    const Hz6Allocator* allocator,
+    const Hz6ObjectDescriptor* descriptor) {
+#if HZ6_OWNER_SOURCE_SIDE_META_L2
+  Hz6Allocator* mutable_allocator = (Hz6Allocator*)allocator;
+#if !HZ6_DIAGNOSTIC_PROBES
+  (void)mutable_allocator;
+#endif
+#if HZ6_DIAGNOSTIC_PROBES
+  if (mutable_allocator) {
+    ++mutable_allocator->stats.owner_source_side_meta_l2_lookup;
+  }
+#endif
+  if (!descriptor || !descriptor->source_block) {
+#if HZ6_DIAGNOSTIC_PROBES
+    if (mutable_allocator) {
+      ++mutable_allocator->stats.owner_source_side_meta_l2_miss_no_block;
+    }
+#endif
+    return NULL;
+  }
+  if (!descriptor->source_block->active ||
+      !descriptor->source_block->owner_source_storage_allocator) {
+#if HZ6_DIAGNOSTIC_PROBES
+    if (mutable_allocator) {
+      ++mutable_allocator->stats.owner_source_side_meta_l2_miss_inactive;
+    }
+#endif
+    return NULL;
+  }
+  Hz6Allocator* storage =
+      descriptor->source_block->owner_source_storage_allocator;
+#if HZ6_OWNER_SOURCE_SIDE_META_DRYRUN && HZ6_DIAGNOSTIC_PROBES
+  if (mutable_allocator) {
+    Hz6Allocator* scanned =
+        hz6_allocator_descriptor_storage_owner(mutable_allocator, descriptor,
+                                               NULL);
+    if (scanned && scanned != storage) {
+      ++mutable_allocator->stats.owner_source_side_meta_l2_storage_mismatch;
+    }
+  }
+#endif
+#if HZ6_DIAGNOSTIC_PROBES
+  if (mutable_allocator) {
+    ++mutable_allocator->stats.owner_source_side_meta_l2_hit;
+  }
+#endif
+  return storage;
+#else
+  (void)allocator;
+  (void)descriptor;
+  return NULL;
+#endif
+}
+
 static inline uint32_t hz6_descriptor_pack_owner16(Hz6OwnerToken owner) {
   if (owner.slot > UINT16_MAX || owner.generation > UINT16_MAX) {
     return 0;
@@ -91,9 +147,12 @@ static inline Hz6OwnerToken hz6_allocator_descriptor_owner(
   const Hz6Allocator* storage = allocator;
 #if HZ6_DESCRIPTOR_STORAGE_OWNER16_L1
   if (!hz6_allocator_descriptor_belongs_to(storage, descriptor)) {
-    storage = hz6_allocator_descriptor_storage_owner((Hz6Allocator*)allocator,
-                                                     descriptor,
-                                                     NULL);
+    storage = hz6_allocator_owner_source_side_meta_storage(allocator,
+                                                           descriptor);
+    if (!storage) {
+      storage = hz6_allocator_descriptor_storage_owner(
+          (Hz6Allocator*)allocator, descriptor, NULL);
+    }
   }
 #endif
   size_t index = hz6_allocator_descriptor_index(storage, descriptor);
@@ -116,7 +175,12 @@ static inline void hz6_allocator_set_descriptor_owner(
   Hz6Allocator* storage = allocator;
 #if HZ6_DESCRIPTOR_STORAGE_OWNER16_L1
   if (!hz6_allocator_descriptor_belongs_to(storage, descriptor)) {
-    storage = hz6_allocator_descriptor_storage_owner(allocator, descriptor, NULL);
+    storage = hz6_allocator_owner_source_side_meta_storage(allocator,
+                                                           descriptor);
+    if (!storage) {
+      storage = hz6_allocator_descriptor_storage_owner(allocator, descriptor,
+                                                       NULL);
+    }
   }
 #endif
   size_t index = hz6_allocator_descriptor_index(storage, descriptor);

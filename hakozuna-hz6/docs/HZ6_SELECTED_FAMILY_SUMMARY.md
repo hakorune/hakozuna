@@ -20,7 +20,8 @@ For cleanup rules and the next source modularization target, see
 | mixed_ws larger_sizes rss | `speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k` | 27.178M | 71,012 | clean selected |
 | Larson T16 full 10k throughput/RSS | `speed + ownerlocalityfast-rsscap-2-desc160k` | 44.754M | 808,488 | clean selected |
 | Larson T16 full 10k lower RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k` | 45.092M | 716,324 | clean selected sibling |
-| Larson T16 full 10k lowest RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-source16k-route192k-run512` | 48.367M | 449,144 | clean selected sibling |
+| Larson T16 full 10k routebytes16 control | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-source16k-route192k-run512` | 40.750M | 449,128 | clean superseded control |
+| Larson T16 full 10k lowest RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-source16k-route192k-run512` | 40.754M | 439,912 | clean selected sibling |
 | Larson T16 full 10k minimum RSS control | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-source16k-route192k-run512` | 41.107M | 469,868 | clean superseded control |
 
 Source:
@@ -42,6 +43,7 @@ Source:
 - `docs/benchmarks/windows/paper/hz6_routepacked_meta_l2_dryrun/`
 - `docs/benchmarks/windows/paper/hz6_routepacked_meta_l2_behavior/`
 - `docs/benchmarks/windows/paper/hz6_hz5_rss_gap/`
+- `docs/benchmarks/windows/paper/hz6_owner_source_side_meta_l2/`
 - `docs/benchmarks/windows/paper/hz6_route_linearwrap_l1_guard/`
 - `docs/benchmarks/windows/paper/hz6_route_loopcarry_l1_repeat/`
 

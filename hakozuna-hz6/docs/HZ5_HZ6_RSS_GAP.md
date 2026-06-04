@@ -78,7 +78,94 @@ The remaining RSS path is layout / ownership, not blind capacity:
    representation changes the pressure source.
 ```
 
-## Next HZ6 Attack
+## OwnerSourceSideMeta-L2 Result
+
+Implementation:
+
+```text
+HZ6_OWNER_SOURCE_SIDE_META_L2=1
+HZ6_DESCRIPTOR_STORAGE_OWNER16_L1=1
+
+Meaning:
+  keep descriptor hot entries ownerless
+  keep packed side owner in descriptor_side_owner16[]
+  use descriptor->source_block->owner_source_storage_allocator as an O(1)
+  descriptor storage hint before falling back to the StorageOwner16 scan
+```
+
+Lane:
+
+```text
+ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-
+noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-
+ownersourcel2-source16k-route192k-run512
+```
+
+Larson T16 main-warmup full 10k, non-diagnostic, run=1:
+
+```text
+selected routebytes16:
+  43.911M ops/s
+  449128 KB peak
+
+storageowner16 + ownersourcel2:
+  44.546M ops/s
+  440364 KB peak
+```
+
+Larson T16 main-warmup full 10k, diagnostic dry-run comparison, run=1:
+
+```text
+storageowner16 + ownersourcel2 + dryrun:
+  44.239M ops/s
+  439936 KB peak
+  owner_source_side_meta_l2_lookup = 1253200849
+  owner_source_side_meta_l2_hit = 1253200849
+  owner_source_side_meta_l2_miss_no_block = 0
+  owner_source_side_meta_l2_miss_inactive = 0
+  owner_source_side_meta_l2_storage_mismatch = 0
+
+safety:
+  route_invalid = 0
+  route_miss = 0
+  route_register_fail = 0
+  remote_free_transfer_fail = 0
+  lifecycle_foreign_free_invalid = 0
+  alloc_fail = 0
+  descriptor_exhausted = 0
+```
+
+Read:
+
+```text
+OwnerSourceSideMeta-L2 is the first positive RSS-gap mechanism after
+routebytes16. It keeps the StorageOwner16 RSS direction while avoiding the
+scan-based hot read in the behavior lane.
+
+OwnerSourceSideMeta-L2 is promoted to the current Larson lowest-RSS selected
+sibling after repeat-3 and worker-warmup checks:
+  main-warmup repeat-3:
+    routebytes16 control = 40.750M / 449128 KB
+    L2 = 40.754M / 439912 KB
+  worker-warmup run=1:
+    routebytes16 control = 40.126M / 448948 KB
+    L2 = 40.787M / 439740 KB
+  full diagnostic comparison has zero L2 mismatch
+```
+
+Next:
+
+```text
+Closeout:
+  keep routebytes16 as the clean comparison control
+  use storageowner16 + ownersourcel2 as the selected lowest-RSS Larson sibling
+  rerun repeat-3 only when touching descriptor/source-block ownership again
+
+Keep as no-go/control:
+  plain StorageOwner16 scan-based owner reads
+```
+
+## Prior HZ6 Attack
 
 ```text
 HZ6 OwnerSourceSideMeta-L1 dry-run

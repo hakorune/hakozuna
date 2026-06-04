@@ -18,6 +18,9 @@ void hz6_allocator_init_state_source_blocks(Hz6Allocator* allocator) {
     for (size_t word = 0; word < HZ6_SOURCE_RUN_BITMAP_WORDS; ++word) {
       allocator->source_blocks[i].run_used_bits[word] = 0;
     }
+#if HZ6_OWNER_SOURCE_SIDE_META_L2
+    allocator->source_blocks[i].owner_source_storage_allocator = NULL;
+#endif
     allocator->source_blocks[i].active = 0;
     allocator->source_blocks[i].route_registered = 0;
     allocator->source_blocks[i].run_active = 0;

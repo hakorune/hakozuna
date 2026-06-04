@@ -31,7 +31,7 @@ Hz6RouteResult hz6_allocator_route_lookup_visible_after_local_miss(
     const void* ptr);
 
 #if HZ6_DESCRIPTOR_STORAGE_OWNER16_L1 || HZ6_DIAGNOSTIC_PROBES || \
-    HZ6_OWNER_SOURCE_SIDE_META_DRYRUN
+    HZ6_OWNER_SOURCE_SIDE_META_DRYRUN || HZ6_OWNER_SOURCE_SIDE_META_L2
 Hz6Allocator* hz6_allocator_descriptor_storage_owner(
     Hz6Allocator* observer,
     const Hz6ObjectDescriptor* descriptor,
