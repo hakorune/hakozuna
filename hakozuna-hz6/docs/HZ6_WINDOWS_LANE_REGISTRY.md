@@ -61,6 +61,28 @@ A future `Get-Hz6WinCapacityLaneRegistry` helper should return records like:
 }
 
 @{
+  Name = "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-storageowner16-noroutebackptr-dir192k-routepacked-source16k-route192k-run512"
+  Suffix = "_ownerloc_rss2_d160_f4_thin_nb_so16_nrb_d192_rp_s16_r192_run512"
+  Status = "evidence"
+  Family = "larson"
+  Tags = @("owner-locality", "thindesc", "no-backptr", "storageowner16", "no-route-backptr", "dir192k", "routepacked", "source16k", "route192k", "run512", "rss-first", "descriptor-layout")
+  ExtraFlags = @(
+    "/DHZ6_OWNER_LOCALITY_FAST_L1=1",
+    "/DHZ6_THIN_DESCRIPTOR_L1=1",
+    "/DHZ6_DESCRIPTOR_NO_BACKPTR_L1=1",
+    "/DHZ6_DESCRIPTOR_STORAGE_OWNER16_L1=1",
+    "/DHZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1=1",
+    "/DHZ6_SHARED_ROUTE_DIRECTORY_CAPACITY=((size_t)196608)",
+    "/DHZ6_ROUTE_PACKED_META_L1=1",
+    "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)163840)",
+    "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)4096)",
+    "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)16384)",
+    "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)196608)",
+    "/DHZ6_SOURCE_RUN_MAX_SLOTS=((size_t)512)"
+  )
+}
+
+@{
   Name = "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-sideowner16-source16k-route192k-run512"
   Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_nobackptr_sideowner16_source16k_route192k_run512"
   Status = "no-go"

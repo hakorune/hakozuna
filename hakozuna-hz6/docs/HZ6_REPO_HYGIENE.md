@@ -62,6 +62,9 @@ Larson lowest RSS:
 The side-owner16 descriptor layout lane is not selected. It is buildable as
 no-go evidence only: allocator-local owner side metadata reaches a 32-byte hot
 descriptor entry, but it breaks cross-owner lifecycle safety counters.
+StorageOwner16 is buildable as RSS-first evidence/control: descriptor side
+metadata becomes safety-clean when keyed by descriptor storage ownership, but
+it does not replace routepacked because the RSS gain costs too much throughput.
 
 Do not add new lanes to the selected family unless they pass:
 
@@ -159,7 +162,9 @@ Descriptor layout:
   guard dir192k/no-backptr as the directory-capacity comparison control
   guard routepacked/no-routebackptr/dir192k as the selected low-RSS sibling
   do not promote allocator-local side-owner16
-  consider side metadata only if the owner source is explicit
+  keep storageowner16 as RSS-first evidence/control unless its lookup cost is
+  reduced
+  consider new side metadata only if the owner source is explicit
 
 SourceBlock metadata layout:
   split or compress run bitmap / run metadata only after descriptor layout
