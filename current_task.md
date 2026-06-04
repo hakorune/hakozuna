@@ -148,6 +148,20 @@ next HZ6 attack:
         larson-cross-owner-selected and larson-cross-owner-lowest-rss now use
         the no-backptr lane as the selected low-RSS sibling. The old run512
         lane remains in larson-run512-descriptorlayout as the direct control.
+      selected preset guard:
+        larson-cross-owner-lowest-rss one-run:
+          front4k:
+            42.460M / 716340 KB, safety clean
+          route192k:
+            44.583M / 628848 KB, safety clean
+          no-backptr run512:
+            42.324M / 476868 KB, safety clean
+        source:
+          docs/benchmarks/windows/paper/hz6_selected_family/
+            larson-nobackptr-selected-guard/
+        read:
+          selected-family wiring is correct and no-backptr remains clean as the
+          lowest-RSS sibling in the selected preset path.
 
   next:
     SourceBlock is no longer the dominant table after run512.

@@ -197,6 +197,18 @@ larson-run512-descriptorlayout:
     allocator explicitly. Repeat-3 is clean at `40.710M / 476784 KB` versus the
     run512 baseline `40.498M / 499812 KB`; keep as the selected lowest-RSS
     sibling candidate and guard before broader default promotion.
+
+larson-nobackptr-selected-guard:
+  larson-cross-owner-lowest-rss preset one-run check after preset promotion.
+  The selected preset now runs:
+    front4k:
+      42.460M / 716340 KB
+    route192k:
+      44.583M / 628848 KB
+    no-backptr route192k-run512:
+      42.324M / 476868 KB
+  all safety clean. Use this as wiring evidence that selected-family runners
+  now exercise no-backptr as the low-RSS sibling.
 ```
 
 ```text
