@@ -12,6 +12,30 @@ typedef struct Hz6ThinDescriptorHotCandidate {
   uint8_t flags;
 } Hz6ThinDescriptorHotCandidate;
 
+typedef struct Hz6OwnerlessDescriptorHotCandidate {
+  void* ptr;
+  Hz6SourceBlock* source_block;
+  uint32_t bytes;
+  uint32_t generation;
+  uint32_t cold_index;
+  uint16_t class_id;
+  uint8_t source_kind;
+  uint8_t state;
+} Hz6OwnerlessDescriptorHotCandidate;
+
+typedef struct Hz6Owner16DescriptorHotCandidate {
+  void* ptr;
+  Hz6SourceBlock* source_block;
+  uint32_t bytes;
+  uint32_t generation;
+  uint32_t cold_index;
+  uint16_t owner_slot16;
+  uint16_t owner_generation16;
+  uint16_t class_id;
+  uint8_t source_kind;
+  uint8_t state;
+} Hz6Owner16DescriptorHotCandidate;
+
 typedef struct Hz6ThinDescriptorColdCandidate {
   void* source_ptr;
   Hz6SourceReleaseFn source_release;
@@ -168,6 +192,33 @@ static void hz6_stats_snapshot_memory_attribution(
   snapshot->metadata_descriptor_thin_hot_savings_bytes =
       hz6_sub_saturating_size(snapshot->memory_descriptor_table_bytes,
                               snapshot->metadata_descriptor_thin_hot_table_bytes);
+  snapshot->metadata_descriptor_ownerless_hot_entry_bytes =
+      sizeof(Hz6OwnerlessDescriptorHotCandidate);
+  snapshot->metadata_descriptor_ownerless_hot_table_bytes =
+      sizeof(Hz6OwnerlessDescriptorHotCandidate) *
+      HZ6_OBJECT_DESCRIPTOR_CAPACITY;
+#if HZ6_THIN_DESCRIPTOR_L1
+  snapshot->metadata_descriptor_ownerless_hot_table_bytes +=
+      sizeof(Hz6ThinDescriptorColdCandidate) *
+      HZ6_DESCRIPTOR_COLD_SOURCE_CAPACITY;
+#endif
+  snapshot->metadata_descriptor_ownerless_hot_savings_bytes =
+      hz6_sub_saturating_size(
+          snapshot->memory_descriptor_table_bytes,
+          snapshot->metadata_descriptor_ownerless_hot_table_bytes);
+  snapshot->metadata_descriptor_owner16_hot_entry_bytes =
+      sizeof(Hz6Owner16DescriptorHotCandidate);
+  snapshot->metadata_descriptor_owner16_hot_table_bytes =
+      sizeof(Hz6Owner16DescriptorHotCandidate) *
+      HZ6_OBJECT_DESCRIPTOR_CAPACITY;
+#if HZ6_THIN_DESCRIPTOR_L1
+  snapshot->metadata_descriptor_owner16_hot_table_bytes +=
+      sizeof(Hz6ThinDescriptorColdCandidate) *
+      HZ6_DESCRIPTOR_COLD_SOURCE_CAPACITY;
+#endif
+  snapshot->metadata_descriptor_owner16_hot_savings_bytes =
+      hz6_sub_saturating_size(snapshot->memory_descriptor_table_bytes,
+                              snapshot->metadata_descriptor_owner16_hot_table_bytes);
 
   snapshot->metadata_route_entry_bytes = sizeof(Hz6RouteEntry);
   snapshot->metadata_route_slim_entry_bytes =

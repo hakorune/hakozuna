@@ -162,6 +162,28 @@ next HZ6 attack:
         read:
           selected-family wiring is correct and no-backptr remains clean as the
           lowest-RSS sibling in the selected preset path.
+      descriptor layout L2 dry-run:
+        source:
+          docs/benchmarks/windows/paper/hz6_selected_family/
+            larson-descriptor-layout-l2-dryrun-clean/
+        baseline run512 diagnostic:
+          descriptor_entry_bytes = 48
+          descriptor_thin_hot_entry_bytes = 40
+          descriptor_ownerless_hot_entry_bytes = 32
+          descriptor_owner16_hot_entry_bytes = 40
+          ownerless theoretical savings vs current table = 41943040 bytes
+          owner16 theoretical savings vs current table = 20971520 bytes
+        no-backptr run512 diagnostic:
+          descriptor_entry_bytes = 40
+          descriptor_ownerless_hot_entry_bytes = 32
+          descriptor_ownerless_hot_table_bytes = 85983232
+          descriptor_ownerless_hot_savings_bytes = 20971520
+          descriptor_owner16_hot_entry_bytes = 40
+          descriptor_owner16_hot_savings_bytes = 0
+        read:
+          owner16 packing does not improve the hot descriptor shape because
+          alignment keeps it at 40 bytes. The next descriptor RSS target is
+          ownerless/side-owner metadata, not 16-bit owner packing.
 
   next:
     SourceBlock is no longer the dominant table after run512.

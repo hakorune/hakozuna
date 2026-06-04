@@ -758,6 +758,24 @@ int main(int argc, char** argv) {
             tds[t].hz6_stats_after.metadata_descriptor_thin_hot_table_bytes;
         hz6_stats.metadata_descriptor_thin_hot_savings_bytes +=
             tds[t].hz6_stats_after.metadata_descriptor_thin_hot_savings_bytes;
+        if (tds[t].hz6_stats_after.metadata_descriptor_ownerless_hot_entry_bytes >
+            hz6_stats.metadata_descriptor_ownerless_hot_entry_bytes) {
+            hz6_stats.metadata_descriptor_ownerless_hot_entry_bytes =
+                tds[t].hz6_stats_after.metadata_descriptor_ownerless_hot_entry_bytes;
+        }
+        hz6_stats.metadata_descriptor_ownerless_hot_table_bytes +=
+            tds[t].hz6_stats_after.metadata_descriptor_ownerless_hot_table_bytes;
+        hz6_stats.metadata_descriptor_ownerless_hot_savings_bytes +=
+            tds[t].hz6_stats_after.metadata_descriptor_ownerless_hot_savings_bytes;
+        if (tds[t].hz6_stats_after.metadata_descriptor_owner16_hot_entry_bytes >
+            hz6_stats.metadata_descriptor_owner16_hot_entry_bytes) {
+            hz6_stats.metadata_descriptor_owner16_hot_entry_bytes =
+                tds[t].hz6_stats_after.metadata_descriptor_owner16_hot_entry_bytes;
+        }
+        hz6_stats.metadata_descriptor_owner16_hot_table_bytes +=
+            tds[t].hz6_stats_after.metadata_descriptor_owner16_hot_table_bytes;
+        hz6_stats.metadata_descriptor_owner16_hot_savings_bytes +=
+            tds[t].hz6_stats_after.metadata_descriptor_owner16_hot_savings_bytes;
         if (tds[t].hz6_stats_after.metadata_route_entry_bytes >
             hz6_stats.metadata_route_entry_bytes) {
             hz6_stats.metadata_route_entry_bytes =
@@ -1058,6 +1076,12 @@ int main(int argc, char** argv) {
            "descriptor_thin_hot_entry_bytes=%zu "
            "descriptor_thin_hot_table_bytes=%zu "
            "descriptor_thin_hot_savings_bytes=%zu "
+           "descriptor_ownerless_hot_entry_bytes=%zu "
+           "descriptor_ownerless_hot_table_bytes=%zu "
+           "descriptor_ownerless_hot_savings_bytes=%zu "
+           "descriptor_owner16_hot_entry_bytes=%zu "
+           "descriptor_owner16_hot_table_bytes=%zu "
+           "descriptor_owner16_hot_savings_bytes=%zu "
            "route_entry_bytes=%zu "
            "route_slim_entry_bytes=%zu "
            "route_slim_table_bytes=%zu "
@@ -1074,6 +1098,12 @@ int main(int argc, char** argv) {
            hz6_stats.metadata_descriptor_thin_hot_entry_bytes,
            hz6_stats.metadata_descriptor_thin_hot_table_bytes,
            hz6_stats.metadata_descriptor_thin_hot_savings_bytes,
+           hz6_stats.metadata_descriptor_ownerless_hot_entry_bytes,
+           hz6_stats.metadata_descriptor_ownerless_hot_table_bytes,
+           hz6_stats.metadata_descriptor_ownerless_hot_savings_bytes,
+           hz6_stats.metadata_descriptor_owner16_hot_entry_bytes,
+           hz6_stats.metadata_descriptor_owner16_hot_table_bytes,
+           hz6_stats.metadata_descriptor_owner16_hot_savings_bytes,
            hz6_stats.metadata_route_entry_bytes,
            hz6_stats.metadata_route_slim_entry_bytes,
            hz6_stats.metadata_route_slim_table_bytes,

@@ -209,6 +209,16 @@ larson-nobackptr-selected-guard:
       42.324M / 476868 KB
   all safety clean. Use this as wiring evidence that selected-family runners
   now exercise no-backptr as the low-RSS sibling.
+
+larson-descriptor-layout-l2-dryrun-clean:
+  diagnostic-only descriptor layout projection on the run512/no-backptr pair.
+  It adds no behavior change. Read:
+    owner16 hot descriptor:
+      40 bytes, no extra savings versus no-backptr
+    ownerless hot descriptor:
+      32 bytes, projected extra savings about 20 MiB versus no-backptr
+  Therefore the next descriptor RSS candidate is side-owner / ownerless hot
+  descriptor metadata, not 16-bit owner packing alone.
 ```
 
 ```text

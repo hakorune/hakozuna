@@ -271,6 +271,12 @@ typedef struct Hz6StatsSnapshot {
   size_t metadata_descriptor_thin_hot_entry_bytes;
   size_t metadata_descriptor_thin_hot_table_bytes;
   size_t metadata_descriptor_thin_hot_savings_bytes;
+  size_t metadata_descriptor_ownerless_hot_entry_bytes;
+  size_t metadata_descriptor_ownerless_hot_table_bytes;
+  size_t metadata_descriptor_ownerless_hot_savings_bytes;
+  size_t metadata_descriptor_owner16_hot_entry_bytes;
+  size_t metadata_descriptor_owner16_hot_table_bytes;
+  size_t metadata_descriptor_owner16_hot_savings_bytes;
   size_t metadata_route_entry_bytes;
   size_t metadata_route_slim_entry_bytes;
   size_t metadata_route_slim_table_bytes;

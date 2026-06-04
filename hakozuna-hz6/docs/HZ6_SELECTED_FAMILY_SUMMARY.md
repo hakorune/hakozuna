@@ -32,6 +32,7 @@ Source:
 - `docs/benchmarks/windows/paper/hz6_selected_family/larson-run512-descriptorlayout-l1d/`
 - `docs/benchmarks/windows/paper/hz6_selected_family/larson-run512-nobackptr-repeat/`
 - `docs/benchmarks/windows/paper/hz6_selected_family/larson-nobackptr-selected-guard/`
+- `docs/benchmarks/windows/paper/hz6_selected_family/larson-descriptor-layout-l2-dryrun-clean/`
 
 ## Evidence Rows
 
@@ -45,6 +46,7 @@ Source:
 | Larson source-run metadata slim | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512` | Previous selected lowest-RSS sibling/control: repeat-3 clean at `48.512M / 499820 KB`. Run1024 is clean control at `44.396M / 518256 KB`. |
 | Larson descriptor boundary | `ownerlocalityfast-rsscap-2-desc158k-front4k-thindesc-source16k-route192k-run512` | Clean tiny-RSS sibling: repeat-3 `40.400M / 498080 KB`. Desc156k and below are no-go from `descriptor_exhausted=3` / `alloc_fail=1`, so static descriptor capacity cuts are effectively closed. |
 | Larson descriptor layout | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-source16k-route192k-run512` | Descriptor no-backptr L1 removes the per-descriptor allocator pointer and passes allocator explicitly through lifecycle helpers. Repeat-3 clean at `40.710M / 476784 KB`; diagnostic entry size is `48 -> 40` bytes and descriptor table bytes are `127926272 -> 106954752`. Strong keep / selected lowest-RSS sibling candidate. |
+| Larson descriptor L2 dry-run | diagnostic only | Owner packing to 16-bit does not shrink the no-backptr descriptor: `descriptor_owner16_hot_entry_bytes=40`, savings `0`. Ownerless hot descriptor projects `32` bytes and about `20971520` bytes additional table savings versus no-backptr. Next candidate is side-owner / ownerless hot descriptor metadata, not owner16 packing. |
 | Larson lowest-RSS preset check | `larson-cross-owner-lowest-rss` | Default check now includes front4k, route192k, and no-backptr route192k-run512. Latest one-run guard: front4k `42.460M / 716340 KB`, route192k `44.583M / 628848 KB`, no-backptr `42.324M / 476868 KB`, all safety clean. |
 | Larson over-retention control | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k` | Passes but over-retains RSS; no promotion. |
 
@@ -92,7 +94,9 @@ HZ6 is now a profile-family allocator:
       keep desc17 safety/RSS and look for hot-path/profile improvements.
    B. Larson RSS:
       guard and promote descriptor no-backptr before trying another descriptor
-      representation change. Static route trimming is closed unless the route
-      representation changes; static descriptor-cap trimming is nearly
-      exhausted at desc158k.
+      representation change. The L2 dry-run says owner16 packing is not useful
+      because alignment keeps the hot descriptor at 40 bytes; ownerless/side
+      owner metadata is the next descriptor RSS candidate. Static route
+      trimming is closed unless the route representation changes; static
+      descriptor-cap trimming is nearly exhausted at desc158k.
 ```
