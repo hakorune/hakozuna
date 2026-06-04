@@ -499,6 +499,21 @@ int main(int argc, char** argv) {
             tds[t].hz6_stats_after.descriptor_storage_current_allocator_match;
         hz6_stats.descriptor_storage_current_allocator_mismatch +=
             tds[t].hz6_stats_after.descriptor_storage_current_allocator_mismatch;
+        hz6_stats.owner_source_side_meta_lookup +=
+            tds[t].hz6_stats_after.owner_source_side_meta_lookup;
+        hz6_stats.owner_source_side_meta_local +=
+            tds[t].hz6_stats_after.owner_source_side_meta_local;
+        hz6_stats.owner_source_side_meta_foreign +=
+            tds[t].hz6_stats_after.owner_source_side_meta_foreign;
+        hz6_stats.owner_source_side_meta_miss +=
+            tds[t].hz6_stats_after.owner_source_side_meta_miss;
+        hz6_stats.owner_source_side_meta_probe_total +=
+            tds[t].hz6_stats_after.owner_source_side_meta_probe_total;
+        if (tds[t].hz6_stats_after.owner_source_side_meta_probe_max >
+            hz6_stats.owner_source_side_meta_probe_max) {
+            hz6_stats.owner_source_side_meta_probe_max =
+                tds[t].hz6_stats_after.owner_source_side_meta_probe_max;
+        }
         hz6_stats.lifecycle_owner_mismatch +=
             tds[t].hz6_stats_after.lifecycle_owner_mismatch;
         hz6_stats.lifecycle_foreign_free_attempt +=
@@ -923,6 +938,12 @@ int main(int argc, char** argv) {
             "descriptor_storage_route_allocator_mismatch=%zu "
             "descriptor_storage_current_allocator_match=%zu "
             "descriptor_storage_current_allocator_mismatch=%zu "
+            "owner_source_side_meta_lookup=%zu "
+            "owner_source_side_meta_local=%zu "
+            "owner_source_side_meta_foreign=%zu "
+            "owner_source_side_meta_miss=%zu "
+            "owner_source_side_meta_probe_total=%zu "
+            "owner_source_side_meta_probe_max=%zu "
             "lifecycle_owner_mismatch=%zu "
             "lifecycle_foreign_free_attempt=%zu "
            "lifecycle_foreign_free_handled=%zu "
@@ -1021,6 +1042,12 @@ int main(int argc, char** argv) {
             hz6_stats.descriptor_storage_route_allocator_mismatch,
             hz6_stats.descriptor_storage_current_allocator_match,
             hz6_stats.descriptor_storage_current_allocator_mismatch,
+            hz6_stats.owner_source_side_meta_lookup,
+            hz6_stats.owner_source_side_meta_local,
+            hz6_stats.owner_source_side_meta_foreign,
+            hz6_stats.owner_source_side_meta_miss,
+            hz6_stats.owner_source_side_meta_probe_total,
+            hz6_stats.owner_source_side_meta_probe_max,
             hz6_stats.lifecycle_owner_mismatch,
            hz6_stats.lifecycle_foreign_free_attempt,
            hz6_stats.lifecycle_foreign_free_handled,

@@ -109,7 +109,7 @@ has changed. HZ6 now has three useful full-10k lanes:
 The remaining Larson RSS is still dominated by metadata tables, not by payload,
 but source-run bitmap trimming, descriptor/source-block back-pointer removal,
 directory trimming, and RoutePackedMeta-L1 have already moved the selected
-low-RSS sibling from about 629 MB to about 456 MB.
+low-RSS sibling from about 629 MB to about 449 MB.
 ```
 
 ## Sources
@@ -118,3 +118,4 @@ low-RSS sibling from about 629 MB to about 456 MB.
 - [Paper-Aligned Windows Larson](../../docs/benchmarks/windows/paper/20260601_140855_paper_larson_windows.md)
 - [HZ6 Lane Guide](HZ6_LANE_GUIDE.md)
 - [HZ6 Current Task](current_task.md)
+- [HZ5 / HZ6 RSS Gap](HZ5_HZ6_RSS_GAP.md)

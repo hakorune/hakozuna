@@ -53,6 +53,12 @@ typedef struct Hz6StatsSnapshot {
   size_t descriptor_storage_route_allocator_mismatch;
   size_t descriptor_storage_current_allocator_match;
   size_t descriptor_storage_current_allocator_mismatch;
+  size_t owner_source_side_meta_lookup;
+  size_t owner_source_side_meta_local;
+  size_t owner_source_side_meta_foreign;
+  size_t owner_source_side_meta_miss;
+  size_t owner_source_side_meta_probe_total;
+  size_t owner_source_side_meta_probe_max;
   size_t lifecycle_owner_mismatch;
   size_t lifecycle_foreign_free_attempt;
   size_t lifecycle_foreign_free_handled;

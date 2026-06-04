@@ -12,7 +12,7 @@ extern "C" {
 Hz6ObjectDescriptor* hz6_allocator_find_free_descriptor(
     Hz6Allocator* allocator);
 
-#if HZ6_DESCRIPTOR_STORAGE_OWNER16_L1
+#if HZ6_DESCRIPTOR_STORAGE_OWNER16_L1 || HZ6_OWNER_SOURCE_SIDE_META_DRYRUN
 Hz6Allocator* hz6_allocator_descriptor_storage_owner(
     Hz6Allocator* observer,
     const Hz6ObjectDescriptor* descriptor,
@@ -37,6 +37,38 @@ static inline int hz6_allocator_descriptor_belongs_to(
          HZ6_OBJECT_DESCRIPTOR_CAPACITY;
 }
 
+static inline void hz6_allocator_owner_source_side_meta_dryrun(
+    const Hz6Allocator* allocator,
+    const Hz6ObjectDescriptor* descriptor) {
+#if HZ6_OWNER_SOURCE_SIDE_META_DRYRUN && HZ6_DIAGNOSTIC_PROBES
+  Hz6Allocator* mutable_allocator = (Hz6Allocator*)allocator;
+  if (!mutable_allocator || !descriptor) {
+    return;
+  }
+  ++mutable_allocator->stats.owner_source_side_meta_lookup;
+  if (hz6_allocator_descriptor_belongs_to(mutable_allocator, descriptor)) {
+    ++mutable_allocator->stats.owner_source_side_meta_local;
+    return;
+  }
+
+  size_t probes = 0;
+  Hz6Allocator* storage = hz6_allocator_descriptor_storage_owner(
+      mutable_allocator, descriptor, &probes);
+  mutable_allocator->stats.owner_source_side_meta_probe_total += probes;
+  if (probes > mutable_allocator->stats.owner_source_side_meta_probe_max) {
+    mutable_allocator->stats.owner_source_side_meta_probe_max = probes;
+  }
+  if (storage) {
+    ++mutable_allocator->stats.owner_source_side_meta_foreign;
+  } else {
+    ++mutable_allocator->stats.owner_source_side_meta_miss;
+  }
+#else
+  (void)allocator;
+  (void)descriptor;
+#endif
+}
+
 static inline uint32_t hz6_descriptor_pack_owner16(Hz6OwnerToken owner) {
   if (owner.slot > UINT16_MAX || owner.generation > UINT16_MAX) {
     return 0;
@@ -54,6 +86,7 @@ static inline Hz6OwnerToken hz6_descriptor_unpack_owner16(uint32_t packed) {
 static inline Hz6OwnerToken hz6_allocator_descriptor_owner(
     const Hz6Allocator* allocator,
     const Hz6ObjectDescriptor* descriptor) {
+  hz6_allocator_owner_source_side_meta_dryrun(allocator, descriptor);
 #if HZ6_DESCRIPTOR_SIDE_OWNER16_L1 || HZ6_DESCRIPTOR_STORAGE_OWNER16_L1
   const Hz6Allocator* storage = allocator;
 #if HZ6_DESCRIPTOR_STORAGE_OWNER16_L1

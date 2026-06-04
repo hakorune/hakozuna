@@ -25,26 +25,31 @@ Current attack plan:
 
 ```text
 Selected lane to preserve:
-  routepacked/no-routebackptr/dir192k
-    47.616M ops/s
-    456048 KB peak
-
-Recent RSS-first evidence:
-  storageowner16/routepacked/no-routebackptr/dir192k
-    42.024M ops/s
-    444520 KB peak
+  routebytes16/routepacked/no-routebackptr/dir192k
+    48.367M ops/s
+    449144 KB peak
     safety clean
-    not selected because throughput drops about 12%
+
+RSS reference:
+  HZ5 policy remains the stronger Larson RSS reference:
+    HZ5 Larson main-warmup paper row:
+      47.485M ops/s
+      183180 KB peak
+
+Current HZ6 gap:
+  HZ6 matches/slightly beats HZ5 throughput on the selected Larson lane, but
+  uses about 2.45x HZ5 peak RSS. The remaining gap is metadata/lifecycle
+  dominated, not payload dominated.
 
 Next:
-  RoutePackedMeta-L2 routebytes16 selected-lane guard.
+  HZ6 OwnerSourceSideMeta-L2 design.
 
 Goal:
-  keep the selected routepacked hot path and measure whether remaining route
-  side metadata can be compressed without moving descriptor ownership or
-  reintroducing storage-owner lookup cost.
+  keep the routebytes16 selected hot path and test whether descriptor owner
+  side metadata can be made owner-source-aware without paying the StorageOwner16
+  lookup cost on every hot owner read.
 
-First L2 dry-run:
+Closed L2 dry-run:
   route_bytes side array:
     current = uint32_t[route_capacity]
     projected = uint16_t[route_capacity] if all registered route bytes fit
@@ -66,7 +71,7 @@ Observation:
     route_bytes16_minus1_zero = 0
     route_bytes16_minus1_max_stored = 65535
 
-Behavior lane:
+Promoted behavior lane:
   ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-
   noroutebackptr-dir192k-routepacked-routebytes16-source16k-route192k-run512
 
@@ -108,6 +113,58 @@ Do not:
   continue static route-capacity trimming
   promote storageowner16 by default
   move descriptor pointer or generation out of the hot route entry yet
+  reopen allocator-local side-owner16
+```
+
+OwnerSourceSideMeta-L1 dry-run:
+
+```text
+Implementation:
+  HZ6_OWNER_SOURCE_SIDE_META_DRYRUN=1
+  diagnostic-only
+  no behavior change
+  counts projected side-owner storage/source ownership lookups on the selected
+  routebytes16 lane
+
+Lane:
+  ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-
+  noroutebackptr-dir192k-routepacked-routebytes16-ownersourcedryrun-
+  source16k-route192k-run512
+
+Larson T=16 main-warmup 1k smoke:
+  56.379M ops/s
+  327696 KB peak
+  owner_source_side_meta_lookup = 115067026
+  owner_source_side_meta_foreign = 97335556
+  owner_source_side_meta_miss = 0
+  owner_source_side_meta_probe_max = 1
+  safety clean
+
+Larson T=16 main-warmup full 10k run=1:
+  46.202M ops/s
+  449164 KB peak
+  owner_source_side_meta_lookup = 925750890
+  owner_source_side_meta_local = 53771176
+  owner_source_side_meta_foreign = 871979714
+  owner_source_side_meta_miss = 0
+  owner_source_side_meta_probe_total = 871979714
+  owner_source_side_meta_probe_max = 1
+  descriptor_storage_lookup = 462912401
+  descriptor_storage_probe_total = 691140834
+  descriptor_storage_probe_max = 17
+  route_invalid = 0
+  route_miss = 0
+  route_register_fail = 0
+  remote_free_transfer_fail = 0
+  lifecycle_foreign_free_invalid = 0
+  alloc_fail = 0
+  descriptor_exhausted = 0
+
+Read:
+  Owner side metadata is still plausible, but the design must eliminate hot
+  scan-based storage owner reads. The dry-run says the owner-source lookup is
+  resolvable and miss-free, but extremely frequent. Next design should make
+  descriptor storage/source owner O(1), not repeat StorageOwner16 scan behavior.
 ```
 
 Latest Larson StorageOwner16-L1 evidence:
