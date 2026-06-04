@@ -8008,7 +8008,8 @@ stored in an allocator-local side table indexed by descriptor pointer.
 Decision:
   descriptor-source diagnostic KEEP
   sideowner16 remains no-go
-  no-backptr remains selected lowest-RSS sibling
+  no-backptr remains the safe descriptor-layout baseline before directory-cap
+  trimming
 
 Next:
   do not try another allocator-local owner side table
@@ -8028,7 +8029,7 @@ Lanes:
 
 Change:
   keep route capacity at route192k
-  keep no-backptr selected descriptor layout
+  keep no-backptr descriptor layout
   reduce HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY only
   owner-locality index follows shared directory capacity
 ```
@@ -8036,7 +8037,7 @@ Change:
 Observation:
 
 ```text
-Run:
+Run 1:
   larson_t16_main_10k
   runs = 1
   diagnostic probes on
@@ -8070,19 +8071,40 @@ dir96k:
   owner_locality_miss = 30844
   shared_dir_probe_max = 98305
   owner_locality_probe_max = 98305
+
+Repeat-3:
+  larson_t16_main_10k
+  runs = 3
+  diagnostic probes on
+
+no-backptr:
+  45.310M ops/s
+  476788 KB
+  ownerlocality_index_bytes = 18874368
+  owner_locality_miss = 0
+  safety clean
+
+dir192k:
+  44.580M ops/s
+  472176 KB
+  ownerlocality_index_bytes = 14155776
+  owner_locality_miss = 0
+  safety clean
 ```
 
 Read:
 
 ```text
 Directory-capacity trimming has a useful middle point.
-dir192k saves about 4 MB versus no-backptr and stays safety-clean.
+dir192k saves about 4.6 MB versus no-backptr and stays safety-clean in
+repeat-3, with about -1.6% throughput versus the same-run no-backptr control.
 dir128k/dir96k are too tight: they reduce RSS further, but the
 owner-locality/shared-directory indexes start missing and probing full tables,
 so throughput collapses.
 
 Decision:
-  dir192k KEEP as candidate-control
+  dir192k PROMOTE as selected lowest-RSS sibling candidate
+  no-backptr KEEP as descriptor-layout comparison control
   dir128k / dir96k KEEP as no-go boundary controls
-  do not promote dir192k until repeat-3 confirms stability
+  do not trim shared directory below dir192k without a representation change
 ```

@@ -139,8 +139,9 @@ Current Larson RSS read:
 route192k is the clean static route lower bound.
 route160k/128k fail warmup because route capacity saturates.
 route192k-run512 is the previous selected lowest-RSS sibling/control.
-route192k-run512 + descriptor no-backptr is the current selected lowest-RSS
-sibling candidate.
+route192k-run512 + descriptor no-backptr is the descriptor-layout comparison
+control.
+dir192k + no-backptr is the current selected lowest-RSS sibling candidate.
 ```
 
 So the next RSS reduction should not be another route-capacity cut or another
@@ -150,7 +151,8 @@ Next source cleanup target:
 
 ```text
 Descriptor layout:
-  guard no-backptr as the selected low-RSS sibling
+  guard no-backptr as the descriptor-layout comparison control
+  guard dir192k/no-backptr as the selected low-RSS sibling
   do not promote allocator-local side-owner16
   consider side metadata only if the owner source is explicit
 

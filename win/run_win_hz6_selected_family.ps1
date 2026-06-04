@@ -86,16 +86,16 @@ $presetMap = [ordered]@{
         -Families @("larson") `
         -BenchmarkProfiles @("larson_t16_main_10k") `
         -Hz6Profiles @("speed") `
-        -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k", "ownerlocalityfast-rsscap-2-desc160k-front4k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-source16k-route192k-run512") `
-        -Note "Larson full 10k selected lane plus current no-backptr low-RSS sibling"
+        -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k", "ownerlocalityfast-rsscap-2-desc160k-front4k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-dir192k-source16k-route192k-run512") `
+        -Note "Larson full 10k selected lane plus current dir192k/no-backptr lowest-RSS sibling"
 
     "larson-cross-owner-lowest-rss" = New-Preset `
         -Name "larson-cross-owner-lowest-rss" `
         -Families @("larson") `
         -BenchmarkProfiles @("larson_t16_main_10k") `
         -Hz6Profiles @("speed") `
-        -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k-front4k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-source16k-route192k-run512") `
-        -Note "front4k versus route192k and selected no-backptr run512 low-RSS Larson siblings"
+        -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k-front4k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-dir192k-source16k-route192k-run512") `
+        -Note "front4k versus route192k, no-backptr, and selected dir192k lowest-RSS Larson siblings"
 
     "larson-thindesc-sourcecap" = New-Preset `
         -Name "larson-thindesc-sourcecap" `

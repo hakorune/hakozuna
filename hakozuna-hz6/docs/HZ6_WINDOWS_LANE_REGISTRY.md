@@ -79,9 +79,9 @@ A future `Get-Hz6WinCapacityLaneRegistry` helper should return records like:
 @{
   Name = "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-dir192k-source16k-route192k-run512"
   Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_nobackptr_dir192k_source16k_route192k_run512"
-  Status = "control"
+  Status = "selected sibling"
   Family = "larson"
-  Tags = @("owner-locality", "thindesc", "no-backptr", "dir192k", "source16k", "route192k", "run512", "rss")
+  Tags = @("owner-locality", "thindesc", "no-backptr", "dir192k", "source16k", "route192k", "run512", "rss", "lowest-rss")
   ExtraFlags = @(
     "/DHZ6_OWNER_LOCALITY_FAST_L1=1",
     "/DHZ6_THIN_DESCRIPTOR_L1=1",
