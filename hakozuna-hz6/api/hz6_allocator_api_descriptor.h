@@ -12,6 +12,13 @@ extern "C" {
 Hz6ObjectDescriptor* hz6_allocator_find_free_descriptor(
     Hz6Allocator* allocator);
 
+#if HZ6_DESCRIPTOR_STORAGE_OWNER16_L1
+Hz6Allocator* hz6_allocator_descriptor_storage_owner(
+    Hz6Allocator* observer,
+    const Hz6ObjectDescriptor* descriptor,
+    size_t* probe_count);
+#endif
+
 static inline size_t hz6_allocator_descriptor_index(
     const Hz6Allocator* allocator,
     const Hz6ObjectDescriptor* descriptor) {
@@ -47,13 +54,21 @@ static inline Hz6OwnerToken hz6_descriptor_unpack_owner16(uint32_t packed) {
 static inline Hz6OwnerToken hz6_allocator_descriptor_owner(
     const Hz6Allocator* allocator,
     const Hz6ObjectDescriptor* descriptor) {
-#if HZ6_DESCRIPTOR_SIDE_OWNER16_L1
-  size_t index = hz6_allocator_descriptor_index(allocator, descriptor);
+#if HZ6_DESCRIPTOR_SIDE_OWNER16_L1 || HZ6_DESCRIPTOR_STORAGE_OWNER16_L1
+  const Hz6Allocator* storage = allocator;
+#if HZ6_DESCRIPTOR_STORAGE_OWNER16_L1
+  if (!hz6_allocator_descriptor_belongs_to(storage, descriptor)) {
+    storage = hz6_allocator_descriptor_storage_owner((Hz6Allocator*)allocator,
+                                                     descriptor,
+                                                     NULL);
+  }
+#endif
+  size_t index = hz6_allocator_descriptor_index(storage, descriptor);
   if (index >= HZ6_OBJECT_DESCRIPTOR_CAPACITY) {
     return (Hz6OwnerToken){0};
   }
   return hz6_descriptor_unpack_owner16(
-      allocator->descriptor_side_owner16[index]);
+      storage->descriptor_side_owner16[index]);
 #else
   (void)allocator;
   return descriptor ? descriptor->owner : (Hz6OwnerToken){0};
@@ -64,12 +79,18 @@ static inline void hz6_allocator_set_descriptor_owner(
     Hz6Allocator* allocator,
     Hz6ObjectDescriptor* descriptor,
     Hz6OwnerToken owner) {
-#if HZ6_DESCRIPTOR_SIDE_OWNER16_L1
-  size_t index = hz6_allocator_descriptor_index(allocator, descriptor);
+#if HZ6_DESCRIPTOR_SIDE_OWNER16_L1 || HZ6_DESCRIPTOR_STORAGE_OWNER16_L1
+  Hz6Allocator* storage = allocator;
+#if HZ6_DESCRIPTOR_STORAGE_OWNER16_L1
+  if (!hz6_allocator_descriptor_belongs_to(storage, descriptor)) {
+    storage = hz6_allocator_descriptor_storage_owner(allocator, descriptor, NULL);
+  }
+#endif
+  size_t index = hz6_allocator_descriptor_index(storage, descriptor);
   if (index >= HZ6_OBJECT_DESCRIPTOR_CAPACITY) {
     return;
   }
-  allocator->descriptor_side_owner16[index] =
+  storage->descriptor_side_owner16[index] =
       hz6_descriptor_pack_owner16(owner);
 #else
   (void)allocator;

@@ -22,6 +22,7 @@ For repo cleanup rules and the source modularization backlog, see
 | Larson cross-owner full 10k | `speed` | `ownerlocalityfast-rsscap-2-desc160k` | Full Larson cross-owner throughput/RSS balance lane; appcap-class throughput with sub-1GB peak RSS. |
 | Larson cross-owner low RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k` | Clean route-capacity control. It keeps the thindesc/source16k shape and trims route capacity to 192K; repeat-3 is safety-clean at about `44.610M / 628844 KB`. |
 | Larson cross-owner lowest RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-source16k-route192k-run512` | Current selected lowest-RSS sibling candidate. It combines descriptor no-backptr, SourceBlock no-route-backptr, dir192k, route192k/run512, and RoutePackedMeta-L1; repeat-3 is clean at `47.616M / 456048 KB`. |
+| Larson cross-owner RSS-first descriptor evidence | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-storageowner16-noroutebackptr-dir192k-routepacked-source16k-route192k-run512` | StorageOwner16-L1 evidence/control. It is safety-clean and reaches `42.024M / 444520 KB`, but does not replace routepacked because the RSS gain costs about 12% throughput. |
 | Larson cross-owner minimum RSS control | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-source16k-route192k-run512` | Clean SourceBlockNoRouteBackptr-L1 control. It removes the SourceBlock route-backend back-pointer and reaches `41.107M / 469868 KB`; superseded by routepacked for both speed and RSS, but useful as an isolation control. |
 | Larson cross-owner no-backptr control | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-source16k-route192k-run512` | Comparison control for dir192k. It keeps route192k/run512 and removes the descriptor allocator back-pointer; repeat-3 is safety-clean at `40.710M / 476784 KB`, and same-run repeat-3 against dir192k is `45.310M / 476788 KB`. |
 | Larson cross-owner run512 control | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512` | Previous selected lowest-RSS sibling/control. Repeat-3 is safety-clean at `48.512M / 499820 KB`; same-run no-backptr cuts another about 23 MB. |
@@ -856,6 +857,15 @@ ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-di
   `47.616M / 456048 KB`, safety clean. The 1k diagnostic smoke reports
   `route_entry_bytes=24`, `route_invalid=0`, `route_miss=0`, and
   `route_register_fail=0`.
+
+ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-storageowner16-noroutebackptr-dir192k-routepacked-source16k-route192k-run512:
+  StorageOwner16-L1 RSS-first descriptor side metadata evidence/control. It
+  removes owner from the hot descriptor and stores packed owner slot/generation
+  in the descriptor storage allocator's side table. This fixes the old
+  allocator-local side-owner16 safety failure. Repeat-3 full 10k:
+  `42.024M / 444520 KB`, safety clean. Keep as evidence/control; routepacked
+  remains selected because storageowner16 saves about 11.5 MB RSS but loses
+  about 12% throughput.
 
 ownerlocalityfast-rsscap-2-desc144k:
   Descriptor-boundary probe for full 10k Larson cross-owner. Same shape as

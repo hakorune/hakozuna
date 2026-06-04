@@ -95,7 +95,7 @@ static void hz6_stats_snapshot_memory_attribution(
   snapshot->memory_descriptor_table_bytes +=
       sizeof(allocator->descriptor_cold_sources);
 #endif
-#if HZ6_DESCRIPTOR_SIDE_OWNER16_L1
+#if HZ6_DESCRIPTOR_SIDE_OWNER16_L1 || HZ6_DESCRIPTOR_STORAGE_OWNER16_L1
   snapshot->memory_descriptor_table_bytes +=
       sizeof(allocator->descriptor_side_owner16);
 #endif

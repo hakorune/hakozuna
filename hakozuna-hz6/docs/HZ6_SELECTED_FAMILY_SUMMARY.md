@@ -38,6 +38,7 @@ Source:
 - `docs/benchmarks/windows/paper/hz6_selected_family/larson-directory-cap-l1-repeat/`
 - `docs/benchmarks/windows/paper/hz6_selected_family/larson-sourceblock-noroutebackptr-dir192k-repeat/`
 - `docs/benchmarks/windows/paper/hz6_selected_family/larson-routepacked-l1-repeat/`
+- `docs/benchmarks/windows/paper/hz6_selected_family/larson-storageowner16-l1-repeat/`
 - `docs/benchmarks/windows/paper/hz6_route_linearwrap_l1_guard/`
 - `docs/benchmarks/windows/paper/hz6_route_loopcarry_l1_repeat/`
 
@@ -63,6 +64,7 @@ Source:
 | Larson directory capacity L1 | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-dir192k-source16k-route192k-run512` | Directory-capacity control, superseded by RoutePackedMeta-L1 for selected lowest-RSS comparisons. Repeat-3 clean at `44.580M / 472176 KB`, reducing owner-locality/shared-directory bytes from `18874368` to `14155776`. Same-run no-backptr control is `45.310M / 476788 KB`; dir192k trades about 1.6% speed for about 4.6 MB lower peak RSS. `dir128k` and `dir96k` are no-go controls: lower RSS but owner locality misses and full-table probes appear. |
 | Larson SourceBlock no-route-backptr L1 | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-source16k-route192k-run512` | Clean minimum-RSS sibling/control, superseded by RoutePackedMeta-L1 for both speed and RSS. It removes only the SourceBlock route-backend back-pointer and passes allocator explicitly to SourceBlock release/unregister helpers. Repeat-3: `41.107M / 469868 KB`, `source_block_entry_bytes=136`, safety clean. |
 | Larson RoutePackedMeta L1 | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-source16k-route192k-run512` | New selected lowest-RSS sibling candidate. It keeps descriptor no-backptr, SourceBlock no-route-backptr, dir192k, source16k, route192k, and run512, then packs route entry front/class/state into a 32-bit meta word and moves bytes to a side array. Repeat-3 full 10k: `47.616M / 456048 KB`; 1k diagnostic smoke has `route_entry_bytes=24`, `route_invalid=0`, `route_miss=0`, `route_register_fail=0`. |
+| Larson StorageOwner16 L1 | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-storageowner16-noroutebackptr-dir192k-routepacked-source16k-route192k-run512` | RSS-first descriptor side metadata evidence/control. It fixes the allocator-local side-owner16 safety issue by resolving side-owner storage through descriptor storage ownership. Repeat-3 full 10k: `42.024M / 444520 KB`, safety clean. Keep as evidence/control; do not replace RoutePackedMeta-L1 because it saves about 11.5 MB RSS but loses about 12% throughput. |
 | Larson lowest-RSS preset check | `larson-cross-owner-lowest-rss` | Default check now includes front4k, route192k, no-backptr route192k-run512, dir192k no-backptr, SourceBlock no-route-backptr, and routepacked lowest-RSS siblings. |
 | Larson over-retention control | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k` | Passes but over-retains RSS; no promotion. |
 

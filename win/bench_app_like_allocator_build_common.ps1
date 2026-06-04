@@ -906,6 +906,13 @@ function Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRou
     $flags
 }
 
+function Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrStorageOwner16NoRouteBackptrDir192kRoutePackedSource16kRoute192kRun512CapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrDir192kRoutePackedSource16kRoute192kRun512CapacityFlags
+    $flags += "/DHZ6_DESCRIPTOR_STORAGE_OWNER16_L1=1"
+    $flags
+}
+
 function Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrDir128kSource16kRoute192kRun512CapacityFlags {
     $flags = @()
     $flags += Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrSource16kRoute192kRun512CapacityFlags
@@ -1384,6 +1391,7 @@ function Invoke-AppLikeHz6BenchBuilds {
     $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrDir192kSource16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrDir192kSource16kRoute192kRun512CapacityFlags
     $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrDir192kSource16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrDir192kSource16kRoute192kRun512CapacityFlags
     $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrDir192kRoutePackedSource16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrDir192kRoutePackedSource16kRoute192kRun512CapacityFlags
+    $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrStorageOwner16NoRouteBackptrDir192kRoutePackedSource16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrStorageOwner16NoRouteBackptrDir192kRoutePackedSource16kRoute192kRun512CapacityFlags
     $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrDir128kSource16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrDir128kSource16kRoute192kRun512CapacityFlags
     $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrDir96kSource16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrDir96kSource16kRoute192kRun512CapacityFlags
     $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrSideOwner16Source16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrSideOwner16Source16kRoute192kRun512CapacityFlags
@@ -1503,6 +1511,7 @@ function Invoke-AppLikeHz6BenchBuilds {
         "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-dir192k-source16k-route192k-run512" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_nobackptr_dir192k_source16k_route192k_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrDir192kSource16kRoute192kRun512Flags }
         "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-source16k-route192k-run512" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_nobackptr_noroutebackptr_dir192k_source16k_route192k_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrDir192kSource16kRoute192kRun512Flags }
         "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-source16k-route192k-run512" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_nobackptr_noroutebackptr_dir192k_routepacked_source16k_route192k_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrDir192kRoutePackedSource16kRoute192kRun512Flags }
+        "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-storageowner16-noroutebackptr-dir192k-routepacked-source16k-route192k-run512" = @{ Suffix = "_ownerloc_rss2_d160_f4_thin_nb_so16_nrb_d192_rp_s16_r192_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrStorageOwner16NoRouteBackptrDir192kRoutePackedSource16kRoute192kRun512Flags }
         "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-dir128k-source16k-route192k-run512" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_nobackptr_dir128k_source16k_route192k_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrDir128kSource16kRoute192kRun512Flags }
         "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-dir96k-source16k-route192k-run512" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_nobackptr_dir96k_source16k_route192k_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrDir96kSource16kRoute192kRun512Flags }
         "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-sideowner16-source16k-route192k-run512" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_nobackptr_sideowner16_source16k_route192k_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrSideOwner16Source16kRoute192kRun512Flags }

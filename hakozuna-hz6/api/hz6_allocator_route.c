@@ -542,8 +542,8 @@ Hz6RouteResult hz6_allocator_route_lookup_visible_after_local_miss(
   return hz6_allocator_route_lookup_visible_only(allocator, ptr);
 }
 
-#if HZ6_DIAGNOSTIC_PROBES
-Hz6Allocator* hz6_allocator_descriptor_storage_owner_diagnostic(
+#if HZ6_DESCRIPTOR_STORAGE_OWNER16_L1 || HZ6_DIAGNOSTIC_PROBES
+Hz6Allocator* hz6_allocator_descriptor_storage_owner(
     Hz6Allocator* observer,
     const Hz6ObjectDescriptor* descriptor,
     size_t* probe_count) {
@@ -569,6 +569,16 @@ Hz6Allocator* hz6_allocator_descriptor_storage_owner_diagnostic(
     }
   }
   return NULL;
+}
+#endif
+
+#if HZ6_DIAGNOSTIC_PROBES
+Hz6Allocator* hz6_allocator_descriptor_storage_owner_diagnostic(
+    Hz6Allocator* observer,
+    const Hz6ObjectDescriptor* descriptor,
+    size_t* probe_count) {
+  return hz6_allocator_descriptor_storage_owner(observer, descriptor,
+                                                probe_count);
 }
 #endif
 

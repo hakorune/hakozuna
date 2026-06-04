@@ -21,6 +21,53 @@ This file is intentionally the historical experiment ledger. Stable decisions
 should be copied into the selected summary or lane guide instead of being left
 only in this file.
 
+Latest Larson StorageOwner16-L1 evidence:
+
+```text
+Goal:
+  test whether side-owner metadata can be made safe by looking up the
+  descriptor storage allocator instead of keying the side table by the current
+  or route allocator.
+
+Implementation:
+  HZ6_DESCRIPTOR_STORAGE_OWNER16_L1
+    removes owner from the hot descriptor like side-owner16
+    stores packed owner slot/generation in descriptor_side_owner16[]
+    resolves the side table through descriptor storage ownership when needed
+
+Lane:
+  ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-
+  storageowner16-noroutebackptr-dir192k-routepacked-source16k-route192k-run512
+
+Results:
+  docs/benchmarks/windows/paper/hz6_selected_family/
+    larson-storageowner16-l1-smoke/
+      20260604_183152_hz6_capacity_matrix_windows.md
+    larson-storageowner16-l1-full10k/
+      20260604_183219_hz6_capacity_matrix_windows.md
+    larson-storageowner16-l1-repeat/
+      20260604_183328_hz6_capacity_matrix_windows.md
+
+  repeat-3 full 10k:
+    42.024M ops/s
+    444520 KB peak
+    route_invalid = 0
+    route_miss = 0
+    remote_free_transfer_fail = 0
+    lifecycle_foreign_free_invalid = 0
+
+Decision:
+  KEEP as RSS-first descriptor side metadata evidence/control.
+  Do not replace RoutePackedMeta-L1 as selected Larson lowest-RSS sibling:
+  storageowner16 saves about 11.5 MB RSS versus routepacked repeat-3 but loses
+  about 12% throughput.
+
+Next:
+  no more allocator-local side-owner table work.
+  if descriptor RSS is reopened, reduce storage-owner lookup cost or design a
+  first-class owner-source side metadata map; keep routepacked as selected.
+```
+
 Latest Larson RoutePackedMeta-L1 decision:
 
 ```text
