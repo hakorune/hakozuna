@@ -8407,3 +8407,101 @@ If wide_ws still needs speed, the likely next clean targets are:
   2. route payload/layout split,
   3. profile-level table policy only if it beats selected rows repeatably.
 ```
+
+### 2026-06-04: DescriptorStorageOwnerDryRun-L1
+
+Goal:
+
+```text
+Before trying another descriptor side-metadata behavior, measure where a
+descriptor pointer is physically stored:
+
+  current allocator?
+  route allocator?
+  another visible allocator's descriptor array?
+
+This is diagnostic-only under HZ6_DIAGNOSTIC_PROBES. It must not affect speed
+lanes.
+```
+
+Change:
+
+```text
+Add descriptor_storage_* diagnostic counters:
+  descriptor_storage_lookup
+  descriptor_storage_hit / miss
+  descriptor_storage_probe_total / max
+  descriptor_storage_route_allocator_match / mismatch
+  descriptor_storage_current_allocator_match / mismatch
+
+Add hz6_allocator_descriptor_storage_owner_diagnostic():
+  scan visible allocators
+  return the allocator whose descriptor array owns the descriptor pointer
+  update counters only from diagnostic free / remote_free paths
+```
+
+Result:
+
+```text
+Source:
+  docs/benchmarks/windows/paper/hz6_selected_family/
+    larson-descriptor-storage-recheck/larson-run512-descriptorlayout/
+    20260604_161726_hz6_capacity_matrix_windows.md
+
+baseline thindesc:
+  ops/s = 44.113M
+  RSS   = 499828 KB
+  route_invalid = 0
+  remote_free_transfer_fail = 0
+  descriptor_storage_hit = 441624204
+  descriptor_storage_miss = 0
+  descriptor_storage_route_allocator_mismatch = 415952846
+  descriptor_storage_current_allocator_mismatch = 416032846
+
+no-backptr:
+  ops/s = 44.523M
+  RSS   = 476776 KB
+  route_invalid = 0
+  remote_free_transfer_fail = 0
+  descriptor_storage_hit = 446150919
+  descriptor_storage_miss = 0
+  descriptor_storage_route_allocator_mismatch = 420203005
+  descriptor_storage_current_allocator_mismatch = 420283005
+
+sideowner16:
+  ops/s = 43.900M
+  RSS   = 475152 KB
+  route_invalid = 11626
+  remote_free_transfer_fail = 11626
+  lifecycle_foreign_free_invalid = 11626
+  descriptor_storage_hit = 439632243
+  descriptor_storage_miss = 0
+  descriptor_storage_route_allocator_mismatch = 380830077
+  descriptor_storage_current_allocator_mismatch = 380910077
+```
+
+Decision:
+
+```text
+KEEP:
+  no-backptr remains the selected Larson descriptor layout.
+
+NO-GO:
+  sideowner16 remains unsafe even though it saves RSS.
+
+Finding:
+  Descriptor storage owner is always discoverable in the visible allocator set,
+  but it is frequently not the route allocator and not the current allocator.
+
+Implication:
+  A safe side-owner redesign cannot be keyed by current allocator or route
+  allocator alone. If revisited, side metadata must be descriptor-storage-owned
+  or avoided by keeping owner inline/no-backptr.
+
+Next:
+  Do not try another sideowner knob immediately.
+  Prefer:
+    1. keep no-backptr selected for Larson,
+    2. move to a source/route payload layout split, or
+    3. design descriptor-storage-owned side metadata as a larger clean track.
+```

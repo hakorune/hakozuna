@@ -542,6 +542,36 @@ Hz6RouteResult hz6_allocator_route_lookup_visible_after_local_miss(
   return hz6_allocator_route_lookup_visible_only(allocator, ptr);
 }
 
+#if HZ6_DIAGNOSTIC_PROBES
+Hz6Allocator* hz6_allocator_descriptor_storage_owner_diagnostic(
+    Hz6Allocator* observer,
+    const Hz6ObjectDescriptor* descriptor,
+    size_t* probe_count) {
+  if (probe_count) {
+    *probe_count = 0;
+  }
+  if (!observer || !descriptor) {
+    return NULL;
+  }
+
+  for (size_t i = 0; i < HZ6_ALLOCATOR_VISIBILITY_CAPACITY; ++i) {
+    Hz6Allocator* visible =
+        atomic_load_explicit(&g_hz6_visible_allocators[i],
+                             memory_order_acquire);
+    if (!visible) {
+      continue;
+    }
+    if (probe_count) {
+      ++*probe_count;
+    }
+    if (hz6_allocator_descriptor_belongs_to(visible, descriptor)) {
+      return visible;
+    }
+  }
+  return NULL;
+}
+#endif
+
 int hz6_allocator_route_negative_filter_skip_local(
     Hz6Allocator* allocator,
     const void* ptr) {

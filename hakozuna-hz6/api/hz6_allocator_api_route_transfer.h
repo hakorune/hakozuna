@@ -30,6 +30,13 @@ Hz6RouteResult hz6_allocator_route_lookup_visible_after_local_miss(
     Hz6Allocator* allocator,
     const void* ptr);
 
+#if HZ6_DIAGNOSTIC_PROBES
+Hz6Allocator* hz6_allocator_descriptor_storage_owner_diagnostic(
+    Hz6Allocator* observer,
+    const Hz6ObjectDescriptor* descriptor,
+    size_t* probe_count);
+#endif
+
 int hz6_allocator_route_negative_filter_skip_local(
     Hz6Allocator* allocator,
     const void* ptr);

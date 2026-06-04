@@ -114,6 +114,33 @@ int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
     } else {
       ++allocator->stats.descriptor_source_current_allocator_mismatch;
     }
+    {
+      size_t storage_probes = 0;
+      Hz6Allocator* storage_allocator =
+          hz6_allocator_descriptor_storage_owner_diagnostic(allocator,
+                                                            descriptor,
+                                                            &storage_probes);
+      ++allocator->stats.descriptor_storage_lookup;
+      allocator->stats.descriptor_storage_probe_total += storage_probes;
+      if (storage_probes > allocator->stats.descriptor_storage_probe_max) {
+        allocator->stats.descriptor_storage_probe_max = storage_probes;
+      }
+      if (storage_allocator) {
+        ++allocator->stats.descriptor_storage_hit;
+        if (storage_allocator == route_allocator) {
+          ++allocator->stats.descriptor_storage_route_allocator_match;
+        } else {
+          ++allocator->stats.descriptor_storage_route_allocator_mismatch;
+        }
+        if (storage_allocator == allocator) {
+          ++allocator->stats.descriptor_storage_current_allocator_match;
+        } else {
+          ++allocator->stats.descriptor_storage_current_allocator_mismatch;
+        }
+      } else {
+        ++allocator->stats.descriptor_storage_miss;
+      }
+    }
   }
 #endif
   int needs_rehome = visible_hit && descriptor &&
