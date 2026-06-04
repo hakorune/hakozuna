@@ -59,6 +59,10 @@ Larson lowest RSS:
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-source16k-route192k-run512
 ```
 
+The side-owner16 descriptor layout lane is not selected. It is buildable as
+no-go evidence only: allocator-local owner side metadata reaches a 32-byte hot
+descriptor entry, but it breaks cross-owner lifecycle safety counters.
+
 Do not add new lanes to the selected family unless they pass:
 
 ```text
@@ -147,7 +151,8 @@ Next source cleanup target:
 ```text
 Descriptor layout:
   guard no-backptr as the selected low-RSS sibling
-  then consider descriptor owner/token compression or side metadata
+  do not promote allocator-local side-owner16
+  consider side metadata only if the owner source is explicit
 
 SourceBlock metadata layout:
   split or compress run bitmap / run metadata only after descriptor layout

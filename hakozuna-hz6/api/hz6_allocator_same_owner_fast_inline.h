@@ -27,8 +27,8 @@ static inline void* hz6_allocator_same_owner_fast_alloc_inline(
         (Hz6ObjectDescriptor*)entry.descriptor;
     if (descriptor->class_id == class_id &&
         hz6_allocator_activate_descriptor(
-            descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr, entry.generation,
-            hz6_allocator_owner_token(allocator))) {
+            allocator, descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr,
+            entry.generation, hz6_allocator_owner_token(allocator))) {
 #if HZ6_DIAGNOSTIC_PROBES
       ++allocator->stats.frontcache_reuse_hit;
 #endif
@@ -53,7 +53,8 @@ static inline int hz6_allocator_same_owner_fast_free_inline(
 
   Hz6ObjectDescriptor* descriptor = (Hz6ObjectDescriptor*)route.descriptor;
   if (!descriptor ||
-      !hz6_owner_equal(descriptor->owner, allocator->owner.token)) {
+      !hz6_allocator_descriptor_owner_equal(allocator, descriptor,
+                                            allocator->owner.token)) {
     return 0;
   }
 

@@ -494,7 +494,8 @@ Hz6RouteResult hz6_allocator_route_lookup_visible_only(Hz6Allocator* allocator,
       if (route.descriptor) {
         const Hz6ObjectDescriptor* descriptor =
             (const Hz6ObjectDescriptor*)route.descriptor;
-        if (hz6_owner_equal(descriptor->owner, allocator->owner.token)) {
+        if (hz6_allocator_descriptor_owner_equal(visible, descriptor,
+                                                 allocator->owner.token)) {
           ++allocator->stats.route_visibility_hit_local_owner;
           if (hz6_allocator_descriptor_has_source_release(visible,
                                                           descriptor)) {

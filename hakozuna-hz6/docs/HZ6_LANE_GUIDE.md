@@ -191,12 +191,17 @@ larson-run512-descriptorlayout:
   larson_t16_main_10k
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-source16k-route192k-run512
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-sideowner16-source16k-route192k-run512
   status:
     descriptor layout boundary. No-backptr removes the allocator pointer from
     `Hz6ObjectDescriptor` and requires descriptor lifecycle helpers to receive
     allocator explicitly. Repeat-3 is clean at `40.710M / 476784 KB` versus the
     run512 baseline `40.498M / 499812 KB`; keep as the selected lowest-RSS
-    sibling candidate and guard before broader default promotion.
+    sibling candidate and guard before broader default promotion. Sideowner16
+    is no-go/evidence only: it reaches a 32-byte hot descriptor but reports
+    `route_invalid=11739`, `remote_free_transfer_fail=11739`, and
+    `lifecycle_foreign_free_invalid=11739` because allocator-local side-owner
+    metadata is not owner-source-aware.
 
 larson-nobackptr-selected-guard:
   larson-cross-owner-lowest-rss preset one-run check after preset promotion.
@@ -435,6 +440,12 @@ Larson cross-owner full 10k:
     Keep it as a tiny-RSS sibling/control, not a default replacement, because
     the RSS win versus desc160k is small and the next lower descriptor caps
     fail warmup.
+  descriptor side-owner no-go:
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-sideowner16-source16k-route192k-run512
+    one-run diagnostic reaches `46.490M / 475672 KB` and a 32-byte hot
+    descriptor entry, but it is not safety-clean. Keep it as evidence that
+    side owner metadata needs the descriptor's owning allocator, not the
+    current allocator.
   route192k control:
     ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k
     repeat-3 clean at about 44.610M ops/s and 628844 KB peak RSS.

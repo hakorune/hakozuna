@@ -127,8 +127,8 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
         Hz6ObjectDescriptor* descriptor =
             (Hz6ObjectDescriptor*)route.descriptor;
         int local_owner = descriptor &&
-                          hz6_owner_equal(descriptor->owner,
-                                          allocator->owner.token);
+                          hz6_allocator_descriptor_owner_equal(
+                              allocator, descriptor, allocator->owner.token);
         int needs_rehome = visible_hit && !local_owner;
         int ok = 0;
 #if HZ6_DIAGNOSTIC_PROBES

@@ -91,6 +91,15 @@ descriptor layout L2 dry-run:
   ownerless_hot_savings_bytes = 20971520
   owner16_hot_entry_bytes = 40
   owner16_hot_savings_bytes = 0
+
+side-owner16 L1 behavior:
+  descriptor_entry_bytes = 32
+  descriptor_table_bytes = 96468992
+  one-run = 46.490M / 475672 KB
+  no-go:
+    route_invalid = 11739
+    remote_free_transfer_fail = 11739
+    lifecycle_foreign_free_invalid = 11739
 ```
 
 Read:
@@ -101,7 +110,11 @@ RSS headroom. No-backptr is a strong keep and should be guarded as the selected
 lowest-RSS Larson sibling candidate before the next descriptor representation
 change. The next descriptor representation should be side-owner / ownerless hot
 metadata. Packing owner slot/generation into 16-bit fields is not useful by
-itself because alignment keeps the entry at 40 bytes.
+itself because alignment keeps the entry at 40 bytes. The first side-owner16
+behavior lane confirms that a 32-byte hot descriptor is mechanically possible,
+but allocator-local side-owner metadata is not a safe cross-owner
+representation. A future side-owner attempt needs owner-source-aware owner
+metadata, or the route/descriptor ownership model must be redesigned.
 ```
 ```
 
@@ -209,8 +222,10 @@ descriptor-capacity boundary and desc156k/below fail. Descriptor no-backptr L1
 succeeded as the next layout target by reducing descriptor entry size from 48
 to 40 bytes. Descriptor layout L2 dry-run shows owner16 packing is a dead end
 without another field move, while ownerless hot descriptor metadata projects a
-32-byte entry. Guard no-backptr across the selected family before trying
-side-owner metadata or a route/descriptor ownership representation rewrite.
+32-byte entry. Side-owner16 L1 reached the 32-byte entry but failed safety
+because the side owner table is allocator-local and does not reliably read
+foreign descriptor ownership. Keep no-backptr selected; do not try another
+descriptor owner side-table without making the owner source explicit.
 ```
 
 Before the metadata-layout experiment, keep small shared helpers out of the

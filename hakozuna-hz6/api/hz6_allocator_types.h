@@ -53,7 +53,9 @@ typedef struct Hz6ObjectDescriptor {
 #if !HZ6_THIN_DESCRIPTOR_L1
   Hz6SourceReleaseFn source_release;
 #endif
+#if !HZ6_DESCRIPTOR_SIDE_OWNER16_L1
   Hz6OwnerToken owner;
+#endif
   uint32_t bytes;
 #if !HZ6_THIN_DESCRIPTOR_L1
   uint32_t source_bytes;
@@ -100,6 +102,9 @@ struct Hz6Allocator {
   size_t next_descriptor_index;
   size_t descriptor_available_count;
   Hz6ObjectDescriptor descriptors[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
+#if HZ6_DESCRIPTOR_SIDE_OWNER16_L1
+  uint32_t descriptor_side_owner16[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
+#endif
 #if HZ6_THIN_DESCRIPTOR_L1
   size_t next_descriptor_cold_index;
   size_t descriptor_cold_source_current;

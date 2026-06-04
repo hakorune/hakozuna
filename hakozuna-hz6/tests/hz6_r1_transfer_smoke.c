@@ -52,7 +52,8 @@ int main(void) {
               "local2p route class") ||
       !expect(local2p_descriptor != NULL, "local2p descriptor") ||
       !expect(hz6_owner_equal(
-                  local2p_descriptor->owner,
+                  hz6_allocator_descriptor_owner(&local2p_allocator,
+                                                 local2p_descriptor),
                   hz6_allocator_owner_token(&local2p_allocator)),
               "local2p owner assigned") ||
       !expect(hz6_free_remote(&local2p_allocator, local2p_object),
@@ -61,8 +62,10 @@ int main(void) {
   }
   if (!expect(local2p_descriptor->state == HZ6_STATE_TRANSFER_FREE,
               "local2p transfer state") ||
-      !expect(local2p_descriptor->owner.slot == 0 &&
-                  local2p_descriptor->owner.generation == 0,
+      !expect(hz6_owner_equal(
+                  hz6_allocator_descriptor_owner(&local2p_allocator,
+                                                 local2p_descriptor),
+                  (Hz6OwnerToken){0}),
               "local2p transfer owner clear") ||
       !expect(hz6_allocator_transfer_count(&local2p_allocator) == 1,
               "local2p transfer count") ||
@@ -79,7 +82,8 @@ int main(void) {
     return 1;
   }
   if (!expect(hz6_owner_equal(
-                  local2p_descriptor->owner,
+                  hz6_allocator_descriptor_owner(&local2p_allocator,
+                                                 local2p_descriptor),
                   hz6_allocator_owner_token(&local2p_allocator)),
               "local2p owner restored")) {
     return 1;

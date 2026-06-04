@@ -37,7 +37,8 @@ int hz6_allocator_orphan_adopt_prepare(Hz6Allocator* adopter,
 #if !HZ6_DESCRIPTOR_NO_BACKPTR_L1
   (**adopted_descriptor).allocator = adopter;
 #endif
-  (**adopted_descriptor).owner = adopter->owner.token;
+  hz6_allocator_set_descriptor_owner(adopter, *adopted_descriptor,
+                                     adopter->owner.token);
   (**adopted_descriptor).state = HZ6_STATE_LOCAL_FREE;
   return 1;
 }

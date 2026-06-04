@@ -154,8 +154,7 @@ void* hz6_front_reuse_cached_or_transfer(Hz6Allocator* allocator,
     }
     Hz6ObjectDescriptor* descriptor =
         (Hz6ObjectDescriptor*)entry.descriptor;
-    if (hz6_allocator_activate_descriptor(
-            descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr, entry.generation,
+    if (hz6_allocator_activate_descriptor(allocator, descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr, entry.generation,
             hz6_allocator_owner_token(allocator))) {
 #if HZ6_DIAGNOSTIC_PROBES
       ++allocator->stats.frontcache_reuse_hit;
@@ -212,8 +211,7 @@ void* hz6_front_reuse_transfer_or_cached(Hz6Allocator* allocator,
     }
     Hz6ObjectDescriptor* descriptor =
         (Hz6ObjectDescriptor*)entry.descriptor;
-    if (hz6_allocator_activate_descriptor(
-            descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr, entry.generation,
+    if (hz6_allocator_activate_descriptor(allocator, descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr, entry.generation,
             hz6_allocator_owner_token(allocator))) {
 #if HZ6_DIAGNOSTIC_PROBES
       ++allocator->stats.frontcache_reuse_hit;

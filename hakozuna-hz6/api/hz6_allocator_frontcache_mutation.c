@@ -288,8 +288,7 @@ void* hz6_allocator_borrow_larger_frontcache(Hz6Allocator* allocator,
       }
 
       bin->entries[index] = bin->entries[--bin->count];
-      if (!hz6_allocator_activate_descriptor(
-              descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr, entry.generation,
+      if (!hz6_allocator_activate_descriptor(allocator, descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr, entry.generation,
               hz6_allocator_owner_token(allocator))) {
 #if HZ6_DIAGNOSTIC_PROBES
         ++allocator->stats.frontcache_borrow_invalid;

@@ -256,7 +256,8 @@ int hz6_allocator_descgov_descriptor_available(
 #endif
 }
 
-int hz6_allocator_activate_descriptor(Hz6ObjectDescriptor* descriptor,
+int hz6_allocator_activate_descriptor(Hz6Allocator* allocator,
+                                      Hz6ObjectDescriptor* descriptor,
                                       Hz6ObjectState expected,
                                       void* ptr,
                                       uint32_t generation,
@@ -268,6 +269,6 @@ int hz6_allocator_activate_descriptor(Hz6ObjectDescriptor* descriptor,
     return 0;
   }
   descriptor->state = HZ6_STATE_ACTIVE;
-  descriptor->owner = owner;
+  hz6_allocator_set_descriptor_owner(allocator, descriptor, owner);
   return 1;
 }

@@ -10,7 +10,9 @@ void hz6_allocator_mark_owner_dead(Hz6Allocator* allocator) {
 
   for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
     Hz6ObjectDescriptor* descriptor = &allocator->descriptors[i];
-    if (!descriptor->ptr || !hz6_owner_equal(descriptor->owner, old_owner)) {
+    if (!descriptor->ptr ||
+        !hz6_allocator_descriptor_owner_equal(allocator, descriptor,
+                                              old_owner)) {
       continue;
     }
     if (descriptor->state == HZ6_STATE_ACTIVE ||

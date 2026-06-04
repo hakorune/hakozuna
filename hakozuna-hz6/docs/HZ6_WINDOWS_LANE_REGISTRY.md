@@ -56,6 +56,25 @@ A future `Get-Hz6WinCapacityLaneRegistry` helper should return records like:
     "/DHZ6_SOURCE_RUN_MAX_SLOTS=((size_t)512)"
   )
 }
+
+@{
+  Name = "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-sideowner16-source16k-route192k-run512"
+  Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_nobackptr_sideowner16_source16k_route192k_run512"
+  Status = "no-go"
+  Family = "larson"
+  Tags = @("owner-locality", "thindesc", "no-backptr", "sideowner16", "source16k", "route192k", "run512", "descriptor-layout")
+  ExtraFlags = @(
+    "/DHZ6_OWNER_LOCALITY_FAST_L1=1",
+    "/DHZ6_THIN_DESCRIPTOR_L1=1",
+    "/DHZ6_DESCRIPTOR_NO_BACKPTR_L1=1",
+    "/DHZ6_DESCRIPTOR_SIDE_OWNER16_L1=1",
+    "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)163840)",
+    "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)4096)",
+    "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)16384)",
+    "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)196608)",
+    "/DHZ6_SOURCE_RUN_MAX_SLOTS=((size_t)512)"
+  )
+}
 ```
 
 Then:

@@ -82,7 +82,8 @@ int hz6_allocator_prepare_descriptor(
 #if !HZ6_THIN_DESCRIPTOR_L1
   descriptor->source_release = source_release;
 #endif
-  descriptor->owner = allocator->owner.token;
+  hz6_allocator_set_descriptor_owner(allocator, descriptor,
+                                     allocator->owner.token);
   descriptor->generation = 1;
   descriptor->state = (uint8_t)state;
 #if HZ6_THIN_DESCRIPTOR_L1

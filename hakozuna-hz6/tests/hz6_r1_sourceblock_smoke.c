@@ -53,7 +53,9 @@ int main(void) {
   source_descriptor.class_id = 1;
   source_descriptor.source_kind = HZ6_SOURCE_SYSTEM;
   source_descriptor.source_release = smoke_release_source;
+#if !HZ6_DESCRIPTOR_SIDE_OWNER16_L1
   source_descriptor.owner = hz6_allocator_owner_token(&allocator);
+#endif
   source_descriptor.generation = 1;
   source_descriptor.state = HZ6_STATE_LOCAL_FREE;
   g_expected_release_source_ptr = source_block;

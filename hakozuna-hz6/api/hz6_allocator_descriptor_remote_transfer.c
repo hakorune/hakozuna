@@ -11,7 +11,8 @@ int hz6_allocator_remote_free_active_descriptor(
 
   ++allocator->stats.remote_free_attempt;
   if (hz6_allocator_profile_strict_owner_remote(allocator)) {
-    if (!hz6_owner_equal(descriptor->owner, allocator->owner.token)) {
+    if (!hz6_allocator_descriptor_owner_equal(allocator, descriptor,
+                                              allocator->owner.token)) {
       ++allocator->stats.remote_free_strict_owner_block;
       return 0;
     }
@@ -26,11 +27,13 @@ int hz6_allocator_remote_free_active_descriptor(
   object.generation = descriptor->generation;
 
   descriptor->state = HZ6_STATE_TRANSFER_FREE;
-  descriptor->owner = (Hz6OwnerToken){0};
+  hz6_allocator_set_descriptor_owner(allocator, descriptor,
+                                     (Hz6OwnerToken){0});
   if (!hz6_allocator_transfer_push(allocator, object)) {
     ++allocator->stats.remote_free_transfer_fail;
     descriptor->state = HZ6_STATE_ACTIVE;
-    descriptor->owner = allocator->owner.token;
+    hz6_allocator_set_descriptor_owner(allocator, descriptor,
+                                       allocator->owner.token);
     return 0;
   }
 

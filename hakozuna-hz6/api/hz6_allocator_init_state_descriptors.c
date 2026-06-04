@@ -27,7 +27,8 @@ void hz6_allocator_init_state_descriptors(Hz6Allocator* allocator) {
 #if !HZ6_THIN_DESCRIPTOR_L1
     allocator->descriptors[i].source_release = NULL;
 #endif
-    allocator->descriptors[i].owner = (Hz6OwnerToken){0};
+    hz6_allocator_set_descriptor_owner(allocator, &allocator->descriptors[i],
+                                       (Hz6OwnerToken){0});
     allocator->descriptors[i].generation = 0;
 #if HZ6_THIN_DESCRIPTOR_L1
     allocator->descriptors[i].cold_index = UINT32_MAX;

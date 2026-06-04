@@ -101,7 +101,8 @@ int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
   const Hz6ObjectDescriptor* descriptor =
       (const Hz6ObjectDescriptor*)route.descriptor;
   int needs_rehome = visible_hit && descriptor &&
-                     !hz6_owner_equal(descriptor->owner, allocator->owner.token);
+                     !hz6_allocator_descriptor_owner_equal(
+                         allocator, descriptor, allocator->owner.token);
   if (needs_rehome) {
 #if HZ6_DIAGNOSTIC_PROBES
     if (hz6_allocator_descriptor_has_source_release(allocator, descriptor)) {

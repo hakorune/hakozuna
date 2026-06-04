@@ -821,6 +821,13 @@ function Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrSourc
     $flags
 }
 
+function Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrSideOwner16Source16kRoute192kRun512CapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrSource16kRoute192kRun512CapacityFlags
+    $flags += "/DHZ6_DESCRIPTOR_SIDE_OWNER16_L1=1"
+    $flags
+}
+
 function Get-Hz6WinOwnerLocalityFastRssCap2Desc144kFront4kThinDescSource16kRoute192kRun512CapacityFlags {
     $flags = @(
         "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)147456)",
@@ -1267,6 +1274,7 @@ function Invoke-AppLikeHz6BenchBuilds {
     $ownerLocalityFastRssCap2Desc160kFront4kThinDescSource16kRoute192kRun1024Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescSource16kRoute192kRun1024CapacityFlags
     $ownerLocalityFastRssCap2Desc160kFront4kThinDescSource16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescSource16kRoute192kRun512CapacityFlags
     $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrSource16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrSource16kRoute192kRun512CapacityFlags
+    $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrSideOwner16Source16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrSideOwner16Source16kRoute192kRun512CapacityFlags
     $ownerLocalityFastRssCap2Desc158kFront4kThinDescSource16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc158kFront4kThinDescSource16kRoute192kRun512CapacityFlags
     $ownerLocalityFastRssCap2Desc156kFront4kThinDescSource16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc156kFront4kThinDescSource16kRoute192kRun512CapacityFlags
     $ownerLocalityFastRssCap2Desc152kFront4kThinDescSource16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc152kFront4kThinDescSource16kRoute192kRun512CapacityFlags
@@ -1372,6 +1380,7 @@ function Invoke-AppLikeHz6BenchBuilds {
         "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run1024" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_source16k_route192k_run1024"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescSource16kRoute192kRun1024Flags }
         "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_source16k_route192k_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescSource16kRoute192kRun512Flags }
         "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-source16k-route192k-run512" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_nobackptr_source16k_route192k_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrSource16kRoute192kRun512Flags }
+        "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-sideowner16-source16k-route192k-run512" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_nobackptr_sideowner16_source16k_route192k_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrSideOwner16Source16kRoute192kRun512Flags }
         "ownerlocalityfast-rsscap-2-desc158k-front4k-thindesc-source16k-route192k-run512" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc158k_front4k_thindesc_source16k_route192k_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc158kFront4kThinDescSource16kRoute192kRun512Flags }
         "ownerlocalityfast-rsscap-2-desc156k-front4k-thindesc-source16k-route192k-run512" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc156k_front4k_thindesc_source16k_route192k_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc156kFront4kThinDescSource16kRoute192kRun512Flags }
         "ownerlocalityfast-rsscap-2-desc152k-front4k-thindesc-source16k-route192k-run512" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc152k_front4k_thindesc_source16k_route192k_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc152kFront4kThinDescSource16kRoute192kRun512Flags }

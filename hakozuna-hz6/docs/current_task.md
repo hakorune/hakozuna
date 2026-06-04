@@ -7878,3 +7878,71 @@ Decision:
   Do not promote thindesc to the mixed_ws default lane.
   Keep the existing mixed_ws recommendations in HZ6_LANE_GUIDE.md.
 ```
+
+## HZ6 Descriptor SideOwner16 L1
+
+Implementation:
+
+```text
+Compile flag:
+  HZ6_DESCRIPTOR_SIDE_OWNER16_L1
+
+Lane:
+  ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-sideowner16-source16k-route192k-run512
+
+Change:
+  remove owner from the hot descriptor entry when enabled
+  store packed owner slot/generation in allocator->descriptor_side_owner16[]
+  route descriptor owner reads/writes through descriptor helper APIs
+```
+
+Observation:
+
+```text
+Run:
+  larson-run512-descriptorlayout
+  runs = 1
+  diagnostic probes on
+
+baseline run512:
+  45.407M ops/s
+  499824 KB
+  safety clean
+
+no-backptr run512:
+  47.836M ops/s
+  476788 KB
+  safety clean
+
+sideowner16 run512:
+  46.490M ops/s
+  475672 KB
+  descriptor_entry_bytes = 32
+  descriptor_table_bytes = 96468992
+
+sideowner16 no-go counters:
+  route_invalid = 11739
+  remote_free_transfer_fail = 11739
+  lifecycle_foreign_free_invalid = 11739
+  transfer_push = 403260491
+  transfer_pop = 403260284
+```
+
+Read:
+
+```text
+SideOwner16 proves that a 32-byte hot descriptor entry is mechanically
+reachable, but the first allocator-local side table is not a valid cross-owner
+representation. Foreign descriptors can be observed from another allocator, so
+owner lookup cannot blindly read the current allocator's side-owner table.
+
+Decision:
+  no-go / evidence only
+  keep no-backptr as the selected lowest-RSS sibling
+  do not promote sideowner16
+
+Next if reopened:
+  make descriptor owner metadata owner-source-aware
+  or redesign route / descriptor ownership so the helper always has the
+  descriptor's owning allocator
+```

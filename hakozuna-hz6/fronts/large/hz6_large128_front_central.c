@@ -12,8 +12,7 @@ void* hz6_large128_reuse_cached_or_central(Hz6Allocator* allocator,
   while (hz6_allocator_frontcache_pop(allocator, class_id, &entry)) {
     Hz6ObjectDescriptor* descriptor =
         (Hz6ObjectDescriptor*)entry.descriptor;
-    if (hz6_allocator_activate_descriptor(
-            descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr, entry.generation,
+    if (hz6_allocator_activate_descriptor(allocator, descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr, entry.generation,
             hz6_allocator_owner_token(allocator))) {
       return entry.ptr;
     }
@@ -24,8 +23,7 @@ void* hz6_large128_reuse_cached_or_central(Hz6Allocator* allocator,
     if (!descriptor) {
       continue;
     }
-    if (hz6_allocator_activate_descriptor(
-            descriptor, HZ6_STATE_CENTRAL_FREE, descriptor->ptr,
+    if (hz6_allocator_activate_descriptor(allocator, descriptor, HZ6_STATE_CENTRAL_FREE, descriptor->ptr,
             descriptor->generation, hz6_allocator_owner_token(allocator))) {
       return descriptor->ptr;
     }
@@ -44,7 +42,8 @@ int hz6_large128_free_local_or_central(Hz6Allocator* allocator,
 
   Hz6ObjectDescriptor* descriptor = (Hz6ObjectDescriptor*)route.descriptor;
   if (descriptor->state != HZ6_STATE_ACTIVE || descriptor->ptr != ptr ||
-      !hz6_owner_equal(descriptor->owner, allocator->owner.token)) {
+      !hz6_allocator_descriptor_owner_equal(allocator, descriptor,
+                                            allocator->owner.token)) {
     return 0;
   }
 
@@ -63,13 +62,15 @@ int hz6_large128_free_local_or_central(Hz6Allocator* allocator,
   }
 
   descriptor->state = HZ6_STATE_CENTRAL_FREE;
-  descriptor->owner = (Hz6OwnerToken){0};
+  hz6_allocator_set_descriptor_owner(allocator, descriptor,
+                                     (Hz6OwnerToken){0});
   if (hz6_allocator_large_span_pool_push(allocator, descriptor)) {
     return 1;
   }
 
   descriptor->state = HZ6_STATE_ACTIVE;
-  descriptor->owner = allocator->owner.token;
+  hz6_allocator_set_descriptor_owner(allocator, descriptor,
+                                     allocator->owner.token);
   return hz6_allocator_remote_free_active_descriptor(allocator, descriptor,
                                                      ptr);
 }
@@ -93,13 +94,15 @@ int hz6_large128_free_remote_or_central(Hz6Allocator* allocator,
   }
 
   descriptor->state = HZ6_STATE_CENTRAL_FREE;
-  descriptor->owner = (Hz6OwnerToken){0};
+  hz6_allocator_set_descriptor_owner(allocator, descriptor,
+                                     (Hz6OwnerToken){0});
   if (hz6_allocator_large_span_pool_push(allocator, descriptor)) {
     return 1;
   }
 
   descriptor->state = HZ6_STATE_ACTIVE;
-  descriptor->owner = allocator->owner.token;
+  hz6_allocator_set_descriptor_owner(allocator, descriptor,
+                                     allocator->owner.token);
   return hz6_allocator_remote_free_active_descriptor(allocator, descriptor,
                                                      ptr);
 }

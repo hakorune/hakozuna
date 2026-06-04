@@ -128,7 +128,8 @@ void hz6_allocator_reset_descriptor_available(
 #if !HZ6_THIN_DESCRIPTOR_L1
   descriptor->source_release = NULL;
 #endif
-  descriptor->owner = (Hz6OwnerToken){0};
+  hz6_allocator_set_descriptor_owner(allocator, descriptor,
+                                     (Hz6OwnerToken){0});
   descriptor->generation = 0;
   descriptor->state = HZ6_STATE_DEAD;
 #if !HZ6_DESCRIPTOR_NO_BACKPTR_L1
@@ -205,7 +206,8 @@ int hz6_allocator_reserve_descriptor_keep_source_slot(
 #if !HZ6_THIN_DESCRIPTOR_L1
   descriptor->source_release = NULL;
 #endif
-  descriptor->owner = (Hz6OwnerToken){0};
+  hz6_allocator_set_descriptor_owner(allocator, descriptor,
+                                     (Hz6OwnerToken){0});
   descriptor->generation = 0;
   descriptor->state = HZ6_STATE_DESCRIPTOR_RESERVED;
 #if !HZ6_DESCRIPTOR_NO_BACKPTR_L1
