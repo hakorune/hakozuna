@@ -29,6 +29,15 @@ typedef struct Hz6RouteTable {
 } Hz6RouteTable;
 
 size_t hz6_route_hash_index(uintptr_t base, size_t capacity);
+size_t hz6_route_probe_step(uintptr_t base, size_t capacity);
+
+#if HZ6_ROUTE_DOUBLE_HASH_L1
+#define HZ6_ROUTE_PROBE_INDEX(start, step, capacity, probe_index) \
+  (((start) + (((probe_index) % (capacity)) * (step))) % (capacity))
+#else
+#define HZ6_ROUTE_PROBE_INDEX(start, step, capacity, probe_index) \
+  ((void)(step), (((start) + (probe_index)) % (capacity)))
+#endif
 
 void hz6_route_table_init(Hz6RouteTable* table,
                           Hz6RouteEntry* entries,

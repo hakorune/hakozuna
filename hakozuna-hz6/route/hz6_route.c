@@ -13,8 +13,13 @@ Hz6RouteResult hz6_route_lookup_exact_probe(const Hz6RouteTable* table,
 
   uintptr_t addr = (uintptr_t)ptr;
   size_t start = hz6_route_hash_index(addr, table->capacity);
+#if HZ6_ROUTE_DOUBLE_HASH_L1
+  size_t step = hz6_route_probe_step(addr, table->capacity);
+#else
+  size_t step = 1;
+#endif
   for (size_t i = 0; i < table->capacity; ++i) {
-    size_t index = (start + i) % table->capacity;
+    size_t index = HZ6_ROUTE_PROBE_INDEX(start, step, table->capacity, i);
     const Hz6RouteEntry* entry = &table->entries[index];
     ++probes;
     if (!entry->active) {
@@ -56,8 +61,13 @@ Hz6RouteResult hz6_route_lookup_probe(const Hz6RouteTable* table,
 
   uintptr_t addr = (uintptr_t)ptr;
   size_t start = hz6_route_hash_index(addr, table->capacity);
+#if HZ6_ROUTE_DOUBLE_HASH_L1
+  size_t step = hz6_route_probe_step(addr, table->capacity);
+#else
+  size_t step = 1;
+#endif
   for (size_t i = 0; i < table->capacity; ++i) {
-    size_t index = (start + i) % table->capacity;
+    size_t index = HZ6_ROUTE_PROBE_INDEX(start, step, table->capacity, i);
     const Hz6RouteEntry* entry = &table->entries[index];
     ++probes;
     if (!entry->active) {

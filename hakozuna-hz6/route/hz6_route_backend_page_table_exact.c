@@ -27,8 +27,14 @@ Hz6RouteResult hz6_route_backend_lookup_page_table_exact_probe(
   }
 
   size_t start = hz6_route_hash_index(addr, backend->exact_table.capacity);
+#if HZ6_ROUTE_DOUBLE_HASH_L1
+  size_t step = hz6_route_probe_step(addr, backend->exact_table.capacity);
+#else
+  size_t step = 1;
+#endif
   for (size_t i = 0; i < backend->exact_table.capacity; ++i) {
-    size_t index = (start + i) % backend->exact_table.capacity;
+    size_t index = HZ6_ROUTE_PROBE_INDEX(start, step,
+                                         backend->exact_table.capacity, i);
     const Hz6RouteEntry* entry = &backend->exact_table.entries[index];
     ++probes;
     if (!entry->active || !entry->exact_valid) {

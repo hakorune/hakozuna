@@ -90,6 +90,92 @@ Latest HZ6 selected-family decision:
       now plausible alongside tombstone/cluster pressure.
     next check:
       repeat route17/18/20 with balanced + wide_ws before behavior.
+
+  repeat-3 confirmation:
+    diagnostic repeat:
+      source:
+        docs/benchmarks/windows/paper/hz6_route_probe_shape_repeat/
+          20260604_151811_hz6_capacity_matrix_windows.md
+      balanced:
+        route17 64.487M / 110940 KB, lookup_probe_total 1.273M, max 8
+        route18 65.386M / 111068 KB, lookup_probe_total 1.269M, max 9
+        route20 66.007M / 111628 KB, lookup_probe_total 1.242M, max 12
+      wide_ws:
+        route17 19.905M / 140312 KB, lookup_probe_total 13.449M, b65+ 33025
+        route18 20.444M / 140576 KB, lookup_probe_total 5.495M, b65+ 14248
+        route20 20.164M / 140952 KB, lookup_probe_total 3.036M, b65+ 2390
+    non-diagnostic repeat:
+      source:
+        docs/benchmarks/windows/paper/hz6_route_probe_shape_nondiag_repeat/
+          20260604_151900_hz6_capacity_matrix_windows.md
+      balanced:
+        route17 67.002M / 110960 KB
+        route18 65.711M / 111152 KB
+        route20 65.453M / 111668 KB
+      wide_ws:
+        route17 20.731M / 140248 KB
+        route18 21.523M / 140580 KB
+        route20 18.154M / 139752 KB
+    read:
+      selected split still stands:
+        balanced low-RSS/speed = route17
+        wide_ws sibling = route18
+      route20 cuts probe count but loses speed in non-diagnostic wide_ws, so
+      bigger route capacity is not the next behavior.  The next experiment
+      should try to reduce route17/18 cluster shape without growing the table
+      footprint.  Tombstones are not the mixed_ws pressure: unregister is zero
+      in this workload.  Prefer a hash/probe-layout experiment before
+      backshift/tombstone compaction.
+
+  RouteDoubleHash-L1:
+    implementation:
+      HZ6_ROUTE_DOUBLE_HASH_L1 changes the first open-addressing pass from
+      linear probing to double hashing.  It keeps exact/invalid route semantics
+      unchanged and is exposed only as a capacity lane:
+        mixedclean-front16k-sourcerun-desc17k-source2k-route18k-doublehash
+    diagnostic smoke:
+      source:
+        docs/benchmarks/windows/paper/hz6_route_doublehash_l1_smoke/
+          20260604_152425_hz6_capacity_matrix_windows.md
+      route18 wide_ws:
+        lookup_probe_total = 5.639M
+        lookup b65+ = 13699
+      route18 doublehash wide_ws:
+        lookup_probe_total = 2.479M
+        lookup b65+ = 34
+      safety:
+        route_invalid = 0
+        route_miss = 0
+        route_register_fail = 0
+        alloc_fail = 0
+    non-diagnostic repeat-3:
+      source:
+        docs/benchmarks/windows/paper/hz6_route_doublehash_l1_repeat/
+          20260604_152734_hz6_capacity_matrix_windows.md
+      route18 wide_ws:
+        21.401M / 140496 KB
+      route18 doublehash wide_ws:
+        20.886M / 140564 KB
+    read:
+      no-go / control evidence.  Double hashing successfully removes the long
+      probe tail, but the extra probe-step cost and less linear memory access
+      do not improve throughput.  Do not promote.  The next route experiment
+      should keep linear locality and reduce cluster/load cost by cheaper
+      means, for example route-entry layout slimming, table split, or a cheaper
+      hash perturbation that preserves linear probing.
+    safety:
+      Windows HZ6 R1 smoke suite passed after adding the route probe sequence
+      abstraction and doublehash control lane:
+        core-contract ok
+        route ok
+        transfer-contract ok
+        source-contract ok
+        allocator ok
+        prefill ok
+        sourceblock ok
+        transfer ok
+        reclaim ok
+        safety ok
 ```
 
 ```text

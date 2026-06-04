@@ -9,8 +9,13 @@ static int hz6_route_table_insert_compacted(Hz6RouteTable* table,
     return 0;
   }
   size_t start = hz6_route_hash_index(saved->base, table->capacity);
+#if HZ6_ROUTE_DOUBLE_HASH_L1
+  size_t step = hz6_route_probe_step(saved->base, table->capacity);
+#else
+  size_t step = 1;
+#endif
   for (size_t i = 0; i < table->capacity; ++i) {
-    size_t index = (start + i) % table->capacity;
+    size_t index = HZ6_ROUTE_PROBE_INDEX(start, step, table->capacity, i);
     Hz6RouteEntry* entry = &table->entries[index];
     if (entry->active || entry->tombstone) {
       continue;

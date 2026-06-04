@@ -15,6 +15,11 @@ int hz6_route_register_exact(Hz6RouteTable* table,
 
   uintptr_t base_addr = (uintptr_t)base;
   size_t start = hz6_route_hash_index(base_addr, table->capacity);
+#if HZ6_ROUTE_DOUBLE_HASH_L1
+  size_t step = hz6_route_probe_step(base_addr, table->capacity);
+#else
+  size_t step = 1;
+#endif
 #if HZ6_DIAGNOSTIC_PROBES
   size_t probes = 0;
 #endif
@@ -24,7 +29,7 @@ int hz6_route_register_exact(Hz6RouteTable* table,
 #if HZ6_DIAGNOSTIC_PROBES
     ++probes;
 #endif
-    size_t index = (start + i) % table->capacity;
+    size_t index = HZ6_ROUTE_PROBE_INDEX(start, step, table->capacity, i);
     Hz6RouteEntry* entry = &table->entries[index];
     if (entry->active && entry->exact_valid && entry->base == base_addr) {
 #if HZ6_DIAGNOSTIC_PROBES
@@ -104,6 +109,11 @@ void hz6_route_unregister_exact(Hz6RouteTable* table,
   }
   uintptr_t base_addr = (uintptr_t)base;
   size_t start = hz6_route_hash_index(base_addr, table->capacity);
+#if HZ6_ROUTE_DOUBLE_HASH_L1
+  size_t step = hz6_route_probe_step(base_addr, table->capacity);
+#else
+  size_t step = 1;
+#endif
 #if HZ6_DIAGNOSTIC_PROBES
   size_t probes = 0;
 #endif
@@ -111,7 +121,7 @@ void hz6_route_unregister_exact(Hz6RouteTable* table,
 #if HZ6_DIAGNOSTIC_PROBES
     ++probes;
 #endif
-    size_t index = (start + i) % table->capacity;
+    size_t index = HZ6_ROUTE_PROBE_INDEX(start, step, table->capacity, i);
     Hz6RouteEntry* entry = &table->entries[index];
     if (entry->active && entry->exact_valid && entry->base == base_addr) {
       entry->active = 0;
