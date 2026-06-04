@@ -40,15 +40,18 @@ A future `Get-Hz6WinCapacityLaneRegistry` helper should return records like:
 
 ```powershell
 @{
-  Name = "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-source16k-route192k-run512"
-  Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_nobackptr_source16k_route192k_run512"
+  Name = "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-source16k-route192k-run512"
+  Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_nobackptr_noroutebackptr_dir192k_routepacked_source16k_route192k_run512"
   Status = "selected sibling"
   Family = "larson"
-  Tags = @("owner-locality", "thindesc", "no-backptr", "source16k", "route192k", "run512", "lowest-rss")
+  Tags = @("owner-locality", "thindesc", "no-backptr", "no-route-backptr", "dir192k", "routepacked", "source16k", "route192k", "run512", "lowest-rss")
   ExtraFlags = @(
     "/DHZ6_OWNER_LOCALITY_FAST_L1=1",
     "/DHZ6_THIN_DESCRIPTOR_L1=1",
     "/DHZ6_DESCRIPTOR_NO_BACKPTR_L1=1",
+    "/DHZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1=1",
+    "/DHZ6_SHARED_ROUTE_DIRECTORY_CAPACITY=((size_t)196608)",
+    "/DHZ6_ROUTE_PACKED_META_L1=1",
     "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)163840)",
     "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)4096)",
     "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)16384)",
@@ -79,7 +82,7 @@ A future `Get-Hz6WinCapacityLaneRegistry` helper should return records like:
 @{
   Name = "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-dir192k-source16k-route192k-run512"
   Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_nobackptr_dir192k_source16k_route192k_run512"
-  Status = "selected sibling"
+  Status = "control"
   Family = "larson"
   Tags = @("owner-locality", "thindesc", "no-backptr", "dir192k", "source16k", "route192k", "run512", "rss", "lowest-rss")
   ExtraFlags = @(

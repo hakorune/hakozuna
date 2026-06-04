@@ -66,8 +66,8 @@ Source:
 
 | Profile family | Selected HZ6 lane | Median ops/s | Median peak_kb | Read |
 | --- | --- | ---: | ---: | --- |
-| balanced clean | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k` | 55.504M | 110,780 | current safety-clean balanced selected row |
-| wide_ws clean | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k` | 19.978M | 140,236 | current safety-clean wide_ws selected row |
+| balanced clean | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap-loopcarry` | 67.462M | 110,888 | current safety-clean balanced selected row |
+| wide_ws clean | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap-loopcarry` | 22.674M | 140,320 | current safety-clean wide_ws selected row |
 | balanced pressure | `rss + descavail-noboost-route4k` | 75.467M | 17,376 | pressure evidence only; not safety-clean because allocation failures are large |
 | wide_ws pressure | `rss + descavail-noboost-route4k` | 57.144M | 12,524 | pressure evidence only; not safety-clean because allocation failures are large |
 | random_mixed small | `strict + sameownerfast-descavail-noboost-route4k` | 45.755M | 4,968 | current same-owner selected row |
@@ -78,7 +78,8 @@ Source:
 | Larson T16 cross-owner full 10k | `speed + ownerlocalityfast-rsscap-2-desc160k` | 44.754M | 808,488 | current cross-owner throughput/RSS balance lane |
 | Larson T16 cross-owner lower RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k` | 45.092M | 716,324 | lower-RSS sibling with similar throughput |
 | Larson T16 cross-owner previous lowest RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512` | 48.512M | 499,820 | previous lowest-RSS sibling/control |
-| Larson T16 cross-owner lowest RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-source16k-route192k-run512` | 40.710M | 476,784 | current lowest-RSS selected sibling candidate |
+| Larson T16 cross-owner minimum RSS control | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-source16k-route192k-run512` | 41.107M | 469,868 | superseded clean isolation control |
+| Larson T16 cross-owner lowest RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-source16k-route192k-run512` | 47.616M | 456,048 | current lowest-RSS selected sibling candidate |
 | Larson T16 cross-owner full 10k near-capacity sibling | `speed + ownerlocalityfast-rsscap-2-desc192k` | 43.679M | 974,296 | stable sibling with more descriptor headroom |
 
 ## Readout
@@ -101,10 +102,13 @@ has changed. HZ6 now has three useful full-10k lanes:
     `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k`
     `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512`
     `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-source16k-route192k-run512`
+    `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-source16k-route192k-run512`
+    `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-source16k-route192k-run512`
 
 The remaining Larson RSS is still dominated by metadata tables, not by payload,
-but source-run bitmap trimming and descriptor no-backptr layout have already
-moved the selected low-RSS sibling from about 629 MB to about 477 MB.
+but source-run bitmap trimming, descriptor/source-block back-pointer removal,
+directory trimming, and RoutePackedMeta-L1 have already moved the selected
+low-RSS sibling from about 629 MB to about 456 MB.
 ```
 
 ## Sources
