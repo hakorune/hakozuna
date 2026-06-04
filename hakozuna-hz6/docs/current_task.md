@@ -8015,3 +8015,74 @@ Next:
   either add first-class descriptor_storage_allocator metadata
   or switch to another RSS target outside descriptor owner side metadata
 ```
+
+## HZ6 Larson Directory Capacity L1
+
+Implementation:
+
+```text
+Lanes:
+  ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-dir192k-source16k-route192k-run512
+  ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-dir128k-source16k-route192k-run512
+  ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-dir96k-source16k-route192k-run512
+
+Change:
+  keep route capacity at route192k
+  keep no-backptr selected descriptor layout
+  reduce HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY only
+  owner-locality index follows shared directory capacity
+```
+
+Observation:
+
+```text
+Run:
+  larson_t16_main_10k
+  runs = 1
+  diagnostic probes on
+
+no-backptr:
+  45.694M ops/s
+  476792 KB
+  ownerlocality_index_bytes = 18874368
+  owner_locality_miss = 0
+
+dir192k:
+  46.599M ops/s
+  472628 KB
+  ownerlocality_index_bytes = 14155776
+  owner_locality_miss = 0
+  shared_dir_first_fallback = 3
+  shared_dir_probe_max = 29
+  owner_locality_probe_max = 222
+  safety clean
+
+dir128k:
+  36.220M ops/s
+  467568 KB
+  owner_locality_miss = 14464
+  shared_dir_probe_max = 131073
+  owner_locality_probe_max = 131073
+
+dir96k:
+  27.505M ops/s
+  465240 KB
+  owner_locality_miss = 30844
+  shared_dir_probe_max = 98305
+  owner_locality_probe_max = 98305
+```
+
+Read:
+
+```text
+Directory-capacity trimming has a useful middle point.
+dir192k saves about 4 MB versus no-backptr and stays safety-clean.
+dir128k/dir96k are too tight: they reduce RSS further, but the
+owner-locality/shared-directory indexes start missing and probing full tables,
+so throughput collapses.
+
+Decision:
+  dir192k KEEP as candidate-control
+  dir128k / dir96k KEEP as no-go boundary controls
+  do not promote dir192k until repeat-3 confirms stability
+```
