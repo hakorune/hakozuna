@@ -592,6 +592,17 @@ int main(int argc, char** argv) {
 #endif
         hz6_stats.route_lookup_probe_total +=
             args[i].hz6_stats_after.route_lookup_probe_total;
+#if HZ6_DIAGNOSTIC_PROBES
+        for (size_t bucket = 0; bucket < HZ6_ROUTE_PROBE_BUCKET_COUNT;
+             ++bucket) {
+            hz6_stats.route_lookup_probe_hist[bucket] +=
+                args[i].hz6_stats_after.route_lookup_probe_hist[bucket];
+            hz6_stats.route_register_probe_hist[bucket] +=
+                args[i].hz6_stats_after.route_register_probe_hist[bucket];
+            hz6_stats.route_unregister_probe_hist[bucket] +=
+                args[i].hz6_stats_after.route_unregister_probe_hist[bucket];
+        }
+#endif
         if (args[i].hz6_stats_after.route_lookup_probe_max >
             hz6_stats.route_lookup_probe_max) {
             hz6_stats.route_lookup_probe_max =
@@ -866,6 +877,32 @@ int main(int argc, char** argv) {
         printf("[HZ6_FRONTCACHE_CLASS] class=%zu push=%zu pop_empty=%zu\n",
                class_id, push, pop_empty);
     }
+#endif
+#if defined(HZ_BENCH_USE_HZ6) && HZ6_DIAGNOSTIC_PROBES
+    printf("[HZ6_ROUTE_PROBE_SHAPE] kind=lookup b1=%zu b2_4=%zu b5_8=%zu "
+           "b9_16=%zu b17_64=%zu b65p=%zu\n",
+           hz6_stats.route_lookup_probe_hist[0],
+           hz6_stats.route_lookup_probe_hist[1],
+           hz6_stats.route_lookup_probe_hist[2],
+           hz6_stats.route_lookup_probe_hist[3],
+           hz6_stats.route_lookup_probe_hist[4],
+           hz6_stats.route_lookup_probe_hist[5]);
+    printf("[HZ6_ROUTE_PROBE_SHAPE] kind=register b1=%zu b2_4=%zu b5_8=%zu "
+           "b9_16=%zu b17_64=%zu b65p=%zu\n",
+           hz6_stats.route_register_probe_hist[0],
+           hz6_stats.route_register_probe_hist[1],
+           hz6_stats.route_register_probe_hist[2],
+           hz6_stats.route_register_probe_hist[3],
+           hz6_stats.route_register_probe_hist[4],
+           hz6_stats.route_register_probe_hist[5]);
+    printf("[HZ6_ROUTE_PROBE_SHAPE] kind=unregister b1=%zu b2_4=%zu b5_8=%zu "
+           "b9_16=%zu b17_64=%zu b65p=%zu\n",
+           hz6_stats.route_unregister_probe_hist[0],
+           hz6_stats.route_unregister_probe_hist[1],
+           hz6_stats.route_unregister_probe_hist[2],
+           hz6_stats.route_unregister_probe_hist[3],
+           hz6_stats.route_unregister_probe_hist[4],
+           hz6_stats.route_unregister_probe_hist[5]);
 #endif
 
     free(args);

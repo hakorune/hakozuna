@@ -256,6 +256,11 @@ size_t hz6_allocator_owner_locality_index_bytes(void) {
 }
 #endif
 
+#if HZ6_DIAGNOSTIC_PROBES
+static void hz6_allocator_note_route_probe_hist(size_t* hist,
+                                                size_t probes);
+#endif
+
 void hz6_allocator_route_visibility_register(Hz6Allocator* allocator) {
   if (!allocator) {
     return;
@@ -317,6 +322,9 @@ Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
                                      ptr,
                                      &lookup_probes);
   ((Hz6Allocator*)allocator)->stats.route_lookup_probe_total += lookup_probes;
+  hz6_allocator_note_route_probe_hist(
+      ((Hz6Allocator*)allocator)->stats.route_lookup_probe_hist,
+      lookup_probes);
   if (lookup_probes >
       ((Hz6Allocator*)allocator)->stats.route_lookup_probe_max) {
     ((Hz6Allocator*)allocator)->stats.route_lookup_probe_max = lookup_probes;
@@ -727,6 +735,33 @@ int hz6_allocator_route_rehome_exact(Hz6Allocator* allocator,
 }
 
 #if HZ6_DIAGNOSTIC_PROBES
+static size_t hz6_allocator_route_probe_bucket(size_t probes) {
+  if (probes <= 1) {
+    return 0;
+  }
+  if (probes <= 4) {
+    return 1;
+  }
+  if (probes <= 8) {
+    return 2;
+  }
+  if (probes <= 16) {
+    return 3;
+  }
+  if (probes <= 64) {
+    return 4;
+  }
+  return 5;
+}
+
+static void hz6_allocator_note_route_probe_hist(size_t* hist,
+                                                size_t probes) {
+  if (!hist) {
+    return;
+  }
+  ++hist[hz6_allocator_route_probe_bucket(probes)];
+}
+
 static void hz6_allocator_note_route_tombstones(Hz6Allocator* allocator) {
   if (!allocator) {
     return;
@@ -877,6 +912,8 @@ void hz6_allocator_route_unregister_exact_reason(
   hz6_route_backend_unregister_exact(&allocator->route_backend, ptr, &probes);
   hz6_allocator_route_maybe_compact_tombstones(allocator);
   allocator->stats.route_unregister_probe_total += probes;
+  hz6_allocator_note_route_probe_hist(
+      allocator->stats.route_unregister_probe_hist, probes);
   if (probes > allocator->stats.route_unregister_probe_max) {
     allocator->stats.route_unregister_probe_max = probes;
   }
@@ -925,6 +962,8 @@ int hz6_allocator_route_register_exact_reason(
                                         descriptor,
                                         &probes);
   allocator->stats.route_register_probe_total += probes;
+  hz6_allocator_note_route_probe_hist(
+      allocator->stats.route_register_probe_hist, probes);
   if (probes > allocator->stats.route_register_probe_max) {
     allocator->stats.route_register_probe_max = probes;
   }

@@ -73,7 +73,7 @@ function Get-LogCapture {
                 }
                 [void]$tail.Enqueue($line)
             }
-            if ($line -match '^(\[BENCH_ARGS\]|\[RSS\]|\[OPS\]|\[HZ6_STATS\]|\[HZ6_MEMORY_ATTR\]|\[HZ6_METADATA_SLIM\]|\[HZ6_FRONT_ALLOC_PATH\]|\[HZ6_FRONTCACHE_CLASS\]|\[HZ6_REDIS_STATS\]|threads=.*ops/s=|bench_[^:]+:.*ops/s=|Pattern:|Throughput:|Throughput = |Ops:|---)') {
+            if ($line -match '^(\[BENCH_ARGS\]|\[RSS\]|\[OPS\]|\[HZ6_STATS\]|\[HZ6_MEMORY_ATTR\]|\[HZ6_METADATA_SLIM\]|\[HZ6_FRONT_ALLOC_PATH\]|\[HZ6_FRONTCACHE_CLASS\]|\[HZ6_ROUTE_PROBE_SHAPE\]|\[HZ6_REDIS_STATS\]|threads=.*ops/s=|bench_[^:]+:.*ops/s=|Pattern:|Throughput:|Throughput = |Ops:|---)') {
                 [void]$captured.Add($line)
             } elseif ($IncludeStatsTail -and $line -match '^\[HZ6_STATS\]\s+label=redis_alloc_string_fail') {
                 if ($statsTail.Count -ge $TailLimit) {

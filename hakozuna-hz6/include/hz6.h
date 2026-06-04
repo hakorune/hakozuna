@@ -15,6 +15,10 @@ typedef struct Hz6Allocator Hz6Allocator;
 #define HZ6_STATS_CLASS_COUNT 16u
 #endif
 
+#ifndef HZ6_ROUTE_PROBE_BUCKET_COUNT
+#define HZ6_ROUTE_PROBE_BUCKET_COUNT 6u
+#endif
+
 typedef struct Hz6StatsSnapshot {
   size_t route_valid;
   size_t route_invalid;
@@ -221,10 +225,13 @@ typedef struct Hz6StatsSnapshot {
   size_t owner_locality_probe_max;
   size_t route_lookup_probe_total;
   size_t route_lookup_probe_max;
+  size_t route_lookup_probe_hist[HZ6_ROUTE_PROBE_BUCKET_COUNT];
   size_t route_register_probe_total;
   size_t route_register_probe_max;
+  size_t route_register_probe_hist[HZ6_ROUTE_PROBE_BUCKET_COUNT];
   size_t route_unregister_probe_total;
   size_t route_unregister_probe_max;
+  size_t route_unregister_probe_hist[HZ6_ROUTE_PROBE_BUCKET_COUNT];
   size_t route_register_reason_unknown;
   size_t route_register_reason_source_run_slot;
   size_t route_register_reason_direct_source;

@@ -19,6 +19,80 @@ remains profile-stabilized; new HZ5 work should not blur the HZ6 contract.
 Latest HZ6 selected-family decision:
 
 ```text
+2026-06-04 next attack after Pro consult:
+  mixed_ws / wide_ws:
+    next main target is route representation / route probe shape, not
+    frontcache/source knobs.
+
+  reason:
+    route17 -> route18 improves wide_ws while route20 does not add more.
+    recent frontcache/source class diagnostics are effectively identical
+    across desc17/route17, desc17/route18, desc17/route20, and desc20/route20.
+    The remaining difference is therefore route load/probe/churn shape.
+
+  immediate implementation:
+    RouteProbeShape-L1 diagnostic only.
+    Add lookup/register/unregister probe buckets:
+      1, 2-4, 5-8, 9-16, 17-64, 65+
+    Keep counters behind HZ6_DIAGNOSTIC_PROBES and do not mix them into
+    production speed lanes.
+
+  compare first:
+    mixedclean-front16k-sourcerun-desc17k-source2k-route17k
+    mixedclean-front16k-sourcerun-desc17k-source2k-route18k
+    mixedclean-front16k-sourcerun-desc17k-source2k-route20k
+
+  next behavior only after reading shape:
+    tombstone/cluster high:
+      RouteBackshiftCompact-L1 or tombstone compact policy
+    invalid envelope scan high:
+      exact/envelope route split or page/segment route directory
+    cached/local-free exact pollution high:
+      active/cached route representation split
+    hash skew high:
+      hash/layout change
+    class-specific pressure:
+      class-aware route admission/capacity
+
+  Larson:
+    freeze current selected lowest-RSS sibling for now.
+    owner/source-aware descriptor ownership is valuable but L2 and should not
+    be mixed with the mixed_ws route experiment.
+
+  initial RouteProbeShape-L1 smoke:
+    source:
+      docs/benchmarks/windows/paper/hz6_route_probe_shape_l1/
+        20260604_151113_hz6_capacity_matrix_windows.md
+    wide_ws one-run, diagnostic-only:
+      route17:
+        20.429M / 140292 KB
+        lookup_probe_total = 11.684M
+        lookup b65+ = 35274
+        register_probe_total = 1.856M
+        register b65+ = 5459
+      route18:
+        21.534M / 140576 KB
+        lookup_probe_total = 5.263M
+        lookup b65+ = 12706
+        register_probe_total = 793K
+        register b65+ = 1987
+      route20:
+        19.282M / 141100 KB
+        lookup_probe_total = 3.053M
+        lookup b65+ = 2017
+        register_probe_total = 449K
+        register b65+ = 316
+    read:
+      route18 clearly cuts long probes relative to route17.
+      route20 cuts probes further but loses speed in this one-run smoke, so
+      the next read should not assume "lower probe count == faster".  Route
+      table footprint/cache locality, hash/layout, and diagnostic variance are
+      now plausible alongside tombstone/cluster pressure.
+    next check:
+      repeat route17/18/20 with balanced + wide_ws before behavior.
+```
+
+```text
 mixed clean-lane update:
   selected-mixed-lowrss is now clean:
     rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k
