@@ -50,6 +50,32 @@ function Get-Median {
     return ([double]$sorted[$mid - 1] + [double]$sorted[$mid]) / 2.0
 }
 
+function Get-KeyValueMap {
+    param([string]$Line)
+    $map = @{}
+    foreach ($match in [regex]::Matches($Line, '([A-Za-z0-9_]+)=([0-9]+)')) {
+        $map[$match.Groups[1].Value] = [double]$match.Groups[2].Value
+    }
+    return $map
+}
+
+function Get-MedianFromMaps {
+    param(
+        [array]$Maps,
+        [string]$Key
+    )
+    $values = New-Object System.Collections.Generic.List[double]
+    foreach ($map in @($Maps)) {
+        if ($null -ne $map -and $map.ContainsKey($Key)) {
+            $values.Add([double]$map[$Key])
+        }
+    }
+    if ($values.Count -eq 0) {
+        return $null
+    }
+    return Get-Median -Values $values.ToArray()
+}
+
 function Get-LogCapture {
     param(
         [Parameter(Mandatory = $true)][string[]]$Paths,
@@ -73,7 +99,7 @@ function Get-LogCapture {
                 }
                 [void]$tail.Enqueue($line)
             }
-            if ($line -match '^(\[BENCH_ARGS\]|\[RSS\]|\[OPS\]|\[HZ6_STATS\]|\[HZ6_MEMORY_ATTR\]|\[HZ6_METADATA_SLIM\]|\[HZ6_FRONT_ALLOC_PATH\]|\[HZ6_FRONTCACHE_CLASS\]|\[HZ6_ROUTE_PROBE_SHAPE\]|\[HZ6_REDIS_STATS\]|threads=.*ops/s=|bench_[^:]+:.*ops/s=|Pattern:|Throughput:|Throughput = |Ops:|---)') {
+            if ($line -match '^(\[BENCH_ARGS\]|\[RSS\]|\[OPS\]|\[HZ6_STATS\]|\[HZ6_MEMORY_ATTR\]|\[HZ6_RSS_RESIDUAL\]|\[HZ6_METADATA_SLIM\]|\[HZ6_FRONT_ALLOC_PATH\]|\[HZ6_FRONTCACHE_CLASS\]|\[HZ6_ROUTE_PROBE_SHAPE\]|\[HZ6_REDIS_STATS\]|threads=.*ops/s=|bench_[^:]+:.*ops/s=|Pattern:|Throughput:|Throughput = |Ops:|---)') {
                 [void]$captured.Add($line)
             } elseif ($IncludeStatsTail -and $line -match '^\[HZ6_STATS\]\s+label=redis_alloc_string_fail') {
                 if ($statsTail.Count -ge $TailLimit) {
@@ -499,6 +525,7 @@ foreach ($family in $selectedFamilies) {
     }
 
     foreach ($case in $cases) {
+        $residualRows = New-Object System.Collections.Generic.List[object]
         $Summary.Add("## $family / $($case.Name)")
         $Summary.Add("")
         $Summary.Add("- Note: " + $case.Note)
@@ -517,6 +544,7 @@ foreach ($family in $selectedFamilies) {
             $opsRuns = New-Object System.Collections.Generic.List[double]
             $peakRuns = New-Object System.Collections.Generic.List[double]
             $runTexts = New-Object System.Collections.Generic.List[string]
+            $residualMaps = New-Object System.Collections.Generic.List[object]
             $redisPatternRuns = @{}
             foreach ($pattern in @("SET", "GET", "LPUSH", "LPOP", "RANDOM")) {
                 $redisPatternRuns[$pattern] = New-Object System.Collections.Generic.List[double]
@@ -580,6 +608,9 @@ foreach ($family in $selectedFamilies) {
                 if ($result.PeakKb -match '^[0-9]+$') {
                     $peakRuns.Add([double]$result.PeakKb)
                 }
+                if ($DiagnosticHz6Probes -and $raw -match '\[HZ6_RSS_RESIDUAL\]\s+([^[]+)') {
+                    $residualMaps.Add((Get-KeyValueMap -Line $Matches[1]))
+                }
                 if ($family -eq "redis") {
                     $runTexts.Add(("run{0}:ok" -f $run))
                 } else {
@@ -597,6 +628,59 @@ foreach ($family in $selectedFamilies) {
             } else {
                 $medianOps = if ($opsRuns.Count -gt 0) { "{0:N3}M" -f ((Get-Median -Values $opsRuns.ToArray()) / 1000000.0) } else { "failed" }
                 $Summary.Add(('| {0} | {1} | {2} | `{3}` |' -f $exe.Name, $medianOps, $medianPeak, ($runTexts -join " ; ")))
+            }
+
+            if ($DiagnosticHz6Probes -and $residualMaps.Count -gt 0) {
+                $residualRows.Add([pscustomobject]@{
+                    Allocator = $exe.Name
+                    StaticTable = Get-MedianFromMaps -Maps $residualMaps.ToArray() -Key "static_table_bytes"
+                    StaticPlusPayload = Get-MedianFromMaps -Maps $residualMaps.ToArray() -Key "static_plus_payload_bytes"
+                    Descriptor = Get-MedianFromMaps -Maps $residualMaps.ToArray() -Key "descriptor_table_bytes"
+                    Route = Get-MedianFromMaps -Maps $residualMaps.ToArray() -Key "route_table_bytes"
+                    SharedDir = Get-MedianFromMaps -Maps $residualMaps.ToArray() -Key "shared_route_directory_bytes"
+                    OwnerIndex = Get-MedianFromMaps -Maps $residualMaps.ToArray() -Key "owner_locality_index_bytes"
+                    SourceBlock = Get-MedianFromMaps -Maps $residualMaps.ToArray() -Key "source_block_table_bytes"
+                    Frontcache = Get-MedianFromMaps -Maps $residualMaps.ToArray() -Key "frontcache_table_bytes"
+                    Transfer = Get-MedianFromMaps -Maps $residualMaps.ToArray() -Key "transfer_table_bytes"
+                    Payload = Get-MedianFromMaps -Maps $residualMaps.ToArray() -Key "source_block_committed_estimate"
+                    ActiveSourceBlocks = Get-MedianFromMaps -Maps $residualMaps.ToArray() -Key "active_source_blocks"
+                    RouteActive = Get-MedianFromMaps -Maps $residualMaps.ToArray() -Key "route_active_current"
+                    FrontcacheTotal = Get-MedianFromMaps -Maps $residualMaps.ToArray() -Key "frontcache_total"
+                })
+            }
+        }
+        if ($DiagnosticHz6Probes -and $residualRows.Count -gt 0) {
+            $Summary.Add("")
+            $Summary.Add("### HZ6 RSS residual audit")
+            $Summary.Add("")
+            $Summary.Add("| allocator | static KiB | static+payload KiB | descriptor KiB | route KiB | shared dir KiB | owner index KiB | source block KiB | frontcache KiB | transfer KiB | payload KiB | active source blocks | route active | frontcache total |")
+            $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+            foreach ($row in $residualRows) {
+                $fmtKb = {
+                    param($value)
+                    if ($null -eq $value) { return "n/a" }
+                    return "{0:N0}" -f ([double]$value / 1024.0)
+                }
+                $fmtCount = {
+                    param($value)
+                    if ($null -eq $value) { return "n/a" }
+                    return "{0:N0}" -f ([double]$value)
+                }
+                $Summary.Add(('| {0} | {1} | {2} | {3} | {4} | {5} | {6} | {7} | {8} | {9} | {10} | {11} | {12} | {13} |' -f `
+                    $row.Allocator,
+                    (& $fmtKb $row.StaticTable),
+                    (& $fmtKb $row.StaticPlusPayload),
+                    (& $fmtKb $row.Descriptor),
+                    (& $fmtKb $row.Route),
+                    (& $fmtKb $row.SharedDir),
+                    (& $fmtKb $row.OwnerIndex),
+                    (& $fmtKb $row.SourceBlock),
+                    (& $fmtKb $row.Frontcache),
+                    (& $fmtKb $row.Transfer),
+                    (& $fmtKb $row.Payload),
+                    (& $fmtCount $row.ActiveSourceBlocks),
+                    (& $fmtCount $row.RouteActive),
+                    (& $fmtCount $row.FrontcacheTotal)))
             }
         }
         $Summary.Add("")

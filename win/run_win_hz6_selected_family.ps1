@@ -12,6 +12,7 @@ param(
     [switch]$LarsonCrossOwnerLowestRss,
     [switch]$LarsonMetadataSlim,
     [switch]$LarsonSourceRunMetaSlim,
+    [switch]$LarsonRssResidualAudit,
     [switch]$LarsonRun512RouteSlim,
     [switch]$LarsonRun512DescSlim,
     [switch]$LarsonRun512DescriptorLayout,
@@ -96,6 +97,14 @@ $presetMap = [ordered]@{
         -Hz6Profiles @("speed") `
         -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k-front4k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-dir192k-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-storageowner16-noroutebackptr-dir192k-routepacked-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-sourceblockpacked-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source16k-route192k-run512") `
         -Note "front4k versus route192k, no-backptr, dir192k/source-block controls, routepacked, routebytes16 control, storageowner16 evidence, OwnerSourceSideMeta-L2 selected sibling, FrontCachePackedMeta-L1, SourceBlockPackedFlags-L1, and combined packed lower-RSS candidates"
+
+    "larson-rss-residual-audit" = New-Preset `
+        -Name "larson-rss-residual-audit" `
+        -Families @("larson") `
+        -BenchmarkProfiles @("larson_t16_main_10k") `
+        -Hz6Profiles @("speed") `
+        -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-sourceblockpacked-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source16k-route192k-run512") `
+        -Note "diagnostic-only residual RSS audit: L2 balance sibling, FrontCachePacked, SourceBlockPacked, and combined packed minimum-RSS candidate"
 
     "larson-thindesc-sourcecap" = New-Preset `
         -Name "larson-thindesc-sourcecap" `
@@ -185,6 +194,11 @@ if ($LarsonMetadataSlim) {
 
 if ($LarsonSourceRunMetaSlim) {
     [void]$selectedPresetNames.Add("larson-sourcerun-metaslim")
+}
+
+if ($LarsonRssResidualAudit) {
+    [void]$selectedPresetNames.Add("larson-rss-residual-audit")
+    $DiagnosticHz6Probes = $true
 }
 
 if ($LarsonRun512RouteSlim) {

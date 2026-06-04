@@ -111,9 +111,13 @@ static void hz6_stats_snapshot_memory_attribution(
       sizeof(allocator->frontcache_bins);
   snapshot->memory_transfer_table_bytes =
       sizeof(allocator->transfer_objects);
-  snapshot->memory_ownerlocality_index_bytes =
-      hz6_allocator_shared_route_directory_bytes() +
+  snapshot->memory_shared_route_directory_bytes =
+      hz6_allocator_shared_route_directory_bytes();
+  snapshot->memory_owner_locality_index_bytes =
       hz6_allocator_owner_locality_index_bytes();
+  snapshot->memory_ownerlocality_index_bytes =
+      snapshot->memory_shared_route_directory_bytes +
+      snapshot->memory_owner_locality_index_bytes;
 
   size_t active_descriptors = 0;
   size_t local_free_descriptors = 0;
@@ -153,6 +157,7 @@ static void hz6_stats_snapshot_memory_attribution(
   size_t active_source_blocks = 0;
   size_t registered_source_blocks = 0;
   size_t ref_nonzero_source_blocks = 0;
+  size_t ref_zero_source_blocks = 0;
   size_t source_block_payload_bytes = 0;
   for (size_t i = 0; i < HZ6_SOURCE_BLOCK_CAPACITY; ++i) {
     const Hz6SourceBlock* block = &allocator->source_blocks[i];
@@ -166,13 +171,26 @@ static void hz6_stats_snapshot_memory_attribution(
     }
     if (block->ref_count != 0) {
       ++ref_nonzero_source_blocks;
+    } else {
+      ++ref_zero_source_blocks;
     }
   }
   snapshot->memory_active_source_blocks = active_source_blocks;
   snapshot->memory_registered_source_blocks = registered_source_blocks;
   snapshot->memory_ref_nonzero_source_blocks = ref_nonzero_source_blocks;
+  snapshot->memory_ref_zero_source_blocks = ref_zero_source_blocks;
   snapshot->memory_source_block_payload_bytes = source_block_payload_bytes;
   snapshot->memory_source_block_committed_estimate = source_block_payload_bytes;
+  snapshot->memory_static_table_bytes =
+      snapshot->memory_descriptor_table_bytes +
+      snapshot->memory_route_table_bytes +
+      snapshot->memory_source_block_table_bytes +
+      snapshot->memory_frontcache_table_bytes +
+      snapshot->memory_transfer_table_bytes +
+      snapshot->memory_ownerlocality_index_bytes;
+  snapshot->memory_static_plus_payload_bytes =
+      snapshot->memory_static_table_bytes +
+      snapshot->memory_source_block_committed_estimate;
 
   size_t frontcache_total = 0;
   size_t frontcache_largest_bin = 0;

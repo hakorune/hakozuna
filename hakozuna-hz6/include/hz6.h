@@ -286,6 +286,10 @@ typedef struct Hz6StatsSnapshot {
   size_t memory_frontcache_table_bytes;
   size_t memory_transfer_table_bytes;
   size_t memory_ownerlocality_index_bytes;
+  size_t memory_shared_route_directory_bytes;
+  size_t memory_owner_locality_index_bytes;
+  size_t memory_static_table_bytes;
+  size_t memory_static_plus_payload_bytes;
   size_t memory_active_descriptors;
   size_t memory_local_free_descriptors;
   size_t memory_transfer_free_descriptors;
@@ -294,6 +298,7 @@ typedef struct Hz6StatsSnapshot {
   size_t memory_active_source_blocks;
   size_t memory_registered_source_blocks;
   size_t memory_ref_nonzero_source_blocks;
+  size_t memory_ref_zero_source_blocks;
   size_t memory_source_block_payload_bytes;
   size_t memory_source_block_committed_estimate;
   size_t memory_frontcache_total;

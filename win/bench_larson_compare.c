@@ -765,6 +765,16 @@ int main(int argc, char** argv) {
             hz6_stats.memory_ownerlocality_index_bytes =
                 tds[t].hz6_stats_after.memory_ownerlocality_index_bytes;
         }
+        if (tds[t].hz6_stats_after.memory_shared_route_directory_bytes >
+            hz6_stats.memory_shared_route_directory_bytes) {
+            hz6_stats.memory_shared_route_directory_bytes =
+                tds[t].hz6_stats_after.memory_shared_route_directory_bytes;
+        }
+        if (tds[t].hz6_stats_after.memory_owner_locality_index_bytes >
+            hz6_stats.memory_owner_locality_index_bytes) {
+            hz6_stats.memory_owner_locality_index_bytes =
+                tds[t].hz6_stats_after.memory_owner_locality_index_bytes;
+        }
         hz6_stats.memory_active_descriptors +=
             tds[t].hz6_stats_after.memory_active_descriptors;
         hz6_stats.memory_local_free_descriptors +=
@@ -781,6 +791,8 @@ int main(int argc, char** argv) {
             tds[t].hz6_stats_after.memory_registered_source_blocks;
         hz6_stats.memory_ref_nonzero_source_blocks +=
             tds[t].hz6_stats_after.memory_ref_nonzero_source_blocks;
+        hz6_stats.memory_ref_zero_source_blocks +=
+            tds[t].hz6_stats_after.memory_ref_zero_source_blocks;
         hz6_stats.memory_source_block_payload_bytes +=
             tds[t].hz6_stats_after.memory_source_block_payload_bytes;
         hz6_stats.memory_source_block_committed_estimate +=
@@ -905,6 +917,19 @@ int main(int argc, char** argv) {
         CloseHandle(handles[t]);
         handles[t] = NULL;
     }
+
+#if defined(HZ_BENCH_USE_HZ6) && HZ6_DIAGNOSTIC_PROBES
+    hz6_stats.memory_static_table_bytes =
+        hz6_stats.memory_descriptor_table_bytes +
+        hz6_stats.memory_route_table_bytes +
+        hz6_stats.memory_source_block_table_bytes +
+        hz6_stats.memory_frontcache_table_bytes +
+        hz6_stats.memory_transfer_table_bytes +
+        hz6_stats.memory_ownerlocality_index_bytes;
+    hz6_stats.memory_static_plus_payload_bytes =
+        hz6_stats.memory_static_table_bytes +
+        hz6_stats.memory_source_block_committed_estimate;
+#endif
 
     duration_sec = (double)(end_ns - start_ns) / 1e9;
     printf("Throughput = %.0f operations per second, relative time: %.3fs.\n",
@@ -1161,6 +1186,10 @@ int main(int argc, char** argv) {
            "frontcache_table_bytes=%zu "
            "transfer_table_bytes=%zu "
            "ownerlocality_index_bytes=%zu "
+           "shared_route_directory_bytes=%zu "
+           "owner_locality_index_bytes=%zu "
+           "static_table_bytes=%zu "
+           "static_plus_payload_bytes=%zu "
            "active_descriptors=%zu "
            "local_free_descriptors=%zu "
            "transfer_free_descriptors=%zu "
@@ -1169,6 +1198,7 @@ int main(int argc, char** argv) {
            "active_source_blocks=%zu "
            "registered_source_blocks=%zu "
            "ref_nonzero_source_blocks=%zu "
+           "ref_zero_source_blocks=%zu "
            "source_block_payload_bytes=%zu "
            "source_block_committed_estimate=%zu "
            "route_active_current=%zu "
@@ -1182,6 +1212,10 @@ int main(int argc, char** argv) {
            hz6_stats.memory_frontcache_table_bytes,
            hz6_stats.memory_transfer_table_bytes,
            hz6_stats.memory_ownerlocality_index_bytes,
+           hz6_stats.memory_shared_route_directory_bytes,
+           hz6_stats.memory_owner_locality_index_bytes,
+           hz6_stats.memory_static_table_bytes,
+           hz6_stats.memory_static_plus_payload_bytes,
            hz6_stats.memory_active_descriptors,
            hz6_stats.memory_local_free_descriptors,
            hz6_stats.memory_transfer_free_descriptors,
@@ -1190,6 +1224,7 @@ int main(int argc, char** argv) {
            hz6_stats.memory_active_source_blocks,
            hz6_stats.memory_registered_source_blocks,
            hz6_stats.memory_ref_nonzero_source_blocks,
+           hz6_stats.memory_ref_zero_source_blocks,
            hz6_stats.memory_source_block_payload_bytes,
            hz6_stats.memory_source_block_committed_estimate,
            hz6_stats.route_active_current,
@@ -1197,6 +1232,41 @@ int main(int argc, char** argv) {
            hz6_stats.route_tombstone_current,
            hz6_stats.memory_frontcache_total,
            hz6_stats.memory_frontcache_largest_bin);
+    printf("[HZ6_RSS_RESIDUAL] "
+           "static_table_bytes=%zu "
+           "static_plus_payload_bytes=%zu "
+           "descriptor_table_bytes=%zu "
+           "route_table_bytes=%zu "
+           "shared_route_directory_bytes=%zu "
+           "owner_locality_index_bytes=%zu "
+           "source_block_table_bytes=%zu "
+           "frontcache_table_bytes=%zu "
+           "transfer_table_bytes=%zu "
+           "source_block_payload_bytes=%zu "
+           "source_block_committed_estimate=%zu "
+           "active_source_blocks=%zu "
+           "ref_nonzero_source_blocks=%zu "
+           "ref_zero_source_blocks=%zu "
+           "route_active_current=%zu "
+           "route_tombstone_current=%zu "
+           "frontcache_total=%zu\n",
+           hz6_stats.memory_static_table_bytes,
+           hz6_stats.memory_static_plus_payload_bytes,
+           hz6_stats.memory_descriptor_table_bytes,
+           hz6_stats.memory_route_table_bytes,
+           hz6_stats.memory_shared_route_directory_bytes,
+           hz6_stats.memory_owner_locality_index_bytes,
+           hz6_stats.memory_source_block_table_bytes,
+           hz6_stats.memory_frontcache_table_bytes,
+           hz6_stats.memory_transfer_table_bytes,
+           hz6_stats.memory_source_block_payload_bytes,
+           hz6_stats.memory_source_block_committed_estimate,
+           hz6_stats.memory_active_source_blocks,
+           hz6_stats.memory_ref_nonzero_source_blocks,
+           hz6_stats.memory_ref_zero_source_blocks,
+           hz6_stats.route_active_current,
+           hz6_stats.route_tombstone_current,
+           hz6_stats.memory_frontcache_total);
     printf("[HZ6_METADATA_SLIM] "
            "descriptor_entry_bytes=%zu "
            "descriptor_thin_hot_entry_bytes=%zu "

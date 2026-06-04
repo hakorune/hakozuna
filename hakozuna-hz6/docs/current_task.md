@@ -326,6 +326,127 @@ If no single table dominates:
   stop adding micro-packing lanes and return to speed/RSS balance work.
 ```
 
+Implementation:
+
+```text
+Added diagnostic-only residual attribution:
+  [HZ6_RSS_RESIDUAL]
+
+New snapshot fields:
+  shared_route_directory_bytes
+  owner_locality_index_bytes
+  static_table_bytes
+  static_plus_payload_bytes
+  ref_zero_source_blocks
+
+New selected-family preset:
+  win/run_win_hz6_selected_family.ps1 -LarsonRssResidualAudit
+
+The preset automatically enables DiagnosticHz6Probes so these counters do not
+mix into normal speed lanes.
+```
+
+Initial 1-run audit:
+
+```text
+Command:
+  win/run_win_hz6_selected_family.ps1
+    -LarsonRssResidualAudit
+    -Runs 1
+    -TimeoutSeconds 90
+    -ForceBuild
+    -ContinueOnFailure
+
+Source:
+  docs/benchmarks/windows/paper/hz6_rss_residual_audit_l1/
+    larson-rss-residual-audit/
+      20260605_084006_hz6_capacity_matrix_windows.md
+      20260605_084006_hz6_capacity_matrix_windows.log
+```
+
+Residual read, run=1:
+
+```text
+OwnerSourceSideMeta-L2:
+  throughput/RSS:
+    47.926M / 439948 KB
+  static_table:
+    259078 KiB
+  static_plus_payload:
+    283590 KiB
+  descriptor / route / sourceblock / frontcache:
+    94208 / 79872 / 36864 / 32774 KiB
+  payload:
+    24512 KiB
+
+FrontCachePackedMeta-L1:
+  throughput/RSS:
+    45.220M / 430780 KB
+  static_table:
+    250886 KiB
+  static_plus_payload:
+    275398 KiB
+  descriptor / route / sourceblock / frontcache:
+    94208 / 79872 / 36864 / 24582 KiB
+
+SourceBlockPackedFlags-L1:
+  throughput/RSS:
+    47.347M / 435776 KB
+  static_table:
+    254982 KiB
+  static_plus_payload:
+    279494 KiB
+  descriptor / route / sourceblock / frontcache:
+    94208 / 79872 / 32768 / 32774 KiB
+
+combined packed:
+  throughput/RSS:
+    44.431M / 426548 KB
+  static_table:
+    246790 KiB
+  static_plus_payload:
+    271238 KiB
+  descriptor / route / sourceblock / frontcache:
+    94208 / 79872 / 32768 / 24582 KiB
+  shared_dir / owner_index / transfer:
+    7680 / 6144 / 1536 KiB
+  payload:
+    24448 KiB
+```
+
+Read:
+
+```text
+The combined packed lane is doing exactly what expected:
+  FrontCachePacked saves about 8192 KiB of static table bytes.
+  SourceBlockPacked saves about 4096 KiB of static table bytes.
+  Combined saves both, dropping static table bytes to about 246790 KiB.
+
+The largest remaining explicit table components are:
+  descriptor table:
+    about 94208 KiB
+  route table:
+    about 79872 KiB
+  source block table:
+    about 32768 KiB
+  frontcache table:
+    about 24582 KiB after packing
+
+The measured peak RSS is still about 155 MiB above static_plus_payload in the
+combined packed run. Before adding another micro-packing lane, we need to
+separate process/CRT/thread stack overhead from allocator-retained backing.
+```
+
+Next:
+
+```text
+1. Use residual audit rows as the new RSS map.
+2. If continuing RSS:
+   first inspect descriptor/route representation or non-table retained memory.
+3. Do not start another FrontCache/SourceBlock flag packing lane unless the
+   audit shows a new static table target larger than the expected win.
+```
+
 This file is intentionally the historical experiment ledger. Stable decisions
 should be copied into the selected summary or lane guide instead of being left
 only in this file.

@@ -77,6 +77,17 @@ separate by output subdirectory.
 ```
 
 ```powershell
+# Diagnostic-only residual RSS audit for the Larson low-RSS family.
+# This preset enables HZ6_DIAGNOSTIC_PROBES and should not be used as a
+# production speed-ranking row.
+.\win\run_win_hz6_selected_family.ps1 `
+  -LarsonRssResidualAudit `
+  -Runs 1 `
+  -TimeoutSeconds 90 `
+  -ContinueOnFailure
+```
+
+```powershell
 # Source-block recovery check after thindesc full-10k warmup failure.
 .\win\run_win_hz6_selected_family.ps1 `
   -LarsonThinDescSourceCap `
@@ -151,6 +162,22 @@ larson-cross-owner-selected:
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-source16k-route192k-run512
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-source16k-route192k-run512
+
+larson-rss-residual-audit:
+  larson_t16_main_10k
+  diagnostic-only
+  compares:
+    OwnerSourceSideMeta-L2
+    FrontCachePackedMeta-L1
+    SourceBlockPackedFlags-L1
+    combined packed
+  output:
+    [HZ6_MEMORY_ATTR]
+    [HZ6_RSS_RESIDUAL]
+    [HZ6_METADATA_SLIM]
+    HZ6 RSS residual audit table in the generated markdown
+  status:
+    attribution/evidence only, not a production speed-ranking row.
 
 selected-family-guard:
   short mixed_ws smoke/control guard before a longer selected-family run
