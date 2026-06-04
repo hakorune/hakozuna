@@ -8278,24 +8278,83 @@ Decision:
   KEEP as route-hash evidence/control.
   Do not promote HashXorFold-L1 over the selected family yet.
 
-  HashXorFold can help a route18-only comparison, but it does not beat the
+HashXorFold can help a route18-only comparison, but it does not beat the
   selected desc17/route17 balanced row in same-run repeat-3, and it does not
   clearly beat selected wide_ws either.
+```
+
+LinearWrap-L1:
+
+```text
+Change:
+  Preserve linear probing and hash semantics, but avoid the per-probe modulo
+  in the default probe macro:
+    old: (start + i) % capacity
+    new: start + i, subtract capacity once when needed
+
+  This is guarded by HZ6_ROUTE_LINEAR_WRAP_L1 and does not change
+  VALID / INVALID / MISS semantics.
+
+Repeat-3:
+  mixed_ws balanced / wide_ws:
+    route17             balanced = 67.229M / 110764 KB
+    route17-linearwrap  balanced = 68.203M / 110740 KB
+    route18             balanced = 64.148M / 111228 KB
+    route18-linearwrap  balanced = 65.475M / 111096 KB
+
+    route17             wide_ws  = 21.403M / 140348 KB
+    route17-linearwrap  wide_ws  = 22.174M / 140144 KB
+    route18             wide_ws  = 21.029M / 140492 KB
+    route18-linearwrap  wide_ws  = 22.562M / 140548 KB
+
+Guard repeat-3:
+  mixed_ws balanced / wide_ws / larger_sizes:
+    route17             balanced     = 67.840M / 110744 KB
+    route17-linearwrap  balanced     = 69.821M / 110836 KB
+    route18             balanced     = 69.707M / 111104 KB
+    route18-linearwrap  balanced     = 78.106M / 111076 KB
+
+    route17             wide_ws      = 20.961M / 140260 KB
+    route17-linearwrap  wide_ws      = 22.964M / 140280 KB
+    route18             wide_ws      = 22.660M / 140536 KB
+    route18-linearwrap  wide_ws      = 21.728M / 140632 KB
+
+    route17             larger_sizes = 32.152M / 78028 KB
+    route17-linearwrap  larger_sizes = 33.720M / 77992 KB
+    route18             larger_sizes = 33.388M / 78104 KB
+    route18-linearwrap  larger_sizes = 34.202M / 78124 KB
+
+Safety:
+  HZ6 Windows R1 smokes all pass.
+
+Decision:
+  PROMOTE route17-linearwrap as the selected mixed_ws clean low-RSS row.
+  It beats route17 on balanced / wide_ws / larger_sizes guard rows while
+  keeping route17 RSS shape.
+
+  Do not promote route18-linearwrap globally yet:
+    it wins balanced and larger_sizes, but loses wide_ws to route18 in the
+    guard run.
+
+  Do not turn HZ6_ROUTE_LINEAR_WRAP_L1 into a global default yet:
+    first keep it as an explicit selected lane, then verify broader families.
 ```
 
 Current selected mixed_ws lanes:
 
 ```text
 balanced low-RSS:
-  rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k
+  rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap
 
-wide_ws low-RSS sibling:
-  rss + mixedclean-front16k-sourcerun-desc17k-source2k-route18k
+wide_ws low-RSS:
+  rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap
 
 controls:
   route20
   doublehash
   hashxor
+  route18
+  route18-linearwrap
 ```
 
 Next:

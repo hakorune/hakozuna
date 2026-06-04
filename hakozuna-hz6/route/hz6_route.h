@@ -34,6 +34,20 @@ size_t hz6_route_probe_step(uintptr_t base, size_t capacity);
 #if HZ6_ROUTE_DOUBLE_HASH_L1
 #define HZ6_ROUTE_PROBE_INDEX(start, step, capacity, probe_index) \
   (((start) + (((probe_index) % (capacity)) * (step))) % (capacity))
+#elif HZ6_ROUTE_LINEAR_WRAP_L1
+static inline size_t hz6_route_linear_probe_index(size_t start,
+                                                  size_t capacity,
+                                                  size_t probe_index) {
+  size_t index = start + probe_index;
+  if (index >= capacity) {
+    index -= capacity;
+  }
+  return index;
+}
+
+#define HZ6_ROUTE_PROBE_INDEX(start, step, capacity, probe_index) \
+  ((void)(step), hz6_route_linear_probe_index((start), (capacity), \
+                                              (probe_index)))
 #else
 #define HZ6_ROUTE_PROBE_INDEX(start, step, capacity, probe_index) \
   ((void)(step), (((start) + (probe_index)) % (capacity)))

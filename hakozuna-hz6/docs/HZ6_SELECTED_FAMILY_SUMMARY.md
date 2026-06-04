@@ -11,8 +11,8 @@ For cleanup rules and the next source modularization target, see
 
 | Family | Selected lane | Median ops/s | Peak KB | Status |
 | --- | --- | ---: | ---: | --- |
-| mixed_ws balanced | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k` | 55.504M | 110,780 | clean selected |
-| mixed_ws wide_ws | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route18k` | 22.184M | 140,456 | clean selected sibling |
+| mixed_ws balanced | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap` | 69.821M | 110,836 | clean selected |
+| mixed_ws wide_ws | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap` | 22.964M | 140,280 | clean selected |
 | random_mixed small | `strict + sameownerfast-descavail-noboost-route4k` | 45.755M | 4,968 | clean selected |
 | random_mixed medium | `strict + sameownerfast-descavail-noboost-route4k` | 42.408M | 4,964 | clean selected |
 | random_mixed mixed | `strict + sameownerfast-descavail-noboost-route4k` | 41.306M | 4,964 | clean selected |
@@ -35,6 +35,7 @@ Source:
 - `docs/benchmarks/windows/paper/hz6_selected_family/larson-nobackptr-selected-guard/`
 - `docs/benchmarks/windows/paper/hz6_selected_family/larson-descriptor-layout-l2-dryrun-clean/`
 - `docs/benchmarks/windows/paper/hz6_selected_family/larson-directory-cap-l1-repeat/`
+- `docs/benchmarks/windows/paper/hz6_route_linearwrap_l1_guard/`
 
 ## Evidence Rows
 
@@ -42,7 +43,8 @@ Source:
 | --- | --- | --- |
 | mixed_ws balanced/wide_ws pressure | `rss + descavail-noboost-route4k` | Very fast and very low RSS, but not clean: high `alloc_fail` / source-block exhaustion. Keep as pressure evidence only. |
 | mixed_ws wide-speed sibling | `rss + mixedclean-front16k-sourcerun-desc20k-source2k-route20k` | Clean sibling: wide_ws `21.498M / 142676 KB`, but higher RSS than desc17. |
-| mixed_ws route-only wide_ws L1 | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route18k` | Selected wide_ws sibling. Keeps descriptor/transfer/source/frontcache at desc17 but raises route capacity to 18K. Repeat-3: balanced `64.923M / 111248 KB`, wide_ws `22.184M / 140456 KB`. It improves wide_ws versus desc17-route17 with about +284 KB peak RSS; route20 is not better enough. |
+| mixed_ws route-only wide_ws L1 | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route18k` | Previous selected wide_ws sibling. Keeps descriptor/transfer/source/frontcache at desc17 but raises route capacity to 18K. Repeat-3: balanced `64.923M / 111248 KB`, wide_ws `22.184M / 140456 KB`. Superseded by route17-linearwrap in the latest guard. |
+| mixed_ws LinearWrap-L1 | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap` | Selected mixed_ws row after route hash/probe cleanup. Guard repeat-3: balanced `69.821M / 110836 KB`, wide_ws `22.964M / 140280 KB`, larger_sizes guard `33.720M / 77992 KB`; safety clean. Keeps route17 RSS while improving route probe arithmetic. |
 | mixed_ws desc16 boundary | `mixedclean-front16k-sourcerun-desc16k-*` | No-go for wide_ws. Transfer2304/2560 does not remove `alloc_fail=6943`; desc17 is the current clean lower bound. |
 | Larson lower-RSS control | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source12k` | Lower RSS than source16k but lower throughput; useful control, not selected. |
 | Larson route boundary | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route160k/128k`, plus `route160k-run512` / `route128k-run512` | No-go: route table saturates during full-10k warmup. Under run512, route160k and route128k still hit `route_register_fail=3` / `alloc_fail=1`, so route192k is the current clean route lower bound. |

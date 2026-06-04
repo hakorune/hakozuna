@@ -14,8 +14,8 @@ For repo cleanup rules and the source modularization backlog, see
 
 | Profile family | Selected HZ6 profile | Selected capacity lane | Why this lane now |
 | --- | --- | --- | --- |
-| balanced clean low-RSS | `rss` | `mixedclean-front16k-sourcerun-desc17k-source2k-route17k` | Clean repeat-3 replacement for the old `descavail` pressure row. Latest selected-family refresh: balanced `55.504M / 110780 KB`; route-only repeat control gives balanced `66.308M / 110940 KB`. |
-| wide_ws clean low-RSS | `rss` | `mixedclean-front16k-sourcerun-desc17k-source2k-route18k` | Selected wide_ws sibling. It keeps desc17 descriptor/transfer/source/frontcache capacity and raises only route capacity to 18K. Repeat-3: wide_ws `22.184M / 140456 KB`, safety clean; about +284 KB peak versus desc17-route17 in the same run. |
+| balanced clean low-RSS | `rss` | `mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap` | Selected mixed_ws clean low-RSS row. LinearWrap-L1 preserves linear probing semantics but avoids per-probe modulo in the route probe macro. Guard repeat-3: balanced `69.821M / 110836 KB`, safety clean. |
+| wide_ws clean low-RSS | `rss` | `mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap` | Same selected mixed_ws row now also beats the previous route18 sibling in the guard repeat-3: wide_ws `22.964M / 140280 KB`, safety clean and lower RSS than route18. |
 | balanced / wide_ws pressure evidence | `rss` | `descavail-noboost-route4k` | Very fast and very low-RSS, but not safety-clean for paper/default claims: it completes by hitting large `alloc_fail` / source-block exhaustion counts. Keep it as pressure evidence only. |
 | random_mixed same-owner speed | `strict` | `sameownerfast-descavail-noboost-route4k` | Selected same-owner fast lane: `HZ6_SAME_OWNER_FAST_L1` + descriptor availability, promoted from the A-ladder. |
 | larger_sizes RSS/speed | `speed` or `rss` | `largerlowrss-front8k-sourcerun-desc8k-route8k` | Best larger_sizes lane; needs larger front retention, not more descriptor-failure cleanup. |
