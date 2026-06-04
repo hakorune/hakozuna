@@ -27,7 +27,7 @@ in the repository.
 | Family | HZ5 policy | HZ6 selected/control | Read |
 | --- | ---: | ---: | --- |
 | `random_mixed / medium` | `6.612M / 10,184 KB` | `42.408M / 4,964 KB` selected same-owner | HZ6 is clearly better on RSS and throughput after the same-owner selected lane work. |
-| `Larson T16 main-warmup` | `47.485M / 183,180 KB` | `40.754M / 439,912 KB` OwnerSourceSideMeta-L2 | HZ6 L2 preserves the routebytes16 comparison-control throughput shape in same-run repeat-3 while cutting RSS, but still uses about 2.40x HZ5 RSS. |
+| `Larson T16 main-warmup` | `47.485M / 183,180 KB` | `40.754M / 439,912 KB` OwnerSourceSideMeta-L2 balance sibling; `40.837M / 426,084 KB` combined packed minimum-RSS candidate | HZ6 L2 preserves the routebytes16 comparison-control throughput shape while cutting RSS. Combined packed lowers HZ6 RSS further, but still uses about 2.33x HZ5 RSS. |
 | `Larson T16 worker-warmup` | `42.987M / 155,640 KB` | `40.787M / 439,740 KB` OwnerSourceSideMeta-L2 run=1 | HZ6 L2 does not break same-owner warmup and lowers RSS versus routebytes16, but HZ5 remains the stronger RSS reference. |
 
 Sources:
@@ -47,7 +47,10 @@ metadata dominated.
 | `...front4k-thindesc-source16k-route192k-run512` | 48.512M | 499,820 | Previous lowest-RSS sibling/control. |
 | `...nobackptr-noroutebackptr-dir192k-source16k-route192k-run512` | 41.107M | 469,868 | Clean minimum-RSS isolation control. |
 | `...routepacked-routebytes16-source16k-route192k-run512` | 40.750M | 449,128 | Superseded routebytes16 comparison control in same-run L2 repeat-3. |
-| `...routepacked-routebytes16-storageowner16-ownersourcel2-source16k-route192k-run512` | 40.754M | 439,912 | Current selected lowest-RSS sibling. |
+| `...routepacked-routebytes16-storageowner16-ownersourcel2-source16k-route192k-run512` | 40.754M | 439,912 | Current selected lowest-RSS balance sibling. |
+| `...routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-source16k-route192k-run512` | 41.131M | 430,692 | FrontCachePacked component lower-RSS candidate/control from the SourceBlockPacked closeout matrix. |
+| `...routepacked-routebytes16-storageowner16-ownersourcel2-sourceblockpacked-source16k-route192k-run512` | 41.070M | 435,304 | SourceBlockPacked component lower-RSS candidate/control. |
+| `...routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source16k-route192k-run512` | 40.837M | 426,084 | Current clean minimum-RSS candidate; lower than either packed component alone. |
 | `...storageowner16-noroutebackptr-dir192k-routepacked-source16k-route192k-run512` | 42.024M | 444,520 | RSS-first evidence/control; lower RSS than selected, but too much throughput cost. |
 
 ## Design Consequence
@@ -71,13 +74,15 @@ owner/shared directory:
 The remaining RSS path is layout / ownership, not blind capacity:
 
 ```text
-1. Keep OwnerSourceSideMeta-L2 as the selected low-RSS sibling.
+1. Keep OwnerSourceSideMeta-L2 as the selected low-RSS balance sibling.
 2. Keep routebytes16 as the comparison control under the selected L2 lane.
-3. Keep storageowner16 as RSS-first evidence/control.
-4. Reopen descriptor-side metadata only with owner-source awareness or a
+3. Keep combined packed as the current clean minimum-RSS sibling/candidate.
+4. Keep FrontCachePacked and SourceBlockPacked as component controls.
+5. Keep storageowner16 as RSS-first evidence/control.
+6. Reopen descriptor-side metadata only with owner-source awareness or a
    broader ownership representation.
-5. Avoid allocator-local side-owner metadata; it already failed cross-owner safety.
-6. Avoid another route/descriptor/directory static trim unless a new
+7. Avoid allocator-local side-owner metadata; it already failed cross-owner safety.
+8. Avoid another route/descriptor/directory static trim unless a new
    representation changes the pressure source.
 ```
 
@@ -145,7 +150,7 @@ OwnerSourceSideMeta-L2 is the first positive RSS-gap mechanism after
 routebytes16. It keeps the StorageOwner16 RSS direction while avoiding the
 scan-based hot read in the behavior lane.
 
-OwnerSourceSideMeta-L2 is promoted to the current Larson lowest-RSS selected
+OwnerSourceSideMeta-L2 is promoted to the current Larson lowest-RSS balance
 sibling after repeat-3 and worker-warmup checks:
   main-warmup repeat-3:
     routebytes16 control = 40.750M / 449128 KB
@@ -161,7 +166,9 @@ Next:
 ```text
 Closeout:
   keep routebytes16 as the clean comparison control
-  use storageowner16 + ownersourcel2 as the selected lowest-RSS Larson sibling
+  use storageowner16 + ownersourcel2 as the selected low-RSS balance sibling
+  use combined FrontCachePacked + SourceBlockPacked as the current
+  minimum-RSS Larson candidate/sibling
   rerun repeat-3 only when touching descriptor/source-block ownership again
 
 Keep as no-go/control:

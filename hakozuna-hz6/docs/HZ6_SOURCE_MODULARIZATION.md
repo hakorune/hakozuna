@@ -50,7 +50,7 @@ row to `48.367M / 449144 KB` in same-run repeat-3. Further RSS work should
 target descriptor table/lifecycle or a broader route/descriptor ownership
 representation, not another static route cut.
 
-SourceBlockPackedFlags-L1 is the current small source-block layout candidate:
+SourceBlockPackedFlags-L1 is the closed small source-block layout candidate:
 
 ```text
 flag:
@@ -65,18 +65,23 @@ diagnostic sizeof check:
   selected routepacked/routebytes16/L2 shape:
     source_block_entry_bytes 144 -> 128
 
-Larson T16 main 10k smoke:
-  47.620M ops/s
-  435768 KB
+Larson T16 main 10k repeat-3:
+  sourceblockpacked alone:
+    41.070M ops/s
+    435304 KB
+  combined with FrontCachePackedMeta-L1:
+    40.837M ops/s
+    426084 KB
 ```
 
 Read:
 
 ```text
-This is a low-risk RSS candidate before a larger source-run side-table split.
+This is a low-risk RSS component before a larger source-run side-table split.
 It does not change source-run slot semantics, route invalid-range ordering, or
-source release ownership. It needs repeat-3 closeout before promotion and
-should be evaluated before combining with FrontCachePackedMeta-L1.
+source release ownership. The isolated repeat-3 closeout is clean, and the
+combined FrontCachePackedMeta-L1 + SourceBlockPackedFlags-L1 lane is now the
+current clean minimum-RSS candidate/sibling.
 ```
 
 Static descriptor-capacity trimming is also effectively at the lower bound for
@@ -154,7 +159,7 @@ Read:
 Static descriptor cuts are exhausted, but descriptor layout still has useful
 RSS headroom. No-backptr is a strong comparison control, routebytes16 is the
 clean route-entry comparison control, and the current selected lowest-RSS
-sibling is OwnerSourceSideMeta-L2 over the routebytes16/routepacked/
+balance sibling is OwnerSourceSideMeta-L2 over the routebytes16/routepacked/
 no-routebackptr/dir192k lane.
 Packing owner slot/generation into 16-bit fields is not useful by itself
 because alignment keeps the entry at 40 bytes. The first side-owner16 behavior
@@ -190,9 +195,11 @@ SourceBlockMetaSlim-L1 moved the previous selected lowest-RSS sibling to
 route192k-run512. RoutePackedMeta-L1 superseded DescriptorNoBackptr and
 SourceBlock no-route-backptr controls, and RoutePackedMeta-L2 routebytes16 is
 the clean route-entry comparison control. OwnerSourceSideMeta-L2 is the current
-selected lowest-RSS balance sibling; FrontCachePackedMeta-L1 is the lower-RSS
-candidate/sibling with a measured throughput tradeoff. StorageOwner16 is
-RSS-first descriptor side metadata evidence/control, not selected.
+selected lowest-RSS balance sibling. FrontCachePackedMeta-L1 and
+SourceBlockPackedFlags-L1 are component lower-RSS controls/candidates, and the
+combined packed lane is the current clean minimum-RSS candidate/sibling.
+StorageOwner16 is RSS-first descriptor side metadata evidence/control, not
+selected.
 Route160k-run512 and route128k-run512 remain no-go controls.
 
 ## Next Refactor Candidate
@@ -277,9 +284,20 @@ storageowner16/ownersourcel2/routebytes16/routepacked/no-routebackptr/dir192k:
   clean selected lowest-RSS balance sibling
 
 frontcachepacked over OwnerSourceSideMeta-L2:
-  44.831M ops/s
-  430708 KB
-  clean lowest-RSS candidate/sibling with a measured throughput tradeoff
+  41.131M ops/s
+  430692 KB
+  clean lower-RSS component candidate/control in the SourceBlockPacked
+  closeout matrix
+
+sourceblockpacked over OwnerSourceSideMeta-L2:
+  41.070M ops/s
+  435304 KB
+  clean lower-RSS SourceBlock metadata component candidate/control
+
+frontcachepacked + sourceblockpacked over OwnerSourceSideMeta-L2:
+  40.837M ops/s
+  426084 KB
+  clean current minimum-RSS candidate/sibling
 ```
 
 Run512 attribution check:
@@ -296,14 +314,17 @@ source_block_payload_bytes   = 24969216
 Read:
 
 ```text
-SourceBlockMetaSlim-L1 succeeded.
-The next layout target is no longer SourceBlock or static route capacity.
+SourceBlockMetaSlim-L1 and SourceBlockPackedFlags-L1 succeeded as bounded
+SourceBlock layout cuts.
+The next static layout target is no longer another SourceBlock flag pack or
+static route-capacity cut.
 Route192k is the clean lower bound under run512; desc158k is the clean static
 descriptor-capacity boundary and desc156k/below fail. Descriptor no-backptr L1
 succeeded as the next layout target by reducing descriptor entry size from 48
 to 40 bytes. RoutePackedMeta-L2 routebytes16 is now the clean route-entry
-comparison control, and OwnerSourceSideMeta-L2 supersedes it as the selected
-low-RSS route/descriptor metadata shape. Descriptor layout L2 dry-run shows owner16 packing is a dead end without
+comparison control, OwnerSourceSideMeta-L2 supersedes it as the selected
+low-RSS route/descriptor metadata shape, and combined packed is the current
+minimum-RSS sibling/candidate. Descriptor layout L2 dry-run shows owner16 packing is a dead end without
 another field move, while ownerless hot descriptor metadata projects a 32-byte
 entry. Side-owner16 L1 reached the 32-byte entry but failed safety because the
 side owner table is allocator-local and does not reliably read foreign

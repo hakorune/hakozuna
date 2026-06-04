@@ -55,11 +55,15 @@ Larson throughput:
 Larson lower RSS:
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k
 
-Larson lowest RSS:
+Larson lowest-RSS balance sibling:
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-source16k-route192k-run512
 
-Larson lowest RSS candidate/sibling:
+Larson lower-RSS component candidates:
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-source16k-route192k-run512
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-sourceblockpacked-source16k-route192k-run512
+
+Larson minimum-RSS candidate:
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source16k-route192k-run512
 ```
 
 The side-owner16 descriptor layout lane is not selected. It is buildable as
@@ -69,9 +73,10 @@ StorageOwner16 is buildable as RSS-first evidence/control: descriptor side
 metadata becomes safety-clean when keyed by descriptor storage ownership, but
 it does not replace routepacked because the RSS gain costs too much throughput.
 OwnerSourceSideMeta-L2 is the selected Larson lowest-RSS balance sibling.
-FrontCachePackedMeta-L1 is lower RSS still, but remains a selected-sibling
-candidate because the direct closeout trades about 3.5% throughput for about
-9 MiB less peak RSS.
+FrontCachePackedMeta-L1 and SourceBlockPackedFlags-L1 are lower-RSS component
+controls/candidates. The combined packed lane is the current clean
+minimum-RSS candidate after repeat-3 (`40.837M / 426084 KB`), but it remains
+a minimum-RSS sibling/candidate rather than a broad throughput promotion.
 
 Do not add new lanes to the selected family unless they pass:
 
@@ -160,8 +165,10 @@ routebytes16 + routepacked + dir192k + both no-backptr lanes is the current
 route-entry comparison control.
 routebytes16 + routepacked + dir192k + both no-backptr lanes + StorageOwner16
 and OwnerSourceSideMeta-L2 is the selected lowest-RSS balance sibling.
-FrontCachePackedMeta-L1 over OwnerSourceSideMeta-L2 is the current
-lowest-RSS candidate/sibling, not the balance selection.
+FrontCachePackedMeta-L1 and SourceBlockPackedFlags-L1 over OwnerSourceSideMeta-L2
+are component lower-RSS controls/candidates.
+FrontCachePackedMeta-L1 + SourceBlockPackedFlags-L1 over OwnerSourceSideMeta-L2
+is the current clean minimum-RSS candidate/sibling, not the balance selection.
 ```
 
 So the next RSS reduction should not be another route-capacity cut or another
@@ -178,8 +185,9 @@ Descriptor layout:
   route-entry comparison control
   guard OwnerSourceSideMeta-L2 over routebytes16/routepacked/no-routebackptr/
   dir192k as the selected low-RSS sibling
-  guard FrontCachePackedMeta-L1 over OwnerSourceSideMeta-L2 as the lowest-RSS
-  candidate/sibling
+  guard FrontCachePackedMeta-L1 and SourceBlockPackedFlags-L1 over
+  OwnerSourceSideMeta-L2 as component lower-RSS controls/candidates
+  guard the combined packed lane as the current minimum-RSS candidate/sibling
   do not promote allocator-local side-owner16
   keep storageowner16 as RSS-first evidence/control unless its lookup cost is
   reduced
