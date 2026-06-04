@@ -19,6 +19,44 @@ remains profile-stabilized; new HZ5 work should not blur the HZ6 contract.
 Latest HZ6 selected-family decision:
 
 ```text
+2026-06-05 next attack after combined packed Pro consult:
+  Larson cross-owner RSS:
+    OwnerSourceSideMeta-L2 remains the selected speed/RSS balance sibling.
+    Combined FrontCachePackedMeta-L1 + SourceBlockPackedFlags-L1 is the
+    selected minimum-RSS sibling/candidate.
+    FrontCachePackedMeta-L1 and SourceBlockPackedFlags-L1 remain component
+    controls/evidence.
+
+  reason:
+    combined packed repeat-3 is clean at 40.837M / 426084 KB.
+    It is lower RSS than either component alone and close to L2 throughput,
+    but it is not a universal default or broad throughput promotion.
+
+  immediate implementation:
+    LarsonRssResidualAudit-L1 diagnostic-only.
+    Do not add another packing lane before measuring the remaining RSS source.
+
+  audit lanes:
+    OwnerSourceSideMeta-L2
+    FrontCachePackedMeta-L1
+    SourceBlockPackedFlags-L1
+    combined packed
+
+  audit target:
+    split residual RSS into route/shared directory, owner-locality index,
+    descriptor hot/cold/side metadata, source-block/source-run metadata,
+    frontcache, transfer, and payload/source retention.
+
+  next behavior only after reading residual:
+    route/shared directory high:
+      RouteDirectorySlim / OwnerLocalityDirectorySlim
+    descriptor side metadata high:
+      OwnerSourceSideMeta compaction or descriptor ownership representation
+    payload/source retention high:
+      source retention/scavenge checkpoint
+    no clear dominant table:
+      stop micro-packing and return to speed/RSS balance work
+
 2026-06-04 next attack after Pro consult:
   mixed_ws / wide_ws:
     next main target is route representation / route probe shape, not

@@ -220,16 +220,117 @@ Use:
   paper/ledger as the minimum-RSS HZ6 Larson full-10k row.
 
 Next:
-  If we continue static RSS work, the next target is no longer frontcache or
-  SourceBlock flags. Move to a larger SourceRun side-table or source_release
-  derivation design only if the safety contract stays clean.
+  Do not add another packing lane yet.
+  First run LarsonRssResidualAudit-L1 to identify the remaining RSS source.
+  Only after that choose route/directory slimming, descriptor side metadata
+  compaction, source retention/scavenge, or a broader ownership redesign.
+```
+
+### 2026-06-05: Pro consult after combined packed lane cleanup
+
+Decision:
+
+```text
+OwnerSourceSideMeta-L2:
+  keep as Larson cross-owner speed/RSS balance sibling
+
+combined packed:
+  keep as selected minimum-RSS sibling/candidate
+  not universal default
+  not broad throughput promotion
+
+FrontCachePackedMeta-L1:
+  keep as component control/evidence
+
+SourceBlockPackedFlags-L1:
+  keep as component control/evidence
+```
+
+Acceptance for combined packed as minimum-RSS paper/profile lane:
+
+```text
+safety:
+  route_invalid = 0
+  route_miss = 0
+  route_register_fail = 0
+  alloc_fail = 0
+  descriptor_exhausted = 0
+  source_block_exhausted = 0
+  remote_free_transfer_fail = 0
+
+performance:
+  throughput >= OwnerSourceSideMeta-L2 - 3%
+  or repeat-3 median stays >= 40M ops/s
+
+RSS:
+  peak <= OwnerSourceSideMeta-L2 - 10 MiB
+  strong if <= OwnerSourceSideMeta-L2 - 13 MiB
+  combined packed remains lower RSS than either component alone
+
+hygiene:
+  diagnostic-only counters/output stay out of non-diagnostic speed lanes
+```
+
+Next high-ROI experiment:
+
+```text
+LarsonRssResidualAudit-L1
+
+Scope:
+  behavior unchanged
+  diagnostic-only
+  compare:
+    OwnerSourceSideMeta-L2
+    FrontCachePackedMeta-L1
+    SourceBlockPackedFlags-L1
+    combined packed
+
+Audit static tables:
+  descriptor hot/cold table bytes
+  route table bytes
+  shared directory bytes
+  owner-locality index bytes
+  source block table bytes
+  source-run metadata bytes
+  frontcache table bytes
+  transfer table bytes
+
+Audit runtime retention:
+  active descriptors
+  local/free/cached descriptors if available
+  active source blocks
+  ref-nonzero/ref-zero source blocks if available
+  payload reserved bytes
+  payload committed estimate
+  route entries active/tombstone if available
+  frontcache total/largest if available
+```
+
+Read:
+
+```text
+If route/shared directory dominates:
+  try RouteDirectorySlim / OwnerLocalityDirectorySlim.
+
+If descriptor side metadata dominates:
+  try OwnerSourceSideMeta compaction or descriptor owner representation
+  redesign.
+
+If source-block table dominates:
+  try SourceBlockSlim-L2 only if the residual is large enough.
+
+If payload/source retention dominates:
+  try source retention / scavenge checkpoint.
+
+If no single table dominates:
+  stop adding micro-packing lanes and return to speed/RSS balance work.
 ```
 
 This file is intentionally the historical experiment ledger. Stable decisions
 should be copied into the selected summary or lane guide instead of being left
 only in this file.
 
-Current attack plan:
+Superseded historical attack plan:
 
 ```text
 Latest candidate:
