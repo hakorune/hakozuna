@@ -70,8 +70,30 @@ Read:
 
 ```text
 Static descriptor cuts can save only about 1.7MB more before warmup failure.
-The next Larson RSS target is descriptor lifecycle / reuse representation, not
-another compile-time descriptor capacity cut.
+Descriptor layout slimming is now the better RSS path. The no-backptr L1
+removes the allocator back-pointer from `Hz6ObjectDescriptor` and passes
+allocator explicitly to descriptor lifecycle helpers:
+
+```text
+baseline run512:
+  descriptor_entry_bytes = 48
+  descriptor_table_bytes = 127926272
+  repeat-3 = 40.498M / 499812 KB
+
+no-backptr run512:
+  descriptor_entry_bytes = 40
+  descriptor_table_bytes = 106954752
+  repeat-3 = 40.710M / 476784 KB
+```
+
+Read:
+
+```text
+Static descriptor cuts are exhausted, but descriptor layout still has useful
+RSS headroom. No-backptr is a strong keep and should be guarded as the selected
+lowest-RSS Larson sibling candidate before the next descriptor representation
+change.
+```
 ```
 
 ### Route Table Is Already Capacity-Bounded
@@ -166,9 +188,12 @@ Read:
 ```text
 SourceBlockMetaSlim-L1 succeeded.
 The next layout target is no longer SourceBlock or static route capacity.
-Route192k is the clean lower bound under run512; desc158k is the clean
-descriptor boundary and desc156k/below fail. Inspect descriptor table/lifecycle
-or route/descriptor ownership representation next.
+Route192k is the clean lower bound under run512; desc158k is the clean static
+descriptor-capacity boundary and desc156k/below fail. Descriptor no-backptr L1
+succeeded as the next layout target by reducing descriptor entry size from 48
+to 40 bytes. Guard no-backptr across the selected family before trying owner
+token compression, descriptor side metadata, or a route/descriptor ownership
+representation rewrite.
 ```
 
 Before the metadata-layout experiment, keep small shared helpers out of the

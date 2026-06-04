@@ -42,7 +42,9 @@ typedef struct Hz6SourceBlock {
 } Hz6SourceBlock;
 
 typedef struct Hz6ObjectDescriptor {
+#if !HZ6_DESCRIPTOR_NO_BACKPTR_L1
   struct Hz6Allocator* allocator;
+#endif
   void* ptr;
 #if !HZ6_THIN_DESCRIPTOR_L1
   void* source_ptr;

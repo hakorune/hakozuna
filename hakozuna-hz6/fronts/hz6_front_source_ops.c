@@ -63,18 +63,18 @@ void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
       ++allocator->stats.source_owned_release;
     }
 #endif
-    hz6_allocator_release_descriptor_source(descriptor);
+    hz6_allocator_release_descriptor_source(allocator, descriptor);
     return NULL;
   }
   if (!hz6_allocator_route_register_exact_reason(
           allocator, ptr, bytes, front_id, class_id, descriptor->generation,
           descriptor, HZ6_ROUTE_REGISTER_REASON_DIRECT_SOURCE)) {
 #if HZ6_DIAGNOSTIC_PROBES
-    if (hz6_allocator_descriptor_has_source_release(descriptor)) {
+    if (hz6_allocator_descriptor_has_source_release(allocator, descriptor)) {
       ++allocator->stats.source_owned_release;
     }
 #endif
-    hz6_allocator_release_descriptor_source(descriptor);
+    hz6_allocator_release_descriptor_source(allocator, descriptor);
     return NULL;
   }
 

@@ -12,7 +12,9 @@ void hz6_allocator_init_state_descriptors(Hz6Allocator* allocator) {
   }
 #endif
   for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
+#if !HZ6_DESCRIPTOR_NO_BACKPTR_L1
     allocator->descriptors[i].allocator = allocator;
+#endif
     allocator->descriptors[i].ptr = NULL;
     allocator->descriptors[i].bytes = 0;
 #if !HZ6_THIN_DESCRIPTOR_L1

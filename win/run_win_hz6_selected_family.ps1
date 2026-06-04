@@ -14,6 +14,7 @@ param(
     [switch]$LarsonSourceRunMetaSlim,
     [switch]$LarsonRun512RouteSlim,
     [switch]$LarsonRun512DescSlim,
+    [switch]$LarsonRun512DescriptorLayout,
     [switch]$LarsonThinDescSourceCap,
     [switch]$ListPresets
 )
@@ -136,6 +137,14 @@ $presetMap = [ordered]@{
         -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc158k-front4k-thindesc-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc156k-front4k-thindesc-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc152k-front4k-thindesc-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc148k-front4k-thindesc-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc144k-front4k-thindesc-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc128k-front4k-thindesc-source16k-route192k-run512") `
         -Note "Descriptor-table capacity re-check after route192k-run512 closed the static route trim path"
 
+    "larson-run512-descriptorlayout" = New-Preset `
+        -Name "larson-run512-descriptorlayout" `
+        -Families @("larson") `
+        -BenchmarkProfiles @("larson_t16_main_10k") `
+        -Hz6Profiles @("speed") `
+        -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-source16k-route192k-run512") `
+        -Note "Descriptor layout L1: remove the per-descriptor allocator back-pointer under the selected run512 lane"
+
     "selected-family-guard" = New-Preset `
         -Name "selected-family-guard" `
         -Families @("mixed_ws") `
@@ -184,6 +193,10 @@ if ($LarsonRun512RouteSlim) {
 
 if ($LarsonRun512DescSlim) {
     [void]$selectedPresetNames.Add("larson-run512-descslim")
+}
+
+if ($LarsonRun512DescriptorLayout) {
+    [void]$selectedPresetNames.Add("larson-run512-descriptorlayout")
 }
 
 if ($LarsonCrossOwnerSelected) {

@@ -20,7 +20,8 @@ For repo cleanup rules and the source modularization backlog, see
 | larger_sizes RSS/speed | `speed` or `rss` | `largerlowrss-front8k-sourcerun-desc8k-route8k` | Best larger_sizes lane; needs larger front retention, not more descriptor-failure cleanup. |
 | Larson cross-owner full 10k | `speed` | `ownerlocalityfast-rsscap-2-desc160k` | Full Larson cross-owner throughput/RSS balance lane; appcap-class throughput with sub-1GB peak RSS. |
 | Larson cross-owner low RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k` | Clean route-capacity control. It keeps the thindesc/source16k shape and trims route capacity to 192K; repeat-3 is safety-clean at about `44.610M / 628844 KB`. |
-| Larson cross-owner lowest RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512` | Current selected lowest-RSS sibling. It keeps route192k and reduces `HZ6_SOURCE_RUN_MAX_SLOTS` to 512; repeat-3 is safety-clean at `48.512M / 499820 KB`. |
+| Larson cross-owner lowest RSS | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-source16k-route192k-run512` | Current selected lowest-RSS sibling candidate. It keeps route192k/run512 and removes the descriptor allocator back-pointer; repeat-3 is safety-clean at `40.710M / 476784 KB`. |
+| Larson cross-owner run512 control | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512` | Previous selected lowest-RSS sibling/control. Repeat-3 is safety-clean at `48.512M / 499820 KB`; same-run no-backptr cuts another about 23 MB. |
 | Larson descriptor boundary | `speed` | `ownerlocalityfast-rsscap-2-desc158k-front4k-thindesc-source16k-route192k-run512` | Clean tiny-RSS sibling/control after run512. Repeat-3 is `40.400M / 498080 KB`; desc156k and below are warmup no-go from `descriptor_exhausted=3` / `alloc_fail=1`. |
 | perf-recovery upper-bound | `strict` / `speed` / `rss` | `ownerlocalityfast-appcap` | Upper-bound / completion control only; too much RSS for default use. |
 
@@ -96,6 +97,13 @@ separate by output subdirectory.
   -Runs 1 `
   -TimeoutSeconds 300 `
   -DiagnosticHz6Probes `
+  -ContinueOnFailure
+
+# Descriptor-layout re-check after run512; no-backptr L1 versus baseline.
+.\win\run_win_hz6_selected_family.ps1 `
+  -LarsonRun512DescriptorLayout `
+  -Runs 3 `
+  -TimeoutSeconds 300 `
   -ContinueOnFailure
 ```
 
@@ -176,6 +184,17 @@ larson-run512-descslim:
     1.7MB median peak versus desc160k; desc156k and below fail warmup with
     descriptor exhaustion. Do not continue static descriptor-capacity trimming
     under the current representation.
+
+larson-run512-descriptorlayout:
+  larson_t16_main_10k
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-source16k-route192k-run512
+  status:
+    descriptor layout boundary. No-backptr removes the allocator pointer from
+    `Hz6ObjectDescriptor` and requires descriptor lifecycle helpers to receive
+    allocator explicitly. Repeat-3 is clean at `40.710M / 476784 KB` versus the
+    run512 baseline `40.498M / 499812 KB`; keep as the selected lowest-RSS
+    sibling candidate and guard before broader default promotion.
 ```
 
 ```text
@@ -230,6 +249,8 @@ Windows profile family:
     selected lower-RSS sibling:
       ownerlocalityfast-rsscap-2-desc160k-front4k
     selected low-RSS sibling:
+      ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-source16k-route192k-run512
+    previous run512 control:
       ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512
     descriptor-capacity boundary control:
       ownerlocalityfast-rsscap-2-desc158k-front4k-thindesc-source16k-route192k-run512

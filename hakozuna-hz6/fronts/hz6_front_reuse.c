@@ -94,9 +94,9 @@ static void* hz6_front_materialize_descriptorless_entry(
 #endif
 #endif
 #if HZ6_DESCRIPTOR_MATERIALIZE_RESERVE_L1
-    hz6_allocator_reserve_descriptor_keep_source_slot(descriptor);
+    hz6_allocator_reserve_descriptor_keep_source_slot(allocator, descriptor);
 #else
-    hz6_allocator_detach_descriptor_keep_source_slot(descriptor);
+    hz6_allocator_detach_descriptor_keep_source_slot(allocator, descriptor);
 #endif
     return NULL;
   }

@@ -2,14 +2,15 @@
 
 #if HZ6_THIN_DESCRIPTOR_L1
 static Hz6DescriptorColdSource* hz6_allocator_descriptor_cold_record(
+    const Hz6Allocator* allocator,
     const Hz6ObjectDescriptor* descriptor) {
-  if (!descriptor || !descriptor->allocator ||
+  if (!allocator || !descriptor ||
       descriptor->cold_index == UINT32_MAX ||
       descriptor->cold_index >= HZ6_DESCRIPTOR_COLD_SOURCE_CAPACITY) {
     return NULL;
   }
   Hz6DescriptorColdSource* cold =
-      &descriptor->allocator->descriptor_cold_sources[descriptor->cold_index];
+      (Hz6DescriptorColdSource*)&allocator->descriptor_cold_sources[descriptor->cold_index];
   if (!cold->active || cold->generation != descriptor->generation) {
     return NULL;
   }
@@ -17,9 +18,10 @@ static Hz6DescriptorColdSource* hz6_allocator_descriptor_cold_record(
 }
 
 static void hz6_allocator_descriptor_cold_release(
+    Hz6Allocator* allocator,
     Hz6ObjectDescriptor* descriptor) {
   Hz6DescriptorColdSource* cold =
-      hz6_allocator_descriptor_cold_record(descriptor);
+      hz6_allocator_descriptor_cold_record(allocator, descriptor);
   if (!cold) {
     if (descriptor) {
       descriptor->cold_index = UINT32_MAX;
@@ -32,15 +34,15 @@ static void hz6_allocator_descriptor_cold_release(
   cold->source_bytes = 0;
   cold->generation = 0;
   cold->source_kind = HZ6_SOURCE_NONE;
-  if (descriptor->allocator &&
-      descriptor->allocator->descriptor_cold_source_current != 0) {
-    --descriptor->allocator->descriptor_cold_source_current;
+  if (allocator && allocator->descriptor_cold_source_current != 0) {
+    --allocator->descriptor_cold_source_current;
   }
   descriptor->cold_index = UINT32_MAX;
 }
 #endif
 
 int hz6_allocator_descriptor_source_meta(
+    const Hz6Allocator* allocator,
     const Hz6ObjectDescriptor* descriptor,
     void** source_ptr,
     size_t* source_bytes,
@@ -62,7 +64,7 @@ int hz6_allocator_descriptor_source_meta(
   }
 #if HZ6_THIN_DESCRIPTOR_L1
   Hz6DescriptorColdSource* cold =
-      hz6_allocator_descriptor_cold_record(descriptor);
+      hz6_allocator_descriptor_cold_record(allocator, descriptor);
   if (!cold) {
     return 0;
   }
@@ -93,14 +95,16 @@ int hz6_allocator_descriptor_source_meta(
 }
 
 int hz6_allocator_descriptor_has_source_release(
+    const Hz6Allocator* allocator,
     const Hz6ObjectDescriptor* descriptor) {
   Hz6SourceReleaseFn release = NULL;
-  return hz6_allocator_descriptor_source_meta(descriptor, NULL, NULL,
+  return hz6_allocator_descriptor_source_meta(allocator, descriptor, NULL, NULL,
                                               &release) &&
          release != NULL;
 }
 
 void hz6_allocator_reset_descriptor_available(
+    Hz6Allocator* allocator,
     Hz6ObjectDescriptor* descriptor) {
   if (!descriptor) {
     return;
@@ -109,10 +113,8 @@ void hz6_allocator_reset_descriptor_available(
   int was_available =
       !descriptor->ptr && descriptor->state == HZ6_STATE_DEAD;
 #endif
-  struct Hz6Allocator* allocator = descriptor->allocator;
-
 #if HZ6_THIN_DESCRIPTOR_L1
-  hz6_allocator_descriptor_cold_release(descriptor);
+  hz6_allocator_descriptor_cold_release(allocator, descriptor);
 #endif
   descriptor->ptr = NULL;
   descriptor->bytes = 0;
@@ -129,7 +131,9 @@ void hz6_allocator_reset_descriptor_available(
   descriptor->owner = (Hz6OwnerToken){0};
   descriptor->generation = 0;
   descriptor->state = HZ6_STATE_DEAD;
+#if !HZ6_DESCRIPTOR_NO_BACKPTR_L1
   descriptor->allocator = allocator;
+#endif
 
 #if HZ6_DESCRIPTOR_AVAIL_COUNT_L1
   if (!was_available && allocator &&
@@ -140,6 +144,7 @@ void hz6_allocator_reset_descriptor_available(
 }
 
 int hz6_allocator_release_descriptor_source(
+    Hz6Allocator* allocator,
     Hz6ObjectDescriptor* descriptor) {
   if (!descriptor || !descriptor->ptr) {
     return 0;
@@ -155,7 +160,8 @@ int hz6_allocator_release_descriptor_source(
     size_t source_bytes = 0;
     Hz6SourceReleaseFn source_release = NULL;
     if (!hz6_allocator_descriptor_source_meta(
-            descriptor, &source_ptr, &source_bytes, &source_release)) {
+            allocator, descriptor, &source_ptr, &source_bytes,
+            &source_release)) {
       return 0;
     }
     if (source_release) {
@@ -165,27 +171,28 @@ int hz6_allocator_release_descriptor_source(
     }
   }
 
-  hz6_allocator_reset_descriptor_available(descriptor);
+  hz6_allocator_reset_descriptor_available(allocator, descriptor);
   return released;
 }
 
 int hz6_allocator_detach_descriptor_keep_source_slot(
+    Hz6Allocator* allocator,
     Hz6ObjectDescriptor* descriptor) {
   if (!descriptor || !descriptor->ptr || !descriptor->source_block) {
     return 0;
   }
 
-  hz6_allocator_reset_descriptor_available(descriptor);
+  hz6_allocator_reset_descriptor_available(allocator, descriptor);
   return 1;
 }
 
 int hz6_allocator_reserve_descriptor_keep_source_slot(
+    Hz6Allocator* allocator,
     Hz6ObjectDescriptor* descriptor) {
   if (!descriptor || !descriptor->ptr || !descriptor->source_block) {
     return 0;
   }
 
-  struct Hz6Allocator* allocator = descriptor->allocator;
   descriptor->ptr = NULL;
   descriptor->bytes = 0;
 #if !HZ6_THIN_DESCRIPTOR_L1
@@ -201,6 +208,8 @@ int hz6_allocator_reserve_descriptor_keep_source_slot(
   descriptor->owner = (Hz6OwnerToken){0};
   descriptor->generation = 0;
   descriptor->state = HZ6_STATE_DESCRIPTOR_RESERVED;
+#if !HZ6_DESCRIPTOR_NO_BACKPTR_L1
   descriptor->allocator = allocator;
+#endif
   return 1;
 }

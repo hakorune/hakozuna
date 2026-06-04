@@ -90,7 +90,7 @@ int hz6_allocator_prepare_descriptor(
       !hz6_allocator_descriptor_cold_alloc(
           allocator, descriptor, source_ptr ? source_ptr : ptr,
           actual_source_bytes, source_kind, source_release)) {
-    hz6_allocator_reset_descriptor_available(descriptor);
+    hz6_allocator_reset_descriptor_available(allocator, descriptor);
     return 0;
   }
 #endif

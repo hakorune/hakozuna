@@ -125,14 +125,36 @@ next HZ6 attack:
         warmup no-go
         descriptor_exhausted = 3
         alloc_fail = 1
+    descriptor layout under run512:
+      no-backptr L1 removes the per-descriptor allocator back-pointer and
+      passes allocator explicitly through descriptor lifecycle helpers.
+      diagnostic:
+        descriptor_entry_bytes = 48 -> 40
+        descriptor_table_bytes = 127926272 -> 106954752
+        descriptor_thin_hot_entry_bytes = 40
+        descriptor_thin_hot_savings_bytes = 20971520
+      repeat-3:
+        baseline run512:
+          40.498M / 499812 KB, safety clean
+        no-backptr run512:
+          40.710M / 476784 KB, safety clean
+      read:
+        strong keep. This saves about 23 MB peak RSS versus the run512
+        baseline without hurting throughput. Treat no-backptr run512 as the
+        new selected Larson lowest-RSS sibling candidate; keep desc158k as a
+        tiny static-capacity control, not the main direction.
 
   next:
     SourceBlock is no longer the dominant table after run512.
     Route is capacity-bounded under run512; route192k remains the clean lower
     bound. Do not trim route capacity again without a new route representation.
     Static descriptor capacity can be trimmed only to desc158k under the current
-    lifecycle, and the win is small. The next Larson RSS target is a descriptor
-    lifecycle/reuse representation change, not another static capacity cut.
+    lifecycle, and the win is small. Descriptor no-backptr L1 is the first
+    successful descriptor layout change: it converts the allocator back-pointer
+    into explicit helper context and cuts the descriptor table by about 20 MiB.
+    The next Larson RSS target should be a guarded selected-family promotion of
+    no-backptr, or a follow-up descriptor representation change; do not return
+    to blind static descriptor/route capacity cuts.
     same-run thindesc16k baseline:
       40.267M / 665700 KB
     route160k/route128k and route160k-run512/route128k-run512:

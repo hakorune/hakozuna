@@ -58,7 +58,8 @@ int main(void) {
   source_descriptor.state = HZ6_STATE_LOCAL_FREE;
   g_expected_release_source_ptr = source_block;
   g_expected_release_source_bytes = sizeof(source_block);
-  if (!expect(hz6_allocator_release_descriptor_source(&source_descriptor),
+  if (!expect(hz6_allocator_release_descriptor_source(&allocator,
+                                                      &source_descriptor),
               "descriptor release uses source pointer") ||
       !expect(g_source_block_release_count == 1,
               "descriptor direct release count") ||
@@ -253,7 +254,7 @@ int main(void) {
   }
   hz6_allocator_route_unregister_exact(&midpage_block_allocator, block_slot2);
   if (!expect(hz6_allocator_release_descriptor_source(
-                  block_slot2_descriptor),
+                  &midpage_block_allocator, block_slot2_descriptor),
               "source block extra slot release") ||
       !expect(block->ref_count == 2,
               "source block extra slot release decremented") ||
@@ -263,7 +264,7 @@ int main(void) {
   }
   hz6_allocator_route_unregister_exact(&midpage_block_allocator, block_slot0);
   if (!expect(hz6_allocator_release_descriptor_source(
-                  block_slot0_descriptor),
+                  &midpage_block_allocator, block_slot0_descriptor),
               "source block first release") ||
       !expect(block->active, "source block retained after first release") ||
       !expect(block->ref_count == 1, "source block decremented") ||
@@ -273,7 +274,7 @@ int main(void) {
   }
   hz6_allocator_route_unregister_exact(&midpage_block_allocator, block_slot1);
   if (!expect(hz6_allocator_release_descriptor_source(
-                  block_slot1_descriptor),
+                  &midpage_block_allocator, block_slot1_descriptor),
               "source block final release") ||
       !expect(!block->active, "source block inactive after final release") ||
       !expect(g_source_block_release_count == 1,

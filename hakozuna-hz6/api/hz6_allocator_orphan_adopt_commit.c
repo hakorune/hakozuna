@@ -22,7 +22,7 @@ int hz6_allocator_orphan_adopt_commit(
                                         adopted_descriptor->generation,
                                         adopted_descriptor,
                                         &adopt_register_probes)) {
-    hz6_allocator_reset_descriptor_available(adopted_descriptor);
+    hz6_allocator_reset_descriptor_available(adopter, adopted_descriptor);
     return 0;
   }
   adopter->stats.route_register_probe_total += adopt_register_probes;
@@ -43,7 +43,7 @@ int hz6_allocator_orphan_adopt_commit(
                                         adopted_descriptor->generation,
                                         adopted_descriptor,
                                         NULL)) {
-    hz6_allocator_reset_descriptor_available(adopted_descriptor);
+    hz6_allocator_reset_descriptor_available(adopter, adopted_descriptor);
     return 0;
   }
 #endif
@@ -59,11 +59,11 @@ int hz6_allocator_orphan_adopt_commit(
   entry.generation = adopted_descriptor->generation;
   if (!hz6_allocator_frontcache_push(adopter, entry.class_id, entry)) {
     hz6_allocator_route_unregister_exact(adopter, ptr);
-    hz6_allocator_reset_descriptor_available(adopted_descriptor);
+    hz6_allocator_reset_descriptor_available(adopter, adopted_descriptor);
     return 0;
   }
 
   hz6_allocator_route_unregister_exact(source, ptr);
-  hz6_allocator_reset_descriptor_available(source_descriptor);
+  hz6_allocator_reset_descriptor_available(source, source_descriptor);
   return 1;
 }

@@ -4,6 +4,7 @@
 #include "hz6_allocator.h"
 
 static inline size_t hz6_allocator_scavenge_descriptor_cost(
+    const Hz6Allocator* allocator,
     const Hz6ObjectDescriptor* descriptor) {
   if (!descriptor) {
     return 0;
@@ -12,8 +13,8 @@ static inline size_t hz6_allocator_scavenge_descriptor_cost(
     return descriptor->bytes;
   }
   size_t source_bytes = 0;
-  if (hz6_allocator_descriptor_source_meta(descriptor, NULL, &source_bytes,
-                                           NULL) &&
+  if (hz6_allocator_descriptor_source_meta(allocator, descriptor, NULL,
+                                           &source_bytes, NULL) &&
       source_bytes != 0) {
     return source_bytes;
   }

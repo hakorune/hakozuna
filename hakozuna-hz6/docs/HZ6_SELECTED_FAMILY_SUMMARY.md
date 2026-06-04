@@ -20,7 +20,7 @@ For cleanup rules and the next source modularization target, see
 | mixed_ws larger_sizes rss | `speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k` | 27.178M | 71,012 | clean selected |
 | Larson T16 full 10k throughput/RSS | `speed + ownerlocalityfast-rsscap-2-desc160k` | 44.754M | 808,488 | clean selected |
 | Larson T16 full 10k lower RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k` | 45.092M | 716,324 | clean selected sibling |
-| Larson T16 full 10k lowest RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512` | 48.512M | 499,820 | clean selected sibling |
+| Larson T16 full 10k lowest RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-source16k-route192k-run512` | 40.710M | 476,784 | clean selected sibling candidate |
 
 Source:
 - `docs/benchmarks/windows/paper/hz6_selected_family/selected-family-desc17-refresh/`
@@ -29,6 +29,8 @@ Source:
 - `docs/benchmarks/windows/paper/hz6_selected_family/larson-lowest-rss-default-check/`
 - `docs/benchmarks/windows/paper/hz6_selected_family/larson-run512-routeslim-l1/`
 - `docs/benchmarks/windows/paper/hz6_selected_family/larson-run512-desc158-repeat/`
+- `docs/benchmarks/windows/paper/hz6_selected_family/larson-run512-descriptorlayout-l1d/`
+- `docs/benchmarks/windows/paper/hz6_selected_family/larson-run512-nobackptr-repeat/`
 
 ## Evidence Rows
 
@@ -41,6 +43,7 @@ Source:
 | Larson route boundary | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route160k/128k`, plus `route160k-run512` / `route128k-run512` | No-go: route table saturates during full-10k warmup. Under run512, route160k and route128k still hit `route_register_fail=3` / `alloc_fail=1`, so route192k is the current clean route lower bound. |
 | Larson source-run metadata slim | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source16k-route192k-run512` | Selected lowest-RSS sibling: repeat-3 clean at `48.512M / 499820 KB`. Run1024 is clean control at `44.396M / 518256 KB`. |
 | Larson descriptor boundary | `ownerlocalityfast-rsscap-2-desc158k-front4k-thindesc-source16k-route192k-run512` | Clean tiny-RSS sibling: repeat-3 `40.400M / 498080 KB`. Desc156k and below are no-go from `descriptor_exhausted=3` / `alloc_fail=1`, so static descriptor capacity cuts are effectively closed. |
+| Larson descriptor layout | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-source16k-route192k-run512` | Descriptor no-backptr L1 removes the per-descriptor allocator pointer and passes allocator explicitly through lifecycle helpers. Repeat-3 clean at `40.710M / 476784 KB`; diagnostic entry size is `48 -> 40` bytes and descriptor table bytes are `127926272 -> 106954752`. Strong keep / selected lowest-RSS sibling candidate. |
 | Larson lowest-RSS preset check | `larson-cross-owner-lowest-rss` | Default check includes front4k, route192k, and route192k-run512. Run512 stayed clean at `40.688M / 499812 KB` in the one-run confirmation. |
 | Larson over-retention control | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k` | Passes but over-retains RSS; no promotion. |
 
@@ -64,10 +67,14 @@ HZ6 is now a profile-family allocator:
   Larson cross-owner:
     full-10k now has clean selected rows,
     and route192k-run512 cuts the lowest-RSS sibling to about 500 MB.
+    Descriptor no-backptr L1 cuts it further to about 477 MB by removing the
+    allocator back-pointer from the hot descriptor shape.
     The route table cannot be statically trimmed below route192k under the
     current representation; route160k-run512 and route128k-run512 fail warmup.
     Static descriptor capacity can be trimmed only to desc158k, which saves
     about 1.7 MB in the repeat-3 median; desc156k and below fail warmup.
+    Therefore the current RSS direction is descriptor layout/lifecycle, not
+    more static capacity cuts.
     RSS is still higher than system/mimalloc/tcmalloc references, but the
     metadata table gap is now much smaller than the previous route192k row.
 ```
@@ -83,8 +90,8 @@ HZ6 is now a profile-family allocator:
    A. wide_ws throughput:
       keep desc17 safety/RSS and look for hot-path/profile improvements.
    B. Larson RSS:
-      continue metadata layout slimming beyond the run512 compile-time bitmap
-      shrink only if another table dominates. Static route trimming is closed
-      unless the route representation changes; static descriptor-cap trimming
-      is nearly exhausted at desc158k.
+      guard and promote descriptor no-backptr before trying another descriptor
+      representation change. Static route trimming is closed unless the route
+      representation changes; static descriptor-cap trimming is nearly
+      exhausted at desc158k.
 ```

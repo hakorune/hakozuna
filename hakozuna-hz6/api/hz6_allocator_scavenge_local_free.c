@@ -17,7 +17,8 @@ size_t hz6_allocator_scavenge_local_free(Hz6Allocator* allocator,
       continue;
     }
 
-    size_t bytes = hz6_allocator_scavenge_descriptor_cost(descriptor);
+    size_t bytes = hz6_allocator_scavenge_descriptor_cost(allocator,
+                                                          descriptor);
     if (!hz6_scavenge_can_release(&budget, bytes)) {
       continue;
     }
@@ -33,11 +34,11 @@ size_t hz6_allocator_scavenge_local_free(Hz6Allocator* allocator,
 
     hz6_allocator_route_unregister_exact(allocator, descriptor->ptr);
 #if HZ6_DIAGNOSTIC_PROBES
-    if (hz6_allocator_descriptor_has_source_release(descriptor)) {
+    if (hz6_allocator_descriptor_has_source_release(allocator, descriptor)) {
       ++allocator->stats.source_owned_release;
     }
 #endif
-    hz6_allocator_release_descriptor_source(descriptor);
+    hz6_allocator_release_descriptor_source(allocator, descriptor);
     hz6_scavenge_account_release(&budget, bytes);
   }
 

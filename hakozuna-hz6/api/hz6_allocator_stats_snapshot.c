@@ -3,13 +3,13 @@
 #if HZ6_DIAGNOSTIC_PROBES
 typedef struct Hz6ThinDescriptorHotCandidate {
   void* ptr;
-  size_t bytes;
   Hz6SourceBlock* source_block;
   Hz6OwnerToken owner;
+  uint32_t bytes;
   uint32_t generation;
-  Hz6ObjectState state;
   uint16_t class_id;
-  uint16_t flags;
+  uint8_t state;
+  uint8_t flags;
 } Hz6ThinDescriptorHotCandidate;
 
 typedef struct Hz6ThinDescriptorColdCandidate {

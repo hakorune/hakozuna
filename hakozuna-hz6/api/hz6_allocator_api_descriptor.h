@@ -11,6 +11,7 @@ Hz6ObjectDescriptor* hz6_allocator_find_free_descriptor(
     Hz6Allocator* allocator);
 
 void hz6_allocator_reset_descriptor_available(
+    Hz6Allocator* allocator,
     Hz6ObjectDescriptor* descriptor);
 
 int hz6_allocator_activate_descriptor(Hz6ObjectDescriptor* descriptor,
@@ -42,21 +43,26 @@ int hz6_allocator_remote_free_active_descriptor(
     void* ptr);
 
 int hz6_allocator_release_descriptor_source(
+    Hz6Allocator* allocator,
     Hz6ObjectDescriptor* descriptor);
 
 int hz6_allocator_descriptor_source_meta(
+    const Hz6Allocator* allocator,
     const Hz6ObjectDescriptor* descriptor,
     void** source_ptr,
     size_t* source_bytes,
     Hz6SourceReleaseFn* source_release);
 
 int hz6_allocator_descriptor_has_source_release(
+    const Hz6Allocator* allocator,
     const Hz6ObjectDescriptor* descriptor);
 
 int hz6_allocator_detach_descriptor_keep_source_slot(
+    Hz6Allocator* allocator,
     Hz6ObjectDescriptor* descriptor);
 
 int hz6_allocator_reserve_descriptor_keep_source_slot(
+    Hz6Allocator* allocator,
     Hz6ObjectDescriptor* descriptor);
 
 void hz6_allocator_note_descriptor_frontcache_reuse_dryrun(
