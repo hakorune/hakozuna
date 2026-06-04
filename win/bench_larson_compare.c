@@ -819,6 +819,29 @@ int main(int argc, char** argv) {
             tds[t].hz6_stats_after.metadata_route_slim_table_bytes;
         hz6_stats.metadata_route_slim_savings_bytes +=
             tds[t].hz6_stats_after.metadata_route_slim_savings_bytes;
+        hz6_stats.metadata_route_bytes16_table_bytes +=
+            tds[t].hz6_stats_after.metadata_route_bytes16_table_bytes;
+        hz6_stats.metadata_route_bytes16_savings_bytes +=
+            tds[t].hz6_stats_after.metadata_route_bytes16_savings_bytes;
+        hz6_stats.metadata_route_bytes16_active_checked +=
+            tds[t].hz6_stats_after.metadata_route_bytes16_active_checked;
+        hz6_stats.metadata_route_bytes16_overflow +=
+            tds[t].hz6_stats_after.metadata_route_bytes16_overflow;
+        if (tds[t].hz6_stats_after.metadata_route_bytes16_max >
+            hz6_stats.metadata_route_bytes16_max) {
+            hz6_stats.metadata_route_bytes16_max =
+                tds[t].hz6_stats_after.metadata_route_bytes16_max;
+        }
+        hz6_stats.metadata_route_bytes16_minus1_overflow +=
+            tds[t].hz6_stats_after.metadata_route_bytes16_minus1_overflow;
+        hz6_stats.metadata_route_bytes16_minus1_zero +=
+            tds[t].hz6_stats_after.metadata_route_bytes16_minus1_zero;
+        if (tds[t].hz6_stats_after.metadata_route_bytes16_minus1_max_stored >
+            hz6_stats.metadata_route_bytes16_minus1_max_stored) {
+            hz6_stats.metadata_route_bytes16_minus1_max_stored =
+                tds[t].hz6_stats_after
+                    .metadata_route_bytes16_minus1_max_stored;
+        }
         if (tds[t].hz6_stats_after.metadata_source_block_entry_bytes >
             hz6_stats.metadata_source_block_entry_bytes) {
             hz6_stats.metadata_source_block_entry_bytes =
@@ -1142,6 +1165,14 @@ int main(int argc, char** argv) {
            "route_slim_entry_bytes=%zu "
            "route_slim_table_bytes=%zu "
            "route_slim_savings_bytes=%zu "
+           "route_bytes16_table_bytes=%zu "
+           "route_bytes16_savings_bytes=%zu "
+           "route_bytes16_active_checked=%zu "
+           "route_bytes16_overflow=%zu "
+           "route_bytes16_max=%zu "
+           "route_bytes16_minus1_overflow=%zu "
+           "route_bytes16_minus1_zero=%zu "
+           "route_bytes16_minus1_max_stored=%zu "
            "source_block_entry_bytes=%zu "
            "source_block_slim_entry_bytes=%zu "
            "source_block_slim_table_bytes=%zu "
@@ -1164,6 +1195,14 @@ int main(int argc, char** argv) {
            hz6_stats.metadata_route_slim_entry_bytes,
            hz6_stats.metadata_route_slim_table_bytes,
            hz6_stats.metadata_route_slim_savings_bytes,
+           hz6_stats.metadata_route_bytes16_table_bytes,
+           hz6_stats.metadata_route_bytes16_savings_bytes,
+           hz6_stats.metadata_route_bytes16_active_checked,
+           hz6_stats.metadata_route_bytes16_overflow,
+           hz6_stats.metadata_route_bytes16_max,
+           hz6_stats.metadata_route_bytes16_minus1_overflow,
+           hz6_stats.metadata_route_bytes16_minus1_zero,
+           hz6_stats.metadata_route_bytes16_minus1_max_stored,
            hz6_stats.metadata_source_block_entry_bytes,
            hz6_stats.metadata_source_block_slim_entry_bytes,
            hz6_stats.metadata_source_block_slim_table_bytes,

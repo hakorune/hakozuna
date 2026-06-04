@@ -395,6 +395,14 @@ static void print_stats(const Hz6Allocator* allocator) {
          "route_slim_entry_bytes=%zu "
          "route_slim_table_bytes=%zu "
          "route_slim_savings_bytes=%zu "
+         "route_bytes16_table_bytes=%zu "
+         "route_bytes16_savings_bytes=%zu "
+         "route_bytes16_active_checked=%zu "
+         "route_bytes16_overflow=%zu "
+         "route_bytes16_max=%zu "
+         "route_bytes16_minus1_overflow=%zu "
+         "route_bytes16_minus1_zero=%zu "
+         "route_bytes16_minus1_max_stored=%zu "
          "source_block_entry_bytes=%zu "
          "source_block_slim_entry_bytes=%zu "
          "source_block_slim_table_bytes=%zu "
@@ -411,6 +419,14 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.metadata_route_slim_entry_bytes,
          stats.metadata_route_slim_table_bytes,
          stats.metadata_route_slim_savings_bytes,
+         stats.metadata_route_bytes16_table_bytes,
+         stats.metadata_route_bytes16_savings_bytes,
+         stats.metadata_route_bytes16_active_checked,
+         stats.metadata_route_bytes16_overflow,
+         stats.metadata_route_bytes16_max,
+         stats.metadata_route_bytes16_minus1_overflow,
+         stats.metadata_route_bytes16_minus1_zero,
+         stats.metadata_route_bytes16_minus1_max_stored,
          stats.metadata_source_block_entry_bytes,
          stats.metadata_source_block_slim_entry_bytes,
          stats.metadata_source_block_slim_table_bytes,

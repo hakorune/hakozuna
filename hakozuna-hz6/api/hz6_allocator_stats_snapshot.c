@@ -235,6 +235,55 @@ static void hz6_stats_snapshot_memory_attribution(
   snapshot->metadata_route_slim_savings_bytes =
       hz6_sub_saturating_size(snapshot->memory_route_table_bytes,
                               snapshot->metadata_route_slim_table_bytes);
+#if HZ6_ROUTE_PACKED_META_L1
+  snapshot->metadata_route_bytes16_table_bytes =
+      sizeof(uint16_t) * HZ6_ROUTE_TABLE_CAPACITY;
+  snapshot->metadata_route_bytes16_savings_bytes =
+      hz6_sub_saturating_size(sizeof(allocator->route_bytes),
+                              snapshot->metadata_route_bytes16_table_bytes);
+
+  size_t route_bytes16_active_checked = 0;
+  size_t route_bytes16_overflow = 0;
+  size_t route_bytes16_max = 0;
+  size_t route_bytes16_minus1_overflow = 0;
+  size_t route_bytes16_minus1_zero = 0;
+  size_t route_bytes16_minus1_max_stored = 0;
+  for (size_t i = 0; i < HZ6_ROUTE_TABLE_CAPACITY; ++i) {
+    const Hz6RouteEntry* entry = &allocator->route_entries[i];
+    if (!hz6_route_entry_active(entry)) {
+      continue;
+    }
+
+    const uint32_t bytes =
+        hz6_route_entry_bytes(&allocator->route_backend.exact_table, i);
+    ++route_bytes16_active_checked;
+    if (bytes > UINT16_MAX) {
+      ++route_bytes16_overflow;
+    }
+    if ((size_t)bytes > route_bytes16_max) {
+      route_bytes16_max = (size_t)bytes;
+    }
+    if (bytes == 0) {
+      ++route_bytes16_minus1_zero;
+    } else if (bytes > ((uint32_t)UINT16_MAX + 1u)) {
+      ++route_bytes16_minus1_overflow;
+    } else {
+      const size_t stored = (size_t)bytes - 1u;
+      if (stored > route_bytes16_minus1_max_stored) {
+        route_bytes16_minus1_max_stored = stored;
+      }
+    }
+  }
+  snapshot->metadata_route_bytes16_active_checked =
+      route_bytes16_active_checked;
+  snapshot->metadata_route_bytes16_overflow = route_bytes16_overflow;
+  snapshot->metadata_route_bytes16_max = route_bytes16_max;
+  snapshot->metadata_route_bytes16_minus1_overflow =
+      route_bytes16_minus1_overflow;
+  snapshot->metadata_route_bytes16_minus1_zero = route_bytes16_minus1_zero;
+  snapshot->metadata_route_bytes16_minus1_max_stored =
+      route_bytes16_minus1_max_stored;
+#endif
 
   snapshot->metadata_source_block_entry_bytes = sizeof(Hz6SourceBlock);
   snapshot->metadata_source_block_slim_entry_bytes =

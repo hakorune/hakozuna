@@ -72,7 +72,8 @@ void hz6_route_table_init(Hz6RouteTable* table,
 }
 
 #if HZ6_ROUTE_PACKED_META_L1
-void hz6_route_table_attach_bytes(Hz6RouteTable* table, uint32_t* bytes) {
+void hz6_route_table_attach_bytes(Hz6RouteTable* table,
+                                  Hz6RouteBytesStorage* bytes) {
   if (!table) {
     return;
   }

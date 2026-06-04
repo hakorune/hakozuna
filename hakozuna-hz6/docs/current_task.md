@@ -21,6 +21,86 @@ This file is intentionally the historical experiment ledger. Stable decisions
 should be copied into the selected summary or lane guide instead of being left
 only in this file.
 
+Current attack plan:
+
+```text
+Selected lane to preserve:
+  routepacked/no-routebackptr/dir192k
+    47.616M ops/s
+    456048 KB peak
+
+Recent RSS-first evidence:
+  storageowner16/routepacked/no-routebackptr/dir192k
+    42.024M ops/s
+    444520 KB peak
+    safety clean
+    not selected because throughput drops about 12%
+
+Next:
+  RoutePackedMeta-L2 routebytes16 repeat-3.
+
+Goal:
+  keep the selected routepacked hot path and measure whether remaining route
+  side metadata can be compressed without moving descriptor ownership or
+  reintroducing storage-owner lookup cost.
+
+First L2 dry-run:
+  route_bytes side array:
+    current = uint32_t[route_capacity]
+    projected = uint16_t[route_capacity] if all registered route bytes fit
+                UINT16_MAX, otherwise count overflow.
+
+Observation:
+  Larson T=16 main-warmup 1k diagnostic, selected routepacked lane:
+    route_bytes16_table_bytes = 6291456
+    route_bytes16_savings_bytes = 6291456
+    route_bytes16_active_checked = 10499
+    route_bytes16_overflow = 147
+    route_bytes16_max = 65536
+
+  Raw uint16_t route_bytes is no-go because 64KiB source-block invalid
+  envelopes overflow UINT16_MAX by one.
+
+  Biased uint16_t route_bytes_minus1 is the next behavior candidate:
+    route_bytes16_minus1_overflow = 0
+    route_bytes16_minus1_zero = 0
+    route_bytes16_minus1_max_stored = 65535
+
+Behavior lane:
+  ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-
+  noroutebackptr-dir192k-routepacked-routebytes16-source16k-route192k-run512
+
+  Mechanism:
+    HZ6_ROUTE_BYTES16_MINUS1_L2 stores route bytes as uint16_t(bytes - 1)
+    behind the existing route accessor boundary.
+
+  Larson T=16 main-warmup full 10k A/B, runs=1:
+    routepacked:
+      44.140M ops/s
+      456040 KB peak
+      safety clean
+    routepacked-routebytes16:
+      44.392M ops/s
+      449132 KB peak
+      safety clean
+
+  Read:
+    candidate-control / repeat-3 next.
+    Same-run signal is slightly faster and about 6.9 MiB lower RSS, but keep
+    RoutePackedMeta-L1 selected until routebytes16 passes repeat-3.
+
+Acceptance to proceed to behavior:
+  achieved for L2 implementation; next acceptance is repeat-3 promotion:
+    routebytes16 safety clean
+    median RSS below RoutePackedMeta-L1
+    median throughput >= RoutePackedMeta-L1 - 3%
+
+Do not:
+  continue static route-capacity trimming
+  promote storageowner16 by default
+  move descriptor pointer or generation out of the hot route entry yet
+```
+
 Latest Larson StorageOwner16-L1 evidence:
 
 ```text

@@ -24,10 +24,18 @@ typedef struct Hz6RouteEntry {
 #endif
 } Hz6RouteEntry;
 
+#if HZ6_ROUTE_PACKED_META_L1
+#if HZ6_ROUTE_BYTES16_MINUS1_L2
+typedef uint16_t Hz6RouteBytesStorage;
+#else
+typedef uint32_t Hz6RouteBytesStorage;
+#endif
+#endif
+
 typedef struct Hz6RouteTable {
   Hz6RouteEntry* entries;
 #if HZ6_ROUTE_PACKED_META_L1
-  uint32_t* bytes;
+  Hz6RouteBytesStorage* bytes;
 #endif
   size_t capacity;
   size_t active_count;
@@ -104,14 +112,23 @@ static inline void hz6_route_entry_set_generation(Hz6RouteTable* table,
 
 static inline uint32_t hz6_route_entry_bytes(const Hz6RouteTable* table,
                                              size_t index) {
+#if HZ6_ROUTE_BYTES16_MINUS1_L2
+  return (table && table->bytes) ? ((uint32_t)table->bytes[index] + 1u) : 0;
+#else
   return (table && table->bytes) ? table->bytes[index] : 0;
+#endif
 }
 
 static inline void hz6_route_entry_set_bytes(Hz6RouteTable* table,
                                              size_t index,
                                              uint32_t bytes) {
   if (table && table->bytes) {
+#if HZ6_ROUTE_BYTES16_MINUS1_L2
+    table->bytes[index] =
+        (Hz6RouteBytesStorage)(bytes == 0 ? 0u : (bytes - 1u));
+#else
     table->bytes[index] = bytes;
+#endif
   }
 }
 #else
@@ -221,7 +238,8 @@ void hz6_route_table_init(Hz6RouteTable* table,
                           size_t capacity);
 
 #if HZ6_ROUTE_PACKED_META_L1
-void hz6_route_table_attach_bytes(Hz6RouteTable* table, uint32_t* bytes);
+void hz6_route_table_attach_bytes(Hz6RouteTable* table,
+                                  Hz6RouteBytesStorage* bytes);
 #endif
 
 int hz6_route_table_compact_tombstones(Hz6RouteTable* table,

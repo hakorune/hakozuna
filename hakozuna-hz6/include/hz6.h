@@ -301,6 +301,14 @@ typedef struct Hz6StatsSnapshot {
   size_t metadata_route_slim_entry_bytes;
   size_t metadata_route_slim_table_bytes;
   size_t metadata_route_slim_savings_bytes;
+  size_t metadata_route_bytes16_table_bytes;
+  size_t metadata_route_bytes16_savings_bytes;
+  size_t metadata_route_bytes16_active_checked;
+  size_t metadata_route_bytes16_overflow;
+  size_t metadata_route_bytes16_max;
+  size_t metadata_route_bytes16_minus1_overflow;
+  size_t metadata_route_bytes16_minus1_zero;
+  size_t metadata_route_bytes16_minus1_max_stored;
   size_t metadata_source_block_entry_bytes;
   size_t metadata_source_block_slim_entry_bytes;
   size_t metadata_source_block_slim_table_bytes;
