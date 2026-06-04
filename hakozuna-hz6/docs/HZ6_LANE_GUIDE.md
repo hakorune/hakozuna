@@ -147,7 +147,8 @@ larson-cross-owner-selected:
   larson_t16_main_10k
   speed + ownerlocalityfast-rsscap-2-desc160k
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k
-  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-source16k-route192k-run512
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-source16k-route192k-run512
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-source16k-route192k-run512
 
 selected-family-guard:
   short mixed_ws smoke/control guard before a longer selected-family run
@@ -178,8 +179,10 @@ larson-sourcerun-metaslim:
   it as a descriptor-layout control. dir192k/no-backptr is now a
   directory-capacity comparison control, no-route-backptr/dir192k is an
   isolation control, and routebytes16/routepacked/no-routebackptr/dir192k is
-  the selected lowest-RSS sibling. Run2048/run1024 remain
-  SourceBlockMetaSlim-L1 controls.
+  the route-entry comparison control; OwnerSourceSideMeta-L2 superseded it as
+  the selected lowest-RSS balance sibling. FrontCachePackedMeta-L1 is the
+  current lower-RSS candidate/sibling with a measured throughput tradeoff.
+  Run2048/run1024 remain SourceBlockMetaSlim-L1 controls.
 
 larson-run512-routeslim:
   larson_t16_main_10k
@@ -449,10 +452,18 @@ Larson cross-owner full 10k:
     repeat-3 full 10k clean; use when about -1.3% throughput is acceptable for
     about 90MB lower peak RSS versus desc160k
   current selected low-RSS sibling:
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-source16k-route192k-run512
+    repeat-3 full 10k clean at about 40.754M ops/s and 439912 KB peak RSS.
+    It combines dir192k, descriptor no-backptr, SourceBlock no-route-backptr,
+    RoutePackedMeta-L1, RoutePackedMeta-L2 routebytes16, StorageOwner16, and
+    OwnerSourceSideMeta-L2.
+  lower-RSS candidate/sibling:
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-source16k-route192k-run512
+    direct closeout is about 44.831M ops/s and 430708 KB peak RSS; use only
+    when about 9 MiB lower RSS is worth the measured throughput tradeoff.
+  routebytes16 comparison control:
     ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-source16k-route192k-run512
     repeat-3 full 10k clean at about 48.367M ops/s and 449144 KB peak RSS.
-    It combines dir192k, descriptor no-backptr, SourceBlock no-route-backptr,
-    RoutePackedMeta-L1, and RoutePackedMeta-L2 routebytes16.
   directory-capacity control:
     ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-dir192k-source16k-route192k-run512
     repeat-3 full 10k clean at about 44.580M ops/s and 472176 KB peak RSS.
@@ -524,7 +535,8 @@ Larson cross-owner full 10k:
     layout control, dir192k/no-backptr is a directory-capacity control,
     routepacked/no-routebackptr/dir192k is the L1 control, and
     routebytes16 is the clean comparison-control sibling; OwnerSourceSideMeta-L2
-    is the current selected low-RSS sibling.
+    is the current selected low-RSS balance sibling, with FrontCachePackedMeta-L1
+    as the lower-RSS candidate/sibling.
   source-block over-retention control:
     ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k
     passes, but raises peak RSS and is not selected
@@ -900,6 +912,15 @@ ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-di
   `owner_source_side_meta_l2_miss_no_block=0`,
   `owner_source_side_meta_l2_miss_inactive=0`,
   `owner_source_side_meta_l2_storage_mismatch=0`, safety clean.
+
+ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-source16k-route192k-run512:
+  Lowest-RSS candidate/sibling over OwnerSourceSideMeta-L2. It adds
+  `HZ6_FRONTCACHE_PACKED_META_L1=1`, shrinking `Hz6FrontCacheEntry` from
+  32 to 24 bytes by packing bytes-minus-one, class id, and the descriptor-cold
+  governor detached flag into a 32-bit meta word. Direct full-10k closeout:
+  OwnerSourceSideMeta-L2 baseline `46.467M / 439912 KB`, FrontCachePacked
+  `44.831M / 430708 KB`, safety clean. Keep as the lower-RSS sibling/candidate,
+  not as the selected throughput/RSS balance lane.
 
 ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2dryrun-source16k-route192k-run512:
   Validation lane for OwnerSourceSideMeta-L2. Same L2 behavior plus

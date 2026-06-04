@@ -159,10 +159,12 @@ route160k / route128k:
 Do not trim route capacity again under the current representation.
 SourceBlockMetaSlim-L1 moved the previous selected lowest-RSS sibling to
 route192k-run512. RoutePackedMeta-L1 superseded DescriptorNoBackptr and
-SourceBlock no-route-backptr controls, and RoutePackedMeta-L2 routebytes16 now
-supersedes RoutePackedMeta-L1 as the selected lowest-RSS sibling.
-StorageOwner16 is RSS-first descriptor side metadata evidence/control, not
-selected. Route160k-run512 and route128k-run512 remain no-go controls.
+SourceBlock no-route-backptr controls, and RoutePackedMeta-L2 routebytes16 is
+the clean route-entry comparison control. OwnerSourceSideMeta-L2 is the current
+selected lowest-RSS balance sibling; FrontCachePackedMeta-L1 is the lower-RSS
+candidate/sibling with a measured throughput tradeoff. StorageOwner16 is
+RSS-first descriptor side metadata evidence/control, not selected.
+Route160k-run512 and route128k-run512 remain no-go controls.
 
 ## Next Refactor Candidate
 
@@ -233,12 +235,22 @@ routepacked/no-routebackptr/dir192k:
 routebytes16/routepacked/no-routebackptr/dir192k:
   48.367M ops/s
   449144 KB
-  clean current selected lowest-RSS sibling
+  clean route-entry comparison control
 
 storageowner16/routepacked/no-routebackptr/dir192k:
   42.024M ops/s
   444520 KB
   clean RSS-first descriptor side metadata evidence/control
+
+storageowner16/ownersourcel2/routebytes16/routepacked/no-routebackptr/dir192k:
+  40.754M ops/s
+  439912 KB
+  clean selected lowest-RSS balance sibling
+
+frontcachepacked over OwnerSourceSideMeta-L2:
+  44.831M ops/s
+  430708 KB
+  clean lowest-RSS candidate/sibling with a measured throughput tradeoff
 ```
 
 Run512 attribution check:

@@ -42,9 +42,9 @@ A future `Get-Hz6WinCapacityLaneRegistry` helper should return records like:
 @{
   Name = "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-source16k-route192k-run512"
   Suffix = "_ownerloc_rss2_d160_f4_thin_nb_nrb_d192_rp_rb16_s16_r192_run512"
-  Status = "selected sibling"
+  Status = "control"
   Family = "larson"
-  Tags = @("owner-locality", "thindesc", "no-backptr", "no-route-backptr", "dir192k", "routepacked", "routebytes16", "source16k", "route192k", "run512", "lowest-rss")
+  Tags = @("owner-locality", "thindesc", "no-backptr", "no-route-backptr", "dir192k", "routepacked", "routebytes16", "source16k", "route192k", "run512", "route-entry-control")
   ExtraFlags = @(
     "/DHZ6_OWNER_LOCALITY_FAST_L1=1",
     "/DHZ6_THIN_DESCRIPTOR_L1=1",
@@ -57,6 +57,55 @@ A future `Get-Hz6WinCapacityLaneRegistry` helper should return records like:
     "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)4096)",
     "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)16384)",
     "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)196608)"
+    "/DHZ6_SOURCE_RUN_MAX_SLOTS=((size_t)512)"
+  )
+}
+
+@{
+  Name = "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-source16k-route192k-run512"
+  Suffix = "_ownerloc_rss2_d160_f4_thin_nb_nrb_d192_rp_rb16_so16_osl2_s16_r192_run512"
+  Status = "selected sibling"
+  Family = "larson"
+  Tags = @("owner-locality", "thindesc", "no-backptr", "no-route-backptr", "dir192k", "routepacked", "routebytes16", "storageowner16", "ownersourcel2", "source16k", "route192k", "run512", "lowest-rss-balance")
+  ExtraFlags = @(
+    "/DHZ6_OWNER_LOCALITY_FAST_L1=1",
+    "/DHZ6_THIN_DESCRIPTOR_L1=1",
+    "/DHZ6_DESCRIPTOR_NO_BACKPTR_L1=1",
+    "/DHZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1=1",
+    "/DHZ6_SHARED_ROUTE_DIRECTORY_CAPACITY=((size_t)196608)",
+    "/DHZ6_ROUTE_PACKED_META_L1=1",
+    "/DHZ6_ROUTE_BYTES16_MINUS1_L2=1",
+    "/DHZ6_DESCRIPTOR_STORAGE_OWNER16_L1=1",
+    "/DHZ6_OWNER_SOURCE_SIDE_META_L2=1",
+    "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)163840)",
+    "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)4096)",
+    "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)16384)",
+    "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)196608)",
+    "/DHZ6_SOURCE_RUN_MAX_SLOTS=((size_t)512)"
+  )
+}
+
+@{
+  Name = "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-source16k-route192k-run512"
+  Suffix = "_ownerloc_rss2_d160_f4_thin_nb_nrb_d192_rp_rb16_so16_osl2_fcp_s16_r192_run512"
+  Status = "selected sibling"
+  Family = "larson"
+  Tags = @("owner-locality", "thindesc", "no-backptr", "no-route-backptr", "dir192k", "routepacked", "routebytes16", "storageowner16", "ownersourcel2", "frontcachepacked", "source16k", "route192k", "run512", "lowest-rss-candidate")
+  ExtraFlags = @(
+    "/DHZ6_OWNER_LOCALITY_FAST_L1=1",
+    "/DHZ6_THIN_DESCRIPTOR_L1=1",
+    "/DHZ6_DESCRIPTOR_NO_BACKPTR_L1=1",
+    "/DHZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1=1",
+    "/DHZ6_SHARED_ROUTE_DIRECTORY_CAPACITY=((size_t)196608)",
+    "/DHZ6_ROUTE_PACKED_META_L1=1",
+    "/DHZ6_ROUTE_BYTES16_MINUS1_L2=1",
+    "/DHZ6_DESCRIPTOR_STORAGE_OWNER16_L1=1",
+    "/DHZ6_OWNER_SOURCE_SIDE_META_L2=1",
+    "/DHZ6_FRONTCACHE_PACKED_META_L1=1",
+    "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)163840)",
+    "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)4096)",
+    "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)16384)",
+    "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)196608)",
     "/DHZ6_SOURCE_RUN_MAX_SLOTS=((size_t)512)"
   )
 }

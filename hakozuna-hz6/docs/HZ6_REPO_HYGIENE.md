@@ -56,7 +56,10 @@ Larson lower RSS:
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k
 
 Larson lowest RSS:
-  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-source16k-route192k-run512
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-source16k-route192k-run512
+
+Larson lowest RSS candidate/sibling:
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-source16k-route192k-run512
 ```
 
 The side-owner16 descriptor layout lane is not selected. It is buildable as
@@ -65,6 +68,10 @@ descriptor entry, but it breaks cross-owner lifecycle safety counters.
 StorageOwner16 is buildable as RSS-first evidence/control: descriptor side
 metadata becomes safety-clean when keyed by descriptor storage ownership, but
 it does not replace routepacked because the RSS gain costs too much throughput.
+OwnerSourceSideMeta-L2 is the selected Larson lowest-RSS balance sibling.
+FrontCachePackedMeta-L1 is lower RSS still, but remains a selected-sibling
+candidate because the direct closeout trades about 3.5% throughput for about
+9 MiB less peak RSS.
 
 Do not add new lanes to the selected family unless they pass:
 
@@ -150,7 +157,11 @@ isolation control.
 routepacked + dir192k + both no-backptr lanes is the RoutePackedMeta-L1
 control.
 routebytes16 + routepacked + dir192k + both no-backptr lanes is the current
-selected lowest-RSS sibling.
+route-entry comparison control.
+routebytes16 + routepacked + dir192k + both no-backptr lanes + StorageOwner16
+and OwnerSourceSideMeta-L2 is the selected lowest-RSS balance sibling.
+FrontCachePackedMeta-L1 over OwnerSourceSideMeta-L2 is the current
+lowest-RSS candidate/sibling, not the balance selection.
 ```
 
 So the next RSS reduction should not be another route-capacity cut or another
@@ -167,6 +178,8 @@ Descriptor layout:
   route-entry comparison control
   guard OwnerSourceSideMeta-L2 over routebytes16/routepacked/no-routebackptr/
   dir192k as the selected low-RSS sibling
+  guard FrontCachePackedMeta-L1 over OwnerSourceSideMeta-L2 as the lowest-RSS
+  candidate/sibling
   do not promote allocator-local side-owner16
   keep storageowner16 as RSS-first evidence/control unless its lookup cost is
   reduced

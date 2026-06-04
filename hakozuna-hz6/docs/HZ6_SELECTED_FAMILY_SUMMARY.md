@@ -22,6 +22,7 @@ For cleanup rules and the next source modularization target, see
 | Larson T16 full 10k lower RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k` | 45.092M | 716,324 | clean selected sibling |
 | Larson T16 full 10k routebytes16 control | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-source16k-route192k-run512` | 40.750M | 449,128 | clean superseded control |
 | Larson T16 full 10k lowest RSS | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-source16k-route192k-run512` | 40.754M | 439,912 | clean selected sibling |
+| Larson T16 full 10k lowest RSS candidate | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-source16k-route192k-run512` | 44.831M | 430,708 | clean selected-sibling candidate; direct closeout, lower RSS but about -3.5% versus same-run L2 |
 | Larson T16 full 10k minimum RSS control | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-source16k-route192k-run512` | 41.107M | 469,868 | clean superseded control |
 
 Source:
@@ -44,6 +45,7 @@ Source:
 - `docs/benchmarks/windows/paper/hz6_routepacked_meta_l2_behavior/`
 - `docs/benchmarks/windows/paper/hz6_hz5_rss_gap/`
 - `docs/benchmarks/windows/paper/hz6_owner_source_side_meta_l2/`
+- `docs/benchmarks/windows/paper/hz6_frontcache_packed_l1/`
 - `docs/benchmarks/windows/paper/hz6_route_linearwrap_l1_guard/`
 - `docs/benchmarks/windows/paper/hz6_route_loopcarry_l1_repeat/`
 
@@ -149,7 +151,9 @@ HZ6 is now a profile-family allocator:
       class-specific route load.
    B. Larson RSS:
       OwnerSourceSideMeta-L2 over routebytes16/routepacked/no-routebackptr/
-      dir192k is the selected lowest-RSS sibling. Keep plain
+      dir192k is the selected lowest-RSS balance sibling. FrontCachePackedMeta-L1
+      is the lower-RSS candidate/sibling with a measured throughput tradeoff.
+      Keep plain
       no-routebackptr/dir192k, routepacked/no-routebackptr/dir192k, and
       routebytes16 as clean controls.
       Side-owner16 L1 proves a 32-byte descriptor hot entry is possible, but
