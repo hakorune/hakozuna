@@ -54,48 +54,25 @@ Latest HZ6 selected-family decision:
       main10k repeat-3 = 46.273M / 224612 KB
       guard rows safety-clean
 
-    diagnostic-only:
-      slotownerconsumerdryrun
-      full10k = 36.691M / 233556 KB
-      would_skip_l2=687536440
-      false_positive=0
+    recent transfer-scoped evidence:
+      depotslottransfer
+        full10k non-diagnostic = 41.596M, safety-clean
+        sparse slot recording is safe when it stays scoped to transfer reuse
 
-  next behavior candidate:
-    SlotOwnerLogicalOwnerFastPath-L1 was implemented and measured as a narrow
-    behavior.  It is safety-clean but speed no-go/control because sparse lookup
-    at every owner_equal entry costs more than the L2 lookup it removes.
-    Do not promote it without a narrower admission gate.
+      depotdescrehomedry
+        full10k diagnostic = 43.040M, safety-clean
+        transfer_reuse_hit=80000
+        depot_descriptor=71811
+        run_match=71811
+        local_descriptor_available=71811
+        would_rehome=71811
 
-  latest diagnostic:
-    OwnerEqualCallsiteDryRun-L1 was added on top of DepotOwnerDirectFastPath-L1.
-    It is diagnostic-only and attributes owner_equal() calls by callsite.
-    main10k:
-      42.434M / 224612 KB
-      owner_equal_site_free=424522978
-      owner_equal_site_local_cache=424449034
-      all other owner_equal_site_* = 0
-      owner_equal_site_unknown=0
-      safety clean
-
-    read:
-      Broad slot-owner logical probing lost because owner_equal pressure is
-      dominated by the free/local-cache path, not by remote/visible/transfer
-      sites.  Future owner-path behavior must be gated inside free/local-cache
-      or by an even cheaper object-state/source-depot predicate; do not probe
-      sparse slot-owner metadata at every owner_equal() call.
-
-  immediate next attack order:
-    1. FreeLocalCacheOwnerPredicate-L0 diagnostic:
-       classify the free/local-cache owner_equal calls by cheap state and
-       source-depot predicates before sparse slot-owner probing.
-
-    2. If the depot/source-run subset is large and cheap to identify:
-       try a narrow behavior lane that answers owner equality only for that
-       subset.
-
-    3. If the predicate is weak or expensive:
-       close slot-owner logical fast-path work as evidence and return to
-       unified depot accounting / owner-safe drain-localize design.
+  immediate next behavior candidate:
+    fail-closed descriptor clone/rehome at transfer reuse.
+    The behavior must replace exact route metadata safely, roll back on
+    failure, and release/reset the old depot descriptor only after the new
+    local descriptor and route are committed.  Do not revive broad
+    slot-local storage-owner override.
 
   2026-06-05 FreeLocalCacheOwnerPredicate-L0:
     implementation:

@@ -43,13 +43,16 @@ HZ6 Larson / ElasticCapacity:
   STOP:
     whole-SourceBlock localize behavior
     another isolated route-only / descriptor-only / source-only cap knob
+    broad slot-local storage-owner override
 
   NEXT if continuing this track:
-    do not promote SlotOwnerLogicalOwnerFastPath-L1 in its broad form
-    OwnerEqualCallsiteDryRun-L1 shows owner_equal pressure is dominated by
-    free/local-cache, so narrow owner-path admission must use a cheaper
-    object-state/source-depot predicate before sparse probing
-    unified depot accounting and owner-safe drain/localize criteria
+    DepotSlotTransferScoped-L1 proved sparse slot recording is safe when it
+    stays scoped to transfer reuse.
+    DepotDescriptorRehomeDryRun-L1 shows most transfer-reused depot
+    descriptors are run-matched and local descriptor capacity is available.
+    The next behavior candidate is fail-closed descriptor clone/rehome at
+    transfer reuse, with route exact replacement and rollback; do not revive
+    general owner_source storage override.
 
   DO NOT MIX:
     diagnostic counters or dry-run lanes into production speed tables
