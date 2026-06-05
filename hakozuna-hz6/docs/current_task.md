@@ -23,7 +23,7 @@ Current short read:
 Selected HZ6 Windows RSS/throughput sibling:
   ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-
   noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-
-  ownersourcel2-frontcachepacked-sourceblockpacked-source16k-route192k-run512
+  ownersourcel2-frontcachepacked-sourceblockpacked-source10k-route192k-run512
 
 Status:
   good compact / Larson cross-owner throughput
@@ -32,8 +32,10 @@ Status:
 
 Current bottleneck hypothesis:
   RSS is now dominated less by payload and more by per-worker static capacity.
-  The next high-ROI HZ6 work is elastic/shared descriptor-route capacity,
-  not another hot-path counter or another entry-level packing tweak.
+  SourceBlock local capacity can be trimmed from source16k to source10k for
+  Larson main-warmup, but source8k/source2k are too tight. The next large-ROI
+  HZ6 work remains elastic/shared descriptor-route capacity, not hot-path
+  counters.
 ```
 
 ### 2026-06-05: CapacityUtil-L1 diagnostic
@@ -277,6 +279,86 @@ Next design:
 Do not:
   promote elasticproj-local-only lanes.
   shrink selected full-10k local capacities without overflow.
+```
+
+### 2026-06-05: Larson packed source-cap trim L1
+
+Goal:
+
+```text
+Use CapacityUtil-L1 to trim only SourceBlock local capacity in the selected
+combined packed Larson lane:
+
+  keep descriptor 160k
+  keep route 192k
+  keep frontcache 4k
+  keep routepacked / routebytes16 / storageowner16 / ownersourcel2
+  keep frontcachepacked / sourceblockpacked
+  vary source block capacity
+```
+
+Results, run=1:
+
+```text
+source16k control:
+  docs/benchmarks/windows/paper/hz6_source2k_packed_probe/
+    20260605_101136_hz6_capacity_matrix_windows.md
+  43.514M / 426088 KB
+  source_block_table_bytes = 32768 KiB
+  safety clean
+
+source2k:
+  same source as above
+  warmup_alloc_fail
+  source_block_exhausted = 257
+  source_block_fail_active_max = 2048
+  source_alloc = 6144
+
+source8k:
+  docs/benchmarks/windows/paper/hz6_source8k_packed_probe/
+    20260605_101450_hz6_capacity_matrix_windows.md
+  warmup_alloc_fail
+  source_block_exhausted = 257
+  source_block_fail_active_max = 8192
+  source_alloc = 12288
+
+source12k:
+  docs/benchmarks/windows/paper/hz6_source12k_packed_probe/
+    20260605_101638_hz6_capacity_matrix_windows.md
+  43.910M / 417332 KB
+  source_block_table_bytes = 24576 KiB
+  safety clean
+
+source10k:
+  docs/benchmarks/windows/paper/hz6_source10k_packed_probe/
+    20260605_101906_hz6_capacity_matrix_windows.md
+  47.375M / 412736 KB
+  source_block_table_bytes = 20480 KiB
+  safety clean:
+    route_invalid=0
+    route_miss=0
+    alloc_fail=0
+    descriptor_exhausted=0
+    route_register_fail=0
+    source_block_exhausted=0
+```
+
+Decision:
+
+```text
+Promote source10k as the current Larson combined packed minimum-RSS sibling.
+
+Keep:
+  source12k as the safety backup / boundary control.
+
+No-go/control:
+  source2k and source8k.
+
+Read:
+  Final active SourceBlock usage is tiny, but cross-owner main-warmup has a
+  transient single-allocator SourceBlock pressure above 8k. Source10k is the
+  first tested local-only capacity that survives that warmup pressure while
+  cutting about 13 MB peak RSS versus source16k in the same probe family.
 ```
 
 ### 2026-06-05: SourceBlockPackedFlags-L1 candidate

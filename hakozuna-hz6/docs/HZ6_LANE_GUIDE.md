@@ -24,7 +24,9 @@ For repo cleanup rules and the source modularization backlog, see
 | Larson cross-owner lowest-RSS balance sibling | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-source16k-route192k-run512` | Current selected lowest-RSS balance sibling. It combines routebytes16 with StorageOwner16 ownerless descriptors and OwnerSourceSideMeta-L2 source-block storage hints. Same-run full-10k repeat-3: routebytes16 control `40.750M / 449128 KB`, L2 `40.754M / 439912 KB`, safety clean. Worker-warmup run=1: routebytes16 `40.126M / 448948 KB`, L2 `40.787M / 439740 KB`. |
 | Larson frontcache packed meta component | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-source16k-route192k-run512` | Lower-RSS component candidate/control, not broad throughput promotion. `HZ6_FRONTCACHE_PACKED_META_L1` shrinks `Hz6FrontCacheEntry` from 32 to 24 bytes by packing bytes-minus-one, class id, and descriptor-cold-governor detached flag into a 32-bit meta word. SourceBlockPacked closeout matrix: `41.131M / 430692 KB`, safety clean. |
 | Larson sourceblock packed flags component | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-sourceblockpacked-source16k-route192k-run512` | Lower-RSS SourceBlock metadata component candidate/control over OwnerSourceSideMeta-L2. `HZ6_SOURCE_BLOCK_PACKED_FLAGS_L1` packs SourceBlock `source_kind / active / route_registered / run_active` into one flag word while keeping `source_release` and OwnerSourceSideMeta-L2 inline. Repeat-3 closeout: `41.070M / 435304 KB`, safety clean. |
-| Larson combined packed minimum-RSS candidate | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source16k-route192k-run512` | Clean minimum-RSS candidate over OwnerSourceSideMeta-L2. It combines `HZ6_FRONTCACHE_PACKED_META_L1` and `HZ6_SOURCE_BLOCK_PACKED_FLAGS_L1`. Repeat-3 full 10k: `40.837M / 426084 KB`, safety clean. Lower RSS than FrontCachePacked alone (`41.131M / 430692 KB`) and SourceBlockPacked alone (`41.070M / 435304 KB`). Keep as minimum-RSS sibling/candidate, not broad throughput promotion. |
+| Larson combined packed minimum-RSS candidate | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source10k-route192k-run512` | Current minimum-RSS candidate over the combined packed lane. It keeps descriptor160k/route192k/front4k but trims SourceBlock capacity from source16k to source10k. Run-1 boundary check: source10k `47.375M / 412736 KB`, safety clean; source8k/source2k fail warmup with SourceBlock exhaustion. Keep as the current minimum-RSS sibling/candidate, not broad throughput promotion until repeat confirmation. |
+| Larson combined packed source-cap backup | `speed` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source12k-route192k-run512` | Safety backup / boundary control for the source10k trim. Run-1: `43.910M / 417332 KB`, safety clean. Use if source10k repeat variance or broader rows show cap pressure. |
+| Larson combined packed source-cap no-go controls | `speed + diagnostic` | `source2k` / `source8k` variants of the combined packed lane | No-go/control. Source2k fails warmup with `source_block_fail_active_max=2048`; source8k fails with `source_block_fail_active_max=8192`. The cross-owner main-warmup transient SourceBlock pressure is above 8k even though final active SourceBlock count is tiny. |
 | Larson ElasticProjection local-only boundary | `speed + diagnostic` | `ownerlocalityfast-rsscap-2-elasticproj-local1k-route16k-source64-front1k-packed` | No-go/control. It tests the raw final-snapshot local cap projection. Both main/worker 1k fail during warmup with descriptor/source-block exhaustion, proving final snapshot utilization is not enough for warmup live-set sizing. |
 | Larson ElasticProjection live-set boundary | `speed + diagnostic` | `ownerlocalityfast-rsscap-2-elasticproj-live2k-route16k-source128-front1k-packed` | Boundary evidence. Worker-warmup 1k is clean at `55.585M / 60952 KB`; main-warmup 1k still fails because the main allocator seeds cross-owner live sets. Keep as evidence for ElasticCapacity-L1 shared overflow, not as a promotion lane. |
 | Larson owner-source side metadata dry-run | `speed + diagnostic` | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-ownersourcedryrun-source16k-route192k-run512` | Diagnostic-only follow-up to the routebytes16 comparison-control lane. Full 10k run=1: `46.202M / 449164 KB`, safety clean, `owner_source_side_meta_foreign=871979714`, `miss=0`, `probe_max=1`. The next owner-side design must be O(1), not StorageOwner16 scan-based. |
@@ -978,7 +980,33 @@ ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-di
   Repeat-3 full 10k: `40.837M / 426084 KB`, safety clean. This is lower RSS
   than FrontCachePacked alone (`41.131M / 430692 KB`) and SourceBlockPacked
   alone (`41.070M / 435304 KB`) at similar throughput. Keep as the current
-  Larson minimum-RSS candidate/sibling, not as a broad throughput promotion.
+  combined-packed source16k control. It is superseded by the source10k trim as
+  the current minimum-RSS sibling.
+
+ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source10k-route192k-run512:
+  Current combined packed minimum-RSS sibling. Same selected packed flags as
+  source16k, but `HZ6_SOURCE_BLOCK_CAPACITY=10240`. Boundary run-1:
+  `47.375M / 412736 KB`, safety clean, `source_block_exhausted=0`. This cuts
+  about 13 MB peak RSS versus the same probe family's source16k control
+  (`43.514M / 426088 KB`). Keep as current minimum-RSS candidate pending
+  repeat confirmation.
+
+ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source12k-route192k-run512:
+  Source-capacity backup/control for the combined packed lane.
+  `HZ6_SOURCE_BLOCK_CAPACITY=12288`, run-1 `43.910M / 417332 KB`, safety clean.
+  Keep as a conservative fallback if source10k shows repeat or broad-row
+  instability.
+
+ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source2k-route192k-run512:
+  Source-capacity no-go/control. `HZ6_SOURCE_BLOCK_CAPACITY=2048` fails
+  cross-owner main-warmup with `source_block_exhausted=257` and
+  `source_block_fail_active_max=2048`.
+
+ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source8k-route192k-run512:
+  Source-capacity no-go/control. `HZ6_SOURCE_BLOCK_CAPACITY=8192` still fails
+  cross-owner main-warmup with `source_block_exhausted=257` and
+  `source_block_fail_active_max=8192`. The first tested passing local-only
+  SourceBlock capacity is source10k.
 
 ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2dryrun-source16k-route192k-run512:
   Validation lane for OwnerSourceSideMeta-L2. Same L2 behavior plus
