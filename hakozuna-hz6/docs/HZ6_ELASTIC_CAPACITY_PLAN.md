@@ -783,6 +783,48 @@ hard no-go:
   source slot/ref-count is released during descriptor rehome
 ```
 
+DepotDescriptorRouteReplaceDryRun-L1:
+
+```text
+lane:
+  ownerlocalityfast-rsscap-2-elasticdescsource-route-depotrunmeta-
+  depotownerdirect-depotroutereplacedry-desc16k-front4k-thindesc-nobackptr-
+  noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-
+  ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run4096
+
+mode:
+  diagnostic-only route replacement preflight
+  run during transfer reuse after activation
+  no route register/unregister behavior
+  no depot descriptor release behavior
+
+full10k diagnostic:
+  41.332M ops/s
+  transfer_reuse_hit=80,000
+  elastic_depot_route_replace_probe=80,000
+  elastic_depot_route_replace_depot_descriptor=71,811
+  elastic_depot_route_replace_run_match=71,811
+  elastic_depot_route_replace_run_mismatch=0
+  elastic_depot_route_replace_origin_missing=0
+  elastic_depot_route_replace_old_route_found=71,811
+  elastic_depot_route_replace_old_route_missing=0
+  elastic_depot_route_replace_old_route_invalid=0
+  descriptor/generation/front/class matches=71,811
+  elastic_depot_route_replace_current_route_same=71,811
+  elastic_depot_route_replace_current_route_conflict=0
+  elastic_depot_route_replace_would_commit=71,811
+  elastic_depot_route_replace_would_rollback=8,189
+  route_invalid=0
+  remote_free_transfer_fail=0
+
+read:
+  The 8,189 rollback rows are non-depot transfer objects.  Every eligible depot
+  descriptor has a matching old route and a same-descriptor current exact route.
+  This means the next behavior primitive should be in-place exact-route
+  descriptor replacement in the current allocator, not an unregister-first
+  rehome path.
+```
+
 ## What The Diagnostics Proved
 
 ElasticProjection-L1:

@@ -208,7 +208,8 @@ static void hz6_front_note_elastic_depot_drain_dryrun(
 #endif
 
 #if HZ6_DIAGNOSTIC_PROBES && \
-    HZ6_ELASTIC_DEPOT_DESCRIPTOR_REHOME_DRYRUN_L1
+    (HZ6_ELASTIC_DEPOT_DESCRIPTOR_REHOME_DRYRUN_L1 || \
+     HZ6_ELASTIC_DEPOT_ROUTE_REPLACE_DRYRUN_L1)
 static int hz6_front_has_local_descriptor_slot(const Hz6Allocator* allocator) {
   if (!allocator) {
     return 0;
@@ -229,7 +230,10 @@ static int hz6_front_has_local_descriptor_slot(const Hz6Allocator* allocator) {
   return 0;
 #endif
 }
+#endif
 
+#if HZ6_DIAGNOSTIC_PROBES && \
+    HZ6_ELASTIC_DEPOT_DESCRIPTOR_REHOME_DRYRUN_L1
 static void hz6_front_note_elastic_depot_descriptor_rehome_dryrun(
     Hz6Allocator* allocator,
     const Hz6ObjectDescriptor* descriptor) {
@@ -261,6 +265,122 @@ static void hz6_front_note_elastic_depot_descriptor_rehome_dryrun(
     ++allocator->stats.elastic_depot_descriptor_rehome_would_rehome;
   } else {
     ++allocator->stats.elastic_depot_descriptor_rehome_no_local_descriptor;
+  }
+}
+#endif
+
+#if HZ6_DIAGNOSTIC_PROBES && HZ6_ELASTIC_DEPOT_ROUTE_REPLACE_DRYRUN_L1
+static Hz6Allocator* hz6_front_depot_route_origin_allocator(
+    const Hz6ObjectDescriptor* descriptor) {
+#if HZ6_OWNER_SOURCE_SIDE_META_L2
+  if (!descriptor || !descriptor->source_block) {
+    return NULL;
+  }
+  return descriptor->source_block->owner_source_storage_allocator;
+#else
+  (void)descriptor;
+  return NULL;
+#endif
+}
+
+static int hz6_front_depot_route_result_matches_descriptor(
+    Hz6Allocator* allocator,
+    Hz6RouteResult route,
+    const Hz6ObjectDescriptor* descriptor,
+    uint16_t front_id,
+    uint16_t class_id) {
+  if (!allocator || !descriptor || route.kind != HZ6_ROUTE_VALID) {
+    return 0;
+  }
+  int ok = 1;
+  if (route.descriptor == descriptor) {
+    ++allocator->stats.elastic_depot_route_replace_descriptor_match;
+  } else {
+    ++allocator->stats.elastic_depot_route_replace_descriptor_mismatch;
+    ok = 0;
+  }
+  if (route.generation == descriptor->generation) {
+    ++allocator->stats.elastic_depot_route_replace_generation_match;
+  } else {
+    ++allocator->stats.elastic_depot_route_replace_generation_mismatch;
+    ok = 0;
+  }
+  if (route.front_id == front_id && route.class_id == class_id &&
+      descriptor->class_id == class_id) {
+    ++allocator->stats.elastic_depot_route_replace_front_class_match;
+  } else {
+    ++allocator->stats.elastic_depot_route_replace_front_class_mismatch;
+    ok = 0;
+  }
+  return ok;
+}
+
+static void hz6_front_note_elastic_depot_route_replace_dryrun(
+    Hz6Allocator* allocator,
+    const Hz6ObjectDescriptor* descriptor,
+    uint16_t front_id,
+    uint16_t class_id) {
+  if (!allocator || !descriptor) {
+    return;
+  }
+  ++allocator->stats.elastic_depot_route_replace_probe;
+  if (!hz6_allocator_descriptor_is_depot(descriptor)) {
+    ++allocator->stats.elastic_depot_route_replace_would_rollback;
+    return;
+  }
+  ++allocator->stats.elastic_depot_route_replace_depot_descriptor;
+
+  Hz6SourceBlock* block = descriptor->source_block;
+  if (!block || !hz6_allocator_source_block_is_elastic_depot(block) ||
+      !hz6_allocator_source_run_contains_slot(block, descriptor->ptr,
+                                             descriptor->class_id,
+                                             descriptor->bytes)) {
+    ++allocator->stats.elastic_depot_route_replace_run_mismatch;
+    ++allocator->stats.elastic_depot_route_replace_would_rollback;
+    return;
+  }
+  ++allocator->stats.elastic_depot_route_replace_run_match;
+
+  int old_route_ok = 0;
+  Hz6Allocator* origin = hz6_front_depot_route_origin_allocator(descriptor);
+  if (!origin) {
+    ++allocator->stats.elastic_depot_route_replace_origin_missing;
+  } else {
+    Hz6RouteResult old_route =
+        hz6_allocator_route_lookup_exact(origin, descriptor->ptr);
+    if (old_route.kind == HZ6_ROUTE_VALID) {
+      ++allocator->stats.elastic_depot_route_replace_old_route_found;
+      old_route_ok = hz6_front_depot_route_result_matches_descriptor(
+          allocator, old_route, descriptor, front_id, class_id);
+    } else if (old_route.kind == HZ6_ROUTE_INVALID) {
+      ++allocator->stats.elastic_depot_route_replace_old_route_invalid;
+    } else {
+      ++allocator->stats.elastic_depot_route_replace_old_route_missing;
+    }
+  }
+
+  int current_route_ok = 0;
+  Hz6RouteResult current_route =
+      hz6_allocator_route_lookup_exact(allocator, descriptor->ptr);
+  if (current_route.kind == HZ6_ROUTE_MISS) {
+    ++allocator->stats.elastic_depot_route_replace_current_route_empty;
+    current_route_ok = 1;
+  } else if (current_route.kind == HZ6_ROUTE_VALID &&
+             current_route.descriptor == descriptor &&
+             current_route.generation == descriptor->generation &&
+             current_route.front_id == front_id &&
+             current_route.class_id == class_id) {
+    ++allocator->stats.elastic_depot_route_replace_current_route_same;
+    current_route_ok = 1;
+  } else {
+    ++allocator->stats.elastic_depot_route_replace_current_route_conflict;
+  }
+
+  if ((old_route_ok || current_route.kind == HZ6_ROUTE_VALID) &&
+      current_route_ok && hz6_front_has_local_descriptor_slot(allocator)) {
+    ++allocator->stats.elastic_depot_route_replace_would_commit;
+  } else {
+    ++allocator->stats.elastic_depot_route_replace_would_rollback;
   }
 }
 #endif
@@ -302,6 +422,10 @@ void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
 #if HZ6_ELASTIC_DEPOT_DESCRIPTOR_REHOME_DRYRUN_L1
     hz6_front_note_elastic_depot_descriptor_rehome_dryrun(allocator,
                                                           descriptor);
+#endif
+#if HZ6_ELASTIC_DEPOT_ROUTE_REPLACE_DRYRUN_L1
+    hz6_front_note_elastic_depot_route_replace_dryrun(
+        allocator, descriptor, front_id, class_id);
 #endif
 #endif
 #if HZ6_ELASTIC_DEPOT_SLOT_LOCALIZE_L1 || \

@@ -824,6 +824,57 @@ int main(int argc, char** argv) {
         hz6_stats.elastic_depot_descriptor_rehome_would_rehome +=
             tds[t].hz6_stats_after
                 .elastic_depot_descriptor_rehome_would_rehome;
+        hz6_stats.elastic_depot_route_replace_probe +=
+            tds[t].hz6_stats_after.elastic_depot_route_replace_probe;
+        hz6_stats.elastic_depot_route_replace_depot_descriptor +=
+            tds[t].hz6_stats_after
+                .elastic_depot_route_replace_depot_descriptor;
+        hz6_stats.elastic_depot_route_replace_run_match +=
+            tds[t].hz6_stats_after.elastic_depot_route_replace_run_match;
+        hz6_stats.elastic_depot_route_replace_run_mismatch +=
+            tds[t].hz6_stats_after.elastic_depot_route_replace_run_mismatch;
+        hz6_stats.elastic_depot_route_replace_origin_missing +=
+            tds[t].hz6_stats_after.elastic_depot_route_replace_origin_missing;
+        hz6_stats.elastic_depot_route_replace_old_route_found +=
+            tds[t].hz6_stats_after.elastic_depot_route_replace_old_route_found;
+        hz6_stats.elastic_depot_route_replace_old_route_missing +=
+            tds[t].hz6_stats_after
+                .elastic_depot_route_replace_old_route_missing;
+        hz6_stats.elastic_depot_route_replace_old_route_invalid +=
+            tds[t].hz6_stats_after
+                .elastic_depot_route_replace_old_route_invalid;
+        hz6_stats.elastic_depot_route_replace_descriptor_match +=
+            tds[t].hz6_stats_after
+                .elastic_depot_route_replace_descriptor_match;
+        hz6_stats.elastic_depot_route_replace_descriptor_mismatch +=
+            tds[t].hz6_stats_after
+                .elastic_depot_route_replace_descriptor_mismatch;
+        hz6_stats.elastic_depot_route_replace_generation_match +=
+            tds[t].hz6_stats_after
+                .elastic_depot_route_replace_generation_match;
+        hz6_stats.elastic_depot_route_replace_generation_mismatch +=
+            tds[t].hz6_stats_after
+                .elastic_depot_route_replace_generation_mismatch;
+        hz6_stats.elastic_depot_route_replace_front_class_match +=
+            tds[t].hz6_stats_after
+                .elastic_depot_route_replace_front_class_match;
+        hz6_stats.elastic_depot_route_replace_front_class_mismatch +=
+            tds[t].hz6_stats_after
+                .elastic_depot_route_replace_front_class_mismatch;
+        hz6_stats.elastic_depot_route_replace_current_route_empty +=
+            tds[t].hz6_stats_after
+                .elastic_depot_route_replace_current_route_empty;
+        hz6_stats.elastic_depot_route_replace_current_route_same +=
+            tds[t].hz6_stats_after
+                .elastic_depot_route_replace_current_route_same;
+        hz6_stats.elastic_depot_route_replace_current_route_conflict +=
+            tds[t].hz6_stats_after
+                .elastic_depot_route_replace_current_route_conflict;
+        hz6_stats.elastic_depot_route_replace_would_commit +=
+            tds[t].hz6_stats_after.elastic_depot_route_replace_would_commit;
+        hz6_stats.elastic_depot_route_replace_would_rollback +=
+            tds[t].hz6_stats_after
+                .elastic_depot_route_replace_would_rollback;
         hz6_stats.elastic_slot_owner_sparse_lookup +=
             tds[t].hz6_stats_after.elastic_slot_owner_sparse_lookup;
         hz6_stats.elastic_slot_owner_sparse_hit +=
@@ -1655,6 +1706,25 @@ int main(int argc, char** argv) {
            "elastic_depot_descriptor_rehome_local_descriptor_available=%zu "
            "elastic_depot_descriptor_rehome_no_local_descriptor=%zu "
            "elastic_depot_descriptor_rehome_would_rehome=%zu "
+           "elastic_depot_route_replace_probe=%zu "
+           "elastic_depot_route_replace_depot_descriptor=%zu "
+           "elastic_depot_route_replace_run_match=%zu "
+           "elastic_depot_route_replace_run_mismatch=%zu "
+           "elastic_depot_route_replace_origin_missing=%zu "
+           "elastic_depot_route_replace_old_route_found=%zu "
+           "elastic_depot_route_replace_old_route_missing=%zu "
+           "elastic_depot_route_replace_old_route_invalid=%zu "
+           "elastic_depot_route_replace_descriptor_match=%zu "
+           "elastic_depot_route_replace_descriptor_mismatch=%zu "
+           "elastic_depot_route_replace_generation_match=%zu "
+           "elastic_depot_route_replace_generation_mismatch=%zu "
+           "elastic_depot_route_replace_front_class_match=%zu "
+           "elastic_depot_route_replace_front_class_mismatch=%zu "
+           "elastic_depot_route_replace_current_route_empty=%zu "
+           "elastic_depot_route_replace_current_route_same=%zu "
+           "elastic_depot_route_replace_current_route_conflict=%zu "
+           "elastic_depot_route_replace_would_commit=%zu "
+           "elastic_depot_route_replace_would_rollback=%zu "
            "elastic_slot_owner_sparse_lookup=%zu "
            "elastic_slot_owner_sparse_hit=%zu "
            "elastic_slot_owner_sparse_miss=%zu "
@@ -1895,6 +1965,25 @@ int main(int argc, char** argv) {
                .elastic_depot_descriptor_rehome_local_descriptor_available,
            hz6_stats.elastic_depot_descriptor_rehome_no_local_descriptor,
            hz6_stats.elastic_depot_descriptor_rehome_would_rehome,
+           hz6_stats.elastic_depot_route_replace_probe,
+           hz6_stats.elastic_depot_route_replace_depot_descriptor,
+           hz6_stats.elastic_depot_route_replace_run_match,
+           hz6_stats.elastic_depot_route_replace_run_mismatch,
+           hz6_stats.elastic_depot_route_replace_origin_missing,
+           hz6_stats.elastic_depot_route_replace_old_route_found,
+           hz6_stats.elastic_depot_route_replace_old_route_missing,
+           hz6_stats.elastic_depot_route_replace_old_route_invalid,
+           hz6_stats.elastic_depot_route_replace_descriptor_match,
+           hz6_stats.elastic_depot_route_replace_descriptor_mismatch,
+           hz6_stats.elastic_depot_route_replace_generation_match,
+           hz6_stats.elastic_depot_route_replace_generation_mismatch,
+           hz6_stats.elastic_depot_route_replace_front_class_match,
+           hz6_stats.elastic_depot_route_replace_front_class_mismatch,
+           hz6_stats.elastic_depot_route_replace_current_route_empty,
+           hz6_stats.elastic_depot_route_replace_current_route_same,
+           hz6_stats.elastic_depot_route_replace_current_route_conflict,
+           hz6_stats.elastic_depot_route_replace_would_commit,
+           hz6_stats.elastic_depot_route_replace_would_rollback,
            hz6_stats.elastic_slot_owner_sparse_lookup,
            hz6_stats.elastic_slot_owner_sparse_hit,
            hz6_stats.elastic_slot_owner_sparse_miss,

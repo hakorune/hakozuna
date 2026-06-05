@@ -67,22 +67,31 @@ Latest HZ6 selected-family decision:
         local_descriptor_available=71811
         would_rehome=71811
 
+      depotroutereplacedry
+        full10k diagnostic = 41.332M, safety-clean
+        transfer_reuse_hit=80000
+        depot_descriptor=71811
+        run_match=71811
+        old_route_found=71811
+        descriptor/generation/front/class match=71811
+        current_route_same=71811
+        current_route_conflict=0
+        would_commit=71811
+        would_rollback=8189 non-depot transfer objects
+
   immediate next attack order:
     1. RouteExactDescriptorReplace-L0/L1:
-       add or dry-run a route exact descriptor replacement contract before
-       changing descriptor ownership.  The key safety question is route commit,
-       not descriptor clone.
+       implement a fail-closed exact-route descriptor replacement primitive.
+       The dry-run shows the current allocator already has an exact route for
+       the old depot descriptor, so the first behavior should replace the
+       descriptor pointer/generation metadata in place rather than
+       unregister-first.
 
-    2. DepotDescriptorRouteReplaceDryRun-L1:
-       shadow-verify that every would_rehome object has an old route that
-       matches the old depot descriptor, generation, bytes, front, and class;
-       and that current-route commit / origin unregister would be safe.
-
-    3. DepotDescriptorRehome-L1 behavior:
+    2. DepotDescriptorRehome-L1 behavior:
        clone/rehome the depot descriptor into a consumer-local descriptor only
-       after route replacement is proven.  Generation should be preserved
-       because this is descriptor storage relocation for the same live object,
-       not a new object lifetime.
+       through the route replacement primitive.  Generation should be
+       preserved because this is descriptor storage relocation for the same
+       live object, not a new object lifetime.
 
     do not:
       revive broad slot-local storage-owner override
