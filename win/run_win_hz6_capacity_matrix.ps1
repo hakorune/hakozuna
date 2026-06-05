@@ -673,6 +673,17 @@ foreach ($family in $selectedFamilies) {
                     TransferCapacity = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "transfer_capacity"
                     TransferUsed = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "transfer_used"
                     TransferUnused = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "transfer_unused"
+                    DescriptorMaxAllocator = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "descriptor_used_max_allocator"
+                    DescriptorLocalCap2x = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "descriptor_local_cap_2x"
+                    RouteMaxAllocator = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "route_used_max_allocator"
+                    RouteOccupiedMaxAllocator = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "route_occupied_max_allocator"
+                    RouteLocalCap2x = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "route_local_cap_2x"
+                    SourceBlockMaxAllocator = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "source_block_used_max_allocator"
+                    SourceBlockLocalCap2x = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "source_block_local_cap_2x"
+                    FrontcacheMaxAllocator = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "frontcache_used_max_allocator"
+                    FrontcacheLocalCap2x = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "frontcache_local_cap_2x"
+                    TransferMaxAllocator = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "transfer_used_max_allocator"
+                    TransferLocalCap2x = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "transfer_local_cap_2x"
                 })
             }
         }
@@ -714,8 +725,8 @@ foreach ($family in $selectedFamilies) {
             $Summary.Add("")
             $Summary.Add("### HZ6 capacity utilization audit")
             $Summary.Add("")
-            $Summary.Add("| allocator | allocators | descriptor used/cap | descriptor util | route active/cap | route util | source blocks used/cap | source util | frontcache used/cap | frontcache util | transfer current/cap | transfer util |")
-            $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+            $Summary.Add("| allocator | allocators | descriptor used/cap | descriptor util | descriptor max/cap2x | route active/cap | route util | route max/cap2x | source blocks used/cap | source util | source max/cap2x | frontcache used/cap | frontcache util | frontcache max/cap2x | transfer current/cap | transfer util | transfer max/cap2x |")
+            $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
             $fmtCount = {
                 param($value)
                 if ($null -eq $value) { return "n/a" }
@@ -732,19 +743,24 @@ foreach ($family in $selectedFamilies) {
                 return "{0:N2}%" -f (([double]$used * 100.0) / [double]$capacity)
             }
             foreach ($row in $capacityRows) {
-                $Summary.Add(('| {0} | {1} | {2} | {3} | {4} | {5} | {6} | {7} | {8} | {9} | {10} | {11} |' -f `
+                $Summary.Add(('| {0} | {1} | {2} | {3} | {4} | {5} | {6} | {7} | {8} | {9} | {10} | {11} | {12} | {13} | {14} | {15} | {16} |' -f `
                     $row.Allocator,
                     (& $fmtCount $row.AllocatorCount),
                     (& $fmtPair $row.DescriptorUsed $row.DescriptorCapacity),
                     (& $fmtPct $row.DescriptorUsed $row.DescriptorCapacity),
+                    (& $fmtPair $row.DescriptorMaxAllocator $row.DescriptorLocalCap2x),
                     (& $fmtPair $row.RouteUsed $row.RouteCapacity),
                     (& $fmtPct $row.RouteUsed $row.RouteCapacity),
+                    (& $fmtPair $row.RouteOccupiedMaxAllocator $row.RouteLocalCap2x),
                     (& $fmtPair $row.SourceBlockUsed $row.SourceBlockCapacity),
                     (& $fmtPct $row.SourceBlockUsed $row.SourceBlockCapacity),
+                    (& $fmtPair $row.SourceBlockMaxAllocator $row.SourceBlockLocalCap2x),
                     (& $fmtPair $row.FrontcacheUsed $row.FrontcacheCapacity),
                     (& $fmtPct $row.FrontcacheUsed $row.FrontcacheCapacity),
+                    (& $fmtPair $row.FrontcacheMaxAllocator $row.FrontcacheLocalCap2x),
                     (& $fmtPair $row.TransferUsed $row.TransferCapacity),
-                    (& $fmtPct $row.TransferUsed $row.TransferCapacity)))
+                    (& $fmtPct $row.TransferUsed $row.TransferCapacity),
+                    (& $fmtPair $row.TransferMaxAllocator $row.TransferLocalCap2x)))
             }
         }
         $Summary.Add("")

@@ -63,6 +63,11 @@ bench_larson_compare:
 run_win_hz6_capacity_matrix:
   captures [HZ6_CAPACITY_UTIL]
   adds "HZ6 capacity utilization audit" markdown table.
+
+Follow-up:
+  [HZ6_CAPACITY_UTIL] also reports per-worker max usage and a diagnostic
+  `local_cap_2x` projection:
+    local_cap_2x = next_pow2(max_worker_used * 2)
 ```
 
 Smoke:
@@ -80,7 +85,7 @@ Command:
 
 Source:
   docs/benchmarks/windows/paper/hz6_capacity_util_l1_smoke/
-    20260605_090709_hz6_capacity_matrix_windows.md
+    20260605_091404_hz6_capacity_matrix_windows.md
 
 Result:
   descriptor used/cap: 2,352 / 2,621,440 = 0.09%
@@ -88,6 +93,13 @@ Result:
   source blocks/cap:   147 / 262,144 = 0.06%
   frontcache used/cap: 2,352 / 1,048,576 = 0.22%
   transfer current/cap: 0 / 65,536 = 0.00%
+
+Per-worker max / projected local cap:
+  descriptor: 160 / 512
+  route:      670 / 2,048
+  source:     10 / 32
+  frontcache: 160 / 512
+  transfer:   0 / 0
 ```
 
 Decision:
