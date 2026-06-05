@@ -4,7 +4,7 @@ int hz6_allocator_retain_source_block(Hz6SourceBlock* block) {
   if (!block || !hz6_source_block_active(block) || !block->ptr) {
     return 0;
   }
-  ++block->ref_count;
+  atomic_fetch_add_explicit(&block->ref_count, 1u, memory_order_acq_rel);
   return 1;
 }
 
@@ -15,12 +15,44 @@ int hz6_allocator_release_source_block(Hz6Allocator* allocator,
     return 0;
   }
 
-  if (block->ref_count != 0) {
-    --block->ref_count;
+  size_t old_ref = atomic_load_explicit(&block->ref_count,
+                                        memory_order_acquire);
+  while (old_ref != 0) {
+    if (atomic_compare_exchange_weak_explicit(&block->ref_count,
+                                              &old_ref,
+                                              old_ref - 1u,
+                                              memory_order_acq_rel,
+                                              memory_order_acquire)) {
+      break;
+    }
   }
-  if (block->ref_count != 0) {
+  if (old_ref == 0 || old_ref - 1u != 0) {
     return 1;
   }
+
+#if HZ6_SOURCE_BLOCK_RELEASE_LIVE_GUARD_L1
+  size_t live_descriptors = 0;
+  for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
+    Hz6ObjectDescriptor* descriptor = &allocator->descriptors[i];
+    if (descriptor->source_block == block && descriptor->ptr &&
+        descriptor->state != HZ6_STATE_DEAD) {
+      ++live_descriptors;
+    }
+  }
+  if (live_descriptors != 0) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.source_block_release_live_guard;
+    if (live_descriptors >
+        allocator->stats.source_block_release_live_descriptors_max) {
+      allocator->stats.source_block_release_live_descriptors_max =
+          live_descriptors;
+    }
+#endif
+    atomic_store_explicit(&block->ref_count, live_descriptors,
+                          memory_order_release);
+    return 1;
+  }
+#endif
 
   if (hz6_source_block_route_registered(block)) {
     if (hz6_source_block_route_shared(block)) {
@@ -55,7 +87,7 @@ int hz6_allocator_release_source_block(Hz6Allocator* allocator,
 #if !HZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1
   block->route_backend = NULL;
 #endif
-  block->ref_count = 0;
+  atomic_store_explicit(&block->ref_count, 0u, memory_order_release);
   block->run_slot_bytes = 0;
   block->run_class_id = 0;
   block->run_slot_count = 0;

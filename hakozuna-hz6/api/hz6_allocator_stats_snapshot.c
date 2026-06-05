@@ -173,7 +173,7 @@ static void hz6_stats_snapshot_memory_attribution(
     if (hz6_source_block_route_registered(block)) {
       ++registered_source_blocks;
     }
-    if (block->ref_count != 0) {
+    if (hz6_source_block_ref_count(block) != 0) {
       ++ref_nonzero_source_blocks;
     } else {
       ++ref_zero_source_blocks;

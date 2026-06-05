@@ -18,6 +18,115 @@ Use these orientation docs before reading this long ledger:
   HZ6_SOURCE_MODULARIZATION.md
 ```
 
+### 2026-06-06: mixed_ws wide_ws route-invalid debug closeout
+
+Goal:
+
+```text
+Debug the wide_ws failure/regression seen after source-depot / budgeted
+descriptor rehome work:
+  before: no longer crashing after SourceBlock activation hardening, but
+          route_invalid / occasional route_miss remained in wide_ws.
+```
+
+Root cause:
+
+```text
+Shared exact route directory deletion used base=0.
+
+The shared route directory is open-addressed.  Under wide_ws, frontcache
+overflow unregisters many exact routes.  Turning a deleted slot into empty
+breaks the probe chain, so a later live exact route behind that deleted slot
+can become unreachable.  The shared invalid source-block envelope then catches
+the still-owned pointer as HZ6_ROUTE_INVALID.
+
+This was not primarily:
+  activation route loss,
+  early SourceBlock release,
+  frontcache/transfer invalid reuse,
+  or lifecycle remote-free failure.
+```
+
+Fix:
+
+```text
+1. Shared route directory now uses a tombstone sentinel on unregister.
+   Lookup skips tombstones.
+   Register reuses tombstones, including the tombstone-only/no-empty case.
+
+2. SourceBlock ref_count is atomic and the shared source-block depot claim path
+   marks a claimed block active while initializing it, preventing concurrent
+   depot slot claims from observing the same free slot.
+
+3. hz6_owns() now uses allocator-level route lookup rather than the local
+   route backend only, so diagnostic ownership witnesses see shared exact
+   overflow and shared invalid range routes.
+
+4. Diagnostic-only attribution was added for free invalid reasons,
+   shared-dir/elastic-route counters, frontcache/transfer invalid witnesses,
+   and bench pre-free owns/duplicate-pointer witnesses.
+```
+
+Validation:
+
+```text
+Normal mixed_ws wide_ws, 8 threads, 200k iters, ws=16384, 16..1024:
+
+  elasticdescsource-route base:
+    exit 0
+    route_valid=813568
+    route_invalid=0
+    route_miss=0
+    route_register_fail=0
+    ops/s around 0.63M in this debug run
+
+  depotdescrehome-budget2048:
+    exit 0
+    route_valid=813568
+    route_invalid=0
+    route_miss=0
+    route_register_fail=0
+    ops/s around 0.64M in this debug run
+
+Diagnostic base with HZ_BENCH_TRACE_LAST_OP=1:
+  route_invalid=0
+  route_miss=0
+  elastic_route_overflow_register_fail=0
+  frontcache_reuse_invalid=0
+  transfer_reuse_invalid=0
+  lifecycle_foreign_free_invalid=0
+  free_invalid_* = 0
+  pre_free_owns_false=0
+  duplicate_alloc_ptr=0
+  activation_route_repair_attempt=0
+  source_block_release_live_guard=0
+```
+
+Decision:
+
+```text
+KEEP:
+  shared route tombstones
+  atomic SourceBlock ref_count
+  locked/claimed shared SourceBlock depot slot initialization
+  allocator-level hz6_owns()
+  diagnostic invalid attribution counters
+
+KEEP DISABLED / diagnostic only:
+  HZ6_SOURCE_BLOCK_ACTIVATION_ROUTE_REPAIR_L1
+  HZ6_SOURCE_BLOCK_RELEASE_LIVE_GUARD_L1
+
+Read:
+  The wide_ws route-invalid bug is closed as a route-directory deletion
+  contract bug.  Do not chase activation repair or release live guard as the
+  primary fix; they did not fire in the confirming diagnostic run.
+
+Next:
+  With safety clean, use wide_ws as a performance/RSS target again.  The next
+  optimization should attack route probe cost / source-run reuse pressure, not
+  more invalid-route repair.
+```
+
 ### 2026-06-06: DepotDescriptorRehomeBudget2048 repeat/guard and run-meta crash fix
 
 Goal:

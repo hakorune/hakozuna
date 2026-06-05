@@ -13,7 +13,9 @@ void hz6_allocator_init_state_source_blocks(Hz6Allocator* allocator) {
 #if !HZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1
     allocator->source_blocks[i].route_backend = NULL;
 #endif
-    allocator->source_blocks[i].ref_count = 0;
+    atomic_store_explicit(&allocator->source_blocks[i].ref_count,
+                          0u,
+                          memory_order_release);
     allocator->source_blocks[i].run_slot_bytes = 0;
     allocator->source_blocks[i].run_class_id = 0;
     allocator->source_blocks[i].run_slot_count = 0;

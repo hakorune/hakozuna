@@ -1,6 +1,7 @@
 #ifndef HZ6_ALLOCATOR_TYPES_H
 #define HZ6_ALLOCATOR_TYPES_H
 
+#include <stdatomic.h>
 #include <stdint.h>
 
 #include "../frontcache/hz6_frontcache.h"
@@ -37,7 +38,7 @@ typedef struct Hz6SourceBlock {
 #if !HZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1
   Hz6RouteBackend* route_backend;
 #endif
-  size_t ref_count;
+  _Atomic size_t ref_count;
   size_t run_slot_bytes;
   uint16_t run_class_id;
   uint16_t run_slot_count;
@@ -54,6 +55,13 @@ typedef struct Hz6SourceBlock {
   int run_active;
 #endif
 } Hz6SourceBlock;
+
+static inline size_t hz6_source_block_ref_count(
+    const Hz6SourceBlock* block) {
+  return block ? atomic_load_explicit(&block->ref_count,
+                                      memory_order_acquire)
+               : 0;
+}
 
 #if HZ6_SOURCE_BLOCK_PACKED_FLAGS_L1
 #define HZ6_SOURCE_BLOCK_FLAG_ACTIVE ((uint16_t)0x0100u)

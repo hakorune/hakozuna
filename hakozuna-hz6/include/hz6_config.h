@@ -332,6 +332,17 @@
 #define HZ6_FRONTCACHE_CAP_ON_FREE 0
 #endif
 
+#ifndef HZ6_SOURCE_BLOCK_ACTIVATION_ROUTE_REPAIR_L1
+/* Diagnostic-only repair probe.  Do not promote as-is: the current repair path
+ * is intentionally narrow and registers repaired source-run slots as TOY. */
+#define HZ6_SOURCE_BLOCK_ACTIVATION_ROUTE_REPAIR_L1 0
+#endif
+
+#ifndef HZ6_SOURCE_BLOCK_RELEASE_LIVE_GUARD_L1
+/* Diagnostic-only lifetime guard for source-block release investigations. */
+#define HZ6_SOURCE_BLOCK_RELEASE_LIVE_GUARD_L1 0
+#endif
+
 #ifndef HZ6_FRONTCACHE_PACKED_META_L1
 #define HZ6_FRONTCACHE_PACKED_META_L1 0
 #endif

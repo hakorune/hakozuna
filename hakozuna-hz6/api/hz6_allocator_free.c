@@ -195,12 +195,20 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
         }
         if (!front) {
           ok = 0;
+#if HZ6_DIAGNOSTIC_PROBES
+          ++allocator->stats.free_invalid_no_front;
+#endif
 #if HZ6_SAME_OWNER_FAST_L1
         } else if (local_owner &&
                    hz6_allocator_same_owner_fast_front_eligible_inline(
                        route.front_id)) {
           ok = hz6_allocator_same_owner_fast_free_inline(allocator, ptr,
                                                          route);
+#if HZ6_DIAGNOSTIC_PROBES
+          if (!ok) {
+            ++allocator->stats.free_invalid_same_owner_fast;
+          }
+#endif
 #elif HZ6_LOCAL_CACHE_DIRECT_FREE_L1
         } else if (local_owner &&
                    (route.front_id == HZ6_FRONT_TOY ||
@@ -208,10 +216,20 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
                     route.front_id == HZ6_FRONT_LOCAL2P)) {
           ok = hz6_allocator_cache_active_descriptor(allocator, descriptor,
                                                      ptr);
+#if HZ6_DIAGNOSTIC_PROBES
+          if (!ok) {
+            ++allocator->stats.free_invalid_local_cache_direct;
+          }
+#endif
 #endif
         } else if (local_owner) {
           ok = front->free_tagged &&
                front->free_tagged(allocator, ptr, route);
+#if HZ6_DIAGNOSTIC_PROBES
+          if (!ok) {
+            ++allocator->stats.free_invalid_front_tagged;
+          }
+#endif
         } else {
           if (needs_rehome) {
 #if HZ6_DIAGNOSTIC_PROBES
@@ -220,6 +238,11 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
           }
           ok = front->remote_free_tagged &&
                front->remote_free_tagged(allocator, ptr, route);
+#if HZ6_DIAGNOSTIC_PROBES
+          if (!ok) {
+            ++allocator->stats.free_invalid_remote_tagged;
+          }
+#endif
         }
         if (ok && needs_rehome) {
 #if HZ6_DIAGNOSTIC_PROBES
@@ -243,11 +266,21 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
         }
 #endif
         if (!ok) {
+#if HZ6_DIAGNOSTIC_PROBES
+          if (local_owner) {
+            ++allocator->stats.free_invalid_local_owner;
+          } else {
+            ++allocator->stats.free_invalid_remote_owner;
+          }
+#endif
           ++allocator->stats.route_invalid;
         }
       }
       return;
     case HZ6_ROUTE_INVALID:
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.free_invalid_route_kind_invalid;
+#endif
       ++allocator->stats.route_invalid;
       return;
     case HZ6_ROUTE_MISS:

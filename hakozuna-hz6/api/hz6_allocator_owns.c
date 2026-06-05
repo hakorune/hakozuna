@@ -4,8 +4,7 @@ int hz6_owns(Hz6Allocator* allocator, const void* ptr) {
   if (!allocator || !ptr) {
     return 0;
   }
-  Hz6RouteResult route =
-      hz6_route_backend_lookup(&allocator->route_backend, ptr);
+  Hz6RouteResult route = hz6_allocator_route_lookup(allocator, ptr);
   if (route.kind == HZ6_ROUTE_INVALID) {
     return 1;
   }

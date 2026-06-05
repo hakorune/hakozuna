@@ -288,7 +288,7 @@ int main(void) {
               "run scavenge releases one slot") ||
       !expect(hz6_source_block_active(run_scavenge_block),
               "run scavenge keeps shared block") ||
-      !expect(run_scavenge_block->ref_count == 7,
+      !expect(hz6_source_block_ref_count(run_scavenge_block) == 7,
               "run scavenge decrements block refcount")) {
     return 1;
   }

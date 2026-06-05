@@ -34,7 +34,7 @@ void hz6_allocator_destroy_source_blocks(Hz6Allocator* allocator) {
 #if !HZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1
     block->route_backend = NULL;
 #endif
-    block->ref_count = 0;
+    atomic_store_explicit(&block->ref_count, 0u, memory_order_release);
     block->run_slot_bytes = 0;
     block->run_class_id = 0;
     block->run_slot_count = 0;

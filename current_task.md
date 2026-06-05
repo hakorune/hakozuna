@@ -19,6 +19,16 @@ remains profile-stabilized; new HZ5 work should not blur the HZ6 contract.
 Latest HZ6 selected-family decision:
 
 ```text
+2026-06-06 wide_ws route-invalid closeout:
+  mixed_ws wide_ws route_invalid/miss was traced to shared exact route
+  directory deletion breaking open-address probe chains.  Fix is tombstone
+  unregister + tombstone reuse on register, plus atomic SourceBlock ref_count
+  and locked shared SourceBlock depot claim hardening.  Confirmed:
+    normal wide_ws base and budget2048 route_invalid=0 route_miss=0
+    diagnostic base elastic_route_overflow_register_fail=0
+    pre_free_owns_false=0 after hz6_owns() uses allocator-level lookup
+  See hakozuna-hz6/docs/current_task.md for the full closeout.
+
 2026-06-05 cleanup/orientation:
   Short docs are the source of truth for the current working set:
     hakozuna-hz6/docs/HZ6_SELECTED_FAMILY_SUMMARY.md

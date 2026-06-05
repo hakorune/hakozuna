@@ -4,8 +4,21 @@
 static Hz6SourceBlock
     g_hz6_source_block_depot[HZ6_ELASTIC_SOURCE_BLOCK_DEPOT_CAPACITY];
 static size_t g_hz6_source_block_depot_next;
+static atomic_flag g_hz6_source_block_depot_lock = ATOMIC_FLAG_INIT;
 
-static Hz6SourceBlock* hz6_allocator_find_source_block_depot_slot(void) {
+static void hz6_allocator_lock_source_block_depot(void) {
+  while (atomic_flag_test_and_set_explicit(&g_hz6_source_block_depot_lock,
+                                           memory_order_acquire)) {
+  }
+}
+
+static void hz6_allocator_unlock_source_block_depot(void) {
+  atomic_flag_clear_explicit(&g_hz6_source_block_depot_lock,
+                             memory_order_release);
+}
+
+static Hz6SourceBlock* hz6_allocator_claim_source_block_depot_slot(void) {
+  hz6_allocator_lock_source_block_depot();
   for (size_t offset = 0; offset < HZ6_ELASTIC_SOURCE_BLOCK_DEPOT_CAPACITY;
        ++offset) {
     size_t index = g_hz6_source_block_depot_next + offset;
@@ -16,13 +29,16 @@ static Hz6SourceBlock* hz6_allocator_find_source_block_depot_slot(void) {
     if (hz6_source_block_active(block) || block->ptr) {
       continue;
     }
+    hz6_source_block_set_active(block, 1);
     g_hz6_source_block_depot_next = index + 1;
     if (g_hz6_source_block_depot_next >=
         HZ6_ELASTIC_SOURCE_BLOCK_DEPOT_CAPACITY) {
       g_hz6_source_block_depot_next = 0;
     }
+    hz6_allocator_unlock_source_block_depot();
     return block;
   }
+  hz6_allocator_unlock_source_block_depot();
   return NULL;
 }
 
@@ -415,7 +431,7 @@ static void hz6_allocator_record_source_block_failure_state(
     if (hz6_source_block_route_registered(block)) {
       ++registered;
     }
-    if (block->ref_count != 0) {
+    if (hz6_source_block_ref_count(block) != 0) {
       ++ref_nonzero;
     } else {
       ++ref_zero;
@@ -460,10 +476,11 @@ void hz6_allocator_note_source_run_reuse_dryrun(Hz6Allocator* allocator,
     const Hz6SourceBlock* block = &allocator->source_blocks[i];
     if (!hz6_source_block_active(block) || !block->ptr ||
         hz6_source_block_source_kind(block) != source_kind ||
-        block->bytes != block_bytes || block->ref_count >= slots_per_block) {
+        block->bytes != block_bytes ||
+        hz6_source_block_ref_count(block) >= slots_per_block) {
       continue;
     }
-    size_t free_slots = slots_per_block - block->ref_count;
+    size_t free_slots = slots_per_block - hz6_source_block_ref_count(block);
     ++candidate_blocks;
     free_slots_total += free_slots;
     if (free_slots > largest_free_slots) {
@@ -522,7 +539,7 @@ Hz6SourceBlock* hz6_allocator_create_source_block(
 #endif
   if (!block) {
 #if HZ6_ELASTIC_SOURCE_BLOCK_OVERFLOW_L1
-    block = hz6_allocator_find_source_block_depot_slot();
+    block = hz6_allocator_claim_source_block_depot_slot();
     if (block) {
       ++allocator->stats.elastic_source_block_overflow_alloc;
     }
@@ -541,6 +558,15 @@ Hz6SourceBlock* hz6_allocator_create_source_block(
 
   void* ptr = source_ops->reserve(bytes, source_ops->allocation_granularity);
   if (!ptr) {
+#if HZ6_ELASTIC_SOURCE_BLOCK_OVERFLOW_L1
+    if (hz6_allocator_source_block_is_elastic_depot(block)) {
+      hz6_source_block_set_active(block, 0);
+      hz6_source_block_set_route_registered(block, 0);
+      hz6_source_block_set_route_shared(block, 0);
+      hz6_source_block_set_source_kind(block, HZ6_SOURCE_NONE);
+      atomic_store_explicit(&block->ref_count, 0u, memory_order_release);
+    }
+#endif
     return NULL;
   }
 
@@ -551,7 +577,7 @@ Hz6SourceBlock* hz6_allocator_create_source_block(
 #if !HZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1
   block->route_backend = NULL;
 #endif
-  block->ref_count = 0;
+  atomic_store_explicit(&block->ref_count, 0u, memory_order_release);
   hz6_source_run_reset(block);
 #if HZ6_OWNER_SOURCE_SIDE_META_L2
   block->owner_source_storage_allocator = allocator;

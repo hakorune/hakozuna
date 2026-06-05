@@ -377,6 +377,41 @@ int hz6_allocator_activate_descriptor(Hz6Allocator* allocator,
         addr - base > block->bytes - descriptor->bytes) {
       return 0;
     }
+#if HZ6_SOURCE_BLOCK_ACTIVATION_ROUTE_REPAIR_L1
+    if (!allocator) {
+      return 0;
+    }
+    if (descriptor->bytes > 4096u) {
+      return 0;
+    }
+    Hz6RouteResult route = hz6_allocator_route_lookup_exact(allocator, ptr);
+    if (route.kind == HZ6_ROUTE_VALID) {
+      if (route.descriptor != descriptor ||
+          route.generation != descriptor->generation ||
+          route.class_id != descriptor->class_id) {
+#if HZ6_DIAGNOSTIC_PROBES
+        ++allocator->stats.activation_route_repair_conflict;
+#endif
+        return 0;
+      }
+    } else {
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.activation_route_repair_attempt;
+#endif
+      if (!hz6_allocator_route_register_exact_reason(
+              allocator, ptr, descriptor->bytes, HZ6_FRONT_TOY,
+              descriptor->class_id, descriptor->generation, descriptor,
+              HZ6_ROUTE_REGISTER_REASON_UNKNOWN)) {
+#if HZ6_DIAGNOSTIC_PROBES
+        ++allocator->stats.activation_route_repair_fail;
+#endif
+        return 0;
+      }
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.activation_route_repair_success;
+#endif
+    }
+#endif
   }
   descriptor->state = HZ6_STATE_ACTIVE;
   hz6_allocator_set_descriptor_owner(allocator, descriptor, owner);

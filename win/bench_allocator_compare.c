@@ -60,6 +60,10 @@ typedef struct {
     size_t alloc_successes;
     size_t alloc_failures;
     size_t frees;
+#if defined(HZ_BENCH_USE_HZ6) && HZ_BENCH_TRACE_LAST_OP
+    size_t hz6_pre_free_owns_false;
+    size_t hz6_duplicate_alloc_ptr;
+#endif
 #if defined(HZ_BENCH_USE_HZ6)
     Hz6Allocator hz6_allocator;
     Hz6StatsSnapshot hz6_stats_after;
@@ -293,6 +297,9 @@ static unsigned __stdcall bench_thread(void* arg) {
         if (slots[idx]) {
 #if defined(HZ_BENCH_USE_HZ6) && HZ_BENCH_TRACE_LAST_OP
             bench_record_last_op(ta, thread_index, 1, slots[idx], 0);
+            if (!hz6_owns(&ta->hz6_allocator, slots[idx])) {
+                ++ta->hz6_pre_free_owns_false;
+            }
 #endif
             bench_free(ta, slots[idx]);
             ++ta->frees;
@@ -317,6 +324,14 @@ static unsigned __stdcall bench_thread(void* arg) {
             }
         }
 #if defined(HZ_BENCH_USE_HZ6) && HZ_BENCH_TRACE_LAST_OP
+        if (ws <= 1024) {
+            for (size_t scan = 0; scan < ws; ++scan) {
+                if (scan != idx && slots[scan] == p) {
+                    ++ta->hz6_duplicate_alloc_ptr;
+                    break;
+                }
+            }
+        }
         bench_record_last_op(ta, thread_index, 2, p, size);
 #endif
         memset(p, 0xA5, size < 64 ? size : 64);
@@ -327,6 +342,9 @@ static unsigned __stdcall bench_thread(void* arg) {
         if (slots[i]) {
 #if defined(HZ_BENCH_USE_HZ6) && HZ_BENCH_TRACE_LAST_OP
             bench_record_last_op(ta, thread_index, 3, slots[i], 0);
+            if (!hz6_owns(&ta->hz6_allocator, slots[i])) {
+                ++ta->hz6_pre_free_owns_false;
+            }
 #endif
             bench_free(ta, slots[i]);
             ++ta->frees;
@@ -509,6 +527,10 @@ int main(int argc, char** argv) {
     size_t alloc_successes = 0;
     size_t alloc_failures = 0;
     size_t frees = 0;
+#if defined(HZ_BENCH_USE_HZ6) && HZ_BENCH_TRACE_LAST_OP
+    size_t hz6_pre_free_owns_false = 0;
+    size_t hz6_duplicate_alloc_ptr = 0;
+#endif
 #if defined(HZ_BENCH_USE_HZ6)
     Hz6StatsSnapshot hz6_stats;
     memset(&hz6_stats, 0, sizeof(hz6_stats));
@@ -518,6 +540,10 @@ int main(int argc, char** argv) {
         alloc_successes += args[i].alloc_successes;
         alloc_failures += args[i].alloc_failures;
         frees += args[i].frees;
+#if defined(HZ_BENCH_USE_HZ6) && HZ_BENCH_TRACE_LAST_OP
+        hz6_pre_free_owns_false += args[i].hz6_pre_free_owns_false;
+        hz6_duplicate_alloc_ptr += args[i].hz6_duplicate_alloc_ptr;
+#endif
 #if defined(HZ_BENCH_USE_HZ6)
         hz6_stats.route_valid += args[i].hz6_stats_after.route_valid;
         hz6_stats.route_invalid += args[i].hz6_stats_after.route_invalid;
@@ -539,6 +565,146 @@ int main(int argc, char** argv) {
             hz6_stats.descriptor_probe_max =
                 args[i].hz6_stats_after.descriptor_probe_max;
         }
+        hz6_stats.frontcache_reuse_hit +=
+            args[i].hz6_stats_after.frontcache_reuse_hit;
+        hz6_stats.frontcache_reuse_invalid +=
+            args[i].hz6_stats_after.frontcache_reuse_invalid;
+        hz6_stats.transfer_reuse_hit +=
+            args[i].hz6_stats_after.transfer_reuse_hit;
+        hz6_stats.transfer_reuse_invalid +=
+            args[i].hz6_stats_after.transfer_reuse_invalid;
+        hz6_stats.route_visibility_lookup +=
+            args[i].hz6_stats_after.route_visibility_lookup;
+        hz6_stats.route_visibility_hit +=
+            args[i].hz6_stats_after.route_visibility_hit;
+        hz6_stats.route_visibility_hit_local_owner +=
+            args[i].hz6_stats_after.route_visibility_hit_local_owner;
+        hz6_stats.route_visibility_hit_foreign_owner +=
+            args[i].hz6_stats_after.route_visibility_hit_foreign_owner;
+        hz6_stats.route_visibility_miss +=
+            args[i].hz6_stats_after.route_visibility_miss;
+        hz6_stats.route_visibility_probe_total +=
+            args[i].hz6_stats_after.route_visibility_probe_total;
+        if (args[i].hz6_stats_after.route_visibility_probe_max >
+            hz6_stats.route_visibility_probe_max) {
+            hz6_stats.route_visibility_probe_max =
+                args[i].hz6_stats_after.route_visibility_probe_max;
+        }
+        hz6_stats.lifecycle_owner_mismatch +=
+            args[i].hz6_stats_after.lifecycle_owner_mismatch;
+        hz6_stats.lifecycle_foreign_free_attempt +=
+            args[i].hz6_stats_after.lifecycle_foreign_free_attempt;
+        hz6_stats.lifecycle_foreign_free_handled +=
+            args[i].hz6_stats_after.lifecycle_foreign_free_handled;
+        hz6_stats.lifecycle_foreign_free_invalid +=
+            args[i].hz6_stats_after.lifecycle_foreign_free_invalid;
+        hz6_stats.free_invalid_route_kind_invalid +=
+            args[i].hz6_stats_after.free_invalid_route_kind_invalid;
+        hz6_stats.free_invalid_no_front +=
+            args[i].hz6_stats_after.free_invalid_no_front;
+        hz6_stats.free_invalid_local_owner +=
+            args[i].hz6_stats_after.free_invalid_local_owner;
+        hz6_stats.free_invalid_remote_owner +=
+            args[i].hz6_stats_after.free_invalid_remote_owner;
+        hz6_stats.free_invalid_same_owner_fast +=
+            args[i].hz6_stats_after.free_invalid_same_owner_fast;
+        hz6_stats.free_invalid_local_cache_direct +=
+            args[i].hz6_stats_after.free_invalid_local_cache_direct;
+        hz6_stats.free_invalid_front_tagged +=
+            args[i].hz6_stats_after.free_invalid_front_tagged;
+        hz6_stats.free_invalid_remote_tagged +=
+            args[i].hz6_stats_after.free_invalid_remote_tagged;
+        hz6_stats.activation_route_repair_attempt +=
+            args[i].hz6_stats_after.activation_route_repair_attempt;
+        hz6_stats.activation_route_repair_success +=
+            args[i].hz6_stats_after.activation_route_repair_success;
+        hz6_stats.activation_route_repair_fail +=
+            args[i].hz6_stats_after.activation_route_repair_fail;
+        hz6_stats.activation_route_repair_conflict +=
+            args[i].hz6_stats_after.activation_route_repair_conflict;
+        hz6_stats.source_block_release_live_guard +=
+            args[i].hz6_stats_after.source_block_release_live_guard;
+        if (args[i].hz6_stats_after.source_block_release_live_descriptors_max >
+            hz6_stats.source_block_release_live_descriptors_max) {
+            hz6_stats.source_block_release_live_descriptors_max =
+                args[i].hz6_stats_after
+                    .source_block_release_live_descriptors_max;
+        }
+        hz6_stats.shared_dir_lookup +=
+            args[i].hz6_stats_after.shared_dir_lookup;
+        hz6_stats.shared_dir_hit +=
+            args[i].hz6_stats_after.shared_dir_hit;
+        hz6_stats.shared_dir_miss +=
+            args[i].hz6_stats_after.shared_dir_miss;
+        hz6_stats.shared_dir_stale +=
+            args[i].hz6_stats_after.shared_dir_stale;
+        hz6_stats.shared_dir_hit_local_allocator +=
+            args[i].hz6_stats_after.shared_dir_hit_local_allocator;
+        hz6_stats.shared_dir_hit_foreign_allocator +=
+            args[i].hz6_stats_after.shared_dir_hit_foreign_allocator;
+        hz6_stats.shared_dir_would_skip_local +=
+            args[i].hz6_stats_after.shared_dir_would_skip_local;
+        hz6_stats.shared_dir_register +=
+            args[i].hz6_stats_after.shared_dir_register;
+        hz6_stats.shared_dir_unregister +=
+            args[i].hz6_stats_after.shared_dir_unregister;
+        hz6_stats.shared_dir_probe_total +=
+            args[i].hz6_stats_after.shared_dir_probe_total;
+        if (args[i].hz6_stats_after.shared_dir_probe_max >
+            hz6_stats.shared_dir_probe_max) {
+            hz6_stats.shared_dir_probe_max =
+                args[i].hz6_stats_after.shared_dir_probe_max;
+        }
+        hz6_stats.shared_dir_first_attempt +=
+            args[i].hz6_stats_after.shared_dir_first_attempt;
+        hz6_stats.shared_dir_first_hit +=
+            args[i].hz6_stats_after.shared_dir_first_hit;
+        hz6_stats.shared_dir_first_fallback +=
+            args[i].hz6_stats_after.shared_dir_first_fallback;
+        hz6_stats.shared_dir_first_invalid +=
+            args[i].hz6_stats_after.shared_dir_first_invalid;
+        hz6_stats.elastic_route_overflow_register +=
+            args[i].hz6_stats_after.elastic_route_overflow_register;
+        hz6_stats.elastic_route_overflow_register_fail +=
+            args[i].hz6_stats_after.elastic_route_overflow_register_fail;
+        hz6_stats.elastic_route_overflow_lookup +=
+            args[i].hz6_stats_after.elastic_route_overflow_lookup;
+        hz6_stats.elastic_route_overflow_hit +=
+            args[i].hz6_stats_after.elastic_route_overflow_hit;
+        hz6_stats.source_owned_prepare +=
+            args[i].hz6_stats_after.source_owned_prepare;
+        hz6_stats.source_owned_route_hit_local_owner +=
+            args[i].hz6_stats_after.source_owned_route_hit_local_owner;
+        hz6_stats.source_owned_visibility_hit_local_owner +=
+            args[i].hz6_stats_after.source_owned_visibility_hit_local_owner;
+        hz6_stats.source_owned_visibility_hit_foreign_owner +=
+            args[i].hz6_stats_after.source_owned_visibility_hit_foreign_owner;
+        hz6_stats.source_owned_remote_free_attempt +=
+            args[i].hz6_stats_after.source_owned_remote_free_attempt;
+        hz6_stats.source_owned_release +=
+            args[i].hz6_stats_after.source_owned_release;
+        hz6_stats.route_register_reason_unknown +=
+            args[i].hz6_stats_after.route_register_reason_unknown;
+        hz6_stats.route_register_reason_source_run_slot +=
+            args[i].hz6_stats_after.route_register_reason_source_run_slot;
+        hz6_stats.route_register_reason_direct_source +=
+            args[i].hz6_stats_after.route_register_reason_direct_source;
+        hz6_stats.route_register_reason_materialize +=
+            args[i].hz6_stats_after.route_register_reason_materialize;
+        hz6_stats.route_register_reason_rehome +=
+            args[i].hz6_stats_after.route_register_reason_rehome;
+        hz6_stats.route_unregister_reason_unknown +=
+            args[i].hz6_stats_after.route_unregister_reason_unknown;
+        hz6_stats.route_unregister_reason_frontcache_overflow +=
+            args[i].hz6_stats_after.route_unregister_reason_frontcache_overflow;
+        hz6_stats.route_unregister_reason_cap_release +=
+            args[i].hz6_stats_after.route_unregister_reason_cap_release;
+        hz6_stats.route_unregister_reason_descriptorless_detach +=
+            args[i].hz6_stats_after.route_unregister_reason_descriptorless_detach;
+        hz6_stats.route_unregister_reason_source_slot_release +=
+            args[i].hz6_stats_after.route_unregister_reason_source_slot_release;
+        hz6_stats.route_unregister_reason_rehome +=
+            args[i].hz6_stats_after.route_unregister_reason_rehome;
 #if HZ6_DIAGNOSTIC_PROBES
 #define HZ6_MAX_STAT(field) \
         do { \
@@ -781,12 +947,78 @@ int main(int argc, char** argv) {
            threads, iters, ws, min_size, max_size, sec, ops_sec,
            alloc_attempts, alloc_successes, alloc_failures, frees);
 #if defined(HZ_BENCH_USE_HZ6)
+#if HZ6_DIAGNOSTIC_PROBES
     printf(" hz6_route_valid=%zu hz6_route_invalid=%zu hz6_route_miss=%zu "
            "hz6_transfer_push=%zu hz6_transfer_pop=%zu "
            "hz6_source_alloc=%zu hz6_alloc_fail=%zu "
            "hz6_descriptor_exhausted=%zu hz6_route_register_fail=%zu "
            "hz6_source_block_exhausted=%zu hz6_descriptor_probe_total=%zu "
            "hz6_descriptor_probe_max=%zu "
+           "hz6_frontcache_reuse_hit=%zu "
+           "hz6_frontcache_reuse_invalid=%zu "
+           "hz6_transfer_reuse_hit=%zu "
+           "hz6_transfer_reuse_invalid=%zu "
+           "hz6_route_visibility_lookup=%zu "
+           "hz6_route_visibility_hit=%zu "
+           "hz6_route_visibility_hit_local_owner=%zu "
+           "hz6_route_visibility_hit_foreign_owner=%zu "
+           "hz6_route_visibility_miss=%zu "
+           "hz6_route_visibility_probe_total=%zu "
+           "hz6_route_visibility_probe_max=%zu "
+           "hz6_lifecycle_owner_mismatch=%zu "
+           "hz6_lifecycle_foreign_free_attempt=%zu "
+           "hz6_lifecycle_foreign_free_handled=%zu "
+           "hz6_lifecycle_foreign_free_invalid=%zu "
+           "hz6_free_invalid_route_kind_invalid=%zu "
+           "hz6_free_invalid_no_front=%zu "
+           "hz6_free_invalid_local_owner=%zu "
+           "hz6_free_invalid_remote_owner=%zu "
+           "hz6_free_invalid_same_owner_fast=%zu "
+           "hz6_free_invalid_local_cache_direct=%zu "
+           "hz6_free_invalid_front_tagged=%zu "
+           "hz6_free_invalid_remote_tagged=%zu "
+           "hz6_activation_route_repair_attempt=%zu "
+           "hz6_activation_route_repair_success=%zu "
+           "hz6_activation_route_repair_fail=%zu "
+           "hz6_activation_route_repair_conflict=%zu "
+           "hz6_source_block_release_live_guard=%zu "
+           "hz6_source_block_release_live_descriptors_max=%zu "
+           "hz6_shared_dir_lookup=%zu "
+           "hz6_shared_dir_hit=%zu "
+           "hz6_shared_dir_miss=%zu "
+           "hz6_shared_dir_stale=%zu "
+           "hz6_shared_dir_hit_local_allocator=%zu "
+           "hz6_shared_dir_hit_foreign_allocator=%zu "
+           "hz6_shared_dir_would_skip_local=%zu "
+           "hz6_shared_dir_register=%zu "
+           "hz6_shared_dir_unregister=%zu "
+           "hz6_shared_dir_probe_total=%zu "
+           "hz6_shared_dir_probe_max=%zu "
+           "hz6_shared_dir_first_attempt=%zu "
+           "hz6_shared_dir_first_hit=%zu "
+           "hz6_shared_dir_first_fallback=%zu "
+           "hz6_shared_dir_first_invalid=%zu "
+           "hz6_elastic_route_overflow_register=%zu "
+           "hz6_elastic_route_overflow_register_fail=%zu "
+           "hz6_elastic_route_overflow_lookup=%zu "
+           "hz6_elastic_route_overflow_hit=%zu "
+           "hz6_source_owned_prepare=%zu "
+           "hz6_source_owned_route_hit_local_owner=%zu "
+           "hz6_source_owned_visibility_hit_local_owner=%zu "
+           "hz6_source_owned_visibility_hit_foreign_owner=%zu "
+           "hz6_source_owned_remote_free_attempt=%zu "
+           "hz6_source_owned_release=%zu "
+           "hz6_route_register_reason_unknown=%zu "
+           "hz6_route_register_reason_source_run_slot=%zu "
+           "hz6_route_register_reason_direct_source=%zu "
+           "hz6_route_register_reason_materialize=%zu "
+           "hz6_route_register_reason_rehome=%zu "
+           "hz6_route_unregister_reason_unknown=%zu "
+           "hz6_route_unregister_reason_frontcache_overflow=%zu "
+           "hz6_route_unregister_reason_cap_release=%zu "
+           "hz6_route_unregister_reason_descriptorless_detach=%zu "
+           "hz6_route_unregister_reason_source_slot_release=%zu "
+           "hz6_route_unregister_reason_rehome=%zu "
            "hz6_descriptor_fail_active_max=%zu "
            "hz6_descriptor_fail_local_free_max=%zu "
            "hz6_descriptor_fail_transfer_free_max=%zu "
@@ -891,6 +1123,71 @@ int main(int argc, char** argv) {
            hz6_stats.alloc_fail, hz6_stats.descriptor_exhausted,
            hz6_stats.route_register_fail, hz6_stats.source_block_exhausted,
            hz6_stats.descriptor_probe_total, hz6_stats.descriptor_probe_max,
+           hz6_stats.frontcache_reuse_hit,
+           hz6_stats.frontcache_reuse_invalid,
+           hz6_stats.transfer_reuse_hit,
+           hz6_stats.transfer_reuse_invalid,
+           hz6_stats.route_visibility_lookup,
+           hz6_stats.route_visibility_hit,
+           hz6_stats.route_visibility_hit_local_owner,
+           hz6_stats.route_visibility_hit_foreign_owner,
+           hz6_stats.route_visibility_miss,
+           hz6_stats.route_visibility_probe_total,
+           hz6_stats.route_visibility_probe_max,
+           hz6_stats.lifecycle_owner_mismatch,
+           hz6_stats.lifecycle_foreign_free_attempt,
+           hz6_stats.lifecycle_foreign_free_handled,
+           hz6_stats.lifecycle_foreign_free_invalid,
+           hz6_stats.free_invalid_route_kind_invalid,
+           hz6_stats.free_invalid_no_front,
+           hz6_stats.free_invalid_local_owner,
+           hz6_stats.free_invalid_remote_owner,
+           hz6_stats.free_invalid_same_owner_fast,
+           hz6_stats.free_invalid_local_cache_direct,
+           hz6_stats.free_invalid_front_tagged,
+           hz6_stats.free_invalid_remote_tagged,
+           hz6_stats.activation_route_repair_attempt,
+           hz6_stats.activation_route_repair_success,
+           hz6_stats.activation_route_repair_fail,
+           hz6_stats.activation_route_repair_conflict,
+           hz6_stats.source_block_release_live_guard,
+           hz6_stats.source_block_release_live_descriptors_max,
+           hz6_stats.shared_dir_lookup,
+           hz6_stats.shared_dir_hit,
+           hz6_stats.shared_dir_miss,
+           hz6_stats.shared_dir_stale,
+           hz6_stats.shared_dir_hit_local_allocator,
+           hz6_stats.shared_dir_hit_foreign_allocator,
+           hz6_stats.shared_dir_would_skip_local,
+           hz6_stats.shared_dir_register,
+           hz6_stats.shared_dir_unregister,
+           hz6_stats.shared_dir_probe_total,
+           hz6_stats.shared_dir_probe_max,
+           hz6_stats.shared_dir_first_attempt,
+           hz6_stats.shared_dir_first_hit,
+           hz6_stats.shared_dir_first_fallback,
+           hz6_stats.shared_dir_first_invalid,
+           hz6_stats.elastic_route_overflow_register,
+           hz6_stats.elastic_route_overflow_register_fail,
+           hz6_stats.elastic_route_overflow_lookup,
+           hz6_stats.elastic_route_overflow_hit,
+           hz6_stats.source_owned_prepare,
+           hz6_stats.source_owned_route_hit_local_owner,
+           hz6_stats.source_owned_visibility_hit_local_owner,
+           hz6_stats.source_owned_visibility_hit_foreign_owner,
+           hz6_stats.source_owned_remote_free_attempt,
+           hz6_stats.source_owned_release,
+           hz6_stats.route_register_reason_unknown,
+           hz6_stats.route_register_reason_source_run_slot,
+           hz6_stats.route_register_reason_direct_source,
+           hz6_stats.route_register_reason_materialize,
+           hz6_stats.route_register_reason_rehome,
+           hz6_stats.route_unregister_reason_unknown,
+           hz6_stats.route_unregister_reason_frontcache_overflow,
+           hz6_stats.route_unregister_reason_cap_release,
+           hz6_stats.route_unregister_reason_descriptorless_detach,
+           hz6_stats.route_unregister_reason_source_slot_release,
+           hz6_stats.route_unregister_reason_rehome,
            hz6_stats.descriptor_fail_active_max,
            hz6_stats.descriptor_fail_local_free_max,
            hz6_stats.descriptor_fail_transfer_free_max,
@@ -990,6 +1287,45 @@ int main(int argc, char** argv) {
            hz6_stats.large_span_central_push,
            hz6_stats.large_span_central_pop,
            hz6_stats.large_span_source_alloc);
+#else
+    printf(" hz6_route_valid=%zu hz6_route_invalid=%zu hz6_route_miss=%zu "
+           "hz6_transfer_push=%zu hz6_transfer_pop=%zu "
+           "hz6_source_alloc=%zu hz6_alloc_fail=%zu "
+           "hz6_descriptor_exhausted=%zu hz6_route_register_fail=%zu "
+           "hz6_source_block_exhausted=%zu hz6_descriptor_probe_total=%zu "
+           "hz6_descriptor_probe_max=%zu "
+           "hz6_route_lookup_probe_total=%zu "
+           "hz6_route_lookup_probe_max=%zu "
+           "hz6_route_register_probe_total=%zu "
+           "hz6_route_register_probe_max=%zu "
+           "hz6_route_unregister_probe_total=%zu "
+           "hz6_route_unregister_probe_max=%zu "
+           "hz6_source_block_probe_total=%zu "
+           "hz6_source_block_probe_max=%zu "
+           "hz6_large_central_push=%zu hz6_large_central_pop=%zu "
+           "hz6_large_source_alloc=%zu",
+           hz6_stats.route_valid, hz6_stats.route_invalid,
+           hz6_stats.route_miss, hz6_stats.transfer_push,
+           hz6_stats.transfer_pop, hz6_stats.source_alloc,
+           hz6_stats.alloc_fail, hz6_stats.descriptor_exhausted,
+           hz6_stats.route_register_fail, hz6_stats.source_block_exhausted,
+           hz6_stats.descriptor_probe_total, hz6_stats.descriptor_probe_max,
+           hz6_stats.route_lookup_probe_total,
+           hz6_stats.route_lookup_probe_max,
+           hz6_stats.route_register_probe_total,
+           hz6_stats.route_register_probe_max,
+           hz6_stats.route_unregister_probe_total,
+           hz6_stats.route_unregister_probe_max,
+           hz6_stats.source_block_probe_total,
+           hz6_stats.source_block_probe_max,
+           hz6_stats.large_span_central_push,
+           hz6_stats.large_span_central_pop,
+           hz6_stats.large_span_source_alloc);
+#endif
+#endif
+#if defined(HZ_BENCH_USE_HZ6) && HZ_BENCH_TRACE_LAST_OP
+    printf(" hz6_pre_free_owns_false=%zu hz6_duplicate_alloc_ptr=%zu",
+           hz6_pre_free_owns_false, hz6_duplicate_alloc_ptr);
 #endif
     printf(" peak_kb=%zu\n", peak_kb);
 #if defined(HZ_BENCH_USE_HZ6) && HZ6_DIAGNOSTIC_PROBES

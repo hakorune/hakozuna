@@ -33,7 +33,7 @@ static void hz6_front_note_source_block_localize_dryrun(
   }
 #endif
   ++allocator->stats.elastic_source_block_localize_storage_mismatch;
-  if (descriptor->source_block->ref_count > 1) {
+  if (hz6_source_block_ref_count(descriptor->source_block) > 1) {
     ++allocator->stats.elastic_source_block_localize_block_shared;
     return;
   }
@@ -168,7 +168,7 @@ static void hz6_front_note_elastic_depot_drain_dryrun(
     ++allocator->stats.elastic_depot_drain_storage_mismatch;
   }
 
-  if (block->ref_count <= 1) {
+  if (hz6_source_block_ref_count(block) <= 1) {
     ++allocator->stats.elastic_depot_drain_ref_exclusive;
   } else {
     ++allocator->stats.elastic_depot_drain_ref_shared;
@@ -200,7 +200,7 @@ static void hz6_front_note_elastic_depot_drain_dryrun(
 
   if (!storage_match && run_match) {
     ++allocator->stats.elastic_depot_drain_would_slot_localize;
-    if (block->ref_count > 1) {
+    if (hz6_source_block_ref_count(block) > 1) {
       ++allocator->stats.elastic_depot_drain_would_keep_shared;
     }
   }

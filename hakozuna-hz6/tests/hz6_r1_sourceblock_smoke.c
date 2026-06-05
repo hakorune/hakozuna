@@ -201,7 +201,8 @@ int main(void) {
               "source block slot zero") ||
       !expect(block_slot1 == g_source_block_storage + HZ6_MIDPAGE_8K_BYTES,
               "source block slot one") ||
-      !expect(block->ref_count == 2, "source block refcount")) {
+      !expect(hz6_source_block_ref_count(block) == 2,
+              "source block refcount")) {
     return 1;
   }
   void* duplicate_block_slot = hz6_front_source_block_slot(
@@ -209,7 +210,7 @@ int main(void) {
       HZ6_MIDPAGE_8K_CLASS_ID, HZ6_MIDPAGE_8K_BYTES, 0, block);
   if (!expect(duplicate_block_slot == NULL,
               "source block duplicate slot rejected") ||
-      !expect(block->ref_count == 2,
+      !expect(hz6_source_block_ref_count(block) == 2,
               "source block duplicate slot refcount restored") ||
       !expect(g_source_block_release_count == 0,
               "source block duplicate slot keeps source alive")) {
@@ -222,7 +223,7 @@ int main(void) {
   if (!expect(block_slot2 ==
                   g_source_block_storage + (2 * HZ6_MIDPAGE_8K_BYTES),
               "source block slot after duplicate failure") ||
-      !expect(block->ref_count == 3,
+      !expect(hz6_source_block_ref_count(block) == 3,
               "source block duplicate failure descriptor reused")) {
     return 1;
   }
@@ -258,7 +259,7 @@ int main(void) {
   if (!expect(hz6_allocator_release_descriptor_source(
                   &midpage_block_allocator, block_slot2_descriptor),
               "source block extra slot release") ||
-      !expect(block->ref_count == 2,
+      !expect(hz6_source_block_ref_count(block) == 2,
               "source block extra slot release decremented") ||
       !expect(g_source_block_release_count == 0,
               "source block extra slot release keeps source alive")) {
@@ -270,7 +271,8 @@ int main(void) {
               "source block first release") ||
       !expect(hz6_source_block_active(block),
               "source block retained after first release") ||
-      !expect(block->ref_count == 1, "source block decremented") ||
+      !expect(hz6_source_block_ref_count(block) == 1,
+              "source block decremented") ||
       !expect(g_source_block_release_count == 0,
               "source block not released early")) {
     return 1;
