@@ -69,6 +69,9 @@ Larson minimum-RSS candidate:
 ElasticCapacity candidate-watch:
   speed + ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512
 
+ElasticCapacity bounded descriptor rehome candidate-control:
+  speed + ownerlocalityfast-rsscap-2-elasticdescsource-route-depotrunmeta-depotownerdirect-depotdescrehome-budget2048-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run4096
+
 ElasticCapacity diagnostic-only:
   speed + diagnostic + ownerlocalityfast-rsscap-2-elasticdescsource-route-slotownerconsumerdryrun-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run4096
 ```
@@ -84,8 +87,11 @@ FrontCachePackedMeta-L1 and SourceBlockPackedFlags-L1 are lower-RSS component
 controls/candidates. The combined packed source10k lane is the current clean
 packed minimum-RSS candidate after repeat-3 (`44.864M / 412280 KB`), but it
 remains a minimum-RSS sibling/candidate rather than a broad throughput
-promotion. DepotOwnerDirectFastPath-L1 is the current ElasticCapacity
-source-depot candidate-watch (`46.273M / 224612 KB`). SlotOwnerConsumerDryRun-L1
+promotion. DepotOwnerDirectFastPath-L1 remains the clean source-depot
+candidate-watch (`46.273M / 224612 KB`). DepotDescriptorRehomeBudget2048-L1 is
+the current bounded descriptor rehome candidate-control (`44.919M`, safety
+clean, diagnostic `descriptor_used=36539` versus full rehome `77883`) and should
+be validated with repeat/guard before any promotion. SlotOwnerConsumerDryRun-L1
 is diagnostic-only and should not enter production speed-ranking tables.
 
 Do not add new lanes to the selected family unless they pass:
