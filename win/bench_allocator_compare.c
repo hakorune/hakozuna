@@ -62,6 +62,34 @@ typedef struct {
 #endif
 } ThreadArg;
 
+#if defined(_WIN32) && defined(HZ_BENCH_USE_HZ6)
+static LONG WINAPI bench_allocator_unhandled_exception_filter(
+    struct _EXCEPTION_POINTERS* exception_info) {
+    DWORD code = 0;
+    void* address = NULL;
+    ULONG_PTR info0 = 0;
+    ULONG_PTR info1 = 0;
+    if (exception_info && exception_info->ExceptionRecord) {
+        code = exception_info->ExceptionRecord->ExceptionCode;
+        address = exception_info->ExceptionRecord->ExceptionAddress;
+        if (exception_info->ExceptionRecord->NumberParameters > 0) {
+            info0 = exception_info->ExceptionRecord->ExceptionInformation[0];
+        }
+        if (exception_info->ExceptionRecord->NumberParameters > 1) {
+            info1 = exception_info->ExceptionRecord->ExceptionInformation[1];
+        }
+    }
+    fprintf(stderr,
+            "bench_allocator_compare: unhandled exception code=0x%08lx address=%p info0=%p info1=%p\n",
+            (unsigned long)code,
+            address,
+            (void*)info0,
+            (void*)info1);
+    fflush(stderr);
+    return EXCEPTION_EXECUTE_HANDLER;
+}
+#endif
+
 static inline void bench_thread_setup(ThreadArg* ta) {
 #if defined(HZ_BENCH_USE_HZ6)
     hz6_allocator_init_with_profile(&ta->hz6_allocator, HZ_BENCH_HZ6_PROFILE);
@@ -324,9 +352,18 @@ int main(int argc, char** argv) {
     if (min_size == 0) min_size = 1;
     if (max_size < min_size) max_size = min_size;
 
+#if defined(_WIN32) && defined(HZ_BENCH_USE_HZ6)
+    SetUnhandledExceptionFilter(bench_allocator_unhandled_exception_filter);
+#endif
+
+    printf("[BENCH_ARGS] threads=%zu iters=%zu ws=%zu min=%zu max=%zu\n",
+           threads, iters, ws, min_size, max_size);
+    fflush(stdout);
+
     ThreadArg* args = (ThreadArg*)calloc(threads, sizeof(ThreadArg));
     if (!args) {
         fprintf(stderr, "alloc args failed\n");
+        fflush(stderr);
         return 1;
     }
 
@@ -336,6 +373,7 @@ int main(int argc, char** argv) {
     HANDLE* handles = (HANDLE*)calloc(threads, sizeof(HANDLE));
     if (!handles) {
         fprintf(stderr, "alloc handles failed\n");
+        fflush(stderr);
         free(args);
         return 1;
     }
@@ -346,9 +384,28 @@ int main(int argc, char** argv) {
         args[i].min_size = min_size;
         args[i].max_size = max_size;
         uintptr_t h = _beginthreadex(NULL, 0, bench_thread, &args[i], 0, NULL);
+        if (h == 0) {
+            fprintf(stderr, "bench_allocator_compare: thread start failed at thread=%zu\n", i);
+            fflush(stderr);
+            for (size_t j = 0; j < i; ++j) {
+                if (handles[j]) {
+                    WaitForSingleObject(handles[j], INFINITE);
+                    CloseHandle(handles[j]);
+                }
+            }
+            free(handles);
+            free(args);
+            return 1;
+        }
         handles[i] = (HANDLE)h;
     }
-    WaitForMultipleObjects((DWORD)threads, handles, TRUE, INFINITE);
+    DWORD wait_rc = WaitForMultipleObjects((DWORD)threads, handles, TRUE, INFINITE);
+    if (wait_rc == WAIT_FAILED) {
+        fprintf(stderr,
+                "bench_allocator_compare: WaitForMultipleObjects failed err=%lu\n",
+                (unsigned long)GetLastError());
+        fflush(stderr);
+    }
     for (size_t i = 0; i < threads; i++) {
         CloseHandle(handles[i]);
     }
@@ -905,6 +962,7 @@ int main(int argc, char** argv) {
            hz6_stats.route_unregister_probe_hist[5]);
 #endif
 
+    fflush(stdout);
     free(args);
     return 0;
 }

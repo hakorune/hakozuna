@@ -99,7 +99,7 @@ function Get-LogCapture {
                 }
                 [void]$tail.Enqueue($line)
             }
-            if ($line -match '^(\[BENCH_ARGS\]|\[RSS\]|\[OPS\]|\[HZ6_STATS\]|\[HZ6_MEMORY_ATTR\]|\[HZ6_RSS_RESIDUAL\]|\[HZ6_CAPACITY_UTIL\]|\[HZ6_MAIN_WARMUP_CAPACITY\]|\[HZ6_ELASTIC_PROJECTION\]|\[HZ6_ELASTIC_OVERFLOW_PROJECTION\]|\[HZ6_METADATA_SLIM\]|\[HZ6_FRONT_ALLOC_PATH\]|\[HZ6_FRONTCACHE_CLASS\]|\[HZ6_ROUTE_PROBE_SHAPE\]|\[HZ6_REDIS_STATS\]|bench_larson_compare: unhandled exception|threads=.*ops/s=|bench_[^:]+:.*ops/s=|Pattern:|Throughput:|Throughput = |Ops:|---)') {
+            if ($line -match '^(\[BENCH_ARGS\]|\[RSS\]|\[OPS\]|\[HZ6_STATS\]|\[HZ6_MEMORY_ATTR\]|\[HZ6_RSS_RESIDUAL\]|\[HZ6_CAPACITY_UTIL\]|\[HZ6_MAIN_WARMUP_CAPACITY\]|\[HZ6_ELASTIC_PROJECTION\]|\[HZ6_ELASTIC_OVERFLOW_PROJECTION\]|\[HZ6_METADATA_SLIM\]|\[HZ6_FRONT_ALLOC_PATH\]|\[HZ6_FRONTCACHE_CLASS\]|\[HZ6_ROUTE_PROBE_SHAPE\]|\[HZ6_REDIS_STATS\]|bench_larson_compare: unhandled exception|threads=|bench_[^:]+:.*ops/s=|Pattern:|Throughput:|Throughput = |Ops:|---)') {
                 [void]$captured.Add($line)
             } elseif ($IncludeStatsTail -and $line -match '^\[HZ6_STATS\]\s+label=redis_alloc_string_fail') {
                 if ($statsTail.Count -ge $TailLimit) {
@@ -124,6 +124,19 @@ function Get-LogCapture {
     }
 
     return ,$captured.ToArray()
+}
+
+function Test-LogCaptureHasResultLine {
+    param(
+        [Parameter(Mandatory = $true)]$Lines
+    )
+    foreach ($line in @($Lines)) {
+        $text = $line.ToString()
+        if ($text -match '(ops/s=|Throughput = |Throughput:|Pattern:)') {
+            return $true
+        }
+    }
+    return $false
 }
 
 function Invoke-CapturedProcess {
@@ -205,7 +218,7 @@ function Invoke-CapturedProcess {
     $lines = New-Object System.Collections.Generic.List[string]
     $captured = Get-LogCapture -Paths @($stdoutPath, $stderrPath) -TailLimit 200
     $captureRetry = 0
-    while ($captured.Count -eq 0 -and $captureRetry -lt 20) {
+    while (($captured.Count -eq 0 -or -not (Test-LogCaptureHasResultLine -Lines $captured)) -and $captureRetry -lt 20) {
         Start-Sleep -Milliseconds 100
         $captured = Get-LogCapture -Paths @($stdoutPath, $stderrPath) -TailLimit 200
         $captureRetry++

@@ -103,6 +103,31 @@ Next:
      evidence.
 ```
 
+Broad follow-up:
+
+```text
+mixed_ws balanced:
+  PASS in a 1-run smoke, around 65.0M ops/s and ~112000 KB,
+  alloc_fail=0, route_invalid=0, route_miss=0, route_register_fail=0.
+
+mixed_ws wide_ws:
+  NO-GO. Direct run exits with an access violation:
+    code=0xc0000005
+    info0=1
+    info1=000001D0AE140020
+
+random_mixed run-1 smoke:
+  small  = 26.253M / 50508 KB, safety clean
+  medium = 28.993M / 12468 KB, safety clean
+  mixed  = 27.576M / 12988 KB, safety clean
+
+Decision update:
+  Budget2048 stays valuable Larson source-depot evidence, but it is not a
+  broad mixed_ws/default promotion candidate. The next broad target should
+  diagnose wide_ws ownership/source-depot safety separately rather than
+  increasing the Budget2048 cap or defaulting this lane.
+```
+
 Current short read:
 
 ```text
