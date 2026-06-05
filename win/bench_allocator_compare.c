@@ -1325,7 +1325,8 @@ int main(int argc, char** argv) {
            "alloc_attempts=%zu alloc_success=%zu alloc_fail=%zu frees=%zu",
            threads, iters, ws, min_size, max_size, sec, ops_sec,
            alloc_attempts, alloc_successes, alloc_failures, frees);
-#if 0
+    /* legacy inline HZ6 output removed; bench_print_hz6_summary() now owns
+     * the HZ6 summary.
 #if defined(HZ_BENCH_USE_HZ6)
 #if HZ6_DIAGNOSTIC_PROBES
     printf(" hz6_route_valid=%zu hz6_route_invalid=%zu hz6_route_miss=%zu "
@@ -1745,7 +1746,7 @@ int main(int argc, char** argv) {
            hz6_stats.route_unregister_probe_hist[4],
            hz6_stats.route_unregister_probe_hist[5]);
 #endif
-#endif
+    */
 #if defined(HZ_BENCH_USE_HZ6) && HZ_BENCH_TRACE_LAST_OP
     bench_print_hz6_summary(&hz6_stats, hz6_pre_free_owns_false,
                             hz6_duplicate_alloc_ptr, peak_kb);
