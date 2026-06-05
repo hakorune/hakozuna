@@ -341,12 +341,30 @@ source10k:
     descriptor_exhausted=0
     route_register_fail=0
     source_block_exhausted=0
+
+source10k repeat-3 confirmation:
+  docs/benchmarks/windows/paper/hz6_source10k_packed_repeat/
+    20260605_102400_hz6_capacity_matrix_windows.md
+  44.864M / 412280 KB
+  safety clean:
+    route_invalid=0
+    route_miss=0
+    alloc_fail=0
+    descriptor_exhausted=0
+    route_register_fail=0
+    source_block_exhausted=0
+  residual:
+    static table = 234502 KiB
+    static+payload = 258950 KiB
+    source block table = 20480 KiB
 ```
 
 Decision:
 
 ```text
 Promote source10k as the current Larson combined packed minimum-RSS sibling.
+It is repeat-3 clean and keeps the combined packed RSS improvement while
+trimming SourceBlock table capacity from source16k to source10k.
 
 Keep:
   source12k as the safety backup / boundary control.
