@@ -199,11 +199,24 @@ non-diagnostic full10k:
   43.843M ops/s
   246,888 KB peak RSS
 
+non-diagnostic repeat-3 guards:
+  main10k   = 42.770M / 246,880 KB
+  worker10k = 46.060M / 237,056 KB
+  main1k    = 56.686M / 115,460 KB
+  worker1k  = 57.326M / 115,272 KB
+  main4k    = 55.410M / 162,072 KB
+  worker4k  = 51.050M / 156,040 KB
+  alloc_fail / descriptor_exhausted / route_register_fail /
+  source_block_exhausted = 0 on all runs
+
 read:
   The original speed loss was storage-owner lookup locality, not the descriptor
-  depot contract itself. ElasticDescriptorRouteOverflow-L1 is now a strong RSS
-  candidate-control. Do repeat/guard validation before promotion; do not add
-  another behavior knob until this lane is bounded.
+  depot contract itself. ElasticDescriptorRouteOverflow-L1 is now the strongest
+  ElasticCapacity RSS shape so far. It is still slightly below the selected
+  source10k throughput class, so treat it as candidate-watch/evidence rather
+  than broad promotion. The next missing piece is shared source-block overflow
+  or a unified overflow drain/localization contract, not another route or
+  descriptor-only knob.
 ```
 
 ## Design Target
@@ -317,7 +330,8 @@ Recommended L1 order:
      implemented as ElasticDescriptorRouteOverflow-L1
      RSS win is strong; depot storage fast path recovers source10k-class
      throughput in non-diagnostic full10k while keeping the lower RSS class.
-     Needs repeat/guard validation before promotion.
+     Repeat-3 guards are safety-clean; keep as candidate-watch/evidence while
+     designing source-block overflow / unified ElasticCapacity drain.
 
 3. SourceBlockOverflow-L1:
    only after descriptor overflow is safe

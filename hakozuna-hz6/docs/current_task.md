@@ -73,8 +73,8 @@ Immediate action queue:
           It is not speed promotion: it is slower than source10k control.
           Next behavior should cover descriptor/source overflow, not keep
           shrinking route alone.
-  2c. ElasticDescriptorRouteOverflow-L1 is fixed as strong RSS evidence and
-      candidate-control after depot storage fast path.
+  2c. ElasticDescriptorRouteOverflow-L1 is fixed as the current ElasticCapacity
+      best RSS candidate-watch after depot storage fast path.
         lane:
           ownerlocalityfast-rsscap-2-elasticdescroute-desc16k-front4k-
           thindesc-nobackptr-noroutebackptr-dir192k-routepacked-
@@ -84,6 +84,13 @@ Immediate action queue:
           before storagefast full10k run-1: 33.184M / 246,824 KB
           after storagefast diagnostic full10k: 40.951M / 246,912 KB
           after storagefast non-diagnostic full10k: 43.843M / 246,888 KB
+          non-diagnostic repeat-3 guards:
+            main10k   42.770M / 246,880 KB
+            worker10k 46.060M / 237,056 KB
+            main1k    56.686M / 115,460 KB
+            worker1k  57.326M / 115,272 KB
+            main4k    55.410M / 162,072 KB
+            worker4k  51.050M / 156,040 KB
           safety: route_invalid=0, route_miss=0, route_register_fail=0,
                   descriptor_exhausted=0, source_block_exhausted=0,
                   alloc_fail=0
@@ -93,13 +100,16 @@ Immediate action queue:
           The original speed loss was depot descriptor storage-owner lookup
           locality. Routing depot descriptors through SourceBlock side metadata
           removes descriptor_storage_miss and recovers source10k-class speed in
-          non-diagnostic full10k. Treat as strong candidate-control; run
-          repeat/guard before promotion.
+          non-diagnostic full10k. Repeat-3 guards are safety-clean. Treat as
+          ElasticCapacity candidate-watch/evidence; do not broad-promote until
+          source-block overflow / unified overflow drain is designed.
   3. Continue ElasticCapacity-L1 design work:
        local small descriptor/route/source/frontcache caps
        shared overflow / depot for warmup pressure
        fail-closed INVALID/MISS preserved
        no hot-path global scan
+       next target: source-block overflow or unified overflow drain/localize
+       contract; descriptor/route-only overflow is now bounded evidence.
   4. Do not implement SourceBlock-only overflow as the main behavior. It cannot
      solve the descriptor/route warmup spike. Treat it only as a possible
      subcomponent after a unified metadata overflow contract is clear.
@@ -273,6 +283,23 @@ Results:
     non-diagnostic:
       43.843M / 246,888 KB
 
+  storagefast non-diagnostic repeat-3 guards:
+    main10k:
+      42.770M / 246,880 KB
+    worker10k:
+      46.060M / 237,056 KB
+    main1k:
+      56.686M / 115,460 KB
+    worker1k:
+      57.326M / 115,272 KB
+    main4k:
+      55.410M / 162,072 KB
+    worker4k:
+      51.050M / 156,040 KB
+    alloc_fail / descriptor_exhausted / route_register_fail /
+    source_block_exhausted:
+      0 on all runs
+
 Read:
   Descriptor overflow is viable and gives the largest RSS drop so far.
   The first run was not promotion because throughput was much lower than
@@ -280,11 +307,17 @@ Read:
   that depot descriptors need a direct storage-owner contract: using
   SourceBlock side metadata turns descriptor_storage_miss to zero and recovers
   the lane to source10k-class throughput while keeping roughly 247 MB RSS.
+  Repeat-3 guards keep the lane safety-clean. The remaining gap versus the
+  selected source10k sibling is no longer descriptor depot lookup; the next
+  design question is whether source-block overflow or unified overflow
+  drain/localization can recover the last throughput while preserving the low
+  RSS class.
 
 Decision:
-  KEEP as ElasticDescriptorRouteOverflow-L1 strong RSS candidate-control.
-  Do not promote yet; next step is repeat/guard validation, not another
-  behavior knob.
+  KEEP as ElasticDescriptorRouteOverflow-L1 strong RSS candidate-watch.
+  Do not broad-promote yet. Next step is source-block overflow / unified
+  ElasticCapacity drain-localize design, not another descriptor/route-only
+  knob.
 ```
 
 ### 2026-06-05: CapacityUtil-L1 diagnostic
