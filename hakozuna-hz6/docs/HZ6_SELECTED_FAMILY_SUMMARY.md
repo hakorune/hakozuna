@@ -24,8 +24,21 @@ For cleanup rules and the next source modularization target, see
 | Larson T16 full 10k lowest-RSS balance sibling | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-source16k-route192k-run512` | 40.754M | 439,912 | clean selected balance sibling |
 | Larson T16 full 10k FrontCachePacked component | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-source16k-route192k-run512` | 41.131M | 430,692 | clean lower-RSS component candidate/control in the SourceBlockPacked closeout matrix |
 | Larson T16 full 10k SourceBlock packed candidate | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-sourceblockpacked-source16k-route192k-run512` | 41.070M | 435,304 | clean lower-RSS candidate; `source_block_entry_bytes` projects/observes `144 -> 128`, lower RSS than L2 but not lower than FrontCachePacked |
-| Larson T16 full 10k minimum RSS candidate | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source16k-route192k-run512` | 40.837M | 426,084 | clean minimum-RSS candidate; combines FrontCachePackedMeta-L1 and SourceBlockPackedFlags-L1 |
+| Larson T16 full 10k packed minimum RSS candidate | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source10k-route192k-run512` | 44.864M | 412,280 | current packed minimum-RSS sibling; source10k repeat-3 safety-clean, source8k/source2k are warmup no-go |
 | Larson T16 full 10k minimum RSS control | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-source16k-route192k-run512` | 41.107M | 469,868 | clean superseded control |
+
+## Active ElasticCapacity Rows
+
+These rows are not broad selected defaults. They are the current source-depot /
+ElasticCapacity working set used to reduce Larson RSS while preserving the
+cross-owner contract.
+
+| Role | Lane | Median ops/s | Peak KB | Status |
+| --- | --- | ---: | ---: | --- |
+| Elastic descriptor+route depot | `speed + ...elasticdescroute-desc16k-...source10k-route16k-run512` | 42.770M | 246,880 | candidate-watch; best descriptor+route depot RSS/throughput shape before source-depot work |
+| Elastic descriptor+source+route depot | `speed + ...elasticdescsource-route-desc16k-...source64-route16k-run512` | 41.733M | 227,852 | lower-RSS source-depot component/control |
+| Depot owner direct fast path | `speed + ...elasticdescsource-route-depotownerdirect-...source64-route16k-run512` | 46.273M | 224,612 | current source-depot candidate-watch; guard rows safety-clean |
+| Slot owner consumer dry-run | `speed + diagnostic + ...elasticdescsource-route-slotownerconsumerdryrun-...source64-route16k-run4096` | 36.691M | 233,556 | diagnostic-only; `would_skip_l2=687536440`, `false_positive=0`; not speed-rankable |
 
 Source:
 - `docs/benchmarks/windows/paper/hz6_selected_family/selected-family-desc17-refresh/`
@@ -53,6 +66,9 @@ Source:
 - `docs/benchmarks/windows/paper/20260605_051427_hz6_capacity_matrix_windows.md`
 - `docs/benchmarks/windows/paper/hz6_route_linearwrap_l1_guard/`
 - `docs/benchmarks/windows/paper/hz6_route_loopcarry_l1_repeat/`
+- `docs/benchmarks/windows/paper/hz6_depot_owner_direct_repeat3/`
+- `docs/benchmarks/windows/paper/hz6_depot_owner_direct_guard_matrix/`
+- `docs/benchmarks/windows/paper/hz6_slot_owner_consumer_dryrun_full10k/`
 
 ## Evidence Rows
 
@@ -81,7 +97,9 @@ Source:
 | Larson StorageOwner16 L1 | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-storageowner16-noroutebackptr-dir192k-routepacked-source16k-route192k-run512` | RSS-first descriptor side metadata evidence/control. It fixes the allocator-local side-owner16 safety issue by resolving side-owner storage through descriptor storage ownership. Repeat-3 full 10k: `42.024M / 444520 KB`, safety clean. Keep as evidence/control; do not replace RoutePackedMeta-L1 because it saves about 11.5 MB RSS but loses about 12% throughput. |
 | Larson OwnerSourceSideMeta L2 | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-source16k-route192k-run512` | Current selected lowest-RSS balance sibling. It keeps routebytes16 and StorageOwner16 ownerless descriptors, then stores the descriptor-storage owner hint on each SourceBlock. Repeat-3 full 10k: routebytes16 control `40.750M / 449128 KB`, L2 `40.754M / 439912 KB`. Worker-warmup run=1: routebytes16 `40.126M / 448948 KB`, L2 `40.787M / 439740 KB`. Diagnostic validation: `owner_source_side_meta_l2_hit=1253200849`, all L2 miss/mismatch counters zero, safety clean. |
 | Larson SourceBlockPackedFlags L1 | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-sourceblockpacked-source16k-route192k-run512` | Lower-RSS SourceBlock metadata component candidate/control on top of OwnerSourceSideMeta-L2. It packs `source_kind`, `active`, `route_registered`, and `run_active` into a SourceBlock flag word while preserving source release and owner-source side metadata. Repeat-3 closeout: `41.070M / 435304 KB`, safety clean. |
-| Larson combined packed minimum-RSS candidate | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source16k-route192k-run512` | Current clean minimum-RSS candidate. It combines FrontCachePackedMeta-L1 and SourceBlockPackedFlags-L1 over OwnerSourceSideMeta-L2. Repeat-3 full 10k: `40.837M / 426084 KB`, safety clean. This is lower RSS than FrontCachePacked alone (`41.131M / 430692 KB`) and SourceBlockPacked alone (`41.070M / 435304 KB`), at similar throughput. Keep as minimum-RSS sibling/candidate, not broad throughput promotion. |
+| Larson combined packed minimum-RSS candidate | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source10k-route192k-run512` | Current packed minimum-RSS sibling. It combines FrontCachePackedMeta-L1 and SourceBlockPackedFlags-L1 over OwnerSourceSideMeta-L2, then trims SourceBlock capacity to source10k. Repeat-3 full 10k: `44.864M / 412280 KB`, safety clean. Source12k is backup/control; source8k and source2k are warmup no-go. Keep as minimum-RSS sibling/candidate, not broad throughput promotion. |
+| Larson DepotOwnerDirectFastPath-L1 | `ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512` | ElasticCapacity source-depot candidate-watch. Main10k repeat-3: `46.273M / 224612 KB`, guard rows safety-clean. Diagnostic A/B cuts `owner_source_side_meta_l2_lookup` from `1547776055` to `489480577`. Not broad default yet. |
+| Larson SlotOwnerConsumerDryRun-L1 | `ownerlocalityfast-rsscap-2-elasticdescsource-route-slotownerconsumerdryrun-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run4096` | Diagnostic-only consumer evidence. Full10k run-1: `36.691M / 233556 KB`, safety clean, `would_skip_l2=687536440`, `false_positive=0`, `stale_generation=0`. This justifies a narrow logical-owner fast-path experiment, but the dry-run counter volume is not speed-rankable. |
 | Larson lowest-RSS preset check | `larson-cross-owner-lowest-rss` | Default check now includes front4k, route192k, no-backptr route192k-run512, dir192k no-backptr, SourceBlock no-route-backptr, routepacked control, routebytes16 comparison control, OwnerSourceSideMeta-L2 selected balance sibling, FrontCachePackedMeta-L1 and SourceBlockPackedFlags-L1 component candidates, and the combined packed minimum-RSS candidate. |
 | Larson over-retention control | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k` | Passes but over-retains RSS; no promotion. |
 
@@ -129,8 +147,13 @@ HZ6 is now a profile-family allocator:
     moving the selected Larson lowest-RSS balance sibling to
     `40.754M / 439912 KB`.
     FrontCachePackedMeta-L1 and SourceBlockPackedFlags-L1 are component
-    lower-RSS controls/candidates, and their combined packed lane is the
-    current minimum-RSS candidate at `40.837M / 426084 KB`.
+    lower-RSS controls/candidates.  Their combined packed source10k lane is the
+    current packed minimum-RSS sibling at `44.864M / 412280 KB`; source8k and
+    source2k remain warmup no-go controls.
+    ElasticCapacity source-depot work now has a separate candidate-watch:
+    DepotOwnerDirectFastPath-L1 at `46.273M / 224612 KB`.  The
+    SlotOwnerConsumerDryRun-L1 row is diagnostic-only and only justifies a
+    narrow logical-owner fast-path experiment.
     StorageOwner16-L1 is safety-clean RSS-first evidence/control at
     `42.024M / 444520 KB`, but it is not selected because it trades about 12%
     throughput for about 11.5 MB RSS.

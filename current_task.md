@@ -19,6 +19,58 @@ remains profile-stabilized; new HZ5 work should not blur the HZ6 contract.
 Latest HZ6 selected-family decision:
 
 ```text
+2026-06-05 cleanup/orientation:
+  Short docs are the source of truth for the current working set:
+    hakozuna-hz6/docs/HZ6_SELECTED_FAMILY_SUMMARY.md
+    hakozuna-hz6/docs/HZ6_ELASTIC_CAPACITY_PLAN.md
+    hakozuna-hz6/docs/HZ6_LANE_GUIDE.md
+    hakozuna-hz6/docs/HZ6_REPO_HYGIENE.md
+
+  current production-ish selected rows:
+    mixed_ws:
+      rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k-
+      linearwrap-loopcarry
+
+    random_mixed:
+      strict + sameownerfast-descavail-noboost-route4k
+
+    larger_sizes:
+      speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k
+
+    Larson low-RSS balance:
+      ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-
+      noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-
+      ownersourcel2-source16k-route192k-run512
+
+    Larson packed minimum-RSS sibling:
+      ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-
+      noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-
+      ownersourcel2-frontcachepacked-sourceblockpacked-source10k-route192k-
+      run512
+
+  current ElasticCapacity source-depot track:
+    candidate-watch:
+      depotownerdirect
+      main10k repeat-3 = 46.273M / 224612 KB
+      guard rows safety-clean
+
+    diagnostic-only:
+      slotownerconsumerdryrun
+      full10k = 36.691M / 233556 KB
+      would_skip_l2=687536440
+      false_positive=0
+
+  next behavior candidate:
+    SlotOwnerLogicalOwnerFastPath-L1, only as a narrow behavior:
+      generation-checked sparse owner match may answer logical owner equality
+      miss/stale/mismatch falls back to existing descriptor-owner path
+
+  do not:
+    use diagnostic-only lanes in speed-ranking tables
+    revive whole-SourceBlock localize
+    add another static route/descriptor/source cap cut without a specific
+    pressure witness
+
 2026-06-05 lane cleanup:
   HZ6_LANE_GUIDE now starts with a quick classification table:
     selected profile lanes

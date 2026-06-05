@@ -11,6 +11,7 @@ benchmark lane or source-level experiment.
 | Short paper-facing selected rows | `HZ6_SELECTED_FAMILY_SUMMARY.md` |
 | Which lane is which | `HZ6_LANE_GUIDE.md` |
 | Cross-allocator comparison table | `HZ6_CROSS_ALLOCATOR_COMPARISON.md` |
+| ElasticCapacity source-depot track | `HZ6_ELASTIC_CAPACITY_PLAN.md` |
 | Windows lane registry cleanup | `HZ6_WINDOWS_LANE_REGISTRY.md` |
 | Source/module cleanup plan | `HZ6_SOURCE_MODULARIZATION.md` |
 | Long experiment ledger | `current_task.md` |
@@ -63,7 +64,13 @@ Larson lower-RSS component candidates:
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-sourceblockpacked-source16k-route192k-run512
 
 Larson minimum-RSS candidate:
-  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source16k-route192k-run512
+  speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source10k-route192k-run512
+
+ElasticCapacity candidate-watch:
+  speed + ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512
+
+ElasticCapacity diagnostic-only:
+  speed + diagnostic + ownerlocalityfast-rsscap-2-elasticdescsource-route-slotownerconsumerdryrun-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run4096
 ```
 
 The side-owner16 descriptor layout lane is not selected. It is buildable as
@@ -74,9 +81,12 @@ metadata becomes safety-clean when keyed by descriptor storage ownership, but
 it does not replace routepacked because the RSS gain costs too much throughput.
 OwnerSourceSideMeta-L2 is the selected Larson lowest-RSS balance sibling.
 FrontCachePackedMeta-L1 and SourceBlockPackedFlags-L1 are lower-RSS component
-controls/candidates. The combined packed lane is the current clean
-minimum-RSS candidate after repeat-3 (`40.837M / 426084 KB`), but it remains
-a minimum-RSS sibling/candidate rather than a broad throughput promotion.
+controls/candidates. The combined packed source10k lane is the current clean
+packed minimum-RSS candidate after repeat-3 (`44.864M / 412280 KB`), but it
+remains a minimum-RSS sibling/candidate rather than a broad throughput
+promotion. DepotOwnerDirectFastPath-L1 is the current ElasticCapacity
+source-depot candidate-watch (`46.273M / 224612 KB`). SlotOwnerConsumerDryRun-L1
+is diagnostic-only and should not enter production speed-ranking tables.
 
 Do not add new lanes to the selected family unless they pass:
 
@@ -99,6 +109,9 @@ HZ6_SELECTED_FAMILY_SUMMARY.md:
 
 HZ6_LANE_GUIDE.md:
   lane dictionary and runner commands
+
+HZ6_ELASTIC_CAPACITY_PLAN.md:
+  source-depot / ElasticCapacity working-set decisions
 
 current_task.md:
   historical ledger and detailed experimental notes
@@ -129,6 +142,8 @@ Near-term rule:
 Add a lane in both capacity_matrix and build_common in the same commit.
 Add selected-family presets only after the lane has a clean result.
 Keep no-go lanes available only when they define a boundary.
+Keep diagnostic-only lanes behind -DiagnosticHz6Probes and explicit diagnostic
+lane names.
 ```
 
 Longer-term cleanup:

@@ -14,9 +14,41 @@ cleanup direction before the next optimization pass.
 | Transfer | `transfer/` | Bounded cross-owner transfer and reuse. |
 | Source | `source/`, source-block helpers in `api/` | Reserve/commit/release backing and source-block lifetime. |
 | Owner | `owner/` | Owner token/liveness contract. |
+| Slot owner side metadata | `api/hz6_allocator_slot_owner_sparse.*` | Diagnostic sparse per-slot owner table and future logical-owner fast-path helper boundary. |
 | Policy/profile | `policy/`, capacity flags | Profile semantics and capacity shape. |
 
 ## Current Pressure Points
+
+### Slot Owner Side Metadata Is Now Split From Front Reuse
+
+`hz6_front_reuse_transfer.c` should stay focused on transfer reuse and front
+activation.  The sparse slot-owner table used by SlotOwnerSparseMeta-L1 and
+SlotOwnerConsumerDryRun-L1 now lives in:
+
+```text
+api/hz6_allocator_slot_owner_sparse.h
+api/hz6_allocator_slot_owner_sparse.c
+```
+
+Contract:
+
+```text
+producer note:
+  records SourceBlock pointer, block ptr, slot index, generation, owner16
+
+consumer dry-run:
+  runs only after the existing descriptor owner path computes the real answer
+  may report would_skip_l2 only when generation and owner match the real answer
+  must report false_positive if sparse metadata would have lied
+
+future behavior:
+  SlotOwnerLogicalOwnerFastPath-L1 may answer logical owner equality only for a
+  generation-checked sparse owner match.
+  miss / stale / mismatch must fall back to the existing descriptor-owner path.
+```
+
+Do not move this table back into a front helper.  It is not a frontcache policy;
+it is owner-path side metadata shared by producer and consumer observations.
 
 ### SourceBlock Is Too Heavy
 
