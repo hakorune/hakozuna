@@ -931,6 +931,54 @@ int main(int argc, char** argv) {
         hz6_stats.memory_source_block_committed_estimate;
 #endif
 
+#if defined(HZ_BENCH_USE_HZ6) && HZ6_DIAGNOSTIC_PROBES
+    const size_t hz6_allocator_count = (size_t)threads;
+    const size_t hz6_descriptor_capacity =
+        HZ6_OBJECT_DESCRIPTOR_CAPACITY * hz6_allocator_count;
+    const size_t hz6_descriptor_used =
+        hz6_stats.memory_active_descriptors +
+        hz6_stats.memory_local_free_descriptors +
+        hz6_stats.memory_transfer_free_descriptors +
+        hz6_stats.memory_remote_pending_descriptors +
+        hz6_stats.memory_dead_with_ptr_descriptors;
+    const size_t hz6_descriptor_unused =
+        (hz6_descriptor_capacity > hz6_descriptor_used)
+            ? (hz6_descriptor_capacity - hz6_descriptor_used)
+            : 0u;
+    const size_t hz6_route_capacity =
+        HZ6_ROUTE_TABLE_CAPACITY * hz6_allocator_count;
+    const size_t hz6_route_used = hz6_stats.route_active_current;
+    const size_t hz6_route_occupied =
+        hz6_stats.route_active_current + hz6_stats.route_tombstone_current;
+    const size_t hz6_route_unused =
+        (hz6_route_capacity > hz6_route_occupied)
+            ? (hz6_route_capacity - hz6_route_occupied)
+            : 0u;
+    const size_t hz6_source_block_capacity =
+        HZ6_SOURCE_BLOCK_CAPACITY * hz6_allocator_count;
+    const size_t hz6_source_block_used =
+        hz6_stats.memory_active_source_blocks;
+    const size_t hz6_source_block_unused =
+        (hz6_source_block_capacity > hz6_source_block_used)
+            ? (hz6_source_block_capacity - hz6_source_block_used)
+            : 0u;
+    const size_t hz6_frontcache_capacity =
+        HZ6_FRONT_CACHE_CLASS_COUNT * HZ6_FRONT_CACHE_BIN_CAPACITY *
+        hz6_allocator_count;
+    const size_t hz6_frontcache_used = hz6_stats.memory_frontcache_total;
+    const size_t hz6_frontcache_unused =
+        (hz6_frontcache_capacity > hz6_frontcache_used)
+            ? (hz6_frontcache_capacity - hz6_frontcache_used)
+            : 0u;
+    const size_t hz6_transfer_capacity =
+        HZ6_TRANSFER_CACHE_CAPACITY * hz6_allocator_count;
+    const size_t hz6_transfer_used = hz6_stats.transfer_current;
+    const size_t hz6_transfer_unused =
+        (hz6_transfer_capacity > hz6_transfer_used)
+            ? (hz6_transfer_capacity - hz6_transfer_used)
+            : 0u;
+#endif
+
     duration_sec = (double)(end_ns - start_ns) / 1e9;
     printf("Throughput = %.0f operations per second, relative time: %.3fs.\n",
            (duration_sec > 0.0) ? ((double)total_allocs / duration_sec) : 0.0,
@@ -1267,6 +1315,41 @@ int main(int argc, char** argv) {
            hz6_stats.route_active_current,
            hz6_stats.route_tombstone_current,
            hz6_stats.memory_frontcache_total);
+    printf("[HZ6_CAPACITY_UTIL] "
+           "allocator_count=%zu "
+           "descriptor_capacity=%zu "
+           "descriptor_used=%zu "
+           "descriptor_unused=%zu "
+           "route_capacity=%zu "
+           "route_used=%zu "
+           "route_occupied=%zu "
+           "route_unused=%zu "
+           "source_block_capacity=%zu "
+           "source_block_used=%zu "
+           "source_block_unused=%zu "
+           "frontcache_capacity=%zu "
+           "frontcache_used=%zu "
+           "frontcache_unused=%zu "
+           "transfer_capacity=%zu "
+           "transfer_used=%zu "
+           "transfer_unused=%zu\n",
+           hz6_allocator_count,
+           hz6_descriptor_capacity,
+           hz6_descriptor_used,
+           hz6_descriptor_unused,
+           hz6_route_capacity,
+           hz6_route_used,
+           hz6_route_occupied,
+           hz6_route_unused,
+           hz6_source_block_capacity,
+           hz6_source_block_used,
+           hz6_source_block_unused,
+           hz6_frontcache_capacity,
+           hz6_frontcache_used,
+           hz6_frontcache_unused,
+           hz6_transfer_capacity,
+           hz6_transfer_used,
+           hz6_transfer_unused);
     printf("[HZ6_METADATA_SLIM] "
            "descriptor_entry_bytes=%zu "
            "descriptor_thin_hot_entry_bytes=%zu "

@@ -17,6 +17,98 @@ Use these orientation docs before reading this long ledger:
   HZ6_SOURCE_MODULARIZATION.md
 ```
 
+Current short read:
+
+```text
+Selected HZ6 Windows RSS/throughput sibling:
+  ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-
+  noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-
+  ownersourcel2-frontcachepacked-sourceblockpacked-source16k-route192k-run512
+
+Status:
+  good compact / Larson cross-owner throughput
+  very low payload relative to static allocator tables
+  not yet a general promotion lane
+
+Current bottleneck hypothesis:
+  RSS is now dominated less by payload and more by per-worker static capacity.
+  The next high-ROI HZ6 work is elastic/shared descriptor-route capacity,
+  not another hot-path counter or another entry-level packing tweak.
+```
+
+### 2026-06-05: CapacityUtil-L1 diagnostic
+
+Goal:
+
+```text
+Follow the RSS residual audit with a capacity utilization split:
+  descriptors used / descriptor capacity
+  route active / route capacity
+  source blocks used / source block capacity
+  frontcache used / frontcache capacity
+  transfer current / transfer capacity
+
+This is diagnostic-only:
+  no HZ6 allocator hot path behavior change
+  no production atomics/counters added
+  derived in the Larson runner from existing stats and build-time capacities
+```
+
+Implementation:
+
+```text
+bench_larson_compare:
+  emits [HZ6_CAPACITY_UTIL] under HZ6_DIAGNOSTIC_PROBES.
+
+run_win_hz6_capacity_matrix:
+  captures [HZ6_CAPACITY_UTIL]
+  adds "HZ6 capacity utilization audit" markdown table.
+```
+
+Smoke:
+
+```text
+Command:
+  win/run_win_hz6_capacity_matrix.ps1
+    -Families larson
+    -BenchmarkProfiles larson_t16_main_1k
+    -Hz6Profiles speed
+    -CapacityLanes ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source16k-route192k-run512
+    -Runs 1
+    -ForceBuild
+    -DiagnosticHz6Probes
+
+Source:
+  docs/benchmarks/windows/paper/hz6_capacity_util_l1_smoke/
+    20260605_090709_hz6_capacity_matrix_windows.md
+
+Result:
+  descriptor used/cap: 2,352 / 2,621,440 = 0.09%
+  route active/cap:    10,499 / 3,145,728 = 0.33%
+  source blocks/cap:   147 / 262,144 = 0.06%
+  frontcache used/cap: 2,352 / 1,048,576 = 0.22%
+  transfer current/cap: 0 / 65,536 = 0.00%
+```
+
+Decision:
+
+```text
+KEEP as diagnostic evidence.
+
+Read:
+  The current selected lane is not payload-heavy in the smoke row.
+  The large static RSS tables are mostly unused because capacity is replicated
+  per worker allocator.
+
+Next:
+  Avoid more entry packing as the main line unless it is near-free.
+  Explore an HZ6 ElasticCapacity / SharedCapacity design:
+    local small descriptor/route tables
+    shared overflow or shared backing pool
+    fail-closed route INVALID/MISS contract preserved
+    no hot-path global scan
+```
+
 ### 2026-06-05: SourceBlockPackedFlags-L1 candidate
 
 Goal:

@@ -79,7 +79,8 @@ separate by output subdirectory.
 ```powershell
 # Diagnostic-only residual RSS audit for the Larson low-RSS family.
 # This preset enables HZ6_DIAGNOSTIC_PROBES and should not be used as a
-# production speed-ranking row.
+# production speed-ranking row. It also emits capacity utilization rows when
+# the underlying runner captures [HZ6_CAPACITY_UTIL].
 .\win\run_win_hz6_selected_family.ps1 `
   -LarsonRssResidualAudit `
   -Runs 1 `
@@ -174,8 +175,10 @@ larson-rss-residual-audit:
   output:
     [HZ6_MEMORY_ATTR]
     [HZ6_RSS_RESIDUAL]
+    [HZ6_CAPACITY_UTIL]
     [HZ6_METADATA_SLIM]
     HZ6 RSS residual audit table in the generated markdown
+    HZ6 capacity utilization audit table in the generated markdown
   status:
     attribution/evidence only, not a production speed-ranking row.
 

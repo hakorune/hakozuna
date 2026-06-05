@@ -99,7 +99,7 @@ function Get-LogCapture {
                 }
                 [void]$tail.Enqueue($line)
             }
-            if ($line -match '^(\[BENCH_ARGS\]|\[RSS\]|\[OPS\]|\[HZ6_STATS\]|\[HZ6_MEMORY_ATTR\]|\[HZ6_RSS_RESIDUAL\]|\[HZ6_METADATA_SLIM\]|\[HZ6_FRONT_ALLOC_PATH\]|\[HZ6_FRONTCACHE_CLASS\]|\[HZ6_ROUTE_PROBE_SHAPE\]|\[HZ6_REDIS_STATS\]|threads=.*ops/s=|bench_[^:]+:.*ops/s=|Pattern:|Throughput:|Throughput = |Ops:|---)') {
+            if ($line -match '^(\[BENCH_ARGS\]|\[RSS\]|\[OPS\]|\[HZ6_STATS\]|\[HZ6_MEMORY_ATTR\]|\[HZ6_RSS_RESIDUAL\]|\[HZ6_CAPACITY_UTIL\]|\[HZ6_METADATA_SLIM\]|\[HZ6_FRONT_ALLOC_PATH\]|\[HZ6_FRONTCACHE_CLASS\]|\[HZ6_ROUTE_PROBE_SHAPE\]|\[HZ6_REDIS_STATS\]|threads=.*ops/s=|bench_[^:]+:.*ops/s=|Pattern:|Throughput:|Throughput = |Ops:|---)') {
                 [void]$captured.Add($line)
             } elseif ($IncludeStatsTail -and $line -match '^\[HZ6_STATS\]\s+label=redis_alloc_string_fail') {
                 if ($statsTail.Count -ge $TailLimit) {
@@ -526,6 +526,7 @@ foreach ($family in $selectedFamilies) {
 
     foreach ($case in $cases) {
         $residualRows = New-Object System.Collections.Generic.List[object]
+        $capacityRows = New-Object System.Collections.Generic.List[object]
         $Summary.Add("## $family / $($case.Name)")
         $Summary.Add("")
         $Summary.Add("- Note: " + $case.Note)
@@ -545,6 +546,7 @@ foreach ($family in $selectedFamilies) {
             $peakRuns = New-Object System.Collections.Generic.List[double]
             $runTexts = New-Object System.Collections.Generic.List[string]
             $residualMaps = New-Object System.Collections.Generic.List[object]
+            $capacityMaps = New-Object System.Collections.Generic.List[object]
             $redisPatternRuns = @{}
             foreach ($pattern in @("SET", "GET", "LPUSH", "LPOP", "RANDOM")) {
                 $redisPatternRuns[$pattern] = New-Object System.Collections.Generic.List[double]
@@ -611,6 +613,9 @@ foreach ($family in $selectedFamilies) {
                 if ($DiagnosticHz6Probes -and $raw -match '\[HZ6_RSS_RESIDUAL\]\s+([^[]+)') {
                     $residualMaps.Add((Get-KeyValueMap -Line $Matches[1]))
                 }
+                if ($DiagnosticHz6Probes -and $raw -match '\[HZ6_CAPACITY_UTIL\]\s+([^[]+)') {
+                    $capacityMaps.Add((Get-KeyValueMap -Line $Matches[1]))
+                }
                 if ($family -eq "redis") {
                     $runTexts.Add(("run{0}:ok" -f $run))
                 } else {
@@ -648,6 +653,28 @@ foreach ($family in $selectedFamilies) {
                     FrontcacheTotal = Get-MedianFromMaps -Maps $residualMaps.ToArray() -Key "frontcache_total"
                 })
             }
+            if ($DiagnosticHz6Probes -and $capacityMaps.Count -gt 0) {
+                $capacityRows.Add([pscustomobject]@{
+                    Allocator = $exe.Name
+                    AllocatorCount = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "allocator_count"
+                    DescriptorCapacity = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "descriptor_capacity"
+                    DescriptorUsed = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "descriptor_used"
+                    DescriptorUnused = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "descriptor_unused"
+                    RouteCapacity = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "route_capacity"
+                    RouteUsed = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "route_used"
+                    RouteOccupied = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "route_occupied"
+                    RouteUnused = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "route_unused"
+                    SourceBlockCapacity = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "source_block_capacity"
+                    SourceBlockUsed = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "source_block_used"
+                    SourceBlockUnused = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "source_block_unused"
+                    FrontcacheCapacity = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "frontcache_capacity"
+                    FrontcacheUsed = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "frontcache_used"
+                    FrontcacheUnused = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "frontcache_unused"
+                    TransferCapacity = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "transfer_capacity"
+                    TransferUsed = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "transfer_used"
+                    TransferUnused = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "transfer_unused"
+                })
+            }
         }
         if ($DiagnosticHz6Probes -and $residualRows.Count -gt 0) {
             $Summary.Add("")
@@ -681,6 +708,43 @@ foreach ($family in $selectedFamilies) {
                     (& $fmtCount $row.ActiveSourceBlocks),
                     (& $fmtCount $row.RouteActive),
                     (& $fmtCount $row.FrontcacheTotal)))
+            }
+        }
+        if ($DiagnosticHz6Probes -and $capacityRows.Count -gt 0) {
+            $Summary.Add("")
+            $Summary.Add("### HZ6 capacity utilization audit")
+            $Summary.Add("")
+            $Summary.Add("| allocator | allocators | descriptor used/cap | descriptor util | route active/cap | route util | source blocks used/cap | source util | frontcache used/cap | frontcache util | transfer current/cap | transfer util |")
+            $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+            $fmtCount = {
+                param($value)
+                if ($null -eq $value) { return "n/a" }
+                return "{0:N0}" -f ([double]$value)
+            }
+            $fmtPair = {
+                param($used, $capacity)
+                if ($null -eq $used -or $null -eq $capacity) { return "n/a" }
+                return ("{0:N0}/{1:N0}" -f ([double]$used), ([double]$capacity))
+            }
+            $fmtPct = {
+                param($used, $capacity)
+                if ($null -eq $used -or $null -eq $capacity -or [double]$capacity -le 0.0) { return "n/a" }
+                return "{0:N2}%" -f (([double]$used * 100.0) / [double]$capacity)
+            }
+            foreach ($row in $capacityRows) {
+                $Summary.Add(('| {0} | {1} | {2} | {3} | {4} | {5} | {6} | {7} | {8} | {9} | {10} | {11} |' -f `
+                    $row.Allocator,
+                    (& $fmtCount $row.AllocatorCount),
+                    (& $fmtPair $row.DescriptorUsed $row.DescriptorCapacity),
+                    (& $fmtPct $row.DescriptorUsed $row.DescriptorCapacity),
+                    (& $fmtPair $row.RouteUsed $row.RouteCapacity),
+                    (& $fmtPct $row.RouteUsed $row.RouteCapacity),
+                    (& $fmtPair $row.SourceBlockUsed $row.SourceBlockCapacity),
+                    (& $fmtPct $row.SourceBlockUsed $row.SourceBlockCapacity),
+                    (& $fmtPair $row.FrontcacheUsed $row.FrontcacheCapacity),
+                    (& $fmtPct $row.FrontcacheUsed $row.FrontcacheCapacity),
+                    (& $fmtPair $row.TransferUsed $row.TransferCapacity),
+                    (& $fmtPct $row.TransferUsed $row.TransferCapacity)))
             }
         }
         $Summary.Add("")
