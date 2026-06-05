@@ -950,11 +950,13 @@ int main(int argc, char** argv) {
            "alloc_attempts=%zu alloc_success=%zu alloc_fail=%zu frees=%zu",
            threads, iters, ws, min_size, max_size, sec, ops_sec,
            alloc_attempts, alloc_successes, alloc_failures, frees);
-#if defined(HZ_BENCH_USE_HZ6) && HZ_BENCH_TRACE_LAST_OP
+#if defined(HZ_BENCH_USE_HZ6)
+#if defined(HZ_BENCH_TRACE_LAST_OP) && HZ_BENCH_TRACE_LAST_OP
     bench_print_hz6_summary(&hz6_stats, hz6_pre_free_owns_false,
                             hz6_duplicate_alloc_ptr, peak_kb);
 #else
     bench_print_hz6_summary(&hz6_stats, 0, 0, peak_kb);
+#endif
 #endif
     fflush(stdout);
     free(args);

@@ -1714,6 +1714,9 @@ function Invoke-AppLikeHz6BenchBuilds {
     if ((Split-Path -Leaf $BenchSrc) -eq "bench_allocator_compare.c") {
         $libSources += (Join-Path $RepoRoot "win\bench_allocator_compare_hz6_summary.c")
     }
+    if ((Split-Path -Leaf $BenchSrc) -eq "bench_larson_compare.c") {
+        $libSources += (Join-Path $RepoRoot "win\bench_larson_hz6_diag.c")
+    }
     $commonFlags = Get-Hz6WinClangCommonFlags
     $profileMap = @{
         "strict" = @{ Name = "strict"; Define = "HZ6_PROFILE_STRICT" }
