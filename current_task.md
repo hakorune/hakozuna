@@ -351,6 +351,42 @@ Latest HZ6 selected-family decision:
     repeat/guard closeout or SlotOwnerConsumerDryRun-L1 if more owner-path work
     needs to be explained.
 
+2026-06-05 DescriptorDepotOwnerDirectFastPath-L1 repeat/guard closeout:
+  repeat-3:
+    docs/benchmarks/windows/paper/hz6_depot_owner_direct_repeat3/
+      20260605_175337_hz6_capacity_matrix_windows.md
+    main10k median:
+      46.273M / 224612 KB
+      safety clean:
+        route_invalid=0
+        route_miss=0
+        route_register_fail=0
+        descriptor_exhausted=0
+        source_block_exhausted=0
+        alloc_fail=0
+        remote_free_transfer_fail=0
+
+  guard matrix:
+    docs/benchmarks/windows/paper/hz6_depot_owner_direct_guard_matrix/
+      20260605_175453_hz6_capacity_matrix_windows.md
+    main1k:
+      58.318M / 92068 KB, safety clean
+    worker1k:
+      57.710M / 91784 KB, safety clean
+    main4k:
+      47.912M / 139052 KB, safety clean
+    worker4k:
+      52.784M / 132804 KB, safety clean
+    worker10k:
+      42.459M / 214292 KB, safety clean
+
+  decision:
+    Upgrade depotownerdirect from one-off behavior evidence to
+    ElasticCapacity candidate-watch.  It does not become a broad default yet,
+    but it is the new best source-depot speed/RSS shape in this track.  The
+    next natural experiment is SlotOwnerConsumerDryRun-L1 only if we still need
+    to explain the remaining non-depot owner path cost.
+
 2026-06-05 next attack after combined packed Pro consult:
   Larson cross-owner RSS:
     OwnerSourceSideMeta-L2 remains the selected speed/RSS balance sibling.

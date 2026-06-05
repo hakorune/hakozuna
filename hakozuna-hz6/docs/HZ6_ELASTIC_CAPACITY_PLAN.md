@@ -307,6 +307,25 @@ read:
   source-depot lane and improves throughput without adding sparse side-table
   RSS.  Keep as behavior candidate-watch.  Remaining L2 lookups imply the next
   pressure is outside depot descriptor owner table access.
+
+repeat/guard closeout:
+  main10k repeat-3:
+    46.273M ops/s
+    224,612 KB peak RSS
+    safety clean
+
+  guards:
+    main1k    58.318M / 92,068 KB, safety clean
+    worker1k  57.710M / 91,784 KB, safety clean
+    main4k    47.912M / 139,052 KB, safety clean
+    worker4k  52.784M / 132,804 KB, safety clean
+    worker10k 42.459M / 214,292 KB, safety clean
+
+decision:
+  Upgrade to ElasticCapacity candidate-watch for the source-depot family.  Not
+  broad default/promotion yet; use it as the current best source-depot
+  speed/RSS shape while deciding whether SlotOwnerConsumerDryRun-L1 can remove
+  the remaining owner-path cost.
 ```
 
 ## What The Diagnostics Proved
