@@ -177,29 +177,50 @@ HZ6 is now a profile-family allocator:
 ## Next Attack Order
 
 ```text
-1. Build a compact cross-allocator comparison table using the selected rows.
-   Purpose:
-     separate clean HZ6 rows from pressure/control rows before paper work.
+Current selected rows are stable enough for comparison tables.  Do not mix
+pressure/no-go/diagnostic lanes into those tables.
 
-2. Attack one of two remaining weaknesses:
-   A. wide_ws throughput:
-      route-only L1 found a clean answer: desc17/route18 keeps desc17
-      descriptor/source/frontcache shape and improves wide_ws with about
-      +284 KB RSS versus desc17/route17. Next wide_ws work should not be more
-      blind descriptor capacity; it should look at route representation or
-      class-specific route load.
-   B. Larson RSS:
-      OwnerSourceSideMeta-L2 over routebytes16/routepacked/no-routebackptr/
-      dir192k is the selected lowest-RSS balance sibling.
-      FrontCachePackedMeta-L1 and SourceBlockPackedFlags-L1 are component
-      lower-RSS controls/candidates, and the combined packed lane is the
-      current minimum-RSS candidate/sibling.
-      Keep plain
-      no-routebackptr/dir192k, routepacked/no-routebackptr/dir192k, and
-      routebytes16 as clean controls.
-      Side-owner16 L1 proves a 32-byte descriptor hot entry is possible, but
-      allocator-local owner side metadata is unsafe for cross-owner lifecycle.
-      Further RSS work should not be more static route/descriptor/directory
-      trimming; it should inspect the remaining metadata table/payload split
-      or move to a broader route / descriptor ownership representation rewrite.
+1. Keep selected profile rows fixed unless a same-run guard replaces them:
+   mixed_ws:
+     route17-linearwrap-loopcarry
+   random_mixed:
+     sameownerfast-descavail-noboost-route4k
+   larger_sizes:
+     largerlowrss-front8k-sourcerun-desc8k-route8k
+   Larson minimum-RSS sibling:
+     frontcachepacked-sourceblockpacked-source10k-route192k-run512
+
+2. Keep ElasticCapacity as a research track, not a selected default:
+   current candidate-watch:
+     DepotOwnerDirectFastPath-L1
+     46.273M / 224612 KB, repeat-3, guard rows safety-clean
+   current lower-RSS evidence/control:
+     ElasticDescriptorSourceRouteOverflow-L1
+   current no-go/control:
+     SlotOwnerLogicalOwnerFastPath-L1 in broad form
+
+3. Next ElasticCapacity attack:
+   FreeLocalCacheOwnerPredicate-L0/L1.
+   OwnerEqualCallsiteDryRun-L1 shows owner_equal pressure is dominated by
+   free/local-cache:
+     owner_equal_site_free=424522978
+     owner_equal_site_local_cache=424449034
+     remote/visible/transfer/same-owner callsites=0
+
+   Therefore:
+     do not sparse-probe slot-owner metadata at every owner_equal() entry.
+     do not revive whole-SourceBlock localize.
+     do not add another isolated static cap knob.
+
+   Instead:
+     first add a diagnostic-only free/local-cache state predicate.
+     count which objects are source-depot descriptors and which are ordinary
+     local descriptors before owner_equal().
+     only if the depot subset is large and cheap to identify, try a behavior
+     lane that answers owner equality through depot owner metadata for that
+     subset.
+
+4. If FreeLocalCacheOwnerPredicate is weak:
+   close the slot-owner logical fast-path family as evidence and return to
+   unified depot accounting / owner-safe drain-localize design.
 ```

@@ -84,6 +84,19 @@ Latest HZ6 selected-family decision:
       or by an even cheaper object-state/source-depot predicate; do not probe
       sparse slot-owner metadata at every owner_equal() call.
 
+  immediate next attack order:
+    1. FreeLocalCacheOwnerPredicate-L0 diagnostic:
+       classify the free/local-cache owner_equal calls by cheap state and
+       source-depot predicates before sparse slot-owner probing.
+
+    2. If the depot/source-run subset is large and cheap to identify:
+       try a narrow behavior lane that answers owner equality only for that
+       subset.
+
+    3. If the predicate is weak or expensive:
+       close slot-owner logical fast-path work as evidence and return to
+       unified depot accounting / owner-safe drain-localize design.
+
   do not:
     use diagnostic-only lanes in speed-ranking tables
     revive whole-SourceBlock localize
