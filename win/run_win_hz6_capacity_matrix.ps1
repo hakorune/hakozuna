@@ -99,7 +99,7 @@ function Get-LogCapture {
                 }
                 [void]$tail.Enqueue($line)
             }
-            if ($line -match '^(\[BENCH_ARGS\]|\[RSS\]|\[OPS\]|\[HZ6_STATS\]|\[HZ6_MEMORY_ATTR\]|\[HZ6_RSS_RESIDUAL\]|\[HZ6_CAPACITY_UTIL\]|\[HZ6_ELASTIC_PROJECTION\]|\[HZ6_METADATA_SLIM\]|\[HZ6_FRONT_ALLOC_PATH\]|\[HZ6_FRONTCACHE_CLASS\]|\[HZ6_ROUTE_PROBE_SHAPE\]|\[HZ6_REDIS_STATS\]|threads=.*ops/s=|bench_[^:]+:.*ops/s=|Pattern:|Throughput:|Throughput = |Ops:|---)') {
+            if ($line -match '^(\[BENCH_ARGS\]|\[RSS\]|\[OPS\]|\[HZ6_STATS\]|\[HZ6_MEMORY_ATTR\]|\[HZ6_RSS_RESIDUAL\]|\[HZ6_CAPACITY_UTIL\]|\[HZ6_MAIN_WARMUP_CAPACITY\]|\[HZ6_ELASTIC_PROJECTION\]|\[HZ6_METADATA_SLIM\]|\[HZ6_FRONT_ALLOC_PATH\]|\[HZ6_FRONTCACHE_CLASS\]|\[HZ6_ROUTE_PROBE_SHAPE\]|\[HZ6_REDIS_STATS\]|threads=.*ops/s=|bench_[^:]+:.*ops/s=|Pattern:|Throughput:|Throughput = |Ops:|---)') {
                 [void]$captured.Add($line)
             } elseif ($IncludeStatsTail -and $line -match '^\[HZ6_STATS\]\s+label=redis_alloc_string_fail') {
                 if ($statsTail.Count -ge $TailLimit) {
@@ -533,6 +533,7 @@ foreach ($family in $selectedFamilies) {
     foreach ($case in $cases) {
         $residualRows = New-Object System.Collections.Generic.List[object]
         $capacityRows = New-Object System.Collections.Generic.List[object]
+        $warmupRows = New-Object System.Collections.Generic.List[object]
         $elasticRows = New-Object System.Collections.Generic.List[object]
         $Summary.Add("## $family / $($case.Name)")
         $Summary.Add("")
@@ -554,6 +555,7 @@ foreach ($family in $selectedFamilies) {
             $runTexts = New-Object System.Collections.Generic.List[string]
             $residualMaps = New-Object System.Collections.Generic.List[object]
             $capacityMaps = New-Object System.Collections.Generic.List[object]
+            $warmupMaps = New-Object System.Collections.Generic.List[object]
             $elasticMaps = New-Object System.Collections.Generic.List[object]
             $redisPatternRuns = @{}
             foreach ($pattern in @("SET", "GET", "LPUSH", "LPOP", "RANDOM")) {
@@ -623,6 +625,9 @@ foreach ($family in $selectedFamilies) {
                 }
                 if ($DiagnosticHz6Probes -and $raw -match '\[HZ6_CAPACITY_UTIL\]\s+([^[]+)') {
                     $capacityMaps.Add((Get-KeyValueMap -Line $Matches[1]))
+                }
+                if ($DiagnosticHz6Probes -and $raw -match '\[HZ6_MAIN_WARMUP_CAPACITY\]\s+([^[]+)') {
+                    $warmupMaps.Add((Get-KeyValueMap -Line $Matches[1]))
                 }
                 if ($DiagnosticHz6Probes -and $raw -match '\[HZ6_ELASTIC_PROJECTION\]\s+([^[]+)') {
                     $elasticMaps.Add((Get-KeyValueMap -Line $Matches[1]))
@@ -698,6 +703,26 @@ foreach ($family in $selectedFamilies) {
                     FrontcacheLocalCap2x = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "frontcache_local_cap_2x"
                     TransferMaxAllocator = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "transfer_used_max_allocator"
                     TransferLocalCap2x = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "transfer_local_cap_2x"
+                })
+            }
+            if ($DiagnosticHz6Probes -and $warmupMaps.Count -gt 0) {
+                $warmupRows.Add([pscustomobject]@{
+                    Allocator = $exe.Name
+                    DescriptorUsed = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "descriptor_used"
+                    DescriptorLiveMax = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "descriptor_live_max"
+                    RouteUsed = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "route_used"
+                    RouteOccupied = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "route_occupied"
+                    RouteActiveMax = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "route_active_max"
+                    SourceBlockUsed = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "source_block_used"
+                    SourceBlockActiveMax = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "source_block_active_max"
+                    FrontcacheUsed = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "frontcache_used"
+                    FrontcacheTotalMax = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "frontcache_total_max"
+                    TransferCurrent = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "transfer_current"
+                    TransferCurrentMax = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "transfer_current_max"
+                    DescriptorExhausted = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "descriptor_exhausted"
+                    RouteRegisterFail = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "route_register_fail"
+                    SourceBlockExhausted = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "source_block_exhausted"
+                    AllocFail = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "alloc_fail"
                 })
             }
             if ($DiagnosticHz6Probes -and $elasticMaps.Count -gt 0) {
@@ -797,6 +822,38 @@ foreach ($family in $selectedFamilies) {
                     (& $fmtPair $row.TransferUsed $row.TransferCapacity),
                     (& $fmtPct $row.TransferUsed $row.TransferCapacity),
                     (& $fmtPair $row.TransferMaxAllocator $row.TransferLocalCap2x)))
+            }
+        }
+        if ($DiagnosticHz6Probes -and $warmupRows.Count -gt 0) {
+            $Summary.Add("")
+            $Summary.Add("### HZ6 main-warmup capacity audit")
+            $Summary.Add("")
+            $Summary.Add("| allocator | descriptor used/peak | route active/occupied/peak | source blocks used/peak | frontcache used/peak | transfer current/peak | failures descriptor/route/source/alloc |")
+            $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: |")
+            $fmtPair2 = {
+                param($a, $b)
+                if ($null -eq $a -or $null -eq $b) { return "n/a" }
+                return ("{0:N0}/{1:N0}" -f ([double]$a), ([double]$b))
+            }
+            $fmtTriple = {
+                param($a, $b, $c)
+                if ($null -eq $a -or $null -eq $b -or $null -eq $c) { return "n/a" }
+                return ("{0:N0}/{1:N0}/{2:N0}" -f ([double]$a), ([double]$b), ([double]$c))
+            }
+            $fmtQuad = {
+                param($a, $b, $c, $d)
+                if ($null -eq $a -or $null -eq $b -or $null -eq $c -or $null -eq $d) { return "n/a" }
+                return ("{0:N0}/{1:N0}/{2:N0}/{3:N0}" -f ([double]$a), ([double]$b), ([double]$c), ([double]$d))
+            }
+            foreach ($row in $warmupRows) {
+                $Summary.Add(('| {0} | {1} | {2} | {3} | {4} | {5} | {6} |' -f `
+                    $row.Allocator,
+                    (& $fmtPair2 $row.DescriptorUsed $row.DescriptorLiveMax),
+                    (& $fmtTriple $row.RouteUsed $row.RouteOccupied $row.RouteActiveMax),
+                    (& $fmtPair2 $row.SourceBlockUsed $row.SourceBlockActiveMax),
+                    (& $fmtPair2 $row.FrontcacheUsed $row.FrontcacheTotalMax),
+                    (& $fmtPair2 $row.TransferCurrent $row.TransferCurrentMax),
+                    (& $fmtQuad $row.DescriptorExhausted $row.RouteRegisterFail $row.SourceBlockExhausted $row.AllocFail)))
             }
         }
         if ($DiagnosticHz6Probes -and $elasticRows.Count -gt 0) {

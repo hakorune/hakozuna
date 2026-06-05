@@ -101,6 +101,18 @@ static size_t hz6_larson_project_table_bytes(size_t current_bytes,
     }
     return (current_bytes / current_capacity) * projected_capacity;
 }
+
+static size_t hz6_larson_descriptor_used_from_stats(
+    const Hz6StatsSnapshot* stats) {
+    if (!stats) {
+        return 0u;
+    }
+    return stats->memory_active_descriptors +
+           stats->memory_local_free_descriptors +
+           stats->memory_transfer_free_descriptors +
+           stats->memory_remote_pending_descriptors +
+           stats->memory_dead_with_ptr_descriptors;
+}
 #endif
 
 static inline void* bench_alloc(size_t size) {
@@ -351,6 +363,9 @@ int main(int argc, char** argv) {
     size_t hz6_source_block_used_max_allocator = 0;
     size_t hz6_frontcache_used_max_allocator = 0;
     size_t hz6_transfer_used_max_allocator = 0;
+    Hz6StatsSnapshot hz6_main_warmup_stats;
+    int hz6_has_main_warmup_stats = 0;
+    memset(&hz6_main_warmup_stats, 0, sizeof(hz6_main_warmup_stats));
 #endif
 #endif
 
@@ -413,6 +428,14 @@ int main(int argc, char** argv) {
         tds[t].alloc_count = 0;
         tds[t].free_count = 0;
     }
+
+#if defined(HZ_BENCH_USE_HZ6) && HZ6_DIAGNOSTIC_PROBES
+    if (!worker_warmup && hz_bench_tls_hz6_initialized) {
+        hz6_main_warmup_stats =
+            hz6_stats_snapshot(&hz_bench_tls_hz6_allocator);
+        hz6_has_main_warmup_stats = 1;
+    }
+#endif
 
     InterlockedExchange(&g_stop_flag, 0);
     InterlockedExchange(&g_ready_count, 0);
@@ -867,11 +890,7 @@ int main(int argc, char** argv) {
         {
             const Hz6StatsSnapshot* local_stats = &tds[t].hz6_stats_after;
             const size_t local_descriptor_used =
-                local_stats->memory_active_descriptors +
-                local_stats->memory_local_free_descriptors +
-                local_stats->memory_transfer_free_descriptors +
-                local_stats->memory_remote_pending_descriptors +
-                local_stats->memory_dead_with_ptr_descriptors;
+                hz6_larson_descriptor_used_from_stats(local_stats);
             const size_t local_descriptor_peak =
                 (local_stats->descriptor_live_max > local_descriptor_used)
                     ? local_stats->descriptor_live_max
@@ -1043,11 +1062,7 @@ int main(int argc, char** argv) {
     const size_t hz6_descriptor_capacity =
         HZ6_OBJECT_DESCRIPTOR_CAPACITY * hz6_allocator_count;
     const size_t hz6_descriptor_used =
-        hz6_stats.memory_active_descriptors +
-        hz6_stats.memory_local_free_descriptors +
-        hz6_stats.memory_transfer_free_descriptors +
-        hz6_stats.memory_remote_pending_descriptors +
-        hz6_stats.memory_dead_with_ptr_descriptors;
+        hz6_larson_descriptor_used_from_stats(&hz6_stats);
     const size_t hz6_descriptor_unused =
         (hz6_descriptor_capacity > hz6_descriptor_used)
             ? (hz6_descriptor_capacity - hz6_descriptor_used)
@@ -1551,6 +1566,44 @@ int main(int argc, char** argv) {
            hz6_frontcache_local_cap_2x,
            hz6_transfer_used_max_allocator,
            hz6_transfer_local_cap_2x);
+    if (hz6_has_main_warmup_stats) {
+        const size_t warm_descriptor_used =
+            hz6_larson_descriptor_used_from_stats(&hz6_main_warmup_stats);
+        const size_t warm_route_occupied =
+            hz6_main_warmup_stats.route_active_current +
+            hz6_main_warmup_stats.route_tombstone_current;
+        printf("[HZ6_MAIN_WARMUP_CAPACITY] "
+               "descriptor_used=%zu "
+               "descriptor_live_max=%zu "
+               "route_used=%zu "
+               "route_occupied=%zu "
+               "route_active_max=%zu "
+               "source_block_used=%zu "
+               "source_block_active_max=%zu "
+               "frontcache_used=%zu "
+               "frontcache_total_max=%zu "
+               "transfer_current=%zu "
+               "transfer_current_max=%zu "
+               "descriptor_exhausted=%zu "
+               "route_register_fail=%zu "
+               "source_block_exhausted=%zu "
+               "alloc_fail=%zu\n",
+               warm_descriptor_used,
+               hz6_main_warmup_stats.descriptor_live_max,
+               hz6_main_warmup_stats.route_active_current,
+               warm_route_occupied,
+               hz6_main_warmup_stats.route_active_max,
+               hz6_main_warmup_stats.memory_active_source_blocks,
+               hz6_main_warmup_stats.source_block_active_max,
+               hz6_main_warmup_stats.memory_frontcache_total,
+               hz6_main_warmup_stats.frontcache_total_max,
+               hz6_main_warmup_stats.transfer_current,
+               hz6_main_warmup_stats.transfer_current_max,
+               hz6_main_warmup_stats.descriptor_exhausted,
+               hz6_main_warmup_stats.route_register_fail,
+               hz6_main_warmup_stats.source_block_exhausted,
+               hz6_main_warmup_stats.alloc_fail);
+    }
     printf("[HZ6_ELASTIC_PROJECTION] "
            "allocator_count=%zu "
            "descriptor_projected_capacity=%zu "

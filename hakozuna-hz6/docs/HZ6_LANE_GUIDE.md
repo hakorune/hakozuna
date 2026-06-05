@@ -181,10 +181,12 @@ larson-rss-residual-audit:
     [HZ6_MEMORY_ATTR]
     [HZ6_RSS_RESIDUAL]
     [HZ6_CAPACITY_UTIL]
+    [HZ6_MAIN_WARMUP_CAPACITY]
     [HZ6_ELASTIC_PROJECTION]
     [HZ6_METADATA_SLIM]
     HZ6 RSS residual audit table in the generated markdown
     HZ6 capacity utilization audit table in the generated markdown
+    HZ6 main-warmup capacity audit table in the generated markdown
     HZ6 elastic capacity projection table in the generated markdown
     per-worker high-water/max usage and projected local_cap_2x for
       elastic-capacity design

@@ -75,6 +75,30 @@ Next behavior target:
   It needs a shared overflow/depot or warmup-owner handoff for low-cap lanes.
 ```
 
+Immediate read after MainWarmupCapacity-L1:
+
+```text
+main-warmup full10k before worker handoff:
+  descriptor_used       = 160,048
+  route_occupied        = 170,051
+  source_block_used     = 10,003
+  frontcache_used       = 48
+
+worker/final full10k after handoff:
+  descriptor max worker = 400
+  route max worker      = 5,425
+  source max worker     = 25
+  frontcache max worker = 401
+
+Meaning:
+  Local-only static cap shrinking cannot work for main-warmup because the main
+  allocator must temporarily hold the whole seeded live set. The RSS win needs
+  shared elastic overflow for the warmup owner:
+    main allocator can burst into shared descriptor/route/source metadata
+    worker handoff/rehome drains back to small local steady-state
+    route INVALID/MISS stays fail-closed
+```
+
 ### 2026-06-05: CapacityUtil-L1 diagnostic
 
 Goal:
@@ -470,6 +494,99 @@ Result:
 Read:
   The high-water fields and updates are correctly isolated from normal
   non-diagnostic build behavior.
+```
+
+### 2026-06-05: MainWarmupCapacity-L1 diagnostic
+
+Goal:
+
+```text
+Capture the main allocator snapshot after main-thread warmup and before worker
+handoff. This closes the gap left by worker/final high-water snapshots.
+
+This is diagnostic-only:
+  [HZ6_MAIN_WARMUP_CAPACITY] is emitted only under HZ6_DIAGNOSTIC_PROBES.
+  No allocator behavior changes.
+```
+
+Implementation:
+
+```text
+bench_larson_compare:
+  after main warmup, snapshot the main thread HZ6 allocator.
+  emit [HZ6_MAIN_WARMUP_CAPACITY].
+
+run_win_hz6_capacity_matrix:
+  captures the line and adds "HZ6 main-warmup capacity audit".
+```
+
+Smoke:
+
+```text
+Source:
+  docs/benchmarks/windows/paper/hz6_main_warmup_capacity_l1_smoke/
+    20260605_115500_hz6_capacity_matrix_windows.md
+
+Result:
+  larson_t16_main_1k:
+    main warmup:
+      descriptor_used=16,016
+      route_occupied=17,017
+      source_block_used=1,001
+      frontcache_used=16
+    final/worker:
+      descriptor max=160
+      route max=670
+      source max=10
+      frontcache max=161
+    safety clean
+```
+
+Full 10k check:
+
+```text
+Source:
+  docs/benchmarks/windows/paper/hz6_main_warmup_capacity_l1_full10k/
+    20260605_115543_hz6_capacity_matrix_windows.md
+
+Result:
+  larson_t16_main_10k:
+    42.898M / 412,828 KB
+    safety clean
+
+  main warmup:
+    descriptor_used=160,048
+    route_occupied=170,051
+    source_block_used=10,003
+    frontcache_used=48
+
+  final/worker:
+    descriptor max=400
+    route max=5,425
+    source max=25
+    frontcache max=401
+```
+
+Decision:
+
+```text
+KEEP as diagnostic evidence.
+
+Read:
+  The low-cap failures are not explained by final steady-state pressure.
+  They are main-warmup owner concentration. ElasticCapacity-L1 must support
+  a temporary shared overflow/depot for descriptor/route/source metadata.
+
+  SourceBlock-only overflow would be incomplete:
+    main warmup source pressure is 10,003 blocks
+    but descriptor and route also spike to 160k/170k
+
+Next:
+  Design a combined shared overflow contract:
+    local small steady-state tables
+    shared burst metadata for main-warmup
+    handoff/rehome drains to worker-local or shared-retained state
+    fail-closed route INVALID/MISS preserved
 ```
 
 ### 2026-06-05: ElasticProjection local-cap controls
