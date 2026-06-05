@@ -48,6 +48,7 @@ $VcpkgLib = Join-Path $VcpkgRoot "installed\x64-windows\lib"
 $VcpkgBin = Join-Path $VcpkgRoot "installed\x64-windows\bin"
 
 $BenchSrc = Join-Path $RepoRoot "win\bench_redis_workload_compare.c"
+$BenchHz6Diag = Join-Path $RepoRoot "win\bench_redis_hz6_diag.c"
 $Hz3Dir = Join-Path $RepoRoot "hakozuna"
 $Hz4Dir = Join-Path $RepoRoot "hakozuna-mt"
 $Hz3Lib = Join-Path $Hz3Dir "out_win\hz3_win.lib"
@@ -75,7 +76,7 @@ Invoke-Checked $Cc ($BaseFlags + @($BenchSrc, "/link", "/out:$BenchCrtOut"))
 if (Test-Path $Hz3Lib) {
     Write-Host "Building: redis workload (hz3)"
     $BenchHz3Out = Join-Path $OutDir "bench_redis_workload_hz3.exe"
-    Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ3=1", $BenchSrc, $Hz3Lib, "/link", "/out:$BenchHz3Out"))
+    Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ3=1", $BenchSrc, $BenchHz6Diag, $Hz3Lib, "/link", "/out:$BenchHz3Out"))
 } else {
     Write-Warning "hz3_win.lib not found; skipping hz3 redis workload bench."
 }
@@ -94,7 +95,7 @@ if ((Test-Path $Hz4Lib) -and (Test-Path (Join-Path $Hz4Dir "win\hz4_win_api.c"))
     Invoke-Checked $Cc ($Hz4Flags + @("/c", (Join-Path $Hz4Dir "win\hz4_win_api.c"), "/Fo$Hz4ApiObj"))
     Write-Host "Building: redis workload (hz4)"
     $BenchHz4Out = Join-Path $OutDir "bench_redis_workload_hz4.exe"
-    Invoke-Checked $Cc ($Hz4Flags + @("/DHZ_BENCH_USE_HZ4=1", $BenchSrc, $Hz4ApiObj, $Hz4Lib, "/link", "/out:$BenchHz4Out"))
+    Invoke-Checked $Cc ($Hz4Flags + @("/DHZ_BENCH_USE_HZ4=1", $BenchSrc, $BenchHz6Diag, $Hz4ApiObj, $Hz4Lib, "/link", "/out:$BenchHz4Out"))
 } else {
     Write-Warning "hz4_win.lib not found; skipping hz4 redis workload bench."
 }
@@ -104,7 +105,7 @@ $MiLib = Join-Path $VcpkgLib "mimalloc.dll.lib"
 if ((Test-Path $MiHeader) -and (Test-Path $MiLib)) {
     Write-Host "Building: redis workload (mimalloc)"
     $BenchMiOut = Join-Path $OutDir "bench_redis_workload_mimalloc.exe"
-    Invoke-Checked $Cc ($BaseFlags + @("/I$VcpkgInclude", "/DHZ_BENCH_USE_MIMALLOC=1", $BenchSrc, $MiLib, "/link", "/out:$BenchMiOut"))
+    Invoke-Checked $Cc ($BaseFlags + @("/I$VcpkgInclude", "/DHZ_BENCH_USE_MIMALLOC=1", $BenchSrc, $BenchHz6Diag, $MiLib, "/link", "/out:$BenchMiOut"))
 } else {
     Write-Warning "mimalloc not found in $VcpkgRoot; skipping mimalloc redis workload bench."
 }
@@ -114,7 +115,7 @@ $TcLib = Join-Path $VcpkgLib "tcmalloc_minimal.lib"
 if ((Test-Path $TcHeader) -and (Test-Path $TcLib)) {
     Write-Host "Building: redis workload (tcmalloc)"
     $BenchTcOut = Join-Path $OutDir "bench_redis_workload_tcmalloc.exe"
-    Invoke-Checked $Cc ($BaseFlags + @("/I$VcpkgInclude", "/DHZ_BENCH_USE_TCMALLOC=1", $BenchSrc, $TcLib, "/link", "/out:$BenchTcOut"))
+    Invoke-Checked $Cc ($BaseFlags + @("/I$VcpkgInclude", "/DHZ_BENCH_USE_TCMALLOC=1", $BenchSrc, $BenchHz6Diag, $TcLib, "/link", "/out:$BenchTcOut"))
 } else {
     Write-Warning "tcmalloc not found in $VcpkgRoot; skipping tcmalloc redis workload bench."
 }

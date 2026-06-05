@@ -103,6 +103,9 @@ if (Test-Path $Hz6Common) {
     if ((Split-Path -Leaf $CompareSource) -eq "bench_allocator_compare.c") {
         $Hz6LibSources += (Join-Path $RepoRoot "win\bench_allocator_compare_hz6_summary.c")
     }
+    if ((Split-Path -Leaf $CompareSource) -eq "bench_redis_workload_compare.c") {
+        $Hz6LibSources += (Join-Path $RepoRoot "win\bench_redis_hz6_diag.c")
+    }
     $Hz6CommonFlags = Get-Hz6WinClangCommonFlags
     $Hz6DiagnosticFlags = @()
     if ($DiagnosticHz6Probes) {
