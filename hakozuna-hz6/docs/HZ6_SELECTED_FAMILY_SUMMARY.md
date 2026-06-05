@@ -43,6 +43,7 @@ cross-owner contract.
 | Owner-equal callsite dry-run | `speed + diagnostic + ...elasticdescsource-route-depotownerdirect-ownerequalcallsite-dryrun-...source64-route16k-run512` | 42.434M | 224,612 | diagnostic-only; owner_equal pressure is free/local-cache dominated |
 | Free/local owner predicate dry-run | `speed + diagnostic + ...elasticdescsource-route-depotownerdirect-freelocalownerpredicate-dryrun-...source64-route16k-run512` | 41.049M | 224,628 | diagnostic-only; free/local-cache owner_equal pressure is mostly depot/source-block backed |
 | Depot descriptor owner-equal fast path | `speed + ...elasticdescsource-route-depotownerdirect-depotownerequal-...source64-route16k-run512` | 40.531M | 227,708 | safety-clean behavior no-go/control; earlier depot-owner branch is slower than depotownerdirect |
+| Unified depot drain dry-run | `speed + diagnostic + ...elasticdescsource-route-depotrunmeta-depotownerdirect-depotdraindryrun-...source64-route16k-run4096` | 43.101M | 235,420 | diagnostic-only; whole-block localize remains blocked, but every probed transfer slot is run-matched and slot-localizable |
 
 Source:
 - `docs/benchmarks/windows/paper/hz6_selected_family/selected-family-desc17-refresh/`
@@ -77,6 +78,7 @@ Source:
 - `docs/benchmarks/windows/paper/hz6_flc_owner_predicate_dryrun_full10k/`
 - `docs/benchmarks/windows/paper/hz6_depot_owner_equal_fastpath_full10k/`
 - `docs/benchmarks/windows/paper/hz6_depot_owner_equal_fastpath_diag_full10k/`
+- `docs/benchmarks/windows/paper/hz6_elastic_depot_runmeta_drain_dryrun_full10k/`
 
 ## Evidence Rows
 
@@ -239,8 +241,22 @@ pressure/no-go/diagnostic lanes into those tables.
      already performs the depot-direct owner read before the L2 path.
 
 5. Next:
-   close the slot-owner logical / depot-owner-equal shortcut family as
-   evidence for now.  Return to unified depot accounting / owner-safe
-   drain-localize design, or look for a different expensive operation that
-   DepotOwnerDirectFastPath-L1 does not already remove.
+   UnifiedDepotDrainDryRun-L1 was added on the depot-runmeta +
+   depotownerdirect lane.  Full10k diagnostic:
+     43.101M / 235420 KB
+     elastic_depot_drain_probe=79485
+     storage_mismatch=79485
+     run_match=79485
+     ref_shared=79485
+     owner_match=79485
+     would_slot_localize=79485
+     would_block_whole_localize=79485
+
+   Read:
+     close the slot-owner logical / depot-owner-equal shortcut family as
+     evidence for now.  Whole-block localize is still blocked by shared
+     SourceBlocks, but slot-level depot drain/localize now has a strong,
+     safety-clean witness.  The next behavior candidate should localize
+     slot ownership/storage state, not move entire SourceBlocks and not add
+     another owner_equal branch.
 ```

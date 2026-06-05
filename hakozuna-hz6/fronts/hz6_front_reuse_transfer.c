@@ -145,6 +145,68 @@ static void hz6_front_note_slot_owner_locality_dryrun(
 }
 #endif
 
+#if HZ6_DIAGNOSTIC_PROBES && HZ6_ELASTIC_DEPOT_DRAIN_DRYRUN_L1
+static void hz6_front_note_elastic_depot_drain_dryrun(
+    Hz6Allocator* allocator,
+    const Hz6ObjectDescriptor* descriptor) {
+  if (!allocator || !descriptor || !descriptor->source_block ||
+      !hz6_allocator_source_block_is_elastic_depot(
+          descriptor->source_block)) {
+    return;
+  }
+
+  Hz6SourceBlock* block = descriptor->source_block;
+  ++allocator->stats.elastic_depot_drain_probe;
+
+  int storage_match = 0;
+#if HZ6_OWNER_SOURCE_SIDE_META_L2
+  storage_match = block->owner_source_storage_allocator == allocator;
+#endif
+  if (storage_match) {
+    ++allocator->stats.elastic_depot_drain_storage_match;
+  } else {
+    ++allocator->stats.elastic_depot_drain_storage_mismatch;
+  }
+
+  if (block->ref_count <= 1) {
+    ++allocator->stats.elastic_depot_drain_ref_exclusive;
+  } else {
+    ++allocator->stats.elastic_depot_drain_ref_shared;
+    ++allocator->stats.elastic_depot_drain_would_block_whole_localize;
+  }
+
+  int run_match = 0;
+  if (!hz6_source_block_run_active(block)) {
+    ++allocator->stats.elastic_depot_drain_run_miss;
+  } else if (block->run_class_id != descriptor->class_id ||
+             block->run_slot_bytes != descriptor->bytes) {
+    ++allocator->stats.elastic_depot_drain_class_mismatch;
+  } else if (!hz6_allocator_source_run_contains_slot(
+                 block, descriptor->ptr, descriptor->class_id,
+                 descriptor->bytes)) {
+    ++allocator->stats.elastic_depot_drain_slot_mismatch;
+  } else {
+    run_match = 1;
+    ++allocator->stats.elastic_depot_drain_run_match;
+  }
+
+  if (hz6_allocator_descriptor_owner_equal_at(
+          allocator, descriptor, allocator->owner.token,
+          HZ6_OWNER_EQUAL_SITE_TRANSFER_LOCALITY)) {
+    ++allocator->stats.elastic_depot_drain_owner_match;
+  } else {
+    ++allocator->stats.elastic_depot_drain_owner_mismatch;
+  }
+
+  if (!storage_match && run_match) {
+    ++allocator->stats.elastic_depot_drain_would_slot_localize;
+    if (block->ref_count > 1) {
+      ++allocator->stats.elastic_depot_drain_would_keep_shared;
+    }
+  }
+}
+#endif
+
 void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
                                uint16_t front_id,
                                uint16_t class_id,
@@ -175,6 +237,9 @@ void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
 #endif
 #if HZ6_ELASTIC_SLOT_OWNER_LOCALITY_DRYRUN_L1
     hz6_front_note_slot_owner_locality_dryrun(allocator, descriptor);
+#endif
+#if HZ6_ELASTIC_DEPOT_DRAIN_DRYRUN_L1
+    hz6_front_note_elastic_depot_drain_dryrun(allocator, descriptor);
 #endif
 #endif
 #if HZ6_ELASTIC_SLOT_OWNER_SPARSE_META_L1 && \

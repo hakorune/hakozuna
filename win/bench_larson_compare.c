@@ -757,6 +757,35 @@ int main(int argc, char** argv) {
         hz6_stats.elastic_slot_owner_locality_would_hit_owner +=
             tds[t].hz6_stats_after
                 .elastic_slot_owner_locality_would_hit_owner;
+        hz6_stats.elastic_depot_drain_probe +=
+            tds[t].hz6_stats_after.elastic_depot_drain_probe;
+        hz6_stats.elastic_depot_drain_storage_match +=
+            tds[t].hz6_stats_after.elastic_depot_drain_storage_match;
+        hz6_stats.elastic_depot_drain_storage_mismatch +=
+            tds[t].hz6_stats_after.elastic_depot_drain_storage_mismatch;
+        hz6_stats.elastic_depot_drain_run_match +=
+            tds[t].hz6_stats_after.elastic_depot_drain_run_match;
+        hz6_stats.elastic_depot_drain_run_miss +=
+            tds[t].hz6_stats_after.elastic_depot_drain_run_miss;
+        hz6_stats.elastic_depot_drain_class_mismatch +=
+            tds[t].hz6_stats_after.elastic_depot_drain_class_mismatch;
+        hz6_stats.elastic_depot_drain_slot_mismatch +=
+            tds[t].hz6_stats_after.elastic_depot_drain_slot_mismatch;
+        hz6_stats.elastic_depot_drain_ref_exclusive +=
+            tds[t].hz6_stats_after.elastic_depot_drain_ref_exclusive;
+        hz6_stats.elastic_depot_drain_ref_shared +=
+            tds[t].hz6_stats_after.elastic_depot_drain_ref_shared;
+        hz6_stats.elastic_depot_drain_owner_match +=
+            tds[t].hz6_stats_after.elastic_depot_drain_owner_match;
+        hz6_stats.elastic_depot_drain_owner_mismatch +=
+            tds[t].hz6_stats_after.elastic_depot_drain_owner_mismatch;
+        hz6_stats.elastic_depot_drain_would_slot_localize +=
+            tds[t].hz6_stats_after.elastic_depot_drain_would_slot_localize;
+        hz6_stats.elastic_depot_drain_would_keep_shared +=
+            tds[t].hz6_stats_after.elastic_depot_drain_would_keep_shared;
+        hz6_stats.elastic_depot_drain_would_block_whole_localize +=
+            tds[t].hz6_stats_after
+                .elastic_depot_drain_would_block_whole_localize;
         hz6_stats.elastic_slot_owner_sparse_lookup +=
             tds[t].hz6_stats_after.elastic_slot_owner_sparse_lookup;
         hz6_stats.elastic_slot_owner_sparse_hit +=
@@ -1560,6 +1589,20 @@ int main(int argc, char** argv) {
            "elastic_slot_owner_locality_owner_mismatch=%zu "
            "elastic_slot_owner_locality_would_set_owner=%zu "
            "elastic_slot_owner_locality_would_hit_owner=%zu "
+           "elastic_depot_drain_probe=%zu "
+           "elastic_depot_drain_storage_match=%zu "
+           "elastic_depot_drain_storage_mismatch=%zu "
+           "elastic_depot_drain_run_match=%zu "
+           "elastic_depot_drain_run_miss=%zu "
+           "elastic_depot_drain_class_mismatch=%zu "
+           "elastic_depot_drain_slot_mismatch=%zu "
+           "elastic_depot_drain_ref_exclusive=%zu "
+           "elastic_depot_drain_ref_shared=%zu "
+           "elastic_depot_drain_owner_match=%zu "
+           "elastic_depot_drain_owner_mismatch=%zu "
+           "elastic_depot_drain_would_slot_localize=%zu "
+           "elastic_depot_drain_would_keep_shared=%zu "
+           "elastic_depot_drain_would_block_whole_localize=%zu "
            "elastic_slot_owner_sparse_lookup=%zu "
            "elastic_slot_owner_sparse_hit=%zu "
            "elastic_slot_owner_sparse_miss=%zu "
@@ -1771,6 +1814,20 @@ int main(int argc, char** argv) {
            hz6_stats.elastic_slot_owner_locality_owner_mismatch,
            hz6_stats.elastic_slot_owner_locality_would_set_owner,
            hz6_stats.elastic_slot_owner_locality_would_hit_owner,
+           hz6_stats.elastic_depot_drain_probe,
+           hz6_stats.elastic_depot_drain_storage_match,
+           hz6_stats.elastic_depot_drain_storage_mismatch,
+           hz6_stats.elastic_depot_drain_run_match,
+           hz6_stats.elastic_depot_drain_run_miss,
+           hz6_stats.elastic_depot_drain_class_mismatch,
+           hz6_stats.elastic_depot_drain_slot_mismatch,
+           hz6_stats.elastic_depot_drain_ref_exclusive,
+           hz6_stats.elastic_depot_drain_ref_shared,
+           hz6_stats.elastic_depot_drain_owner_match,
+           hz6_stats.elastic_depot_drain_owner_mismatch,
+           hz6_stats.elastic_depot_drain_would_slot_localize,
+           hz6_stats.elastic_depot_drain_would_keep_shared,
+           hz6_stats.elastic_depot_drain_would_block_whole_localize,
            hz6_stats.elastic_slot_owner_sparse_lookup,
            hz6_stats.elastic_slot_owner_sparse_hit,
            hz6_stats.elastic_slot_owner_sparse_miss,

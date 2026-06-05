@@ -156,6 +156,33 @@ Latest HZ6 selected-family decision:
       short-circuit unless it removes a different expensive operation, not just
       reorders the same depot-owner read.
 
+  2026-06-05 UnifiedDepotDrainDryRun-L1:
+    implementation:
+      Add HZ6_ELASTIC_DEPOT_DRAIN_DRYRUN_L1.
+      It is diagnostic-only and runs during transfer reuse on the
+      DepotRunMeta + DepotOwnerDirect source-depot lane.  It unifies the
+      previous storage-owner, run metadata, ref-count, owner-match, and
+      slot-localize projections into one owner-safe drain/localize witness.
+
+    full10k diagnostic:
+      43.101M / 235420 KB
+      elastic_depot_drain_probe=79485
+      elastic_depot_drain_storage_mismatch=79485
+      elastic_depot_drain_run_match=79485
+      elastic_depot_drain_ref_shared=79485
+      elastic_depot_drain_owner_match=79485
+      elastic_depot_drain_would_slot_localize=79485
+      elastic_depot_drain_would_block_whole_localize=79485
+      safety clean
+
+    read:
+      Whole-SourceBlock localize remains no-go: every probed depot transfer
+      block is shared.  But every probe is run-matched, owner-matched after
+      activation, and slot-localizable.  This is the strongest current witness
+      for a slot-level depot drain/localize behavior.  The next behavior should
+      localize per-slot storage/owner state for depot transfer reuse, not move
+      whole SourceBlocks and not add another owner_equal branch.
+
   do not:
     use diagnostic-only lanes in speed-ranking tables
     revive whole-SourceBlock localize

@@ -586,6 +586,56 @@ read:
   the depot owner read earlier.
 ```
 
+UnifiedDepotDrainDryRun-L1 result:
+
+```text
+lane:
+  ownerlocalityfast-rsscap-2-elasticdescsource-route-depotrunmeta-
+  depotownerdirect-depotdraindryrun-desc16k-front4k-thindesc-nobackptr-
+  noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-
+  ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run4096
+
+mode:
+  diagnostic-only
+  behavior unchanged
+  DepotRunMeta + DepotOwnerDirectFastPath + unified depot drain/localize
+  projection
+
+full10k diagnostic:
+  43.101M ops/s
+  235,420 KB peak RSS
+  elastic_depot_drain_probe=79,485
+  elastic_depot_drain_storage_match=0
+  elastic_depot_drain_storage_mismatch=79,485
+  elastic_depot_drain_run_match=79,485
+  elastic_depot_drain_run_miss=0
+  elastic_depot_drain_class_mismatch=0
+  elastic_depot_drain_slot_mismatch=0
+  elastic_depot_drain_ref_exclusive=0
+  elastic_depot_drain_ref_shared=79,485
+  elastic_depot_drain_owner_match=79,485
+  elastic_depot_drain_owner_mismatch=0
+  elastic_depot_drain_would_slot_localize=79,485
+  elastic_depot_drain_would_keep_shared=79,485
+  elastic_depot_drain_would_block_whole_localize=79,485
+  safety clean:
+    route_invalid=0
+    route_miss=0
+    route_register_fail=0
+    descriptor_exhausted=0
+    source_block_exhausted=0
+    alloc_fail=0
+    remote_free_transfer_fail=0
+
+read:
+  This closes the unified-drain diagnostic gap.  Whole-SourceBlock localize is
+  still blocked because every probed depot block is shared, but every probed
+  transfer object is run-matched, owner-matched after activation, and
+  slot-localizable.  The next behavior should localize per-slot storage/owner
+  state for depot transfer reuse.  Do not move whole SourceBlocks and do not
+  add another owner_equal shortcut.
+```
+
 ## What The Diagnostics Proved
 
 ElasticProjection-L1:
