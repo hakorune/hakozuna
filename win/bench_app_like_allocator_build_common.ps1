@@ -1716,6 +1716,7 @@ function Invoke-AppLikeHz6BenchBuilds {
     }
     if ((Split-Path -Leaf $BenchSrc) -eq "bench_larson_compare.c") {
         $libSources += (Join-Path $RepoRoot "win\bench_larson_hz6_diag.c")
+        $libSources += (Join-Path $RepoRoot "win\bench_larson_hz6_summary.c")
     }
     if ((Split-Path -Leaf $BenchSrc) -eq "bench_redis_workload_compare.c") {
         $libSources += (Join-Path $RepoRoot "win\bench_redis_hz6_diag.c")
