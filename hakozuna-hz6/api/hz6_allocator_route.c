@@ -1285,7 +1285,21 @@ int hz6_allocator_route_replace_exact_descriptor(
       old_generation, old_descriptor, new_generation, new_descriptor, NULL);
 #endif
 #if HZ6_SHARED_ROUTE_DIRECTORY_L1
-  if (ok) {
+  if (!ok) {
+    Hz6RouteResult shared_route = hz6_shared_route_directory_lookup_raw(base);
+    if (shared_route.kind == HZ6_ROUTE_VALID &&
+        shared_route.descriptor == old_descriptor &&
+        shared_route.generation == old_generation &&
+        shared_route.front_id == front_id &&
+        shared_route.class_id == class_id) {
+      ok = hz6_shared_route_directory_register(allocator,
+                                               base,
+                                               front_id,
+                                               class_id,
+                                               new_generation,
+                                               new_descriptor);
+    }
+  } else {
     (void)hz6_shared_route_directory_register(allocator,
                                               base,
                                               front_id,

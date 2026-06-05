@@ -79,6 +79,21 @@ Latest HZ6 selected-family decision:
         would_commit=71811
         would_rollback=8189 non-depot transfer objects
 
+      depotdescrehome
+        full10k non-diagnostic = 44.853M, safety-clean
+        full10k diagnostic = 43.616M, safety-clean
+        l1_attempt=80000
+        l1_success=71811
+        l1_ineligible=8189 non-depot transfer objects
+        no_local_descriptor=0
+        route_replace_fail=0
+        detach_fail=0
+        rollback=0
+        watch item:
+          descriptor_used rises to 77883 in diagnostic final stats because
+          depot descriptors are materialized into consumer-local descriptors.
+          This is valid behavior evidence, not promotion yet.
+
   immediate next attack order:
     1. RouteExactDescriptorReplace-L0/L1:
        implement a fail-closed exact-route descriptor replacement primitive.
@@ -96,6 +111,11 @@ Latest HZ6 selected-family decision:
        through the route replacement primitive.  Generation should be
        preserved because this is descriptor storage relocation for the same
        live object, not a new object lifetime.
+       L1 behavior now succeeds for every eligible transfer-reuse depot
+       descriptor and keeps safety clean.  Next optimization should not add
+       another route knob; it should examine rehomed descriptor retention and
+       whether local descriptor pressure can be bounded without losing the
+       speed gain.
 
     do not:
       revive broad slot-local storage-owner override

@@ -832,6 +832,36 @@ RouteExactDescriptorReplace-L0:
   allocator wrapper also refreshes the shared route directory / owner-locality
   index after a successful local table replacement.  Route smoke verifies the
   happy path and old descriptor / generation mismatch rejection.
+
+DepotDescriptorRehome-L1:
+  The first behavior lane uses the route replacement primitive at transfer
+  reuse.  It prepares a consumer-local descriptor for the same source-block
+  slot, preserves generation, replaces the current exact/shared route entry,
+  then detaches the old depot descriptor without releasing the source slot.
+
+  Full10k non-diagnostic:
+    44.853M ops/s
+    route_invalid=0
+    remote_free_transfer_fail=0
+
+  Full10k diagnostic:
+    43.616M ops/s
+    l1_attempt=80,000
+    l1_success=71,811
+    l1_ineligible=8,189
+    no_local_descriptor=0
+    prepare_fail=0
+    route_replace_fail=0
+    detach_fail=0
+    rollback=0
+    route_invalid=0
+    remote_free_transfer_fail=0
+
+  Read:
+    The behavior is safety-clean and consumes the dry-run witness.  It is not a
+    promotion yet because descriptor usage rises: diagnostic final
+    descriptor_used=77,883 after rehoming.  The next useful work is descriptor
+    retention / bounding for rehomed slots, not another owner-route shortcut.
 ```
 
 ## What The Diagnostics Proved

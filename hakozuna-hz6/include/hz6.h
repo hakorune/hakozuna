@@ -210,6 +210,14 @@ typedef struct Hz6StatsSnapshot {
   size_t elastic_depot_route_replace_current_route_conflict;
   size_t elastic_depot_route_replace_would_commit;
   size_t elastic_depot_route_replace_would_rollback;
+  size_t elastic_depot_descriptor_rehome_l1_attempt;
+  size_t elastic_depot_descriptor_rehome_l1_success;
+  size_t elastic_depot_descriptor_rehome_l1_ineligible;
+  size_t elastic_depot_descriptor_rehome_l1_no_local_descriptor;
+  size_t elastic_depot_descriptor_rehome_l1_prepare_fail;
+  size_t elastic_depot_descriptor_rehome_l1_route_replace_fail;
+  size_t elastic_depot_descriptor_rehome_l1_detach_fail;
+  size_t elastic_depot_descriptor_rehome_l1_rollback;
   size_t owner_equal_site_free;
   size_t owner_equal_site_remote_free;
   size_t owner_equal_site_local_cache;

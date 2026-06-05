@@ -269,7 +269,8 @@ static void hz6_front_note_elastic_depot_descriptor_rehome_dryrun(
 }
 #endif
 
-#if HZ6_DIAGNOSTIC_PROBES && HZ6_ELASTIC_DEPOT_ROUTE_REPLACE_DRYRUN_L1
+#if HZ6_ELASTIC_DEPOT_ROUTE_REPLACE_DRYRUN_L1 || \
+    HZ6_ELASTIC_DEPOT_DESCRIPTOR_REHOME_L1
 static Hz6Allocator* hz6_front_depot_route_origin_allocator(
     const Hz6ObjectDescriptor* descriptor) {
 #if HZ6_OWNER_SOURCE_SIDE_META_L2
@@ -282,7 +283,9 @@ static Hz6Allocator* hz6_front_depot_route_origin_allocator(
   return NULL;
 #endif
 }
+#endif
 
+#if HZ6_DIAGNOSTIC_PROBES && HZ6_ELASTIC_DEPOT_ROUTE_REPLACE_DRYRUN_L1
 static int hz6_front_depot_route_result_matches_descriptor(
     Hz6Allocator* allocator,
     Hz6RouteResult route,
@@ -385,6 +388,89 @@ static void hz6_front_note_elastic_depot_route_replace_dryrun(
 }
 #endif
 
+#if HZ6_ELASTIC_DEPOT_DESCRIPTOR_REHOME_L1
+static Hz6ObjectDescriptor* hz6_front_try_elastic_depot_descriptor_rehome(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor,
+    uint16_t front_id,
+    uint16_t class_id) {
+  if (!allocator || !descriptor) {
+    return descriptor;
+  }
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.elastic_depot_descriptor_rehome_l1_attempt;
+#endif
+  if (!hz6_allocator_descriptor_is_depot(descriptor) ||
+      hz6_allocator_descriptor_belongs_to(allocator, descriptor) ||
+      !descriptor->source_block ||
+      !hz6_allocator_source_block_is_elastic_depot(descriptor->source_block) ||
+      !hz6_allocator_source_run_contains_slot(descriptor->source_block,
+                                             descriptor->ptr,
+                                             descriptor->class_id,
+                                             descriptor->bytes)) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.elastic_depot_descriptor_rehome_l1_ineligible;
+#endif
+    return descriptor;
+  }
+
+  Hz6ObjectDescriptor* local = hz6_allocator_find_free_descriptor(allocator);
+  if (!local || !hz6_allocator_descriptor_belongs_to(allocator, local)) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats
+          .elastic_depot_descriptor_rehome_l1_no_local_descriptor;
+#endif
+    return descriptor;
+  }
+
+  void* ptr = descriptor->ptr;
+  uint32_t bytes = descriptor->bytes;
+  uint32_t generation = descriptor->generation;
+  Hz6SourceBlock* block = descriptor->source_block;
+  if (!hz6_allocator_prepare_descriptor(
+          allocator, local, ptr, bytes, block->ptr, block->bytes, block,
+          descriptor->class_id, hz6_source_block_source_kind(block),
+          block->source_release, HZ6_STATE_ACTIVE)) {
+    hz6_allocator_reset_descriptor_available(allocator, local);
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.elastic_depot_descriptor_rehome_l1_prepare_fail;
+#endif
+    return descriptor;
+  }
+  local->generation = generation;
+
+  if (!hz6_allocator_route_replace_exact_descriptor(
+          allocator, ptr, bytes, front_id, class_id, generation, descriptor,
+          generation, local)) {
+    hz6_allocator_reset_descriptor_available(allocator, local);
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats
+          .elastic_depot_descriptor_rehome_l1_route_replace_fail;
+#endif
+    return descriptor;
+  }
+
+  Hz6Allocator* origin = hz6_front_depot_route_origin_allocator(descriptor);
+  if (!hz6_allocator_detach_descriptor_keep_source_slot(
+          origin ? origin : allocator, descriptor)) {
+    (void)hz6_allocator_route_replace_exact_descriptor(
+        allocator, ptr, bytes, front_id, class_id, generation, local,
+        generation, descriptor);
+    hz6_allocator_reset_descriptor_available(allocator, local);
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.elastic_depot_descriptor_rehome_l1_detach_fail;
+    ++allocator->stats.elastic_depot_descriptor_rehome_l1_rollback;
+#endif
+    return descriptor;
+  }
+
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.elastic_depot_descriptor_rehome_l1_success;
+#endif
+  return local;
+}
+#endif
+
 void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
                                uint16_t front_id,
                                uint16_t class_id,
@@ -405,6 +491,10 @@ void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
 #endif
       continue;
     }
+#if HZ6_ELASTIC_DEPOT_DESCRIPTOR_REHOME_L1
+    descriptor = hz6_front_try_elastic_depot_descriptor_rehome(
+        allocator, descriptor, front_id, class_id);
+#endif
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.transfer_reuse_hit;
 #if HZ6_ELASTIC_SOURCE_BLOCK_LOCALIZE_DRYRUN_L1
