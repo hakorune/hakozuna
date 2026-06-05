@@ -199,6 +199,64 @@ Latest HZ6 selected-family decision:
     behavior.  Keep this as dry-run evidence; do not yet mutate slot owner
     state or rehome routes.
 
+2026-06-05 SlotOwnerSparseMeta-L1:
+  implementation:
+    Add HZ6_ELASTIC_SLOT_OWNER_SPARSE_META_L1 on top of
+    SlotOwnerLocalityDryRun-L1.  This keeps behavior unchanged and records a
+    sparse side-table entry keyed by SourceBlock pointer + slot index with the
+    current owner16 token at transfer reuse.
+
+  lane:
+    ownerlocalityfast-rsscap-2-elasticdescsource-route-slotownersparse-
+    desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-
+    routebytes16-storageowner16-ownersourcel2-frontcachepacked-
+    sourceblockpacked-source64-route16k-run4096
+
+  smoke:
+    docs/benchmarks/windows/paper/
+      hz6_elastic_slot_owner_sparse_meta_smoke/
+      20260605_170219_hz6_capacity_matrix_windows.md
+    main1k:
+      56.550M / 116720 KB
+      sparse_lookup=7487
+      sparse_insert=7487
+      sparse_hit=0
+      sparse_update=0
+      sparse_collision=259
+      sparse_full=0
+      safety clean
+
+  full10k:
+    docs/benchmarks/windows/paper/
+      hz6_elastic_slot_owner_sparse_meta_full10k/
+      20260605_170249_hz6_capacity_matrix_windows.md
+    43.039M / 233124 KB
+    elastic_slot_owner_locality_probe=79485
+    elastic_slot_owner_locality_slot_match=79485
+    elastic_slot_owner_locality_owner_match=79485
+    elastic_slot_owner_sparse_lookup=79485
+    elastic_slot_owner_sparse_miss=79485
+    elastic_slot_owner_sparse_insert=79485
+    elastic_slot_owner_sparse_hit=0
+    elastic_slot_owner_sparse_update=0
+    elastic_slot_owner_sparse_collision=62673
+    elastic_slot_owner_sparse_full=0
+    safety clean:
+      route_invalid=0
+      route_miss=0
+      route_register_fail=0
+      descriptor_exhausted=0
+      source_block_exhausted=0
+      alloc_fail=0
+
+  read:
+    The sparse side-table has enough capacity and no safety failure.  However,
+    this workload inserts each observed transfer slot once and does not show
+    same-slot sparse hits.  Treat SlotOwnerSparseMeta-L1 as metadata feasibility
+    evidence, not as a performance behavior yet.  The next behavior should use
+    this metadata to avoid storage-owner mismatch work or guide owner-local
+    lookup; otherwise it remains a pure RSS-cost side table.
+
 2026-06-05 next attack after combined packed Pro consult:
   Larson cross-owner RSS:
     OwnerSourceSideMeta-L2 remains the selected speed/RSS balance sibling.

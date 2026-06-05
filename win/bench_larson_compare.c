@@ -757,6 +757,24 @@ int main(int argc, char** argv) {
         hz6_stats.elastic_slot_owner_locality_would_hit_owner +=
             tds[t].hz6_stats_after
                 .elastic_slot_owner_locality_would_hit_owner;
+        hz6_stats.elastic_slot_owner_sparse_lookup +=
+            tds[t].hz6_stats_after.elastic_slot_owner_sparse_lookup;
+        hz6_stats.elastic_slot_owner_sparse_hit +=
+            tds[t].hz6_stats_after.elastic_slot_owner_sparse_hit;
+        hz6_stats.elastic_slot_owner_sparse_miss +=
+            tds[t].hz6_stats_after.elastic_slot_owner_sparse_miss;
+        hz6_stats.elastic_slot_owner_sparse_insert +=
+            tds[t].hz6_stats_after.elastic_slot_owner_sparse_insert;
+        hz6_stats.elastic_slot_owner_sparse_update +=
+            tds[t].hz6_stats_after.elastic_slot_owner_sparse_update;
+        hz6_stats.elastic_slot_owner_sparse_owner_match +=
+            tds[t].hz6_stats_after.elastic_slot_owner_sparse_owner_match;
+        hz6_stats.elastic_slot_owner_sparse_owner_mismatch +=
+            tds[t].hz6_stats_after.elastic_slot_owner_sparse_owner_mismatch;
+        hz6_stats.elastic_slot_owner_sparse_collision +=
+            tds[t].hz6_stats_after.elastic_slot_owner_sparse_collision;
+        hz6_stats.elastic_slot_owner_sparse_full +=
+            tds[t].hz6_stats_after.elastic_slot_owner_sparse_full;
         hz6_stats.source_owned_prepare +=
             tds[t].hz6_stats_after.source_owned_prepare;
         hz6_stats.source_owned_route_hit_local_owner +=
@@ -1451,6 +1469,15 @@ int main(int argc, char** argv) {
            "elastic_slot_owner_locality_owner_mismatch=%zu "
            "elastic_slot_owner_locality_would_set_owner=%zu "
            "elastic_slot_owner_locality_would_hit_owner=%zu "
+           "elastic_slot_owner_sparse_lookup=%zu "
+           "elastic_slot_owner_sparse_hit=%zu "
+           "elastic_slot_owner_sparse_miss=%zu "
+           "elastic_slot_owner_sparse_insert=%zu "
+           "elastic_slot_owner_sparse_update=%zu "
+           "elastic_slot_owner_sparse_owner_match=%zu "
+           "elastic_slot_owner_sparse_owner_mismatch=%zu "
+           "elastic_slot_owner_sparse_collision=%zu "
+           "elastic_slot_owner_sparse_full=%zu "
            "source_owned_prepare=%zu "
            "source_owned_route_hit_local_owner=%zu "
            "source_owned_visibility_hit_local_owner=%zu "
@@ -1611,6 +1638,15 @@ int main(int argc, char** argv) {
            hz6_stats.elastic_slot_owner_locality_owner_mismatch,
            hz6_stats.elastic_slot_owner_locality_would_set_owner,
            hz6_stats.elastic_slot_owner_locality_would_hit_owner,
+           hz6_stats.elastic_slot_owner_sparse_lookup,
+           hz6_stats.elastic_slot_owner_sparse_hit,
+           hz6_stats.elastic_slot_owner_sparse_miss,
+           hz6_stats.elastic_slot_owner_sparse_insert,
+           hz6_stats.elastic_slot_owner_sparse_update,
+           hz6_stats.elastic_slot_owner_sparse_owner_match,
+           hz6_stats.elastic_slot_owner_sparse_owner_mismatch,
+           hz6_stats.elastic_slot_owner_sparse_collision,
+           hz6_stats.elastic_slot_owner_sparse_full,
            hz6_stats.source_owned_prepare,
            hz6_stats.source_owned_route_hit_local_owner,
            hz6_stats.source_owned_visibility_hit_local_owner,

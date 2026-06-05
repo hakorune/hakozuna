@@ -62,6 +62,9 @@ Prerequisite/control:
 
 Diagnostic slot-owner evidence:
   SlotOwnerLocalityDryRun-L1
+
+Sparse side metadata evidence:
+  SlotOwnerSparseMeta-L1
 ```
 
 SourceBlockLocalizeDryRun-L1 result:
@@ -207,6 +210,48 @@ read:
   but every one is a source-run slot match whose descriptor owner is current
   after transfer activation.  This supports sparse per-slot owner/locality
   metadata as the next behavior candidate.  Keep A0 as evidence only.
+```
+
+SlotOwnerSparseMeta-L1 result:
+
+```text
+lane:
+  ownerlocalityfast-rsscap-2-elasticdescsource-route-slotownersparse-
+  desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-
+  routebytes16-storageowner16-ownersourcel2-frontcachepacked-
+  sourceblockpacked-source64-route16k-run4096
+
+mode:
+  diagnostic side-metadata feasibility
+  no allocation/free behavior change
+  no route rehome
+
+full10k run-1:
+  43.039M ops/s
+  233,124 KB peak RSS
+  safety clean:
+    route_invalid=0
+    route_miss=0
+    route_register_fail=0
+    descriptor_exhausted=0
+    source_block_exhausted=0
+    alloc_fail=0
+
+counters:
+  elastic_slot_owner_sparse_lookup          = 79,485
+  elastic_slot_owner_sparse_miss            = 79,485
+  elastic_slot_owner_sparse_insert          = 79,485
+  elastic_slot_owner_sparse_hit             = 0
+  elastic_slot_owner_sparse_update          = 0
+  elastic_slot_owner_sparse_collision       = 62,673
+  elastic_slot_owner_sparse_full            = 0
+
+read:
+  The sparse side table has enough capacity for observed transfer slots, but
+  this Larson slice inserts each observed slot once and does not demonstrate a
+  same-slot hit path.  Keep it as metadata feasibility evidence.  A future
+  behavior must consume this metadata to avoid storage-owner mismatch work or
+  guide owner-local lookup; otherwise it is only an RSS-cost side table.
 ```
 
 ## What The Diagnostics Proved
@@ -601,7 +646,12 @@ Recommended L1 order:
    movement. The next behavior should be sparse per-slot owner/locality state,
    not route rehome or SourceBlock storage-owner mutation yet.
 
-6. Unified ElasticCapacity-L1:
+6. SlotOwnerSparseMeta-L1:
+   implemented as diagnostic side metadata. It proves observed transfer slots
+   fit into a sparse table without overflow, but does not show same-slot hits in
+   this workload. The next behavior must use the metadata to remove real work.
+
+7. Unified ElasticCapacity-L1:
    descriptor + route + source overflow in one lane
    full10k target: keep route-overflow RSS class while recovering source10k
    throughput
