@@ -254,6 +254,61 @@ read:
   guide owner-local lookup; otherwise it is only an RSS-cost side table.
 ```
 
+Next after SlotOwnerSparseMeta-L1:
+
+```text
+1. DescriptorDepotOwnerDirectFastPath-L1
+   Depot descriptors should read/write the shared depot owner table before
+   OwnerSourceSideMeta-L2 storage lookup.  This is the lowest-risk work reducer:
+   no sparse table, no route rehome, no SourceBlock owner movement, and no new
+   production diagnostic counter.
+
+2. SlotOwnerConsumerDryRun-L1
+   If the direct depot fast path does not close the source-depot speed gap,
+   consume sparse slot-owner metadata in diagnostic-only downstream owner checks.
+   Required evidence: would_skip_l2 > 0 and false_positive = 0.
+
+3. SlotOwnerLogicalOwnerFastPath-L1
+   Behavior only after the consumer dry-run proves positive hits.  The sparse
+   entry may prove a logical current-owner match, but it must not replace the
+   descriptor storage-owner contract.
+```
+
+DescriptorDepotOwnerDirectFastPath-L1 result:
+
+```text
+lane:
+  ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-
+  desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-
+  routebytes16-storageowner16-ownersourcel2-frontcachepacked-
+  sourceblockpacked-source64-route16k-run512
+
+main10k non-diagnostic run-1:
+  45.258M ops/s
+  224,600 KB peak RSS
+  safety clean
+
+worker10k guard run-1:
+  47.481M ops/s
+  214,284 KB peak RSS
+  safety clean
+
+diagnostic A/B:
+  source-depot control:
+    42.121M / 224,608 KB
+    owner_source_side_meta_l2_lookup = 1,547,776,055
+
+  depot-owner direct:
+    42.946M / 227,748 KB
+    owner_source_side_meta_l2_lookup = 489,480,577
+
+read:
+  Direct depot owner get/set removes about 68% of the L2 lookup pressure in the
+  source-depot lane and improves throughput without adding sparse side-table
+  RSS.  Keep as behavior candidate-watch.  Remaining L2 lookups imply the next
+  pressure is outside depot descriptor owner table access.
+```
+
 ## What The Diagnostics Proved
 
 ElasticProjection-L1:

@@ -257,6 +257,100 @@ Latest HZ6 selected-family decision:
     this metadata to avoid storage-owner mismatch work or guide owner-local
     lookup; otherwise it remains a pure RSS-cost side table.
 
+2026-06-05 next after SlotOwnerSparseMeta Pro consult:
+  decision:
+    Do not promote SlotOwnerSparseMeta-L1 directly.
+    Do not use sparse slot owner as a descriptor storage-owner override.
+    Logical slot owner and descriptor storage owner are different contracts.
+
+  recommended order:
+    1. DescriptorDepotOwnerDirectFastPath-L1.
+       If a descriptor is from the shared descriptor depot, read/write the depot
+       owner table directly before OwnerSourceSideMeta-L2 storage lookup.
+       This has no sparse table, no RSS side table, and uses existing
+       owner_source_side_meta_l2_lookup/hit counters as the effect signal.
+
+    2. SlotOwnerConsumerDryRun-L1.
+       Consume sparse owner entries from downstream free/owner-equal locations
+       as diagnostic-only evidence.  Count would_skip_l2 and false_positive.
+
+    3. SlotOwnerLogicalOwnerFastPath-L1.
+       Only if consumer dry-run is strong: positive hit means logical owner
+       match, miss/stale/mismatch falls back to the existing heavy owner path.
+
+  acceptance for step 1:
+    owner_source_side_meta_l2_lookup should drop on the source-depot lane.
+    route_invalid=0, route_miss=0, route_register_fail=0.
+    descriptor_exhausted=0, source_block_exhausted=0, alloc_fail=0.
+    throughput should stay within -3% of the source-depot control, preferably
+    recover toward ElasticDescriptorRouteOverflow.
+
+2026-06-05 DescriptorDepotOwnerDirectFastPath-L1:
+  implementation:
+    Add HZ6_DESCRIPTOR_DEPOT_OWNER_DIRECT_FASTPATH_L1.
+    When a descriptor is in the elastic descriptor depot, descriptor owner
+    get/set uses the shared depot owner table before OwnerSourceSideMeta-L2
+    storage lookup.  This is a behavior lane, but it adds no sparse table, no
+    route rehome, and no new production counter.
+
+  lane:
+    ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-
+    desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-
+    routebytes16-storageowner16-ownersourcel2-frontcachepacked-
+    sourceblockpacked-source64-route16k-run512
+
+  smoke:
+    docs/benchmarks/windows/paper/hz6_depot_owner_direct_smoke/
+      20260605_173815_hz6_capacity_matrix_windows.md
+    main1k:
+      57.649M / 105816 KB
+      safety clean
+      depot overflow not triggered, so owner_source_side_meta_l2_lookup=0
+
+  full10k:
+    docs/benchmarks/windows/paper/hz6_depot_owner_direct_full10k/
+      20260605_173842_hz6_capacity_matrix_windows.md
+    main10k:
+      45.258M / 224600 KB
+      safety clean:
+        route_invalid=0
+        route_miss=0
+        route_register_fail=0
+        descriptor_exhausted=0
+        source_block_exhausted=0
+        alloc_fail=0
+
+    worker guard:
+      docs/benchmarks/windows/paper/hz6_depot_owner_direct_worker_guard/
+        20260605_174232_hz6_capacity_matrix_windows.md
+      worker10k:
+        47.481M / 214284 KB
+        safety clean
+
+  diagnostic A/B:
+    control:
+      docs/benchmarks/windows/paper/
+        hz6_elastic_descsource_control_diag_full10k/
+        20260605_174044_hz6_capacity_matrix_windows.md
+      42.121M / 224608 KB
+      owner_source_side_meta_l2_lookup=1547776055
+
+    direct:
+      docs/benchmarks/windows/paper/
+        hz6_depot_owner_direct_diag_full10k/
+        20260605_173933_hz6_capacity_matrix_windows.md
+      42.946M / 227748 KB
+      owner_source_side_meta_l2_lookup=489480577
+
+  read:
+    KEEP as a strong ElasticCapacity behavior candidate.  Depot owner direct
+    cuts OwnerSourceSideMeta-L2 lookup by about 68% in diagnostic A/B and
+    improves the non-diagnostic source-depot shape to 45.258M while preserving
+    roughly the same low RSS.  L2 lookup does not drop to zero, so the remaining
+    pressure is not depot-descriptor owner table work; the next step can be a
+    repeat/guard closeout or SlotOwnerConsumerDryRun-L1 if more owner-path work
+    needs to be explained.
+
 2026-06-05 next attack after combined packed Pro consult:
   Larson cross-owner RSS:
     OwnerSourceSideMeta-L2 remains the selected speed/RSS balance sibling.

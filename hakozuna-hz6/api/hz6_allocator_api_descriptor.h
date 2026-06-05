@@ -155,6 +155,12 @@ static inline Hz6OwnerToken hz6_allocator_descriptor_owner(
     const Hz6Allocator* allocator,
     const Hz6ObjectDescriptor* descriptor) {
   hz6_allocator_owner_source_side_meta_dryrun(allocator, descriptor);
+#if HZ6_DESCRIPTOR_DEPOT_OWNER_DIRECT_FASTPATH_L1 && \
+    HZ6_ELASTIC_DESCRIPTOR_OVERFLOW_L1
+  if (hz6_allocator_descriptor_is_depot(descriptor)) {
+    return hz6_allocator_descriptor_depot_owner(descriptor);
+  }
+#endif
 #if HZ6_DESCRIPTOR_SIDE_OWNER16_L1 || HZ6_DESCRIPTOR_STORAGE_OWNER16_L1
   const Hz6Allocator* storage = allocator;
 #if HZ6_DESCRIPTOR_STORAGE_OWNER16_L1
@@ -188,6 +194,13 @@ static inline void hz6_allocator_set_descriptor_owner(
     Hz6Allocator* allocator,
     Hz6ObjectDescriptor* descriptor,
     Hz6OwnerToken owner) {
+#if HZ6_DESCRIPTOR_DEPOT_OWNER_DIRECT_FASTPATH_L1 && \
+    HZ6_ELASTIC_DESCRIPTOR_OVERFLOW_L1
+  if (hz6_allocator_descriptor_is_depot(descriptor)) {
+    hz6_allocator_set_descriptor_depot_owner(descriptor, owner);
+    return;
+  }
+#endif
 #if HZ6_DESCRIPTOR_SIDE_OWNER16_L1 || HZ6_DESCRIPTOR_STORAGE_OWNER16_L1
   Hz6Allocator* storage = allocator;
 #if HZ6_DESCRIPTOR_STORAGE_OWNER16_L1
