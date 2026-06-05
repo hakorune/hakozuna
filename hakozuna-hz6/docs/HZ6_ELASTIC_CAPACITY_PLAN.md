@@ -53,6 +53,9 @@ Lower-RSS component/control:
 
 Diagnostic no-go/control:
   SourceBlockLocalizeDryRun-L1
+
+Diagnostic slot-level evidence:
+  SourceRunLocalityDryRun-L1
 ```
 
 SourceBlockLocalizeDryRun-L1 result:
@@ -70,6 +73,41 @@ next:
 
 do not:
   move whole shared SourceBlocks as the next ElasticCapacity behavior
+```
+
+SourceRunLocalityDryRun-L1 result:
+
+```text
+lane:
+  ownerlocalityfast-rsscap-2-elasticdescsource-route-runlocalitydryrun-
+  desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-
+  routebytes16-storageowner16-ownersourcel2-frontcachepacked-
+  sourceblockpacked-source64-route16k-run512
+
+full10k run-1:
+  42.733M ops/s
+  225,168 KB peak RSS
+  safety clean:
+    route_invalid=0
+    route_miss=0
+    route_register_fail=0
+    descriptor_exhausted=0
+    source_block_exhausted=0
+    alloc_fail=0
+
+counters:
+  elastic_source_run_locality_probe             = 79,485
+  elastic_source_run_locality_storage_mismatch  = 79,485
+  elastic_source_run_locality_run_miss          = 79,485
+  elastic_source_run_locality_class_mismatch    = 0
+  elastic_source_run_locality_slot_match        = 79,485
+  elastic_source_run_locality_would_rehome_slot = 79,485
+
+read:
+  The current source-depot lane has no source-run metadata, so run_miss is
+  expected.  However, every probed transfer object can be physically identified
+  as a block/offset/bytes slot.  This supports a future slot-level ownership or
+  storage-locality behavior.  It does not justify whole-SourceBlock movement.
 ```
 
 ## What The Diagnostics Proved

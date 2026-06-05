@@ -271,6 +271,31 @@ void hz6_allocator_source_run_release_slot(Hz6SourceBlock* block,
   block->run_next_hint = (uint16_t)slot_index;
 }
 
+int hz6_allocator_source_run_contains_slot(const Hz6SourceBlock* block,
+                                           const void* ptr,
+                                           uint16_t class_id,
+                                           size_t slot_bytes) {
+  if (!block || !ptr || !hz6_source_block_run_active(block) || !block->ptr ||
+      slot_bytes == 0 || block->run_slot_bytes != slot_bytes ||
+      block->run_class_id != class_id) {
+    return 0;
+  }
+  const unsigned char* user = (const unsigned char*)ptr;
+  const unsigned char* base = (const unsigned char*)block->ptr;
+  if (user < base) {
+    return 0;
+  }
+  size_t offset = (size_t)(user - base);
+  if (offset >= block->bytes || (offset % block->run_slot_bytes) != 0) {
+    return 0;
+  }
+  size_t slot_index = offset / block->run_slot_bytes;
+  if (slot_index >= block->run_slot_count) {
+    return 0;
+  }
+  return hz6_source_run_bit_get(block, slot_index);
+}
+
 #if HZ6_DIAGNOSTIC_PROBES
 static void hz6_allocator_record_source_block_failure_state(
     Hz6Allocator* allocator) {

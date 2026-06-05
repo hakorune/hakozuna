@@ -39,6 +39,47 @@ Latest HZ6 selected-family decision:
   rule:
     dry-run / diagnostic lanes must not enter production speed-ranking tables.
 
+2026-06-05 SourceRunLocalityDryRun-L1:
+  implementation:
+    Add HZ6_ELASTIC_SOURCE_RUN_LOCALITY_DRYRUN_L1.
+    It runs only with diagnostic probes and observes transfer reuse from the
+    elastic SourceBlock depot.
+
+  purpose:
+    After whole-SourceBlock localize was blocked by shared ref-counts, measure
+    whether depot transfer objects are at least slot-level localizable.
+
+  smoke:
+    docs/benchmarks/windows/paper/
+      hz6_elastic_source_run_locality_dryrun_smoke/
+      20260605_155944_hz6_capacity_matrix_windows.md
+    main1k:
+      57.417M / 92644 KB
+      elastic_source_run_locality_probe=7487
+      storage_mismatch=7487
+      run_miss=7487
+      slot_match=7487
+      would_rehome_slot=7487
+      safety clean
+
+  full10k:
+    docs/benchmarks/windows/paper/
+      hz6_elastic_source_run_locality_dryrun_full10k/
+      20260605_160007_hz6_capacity_matrix_windows.md
+    42.733M / 225168 KB
+    elastic_source_run_locality_probe=79485
+    storage_mismatch=79485
+    run_miss=79485
+    slot_match=79485
+    would_rehome_slot=79485
+    safety clean
+
+  read:
+    current source-depot lane does not carry source-run metadata, hence
+    run_miss.  But every probed transfer object is physically identifiable as
+    a block/offset/bytes slot.  Next behavior should be slot-level ownership or
+    descriptor storage locality; do not revive whole-SourceBlock localize.
+
 2026-06-05 next attack after combined packed Pro consult:
   Larson cross-owner RSS:
     OwnerSourceSideMeta-L2 remains the selected speed/RSS balance sibling.
