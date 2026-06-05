@@ -74,23 +74,27 @@ Immediate action queue:
           Next behavior should cover descriptor/source overflow, not keep
           shrinking route alone.
   2c. ElasticDescriptorRouteOverflow-L1 is fixed as strong RSS evidence and
-      speed no-go/control for now.
+      candidate-control after depot storage fast path.
         lane:
           ownerlocalityfast-rsscap-2-elasticdescroute-desc16k-front4k-
           thindesc-nobackptr-noroutebackptr-dir192k-routepacked-
           routebytes16-storageowner16-ownersourcel2-frontcachepacked-
           sourceblockpacked-source10k-route16k-run512
         result:
-          full10k run-1: 33.184M / 246,824 KB
+          before storagefast full10k run-1: 33.184M / 246,824 KB
+          after storagefast diagnostic full10k: 40.951M / 246,912 KB
+          after storagefast non-diagnostic full10k: 43.843M / 246,888 KB
           safety: route_invalid=0, route_miss=0, route_register_fail=0,
                   descriptor_exhausted=0, source_block_exhausted=0,
                   alloc_fail=0
           main-warmup descriptor depot alloc: 143,664
         read:
           descriptor depot + route overflow is viable and drops RSS sharply.
-          It is too slow as-is because depot descriptors cause descriptor
-          storage lookup misses/probes. Treat as mechanism evidence, not
-          promotion.
+          The original speed loss was depot descriptor storage-owner lookup
+          locality. Routing depot descriptors through SourceBlock side metadata
+          removes descriptor_storage_miss and recovers source10k-class speed in
+          non-diagnostic full10k. Treat as strong candidate-control; run
+          repeat/guard before promotion.
   3. Continue ElasticCapacity-L1 design work:
        local small descriptor/route/source/frontcache caps
        shared overflow / depot for warmup pressure
@@ -259,16 +263,28 @@ Results:
     alloc_fail=0
     main-warmup elastic_descriptor_overflow_alloc=143,664
 
+  storagefast full10k:
+    diagnostic:
+      40.951M / 246,912 KB
+      descriptor_storage_lookup=409,709,924
+      descriptor_storage_hit=409,709,924
+      descriptor_storage_miss=0
+      safety clean
+    non-diagnostic:
+      43.843M / 246,888 KB
+
 Read:
   Descriptor overflow is viable and gives the largest RSS drop so far.
-  It is not promotion: throughput is much lower than source10k control and
-  route-only overflow. The stats show heavy descriptor_storage_miss/probe
-  pressure for depot descriptors, so the next optimization is depot descriptor
-  storage locality, not another blind capacity trim.
+  The first run was not promotion because throughput was much lower than
+  source10k control and route-only overflow. The storagefast follow-up shows
+  that depot descriptors need a direct storage-owner contract: using
+  SourceBlock side metadata turns descriptor_storage_miss to zero and recovers
+  the lane to source10k-class throughput while keeping roughly 247 MB RSS.
 
 Decision:
-  KEEP as ElasticDescriptorRouteOverflow-L1 mechanism/RSS evidence.
-  NO-GO as a speed or promotion lane in current form.
+  KEEP as ElasticDescriptorRouteOverflow-L1 strong RSS candidate-control.
+  Do not promote yet; next step is repeat/guard validation, not another
+  behavior knob.
 ```
 
 ### 2026-06-05: CapacityUtil-L1 diagnostic

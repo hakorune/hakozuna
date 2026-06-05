@@ -181,6 +181,31 @@ read:
   promoted lane.
 ```
 
+Depot storage fast path:
+
+```text
+change:
+  depot descriptors resolve their storage owner through SourceBlock side
+  metadata instead of scanning visible allocator descriptor tables.
+
+diagnostic full10k:
+  40.951M ops/s
+  246,912 KB peak RSS
+  descriptor_storage_miss = 0
+  descriptor_storage_hit  = 409,709,924
+  safety clean
+
+non-diagnostic full10k:
+  43.843M ops/s
+  246,888 KB peak RSS
+
+read:
+  The original speed loss was storage-owner lookup locality, not the descriptor
+  depot contract itself. ElasticDescriptorRouteOverflow-L1 is now a strong RSS
+  candidate-control. Do repeat/guard validation before promotion; do not add
+  another behavior knob until this lane is bounded.
+```
+
 ## Design Target
 
 ElasticCapacity-L1 should reduce replicated per-worker static metadata while
@@ -290,8 +315,9 @@ Recommended L1 order:
 
    Current status:
      implemented as ElasticDescriptorRouteOverflow-L1
-     RSS win is strong, speed is no-go/control due to descriptor storage
-     lookup pressure.
+     RSS win is strong; depot storage fast path recovers source10k-class
+     throughput in non-diagnostic full10k while keeping the lower RSS class.
+     Needs repeat/guard validation before promotion.
 
 3. SourceBlockOverflow-L1:
    only after descriptor overflow is safe

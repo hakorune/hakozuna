@@ -760,6 +760,12 @@ Hz6Allocator* hz6_allocator_descriptor_storage_owner(
     return NULL;
   }
 
+#if HZ6_ELASTIC_DESCRIPTOR_OVERFLOW_L1
+  if (hz6_allocator_descriptor_is_depot(descriptor)) {
+    return hz6_allocator_owner_source_side_meta_storage(observer, descriptor);
+  }
+#endif
+
   for (size_t i = 0; i < HZ6_ALLOCATOR_VISIBILITY_CAPACITY; ++i) {
     Hz6Allocator* visible =
         atomic_load_explicit(&g_hz6_visible_allocators[i],
