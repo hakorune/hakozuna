@@ -26,7 +26,7 @@ these rows answer which lanes should be used, watched, or avoided.
 | Selected Larson low-RSS sibling | `...frontcachepacked-sourceblockpacked-source10k-route192k-run512` | Current Larson minimum-RSS sibling. Use for current HZ6 Larson low-RSS comparisons. |
 | ElasticCapacity candidate-watch | `...elasticdescroute-desc16k-...source10k-route16k-run512` | Best ElasticCapacity RSS/throughput shape so far. Watch, but do not broad-promote. |
 | ElasticCapacity component/control | `...elasticdescsource-route-desc16k-...source64-route16k-run512` | Lower RSS source-block depot evidence; speed is lower than ElasticDescriptorRouteOverflow. |
-| Diagnostic-only | `...localizedryrun...`, `...runlocalitydryrun...`, `[HZ6_ELASTIC_PROJECTION]`, `[HZ6_MAIN_WARMUP_CAPACITY]`, `[HZ6_ELASTIC_OVERFLOW_PROJECTION]` | Never use as production speed-ranking rows. |
+| Diagnostic-only | `...localizedryrun...`, `...runlocalitydryrun...`, `...depotrunmeta...`, `[HZ6_ELASTIC_PROJECTION]`, `[HZ6_MAIN_WARMUP_CAPACITY]`, `[HZ6_ELASTIC_OVERFLOW_PROJECTION]` | Never use as production speed-ranking rows. |
 | Boundary / no-go | `source2k`, `source8k`, `elasticproj-local1k`, whole-SourceBlock localize | Keep as evidence only. These rows explain capacity or ownership limits. |
 
 ## Active Next Read
@@ -43,7 +43,8 @@ HZ6 Larson / ElasticCapacity:
     another isolated route-only / descriptor-only / source-only cap knob
 
   NEXT if continuing this track:
-    slot-level/source-run ownership or descriptor storage-locality policy
+    SlotOwnerLocalityDryRun-L1 over the depotrunmeta prerequisite
+    then slot-level/source-run ownership or descriptor storage-locality policy
     unified depot accounting and owner-safe drain/localize criteria
 
   DO NOT MIX:
@@ -66,6 +67,7 @@ HZ6 Larson / ElasticCapacity:
 | ElasticDescriptorSourceRouteOverflow-L1 | `...elasticdescsource-route-desc16k-front4k-...source64-route16k-run512` | Lower-RSS component/control, not promotion. It keeps descriptor and route local caps at `16k`, trims local SourceBlock cap to `64`, and adds a shared SourceBlock depot. Diagnostic full10k is `41.516M / 225212 KB`, non-diagnostic full10k is `41.733M / 227852 KB`, and smoke main1k is `56.362M / 106048 KB`; safety is clean with `source_block_exhausted=0`, `alloc_fail=0`, `descriptor_exhausted=0`, and `route_register_fail=0`. Main-warmup confirms local `source_block_used=64` while active SourceBlock high-water reaches `10003`. This proves the source-block depot can absorb the warmup spike and cut RSS below ElasticDescriptorRouteOverflow, but speed is lower, so keep it as source-depot evidence/control. |
 | SourceBlockLocalizeDryRun-L1 | `...elasticdescsource-route-localizedryrun-...source64-route16k-run512` | Diagnostic no-go/control for whole-SourceBlock localize. Transfer reuse sees depot blocks with storage-owner mismatch, but `would_move=0` because every localize probe is blocked by shared SourceBlock ref-count. This says the next design should not move whole SourceBlocks to a worker; use slot-level ownership or storage-locality policy instead. |
 | SourceRunLocalityDryRun-L1 | `...elasticdescsource-route-runlocalitydryrun-...source64-route16k-run512` | Diagnostic evidence/control for slot-level/source-run ownership. Full10k run-1 is safety clean at `42.733M / 225168 KB`. It reports `elastic_source_run_locality_probe=79485`, `storage_mismatch=79485`, `run_miss=79485`, and inferred `slot_match=would_rehome_slot=79485`. Read: the current source-depot lane does not carry source-run metadata, but every probed transfer object is physically slot-localizable by block/offset/bytes. This supports a future slot-level owner/locality behavior, not whole-block movement. |
+| SourceRunMetadataOnDepot-L1 | `...elasticdescsource-route-depotrunmeta-...source64-route16k-run4096` | Metadata-only prerequisite/control for slot-level locality. It keeps `HZ6_SOURCE_RUN_REUSE_L1` off and adds source-run metadata to elastic source-depot blocks. Full10k run-1 is safety clean at `42.148M / 230032 KB`; the prior `run_miss=79485` drops to `0`, while `slot_match=would_rehome_slot=79485`. Main-warmup shows depot metadata activity: `init=9939`, `mark=159024`, all mismatch counters `0`. This closes the C prerequisite from the consult; next is sparse SlotOwnerLocalityDryRun-L1, not production promotion. |
 | Next behavior target | `ElasticCapacity-L1 drain/localize` | Partially implemented through route overflow, descriptor depot, and source-block depot component lanes. The next design target is not another isolated metadata cap: it is unified depot accounting, owner-safe drain/localize, and promotion criteria for whether the lower-RSS source-depot shape can recover ElasticDescriptorRouteOverflow-class throughput. |
 
 ## Current Recommendation

@@ -174,6 +174,9 @@ int hz6_allocator_release_descriptor_source(
 
   int released = 0;
   if (descriptor->source_block) {
+    hz6_allocator_elastic_depot_source_run_will_clear_slot(
+        allocator, descriptor->source_block, descriptor->ptr,
+        descriptor->class_id, descriptor->bytes);
     hz6_allocator_source_run_release_slot(descriptor->source_block,
                                           descriptor->ptr);
     released =

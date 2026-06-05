@@ -49,6 +49,20 @@ int hz6_allocator_source_run_contains_slot(const Hz6SourceBlock* block,
                                            uint16_t class_id,
                                            size_t slot_bytes);
 
+int hz6_allocator_elastic_depot_source_run_mark_slot(
+    Hz6Allocator* allocator,
+    Hz6SourceBlock* block,
+    const void* ptr,
+    uint16_t class_id,
+    size_t slot_bytes);
+
+int hz6_allocator_elastic_depot_source_run_will_clear_slot(
+    Hz6Allocator* allocator,
+    const Hz6SourceBlock* block,
+    const void* ptr,
+    uint16_t class_id,
+    size_t slot_bytes);
+
 void hz6_allocator_note_source_run_reuse_dryrun(Hz6Allocator* allocator,
                                                 Hz6SourceKind source_kind,
                                                 size_t block_bytes,

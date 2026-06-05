@@ -80,6 +80,65 @@ Latest HZ6 selected-family decision:
     a block/offset/bytes slot.  Next behavior should be slot-level ownership or
     descriptor storage locality; do not revive whole-SourceBlock localize.
 
+2026-06-05 SourceRunMetadataOnDepot-L1:
+  implementation:
+    Add HZ6_ELASTIC_DEPOT_SOURCE_RUN_META_L1.
+    It initializes source-run metadata on elastic source-depot blocks without
+    enabling SourceRunReuse-L1 behavior.  The lane is diagnostic/prerequisite
+    evidence, not a production speed row.
+
+  lane:
+    ownerlocalityfast-rsscap-2-elasticdescsource-route-depotrunmeta-
+    desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-
+    routebytes16-storageowner16-ownersourcel2-frontcachepacked-
+    sourceblockpacked-source64-route16k-run4096
+
+  smoke:
+    docs/benchmarks/windows/paper/
+      hz6_elastic_depot_source_run_meta_smoke3/
+      20260605_164158_hz6_capacity_matrix_windows.md
+    main1k:
+      56.846M / 93552 KB
+      elastic_source_run_locality_probe=7487
+      elastic_source_run_locality_run_miss=0
+      elastic_source_run_locality_slot_match=7487
+      elastic_source_run_locality_would_rehome_slot=7487
+      main-warmup depot metadata:
+        init=937
+        mark=14992
+      safety clean
+
+  full10k:
+    docs/benchmarks/windows/paper/
+      hz6_elastic_depot_source_run_meta_full10k2/
+      20260605_163855_hz6_capacity_matrix_windows.md
+    42.148M / 230032 KB
+    elastic_source_run_locality_probe=79485
+    elastic_source_run_locality_run_miss=0
+    elastic_source_run_locality_slot_match=79485
+    elastic_source_run_locality_would_rehome_slot=79485
+    main-warmup depot metadata:
+      init=9939
+      mark=159024
+    mismatch/failure counters:
+      class_mismatch=0
+      slot_misaligned=0
+      too_many_slots=0
+      used_count_mismatch=0
+      route_invalid=0
+      route_miss=0
+      route_register_fail=0
+      descriptor_exhausted=0
+      source_block_exhausted=0
+      alloc_fail=0
+
+  read:
+    SourceRunMetadataOnDepot-L1 closes the C prerequisite from the Pro consult.
+    Depot SourceBlocks now carry source-run metadata and the prior run_miss
+    signal drops to zero.  The next behavior should be SlotOwnerLocalityDryRun-L1
+    with sparse per-slot ownership/locality projection; do not move whole
+    SourceBlocks and do not enable SourceRunReuse-L1 in this depot lane yet.
+
 2026-06-05 next attack after combined packed Pro consult:
   Larson cross-owner RSS:
     OwnerSourceSideMeta-L2 remains the selected speed/RSS balance sibling.

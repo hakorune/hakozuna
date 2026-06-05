@@ -371,6 +371,7 @@ $laneSuffix = @{
     "ownerlocalityfast-rsscap-2-elasticdescsource-route-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512" = "_ownerloc_rss2_eldescsrcroute_d16_f4_thin_nb_nrb_d192_rp_rb16_so16_osl2_fcp_sbp_s64_r16_run512"
     "ownerlocalityfast-rsscap-2-elasticdescsource-route-localizedryrun-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512" = "_ownerloc_rss2_eldescsrcroute_locdry_d16_f4_thin_nb_nrb_d192_rp_rb16_so16_osl2_fcp_sbp_s64_r16_run512"
     "ownerlocalityfast-rsscap-2-elasticdescsource-route-runlocalitydryrun-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512" = "_ownerloc_rss2_eldescsrcroute_runlocdry_d16_f4_thin_nb_nrb_d192_rp_rb16_so16_osl2_fcp_sbp_s64_r16_run512"
+    "ownerlocalityfast-rsscap-2-elasticdescsource-route-depotrunmeta-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run4096" = "_ownerloc_rss2_eldescsrcroute_depotrunmeta_d16_f4_thin_nb_nrb_d192_rp_rb16_so16_osl2_fcp_sbp_s64_r16_run4096"
     "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2dryrun-source16k-route192k-run512" = "_ownerloc_rss2_d160_f4_thin_nb_nrb_d192_rp_rb16_so16_osl2dry_s16_r192_run512"
     "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-storageowner16-noroutebackptr-dir192k-routepacked-source16k-route192k-run512" = "_ownerloc_rss2_d160_f4_thin_nb_so16_nrb_d192_rp_s16_r192_run512"
     "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-dir128k-source16k-route192k-run512" = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_nobackptr_dir128k_source16k_route192k_run512"
@@ -730,6 +731,13 @@ foreach ($family in $selectedFamilies) {
                     TransferCurrent = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "transfer_current"
                     TransferCurrentMax = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "transfer_current_max"
                     DescriptorExhausted = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "descriptor_exhausted"
+                    ElasticDepotRunMetaInit = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "elastic_depot_run_meta_init"
+                    ElasticDepotRunMetaMark = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "elastic_depot_run_meta_mark"
+                    ElasticDepotRunMetaClear = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "elastic_depot_run_meta_clear"
+                    ElasticDepotRunMetaClassMismatch = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "elastic_depot_run_meta_class_mismatch"
+                    ElasticDepotRunMetaSlotMisaligned = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "elastic_depot_run_meta_slot_misaligned"
+                    ElasticDepotRunMetaTooManySlots = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "elastic_depot_run_meta_too_many_slots"
+                    ElasticDepotRunMetaUsedCountMismatch = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "elastic_depot_run_meta_used_count_mismatch"
                     RouteRegisterFail = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "route_register_fail"
                     SourceBlockExhausted = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "source_block_exhausted"
                     AllocFail = Get-MedianFromMaps -Maps $warmupMaps.ToArray() -Key "alloc_fail"
@@ -859,8 +867,8 @@ foreach ($family in $selectedFamilies) {
             $Summary.Add("")
             $Summary.Add("### HZ6 main-warmup capacity audit")
             $Summary.Add("")
-            $Summary.Add("| allocator | descriptor used/peak | route active/occupied/peak | source blocks used/peak | frontcache used/peak | transfer current/peak | failures descriptor/route/source/alloc |")
-            $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: |")
+            $Summary.Add("| allocator | descriptor used/peak | route active/occupied/peak | source blocks used/peak | frontcache used/peak | transfer current/peak | depot run meta init/mark/clear | depot run meta bad class/align/slots/count | failures descriptor/route/source/alloc |")
+            $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
             $fmtPair2 = {
                 param($a, $b)
                 if ($null -eq $a -or $null -eq $b) { return "n/a" }
@@ -877,13 +885,15 @@ foreach ($family in $selectedFamilies) {
                 return ("{0:N0}/{1:N0}/{2:N0}/{3:N0}" -f ([double]$a), ([double]$b), ([double]$c), ([double]$d))
             }
             foreach ($row in $warmupRows) {
-                $Summary.Add(('| {0} | {1} | {2} | {3} | {4} | {5} | {6} |' -f `
+                $Summary.Add(('| {0} | {1} | {2} | {3} | {4} | {5} | {6} | {7} | {8} |' -f `
                     $row.Allocator,
                     (& $fmtPair2 $row.DescriptorUsed $row.DescriptorLiveMax),
                     (& $fmtTriple $row.RouteUsed $row.RouteOccupied $row.RouteActiveMax),
                     (& $fmtPair2 $row.SourceBlockUsed $row.SourceBlockActiveMax),
                     (& $fmtPair2 $row.FrontcacheUsed $row.FrontcacheTotalMax),
                     (& $fmtPair2 $row.TransferCurrent $row.TransferCurrentMax),
+                    (& $fmtTriple $row.ElasticDepotRunMetaInit $row.ElasticDepotRunMetaMark $row.ElasticDepotRunMetaClear),
+                    (& $fmtQuad $row.ElasticDepotRunMetaClassMismatch $row.ElasticDepotRunMetaSlotMisaligned $row.ElasticDepotRunMetaTooManySlots $row.ElasticDepotRunMetaUsedCountMismatch),
                     (& $fmtQuad $row.DescriptorExhausted $row.RouteRegisterFail $row.SourceBlockExhausted $row.AllocFail)))
             }
         }

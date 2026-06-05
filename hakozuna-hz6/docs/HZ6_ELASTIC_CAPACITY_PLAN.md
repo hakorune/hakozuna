@@ -56,6 +56,9 @@ Diagnostic no-go/control:
 
 Diagnostic slot-level evidence:
   SourceRunLocalityDryRun-L1
+
+Prerequisite/control:
+  SourceRunMetadataOnDepot-L1
 ```
 
 SourceBlockLocalizeDryRun-L1 result:
@@ -108,6 +111,55 @@ read:
   expected.  However, every probed transfer object can be physically identified
   as a block/offset/bytes slot.  This supports a future slot-level ownership or
   storage-locality behavior.  It does not justify whole-SourceBlock movement.
+```
+
+SourceRunMetadataOnDepot-L1 result:
+
+```text
+lane:
+  ownerlocalityfast-rsscap-2-elasticdescsource-route-depotrunmeta-
+  desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-
+  routebytes16-storageowner16-ownersourcel2-frontcachepacked-
+  sourceblockpacked-source64-route16k-run4096
+
+mode:
+  metadata-only prerequisite/control
+  HZ6_ELASTIC_DEPOT_SOURCE_RUN_META_L1=1
+  HZ6_SOURCE_RUN_REUSE_L1 remains off
+
+full10k run-1:
+  42.148M ops/s
+  230,032 KB peak RSS
+  safety clean:
+    route_invalid=0
+    route_miss=0
+    route_register_fail=0
+    descriptor_exhausted=0
+    source_block_exhausted=0
+    alloc_fail=0
+
+counters:
+  elastic_source_run_locality_probe             = 79,485
+  elastic_source_run_locality_storage_mismatch  = 79,485
+  elastic_source_run_locality_run_miss          = 0
+  elastic_source_run_locality_class_mismatch    = 0
+  elastic_source_run_locality_slot_match        = 79,485
+  elastic_source_run_locality_would_rehome_slot = 79,485
+
+main-warmup depot metadata:
+  elastic_depot_run_meta_init                   = 9,939
+  elastic_depot_run_meta_mark                   = 159,024
+  elastic_depot_run_meta_class_mismatch         = 0
+  elastic_depot_run_meta_slot_misaligned        = 0
+  elastic_depot_run_meta_too_many_slots         = 0
+  elastic_depot_run_meta_used_count_mismatch    = 0
+
+read:
+  Depot SourceBlocks now carry source-run metadata, so the previous run_miss
+  blocker is removed.  The remaining slot-level locality signal is still
+  storage-owner mismatch with perfect physical slot identification.  Next
+  should be SlotOwnerLocalityDryRun-L1, not whole-SourceBlock movement and not
+  source-run reuse behavior inside the depot lane.
 ```
 
 ## What The Diagnostics Proved
@@ -491,11 +543,17 @@ Recommended L1 order:
    warmup spike can be absorbed with local source cap 64, but the lane is a
    lower-RSS component/control rather than the promoted shape.
 
-4. Unified ElasticCapacity-L1:
+4. SourceRunMetadataOnDepot-L1:
+   implemented as metadata-only prerequisite/control. It removes the prior
+   source-run metadata gap in the source-depot lane without enabling source-run
+   reuse behavior. This prepares the next slot-owner locality dry-run.
+
+5. Unified ElasticCapacity-L1:
    descriptor + route + source overflow in one lane
    full10k target: keep route-overflow RSS class while recovering source10k
    throughput
-   next missing piece: depot accounting and owner-safe drain/localize
+   next missing piece: sparse slot-owner locality accounting and owner-safe
+   drain/localize
 ```
 
 Descriptor overflow caution:

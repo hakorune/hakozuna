@@ -716,6 +716,21 @@ int main(int argc, char** argv) {
         hz6_stats.elastic_source_run_locality_would_rehome_slot +=
             tds[t].hz6_stats_after
                 .elastic_source_run_locality_would_rehome_slot;
+        hz6_stats.elastic_depot_run_meta_init +=
+            tds[t].hz6_stats_after.elastic_depot_run_meta_init;
+        hz6_stats.elastic_depot_run_meta_mark +=
+            tds[t].hz6_stats_after.elastic_depot_run_meta_mark;
+        hz6_stats.elastic_depot_run_meta_clear +=
+            tds[t].hz6_stats_after.elastic_depot_run_meta_clear;
+        hz6_stats.elastic_depot_run_meta_class_mismatch +=
+            tds[t].hz6_stats_after.elastic_depot_run_meta_class_mismatch;
+        hz6_stats.elastic_depot_run_meta_slot_misaligned +=
+            tds[t].hz6_stats_after.elastic_depot_run_meta_slot_misaligned;
+        hz6_stats.elastic_depot_run_meta_too_many_slots +=
+            tds[t].hz6_stats_after.elastic_depot_run_meta_too_many_slots;
+        hz6_stats.elastic_depot_run_meta_used_count_mismatch +=
+            tds[t].hz6_stats_after
+                .elastic_depot_run_meta_used_count_mismatch;
         hz6_stats.source_owned_prepare +=
             tds[t].hz6_stats_after.source_owned_prepare;
         hz6_stats.source_owned_route_hit_local_owner +=
@@ -1393,6 +1408,13 @@ int main(int argc, char** argv) {
            "elastic_source_run_locality_class_mismatch=%zu "
            "elastic_source_run_locality_slot_match=%zu "
            "elastic_source_run_locality_would_rehome_slot=%zu "
+           "elastic_depot_run_meta_init=%zu "
+           "elastic_depot_run_meta_mark=%zu "
+           "elastic_depot_run_meta_clear=%zu "
+           "elastic_depot_run_meta_class_mismatch=%zu "
+           "elastic_depot_run_meta_slot_misaligned=%zu "
+           "elastic_depot_run_meta_too_many_slots=%zu "
+           "elastic_depot_run_meta_used_count_mismatch=%zu "
            "source_owned_prepare=%zu "
            "source_owned_route_hit_local_owner=%zu "
            "source_owned_visibility_hit_local_owner=%zu "
@@ -1536,6 +1558,13 @@ int main(int argc, char** argv) {
            hz6_stats.elastic_source_run_locality_class_mismatch,
            hz6_stats.elastic_source_run_locality_slot_match,
            hz6_stats.elastic_source_run_locality_would_rehome_slot,
+           hz6_stats.elastic_depot_run_meta_init,
+           hz6_stats.elastic_depot_run_meta_mark,
+           hz6_stats.elastic_depot_run_meta_clear,
+           hz6_stats.elastic_depot_run_meta_class_mismatch,
+           hz6_stats.elastic_depot_run_meta_slot_misaligned,
+           hz6_stats.elastic_depot_run_meta_too_many_slots,
+           hz6_stats.elastic_depot_run_meta_used_count_mismatch,
            hz6_stats.source_owned_prepare,
            hz6_stats.source_owned_route_hit_local_owner,
            hz6_stats.source_owned_visibility_hit_local_owner,
@@ -1768,6 +1797,13 @@ int main(int argc, char** argv) {
                "elastic_source_block_overflow_alloc=%zu "
                "elastic_source_block_overflow_release=%zu "
                "elastic_source_block_overflow_exhausted=%zu "
+               "elastic_depot_run_meta_init=%zu "
+               "elastic_depot_run_meta_mark=%zu "
+               "elastic_depot_run_meta_clear=%zu "
+               "elastic_depot_run_meta_class_mismatch=%zu "
+               "elastic_depot_run_meta_slot_misaligned=%zu "
+               "elastic_depot_run_meta_too_many_slots=%zu "
+               "elastic_depot_run_meta_used_count_mismatch=%zu "
                "route_register_fail=%zu "
                "source_block_exhausted=%zu "
                "alloc_fail=%zu\n",
@@ -1788,6 +1824,13 @@ int main(int argc, char** argv) {
                hz6_main_warmup_stats.elastic_source_block_overflow_alloc,
                hz6_main_warmup_stats.elastic_source_block_overflow_release,
                hz6_main_warmup_stats.elastic_source_block_overflow_exhausted,
+               hz6_main_warmup_stats.elastic_depot_run_meta_init,
+               hz6_main_warmup_stats.elastic_depot_run_meta_mark,
+               hz6_main_warmup_stats.elastic_depot_run_meta_clear,
+               hz6_main_warmup_stats.elastic_depot_run_meta_class_mismatch,
+               hz6_main_warmup_stats.elastic_depot_run_meta_slot_misaligned,
+               hz6_main_warmup_stats.elastic_depot_run_meta_too_many_slots,
+               hz6_main_warmup_stats.elastic_depot_run_meta_used_count_mismatch,
                hz6_main_warmup_stats.route_register_fail,
                hz6_main_warmup_stats.source_block_exhausted,
                hz6_main_warmup_stats.alloc_fail);

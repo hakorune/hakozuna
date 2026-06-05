@@ -296,6 +296,106 @@ int hz6_allocator_source_run_contains_slot(const Hz6SourceBlock* block,
   return hz6_source_run_bit_get(block, slot_index);
 }
 
+int hz6_allocator_elastic_depot_source_run_mark_slot(
+    Hz6Allocator* allocator,
+    Hz6SourceBlock* block,
+    const void* ptr,
+    uint16_t class_id,
+    size_t slot_bytes) {
+#if HZ6_ELASTIC_DEPOT_SOURCE_RUN_META_L1
+  if (!allocator || !block || !ptr ||
+      !hz6_allocator_source_block_is_elastic_depot(block) ||
+      !hz6_source_block_active(block) || !block->ptr || slot_bytes == 0) {
+    return 0;
+  }
+
+  const unsigned char* user = (const unsigned char*)ptr;
+  const unsigned char* base = (const unsigned char*)block->ptr;
+  if (user < base) {
+    ++allocator->stats.elastic_depot_run_meta_slot_misaligned;
+    return 0;
+  }
+  size_t offset = (size_t)(user - base);
+  if (offset >= block->bytes || (offset % slot_bytes) != 0) {
+    ++allocator->stats.elastic_depot_run_meta_slot_misaligned;
+    return 0;
+  }
+  size_t slot_count = block->bytes / slot_bytes;
+  if (slot_count == 0 || slot_count > HZ6_SOURCE_RUN_MAX_SLOTS ||
+      slot_count > UINT16_MAX) {
+    ++allocator->stats.elastic_depot_run_meta_too_many_slots;
+    return 0;
+  }
+  size_t slot_index = offset / slot_bytes;
+  if (slot_index >= slot_count) {
+    ++allocator->stats.elastic_depot_run_meta_slot_misaligned;
+    return 0;
+  }
+
+  if (!hz6_source_block_run_active(block)) {
+    hz6_source_run_reset(block);
+    block->run_slot_bytes = slot_bytes;
+    block->run_class_id = class_id;
+    block->run_slot_count = (uint16_t)slot_count;
+    hz6_source_block_set_run_active(block, 1);
+    ++allocator->stats.elastic_depot_run_meta_init;
+  } else if (block->run_class_id != class_id ||
+             block->run_slot_bytes != slot_bytes ||
+             block->run_slot_count != (uint16_t)slot_count) {
+    ++allocator->stats.elastic_depot_run_meta_class_mismatch;
+    return 0;
+  }
+
+  if (hz6_source_run_bit_get(block, slot_index)) {
+    ++allocator->stats.elastic_depot_run_meta_used_count_mismatch;
+    return 1;
+  }
+  hz6_source_run_bit_set(block, slot_index);
+  if (block->run_used_count < block->run_slot_count) {
+    ++block->run_used_count;
+  } else {
+    ++allocator->stats.elastic_depot_run_meta_used_count_mismatch;
+  }
+  block->run_next_hint = (uint16_t)((slot_index + 1u) % block->run_slot_count);
+  ++allocator->stats.elastic_depot_run_meta_mark;
+  return 1;
+#else
+  (void)allocator;
+  (void)block;
+  (void)ptr;
+  (void)class_id;
+  (void)slot_bytes;
+  return 0;
+#endif
+}
+
+int hz6_allocator_elastic_depot_source_run_will_clear_slot(
+    Hz6Allocator* allocator,
+    const Hz6SourceBlock* block,
+    const void* ptr,
+    uint16_t class_id,
+    size_t slot_bytes) {
+#if HZ6_ELASTIC_DEPOT_SOURCE_RUN_META_L1
+  if (!allocator || !block ||
+      !hz6_allocator_source_block_is_elastic_depot(block)) {
+    return 0;
+  }
+  if (hz6_allocator_source_run_contains_slot(block, ptr, class_id,
+                                             slot_bytes)) {
+    ++allocator->stats.elastic_depot_run_meta_clear;
+    return 1;
+  }
+  return 0;
+#else
+  (void)allocator;
+  (void)block;
+  (void)ptr;
+  (void)class_id;
+  (void)slot_bytes;
+  return 0;
+#endif
+}
+
 #if HZ6_DIAGNOSTIC_PROBES
 static void hz6_allocator_record_source_block_failure_state(
     Hz6Allocator* allocator) {

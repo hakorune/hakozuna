@@ -232,6 +232,8 @@ void* hz6_front_source_block_slot(Hz6Allocator* allocator,
     return NULL;
   }
 
+  hz6_allocator_elastic_depot_source_run_mark_slot(
+      allocator, source_block, user_ptr, class_id, user_bytes);
   return user_ptr;
 }
 
