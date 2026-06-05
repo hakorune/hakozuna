@@ -38,6 +38,9 @@
 #ifndef HZ_BENCH_HZ6_PROFILE
 #define HZ_BENCH_HZ6_PROFILE HZ6_PROFILE_STRICT
 #endif
+#ifndef HZ_BENCH_TRACE_LAST_OP
+#define HZ_BENCH_TRACE_LAST_OP 0
+#endif
 #endif
 
 #if defined(HZ_BENCH_USE_HZ5_POLICY)
@@ -48,6 +51,7 @@
 
 typedef struct {
     uint32_t seed;
+    size_t thread_index;
     size_t iters;
     size_t ws;
     size_t min_size;
@@ -62,7 +66,29 @@ typedef struct {
 #endif
 } ThreadArg;
 
-#if defined(_WIN32) && defined(HZ_BENCH_USE_HZ6)
+#if defined(_WIN32) && defined(HZ_BENCH_USE_HZ6) && HZ_BENCH_TRACE_LAST_OP
+static __declspec(thread) LONG t_last_thread = -1;
+static __declspec(thread) LONG t_last_op = 0;
+static __declspec(thread) LONG t_last_size = 0;
+static __declspec(thread) LONG t_last_owns = -1;
+static __declspec(thread) PVOID t_last_ptr = NULL;
+
+static void bench_record_last_op(ThreadArg* ta,
+                                 size_t thread,
+                                 LONG op,
+                                 void* ptr,
+                                 size_t size) {
+    t_last_thread = (LONG)thread;
+    t_last_op = op;
+    t_last_ptr = ptr;
+    t_last_size = (LONG)size;
+#if defined(HZ_BENCH_USE_HZ6)
+    t_last_owns = ptr ? (LONG)hz6_owns(&ta->hz6_allocator, ptr) : -1;
+#else
+    (void)ta;
+#endif
+}
+
 static LONG WINAPI bench_allocator_unhandled_exception_filter(
     struct _EXCEPTION_POINTERS* exception_info) {
     DWORD code = 0;
@@ -79,12 +105,40 @@ static LONG WINAPI bench_allocator_unhandled_exception_filter(
             info1 = exception_info->ExceptionRecord->ExceptionInformation[1];
         }
     }
+    PVOID last_ptr = t_last_ptr;
+    MEMORY_BASIC_INFORMATION last_mbi;
+    MEMORY_BASIC_INFORMATION fault_mbi;
+    SIZE_T last_vq = last_ptr ? VirtualQuery(last_ptr, &last_mbi, sizeof(last_mbi)) : 0;
+    SIZE_T fault_vq = info1 ? VirtualQuery((void*)info1, &fault_mbi, sizeof(fault_mbi)) : 0;
     fprintf(stderr,
-            "bench_allocator_compare: unhandled exception code=0x%08lx address=%p info0=%p info1=%p\n",
+            "bench_allocator_compare: unhandled exception code=0x%08lx address=%p info0=%p info1=%p last_thread=%ld last_op=%ld last_ptr=%p last_size=%ld last_owns=%ld\n",
             (unsigned long)code,
             address,
             (void*)info0,
-            (void*)info1);
+            (void*)info1,
+            t_last_thread,
+            t_last_op,
+            last_ptr,
+            t_last_size,
+            t_last_owns);
+    if (last_vq) {
+        fprintf(stderr,
+                "bench_allocator_compare: last_ptr_vq base=%p alloc_base=%p state=0x%lx protect=0x%lx region=%zu\n",
+                last_mbi.BaseAddress,
+                last_mbi.AllocationBase,
+                (unsigned long)last_mbi.State,
+                (unsigned long)last_mbi.Protect,
+                (size_t)last_mbi.RegionSize);
+    }
+    if (fault_vq) {
+        fprintf(stderr,
+                "bench_allocator_compare: fault_vq base=%p alloc_base=%p state=0x%lx protect=0x%lx region=%zu\n",
+                fault_mbi.BaseAddress,
+                fault_mbi.AllocationBase,
+                (unsigned long)fault_mbi.State,
+                (unsigned long)fault_mbi.Protect,
+                (size_t)fault_mbi.RegionSize);
+    }
     fflush(stderr);
     return EXCEPTION_EXECUTE_HANDLER;
 }
@@ -222,6 +276,9 @@ static size_t peak_working_set_kb(void) {
 
 static unsigned __stdcall bench_thread(void* arg) {
     ThreadArg* ta = (ThreadArg*)arg;
+#if defined(HZ_BENCH_USE_HZ6) && HZ_BENCH_TRACE_LAST_OP
+    size_t thread_index = ta->thread_index;
+#endif
     uint32_t seed = ta->seed;
     size_t ws = ta->ws ? ta->ws : 1;
     void** slots = (void**)calloc(ws, sizeof(void*));
@@ -234,6 +291,9 @@ static unsigned __stdcall bench_thread(void* arg) {
         uint32_t r = lcg_next(&seed);
         size_t idx = (size_t)(r % (uint32_t)ws);
         if (slots[idx]) {
+#if defined(HZ_BENCH_USE_HZ6) && HZ_BENCH_TRACE_LAST_OP
+            bench_record_last_op(ta, thread_index, 1, slots[idx], 0);
+#endif
             bench_free(ta, slots[idx]);
             ++ta->frees;
             slots[idx] = NULL;
@@ -256,12 +316,18 @@ static unsigned __stdcall bench_thread(void* arg) {
                 size = new_size;
             }
         }
+#if defined(HZ_BENCH_USE_HZ6) && HZ_BENCH_TRACE_LAST_OP
+        bench_record_last_op(ta, thread_index, 2, p, size);
+#endif
         memset(p, 0xA5, size < 64 ? size : 64);
         slots[idx] = p;
     }
 
     for (size_t i = 0; i < ws; i++) {
         if (slots[i]) {
+#if defined(HZ_BENCH_USE_HZ6) && HZ_BENCH_TRACE_LAST_OP
+            bench_record_last_op(ta, thread_index, 3, slots[i], 0);
+#endif
             bench_free(ta, slots[i]);
             ++ta->frees;
         }
@@ -352,7 +418,7 @@ int main(int argc, char** argv) {
     if (min_size == 0) min_size = 1;
     if (max_size < min_size) max_size = min_size;
 
-#if defined(_WIN32) && defined(HZ_BENCH_USE_HZ6)
+#if defined(_WIN32) && defined(HZ_BENCH_USE_HZ6) && HZ_BENCH_TRACE_LAST_OP
     SetUnhandledExceptionFilter(bench_allocator_unhandled_exception_filter);
 #endif
 
@@ -379,6 +445,7 @@ int main(int argc, char** argv) {
     }
     for (size_t i = 0; i < threads; i++) {
         args[i].seed = (uint32_t)(1234 + i);
+        args[i].thread_index = i;
         args[i].iters = iters;
         args[i].ws = ws;
         args[i].min_size = min_size;
@@ -419,6 +486,7 @@ int main(int argc, char** argv) {
     }
     for (size_t i = 0; i < threads; i++) {
         args[i].seed = (uint32_t)(1234 + i);
+        args[i].thread_index = i;
         args[i].iters = iters;
         args[i].ws = ws;
         args[i].min_size = min_size;

@@ -10730,3 +10730,101 @@ Next:
     2. descriptor-storage-owned side metadata as a larger redesign, or
     3. non-static policy only if it preserves selected safety.
 ```
+# HZ6 current task
+
+## 2026-06-06: Elastic source-depot wide_ws fail-closed hardening
+
+Context:
+
+```text
+DepotDescriptorRehomeBudget2048-L1 was clean on Larson repeat/guard, but
+mixed_ws wide_ws hit 0xc0000005 during broad smoke. Direct checks showed the
+fault was not Budget2048-specific:
+
+  elasticdescsource-route
+  depotownerdirect
+  depotdescrehome
+  depotdescrehome-budget2048
+
+all reproduced the wide_ws access violation before the hardening.
+```
+
+Diagnostic:
+
+```text
+Added bench-only HZ_BENCH_TRACE_LAST_OP, enabled only with
+-DiagnosticHz6Probes. The first global last-op probe was racy, so it was moved
+to TLS.
+
+TLS result:
+  last_op = alloc-touch
+  last_ptr = MEM_FREE
+  fault   = MEM_FREE write
+
+Meaning:
+  HZ6 returned a stale source-backed slot as ACTIVE, and the benchmark crashed
+  on the immediate memset. This is a stale cached/route/source-block lifecycle
+  problem, not a user payload commit issue and not specific to Budget2048.
+```
+
+Implementation:
+
+```text
+1. Shared exact-route lookup now fail-closes stale entries:
+   descriptor ptr/generation/state must still match the exact route.
+   descriptors whose source_block is inactive or has no backing ptr are not
+   returned as VALID.
+
+2. hz6_allocator_activate_descriptor() now validates source_block backing:
+   source_block must be active, have a non-null ptr, and the descriptor ptr /
+   bytes must be inside the block.
+
+3. hz6_allocator_release_source_block() hides block->ptr before OS release:
+   stale cached descriptors see ptr == NULL and fail activation instead of
+   reactivating memory that is already being released.
+```
+
+Validation:
+
+```text
+Diagnostic elasticdescsource-route wide_ws:
+  before: 0xc0000005, alloc returned MEM_FREE ptr
+  after:  ExitCode 0
+
+Normal elasticdescsource-route wide_ws:
+  ExitCode 0
+  ops/s ~= 0.671M
+  route_invalid ~= 23K
+  route_miss ~= 21
+
+Normal DepotDescriptorRehomeBudget2048 wide_ws:
+  ExitCode 0
+  ops/s ~= 0.597M
+  route_invalid ~= 20K
+  route_miss ~= 27
+
+Selected mixed_ws route17-linearwrap-loopcarry short guard:
+  balanced short: route_invalid = 0, route_miss = 0
+  wide_ws short:  route_invalid = 0, route_miss = 0
+```
+
+Decision:
+
+```text
+KEEP:
+  source-block activation/release guards.
+  bench last-op tracing as diagnostic-only plumbing.
+
+Do not promote:
+  elasticdescsource-route / depotdescrehome-budget2048 to broad mixed_ws.
+
+Finding:
+  The source-depot family is now fail-closed instead of crashing, but wide_ws
+  still exposes stale lifecycle pressure via route_invalid/route_miss.
+
+Next:
+  Treat this as an ElasticCapacity source-depot lifecycle track. The next
+  useful design is not another Budget2048 knob; it is exact-route/source-block
+  lifecycle ownership cleanup, likely around stale shared exact entries and
+  cached descriptor invalidation.
+```

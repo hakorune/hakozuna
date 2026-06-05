@@ -128,6 +128,19 @@ static Hz6RouteResult hz6_shared_route_directory_lookup_raw(const void* ptr) {
         atomic_load_explicit(&entry->class_id, memory_order_acquire);
     unsigned int generation =
         atomic_load_explicit(&entry->generation, memory_order_acquire);
+    const Hz6ObjectDescriptor* descriptor =
+        (const Hz6ObjectDescriptor*)descriptor_value;
+    if (!descriptor || descriptor->ptr != ptr ||
+        descriptor->generation != (uint32_t)generation ||
+        descriptor->state == HZ6_STATE_DEAD ||
+        descriptor->state == HZ6_STATE_DESCRIPTOR_RESERVED) {
+      return hz6_route_miss();
+    }
+    if (descriptor->source_block &&
+        (!hz6_source_block_active(descriptor->source_block) ||
+         !descriptor->source_block->ptr)) {
+      return hz6_route_miss();
+    }
     Hz6RouteResult route = hz6_route_valid((uint16_t)front_id,
                                            (uint16_t)class_id,
                                            (uint32_t)generation,

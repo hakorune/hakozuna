@@ -2077,6 +2077,7 @@ function Invoke-AppLikeHz6BenchBuilds {
             $args += ("/DHZ_BENCH_HZ6_PROFILE={0}" -f $profile.Define)
             if ($DiagnosticHz6Probes) {
                 $args += "/DHZ6_DIAGNOSTIC_PROBES=1"
+                $args += "/DHZ_BENCH_TRACE_LAST_OP=1"
             }
             $args += $variant.ExtraFlags
             $args += $includeFlags

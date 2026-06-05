@@ -34,13 +34,21 @@ int hz6_allocator_release_source_block(Hz6Allocator* allocator,
                                                  NULL);
     }
   }
-  int released = block->source_release
-                     ? block->source_release(block->ptr, block->bytes)
-                     : hz6_source_system_release(block->ptr, block->bytes);
-  if (hz6_allocator_source_block_is_elastic_depot(block)) {
+  void* release_ptr = block->ptr;
+  size_t release_bytes = block->bytes;
+  Hz6SourceReleaseFn release_fn = block->source_release;
+  int elastic_depot_block = hz6_allocator_source_block_is_elastic_depot(block);
+
+  /* Hide the backing from stale cached descriptors before OS release. */
+  block->ptr = NULL;
+  hz6_source_block_set_run_active(block, 0);
+
+  int released = release_fn
+                     ? release_fn(release_ptr, release_bytes)
+                     : hz6_source_system_release(release_ptr, release_bytes);
+  if (elastic_depot_block) {
     ++allocator->stats.elastic_source_block_overflow_release;
   }
-  block->ptr = NULL;
   block->bytes = 0;
   hz6_source_block_set_source_kind(block, HZ6_SOURCE_NONE);
   block->source_release = NULL;
@@ -62,7 +70,6 @@ int hz6_allocator_release_source_block(Hz6Allocator* allocator,
   hz6_source_block_set_active(block, 0);
   hz6_source_block_set_route_registered(block, 0);
   hz6_source_block_set_route_shared(block, 0);
-  hz6_source_block_set_run_active(block, 0);
 #if HZ6_DIAGNOSTIC_PROBES
   if (allocator->diagnostic_source_block_active_current != 0) {
     --allocator->diagnostic_source_block_active_current;

@@ -367,6 +367,17 @@ int hz6_allocator_activate_descriptor(Hz6Allocator* allocator,
   if (descriptor->ptr != ptr || descriptor->generation != generation) {
     return 0;
   }
+  if (descriptor->source_block) {
+    const Hz6SourceBlock* block = descriptor->source_block;
+    uintptr_t base = (uintptr_t)block->ptr;
+    uintptr_t addr = (uintptr_t)ptr;
+    if (!hz6_source_block_active(block) || !block->ptr ||
+        descriptor->bytes == 0 || addr < base ||
+        descriptor->bytes > block->bytes ||
+        addr - base > block->bytes - descriptor->bytes) {
+      return 0;
+    }
+  }
   descriptor->state = HZ6_STATE_ACTIVE;
   hz6_allocator_set_descriptor_owner(allocator, descriptor, owner);
   return 1;
