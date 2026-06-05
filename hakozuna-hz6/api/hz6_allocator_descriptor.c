@@ -1,5 +1,88 @@
 #include "hz6_allocator.h"
 
+#if HZ6_ELASTIC_DESCRIPTOR_OVERFLOW_L1
+static Hz6ObjectDescriptor g_hz6_descriptor_depot
+    [HZ6_ELASTIC_DESCRIPTOR_DEPOT_CAPACITY];
+static uint32_t g_hz6_descriptor_depot_owner16
+    [HZ6_ELASTIC_DESCRIPTOR_DEPOT_CAPACITY];
+static size_t g_hz6_descriptor_depot_next;
+
+static size_t hz6_allocator_descriptor_depot_index(
+    const Hz6ObjectDescriptor* descriptor) {
+  if (!descriptor ||
+      descriptor < g_hz6_descriptor_depot ||
+      descriptor >= g_hz6_descriptor_depot +
+                        HZ6_ELASTIC_DESCRIPTOR_DEPOT_CAPACITY) {
+    return HZ6_ELASTIC_DESCRIPTOR_DEPOT_CAPACITY;
+  }
+  return (size_t)(descriptor - g_hz6_descriptor_depot);
+}
+
+int hz6_allocator_descriptor_is_depot(
+    const Hz6ObjectDescriptor* descriptor) {
+  return hz6_allocator_descriptor_depot_index(descriptor) <
+         HZ6_ELASTIC_DESCRIPTOR_DEPOT_CAPACITY;
+}
+
+Hz6OwnerToken hz6_allocator_descriptor_depot_owner(
+    const Hz6ObjectDescriptor* descriptor) {
+  size_t index = hz6_allocator_descriptor_depot_index(descriptor);
+  if (index >= HZ6_ELASTIC_DESCRIPTOR_DEPOT_CAPACITY) {
+    return (Hz6OwnerToken){0};
+  }
+  return hz6_descriptor_unpack_owner16(g_hz6_descriptor_depot_owner16[index]);
+}
+
+void hz6_allocator_set_descriptor_depot_owner(
+    Hz6ObjectDescriptor* descriptor,
+    Hz6OwnerToken owner) {
+  size_t index = hz6_allocator_descriptor_depot_index(descriptor);
+  if (index >= HZ6_ELASTIC_DESCRIPTOR_DEPOT_CAPACITY) {
+    return;
+  }
+  g_hz6_descriptor_depot_owner16[index] = hz6_descriptor_pack_owner16(owner);
+}
+
+static Hz6ObjectDescriptor* hz6_allocator_find_descriptor_depot_slot(
+    Hz6Allocator* allocator) {
+  for (size_t offset = 0; offset < HZ6_ELASTIC_DESCRIPTOR_DEPOT_CAPACITY;
+       ++offset) {
+    size_t index = g_hz6_descriptor_depot_next + offset;
+    if (index >= HZ6_ELASTIC_DESCRIPTOR_DEPOT_CAPACITY) {
+      index -= HZ6_ELASTIC_DESCRIPTOR_DEPOT_CAPACITY;
+    }
+    Hz6ObjectDescriptor* descriptor = &g_hz6_descriptor_depot[index];
+    if (descriptor->ptr || descriptor->state != HZ6_STATE_DEAD) {
+      continue;
+    }
+    g_hz6_descriptor_depot_next = index + 1;
+    if (g_hz6_descriptor_depot_next >=
+        HZ6_ELASTIC_DESCRIPTOR_DEPOT_CAPACITY) {
+      g_hz6_descriptor_depot_next = 0;
+    }
+#if HZ6_THIN_DESCRIPTOR_L1
+    descriptor->cold_index = UINT32_MAX;
+#endif
+#if HZ6_DIAGNOSTIC_PROBES
+    if (allocator) {
+      ++allocator->stats.elastic_descriptor_overflow_alloc;
+    }
+#else
+    (void)allocator;
+#endif
+    return descriptor;
+  }
+#if HZ6_DIAGNOSTIC_PROBES
+  if (allocator) {
+    ++allocator->stats.elastic_descriptor_overflow_exhausted;
+  }
+#else
+  (void)allocator;
+#endif
+  return NULL;
+}
+#endif
+
 #if HZ6_DIAGNOSTIC_PROBES
 static void hz6_allocator_record_descriptor_failure_state(
     Hz6Allocator* allocator) {
@@ -109,6 +192,13 @@ Hz6ObjectDescriptor* hz6_allocator_find_free_descriptor(
   }
 #if HZ6_DESCRIPTOR_AVAIL_COUNT_L1
   if (allocator->descriptor_available_count == 0) {
+#if HZ6_ELASTIC_DESCRIPTOR_OVERFLOW_L1
+    Hz6ObjectDescriptor* overflow =
+        hz6_allocator_find_descriptor_depot_slot(allocator);
+    if (overflow) {
+      return overflow;
+    }
+#endif
     ++allocator->stats.descriptor_exhausted;
 #if HZ6_DIAGNOSTIC_PROBES
     hz6_allocator_record_descriptor_failure_state(allocator);
@@ -158,6 +248,15 @@ Hz6ObjectDescriptor* hz6_allocator_find_free_descriptor(
   allocator->stats.descriptor_probe_total += probes;
   if (probes > allocator->stats.descriptor_probe_max) {
     allocator->stats.descriptor_probe_max = probes;
+  }
+#endif
+#if HZ6_ELASTIC_DESCRIPTOR_OVERFLOW_L1
+  {
+    Hz6ObjectDescriptor* overflow =
+        hz6_allocator_find_descriptor_depot_slot(allocator);
+    if (overflow) {
+      return overflow;
+    }
   }
 #endif
   ++allocator->stats.descriptor_exhausted;

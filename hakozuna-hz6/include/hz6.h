@@ -104,6 +104,9 @@ typedef struct Hz6StatsSnapshot {
   size_t elastic_route_overflow_register_fail;
   size_t elastic_route_overflow_lookup;
   size_t elastic_route_overflow_hit;
+  size_t elastic_descriptor_overflow_alloc;
+  size_t elastic_descriptor_overflow_reset;
+  size_t elastic_descriptor_overflow_exhausted;
   size_t source_owned_prepare;
   size_t source_owned_route_hit_local_owner;
   size_t source_owned_visibility_hit_local_owner;

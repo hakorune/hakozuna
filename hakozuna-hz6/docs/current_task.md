@@ -73,6 +73,24 @@ Immediate action queue:
           It is not speed promotion: it is slower than source10k control.
           Next behavior should cover descriptor/source overflow, not keep
           shrinking route alone.
+  2c. ElasticDescriptorRouteOverflow-L1 is fixed as strong RSS evidence and
+      speed no-go/control for now.
+        lane:
+          ownerlocalityfast-rsscap-2-elasticdescroute-desc16k-front4k-
+          thindesc-nobackptr-noroutebackptr-dir192k-routepacked-
+          routebytes16-storageowner16-ownersourcel2-frontcachepacked-
+          sourceblockpacked-source10k-route16k-run512
+        result:
+          full10k run-1: 33.184M / 246,824 KB
+          safety: route_invalid=0, route_miss=0, route_register_fail=0,
+                  descriptor_exhausted=0, source_block_exhausted=0,
+                  alloc_fail=0
+          main-warmup descriptor depot alloc: 143,664
+        read:
+          descriptor depot + route overflow is viable and drops RSS sharply.
+          It is too slow as-is because depot descriptors cause descriptor
+          storage lookup misses/probes. Treat as mechanism evidence, not
+          promotion.
   3. Continue ElasticCapacity-L1 design work:
        local small descriptor/route/source/frontcache caps
        shared overflow / depot for warmup pressure
@@ -206,6 +224,51 @@ Decision:
   Do not promote as the main HZ6 Larson lane.
   Next step is descriptor/source overflow or a unified metadata depot; route
   alone is not enough.
+```
+
+Immediate read after ElasticDescriptorRouteOverflow-L1:
+
+```text
+Lane:
+  ownerlocalityfast-rsscap-2-elasticdescroute-desc16k-front4k-thindesc-
+  nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-
+  ownersourcel2-frontcachepacked-sourceblockpacked-source10k-route16k-run512
+
+Implementation:
+  Descriptor local cap is reduced to 16k.
+  A shared descriptor depot supplies overflow descriptors after local
+  descriptor exhaustion.
+  Depot descriptors use a separate owner16 side array so owned/free state does
+  not rely on allocator-local descriptor indexes.
+  ElasticRouteOverflow-L1 remains enabled for exact and invalid-envelope route
+  overflow.
+
+Results:
+  smoke main1k:
+    56.223M / 126,824 KB
+    safety clean
+    descriptor depot unused because main1k fits local 16k descriptors
+
+  full10k:
+    33.184M / 246,824 KB
+    route_invalid=0
+    route_miss=0
+    route_register_fail=0
+    descriptor_exhausted=0
+    source_block_exhausted=0
+    alloc_fail=0
+    main-warmup elastic_descriptor_overflow_alloc=143,664
+
+Read:
+  Descriptor overflow is viable and gives the largest RSS drop so far.
+  It is not promotion: throughput is much lower than source10k control and
+  route-only overflow. The stats show heavy descriptor_storage_miss/probe
+  pressure for depot descriptors, so the next optimization is depot descriptor
+  storage locality, not another blind capacity trim.
+
+Decision:
+  KEEP as ElasticDescriptorRouteOverflow-L1 mechanism/RSS evidence.
+  NO-GO as a speed or promotion lane in current form.
 ```
 
 ### 2026-06-05: CapacityUtil-L1 diagnostic

@@ -109,6 +109,10 @@ void hz6_allocator_reset_descriptor_available(
   if (!descriptor) {
     return;
   }
+#if HZ6_ELASTIC_DESCRIPTOR_OVERFLOW_L1 && \
+    (HZ6_DESCRIPTOR_AVAIL_COUNT_L1 || HZ6_DIAGNOSTIC_PROBES)
+  int is_depot_descriptor = hz6_allocator_descriptor_is_depot(descriptor);
+#endif
 #if HZ6_DIAGNOSTIC_PROBES
   int had_ptr = descriptor->ptr != NULL;
 #endif
@@ -141,11 +145,19 @@ void hz6_allocator_reset_descriptor_available(
 
 #if HZ6_DESCRIPTOR_AVAIL_COUNT_L1
   if (!was_available && allocator &&
+#if HZ6_ELASTIC_DESCRIPTOR_OVERFLOW_L1
+      !is_depot_descriptor &&
+#endif
       allocator->descriptor_available_count < HZ6_OBJECT_DESCRIPTOR_CAPACITY) {
     ++allocator->descriptor_available_count;
   }
 #endif
 #if HZ6_DIAGNOSTIC_PROBES
+#if HZ6_ELASTIC_DESCRIPTOR_OVERFLOW_L1
+  if (had_ptr && allocator && is_depot_descriptor) {
+    ++allocator->stats.elastic_descriptor_overflow_reset;
+  }
+#endif
   if (had_ptr && allocator &&
       allocator->diagnostic_descriptor_live_current != 0) {
     --allocator->diagnostic_descriptor_live_current;

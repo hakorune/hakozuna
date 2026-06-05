@@ -674,6 +674,12 @@ int main(int argc, char** argv) {
             tds[t].hz6_stats_after.elastic_route_overflow_lookup;
         hz6_stats.elastic_route_overflow_hit +=
             tds[t].hz6_stats_after.elastic_route_overflow_hit;
+        hz6_stats.elastic_descriptor_overflow_alloc +=
+            tds[t].hz6_stats_after.elastic_descriptor_overflow_alloc;
+        hz6_stats.elastic_descriptor_overflow_reset +=
+            tds[t].hz6_stats_after.elastic_descriptor_overflow_reset;
+        hz6_stats.elastic_descriptor_overflow_exhausted +=
+            tds[t].hz6_stats_after.elastic_descriptor_overflow_exhausted;
         hz6_stats.source_owned_prepare +=
             tds[t].hz6_stats_after.source_owned_prepare;
         hz6_stats.source_owned_route_hit_local_owner +=
@@ -1327,6 +1333,9 @@ int main(int argc, char** argv) {
            "elastic_route_overflow_register_fail=%zu "
            "elastic_route_overflow_lookup=%zu "
            "elastic_route_overflow_hit=%zu "
+           "elastic_descriptor_overflow_alloc=%zu "
+           "elastic_descriptor_overflow_reset=%zu "
+           "elastic_descriptor_overflow_exhausted=%zu "
            "source_owned_prepare=%zu "
            "source_owned_route_hit_local_owner=%zu "
            "source_owned_visibility_hit_local_owner=%zu "
@@ -1452,6 +1461,9 @@ int main(int argc, char** argv) {
            hz6_stats.elastic_route_overflow_register_fail,
            hz6_stats.elastic_route_overflow_lookup,
            hz6_stats.elastic_route_overflow_hit,
+           hz6_stats.elastic_descriptor_overflow_alloc,
+           hz6_stats.elastic_descriptor_overflow_reset,
+           hz6_stats.elastic_descriptor_overflow_exhausted,
            hz6_stats.source_owned_prepare,
            hz6_stats.source_owned_route_hit_local_owner,
            hz6_stats.source_owned_visibility_hit_local_owner,
@@ -1675,6 +1687,8 @@ int main(int argc, char** argv) {
                "transfer_current=%zu "
                "transfer_current_max=%zu "
                "descriptor_exhausted=%zu "
+               "elastic_descriptor_overflow_alloc=%zu "
+               "elastic_descriptor_overflow_exhausted=%zu "
                "route_register_fail=%zu "
                "source_block_exhausted=%zu "
                "alloc_fail=%zu\n",
@@ -1690,6 +1704,8 @@ int main(int argc, char** argv) {
                hz6_main_warmup_stats.transfer_current,
                hz6_main_warmup_stats.transfer_current_max,
                hz6_main_warmup_stats.descriptor_exhausted,
+               hz6_main_warmup_stats.elastic_descriptor_overflow_alloc,
+               hz6_main_warmup_stats.elastic_descriptor_overflow_exhausted,
                hz6_main_warmup_stats.route_register_fail,
                hz6_main_warmup_stats.source_block_exhausted,
                hz6_main_warmup_stats.alloc_fail);

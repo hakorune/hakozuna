@@ -145,6 +145,42 @@ read:
   unified ElasticCapacity design rather than the final shape.
 ```
 
+ElasticDescriptorRouteOverflow-L1:
+
+```text
+lane:
+  ownerlocalityfast-rsscap-2-elasticdescroute-desc16k-front4k-thindesc-
+  nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-
+  ownersourcel2-frontcachepacked-sourceblockpacked-source10k-route16k-run512
+
+shape:
+  descriptor local cap = 16k
+  route local cap      = 16k
+  shared descriptor depot
+  shared exact route overflow
+  shared SourceBlock invalid-envelope overflow
+  source/frontcache remain source10k-control sized
+
+full10k run-1:
+  33.184M ops/s
+  246,824 KB peak RSS
+  main-warmup descriptor depot alloc = 143,664
+  safety clean:
+    route_invalid=0
+    route_miss=0
+    route_register_fail=0
+    descriptor_exhausted=0
+    source_block_exhausted=0
+    alloc_fail=0
+
+read:
+  Descriptor overflow works and gives a major RSS reduction. The speed drop
+  shows that depot descriptors need a first-class storage/locality contract;
+  descriptor storage lookup currently misses for many depot descriptors and
+  falls back to expensive scans. Keep this as mechanism evidence, not the
+  promoted lane.
+```
+
 ## Design Target
 
 ElasticCapacity-L1 should reduce replicated per-worker static metadata while
@@ -228,11 +264,55 @@ Recommended L1 order:
      overflow_total_bytes
 
 3. Implement one metadata class only after the unified contract is clear.
-   Prefer route or descriptor first, because MainWarmupCapacity shows they
-   spike higher than source blocks.
+   Route overflow is now implemented as ElasticRouteOverflow-L1 and kept as a
+   component/control. The next metadata class should be descriptor overflow,
+   because descriptor warmup pressure is the largest remaining static table
+   contributor. Source-block overflow should follow after descriptor ownership
+   is safe.
 
 4. Add source-block overflow only as part of the same contract, not as an
    isolated fix.
+```
+
+## Next Implementation Order
+
+```text
+1. DescriptorOverflow-L0 compatibility audit:
+   Verify whether descriptors can live outside the allocator-local descriptor
+   array without breaking owner16 side metadata, owner-source side metadata,
+   route generation, or descriptor storage lookup.
+
+2. DescriptorOverflow-L1 narrow behavior:
+   local descriptor cap remains small
+   overflow descriptors live in a shared descriptor depot
+   descriptor ownership side metadata has a depot-compatible storage path
+   route exact/envelope overflow remains enabled
+
+   Current status:
+     implemented as ElasticDescriptorRouteOverflow-L1
+     RSS win is strong, speed is no-go/control due to descriptor storage
+     lookup pressure.
+
+3. SourceBlockOverflow-L1:
+   only after descriptor overflow is safe
+   source block metadata can live in a shared depot
+   invalid envelope registration and unregister must mirror route overflow
+
+4. Unified ElasticCapacity-L1:
+   descriptor + route + source overflow in one lane
+   full10k target: keep route-overflow RSS class while recovering source10k
+   throughput
+```
+
+Descriptor overflow caution:
+
+```text
+The current owner16 side metadata indexes `descriptor_side_owner16` by
+descriptor pointer within an allocator-local descriptor array. A descriptor
+from a global/depot array will not have a valid local index unless the owner
+side metadata path is made depot-aware. Therefore descriptor overflow must not
+simply return a pointer to an unrelated global descriptor array without a
+matching storage-owner contract.
 ```
 
 ## Acceptance
