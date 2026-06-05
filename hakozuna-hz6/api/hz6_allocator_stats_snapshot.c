@@ -106,6 +106,10 @@ static void hz6_stats_snapshot_memory_attribution(
 #endif
   snapshot->memory_source_block_table_bytes =
       sizeof(allocator->source_blocks);
+#if HZ6_ELASTIC_SOURCE_BLOCK_OVERFLOW_L1
+  snapshot->memory_source_block_depot_bytes =
+      sizeof(Hz6SourceBlock) * HZ6_ELASTIC_SOURCE_BLOCK_DEPOT_CAPACITY;
+#endif
   snapshot->memory_frontcache_table_bytes =
       sizeof(allocator->frontcache_entries) +
       sizeof(allocator->frontcache_bins);
@@ -185,6 +189,7 @@ static void hz6_stats_snapshot_memory_attribution(
       snapshot->memory_descriptor_table_bytes +
       snapshot->memory_route_table_bytes +
       snapshot->memory_source_block_table_bytes +
+      snapshot->memory_source_block_depot_bytes +
       snapshot->memory_frontcache_table_bytes +
       snapshot->memory_transfer_table_bytes +
       snapshot->memory_ownerlocality_index_bytes;

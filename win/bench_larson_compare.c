@@ -680,6 +680,12 @@ int main(int argc, char** argv) {
             tds[t].hz6_stats_after.elastic_descriptor_overflow_reset;
         hz6_stats.elastic_descriptor_overflow_exhausted +=
             tds[t].hz6_stats_after.elastic_descriptor_overflow_exhausted;
+        hz6_stats.elastic_source_block_overflow_alloc +=
+            tds[t].hz6_stats_after.elastic_source_block_overflow_alloc;
+        hz6_stats.elastic_source_block_overflow_release +=
+            tds[t].hz6_stats_after.elastic_source_block_overflow_release;
+        hz6_stats.elastic_source_block_overflow_exhausted +=
+            tds[t].hz6_stats_after.elastic_source_block_overflow_exhausted;
         hz6_stats.source_owned_prepare +=
             tds[t].hz6_stats_after.source_owned_prepare;
         hz6_stats.source_owned_route_hit_local_owner +=
@@ -850,6 +856,11 @@ int main(int argc, char** argv) {
             tds[t].hz6_stats_after.memory_route_table_bytes;
         hz6_stats.memory_source_block_table_bytes +=
             tds[t].hz6_stats_after.memory_source_block_table_bytes;
+        if (tds[t].hz6_stats_after.memory_source_block_depot_bytes >
+            hz6_stats.memory_source_block_depot_bytes) {
+            hz6_stats.memory_source_block_depot_bytes =
+                tds[t].hz6_stats_after.memory_source_block_depot_bytes;
+        }
         hz6_stats.memory_frontcache_table_bytes +=
             tds[t].hz6_stats_after.memory_frontcache_table_bytes;
         hz6_stats.memory_transfer_table_bytes +=
@@ -1067,6 +1078,7 @@ int main(int argc, char** argv) {
         hz6_stats.memory_descriptor_table_bytes +
         hz6_stats.memory_route_table_bytes +
         hz6_stats.memory_source_block_table_bytes +
+        hz6_stats.memory_source_block_depot_bytes +
         hz6_stats.memory_frontcache_table_bytes +
         hz6_stats.memory_transfer_table_bytes +
         hz6_stats.memory_ownerlocality_index_bytes;
@@ -1336,6 +1348,9 @@ int main(int argc, char** argv) {
            "elastic_descriptor_overflow_alloc=%zu "
            "elastic_descriptor_overflow_reset=%zu "
            "elastic_descriptor_overflow_exhausted=%zu "
+           "elastic_source_block_overflow_alloc=%zu "
+           "elastic_source_block_overflow_release=%zu "
+           "elastic_source_block_overflow_exhausted=%zu "
            "source_owned_prepare=%zu "
            "source_owned_route_hit_local_owner=%zu "
            "source_owned_visibility_hit_local_owner=%zu "
@@ -1464,6 +1479,9 @@ int main(int argc, char** argv) {
            hz6_stats.elastic_descriptor_overflow_alloc,
            hz6_stats.elastic_descriptor_overflow_reset,
            hz6_stats.elastic_descriptor_overflow_exhausted,
+           hz6_stats.elastic_source_block_overflow_alloc,
+           hz6_stats.elastic_source_block_overflow_release,
+           hz6_stats.elastic_source_block_overflow_exhausted,
            hz6_stats.source_owned_prepare,
            hz6_stats.source_owned_route_hit_local_owner,
            hz6_stats.source_owned_visibility_hit_local_owner,
@@ -1521,6 +1539,7 @@ int main(int argc, char** argv) {
            "descriptor_table_bytes=%zu "
            "route_table_bytes=%zu "
            "source_block_table_bytes=%zu "
+           "source_block_depot_bytes=%zu "
            "frontcache_table_bytes=%zu "
            "transfer_table_bytes=%zu "
            "ownerlocality_index_bytes=%zu "
@@ -1547,6 +1566,7 @@ int main(int argc, char** argv) {
            hz6_stats.memory_descriptor_table_bytes,
            hz6_stats.memory_route_table_bytes,
            hz6_stats.memory_source_block_table_bytes,
+           hz6_stats.memory_source_block_depot_bytes,
            hz6_stats.memory_frontcache_table_bytes,
            hz6_stats.memory_transfer_table_bytes,
            hz6_stats.memory_ownerlocality_index_bytes,
@@ -1578,6 +1598,7 @@ int main(int argc, char** argv) {
            "shared_route_directory_bytes=%zu "
            "owner_locality_index_bytes=%zu "
            "source_block_table_bytes=%zu "
+           "source_block_depot_bytes=%zu "
            "frontcache_table_bytes=%zu "
            "transfer_table_bytes=%zu "
            "source_block_payload_bytes=%zu "
@@ -1595,6 +1616,7 @@ int main(int argc, char** argv) {
            hz6_stats.memory_shared_route_directory_bytes,
            hz6_stats.memory_owner_locality_index_bytes,
            hz6_stats.memory_source_block_table_bytes,
+           hz6_stats.memory_source_block_depot_bytes,
            hz6_stats.memory_frontcache_table_bytes,
            hz6_stats.memory_transfer_table_bytes,
            hz6_stats.memory_source_block_payload_bytes,
@@ -1689,6 +1711,9 @@ int main(int argc, char** argv) {
                "descriptor_exhausted=%zu "
                "elastic_descriptor_overflow_alloc=%zu "
                "elastic_descriptor_overflow_exhausted=%zu "
+               "elastic_source_block_overflow_alloc=%zu "
+               "elastic_source_block_overflow_release=%zu "
+               "elastic_source_block_overflow_exhausted=%zu "
                "route_register_fail=%zu "
                "source_block_exhausted=%zu "
                "alloc_fail=%zu\n",
@@ -1706,6 +1731,9 @@ int main(int argc, char** argv) {
                hz6_main_warmup_stats.descriptor_exhausted,
                hz6_main_warmup_stats.elastic_descriptor_overflow_alloc,
                hz6_main_warmup_stats.elastic_descriptor_overflow_exhausted,
+               hz6_main_warmup_stats.elastic_source_block_overflow_alloc,
+               hz6_main_warmup_stats.elastic_source_block_overflow_release,
+               hz6_main_warmup_stats.elastic_source_block_overflow_exhausted,
                hz6_main_warmup_stats.route_register_fail,
                hz6_main_warmup_stats.source_block_exhausted,
                hz6_main_warmup_stats.alloc_fail);

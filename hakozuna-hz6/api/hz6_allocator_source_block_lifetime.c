@@ -37,6 +37,9 @@ int hz6_allocator_release_source_block(Hz6Allocator* allocator,
   int released = block->source_release
                      ? block->source_release(block->ptr, block->bytes)
                      : hz6_source_system_release(block->ptr, block->bytes);
+  if (hz6_allocator_source_block_is_elastic_depot(block)) {
+    ++allocator->stats.elastic_source_block_overflow_release;
+  }
   block->ptr = NULL;
   block->bytes = 0;
   hz6_source_block_set_source_kind(block, HZ6_SOURCE_NONE);

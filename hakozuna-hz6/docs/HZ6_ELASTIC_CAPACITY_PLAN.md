@@ -269,6 +269,16 @@ caution:
   descriptor depot and route overflow. Before promotion, the source depot needs
   explicit depot accounting and an owner-safe drain/localize contract so depot
   blocks do not remain merely as a shared static escape hatch.
+
+depot accounting follow-up:
+  SourceBlock depot counters are now exposed as
+    elastic_source_block_overflow_alloc
+    elastic_source_block_overflow_release
+    elastic_source_block_overflow_exhausted
+  and RSS attribution reports source_block_depot_bytes separately. Smoke shows
+  the counters on main-warmup pressure rows and adds the shared depot cost
+  (`2,097,152` bytes for the current 16k SourceBlock depot) to static table
+  accounting.
 ```
 
 ## Design Target

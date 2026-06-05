@@ -107,6 +107,9 @@ typedef struct Hz6StatsSnapshot {
   size_t elastic_descriptor_overflow_alloc;
   size_t elastic_descriptor_overflow_reset;
   size_t elastic_descriptor_overflow_exhausted;
+  size_t elastic_source_block_overflow_alloc;
+  size_t elastic_source_block_overflow_release;
+  size_t elastic_source_block_overflow_exhausted;
   size_t source_owned_prepare;
   size_t source_owned_route_hit_local_owner;
   size_t source_owned_visibility_hit_local_owner;
@@ -293,6 +296,7 @@ typedef struct Hz6StatsSnapshot {
   size_t memory_descriptor_table_bytes;
   size_t memory_route_table_bytes;
   size_t memory_source_block_table_bytes;
+  size_t memory_source_block_depot_bytes;
   size_t memory_frontcache_table_bytes;
   size_t memory_transfer_table_bytes;
   size_t memory_ownerlocality_index_bytes;

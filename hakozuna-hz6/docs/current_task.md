@@ -400,6 +400,37 @@ Decision:
   current best RSS/throughput balance.
 ```
 
+Immediate read after SourceBlock depot accounting:
+
+```text
+Implementation:
+  Added slow-path SourceBlock depot counters:
+    elastic_source_block_overflow_alloc
+    elastic_source_block_overflow_release
+    elastic_source_block_overflow_exhausted
+
+  Added RSS attribution:
+    source_block_depot_bytes
+
+Smoke source:
+  docs/benchmarks/windows/paper/
+    hz6_elastic_source_block_depot_accounting_smoke/
+    20260605_151806_hz6_capacity_matrix_windows.md
+
+Read:
+  The counters are visible in both [HZ6_STATS] and
+  [HZ6_MAIN_WARMUP_CAPACITY]. Main-warmup pressure rows show SourceBlock depot
+  allocation directly, while source_block_exhausted remains zero. RSS
+  attribution now includes the shared depot static cost separately from the
+  per-worker local source_block_table_bytes.
+
+Decision:
+  KEEP as observability cleanup for ElasticDescriptorSourceRouteOverflow-L1.
+  This is not a behavior change and does not make the source-depot lane a
+  promotion candidate by itself. Next promotion question remains
+  drain/localize and owner-safe depot lifecycle.
+```
+
 ### 2026-06-05: CapacityUtil-L1 diagnostic
 
 Goal:

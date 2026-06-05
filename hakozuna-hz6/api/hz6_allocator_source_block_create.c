@@ -25,6 +25,22 @@ static Hz6SourceBlock* hz6_allocator_find_source_block_depot_slot(void) {
   }
   return NULL;
 }
+
+int hz6_allocator_source_block_is_elastic_depot(
+    const Hz6SourceBlock* block) {
+  const uintptr_t address = (uintptr_t)block;
+  const uintptr_t begin = (uintptr_t)&g_hz6_source_block_depot[0];
+  const uintptr_t end =
+      (uintptr_t)&g_hz6_source_block_depot
+          [HZ6_ELASTIC_SOURCE_BLOCK_DEPOT_CAPACITY];
+  return address >= begin && address < end;
+}
+#else
+int hz6_allocator_source_block_is_elastic_depot(
+    const Hz6SourceBlock* block) {
+  (void)block;
+  return 0;
+}
 #endif
 
 static void hz6_source_run_reset(Hz6SourceBlock* block) {
@@ -380,10 +396,16 @@ Hz6SourceBlock* hz6_allocator_create_source_block(
   if (!block) {
 #if HZ6_ELASTIC_SOURCE_BLOCK_OVERFLOW_L1
     block = hz6_allocator_find_source_block_depot_slot();
+    if (block) {
+      ++allocator->stats.elastic_source_block_overflow_alloc;
+    }
 #endif
   }
   if (!block) {
     ++allocator->stats.source_block_exhausted;
+#if HZ6_ELASTIC_SOURCE_BLOCK_OVERFLOW_L1
+    ++allocator->stats.elastic_source_block_overflow_exhausted;
+#endif
 #if HZ6_DIAGNOSTIC_PROBES
     hz6_allocator_record_source_block_failure_state(allocator);
 #endif
