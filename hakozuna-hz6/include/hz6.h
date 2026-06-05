@@ -185,6 +185,11 @@ typedef struct Hz6StatsSnapshot {
   size_t flc_owner_predicate_source_block_shared;
   size_t flc_owner_predicate_source_run_active;
   size_t flc_owner_predicate_source_release;
+  size_t depot_owner_equal_fastpath_probe;
+  size_t depot_owner_equal_fastpath_hit;
+  size_t depot_owner_equal_fastpath_miss;
+  size_t depot_owner_equal_fastpath_fallback;
+  size_t depot_owner_equal_fastpath_other_site;
   size_t source_owned_prepare;
   size_t source_owned_route_hit_local_owner;
   size_t source_owned_visibility_hit_local_owner;

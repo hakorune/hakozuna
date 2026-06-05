@@ -856,6 +856,16 @@ int main(int argc, char** argv) {
             tds[t].hz6_stats_after.flc_owner_predicate_source_run_active;
         hz6_stats.flc_owner_predicate_source_release +=
             tds[t].hz6_stats_after.flc_owner_predicate_source_release;
+        hz6_stats.depot_owner_equal_fastpath_probe +=
+            tds[t].hz6_stats_after.depot_owner_equal_fastpath_probe;
+        hz6_stats.depot_owner_equal_fastpath_hit +=
+            tds[t].hz6_stats_after.depot_owner_equal_fastpath_hit;
+        hz6_stats.depot_owner_equal_fastpath_miss +=
+            tds[t].hz6_stats_after.depot_owner_equal_fastpath_miss;
+        hz6_stats.depot_owner_equal_fastpath_fallback +=
+            tds[t].hz6_stats_after.depot_owner_equal_fastpath_fallback;
+        hz6_stats.depot_owner_equal_fastpath_other_site +=
+            tds[t].hz6_stats_after.depot_owner_equal_fastpath_other_site;
         hz6_stats.source_owned_prepare +=
             tds[t].hz6_stats_after.source_owned_prepare;
         hz6_stats.source_owned_route_hit_local_owner +=
@@ -1596,6 +1606,11 @@ int main(int argc, char** argv) {
            "flc_owner_predicate_source_block_shared=%zu "
            "flc_owner_predicate_source_run_active=%zu "
            "flc_owner_predicate_source_release=%zu "
+           "depot_owner_equal_fastpath_probe=%zu "
+           "depot_owner_equal_fastpath_hit=%zu "
+           "depot_owner_equal_fastpath_miss=%zu "
+           "depot_owner_equal_fastpath_fallback=%zu "
+           "depot_owner_equal_fastpath_other_site=%zu "
            "source_owned_prepare=%zu "
            "source_owned_route_hit_local_owner=%zu "
            "source_owned_visibility_hit_local_owner=%zu "
@@ -1802,6 +1817,11 @@ int main(int argc, char** argv) {
            hz6_stats.flc_owner_predicate_source_block_shared,
            hz6_stats.flc_owner_predicate_source_run_active,
            hz6_stats.flc_owner_predicate_source_release,
+           hz6_stats.depot_owner_equal_fastpath_probe,
+           hz6_stats.depot_owner_equal_fastpath_hit,
+           hz6_stats.depot_owner_equal_fastpath_miss,
+           hz6_stats.depot_owner_equal_fastpath_fallback,
+           hz6_stats.depot_owner_equal_fastpath_other_site,
            hz6_stats.source_owned_prepare,
            hz6_stats.source_owned_route_hit_local_owner,
            hz6_stats.source_owned_visibility_hit_local_owner,

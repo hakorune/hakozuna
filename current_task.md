@@ -127,6 +127,35 @@ Latest HZ6 selected-family decision:
       descriptors / non-depot descriptors.  Do not use source_run_active as the
       gate in this lane; it is zero here.
 
+  2026-06-05 DepotDescriptorOwnerEqualFastPath-L1:
+    implementation:
+      Add HZ6_DEPOT_DESCRIPTOR_OWNER_EQUAL_FASTPATH_L1.
+      In owner_equal_at(), only for FREE/LOCAL_CACHE sites and depot
+      descriptors, compare the depot owner directly before the normal owner
+      path.  Non-depot descriptors and other sites fall back unchanged.
+
+    full10k non-diagnostic:
+      40.531M / 227708 KB
+      safety clean
+
+    full10k diagnostic:
+      41.221M / 227744 KB
+      depot_owner_equal_fastpath_probe=824802008
+      depot_owner_equal_fastpath_hit=696139014
+      depot_owner_equal_fastpath_miss=71811
+      depot_owner_equal_fastpath_fallback=128591183
+      depot_owner_equal_fastpath_other_site=0
+      safety clean
+
+    read:
+      Safety is clean and the predicate hits heavily, but speed is no-go versus
+      DepotOwnerDirectFastPath-L1 (`46.273M / 224612 KB`).  The existing
+      descriptor_owner() depot-direct path already avoids the expensive L2
+      owner lookup; adding an earlier free/local-cache branch costs more than
+      it saves.  Keep as no-go/control.  Do not add another owner_equal
+      short-circuit unless it removes a different expensive operation, not just
+      reorders the same depot-owner read.
+
   do not:
     use diagnostic-only lanes in speed-ranking tables
     revive whole-SourceBlock localize

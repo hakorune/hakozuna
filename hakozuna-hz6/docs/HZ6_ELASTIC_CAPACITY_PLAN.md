@@ -539,6 +539,53 @@ read:
   source-depot shape.
 ```
 
+DepotDescriptorOwnerEqualFastPath-L1 result:
+
+```text
+lane:
+  ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-
+  depotownerequal-desc16k-front4k-thindesc-nobackptr-noroutebackptr-
+  dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-
+  frontcachepacked-sourceblockpacked-source64-route16k-run512
+
+mode:
+  behavior no-go/control
+  only FREE/LOCAL_CACHE sites
+  only depot descriptors
+  non-depot and other sites fall back to the existing owner path
+
+full10k non-diagnostic:
+  40.531M ops/s
+  227,708 KB peak RSS
+  safety clean
+
+full10k diagnostic:
+  41.221M ops/s
+  227,744 KB peak RSS
+  depot_owner_equal_fastpath_probe=824,802,008
+  depot_owner_equal_fastpath_hit=696,139,014
+  depot_owner_equal_fastpath_miss=71,811
+  depot_owner_equal_fastpath_fallback=128,591,183
+  depot_owner_equal_fastpath_other_site=0
+  safety clean:
+    route_invalid=0
+    route_miss=0
+    route_register_fail=0
+    descriptor_exhausted=0
+    source_block_exhausted=0
+    alloc_fail=0
+    remote_free_transfer_fail=0
+
+read:
+  The shortcut is safe and the hit volume is real, but it is slower than
+  DepotOwnerDirectFastPath-L1 (`46.273M / 224,612 KB`).  The existing
+  descriptor_owner() depot-direct path already performs the same owner read
+  before the L2 storage path; this lane only adds an earlier branch/predicate
+  in the hot free/local-cache owner-equality path.  Do not promote.  Future
+  owner-path work must remove a different expensive operation, not just move
+  the depot owner read earlier.
+```
+
 ## What The Diagnostics Proved
 
 ElasticProjection-L1:

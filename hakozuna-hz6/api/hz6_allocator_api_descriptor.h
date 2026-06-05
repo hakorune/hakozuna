@@ -344,6 +344,70 @@ static inline void hz6_allocator_note_free_local_cache_owner_predicate(
 #endif
 }
 
+static inline int hz6_allocator_depot_descriptor_owner_equal_fastpath(
+    const Hz6Allocator* allocator,
+    const Hz6ObjectDescriptor* descriptor,
+    Hz6OwnerToken owner,
+    Hz6OwnerEqualSite site,
+    int* answered) {
+#if HZ6_DEPOT_DESCRIPTOR_OWNER_EQUAL_FASTPATH_L1 && \
+    HZ6_ELASTIC_DESCRIPTOR_OVERFLOW_L1
+  Hz6Allocator* mutable_allocator = (Hz6Allocator*)allocator;
+#if !HZ6_DIAGNOSTIC_PROBES
+  (void)mutable_allocator;
+#endif
+  if (answered) {
+    *answered = 0;
+  }
+  if (site != HZ6_OWNER_EQUAL_SITE_FREE &&
+      site != HZ6_OWNER_EQUAL_SITE_LOCAL_CACHE) {
+#if HZ6_DIAGNOSTIC_PROBES
+    if (mutable_allocator) {
+      ++mutable_allocator->stats.depot_owner_equal_fastpath_other_site;
+    }
+#endif
+    return 0;
+  }
+#if HZ6_DIAGNOSTIC_PROBES
+  if (mutable_allocator) {
+    ++mutable_allocator->stats.depot_owner_equal_fastpath_probe;
+  }
+#endif
+  if (!hz6_allocator_descriptor_is_depot(descriptor)) {
+#if HZ6_DIAGNOSTIC_PROBES
+    if (mutable_allocator) {
+      ++mutable_allocator->stats.depot_owner_equal_fastpath_fallback;
+    }
+#endif
+    return 0;
+  }
+  if (answered) {
+    *answered = 1;
+  }
+  int equal =
+      hz6_owner_equal(hz6_allocator_descriptor_depot_owner(descriptor), owner);
+#if HZ6_DIAGNOSTIC_PROBES
+  if (mutable_allocator) {
+    if (equal) {
+      ++mutable_allocator->stats.depot_owner_equal_fastpath_hit;
+    } else {
+      ++mutable_allocator->stats.depot_owner_equal_fastpath_miss;
+    }
+  }
+#endif
+  return equal;
+#else
+  (void)allocator;
+  (void)descriptor;
+  (void)owner;
+  (void)site;
+  if (answered) {
+    *answered = 0;
+  }
+  return 0;
+#endif
+}
+
 static inline int hz6_allocator_descriptor_owner_equal_at(
     const Hz6Allocator* allocator,
     const Hz6ObjectDescriptor* descriptor,
@@ -352,6 +416,12 @@ static inline int hz6_allocator_descriptor_owner_equal_at(
   hz6_allocator_note_owner_equal_site(allocator, site);
   hz6_allocator_note_free_local_cache_owner_predicate(
       allocator, descriptor, site);
+  int depot_owner_equal_answered = 0;
+  int depot_owner_equal = hz6_allocator_depot_descriptor_owner_equal_fastpath(
+      allocator, descriptor, owner, site, &depot_owner_equal_answered);
+  if (depot_owner_equal_answered) {
+    return depot_owner_equal;
+  }
 #if HZ6_ELASTIC_SLOT_OWNER_LOGICAL_FASTPATH_L1
   if (hz6_allocator_elastic_slot_owner_logical_owner_match(
           (Hz6Allocator*)allocator, descriptor, owner)) {

@@ -42,6 +42,7 @@ cross-owner contract.
 | Slot owner logical fast path | `speed + ...elasticdescsource-route-slotownerlogical-...source64-route16k-run4096` | 38.494M | 239,484 | safety-clean behavior no-go/control; broad sparse probing is too expensive |
 | Owner-equal callsite dry-run | `speed + diagnostic + ...elasticdescsource-route-depotownerdirect-ownerequalcallsite-dryrun-...source64-route16k-run512` | 42.434M | 224,612 | diagnostic-only; owner_equal pressure is free/local-cache dominated |
 | Free/local owner predicate dry-run | `speed + diagnostic + ...elasticdescsource-route-depotownerdirect-freelocalownerpredicate-dryrun-...source64-route16k-run512` | 41.049M | 224,628 | diagnostic-only; free/local-cache owner_equal pressure is mostly depot/source-block backed |
+| Depot descriptor owner-equal fast path | `speed + ...elasticdescsource-route-depotownerdirect-depotownerequal-...source64-route16k-run512` | 40.531M | 227,708 | safety-clean behavior no-go/control; earlier depot-owner branch is slower than depotownerdirect |
 
 Source:
 - `docs/benchmarks/windows/paper/hz6_selected_family/selected-family-desc17-refresh/`
@@ -74,6 +75,8 @@ Source:
 - `docs/benchmarks/windows/paper/hz6_slot_owner_consumer_dryrun_full10k/`
 - `docs/benchmarks/windows/paper/hz6_owner_equal_callsite_dryrun_full10k/`
 - `docs/benchmarks/windows/paper/hz6_flc_owner_predicate_dryrun_full10k/`
+- `docs/benchmarks/windows/paper/hz6_depot_owner_equal_fastpath_full10k/`
+- `docs/benchmarks/windows/paper/hz6_depot_owner_equal_fastpath_diag_full10k/`
 
 ## Evidence Rows
 
@@ -222,13 +225,22 @@ pressure/no-go/diagnostic lanes into those tables.
        source_block=821934976
        source_run_active=0
 
-4. Next behavior:
-   DepotDescriptorOwnerEqualFastPath-L1.
-   Only short-circuit owner equality for depot descriptors in the
-   free/local-cache owner_equal path.  Keep non-depot descriptors and
-   source_run_active==0 cases on the normal path.
+4. DepotDescriptorOwnerEqualFastPath-L1 was tested:
+   non-diagnostic full10k:
+     40.531M / 227708 KB
+   diagnostic full10k:
+     probe=824802008
+     hit=696139014
+     fallback=128591183
 
-5. If DepotDescriptorOwnerEqualFastPath-L1 is no-go:
-   close the slot-owner logical fast-path family as evidence and return to
-   unified depot accounting / owner-safe drain-localize design.
+   Result:
+     safety-clean no-go/control.
+     It is slower than DepotOwnerDirectFastPath-L1 because descriptor_owner()
+     already performs the depot-direct owner read before the L2 path.
+
+5. Next:
+   close the slot-owner logical / depot-owner-equal shortcut family as
+   evidence for now.  Return to unified depot accounting / owner-safe
+   drain-localize design, or look for a different expensive operation that
+   DepotOwnerDirectFastPath-L1 does not already remove.
 ```
