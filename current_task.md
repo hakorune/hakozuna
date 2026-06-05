@@ -61,9 +61,10 @@ Latest HZ6 selected-family decision:
       false_positive=0
 
   next behavior candidate:
-    SlotOwnerLogicalOwnerFastPath-L1, only as a narrow behavior:
-      generation-checked sparse owner match may answer logical owner equality
-      miss/stale/mismatch falls back to existing descriptor-owner path
+    SlotOwnerLogicalOwnerFastPath-L1 was implemented and measured as a narrow
+    behavior.  It is safety-clean but speed no-go/control because sparse lookup
+    at every owner_equal entry costs more than the L2 lookup it removes.
+    Do not promote it without a narrower admission gate.
 
   do not:
     use diagnostic-only lanes in speed-ranking tables
@@ -502,6 +503,78 @@ Latest HZ6 selected-family decision:
     experiment: SlotOwnerLogicalOwnerFastPath-L1, where a generation-checked
     sparse hit may answer logical owner equality and miss/stale/mismatch falls
     back to the existing descriptor owner path.
+
+2026-06-05 SlotOwnerLogicalOwnerFastPath-L1:
+  implementation:
+    Add HZ6_ELASTIC_SLOT_OWNER_LOGICAL_FASTPATH_L1.
+    The sparse slot-owner table is updated outside diagnostic builds when this
+    behavior is enabled, but sparse-table counters remain diagnostic-only.
+    The fast path answers only a positive logical owner match:
+      source-run slot match
+      block pointer match
+      descriptor generation match
+      owner16 match
+    Any miss, stale generation, or owner mismatch falls back to the existing
+    descriptor owner path.  It never uses sparse metadata as a storage-owner
+    override and never proves negative equality.
+
+  lane:
+    ownerlocalityfast-rsscap-2-elasticdescsource-route-slotownerlogical-
+    desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-
+    routebytes16-storageowner16-ownersourcel2-frontcachepacked-
+    sourceblockpacked-source64-route16k-run4096
+
+  smoke diagnostic:
+    docs/benchmarks/windows/paper/hz6_slot_owner_logical_smoke/
+      20260605_183652_hz6_capacity_matrix_windows.md
+    main1k:
+      56.183M / 117616 KB
+      logical_probe=89176100
+      logical_hit=89161126
+      logical_miss=14974
+      stale_generation=0
+      owner_mismatch=0
+      fallback=14974
+      owner_source_side_meta_l2_lookup=53848038
+      safety clean
+
+  full10k non-diagnostic:
+    docs/benchmarks/windows/paper/hz6_slot_owner_logical_full10k/
+      20260605_183723_hz6_capacity_matrix_windows.md
+    main10k:
+      38.494M / 239484 KB
+      safety clean:
+        route_invalid=0
+        route_miss=0
+        route_register_fail=0
+        descriptor_exhausted=0
+        source_block_exhausted=0
+        alloc_fail=0
+        remote_free_transfer_fail=0
+
+  full10k diagnostic:
+    docs/benchmarks/windows/paper/hz6_slot_owner_logical_diag_full10k/
+      20260605_183811_hz6_capacity_matrix_windows.md
+    main10k:
+      38.275M / 233568 KB
+      logical_probe=717941382
+      logical_hit=717746510
+      logical_miss=194872
+      stale_generation=0
+      owner_mismatch=0
+      fallback=194872
+      owner_source_side_meta_l2_lookup=366129578
+      safety clean
+
+  read:
+    KEEP as safety/contract evidence, but mark speed no-go/control.  The
+    logical match contract is safe in this slice and removes a large amount of
+    L2 owner-path work.  However, trying the sparse table at every
+    owner_equal() entry is too broad: non-diagnostic full10k falls to 38.494M,
+    below depotownerdirect repeat-3 at 46.273M.  Do not promote this as a
+    default or candidate-watch lane.  A future attempt would need a narrower
+    admission gate that avoids probing sparse metadata on cheap local/depot
+    owner checks.
 
 2026-06-05 next attack after combined packed Pro consult:
   Larson cross-owner RSS:

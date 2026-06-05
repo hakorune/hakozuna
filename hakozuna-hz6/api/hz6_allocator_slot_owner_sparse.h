@@ -17,6 +17,11 @@ void hz6_allocator_elastic_slot_owner_consumer_dryrun(
     Hz6OwnerToken expected_owner,
     int existing_equal);
 
+int hz6_allocator_elastic_slot_owner_logical_owner_match(
+    Hz6Allocator* allocator,
+    const Hz6ObjectDescriptor* descriptor,
+    Hz6OwnerToken expected_owner);
+
 #ifdef __cplusplus
 }
 #endif

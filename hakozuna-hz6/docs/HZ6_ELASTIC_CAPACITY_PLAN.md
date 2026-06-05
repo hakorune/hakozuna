@@ -381,6 +381,53 @@ read:
   miss/stale/mismatch must fall back to the existing descriptor owner path.
 ```
 
+SlotOwnerLogicalOwnerFastPath-L1 result:
+
+```text
+lane:
+  ownerlocalityfast-rsscap-2-elasticdescsource-route-slotownerlogical-
+  desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-
+  routebytes16-storageowner16-ownersourcel2-frontcachepacked-
+  sourceblockpacked-source64-route16k-run4096
+
+mode:
+  behavior no-go/control
+  positive logical-owner match only
+  no negative proof
+  no storage-owner override
+  miss/stale/mismatch falls back to the existing descriptor owner path
+
+full10k non-diagnostic run-1:
+  38.494M ops/s
+  239,484 KB peak RSS
+  safety clean:
+    route_invalid=0
+    route_miss=0
+    route_register_fail=0
+    descriptor_exhausted=0
+    source_block_exhausted=0
+    alloc_fail=0
+    remote_free_transfer_fail=0
+
+full10k diagnostic run-1:
+  38.275M ops/s
+  233,568 KB peak RSS
+  logical_probe=717,941,382
+  logical_hit=717,746,510
+  logical_miss=194,872
+  stale_generation=0
+  owner_mismatch=0
+  fallback=194,872
+  owner_source_side_meta_l2_lookup=366,129,578
+
+read:
+  Safety is good and the positive-match contract is valid, but the lane is a
+  speed no-go versus DepotOwnerDirectFastPath-L1 (`46.273M / 224,612 KB`).
+  The sparse probe is too broad when attempted at every owner_equal() entry.
+  Do not promote.  Future owner-path work needs an admission gate that avoids
+  sparse probing on cheap local/depot checks.
+```
+
 ## What The Diagnostics Proved
 
 ElasticProjection-L1:

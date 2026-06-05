@@ -157,6 +157,12 @@ typedef struct Hz6StatsSnapshot {
   size_t elastic_slot_owner_consumer_false_positive;
   size_t elastic_slot_owner_consumer_would_skip_l2;
   size_t elastic_slot_owner_consumer_fallback;
+  size_t elastic_slot_owner_logical_fastpath_probe;
+  size_t elastic_slot_owner_logical_fastpath_hit;
+  size_t elastic_slot_owner_logical_fastpath_miss;
+  size_t elastic_slot_owner_logical_fastpath_stale_generation;
+  size_t elastic_slot_owner_logical_fastpath_owner_mismatch;
+  size_t elastic_slot_owner_logical_fastpath_fallback;
   size_t source_owned_prepare;
   size_t source_owned_route_hit_local_owner;
   size_t source_owned_visibility_hit_local_owner;

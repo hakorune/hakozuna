@@ -2,7 +2,8 @@
 
 #include "hz6_allocator_api_descriptor.h"
 
-#if HZ6_DIAGNOSTIC_PROBES && HZ6_ELASTIC_SLOT_OWNER_SPARSE_META_L1
+#if HZ6_ELASTIC_SLOT_OWNER_SPARSE_META_L1 && \
+    (HZ6_DIAGNOSTIC_PROBES || HZ6_ELASTIC_SLOT_OWNER_LOGICAL_FASTPATH_L1)
 typedef struct Hz6ElasticSlotOwnerSparseEntry {
   const Hz6SourceBlock* block;
   const void* block_ptr;
@@ -60,7 +61,8 @@ static int hz6_elastic_slot_owner_sparse_slot_index(
 void hz6_allocator_elastic_slot_owner_sparse_note(
     Hz6Allocator* allocator,
     const Hz6ObjectDescriptor* descriptor) {
-#if HZ6_DIAGNOSTIC_PROBES && HZ6_ELASTIC_SLOT_OWNER_SPARSE_META_L1
+#if HZ6_ELASTIC_SLOT_OWNER_SPARSE_META_L1 && \
+    (HZ6_DIAGNOSTIC_PROBES || HZ6_ELASTIC_SLOT_OWNER_LOGICAL_FASTPATH_L1)
   if (!allocator || !descriptor || !descriptor->source_block ||
       HZ6_ELASTIC_SLOT_OWNER_SPARSE_CAPACITY == 0) {
     return;
@@ -71,7 +73,9 @@ void hz6_allocator_elastic_slot_owner_sparse_note(
     return;
   }
 
+#if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.elastic_slot_owner_sparse_lookup;
+#endif
   const uint32_t owner16 =
       hz6_descriptor_pack_owner16(allocator->owner.token);
   size_t start =
@@ -92,31 +96,120 @@ void hz6_allocator_elastic_slot_owner_sparse_note(
       entry->owner16 = owner16;
       entry->generation = descriptor->generation;
       entry->used = 1;
+#if HZ6_DIAGNOSTIC_PROBES
       ++allocator->stats.elastic_slot_owner_sparse_miss;
       ++allocator->stats.elastic_slot_owner_sparse_insert;
+#endif
       return;
     }
     if (entry->block == descriptor->source_block &&
         entry->block_ptr == descriptor->source_block->ptr &&
         entry->slot_index == slot_index) {
+#if HZ6_DIAGNOSTIC_PROBES
       ++allocator->stats.elastic_slot_owner_sparse_hit;
+#endif
       if (entry->owner16 == owner16 &&
           entry->generation == descriptor->generation) {
+#if HZ6_DIAGNOSTIC_PROBES
         ++allocator->stats.elastic_slot_owner_sparse_owner_match;
+#endif
       } else {
+#if HZ6_DIAGNOSTIC_PROBES
         ++allocator->stats.elastic_slot_owner_sparse_owner_mismatch;
+#endif
         entry->owner16 = owner16;
         entry->generation = descriptor->generation;
+#if HZ6_DIAGNOSTIC_PROBES
         ++allocator->stats.elastic_slot_owner_sparse_update;
+#endif
       }
       return;
     }
+#if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.elastic_slot_owner_sparse_collision;
+#endif
   }
+#if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.elastic_slot_owner_sparse_full;
+#endif
 #else
   (void)allocator;
   (void)descriptor;
+#endif
+}
+
+int hz6_allocator_elastic_slot_owner_logical_owner_match(
+    Hz6Allocator* allocator,
+    const Hz6ObjectDescriptor* descriptor,
+    Hz6OwnerToken expected_owner) {
+#if HZ6_ELASTIC_SLOT_OWNER_SPARSE_META_L1 && \
+    HZ6_ELASTIC_SLOT_OWNER_LOGICAL_FASTPATH_L1
+  if (!allocator || !descriptor || !descriptor->source_block ||
+      HZ6_ELASTIC_SLOT_OWNER_SPARSE_CAPACITY == 0) {
+    return 0;
+  }
+
+  uint16_t slot_index = 0;
+  if (!hz6_elastic_slot_owner_sparse_slot_index(descriptor, &slot_index)) {
+    return 0;
+  }
+
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.elastic_slot_owner_logical_fastpath_probe;
+#endif
+  const uint32_t expected16 = hz6_descriptor_pack_owner16(expected_owner);
+  size_t start =
+      hz6_elastic_slot_owner_sparse_hash(descriptor->source_block,
+                                         slot_index);
+  for (size_t probe = 0; probe < HZ6_ELASTIC_SLOT_OWNER_SPARSE_CAPACITY;
+       ++probe) {
+    size_t index = start + probe;
+    if (index >= HZ6_ELASTIC_SLOT_OWNER_SPARSE_CAPACITY) {
+      index -= HZ6_ELASTIC_SLOT_OWNER_SPARSE_CAPACITY;
+    }
+    const Hz6ElasticSlotOwnerSparseEntry* entry =
+        &g_hz6_elastic_slot_owner_sparse[index];
+    if (!entry->used) {
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.elastic_slot_owner_logical_fastpath_miss;
+      ++allocator->stats.elastic_slot_owner_logical_fastpath_fallback;
+#endif
+      return 0;
+    }
+    if (entry->block != descriptor->source_block ||
+        entry->block_ptr != descriptor->source_block->ptr ||
+        entry->slot_index != slot_index) {
+      continue;
+    }
+    if (entry->generation != descriptor->generation) {
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.elastic_slot_owner_logical_fastpath_stale_generation;
+      ++allocator->stats.elastic_slot_owner_logical_fastpath_fallback;
+#endif
+      return 0;
+    }
+    if (entry->owner16 == expected16) {
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.elastic_slot_owner_logical_fastpath_hit;
+#endif
+      return 1;
+    }
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.elastic_slot_owner_logical_fastpath_owner_mismatch;
+    ++allocator->stats.elastic_slot_owner_logical_fastpath_fallback;
+#endif
+    return 0;
+  }
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.elastic_slot_owner_logical_fastpath_miss;
+  ++allocator->stats.elastic_slot_owner_logical_fastpath_fallback;
+#endif
+  return 0;
+#else
+  (void)allocator;
+  (void)descriptor;
+  (void)expected_owner;
+  return 0;
 #endif
 }
 

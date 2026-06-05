@@ -45,6 +45,8 @@ future behavior:
   SlotOwnerLogicalOwnerFastPath-L1 may answer logical owner equality only for a
   generation-checked sparse owner match.
   miss / stale / mismatch must fall back to the existing descriptor-owner path.
+  The broad owner_equal() entry-point version is safety-clean but speed no-go;
+  do not retry it without a narrower admission gate.
 ```
 
 Do not move this table back into a front helper.  It is not a frontcache policy;

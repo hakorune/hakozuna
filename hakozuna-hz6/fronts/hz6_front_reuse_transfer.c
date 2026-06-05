@@ -175,9 +175,10 @@ void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
 #if HZ6_ELASTIC_SLOT_OWNER_LOCALITY_DRYRUN_L1
     hz6_front_note_slot_owner_locality_dryrun(allocator, descriptor);
 #endif
-#if HZ6_ELASTIC_SLOT_OWNER_SPARSE_META_L1
-    hz6_allocator_elastic_slot_owner_sparse_note(allocator, descriptor);
 #endif
+#if HZ6_ELASTIC_SLOT_OWNER_SPARSE_META_L1 && \
+    (HZ6_DIAGNOSTIC_PROBES || HZ6_ELASTIC_SLOT_OWNER_LOGICAL_FASTPATH_L1)
+    hz6_allocator_elastic_slot_owner_sparse_note(allocator, descriptor);
 #endif
     if (path) {
       *path = HZ6_ALLOC_PATH_TRANSFER_REUSE;

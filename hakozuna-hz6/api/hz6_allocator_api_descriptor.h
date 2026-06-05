@@ -237,6 +237,12 @@ static inline int hz6_allocator_descriptor_owner_equal(
     const Hz6Allocator* allocator,
     const Hz6ObjectDescriptor* descriptor,
     Hz6OwnerToken owner) {
+#if HZ6_ELASTIC_SLOT_OWNER_LOGICAL_FASTPATH_L1
+  if (hz6_allocator_elastic_slot_owner_logical_owner_match(
+          (Hz6Allocator*)allocator, descriptor, owner)) {
+    return 1;
+  }
+#endif
   int equal =
       hz6_owner_equal(hz6_allocator_descriptor_owner(allocator, descriptor),
                       owner);
