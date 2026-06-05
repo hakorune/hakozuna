@@ -114,6 +114,37 @@ read:
   this selected Larson row.
 ```
 
+ElasticRouteOverflow-L1:
+
+```text
+lane:
+  ownerlocalityfast-rsscap-2-elasticroute-desc160k-front4k-thindesc-
+  nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-
+  ownersourcel2-frontcachepacked-sourceblockpacked-source10k-route16k-run512
+
+shape:
+  route local cap = 16k
+  shared exact route overflow
+  shared SourceBlock invalid-envelope overflow
+  descriptor/source/frontcache remain source10k-control sized
+
+full10k run-1:
+  41.723M ops/s
+  335,132 KB peak RSS
+  safety clean:
+    route_invalid=0
+    route_miss=0
+    route_register_fail=0
+    alloc_fail=0
+
+read:
+  Shared route overflow is a viable safety mechanism and gives a large RSS
+  reduction. It is not the promotion lane because throughput is below the
+  selected source10k control. Route-only overflow also leaves descriptor and
+  source-block static capacity untouched, so it is a component/control for the
+  unified ElasticCapacity design rather than the final shape.
+```
+
 ## Design Target
 
 ElasticCapacity-L1 should reduce replicated per-worker static metadata while

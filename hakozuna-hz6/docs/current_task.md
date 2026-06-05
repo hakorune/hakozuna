@@ -57,7 +57,23 @@ Immediate action queue:
           transfer overflow         0
         This reinforces that descriptor/route/source need a unified overflow
         contract; frontcache/transfer are not the first ElasticCapacity target.
-  3. Move to ElasticCapacity-L1 design work:
+  2b. ElasticRouteOverflow-L1 is fixed as a narrow RSS candidate-control.
+        lane:
+          ownerlocalityfast-rsscap-2-elasticroute-desc160k-front4k-
+          thindesc-nobackptr-noroutebackptr-dir192k-routepacked-
+          routebytes16-storageowner16-ownersourcel2-frontcachepacked-
+          sourceblockpacked-source10k-route16k-run512
+        result:
+          smoke main1k clean
+          full10k run-1: 41.723M / 335,132 KB
+          safety: route_invalid=0, route_miss=0, route_register_fail=0,
+                  alloc_fail=0
+        read:
+          shared exact/envelope route overflow is viable and reduces RSS.
+          It is not speed promotion: it is slower than source10k control.
+          Next behavior should cover descriptor/source overflow, not keep
+          shrinking route alone.
+  3. Continue ElasticCapacity-L1 design work:
        local small descriptor/route/source/frontcache caps
        shared overflow / depot for warmup pressure
        fail-closed INVALID/MISS preserved
@@ -149,6 +165,47 @@ Meaning:
   The next behavior must support descriptor, route, and source-block overflow
   together. Frontcache and transfer are not the first ElasticCapacity pressure
   points in this selected Larson row.
+```
+
+Immediate read after ElasticRouteOverflow-L1:
+
+```text
+Lane:
+  ownerlocalityfast-rsscap-2-elasticroute-desc160k-front4k-thindesc-
+  nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-
+  ownersourcel2-frontcachepacked-sourceblockpacked-source10k-route16k-run512
+
+Implementation:
+  Local route table is reduced to 16k.
+  Shared route directory handles exact overflow.
+  Shared invalid-range table handles SourceBlock envelope overflow.
+  SourceBlock remembers whether its invalid envelope is local or shared so
+  release/destroy unregister the correct table.
+
+Results:
+  smoke main1k:
+    clean, non-diagnostic smoke also builds/runs
+
+  full10k:
+    41.723M ops/s
+    335,132 KB peak RSS
+    route_invalid=0
+    route_miss=0
+    route_register_fail=0
+    alloc_fail=0
+    elastic_route_overflow_lookup/hit = 393,519,809 / 393,519,809
+
+Read:
+  Route overflow is safe enough as a mechanism/control and gives a large RSS
+  reduction versus the source10k control (`412,280 KB` repeat-3 median;
+  `412,868 KB` diagnostic run-1). However throughput is below source10k
+  control (`44.864M` repeat-3 median; `43.472M` diagnostic run-1).
+
+Decision:
+  KEEP as ElasticRouteOverflow-L1 RSS candidate-control.
+  Do not promote as the main HZ6 Larson lane.
+  Next step is descriptor/source overflow or a unified metadata depot; route
+  alone is not enough.
 ```
 
 ### 2026-06-05: CapacityUtil-L1 diagnostic

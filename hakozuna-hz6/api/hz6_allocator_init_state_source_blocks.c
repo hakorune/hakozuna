@@ -27,6 +27,7 @@ void hz6_allocator_init_state_source_blocks(Hz6Allocator* allocator) {
 #endif
     hz6_source_block_set_active(&allocator->source_blocks[i], 0);
     hz6_source_block_set_route_registered(&allocator->source_blocks[i], 0);
+    hz6_source_block_set_route_shared(&allocator->source_blocks[i], 0);
     hz6_source_block_set_run_active(&allocator->source_blocks[i], 0);
   }
 }

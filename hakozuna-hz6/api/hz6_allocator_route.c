@@ -31,18 +31,34 @@ typedef struct Hz6SharedRouteDirectoryEntry {
 static Hz6SharedRouteDirectoryEntry g_hz6_shared_route_directory
     [HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY];
 
+#if HZ6_ELASTIC_ROUTE_OVERFLOW_L1
+typedef struct Hz6SharedRouteRangeEntry {
+  _Atomic(uintptr_t) base;
+  _Atomic(uintptr_t) bytes;
+  _Atomic(unsigned int) front_id;
+  _Atomic(unsigned int) class_id;
+} Hz6SharedRouteRangeEntry;
+
+static Hz6SharedRouteRangeEntry g_hz6_shared_route_ranges
+    [HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY];
+#endif
+
 size_t hz6_allocator_shared_route_directory_bytes(void) {
-  return sizeof(g_hz6_shared_route_directory);
+  size_t bytes = sizeof(g_hz6_shared_route_directory);
+#if HZ6_ELASTIC_ROUTE_OVERFLOW_L1
+  bytes += sizeof(g_hz6_shared_route_ranges);
+#endif
+  return bytes;
 }
 
-static void hz6_shared_route_directory_register(Hz6Allocator* allocator,
-                                                void* base,
-                                                uint16_t front_id,
-                                                uint16_t class_id,
-                                                uint32_t generation,
-                                                void* descriptor) {
+static int hz6_shared_route_directory_register(Hz6Allocator* allocator,
+                                               void* base,
+                                               uint16_t front_id,
+                                               uint16_t class_id,
+                                               uint32_t generation,
+                                               void* descriptor) {
   if (!allocator || !base || !descriptor) {
-    return;
+    return 0;
   }
   size_t start = hz6_route_directory_index((uintptr_t)base);
   for (size_t probe = 0; probe < HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY; ++probe) {
@@ -75,9 +91,161 @@ static void hz6_shared_route_directory_register(Hz6Allocator* allocator,
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.shared_dir_register;
 #endif
+    return 1;
+  }
+  return 0;
+}
+
+static Hz6RouteResult hz6_shared_route_directory_lookup_raw(const void* ptr) {
+  if (!ptr) {
+    return hz6_route_miss();
+  }
+  uintptr_t key = (uintptr_t)ptr;
+  size_t start = hz6_route_directory_index(key);
+  for (size_t probes = 0; probes < HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY;
+       ++probes) {
+    size_t index = (start + probes) % HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY;
+    Hz6SharedRouteDirectoryEntry* entry =
+        &g_hz6_shared_route_directory[index];
+    uintptr_t current =
+        atomic_load_explicit(&entry->base, memory_order_acquire);
+    if (current == 0) {
+      return hz6_route_miss();
+    }
+    if (current != key) {
+      continue;
+    }
+    Hz6Allocator* route_allocator =
+        atomic_load_explicit(&entry->allocator, memory_order_acquire);
+    uintptr_t descriptor_value =
+        atomic_load_explicit(&entry->descriptor, memory_order_acquire);
+    if (!route_allocator || descriptor_value == 0) {
+      return hz6_route_miss();
+    }
+    unsigned int front_id =
+        atomic_load_explicit(&entry->front_id, memory_order_acquire);
+    unsigned int class_id =
+        atomic_load_explicit(&entry->class_id, memory_order_acquire);
+    unsigned int generation =
+        atomic_load_explicit(&entry->generation, memory_order_acquire);
+    Hz6RouteResult route = hz6_route_valid((uint16_t)front_id,
+                                           (uint16_t)class_id,
+                                           (uint32_t)generation,
+                                           (void*)descriptor_value);
+    route.route_allocator = route_allocator;
+    return route;
+  }
+  return hz6_route_miss();
+}
+
+#if HZ6_ELASTIC_ROUTE_OVERFLOW_L1
+static int hz6_shared_route_range_register(void* base,
+                                           size_t bytes,
+                                           uint16_t front_id,
+                                           uint16_t class_id) {
+  if (!base || bytes == 0) {
+    return 0;
+  }
+  uintptr_t key = (uintptr_t)base;
+  size_t start = hz6_route_directory_index(key);
+  for (size_t probe = 0; probe < HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY;
+       ++probe) {
+    size_t index = (start + probe) % HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY;
+    Hz6SharedRouteRangeEntry* entry = &g_hz6_shared_route_ranges[index];
+    uintptr_t current =
+        atomic_load_explicit(&entry->base, memory_order_acquire);
+    if (current == key) {
+      return 0;
+    }
+    if (current != 0) {
+      continue;
+    }
+    uintptr_t expected = 0;
+    if (!atomic_compare_exchange_strong_explicit(&entry->base,
+                                                 &expected,
+                                                 key,
+                                                 memory_order_acq_rel,
+                                                 memory_order_acquire)) {
+      continue;
+    }
+    atomic_store_explicit(&entry->bytes, (uintptr_t)bytes,
+                          memory_order_release);
+    atomic_store_explicit(&entry->front_id, (unsigned int)front_id,
+                          memory_order_release);
+    atomic_store_explicit(&entry->class_id, (unsigned int)class_id,
+                          memory_order_release);
+    return 1;
+  }
+  return 0;
+}
+
+static void hz6_shared_route_range_unregister(void* base) {
+  if (!base) {
+    return;
+  }
+  uintptr_t key = (uintptr_t)base;
+  size_t start = hz6_route_directory_index(key);
+  for (size_t probe = 0; probe < HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY;
+       ++probe) {
+    size_t index = (start + probe) % HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY;
+    Hz6SharedRouteRangeEntry* entry = &g_hz6_shared_route_ranges[index];
+    uintptr_t current =
+        atomic_load_explicit(&entry->base, memory_order_acquire);
+    if (current == 0) {
+      return;
+    }
+    if (current != key) {
+      continue;
+    }
+    atomic_store_explicit(&entry->base, (uintptr_t)0, memory_order_release);
+    atomic_store_explicit(&entry->bytes, (uintptr_t)0, memory_order_release);
+    atomic_store_explicit(&entry->front_id, 0u, memory_order_release);
+    atomic_store_explicit(&entry->class_id, 0u, memory_order_release);
     return;
   }
 }
+
+static Hz6RouteResult hz6_shared_route_range_lookup_raw(const void* ptr) {
+  if (!ptr) {
+    return hz6_route_miss();
+  }
+  uintptr_t addr = (uintptr_t)ptr;
+  for (size_t i = 0; i < HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY; ++i) {
+    Hz6SharedRouteRangeEntry* entry = &g_hz6_shared_route_ranges[i];
+    uintptr_t base = atomic_load_explicit(&entry->base, memory_order_acquire);
+    if (base == 0) {
+      continue;
+    }
+    uintptr_t bytes =
+        atomic_load_explicit(&entry->bytes, memory_order_acquire);
+    if (bytes == 0 || addr < base || addr >= base + bytes) {
+      continue;
+    }
+    unsigned int front_id =
+        atomic_load_explicit(&entry->front_id, memory_order_acquire);
+    unsigned int class_id =
+        atomic_load_explicit(&entry->class_id, memory_order_acquire);
+    return hz6_route_invalid((uint16_t)front_id, (uint16_t)class_id);
+  }
+  return hz6_route_miss();
+}
+
+int hz6_allocator_route_register_shared_invalid_range(Hz6Allocator* allocator,
+                                                      void* base,
+                                                      size_t bytes,
+                                                      uint16_t front_id,
+                                                      uint16_t class_id) {
+  (void)allocator;
+  return hz6_shared_route_range_register(base, bytes, front_id, class_id);
+}
+
+void hz6_allocator_route_unregister_shared_invalid_range(
+    Hz6Allocator* allocator,
+    void* base) {
+  (void)allocator;
+  hz6_shared_route_range_unregister(base);
+}
+#endif
 
 static void hz6_shared_route_directory_unregister(Hz6Allocator* allocator,
                                                   void* base) {
@@ -332,6 +500,28 @@ Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
 #else
   Hz6RouteResult route = hz6_route_backend_lookup(&allocator->route_backend, ptr);
 #endif
+#if HZ6_SHARED_ROUTE_DIRECTORY_L1 && HZ6_ELASTIC_ROUTE_OVERFLOW_L1
+  if (route.kind != HZ6_ROUTE_VALID) {
+    Hz6RouteResult overflow_route =
+        hz6_shared_route_directory_lookup_raw(ptr);
+#if HZ6_DIAGNOSTIC_PROBES
+    ++((Hz6Allocator*)allocator)->stats.elastic_route_overflow_lookup;
+#endif
+    if (overflow_route.kind == HZ6_ROUTE_VALID) {
+#if HZ6_DIAGNOSTIC_PROBES
+      ++((Hz6Allocator*)allocator)->stats.elastic_route_overflow_hit;
+#endif
+      return overflow_route;
+    }
+    if (route.kind == HZ6_ROUTE_MISS) {
+      Hz6RouteResult overflow_range =
+          hz6_shared_route_range_lookup_raw(ptr);
+      if (overflow_range.kind == HZ6_ROUTE_INVALID) {
+        return overflow_range;
+      }
+    }
+  }
+#endif
   if (route.kind != HZ6_ROUTE_MISS) {
     route.route_allocator = (Hz6Allocator*)allocator;
 #if HZ6_DIAGNOSTIC_PROBES
@@ -366,6 +556,21 @@ Hz6RouteResult hz6_allocator_route_lookup_exact(const Hz6Allocator* allocator,
 #else
   Hz6RouteResult route =
       hz6_route_backend_lookup_exact(&allocator->route_backend, ptr);
+#endif
+#if HZ6_SHARED_ROUTE_DIRECTORY_L1 && HZ6_ELASTIC_ROUTE_OVERFLOW_L1
+  if (route.kind == HZ6_ROUTE_MISS) {
+    Hz6RouteResult overflow_route =
+        hz6_shared_route_directory_lookup_raw(ptr);
+#if HZ6_DIAGNOSTIC_PROBES
+    ++((Hz6Allocator*)allocator)->stats.elastic_route_overflow_lookup;
+#endif
+    if (overflow_route.kind == HZ6_ROUTE_VALID) {
+#if HZ6_DIAGNOSTIC_PROBES
+      ++((Hz6Allocator*)allocator)->stats.elastic_route_overflow_hit;
+#endif
+      return overflow_route;
+    }
+  }
 #endif
   if (route.kind != HZ6_ROUTE_MISS) {
     route.route_allocator = (Hz6Allocator*)allocator;
@@ -690,49 +895,10 @@ Hz6RouteResult hz6_allocator_route_shared_directory_lookup_exact(
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.shared_dir_first_attempt;
 #endif
-  uintptr_t key = (uintptr_t)ptr;
-  size_t start = hz6_route_directory_index(key);
-  for (size_t probes = 0; probes < HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY;
-       ++probes) {
-    size_t index = (start + probes) % HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY;
-    Hz6SharedRouteDirectoryEntry* entry =
-        &g_hz6_shared_route_directory[index];
-    uintptr_t current =
-        atomic_load_explicit(&entry->base, memory_order_acquire);
-    if (current == 0) {
+  Hz6RouteResult route = hz6_shared_route_directory_lookup_raw(ptr);
+  if (route.kind == HZ6_ROUTE_VALID) {
 #if HZ6_DIAGNOSTIC_PROBES
-      ++allocator->stats.shared_dir_first_fallback;
-#endif
-      return hz6_route_miss();
-    }
-    if (current != key) {
-      continue;
-    }
-    Hz6Allocator* route_allocator =
-        atomic_load_explicit(&entry->allocator, memory_order_acquire);
-    uintptr_t descriptor_value =
-        atomic_load_explicit(&entry->descriptor, memory_order_acquire);
-    if (!route_allocator || descriptor_value == 0) {
-#if HZ6_DIAGNOSTIC_PROBES
-      ++allocator->stats.shared_dir_first_fallback;
-#endif
-      return hz6_route_miss();
-    }
-    unsigned int front_id =
-        atomic_load_explicit(&entry->front_id, memory_order_acquire);
-    unsigned int class_id =
-        atomic_load_explicit(&entry->class_id, memory_order_acquire);
-    unsigned int generation =
-        atomic_load_explicit(&entry->generation, memory_order_acquire);
-    Hz6RouteResult route = hz6_route_valid((uint16_t)front_id,
-                                           (uint16_t)class_id,
-                                           (uint32_t)generation,
-                                           (void*)descriptor_value);
-    route.route_allocator = route_allocator;
-#if HZ6_DIAGNOSTIC_PROBES
-    if (route.kind == HZ6_ROUTE_VALID) {
-      ++allocator->stats.shared_dir_first_hit;
-    }
+    ++allocator->stats.shared_dir_first_hit;
 #endif
     return route;
   }
@@ -1016,9 +1182,6 @@ int hz6_allocator_route_register_exact_reason(
     allocator->stats.route_active_max =
         allocator->stats.route_active_current;
   }
-  if (!ok) {
-    ++allocator->stats.route_register_fail;
-  }
   hz6_allocator_note_route_tombstones(allocator);
 #else
   ok = hz6_route_backend_register_exact(&allocator->route_backend,
@@ -1032,17 +1195,39 @@ int hz6_allocator_route_register_exact_reason(
 #endif
 #if HZ6_SHARED_ROUTE_DIRECTORY_L1
   if (ok) {
-    hz6_shared_route_directory_register(allocator,
-                                        base,
-                                        front_id,
-                                        class_id,
-                                        generation,
-                                        descriptor);
+    (void)hz6_shared_route_directory_register(allocator,
+                                              base,
+                                              front_id,
+                                              class_id,
+                                              generation,
+                                              descriptor);
   }
+#if HZ6_ELASTIC_ROUTE_OVERFLOW_L1
+  if (!ok) {
+    ok = hz6_shared_route_directory_register(allocator,
+                                             base,
+                                             front_id,
+                                             class_id,
+                                             generation,
+                                             descriptor);
+#if HZ6_DIAGNOSTIC_PROBES
+    if (ok) {
+      ++allocator->stats.elastic_route_overflow_register;
+    } else {
+      ++allocator->stats.elastic_route_overflow_register_fail;
+    }
+#endif
+  }
+#endif
 #endif
 #if HZ6_OWNER_LOCALITY_INDEX_L1
   if (ok) {
     hz6_owner_locality_index_register(allocator, base, generation);
+  }
+#endif
+#if HZ6_DIAGNOSTIC_PROBES
+  if (!ok) {
+    ++allocator->stats.route_register_fail;
   }
 #endif
   return ok;

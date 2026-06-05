@@ -100,6 +100,10 @@ typedef struct Hz6StatsSnapshot {
   size_t shared_dir_first_hit;
   size_t shared_dir_first_fallback;
   size_t shared_dir_first_invalid;
+  size_t elastic_route_overflow_register;
+  size_t elastic_route_overflow_register_fail;
+  size_t elastic_route_overflow_lookup;
+  size_t elastic_route_overflow_hit;
   size_t source_owned_prepare;
   size_t source_owned_route_hit_local_owner;
   size_t source_owned_visibility_hit_local_owner;

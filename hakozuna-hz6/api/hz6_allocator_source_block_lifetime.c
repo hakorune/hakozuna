@@ -23,9 +23,16 @@ int hz6_allocator_release_source_block(Hz6Allocator* allocator,
   }
 
   if (hz6_source_block_route_registered(block)) {
-    hz6_route_backend_unregister_invalid_range(&allocator->route_backend,
-                                               block->ptr,
-                                               NULL);
+    if (hz6_source_block_route_shared(block)) {
+#if HZ6_SHARED_ROUTE_DIRECTORY_L1 && HZ6_ELASTIC_ROUTE_OVERFLOW_L1
+      hz6_allocator_route_unregister_shared_invalid_range(allocator,
+                                                          block->ptr);
+#endif
+    } else {
+      hz6_route_backend_unregister_invalid_range(&allocator->route_backend,
+                                                 block->ptr,
+                                                 NULL);
+    }
   }
   int released = block->source_release
                      ? block->source_release(block->ptr, block->bytes)
@@ -51,6 +58,7 @@ int hz6_allocator_release_source_block(Hz6Allocator* allocator,
 #endif
   hz6_source_block_set_active(block, 0);
   hz6_source_block_set_route_registered(block, 0);
+  hz6_source_block_set_route_shared(block, 0);
   hz6_source_block_set_run_active(block, 0);
 #if HZ6_DIAGNOSTIC_PROBES
   if (allocator->diagnostic_source_block_active_current != 0) {

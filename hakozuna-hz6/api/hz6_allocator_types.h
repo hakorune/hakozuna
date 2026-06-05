@@ -50,6 +50,7 @@ typedef struct Hz6SourceBlock {
 #if !HZ6_SOURCE_BLOCK_PACKED_FLAGS_L1
   int active;
   int route_registered;
+  int route_shared;
   int run_active;
 #endif
 } Hz6SourceBlock;
@@ -58,6 +59,7 @@ typedef struct Hz6SourceBlock {
 #define HZ6_SOURCE_BLOCK_FLAG_ACTIVE ((uint16_t)0x0100u)
 #define HZ6_SOURCE_BLOCK_FLAG_ROUTE_REGISTERED ((uint16_t)0x0200u)
 #define HZ6_SOURCE_BLOCK_FLAG_RUN_ACTIVE ((uint16_t)0x0400u)
+#define HZ6_SOURCE_BLOCK_FLAG_ROUTE_SHARED ((uint16_t)0x0800u)
 #define HZ6_SOURCE_BLOCK_SOURCE_KIND_MASK ((uint16_t)0x00ffu)
 
 static inline Hz6SourceKind hz6_source_block_source_kind(
@@ -117,6 +119,26 @@ static inline void hz6_source_block_set_route_registered(
   }
 }
 
+static inline int hz6_source_block_route_shared(
+    const Hz6SourceBlock* block) {
+  return block &&
+         (block->source_state_flags & HZ6_SOURCE_BLOCK_FLAG_ROUTE_SHARED) != 0;
+}
+
+static inline void hz6_source_block_set_route_shared(
+    Hz6SourceBlock* block,
+    int shared) {
+  if (!block) {
+    return;
+  }
+  if (shared) {
+    block->source_state_flags |= HZ6_SOURCE_BLOCK_FLAG_ROUTE_SHARED;
+  } else {
+    block->source_state_flags &=
+        (uint16_t)~HZ6_SOURCE_BLOCK_FLAG_ROUTE_SHARED;
+  }
+}
+
 static inline int hz6_source_block_run_active(const Hz6SourceBlock* block) {
   return block &&
          (block->source_state_flags & HZ6_SOURCE_BLOCK_FLAG_RUN_ACTIVE) != 0;
@@ -168,6 +190,19 @@ static inline void hz6_source_block_set_route_registered(
     int registered) {
   if (block) {
     block->route_registered = registered ? 1 : 0;
+  }
+}
+
+static inline int hz6_source_block_route_shared(
+    const Hz6SourceBlock* block) {
+  return block && block->route_shared;
+}
+
+static inline void hz6_source_block_set_route_shared(
+    Hz6SourceBlock* block,
+    int shared) {
+  if (block) {
+    block->route_shared = shared ? 1 : 0;
   }
 }
 

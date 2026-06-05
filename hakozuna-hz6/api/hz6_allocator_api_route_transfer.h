@@ -112,6 +112,16 @@ int hz6_allocator_source_block_register_invalid_range(
     uint16_t front_id,
     uint16_t class_id);
 
+int hz6_allocator_route_register_shared_invalid_range(Hz6Allocator* allocator,
+                                                      void* base,
+                                                      size_t bytes,
+                                                      uint16_t front_id,
+                                                      uint16_t class_id);
+
+void hz6_allocator_route_unregister_shared_invalid_range(
+    Hz6Allocator* allocator,
+    void* base);
+
 Hz6RouteBackendKind hz6_allocator_route_backend_kind(
     const Hz6Allocator* allocator);
 

@@ -666,6 +666,14 @@ int main(int argc, char** argv) {
             tds[t].hz6_stats_after.shared_dir_first_fallback;
         hz6_stats.shared_dir_first_invalid +=
             tds[t].hz6_stats_after.shared_dir_first_invalid;
+        hz6_stats.elastic_route_overflow_register +=
+            tds[t].hz6_stats_after.elastic_route_overflow_register;
+        hz6_stats.elastic_route_overflow_register_fail +=
+            tds[t].hz6_stats_after.elastic_route_overflow_register_fail;
+        hz6_stats.elastic_route_overflow_lookup +=
+            tds[t].hz6_stats_after.elastic_route_overflow_lookup;
+        hz6_stats.elastic_route_overflow_hit +=
+            tds[t].hz6_stats_after.elastic_route_overflow_hit;
         hz6_stats.source_owned_prepare +=
             tds[t].hz6_stats_after.source_owned_prepare;
         hz6_stats.source_owned_route_hit_local_owner +=
@@ -1315,6 +1323,10 @@ int main(int argc, char** argv) {
            "shared_dir_probe_max=%zu "
            "shared_dir_first_attempt=%zu shared_dir_first_hit=%zu "
            "shared_dir_first_fallback=%zu shared_dir_first_invalid=%zu "
+           "elastic_route_overflow_register=%zu "
+           "elastic_route_overflow_register_fail=%zu "
+           "elastic_route_overflow_lookup=%zu "
+           "elastic_route_overflow_hit=%zu "
            "source_owned_prepare=%zu "
            "source_owned_route_hit_local_owner=%zu "
            "source_owned_visibility_hit_local_owner=%zu "
@@ -1436,6 +1448,10 @@ int main(int argc, char** argv) {
            hz6_stats.shared_dir_first_hit,
            hz6_stats.shared_dir_first_fallback,
            hz6_stats.shared_dir_first_invalid,
+           hz6_stats.elastic_route_overflow_register,
+           hz6_stats.elastic_route_overflow_register_fail,
+           hz6_stats.elastic_route_overflow_lookup,
+           hz6_stats.elastic_route_overflow_hit,
            hz6_stats.source_owned_prepare,
            hz6_stats.source_owned_route_hit_local_owner,
            hz6_stats.source_owned_visibility_hit_local_owner,
