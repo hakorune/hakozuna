@@ -293,12 +293,65 @@ static inline void hz6_allocator_note_owner_equal_site(
 #endif
 }
 
+static inline void hz6_allocator_note_free_local_cache_owner_predicate(
+    const Hz6Allocator* allocator,
+    const Hz6ObjectDescriptor* descriptor,
+    Hz6OwnerEqualSite site) {
+#if HZ6_DIAGNOSTIC_PROBES && HZ6_FREE_LOCAL_CACHE_OWNER_PREDICATE_DRYRUN_L0
+  Hz6Allocator* mutable_allocator = (Hz6Allocator*)allocator;
+  if (!mutable_allocator ||
+      (site != HZ6_OWNER_EQUAL_SITE_FREE &&
+       site != HZ6_OWNER_EQUAL_SITE_LOCAL_CACHE)) {
+    return;
+  }
+  ++mutable_allocator->stats.flc_owner_predicate_probe;
+  if (site == HZ6_OWNER_EQUAL_SITE_FREE) {
+    ++mutable_allocator->stats.flc_owner_predicate_site_free;
+  } else {
+    ++mutable_allocator->stats.flc_owner_predicate_site_local_cache;
+  }
+#if HZ6_ELASTIC_DESCRIPTOR_OVERFLOW_L1
+  if (hz6_allocator_descriptor_is_depot(descriptor)) {
+    ++mutable_allocator->stats.flc_owner_predicate_depot_descriptor;
+  }
+#endif
+  if (hz6_allocator_descriptor_belongs_to(mutable_allocator, descriptor)) {
+    ++mutable_allocator->stats.flc_owner_predicate_local_descriptor;
+  } else {
+    ++mutable_allocator->stats.flc_owner_predicate_foreign_descriptor;
+  }
+  if (!descriptor || !descriptor->source_block) {
+    ++mutable_allocator->stats.flc_owner_predicate_no_source_block;
+    return;
+  }
+  ++mutable_allocator->stats.flc_owner_predicate_source_block;
+  if (hz6_source_block_active(descriptor->source_block)) {
+    ++mutable_allocator->stats.flc_owner_predicate_source_block_active;
+  }
+  if (hz6_source_block_route_shared(descriptor->source_block)) {
+    ++mutable_allocator->stats.flc_owner_predicate_source_block_shared;
+  }
+  if (hz6_source_block_run_active(descriptor->source_block)) {
+    ++mutable_allocator->stats.flc_owner_predicate_source_run_active;
+  }
+  if (descriptor->source_block->source_release) {
+    ++mutable_allocator->stats.flc_owner_predicate_source_release;
+  }
+#else
+  (void)allocator;
+  (void)descriptor;
+  (void)site;
+#endif
+}
+
 static inline int hz6_allocator_descriptor_owner_equal_at(
     const Hz6Allocator* allocator,
     const Hz6ObjectDescriptor* descriptor,
     Hz6OwnerToken owner,
     Hz6OwnerEqualSite site) {
   hz6_allocator_note_owner_equal_site(allocator, site);
+  hz6_allocator_note_free_local_cache_owner_predicate(
+      allocator, descriptor, site);
 #if HZ6_ELASTIC_SLOT_OWNER_LOGICAL_FASTPATH_L1
   if (hz6_allocator_elastic_slot_owner_logical_owner_match(
           (Hz6Allocator*)allocator, descriptor, owner)) {

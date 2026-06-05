@@ -97,6 +97,36 @@ Latest HZ6 selected-family decision:
        close slot-owner logical fast-path work as evidence and return to
        unified depot accounting / owner-safe drain-localize design.
 
+  2026-06-05 FreeLocalCacheOwnerPredicate-L0:
+    implementation:
+      Add HZ6_FREE_LOCAL_CACHE_OWNER_PREDICATE_DRYRUN_L0.
+      It is diagnostic-only and records cheap descriptor/source-block
+      predicates only for HZ6_OWNER_EQUAL_SITE_FREE and
+      HZ6_OWNER_EQUAL_SITE_LOCAL_CACHE.
+
+    full10k:
+      41.049M / 224628 KB
+      flc_owner_predicate_probe=821934976
+      flc_owner_predicate_site_free=411004460
+      flc_owner_predicate_site_local_cache=410930516
+      flc_owner_predicate_depot_descriptor=693768653
+      flc_owner_predicate_local_descriptor=47477340
+      flc_owner_predicate_foreign_descriptor=774457636
+      flc_owner_predicate_source_block=821934976
+      flc_owner_predicate_source_block_shared=698397445
+      flc_owner_predicate_source_release=821934976
+      flc_owner_predicate_source_run_active=0
+      safety clean
+
+    read:
+      The predicate is not weak.  In the full cross-owner row, most free/local
+      owner_equal pressure is depot/source-block backed and a large majority is
+      foreign descriptor storage.  This supports one narrow behavior attempt:
+      answer owner equality through depot owner metadata only when the
+      descriptor is a depot descriptor, and keep the normal path for local
+      descriptors / non-depot descriptors.  Do not use source_run_active as the
+      gate in this lane; it is zero here.
+
   do not:
     use diagnostic-only lanes in speed-ranking tables
     revive whole-SourceBlock localize

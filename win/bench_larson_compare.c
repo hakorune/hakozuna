@@ -832,6 +832,30 @@ int main(int argc, char** argv) {
             tds[t].hz6_stats_after.owner_equal_site_same_owner_fast;
         hz6_stats.owner_equal_site_unknown +=
             tds[t].hz6_stats_after.owner_equal_site_unknown;
+        hz6_stats.flc_owner_predicate_probe +=
+            tds[t].hz6_stats_after.flc_owner_predicate_probe;
+        hz6_stats.flc_owner_predicate_site_free +=
+            tds[t].hz6_stats_after.flc_owner_predicate_site_free;
+        hz6_stats.flc_owner_predicate_site_local_cache +=
+            tds[t].hz6_stats_after.flc_owner_predicate_site_local_cache;
+        hz6_stats.flc_owner_predicate_depot_descriptor +=
+            tds[t].hz6_stats_after.flc_owner_predicate_depot_descriptor;
+        hz6_stats.flc_owner_predicate_local_descriptor +=
+            tds[t].hz6_stats_after.flc_owner_predicate_local_descriptor;
+        hz6_stats.flc_owner_predicate_foreign_descriptor +=
+            tds[t].hz6_stats_after.flc_owner_predicate_foreign_descriptor;
+        hz6_stats.flc_owner_predicate_no_source_block +=
+            tds[t].hz6_stats_after.flc_owner_predicate_no_source_block;
+        hz6_stats.flc_owner_predicate_source_block +=
+            tds[t].hz6_stats_after.flc_owner_predicate_source_block;
+        hz6_stats.flc_owner_predicate_source_block_active +=
+            tds[t].hz6_stats_after.flc_owner_predicate_source_block_active;
+        hz6_stats.flc_owner_predicate_source_block_shared +=
+            tds[t].hz6_stats_after.flc_owner_predicate_source_block_shared;
+        hz6_stats.flc_owner_predicate_source_run_active +=
+            tds[t].hz6_stats_after.flc_owner_predicate_source_run_active;
+        hz6_stats.flc_owner_predicate_source_release +=
+            tds[t].hz6_stats_after.flc_owner_predicate_source_release;
         hz6_stats.source_owned_prepare +=
             tds[t].hz6_stats_after.source_owned_prepare;
         hz6_stats.source_owned_route_hit_local_owner +=
@@ -1560,6 +1584,18 @@ int main(int argc, char** argv) {
            "owner_equal_site_owner_dead=%zu "
            "owner_equal_site_same_owner_fast=%zu "
            "owner_equal_site_unknown=%zu "
+           "flc_owner_predicate_probe=%zu "
+           "flc_owner_predicate_site_free=%zu "
+           "flc_owner_predicate_site_local_cache=%zu "
+           "flc_owner_predicate_depot_descriptor=%zu "
+           "flc_owner_predicate_local_descriptor=%zu "
+           "flc_owner_predicate_foreign_descriptor=%zu "
+           "flc_owner_predicate_no_source_block=%zu "
+           "flc_owner_predicate_source_block=%zu "
+           "flc_owner_predicate_source_block_active=%zu "
+           "flc_owner_predicate_source_block_shared=%zu "
+           "flc_owner_predicate_source_run_active=%zu "
+           "flc_owner_predicate_source_release=%zu "
            "source_owned_prepare=%zu "
            "source_owned_route_hit_local_owner=%zu "
            "source_owned_visibility_hit_local_owner=%zu "
@@ -1754,6 +1790,18 @@ int main(int argc, char** argv) {
            hz6_stats.owner_equal_site_owner_dead,
            hz6_stats.owner_equal_site_same_owner_fast,
            hz6_stats.owner_equal_site_unknown,
+           hz6_stats.flc_owner_predicate_probe,
+           hz6_stats.flc_owner_predicate_site_free,
+           hz6_stats.flc_owner_predicate_site_local_cache,
+           hz6_stats.flc_owner_predicate_depot_descriptor,
+           hz6_stats.flc_owner_predicate_local_descriptor,
+           hz6_stats.flc_owner_predicate_foreign_descriptor,
+           hz6_stats.flc_owner_predicate_no_source_block,
+           hz6_stats.flc_owner_predicate_source_block,
+           hz6_stats.flc_owner_predicate_source_block_active,
+           hz6_stats.flc_owner_predicate_source_block_shared,
+           hz6_stats.flc_owner_predicate_source_run_active,
+           hz6_stats.flc_owner_predicate_source_release,
            hz6_stats.source_owned_prepare,
            hz6_stats.source_owned_route_hit_local_owner,
            hz6_stats.source_owned_visibility_hit_local_owner,

@@ -41,6 +41,7 @@ cross-owner contract.
 | Slot owner consumer dry-run | `speed + diagnostic + ...elasticdescsource-route-slotownerconsumerdryrun-...source64-route16k-run4096` | 36.691M | 233,556 | diagnostic-only; `would_skip_l2=687536440`, `false_positive=0`; not speed-rankable |
 | Slot owner logical fast path | `speed + ...elasticdescsource-route-slotownerlogical-...source64-route16k-run4096` | 38.494M | 239,484 | safety-clean behavior no-go/control; broad sparse probing is too expensive |
 | Owner-equal callsite dry-run | `speed + diagnostic + ...elasticdescsource-route-depotownerdirect-ownerequalcallsite-dryrun-...source64-route16k-run512` | 42.434M | 224,612 | diagnostic-only; owner_equal pressure is free/local-cache dominated |
+| Free/local owner predicate dry-run | `speed + diagnostic + ...elasticdescsource-route-depotownerdirect-freelocalownerpredicate-dryrun-...source64-route16k-run512` | 41.049M | 224,628 | diagnostic-only; free/local-cache owner_equal pressure is mostly depot/source-block backed |
 
 Source:
 - `docs/benchmarks/windows/paper/hz6_selected_family/selected-family-desc17-refresh/`
@@ -72,6 +73,7 @@ Source:
 - `docs/benchmarks/windows/paper/hz6_depot_owner_direct_guard_matrix/`
 - `docs/benchmarks/windows/paper/hz6_slot_owner_consumer_dryrun_full10k/`
 - `docs/benchmarks/windows/paper/hz6_owner_equal_callsite_dryrun_full10k/`
+- `docs/benchmarks/windows/paper/hz6_flc_owner_predicate_dryrun_full10k/`
 
 ## Evidence Rows
 
@@ -213,14 +215,20 @@ pressure/no-go/diagnostic lanes into those tables.
      do not add another isolated static cap knob.
 
    Instead:
-     first add a diagnostic-only free/local-cache state predicate.
-     count which objects are source-depot descriptors and which are ordinary
-     local descriptors before owner_equal().
-     only if the depot subset is large and cheap to identify, try a behavior
-     lane that answers owner equality through depot owner metadata for that
-     subset.
+     FreeLocalCacheOwnerPredicate-L0 was added and is a strong witness:
+       probe=821934976
+       depot_descriptor=693768653
+       foreign_descriptor=774457636
+       source_block=821934976
+       source_run_active=0
 
-4. If FreeLocalCacheOwnerPredicate is weak:
+4. Next behavior:
+   DepotDescriptorOwnerEqualFastPath-L1.
+   Only short-circuit owner equality for depot descriptors in the
+   free/local-cache owner_equal path.  Keep non-depot descriptors and
+   source_run_active==0 cases on the normal path.
+
+5. If DepotDescriptorOwnerEqualFastPath-L1 is no-go:
    close the slot-owner logical fast-path family as evidence and return to
    unified depot accounting / owner-safe drain-localize design.
 ```

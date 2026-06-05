@@ -173,6 +173,18 @@ typedef struct Hz6StatsSnapshot {
   size_t owner_equal_site_owner_dead;
   size_t owner_equal_site_same_owner_fast;
   size_t owner_equal_site_unknown;
+  size_t flc_owner_predicate_probe;
+  size_t flc_owner_predicate_site_free;
+  size_t flc_owner_predicate_site_local_cache;
+  size_t flc_owner_predicate_depot_descriptor;
+  size_t flc_owner_predicate_local_descriptor;
+  size_t flc_owner_predicate_foreign_descriptor;
+  size_t flc_owner_predicate_no_source_block;
+  size_t flc_owner_predicate_source_block;
+  size_t flc_owner_predicate_source_block_active;
+  size_t flc_owner_predicate_source_block_shared;
+  size_t flc_owner_predicate_source_run_active;
+  size_t flc_owner_predicate_source_release;
   size_t source_owned_prepare;
   size_t source_owned_route_hit_local_owner;
   size_t source_owned_visibility_hit_local_owner;

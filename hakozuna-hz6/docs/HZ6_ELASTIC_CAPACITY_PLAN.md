@@ -479,6 +479,66 @@ read:
   diagnostic evidence; do not use it as a speed-ranking lane.
 ```
 
+FreeLocalCacheOwnerPredicate-L0 result:
+
+```text
+lane:
+  ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-
+  freelocalownerpredicate-dryrun-desc16k-front4k-thindesc-nobackptr-
+  noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-
+  ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512
+
+mode:
+  diagnostic-only
+  no behavior change
+  only observes HZ6_OWNER_EQUAL_SITE_FREE and
+  HZ6_OWNER_EQUAL_SITE_LOCAL_CACHE
+
+smoke main1k:
+  56.124M ops/s
+  105,856 KB peak RSS
+  flc_owner_predicate_probe=113,649,970
+  depot_descriptor=0
+  local_descriptor=17,501,244
+  foreign_descriptor=96,148,726
+  source_block=113,649,970
+  source_block_shared=3,650,677
+  source_release=113,649,970
+  safety clean
+
+full10k:
+  41.049M ops/s
+  224,628 KB peak RSS
+  flc_owner_predicate_probe=821,934,976
+  site_free=411,004,460
+  site_local_cache=410,930,516
+  depot_descriptor=693,768,653
+  local_descriptor=47,477,340
+  foreign_descriptor=774,457,636
+  no_source_block=0
+  source_block=821,934,976
+  source_block_active=821,934,976
+  source_block_shared=698,397,445
+  source_run_active=0
+  source_release=821,934,976
+  safety clean:
+    route_invalid=0
+    route_miss=0
+    route_register_fail=0
+    descriptor_exhausted=0
+    source_block_exhausted=0
+    alloc_fail=0
+    remote_free_transfer_fail=0
+
+read:
+  This is a strong predicate witness.  The full10k free/local-cache owner_equal
+  pressure is largely depot descriptor backed and foreign descriptor-storage
+  backed; the source block is present for all observed calls.  The next narrow
+  behavior may test a depot-descriptor-only owner equality shortcut.  Do not
+  gate on source_run_active for this lane because it is zero in the observed
+  source-depot shape.
+```
+
 ## What The Diagnostics Proved
 
 ElasticProjection-L1:
