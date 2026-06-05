@@ -12,6 +12,44 @@ For repo cleanup rules and the source modularization backlog, see
 For the current ElasticCapacity design target, see
 [`HZ6_ELASTIC_CAPACITY_PLAN.md`](HZ6_ELASTIC_CAPACITY_PLAN.md).
 
+## Quick Lane Classification
+
+Use this section first.  The detailed tables below keep the evidence ledger, but
+these rows answer which lanes should be used, watched, or avoided.
+
+| Class | Lane / family | Use |
+| --- | --- | --- |
+| Selected profile lane | `mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap-loopcarry` | Current balanced clean low-RSS row. |
+| Selected sibling | `route18` mixedclean sibling | Current wide_ws sibling when wide_ws is the target; do not replace balanced route17/loopcarry by default. |
+| Selected profile lane | `sameownerfast-descavail-noboost-route4k` | random_mixed same-owner speed row. |
+| Selected profile lane | `largerlowrss-front8k-sourcerun-desc8k-route8k` | larger_sizes RSS/speed row. |
+| Selected Larson low-RSS sibling | `...frontcachepacked-sourceblockpacked-source10k-route192k-run512` | Current Larson minimum-RSS sibling. Use for current HZ6 Larson low-RSS comparisons. |
+| ElasticCapacity candidate-watch | `...elasticdescroute-desc16k-...source10k-route16k-run512` | Best ElasticCapacity RSS/throughput shape so far. Watch, but do not broad-promote. |
+| ElasticCapacity component/control | `...elasticdescsource-route-desc16k-...source64-route16k-run512` | Lower RSS source-block depot evidence; speed is lower than ElasticDescriptorRouteOverflow. |
+| Diagnostic-only | `...localizedryrun...`, `[HZ6_ELASTIC_PROJECTION]`, `[HZ6_MAIN_WARMUP_CAPACITY]`, `[HZ6_ELASTIC_OVERFLOW_PROJECTION]` | Never use as production speed-ranking rows. |
+| Boundary / no-go | `source2k`, `source8k`, `elasticproj-local1k`, whole-SourceBlock localize | Keep as evidence only. These rows explain capacity or ownership limits. |
+
+## Active Next Read
+
+```text
+HZ6 Larson / ElasticCapacity:
+  KEEP:
+    selected source10k packed lane as the current minimum-RSS sibling
+    ElasticDescriptorRouteOverflow-L1 as candidate-watch
+    ElasticDescriptorSourceRouteOverflow-L1 as lower-RSS source-depot evidence
+
+  STOP:
+    whole-SourceBlock localize behavior
+    another isolated route-only / descriptor-only / source-only cap knob
+
+  NEXT if continuing this track:
+    slot-level/source-run ownership or descriptor storage-locality policy
+    unified depot accounting and owner-safe drain/localize criteria
+
+  DO NOT MIX:
+    diagnostic counters or dry-run lanes into production speed tables
+```
+
 ## Larson / ElasticCapacity Lane Status
 
 | Role | Lane / diagnostic | Status |

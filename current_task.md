@@ -19,6 +19,26 @@ remains profile-stabilized; new HZ5 work should not blur the HZ6 contract.
 Latest HZ6 selected-family decision:
 
 ```text
+2026-06-05 lane cleanup:
+  HZ6_LANE_GUIDE now starts with a quick classification table:
+    selected profile lanes
+    ElasticCapacity candidate-watch lanes
+    component/control lanes
+    diagnostic-only lanes
+    no-go / boundary lanes
+
+  current Larson / ElasticCapacity read:
+    source10k combined packed lane stays the selected minimum-RSS sibling.
+    ElasticDescriptorRouteOverflow-L1 stays candidate-watch.
+    ElasticDescriptorSourceRouteOverflow-L1 stays lower-RSS source-depot
+    evidence/control, not promotion.
+    SourceBlockLocalizeDryRun-L1 closes whole-SourceBlock localize as no-go:
+    probes are blocked by shared SourceBlock ownership, so the next design
+    should be slot-level/source-run ownership or descriptor storage locality.
+
+  rule:
+    dry-run / diagnostic lanes must not enter production speed-ranking tables.
+
 2026-06-05 next attack after combined packed Pro consult:
   Larson cross-owner RSS:
     OwnerSourceSideMeta-L2 remains the selected speed/RSS balance sibling.

@@ -39,6 +39,39 @@ source-cap boundary:
   source8k/source2k = no-go from warmup SourceBlock exhaustion
 ```
 
+## Current Lane Status
+
+```text
+Selected minimum-RSS sibling:
+  source10k combined packed lane
+
+Candidate-watch:
+  ElasticDescriptorRouteOverflow-L1
+
+Lower-RSS component/control:
+  ElasticDescriptorSourceRouteOverflow-L1
+
+Diagnostic no-go/control:
+  SourceBlockLocalizeDryRun-L1
+```
+
+SourceBlockLocalizeDryRun-L1 result:
+
+```text
+read:
+  whole-SourceBlock localize is not the next behavior.
+  Transfer reuse sees depot blocks with storage-owner mismatch, but every
+  localize probe is blocked by shared SourceBlock ownership.
+
+next:
+  slot-level/source-run ownership
+  or descriptor storage-locality policy
+  or unified depot drain/localize criteria
+
+do not:
+  move whole shared SourceBlocks as the next ElasticCapacity behavior
+```
+
 ## What The Diagnostics Proved
 
 ElasticProjection-L1:
