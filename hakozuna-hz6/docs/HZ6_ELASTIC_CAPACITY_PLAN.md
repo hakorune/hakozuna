@@ -219,6 +219,58 @@ read:
   descriptor-only knob.
 ```
 
+ElasticDescriptorSourceRouteOverflow-L1:
+
+```text
+lane:
+  ownerlocalityfast-rsscap-2-elasticdescsource-route-desc16k-front4k-
+  thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-
+  storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-
+  source64-route16k-run512
+
+shape:
+  descriptor local cap = 16k
+  route local cap      = 16k
+  source block local cap = 64
+  shared descriptor depot
+  shared SourceBlock depot
+  shared exact route overflow
+  shared SourceBlock invalid-envelope overflow
+
+diagnostic smoke main1k:
+  56.362M ops/s
+  106,048 KB peak RSS
+  source_block_exhausted = 0
+  alloc_fail / descriptor_exhausted / route_register_fail = 0
+
+diagnostic full10k:
+  41.516M ops/s
+  225,212 KB peak RSS
+  main-warmup local source_block_used = 64
+  main-warmup source_block_active_max = 10,003
+  source_block_exhausted = 0
+  descriptor_storage_miss = 0
+  alloc_fail / descriptor_exhausted / route_register_fail = 0
+
+non-diagnostic full10k:
+  41.733M ops/s
+  227,852 KB peak RSS
+  safety clean
+
+read:
+  SourceBlock depot behavior works as a subcomponent: a tiny local SourceBlock
+  table can survive the full main-warmup source spike while cutting RSS below
+  ElasticDescriptorRouteOverflow-L1. The tradeoff is throughput: it is slower
+  than the current ElasticDescriptorRouteOverflow candidate-watch. Keep this as
+  lower-RSS source-depot evidence/control, not broad promotion.
+
+caution:
+  This is not a SourceBlock-only solution. It depends on the already-enabled
+  descriptor depot and route overflow. Before promotion, the source depot needs
+  explicit depot accounting and an owner-safe drain/localize contract so depot
+  blocks do not remain merely as a shared static escape hatch.
+```
+
 ## Design Target
 
 ElasticCapacity-L1 should reduce replicated per-worker static metadata while
@@ -334,14 +386,17 @@ Recommended L1 order:
      designing source-block overflow / unified ElasticCapacity drain.
 
 3. SourceBlockOverflow-L1:
-   only after descriptor overflow is safe
-   source block metadata can live in a shared depot
-   invalid envelope registration and unregister must mirror route overflow
+   implemented narrowly as ElasticDescriptorSourceRouteOverflow-L1.
+   The source block metadata can live in a shared depot, and invalid envelope
+   registration remains route-overflow compatible. Current evidence proves the
+   warmup spike can be absorbed with local source cap 64, but the lane is a
+   lower-RSS component/control rather than the promoted shape.
 
 4. Unified ElasticCapacity-L1:
    descriptor + route + source overflow in one lane
    full10k target: keep route-overflow RSS class while recovering source10k
    throughput
+   next missing piece: depot accounting and owner-safe drain/localize
 ```
 
 Descriptor overflow caution:

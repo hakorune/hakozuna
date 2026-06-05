@@ -103,18 +103,44 @@ Immediate action queue:
           non-diagnostic full10k. Repeat-3 guards are safety-clean. Treat as
           ElasticCapacity candidate-watch/evidence; do not broad-promote until
           source-block overflow / unified overflow drain is designed.
+  2d. ElasticDescriptorSourceRouteOverflow-L1 is fixed as a lower-RSS
+      source-depot component/control.
+        lane:
+          ownerlocalityfast-rsscap-2-elasticdescsource-route-desc16k-front4k-
+          thindesc-nobackptr-noroutebackptr-dir192k-routepacked-
+          routebytes16-storageowner16-ownersourcel2-frontcachepacked-
+          sourceblockpacked-source64-route16k-run512
+        implementation:
+          descriptor local cap 16k + shared descriptor depot
+          route local cap 16k + shared exact/envelope route overflow
+          source block local cap 64 + shared SourceBlock depot
+        result:
+          diagnostic smoke main1k: 56.362M / 106,048 KB
+          diagnostic full10k:      41.516M / 225,212 KB
+          non-diagnostic full10k:  41.733M / 227,852 KB
+          main-warmup local source_block_used=64 while
+            source_block_active_max=10,003
+          safety: source_block_exhausted=0, descriptor_exhausted=0,
+                  route_register_fail=0, alloc_fail=0
+        read:
+          SourceBlock depot absorbs the main-warmup source spike and cuts RSS
+          below ElasticDescriptorRouteOverflow-L1. Throughput is lower than the
+          descriptor+route depot candidate-watch, so this is a lower-RSS
+          source-depot component/control, not promotion.
   3. Continue ElasticCapacity-L1 design work:
        local small descriptor/route/source/frontcache caps
        shared overflow / depot for warmup pressure
        fail-closed INVALID/MISS preserved
        no hot-path global scan
-       next target: source-block overflow or unified overflow drain/localize
-       contract; descriptor/route-only overflow is now bounded evidence.
-  4. Do not implement SourceBlock-only overflow as the main behavior. It cannot
-     solve the descriptor/route warmup spike. Treat it only as a possible
-     subcomponent after a unified metadata overflow contract is clear.
-  5. Do not add another packing lane until ElasticCapacity-L1 has a first
-     shared-overflow prototype or diagnostic skeleton.
+       next target: depot accounting and unified overflow drain/localize
+       contract; descriptor/route/source depot pieces are now bounded evidence.
+  4. Do not promote SourceBlock-only overflow as the main behavior. The current
+     source-depot lane works only as part of descriptor+route overflow. Treat
+     it as a subcomponent until drain/localize and owner/destroy accounting are
+     explicit.
+  5. Do not add another packing lane now. ElasticCapacity-L1 has route,
+     descriptor, and source-block depot component evidence; the next useful
+     work is accounting, drain/localize, and promotion/no-go criteria.
 ```
 
 Immediate read after ElasticHighWater-L1:
@@ -318,6 +344,60 @@ Decision:
   Do not broad-promote yet. Next step is source-block overflow / unified
   ElasticCapacity drain-localize design, not another descriptor/route-only
   knob.
+```
+
+Immediate read after ElasticDescriptorSourceRouteOverflow-L1:
+
+```text
+Lane:
+  ownerlocalityfast-rsscap-2-elasticdescsource-route-desc16k-front4k-
+  thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-
+  storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-
+  source64-route16k-run512
+
+Implementation:
+  Descriptor and route local caps remain at 16k.
+  Local SourceBlock cap is reduced to 64.
+  Shared SourceBlock depot supplies overflow blocks after local source-block
+  exhaustion would otherwise happen.
+  ElasticDescriptorRouteOverflow-L1 remains enabled for descriptor and route
+  overflow.
+
+Results:
+  diagnostic smoke main1k:
+    56.362M / 106,048 KB
+    source_block_exhausted=0
+    descriptor_exhausted=0
+    route_register_fail=0
+    alloc_fail=0
+
+  diagnostic full10k:
+    41.516M / 225,212 KB
+    main-warmup source_block_used=64
+    main-warmup source_block_active_max=10,003
+    source_block_exhausted=0
+    descriptor_storage_miss=0
+    descriptor_exhausted=0
+    route_register_fail=0
+    alloc_fail=0
+
+  non-diagnostic full10k:
+    41.733M / 227,852 KB
+    safety clean
+
+Read:
+  SourceBlock depot is viable as an ElasticCapacity subcomponent. It proves the
+  source-block warmup spike can move out of per-worker local static capacity
+  and drops RSS below the ElasticDescriptorRouteOverflow candidate-watch.
+  Throughput is lower than ElasticDescriptorRouteOverflow, so the correct label
+  is lower-RSS component/control, not promotion.
+
+Decision:
+  KEEP as ElasticDescriptorSourceRouteOverflow-L1 source-depot evidence.
+  Next target is not another cap shrink. Add explicit depot accounting /
+  drain-localize design if this lower-RSS shape is going to compete for
+  candidate-watch; otherwise keep ElasticDescriptorRouteOverflow-L1 as the
+  current best RSS/throughput balance.
 ```
 
 ### 2026-06-05: CapacityUtil-L1 diagnostic

@@ -1,5 +1,32 @@
 #include "hz6_allocator.h"
 
+#if HZ6_ELASTIC_SOURCE_BLOCK_OVERFLOW_L1
+static Hz6SourceBlock
+    g_hz6_source_block_depot[HZ6_ELASTIC_SOURCE_BLOCK_DEPOT_CAPACITY];
+static size_t g_hz6_source_block_depot_next;
+
+static Hz6SourceBlock* hz6_allocator_find_source_block_depot_slot(void) {
+  for (size_t offset = 0; offset < HZ6_ELASTIC_SOURCE_BLOCK_DEPOT_CAPACITY;
+       ++offset) {
+    size_t index = g_hz6_source_block_depot_next + offset;
+    if (index >= HZ6_ELASTIC_SOURCE_BLOCK_DEPOT_CAPACITY) {
+      index -= HZ6_ELASTIC_SOURCE_BLOCK_DEPOT_CAPACITY;
+    }
+    Hz6SourceBlock* block = &g_hz6_source_block_depot[index];
+    if (hz6_source_block_active(block) || block->ptr) {
+      continue;
+    }
+    g_hz6_source_block_depot_next = index + 1;
+    if (g_hz6_source_block_depot_next >=
+        HZ6_ELASTIC_SOURCE_BLOCK_DEPOT_CAPACITY) {
+      g_hz6_source_block_depot_next = 0;
+    }
+    return block;
+  }
+  return NULL;
+}
+#endif
+
 static void hz6_source_run_reset(Hz6SourceBlock* block) {
   if (!block) {
     return;
@@ -350,6 +377,11 @@ Hz6SourceBlock* hz6_allocator_create_source_block(
     allocator->stats.source_block_probe_max = probes;
   }
 #endif
+  if (!block) {
+#if HZ6_ELASTIC_SOURCE_BLOCK_OVERFLOW_L1
+    block = hz6_allocator_find_source_block_depot_slot();
+#endif
+  }
   if (!block) {
     ++allocator->stats.source_block_exhausted;
 #if HZ6_DIAGNOSTIC_PROBES
