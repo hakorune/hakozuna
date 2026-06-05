@@ -1,5 +1,24 @@
 #include "hz6_allocator.h"
 
+#if HZ6_DIAGNOSTIC_PROBES
+static void hz6_allocator_note_frontcache_push_highwater(
+    Hz6Allocator* allocator) {
+  ++allocator->diagnostic_frontcache_total_current;
+  if (allocator->diagnostic_frontcache_total_current >
+      allocator->stats.frontcache_total_max) {
+    allocator->stats.frontcache_total_max =
+        allocator->diagnostic_frontcache_total_current;
+  }
+}
+
+static void hz6_allocator_note_frontcache_pop_highwater(
+    Hz6Allocator* allocator) {
+  if (allocator && allocator->diagnostic_frontcache_total_current != 0) {
+    --allocator->diagnostic_frontcache_total_current;
+  }
+}
+#endif
+
 int hz6_allocator_frontcache_push(Hz6Allocator* allocator,
                                   uint16_t class_id,
                                   Hz6FrontCacheEntry entry) {
@@ -11,6 +30,9 @@ int hz6_allocator_frontcache_push(Hz6Allocator* allocator,
 #if HZ6_DIAGNOSTIC_PROBES
     if (ok && class_id < HZ6_STATS_CLASS_COUNT) {
       ++allocator->stats.frontcache_push_by_class[class_id];
+    }
+    if (ok) {
+      hz6_allocator_note_frontcache_push_highwater(allocator);
     }
 #endif
     return ok;
@@ -29,6 +51,9 @@ int hz6_allocator_frontcache_pop(Hz6Allocator* allocator,
     if (!ok && class_id < HZ6_STATS_CLASS_COUNT) {
       ++allocator->stats.frontcache_pop_empty_by_class[class_id];
     }
+    if (ok) {
+      hz6_allocator_note_frontcache_pop_highwater(allocator);
+    }
 #endif
     return ok;
   }
@@ -43,11 +68,19 @@ int hz6_allocator_frontcache_remove(Hz6Allocator* allocator,
   if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
     return 0;
   }
-  return hz6_frontcache_remove(&allocator->frontcache_bins[class_id],
-                               ptr,
-                               descriptor,
-                               generation,
-                               removed);
+  {
+    int ok = hz6_frontcache_remove(&allocator->frontcache_bins[class_id],
+                                   ptr,
+                                   descriptor,
+                                   generation,
+                                   removed);
+#if HZ6_DIAGNOSTIC_PROBES
+    if (ok) {
+      hz6_allocator_note_frontcache_pop_highwater(allocator);
+    }
+#endif
+    return ok;
+  }
 }
 
 int hz6_allocator_spill_frontcache_for_descriptor(
@@ -288,6 +321,9 @@ void* hz6_allocator_borrow_larger_frontcache(Hz6Allocator* allocator,
       }
 
       bin->entries[index] = bin->entries[--bin->count];
+#if HZ6_DIAGNOSTIC_PROBES
+      hz6_allocator_note_frontcache_pop_highwater(allocator);
+#endif
       if (!hz6_allocator_activate_descriptor(allocator, descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr, entry.generation,
               hz6_allocator_owner_token(allocator))) {
 #if HZ6_DIAGNOSTIC_PROBES

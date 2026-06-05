@@ -54,6 +54,27 @@ Immediate action queue:
      next static-table target.
 ```
 
+Immediate read after ElasticHighWater-L1:
+
+```text
+source10k selected lane:
+  full10k high-water is modest:
+    descriptor_live_max      = 400
+    source_block_active_max  = 25
+    frontcache_total_max     = 401
+    route occupied max       = 5425
+
+Meaning:
+  The source10k selected lane itself is not near its static caps.
+  The source8k/source2k failures and local-only elastic failures are caused by
+  warmup ownership/lifecycle placement in the low-cap lanes, not by steady-state
+  pressure in source10k.
+
+Next behavior target:
+  ElasticCapacity-L1 should not merely shrink every worker-local table.
+  It needs a shared overflow/depot or warmup-owner handoff for low-cap lanes.
+```
+
 ### 2026-06-05: CapacityUtil-L1 diagnostic
 
 Goal:
@@ -334,6 +355,121 @@ Next:
     route INVALID/MISS and owned-looking invalid fail-closed semantics are
       preserved
     no hot-path global scan
+```
+
+### 2026-06-05: ElasticHighWater-L1 diagnostic
+
+Goal:
+
+```text
+Tighten ElasticProjection by recording successful-run high-water marks for:
+  descriptor live count
+  source block active count
+  frontcache total count
+
+This is diagnostic-only:
+  fields and updates are compiled only under HZ6_DIAGNOSTIC_PROBES
+  no production hot-path counter/atomic is added
+```
+
+Implementation:
+
+```text
+Hz6Allocator diagnostic fields:
+  diagnostic_descriptor_live_current
+  diagnostic_source_block_active_current
+  diagnostic_frontcache_total_current
+
+Hz6StatsSnapshot high-water fields:
+  descriptor_live_max
+  source_block_active_max
+  frontcache_total_max
+
+bench_larson_compare:
+  capacity local_cap_2x projection now uses high-water where available.
+  [HZ6_CAPACITY_UTIL] reports descriptor/source/frontcache peak values.
+```
+
+Smoke:
+
+```text
+Source:
+  docs/benchmarks/windows/paper/hz6_elastic_highwater_l1_smoke/
+    20260605_113623_hz6_capacity_matrix_windows.md
+
+Result:
+  larson_t16_main_1k:
+    56.166M / 290,936 KB
+    safety clean
+    descriptor_live_max=160
+    source_block_active_max=10
+    frontcache_total_max=161
+```
+
+Full 10k check:
+
+```text
+Source:
+  docs/benchmarks/windows/paper/hz6_elastic_highwater_l1_full10k/
+    20260605_113648_hz6_capacity_matrix_windows.md
+
+Result:
+  larson_t16_main_10k:
+    45.200M / 412,840 KB
+    safety clean
+
+  high-water:
+    descriptor_live_max=400
+    source_block_active_max=25
+    frontcache_total_max=401
+    route occupied max allocator=5425
+
+  projected static:
+    21,616 KiB
+
+  projected static+payload:
+    46,128 KiB
+
+  projected static savings:
+    212,886 KiB
+```
+
+Decision:
+
+```text
+KEEP as diagnostic evidence.
+
+Read:
+  In the selected source10k lane, high-water is close to final utilization.
+  That strengthens the static-table RSS diagnosis. The selected lane has large
+  unused static tables even during successful warmup/runtime.
+
+  The low-cap no-go rows are not fixed by pure final-snapshot shrinking. They
+  need an ElasticCapacity behavior that can handle warmup-owner concentration
+  and cross-owner live-set placement:
+    local small tables
+    shared overflow/depot
+    fail-closed route ownership
+```
+
+Non-diagnostic build smoke:
+
+```text
+Source:
+  docs/benchmarks/windows/paper/hz6_elastic_highwater_l1_nondiag_smoke/
+    20260605_113908_hz6_capacity_matrix_windows.md
+
+Result:
+  larson_t16_main_1k:
+    57.642M / 290,924 KB
+    alloc_fail=0
+    descriptor_exhausted=0
+    route_register_fail=0
+    source_block_exhausted=0
+
+Read:
+  The high-water fields and updates are correctly isolated from normal
+  non-diagnostic build behavior.
 ```
 
 ### 2026-06-05: ElasticProjection local-cap controls

@@ -96,6 +96,12 @@ int hz6_allocator_prepare_descriptor(
   }
 #endif
 #if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->diagnostic_descriptor_live_current;
+  if (allocator->diagnostic_descriptor_live_current >
+      allocator->stats.descriptor_live_max) {
+    allocator->stats.descriptor_live_max =
+        allocator->diagnostic_descriptor_live_current;
+  }
   if (source_release) {
     ++allocator->stats.source_owned_prepare;
   }

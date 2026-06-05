@@ -257,6 +257,11 @@ struct Hz6Allocator {
   Hz6DescriptorColdSource descriptor_cold_sources[HZ6_DESCRIPTOR_COLD_SOURCE_CAPACITY];
 #endif
   size_t descgov_detached_budget_used;
+#if HZ6_DIAGNOSTIC_PROBES
+  size_t diagnostic_descriptor_live_current;
+  size_t diagnostic_source_block_active_current;
+  size_t diagnostic_frontcache_total_current;
+#endif
   Hz6SourceRegistry source_registry;
   Hz6FrontCacheEntry frontcache_entries[HZ6_FRONT_CACHE_CLASS_COUNT]
                                       [HZ6_FRONT_CACHE_BIN_CAPACITY];

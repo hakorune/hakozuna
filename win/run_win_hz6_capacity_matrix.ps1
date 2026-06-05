@@ -684,6 +684,9 @@ foreach ($family in $selectedFamilies) {
                     TransferCapacity = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "transfer_capacity"
                     TransferUsed = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "transfer_used"
                     TransferUnused = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "transfer_unused"
+                    DescriptorLiveMax = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "descriptor_live_max"
+                    SourceBlockActiveMax = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "source_block_active_max"
+                    FrontcacheTotalMax = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "frontcache_total_max"
                     DescriptorMaxAllocator = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "descriptor_used_max_allocator"
                     DescriptorLocalCap2x = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "descriptor_local_cap_2x"
                     RouteMaxAllocator = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "route_used_max_allocator"
@@ -755,8 +758,8 @@ foreach ($family in $selectedFamilies) {
             $Summary.Add("")
             $Summary.Add("### HZ6 capacity utilization audit")
             $Summary.Add("")
-            $Summary.Add("| allocator | allocators | descriptor used/cap | descriptor util | descriptor max/cap2x | route active/cap | route util | route max/cap2x | source blocks used/cap | source util | source max/cap2x | frontcache used/cap | frontcache util | frontcache max/cap2x | transfer current/cap | transfer util | transfer max/cap2x |")
-            $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+            $Summary.Add("| allocator | allocators | descriptor used/cap | descriptor util | descriptor peak | descriptor max/cap2x | route active/cap | route util | route max/cap2x | source blocks used/cap | source util | source peak | source max/cap2x | frontcache used/cap | frontcache util | frontcache peak | frontcache max/cap2x | transfer current/cap | transfer util | transfer max/cap2x |")
+            $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
             $fmtCount = {
                 param($value)
                 if ($null -eq $value) { return "n/a" }
@@ -773,20 +776,23 @@ foreach ($family in $selectedFamilies) {
                 return "{0:N2}%" -f (([double]$used * 100.0) / [double]$capacity)
             }
             foreach ($row in $capacityRows) {
-                $Summary.Add(('| {0} | {1} | {2} | {3} | {4} | {5} | {6} | {7} | {8} | {9} | {10} | {11} | {12} | {13} | {14} | {15} | {16} |' -f `
+                $Summary.Add(('| {0} | {1} | {2} | {3} | {4} | {5} | {6} | {7} | {8} | {9} | {10} | {11} | {12} | {13} | {14} | {15} | {16} | {17} | {18} | {19} |' -f `
                     $row.Allocator,
                     (& $fmtCount $row.AllocatorCount),
                     (& $fmtPair $row.DescriptorUsed $row.DescriptorCapacity),
                     (& $fmtPct $row.DescriptorUsed $row.DescriptorCapacity),
+                    (& $fmtCount $row.DescriptorLiveMax),
                     (& $fmtPair $row.DescriptorMaxAllocator $row.DescriptorLocalCap2x),
                     (& $fmtPair $row.RouteUsed $row.RouteCapacity),
                     (& $fmtPct $row.RouteUsed $row.RouteCapacity),
                     (& $fmtPair $row.RouteOccupiedMaxAllocator $row.RouteLocalCap2x),
                     (& $fmtPair $row.SourceBlockUsed $row.SourceBlockCapacity),
                     (& $fmtPct $row.SourceBlockUsed $row.SourceBlockCapacity),
+                    (& $fmtCount $row.SourceBlockActiveMax),
                     (& $fmtPair $row.SourceBlockMaxAllocator $row.SourceBlockLocalCap2x),
                     (& $fmtPair $row.FrontcacheUsed $row.FrontcacheCapacity),
                     (& $fmtPct $row.FrontcacheUsed $row.FrontcacheCapacity),
+                    (& $fmtCount $row.FrontcacheTotalMax),
                     (& $fmtPair $row.FrontcacheMaxAllocator $row.FrontcacheLocalCap2x),
                     (& $fmtPair $row.TransferUsed $row.TransferCapacity),
                     (& $fmtPct $row.TransferUsed $row.TransferCapacity),

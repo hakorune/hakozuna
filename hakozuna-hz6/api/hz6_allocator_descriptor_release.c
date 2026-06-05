@@ -109,6 +109,9 @@ void hz6_allocator_reset_descriptor_available(
   if (!descriptor) {
     return;
   }
+#if HZ6_DIAGNOSTIC_PROBES
+  int had_ptr = descriptor->ptr != NULL;
+#endif
 #if HZ6_DESCRIPTOR_AVAIL_COUNT_L1
   int was_available =
       !descriptor->ptr && descriptor->state == HZ6_STATE_DEAD;
@@ -140,6 +143,12 @@ void hz6_allocator_reset_descriptor_available(
   if (!was_available && allocator &&
       allocator->descriptor_available_count < HZ6_OBJECT_DESCRIPTOR_CAPACITY) {
     ++allocator->descriptor_available_count;
+  }
+#endif
+#if HZ6_DIAGNOSTIC_PROBES
+  if (had_ptr && allocator &&
+      allocator->diagnostic_descriptor_live_current != 0) {
+    --allocator->diagnostic_descriptor_live_current;
   }
 #endif
 }

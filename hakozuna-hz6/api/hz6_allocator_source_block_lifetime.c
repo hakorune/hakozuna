@@ -52,5 +52,10 @@ int hz6_allocator_release_source_block(Hz6Allocator* allocator,
   hz6_source_block_set_active(block, 0);
   hz6_source_block_set_route_registered(block, 0);
   hz6_source_block_set_run_active(block, 0);
+#if HZ6_DIAGNOSTIC_PROBES
+  if (allocator->diagnostic_source_block_active_current != 0) {
+    --allocator->diagnostic_source_block_active_current;
+  }
+#endif
   return released;
 }

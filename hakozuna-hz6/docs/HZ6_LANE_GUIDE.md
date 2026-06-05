@@ -186,7 +186,8 @@ larson-rss-residual-audit:
     HZ6 RSS residual audit table in the generated markdown
     HZ6 capacity utilization audit table in the generated markdown
     HZ6 elastic capacity projection table in the generated markdown
-    per-worker max usage and projected local_cap_2x for elastic-capacity design
+    per-worker high-water/max usage and projected local_cap_2x for
+      elastic-capacity design
   status:
     attribution/evidence only, not a production speed-ranking row.
 

@@ -781,6 +781,21 @@ int main(int argc, char** argv) {
             hz6_stats.route_unregister_probe_max =
                 tds[t].hz6_stats_after.route_unregister_probe_max;
         }
+        if (tds[t].hz6_stats_after.descriptor_live_max >
+            hz6_stats.descriptor_live_max) {
+            hz6_stats.descriptor_live_max =
+                tds[t].hz6_stats_after.descriptor_live_max;
+        }
+        if (tds[t].hz6_stats_after.source_block_active_max >
+            hz6_stats.source_block_active_max) {
+            hz6_stats.source_block_active_max =
+                tds[t].hz6_stats_after.source_block_active_max;
+        }
+        if (tds[t].hz6_stats_after.frontcache_total_max >
+            hz6_stats.frontcache_total_max) {
+            hz6_stats.frontcache_total_max =
+                tds[t].hz6_stats_after.frontcache_total_max;
+        }
         hz6_stats.source_block_probe_total +=
             tds[t].hz6_stats_after.source_block_probe_total;
         if (tds[t].hz6_stats_after.source_block_probe_max >
@@ -857,29 +872,45 @@ int main(int argc, char** argv) {
                 local_stats->memory_transfer_free_descriptors +
                 local_stats->memory_remote_pending_descriptors +
                 local_stats->memory_dead_with_ptr_descriptors;
+            const size_t local_descriptor_peak =
+                (local_stats->descriptor_live_max > local_descriptor_used)
+                    ? local_stats->descriptor_live_max
+                    : local_descriptor_used;
             const size_t local_route_used = local_stats->route_active_current;
             const size_t local_route_occupied =
                 local_stats->route_active_current +
                 local_stats->route_tombstone_current;
+            const size_t local_route_peak =
+                (local_stats->route_active_max > local_route_occupied)
+                    ? local_stats->route_active_max
+                    : local_route_occupied;
             const size_t local_source_block_used =
                 local_stats->memory_active_source_blocks;
+            const size_t local_source_block_peak =
+                (local_stats->source_block_active_max > local_source_block_used)
+                    ? local_stats->source_block_active_max
+                    : local_source_block_used;
             const size_t local_frontcache_used =
                 local_stats->memory_frontcache_total;
+            const size_t local_frontcache_peak =
+                (local_stats->frontcache_total_max > local_frontcache_used)
+                    ? local_stats->frontcache_total_max
+                    : local_frontcache_used;
             const size_t local_transfer_used = local_stats->transfer_current_max;
-            if (local_descriptor_used > hz6_descriptor_used_max_allocator) {
-                hz6_descriptor_used_max_allocator = local_descriptor_used;
+            if (local_descriptor_peak > hz6_descriptor_used_max_allocator) {
+                hz6_descriptor_used_max_allocator = local_descriptor_peak;
             }
             if (local_route_used > hz6_route_used_max_allocator) {
                 hz6_route_used_max_allocator = local_route_used;
             }
-            if (local_route_occupied > hz6_route_occupied_max_allocator) {
-                hz6_route_occupied_max_allocator = local_route_occupied;
+            if (local_route_peak > hz6_route_occupied_max_allocator) {
+                hz6_route_occupied_max_allocator = local_route_peak;
             }
-            if (local_source_block_used > hz6_source_block_used_max_allocator) {
-                hz6_source_block_used_max_allocator = local_source_block_used;
+            if (local_source_block_peak > hz6_source_block_used_max_allocator) {
+                hz6_source_block_used_max_allocator = local_source_block_peak;
             }
-            if (local_frontcache_used > hz6_frontcache_used_max_allocator) {
-                hz6_frontcache_used_max_allocator = local_frontcache_used;
+            if (local_frontcache_peak > hz6_frontcache_used_max_allocator) {
+                hz6_frontcache_used_max_allocator = local_frontcache_peak;
             }
             if (local_transfer_used > hz6_transfer_used_max_allocator) {
                 hz6_transfer_used_max_allocator = local_transfer_used;
@@ -1221,6 +1252,8 @@ int main(int argc, char** argv) {
            "route_lookup_probe_total=%zu route_lookup_probe_max=%zu "
            "route_register_probe_total=%zu route_register_probe_max=%zu "
            "route_unregister_probe_total=%zu route_unregister_probe_max=%zu "
+           "descriptor_live_max=%zu source_block_active_max=%zu "
+           "frontcache_total_max=%zu "
            "source_block_probe_total=%zu source_block_probe_max=%zu "
            "large_span_central_push=%zu large_span_central_pop=%zu large_span_source_alloc=%zu\n",
            "larson_main_final",
@@ -1358,6 +1391,9 @@ int main(int argc, char** argv) {
            hz6_stats.route_register_probe_max,
            hz6_stats.route_unregister_probe_total,
            hz6_stats.route_unregister_probe_max,
+           hz6_stats.descriptor_live_max,
+           hz6_stats.source_block_active_max,
+           hz6_stats.frontcache_total_max,
            hz6_stats.source_block_probe_total,
            hz6_stats.source_block_probe_max,
            hz6_stats.large_span_central_push,
@@ -1470,6 +1506,9 @@ int main(int argc, char** argv) {
            "transfer_capacity=%zu "
            "transfer_used=%zu "
            "transfer_unused=%zu "
+           "descriptor_live_max=%zu "
+           "source_block_active_max=%zu "
+           "frontcache_total_max=%zu "
            "descriptor_used_max_allocator=%zu "
            "descriptor_local_cap_2x=%zu "
            "route_used_max_allocator=%zu "
@@ -1498,6 +1537,9 @@ int main(int argc, char** argv) {
            hz6_transfer_capacity,
            hz6_transfer_used,
            hz6_transfer_unused,
+           hz6_stats.descriptor_live_max,
+           hz6_stats.source_block_active_max,
+           hz6_stats.frontcache_total_max,
            hz6_descriptor_used_max_allocator,
            hz6_descriptor_local_cap_2x,
            hz6_route_used_max_allocator,

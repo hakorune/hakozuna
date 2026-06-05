@@ -9,5 +9,10 @@ void hz6_allocator_init_state_owner(Hz6Allocator* allocator,
   allocator->owner.token.generation = 1;
   allocator->owner.state = HZ6_OWNER_ALIVE;
   allocator->stats = (Hz6StatsSnapshot){0};
+#if HZ6_DIAGNOSTIC_PROBES
+  allocator->diagnostic_descriptor_live_current = 0;
+  allocator->diagnostic_source_block_active_current = 0;
+  allocator->diagnostic_frontcache_total_current = 0;
+#endif
   hz6_source_registry_init(&allocator->source_registry);
 }

@@ -274,6 +274,9 @@ typedef struct Hz6StatsSnapshot {
   size_t route_retained_overflow_attempt;
   size_t route_retained_overflow_success;
   size_t route_retained_overflow_fail;
+  size_t descriptor_live_max;
+  size_t source_block_active_max;
+  size_t frontcache_total_max;
   size_t source_block_probe_total;
   size_t source_block_probe_max;
   size_t source_block_fail_active_max;
