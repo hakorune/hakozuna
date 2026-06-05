@@ -387,6 +387,70 @@ Latest HZ6 selected-family decision:
     next natural experiment is SlotOwnerConsumerDryRun-L1 only if we still need
     to explain the remaining non-depot owner path cost.
 
+2026-06-05 SlotOwnerConsumerDryRun-L1:
+  implementation:
+    Add HZ6_ELASTIC_SLOT_OWNER_CONSUMER_DRYRUN_L1.
+    The sparse slot-owner table is now shared by the producer note path and a
+    diagnostic consumer dry-run.  The consumer runs only after the existing
+    descriptor-owner equality path computes the real answer, then asks whether
+    a sparse per-slot owner entry would have safely skipped heavier L2 owner
+    lookup work.  It does not change allocation/free behavior.
+
+  lane:
+    ownerlocalityfast-rsscap-2-elasticdescsource-route-
+    slotownerconsumerdryrun-desc16k-front4k-thindesc-nobackptr-
+    noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-
+    ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-
+    run4096
+
+  smoke:
+    docs/benchmarks/windows/paper/
+      hz6_slot_owner_consumer_dryrun_smoke/
+      20260605_180342_hz6_capacity_matrix_windows.md
+    main1k:
+      55.042M / 117620 KB
+      elastic_slot_owner_consumer_probe=88111696
+      elastic_slot_owner_consumer_hit=88096722
+      elastic_slot_owner_consumer_miss=14974
+      elastic_slot_owner_consumer_would_skip_l2=88096722
+      elastic_slot_owner_consumer_false_positive=0
+      safety clean
+
+  full10k:
+    docs/benchmarks/windows/paper/
+      hz6_slot_owner_consumer_dryrun_full10k/
+      20260605_180432_hz6_capacity_matrix_windows.md
+    main10k:
+      36.691M / 233556 KB
+      elastic_slot_owner_consumer_probe=687695410
+      elastic_slot_owner_consumer_hit=687536440
+      elastic_slot_owner_consumer_miss=158970
+      elastic_slot_owner_consumer_owner_match=687536440
+      elastic_slot_owner_consumer_owner_mismatch=0
+      elastic_slot_owner_consumer_stale_generation=0
+      elastic_slot_owner_consumer_false_positive=0
+      elastic_slot_owner_consumer_would_skip_l2=687536440
+      elastic_slot_owner_consumer_fallback=158970
+      owner_source_side_meta_l2_lookup=418621565
+      safety clean:
+        route_invalid=0
+        route_miss=0
+        route_register_fail=0
+        descriptor_exhausted=0
+        source_block_exhausted=0
+        alloc_fail=0
+        remote_free_transfer_fail=0
+
+  read:
+    KEEP as diagnostic evidence.  The sparse owner table is no longer merely a
+    producer-side feasibility table: downstream owner-equality sites see very
+    high sparse hits and would_skip_l2, with false_positive=0 and no generation
+    staleness in both smoke and full10k.  The diagnostic overhead is heavy, so
+    this row is not a speed-ranking lane.  It does justify one narrow behavior
+    experiment: SlotOwnerLogicalOwnerFastPath-L1, where a generation-checked
+    sparse hit may answer logical owner equality and miss/stale/mismatch falls
+    back to the existing descriptor owner path.
+
 2026-06-05 next attack after combined packed Pro consult:
   Larson cross-owner RSS:
     OwnerSourceSideMeta-L2 remains the selected speed/RSS balance sibling.

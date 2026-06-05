@@ -65,6 +65,9 @@ Diagnostic slot-owner evidence:
 
 Sparse side metadata evidence:
   SlotOwnerSparseMeta-L1
+
+Diagnostic consumer evidence:
+  SlotOwnerConsumerDryRun-L1
 ```
 
 SourceBlockLocalizeDryRun-L1 result:
@@ -326,6 +329,56 @@ decision:
   broad default/promotion yet; use it as the current best source-depot
   speed/RSS shape while deciding whether SlotOwnerConsumerDryRun-L1 can remove
   the remaining owner-path cost.
+```
+
+SlotOwnerConsumerDryRun-L1 result:
+
+```text
+lane:
+  ownerlocalityfast-rsscap-2-elasticdescsource-route-
+  slotownerconsumerdryrun-desc16k-front4k-thindesc-nobackptr-
+  noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-
+  ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run4096
+
+mode:
+  diagnostic-only consumer projection
+  no allocation/free behavior change
+  no route rehome
+  no storage-owner override
+
+full10k run-1:
+  36.691M ops/s
+  233,556 KB peak RSS
+  safety clean:
+    route_invalid=0
+    route_miss=0
+    route_register_fail=0
+    descriptor_exhausted=0
+    source_block_exhausted=0
+    alloc_fail=0
+    remote_free_transfer_fail=0
+
+counters:
+  elastic_slot_owner_consumer_probe            = 687,695,410
+  elastic_slot_owner_consumer_hit              = 687,536,440
+  elastic_slot_owner_consumer_miss             = 158,970
+  elastic_slot_owner_consumer_owner_match      = 687,536,440
+  elastic_slot_owner_consumer_owner_mismatch   = 0
+  elastic_slot_owner_consumer_stale_generation = 0
+  elastic_slot_owner_consumer_false_positive   = 0
+  elastic_slot_owner_consumer_would_skip_l2    = 687,536,440
+  elastic_slot_owner_consumer_fallback         = 158,970
+  owner_source_side_meta_l2_lookup             = 418,621,565
+
+read:
+  The sparse slot-owner table is a real downstream consumer candidate, not only
+  producer-side metadata.  Generation-checked sparse hits would skip a very
+  large number of owner-equality heavy-path checks, and the dry-run reports no
+  false positives or stale-generation hits.  The diagnostic counter volume is
+  intentionally heavy, so this is not a speed-ranking lane.  The next narrow
+  behavior candidate is SlotOwnerLogicalOwnerFastPath-L1: on a sparse
+  generation-checked owner match, answer logical owner equality directly;
+  miss/stale/mismatch must fall back to the existing descriptor owner path.
 ```
 
 ## What The Diagnostics Proved

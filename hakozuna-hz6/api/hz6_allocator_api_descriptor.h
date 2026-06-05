@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 
+#include "hz6_allocator_slot_owner_sparse.h"
 #include "hz6_allocator_types.h"
 
 #ifdef __cplusplus
@@ -236,8 +237,14 @@ static inline int hz6_allocator_descriptor_owner_equal(
     const Hz6Allocator* allocator,
     const Hz6ObjectDescriptor* descriptor,
     Hz6OwnerToken owner) {
-  return hz6_owner_equal(hz6_allocator_descriptor_owner(allocator, descriptor),
-                         owner);
+  int equal =
+      hz6_owner_equal(hz6_allocator_descriptor_owner(allocator, descriptor),
+                      owner);
+#if HZ6_DIAGNOSTIC_PROBES && HZ6_ELASTIC_SLOT_OWNER_CONSUMER_DRYRUN_L1
+  hz6_allocator_elastic_slot_owner_consumer_dryrun(allocator, descriptor,
+                                                   owner, equal);
+#endif
+  return equal;
 }
 
 void hz6_allocator_reset_descriptor_available(
