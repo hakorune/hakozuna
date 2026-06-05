@@ -106,6 +106,17 @@ int hz6_allocator_route_register_exact_reason(
     void* descriptor,
     Hz6RouteRegisterReason reason);
 
+int hz6_allocator_route_replace_exact_descriptor(
+    Hz6Allocator* allocator,
+    void* base,
+    size_t bytes,
+    uint16_t front_id,
+    uint16_t class_id,
+    uint32_t old_generation,
+    void* old_descriptor,
+    uint32_t new_generation,
+    void* new_descriptor);
+
 int hz6_allocator_source_block_register_invalid_range(
     Hz6Allocator* allocator,
     Hz6SourceBlock* block,

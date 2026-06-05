@@ -43,6 +43,28 @@ int main(void) {
     return 1;
   }
 
+  SmokeDescriptor replacement_descriptor;
+  replacement_descriptor.marker = 43;
+  SmokeDescriptor wrong_descriptor;
+  wrong_descriptor.marker = 44;
+  if (!expect(!hz6_route_replace_exact_descriptor(
+                  &route_table, base, sizeof(object), HZ6_FRONT_LOCAL2P, 7,
+                  11, &wrong_descriptor, 11, &replacement_descriptor, NULL),
+              "route replace rejects old descriptor mismatch") ||
+      !expect(hz6_route_replace_exact_descriptor(
+                  &route_table, base, sizeof(object), HZ6_FRONT_LOCAL2P, 7,
+                  11, &descriptor, 11, &replacement_descriptor, NULL),
+              "route replace descriptor") ||
+      !expect(hz6_route_lookup(&route_table, base).descriptor ==
+                  &replacement_descriptor,
+              "route replace descriptor visible") ||
+      !expect(!hz6_route_replace_exact_descriptor(
+                  &route_table, base, sizeof(object), HZ6_FRONT_LOCAL2P, 7,
+                  12, &replacement_descriptor, 12, &descriptor, NULL),
+              "route replace rejects generation mismatch")) {
+    return 1;
+  }
+
   Hz6RouteResult interior = hz6_route_lookup(&route_table, object + 16);
   if (!expect(interior.kind == HZ6_ROUTE_INVALID,
               "interior pointer invalid")) {

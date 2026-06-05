@@ -110,6 +110,93 @@ int hz6_route_register_exact(Hz6RouteTable* table,
   return 1;
 }
 
+int hz6_route_replace_exact_descriptor(Hz6RouteTable* table,
+                                       void* base,
+                                       size_t bytes,
+                                       uint16_t front_id,
+                                       uint16_t class_id,
+                                       uint32_t old_generation,
+                                       void* old_descriptor,
+                                       uint32_t new_generation,
+                                       void* new_descriptor,
+                                       size_t* probe_count) {
+  if (!table || !table->entries || !base || bytes == 0 ||
+      bytes > (size_t)UINT32_MAX || !old_descriptor || !new_descriptor) {
+    return 0;
+  }
+
+  uintptr_t base_addr = (uintptr_t)base;
+  size_t start = hz6_route_hash_index(base_addr, table->capacity);
+#if HZ6_ROUTE_DOUBLE_HASH_L1
+  size_t step = hz6_route_probe_step(base_addr, table->capacity);
+#else
+  size_t step = 1;
+#endif
+#if HZ6_DIAGNOSTIC_PROBES
+  size_t probes = 0;
+#endif
+#if HZ6_ROUTE_LOOP_CARRY_L1 && HZ6_ROUTE_LINEAR_WRAP_L1 && \
+    !HZ6_ROUTE_DOUBLE_HASH_L1
+  (void)step;
+  for (size_t i = 0, index = start; i < table->capacity;
+       ++i, index = hz6_route_linear_next_index(index, table->capacity)) {
+#else
+  for (size_t i = 0; i < table->capacity; ++i) {
+#endif
+#if HZ6_DIAGNOSTIC_PROBES
+    ++probes;
+#endif
+#if !(HZ6_ROUTE_LOOP_CARRY_L1 && HZ6_ROUTE_LINEAR_WRAP_L1 && \
+      !HZ6_ROUTE_DOUBLE_HASH_L1)
+    size_t index = HZ6_ROUTE_PROBE_INDEX(start, step, table->capacity, i);
+#endif
+    Hz6RouteEntry* entry = &table->entries[index];
+    if (!hz6_route_entry_active(entry)) {
+      if (!hz6_route_entry_tombstone(entry)) {
+        break;
+      }
+      continue;
+    }
+    if (!hz6_route_entry_exact_valid(entry) || entry->base != base_addr) {
+      continue;
+    }
+#if HZ6_DIAGNOSTIC_PROBES
+    if (probe_count) {
+      *probe_count = probes;
+    }
+#else
+    if (probe_count) {
+      *probe_count = 0;
+    }
+#endif
+    if (entry->descriptor != old_descriptor ||
+        hz6_route_entry_generation(table, index) != old_generation ||
+        hz6_route_entry_bytes(table, index) != (uint32_t)bytes ||
+        hz6_route_entry_front_id(entry) != front_id ||
+        hz6_route_entry_class_id(entry) != class_id) {
+      return 0;
+    }
+    entry->descriptor = new_descriptor;
+    hz6_route_entry_set_generation(table, index, new_generation);
+    hz6_route_entry_set_bytes(table, index, (uint32_t)bytes);
+    hz6_route_entry_set_meta(entry, front_id, class_id,
+                             HZ6_ROUTE_META_EXACT_VALID |
+                                 HZ6_ROUTE_META_ACTIVE);
+    return 1;
+  }
+
+#if HZ6_DIAGNOSTIC_PROBES
+  if (probe_count) {
+    *probe_count = probes;
+  }
+#else
+  if (probe_count) {
+    *probe_count = 0;
+  }
+#endif
+  return 0;
+}
+
 void hz6_route_unregister_exact(Hz6RouteTable* table,
                                 void* base,
                                 size_t* probe_count) {

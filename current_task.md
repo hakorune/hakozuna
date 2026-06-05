@@ -86,6 +86,10 @@ Latest HZ6 selected-family decision:
        the old depot descriptor, so the first behavior should replace the
        descriptor pointer/generation metadata in place rather than
        unregister-first.
+       L0 primitive added as `hz6_route_replace_exact_descriptor()` /
+       `hz6_allocator_route_replace_exact_descriptor()`.  It requires old
+       descriptor, generation, front, class, and bytes to match before changing
+       the exact entry, and route smoke verifies mismatch rejection.
 
     2. DepotDescriptorRehome-L1 behavior:
        clone/rehome the depot descriptor into a consumer-local descriptor only

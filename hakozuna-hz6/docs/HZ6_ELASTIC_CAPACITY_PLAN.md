@@ -823,6 +823,15 @@ read:
   This means the next behavior primitive should be in-place exact-route
   descriptor replacement in the current allocator, not an unregister-first
   rehome path.
+
+RouteExactDescriptorReplace-L0:
+  `hz6_route_replace_exact_descriptor()` and
+  `hz6_allocator_route_replace_exact_descriptor()` are now available as the
+  fail-closed primitive.  They only update an active exact route when base,
+  bytes, front, class, old descriptor, and old generation match.  The public
+  allocator wrapper also refreshes the shared route directory / owner-locality
+  index after a successful local table replacement.  Route smoke verifies the
+  happy path and old descriptor / generation mismatch rejection.
 ```
 
 ## What The Diagnostics Proved

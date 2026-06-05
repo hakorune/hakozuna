@@ -1252,6 +1252,61 @@ int hz6_allocator_route_register_exact(Hz6Allocator* allocator,
       HZ6_ROUTE_REGISTER_REASON_UNKNOWN);
 }
 
+int hz6_allocator_route_replace_exact_descriptor(
+    Hz6Allocator* allocator,
+    void* base,
+    size_t bytes,
+    uint16_t front_id,
+    uint16_t class_id,
+    uint32_t old_generation,
+    void* old_descriptor,
+    uint32_t new_generation,
+    void* new_descriptor) {
+  if (!allocator || !base || bytes == 0 || !old_descriptor ||
+      !new_descriptor) {
+    return 0;
+  }
+  int ok = 0;
+#if HZ6_DIAGNOSTIC_PROBES
+  size_t probes = 0;
+  ok = hz6_route_backend_replace_exact_descriptor(
+      &allocator->route_backend, base, bytes, front_id, class_id,
+      old_generation, old_descriptor, new_generation, new_descriptor,
+      &probes);
+  allocator->stats.route_register_probe_total += probes;
+  hz6_allocator_note_route_probe_hist(
+      allocator->stats.route_register_probe_hist, probes);
+  if (probes > allocator->stats.route_register_probe_max) {
+    allocator->stats.route_register_probe_max = probes;
+  }
+#else
+  ok = hz6_route_backend_replace_exact_descriptor(
+      &allocator->route_backend, base, bytes, front_id, class_id,
+      old_generation, old_descriptor, new_generation, new_descriptor, NULL);
+#endif
+#if HZ6_SHARED_ROUTE_DIRECTORY_L1
+  if (ok) {
+    (void)hz6_shared_route_directory_register(allocator,
+                                              base,
+                                              front_id,
+                                              class_id,
+                                              new_generation,
+                                              new_descriptor);
+  }
+#endif
+#if HZ6_OWNER_LOCALITY_INDEX_L1
+  if (ok) {
+    hz6_owner_locality_index_register(allocator, base, new_generation);
+  }
+#endif
+#if HZ6_DIAGNOSTIC_PROBES
+  if (!ok) {
+    ++allocator->stats.route_register_fail;
+  }
+#endif
+  return ok;
+}
+
 Hz6RouteBackendKind hz6_allocator_route_backend_kind(
     const Hz6Allocator* allocator) {
   if (!allocator) {
