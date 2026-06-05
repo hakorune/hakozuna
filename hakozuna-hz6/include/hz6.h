@@ -183,6 +183,14 @@ typedef struct Hz6StatsSnapshot {
   size_t elastic_depot_slot_localize_storage_hit;
   size_t elastic_depot_slot_localize_storage_miss;
   size_t elastic_depot_slot_localize_storage_stale;
+  size_t elastic_depot_descriptor_rehome_probe;
+  size_t elastic_depot_descriptor_rehome_depot_descriptor;
+  size_t elastic_depot_descriptor_rehome_already_local;
+  size_t elastic_depot_descriptor_rehome_run_match;
+  size_t elastic_depot_descriptor_rehome_run_mismatch;
+  size_t elastic_depot_descriptor_rehome_local_descriptor_available;
+  size_t elastic_depot_descriptor_rehome_no_local_descriptor;
+  size_t elastic_depot_descriptor_rehome_would_rehome;
   size_t owner_equal_site_free;
   size_t owner_equal_site_remote_free;
   size_t owner_equal_site_local_cache;

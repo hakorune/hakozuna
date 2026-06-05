@@ -207,6 +207,64 @@ static void hz6_front_note_elastic_depot_drain_dryrun(
 }
 #endif
 
+#if HZ6_DIAGNOSTIC_PROBES && \
+    HZ6_ELASTIC_DEPOT_DESCRIPTOR_REHOME_DRYRUN_L1
+static int hz6_front_has_local_descriptor_slot(const Hz6Allocator* allocator) {
+  if (!allocator) {
+    return 0;
+  }
+#if HZ6_DESCRIPTOR_AVAIL_COUNT_L1
+  return allocator->descriptor_available_count != 0;
+#else
+  for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
+    const Hz6ObjectDescriptor* descriptor = &allocator->descriptors[i];
+    if (!descriptor->ptr
+#if HZ6_DESCRIPTOR_MATERIALIZE_RESERVE_L1
+        && descriptor->state == HZ6_STATE_DEAD
+#endif
+    ) {
+      return 1;
+    }
+  }
+  return 0;
+#endif
+}
+
+static void hz6_front_note_elastic_depot_descriptor_rehome_dryrun(
+    Hz6Allocator* allocator,
+    const Hz6ObjectDescriptor* descriptor) {
+  if (!allocator || !descriptor) {
+    return;
+  }
+  ++allocator->stats.elastic_depot_descriptor_rehome_probe;
+  if (!hz6_allocator_descriptor_is_depot(descriptor)) {
+    return;
+  }
+  ++allocator->stats.elastic_depot_descriptor_rehome_depot_descriptor;
+  if (hz6_allocator_descriptor_belongs_to(allocator, descriptor)) {
+    ++allocator->stats.elastic_depot_descriptor_rehome_already_local;
+    return;
+  }
+  if (!descriptor->source_block ||
+      !hz6_allocator_source_block_is_elastic_depot(descriptor->source_block) ||
+      !hz6_allocator_source_run_contains_slot(descriptor->source_block,
+                                             descriptor->ptr,
+                                             descriptor->class_id,
+                                             descriptor->bytes)) {
+    ++allocator->stats.elastic_depot_descriptor_rehome_run_mismatch;
+    return;
+  }
+  ++allocator->stats.elastic_depot_descriptor_rehome_run_match;
+  if (hz6_front_has_local_descriptor_slot(allocator)) {
+    ++allocator->stats
+          .elastic_depot_descriptor_rehome_local_descriptor_available;
+    ++allocator->stats.elastic_depot_descriptor_rehome_would_rehome;
+  } else {
+    ++allocator->stats.elastic_depot_descriptor_rehome_no_local_descriptor;
+  }
+}
+#endif
+
 void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
                                uint16_t front_id,
                                uint16_t class_id,
@@ -240,6 +298,10 @@ void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
 #endif
 #if HZ6_ELASTIC_DEPOT_DRAIN_DRYRUN_L1
     hz6_front_note_elastic_depot_drain_dryrun(allocator, descriptor);
+#endif
+#if HZ6_ELASTIC_DEPOT_DESCRIPTOR_REHOME_DRYRUN_L1
+    hz6_front_note_elastic_depot_descriptor_rehome_dryrun(allocator,
+                                                          descriptor);
 #endif
 #endif
 #if HZ6_ELASTIC_DEPOT_SLOT_LOCALIZE_L1 || \

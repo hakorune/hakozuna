@@ -46,6 +46,7 @@ cross-owner contract.
 | Unified depot drain dry-run | `speed + diagnostic + ...elasticdescsource-route-depotrunmeta-depotownerdirect-depotdraindryrun-...source64-route16k-run4096` | 43.101M | 235,420 | diagnostic-only; whole-block localize remains blocked, but every probed transfer slot is run-matched and slot-localizable |
 | Depot slot localize | `speed + ...elasticdescsource-route-depotrunmeta-depotownerdirect-depotslotlocalize-...source64-route16k-run4096` | 44.658M | 240,636 | behavior no-go/control; slot-local storage hits heavily but leaks `route_invalid=125` / `remote_free_transfer_fail=125` |
 | Depot slot transfer scoped | `speed + ...elasticdescsource-route-depotrunmeta-depotownerdirect-depotslottransfer-...source64-route16k-run4096` | 41.596M | n/a | safe transfer-scoped control/evidence; sparse slot recording works without broad storage override, `route_invalid=0` / `remote_free_transfer_fail=0` |
+| Depot descriptor rehome dry-run | `speed + diagnostic + ...elasticdescsource-route-depotrunmeta-depotownerdirect-depotdescrehomedry-...source64-route16k-run4096` | 43.040M | n/a | diagnostic-only; `would_rehome=71811` with local descriptor availability and safety clean |
 
 Source:
 - `docs/benchmarks/windows/paper/hz6_selected_family/selected-family-desc17-refresh/`

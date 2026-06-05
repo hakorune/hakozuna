@@ -717,6 +717,43 @@ read:
   fail-closed descriptor-local or transfer-local decision.
 ```
 
+DepotDescriptorRehomeDryRun-L1:
+
+```text
+lane:
+  ownerlocalityfast-rsscap-2-elasticdescsource-route-depotrunmeta-
+  depotownerdirect-depotdescrehomedry-desc16k-front4k-thindesc-nobackptr-
+  noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-
+  ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run4096
+
+mode:
+  diagnostic-only descriptor clone/rehome witness
+  run during transfer reuse after activation
+  no route unregister/register behavior
+  no depot descriptor release behavior
+
+full10k diagnostic:
+  43.040M ops/s
+  transfer_reuse_hit=80,000
+  elastic_depot_descriptor_rehome_probe=80,000
+  elastic_depot_descriptor_rehome_depot_descriptor=71,811
+  elastic_depot_descriptor_rehome_already_local=0
+  elastic_depot_descriptor_rehome_run_match=71,811
+  elastic_depot_descriptor_rehome_run_mismatch=0
+  elastic_depot_descriptor_rehome_local_descriptor_available=71,811
+  elastic_depot_descriptor_rehome_no_local_descriptor=0
+  elastic_depot_descriptor_rehome_would_rehome=71,811
+  route_invalid=0
+  remote_free_transfer_fail=0
+
+read:
+  Strong witness for descriptor-local rehome at transfer reuse.  Eligible depot
+  descriptors are run-matched and local descriptor capacity is available in
+  the consumer allocator.  The next behavior candidate should clone/rehome the
+  descriptor with a fail-closed route exact replacement and rollback path; it
+  should not revive broad slot-local storage-owner override.
+```
+
 ## What The Diagnostics Proved
 
 ElasticProjection-L1:

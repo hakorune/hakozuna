@@ -801,6 +801,29 @@ int main(int argc, char** argv) {
         hz6_stats.elastic_depot_slot_localize_storage_stale +=
             tds[t].hz6_stats_after
                 .elastic_depot_slot_localize_storage_stale;
+        hz6_stats.elastic_depot_descriptor_rehome_probe +=
+            tds[t].hz6_stats_after.elastic_depot_descriptor_rehome_probe;
+        hz6_stats.elastic_depot_descriptor_rehome_depot_descriptor +=
+            tds[t].hz6_stats_after
+                .elastic_depot_descriptor_rehome_depot_descriptor;
+        hz6_stats.elastic_depot_descriptor_rehome_already_local +=
+            tds[t].hz6_stats_after
+                .elastic_depot_descriptor_rehome_already_local;
+        hz6_stats.elastic_depot_descriptor_rehome_run_match +=
+            tds[t].hz6_stats_after.elastic_depot_descriptor_rehome_run_match;
+        hz6_stats.elastic_depot_descriptor_rehome_run_mismatch +=
+            tds[t].hz6_stats_after
+                .elastic_depot_descriptor_rehome_run_mismatch;
+        hz6_stats
+            .elastic_depot_descriptor_rehome_local_descriptor_available +=
+            tds[t].hz6_stats_after
+                .elastic_depot_descriptor_rehome_local_descriptor_available;
+        hz6_stats.elastic_depot_descriptor_rehome_no_local_descriptor +=
+            tds[t].hz6_stats_after
+                .elastic_depot_descriptor_rehome_no_local_descriptor;
+        hz6_stats.elastic_depot_descriptor_rehome_would_rehome +=
+            tds[t].hz6_stats_after
+                .elastic_depot_descriptor_rehome_would_rehome;
         hz6_stats.elastic_slot_owner_sparse_lookup +=
             tds[t].hz6_stats_after.elastic_slot_owner_sparse_lookup;
         hz6_stats.elastic_slot_owner_sparse_hit +=
@@ -1624,6 +1647,14 @@ int main(int argc, char** argv) {
            "elastic_depot_slot_localize_storage_hit=%zu "
            "elastic_depot_slot_localize_storage_miss=%zu "
            "elastic_depot_slot_localize_storage_stale=%zu "
+           "elastic_depot_descriptor_rehome_probe=%zu "
+           "elastic_depot_descriptor_rehome_depot_descriptor=%zu "
+           "elastic_depot_descriptor_rehome_already_local=%zu "
+           "elastic_depot_descriptor_rehome_run_match=%zu "
+           "elastic_depot_descriptor_rehome_run_mismatch=%zu "
+           "elastic_depot_descriptor_rehome_local_descriptor_available=%zu "
+           "elastic_depot_descriptor_rehome_no_local_descriptor=%zu "
+           "elastic_depot_descriptor_rehome_would_rehome=%zu "
            "elastic_slot_owner_sparse_lookup=%zu "
            "elastic_slot_owner_sparse_hit=%zu "
            "elastic_slot_owner_sparse_miss=%zu "
@@ -1855,6 +1886,15 @@ int main(int argc, char** argv) {
            hz6_stats.elastic_depot_slot_localize_storage_hit,
            hz6_stats.elastic_depot_slot_localize_storage_miss,
            hz6_stats.elastic_depot_slot_localize_storage_stale,
+           hz6_stats.elastic_depot_descriptor_rehome_probe,
+           hz6_stats.elastic_depot_descriptor_rehome_depot_descriptor,
+           hz6_stats.elastic_depot_descriptor_rehome_already_local,
+           hz6_stats.elastic_depot_descriptor_rehome_run_match,
+           hz6_stats.elastic_depot_descriptor_rehome_run_mismatch,
+           hz6_stats
+               .elastic_depot_descriptor_rehome_local_descriptor_available,
+           hz6_stats.elastic_depot_descriptor_rehome_no_local_descriptor,
+           hz6_stats.elastic_depot_descriptor_rehome_would_rehome,
            hz6_stats.elastic_slot_owner_sparse_lookup,
            hz6_stats.elastic_slot_owner_sparse_hit,
            hz6_stats.elastic_slot_owner_sparse_miss,

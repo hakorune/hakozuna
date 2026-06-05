@@ -248,6 +248,38 @@ Latest HZ6 selected-family decision:
       only in a fail-closed descriptor-local or transfer-local decision; do not
       re-enable broad storage-owner override.
 
+  2026-06-05 DepotDescriptorRehomeDryRun-L1:
+    implementation:
+      Add HZ6_ELASTIC_DEPOT_DESCRIPTOR_REHOME_DRYRUN_L1.
+      It runs during transfer reuse after activation, on top of the safe
+      depotslottransfer lane, and asks whether a depot descriptor could be
+      cloned/re-homed into the consumer allocator's local descriptor table.
+      This is diagnostic-only; it does not unregister/register routes, release
+      depot descriptors, or change object ownership.
+
+    full10k diagnostic:
+      43.040M / safety clean
+      transfer_reuse_hit=80000
+      elastic_depot_descriptor_rehome_probe=80000
+      elastic_depot_descriptor_rehome_depot_descriptor=71811
+      elastic_depot_descriptor_rehome_already_local=0
+      elastic_depot_descriptor_rehome_run_match=71811
+      elastic_depot_descriptor_rehome_run_mismatch=0
+      elastic_depot_descriptor_rehome_local_descriptor_available=71811
+      elastic_depot_descriptor_rehome_no_local_descriptor=0
+      elastic_depot_descriptor_rehome_would_rehome=71811
+      route_invalid=0
+      remote_free_transfer_fail=0
+
+    read:
+      Strong next-behavior witness.  Most transfer-reused depot descriptors are
+      physically run-matched slots and every eligible depot descriptor had a
+      local descriptor slot available in the consumer allocator.  The next
+      behavior candidate is not storage-owner override; it is descriptor
+      clone/rehome at transfer reuse, with fail-closed route exact replacement
+      and depot descriptor release/rollback.  Keep this diagnostic separate
+      from speed lanes until the route-swap safety contract is implemented.
+
   do not:
     use diagnostic-only lanes in speed-ranking tables
     revive whole-SourceBlock localize
