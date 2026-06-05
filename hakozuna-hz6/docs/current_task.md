@@ -160,6 +160,125 @@ Next:
     no hot-path global scan
 ```
 
+### 2026-06-05: ElasticProjection local-cap controls
+
+Goal:
+
+```text
+Use CapacityUtil-L1 to test whether the selected Larson lane can simply lower
+per-worker static capacities, before implementing shared/elastic overflow.
+
+This is a control track:
+  no production promotion
+  no shared overflow yet
+  tests where local-only capacity breaks
+```
+
+Lane 1:
+
+```text
+ownerlocalityfast-rsscap-2-elasticproj-local1k-route16k-source64-front1k-packed
+
+Caps:
+  descriptor 1024
+  route 16384
+  source block 64
+  frontcache bin 1024
+  selected packed/owner/source flags
+
+Result:
+  main-warmup 1k:
+    warmup_alloc_fail
+    descriptor_exhausted=2
+    source_block_exhausted=1
+    source_alloc=64
+
+  worker-warmup 1k:
+    warmup_alloc_fail
+    descriptor_exhausted=2
+    source_block_exhausted=1
+```
+
+Read:
+
+```text
+The final-snapshot max/cap2x projection was too optimistic for warmup live-set
+pressure. The lane is useful as a no-go/control, but not a behavior candidate.
+```
+
+Lane 2:
+
+```text
+ownerlocalityfast-rsscap-2-elasticproj-live2k-route16k-source128-front1k-packed
+
+Caps:
+  descriptor 2048
+  route 16384
+  source block 128
+  frontcache bin 1024
+  selected packed/owner/source flags
+```
+
+Smoke:
+
+```text
+Source:
+  docs/benchmarks/windows/paper/hz6_elasticproj_l1_smoke/
+    20260605_092158_hz6_capacity_matrix_windows.md
+
+main-warmup 1k:
+  failed:parse
+  read:
+    still not enough for cross-owner main-thread warmup.
+    The main allocator must seed multiple worker live sets before rehome.
+
+worker-warmup 1k:
+  55.585M / 60952 KB
+  safety clean:
+    route_invalid=0
+    route_miss=0
+    alloc_fail=0
+    descriptor_exhausted=0
+    route_register_fail=0
+    source_block_exhausted=0
+
+  residual:
+    static table = 30598 KiB
+    static+payload = 104326 KiB
+    descriptor = 2176 KiB
+    route = 6656 KiB
+    source block = 256 KiB
+    frontcache = 6150 KiB
+    payload = 73728 KiB
+
+  utilization:
+    descriptor used/cap = 18,432 / 32,768 = 56.25%
+    route active/cap = 19,584 / 262,144 = 7.47%
+    source blocks/cap = 1,152 / 2,048 = 56.25%
+    frontcache used/cap = 2,432 / 262,144 = 0.93%
+```
+
+Decision:
+
+```text
+KEEP as boundary evidence.
+
+Read:
+  Local-only low capacity is viable for same-owner 1k.
+  It is not enough for cross-owner main-warmup because the main allocator
+  carries the initial live-set seeding pressure.
+
+Next design:
+  HZ6 ElasticCapacity-L1 needs either:
+    A. shared overflow descriptor/source-block allocation for warmup pressure
+    B. benchmark/lifecycle-aware worker preseed path for same-owner lanes
+    C. a source-backed global descriptor/source-block depot
+
+Do not:
+  promote elasticproj-local-only lanes.
+  shrink selected full-10k local capacities without overflow.
+```
+
 ### 2026-06-05: SourceBlockPackedFlags-L1 candidate
 
 Goal:

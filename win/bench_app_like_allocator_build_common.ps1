@@ -949,6 +949,54 @@ function Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRou
     $flags
 }
 
+function Get-Hz6WinOwnerLocalityFastRssCap2ElasticProjectionLocal1kRoute16kSource64Front1kPackedCapacityFlags {
+    @(
+        "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)1024)",
+        "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)16384)",
+        "/DHZ6_TRANSFER_CACHE_CAPACITY=((size_t)4096)",
+        "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)64)",
+        "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)1024)",
+        "/DHZ6_SHARED_ROUTE_DIRECTORY_L1=1",
+        "/DHZ6_OWNER_LOCALITY_INDEX_L1=1",
+        "/DHZ6_THIN_DESCRIPTOR_L1=1",
+        "/DHZ6_DESCRIPTOR_COLD_SOURCE_CAPACITY=((size_t)1024)",
+        "/DHZ6_DESCRIPTOR_NO_BACKPTR_L1=1",
+        "/DHZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1=1",
+        "/DHZ6_SHARED_ROUTE_DIRECTORY_CAPACITY=((size_t)196608)",
+        "/DHZ6_ROUTE_PACKED_META_L1=1",
+        "/DHZ6_ROUTE_BYTES16_MINUS1_L2=1",
+        "/DHZ6_DESCRIPTOR_STORAGE_OWNER16_L1=1",
+        "/DHZ6_OWNER_SOURCE_SIDE_META_L2=1",
+        "/DHZ6_FRONTCACHE_PACKED_META_L1=1",
+        "/DHZ6_SOURCE_BLOCK_PACKED_FLAGS_L1=1",
+        "/DHZ6_SOURCE_RUN_MAX_SLOTS=((size_t)512)"
+    )
+}
+
+function Get-Hz6WinOwnerLocalityFastRssCap2ElasticProjectionLive2kRoute16kSource128Front1kPackedCapacityFlags {
+    @(
+        "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)2048)",
+        "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)16384)",
+        "/DHZ6_TRANSFER_CACHE_CAPACITY=((size_t)4096)",
+        "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)128)",
+        "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)1024)",
+        "/DHZ6_SHARED_ROUTE_DIRECTORY_L1=1",
+        "/DHZ6_OWNER_LOCALITY_INDEX_L1=1",
+        "/DHZ6_THIN_DESCRIPTOR_L1=1",
+        "/DHZ6_DESCRIPTOR_COLD_SOURCE_CAPACITY=((size_t)2048)",
+        "/DHZ6_DESCRIPTOR_NO_BACKPTR_L1=1",
+        "/DHZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1=1",
+        "/DHZ6_SHARED_ROUTE_DIRECTORY_CAPACITY=((size_t)196608)",
+        "/DHZ6_ROUTE_PACKED_META_L1=1",
+        "/DHZ6_ROUTE_BYTES16_MINUS1_L2=1",
+        "/DHZ6_DESCRIPTOR_STORAGE_OWNER16_L1=1",
+        "/DHZ6_OWNER_SOURCE_SIDE_META_L2=1",
+        "/DHZ6_FRONTCACHE_PACKED_META_L1=1",
+        "/DHZ6_SOURCE_BLOCK_PACKED_FLAGS_L1=1",
+        "/DHZ6_SOURCE_RUN_MAX_SLOTS=((size_t)512)"
+    )
+}
+
 function Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrDir192kRoutePackedBytes16StorageOwner16OwnerSourceL2DryRunSource16kRoute192kRun512CapacityFlags {
     $flags = @()
     $flags += Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrDir192kRoutePackedBytes16StorageOwner16OwnerSourceL2Source16kRoute192kRun512CapacityFlags
@@ -1447,6 +1495,8 @@ function Invoke-AppLikeHz6BenchBuilds {
     $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrDir192kRoutePackedBytes16StorageOwner16OwnerSourceL2FrontcachePackedSource16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrDir192kRoutePackedBytes16StorageOwner16OwnerSourceL2FrontcachePackedSource16kRoute192kRun512CapacityFlags
     $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrDir192kRoutePackedBytes16StorageOwner16OwnerSourceL2SourceBlockPackedSource16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrDir192kRoutePackedBytes16StorageOwner16OwnerSourceL2SourceBlockPackedSource16kRoute192kRun512CapacityFlags
     $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrDir192kRoutePackedBytes16StorageOwner16OwnerSourceL2FrontcachePackedSourceBlockPackedSource16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrDir192kRoutePackedBytes16StorageOwner16OwnerSourceL2FrontcachePackedSourceBlockPackedSource16kRoute192kRun512CapacityFlags
+    $ownerLocalityFastRssCap2ElasticProjectionLocal1kRoute16kSource64Front1kPackedFlags = Get-Hz6WinOwnerLocalityFastRssCap2ElasticProjectionLocal1kRoute16kSource64Front1kPackedCapacityFlags
+    $ownerLocalityFastRssCap2ElasticProjectionLive2kRoute16kSource128Front1kPackedFlags = Get-Hz6WinOwnerLocalityFastRssCap2ElasticProjectionLive2kRoute16kSource128Front1kPackedCapacityFlags
     $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrDir192kRoutePackedBytes16StorageOwner16OwnerSourceL2DryRunSource16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrDir192kRoutePackedBytes16StorageOwner16OwnerSourceL2DryRunSource16kRoute192kRun512CapacityFlags
     $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrStorageOwner16NoRouteBackptrDir192kRoutePackedSource16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrStorageOwner16NoRouteBackptrDir192kRoutePackedSource16kRoute192kRun512CapacityFlags
     $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrDir128kSource16kRoute192kRun512Flags = Get-Hz6WinOwnerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrDir128kSource16kRoute192kRun512CapacityFlags
@@ -1574,6 +1624,8 @@ function Invoke-AppLikeHz6BenchBuilds {
         "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-source16k-route192k-run512" = @{ Suffix = "_ownerloc_rss2_d160_f4_thin_nb_nrb_d192_rp_rb16_so16_osl2_fcp_s16_r192_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrDir192kRoutePackedBytes16StorageOwner16OwnerSourceL2FrontcachePackedSource16kRoute192kRun512Flags }
         "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-sourceblockpacked-source16k-route192k-run512" = @{ Suffix = "_ownerloc_rss2_d160_f4_thin_nb_nrb_d192_rp_rb16_so16_osl2_sbp_s16_r192_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrDir192kRoutePackedBytes16StorageOwner16OwnerSourceL2SourceBlockPackedSource16kRoute192kRun512Flags }
         "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source16k-route192k-run512" = @{ Suffix = "_ownerloc_rss2_d160_f4_thin_nb_nrb_d192_rp_rb16_so16_osl2_fcp_sbp_s16_r192_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrDir192kRoutePackedBytes16StorageOwner16OwnerSourceL2FrontcachePackedSourceBlockPackedSource16kRoute192kRun512Flags }
+        "ownerlocalityfast-rsscap-2-elasticproj-local1k-route16k-source64-front1k-packed" = @{ Suffix = "_ownerloc_rss2_elproj_l1k_r16k_s64_f1k_packed"; ExtraFlags = $ownerLocalityFastRssCap2ElasticProjectionLocal1kRoute16kSource64Front1kPackedFlags }
+        "ownerlocalityfast-rsscap-2-elasticproj-live2k-route16k-source128-front1k-packed" = @{ Suffix = "_ownerloc_rss2_elproj_l2k_r16k_s128_f1k_packed"; ExtraFlags = $ownerLocalityFastRssCap2ElasticProjectionLive2kRoute16kSource128Front1kPackedFlags }
         "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2dryrun-source16k-route192k-run512" = @{ Suffix = "_ownerloc_rss2_d160_f4_thin_nb_nrb_d192_rp_rb16_so16_osl2dry_s16_r192_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrNoRouteBackptrDir192kRoutePackedBytes16StorageOwner16OwnerSourceL2DryRunSource16kRoute192kRun512Flags }
         "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-storageowner16-noroutebackptr-dir192k-routepacked-source16k-route192k-run512" = @{ Suffix = "_ownerloc_rss2_d160_f4_thin_nb_so16_nrb_d192_rp_s16_r192_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrStorageOwner16NoRouteBackptrDir192kRoutePackedSource16kRoute192kRun512Flags }
         "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-dir128k-source16k-route192k-run512" = @{ Suffix = "_ownerlocalityfast_rsscap_2_desc160k_front4k_thindesc_nobackptr_dir128k_source16k_route192k_run512"; ExtraFlags = $ownerLocalityFastRssCap2Desc160kFront4kThinDescNoBackptrDir128kSource16kRoute192kRun512Flags }
