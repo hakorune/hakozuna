@@ -862,6 +862,35 @@ DepotDescriptorRehome-L1:
     promotion yet because descriptor usage rises: diagnostic final
     descriptor_used=77,883 after rehoming.  The next useful work is descriptor
     retention / bounding for rehomed slots, not another owner-route shortcut.
+
+DepotDescriptorRehomeCapFree-L1:
+  Control lane that combines DepotDescriptorRehome-L1 with
+  `HZ6_FRONTCACHE_CAP_ON_FREE=1`.
+
+  Full10k non-diagnostic:
+    43.602M ops/s
+    route_invalid=0
+    remote_free_transfer_fail=0
+
+  Full10k diagnostic:
+    42.119M ops/s
+    l1_attempt=80,000
+    l1_success=71,811
+    route_replace_fail=0
+    detach_fail=0
+    rollback=0
+    descriptor_used=77,883
+    active_descriptors=72,327
+    local_free_descriptors=5,556
+    frontcache_total=6,072
+
+  Read:
+    This is a no-go for the simple frontcache-cap explanation.  Safety remains
+    clean, but descriptor usage does not fall and throughput regresses from
+    DepotDescriptorRehome-L1.  The retention watch item is dominated by live
+    Larson objects materialized into consumer-local descriptors, not by cold
+    frontcache backlog.  Do not pursue broad cap-on-free as the next control
+    plane for this track.
 ```
 
 ## What The Diagnostics Proved

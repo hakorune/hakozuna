@@ -94,6 +94,22 @@ Latest HZ6 selected-family decision:
           depot descriptors are materialized into consumer-local descriptors.
           This is valid behavior evidence, not promotion yet.
 
+      depotdescrehome-capfree
+        full10k non-diagnostic = 43.602M, safety-clean
+        full10k diagnostic = 42.119M, safety-clean
+        l1_attempt=80000
+        l1_success=71811
+        route_replace_fail=0
+        detach_fail=0
+        rollback=0
+        read:
+          control/no-go for the simple frontcache cap hypothesis.
+          `descriptor_used` remains 77883, `active_descriptors` remains about
+          72327, and `frontcache_total` is only 6072.  The retention watch item
+          is dominated by live Larson objects materialized into consumer-local
+          descriptors, not by a cold frontcache backlog.  Do not chase a broad
+          cap-on-free policy for this track.
+
   immediate next attack order:
     1. RouteExactDescriptorReplace-L0/L1:
        implement a fail-closed exact-route descriptor replacement primitive.
@@ -113,9 +129,12 @@ Latest HZ6 selected-family decision:
        live object, not a new object lifetime.
        L1 behavior now succeeds for every eligible transfer-reuse depot
        descriptor and keeps safety clean.  Next optimization should not add
-       another route knob; it should examine rehomed descriptor retention and
-       whether local descriptor pressure can be bounded without losing the
-       speed gain.
+       another route knob.  The capfree control shows frontcache backlog is not
+       the dominant retention source; next work should examine whether
+       consumer-local descriptor materialization should be retained for live
+       cross-owner Larson objects, or whether a cheaper owner/depot descriptor
+       equality path can capture the speed without cloning every eligible
+       descriptor.
 
     do not:
       revive broad slot-local storage-owner override
