@@ -38,19 +38,20 @@ Current bottleneck hypothesis:
   counters.
 
 Immediate action queue:
-  1. Guard source10k outside the main-warmup repeat row:
-       larson_t16_worker_10k
-       larson_t16_main_4k / worker_4k
-       larson_t16_main_1k / worker_1k if needed
-  2. If source10k remains safety-clean, keep it as the current Larson
-     combined-packed minimum-RSS sibling.
+  1. source10k guard matrix is complete and safety-clean.
+     Keep source10k as the current Larson combined-packed minimum-RSS sibling.
+  2. Add ElasticProjection-L1 before behavior:
+       use existing diagnostic stats only
+       estimate projected table KiB from local_cap_2x
+       compare projected static KiB against current static KiB
+       keep allocator hot path unchanged
   3. Then move to ElasticCapacity-L1 design work:
        local descriptor/route/source/frontcache caps
        shared overflow / depot for warmup pressure
        fail-closed INVALID/MISS preserved
        no hot-path global scan
-  4. Do not add new hot-path counters or another packing lane before the
-     guard matrix is clean.
+  4. Do not add another packing lane until ElasticProjection identifies the
+     next static-table target.
 ```
 
 ### 2026-06-05: CapacityUtil-L1 diagnostic
@@ -174,6 +175,164 @@ Next:
         frontcache local cap ~= 1,024
     shared overflow or shared backing pool
     fail-closed route INVALID/MISS contract preserved
+    no hot-path global scan
+```
+
+### 2026-06-05: ElasticProjection-L1 diagnostic
+
+Goal:
+
+```text
+Before implementing shared/elastic descriptor-route capacity, quantify the
+static-table upside of local-cap sizing with the already observed
+`local_cap_2x` headroom.
+
+This is diagnostic-only:
+  no HZ6 allocator hot path behavior change
+  no production atomics/counters added
+  no route/descriptor/source lifetime behavior change
+```
+
+Implementation:
+
+```text
+bench_larson_compare:
+  emits [HZ6_ELASTIC_PROJECTION] under HZ6_DIAGNOSTIC_PROBES.
+  It projects table bytes for:
+    descriptor
+    route
+    source block
+    frontcache
+    transfer
+
+run_win_hz6_capacity_matrix:
+  captures [HZ6_ELASTIC_PROJECTION]
+  adds "HZ6 elastic capacity projection" markdown table.
+```
+
+Read:
+
+```text
+ElasticProjection-L1 is not a promotion lane.
+It is the design bridge between:
+  CapacityUtil-L1:
+    current per-worker fixed tables are mostly unused
+
+and:
+  ElasticCapacity-L1:
+    local small tables plus shared overflow/depot
+```
+
+Acceptance:
+
+```text
+The diagnostic must build and run only when DiagnosticHz6Probes is enabled.
+The projection table must not change throughput/safety behavior by itself.
+Use the output to choose the first real ElasticCapacity target.
+```
+
+Smoke:
+
+```text
+Command:
+  win/run_win_hz6_capacity_matrix.ps1
+    -Families larson
+    -BenchmarkProfiles larson_t16_main_1k
+    -Hz6Profiles speed
+    -CapacityLanes ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source10k-route192k-run512
+    -Runs 1
+    -ForceBuild
+    -DiagnosticHz6Probes
+
+Source:
+  docs/benchmarks/windows/paper/hz6_elastic_projection_l1_smoke2/
+    20260605_104834_hz6_capacity_matrix_windows.md
+
+Result:
+  throughput/RSS:
+    56.041M / 290,952 KB
+
+  safety:
+    route_invalid=0
+    route_miss=0
+    alloc_fail=0
+    descriptor_exhausted=0
+    route_register_fail=0
+    source_block_exhausted=0
+
+  current static:
+    234,502 KiB
+
+  projected static:
+    15,212 KiB
+
+  projected static savings:
+    219,290 KiB
+```
+
+Full 10k check:
+
+```text
+Command:
+  same lane and diagnostic flags, but:
+    -BenchmarkProfiles larson_t16_main_10k
+    -Runs 1
+    -SkipBuild
+
+Source:
+  docs/benchmarks/windows/paper/hz6_elastic_projection_l1_full10k/
+    20260605_104905_hz6_capacity_matrix_windows.md
+
+Result:
+  throughput/RSS:
+    40.575M / 412,840 KB
+
+  safety:
+    route_invalid=0
+    route_miss=0
+    alloc_fail=0
+    descriptor_exhausted=0
+    route_register_fail=0
+    source_block_exhausted=0
+
+  current static:
+    234,502 KiB
+
+  projected static:
+    21,616 KiB
+
+  projected static+payload:
+    46,000 KiB
+
+  projected static savings:
+    212,886 KiB
+
+  projected caps:
+    descriptor 16,384 entries / 576 KiB
+    route      262,144 entries / 6,656 KiB
+    source     1,024 entries / 128 KiB
+    frontcache 16,384 entries / 384 KiB
+    transfer   2,048 entries / 48 KiB
+```
+
+Decision:
+
+```text
+KEEP as diagnostic evidence.
+
+Read:
+  The remaining RSS opportunity is now overwhelmingly static-table capacity,
+  not payload. Source10k solved the local source-block lower bound for the
+  main-warmup 10k row, but descriptor/route/frontcache/source tables are still
+  replicated per worker at much larger caps than observed use.
+
+Next:
+  Start ElasticCapacity-L1 as behavior design, with route/descriptor safety
+  first:
+    local route/descriptor/source/frontcache tables stay small
+    shared overflow/depot handles warmup pressure
+    route INVALID/MISS and owned-looking invalid fail-closed semantics are
+      preserved
     no hot-path global scan
 ```
 

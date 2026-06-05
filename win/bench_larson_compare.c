@@ -91,6 +91,16 @@ static size_t hz6_larson_headroom_capacity(size_t max_used) {
     }
     return hz6_larson_next_pow2_capacity(max_used * 2u);
 }
+
+static size_t hz6_larson_project_table_bytes(size_t current_bytes,
+                                             size_t current_capacity,
+                                             size_t projected_capacity) {
+    if (current_bytes == 0u || current_capacity == 0u ||
+        projected_capacity == 0u) {
+        return 0u;
+    }
+    return (current_bytes / current_capacity) * projected_capacity;
+}
 #endif
 
 static inline void* bench_alloc(size_t size) {
@@ -855,7 +865,7 @@ int main(int argc, char** argv) {
                 local_stats->memory_active_source_blocks;
             const size_t local_frontcache_used =
                 local_stats->memory_frontcache_total;
-            const size_t local_transfer_used = local_stats->transfer_current;
+            const size_t local_transfer_used = local_stats->transfer_current_max;
             if (local_descriptor_used > hz6_descriptor_used_max_allocator) {
                 hz6_descriptor_used_max_allocator = local_descriptor_used;
             }
@@ -1053,6 +1063,57 @@ int main(int argc, char** argv) {
         hz6_larson_headroom_capacity(hz6_frontcache_used_max_allocator);
     const size_t hz6_transfer_local_cap_2x =
         hz6_larson_headroom_capacity(hz6_transfer_used_max_allocator);
+    const size_t hz6_descriptor_projected_capacity =
+        hz6_descriptor_local_cap_2x * hz6_allocator_count;
+    const size_t hz6_route_projected_capacity =
+        hz6_route_local_cap_2x * hz6_allocator_count;
+    const size_t hz6_source_block_projected_capacity =
+        hz6_source_block_local_cap_2x * hz6_allocator_count;
+    const size_t hz6_frontcache_projected_capacity =
+        hz6_frontcache_local_cap_2x * hz6_allocator_count;
+    const size_t hz6_transfer_projected_capacity =
+        hz6_transfer_local_cap_2x * hz6_allocator_count;
+    const size_t hz6_descriptor_projected_bytes =
+        hz6_larson_project_table_bytes(
+            hz6_stats.memory_descriptor_table_bytes,
+            hz6_descriptor_capacity,
+            hz6_descriptor_projected_capacity);
+    const size_t hz6_route_projected_bytes =
+        hz6_larson_project_table_bytes(
+            hz6_stats.memory_route_table_bytes,
+            hz6_route_capacity,
+            hz6_route_projected_capacity);
+    const size_t hz6_source_block_projected_bytes =
+        hz6_larson_project_table_bytes(
+            hz6_stats.memory_source_block_table_bytes,
+            hz6_source_block_capacity,
+            hz6_source_block_projected_capacity);
+    const size_t hz6_frontcache_projected_bytes =
+        hz6_larson_project_table_bytes(
+            hz6_stats.memory_frontcache_table_bytes,
+            hz6_frontcache_capacity,
+            hz6_frontcache_projected_capacity);
+    const size_t hz6_transfer_projected_bytes =
+        hz6_larson_project_table_bytes(
+            hz6_stats.memory_transfer_table_bytes,
+            hz6_transfer_capacity,
+            hz6_transfer_projected_capacity);
+    const size_t hz6_elastic_projected_static_bytes =
+        hz6_descriptor_projected_bytes +
+        hz6_route_projected_bytes +
+        hz6_source_block_projected_bytes +
+        hz6_frontcache_projected_bytes +
+        hz6_transfer_projected_bytes +
+        hz6_stats.memory_ownerlocality_index_bytes;
+    const size_t hz6_elastic_projected_static_plus_payload_bytes =
+        hz6_elastic_projected_static_bytes +
+        hz6_stats.memory_source_block_committed_estimate;
+    const size_t hz6_elastic_projected_savings_bytes =
+        (hz6_stats.memory_static_table_bytes >
+         hz6_elastic_projected_static_bytes)
+            ? (hz6_stats.memory_static_table_bytes -
+               hz6_elastic_projected_static_bytes)
+            : 0u;
 #endif
 
     duration_sec = (double)(end_ns - start_ns) / 1e9;
@@ -1448,6 +1509,35 @@ int main(int argc, char** argv) {
            hz6_frontcache_local_cap_2x,
            hz6_transfer_used_max_allocator,
            hz6_transfer_local_cap_2x);
+    printf("[HZ6_ELASTIC_PROJECTION] "
+           "allocator_count=%zu "
+           "descriptor_projected_capacity=%zu "
+           "descriptor_projected_table_bytes=%zu "
+           "route_projected_capacity=%zu "
+           "route_projected_table_bytes=%zu "
+           "source_block_projected_capacity=%zu "
+           "source_block_projected_table_bytes=%zu "
+           "frontcache_projected_capacity=%zu "
+           "frontcache_projected_table_bytes=%zu "
+           "transfer_projected_capacity=%zu "
+           "transfer_projected_table_bytes=%zu "
+           "projected_static_table_bytes=%zu "
+           "projected_static_plus_payload_bytes=%zu "
+           "projected_static_savings_bytes=%zu\n",
+           hz6_allocator_count,
+           hz6_descriptor_projected_capacity,
+           hz6_descriptor_projected_bytes,
+           hz6_route_projected_capacity,
+           hz6_route_projected_bytes,
+           hz6_source_block_projected_capacity,
+           hz6_source_block_projected_bytes,
+           hz6_frontcache_projected_capacity,
+           hz6_frontcache_projected_bytes,
+           hz6_transfer_projected_capacity,
+           hz6_transfer_projected_bytes,
+           hz6_elastic_projected_static_bytes,
+           hz6_elastic_projected_static_plus_payload_bytes,
+           hz6_elastic_projected_savings_bytes);
     printf("[HZ6_METADATA_SLIM] "
            "descriptor_entry_bytes=%zu "
            "descriptor_thin_hot_entry_bytes=%zu "

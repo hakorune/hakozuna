@@ -99,7 +99,7 @@ function Get-LogCapture {
                 }
                 [void]$tail.Enqueue($line)
             }
-            if ($line -match '^(\[BENCH_ARGS\]|\[RSS\]|\[OPS\]|\[HZ6_STATS\]|\[HZ6_MEMORY_ATTR\]|\[HZ6_RSS_RESIDUAL\]|\[HZ6_CAPACITY_UTIL\]|\[HZ6_METADATA_SLIM\]|\[HZ6_FRONT_ALLOC_PATH\]|\[HZ6_FRONTCACHE_CLASS\]|\[HZ6_ROUTE_PROBE_SHAPE\]|\[HZ6_REDIS_STATS\]|threads=.*ops/s=|bench_[^:]+:.*ops/s=|Pattern:|Throughput:|Throughput = |Ops:|---)') {
+            if ($line -match '^(\[BENCH_ARGS\]|\[RSS\]|\[OPS\]|\[HZ6_STATS\]|\[HZ6_MEMORY_ATTR\]|\[HZ6_RSS_RESIDUAL\]|\[HZ6_CAPACITY_UTIL\]|\[HZ6_ELASTIC_PROJECTION\]|\[HZ6_METADATA_SLIM\]|\[HZ6_FRONT_ALLOC_PATH\]|\[HZ6_FRONTCACHE_CLASS\]|\[HZ6_ROUTE_PROBE_SHAPE\]|\[HZ6_REDIS_STATS\]|threads=.*ops/s=|bench_[^:]+:.*ops/s=|Pattern:|Throughput:|Throughput = |Ops:|---)') {
                 [void]$captured.Add($line)
             } elseif ($IncludeStatsTail -and $line -match '^\[HZ6_STATS\]\s+label=redis_alloc_string_fail') {
                 if ($statsTail.Count -ge $TailLimit) {
@@ -533,6 +533,7 @@ foreach ($family in $selectedFamilies) {
     foreach ($case in $cases) {
         $residualRows = New-Object System.Collections.Generic.List[object]
         $capacityRows = New-Object System.Collections.Generic.List[object]
+        $elasticRows = New-Object System.Collections.Generic.List[object]
         $Summary.Add("## $family / $($case.Name)")
         $Summary.Add("")
         $Summary.Add("- Note: " + $case.Note)
@@ -553,6 +554,7 @@ foreach ($family in $selectedFamilies) {
             $runTexts = New-Object System.Collections.Generic.List[string]
             $residualMaps = New-Object System.Collections.Generic.List[object]
             $capacityMaps = New-Object System.Collections.Generic.List[object]
+            $elasticMaps = New-Object System.Collections.Generic.List[object]
             $redisPatternRuns = @{}
             foreach ($pattern in @("SET", "GET", "LPUSH", "LPOP", "RANDOM")) {
                 $redisPatternRuns[$pattern] = New-Object System.Collections.Generic.List[double]
@@ -622,6 +624,9 @@ foreach ($family in $selectedFamilies) {
                 if ($DiagnosticHz6Probes -and $raw -match '\[HZ6_CAPACITY_UTIL\]\s+([^[]+)') {
                     $capacityMaps.Add((Get-KeyValueMap -Line $Matches[1]))
                 }
+                if ($DiagnosticHz6Probes -and $raw -match '\[HZ6_ELASTIC_PROJECTION\]\s+([^[]+)') {
+                    $elasticMaps.Add((Get-KeyValueMap -Line $Matches[1]))
+                }
                 if ($family -eq "redis") {
                     $runTexts.Add(("run{0}:ok" -f $run))
                 } else {
@@ -690,6 +695,25 @@ foreach ($family in $selectedFamilies) {
                     FrontcacheLocalCap2x = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "frontcache_local_cap_2x"
                     TransferMaxAllocator = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "transfer_used_max_allocator"
                     TransferLocalCap2x = Get-MedianFromMaps -Maps $capacityMaps.ToArray() -Key "transfer_local_cap_2x"
+                })
+            }
+            if ($DiagnosticHz6Probes -and $elasticMaps.Count -gt 0) {
+                $elasticRows.Add([pscustomobject]@{
+                    Allocator = $exe.Name
+                    AllocatorCount = Get-MedianFromMaps -Maps $elasticMaps.ToArray() -Key "allocator_count"
+                    DescriptorCapacity = Get-MedianFromMaps -Maps $elasticMaps.ToArray() -Key "descriptor_projected_capacity"
+                    DescriptorBytes = Get-MedianFromMaps -Maps $elasticMaps.ToArray() -Key "descriptor_projected_table_bytes"
+                    RouteCapacity = Get-MedianFromMaps -Maps $elasticMaps.ToArray() -Key "route_projected_capacity"
+                    RouteBytes = Get-MedianFromMaps -Maps $elasticMaps.ToArray() -Key "route_projected_table_bytes"
+                    SourceBlockCapacity = Get-MedianFromMaps -Maps $elasticMaps.ToArray() -Key "source_block_projected_capacity"
+                    SourceBlockBytes = Get-MedianFromMaps -Maps $elasticMaps.ToArray() -Key "source_block_projected_table_bytes"
+                    FrontcacheCapacity = Get-MedianFromMaps -Maps $elasticMaps.ToArray() -Key "frontcache_projected_capacity"
+                    FrontcacheBytes = Get-MedianFromMaps -Maps $elasticMaps.ToArray() -Key "frontcache_projected_table_bytes"
+                    TransferCapacity = Get-MedianFromMaps -Maps $elasticMaps.ToArray() -Key "transfer_projected_capacity"
+                    TransferBytes = Get-MedianFromMaps -Maps $elasticMaps.ToArray() -Key "transfer_projected_table_bytes"
+                    ProjectedStatic = Get-MedianFromMaps -Maps $elasticMaps.ToArray() -Key "projected_static_table_bytes"
+                    ProjectedStaticPlusPayload = Get-MedianFromMaps -Maps $elasticMaps.ToArray() -Key "projected_static_plus_payload_bytes"
+                    StaticSavings = Get-MedianFromMaps -Maps $elasticMaps.ToArray() -Key "projected_static_savings_bytes"
                 })
             }
         }
@@ -767,6 +791,41 @@ foreach ($family in $selectedFamilies) {
                     (& $fmtPair $row.TransferUsed $row.TransferCapacity),
                     (& $fmtPct $row.TransferUsed $row.TransferCapacity),
                     (& $fmtPair $row.TransferMaxAllocator $row.TransferLocalCap2x)))
+            }
+        }
+        if ($DiagnosticHz6Probes -and $elasticRows.Count -gt 0) {
+            $Summary.Add("")
+            $Summary.Add("### HZ6 elastic capacity projection")
+            $Summary.Add("")
+            $Summary.Add("| allocator | allocators | projected static KiB | projected static+payload KiB | static savings KiB | descriptor cap/KiB | route cap/KiB | source cap/KiB | frontcache cap/KiB | transfer cap/KiB |")
+            $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+            $fmtKb = {
+                param($value)
+                if ($null -eq $value) { return "n/a" }
+                return "{0:N0}" -f ([double]$value / 1024.0)
+            }
+            $fmtCount = {
+                param($value)
+                if ($null -eq $value) { return "n/a" }
+                return "{0:N0}" -f ([double]$value)
+            }
+            $fmtCapKb = {
+                param($capacity, $bytes)
+                if ($null -eq $capacity -or $null -eq $bytes) { return "n/a" }
+                return ("{0:N0}/{1:N0}" -f ([double]$capacity), ([double]$bytes / 1024.0))
+            }
+            foreach ($row in $elasticRows) {
+                $Summary.Add(('| {0} | {1} | {2} | {3} | {4} | {5} | {6} | {7} | {8} | {9} |' -f `
+                    $row.Allocator,
+                    (& $fmtCount $row.AllocatorCount),
+                    (& $fmtKb $row.ProjectedStatic),
+                    (& $fmtKb $row.ProjectedStaticPlusPayload),
+                    (& $fmtKb $row.StaticSavings),
+                    (& $fmtCapKb $row.DescriptorCapacity $row.DescriptorBytes),
+                    (& $fmtCapKb $row.RouteCapacity $row.RouteBytes),
+                    (& $fmtCapKb $row.SourceBlockCapacity $row.SourceBlockBytes),
+                    (& $fmtCapKb $row.FrontcacheCapacity $row.FrontcacheBytes),
+                    (& $fmtCapKb $row.TransferCapacity $row.TransferBytes)))
             }
         }
         $Summary.Add("")
