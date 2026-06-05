@@ -102,6 +102,40 @@ Per-worker max / projected local cap:
   transfer:   0 / 0
 ```
 
+Full 10k check:
+
+```text
+Command:
+  same lane and diagnostic flags, but:
+    -BenchmarkProfiles larson_t16_main_10k
+    -Runs 1
+    -SkipBuild
+
+Source:
+  docs/benchmarks/windows/paper/hz6_capacity_util_l1_full10k/
+    20260605_091547_hz6_capacity_matrix_windows.md
+
+Result:
+  throughput/RSS:
+    45.593M / 426112 KB
+
+  descriptor used/cap:
+    6,088 / 2,621,440 = 0.23%
+    max worker / local_cap_2x = 400 / 1,024
+
+  route active/cap:
+    86,471 / 3,145,728 = 2.75%
+    max worker occupied / local_cap_2x = 5,425 / 16,384
+
+  source blocks/cap:
+    383 / 262,144 = 0.15%
+    max worker / local_cap_2x = 25 / 64
+
+  frontcache used/cap:
+    6,088 / 1,048,576 = 0.58%
+    max worker / local_cap_2x = 400 / 1,024
+```
+
 Decision:
 
 ```text
@@ -116,6 +150,11 @@ Next:
   Avoid more entry packing as the main line unless it is near-free.
   Explore an HZ6 ElasticCapacity / SharedCapacity design:
     local small descriptor/route tables
+      initial Larson full-10k projection:
+        descriptor local cap ~= 1,024
+        route local cap ~= 16,384
+        source block local cap ~= 64
+        frontcache local cap ~= 1,024
     shared overflow or shared backing pool
     fail-closed route INVALID/MISS contract preserved
     no hot-path global scan
