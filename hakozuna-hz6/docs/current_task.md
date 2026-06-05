@@ -47,6 +47,16 @@ Immediate action queue:
        HighWater shows final worker steady-state is tiny.
        MainWarmupCapacity shows the main allocator transiently owns the seeded
        live set: descriptor 160,048; route 170,051; source block 10,003.
+  2a. ElasticOverflowProjection-L0 is fixed as the first shared-overflow
+      sizing diagnostic.
+        full10k with final high-water local caps projects:
+          descriptor overflow 159,024
+          route overflow      153,667
+          source overflow       9,939
+          frontcache overflow       0
+          transfer overflow         0
+        This reinforces that descriptor/route/source need a unified overflow
+        contract; frontcache/transfer are not the first ElasticCapacity target.
   3. Move to ElasticCapacity-L1 design work:
        local small descriptor/route/source/frontcache caps
        shared overflow / depot for warmup pressure
@@ -102,6 +112,43 @@ Meaning:
     main allocator can burst into shared descriptor/route/source metadata
     worker handoff/rehome drains back to small local steady-state
     route INVALID/MISS stays fail-closed
+```
+
+Immediate read after ElasticOverflowProjection-L0:
+
+```text
+Diagnostic:
+  [HZ6_ELASTIC_OVERFLOW_PROJECTION]
+
+Source:
+  docs/benchmarks/windows/paper/hz6_elastic_overflow_l0_smoke/
+    20260605_120559_hz6_capacity_matrix_windows.md
+  docs/benchmarks/windows/paper/hz6_elastic_overflow_l0_full10k/
+    20260605_120639_hz6_capacity_matrix_windows.md
+
+full10k selected source10k lane:
+  throughput / RSS:
+    43.472M / 412,868 KB
+
+  projected local caps from final worker high-water:
+    descriptor local cap  = 1,024
+    route local cap       = 16,384
+    source block local cap= 64
+    frontcache local cap  = 1,024
+    transfer local cap    = 128
+
+  projected main-warmup overflow:
+    descriptor overflow   = 159,024 / 5,591 KiB
+    route overflow        = 153,667 / 3,902 KiB
+    source block overflow = 9,939 / 1,242 KiB
+    frontcache overflow   = 0
+    transfer overflow     = 0
+    total overflow        = 10,735 KiB
+
+Meaning:
+  The next behavior must support descriptor, route, and source-block overflow
+  together. Frontcache and transfer are not the first ElasticCapacity pressure
+  points in this selected Larson row.
 ```
 
 ### 2026-06-05: CapacityUtil-L1 diagnostic

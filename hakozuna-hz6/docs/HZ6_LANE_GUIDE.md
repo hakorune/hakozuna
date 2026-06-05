@@ -22,6 +22,7 @@ For the current ElasticCapacity design target, see
 | ElasticProjection-L1 | `[HZ6_ELASTIC_PROJECTION]` diagnostic | Fixed diagnostic evidence. It shows large static-table upside but also that final local high-water alone is not enough for main-warmup sizing. |
 | ElasticHighWater-L1 | `descriptor_live_max`, `source_block_active_max`, `frontcache_total_max` diagnostics | Fixed diagnostic evidence. In the selected source10k lane, final worker high-water is modest: descriptor `400`, source block `25`, frontcache `401`, route occupied `5425`. |
 | MainWarmupCapacity-L1 | `[HZ6_MAIN_WARMUP_CAPACITY]` diagnostic | Fixed diagnostic evidence. Main-warmup temporarily owns descriptor `160048`, route `170051`, source block `10003`, frontcache `48`; after worker handoff the steady-state worker maxima are tiny. |
+| ElasticOverflowProjection-L0 | `[HZ6_ELASTIC_OVERFLOW_PROJECTION]` diagnostic | Fixed diagnostic evidence. Full10k with final high-water local caps projects overflow descriptor `159024`, route `153667`, source block `9939`, frontcache `0`, transfer `0`. This confirms descriptor/route/source must move together. |
 | Next behavior target | `ElasticCapacity-L1 shared overflow/depot` | Not implemented. It must cover descriptor, route, and source metadata together. A SourceBlock-only overflow cannot solve the main-warmup spike. |
 
 ## Current Recommendation

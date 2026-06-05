@@ -99,7 +99,7 @@ function Get-LogCapture {
                 }
                 [void]$tail.Enqueue($line)
             }
-            if ($line -match '^(\[BENCH_ARGS\]|\[RSS\]|\[OPS\]|\[HZ6_STATS\]|\[HZ6_MEMORY_ATTR\]|\[HZ6_RSS_RESIDUAL\]|\[HZ6_CAPACITY_UTIL\]|\[HZ6_MAIN_WARMUP_CAPACITY\]|\[HZ6_ELASTIC_PROJECTION\]|\[HZ6_METADATA_SLIM\]|\[HZ6_FRONT_ALLOC_PATH\]|\[HZ6_FRONTCACHE_CLASS\]|\[HZ6_ROUTE_PROBE_SHAPE\]|\[HZ6_REDIS_STATS\]|threads=.*ops/s=|bench_[^:]+:.*ops/s=|Pattern:|Throughput:|Throughput = |Ops:|---)') {
+            if ($line -match '^(\[BENCH_ARGS\]|\[RSS\]|\[OPS\]|\[HZ6_STATS\]|\[HZ6_MEMORY_ATTR\]|\[HZ6_RSS_RESIDUAL\]|\[HZ6_CAPACITY_UTIL\]|\[HZ6_MAIN_WARMUP_CAPACITY\]|\[HZ6_ELASTIC_PROJECTION\]|\[HZ6_ELASTIC_OVERFLOW_PROJECTION\]|\[HZ6_METADATA_SLIM\]|\[HZ6_FRONT_ALLOC_PATH\]|\[HZ6_FRONTCACHE_CLASS\]|\[HZ6_ROUTE_PROBE_SHAPE\]|\[HZ6_REDIS_STATS\]|threads=.*ops/s=|bench_[^:]+:.*ops/s=|Pattern:|Throughput:|Throughput = |Ops:|---)') {
                 [void]$captured.Add($line)
             } elseif ($IncludeStatsTail -and $line -match '^\[HZ6_STATS\]\s+label=redis_alloc_string_fail') {
                 if ($statsTail.Count -ge $TailLimit) {
@@ -535,6 +535,7 @@ foreach ($family in $selectedFamilies) {
         $capacityRows = New-Object System.Collections.Generic.List[object]
         $warmupRows = New-Object System.Collections.Generic.List[object]
         $elasticRows = New-Object System.Collections.Generic.List[object]
+        $overflowRows = New-Object System.Collections.Generic.List[object]
         $Summary.Add("## $family / $($case.Name)")
         $Summary.Add("")
         $Summary.Add("- Note: " + $case.Note)
@@ -557,6 +558,7 @@ foreach ($family in $selectedFamilies) {
             $capacityMaps = New-Object System.Collections.Generic.List[object]
             $warmupMaps = New-Object System.Collections.Generic.List[object]
             $elasticMaps = New-Object System.Collections.Generic.List[object]
+            $overflowMaps = New-Object System.Collections.Generic.List[object]
             $redisPatternRuns = @{}
             foreach ($pattern in @("SET", "GET", "LPUSH", "LPOP", "RANDOM")) {
                 $redisPatternRuns[$pattern] = New-Object System.Collections.Generic.List[double]
@@ -631,6 +633,9 @@ foreach ($family in $selectedFamilies) {
                 }
                 if ($DiagnosticHz6Probes -and $raw -match '\[HZ6_ELASTIC_PROJECTION\]\s+([^[]+)') {
                     $elasticMaps.Add((Get-KeyValueMap -Line $Matches[1]))
+                }
+                if ($DiagnosticHz6Probes -and $raw -match '\[HZ6_ELASTIC_OVERFLOW_PROJECTION\]\s+([^[]+)') {
+                    $overflowMaps.Add((Get-KeyValueMap -Line $Matches[1]))
                 }
                 if ($family -eq "redis") {
                     $runTexts.Add(("run{0}:ok" -f $run))
@@ -742,6 +747,27 @@ foreach ($family in $selectedFamilies) {
                     ProjectedStatic = Get-MedianFromMaps -Maps $elasticMaps.ToArray() -Key "projected_static_table_bytes"
                     ProjectedStaticPlusPayload = Get-MedianFromMaps -Maps $elasticMaps.ToArray() -Key "projected_static_plus_payload_bytes"
                     StaticSavings = Get-MedianFromMaps -Maps $elasticMaps.ToArray() -Key "projected_static_savings_bytes"
+                })
+            }
+            if ($DiagnosticHz6Probes -and $overflowMaps.Count -gt 0) {
+                $overflowRows.Add([pscustomobject]@{
+                    Allocator = $exe.Name
+                    DescriptorLocalCap = Get-MedianFromMaps -Maps $overflowMaps.ToArray() -Key "descriptor_local_cap"
+                    DescriptorOverflow = Get-MedianFromMaps -Maps $overflowMaps.ToArray() -Key "descriptor_overflow"
+                    DescriptorOverflowBytes = Get-MedianFromMaps -Maps $overflowMaps.ToArray() -Key "descriptor_overflow_bytes"
+                    RouteLocalCap = Get-MedianFromMaps -Maps $overflowMaps.ToArray() -Key "route_local_cap"
+                    RouteOverflow = Get-MedianFromMaps -Maps $overflowMaps.ToArray() -Key "route_overflow"
+                    RouteOverflowBytes = Get-MedianFromMaps -Maps $overflowMaps.ToArray() -Key "route_overflow_bytes"
+                    SourceBlockLocalCap = Get-MedianFromMaps -Maps $overflowMaps.ToArray() -Key "source_block_local_cap"
+                    SourceBlockOverflow = Get-MedianFromMaps -Maps $overflowMaps.ToArray() -Key "source_block_overflow"
+                    SourceBlockOverflowBytes = Get-MedianFromMaps -Maps $overflowMaps.ToArray() -Key "source_block_overflow_bytes"
+                    FrontcacheLocalCap = Get-MedianFromMaps -Maps $overflowMaps.ToArray() -Key "frontcache_local_cap"
+                    FrontcacheOverflow = Get-MedianFromMaps -Maps $overflowMaps.ToArray() -Key "frontcache_overflow"
+                    FrontcacheOverflowBytes = Get-MedianFromMaps -Maps $overflowMaps.ToArray() -Key "frontcache_overflow_bytes"
+                    TransferLocalCap = Get-MedianFromMaps -Maps $overflowMaps.ToArray() -Key "transfer_local_cap"
+                    TransferOverflow = Get-MedianFromMaps -Maps $overflowMaps.ToArray() -Key "transfer_overflow"
+                    TransferOverflowBytes = Get-MedianFromMaps -Maps $overflowMaps.ToArray() -Key "transfer_overflow_bytes"
+                    OverflowTotalBytes = Get-MedianFromMaps -Maps $overflowMaps.ToArray() -Key "overflow_total_bytes"
                 })
             }
         }
@@ -889,6 +915,33 @@ foreach ($family in $selectedFamilies) {
                     (& $fmtCapKb $row.SourceBlockCapacity $row.SourceBlockBytes),
                     (& $fmtCapKb $row.FrontcacheCapacity $row.FrontcacheBytes),
                     (& $fmtCapKb $row.TransferCapacity $row.TransferBytes)))
+            }
+        }
+        if ($DiagnosticHz6Probes -and $overflowRows.Count -gt 0) {
+            $Summary.Add("")
+            $Summary.Add("### HZ6 elastic overflow projection")
+            $Summary.Add("")
+            $Summary.Add("| allocator | descriptor local/overflow/KiB | route local/overflow/KiB | source local/overflow/KiB | frontcache local/overflow/KiB | transfer local/overflow/KiB | overflow total KiB |")
+            $Summary.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: |")
+            $fmtTripleKb = {
+                param($localCap, $overflow, $bytes)
+                if ($null -eq $localCap -or $null -eq $overflow -or $null -eq $bytes) { return "n/a" }
+                return ("{0:N0}/{1:N0}/{2:N0}" -f ([double]$localCap), ([double]$overflow), ([double]$bytes / 1024.0))
+            }
+            $fmtKb = {
+                param($value)
+                if ($null -eq $value) { return "n/a" }
+                return "{0:N0}" -f ([double]$value / 1024.0)
+            }
+            foreach ($row in $overflowRows) {
+                $Summary.Add(('| {0} | {1} | {2} | {3} | {4} | {5} | {6} |' -f `
+                    $row.Allocator,
+                    (& $fmtTripleKb $row.DescriptorLocalCap $row.DescriptorOverflow $row.DescriptorOverflowBytes),
+                    (& $fmtTripleKb $row.RouteLocalCap $row.RouteOverflow $row.RouteOverflowBytes),
+                    (& $fmtTripleKb $row.SourceBlockLocalCap $row.SourceBlockOverflow $row.SourceBlockOverflowBytes),
+                    (& $fmtTripleKb $row.FrontcacheLocalCap $row.FrontcacheOverflow $row.FrontcacheOverflowBytes),
+                    (& $fmtTripleKb $row.TransferLocalCap $row.TransferOverflow $row.TransferOverflowBytes),
+                    (& $fmtKb $row.OverflowTotalBytes)))
             }
         }
         $Summary.Add("")

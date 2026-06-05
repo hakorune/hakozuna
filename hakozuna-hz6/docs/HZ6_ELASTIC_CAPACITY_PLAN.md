@@ -90,6 +90,30 @@ read:
   seeded live set. Final worker high-water alone is not a safe sizing rule.
 ```
 
+ElasticOverflowProjection-L0:
+
+```text
+full10k with final high-water local caps:
+  descriptor local cap  = 1,024
+  route local cap       = 16,384
+  source block local cap= 64
+  frontcache local cap  = 1,024
+  transfer local cap    = 128
+
+projected main-warmup overflow:
+  descriptor overflow   = 159,024 / 5,591 KiB
+  route overflow        = 153,667 / 3,902 KiB
+  source block overflow = 9,939 / 1,242 KiB
+  frontcache overflow   = 0
+  transfer overflow     = 0
+  total overflow        = 10,735 KiB
+
+read:
+  The first ElasticCapacity behavior must cover descriptor, route, and source
+  metadata together. Frontcache and transfer are not first-order pressure in
+  this selected Larson row.
+```
+
 ## Design Target
 
 ElasticCapacity-L1 should reduce replicated per-worker static metadata while
@@ -164,11 +188,13 @@ Recommended L1 order:
      overflow owner/origin
      localize/drain/rehome
 
-2. Add diagnostic-only would-overflow counters for the source10k lane:
-     descriptor_would_overflow
-     route_would_overflow
-     source_block_would_overflow
-     overflow_current_estimate
+2. Keep `[HZ6_ELASTIC_OVERFLOW_PROJECTION]` as the L0 sizing diagnostic:
+     descriptor_overflow
+     route_overflow
+     source_block_overflow
+     frontcache_overflow
+     transfer_overflow
+     overflow_total_bytes
 
 3. Implement one metadata class only after the unified contract is clear.
    Prefer route or descriptor first, because MainWarmupCapacity shows they

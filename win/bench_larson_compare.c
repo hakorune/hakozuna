@@ -102,6 +102,10 @@ static size_t hz6_larson_project_table_bytes(size_t current_bytes,
     return (current_bytes / current_capacity) * projected_capacity;
 }
 
+static size_t hz6_larson_overflow_count(size_t used, size_t local_capacity) {
+    return (used > local_capacity) ? (used - local_capacity) : 0u;
+}
+
 static size_t hz6_larson_descriptor_used_from_stats(
     const Hz6StatsSnapshot* stats) {
     if (!stats) {
@@ -1160,6 +1164,76 @@ int main(int argc, char** argv) {
             ? (hz6_stats.memory_static_table_bytes -
                hz6_elastic_projected_static_bytes)
             : 0u;
+    size_t hz6_overflow_descriptor_count = 0u;
+    size_t hz6_overflow_route_count = 0u;
+    size_t hz6_overflow_source_block_count = 0u;
+    size_t hz6_overflow_frontcache_count = 0u;
+    size_t hz6_overflow_transfer_count = 0u;
+    size_t hz6_overflow_descriptor_bytes = 0u;
+    size_t hz6_overflow_route_bytes = 0u;
+    size_t hz6_overflow_source_block_bytes = 0u;
+    size_t hz6_overflow_frontcache_bytes = 0u;
+    size_t hz6_overflow_transfer_bytes = 0u;
+    size_t hz6_overflow_total_bytes = 0u;
+    if (hz6_has_main_warmup_stats) {
+        const size_t warm_descriptor_used =
+            hz6_larson_descriptor_used_from_stats(&hz6_main_warmup_stats);
+        const size_t warm_route_occupied =
+            hz6_main_warmup_stats.route_active_current +
+            hz6_main_warmup_stats.route_tombstone_current;
+        const size_t warm_source_block_used =
+            hz6_main_warmup_stats.memory_active_source_blocks;
+        const size_t warm_frontcache_used =
+            hz6_main_warmup_stats.memory_frontcache_total;
+        const size_t warm_transfer_used =
+            hz6_main_warmup_stats.transfer_current_max;
+        hz6_overflow_descriptor_count =
+            hz6_larson_overflow_count(warm_descriptor_used,
+                                      hz6_descriptor_local_cap_2x);
+        hz6_overflow_route_count =
+            hz6_larson_overflow_count(warm_route_occupied,
+                                      hz6_route_local_cap_2x);
+        hz6_overflow_source_block_count =
+            hz6_larson_overflow_count(warm_source_block_used,
+                                      hz6_source_block_local_cap_2x);
+        hz6_overflow_frontcache_count =
+            hz6_larson_overflow_count(warm_frontcache_used,
+                                      hz6_frontcache_local_cap_2x);
+        hz6_overflow_transfer_count =
+            hz6_larson_overflow_count(warm_transfer_used,
+                                      hz6_transfer_local_cap_2x);
+        hz6_overflow_descriptor_bytes =
+            hz6_larson_project_table_bytes(
+                hz6_stats.memory_descriptor_table_bytes,
+                hz6_descriptor_capacity,
+                hz6_overflow_descriptor_count);
+        hz6_overflow_route_bytes =
+            hz6_larson_project_table_bytes(
+                hz6_stats.memory_route_table_bytes,
+                hz6_route_capacity,
+                hz6_overflow_route_count);
+        hz6_overflow_source_block_bytes =
+            hz6_larson_project_table_bytes(
+                hz6_stats.memory_source_block_table_bytes,
+                hz6_source_block_capacity,
+                hz6_overflow_source_block_count);
+        hz6_overflow_frontcache_bytes =
+            hz6_larson_project_table_bytes(
+                hz6_stats.memory_frontcache_table_bytes,
+                hz6_frontcache_capacity,
+                hz6_overflow_frontcache_count);
+        hz6_overflow_transfer_bytes =
+            hz6_larson_project_table_bytes(
+                hz6_stats.memory_transfer_table_bytes,
+                hz6_transfer_capacity,
+                hz6_overflow_transfer_count);
+        hz6_overflow_total_bytes =
+            hz6_overflow_descriptor_bytes +
+            hz6_overflow_route_bytes +
+            hz6_overflow_source_block_bytes +
+            hz6_overflow_frontcache_bytes +
+            hz6_overflow_transfer_bytes;
+    }
 #endif
 
     duration_sec = (double)(end_ns - start_ns) / 1e9;
@@ -1633,6 +1707,41 @@ int main(int argc, char** argv) {
            hz6_elastic_projected_static_bytes,
            hz6_elastic_projected_static_plus_payload_bytes,
            hz6_elastic_projected_savings_bytes);
+    if (hz6_has_main_warmup_stats) {
+        printf("[HZ6_ELASTIC_OVERFLOW_PROJECTION] "
+               "descriptor_local_cap=%zu "
+               "descriptor_overflow=%zu "
+               "descriptor_overflow_bytes=%zu "
+               "route_local_cap=%zu "
+               "route_overflow=%zu "
+               "route_overflow_bytes=%zu "
+               "source_block_local_cap=%zu "
+               "source_block_overflow=%zu "
+               "source_block_overflow_bytes=%zu "
+               "frontcache_local_cap=%zu "
+               "frontcache_overflow=%zu "
+               "frontcache_overflow_bytes=%zu "
+               "transfer_local_cap=%zu "
+               "transfer_overflow=%zu "
+               "transfer_overflow_bytes=%zu "
+               "overflow_total_bytes=%zu\n",
+               hz6_descriptor_local_cap_2x,
+               hz6_overflow_descriptor_count,
+               hz6_overflow_descriptor_bytes,
+               hz6_route_local_cap_2x,
+               hz6_overflow_route_count,
+               hz6_overflow_route_bytes,
+               hz6_source_block_local_cap_2x,
+               hz6_overflow_source_block_count,
+               hz6_overflow_source_block_bytes,
+               hz6_frontcache_local_cap_2x,
+               hz6_overflow_frontcache_count,
+               hz6_overflow_frontcache_bytes,
+               hz6_transfer_local_cap_2x,
+               hz6_overflow_transfer_count,
+               hz6_overflow_transfer_bytes,
+               hz6_overflow_total_bytes);
+    }
     printf("[HZ6_METADATA_SLIM] "
            "descriptor_entry_bytes=%zu "
            "descriptor_thin_hot_entry_bytes=%zu "
