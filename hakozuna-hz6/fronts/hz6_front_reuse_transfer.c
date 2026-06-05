@@ -242,6 +242,9 @@ void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
     hz6_front_note_elastic_depot_drain_dryrun(allocator, descriptor);
 #endif
 #endif
+#if HZ6_ELASTIC_DEPOT_SLOT_LOCALIZE_L1
+    hz6_allocator_elastic_depot_slot_localize(allocator, descriptor);
+#endif
 #if HZ6_ELASTIC_SLOT_OWNER_SPARSE_META_L1 && \
     (HZ6_DIAGNOSTIC_PROBES || HZ6_ELASTIC_SLOT_OWNER_LOGICAL_FASTPATH_L1)
     hz6_allocator_elastic_slot_owner_sparse_note(allocator, descriptor);

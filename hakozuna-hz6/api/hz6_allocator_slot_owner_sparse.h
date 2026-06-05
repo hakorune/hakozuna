@@ -11,6 +11,14 @@ void hz6_allocator_elastic_slot_owner_sparse_note(
     Hz6Allocator* allocator,
     const Hz6ObjectDescriptor* descriptor);
 
+int hz6_allocator_elastic_depot_slot_localize(
+    Hz6Allocator* allocator,
+    const Hz6ObjectDescriptor* descriptor);
+
+Hz6Allocator* hz6_allocator_elastic_slot_owner_sparse_storage(
+    Hz6Allocator* observer,
+    const Hz6ObjectDescriptor* descriptor);
+
 void hz6_allocator_elastic_slot_owner_consumer_dryrun(
     const Hz6Allocator* allocator,
     const Hz6ObjectDescriptor* descriptor,

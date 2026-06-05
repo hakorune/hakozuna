@@ -177,6 +177,12 @@ typedef struct Hz6StatsSnapshot {
   size_t elastic_depot_drain_would_slot_localize;
   size_t elastic_depot_drain_would_keep_shared;
   size_t elastic_depot_drain_would_block_whole_localize;
+  size_t elastic_depot_slot_localize_attempt;
+  size_t elastic_depot_slot_localize_success;
+  size_t elastic_depot_slot_localize_ineligible;
+  size_t elastic_depot_slot_localize_storage_hit;
+  size_t elastic_depot_slot_localize_storage_miss;
+  size_t elastic_depot_slot_localize_storage_stale;
   size_t owner_equal_site_free;
   size_t owner_equal_site_remote_free;
   size_t owner_equal_site_local_cache;

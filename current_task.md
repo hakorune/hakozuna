@@ -183,6 +183,36 @@ Latest HZ6 selected-family decision:
       localize per-slot storage/owner state for depot transfer reuse, not move
       whole SourceBlocks and not add another owner_equal branch.
 
+  2026-06-05 DepotSlotLocalize-L1:
+    implementation:
+      Add HZ6_ELASTIC_DEPOT_SLOT_LOCALIZE_L1.
+      It records slot-local storage in the sparse slot-owner table during
+      depot transfer reuse and lets owner_source_side_meta_storage() return
+      that per-slot storage owner before the SourceBlock-level storage owner.
+
+    full10k non-diagnostic:
+      44.658M / 240636 KB
+      route_invalid=125
+      remote_free_transfer_fail=125
+
+    full10k diagnostic:
+      36.191M / 240656 KB
+      elastic_depot_slot_localize_attempt=30733367
+      elastic_depot_slot_localize_success=30733367
+      elastic_depot_slot_localize_storage_hit=401643367
+      elastic_depot_slot_localize_storage_miss=4465070
+      elastic_depot_slot_localize_storage_stale=0
+      route_invalid=125
+      remote_free_transfer_fail=125
+
+    read:
+      No-go/control.  The slot-local storage table is active and heavily hit,
+      but returning slot-local storage through the general owner_source side
+      metadata path lets a small number of stale/ownership mismatches reach
+      real free/remote-transfer behavior.  Do not promote.  The next attempt
+      must keep slot-localization scoped to transfer reuse or a fail-closed
+      descriptor-local path; do not use it as a broad storage-owner override.
+
   do not:
     use diagnostic-only lanes in speed-ranking tables
     revive whole-SourceBlock localize

@@ -636,6 +636,48 @@ read:
   add another owner_equal shortcut.
 ```
 
+DepotSlotLocalize-L1 result:
+
+```text
+lane:
+  ownerlocalityfast-rsscap-2-elasticdescsource-route-depotrunmeta-
+  depotownerdirect-depotslotlocalize-desc16k-front4k-thindesc-nobackptr-
+  noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-
+  ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run4096
+
+mode:
+  behavior no-go/control
+  write slot-local storage allocator into the sparse slot-owner table during
+  depot transfer reuse
+  let owner_source_side_meta_storage() return the slot-local storage owner
+  before the SourceBlock-level storage owner
+
+full10k non-diagnostic:
+  44.658M ops/s
+  240,636 KB peak RSS
+  route_invalid=125
+  remote_free_transfer_fail=125
+
+full10k diagnostic:
+  36.191M ops/s
+  240,656 KB peak RSS
+  elastic_depot_slot_localize_attempt=30,733,367
+  elastic_depot_slot_localize_success=30,733,367
+  elastic_depot_slot_localize_storage_hit=401,643,367
+  elastic_depot_slot_localize_storage_miss=4,465,070
+  elastic_depot_slot_localize_storage_stale=0
+  route_invalid=125
+  remote_free_transfer_fail=125
+
+read:
+  The mechanism is active and heavily hit, but the storage override is not
+  safe enough as a general owner_source side-meta replacement.  A small number
+  of stale/ownership mismatches reaches real free/remote-transfer behavior.
+  Keep as no-go/control.  The next slot-local design must remain scoped to
+  transfer reuse or another descriptor-local fail-closed path; do not use it
+  as broad SourceBlock storage-owner override.
+```
+
 ## What The Diagnostics Proved
 
 ElasticProjection-L1:

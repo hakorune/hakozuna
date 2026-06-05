@@ -113,6 +113,21 @@ static inline Hz6Allocator* hz6_allocator_owner_source_side_meta_storage(
 #endif
     return NULL;
   }
+#if HZ6_ELASTIC_DEPOT_SLOT_LOCALIZE_L1
+  {
+    Hz6Allocator* slot_storage =
+        hz6_allocator_elastic_slot_owner_sparse_storage(
+            mutable_allocator, descriptor);
+    if (slot_storage) {
+#if HZ6_DIAGNOSTIC_PROBES
+      if (mutable_allocator) {
+        ++mutable_allocator->stats.owner_source_side_meta_l2_hit;
+      }
+#endif
+      return slot_storage;
+    }
+  }
+#endif
   Hz6Allocator* storage =
       descriptor->source_block->owner_source_storage_allocator;
 #if HZ6_OWNER_SOURCE_SIDE_META_DRYRUN && HZ6_DIAGNOSTIC_PROBES

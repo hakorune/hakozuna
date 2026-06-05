@@ -44,6 +44,7 @@ cross-owner contract.
 | Free/local owner predicate dry-run | `speed + diagnostic + ...elasticdescsource-route-depotownerdirect-freelocalownerpredicate-dryrun-...source64-route16k-run512` | 41.049M | 224,628 | diagnostic-only; free/local-cache owner_equal pressure is mostly depot/source-block backed |
 | Depot descriptor owner-equal fast path | `speed + ...elasticdescsource-route-depotownerdirect-depotownerequal-...source64-route16k-run512` | 40.531M | 227,708 | safety-clean behavior no-go/control; earlier depot-owner branch is slower than depotownerdirect |
 | Unified depot drain dry-run | `speed + diagnostic + ...elasticdescsource-route-depotrunmeta-depotownerdirect-depotdraindryrun-...source64-route16k-run4096` | 43.101M | 235,420 | diagnostic-only; whole-block localize remains blocked, but every probed transfer slot is run-matched and slot-localizable |
+| Depot slot localize | `speed + ...elasticdescsource-route-depotrunmeta-depotownerdirect-depotslotlocalize-...source64-route16k-run4096` | 44.658M | 240,636 | behavior no-go/control; slot-local storage hits heavily but leaks `route_invalid=125` / `remote_free_transfer_fail=125` |
 
 Source:
 - `docs/benchmarks/windows/paper/hz6_selected_family/selected-family-desc17-refresh/`
@@ -79,6 +80,8 @@ Source:
 - `docs/benchmarks/windows/paper/hz6_depot_owner_equal_fastpath_full10k/`
 - `docs/benchmarks/windows/paper/hz6_depot_owner_equal_fastpath_diag_full10k/`
 - `docs/benchmarks/windows/paper/hz6_elastic_depot_runmeta_drain_dryrun_full10k/`
+- `docs/benchmarks/windows/paper/hz6_elastic_depot_slot_localize_full10k/`
+- `docs/benchmarks/windows/paper/hz6_elastic_depot_slot_localize_diag_full10k/`
 
 ## Evidence Rows
 
@@ -259,4 +262,22 @@ pressure/no-go/diagnostic lanes into those tables.
      safety-clean witness.  The next behavior candidate should localize
      slot ownership/storage state, not move entire SourceBlocks and not add
      another owner_equal branch.
+
+6. DepotSlotLocalize-L1 was tested:
+   non-diagnostic full10k:
+     44.658M / 240636 KB
+     route_invalid=125
+     remote_free_transfer_fail=125
+   diagnostic full10k:
+     36.191M / 240656 KB
+     attempt=success=30733367
+     storage_hit=401643367
+     storage_miss=4465070
+     storage_stale=0
+
+   Result:
+     no-go/control.  Slot-local storage is real, but returning it through the
+     general owner_source storage path is not fail-closed enough.  The next
+     design must keep slot-localization scoped to transfer reuse or a
+     descriptor-local path that cannot leak stale storage into normal free.
 ```

@@ -786,6 +786,21 @@ int main(int argc, char** argv) {
         hz6_stats.elastic_depot_drain_would_block_whole_localize +=
             tds[t].hz6_stats_after
                 .elastic_depot_drain_would_block_whole_localize;
+        hz6_stats.elastic_depot_slot_localize_attempt +=
+            tds[t].hz6_stats_after.elastic_depot_slot_localize_attempt;
+        hz6_stats.elastic_depot_slot_localize_success +=
+            tds[t].hz6_stats_after.elastic_depot_slot_localize_success;
+        hz6_stats.elastic_depot_slot_localize_ineligible +=
+            tds[t].hz6_stats_after.elastic_depot_slot_localize_ineligible;
+        hz6_stats.elastic_depot_slot_localize_storage_hit +=
+            tds[t].hz6_stats_after
+                .elastic_depot_slot_localize_storage_hit;
+        hz6_stats.elastic_depot_slot_localize_storage_miss +=
+            tds[t].hz6_stats_after
+                .elastic_depot_slot_localize_storage_miss;
+        hz6_stats.elastic_depot_slot_localize_storage_stale +=
+            tds[t].hz6_stats_after
+                .elastic_depot_slot_localize_storage_stale;
         hz6_stats.elastic_slot_owner_sparse_lookup +=
             tds[t].hz6_stats_after.elastic_slot_owner_sparse_lookup;
         hz6_stats.elastic_slot_owner_sparse_hit +=
@@ -1603,6 +1618,12 @@ int main(int argc, char** argv) {
            "elastic_depot_drain_would_slot_localize=%zu "
            "elastic_depot_drain_would_keep_shared=%zu "
            "elastic_depot_drain_would_block_whole_localize=%zu "
+           "elastic_depot_slot_localize_attempt=%zu "
+           "elastic_depot_slot_localize_success=%zu "
+           "elastic_depot_slot_localize_ineligible=%zu "
+           "elastic_depot_slot_localize_storage_hit=%zu "
+           "elastic_depot_slot_localize_storage_miss=%zu "
+           "elastic_depot_slot_localize_storage_stale=%zu "
            "elastic_slot_owner_sparse_lookup=%zu "
            "elastic_slot_owner_sparse_hit=%zu "
            "elastic_slot_owner_sparse_miss=%zu "
@@ -1828,6 +1849,12 @@ int main(int argc, char** argv) {
            hz6_stats.elastic_depot_drain_would_slot_localize,
            hz6_stats.elastic_depot_drain_would_keep_shared,
            hz6_stats.elastic_depot_drain_would_block_whole_localize,
+           hz6_stats.elastic_depot_slot_localize_attempt,
+           hz6_stats.elastic_depot_slot_localize_success,
+           hz6_stats.elastic_depot_slot_localize_ineligible,
+           hz6_stats.elastic_depot_slot_localize_storage_hit,
+           hz6_stats.elastic_depot_slot_localize_storage_miss,
+           hz6_stats.elastic_depot_slot_localize_storage_stale,
            hz6_stats.elastic_slot_owner_sparse_lookup,
            hz6_stats.elastic_slot_owner_sparse_hit,
            hz6_stats.elastic_slot_owner_sparse_miss,
