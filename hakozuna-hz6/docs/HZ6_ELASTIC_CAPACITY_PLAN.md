@@ -678,6 +678,45 @@ read:
   as broad SourceBlock storage-owner override.
 ```
 
+DepotSlotTransferScoped-L1:
+
+```text
+lane:
+  ownerlocalityfast-rsscap-2-elasticdescsource-route-depotrunmeta-
+  depotownerdirect-depotslottransfer-desc16k-front4k-thindesc-nobackptr-
+  noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-
+  ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run4096
+
+mode:
+  safe transfer-scoped control/evidence
+  record depot transfer-reuse slots in the sparse slot-owner table
+  do not let owner_source_side_meta_storage() return slot-local storage
+
+full10k non-diagnostic:
+  41.596M ops/s
+  route_invalid=0
+  remote_free_transfer_fail=0
+
+full10k diagnostic:
+  42.801M ops/s
+  elastic_depot_slot_localize_attempt=79,485
+  elastic_depot_slot_localize_success=79,485
+  elastic_depot_slot_localize_ineligible=515
+  elastic_depot_slot_localize_storage_hit=0
+  elastic_slot_owner_sparse_insert=79,485
+  elastic_slot_owner_sparse_hit=79,485
+  elastic_slot_owner_sparse_owner_match=79,485
+  route_invalid=0
+  remote_free_transfer_fail=0
+
+read:
+  Sparse slot-owner recording is safe when scoped to transfer reuse.  This
+  confirms the DepotSlotLocalize-L1 failures came from consuming the sparse
+  slot table as a broad storage-owner override, not from the slot-local witness
+  itself.  The next behavior must consume this witness only inside a
+  fail-closed descriptor-local or transfer-local decision.
+```
+
 ## What The Diagnostics Proved
 
 ElasticProjection-L1:

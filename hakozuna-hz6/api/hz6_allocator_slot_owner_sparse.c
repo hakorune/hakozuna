@@ -5,7 +5,8 @@
 
 #if HZ6_ELASTIC_SLOT_OWNER_SPARSE_META_L1 && \
     (HZ6_DIAGNOSTIC_PROBES || HZ6_ELASTIC_SLOT_OWNER_LOGICAL_FASTPATH_L1 || \
-     HZ6_ELASTIC_DEPOT_SLOT_LOCALIZE_L1)
+     HZ6_ELASTIC_DEPOT_SLOT_LOCALIZE_L1 || \
+     HZ6_ELASTIC_DEPOT_SLOT_TRANSFER_SCOPED_L1)
 typedef struct Hz6ElasticSlotOwnerSparseEntry {
   const Hz6SourceBlock* block;
   const void* block_ptr;
@@ -66,7 +67,8 @@ void hz6_allocator_elastic_slot_owner_sparse_note(
     const Hz6ObjectDescriptor* descriptor) {
 #if HZ6_ELASTIC_SLOT_OWNER_SPARSE_META_L1 && \
     (HZ6_DIAGNOSTIC_PROBES || HZ6_ELASTIC_SLOT_OWNER_LOGICAL_FASTPATH_L1 || \
-     HZ6_ELASTIC_DEPOT_SLOT_LOCALIZE_L1)
+     HZ6_ELASTIC_DEPOT_SLOT_LOCALIZE_L1 || \
+     HZ6_ELASTIC_DEPOT_SLOT_TRANSFER_SCOPED_L1)
   if (!allocator || !descriptor || !descriptor->source_block ||
       HZ6_ELASTIC_SLOT_OWNER_SPARSE_CAPACITY == 0) {
     return;
@@ -148,7 +150,8 @@ void hz6_allocator_elastic_slot_owner_sparse_note(
 int hz6_allocator_elastic_depot_slot_localize(
     Hz6Allocator* allocator,
     const Hz6ObjectDescriptor* descriptor) {
-#if HZ6_ELASTIC_DEPOT_SLOT_LOCALIZE_L1 && \
+#if (HZ6_ELASTIC_DEPOT_SLOT_LOCALIZE_L1 || \
+     HZ6_ELASTIC_DEPOT_SLOT_TRANSFER_SCOPED_L1) && \
     HZ6_ELASTIC_SLOT_OWNER_SPARSE_META_L1
   if (!allocator || !descriptor || !descriptor->source_block ||
       !hz6_allocator_source_block_is_elastic_depot(

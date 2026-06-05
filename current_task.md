@@ -213,6 +213,41 @@ Latest HZ6 selected-family decision:
       must keep slot-localization scoped to transfer reuse or a fail-closed
       descriptor-local path; do not use it as a broad storage-owner override.
 
+  2026-06-05 DepotSlotTransferScoped-L1:
+    implementation:
+      Add HZ6_ELASTIC_DEPOT_SLOT_TRANSFER_SCOPED_L1 and the
+      depotslottransfer lane.  It records depot transfer-reuse slots in the
+      sparse slot-owner table, but deliberately does not let
+      owner_source_side_meta_storage() return the slot-local storage owner.
+      This keeps the experiment scoped to transfer reuse and avoids the broad
+      storage-owner override that made DepotSlotLocalize-L1 unsafe.
+
+    full10k non-diagnostic:
+      41.596M / safety clean
+      route_invalid=0
+      remote_free_transfer_fail=0
+
+    full10k diagnostic:
+      42.801M / safety clean
+      elastic_depot_slot_localize_attempt=79485
+      elastic_depot_slot_localize_success=79485
+      elastic_depot_slot_localize_ineligible=515
+      elastic_depot_slot_localize_storage_hit=0
+      elastic_slot_owner_sparse_insert=79485
+      elastic_slot_owner_sparse_hit=79485
+      elastic_slot_owner_sparse_owner_match=79485
+      route_invalid=0
+      remote_free_transfer_fail=0
+
+    read:
+      Keep as safe transfer-scoped control/evidence, not promotion.  The sparse
+      slot table can be populated from depot transfer reuse without safety
+      leakage, and the prior `route_invalid=125` / `remote_free_transfer_fail=125`
+      was caused by using slot-local storage as a general owner_source storage
+      override.  The next useful behavior must consume this slot-local witness
+      only in a fail-closed descriptor-local or transfer-local decision; do not
+      re-enable broad storage-owner override.
+
   do not:
     use diagnostic-only lanes in speed-ranking tables
     revive whole-SourceBlock localize
