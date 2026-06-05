@@ -40,6 +40,7 @@ cross-owner contract.
 | Depot owner direct fast path | `speed + ...elasticdescsource-route-depotownerdirect-...source64-route16k-run512` | 46.273M | 224,612 | current source-depot candidate-watch; guard rows safety-clean |
 | Slot owner consumer dry-run | `speed + diagnostic + ...elasticdescsource-route-slotownerconsumerdryrun-...source64-route16k-run4096` | 36.691M | 233,556 | diagnostic-only; `would_skip_l2=687536440`, `false_positive=0`; not speed-rankable |
 | Slot owner logical fast path | `speed + ...elasticdescsource-route-slotownerlogical-...source64-route16k-run4096` | 38.494M | 239,484 | safety-clean behavior no-go/control; broad sparse probing is too expensive |
+| Owner-equal callsite dry-run | `speed + diagnostic + ...elasticdescsource-route-depotownerdirect-ownerequalcallsite-dryrun-...source64-route16k-run512` | 42.434M | 224,612 | diagnostic-only; owner_equal pressure is free/local-cache dominated |
 
 Source:
 - `docs/benchmarks/windows/paper/hz6_selected_family/selected-family-desc17-refresh/`
@@ -70,6 +71,7 @@ Source:
 - `docs/benchmarks/windows/paper/hz6_depot_owner_direct_repeat3/`
 - `docs/benchmarks/windows/paper/hz6_depot_owner_direct_guard_matrix/`
 - `docs/benchmarks/windows/paper/hz6_slot_owner_consumer_dryrun_full10k/`
+- `docs/benchmarks/windows/paper/hz6_owner_equal_callsite_dryrun_full10k/`
 
 ## Evidence Rows
 
@@ -102,6 +104,7 @@ Source:
 | Larson DepotOwnerDirectFastPath-L1 | `ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512` | ElasticCapacity source-depot candidate-watch. Main10k repeat-3: `46.273M / 224612 KB`, guard rows safety-clean. Diagnostic A/B cuts `owner_source_side_meta_l2_lookup` from `1547776055` to `489480577`. Not broad default yet. |
 | Larson SlotOwnerConsumerDryRun-L1 | `ownerlocalityfast-rsscap-2-elasticdescsource-route-slotownerconsumerdryrun-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run4096` | Diagnostic-only consumer evidence. Full10k run-1: `36.691M / 233556 KB`, safety clean, `would_skip_l2=687536440`, `false_positive=0`, `stale_generation=0`. This justifies a narrow logical-owner fast-path experiment, but the dry-run counter volume is not speed-rankable. |
 | Larson SlotOwnerLogicalOwnerFastPath-L1 | `ownerlocalityfast-rsscap-2-elasticdescsource-route-slotownerlogical-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run4096` | Safety-clean behavior no-go/control. Non-diagnostic full10k: `38.494M / 239484 KB`; diagnostic full10k reports `logical_hit=717746510`, `stale_generation=0`, `owner_mismatch=0`, but broad sparse probing at every owner-equality entry loses speed versus depotownerdirect. |
+| Larson OwnerEqualCallsiteDryRun-L1 | `ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-ownerequalcallsite-dryrun-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512` | Diagnostic-only callsite attribution. Full10k run-1: `42.434M / 224612 KB`, safety clean. `owner_equal_site_free=424522978`, `owner_equal_site_local_cache=424449034`, all remote/visible/transfer/same-owner callsites `0`, and `unknown=0`. This fixes the next design target: do not probe sparse slot-owner metadata at every owner_equal; use a cheaper free/local-cache state predicate first. |
 | Larson lowest-RSS preset check | `larson-cross-owner-lowest-rss` | Default check now includes front4k, route192k, no-backptr route192k-run512, dir192k no-backptr, SourceBlock no-route-backptr, routepacked control, routebytes16 comparison control, OwnerSourceSideMeta-L2 selected balance sibling, FrontCachePackedMeta-L1 and SourceBlockPackedFlags-L1 component candidates, and the combined packed minimum-RSS candidate. |
 | Larson over-retention control | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-source32k` | Passes but over-retains RSS; no promotion. |
 

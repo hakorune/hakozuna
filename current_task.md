@@ -66,6 +66,24 @@ Latest HZ6 selected-family decision:
     at every owner_equal entry costs more than the L2 lookup it removes.
     Do not promote it without a narrower admission gate.
 
+  latest diagnostic:
+    OwnerEqualCallsiteDryRun-L1 was added on top of DepotOwnerDirectFastPath-L1.
+    It is diagnostic-only and attributes owner_equal() calls by callsite.
+    main10k:
+      42.434M / 224612 KB
+      owner_equal_site_free=424522978
+      owner_equal_site_local_cache=424449034
+      all other owner_equal_site_* = 0
+      owner_equal_site_unknown=0
+      safety clean
+
+    read:
+      Broad slot-owner logical probing lost because owner_equal pressure is
+      dominated by the free/local-cache path, not by remote/visible/transfer
+      sites.  Future owner-path behavior must be gated inside free/local-cache
+      or by an even cheaper object-state/source-depot predicate; do not probe
+      sparse slot-owner metadata at every owner_equal() call.
+
   do not:
     use diagnostic-only lanes in speed-ranking tables
     revive whole-SourceBlock localize

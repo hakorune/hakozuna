@@ -428,6 +428,57 @@ read:
   sparse probing on cheap local/depot checks.
 ```
 
+OwnerEqualCallsiteDryRun-L1 result:
+
+```text
+lane:
+  ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-
+  ownerequalcallsite-dryrun-desc16k-front4k-thindesc-nobackptr-
+  noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-
+  ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512
+
+mode:
+  diagnostic-only
+  no behavior change
+  callsite attribution for hz6_allocator_descriptor_owner_equal()
+
+smoke main1k:
+  55.891M ops/s
+  105,844 KB peak RSS
+  owner_equal_site_free=56,824,387
+  owner_equal_site_local_cache=56,818,739
+  owner_equal_site_unknown=0
+  safety clean
+
+full10k:
+  42.434M ops/s
+  224,612 KB peak RSS
+  owner_equal_site_free=424,522,978
+  owner_equal_site_local_cache=424,449,034
+  owner_equal_site_remote_free=0
+  owner_equal_site_visible_lookup=0
+  owner_equal_site_transfer_locality=0
+  owner_equal_site_same_owner_fast=0
+  owner_equal_site_unknown=0
+  owner_source_side_meta_l2_lookup=483,610,117
+  safety clean:
+    route_invalid=0
+    route_miss=0
+    route_register_fail=0
+    descriptor_exhausted=0
+    source_block_exhausted=0
+    alloc_fail=0
+    remote_free_transfer_fail=0
+
+read:
+  This explains why SlotOwnerLogicalOwnerFastPath-L1 is a speed no-go in broad
+  form: the owner-equality pressure is almost entirely the free/local-cache
+  path, not remote/visible/transfer-locality.  The next owner-path experiment
+  must use a cheaper state/source-depot predicate before sparse slot-owner
+  probing, or target a narrower free/local-cache subpath.  Keep this as
+  diagnostic evidence; do not use it as a speed-ranking lane.
+```
+
 ## What The Diagnostics Proved
 
 ElasticProjection-L1:

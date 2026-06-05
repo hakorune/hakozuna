@@ -15,8 +15,9 @@ size_t hz6_allocator_drain_remote_pending(Hz6Allocator* allocator) {
         descriptor->class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
       continue;
     }
-    if (!hz6_allocator_descriptor_owner_equal(allocator, descriptor,
-                                              allocator->owner.token)) {
+    if (!hz6_allocator_descriptor_owner_equal_at(
+            allocator, descriptor, allocator->owner.token,
+            HZ6_OWNER_EQUAL_SITE_REMOTE_PENDING)) {
       continue;
     }
 

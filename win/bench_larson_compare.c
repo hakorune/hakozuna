@@ -812,6 +812,26 @@ int main(int argc, char** argv) {
         hz6_stats.elastic_slot_owner_logical_fastpath_fallback +=
             tds[t].hz6_stats_after
                 .elastic_slot_owner_logical_fastpath_fallback;
+        hz6_stats.owner_equal_site_free +=
+            tds[t].hz6_stats_after.owner_equal_site_free;
+        hz6_stats.owner_equal_site_remote_free +=
+            tds[t].hz6_stats_after.owner_equal_site_remote_free;
+        hz6_stats.owner_equal_site_local_cache +=
+            tds[t].hz6_stats_after.owner_equal_site_local_cache;
+        hz6_stats.owner_equal_site_visible_lookup +=
+            tds[t].hz6_stats_after.owner_equal_site_visible_lookup;
+        hz6_stats.owner_equal_site_transfer_locality +=
+            tds[t].hz6_stats_after.owner_equal_site_transfer_locality;
+        hz6_stats.owner_equal_site_large_central +=
+            tds[t].hz6_stats_after.owner_equal_site_large_central;
+        hz6_stats.owner_equal_site_remote_pending +=
+            tds[t].hz6_stats_after.owner_equal_site_remote_pending;
+        hz6_stats.owner_equal_site_owner_dead +=
+            tds[t].hz6_stats_after.owner_equal_site_owner_dead;
+        hz6_stats.owner_equal_site_same_owner_fast +=
+            tds[t].hz6_stats_after.owner_equal_site_same_owner_fast;
+        hz6_stats.owner_equal_site_unknown +=
+            tds[t].hz6_stats_after.owner_equal_site_unknown;
         hz6_stats.source_owned_prepare +=
             tds[t].hz6_stats_after.source_owned_prepare;
         hz6_stats.source_owned_route_hit_local_owner +=
@@ -1530,6 +1550,16 @@ int main(int argc, char** argv) {
            "elastic_slot_owner_logical_fastpath_stale_generation=%zu "
            "elastic_slot_owner_logical_fastpath_owner_mismatch=%zu "
            "elastic_slot_owner_logical_fastpath_fallback=%zu "
+           "owner_equal_site_free=%zu "
+           "owner_equal_site_remote_free=%zu "
+           "owner_equal_site_local_cache=%zu "
+           "owner_equal_site_visible_lookup=%zu "
+           "owner_equal_site_transfer_locality=%zu "
+           "owner_equal_site_large_central=%zu "
+           "owner_equal_site_remote_pending=%zu "
+           "owner_equal_site_owner_dead=%zu "
+           "owner_equal_site_same_owner_fast=%zu "
+           "owner_equal_site_unknown=%zu "
            "source_owned_prepare=%zu "
            "source_owned_route_hit_local_owner=%zu "
            "source_owned_visibility_hit_local_owner=%zu "
@@ -1714,6 +1744,16 @@ int main(int argc, char** argv) {
            hz6_stats.elastic_slot_owner_logical_fastpath_stale_generation,
            hz6_stats.elastic_slot_owner_logical_fastpath_owner_mismatch,
            hz6_stats.elastic_slot_owner_logical_fastpath_fallback,
+           hz6_stats.owner_equal_site_free,
+           hz6_stats.owner_equal_site_remote_free,
+           hz6_stats.owner_equal_site_local_cache,
+           hz6_stats.owner_equal_site_visible_lookup,
+           hz6_stats.owner_equal_site_transfer_locality,
+           hz6_stats.owner_equal_site_large_central,
+           hz6_stats.owner_equal_site_remote_pending,
+           hz6_stats.owner_equal_site_owner_dead,
+           hz6_stats.owner_equal_site_same_owner_fast,
+           hz6_stats.owner_equal_site_unknown,
            hz6_stats.source_owned_prepare,
            hz6_stats.source_owned_route_hit_local_owner,
            hz6_stats.source_owned_visibility_hit_local_owner,

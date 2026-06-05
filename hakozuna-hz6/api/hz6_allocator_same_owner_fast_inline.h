@@ -53,8 +53,9 @@ static inline int hz6_allocator_same_owner_fast_free_inline(
 
   Hz6ObjectDescriptor* descriptor = (Hz6ObjectDescriptor*)route.descriptor;
   if (!descriptor ||
-      !hz6_allocator_descriptor_owner_equal(allocator, descriptor,
-                                            allocator->owner.token)) {
+      !hz6_allocator_descriptor_owner_equal_at(
+          allocator, descriptor, allocator->owner.token,
+          HZ6_OWNER_EQUAL_SITE_SAME_OWNER_FAST)) {
     return 0;
   }
 

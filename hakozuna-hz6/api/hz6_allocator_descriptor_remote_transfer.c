@@ -11,8 +11,9 @@ int hz6_allocator_remote_free_active_descriptor(
 
   ++allocator->stats.remote_free_attempt;
   if (hz6_allocator_profile_strict_owner_remote(allocator)) {
-    if (!hz6_allocator_descriptor_owner_equal(allocator, descriptor,
-                                              allocator->owner.token)) {
+    if (!hz6_allocator_descriptor_owner_equal_at(
+            allocator, descriptor, allocator->owner.token,
+            HZ6_OWNER_EQUAL_SITE_REMOTE_FREE)) {
       ++allocator->stats.remote_free_strict_owner_block;
       return 0;
     }

@@ -59,8 +59,9 @@ int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
   if (!allocator || !descriptor || !ptr ||
       descriptor->state != HZ6_STATE_ACTIVE || descriptor->ptr != ptr ||
       descriptor->class_id >= HZ6_FRONT_CACHE_CLASS_COUNT ||
-      !hz6_allocator_descriptor_owner_equal(allocator, descriptor,
-                                            allocator->owner.token)) {
+      !hz6_allocator_descriptor_owner_equal_at(
+          allocator, descriptor, allocator->owner.token,
+          HZ6_OWNER_EQUAL_SITE_LOCAL_CACHE)) {
     return 0;
   }
 

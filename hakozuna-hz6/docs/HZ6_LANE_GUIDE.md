@@ -26,7 +26,7 @@ these rows answer which lanes should be used, watched, or avoided.
 | Selected Larson low-RSS sibling | `...frontcachepacked-sourceblockpacked-source10k-route192k-run512` | Current Larson minimum-RSS sibling. Use for current HZ6 Larson low-RSS comparisons. |
 | ElasticCapacity candidate-watch | `...elasticdescroute-desc16k-...source10k-route16k-run512` | Best ElasticCapacity RSS/throughput shape so far. Watch, but do not broad-promote. |
 | ElasticCapacity component/control | `...elasticdescsource-route-desc16k-...source64-route16k-run512` | Lower RSS source-block depot evidence; speed is lower than ElasticDescriptorRouteOverflow. |
-| Diagnostic-only | `...localizedryrun...`, `...runlocalitydryrun...`, `...depotrunmeta...`, `...slotownerdryrun...`, `...slotownersparse...`, `...slotownerconsumerdryrun...`, `[HZ6_ELASTIC_PROJECTION]`, `[HZ6_MAIN_WARMUP_CAPACITY]`, `[HZ6_ELASTIC_OVERFLOW_PROJECTION]` | Never use as production speed-ranking rows. |
+| Diagnostic-only | `...localizedryrun...`, `...runlocalitydryrun...`, `...depotrunmeta...`, `...slotownerdryrun...`, `...slotownersparse...`, `...slotownerconsumerdryrun...`, `...ownerequalcallsite-dryrun...`, `[HZ6_ELASTIC_PROJECTION]`, `[HZ6_MAIN_WARMUP_CAPACITY]`, `[HZ6_ELASTIC_OVERFLOW_PROJECTION]` | Never use as production speed-ranking rows. |
 | ElasticCapacity candidate-watch | `...depotownerdirect...` | Best source-depot speed/RSS shape so far. It bypasses OwnerSourceSideMeta-L2 for depot descriptors by reading/writing the depot owner table directly. Main10k repeat-3: `46.273M / 224612 KB`, guard rows safety-clean. Not broad default/promotion yet. |
 | Boundary / no-go | `...slotownerlogical...` | Safety-clean behavior no-go/control. Sparse generation-checked positive owner match is valid, but probing sparse metadata at every `owner_equal()` entry costs more than it saves. |
 | Boundary / no-go | `source2k`, `source8k`, `elasticproj-local1k`, whole-SourceBlock localize | Keep as evidence only. These rows explain capacity or ownership limits. |
@@ -46,8 +46,9 @@ HZ6 Larson / ElasticCapacity:
 
   NEXT if continuing this track:
     do not promote SlotOwnerLogicalOwnerFastPath-L1 in its broad form
-    narrow owner-path admission only if a future pressure witness identifies a
-    cheap gate before sparse probing
+    OwnerEqualCallsiteDryRun-L1 shows owner_equal pressure is dominated by
+    free/local-cache, so narrow owner-path admission must use a cheaper
+    object-state/source-depot predicate before sparse probing
     unified depot accounting and owner-safe drain/localize criteria
 
   DO NOT MIX:
@@ -76,6 +77,7 @@ HZ6 Larson / ElasticCapacity:
 | DescriptorDepotOwnerDirectFastPath-L1 | `...elasticdescsource-route-depotownerdirect-...source64-route16k-run512` | Behavior candidate-watch after SlotOwnerSparseMeta-L1. Depot descriptors read/write the shared depot owner table before OwnerSourceSideMeta-L2 storage lookup. Non-diagnostic main10k repeat-3: `46.273M / 224612 KB`, guard rows safety-clean. Diagnostic A/B cuts `owner_source_side_meta_l2_lookup` from `1547776055` to `489480577`. Keep as the current best source-depot shape; not broad default yet. |
 | SlotOwnerConsumerDryRun-L1 | `...elasticdescsource-route-slotownerconsumerdryrun-...source64-route16k-run4096` | Diagnostic-only consumer evidence. Full10k run-1 is safety clean at `36.691M / 233556 KB`; `consumer_probe=687695410`, `hit=687536440`, `would_skip_l2=687536440`, `false_positive=0`, `stale_generation=0`, `fallback=158970`. This validates a narrow logical-owner fast-path experiment, but the dry-run counter volume is not speed-rankable. |
 | SlotOwnerLogicalOwnerFastPath-L1 | `...elasticdescsource-route-slotownerlogical-...source64-route16k-run4096` | Safety-clean behavior no-go/control. Non-diagnostic full10k run-1: `38.494M / 239484 KB`; diagnostic full10k: `logical_probe=717941382`, `hit=717746510`, `stale_generation=0`, `owner_mismatch=0`, but speed is below depotownerdirect. The contract is valid, but broad sparse probing at every owner-equality site is too expensive. |
+| OwnerEqualCallsiteDryRun-L1 | `...elasticdescsource-route-depotownerdirect-ownerequalcallsite-dryrun-...source64-route16k-run512` | Diagnostic-only callsite attribution on top of DepotOwnerDirectFastPath-L1. Full10k run-1 is safety clean at `42.434M / 224612 KB`; `owner_equal_site_free=424522978`, `owner_equal_site_local_cache=424449034`, all remote/visible/transfer/same-owner sites `0`, and `owner_equal_site_unknown=0`. This says broad slot-owner probing failed because free/local-cache dominates, so future behavior needs a cheaper predicate or narrower free/local-cache gate. |
 | Next behavior target | `ElasticCapacity-L1 drain/localize` | Partially implemented through route overflow, descriptor depot, and source-block depot component lanes. The next design target is not another isolated metadata cap: it is unified depot accounting, owner-safe drain/localize, and promotion criteria for whether the lower-RSS source-depot shape can recover ElasticDescriptorRouteOverflow-class throughput. |
 
 ## Current Recommendation

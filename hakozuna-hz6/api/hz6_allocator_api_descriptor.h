@@ -233,10 +233,72 @@ static inline void hz6_allocator_set_descriptor_owner(
 #endif
 }
 
-static inline int hz6_allocator_descriptor_owner_equal(
+typedef enum Hz6OwnerEqualSite {
+  HZ6_OWNER_EQUAL_SITE_UNKNOWN = 0,
+  HZ6_OWNER_EQUAL_SITE_FREE,
+  HZ6_OWNER_EQUAL_SITE_REMOTE_FREE,
+  HZ6_OWNER_EQUAL_SITE_LOCAL_CACHE,
+  HZ6_OWNER_EQUAL_SITE_VISIBLE_LOOKUP,
+  HZ6_OWNER_EQUAL_SITE_TRANSFER_LOCALITY,
+  HZ6_OWNER_EQUAL_SITE_LARGE_CENTRAL,
+  HZ6_OWNER_EQUAL_SITE_REMOTE_PENDING,
+  HZ6_OWNER_EQUAL_SITE_OWNER_DEAD,
+  HZ6_OWNER_EQUAL_SITE_SAME_OWNER_FAST
+} Hz6OwnerEqualSite;
+
+static inline void hz6_allocator_note_owner_equal_site(
+    const Hz6Allocator* allocator,
+    Hz6OwnerEqualSite site) {
+#if HZ6_DIAGNOSTIC_PROBES && HZ6_OWNER_EQUAL_CALLSITE_DRYRUN_L1
+  Hz6Allocator* mutable_allocator = (Hz6Allocator*)allocator;
+  if (!mutable_allocator) {
+    return;
+  }
+  switch (site) {
+    case HZ6_OWNER_EQUAL_SITE_FREE:
+      ++mutable_allocator->stats.owner_equal_site_free;
+      break;
+    case HZ6_OWNER_EQUAL_SITE_REMOTE_FREE:
+      ++mutable_allocator->stats.owner_equal_site_remote_free;
+      break;
+    case HZ6_OWNER_EQUAL_SITE_LOCAL_CACHE:
+      ++mutable_allocator->stats.owner_equal_site_local_cache;
+      break;
+    case HZ6_OWNER_EQUAL_SITE_VISIBLE_LOOKUP:
+      ++mutable_allocator->stats.owner_equal_site_visible_lookup;
+      break;
+    case HZ6_OWNER_EQUAL_SITE_TRANSFER_LOCALITY:
+      ++mutable_allocator->stats.owner_equal_site_transfer_locality;
+      break;
+    case HZ6_OWNER_EQUAL_SITE_LARGE_CENTRAL:
+      ++mutable_allocator->stats.owner_equal_site_large_central;
+      break;
+    case HZ6_OWNER_EQUAL_SITE_REMOTE_PENDING:
+      ++mutable_allocator->stats.owner_equal_site_remote_pending;
+      break;
+    case HZ6_OWNER_EQUAL_SITE_OWNER_DEAD:
+      ++mutable_allocator->stats.owner_equal_site_owner_dead;
+      break;
+    case HZ6_OWNER_EQUAL_SITE_SAME_OWNER_FAST:
+      ++mutable_allocator->stats.owner_equal_site_same_owner_fast;
+      break;
+    case HZ6_OWNER_EQUAL_SITE_UNKNOWN:
+    default:
+      ++mutable_allocator->stats.owner_equal_site_unknown;
+      break;
+  }
+#else
+  (void)allocator;
+  (void)site;
+#endif
+}
+
+static inline int hz6_allocator_descriptor_owner_equal_at(
     const Hz6Allocator* allocator,
     const Hz6ObjectDescriptor* descriptor,
-    Hz6OwnerToken owner) {
+    Hz6OwnerToken owner,
+    Hz6OwnerEqualSite site) {
+  hz6_allocator_note_owner_equal_site(allocator, site);
 #if HZ6_ELASTIC_SLOT_OWNER_LOGICAL_FASTPATH_L1
   if (hz6_allocator_elastic_slot_owner_logical_owner_match(
           (Hz6Allocator*)allocator, descriptor, owner)) {
@@ -251,6 +313,14 @@ static inline int hz6_allocator_descriptor_owner_equal(
                                                    owner, equal);
 #endif
   return equal;
+}
+
+static inline int hz6_allocator_descriptor_owner_equal(
+    const Hz6Allocator* allocator,
+    const Hz6ObjectDescriptor* descriptor,
+    Hz6OwnerToken owner) {
+  return hz6_allocator_descriptor_owner_equal_at(
+      allocator, descriptor, owner, HZ6_OWNER_EQUAL_SITE_UNKNOWN);
 }
 
 void hz6_allocator_reset_descriptor_available(

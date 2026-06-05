@@ -144,8 +144,9 @@ int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
   }
 #endif
   int needs_rehome = visible_hit && descriptor &&
-                     !hz6_allocator_descriptor_owner_equal(
-                         allocator, descriptor, allocator->owner.token);
+                     !hz6_allocator_descriptor_owner_equal_at(
+                         allocator, descriptor, allocator->owner.token,
+                         HZ6_OWNER_EQUAL_SITE_REMOTE_FREE);
   if (needs_rehome) {
 #if HZ6_DIAGNOSTIC_PROBES
     if (hz6_allocator_descriptor_has_source_release(allocator, descriptor)) {

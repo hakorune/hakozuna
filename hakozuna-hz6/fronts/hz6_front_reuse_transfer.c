@@ -133,8 +133,9 @@ static void hz6_front_note_slot_owner_locality_dryrun(
   }
 
   ++allocator->stats.elastic_slot_owner_locality_slot_match;
-  if (hz6_allocator_descriptor_owner_equal(allocator, descriptor,
-                                           allocator->owner.token)) {
+  if (hz6_allocator_descriptor_owner_equal_at(
+          allocator, descriptor, allocator->owner.token,
+          HZ6_OWNER_EQUAL_SITE_TRANSFER_LOCALITY)) {
     ++allocator->stats.elastic_slot_owner_locality_owner_match;
     ++allocator->stats.elastic_slot_owner_locality_would_set_owner;
     ++allocator->stats.elastic_slot_owner_locality_would_hit_owner;

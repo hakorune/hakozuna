@@ -42,8 +42,9 @@ int hz6_large128_free_local_or_central(Hz6Allocator* allocator,
 
   Hz6ObjectDescriptor* descriptor = (Hz6ObjectDescriptor*)route.descriptor;
   if (descriptor->state != HZ6_STATE_ACTIVE || descriptor->ptr != ptr ||
-      !hz6_allocator_descriptor_owner_equal(allocator, descriptor,
-                                            allocator->owner.token)) {
+      !hz6_allocator_descriptor_owner_equal_at(
+          allocator, descriptor, allocator->owner.token,
+          HZ6_OWNER_EQUAL_SITE_LARGE_CENTRAL)) {
     return 0;
   }
 
