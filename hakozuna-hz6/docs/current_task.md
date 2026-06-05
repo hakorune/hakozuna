@@ -18,6 +18,91 @@ Use these orientation docs before reading this long ledger:
   HZ6_SOURCE_MODULARIZATION.md
 ```
 
+### 2026-06-06: DepotDescriptorRehomeBudget2048 repeat/guard and run-meta crash fix
+
+Goal:
+
+```text
+Validate DepotDescriptorRehomeBudget2048-L1 as the bounded follow-up to
+DepotDescriptorRehome-L1, including same-owner worker-warmup guard rows.
+```
+
+Issue found:
+
+```text
+The non-diagnostic Larson worker-warmup 8k/10k rows could terminate with
+0xC0000094 during early warmup. Diagnostic builds passed, which initially
+made the failure look like a parser/capture issue.
+
+Root cause:
+  elastic depot source-run metadata could observe a run-active block whose
+  run_slot_count was transiently zero during concurrent worker warmup.
+  The metadata mark path then used block->run_slot_count in a modulo.
+```
+
+Fix:
+
+```text
+1. Add a bench-only unhandled-exception print path so future Larson crashes
+   report exception code/address and a compact HZ6 stats snapshot.
+
+2. Make the capacity matrix capture that exception line and wait briefly for
+   redirected stdout/stderr to flush after process exit.
+
+3. Harden hz6_allocator_elastic_depot_source_run_mark_slot():
+   - reject active run metadata with run_slot_count == 0,
+   - use the already validated local slot_count for used-count bounds and
+     next-hint modulo instead of rereading block->run_slot_count.
+```
+
+Validation:
+
+```text
+Manual non-diagnostic worker10k after fix:
+  3 consecutive runs exit 0.
+
+Matrix:
+  docs/benchmarks/windows/paper/
+    hz6_depotdescrehome_budget2048_repeat_guard_final/
+      20260606_004135_hz6_capacity_matrix_windows.md
+
+Repeat-3 medians:
+  larson_T1              8.625M
+  larson_T4             23.239M
+  larson_T8             30.697M
+  larson_T16            44.043M
+  larson_t16_main_10k   44.034M
+  larson_t16_worker_10k 45.404M
+  larson_t16_main_4k    52.708M
+  larson_t16_worker_4k  54.011M
+  larson_t16_main_1k    57.438M
+  larson_t16_worker_1k  58.247M
+```
+
+Decision:
+
+```text
+KEEP:
+  DepotDescriptorRehomeBudget2048-L1 remains the current bounded
+  source-depot candidate-control.
+
+Interpretation:
+  The budget cap keeps descriptor materialization bounded while preserving
+  strong Larson main/worker throughput after the run-meta zero-count fix.
+
+Not yet:
+  Do not make it default/paper-selected until broader non-Larson lanes
+  are checked.
+
+Next:
+  1. Commit this crash fix + runner hygiene + ledger.
+  2. Run a small broad-lane check for mixed_ws/random_mixed/large_slices if
+     promoting beyond Larson is considered.
+  3. If broad lanes are clean, compare against the selected low-RSS HZ6 row
+     and decide whether Budget2048 is a source-depot sibling or just Larson
+     evidence.
+```
+
 Current short read:
 
 ```text

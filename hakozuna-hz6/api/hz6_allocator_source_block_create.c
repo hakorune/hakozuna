@@ -331,17 +331,19 @@ int hz6_allocator_elastic_depot_source_run_mark_slot(
     ++allocator->stats.elastic_depot_run_meta_slot_misaligned;
     return 0;
   }
+  uint16_t run_slot_count = (uint16_t)slot_count;
 
   if (!hz6_source_block_run_active(block)) {
     hz6_source_run_reset(block);
     block->run_slot_bytes = slot_bytes;
     block->run_class_id = class_id;
-    block->run_slot_count = (uint16_t)slot_count;
+    block->run_slot_count = run_slot_count;
     hz6_source_block_set_run_active(block, 1);
     ++allocator->stats.elastic_depot_run_meta_init;
-  } else if (block->run_class_id != class_id ||
+  } else if (block->run_slot_count == 0 ||
+             block->run_class_id != class_id ||
              block->run_slot_bytes != slot_bytes ||
-             block->run_slot_count != (uint16_t)slot_count) {
+             block->run_slot_count != run_slot_count) {
     ++allocator->stats.elastic_depot_run_meta_class_mismatch;
     return 0;
   }
@@ -351,12 +353,12 @@ int hz6_allocator_elastic_depot_source_run_mark_slot(
     return 1;
   }
   hz6_source_run_bit_set(block, slot_index);
-  if (block->run_used_count < block->run_slot_count) {
+  if (block->run_used_count < run_slot_count) {
     ++block->run_used_count;
   } else {
     ++allocator->stats.elastic_depot_run_meta_used_count_mismatch;
   }
-  block->run_next_hint = (uint16_t)((slot_index + 1u) % block->run_slot_count);
+  block->run_next_hint = (uint16_t)((slot_index + 1u) % run_slot_count);
   ++allocator->stats.elastic_depot_run_meta_mark;
   return 1;
 #else

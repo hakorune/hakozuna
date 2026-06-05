@@ -17,6 +17,7 @@
 typedef struct LarsonThreadData {
     void** blocks;
     size_t* sizes;
+    size_t thread_index;
     size_t live_count;
     size_t iterations_per_check;
     size_t min_size;
@@ -33,6 +34,32 @@ typedef struct LarsonThreadData {
 static volatile LONG g_stop_flag = 0;
 static volatile LONG g_start_flag = 1;
 static volatile LONG g_ready_count = 0;
+static volatile LONG g_worker_warmup_fail_count = 0;
+static volatile LONG g_worker_warmup_fail_thread = -1;
+static volatile LONG g_worker_warmup_fail_slot = -1;
+static volatile LONG g_worker_warmup_fail_size = 0;
+
+static LONG WINAPI bench_unhandled_exception_filter(
+    struct _EXCEPTION_POINTERS* exception_info) {
+    DWORD code = 0;
+    void* address = NULL;
+    if (exception_info && exception_info->ExceptionRecord) {
+        code = exception_info->ExceptionRecord->ExceptionCode;
+        address = exception_info->ExceptionRecord->ExceptionAddress;
+    }
+    fprintf(stderr,
+            "bench_larson_compare: unhandled exception code=0x%08lx address=%p worker_fail_count=%ld first_thread=%ld first_slot=%ld first_size=%ld\n",
+            (unsigned long)code,
+            address,
+            InterlockedCompareExchange(&g_worker_warmup_fail_count, 0, 0),
+            InterlockedCompareExchange(&g_worker_warmup_fail_thread, 0, 0),
+            InterlockedCompareExchange(&g_worker_warmup_fail_slot, 0, 0),
+            InterlockedCompareExchange(&g_worker_warmup_fail_size, 0, 0));
+    hz_bench_dump_stats(stderr, "larson_unhandled_exception");
+    fflush(stderr);
+    ExitProcess(3);
+    return EXCEPTION_EXECUTE_HANDLER;
+}
 
 static uint32_t parse_u32(const char* s, uint32_t def) {
     if (!s) {
@@ -146,7 +173,16 @@ static int warmup_thread_blocks(LarsonThreadData* td) {
         size_t size = pick_size(rng_next(&local_seed), td->min_size, td->max_size);
         void* p = bench_alloc(size);
         if (!p) {
+            if (InterlockedCompareExchange(&g_worker_warmup_fail_count, 1, 0) == 0) {
+                InterlockedExchange(&g_worker_warmup_fail_thread, (LONG)td->thread_index);
+                InterlockedExchange(&g_worker_warmup_fail_slot, (LONG)i);
+                InterlockedExchange(&g_worker_warmup_fail_size, (LONG)size);
+            }
+            fprintf(stderr,
+                    "bench_larson_compare: worker warmup alloc failed at thread=%zu slot=%zu size=%zu\n",
+                    td->thread_index, i, size);
             hz_bench_dump_stats(stderr, "larson_worker_warmup_alloc_fail");
+            fflush(stderr);
             return 0;
         }
         touch_allocation(p, size, local_seed);
@@ -345,6 +381,8 @@ int main(int argc, char** argv) {
     uint32_t warmup_mode = (argc > 8) ? parse_u32(argv[8], 0u) : 0u;
     int worker_warmup = (warmup_mode != 0u);
 
+    SetUnhandledExceptionFilter(bench_unhandled_exception_filter);
+
     LarsonThreadData* tds = NULL;
     HANDLE* handles = NULL;
     void** all_blocks = NULL;
@@ -384,6 +422,7 @@ int main(int argc, char** argv) {
     printf("[BENCH_ARGS] runtime=%u min=%u max=%u chunks=%u rounds=%u seed=%u threads=%u warmup=%s\n",
            runtime_sec, min_size, max_size, chunks_per_thread, rounds, seed,
            threads, worker_warmup ? "worker" : "main");
+    fflush(stdout);
 
     hz_bench_allocator_thread_setup();
 
@@ -423,6 +462,7 @@ int main(int argc, char** argv) {
 
         tds[t].blocks = all_blocks + base;
         tds[t].sizes = all_sizes + base;
+        tds[t].thread_index = t;
         tds[t].live_count = (size_t)chunks_per_thread;
         tds[t].iterations_per_check = (size_t)chunks_per_thread * (size_t)rounds;
         tds[t].min_size = min_size;
@@ -444,6 +484,10 @@ int main(int argc, char** argv) {
     InterlockedExchange(&g_stop_flag, 0);
     InterlockedExchange(&g_ready_count, 0);
     InterlockedExchange(&g_start_flag, worker_warmup ? 0 : 1);
+    InterlockedExchange(&g_worker_warmup_fail_count, 0);
+    InterlockedExchange(&g_worker_warmup_fail_thread, -1);
+    InterlockedExchange(&g_worker_warmup_fail_slot, -1);
+    InterlockedExchange(&g_worker_warmup_fail_size, 0);
 
     for (t = 0; t < threads; ++t) {
         uintptr_t h = _beginthreadex(NULL, 0, larson_thread, &tds[t], 0, NULL);
@@ -476,7 +520,13 @@ int main(int argc, char** argv) {
                     handles[j] = NULL;
                 }
             }
-            fprintf(stderr, "bench_larson_compare: worker warmup failed\n");
+            fprintf(stderr,
+                    "bench_larson_compare: worker warmup failed count=%ld first_thread=%ld first_slot=%ld first_size=%ld\n",
+                    InterlockedCompareExchange(&g_worker_warmup_fail_count, 0, 0),
+                    InterlockedCompareExchange(&g_worker_warmup_fail_thread, 0, 0),
+                    InterlockedCompareExchange(&g_worker_warmup_fail_slot, 0, 0),
+                    InterlockedCompareExchange(&g_worker_warmup_fail_size, 0, 0));
+            fflush(stderr);
             exit_code = 1;
             goto cleanup;
         }

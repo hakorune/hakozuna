@@ -99,7 +99,7 @@ function Get-LogCapture {
                 }
                 [void]$tail.Enqueue($line)
             }
-            if ($line -match '^(\[BENCH_ARGS\]|\[RSS\]|\[OPS\]|\[HZ6_STATS\]|\[HZ6_MEMORY_ATTR\]|\[HZ6_RSS_RESIDUAL\]|\[HZ6_CAPACITY_UTIL\]|\[HZ6_MAIN_WARMUP_CAPACITY\]|\[HZ6_ELASTIC_PROJECTION\]|\[HZ6_ELASTIC_OVERFLOW_PROJECTION\]|\[HZ6_METADATA_SLIM\]|\[HZ6_FRONT_ALLOC_PATH\]|\[HZ6_FRONTCACHE_CLASS\]|\[HZ6_ROUTE_PROBE_SHAPE\]|\[HZ6_REDIS_STATS\]|threads=.*ops/s=|bench_[^:]+:.*ops/s=|Pattern:|Throughput:|Throughput = |Ops:|---)') {
+            if ($line -match '^(\[BENCH_ARGS\]|\[RSS\]|\[OPS\]|\[HZ6_STATS\]|\[HZ6_MEMORY_ATTR\]|\[HZ6_RSS_RESIDUAL\]|\[HZ6_CAPACITY_UTIL\]|\[HZ6_MAIN_WARMUP_CAPACITY\]|\[HZ6_ELASTIC_PROJECTION\]|\[HZ6_ELASTIC_OVERFLOW_PROJECTION\]|\[HZ6_METADATA_SLIM\]|\[HZ6_FRONT_ALLOC_PATH\]|\[HZ6_FRONTCACHE_CLASS\]|\[HZ6_ROUTE_PROBE_SHAPE\]|\[HZ6_REDIS_STATS\]|bench_larson_compare: unhandled exception|threads=.*ops/s=|bench_[^:]+:.*ops/s=|Pattern:|Throughput:|Throughput = |Ops:|---)') {
                 [void]$captured.Add($line)
             } elseif ($IncludeStatsTail -and $line -match '^\[HZ6_STATS\]\s+label=redis_alloc_string_fail') {
                 if ($statsTail.Count -ge $TailLimit) {
@@ -193,9 +193,23 @@ function Invoke-CapturedProcess {
     }
 
     $proc.WaitForExit()
+    try {
+        # Give redirected stdout/stderr handles a short chance to flush after
+        # process exit. Some long HZ6 Larson rows can otherwise return rc=0
+        # with an empty capture file, which makes the matrix parser report a
+        # false parse failure.
+        [void]$proc.WaitForExit(1000)
+    } catch {
+    }
 
     $lines = New-Object System.Collections.Generic.List[string]
     $captured = Get-LogCapture -Paths @($stdoutPath, $stderrPath) -TailLimit 200
+    $captureRetry = 0
+    while ($captured.Count -eq 0 -and $captureRetry -lt 20) {
+        Start-Sleep -Milliseconds 100
+        $captured = Get-LogCapture -Paths @($stdoutPath, $stderrPath) -TailLimit 200
+        $captureRetry++
+    }
     foreach ($line in $captured) {
         if ($line -ne "") { $lines.Add($line) }
     }
