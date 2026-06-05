@@ -686,6 +686,21 @@ int main(int argc, char** argv) {
             tds[t].hz6_stats_after.elastic_source_block_overflow_release;
         hz6_stats.elastic_source_block_overflow_exhausted +=
             tds[t].hz6_stats_after.elastic_source_block_overflow_exhausted;
+        hz6_stats.elastic_source_block_localize_probe +=
+            tds[t].hz6_stats_after.elastic_source_block_localize_probe;
+        hz6_stats.elastic_source_block_localize_storage_match +=
+            tds[t].hz6_stats_after
+                .elastic_source_block_localize_storage_match;
+        hz6_stats.elastic_source_block_localize_storage_mismatch +=
+            tds[t].hz6_stats_after
+                .elastic_source_block_localize_storage_mismatch;
+        hz6_stats.elastic_source_block_localize_would_move +=
+            tds[t].hz6_stats_after.elastic_source_block_localize_would_move;
+        hz6_stats.elastic_source_block_localize_block_shared +=
+            tds[t].hz6_stats_after.elastic_source_block_localize_block_shared;
+        hz6_stats.elastic_source_block_localize_no_local_slot +=
+            tds[t].hz6_stats_after
+                .elastic_source_block_localize_no_local_slot;
         hz6_stats.source_owned_prepare +=
             tds[t].hz6_stats_after.source_owned_prepare;
         hz6_stats.source_owned_route_hit_local_owner +=
@@ -1351,6 +1366,12 @@ int main(int argc, char** argv) {
            "elastic_source_block_overflow_alloc=%zu "
            "elastic_source_block_overflow_release=%zu "
            "elastic_source_block_overflow_exhausted=%zu "
+           "elastic_source_block_localize_probe=%zu "
+           "elastic_source_block_localize_storage_match=%zu "
+           "elastic_source_block_localize_storage_mismatch=%zu "
+           "elastic_source_block_localize_would_move=%zu "
+           "elastic_source_block_localize_block_shared=%zu "
+           "elastic_source_block_localize_no_local_slot=%zu "
            "source_owned_prepare=%zu "
            "source_owned_route_hit_local_owner=%zu "
            "source_owned_visibility_hit_local_owner=%zu "
@@ -1482,6 +1503,12 @@ int main(int argc, char** argv) {
            hz6_stats.elastic_source_block_overflow_alloc,
            hz6_stats.elastic_source_block_overflow_release,
            hz6_stats.elastic_source_block_overflow_exhausted,
+           hz6_stats.elastic_source_block_localize_probe,
+           hz6_stats.elastic_source_block_localize_storage_match,
+           hz6_stats.elastic_source_block_localize_storage_mismatch,
+           hz6_stats.elastic_source_block_localize_would_move,
+           hz6_stats.elastic_source_block_localize_block_shared,
+           hz6_stats.elastic_source_block_localize_no_local_slot,
            hz6_stats.source_owned_prepare,
            hz6_stats.source_owned_route_hit_local_owner,
            hz6_stats.source_owned_visibility_hit_local_owner,

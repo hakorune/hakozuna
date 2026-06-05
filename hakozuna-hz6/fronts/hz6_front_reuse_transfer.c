@@ -1,5 +1,49 @@
 #include "hz6_front_util.h"
 
+#if HZ6_DIAGNOSTIC_PROBES && HZ6_ELASTIC_SOURCE_BLOCK_LOCALIZE_DRYRUN_L1
+static int hz6_front_has_free_local_source_block_slot(
+    const Hz6Allocator* allocator) {
+  if (!allocator) {
+    return 0;
+  }
+  for (size_t i = 0; i < HZ6_SOURCE_BLOCK_CAPACITY; ++i) {
+    if (!hz6_source_block_active(&allocator->source_blocks[i])) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+static void hz6_front_note_source_block_localize_dryrun(
+    Hz6Allocator* allocator,
+    const Hz6ObjectDescriptor* descriptor) {
+  if (!allocator || !descriptor || !descriptor->source_block ||
+      !hz6_allocator_source_block_is_elastic_depot(
+          descriptor->source_block)) {
+    return;
+  }
+
+  ++allocator->stats.elastic_source_block_localize_probe;
+#if HZ6_OWNER_SOURCE_SIDE_META_L2
+  if (descriptor->source_block->owner_source_storage_allocator ==
+      allocator) {
+    ++allocator->stats.elastic_source_block_localize_storage_match;
+    return;
+  }
+#endif
+  ++allocator->stats.elastic_source_block_localize_storage_mismatch;
+  if (descriptor->source_block->ref_count > 1) {
+    ++allocator->stats.elastic_source_block_localize_block_shared;
+    return;
+  }
+  if (!hz6_front_has_free_local_source_block_slot(allocator)) {
+    ++allocator->stats.elastic_source_block_localize_no_local_slot;
+    return;
+  }
+  ++allocator->stats.elastic_source_block_localize_would_move;
+}
+#endif
+
 void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
                                uint16_t front_id,
                                uint16_t class_id,
@@ -22,6 +66,9 @@ void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
     }
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.transfer_reuse_hit;
+#if HZ6_ELASTIC_SOURCE_BLOCK_LOCALIZE_DRYRUN_L1
+    hz6_front_note_source_block_localize_dryrun(allocator, descriptor);
+#endif
 #endif
     if (path) {
       *path = HZ6_ALLOC_PATH_TRANSFER_REUSE;

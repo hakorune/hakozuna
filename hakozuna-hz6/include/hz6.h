@@ -110,6 +110,12 @@ typedef struct Hz6StatsSnapshot {
   size_t elastic_source_block_overflow_alloc;
   size_t elastic_source_block_overflow_release;
   size_t elastic_source_block_overflow_exhausted;
+  size_t elastic_source_block_localize_probe;
+  size_t elastic_source_block_localize_storage_match;
+  size_t elastic_source_block_localize_storage_mismatch;
+  size_t elastic_source_block_localize_would_move;
+  size_t elastic_source_block_localize_block_shared;
+  size_t elastic_source_block_localize_no_local_slot;
   size_t source_owned_prepare;
   size_t source_owned_route_hit_local_owner;
   size_t source_owned_visibility_hit_local_owner;

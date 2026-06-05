@@ -279,6 +279,24 @@ depot accounting follow-up:
   the counters on main-warmup pressure rows and adds the shared depot cost
   (`2,097,152` bytes for the current 16k SourceBlock depot) to static table
   accounting.
+
+localize dry-run:
+  Whole-SourceBlock localize was tested as diagnostic-only. The dry-run counts
+  transfer-reused depot blocks whose storage owner differs from the current
+  allocator and only marks a block localizable if it is exclusive
+  (`ref_count <= 1`) and a local SourceBlock slot is free.
+
+  smoke:
+    elastic_source_block_localize_probe > 0
+    elastic_source_block_localize_storage_mismatch == probe
+    elastic_source_block_localize_would_move = 0
+    elastic_source_block_localize_block_shared == probe
+
+  read:
+    The source-depot pressure is shared-run pressure, not exclusive block
+    pressure. Localizing whole SourceBlock metadata would be unsafe or mostly
+    ineffective because the same physical run still owns multiple live/cached
+    slots. Do not implement whole-block localize behavior from this evidence.
 ```
 
 ## Design Target

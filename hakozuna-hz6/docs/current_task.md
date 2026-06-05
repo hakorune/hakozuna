@@ -431,6 +431,52 @@ Decision:
   drain/localize and owner-safe depot lifecycle.
 ```
 
+Immediate read after SourceBlock localize dry-run:
+
+```text
+Lane:
+  ownerlocalityfast-rsscap-2-elasticdescsource-route-localizedryrun-
+  desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-
+  routebytes16-storageowner16-ownersourcel2-frontcachepacked-
+  sourceblockpacked-source64-route16k-run512
+
+Implementation:
+  Diagnostic-only.
+  On transfer reuse, if the descriptor's SourceBlock is in the shared depot,
+  count whether the depot block could be localized to the current allocator.
+  Conservative localizable condition:
+    storage owner differs from current allocator
+    ref_count <= 1
+    current allocator has a free local SourceBlock slot
+
+Smoke source:
+  docs/benchmarks/windows/paper/
+    hz6_elastic_source_block_localize_dryrun_smoke/
+    20260605_153225_hz6_capacity_matrix_windows.md
+
+Result:
+  main-warmup rows show:
+    elastic_source_block_localize_probe > 0
+    elastic_source_block_localize_storage_mismatch == probe
+    elastic_source_block_localize_would_move = 0
+    elastic_source_block_localize_block_shared == probe
+
+  worker-warmup rows show:
+    transfer reuse is absent, so localize_probe = 0
+
+Read:
+  Whole-block localize is not the next behavior. The depot SourceBlocks that
+  cross owner/storage boundaries are still shared physical runs, so moving the
+  whole SourceBlock metadata to one worker would be unsafe or ineffective.
+
+Decision:
+  KEEP as no-go/control for whole-SourceBlock localize.
+  Do not implement whole-block localize behavior.
+  Next useful design target should be slot-level/source-run ownership,
+  descriptor storage locality without moving the whole block, or a different
+  drain policy that respects shared run ownership.
+```
+
 ### 2026-06-05: CapacityUtil-L1 diagnostic
 
 Goal:
