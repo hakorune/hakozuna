@@ -292,6 +292,7 @@ struct Hz6Allocator {
   Hz6DescriptorColdSource descriptor_cold_sources[HZ6_DESCRIPTOR_COLD_SOURCE_CAPACITY];
 #endif
   size_t descgov_detached_budget_used;
+  size_t depot_descriptor_rehome_budget_used;
 #if HZ6_DIAGNOSTIC_PROBES
   size_t diagnostic_descriptor_live_current;
   size_t diagnostic_source_block_active_current;

@@ -891,6 +891,35 @@ DepotDescriptorRehomeCapFree-L1:
     Larson objects materialized into consumer-local descriptors, not by cold
     frontcache backlog.  Do not pursue broad cap-on-free as the next control
     plane for this track.
+
+DepotDescriptorRehomeBudget2048-L1:
+  Candidate-control lane that keeps DepotDescriptorRehome-L1 but limits
+  consumer-local descriptor rehome commits to 2,048 per allocator.
+
+  Full10k non-diagnostic:
+    44.919M ops/s
+    route_invalid=0
+    remote_free_transfer_fail=0
+
+  Full10k diagnostic:
+    40.961M ops/s
+    l1_attempt=80,000
+    l1_success=30,483
+    l1_ineligible=8,189
+    l1_budget_denied=41,328
+    route_replace_fail=0
+    detach_fail=0
+    rollback=0
+    descriptor_used=36,539
+    active_descriptors=33,528
+    descriptor_live_max=2,448
+
+  Read:
+    This is the strongest follow-up after full DepotDescriptorRehome-L1.
+    Budgeting removes more than half of the consumer-local materialization
+    while preserving the full-rehome speed signal in the non-diagnostic run.
+    Unlike capfree, it attacks the actual retention source.  Next validation
+    should be repeat/guard on budgeted rehome before promoting it.
 ```
 
 ## What The Diagnostics Proved

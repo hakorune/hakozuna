@@ -50,6 +50,7 @@ cross-owner contract.
 | Depot descriptor route-replace dry-run | `speed + diagnostic + ...elasticdescsource-route-depotrunmeta-depotownerdirect-depotroutereplacedry-...source64-route16k-run4096` | 41.332M | n/a | diagnostic-only; `would_commit=71811`, `current_route_same=71811`, no mismatch/conflict, safety clean |
 | Depot descriptor rehome | `speed + ...elasticdescsource-route-depotrunmeta-depotownerdirect-depotdescrehome-...source64-route16k-run4096` | 44.853M | n/a | behavior evidence; `success=71811`, safety clean, but descriptor retention grows so not promotion yet |
 | Depot descriptor rehome + capfree | `speed + ...elasticdescsource-route-depotrunmeta-depotownerdirect-depotdescrehome-capfree-...source64-route16k-run4096` | 43.602M | n/a | control/no-go for simple frontcache cap; safety clean but `descriptor_used` stays `77883`, showing retention is live consumer-local materialization rather than cold frontcache backlog |
+| Depot descriptor rehome budget2048 | `speed + ...elasticdescsource-route-depotrunmeta-depotownerdirect-depotdescrehome-budget2048-...source64-route16k-run4096` | 44.919M | n/a | bounded rehome candidate-control; safety clean, `success=30483`, `budget_denied=41328`, and diagnostic `descriptor_used` drops to `36539` |
 
 Source:
 - `docs/benchmarks/windows/paper/hz6_selected_family/selected-family-desc17-refresh/`

@@ -110,6 +110,27 @@ Latest HZ6 selected-family decision:
           descriptors, not by a cold frontcache backlog.  Do not chase a broad
           cap-on-free policy for this track.
 
+      depotdescrehome-budget2048
+        full10k non-diagnostic = 44.919M, safety-clean
+        full10k diagnostic = 40.961M, safety-clean
+        l1_attempt=80000
+        l1_success=30483
+        l1_ineligible=8189
+        l1_budget_denied=41328
+        route_replace_fail=0
+        detach_fail=0
+        rollback=0
+        descriptor_used=36539
+        active_descriptors=33528
+        descriptor_live_max=2448
+        read:
+          Strong candidate-control.  A per-allocator 2048 rehome budget cuts
+          consumer-local descriptor materialization by more than half versus
+          full rehome while keeping non-diagnostic throughput slightly above
+          full rehome in this run.  This is a better next candidate than
+          capfree; repeat/guard should decide whether budget2048 becomes the
+          selected ElasticCapacity source-depot lane.
+
   immediate next attack order:
     1. RouteExactDescriptorReplace-L0/L1:
        implement a fail-closed exact-route descriptor replacement primitive.
@@ -130,11 +151,10 @@ Latest HZ6 selected-family decision:
        L1 behavior now succeeds for every eligible transfer-reuse depot
        descriptor and keeps safety clean.  Next optimization should not add
        another route knob.  The capfree control shows frontcache backlog is not
-       the dominant retention source; next work should examine whether
-       consumer-local descriptor materialization should be retained for live
-       cross-owner Larson objects, or whether a cheaper owner/depot descriptor
-       equality path can capture the speed without cloning every eligible
-       descriptor.
+       the dominant retention source.  Budget2048 shows that consumer-local
+       descriptor materialization can be bounded while keeping the speed signal,
+       so the next validation should be repeat/guard for budgeted rehome rather
+       than another route or broad owner shortcut.
 
     do not:
       revive broad slot-local storage-owner override

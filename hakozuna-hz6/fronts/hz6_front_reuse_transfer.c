@@ -414,6 +414,16 @@ static Hz6ObjectDescriptor* hz6_front_try_elastic_depot_descriptor_rehome(
     return descriptor;
   }
 
+#if HZ6_ELASTIC_DEPOT_DESCRIPTOR_REHOME_BUDGET_L1
+  if (allocator->depot_descriptor_rehome_budget_used >=
+      HZ6_ELASTIC_DEPOT_DESCRIPTOR_REHOME_BUDGET) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.elastic_depot_descriptor_rehome_l1_budget_denied;
+#endif
+    return descriptor;
+  }
+#endif
+
   Hz6ObjectDescriptor* local = hz6_allocator_find_free_descriptor(allocator);
   if (!local || !hz6_allocator_descriptor_belongs_to(allocator, local)) {
 #if HZ6_DIAGNOSTIC_PROBES
@@ -466,6 +476,9 @@ static Hz6ObjectDescriptor* hz6_front_try_elastic_depot_descriptor_rehome(
 
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.elastic_depot_descriptor_rehome_l1_success;
+#endif
+#if HZ6_ELASTIC_DEPOT_DESCRIPTOR_REHOME_BUDGET_L1
+  ++allocator->depot_descriptor_rehome_budget_used;
 #endif
   return local;
 }
