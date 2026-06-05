@@ -67,12 +67,27 @@ Latest HZ6 selected-family decision:
         local_descriptor_available=71811
         would_rehome=71811
 
-  immediate next behavior candidate:
-    fail-closed descriptor clone/rehome at transfer reuse.
-    The behavior must replace exact route metadata safely, roll back on
-    failure, and release/reset the old depot descriptor only after the new
-    local descriptor and route are committed.  Do not revive broad
-    slot-local storage-owner override.
+  immediate next attack order:
+    1. RouteExactDescriptorReplace-L0/L1:
+       add or dry-run a route exact descriptor replacement contract before
+       changing descriptor ownership.  The key safety question is route commit,
+       not descriptor clone.
+
+    2. DepotDescriptorRouteReplaceDryRun-L1:
+       shadow-verify that every would_rehome object has an old route that
+       matches the old depot descriptor, generation, bytes, front, and class;
+       and that current-route commit / origin unregister would be safe.
+
+    3. DepotDescriptorRehome-L1 behavior:
+       clone/rehome the depot descriptor into a consumer-local descriptor only
+       after route replacement is proven.  Generation should be preserved
+       because this is descriptor storage relocation for the same live object,
+       not a new object lifetime.
+
+    do not:
+      revive broad slot-local storage-owner override
+      unregister old route before a replacement/commit path is proven
+      call source-release on the old depot descriptor during rehome
 
   2026-06-05 FreeLocalCacheOwnerPredicate-L0:
     implementation:

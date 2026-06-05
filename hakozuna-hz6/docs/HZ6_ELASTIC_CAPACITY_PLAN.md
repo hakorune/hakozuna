@@ -754,6 +754,35 @@ read:
   should not revive broad slot-local storage-owner override.
 ```
 
+RouteExactDescriptorReplace / DepotDescriptorRouteReplaceDryRun next:
+
+```text
+why:
+  DepotDescriptorRehomeDryRun proved local descriptor capacity and slot/run
+  eligibility.  It did not prove route-swap safety.  The next step must verify
+  exact route replacement before changing descriptor ownership.
+
+preferred order:
+  1. shadow-check old route for ptr
+  2. require route.descriptor == old depot descriptor
+  3. require route.generation == old descriptor generation
+  4. require route bytes/front/class match
+  5. prove current allocator can commit an exact route for the same live object
+  6. only after route commit, detach/reset old depot descriptor while keeping
+     the source slot alive
+
+generation:
+  preserve generation during descriptor rehome.  This is descriptor storage
+  relocation for the same live object, not a new object lifetime.
+
+hard no-go:
+  route_invalid / route_miss / route_register_fail / remote_free_transfer_fail
+  become nonzero
+  old route points at a reset depot descriptor
+  rollback cannot restore old route + old descriptor
+  source slot/ref-count is released during descriptor rehome
+```
+
 ## What The Diagnostics Proved
 
 ElasticProjection-L1:

@@ -50,9 +50,11 @@ HZ6 Larson / ElasticCapacity:
     stays scoped to transfer reuse.
     DepotDescriptorRehomeDryRun-L1 shows most transfer-reused depot
     descriptors are run-matched and local descriptor capacity is available.
-    The next behavior candidate is fail-closed descriptor clone/rehome at
-    transfer reuse, with route exact replacement and rollback; do not revive
-    general owner_source storage override.
+    First add a RouteExactDescriptorReplace / route-replace dry-run to prove
+    old route descriptor/generation/class match and safe current-route commit.
+    Only after that should DepotDescriptorRehome-L1 clone/rehome descriptors at
+    transfer reuse. Preserve generation during rehome; do not revive general
+    owner_source storage override.
 
   DO NOT MIX:
     diagnostic counters or dry-run lanes into production speed tables
