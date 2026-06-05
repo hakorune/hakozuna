@@ -13,6 +13,7 @@ Repo hygiene note:
 Use these orientation docs before reading this long ledger:
   HZ6_SELECTED_FAMILY_SUMMARY.md
   HZ6_LANE_GUIDE.md
+  HZ6_ELASTIC_CAPACITY_PLAN.md
   HZ6_REPO_HYGIENE.md
   HZ6_SOURCE_MODULARIZATION.md
 ```
@@ -34,24 +35,28 @@ Current bottleneck hypothesis:
   RSS is now dominated less by payload and more by per-worker static capacity.
   SourceBlock local capacity can be trimmed from source16k to source10k for
   Larson main-warmup, but source8k/source2k are too tight. The next large-ROI
-  HZ6 work remains elastic/shared descriptor-route capacity, not hot-path
-  counters.
+  HZ6 work remains elastic/shared descriptor-route-source capacity, not
+  hot-path counters and not another packing-only lane.
 
 Immediate action queue:
   1. source10k guard matrix is complete and safety-clean.
      Keep source10k as the current Larson combined-packed minimum-RSS sibling.
-  2. Add ElasticProjection-L1 before behavior:
-       use existing diagnostic stats only
-       estimate projected table KiB from local_cap_2x
-       compare projected static KiB against current static KiB
-       keep allocator hot path unchanged
-  3. Then move to ElasticCapacity-L1 design work:
-       local descriptor/route/source/frontcache caps
+  2. ElasticProjection-L1, ElasticHighWater-L1, and MainWarmupCapacity-L1 are
+     fixed as diagnostic evidence.
+       Projection shows large static-table upside.
+       HighWater shows final worker steady-state is tiny.
+       MainWarmupCapacity shows the main allocator transiently owns the seeded
+       live set: descriptor 160,048; route 170,051; source block 10,003.
+  3. Move to ElasticCapacity-L1 design work:
+       local small descriptor/route/source/frontcache caps
        shared overflow / depot for warmup pressure
        fail-closed INVALID/MISS preserved
        no hot-path global scan
-  4. Do not add another packing lane until ElasticProjection identifies the
-     next static-table target.
+  4. Do not implement SourceBlock-only overflow as the main behavior. It cannot
+     solve the descriptor/route warmup spike. Treat it only as a possible
+     subcomponent after a unified metadata overflow contract is clear.
+  5. Do not add another packing lane until ElasticCapacity-L1 has a first
+     shared-overflow prototype or diagnostic skeleton.
 ```
 
 Immediate read after ElasticHighWater-L1:
