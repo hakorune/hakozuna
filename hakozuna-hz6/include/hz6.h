@@ -129,6 +129,16 @@ typedef struct Hz6StatsSnapshot {
   size_t elastic_depot_run_meta_slot_misaligned;
   size_t elastic_depot_run_meta_too_many_slots;
   size_t elastic_depot_run_meta_used_count_mismatch;
+  size_t elastic_slot_owner_locality_probe;
+  size_t elastic_slot_owner_locality_storage_match;
+  size_t elastic_slot_owner_locality_storage_mismatch;
+  size_t elastic_slot_owner_locality_run_miss;
+  size_t elastic_slot_owner_locality_class_mismatch;
+  size_t elastic_slot_owner_locality_slot_match;
+  size_t elastic_slot_owner_locality_owner_match;
+  size_t elastic_slot_owner_locality_owner_mismatch;
+  size_t elastic_slot_owner_locality_would_set_owner;
+  size_t elastic_slot_owner_locality_would_hit_owner;
   size_t source_owned_prepare;
   size_t source_owned_route_hit_local_owner;
   size_t source_owned_visibility_hit_local_owner;

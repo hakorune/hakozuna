@@ -95,6 +95,54 @@ static void hz6_front_note_source_run_locality_dryrun(
 }
 #endif
 
+#if HZ6_DIAGNOSTIC_PROBES && HZ6_ELASTIC_SLOT_OWNER_LOCALITY_DRYRUN_L1
+static void hz6_front_note_slot_owner_locality_dryrun(
+    Hz6Allocator* allocator,
+    const Hz6ObjectDescriptor* descriptor) {
+  if (!allocator || !descriptor || !descriptor->source_block ||
+      !hz6_allocator_source_block_is_elastic_depot(
+          descriptor->source_block)) {
+    return;
+  }
+
+  ++allocator->stats.elastic_slot_owner_locality_probe;
+#if HZ6_OWNER_SOURCE_SIDE_META_L2
+  if (descriptor->source_block->owner_source_storage_allocator ==
+      allocator) {
+    ++allocator->stats.elastic_slot_owner_locality_storage_match;
+    return;
+  }
+#endif
+  ++allocator->stats.elastic_slot_owner_locality_storage_mismatch;
+  if (!hz6_source_block_run_active(descriptor->source_block)) {
+    ++allocator->stats.elastic_slot_owner_locality_run_miss;
+    return;
+  }
+  if (descriptor->source_block->run_class_id != descriptor->class_id ||
+      descriptor->source_block->run_slot_bytes != descriptor->bytes) {
+    ++allocator->stats.elastic_slot_owner_locality_class_mismatch;
+    return;
+  }
+  if (!hz6_allocator_source_run_contains_slot(descriptor->source_block,
+                                             descriptor->ptr,
+                                             descriptor->class_id,
+                                             descriptor->bytes)) {
+    ++allocator->stats.elastic_slot_owner_locality_run_miss;
+    return;
+  }
+
+  ++allocator->stats.elastic_slot_owner_locality_slot_match;
+  if (hz6_allocator_descriptor_owner_equal(allocator, descriptor,
+                                           allocator->owner.token)) {
+    ++allocator->stats.elastic_slot_owner_locality_owner_match;
+    ++allocator->stats.elastic_slot_owner_locality_would_set_owner;
+    ++allocator->stats.elastic_slot_owner_locality_would_hit_owner;
+  } else {
+    ++allocator->stats.elastic_slot_owner_locality_owner_mismatch;
+  }
+}
+#endif
+
 void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
                                uint16_t front_id,
                                uint16_t class_id,
@@ -122,6 +170,9 @@ void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
 #endif
 #if HZ6_ELASTIC_SOURCE_RUN_LOCALITY_DRYRUN_L1
     hz6_front_note_source_run_locality_dryrun(allocator, descriptor);
+#endif
+#if HZ6_ELASTIC_SLOT_OWNER_LOCALITY_DRYRUN_L1
+    hz6_front_note_slot_owner_locality_dryrun(allocator, descriptor);
 #endif
 #endif
     if (path) {

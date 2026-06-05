@@ -139,6 +139,66 @@ Latest HZ6 selected-family decision:
     with sparse per-slot ownership/locality projection; do not move whole
     SourceBlocks and do not enable SourceRunReuse-L1 in this depot lane yet.
 
+2026-06-05 SlotOwnerLocalityDryRun-L1:
+  implementation:
+    Add HZ6_ELASTIC_SLOT_OWNER_LOCALITY_DRYRUN_L1 on top of
+    SourceRunMetadataOnDepot-L1.  This is diagnostic-only: it does not change
+    descriptor ownership, route ownership, SourceBlock storage owner, or
+    transfer behavior.
+
+  lane:
+    ownerlocalityfast-rsscap-2-elasticdescsource-route-slotownerdryrun-
+    desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-
+    routebytes16-storageowner16-ownersourcel2-frontcachepacked-
+    sourceblockpacked-source64-route16k-run4096
+
+  smoke:
+    docs/benchmarks/windows/paper/
+      hz6_elastic_slot_owner_locality_dryrun_smoke/
+      20260605_165044_hz6_capacity_matrix_windows.md
+    main1k:
+      57.435M / 113620 KB
+      elastic_slot_owner_locality_probe=7487
+      storage_mismatch=7487
+      run_miss=0
+      class_mismatch=0
+      slot_match=7487
+      owner_match=7487
+      owner_mismatch=0
+      would_set_owner=7487
+      would_hit_owner=7487
+      safety clean
+
+  full10k:
+    docs/benchmarks/windows/paper/
+      hz6_elastic_slot_owner_locality_dryrun_full10k/
+      20260605_165106_hz6_capacity_matrix_windows.md
+    43.174M / 230020 KB
+    elastic_slot_owner_locality_probe=79485
+    storage_mismatch=79485
+    run_miss=0
+    class_mismatch=0
+    slot_match=79485
+    owner_match=79485
+    owner_mismatch=0
+    would_set_owner=79485
+    would_hit_owner=79485
+    safety clean:
+      route_invalid=0
+      route_miss=0
+      route_register_fail=0
+      descriptor_exhausted=0
+      source_block_exhausted=0
+      alloc_fail=0
+
+  read:
+    A0 gives the strongest locality signal so far.  Every depot transfer reuse
+    probe remains a SourceBlock storage-owner mismatch, but every one is now
+    a source-run slot match whose descriptor owner is current after transfer
+    activation.  This supports a future sparse per-slot owner/locality metadata
+    behavior.  Keep this as dry-run evidence; do not yet mutate slot owner
+    state or rehome routes.
+
 2026-06-05 next attack after combined packed Pro consult:
   Larson cross-owner RSS:
     OwnerSourceSideMeta-L2 remains the selected speed/RSS balance sibling.

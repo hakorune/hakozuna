@@ -59,6 +59,9 @@ Diagnostic slot-level evidence:
 
 Prerequisite/control:
   SourceRunMetadataOnDepot-L1
+
+Diagnostic slot-owner evidence:
+  SlotOwnerLocalityDryRun-L1
 ```
 
 SourceBlockLocalizeDryRun-L1 result:
@@ -160,6 +163,50 @@ read:
   storage-owner mismatch with perfect physical slot identification.  Next
   should be SlotOwnerLocalityDryRun-L1, not whole-SourceBlock movement and not
   source-run reuse behavior inside the depot lane.
+```
+
+SlotOwnerLocalityDryRun-L1 result:
+
+```text
+lane:
+  ownerlocalityfast-rsscap-2-elasticdescsource-route-slotownerdryrun-
+  desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-
+  routebytes16-storageowner16-ownersourcel2-frontcachepacked-
+  sourceblockpacked-source64-route16k-run4096
+
+mode:
+  diagnostic-only A0 projection
+  no descriptor owner mutation beyond existing transfer activation
+  no route rehome
+  no SourceBlock storage-owner movement
+
+full10k run-1:
+  43.174M ops/s
+  230,020 KB peak RSS
+  safety clean:
+    route_invalid=0
+    route_miss=0
+    route_register_fail=0
+    descriptor_exhausted=0
+    source_block_exhausted=0
+    alloc_fail=0
+
+counters:
+  elastic_slot_owner_locality_probe              = 79,485
+  elastic_slot_owner_locality_storage_mismatch   = 79,485
+  elastic_slot_owner_locality_run_miss           = 0
+  elastic_slot_owner_locality_class_mismatch     = 0
+  elastic_slot_owner_locality_slot_match         = 79,485
+  elastic_slot_owner_locality_owner_match        = 79,485
+  elastic_slot_owner_locality_owner_mismatch     = 0
+  elastic_slot_owner_locality_would_set_owner    = 79,485
+  elastic_slot_owner_locality_would_hit_owner    = 79,485
+
+read:
+  Every probed transfer object is still a SourceBlock storage-owner mismatch,
+  but every one is a source-run slot match whose descriptor owner is current
+  after transfer activation.  This supports sparse per-slot owner/locality
+  metadata as the next behavior candidate.  Keep A0 as evidence only.
 ```
 
 ## What The Diagnostics Proved
@@ -548,7 +595,13 @@ Recommended L1 order:
    source-run metadata gap in the source-depot lane without enabling source-run
    reuse behavior. This prepares the next slot-owner locality dry-run.
 
-5. Unified ElasticCapacity-L1:
+5. SlotOwnerLocalityDryRun-L1:
+   implemented as diagnostic-only evidence. It shows the source-depot transfer
+   objects can be represented as worker-local slots without whole-block
+   movement. The next behavior should be sparse per-slot owner/locality state,
+   not route rehome or SourceBlock storage-owner mutation yet.
+
+6. Unified ElasticCapacity-L1:
    descriptor + route + source overflow in one lane
    full10k target: keep route-overflow RSS class while recovering source10k
    throughput

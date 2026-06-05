@@ -731,6 +731,32 @@ int main(int argc, char** argv) {
         hz6_stats.elastic_depot_run_meta_used_count_mismatch +=
             tds[t].hz6_stats_after
                 .elastic_depot_run_meta_used_count_mismatch;
+        hz6_stats.elastic_slot_owner_locality_probe +=
+            tds[t].hz6_stats_after.elastic_slot_owner_locality_probe;
+        hz6_stats.elastic_slot_owner_locality_storage_match +=
+            tds[t].hz6_stats_after
+                .elastic_slot_owner_locality_storage_match;
+        hz6_stats.elastic_slot_owner_locality_storage_mismatch +=
+            tds[t].hz6_stats_after
+                .elastic_slot_owner_locality_storage_mismatch;
+        hz6_stats.elastic_slot_owner_locality_run_miss +=
+            tds[t].hz6_stats_after.elastic_slot_owner_locality_run_miss;
+        hz6_stats.elastic_slot_owner_locality_class_mismatch +=
+            tds[t].hz6_stats_after
+                .elastic_slot_owner_locality_class_mismatch;
+        hz6_stats.elastic_slot_owner_locality_slot_match +=
+            tds[t].hz6_stats_after.elastic_slot_owner_locality_slot_match;
+        hz6_stats.elastic_slot_owner_locality_owner_match +=
+            tds[t].hz6_stats_after.elastic_slot_owner_locality_owner_match;
+        hz6_stats.elastic_slot_owner_locality_owner_mismatch +=
+            tds[t].hz6_stats_after
+                .elastic_slot_owner_locality_owner_mismatch;
+        hz6_stats.elastic_slot_owner_locality_would_set_owner +=
+            tds[t].hz6_stats_after
+                .elastic_slot_owner_locality_would_set_owner;
+        hz6_stats.elastic_slot_owner_locality_would_hit_owner +=
+            tds[t].hz6_stats_after
+                .elastic_slot_owner_locality_would_hit_owner;
         hz6_stats.source_owned_prepare +=
             tds[t].hz6_stats_after.source_owned_prepare;
         hz6_stats.source_owned_route_hit_local_owner +=
@@ -1415,6 +1441,16 @@ int main(int argc, char** argv) {
            "elastic_depot_run_meta_slot_misaligned=%zu "
            "elastic_depot_run_meta_too_many_slots=%zu "
            "elastic_depot_run_meta_used_count_mismatch=%zu "
+           "elastic_slot_owner_locality_probe=%zu "
+           "elastic_slot_owner_locality_storage_match=%zu "
+           "elastic_slot_owner_locality_storage_mismatch=%zu "
+           "elastic_slot_owner_locality_run_miss=%zu "
+           "elastic_slot_owner_locality_class_mismatch=%zu "
+           "elastic_slot_owner_locality_slot_match=%zu "
+           "elastic_slot_owner_locality_owner_match=%zu "
+           "elastic_slot_owner_locality_owner_mismatch=%zu "
+           "elastic_slot_owner_locality_would_set_owner=%zu "
+           "elastic_slot_owner_locality_would_hit_owner=%zu "
            "source_owned_prepare=%zu "
            "source_owned_route_hit_local_owner=%zu "
            "source_owned_visibility_hit_local_owner=%zu "
@@ -1565,6 +1601,16 @@ int main(int argc, char** argv) {
            hz6_stats.elastic_depot_run_meta_slot_misaligned,
            hz6_stats.elastic_depot_run_meta_too_many_slots,
            hz6_stats.elastic_depot_run_meta_used_count_mismatch,
+           hz6_stats.elastic_slot_owner_locality_probe,
+           hz6_stats.elastic_slot_owner_locality_storage_match,
+           hz6_stats.elastic_slot_owner_locality_storage_mismatch,
+           hz6_stats.elastic_slot_owner_locality_run_miss,
+           hz6_stats.elastic_slot_owner_locality_class_mismatch,
+           hz6_stats.elastic_slot_owner_locality_slot_match,
+           hz6_stats.elastic_slot_owner_locality_owner_match,
+           hz6_stats.elastic_slot_owner_locality_owner_mismatch,
+           hz6_stats.elastic_slot_owner_locality_would_set_owner,
+           hz6_stats.elastic_slot_owner_locality_would_hit_owner,
            hz6_stats.source_owned_prepare,
            hz6_stats.source_owned_route_hit_local_owner,
            hz6_stats.source_owned_visibility_hit_local_owner,
