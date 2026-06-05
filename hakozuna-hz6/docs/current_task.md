@@ -36,6 +36,21 @@ Current bottleneck hypothesis:
   Larson main-warmup, but source8k/source2k are too tight. The next large-ROI
   HZ6 work remains elastic/shared descriptor-route capacity, not hot-path
   counters.
+
+Immediate action queue:
+  1. Guard source10k outside the main-warmup repeat row:
+       larson_t16_worker_10k
+       larson_t16_main_4k / worker_4k
+       larson_t16_main_1k / worker_1k if needed
+  2. If source10k remains safety-clean, keep it as the current Larson
+     combined-packed minimum-RSS sibling.
+  3. Then move to ElasticCapacity-L1 design work:
+       local descriptor/route/source/frontcache caps
+       shared overflow / depot for warmup pressure
+       fail-closed INVALID/MISS preserved
+       no hot-path global scan
+  4. Do not add new hot-path counters or another packing lane before the
+     guard matrix is clean.
 ```
 
 ### 2026-06-05: CapacityUtil-L1 diagnostic
@@ -357,6 +372,32 @@ source10k repeat-3 confirmation:
     static table = 234502 KiB
     static+payload = 258950 KiB
     source block table = 20480 KiB
+
+source10k guard matrix:
+  docs/benchmarks/windows/paper/hz6_source10k_guard/
+    20260605_103956_hz6_capacity_matrix_windows.md
+  docs/benchmarks/windows/paper/hz6_source10k_guard_1k/
+    20260605_104036_hz6_capacity_matrix_windows.md
+
+  larson_t16_worker_10k:
+    45.707M / 412128 KB
+    safety clean
+
+  larson_t16_main_4k:
+    48.305M / 331152 KB
+    safety clean
+
+  larson_t16_worker_4k:
+    51.418M / 331100 KB
+    safety clean
+
+  larson_t16_main_1k:
+    55.927M / 290380 KB
+    safety clean
+
+  larson_t16_worker_1k:
+    55.836M / 290372 KB
+    safety clean
 ```
 
 Decision:
@@ -365,6 +406,7 @@ Decision:
 Promote source10k as the current Larson combined packed minimum-RSS sibling.
 It is repeat-3 clean and keeps the combined packed RSS improvement while
 trimming SourceBlock table capacity from source16k to source10k.
+Guard rows are clean for 10k worker, 4k main/worker, and 1k main/worker.
 
 Keep:
   source12k as the safety backup / boundary control.
