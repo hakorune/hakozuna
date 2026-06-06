@@ -83,6 +83,8 @@ function Invoke-BenchProcess {
         $proc = New-Object System.Diagnostics.Process
         $proc.StartInfo = $psi
         [void]$proc.Start()
+        $stdoutTask = $proc.StandardOutput.ReadToEndAsync()
+        $stderrTask = $proc.StandardError.ReadToEndAsync()
 
         $peakWorkingSetBytes = [Int64]0
         $timedOut = $false
@@ -130,9 +132,9 @@ function Invoke-BenchProcess {
             } catch {
             }
         }
-        $stdout = $proc.StandardOutput.ReadToEnd()
-        $stderr = $proc.StandardError.ReadToEnd()
         $proc.WaitForExit()
+        $stdout = $stdoutTask.Result
+        $stderr = $stderrTask.Result
 
         try {
             $proc.Refresh()
@@ -281,6 +283,7 @@ $Summary.Add("| --- | ---: | ---: | --- |")
         )
         $result = Invoke-BenchProcess -Path $exe.Path -BenchArgs $benchArgs
         $raw = (($result.Output | ForEach-Object { $_.ToString().Trim() }) -join " ").Trim()
+        $raw = ($raw -replace '[\r\n]+', ' ')
         if (-not $raw) {
             $raw = "(no output)"
         }
