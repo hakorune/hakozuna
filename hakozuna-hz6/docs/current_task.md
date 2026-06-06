@@ -5238,6 +5238,90 @@ HZ6 is a route-safe, low-RSS, selected-family allocator.
 It should not be described as a universal fastest one-lane allocator.
 ```
 
+### 2026-06-06: ToySmallActiveMap over SourceBlockRoute dynmap
+
+Goal:
+
+```text
+Check whether the previous ToySmallActiveMap same-owner free shortcut still
+helps after SourceBlockRoute dynmap became the selected-small candidate.
+```
+
+New capacity lane:
+
+```text
+toysmallactivemap-sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+```
+
+Flags:
+
+```text
+SourceBlockRoute dynmap selected-small flags
+  + HZ6_TOY_SMALL_ACTIVE_FREE_MAP_L1=1
+  + HZ6_TOY_SMALL_HOTPATH_DIAG_L1=1
+```
+
+Diagnostic smoke:
+
+```text
+results/hz6-toysmall-activemap-dynmap-smoke/20260606_193738_hz6_capacity_matrix_windows.md
+
+256B:
+  dynmap            46.447M / 14,272 KB
+  activemap+dynmap 45.544M / 15,524 KB
+  active_hit        294760 / 305088
+  safety            route_invalid=0 route_miss=0 route_register_fail=0
+
+2K:
+  dynmap            27.415M / 75,824 KB
+  activemap+dynmap 23.411M / 76,528 KB
+  active_hit        296578 / 305088
+  safety            route_invalid=0 route_miss=0 route_register_fail=0
+
+16K:
+  dynmap            18.375M / 17,676 KB
+  activemap+dynmap 21.224M / 17,852 KB
+  active_hit        0 / 0
+  safety            route_invalid=0 route_miss=0 route_register_fail=0
+```
+
+Non-diagnostic repeat-3:
+
+```text
+results/hz6-toysmall-activemap-dynmap-repeat3/20260606_193817_hz6_capacity_matrix_windows.md
+
+             SourceBlockRoute dynmap   ActiveMap + dynmap
+  256B       66.780M / 14,248 KB       72.145M / 15,108 KB   +8.03%
+  512B       50.602M / 26,632 KB       53.993M / 27,412 KB   +6.70%
+  1K         52.728M / 26,636 KB       55.545M / 27,352 KB   +5.34%
+  2K         39.299M / 75,796 KB       39.451M / 76,584 KB   +0.39%
+  4K         51.039M / 42,504 KB       53.277M / 43,272 KB   +4.38%
+  8K         60.343M / 25,948 KB       57.883M / 26,108 KB   -4.08%
+  16K        47.486M / 17,668 KB       56.015M / 17,788 KB   +17.96%
+```
+
+Decision:
+
+```text
+KEEP as Toy/small polish candidate-control.
+
+Good:
+  Improves 256B, 512B, 1K, 4K, and 16K.
+  2K is neutral.
+  RSS delta is bounded.
+  Safety is clean in diagnostic smoke.
+
+Not selected yet:
+  8K regresses by about 4%.
+  The lane adds active-map hot-path state.
+
+Next:
+  Run repeat-5/10 if considering promotion.
+  If 8K stays below -5%, do not split selected-small immediately; instead test
+  whether active-map branch/probe cost can be made invisible for non-Toy rows or
+  whether a narrower Toy/small-only behavior lane should remain a control.
+```
+
 Random_mixed guard repeat-3:
 
 ```text
