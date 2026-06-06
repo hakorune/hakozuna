@@ -3,6 +3,7 @@ param(
     [string[]]$Profiles,
     [string[]]$Allocators,
     [int]$BenchTimeoutSeconds = 0,
+    [switch]$ForceBuild,
     [switch]$ContinueOnFailure
 )
 
@@ -54,7 +55,7 @@ if ($Allocators -and $Allocators.Count -gt 0) {
     $Executables = $SelectedExecutables
 }
 
-if ($Executables | Where-Object { -not (Test-Path $_.Path) }) {
+if ($ForceBuild -or ($Executables | Where-Object { -not (Test-Path $_.Path) })) {
     & $BuildScript
     if ($LASTEXITCODE -ne 0) {
         throw "build_win_allocator_suite.ps1 failed with exit code $LASTEXITCODE"

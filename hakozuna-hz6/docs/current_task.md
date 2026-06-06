@@ -258,7 +258,22 @@ Legacy matrix connection:
   only the target HZ6 lane before spending time on the full external allocator
   comparison. It also accepts `-BenchTimeoutSeconds` for exploratory large
   rows; keep full paper-style runs timeout-free unless a row is already known
-  to hang.
+  to hang. Use `-ForceBuild` after HZ6 source changes, because the legacy
+  matrix reuses existing `out_win_suite` artifacts when they are present.
+
+Legacy matrix stale-artifact note:
+  The first HZ6-only legacy `large_slice_1m` smoke timed out because
+  `out_win_suite/bench_mixed_ws_hz6_speed_route4k.exe` was older than the
+  LargeDirect/LargeSpan rebuild. Direct execution of the newer
+  `out_win_hz6_capacity/bench_mixed_ws_hz6_speed_route4k.exe` completed
+  immediately:
+
+    threads=4 iters=12000 ws=8 size=1048576..1048576
+    ops/s=34622042.701
+    route_invalid=0 route_miss=0 alloc_fail=0 source_alloc=32
+
+  This confirms the 1M row itself is healthy; stale legacy suite artifacts were
+  the measurement hazard.
 ```
 
 Non-goals for this step:

@@ -53,7 +53,9 @@ HZ6 LargeSpan / LargeDirect:
     these 256K/512K/1M and direct 2M/4M/8M rows for cross-allocator comparison.
     For a quick HZ6-only connection check, pass `-Allocators hz6-speed-route4k`
     instead of running the full allocator set. Use `-BenchTimeoutSeconds` for
-    exploratory large rows so a stuck row cannot keep spawning children.
+    exploratory large rows so a stuck row cannot keep spawning children. Use
+    `-ForceBuild` after HZ6 source changes; the legacy matrix otherwise reuses
+    existing `out_win_suite` artifacts when they are present.
 
   NEXT:
     stop large coverage expansion here unless >8M is the immediate target.
