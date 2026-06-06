@@ -7,7 +7,11 @@
 #if !HZ6_SAME_OWNER_FAST_L1 && \
     (HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1 || HZ6_LOCAL_CACHE_DIRECT_REUSE_L1)
 static int hz6_allocator_direct_local_alloc_front_eligible(
-    uint16_t front_id) {
+    uint16_t front_id,
+    uint16_t class_id) {
+  if (class_id > HZ6_LOCAL_CACHE_DIRECT_MAX_CLASS) {
+    return 0;
+  }
   return front_id == HZ6_FRONT_TOY || front_id == HZ6_FRONT_MIDPAGE ||
          front_id == HZ6_FRONT_LOCAL2P;
 }
@@ -50,7 +54,7 @@ static void* hz6_allocator_direct_local_reuse(Hz6Allocator* allocator,
 static void* hz6_allocator_direct_local_alloc(Hz6Allocator* allocator,
                                               uint16_t front_id,
                                               uint16_t class_id) {
-  if (!hz6_allocator_direct_local_alloc_front_eligible(front_id)) {
+  if (!hz6_allocator_direct_local_alloc_front_eligible(front_id, class_id)) {
     return NULL;
   }
 #if HZ6_LOCAL_CACHE_DIRECT_REUSE_L1

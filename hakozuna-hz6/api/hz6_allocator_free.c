@@ -213,6 +213,7 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
 #endif
 #elif HZ6_LOCAL_CACHE_DIRECT_FREE_L1
         } else if (local_owner &&
+                   route.class_id <= HZ6_LOCAL_CACHE_DIRECT_MAX_CLASS &&
                    (route.front_id == HZ6_FRONT_TOY ||
                     route.front_id == HZ6_FRONT_MIDPAGE ||
                     route.front_id == HZ6_FRONT_LOCAL2P)) {

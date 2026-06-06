@@ -216,6 +216,56 @@ promotion because 16K regresses hard in the legacy single-run. Treat it as a
 candidate-watch that needs a size gate or more repeat evidence.
 ```
 
+## Small8K Size-Gated Control
+
+The follow-up control adds:
+
+```text
+HZ6_LOCAL_CACHE_DIRECT_MAX_CLASS=4
+```
+
+to create:
+
+```text
+directlocalfreereuse-small8k-largerlowrss-front8k-sourcerun-desc8k-route8k
+```
+
+This allows DirectLocalFreeReuse for Toy classes and MidPage 8K while excluding
+MidPage 16K/32K class 5.
+
+HZ6-only repeat-5 best rows:
+
+| profile | best row | delta vs largerlowrss | read |
+| --- | --- | ---: | --- |
+| `large_slice_256` | `sameownerfast` | +30.9% | SameOwnerFast ahead |
+| `large_slice_512` | `sameownerfast` | +30.1% | SameOwnerFast slightly ahead |
+| `large_slice_1k` | `directlocalfreereuse-small8k` | +26.5% | small8k gate helps |
+| `large_slice_2k` | `directlocalfreereuse` | +15.3% | full DirectLocalFreeReuse ahead |
+| `large_slice_4k` | `sameownerfast` | +27.4% | SameOwnerFast ahead |
+| `large_slice_8k` | `directlocalfreereuse-small8k` | +19.2% | small8k gate helps |
+| `large_slice_16k` | `directlocalfreereuse` | +22.3% | full DirectLocalFreeReuse ahead in HZ6-only repeat-5 |
+
+Legacy single-run best rows with small8k connected:
+
+| profile | best row | delta vs largerlowrss | read |
+| --- | --- | ---: | --- |
+| `large_slice_256` | `sameownerfast` | +31.1% | SameOwnerFast ahead |
+| `large_slice_512` | `directlocalfreereuse-small8k` | +32.7% | small8k gate ahead |
+| `large_slice_1k` | `directlocalfreereuse-small8k` | +35.9% | small8k gate ahead |
+| `large_slice_2k` | `directlocalfreereuse` | +21.2% | full DirectLocalFreeReuse ahead |
+| `large_slice_4k` | `directlocalfreereuse` | +26.3% | full DirectLocalFreeReuse ahead |
+| `large_slice_8k` | `directlocalfreereuse` | +21.7% | full DirectLocalFreeReuse ahead |
+| `large_slice_16k` | `sameownerfast` | +33.7% | SameOwnerFast safer |
+
+Read:
+
+```text
+The class gate works and is safe, but it is not a universal winner.
+SameOwnerFast, DirectLocalFreeReuse, and DirectLocalFreeReuse-small8k should
+remain candidate/control lanes until repeat evidence gives a clean selection
+rule. Do not overfit a per-size hybrid yet.
+```
+
 ## Read
 
 The first diagnostic showed the selected `largerlowrss` lane was already
@@ -247,6 +297,8 @@ WATCH:
   2K is noisy but positive in repeat-10 and DirectLocalFreeReuse repeat-5.
   16K prefers SameOwnerFast in the legacy single-run and is a DirectLocalFreeReuse
   no-go until a size gate or repeat evidence explains it.
+  DirectLocalFreeReuse-small8k is useful evidence, but it is not a universal
+  replacement for SameOwnerFast or full DirectLocalFreeReuse.
 
 NOT YET:
   default

@@ -25,6 +25,7 @@ these rows answer which lanes should be used, watched, or avoided.
 | Selected profile lane | `largerlowrss-front8k-sourcerun-desc8k-route8k` | larger_sizes RSS/speed row. |
 | Candidate-watch/control | `sameownerfast-largerlowrss-front8k-sourcerun-desc8k-route8k` | Mechanism evidence for the small/mid same-owner fixed-size win. Repeat-10 is positive across 256B..16K; currently safer than DirectLocalFreeReuse at 16K. Keep as a close control, not broad/default. |
 | Candidate-watch | `directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k` | Decomposed small/mid same-owner fixed-size candidate. It is strong in controlled repeat-5 and legacy single-run 256B/512B/4K/8K, but legacy 16K regresses. Needs size gate or more repeat evidence before promotion. |
+| Candidate-watch/control | `directlocalfreereuse-small8k-largerlowrss-front8k-sourcerun-desc8k-route8k` | Size-gated DirectLocalFreeReuse control. It sets `HZ6_LOCAL_CACHE_DIRECT_MAX_CLASS=4`, so 256B..8K can use direct local free/alloc/reuse while 16K/32K fall back. Useful evidence, not a universal winner. |
 | LargeSpan family seed | `mixed_ws large_slice_128k,large_slice_256k,large_slice_512k,large_slice_1m + speed-route4k` | Narrow 128K..1M LargeSpan class verification. Use for LargeSpan backend safety/coverage, not broad speed ranking. |
 | LargeDirect coverage seed | `mixed_ws large_direct_slice_2m,large_direct_slice_4m,large_direct_slice_8m + speed-route4k` | Narrow >1M..8M direct-release verification. Use for coverage/low-RSS safety evidence, not throughput ranking. |
 | Selected Larson low-RSS sibling | `...frontcachepacked-sourceblockpacked-source10k-route192k-run512` | Current Larson minimum-RSS sibling. Use for current HZ6 Larson low-RSS comparisons. |
@@ -79,7 +80,13 @@ HZ6 LargeSpan / LargeDirect:
     but the single-run legacy read regresses at 16K for DirectLocalFreeReuse
     while SameOwnerFast stays positive. The current read is local alloc/reuse
     activation cost, not source capacity; promotion needs a size gate or more
-    repeat evidence.
+    repeat evidence. A size-gated control,
+    `directlocalfreereuse-small8k-largerlowrss-front8k-...`, is now wired. It
+    uses `HZ6_LOCAL_CACHE_DIRECT_MAX_CLASS=4` to allow Toy/class-4 paths up to
+    8K while excluding 16K/32K MidPage class 5. Repeat-5 and legacy single-run
+    show it is useful, especially around 512B/1K/8K, but it is not a universal
+    winner. Do not build an overfit per-size hybrid until repeat evidence gives
+    a clean rule.
 
   NEXT:
     stop large coverage expansion here unless >8M is the immediate target.

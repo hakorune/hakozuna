@@ -161,6 +161,40 @@ Latest HZ6 small fixed-size attack:
     mimalloc remains much faster on 256B..16K in this runner, so HZ6's near-term
     claim here is low-RSS/safety with improving speed, not small-object speed
     leadership.
+
+  Implemented size-gated control:
+    directlocalfreereuse-small8k-largerlowrss-front8k-sourcerun-desc8k-route8k
+
+  Design:
+    HZ6_LOCAL_CACHE_DIRECT_MAX_CLASS controls DirectLocalFreeReuse eligibility.
+    small8k sets MAX_CLASS=4, allowing Toy 256B/512B/1K/4K and MidPage 8K,
+    while excluding MidPage 16K/32K class 5.
+
+  HZ6-only repeat-5 with base/sameownerfast/directlocal/full/small8k:
+    256B: best sameownerfast +30.9%
+    512B: best sameownerfast +30.1%
+    1K:   best directlocalfreereuse-small8k +26.5%
+    2K:   best directlocalfreereuse +15.3%
+    4K:   best sameownerfast +27.4%
+    8K:   best directlocalfreereuse-small8k +19.2%
+    16K:  best directlocalfreereuse +22.3%
+
+  Legacy single-run with small8k connected:
+    256B: best sameownerfast +31.1%
+    512B: best directlocalfreereuse-small8k +32.7%
+    1K:   best directlocalfreereuse-small8k +35.9%
+    2K:   best directlocalfreereuse +21.2%
+    4K:   best directlocalfreereuse +26.3%
+    8K:   best directlocalfreereuse +21.7%
+    16K:  best sameownerfast +33.7%
+
+  Read after size-gated control:
+    small8k gate is safe and useful, but it is not a universal winner.
+    full DirectLocalFreeReuse remains strong at 2K/4K/8K and sometimes 16K.
+    SameOwnerFast is the safer 16K row and often competitive at 256B/512B/4K.
+    Do not create an overfit per-size hybrid yet.
+    Keep all three as candidate/control lanes until repeat evidence stabilizes
+    a clean selection rule.
 ```
 
 Latest HZ6 selected-family decision:
