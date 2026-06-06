@@ -11478,3 +11478,128 @@ Next:
   lifecycle ownership cleanup, likely around stale shared exact entries and
   cached descriptor invalidation.
 ```
+
+## 2026-06-06: SourceBlockRoute-L1 dry-run for selected small-mid free
+
+Context:
+
+```text
+Selected-small/mid work has narrowed the remaining free-path issue to route
+lookup / activation bookkeeping. DirectLocalFreeReuse is the current practical
+control, while DirectLocalExact and hybrid exact-upper are useful evidence but
+not stable enough to default.
+
+The next design question is whether source-block run metadata can become a
+cheap owned-pointer routing witness for 8K/16K style source-run slots without
+putting exact-route table pressure on every free.
+```
+
+Implementation:
+
+```text
+Added diagnostic-only SourceBlockRoute-L1 dry-run:
+
+  HZ6_SOURCE_BLOCK_ROUTE_DRYRUN_L1=1
+  requires HZ6_DIAGNOSTIC_PROBES
+
+free path:
+  after the same-owner toy-small active-map probe,
+  scan source_blocks for ptr-in-block,
+  verify run slot alignment and used bit,
+  then scan descriptors for matching ptr/source_block/class.
+
+No behavior changes:
+  no route replacement
+  no hot production counter
+  no allocation/free state transition change
+  no exact route unregister/register change
+```
+
+Counters:
+
+```text
+source_block_route_dryrun_attempt
+source_block_route_block_hit
+source_block_route_slot_hit
+source_block_route_descriptor_hit
+source_block_route_miss_no_block
+source_block_route_invalid_alignment
+source_block_route_invalid_unused
+source_block_route_descriptor_miss
+source_block_route_class_mismatch
+source_block_route_probe_total
+source_block_route_probe_max
+```
+
+Lane:
+
+```text
+sourceblockroute-dryrun-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+
+This is a diagnostic lane only. It is intentionally paired with the current
+DirectLocalFreeReuse/LargerLowRss low-capacity control to measure source-block
+route viability before any behavior lane exists.
+```
+
+Smoke:
+
+```text
+Command:
+  win/run_win_hz6_capacity_matrix.ps1
+    -Runs 1
+    -Families mixed_ws
+    -BenchmarkProfiles large_slice_8k
+    -Hz6Profiles speed
+    -CapacityLanes sourceblockroute-dryrun-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+    -DiagnosticHz6Probes
+    -ForceBuild
+
+Result:
+  ops/s ~= 9.90M  (diagnostic overhead expected)
+  peak_kb = 25,376
+
+Safety:
+  alloc_fail = 0
+  route_invalid = 0
+  route_miss = 0
+  route_register_fail = 0
+  descriptor_exhausted = 0
+  source_block_exhausted = 0
+
+SourceBlockRoute:
+  attempt = 200704
+  block_hit = 200704
+  slot_hit = 200704
+  descriptor_hit = 200704
+  miss_no_block = 0
+  invalid_alignment = 0
+  invalid_unused = 0
+  descriptor_miss = 0
+  class_mismatch = 0
+  probe_total = 12945408
+  probe_max = 128
+```
+
+Decision:
+
+```text
+KEEP as diagnostic evidence.
+
+Finding:
+  SourceBlock run metadata can identify every 8K large-slice free cleanly in
+  this control profile, with no invalid/miss leakage. This supports a future
+  behavior design where source-block/run metadata participates in owned-route
+  classification.
+
+Not behavior-ready:
+  The current dry-run scans source blocks and descriptors. probe_max=128 makes
+  it clearly diagnostic-only. A behavior lane needs a direct block index and/or
+  slot->descriptor map before it can replace hot exact-route lookup.
+
+Next:
+  If selected-small/mid free-path work continues, design SourceBlockRoute-L2 as
+  an indexed source-block route witness:
+    ptr -> block/run slot
+    slot -> descriptor
+    exact route remains safety/control until L2 proves fail-closed behavior.
+```

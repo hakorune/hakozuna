@@ -68,6 +68,7 @@ HZ6_LIB_SOURCES=(
   "${HZ6_DIR}/api/hz6_allocator_source_block_create.c"
   "${HZ6_DIR}/api/hz6_allocator_source_block_lifetime.c"
   "${HZ6_DIR}/api/hz6_allocator_source_block_route.c"
+  "${HZ6_DIR}/api/hz6_allocator_source_block_route_dryrun.c"
   "${HZ6_DIR}/api/hz6_allocator_transfer_query.c"
   "${HZ6_DIR}/api/hz6_allocator_transfer_dispatch.c"
   "${HZ6_DIR}/api/hz6_allocator_large_span_pool.c"

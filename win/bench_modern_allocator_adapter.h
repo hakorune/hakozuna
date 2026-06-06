@@ -192,6 +192,17 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 "source_run_reuse_prepare_fail=%zu "
                 "source_run_reuse_rollback=%zu "
                 "source_run_reuse_used_count_mismatch=%zu "
+                "source_block_route_dryrun_attempt=%zu "
+                "source_block_route_block_hit=%zu "
+                "source_block_route_slot_hit=%zu "
+                "source_block_route_descriptor_hit=%zu "
+                "source_block_route_miss_no_block=%zu "
+                "source_block_route_invalid_alignment=%zu "
+                "source_block_route_invalid_unused=%zu "
+                "source_block_route_descriptor_miss=%zu "
+                "source_block_route_class_mismatch=%zu "
+                "source_block_route_probe_total=%zu "
+                "source_block_route_probe_max=%zu "
                 "toy_small_malloc_fast_attempt=%zu "
                 "toy_small_malloc_fast_hit=%zu "
                 "toy_small_malloc_front_dispatch=%zu "
@@ -325,6 +336,17 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 s.source_run_reuse_prepare_fail,
                 s.source_run_reuse_rollback,
                 s.source_run_reuse_used_count_mismatch,
+                s.source_block_route_dryrun_attempt,
+                s.source_block_route_block_hit,
+                s.source_block_route_slot_hit,
+                s.source_block_route_descriptor_hit,
+                s.source_block_route_miss_no_block,
+                s.source_block_route_invalid_alignment,
+                s.source_block_route_invalid_unused,
+                s.source_block_route_descriptor_miss,
+                s.source_block_route_class_mismatch,
+                s.source_block_route_probe_total,
+                s.source_block_route_probe_max,
                 s.toy_small_malloc_fast_attempt,
                 s.toy_small_malloc_fast_hit,
                 s.toy_small_malloc_front_dispatch,

@@ -875,6 +875,27 @@ int main(int argc, char** argv) {
             args[i].hz6_stats_after.source_run_reuse_rollback;
         hz6_stats.source_run_reuse_used_count_mismatch +=
             args[i].hz6_stats_after.source_run_reuse_used_count_mismatch;
+        hz6_stats.source_block_route_dryrun_attempt +=
+            args[i].hz6_stats_after.source_block_route_dryrun_attempt;
+        hz6_stats.source_block_route_block_hit +=
+            args[i].hz6_stats_after.source_block_route_block_hit;
+        hz6_stats.source_block_route_slot_hit +=
+            args[i].hz6_stats_after.source_block_route_slot_hit;
+        hz6_stats.source_block_route_descriptor_hit +=
+            args[i].hz6_stats_after.source_block_route_descriptor_hit;
+        hz6_stats.source_block_route_miss_no_block +=
+            args[i].hz6_stats_after.source_block_route_miss_no_block;
+        hz6_stats.source_block_route_invalid_alignment +=
+            args[i].hz6_stats_after.source_block_route_invalid_alignment;
+        hz6_stats.source_block_route_invalid_unused +=
+            args[i].hz6_stats_after.source_block_route_invalid_unused;
+        hz6_stats.source_block_route_descriptor_miss +=
+            args[i].hz6_stats_after.source_block_route_descriptor_miss;
+        hz6_stats.source_block_route_class_mismatch +=
+            args[i].hz6_stats_after.source_block_route_class_mismatch;
+        hz6_stats.source_block_route_probe_total +=
+            args[i].hz6_stats_after.source_block_route_probe_total;
+        HZ6_MAX_STAT(source_block_route_probe_max);
         hz6_stats.toy_small_malloc_fast_attempt +=
             args[i].hz6_stats_after.toy_small_malloc_fast_attempt;
         hz6_stats.toy_small_malloc_fast_hit +=

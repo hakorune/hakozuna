@@ -13,6 +13,10 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
     return;
   }
 
+#if HZ6_SOURCE_BLOCK_ROUTE_DRYRUN_L1 && HZ6_DIAGNOSTIC_PROBES
+  hz6_allocator_source_block_route_dryrun(allocator, ptr);
+#endif
+
   int visible_hit = 0;
   int visible_lookup_done = 0;
   Hz6RouteResult route = hz6_route_miss();

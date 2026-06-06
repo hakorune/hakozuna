@@ -409,6 +409,17 @@ typedef struct Hz6StatsSnapshot {
   size_t source_run_reuse_prepare_fail;
   size_t source_run_reuse_rollback;
   size_t source_run_reuse_used_count_mismatch;
+  size_t source_block_route_dryrun_attempt;
+  size_t source_block_route_block_hit;
+  size_t source_block_route_slot_hit;
+  size_t source_block_route_descriptor_hit;
+  size_t source_block_route_miss_no_block;
+  size_t source_block_route_invalid_alignment;
+  size_t source_block_route_invalid_unused;
+  size_t source_block_route_descriptor_miss;
+  size_t source_block_route_class_mismatch;
+  size_t source_block_route_probe_total;
+  size_t source_block_route_probe_max;
   size_t route_exact_lookup_probe_total;
   size_t route_exact_lookup_probe_max;
   size_t owner_locality_lookup;

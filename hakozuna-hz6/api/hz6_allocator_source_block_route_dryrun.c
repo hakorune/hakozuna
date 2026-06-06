@@ -1,0 +1,107 @@
+#include "hz6_allocator.h"
+
+#if HZ6_SOURCE_BLOCK_ROUTE_DRYRUN_L1 && HZ6_DIAGNOSTIC_PROBES
+static int hz6_source_block_route_bit_get(const Hz6SourceBlock* block,
+                                          size_t slot_index) {
+  size_t word = slot_index / 64u;
+  size_t bit = slot_index % 64u;
+  if (!block || word >= HZ6_SOURCE_RUN_BITMAP_WORDS) {
+    return 0;
+  }
+  return (block->run_used_bits[word] & (UINT64_C(1) << bit)) != 0;
+}
+
+static int hz6_source_block_route_descriptor_matches(
+    const Hz6ObjectDescriptor* descriptor,
+    const Hz6SourceBlock* block,
+    const void* ptr) {
+  return descriptor && descriptor->ptr == ptr &&
+         descriptor->source_block == block &&
+         descriptor->state != HZ6_STATE_DEAD &&
+         descriptor->state != HZ6_STATE_DESCRIPTOR_RESERVED;
+}
+#endif
+
+void hz6_allocator_source_block_route_dryrun(Hz6Allocator* allocator,
+                                             const void* ptr) {
+#if HZ6_SOURCE_BLOCK_ROUTE_DRYRUN_L1 && HZ6_DIAGNOSTIC_PROBES
+  if (!allocator || !ptr) {
+    return;
+  }
+
+  ++allocator->stats.source_block_route_dryrun_attempt;
+  size_t probes = 0;
+  for (size_t i = 0; i < HZ6_SOURCE_BLOCK_CAPACITY; ++i) {
+    Hz6SourceBlock* block = &allocator->source_blocks[i];
+    ++probes;
+    if (!hz6_source_block_active(block) || !block->ptr || block->bytes == 0) {
+      continue;
+    }
+
+    const unsigned char* user = (const unsigned char*)ptr;
+    const unsigned char* base = (const unsigned char*)block->ptr;
+    const unsigned char* end = base + block->bytes;
+    if (user < base || user >= end) {
+      continue;
+    }
+
+    ++allocator->stats.source_block_route_block_hit;
+    allocator->stats.source_block_route_probe_total += probes;
+    if (probes > allocator->stats.source_block_route_probe_max) {
+      allocator->stats.source_block_route_probe_max = probes;
+    }
+
+    if (!hz6_source_block_run_active(block) ||
+        block->run_slot_bytes == 0 ||
+        block->run_slot_count == 0) {
+      ++allocator->stats.source_block_route_invalid_alignment;
+      return;
+    }
+
+    size_t offset = (size_t)(user - base);
+    if ((offset % block->run_slot_bytes) != 0) {
+      ++allocator->stats.source_block_route_invalid_alignment;
+      return;
+    }
+
+    size_t slot_index = offset / block->run_slot_bytes;
+    if (slot_index >= block->run_slot_count) {
+      ++allocator->stats.source_block_route_invalid_alignment;
+      return;
+    }
+
+    if (!hz6_source_block_route_bit_get(block, slot_index)) {
+      ++allocator->stats.source_block_route_invalid_unused;
+      return;
+    }
+
+    ++allocator->stats.source_block_route_slot_hit;
+
+    for (size_t d = 0; d < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++d) {
+      const Hz6ObjectDescriptor* descriptor = &allocator->descriptors[d];
+      if (!hz6_source_block_route_descriptor_matches(descriptor, block, ptr)) {
+        continue;
+      }
+      if (descriptor->class_id != block->run_class_id ||
+          descriptor->bytes != block->run_slot_bytes) {
+        ++allocator->stats.source_block_route_class_mismatch;
+        return;
+      }
+      ++allocator->stats.source_block_route_descriptor_hit;
+      return;
+    }
+
+    ++allocator->stats.source_block_route_descriptor_miss;
+    return;
+  }
+
+  allocator->stats.source_block_route_probe_total += probes;
+  if (probes > allocator->stats.source_block_route_probe_max) {
+    allocator->stats.source_block_route_probe_max = probes;
+  }
+  ++allocator->stats.source_block_route_miss_no_block;
+#else
+  (void)allocator;
+  (void)ptr;
+#endif
+}
