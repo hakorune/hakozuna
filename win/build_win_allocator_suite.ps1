@@ -125,6 +125,7 @@ if (Test-Path $Hz6Common) {
     $Hz6BroadCapacityFlags = Get-Hz6WinBroadCapacityFlags
     $Hz6Route4kCapacityFlags = Get-Hz6WinRoute4kCapacityFlags
     $Hz6LargerLowRssCapacityFlags = Get-Hz6WinLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
+    $Hz6LargeDirectRetain16mLargerLowRssCapacityFlags = Get-Hz6WinLargeDirectRetain16mLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
     $Hz6LargeDirectRetain32mLargerLowRssCapacityFlags = Get-Hz6WinLargeDirectRetain32mLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
     $Hz6SameOwnerFastLargerLowRssCapacityFlags = Get-Hz6WinSameOwnerFastLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
     $Hz6DirectLocalFreeReuseLargerLowRssCapacityFlags = Get-Hz6WinDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
@@ -136,6 +137,7 @@ if (Test-Path $Hz6Common) {
             @{ Suffix = "_broad"; ExtraFlags = $Hz6BroadCapacityFlags },
             @{ Suffix = "_route4k"; ExtraFlags = $Hz6Route4kCapacityFlags },
             @{ Suffix = "_largerlowrss"; ExtraFlags = $Hz6LargerLowRssCapacityFlags },
+            @{ Suffix = "_largedirectretain16m_largerlowrss"; ExtraFlags = $Hz6LargeDirectRetain16mLargerLowRssCapacityFlags },
             @{ Suffix = "_largedirectretain32m_largerlowrss"; ExtraFlags = $Hz6LargeDirectRetain32mLargerLowRssCapacityFlags },
             @{ Suffix = "_sameownerfast_largerlowrss"; ExtraFlags = $Hz6SameOwnerFastLargerLowRssCapacityFlags },
             @{ Suffix = "_directlocalfreereuse_largerlowrss"; ExtraFlags = $Hz6DirectLocalFreeReuseLargerLowRssCapacityFlags },

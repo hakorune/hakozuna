@@ -116,8 +116,8 @@ $presetMap = [ordered]@{
         -Families @("mixed_ws") `
         -BenchmarkProfiles @("large_direct_slice_2m", "large_direct_slice_4m", "large_direct_slice_8m", "large_slice_1m", "large_slice_512k") `
         -Hz6Profiles @("speed", "rss") `
-        -CapacityLanes @("largerlowrss-front8k-sourcerun-desc8k-route8k", "largedirectretain32m-largerlowrss-front8k-sourcerun-desc8k-route8k") `
-        -Note "LargeDirectRetain32M candidate/control: compare direct-large retained reuse against LargerLowRSS base while guarding 512K/1M LargeSpan rows"
+        -CapacityLanes @("largerlowrss-front8k-sourcerun-desc8k-route8k", "largedirectretain-largerlowrss-front8k-sourcerun-desc8k-route8k", "largedirectretain16m-largerlowrss-front8k-sourcerun-desc8k-route8k", "largedirectretain32m-largerlowrss-front8k-sourcerun-desc8k-route8k") `
+        -Note "LargeDirectRetain cap ladder: compare base, 8M default, 16M, and 32M retained reuse while guarding 512K/1M LargeSpan rows"
 
     "larson-cross-owner-selected" = New-Preset `
         -Name "larson-cross-owner-selected" `

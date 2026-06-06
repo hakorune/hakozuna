@@ -327,6 +327,7 @@ $laneSuffix = @{
     "largerlowrss-sourcerun-desc8k-source2k-route64k" = "_largerlowrss_sourcerun_desc8k_source2k_route64k"
     "largerlowrss-front8k-sourcerun-desc8k-route8k" = "_largerlowrss_front8k_sourcerun_desc8k_route8k"
     "largedirectretain-largerlowrss-front8k-sourcerun-desc8k-route8k" = "_largedirectretain_largerlowrss_front8k_sourcerun_desc8k_route8k"
+    "largedirectretain16m-largerlowrss-front8k-sourcerun-desc8k-route8k" = "_largedirectretain16m_largerlowrss_front8k_sourcerun_desc8k_route8k"
     "largedirectretain32m-largerlowrss-front8k-sourcerun-desc8k-route8k" = "_largedirectretain32m_largerlowrss_front8k_sourcerun_desc8k_route8k"
     "sameownerfast-largerlowrss-front8k-sourcerun-desc8k-route8k" = "_sameownerfast_largerlowrss_front8k_sourcerun_desc8k_route8k"
     # Selected-small candidate/control family. Keep trusted/packed/exact in

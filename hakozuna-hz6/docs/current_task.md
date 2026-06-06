@@ -219,6 +219,67 @@ signal, not a final paper median.  Next large-path work should be repeat-3 or
 a cap ladder, not another direct-large algorithm knob.
 ```
 
+Cap ladder repeat-3:
+
+```text
+Source:
+  docs/benchmarks/windows/paper/hz6_large_direct_retain_cap_ladder_20260606/
+    20260606_235616_hz6_capacity_matrix_windows.md
+
+Lanes:
+  base LargerLowRSS
+  LargeDirectRetain default cap = 8 MiB
+  LargeDirectRetain16M
+  LargeDirectRetain32M
+```
+
+Median result:
+
+```text
+large_direct_slice_2m:
+  base 0.296M speed / 0.333M rss, source_alloc 16000
+  8M   19.406M speed / 19.178M rss, source_alloc 16
+  16M  21.999M speed / 29.509M rss, source_alloc 16
+  32M  25.555M speed / 22.698M rss, source_alloc 16
+
+large_direct_slice_4m:
+  base 0.290M speed / 0.293M rss, source_alloc 10004
+  8M   2.610M speed / 2.826M rss, source_alloc 985
+  16M  14.933M speed / 19.843M rss, source_alloc 12
+  32M  15.614M speed / 17.400M rss, source_alloc 12
+
+large_direct_slice_8m:
+  base 0.300M speed / 0.302M rss, source_alloc 6000
+  8M   0.581M speed / 0.592M rss, source_alloc 3004
+  16M  10.946M speed / 11.568M rss, source_alloc 8
+  32M  11.498M speed / 11.421M rss, source_alloc 8
+
+guards:
+  1M source_alloc stays 32
+  512K source_alloc stays 64
+
+safety:
+  all checked failure counters zero
+```
+
+Decision:
+
+```text
+LargeDirectRetain16M:
+  PROMOTE to the practical candidate-control for >1MiB LargeDirect.
+
+LargeDirectRetain32M:
+  keep as upper-bound/control.  It is fast, but cap-ladder evidence does not
+  justify treating 32M as required.
+
+LargeDirectRetain default 8M:
+  keep as boundary/control.  It handles 2M but is too small for 4M/8M.
+
+Next:
+  wire 16M into the legacy matrix for follow-up cross-allocator large_slices.
+  Do not add more direct-large knobs before a 16M cross-allocator refresh.
+```
+
 ### 2026-06-06: Next target - selected-small 8K guard
 
 Current next attack:

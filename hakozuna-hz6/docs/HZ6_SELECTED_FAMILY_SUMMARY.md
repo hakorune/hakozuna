@@ -46,16 +46,16 @@ HZ6-only research/control rows. They remain useful for attribution, but are not
 selected-family rows unless a later repeat re-promotes them.
 
 LargeDirect note:
-`largedirectretain32m-largerlowrss-front8k-sourcerun-desc8k-route8k` is the
-current >1MiB direct-large candidate/control, not a broad selected default.  It
-retains exact-size direct-large objects up to 32 MiB and keeps the generic
-LargeSpan <=1MiB central-pool path unchanged.  Repeat-3 converts 2M/4M/8M from
-direct OS churn to retained reuse (`source_alloc` `16000/10004/6000` -> `16/12/8`)
-with safety counters clean.  Legacy rows
-`hz6-*-largedirectretain32m-largerlowrss` are also wired and reproduce the
-2M/4M/8M win in the allocator matrix.  Use them for follow-up `large_slices`
-refreshes, not for paper-facing broad selected rows until 512K/1M guards are
-repeated.
+`largedirectretain16m-largerlowrss-front8k-sourcerun-desc8k-route8k` is the
+current practical >1MiB direct-large candidate/control, not a broad selected
+default.  It retains exact-size direct-large objects up to 16 MiB and keeps the
+generic LargeSpan <=1MiB central-pool path unchanged.  The cap ladder shows 8M
+is too small for 4M/8M (`source_alloc` remains high), while 16M removes churn
+for 2M/4M/8M and 32M is mainly an upper-bound/control.  Legacy rows
+`hz6-*-largedirectretain16m-largerlowrss` and
+`hz6-*-largedirectretain32m-largerlowrss` are wired for follow-up
+`large_slices` refreshes.  Do not use either as a paper-facing broad selected
+row until 512K/1M guards are repeated in the same matrix.
 
 ## Active ElasticCapacity Rows
 
@@ -115,6 +115,7 @@ Source:
 - `docs/benchmarks/windows/paper/hz6_depot_owner_direct_guard_matrix/`
 - `docs/benchmarks/windows/paper/hz6_selected_family/larson-elastic-directfree-trustedlocalcache-repeat3/`
 - `docs/benchmarks/windows/paper/hz6_selected_family/large-direct-retain32m-directpush-20260606/`
+- `docs/benchmarks/windows/paper/hz6_large_direct_retain_cap_ladder_20260606/`
 - `docs/benchmarks/windows/paper/hz6_slot_owner_consumer_dryrun_full10k/`
 - `docs/benchmarks/windows/paper/hz6_owner_equal_callsite_dryrun_full10k/`
 - `docs/benchmarks/windows/paper/hz6_flc_owner_predicate_dryrun_full10k/`
