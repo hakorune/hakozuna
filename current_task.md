@@ -366,6 +366,55 @@ Latest HZ6 small fixed-size attack:
       not improve the 512B/2K/8K/16K direct-local fixed-size speed shape.
       Keep as no-go/control evidence and do not wire into selected-family or
       legacy cross-allocator rows.
+
+  DirectLocalExact-L1:
+    Implemented candidate/control lane:
+      directlocalexact-largerlowrss-front8k-sourcerun-desc8k-route8k
+
+    Design:
+      keeps DirectLocalFreeReuse and adds HZ6_LOCAL_EXACT_FIRST_FREE_L1.
+      This tests whether the remaining small fixed-size gap is mostly the
+      general route lookup on free.
+
+    Diagnostic witness before behavior:
+      directlocalfreereuse diagnostic run showed route lookup pressure even
+      when capacity/source counters were clean:
+        512B route_lookup_probe_total=1,909,436 / route_valid=305,088
+        2K   route_lookup_probe_total=2,111,815 / route_valid=305,088
+        8K   route_lookup_probe_total=989,531   / route_valid=200,704
+        16K  route_lookup_probe_total=1,021,285 / route_valid=160,256
+
+    Repeat-5:
+      DirectLocalExact improved the worst-row shape and beat DirectLocalFreeReuse
+      on 256B, 1K, 2K, 8K, and 16K, but lost on 512B and 4K.
+      avg/min delta vs largerlowrss:
+        directlocalfreereuse avg +19.8%, min +8.7%
+        directlocalexact     avg +20.8%, min +16.2%
+
+    Repeat-10:
+      avg/min delta vs largerlowrss:
+        directlocalfreereuse avg +20.2%, min +9.2%
+        directlocalexact     avg +20.2%, min +10.9%
+
+      directlocalexact vs directlocalfreereuse by row:
+        256B: -0.7%
+        512B: +0.3%
+        1K:   -1.3%
+        2K:   -2.4%
+        4K:   +6.4%
+        8K:   -4.1%
+        16K:  +1.5%
+
+    Safety:
+      no non-zero route_invalid / route_miss / alloc_fail /
+      descriptor_exhausted / route_register_fail / source_block_exhausted /
+      frontcache_reuse_invalid seen in repeat-10.
+
+    Read:
+      route lookup shortening is relevant, but simple exact-first free is not
+      a clean selected-small replacement.  Keep DirectLocalFreeReuse as the
+      selected-small candidate-watch and keep DirectLocalExact as a close
+      route-pressure control.  Do not selected-family or legacy-wire it yet.
 ```
 
 Latest HZ6 selected-family decision:
