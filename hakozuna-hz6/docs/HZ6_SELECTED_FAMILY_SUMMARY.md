@@ -92,6 +92,34 @@ Source:
 
 ## Evidence Rows
 
+## Runner Smoke
+
+```text
+2026-06-06 selected-family wrapper smoke:
+  win/run_win_hz6_selected_family.ps1 -SelectedFamily -Runs 1
+
+  Completed preset groups:
+    selected-mixed-lowrss
+    selected-random-sameowner
+    selected-small-fixed
+    selected-larger-lowrss
+    larson-cross-owner-selected
+
+  Safety scan:
+    route_invalid = 0
+    route_miss = 0
+    alloc_fail = 0
+    descriptor_exhausted = 0
+    route_register_fail = 0
+    source_block_exhausted = 0
+    remote_free_transfer_fail = 0
+    lifecycle_foreign_free_invalid = 0
+
+  Note:
+    This is a runner connectivity smoke.  Do not use the run-1 smoke values as
+    paper medians.
+```
+
 | Family | Lane | Read |
 | --- | --- | --- |
 | mixed_ws balanced/wide_ws pressure | `rss + descavail-noboost-route4k` | Very fast and very low RSS, but not clean: high `alloc_fail` / source-block exhaustion. Keep as pressure evidence only. |

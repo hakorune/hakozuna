@@ -218,6 +218,11 @@ separate by output subdirectory.
   -ContinueOnFailure
 ```
 
+2026-06-06 connectivity note:
+`-SelectedFamily -Runs 1` completes with `selected-small-fixed` included.
+Treat those smoke outputs as runner validation only; use repeat evidence or
+archived paper rows for comparison tables.
+
 `-SelectedSmallFixed` runs `mixed_ws large_slice_256..large_slice_16k` with
 `speed + directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k`.
 Use it as the selected-small runner connection check; use the documented

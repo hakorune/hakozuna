@@ -244,6 +244,43 @@ Latest HZ6 small fixed-size attack:
     Result:
       completed and wrote selected-small-fixed summary.
       Treat smoke values as runner connectivity, not paper medians.
+
+  Full selected-family smoke with selected-small included:
+    command:
+      powershell -NoProfile -ExecutionPolicy Bypass `
+        -File .\win\run_win_hz6_selected_family.ps1 `
+        -SelectedFamily -Runs 1 -TimeoutSeconds 180 `
+        -OutputDir .\results\hz6-selected-family-with-small-smoke `
+        -ContinueOnFailure
+
+    Result:
+      all five selected-family preset groups completed:
+        selected-mixed-lowrss
+        selected-random-sameowner
+        selected-small-fixed
+        selected-larger-lowrss
+        larson-cross-owner-selected
+
+      safety scan:
+        no non-zero route_invalid / route_miss / alloc_fail /
+        descriptor_exhausted / route_register_fail /
+        source_block_exhausted / remote_free_transfer_fail /
+        lifecycle_foreign_free_invalid found in the smoke summaries.
+
+      selected-small-fixed smoke rows:
+        256B: 76.056M ops/s / 13,668 KB
+        512B: 57.295M ops/s / 25,996 KB
+        1K:   57.401M ops/s / 25,860 KB
+        2K:   38.994M ops/s / 75,152 KB
+        4K:   54.122M ops/s / 41,916 KB
+        8K:   59.678M ops/s / 25,364 KB
+        16K:  55.191M ops/s / 17,088 KB
+
+    Read:
+      selected-small-fixed is now connected to the selected-family runner.
+      These are run-1 smoke/connectivity values, not paper medians.
+      The selected-family wrapper can now be used to produce an HZ6 profile
+      family snapshot that includes the small fixed-size candidate-watch row.
 ```
 
 Latest HZ6 selected-family decision:
