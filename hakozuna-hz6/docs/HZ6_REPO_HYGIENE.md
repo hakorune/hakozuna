@@ -63,10 +63,10 @@ Larson lower-RSS component candidates:
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-source16k-route192k-run512
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-sourceblockpacked-source16k-route192k-run512
 
-Larson minimum-RSS candidate:
+Larson packed minimum-RSS sibling:
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source10k-route192k-run512
 
-ElasticCapacity candidate-watch:
+Larson Elastic low-RSS sibling:
   speed + ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512
 
 ElasticCapacity bounded descriptor rehome candidate-control:
@@ -87,9 +87,11 @@ FrontCachePackedMeta-L1 and SourceBlockPackedFlags-L1 are lower-RSS component
 controls/candidates. The combined packed source10k lane is the current clean
 packed minimum-RSS candidate after repeat-3 (`44.864M / 412280 KB`), but it
 remains a minimum-RSS sibling/candidate rather than a broad throughput
-promotion. DepotOwnerDirectFastPath-L1 remains the clean source-depot
-candidate-watch (`46.273M / 224612 KB`). DepotDescriptorRehomeBudget2048-L1 is
-the current bounded descriptor rehome candidate-control (`44.919M`, safety
+promotion. DepotOwnerDirectFastPath-L1 is the selected Larson/Elastic low-RSS
+sibling after the 2026-06-06 repeat-3 guard: it is safety-clean, averages
+`+0.52%` speed against the packed source10k sibling, and cuts about `187-199`
+MiB peak RSS. It is not a broad HZ6 default. DepotDescriptorRehomeBudget2048-L1
+is the current bounded descriptor rehome candidate-control (`44.919M`, safety
 clean, diagnostic `descriptor_used=36539` versus full rehome `77883`) and should
 be validated with repeat/guard before any promotion. SlotOwnerConsumerDryRun-L1
 is diagnostic-only and should not enter production speed-ranking tables.

@@ -419,6 +419,14 @@ larson-cross-owner-selected:
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-source16k-route192k-run512
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-source16k-route192k-run512
 
+larson-elastic-lowrss-selected:
+  larson_t16_main_10k
+  speed + ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512
+  status:
+    selected Larson/Elastic low-RSS sibling after repeat-3 guard against the
+    packed source10k sibling. It keeps safety clean, averages +0.52% speed
+    across main/worker 1k/4k/10k, and cuts about 187-199 MiB peak RSS.
+
 larson-rss-residual-audit:
   larson_t16_main_10k
   diagnostic-only
