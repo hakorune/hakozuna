@@ -18,6 +18,35 @@ Use these orientation docs before reading this long ledger:
   HZ6_SOURCE_MODULARIZATION.md
 ```
 
+## Current Read 2026-06-07
+
+```text
+LargeDirect:
+  closed for now.
+  LargeDirectRetain16M is the practical >1MiB candidate-control.
+  LargeDirectRetain32M remains upper-bound/control.
+  Do not add another direct-large cap/recycle knob before a new weakness appears.
+
+random_mixed:
+  selected same-owner speed lane is already:
+    strict + sameownerfast-descavail-noboost-route4k
+  Older random_mixed weakness notes remain as evidence, not the active target.
+
+selected-small fixed 256B..16K:
+  SourceBlockRoute dynmap is candidate-watch/evidence, not broad default.
+  DirectLocalFreeReuse remains the simpler baseline/control.
+
+Larson / Elastic:
+  current strongest RSS direction remains the selected Larson/Elastic low-RSS
+  sibling documented in HZ6_SELECTED_FAMILY_SUMMARY.md.
+
+Immediate engineering posture:
+  1. keep lane docs and selected-family scripts readable.
+  2. do not reopen direct-large tuning.
+  3. if optimizing next, pick a fresh weak row from selected-family/cross-allocator
+     tables rather than extending an already-closed knob family.
+```
+
 ### 2026-06-06: LargeDirectRetain-L1 direct-large control
 
 Current decision:
@@ -54,7 +83,8 @@ HZ6_LARGE_DIRECT_RETAIN_L1:
 
 HZ6_LARGE_DIRECT_RETAIN_BYTES_CAP:
   defaults to the existing LargeSpan class byte cap and can be raised by an
-  experiment lane.  The current control uses 32 MiB.
+  experiment lane.  The practical control is now 16 MiB; 32 MiB is retained as
+  an upper-bound/control row.
 
 LargeDirect release:
   ACTIVE -> CENTRAL_FREE(ownerless) -> direct-large pool push.

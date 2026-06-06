@@ -53,9 +53,10 @@ generic LargeSpan <=1MiB central-pool path unchanged.  The cap ladder shows 8M
 is too small for 4M/8M (`source_alloc` remains high), while 16M removes churn
 for 2M/4M/8M and 32M is mainly an upper-bound/control.  Legacy rows
 `hz6-*-largedirectretain16m-largerlowrss` and
-`hz6-*-largedirectretain32m-largerlowrss` are wired for follow-up
-`large_slices` refreshes.  Do not use either as a paper-facing broad selected
-row until 512K/1M guards are repeated in the same matrix.
+`hz6-*-largedirectretain32m-largerlowrss` are wired in the legacy matrix.  Use
+16M as the practical LargeDirect candidate/control and 32M as upper-bound
+evidence; neither is a broad selected default because the generic LargeSpan
+<=1MiB path remains separate.
 The 2026-06-07 single-run cross-allocator slice now confirms 16M as the cleaner
 candidate-control: it wins 512K/2M/8M, stays close on 1M/4M, and keeps direct
 large RSS around 9 MiB.  32M remains an upper-bound/control row rather than the

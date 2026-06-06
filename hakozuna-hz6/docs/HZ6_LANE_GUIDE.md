@@ -182,9 +182,10 @@ HZ6 LargeSpan / LargeDirect:
     a clean rule.
 
   NEXT:
-    stop large coverage expansion here unless >8M is the immediate target.
-    Future work is released-route quarantine or a tiny direct-large recycle
-    lane, not broad LargeSpan pooling for >1M.
+    stop large/direct coverage expansion for now.
+    LargeDirectRetain16M already provides the practical >1MiB retained-reuse
+    control, and 32M remains the upper-bound row. Do not add another
+    direct-large recycle/cap lane unless a new >8M workload becomes the target.
 
 HZ6 Larson / ElasticCapacity:
   KEEP:
