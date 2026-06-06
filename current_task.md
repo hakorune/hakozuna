@@ -477,15 +477,20 @@ Latest HZ6 selected-family decision:
       This removes the MidPage-only SourceBlock fill loop and lets 8K/32K
       MidPage use the same SourceRunReuse-L1 rollback/accounting path as Toy.
 
-    Smoke:
+    Confirmation:
       build_win_hz6_capacity_suite mixed_ws/speed for LargerLowRSS and
       DirectLocalFreeReuse LargerLowRSS lanes passed.
-      hz6-midpage-sourceblock-unified-smoke run-1:
-        8K LargerLowRSS:             51.101M / 25,920 KB
-        8K DirectLocalFreeReuse:     62.059M / 25,920 KB
-        16K LargerLowRSS:            47.313M / 17,644 KB
-        16K DirectLocalFreeReuse:    57.168M / 17,656 KB
-      all rows: route_invalid=0 route_miss=0 alloc_fail=0
+      hz6-midpage-sourceblock-unified-repeat3:
+        8K LargerLowRSS:             55.476M / 25,984 KB
+        8K DirectLocalFreeReuse:     63.667M / 25,920 KB
+        16K LargerLowRSS:            50.723M / 17,648 KB
+        16K DirectLocalFreeReuse:    52.147M / 17,648 KB
+      all rows:
+        route_invalid=0
+        route_miss=0
+        alloc_fail=0
+        route_register_fail=0
+        source_run_reuse rollback/safety counters=0
 
     Read:
       This is a structural cleanup and contract unification, not a new speed
