@@ -406,6 +406,12 @@
 #define HZ6_SOURCE_BLOCK_ROUTE_BEHAVIOR_L1 0
 #endif
 
+#ifndef HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_DYNAMIC_L1
+/* Store source-run slot descriptor maps only for active runs instead of
+ * embedding HZ6_SOURCE_RUN_MAX_SLOTS entries in every source block. */
+#define HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_DYNAMIC_L1 0
+#endif
+
 #ifndef HZ6_FRONTCACHE_PACKED_META_L1
 #define HZ6_FRONTCACHE_PACKED_META_L1 0
 #endif

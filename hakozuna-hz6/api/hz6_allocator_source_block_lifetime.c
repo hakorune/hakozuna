@@ -1,5 +1,7 @@
 #include "hz6_allocator.h"
 
+#include <stdlib.h>
+
 int hz6_allocator_retain_source_block(Hz6SourceBlock* block) {
   if (!block || !hz6_source_block_active(block) || !block->ptr) {
     return 0;
@@ -99,6 +101,11 @@ int hz6_allocator_release_source_block(Hz6Allocator* allocator,
   for (size_t i = 0; i < HZ6_SOURCE_RUN_BITMAP_WORDS; ++i) {
     block->run_used_bits[i] = 0;
   }
+#if HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_L1 && \
+    HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_DYNAMIC_L1
+  free(block->run_descriptor_indices);
+  block->run_descriptor_indices = NULL;
+#endif
 #if HZ6_OWNER_SOURCE_SIDE_META_L2
   block->owner_source_storage_allocator = NULL;
 #endif

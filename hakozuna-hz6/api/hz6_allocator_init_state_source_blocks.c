@@ -28,6 +28,10 @@ void hz6_allocator_init_state_source_blocks(Hz6Allocator* allocator) {
 #if HZ6_OWNER_SOURCE_SIDE_META_L2
     allocator->source_blocks[i].owner_source_storage_allocator = NULL;
 #endif
+#if HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_L1 && \
+    HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_DYNAMIC_L1
+    allocator->source_blocks[i].run_descriptor_indices = NULL;
+#endif
     hz6_source_block_set_active(&allocator->source_blocks[i], 0);
     hz6_source_block_set_route_registered(&allocator->source_blocks[i], 0);
     hz6_source_block_set_route_shared(&allocator->source_blocks[i], 0);

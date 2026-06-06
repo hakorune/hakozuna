@@ -1,5 +1,7 @@
 #include "hz6_allocator.h"
 
+#include <stdlib.h>
+
 #if HZ6_ELASTIC_SOURCE_BLOCK_OVERFLOW_L1
 static Hz6SourceBlock
     g_hz6_source_block_depot[HZ6_ELASTIC_SOURCE_BLOCK_DEPOT_CAPACITY];
@@ -74,11 +76,39 @@ static void hz6_source_run_reset(Hz6SourceBlock* block) {
     block->run_used_bits[i] = 0;
   }
 #if HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_L1
+#if HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_DYNAMIC_L1
+  free(block->run_descriptor_indices);
+  block->run_descriptor_indices = NULL;
+#else
   for (size_t i = 0; i < HZ6_SOURCE_RUN_MAX_SLOTS; ++i) {
     block->run_descriptor_indices[i] = UINT32_MAX;
   }
 #endif
+#endif
 }
+
+#if HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_L1
+static int hz6_source_run_descriptor_map_init(Hz6SourceBlock* block) {
+  if (!block || block->run_slot_count == 0) {
+    return 0;
+  }
+#if HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_DYNAMIC_L1
+  block->run_descriptor_indices =
+      (uint32_t*)malloc(sizeof(uint32_t) * block->run_slot_count);
+  if (!block->run_descriptor_indices) {
+    return 0;
+  }
+  for (size_t i = 0; i < block->run_slot_count; ++i) {
+    block->run_descriptor_indices[i] = UINT32_MAX;
+  }
+#else
+  for (size_t i = 0; i < HZ6_SOURCE_RUN_MAX_SLOTS; ++i) {
+    block->run_descriptor_indices[i] = UINT32_MAX;
+  }
+#endif
+  return 1;
+}
+#endif
 
 static int hz6_source_run_bit_get(const Hz6SourceBlock* block,
                                   size_t slot_index) {
@@ -141,6 +171,12 @@ int hz6_allocator_source_run_init(Hz6SourceBlock* block,
   block->run_front_id = front_id;
   block->run_class_id = class_id;
   block->run_slot_count = (uint16_t)slots;
+#if HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_L1
+  if (!hz6_source_run_descriptor_map_init(block)) {
+    hz6_source_run_reset(block);
+    return 0;
+  }
+#endif
   hz6_source_block_set_run_active(block, 1);
   return 1;
 }
@@ -361,6 +397,11 @@ void hz6_allocator_source_run_set_descriptor(
       descriptor_index > UINT32_MAX) {
     return;
   }
+#if HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_DYNAMIC_L1
+  if (!block->run_descriptor_indices) {
+    return;
+  }
+#endif
   block->run_descriptor_indices[slot_index] = (uint32_t)descriptor_index;
 #if HZ6_DIAGNOSTIC_PROBES
   if (allocator) {
@@ -383,6 +424,11 @@ void hz6_allocator_source_run_clear_descriptor(Hz6Allocator* allocator,
   if (!hz6_allocator_source_run_slot_index(block, ptr, &slot_index)) {
     return;
   }
+#if HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_DYNAMIC_L1
+  if (!block->run_descriptor_indices) {
+    return;
+  }
+#endif
   block->run_descriptor_indices[slot_index] = UINT32_MAX;
 #if HZ6_DIAGNOSTIC_PROBES
   if (allocator) {
@@ -406,6 +452,14 @@ Hz6ObjectDescriptor* hz6_allocator_source_run_descriptor_at(
       !hz6_allocator_source_run_slot_index(block, ptr, &slot_index)) {
     return NULL;
   }
+#if HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_DYNAMIC_L1
+  if (!block->run_descriptor_indices) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.source_block_route_descriptor_map_miss;
+#endif
+    return NULL;
+  }
+#endif
   uint32_t descriptor_index = block->run_descriptor_indices[slot_index];
   if (descriptor_index == UINT32_MAX ||
       descriptor_index >= HZ6_OBJECT_DESCRIPTOR_CAPACITY) {
@@ -479,6 +533,13 @@ int hz6_allocator_elastic_depot_source_run_mark_slot(
     block->run_front_id = HZ6_FRONT_NONE;
     block->run_class_id = class_id;
     block->run_slot_count = run_slot_count;
+#if HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_L1
+    if (!hz6_source_run_descriptor_map_init(block)) {
+      hz6_source_run_reset(block);
+      ++allocator->stats.elastic_depot_run_meta_class_mismatch;
+      return 0;
+    }
+#endif
     hz6_source_block_set_run_active(block, 1);
     ++allocator->stats.elastic_depot_run_meta_init;
   } else if (block->run_slot_count == 0 ||

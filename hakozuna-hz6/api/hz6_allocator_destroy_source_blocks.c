@@ -1,5 +1,7 @@
 #include "hz6_allocator_destroy_internal.h"
 
+#include <stdlib.h>
+
 void hz6_allocator_destroy_source_blocks(Hz6Allocator* allocator) {
   if (!allocator) {
     return;
@@ -45,6 +47,11 @@ void hz6_allocator_destroy_source_blocks(Hz6Allocator* allocator) {
     for (size_t word = 0; word < HZ6_SOURCE_RUN_BITMAP_WORDS; ++word) {
       block->run_used_bits[word] = 0;
     }
+#if HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_L1 && \
+    HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_DYNAMIC_L1
+    free(block->run_descriptor_indices);
+    block->run_descriptor_indices = NULL;
+#endif
     hz6_source_block_set_active(block, 0);
     hz6_source_block_set_route_registered(block, 0);
     hz6_source_block_set_route_shared(block, 0);

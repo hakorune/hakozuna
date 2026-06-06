@@ -12061,3 +12061,106 @@ Next design target:
     only arm source-block route for known source-run-heavy classes
     or split this as an 8K/source-run-special lane rather than broad selected
 ```
+
+## 2026-06-06: SourceBlockRoute dynamic slotmap
+
+Problem:
+
+```text
+SourceBlockRoute behavior needed a slot->descriptor map.
+The first map was embedded in every Hz6SourceBlock:
+  run_descriptor_indices[HZ6_SOURCE_RUN_MAX_SLOTS]
+
+That is correct but too heavy for broad selected rows:
+  static behavior selected guard showed clear RSS increase.
+```
+
+Implementation:
+
+```text
+Added flag:
+  HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_DYNAMIC_L1=1
+
+When enabled:
+  Hz6SourceBlock stores uint32_t* run_descriptor_indices
+  source_run_init allocates exactly run_slot_count entries
+  source_run_reset / source block release / allocator destroy free the map
+  source-run slotmap behavior is otherwise unchanged
+```
+
+Windows lane:
+
+```text
+sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+```
+
+8K smoke:
+
+```text
+Normal:
+  ops/s ~= 60.91M
+  peak_kb = 26,380
+  route_invalid = 0
+  route_miss = 0
+  route_register_fail = 0
+
+Diagnostic:
+  behavior_attempt = 200704
+  behavior_valid = 200704
+  behavior_fallback = 0
+  behavior_invalid_front = 0
+  behavior_invalid_descriptor = 0
+  descriptor_map_hit = 200704
+  descriptor_map_miss = 0
+  descriptor_map_stale = 0
+  range_index_hit = 200704
+  range_index_probe_max = 1
+```
+
+Selected-family guard, run1:
+
+```text
+balanced:
+  directlocalfreereuse 75.82M / 96,920 KB
+  dynmap sourceblock  73.92M / 98,380 KB
+
+wide_ws:
+  directlocalfreereuse 0.477M / 69,356 KB
+  dynmap sourceblock  0.464M / 73,356 KB
+
+larger_sizes:
+  directlocalfreereuse 38.85M / 71,044 KB
+  dynmap sourceblock  38.55M / 71,684 KB
+
+large_slice_4k:
+  directlocalfreereuse 49.95M / 41,976 KB
+  dynmap sourceblock  47.75M / 42,704 KB
+
+large_slice_8k:
+  directlocalfreereuse 65.08M / 25,372 KB
+  dynmap sourceblock  62.76M / 25,944 KB
+
+large_slice_16k:
+  directlocalfreereuse 53.61M / 17,100 KB
+  dynmap sourceblock  51.78M / 17,664 KB
+```
+
+Decision:
+
+```text
+KEEP as SourceBlockRoute-L2 evidence.
+
+Good:
+  The static slotmap RSS problem is largely fixed.
+  Safety remains clean.
+
+Not promotion:
+  The selected-family run does not show a broad speed win.
+  Current source-block route should remain evidence/specialized lane, not
+  selected default.
+
+Next:
+  If continuing SourceBlockRoute, the next target should be route lookup cost
+  still remaining outside free-route lookup, or an 8K-only/source-run-special
+  lane.  Do not promote broad sourceblockroute yet.
+```
