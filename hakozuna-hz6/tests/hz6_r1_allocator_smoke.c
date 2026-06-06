@@ -24,6 +24,16 @@ static size_t smoke_large128_central_bytes(const Hz6Allocator* allocator) {
                                              HZ6_LARGE128_CLASS_ID);
 }
 
+static size_t smoke_large256_central_count(const Hz6Allocator* allocator) {
+  return hz6_allocator_large_span_pool_count(allocator,
+                                             HZ6_LARGE256_CLASS_ID);
+}
+
+static size_t smoke_large256_central_bytes(const Hz6Allocator* allocator) {
+  return hz6_allocator_large_span_pool_bytes(allocator,
+                                             HZ6_LARGE256_CLASS_ID);
+}
+
 int main(void) {
   int foreign = 0;
 
@@ -176,7 +186,58 @@ int main(void) {
               "large128 source alloc")) {
     return 1;
   }
-  if (!expect(hz6_malloc(&large_allocator, HZ6_LARGE128_BYTES + 1) == NULL,
+  void* large256_object = hz6_malloc(&large_allocator,
+                                     HZ6_LARGE128_BYTES + 1);
+  if (!expect(large256_object != NULL, "large256 malloc")) {
+    return 1;
+  }
+  Hz6RouteResult large256_route =
+      hz6_allocator_route_lookup(&large_allocator, large256_object);
+  if (!expect(large256_route.kind == HZ6_ROUTE_VALID,
+              "large256 route valid") ||
+      !expect(large256_route.front_id == HZ6_FRONT_LARGE,
+              "large256 route front") ||
+      !expect(large256_route.class_id == HZ6_LARGE256_CLASS_ID,
+              "large256 route class")) {
+    return 1;
+  }
+  Hz6ObjectDescriptor* large256_descriptor =
+      (Hz6ObjectDescriptor*)large256_route.descriptor;
+  if (!expect(large256_descriptor != NULL, "large256 descriptor") ||
+      !expect(large256_descriptor->source_bytes == HZ6_LARGE256_BYTES,
+              "large256 source bytes") ||
+      !expect(hz6_free_remote(&large_allocator, large256_object),
+              "large256 remote free")) {
+    return 1;
+  }
+  if (!expect(large256_descriptor->state == HZ6_STATE_CENTRAL_FREE,
+              "large256 central free state") ||
+      !expect(smoke_large256_central_count(&large_allocator) == 1,
+              "large256 central pool count") ||
+      !expect(smoke_large256_central_bytes(&large_allocator) ==
+                  HZ6_LARGE256_BYTES,
+              "large256 central pool bytes") ||
+      !expect(hz6_allocator_large_span_pool_global_bytes(&large_allocator) ==
+                  HZ6_LARGE256_BYTES,
+              "large256 central global bytes")) {
+    return 1;
+  }
+  void* large256_reused = hz6_malloc(&large_allocator,
+                                     HZ6_LARGE128_BYTES + 1);
+  if (!expect(large256_reused == large256_object, "large256 central reuse")) {
+    return 1;
+  }
+  if (!expect(smoke_large256_central_count(&large_allocator) == 0,
+              "large256 central pool empty") ||
+      !expect(smoke_large256_central_bytes(&large_allocator) == 0,
+              "large256 central pool bytes empty") ||
+      !expect(hz6_allocator_large_span_pool_global_bytes(&large_allocator) ==
+                  0,
+              "large256 central global bytes empty")) {
+    return 1;
+  }
+  hz6_free(&large_allocator, large256_reused);
+  if (!expect(hz6_malloc(&large_allocator, HZ6_LARGE256_BYTES + 1) == NULL,
               "unsupported over-large allocation")) {
     return 1;
   }

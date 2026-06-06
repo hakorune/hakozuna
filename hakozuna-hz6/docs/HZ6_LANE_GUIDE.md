@@ -23,6 +23,7 @@ these rows answer which lanes should be used, watched, or avoided.
 | Selected sibling | `route18` mixedclean sibling | Current wide_ws sibling when wide_ws is the target; do not replace balanced route17/loopcarry by default. |
 | Selected profile lane | `sameownerfast-descavail-noboost-route4k` | random_mixed same-owner speed row. |
 | Selected profile lane | `largerlowrss-front8k-sourcerun-desc8k-route8k` | larger_sizes RSS/speed row. |
+| LargeSpan family seed | `mixed_ws large_slice_128k,large_slice_256k + speed-route4k` | Narrow 128K/256K LargeSpan class verification. Use for LargeSpan backend safety/coverage, not broad speed ranking. |
 | Selected Larson low-RSS sibling | `...frontcachepacked-sourceblockpacked-source10k-route192k-run512` | Current Larson minimum-RSS sibling. Use for current HZ6 Larson low-RSS comparisons. |
 | ElasticCapacity candidate-watch | `...elasticdescroute-desc16k-...source10k-route16k-run512` | Best ElasticCapacity RSS/throughput shape so far. Watch, but do not broad-promote. |
 | ElasticCapacity component/control | `...elasticdescsource-route-desc16k-...source64-route16k-run512` | Lower RSS source-block depot evidence; speed is lower than ElasticDescriptorRouteOverflow. |
@@ -34,6 +35,21 @@ these rows answer which lanes should be used, watched, or avoided.
 ## Active Next Read
 
 ```text
+HZ6 LargeSpan:
+  KEEP:
+    LargeSpan class table with 128K and 256K classes
+    bytes-aware CentralSpanPool budget
+
+  CURRENT READ:
+    large_slice_128k and large_slice_256k are clean under speed-route4k after
+    ForceBuild. Treat this as backend coverage/safety evidence, not a broad
+    allocator ranking row.
+
+  NEXT:
+    add 512K / 1M only through the same class-table/backend path, or stop and
+    return to selected-family optimization if broad large-object coverage is
+    not the immediate target.
+
 HZ6 Larson / ElasticCapacity:
   KEEP:
     selected source10k packed lane as the current minimum-RSS sibling

@@ -42,7 +42,7 @@ LargeSpan family L1.
 
 Goal:
   promote the existing large128 seed into an explicit, extensible LargeSpan
-  family starting with the 128K central span proof target.
+  family. 128K is the proof target; 256K is the first second-class extension.
 
 Why:
   HZ6 can show low-RSS/safety strength, but the broad large-size story is still
@@ -70,15 +70,15 @@ Immediate implementation order:
        all runs route_invalid=0 route_miss=0 alloc_fail=0
        all runs large_source_alloc=256
 
-Next LargeSpan step:
-  CentralSpanPoolBudget-L1 before adding the second class.
+Current LargeSpan step:
+  LargeSpan256-L1 is in place after CentralSpanPoolBudget-L1.
 
 Pro consult read:
   HZ6 LargeSpan should proceed, but do not add 128K/256K/512K/1M all at once.
   The safe order is:
     1. LargeSpan class policy. DONE.
-    2. CentralSpanPool bytes-bounded accounting.
-    3. LargeSpan256-L1.
+    2. CentralSpanPool bytes-bounded accounting. DONE.
+    3. LargeSpan256-L1. DONE.
     4. LargeSpan512 / LargeSpan1M behind the same backend.
     5. Scavenge/RSSReturn only after retained-span speed/safety is stable.
 
@@ -92,7 +92,7 @@ Why bytes budget first:
   Keep boundaries:
     exact 64K remains Local2P-first
     >32K..128K remains the 128K LargeSpan class
-    >128K..256K comes later as LargeSpan256-L1
+    >128K..256K is the 256K LargeSpan class
     256..8192 larger_sizes is mid/source-block pressure, not the LargeSpan front
 
 CentralSpanPoolBudget-L1 implementation:
@@ -115,6 +115,37 @@ CentralSpanPoolBudget-L1 implementation:
       median 72.608M ops/s / 6,740 KB
       all runs route_invalid=0 route_miss=0 alloc_fail=0
       all runs large_source_alloc=256
+
+LargeSpan256-L1 implementation:
+  DONE.
+  Added a 256K class to the LargeSpan class table and let the existing
+  LargeSpan front allocate/prefill by class metadata instead of hard-coding the
+  128K class. The front ops name is now `largespan` to reflect the family while
+  keeping the existing file/module names stable for this step.
+
+  Behavior:
+    requests >128K..256K route to HZ6_FRONT_LARGE class 9
+    requests >256K still fail closed
+    central reuse/free uses the same bytes-aware CentralSpanPool accounting
+    no decommit/release and no hot-path diagnostic counters were added
+
+  Verification:
+    Windows HZ6 R1 smokes all pass
+    allocator smoke now asserts Large256 route class, central bytes/global
+    bytes, and same-pointer central reuse
+    mixed_ws large_slice_128k repeat-3 after ForceBuild:
+      median 69.082M ops/s / 6,544 KB
+      all runs route_invalid=0 route_miss=0 alloc_fail=0
+      all runs large_source_alloc=256
+    mixed_ws large_slice_256k repeat-3 after ForceBuild:
+      median 60.908M ops/s / 6,028 KB
+      all runs route_invalid=0 route_miss=0 alloc_fail=0
+      all runs large_source_alloc=128
+
+  Note:
+    the first 256K matrix run reused an old pre-LargeSpan256 exe because the
+    capacity runner only rebuilds missing artifacts unless `-ForceBuild` is
+    supplied. The ForceBuild rerun is the valid closeout.
 ```
 
 Non-goals for this step:

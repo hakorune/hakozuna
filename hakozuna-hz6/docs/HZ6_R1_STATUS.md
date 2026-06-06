@@ -171,7 +171,7 @@ Contracts:
   Large128 front alloc/free/ops helpers are split into separate helper units so
   source refill stays separate from reuse and free-path dispatch
   LargeSpan class metadata is split into fronts/large/hz6_large_span_class.*
-  so the current 128K seed is an explicit one-class LargeSpan family rather
+  so the current 128K/256K seed is an explicit LargeSpan class family rather
   than a hard-coded large128 request check
   LargeSpan central pool accounting is bytes-aware: per-class retained bytes
   and global retained bytes are tracked alongside descriptor count so future
@@ -208,8 +208,8 @@ Fronts:
     exercises the MidPage route/front contract
     uses OS-paged SourceLayer backing in the Linux R1 smoke
 
-  large128:
-    >4KiB..128KiB except exact 64KiB seed front
+  largespan:
+    >4KiB..256KiB except exact 64KiB seed front
     exercises transfer-first reuse
     uses Linux mmap SourceLayer backing in the Linux R1 smoke
 ```
@@ -287,8 +287,8 @@ remote free:
   toy handles <=4KiB
   midpage handles >4KiB..32KiB
   local2p handles exact 64KiB
-  large128 handles >32KiB..128KiB except exact 64KiB
-  >128KiB is unsupported in R1 and returns NULL
+  largespan handles >32KiB..256KiB except exact 64KiB
+  >256KiB is unsupported in R1 and returns NULL
   front source slot creation is split into kind/ops helpers so source-kind
   lookup stays separate from direct source-backed slot creation
   FrontOps carries an optional class-aware prefill hook for front-specific
@@ -364,14 +364,14 @@ policy:
 
 ## Large-Size Boundary
 
-HZ6-R1 has a Large128 seed, not a complete large-object family.
+HZ6-R1 has a 128K/256K LargeSpan seed, not a complete large-object family.
 
 ```text
 implemented:
-  >32KiB..128KiB except exact 64KiB
+  >32KiB..256KiB except exact 64KiB
 
 not implemented yet:
-  >128KiB broad large-object classes
+  >256KiB broad large-object classes
   ordinary-malloc preload coverage for all large sizes
   HZ3/HZ4/HZ5/tcmalloc cross-family large-size comparison
 ```
@@ -385,10 +385,12 @@ L1:
   lives in a LargeSpan class table, while route/free/source behavior remains
   unchanged. CentralSpanPoolBudget-L1 is also in place: central push is bounded
   by span count and retained bytes, budget-full uses the existing fallback path,
-  and no decommit/release is mixed into the hot path.
+  and no decommit/release is mixed into the hot path. LargeSpan256-L1 extends
+  the same class table/backend to the >128K..256K class and keeps >256K
+  fail-closed.
 
 L2:
-  add 256K / 512K / 1M LargeSpan classes using the same route, transfer,
+  add 512K / 1M LargeSpan classes using the same route, transfer,
   source, and scavenge contracts instead of adding a separate large allocator.
 
 L3:
@@ -399,8 +401,8 @@ L3:
 Reporting rule:
 
 ```text
-Until L2 lands, describe HZ6 large results as Large128 seed results.
-Do not claim broad large-object allocator coverage from R1.
+Until L2 lands, describe HZ6 large results as 128K/256K LargeSpan seed
+results. Do not claim broad large-object allocator coverage from R1.
 ```
 
 ## Verification Command

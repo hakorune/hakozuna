@@ -3,6 +3,8 @@
 static const Hz6LargeSpanClass kHz6LargeSpanClasses[] = {
     {HZ6_LARGE128_CLASS_ID, HZ6_LARGE128_BYTES, HZ6_LARGE128_BYTES,
      "large128"},
+    {HZ6_LARGE256_CLASS_ID, HZ6_LARGE256_BYTES, HZ6_LARGE256_BYTES,
+     "large256"},
 };
 
 size_t hz6_large_span_class_count(void) {

@@ -19,8 +19,7 @@ int hz6_large128_can_allocate(size_t size,
 void* hz6_large128_alloc(Hz6Allocator* allocator,
                          uint16_t class_id,
                          size_t size) {
-  (void)size;
-  if (!allocator || class_id != HZ6_LARGE128_CLASS_ID) {
+  if (!allocator) {
     return NULL;
   }
   const Hz6LargeSpanClass* span_class =
@@ -48,9 +47,6 @@ void* hz6_large128_alloc(Hz6Allocator* allocator,
 size_t hz6_large128_prefill(Hz6Allocator* allocator,
                             uint16_t class_id,
                             size_t count) {
-  if (class_id != 0 && class_id != HZ6_LARGE128_CLASS_ID) {
-    return 0;
-  }
   const uint16_t prefill_class_id =
       class_id == 0 ? HZ6_LARGE128_CLASS_ID : class_id;
   const Hz6LargeSpanClass* span_class =
