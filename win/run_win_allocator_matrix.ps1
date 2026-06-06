@@ -39,6 +39,9 @@ $Executables = @(
     @{ Name = "hz6-strict-sameownerfast-largerlowrss"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_strict_sameownerfast_largerlowrss.exe") },
     @{ Name = "hz6-speed-sameownerfast-largerlowrss"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_speed_sameownerfast_largerlowrss.exe") },
     @{ Name = "hz6-rss-sameownerfast-largerlowrss"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_rss_sameownerfast_largerlowrss.exe") },
+    @{ Name = "hz6-strict-directlocalfreereuse-largerlowrss"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_strict_directlocalfreereuse_largerlowrss.exe") },
+    @{ Name = "hz6-speed-directlocalfreereuse-largerlowrss"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_speed_directlocalfreereuse_largerlowrss.exe") },
+    @{ Name = "hz6-rss-directlocalfreereuse-largerlowrss"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_rss_directlocalfreereuse_largerlowrss.exe") },
     @{ Name = "mimalloc"; Path = (Join-Path $SuiteDir "bench_mixed_ws_mimalloc.exe") },
     @{ Name = "tcmalloc"; Path = (Join-Path $SuiteDir "bench_mixed_ws_tcmalloc.exe") }
 )
@@ -266,6 +269,7 @@ $Summary.Add("- `hz6-*-broad` keeps the same HZ6 policy profile but raises descr
 $Summary.Add("- `hz6-*-route4k` keeps the non-route capacities at control values while widening only the route table to 4096.")
 $Summary.Add("- `hz6-*-largerlowrss` uses the selected 4K..16K/LargerSizes low-RSS lane: front8k + SourceRunReuse + desc8k + route8k.")
 $Summary.Add("- `hz6-*-sameownerfast-largerlowrss` adds SameOwnerFast-L1 to the LargerLowRSS lane for same-owner small/mid fixed-size checks.")
+$Summary.Add("- `hz6-*-directlocalfreereuse-largerlowrss` decomposes the SameOwnerFast win into direct local free + alloc + reuse on the LargerLowRSS lane.")
 $Summary.Add("- The unqualified `hz6-*` rows keep the small default R1 capacities as controls.")
 $Summary.Add("")
 

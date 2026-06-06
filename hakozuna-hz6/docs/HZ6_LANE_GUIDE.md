@@ -23,7 +23,8 @@ these rows answer which lanes should be used, watched, or avoided.
 | Selected sibling | `route18` mixedclean sibling | Current wide_ws sibling when wide_ws is the target; do not replace balanced route17/loopcarry by default. |
 | Selected profile lane | `sameownerfast-descavail-noboost-route4k` | random_mixed same-owner speed row. |
 | Selected profile lane | `largerlowrss-front8k-sourcerun-desc8k-route8k` | larger_sizes RSS/speed row. |
-| Candidate-watch | `sameownerfast-largerlowrss-front8k-sourcerun-desc8k-route8k` | 256B/512B/1K/4K/8K/16K same-owner fixed-size speed probe. 2K is an explicit no-go exception. Not broad/default yet. |
+| Candidate-watch/control | `sameownerfast-largerlowrss-front8k-sourcerun-desc8k-route8k` | Mechanism evidence for the small/mid same-owner fixed-size win. Repeat-10 is positive across 256B..16K; currently safer than DirectLocalFreeReuse at 16K. Keep as a close control, not broad/default. |
+| Candidate-watch | `directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k` | Decomposed small/mid same-owner fixed-size candidate. It is strong in controlled repeat-5 and legacy single-run 256B/512B/4K/8K, but legacy 16K regresses. Needs size gate or more repeat evidence before promotion. |
 | LargeSpan family seed | `mixed_ws large_slice_128k,large_slice_256k,large_slice_512k,large_slice_1m + speed-route4k` | Narrow 128K..1M LargeSpan class verification. Use for LargeSpan backend safety/coverage, not broad speed ranking. |
 | LargeDirect coverage seed | `mixed_ws large_direct_slice_2m,large_direct_slice_4m,large_direct_slice_8m + speed-route4k` | Narrow >1M..8M direct-release verification. Use for coverage/low-RSS safety evidence, not throughput ranking. |
 | Selected Larson low-RSS sibling | `...frontcachepacked-sourceblockpacked-source10k-route192k-run512` | Current Larson minimum-RSS sibling. Use for current HZ6 Larson low-RSS comparisons. |
@@ -65,10 +66,20 @@ HZ6 LargeSpan / LargeDirect:
     4K/8K/16K fixed-size gap is a real algorithmic gap or just a route4k
     low-capacity control artifact.
     `sameownerfast-largerlowrss-front8k-sourcerun-desc8k-route8k` is a
-    candidate-watch follow-up for 256B..16K same-owner fixed-size rows. It
-    repeats +11%..+33% over `largerlowrss` on 256B/512B/1K/4K/8K/16K in
-    HZ6-only repeat-5, with flat RSS. 2K regresses by about 3.7%, so do not
-    use this lane for 2K and do not default-promote yet.
+    candidate-watch follow-up for 256B..16K same-owner fixed-size rows.
+    Repeat-10 is positive across the set:
+    +23.2% 256B, +19.5% 512B, +20.0% 1K, +12.9% 2K, +5.2% 4K,
+    +13.0% 8K, and +8.6% 16K, with flat RSS. 2K is noisy and 4K/16K are
+    smaller wins, so do not default-promote yet. Decomposition shows the win
+    is not free-side only: `directlocalfreereuse-largerlowrss-front8k-...`
+    is the stronger controlled decomposition row in most rows, while
+    SameOwnerFast remains a close mechanism/control lane. Full 256B..16K
+    repeat-5 best rows are DirectLocalFreeReuse for 256B/1K/2K/4K/16K and
+    SameOwnerFast for 512B/8K. Legacy matrix connectivity is also verified,
+    but the single-run legacy read regresses at 16K for DirectLocalFreeReuse
+    while SameOwnerFast stays positive. The current read is local alloc/reuse
+    activation cost, not source capacity; promotion needs a size gate or more
+    repeat evidence.
 
   NEXT:
     stop large coverage expansion here unless >8M is the immediate target.

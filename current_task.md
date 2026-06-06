@@ -85,30 +85,82 @@ Latest HZ6 small fixed-size attack:
 
   Implemented candidate-watch:
     sameownerfast-largerlowrss-front8k-sourcerun-desc8k-route8k
+    directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
 
-  HZ6-only repeat-5:
-    256B: +30.7%
-    512B: +32.5%
-    1K:   +21.1%
-    2K:   -3.7%
-    4K:   +11.0%
-    8K:   +20.0%
-    16K:  +19.1%
+  HZ6-only repeat-10:
+    256B: +23.2%
+    512B: +19.5%
+    1K:   +20.0%
+    2K:   +12.9%
+    4K:   +5.2%
+    8K:   +13.0%
+    16K:  +8.6%
     RSS essentially flat.
 
-  Read after repeat-5:
-    sameownerfast-largerlowrss is a real speed win for
-    256B/512B/1K/4K/8K/16K.
-    2K is an explicit no-go exception for this composition.
+  Read after repeat-10:
+    sameownerfast-largerlowrss is a real speed win for 256B..16K.
+    2K is noisy, not a structural no-go.
+    4K and 16K are smaller wins.
 
   Status:
-    keep sameownerfast-largerlowrss as candidate-watch for the winning rows.
-    keep 2K on plain largerlowrss unless a 2K-specific cause is found.
+    keep sameownerfast-largerlowrss as mechanism evidence/control.
+    keep directlocalfreereuse-largerlowrss as a strong candidate-watch
+    for same-owner fixed-size rows.
     do not default-promote yet.
-    next if continuing this track:
-      repeat selected rows with mimalloc/tcmalloc comparison,
-      then decide whether SameOwnerFast should become part of selected
-      same-owner fixed-size HZ6 lane.
+
+  DirectLocal decomposition repeat-5:
+    512B: directlocalfreereuse +25.1%
+    2K:   directlocalfreereuse +21.3%
+    4K:   directlocalfreereuse +31.2%
+    8K:   directlocalfreereuse +19.5%
+
+  Full 256B..16K repeat-5 with base/sameownerfast/directlocalfreereuse:
+    256B: best directlocalfreereuse +30.9%
+    512B: best sameownerfast +25.6%
+    1K:   best directlocalfreereuse +27.6%
+    2K:   best directlocalfreereuse +17.1%
+    4K:   best directlocalfreereuse +25.3%
+    8K:   best sameownerfast +11.3%
+    16K:  best directlocalfreereuse +15.8%
+
+  Read after decomposition:
+    the win is not free-side only.
+    directlocalfree alone is smaller, directlocalalloc is larger,
+    directlocalfreealloc is close to SameOwnerFast, and
+    directlocalfreereuse is the strongest decomposition shape in most rows.
+    The remaining 256B..16K gap is mostly local alloc/reuse activation cost.
+
+  Next:
+    legacy runner connectivity for hz6-*-directlocalfreereuse-largerlowrss
+    is verified.
+
+  Legacy connectivity single-run:
+    command:
+      win/run_win_allocator_matrix.ps1
+      -Profiles large_slice_256..large_slice_16k
+      -Allocators hz6-speed-largerlowrss,
+                  hz6-speed-sameownerfast-largerlowrss,
+                  hz6-speed-directlocalfreereuse-largerlowrss,
+                  mimalloc,tcmalloc
+
+    delta vs hz6-speed-largerlowrss:
+      256B: directlocalfreereuse +38.6%, sameownerfast +32.7%
+      512B: directlocalfreereuse +62.6%, sameownerfast +59.1%
+      1K:   directlocalfreereuse +12.3%, sameownerfast +20.0%
+      2K:   directlocalfreereuse +13.2%, sameownerfast +19.9%
+      4K:   directlocalfreereuse +18.3%, sameownerfast +9.1%
+      8K:   directlocalfreereuse +20.0%, sameownerfast +8.5%
+      16K:  directlocalfreereuse -28.0%, sameownerfast +14.5%
+
+  Read after legacy connectivity:
+    directlocalfreereuse is connected and valuable, but not a clean
+    256B..16K promotion because 16K regresses hard in the legacy single-run.
+    sameownerfast is safer at 16K and also wins this single-run at 1K/2K.
+    The practical next step is a size-gated selected-small lane or a repeat
+    matrix that decides where DirectLocalFreeReuse is allowed.
+    mimalloc remains much faster on 256B..16K in this runner, so HZ6's near-term
+    claim here is low-RSS/safety with improving speed, not small-object speed
+    leadership.
 ```
 
 Latest HZ6 selected-family decision:
