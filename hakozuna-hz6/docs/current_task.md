@@ -18,6 +18,80 @@ Use these orientation docs before reading this long ledger:
   HZ6_SOURCE_MODULARIZATION.md
 ```
 
+### 2026-06-06: ToySmallActiveMap dynmap repeat-10 closeout
+
+Current decision:
+
+```text
+toysmallactivemap-sourceblockroute-behavior-dynmap-...:
+  KEEP as candidate-watch/control evidence
+  do not promote to selected-small wiring
+```
+
+Reason:
+
+```text
+ToySmallActiveMap over SourceBlockRoute dynmap is safety-clean and shows that
+same-owner active-map bypass can help selected Toy/small rows, but repeat-10
+does not clear the selected-small promotion line.
+
+Promotion line was:
+  average positive
+  min delta >= -3%
+  route_invalid / route_miss / route_register_fail remain zero
+  no selected-family broad regression
+
+Repeat-10 misses the min-delta and average-delta gates, so selected-family guard
+is intentionally skipped for this lane.
+```
+
+Command:
+
+```powershell
+win/run_win_hz6_capacity_matrix.ps1 `
+  -OutputDir results/hz6-toysmall-activemap-dynmap-repeat10 `
+  -Runs 10 `
+  -Families mixed_ws `
+  -BenchmarkProfiles large_slice_256,large_slice_512,large_slice_1k,large_slice_2k,large_slice_4k,large_slice_8k,large_slice_16k `
+  -Hz6Profiles speed `
+  -CapacityLanes `
+    sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k,`
+    toysmallactivemap-sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k `
+  -TimeoutSeconds 120 `
+  -ContinueOnFailure
+```
+
+Repeat-10 median result:
+
+```text
+profile     base dynmap             active-map dynmap       delta    RSS delta
+256B        77.577M / 14,322 KB     75.951M / 15,092 KB    -2.10%   +770 KB
+512B        58.634M / 26,596 KB     54.558M / 27,350 KB    -6.95%   +754 KB
+1K          56.001M / 26,606 KB     57.885M / 27,350 KB    +3.36%   +744 KB
+2K          37.258M / 75,744 KB     37.811M / 76,552 KB    +1.48%   +808 KB
+4K          51.139M / 42,520 KB     53.256M / 43,280 KB    +4.14%   +760 KB
+8K          62.410M / 25,950 KB     60.897M / 26,052 KB    -2.42%   +102 KB
+16K         51.455M / 17,666 KB     47.646M / 17,826 KB    -7.40%   +160 KB
+
+Average delta: -1.41%
+Min delta:     -7.40%
+```
+
+Interpretation:
+
+```text
+Active-map state is a useful mechanism witness, but the broad selected-small
+shape is not better than the current SourceBlockRoute dynmap row. The 1K/2K/4K
+signals are real enough to preserve as evidence; the 512B/16K regressions make
+promotion unsafe.
+
+Next:
+  keep current selected-small dynmap row
+  do not add more active-map knobs for now
+  resume broader HZ6 polish from the remaining weak profile instead of trying
+  to force this lane into default
+```
+
 ### 2026-06-06: next target after bench modularization
 
 Current read:
