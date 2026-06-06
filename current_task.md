@@ -154,8 +154,9 @@ Latest HZ6 small fixed-size attack:
 
   Read after legacy connectivity:
     directlocalfreereuse is connected and valuable, but not a clean
-    256B..16K promotion because 16K regresses hard in the legacy single-run.
-    sameownerfast is safer at 16K and also wins this single-run at 1K/2K.
+    256B..16K promotion from the first legacy single-run alone because 16K
+    regressed in that one run.
+    sameownerfast looked safer at 16K in that first legacy single-run.
     The practical next step is a size-gated selected-small lane or a repeat
     matrix that decides where DirectLocalFreeReuse is allowed.
     mimalloc remains much faster on 256B..16K in this runner, so HZ6's near-term
@@ -191,10 +192,39 @@ Latest HZ6 small fixed-size attack:
   Read after size-gated control:
     small8k gate is safe and useful, but it is not a universal winner.
     full DirectLocalFreeReuse remains strong at 2K/4K/8K and sometimes 16K.
-    SameOwnerFast is the safer 16K row and often competitive at 256B/512B/4K.
+    SameOwnerFast is a safer control row and often competitive at
+    256B/512B/4K/16K.
     Do not create an overfit per-size hybrid yet.
     Keep all three as candidate/control lanes until repeat evidence stabilizes
     a clean selection rule.
+
+  HZ6-only candidate repeat-10:
+    Compared:
+      largerlowrss
+      sameownerfast-largerlowrss
+      directlocalfreereuse-largerlowrss
+      directlocalfreereuse-small8k-largerlowrss
+
+    best per row:
+      256B: directlocalfreereuse +28.1%
+      512B: directlocalfreereuse-small8k +23.2%
+      1K:   sameownerfast +24.6%
+      2K:   directlocalfreereuse +23.3%
+      4K:   directlocalfreereuse-small8k +19.7%
+      8K:   directlocalfreereuse-small8k +17.1%
+      16K:  directlocalfreereuse +14.3%
+
+    simple lane average/min delta vs largerlowrss:
+      sameownerfast:                avg +17.4%, min +8.2%
+      directlocalfreereuse:         avg +19.8%, min +14.2%
+      directlocalfreereuse-small8k: avg +17.9%, min +0.8%
+
+  Current selected-small read:
+    DirectLocalFreeReuse is the best simple candidate-watch for 256B..16K.
+    It is not the best row at every size, but it is positive across all rows
+    with the best average and best minimum improvement in repeat-10.
+    SameOwnerFast and small8k remain control lanes.
+    Do not build a per-size hybrid yet; that would overfit the current noise.
 ```
 
 Latest HZ6 selected-family decision:

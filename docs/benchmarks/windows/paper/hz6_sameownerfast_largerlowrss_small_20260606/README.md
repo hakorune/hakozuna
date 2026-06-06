@@ -212,8 +212,9 @@ Legacy connectivity read:
 
 ```text
 DirectLocalFreeReuse is wired and useful, but it is not a clean 256B..16K
-promotion because 16K regresses hard in the legacy single-run. Treat it as a
-candidate-watch that needs a size gate or more repeat evidence.
+promotion from the first legacy single-run alone because 16K regressed in that
+run. Treat it as a candidate-watch that needs a size gate or more repeat
+evidence.
 ```
 
 ## Small8K Size-Gated Control
@@ -266,6 +267,45 @@ remain candidate/control lanes until repeat evidence gives a clean selection
 rule. Do not overfit a per-size hybrid yet.
 ```
 
+## Candidate Repeat-10
+
+Follow-up HZ6-only repeat-10 compared the three candidate/control lanes:
+
+```text
+sameownerfast-largerlowrss
+directlocalfreereuse-largerlowrss
+directlocalfreereuse-small8k-largerlowrss
+```
+
+Best row by profile:
+
+| profile | best row | delta vs largerlowrss |
+| --- | --- | ---: |
+| `large_slice_256` | `directlocalfreereuse` | +28.1% |
+| `large_slice_512` | `directlocalfreereuse-small8k` | +23.2% |
+| `large_slice_1k` | `sameownerfast` | +24.6% |
+| `large_slice_2k` | `directlocalfreereuse` | +23.3% |
+| `large_slice_4k` | `directlocalfreereuse-small8k` | +19.7% |
+| `large_slice_8k` | `directlocalfreereuse-small8k` | +17.1% |
+| `large_slice_16k` | `directlocalfreereuse` | +14.3% |
+
+Simple-lane aggregate vs `largerlowrss`:
+
+| lane | average delta | minimum delta |
+| --- | ---: | ---: |
+| `sameownerfast` | +17.4% | +8.2% |
+| `directlocalfreereuse` | +19.8% | +14.2% |
+| `directlocalfreereuse-small8k` | +17.9% | +0.8% |
+
+Read:
+
+```text
+DirectLocalFreeReuse is the best simple candidate-watch for 256B..16K.  It is
+not the best row at every size, but it is positive across all rows and has the
+best average and minimum improvement in repeat-10.  Keep SameOwnerFast and
+small8k as controls; do not build a per-size hybrid yet.
+```
+
 ## Read
 
 The first diagnostic showed the selected `largerlowrss` lane was already
@@ -290,7 +330,7 @@ Status:
 ```text
 KEEP:
   sameownerfast-largerlowrss as mechanism evidence
-  directlocalfreereuse-largerlowrss as a strong candidate-watch
+  directlocalfreereuse-largerlowrss as the best simple candidate-watch
 
 WATCH:
   512B and 8K sometimes prefer SameOwnerFast.
