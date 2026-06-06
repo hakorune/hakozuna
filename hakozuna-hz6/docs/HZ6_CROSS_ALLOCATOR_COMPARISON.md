@@ -100,6 +100,48 @@ HZ4 produced access-violation failures on 128K..4M rows in this runner; treat
 those cells as compatibility/safety warnings, not speed data.
 ```
 
+### HZ6 selected-small repeat-10 update
+
+The route4k rows above are weakness-map controls. The current HZ6 selected-small
+candidate uses `directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k`
+and is much closer to the practical rows while preserving the low-RSS shape.
+
+Source:
+- `results/hz6-largerlowrss-small-candidate-repeat10/20260606_142228_hz6_capacity_matrix_windows.md`
+
+Runner shortcut:
+
+```powershell
+.\win\run_win_allocator_matrix.ps1 `
+  -Profiles selected_small_slices `
+  -Allocators hz6-speed-largerlowrss,hz6-speed-directlocalfreereuse-largerlowrss,mimalloc,tcmalloc `
+  -ForceBuild
+```
+
+| profile | LargerLowRSS | selected-small candidate | best HZ6 control in repeat-10 | peak KB shape |
+| --- | ---: | ---: | ---: | --- |
+| `large_slice_256` | 58.212M | 74.567M | 74.567M `directlocalfreereuse` | ~13.6 MB |
+| `large_slice_512` | 47.496M | 56.798M | 58.499M `directlocalfreereuse-small8k` | ~26.0 MB |
+| `large_slice_1k` | 45.752M | 54.628M | 57.017M `sameownerfast` | ~26.0 MB |
+| `large_slice_2k` | 32.128M | 39.623M | 39.623M `directlocalfreereuse` | ~75.1 MB |
+| `large_slice_4k` | 44.426M | 53.092M | 53.168M `directlocalfreereuse-small8k` | ~41.9 MB |
+| `large_slice_8k` | 58.200M | 66.468M | 68.168M `directlocalfreereuse-small8k` | ~25.4 MB |
+| `large_slice_16k` | 52.993M | 60.562M | 60.562M `directlocalfreereuse` | ~17.1 MB |
+
+Read:
+
+```text
+DirectLocalFreeReuse is the best simple selected-small candidate:
+  repeat-10 average improvement vs LargerLowRSS is about +20%
+  every row is positive
+  RSS shape stays essentially unchanged
+
+sameownerfast and small8k remain useful controls, but not a clean replacement.
+HZ6 is still not the small-object speed leader versus mimalloc/HZ3/HZ4, but the
+current selected-small lane is no longer represented by the old route4k weakness
+rows.
+```
+
 ## Current HZ6 Selected-Family Snapshot
 
 These are the current HZ6 family choices from the latest internal selection

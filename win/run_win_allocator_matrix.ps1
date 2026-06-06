@@ -4,7 +4,8 @@ param(
     [string[]]$Allocators,
     [int]$BenchTimeoutSeconds = 0,
     [switch]$ForceBuild,
-    [switch]$ContinueOnFailure
+    [switch]$ContinueOnFailure,
+    [switch]$ListOnly
 )
 
 $ErrorActionPreference = "Stop"
@@ -17,7 +18,9 @@ if (-not $OutputDir) {
     $OutputDir = Join-Path $RepoRoot "docs\\benchmarks\\windows"
 }
 
-New-Item -ItemType Directory -Force $OutputDir | Out-Null
+if (-not $ListOnly) {
+    New-Item -ItemType Directory -Force $OutputDir | Out-Null
+}
 
 $Executables = @(
     @{ Name = "crt"; Path = (Join-Path $SuiteDir "bench_mixed_ws_crt.exe") },
@@ -67,7 +70,7 @@ if ($Allocators -and $Allocators.Count -gt 0) {
     $Executables = $SelectedExecutables
 }
 
-if ($ForceBuild -or ($Executables | Where-Object { -not (Test-Path $_.Path) })) {
+if (-not $ListOnly -and ($ForceBuild -or ($Executables | Where-Object { -not (Test-Path $_.Path) }))) {
     & $BuildScript
     if ($LASTEXITCODE -ne 0) {
         throw "build_win_allocator_suite.ps1 failed with exit code $LASTEXITCODE"
@@ -212,6 +215,15 @@ $AllProfiles = @(
 )
 
 $ProfileAliases = @{
+    "selected_small_slices" = @(
+        "large_slice_256",
+        "large_slice_512",
+        "large_slice_1k",
+        "large_slice_2k",
+        "large_slice_4k",
+        "large_slice_8k",
+        "large_slice_16k"
+    )
     "large_slices" = @(
         "large_slice_256",
         "large_slice_512",
@@ -253,6 +265,16 @@ if ($Profiles -and $Profiles.Count -gt 0) {
     }
 } else {
     $Selected = $AllProfiles
+}
+
+if ($ListOnly) {
+    Write-Host "Selected allocator matrix rows:"
+    foreach ($profile in $Selected) {
+        foreach ($exe in $Executables) {
+            Write-Host ("{0}`t{1}`t{2}" -f $profile.Name, $exe.Name, $exe.Path)
+        }
+    }
+    return
 }
 
 $ArtifactsPath = Join-Path $RepoRoot "out_win_suite"

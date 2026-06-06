@@ -437,7 +437,44 @@ Latest HZ6 small fixed-size attack:
 Latest HZ6 selected-family decision:
 
 ```text
-2026-06-06 next attack after Windows bench modularization:
+2026-06-06 follow-up after selected-small lane cleanup:
+  LargeSpan/LargeDirect status:
+    detailed HZ6 ledger has already closed the LargeSpan256/512/1M and
+    LargeDirect-L1 rollout.
+    Treat 128K..1M as the current retained-reuse LargeSpan win range.
+    Treat >1M..8M as direct-release/low-retain coverage, not speed-promotion.
+
+  Cross-comparison doc update:
+    HZ6_CROSS_ALLOCATOR_COMPARISON now separates route4k weakness-map rows
+    from the current selected-small repeat-10 row.
+
+  Current selected-small repeat-10 read:
+    LargerLowRSS -> DirectLocalFreeReuse:
+      256B: 58.212M -> 74.567M
+      512B: 47.496M -> 56.798M
+      1K:   45.752M -> 54.628M
+      2K:   32.128M -> 39.623M
+      4K:   44.426M -> 53.092M
+      8K:   58.200M -> 66.468M
+      16K:  52.993M -> 60.562M
+
+    RSS shape remains essentially unchanged.  HZ6 is still not the small-object
+    speed leader versus mimalloc/HZ3/HZ4, but the old route4k table is no
+    longer the current selected-small representation.
+
+  Next target:
+    small/mid transition after DirectLocalFreeReuse.
+    Do not add another directlocal owner/packed/exact knob yet; those were
+    closed as controls.  The next useful work should either:
+      1. collect a clean cross-allocator selected-small matrix, or
+      2. inspect MidPage/Toy activation/source layout for a non-knob
+         structural simplification.
+
+2026-06-06 historical LargeSpan attack after Windows bench modularization:
+  Status:
+    CLOSED as implementation history.  The active next target is the
+    selected-small / small-mid transition listed above.
+
   The Windows bench source/output cleanup is now in a much healthier shape:
     bench_allocator_compare HZ6 summary is helper-owned
     Larson HZ6 summary/front diagnostics are helper-owned
@@ -448,7 +485,7 @@ Latest HZ6 selected-family decision:
     RSS-oriented Larson siblings are meaningful evidence
     lane docs are good enough for targeted development
 
-  Primary next target:
+  Historical primary target:
     LargeSpan family work.
 
   Reason:
