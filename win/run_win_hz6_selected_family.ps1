@@ -8,6 +8,7 @@ param(
     [switch]$ContinueOnFailure,
     [switch]$SelectedFamily,
     [switch]$SelectedFamilyGuard,
+    [switch]$SelectedSmallFixed,
     [switch]$LarsonCrossOwnerSelected,
     [switch]$LarsonCrossOwnerLowestRss,
     [switch]$LarsonMetadataSlim,
@@ -81,6 +82,14 @@ $presetMap = [ordered]@{
         -Hz6Profiles @("speed", "rss") `
         -CapacityLanes @("largerlowrss-front8k-sourcerun-desc8k-route8k") `
         -Note "selected larger_sizes RSS/speed lane"
+
+    "selected-small-fixed" = New-Preset `
+        -Name "selected-small-fixed" `
+        -Families @("mixed_ws") `
+        -BenchmarkProfiles @("large_slice_256", "large_slice_512", "large_slice_1k", "large_slice_2k", "large_slice_4k", "large_slice_8k", "large_slice_16k") `
+        -Hz6Profiles @("speed") `
+        -CapacityLanes @("directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k") `
+        -Note "selected-small candidate: best simple 256B..16K fixed-size lane from HZ6-only repeat-10"
 
     "larson-cross-owner-selected" = New-Preset `
         -Name "larson-cross-owner-selected" `
@@ -221,10 +230,15 @@ if ($SelectedFamilyGuard) {
     [void]$selectedPresetNames.Add("selected-family-guard")
 }
 
+if ($SelectedSmallFixed) {
+    [void]$selectedPresetNames.Add("selected-small-fixed")
+}
+
 if ($SelectedFamily) {
     foreach ($name in @(
         "selected-mixed-lowrss",
         "selected-random-sameowner",
+        "selected-small-fixed",
         "selected-larger-lowrss",
         "larson-cross-owner-selected"
     )) {

@@ -225,6 +225,25 @@ Latest HZ6 small fixed-size attack:
     with the best average and best minimum improvement in repeat-10.
     SameOwnerFast and small8k remain control lanes.
     Do not build a per-size hybrid yet; that would overfit the current noise.
+
+  Selected-family runner wiring:
+    Added win/run_win_hz6_selected_family.ps1 -SelectedSmallFixed.
+    The normal -SelectedFamily preset set now includes selected-small-fixed.
+
+    selected-small-fixed:
+      mixed_ws large_slice_256..large_slice_16k
+      speed + directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+
+    Smoke:
+      powershell -NoProfile -ExecutionPolicy Bypass `
+        -File .\win\run_win_hz6_selected_family.ps1 `
+        -SelectedSmallFixed -Runs 3 -TimeoutSeconds 120 `
+        -OutputDir .\results\hz6-selected-small-fixed-smoke `
+        -ContinueOnFailure
+
+    Result:
+      completed and wrote selected-small-fixed summary.
+      Treat smoke values as runner connectivity, not paper medians.
 ```
 
 Latest HZ6 selected-family decision:

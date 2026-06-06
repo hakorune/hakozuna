@@ -210,6 +210,20 @@ separate by output subdirectory.
 ```
 
 ```powershell
+# Small fixed-size selected candidate only.
+.\win\run_win_hz6_selected_family.ps1 `
+  -SelectedSmallFixed `
+  -Runs 3 `
+  -TimeoutSeconds 120 `
+  -ContinueOnFailure
+```
+
+`-SelectedSmallFixed` runs `mixed_ws large_slice_256..large_slice_16k` with
+`speed + directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k`.
+Use it as the selected-small runner connection check; use the documented
+HZ6-only repeat-10 for the current performance read.
+
+```powershell
 # Larson full-10k selected lane plus low-RSS siblings.
 .\win\run_win_hz6_selected_family.ps1 `
   -LarsonCrossOwnerSelected `
