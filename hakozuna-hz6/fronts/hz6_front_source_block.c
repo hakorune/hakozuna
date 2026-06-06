@@ -314,6 +314,12 @@ size_t hz6_front_prefill_source_block_kind(Hz6Allocator* allocator,
 #endif
     return 0;
   }
+#if HZ6_SOURCE_BLOCK_ROUTE_LATE_REGISTER_L1 && \
+    HZ6_SOURCE_BLOCK_ROUTE_RANGE_INDEX_L1
+  if (class_id <= HZ6_SOURCE_BLOCK_ROUTE_MAX_CLASS) {
+    hz6_allocator_source_block_range_index_register(allocator, block);
+  }
+#endif
 #endif
 
   filled = 0;

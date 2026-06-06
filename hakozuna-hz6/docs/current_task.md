@@ -18,6 +18,118 @@ Use these orientation docs before reading this long ledger:
   HZ6_SOURCE_MODULARIZATION.md
 ```
 
+### 2026-06-06: Next target - selected-small 8K guard
+
+Current next attack:
+
+```text
+Freeze for now:
+  Larson/Elastic low-RSS selected sibling
+    ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-directfree-trustedlocalcache-...
+
+Attack next:
+  selected-small fixed-size candidate
+    sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+```
+
+Reason:
+
+```text
+The current selected-small candidate is broadly positive versus the simple
+DirectLocalFreeReuse control:
+
+  balanced   +8.46%
+  wide_ws    +3.78%
+  larger     +6.92%
+  4K         +5.96%
+  16K       +16.48%
+
+but it still has a small 8K regression:
+
+  8K        -2.40%
+
+Before defaulting or broad-wiring the selected-small lane, run a focused
+4K/8K/16K + balanced/wide/larger repeat matrix against the known controls:
+
+  directlocalfreereuse
+  sourceblockroute-behavior-dynmap
+  directlocalfreereuse-small8k
+  directlocalexact
+
+If 8K is the only weak row, prefer a class-gated or dynmap-bypass adjustment
+over another broad hot-path feature. If multiple rows wobble, keep the current
+selected-small candidate frozen and move to larger_sizes / 1M+ work instead.
+```
+
+Follow-up implementation:
+
+```text
+Added:
+  HZ6_SOURCE_BLOCK_ROUTE_MAX_CLASS
+  HZ6_SOURCE_BLOCK_ROUTE_LATE_REGISTER_L1
+
+New control lane:
+  sourceblockroute-behavior-dynmap-small8k-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+
+Meaning:
+  SourceBlockRoute dynmap is range-index registered only after source-run class
+  selection and only when class_id <= 4. This keeps the 8K MidPage class on the
+  dynmap path while letting larger MidPage classes fall back to the normal exact
+  route without a registered source-block range hit.
+```
+
+Repeat-3:
+
+```text
+Source:
+  docs/benchmarks/windows/paper/hz6_selected_family/
+    sourceblockroute-dynmap-small8k-latereg-repeat3-20260606/
+      20260606_225004_hz6_capacity_matrix_windows.md
+
+directlocal control:
+  directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+
+dynmap:
+  sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+
+dynmap-small8k:
+  sourceblockroute-behavior-dynmap-small8k-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+```
+
+Median versus DirectLocalFreeReuse:
+
+```text
+profile          dynmap      dynmap-small8k
+4K              -3.37%       -9.32%
+8K             +18.12%      +12.06%
+16K            +14.53%      +17.87%
+balanced        -1.79%       -1.51%
+wide_ws         +3.13%       +1.79%
+larger_sizes    -3.92%       +0.70%
+```
+
+Decision:
+
+```text
+dynmap-small8k:
+  KEEP as control evidence.
+  It is safety-clean and proves class-gated late registration works, but it
+  worsens 4K and does not make selected-small broad/default cleaner.
+
+SourceBlockRoute dynmap:
+  KEEP as selected-small candidate-watch / evidence.
+  Do not broad-default from this repeat-3 alone.
+
+DirectLocalFreeReuse:
+  Remains the stable simple control and likely paper-facing fallback if
+  selected-small needs one conservative row.
+
+Next:
+  Stop adding SourceBlockRoute knobs for now.
+  If selected-small polish continues, attack 4K/8K/16K with a route-cost or
+  per-front routing design, not another broad dynmap toggle.
+```
+
 ### 2026-06-06: DepotOwnerDirect DirectFreeTrustedLocalCache promotion
 
 Current decision:

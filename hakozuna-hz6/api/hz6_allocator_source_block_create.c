@@ -991,7 +991,9 @@ Hz6SourceBlock* hz6_allocator_create_source_block(
   hz6_source_block_set_active(block, 1);
   hz6_source_block_set_route_registered(block, 0);
   hz6_source_block_set_route_shared(block, 0);
+#if !HZ6_SOURCE_BLOCK_ROUTE_LATE_REGISTER_L1
   hz6_allocator_source_block_range_index_register(allocator, block);
+#endif
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->diagnostic_source_block_active_current;
   if (allocator->diagnostic_source_block_active_current >

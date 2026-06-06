@@ -406,6 +406,20 @@
 #define HZ6_SOURCE_BLOCK_ROUTE_BEHAVIOR_L1 0
 #endif
 
+#ifndef HZ6_SOURCE_BLOCK_ROUTE_MAX_CLASS
+/* Class gate for SourceBlockRoute behavior experiments.  The default preserves
+ * the original all-class behavior; selected-small variants can narrow this to
+ * keep larger fixed-size classes on the exact-route fallback. */
+#define HZ6_SOURCE_BLOCK_ROUTE_MAX_CLASS HZ6_FRONT_CACHE_CLASS_COUNT
+#endif
+
+#ifndef HZ6_SOURCE_BLOCK_ROUTE_LATE_REGISTER_L1
+/* Register SourceBlockRoute range entries after source-run class selection.
+ * This lets class-gated SourceBlockRoute lanes avoid range-index hits on
+ * classes that should fall back to the normal exact route. */
+#define HZ6_SOURCE_BLOCK_ROUTE_LATE_REGISTER_L1 0
+#endif
+
 #ifndef HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_DYNAMIC_L1
 /* Store source-run slot descriptor maps only for active runs instead of
  * embedding HZ6_SOURCE_RUN_MAX_SLOTS entries in every source block. */

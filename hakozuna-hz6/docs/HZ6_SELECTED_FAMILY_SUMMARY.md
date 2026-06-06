@@ -16,7 +16,7 @@ For cleanup rules and the next source modularization target, see
 | random_mixed small | `strict + sameownerfast-descavail-noboost-route4k` | 45.755M | 4,968 | clean selected |
 | random_mixed medium | `strict + sameownerfast-descavail-noboost-route4k` | 42.408M | 4,964 | clean selected |
 | random_mixed mixed | `strict + sameownerfast-descavail-noboost-route4k` | 41.306M | 4,964 | clean selected |
-| mixed_ws fixed 256B..16K | `speed + sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k` | repeat-3: +8.46% balanced, +3.78% wide_ws, +6.92% larger_sizes, +5.96% 4K, -2.40% 8K, +16.48% 16K vs DirectLocalFreeReuse | RSS +0.6..3.6MiB vs DirectLocalFreeReuse | selected-small candidate |
+| mixed_ws fixed 256B..16K | `speed + sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k` | candidate-watch: earlier repeat-3 was broadly positive; 2026-06-06 follow-up showed the shape is workload-sensitive, with 8K/16K wins but 4K/balanced/larger_sizes wobble depending on run | RSS generally higher than DirectLocalFreeReuse | selected-small evidence, not broad/default |
 | mixed_ws larger_sizes speed | `speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k` | 26.404M | 71,040 | clean selected |
 | mixed_ws larger_sizes rss | `speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k` | 27.178M | 71,012 | clean selected |
 | Larson T16 full 10k throughput/RSS | `speed + ownerlocalityfast-rsscap-2-desc160k` | 44.754M | 808,488 | clean selected |
@@ -31,8 +31,13 @@ For cleanup rules and the next source modularization target, see
 
 Selected-small note:
 `sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k`
-is fixed as the selected-small candidate row for 256B..16K fixed-size checks.
-The former DirectLocalFreeReuse lane remains the simple control/baseline.
+is kept as the selected-small candidate-watch row for 256B..16K fixed-size
+checks. The former DirectLocalFreeReuse lane remains the simple
+control/baseline and the conservative fallback if a paper-facing selected-small
+row needs maximum stability.
+The `sourceblockroute-behavior-dynmap-small8k-*` follow-up proves class-gated
+late range-index registration works, but it still regresses 4K/balanced enough
+to remain control evidence rather than selected wiring.
 MidPage 8K/32K prefill now uses the shared SourceBlock helper, so the small/mid
 boundary is structurally unified with Toy; this does not create a new promoted
 speed lane by itself. `directlocaltrusted-*`, `directlocalpacked-*`,

@@ -51,6 +51,12 @@ Hz6RouteResult hz6_allocator_source_block_route_lookup(Hz6Allocator* allocator,
 #endif
     return hz6_route_miss();
   }
+  if (block->run_class_id > HZ6_SOURCE_BLOCK_ROUTE_MAX_CLASS) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.source_block_route_behavior_fallback;
+#endif
+    return hz6_route_miss();
+  }
   size_t front_index = 0;
   if (!hz6_front_attr_index_from_id(block->run_front_id, &front_index)) {
 #if HZ6_DIAGNOSTIC_PROBES
