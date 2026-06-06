@@ -192,6 +192,14 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 "source_run_reuse_prepare_fail=%zu "
                 "source_run_reuse_rollback=%zu "
                 "source_run_reuse_used_count_mismatch=%zu "
+                "toy_small_malloc_fast_attempt=%zu "
+                "toy_small_malloc_fast_hit=%zu "
+                "toy_small_malloc_front_dispatch=%zu "
+                "toy_small_free_route_lookup=%zu "
+                "toy_small_free_owner_equal=%zu "
+                "toy_small_free_fast_hit=%zu "
+                "toy_small_free_cache_push=%zu "
+                "toy_small_activate_descriptor=%zu "
                 "route_lookup_probe_total=%zu route_lookup_probe_max=%zu "
                 "route_register_probe_total=%zu route_register_probe_max=%zu "
                 "route_unregister_probe_total=%zu route_unregister_probe_max=%zu "
@@ -309,6 +317,14 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 s.source_run_reuse_prepare_fail,
                 s.source_run_reuse_rollback,
                 s.source_run_reuse_used_count_mismatch,
+                s.toy_small_malloc_fast_attempt,
+                s.toy_small_malloc_fast_hit,
+                s.toy_small_malloc_front_dispatch,
+                s.toy_small_free_route_lookup,
+                s.toy_small_free_owner_equal,
+                s.toy_small_free_fast_hit,
+                s.toy_small_free_cache_push,
+                s.toy_small_activate_descriptor,
                 s.route_lookup_probe_total,
                 s.route_lookup_probe_max,
                 s.route_register_probe_total,

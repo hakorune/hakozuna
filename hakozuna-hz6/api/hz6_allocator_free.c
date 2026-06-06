@@ -1,5 +1,6 @@
 #include "hz6_allocator.h"
 #include "hz6_allocator_same_owner_fast_inline.h"
+#include "hz6_allocator_toy_small_diag.h"
 
 #include "../fronts/hz6_front.h"
 
@@ -123,6 +124,8 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
     case HZ6_ROUTE_VALID:
       ++allocator->stats.route_valid;
       {
+        hz6_toy_small_hotpath_diag_free_route_lookup(
+            allocator, route.front_id, route.class_id);
         const Hz6FrontOps* front = hz6_front_for_id(route.front_id);
         Hz6ObjectDescriptor* descriptor =
             (Hz6ObjectDescriptor*)route.descriptor;
@@ -176,6 +179,10 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
                           hz6_allocator_descriptor_owner_equal_at(
                               allocator, descriptor, allocator->owner.token,
                               HZ6_OWNER_EQUAL_SITE_FREE);
+        if (local_owner) {
+          hz6_toy_small_hotpath_diag_free_owner_equal(
+              allocator, route.front_id, route.class_id);
+        }
         int needs_rehome = visible_hit && !local_owner &&
                             hz6_front_remote_rehome_allowed(route.front_id,
                                                             route.class_id);
@@ -206,6 +213,12 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
                        route.front_id)) {
           ok = hz6_allocator_same_owner_fast_free_inline(allocator, ptr,
                                                          route);
+          if (ok) {
+            hz6_toy_small_hotpath_diag_free_fast_hit(
+                allocator, route.front_id, route.class_id);
+            hz6_toy_small_hotpath_diag_free_cache_push(
+                allocator, route.front_id, route.class_id);
+          }
 #if HZ6_DIAGNOSTIC_PROBES
           if (!ok) {
             ++allocator->stats.free_invalid_same_owner_fast;
@@ -224,6 +237,12 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
           ok = hz6_allocator_cache_active_descriptor(allocator, descriptor,
                                                      ptr);
 #endif
+          if (ok) {
+            hz6_toy_small_hotpath_diag_free_fast_hit(
+                allocator, route.front_id, route.class_id);
+            hz6_toy_small_hotpath_diag_free_cache_push(
+                allocator, route.front_id, route.class_id);
+          }
 #if HZ6_DIAGNOSTIC_PROBES
           if (!ok) {
             ++allocator->stats.free_invalid_local_cache_direct;
@@ -233,6 +252,10 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
         } else if (local_owner) {
           ok = front->free_tagged &&
                front->free_tagged(allocator, ptr, route);
+          if (ok) {
+            hz6_toy_small_hotpath_diag_free_cache_push(
+                allocator, route.front_id, route.class_id);
+          }
 #if HZ6_DIAGNOSTIC_PROBES
           if (!ok) {
             ++allocator->stats.free_invalid_front_tagged;

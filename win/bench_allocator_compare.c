@@ -875,6 +875,22 @@ int main(int argc, char** argv) {
             args[i].hz6_stats_after.source_run_reuse_rollback;
         hz6_stats.source_run_reuse_used_count_mismatch +=
             args[i].hz6_stats_after.source_run_reuse_used_count_mismatch;
+        hz6_stats.toy_small_malloc_fast_attempt +=
+            args[i].hz6_stats_after.toy_small_malloc_fast_attempt;
+        hz6_stats.toy_small_malloc_fast_hit +=
+            args[i].hz6_stats_after.toy_small_malloc_fast_hit;
+        hz6_stats.toy_small_malloc_front_dispatch +=
+            args[i].hz6_stats_after.toy_small_malloc_front_dispatch;
+        hz6_stats.toy_small_free_route_lookup +=
+            args[i].hz6_stats_after.toy_small_free_route_lookup;
+        hz6_stats.toy_small_free_owner_equal +=
+            args[i].hz6_stats_after.toy_small_free_owner_equal;
+        hz6_stats.toy_small_free_fast_hit +=
+            args[i].hz6_stats_after.toy_small_free_fast_hit;
+        hz6_stats.toy_small_free_cache_push +=
+            args[i].hz6_stats_after.toy_small_free_cache_push;
+        hz6_stats.toy_small_activate_descriptor +=
+            args[i].hz6_stats_after.toy_small_activate_descriptor;
         for (size_t class_id = 0; class_id < HZ6_STATS_CLASS_COUNT;
              ++class_id) {
             hz6_stats.frontcache_push_by_class[class_id] +=

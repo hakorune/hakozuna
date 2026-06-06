@@ -1,5 +1,6 @@
 #include "hz6_allocator.h"
 #include "hz6_allocator_same_owner_fast_inline.h"
+#include "hz6_allocator_toy_small_diag.h"
 
 #include "../fronts/hz6_front.h"
 #include "../fronts/hz6_front_util.h"
@@ -87,6 +88,8 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
   }
 
 #if HZ6_SAME_OWNER_FAST_L1 || HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1
+  hz6_toy_small_hotpath_diag_malloc_fast_attempt(allocator, front->front_id,
+                                                 class_id);
 #if HZ6_SAME_OWNER_FAST_L1
   void* direct_ptr = hz6_allocator_same_owner_fast_alloc_inline(
       allocator, front->front_id, class_id);
@@ -95,10 +98,14 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
       allocator, front->front_id, class_id);
 #endif
   if (direct_ptr) {
+    hz6_toy_small_hotpath_diag_malloc_fast_hit(allocator, front->front_id,
+                                               class_id);
     return direct_ptr;
   }
 #endif
 
+  hz6_toy_small_hotpath_diag_malloc_front_dispatch(allocator, front->front_id,
+                                                   class_id);
   void* ptr = front->alloc(allocator, class_id, size);
   if (!ptr) {
     ++allocator->stats.alloc_fail;

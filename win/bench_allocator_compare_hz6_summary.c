@@ -322,6 +322,14 @@ void bench_print_hz6_summary(const Hz6StatsSnapshot* hz6_stats,
            "hz6_source_block_fail_registered_max=%zu "
            "hz6_source_block_fail_ref_nonzero_max=%zu "
            "hz6_source_block_fail_ref_zero_max=%zu "
+           "hz6_toy_small_malloc_fast_attempt=%zu "
+           "hz6_toy_small_malloc_fast_hit=%zu "
+           "hz6_toy_small_malloc_front_dispatch=%zu "
+           "hz6_toy_small_free_route_lookup=%zu "
+           "hz6_toy_small_free_owner_equal=%zu "
+           "hz6_toy_small_free_fast_hit=%zu "
+           "hz6_toy_small_free_cache_push=%zu "
+           "hz6_toy_small_activate_descriptor=%zu "
            "hz6_large_central_push=%zu hz6_large_central_pop=%zu "
            "hz6_large_source_alloc=%zu",
            hz6_stats->route_lookup_probe_total,
@@ -336,6 +344,14 @@ void bench_print_hz6_summary(const Hz6StatsSnapshot* hz6_stats,
            hz6_stats->source_block_fail_registered_max,
            hz6_stats->source_block_fail_ref_nonzero_max,
            hz6_stats->source_block_fail_ref_zero_max,
+           hz6_stats->toy_small_malloc_fast_attempt,
+           hz6_stats->toy_small_malloc_fast_hit,
+           hz6_stats->toy_small_malloc_front_dispatch,
+           hz6_stats->toy_small_free_route_lookup,
+           hz6_stats->toy_small_free_owner_equal,
+           hz6_stats->toy_small_free_fast_hit,
+           hz6_stats->toy_small_free_cache_push,
+           hz6_stats->toy_small_activate_descriptor,
            hz6_stats->large_span_central_push,
            hz6_stats->large_span_central_pop,
            hz6_stats->large_span_source_alloc);

@@ -297,6 +297,14 @@ typedef struct Hz6StatsSnapshot {
   size_t midpage_source_alloc;
   size_t large_source_alloc;
   size_t toy_source_alloc;
+  size_t toy_small_malloc_fast_attempt;
+  size_t toy_small_malloc_fast_hit;
+  size_t toy_small_malloc_front_dispatch;
+  size_t toy_small_free_route_lookup;
+  size_t toy_small_free_owner_equal;
+  size_t toy_small_free_fast_hit;
+  size_t toy_small_free_cache_push;
+  size_t toy_small_activate_descriptor;
   size_t front_alloc_path[HZ6_FRONT_ATTR_COUNT][HZ6_ALLOC_PATH_COUNT];
   size_t alloc_fail;
   size_t descriptor_exhausted;

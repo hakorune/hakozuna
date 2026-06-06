@@ -11139,6 +11139,117 @@ Next:
 ```
 # HZ6 current task
 
+## 2026-06-06: ToySmallHotPathDiag-L1
+
+Context:
+
+```text
+The selected-small candidate-watch is safety-clean but still loses 256B..2K
+against HZ3/HZ4/mimalloc/tcmalloc in the cross-allocator fixed-size table.
+Worker review pointed at successful hot-path work rather than capacity/refill
+failure: free-side route lookup, local-owner/cache push, and alloc-side
+frontcache activation.
+```
+
+Implementation:
+
+```text
+Added HZ6_TOY_SMALL_HOTPATH_DIAG_L1, gated behind HZ6_DIAGNOSTIC_PROBES.
+
+New diagnostic lane:
+  toysmallhotpathdiag-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+
+New counters:
+  hz6_toy_small_malloc_fast_attempt
+  hz6_toy_small_malloc_fast_hit
+  hz6_toy_small_malloc_front_dispatch
+  hz6_toy_small_free_route_lookup
+  hz6_toy_small_free_owner_equal
+  hz6_toy_small_free_fast_hit
+  hz6_toy_small_free_cache_push
+  hz6_toy_small_activate_descriptor
+
+These counters are diagnostic-only and should not be used for speed-ranking
+rows.
+```
+
+Smoke:
+
+```text
+Command:
+  ./win/run_win_hz6_capacity_matrix.ps1
+    -OutputDir results/hz6-toysmall-hotpath-diag-smoke
+    -Runs 1
+    -Families mixed_ws
+    -BenchmarkProfiles large_slice_256,large_slice_512,large_slice_1k,large_slice_2k
+    -Hz6Profiles speed
+    -CapacityLanes toysmallhotpathdiag-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+    -DiagnosticHz6Probes
+    -ForceBuild
+    -TimeoutSeconds 60
+    -ContinueOnFailure
+
+Result file:
+  results/hz6-toysmall-hotpath-diag-smoke/20260606_163013_hz6_capacity_matrix_windows.md
+```
+
+Observed:
+
+```text
+large_slice_256:
+  ops/s 53.213M
+  malloc_fast_attempt      305088
+  malloc_fast_hit          304064
+  malloc_front_dispatch      1024
+  free_route_lookup        305088
+  free_owner_equal         305088
+  free_fast_hit            305088
+  free_cache_push          305088
+  route_lookup_probe_total 1843374
+
+large_slice_512:
+  ops/s 43.621M
+  malloc_fast_hit          304064 / 305088
+  free_fast_hit            305088 / 305088
+  route_lookup_probe_total 1899098
+
+large_slice_1k:
+  ops/s 41.417M
+  malloc_fast_hit          304064 / 305088
+  free_fast_hit            305088 / 305088
+  route_lookup_probe_total 1904804
+
+large_slice_2k:
+  ops/s 31.717M
+  malloc_fast_hit          304064 / 305088
+  free_fast_hit            305088 / 305088
+  route_lookup_probe_total 2064490
+
+All rows:
+  route_invalid = 0
+  route_miss = 0
+  alloc_fail = 0
+  frontcache_reuse_invalid = 0
+```
+
+Decision:
+
+```text
+Toy/small fixed-size selected-small is already in steady-state fast reuse:
+  - alloc fast hit covers almost all allocations after the initial 1024 dispatches
+  - free direct/cache hit covers every free
+  - source/refill/descriptor exhaustion are not the current bottleneck
+
+Next high-ROI design target:
+  Free-side route lookup cost for local same-owner Toy/small frees.
+
+Likely next experiment:
+  a narrow ToySmallDirectFreeCookie/route-shortcut diagnostic-control, or an
+  exact local free bypass that proves route lookup can be removed while keeping
+  fail-closed safety. Do not change selected-small default until a repeat matrix
+  confirms safety and speed.
+```
+
 ## 2026-06-06: Elastic source-depot wide_ws fail-closed hardening
 
 Context:
