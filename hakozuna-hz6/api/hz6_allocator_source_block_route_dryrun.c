@@ -64,6 +64,13 @@ Hz6RouteResult hz6_allocator_source_block_route_lookup(Hz6Allocator* allocator,
 #endif
     return hz6_route_miss();
   }
+  if (!HZ6_SOURCE_BLOCK_ROUTE_TOY_FRONT_L1 &&
+      block->run_front_id == HZ6_FRONT_TOY) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.source_block_route_behavior_fallback;
+#endif
+    return hz6_route_miss();
+  }
 
   const unsigned char* user = (const unsigned char*)ptr;
   const unsigned char* base = (const unsigned char*)block->ptr;

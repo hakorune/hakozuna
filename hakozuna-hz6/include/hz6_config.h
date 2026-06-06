@@ -425,6 +425,13 @@
 #define HZ6_SOURCE_BLOCK_ROUTE_MAX_CLASS HZ6_FRONT_CACHE_CLASS_COUNT
 #endif
 
+#ifndef HZ6_SOURCE_BLOCK_ROUTE_TOY_FRONT_L1
+/* Keep Toy/small on exact-route fallback when testing SourceBlockRoute as a
+ * MidPage/small-mid shortcut.  Toy rows can be too small for the source-block
+ * route arithmetic to pay for itself. */
+#define HZ6_SOURCE_BLOCK_ROUTE_TOY_FRONT_L1 1
+#endif
+
 #ifndef HZ6_SOURCE_BLOCK_ROUTE_LATE_REGISTER_L1
 /* Register SourceBlockRoute range entries after source-run class selection.
  * This lets class-gated SourceBlockRoute lanes avoid range-index hits on

@@ -35,6 +35,11 @@ random_mixed:
 selected-small fixed 256B..16K:
   SourceBlockRoute dynmap is candidate-watch/evidence, not broad default.
   DirectLocalFreeReuse remains the simpler baseline/control.
+  2026-06-07 Toy-small hot-path diag shows steady-state fast reuse already
+  hits almost all allocations/frees.  SourceBlockRoute dynmap reduces exact
+  route probe pressure, but the source-block route arithmetic is not a clean
+  small-object speed replacement.  The notoy/late-register follow-up is
+  safety-clean but remains control evidence, not promotion.
 
 Larson / Elastic:
   current strongest RSS direction remains the selected Larson/Elastic low-RSS
@@ -45,6 +50,70 @@ Immediate engineering posture:
   2. do not reopen direct-large tuning.
   3. if optimizing next, pick a fresh weak row from selected-family/cross-allocator
      tables rather than extending an already-closed knob family.
+```
+
+### 2026-06-07: ToySmall hot-path diag and SourceBlockRoute notoy control
+
+Goal:
+
+```text
+After direct-large closeout, re-check the remaining selected-small 256B..2K
+gap without mixing diagnostic counters into speed/default lanes.
+```
+
+Implementation:
+
+```text
+Added diagnostic capacity lane:
+  toysmallhotpathdiag-sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+
+Added control capacity lane:
+  sourceblockroute-behavior-dynmap-notoy-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+
+notoy behavior:
+  HZ6_SOURCE_BLOCK_ROUTE_TOY_FRONT_L1=0
+  HZ6_SOURCE_BLOCK_ROUTE_LATE_REGISTER_L1=1
+  Toy/small source blocks are not registered into the SourceBlockRoute range
+  index; Toy/small frees fall back to exact-route/directlocal behavior.
+```
+
+Observed:
+
+```text
+Toy-small diag over DirectLocalFreeReuse:
+  malloc_fast_hit is near total:
+    305088 attempts / 304064 hits on 256B..2K
+    242432 attempts / 241920 hits on 4K
+  free_fast_hit equals all frees on the fixed-size rows.
+  safety counters stay zero.
+
+SourceBlockRoute dynmap diag:
+  source_block_route_behavior_valid is all frees for Toy/small rows.
+  route_lookup_probe_total drops versus DirectLocalFreeReuse.
+  speed does not cleanly improve; 256B..4K can wobble or regress.
+
+notoy-late control:
+  safety-clean.
+  Toy range-index hits become misses/fallbacks as intended.
+  It does not beat DirectLocalFreeReuse cleanly; keep as control evidence.
+```
+
+Decision:
+
+```text
+KEEP:
+  ToySmallHotPathDiag over dynmap as diagnostic-only.
+  SourceBlockRoute dynmap notoy/late as candidate-control.
+
+DO NOT PROMOTE:
+  notoy-late to selected-small.
+  additional Toy active-map or SourceBlockRoute class-gate knobs right now.
+
+Read:
+  The 256B..2K gap is not source allocation, descriptor exhaustion, or missing
+  reuse.  It is the cost of HZ6's route/descriptor contract on very small
+  same-owner objects.  Further gains likely need a cleaner small-object front
+  contract, not another SourceBlockRoute toggle.
 ```
 
 ### 2026-06-06: LargeDirectRetain-L1 direct-large control
