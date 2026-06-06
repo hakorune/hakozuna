@@ -14,6 +14,13 @@ results/hz6-legacy-large-direct-retain-connect/
   20260606_232854_allocator_matrix.md
 ```
 
+Selected-family preset smoke:
+
+```text
+results/hz6-large-direct-retain-preset-smoke/large-direct-retain-control/
+  20260606_233749_hz6_capacity_matrix_windows.md
+```
+
 Scope:
 
 ```text
@@ -92,4 +99,13 @@ rows.  The connection run compares only HZ6 base largerlowrss vs retain32m on
   8M: 0.307M -> 10.069M
 
 Safety counters remain zero.
+```
+
+Preset smoke read:
+
+```text
+`win/run_win_hz6_selected_family.ps1 -LargeDirectRetainControl` resolves and
+runs the intended base/retain lanes for speed/rss.  The run-1 smoke stays
+safety-clean and keeps the 512K/1M guard rows on the unchanged LargeSpan
+source allocation counts (`64` and `32` respectively).
 ```

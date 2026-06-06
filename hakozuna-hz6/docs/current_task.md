@@ -132,6 +132,13 @@ Added legacy suite allocator rows:
   hz6-speed-largedirectretain32m-largerlowrss
   hz6-rss-largedirectretain32m-largerlowrss
 
+Added selected-family convenience preset:
+  win/run_win_hz6_selected_family.ps1 -LargeDirectRetainControl
+
+The preset is intentionally outside -SelectedFamily. It runs 2M/4M/8M direct
+large rows plus 512K/1M LargeSpan guards for the base LargerLowRSS and
+LargeDirectRetain32M lanes.
+
 Connection check source:
   docs/benchmarks/windows/paper/hz6_selected_family/
     large-direct-retain32m-directpush-20260606/
@@ -153,6 +160,24 @@ safety:
   alloc_fail = 0
   descriptor_exhausted = 0
   source_block_exhausted = 0
+```
+
+Preset smoke:
+
+```text
+Source:
+  docs/benchmarks/windows/paper/hz6_selected_family/
+    large-direct-retain32m-directpush-20260606/
+      20260606_233749_hz6_capacity_matrix_windows.md
+
+Command:
+  win/run_win_hz6_selected_family.ps1 -LargeDirectRetainControl -Runs 1 -SkipBuild
+
+Read:
+  preset resolves the intended base/retain lanes for speed/rss
+  direct-large speed signal reproduces
+  512K/1M guards keep source_alloc at 64/32
+  all safety counters remain zero
 ```
 
 ### 2026-06-06: Next target - selected-small 8K guard

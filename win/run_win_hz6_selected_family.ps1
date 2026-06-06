@@ -10,6 +10,7 @@ param(
     [switch]$SelectedFamilyGuard,
     [switch]$SelectedSmallFixed,
     [switch]$SelectedSmallFixedHybridExactUpper,
+    [switch]$LargeDirectRetainControl,
     [switch]$LarsonCrossOwnerSelected,
     [switch]$LarsonElasticLowRssSelected,
     [switch]$LarsonCrossOwnerLowestRss,
@@ -109,6 +110,14 @@ $presetMap = [ordered]@{
         -Hz6Profiles @("speed") `
         -CapacityLanes @("directlocalexact-largerlowrss-front8k-sourcerun-desc8k-route8k") `
         -Note "selected-small hybrid control upper rows: DirectLocalExact for 8K..16K only; not a single-binary default"
+
+    "large-direct-retain-control" = New-Preset `
+        -Name "large-direct-retain-control" `
+        -Families @("mixed_ws") `
+        -BenchmarkProfiles @("large_direct_slice_2m", "large_direct_slice_4m", "large_direct_slice_8m", "large_slice_1m", "large_slice_512k") `
+        -Hz6Profiles @("speed", "rss") `
+        -CapacityLanes @("largerlowrss-front8k-sourcerun-desc8k-route8k", "largedirectretain32m-largerlowrss-front8k-sourcerun-desc8k-route8k") `
+        -Note "LargeDirectRetain32M candidate/control: compare direct-large retained reuse against LargerLowRSS base while guarding 512K/1M LargeSpan rows"
 
     "larson-cross-owner-selected" = New-Preset `
         -Name "larson-cross-owner-selected" `
@@ -268,6 +277,10 @@ if ($SelectedSmallFixed) {
 if ($SelectedSmallFixedHybridExactUpper) {
     [void]$selectedPresetNames.Add("selected-small-fixed-hybrid-lower")
     [void]$selectedPresetNames.Add("selected-small-fixed-hybrid-upper-exact")
+}
+
+if ($LargeDirectRetainControl) {
+    [void]$selectedPresetNames.Add("large-direct-retain-control")
 }
 
 if ($SelectedFamily) {
