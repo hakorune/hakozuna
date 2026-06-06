@@ -891,6 +891,22 @@ int main(int argc, char** argv) {
             args[i].hz6_stats_after.toy_small_free_cache_push;
         hz6_stats.toy_small_activate_descriptor +=
             args[i].hz6_stats_after.toy_small_activate_descriptor;
+        hz6_stats.toy_small_active_map_register +=
+            args[i].hz6_stats_after.toy_small_active_map_register;
+        hz6_stats.toy_small_active_map_register_collision +=
+            args[i].hz6_stats_after.toy_small_active_map_register_collision;
+        hz6_stats.toy_small_active_map_free_attempt +=
+            args[i].hz6_stats_after.toy_small_active_map_free_attempt;
+        hz6_stats.toy_small_active_map_free_hit +=
+            args[i].hz6_stats_after.toy_small_active_map_free_hit;
+        hz6_stats.toy_small_active_map_free_miss +=
+            args[i].hz6_stats_after.toy_small_active_map_free_miss;
+        hz6_stats.toy_small_active_map_free_stale +=
+            args[i].hz6_stats_after.toy_small_active_map_free_stale;
+        hz6_stats.toy_small_active_map_free_cache_fail +=
+            args[i].hz6_stats_after.toy_small_active_map_free_cache_fail;
+        hz6_stats.toy_small_active_map_route_bypass +=
+            args[i].hz6_stats_after.toy_small_active_map_route_bypass;
         for (size_t class_id = 0; class_id < HZ6_STATS_CLASS_COUNT;
              ++class_id) {
             hz6_stats.frontcache_push_by_class[class_id] +=

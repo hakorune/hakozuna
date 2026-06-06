@@ -11250,6 +11250,99 @@ Likely next experiment:
   confirms safety and speed.
 ```
 
+## 2026-06-06: ToySmallActiveFreeMap-L1
+
+Goal:
+
+```text
+Use the ToySmallHotPathDiag evidence to test whether same-owner Toy/small active
+frees can bypass exact-route lookup safely.
+
+Design:
+  - register direct-local reused ACTIVE descriptors in a bounded per-allocator
+    active free map
+  - free first probes the map and validates descriptor ptr/generation/class,
+    ACTIVE state, Toy/small class, and same owner
+  - map hit caches the active descriptor directly and counts the free as valid
+  - map miss/stale/cache-fail falls back to the normal exact-route free path
+  - no VirtualQuery, no foreign fallback escape, no route-invalid relaxation
+```
+
+Lane:
+
+```text
+toysmallactivemap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+```
+
+Diagnostic smoke:
+
+```text
+results/hz6-toysmall-activemap-probe4-smoke/20260606_165705_hz6_capacity_matrix_windows.md
+
+large_slice_256:
+  active_map_hit / attempt 296364 / 305088
+  active_map_miss          8724
+  active_map_stale         0
+  active_map_cache_fail    0
+  route_lookup_probe_total 1420319
+
+large_slice_512:
+  active_map_hit / attempt 295836 / 305088
+  active_map_miss          9252
+  active_map_stale         0
+  active_map_cache_fail    0
+  route_lookup_probe_total 1449847
+
+large_slice_1k:
+  active_map_hit / attempt 296853 / 305088
+  active_map_miss          8235
+  active_map_stale         0
+  active_map_cache_fail    0
+  route_lookup_probe_total 1417358
+
+large_slice_2k:
+  active_map_hit / attempt 297950 / 305088
+  active_map_miss          7138
+  active_map_stale         0
+  active_map_cache_fail    0
+  route_lookup_probe_total 1589196
+```
+
+Repeat-3 normal comparison:
+
+```text
+results/hz6-toysmall-activemap-probe4-repeat3/20260606_165843_hz6_capacity_matrix_windows.md
+
+             DirectLocalFreeReuse   ToySmallActiveMap
+  256B       76.045M                73.971M
+  512B       47.466M                51.438M
+  1K         52.022M                53.600M
+  2K         36.587M                39.719M
+```
+
+Decision:
+
+```text
+KEEP as candidate/control evidence.
+
+Positive:
+  - fail-closed safety counters stay clean
+  - same-owner active free route bypass is viable
+  - route lookup pressure drops materially in diagnostic runs
+  - repeat-3 improves 512B/1K/2K
+
+Not default yet:
+  - 256B regresses slightly in repeat-3
+  - map state and probe loop are extra hot-path machinery
+  - selected-small default remains DirectLocalFreeReuse until a broader
+    selected-family / RSS / guard matrix justifies promotion
+
+Next:
+  Use ActiveMap as evidence that the remaining small-object cost is route
+  lookup / activation bookkeeping. Do not add more map knobs before checking
+  broader selected-family impact.
+```
+
 ## 2026-06-06: Elastic source-depot wide_ws fail-closed hardening
 
 Context:

@@ -277,6 +277,16 @@ typedef struct Hz6LargeSpanPool {
   size_t bytes_current;
 } Hz6LargeSpanPool;
 
+#if HZ6_TOY_SMALL_ACTIVE_FREE_MAP_L1
+typedef struct Hz6ToySmallActiveMapEntry {
+  void* ptr;
+  Hz6ObjectDescriptor* descriptor;
+  uint32_t generation;
+  uint16_t class_id;
+  uint16_t front_id;
+} Hz6ToySmallActiveMapEntry;
+#endif
+
 struct Hz6Allocator {
   Hz6ProfileConfig profile;
   Hz6OwnerRecord owner;
@@ -303,6 +313,10 @@ struct Hz6Allocator {
 #endif
   size_t descgov_detached_budget_used;
   size_t depot_descriptor_rehome_budget_used;
+#if HZ6_TOY_SMALL_ACTIVE_FREE_MAP_L1
+  Hz6ToySmallActiveMapEntry
+      toy_small_active_map[HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY];
+#endif
 #if HZ6_DIAGNOSTIC_PROBES
   size_t diagnostic_descriptor_live_current;
   size_t diagnostic_source_block_active_current;

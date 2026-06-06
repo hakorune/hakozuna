@@ -5,16 +5,12 @@
 
 #include "../fronts/hz6_front.h"
 
+#include <stdint.h>
+
 static inline int hz6_toy_small_hotpath_diag_is_toy_small(uint16_t front_id,
                                                           uint16_t class_id) {
-#if HZ6_DIAGNOSTIC_PROBES && HZ6_TOY_SMALL_HOTPATH_DIAG_L1
   return front_id == HZ6_FRONT_TOY &&
          class_id < HZ6_FRONT_CACHE_CLASS_COUNT;
-#else
-  (void)front_id;
-  (void)class_id;
-  return 0;
-#endif
 }
 
 static inline void hz6_toy_small_hotpath_diag_malloc_fast_attempt(
@@ -127,6 +123,159 @@ static inline void hz6_toy_small_hotpath_diag_free_cache_push(
   (void)allocator;
   (void)front_id;
   (void)class_id;
+#endif
+}
+
+static inline size_t hz6_toy_small_active_map_index(const void* ptr) {
+  uintptr_t key = (uintptr_t)ptr >> 4u;
+  key ^= key >> 17u;
+  key *= (uintptr_t)0xed5ad4bbU;
+  key ^= key >> 11u;
+  return (size_t)(key % HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY);
+}
+
+static inline void hz6_toy_small_active_map_register(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id,
+    void* ptr,
+    Hz6ObjectDescriptor* descriptor) {
+#if HZ6_TOY_SMALL_ACTIVE_FREE_MAP_L1
+  if (!allocator || !ptr || !descriptor ||
+      !hz6_toy_small_hotpath_diag_is_toy_small(front_id, class_id)) {
+    return;
+  }
+  size_t base_index = hz6_toy_small_active_map_index(ptr);
+  Hz6ToySmallActiveMapEntry* entry = NULL;
+  Hz6ToySmallActiveMapEntry* first_empty = NULL;
+  int saw_collision = 0;
+  for (size_t probe = 0; probe < HZ6_TOY_SMALL_ACTIVE_FREE_MAP_PROBE_LIMIT;
+       ++probe) {
+    size_t index =
+        (base_index + probe) % HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY;
+    Hz6ToySmallActiveMapEntry* candidate =
+        &allocator->toy_small_active_map[index];
+    if (candidate->ptr == ptr) {
+      entry = candidate;
+      break;
+    }
+    if (!candidate->ptr) {
+      if (!first_empty) {
+        first_empty = candidate;
+      }
+      continue;
+    }
+    saw_collision = 1;
+  }
+  if (!entry) {
+    entry = first_empty ? first_empty
+                        : &allocator->toy_small_active_map[base_index];
+  }
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.toy_small_active_map_register;
+  if (saw_collision) {
+    ++allocator->stats.toy_small_active_map_register_collision;
+  }
+#else
+  (void)saw_collision;
+#endif
+  entry->ptr = ptr;
+  entry->descriptor = descriptor;
+  entry->generation = descriptor->generation;
+  entry->class_id = class_id;
+  entry->front_id = front_id;
+#else
+  (void)allocator;
+  (void)front_id;
+  (void)class_id;
+  (void)ptr;
+  (void)descriptor;
+#endif
+}
+
+static inline int hz6_toy_small_active_map_try_free(Hz6Allocator* allocator,
+                                                   void* ptr) {
+#if HZ6_TOY_SMALL_ACTIVE_FREE_MAP_L1
+  if (!allocator || !ptr) {
+    return 0;
+  }
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.toy_small_active_map_free_attempt;
+#endif
+  size_t base_index = hz6_toy_small_active_map_index(ptr);
+  Hz6ToySmallActiveMapEntry* entry = NULL;
+  for (size_t probe = 0; probe < HZ6_TOY_SMALL_ACTIVE_FREE_MAP_PROBE_LIMIT;
+       ++probe) {
+    size_t index =
+        (base_index + probe) % HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY;
+    Hz6ToySmallActiveMapEntry* candidate =
+        &allocator->toy_small_active_map[index];
+    if (candidate->ptr == ptr) {
+      entry = candidate;
+      break;
+    }
+  }
+  if (!entry) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.toy_small_active_map_free_miss;
+#endif
+    return 0;
+  }
+
+  Hz6ObjectDescriptor* descriptor = entry->descriptor;
+  if (!descriptor || descriptor->ptr != ptr ||
+      descriptor->generation != entry->generation ||
+      descriptor->class_id != entry->class_id ||
+      descriptor->state != HZ6_STATE_ACTIVE ||
+      !hz6_toy_small_hotpath_diag_is_toy_small(entry->front_id,
+                                               entry->class_id) ||
+      !hz6_allocator_descriptor_owner_equal_at(
+          allocator, descriptor, allocator->owner.token,
+          HZ6_OWNER_EQUAL_SITE_FREE)) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.toy_small_active_map_free_stale;
+#endif
+    entry->ptr = NULL;
+    entry->descriptor = NULL;
+    entry->generation = 0;
+    entry->class_id = 0;
+    entry->front_id = 0;
+    return 0;
+  }
+
+  if (!hz6_allocator_cache_active_descriptor(allocator, descriptor, ptr)) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.toy_small_active_map_free_cache_fail;
+#endif
+    entry->ptr = NULL;
+    entry->descriptor = NULL;
+    entry->generation = 0;
+    entry->class_id = 0;
+    entry->front_id = 0;
+    return 0;
+  }
+
+  entry->ptr = NULL;
+  entry->descriptor = NULL;
+  entry->generation = 0;
+  entry->class_id = 0;
+  entry->front_id = 0;
+  ++allocator->stats.route_valid;
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.toy_small_active_map_free_hit;
+  ++allocator->stats.toy_small_active_map_route_bypass;
+  hz6_toy_small_hotpath_diag_free_owner_equal(
+      allocator, HZ6_FRONT_TOY, descriptor->class_id);
+  hz6_toy_small_hotpath_diag_free_fast_hit(
+      allocator, HZ6_FRONT_TOY, descriptor->class_id);
+  hz6_toy_small_hotpath_diag_free_cache_push(
+      allocator, HZ6_FRONT_TOY, descriptor->class_id);
+#endif
+  return 1;
+#else
+  (void)allocator;
+  (void)ptr;
+  return 0;
 #endif
 }
 

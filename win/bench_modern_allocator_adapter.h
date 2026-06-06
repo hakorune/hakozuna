@@ -200,6 +200,14 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 "toy_small_free_fast_hit=%zu "
                 "toy_small_free_cache_push=%zu "
                 "toy_small_activate_descriptor=%zu "
+                "toy_small_active_map_register=%zu "
+                "toy_small_active_map_register_collision=%zu "
+                "toy_small_active_map_free_attempt=%zu "
+                "toy_small_active_map_free_hit=%zu "
+                "toy_small_active_map_free_miss=%zu "
+                "toy_small_active_map_free_stale=%zu "
+                "toy_small_active_map_free_cache_fail=%zu "
+                "toy_small_active_map_route_bypass=%zu "
                 "route_lookup_probe_total=%zu route_lookup_probe_max=%zu "
                 "route_register_probe_total=%zu route_register_probe_max=%zu "
                 "route_unregister_probe_total=%zu route_unregister_probe_max=%zu "
@@ -325,6 +333,14 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 s.toy_small_free_fast_hit,
                 s.toy_small_free_cache_push,
                 s.toy_small_activate_descriptor,
+                s.toy_small_active_map_register,
+                s.toy_small_active_map_register_collision,
+                s.toy_small_active_map_free_attempt,
+                s.toy_small_active_map_free_hit,
+                s.toy_small_active_map_free_miss,
+                s.toy_small_active_map_free_stale,
+                s.toy_small_active_map_free_cache_fail,
+                s.toy_small_active_map_route_bypass,
                 s.route_lookup_probe_total,
                 s.route_lookup_probe_max,
                 s.route_register_probe_total,

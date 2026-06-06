@@ -330,6 +330,14 @@ void bench_print_hz6_summary(const Hz6StatsSnapshot* hz6_stats,
            "hz6_toy_small_free_fast_hit=%zu "
            "hz6_toy_small_free_cache_push=%zu "
            "hz6_toy_small_activate_descriptor=%zu "
+           "hz6_toy_small_active_map_register=%zu "
+           "hz6_toy_small_active_map_register_collision=%zu "
+           "hz6_toy_small_active_map_free_attempt=%zu "
+           "hz6_toy_small_active_map_free_hit=%zu "
+           "hz6_toy_small_active_map_free_miss=%zu "
+           "hz6_toy_small_active_map_free_stale=%zu "
+           "hz6_toy_small_active_map_free_cache_fail=%zu "
+           "hz6_toy_small_active_map_route_bypass=%zu "
            "hz6_large_central_push=%zu hz6_large_central_pop=%zu "
            "hz6_large_source_alloc=%zu",
            hz6_stats->route_lookup_probe_total,
@@ -352,6 +360,14 @@ void bench_print_hz6_summary(const Hz6StatsSnapshot* hz6_stats,
            hz6_stats->toy_small_free_fast_hit,
            hz6_stats->toy_small_free_cache_push,
            hz6_stats->toy_small_activate_descriptor,
+           hz6_stats->toy_small_active_map_register,
+           hz6_stats->toy_small_active_map_register_collision,
+           hz6_stats->toy_small_active_map_free_attempt,
+           hz6_stats->toy_small_active_map_free_hit,
+           hz6_stats->toy_small_active_map_free_miss,
+           hz6_stats->toy_small_active_map_free_stale,
+           hz6_stats->toy_small_active_map_free_cache_fail,
+           hz6_stats->toy_small_active_map_route_bypass,
            hz6_stats->large_span_central_push,
            hz6_stats->large_span_central_pop,
            hz6_stats->large_span_source_alloc);

@@ -9,6 +9,10 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
     return;
   }
 
+  if (hz6_toy_small_active_map_try_free(allocator, ptr)) {
+    return;
+  }
+
   int visible_hit = 0;
   int visible_lookup_done = 0;
   Hz6RouteResult route = hz6_route_miss();

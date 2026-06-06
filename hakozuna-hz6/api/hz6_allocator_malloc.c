@@ -20,7 +20,12 @@ static int hz6_allocator_direct_local_alloc_front_eligible(
 
 #if !HZ6_SAME_OWNER_FAST_L1 && HZ6_LOCAL_CACHE_DIRECT_REUSE_L1
 static void* hz6_allocator_direct_local_reuse(Hz6Allocator* allocator,
-                                              uint16_t class_id) {
+                                              uint16_t class_id,
+                                              Hz6ObjectDescriptor**
+                                                  out_descriptor) {
+  if (out_descriptor) {
+    *out_descriptor = NULL;
+  }
   if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
     return NULL;
   }
@@ -45,6 +50,9 @@ static void* hz6_allocator_direct_local_reuse(Hz6Allocator* allocator,
 #if HZ6_DIAGNOSTIC_PROBES
       ++allocator->stats.frontcache_reuse_hit;
 #endif
+      if (out_descriptor) {
+        *out_descriptor = descriptor;
+      }
       return entry.ptr;
     }
 #if HZ6_DIAGNOSTIC_PROBES
@@ -59,13 +67,20 @@ static void* hz6_allocator_direct_local_reuse(Hz6Allocator* allocator,
 #if !HZ6_SAME_OWNER_FAST_L1 && HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1
 static void* hz6_allocator_direct_local_alloc(Hz6Allocator* allocator,
                                               uint16_t front_id,
-                                              uint16_t class_id) {
+                                              uint16_t class_id,
+                                              Hz6ObjectDescriptor**
+                                                  out_descriptor) {
+  if (out_descriptor) {
+    *out_descriptor = NULL;
+  }
   if (!hz6_allocator_direct_local_alloc_front_eligible(front_id, class_id)) {
     return NULL;
   }
 #if HZ6_LOCAL_CACHE_DIRECT_REUSE_L1
-  return hz6_allocator_direct_local_reuse(allocator, class_id);
+  return hz6_allocator_direct_local_reuse(allocator, class_id,
+                                          out_descriptor);
 #else
+  (void)out_descriptor;
   return hz6_front_reuse_cached_or_transfer(allocator, front_id, class_id,
                                             NULL);
 #endif
@@ -88,6 +103,7 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
   }
 
 #if HZ6_SAME_OWNER_FAST_L1 || HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1
+  Hz6ObjectDescriptor* direct_descriptor = NULL;
   hz6_toy_small_hotpath_diag_malloc_fast_attempt(allocator, front->front_id,
                                                  class_id);
 #if HZ6_SAME_OWNER_FAST_L1
@@ -95,9 +111,11 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
       allocator, front->front_id, class_id);
 #else
   void* direct_ptr = hz6_allocator_direct_local_alloc(
-      allocator, front->front_id, class_id);
+      allocator, front->front_id, class_id, &direct_descriptor);
 #endif
   if (direct_ptr) {
+    hz6_toy_small_active_map_register(
+        allocator, front->front_id, class_id, direct_ptr, direct_descriptor);
     hz6_toy_small_hotpath_diag_malloc_fast_hit(allocator, front->front_id,
                                                class_id);
     return direct_ptr;
