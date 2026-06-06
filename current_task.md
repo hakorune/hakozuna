@@ -47,6 +47,9 @@ Latest HZ6 selected-family decision:
       large128 request/class handling now goes through a one-class table
       Windows HZ6 R1 smokes pass
       mixed_ws large_slice_128k run1 is route_invalid/route_miss clean
+      mixed_ws large_slice_128k repeat-3:
+        median 75.404M ops/s / 6,736 KB
+        route_invalid=0 route_miss=0 alloc_fail=0
 
   Secondary target:
     Elastic source-depot lifecycle cleanup for wide_ws stale-route pressure.

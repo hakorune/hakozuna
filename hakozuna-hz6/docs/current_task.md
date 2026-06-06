@@ -65,6 +65,10 @@ Immediate implementation order:
      Windows HZ6 R1 smokes all pass
      mixed_ws large_slice_128k run1 is clean:
        route_invalid=0 route_miss=0 alloc_fail=0 large_source_alloc=256
+     mixed_ws large_slice_128k repeat-3 closeout:
+       median 75.404M ops/s / 6,736 KB
+       all runs route_invalid=0 route_miss=0 alloc_fail=0
+       all runs large_source_alloc=256
 
 Next LargeSpan step:
   add a second class behind the same table only after a focused 128K closeout.
