@@ -39,3 +39,10 @@ const Hz6FrontOps* hz6_front_for_id(uint16_t front_id) {
   }
   return NULL;
 }
+
+int hz6_front_remote_rehome_allowed(uint16_t front_id, uint16_t class_id) {
+  if (front_id == HZ6_FRONT_LARGE) {
+    return hz6_large128_remote_rehome_allowed(class_id);
+  }
+  return 1;
+}

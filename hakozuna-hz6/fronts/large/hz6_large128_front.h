@@ -40,6 +40,8 @@ int hz6_large128_free_remote_or_central(Hz6Allocator* allocator,
                                         void* ptr,
                                         Hz6RouteResult route);
 
+int hz6_large128_remote_rehome_allowed(uint16_t class_id);
+
 const Hz6FrontOps* hz6_large128_front_ops(void);
 
 #ifdef __cplusplus

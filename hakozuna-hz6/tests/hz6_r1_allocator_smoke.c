@@ -69,6 +69,45 @@ static int smoke_large_span_roundtrip(Hz6Allocator* allocator,
   return 1;
 }
 
+static int smoke_large_direct_release(Hz6Allocator* allocator,
+                                      size_t request_bytes,
+                                      int remote_free) {
+  void* object = hz6_malloc(allocator, request_bytes);
+  if (!expect(object != NULL, "largedirect malloc")) {
+    return 0;
+  }
+  Hz6RouteResult route = hz6_allocator_route_lookup(allocator, object);
+  if (!expect(route.kind == HZ6_ROUTE_VALID, "largedirect route valid") ||
+      !expect(route.front_id == HZ6_FRONT_LARGE, "largedirect route front") ||
+      !expect(route.class_id == HZ6_LARGE_DIRECT_CLASS_ID,
+              "largedirect route class")) {
+    return 0;
+  }
+  Hz6ObjectDescriptor* descriptor = (Hz6ObjectDescriptor*)route.descriptor;
+  if (!expect(descriptor != NULL, "largedirect descriptor") ||
+      !expect(descriptor->source_kind == HZ6_SOURCE_OS_PAGED,
+              "largedirect os paged source kind") ||
+      !expect(descriptor->source_block == NULL, "largedirect no source block") ||
+      !expect(descriptor->source_ptr == object, "largedirect source pointer") ||
+      !expect(descriptor->source_bytes >= request_bytes,
+              "largedirect rounded source bytes")) {
+    return 0;
+  }
+  if (remote_free) {
+    if (!expect(hz6_free_remote(allocator, object),
+                "largedirect remote free")) {
+      return 0;
+    }
+  } else {
+    hz6_free(allocator, object);
+  }
+  route = hz6_allocator_route_lookup(allocator, object);
+  if (!expect(route.kind == HZ6_ROUTE_MISS, "largedirect route released")) {
+    return 0;
+  }
+  return 1;
+}
+
 int main(void) {
   int foreign = 0;
 
@@ -179,13 +218,28 @@ int main(void) {
                                   HZ6_LARGE1M_BYTES)) {
     return 1;
   }
+  if (!smoke_large_direct_release(&large_allocator,
+                                  HZ6_LARGE1M_BYTES + 1, 0) ||
+      !smoke_large_direct_release(&large_allocator,
+                                  HZ6_LARGE1M_BYTES * 2, 1) ||
+      !smoke_large_direct_release(&large_allocator,
+                                  HZ6_LARGE1M_BYTES * 4, 0) ||
+      !smoke_large_direct_release(&large_allocator,
+                                  HZ6_LARGE1M_BYTES * 8, 1)) {
+    return 1;
+  }
   Hz6StatsSnapshot large_stats = hz6_stats_snapshot(&large_allocator);
   if (!expect(large_stats.transfer_push == 0, "largespan transfer push") ||
       !expect(large_stats.transfer_pop == 0, "largespan transfer pop") ||
-      !expect(large_stats.source_alloc == 4, "largespan source alloc")) {
+      !expect(large_stats.large_span_central_push == 4,
+              "largespan central push count") ||
+      !expect(large_stats.large_span_central_pop == 4,
+              "largespan central pop count") ||
+      !expect(large_stats.source_alloc == 8, "large source alloc")) {
     return 1;
   }
-  if (!expect(hz6_malloc(&large_allocator, HZ6_LARGE1M_BYTES + 1) == NULL,
+  if (!expect(hz6_malloc(&large_allocator,
+                         HZ6_LARGE_DIRECT_MAX_BYTES + 1) == NULL,
               "unsupported over-large allocation")) {
     return 1;
   }

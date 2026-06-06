@@ -24,6 +24,7 @@ these rows answer which lanes should be used, watched, or avoided.
 | Selected profile lane | `sameownerfast-descavail-noboost-route4k` | random_mixed same-owner speed row. |
 | Selected profile lane | `largerlowrss-front8k-sourcerun-desc8k-route8k` | larger_sizes RSS/speed row. |
 | LargeSpan family seed | `mixed_ws large_slice_128k,large_slice_256k,large_slice_512k,large_slice_1m + speed-route4k` | Narrow 128K..1M LargeSpan class verification. Use for LargeSpan backend safety/coverage, not broad speed ranking. |
+| LargeDirect coverage seed | `mixed_ws large_direct_slice_2m,large_direct_slice_4m,large_direct_slice_8m + speed-route4k` | Narrow >1M..8M direct-release verification. Use for coverage/low-RSS safety evidence, not throughput ranking. |
 | Selected Larson low-RSS sibling | `...frontcachepacked-sourceblockpacked-source10k-route192k-run512` | Current Larson minimum-RSS sibling. Use for current HZ6 Larson low-RSS comparisons. |
 | ElasticCapacity candidate-watch | `...elasticdescroute-desc16k-...source10k-route16k-run512` | Best ElasticCapacity RSS/throughput shape so far. Watch, but do not broad-promote. |
 | ElasticCapacity component/control | `...elasticdescsource-route-desc16k-...source64-route16k-run512` | Lower RSS source-block depot evidence; speed is lower than ElasticDescriptorRouteOverflow. |
@@ -35,20 +36,24 @@ these rows answer which lanes should be used, watched, or avoided.
 ## Active Next Read
 
 ```text
-HZ6 LargeSpan:
+HZ6 LargeSpan / LargeDirect:
   KEEP:
     LargeSpan class table with 128K, 256K, 512K, and 1M classes
     bytes-aware CentralSpanPool budget
+    LargeDirect direct-release coverage for >1M..8M
 
   CURRENT READ:
     large_slice_128k, large_slice_256k, large_slice_512k, and large_slice_1m
     are clean under speed-route4k after ForceBuild. Treat this as backend
     coverage/safety evidence, not a broad allocator ranking row.
+    large_direct_slice_2m, large_direct_slice_4m, and large_direct_slice_8m
+    are also clean, but intentionally slow because they do OS direct
+    alloc/release instead of retained reuse.
 
   NEXT:
-    stop LargeSpan class expansion here unless >1M is the immediate target.
-    Return to selected-family optimization for the next HZ6 throughput/RSS
-    improvement pass.
+    stop large coverage expansion here unless >8M is the immediate target.
+    Future work is released-route quarantine or a tiny direct-large recycle
+    lane, not broad LargeSpan pooling for >1M.
 
 HZ6 Larson / ElasticCapacity:
   KEEP:

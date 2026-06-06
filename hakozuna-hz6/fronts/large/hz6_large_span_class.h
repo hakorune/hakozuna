@@ -17,6 +17,9 @@ extern "C" {
 #define HZ6_LARGE512_BYTES ((size_t)524288)
 #define HZ6_LARGE1M_CLASS_ID ((uint16_t)11)
 #define HZ6_LARGE1M_BYTES ((size_t)1048576)
+#define HZ6_LARGE_DIRECT_CLASS_ID ((uint16_t)12)
+#define HZ6_LARGE_DIRECT_MIN_BYTES HZ6_LARGE1M_BYTES
+#define HZ6_LARGE_DIRECT_MAX_BYTES ((size_t)8388608)
 
 typedef struct Hz6LargeSpanClass {
   uint16_t class_id;
@@ -32,6 +35,10 @@ const Hz6LargeSpanClass* hz6_large_span_class_for_class_id(
     uint16_t class_id);
 
 size_t hz6_large_span_class_count(void);
+
+int hz6_large_direct_can_allocate(size_t size, size_t align);
+
+int hz6_large_direct_class_id(uint16_t class_id);
 
 #ifdef __cplusplus
 }

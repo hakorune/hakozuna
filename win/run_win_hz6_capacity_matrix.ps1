@@ -253,7 +253,7 @@ function Expand-ProfileSelection {
     $selected = @()
     foreach ($name in $names) {
         if ($name -eq "large_slices") {
-            foreach ($slice in @("large_slice_256", "large_slice_512", "large_slice_1k", "large_slice_2k", "large_slice_4k", "large_slice_8k", "large_slice_16k", "large_slice_32k", "large_slice_64k", "large_slice_128k", "large_slice_256k", "large_slice_512k", "large_slice_1m")) {
+            foreach ($slice in @("large_slice_256", "large_slice_512", "large_slice_1k", "large_slice_2k", "large_slice_4k", "large_slice_8k", "large_slice_16k", "large_slice_32k", "large_slice_64k", "large_slice_128k", "large_slice_256k", "large_slice_512k", "large_slice_1m", "large_direct_slice_2m", "large_direct_slice_4m", "large_direct_slice_8m")) {
                 $selected += ($AllProfiles | Where-Object { $_.Name -eq $slice })
             }
             continue
@@ -537,6 +537,9 @@ $mixedProfiles = @(
     @{ Name = "large_slice_256k"; Args = @("4", "30000", "32", "262144", "262144"); Note = "fixed-size large slice: 256 KiB" },
     @{ Name = "large_slice_512k"; Args = @("4", "20000", "16", "524288", "524288"); Note = "fixed-size large slice: 512 KiB" },
     @{ Name = "large_slice_1m"; Args = @("4", "12000", "8", "1048576", "1048576"); Note = "fixed-size large slice: 1 MiB" },
+    @{ Name = "large_direct_slice_2m"; Args = @("4", "8000", "4", "2097152", "2097152"); Note = "fixed-size direct large slice: 2 MiB" },
+    @{ Name = "large_direct_slice_4m"; Args = @("4", "5000", "3", "4194304", "4194304"); Note = "fixed-size direct large slice: 4 MiB" },
+    @{ Name = "large_direct_slice_8m"; Args = @("4", "3000", "2", "8388608", "8388608"); Note = "fixed-size direct large slice: 8 MiB" },
     @{ Name = "heavy_mixed"; Args = @("8", "5000000", "16384", "16", "4096"); Note = "heavier mixed run with longer timings" }
 )
 $randomProfiles = @(

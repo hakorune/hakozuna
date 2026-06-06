@@ -37,3 +37,12 @@ const Hz6LargeSpanClass* hz6_large_span_class_for_request(size_t size,
   }
   return NULL;
 }
+
+int hz6_large_direct_can_allocate(size_t size, size_t align) {
+  return align <= 16 && size > HZ6_LARGE_DIRECT_MIN_BYTES &&
+         size <= HZ6_LARGE_DIRECT_MAX_BYTES;
+}
+
+int hz6_large_direct_class_id(uint16_t class_id) {
+  return class_id == HZ6_LARGE_DIRECT_CLASS_ID;
+}

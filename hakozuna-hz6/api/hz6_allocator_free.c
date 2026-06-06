@@ -176,7 +176,9 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
                           hz6_allocator_descriptor_owner_equal_at(
                               allocator, descriptor, allocator->owner.token,
                               HZ6_OWNER_EQUAL_SITE_FREE);
-        int needs_rehome = visible_hit && !local_owner;
+        int needs_rehome = visible_hit && !local_owner &&
+                            hz6_front_remote_rehome_allowed(route.front_id,
+                                                            route.class_id);
         int ok = 0;
 #if HZ6_DIAGNOSTIC_PROBES
         if (!local_owner) {

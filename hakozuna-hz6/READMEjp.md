@@ -129,30 +129,36 @@ midpage:
 local2p:
   exact 64KiB seed front
 
-large128:
-  >32KiB..128KiB except exact 64KiB seed front
+largespan:
+  >32KiB..1MiB except exact 64KiB LargeSpan seed front
 
->128KiB:
+largedirect:
+  >1MiB..8MiB direct-release coverage seed
+
+>8MiB:
   R1 では未対応
 ```
 
-そのため次の HZ6 設計は、「すべての large size を数値調整する」ではなく、
-Large128 seed を LargeSpan family に育てるのが筋です。
+HZ6 の large path は retained reuse と direct-release coverage に分けます。
 
 ```text
-L1:
-  128K ownerless CentralSpanPool を proof target として固める
+LargeSpan:
+  128K / 256K / 512K / 1M classes
+  bytes-aware CentralSpanPool retained reuse
 
-L2:
-  256K / 512K / 1M span class を同じ RouteLayer,
-  TransferLayer, SourceLayer, ScavengeLayer contract の上に追加する
+LargeDirect:
+  >1M..8M
+  descriptor-owned exact route
+  OS_PAGED allocation and payload release on free
+  no central retain and no transfer cache
 
-L3:
+Future:
   ordinary malloc preload coverage を作り、HZ3/HZ4/HZ5 と横並びで測る
 ```
 
-L2 までは、HZ6 の大きなサイズの結果は `Large128 seed` として扱い、
-広い large-object allocator の主張にはしない方針です。
+HZ6 の large-size 結果は `LargeSpan 128K..1M seed` と
+`LargeDirect >1M..8M coverage seed` として扱い、広い large-object
+allocator の主張にはしない方針です。
 
 ## 非目標
 

@@ -2,6 +2,33 @@
 
 #include "../hz6_front_util.h"
 
+static int hz6_large_direct_release(Hz6Allocator* allocator,
+                                    void* ptr,
+                                    Hz6RouteResult route) {
+  if (!allocator || !ptr || route.kind != HZ6_ROUTE_VALID ||
+      !route.descriptor || !hz6_large_direct_class_id(route.class_id)) {
+    return 0;
+  }
+  Hz6Allocator* route_allocator =
+      route.route_allocator ? route.route_allocator : allocator;
+  Hz6ObjectDescriptor* descriptor = (Hz6ObjectDescriptor*)route.descriptor;
+  if (descriptor->state != HZ6_STATE_ACTIVE || descriptor->ptr != ptr ||
+      descriptor->source_block != NULL ||
+      !hz6_large_direct_class_id(descriptor->class_id)) {
+    return 0;
+  }
+
+  hz6_allocator_route_unregister_exact_reason(
+      route_allocator, ptr, HZ6_ROUTE_UNREGISTER_REASON_UNKNOWN);
+#if HZ6_DIAGNOSTIC_PROBES
+  if (hz6_allocator_descriptor_has_source_release(route_allocator,
+                                                  descriptor)) {
+    ++route_allocator->stats.source_owned_release;
+  }
+#endif
+  return hz6_allocator_release_descriptor_source(route_allocator, descriptor);
+}
+
 void* hz6_large128_reuse_cached_or_central(Hz6Allocator* allocator,
                                            uint16_t class_id) {
   if (!allocator || !hz6_large_span_class_for_class_id(class_id)) {
@@ -35,6 +62,9 @@ void* hz6_large128_reuse_cached_or_central(Hz6Allocator* allocator,
 int hz6_large128_free_local_or_central(Hz6Allocator* allocator,
                                        void* ptr,
                                        Hz6RouteResult route) {
+  if (hz6_large_direct_class_id(route.class_id)) {
+    return hz6_large_direct_release(allocator, ptr, route);
+  }
   if (!allocator || !ptr || route.kind != HZ6_ROUTE_VALID ||
       !route.descriptor ||
       !hz6_large_span_class_for_class_id(route.class_id)) {
@@ -81,6 +111,9 @@ int hz6_large128_free_local_or_central(Hz6Allocator* allocator,
 int hz6_large128_free_remote_or_central(Hz6Allocator* allocator,
                                         void* ptr,
                                         Hz6RouteResult route) {
+  if (hz6_large_direct_class_id(route.class_id)) {
+    return hz6_large_direct_release(allocator, ptr, route);
+  }
   if (!allocator || !ptr || route.kind != HZ6_ROUTE_VALID ||
       !route.descriptor ||
       !hz6_large_span_class_for_class_id(route.class_id)) {
@@ -109,4 +142,8 @@ int hz6_large128_free_remote_or_central(Hz6Allocator* allocator,
                                      allocator->owner.token);
   return hz6_allocator_remote_free_active_descriptor(allocator, descriptor,
                                                      ptr);
+}
+
+int hz6_large128_remote_rehome_allowed(uint16_t class_id) {
+  return !hz6_large_direct_class_id(class_id);
 }

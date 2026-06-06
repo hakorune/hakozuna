@@ -166,30 +166,36 @@ midpage:
 local2p:
   exact 64KiB seed front
 
-large128:
-  >32KiB..128KiB except exact 64KiB seed front
+largespan:
+  >32KiB..1MiB except exact 64KiB LargeSpan seed front
 
->128KiB:
+largedirect:
+  >1MiB..8MiB direct-release coverage seed
+
+>8MiB:
   unsupported in R1
 ```
 
-So the next HZ6 design step is not "tune every large size." It is to promote
-the Large128 seed into a real LargeSpan family:
+The HZ6 large path is split into retained reuse and direct-release coverage:
 
 ```text
-L1:
-  stabilize the 128K ownerless CentralSpanPool as the proof target
+LargeSpan:
+  128K / 256K / 512K / 1M classes
+  bytes-aware CentralSpanPool retained reuse
 
-L2:
-  add 256K / 512K / 1M span classes behind the same RouteLayer,
-  TransferLayer, SourceLayer, and ScavengeLayer contracts
+LargeDirect:
+  >1M..8M
+  descriptor-owned exact route
+  OS_PAGED allocation and payload release on free
+  no central retain and no transfer cache
 
-L3:
+Future:
   add full ordinary-malloc preload coverage and compare against HZ3/HZ4/HZ5
 ```
 
-Until L2 exists, HZ6 large-size results should be reported as `Large128 seed`
-results, not as a broad large-object allocator claim.
+HZ6 large-size results should be reported as `LargeSpan 128K..1M seed` plus
+`LargeDirect >1M..8M coverage seed`, not as a broad large-object allocator
+claim.
 
 ## Non-Goals
 

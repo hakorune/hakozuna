@@ -288,7 +288,8 @@ remote free:
   midpage handles >4KiB..32KiB
   local2p handles exact 64KiB
   largespan handles >32KiB..1MiB except exact 64KiB
-  >1MiB is unsupported in R1 and returns NULL
+  >1MiB..8MiB is LargeDirect direct-release coverage
+  >8MiB is unsupported in R1 and returns NULL
   front source slot creation is split into kind/ops helpers so source-kind
   lookup stays separate from direct source-backed slot creation
   FrontOps carries an optional class-aware prefill hook for front-specific
@@ -364,14 +365,17 @@ policy:
 
 ## Large-Size Boundary
 
-HZ6-R1 has a 128K/256K/512K/1M LargeSpan seed, not a complete large-object family.
+HZ6-R1 has a 128K/256K/512K/1M LargeSpan seed plus a >1M..8M
+LargeDirect coverage seed, not a complete large-object family.
 
 ```text
 implemented:
   >32KiB..1MiB except exact 64KiB
+  >1MiB..8MiB as LargeDirect direct OS_PAGED alloc/release
 
 not implemented yet:
-  >1MiB broad large-object classes
+  >8MiB broad large-object coverage
+  released-route quarantine for stale LargeDirect frees
   ordinary-malloc preload coverage for all large sizes
   HZ3/HZ4/HZ5/tcmalloc cross-family large-size comparison
 ```
@@ -387,11 +391,12 @@ L1:
   by span count and retained bytes, budget-full uses the existing fallback path,
   and no decommit/release is mixed into the hot path.
   LargeSpan256/512/1M-L1 extends the same class table/backend through the
-  >512K..1M class and keeps >1M fail-closed.
+  >512K..1M class.
 
 L2:
-  add larger-than-1M LargeSpan classes using the same route, transfer, source,
-  and scavenge contracts instead of adding a separate large allocator.
+  LargeDirect-L1 covers >1M..8M with direct OS_PAGED allocation, exact route,
+  descriptor-owned source metadata, payload release on free, no central retain,
+  no transfer cache, and no generic route rehome after remote free.
 
 L3:
   run a full same-machine comparison against HZ3/HZ4/HZ5/tcmalloc after broad
@@ -401,8 +406,9 @@ L3:
 Reporting rule:
 
 ```text
-Until L2 lands, describe HZ6 large results as 128K..1M LargeSpan seed
-results. Do not claim broad large-object allocator coverage from R1.
+Describe HZ6 large results as 128K..1M LargeSpan retained-reuse seed plus
+>1M..8M LargeDirect coverage seed. Do not claim a broad large-object allocator
+or a >1M throughput winner from R1.
 ```
 
 ## Verification Command

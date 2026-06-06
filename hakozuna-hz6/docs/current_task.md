@@ -96,7 +96,8 @@ Why bytes budget first:
     >128K..256K is the 256K LargeSpan class
     >256K..512K is the 512K LargeSpan class
     >512K..1M is the 1M LargeSpan class
-    >1M remains fail-closed in R1
+    >1M..8M is the LargeDirect class
+    >8M remains fail-closed in R1
     256..8192 larger_sizes is mid/source-block pressure, not the LargeSpan front
 
 CentralSpanPoolBudget-L1 implementation:
@@ -161,6 +162,79 @@ LargeSpan256/512/1M-L1 implementation:
     capacity runner only rebuilds missing artifacts unless `-ForceBuild` is
     supplied. LargeSpan closeouts should use ForceBuild when class-table code
     changes.
+
+LargeDirect-L1 implementation:
+  DONE.
+  Pro consult agrees that `>1M` should not be folded into the retained
+  LargeSpan class pool. HZ6 should keep two large families:
+
+    <=1M:
+      LargeSpan class table
+      bytes-aware CentralSpanPool
+      retained reuse / performance family
+
+    >1M:
+      LargeDirect
+      direct OS_PAGED source allocation
+      descriptor-owned exact route
+      payload release on free
+      no central retain
+      no transfer cache
+      no generic route rehome after remote free
+
+  Initial boundary:
+    1M exact remains LargeSpan class 11
+    >1M..8M routes to HZ6_FRONT_LARGE LargeDirect class
+    >8M remains fail-closed NULL for L1
+
+  Safety contract:
+    LargeDirect descriptors use source_block=NULL and source_release from the
+    OS_PAGED source backend.
+    local free unregisters the exact route and releases the payload.
+    remote free also releases the payload, but must not run generic
+    route_rehome afterward.
+    LargeDirect never enters CentralSpanPool, frontcache, or transfer cache.
+
+  Implementation:
+    added HZ6_LARGE_DIRECT_CLASS_ID for `>1M..8M`
+    added front_remote_rehome_allowed(front, class) and blocks rehome for
+    LargeDirect only
+    LargeDirect allocation stores user bytes as descriptor bytes and rounded
+    source bytes for OS release
+    LargeDirect free uses the route allocator to unregister/release the
+    descriptor-owned source, so visible foreign frees do not mutate the wrong
+    descriptor owner
+
+  Verification:
+    Windows HZ6 R1 smokes all pass
+    allocator smoke covers:
+      1M exact -> LargeSpan class 11
+      1M+1 / 2M / 4M / 8M -> LargeDirect class
+      8M+1 -> fail-closed NULL
+      transfer_push=0 transfer_pop=0 for the large-only smoke
+    mixed_ws large_slice_1m repeat-3 after LargeDirect ForceBuild:
+      median 40.211M ops/s / 5,632 KB
+      route_invalid=0 route_miss=0 alloc_fail=0
+      source_alloc=32
+    mixed_ws large_direct_slice_2m repeat-3 after ForceBuild:
+      median 0.340M ops/s / 5,540 KB
+      route_invalid=0 route_miss=0 alloc_fail=0
+      transfer_push=0 transfer_pop=0
+      source_alloc=16000
+    mixed_ws large_direct_slice_4m repeat-3 after ForceBuild:
+      median 0.330M ops/s / 5,540 KB
+      route_invalid=0 route_miss=0 alloc_fail=0
+      transfer_push=0 transfer_pop=0
+      source_alloc=10004
+    mixed_ws large_direct_slice_8m repeat-3 after ForceBuild:
+      median 0.323M ops/s / 5,520 KB
+      route_invalid=0 route_miss=0 alloc_fail=0
+      transfer_push=0 transfer_pop=0
+      source_alloc=6000
+
+  Follow-up:
+    stale/double-free quarantine is a future safety-strengthening lane. L1
+    prioritizes coverage plus low-RSS direct release without retaining payload.
 ```
 
 Non-goals for this step:
