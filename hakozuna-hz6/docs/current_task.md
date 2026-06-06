@@ -40,6 +40,9 @@ selected-small fixed 256B..16K:
   route probe pressure, but the source-block route arithmetic is not a clean
   small-object speed replacement.  The notoy/late-register follow-up is
   safety-clean but remains control evidence, not promotion.
+  Close the SourceBlockRoute / active-map / notoy small-knob track.  If 256B..2K
+  is attacked again, do it as a separate SmallRunFront / TinyRunRoute design,
+  not as another Toy or SourceBlockRoute toggle.
 
 Larson / Elastic:
   current strongest RSS direction remains the selected Larson/Elastic low-RSS
@@ -50,6 +53,78 @@ Immediate engineering posture:
   2. do not reopen direct-large tuning.
   3. if optimizing next, pick a fresh weak row from selected-family/cross-allocator
      tables rather than extending an already-closed knob family.
+  4. keep ToyFront as the route-safe reference front; use a new SmallRunFront
+     if the tiny-object speed gap becomes the active target.
+```
+
+### 2026-06-07: Small-object track design decision
+
+External design review agreed with the local read:
+
+```text
+SourceBlockRoute / active-map / notoy:
+  close the small-knob track for now
+
+ToyFront:
+  keep as HZ6's correctness/reference front
+
+If 256B..2K is attacked again:
+  create a separate SmallRunFront-L1 / TinyRunRoute-L1 design
+  do not keep extending ToyFastPath or SourceBlockRoute variants
+```
+
+Why:
+
+```text
+The latest Toy-small diagnostics show that reuse is already present:
+  malloc_fast_hit ~= all allocations after warmup
+  free_fast_hit ~= all frees
+  source allocation / descriptor exhaustion / route safety counters are clean
+
+The remaining gap versus HZ3/HZ4/mimalloc is therefore not:
+  missing reuse
+  source pressure
+  descriptor starvation
+
+It is:
+  route/descriptor contract cost on very small same-owner objects.
+```
+
+SmallRunFront/TinyRunRoute sketch:
+
+```text
+SmallRunRouteDryRun-L1 first:
+  run range -> slot index -> descriptor
+  verify active slot
+  verify descriptor pointer/class/generation/owner
+  would return VALID only on positive proof
+
+Counters:
+  smallrun_route_attempt
+  smallrun_range_hit
+  smallrun_active_slot_hit
+  smallrun_descriptor_match
+  smallrun_generation_match
+  smallrun_would_valid
+  smallrun_would_invalid
+  smallrun_exact_fallback_needed
+  smallrun_false_positive
+
+Safety:
+  exact route fallback remains in L1
+  owned-looking invalid must not become MISS
+  stale slot must not become reusable
+  remote owner mismatch still goes through remote handoff
+  diagnostic counters stay out of production speed lanes
+```
+
+Decision:
+
+```text
+Do not implement SmallRunFront immediately unless small-object speed becomes the
+explicit active target.  For the current HZ6 paper/selected-family direction,
+lean into route-safe low-RSS remote/large/Larson strengths and keep selected-small
+as candidate-watch evidence rather than a universal tiny-object speed claim.
 ```
 
 ### 2026-06-07: ToySmall hot-path diag and SourceBlockRoute notoy control

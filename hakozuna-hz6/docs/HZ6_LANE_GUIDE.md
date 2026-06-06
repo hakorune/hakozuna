@@ -79,6 +79,17 @@ remaining small fixed-size gap. So far they do not cleanly replace
 DirectLocalFreeReuse, and they should stay in the capacity matrix rather than
 paper-facing cross-allocator rows.
 
+Small-object design note:
+
+```text
+The SourceBlockRoute / active-map / notoy small-knob track is closed for now.
+ToyFront remains the route-safe reference front.  If 256B..2K speed becomes the
+active target again, start a separate SmallRunFront-L1 / TinyRunRoute-L1 design
+with dry-run attribution first; do not promote another SourceBlockRoute or
+Toy-active-map toggle into selected-small without a fresh design review and
+repeat matrix.
+```
+
 MidPage/Toy source placement note:
 
 ```text

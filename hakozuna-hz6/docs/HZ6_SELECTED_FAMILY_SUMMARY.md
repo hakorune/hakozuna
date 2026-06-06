@@ -44,6 +44,10 @@ speed lane by itself. `directlocaltrusted-*`, `directlocalpacked-*`,
 `directlocalexact-*`, and the former DirectLocalFreeReuse selected-small lane are
 HZ6-only research/control rows. They remain useful for attribution, but are not
 selected-family rows unless a later repeat re-promotes them.
+The 2026-06-07 Toy-small / SourceBlockRoute closeout keeps selected-small as
+candidate-watch rather than a universal tiny-object claim.  If HZ6 later targets
+256B..2K speed directly, it should use a separate SmallRunFront/TinyRunRoute
+design while keeping ToyFront as the route-safe reference implementation.
 
 LargeDirect note:
 `largedirectretain16m-largerlowrss-front8k-sourcerun-desc8k-route8k` is the
