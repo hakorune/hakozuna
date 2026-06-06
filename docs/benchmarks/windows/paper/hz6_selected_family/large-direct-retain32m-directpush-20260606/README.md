@@ -7,6 +7,13 @@ results/hz6-large-direct-retain32m-directpush-speedrss-repeat3/
   20260606_232222_hz6_capacity_matrix_windows.md
 ```
 
+Legacy runner connection check:
+
+```text
+results/hz6-legacy-large-direct-retain-connect/
+  20260606_232854_allocator_matrix.md
+```
+
 Scope:
 
 ```text
@@ -71,4 +78,18 @@ converts direct OS source churn into exact-size retained reuse without changing
 LargeSpan source allocation counts for the 512K/1M guard rows.  Keep it out of
 broad selected defaults until a cross-allocator large_slices refresh confirms
 the guard rows remain stable.
+```
+
+Legacy connection read:
+
+```text
+The legacy allocator matrix now has hz6-*-largedirectretain32m-largerlowrss
+rows.  The connection run compares only HZ6 base largerlowrss vs retain32m on
+2M/4M/8M direct slices and reproduces the HZ6-only signal:
+
+  2M: 0.332M -> 20.533M
+  4M: 0.297M -> 19.117M
+  8M: 0.307M -> 10.069M
+
+Safety counters remain zero.
 ```

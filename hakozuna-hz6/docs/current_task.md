@@ -124,6 +124,37 @@ If more large-path work continues:
   3. do not add another generic LargeSpan knob unless <=1MiB rows regress
 ```
 
+Legacy runner connection:
+
+```text
+Added legacy suite allocator rows:
+  hz6-strict-largedirectretain32m-largerlowrss
+  hz6-speed-largedirectretain32m-largerlowrss
+  hz6-rss-largedirectretain32m-largerlowrss
+
+Connection check source:
+  docs/benchmarks/windows/paper/hz6_selected_family/
+    large-direct-retain32m-directpush-20260606/
+      20260606_232854_allocator_matrix.md
+```
+
+Legacy connection check, run1:
+
+```text
+profile                base largerlowrss   retain32m          source_alloc
+large_direct_slice_2m  0.332M / 8884 KB    20.533M / 9332 KB  16000 -> 16
+large_direct_slice_4m  0.297M / 8868 KB    19.117M / 8884 KB  10004 -> 12
+large_direct_slice_8m  0.307M / 8872 KB    10.069M / 8868 KB   6000 -> 8
+
+safety:
+  route_invalid = 0
+  route_miss = 0
+  route_register_fail = 0
+  alloc_fail = 0
+  descriptor_exhausted = 0
+  source_block_exhausted = 0
+```
+
 ### 2026-06-06: Next target - selected-small 8K guard
 
 Current next attack:

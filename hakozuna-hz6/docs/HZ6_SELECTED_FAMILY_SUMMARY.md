@@ -51,8 +51,11 @@ current >1MiB direct-large candidate/control, not a broad selected default.  It
 retains exact-size direct-large objects up to 32 MiB and keeps the generic
 LargeSpan <=1MiB central-pool path unchanged.  Repeat-3 converts 2M/4M/8M from
 direct OS churn to retained reuse (`source_alloc` `16000/10004/6000` -> `16/12/8`)
-with safety counters clean; use it for follow-up `large_slices` refreshes, not
-for paper-facing broad selected rows until 512K/1M guards are repeated.
+with safety counters clean.  Legacy rows
+`hz6-*-largedirectretain32m-largerlowrss` are also wired and reproduce the
+2M/4M/8M win in the allocator matrix.  Use them for follow-up `large_slices`
+refreshes, not for paper-facing broad selected rows until 512K/1M guards are
+repeated.
 
 ## Active ElasticCapacity Rows
 
