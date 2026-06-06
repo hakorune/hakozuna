@@ -49,6 +49,11 @@ HZ6 LargeSpan / LargeDirect:
     large_direct_slice_2m, large_direct_slice_4m, and large_direct_slice_8m
     are also clean, but intentionally slow because they do OS direct
     alloc/release instead of retained reuse.
+    `win/run_win_allocator_matrix.ps1 -Profiles large_slices` now includes
+    these 256K/512K/1M and direct 2M/4M/8M rows for cross-allocator comparison.
+    For a quick HZ6-only connection check, pass `-Allocators hz6-speed-route4k`
+    instead of running the full allocator set. Use `-BenchTimeoutSeconds` for
+    exploratory large rows so a stuck row cannot keep spawning children.
 
   NEXT:
     stop large coverage expansion here unless >8M is the immediate target.

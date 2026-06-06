@@ -1,6 +1,8 @@
 param(
     [string]$OutputDir,
     [string[]]$Profiles,
+    [string[]]$Allocators,
+    [int]$BenchTimeoutSeconds = 0,
     [switch]$ContinueOnFailure
 )
 
@@ -34,6 +36,24 @@ $Executables = @(
     @{ Name = "tcmalloc"; Path = (Join-Path $SuiteDir "bench_mixed_ws_tcmalloc.exe") }
 )
 
+if ($Allocators -and $Allocators.Count -gt 0) {
+    $AllocatorNames = @()
+    foreach ($name in $Allocators) {
+        foreach ($part in @($name -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne "" })) {
+            $AllocatorNames += $part
+        }
+    }
+    $SelectedExecutables = @()
+    foreach ($name in $AllocatorNames) {
+        $match = $Executables | Where-Object { $_.Name -eq $name }
+        if (-not $match) {
+            throw "Unknown allocator: $name"
+        }
+        $SelectedExecutables += $match
+    }
+    $Executables = $SelectedExecutables
+}
+
 if ($Executables | Where-Object { -not (Test-Path $_.Path) }) {
     & $BuildScript
     if ($LASTEXITCODE -ne 0) {
@@ -64,6 +84,12 @@ function Invoke-BenchProcess {
         [void]$proc.Start()
 
         $peakWorkingSetBytes = [Int64]0
+        $timedOut = $false
+        $deadline = if ($BenchTimeoutSeconds -gt 0) {
+            [DateTime]::UtcNow.AddSeconds($BenchTimeoutSeconds)
+        } else {
+            [DateTime]::MaxValue
+        }
         try {
             $proc.Refresh()
             if ($proc.WorkingSet64 -gt $peakWorkingSetBytes) {
@@ -86,9 +112,23 @@ function Invoke-BenchProcess {
                 }
             } catch {
             }
+            if ([DateTime]::UtcNow -ge $deadline) {
+                $timedOut = $true
+                try {
+                    $proc.Kill()
+                } catch {
+                }
+                break
+            }
             Start-Sleep -Milliseconds 1
         }
 
+        if ($timedOut) {
+            try {
+                $proc.WaitForExit(5000) | Out-Null
+            } catch {
+            }
+        }
         $stdout = $proc.StandardOutput.ReadToEnd()
         $stderr = $proc.StandardError.ReadToEnd()
         $proc.WaitForExit()
@@ -111,7 +151,10 @@ function Invoke-BenchProcess {
         if ($stderr) {
             $output += $stderr
         }
-        $rc = $proc.ExitCode
+        if ($timedOut) {
+            $output += "timeout_seconds=$BenchTimeoutSeconds"
+        }
+        $rc = if ($timedOut) { -999 } else { $proc.ExitCode }
         $peakKb = if ($peakWorkingSetBytes -gt 0) { [string][UInt64]([Math]::Ceiling($peakWorkingSetBytes / 1024.0)) } else { "NA" }
         if ($stdout -match 'peak_kb=([0-9]+)') {
             $peakKb = $Matches[1]
@@ -119,9 +162,10 @@ function Invoke-BenchProcess {
             $peakKb = $Matches[1]
         }
         return [pscustomobject]@{
-            Output    = $output
-            ExitCode  = $rc
-            PeakKb    = $peakKb
+            Output   = $output
+            ExitCode = $rc
+            PeakKb   = $peakKb
+            TimedOut = $timedOut
         }
     } finally {
         $ErrorActionPreference = $prevEap
@@ -143,6 +187,12 @@ $AllProfiles = @(
     @{ Name = "large_slice_32k"; Threads = 4; ItersPerThread = 60000; WorkingSet = 256; MinSize = 32768; MaxSize = 32768; Note = "fixed-size large slice: 32 KiB" },
     @{ Name = "large_slice_64k"; Threads = 4; ItersPerThread = 50000; WorkingSet = 128; MinSize = 65536; MaxSize = 65536; Note = "fixed-size large slice: 64 KiB" },
     @{ Name = "large_slice_128k"; Threads = 4; ItersPerThread = 40000; WorkingSet = 64; MinSize = 131072; MaxSize = 131072; Note = "fixed-size large slice: 128 KiB" },
+    @{ Name = "large_slice_256k"; Threads = 4; ItersPerThread = 30000; WorkingSet = 32; MinSize = 262144; MaxSize = 262144; Note = "fixed-size large slice: 256 KiB" },
+    @{ Name = "large_slice_512k"; Threads = 4; ItersPerThread = 20000; WorkingSet = 16; MinSize = 524288; MaxSize = 524288; Note = "fixed-size large slice: 512 KiB" },
+    @{ Name = "large_slice_1m"; Threads = 4; ItersPerThread = 12000; WorkingSet = 8; MinSize = 1048576; MaxSize = 1048576; Note = "fixed-size large slice: 1 MiB" },
+    @{ Name = "large_direct_slice_2m"; Threads = 4; ItersPerThread = 8000; WorkingSet = 4; MinSize = 2097152; MaxSize = 2097152; Note = "fixed-size direct large slice: 2 MiB" },
+    @{ Name = "large_direct_slice_4m"; Threads = 4; ItersPerThread = 5000; WorkingSet = 3; MinSize = 4194304; MaxSize = 4194304; Note = "fixed-size direct large slice: 4 MiB" },
+    @{ Name = "large_direct_slice_8m"; Threads = 4; ItersPerThread = 3000; WorkingSet = 2; MinSize = 8388608; MaxSize = 8388608; Note = "fixed-size direct large slice: 8 MiB" },
     @{ Name = "heavy_mixed"; Threads = 8; ItersPerThread = 5000000; WorkingSet = 16384; MinSize = 16; MaxSize = 4096; Note = "heavier mixed run with longer timings" }
 )
 
@@ -157,7 +207,13 @@ $ProfileAliases = @{
         "large_slice_16k",
         "large_slice_32k",
         "large_slice_64k",
-        "large_slice_128k"
+        "large_slice_128k",
+        "large_slice_256k",
+        "large_slice_512k",
+        "large_slice_1m",
+        "large_direct_slice_2m",
+        "large_direct_slice_4m",
+        "large_direct_slice_8m"
     )
 }
 
@@ -193,6 +249,7 @@ $Summary.Add("")
 $Summary.Add("Generated: " + (Get-Date -Format "yyyy-MM-dd HH:mm:ss zzz"))
 $Summary.Add("")
 $Summary.Add("Artifacts: [out_win_suite]($ArtifactsPath)")
+$Summary.Add("Allocators: " + (($Executables | ForEach-Object { $_.Name }) -join ", "))
 $Summary.Add("")
 $Summary.Add("Notes:")
 $Summary.Add("- `hz5-policy` uses the HZ5 Windows policy/API path in this mixed `malloc/free` runner. It is not the exact 64K/a8192 Local2P microbench lane; use the HZ5 synthetic/Local2P family for that profile.")

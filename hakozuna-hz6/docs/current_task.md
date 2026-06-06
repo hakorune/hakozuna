@@ -235,6 +235,30 @@ LargeDirect-L1 implementation:
   Follow-up:
     stale/double-free quarantine is a future safety-strengthening lane. L1
     prioritizes coverage plus low-RSS direct release without retaining payload.
+
+Legacy matrix connection:
+  DONE.
+  The cross-allocator Windows legacy matrix now includes the same large-family
+  continuation rows under the `large_slices` alias:
+
+    large_slice_256k
+    large_slice_512k
+    large_slice_1m
+    large_direct_slice_2m
+    large_direct_slice_4m
+    large_direct_slice_8m
+
+  This lets HZ6 LargeSpan/LargeDirect coverage be compared against CRT, HZ3,
+  HZ4, HZ5 policy, mimalloc, and tcmalloc using the same mixed_ws-style runner.
+  Treat these rows as cross-allocator large-family coverage and weakness
+  discovery. LargeDirect rows remain intentionally direct-release/low-retain
+  rows, not throughput-promotion rows.
+
+  The runner also accepts `-Allocators`, so quick connection checks can run
+  only the target HZ6 lane before spending time on the full external allocator
+  comparison. It also accepts `-BenchTimeoutSeconds` for exploratory large
+  rows; keep full paper-style runs timeout-free unless a row is already known
+  to hang.
 ```
 
 Non-goals for this step:
