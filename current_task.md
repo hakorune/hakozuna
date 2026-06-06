@@ -16,6 +16,50 @@ decisions should be mirrored into the HZ6 docs above.
 HZ6 is now in active Windows/Linux implementation and benchmarking. HZ5 Linux
 remains profile-stabilized; new HZ5 work should not blur the HZ6 contract.
 
+Latest HZ6 Windows large-slice lane wiring:
+
+```text
+2026-06-06:
+  The weak legacy large_slice_4k / 8k / 16k route4k rows now have enough
+  diagnostic evidence:
+    4K/8K route4k weakness is descriptor/source-block exhaustion.
+    16K route4k weakness is direct-source/source-block pressure.
+    No new hot-path counter is needed before the next step.
+
+  The existing selected lane:
+    largerlowrss-front8k-sourcerun-desc8k-route8k
+
+  was wired into:
+    win/build_win_allocator_suite.ps1
+    win/run_win_allocator_matrix.ps1
+
+  New legacy matrix allocator names:
+    hz6-strict-largerlowrss
+    hz6-speed-largerlowrss
+    hz6-rss-largerlowrss
+
+  Connectivity check:
+    large_slice_4k:
+      rss-largerlowrss 40.909M ops/s / 42,524 KB
+    large_slice_8k:
+      rss-largerlowrss 58.647M ops/s / 25,360 KB
+    large_slice_16k:
+      rss-largerlowrss 57.947M ops/s / 17,092 KB
+
+  Safety:
+    alloc_fail = 0
+    route_invalid = 0
+    route_miss = 0
+    descriptor_exhausted = 0
+    route_register_fail = 0
+    source_block_exhausted = 0
+
+  Read:
+    route4k remains a tiny-capacity low-RSS control.
+    largerlowrss is the selected HZ6 row for 4K..16K legacy large-slice checks.
+    This is a single-run connectivity check, not a paper median.
+```
+
 Latest HZ6 selected-family decision:
 
 ```text

@@ -33,6 +33,9 @@ $Executables = @(
     @{ Name = "hz6-strict-route4k"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_strict_route4k.exe") },
     @{ Name = "hz6-speed-route4k"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_speed_route4k.exe") },
     @{ Name = "hz6-rss-route4k"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_rss_route4k.exe") },
+    @{ Name = "hz6-strict-largerlowrss"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_strict_largerlowrss.exe") },
+    @{ Name = "hz6-speed-largerlowrss"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_speed_largerlowrss.exe") },
+    @{ Name = "hz6-rss-largerlowrss"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_rss_largerlowrss.exe") },
     @{ Name = "mimalloc"; Path = (Join-Path $SuiteDir "bench_mixed_ws_mimalloc.exe") },
     @{ Name = "tcmalloc"; Path = (Join-Path $SuiteDir "bench_mixed_ws_tcmalloc.exe") }
 )
@@ -258,6 +261,7 @@ $Summary.Add("Notes:")
 $Summary.Add("- `hz5-policy` uses the HZ5 Windows policy/API path in this mixed `malloc/free` runner. It is not the exact 64K/a8192 Local2P microbench lane; use the HZ5 synthetic/Local2P family for that profile.")
 $Summary.Add("- `hz6-*-broad` keeps the same HZ6 policy profile but raises descriptor/route/source/front-cache capacities for broad working-set matrix profiles.")
 $Summary.Add("- `hz6-*-route4k` keeps the non-route capacities at control values while widening only the route table to 4096.")
+$Summary.Add("- `hz6-*-largerlowrss` uses the selected 4K..16K/LargerSizes low-RSS lane: front8k + SourceRunReuse + desc8k + route8k.")
 $Summary.Add("- The unqualified `hz6-*` rows keep the small default R1 capacities as controls.")
 $Summary.Add("")
 

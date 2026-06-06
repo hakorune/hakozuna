@@ -59,6 +59,10 @@ HZ6 LargeSpan / LargeDirect:
     The 2026-06-06 selected cross-allocator `large_slices` run is archived under
     `docs/benchmarks/windows/paper/hz6_legacy_large_slices_selected_20260606/`
     and summarized in `HZ6_CROSS_ALLOCATOR_COMPARISON.md`.
+    `hz6-*-largerlowrss` is now wired into the legacy allocator matrix as the
+    selected 4K..16K/LargerSizes HZ6 row. Use it when checking whether the
+    4K/8K/16K fixed-size gap is a real algorithmic gap or just a route4k
+    low-capacity control artifact.
 
   NEXT:
     stop large coverage expansion here unless >8M is the immediate target.

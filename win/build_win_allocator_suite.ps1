@@ -15,6 +15,7 @@ $Hz4Script = Join-Path $RepoRoot "hakozuna-mt\\win\\build_win_bench_compare.ps1"
 $Hz5Root = Join-Path $RepoRoot "hakozuna-hz5"
 $Hz6Root = Join-Path $RepoRoot "hakozuna-hz6"
 $Hz6Common = Join-Path $Hz6Root "win\\hz6_win_build_common.ps1"
+$AppLikeBuildCommon = Join-Path $PSScriptRoot "bench_app_like_allocator_build_common.ps1"
 
 $Hz3Args = @()
 $Hz4Args = @()
@@ -98,6 +99,11 @@ if (Test-Path $Hz5Root) {
 
 if (Test-Path $Hz6Common) {
     . $Hz6Common
+    if (Test-Path $AppLikeBuildCommon) {
+        . $AppLikeBuildCommon
+    } else {
+        throw "HZ6 app-like build helper not found: $AppLikeBuildCommon"
+    }
     $Hz6IncludeFlags = Get-Hz6WinIncludeFlags -Hz6Root $Hz6Root -ExtraIncludeRoots @("win")
     $Hz6LibSources = Get-Hz6WinLibSources -Hz6Root $Hz6Root
     if ((Split-Path -Leaf $CompareSource) -eq "bench_allocator_compare.c") {
@@ -116,26 +122,16 @@ if (Test-Path $Hz6Common) {
         @{ Name = "speed"; Define = "HZ6_PROFILE_SPEED" },
         @{ Name = "rss"; Define = "HZ6_PROFILE_RSS" }
     )
-    $Hz6BroadCapacityFlags = @(
-        "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)4096)",
-        "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)4096)",
-        "/DHZ6_TRANSFER_CACHE_CAPACITY=((size_t)4096)",
-        "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)512)",
-        "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)1024)"
-    )
-    $Hz6Route4kCapacityFlags = @(
-        "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)512)",
-        "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)4096)",
-        "/DHZ6_TRANSFER_CACHE_CAPACITY=((size_t)512)",
-        "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)128)",
-        "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)256)"
-    )
+    $Hz6BroadCapacityFlags = Get-Hz6WinBroadCapacityFlags
+    $Hz6Route4kCapacityFlags = Get-Hz6WinRoute4kCapacityFlags
+    $Hz6LargerLowRssCapacityFlags = Get-Hz6WinLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
 
     foreach ($profile in $Hz6Profiles) {
         foreach ($variant in @(
             @{ Suffix = ""; ExtraFlags = @() },
             @{ Suffix = "_broad"; ExtraFlags = $Hz6BroadCapacityFlags },
-            @{ Suffix = "_route4k"; ExtraFlags = $Hz6Route4kCapacityFlags }
+            @{ Suffix = "_route4k"; ExtraFlags = $Hz6Route4kCapacityFlags },
+            @{ Suffix = "_largerlowrss"; ExtraFlags = $Hz6LargerLowRssCapacityFlags }
         )) {
             $output = Join-Path $OutDir ("bench_mixed_ws_hz6_{0}{1}.exe" -f $profile.Name, $variant.Suffix)
             $args = @()

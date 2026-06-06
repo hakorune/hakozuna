@@ -63,6 +63,7 @@ HZ4, HZ5 policy, HZ6 route4k lanes, mimalloc, and tcmalloc.
 
 Source:
 - [HZ6 Legacy Large Slices Selected Matrix](../../docs/benchmarks/windows/paper/hz6_legacy_large_slices_selected_20260606/20260606_125322_allocator_matrix.md)
+- [HZ6 LargerLowRSS Connectivity Check](../../docs/benchmarks/windows/paper/hz6_legacy_largerlowrss_connectivity_20260606/README.md)
 
 | profile | best allocator | HZ6 speed route4k | HZ6 rss route4k | HZ6 rss peak KB | Read |
 | --- | ---: | ---: | ---: | ---: | --- |
@@ -88,7 +89,13 @@ Notes:
 ```text
 HZ6 LargeSpan is strong in the 128K..1M retained-reuse range.
 HZ6 LargeDirect is a coverage/RSS lane for >1M..8M, not a throughput ranking lane.
-HZ6 small/mid fixed-size rows below 32K remain weak versus mimalloc/HZ3/HZ4.
+HZ6 route4k small/mid fixed-size rows below 32K remain weak versus mimalloc/HZ3/HZ4.
+For 4K..16K, the selected `largerlowrss-front8k-sourcerun-desc8k-route8k`
+lane is now connected to the legacy matrix as `hz6-*-largerlowrss`:
+  4K: 40.91M ops/s / 42,524 KB on `hz6-rss-largerlowrss`
+  8K: 58.65M ops/s / 25,360 KB on `hz6-rss-largerlowrss`
+  16K: 57.95M ops/s / 17,092 KB on `hz6-rss-largerlowrss`
+These rows are single-run connectivity checks, not paper medians.
 HZ4 produced access-violation failures on 128K..4M rows in this runner; treat
 those cells as compatibility/safety warnings, not speed data.
 ```
