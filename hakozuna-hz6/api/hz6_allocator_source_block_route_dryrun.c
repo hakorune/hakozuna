@@ -77,6 +77,22 @@ void hz6_allocator_source_block_route_dryrun(Hz6Allocator* allocator,
 
     ++allocator->stats.source_block_route_slot_hit;
 
+#if HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_L1
+    {
+      Hz6ObjectDescriptor* descriptor =
+          hz6_allocator_source_run_descriptor_at(allocator, block, ptr);
+      if (descriptor) {
+        if (descriptor->class_id != block->run_class_id ||
+            descriptor->bytes != block->run_slot_bytes) {
+          ++allocator->stats.source_block_route_class_mismatch;
+          return;
+        }
+        ++allocator->stats.source_block_route_descriptor_hit;
+        return;
+      }
+    }
+#endif
+
     for (size_t d = 0; d < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++d) {
       const Hz6ObjectDescriptor* descriptor = &allocator->descriptors[d];
       if (!hz6_source_block_route_descriptor_matches(descriptor, block, ptr)) {

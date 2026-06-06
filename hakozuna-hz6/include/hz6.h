@@ -420,6 +420,11 @@ typedef struct Hz6StatsSnapshot {
   size_t source_block_route_class_mismatch;
   size_t source_block_route_probe_total;
   size_t source_block_route_probe_max;
+  size_t source_block_route_descriptor_map_hit;
+  size_t source_block_route_descriptor_map_miss;
+  size_t source_block_route_descriptor_map_stale;
+  size_t source_block_route_descriptor_map_set;
+  size_t source_block_route_descriptor_map_clear;
   size_t route_exact_lookup_probe_total;
   size_t route_exact_lookup_probe_max;
   size_t owner_locality_lookup;

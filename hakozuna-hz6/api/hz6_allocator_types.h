@@ -45,6 +45,9 @@ typedef struct Hz6SourceBlock {
   uint16_t run_used_count;
   uint16_t run_next_hint;
   uint64_t run_used_bits[HZ6_SOURCE_RUN_BITMAP_WORDS];
+#if HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_L1
+  uint32_t run_descriptor_indices[HZ6_SOURCE_RUN_MAX_SLOTS];
+#endif
 #if HZ6_OWNER_SOURCE_SIDE_META_L2
   struct Hz6Allocator* owner_source_storage_allocator;
 #endif

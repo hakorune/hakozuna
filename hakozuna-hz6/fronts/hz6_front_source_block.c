@@ -94,6 +94,8 @@ static void* hz6_front_source_block_reserved_slot(
     return NULL;
   }
 
+  hz6_allocator_source_run_set_descriptor(allocator, block, user_ptr,
+                                          descriptor);
   hz6_allocator_source_run_commit_slot(block, *slot_index);
   return user_ptr;
 }
@@ -232,6 +234,8 @@ void* hz6_front_source_block_slot(Hz6Allocator* allocator,
     return NULL;
   }
 
+  hz6_allocator_source_run_set_descriptor(allocator, source_block, user_ptr,
+                                          descriptor);
   hz6_allocator_elastic_depot_source_run_mark_slot(
       allocator, source_block, user_ptr, class_id, user_bytes);
   return user_ptr;

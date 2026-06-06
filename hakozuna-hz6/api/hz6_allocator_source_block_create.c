@@ -72,6 +72,11 @@ static void hz6_source_run_reset(Hz6SourceBlock* block) {
   for (size_t i = 0; i < HZ6_SOURCE_RUN_BITMAP_WORDS; ++i) {
     block->run_used_bits[i] = 0;
   }
+#if HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_L1
+  for (size_t i = 0; i < HZ6_SOURCE_RUN_MAX_SLOTS; ++i) {
+    block->run_descriptor_indices[i] = UINT32_MAX;
+  }
+#endif
 }
 
 static int hz6_source_run_bit_get(const Hz6SourceBlock* block,
@@ -310,6 +315,122 @@ int hz6_allocator_source_run_contains_slot(const Hz6SourceBlock* block,
     return 0;
   }
   return hz6_source_run_bit_get(block, slot_index);
+}
+
+#if HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_L1
+static int hz6_allocator_source_run_slot_index(const Hz6SourceBlock* block,
+                                               const void* ptr,
+                                               size_t* slot_index) {
+  if (!block || !ptr || !slot_index || !hz6_source_block_run_active(block) ||
+      !block->ptr || block->run_slot_bytes == 0) {
+    return 0;
+  }
+  const unsigned char* user = (const unsigned char*)ptr;
+  const unsigned char* base = (const unsigned char*)block->ptr;
+  if (user < base) {
+    return 0;
+  }
+  size_t offset = (size_t)(user - base);
+  if (offset >= block->bytes || (offset % block->run_slot_bytes) != 0) {
+    return 0;
+  }
+  size_t index = offset / block->run_slot_bytes;
+  if (index >= block->run_slot_count ||
+      index >= HZ6_SOURCE_RUN_MAX_SLOTS) {
+    return 0;
+  }
+  *slot_index = index;
+  return 1;
+}
+#endif
+
+void hz6_allocator_source_run_set_descriptor(
+    Hz6Allocator* allocator,
+    Hz6SourceBlock* block,
+    const void* ptr,
+    const Hz6ObjectDescriptor* descriptor) {
+#if HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_L1
+  size_t slot_index = 0;
+  size_t descriptor_index =
+      hz6_allocator_descriptor_index(allocator, descriptor);
+  if (!hz6_allocator_source_run_slot_index(block, ptr, &slot_index) ||
+      descriptor_index >= HZ6_OBJECT_DESCRIPTOR_CAPACITY ||
+      descriptor_index > UINT32_MAX) {
+    return;
+  }
+  block->run_descriptor_indices[slot_index] = (uint32_t)descriptor_index;
+#if HZ6_DIAGNOSTIC_PROBES
+  if (allocator) {
+    ++allocator->stats.source_block_route_descriptor_map_set;
+  }
+#endif
+#else
+  (void)allocator;
+  (void)block;
+  (void)ptr;
+  (void)descriptor;
+#endif
+}
+
+void hz6_allocator_source_run_clear_descriptor(Hz6Allocator* allocator,
+                                               Hz6SourceBlock* block,
+                                               const void* ptr) {
+#if HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_L1
+  size_t slot_index = 0;
+  if (!hz6_allocator_source_run_slot_index(block, ptr, &slot_index)) {
+    return;
+  }
+  block->run_descriptor_indices[slot_index] = UINT32_MAX;
+#if HZ6_DIAGNOSTIC_PROBES
+  if (allocator) {
+    ++allocator->stats.source_block_route_descriptor_map_clear;
+  }
+#endif
+#else
+  (void)allocator;
+  (void)block;
+  (void)ptr;
+#endif
+}
+
+Hz6ObjectDescriptor* hz6_allocator_source_run_descriptor_at(
+    Hz6Allocator* allocator,
+    const Hz6SourceBlock* block,
+    const void* ptr) {
+#if HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_L1
+  size_t slot_index = 0;
+  if (!allocator ||
+      !hz6_allocator_source_run_slot_index(block, ptr, &slot_index)) {
+    return NULL;
+  }
+  uint32_t descriptor_index = block->run_descriptor_indices[slot_index];
+  if (descriptor_index == UINT32_MAX ||
+      descriptor_index >= HZ6_OBJECT_DESCRIPTOR_CAPACITY) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.source_block_route_descriptor_map_miss;
+#endif
+    return NULL;
+  }
+  Hz6ObjectDescriptor* descriptor =
+      &allocator->descriptors[descriptor_index];
+  if (descriptor->ptr != ptr || descriptor->source_block != block ||
+      descriptor->state == HZ6_STATE_DEAD ||
+      descriptor->state == HZ6_STATE_DESCRIPTOR_RESERVED) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.source_block_route_descriptor_map_stale;
+#endif
+    return NULL;
+  }
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.source_block_route_descriptor_map_hit;
+#endif
+  return descriptor;
+#else
+  (void)allocator;
+  (void)block;
+  (void)ptr;
+  return NULL;
+#endif
 }
 
 int hz6_allocator_elastic_depot_source_run_mark_slot(

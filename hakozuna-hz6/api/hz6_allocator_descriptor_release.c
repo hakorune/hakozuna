@@ -177,6 +177,9 @@ int hz6_allocator_release_descriptor_source(
     hz6_allocator_elastic_depot_source_run_will_clear_slot(
         allocator, descriptor->source_block, descriptor->ptr,
         descriptor->class_id, descriptor->bytes);
+    hz6_allocator_source_run_clear_descriptor(allocator,
+                                              descriptor->source_block,
+                                              descriptor->ptr);
     hz6_allocator_source_run_release_slot(descriptor->source_block,
                                           descriptor->ptr);
     released =
@@ -208,6 +211,9 @@ int hz6_allocator_detach_descriptor_keep_source_slot(
     return 0;
   }
 
+  hz6_allocator_source_run_clear_descriptor(allocator,
+                                            descriptor->source_block,
+                                            descriptor->ptr);
   hz6_allocator_reset_descriptor_available(allocator, descriptor);
   return 1;
 }

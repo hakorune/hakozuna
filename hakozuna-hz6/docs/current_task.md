@@ -11603,3 +11603,119 @@ Next:
     slot -> descriptor
     exact route remains safety/control until L2 proves fail-closed behavior.
 ```
+
+## 2026-06-06: SourceBlockRoute slot-descriptor map dry-run
+
+Context:
+
+```text
+SourceBlockRoute-L1 proved that source-block run metadata can identify every
+8K large-slice free in the control profile, but the dry-run still scanned
+source blocks and then descriptors:
+
+  source_block_route_probe_max = 128
+
+That makes it evidence, not a hot-path replacement. The next smallest step is
+not behavior replacement. It is a slot->descriptor map so the dry-run can prove
+that descriptor scan can be removed safely.
+```
+
+Implementation:
+
+```text
+Added flag:
+  HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_L1=1
+
+When enabled:
+  Hz6SourceBlock keeps run_descriptor_indices[HZ6_SOURCE_RUN_MAX_SLOTS].
+  source-run slot creation records descriptor index after exact route register.
+  descriptor release / descriptor detach clears the slot descriptor index.
+  dry-run checks slot->descriptor map before falling back to descriptor scan.
+
+Still diagnostic/control:
+  free behavior is unchanged
+  exact route remains the real ownership route
+  map is compiled out when the flag is off
+```
+
+Lane:
+
+```text
+sourceblockroute-slotmap-dryrun-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+```
+
+Smoke:
+
+```text
+Command:
+  win/run_win_hz6_capacity_matrix.ps1
+    -Runs 1
+    -Families mixed_ws
+    -BenchmarkProfiles large_slice_8k
+    -Hz6Profiles speed
+    -CapacityLanes sourceblockroute-slotmap-dryrun-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+    -DiagnosticHz6Probes
+    -ForceBuild
+
+Result:
+  ops/s ~= 14.79M  (diagnostic overhead expected)
+  peak_kb = 39,704
+
+Safety:
+  alloc_fail = 0
+  route_invalid = 0
+  route_miss = 0
+  route_register_fail = 0
+  descriptor_exhausted = 0
+  source_block_exhausted = 0
+
+SourceBlockRoute:
+  attempt = 200704
+  block_hit = 200704
+  slot_hit = 200704
+  descriptor_hit = 200704
+  miss_no_block = 0
+  invalid_alignment = 0
+  invalid_unused = 0
+  descriptor_miss = 0
+  class_mismatch = 0
+
+SlotDescriptorMap:
+  descriptor_map_hit = 200704
+  descriptor_map_miss = 0
+  descriptor_map_stale = 0
+  descriptor_map_set = 4096
+  descriptor_map_clear = 0
+```
+
+Baseline build check:
+
+```text
+directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+  normal non-diagnostic build: OK
+
+This confirms the slotmap helper is not leaking unused-function or counter
+cost into the normal lane when the flag is off.
+```
+
+Decision:
+
+```text
+KEEP as L2-ready evidence.
+
+Finding:
+  slot->descriptor metadata is coherent in the 8K source-run control:
+  every dry-run free hits the map, no stale entries, no map misses.
+
+Not default:
+  The current dry-run still scans source blocks to find the block. This proves
+  descriptor-scan removal, not full route-table replacement.
+
+Next:
+  If continuing SourceBlockRoute, implement a block index/range witness first:
+    ptr -> source block / run slot without scanning all source blocks.
+
+  Only after both pieces are clean:
+    block index hit + slot descriptor map hit
+  should a behavior lane try source-block route before exact route.
+```

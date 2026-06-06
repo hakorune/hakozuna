@@ -203,6 +203,11 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 "source_block_route_class_mismatch=%zu "
                 "source_block_route_probe_total=%zu "
                 "source_block_route_probe_max=%zu "
+                "source_block_route_descriptor_map_hit=%zu "
+                "source_block_route_descriptor_map_miss=%zu "
+                "source_block_route_descriptor_map_stale=%zu "
+                "source_block_route_descriptor_map_set=%zu "
+                "source_block_route_descriptor_map_clear=%zu "
                 "toy_small_malloc_fast_attempt=%zu "
                 "toy_small_malloc_fast_hit=%zu "
                 "toy_small_malloc_front_dispatch=%zu "
@@ -347,6 +352,11 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 s.source_block_route_class_mismatch,
                 s.source_block_route_probe_total,
                 s.source_block_route_probe_max,
+                s.source_block_route_descriptor_map_hit,
+                s.source_block_route_descriptor_map_miss,
+                s.source_block_route_descriptor_map_stale,
+                s.source_block_route_descriptor_map_set,
+                s.source_block_route_descriptor_map_clear,
                 s.toy_small_malloc_fast_attempt,
                 s.toy_small_malloc_fast_hit,
                 s.toy_small_malloc_front_dispatch,

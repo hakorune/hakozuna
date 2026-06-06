@@ -896,6 +896,16 @@ int main(int argc, char** argv) {
         hz6_stats.source_block_route_probe_total +=
             args[i].hz6_stats_after.source_block_route_probe_total;
         HZ6_MAX_STAT(source_block_route_probe_max);
+        hz6_stats.source_block_route_descriptor_map_hit +=
+            args[i].hz6_stats_after.source_block_route_descriptor_map_hit;
+        hz6_stats.source_block_route_descriptor_map_miss +=
+            args[i].hz6_stats_after.source_block_route_descriptor_map_miss;
+        hz6_stats.source_block_route_descriptor_map_stale +=
+            args[i].hz6_stats_after.source_block_route_descriptor_map_stale;
+        hz6_stats.source_block_route_descriptor_map_set +=
+            args[i].hz6_stats_after.source_block_route_descriptor_map_set;
+        hz6_stats.source_block_route_descriptor_map_clear +=
+            args[i].hz6_stats_after.source_block_route_descriptor_map_clear;
         hz6_stats.toy_small_malloc_fast_attempt +=
             args[i].hz6_stats_after.toy_small_malloc_fast_attempt;
         hz6_stats.toy_small_malloc_fast_hit +=
