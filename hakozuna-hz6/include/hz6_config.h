@@ -25,6 +25,18 @@
   HZ6_LARGE_SPAN_CENTRAL_CLASS_BYTES_CAP
 #endif
 
+#ifndef HZ6_LARGE_DIRECT_RETAIN_L1
+/* Experimental >1MiB direct-large retention.  Default keeps the low-RSS
+ * direct-release contract; enabled lanes retain exact-size direct objects in
+ * the large central pool up to the existing byte caps. */
+#define HZ6_LARGE_DIRECT_RETAIN_L1 0
+#endif
+
+#ifndef HZ6_LARGE_DIRECT_RETAIN_BYTES_CAP
+#define HZ6_LARGE_DIRECT_RETAIN_BYTES_CAP \
+  HZ6_LARGE_SPAN_CENTRAL_CLASS_BYTES_CAP
+#endif
+
 #ifndef HZ6_TRANSFER_SHARD_COUNT
 #define HZ6_TRANSFER_SHARD_COUNT ((size_t)4)
 #endif

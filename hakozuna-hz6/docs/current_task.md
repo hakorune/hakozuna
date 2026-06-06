@@ -18,6 +18,112 @@ Use these orientation docs before reading this long ledger:
   HZ6_SOURCE_MODULARIZATION.md
 ```
 
+### 2026-06-06: LargeDirectRetain-L1 direct-large control
+
+Current decision:
+
+```text
+largedirectretain32m-largerlowrss-front8k-sourcerun-desc8k-route8k:
+  KEEP as a >1MiB direct-large candidate/control.
+  It is not a broad LargeSpan default and does not replace the selected
+  larger_sizes lane.
+
+largerlowrss-front8k-sourcerun-desc8k-route8k:
+  remains the selected larger_sizes RSS/speed row for mixed_ws 4K..1M style
+  coverage.
+```
+
+Reason:
+
+```text
+LargeSpan <= 1MiB is already strong through the retained central span path.
+The weak rows were >1MiB LargeDirect slices, which intentionally used direct
+OS reserve/release to preserve low RSS.  That makes coverage safe but slow:
+every alloc/free loop re-enters the OS path.
+
+LargeDirectRetain-L1 adds an exact-size retained pool only for the direct-large
+class.  It does not change the generic LargeSpan central-pool cap or the
+selected 512K/1M LargeSpan path.
+```
+
+Implementation:
+
+```text
+HZ6_LARGE_DIRECT_RETAIN_L1:
+  enables direct-large retention for >1MiB objects.
+
+HZ6_LARGE_DIRECT_RETAIN_BYTES_CAP:
+  defaults to the existing LargeSpan class byte cap and can be raised by an
+  experiment lane.  The current control uses 32 MiB.
+
+LargeDirect release:
+  ACTIVE -> CENTRAL_FREE(ownerless) -> direct-large pool push.
+  If push fails, fall back to exact-route unregister + source release.
+
+LargeDirect alloc:
+  exact-size retained descriptor pop first.
+  If activation fails, release that retained descriptor source and continue.
+  Otherwise fall back to the existing direct source allocation.
+```
+
+Repeat-3:
+
+```text
+Source:
+  docs/benchmarks/windows/paper/hz6_selected_family/
+    large-direct-retain32m-directpush-20260606/
+      20260606_232222_hz6_capacity_matrix_windows.md
+
+Command shape:
+  mixed_ws, speed/rss
+  large_direct_slice_2m, large_direct_slice_4m, large_direct_slice_8m
+  guard rows: large_slice_1m, large_slice_512k
+  lanes:
+    largerlowrss-front8k-sourcerun-desc8k-route8k
+    largedirectretain32m-largerlowrss-front8k-sourcerun-desc8k-route8k
+```
+
+Median results:
+
+```text
+profile                  base speed/rss      retain32m speed/rss    source_alloc
+large_direct_slice_2m    0.323M / 0.354M     20.779M / 24.934M      16000 -> 16
+large_direct_slice_4m    0.305M / 0.293M     15.680M / 17.701M      10004 -> 12
+large_direct_slice_8m    0.304M / 0.301M     11.480M /  9.993M       6000 -> 8
+large_slice_1m guard    36.647M / 32.352M   35.765M / 33.296M        32 -> 32
+large_slice_512k guard  48.379M / 48.588M   45.341M / 52.697M        64 -> 64
+```
+
+Safety:
+
+```text
+route_invalid = 0
+route_miss = 0
+route_register_fail = 0
+alloc_fail = 0
+descriptor_exhausted = 0
+source_block_exhausted = 0
+```
+
+Read:
+
+```text
+LargeDirectRetain-L1 fixes the direct-large source churn without touching the
+LargeSpan <=1MiB route.  The 2M/4M/8M rows move from coverage-only direct
+release to practical retained reuse.  Keep it as a direct-large control and
+avoid broad-defaulting until a cross-allocator large_slices refresh confirms
+that the 512K/1M guard rows stay stable.
+```
+
+Next:
+
+```text
+If more large-path work continues:
+  1. run a selected large_slices cross-allocator refresh with retain32m
+  2. consider a lower cap ladder only if RSS becomes a paper concern
+  3. do not add another generic LargeSpan knob unless <=1MiB rows regress
+```
+
 ### 2026-06-06: Next target - selected-small 8K guard
 
 Current next attack:

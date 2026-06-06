@@ -18,6 +18,18 @@ static int hz6_large_direct_release(Hz6Allocator* allocator,
     return 0;
   }
 
+#if HZ6_LARGE_DIRECT_RETAIN_L1
+  descriptor->state = HZ6_STATE_CENTRAL_FREE;
+  hz6_allocator_set_descriptor_owner(route_allocator, descriptor,
+                                     (Hz6OwnerToken){0});
+  if (hz6_allocator_large_direct_pool_push(route_allocator, descriptor)) {
+    return 1;
+  }
+  descriptor->state = HZ6_STATE_ACTIVE;
+  hz6_allocator_set_descriptor_owner(route_allocator, descriptor,
+                                     route_allocator->owner.token);
+#endif
+
   hz6_allocator_route_unregister_exact_reason(
       route_allocator, ptr, HZ6_ROUTE_UNREGISTER_REASON_UNKNOWN);
 #if HZ6_DIAGNOSTIC_PROBES

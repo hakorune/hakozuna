@@ -27,6 +27,27 @@ static void* hz6_large_direct_alloc(Hz6Allocator* allocator, size_t size) {
     return NULL;
   }
 
+#if HZ6_LARGE_DIRECT_RETAIN_L1
+  Hz6ObjectDescriptor* retained = NULL;
+  while (hz6_allocator_large_span_pool_pop_exact_bytes(
+      allocator, HZ6_LARGE_DIRECT_CLASS_ID, size, &retained)) {
+    if (retained &&
+        hz6_allocator_activate_descriptor(allocator, retained,
+                                          HZ6_STATE_CENTRAL_FREE,
+                                          retained->ptr,
+                                          retained->generation,
+                                          hz6_allocator_owner_token(
+                                              allocator))) {
+      hz6_allocator_note_front_alloc_path(allocator, HZ6_FRONT_LARGE,
+                                          HZ6_ALLOC_PATH_RELEASED_REUSE);
+      return retained->ptr;
+    }
+    if (retained) {
+      hz6_allocator_release_descriptor_source(allocator, retained);
+    }
+  }
+#endif
+
   Hz6ObjectDescriptor* descriptor =
       hz6_allocator_find_free_descriptor(allocator);
   if (!descriptor) {

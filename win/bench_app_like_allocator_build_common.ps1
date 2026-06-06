@@ -507,6 +507,20 @@ function Get-Hz6WinLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags {
     )
 }
 
+function Get-Hz6WinLargeDirectRetainLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
+    $flags += "/DHZ6_LARGE_DIRECT_RETAIN_L1=1"
+    $flags
+}
+
+function Get-Hz6WinLargeDirectRetain32mLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinLargeDirectRetainLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
+    $flags += "/DHZ6_LARGE_DIRECT_RETAIN_BYTES_CAP=((size_t)32u * 1024u * 1024u)"
+    $flags
+}
+
 function Get-Hz6WinLargerLowRssFront6kSourceRunDesc8kRoute8kCapacityFlags {
     @(
         "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)8192)",
@@ -1916,6 +1930,8 @@ function Invoke-AppLikeHz6BenchBuilds {
     $largerLowRssSourceRunDesc8kRoute64kFlags = Get-Hz6WinLargerLowRssSourceRunDesc8kRoute64kCapacityFlags
     $largerLowRssSourceRunDesc8kSource2kRoute64kFlags = Get-Hz6WinLargerLowRssSourceRunDesc8kSource2kRoute64kCapacityFlags
     $largerLowRssFront8kSourceRunDesc8kRoute8kFlags = Get-Hz6WinLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
+    $largeDirectRetainLargerLowRssFront8kSourceRunDesc8kRoute8kFlags = Get-Hz6WinLargeDirectRetainLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
+    $largeDirectRetain32mLargerLowRssFront8kSourceRunDesc8kRoute8kFlags = Get-Hz6WinLargeDirectRetain32mLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
     $sameOwnerFastLargerLowRssFront8kSourceRunDesc8kRoute8kFlags = Get-Hz6WinSameOwnerFastLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
     $directLocalFreeLargerLowRssFront8kSourceRunDesc8kRoute8kFlags = Get-Hz6WinDirectLocalFreeLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
     $directLocalAllocLargerLowRssFront8kSourceRunDesc8kRoute8kFlags = Get-Hz6WinDirectLocalAllocLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
@@ -2091,6 +2107,8 @@ function Invoke-AppLikeHz6BenchBuilds {
         "largerlowrss-sourcerun-desc8k-route64k" = @{ Suffix = "_largerlowrss_sourcerun_desc8k_route64k"; ExtraFlags = $largerLowRssSourceRunDesc8kRoute64kFlags }
         "largerlowrss-sourcerun-desc8k-source2k-route64k" = @{ Suffix = "_largerlowrss_sourcerun_desc8k_source2k_route64k"; ExtraFlags = $largerLowRssSourceRunDesc8kSource2kRoute64kFlags }
         "largerlowrss-front8k-sourcerun-desc8k-route8k" = @{ Suffix = "_largerlowrss_front8k_sourcerun_desc8k_route8k"; ExtraFlags = $largerLowRssFront8kSourceRunDesc8kRoute8kFlags }
+        "largedirectretain-largerlowrss-front8k-sourcerun-desc8k-route8k" = @{ Suffix = "_largedirectretain_largerlowrss_front8k_sourcerun_desc8k_route8k"; ExtraFlags = $largeDirectRetainLargerLowRssFront8kSourceRunDesc8kRoute8kFlags }
+        "largedirectretain32m-largerlowrss-front8k-sourcerun-desc8k-route8k" = @{ Suffix = "_largedirectretain32m_largerlowrss_front8k_sourcerun_desc8k_route8k"; ExtraFlags = $largeDirectRetain32mLargerLowRssFront8kSourceRunDesc8kRoute8kFlags }
         "sameownerfast-largerlowrss-front8k-sourcerun-desc8k-route8k" = @{ Suffix = "_sameownerfast_largerlowrss_front8k_sourcerun_desc8k_route8k"; ExtraFlags = $sameOwnerFastLargerLowRssFront8kSourceRunDesc8kRoute8kFlags }
         # Selected-small candidate/control family. SourceBlockRoute dynmap is
         # selected-family wired today; DirectLocalFreeReuse remains the simple

@@ -23,9 +23,18 @@ void hz6_allocator_note_front_alloc_path(Hz6Allocator* allocator,
 int hz6_allocator_large_span_pool_push(Hz6Allocator* allocator,
                                        Hz6ObjectDescriptor* descriptor);
 
+int hz6_allocator_large_direct_pool_push(Hz6Allocator* allocator,
+                                         Hz6ObjectDescriptor* descriptor);
+
 int hz6_allocator_large_span_pool_pop(Hz6Allocator* allocator,
                                       uint16_t class_id,
                                       Hz6ObjectDescriptor** out);
+
+int hz6_allocator_large_span_pool_pop_exact_bytes(
+    Hz6Allocator* allocator,
+    uint16_t class_id,
+    size_t bytes,
+    Hz6ObjectDescriptor** out);
 
 size_t hz6_allocator_large_span_pool_count(const Hz6Allocator* allocator,
                                            uint16_t class_id);

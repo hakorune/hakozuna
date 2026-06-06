@@ -45,6 +45,15 @@ speed lane by itself. `directlocaltrusted-*`, `directlocalpacked-*`,
 HZ6-only research/control rows. They remain useful for attribution, but are not
 selected-family rows unless a later repeat re-promotes them.
 
+LargeDirect note:
+`largedirectretain32m-largerlowrss-front8k-sourcerun-desc8k-route8k` is the
+current >1MiB direct-large candidate/control, not a broad selected default.  It
+retains exact-size direct-large objects up to 32 MiB and keeps the generic
+LargeSpan <=1MiB central-pool path unchanged.  Repeat-3 converts 2M/4M/8M from
+direct OS churn to retained reuse (`source_alloc` `16000/10004/6000` -> `16/12/8`)
+with safety counters clean; use it for follow-up `large_slices` refreshes, not
+for paper-facing broad selected rows until 512K/1M guards are repeated.
+
 ## Active ElasticCapacity Rows
 
 These rows are not broad selected defaults. They are the current source-depot /
@@ -102,6 +111,7 @@ Source:
 - `docs/benchmarks/windows/paper/hz6_depot_owner_direct_repeat3/`
 - `docs/benchmarks/windows/paper/hz6_depot_owner_direct_guard_matrix/`
 - `docs/benchmarks/windows/paper/hz6_selected_family/larson-elastic-directfree-trustedlocalcache-repeat3/`
+- `docs/benchmarks/windows/paper/hz6_selected_family/large-direct-retain32m-directpush-20260606/`
 - `docs/benchmarks/windows/paper/hz6_slot_owner_consumer_dryrun_full10k/`
 - `docs/benchmarks/windows/paper/hz6_owner_equal_callsite_dryrun_full10k/`
 - `docs/benchmarks/windows/paper/hz6_flc_owner_predicate_dryrun_full10k/`
