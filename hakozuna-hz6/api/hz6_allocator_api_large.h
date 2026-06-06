@@ -32,6 +32,16 @@ size_t hz6_allocator_large_span_pool_count(const Hz6Allocator* allocator,
 
 size_t hz6_allocator_large_span_pool_capacity(uint16_t class_id);
 
+size_t hz6_allocator_large_span_pool_bytes(const Hz6Allocator* allocator,
+                                           uint16_t class_id);
+
+size_t hz6_allocator_large_span_pool_bytes_capacity(uint16_t class_id);
+
+size_t hz6_allocator_large_span_pool_global_bytes(
+    const Hz6Allocator* allocator);
+
+size_t hz6_allocator_large_span_pool_global_bytes_capacity(void);
+
 #ifdef __cplusplus
 }
 #endif

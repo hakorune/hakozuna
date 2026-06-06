@@ -173,6 +173,9 @@ Contracts:
   LargeSpan class metadata is split into fronts/large/hz6_large_span_class.*
   so the current 128K seed is an explicit one-class LargeSpan family rather
   than a hard-coded large128 request check
+  LargeSpan central pool accounting is bytes-aware: per-class retained bytes
+  and global retained bytes are tracked alongside descriptor count so future
+  256K/512K/1M classes do not share a misleading count-only budget
   shared object states
   owner token equality/liveness helpers
   profile configuration
@@ -380,7 +383,9 @@ L1:
   stabilize the 128K ownerless CentralSpanPool and keep double-return
   impossible. The first L1 cleanup is in place: 128K request/class metadata now
   lives in a LargeSpan class table, while route/free/source behavior remains
-  unchanged.
+  unchanged. CentralSpanPoolBudget-L1 is also in place: central push is bounded
+  by span count and retained bytes, budget-full uses the existing fallback path,
+  and no decommit/release is mixed into the hot path.
 
 L2:
   add 256K / 512K / 1M LargeSpan classes using the same route, transfer,

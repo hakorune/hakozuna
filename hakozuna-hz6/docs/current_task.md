@@ -71,9 +71,50 @@ Immediate implementation order:
        all runs large_source_alloc=256
 
 Next LargeSpan step:
-  add a second class behind the same table only after a focused 128K closeout.
-  Do not let the 256..8192 larger_sizes lane drive LargeSpan design; that row is
-  mid/source-block pressure, not the LargeSpan front.
+  CentralSpanPoolBudget-L1 before adding the second class.
+
+Pro consult read:
+  HZ6 LargeSpan should proceed, but do not add 128K/256K/512K/1M all at once.
+  The safe order is:
+    1. LargeSpan class policy. DONE.
+    2. CentralSpanPool bytes-bounded accounting.
+    3. LargeSpan256-L1.
+    4. LargeSpan512 / LargeSpan1M behind the same backend.
+    5. Scavenge/RSSReturn only after retained-span speed/safety is stable.
+
+Why bytes budget first:
+  Current central pool capacity is effectively descriptor-count based. That is
+  readable for a one-class 128K seed, but it becomes misleading as soon as
+  256K/512K/1M enter the same pool. L1 should track per-class bytes and global
+  retained bytes. Budget-over behavior should use the existing fallback path;
+  do not decommit/release in this step.
+
+  Keep boundaries:
+    exact 64K remains Local2P-first
+    >32K..128K remains the 128K LargeSpan class
+    >128K..256K comes later as LargeSpan256-L1
+    256..8192 larger_sizes is mid/source-block pressure, not the LargeSpan front
+
+CentralSpanPoolBudget-L1 implementation:
+  DONE.
+  Added per-class retained bytes and global retained bytes accounting to
+  Hz6LargeSpanPool. The default cap is 8MiB/class and 8MiB global, matching the
+  old count cap for the one-class 128K seed: 64 spans * 128K.
+
+  Behavior:
+    central push requires count budget and bytes budget
+    budget full returns push failure and uses the existing fallback path
+    central pop subtracts per-class/global bytes
+    no decommit/release added
+    no hot-path diagnostic counters added
+
+  Verification:
+    Windows HZ6 R1 smokes all pass
+    allocator smoke now asserts central bytes/global bytes on Large128 push/pop
+    mixed_ws large_slice_128k repeat-3:
+      median 72.608M ops/s / 6,740 KB
+      all runs route_invalid=0 route_miss=0 alloc_fail=0
+      all runs large_source_alloc=256
 ```
 
 Non-goals for this step:

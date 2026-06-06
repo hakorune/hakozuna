@@ -51,6 +51,29 @@ Latest HZ6 selected-family decision:
         median 75.404M ops/s / 6,736 KB
         route_invalid=0 route_miss=0 alloc_fail=0
 
+  Pro consult / next LargeSpan order:
+    Do not add all 128K/256K/512K/1M classes at once.
+    NEXT:
+      CentralSpanPoolBudget-L1
+        add per-class retained bytes and global retained bytes accounting
+        keep existing fallback when budget is full
+        do not add decommit/release yet
+      then LargeSpan256-L1
+
+    Reason:
+      descriptor-count central capacity is readable for a one-class 128K seed,
+      but it becomes misleading once 256K/512K/1M spans share the same backend.
+
+    CentralSpanPoolBudget-L1 DONE:
+      per-class retained bytes and global retained bytes added
+      default cap is 8MiB/class and 8MiB global
+      budget full keeps existing fallback behavior
+      allocator smoke asserts Large128 central bytes push/pop
+      Windows HZ6 R1 smokes pass
+      mixed_ws large_slice_128k repeat-3:
+        median 72.608M ops/s / 6,740 KB
+        route_invalid=0 route_miss=0 alloc_fail=0
+
   Secondary target:
     Elastic source-depot lifecycle cleanup for wide_ws stale-route pressure.
 

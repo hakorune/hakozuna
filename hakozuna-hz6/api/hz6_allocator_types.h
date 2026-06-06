@@ -269,10 +269,12 @@ typedef struct Hz6DescriptorColdSource {
 typedef struct Hz6LargeSpanPoolBin {
   Hz6ObjectDescriptor* descriptors[HZ6_TRANSFER_CACHE_CAPACITY];
   size_t count;
+  size_t bytes_current;
 } Hz6LargeSpanPoolBin;
 
 typedef struct Hz6LargeSpanPool {
   Hz6LargeSpanPoolBin bins[HZ6_FRONT_CACHE_CLASS_COUNT];
+  size_t bytes_current;
 } Hz6LargeSpanPool;
 
 struct Hz6Allocator {

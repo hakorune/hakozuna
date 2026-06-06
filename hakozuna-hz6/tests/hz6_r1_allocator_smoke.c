@@ -19,6 +19,11 @@ static size_t smoke_large128_central_count(const Hz6Allocator* allocator) {
                                              HZ6_LARGE128_CLASS_ID);
 }
 
+static size_t smoke_large128_central_bytes(const Hz6Allocator* allocator) {
+  return hz6_allocator_large_span_pool_bytes(allocator,
+                                             HZ6_LARGE128_CLASS_ID);
+}
+
 int main(void) {
   int foreign = 0;
 
@@ -141,7 +146,13 @@ int main(void) {
   if (!expect(large_descriptor->state == HZ6_STATE_CENTRAL_FREE,
               "large128 central free state") ||
       !expect(smoke_large128_central_count(&large_allocator) == 1,
-              "large128 central pool count")) {
+              "large128 central pool count") ||
+      !expect(smoke_large128_central_bytes(&large_allocator) ==
+                  HZ6_LARGE128_BYTES,
+              "large128 central pool bytes") ||
+      !expect(hz6_allocator_large_span_pool_global_bytes(&large_allocator) ==
+                  HZ6_LARGE128_BYTES,
+              "large128 central global bytes")) {
     return 1;
   }
   void* large_reused = hz6_malloc(&large_allocator, 70000);
@@ -149,7 +160,12 @@ int main(void) {
     return 1;
   }
   if (!expect(smoke_large128_central_count(&large_allocator) == 0,
-              "large128 central pool empty")) {
+              "large128 central pool empty") ||
+      !expect(smoke_large128_central_bytes(&large_allocator) == 0,
+              "large128 central pool bytes empty") ||
+      !expect(hz6_allocator_large_span_pool_global_bytes(&large_allocator) ==
+                  0,
+              "large128 central global bytes empty")) {
     return 1;
   }
   hz6_free(&large_allocator, large_reused);
