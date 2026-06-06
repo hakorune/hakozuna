@@ -276,8 +276,70 @@ LargeDirectRetain default 8M:
   keep as boundary/control.  It handles 2M but is too small for 4M/8M.
 
 Next:
-  wire 16M into the legacy matrix for follow-up cross-allocator large_slices.
-  Do not add more direct-large knobs before a 16M cross-allocator refresh.
+  run a 16M cross-allocator large_slices refresh before adding more direct-large
+  knobs.
+```
+
+16M cross-allocator slice:
+
+```text
+Source:
+  docs/benchmarks/windows/paper/hz6_large_direct_retain16m_crossalloc_slice_20260607/
+    20260607_000428_allocator_matrix.md
+
+Rows:
+  large_slice_512k
+  large_slice_1m
+  large_direct_slice_2m
+  large_direct_slice_4m
+  large_direct_slice_8m
+
+Allocators:
+  hz3, hz4, hz5-policy, HZ6 base LargerLowRSS,
+  HZ6 LargeDirectRetain16M, HZ6 LargeDirectRetain32M,
+  mimalloc, tcmalloc
+```
+
+Single-run read:
+
+```text
+large_slice_512k:
+  winner: hz6-speed-largedirectretain16m-largerlowrss
+  55.294M ops/s, 9532 KB
+
+large_slice_1m:
+  winner: hz6-speed-largedirectretain32m-largerlowrss
+  40.047M ops/s, 8980 KB
+  16M rss lane: 38.235M ops/s, 8980 KB
+
+large_direct_slice_2m:
+  winner: hz6-rss-largedirectretain16m-largerlowrss
+  28.063M ops/s, 8892 KB
+
+large_direct_slice_4m:
+  winner: hz6-speed-largedirectretain32m-largerlowrss
+  18.295M ops/s, 8872 KB
+  16M rss lane: 16.373M ops/s, 8884 KB
+
+large_direct_slice_8m:
+  winner: hz6-speed-largedirectretain16m-largerlowrss
+  12.146M ops/s, 8872 KB
+```
+
+Decision:
+
+```text
+LargeDirectRetain16M:
+  KEEP as practical candidate-control.  It wins 512K/2M/8M in the single-run
+  cross-allocator slice and is close on 1M/4M while preserving low RSS.
+
+LargeDirectRetain32M:
+  keep as upper-bound/control.  It wins 1M/4M in this slice, but 16M already
+  removes the direct-large source churn and is the cleaner cap.
+
+Next:
+  stop direct-large cap tuning for now.  The large direct path is no longer the
+  main weak point; move to the next HZ6 weakness after lane cleanup.
 ```
 
 ### 2026-06-06: Next target - selected-small 8K guard

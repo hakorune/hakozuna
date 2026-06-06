@@ -56,6 +56,10 @@ for 2M/4M/8M and 32M is mainly an upper-bound/control.  Legacy rows
 `hz6-*-largedirectretain32m-largerlowrss` are wired for follow-up
 `large_slices` refreshes.  Do not use either as a paper-facing broad selected
 row until 512K/1M guards are repeated in the same matrix.
+The 2026-06-07 single-run cross-allocator slice now confirms 16M as the cleaner
+candidate-control: it wins 512K/2M/8M, stays close on 1M/4M, and keeps direct
+large RSS around 9 MiB.  32M remains an upper-bound/control row rather than the
+default assumption.
 
 ## Active ElasticCapacity Rows
 
@@ -116,6 +120,7 @@ Source:
 - `docs/benchmarks/windows/paper/hz6_selected_family/larson-elastic-directfree-trustedlocalcache-repeat3/`
 - `docs/benchmarks/windows/paper/hz6_selected_family/large-direct-retain32m-directpush-20260606/`
 - `docs/benchmarks/windows/paper/hz6_large_direct_retain_cap_ladder_20260606/`
+- `docs/benchmarks/windows/paper/hz6_large_direct_retain16m_crossalloc_slice_20260607/`
 - `docs/benchmarks/windows/paper/hz6_slot_owner_consumer_dryrun_full10k/`
 - `docs/benchmarks/windows/paper/hz6_owner_equal_callsite_dryrun_full10k/`
 - `docs/benchmarks/windows/paper/hz6_flc_owner_predicate_dryrun_full10k/`
