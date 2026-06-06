@@ -40,6 +40,7 @@ typedef struct Hz6SourceBlock {
 #endif
   _Atomic size_t ref_count;
   size_t run_slot_bytes;
+  uint16_t run_front_id;
   uint16_t run_class_id;
   uint16_t run_slot_count;
   uint16_t run_used_count;

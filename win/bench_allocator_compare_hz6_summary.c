@@ -186,7 +186,12 @@ void bench_print_hz6_summary(const Hz6StatsSnapshot* hz6_stats,
            "hz6_source_block_route_range_index_miss=%zu "
            "hz6_source_block_route_range_index_stale=%zu "
            "hz6_source_block_route_range_index_probe_total=%zu "
-           "hz6_source_block_route_range_index_probe_max=%zu",
+           "hz6_source_block_route_range_index_probe_max=%zu "
+           "hz6_source_block_route_behavior_attempt=%zu "
+           "hz6_source_block_route_behavior_valid=%zu "
+           "hz6_source_block_route_behavior_fallback=%zu "
+           "hz6_source_block_route_behavior_invalid_front=%zu "
+           "hz6_source_block_route_behavior_invalid_descriptor=%zu",
            hz6_stats->route_valid, hz6_stats->route_invalid,
            hz6_stats->route_miss, hz6_stats->transfer_push,
            hz6_stats->transfer_pop, hz6_stats->source_alloc,
@@ -358,7 +363,12 @@ void bench_print_hz6_summary(const Hz6StatsSnapshot* hz6_stats,
            hz6_stats->source_block_route_range_index_miss,
            hz6_stats->source_block_route_range_index_stale,
            hz6_stats->source_block_route_range_index_probe_total,
-           hz6_stats->source_block_route_range_index_probe_max);
+           hz6_stats->source_block_route_range_index_probe_max,
+           hz6_stats->source_block_route_behavior_attempt,
+           hz6_stats->source_block_route_behavior_valid,
+           hz6_stats->source_block_route_behavior_fallback,
+           hz6_stats->source_block_route_behavior_invalid_front,
+           hz6_stats->source_block_route_behavior_invalid_descriptor);
 #if HZ6_DIAGNOSTIC_PROBES
     printf(" hz6_route_lookup_probe_total=%zu "
            "hz6_route_lookup_probe_max=%zu "

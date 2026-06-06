@@ -304,7 +304,7 @@ size_t hz6_front_prefill_source_block_kind(Hz6Allocator* allocator,
     return 0;
   }
 #if HZ6_SOURCE_RUN_REUSE_L1
-  if (!hz6_allocator_source_run_init(block, class_id, slot_bytes)) {
+  if (!hz6_allocator_source_run_init(block, front_id, class_id, slot_bytes)) {
     hz6_allocator_release_source_block(allocator, block);
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.source_prefill_fallback;

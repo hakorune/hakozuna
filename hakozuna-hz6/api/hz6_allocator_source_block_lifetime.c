@@ -91,6 +91,7 @@ int hz6_allocator_release_source_block(Hz6Allocator* allocator,
 #endif
   atomic_store_explicit(&block->ref_count, 0u, memory_order_release);
   block->run_slot_bytes = 0;
+  block->run_front_id = HZ6_FRONT_NONE;
   block->run_class_id = 0;
   block->run_slot_count = 0;
   block->run_used_count = 0;

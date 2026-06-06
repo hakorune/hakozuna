@@ -352,7 +352,10 @@ static void print_stats(const Hz6Allocator* allocator) {
          "range_index_register=%zu range_index_unregister=%zu "
          "range_index_register_fail=%zu range_index_lookup=%zu "
          "range_index_hit=%zu range_index_miss=%zu range_index_stale=%zu "
-         "range_index_probe_total=%zu range_index_probe_max=%zu\n",
+         "range_index_probe_total=%zu range_index_probe_max=%zu "
+         "behavior_attempt=%zu behavior_valid=%zu "
+         "behavior_fallback=%zu behavior_invalid_front=%zu "
+         "behavior_invalid_descriptor=%zu\n",
          stats.source_block_route_dryrun_attempt,
          stats.source_block_route_block_hit,
          stats.source_block_route_slot_hit,
@@ -377,7 +380,12 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.source_block_route_range_index_miss,
          stats.source_block_route_range_index_stale,
          stats.source_block_route_range_index_probe_total,
-         stats.source_block_route_range_index_probe_max);
+         stats.source_block_route_range_index_probe_max,
+         stats.source_block_route_behavior_attempt,
+         stats.source_block_route_behavior_valid,
+         stats.source_block_route_behavior_fallback,
+         stats.source_block_route_behavior_invalid_front,
+         stats.source_block_route_behavior_invalid_descriptor);
   print_front_prefill_stats(allocator);
   printf("[HZ6_MEMORY_ATTR] "
          "descriptor_table_bytes=%zu "

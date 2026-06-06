@@ -64,6 +64,7 @@ static void hz6_source_run_reset(Hz6SourceBlock* block) {
     return;
   }
   block->run_slot_bytes = 0;
+  block->run_front_id = HZ6_FRONT_NONE;
   block->run_class_id = 0;
   block->run_slot_count = 0;
   block->run_used_count = 0;
@@ -121,10 +122,11 @@ static uint16_t hz6_source_run_count_used_bits(const Hz6SourceBlock* block) {
 #endif
 
 int hz6_allocator_source_run_init(Hz6SourceBlock* block,
+                                  uint16_t front_id,
                                   uint16_t class_id,
                                   size_t slot_bytes) {
   if (!block || !hz6_source_block_active(block) || !block->ptr ||
-      slot_bytes == 0 ||
+      front_id == HZ6_FRONT_NONE || slot_bytes == 0 ||
       block->bytes < slot_bytes) {
     return 0;
   }
@@ -136,6 +138,7 @@ int hz6_allocator_source_run_init(Hz6SourceBlock* block,
 
   hz6_source_run_reset(block);
   block->run_slot_bytes = slot_bytes;
+  block->run_front_id = front_id;
   block->run_class_id = class_id;
   block->run_slot_count = (uint16_t)slots;
   hz6_source_block_set_run_active(block, 1);
@@ -473,6 +476,7 @@ int hz6_allocator_elastic_depot_source_run_mark_slot(
   if (!hz6_source_block_run_active(block)) {
     hz6_source_run_reset(block);
     block->run_slot_bytes = slot_bytes;
+    block->run_front_id = HZ6_FRONT_NONE;
     block->run_class_id = class_id;
     block->run_slot_count = run_slot_count;
     hz6_source_block_set_run_active(block, 1);

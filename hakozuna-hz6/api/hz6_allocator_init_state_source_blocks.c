@@ -17,6 +17,7 @@ void hz6_allocator_init_state_source_blocks(Hz6Allocator* allocator) {
                           0u,
                           memory_order_release);
     allocator->source_blocks[i].run_slot_bytes = 0;
+    allocator->source_blocks[i].run_front_id = HZ6_FRONT_NONE;
     allocator->source_blocks[i].run_class_id = 0;
     allocator->source_blocks[i].run_slot_count = 0;
     allocator->source_blocks[i].run_used_count = 0;

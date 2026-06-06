@@ -20,8 +20,13 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
   int visible_hit = 0;
   int visible_lookup_done = 0;
   Hz6RouteResult route = hz6_route_miss();
+#if HZ6_SOURCE_BLOCK_ROUTE_BEHAVIOR_L1
+  route = hz6_allocator_source_block_route_lookup(allocator, ptr);
+#endif
 #if HZ6_OWNER_LOCALITY_INDEX_L1
-  route = hz6_allocator_route_lookup_exact(allocator, ptr);
+  if (route.kind == HZ6_ROUTE_MISS) {
+    route = hz6_allocator_route_lookup_exact(allocator, ptr);
+  }
   if (route.kind == HZ6_ROUTE_MISS) {
     Hz6OwnerLocalityKind locality =
         hz6_allocator_route_owner_locality_hint(allocator, ptr);
@@ -38,7 +43,9 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
   }
 #else
 #if HZ6_LOCAL_EXACT_FIRST_FREE_L1
-  route = hz6_allocator_route_lookup_exact(allocator, ptr);
+  if (route.kind == HZ6_ROUTE_MISS) {
+    route = hz6_allocator_route_lookup_exact(allocator, ptr);
+  }
 #endif
 #if HZ6_SHARED_ROUTE_DIRECTORY_FIRST_L1 && HZ6_DIAGNOSTIC_PROBES
   if (!hz6_allocator_profile_strict_owner_remote(allocator) &&

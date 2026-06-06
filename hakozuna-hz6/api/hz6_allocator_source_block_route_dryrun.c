@@ -1,6 +1,7 @@
 #include "hz6_allocator.h"
 
-#if HZ6_SOURCE_BLOCK_ROUTE_DRYRUN_L1 && HZ6_DIAGNOSTIC_PROBES
+#if (HZ6_SOURCE_BLOCK_ROUTE_DRYRUN_L1 && HZ6_DIAGNOSTIC_PROBES) || \
+    HZ6_SOURCE_BLOCK_ROUTE_BEHAVIOR_L1
 static int hz6_source_block_route_bit_get(const Hz6SourceBlock* block,
                                           size_t slot_index) {
   size_t word = slot_index / 64u;
@@ -10,7 +11,9 @@ static int hz6_source_block_route_bit_get(const Hz6SourceBlock* block,
   }
   return (block->run_used_bits[word] & (UINT64_C(1) << bit)) != 0;
 }
+#endif
 
+#if HZ6_SOURCE_BLOCK_ROUTE_DRYRUN_L1 && HZ6_DIAGNOSTIC_PROBES
 static int hz6_source_block_route_descriptor_matches(
     const Hz6ObjectDescriptor* descriptor,
     const Hz6SourceBlock* block,
@@ -21,6 +24,87 @@ static int hz6_source_block_route_descriptor_matches(
          descriptor->state != HZ6_STATE_DESCRIPTOR_RESERVED;
 }
 #endif
+
+Hz6RouteResult hz6_allocator_source_block_route_lookup(Hz6Allocator* allocator,
+                                                       const void* ptr) {
+#if HZ6_SOURCE_BLOCK_ROUTE_BEHAVIOR_L1 && \
+    HZ6_SOURCE_BLOCK_ROUTE_RANGE_INDEX_L1 && \
+    HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_L1
+  if (!allocator || !ptr) {
+    return hz6_route_miss();
+  }
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.source_block_route_behavior_attempt;
+#endif
+  Hz6SourceBlock* block =
+      hz6_allocator_source_block_range_index_lookup(allocator, ptr);
+  if (!block) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.source_block_route_behavior_fallback;
+#endif
+    return hz6_route_miss();
+  }
+  if (!hz6_source_block_run_active(block) || block->run_slot_bytes == 0 ||
+      block->run_slot_count == 0 || block->run_front_id == HZ6_FRONT_NONE) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.source_block_route_behavior_invalid_front;
+#endif
+    return hz6_route_miss();
+  }
+  size_t front_index = 0;
+  if (!hz6_front_attr_index_from_id(block->run_front_id, &front_index)) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.source_block_route_behavior_invalid_front;
+#endif
+    return hz6_route_miss();
+  }
+
+  const unsigned char* user = (const unsigned char*)ptr;
+  const unsigned char* base = (const unsigned char*)block->ptr;
+  size_t offset = (size_t)(user - base);
+  if ((offset % block->run_slot_bytes) != 0) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.source_block_route_behavior_fallback;
+#endif
+    return hz6_route_miss();
+  }
+  size_t slot_index = offset / block->run_slot_bytes;
+  if (slot_index >= block->run_slot_count ||
+      !hz6_source_block_route_bit_get(block, slot_index)) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.source_block_route_behavior_fallback;
+#endif
+    return hz6_route_miss();
+  }
+
+  Hz6ObjectDescriptor* descriptor =
+      hz6_allocator_source_run_descriptor_at(allocator, block, ptr);
+  if (!descriptor || descriptor->class_id != block->run_class_id ||
+      descriptor->bytes != block->run_slot_bytes ||
+      descriptor->ptr != ptr || descriptor->source_block != block ||
+      descriptor->state == HZ6_STATE_DEAD ||
+      descriptor->state == HZ6_STATE_DESCRIPTOR_RESERVED) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.source_block_route_behavior_invalid_descriptor;
+#endif
+    return hz6_route_miss();
+  }
+
+  Hz6RouteResult route = hz6_route_valid(block->run_front_id,
+                                         block->run_class_id,
+                                         descriptor->generation,
+                                         descriptor);
+  route.route_allocator = allocator;
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.source_block_route_behavior_valid;
+#endif
+  return route;
+#else
+  (void)allocator;
+  (void)ptr;
+  return hz6_route_miss();
+#endif
+}
 
 void hz6_allocator_source_block_route_dryrun(Hz6Allocator* allocator,
                                              const void* ptr) {

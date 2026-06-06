@@ -434,6 +434,11 @@ typedef struct Hz6StatsSnapshot {
   size_t source_block_route_range_index_stale;
   size_t source_block_route_range_index_probe_total;
   size_t source_block_route_range_index_probe_max;
+  size_t source_block_route_behavior_attempt;
+  size_t source_block_route_behavior_valid;
+  size_t source_block_route_behavior_fallback;
+  size_t source_block_route_behavior_invalid_front;
+  size_t source_block_route_behavior_invalid_descriptor;
   size_t route_exact_lookup_probe_total;
   size_t route_exact_lookup_probe_max;
   size_t owner_locality_lookup;

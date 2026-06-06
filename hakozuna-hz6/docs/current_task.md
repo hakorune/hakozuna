@@ -11869,3 +11869,195 @@ Next:
     route_invalid/miss/register_fail = 0
     broad selected-family does not regress
 ```
+
+## 2026-06-06: SourceBlockRoute behavior L1
+
+Implemented the first behavior lane for the SourceBlockRoute line.
+
+Design:
+
+```text
+Flag:
+  HZ6_SOURCE_BLOCK_ROUTE_BEHAVIOR_L1=1
+
+Required helpers:
+  HZ6_SOURCE_BLOCK_ROUTE_RANGE_INDEX_L1=1
+  HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_L1=1
+
+Free route order:
+  toy small active-map fast path remains first
+  source-block route lookup for source-run slots
+  exact/local route lookup remains fallback/control
+
+SourceBlock route VALID requires:
+  ptr -> source block via page range index
+  source block has active source-run metadata
+  source-run stores a non-NONE front id
+  ptr is slot-aligned and used
+  slot->descriptor map returns a live descriptor
+  descriptor ptr/source_block/class/bytes match the run metadata
+
+Otherwise:
+  return MISS and let the existing exact/local route path decide.
+```
+
+Important implementation detail:
+
+```text
+Hz6SourceBlock now stores run_front_id.
+
+Reason:
+  dry-run only needed class/descriptor evidence.
+  behavior must build a complete Hz6RouteResult and therefore must know the
+  front_id without consulting the exact route table.
+```
+
+Windows lane:
+
+```text
+sourceblockroute-behavior-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+```
+
+Diagnostic smoke:
+
+```text
+Command:
+  win/run_win_hz6_capacity_matrix.ps1
+    -Runs 1
+    -Families mixed_ws
+    -BenchmarkProfiles large_slice_8k
+    -Hz6Profiles speed
+    -CapacityLanes sourceblockroute-behavior-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+    -DiagnosticHz6Probes
+    -ForceBuild
+
+Result:
+  ops/s ~= 14.36M  (diagnostic overhead expected)
+  peak_kb = 40,660
+
+Safety:
+  alloc_fail = 0
+  route_invalid = 0
+  route_miss = 0
+  route_register_fail = 0
+  descriptor_exhausted = 0
+  source_block_exhausted = 0
+
+Behavior:
+  behavior_attempt = 200704
+  behavior_valid = 200704
+  behavior_fallback = 0
+  behavior_invalid_front = 0
+  behavior_invalid_descriptor = 0
+
+RangeIndex:
+  lookup = 200704
+  hit = 200704
+  miss = 0
+  stale = 0
+  probe_total = 200704
+  probe_max = 1
+
+SlotDescriptorMap:
+  descriptor_map_hit = 200704
+  descriptor_map_miss = 0
+  descriptor_map_stale = 0
+```
+
+Normal build check:
+
+```text
+same lane, no DiagnosticHz6Probes:
+  build/run OK
+  ops/s ~= 59.82M
+  peak_kb = 40,660
+  route_invalid = 0
+  route_miss = 0
+```
+
+Decision:
+
+```text
+KEEP as behavior evidence.
+
+Finding:
+  SourceBlockRoute can replace exact-route free lookup for the 8K source-run
+  control row with zero fallback/invalid in smoke.
+
+Not promotion yet:
+  This is still source-run scoped and needs broader selected-family guard.
+
+Next:
+  Run a selected-family smoke/repeat against:
+    directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+    sourceblockroute-behavior-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+
+  Watch:
+    route_invalid / route_miss / route_register_fail remain zero
+    behavior fallback/invalid remain zero on source-run rows
+    non-source-run rows do not regress via fallback
+    broad selected-family performance and RSS do not degrade
+```
+
+Selected-family guard, run1:
+
+```text
+Command:
+  win/run_win_hz6_capacity_matrix.ps1
+    -Runs 1
+    -Families mixed_ws
+    -BenchmarkProfiles balanced,wide_ws,larger_sizes,large_slice_4k,large_slice_8k,large_slice_16k
+    -Hz6Profiles speed
+    -CapacityLanes directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k,
+                   sourceblockroute-behavior-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+
+Result summary:
+  balanced:
+    directlocalfreereuse 70.54M / 96,540 KB
+    sourceblockroute     63.88M / 129,340 KB
+
+  wide_ws:
+    directlocalfreereuse 0.425M / 69,236 KB
+    sourceblockroute     0.436M / 135,940 KB
+
+  larger_sizes:
+    directlocalfreereuse 37.71M / 71,032 KB
+    sourceblockroute     32.53M / 95,652 KB
+
+  large_slice_4k:
+    directlocalfreereuse 49.85M / 41,980 KB
+    sourceblockroute     51.43M / 56,776 KB
+
+  large_slice_8k:
+    directlocalfreereuse 48.35M / 25,372 KB
+    sourceblockroute     56.30M / 40,228 KB
+
+  large_slice_16k:
+    directlocalfreereuse 40.33M / 17,100 KB
+    sourceblockroute     39.36M / 38,100 KB
+```
+
+Decision:
+
+```text
+KEEP as scoped behavior evidence.
+Do not promote into selected lane yet.
+
+Good:
+  source-run exact rows, especially 8K, can benefit from source-block route.
+  safety stayed clean in the guard rows:
+    route_invalid = 0
+    route_miss = 0
+    route_register_fail = 0
+
+Concern:
+  current range-index/slotmap lane adds noticeable RSS across broader rows.
+  balanced and larger_sizes regress in run1.
+
+Next design target:
+  SourceBlockRoute-L2 should not be "global range-index on every selected row".
+  Explore a more compact/gated range index:
+    smaller range-index capacity
+    only arm source-block route for known source-run-heavy classes
+    or split this as an 8K/source-run-special lane rather than broad selected
+```

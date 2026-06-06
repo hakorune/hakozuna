@@ -400,6 +400,12 @@
 #define HZ6_SOURCE_BLOCK_RELEASE_LIVE_GUARD_L1 0
 #endif
 
+#ifndef HZ6_SOURCE_BLOCK_ROUTE_BEHAVIOR_L1
+/* Experimental source-run free route shortcut.  Requires range-index and
+ * slot-descriptor map; exact route remains the fallback/control path. */
+#define HZ6_SOURCE_BLOCK_ROUTE_BEHAVIOR_L1 0
+#endif
+
 #ifndef HZ6_FRONTCACHE_PACKED_META_L1
 #define HZ6_FRONTCACHE_PACKED_META_L1 0
 #endif
