@@ -5198,6 +5198,46 @@ Safety:
   route_register_fail = 0
 ```
 
+### 2026-06-06: Post-push design review readout
+
+External design review after pushing `947f870` agreed with the
+SourceBlockRoute dynmap selected-small promotion.
+
+Decision:
+
+```text
+SourceBlockRoute dynmap:
+  KEEP as selected-small candidate row.
+  8K -2.40% is acceptable for now because repeat-3 is positive on 5/6 rows
+  and RSS delta is bounded.
+
+Do not:
+  split an 8K-only selected lane yet.
+  extend SourceBlockRoute dynmap blindly into every tiny-object hot path.
+  change broad/global HZ6 defaults.
+```
+
+Next order:
+
+```text
+1. Fix stale selected-small lane docs.
+2. Run selected-small repeat-5/10 or cross-allocator refresh when paper-facing
+   numbers need updating.
+3. Attack Toy/small 256B..2K with hot-path attribution first.
+4. Keep Larson RSS as a parallel audit/control track:
+     descriptor retention
+     source/depot retained metadata
+     frontcache/transfer retained volume
+   before adding new broad owner/depot behavior.
+```
+
+Positioning:
+
+```text
+HZ6 is a route-safe, low-RSS, selected-family allocator.
+It should not be described as a universal fastest one-lane allocator.
+```
+
 Random_mixed guard repeat-3:
 
 ```text
@@ -11144,8 +11184,9 @@ Next:
 Context:
 
 ```text
-The selected-small candidate-watch is safety-clean but still loses 256B..2K
-against HZ3/HZ4/mimalloc/tcmalloc in the cross-allocator fixed-size table.
+The then-selected DirectLocalFreeReuse candidate-watch was safety-clean but
+still lost 256B..2K against HZ3/HZ4/mimalloc/tcmalloc in the cross-allocator
+fixed-size table.
 Worker review pointed at successful hot-path work rather than capacity/refill
 failure: free-side route lookup, local-owner/cache push, and alloc-side
 frontcache activation.

@@ -44,7 +44,7 @@ these rows answer which lanes should be used, watched, or avoided.
 
 ## Selected-Small Wiring Policy
 
-The current selected-small candidate-watch is fixed as:
+The current selected-small candidate is fixed as:
 
 ```text
 speed + sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
@@ -104,8 +104,10 @@ hz6-midpage-sourceblock-unified-repeat3:
 ```text
 HZ6 selected-small / small-mid:
   FIXED:
+    sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+      as selected-small candidate row
     directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
-      as selected-small candidate-watch
+      as simple baseline/control
     MidPage source-block prefill unified through
       hz6_front_prefill_source_block_kind()
 
@@ -115,9 +117,10 @@ HZ6 selected-small / small-mid:
     per-size hybrid rows
 
   NEXT:
-    run repeat/cross-allocator selected-small matrices before promotion, or
-    inspect another structural small/mid simplification. Do not add another
-    direct-local micro-knob without a new pressure signal.
+    run repeat-5/10 and cross-allocator selected-small refresh before using
+    SourceBlockRoute dynmap as a paper-facing broad claim.  For further
+    256B..2K work, inspect Toy/small hot-path attribution first; do not add
+    another direct-local micro-knob without a new pressure signal.
 
 HZ6 LargeSpan / LargeDirect:
   FIXED:
