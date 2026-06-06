@@ -41,6 +41,32 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\win\run_win_hz6_capacity_m
 | `large_slice_8k` | 57.372M | 67.977M | +18.5% | flat |
 | `large_slice_16k` | 50.919M | 63.120M | +24.0% | flat |
 
+## Repeat-5 Recheck
+
+Command:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\win\run_win_hz6_capacity_matrix.ps1 `
+  -Families mixed_ws `
+  -BenchmarkProfiles large_slice_256,large_slice_512,large_slice_1k,large_slice_2k,large_slice_4k,large_slice_8k,large_slice_16k `
+  -Hz6Profiles speed `
+  -CapacityLanes largerlowrss-front8k-sourcerun-desc8k-route8k,sameownerfast-largerlowrss-front8k-sourcerun-desc8k-route8k `
+  -Runs 5 `
+  -OutputDir .\results\hz6-sameownerfast-largerlowrss-small-repeat5 `
+  -TimeoutSeconds 120 `
+  -ContinueOnFailure
+```
+
+| profile | largerlowrss | sameownerfast-largerlowrss | delta | RSS read |
+| --- | ---: | ---: | ---: | --- |
+| `large_slice_256` | 56.803M | 74.230M | +30.7% | flat/slightly lower |
+| `large_slice_512` | 43.850M | 58.080M | +32.5% | flat/slightly lower |
+| `large_slice_1k` | 45.682M | 55.316M | +21.1% | flat |
+| `large_slice_2k` | 33.230M | 31.996M | -3.7% | flat |
+| `large_slice_4k` | 45.643M | 50.648M | +11.0% | flat |
+| `large_slice_8k` | 52.672M | 63.225M | +20.0% | flat |
+| `large_slice_16k` | 46.847M | 55.814M | +19.1% | flat |
+
 ## Legacy Matrix Connectivity
 
 The lane is also wired into `win/run_win_allocator_matrix.ps1` as:
@@ -51,9 +77,8 @@ hz6-speed-sameownerfast-largerlowrss
 hz6-rss-sameownerfast-largerlowrss
 ```
 
-Single-run legacy connectivity showed most rows improve, but `large_slice_2k`
-was noisy/regressed in the legacy row. Treat this as candidate-watch, not broad
-promotion.
+Single-run legacy connectivity and repeat-5 both show `large_slice_2k` is not
+helped by this lane. Treat 2K as an explicit exception.
 
 ## Read
 
@@ -78,7 +103,11 @@ Status:
 
 ```text
 KEEP:
-  candidate-watch for 256B..16K same-owner fixed-size rows
+  candidate-watch for 256B/512B/1K/4K/8K/16K same-owner fixed-size rows
+
+EXCEPTION:
+  2K is no-go for this composition and should stay on plain largerlowrss unless
+  a later 2K-specific cause is found.
 
 NOT YET:
   default

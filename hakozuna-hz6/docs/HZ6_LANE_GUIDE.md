@@ -23,7 +23,7 @@ these rows answer which lanes should be used, watched, or avoided.
 | Selected sibling | `route18` mixedclean sibling | Current wide_ws sibling when wide_ws is the target; do not replace balanced route17/loopcarry by default. |
 | Selected profile lane | `sameownerfast-descavail-noboost-route4k` | random_mixed same-owner speed row. |
 | Selected profile lane | `largerlowrss-front8k-sourcerun-desc8k-route8k` | larger_sizes RSS/speed row. |
-| Candidate-watch | `sameownerfast-largerlowrss-front8k-sourcerun-desc8k-route8k` | 256B..16K same-owner fixed-size speed probe. Strong repeat-3 signal, but not broad/default yet. |
+| Candidate-watch | `sameownerfast-largerlowrss-front8k-sourcerun-desc8k-route8k` | 256B/512B/1K/4K/8K/16K same-owner fixed-size speed probe. 2K is an explicit no-go exception. Not broad/default yet. |
 | LargeSpan family seed | `mixed_ws large_slice_128k,large_slice_256k,large_slice_512k,large_slice_1m + speed-route4k` | Narrow 128K..1M LargeSpan class verification. Use for LargeSpan backend safety/coverage, not broad speed ranking. |
 | LargeDirect coverage seed | `mixed_ws large_direct_slice_2m,large_direct_slice_4m,large_direct_slice_8m + speed-route4k` | Narrow >1M..8M direct-release verification. Use for coverage/low-RSS safety evidence, not throughput ranking. |
 | Selected Larson low-RSS sibling | `...frontcachepacked-sourceblockpacked-source10k-route192k-run512` | Current Larson minimum-RSS sibling. Use for current HZ6 Larson low-RSS comparisons. |
@@ -66,8 +66,9 @@ HZ6 LargeSpan / LargeDirect:
     low-capacity control artifact.
     `sameownerfast-largerlowrss-front8k-sourcerun-desc8k-route8k` is a
     candidate-watch follow-up for 256B..16K same-owner fixed-size rows. It
-    repeats +15%..+27% over `largerlowrss` in HZ6-only repeat-3, with flat RSS,
-    but legacy single-run 2K was noisy, so do not default-promote yet.
+    repeats +11%..+33% over `largerlowrss` on 256B/512B/1K/4K/8K/16K in
+    HZ6-only repeat-5, with flat RSS. 2K regresses by about 3.7%, so do not
+    use this lane for 2K and do not default-promote yet.
 
   NEXT:
     stop large coverage expansion here unless >8M is the immediate target.

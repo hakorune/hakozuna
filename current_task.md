@@ -86,21 +86,24 @@ Latest HZ6 small fixed-size attack:
   Implemented candidate-watch:
     sameownerfast-largerlowrss-front8k-sourcerun-desc8k-route8k
 
-  HZ6-only repeat-3:
-    256B: +22.2%
-    512B: +26.9%
-    1K:   +15.3%
-    2K:   +17.1%
-    4K:   +21.8%
-    8K:   +18.5%
-    16K:  +24.0%
+  HZ6-only repeat-5:
+    256B: +30.7%
+    512B: +32.5%
+    1K:   +21.1%
+    2K:   -3.7%
+    4K:   +11.0%
+    8K:   +20.0%
+    16K:  +19.1%
     RSS essentially flat.
 
-  Legacy single-run connectivity:
-    mostly improves, but 2K was noisy/regressed.
+  Read after repeat-5:
+    sameownerfast-largerlowrss is a real speed win for
+    256B/512B/1K/4K/8K/16K.
+    2K is an explicit no-go exception for this composition.
 
   Status:
-    keep sameownerfast-largerlowrss as candidate-watch.
+    keep sameownerfast-largerlowrss as candidate-watch for the winning rows.
+    keep 2K on plain largerlowrss unless a 2K-specific cause is found.
     do not default-promote yet.
     next if continuing this track:
       repeat selected rows with mimalloc/tcmalloc comparison,
