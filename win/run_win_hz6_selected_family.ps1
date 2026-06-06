@@ -18,6 +18,7 @@ param(
     [switch]$LarsonRun512DescSlim,
     [switch]$LarsonRun512DescriptorLayout,
     [switch]$LarsonThinDescSourceCap,
+    [switch]$ListOnly,
     [switch]$ListPresets
 )
 
@@ -276,6 +277,7 @@ foreach ($presetName in $selectedPresetNames) {
         ForceBuild = [bool]$ForceBuild
         DiagnosticHz6Probes = [bool]$DiagnosticHz6Probes
         ContinueOnFailure = [bool]$ContinueOnFailure
+        ListOnly = [bool]$ListOnly
     }
 
     Write-Host ("[selected-family] {0}: {1}" -f $preset.Name, $preset.Note)

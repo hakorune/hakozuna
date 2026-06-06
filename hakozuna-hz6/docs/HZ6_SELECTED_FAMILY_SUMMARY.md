@@ -28,6 +28,12 @@ For cleanup rules and the next source modularization target, see
 | Larson T16 full 10k packed minimum RSS candidate | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source10k-route192k-run512` | 44.864M | 412,280 | current packed minimum-RSS sibling; source10k repeat-3 safety-clean, source8k/source2k are warmup no-go |
 | Larson T16 full 10k minimum RSS control | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-source16k-route192k-run512` | 41.107M | 469,868 | clean superseded control |
 
+Selected-small note:
+`directlocaltrusted-*`, `directlocalpacked-*`, and `directlocalexact-*` are
+HZ6-only research controls. They remain useful for owner-check, packed-metadata,
+and exact-route attribution, but are not selected-family or legacy
+cross-allocator rows.
+
 ## Active ElasticCapacity Rows
 
 These rows are not broad selected defaults. They are the current source-depot /

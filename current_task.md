@@ -415,6 +415,23 @@ Latest HZ6 small fixed-size attack:
       a clean selected-small replacement.  Keep DirectLocalFreeReuse as the
       selected-small candidate-watch and keep DirectLocalExact as a close
       route-pressure control.  Do not selected-family or legacy-wire it yet.
+
+  Selected-small lane cleanup:
+    Keep the selected-family and legacy cross-allocator wire narrow:
+      selected:
+        directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+      HZ6-only controls:
+        directlocaltrusted-largerlowrss-front8k-sourcerun-desc8k-route8k
+        directlocalpacked-largerlowrss-front8k-sourcerun-desc8k-route8k
+        directlocalexact-largerlowrss-front8k-sourcerun-desc8k-route8k
+
+    Source cleanup:
+      DirectLocalFreeReuse-derived flag builders now share one helper so the
+      selected/control/no-go variants are less error-prone.  Lane names and
+      output suffixes are unchanged, preserving old benchmark comparability.
+      `win/run_win_hz6_selected_family.ps1` now forwards `-ListOnly` to the
+      capacity matrix so selected-family lane enumeration cannot accidentally
+      execute a long Larson row.
 ```
 
 Latest HZ6 selected-family decision:

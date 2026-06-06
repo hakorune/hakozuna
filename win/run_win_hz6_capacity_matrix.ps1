@@ -327,6 +327,8 @@ $laneSuffix = @{
     "largerlowrss-sourcerun-desc8k-source2k-route64k" = "_largerlowrss_sourcerun_desc8k_source2k_route64k"
     "largerlowrss-front8k-sourcerun-desc8k-route8k" = "_largerlowrss_front8k_sourcerun_desc8k_route8k"
     "sameownerfast-largerlowrss-front8k-sourcerun-desc8k-route8k" = "_sameownerfast_largerlowrss_front8k_sourcerun_desc8k_route8k"
+    # Selected-small candidate/control family. Keep trusted/packed/exact in
+    # HZ6-only capacity runs unless later repeat evidence promotes them.
     "directlocalfree-largerlowrss-front8k-sourcerun-desc8k-route8k" = "_directlocalfree_largerlowrss_front8k_sourcerun_desc8k_route8k"
     "directlocalalloc-largerlowrss-front8k-sourcerun-desc8k-route8k" = "_directlocalalloc_largerlowrss_front8k_sourcerun_desc8k_route8k"
     "directlocalfreealloc-largerlowrss-front8k-sourcerun-desc8k-route8k" = "_directlocalfreealloc_largerlowrss_front8k_sourcerun_desc8k_route8k"

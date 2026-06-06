@@ -39,6 +39,31 @@ these rows answer which lanes should be used, watched, or avoided.
 | Boundary / no-go | `...slotownerlogical...` | Safety-clean behavior no-go/control. Sparse generation-checked positive owner match is valid, but probing sparse metadata at every `owner_equal()` entry costs more than it saves. |
 | Boundary / no-go | `source2k`, `source8k`, `elasticproj-local1k`, whole-SourceBlock localize | Keep as evidence only. These rows explain capacity or ownership limits. |
 
+## Selected-Small Wiring Policy
+
+The current selected-small candidate-watch is:
+
+```text
+speed + directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+```
+
+Use it in `win/run_win_hz6_selected_family.ps1 -SelectedFamily` and in the
+legacy cross-allocator matrix when a selected-small HZ6 row is needed. Keep the
+following rows out of selected-family and legacy cross-allocator tables unless a
+later repeat explicitly promotes them:
+
+```text
+directlocaltrusted-largerlowrss-front8k-sourcerun-desc8k-route8k
+directlocalpacked-largerlowrss-front8k-sourcerun-desc8k-route8k
+directlocalexact-largerlowrss-front8k-sourcerun-desc8k-route8k
+```
+
+These rows are still valuable HZ6-only controls. They answer whether owner
+checks, packed front-cache metadata, or exact-first free routing explain the
+remaining small fixed-size gap. So far they do not cleanly replace
+DirectLocalFreeReuse, and they should stay in the capacity matrix rather than
+paper-facing cross-allocator rows.
+
 ## Active Next Read
 
 ```text
