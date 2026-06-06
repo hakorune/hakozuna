@@ -515,6 +515,56 @@ Latest HZ6 selected-family decision:
       promote per-size hybrids
       relabel MidPage source-block unification as a new speed lane
 
+    Cross-allocator single-run confirmation:
+      Source:
+        results/hz6-selected-small-crossallocator-check/
+        20260606_155209_allocator_matrix.md
+
+      HZ6 selected-small vs external allocators:
+        256B:
+          HZ6 selected 72.024M / 14,160 KB
+          loses to HZ3 315.673M, HZ4 227.264M, mimalloc 321.578M,
+          and tcmalloc 141.643M
+        512B:
+          HZ6 selected 50.001M / 26,636 KB
+          loses to HZ3 241.585M, HZ4 134.177M, mimalloc 361.620M,
+          and tcmalloc 186.226M
+        1K:
+          HZ6 selected 54.219M / 26,536 KB
+          loses to HZ3 247.934M, HZ4 167.729M, mimalloc 254.421M,
+          and tcmalloc 108.170M
+        2K:
+          HZ6 selected 37.537M / 75,596 KB
+          loses to HZ3 142.653M, HZ4 132.729M, mimalloc 190.186M,
+          and tcmalloc 82.954M
+        4K:
+          HZ6 selected 52.730M / 42,468 KB
+          beats HZ3 8.271M, HZ4 25.702M, and tcmalloc 35.027M
+          but loses to mimalloc 166.165M
+        8K:
+          HZ6 selected 67.222M / 25,920 KB
+          beats HZ3 9.400M, HZ4 32.947M, and tcmalloc 60.366M
+          but loses to mimalloc 116.734M
+        16K:
+          HZ6 selected 55.120M / 17,656 KB
+          beats HZ3 23.426M, HZ4 34.331M, and tcmalloc 41.811M
+          but loses to mimalloc 139.373M
+
+      Safety:
+        HZ6 route_invalid=0
+        HZ6 route_miss=0
+        HZ6 alloc_fail=0
+        HZ6 route_register_fail=0
+        HZ6 source_block_exhausted=0
+        HZ6 descriptor_exhausted=0
+
+      Read:
+        selected-small is not a small-object speed leader at 256B..2K.
+        It becomes credible from 4K upward, where it beats HZ3/HZ4/tcmalloc
+        in this runner while remaining safety-clean.  Treat as fixed
+        candidate-watch / 4K..16K strength evidence, not a broad small-object
+        promotion.  Mimalloc remains the speed ceiling in this matrix.
+
 2026-06-06 historical LargeSpan attack after Windows bench modularization:
   Status:
     CLOSED as implementation history.  The active next target is the

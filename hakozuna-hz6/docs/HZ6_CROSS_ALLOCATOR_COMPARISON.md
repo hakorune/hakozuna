@@ -142,6 +142,41 @@ current selected-small lane is no longer represented by the old route4k weakness
 rows.
 ```
 
+### HZ6 selected-small cross-allocator check
+
+This is a single-run Windows confirmation matrix, not a paper median. It uses
+the current selected-small candidate-watch row and keeps the old allocators in
+the same `mixed_ws` fixed-size runner.
+
+Source:
+- `results/hz6-selected-small-crossallocator-check/20260606_155209_allocator_matrix.md`
+
+| profile | HZ3 | HZ4 | HZ6 LargerLowRSS | HZ6 selected-small | mimalloc | tcmalloc |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `large_slice_256` | 315.673M | 227.264M | 57.293M | 72.024M | 321.578M | 141.643M |
+| `large_slice_512` | 241.585M | 134.177M | 37.792M | 50.001M | 361.620M | 186.226M |
+| `large_slice_1k` | 247.934M | 167.729M | 46.024M | 54.219M | 254.421M | 108.170M |
+| `large_slice_2k` | 142.653M | 132.729M | 30.502M | 37.537M | 190.186M | 82.954M |
+| `large_slice_4k` | 8.271M | 25.702M | 36.420M | 52.730M | 166.165M | 35.027M |
+| `large_slice_8k` | 9.400M | 32.947M | 57.275M | 67.222M | 116.734M | 60.366M |
+| `large_slice_16k` | 23.426M | 34.331M | 50.037M | 55.120M | 139.373M | 41.811M |
+
+Read:
+
+```text
+HZ6 selected-small is not the 256B..2K speed leader.
+HZ3/HZ4/mimalloc/tcmalloc are much stronger on those tiny rows.
+
+From 4K upward, HZ6 selected-small becomes credible:
+  beats HZ3, HZ4, and tcmalloc on 4K/8K/16K in this runner
+  remains safety-clean
+  still loses to mimalloc speed
+
+Decision:
+  keep selected-small as candidate-watch and 4K..16K strength evidence.
+  Do not broad-promote it as a generic small-object speed lane.
+```
+
 ## Current HZ6 Selected-Family Snapshot
 
 These are the current HZ6 family choices from the latest internal selection
