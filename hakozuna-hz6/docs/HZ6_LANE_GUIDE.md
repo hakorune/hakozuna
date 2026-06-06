@@ -24,7 +24,8 @@ these rows answer which lanes should be used, watched, or avoided.
 | Selected profile lane | `sameownerfast-descavail-noboost-route4k` | random_mixed same-owner speed row. |
 | Selected profile lane | `largerlowrss-front8k-sourcerun-desc8k-route8k` | larger_sizes RSS/speed row. |
 | Candidate-watch/control | `sameownerfast-largerlowrss-front8k-sourcerun-desc8k-route8k` | Mechanism evidence for the small/mid same-owner fixed-size win. Positive across 256B..16K, but weaker as a single simple lane than DirectLocalFreeReuse in the latest repeat-10. Keep as a close control, not broad/default. |
-| Candidate-watch | `directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k` | Best simple small/mid same-owner fixed-size candidate so far. Latest HZ6-only repeat-10 is positive across 256B..16K with avg +19.8% and min +14.2% vs LargerLowRSS. Not broad/default yet. |
+| Selected-small candidate | `sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k` | Current selected-small fixed-size row. SourceBlockRoute behavior with dynamic per-run slot descriptor map; repeat-3 improves balanced, wide_ws, larger_sizes, 4K, and 16K versus DirectLocalFreeReuse, with only a small 8K speed regression and bounded RSS increase. |
+| Candidate-watch/control | `directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k` | Former selected-small simple lane. HZ6-only repeat-10 was positive across 256B..16K versus LargerLowRSS; keep as the simple baseline/control for SourceBlockRoute dynmap. |
 | Diagnostic-only | `toysmallhotpathdiag-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k` | Selected-small candidate plus `HZ6_TOY_SMALL_HOTPATH_DIAG_L1`. Use only with `-DiagnosticHz6Probes` to attribute Toy/small malloc/free hot-path work; not speed-rankable and not selected-family wiring. |
 | Candidate-watch/control | `toysmallactivemap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k` | Toy/small active free-map over DirectLocalFreeReuse. It keeps a bounded per-allocator active pointer map so same-owner active frees can bypass exact-route lookup and fall back to route lookup on miss/stale/cache-fail. The current-gated version avoids probing the map when it is empty, so non-Toy rows do not pay full map lookup cost. Latest repeat-3 is safety-clean and improves 256B/512B/1K/2K/4K/8K, but 16K regresses and the lane adds hot-path state, so keep as control evidence rather than default. |
 | Candidate-watch/control | `directlocalfreereuse-small8k-largerlowrss-front8k-sourcerun-desc8k-route8k` | Size-gated DirectLocalFreeReuse control. It sets `HZ6_LOCAL_CACHE_DIRECT_MAX_CLASS=4`, so 256B..8K can use direct local free/alloc/reuse while 16K/32K fall back. Useful evidence, not a universal winner. |
@@ -46,17 +47,18 @@ these rows answer which lanes should be used, watched, or avoided.
 The current selected-small candidate-watch is fixed as:
 
 ```text
-speed + directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+speed + sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
 ```
 
 Use it in `win/run_win_hz6_selected_family.ps1 -SelectedFamily` and in the
 legacy cross-allocator matrix when a selected-small HZ6 row is needed. This is
-the selected-small candidate-watch row, not a broad/default allocator profile.
+the selected-small candidate row, not a broad/default allocator profile.
 Keep the
 following rows out of selected-family and legacy cross-allocator tables unless a
 later repeat explicitly promotes them:
 
 ```text
+directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
 directlocaltrusted-largerlowrss-front8k-sourcerun-desc8k-route8k
 directlocalpacked-largerlowrss-front8k-sourcerun-desc8k-route8k
 directlocalexact-largerlowrss-front8k-sourcerun-desc8k-route8k

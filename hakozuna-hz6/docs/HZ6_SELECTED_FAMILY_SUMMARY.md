@@ -16,7 +16,7 @@ For cleanup rules and the next source modularization target, see
 | random_mixed small | `strict + sameownerfast-descavail-noboost-route4k` | 45.755M | 4,968 | clean selected |
 | random_mixed medium | `strict + sameownerfast-descavail-noboost-route4k` | 42.408M | 4,964 | clean selected |
 | random_mixed mixed | `strict + sameownerfast-descavail-noboost-route4k` | 41.306M | 4,964 | clean selected |
-| mixed_ws fixed 256B..16K | `speed + directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k` | repeat-10 avg +19.8% vs LargerLowRSS | same RSS shape | selected-small candidate-watch |
+| mixed_ws fixed 256B..16K | `speed + sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k` | repeat-3: +8.46% balanced, +3.78% wide_ws, +6.92% larger_sizes, +5.96% 4K, -2.40% 8K, +16.48% 16K vs DirectLocalFreeReuse | RSS +0.6..3.6MiB vs DirectLocalFreeReuse | selected-small candidate |
 | mixed_ws larger_sizes speed | `speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k` | 26.404M | 71,040 | clean selected |
 | mixed_ws larger_sizes rss | `speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k` | 27.178M | 71,012 | clean selected |
 | Larson T16 full 10k throughput/RSS | `speed + ownerlocalityfast-rsscap-2-desc160k` | 44.754M | 808,488 | clean selected |
@@ -29,14 +29,15 @@ For cleanup rules and the next source modularization target, see
 | Larson T16 full 10k minimum RSS control | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-source16k-route192k-run512` | 41.107M | 469,868 | clean superseded control |
 
 Selected-small note:
-`directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k` is fixed
-as the selected-small candidate-watch row for 256B..16K fixed-size checks.
+`sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k`
+is fixed as the selected-small candidate row for 256B..16K fixed-size checks.
+The former DirectLocalFreeReuse lane remains the simple control/baseline.
 MidPage 8K/32K prefill now uses the shared SourceBlock helper, so the small/mid
 boundary is structurally unified with Toy; this does not create a new promoted
-speed lane by itself. `directlocaltrusted-*`, `directlocalpacked-*`, and
-`directlocalexact-*` are HZ6-only research controls. They remain useful for
-owner-check, packed-metadata, and exact-route attribution, but are not
-selected-family or legacy cross-allocator rows.
+speed lane by itself. `directlocaltrusted-*`, `directlocalpacked-*`,
+`directlocalexact-*`, and the former DirectLocalFreeReuse selected-small lane are
+HZ6-only research/control rows. They remain useful for attribution, but are not
+selected-family rows unless a later repeat re-promotes them.
 
 ## Active ElasticCapacity Rows
 

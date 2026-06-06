@@ -12164,3 +12164,121 @@ Next:
   still remaining outside free-route lookup, or an 8K-only/source-run-special
   lane.  Do not promote broad sourceblockroute yet.
 ```
+
+### 2026-06-06: SourceBlockRoute dynmap default-candidate repeat-3
+
+Question:
+
+```text
+Can SourceBlockRoute behavior + dynamic slot descriptor map become the
+selected-small default candidate instead of DirectLocalFreeReuse?
+```
+
+Command:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass `
+  -File win\run_win_hz6_capacity_matrix.ps1 `
+  -OutputDir results\hz6-sourceblockroute-dynmap-default-candidate-repeat3 `
+  -Runs 3 `
+  -Families mixed_ws `
+  -BenchmarkProfiles balanced,wide_ws,larger_sizes,large_slice_4k,large_slice_8k,large_slice_16k `
+  -Hz6Profiles speed `
+  -CapacityLanes `
+    directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k,`
+    sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k `
+  -TimeoutSeconds 120 `
+  -ContinueOnFailure
+```
+
+Result:
+
+```text
+balanced:
+  directlocalfreereuse 76.471M / 96,776 KB
+  dynmap sourceblock  82.939M / 98,288 KB
+  delta +8.46%, RSS +1,512 KB
+
+wide_ws:
+  directlocalfreereuse 0.450M / 69,260 KB
+  dynmap sourceblock  0.467M / 72,836 KB
+  delta +3.78%, RSS +3,576 KB
+
+larger_sizes:
+  directlocalfreereuse 35.407M / 70,952 KB
+  dynmap sourceblock  37.857M / 71,684 KB
+  delta +6.92%, RSS +732 KB
+
+large_slice_4k:
+  directlocalfreereuse 51.878M / 41,916 KB
+  dynmap sourceblock  54.969M / 42,568 KB
+  delta +5.96%, RSS +652 KB
+
+large_slice_8k:
+  directlocalfreereuse 60.728M / 25,376 KB
+  dynmap sourceblock  59.271M / 25,944 KB
+  delta -2.40%, RSS +568 KB
+
+large_slice_16k:
+  directlocalfreereuse 46.308M / 17,096 KB
+  dynmap sourceblock  53.940M / 17,664 KB
+  delta +16.48%, RSS +568 KB
+```
+
+Decision:
+
+```text
+PROMOTE as selected-small candidate row.
+
+Scope:
+  Update selected-family wiring only.
+  Do not change broad/global HZ6 defaults.
+
+Why:
+  repeat-3 is positive on balanced, wide_ws, larger_sizes, 4K, and 16K.
+  8K regresses only -2.40%.
+  RSS increase is bounded, with max +3.6 MiB in wide_ws and sub-1 MiB on
+  larger_sizes / fixed slices except balanced.
+
+Keep:
+  directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k as the
+  simple control/baseline.
+
+Next:
+  Run selected-family smoke after wiring.
+  Later, re-run cross-allocator selected-small table if paper-facing numbers
+  need to be refreshed.
+```
+
+Selected-family wiring smoke:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass `
+  -File win\run_win_hz6_selected_family.ps1 `
+  -OutputDir results\hz6-selected-small-dynmap-smoke `
+  -Runs 1 `
+  -SelectedSmallFixed `
+  -ForceBuild `
+  -TimeoutSeconds 120 `
+  -ContinueOnFailure
+```
+
+Result:
+
+```text
+PASS:
+  selected-small-fixed now builds/runs
+  bench_mixed_ws_hz6_speed_sourceblockroute_behavior_dynmap_directlocalfreereuse_largerlowrss_front8k_sourcerun_desc8k_route8k.exe
+
+Smoke rows:
+  256B  76.719M / 14,332 KB
+  512B  51.531M / 26,516 KB
+  1K    57.545M / 26,588 KB
+  8K    61.555M / 25,936 KB
+  16K   41.484M / 17,664 KB
+
+Safety:
+  route_invalid = 0
+  route_miss = 0
+  route_register_fail = 0
+```

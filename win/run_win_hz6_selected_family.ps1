@@ -90,8 +90,8 @@ $presetMap = [ordered]@{
         -Families @("mixed_ws") `
         -BenchmarkProfiles @("large_slice_256", "large_slice_512", "large_slice_1k", "large_slice_2k", "large_slice_4k", "large_slice_8k", "large_slice_16k") `
         -Hz6Profiles @("speed") `
-        -CapacityLanes @("directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k") `
-        -Note "selected-small candidate: best simple 256B..16K fixed-size lane from HZ6-only repeat-10"
+        -CapacityLanes @("sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k") `
+        -Note "selected-small candidate: SourceBlockRoute dynmap over DirectLocalFreeReuse; repeat-3 improves balanced/wide/larger/4K/16K with small 8K regression"
 
     "selected-small-fixed-hybrid-lower" = New-Preset `
         -Name "selected-small-fixed-hybrid-lower" `
