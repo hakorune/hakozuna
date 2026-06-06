@@ -1,8 +1,7 @@
 #include "hz6_midpage_front.h"
 
-#include "../hz6_front_source_block.h"
 #include "../hz6_front_source.h"
-#include "../hz6_front_util.h"
+#include "../hz6_front_source_block.h"
 
 size_t hz6_midpage_prefill_run(Hz6Allocator* allocator, uint16_t class_id) {
   Hz6MidPageRunPolicy policy;
@@ -16,49 +15,8 @@ size_t hz6_midpage_prefill_run(Hz6Allocator* allocator, uint16_t class_id) {
     return 0;
   }
 
-  Hz6SourceKind source_kind =
-      hz6_allocator_profile_source_kind(allocator);
-  const Hz6OsMemoryOps* source_ops =
-      hz6_allocator_source_ops(allocator, source_kind);
-  hz6_allocator_note_source_run_reuse_dryrun(allocator, source_kind,
-                                             policy.run_bytes,
-                                             policy.slot_bytes);
-  Hz6SourceBlock* block = hz6_allocator_create_source_block(
-      allocator, policy.run_bytes, source_ops, source_kind);
-  if (!block) {
-    return 0;
-  }
-
-  size_t filled = 0;
-  while (filled < policy.slots_per_run &&
-         hz6_allocator_frontcache_count(allocator, class_id) <
-             hz6_allocator_frontcache_capacity(allocator, class_id)) {
-    size_t offset = filled * policy.slot_bytes;
-    void* ptr = hz6_front_source_block_slot(
-        allocator, HZ6_FRONT_MIDPAGE, class_id, policy.slot_bytes, offset,
-        block);
-    if (!ptr) {
-      break;
-    }
-
-    Hz6RouteResult route = hz6_allocator_route_lookup(allocator, ptr);
-    Hz6ObjectDescriptor* descriptor =
-        (Hz6ObjectDescriptor*)route.descriptor;
-    if (route.kind != HZ6_ROUTE_VALID || !descriptor) {
-      break;
-    }
-
-    if (!hz6_allocator_cache_active_descriptor(allocator, descriptor, ptr)) {
-      break;
-    }
-
-    ++filled;
-  }
-
-  if (filled == 0) {
-    hz6_allocator_release_source_block(allocator, block);
-  } else {
-    hz6_allocator_note_source_alloc_for_front(allocator, HZ6_FRONT_MIDPAGE);
-  }
-  return filled;
+  return hz6_front_prefill_source_block_kind(
+      allocator, HZ6_FRONT_MIDPAGE, class_id, policy.slot_bytes,
+      policy.run_bytes, hz6_allocator_profile_source_kind(allocator),
+      policy.slots_per_run);
 }

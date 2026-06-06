@@ -470,6 +470,28 @@ Latest HZ6 selected-family decision:
       2. inspect MidPage/Toy activation/source layout for a non-knob
          structural simplification.
 
+  MidPage source-block unification:
+    DONE:
+      hz6_midpage_prefill_run() now delegates to the shared
+      hz6_front_prefill_source_block_kind() helper.
+      This removes the MidPage-only SourceBlock fill loop and lets 8K/32K
+      MidPage use the same SourceRunReuse-L1 rollback/accounting path as Toy.
+
+    Smoke:
+      build_win_hz6_capacity_suite mixed_ws/speed for LargerLowRSS and
+      DirectLocalFreeReuse LargerLowRSS lanes passed.
+      hz6-midpage-sourceblock-unified-smoke run-1:
+        8K LargerLowRSS:             51.101M / 25,920 KB
+        8K DirectLocalFreeReuse:     62.059M / 25,920 KB
+        16K LargerLowRSS:            47.313M / 17,644 KB
+        16K DirectLocalFreeReuse:    57.168M / 17,656 KB
+      all rows: route_invalid=0 route_miss=0 alloc_fail=0
+
+    Read:
+      This is a structural cleanup and contract unification, not a new speed
+      knob.  Next performance decision still needs a repeat matrix if we want
+      to promote any small/mid behavior.
+
 2026-06-06 historical LargeSpan attack after Windows bench modularization:
   Status:
     CLOSED as implementation history.  The active next target is the

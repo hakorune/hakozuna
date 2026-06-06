@@ -64,6 +64,18 @@ remaining small fixed-size gap. So far they do not cleanly replace
 DirectLocalFreeReuse, and they should stay in the capacity matrix rather than
 paper-facing cross-allocator rows.
 
+MidPage/Toy source placement note:
+
+```text
+MidPage 8K/32K prefill now uses the same shared source-block helper as Toy:
+  hz6_midpage_prefill_run()
+    -> hz6_front_prefill_source_block_kind()
+
+This is a structural cleanup for the small/mid transition. It does not promote
+a new speed lane by itself; use repeat matrices before changing selected-family
+rows.
+```
+
 ## Active Next Read
 
 ```text
