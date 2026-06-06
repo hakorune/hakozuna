@@ -10,6 +10,7 @@ void hz6_allocator_destroy_source_blocks(Hz6Allocator* allocator) {
     if (!hz6_source_block_active(block) || !block->ptr) {
       continue;
     }
+    hz6_allocator_source_block_range_index_unregister(allocator, block);
     if (hz6_source_block_route_registered(block)) {
       if (hz6_source_block_route_shared(block)) {
 #if HZ6_SHARED_ROUTE_DIRECTORY_L1 && HZ6_ELASTIC_ROUTE_OVERFLOW_L1

@@ -280,6 +280,15 @@ typedef struct Hz6LargeSpanPool {
   size_t bytes_current;
 } Hz6LargeSpanPool;
 
+#if HZ6_SOURCE_BLOCK_ROUTE_RANGE_INDEX_L1
+typedef struct Hz6SourceBlockRangeIndexEntry {
+  uintptr_t page;
+  uint32_t block_index;
+  uint8_t active;
+  uint8_t reserved[3];
+} Hz6SourceBlockRangeIndexEntry;
+#endif
+
 #if HZ6_TOY_SMALL_ACTIVE_FREE_MAP_L1
 typedef struct Hz6ToySmallActiveMapEntry {
   void* ptr;
@@ -302,6 +311,10 @@ struct Hz6Allocator {
   Hz6TransferBackend transfer_backend;
   Hz6LargeSpanPool large_span_pool;
   Hz6SourceBlock source_blocks[HZ6_SOURCE_BLOCK_CAPACITY];
+#if HZ6_SOURCE_BLOCK_ROUTE_RANGE_INDEX_L1
+  Hz6SourceBlockRangeIndexEntry
+      source_block_range_index[HZ6_SOURCE_BLOCK_ROUTE_RANGE_INDEX_CAPACITY];
+#endif
   size_t next_descriptor_index;
   size_t descriptor_available_count;
   Hz6ObjectDescriptor descriptors[HZ6_OBJECT_DESCRIPTOR_CAPACITY];

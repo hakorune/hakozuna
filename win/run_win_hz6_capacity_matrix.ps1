@@ -340,6 +340,7 @@ $laneSuffix = @{
     "directlocalexact-largerlowrss-front8k-sourcerun-desc8k-route8k" = "_directlocalexact_largerlowrss_front8k_sourcerun_desc8k_route8k"
     "sourceblockroute-dryrun-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k" = "_sourceblockroute_dryrun_directlocalfreereuse_largerlowrss_front8k_sourcerun_desc8k_route8k"
     "sourceblockroute-slotmap-dryrun-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k" = "_sourceblockroute_slotmap_dryrun_directlocalfreereuse_largerlowrss_front8k_sourcerun_desc8k_route8k"
+    "sourceblockroute-rangeindex-slotmap-dryrun-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k" = "_sourceblockroute_rangeindex_slotmap_dryrun_directlocalfreereuse_largerlowrss_front8k_sourcerun_desc8k_route8k"
     "directlocalfreereuse-small8k-largerlowrss-front8k-sourcerun-desc8k-route8k" = "_directlocalfreereuse_small8k_largerlowrss_front8k_sourcerun_desc8k_route8k"
     "largerlowrss-front6k-sourcerun-desc8k-route8k" = "_largerlowrss_front6k_sourcerun_desc8k_route8k"
     "largerlowrss-front4k-sourcerun-desc8k-route8k" = "_largerlowrss_front4k_sourcerun_desc8k_route8k"

@@ -348,7 +348,11 @@ static void print_stats(const Hz6Allocator* allocator) {
          "probe_total=%zu probe_max=%zu "
          "descriptor_map_hit=%zu descriptor_map_miss=%zu "
          "descriptor_map_stale=%zu descriptor_map_set=%zu "
-         "descriptor_map_clear=%zu\n",
+         "descriptor_map_clear=%zu "
+         "range_index_register=%zu range_index_unregister=%zu "
+         "range_index_register_fail=%zu range_index_lookup=%zu "
+         "range_index_hit=%zu range_index_miss=%zu range_index_stale=%zu "
+         "range_index_probe_total=%zu range_index_probe_max=%zu\n",
          stats.source_block_route_dryrun_attempt,
          stats.source_block_route_block_hit,
          stats.source_block_route_slot_hit,
@@ -364,7 +368,16 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.source_block_route_descriptor_map_miss,
          stats.source_block_route_descriptor_map_stale,
          stats.source_block_route_descriptor_map_set,
-         stats.source_block_route_descriptor_map_clear);
+         stats.source_block_route_descriptor_map_clear,
+         stats.source_block_route_range_index_register,
+         stats.source_block_route_range_index_unregister,
+         stats.source_block_route_range_index_register_fail,
+         stats.source_block_route_range_index_lookup,
+         stats.source_block_route_range_index_hit,
+         stats.source_block_route_range_index_miss,
+         stats.source_block_route_range_index_stale,
+         stats.source_block_route_range_index_probe_total,
+         stats.source_block_route_range_index_probe_max);
   print_front_prefill_stats(allocator);
   printf("[HZ6_MEMORY_ATTR] "
          "descriptor_table_bytes=%zu "

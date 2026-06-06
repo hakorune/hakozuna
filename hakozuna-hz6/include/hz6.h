@@ -425,6 +425,15 @@ typedef struct Hz6StatsSnapshot {
   size_t source_block_route_descriptor_map_stale;
   size_t source_block_route_descriptor_map_set;
   size_t source_block_route_descriptor_map_clear;
+  size_t source_block_route_range_index_register;
+  size_t source_block_route_range_index_unregister;
+  size_t source_block_route_range_index_register_fail;
+  size_t source_block_route_range_index_lookup;
+  size_t source_block_route_range_index_hit;
+  size_t source_block_route_range_index_miss;
+  size_t source_block_route_range_index_stale;
+  size_t source_block_route_range_index_probe_total;
+  size_t source_block_route_range_index_probe_max;
   size_t route_exact_lookup_probe_total;
   size_t route_exact_lookup_probe_max;
   size_t owner_locality_lookup;

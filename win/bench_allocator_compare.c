@@ -906,6 +906,23 @@ int main(int argc, char** argv) {
             args[i].hz6_stats_after.source_block_route_descriptor_map_set;
         hz6_stats.source_block_route_descriptor_map_clear +=
             args[i].hz6_stats_after.source_block_route_descriptor_map_clear;
+        hz6_stats.source_block_route_range_index_register +=
+            args[i].hz6_stats_after.source_block_route_range_index_register;
+        hz6_stats.source_block_route_range_index_unregister +=
+            args[i].hz6_stats_after.source_block_route_range_index_unregister;
+        hz6_stats.source_block_route_range_index_register_fail +=
+            args[i].hz6_stats_after.source_block_route_range_index_register_fail;
+        hz6_stats.source_block_route_range_index_lookup +=
+            args[i].hz6_stats_after.source_block_route_range_index_lookup;
+        hz6_stats.source_block_route_range_index_hit +=
+            args[i].hz6_stats_after.source_block_route_range_index_hit;
+        hz6_stats.source_block_route_range_index_miss +=
+            args[i].hz6_stats_after.source_block_route_range_index_miss;
+        hz6_stats.source_block_route_range_index_stale +=
+            args[i].hz6_stats_after.source_block_route_range_index_stale;
+        hz6_stats.source_block_route_range_index_probe_total +=
+            args[i].hz6_stats_after.source_block_route_range_index_probe_total;
+        HZ6_MAX_STAT(source_block_route_range_index_probe_max);
         hz6_stats.toy_small_malloc_fast_attempt +=
             args[i].hz6_stats_after.toy_small_malloc_fast_attempt;
         hz6_stats.toy_small_malloc_fast_hit +=

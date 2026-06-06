@@ -177,7 +177,16 @@ void bench_print_hz6_summary(const Hz6StatsSnapshot* hz6_stats,
            "hz6_source_block_route_descriptor_map_miss=%zu "
            "hz6_source_block_route_descriptor_map_stale=%zu "
            "hz6_source_block_route_descriptor_map_set=%zu "
-           "hz6_source_block_route_descriptor_map_clear=%zu",
+           "hz6_source_block_route_descriptor_map_clear=%zu "
+           "hz6_source_block_route_range_index_register=%zu "
+           "hz6_source_block_route_range_index_unregister=%zu "
+           "hz6_source_block_route_range_index_register_fail=%zu "
+           "hz6_source_block_route_range_index_lookup=%zu "
+           "hz6_source_block_route_range_index_hit=%zu "
+           "hz6_source_block_route_range_index_miss=%zu "
+           "hz6_source_block_route_range_index_stale=%zu "
+           "hz6_source_block_route_range_index_probe_total=%zu "
+           "hz6_source_block_route_range_index_probe_max=%zu",
            hz6_stats->route_valid, hz6_stats->route_invalid,
            hz6_stats->route_miss, hz6_stats->transfer_push,
            hz6_stats->transfer_pop, hz6_stats->source_alloc,
@@ -340,7 +349,16 @@ void bench_print_hz6_summary(const Hz6StatsSnapshot* hz6_stats,
            hz6_stats->source_block_route_descriptor_map_miss,
            hz6_stats->source_block_route_descriptor_map_stale,
            hz6_stats->source_block_route_descriptor_map_set,
-           hz6_stats->source_block_route_descriptor_map_clear);
+           hz6_stats->source_block_route_descriptor_map_clear,
+           hz6_stats->source_block_route_range_index_register,
+           hz6_stats->source_block_route_range_index_unregister,
+           hz6_stats->source_block_route_range_index_register_fail,
+           hz6_stats->source_block_route_range_index_lookup,
+           hz6_stats->source_block_route_range_index_hit,
+           hz6_stats->source_block_route_range_index_miss,
+           hz6_stats->source_block_route_range_index_stale,
+           hz6_stats->source_block_route_range_index_probe_total,
+           hz6_stats->source_block_route_range_index_probe_max);
 #if HZ6_DIAGNOSTIC_PROBES
     printf(" hz6_route_lookup_probe_total=%zu "
            "hz6_route_lookup_probe_max=%zu "

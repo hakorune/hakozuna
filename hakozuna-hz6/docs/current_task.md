@@ -11719,3 +11719,153 @@ Next:
     block index hit + slot descriptor map hit
   should a behavior lane try source-block route before exact route.
 ```
+
+## 2026-06-06: SourceBlockRoute range-index + slotmap dry-run
+
+Context:
+
+```text
+SourceBlockRoute-L1:
+  source block scan + descriptor scan
+  clean ownership witness, but probe_max=128
+
+SourceBlockRoute slotmap:
+  source block scan + slot->descriptor map
+  descriptor scan removed, but block scan remained
+
+The remaining question before behavior is whether ptr can find its source block
+without scanning the source_blocks array.
+```
+
+Implementation:
+
+```text
+Added flag:
+  HZ6_SOURCE_BLOCK_ROUTE_RANGE_INDEX_L1=1
+
+Design:
+  page-granular range index:
+    page -> source_block_index
+
+  source block create:
+    register all pages covered by the block
+
+  source block release/destroy:
+    unregister all pages before hiding/releasing the backing
+
+  dry-run:
+    range index lookup first
+    then run-slot validation
+    then slot->descriptor map
+    fallback scan only if range index misses
+
+The range index uses tombstones for deletes so open-addressing probe chains do
+not break after source block release.
+```
+
+Lane:
+
+```text
+sourceblockroute-rangeindex-slotmap-dryrun-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+```
+
+Smoke:
+
+```text
+Command:
+  win/run_win_hz6_capacity_matrix.ps1
+    -Runs 1
+    -Families mixed_ws
+    -BenchmarkProfiles large_slice_8k
+    -Hz6Profiles speed
+    -CapacityLanes sourceblockroute-rangeindex-slotmap-dryrun-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+    -DiagnosticHz6Probes
+    -ForceBuild
+
+Result:
+  ops/s ~= 11.26M  (diagnostic overhead expected)
+  peak_kb = 40,652
+
+Safety:
+  alloc_fail = 0
+  route_invalid = 0
+  route_miss = 0
+  route_register_fail = 0
+  descriptor_exhausted = 0
+  source_block_exhausted = 0
+
+SourceBlockRoute:
+  attempt = 200704
+  block_hit = 200704
+  slot_hit = 200704
+  descriptor_hit = 200704
+  miss_no_block = 0
+  invalid_alignment = 0
+  invalid_unused = 0
+  descriptor_miss = 0
+  class_mismatch = 0
+  source_block_route_probe_total = 0
+  source_block_route_probe_max = 0
+
+SlotDescriptorMap:
+  descriptor_map_hit = 200704
+  descriptor_map_miss = 0
+  descriptor_map_stale = 0
+  descriptor_map_set = 4096
+  descriptor_map_clear = 0
+
+RangeIndex:
+  register = 8192
+  unregister = 0
+  register_fail = 0
+  lookup = 200704
+  hit = 200704
+  miss = 0
+  stale = 0
+  probe_total = 213248
+  probe_max = 17
+```
+
+Baseline build check:
+
+```text
+directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+  normal non-diagnostic build: OK
+```
+
+Decision:
+
+```text
+KEEP as behavior-gate evidence.
+
+Finding:
+  The two missing pieces for SourceBlockRoute behavior both work in the 8K
+  source-run control:
+
+    ptr -> source block via page range index
+    source block/run slot -> descriptor via slotmap
+
+  The dry-run no longer scans source_blocks:
+    source_block_route_probe_total = 0
+
+  Range index probes are mostly small:
+    213248 / 200704 ~= 1.06 average probes
+    probe_max = 17
+
+Not default:
+  This is still diagnostic-only. Exact route remains the real ownership route.
+
+Next:
+  The next reasonable experiment is a behavior lane:
+
+    SourceBlockRouteBehavior-L1
+      source-block route first for source-run slots only
+      exact route fallback/control remains
+      fail closed on range-index miss/stale/map miss/class mismatch
+
+  Acceptance before any promotion:
+    range_index hit ~= frees
+    descriptor_map stale/miss = 0
+    route_invalid/miss/register_fail = 0
+    broad selected-family does not regress
+```

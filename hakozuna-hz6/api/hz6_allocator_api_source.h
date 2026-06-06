@@ -64,6 +64,16 @@ Hz6ObjectDescriptor* hz6_allocator_source_run_descriptor_at(
     const Hz6SourceBlock* block,
     const void* ptr);
 
+void hz6_allocator_source_block_range_index_register(Hz6Allocator* allocator,
+                                                     const Hz6SourceBlock* block);
+
+void hz6_allocator_source_block_range_index_unregister(Hz6Allocator* allocator,
+                                                       const Hz6SourceBlock* block);
+
+Hz6SourceBlock* hz6_allocator_source_block_range_index_lookup(
+    Hz6Allocator* allocator,
+    const void* ptr);
+
 int hz6_allocator_elastic_depot_source_run_mark_slot(
     Hz6Allocator* allocator,
     Hz6SourceBlock* block,

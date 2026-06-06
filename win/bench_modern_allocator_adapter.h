@@ -208,6 +208,15 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 "source_block_route_descriptor_map_stale=%zu "
                 "source_block_route_descriptor_map_set=%zu "
                 "source_block_route_descriptor_map_clear=%zu "
+                "source_block_route_range_index_register=%zu "
+                "source_block_route_range_index_unregister=%zu "
+                "source_block_route_range_index_register_fail=%zu "
+                "source_block_route_range_index_lookup=%zu "
+                "source_block_route_range_index_hit=%zu "
+                "source_block_route_range_index_miss=%zu "
+                "source_block_route_range_index_stale=%zu "
+                "source_block_route_range_index_probe_total=%zu "
+                "source_block_route_range_index_probe_max=%zu "
                 "toy_small_malloc_fast_attempt=%zu "
                 "toy_small_malloc_fast_hit=%zu "
                 "toy_small_malloc_front_dispatch=%zu "
@@ -357,6 +366,15 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 s.source_block_route_descriptor_map_stale,
                 s.source_block_route_descriptor_map_set,
                 s.source_block_route_descriptor_map_clear,
+                s.source_block_route_range_index_register,
+                s.source_block_route_range_index_unregister,
+                s.source_block_route_range_index_register_fail,
+                s.source_block_route_range_index_lookup,
+                s.source_block_route_range_index_hit,
+                s.source_block_route_range_index_miss,
+                s.source_block_route_range_index_stale,
+                s.source_block_route_range_index_probe_total,
+                s.source_block_route_range_index_probe_max,
                 s.toy_small_malloc_fast_attempt,
                 s.toy_small_malloc_fast_hit,
                 s.toy_small_malloc_front_dispatch,
