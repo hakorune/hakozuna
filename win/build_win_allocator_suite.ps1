@@ -125,13 +125,15 @@ if (Test-Path $Hz6Common) {
     $Hz6BroadCapacityFlags = Get-Hz6WinBroadCapacityFlags
     $Hz6Route4kCapacityFlags = Get-Hz6WinRoute4kCapacityFlags
     $Hz6LargerLowRssCapacityFlags = Get-Hz6WinLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
+    $Hz6SameOwnerFastLargerLowRssCapacityFlags = Get-Hz6WinSameOwnerFastLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
 
     foreach ($profile in $Hz6Profiles) {
         foreach ($variant in @(
             @{ Suffix = ""; ExtraFlags = @() },
             @{ Suffix = "_broad"; ExtraFlags = $Hz6BroadCapacityFlags },
             @{ Suffix = "_route4k"; ExtraFlags = $Hz6Route4kCapacityFlags },
-            @{ Suffix = "_largerlowrss"; ExtraFlags = $Hz6LargerLowRssCapacityFlags }
+            @{ Suffix = "_largerlowrss"; ExtraFlags = $Hz6LargerLowRssCapacityFlags },
+            @{ Suffix = "_sameownerfast_largerlowrss"; ExtraFlags = $Hz6SameOwnerFastLargerLowRssCapacityFlags }
         )) {
             $output = Join-Path $OutDir ("bench_mixed_ws_hz6_{0}{1}.exe" -f $profile.Name, $variant.Suffix)
             $args = @()

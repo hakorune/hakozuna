@@ -60,6 +60,54 @@ Latest HZ6 Windows large-slice lane wiring:
     This is a single-run connectivity check, not a paper median.
 ```
 
+Latest HZ6 small fixed-size attack:
+
+```text
+2026-06-06:
+  Full legacy large_slices with largerlowrss connected:
+    HZ6 wins 128K, 256K, 512K, and 1M.
+    HZ6 is viable but not winner at 8K/16K.
+    HZ6 remains weak at 256B..4K versus mimalloc/HZ3/HZ4.
+
+  Diagnostic largerlowrss small rows:
+    capacity is clean:
+      alloc_fail = 0
+      route_invalid = 0
+      route_miss = 0
+      descriptor_exhausted = 0
+      source_block_exhausted = 0
+    frontcache_reuse_hit ~= alloc count
+    source_owned_route_hit_local_owner is very high
+
+  Read:
+    the remaining 256B..16K gap is hot same-owner/frontcache/route cost,
+    not route4k-style capacity exhaustion.
+
+  Implemented candidate-watch:
+    sameownerfast-largerlowrss-front8k-sourcerun-desc8k-route8k
+
+  HZ6-only repeat-3:
+    256B: +22.2%
+    512B: +26.9%
+    1K:   +15.3%
+    2K:   +17.1%
+    4K:   +21.8%
+    8K:   +18.5%
+    16K:  +24.0%
+    RSS essentially flat.
+
+  Legacy single-run connectivity:
+    mostly improves, but 2K was noisy/regressed.
+
+  Status:
+    keep sameownerfast-largerlowrss as candidate-watch.
+    do not default-promote yet.
+    next if continuing this track:
+      repeat selected rows with mimalloc/tcmalloc comparison,
+      then decide whether SameOwnerFast should become part of selected
+      same-owner fixed-size HZ6 lane.
+```
+
 Latest HZ6 selected-family decision:
 
 ```text

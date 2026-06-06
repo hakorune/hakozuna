@@ -157,6 +157,13 @@ function Get-Hz6WinSameOwnerFastDescAvailNoBoostRoute4kCapacityFlags {
     $flags
 }
 
+function Get-Hz6WinSameOwnerFastLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
+    $flags += "/DHZ6_SAME_OWNER_FAST_L1=1"
+    $flags
+}
+
 function Get-Hz6WinSpillRoute4kCapacityFlags {
     $flags = @()
     $flags += Get-Hz6WinRoute4kCapacityFlags
@@ -1765,6 +1772,7 @@ function Invoke-AppLikeHz6BenchBuilds {
     $largerLowRssSourceRunDesc8kRoute64kFlags = Get-Hz6WinLargerLowRssSourceRunDesc8kRoute64kCapacityFlags
     $largerLowRssSourceRunDesc8kSource2kRoute64kFlags = Get-Hz6WinLargerLowRssSourceRunDesc8kSource2kRoute64kCapacityFlags
     $largerLowRssFront8kSourceRunDesc8kRoute8kFlags = Get-Hz6WinLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
+    $sameOwnerFastLargerLowRssFront8kSourceRunDesc8kRoute8kFlags = Get-Hz6WinSameOwnerFastLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
     $largerLowRssFront6kSourceRunDesc8kRoute8kFlags = Get-Hz6WinLargerLowRssFront6kSourceRunDesc8kRoute8kCapacityFlags
     $largerLowRssFront4kSourceRunDesc8kRoute8kFlags = Get-Hz6WinLargerLowRssFront4kSourceRunDesc8kRoute8kCapacityFlags
     $mixedCleanFront8kSourceRunDesc16kSource2kRoute16kFlags = Get-Hz6WinMixedCleanFront8kSourceRunDesc16kSource2kRoute16kCapacityFlags
@@ -1920,6 +1928,7 @@ function Invoke-AppLikeHz6BenchBuilds {
         "largerlowrss-sourcerun-desc8k-route64k" = @{ Suffix = "_largerlowrss_sourcerun_desc8k_route64k"; ExtraFlags = $largerLowRssSourceRunDesc8kRoute64kFlags }
         "largerlowrss-sourcerun-desc8k-source2k-route64k" = @{ Suffix = "_largerlowrss_sourcerun_desc8k_source2k_route64k"; ExtraFlags = $largerLowRssSourceRunDesc8kSource2kRoute64kFlags }
         "largerlowrss-front8k-sourcerun-desc8k-route8k" = @{ Suffix = "_largerlowrss_front8k_sourcerun_desc8k_route8k"; ExtraFlags = $largerLowRssFront8kSourceRunDesc8kRoute8kFlags }
+        "sameownerfast-largerlowrss-front8k-sourcerun-desc8k-route8k" = @{ Suffix = "_sameownerfast_largerlowrss_front8k_sourcerun_desc8k_route8k"; ExtraFlags = $sameOwnerFastLargerLowRssFront8kSourceRunDesc8kRoute8kFlags }
         "largerlowrss-front6k-sourcerun-desc8k-route8k" = @{ Suffix = "_largerlowrss_front6k_sourcerun_desc8k_route8k"; ExtraFlags = $largerLowRssFront6kSourceRunDesc8kRoute8kFlags }
         "largerlowrss-front4k-sourcerun-desc8k-route8k" = @{ Suffix = "_largerlowrss_front4k_sourcerun_desc8k_route8k"; ExtraFlags = $largerLowRssFront4kSourceRunDesc8kRoute8kFlags }
         "mixedclean-front8k-sourcerun-desc16k-source2k-route16k" = @{ Suffix = "_mixedclean_front8k_sourcerun_desc16k_source2k_route16k"; ExtraFlags = $mixedCleanFront8kSourceRunDesc16kSource2kRoute16kFlags }
