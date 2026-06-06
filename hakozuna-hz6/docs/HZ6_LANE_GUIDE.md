@@ -41,14 +41,16 @@ these rows answer which lanes should be used, watched, or avoided.
 
 ## Selected-Small Wiring Policy
 
-The current selected-small candidate-watch is:
+The current selected-small candidate-watch is fixed as:
 
 ```text
 speed + directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
 ```
 
 Use it in `win/run_win_hz6_selected_family.ps1 -SelectedFamily` and in the
-legacy cross-allocator matrix when a selected-small HZ6 row is needed. Keep the
+legacy cross-allocator matrix when a selected-small HZ6 row is needed. This is
+the selected-small candidate-watch row, not a broad/default allocator profile.
+Keep the
 following rows out of selected-family and legacy cross-allocator tables unless a
 later repeat explicitly promotes them:
 
@@ -76,11 +78,45 @@ a new speed lane by itself; use repeat matrices before changing selected-family
 rows.
 ```
 
-## Active Next Read
+Fixed confirmation:
 
 ```text
+hz6-midpage-sourceblock-unified-repeat3:
+  8K LargerLowRSS:             55.476M / 25,984 KB
+  8K DirectLocalFreeReuse:     63.667M / 25,920 KB
+  16K LargerLowRSS:            50.723M / 17,648 KB
+  16K DirectLocalFreeReuse:    52.147M / 17,648 KB
+
+  safety:
+    route_invalid=0
+    route_miss=0
+    alloc_fail=0
+    route_register_fail=0
+    source-run rollback/safety counters=0
+```
+
+## Current Fixed Read
+
+```text
+HZ6 selected-small / small-mid:
+  FIXED:
+    directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+      as selected-small candidate-watch
+    MidPage source-block prefill unified through
+      hz6_front_prefill_source_block_kind()
+
+  DO NOT PROMOTE:
+    trusted/packed/exact DirectLocal variants
+    directlocalfreereuse-small8k as a default
+    per-size hybrid rows
+
+  NEXT:
+    run repeat/cross-allocator selected-small matrices before promotion, or
+    inspect another structural small/mid simplification. Do not add another
+    direct-local micro-knob without a new pressure signal.
+
 HZ6 LargeSpan / LargeDirect:
-  KEEP:
+  FIXED:
     LargeSpan class table with 128K, 256K, 512K, and 1M classes
     bytes-aware CentralSpanPool budget
     LargeDirect direct-release coverage for >1M..8M

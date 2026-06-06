@@ -29,10 +29,14 @@ For cleanup rules and the next source modularization target, see
 | Larson T16 full 10k minimum RSS control | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-source16k-route192k-run512` | 41.107M | 469,868 | clean superseded control |
 
 Selected-small note:
-`directlocaltrusted-*`, `directlocalpacked-*`, and `directlocalexact-*` are
-HZ6-only research controls. They remain useful for owner-check, packed-metadata,
-and exact-route attribution, but are not selected-family or legacy
-cross-allocator rows.
+`directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k` is fixed
+as the selected-small candidate-watch row for 256B..16K fixed-size checks.
+MidPage 8K/32K prefill now uses the shared SourceBlock helper, so the small/mid
+boundary is structurally unified with Toy; this does not create a new promoted
+speed lane by itself. `directlocaltrusted-*`, `directlocalpacked-*`, and
+`directlocalexact-*` are HZ6-only research controls. They remain useful for
+owner-check, packed-metadata, and exact-route attribution, but are not
+selected-family or legacy cross-allocator rows.
 
 ## Active ElasticCapacity Rows
 

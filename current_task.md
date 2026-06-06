@@ -497,6 +497,24 @@ Latest HZ6 selected-family decision:
       knob.  Next performance decision still needs a repeat matrix if we want
       to promote any small/mid behavior.
 
+    Lane fixed:
+      selected-small candidate-watch remains:
+        speed + directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+      directlocaltrusted / directlocalpacked / directlocalexact remain
+      HZ6-only controls.
+      directlocalfreereuse-small8k remains a size-gated control, not default.
+
+    Next allowed moves:
+      1. clean repeat/cross-allocator selected-small matrix for promotion
+         evidence, or
+      2. another structural small/mid simplification with a new pressure
+         signal.
+
+    Do not do next:
+      add another directlocal micro-knob
+      promote per-size hybrids
+      relabel MidPage source-block unification as a new speed lane
+
 2026-06-06 historical LargeSpan attack after Windows bench modularization:
   Status:
     CLOSED as implementation history.  The active next target is the
