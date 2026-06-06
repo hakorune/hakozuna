@@ -13,6 +13,10 @@ extern "C" {
 #define HZ6_LARGE128_BYTES ((size_t)131072)
 #define HZ6_LARGE256_CLASS_ID ((uint16_t)9)
 #define HZ6_LARGE256_BYTES ((size_t)262144)
+#define HZ6_LARGE512_CLASS_ID ((uint16_t)10)
+#define HZ6_LARGE512_BYTES ((size_t)524288)
+#define HZ6_LARGE1M_CLASS_ID ((uint16_t)11)
+#define HZ6_LARGE1M_BYTES ((size_t)1048576)
 
 typedef struct Hz6LargeSpanClass {
   uint16_t class_id;

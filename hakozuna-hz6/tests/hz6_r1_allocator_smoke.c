@@ -14,24 +14,59 @@ static int expect(int condition, const char* label) {
   return 1;
 }
 
-static size_t smoke_large128_central_count(const Hz6Allocator* allocator) {
-  return hz6_allocator_large_span_pool_count(allocator,
-                                             HZ6_LARGE128_CLASS_ID);
-}
-
-static size_t smoke_large128_central_bytes(const Hz6Allocator* allocator) {
-  return hz6_allocator_large_span_pool_bytes(allocator,
-                                             HZ6_LARGE128_CLASS_ID);
-}
-
-static size_t smoke_large256_central_count(const Hz6Allocator* allocator) {
-  return hz6_allocator_large_span_pool_count(allocator,
-                                             HZ6_LARGE256_CLASS_ID);
-}
-
-static size_t smoke_large256_central_bytes(const Hz6Allocator* allocator) {
-  return hz6_allocator_large_span_pool_bytes(allocator,
-                                             HZ6_LARGE256_CLASS_ID);
+static int smoke_large_span_roundtrip(Hz6Allocator* allocator,
+                                      size_t request_bytes,
+                                      uint16_t expected_class_id,
+                                      size_t expected_span_bytes) {
+  void* object = hz6_malloc(allocator, request_bytes);
+  if (!expect(object != NULL, "largespan malloc")) {
+    return 0;
+  }
+  Hz6RouteResult route = hz6_allocator_route_lookup(allocator, object);
+  if (!expect(route.kind == HZ6_ROUTE_VALID, "largespan route valid") ||
+      !expect(route.front_id == HZ6_FRONT_LARGE, "largespan route front") ||
+      !expect(route.class_id == expected_class_id, "largespan route class")) {
+    return 0;
+  }
+  Hz6ObjectDescriptor* descriptor = (Hz6ObjectDescriptor*)route.descriptor;
+  if (!expect(descriptor != NULL, "largespan descriptor") ||
+      !expect(descriptor->source_kind == HZ6_SOURCE_OS_PAGED,
+              "largespan os paged source kind") ||
+      !expect(descriptor->source_ptr == object, "largespan source pointer") ||
+      !expect(descriptor->source_bytes == expected_span_bytes,
+              "largespan source bytes") ||
+      !expect(hz6_free_remote(allocator, object), "largespan remote free")) {
+    return 0;
+  }
+  if (!expect(descriptor->state == HZ6_STATE_CENTRAL_FREE,
+              "largespan central free state") ||
+      !expect(hz6_allocator_large_span_pool_count(
+                  allocator, expected_class_id) == 1,
+              "largespan central pool count") ||
+      !expect(hz6_allocator_large_span_pool_bytes(
+                  allocator, expected_class_id) == expected_span_bytes,
+              "largespan central pool bytes") ||
+      !expect(hz6_allocator_large_span_pool_global_bytes(allocator) ==
+                  expected_span_bytes,
+              "largespan central global bytes")) {
+    return 0;
+  }
+  void* reused = hz6_malloc(allocator, request_bytes);
+  if (!expect(reused == object, "largespan central reuse")) {
+    return 0;
+  }
+  if (!expect(hz6_allocator_large_span_pool_count(
+                  allocator, expected_class_id) == 0,
+              "largespan central pool empty") ||
+      !expect(hz6_allocator_large_span_pool_bytes(
+                  allocator, expected_class_id) == 0,
+              "largespan central pool bytes empty") ||
+      !expect(hz6_allocator_large_span_pool_global_bytes(allocator) == 0,
+              "largespan central global bytes empty")) {
+    return 0;
+  }
+  hz6_free(allocator, reused);
+  return 1;
 }
 
 int main(void) {
@@ -127,117 +162,30 @@ int main(void) {
 
   Hz6Allocator large_allocator;
   hz6_allocator_init_with_profile(&large_allocator, HZ6_PROFILE_REMOTE);
-  void* large_object = hz6_malloc(&large_allocator, 70000);
-  if (!expect(large_object != NULL, "large128 malloc")) {
+  if (!smoke_large_span_roundtrip(&large_allocator, 70000,
+                                  HZ6_LARGE128_CLASS_ID,
+                                  HZ6_LARGE128_BYTES) ||
+      !smoke_large_span_roundtrip(&large_allocator,
+                                  HZ6_LARGE128_BYTES + 1,
+                                  HZ6_LARGE256_CLASS_ID,
+                                  HZ6_LARGE256_BYTES) ||
+      !smoke_large_span_roundtrip(&large_allocator,
+                                  HZ6_LARGE256_BYTES + 1,
+                                  HZ6_LARGE512_CLASS_ID,
+                                  HZ6_LARGE512_BYTES) ||
+      !smoke_large_span_roundtrip(&large_allocator,
+                                  HZ6_LARGE512_BYTES + 1,
+                                  HZ6_LARGE1M_CLASS_ID,
+                                  HZ6_LARGE1M_BYTES)) {
     return 1;
   }
-  Hz6RouteResult large_route =
-      hz6_allocator_route_lookup(&large_allocator, large_object);
-  if (!expect(large_route.kind == HZ6_ROUTE_VALID, "large128 route valid") ||
-      !expect(large_route.front_id == HZ6_FRONT_LARGE,
-              "large128 route front") ||
-      !expect(large_route.class_id == HZ6_LARGE128_CLASS_ID,
-              "large128 route class")) {
-    return 1;
-  }
-  Hz6ObjectDescriptor* large_descriptor =
-      (Hz6ObjectDescriptor*)large_route.descriptor;
-  if (!expect(large_descriptor != NULL, "large128 descriptor") ||
-      !expect(large_descriptor->source_kind == HZ6_SOURCE_OS_PAGED,
-              "large128 os paged source kind") ||
-      !expect(large_descriptor->source_ptr == large_object,
-              "large128 source pointer") ||
-      !expect(large_descriptor->source_bytes == HZ6_LARGE128_BYTES,
-              "large128 source bytes") ||
-      !expect(hz6_free_remote(&large_allocator, large_object),
-              "large128 remote free")) {
-    return 1;
-  }
-  if (!expect(large_descriptor->state == HZ6_STATE_CENTRAL_FREE,
-              "large128 central free state") ||
-      !expect(smoke_large128_central_count(&large_allocator) == 1,
-              "large128 central pool count") ||
-      !expect(smoke_large128_central_bytes(&large_allocator) ==
-                  HZ6_LARGE128_BYTES,
-              "large128 central pool bytes") ||
-      !expect(hz6_allocator_large_span_pool_global_bytes(&large_allocator) ==
-                  HZ6_LARGE128_BYTES,
-              "large128 central global bytes")) {
-    return 1;
-  }
-  void* large_reused = hz6_malloc(&large_allocator, 70000);
-  if (!expect(large_reused == large_object, "large128 transfer reuse")) {
-    return 1;
-  }
-  if (!expect(smoke_large128_central_count(&large_allocator) == 0,
-              "large128 central pool empty") ||
-      !expect(smoke_large128_central_bytes(&large_allocator) == 0,
-              "large128 central pool bytes empty") ||
-      !expect(hz6_allocator_large_span_pool_global_bytes(&large_allocator) ==
-                  0,
-              "large128 central global bytes empty")) {
-    return 1;
-  }
-  hz6_free(&large_allocator, large_reused);
   Hz6StatsSnapshot large_stats = hz6_stats_snapshot(&large_allocator);
-  if (!expect(large_stats.transfer_push == 0, "large128 transfer push") ||
-      !expect(large_stats.transfer_pop == 0, "large128 transfer pop") ||
-      !expect(large_stats.source_alloc == 1,
-              "large128 source alloc")) {
+  if (!expect(large_stats.transfer_push == 0, "largespan transfer push") ||
+      !expect(large_stats.transfer_pop == 0, "largespan transfer pop") ||
+      !expect(large_stats.source_alloc == 4, "largespan source alloc")) {
     return 1;
   }
-  void* large256_object = hz6_malloc(&large_allocator,
-                                     HZ6_LARGE128_BYTES + 1);
-  if (!expect(large256_object != NULL, "large256 malloc")) {
-    return 1;
-  }
-  Hz6RouteResult large256_route =
-      hz6_allocator_route_lookup(&large_allocator, large256_object);
-  if (!expect(large256_route.kind == HZ6_ROUTE_VALID,
-              "large256 route valid") ||
-      !expect(large256_route.front_id == HZ6_FRONT_LARGE,
-              "large256 route front") ||
-      !expect(large256_route.class_id == HZ6_LARGE256_CLASS_ID,
-              "large256 route class")) {
-    return 1;
-  }
-  Hz6ObjectDescriptor* large256_descriptor =
-      (Hz6ObjectDescriptor*)large256_route.descriptor;
-  if (!expect(large256_descriptor != NULL, "large256 descriptor") ||
-      !expect(large256_descriptor->source_bytes == HZ6_LARGE256_BYTES,
-              "large256 source bytes") ||
-      !expect(hz6_free_remote(&large_allocator, large256_object),
-              "large256 remote free")) {
-    return 1;
-  }
-  if (!expect(large256_descriptor->state == HZ6_STATE_CENTRAL_FREE,
-              "large256 central free state") ||
-      !expect(smoke_large256_central_count(&large_allocator) == 1,
-              "large256 central pool count") ||
-      !expect(smoke_large256_central_bytes(&large_allocator) ==
-                  HZ6_LARGE256_BYTES,
-              "large256 central pool bytes") ||
-      !expect(hz6_allocator_large_span_pool_global_bytes(&large_allocator) ==
-                  HZ6_LARGE256_BYTES,
-              "large256 central global bytes")) {
-    return 1;
-  }
-  void* large256_reused = hz6_malloc(&large_allocator,
-                                     HZ6_LARGE128_BYTES + 1);
-  if (!expect(large256_reused == large256_object, "large256 central reuse")) {
-    return 1;
-  }
-  if (!expect(smoke_large256_central_count(&large_allocator) == 0,
-              "large256 central pool empty") ||
-      !expect(smoke_large256_central_bytes(&large_allocator) == 0,
-              "large256 central pool bytes empty") ||
-      !expect(hz6_allocator_large_span_pool_global_bytes(&large_allocator) ==
-                  0,
-              "large256 central global bytes empty")) {
-    return 1;
-  }
-  hz6_free(&large_allocator, large256_reused);
-  if (!expect(hz6_malloc(&large_allocator, HZ6_LARGE256_BYTES + 1) == NULL,
+  if (!expect(hz6_malloc(&large_allocator, HZ6_LARGE1M_BYTES + 1) == NULL,
               "unsupported over-large allocation")) {
     return 1;
   }

@@ -23,7 +23,7 @@ these rows answer which lanes should be used, watched, or avoided.
 | Selected sibling | `route18` mixedclean sibling | Current wide_ws sibling when wide_ws is the target; do not replace balanced route17/loopcarry by default. |
 | Selected profile lane | `sameownerfast-descavail-noboost-route4k` | random_mixed same-owner speed row. |
 | Selected profile lane | `largerlowrss-front8k-sourcerun-desc8k-route8k` | larger_sizes RSS/speed row. |
-| LargeSpan family seed | `mixed_ws large_slice_128k,large_slice_256k + speed-route4k` | Narrow 128K/256K LargeSpan class verification. Use for LargeSpan backend safety/coverage, not broad speed ranking. |
+| LargeSpan family seed | `mixed_ws large_slice_128k,large_slice_256k,large_slice_512k,large_slice_1m + speed-route4k` | Narrow 128K..1M LargeSpan class verification. Use for LargeSpan backend safety/coverage, not broad speed ranking. |
 | Selected Larson low-RSS sibling | `...frontcachepacked-sourceblockpacked-source10k-route192k-run512` | Current Larson minimum-RSS sibling. Use for current HZ6 Larson low-RSS comparisons. |
 | ElasticCapacity candidate-watch | `...elasticdescroute-desc16k-...source10k-route16k-run512` | Best ElasticCapacity RSS/throughput shape so far. Watch, but do not broad-promote. |
 | ElasticCapacity component/control | `...elasticdescsource-route-desc16k-...source64-route16k-run512` | Lower RSS source-block depot evidence; speed is lower than ElasticDescriptorRouteOverflow. |
@@ -37,18 +37,18 @@ these rows answer which lanes should be used, watched, or avoided.
 ```text
 HZ6 LargeSpan:
   KEEP:
-    LargeSpan class table with 128K and 256K classes
+    LargeSpan class table with 128K, 256K, 512K, and 1M classes
     bytes-aware CentralSpanPool budget
 
   CURRENT READ:
-    large_slice_128k and large_slice_256k are clean under speed-route4k after
-    ForceBuild. Treat this as backend coverage/safety evidence, not a broad
-    allocator ranking row.
+    large_slice_128k, large_slice_256k, large_slice_512k, and large_slice_1m
+    are clean under speed-route4k after ForceBuild. Treat this as backend
+    coverage/safety evidence, not a broad allocator ranking row.
 
   NEXT:
-    add 512K / 1M only through the same class-table/backend path, or stop and
-    return to selected-family optimization if broad large-object coverage is
-    not the immediate target.
+    stop LargeSpan class expansion here unless >1M is the immediate target.
+    Return to selected-family optimization for the next HZ6 throughput/RSS
+    improvement pass.
 
 HZ6 Larson / ElasticCapacity:
   KEEP:

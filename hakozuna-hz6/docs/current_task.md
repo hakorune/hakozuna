@@ -42,7 +42,8 @@ LargeSpan family L1.
 
 Goal:
   promote the existing large128 seed into an explicit, extensible LargeSpan
-  family. 128K is the proof target; 256K is the first second-class extension.
+  family. 128K is the proof target; 256K/512K/1M are the first bounded
+  extension classes.
 
 Why:
   HZ6 can show low-RSS/safety strength, but the broad large-size story is still
@@ -71,15 +72,15 @@ Immediate implementation order:
        all runs large_source_alloc=256
 
 Current LargeSpan step:
-  LargeSpan256-L1 is in place after CentralSpanPoolBudget-L1.
+  LargeSpan256/512/1M-L1 is in place after CentralSpanPoolBudget-L1.
 
-Pro consult read:
+Original pro consult read:
   HZ6 LargeSpan should proceed, but do not add 128K/256K/512K/1M all at once.
-  The safe order is:
+  The safe order was:
     1. LargeSpan class policy. DONE.
     2. CentralSpanPool bytes-bounded accounting. DONE.
     3. LargeSpan256-L1. DONE.
-    4. LargeSpan512 / LargeSpan1M behind the same backend.
+    4. LargeSpan512 / LargeSpan1M behind the same backend. DONE.
     5. Scavenge/RSSReturn only after retained-span speed/safety is stable.
 
 Why bytes budget first:
@@ -93,6 +94,9 @@ Why bytes budget first:
     exact 64K remains Local2P-first
     >32K..128K remains the 128K LargeSpan class
     >128K..256K is the 256K LargeSpan class
+    >256K..512K is the 512K LargeSpan class
+    >512K..1M is the 1M LargeSpan class
+    >1M remains fail-closed in R1
     256..8192 larger_sizes is mid/source-block pressure, not the LargeSpan front
 
 CentralSpanPoolBudget-L1 implementation:
@@ -116,36 +120,47 @@ CentralSpanPoolBudget-L1 implementation:
       all runs route_invalid=0 route_miss=0 alloc_fail=0
       all runs large_source_alloc=256
 
-LargeSpan256-L1 implementation:
+LargeSpan256/512/1M-L1 implementation:
   DONE.
-  Added a 256K class to the LargeSpan class table and let the existing
+  Added 256K, 512K, and 1M classes to the LargeSpan class table and let the existing
   LargeSpan front allocate/prefill by class metadata instead of hard-coding the
   128K class. The front ops name is now `largespan` to reflect the family while
   keeping the existing file/module names stable for this step.
 
   Behavior:
     requests >128K..256K route to HZ6_FRONT_LARGE class 9
-    requests >256K still fail closed
+    requests >256K..512K route to HZ6_FRONT_LARGE class 10
+    requests >512K..1M route to HZ6_FRONT_LARGE class 11
+    requests >1M still fail closed
     central reuse/free uses the same bytes-aware CentralSpanPool accounting
     no decommit/release and no hot-path diagnostic counters were added
 
   Verification:
     Windows HZ6 R1 smokes all pass
-    allocator smoke now asserts Large256 route class, central bytes/global
-    bytes, and same-pointer central reuse
-    mixed_ws large_slice_128k repeat-3 after ForceBuild:
-      median 69.082M ops/s / 6,544 KB
+    allocator smoke now asserts Large128/256/512/1M route class, central
+    bytes/global bytes, and same-pointer central reuse
+    mixed_ws large_slice_128k repeat-3 after 512K/1M ForceBuild:
+      median 64.712M ops/s / 6,544 KB
       all runs route_invalid=0 route_miss=0 alloc_fail=0
-      all runs large_source_alloc=256
-    mixed_ws large_slice_256k repeat-3 after ForceBuild:
-      median 60.908M ops/s / 6,028 KB
+      source_alloc=256
+    mixed_ws large_slice_256k repeat-3 after 512K/1M ForceBuild:
+      median 62.228M ops/s / 6,020 KB
       all runs route_invalid=0 route_miss=0 alloc_fail=0
-      all runs large_source_alloc=128
+      source_alloc=128
+    mixed_ws large_slice_512k repeat-3 after ForceBuild:
+      median 57.393M ops/s / 5,768 KB
+      all runs route_invalid=0 route_miss=0 alloc_fail=0
+      source_alloc=64
+    mixed_ws large_slice_1m repeat-3 after ForceBuild:
+      median 42.024M ops/s / 5,636 KB
+      all runs route_invalid=0 route_miss=0 alloc_fail=0
+      source_alloc=32
 
   Note:
     the first 256K matrix run reused an old pre-LargeSpan256 exe because the
     capacity runner only rebuilds missing artifacts unless `-ForceBuild` is
-    supplied. The ForceBuild rerun is the valid closeout.
+    supplied. LargeSpan closeouts should use ForceBuild when class-table code
+    changes.
 ```
 
 Non-goals for this step:
@@ -154,7 +169,7 @@ Non-goals for this step:
 do not add another broad capacity knob
 do not mix in Elastic source-depot lifecycle behavior
 do not weaken owned-invalid / stale-pointer fail-closed behavior
-do not claim broad large-object allocator coverage until 256K/512K/1M exist
+do not claim broad large-object allocator coverage beyond the 128K..1M seed
 ```
 
 ### 2026-06-06: mixed_ws wide_ws route-invalid debug closeout
