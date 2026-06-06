@@ -65,6 +65,7 @@ cross-owner contract.
 | Depot descriptor rehome budget2048 | `speed + ...elasticdescsource-route-depotrunmeta-depotownerdirect-depotdescrehome-budget2048-...source64-route16k-run4096` | 44.034M main10k / 45.404M worker10k | 217888 KB worker10k | Larson bounded rehome candidate-control; repeat/guard safety clean after depot run-meta zero-count guard, diagnostic `descriptor_used` drops to `36539`; broad smoke keeps it out of default promotion. The former mixed_ws wide_ws `0xc0000005` is now fail-closed by source-block activation/release guards, but the row still reports `route_invalid`/`route_miss`, so it remains no-go for broad selected defaults. |
 
 Source:
+- `docs/benchmarks/windows/paper/hz6_selected_family/sourceblockroute-dynmap-selected-small-20260606/`
 - `docs/benchmarks/windows/paper/hz6_selected_family/selected-family-desc17-refresh/`
 - `docs/benchmarks/windows/paper/hz6_selected_family/widews-routeonly-repeat/`
 - `docs/benchmarks/windows/paper/hz6_selected_family/larson-metadata-slim-route192-repeat/`
