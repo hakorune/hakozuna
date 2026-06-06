@@ -67,7 +67,7 @@ Larson packed minimum-RSS sibling:
   speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source10k-route192k-run512
 
 Larson Elastic low-RSS sibling:
-  speed + ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512
+  speed + ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-directfree-trustedlocalcache-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512
 
 ElasticCapacity bounded descriptor rehome candidate-control:
   speed + ownerlocalityfast-rsscap-2-elasticdescsource-route-depotrunmeta-depotownerdirect-depotdescrehome-budget2048-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run4096
@@ -87,10 +87,12 @@ FrontCachePackedMeta-L1 and SourceBlockPackedFlags-L1 are lower-RSS component
 controls/candidates. The combined packed source10k lane is the current clean
 packed minimum-RSS candidate after repeat-3 (`44.864M / 412280 KB`), but it
 remains a minimum-RSS sibling/candidate rather than a broad throughput
-promotion. DepotOwnerDirectFastPath-L1 is the selected Larson/Elastic low-RSS
-sibling after the 2026-06-06 repeat-3 guard: it is safety-clean, averages
-`+0.52%` speed against the packed source10k sibling, and cuts about `187-199`
-MiB peak RSS. It is not a broad HZ6 default. DepotDescriptorRehomeBudget2048-L1
+promotion. DepotOwnerDirectDirectFreeTrustedLocalCache is the selected
+Larson/Elastic low-RSS sibling after the 2026-06-06 repeat-3 guard: it is
+safety-clean, improves every main/worker 1k/4k/10k row over DepotOwnerDirect
+(`avg +2.60%`, min `+1.34%`), and keeps essentially the same peak RSS.
+DepotOwnerDirectFastPath-L1 remains the clean source-depot control. It is not a
+broad HZ6 default. DepotDescriptorRehomeBudget2048-L1
 is the current bounded descriptor rehome candidate-control (`44.919M`, safety
 clean, diagnostic `descriptor_used=36539` versus full rehome `77883`) and should
 be validated with repeat/guard before any promotion. SlotOwnerConsumerDryRun-L1

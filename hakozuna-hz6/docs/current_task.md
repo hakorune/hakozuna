@@ -18,6 +18,88 @@ Use these orientation docs before reading this long ledger:
   HZ6_SOURCE_MODULARIZATION.md
 ```
 
+### 2026-06-06: DepotOwnerDirect DirectFreeTrustedLocalCache promotion
+
+Current decision:
+
+```text
+ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-directfree-trustedlocalcache-...:
+  promote as the selected Larson/Elastic low-RSS sibling
+
+ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-...:
+  keep as the clean source-depot control/baseline
+
+ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-trustedlocalcache-...:
+  keep as boundary/control; trusted owner without DirectFree does not remove the
+  intended free-side second owner check
+```
+
+Reason:
+
+```text
+DepotOwnerDirect had already cut roughly 187-199 MiB RSS versus the packed
+source10k sibling, but main10k retained a small speed gap in the guard matrix.
+
+The next low-risk hypothesis was not another broad owner_equal shortcut.
+OwnerEqualCallsiteDryRun already showed free/local-cache dominates, and
+DepotOwnerDirect already makes descriptor_owner() read the depot owner table
+directly. The more specific remaining redundancy is:
+
+  hz6_free()
+    -> proves local_owner
+    -> generic front free/cache path can check owner again
+
+DirectFreeTrustedLocalCache composes:
+
+  HZ6_DESCRIPTOR_DEPOT_OWNER_DIRECT_FASTPATH_L1
+  HZ6_LOCAL_CACHE_DIRECT_FREE_L1
+  HZ6_LOCAL_CACHE_TRUSTED_OWNER_L1
+
+so local-owner frees for Toy/MidPage/Local2P can push the active descriptor to
+frontcache without the second owner read. It does not change route ownership,
+remote handoff, decommit/release, or fallback safety.
+```
+
+Command:
+
+```powershell
+win/run_win_hz6_capacity_matrix.ps1 `
+  -OutputDir results/hz6-depotownerdirect-directfree-trustedlocalcache-repeat3 `
+  -Runs 3 `
+  -Families larson `
+  -BenchmarkProfiles larson_t16_main_1k,larson_t16_worker_1k,larson_t16_main_4k,larson_t16_worker_4k,larson_t16_main_10k,larson_t16_worker_10k `
+  -Hz6Profiles speed `
+  -CapacityLanes `
+    ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512,`
+    ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-directfree-trustedlocalcache-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512 `
+  -TimeoutSeconds 240 `
+  -ContinueOnFailure
+```
+
+Repeat-3 median:
+
+```text
+profile              depot direct          directfree trusted   speed delta   RSS delta
+main_1k              55.26M /  92,116 KB   57.07M /  92,120 KB  +3.27%       +4 KB
+worker_1k            56.37M /  91,852 KB   57.63M /  91,852 KB  +2.24%        0 KB
+main_4k              54.08M / 139,128 KB   55.80M / 139,108 KB  +3.18%       -20 KB
+worker_4k            50.28M / 132,988 KB   50.95M / 132,992 KB  +1.34%       +4 KB
+main_10k             42.31M / 224,708 KB   43.75M / 224,724 KB  +3.38%       +16 KB
+worker_10k           45.78M / 214,824 KB   46.77M / 214,828 KB  +2.17%       +4 KB
+
+Average speed delta: +2.60%
+Minimum speed delta: +1.34%
+Average RSS delta:   +1.3 KB
+Safety:              clean
+```
+
+Runner update:
+
+```text
+larson-elastic-lowrss-selected now points to:
+  ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-directfree-trustedlocalcache-...
+```
+
 ### 2026-06-06: DepotOwnerDirect Elastic low-RSS selected sibling
 
 Current decision:

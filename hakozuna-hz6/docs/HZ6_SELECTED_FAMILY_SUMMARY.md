@@ -26,7 +26,7 @@ For cleanup rules and the next source modularization target, see
 | Larson T16 full 10k FrontCachePacked component | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-source16k-route192k-run512` | 41.131M | 430,692 | clean lower-RSS component candidate/control in the SourceBlockPacked closeout matrix |
 | Larson T16 full 10k SourceBlock packed candidate | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-sourceblockpacked-source16k-route192k-run512` | 41.070M | 435,304 | clean lower-RSS candidate; `source_block_entry_bytes` projects/observes `144 -> 128`, lower RSS than L2 but not lower than FrontCachePacked |
 | Larson T16 full 10k packed minimum RSS candidate | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source10k-route192k-run512` | 44.864M | 412,280 | current packed minimum-RSS sibling; source10k repeat-3 safety-clean, source8k/source2k are warmup no-go |
-| Larson T16 full 10k Elastic minimum RSS sibling | `speed + ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512` | guard repeat-3 main10k: 39.833M | 224,592 | selected Larson/Elastic low-RSS sibling; repeat-3 guard vs packed source10k is safety-clean, average +0.52% speed across main/worker 1k/4k/10k, about 187-199 MiB lower RSS |
+| Larson T16 full 10k Elastic minimum RSS sibling | `speed + ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-directfree-trustedlocalcache-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512` | repeat-3 main10k: 43.75M | 224,724 | selected Larson/Elastic low-RSS sibling; DirectFreeTrustedLocalCache improves every main/worker 1k/4k/10k guard row over DepotOwnerDirect (`avg +2.60%`, min `+1.34%`) with essentially unchanged RSS |
 | Larson T16 full 10k minimum RSS control | `speed + ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-source16k-route192k-run512` | 41.107M | 469,868 | clean superseded control |
 
 Selected-small note:
@@ -50,7 +50,9 @@ cross-owner contract.
 | --- | --- | ---: | ---: | --- |
 | Elastic descriptor+route depot | `speed + ...elasticdescroute-desc16k-...source10k-route16k-run512` | 42.770M | 246,880 | candidate-watch; best descriptor+route depot RSS/throughput shape before source-depot work |
 | Elastic descriptor+source+route depot | `speed + ...elasticdescsource-route-desc16k-...source64-route16k-run512` | 41.733M | 227,852 | lower-RSS source-depot component/control |
-| Depot owner direct fast path | `speed + ...elasticdescsource-route-depotownerdirect-...source64-route16k-run512` | guard repeat-3 main10k: 39.833M | 224,592 | selected Larson/Elastic low-RSS sibling; guard rows safety-clean, about 187-199 MiB lower RSS than packed source10k |
+| Depot owner direct fast path | `speed + ...elasticdescsource-route-depotownerdirect-...source64-route16k-run512` | guard repeat-3 main10k: 39.833M | 224,592 | previous selected Larson/Elastic low-RSS sibling; now the clean control for DirectFreeTrustedLocalCache |
+| Depot owner direct + DirectFreeTrustedLocalCache | `speed + ...elasticdescsource-route-depotownerdirect-directfree-trustedlocalcache-...source64-route16k-run512` | repeat-3 main10k: 43.75M | 224,724 | selected Larson/Elastic low-RSS sibling; safety clean, `avg +2.60%` and min `+1.34%` vs DepotOwnerDirect over main/worker 1k/4k/10k |
+| Depot owner direct + TrustedLocalCache only | `speed + ...elasticdescsource-route-depotownerdirect-trustedlocalcache-...source64-route16k-run512` | repeat-3 main10k: 41.63M | 224,712 | boundary/control; without DirectFree it does not remove the intended free-side second owner check and does not broadly beat DepotOwnerDirect |
 | Slot owner consumer dry-run | `speed + diagnostic + ...elasticdescsource-route-slotownerconsumerdryrun-...source64-route16k-run4096` | 36.691M | 233,556 | diagnostic-only; `would_skip_l2=687536440`, `false_positive=0`; not speed-rankable |
 | Slot owner logical fast path | `speed + ...elasticdescsource-route-slotownerlogical-...source64-route16k-run4096` | 38.494M | 239,484 | safety-clean behavior no-go/control; broad sparse probing is too expensive |
 | Owner-equal callsite dry-run | `speed + diagnostic + ...elasticdescsource-route-depotownerdirect-ownerequalcallsite-dryrun-...source64-route16k-run512` | 42.434M | 224,612 | diagnostic-only; owner_equal pressure is free/local-cache dominated |
@@ -94,6 +96,7 @@ Source:
 - `docs/benchmarks/windows/paper/hz6_route_loopcarry_l1_repeat/`
 - `docs/benchmarks/windows/paper/hz6_depot_owner_direct_repeat3/`
 - `docs/benchmarks/windows/paper/hz6_depot_owner_direct_guard_matrix/`
+- `results/hz6-depotownerdirect-directfree-trustedlocalcache-repeat3/`
 - `docs/benchmarks/windows/paper/hz6_slot_owner_consumer_dryrun_full10k/`
 - `docs/benchmarks/windows/paper/hz6_owner_equal_callsite_dryrun_full10k/`
 - `docs/benchmarks/windows/paper/hz6_flc_owner_predicate_dryrun_full10k/`
@@ -159,7 +162,8 @@ Source:
 | Larson OwnerSourceSideMeta L2 | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-source16k-route192k-run512` | Current selected lowest-RSS balance sibling. It keeps routebytes16 and StorageOwner16 ownerless descriptors, then stores the descriptor-storage owner hint on each SourceBlock. Repeat-3 full 10k: routebytes16 control `40.750M / 449128 KB`, L2 `40.754M / 439912 KB`. Worker-warmup run=1: routebytes16 `40.126M / 448948 KB`, L2 `40.787M / 439740 KB`. Diagnostic validation: `owner_source_side_meta_l2_hit=1253200849`, all L2 miss/mismatch counters zero, safety clean. |
 | Larson SourceBlockPackedFlags L1 | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-sourceblockpacked-source16k-route192k-run512` | Lower-RSS SourceBlock metadata component candidate/control on top of OwnerSourceSideMeta-L2. It packs `source_kind`, `active`, `route_registered`, and `run_active` into a SourceBlock flag word while preserving source release and owner-source side metadata. Repeat-3 closeout: `41.070M / 435304 KB`, safety clean. |
 | Larson combined packed minimum-RSS candidate | `ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source10k-route192k-run512` | Current packed minimum-RSS sibling. It combines FrontCachePackedMeta-L1 and SourceBlockPackedFlags-L1 over OwnerSourceSideMeta-L2, then trims SourceBlock capacity to source10k. Repeat-3 full 10k: `44.864M / 412280 KB`, safety clean. Source12k is backup/control; source8k and source2k are warmup no-go. Keep as minimum-RSS sibling/candidate, not broad throughput promotion. |
-| Larson DepotOwnerDirectFastPath-L1 | `ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512` | Selected Larson/Elastic low-RSS sibling. Repeat-3 guard vs packed source10k is safety-clean, average `+0.52%` speed across main/worker 1k/4k/10k, and about `187-199 MiB` lower RSS. Diagnostic A/B cuts `owner_source_side_meta_l2_lookup` from `1547776055` to `489480577`. Not broad default. |
+| Larson DepotOwnerDirectFastPath-L1 | `ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512` | Previous selected Larson/Elastic low-RSS sibling and current clean control. Repeat-3 guard vs packed source10k is safety-clean, average `+0.52%` speed across main/worker 1k/4k/10k, and about `187-199 MiB` lower RSS. Diagnostic A/B cuts `owner_source_side_meta_l2_lookup` from `1547776055` to `489480577`. Not broad default. |
+| Larson DepotOwnerDirectDirectFreeTrustedLocalCache | `ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-directfree-trustedlocalcache-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512` | Selected Larson/Elastic low-RSS sibling. Repeat-3 vs DepotOwnerDirect improves every main/worker 1k/4k/10k row, `avg +2.60%`, min `+1.34%`, RSS essentially unchanged, safety clean. |
 | Larson SlotOwnerConsumerDryRun-L1 | `ownerlocalityfast-rsscap-2-elasticdescsource-route-slotownerconsumerdryrun-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run4096` | Diagnostic-only consumer evidence. Full10k run-1: `36.691M / 233556 KB`, safety clean, `would_skip_l2=687536440`, `false_positive=0`, `stale_generation=0`. This justifies a narrow logical-owner fast-path experiment, but the dry-run counter volume is not speed-rankable. |
 | Larson SlotOwnerLogicalOwnerFastPath-L1 | `ownerlocalityfast-rsscap-2-elasticdescsource-route-slotownerlogical-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run4096` | Safety-clean behavior no-go/control. Non-diagnostic full10k: `38.494M / 239484 KB`; diagnostic full10k reports `logical_hit=717746510`, `stale_generation=0`, `owner_mismatch=0`, but broad sparse probing at every owner-equality entry loses speed versus depotownerdirect. |
 | Larson OwnerEqualCallsiteDryRun-L1 | `ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-ownerequalcallsite-dryrun-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512` | Diagnostic-only callsite attribution. Full10k run-1: `42.434M / 224612 KB`, safety clean. `owner_equal_site_free=424522978`, `owner_equal_site_local_cache=424449034`, all remote/visible/transfer/same-owner callsites `0`, and `unknown=0`. This fixes the next design target: do not probe sparse slot-owner metadata at every owner_equal; use a cheaper free/local-cache state predicate first. |
@@ -249,19 +253,20 @@ pressure/no-go/diagnostic lanes into those tables.
      frontcachepacked-sourceblockpacked-source10k-route192k-run512
 
 2. Keep ElasticCapacity out of broad defaults, but include the clean
-   DepotOwnerDirect row as the selected Larson/Elastic low-RSS sibling:
+   DepotOwnerDirectDirectFreeTrustedLocalCache row as the selected
+   Larson/Elastic low-RSS sibling:
    current selected Elastic low-RSS sibling:
-     DepotOwnerDirectFastPath-L1
-     guard repeat-3 main10k 39.833M / 224592 KB
-     average +0.52% speed across main/worker 1k/4k/10k
-     about 187-199 MiB lower RSS than packed source10k
+     DepotOwnerDirectDirectFreeTrustedLocalCache
+     repeat-3 main10k 43.75M / 224724 KB
+     average +2.60% speed vs DepotOwnerDirect across main/worker 1k/4k/10k
+     essentially unchanged RSS versus DepotOwnerDirect
    current lower-RSS evidence/control:
      ElasticDescriptorSourceRouteOverflow-L1
    current no-go/control:
      SlotOwnerLogicalOwnerFastPath-L1 in broad form
 
-3. Next ElasticCapacity attack:
-   FreeLocalCacheOwnerPredicate-L0/L1.
+3. Completed ElasticCapacity free/local-cache attack:
+   DirectFreeTrustedLocalCache-L1.
    OwnerEqualCallsiteDryRun-L1 shows owner_equal pressure is dominated by
    free/local-cache:
      owner_equal_site_free=424522978
@@ -273,13 +278,18 @@ pressure/no-go/diagnostic lanes into those tables.
      do not revive whole-SourceBlock localize.
      do not add another isolated static cap knob.
 
-   Instead:
-     FreeLocalCacheOwnerPredicate-L0 was added and is a strong witness:
+   FreeLocalCacheOwnerPredicate-L0 was added first as a strong witness:
        probe=821934976
        depot_descriptor=693768653
        foreign_descriptor=774457636
        source_block=821934976
        source_run_active=0
+
+   Behavior result:
+     DepotOwnerDirectDirectFreeTrustedLocalCache is now selected for the
+     Larson/Elastic low-RSS sibling. It avoids the second owner read only after
+     hz6_free() has already proven local ownership, rather than adding another
+     broad owner_equal branch.
 
 4. DepotDescriptorOwnerEqualFastPath-L1 was tested:
    non-diagnostic full10k:
