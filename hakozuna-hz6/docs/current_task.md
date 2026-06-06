@@ -11320,6 +11320,45 @@ results/hz6-toysmall-activemap-probe4-repeat3/20260606_165843_hz6_capacity_matri
   2K         36.587M                39.719M
 ```
 
+Current-gate follow-up:
+
+```text
+Added allocator->toy_small_active_map_current so non-Toy/small frees skip the
+map hash/probe path when there are no active map entries. This matters because
+8K/16K rows are not Toy/small but previously still paid active_map_free_attempt
+MISS probes on every free.
+
+Diagnostic upper-size check:
+  results/hz6-toysmall-activemap-currentgate-upper-diag/20260606_170659_hz6_capacity_matrix_windows.md
+
+  8K:
+    active_map_register     0
+    active_map_free_attempt 0
+    active_map_route_bypass 0
+
+  16K:
+    active_map_register     0
+    active_map_free_attempt 0
+    active_map_route_bypass 0
+
+Current-gate repeat-3:
+  results/hz6-toysmall-activemap-currentgate-small-repeat3/20260606_170804_hz6_capacity_matrix_windows.md
+  results/hz6-toysmall-activemap-currentgate-upper-repeat3/20260606_170728_hz6_capacity_matrix_windows.md
+
+             DirectLocalFreeReuse   ToySmallActiveMap-currentgate
+  256B       68.180M                74.170M
+  512B       55.560M                57.770M
+  1K         52.650M                56.560M
+  2K         36.480M                39.080M
+  4K         50.310M                51.270M
+  8K         54.280M                62.790M
+  16K        50.780M                43.620M
+
+Safety:
+  route_invalid / route_miss / route_register_fail / alloc_fail stayed zero in
+  the current-gate repeat rows.
+```
+
 Decision:
 
 ```text
@@ -11329,10 +11368,10 @@ Positive:
   - fail-closed safety counters stay clean
   - same-owner active free route bypass is viable
   - route lookup pressure drops materially in diagnostic runs
-  - repeat-3 improves 512B/1K/2K
+  - current-gate repeat-3 improves 256B/512B/1K/2K/4K/8K
 
 Not default yet:
-  - 256B regresses slightly in repeat-3
+  - 16K regresses in current-gate repeat-3
   - map state and probe loop are extra hot-path machinery
   - selected-small default remains DirectLocalFreeReuse until a broader
     selected-family / RSS / guard matrix justifies promotion

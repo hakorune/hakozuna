@@ -134,6 +134,24 @@ static inline size_t hz6_toy_small_active_map_index(const void* ptr) {
   return (size_t)(key % HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY);
 }
 
+#if HZ6_TOY_SMALL_ACTIVE_FREE_MAP_L1
+static inline void hz6_toy_small_active_map_clear(
+    Hz6Allocator* allocator,
+    Hz6ToySmallActiveMapEntry* entry) {
+  if (!allocator || !entry || !entry->ptr) {
+    return;
+  }
+  entry->ptr = NULL;
+  entry->descriptor = NULL;
+  entry->generation = 0;
+  entry->class_id = 0;
+  entry->front_id = 0;
+  if (allocator->toy_small_active_map_current > 0) {
+    --allocator->toy_small_active_map_current;
+  }
+}
+#endif
+
 static inline void hz6_toy_small_active_map_register(
     Hz6Allocator* allocator,
     uint16_t front_id,
@@ -171,6 +189,9 @@ static inline void hz6_toy_small_active_map_register(
     entry = first_empty ? first_empty
                         : &allocator->toy_small_active_map[base_index];
   }
+  if (!entry->ptr) {
+    ++allocator->toy_small_active_map_current;
+  }
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.toy_small_active_map_register;
   if (saw_collision) {
@@ -197,6 +218,9 @@ static inline int hz6_toy_small_active_map_try_free(Hz6Allocator* allocator,
                                                    void* ptr) {
 #if HZ6_TOY_SMALL_ACTIVE_FREE_MAP_L1
   if (!allocator || !ptr) {
+    return 0;
+  }
+  if (allocator->toy_small_active_map_current == 0) {
     return 0;
   }
 #if HZ6_DIAGNOSTIC_PROBES
@@ -235,11 +259,7 @@ static inline int hz6_toy_small_active_map_try_free(Hz6Allocator* allocator,
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.toy_small_active_map_free_stale;
 #endif
-    entry->ptr = NULL;
-    entry->descriptor = NULL;
-    entry->generation = 0;
-    entry->class_id = 0;
-    entry->front_id = 0;
+    hz6_toy_small_active_map_clear(allocator, entry);
     return 0;
   }
 
@@ -247,19 +267,11 @@ static inline int hz6_toy_small_active_map_try_free(Hz6Allocator* allocator,
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.toy_small_active_map_free_cache_fail;
 #endif
-    entry->ptr = NULL;
-    entry->descriptor = NULL;
-    entry->generation = 0;
-    entry->class_id = 0;
-    entry->front_id = 0;
+    hz6_toy_small_active_map_clear(allocator, entry);
     return 0;
   }
 
-  entry->ptr = NULL;
-  entry->descriptor = NULL;
-  entry->generation = 0;
-  entry->class_id = 0;
-  entry->front_id = 0;
+  hz6_toy_small_active_map_clear(allocator, entry);
   ++allocator->stats.route_valid;
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.toy_small_active_map_free_hit;

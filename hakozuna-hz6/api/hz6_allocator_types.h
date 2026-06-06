@@ -314,6 +314,7 @@ struct Hz6Allocator {
   size_t descgov_detached_budget_used;
   size_t depot_descriptor_rehome_budget_used;
 #if HZ6_TOY_SMALL_ACTIVE_FREE_MAP_L1
+  size_t toy_small_active_map_current;
   Hz6ToySmallActiveMapEntry
       toy_small_active_map[HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY];
 #endif
