@@ -54,6 +54,45 @@ Source:
 | `mimalloc` | 55.396M | 155,148 | practical baseline leader here |
 | `tcmalloc` | 52.887M | 112,320 | lower RSS than mimalloc on this row |
 
+### Family 3: `legacy large_slices`
+
+This is a single-run Windows legacy allocator matrix slice, added after the HZ6
+LargeSpan/LargeDirect coverage work. It is useful as a weakness map, not as a
+paper median. The matrix uses the same mixed working-set runner for CRT, HZ3,
+HZ4, HZ5 policy, HZ6 route4k lanes, mimalloc, and tcmalloc.
+
+Source:
+- [HZ6 Legacy Large Slices Selected Matrix](../../docs/benchmarks/windows/paper/hz6_legacy_large_slices_selected_20260606/20260606_125322_allocator_matrix.md)
+
+| profile | best allocator | HZ6 speed route4k | HZ6 rss route4k | HZ6 rss peak KB | Read |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `large_slice_256` | `mimalloc` 382.00M | 7.33M | 7.11M | 7,684 | HZ6 is not competitive on tiny fixed-size rows. |
+| `large_slice_512` | `mimalloc` 345.88M | 7.04M | 7.09M | 7,696 | same weakness as 256B. |
+| `large_slice_1k` | `hz3` 195.19M | 7.13M | 6.26M | 7,700 | HZ6 small path is low-RSS but slow. |
+| `large_slice_2k` | `mimalloc` 213.28M | 6.32M | 6.17M | 13,848 | HZ6 still slow; RSS is lower than general allocators. |
+| `large_slice_4k` | `mimalloc` 180.92M | 4.86M | 4.83M | 13,784 | HZ6 route4k is a low-RSS control, not a speed row. |
+| `large_slice_8k` | `mimalloc` 112.32M | 3.05M | 3.06M | 13,748 | HZ6 mid/small transition remains weak. |
+| `large_slice_16k` | `mimalloc` 151.37M | 1.20M | 1.22M | 13,552 | worst large-slice speed gap in this matrix. |
+| `large_slice_32k` | `mimalloc` 142.10M | 55.12M | 52.41M | 9,636 | HZ6 becomes viable again at the lower LargeSpan edge. |
+| `large_slice_64k` | `mimalloc` 108.25M | 58.94M | 59.18M | 7,576 | HZ6 is close to tcmalloc with much lower RSS. |
+| `large_slice_128k` | `hz6-rss-route4k` 67.22M | 64.63M | 67.22M | 6,532 | HZ6 wins this row. |
+| `large_slice_256k` | `hz6-rss-route4k` 56.35M | 55.55M | 56.35M | 6,020 | HZ6 wins this row. |
+| `large_slice_512k` | `hz6-speed-route4k` 58.55M | 58.55M | 54.20M | 5,760 | HZ6 wins this row. |
+| `large_slice_1m` | `hz6-rss-route4k` 39.48M | 32.31M | 39.48M | 5,624 | HZ6 wins this row. |
+| `large_direct_slice_2m` | `mimalloc` 2.50M | 0.26M | 0.31M | 5,548 | HZ6 LargeDirect is low-retain/direct-release, not speed-first. |
+| `large_direct_slice_4m` | `mimalloc` 1.04M | 0.29M | 0.22M | 5,528 | same LargeDirect tradeoff. |
+| `large_direct_slice_8m` | `hz4` 12.10M | 0.24M | 0.31M | 5,508 | HZ6 remains low-RSS; throughput is intentionally direct-release limited. |
+
+Notes:
+
+```text
+HZ6 LargeSpan is strong in the 128K..1M retained-reuse range.
+HZ6 LargeDirect is a coverage/RSS lane for >1M..8M, not a throughput ranking lane.
+HZ6 small/mid fixed-size rows below 32K remain weak versus mimalloc/HZ3/HZ4.
+HZ4 produced access-violation failures on 128K..4M rows in this runner; treat
+those cells as compatibility/safety warnings, not speed data.
+```
+
 ## Current HZ6 Selected-Family Snapshot
 
 These are the current HZ6 family choices from the latest internal selection

@@ -274,6 +274,37 @@ Legacy matrix stale-artifact note:
 
   This confirms the 1M row itself is healthy; stale legacy suite artifacts were
   the measurement hazard.
+
+Legacy large_slices closeout:
+  DONE.
+  Raw matrix/logs are archived at:
+
+    docs/benchmarks/windows/paper/hz6_legacy_large_slices_selected_20260606/
+
+  Short read:
+
+    256B..16K:
+      HZ6 route4k is low-RSS but speed-weak versus mimalloc/HZ3/HZ4.
+
+    32K/64K:
+      HZ6 becomes viable again and keeps RSS low.
+
+    128K..1M:
+      HZ6 LargeSpan is the strongest or near-strongest row:
+        128K: HZ6-rss-route4k 67.22M / 6532 KB
+        256K: HZ6-rss-route4k 56.35M / 6020 KB
+        512K: HZ6-speed-route4k 58.55M / 5760 KB
+        1M:   HZ6-rss-route4k 39.48M / 5624 KB
+
+    >1M..8M:
+      HZ6 LargeDirect remains a low-retain/direct-release coverage lane.
+      It is not meant to win throughput rows where mimalloc/tcmalloc/HZ4 retain
+      or recycle large payloads.
+
+  Current implication:
+    Do not expand large coverage again immediately. The next real HZ6 weakness
+    is below 32K, especially the fixed-size 4K..16K transition where HZ6 is
+    much slower than mimalloc/HZ3/HZ4 despite low RSS.
 ```
 
 Non-goals for this step:

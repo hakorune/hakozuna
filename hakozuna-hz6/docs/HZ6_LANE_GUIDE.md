@@ -56,6 +56,9 @@ HZ6 LargeSpan / LargeDirect:
     exploratory large rows so a stuck row cannot keep spawning children. Use
     `-ForceBuild` after HZ6 source changes; the legacy matrix otherwise reuses
     existing `out_win_suite` artifacts when they are present.
+    The 2026-06-06 selected cross-allocator `large_slices` run is archived under
+    `docs/benchmarks/windows/paper/hz6_legacy_large_slices_selected_20260606/`
+    and summarized in `HZ6_CROSS_ALLOCATOR_COMPARISON.md`.
 
   NEXT:
     stop large coverage expansion here unless >8M is the immediate target.
