@@ -34,8 +34,13 @@ static void* hz6_allocator_direct_local_reuse(Hz6Allocator* allocator,
     Hz6ObjectDescriptor* descriptor =
         (Hz6ObjectDescriptor*)entry.descriptor;
     if (descriptor->class_id == class_id &&
+#if HZ6_LOCAL_CACHE_TRUSTED_OWNER_L1
+        hz6_allocator_activate_local_descriptor_trusted_owner(
+            allocator, descriptor, entry.ptr, entry.generation)) {
+#else
         hz6_allocator_activate_descriptor(allocator, descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr, entry.generation,
             hz6_allocator_owner_token(allocator))) {
+#endif
 #if HZ6_DIAGNOSTIC_PROBES
       ++allocator->stats.frontcache_reuse_hit;
 #endif

@@ -187,3 +187,76 @@ int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
   hz6_allocator_release_descriptor_source(allocator, descriptor);
   return 1;
 }
+
+int hz6_allocator_cache_active_descriptor_trusted_owner(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor,
+    void* ptr) {
+#if HZ6_LOCAL_CACHE_TRUSTED_OWNER_L1
+  if (!allocator || !descriptor || !ptr ||
+      descriptor->state != HZ6_STATE_ACTIVE || descriptor->ptr != ptr ||
+      descriptor->class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
+    return 0;
+  }
+
+  descriptor->state = HZ6_STATE_LOCAL_FREE;
+  Hz6FrontCacheEntry entry = {0};
+  entry.ptr = ptr;
+  entry.descriptor = descriptor;
+#if HZ6_DESCRIPTORLESS_FRONTCACHE_L1
+  entry.source_block = descriptor->source_block;
+#endif
+  entry.generation = descriptor->generation;
+  hz6_frontcache_entry_set_bytes(&entry, descriptor->bytes);
+  hz6_frontcache_entry_set_class_id(&entry, descriptor->class_id);
+  const uint16_t entry_class_id = hz6_frontcache_entry_class_id(&entry);
+
+  if (hz6_allocator_frontcache_push(allocator, entry_class_id, entry)) {
+    return 1;
+  }
+
+  descriptor->state = HZ6_STATE_DEAD;
+  hz6_allocator_route_unregister_exact_reason(
+      allocator, ptr, HZ6_ROUTE_UNREGISTER_REASON_FRONTCACHE_OVERFLOW);
+#if HZ6_DIAGNOSTIC_PROBES
+  if (hz6_allocator_descriptor_has_source_release(allocator, descriptor)) {
+    ++allocator->stats.source_owned_release;
+  }
+#endif
+  hz6_allocator_release_descriptor_source(allocator, descriptor);
+  return 1;
+#else
+  return hz6_allocator_cache_active_descriptor(allocator, descriptor, ptr);
+#endif
+}
+
+int hz6_allocator_activate_local_descriptor_trusted_owner(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor,
+    void* ptr,
+    uint32_t generation) {
+#if HZ6_LOCAL_CACHE_TRUSTED_OWNER_L1
+  (void)allocator;
+  if (!descriptor || descriptor->state != HZ6_STATE_LOCAL_FREE ||
+      descriptor->ptr != ptr || descriptor->generation != generation) {
+    return 0;
+  }
+  if (descriptor->source_block) {
+    const Hz6SourceBlock* block = descriptor->source_block;
+    uintptr_t base = (uintptr_t)block->ptr;
+    uintptr_t addr = (uintptr_t)ptr;
+    if (!hz6_source_block_active(block) || !block->ptr ||
+        descriptor->bytes == 0 || addr < base ||
+        descriptor->bytes > block->bytes ||
+        addr - base > block->bytes - descriptor->bytes) {
+      return 0;
+    }
+  }
+  descriptor->state = HZ6_STATE_ACTIVE;
+  return 1;
+#else
+  return hz6_allocator_activate_descriptor(
+      allocator, descriptor, HZ6_STATE_LOCAL_FREE, ptr, generation,
+      hz6_allocator_owner_token(allocator));
+#endif
+}

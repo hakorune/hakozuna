@@ -217,8 +217,13 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
                    (route.front_id == HZ6_FRONT_TOY ||
                     route.front_id == HZ6_FRONT_MIDPAGE ||
                     route.front_id == HZ6_FRONT_LOCAL2P)) {
+#if HZ6_LOCAL_CACHE_TRUSTED_OWNER_L1
+          ok = hz6_allocator_cache_active_descriptor_trusted_owner(
+              allocator, descriptor, ptr);
+#else
           ok = hz6_allocator_cache_active_descriptor(allocator, descriptor,
                                                      ptr);
+#endif
 #if HZ6_DIAGNOSTIC_PROBES
           if (!ok) {
             ++allocator->stats.free_invalid_local_cache_direct;

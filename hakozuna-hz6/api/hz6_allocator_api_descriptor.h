@@ -489,6 +489,17 @@ int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
                                           Hz6ObjectDescriptor* descriptor,
                                           void* ptr);
 
+int hz6_allocator_cache_active_descriptor_trusted_owner(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor,
+    void* ptr);
+
+int hz6_allocator_activate_local_descriptor_trusted_owner(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor,
+    void* ptr,
+    uint32_t generation);
+
 int hz6_allocator_remote_free_active_descriptor(
     Hz6Allocator* allocator,
     Hz6ObjectDescriptor* descriptor,

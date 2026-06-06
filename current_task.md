@@ -281,6 +281,56 @@ Latest HZ6 small fixed-size attack:
       These are run-1 smoke/connectivity values, not paper medians.
       The selected-family wrapper can now be used to produce an HZ6 profile
       family snapshot that includes the small fixed-size candidate-watch row.
+
+  DirectLocalTrustedOwner-L1 smoke:
+    Implemented candidate/control lane:
+      directlocaltrusted-largerlowrss-front8k-sourcerun-desc8k-route8k
+
+    Design:
+      keeps DirectLocalFreeReuse, then enables
+      HZ6_LOCAL_CACHE_TRUSTED_OWNER_L1.
+      The shortcut is intentionally scoped to local-cache/direct-local paths:
+        alloc from an allocator-owned frontcache can activate LOCAL_FREE
+        without re-setting owner;
+        free after an already-computed local_owner check can cache ACTIVE
+        without repeating descriptor owner equality.
+
+    Smoke command:
+      win/run_win_hz6_capacity_matrix.ps1
+        -Families mixed_ws
+        -BenchmarkProfiles large_slice_512,large_slice_2k,
+                           large_slice_8k,large_slice_16k
+        -Hz6Profiles speed
+        -CapacityLanes largerlowrss,
+                       directlocalfreereuse-largerlowrss,
+                       directlocaltrusted-largerlowrss
+        -Runs 3
+
+    Result versus largerlowrss:
+      512B:
+        directlocalfreereuse +24.0%
+        directlocaltrusted   +19.5%
+      2K:
+        directlocalfreereuse +21.3%
+        directlocaltrusted   +15.8%
+      8K:
+        directlocalfreereuse +35.1%
+        directlocaltrusted   +28.4%
+      16K:
+        directlocalfreereuse +14.5%
+        directlocaltrusted   +17.6%
+
+    Safety:
+      no non-zero route_invalid / route_miss / alloc_fail /
+      descriptor_exhausted / route_register_fail / source_block_exhausted /
+      free_invalid_local_cache_direct / frontcache_reuse_invalid seen.
+
+    Read:
+      safety-clean, but not a promotion candidate.
+      It only beats DirectLocalFreeReuse at 16K in this smoke and loses on
+      512B/2K/8K, so owner re-check / owner set is not the main remaining
+      256B..16K bottleneck. Keep as no-go/control evidence and do not wire
+      into selected-family or legacy cross-allocator rows.
 ```
 
 Latest HZ6 selected-family decision:

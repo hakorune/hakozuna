@@ -330,6 +330,12 @@
 #define HZ6_LOCAL_CACHE_DIRECT_MAX_CLASS HZ6_FRONT_CACHE_CLASS_COUNT
 #endif
 
+#ifndef HZ6_LOCAL_CACHE_TRUSTED_OWNER_L1
+/* Candidate-only same-allocator local-cache shortcut.  Callers must already be
+ * on an allocator-owned frontcache path or have checked local ownership. */
+#define HZ6_LOCAL_CACHE_TRUSTED_OWNER_L1 0
+#endif
+
 #ifndef HZ6_SAME_OWNER_FAST_L1
 #define HZ6_SAME_OWNER_FAST_L1 0
 #endif
