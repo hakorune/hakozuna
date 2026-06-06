@@ -9,6 +9,7 @@ param(
     [switch]$SelectedFamily,
     [switch]$SelectedFamilyGuard,
     [switch]$SelectedSmallFixed,
+    [switch]$SelectedSmallFixedHybridExactUpper,
     [switch]$LarsonCrossOwnerSelected,
     [switch]$LarsonCrossOwnerLowestRss,
     [switch]$LarsonMetadataSlim,
@@ -91,6 +92,22 @@ $presetMap = [ordered]@{
         -Hz6Profiles @("speed") `
         -CapacityLanes @("directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k") `
         -Note "selected-small candidate: best simple 256B..16K fixed-size lane from HZ6-only repeat-10"
+
+    "selected-small-fixed-hybrid-lower" = New-Preset `
+        -Name "selected-small-fixed-hybrid-lower" `
+        -Families @("mixed_ws") `
+        -BenchmarkProfiles @("large_slice_256", "large_slice_512", "large_slice_1k", "large_slice_2k", "large_slice_4k") `
+        -Hz6Profiles @("speed") `
+        -CapacityLanes @("directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k") `
+        -Note "selected-small hybrid control lower rows: keep DirectLocalFreeReuse for 256B..4K"
+
+    "selected-small-fixed-hybrid-upper-exact" = New-Preset `
+        -Name "selected-small-fixed-hybrid-upper-exact" `
+        -Families @("mixed_ws") `
+        -BenchmarkProfiles @("large_slice_8k", "large_slice_16k") `
+        -Hz6Profiles @("speed") `
+        -CapacityLanes @("directlocalexact-largerlowrss-front8k-sourcerun-desc8k-route8k") `
+        -Note "selected-small hybrid control upper rows: DirectLocalExact for 8K..16K only; not a single-binary default"
 
     "larson-cross-owner-selected" = New-Preset `
         -Name "larson-cross-owner-selected" `
@@ -233,6 +250,11 @@ if ($SelectedFamilyGuard) {
 
 if ($SelectedSmallFixed) {
     [void]$selectedPresetNames.Add("selected-small-fixed")
+}
+
+if ($SelectedSmallFixedHybridExactUpper) {
+    [void]$selectedPresetNames.Add("selected-small-fixed-hybrid-lower")
+    [void]$selectedPresetNames.Add("selected-small-fixed-hybrid-upper-exact")
 }
 
 if ($SelectedFamily) {

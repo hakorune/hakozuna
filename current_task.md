@@ -504,6 +504,80 @@ Latest HZ6 selected-family decision:
       HZ6-only controls.
       directlocalfreereuse-small8k remains a size-gated control, not default.
 
+    8K/16K/32K boundary follow-up:
+      Source:
+        results/hz6-boundary-8k16k32k-repeat3/
+        results/hz6-boundary-directlocal-diag/
+        results/hz6-boundary-directlocalexact-repeat3/
+
+      LargerLowRSS / DirectLocalFreeReuse / small8k repeat-3:
+        8K:
+          50.52M -> 64.39M -> 60.75M
+        16K:
+          37.59M -> 52.54M -> 44.56M
+        32K:
+          48.31M -> 67.90M -> 60.08M
+
+      DirectLocalFreeReuse / DirectLocalExact repeat-3:
+        8K:
+          57.75M -> 63.63M
+        16K:
+          40.52M -> 46.27M
+        32K:
+          52.88M -> 61.99M
+
+      Diagnostic read:
+        DirectLocalFreeReuse boundary rows are frontcache-reuse dominated after
+        initial source refill.  source_run_reuse miss_no_block/source_alloc are
+        bounded setup costs, while route_lookup_probe_total remains the visible
+        free-side pressure.
+
+      Decision:
+        do not C-gate DirectLocalExact by class/size yet.  free() does not know
+        size before route lookup, so a broad exact-first gate would still tax
+        small rows before it can reject them.  Keep DirectLocalFreeReuse as the
+        single-binary selected-small candidate-watch, and add a runner-level
+        hybrid control that measures:
+          256B..4K with DirectLocalFreeReuse
+          8K..16K with DirectLocalExact
+        This is evidence gathering, not a default allocator lane.
+
+    Runner wiring:
+      Added win/run_win_hz6_selected_family.ps1
+        -SelectedSmallFixedHybridExactUpper
+
+      It expands to two presets:
+        selected-small-fixed-hybrid-lower:
+          256B..4K + directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+        selected-small-fixed-hybrid-upper-exact:
+          8K..16K + directlocalexact-largerlowrss-front8k-sourcerun-desc8k-route8k
+
+      Smoke/repeat-3:
+        Source:
+          results/hz6-selected-small-hybrid-exact-upper-repeat3/
+
+        lower:
+          256B: 70.439M / 13,712 KB
+          512B: 53.952M / 25,924 KB
+          1K:   53.352M / 25,876 KB
+          2K:   39.114M / 75,036 KB
+          4K:   52.542M / 41,908 KB
+
+        upper exact:
+          8K:   59.719M / 25,372 KB
+          16K:  46.671M / 17,088 KB
+
+        safety:
+          no non-zero route_invalid / route_miss / alloc_fail /
+          route_register_fail / descriptor_exhausted / source_block_exhausted.
+
+        Read:
+          the runner-level split works, but upper exact is not stable enough to
+          displace selected-small.  It was strong in the boundary-only repeat
+          and weaker in this selected-family wrapper repeat, so keep it as a
+          control measurement path only.  Do not default DirectLocalExact and
+          do not build a C-level exact-first size gate yet.
+
     Next allowed moves:
       1. clean repeat/cross-allocator selected-small matrix for promotion
          evidence, or
