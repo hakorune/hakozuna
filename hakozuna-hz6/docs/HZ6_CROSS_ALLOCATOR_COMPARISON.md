@@ -65,6 +65,7 @@ Source:
 - [HZ6 Legacy Large Slices Selected Matrix](../../docs/benchmarks/windows/paper/hz6_legacy_large_slices_selected_20260606/20260606_125322_allocator_matrix.md)
 - [HZ6 LargerLowRSS Connectivity Check](../../docs/benchmarks/windows/paper/hz6_legacy_largerlowrss_connectivity_20260606/README.md)
 - [HZ6 LargeDirectRetain32M Connection Check](../../docs/benchmarks/windows/paper/hz6_selected_family/large-direct-retain32m-directpush-20260606/README.md)
+- [HZ6 LargeDirectRetain Cross-Allocator Slice](../../docs/benchmarks/windows/paper/hz6_large_direct_retain_crossalloc_slice_20260606/README.md)
 
 | profile | best allocator | HZ6 speed route4k | HZ6 rss route4k | HZ6 rss peak KB | Read |
 | --- | ---: | ---: | ---: | ---: | --- |
@@ -79,11 +80,11 @@ Source:
 | `large_slice_64k` | `mimalloc` 108.25M | 58.94M | 59.18M | 7,576 | HZ6 is close to tcmalloc with much lower RSS. |
 | `large_slice_128k` | `hz6-rss-route4k` 67.22M | 64.63M | 67.22M | 6,532 | HZ6 wins this row. |
 | `large_slice_256k` | `hz6-rss-route4k` 56.35M | 55.55M | 56.35M | 6,020 | HZ6 wins this row. |
-| `large_slice_512k` | `hz6-speed-route4k` 58.55M | 58.55M | 54.20M | 5,760 | HZ6 wins this row. |
-| `large_slice_1m` | `hz6-rss-route4k` 39.48M | 32.31M | 39.48M | 5,624 | HZ6 wins this row. |
-| `large_direct_slice_2m` | `mimalloc` 2.50M in the old matrix; `hz6-speed-largedirectretain32m-largerlowrss` 20.53M in the new HZ6 connection check | 0.26M | 0.31M | 5,548 old route4k / 9,332 retain32m check | Updated: LargeDirectRetain32M removes OS source churn for this row. |
-| `large_direct_slice_4m` | `mimalloc` 1.04M in the old matrix; `hz6-speed-largedirectretain32m-largerlowrss` 19.12M in the new HZ6 connection check | 0.29M | 0.22M | 5,528 old route4k / 8,884 retain32m check | Updated: LargeDirectRetain32M is now the HZ6 direct-large control. |
-| `large_direct_slice_8m` | `hz4` 12.10M in the old matrix; `hz6-speed-largedirectretain32m-largerlowrss` 10.07M in the new HZ6 connection check | 0.24M | 0.31M | 5,508 old route4k / 8,868 retain32m check | Updated: retain32m closes most of the direct-release gap, but needs full cross-allocator refresh. |
+| `large_slice_512k` | old matrix: `hz6-speed-route4k` 58.55M; retain slice: `hz6-rss-largedirectretain32m-largerlowrss` 50.98M | 58.55M old route4k | 54.20M old route4k | 5,760 old route4k / 9,540 retain slice | HZ6 remains the leading shape in the 512K guard row; retain32m does not increase source_alloc. |
+| `large_slice_1m` | old matrix: `hz6-rss-route4k` 39.48M; retain slice: `hz6-rss-largedirectretain32m-largerlowrss` 36.33M | 32.31M old route4k | 39.48M old route4k | 5,624 old route4k / 8,972 retain slice | HZ6 remains the leading shape in the 1M guard row; retain32m does not increase source_alloc. |
+| `large_direct_slice_2m` | retain slice: `hz6-speed-largedirectretain32m-largerlowrss` 27.54M | 0.26M old route4k | 0.31M old route4k | 5,548 old route4k / 8,896 retain slice | LargeDirectRetain32M wins the refreshed slice; source_alloc `16000 -> 16`. |
+| `large_direct_slice_4m` | retain slice: `hz6-rss-largedirectretain32m-largerlowrss` 16.85M | 0.29M old route4k | 0.22M old route4k | 5,528 old route4k / 8,888 retain slice | LargeDirectRetain32M wins the refreshed slice; source_alloc `10004 -> 12`. |
+| `large_direct_slice_8m` | retain slice: `hz6-speed-largedirectretain32m-largerlowrss` 13.18M | 0.24M old route4k | 0.31M old route4k | 5,508 old route4k / 8,860 retain slice | LargeDirectRetain32M edges the old HZ4 winner in the refreshed slice; source_alloc `6000 -> 8`. |
 
 Notes:
 
@@ -91,10 +92,9 @@ Notes:
 HZ6 LargeSpan is strong in the 128K..1M retained-reuse range.
 HZ6 LargeDirect route4k was originally a coverage/RSS lane for >1M..8M, not a
 throughput ranking lane.  The newer LargeDirectRetain32M control changes that
-read for HZ6-only / connection-check rows: 2M/4M/8M now reuse exact-size
-direct-large objects and are no longer dominated by OS source churn.  Run a full
-cross-allocator `large_slices` refresh before replacing the old best-allocator
-cells in paper-facing tables.
+read: in the focused cross-allocator slice, HZ6 retain32m is the fastest row for
+2M/4M/8M while staying low RSS.  This is a single-run update, not a paper
+median; repeat before replacing paper-facing tables.
 HZ6 route4k small/mid fixed-size rows below 32K remain weak versus mimalloc/HZ3/HZ4.
 For 4K..16K, the selected `largerlowrss-front8k-sourcerun-desc8k-route8k`
 lane is now connected to the legacy matrix as `hz6-*-largerlowrss`:

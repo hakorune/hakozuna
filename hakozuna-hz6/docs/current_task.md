@@ -180,6 +180,45 @@ Read:
   all safety counters remain zero
 ```
 
+Focused cross-allocator slice:
+
+```text
+Source:
+  docs/benchmarks/windows/paper/hz6_large_direct_retain_crossalloc_slice_20260606/
+    20260606_233919_allocator_matrix.md
+
+Command:
+  win/run_win_allocator_matrix.ps1
+    -Profiles large_slice_512k,large_slice_1m,
+              large_direct_slice_2m,large_direct_slice_4m,large_direct_slice_8m
+    -Allocators hz3,hz4,hz5-policy,
+                hz6-speed-largerlowrss,
+                hz6-speed-largedirectretain32m-largerlowrss,
+                hz6-rss-largedirectretain32m-largerlowrss,
+                mimalloc,tcmalloc
+```
+
+Single-run result:
+
+```text
+profile                winner                                      read
+large_slice_512k       hz6-rss-largedirectretain32m-largerlowrss   50.975M / 9540 KB
+large_slice_1m         hz6-rss-largedirectretain32m-largerlowrss   36.328M / 8972 KB
+large_direct_slice_2m  hz6-speed-largedirectretain32m-largerlowrss 27.536M / 8896 KB
+large_direct_slice_4m  hz6-rss-largedirectretain32m-largerlowrss   16.851M / 8888 KB
+large_direct_slice_8m  hz6-speed-largedirectretain32m-largerlowrss 13.184M / 8860 KB
+```
+
+Read:
+
+```text
+This changes the old LargeDirect story.  Route4k direct-release was
+coverage/RSS-only, but LargeDirectRetain32M is speed-competitive and wins the
+focused single-run slice for 2M/4M/8M while staying low RSS.  Treat as a strong
+signal, not a final paper median.  Next large-path work should be repeat-3 or
+a cap ladder, not another direct-large algorithm knob.
+```
+
 ### 2026-06-06: Next target - selected-small 8K guard
 
 Current next attack:
