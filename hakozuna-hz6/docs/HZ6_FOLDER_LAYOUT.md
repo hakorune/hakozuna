@@ -169,12 +169,13 @@ hakozuna-hz6/
     hz6_midpage_prefill_policy.c
     hz6_midpage_policy.c
     large/
-    hz6_large128_front.h
-    hz6_large128_front_alloc.c
-    hz6_large128_front_free.c
-    hz6_large128_front_ops.c
-      hz6_large.h
-      hz6_large.c
+      hz6_large_span_class.h
+      hz6_large_span_class.c
+      hz6_large128_front.h
+      hz6_large128_front_alloc.c
+      hz6_large128_front_central.c
+      hz6_large128_front_free.c
+      hz6_large128_front_ops.c
 
   policy/
     hz6_policy.h
@@ -334,8 +335,11 @@ fronts/hz6_front_reuse.c
 fronts/hz6_front_free.c
 fronts/toy/hz6_toy_front.h
 fronts/toy/hz6_toy_front.c
+fronts/large/hz6_large_span_class.h
+fronts/large/hz6_large_span_class.c
 fronts/large/hz6_large128_front.h
 fronts/large/hz6_large128_front_alloc.c
+fronts/large/hz6_large128_front_central.c
 fronts/large/hz6_large128_front_free.c
 fronts/large/hz6_large128_front_ops.c
 fronts/local2p/hz6_local2p_front.h

@@ -170,6 +170,9 @@ Contracts:
   transfer-first reuse stays separate from wrapper selection
   Large128 front alloc/free/ops helpers are split into separate helper units so
   source refill stays separate from reuse and free-path dispatch
+  LargeSpan class metadata is split into fronts/large/hz6_large_span_class.*
+  so the current 128K seed is an explicit one-class LargeSpan family rather
+  than a hard-coded large128 request check
   shared object states
   owner token equality/liveness helpers
   profile configuration
@@ -375,7 +378,9 @@ Design direction:
 ```text
 L1:
   stabilize the 128K ownerless CentralSpanPool and keep double-return
-  impossible.
+  impossible. The first L1 cleanup is in place: 128K request/class metadata now
+  lives in a LargeSpan class table, while route/free/source behavior remains
+  unchanged.
 
 L2:
   add 256K / 512K / 1M LargeSpan classes using the same route, transfer,

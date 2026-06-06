@@ -4,7 +4,7 @@
 
 void* hz6_large128_reuse_cached_or_central(Hz6Allocator* allocator,
                                            uint16_t class_id) {
-  if (!allocator || class_id != HZ6_LARGE128_CLASS_ID) {
+  if (!allocator || !hz6_large_span_class_for_class_id(class_id)) {
     return NULL;
   }
 
@@ -36,7 +36,8 @@ int hz6_large128_free_local_or_central(Hz6Allocator* allocator,
                                        void* ptr,
                                        Hz6RouteResult route) {
   if (!allocator || !ptr || route.kind != HZ6_ROUTE_VALID ||
-      !route.descriptor || route.class_id != HZ6_LARGE128_CLASS_ID) {
+      !route.descriptor ||
+      !hz6_large_span_class_for_class_id(route.class_id)) {
     return 0;
   }
 
@@ -81,7 +82,8 @@ int hz6_large128_free_remote_or_central(Hz6Allocator* allocator,
                                         void* ptr,
                                         Hz6RouteResult route) {
   if (!allocator || !ptr || route.kind != HZ6_ROUTE_VALID ||
-      !route.descriptor || route.class_id != HZ6_LARGE128_CLASS_ID) {
+      !route.descriptor ||
+      !hz6_large_span_class_for_class_id(route.class_id)) {
     return 0;
   }
 

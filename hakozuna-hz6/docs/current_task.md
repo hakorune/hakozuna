@@ -18,6 +18,69 @@ Use these orientation docs before reading this long ledger:
   HZ6_SOURCE_MODULARIZATION.md
 ```
 
+### 2026-06-06: next target after bench modularization
+
+Current read:
+
+```text
+The Windows benchmark source/output cleanup is now good enough to resume HZ6
+allocator work.  HZ6 is no longer blocked on bench readability:
+  bench_allocator_compare HZ6 summary is helper-owned
+  Larson HZ6 summary/front diagnostics are helper-owned
+  Redis HZ6 diagnostics are helper-owned
+
+Safety has also improved:
+  selected mixed_ws/wide_ws route-invalid issue is closed
+  diagnostic ownership witnesses are available without polluting speed lanes
+  source-depot wide_ws now fail-closes instead of crashing
+```
+
+Selected next target:
+
+```text
+LargeSpan family L1.
+
+Goal:
+  promote the existing large128 seed into an explicit, extensible LargeSpan
+  family starting with the 128K central span proof target.
+
+Why:
+  HZ6 can show low-RSS/safety strength, but the broad large-size story is still
+  weak because >128K is unsupported and large128 is a seed front rather than a
+  real span family.
+```
+
+Immediate implementation order:
+
+```text
+1. Inspect current large128 / large front ownership boundaries. DONE.
+2. Make the 128K span class explicit and easier to extend. DONE:
+     added fronts/large/hz6_large_span_class.{h,c}
+     large128 now asks the LargeSpan class table for request/class metadata
+     central reuse/free validates through the same table
+3. Preserve current RouteLayer / TransferLayer / SourceLayer contracts. DONE:
+     no route/free semantics changed
+     no hot-path diagnostic counters added
+4. Validate with focused HZ6 build/smoke before any wider benchmark claim. DONE:
+     Windows HZ6 R1 smokes all pass
+     mixed_ws large_slice_128k run1 is clean:
+       route_invalid=0 route_miss=0 alloc_fail=0 large_source_alloc=256
+
+Next LargeSpan step:
+  add a second class behind the same table only after a focused 128K closeout.
+  Do not let the 256..8192 larger_sizes lane drive LargeSpan design; that row is
+  mid/source-block pressure, not the LargeSpan front.
+```
+
+Non-goals for this step:
+
+```text
+do not add another broad capacity knob
+do not mix in Elastic source-depot lifecycle behavior
+do not weaken owned-invalid / stale-pointer fail-closed behavior
+do not claim broad large-object allocator coverage until 256K/512K/1M exist
+```
+
 ### 2026-06-06: mixed_ws wide_ws route-invalid debug closeout
 
 Goal:

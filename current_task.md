@@ -19,6 +19,43 @@ remains profile-stabilized; new HZ5 work should not blur the HZ6 contract.
 Latest HZ6 selected-family decision:
 
 ```text
+2026-06-06 next attack after Windows bench modularization:
+  The Windows bench source/output cleanup is now in a much healthier shape:
+    bench_allocator_compare HZ6 summary is helper-owned
+    Larson HZ6 summary/front diagnostics are helper-owned
+    Redis HZ6 diagnostics are helper-owned
+
+  HZ6 is strong enough to resume performance work:
+    safety-oriented selected rows are route_invalid/route_miss clean
+    RSS-oriented Larson siblings are meaningful evidence
+    lane docs are good enough for targeted development
+
+  Primary next target:
+    LargeSpan family work.
+
+  Reason:
+    HZ6 still reports large-object behavior as a Large128 seed, not as a broad
+    large-object allocator.  The next high-ROI implementation should promote
+    the large128 seed toward a real LargeSpan family before claiming broad
+    ordinary-malloc coverage.
+
+  First step:
+    inspect current large128 / large front code and implement the smallest
+    cleanup that makes 128K central span behavior more explicit and extensible.
+    DONE:
+      added LargeSpan class metadata in hakozuna-hz6/fronts/large/
+      large128 request/class handling now goes through a one-class table
+      Windows HZ6 R1 smokes pass
+      mixed_ws large_slice_128k run1 is route_invalid/route_miss clean
+
+  Secondary target:
+    Elastic source-depot lifecycle cleanup for wide_ws stale-route pressure.
+
+  Do not do next:
+    add another ad hoc capacity knob
+    weaken owned-invalid behavior into fallback
+    mix LargeSpan work with Elastic source-depot lifecycle experiments
+
 2026-06-06 wide_ws route-invalid closeout:
   mixed_ws wide_ws route_invalid/miss was traced to shared exact route
   directory deletion breaking open-address probe chains.  Fix is tombstone
