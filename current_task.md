@@ -331,6 +331,41 @@ Latest HZ6 small fixed-size attack:
       512B/2K/8K, so owner re-check / owner set is not the main remaining
       256B..16K bottleneck. Keep as no-go/control evidence and do not wire
       into selected-family or legacy cross-allocator rows.
+
+  DirectLocalPacked-L1 smoke:
+    Implemented candidate/control lane:
+      directlocalpacked-largerlowrss-front8k-sourcerun-desc8k-route8k
+
+    Design:
+      keeps DirectLocalFreeReuse and adds HZ6_FRONTCACHE_PACKED_META_L1.
+      This tests whether the Larson FrontCachePackedMeta-L1 metadata shrink
+      helps small fixed-size same-owner rows.
+
+    Result versus largerlowrss:
+      512B:
+        directlocalfreereuse +23.8%
+        directlocalpacked    +18.8%
+      2K:
+        directlocalfreereuse +19.6%
+        directlocalpacked    +19.4%
+      8K:
+        directlocalfreereuse +14.2%
+        directlocalpacked    +8.1%
+      16K:
+        directlocalfreereuse +19.7%
+        directlocalpacked    +17.5%
+
+    Safety:
+      no non-zero route_invalid / route_miss / alloc_fail /
+      descriptor_exhausted / route_register_fail / source_block_exhausted /
+      frontcache_reuse_invalid seen.
+
+    Read:
+      safety-clean, but not a speed promotion candidate.
+      FrontCachePackedMeta-L1 is still valuable in Larson RSS rows, but it does
+      not improve the 512B/2K/8K/16K direct-local fixed-size speed shape.
+      Keep as no-go/control evidence and do not wire into selected-family or
+      legacy cross-allocator rows.
 ```
 
 Latest HZ6 selected-family decision:

@@ -202,6 +202,13 @@ function Get-Hz6WinDirectLocalTrustedLargerLowRssFront8kSourceRunDesc8kRoute8kCa
     $flags
 }
 
+function Get-Hz6WinDirectLocalPackedLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
+    $flags += "/DHZ6_FRONTCACHE_PACKED_META_L1=1"
+    $flags
+}
+
 function Get-Hz6WinDirectLocalFreeReuseSmall8kLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags {
     $flags = @()
     $flags += Get-Hz6WinDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
@@ -1823,6 +1830,7 @@ function Invoke-AppLikeHz6BenchBuilds {
     $directLocalFreeAllocLargerLowRssFront8kSourceRunDesc8kRoute8kFlags = Get-Hz6WinDirectLocalFreeAllocLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
     $directLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kFlags = Get-Hz6WinDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
     $directLocalTrustedLargerLowRssFront8kSourceRunDesc8kRoute8kFlags = Get-Hz6WinDirectLocalTrustedLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
+    $directLocalPackedLargerLowRssFront8kSourceRunDesc8kRoute8kFlags = Get-Hz6WinDirectLocalPackedLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
     $directLocalFreeReuseSmall8kLargerLowRssFront8kSourceRunDesc8kRoute8kFlags = Get-Hz6WinDirectLocalFreeReuseSmall8kLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
     $largerLowRssFront6kSourceRunDesc8kRoute8kFlags = Get-Hz6WinLargerLowRssFront6kSourceRunDesc8kRoute8kCapacityFlags
     $largerLowRssFront4kSourceRunDesc8kRoute8kFlags = Get-Hz6WinLargerLowRssFront4kSourceRunDesc8kRoute8kCapacityFlags
@@ -1985,6 +1993,7 @@ function Invoke-AppLikeHz6BenchBuilds {
         "directlocalfreealloc-largerlowrss-front8k-sourcerun-desc8k-route8k" = @{ Suffix = "_directlocalfreealloc_largerlowrss_front8k_sourcerun_desc8k_route8k"; ExtraFlags = $directLocalFreeAllocLargerLowRssFront8kSourceRunDesc8kRoute8kFlags }
         "directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k" = @{ Suffix = "_directlocalfreereuse_largerlowrss_front8k_sourcerun_desc8k_route8k"; ExtraFlags = $directLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kFlags }
         "directlocaltrusted-largerlowrss-front8k-sourcerun-desc8k-route8k" = @{ Suffix = "_directlocaltrusted_largerlowrss_front8k_sourcerun_desc8k_route8k"; ExtraFlags = $directLocalTrustedLargerLowRssFront8kSourceRunDesc8kRoute8kFlags }
+        "directlocalpacked-largerlowrss-front8k-sourcerun-desc8k-route8k" = @{ Suffix = "_directlocalpacked_largerlowrss_front8k_sourcerun_desc8k_route8k"; ExtraFlags = $directLocalPackedLargerLowRssFront8kSourceRunDesc8kRoute8kFlags }
         "directlocalfreereuse-small8k-largerlowrss-front8k-sourcerun-desc8k-route8k" = @{ Suffix = "_directlocalfreereuse_small8k_largerlowrss_front8k_sourcerun_desc8k_route8k"; ExtraFlags = $directLocalFreeReuseSmall8kLargerLowRssFront8kSourceRunDesc8kRoute8kFlags }
         "largerlowrss-front6k-sourcerun-desc8k-route8k" = @{ Suffix = "_largerlowrss_front6k_sourcerun_desc8k_route8k"; ExtraFlags = $largerLowRssFront6kSourceRunDesc8kRoute8kFlags }
         "largerlowrss-front4k-sourcerun-desc8k-route8k" = @{ Suffix = "_largerlowrss_front4k_sourcerun_desc8k_route8k"; ExtraFlags = $largerLowRssFront4kSourceRunDesc8kRoute8kFlags }
