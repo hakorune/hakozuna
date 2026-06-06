@@ -5322,6 +5322,41 @@ Next:
   whether a narrower Toy/small-only behavior lane should remain a control.
 ```
 
+Repeat-5 follow-up:
+
+```text
+results/hz6-toysmall-activemap-dynmap-repeat5/20260606_194020_hz6_capacity_matrix_windows.md
+
+             SourceBlockRoute dynmap   ActiveMap + dynmap
+  256B       74.372M / 14,308 KB       73.333M / 15,040 KB   -1.40%
+  512B       54.444M / 26,616 KB       56.038M / 27,332 KB   +2.93%
+  1K         54.417M / 26,572 KB       55.589M / 27,396 KB   +2.15%
+  2K         33.201M / 75,768 KB       41.245M / 76,528 KB   +24.23%
+  4K         51.126M / 42,556 KB       52.930M / 43,284 KB   +3.53%
+  8K         61.006M / 25,948 KB       60.299M / 26,100 KB   -1.16%
+  16K        53.896M / 17,660 KB       54.278M / 17,808 KB   +0.71%
+```
+
+Updated decision:
+
+```text
+KEEP as promotion candidate-control, not selected yet.
+
+Why:
+  repeat-5 reduces the 8K concern from -4.08% to -1.16%.
+  2K gains strongly, and 512B/1K/4K/16K are positive.
+  256B is a small -1.40%, so this is not a clean universal replacement.
+  RSS delta remains bounded but active-map state is still a hot-path addition.
+
+Next:
+  If pursuing selected-small polish, run repeat-10 and selected-family guard.
+  Promotion line should require:
+    average positive,
+    min delta >= -3%,
+    route_invalid/route_miss/route_register_fail = 0,
+    no selected-family broad regression.
+```
+
 Random_mixed guard repeat-3:
 
 ```text
