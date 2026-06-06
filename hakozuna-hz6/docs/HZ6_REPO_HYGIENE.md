@@ -127,6 +127,25 @@ current_task.md:
   historical ledger and detailed experimental notes
 ```
 
+Benchmark result storage policy:
+
+```text
+results/:
+  local scratch output from exploratory runners
+  ignored by git by default
+  may be referenced in current_task during active investigation
+
+docs/benchmarks/windows/paper/:
+  curated evidence snapshots for selected rows, closeouts, and paper-facing
+  comparisons
+  commit only the result files that justify a selected/default row or a
+  durable no-go boundary
+```
+
+When a `results/` run becomes promotion evidence, copy the summary markdown into
+`docs/benchmarks/windows/paper/...` in the same commit that updates the selected
+lane or documentation. Do not commit whole scratch result directories.
+
 Do not:
 
 ```text

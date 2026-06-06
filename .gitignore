@@ -3,6 +3,7 @@ mac/out/
 bench/out/
 hakozuna-hz6/out/
 bench_results/
+results/
 bench_burst_idle*
 *.o
 *.d

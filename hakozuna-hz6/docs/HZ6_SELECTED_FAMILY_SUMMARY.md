@@ -96,7 +96,7 @@ Source:
 - `docs/benchmarks/windows/paper/hz6_route_loopcarry_l1_repeat/`
 - `docs/benchmarks/windows/paper/hz6_depot_owner_direct_repeat3/`
 - `docs/benchmarks/windows/paper/hz6_depot_owner_direct_guard_matrix/`
-- `results/hz6-depotownerdirect-directfree-trustedlocalcache-repeat3/`
+- `docs/benchmarks/windows/paper/hz6_selected_family/larson-elastic-directfree-trustedlocalcache-repeat3/`
 - `docs/benchmarks/windows/paper/hz6_slot_owner_consumer_dryrun_full10k/`
 - `docs/benchmarks/windows/paper/hz6_owner_equal_callsite_dryrun_full10k/`
 - `docs/benchmarks/windows/paper/hz6_flc_owner_predicate_dryrun_full10k/`
