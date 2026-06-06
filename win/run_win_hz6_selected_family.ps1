@@ -11,6 +11,7 @@ param(
     [switch]$SelectedSmallFixed,
     [switch]$SelectedSmallFixedHybridExactUpper,
     [switch]$LarsonCrossOwnerSelected,
+    [switch]$LarsonElasticLowRssSelected,
     [switch]$LarsonCrossOwnerLowestRss,
     [switch]$LarsonMetadataSlim,
     [switch]$LarsonSourceRunMetaSlim,
@@ -116,6 +117,14 @@ $presetMap = [ordered]@{
         -Hz6Profiles @("speed") `
         -CapacityLanes @("ownerlocalityfast-rsscap-2-desc160k", "ownerlocalityfast-rsscap-2-desc160k-front4k", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-sourceblockpacked-source16k-route192k-run512", "ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source16k-route192k-run512") `
         -Note "Larson full 10k selected lane plus OwnerSourceSideMeta-L2 lowest-RSS sibling, FrontCachePackedMeta-L1, SourceBlockPackedFlags-L1, and combined packed lower-RSS candidates"
+
+    "larson-elastic-lowrss-selected" = New-Preset `
+        -Name "larson-elastic-lowrss-selected" `
+        -Families @("larson") `
+        -BenchmarkProfiles @("larson_t16_main_10k") `
+        -Hz6Profiles @("speed") `
+        -CapacityLanes @("ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512") `
+        -Note "Larson ElasticCapacity low-RSS sibling: DepotOwnerDirect source-depot row; repeat-3 guard is safety-clean and about 188-199 MiB lower RSS than the packed source10k minimum-RSS sibling"
 
     "larson-cross-owner-lowest-rss" = New-Preset `
         -Name "larson-cross-owner-lowest-rss" `
@@ -244,6 +253,10 @@ if ($LarsonCrossOwnerSelected) {
     [void]$selectedPresetNames.Add("larson-cross-owner-selected")
 }
 
+if ($LarsonElasticLowRssSelected) {
+    [void]$selectedPresetNames.Add("larson-elastic-lowrss-selected")
+}
+
 if ($SelectedFamilyGuard) {
     [void]$selectedPresetNames.Add("selected-family-guard")
 }
@@ -263,7 +276,8 @@ if ($SelectedFamily) {
         "selected-random-sameowner",
         "selected-small-fixed",
         "selected-larger-lowrss",
-        "larson-cross-owner-selected"
+        "larson-cross-owner-selected",
+        "larson-elastic-lowrss-selected"
     )) {
         [void]$selectedPresetNames.Add($name)
     }

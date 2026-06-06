@@ -18,6 +18,76 @@ Use these orientation docs before reading this long ledger:
   HZ6_SOURCE_MODULARIZATION.md
 ```
 
+### 2026-06-06: DepotOwnerDirect Elastic low-RSS selected sibling
+
+Current decision:
+
+```text
+ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-...:
+  promote from ElasticCapacity candidate-watch
+  to selected Larson/Elastic low-RSS sibling
+
+Scope:
+  selected-family runner includes it as a paper-facing Larson low-RSS sibling
+  not a broad HZ6 default
+```
+
+Reason:
+
+```text
+After ToySmallActiveMap missed selected-small promotion, the next high-ROI
+weakness was Larson RSS. DepotOwnerDirect had already been the best source-depot
+shape, but it needed a direct guard against the current packed source10k
+minimum-RSS sibling.
+
+Repeat-3 guard is safety-clean and shows the depot row is essentially speed
+neutral while cutting roughly 187-199 MiB peak RSS across main/worker
+1k/4k/10k Larson slices.
+```
+
+Command:
+
+```powershell
+win/run_win_hz6_capacity_matrix.ps1 `
+  -OutputDir results/hz6-elastic-depotownerdirect-selected-guard-repeat3 `
+  -Runs 3 `
+  -Families larson `
+  -BenchmarkProfiles larson_t16_main_1k,larson_t16_worker_1k,larson_t16_main_4k,larson_t16_worker_4k,larson_t16_main_10k,larson_t16_worker_10k `
+  -Hz6Profiles speed `
+  -CapacityLanes `
+    ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source10k-route192k-run512,`
+    ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512 `
+  -TimeoutSeconds 240 `
+  -ContinueOnFailure
+```
+
+Repeat-3 median guard:
+
+```text
+profile              packed source10k       depot owner direct    speed delta   RSS delta
+main_1k              55.935M / 290,360 KB   56.351M / 92,068 KB   +0.74%       -198,292 KB
+worker_1k            57.365M / 290,356 KB   56.326M / 91,816 KB   -1.81%       -198,540 KB
+main_4k              49.442M / 331,140 KB   51.488M / 139,048 KB  +4.14%       -192,092 KB
+worker_4k            51.159M / 331,076 KB   51.723M / 132,784 KB  +1.10%       -198,292 KB
+main_10k             40.544M / 412,260 KB   39.833M / 224,592 KB  -1.75%       -187,668 KB
+worker_10k           41.171M / 412,092 KB   41.455M / 214,248 KB  +0.69%       -197,844 KB
+
+Average speed delta: +0.52%
+Minimum speed delta: -1.81%
+Average RSS delta:   -195,455 KB
+Safety:              clean
+```
+
+Runner update:
+
+```text
+Added selected-family preset:
+  larson-elastic-lowrss-selected
+
+Included it in:
+  win/run_win_hz6_selected_family.ps1 -SelectedFamily
+```
+
 ### 2026-06-06: ToySmallActiveMap dynmap repeat-10 closeout
 
 Current decision:
