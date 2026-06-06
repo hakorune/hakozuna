@@ -16,6 +16,79 @@ decisions should be mirrored into the HZ6 docs above.
 HZ6 is now in active Windows/Linux implementation and benchmarking. HZ5 Linux
 remains profile-stabilized; new HZ5 work should not blur the HZ6 contract.
 
+Latest HZ6 SmallRunRoute attack:
+
+```text
+2026-06-07:
+  SourceBlockRoute / active-map / notoy small-knob track is closed as evidence.
+  ToyFront remains the route-safe reference front; do not replace it with a
+  broad source-block route.
+
+  New direction:
+    SmallRunRoute-L1
+
+  Meaning:
+    a narrow TinyRun route proof for 256B..4K toy/small source-run slots.
+    It is not a generic SourceBlockRoute promotion.
+
+  Dry-run lane:
+    smallrunroute-dryrun-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+
+  Dry-run check:
+    256B/512B/1K/2K/4K all had:
+      smallrun_would_valid == free attempts
+      smallrun_exact_fallback_needed = 0
+      smallrun_false_positive = 0
+      route_invalid = 0
+      route_miss = 0
+      route_register_fail = 0
+
+  Important detail:
+    HZ6's current small class geometry rounds the 2K row into a 4K slot class,
+    so HZ6_SMALL_RUN_ROUTE_MAX_SLOT_BYTES defaults to 4096.
+
+  Next:
+    add SmallRunRoute behavior as a separate lane.
+    Keep exact route fallback.
+    Keep diagnostic counters out of speed builds.
+    Do not merge it with generic SourceBlockRoute yet.
+
+  Implemented:
+    smallrunroute-behavior-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+    smallrunroute-behavior-min512-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+
+  Diagnostic behavior smoke:
+    behavior_valid == behavior_attempt on 256B/512B/1K/2K/4K
+    behavior_fallback = 0
+    behavior_invalid_slot = 0
+    behavior_invalid_descriptor = 0
+    route_invalid = 0
+    route_miss = 0
+    route_register_fail = 0
+    route_lookup_probe_total drops materially versus exact route.
+
+  Non-diagnostic repeat-3:
+    all-size SmallRunRoute:
+      256B -0.9%
+      512B -1.0%
+      1K   +4.4%
+      2K   -13.6%
+      4K   -1.8%
+
+    min512 SmallRunRoute:
+      256B -0.8%
+      512B -2.5%
+      1K   +7.2%
+      2K   -1.3%
+      4K   -0.1%
+
+  Read:
+    SmallRunRoute is safety-clean and useful mechanism evidence.
+    It is not a broad default-promotion lane yet.
+    The current useful signal is mostly the 1K row; avoid overfitting a
+    one-size production lane until the next hotspot explains why 1K benefits.
+```
+
 Latest HZ6 Windows large-slice lane wiring:
 
 ```text

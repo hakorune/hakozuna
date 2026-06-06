@@ -382,6 +382,20 @@ void bench_print_hz6_summary(const Hz6StatsSnapshot* hz6_stats,
            "hz6_source_block_fail_registered_max=%zu "
            "hz6_source_block_fail_ref_nonzero_max=%zu "
            "hz6_source_block_fail_ref_zero_max=%zu "
+           "hz6_smallrun_route_attempt=%zu "
+           "hz6_smallrun_range_hit=%zu "
+           "hz6_smallrun_active_slot_hit=%zu "
+           "hz6_smallrun_descriptor_match=%zu "
+           "hz6_smallrun_generation_match=%zu "
+           "hz6_smallrun_would_valid=%zu "
+           "hz6_smallrun_would_invalid=%zu "
+           "hz6_smallrun_exact_fallback_needed=%zu "
+           "hz6_smallrun_false_positive=%zu "
+           "hz6_smallrun_behavior_attempt=%zu "
+           "hz6_smallrun_behavior_valid=%zu "
+           "hz6_smallrun_behavior_fallback=%zu "
+           "hz6_smallrun_behavior_invalid_slot=%zu "
+           "hz6_smallrun_behavior_invalid_descriptor=%zu "
            "hz6_toy_small_malloc_fast_attempt=%zu "
            "hz6_toy_small_malloc_fast_hit=%zu "
            "hz6_toy_small_malloc_front_dispatch=%zu "
@@ -412,6 +426,20 @@ void bench_print_hz6_summary(const Hz6StatsSnapshot* hz6_stats,
            hz6_stats->source_block_fail_registered_max,
            hz6_stats->source_block_fail_ref_nonzero_max,
            hz6_stats->source_block_fail_ref_zero_max,
+           hz6_stats->smallrun_route_attempt,
+           hz6_stats->smallrun_range_hit,
+           hz6_stats->smallrun_active_slot_hit,
+           hz6_stats->smallrun_descriptor_match,
+           hz6_stats->smallrun_generation_match,
+           hz6_stats->smallrun_would_valid,
+           hz6_stats->smallrun_would_invalid,
+           hz6_stats->smallrun_exact_fallback_needed,
+           hz6_stats->smallrun_false_positive,
+           hz6_stats->smallrun_behavior_attempt,
+           hz6_stats->smallrun_behavior_valid,
+           hz6_stats->smallrun_behavior_fallback,
+           hz6_stats->smallrun_behavior_invalid_slot,
+           hz6_stats->smallrun_behavior_invalid_descriptor,
            hz6_stats->toy_small_malloc_fast_attempt,
            hz6_stats->toy_small_malloc_fast_hit,
            hz6_stats->toy_small_malloc_front_dispatch,

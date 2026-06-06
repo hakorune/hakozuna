@@ -432,6 +432,28 @@
 #define HZ6_SOURCE_BLOCK_ROUTE_TOY_FRONT_L1 1
 #endif
 
+#ifndef HZ6_SMALL_RUN_ROUTE_DRYRUN_L1
+/* Diagnostic-only probe for a future SmallRunFront/TinyRunRoute design. */
+#define HZ6_SMALL_RUN_ROUTE_DRYRUN_L1 0
+#endif
+
+#ifndef HZ6_SMALL_RUN_ROUTE_BEHAVIOR_L1
+/* Narrow Toy/small source-run route shortcut.  This is intentionally separate
+ * from generic SourceBlockRoute: exact route remains the fallback, and only a
+ * fully proven active source-run slot returns VALID. */
+#define HZ6_SMALL_RUN_ROUTE_BEHAVIOR_L1 0
+#endif
+
+#ifndef HZ6_SMALL_RUN_ROUTE_MAX_SLOT_BYTES
+/* HZ6's current small class geometry rounds the 2K row into a 4K slot class. */
+#define HZ6_SMALL_RUN_ROUTE_MAX_SLOT_BYTES ((size_t)4096)
+#endif
+
+#ifndef HZ6_SMALL_RUN_ROUTE_MIN_SLOT_BYTES
+/* Optional lower gate for size-split SmallRunRoute experiments. */
+#define HZ6_SMALL_RUN_ROUTE_MIN_SLOT_BYTES ((size_t)0)
+#endif
+
 #ifndef HZ6_SOURCE_BLOCK_ROUTE_LATE_REGISTER_L1
 /* Register SourceBlockRoute range entries after source-run class selection.
  * This lets class-gated SourceBlockRoute lanes avoid range-index hits on

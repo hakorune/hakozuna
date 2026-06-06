@@ -933,6 +933,34 @@ int main(int argc, char** argv) {
             args[i].hz6_stats_after.source_block_route_behavior_invalid_front;
         hz6_stats.source_block_route_behavior_invalid_descriptor +=
             args[i].hz6_stats_after.source_block_route_behavior_invalid_descriptor;
+        hz6_stats.smallrun_route_attempt +=
+            args[i].hz6_stats_after.smallrun_route_attempt;
+        hz6_stats.smallrun_range_hit +=
+            args[i].hz6_stats_after.smallrun_range_hit;
+        hz6_stats.smallrun_active_slot_hit +=
+            args[i].hz6_stats_after.smallrun_active_slot_hit;
+        hz6_stats.smallrun_descriptor_match +=
+            args[i].hz6_stats_after.smallrun_descriptor_match;
+        hz6_stats.smallrun_generation_match +=
+            args[i].hz6_stats_after.smallrun_generation_match;
+        hz6_stats.smallrun_would_valid +=
+            args[i].hz6_stats_after.smallrun_would_valid;
+        hz6_stats.smallrun_would_invalid +=
+            args[i].hz6_stats_after.smallrun_would_invalid;
+        hz6_stats.smallrun_exact_fallback_needed +=
+            args[i].hz6_stats_after.smallrun_exact_fallback_needed;
+        hz6_stats.smallrun_false_positive +=
+            args[i].hz6_stats_after.smallrun_false_positive;
+        hz6_stats.smallrun_behavior_attempt +=
+            args[i].hz6_stats_after.smallrun_behavior_attempt;
+        hz6_stats.smallrun_behavior_valid +=
+            args[i].hz6_stats_after.smallrun_behavior_valid;
+        hz6_stats.smallrun_behavior_fallback +=
+            args[i].hz6_stats_after.smallrun_behavior_fallback;
+        hz6_stats.smallrun_behavior_invalid_slot +=
+            args[i].hz6_stats_after.smallrun_behavior_invalid_slot;
+        hz6_stats.smallrun_behavior_invalid_descriptor +=
+            args[i].hz6_stats_after.smallrun_behavior_invalid_descriptor;
         hz6_stats.toy_small_malloc_fast_attempt +=
             args[i].hz6_stats_after.toy_small_malloc_fast_attempt;
         hz6_stats.toy_small_malloc_fast_hit +=

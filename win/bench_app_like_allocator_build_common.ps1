@@ -240,6 +240,33 @@ function Get-Hz6WinSourceBlockRouteBehaviorDynMapNoToyDirectLocalFreeReuseLarger
     $flags
 }
 
+function Get-Hz6WinSmallRunRouteDryRunDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
+    $flags += "/DHZ6_SMALL_RUN_ROUTE_DRYRUN_L1=1"
+    $flags += "/DHZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_L1=1"
+    $flags += "/DHZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_DYNAMIC_L1=1"
+    $flags += "/DHZ6_SOURCE_BLOCK_ROUTE_RANGE_INDEX_L1=1"
+    $flags
+}
+
+function Get-Hz6WinSmallRunRouteBehaviorDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
+    $flags += "/DHZ6_SMALL_RUN_ROUTE_BEHAVIOR_L1=1"
+    $flags += "/DHZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_L1=1"
+    $flags += "/DHZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_DYNAMIC_L1=1"
+    $flags += "/DHZ6_SOURCE_BLOCK_ROUTE_RANGE_INDEX_L1=1"
+    $flags
+}
+
+function Get-Hz6WinSmallRunRouteBehaviorMin512DirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinSmallRunRouteBehaviorDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
+    $flags += "/DHZ6_SMALL_RUN_ROUTE_MIN_SLOT_BYTES=512"
+    $flags
+}
+
 function Get-Hz6WinDirectLocalTrustedLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags {
     Get-Hz6WinDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlagsWith @(
         "/DHZ6_LOCAL_CACHE_TRUSTED_OWNER_L1=1"
@@ -1964,6 +1991,9 @@ function Invoke-AppLikeHz6BenchBuilds {
     $toySmallActiveMapDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kFlags = Get-Hz6WinToySmallActiveMapDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
     $toySmallActiveMapSourceBlockRouteBehaviorDynMapDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kFlags = Get-Hz6WinToySmallActiveMapSourceBlockRouteBehaviorDynMapDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
     $toySmallHotPathDiagSourceBlockRouteBehaviorDynMapDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kFlags = Get-Hz6WinToySmallHotPathDiagSourceBlockRouteBehaviorDynMapDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
+    $smallRunRouteDryRunDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kFlags = Get-Hz6WinSmallRunRouteDryRunDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
+    $smallRunRouteBehaviorDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kFlags = Get-Hz6WinSmallRunRouteBehaviorDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
+    $smallRunRouteBehaviorMin512DirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kFlags = Get-Hz6WinSmallRunRouteBehaviorMin512DirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
     $directLocalTrustedLargerLowRssFront8kSourceRunDesc8kRoute8kFlags = Get-Hz6WinDirectLocalTrustedLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
     $directLocalPackedLargerLowRssFront8kSourceRunDesc8kRoute8kFlags = Get-Hz6WinDirectLocalPackedLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
     $directLocalExactLargerLowRssFront8kSourceRunDesc8kRoute8kFlags = Get-Hz6WinDirectLocalExactLargerLowRssFront8kSourceRunDesc8kRoute8kCapacityFlags
@@ -2155,6 +2185,9 @@ function Invoke-AppLikeHz6BenchBuilds {
         "sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k" = @{ Suffix = "_sourceblockroute_behavior_dynmap_directlocalfreereuse_largerlowrss_front8k_sourcerun_desc8k_route8k"; ExtraFlags = $sourceBlockRouteBehaviorDynMapDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kFlags }
         "toysmallhotpathdiag-sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k" = @{ Suffix = "_toysmallhotpathdiag_sourceblockroute_behavior_dynmap_directlocalfreereuse_largerlowrss_front8k_sourcerun_desc8k_route8k"; ExtraFlags = $toySmallHotPathDiagSourceBlockRouteBehaviorDynMapDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kFlags }
         "sourceblockroute-behavior-dynmap-notoy-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k" = @{ Suffix = "_sourceblockroute_behavior_dynmap_notoy_directlocalfreereuse_largerlowrss_front8k_sourcerun_desc8k_route8k"; ExtraFlags = $sourceBlockRouteBehaviorDynMapNoToyDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kFlags }
+        "smallrunroute-dryrun-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k" = @{ Suffix = "_smallrunroute_dryrun_directlocalfreereuse_largerlowrss_front8k_sourcerun_desc8k_route8k"; ExtraFlags = $smallRunRouteDryRunDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kFlags }
+        "smallrunroute-behavior-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k" = @{ Suffix = "_smallrunroute_behavior_directlocalfreereuse_largerlowrss_front8k_sourcerun_desc8k_route8k"; ExtraFlags = $smallRunRouteBehaviorDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kFlags }
+        "smallrunroute-behavior-min512-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k" = @{ Suffix = "_smallrunroute_behavior_min512_directlocalfreereuse_largerlowrss_front8k_sourcerun_desc8k_route8k"; ExtraFlags = $smallRunRouteBehaviorMin512DirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kFlags }
         "sourceblockroute-behavior-dynmap-small8k-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k" = @{ Suffix = "_sourceblockroute_behavior_dynmap_small8k_directlocalfreereuse_largerlowrss_front8k_sourcerun_desc8k_route8k"; ExtraFlags = $sourceBlockRouteBehaviorDynMapSmall8kDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kFlags }
         "toysmallactivemap-sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k" = @{ Suffix = "_toysmallactivemap_sourceblockroute_behavior_dynmap_directlocalfreereuse_largerlowrss_front8k_sourcerun_desc8k_route8k"; ExtraFlags = $toySmallActiveMapSourceBlockRouteBehaviorDynMapDirectLocalFreeReuseLargerLowRssFront8kSourceRunDesc8kRoute8kFlags }
         "directlocalfreereuse-small8k-largerlowrss-front8k-sourcerun-desc8k-route8k" = @{ Suffix = "_directlocalfreereuse_small8k_largerlowrss_front8k_sourcerun_desc8k_route8k"; ExtraFlags = $directLocalFreeReuseSmall8kLargerLowRssFront8kSourceRunDesc8kRoute8kFlags }

@@ -126,6 +126,12 @@ int hz6_allocator_source_block_register_invalid_range(
 void hz6_allocator_source_block_route_dryrun(Hz6Allocator* allocator,
                                              const void* ptr);
 
+void hz6_allocator_small_run_route_dryrun(Hz6Allocator* allocator,
+                                          const void* ptr);
+
+Hz6RouteResult hz6_allocator_small_run_route_lookup(Hz6Allocator* allocator,
+                                                    const void* ptr);
+
 int hz6_allocator_route_register_shared_invalid_range(Hz6Allocator* allocator,
                                                       void* base,
                                                       size_t bytes,

@@ -217,6 +217,20 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 "source_block_route_range_index_stale=%zu "
                 "source_block_route_range_index_probe_total=%zu "
                 "source_block_route_range_index_probe_max=%zu "
+                "smallrun_route_attempt=%zu "
+                "smallrun_range_hit=%zu "
+                "smallrun_active_slot_hit=%zu "
+                "smallrun_descriptor_match=%zu "
+                "smallrun_generation_match=%zu "
+                "smallrun_would_valid=%zu "
+                "smallrun_would_invalid=%zu "
+                "smallrun_exact_fallback_needed=%zu "
+                "smallrun_false_positive=%zu "
+                "smallrun_behavior_attempt=%zu "
+                "smallrun_behavior_valid=%zu "
+                "smallrun_behavior_fallback=%zu "
+                "smallrun_behavior_invalid_slot=%zu "
+                "smallrun_behavior_invalid_descriptor=%zu "
                 "toy_small_malloc_fast_attempt=%zu "
                 "toy_small_malloc_fast_hit=%zu "
                 "toy_small_malloc_front_dispatch=%zu "
@@ -375,6 +389,20 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 s.source_block_route_range_index_stale,
                 s.source_block_route_range_index_probe_total,
                 s.source_block_route_range_index_probe_max,
+                s.smallrun_route_attempt,
+                s.smallrun_range_hit,
+                s.smallrun_active_slot_hit,
+                s.smallrun_descriptor_match,
+                s.smallrun_generation_match,
+                s.smallrun_would_valid,
+                s.smallrun_would_invalid,
+                s.smallrun_exact_fallback_needed,
+                s.smallrun_false_positive,
+                s.smallrun_behavior_attempt,
+                s.smallrun_behavior_valid,
+                s.smallrun_behavior_fallback,
+                s.smallrun_behavior_invalid_slot,
+                s.smallrun_behavior_invalid_descriptor,
                 s.toy_small_malloc_fast_attempt,
                 s.toy_small_malloc_fast_hit,
                 s.toy_small_malloc_front_dispatch,
