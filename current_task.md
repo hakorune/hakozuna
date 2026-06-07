@@ -368,6 +368,33 @@ Latest HZ6 SmallRunRoute attack:
     for the replacement path to amortize, and 2K is distorted by the current
     4K slot geometry / source_alloc pressure.
 
+  Static class-window controls:
+    Temporary `MAX_SLOT_BYTES=1024` and `MAX_SLOT_BYTES=1024 +
+    LATE_REGISTER + MAX_CLASS=3` controls were measured and then removed
+    from the lane map to avoid no-go clutter.
+
+    max1k repeat-3:
+      256B 74.660M vs direct 68.114M
+      512B 55.513M vs direct 56.902M
+      1K   58.100M vs direct 49.802M
+      2K   29.838M vs direct 37.158M
+      4K   50.100M vs direct 47.614M
+
+    max1k + late-register repeat-3:
+      256B 74.833M vs direct 70.565M
+      512B 42.520M vs direct 55.564M
+      1K   43.346M vs direct 41.759M
+      2K   31.336M vs direct 25.606M
+      4K   40.591M vs direct 46.999M
+
+  Read:
+    Simple static class/slot windows are not stable enough to promote.
+    They confirm the SmallRunRoute replacement cost is workload and class
+    shape sensitive, but do not provide a clean selected-small rule. Keep
+    the existing all-size/min512 SmallRunRoute lanes as evidence only; do
+    not add more static gates without a new diagnostic that explains the
+    variance.
+
   Selected-small refresh repeat-5:
     Compared:
       largerlowrss
