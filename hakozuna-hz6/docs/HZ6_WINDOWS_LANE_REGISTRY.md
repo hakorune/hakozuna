@@ -57,11 +57,19 @@ front1k:
   status: selected lower-RSS sibling
   lane:
     ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-directfree-trustedlocalcache-desc16k-front1k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512
+
+front2k:
+  status: evidence/control only
+  lane:
+    ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-directfree-trustedlocalcache-desc16k-front2k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512
 ```
 
 `win/run_win_hz6_selected_family.ps1 -LarsonElasticLowRssSelected` runs both
 rows together.  Front2k remains evidence/control only and is intentionally not
 part of the selected-family preset.
+
+Use `-LarsonElasticFrontcacheGuard` when front2k should be included in the
+boundary check across main/worker 1k/4k/10k.
 
 ## Desired Manifest Shape
 

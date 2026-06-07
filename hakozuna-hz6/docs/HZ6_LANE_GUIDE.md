@@ -372,6 +372,16 @@ Use this preset for frontcache-boundary follow-up checks instead of spelling out
 the long capacity lane names by hand.
 
 ```powershell
+# Elastic frontcache boundary guard: front4k / front2k / front1k across
+# main/worker 1k/4k/10k.
+.\win\run_win_hz6_selected_family.ps1 `
+  -LarsonElasticFrontcacheGuard `
+  -Runs 3 `
+  -TimeoutSeconds 240 `
+  -ContinueOnFailure
+```
+
+```powershell
 # Narrow low-RSS sibling check: front4k / route192k / no-backptr / routepacked.
 .\win\run_win_hz6_selected_family.ps1 `
   -LarsonCrossOwnerLowestRss `

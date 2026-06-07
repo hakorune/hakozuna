@@ -288,8 +288,13 @@ HZ6 is now a profile-family allocator:
     lower-RSS controls/candidates.  Their combined packed source10k lane is the
     current packed minimum-RSS sibling at `44.864M / 412280 KB`; source8k and
     source2k remain warmup no-go controls.
-    ElasticCapacity source-depot work now has a separate candidate-watch:
-    DepotOwnerDirectFastPath-L1 at `46.273M / 224612 KB`.  The
+    ElasticCapacity source-depot work is now split into speed-balance and
+    lower-RSS selected siblings:
+      front4k DFTLC remains the speed-balance control.
+      front1k DFTLC is the selected lower-RSS sibling after the repeat-3
+      main/worker 1k/4k/10k guard.
+      front2k remains boundary evidence/control only.
+    DepotOwnerDirectFastPath-L1 is now a superseded clean control.  The
     SlotOwnerConsumerDryRun-L1 row is diagnostic-only and only justifies a
     narrow logical-owner fast-path experiment.
     StorageOwner16-L1 is safety-clean RSS-first evidence/control at

@@ -13,6 +13,7 @@ param(
     [switch]$LargeDirectRetainControl,
     [switch]$LarsonCrossOwnerSelected,
     [switch]$LarsonElasticLowRssSelected,
+    [switch]$LarsonElasticFrontcacheGuard,
     [switch]$LarsonElasticRehomeBudgetGuard,
     [switch]$LarsonCrossOwnerLowestRss,
     [switch]$LarsonMetadataSlim,
@@ -135,6 +136,14 @@ $presetMap = [ordered]@{
         -Hz6Profiles @("speed") `
         -CapacityLanes @("ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-directfree-trustedlocalcache-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512", "ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-directfree-trustedlocalcache-desc16k-front1k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512") `
         -Note "Larson ElasticCapacity low-RSS siblings: front4k speed-balance control plus front1k selected lower-RSS sibling; front1k repeat-3 guard saves about 20.7 MiB on every main/worker 1k/4k/10k row with small speed variance and safety clean"
+
+    "larson-elastic-frontcache-guard" = New-Preset `
+        -Name "larson-elastic-frontcache-guard" `
+        -Families @("larson") `
+        -BenchmarkProfiles @("larson_t16_main_10k", "larson_t16_worker_10k", "larson_t16_main_4k", "larson_t16_worker_4k", "larson_t16_main_1k", "larson_t16_worker_1k") `
+        -Hz6Profiles @("speed") `
+        -CapacityLanes @("ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-directfree-trustedlocalcache-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512", "ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-directfree-trustedlocalcache-desc16k-front2k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512", "ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-directfree-trustedlocalcache-desc16k-front1k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512") `
+        -Note "Larson Elastic frontcache-boundary guard: front4k speed-balance control, front2k evidence/control, and front1k selected lower-RSS sibling across main/worker 1k/4k/10k"
 
     "larson-elastic-rehomebudget-guard" = New-Preset `
         -Name "larson-elastic-rehomebudget-guard" `
@@ -273,6 +282,10 @@ if ($LarsonCrossOwnerSelected) {
 
 if ($LarsonElasticLowRssSelected) {
     [void]$selectedPresetNames.Add("larson-elastic-lowrss-selected")
+}
+
+if ($LarsonElasticFrontcacheGuard) {
+    [void]$selectedPresetNames.Add("larson-elastic-frontcache-guard")
 }
 
 if ($LarsonElasticRehomeBudgetGuard) {

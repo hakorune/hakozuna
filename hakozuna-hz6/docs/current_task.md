@@ -309,6 +309,9 @@ Larson / Elastic:
     lane wiring:
       selected-family `larson-elastic-lowrss-selected` now runs both the
       front4k speed-balance control and the front1k selected lower-RSS sibling.
+      selected-family `larson-elastic-frontcache-guard` runs front4k/front2k/
+      front1k across main/worker 1k/4k/10k when the boundary needs a repeat
+      guard.
 
 mixed_ws low-RSS capacity split:
   2026-06-07 guard data shows an important tension:
