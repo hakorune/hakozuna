@@ -43,6 +43,26 @@ powershell -ExecutionPolicy Bypass -File win/check_win_hz6_capacity_lanes.ps1
 It compares the capacity lane keys in the build-common map and the capacity
 matrix suffix map. It does not run benchmarks; it only catches lane-key drift.
 
+## Current Selected-Family Elastic Rows
+
+The Elastic DFTLC family currently has two selected-family rows:
+
+```text
+front4k:
+  status: speed-balance control
+  lane:
+    ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-directfree-trustedlocalcache-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512
+
+front1k:
+  status: selected lower-RSS sibling
+  lane:
+    ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-directfree-trustedlocalcache-desc16k-front1k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512
+```
+
+`win/run_win_hz6_selected_family.ps1 -LarsonElasticLowRssSelected` runs both
+rows together.  Front2k remains evidence/control only and is intentionally not
+part of the selected-family preset.
+
 ## Desired Manifest Shape
 
 A future `Get-Hz6WinCapacityLaneRegistry` helper should return records like:

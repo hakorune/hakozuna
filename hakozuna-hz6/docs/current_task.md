@@ -262,21 +262,53 @@ Larson / Elastic:
         front4k = 44.150M / 214820 KB
         front1k = 44.877M / 194088 KB
       safety clean across all rows.
+    repeat-3 guard across main/worker 1k/4k/10k:
+      main_1k:
+        front4k = 57.777M / 92120 KB
+        front1k = 57.350M / 71396 KB
+        delta = -0.74% speed, -20724 KB RSS
+      worker_1k:
+        front4k = 58.001M / 91836 KB
+        front1k = 58.363M / 71108 KB
+        delta = +0.62% speed, -20728 KB RSS
+      main_4k:
+        front4k = 55.527M / 139140 KB
+        front1k = 56.713M / 118420 KB
+        delta = +2.14% speed, -20720 KB RSS
+      worker_4k:
+        front4k = 53.552M / 133012 KB
+        front1k = 52.864M / 112268 KB
+        delta = -1.28% speed, -20744 KB RSS
+      main_10k:
+        front4k = 39.963M / 224712 KB
+        front1k = 43.303M / 203988 KB
+        delta = +8.36% speed, -20724 KB RSS
+      worker_10k:
+        front4k = 47.699M / 214832 KB
+        front1k = 47.941M / 194096 KB
+        delta = +0.51% speed, -20736 KB RSS
+      safety clean across all rows:
+        route_invalid = 0
+        route_miss = 0
+        route_register_fail = 0
+        alloc_fail = 0
+        descriptor_exhausted = 0
+        source_block_exhausted = 0
+        remote_free_transfer_fail = 0
     interpretation:
-      front1k is a strong lower-RSS candidate-watch: it saves about 19-21 MiB
-      on every Larson guard row and does not introduce safety failures.  It is
-      not a pure speed promotion yet because speed is mixed: worker4k/worker10k
-      improve, while main1k/main4k/main10k and worker1k regress modestly
-      (worst observed row is worker1k at about -4.1%).
+      front1k is now the selected Elastic lower-RSS sibling.  The repeat-3
+      guard saves about 20.7 MiB on every Larson main/worker 1k/4k/10k row,
+      wins speed on 4/6 rows, and keeps the two regressions small
+      (main1k -0.74%, worker4k -1.28%).  It does not introduce safety
+      failures.
     decision:
       keep front4k as the Elastic speed-balance control.
-      keep front1k as the next Elastic lower-RSS candidate-watch.
+      promote front1k as the selected Elastic lower-RSS sibling.
       front2k is evidence/control only because it saves less RSS than front1k
       and did not beat front4k/front1k on the first diagnostic main10k row.
-    next:
-      before defaulting front1k, run repeat-3 guard across main/worker
-      1k/4k/10k or ask for design review if the speed/RSS tradeoff should be
-      split into separate "speed-balance" and "minimum-RSS" presets.
+    lane wiring:
+      selected-family `larson-elastic-lowrss-selected` now runs both the
+      front4k speed-balance control and the front1k selected lower-RSS sibling.
 
 mixed_ws low-RSS capacity split:
   2026-06-07 guard data shows an important tension:

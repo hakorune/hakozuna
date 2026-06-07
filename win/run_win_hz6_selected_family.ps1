@@ -133,8 +133,8 @@ $presetMap = [ordered]@{
         -Families @("larson") `
         -BenchmarkProfiles @("larson_t16_main_10k") `
         -Hz6Profiles @("speed") `
-        -CapacityLanes @("ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-directfree-trustedlocalcache-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512") `
-        -Note "Larson ElasticCapacity low-RSS sibling: DepotOwnerDirect plus DirectFree/TrustedLocalCache; repeat-3 improves every main/worker 1k/4k/10k guard row over DepotOwnerDirect with essentially unchanged RSS"
+        -CapacityLanes @("ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-directfree-trustedlocalcache-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512", "ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-directfree-trustedlocalcache-desc16k-front1k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512") `
+        -Note "Larson ElasticCapacity low-RSS siblings: front4k speed-balance control plus front1k selected lower-RSS sibling; front1k repeat-3 guard saves about 20.7 MiB on every main/worker 1k/4k/10k row with small speed variance and safety clean"
 
     "larson-elastic-rehomebudget-guard" = New-Preset `
         -Name "larson-elastic-rehomebudget-guard" `
