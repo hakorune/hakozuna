@@ -261,6 +261,10 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
                                                      ptr);
 #endif
           if (ok) {
+#if HZ6_DIAGNOSTIC_PROBES
+            ++allocator->stats
+                  .elastic_dftlc_rehome_intersection_directfree_hit;
+#endif
             hz6_toy_small_hotpath_diag_free_fast_hit(
                 allocator, route.front_id, route.class_id);
             hz6_toy_small_hotpath_diag_free_cache_push(
@@ -269,6 +273,8 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
 #if HZ6_DIAGNOSTIC_PROBES
           if (!ok) {
             ++allocator->stats.free_invalid_local_cache_direct;
+            ++allocator->stats
+                  .elastic_dftlc_rehome_intersection_directfree_fail;
           }
 #endif
 #endif

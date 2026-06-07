@@ -122,6 +122,83 @@ Latest HZ6 Redis route-churn attack:
     geomean and loses GET/LPOP.
 ```
 
+Latest HZ6 Elastic / Larson follow-up:
+
+```text
+2026-06-07:
+  Redis is closed for now as evidence/control. The active target moves back to
+  Larson / ElasticCapacity because it is still the cleanest path toward HZ6's
+  low-RSS cross-owner strength.
+
+  Current selected Elastic low-RSS sibling:
+    DepotOwnerDirect + DirectFreeTrustedLocalCache
+    main10k repeat-3 = about 43.75M / 224724 KB
+    safety clean
+
+  Prior composition guard:
+    DirectFreeTrustedLocalCache + DepotDescriptorRehomeBudget2048
+      main10k = 39.525M / 234696 KB
+      safety clean but loses versus selected DFTLC while RSS rises
+
+  New diagnostic-only lane:
+    ownerlocalityfast-rsscap-2-elasticdescsource-route-depotrunmeta-
+    depotownerdirect-directfree-trustedlocalcache-depotdescrehome-budget2048-
+    intersectiondryrun-desc16k-front4k-thindesc-nobackptr-noroutebackptr-
+    dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-
+    frontcachepacked-sourceblockpacked-source64-route16k-run4096
+
+  Purpose:
+    Count the boundary between the free/local-cache speed path and the
+    transfer/rehome path in the same diagnostic run:
+      elastic_dftlc_rehome_intersection_directfree_hit
+      elastic_dftlc_rehome_intersection_directfree_fail
+      elastic_dftlc_rehome_intersection_transfer_probe
+      elastic_dftlc_rehome_intersection_transfer_depot
+      elastic_dftlc_rehome_intersection_transfer_already_local
+      elastic_dftlc_rehome_intersection_transfer_would_rehome
+      elastic_dftlc_rehome_intersection_rehome_success
+      elastic_dftlc_rehome_intersection_rehome_ineligible
+      elastic_dftlc_rehome_intersection_rehome_budget_denied
+
+  Read target:
+    If transfer probes are mostly already-local or ineligible under DFTLC, then
+    rehome budget is not composing with the selected DFTLC mechanism and should
+    remain a separate ElasticCapacity control. If would_rehome/success is high
+    but selected DFTLC still loses, the next design should gate rehome by
+    workload pressure or transfer class rather than applying a static per-owner
+    budget.
+
+  Observed after fixing Larson worker stats aggregation:
+    main1k smoke:
+      ops = 52.653M, peak = 98744 KB
+      directfree_hit = 53158057
+      transfer_probe = 8000
+      transfer_depot = 0
+      rehome_success = 0
+      rehome_ineligible = 8000
+      rehome_budget_denied = 0
+      safety counters clean
+
+    main10k:
+      ops = 36.004M, peak = 235292 KB
+      directfree_hit = 362995404
+      transfer_probe = 80000
+      transfer_depot = 71811
+      transfer_would_rehome = 71811
+      rehome_success = 30483
+      rehome_ineligible = 8189
+      rehome_budget_denied = 41328
+      safety counters clean
+
+  Read:
+    DirectFreeTrustedLocalCache remains the dominant speed path. The rehome
+    budget path is absent on main1k and only partially active on main10k, where
+    it spends most eligible transfers at the static budget boundary. Keep the
+    intersection lane as diagnostic evidence. Do not promote DFTLC+budget2048;
+    the next Elastic work should either leave selected DFTLC alone or design a
+    conditional transfer/rehome policy rather than another fixed budget value.
+```
+
 Latest HZ6 SmallRunRoute attack:
 
 ```text

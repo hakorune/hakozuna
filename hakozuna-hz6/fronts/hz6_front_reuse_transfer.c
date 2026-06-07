@@ -399,26 +399,46 @@ static Hz6ObjectDescriptor* hz6_front_try_elastic_depot_descriptor_rehome(
   }
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.elastic_depot_descriptor_rehome_l1_attempt;
+  ++allocator->stats.elastic_dftlc_rehome_intersection_transfer_probe;
 #endif
   if (!hz6_allocator_descriptor_is_depot(descriptor) ||
-      hz6_allocator_descriptor_belongs_to(allocator, descriptor) ||
       !descriptor->source_block ||
       !hz6_allocator_source_block_is_elastic_depot(descriptor->source_block) ||
       !hz6_allocator_source_run_contains_slot(descriptor->source_block,
-                                             descriptor->ptr,
-                                             descriptor->class_id,
-                                             descriptor->bytes)) {
+                                              descriptor->ptr,
+                                              descriptor->class_id,
+                                              descriptor->bytes)) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.elastic_depot_descriptor_rehome_l1_ineligible;
+    ++allocator->stats
+          .elastic_dftlc_rehome_intersection_rehome_ineligible;
 #endif
     return descriptor;
   }
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.elastic_dftlc_rehome_intersection_transfer_depot;
+#endif
+  if (hz6_allocator_descriptor_belongs_to(allocator, descriptor)) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.elastic_depot_descriptor_rehome_l1_ineligible;
+    ++allocator->stats
+          .elastic_dftlc_rehome_intersection_transfer_already_local;
+    ++allocator->stats
+          .elastic_dftlc_rehome_intersection_rehome_ineligible;
+#endif
+    return descriptor;
+  }
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.elastic_dftlc_rehome_intersection_transfer_would_rehome;
+#endif
 
 #if HZ6_ELASTIC_DEPOT_DESCRIPTOR_REHOME_BUDGET_L1
   if (allocator->depot_descriptor_rehome_budget_used >=
       HZ6_ELASTIC_DEPOT_DESCRIPTOR_REHOME_BUDGET) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.elastic_depot_descriptor_rehome_l1_budget_denied;
+    ++allocator->stats
+          .elastic_dftlc_rehome_intersection_rehome_budget_denied;
 #endif
     return descriptor;
   }
@@ -476,6 +496,7 @@ static Hz6ObjectDescriptor* hz6_front_try_elastic_depot_descriptor_rehome(
 
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.elastic_depot_descriptor_rehome_l1_success;
+  ++allocator->stats.elastic_dftlc_rehome_intersection_rehome_success;
 #endif
 #if HZ6_ELASTIC_DEPOT_DESCRIPTOR_REHOME_BUDGET_L1
   ++allocator->depot_descriptor_rehome_budget_used;

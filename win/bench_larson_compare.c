@@ -861,6 +861,42 @@ int main(int argc, char** argv) {
         hz6_stats.elastic_depot_descriptor_rehome_l1_budget_denied +=
             tds[t].hz6_stats_after
                 .elastic_depot_descriptor_rehome_l1_budget_denied;
+        hz6_stats.elastic_dftlc_rehome_intersection_directfree_hit +=
+            tds[t]
+                .hz6_stats_after
+                .elastic_dftlc_rehome_intersection_directfree_hit;
+        hz6_stats.elastic_dftlc_rehome_intersection_directfree_fail +=
+            tds[t]
+                .hz6_stats_after
+                .elastic_dftlc_rehome_intersection_directfree_fail;
+        hz6_stats.elastic_dftlc_rehome_intersection_transfer_probe +=
+            tds[t]
+                .hz6_stats_after
+                .elastic_dftlc_rehome_intersection_transfer_probe;
+        hz6_stats.elastic_dftlc_rehome_intersection_transfer_depot +=
+            tds[t]
+                .hz6_stats_after
+                .elastic_dftlc_rehome_intersection_transfer_depot;
+        hz6_stats.elastic_dftlc_rehome_intersection_transfer_already_local +=
+            tds[t]
+                .hz6_stats_after
+                .elastic_dftlc_rehome_intersection_transfer_already_local;
+        hz6_stats.elastic_dftlc_rehome_intersection_transfer_would_rehome +=
+            tds[t]
+                .hz6_stats_after
+                .elastic_dftlc_rehome_intersection_transfer_would_rehome;
+        hz6_stats.elastic_dftlc_rehome_intersection_rehome_success +=
+            tds[t]
+                .hz6_stats_after
+                .elastic_dftlc_rehome_intersection_rehome_success;
+        hz6_stats.elastic_dftlc_rehome_intersection_rehome_ineligible +=
+            tds[t]
+                .hz6_stats_after
+                .elastic_dftlc_rehome_intersection_rehome_ineligible;
+        hz6_stats.elastic_dftlc_rehome_intersection_rehome_budget_denied +=
+            tds[t]
+                .hz6_stats_after
+                .elastic_dftlc_rehome_intersection_rehome_budget_denied;
         hz6_stats.elastic_slot_owner_sparse_lookup +=
             tds[t].hz6_stats_after.elastic_slot_owner_sparse_lookup;
         hz6_stats.elastic_slot_owner_sparse_hit +=

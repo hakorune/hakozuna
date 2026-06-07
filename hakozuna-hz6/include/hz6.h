@@ -233,6 +233,15 @@ typedef struct Hz6StatsSnapshot {
   size_t elastic_depot_descriptor_rehome_l1_detach_fail;
   size_t elastic_depot_descriptor_rehome_l1_rollback;
   size_t elastic_depot_descriptor_rehome_l1_budget_denied;
+  size_t elastic_dftlc_rehome_intersection_directfree_hit;
+  size_t elastic_dftlc_rehome_intersection_directfree_fail;
+  size_t elastic_dftlc_rehome_intersection_transfer_probe;
+  size_t elastic_dftlc_rehome_intersection_transfer_depot;
+  size_t elastic_dftlc_rehome_intersection_transfer_already_local;
+  size_t elastic_dftlc_rehome_intersection_transfer_would_rehome;
+  size_t elastic_dftlc_rehome_intersection_rehome_success;
+  size_t elastic_dftlc_rehome_intersection_rehome_ineligible;
+  size_t elastic_dftlc_rehome_intersection_rehome_budget_denied;
   size_t owner_equal_site_free;
   size_t owner_equal_site_remote_free;
   size_t owner_equal_site_local_cache;

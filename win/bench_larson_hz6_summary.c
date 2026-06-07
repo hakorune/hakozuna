@@ -170,6 +170,15 @@ void bench_print_larson_hz6_summary(const Hz6StatsSnapshot* hz6_stats) {
            "elastic_depot_descriptor_rehome_l1_detach_fail=%zu "
            "elastic_depot_descriptor_rehome_l1_rollback=%zu "
            "elastic_depot_descriptor_rehome_l1_budget_denied=%zu "
+           "elastic_dftlc_rehome_intersection_directfree_hit=%zu "
+           "elastic_dftlc_rehome_intersection_directfree_fail=%zu "
+           "elastic_dftlc_rehome_intersection_transfer_probe=%zu "
+           "elastic_dftlc_rehome_intersection_transfer_depot=%zu "
+           "elastic_dftlc_rehome_intersection_transfer_already_local=%zu "
+           "elastic_dftlc_rehome_intersection_transfer_would_rehome=%zu "
+           "elastic_dftlc_rehome_intersection_rehome_success=%zu "
+           "elastic_dftlc_rehome_intersection_rehome_ineligible=%zu "
+           "elastic_dftlc_rehome_intersection_rehome_budget_denied=%zu "
            "elastic_slot_owner_sparse_lookup=%zu "
            "elastic_slot_owner_sparse_hit=%zu "
            "elastic_slot_owner_sparse_miss=%zu "
@@ -437,6 +446,15 @@ void bench_print_larson_hz6_summary(const Hz6StatsSnapshot* hz6_stats) {
            hz6_stats->elastic_depot_descriptor_rehome_l1_detach_fail,
            hz6_stats->elastic_depot_descriptor_rehome_l1_rollback,
            hz6_stats->elastic_depot_descriptor_rehome_l1_budget_denied,
+           hz6_stats->elastic_dftlc_rehome_intersection_directfree_hit,
+           hz6_stats->elastic_dftlc_rehome_intersection_directfree_fail,
+           hz6_stats->elastic_dftlc_rehome_intersection_transfer_probe,
+           hz6_stats->elastic_dftlc_rehome_intersection_transfer_depot,
+           hz6_stats->elastic_dftlc_rehome_intersection_transfer_already_local,
+           hz6_stats->elastic_dftlc_rehome_intersection_transfer_would_rehome,
+           hz6_stats->elastic_dftlc_rehome_intersection_rehome_success,
+           hz6_stats->elastic_dftlc_rehome_intersection_rehome_ineligible,
+           hz6_stats->elastic_dftlc_rehome_intersection_rehome_budget_denied,
            hz6_stats->elastic_slot_owner_sparse_lookup,
            hz6_stats->elastic_slot_owner_sparse_hit,
            hz6_stats->elastic_slot_owner_sparse_miss,

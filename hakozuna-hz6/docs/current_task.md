@@ -47,6 +47,27 @@ selected-small fixed 256B..16K:
 Larson / Elastic:
   current strongest RSS direction remains the selected Larson/Elastic low-RSS
   sibling documented in HZ6_SELECTED_FAMILY_SUMMARY.md.
+  The active follow-up is diagnostic-only:
+    DFTLC + DepotDescriptorRehomeBudget2048 intersection dry-run.
+  It counts whether DirectFreeTrustedLocalCache and budgeted descriptor rehome
+  are helping the same lifecycle path or merely composing two unrelated knobs.
+  Latest read:
+    main1k is effectively DFTLC-only:
+      directfree_hit = 53158057
+      transfer_probe = 8000
+      rehome_success = 0
+      rehome_ineligible = 8000
+    main10k shows partial rehome overlap:
+      directfree_hit = 362995404
+      transfer_probe = 80000
+      transfer_depot = 71811
+      rehome_success = 30483
+      rehome_budget_denied = 41328
+    Keep DFTLC+budget2048 as composition evidence, not promotion. The next
+    Elastic design should avoid another fixed budget sweep; use a conditional
+    transfer/rehome policy only if Elastic is reopened.
+  Keep Redis route-churn closed as evidence/control while this Elastic pass is
+  active.
 
 Immediate engineering posture:
   1. keep lane docs and selected-family scripts readable.
