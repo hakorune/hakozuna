@@ -312,6 +312,38 @@ Larson / Elastic:
       selected-family `larson-elastic-frontcache-guard` runs front4k/front2k/
       front1k across main/worker 1k/4k/10k when the boundary needs a repeat
       guard.
+    frontcache-guard repeat-3 with front2k included:
+      main_1k:
+        front4k = 57.260M / 92124 KB
+        front2k = 57.761M / 78292 KB
+        front1k = 57.380M / 71380 KB
+      worker_1k:
+        front4k = 58.290M / 91832 KB
+        front2k = 57.887M / 78024 KB
+        front1k = 58.019M / 71124 KB
+      main_4k:
+        front4k = 56.110M / 139128 KB
+        front2k = 56.397M / 125308 KB
+        front1k = 56.650M / 118388 KB
+      worker_4k:
+        front4k = 52.596M / 132996 KB
+        front2k = 53.272M / 119180 KB
+        front1k = 52.645M / 112276 KB
+      main_10k:
+        front4k = 42.756M / 224864 KB
+        front2k = 42.568M / 211020 KB
+        front1k = 41.448M / 204092 KB
+      worker_10k:
+        front4k = 43.488M / 214904 KB
+        front2k = 45.424M / 201000 KB
+        front1k = 44.430M / 194096 KB
+      safety clean across all rows.
+    refreshed read:
+      front1k remains the selected lower-RSS sibling: it saves about 20.7 MiB
+      RSS versus front4k on every row, wins speed on 4/6 rows, and its largest
+      observed regression is main10k at -3.06%.  front2k is useful boundary
+      evidence but saves only about 13.8 MiB and does not dominate front1k or
+      front4k, so it stays control/evidence.
 
 mixed_ws low-RSS capacity split:
   2026-06-07 guard data shows an important tension:
