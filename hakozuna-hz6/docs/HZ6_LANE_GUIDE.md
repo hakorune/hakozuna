@@ -21,6 +21,8 @@ these rows answer which lanes should be used, watched, or avoided.
 | --- | --- | --- |
 | Selected profile lane | `mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap-loopcarry` | Current balanced clean low-RSS row. |
 | Selected sibling | `route18` mixedclean sibling | Current wide_ws sibling when wide_ws is the target; do not replace balanced route17/loopcarry by default. |
+| Boundary / no-go control | `mixedclean-front16k-sourcerun-desc17k-source2k-route16k-linearwrap-loopcarry` | Route exact lower-bound evidence. It does not exhaust SourceBlock metadata, but exact route registration fails and triggers alloc-fail/starvation aftershock in wide_ws. Do not promote. |
+| Boundary / hard no-go | `mixedclean-front16k-sourcerun-desc17k-source2k-route8k-linearwrap-loopcarry` / `...source4k-route8k...` | Route pressure collapse. Route registration failure cascades into SourceBlock cap exhaustion; source4k does not rescue wide_ws. Evidence only. |
 | Selected profile lane | `sameownerfast-descavail-noboost-route4k` | random_mixed same-owner speed row. |
 | Selected profile lane | `largerlowrss-front8k-sourcerun-desc8k-route8k` | larger_sizes RSS/speed row. |
 | Redis candidate-control | `redislowrss-sourcerun-desc8k-route8k` | Current Redis-like low-RSS candidate-control. Use for Redis long/paper-style rows when the goal is completion and low RSS, not broad HZ6 promotion. |
@@ -1529,6 +1531,37 @@ mixedclean-front16k-sourcerun-desc17k-source2k-route17k:
   balanced `55.504M / 110780 KB`, wide_ws `19.978M / 140236 KB`.
   Route-only repeat control: balanced `66.308M / 110940 KB`, wide_ws
   `20.155M / 140172 KB`.
+
+mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap-loopcarry:
+  Current selected mixed_ws boundary after LinearWrap/LoopCarry route cleanup.
+  WideWsSourcePressureAudit-L1 confirms this is not arbitrary route slack:
+  `route_register_fail=0`, `alloc_fail=0`, `source_block_exhausted=0`,
+  `source_run_reuse_route_fail=0`, and `source_block_active_max=213` in the
+  route-capacity closeout run.
+
+mixedclean-front16k-sourcerun-desc17k-source2k-route16k-linearwrap-loopcarry:
+  Route-capacity lower-bound no-go/control. It keeps the selected descriptor,
+  source-block, frontcache, LinearWrap, and LoopCarry shape but cuts exact route
+  capacity to 16K. Wide_ws does not exhaust SourceBlock metadata
+  (`source_block_exhausted=0`), but exact route registration fails:
+  `route_register_fail=20833`, `source_run_reuse_route_fail=13890`,
+  `alloc_fail=6943`, and the later `source_refill_starvation=691124` is an
+  aftershock because `alloc_fail > 0` latches the starvation heuristic. Do not
+  promote or use as a production RSS cut.
+
+mixedclean-front16k-sourcerun-desc17k-source2k-route8k-linearwrap-loopcarry:
+  Hard route-pressure no-go/control. Wide_ws reports `route_register_fail=1506645`
+  and `source_run_reuse_route_fail=534333`; source-run materialization then
+  collapses into SourceBlock metadata exhaustion (`source_block_exhausted=503237`,
+  `source_block_active_max=2048`). This lane is useful evidence that the cliff
+  is route exact registration pressure cascading into source-block retention,
+  not a simple source-block capacity issue.
+
+mixedclean-front16k-sourcerun-desc17k-source4k-route8k-linearwrap-loopcarry:
+  Source-capacity compensation no-go/control for the route8k collapse.
+  Raising SourceBlock capacity from 2K to 4K does not rescue wide_ws
+  (`alloc_fail` remains at the route8k failure level), so do not retry static
+  source-capacity bumps as the next mixed_ws strategy.
 
 mixedclean-front16k-sourcerun-desc17k-source2k-route18k:
   Selected wide_ws sibling. Same descriptor, transfer, source-block, and
