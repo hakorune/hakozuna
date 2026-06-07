@@ -15,20 +15,30 @@ static int expect(int cond, const char* label) {
 int main(void) {
   void* a = h7_malloc(64);
   void* b = h7_malloc(4096);
-  void* c = h7_malloc(4097);
+  void* c = h7_malloc(8192);
+  void* d = h7_malloc(16384);
+  void* e = h7_malloc(32768);
+  void* f = h7_malloc(65536);
   unsigned char* z = (unsigned char*)h7_calloc(32, 8);
   H7Stats stats;
   size_t i;
 
   if (!expect(a != 0, "malloc 64") || !expect(b != 0, "malloc 4096") ||
-      !expect(c != 0, "malloc 4097") || !expect(z != 0, "calloc")) {
+      !expect(c != 0, "malloc 8192") || !expect(d != 0, "malloc 16384") ||
+      !expect(e != 0, "malloc 32768 direct") ||
+      !expect(f != 0, "malloc 65536 direct") ||
+      !expect(z != 0, "calloc")) {
     return 1;
   }
   if (!expect(h7_route(a) == H7_ROUTE_VALID, "route valid small") ||
       !expect(h7_route((unsigned char*)a + 1) == H7_ROUTE_INVALID,
               "route invalid small interior") ||
-      !expect(h7_route(c) == H7_ROUTE_VALID, "route valid direct") ||
+      !expect(h7_route(c) == H7_ROUTE_VALID, "route valid medium 8K") ||
       !expect(h7_route((unsigned char*)c + 1) == H7_ROUTE_INVALID,
+              "route invalid medium interior") ||
+      !expect(h7_route(e) == H7_ROUTE_VALID, "route valid 32K direct") ||
+      !expect(h7_route(f) == H7_ROUTE_VALID, "route valid 64K direct") ||
+      !expect(h7_route((unsigned char*)f + 1) == H7_ROUTE_INVALID,
               "route invalid direct interior") ||
       !expect(h7_route(&stats) == H7_ROUTE_MISS, "route miss foreign")) {
     return 1;
@@ -40,15 +50,19 @@ int main(void) {
   }
   memset(a, 0xA5, 64);
   memset(b, 0x5A, 4096);
-  memset(c, 0xC3, 4097);
+  memset(c, 0xC3, 8192);
+  memset(d, 0xD4, 16384);
+  memset(e, 0xE5, 32768);
+  memset(f, 0xF6, 65536);
 
   stats = h7_stats();
-  if (!expect(stats.active_bytes >= 64 + 4096 + 4097 + 256,
+  if (!expect(stats.active_bytes >= 64 + 4096 + 8192 + 16384 + 32768 +
+                                      65536 + 256,
               "active bytes after alloc")) {
     return 1;
   }
   if (!expect(stats.span_count >= 1, "span count") ||
-      !expect(stats.direct_count == 1, "direct count")) {
+      !expect(stats.direct_count == 2, "direct count")) {
     return 1;
   }
 
@@ -58,7 +72,10 @@ int main(void) {
   }
   h7_free(b);
   h7_free(c);
-  if (!expect(h7_route(c) == H7_ROUTE_MISS, "route miss freed direct")) {
+  h7_free(d);
+  h7_free(e);
+  h7_free(f);
+  if (!expect(h7_route(f) == H7_ROUTE_MISS, "route miss freed direct")) {
     return 1;
   }
   h7_free(z);

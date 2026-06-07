@@ -43,12 +43,14 @@ Scope:
   single-threaded unless externally synchronized
 
 Shape:
-  small: 16B..4KiB, 64KiB aligned spans, bitmap + free list
-  big:   >4KiB, direct OS allocation with a small direct header
+  span:  16B..16KiB, 64KiB aligned spans, bitmap + free list
+  big:   >16KiB, direct OS allocation with a small direct header
 ```
 
-TinyRoute-0 intentionally uses only two allocation layers: `small` and `big`.
-There is no separate medium retained pool in the first prototype.
+TinyRoute started with only `small` and `big`. TinyRoute-3 MediumLite keeps the
+same span machinery and extends span classes to 8K and 16K without adding a
+medium central pool. 32K stays direct because it is too close to one retained
+slot per 64KiB span.
 
 ## TinyRoute-1
 
@@ -84,15 +86,21 @@ TinyRoute-2:
   no speed claim yet
 
 TinyRoute-3:
-  per-thread small span/front cache
-  remote free policy only after same-thread path is stable
+  MediumLite retained spans for 8K / 16K
+  32K and larger stay direct
 
 TinyRoute-4:
-  medium retained pool for 8K..64K style workloads
+  optional per-thread small span/front cache
+  remote free remains global-lock fallback
 ```
 
 The near-term goal is not to clone HZ6. It is to keep HZ7 tiny while adding
-route safety and then multithread safety in the smallest honest steps.
+route safety, coarse multithread safety, and the smallest medium coverage that
+keeps the code readable.
+
+Lock-free remote free, owner inboxes, libc interposition, and profile-family
+policy are not HZ7 v1 goals. If they become necessary, they belong in a later
+HZ8/HZ6-family design rather than TinyRoute.
 
 ## Reading Order
 

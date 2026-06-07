@@ -12,8 +12,8 @@
 #include <unistd.h>
 #endif
 
-#define H7_SMALL_MAX 4096u
-#define H7_DIRECT_MIN (H7_SMALL_MAX + 1u)
+#define H7_SPAN_CLASS_MAX 16384u
+#define H7_DIRECT_MIN (H7_SPAN_CLASS_MAX + 1u)
 #define H7_SPAN_BYTES (64u * 1024u)
 #define H7_EMPTY_SPAN_CAP 1u
 #define H7_FREE_NONE UINT32_MAX
@@ -83,6 +83,7 @@ static H7Class g_h7_classes[] = {
     {16u, 0, 0, 0},   {32u, 0, 0, 0},   {64u, 0, 0, 0},
     {128u, 0, 0, 0},  {256u, 0, 0, 0},  {512u, 0, 0, 0},
     {1024u, 0, 0, 0}, {2048u, 0, 0, 0}, {4096u, 0, 0, 0},
+    {8192u, 0, 0, 0}, {16384u, 0, 0, 0},
 };
 
 static H7Stats g_h7_stats;
@@ -507,7 +508,7 @@ static void* h7_malloc_unlocked(size_t size) {
   if (size == 0) {
     return 0;
   }
-  if (size <= H7_SMALL_MAX) {
+  if (size <= H7_SPAN_CLASS_MAX) {
     return h7_small_alloc(size);
   }
   return h7_big_alloc(size);

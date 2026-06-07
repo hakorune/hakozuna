@@ -304,8 +304,9 @@ Segment table policy:
 ```text
 fixed capacity
 64KiB region-base hash first
-append insert
-swap-remove active entries
+linear probe
+active-flag deletion
+no tombstone semantics
 no heap allocation
 no arbitrary pointer dereference before segment lookup
 ```
@@ -342,17 +343,74 @@ TinyRoute-2:
   keep direct API only
 
 TinyRoute-3:
-  replace the coarse lock bottleneck with thread-local small spans/front cache
-  add owner/remote handoff only after same-thread TLS is clean
+  MediumLite-L1 retained span classes
+  8K / 16K added to the existing span class table
+  32K and larger remain direct
 
 TinyRoute-4:
-  add a retained medium layer for >4KiB workloads
-  do not add it before route and multithread safety are stable
+  optional per-thread small spans/front cache
+  remote free remains global-lock fallback
 ```
 
 Acceptance for TinyRoute-2 is safety, not speed. If global-lock multithread
 smoke is clean, HZ7 can be included in multithread benchmark harnesses as a
-clearly labeled safety baseline while TinyRoute-3 works on throughput.
+clearly labeled safety baseline. HZ7 v1 should not add lock-free remote free,
+owner inboxes, or libc interposition.
+
+## TinyRoute-3 MediumLite
+
+MediumLite is the only planned HZ7 v1 throughput expansion.
+
+```text
+Goal:
+  stop treating every >4KiB allocation as immediate direct OS allocation
+  without importing HZ6 LargeSpan / profile-family machinery
+
+Span classes:
+  16B..4K
+  8K
+  16K
+
+Direct:
+  32K and larger
+
+Keep:
+  H7_SPAN_BYTES = 64KiB
+  same bitmap + free-list machinery
+  empty span cap = 1
+  coarse global lock
+  no medium central pool
+  no medium-specific policy matrix
+```
+
+Implementation boundary:
+
+```c
+#define H7_SPAN_CLASS_MAX 16384u
+#define H7_DIRECT_MIN (H7_SPAN_CLASS_MAX + 1u)
+```
+
+Rationale:
+
+```text
+8K/16K fit the existing 64KiB span shape with multiple useful slots.
+32K is technically possible but behaves too much like one retained slot per
+64KiB span once metadata and empty-span retention are included.
+64K does not fit once header/bitmap metadata is included.
+Increasing H7_SPAN_BYTES to 128KiB would hurt small-object RSS and is no-go.
+```
+
+No-go:
+
+```text
+128KiB universal span
+medium central pool
+decommit/recommit policy
+remote handoff
+owner inbox
+lock-free remote free
+profile lanes
+```
 
 ## Invalid Free Action
 

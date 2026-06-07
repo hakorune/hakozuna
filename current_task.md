@@ -37,16 +37,47 @@ Implemented footing:
        no speed claim yet
 
 Next order:
-  3. TinyRoute-3 multithread performance:
-       per-thread small spans/front cache
-       owner/remote handoff only after same-thread TLS is clean
+  3. TinyRoute-3 MediumLite-L1:
+       add 8K / 16K retained span classes
+       keep H7_SPAN_BYTES at 64KiB
+       keep 32K and larger direct
+       no medium central pool
+       no policy matrix
 
-  4. TinyRoute-4 medium retained pool:
-       attack >4KiB direct-OS weakness after route/thread safety
+     Note:
+       naive 8K/16K/32K retained spans were no-go in smoke-scale
+       random_mixed: medium/mixed slowed down and RSS rose. 32K is too close
+       to one-slot-per-64KiB-span territory, so MediumLite-L1 keeps only
+       8K/16K retained and leaves 32K direct.
+
+     Smoke-scale observation:
+       direct-only route-safe baseline:
+         medium ~0.86M ops/s, mixed ~0.96M ops/s, peak RSS ~5.3..5.8 MiB
+       naive 8K/16K/32K:
+         medium ~0.37M, mixed ~0.41M, peak RSS ~15 MiB => no-go/control
+       8K/16K only:
+         run-3 smoke:
+           small ~71..74M
+           medium ~1.32..1.40M
+           mixed ~1.43..1.51M
+           peak RSS ~5.1 MiB small, ~7.1 MiB medium, ~7.3 MiB mixed
+           route_register_fail = 0
+
+     Read:
+       8K/16K MediumLite-L1 is a speed candidate with RSS watch. It improves
+       medium/mixed versus direct-only without the 32K retained-span blow-up,
+       but it is not yet a selected default until repeat and full random_mixed
+       rows confirm the tradeoff.
+
+  4. TinyRoute-4 optional TLS small path:
+       only if MT speed becomes a target
+       remote free remains global-lock fallback
 
 Rule:
   HZ7 should stay tiny and direct-API until route safety and coarse
   multithread safety are proven. Do not import the HZ6 lane matrix.
+  Lock-free remote free / owner inbox / libc interpose are HZ8 or HZ6-family
+  topics, not HZ7 v1 completion criteria.
 ```
 
 Latest HZ6 Redis route-churn attack:
