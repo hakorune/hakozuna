@@ -16,9 +16,13 @@
 #define H7_DIRECT_MIN (H7_SPAN_CLASS_MAX + 1u)
 #define H7_SPAN_BYTES (64u * 1024u)
 #define H7_EMPTY_SPAN_CAP 1u
+#define H7_DIRECT_RETAIN_32K (32u * 1024u)
+#define H7_DIRECT_RETAIN_64K (64u * 1024u)
 #define H7_FREE_NONE UINT32_MAX
 #define H7_MAGIC 0x48375A37u
 #define H7_COOKIE 0x7A17C0DEu
+#define H7_REGION_ACTIVE 0x1u
+#define H7_REGION_RETAINED 0x2u
 #ifndef H7_ROUTE_CAPACITY
 #define H7_ROUTE_CAPACITY 4096u
 #endif
@@ -88,6 +92,8 @@ static H7Class g_h7_classes[] = {
 
 static H7Stats g_h7_stats;
 static H7RouteEntry g_h7_routes[H7_ROUTE_CAPACITY];
+static H7Direct* g_h7_direct_retain_32k;
+static H7Direct* g_h7_direct_retain_64k;
 
 #ifdef _WIN32
 static volatile LONG g_h7_lock;
@@ -129,6 +135,16 @@ static uintptr_t h7_region_base_from_ptr(const void* ptr) {
 
 static size_t h7_route_hash(uintptr_t base) {
   return (size_t)((base >> 16u) & (H7_ROUTE_CAPACITY - 1u));
+}
+
+static H7Direct** h7_direct_retain_bucket_for_size(size_t size) {
+  if (size > H7_SPAN_CLASS_MAX && size <= H7_DIRECT_RETAIN_32K) {
+    return &g_h7_direct_retain_32k;
+  }
+  if (size > H7_DIRECT_RETAIN_32K && size <= H7_DIRECT_RETAIN_64K) {
+    return &g_h7_direct_retain_64k;
+  }
+  return 0;
 }
 
 static int h7_route_register(void* base, size_t size, H7RegionKind kind) {
@@ -174,6 +190,8 @@ static H7RouteResult h7_route_result_for_entry(const H7RouteEntry* entry) {
   result.region = region;
   if (region->magic != H7_MAGIC || region->cookie != H7_COOKIE ||
       region->kind != entry->kind) {
+    result.kind = H7_ROUTE_INVALID;
+  } else if ((region->flags & H7_REGION_ACTIVE) == 0) {
     result.kind = H7_ROUTE_INVALID;
   }
   return result;
@@ -351,6 +369,7 @@ static H7Span* h7_span_create(uint16_t class_id) {
   span->region.magic = H7_MAGIC;
   span->region.cookie = H7_COOKIE;
   span->region.kind = H7_REGION_SMALL_SPAN;
+  span->region.flags = H7_REGION_ACTIVE;
   span->region.region_size = H7_SPAN_BYTES;
   span->class_id = class_id;
   span->slot_size = klass->slot_size;
@@ -470,7 +489,18 @@ static void h7_small_free(H7Span* span, void* ptr) {
 static void* h7_big_alloc(size_t size) {
   size_t user_offset = h7_align_up(sizeof(H7Direct), 16u);
   size_t region_size = h7_region_align_up(user_offset + size);
-  H7Direct* direct = (H7Direct*)h7_os_alloc_region(region_size);
+  H7Direct** retain = h7_direct_retain_bucket_for_size(size);
+  H7Direct* direct;
+  if (retain && *retain) {
+    direct = *retain;
+    *retain = 0;
+    direct->region.flags = H7_REGION_ACTIVE;
+    direct->requested_size = size;
+    g_h7_stats.active_bytes += size;
+    ++g_h7_stats.direct_count;
+    return (unsigned char*)direct + user_offset;
+  }
+  direct = (H7Direct*)h7_os_alloc_region(region_size);
   if (!direct) {
     return 0;
   }
@@ -478,6 +508,7 @@ static void* h7_big_alloc(size_t size) {
   direct->region.magic = H7_MAGIC;
   direct->region.cookie = H7_COOKIE;
   direct->region.kind = H7_REGION_DIRECT;
+  direct->region.flags = H7_REGION_ACTIVE;
   direct->region.region_size = region_size;
   direct->requested_size = size;
   if (!h7_route_register(direct, region_size, H7_REGION_DIRECT)) {
@@ -492,15 +523,26 @@ static void* h7_big_alloc(size_t size) {
 
 static void h7_big_free(H7Direct* direct, void* ptr) {
   size_t user_offset = h7_align_up(sizeof(H7Direct), 16u);
+  H7Direct** retain = 0;
   if (!direct || direct->region.magic != H7_MAGIC ||
       direct->region.kind != H7_REGION_DIRECT ||
+      (direct->region.flags & H7_REGION_ACTIVE) == 0 ||
       ptr != (unsigned char*)direct + user_offset) {
+    return;
+  }
+  retain = h7_direct_retain_bucket_for_size(direct->requested_size);
+  if (retain && !*retain) {
+    g_h7_stats.active_bytes -= direct->requested_size;
+    --g_h7_stats.direct_count;
+    direct->region.flags = H7_REGION_RETAINED;
+    *retain = direct;
     return;
   }
   h7_route_unregister(direct);
   g_h7_stats.active_bytes -= direct->requested_size;
   g_h7_stats.reserved_bytes -= direct->region.region_size;
   --g_h7_stats.direct_count;
+  direct->region.flags = 0;
   h7_os_free(direct, direct->region.region_size);
 }
 

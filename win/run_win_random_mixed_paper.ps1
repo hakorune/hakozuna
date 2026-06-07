@@ -167,7 +167,7 @@ $Summary.Add('- throughput statistic: `median ops/s`')
 $Summary.Add('- memory note: Windows reports `PeakWorkingSetSize` as `[RSS] peak_kb`, which is not identical to Linux `ru_maxrss`')
 $Summary.Add(('- profiles: `small`, `medium`, `mixed` with `RUNS={0}`, `ITERS=20,000,000`, `WS=400`' -f $Runs))
 $Summary.Add(('- selected allocators: `{0}`' -f (($Executables | ForEach-Object { $_.Name }) -join ', ')))
-$Summary.Add('- `hz7-tinyroute` is a direct-API TinyRoute row: span classes currently cover `<=16KiB`, `>16KiB` uses direct OS regions, and it is not an interposer/general allocator row yet.')
+$Summary.Add('- `hz7-tinyroute` is a direct-API TinyRoute row: span classes currently cover `<=16KiB`; `>16KiB` uses direct OS regions with bounded 32K/64K direct retain buckets, and it is not an interposer/general allocator row yet.')
 $Summary.Add('- HZ6 rows now include `broad`, `control`, `route4k`, and `appcap` capacity lanes; `route4k` isolates route-table capacity while keeping the other control capacities.')
 $Summary.Add("")
 

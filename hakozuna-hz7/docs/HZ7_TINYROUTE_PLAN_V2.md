@@ -347,6 +347,13 @@ TinyRoute-3:
   8K / 16K added to the existing span class table
   32K and larger remain direct
 
+TinyRoute-3.5:
+  DirectRetain32/64-L1
+  32K and 64K direct buckets may retain one inactive region each
+  retained regions keep their route envelope and classify as INVALID
+  reuse restores ACTIVE/VALID for the same bucket
+  no adaptive cap, no size ladder, no medium retained pool
+
 TinyRoute-4:
   optional per-thread small spans/front cache
   remote free remains global-lock fallback
@@ -410,6 +417,55 @@ remote handoff
 owner inbox
 lock-free remote free
 profile lanes
+```
+
+## TinyRoute-3.5 DirectRetain32/64
+
+DirectRetain32/64 is a narrow direct-region churn control, not a new medium
+layer.
+
+```text
+Eligible:
+  32KiB direct bucket: >16KiB..32KiB request
+  64KiB direct bucket: >32KiB..64KiB request
+
+Policy:
+  cap = 1 retained region per bucket
+  free to empty bucket -> mark retained, keep route entry, keep reservation
+  alloc same bucket -> reactivate retained region
+  bucket full or other size -> release to OS
+
+Route:
+  active exact user pointer -> VALID
+  retained exact user pointer -> INVALID
+  retained interior pointer -> INVALID
+  released after bucket overflow -> MISS
+```
+
+Acceptance:
+
+```text
+medium/mixed random_mixed improves versus MediumLite
+small random_mixed does not regress materially
+retained direct stats remain bounded
+h7_route(retained_ptr) == INVALID
+route_register_fail = 0
+```
+
+Observed on Windows random_mixed repeat-5:
+
+```text
+small   79.591M ops/s, 4,552 KB peak
+medium   1.437M ops/s, 6,640 KB peak
+mixed    1.646M ops/s, 7,024 KB peak
+```
+
+Decision:
+
+```text
+KEEP as HZ7 v1 default.
+It stays bounded and route-safe while improving medium/mixed enough to justify
+the two fixed retained direct buckets.
 ```
 
 ## Invalid Free Action

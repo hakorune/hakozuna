@@ -19,6 +19,8 @@ int main(void) {
   void* d = h7_malloc(16384);
   void* e = h7_malloc(32768);
   void* f = h7_malloc(65536);
+  void* e2;
+  void* f2;
   unsigned char* z = (unsigned char*)h7_calloc(32, 8);
   H7Stats stats;
   size_t i;
@@ -74,10 +76,25 @@ int main(void) {
   h7_free(c);
   h7_free(d);
   h7_free(e);
-  h7_free(f);
-  if (!expect(h7_route(f) == H7_ROUTE_MISS, "route miss freed direct")) {
+  if (!expect(h7_route(e) == H7_ROUTE_INVALID,
+              "route invalid retained 32K direct")) {
     return 1;
   }
+  h7_free(f);
+  if (!expect(h7_route(f) == H7_ROUTE_INVALID,
+              "route invalid retained 64K direct")) {
+    return 1;
+  }
+  e2 = h7_malloc(32768);
+  f2 = h7_malloc(65536);
+  if (!expect(e2 == e, "reuse retained 32K direct") ||
+      !expect(f2 == f, "reuse retained 64K direct") ||
+      !expect(h7_route(e2) == H7_ROUTE_VALID, "route valid reused 32K") ||
+      !expect(h7_route(f2) == H7_ROUTE_VALID, "route valid reused 64K")) {
+    return 1;
+  }
+  h7_free(e2);
+  h7_free(f2);
   h7_free(z);
   h7_free(0);
 

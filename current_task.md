@@ -73,6 +73,34 @@ Next order:
        only if MT speed becomes a target
        remote free remains global-lock fallback
 
+  5. TinyRoute-3.5 DirectRetain32/64-L1:
+       retain at most one inactive direct region for 32K and 64K direct buckets
+       keep retained direct routes registered as owned-looking INVALID
+       32K bucket covers >16K..32K; 64K bucket covers >32K..64K
+       no adaptive cap, no medium pool, no policy matrix
+
+     Read:
+       MediumLite lifts 8K/16K, but random_mixed medium/mixed still pay direct
+       OS churn for 32K/64K. DirectRetain32/64 is the smallest final HZ7 v1
+       check before closing Windows HZ7: if it improves medium/mixed without
+       raising RSS materially, keep it; if not, close HZ7 as a small/medium-lite
+       tiny route-safe allocator.
+
+     Observed:
+       Windows random_mixed HZ7-only repeat-5:
+         small  79.591M ops/s, 4,552 KB peak
+         medium  1.437M ops/s, 6,640 KB peak
+         mixed   1.646M ops/s, 7,024 KB peak
+       smoke safety clean:
+         retained direct exact pointer -> INVALID while retained
+         same-bucket reuse -> VALID
+         route_register_fail = 0
+
+     Decision:
+       keep DirectRetain32/64 bucket cap=1 as the current HZ7 default. It is
+       small, bounded, route-safe, and improves the HZ7 medium/mixed position
+       without changing TinyRoute into a profile-family allocator.
+
 Rule:
   HZ7 should stay tiny and direct-API until route safety and coarse
   multithread safety are proven. Do not import the HZ6 lane matrix.

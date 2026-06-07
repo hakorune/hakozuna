@@ -52,6 +52,21 @@ same span machinery and extends span classes to 8K and 16K without adding a
 medium central pool. 32K stays direct because it is too close to one retained
 slot per 64KiB span.
 
+TinyRoute-3.5 DirectRetain32/64 keeps the two-layer shape but reduces direct
+OS churn for the random-mixed medium profile by retaining at most one inactive
+direct region for the 32K and 64K direct buckets. The 32K bucket covers
+`>16K..32K`, and the 64K bucket covers `>32K..64K`. A retained direct region
+remains in the route table as HZ7-owned-looking `INVALID`; it becomes `VALID`
+again only when reused by the same bucket.
+
+Windows random_mixed repeat-5 after DirectRetain32/64:
+
+```text
+small   79.591M ops/s, 4,552 KB peak
+medium   1.437M ops/s, 6,640 KB peak
+mixed    1.646M ops/s, 7,024 KB peak
+```
+
 ## TinyRoute-1
 
 TinyRoute-1 adds optional tiny route safety.
@@ -88,6 +103,11 @@ TinyRoute-2:
 TinyRoute-3:
   MediumLite retained spans for 8K / 16K
   32K and larger stay direct
+
+TinyRoute-3.5:
+  DirectRetain32/64 cap=1
+  retained direct routes are INVALID, not MISS
+  no adaptive medium pool
 
 TinyRoute-4:
   optional per-thread small span/front cache
