@@ -236,6 +236,40 @@ Latest HZ6 SmallRunRoute attack:
       fix belongs in direct-local reuse, SameOwnerFast, or MidPage class
       transition logic.
 
+    Toy/small hot-path attribution:
+      directlocalfreereuse + hotpath diag on 2K:
+        malloc_fast_attempt = 305088
+        malloc_fast_hit = 304064
+        malloc_front_dispatch = 1024
+        free_route_lookup = 305088
+        free_owner_equal = 305088
+        free_fast_hit = 305088
+        route_lookup_probe_total = 2069136
+        route_lookup_probe_max = 29
+
+      directlocalfreereuse + hotpath diag on 8K:
+        Toy counters are 0 because the row is MidPage, not Toy.
+        route_lookup_probe_total = 989137
+        route_lookup_probe_max = 6
+
+      active-map focused read:
+        2K:
+          directlocalfreereuse = 31.505M
+          toysmallactivemap    = 37.676M  (+19.6%)
+        8K:
+          directlocalfreereuse = 57.105M
+          toysmallactivemap    = 48.342M  (-15.3%)
+        16K:
+          directlocalfreereuse = 41.872M
+          toysmallactivemap    = 40.787M  (-2.6%)
+
+    Read:
+      2K still has a real free-route-lookup tax, but the existing active-map
+      lane is not clean enough because it adds overhead to non-Toy fixed-size
+      rows.  Do not promote active-map.  The next selected-small design, if
+      reopened, must make the Toy free bypass non-Toy-zero-cost instead of
+      adding another broad active pointer map.
+
   New direction:
     SmallRunRoute-L1
 
