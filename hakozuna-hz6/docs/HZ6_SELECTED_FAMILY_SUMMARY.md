@@ -16,6 +16,7 @@ For cleanup rules and the next source modularization target, see
 | random_mixed small | `strict + sameownerfast-descavail-noboost-route4k` | 45.755M | 4,968 | clean selected |
 | random_mixed medium | `strict + sameownerfast-descavail-noboost-route4k` | 42.408M | 4,964 | clean selected |
 | random_mixed mixed | `strict + sameownerfast-descavail-noboost-route4k` | 41.306M | 4,964 | clean selected |
+| random_mixed same-owner trusted-free candidate | `strict + sameownertrustedfree-descavail-noboost-route4k` | repeat-3: small 44.570M, medium 44.058M, mixed 42.168M | ~4,632 KB | candidate-watch only; improves medium/mixed over same-run selected control, but small is only +2.6%, so do not replace selected yet |
 | mixed_ws fixed 256B..16K | `speed + sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k` | candidate-watch: earlier repeat-3 was broadly positive; 2026-06-06 follow-up showed the shape is workload-sensitive, with 8K/16K wins but 4K/balanced/larger_sizes wobble depending on run | RSS generally higher than DirectLocalFreeReuse | selected-small evidence, not broad/default |
 | selected-small hybrid boundary | `speed + directlocalsmall8k-sameownerlarge-largerlowrss-front8k-sourcerun-desc8k-route8k` | class-gated DirectLocalFreeReuse <=8K plus SameOwnerFast >=16K control; focused refresh only gives a 2K witness and loses 8K/16K shape | RSS flat | no-go/control, not selected |
 | mixed_ws larger_sizes speed | `speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k` | 26.404M | 71,040 | clean selected |
@@ -253,6 +254,9 @@ HZ6 is now a profile-family allocator:
   random_mixed:
     selected same-owner lane is stable and low-RSS,
     but it is not a speed leader versus HZ3/tcmalloc historical rows.
+    SameOwnerTrustedLocalFree-L1 is the current candidate-watch: it avoids
+    proving local owner twice on same-owner free and improves medium/mixed in
+    repeat-3 without safety/RSS cost, but small is not yet above the +3% line.
 
   larger_sizes:
     selected largerlowrss lane is clean and relatively low-RSS.

@@ -413,6 +413,13 @@
 #define HZ6_SAME_OWNER_FAST_L1 0
 #endif
 
+#ifndef HZ6_SAME_OWNER_TRUSTED_LOCAL_FREE_L1
+/* Candidate-only shortcut for same-owner free paths.  hz6_free() must have
+ * already proven descriptor ownership before this path skips the second owner
+ * equality check in the same-owner cache transition. */
+#define HZ6_SAME_OWNER_TRUSTED_LOCAL_FREE_L1 0
+#endif
+
 #ifndef HZ6_SAME_OWNER_FAST_MIN_CLASS
 #define HZ6_SAME_OWNER_FAST_MIN_CLASS 0
 #endif

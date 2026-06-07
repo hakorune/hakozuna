@@ -76,4 +76,27 @@ static inline int hz6_allocator_same_owner_fast_free_inline(
   return hz6_allocator_cache_active_descriptor(allocator, descriptor, ptr);
 }
 
+static inline int hz6_allocator_same_owner_fast_free_trusted_owner_inline(
+    Hz6Allocator* allocator,
+    void* ptr,
+    Hz6RouteResult route) {
+  if (!allocator || !ptr ||
+      !hz6_allocator_same_owner_fast_eligible_inline(route.front_id,
+                                                    route.class_id)) {
+    return 0;
+  }
+
+  Hz6ObjectDescriptor* descriptor = (Hz6ObjectDescriptor*)route.descriptor;
+  if (!descriptor) {
+    return 0;
+  }
+
+#if HZ6_SAME_OWNER_TRUSTED_LOCAL_FREE_L1
+  return hz6_allocator_cache_active_descriptor_trusted_owner(allocator,
+                                                            descriptor, ptr);
+#else
+  return hz6_allocator_same_owner_fast_free_inline(allocator, ptr, route);
+#endif
+}
+
 #endif

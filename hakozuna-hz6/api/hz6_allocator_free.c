@@ -240,8 +240,13 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
         } else if (local_owner &&
                    hz6_allocator_same_owner_fast_eligible_inline(
                        route.front_id, route.class_id)) {
+#if HZ6_SAME_OWNER_TRUSTED_LOCAL_FREE_L1
+          ok = hz6_allocator_same_owner_fast_free_trusted_owner_inline(
+              allocator, ptr, route);
+#else
           ok = hz6_allocator_same_owner_fast_free_inline(allocator, ptr,
                                                          route);
+#endif
           if (ok) {
             hz6_toy_small_hotpath_diag_free_fast_hit(
                 allocator, route.front_id, route.class_id);

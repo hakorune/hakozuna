@@ -31,6 +31,28 @@ random_mixed:
   selected same-owner speed lane is already:
     strict + sameownerfast-descavail-noboost-route4k
   Older random_mixed weakness notes remain as evidence, not the active target.
+  2026-06-08 random_mixed medium refresh:
+    paper runner current observation still places HZ6 behind HZ3/tcmalloc on
+    pure speed, while keeping low RSS.  The active hypothesis is not
+    route/visibility/transfer; it is same-owner hot-path contract cost.
+    Next narrow candidate:
+      sameownertrustedfree-descavail-noboost-route4k
+    Meaning:
+      sameownerfast plus a trusted local free transition.  hz6_free() already
+      proves local_owner, so this lane skips the second owner_equal() inside
+      the same-owner cache-active transition while keeping state, pointer,
+      class, descriptor, and generation checks.  Keep the selected
+      sameownerfast lane unchanged unless repeat evidence is clean.
+    Repeat-3:
+      small:  trustedfree 44.570M / 4,632 KB vs selected 43.427M / 4,632 KB
+      medium: trustedfree 44.058M / 4,636 KB vs selected 42.194M / 4,632 KB
+      mixed:  trustedfree 42.168M / 4,632 KB vs selected 40.145M / 4,636 KB
+    Read:
+      keep as candidate-watch.  It cleanly supports the "do not prove local
+      owner twice" hypothesis, with medium/mixed above the +3% line and mixed
+      at about +5%.  Small is positive but under the +3% target, so do not
+      replace the selected sameownerfast row until a broader selected-family
+      guard confirms the shape.
 
 selected-small fixed 256B..16K:
   SourceBlockRoute dynmap is candidate-watch/evidence, not broad default.

@@ -301,6 +301,7 @@ $laneSuffix = @{
     "directlocalfreealloc-descavail-noboost-route4k" = "_directlocalfreealloc_descavail_noboost_route4k"
     "directlocalfreereuse-descavail-noboost-route4k" = "_directlocalfreereuse_descavail_noboost_route4k"
     "sameownerfast-descavail-noboost-route4k" = "_sameownerfast_descavail_noboost_route4k"
+    "sameownertrustedfree-descavail-noboost-route4k" = "_sameownertrustedfree_descavail_noboost_route4k"
     "spill-route4k" = "_spill_route4k"
     "borrow-route4k" = "_borrow_route4k"
     "cap-route4k" = "_cap_route4k"
