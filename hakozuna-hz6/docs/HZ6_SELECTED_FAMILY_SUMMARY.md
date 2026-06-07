@@ -71,6 +71,18 @@ candidate-control: it wins 512K/2M/8M, stays close on 1M/4M, and keeps direct
 large RSS around 9 MiB.  32M remains an upper-bound/control row rather than the
 default assumption.
 
+Redis note:
+Redis-like rows are intentionally outside the selected-family table.  The
+current Redis candidate-control is
+`redislowrss-sourcerun-desc8k-route8k`; use it when the benchmark goal is
+Redis-like completion/low-RSS evidence.  `...tombcompact` remains conservative
+RouteTombstoneCompact evidence.  `...tombcompact-aggr1024` and
+`...tombcompact-aggr2048` are threshold-boundary controls only: they prove the
+half-cap threshold can suppress compaction on 8K route tables, but the first
+refreshed Redis long run did not produce a clean winner and RSS rises.  Do not
+promote Redis tombstone threshold knobs into selected-family rows without a
+fresh repeat showing SET/GET/LPUSH/RANDOM and RSS improve together.
+
 ## Active ElasticCapacity Rows
 
 These rows are not broad selected defaults. They are the current source-depot /

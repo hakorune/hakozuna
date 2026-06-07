@@ -54,6 +54,18 @@ Latest HZ6 Redis route-churn attack:
     Keep aggr1024/aggr2048 as Redis threshold-boundary controls, not selected
     defaults. The next Redis fix likely needs a conditional pattern/pressure
     policy rather than a single lower tombstone threshold.
+
+ 整理:
+    Redis route-churn track is not blocked by missing counters anymore.
+    We now know:
+      conservative tombcompact can be too cold to fire,
+      aggr1024/aggr2048 can force compaction safely,
+      fixed lower thresholds do not cleanly win the row.
+
+    Therefore:
+      stop adding plain tombstone threshold values.
+      If Redis is reopened, attack conditional compaction or pressure-aware
+      retained route/source policy, not another fixed threshold.
 ```
 
 Latest HZ6 SmallRunRoute attack:
