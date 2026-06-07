@@ -23,8 +23,8 @@ these rows answer which lanes should be used, watched, or avoided.
 | Selected sibling | `route18` mixedclean sibling | Current wide_ws sibling when wide_ws is the target; do not replace balanced route17/loopcarry by default. |
 | Boundary / no-go control | `mixedclean-front16k-sourcerun-desc17k-source2k-route16k-linearwrap-loopcarry` | Route exact lower-bound evidence. It does not exhaust SourceBlock metadata, but exact route registration fails and triggers alloc-fail/starvation aftershock in wide_ws. Do not promote. |
 | Boundary / hard no-go | `mixedclean-front16k-sourcerun-desc17k-source2k-route8k-linearwrap-loopcarry` / `...source4k-route8k...` | Route pressure collapse. Route registration failure cascades into SourceBlock cap exhaustion; source4k does not rescue wide_ws. Evidence only. |
-| Selected profile lane | `sameownerfast-descavail-noboost-route4k` | random_mixed same-owner speed row. |
-| Candidate-watch/control | `sameownertrustedfree-descavail-noboost-route4k` | SameOwnerTrustedLocalFree-L1 over the selected random_mixed lane. It keeps the selected lane unchanged and tests whether skipping the second owner check after `hz6_free()` already proved local ownership can improve same-owner hot-path speed without RSS or safety cost. Repeat-3 is safety-clean and positive (`small +2.6%`, `medium +4.4%`, `mixed +5.0%`), but small is below the +3% target, so keep as candidate-watch until a broader guard confirms it. |
+| Selected profile lane | `sameownertrustedfree-descavail-noboost-route4k` | Current random_mixed same-owner speed row. SameOwnerTrustedLocalFree-L1 avoids the second owner check after `hz6_free()` already proved local ownership. Repeat-5 guard is safety-clean and beats the old selected lane on small/medium/mixed with flat RSS. |
+| Superseded selected control | `sameownerfast-descavail-noboost-route4k` | Former random_mixed selected lane. Keep as the direct control for trusted-free guards and paper history. |
 | Selected profile lane | `largerlowrss-front8k-sourcerun-desc8k-route8k` | larger_sizes RSS/speed row. |
 | Redis candidate-control | `redislowrss-sourcerun-desc8k-route8k` | Current Redis-like low-RSS candidate-control. Use for Redis long/paper-style rows when the goal is completion and low RSS, not broad HZ6 promotion. |
 | Redis behavior evidence | `redislowrss-sourcerun-desc8k-route8k-tombcompact` | Conservative RouteTombstoneCompact-L1 Redis route-churn evidence. Helps RANDOM/LPUSH in some rows, but does not cleanly win SET/GET/LPOP. |
@@ -467,7 +467,7 @@ selected-mixed-pressure:
 
 selected-random-sameowner:
   random_mixed small / medium / mixed
-  strict + sameownerfast-descavail-noboost-route4k
+  strict + sameownertrustedfree-descavail-noboost-route4k
 
 random-sameowner-trustedfree-guard:
   random_mixed small / medium / mixed

@@ -13,10 +13,9 @@ For cleanup rules and the next source modularization target, see
 | --- | --- | ---: | ---: | --- |
 | mixed_ws balanced | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap-loopcarry` | 67.462M | 110,888 | clean selected |
 | mixed_ws wide_ws | `rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap-loopcarry` | 22.674M | 140,320 | clean selected |
-| random_mixed small | `strict + sameownerfast-descavail-noboost-route4k` | 45.755M | 4,968 | clean selected |
-| random_mixed medium | `strict + sameownerfast-descavail-noboost-route4k` | 42.408M | 4,964 | clean selected |
-| random_mixed mixed | `strict + sameownerfast-descavail-noboost-route4k` | 41.306M | 4,964 | clean selected |
-| random_mixed same-owner trusted-free candidate | `strict + sameownertrustedfree-descavail-noboost-route4k` | repeat-3: small 44.570M, medium 44.058M, mixed 42.168M | ~4,632 KB | candidate-watch only; improves medium/mixed over same-run selected control, but small is only +2.6%, so do not replace selected yet |
+| random_mixed small | `strict + sameownertrustedfree-descavail-noboost-route4k` | 44.923M | 4,636 | clean selected; repeat-5 beats former sameownerfast control by +4.1% with flat RSS |
+| random_mixed medium | `strict + sameownertrustedfree-descavail-noboost-route4k` | 44.256M | 4,636 | clean selected; repeat-5 beats former sameownerfast control by +5.0% with flat RSS |
+| random_mixed mixed | `strict + sameownertrustedfree-descavail-noboost-route4k` | 41.798M | 4,632 | clean selected; repeat-5 beats former sameownerfast control by +4.5% with flat RSS |
 | mixed_ws fixed 256B..16K | `speed + sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k` | candidate-watch: earlier repeat-3 was broadly positive; 2026-06-06 follow-up showed the shape is workload-sensitive, with 8K/16K wins but 4K/balanced/larger_sizes wobble depending on run | RSS generally higher than DirectLocalFreeReuse | selected-small evidence, not broad/default |
 | selected-small hybrid boundary | `speed + directlocalsmall8k-sameownerlarge-largerlowrss-front8k-sourcerun-desc8k-route8k` | class-gated DirectLocalFreeReuse <=8K plus SameOwnerFast >=16K control; focused refresh only gives a 2K witness and loses 8K/16K shape | RSS flat | no-go/control, not selected |
 | mixed_ws larger_sizes speed | `speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k` | 26.404M | 71,040 | clean selected |
@@ -254,9 +253,9 @@ HZ6 is now a profile-family allocator:
   random_mixed:
     selected same-owner lane is stable and low-RSS,
     but it is not a speed leader versus HZ3/tcmalloc historical rows.
-    SameOwnerTrustedLocalFree-L1 is the current candidate-watch: it avoids
-    proving local owner twice on same-owner free and improves medium/mixed in
-    repeat-3 without safety/RSS cost, but small is not yet above the +3% line.
+    SameOwnerTrustedLocalFree-L1 is now selected: it avoids proving local
+    owner twice on same-owner free and repeat-5 improves small/medium/mixed
+    over the former sameownerfast row without safety/RSS cost.
 
   larger_sizes:
     selected largerlowrss lane is clean and relatively low-RSS.
@@ -326,7 +325,7 @@ pressure/no-go/diagnostic lanes into those tables.
    mixed_ws:
      route17-linearwrap-loopcarry
    random_mixed:
-     sameownerfast-descavail-noboost-route4k
+     sameownertrustedfree-descavail-noboost-route4k
    larger_sizes:
      largerlowrss-front8k-sourcerun-desc8k-route8k
    Larson minimum-RSS sibling:

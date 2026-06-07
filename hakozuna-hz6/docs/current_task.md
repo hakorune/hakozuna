@@ -28,14 +28,15 @@ LargeDirect:
   Do not add another direct-large cap/recycle knob before a new weakness appears.
 
 random_mixed:
-  selected same-owner speed lane is already:
-    strict + sameownerfast-descavail-noboost-route4k
-  Older random_mixed weakness notes remain as evidence, not the active target.
+  selected same-owner speed lane is now:
+    strict + sameownertrustedfree-descavail-noboost-route4k
+  Older random_mixed weakness notes and the previous sameownerfast selected
+  row remain as evidence/control, not the active target.
   2026-06-08 random_mixed medium refresh:
     paper runner current observation still places HZ6 behind HZ3/tcmalloc on
     pure speed, while keeping low RSS.  The active hypothesis is not
     route/visibility/transfer; it is same-owner hot-path contract cost.
-    Next narrow candidate:
+    Narrow candidate:
       sameownertrustedfree-descavail-noboost-route4k
     Meaning:
       sameownerfast plus a trusted local free transition.  hz6_free() already
@@ -47,12 +48,15 @@ random_mixed:
       small:  trustedfree 44.570M / 4,632 KB vs selected 43.427M / 4,632 KB
       medium: trustedfree 44.058M / 4,636 KB vs selected 42.194M / 4,632 KB
       mixed:  trustedfree 42.168M / 4,632 KB vs selected 40.145M / 4,636 KB
+    Repeat-5 selected-family guard:
+      small:  trustedfree 44.923M / 4,636 KB vs selected 43.168M / 4,632 KB
+      medium: trustedfree 44.256M / 4,636 KB vs selected 42.137M / 4,632 KB
+      mixed:  trustedfree 41.798M / 4,632 KB vs selected 39.987M / 4,636 KB
     Read:
-      keep as candidate-watch.  It cleanly supports the "do not prove local
-      owner twice" hypothesis, with medium/mixed above the +3% line and mixed
-      at about +5%.  Small is positive but under the +3% target, so do not
-      replace the selected sameownerfast row until a broader selected-family
-      guard confirms the shape.
+      promote to selected.  It cleanly supports the "do not prove local owner
+      twice" hypothesis across small/medium/mixed with flat RSS and safety
+      counters clean.  Keep sameownerfast-descavail-noboost-route4k as the
+      superseded selected control.
 
 selected-small fixed 256B..16K:
   SourceBlockRoute dynmap is candidate-watch/evidence, not broad default.

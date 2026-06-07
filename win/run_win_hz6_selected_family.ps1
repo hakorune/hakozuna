@@ -79,8 +79,8 @@ $presetMap = [ordered]@{
         -Families @("random_mixed") `
         -BenchmarkProfiles @("small", "medium", "mixed") `
         -Hz6Profiles @("strict") `
-        -CapacityLanes @("sameownerfast-descavail-noboost-route4k") `
-        -Note "selected random_mixed same-owner speed lane"
+        -CapacityLanes @("sameownertrustedfree-descavail-noboost-route4k") `
+        -Note "selected random_mixed same-owner speed lane with trusted local free"
 
     "random-sameowner-trustedfree-guard" = New-Preset `
         -Name "random-sameowner-trustedfree-guard" `
