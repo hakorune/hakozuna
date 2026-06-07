@@ -1,0 +1,54 @@
+param(
+    [string]$CompilerPath = "clang-cl",
+    [string]$OutDir,
+    [switch]$SkipRun
+)
+
+$ErrorActionPreference = "Stop"
+
+$Hz7Root = Split-Path -Parent $PSScriptRoot
+if (-not $OutDir) {
+    $OutDir = Join-Path $Hz7Root "out\win\smokes"
+}
+
+New-Item -ItemType Directory -Force $OutDir | Out-Null
+
+$Compiler = Get-Command $CompilerPath -ErrorAction Stop
+$SmokeSource = Join-Path $Hz7Root "tests\hz7_smoke.c"
+$Hz7Source = Join-Path $Hz7Root "hz7.c"
+$OutputPath = Join-Path $OutDir "hz7_smoke.exe"
+
+if (-not (Test-Path $SmokeSource)) {
+    throw "Smoke source not found: $SmokeSource"
+}
+if (-not (Test-Path $Hz7Source)) {
+    throw "HZ7 source not found: $Hz7Source"
+}
+
+$Args = @(
+    "/nologo",
+    "/O2",
+    "/W4",
+    "/WX",
+    "/D_CRT_SECURE_NO_WARNINGS",
+    $Hz7Source,
+    $SmokeSource,
+    "/Fe:$OutputPath"
+)
+
+Write-Host "[hz7-win] building hz7_smoke.exe"
+& $Compiler.Source @Args
+if ($LASTEXITCODE -ne 0) {
+    throw "clang-cl failed with exit code $LASTEXITCODE"
+}
+
+if (-not $SkipRun) {
+    Write-Host "[hz7-win] running hz7_smoke.exe"
+    & $OutputPath
+    if ($LASTEXITCODE -ne 0) {
+        throw "hz7 smoke failed with exit code $LASTEXITCODE"
+    }
+}
+
+Write-Host "HZ7 Windows smoke output: $OutDir"
+

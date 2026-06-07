@@ -74,7 +74,22 @@ does not claim safe foreign-pointer handling.
 ## Reading Order
 
 ```text
+docs/HZ7_TINYROUTE_PLAN_V2.md
 docs/HZ7_TINYROUTE_PLAN.md
+```
+
+## TinyRoute-0 Smoke
+
+Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\hakozuna-hz7\win\build_win_hz7_smokes.ps1
+```
+
+Linux:
+
+```bash
+./hakozuna-hz7/linux/build_hz7_smoke.sh
 ```
 
 ## Non-Goals
@@ -90,4 +105,3 @@ not thread-local front caches in v0
 not medium retained pool in v0
 not production hot-path diagnostics
 ```
-
