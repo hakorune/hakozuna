@@ -270,6 +270,32 @@ Latest HZ6 SmallRunRoute attack:
       reopened, must make the Toy free bypass non-Toy-zero-cost instead of
       adding another broad active pointer map.
 
+    Outer-gate control:
+      Tested a temporary outer-current gate around ToySmallActiveMap to see
+      whether non-Toy rows were mostly paying an empty-map call/code-shape tax.
+      The experiment was intentionally not kept as a lane after measurement.
+
+      repeat-3:
+        2K:
+          directlocalfreereuse = 27.274M
+          toysmallactivemap    = 25.680M
+          outer-gate control   = 23.796M
+        8K:
+          directlocalfreereuse = 48.154M
+          toysmallactivemap    = 45.476M
+          outer-gate control   = 44.968M
+        16K:
+          directlocalfreereuse = 44.431M
+          toysmallactivemap    = 37.612M
+          outer-gate control   = 38.060M
+
+    Read:
+      Outer-gating does not rescue the active-map family. The regression is
+      not just an empty-map probe; it is likely code-shape / branch / active
+      pointer-map topology. Close broad ToySmallActiveMap for selected-small
+      work. If the Toy free route tax is reopened, use a route/descriptor
+      design that is only reachable for Toy objects, not a top-of-free map.
+
   New direction:
     SmallRunRoute-L1
 
