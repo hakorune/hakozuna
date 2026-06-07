@@ -87,6 +87,48 @@ Latest HZ6 SmallRunRoute attack:
     It is not a broad default-promotion lane yet.
     The current useful signal is mostly the 1K row; avoid overfitting a
     one-size production lane until the next hotspot explains why 1K benefits.
+
+  Worker-assisted read:
+    SmallRunRoute replaces exact route lookup with range-index lookup +
+    slot arithmetic + bitmap + descriptor-map validation. It wins only when
+    the avoided exact-route probing is more expensive than that replacement.
+    The 1K row appears to be the current sweet spot. 256B/512B are too small
+    for the replacement path to amortize, and 2K is distorted by the current
+    4K slot geometry / source_alloc pressure.
+
+  Selected-small refresh repeat-5:
+    Compared:
+      largerlowrss
+      sameownerfast
+      directlocalfreereuse
+      sourceblockroute-behavior-dynmap-directlocalfreereuse
+      smallrunroute-behavior-min512-directlocalfreereuse
+
+    winners:
+      256B: dynmap 78.089M / 14,320 KB
+      512B: dynmap 55.517M / 26,580 KB
+      1K:   dynmap 57.399M / 26,572 KB
+      2K:   dynmap 37.236M / 75,768 KB
+      4K:   smallrun-min512 50.157M / 42,516 KB
+      8K:   sameownerfast 64.009M / 25,388 KB
+      16K:  dynmap 54.087M / 17,668 KB
+
+    Read:
+      The current selected-small dynmap lane remains the best broad
+      candidate-watch shape in this repeat-5.
+      SmallRunRoute is not a selected-small replacement; keep it as
+      TinyRunRoute/SmallRunFront mechanism evidence and a 4K/1K clue.
+      SameOwnerFast remains the 8K control/winner in this run.
+
+  Diagnostic attribution:
+    dynmap and smallrun both reduce route_lookup_probe_total materially, but
+    SmallRun-min512 pays a range-index lookup before fallback on 256B:
+      256B smallrun-min512:
+        smallrun_behavior_attempt=305088
+        smallrun_behavior_valid=0
+        smallrun_behavior_fallback=305088
+        range_index_lookup=305088
+    This confirms the lower-gate overhead issue.
 ```
 
 Latest HZ6 Windows large-slice lane wiring:

@@ -33,6 +33,7 @@ these rows answer which lanes should be used, watched, or avoided.
 | Candidate-watch/control | `toysmallactivemap-sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k` | Toy/small active free-map layered over the current SourceBlockRoute dynmap selected-small lane. Repeat-10 is safety-clean but regresses 512B and 16K enough to miss promotion: keep as control evidence that same-owner active-map bypass can help some Toy/small rows, not as selected wiring. |
 | Candidate-watch/control | `directlocalfreereuse-small8k-largerlowrss-front8k-sourcerun-desc8k-route8k` | Size-gated DirectLocalFreeReuse control. It sets `HZ6_LOCAL_CACHE_DIRECT_MAX_CLASS=4`, so 256B..8K can use direct local free/alloc/reuse while 16K/32K fall back. Useful evidence, not a universal winner. |
 | Candidate-watch/control | `sourceblockroute-behavior-dynmap-small8k-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k` | SourceBlockRoute dynmap with late range-index registration and `HZ6_SOURCE_BLOCK_ROUTE_MAX_CLASS=4`. Safety-clean repeat-3 proves class-gated late registration works and improves 8K/16K in that run, but it regresses 4K and does not cleanly improve balanced. Keep as control evidence, not selected/default. |
+| Candidate-watch/control | `smallrunroute-behavior-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k` / `smallrunroute-behavior-min512-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k` | TinyRun/SmallRun route evidence. Safety-clean and proves source-run slot route reconstruction can replace exact-route lookup on Toy/small slots. The latest repeat-5 does not beat the selected dynmap row broadly; min512 mostly helps as a 1K/4K clue and pays lower-gate fallback cost on 256B. Keep as evidence/control, not selected/default. |
 | Boundary / no-go control | `directlocaltrusted-largerlowrss-front8k-sourcerun-desc8k-route8k` | Trusted local-cache owner shortcut over DirectLocalFreeReuse. Safety-clean smoke, but loses to DirectLocalFreeReuse on 512B/2K/8K and only wins 16K. Do not select or legacy-wire. |
 | Boundary / no-go control | `directlocalpacked-largerlowrss-front8k-sourcerun-desc8k-route8k` | FrontCachePackedMeta-L1 over DirectLocalFreeReuse. Safety-clean smoke, but loses to DirectLocalFreeReuse on 512B/2K/8K/16K. Keep FrontCachePacked for Larson RSS rows, not selected-small speed. |
 | Candidate-watch/control | `directlocalexact-largerlowrss-front8k-sourcerun-desc8k-route8k` | DirectLocalFreeReuse plus exact-first free route lookup. Repeat-10 ties DirectLocalFreeReuse on average and slightly improves min delta, but loses 1K/2K/8K. Keep as route-pressure control; do not select yet. |
@@ -83,11 +84,12 @@ Small-object design note:
 
 ```text
 The SourceBlockRoute / active-map / notoy small-knob track is closed for now.
-ToyFront remains the route-safe reference front.  If 256B..2K speed becomes the
-active target again, start a separate SmallRunFront-L1 / TinyRunRoute-L1 design
-with dry-run attribution first; do not promote another SourceBlockRoute or
-Toy-active-map toggle into selected-small without a fresh design review and
-repeat matrix.
+ToyFront remains the route-safe reference front.  SmallRunRoute-L1 now exists
+as the separate TinyRunRoute evidence lane requested by this note. It is
+safety-clean, but the current signal is narrow and does not replace the
+selected dynmap row. Do not promote another SourceBlockRoute, Toy-active-map,
+or SmallRunRoute toggle into selected-small without a fresh repeat matrix and a
+clear multi-row win.
 ```
 
 MidPage/Toy source placement note:

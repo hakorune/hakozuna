@@ -45,9 +45,12 @@ speed lane by itself. `directlocaltrusted-*`, `directlocalpacked-*`,
 HZ6-only research/control rows. They remain useful for attribution, but are not
 selected-family rows unless a later repeat re-promotes them.
 The 2026-06-07 Toy-small / SourceBlockRoute closeout keeps selected-small as
-candidate-watch rather than a universal tiny-object claim.  If HZ6 later targets
-256B..2K speed directly, it should use a separate SmallRunFront/TinyRunRoute
-design while keeping ToyFront as the route-safe reference implementation.
+candidate-watch rather than a universal tiny-object claim.  SmallRunRoute-L1 /
+TinyRunRoute was added after that closeout and is safety-clean, but the repeat-5
+refresh keeps it as mechanism evidence: it is mostly a 1K/4K clue and does not
+replace the selected dynmap row.  If HZ6 later targets 256B..2K speed directly,
+continue with SmallRunFront/TinyRunRoute attribution while keeping ToyFront as
+the route-safe reference implementation.
 
 LargeDirect note:
 `largedirectretain16m-largerlowrss-front8k-sourcerun-desc8k-route8k` is the
