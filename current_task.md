@@ -74,7 +74,7 @@ Next order:
        remote free remains global-lock fallback
 
   5. TinyRoute-3.5 DirectRetain32/64-L1:
-       retain at most one inactive direct region for 32K and 64K direct buckets
+       retain at most eight inactive direct regions for 32K and 64K direct buckets
        keep retained direct routes registered as owned-looking INVALID
        32K bucket covers >16K..32K; 64K bucket covers >32K..64K
        no adaptive cap, no medium pool, no policy matrix
@@ -88,17 +88,17 @@ Next order:
 
      Observed:
        Windows random_mixed HZ7-only repeat-5:
-         small  79.414M ops/s, 4,556 KB peak
-         medium  2.507M ops/s, 6,636 KB peak
-         mixed   2.833M ops/s, 7,020 KB peak
+         small  78.328M ops/s, 4,560 KB peak
+         medium  7.637M ops/s, 6,644 KB peak
+         mixed   8.338M ops/s, 7,024 KB peak
        smoke safety clean:
          retained direct exact pointer -> INVALID while retained
          same-bucket reuse -> VALID
          route_register_fail = 0
 
      Decision:
-       keep DirectRetain32/64 bucket cap=1 as the current HZ7 default. It is
-       small, bounded, route-safe, and materially improves the HZ7
+       keep DirectRetain32/64 bucket cap=8 as the current HZ7 default. It is
+       still small, bounded, route-safe, and materially improves the HZ7
        medium/mixed position without changing TinyRoute into a profile-family
        allocator.
 
@@ -109,6 +109,11 @@ Next order:
          HZ7 small 79.868M / 4,556 KB
          HZ7 medium 2.527M / 6,644 KB
          HZ7 mixed 2.868M / 7,028 KB
+
+       Note:
+         The rebuilt run-1 above used cap=1-era data. DirectRetain cap=8 is
+         the current selected HZ7 default and materially improves medium/mixed
+         in repeat-5 while preserving the same RSS envelope.
 
        Legacy mt_remote:
          HZ7 fails as expected for v1 scope:

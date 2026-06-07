@@ -349,7 +349,7 @@ TinyRoute-3:
 
 TinyRoute-3.5:
   DirectRetain32/64-L1
-  32K and 64K direct buckets may retain one inactive region each
+  32K and 64K direct buckets may retain up to eight inactive regions each
   retained regions keep their route envelope and classify as INVALID
   reuse restores ACTIVE/VALID for the same bucket
   no adaptive cap, no size ladder, no medium retained pool
@@ -430,7 +430,7 @@ Eligible:
   64KiB direct bucket: >32KiB..64KiB request
 
 Policy:
-  cap = 1 retained region per bucket
+  cap = 8 retained regions per bucket
   free to empty bucket -> mark retained, keep route entry, keep reservation
   alloc same bucket -> reactivate retained region
   bucket full or other size -> release to OS
@@ -455,9 +455,9 @@ route_register_fail = 0
 Observed on Windows random_mixed repeat-5:
 
 ```text
-small   79.414M ops/s, 4,556 KB peak
-medium   2.507M ops/s, 6,636 KB peak
-mixed    2.833M ops/s, 7,020 KB peak
+small   78.328M ops/s, 4,560 KB peak
+medium   7.637M ops/s, 6,644 KB peak
+mixed    8.338M ops/s, 7,024 KB peak
 ```
 
 Decision:

@@ -53,7 +53,7 @@ medium central pool. 32K stays direct because it is too close to one retained
 slot per 64KiB span.
 
 TinyRoute-3.5 DirectRetain32/64 keeps the two-layer shape but reduces direct
-OS churn for the random-mixed medium profile by retaining at most one inactive
+OS churn for the random-mixed medium profile by retaining up to eight inactive
 direct region for the 32K and 64K direct buckets. The 32K bucket covers
 `>16K..32K`, and the 64K bucket covers `>32K..64K`. A retained direct region
 remains in the route table as HZ7-owned-looking `INVALID`; it becomes `VALID`
@@ -62,9 +62,9 @@ again only when reused by the same bucket.
 Windows random_mixed repeat-5 after DirectRetain32/64:
 
 ```text
-small   79.414M ops/s, 4,556 KB peak
-medium   2.507M ops/s, 6,636 KB peak
-mixed    2.833M ops/s, 7,020 KB peak
+small   78.328M ops/s, 4,560 KB peak
+medium   7.637M ops/s, 6,644 KB peak
+mixed    8.338M ops/s, 7,024 KB peak
 ```
 
 ## TinyRoute-1
@@ -105,7 +105,7 @@ TinyRoute-3:
   32K and larger stay direct
 
 TinyRoute-3.5:
-  DirectRetain32/64 cap=1
+  DirectRetain32/64 cap=8
   retained direct routes are INVALID, not MISS
   no adaptive medium pool
 
