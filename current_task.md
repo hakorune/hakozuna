@@ -16,6 +16,46 @@ decisions should be mirrored into the HZ6 docs above.
 HZ6 is now in active Windows/Linux implementation and benchmarking. HZ5 Linux
 remains profile-stabilized; new HZ5 work should not blur the HZ6 contract.
 
+Latest HZ6 Redis route-churn attack:
+
+```text
+2026-06-07:
+  Redis long refresh showed regular tombcompact can be threshold-gated too
+  conservatively on 8K route tables: summed tombstone_current may be non-zero
+  while per-allocator tombstone_max stays below the half-cap floor, so
+  route_tombstone_compact_attempt remains 0.
+
+  New narrow controls:
+    redislowrss-sourcerun-desc8k-route8k-tombcompact-aggr1024
+    redislowrss-sourcerun-desc8k-route8k-tombcompact-aggr2048
+
+  Meaning:
+    Redis-only threshold boundary probes. They remove the route_capacity/2
+    floor under HZ6_ROUTE_TOMBSTONE_COMPACT_AGGRESSIVE_L1 and use absolute
+    tombstone thresholds. Existing tombcompact semantics remain unchanged.
+
+  Next:
+    run Redis long with diagnostic probes and require compact_attempt > 0,
+    safety counters zero, SET not materially worse, and RSS within the Redis
+    candidate-control envelope before keeping either lane.
+
+  Observed:
+    diagnostic run proves the aggressive thresholds fire:
+      aggr1024: LPUSH compact_attempt=4, RANDOM compact_attempt=8
+      aggr2048: RANDOM compact_attempt=4
+
+    non-diagnostic run=1:
+      base keeps best GET/LPOP
+      regular tombcompact keeps best RANDOM
+      aggr2048 has the best SET and near-regular LPUSH
+      aggr1024 lowers RANDOM probe work but does not win the row
+
+  Read:
+    Keep aggr1024/aggr2048 as Redis threshold-boundary controls, not selected
+    defaults. The next Redis fix likely needs a conditional pattern/pressure
+    policy rather than a single lower tombstone threshold.
+```
+
 Latest HZ6 SmallRunRoute attack:
 
 ```text

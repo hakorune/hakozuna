@@ -7296,6 +7296,107 @@ Read:
   tombstone cleanup alone.
 ```
 
+### RouteTombstoneCompact aggressive-threshold boundary 2026-06-07
+
+```text
+Observation:
+  A 2026-06-07 Redis long refresh showed the regular tombcompact lane can
+  improve Redis shape, but diagnostic counters reported:
+
+    route_tombstone_compact_attempt = 0
+
+  while aggregated route_tombstone_current was non-zero.
+
+Read:
+  This is not necessarily a stats bug. Redis diagnostics sum
+  route_tombstone_current across allocators but max route_tombstone_max per
+  allocator. With route capacity 8192, the conservative compact threshold is:
+
+    max(HZ6_ROUTE_TOMBSTONE_COMPACT_MIN, route_capacity / 2)
+    = max(1024, 4096)
+    = 4096
+
+  The refreshed row showed per-allocator max below that floor, so no compact
+  attempt fired even though summed current looked large.
+
+Change:
+  Add Redis-only boundary controls:
+
+    redislowrss-sourcerun-desc8k-route8k-tombcompact-aggr1024
+    redislowrss-sourcerun-desc8k-route8k-tombcompact-aggr2048
+
+  These enable RouteTombstoneCompact-L1 and
+  HZ6_ROUTE_TOMBSTONE_COMPACT_AGGRESSIVE_L1, which removes the half-cap floor
+  and uses the absolute MIN threshold.
+
+Acceptance:
+  route_tombstone_compact_attempt > 0 in diagnostic Redis rows
+  RANDOM/GET/LPUSH improve or hold versus base/tombcompact
+  SET regression <= 2%
+  Redis peak RSS does not materially rise
+  route_register_fail / route_miss / route_invalid remain zero
+
+No-go:
+  compact attempts fire but throughput regresses broadly
+  SET loses materially
+  RSS rises beyond the Redis candidate-control envelope
+  safety counters become non-zero
+
+Status:
+  Implemented as a narrow Redis threshold-control lane, not a selected default.
+
+Observed:
+  results/hz6-redis-tombcompact-aggressive-r1
+  diagnostic run=1, redis_long:
+
+  regular tombcompact:
+    compact_attempt = 0 on all Redis patterns
+
+  aggr1024:
+    LPUSH  compact_attempt = 4,  moved = 4356
+    RANDOM compact_attempt = 8,  moved = 9756
+    RANDOM route_lookup_probe_total falls 560538 -> 426845
+    RANDOM route_register_probe_total falls 27033 -> 19714
+
+  aggr2048:
+    RANDOM compact_attempt = 4, moved = 4640
+    RANDOM route_lookup_probe_total falls 560538 -> 545058
+    RANDOM route_register_probe_total falls 27033 -> 26196
+
+  Safety stayed clean in the diagnostic run:
+    alloc_fail = 0
+    descriptor_exhausted = 0
+    route_register_fail = 0
+    source_block_exhausted = 0
+
+  results/hz6-redis-tombcompact-aggressive-r1-nondiag
+  non-diagnostic run=1, redis_long:
+
+    base:
+      SET 33.19M, GET 311.67M, LPUSH 26.73M, LPOP 843.59M,
+      RANDOM 79.75M, peak 13,852 KB
+
+    regular tombcompact:
+      SET 30.84M, GET 219.74M, LPUSH 31.65M, LPOP 535.59M,
+      RANDOM 89.45M, peak 13,788 KB
+
+    aggr1024:
+      SET 36.70M, GET 250.42M, LPUSH 28.32M, LPOP 678.89M,
+      RANDOM 84.57M, peak 14,268 KB
+
+    aggr2048:
+      SET 37.38M, GET 285.26M, LPUSH 31.50M, LPOP 755.72M,
+      RANDOM 74.60M, peak 14,232 KB
+
+Read:
+  Aggressive thresholds prove the threshold floor was the reason compact did
+  not fire on refreshed 8K-route Redis rows. aggr1024 materially lowers RANDOM
+  probe work, and aggr2048 gives a better SET/LPUSH shape, but neither is a
+  clean promotion: RSS rises about 380-420 KB versus base, regular tombcompact
+  remains the best RANDOM row in this non-diagnostic sample, and base keeps
+  the best GET/LPOP. Keep aggr1024/aggr2048 as boundary controls.
+```
+
 ## RouteRetainedOverflow-L1 2026-06-02
 
 ```text

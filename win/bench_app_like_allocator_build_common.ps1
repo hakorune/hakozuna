@@ -500,6 +500,22 @@ function Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kTombCompactCapacityFlags {
     $flags
 }
 
+function Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kTombCompactAggressive1024CapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kTombCompactCapacityFlags
+    $flags += "/DHZ6_ROUTE_TOMBSTONE_COMPACT_AGGRESSIVE_L1=1"
+    $flags += "/DHZ6_ROUTE_TOMBSTONE_COMPACT_MIN=((size_t)1024)"
+    $flags
+}
+
+function Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kTombCompactAggressive2048CapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kTombCompactCapacityFlags
+    $flags += "/DHZ6_ROUTE_TOMBSTONE_COMPACT_AGGRESSIVE_L1=1"
+    $flags += "/DHZ6_ROUTE_TOMBSTONE_COMPACT_MIN=((size_t)2048)"
+    $flags
+}
+
 function Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kRetainedOverflowCapacityFlags {
     $flags = @()
     $flags += Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kCapacityFlags
@@ -2002,6 +2018,8 @@ function Invoke-AppLikeHz6BenchBuilds {
     $redisLowRssSourceRunDesc8kRoute8kFlags = Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kCapacityFlags
     $largerLowRssSourceRunDesc8kRoute8kFlags = Get-Hz6WinLargerLowRssSourceRunDesc8kRoute8kCapacityFlags
     $redisLowRssSourceRunDesc8kRoute8kTombCompactFlags = Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kTombCompactCapacityFlags
+    $redisLowRssSourceRunDesc8kRoute8kTombCompactAggressive1024Flags = Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kTombCompactAggressive1024CapacityFlags
+    $redisLowRssSourceRunDesc8kRoute8kTombCompactAggressive2048Flags = Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kTombCompactAggressive2048CapacityFlags
     $redisLowRssSourceRunDesc8kRoute8kRetainedOverflowFlags = Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kRetainedOverflowCapacityFlags
     $redisLowRssSourceRunDesc8kRoute8kSlotLookupFlags = Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kSlotLookupCapacityFlags
     $largerLowRssSourceRunDesc8kRoute64kFlags = Get-Hz6WinLargerLowRssSourceRunDesc8kRoute64kCapacityFlags
@@ -2188,6 +2206,8 @@ function Invoke-AppLikeHz6BenchBuilds {
         "redislowrss-sourcerun-desc8k-route8k" = @{ Suffix = "_redislowrss_sourcerun_desc8k_route8k"; ExtraFlags = $redisLowRssSourceRunDesc8kRoute8kFlags }
         "largerlowrss-sourcerun-desc8k-route8k" = @{ Suffix = "_largerlowrss_sourcerun_desc8k_route8k"; ExtraFlags = $largerLowRssSourceRunDesc8kRoute8kFlags }
         "redislowrss-sourcerun-desc8k-route8k-tombcompact" = @{ Suffix = "_redislowrss_sourcerun_desc8k_route8k_tombcompact"; ExtraFlags = $redisLowRssSourceRunDesc8kRoute8kTombCompactFlags }
+        "redislowrss-sourcerun-desc8k-route8k-tombcompact-aggr1024" = @{ Suffix = "_redislowrss_sourcerun_desc8k_route8k_tombcompact_aggr1024"; ExtraFlags = $redisLowRssSourceRunDesc8kRoute8kTombCompactAggressive1024Flags }
+        "redislowrss-sourcerun-desc8k-route8k-tombcompact-aggr2048" = @{ Suffix = "_redislowrss_sourcerun_desc8k_route8k_tombcompact_aggr2048"; ExtraFlags = $redisLowRssSourceRunDesc8kRoute8kTombCompactAggressive2048Flags }
         "redislowrss-sourcerun-desc8k-route8k-retainedoverflow" = @{ Suffix = "_redislowrss_sourcerun_desc8k_route8k_retainedoverflow"; ExtraFlags = $redisLowRssSourceRunDesc8kRoute8kRetainedOverflowFlags }
         "redislowrss-sourcerun-desc8k-route8k-slotlookup" = @{ Suffix = "_redislowrss_sourcerun_desc8k_route8k_slotlookup"; ExtraFlags = $redisLowRssSourceRunDesc8kRoute8kSlotLookupFlags }
         "largerlowrss-sourcerun-desc8k-route64k" = @{ Suffix = "_largerlowrss_sourcerun_desc8k_route64k"; ExtraFlags = $largerLowRssSourceRunDesc8kRoute64kFlags }

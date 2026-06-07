@@ -1620,6 +1620,23 @@ redislowrss-sourcerun-desc8k-route8k-tombcompact:
   RANDOM and modestly improves LPUSH with a small peak increase, but SET/GET
   are slightly lower, so keep it Redis-specific.
 
+redislowrss-sourcerun-desc8k-route8k-tombcompact-aggr1024:
+redislowrss-sourcerun-desc8k-route8k-tombcompact-aggr2048:
+  Redis-only RouteTombstoneCompact threshold boundary controls. The base
+  tombcompact lane keeps the conservative threshold
+  `max(HZ6_ROUTE_TOMBSTONE_COMPACT_MIN, route_capacity / 2)`, which means an
+  8192-route row compacts only after about 4096 tombstones in a single
+  allocator. The aggressive lanes intentionally remove that half-cap floor and
+  use absolute 1024/2048 thresholds. Use these only to test whether Redis
+  route-churn wants earlier tombstone compaction; do not treat them as broad
+  HZ6 defaults unless SET/GET/RANDOM and RSS all improve with clean safety
+  counters. First refreshed Redis long diagnostic proved the lanes fire
+  (aggr1024: LPUSH/RANDOM, aggr2048: RANDOM), but the non-diagnostic run did
+  not produce a clean winner: aggr1024 lowered RANDOM probe work yet raised
+  peak, aggr2048 helped SET/LPUSH shape but lost RANDOM, and base/regular
+  tombcompact each still own different patterns. Keep both as threshold
+  boundary controls.
+
 redislowrss-sourcerun-desc8k-route8k-retainedoverflow:
   redislowrss-sourcerun-desc8k-route8k plus RouteRetainedOverflow-L1. When a
   LOCAL_FREE object cannot enter frontcache, it is retained in the bounded

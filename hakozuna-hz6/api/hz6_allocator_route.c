@@ -1068,10 +1068,12 @@ static size_t hz6_allocator_route_tombstone_compact_threshold(
     return (size_t)-1;
   }
   size_t threshold = HZ6_ROUTE_TOMBSTONE_COMPACT_MIN;
+#if !HZ6_ROUTE_TOMBSTONE_COMPACT_AGGRESSIVE_L1
   size_t half = table->capacity / 2;
   if (threshold < half) {
     threshold = half;
   }
+#endif
   if (threshold >= table->capacity) {
     threshold = table->capacity - 1;
   }
