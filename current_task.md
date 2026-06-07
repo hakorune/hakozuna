@@ -266,6 +266,49 @@ Latest HZ6 Larson / ElasticCapacity attack:
     Keep it as composition guard/control evidence, not selected promotion.
     The current Larson / Elastic selected lane remains:
       depotownerdirect-directfree-trustedlocalcache source64-route16k-run512.
+
+  Small-budget follow-up:
+    Added DFTLC + RehomeBudget boundary rows:
+      budget512
+      budget1024
+      budget2048
+
+    results/hz6-elastic-dftlc-rehomebudget-smallbudget-guard-r1/
+
+    main10k:
+      dftlc-selected  38.845M / 224,732 KB
+      budget2048      40.212M / 234,692 KB
+      dftlc+budget512 39.805M / 240,676 KB
+      dftlc+budget1024 39.888M / 240,684 KB
+      dftlc+budget2048 39.101M / 234,696 KB
+
+    main4k:
+      dftlc-selected  49.997M / 139,028 KB
+      dftlc+budget512 50.152M / 146,424 KB
+      dftlc+budget1024 49.758M / 146,436 KB
+      dftlc+budget2048 48.549M / 146,404 KB
+
+    worker1k:
+      dftlc-selected  57.011M / 91,832 KB
+      dftlc+budget512 57.665M / 92,400 KB
+      dftlc+budget1024 57.049M / 92,392 KB
+      dftlc+budget2048 58.346M / 92,392 KB
+
+    Safety:
+      route_invalid = 0
+      route_miss = 0
+      route_register_fail = 0
+      remote_free_transfer_fail = 0
+      lifecycle_foreign_free_invalid = 0
+      alloc_fail = 0
+
+    Read:
+      Smaller budgets do not rescue the composition.
+      budget512/budget1024 are safety-clean and can improve isolated small rows,
+      but main10k still fails the RSS requirement versus selected DFTLC.
+      Keep all DFTLC + RehomeBudget budget rows as boundary/control evidence.
+      Do not continue this family with another simple budget value unless a new
+      conditional policy explains why main10k RSS would not rise.
 ```
 
 Latest HZ6 Windows large-slice lane wiring:
