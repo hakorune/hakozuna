@@ -320,6 +320,9 @@ struct Hz6Allocator {
   Hz6SourceBlockRangeIndexEntry
       source_block_range_index[HZ6_SOURCE_BLOCK_ROUTE_RANGE_INDEX_CAPACITY];
 #endif
+#if HZ6_SMALL_RUN_ROUTE_ARMED_L1
+  size_t small_run_route_range_registered;
+#endif
   size_t next_descriptor_index;
   size_t descriptor_available_count;
   Hz6ObjectDescriptor descriptors[HZ6_OBJECT_DESCRIPTOR_CAPACITY];

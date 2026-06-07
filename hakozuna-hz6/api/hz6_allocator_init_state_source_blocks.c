@@ -44,4 +44,7 @@ void hz6_allocator_init_state_source_blocks(Hz6Allocator* allocator) {
     allocator->source_block_range_index[i].active = 0;
   }
 #endif
+#if HZ6_SMALL_RUN_ROUTE_ARMED_L1
+  allocator->small_run_route_range_registered = 0;
+#endif
 }

@@ -715,6 +715,15 @@ static size_t hz6_allocator_source_block_index(const Hz6Allocator* allocator,
 }
 #endif
 
+#if HZ6_SMALL_RUN_ROUTE_ARMED_L1
+static int hz6_source_block_small_run_route_eligible(
+    const Hz6SourceBlock* block) {
+  return block && block->run_front_id == HZ6_FRONT_TOY &&
+         block->run_slot_bytes >= HZ6_SMALL_RUN_ROUTE_MIN_SLOT_BYTES &&
+         block->run_slot_bytes <= HZ6_SMALL_RUN_ROUTE_MAX_SLOT_BYTES;
+}
+#endif
+
 void hz6_allocator_source_block_range_index_register(
     Hz6Allocator* allocator,
     const Hz6SourceBlock* block) {
@@ -731,6 +740,9 @@ void hz6_allocator_source_block_range_index_register(
   uintptr_t begin = hz6_source_block_route_range_page((uintptr_t)block->ptr);
   uintptr_t end = (uintptr_t)block->ptr + block->bytes - 1u;
   uintptr_t last = hz6_source_block_route_range_page(end);
+#if HZ6_SMALL_RUN_ROUTE_ARMED_L1
+  size_t inserted_count = 0;
+#endif
   for (uintptr_t page = begin;; page +=
            HZ6_SOURCE_BLOCK_ROUTE_RANGE_INDEX_GRANULARITY) {
     size_t start = hz6_source_block_route_range_hash(page);
@@ -764,6 +776,9 @@ void hz6_allocator_source_block_range_index_register(
 #if HZ6_DIAGNOSTIC_PROBES
       ++allocator->stats.source_block_route_range_index_register;
 #endif
+#if HZ6_SMALL_RUN_ROUTE_ARMED_L1
+      ++inserted_count;
+#endif
       inserted = 1;
       break;
     }
@@ -777,6 +792,12 @@ void hz6_allocator_source_block_range_index_register(
       break;
     }
   }
+#if HZ6_SMALL_RUN_ROUTE_ARMED_L1
+  if (inserted_count > 0 &&
+      hz6_source_block_small_run_route_eligible(block)) {
+    ++allocator->small_run_route_range_registered;
+  }
+#endif
 #else
   (void)allocator;
   (void)block;
@@ -799,6 +820,9 @@ void hz6_allocator_source_block_range_index_unregister(
   uintptr_t begin = hz6_source_block_route_range_page((uintptr_t)block->ptr);
   uintptr_t end = (uintptr_t)block->ptr + block->bytes - 1u;
   uintptr_t last = hz6_source_block_route_range_page(end);
+#if HZ6_SMALL_RUN_ROUTE_ARMED_L1
+  size_t removed_count = 0;
+#endif
   for (uintptr_t page = begin;; page +=
            HZ6_SOURCE_BLOCK_ROUTE_RANGE_INDEX_GRANULARITY) {
     size_t start = hz6_source_block_route_range_hash(page);
@@ -827,6 +851,9 @@ void hz6_allocator_source_block_range_index_unregister(
 #if HZ6_DIAGNOSTIC_PROBES
         ++allocator->stats.source_block_route_range_index_unregister;
 #endif
+#if HZ6_SMALL_RUN_ROUTE_ARMED_L1
+        ++removed_count;
+#endif
       }
       break;
     }
@@ -834,6 +861,13 @@ void hz6_allocator_source_block_range_index_unregister(
       break;
     }
   }
+#if HZ6_SMALL_RUN_ROUTE_ARMED_L1
+  if (removed_count > 0 &&
+      hz6_source_block_small_run_route_eligible(block) &&
+      allocator->small_run_route_range_registered > 0) {
+    --allocator->small_run_route_range_registered;
+  }
+#endif
 #else
   (void)allocator;
   (void)block;

@@ -493,6 +493,13 @@
 #define HZ6_SMALL_RUN_ROUTE_TOY_RANGE_ONLY_L1 0
 #endif
 
+#ifndef HZ6_SMALL_RUN_ROUTE_ARMED_L1
+/* Skip the SmallRunRoute range-index lookup until at least one eligible
+ * source-run range has been registered. This removes the empty-table probe on
+ * pure non-Toy rows without adding a second prefilter table. */
+#define HZ6_SMALL_RUN_ROUTE_ARMED_L1 0
+#endif
+
 #ifndef HZ6_SOURCE_BLOCK_ROUTE_LATE_REGISTER_L1
 /* Register SourceBlockRoute range entries after source-run class selection.
  * This lets class-gated SourceBlockRoute lanes avoid range-index hits on

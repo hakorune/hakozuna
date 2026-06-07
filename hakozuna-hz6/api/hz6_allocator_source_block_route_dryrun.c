@@ -37,6 +37,13 @@ void hz6_allocator_small_run_route_dryrun(Hz6Allocator* allocator,
   }
   ++allocator->stats.smallrun_route_attempt;
 
+#if HZ6_SMALL_RUN_ROUTE_ARMED_L1
+  if (allocator->small_run_route_range_registered == 0) {
+    ++allocator->stats.smallrun_exact_fallback_needed;
+    return;
+  }
+#endif
+
   Hz6SourceBlock* block =
       hz6_allocator_source_block_range_index_lookup(allocator, ptr);
   if (!block) {
@@ -108,6 +115,15 @@ Hz6RouteResult hz6_allocator_small_run_route_lookup(Hz6Allocator* allocator,
   }
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.smallrun_behavior_attempt;
+#endif
+
+#if HZ6_SMALL_RUN_ROUTE_ARMED_L1
+  if (allocator->small_run_route_range_registered == 0) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.smallrun_behavior_fallback;
+#endif
+    return hz6_route_miss();
+  }
 #endif
 
   Hz6SourceBlock* block =

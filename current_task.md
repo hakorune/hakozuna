@@ -453,6 +453,35 @@ Latest HZ6 SmallRunRoute attack:
         lookup is reopened, make the existing range index encode the cheap
         Toy-only miss directly instead of adding a second side table.
 
+    Toy-armed control:
+      Implemented:
+        smallrunroute-behavior-range64k-toyarmed-directlocalfreereuse-
+        largerlowrss-front8k-sourcerun-desc8k-route8k
+
+      Meaning:
+        Keep one allocator-local armed count for eligible Toy source-run range
+        registrations. If no Toy range is registered, SmallRunRoute returns
+        MISS before touching the range-index. This removes empty-table
+        range-index probes on pure non-Toy rows without adding a second
+        prefilter table.
+
+      selected-small repeat-3:
+        direct / range64k-toyonly / range64k-toyarmed
+        256B 74.331M / 70.661M / 75.337M
+        512B 52.778M / 50.383M / 54.437M
+        1K   54.263M / 57.214M / 55.475M
+        2K   34.032M / 25.848M / 31.319M
+        4K   43.198M / 45.270M / 49.708M
+        8K   49.287M / 57.841M / 58.410M
+        16K  47.150M / 48.697M / 42.417M
+
+      Read:
+        The mechanism is better than the separate Toy prefilter and improves
+        several rows, especially 256B/512B/4K/8K. It still regresses 16K and
+        does not form a clean selected-small replacement. Keep toyarmed as a
+        candidate/control. Do not promote unless a later repeat shows the 16K
+        regression was noise and preserves the Toy-low wins.
+
   Selected-small refresh repeat-5:
     Compared:
       largerlowrss

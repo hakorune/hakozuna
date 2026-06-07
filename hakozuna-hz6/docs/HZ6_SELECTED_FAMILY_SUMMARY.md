@@ -60,6 +60,11 @@ Toy-only late registration avoids returning SmallRunRoute VALID for non-Toy
 runs. It improves 256B/512B/1K in the focused repeat-3, but still loses enough
 2K/4K/8K/16K shape to remain control evidence rather than a selected-small
 replacement.
+The `smallrunroute-behavior-range64k-toyarmed-*` control removes empty-table
+range-index probes before any eligible Toy range is registered. It improves
+256B/512B/4K/8K versus toyonly in the focused repeat-3, but the 16K row
+regresses, so it remains candidate/control evidence rather than selected
+wiring.
 
 LargeDirect note:
 `largedirectretain16m-largerlowrss-front8k-sourcerun-desc8k-route8k` is the
