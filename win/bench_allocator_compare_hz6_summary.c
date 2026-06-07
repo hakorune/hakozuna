@@ -61,6 +61,12 @@ void bench_print_hz6_summary(const Hz6StatsSnapshot* hz6_stats,
            "hz6_elastic_route_overflow_register_fail=%zu "
            "hz6_elastic_route_overflow_lookup=%zu "
            "hz6_elastic_route_overflow_hit=%zu "
+           "hz6_elastic_descriptor_overflow_alloc=%zu "
+           "hz6_elastic_descriptor_overflow_reset=%zu "
+           "hz6_elastic_descriptor_overflow_exhausted=%zu "
+           "hz6_elastic_source_block_overflow_alloc=%zu "
+           "hz6_elastic_source_block_overflow_release=%zu "
+           "hz6_elastic_source_block_overflow_exhausted=%zu "
            "hz6_source_owned_prepare=%zu "
            "hz6_source_owned_route_hit_local_owner=%zu "
            "hz6_source_owned_visibility_hit_local_owner=%zu "
@@ -238,6 +244,12 @@ void bench_print_hz6_summary(const Hz6StatsSnapshot* hz6_stats,
            hz6_stats->elastic_route_overflow_register_fail,
            hz6_stats->elastic_route_overflow_lookup,
            hz6_stats->elastic_route_overflow_hit,
+           hz6_stats->elastic_descriptor_overflow_alloc,
+           hz6_stats->elastic_descriptor_overflow_reset,
+           hz6_stats->elastic_descriptor_overflow_exhausted,
+           hz6_stats->elastic_source_block_overflow_alloc,
+           hz6_stats->elastic_source_block_overflow_release,
+           hz6_stats->elastic_source_block_overflow_exhausted,
            hz6_stats->source_owned_prepare,
            hz6_stats->source_owned_route_hit_local_owner,
            hz6_stats->source_owned_visibility_hit_local_owner,

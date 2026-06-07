@@ -675,6 +675,18 @@ int main(int argc, char** argv) {
             args[i].hz6_stats_after.elastic_route_overflow_lookup;
         hz6_stats.elastic_route_overflow_hit +=
             args[i].hz6_stats_after.elastic_route_overflow_hit;
+        hz6_stats.elastic_descriptor_overflow_alloc +=
+            args[i].hz6_stats_after.elastic_descriptor_overflow_alloc;
+        hz6_stats.elastic_descriptor_overflow_reset +=
+            args[i].hz6_stats_after.elastic_descriptor_overflow_reset;
+        hz6_stats.elastic_descriptor_overflow_exhausted +=
+            args[i].hz6_stats_after.elastic_descriptor_overflow_exhausted;
+        hz6_stats.elastic_source_block_overflow_alloc +=
+            args[i].hz6_stats_after.elastic_source_block_overflow_alloc;
+        hz6_stats.elastic_source_block_overflow_release +=
+            args[i].hz6_stats_after.elastic_source_block_overflow_release;
+        hz6_stats.elastic_source_block_overflow_exhausted +=
+            args[i].hz6_stats_after.elastic_source_block_overflow_exhausted;
         hz6_stats.source_owned_prepare +=
             args[i].hz6_stats_after.source_owned_prepare;
         hz6_stats.source_owned_route_hit_local_owner +=

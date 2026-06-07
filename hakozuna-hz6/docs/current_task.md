@@ -116,6 +116,49 @@ Larson / Elastic:
   Keep Redis route-churn closed as evidence/control while this Elastic pass is
   active.
 
+mixed_ws low-RSS capacity split:
+  2026-06-07 guard data shows an important tension:
+    descavail-noboost-route4k is very fast and low RSS, but not safe
+    (descriptor/source-block exhaustion and alloc_fail dominate).
+    The selected mixedclean lane is clean, but pays much higher RSS.
+  A static "enable every elastic overflow on descavail-noboost-route4k"
+  probe was no-go:
+    balanced/wide_ws did not complete a parseable result at full workload.
+    larger_sizes completed but produced route_invalid=146 and ~0.6M ops/s.
+  Do not retain that all-overflow overlay as a capacity lane.  If Elastic
+  overflow is revisited, it needs lifecycle-aware ownership/source-block
+  policy rather than simply attaching depot overflow to a low local table.
+  Boundary follow-up tested:
+    mixedclean-front16k-sourcerun-desc17k-source2k-route4k-linearwrap-loopcarry
+  Purpose:
+    keep the clean selected mixedclean descriptor/source/frontcache shape,
+    but shrink route capacity from 17K to 4K to test whether route capacity is
+    the RSS driver or a required safety/performance boundary.
+  R1 result:
+    route4k is no-go.  It lowers RSS, but introduces alloc_fail/source-block
+    exhaustion:
+      balanced: 22.112M, peak 102,356KB, alloc_fail=6514
+      wide_ws:  0.222M, peak 52,744KB, alloc_fail=971379,
+                source_block_exhausted=955427
+      larger:   5.769M, peak 70,304KB, alloc_fail=14729
+    Read:
+      selected mixedclean's 17K route is not just slack; shrinking all the way
+      to 4K crosses a safety/performance boundary.  Next boundary probe is
+      route8k with the same clean descriptor/source/frontcache shape.
+  Route8k / route16k boundary results:
+    route8k:
+      balanced is clean and near selected, larger_sizes is clean, but wide_ws
+      collapses with alloc_fail=518782 and source_block_exhausted=503237.
+    route16k with descriptor16k:
+      wide_ws still has alloc_fail=6943.
+    route16k with descriptor17k:
+      balanced/larger are clean, but wide_ws still has alloc_fail=6943.
+  Current decision:
+    route17k remains the selected mixedclean safety boundary.  Route8k and
+    route16k are useful route-capacity boundary evidence only; do not promote
+    them unless a new wide_ws policy removes the source-block pressure without
+    reintroducing route invalid/miss.
+
 Immediate engineering posture:
   1. keep lane docs and selected-family scripts readable.
   2. do not reopen direct-large tuning.
