@@ -26,6 +26,7 @@ these rows answer which lanes should be used, watched, or avoided.
 | Redis candidate-control | `redislowrss-sourcerun-desc8k-route8k` | Current Redis-like low-RSS candidate-control. Use for Redis long/paper-style rows when the goal is completion and low RSS, not broad HZ6 promotion. |
 | Redis behavior evidence | `redislowrss-sourcerun-desc8k-route8k-tombcompact` | Conservative RouteTombstoneCompact-L1 Redis route-churn evidence. Helps RANDOM/LPUSH in some rows, but does not cleanly win SET/GET/LPOP. |
 | Redis boundary controls | `redislowrss-sourcerun-desc8k-route8k-tombcompact-aggr1024` / `...aggr2048` | Aggressive tombstone threshold probes. They prove the half-cap threshold can suppress compaction on 8K route tables, but first refreshed Redis long run did not produce a clean winner and RSS rises. Keep as controls, not defaults. |
+| Redis behavior evidence | `redislowrss-sourcerun-desc8k-route8k-condtombdry` / `...condtombcompact` | Conditional tombstone compact witness. Dry-run cleanly projected LPUSH/RANDOM only; behavior compacts only LPUSH/RANDOM and keeps safety clean, but repeat-3 still loses row geomean to `aggr1024` and loses GET/LPOP enough to block selection. |
 | Redis no-go/control | `redislowrss-sourcerun-desc8k-route8k-retainedoverflow` / `...slotlookup` | RetainedOverflow and SlotLookup are useful Redis mechanism witnesses. Neither replaces the candidate-control today; do not compose them into selected lanes without fresh evidence. |
 | Candidate-watch/control | `sameownerfast-largerlowrss-front8k-sourcerun-desc8k-route8k` | Mechanism evidence for the small/mid same-owner fixed-size win. Positive across 256B..16K, but weaker as a single simple lane than DirectLocalFreeReuse in the latest repeat-10. Keep as a close control, not broad/default. |
 | Selected-small candidate-watch | `sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k` | Current SourceBlockRoute dynmap selected-small evidence row. Earlier repeat-3 was broadly positive, but the 2026-06-06 follow-up showed the shape is workload-sensitive: 8K/16K can improve while 4K/balanced/larger_sizes can wobble. Keep as candidate-watch/evidence; do not broad-default without a fresh repeat-5/10 selected-family guard. |
@@ -1651,6 +1652,15 @@ redislowrss-sourcerun-desc8k-route8k-condtombdry:
   low-pressure rows, close the fixed-threshold tombcompact track. First
   diagnostic run separated the rows cleanly: LPUSH projected 4 compactions,
   RANDOM projected 8, and SET/GET/LPOP projected zero.
+
+redislowrss-sourcerun-desc8k-route8k-condtombcompact:
+  Redis-only ConditionalTombCompact behavior. It uses the same table-local
+  condition as `condtombdry` and compacts only when the absolute tombstone
+  minimum, ratio/occupancy pressure, and cooldown gates pass. Diagnostic run
+  proved it compacts LPUSH/RANDOM only with clean safety counters. Repeat-3 is
+  useful but not selected: it improves SET/RANDOM versus base and keeps peak
+  close to the Redis envelope, but row geomean trails aggr1024 and GET/LPOP
+  regress versus the best controls.
 
 redislowrss-sourcerun-desc8k-route8k-retainedoverflow:
   redislowrss-sourcerun-desc8k-route8k plus RouteRetainedOverflow-L1. When a

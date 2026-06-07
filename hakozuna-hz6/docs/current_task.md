@@ -7510,6 +7510,90 @@ Next:
   broader selected-family / Larson / mixed_ws backlog.
 ```
 
+### RedisConditionalTombCompact-L1 behavior 2026-06-07
+
+```text
+Lane:
+  redislowrss-sourcerun-desc8k-route8k-condtombcompact
+
+Behavior:
+  Redis-only conditional RouteTombstoneCompact behavior.
+  It uses the same table-local condition as condtombdry:
+
+    tombstone_count >= 1024
+    AND (
+         tombstone_count * 4 >= active_count
+         OR active_count + tombstone_count >= capacity * 3 / 4
+    )
+    AND cooldown 1024
+
+  It does not use workload names or hot-path diagnostic counters.
+
+Observed:
+  results/hz6-redis-condtombcompact-r1
+  diagnostic run=1, redis_long:
+
+    condtombcompact:
+      LPUSH:
+        compact_attempt = 4
+        compact_success = 4
+        compact_fail_alloc = 0
+        compact_moved = 4356
+
+      RANDOM:
+        compact_attempt = 4
+        compact_success = 4
+        compact_fail_alloc = 0
+        compact_moved = 5116
+
+      SET/GET/LPOP:
+        compact_attempt = 0
+
+  Safety:
+    alloc_fail = 0
+    descriptor_exhausted = 0
+    route_register_fail = 0
+    source_block_exhausted = 0
+
+  results/hz6-redis-condtombcompact-repeat3
+  non-diagnostic repeat-3, redis_long:
+
+    base:
+      SET 28.54M, GET 315.72M, LPUSH 27.30M, LPOP 569.48M,
+      RANDOM 79.16M, peak 13,864 KB, geomean 102.09
+
+    regular tombcompact:
+      SET 32.56M, GET 300.81M, LPUSH 31.31M, LPOP 649.39M,
+      RANDOM 80.97M, peak 13,808 KB, geomean 110.03
+
+    aggr1024:
+      SET 33.05M, GET 331.44M, LPUSH 29.83M, LPOP 596.07M,
+      RANDOM 91.43M, peak 13,916 KB, geomean 112.23
+
+    condtombcompact:
+      SET 34.63M, GET 292.10M, LPUSH 30.92M, LPOP 523.31M,
+      RANDOM 88.40M, peak 13,828 KB, geomean 107.67
+
+Read:
+  KEEP as Redis conditional-compact behavior evidence.
+  It is mechanically clean and precise: it compacts only LPUSH/RANDOM in the
+  diagnostic row, and RSS returns close to the base/regular envelope. However,
+  repeat-3 does not beat aggr1024 or regular tombcompact on row geomean and
+  loses GET/LPOP enough to block promotion.
+
+Status:
+  Not selected.
+  Not a broad default.
+  Useful as evidence that table-local conditional compaction can target
+  LPUSH/RANDOM without workload-name knowledge.
+
+Next:
+  Do not add another fixed threshold. If Redis remains active, the next
+  improvement should explain GET/LPOP regressions or use a retained
+  route/source policy. Otherwise close Redis route-churn here and return to
+  selected-family / Larson / mixed_ws.
+```
+
 ## RouteRetainedOverflow-L1 2026-06-02
 
 ```text

@@ -324,6 +324,7 @@ $laneSuffix = @{
     "redislowrss-sourcerun-desc8k-route8k-tombcompact-aggr1024" = "_redislowrss_sourcerun_desc8k_route8k_tombcompact_aggr1024"
     "redislowrss-sourcerun-desc8k-route8k-tombcompact-aggr2048" = "_redislowrss_sourcerun_desc8k_route8k_tombcompact_aggr2048"
     "redislowrss-sourcerun-desc8k-route8k-condtombdry" = "_redislowrss_sourcerun_desc8k_route8k_condtombdry"
+    "redislowrss-sourcerun-desc8k-route8k-condtombcompact" = "_redislowrss_sourcerun_desc8k_route8k_condtombcompact"
     "redislowrss-sourcerun-desc8k-route8k-retainedoverflow" = "_redislowrss_sourcerun_desc8k_route8k_retainedoverflow"
     "redislowrss-sourcerun-desc8k-route8k-slotlookup" = "_redislowrss_sourcerun_desc8k_route8k_slotlookup"
     "largerlowrss-sourcerun-desc8k-route64k" = "_largerlowrss_sourcerun_desc8k_route64k"

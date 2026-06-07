@@ -525,6 +525,16 @@ function Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kConditionalTombDryRunCapacit
     $flags
 }
 
+function Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kConditionalTombCompactCapacityFlags {
+    $flags = @()
+    $flags += Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kCapacityFlags
+    $flags += "/DHZ6_ROUTE_TOMBSTONE_COMPACT_L1=1"
+    $flags += "/DHZ6_ROUTE_TOMBSTONE_CONDITIONAL_COMPACT_L1=1"
+    $flags += "/DHZ6_ROUTE_TOMBSTONE_CONDITIONAL_ABS_MIN=((size_t)1024)"
+    $flags += "/DHZ6_ROUTE_TOMBSTONE_CONDITIONAL_COOLDOWN=((size_t)1024)"
+    $flags
+}
+
 function Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kRetainedOverflowCapacityFlags {
     $flags = @()
     $flags += Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kCapacityFlags
@@ -2030,6 +2040,7 @@ function Invoke-AppLikeHz6BenchBuilds {
     $redisLowRssSourceRunDesc8kRoute8kTombCompactAggressive1024Flags = Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kTombCompactAggressive1024CapacityFlags
     $redisLowRssSourceRunDesc8kRoute8kTombCompactAggressive2048Flags = Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kTombCompactAggressive2048CapacityFlags
     $redisLowRssSourceRunDesc8kRoute8kConditionalTombDryRunFlags = Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kConditionalTombDryRunCapacityFlags
+    $redisLowRssSourceRunDesc8kRoute8kConditionalTombCompactFlags = Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kConditionalTombCompactCapacityFlags
     $redisLowRssSourceRunDesc8kRoute8kRetainedOverflowFlags = Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kRetainedOverflowCapacityFlags
     $redisLowRssSourceRunDesc8kRoute8kSlotLookupFlags = Get-Hz6WinRedisLowRssSourceRunDesc8kRoute8kSlotLookupCapacityFlags
     $largerLowRssSourceRunDesc8kRoute64kFlags = Get-Hz6WinLargerLowRssSourceRunDesc8kRoute64kCapacityFlags
@@ -2219,6 +2230,7 @@ function Invoke-AppLikeHz6BenchBuilds {
         "redislowrss-sourcerun-desc8k-route8k-tombcompact-aggr1024" = @{ Suffix = "_redislowrss_sourcerun_desc8k_route8k_tombcompact_aggr1024"; ExtraFlags = $redisLowRssSourceRunDesc8kRoute8kTombCompactAggressive1024Flags }
         "redislowrss-sourcerun-desc8k-route8k-tombcompact-aggr2048" = @{ Suffix = "_redislowrss_sourcerun_desc8k_route8k_tombcompact_aggr2048"; ExtraFlags = $redisLowRssSourceRunDesc8kRoute8kTombCompactAggressive2048Flags }
         "redislowrss-sourcerun-desc8k-route8k-condtombdry" = @{ Suffix = "_redislowrss_sourcerun_desc8k_route8k_condtombdry"; ExtraFlags = $redisLowRssSourceRunDesc8kRoute8kConditionalTombDryRunFlags }
+        "redislowrss-sourcerun-desc8k-route8k-condtombcompact" = @{ Suffix = "_redislowrss_sourcerun_desc8k_route8k_condtombcompact"; ExtraFlags = $redisLowRssSourceRunDesc8kRoute8kConditionalTombCompactFlags }
         "redislowrss-sourcerun-desc8k-route8k-retainedoverflow" = @{ Suffix = "_redislowrss_sourcerun_desc8k_route8k_retainedoverflow"; ExtraFlags = $redisLowRssSourceRunDesc8kRoute8kRetainedOverflowFlags }
         "redislowrss-sourcerun-desc8k-route8k-slotlookup" = @{ Suffix = "_redislowrss_sourcerun_desc8k_route8k_slotlookup"; ExtraFlags = $redisLowRssSourceRunDesc8kRoute8kSlotLookupFlags }
         "largerlowrss-sourcerun-desc8k-route64k" = @{ Suffix = "_largerlowrss_sourcerun_desc8k_route64k"; ExtraFlags = $largerLowRssSourceRunDesc8kRoute64kFlags }

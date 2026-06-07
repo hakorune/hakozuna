@@ -1061,7 +1061,8 @@ static void hz6_allocator_note_route_tombstones(Hz6Allocator* allocator) {
 }
 #endif
 
-#if HZ6_ROUTE_TOMBSTONE_COMPACT_L1
+#if HZ6_ROUTE_TOMBSTONE_COMPACT_L1 && \
+    !HZ6_ROUTE_TOMBSTONE_CONDITIONAL_COMPACT_L1
 static size_t hz6_allocator_route_tombstone_compact_threshold(
     const Hz6RouteTable* table) {
   if (!table || table->capacity == 0) {
@@ -1081,15 +1082,17 @@ static size_t hz6_allocator_route_tombstone_compact_threshold(
 }
 #endif
 
-static void hz6_allocator_route_note_conditional_tombstone_dryrun(
-    Hz6Allocator* allocator) {
-#if HZ6_ROUTE_TOMBSTONE_CONDITIONAL_DRYRUN_L1 && HZ6_DIAGNOSTIC_PROBES
+#if HZ6_ROUTE_TOMBSTONE_CONDITIONAL_DRYRUN_L1 || \
+    HZ6_ROUTE_TOMBSTONE_CONDITIONAL_COMPACT_L1
+static int hz6_allocator_route_conditional_tombstone_ready(
+    Hz6Allocator* allocator,
+    int note_stats) {
   if (!allocator) {
-    return;
+    return 0;
   }
   Hz6RouteTable* table = &allocator->route_backend.exact_table;
   if (!table || table->capacity == 0) {
-    return;
+    return 0;
   }
   size_t tombstones = table->tombstone_count;
   size_t abs_min = HZ6_ROUTE_TOMBSTONE_CONDITIONAL_ABS_MIN;
@@ -1100,34 +1103,60 @@ static void hz6_allocator_route_note_conditional_tombstone_dryrun(
     abs_min = table->capacity - 1;
   }
   if (tombstones < abs_min) {
-    return;
+    return 0;
   }
 
-  ++allocator->stats.route_tombstone_cond_probe;
+#if HZ6_DIAGNOSTIC_PROBES
+  if (note_stats) {
+    ++allocator->stats.route_tombstone_cond_probe;
+  }
+#else
+  (void)note_stats;
+#endif
   size_t active = table->active_count;
   int ratio25 = active != 0 && tombstones * 4u >= active;
   int occupancy75 =
       (active + tombstones) * 4u >= table->capacity * 3u;
-  if (ratio25) {
-    ++allocator->stats.route_tombstone_cond_ratio25;
+#if HZ6_DIAGNOSTIC_PROBES
+  if (note_stats) {
+    if (ratio25) {
+      ++allocator->stats.route_tombstone_cond_ratio25;
+    }
+    if (occupancy75) {
+      ++allocator->stats.route_tombstone_cond_occupancy75;
+    }
   }
-  if (occupancy75) {
-    ++allocator->stats.route_tombstone_cond_occupancy75;
-  }
+#endif
   if (!ratio25 && !occupancy75) {
-    return;
+    return 0;
   }
 
   size_t cooldown = HZ6_ROUTE_TOMBSTONE_CONDITIONAL_COOLDOWN;
   size_t highwater = allocator->stats.route_tombstone_cond_highwater;
   if (cooldown != 0 && highwater != 0 &&
       tombstones < highwater + cooldown) {
-    ++allocator->stats.route_tombstone_cond_cooldown_blocked;
-    return;
+#if HZ6_DIAGNOSTIC_PROBES
+    if (note_stats) {
+      ++allocator->stats.route_tombstone_cond_cooldown_blocked;
+    }
+#endif
+    return 0;
   }
 
-  ++allocator->stats.route_tombstone_cond_would_compact;
+#if HZ6_DIAGNOSTIC_PROBES
+  if (note_stats) {
+    ++allocator->stats.route_tombstone_cond_would_compact;
+  }
+#endif
   allocator->stats.route_tombstone_cond_highwater = tombstones;
+  return 1;
+}
+#endif
+
+static void hz6_allocator_route_note_conditional_tombstone_dryrun(
+    Hz6Allocator* allocator) {
+#if HZ6_ROUTE_TOMBSTONE_CONDITIONAL_DRYRUN_L1 && HZ6_DIAGNOSTIC_PROBES
+  (void)hz6_allocator_route_conditional_tombstone_ready(allocator, 1);
 #else
   (void)allocator;
 #endif
@@ -1139,12 +1168,18 @@ static void hz6_allocator_route_maybe_compact_tombstones(
   if (!allocator) {
     return;
   }
+#if HZ6_ROUTE_TOMBSTONE_CONDITIONAL_COMPACT_L1
+  if (!hz6_allocator_route_conditional_tombstone_ready(allocator, 1)) {
+    return;
+  }
+#else
   Hz6RouteTable* table = &allocator->route_backend.exact_table;
   size_t threshold =
       hz6_allocator_route_tombstone_compact_threshold(table);
   if (table->tombstone_count < threshold) {
     return;
   }
+#endif
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.route_tombstone_compact_attempt;
 #endif

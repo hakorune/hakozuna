@@ -93,6 +93,33 @@ Latest HZ6 Redis route-churn attack:
     conditional compact dry-run is a strong witness. If Redis stays active,
     the next and only sensible behavior test is a narrow conditional compact
     lane using the same table-local condition and cooldown.
+
+  Implemented behavior:
+    redislowrss-sourcerun-desc8k-route8k-condtombcompact
+
+  Observed:
+    diagnostic:
+      LPUSH compact_attempt=success=4
+      RANDOM compact_attempt=success=4
+      SET/GET/LPOP compact_attempt=0
+      safety counters clean
+
+    non-diagnostic repeat-3:
+      condtombcompact:
+        SET 34.63M, GET 292.10M, LPUSH 30.92M, LPOP 523.31M,
+        RANDOM 88.40M, peak 13,828 KB, geomean 107.67
+
+      aggr1024:
+        geomean 112.23
+
+      regular tombcompact:
+        geomean 110.03
+
+  Read:
+    KEEP condtombcompact as Redis conditional behavior evidence, but do not
+    select it. It proves table-local conditional compaction can target
+    LPUSH/RANDOM safely, yet repeat-3 still trails aggr1024/regular on row
+    geomean and loses GET/LPOP.
 ```
 
 Latest HZ6 SmallRunRoute attack:
