@@ -469,6 +469,12 @@ selected-random-sameowner:
   random_mixed small / medium / mixed
   strict + sameownerfast-descavail-noboost-route4k
 
+random-sameowner-trustedfree-guard:
+  random_mixed small / medium / mixed
+  strict + sameownerfast-descavail-noboost-route4k
+  strict + sameownertrustedfree-descavail-noboost-route4k
+  Use through `run_win_hz6_selected_family.ps1 -RandomSameOwnerTrustedFreeGuard`.
+
 selected-larger-lowrss:
   mixed_ws larger_sizes
   speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k

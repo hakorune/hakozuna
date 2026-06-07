@@ -8,6 +8,7 @@ param(
     [switch]$ContinueOnFailure,
     [switch]$SelectedFamily,
     [switch]$SelectedFamilyGuard,
+    [switch]$RandomSameOwnerTrustedFreeGuard,
     [switch]$SelectedSmallFixed,
     [switch]$SelectedSmallFixedHybridExactUpper,
     [switch]$LargeDirectRetainControl,
@@ -80,6 +81,14 @@ $presetMap = [ordered]@{
         -Hz6Profiles @("strict") `
         -CapacityLanes @("sameownerfast-descavail-noboost-route4k") `
         -Note "selected random_mixed same-owner speed lane"
+
+    "random-sameowner-trustedfree-guard" = New-Preset `
+        -Name "random-sameowner-trustedfree-guard" `
+        -Families @("random_mixed") `
+        -BenchmarkProfiles @("small", "medium", "mixed") `
+        -Hz6Profiles @("strict") `
+        -CapacityLanes @("sameownerfast-descavail-noboost-route4k", "sameownertrustedfree-descavail-noboost-route4k") `
+        -Note "guard selected same-owner fast against SameOwnerTrustedLocalFree-L1 candidate"
 
     "selected-larger-lowrss" = New-Preset `
         -Name "selected-larger-lowrss" `
@@ -294,6 +303,10 @@ if ($LarsonElasticRehomeBudgetGuard) {
 
 if ($SelectedFamilyGuard) {
     [void]$selectedPresetNames.Add("selected-family-guard")
+}
+
+if ($RandomSameOwnerTrustedFreeGuard) {
+    [void]$selectedPresetNames.Add("random-sameowner-trustedfree-guard")
 }
 
 if ($SelectedSmallFixed) {
