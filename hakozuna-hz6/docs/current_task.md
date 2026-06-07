@@ -7397,6 +7397,119 @@ Read:
   the best GET/LPOP. Keep aggr1024/aggr2048 as boundary controls.
 ```
 
+### RedisConditionalTombCompactDryRun-L1 2026-06-07
+
+```text
+Consult read:
+  The Redis route-churn read is correct:
+    base = current Redis low-RSS candidate-control
+    regular tombcompact = conservative route-churn evidence
+    aggr1024/aggr2048 = threshold boundary controls
+
+  Fixed threshold ladders are now low ROI. If Redis continues, use one final
+  conditional compact dry-run; otherwise return to selected-family / Larson /
+  mixed_ws.
+
+Lane:
+  redislowrss-sourcerun-desc8k-route8k-condtombdry
+
+Behavior:
+  diagnostic-only projection.
+  It does not compact and does not change Redis speed-lane behavior.
+
+Condition projected:
+  tombstone_count >= abs_min
+  AND (
+       tombstone_count * 4 >= active_count
+       OR active_count + tombstone_count >= capacity * 3 / 4
+  )
+  AND cooldown allows
+
+Default projection parameters:
+  HZ6_ROUTE_TOMBSTONE_CONDITIONAL_ABS_MIN = 1024
+  HZ6_ROUTE_TOMBSTONE_CONDITIONAL_COOLDOWN = 1024
+
+Counters:
+  route_tombstone_cond_probe
+  route_tombstone_cond_would_compact
+  route_tombstone_cond_ratio25
+  route_tombstone_cond_occupancy75
+  route_tombstone_cond_cooldown_blocked
+  route_tombstone_cond_highwater
+
+Acceptance:
+  route_invalid = 0
+  route_miss = 0
+  route_register_fail = 0
+  alloc_fail = 0
+  descriptor_exhausted = 0
+  source_block_exhausted = 0
+  would_compact appears on RANDOM/LPUSH pressure rows
+  would_compact is not excessive on GET/LPOP low-pressure rows
+  cooldown blocks repeated low-value compaction projections
+
+No-go:
+  projection fires everywhere and does not separate pressure rows
+  projection never fires where aggr1024/aggr2048 proved compaction helps
+  the useful condition requires hot-path diagnostic counters rather than table
+  state
+
+Read target:
+  If condtombdry is clean and separates rows, consider a narrow behavior lane.
+  If not, close Redis fixed-threshold tombcompact work and return to
+  selected-family / Larson / mixed_ws.
+
+Observed:
+  results/hz6-redis-condtombdry-r1
+  diagnostic run=1, redis_long:
+
+  base safety:
+    alloc_fail = 0
+    descriptor_exhausted = 0
+    route_register_fail = 0
+    source_block_exhausted = 0
+
+  condtombdry:
+    SET:
+      route_tombstone_cond_probe = 0
+      route_tombstone_cond_would_compact = 0
+
+    GET:
+      route_tombstone_cond_probe = 0
+      route_tombstone_cond_would_compact = 0
+
+    LPUSH:
+      route_tombstone_cond_probe = 2208
+      route_tombstone_cond_would_compact = 4
+      route_tombstone_cond_ratio25 = 2208
+      route_tombstone_cond_cooldown_blocked = 2204
+
+    LPOP:
+      route_tombstone_cond_probe = 0
+      route_tombstone_cond_would_compact = 0
+
+    RANDOM:
+      route_tombstone_cond_probe = 6932
+      route_tombstone_cond_would_compact = 8
+      route_tombstone_cond_ratio25 = 6932
+      route_tombstone_cond_cooldown_blocked = 6924
+
+Read:
+  KEEP as a strong conditional-compact witness. The table-local condition
+  separates pressure rows cleanly in this diagnostic sample: LPUSH and RANDOM
+  project bounded compaction, while SET/GET/LPOP stay at zero. This is the
+  first Redis route-churn signal that looks more precise than a fixed
+  threshold ladder.
+
+Next:
+  If Redis remains the active target, implement a narrow
+  RouteTombstoneConditionalCompact-L1 behavior lane using the same
+  table-local condition and cooldown. Compare against base, regular
+  tombcompact, aggr1024, and aggr2048. If behavior does not improve the row
+  without raising RSS materially, close Redis route-churn and return to the
+  broader selected-family / Larson / mixed_ws backlog.
+```
+
 ## RouteRetainedOverflow-L1 2026-06-02
 
 ```text

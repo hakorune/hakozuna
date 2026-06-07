@@ -1641,6 +1641,17 @@ redislowrss-sourcerun-desc8k-route8k-tombcompact-aggr2048:
   tombcompact each still own different patterns. Keep both as threshold
   boundary controls.
 
+redislowrss-sourcerun-desc8k-route8k-condtombdry:
+  Redis-only ConditionalTombCompact dry-run. It does not compact. It projects
+  whether a conditional policy would compact after frontcache-overflow
+  unregisters when an absolute tombstone minimum is reached and either the
+  tombstone/active ratio or route occupancy is high, with a cooldown gate.
+  Use this as the final Redis route-churn design witness before adding a
+  behavior lane; if it does not separate RANDOM/LPUSH pressure from GET/LPOP
+  low-pressure rows, close the fixed-threshold tombcompact track. First
+  diagnostic run separated the rows cleanly: LPUSH projected 4 compactions,
+  RANDOM projected 8, and SET/GET/LPOP projected zero.
+
 redislowrss-sourcerun-desc8k-route8k-retainedoverflow:
   redislowrss-sourcerun-desc8k-route8k plus RouteRetainedOverflow-L1. When a
   LOCAL_FREE object cannot enter frontcache, it is retained in the bounded

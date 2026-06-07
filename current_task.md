@@ -66,6 +66,33 @@ Latest HZ6 Redis route-churn attack:
       stop adding plain tombstone threshold values.
       If Redis is reopened, attack conditional compaction or pressure-aware
       retained route/source policy, not another fixed threshold.
+
+  Implemented follow-up:
+    redislowrss-sourcerun-desc8k-route8k-condtombdry
+
+  Meaning:
+    Redis-only diagnostic projection for conditional tombstone compaction.
+    It does not compact. It uses table-local state:
+      tombstone_count >= 1024
+      ratio25 or occupancy75
+      cooldown 1024
+
+  Close rule:
+    if condtombdry does not clearly separate RANDOM/LPUSH pressure from
+    GET/LPOP low-pressure rows, close the Redis fixed-threshold tombcompact
+    track and return to selected-family / Larson / mixed_ws.
+
+  Observed:
+    diagnostic run=1:
+      SET/GET/LPOP would_compact = 0
+      LPUSH would_compact = 4
+      RANDOM would_compact = 8
+      safety counters remain zero
+
+  Read:
+    conditional compact dry-run is a strong witness. If Redis stays active,
+    the next and only sensible behavior test is a narrow conditional compact
+    lane using the same table-local condition and cooldown.
 ```
 
 Latest HZ6 SmallRunRoute attack:

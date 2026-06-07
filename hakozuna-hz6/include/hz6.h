@@ -491,6 +491,12 @@ typedef struct Hz6StatsSnapshot {
   size_t route_tombstone_compact_success;
   size_t route_tombstone_compact_fail_alloc;
   size_t route_tombstone_compact_moved;
+  size_t route_tombstone_cond_probe;
+  size_t route_tombstone_cond_would_compact;
+  size_t route_tombstone_cond_ratio25;
+  size_t route_tombstone_cond_occupancy75;
+  size_t route_tombstone_cond_cooldown_blocked;
+  size_t route_tombstone_cond_highwater;
   size_t route_retained_overflow_attempt;
   size_t route_retained_overflow_success;
   size_t route_retained_overflow_fail;

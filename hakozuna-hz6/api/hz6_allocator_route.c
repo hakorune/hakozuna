@@ -1081,6 +1081,58 @@ static size_t hz6_allocator_route_tombstone_compact_threshold(
 }
 #endif
 
+static void hz6_allocator_route_note_conditional_tombstone_dryrun(
+    Hz6Allocator* allocator) {
+#if HZ6_ROUTE_TOMBSTONE_CONDITIONAL_DRYRUN_L1 && HZ6_DIAGNOSTIC_PROBES
+  if (!allocator) {
+    return;
+  }
+  Hz6RouteTable* table = &allocator->route_backend.exact_table;
+  if (!table || table->capacity == 0) {
+    return;
+  }
+  size_t tombstones = table->tombstone_count;
+  size_t abs_min = HZ6_ROUTE_TOMBSTONE_CONDITIONAL_ABS_MIN;
+  if (abs_min == 0) {
+    abs_min = 1;
+  }
+  if (abs_min >= table->capacity) {
+    abs_min = table->capacity - 1;
+  }
+  if (tombstones < abs_min) {
+    return;
+  }
+
+  ++allocator->stats.route_tombstone_cond_probe;
+  size_t active = table->active_count;
+  int ratio25 = active != 0 && tombstones * 4u >= active;
+  int occupancy75 =
+      (active + tombstones) * 4u >= table->capacity * 3u;
+  if (ratio25) {
+    ++allocator->stats.route_tombstone_cond_ratio25;
+  }
+  if (occupancy75) {
+    ++allocator->stats.route_tombstone_cond_occupancy75;
+  }
+  if (!ratio25 && !occupancy75) {
+    return;
+  }
+
+  size_t cooldown = HZ6_ROUTE_TOMBSTONE_CONDITIONAL_COOLDOWN;
+  size_t highwater = allocator->stats.route_tombstone_cond_highwater;
+  if (cooldown != 0 && highwater != 0 &&
+      tombstones < highwater + cooldown) {
+    ++allocator->stats.route_tombstone_cond_cooldown_blocked;
+    return;
+  }
+
+  ++allocator->stats.route_tombstone_cond_would_compact;
+  allocator->stats.route_tombstone_cond_highwater = tombstones;
+#else
+  (void)allocator;
+#endif
+}
+
 static void hz6_allocator_route_maybe_compact_tombstones(
     Hz6Allocator* allocator) {
 #if HZ6_ROUTE_TOMBSTONE_COMPACT_L1
@@ -1195,6 +1247,7 @@ void hz6_allocator_route_unregister_exact_reason(
 #if HZ6_DIAGNOSTIC_PROBES
   size_t probes = 0;
   hz6_route_backend_unregister_exact(&allocator->route_backend, ptr, &probes);
+  hz6_allocator_route_note_conditional_tombstone_dryrun(allocator);
   hz6_allocator_route_maybe_compact_tombstones(allocator);
   allocator->stats.route_unregister_probe_total += probes;
   hz6_allocator_note_route_probe_hist(
@@ -1212,6 +1265,7 @@ void hz6_allocator_route_unregister_exact_reason(
   hz6_allocator_note_route_tombstones(allocator);
 #else
   hz6_route_backend_unregister_exact(&allocator->route_backend, ptr, NULL);
+  hz6_allocator_route_note_conditional_tombstone_dryrun(allocator);
   hz6_allocator_route_maybe_compact_tombstones(allocator);
 #endif
 }

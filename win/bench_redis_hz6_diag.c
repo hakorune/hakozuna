@@ -78,6 +78,19 @@ void print_hz6_redis_stats(const char* pattern,
         total.route_tombstone_compact_fail_alloc +=
             s->route_tombstone_compact_fail_alloc;
         total.route_tombstone_compact_moved += s->route_tombstone_compact_moved;
+        total.route_tombstone_cond_probe += s->route_tombstone_cond_probe;
+        total.route_tombstone_cond_would_compact +=
+            s->route_tombstone_cond_would_compact;
+        total.route_tombstone_cond_ratio25 += s->route_tombstone_cond_ratio25;
+        total.route_tombstone_cond_occupancy75 +=
+            s->route_tombstone_cond_occupancy75;
+        total.route_tombstone_cond_cooldown_blocked +=
+            s->route_tombstone_cond_cooldown_blocked;
+        if (s->route_tombstone_cond_highwater >
+            total.route_tombstone_cond_highwater) {
+            total.route_tombstone_cond_highwater =
+                s->route_tombstone_cond_highwater;
+        }
         total.route_retained_overflow_attempt += s->route_retained_overflow_attempt;
         total.route_retained_overflow_success += s->route_retained_overflow_success;
         total.route_retained_overflow_fail += s->route_retained_overflow_fail;
@@ -120,6 +133,12 @@ void print_hz6_redis_stats(const char* pattern,
            "route_tombstone_compact_success=%zu "
            "route_tombstone_compact_fail_alloc=%zu "
            "route_tombstone_compact_moved=%zu "
+           "route_tombstone_cond_probe=%zu "
+           "route_tombstone_cond_would_compact=%zu "
+           "route_tombstone_cond_ratio25=%zu "
+           "route_tombstone_cond_occupancy75=%zu "
+           "route_tombstone_cond_cooldown_blocked=%zu "
+           "route_tombstone_cond_highwater=%zu "
            "route_retained_overflow_attempt=%zu "
            "route_retained_overflow_success=%zu "
            "route_retained_overflow_fail=%zu "
@@ -167,6 +186,12 @@ void print_hz6_redis_stats(const char* pattern,
            total.route_tombstone_compact_success,
            total.route_tombstone_compact_fail_alloc,
            total.route_tombstone_compact_moved,
+           total.route_tombstone_cond_probe,
+           total.route_tombstone_cond_would_compact,
+           total.route_tombstone_cond_ratio25,
+           total.route_tombstone_cond_occupancy75,
+           total.route_tombstone_cond_cooldown_blocked,
+           total.route_tombstone_cond_highwater,
            total.route_retained_overflow_attempt,
            total.route_retained_overflow_success,
            total.route_retained_overflow_fail,
