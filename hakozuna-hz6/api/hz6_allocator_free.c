@@ -28,7 +28,13 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
 #endif
 #if HZ6_SMALL_RUN_ROUTE_BEHAVIOR_L1
   if (route.kind == HZ6_ROUTE_MISS) {
+#if HZ6_SMALL_RUN_ROUTE_ARMED_L1
+    if (allocator->small_run_route_range_registered != 0) {
+      route = hz6_allocator_small_run_route_lookup(allocator, ptr);
+    }
+#else
     route = hz6_allocator_small_run_route_lookup(allocator, ptr);
+#endif
   }
 #endif
 #if HZ6_OWNER_LOCALITY_INDEX_L1

@@ -70,6 +70,20 @@ selected-small fixed 256B..16K:
       signal, but 2K/16K are not clean enough for selected-small promotion.
       Do not default this lane without a repeat-5/10 guard and a fix for the
       boundary fallback/layout sensitivity.
+    Follow-up implementation cleanup:
+      hz6_free() now skips the SmallRunRoute lookup call entirely when
+      HZ6_SMALL_RUN_ROUTE_ARMED_L1 is enabled and no eligible range has been
+      registered.  This removes an avoidable function-call fallback on pure
+      non-Toy rows, but the repeat-3 after the cleanup is still mixed:
+        256B direct 73.764M vs slotmax1k 70.471M
+        512B direct 52.227M vs slotmax1k 53.033M
+        1K   direct 50.923M vs slotmax1k 48.249M
+        2K   direct 32.881M vs slotmax1k 35.578M
+        4K   direct 43.594M vs slotmax1k 43.390M
+        8K   direct 54.231M vs slotmax1k 60.502M
+        16K  direct 57.287M vs slotmax1k 52.860M
+      Conclusion remains unchanged: slotmax1k is useful control evidence, not
+      a selected-small replacement.
 
 Larson / Elastic:
   current strongest RSS direction remains the selected Larson/Elastic low-RSS
