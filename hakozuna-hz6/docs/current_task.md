@@ -84,6 +84,42 @@ selected-small fixed 256B..16K:
         16K  direct 57.287M vs slotmax1k 52.860M
       Conclusion remains unchanged: slotmax1k is useful control evidence, not
       a selected-small replacement.
+    Focused selected-small guard repeat-5 after route-capacity closeout:
+      compared only:
+        directlocalfreereuse
+        sourceblockroute dynmap
+        smallrunroute range64k toyarmed slotmax1k
+        sameownerfast
+      rows:
+        256B: dynmap 80.989M, direct 77.057M, sameownerfast 76.505M,
+              slotmax1k 75.998M
+        512B: direct 57.979M, slotmax1k 56.491M, sameownerfast 55.173M,
+              dynmap 53.587M
+        1K:   dynmap 61.100M, slotmax1k 58.283M, sameownerfast 57.162M,
+              direct 53.524M
+        2K:   sameownerfast 38.900M, dynmap 37.397M, slotmax1k 35.762M,
+              direct 32.968M
+        4K:   slotmax1k 53.548M, sameownerfast 51.835M, dynmap 51.752M,
+              direct 49.470M
+        8K:   dynmap 64.775M, direct 64.725M, sameownerfast 64.421M,
+              slotmax1k 63.881M
+        16K:  direct 57.457M, sameownerfast 56.577M, slotmax1k 54.886M,
+              dynmap 53.174M
+      safety:
+        all rows clean.
+      Read:
+        no single lane dominates 256B..16K.  Dynmap remains the strongest broad
+        selected-small candidate-watch because it wins 256B/1K/8K and is close
+        elsewhere, but directlocalfreereuse is still the most stable fallback
+        for 512B/16K and sameownerfast owns the 2K clue.  TinyRun/SmallRunRoute
+        is useful evidence for route bypass and the 4K clue, but it is not a
+        default/promotion path yet.
+      Fixed decision:
+        keep selected-small as candidate-watch/control, not broad default.
+        Do not add another static per-size gate or Toy/Tiny knob without a new
+        pressure signal.  If small is reopened, it should be a true
+        SmallRunFront/TinyRunRoute design with front/class semantics, not
+        another overlay on ToyFront.
 
 Larson / Elastic:
   current strongest RSS direction remains the selected Larson/Elastic low-RSS

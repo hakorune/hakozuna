@@ -70,6 +70,10 @@ SmallRunRoute registration to Toy source-run slots up to 1K.  It is a focused
 low-class control, not a selected-small replacement: Toy 2K and 4K share the
 same 4K physical slot class, so static registration policy cannot rescue 2K
 without also taxing 4K.
+The post-route-closeout selected-small repeat-5 keeps this conclusion:
+`dynmap` wins 256B/1K/8K, `directlocalfreereuse` wins 512B/16K,
+`sameownerfast` wins 2K, and `slotmax1k` wins 4K; all rows are safety-clean.
+This is useful mechanism evidence, but not a single-lane promotion signal.
 
 LargeDirect note:
 `largedirectretain16m-largerlowrss-front8k-sourcerun-desc8k-route8k` is the
