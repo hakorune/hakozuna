@@ -17,9 +17,8 @@ HZ7 repeat-5 local check:
   results/windows-hz7-directretain-bucket-r5-rebuilt/
     20260608_040158_paper_random_mixed_windows.md
 
-HZ7 cap=8 repeat-5 local check:
-  results/windows-hz7-directretain-cap8-r5/
-    20260608_042803_paper_random_mixed_windows.md
+HZ7 cap=16 repeat-5 local check:
+  direct command cap16 probe, 2026-06-08
 
 Legacy mt_remote:
   results/windows-hz7-remote-overview/
@@ -66,7 +65,7 @@ WS=400
 | hz6-strict-broad | 35.790M | 7,364 | broad HZ6 control |
 | crt | 7.560M | 10,460 | baseline |
 | hz5-policy | 6.956M | 10,032 | slower |
-| hz7-tinyroute | 7.637M | 6,644 | cap=8 tiny direct-retain row, still weak on medium |
+| hz7-tinyroute | 10.928M | 7,240 | cap=16 tiny direct-retain row, still weak on medium |
 
 ### mixed: 16..32768
 
@@ -80,7 +79,7 @@ WS=400
 | hz6-strict-route4k | 32.839M | 4,632 | low-RSS HZ6 control |
 | crt | 7.443M | 11,104 | baseline |
 | hz5-policy | 7.334M | 10,928 | slower |
-| hz7-tinyroute | 8.338M | 7,024 | cap=8 tiny row, medium/direct-heavy weakness |
+| hz7-tinyroute | 11.701M | 7,600 | cap=16 tiny row, medium/direct-heavy weakness |
 
 ## HZ7 Repeat-5 Local Check
 
@@ -94,9 +93,9 @@ RUNS=5
 
 | profile | ops/s | peak KB | read |
 | --- | ---: | ---: | --- |
-| small | 78.328M | 4,560 | stable low-RSS small row |
-| medium | 7.637M | 6,644 | cap=8 DirectRetain32/64 improves but remains slow |
-| mixed | 8.338M | 7,024 | same medium/direct-heavy weakness |
+| small | 79.316M | 5,136 | stable low-RSS small row |
+| medium | 10.928M | 7,240 | cap=16 DirectRetain32/64 improves but remains slow |
+| mixed | 11.701M | 7,600 | same medium/direct-heavy weakness |
 
 ## Legacy MT Remote
 
