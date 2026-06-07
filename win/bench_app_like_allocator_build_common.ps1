@@ -818,6 +818,19 @@ function Get-Hz6WinMixedCleanFront16kSourceRunDesc17kSource2kRoute8kLinearWrapLo
     )
 }
 
+function Get-Hz6WinMixedCleanFront16kSourceRunDesc17kSource4kRoute8kLinearWrapLoopCarryCapacityFlags {
+    @(
+        "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)17408)",
+        "/DHZ6_ROUTE_TABLE_CAPACITY=((size_t)8192)",
+        "/DHZ6_TRANSFER_CACHE_CAPACITY=((size_t)2176)",
+        "/DHZ6_SOURCE_BLOCK_CAPACITY=((size_t)4096)",
+        "/DHZ6_FRONT_CACHE_BIN_CAPACITY=((size_t)16384)",
+        "/DHZ6_SOURCE_RUN_REUSE_L1=1",
+        "/DHZ6_ROUTE_LINEAR_WRAP_L1=1",
+        "/DHZ6_ROUTE_LOOP_CARRY_L1=1"
+    )
+}
+
 function Get-Hz6WinMixedCleanFront16kSourceRunDesc17kSource2kRoute16kLinearWrapLoopCarryCapacityFlags {
     @(
         "/DHZ6_OBJECT_DESCRIPTOR_CAPACITY=((size_t)17408)",
@@ -2180,6 +2193,7 @@ function Invoke-AppLikeHz6BenchBuilds {
     $mixedCleanFront16kSourceRunDesc17kSource2kRoute17kLinearWrapLoopCarryFlags = Get-Hz6WinMixedCleanFront16kSourceRunDesc17kSource2kRoute17kLinearWrapLoopCarryCapacityFlags
     $mixedCleanFront16kSourceRunDesc17kSource2kRoute4kLinearWrapLoopCarryFlags = Get-Hz6WinMixedCleanFront16kSourceRunDesc17kSource2kRoute4kLinearWrapLoopCarryCapacityFlags
     $mixedCleanFront16kSourceRunDesc17kSource2kRoute8kLinearWrapLoopCarryFlags = Get-Hz6WinMixedCleanFront16kSourceRunDesc17kSource2kRoute8kLinearWrapLoopCarryCapacityFlags
+    $mixedCleanFront16kSourceRunDesc17kSource4kRoute8kLinearWrapLoopCarryFlags = Get-Hz6WinMixedCleanFront16kSourceRunDesc17kSource4kRoute8kLinearWrapLoopCarryCapacityFlags
     $mixedCleanFront16kSourceRunDesc17kSource2kRoute16kLinearWrapLoopCarryFlags = Get-Hz6WinMixedCleanFront16kSourceRunDesc17kSource2kRoute16kLinearWrapLoopCarryCapacityFlags
     $mixedCleanFront16kSourceRunDesc17kSource2kRoute18kFlags = Get-Hz6WinMixedCleanFront16kSourceRunDesc17kSource2kRoute18kCapacityFlags
     $mixedCleanFront16kSourceRunDesc17kSource2kRoute18kDoubleHashFlags = Get-Hz6WinMixedCleanFront16kSourceRunDesc17kSource2kRoute18kDoubleHashCapacityFlags
@@ -2382,6 +2396,7 @@ function Invoke-AppLikeHz6BenchBuilds {
         "mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap-loopcarry" = @{ Suffix = "_mixedclean_front16k_sourcerun_desc17k_source2k_route17k_linearwrap_loopcarry"; ExtraFlags = $mixedCleanFront16kSourceRunDesc17kSource2kRoute17kLinearWrapLoopCarryFlags }
         "mixedclean-front16k-sourcerun-desc17k-source2k-route4k-linearwrap-loopcarry" = @{ Suffix = "_mixedclean_front16k_sourcerun_desc17k_source2k_route4k_linearwrap_loopcarry"; ExtraFlags = $mixedCleanFront16kSourceRunDesc17kSource2kRoute4kLinearWrapLoopCarryFlags }
         "mixedclean-front16k-sourcerun-desc17k-source2k-route8k-linearwrap-loopcarry" = @{ Suffix = "_mixedclean_front16k_sourcerun_desc17k_source2k_route8k_linearwrap_loopcarry"; ExtraFlags = $mixedCleanFront16kSourceRunDesc17kSource2kRoute8kLinearWrapLoopCarryFlags }
+        "mixedclean-front16k-sourcerun-desc17k-source4k-route8k-linearwrap-loopcarry" = @{ Suffix = "_mixedclean_front16k_sourcerun_desc17k_source4k_route8k_linearwrap_loopcarry"; ExtraFlags = $mixedCleanFront16kSourceRunDesc17kSource4kRoute8kLinearWrapLoopCarryFlags }
         "mixedclean-front16k-sourcerun-desc17k-source2k-route16k-linearwrap-loopcarry" = @{ Suffix = "_mixedclean_front16k_sourcerun_desc17k_source2k_route16k_linearwrap_loopcarry"; ExtraFlags = $mixedCleanFront16kSourceRunDesc17kSource2kRoute16kLinearWrapLoopCarryFlags }
         "mixedclean-front16k-sourcerun-desc17k-source2k-route18k" = @{ Suffix = "_mixedclean_front16k_sourcerun_desc17k_source2k_route18k"; ExtraFlags = $mixedCleanFront16kSourceRunDesc17kSource2kRoute18kFlags }
         "mixedclean-front16k-sourcerun-desc17k-source2k-route18k-doublehash" = @{ Suffix = "_mixedclean_front16k_sourcerun_desc17k_source2k_route18k_doublehash"; ExtraFlags = $mixedCleanFront16kSourceRunDesc17kSource2kRoute18kDoubleHashFlags }

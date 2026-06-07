@@ -153,11 +153,16 @@ mixed_ws low-RSS capacity split:
       wide_ws still has alloc_fail=6943.
     route16k with descriptor17k:
       balanced/larger are clean, but wide_ws still has alloc_fail=6943.
+    route8k with source4k:
+      source cap 2K->4K does not rescue wide_ws:
+      alloc_fail remains 518782 and source_block_exhausted remains high
+      (486853), while balanced/larger lose RSS or speed.
   Current decision:
     route17k remains the selected mixedclean safety boundary.  Route8k and
-    route16k are useful route-capacity boundary evidence only; do not promote
-    them unless a new wide_ws policy removes the source-block pressure without
-    reintroducing route invalid/miss.
+    route16k are useful route-capacity boundary evidence only.  Source4k/route8k
+    is a no-go capacity-compensation control.  Do not promote these unless a new
+    wide_ws policy removes the source-block pressure without reintroducing route
+    invalid/miss.
 
 Immediate engineering posture:
   1. keep lane docs and selected-family scripts readable.

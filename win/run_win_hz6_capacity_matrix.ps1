@@ -379,6 +379,7 @@ $laneSuffix = @{
     "mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap-loopcarry" = "_mixedclean_front16k_sourcerun_desc17k_source2k_route17k_linearwrap_loopcarry"
     "mixedclean-front16k-sourcerun-desc17k-source2k-route4k-linearwrap-loopcarry" = "_mixedclean_front16k_sourcerun_desc17k_source2k_route4k_linearwrap_loopcarry"
     "mixedclean-front16k-sourcerun-desc17k-source2k-route8k-linearwrap-loopcarry" = "_mixedclean_front16k_sourcerun_desc17k_source2k_route8k_linearwrap_loopcarry"
+    "mixedclean-front16k-sourcerun-desc17k-source4k-route8k-linearwrap-loopcarry" = "_mixedclean_front16k_sourcerun_desc17k_source4k_route8k_linearwrap_loopcarry"
     "mixedclean-front16k-sourcerun-desc17k-source2k-route16k-linearwrap-loopcarry" = "_mixedclean_front16k_sourcerun_desc17k_source2k_route16k_linearwrap_loopcarry"
     "mixedclean-front16k-sourcerun-desc17k-source2k-route18k" = "_mixedclean_front16k_sourcerun_desc17k_source2k_route18k"
     "mixedclean-front16k-sourcerun-desc17k-source2k-route18k-doublehash" = "_mixedclean_front16k_sourcerun_desc17k_source2k_route18k_doublehash"
