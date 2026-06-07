@@ -8,15 +8,16 @@ to change.
 ## Current Selected Lane
 
 ```text
-ownerlocalityfast-rsscap-2-desc160k-front4k-thindesc-nobackptr-
+ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-
+directfree-trustedlocalcache-desc16k-front4k-thindesc-nobackptr-
 noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-
-ownersourcel2-frontcachepacked-sourceblockpacked-source10k-route192k-run512
+ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512
 ```
 
 Status:
 
 ```text
-KEEP as current Larson minimum-RSS sibling.
+KEEP as current Larson/Elastic low-RSS sibling.
 Not broad promotion/default.
 Not a speed-ranking diagnostic row.
 ```
@@ -24,26 +25,23 @@ Not a speed-ranking diagnostic row.
 Evidence:
 
 ```text
-main10k repeat-3:
-  44.864M ops/s
-  412,280 KB peak RSS
+guard repeat-3:
+  improves every main/worker 1k/4k/10k row over DepotOwnerDirect
+  average +2.60%, minimum +1.34%
+  main10k = 43.75M ops/s / 224,724 KB peak RSS
   safety clean
 
-guards:
-  worker10k clean
-  main/worker4k clean
-  main/worker1k clean
-
-source-cap boundary:
-  source12k = backup/control
-  source8k/source2k = no-go from warmup SourceBlock exhaustion
+role:
+  selected source-depot low-RSS sibling for Larson/Elastic comparisons
+  clean control for future conditional transfer/rehome policy
+  not a broad mixed_ws/default allocator profile
 ```
 
 ## Current Lane Status
 
 ```text
-Selected minimum-RSS sibling:
-  source10k combined packed lane
+Selected Larson/Elastic low-RSS sibling:
+  DepotOwnerDirect + DirectFreeTrustedLocalCache source-depot lane
 
 Candidate-watch:
   ElasticDescriptorRouteOverflow-L1
@@ -68,6 +66,17 @@ Sparse side metadata evidence:
 
 Diagnostic consumer evidence:
   SlotOwnerConsumerDryRun-L1
+
+Latest no-promotion evidence:
+  DFTLC + DepotDescriptorRehomeBudget2048 intersection dry-run
+  Budgeted rehome composes poorly with DFTLC on main10k and raises RSS.
+  Do not run another fixed budget sweep unless a new diagnostic signal appears.
+
+Next if reopened:
+  conditional transfer/rehome policy
+  trigger only when transfer-depot pressure is present and the selected DFTLC
+  path is not already the dominant solution
+  keep broad mixed_ws safety guards separate from Larson/Elastic ranking
 ```
 
 SourceBlockLocalizeDryRun-L1 result:
