@@ -34,6 +34,15 @@ files:
      selected / selected sibling / control / evidence / pressure / no-go
 ```
 
+Use this checker after lane-map edits:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File win/check_win_hz6_capacity_lanes.ps1
+```
+
+It compares the capacity lane keys in the build-common map and the capacity
+matrix suffix map. It does not run benchmarks; it only catches lane-key drift.
+
 ## Desired Manifest Shape
 
 A future `Get-Hz6WinCapacityLaneRegistry` helper should return records like:

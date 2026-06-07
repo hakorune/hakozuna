@@ -15,6 +15,41 @@ static int hz6_source_block_route_bit_get(const Hz6SourceBlock* block,
 }
 #endif
 
+#if HZ6_SOURCE_BLOCK_ROUTE_BEHAVIOR_L1 ||                         \
+    (HZ6_SMALL_RUN_ROUTE_DRYRUN_L1 && HZ6_DIAGNOSTIC_PROBES) ||    \
+    HZ6_SMALL_RUN_ROUTE_BEHAVIOR_L1
+static int hz6_source_block_route_slot_index(const Hz6SourceBlock* block,
+                                             const void* ptr,
+                                             size_t* slot_index) {
+  if (!block || !ptr || !slot_index || !hz6_source_block_run_active(block) ||
+      block->run_slot_bytes == 0 || block->run_slot_count == 0) {
+    return 0;
+  }
+  const unsigned char* user = (const unsigned char*)ptr;
+  const unsigned char* base = (const unsigned char*)block->ptr;
+  size_t offset = (size_t)(user - base);
+  if ((offset % block->run_slot_bytes) != 0) {
+    return 0;
+  }
+  *slot_index = offset / block->run_slot_bytes;
+  return *slot_index < block->run_slot_count;
+}
+
+static int hz6_source_block_route_descriptor_valid(
+    const Hz6ObjectDescriptor* descriptor,
+    const Hz6SourceBlock* block,
+    const void* ptr,
+    int require_generation) {
+  return descriptor && descriptor->ptr == ptr &&
+         descriptor->source_block == block &&
+         descriptor->class_id == block->run_class_id &&
+         descriptor->bytes == block->run_slot_bytes &&
+         descriptor->state != HZ6_STATE_DEAD &&
+         descriptor->state != HZ6_STATE_DESCRIPTOR_RESERVED &&
+         (!require_generation || descriptor->generation != 0);
+}
+#endif
+
 #if HZ6_SOURCE_BLOCK_ROUTE_DRYRUN_L1 && HZ6_DIAGNOSTIC_PROBES
 static int hz6_source_block_route_descriptor_matches(
     const Hz6ObjectDescriptor* descriptor,
@@ -61,15 +96,8 @@ void hz6_allocator_small_run_route_dryrun(Hz6Allocator* allocator,
     return;
   }
 
-  const unsigned char* user = (const unsigned char*)ptr;
-  const unsigned char* base = (const unsigned char*)block->ptr;
-  size_t offset = (size_t)(user - base);
-  if ((offset % block->run_slot_bytes) != 0) {
-    ++allocator->stats.smallrun_would_invalid;
-    return;
-  }
-  size_t slot_index = offset / block->run_slot_bytes;
-  if (slot_index >= block->run_slot_count ||
+  size_t slot_index = 0;
+  if (!hz6_source_block_route_slot_index(block, ptr, &slot_index) ||
       !hz6_source_block_route_bit_get(block, slot_index)) {
     ++allocator->stats.smallrun_would_invalid;
     return;
@@ -82,11 +110,7 @@ void hz6_allocator_small_run_route_dryrun(Hz6Allocator* allocator,
     ++allocator->stats.smallrun_exact_fallback_needed;
     return;
   }
-  if (descriptor->ptr != ptr || descriptor->source_block != block ||
-      descriptor->class_id != block->run_class_id ||
-      descriptor->bytes != block->run_slot_bytes ||
-      descriptor->state == HZ6_STATE_DEAD ||
-      descriptor->state == HZ6_STATE_DESCRIPTOR_RESERVED) {
+  if (!hz6_source_block_route_descriptor_valid(descriptor, block, ptr, 0)) {
     ++allocator->stats.smallrun_false_positive;
     ++allocator->stats.smallrun_exact_fallback_needed;
     return;
@@ -145,17 +169,8 @@ Hz6RouteResult hz6_allocator_small_run_route_lookup(Hz6Allocator* allocator,
     return hz6_route_miss();
   }
 
-  const unsigned char* user = (const unsigned char*)ptr;
-  const unsigned char* base = (const unsigned char*)block->ptr;
-  size_t offset = (size_t)(user - base);
-  if ((offset % block->run_slot_bytes) != 0) {
-#if HZ6_DIAGNOSTIC_PROBES
-    ++allocator->stats.smallrun_behavior_invalid_slot;
-#endif
-    return hz6_route_invalid(block->run_front_id, block->run_class_id);
-  }
-  size_t slot_index = offset / block->run_slot_bytes;
-  if (slot_index >= block->run_slot_count ||
+  size_t slot_index = 0;
+  if (!hz6_source_block_route_slot_index(block, ptr, &slot_index) ||
       !hz6_source_block_route_bit_get(block, slot_index)) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.smallrun_behavior_invalid_slot;
@@ -171,12 +186,7 @@ Hz6RouteResult hz6_allocator_small_run_route_lookup(Hz6Allocator* allocator,
 #endif
     return hz6_route_miss();
   }
-  if (descriptor->ptr != ptr || descriptor->source_block != block ||
-      descriptor->class_id != block->run_class_id ||
-      descriptor->bytes != block->run_slot_bytes ||
-      descriptor->state == HZ6_STATE_DEAD ||
-      descriptor->state == HZ6_STATE_DESCRIPTOR_RESERVED ||
-      descriptor->generation == 0) {
+  if (!hz6_source_block_route_descriptor_valid(descriptor, block, ptr, 1)) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.smallrun_behavior_invalid_descriptor;
 #endif
@@ -246,17 +256,8 @@ Hz6RouteResult hz6_allocator_source_block_route_lookup(Hz6Allocator* allocator,
     return hz6_route_miss();
   }
 
-  const unsigned char* user = (const unsigned char*)ptr;
-  const unsigned char* base = (const unsigned char*)block->ptr;
-  size_t offset = (size_t)(user - base);
-  if ((offset % block->run_slot_bytes) != 0) {
-#if HZ6_DIAGNOSTIC_PROBES
-    ++allocator->stats.source_block_route_behavior_fallback;
-#endif
-    return hz6_route_miss();
-  }
-  size_t slot_index = offset / block->run_slot_bytes;
-  if (slot_index >= block->run_slot_count ||
+  size_t slot_index = 0;
+  if (!hz6_source_block_route_slot_index(block, ptr, &slot_index) ||
       !hz6_source_block_route_bit_get(block, slot_index)) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.source_block_route_behavior_fallback;
@@ -266,11 +267,7 @@ Hz6RouteResult hz6_allocator_source_block_route_lookup(Hz6Allocator* allocator,
 
   Hz6ObjectDescriptor* descriptor =
       hz6_allocator_source_run_descriptor_at(allocator, block, ptr);
-  if (!descriptor || descriptor->class_id != block->run_class_id ||
-      descriptor->bytes != block->run_slot_bytes ||
-      descriptor->ptr != ptr || descriptor->source_block != block ||
-      descriptor->state == HZ6_STATE_DEAD ||
-      descriptor->state == HZ6_STATE_DESCRIPTOR_RESERVED) {
+  if (!hz6_source_block_route_descriptor_valid(descriptor, block, ptr, 0)) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.source_block_route_behavior_invalid_descriptor;
 #endif
