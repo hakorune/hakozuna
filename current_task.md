@@ -160,6 +160,32 @@ Latest HZ6 SmallRunRoute attack:
       dynmap-small8k is not a rescue gate; it regresses the checked boundary
       rows and should remain control/no-go evidence.
       Do not add another selected-small size gate without a new mechanism.
+
+  Toy/small hotpath refresh:
+    Existing diagnostic/control lanes were rechecked on 256B/512B/1K/2K/4K:
+      toysmallhotpathdiag-directlocalfreereuse
+      toysmallactivemap-directlocalfreereuse
+      toysmallhotpathdiag-sourceblockroute-dynmap
+      toysmallactivemap-sourceblockroute-dynmap
+
+    Read:
+      Hotpath diag confirms the Toy/small path is the active witness:
+        malloc_fast_attempt is about allocation count
+        malloc_fast_hit is allocation count minus initial front dispatch
+        free_route_lookup / owner_equal / free_fast_hit / cache_push all align
+      Active-map bypass is also real:
+        route_bypass is about 296K..298K for 256B..2K and about 241K for 4K
+        free_route_lookup drops to roughly 0.3%..3% of frees
+      But the behavior is not a clean speed promotion:
+        active-map direct/dynmap rows are slower in the diagnostic repeat-3,
+        and prior non-diagnostic repeats already missed broad promotion.
+
+    Selected-small closeout:
+      The remaining 256B..2K gap is not solved by another active-map,
+      SourceBlockRoute, SmallRunRoute, or dynmap-small8k toggle. Keep dynmap
+      as selected-small candidate-watch/evidence, directlocalfreereuse as
+      simple control, and move new optimization work to a different HZ6 target
+      unless a new mechanism is proposed.
 ```
 
 Latest HZ6 Windows large-slice lane wiring:
