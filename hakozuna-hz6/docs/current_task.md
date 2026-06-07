@@ -217,6 +217,66 @@ Larson / Elastic:
       if RSS is reopened, target elastic/static metadata sizing or table
       allocation policy first.  Do not reopen DFTLC+budget composition unless a
       new diagnostic points to transfer/depot lifecycle retention.
+  ElasticFrontcacheBoundary-L1:
+    lane wiring added:
+      selected DFTLC front4k control
+      selected DFTLC with front2k only
+      selected DFTLC with front1k only
+    R1 diagnostic main10k:
+      front4k = 40.301M / 224728 KB
+      front2k = 39.199M / 214080 KB
+      front1k = 40.090M / 207176 KB
+      all safety clean
+      residual frontcache_table_bytes:
+        front4k = 24582 KiB
+        front2k = 12294 KiB
+        front1k = 6150 KiB
+    repeat-3 non-diagnostic main10k:
+      front4k = 42.930M / 224720 KB
+      front1k = 42.972M / 203988 KB
+      safety clean:
+        route_invalid = 0
+        route_miss = 0
+        route_register_fail = 0
+        alloc_fail = 0
+        descriptor_exhausted = 0
+        source_block_exhausted = 0
+        remote_free_transfer_fail = 0
+    6-row guard run-1:
+      main_1k:
+        front4k = 58.260M / 92120 KB
+        front1k = 57.813M / 71424 KB
+      worker_1k:
+        front4k = 58.649M / 91852 KB
+        front1k = 56.260M / 71104 KB
+      main_4k:
+        front4k = 55.227M / 139100 KB
+        front1k = 53.846M / 118364 KB
+      worker_4k:
+        front4k = 50.728M / 132984 KB
+        front1k = 52.770M / 112240 KB
+      main_10k:
+        front4k = 43.461M / 224720 KB
+        front1k = 42.250M / 203992 KB
+      worker_10k:
+        front4k = 44.150M / 214820 KB
+        front1k = 44.877M / 194088 KB
+      safety clean across all rows.
+    interpretation:
+      front1k is a strong lower-RSS candidate-watch: it saves about 19-21 MiB
+      on every Larson guard row and does not introduce safety failures.  It is
+      not a pure speed promotion yet because speed is mixed: worker4k/worker10k
+      improve, while main1k/main4k/main10k and worker1k regress modestly
+      (worst observed row is worker1k at about -4.1%).
+    decision:
+      keep front4k as the Elastic speed-balance control.
+      keep front1k as the next Elastic lower-RSS candidate-watch.
+      front2k is evidence/control only because it saves less RSS than front1k
+      and did not beat front4k/front1k on the first diagnostic main10k row.
+    next:
+      before defaulting front1k, run repeat-3 guard across main/worker
+      1k/4k/10k or ask for design review if the speed/RSS tradeoff should be
+      split into separate "speed-balance" and "minimum-RSS" presets.
 
 mixed_ws low-RSS capacity split:
   2026-06-07 guard data shows an important tension:
