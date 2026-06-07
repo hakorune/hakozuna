@@ -37,7 +37,9 @@ control/baseline and the conservative fallback if a paper-facing selected-small
 row needs maximum stability.
 The `sourceblockroute-behavior-dynmap-small8k-*` follow-up proves class-gated
 late range-index registration works, but it still regresses 4K/balanced enough
-to remain control evidence rather than selected wiring.
+to remain control evidence rather than selected wiring.  The 2026-06-07
+boundary refresh confirms that reading: dynmap-small8k lost to dynmap/direct on
+4K/8K/16K, so it is not a selected-small rescue gate.
 MidPage 8K/32K prefill now uses the shared SourceBlock helper, so the small/mid
 boundary is structurally unified with Toy; this does not create a new promoted
 speed lane by itself. `directlocaltrusted-*`, `directlocalpacked-*`,

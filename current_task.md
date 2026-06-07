@@ -129,6 +129,37 @@ Latest HZ6 SmallRunRoute attack:
         smallrun_behavior_fallback=305088
         range_index_lookup=305088
     This confirms the lower-gate overhead issue.
+
+  Boundary repeat-10 follow-up:
+    Compared directlocalfreereuse, sameownerfast, dynmap, and smallrun-min512
+    on 4K/8K/16K without diagnostic counters:
+      4K:
+        dynmap 53.281M / 42,516 KB
+        direct 52.728M / 41,962 KB
+        sameowner 52.286M / 41,934 KB
+        smallrun-min512 50.274M / 42,518 KB
+      8K:
+        dynmap 65.056M / 25,946 KB
+        direct 63.219M / 25,386 KB
+        smallrun-min512 59.511M / 25,948 KB
+        sameowner 59.507M / 25,388 KB
+      16K:
+        direct 56.492M / 17,116 KB
+        sameowner 55.452M / 17,120 KB
+        dynmap 54.252M / 17,660 KB
+        smallrun-min512 50.216M / 17,664 KB
+
+    Existing dynmap-small8k gate refresh:
+      4K:  dynmap 52.948M, dynmap-small8k 45.871M, direct 50.124M
+      8K:  dynmap 59.024M, dynmap-small8k 55.729M, direct 56.435M
+      16K: direct 50.583M, dynmap 46.086M, dynmap-small8k 45.075M
+
+    Read:
+      The selected dynmap row remains the cleanest 4K/8K candidate-watch.
+      directlocalfreereuse remains the 16K speed/RSS control.
+      dynmap-small8k is not a rescue gate; it regresses the checked boundary
+      rows and should remain control/no-go evidence.
+      Do not add another selected-small size gate without a new mechanism.
 ```
 
 Latest HZ6 Windows large-slice lane wiring:
