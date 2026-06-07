@@ -1580,15 +1580,136 @@ int main(int argc, char** argv) {
             hz6_overflow_frontcache_bytes +
             hz6_overflow_transfer_bytes;
     }
-    (void)hz6_descriptor_unused;
-    (void)hz6_route_used;
-    (void)hz6_route_unused;
-    (void)hz6_source_block_unused;
-    (void)hz6_frontcache_unused;
-    (void)hz6_transfer_unused;
-    (void)hz6_elastic_projected_static_plus_payload_bytes;
-    (void)hz6_elastic_projected_savings_bytes;
-    (void)hz6_overflow_total_bytes;
+    printf("[HZ6_RSS_RESIDUAL] "
+           "static_table_bytes=%zu static_plus_payload_bytes=%zu "
+           "descriptor_table_bytes=%zu route_table_bytes=%zu "
+           "shared_route_directory_bytes=%zu owner_locality_index_bytes=%zu "
+           "source_block_table_bytes=%zu source_block_depot_bytes=%zu "
+           "frontcache_table_bytes=%zu transfer_table_bytes=%zu "
+           "source_block_committed_estimate=%zu active_source_blocks=%zu "
+           "registered_source_blocks=%zu ref_nonzero_source_blocks=%zu "
+           "ref_zero_source_blocks=%zu route_active_current=%zu "
+           "route_tombstone_current=%zu frontcache_total=%zu\n",
+           hz6_stats.memory_static_table_bytes,
+           hz6_stats.memory_static_plus_payload_bytes,
+           hz6_stats.memory_descriptor_table_bytes,
+           hz6_stats.memory_route_table_bytes,
+           hz6_stats.memory_shared_route_directory_bytes,
+           hz6_stats.memory_ownerlocality_index_bytes,
+           hz6_stats.memory_source_block_table_bytes,
+           hz6_stats.memory_source_block_depot_bytes,
+           hz6_stats.memory_frontcache_table_bytes,
+           hz6_stats.memory_transfer_table_bytes,
+           hz6_stats.memory_source_block_committed_estimate,
+           hz6_stats.memory_active_source_blocks,
+           hz6_stats.memory_registered_source_blocks,
+           hz6_stats.memory_ref_nonzero_source_blocks,
+           hz6_stats.memory_ref_zero_source_blocks,
+           hz6_stats.route_active_current,
+           hz6_stats.route_tombstone_current,
+           hz6_stats.memory_frontcache_total);
+    printf("[HZ6_CAPACITY_UTIL] "
+           "allocator_count=%zu "
+           "descriptor_capacity=%zu descriptor_used=%zu descriptor_unused=%zu "
+           "route_capacity=%zu route_used=%zu route_occupied=%zu "
+           "route_unused=%zu source_block_capacity=%zu "
+           "source_block_used=%zu source_block_unused=%zu "
+           "frontcache_capacity=%zu frontcache_used=%zu "
+           "frontcache_unused=%zu transfer_capacity=%zu "
+           "transfer_used=%zu transfer_unused=%zu "
+           "descriptor_live_max=%zu source_block_active_max=%zu "
+           "frontcache_total_max=%zu "
+           "descriptor_used_max_allocator=%zu descriptor_local_cap_2x=%zu "
+           "route_used_max_allocator=%zu "
+           "route_occupied_max_allocator=%zu route_local_cap_2x=%zu "
+           "source_block_used_max_allocator=%zu "
+           "source_block_local_cap_2x=%zu "
+           "frontcache_used_max_allocator=%zu frontcache_local_cap_2x=%zu "
+           "transfer_used_max_allocator=%zu transfer_local_cap_2x=%zu\n",
+           hz6_allocator_count,
+           hz6_descriptor_capacity,
+           hz6_descriptor_used,
+           hz6_descriptor_unused,
+           hz6_route_capacity,
+           hz6_route_used,
+           hz6_route_occupied,
+           hz6_route_unused,
+           hz6_source_block_capacity,
+           hz6_source_block_used,
+           hz6_source_block_unused,
+           hz6_frontcache_capacity,
+           hz6_frontcache_used,
+           hz6_frontcache_unused,
+           hz6_transfer_capacity,
+           hz6_transfer_used,
+           hz6_transfer_unused,
+           hz6_stats.descriptor_live_max,
+           hz6_stats.source_block_active_max,
+           hz6_stats.frontcache_total_max,
+           hz6_descriptor_used_max_allocator,
+           hz6_descriptor_local_cap_2x,
+           hz6_route_used_max_allocator,
+           hz6_route_occupied_max_allocator,
+           hz6_route_local_cap_2x,
+           hz6_source_block_used_max_allocator,
+           hz6_source_block_local_cap_2x,
+           hz6_frontcache_used_max_allocator,
+           hz6_frontcache_local_cap_2x,
+           hz6_transfer_used_max_allocator,
+           hz6_transfer_local_cap_2x);
+    printf("[HZ6_ELASTIC_PROJECTION] "
+           "allocator_count=%zu "
+           "descriptor_projected_capacity=%zu "
+           "descriptor_projected_table_bytes=%zu "
+           "route_projected_capacity=%zu route_projected_table_bytes=%zu "
+           "source_block_projected_capacity=%zu "
+           "source_block_projected_table_bytes=%zu "
+           "frontcache_projected_capacity=%zu "
+           "frontcache_projected_table_bytes=%zu "
+           "transfer_projected_capacity=%zu "
+           "transfer_projected_table_bytes=%zu "
+           "projected_static_table_bytes=%zu "
+           "projected_static_plus_payload_bytes=%zu "
+           "projected_static_savings_bytes=%zu\n",
+           hz6_allocator_count,
+           hz6_descriptor_projected_capacity,
+           hz6_descriptor_projected_bytes,
+           hz6_route_projected_capacity,
+           hz6_route_projected_bytes,
+           hz6_source_block_projected_capacity,
+           hz6_source_block_projected_bytes,
+           hz6_frontcache_projected_capacity,
+           hz6_frontcache_projected_bytes,
+           hz6_transfer_projected_capacity,
+           hz6_transfer_projected_bytes,
+           hz6_elastic_projected_static_bytes,
+           hz6_elastic_projected_static_plus_payload_bytes,
+           hz6_elastic_projected_savings_bytes);
+    printf("[HZ6_ELASTIC_OVERFLOW_PROJECTION] "
+           "descriptor_local_cap=%zu descriptor_overflow=%zu "
+           "descriptor_overflow_bytes=%zu route_local_cap=%zu "
+           "route_overflow=%zu route_overflow_bytes=%zu "
+           "source_block_local_cap=%zu source_block_overflow=%zu "
+           "source_block_overflow_bytes=%zu frontcache_local_cap=%zu "
+           "frontcache_overflow=%zu frontcache_overflow_bytes=%zu "
+           "transfer_local_cap=%zu transfer_overflow=%zu "
+           "transfer_overflow_bytes=%zu overflow_total_bytes=%zu\n",
+           hz6_descriptor_local_cap_2x,
+           hz6_overflow_descriptor_count,
+           hz6_overflow_descriptor_bytes,
+           hz6_route_local_cap_2x,
+           hz6_overflow_route_count,
+           hz6_overflow_route_bytes,
+           hz6_source_block_local_cap_2x,
+           hz6_overflow_source_block_count,
+           hz6_overflow_source_block_bytes,
+           hz6_frontcache_local_cap_2x,
+           hz6_overflow_frontcache_count,
+           hz6_overflow_frontcache_bytes,
+           hz6_transfer_local_cap_2x,
+           hz6_overflow_transfer_count,
+           hz6_overflow_transfer_bytes,
+           hz6_overflow_total_bytes);
 #endif
 
     duration_sec = (double)(end_ns - start_ns) / 1e9;

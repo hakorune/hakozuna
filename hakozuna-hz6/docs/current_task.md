@@ -124,7 +124,7 @@ selected-small fixed 256B..16K:
 Larson / Elastic:
   current strongest RSS direction remains the selected Larson/Elastic low-RSS
   sibling documented in HZ6_SELECTED_FAMILY_SUMMARY.md.
-  The active follow-up is diagnostic-only:
+  Closed follow-up:
     DFTLC + DepotDescriptorRehomeBudget2048 intersection dry-run.
   It counts whether DirectFreeTrustedLocalCache and budgeted descriptor rehome
   are helping the same lifecycle path or merely composing two unrelated knobs.
@@ -149,8 +149,74 @@ Larson / Elastic:
     another static rehome threshold/budget lane.  If Elastic is reopened, first
     design a policy that explains which lifecycle state is being protected
     rather than gating descriptor rehome by a single backlog number.
-  Keep Redis route-churn closed as evidence/control while this Elastic pass is
-  active.
+  Fixed decision:
+    selected Elastic low-RSS sibling remains:
+      depotownerdirect-directfree-trustedlocalcache
+    Keep as evidence/control only:
+      depotdescrehome-budget2048
+      DFTLC + depotdescrehome-budget2048
+      transferpressure8
+      intersection dry-run
+    Do not:
+      add another fixed rehome budget
+      add another static transfer backlog threshold
+      compose DFTLC with descriptor rehome without a lifecycle-specific reason
+  Next if Elastic/RSS is reopened:
+    start with ElasticResidualRssAudit-L1, not behavior.  Attribute the selected
+    DFTLC row's remaining RSS into static metadata tables, source-block payload,
+    transfer/frontcache retention, descriptor materialization, and depot state.
+    Only after that should behavior target a specific residual owner.  Keep
+    Redis route-churn closed as evidence/control while this audit is active.
+  ElasticResidualRssAudit-L1 R2:
+    wiring fixed:
+      win/bench_larson_compare.c now emits the diagnostic-only
+      [HZ6_RSS_RESIDUAL], [HZ6_CAPACITY_UTIL], [HZ6_ELASTIC_PROJECTION], and
+      [HZ6_ELASTIC_OVERFLOW_PROJECTION] rows under HZ6_DIAGNOSTIC_PROBES.
+      This is runner/reporting plumbing only; it does not touch allocator hot
+      paths or production lanes.
+    selected DFTLC low-RSS sibling, larson_t16_main_10k, run-1:
+      throughput = 39.416M ops/s
+      peak RSS = 224724 KiB
+      static_table = 64782 KiB
+      payload = 24384 KiB
+      static_plus_payload = 89166 KiB
+      frontcache_table = 24582 KiB
+      ownerlocality_index = 18432 KiB
+      shared_route_directory = 12288 KiB
+      descriptor_table = 11264 KiB
+      route_table = 6656 KiB
+      transfer_table = 1536 KiB
+      active_source_blocks = 381
+      route_active_current = 6437
+      frontcache_total = 6056
+    capacity read:
+      descriptor used/cap = 6056/262144
+      route active/cap = 6437/262144
+      source blocks used/cap = 381/1024
+      frontcache used/cap = 6056/1048576
+      transfer current/cap = 0/65536
+      per-worker max/cap2x projections are descriptor 400/1024,
+      route occupied 425/1024, source block 25/64, frontcache 401/1024,
+      transfer 54/128.
+    elastic projection:
+      projected static_table = 20120 KiB
+      projected static_plus_payload = 44504 KiB
+      projected static savings = 44662 KiB
+      projected overflow top-up is only 1050 KiB for descriptor+route local
+      cap2x overflow, with source/frontcache/transfer overflow at zero.
+    interpretation:
+      the remaining explained RSS is not dominated by live object count.
+      Frontcache metadata, owner-locality/shared-route metadata, and the still
+      broad descriptor/route tables are the first visible owners.  The gap
+      between peak RSS and static_plus_payload remains large, so do not treat
+      this as a complete RSS attribution yet; it is enough to avoid another
+      fixed budget/threshold lane.  Note: ownerlocality_index includes the
+      shared route directory footprint, so do not double-count shared_dir when
+      estimating total static_table.
+    next design direction:
+      if RSS is reopened, target elastic/static metadata sizing or table
+      allocation policy first.  Do not reopen DFTLC+budget composition unless a
+      new diagnostic points to transfer/depot lifecycle retention.
 
 mixed_ws low-RSS capacity split:
   2026-06-07 guard data shows an important tension:
