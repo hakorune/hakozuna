@@ -9,7 +9,15 @@ void bench_print_hz6_summary(const Hz6StatsSnapshot* hz6_stats,
                              size_t peak_kb) {
     printf(" hz6_route_valid=%zu hz6_route_invalid=%zu hz6_route_miss=%zu "
            "hz6_transfer_push=%zu hz6_transfer_pop=%zu "
-           "hz6_source_alloc=%zu hz6_alloc_fail=%zu "
+           "hz6_source_alloc=%zu "
+           "hz6_source_refill_starvation=%zu "
+           "hz6_source_refill_saturation=%zu "
+           "hz6_source_refill_boost=%zu "
+           "hz6_source_refill_clamp=%zu "
+           "hz6_source_admission_open=%zu "
+           "hz6_source_admission_boosted=%zu "
+           "hz6_source_admission_clamped=%zu "
+           "hz6_alloc_fail=%zu "
            "hz6_descriptor_exhausted=%zu hz6_route_register_fail=%zu "
            "hz6_source_block_exhausted=%zu hz6_descriptor_probe_total=%zu "
            "hz6_descriptor_probe_max=%zu "
@@ -201,6 +209,13 @@ void bench_print_hz6_summary(const Hz6StatsSnapshot* hz6_stats,
            hz6_stats->route_valid, hz6_stats->route_invalid,
            hz6_stats->route_miss, hz6_stats->transfer_push,
            hz6_stats->transfer_pop, hz6_stats->source_alloc,
+           hz6_stats->source_refill_starvation,
+           hz6_stats->source_refill_saturation,
+           hz6_stats->source_refill_boost,
+           hz6_stats->source_refill_clamp,
+           hz6_stats->source_admission_open,
+           hz6_stats->source_admission_boosted,
+           hz6_stats->source_admission_clamped,
            hz6_stats->alloc_fail, hz6_stats->descriptor_exhausted,
            hz6_stats->route_register_fail, hz6_stats->source_block_exhausted,
            hz6_stats->descriptor_probe_total,
@@ -394,6 +409,8 @@ void bench_print_hz6_summary(const Hz6StatsSnapshot* hz6_stats,
            "hz6_source_block_fail_registered_max=%zu "
            "hz6_source_block_fail_ref_nonzero_max=%zu "
            "hz6_source_block_fail_ref_zero_max=%zu "
+           "hz6_source_block_active_max=%zu "
+           "hz6_frontcache_total_max=%zu "
            "hz6_smallrun_route_attempt=%zu "
            "hz6_smallrun_range_hit=%zu "
            "hz6_smallrun_active_slot_hit=%zu "
@@ -438,6 +455,8 @@ void bench_print_hz6_summary(const Hz6StatsSnapshot* hz6_stats,
            hz6_stats->source_block_fail_registered_max,
            hz6_stats->source_block_fail_ref_nonzero_max,
            hz6_stats->source_block_fail_ref_zero_max,
+           hz6_stats->source_block_active_max,
+           hz6_stats->frontcache_total_max,
            hz6_stats->smallrun_route_attempt,
            hz6_stats->smallrun_range_hit,
            hz6_stats->smallrun_active_slot_hit,

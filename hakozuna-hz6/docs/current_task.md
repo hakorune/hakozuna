@@ -163,6 +163,43 @@ mixed_ws low-RSS capacity split:
     is a no-go capacity-compensation control.  Do not promote these unless a new
     wide_ws policy removes the source-block pressure without reintroducing route
     invalid/miss.
+  Pro design consult read:
+    close the route-capacity shrink track.  The evidence says route17k is a
+    mixedclean safety boundary, not arbitrary slack.  If mixed_ws/wide_ws is
+    reopened, start with WideWsSourcePressureAudit-L1, not behavior:
+      compare selected route17k against route8k/route16k boundaries using
+      source_refill/admission, source_block_fail high-water, frontcache total,
+      and source-run reuse counters.
+    Behavior candidates after audit only:
+      SourceBlockAdmissionPolicy-L1,
+      Frontcache/SourceBlockLifecycleSplit-L1,
+      SourceRunReuse/ReleaseOrdering-L1.
+    Do not retry simple route/source capacity bumps or all-elastic overflow.
+  WideWsSourcePressureAudit-L1 run-1:
+    selected route17k:
+      16.824M / 140,952KB, alloc_fail=0, source_block_exhausted=0
+      source_refill_saturation=193428, source_refill_clamp=193428
+      source_admission_open=620140, source_admission_clamped=193428
+      source_block_active_max=213, frontcache_total_max=16700
+      source_run_reuse_attempt=127584, hit=125892, miss_no_block=1692
+    route16k / desc17k:
+      7.901M / 138,556KB, alloc_fail=6943, source_block_exhausted=0
+      source_refill_starvation=691124, boost=500946, clamp=190178
+      source_block_active_max=1253, frontcache_total_max=16177
+      source_run_reuse_attempt=131379, hit=122772, miss_no_block=1660
+    route8k:
+      0.368M / 81,560KB, alloc_fail=518782,
+      source_block_exhausted=503237
+      source_block_fail_active_max=2048, source_block_active_max=2048
+      source_run_reuse_attempt=580969, hit=61341, miss_no_block=840
+  Audit read:
+    route8k is hard source-block-cap collapse.  route16k is not source-block
+    exhausted; it starves/refill-boosts while the selected route17k remains
+    safety-clean.  If mixed_ws is reopened, do not start from capacity bumps.
+    The next plausible behavior must explain why route16k starves despite
+    enough source-block capacity, likely as admission/refill ordering or
+    lifecycle pressure.  Otherwise keep mixed_ws fixed and move to another
+    selected-family weakness.
 
 Immediate engineering posture:
   1. keep lane docs and selected-family scripts readable.

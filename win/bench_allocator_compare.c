@@ -555,6 +555,20 @@ int main(int argc, char** argv) {
         hz6_stats.transfer_push += args[i].hz6_stats_after.transfer_push;
         hz6_stats.transfer_pop += args[i].hz6_stats_after.transfer_pop;
         hz6_stats.source_alloc += args[i].hz6_stats_after.source_alloc;
+        hz6_stats.source_refill_starvation +=
+            args[i].hz6_stats_after.source_refill_starvation;
+        hz6_stats.source_refill_saturation +=
+            args[i].hz6_stats_after.source_refill_saturation;
+        hz6_stats.source_refill_boost +=
+            args[i].hz6_stats_after.source_refill_boost;
+        hz6_stats.source_refill_clamp +=
+            args[i].hz6_stats_after.source_refill_clamp;
+        hz6_stats.source_admission_open +=
+            args[i].hz6_stats_after.source_admission_open;
+        hz6_stats.source_admission_boosted +=
+            args[i].hz6_stats_after.source_admission_boosted;
+        hz6_stats.source_admission_clamped +=
+            args[i].hz6_stats_after.source_admission_clamped;
         hz6_stats.alloc_fail += args[i].hz6_stats_after.alloc_fail;
         hz6_stats.descriptor_exhausted +=
             args[i].hz6_stats_after.descriptor_exhausted;
@@ -1065,6 +1079,8 @@ int main(int argc, char** argv) {
         HZ6_MAX_STAT(source_block_fail_registered_max);
         HZ6_MAX_STAT(source_block_fail_ref_nonzero_max);
         HZ6_MAX_STAT(source_block_fail_ref_zero_max);
+        HZ6_MAX_STAT(source_block_active_max);
+        HZ6_MAX_STAT(frontcache_total_max);
 #undef HZ6_MAX_STAT
 #endif
         hz6_stats.large_span_central_push +=
