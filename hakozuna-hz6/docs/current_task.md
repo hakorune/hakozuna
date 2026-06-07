@@ -43,6 +43,33 @@ selected-small fixed 256B..16K:
   Close the SourceBlockRoute / active-map / notoy small-knob track.  If 256B..2K
   is attacked again, do it as a separate SmallRunFront / TinyRunRoute design,
   not as another Toy or SourceBlockRoute toggle.
+  2026-06-07 selected-small route-policy refresh:
+    direct / SourceBlockRoute dynmap / SmallRunRoute toyonly / toyarmed winners
+    split by row:
+      256B toyonly, 512B dynmap, 1K toyarmed, 2K dynmap,
+      4K direct, 8K toyarmed, 16K direct.
+    This is not a clean promotion signal.  HZ6 maps Toy 2K and 4K to the same
+    4K slot class, while MidPage 8K also uses class 4, so a static class gate
+    cannot isolate the 2K win without taxing 4K/8K boundaries.
+    Next narrow control:
+      smallrunroute-behavior-range64k-toyarmed-slotmax1k-directlocalfreereuse-
+      largerlowrss-front8k-sourcerun-desc8k-route8k
+    Purpose:
+      registration-time SmallRunRoute only for Toy slot <=1K; 2K/4K/8K/16K
+      remain on DirectLocalFreeReuse/exact-route fallback.
+    Repeat-3 result:
+      256B: slotmax1k 73.835M / direct 67.285M
+      512B: slotmax1k 52.179M / direct 51.681M
+      1K:   slotmax1k 57.077M / direct 53.338M
+      2K:   slotmax1k 35.390M / direct 36.202M
+      4K:   slotmax1k 50.017M / direct 48.605M
+      8K:   slotmax1k 53.930M / direct 52.870M
+      16K:  slotmax1k 48.433M / direct 53.936M
+    Read:
+      keep as low-class mechanism evidence/control.  It confirms the 256B/1K
+      signal, but 2K/16K are not clean enough for selected-small promotion.
+      Do not default this lane without a repeat-5/10 guard and a fix for the
+      boundary fallback/layout sensitivity.
 
 Larson / Elastic:
   current strongest RSS direction remains the selected Larson/Elastic low-RSS

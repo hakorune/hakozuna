@@ -359,6 +359,7 @@ $laneSuffix = @{
     "smallrunroute-behavior-range64k-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k" = "_smallrunroute_behavior_range64k_directlocalfreereuse_largerlowrss_front8k_sourcerun_desc8k_route8k"
     "smallrunroute-behavior-range64k-toyonly-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k" = "_smallrunroute_behavior_range64k_toyonly_directlocalfreereuse_largerlowrss_front8k_sourcerun_desc8k_route8k"
     "smallrunroute-behavior-range64k-toyarmed-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k" = "_smallrunroute_behavior_range64k_toyarmed_directlocalfreereuse_largerlowrss_front8k_sourcerun_desc8k_route8k"
+    "smallrunroute-behavior-range64k-toyarmed-slotmax1k-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k" = "_smallrunroute_behavior_range64k_toyarmed_slotmax1k_directlocalfreereuse_largerlowrss_front8k_sourcerun_desc8k_route8k"
     "sourceblockroute-behavior-dynmap-small8k-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k" = "_sourceblockroute_behavior_dynmap_small8k_directlocalfreereuse_largerlowrss_front8k_sourcerun_desc8k_route8k"
     "toysmallactivemap-sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k" = "_toysmallactivemap_sourceblockroute_behavior_dynmap_directlocalfreereuse_largerlowrss_front8k_sourcerun_desc8k_route8k"
     "directlocalfreereuse-small8k-largerlowrss-front8k-sourcerun-desc8k-route8k" = "_directlocalfreereuse_small8k_largerlowrss_front8k_sourcerun_desc8k_route8k"

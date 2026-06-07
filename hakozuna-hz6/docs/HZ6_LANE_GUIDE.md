@@ -42,6 +42,7 @@ these rows answer which lanes should be used, watched, or avoided.
 | Candidate-watch/control | `smallrunroute-behavior-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k` / `smallrunroute-behavior-min512-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k` | TinyRun/SmallRun route evidence. Safety-clean and proves source-run slot route reconstruction can replace exact-route lookup on Toy/small slots. The latest repeat-5 does not beat the selected dynmap row broadly; min512 mostly helps as a 1K/4K clue and pays lower-gate fallback cost on 256B. Keep as evidence/control, not selected/default. |
 | Candidate-watch/control | `smallrunroute-behavior-range64k-toyonly-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k` | SmallRunRoute with 64 KiB range-index granularity and Toy-only late range registration. It cuts 2K range-index probe pressure (`1,174,976/max129 -> 342,992/max2` in diagnostic) and wins 256B/512B/1K in the focused repeat-3, but 2K/4K/8K/16K still do not form a broad selected-small replacement. Keep as Toy-low control/evidence. |
 | Candidate-watch/control | `smallrunroute-behavior-range64k-toyarmed-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k` | SmallRunRoute range64k/toyonly plus an allocator-local armed count. It skips the range-index lookup until at least one eligible Toy source-run range is registered, avoiding the empty-table probe on pure non-Toy rows without a second prefilter table. Focused repeat-3 improves 256B/512B/4K/8K versus toyonly, but 16K regresses, so keep as candidate/control only. |
+| Candidate-watch/control | `smallrunroute-behavior-range64k-toyarmed-slotmax1k-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k` | SmallRunRoute range64k/toyarmed with `HZ6_SMALL_RUN_ROUTE_MAX_SLOT_BYTES=1024`. It intentionally registers only Toy 256B/512B/1K source-runs and leaves 2K/4K/8K/16K on the DirectLocalFreeReuse/exact-route fallback. Use as the narrow low-class follow-up after the 2026-06-07 selected-small refresh; not selected until repeat evidence proves it beats the simple direct lane without RSS or boundary regressions. |
 | Boundary / no-go control | `directlocaltrusted-largerlowrss-front8k-sourcerun-desc8k-route8k` | Trusted local-cache owner shortcut over DirectLocalFreeReuse. Safety-clean smoke, but loses to DirectLocalFreeReuse on 512B/2K/8K and only wins 16K. Do not select or legacy-wire. |
 | Boundary / no-go control | `directlocalpacked-largerlowrss-front8k-sourcerun-desc8k-route8k` | FrontCachePackedMeta-L1 over DirectLocalFreeReuse. Safety-clean smoke, but loses to DirectLocalFreeReuse on 512B/2K/8K/16K. Keep FrontCachePacked for Larson RSS rows, not selected-small speed. |
 | Candidate-watch/control | `directlocalexact-largerlowrss-front8k-sourcerun-desc8k-route8k` | DirectLocalFreeReuse plus exact-first free route lookup. Repeat-10 ties DirectLocalFreeReuse on average and slightly improves min delta, but loses 1K/2K/8K. Keep as route-pressure control; do not select yet. |
@@ -98,6 +99,12 @@ safety-clean, but the current signal is narrow and does not replace the
 selected dynmap row. Do not promote another SourceBlockRoute, Toy-active-map,
 or SmallRunRoute toggle into selected-small without a fresh repeat matrix and a
 clear multi-row win.
+
+The slotmax1k SmallRunRoute lane is the current narrow follow-up. It is not a
+free-time size selector: it only decides which source-runs register into the
+range index. HZ6 maps 2K and 4K Toy requests to the same 4K slot class, and
+MidPage 8K also uses class 4, so this lane deliberately tests only the clean
+256B/512B/1K signal instead of pretending a static class gate can isolate 2K.
 ```
 
 MidPage/Toy source placement note:

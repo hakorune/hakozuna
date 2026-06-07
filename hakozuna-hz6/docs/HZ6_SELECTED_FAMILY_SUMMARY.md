@@ -65,6 +65,11 @@ range-index probes before any eligible Toy range is registered. It improves
 256B/512B/4K/8K versus toyonly in the focused repeat-3, but the 16K row
 regresses, so it remains candidate/control evidence rather than selected
 wiring.
+The `smallrunroute-behavior-range64k-toyarmed-slotmax1k-*` follow-up narrows
+SmallRunRoute registration to Toy source-run slots up to 1K.  It is a focused
+low-class control, not a selected-small replacement: Toy 2K and 4K share the
+same 4K physical slot class, so static registration policy cannot rescue 2K
+without also taxing 4K.
 
 LargeDirect note:
 `largedirectretain16m-largerlowrss-front8k-sourcerun-desc8k-route8k` is the
