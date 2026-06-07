@@ -207,6 +207,35 @@ Latest HZ6 SmallRunRoute attack:
   ToyFront remains the route-safe reference front; do not replace it with a
   broad source-block route.
 
+  Selected-small / 256B..16K refresh after Elastic closeout:
+    The weak row moved to fixed-size 256B..16K slices. A run-1 refresh confirmed
+    that LargerLowRSS is still low-RSS but leaves large speed on the table, and
+    the simple fast paths are size-sensitive:
+
+      large_slice_2k:
+        directlocalfreereuse             +8.6%
+        directlocalsmall8k+sameownerlarge +11.6%
+
+      large_slice_8k:
+        directlocalfreereuse-small8k     +28.6%
+        directlocalsmall8k+sameownerlarge  +8.4%
+
+      large_slice_16k:
+        largerlowrss was the focused winner
+        directlocalsmall8k+sameownerlarge  -1.2%
+
+    Implemented a class-gated hybrid control:
+      directlocalsmall8k-sameownerlarge-largerlowrss-front8k-sourcerun-
+      desc8k-route8k
+
+    Read:
+      The hybrid is safety-clean and useful as a 2K mechanism witness, but it
+      does not solve 8K/16K and should not be selected.  Do not add another
+      static size hybrid yet.  If selected-small is reopened, use
+      Toy/small hot-path attribution on 2K/8K first, then decide whether the
+      fix belongs in direct-local reuse, SameOwnerFast, or MidPage class
+      transition logic.
+
   New direction:
     SmallRunRoute-L1
 

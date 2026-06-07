@@ -232,8 +232,8 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
 #endif
 #if HZ6_SAME_OWNER_FAST_L1
         } else if (local_owner &&
-                   hz6_allocator_same_owner_fast_front_eligible_inline(
-                       route.front_id)) {
+                   hz6_allocator_same_owner_fast_eligible_inline(
+                       route.front_id, route.class_id)) {
           ok = hz6_allocator_same_owner_fast_free_inline(allocator, ptr,
                                                          route);
           if (ok) {
@@ -247,7 +247,8 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
             ++allocator->stats.free_invalid_same_owner_fast;
           }
 #endif
-#elif HZ6_LOCAL_CACHE_DIRECT_FREE_L1
+#endif
+#if HZ6_LOCAL_CACHE_DIRECT_FREE_L1
         } else if (local_owner &&
                    route.class_id <= HZ6_LOCAL_CACHE_DIRECT_MAX_CLASS &&
                    (route.front_id == HZ6_FRONT_TOY ||

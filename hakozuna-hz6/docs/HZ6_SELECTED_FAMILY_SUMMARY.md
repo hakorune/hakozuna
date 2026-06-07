@@ -17,6 +17,7 @@ For cleanup rules and the next source modularization target, see
 | random_mixed medium | `strict + sameownerfast-descavail-noboost-route4k` | 42.408M | 4,964 | clean selected |
 | random_mixed mixed | `strict + sameownerfast-descavail-noboost-route4k` | 41.306M | 4,964 | clean selected |
 | mixed_ws fixed 256B..16K | `speed + sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k` | candidate-watch: earlier repeat-3 was broadly positive; 2026-06-06 follow-up showed the shape is workload-sensitive, with 8K/16K wins but 4K/balanced/larger_sizes wobble depending on run | RSS generally higher than DirectLocalFreeReuse | selected-small evidence, not broad/default |
+| selected-small hybrid boundary | `speed + directlocalsmall8k-sameownerlarge-largerlowrss-front8k-sourcerun-desc8k-route8k` | class-gated DirectLocalFreeReuse <=8K plus SameOwnerFast >=16K control; focused refresh only gives a 2K witness and loses 8K/16K shape | RSS flat | no-go/control, not selected |
 | mixed_ws larger_sizes speed | `speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k` | 26.404M | 71,040 | clean selected |
 | mixed_ws larger_sizes rss | `speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k` | 27.178M | 71,012 | clean selected |
 | Larson T16 full 10k throughput/RSS | `speed + ownerlocalityfast-rsscap-2-desc160k` | 44.754M | 808,488 | clean selected |

@@ -7,12 +7,25 @@ static inline int hz6_allocator_same_owner_fast_front_eligible_inline(
          front_id == HZ6_FRONT_LOCAL2P;
 }
 
+static inline int hz6_allocator_same_owner_fast_class_eligible_inline(
+    uint16_t class_id) {
+  return class_id >= HZ6_SAME_OWNER_FAST_MIN_CLASS &&
+         class_id <= HZ6_SAME_OWNER_FAST_MAX_CLASS;
+}
+
+static inline int hz6_allocator_same_owner_fast_eligible_inline(
+    uint16_t front_id,
+    uint16_t class_id) {
+  return hz6_allocator_same_owner_fast_front_eligible_inline(front_id) &&
+         hz6_allocator_same_owner_fast_class_eligible_inline(class_id);
+}
+
 static inline void* hz6_allocator_same_owner_fast_alloc_inline(
     Hz6Allocator* allocator,
     uint16_t front_id,
     uint16_t class_id) {
   if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT ||
-      !hz6_allocator_same_owner_fast_front_eligible_inline(front_id)) {
+      !hz6_allocator_same_owner_fast_eligible_inline(front_id, class_id)) {
     return NULL;
   }
 
@@ -47,7 +60,8 @@ static inline int hz6_allocator_same_owner_fast_free_inline(
     void* ptr,
     Hz6RouteResult route) {
   if (!allocator || !ptr ||
-      !hz6_allocator_same_owner_fast_front_eligible_inline(route.front_id)) {
+      !hz6_allocator_same_owner_fast_eligible_inline(route.front_id,
+                                                    route.class_id)) {
     return 0;
   }
 
