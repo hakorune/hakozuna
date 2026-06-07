@@ -104,9 +104,15 @@ Larson / Elastic:
       transfer_depot = 71811
       rehome_success = 30483
       rehome_budget_denied = 41328
-    Keep DFTLC+budget2048 as composition evidence, not promotion. The next
-    Elastic design should avoid another fixed budget sweep; use a conditional
-    transfer/rehome policy only if Elastic is reopened.
+  Keep DFTLC+budget2048 as composition evidence, not promotion. The next
+  Elastic design should avoid another fixed budget sweep; use a conditional
+  transfer/rehome policy only if Elastic is reopened.
+  Cleanup read after the local TP8 transfer-pressure sketch:
+    a fixed transfer backlog threshold did not produce a clean new signal and
+    the diagnostic counters did not justify retaining the lane.  Do not add
+    another static rehome threshold/budget lane.  If Elastic is reopened, first
+    design a policy that explains which lifecycle state is being protected
+    rather than gating descriptor rehome by a single backlog number.
   Keep Redis route-churn closed as evidence/control while this Elastic pass is
   active.
 
