@@ -432,6 +432,27 @@ Latest HZ6 SmallRunRoute attack:
       selected-small replacement. Keep range64k-toyonly as a Toy-low
       candidate/control; do not promote it into the full selected-small row.
 
+    Toy-prefilter control:
+      A temporary smallrunroute-behavior-range64k-toyprefilter lane added a
+      separate Toy 64KiB base prefilter so non-Toy rows could skip the
+      SmallRunRoute range-index lookup entirely. It was measured and removed
+      from the lane map.
+
+      repeat-3:
+        256B 68.005M vs range64k-toyonly 69.535M
+        512B 50.387M vs range64k-toyonly 55.046M
+        1K   49.597M vs range64k-toyonly 52.875M
+        2K   37.735M vs range64k-toyonly 39.481M
+        4K   44.203M vs range64k-toyonly 53.950M
+        8K   51.900M vs range64k-toyonly 60.851M
+        16K  50.222M vs range64k-toyonly 53.206M
+
+      Read:
+        The extra prefilter table/cache footprint costs more than it saves.
+        Do not keep a separate Toy prefilter table. If non-Toy SmallRunRoute
+        lookup is reopened, make the existing range index encode the cheap
+        Toy-only miss directly instead of adding a second side table.
+
   Selected-small refresh repeat-5:
     Compared:
       largerlowrss
