@@ -13,6 +13,7 @@ param(
     [switch]$LargeDirectRetainControl,
     [switch]$LarsonCrossOwnerSelected,
     [switch]$LarsonElasticLowRssSelected,
+    [switch]$LarsonElasticRehomeBudgetGuard,
     [switch]$LarsonCrossOwnerLowestRss,
     [switch]$LarsonMetadataSlim,
     [switch]$LarsonSourceRunMetaSlim,
@@ -134,6 +135,14 @@ $presetMap = [ordered]@{
         -Hz6Profiles @("speed") `
         -CapacityLanes @("ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-directfree-trustedlocalcache-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512") `
         -Note "Larson ElasticCapacity low-RSS sibling: DepotOwnerDirect plus DirectFree/TrustedLocalCache; repeat-3 improves every main/worker 1k/4k/10k guard row over DepotOwnerDirect with essentially unchanged RSS"
+
+    "larson-elastic-rehomebudget-guard" = New-Preset `
+        -Name "larson-elastic-rehomebudget-guard" `
+        -Families @("larson") `
+        -BenchmarkProfiles @("larson_t16_main_10k", "larson_t16_worker_10k", "larson_t16_main_4k", "larson_t16_worker_4k", "larson_t16_main_1k", "larson_t16_worker_1k") `
+        -Hz6Profiles @("speed") `
+        -CapacityLanes @("ownerlocalityfast-rsscap-2-elasticdescsource-route-depotownerdirect-directfree-trustedlocalcache-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run512", "ownerlocalityfast-rsscap-2-elasticdescsource-route-depotrunmeta-depotownerdirect-depotdescrehome-budget2048-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run4096", "ownerlocalityfast-rsscap-2-elasticdescsource-route-depotrunmeta-depotownerdirect-directfree-trustedlocalcache-depotdescrehome-budget2048-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run4096") `
+        -Note "Larson ElasticCapacity composition guard: selected DirectFree/TrustedLocalCache versus bounded DepotDescriptorRehomeBudget2048 and their combined source-depot candidate-control"
 
     "larson-cross-owner-lowest-rss" = New-Preset `
         -Name "larson-cross-owner-lowest-rss" `
@@ -264,6 +273,10 @@ if ($LarsonCrossOwnerSelected) {
 
 if ($LarsonElasticLowRssSelected) {
     [void]$selectedPresetNames.Add("larson-elastic-lowrss-selected")
+}
+
+if ($LarsonElasticRehomeBudgetGuard) {
+    [void]$selectedPresetNames.Add("larson-elastic-rehomebudget-guard")
 }
 
 if ($SelectedFamilyGuard) {

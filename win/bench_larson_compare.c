@@ -1544,6 +1544,15 @@ int main(int argc, char** argv) {
             hz6_overflow_frontcache_bytes +
             hz6_overflow_transfer_bytes;
     }
+    (void)hz6_descriptor_unused;
+    (void)hz6_route_used;
+    (void)hz6_route_unused;
+    (void)hz6_source_block_unused;
+    (void)hz6_frontcache_unused;
+    (void)hz6_transfer_unused;
+    (void)hz6_elastic_projected_static_plus_payload_bytes;
+    (void)hz6_elastic_projected_savings_bytes;
+    (void)hz6_overflow_total_bytes;
 #endif
 
     duration_sec = (double)(end_ns - start_ns) / 1e9;

@@ -188,6 +188,86 @@ Latest HZ6 SmallRunRoute attack:
       unless a new mechanism is proposed.
 ```
 
+Latest HZ6 Larson / ElasticCapacity attack:
+
+```text
+2026-06-07:
+  After closing selected-small toggles, the next ROI target moved back to the
+  HZ6-specific low-RSS/cross-owner path:
+    Larson / ElasticCapacity.
+
+  Implemented runner lane:
+    ownerlocalityfast-rsscap-2-elasticdescsource-route-depotrunmeta-
+    depotownerdirect-directfree-trustedlocalcache-depotdescrehome-budget2048-
+    desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-
+    routebytes16-storageowner16-ownersourcel2-frontcachepacked-
+    sourceblockpacked-source64-route16k-run4096
+
+  Meaning:
+    Compose the current selected Elastic low-RSS sibling
+      DepotOwnerDirect + DirectFreeTrustedLocalCache
+    with the bounded descriptor materialization control
+      DepotDescriptorRehomeBudget2048.
+
+  Added selected-family preset:
+    -LarsonElasticRehomeBudgetGuard
+
+  Build fix:
+    Diagnostic Larson builds had stale local projection variables that were
+    computed but no longer printed after summary helper cleanup. They are now
+    explicitly consumed in the diagnostic block; speed builds and allocator
+    hot paths are unchanged.
+
+  Guard run-1:
+    results/hz6-elastic-dftlc-rehomebudget-guard-r1/
+
+    main10k:
+      dftlc-selected  42.369M / 227,444 KB
+      budget2048      39.472M / 240,236 KB
+      dftlc+budget    39.525M / 234,696 KB
+
+    worker10k:
+      dftlc-selected  44.130M / 214,820 KB
+      budget2048      44.212M / 219,428 KB
+      dftlc+budget    45.404M / 219,432 KB
+
+    main4k:
+      dftlc-selected  56.667M / 139,164 KB
+      budget2048      51.258M / 146,472 KB
+      dftlc+budget    51.969M / 146,500 KB
+
+    worker4k:
+      dftlc-selected  49.857M / 132,992 KB
+      budget2048      49.508M / 134,908 KB
+      dftlc+budget    50.467M / 134,904 KB
+
+    main1k:
+      dftlc-selected  56.029M / 92,124 KB
+      budget2048      56.729M / 98,144 KB
+      dftlc+budget    57.129M / 98,144 KB
+
+    worker1k:
+      dftlc-selected  58.084M / 91,860 KB
+      budget2048      57.050M / 92,408 KB
+      dftlc+budget    58.390M / 92,420 KB
+
+  Safety:
+    route_invalid = 0
+    route_miss = 0
+    route_register_fail = 0
+    remote_free_transfer_fail = 0
+    lifecycle_foreign_free_invalid = 0
+    alloc_fail = 0
+
+  Read:
+    The combined DFTLC + RehomeBudget lane is safety-clean and improves some
+    worker/small rows, but it loses the critical main10k row and raises RSS
+    versus the selected DirectFreeTrustedLocalCache lane.
+    Keep it as composition guard/control evidence, not selected promotion.
+    The current Larson / Elastic selected lane remains:
+      depotownerdirect-directfree-trustedlocalcache source64-route16k-run512.
+```
+
 Latest HZ6 Windows large-slice lane wiring:
 
 ```text
