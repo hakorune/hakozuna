@@ -2,6 +2,7 @@ param(
     [string]$OutputDir,
     [int]$Runs = 10,
     [string[]]$Profiles,
+    [string[]]$Allocators,
     [switch]$ContinueOnFailure,
     [switch]$DiagnosticHz6Probes
 )
@@ -47,6 +48,24 @@ $Executables = @(
     @{ Name = "mimalloc"; Path = (Join-Path $SuiteDir "bench_random_mixed_mimalloc.exe") },
     @{ Name = "tcmalloc"; Path = (Join-Path $SuiteDir "bench_random_mixed_tcmalloc.exe") }
 )
+
+if ($Allocators -and $Allocators.Count -gt 0) {
+    $AllocatorNames = @()
+    foreach ($name in $Allocators) {
+        foreach ($part in @($name -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne "" })) {
+            $AllocatorNames += $part
+        }
+    }
+    $SelectedExecutables = @()
+    foreach ($name in $AllocatorNames) {
+        $match = $Executables | Where-Object { $_.Name -eq $name }
+        if (-not $match) {
+            throw "Unknown allocator: $name"
+        }
+        $SelectedExecutables += $match
+    }
+    $Executables = $SelectedExecutables
+}
 
 if ($DiagnosticHz6Probes -or ($Executables | Where-Object { -not (Test-Path $_.Path) })) {
     & $BuildScript -DiagnosticHz6Probes:$DiagnosticHz6Probes -OutDirName $SuiteDirName
@@ -109,8 +128,14 @@ $AllProfiles = @(
 )
 
 if ($Profiles -and $Profiles.Count -gt 0) {
-    $Selected = @()
+    $ProfileNames = @()
     foreach ($name in $Profiles) {
+        foreach ($part in @($name -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne "" })) {
+            $ProfileNames += $part
+        }
+    }
+    $Selected = @()
+    foreach ($name in $ProfileNames) {
         $match = $AllProfiles | Where-Object { $_.Name -eq $name }
         if (-not $match) {
             throw "Unknown profile: $name"
@@ -141,7 +166,8 @@ $Summary.Add('- allocator model: per-allocator link-mode executables, no `LD_PRE
 $Summary.Add('- throughput statistic: `median ops/s`')
 $Summary.Add('- memory note: Windows reports `PeakWorkingSetSize` as `[RSS] peak_kb`, which is not identical to Linux `ru_maxrss`')
 $Summary.Add(('- profiles: `small`, `medium`, `mixed` with `RUNS={0}`, `ITERS=20,000,000`, `WS=400`' -f $Runs))
-$Summary.Add('- `hz7-tinyroute` is a direct-API TinyRoute-0 row: small `<=4KiB` uses 64KiB spans, `>4KiB` uses direct OS regions, and it is not an interposer/general allocator row yet.')
+$Summary.Add(('- selected allocators: `{0}`' -f (($Executables | ForEach-Object { $_.Name }) -join ', ')))
+$Summary.Add('- `hz7-tinyroute` is a direct-API TinyRoute row: span classes currently cover `<=16KiB`, `>16KiB` uses direct OS regions, and it is not an interposer/general allocator row yet.')
 $Summary.Add('- HZ6 rows now include `broad`, `control`, `route4k`, and `appcap` capacity lanes; `route4k` isolates route-table capacity while keeping the other control capacities.')
 $Summary.Add("")
 
