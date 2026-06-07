@@ -54,6 +54,12 @@ refresh keeps it as mechanism evidence: it is mostly a 1K/4K clue and does not
 replace the selected dynmap row.  If HZ6 later targets 256B..2K speed directly,
 continue with SmallRunFront/TinyRunRoute attribution while keeping ToyFront as
 the route-safe reference implementation.
+The follow-up `smallrunroute-behavior-range64k-toyonly-*` row is a cleaner
+Toy-low control: 64 KiB range-index granularity matches Toy source blocks and
+Toy-only late registration avoids returning SmallRunRoute VALID for non-Toy
+runs. It improves 256B/512B/1K in the focused repeat-3, but still loses enough
+2K/4K/8K/16K shape to remain control evidence rather than a selected-small
+replacement.
 
 LargeDirect note:
 `largedirectretain16m-largerlowrss-front8k-sourcerun-desc8k-route8k` is the

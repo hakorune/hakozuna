@@ -316,8 +316,16 @@ size_t hz6_front_prefill_source_block_kind(Hz6Allocator* allocator,
   }
 #if HZ6_SOURCE_BLOCK_ROUTE_LATE_REGISTER_L1 && \
     HZ6_SOURCE_BLOCK_ROUTE_RANGE_INDEX_L1
-  if (class_id <= HZ6_SOURCE_BLOCK_ROUTE_MAX_CLASS &&
-      (HZ6_SOURCE_BLOCK_ROUTE_TOY_FRONT_L1 || front_id != HZ6_FRONT_TOY)) {
+  int should_register_range =
+      class_id <= HZ6_SOURCE_BLOCK_ROUTE_MAX_CLASS &&
+      (HZ6_SOURCE_BLOCK_ROUTE_TOY_FRONT_L1 || front_id != HZ6_FRONT_TOY);
+#if HZ6_SMALL_RUN_ROUTE_TOY_RANGE_ONLY_L1
+  should_register_range =
+      front_id == HZ6_FRONT_TOY &&
+      slot_bytes >= HZ6_SMALL_RUN_ROUTE_MIN_SLOT_BYTES &&
+      slot_bytes <= HZ6_SMALL_RUN_ROUTE_MAX_SLOT_BYTES;
+#endif
+  if (should_register_range) {
     hz6_allocator_source_block_range_index_register(allocator, block);
   }
 #endif

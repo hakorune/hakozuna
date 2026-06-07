@@ -395,6 +395,43 @@ Latest HZ6 SmallRunRoute attack:
     not add more static gates without a new diagnostic that explains the
     variance.
 
+  Range-index granularity follow-up:
+    Implemented:
+      smallrunroute-behavior-range64k-directlocalfreereuse-largerlowrss-
+      front8k-sourcerun-desc8k-route8k
+
+      smallrunroute-behavior-range64k-toyonly-directlocalfreereuse-
+      largerlowrss-front8k-sourcerun-desc8k-route8k
+
+    Rationale:
+      Toy source blocks are 64 KiB, while the existing SmallRunRoute range
+      index used 4 KiB pages. The range64k lane reduces source-run range index
+      entries from 16 per Toy block to 1 per Toy block.
+
+    Diagnostic:
+      2K range-index probe pressure:
+        normal SmallRunRoute: 1,174,976 total / max 129
+        range64k:              342,992 total / max 2
+
+    selected-small repeat-3:
+      range64k-toyonly:
+        256B 75.889M vs direct 67.725M / dynmap 73.440M
+        512B 54.730M vs direct 51.206M / dynmap 52.155M
+        1K   58.581M vs direct 55.596M / dynmap 56.788M
+        2K   34.197M vs direct 35.452M / dynmap 35.723M
+        4K   44.070M vs direct 50.641M / dynmap 52.470M
+        8K   57.720M vs direct 59.734M / dynmap 56.489M
+        16K  45.290M vs direct 49.643M / dynmap 40.639M
+
+    Read:
+      Range64k is the first SmallRunRoute follow-up with a clear mechanism:
+      it materially lowers range-index probe pressure and gives a clean
+      256B/512B/1K Toy-low win. Toy-only registration prevents non-Toy
+      source-runs from returning SmallRunRoute VALID, but non-Toy rows still
+      pay a one-probe miss before exact fallback, so this is not a broad
+      selected-small replacement. Keep range64k-toyonly as a Toy-low
+      candidate/control; do not promote it into the full selected-small row.
+
   Selected-small refresh repeat-5:
     Compared:
       largerlowrss

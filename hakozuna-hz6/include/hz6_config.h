@@ -486,6 +486,13 @@
 #define HZ6_SMALL_RUN_ROUTE_MIN_SLOT_BYTES ((size_t)0)
 #endif
 
+#ifndef HZ6_SMALL_RUN_ROUTE_TOY_RANGE_ONLY_L1
+/* Register range-index entries only for Toy source-runs when the range index
+ * exists solely to feed SmallRunRoute. This avoids taxing MidPage/Large rows
+ * with a SmallRunRoute hit-then-fallback. */
+#define HZ6_SMALL_RUN_ROUTE_TOY_RANGE_ONLY_L1 0
+#endif
+
 #ifndef HZ6_SOURCE_BLOCK_ROUTE_LATE_REGISTER_L1
 /* Register SourceBlockRoute range entries after source-run class selection.
  * This lets class-gated SourceBlockRoute lanes avoid range-index hits on
