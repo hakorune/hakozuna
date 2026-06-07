@@ -16,6 +16,39 @@ decisions should be mirrored into the HZ6 docs above.
 HZ6 is now in active Windows/Linux implementation and benchmarking. HZ5 Linux
 remains profile-stabilized; new HZ5 work should not blur the HZ6 contract.
 
+HZ7 TinyRoute current track:
+
+```text
+Status:
+  TinyRoute-0 direct API exists.
+  TinyRoute-1 fixed region route table exists.
+  TinyRoute-2 coarse global-lock multithread smoke exists.
+  Windows random_mixed includes hz7-tinyroute as a direct-API row.
+
+Implemented footing:
+  1. TinyRoute-1 route safety:
+       fixed region table
+       64KiB region-base hash for common lookup
+       h7_route(ptr) -> MISS / VALID / INVALID
+       h7_free() must not dereference arbitrary foreign pointers first
+
+  2. TinyRoute-2 multithread safety:
+       coarse global lock smoke first
+       no speed claim yet
+
+Next order:
+  3. TinyRoute-3 multithread performance:
+       per-thread small spans/front cache
+       owner/remote handoff only after same-thread TLS is clean
+
+  4. TinyRoute-4 medium retained pool:
+       attack >4KiB direct-OS weakness after route/thread safety
+
+Rule:
+  HZ7 should stay tiny and direct-API until route safety and coarse
+  multithread safety are proven. Do not import the HZ6 lane matrix.
+```
+
 Latest HZ6 Redis route-churn attack:
 
 ```text

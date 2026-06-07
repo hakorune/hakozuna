@@ -36,6 +36,26 @@ Non-goals:
   medium retained pool
 ```
 
+## Benchmark Integration
+
+TinyRoute-0 is intentionally integrated only where its direct API is honest.
+
+```text
+Windows random_mixed:
+  row name: hz7-tinyroute
+  adapter: h7_malloc / h7_free
+  scope: direct API, single-process, benchmark-owned pointers
+
+Not yet:
+  libc interpose
+  cross-thread ownership benchmark
+  Redis/memcached real app rows
+  mt-remote rows
+```
+
+The integration point is the benchmark adapter, not an HZ6 profile lane. HZ7
+should stay a single-shape allocator until TinyRoute-1 route safety is added.
+
 ## Two Layers
 
 TinyRoute-0 has only two allocation layers.
@@ -283,12 +303,17 @@ Segment table policy:
 
 ```text
 fixed capacity
-linear scan first
+64KiB region-base hash first
 append insert
 swap-remove active entries
 no heap allocation
 no arbitrary pointer dereference before segment lookup
 ```
+
+TinyRoute-1 may fall back to a bounded range scan only when the base-hash
+lookup misses. This preserves `INVALID` semantics for interior pointers inside
+large direct regions without making the common small-span path a full table
+scan.
 
 TinyRoute-1 may keep a bounded released-segment quarantine.
 
@@ -304,6 +329,30 @@ released segment after quarantine eviction:
 ```
 
 Do not claim permanent stale-pointer detection.
+
+## After Route Safety
+
+Once TinyRoute-1 smoke and random_mixed direct-API rows are stable, the next
+steps are intentionally narrow.
+
+```text
+TinyRoute-2:
+  add a coarse global lock build/smoke
+  prove multithread safety before proving multithread speed
+  keep direct API only
+
+TinyRoute-3:
+  replace the coarse lock bottleneck with thread-local small spans/front cache
+  add owner/remote handoff only after same-thread TLS is clean
+
+TinyRoute-4:
+  add a retained medium layer for >4KiB workloads
+  do not add it before route and multithread safety are stable
+```
+
+Acceptance for TinyRoute-2 is safety, not speed. If global-lock multithread
+smoke is clean, HZ7 can be included in multithread benchmark harnesses as a
+clearly labeled safety baseline while TinyRoute-3 works on throughput.
 
 ## Invalid Free Action
 
@@ -389,4 +438,3 @@ OS query is used on every free
 binary size approaches HZ6
 source grows beyond readable single-file too early
 ```
-

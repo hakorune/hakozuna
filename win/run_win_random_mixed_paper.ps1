@@ -28,6 +28,7 @@ $Executables = @(
     @{ Name = "hz3"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz3.exe") },
     @{ Name = "hz4"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz4.exe") },
     @{ Name = "hz5-policy"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz5_policy.exe") },
+    @{ Name = "hz7-tinyroute"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz7.exe") },
     @{ Name = "hz6-strict"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_strict.exe") },
     @{ Name = "hz6-speed"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_speed.exe") },
     @{ Name = "hz6-rss"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_rss.exe") },
@@ -140,6 +141,7 @@ $Summary.Add('- allocator model: per-allocator link-mode executables, no `LD_PRE
 $Summary.Add('- throughput statistic: `median ops/s`')
 $Summary.Add('- memory note: Windows reports `PeakWorkingSetSize` as `[RSS] peak_kb`, which is not identical to Linux `ru_maxrss`')
 $Summary.Add(('- profiles: `small`, `medium`, `mixed` with `RUNS={0}`, `ITERS=20,000,000`, `WS=400`' -f $Runs))
+$Summary.Add('- `hz7-tinyroute` is a direct-API TinyRoute-0 row: small `<=4KiB` uses 64KiB spans, `>4KiB` uses direct OS regions, and it is not an interposer/general allocator row yet.')
 $Summary.Add('- HZ6 rows now include `broad`, `control`, `route4k`, and `appcap` capacity lanes; `route4k` isolates route-table capacity while keeping the other control capacities.')
 $Summary.Add("")
 

@@ -13,6 +13,8 @@
 #include "hz6_allocator.h"
 #include "hz6_allocator_api_init.h"
 #include "hz6_profiles.h"
+#elif defined(HZ_BENCH_USE_HZ7)
+#include "hz7.h"
 #elif defined(HZ_BENCH_USE_HZ5_POLICY)
 #include "hz5_policy.h"
 #elif defined(HZ_BENCH_USE_MIMALLOC)
@@ -62,6 +64,8 @@ static inline void* hz_bench_alloc(size_t size) {
 #elif defined(HZ_BENCH_USE_HZ6)
     hz_bench_allocator_thread_setup();
     return hz6_malloc(&hz_bench_tls_hz6_allocator, size);
+#elif defined(HZ_BENCH_USE_HZ7)
+    return h7_malloc(size);
 #elif defined(HZ_BENCH_USE_HZ5_POLICY)
     static const Hz5PolicyHooks hooks = {0};
     return hz5_policy_alloc_aligned(size, (size_t)HZ_BENCH_HZ5_ALIGN, &hooks);
@@ -82,6 +86,8 @@ static inline void hz_bench_free(void* ptr) {
 #elif defined(HZ_BENCH_USE_HZ6)
     hz_bench_allocator_thread_setup();
     hz6_free(&hz_bench_tls_hz6_allocator, ptr);
+#elif defined(HZ_BENCH_USE_HZ7)
+    h7_free(ptr);
 #elif defined(HZ_BENCH_USE_HZ5_POLICY)
     static const Hz5PolicyHooks hooks = {0};
     (void)hz5_policy_free(ptr, &hooks);
@@ -514,6 +520,21 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 s.large_span_central_pop,
                 s.large_span_source_alloc);
 #endif
+    }
+#elif defined(HZ_BENCH_USE_HZ7)
+    {
+        H7Stats s = h7_stats();
+        fprintf(out,
+                "[HZ7_STATS] label=%s active_bytes=%zu reserved_bytes=%zu "
+                "span_count=%zu direct_count=%zu route_count=%zu "
+                "route_register_fail=%zu\n",
+                label ? label : "unknown",
+                s.active_bytes,
+                s.reserved_bytes,
+                s.span_count,
+                s.direct_count,
+                s.route_count,
+                s.route_register_fail);
     }
 #else
     (void)out;

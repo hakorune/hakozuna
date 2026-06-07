@@ -71,6 +71,29 @@ Mechanism:
 TinyRoute-1 is where HZ6's route contract returns in miniature. TinyRoute-0
 does not claim safe foreign-pointer handling.
 
+## Completion Roadmap
+
+```text
+TinyRoute-1:
+  fixed region route table
+  h7_route(ptr) -> MISS / VALID / INVALID
+  h7_free() does not dereference arbitrary foreign pointers first
+
+TinyRoute-2:
+  coarse global lock multithread safety smoke
+  no speed claim yet
+
+TinyRoute-3:
+  per-thread small span/front cache
+  remote free policy only after same-thread path is stable
+
+TinyRoute-4:
+  medium retained pool for 8K..64K style workloads
+```
+
+The near-term goal is not to clone HZ6. It is to keep HZ7 tiny while adding
+route safety and then multithread safety in the smallest honest steps.
+
 ## Reading Order
 
 ```text
@@ -86,11 +109,35 @@ Windows:
 powershell -ExecutionPolicy Bypass -File .\hakozuna-hz7\win\build_win_hz7_smokes.ps1
 ```
 
+The Windows smoke script builds and runs both:
+
+```text
+hz7_smoke.exe:
+  direct API + route safety smoke
+
+hz7_mt_smoke.exe:
+  coarse-lock multithread safety smoke
+```
+
 Linux:
 
 ```bash
 ./hakozuna-hz7/linux/build_hz7_smoke.sh
 ```
+
+## Windows Random Mixed Bench
+
+TinyRoute-0 is wired into the Windows `random_mixed` runner as a direct-API
+row named `hz7-tinyroute`.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\win\build_win_random_mixed_suite.ps1
+powershell -ExecutionPolicy Bypass -File .\win\run_win_random_mixed_paper.ps1 -Runs 1 -Profiles small,medium,mixed
+```
+
+This row uses `h7_malloc()` / `h7_free()` through the benchmark adapter. It is
+not a libc interposer row and should not be used as a general allocator claim
+until a later HZ7 route/interpose stage exists.
 
 ## Non-Goals
 

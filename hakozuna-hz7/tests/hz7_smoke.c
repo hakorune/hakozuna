@@ -24,6 +24,15 @@ int main(void) {
       !expect(c != 0, "malloc 4097") || !expect(z != 0, "calloc")) {
     return 1;
   }
+  if (!expect(h7_route(a) == H7_ROUTE_VALID, "route valid small") ||
+      !expect(h7_route((unsigned char*)a + 1) == H7_ROUTE_INVALID,
+              "route invalid small interior") ||
+      !expect(h7_route(c) == H7_ROUTE_VALID, "route valid direct") ||
+      !expect(h7_route((unsigned char*)c + 1) == H7_ROUTE_INVALID,
+              "route invalid direct interior") ||
+      !expect(h7_route(&stats) == H7_ROUTE_MISS, "route miss foreign")) {
+    return 1;
+  }
   for (i = 0; i < 32u * 8u; ++i) {
     if (!expect(z[i] == 0, "calloc zero fill")) {
       return 1;
@@ -44,8 +53,14 @@ int main(void) {
   }
 
   h7_free(a);
+  if (!expect(h7_route(a) == H7_ROUTE_INVALID, "route invalid freed small")) {
+    return 1;
+  }
   h7_free(b);
   h7_free(c);
+  if (!expect(h7_route(c) == H7_ROUTE_MISS, "route miss freed direct")) {
+    return 1;
+  }
   h7_free(z);
   h7_free(0);
 
@@ -68,4 +83,3 @@ int main(void) {
   printf("hz7-smoke ok\n");
   return 0;
 }
-

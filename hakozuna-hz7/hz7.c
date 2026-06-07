@@ -7,6 +7,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #else
+#include <sched.h>
 #include <sys/mman.h>
 #include <unistd.h>
 #endif
@@ -18,9 +19,14 @@
 #define H7_FREE_NONE UINT32_MAX
 #define H7_MAGIC 0x48375A37u
 #define H7_COOKIE 0x7A17C0DEu
+#ifndef H7_ROUTE_CAPACITY
+#define H7_ROUTE_CAPACITY 4096u
+#endif
 
 _Static_assert((H7_SPAN_BYTES & (H7_SPAN_BYTES - 1u)) == 0,
                "H7_SPAN_BYTES must be a power of two");
+_Static_assert((H7_ROUTE_CAPACITY & (H7_ROUTE_CAPACITY - 1u)) == 0,
+               "H7_ROUTE_CAPACITY must be a power of two");
 
 typedef enum H7RegionKind {
   H7_REGION_SMALL_SPAN = 1,
@@ -61,6 +67,18 @@ typedef struct H7Class {
   uint32_t empty_count;
 } H7Class;
 
+typedef struct H7RouteEntry {
+  uintptr_t base;
+  size_t size;
+  H7RegionKind kind;
+  uint16_t active;
+} H7RouteEntry;
+
+typedef struct H7RouteResult {
+  H7RouteKind kind;
+  H7RegionHeader* region;
+} H7RouteResult;
+
 static H7Class g_h7_classes[] = {
     {16u, 0, 0, 0},   {32u, 0, 0, 0},   {64u, 0, 0, 0},
     {128u, 0, 0, 0},  {256u, 0, 0, 0},  {512u, 0, 0, 0},
@@ -68,6 +86,33 @@ static H7Class g_h7_classes[] = {
 };
 
 static H7Stats g_h7_stats;
+static H7RouteEntry g_h7_routes[H7_ROUTE_CAPACITY];
+
+#ifdef _WIN32
+static volatile LONG g_h7_lock;
+#else
+static volatile int g_h7_lock;
+#endif
+
+static void h7_lock(void) {
+#ifdef _WIN32
+  while (InterlockedCompareExchange(&g_h7_lock, 1, 0) != 0) {
+    Sleep(0);
+  }
+#else
+  while (__sync_lock_test_and_set(&g_h7_lock, 1) != 0) {
+    sched_yield();
+  }
+#endif
+}
+
+static void h7_unlock(void) {
+#ifdef _WIN32
+  InterlockedExchange(&g_h7_lock, 0);
+#else
+  __sync_lock_release(&g_h7_lock);
+#endif
+}
 
 static size_t h7_align_up(size_t x, size_t a) {
   return (x + a - 1u) & ~(a - 1u);
@@ -77,9 +122,100 @@ static size_t h7_region_align_up(size_t x) {
   return h7_align_up(x, H7_SPAN_BYTES);
 }
 
-static H7RegionHeader* h7_region_from_ptr(const void* ptr) {
-  return (H7RegionHeader*)((uintptr_t)ptr &
-                           ~((uintptr_t)H7_SPAN_BYTES - 1u));
+static uintptr_t h7_region_base_from_ptr(const void* ptr) {
+  return (uintptr_t)ptr & ~((uintptr_t)H7_SPAN_BYTES - 1u);
+}
+
+static size_t h7_route_hash(uintptr_t base) {
+  return (size_t)((base >> 16u) & (H7_ROUTE_CAPACITY - 1u));
+}
+
+static int h7_route_register(void* base, size_t size, H7RegionKind kind) {
+  size_t i;
+  uintptr_t key = (uintptr_t)base;
+  size_t start = h7_route_hash(key);
+  for (i = 0; i < H7_ROUTE_CAPACITY; ++i) {
+    size_t slot = (start + i) & (H7_ROUTE_CAPACITY - 1u);
+    if (!g_h7_routes[slot].active) {
+      g_h7_routes[slot].base = key;
+      g_h7_routes[slot].size = size;
+      g_h7_routes[slot].kind = kind;
+      g_h7_routes[slot].active = 1u;
+      ++g_h7_stats.route_count;
+      return 1;
+    }
+  }
+  ++g_h7_stats.route_register_fail;
+  return 0;
+}
+
+static void h7_route_unregister(void* base) {
+  size_t i;
+  uintptr_t key = (uintptr_t)base;
+  size_t start = h7_route_hash(key);
+  for (i = 0; i < H7_ROUTE_CAPACITY; ++i) {
+    size_t slot = (start + i) & (H7_ROUTE_CAPACITY - 1u);
+    if (g_h7_routes[slot].active && g_h7_routes[slot].base == key) {
+      g_h7_routes[slot].active = 0u;
+      g_h7_routes[slot].base = 0u;
+      g_h7_routes[slot].size = 0u;
+      g_h7_routes[slot].kind = 0;
+      --g_h7_stats.route_count;
+      return;
+    }
+  }
+}
+
+static H7RouteResult h7_route_result_for_entry(const H7RouteEntry* entry) {
+  H7RouteResult result;
+  H7RegionHeader* region = (H7RegionHeader*)entry->base;
+  result.kind = H7_ROUTE_VALID;
+  result.region = region;
+  if (region->magic != H7_MAGIC || region->cookie != H7_COOKIE ||
+      region->kind != entry->kind) {
+    result.kind = H7_ROUTE_INVALID;
+  }
+  return result;
+}
+
+static H7RouteResult h7_route_lookup_raw(const void* ptr) {
+  H7RouteResult result;
+  uintptr_t region_base;
+  uintptr_t addr = (uintptr_t)ptr;
+  size_t i;
+  size_t start;
+  result.kind = H7_ROUTE_MISS;
+  result.region = 0;
+  if (!ptr) {
+    return result;
+  }
+  region_base = h7_region_base_from_ptr(ptr);
+  start = h7_route_hash(region_base);
+  for (i = 0; i < H7_ROUTE_CAPACITY; ++i) {
+    size_t slot = (start + i) & (H7_ROUTE_CAPACITY - 1u);
+    if (!g_h7_routes[slot].active) {
+      continue;
+    }
+    if (g_h7_routes[slot].base == region_base) {
+      return h7_route_result_for_entry(&g_h7_routes[slot]);
+    }
+  }
+
+  /* Direct regions can span multiple 64KiB chunks; keep INVALID semantics for
+     interior pointers by falling back to a bounded range scan on miss. */
+  for (i = 0; i < H7_ROUTE_CAPACITY; ++i) {
+    uintptr_t base;
+    uintptr_t end;
+    if (!g_h7_routes[i].active) {
+      continue;
+    }
+    base = g_h7_routes[i].base;
+    end = base + g_h7_routes[i].size;
+    if (addr >= base && addr < end) {
+      return h7_route_result_for_entry(&g_h7_routes[i]);
+    }
+  }
+  return result;
 }
 
 static uint64_t* h7_span_bitmap(H7Span* span) {
@@ -221,6 +357,10 @@ static H7Span* h7_span_create(uint16_t class_id) {
   span->free_head = 0;
   span->bitmap_words = bitmap_words;
   span->slot_offset = slot_offset;
+  if (!h7_route_register(span, H7_SPAN_BYTES, H7_REGION_SMALL_SPAN)) {
+    h7_os_free(span, H7_SPAN_BYTES);
+    return 0;
+  }
   for (i = 0; i < slot_count; ++i) {
     uint32_t* next =
         (uint32_t*)(h7_span_slots(span) + (size_t)i * span->slot_size);
@@ -235,6 +375,7 @@ static void h7_span_destroy(H7Span* span) {
   if (!span) {
     return;
   }
+  h7_route_unregister(span);
   g_h7_stats.reserved_bytes -= span->region.region_size;
   --g_h7_stats.span_count;
   h7_os_free(span, span->region.region_size);
@@ -338,6 +479,10 @@ static void* h7_big_alloc(size_t size) {
   direct->region.kind = H7_REGION_DIRECT;
   direct->region.region_size = region_size;
   direct->requested_size = size;
+  if (!h7_route_register(direct, region_size, H7_REGION_DIRECT)) {
+    h7_os_free(direct, region_size);
+    return 0;
+  }
   g_h7_stats.active_bytes += size;
   g_h7_stats.reserved_bytes += region_size;
   ++g_h7_stats.direct_count;
@@ -351,13 +496,14 @@ static void h7_big_free(H7Direct* direct, void* ptr) {
       ptr != (unsigned char*)direct + user_offset) {
     return;
   }
+  h7_route_unregister(direct);
   g_h7_stats.active_bytes -= direct->requested_size;
   g_h7_stats.reserved_bytes -= direct->region.region_size;
   --g_h7_stats.direct_count;
   h7_os_free(direct, direct->region.region_size);
 }
 
-void* h7_malloc(size_t size) {
+static void* h7_malloc_unlocked(size_t size) {
   if (size == 0) {
     return 0;
   }
@@ -365,6 +511,14 @@ void* h7_malloc(size_t size) {
     return h7_small_alloc(size);
   }
   return h7_big_alloc(size);
+}
+
+void* h7_malloc(size_t size) {
+  void* ptr;
+  h7_lock();
+  ptr = h7_malloc_unlocked(size);
+  h7_unlock();
+  return ptr;
 }
 
 void* h7_calloc(size_t count, size_t size) {
@@ -382,22 +536,65 @@ void* h7_calloc(size_t count, size_t size) {
 }
 
 void h7_free(void* ptr) {
-  H7RegionHeader* region;
+  H7RouteResult route;
   if (!ptr) {
     return;
   }
-  region = h7_region_from_ptr(ptr);
-  if (region->magic != H7_MAGIC || region->cookie != H7_COOKIE) {
+  h7_lock();
+  route = h7_route_lookup_raw(ptr);
+  if (route.kind != H7_ROUTE_VALID || !route.region) {
+    h7_unlock();
     return;
   }
-  if (region->kind == H7_REGION_SMALL_SPAN) {
-    h7_small_free((H7Span*)region, ptr);
-  } else if (region->kind == H7_REGION_DIRECT) {
-    h7_big_free((H7Direct*)region, ptr);
+  if (route.region->kind == H7_REGION_SMALL_SPAN) {
+    h7_small_free((H7Span*)route.region, ptr);
+  } else if (route.region->kind == H7_REGION_DIRECT) {
+    h7_big_free((H7Direct*)route.region, ptr);
   }
+  h7_unlock();
+}
+
+static H7RouteKind h7_route_unlocked(void* ptr) {
+  H7RouteResult route = h7_route_lookup_raw(ptr);
+  if (route.kind != H7_ROUTE_VALID || !route.region) {
+    return route.kind;
+  }
+  if (route.region->kind == H7_REGION_SMALL_SPAN) {
+    H7Span* span = (H7Span*)route.region;
+    uintptr_t slots = (uintptr_t)h7_span_slots(span);
+    uintptr_t addr = (uintptr_t)ptr;
+    uint32_t index;
+    if (addr < slots || addr >= (uintptr_t)span + H7_SPAN_BYTES ||
+        ((addr - slots) % span->slot_size) != 0) {
+      return H7_ROUTE_INVALID;
+    }
+    index = (uint32_t)((addr - slots) / span->slot_size);
+    if (index >= span->slot_count || !h7_bitmap_test(span, index)) {
+      return H7_ROUTE_INVALID;
+    }
+    return H7_ROUTE_VALID;
+  }
+  if (route.region->kind == H7_REGION_DIRECT) {
+    H7Direct* direct = (H7Direct*)route.region;
+    size_t user_offset = h7_align_up(sizeof(H7Direct), 16u);
+    return ptr == (unsigned char*)direct + user_offset ? H7_ROUTE_VALID
+                                                       : H7_ROUTE_INVALID;
+  }
+  return H7_ROUTE_INVALID;
+}
+
+H7RouteKind h7_route(void* ptr) {
+  H7RouteKind kind;
+  h7_lock();
+  kind = h7_route_unlocked(ptr);
+  h7_unlock();
+  return kind;
 }
 
 H7Stats h7_stats(void) {
-  return g_h7_stats;
+  H7Stats stats;
+  h7_lock();
+  stats = g_h7_stats;
+  h7_unlock();
+  return stats;
 }
-

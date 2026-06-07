@@ -52,8 +52,10 @@ $VcpkgBin = Join-Path $VcpkgRoot "installed\x64-windows\bin"
 $BenchSrc = Join-Path $RepoRoot "win\bench_random_mixed_compare.c"
 $Hz3Dir = Join-Path $RepoRoot "hakozuna"
 $Hz4Dir = Join-Path $RepoRoot "hakozuna-mt"
+$Hz7Dir = Join-Path $RepoRoot "hakozuna-hz7"
 $Hz3Lib = Join-Path $Hz3Dir "out_win\hz3_win.lib"
 $Hz4Lib = Join-Path $Hz4Dir "out_win_bench\hz4_win.lib"
+$Hz7Source = Join-Path $Hz7Dir "hz7.c"
 
 $BaseFlags = @(
     "/nologo",
@@ -67,7 +69,8 @@ $BaseFlags = @(
     "/I$Hz3Dir\win\include",
     "/I$Hz4Dir\core",
     "/I$Hz4Dir\include",
-    "/I$Hz4Dir\win"
+    "/I$Hz4Dir\win",
+    "/I$Hz7Dir"
 )
 
 Write-Host "Building: bench_random_mixed (CRT baseline)"
@@ -127,6 +130,14 @@ Invoke-AppLikeHz5BenchBuild `
     -RepoRoot $RepoRoot `
     -BenchSrc $BenchSrc `
     -OutputPath (Join-Path $OutDir "bench_random_mixed_hz5_policy.exe")
+
+if (Test-Path $Hz7Source) {
+    Write-Host "Building: bench_random_mixed (hz7-tinyroute)"
+    $BenchHz7Out = Join-Path $OutDir "bench_random_mixed_hz7.exe"
+    Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ7=1", $Hz7Source, $BenchSrc, "psapi.lib", "/link", "/out:$BenchHz7Out"))
+} else {
+    Write-Warning "HZ7 source not found; skipping HZ7 random_mixed bench."
+}
 
 Invoke-AppLikeHz6BenchBuilds `
     -Compiler $Cc `
