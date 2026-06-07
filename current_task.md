@@ -88,9 +88,9 @@ Next order:
 
      Observed:
        Windows random_mixed HZ7-only repeat-5:
-         small  79.591M ops/s, 4,552 KB peak
-         medium  1.437M ops/s, 6,640 KB peak
-         mixed   1.646M ops/s, 7,024 KB peak
+         small  79.414M ops/s, 4,556 KB peak
+         medium  2.507M ops/s, 6,636 KB peak
+         mixed   2.833M ops/s, 7,020 KB peak
        smoke safety clean:
          retained direct exact pointer -> INVALID while retained
          same-bucket reuse -> VALID
@@ -98,8 +98,28 @@ Next order:
 
      Decision:
        keep DirectRetain32/64 bucket cap=1 as the current HZ7 default. It is
-       small, bounded, route-safe, and improves the HZ7 medium/mixed position
-       without changing TinyRoute into a profile-family allocator.
+       small, bounded, route-safe, and materially improves the HZ7
+       medium/mixed position without changing TinyRoute into a profile-family
+       allocator.
+
+     Cross-allocator overview:
+       docs/benchmarks/windows/HZ7_CROSS_ALLOCATOR_REMOTE_OVERVIEW_20260608.md
+
+       Local random_mixed rebuilt run-1:
+         HZ7 small 79.868M / 4,556 KB
+         HZ7 medium 2.527M / 6,644 KB
+         HZ7 mixed 2.868M / 7,028 KB
+
+       Legacy mt_remote:
+         HZ7 fails as expected for v1 scope:
+           route_count=4096
+           route_register_fail > 0
+           reserved_bytes ~= 256 MiB
+
+       Read:
+         HZ7 is now a strong tiny low-RSS small row, not a remote allocator.
+         Remote-capable work belongs to HZ6/HZ8 unless HZ7's tiny v1 scope is
+         intentionally changed.
 
 Rule:
   HZ7 should stay tiny and direct-API until route safety and coarse

@@ -23,6 +23,7 @@ $LegacyExecutables = @(
     @{ Name = "hz3"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz3.exe") },
     @{ Name = "hz4"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz4.exe") },
     @{ Name = "hz5-policy"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz5_policy.exe") },
+    @{ Name = "hz7-tinyroute"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz7.exe") },
     @{ Name = "mimalloc"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_mimalloc.exe") },
     @{ Name = "tcmalloc"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_tcmalloc.exe") }
 )
@@ -195,7 +196,8 @@ $Summary.Add(('- runs: `{0}`' -f $Runs))
 $Summary.Add(('- timeout_seconds: `{0}`' -f $TimeoutSeconds))
 $Summary.Add('- statistic: `median ops/s`')
 $Summary.Add('- hz3 profile: `scale + S97-2 direct-map bucketize + skip_tail_null`')
-$Summary.Add('- note: paper originally reports `hz3 / mimalloc / tcmalloc`; this runner also records `crt` and `hz4`')
+$Summary.Add('- note: paper originally reports `hz3 / mimalloc / tcmalloc`; this runner also records `crt`, `hz4`, `hz5-policy`, and `hz7-tinyroute`')
+$Summary.Add('- hz7 note: `hz7-tinyroute` is a direct-API coarse-lock safety baseline here, not a lock-free remote allocator.')
 if (-not $IncludeHz6Legacy) {
     $Summary.Add('- hz6 note: HZ6 rows are skipped by default because this legacy benchmark frees cross-thread pointers through per-thread allocator instances; use `-IncludeHz6Legacy` only for debugging the mismatch, and use the HZ6 standalone remote/reuse runner for HZ6 contract numbers.')
 }

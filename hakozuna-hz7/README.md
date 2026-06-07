@@ -62,9 +62,9 @@ again only when reused by the same bucket.
 Windows random_mixed repeat-5 after DirectRetain32/64:
 
 ```text
-small   79.591M ops/s, 4,552 KB peak
-medium   1.437M ops/s, 6,640 KB peak
-mixed    1.646M ops/s, 7,024 KB peak
+small   79.414M ops/s, 4,556 KB peak
+medium   2.507M ops/s, 6,636 KB peak
+mixed    2.833M ops/s, 7,020 KB peak
 ```
 
 ## TinyRoute-1
