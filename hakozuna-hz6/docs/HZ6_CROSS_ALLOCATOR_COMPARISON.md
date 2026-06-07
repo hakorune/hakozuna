@@ -113,8 +113,18 @@ those cells as compatibility/safety warnings, not speed data.
 ### HZ6 selected-small repeat-10 update
 
 The route4k rows above are weakness-map controls. The current HZ6 selected-small
-candidate uses `directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k`
-and is much closer to the practical rows while preserving the low-RSS shape.
+story has two useful rows:
+
+```text
+sourceblockroute-behavior-dynmap-directlocalfreereuse-largerlowrss-front8k-
+sourcerun-desc8k-route8k
+  selected-small candidate-watch / evidence row
+
+directlocalfreereuse-largerlowrss-front8k-sourcerun-desc8k-route8k
+  simple stable fallback/control
+```
+
+Both are much closer to the practical rows while preserving the low-RSS shape.
 
 Source:
 - `results/hz6-largerlowrss-small-candidate-repeat10/20260606_142228_hz6_capacity_matrix_windows.md`
@@ -141,12 +151,16 @@ Runner shortcut:
 Read:
 
 ```text
-DirectLocalFreeReuse is the best simple selected-small candidate:
+DirectLocalFreeReuse is the best simple selected-small fallback/control:
   repeat-10 average improvement vs LargerLowRSS is about +20%
   every row is positive
   RSS shape stays essentially unchanged
 
-sameownerfast and small8k remain useful controls, but not a clean replacement.
+The later SourceBlockRoute dynmap / SmallRunRoute guards show why this row is
+not the whole selected-small story: winners split by size, with dynmap winning
+some Toy/small rows and directlocalfreereuse remaining strongest on 512B/16K.
+sameownerfast, dynmap, and SmallRunRoute remain useful controls, but no single
+row is a broad tiny-object speed leader.
 HZ6 is still not the small-object speed leader versus mimalloc/HZ3/HZ4, but the
 current selected-small lane is no longer represented by the old route4k weakness
 rows.
@@ -184,6 +198,8 @@ From 4K upward, HZ6 selected-small becomes credible:
 
 Decision:
   keep selected-small as candidate-watch and 4K..16K strength evidence.
+  Use dynmap as the current candidate-watch/evidence row and
+  directlocalfreereuse as the stable fallback/control.
   Do not broad-promote it as a generic small-object speed lane.
 ```
 
