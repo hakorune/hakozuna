@@ -125,6 +125,7 @@ HZ8/HZ6-family design rather than TinyRoute.
 ## Reading Order
 
 ```text
+docs/HZ7_TINYROUTE_V2.md
 docs/HZ7_TINYROUTE_PLAN_V2.md
 docs/HZ7_TINYROUTE_PLAN.md
 ```

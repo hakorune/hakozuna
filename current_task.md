@@ -25,6 +25,11 @@ Status:
   TinyRoute-2 coarse global-lock multithread smoke exists.
   Windows random_mixed includes hz7-tinyroute as a direct-API row.
 
+HZ7 Tiny v2 note:
+  docs/HZ7_TINYROUTE_V2.md
+  Keep code in the same hakozuna-hz7 folder for now.
+  Split the code tree only if v2 grows into a different runtime shape.
+
 Implemented footing:
   1. TinyRoute-1 route safety:
        fixed region table
