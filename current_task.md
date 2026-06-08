@@ -29,8 +29,13 @@ HZ7 Tiny v2 note:
   hakozuna-hz7-v2/docs/HZ7_TINYROUTE_V2.md
   Keep code in the separate hakozuna-hz7-v2 folder.
   Keep v1 frozen as the cute tiny baseline.
-  First v2 step: keep span init lightweight; treat medium reuse knobs as
-  benchmark-gated and do not over-retain empty spans.
+  Archived no-go:
+    medium empty-span cap experiments did not earn a stable win.
+    route slot index cleanup alone was hygiene-only and did not earn a stable
+    random_mixed win.
+  Next v2 step:
+    route hot cache so exact-base lookup gets a tiny fast path on top of the
+    slot-hint cleanup.
 
 Implemented footing:
   1. TinyRoute-1 route safety:

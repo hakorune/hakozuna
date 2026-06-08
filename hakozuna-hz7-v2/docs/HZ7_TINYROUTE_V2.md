@@ -137,9 +137,42 @@ HZ7 v2:
 ```text
 First pass:
   keep span initialization lightweight
-  do not over-retain empty spans for medium classes
+  keep the direct route hot cache exact-base and tiny
 
 Read:
-  medium/local reuse knobs need to earn their keep in benchmark
-  if a knob slows medium/mixed, keep the v1 baseline instead
+  route cleanup needs to earn its keep in benchmark
+  if a cleanup knob does not improve medium/mixed, keep v1 frozen and
+  archive the knob as hygiene-only
+```
+
+## Archived No-Gos
+
+```text
+medium empty-span cap experiments:
+  cap=2 / cap=4 / cap=8 style tweaks did not improve the local-complete shape
+  they pushed v2 away from the tiny baseline without earning a stable win
+
+Read:
+  medium/local reuse should not be forced by a cache knob
+
+route_slot_index cleanup alone:
+  makes unregister safer and cleaner, but did not earn a stable random_mixed
+  win on its own
+
+Read:
+  route_slot_index cleanup is hygiene-only unless a cache or other route hot
+  path change also comes with it
+```
+
+## Next Step
+
+```text
+route hot cache:
+  exact-base one-slot route cache on top of the slot-hint cleanup
+  keep the fallback scan as a safety net
+
+Observed read:
+  random_mixed median moved from the slot-hint cleanup baseline to
+  small 43.929M ops/s, medium 7.420M ops/s, mixed 7.581M ops/s with peak RSS
+  still around 5.5 MiB / 10.6 MiB / 11.7 MiB
 ```

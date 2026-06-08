@@ -22,6 +22,7 @@
 #define H7_DIRECT_RETAIN_CAP 16u
 #endif
 #define H7_FREE_NONE UINT32_MAX
+#define H7_ROUTE_SLOT_NONE UINT32_MAX
 #define H7_MAGIC 0x48375A37u
 #define H7_COOKIE 0x7A17C0DEu
 #define H7_REGION_ACTIVE 0x1u
@@ -29,6 +30,7 @@
 #ifndef H7_ROUTE_CAPACITY
 #define H7_ROUTE_CAPACITY 4096u
 #endif
+#define H7_ROUTE_CACHE_CAP 4u
 
 _Static_assert((H7_SPAN_BYTES & (H7_SPAN_BYTES - 1u)) == 0,
                "H7_SPAN_BYTES must be a power of two");
@@ -87,6 +89,11 @@ typedef struct H7RouteEntry {
   uint16_t active;
 } H7RouteEntry;
 
+typedef struct H7RouteCacheEntry {
+  uintptr_t base;
+  uint32_t slot;
+} H7RouteCacheEntry;
+
 typedef struct H7RouteResult {
   H7RouteKind kind;
   H7RegionHeader* region;
@@ -101,6 +108,7 @@ static H7Class g_h7_classes[] = {
 
 static H7Stats g_h7_stats;
 static H7RouteEntry g_h7_routes[H7_ROUTE_CAPACITY];
+static H7RouteCacheEntry g_h7_route_cache[H7_ROUTE_CACHE_CAP];
 static H7DirectRetainBucket g_h7_direct_retain_32k;
 static H7DirectRetainBucket g_h7_direct_retain_64k;
 
@@ -146,6 +154,10 @@ static size_t h7_route_hash(uintptr_t base) {
   return (size_t)((base >> 16u) & (H7_ROUTE_CAPACITY - 1u));
 }
 
+static size_t h7_route_cache_index(uintptr_t base) {
+  return (size_t)((base >> 16u) & (H7_ROUTE_CACHE_CAP - 1u));
+}
+
 static H7DirectRetainBucket* h7_direct_retain_bucket_for_size(size_t size) {
   if (size > H7_SPAN_CLASS_MAX && size <= H7_DIRECT_RETAIN_32K) {
     return &g_h7_direct_retain_32k;
@@ -159,6 +171,7 @@ static H7DirectRetainBucket* h7_direct_retain_bucket_for_size(size_t size) {
 static int h7_route_register(void* base, size_t size, H7RegionKind kind) {
   size_t i;
   uintptr_t key = (uintptr_t)base;
+  H7RegionHeader* region = (H7RegionHeader*)base;
   size_t start = h7_route_hash(key);
   for (i = 0; i < H7_ROUTE_CAPACITY; ++i) {
     size_t slot = (start + i) & (H7_ROUTE_CAPACITY - 1u);
@@ -167,6 +180,9 @@ static int h7_route_register(void* base, size_t size, H7RegionKind kind) {
       g_h7_routes[slot].size = size;
       g_h7_routes[slot].kind = kind;
       g_h7_routes[slot].active = 1u;
+      if (region) {
+        region->reserved = (uint32_t)slot;
+      }
       ++g_h7_stats.route_count;
       return 1;
     }
@@ -178,16 +194,34 @@ static int h7_route_register(void* base, size_t size, H7RegionKind kind) {
 static void h7_route_unregister(void* base) {
   size_t i;
   uintptr_t key = (uintptr_t)base;
-  size_t start = h7_route_hash(key);
-  for (i = 0; i < H7_ROUTE_CAPACITY; ++i) {
-    size_t slot = (start + i) & (H7_ROUTE_CAPACITY - 1u);
+  H7RegionHeader* region = (H7RegionHeader*)base;
+  if (region && region->reserved < H7_ROUTE_CAPACITY) {
+    size_t slot = (size_t)region->reserved;
     if (g_h7_routes[slot].active && g_h7_routes[slot].base == key) {
       g_h7_routes[slot].active = 0u;
       g_h7_routes[slot].base = 0u;
       g_h7_routes[slot].size = 0u;
       g_h7_routes[slot].kind = 0;
+      region->reserved = H7_ROUTE_SLOT_NONE;
       --g_h7_stats.route_count;
       return;
+    }
+  }
+  {
+    size_t start = h7_route_hash(key);
+    for (i = 0; i < H7_ROUTE_CAPACITY; ++i) {
+      size_t slot = (start + i) & (H7_ROUTE_CAPACITY - 1u);
+      if (g_h7_routes[slot].active && g_h7_routes[slot].base == key) {
+        g_h7_routes[slot].active = 0u;
+        g_h7_routes[slot].base = 0u;
+        g_h7_routes[slot].size = 0u;
+        g_h7_routes[slot].kind = 0;
+        if (region) {
+          region->reserved = H7_ROUTE_SLOT_NONE;
+        }
+        --g_h7_stats.route_count;
+        return;
+      }
     }
   }
 }
@@ -212,12 +246,21 @@ static H7RouteResult h7_route_lookup_raw(const void* ptr) {
   uintptr_t addr = (uintptr_t)ptr;
   size_t i;
   size_t start;
+  size_t cache_index;
+  H7RouteCacheEntry* cache;
   result.kind = H7_ROUTE_MISS;
   result.region = 0;
   if (!ptr) {
     return result;
   }
   region_base = h7_region_base_from_ptr(ptr);
+  cache_index = h7_route_cache_index(region_base);
+  cache = &g_h7_route_cache[cache_index];
+  if (cache->base == region_base && cache->slot < H7_ROUTE_CAPACITY &&
+      g_h7_routes[cache->slot].active &&
+      g_h7_routes[cache->slot].base == region_base) {
+    return h7_route_result_for_entry(&g_h7_routes[cache->slot]);
+  }
   start = h7_route_hash(region_base);
   for (i = 0; i < H7_ROUTE_CAPACITY; ++i) {
     size_t slot = (start + i) & (H7_ROUTE_CAPACITY - 1u);
@@ -225,6 +268,8 @@ static H7RouteResult h7_route_lookup_raw(const void* ptr) {
       continue;
     }
     if (g_h7_routes[slot].base == region_base) {
+      cache->base = region_base;
+      cache->slot = (uint32_t)slot;
       return h7_route_result_for_entry(&g_h7_routes[slot]);
     }
   }
@@ -240,6 +285,8 @@ static H7RouteResult h7_route_lookup_raw(const void* ptr) {
     base = g_h7_routes[i].base;
     end = base + g_h7_routes[i].size;
     if (addr >= base && addr < end) {
+      cache->base = base;
+      cache->slot = (uint32_t)i;
       return h7_route_result_for_entry(&g_h7_routes[i]);
     }
   }
