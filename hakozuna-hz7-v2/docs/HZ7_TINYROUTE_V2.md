@@ -3,8 +3,8 @@
 HZ7 TinyRoute V2 is the next-stage design note for a tiny allocator that stays
 small while becoming more complete on local workloads.
 
-This note now applies to the separate `hakozuna-hz7-v2/` folder. The v1 tree
-stays frozen as the cute tiny baseline.
+This note applies to the separate `hakozuna-hz7-v2/` folder. The v1 tree stays
+frozen as the cute tiny baseline.
 
 ## Folder Policy
 
@@ -44,21 +44,21 @@ Non-goals:
   HZ6-style profile matrix
 ```
 
-## Why Same Folder First
+## Why Separate Folder
 
-Keeping v2 in the same folder keeps the boundary honest.
+Keeping v2 separate keeps the baseline honest.
 
 ```text
-If the allocator still fits in one readable tree:
-  keep it together
+v1:
+  frozen cute tiny baseline
 
-If v2 starts needing separate runtime shape, separate benchmarks, or separate
-feature families:
-  then split into a new folder
+v2:
+  growth track for a local-complete tiny allocator
 ```
 
-The current HZ7 v1 implementation is still compact enough that a folder split
-would mostly add noise rather than clarity.
+The current HZ7 v1 implementation stays compact and readable on its own.
+Splitting v2 out now lets us grow the local-complete path without blurring the
+baseline or the line budget.
 
 ## Suggested Organization
 
@@ -101,12 +101,12 @@ Only consider a new code folder if one of these becomes true:
 
 ```text
 Now:
-  keep the same folder
-  write docs first
-  keep code in place
+  keep v1 frozen
+  grow v2 in its own folder
+  start with local small/medium reuse
 
 Later:
-  split only if v2 proves it needs a different shape
+  only reunify if the code shapes converge again
 ```
 
 ## Current HZ7 v1 Read
@@ -129,4 +129,5 @@ HZ7 v2:
   keep local allocator scope
   improve local performance without importing HZ6 complexity
   keep route safety and low-RSS as first-class goals
+  start by strengthening medium local reuse
 ```
