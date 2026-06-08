@@ -137,7 +137,7 @@ HZ7 v2:
 ```text
 First pass:
   keep span initialization lightweight
-  keep the direct route hot cache exact-base and tiny
+  keep the route path exact-base and tiny
 
 Read:
   route cleanup needs to earn its keep in benchmark
@@ -162,17 +162,29 @@ route_slot_index cleanup alone:
 Read:
   route_slot_index cleanup is hygiene-only unless a cache or other route hot
   path change also comes with it
+
+route hot cache:
+  exact-base one-slot route cache was tried on top of the slot-hint cleanup
+  repeat-5 recheck did not hold a stable win across small / medium / mixed
+
+Read:
+  route hot cache is archived no-go for now; keep it out of the default HZ7 v2
+  path unless a later design brings a stronger paired change
+
+Recheck after removal:
+  small 45.266M ops/s, medium 7.304M ops/s, mixed 7.987M ops/s on a 3-run
+  pass; the reverted baseline is the one to keep moving forward from
 ```
 
 ## Next Step
 
 ```text
-route hot cache:
-  exact-base one-slot route cache on top of the slot-hint cleanup
-  keep the fallback scan as a safety net
+next tiny-step candidate:
+  choose a new route-local micro-opt only if it is paired with a stronger
+  medium/mixed improvement than route hot cache showed
 
-Observed read:
-  random_mixed median moved from the slot-hint cleanup baseline to
-  small 43.929M ops/s, medium 7.420M ops/s, mixed 7.581M ops/s with peak RSS
-  still around 5.5 MiB / 10.6 MiB / 11.7 MiB
+Current read:
+  route hot cache is no longer the next active HZ7 v2 step
+  keep v1 frozen and look for a different tiny win rather than layering more
+  route cache depth
 ```

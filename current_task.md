@@ -33,9 +33,11 @@ HZ7 Tiny v2 note:
     medium empty-span cap experiments did not earn a stable win.
     route slot index cleanup alone was hygiene-only and did not earn a stable
     random_mixed win.
+    route hot cache did not hold a stable win on repeat-5, and removing it
+    restored the cleaner baseline.
   Next v2 step:
-    route hot cache so exact-base lookup gets a tiny fast path on top of the
-    slot-hint cleanup.
+    look for a different tiny route-local win only if it pairs with a stronger
+    medium/mixed improvement than the route hot cache showed.
 
 Implemented footing:
   1. TinyRoute-1 route safety:

@@ -30,7 +30,6 @@
 #ifndef H7_ROUTE_CAPACITY
 #define H7_ROUTE_CAPACITY 4096u
 #endif
-#define H7_ROUTE_CACHE_CAP 4u
 
 _Static_assert((H7_SPAN_BYTES & (H7_SPAN_BYTES - 1u)) == 0,
                "H7_SPAN_BYTES must be a power of two");
@@ -89,11 +88,6 @@ typedef struct H7RouteEntry {
   uint16_t active;
 } H7RouteEntry;
 
-typedef struct H7RouteCacheEntry {
-  uintptr_t base;
-  uint32_t slot;
-} H7RouteCacheEntry;
-
 typedef struct H7RouteResult {
   H7RouteKind kind;
   H7RegionHeader* region;
@@ -108,7 +102,6 @@ static H7Class g_h7_classes[] = {
 
 static H7Stats g_h7_stats;
 static H7RouteEntry g_h7_routes[H7_ROUTE_CAPACITY];
-static H7RouteCacheEntry g_h7_route_cache[H7_ROUTE_CACHE_CAP];
 static H7DirectRetainBucket g_h7_direct_retain_32k;
 static H7DirectRetainBucket g_h7_direct_retain_64k;
 
@@ -152,10 +145,6 @@ static uintptr_t h7_region_base_from_ptr(const void* ptr) {
 
 static size_t h7_route_hash(uintptr_t base) {
   return (size_t)((base >> 16u) & (H7_ROUTE_CAPACITY - 1u));
-}
-
-static size_t h7_route_cache_index(uintptr_t base) {
-  return (size_t)((base >> 16u) & (H7_ROUTE_CACHE_CAP - 1u));
 }
 
 static H7DirectRetainBucket* h7_direct_retain_bucket_for_size(size_t size) {
@@ -246,21 +235,12 @@ static H7RouteResult h7_route_lookup_raw(const void* ptr) {
   uintptr_t addr = (uintptr_t)ptr;
   size_t i;
   size_t start;
-  size_t cache_index;
-  H7RouteCacheEntry* cache;
   result.kind = H7_ROUTE_MISS;
   result.region = 0;
   if (!ptr) {
     return result;
   }
   region_base = h7_region_base_from_ptr(ptr);
-  cache_index = h7_route_cache_index(region_base);
-  cache = &g_h7_route_cache[cache_index];
-  if (cache->base == region_base && cache->slot < H7_ROUTE_CAPACITY &&
-      g_h7_routes[cache->slot].active &&
-      g_h7_routes[cache->slot].base == region_base) {
-    return h7_route_result_for_entry(&g_h7_routes[cache->slot]);
-  }
   start = h7_route_hash(region_base);
   for (i = 0; i < H7_ROUTE_CAPACITY; ++i) {
     size_t slot = (start + i) & (H7_ROUTE_CAPACITY - 1u);
@@ -268,8 +248,6 @@ static H7RouteResult h7_route_lookup_raw(const void* ptr) {
       continue;
     }
     if (g_h7_routes[slot].base == region_base) {
-      cache->base = region_base;
-      cache->slot = (uint32_t)slot;
       return h7_route_result_for_entry(&g_h7_routes[slot]);
     }
   }
@@ -285,8 +263,6 @@ static H7RouteResult h7_route_lookup_raw(const void* ptr) {
     base = g_h7_routes[i].base;
     end = base + g_h7_routes[i].size;
     if (addr >= base && addr < end) {
-      cache->base = base;
-      cache->slot = (uint32_t)i;
       return h7_route_result_for_entry(&g_h7_routes[i]);
     }
   }
