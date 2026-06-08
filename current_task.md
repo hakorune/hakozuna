@@ -36,8 +36,8 @@ HZ7 Tiny v2 note:
     route hot cache did not hold a stable win on repeat-5, and removing it
     restored the cleaner baseline.
   Next v2 step:
-    look for a different tiny route-local win only if it pairs with a stronger
-    medium/mixed improvement than the route hot cache showed.
+    look for a different tiny local hot-path change only if it can beat the
+    archived scan baseline on small / medium / mixed together.
 
 Implemented footing:
   1. TinyRoute-1 route safety:

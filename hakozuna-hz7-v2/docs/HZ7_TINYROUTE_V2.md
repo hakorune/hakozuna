@@ -171,6 +171,15 @@ Read:
   route hot cache is archived no-go for now; keep it out of the default HZ7 v2
   path unless a later design brings a stronger paired change
 
+SpanClassLookupTrim-L1:
+  branch-ladder size->class lookup was tried for 16B..16KiB
+  it improved medium but regressed mixed enough that it did not hold a stable
+  win as a v2 step
+
+Read:
+  SpanClassLookupTrim-L1 is archived no-go; keep the compact scan until a
+  stronger local hot-path idea appears
+
 Recheck after removal:
   small 45.266M ops/s, medium 7.304M ops/s, mixed 7.987M ops/s on a 3-run
   pass; the reverted baseline is the one to keep moving forward from
@@ -180,11 +189,11 @@ Recheck after removal:
 
 ```text
 next tiny-step candidate:
-  choose a new route-local micro-opt only if it is paired with a stronger
-  medium/mixed improvement than route hot cache showed
+  choose a new tiny local hot-path change only if it can beat the archived
+  scan baseline on small / medium / mixed together
 
 Current read:
-  route hot cache is no longer the next active HZ7 v2 step
-  keep v1 frozen and look for a different tiny win rather than layering more
-  route cache depth
+  route hot cache and SpanClassLookupTrim-L1 are both archived
+  keep v1 frozen and stop layering tiny route/class changes unless a stronger
+  paired improvement appears
 ```
