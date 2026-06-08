@@ -131,3 +131,15 @@ HZ7 v2:
   keep route safety and low-RSS as first-class goals
   start by strengthening medium local reuse
 ```
+
+## Current Growth Step
+
+```text
+First pass:
+  keep span initialization lightweight
+  do not over-retain empty spans for medium classes
+
+Read:
+  medium/local reuse knobs need to earn their keep in benchmark
+  if a knob slows medium/mixed, keep the v1 baseline instead
+```

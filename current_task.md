@@ -29,7 +29,8 @@ HZ7 Tiny v2 note:
   hakozuna-hz7-v2/docs/HZ7_TINYROUTE_V2.md
   Keep code in the separate hakozuna-hz7-v2 folder.
   Keep v1 frozen as the cute tiny baseline.
-  First v2 step: strengthen local medium reuse without importing HZ6 shape.
+  First v2 step: keep span init lightweight; treat medium reuse knobs as
+  benchmark-gated and do not over-retain empty spans.
 
 Implemented footing:
   1. TinyRoute-1 route safety:

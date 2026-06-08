@@ -60,6 +60,7 @@ typedef struct H7Span {
   uint32_t bitmap_words;
   uint32_t slot_offset;
   struct H7Span* next;
+  struct H7Span* prev;
 } H7Span;
 
 typedef struct H7Direct {
@@ -269,19 +270,27 @@ static void h7_bitmap_clear(H7Span* span, uint32_t index) {
 }
 
 static void h7_list_remove(H7Span** head, H7Span* span) {
-  H7Span** cursor = head;
-  while (*cursor) {
-    if (*cursor == span) {
-      *cursor = span->next;
-      span->next = 0;
-      return;
-    }
-    cursor = &(*cursor)->next;
+  if (!span) {
+    return;
   }
+  if (span->prev) {
+    span->prev->next = span->next;
+  } else if (*head == span) {
+    *head = span->next;
+  }
+  if (span->next) {
+    span->next->prev = span->prev;
+  }
+  span->next = 0;
+  span->prev = 0;
 }
 
 static void h7_list_push(H7Span** head, H7Span* span) {
+  span->prev = 0;
   span->next = *head;
+  if (*head) {
+    (*head)->prev = span;
+  }
   *head = span;
 }
 
@@ -373,7 +382,7 @@ static H7Span* h7_span_create(uint16_t class_id) {
   if (!span) {
     return 0;
   }
-  memset(span, 0, H7_SPAN_BYTES);
+  memset(span, 0, sizeof(H7Span));
   span->region.magic = H7_MAGIC;
   span->region.cookie = H7_COOKIE;
   span->region.kind = H7_REGION_SMALL_SPAN;
@@ -424,7 +433,11 @@ static void* h7_small_alloc(size_t size) {
     span = klass->empty;
     if (span) {
       klass->empty = span->next;
+      if (klass->empty) {
+        klass->empty->prev = 0;
+      }
       span->next = 0;
+      span->prev = 0;
       --klass->empty_count;
     }
   }
