@@ -130,6 +130,13 @@ HZ7 v2:
   improve local performance without importing HZ6 complexity
   keep route safety and low-RSS as first-class goals
   start by strengthening medium local reuse
+
+Remote read:
+  remote is evidence/control only
+  no owner-aware remote free
+  no inbox/TLS ownership
+  if remote is revisited, it should stay in a smoke/preset lane rather than a
+  performance lane
 ```
 
 ## Current Growth Step
@@ -196,4 +203,19 @@ Current read:
   route hot cache and SpanClassLookupTrim-L1 are both archived
   keep v1 frozen and stop layering tiny route/class changes unless a stronger
   paired improvement appears
+```
+
+## Remote Evidence
+
+```text
+Allowed:
+  coarse-lock remote smoke
+  route-capacity evidence
+  fail-closed safety checks
+
+Not allowed:
+  remote throughput claims
+  owner-aware remote free
+  inbox / TLS ownership
+  remote policy matrices
 ```

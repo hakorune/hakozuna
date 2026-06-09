@@ -120,9 +120,25 @@ The near-term goal is not to clone HZ6. It is to keep HZ7 tiny while adding
 route safety, coarse multithread safety, and the smallest medium coverage that
 keeps the code readable.
 
+Remote free is only a fallback/smoke concern here, not a performance track.
 Lock-free remote free, owner inboxes, libc interposition, and profile-family
-policy are not HZ7 v1 goals. If they become necessary, they belong in a later
-HZ8/HZ6-family design rather than TinyRoute.
+policy are not HZ7 v1/v2 goals. If they become necessary, they belong in a
+later HZ8/HZ6-family design rather than TinyRoute.
+
+## Remote Evidence
+
+```text
+Allowed:
+  coarse-lock remote smoke
+  route-capacity evidence
+  safety/fail-closed checks
+
+Not allowed:
+  remote throughput claims
+  owner-aware remote free
+  inbox/TLS ownership
+  remote-specific policy matrix
+```
 
 ## Reading Order
 
