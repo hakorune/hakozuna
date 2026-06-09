@@ -25,6 +25,11 @@ ElasticCapacity machinery, descriptor depot, or workload-specific lanes. The
 first prototype should prove that the allocator can stay small and predictable
 before adding more shape.
 
+HZ7 v2 is local-performance focused and remote-free safe, but it does not try
+to become a remote-performance allocator. Cross-thread frees should stay safe
+under the coarse global lock; they are evidence/control, not a throughput
+claim.
+
 ## TinyRoute-0
 
 TinyRoute-0 is the first prototype.

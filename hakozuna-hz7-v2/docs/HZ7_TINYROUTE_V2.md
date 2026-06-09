@@ -27,14 +27,17 @@ while v2 can grow without blurring the baseline.
 
 ```text
 Target:
-  a 2000-line-class tiny allocator
+  a readable tiny allocator reference implementation
 
 Design center:
   direct API
   route safety
   low RSS
   local small/medium performance
+  remote-free safe
   coarse multithread safety
+  teachable invariants and no-go history
+  line growth as a soft guard, not a hard cap
 
 Non-goals:
   remote allocator speed
@@ -147,6 +150,9 @@ First pass:
   keep the route path exact-base and tiny
 
 Read:
+  keep the core easy to explain
+  keep line growth as a soft guard, not a hard cap
+
   route cleanup needs to earn its keep in benchmark
   if a cleanup knob does not improve medium/mixed, keep v1 frozen and
   archive the knob as hygiene-only
@@ -209,7 +215,7 @@ Current read:
 
 ```text
 Allowed:
-  coarse-lock remote smoke
+  coarse-lock remote-free safety smoke
   route-capacity evidence
   fail-closed safety checks
 
