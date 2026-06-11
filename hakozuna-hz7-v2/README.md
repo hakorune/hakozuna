@@ -168,6 +168,9 @@ The Windows smoke script builds and runs both:
 hz7_smoke.exe:
   direct API + route safety smoke
 
+hz7_remote_smoke.exe:
+  cross-thread alloc/free safety smoke under the coarse global lock
+
 hz7_mt_smoke.exe:
   coarse-lock multithread safety smoke
 ```
