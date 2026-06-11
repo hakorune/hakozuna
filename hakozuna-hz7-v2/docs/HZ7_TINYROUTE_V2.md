@@ -47,6 +47,10 @@ Non-goals:
   HZ6-style profile matrix
 ```
 
+Current task list:
+
+- [HZ7_V2_TASKS.md](HZ7_V2_TASKS.md)
+
 ## Why Separate Folder
 
 Keeping v2 separate keeps the baseline honest.

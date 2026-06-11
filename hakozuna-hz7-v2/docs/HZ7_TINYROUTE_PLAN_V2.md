@@ -9,6 +9,12 @@ TinyRoute-0 proves smallness.
 TinyRoute-1 reintroduces route safety without becoming HZ6-lite.
 ```
 
+## Task Ledger
+
+Use [HZ7_V2_TASKS.md](HZ7_V2_TASKS.md) as the working checklist for the
+current v2 target. Keep this plan file as the shape of the implementation, and
+keep the task file as the day-to-day list of things to finish or keep frozen.
+
 ## TinyRoute-0 Scope
 
 ```text

@@ -148,6 +148,7 @@ Not allowed:
 ## Reading Order
 
 ```text
+docs/HZ7_V2_TASKS.md
 docs/HZ7_TINYROUTE_V2.md
 docs/HZ7_TINYROUTE_PLAN_V2.md
 docs/HZ7_TINYROUTE_PLAN.md
