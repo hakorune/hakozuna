@@ -162,6 +162,21 @@ HeaderCppSmoke-L1:
   [x] require Windows and Linux smoke scripts to pass
 ```
 
+The next maintenance step is `SmokeScriptModule-L1`. It is not an allocator
+policy change. It keeps the smoke list unchanged while removing repetitive
+Windows smoke build/run boilerplate so future checks can be added without
+copying another large argument block.
+
+```text
+SmokeScriptModule-L1:
+  [x] add a small Windows smoke build/run helper
+  [x] keep all existing smoke binaries and output names unchanged
+  [x] keep the Linux smoke script behavior unchanged unless a direct cleanup is
+      needed
+  [x] keep allocator policy and speed path unchanged
+  [x] require Windows and Linux smoke scripts to pass
+```
+
 The accepted cleanup step is `RouteValidationModule-L1`. It is not a policy
 change. It keeps the current route lookup behavior, but shares the small/direct
 user-pointer validation logic used by `h7_route()` and `h7_free()`.

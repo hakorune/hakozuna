@@ -45,116 +45,59 @@ if (-not (Test-Path $Hz7Source)) {
     throw "HZ7 source not found: $Hz7Source"
 }
 
-$Args = @(
-    "/nologo",
-    "/O2",
-    "/W4",
-    "/WX",
-    "/D_CRT_SECURE_NO_WARNINGS",
-    $Hz7Source,
-    $SmokeSource,
-    "/Fe:$OutputPath"
-)
+function Build-Hz7Smoke {
+    param(
+        [string]$Name,
+        [string]$Source,
+        [string]$Output
+    )
 
-Write-Host "[hz7-win] building hz7_smoke.exe"
-& $Compiler.Source @Args
-if ($LASTEXITCODE -ne 0) {
-    throw "clang-cl failed with exit code $LASTEXITCODE"
+    $BuildArgs = @(
+        "/nologo",
+        "/O2",
+        "/W4",
+        "/WX",
+        "/D_CRT_SECURE_NO_WARNINGS",
+        $Hz7Source,
+        $Source,
+        "/Fe:$Output"
+    )
+
+    Write-Host "[hz7-win] building $Name"
+    & $Compiler.Source @BuildArgs
+    if ($LASTEXITCODE -ne 0) {
+        throw "clang-cl $Name failed with exit code $LASTEXITCODE"
+    }
 }
 
-$RemoteArgs = @(
-    "/nologo",
-    "/O2",
-    "/W4",
-    "/WX",
-    "/D_CRT_SECURE_NO_WARNINGS",
-    $Hz7Source,
-    $RemoteSmokeSource,
-    "/Fe:$RemoteOutputPath"
-)
+function Run-Hz7Smoke {
+    param(
+        [string]$Name,
+        [string]$Output
+    )
 
-Write-Host "[hz7-win] building hz7_remote_smoke.exe"
-& $Compiler.Source @RemoteArgs
-if ($LASTEXITCODE -ne 0) {
-    throw "clang-cl remote smoke failed with exit code $LASTEXITCODE"
+    Write-Host "[hz7-win] running $Name"
+    & $Output
+    if ($LASTEXITCODE -ne 0) {
+        throw "$Name failed with exit code $LASTEXITCODE"
+    }
 }
 
-$MtArgs = @(
-    "/nologo",
-    "/O2",
-    "/W4",
-    "/WX",
-    "/D_CRT_SECURE_NO_WARNINGS",
-    $Hz7Source,
-    $MtSmokeSource,
-    "/Fe:$MtOutputPath"
+$SmokeTargets = @(
+    @{ Name = "hz7_smoke.exe"; Source = $SmokeSource; Output = $OutputPath },
+    @{ Name = "hz7_remote_smoke.exe"; Source = $RemoteSmokeSource; Output = $RemoteOutputPath },
+    @{ Name = "hz7_mt_smoke.exe"; Source = $MtSmokeSource; Output = $MtOutputPath },
+    @{ Name = "hz7_stats_smoke.exe"; Source = $StatsSmokeSource; Output = $StatsOutputPath },
+    @{ Name = "hz7_cpp_smoke.exe"; Source = $CppSmokeSource; Output = $CppOutputPath }
 )
 
-Write-Host "[hz7-win] building hz7_mt_smoke.exe"
-& $Compiler.Source @MtArgs
-if ($LASTEXITCODE -ne 0) {
-    throw "clang-cl mt smoke failed with exit code $LASTEXITCODE"
-}
-
-$StatsArgs = @(
-    "/nologo",
-    "/O2",
-    "/W4",
-    "/WX",
-    "/D_CRT_SECURE_NO_WARNINGS",
-    $Hz7Source,
-    $StatsSmokeSource,
-    "/Fe:$StatsOutputPath"
-)
-
-Write-Host "[hz7-win] building hz7_stats_smoke.exe"
-& $Compiler.Source @StatsArgs
-if ($LASTEXITCODE -ne 0) {
-    throw "clang-cl stats smoke failed with exit code $LASTEXITCODE"
-}
-
-$CppArgs = @(
-    "/nologo",
-    "/O2",
-    "/W4",
-    "/WX",
-    "/D_CRT_SECURE_NO_WARNINGS",
-    $Hz7Source,
-    $CppSmokeSource,
-    "/Fe:$CppOutputPath"
-)
-
-Write-Host "[hz7-win] building hz7_cpp_smoke.exe"
-& $Compiler.Source @CppArgs
-if ($LASTEXITCODE -ne 0) {
-    throw "clang-cl C++ smoke failed with exit code $LASTEXITCODE"
+foreach ($Target in $SmokeTargets) {
+    Build-Hz7Smoke -Name $Target.Name -Source $Target.Source -Output $Target.Output
 }
 
 if (-not $SkipRun) {
-    Write-Host "[hz7-win] running hz7_smoke.exe"
-    & $OutputPath
-    if ($LASTEXITCODE -ne 0) {
-        throw "hz7 smoke failed with exit code $LASTEXITCODE"
-    }
-    Write-Host "[hz7-win] running hz7_remote_smoke.exe"
-    & $RemoteOutputPath
-    if ($LASTEXITCODE -ne 0) {
-        throw "hz7 remote smoke failed with exit code $LASTEXITCODE"
-    }
-    Write-Host "[hz7-win] running hz7_mt_smoke.exe"
-    & $MtOutputPath
-    if ($LASTEXITCODE -ne 0) {
-        throw "hz7 mt smoke failed with exit code $LASTEXITCODE"
-    }
-    Write-Host "[hz7-win] running hz7_stats_smoke.exe"
-    & $StatsOutputPath
-    if ($LASTEXITCODE -ne 0) {
-        throw "hz7 stats smoke failed with exit code $LASTEXITCODE"
-    }
-    Write-Host "[hz7-win] running hz7_cpp_smoke.exe"
-    & $CppOutputPath
-    if ($LASTEXITCODE -ne 0) {
-        throw "hz7 C++ smoke failed with exit code $LASTEXITCODE"
+    foreach ($Target in $SmokeTargets) {
+        Run-Hz7Smoke -Name $Target.Name -Output $Target.Output
     }
 }
 
