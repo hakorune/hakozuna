@@ -30,7 +30,7 @@ win/bench_hz7_v3_ops.inc
   benchmark operation helpers for individual row bodies
 
 win/bench_hz7_v3_rows.inc
-  shared row definitions and row wrapper helpers
+  shared span-audit row definitions and row wrapper helpers
 
 win/bench_hz7_v3_sequences.inc
   ordered scenario groups and registry-driven execution

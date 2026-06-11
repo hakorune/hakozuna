@@ -1,13 +1,19 @@
+#ifndef H7_ARRAY_COUNT
+#define H7_ARRAY_COUNT(x) (sizeof(x) / sizeof((x)[0]))
+#endif
+
 typedef struct H7SizeRow {
   const char* label;
   size_t size;
 } H7SizeRow;
 
-static const H7SizeRow kSpanRows[] = {
+static const H7SizeRow kSpanAuditRows[] = {
     {"span4k", 4096u},
     {"span8k", 8192u},
     {"span16k", 16384u},
 };
+
+static const size_t kSpanAuditRowCount = H7_ARRAY_COUNT(kSpanAuditRows);
 
 static void h7_run_size_rows_malloc_free(const H7SizeRow* rows,
                                          size_t count,

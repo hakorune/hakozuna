@@ -38,6 +38,9 @@ done:
   SpanFreeListCleanup-L1
     span free-list transitions now use explicit full / empty helpers
 
+  BenchmarkRowRegistry-L1
+    span-audit row registry now has a named row group and explicit row count
+
 active:
   SpanPathAudit-L1
     inspect 4K..16K span path before adding new policy

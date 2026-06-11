@@ -1,11 +1,11 @@
 static void h7_run_v3_span_sequence(uint32_t iters) {
   h7_run_malloc_free("small64", 64u, iters);
-  h7_run_size_rows_malloc_free(kSpanRows, sizeof(kSpanRows) / sizeof(kSpanRows[0]), iters);
+  h7_run_size_rows_malloc_free(kSpanAuditRows, kSpanAuditRowCount, iters);
   h7_run_malloc_free("direct32k", 32768u, iters);
 
-  h7_run_size_rows_route_invariant(kSpanRows, sizeof(kSpanRows) / sizeof(kSpanRows[0]), iters);
-  h7_run_size_rows_route_valid(kSpanRows, sizeof(kSpanRows) / sizeof(kSpanRows[0]), iters);
-  h7_run_size_rows_route_invalid(kSpanRows, sizeof(kSpanRows) / sizeof(kSpanRows[0]), iters);
+  h7_run_size_rows_route_invariant(kSpanAuditRows, kSpanAuditRowCount, iters);
+  h7_run_size_rows_route_valid(kSpanAuditRows, kSpanAuditRowCount, iters);
+  h7_run_size_rows_route_invalid(kSpanAuditRows, kSpanAuditRowCount, iters);
 
   h7_run_route_valid("small64", 64u, iters);
   h7_run_route_valid("direct32k", 32768u, iters);
@@ -25,17 +25,17 @@ static void h7_run_v3_fresh_sequence(uint32_t iters) {
 
 static void h7_run_v3_batch_sequence(uint32_t iters) {
   h7_run_malloc_batch_free("small64", 64u, iters);
-  h7_run_size_rows_malloc_batch_free(kSpanRows, sizeof(kSpanRows) / sizeof(kSpanRows[0]), iters);
+  h7_run_size_rows_malloc_batch_free(kSpanAuditRows, kSpanAuditRowCount, iters);
   h7_run_malloc_batch_free("direct32k", 32768u, iters);
 
   h7_run_free_batch("small64", 64u, iters);
-  h7_run_size_rows_free_batch(kSpanRows, sizeof(kSpanRows) / sizeof(kSpanRows[0]), iters);
+  h7_run_size_rows_free_batch(kSpanAuditRows, kSpanAuditRowCount, iters);
   h7_run_free_batch("direct32k", 32768u, iters);
 }
 
 static void h7_run_v3_retained_sequence(uint32_t iters) {
   h7_run_free_retained_loop("small64", 64u, iters);
-  h7_run_size_rows_free_retained_loop(kSpanRows, sizeof(kSpanRows) / sizeof(kSpanRows[0]), iters);
+  h7_run_size_rows_free_retained_loop(kSpanAuditRows, kSpanAuditRowCount, iters);
   h7_run_free_retained_loop("direct32k", 32768u, iters);
 }
 

@@ -15,7 +15,7 @@ win/run_win_hz7_v3_size_slices.ps1
   filtered companion probe for 4K / 8K / 16K slices
 
 win/bench_hz7_v3_rows.inc
-  shared size-row labels and row wrapper helpers used by the driver
+  shared span-audit row labels and row wrapper helpers used by the driver
 
 win/bench_hz7_v3_ops.inc
   benchmark operation helpers for individual row bodies
@@ -52,11 +52,11 @@ docs/benchmarks/windows/hz7_v3_size_slices_probe2/
 ```text
 hotpath:
   route invariant helper
-  span path audit
+  span audit rows
   local 4K..16K span/free-list behavior
 
 size slices:
-  4K / 8K / 16K companion rows
+  4K / 8K / 16K span-audit companion rows
   filtered companion to the hotpath probe
 ```
 
