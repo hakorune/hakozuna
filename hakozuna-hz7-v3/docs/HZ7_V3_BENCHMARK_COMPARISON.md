@@ -41,10 +41,10 @@ Latest runner snapshots:
 
 ```text
 hotpath:
-  out_win_hz7_v3_hotpath/20260611_235842_hz7_v3_hotpath_windows.md
+  ../out_win_hz7_v3_hotpath/20260612_000735_hz7_v3_hotpath_windows.md
 
 size-slices:
-  out_win_hz7_v3_size_slices/20260611_235108_hz7_v3_size_slices_windows.md
+  ../out_win_hz7_v3_size_slices/20260612_000740_hz7_v3_size_slices_windows.md
 ```
 
 ## 4K / 8K / 16K Span Audit
@@ -78,6 +78,26 @@ their retained-path behavior stays visible in the same registry.
 | free_retained_loop span8k | 49.505M pairs/s | 47.393M pairs/s | 46.974M pairs/s |
 | free_retained_loop span16k | 49.751M pairs/s | 47.494M pairs/s | 47.845M pairs/s |
 
+## Latest Refresh
+
+The most recent one-run smoke refresh keeps the same registry shape and updates
+the current local evidence with a 20260612 timestamp.
+
+| row | hotpath latest | size-slices latest |
+| --- | ---: | ---: |
+| malloc_free span4k | 31.746M pairs/s | 48.866M pairs/s |
+| malloc_free span8k | 37.313M pairs/s | 48.579M pairs/s |
+| malloc_free span16k | 41.322M pairs/s | 48.483M pairs/s |
+| route_valid span4k | 123.457M ops/s | 123.065M ops/s |
+| route_valid span8k | 123.457M ops/s | 123.037M ops/s |
+| route_valid span16k | 123.457M ops/s | 121.864M ops/s |
+| route_invalid span4k | 123.457M ops/s | 122.514M ops/s |
+| route_invalid span8k | 125.000M ops/s | 122.465M ops/s |
+| route_invalid span16k | 123.457M ops/s | 122.758M ops/s |
+| free_retained_loop span4k | 49.751M pairs/s | 47.834M pairs/s |
+| free_retained_loop span8k | 49.261M pairs/s | 48.157M pairs/s |
+| free_retained_loop span16k | 49.505M pairs/s | 47.658M pairs/s |
+
 ## Direct Retained Companion
 
 The hotpath companion rows now surface the direct retained 32K / 64K path
@@ -86,18 +106,18 @@ audit rows without changing the companion split.
 
 | row | hotpath latest |
 | --- | ---: |
-| free_batch direct32k | 945.358K ops/s |
-| free_batch direct64k | 868.885K ops/s |
-| free_retained_loop direct32k | 58.479M pairs/s |
-| free_retained_loop direct64k | 58.823M pairs/s |
-| malloc_batch direct32k | 526.981K ops/s |
-| malloc_batch direct64k | 521.839K ops/s |
-| malloc_free direct32k | 50.000M pairs/s |
-| malloc_free direct64k | 48.781M pairs/s |
-| route_invalid direct32k | 119.048M ops/s |
-| route_invalid direct64k | 119.048M ops/s |
-| route_valid direct32k | 120.482M ops/s |
-| route_valid direct64k | 121.951M ops/s |
+| free_batch direct32k | 956.297K ops/s |
+| free_batch direct64k | 874.126K ops/s |
+| free_retained_loop direct32k | 58.140M pairs/s |
+| free_retained_loop direct64k | 58.139M pairs/s |
+| malloc_batch direct32k | 513.716K ops/s |
+| malloc_batch direct64k | 591.716K ops/s |
+| malloc_free direct32k | 51.282M pairs/s |
+| malloc_free direct64k | 51.546M pairs/s |
+| route_invalid direct32k | 121.951M ops/s |
+| route_invalid direct64k | 121.951M ops/s |
+| route_valid direct32k | 125.000M ops/s |
+| route_valid direct64k | 125.000M ops/s |
 
 ## What Stands Out
 

@@ -47,9 +47,11 @@ done:
   BenchmarkComparisonNote-L1
     benchmark comparison note now records shared runner helpers and companion naming
     comparison note now also surfaces the direct retained companion rows
+    comparison note now reflects the 20260612 hotpath and size-slices refresh
 
   BenchmarkLatestSnapshot-L1
     comparison note now points at the latest hotpath and size-slices summary snapshots
+    latest snapshot paths now track the 20260612 smoke refresh
 
   DirectRetainedRowRegistry-L1
     hotpath row registry now carries direct retained 32K / 64K companion rows
@@ -63,7 +65,6 @@ active:
     keep the route/span/big helper split easy to follow
 
 next:
-  compare the latest hotpath and size-slice snapshots
   keep the hotpath and size-slice wiring narrow and readable
   pick the next span/free-list tweak from the measured 4K..16K path
 ```
