@@ -56,6 +56,9 @@ hz7_route.inc
 
 hz7_span.inc
   span metadata, bitmap/free-list helpers, partial/empty span movement
+
+hz7_big.inc
+  direct allocation, malloc/free API wiring, stats and retained direct flow
 ```
 
 ## V3 Goal

@@ -38,7 +38,7 @@ active:
     keep the route invariant helper and span/free-list cleanup readable
     keep route safety unchanged
     keep RemoteNatural-L1 as a control preset
-    keep the route/span helper split easy to follow
+    keep the route/span/big helper split easy to follow
 
 next:
   extend the v3 hotpath rows to cover 4K, 8K, and 16K span-audit slices
