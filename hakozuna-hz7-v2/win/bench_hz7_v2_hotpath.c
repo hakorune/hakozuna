@@ -322,6 +322,64 @@ static void h7_run_mixed_steady(const char* label,
          h7_peak_working_set_kb());
 }
 
+static void h7_run_random_toggle(const char* label,
+                                 size_t min_size,
+                                 size_t max_size,
+                                 uint32_t iters,
+                                 uint32_t live_count,
+                                 uint32_t touch_allocs) {
+  uint32_t i;
+  uint32_t rng = 0x12345678u;
+  uint32_t ok = 0;
+  uint32_t allocs = 0;
+  uint32_t frees = 0;
+  void** ptrs = (void**)calloc(live_count, sizeof(void*));
+  double start;
+  double elapsed;
+  if (!ptrs || live_count == 0) {
+    printf("hz7_hotpath: op=random_toggle label=%s size=0 alloc_failed=1\n",
+           label);
+    free(ptrs);
+    return;
+  }
+  start = h7_seconds();
+  for (i = 0; i < iters; ++i) {
+    uint32_t r = h7_rng_next(&rng);
+    uint32_t slot = r % live_count;
+    size_t size = h7_size_from_range(r, min_size, max_size);
+    if (ptrs[slot]) {
+      h7_free(ptrs[slot]);
+      ptrs[slot] = 0;
+      ++frees;
+      ++ok;
+    } else {
+      ptrs[slot] = h7_malloc(size);
+      if (ptrs[slot]) {
+        if (touch_allocs) {
+          h7_touch(ptrs[slot], size, i);
+        }
+        ++allocs;
+        ++ok;
+      }
+    }
+  }
+  elapsed = h7_seconds() - start;
+  for (i = 0; i < live_count; ++i) {
+    h7_free(ptrs[i]);
+  }
+  free(ptrs);
+  printf("hz7_hotpath: op=random_toggle label=%s size=0 iters=%u ok=%u "
+         "allocs=%u frees=%u time=%.6f ops/s=%.2f peak_kb=%zu\n",
+         label,
+         iters,
+         ok,
+         allocs,
+         frees,
+         elapsed,
+         elapsed > 0.0 ? (double)ok / elapsed : 0.0,
+         h7_peak_working_set_kb());
+}
+
 int main(int argc, char** argv) {
   uint32_t iters = 10000000u;
   if (argc > 1) {
@@ -340,6 +398,13 @@ int main(int argc, char** argv) {
   h7_run_route_invalid("span8k", 8192u, iters);
   h7_run_route_invalid("direct32k", 32768u, iters);
 
+  h7_run_random_toggle("fresh_small_ws400", 16u, 2048u, iters, 400u, 1u);
+  h7_run_random_toggle("fresh_medium_ws400", 4096u, 32768u, iters, 400u, 1u);
+  h7_run_random_toggle("fresh_mixed_ws400", 16u, 32768u, iters, 400u, 1u);
+  h7_run_random_toggle("fresh_small_ws400_notouch", 16u, 2048u, iters, 400u, 0u);
+  h7_run_random_toggle("fresh_medium_ws400_notouch", 4096u, 32768u, iters, 400u, 0u);
+  h7_run_random_toggle("fresh_mixed_ws400_notouch", 16u, 32768u, iters, 400u, 0u);
+
   h7_run_malloc_batch_free("small64", 64u, iters);
   h7_run_malloc_batch_free("span8k", 8192u, iters);
   h7_run_malloc_batch_free("direct32k", 32768u, iters);
@@ -357,6 +422,10 @@ int main(int argc, char** argv) {
   h7_run_mixed_steady("direct_medium_ws400", 16385u, 32768u, iters, 400u);
   h7_run_mixed_steady("medium_ws400", 4096u, 32768u, iters, 400u);
   h7_run_mixed_steady("mixed_ws400", 16u, 32768u, iters, 400u);
+
+  h7_run_random_toggle("small_ws400", 16u, 2048u, iters, 400u, 1u);
+  h7_run_random_toggle("medium_ws400", 4096u, 32768u, iters, 400u, 1u);
+  h7_run_random_toggle("mixed_ws400", 16u, 32768u, iters, 400u, 1u);
 
   return 0;
 }

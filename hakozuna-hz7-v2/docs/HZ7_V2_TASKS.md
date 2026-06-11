@@ -1378,3 +1378,88 @@ steady churn:
   medium range split policy
   or benchmark/lane separation between span-medium and direct-medium profiles
 ```
+
+### RandomToggle-L1 correction
+
+`bench_random_mixed_compare` is a toggle workload:
+
+```text
+if slot is empty:
+  allocate
+else:
+  free
+```
+
+It does not do a free+alloc replacement every operation, and it does not touch
+the allocated payload. Earlier `mixed_steady` rows are therefore useful as a
+boundary-replacement stress, but they are not the same as the paper
+`random_mixed` row.
+
+Added diagnostic rows:
+
+```text
+random_toggle fresh_*:
+  run before the heavy batch rows so the process is not polluted by batch
+  source pressure
+
+random_toggle fresh_*_notouch:
+  same toggle workload, but no payload touch on allocation
+  closer to bench_random_mixed_compare
+```
+
+Windows repeat-3 observation:
+
+```text
+fresh_small_ws400:
+  touch     86.072M ops/s
+  notouch   85.729M ops/s
+
+fresh_medium_ws400:
+  touch     21.172M ops/s
+  notouch   42.647M ops/s
+
+fresh_mixed_ws400:
+  touch     23.276M ops/s
+  notouch   43.573M ops/s
+```
+
+Source:
+
+```text
+out_win_hz7_v2_hotpath_toggle_notouch_l1/
+20260611_173807_hz7_v2_hotpath_windows.md
+```
+
+Corrected reading:
+
+```text
+The paper random_mixed medium/mixed row is closer to the notouch toggle row.
+The 20M-class medium/mixed result was mostly payload touch/page cost mixed
+with allocator cost.
+
+HZ7 v2 still has a real medium/mixed gap:
+  small toggle notouch   around 86M
+  medium toggle notouch  around 43M
+  mixed toggle notouch   around 44M
+
+This gap is no longer explained by payload touch.
+It is likely caused by direct-retain capacity/admission and source churn in
+the medium range, not by 32KiB span expansion.
+```
+
+Next:
+
+```text
+DirectRetainCap-L2:
+  measure cap 64 / 128 / 256 explicitly with notouch random_toggle and
+  random_mixed medium/mixed.
+
+Acceptance:
+  medium/mixed improve materially
+  small does not regress
+  RSS stays close to the low-RSS HZ7 v2 baseline
+
+No-go:
+  speed improves only by retaining too much memory
+  RSS loses the HZ7 v2 identity
+```
