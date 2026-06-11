@@ -861,24 +861,26 @@ void* h7_calloc(size_t count, size_t size) {
   return ptr;
 }
 
+static void h7_free_locked(void* ptr, H7PendingRelease* release) {
+  H7RouteResult route = h7_route_lookup_raw(ptr);
+  if (route.kind != H7_ROUTE_VALID || !route.region) {
+    return;
+  }
+  if (route.region->kind == H7_REGION_SMALL_SPAN) {
+    h7_small_free((H7Span*)route.region, ptr, release);
+  } else if (route.region->kind == H7_REGION_DIRECT) {
+    h7_big_free((H7Direct*)route.region, ptr, release);
+  }
+}
+
 void h7_free(void* ptr) {
   H7PendingRelease release;
-  H7RouteResult route;
   if (!ptr) {
     return;
   }
   h7_pending_release_clear(&release);
   h7_lock();
-  route = h7_route_lookup_raw(ptr);
-  if (route.kind != H7_ROUTE_VALID || !route.region) {
-    h7_unlock();
-    return;
-  }
-  if (route.region->kind == H7_REGION_SMALL_SPAN) {
-    h7_small_free((H7Span*)route.region, ptr, &release);
-  } else if (route.region->kind == H7_REGION_DIRECT) {
-    h7_big_free((H7Direct*)route.region, ptr, &release);
-  }
+  h7_free_locked(ptr, &release);
   h7_unlock();
   h7_pending_release_now(&release);
 }
