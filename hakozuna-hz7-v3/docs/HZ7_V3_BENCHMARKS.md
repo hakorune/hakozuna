@@ -27,6 +27,7 @@ win/bench_hz7_v3_common.ps1
   shared probe helper now owns the repeated build / run / summary plumbing
   shared summary-row parser also feeds the size-slices companion
   shared summary-path reader keeps the size-slices runner thin too
+  shared span-audit key list keeps the size-slices ordering in one place
 
 win/bench_hz7_v3_rows.inc
   shared span-audit row labels and row wrapper helpers used by the driver

@@ -229,6 +229,32 @@ function Get-H7BenchmarkRowsFromMarkdownPath {
     return $rows
 }
 
+function Get-H7SpanAuditOrderedKeys {
+    return @(
+        'malloc_free:span4k',
+        'malloc_free:span8k',
+        'malloc_free:span16k',
+        'route_invariant:span4k',
+        'route_invariant:span8k',
+        'route_invariant:span16k',
+        'route_valid:span4k',
+        'route_valid:span8k',
+        'route_valid:span16k',
+        'route_invalid:span4k',
+        'route_invalid:span8k',
+        'route_invalid:span16k',
+        'malloc_batch:span4k',
+        'malloc_batch:span8k',
+        'malloc_batch:span16k',
+        'free_batch:span4k',
+        'free_batch:span8k',
+        'free_batch:span16k',
+        'free_retained_loop:span4k',
+        'free_retained_loop:span8k',
+        'free_retained_loop:span16k'
+    )
+}
+
 function Invoke-H7BenchmarkProbe {
     param(
         [string]$CompilerPath,

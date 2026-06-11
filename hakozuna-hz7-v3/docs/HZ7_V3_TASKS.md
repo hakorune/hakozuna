@@ -76,6 +76,10 @@ done:
     hotpath-style runners now share the build / run / summary probe helper
     so the benchmark plumbing stays thin and consistent
 
+  BenchmarkSpanAuditKeyList-L1
+    the span-audit row ordering now lives in one shared helper instead of the
+    size-slices runner script
+
 active:
   SpanPathAudit-L1
     inspect the current 4K..16K span path and direct retained companion rows

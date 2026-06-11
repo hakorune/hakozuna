@@ -56,36 +56,12 @@ if (-not $summaryPath -or -not (Test-Path $summaryPath)) {
 
 $rows = Get-H7BenchmarkRowsFromMarkdownPath -Path $summaryPath
 
-$wanted = @(
-    'malloc_free:span4k',
-    'malloc_free:span8k',
-    'malloc_free:span16k',
-    'route_invariant:span4k',
-    'route_invariant:span8k',
-    'route_invariant:span16k',
-    'route_valid:span4k',
-    'route_valid:span8k',
-    'route_valid:span16k',
-    'route_invalid:span4k',
-    'route_invalid:span8k',
-    'route_invalid:span16k',
-    'malloc_batch:span4k',
-    'malloc_batch:span8k',
-    'malloc_batch:span16k',
-    'free_batch:span4k',
-    'free_batch:span8k',
-    'free_batch:span16k',
-    'free_retained_loop:span4k',
-    'free_retained_loop:span8k',
-    'free_retained_loop:span16k'
-)
-
 $Report = New-H7BenchmarkSummaryLines -Title "HZ7 v3 Windows Size Slices" `
     -Benchmark "bench_hz7_v3_size_slices" -Allocator "hz7-v3" -Runs $Runs -Iters $Iters `
     -Note "filtered from the v3 hotpath probe to emphasize 4K/8K/16K span-audit rows" `
     -DirectRetainCap $DirectRetainCap -SpanClassMax $SpanClassMax
 
-Add-H7BenchmarkSummaryTable -Lines $Report -Rows $rows -OrderedKeys $wanted
+Add-H7BenchmarkSummaryTable -Lines $Report -Rows $rows -OrderedKeys (Get-H7SpanAuditOrderedKeys)
 
 $Report.Add("")
 $Report.Add("Artifacts: $OutputDir")

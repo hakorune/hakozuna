@@ -40,6 +40,7 @@ win/bench_hz7_v3_common.ps1
   shared hotpath-row parser keeps the runner scripts thinner
   shared probe helper now owns build / run / summary plumbing for hotpath-style
   runners
+  shared span-audit key list keeps the size-slices ordering out of the runner
 
 win/bench_hz7_v3_sequences.inc
   ordered scenario groups and registry-driven execution
