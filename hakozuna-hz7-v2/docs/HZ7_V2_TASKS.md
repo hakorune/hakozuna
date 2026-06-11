@@ -61,11 +61,14 @@ active:
     keep cap128/cap256 as controls only
     keep Windows/Linux smoke parity visible
 
-next:
   StopOrContinueDecision-L1
-    decide whether to stop HZ7 v2 here as the cap64 tiny reference
-    use docs/HZ7_V2_STOP_OR_CONTINUE_PROMPT.md for external design review
-    if continuing, use the baseline snapshot as the scoreboard before tuning
+    local recommendation is closeout as the cap64 tiny reference
+    external review prompt is ready before final stop/continue decision
+
+next:
+  ExternalReview-L1
+    use docs/HZ7_V2_STOP_OR_CONTINUE_PROMPT.md if another design opinion is wanted
+    decide whether to accept closeout or authorize one more measured experiment
 
   OptionalCleanup-L1
     only accept additional tiny source/list cleanup if it preserves readability

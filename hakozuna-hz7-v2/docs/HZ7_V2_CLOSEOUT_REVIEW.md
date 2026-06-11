@@ -121,6 +121,24 @@ hz7_cpp_smoke:
 
 ## Closeout Decision
 
+Local recommendation:
+
+```text
+A. closeout:
+  preferred local decision
+
+Reason:
+  HZ7 v2 already has a clear identity:
+    tiny
+    route-safe
+    low-RSS
+    remote-free safe
+
+  The remaining obvious performance work would either chase throughput against
+  HZ3/tcmalloc or introduce remote/TLS/owner policy, which belongs outside the
+  current HZ7 v2 identity.
+```
+
 Recommended closeout:
 
 ```text
@@ -162,4 +180,3 @@ Performance work:
   only after a deliberate decision to keep growing v2
   measure against the baseline snapshot
 ```
-
