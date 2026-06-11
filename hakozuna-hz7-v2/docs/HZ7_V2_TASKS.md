@@ -668,3 +668,44 @@ Do not keep splitting helpers unless the boundary remains obvious.
 Next performance work should start from measured small/medium/mixed behavior,
 not from remote-fast features.
 ```
+
+## Size-Slice Diagnostic
+
+`Hz7V2SizeSliceRunner-L1` adds an HZ7 v2-only diagnostic runner that reuses the
+existing Windows `bench_random_mixed_compare` executable. It does not add a new
+allocator policy. Its purpose is to split the medium profile into the
+span-covered and direct-retained halves before changing direct-region behavior.
+
+```text
+Hz7V2SizeSliceRunner-L1:
+  [x] add a Windows HZ7 v2-only size-slice runner
+  [x] keep the runner outside allocator hot paths
+  [x] measure small, span_4k_16k, direct_16k_32k, and mixed
+  [x] write markdown and raw log artifacts
+  [x] keep allocator code unchanged
+```
+
+Windows HZ7 v2 size-slice diagnostic, runs=3:
+
+```text
+small_16_2k     77.139M ops/s, 4,584 KB peak
+span_4k_16k     27.894M ops/s, 5,164 KB peak
+direct_16k_32k  16.280M ops/s, 4,760 KB peak
+mixed_16_32k    19.101M ops/s, 5,500 KB peak
+```
+
+Source:
+
+```text
+out_win_hz7_v2_size_slices_cleanup/
+20260611_165230_hz7_v2_size_slices_windows.md
+```
+
+Reading:
+
+```text
+medium weakness is mostly the direct-retained 16K+..32K slice.
+span-covered 4K..16K is slower than small but not the main collapse.
+next performance work should inspect direct retained reuse / route transitions,
+not remote-fast machinery.
+```

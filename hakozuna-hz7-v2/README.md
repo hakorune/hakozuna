@@ -162,6 +162,15 @@ Quick HZ7 v2-only run:
 powershell -ExecutionPolicy Bypass -File .\win\run_win_random_mixed_paper.ps1 -Runs 5 -Profiles small,medium,mixed -Allocators hz7-v2
 ```
 
+HZ7 v2 size-slice diagnostic:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\hakozuna-hz7-v2\win\run_win_hz7_v2_size_slices.ps1 -Runs 3
+```
+
+This splits the medium range into span-covered `4K..16K` and direct-retained
+`16K+..32K` slices before adding another allocator policy knob.
+
 Full random_mixed suite:
 
 ```powershell
