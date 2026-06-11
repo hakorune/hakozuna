@@ -811,3 +811,59 @@ Source:
 out_win_random_mixed_hz7v2_emptycap4_default_repeat5/
 20260611_170118_paper_random_mixed_windows.md
 ```
+
+## Cross-Allocator Snapshot
+
+After `DirectRetainCap32-L1` and `EmptySpanCap4-L1`, HZ7 v2 is no longer just a
+tiny safety reference. It remains slower than HZ3/tcmalloc on this
+single-thread random_mixed suite, but it is the lowest-RSS row in all three
+profiles.
+
+Windows `random_mixed` runs=3:
+
+```text
+small:
+  hz3       155.273M ops/s,  7,184 KB peak
+  hz4       120.775M ops/s, 12,564 KB peak
+  hz7-v2     79.859M ops/s,  4,580 KB peak
+  mimalloc  102.449M ops/s,  6,548 KB peak
+  tcmalloc  123.558M ops/s,  9,508 KB peak
+
+medium:
+  hz3       155.948M ops/s,  6,440 KB peak
+  hz4        84.061M ops/s,  9,812 KB peak
+  hz7-v2     41.186M ops/s,  5,080 KB peak
+  mimalloc   89.051M ops/s, 11,652 KB peak
+  tcmalloc  154.142M ops/s, 10,280 KB peak
+
+mixed:
+  hz3       150.675M ops/s,  7,444 KB peak
+  hz4        79.981M ops/s, 18,268 KB peak
+  hz7-v2     42.376M ops/s,  5,612 KB peak
+  mimalloc   89.200M ops/s, 11,896 KB peak
+  tcmalloc  150.727M ops/s, 10,896 KB peak
+```
+
+Source:
+
+```text
+out_win_random_mixed_hz7v2_cross_compare/
+20260611_170729_paper_random_mixed_windows.md
+```
+
+Reading:
+
+```text
+HZ7 v2 strength:
+  lowest RSS across small / medium / mixed
+  much stronger than the initial v2 cleanup baseline
+  tiny source size still under 900 lines
+
+HZ7 v2 weakness:
+  single-thread throughput still below HZ3/tcmalloc
+  medium/mixed speed is now useful but not top-tier
+
+Next likely target:
+  same-thread hot path cost, especially global lock + route lookup overhead
+  do not chase remote fast path yet
+```
