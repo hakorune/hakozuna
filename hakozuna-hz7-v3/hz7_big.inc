@@ -218,9 +218,8 @@ void* h7_calloc(size_t count, size_t size) {
 }
 
 static void h7_free_locked(void* ptr, H7PendingRelease* release) {
-  H7RouteResult route = h7_route_lookup_free_candidate(ptr);
-  if (h7_route_kind_for_user_ptr(route, ptr) != H7_ROUTE_VALID ||
-      !route.region) {
+  H7RouteResult route = h7_route_lookup_user_ptr(ptr);
+  if (route.kind != H7_ROUTE_VALID || !route.region) {
     return;
   }
   if (route.region->kind == H7_REGION_SMALL_SPAN) {
@@ -243,8 +242,7 @@ void h7_free(void* ptr) {
 }
 
 static H7RouteKind h7_route_unlocked(void* ptr) {
-  H7RouteResult route = h7_route_lookup_raw(ptr);
-  return h7_route_kind_for_user_ptr(route, ptr);
+  return h7_route_lookup_user_ptr(ptr).kind;
 }
 
 H7RouteKind h7_route(void* ptr) {
