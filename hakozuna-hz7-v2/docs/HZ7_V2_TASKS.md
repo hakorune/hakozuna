@@ -582,3 +582,20 @@ Not allowed:
   inbox / TLS ownership
   remote policy matrices
 ```
+
+## Current Small Cleanup
+
+`SpanFreeListTrim-L1` is the next allowed tiny cleanup. It is not a cache
+policy change and does not change span retention, partial-list movement, or
+RSS behavior. It only gives the free-list next-index cell stored inside each
+free span slot one helper owner.
+
+```text
+SpanFreeListTrim-L1:
+  [x] add helpers for reading and writing a free slot next index
+  [x] use them from span preparation, pop, and push
+  [x] keep bitmap set/clear behavior unchanged
+  [x] keep partial/empty span list behavior unchanged
+  [x] keep active_bytes and used_count accounting unchanged
+  [x] require Windows and Linux smoke scripts to pass
+```

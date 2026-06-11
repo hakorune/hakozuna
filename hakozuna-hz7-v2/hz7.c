@@ -409,16 +409,30 @@ static void h7_bitmap_clear(H7Span* span, uint32_t index) {
   bitmap[index / 64u] &= ~(UINT64_C(1) << (index % 64u));
 }
 
+static uint32_t* h7_span_free_slot_next_cell(H7Span* span, uint32_t index) {
+  return (uint32_t*)h7_span_slot_ptr(span, index);
+}
+
+static uint32_t h7_span_free_slot_next(H7Span* span, uint32_t index) {
+  return *h7_span_free_slot_next_cell(span, index);
+}
+
+static void h7_span_set_free_slot_next(H7Span* span,
+                                       uint32_t index,
+                                       uint32_t next) {
+  *h7_span_free_slot_next_cell(span, index) = next;
+}
+
 static uint32_t h7_span_pop_free_slot(H7Span* span) {
   uint32_t index = span->free_head;
   if (index != H7_FREE_NONE) {
-    span->free_head = *(uint32_t*)h7_span_slot_ptr(span, index);
+    span->free_head = h7_span_free_slot_next(span, index);
   }
   return index;
 }
 
-static void h7_span_push_free_slot(H7Span* span, uint32_t index, void* ptr) {
-  *(uint32_t*)ptr = span->free_head;
+static void h7_span_push_free_slot(H7Span* span, uint32_t index) {
+  h7_span_set_free_slot_next(span, index, span->free_head);
   span->free_head = index;
 }
 
@@ -586,8 +600,8 @@ static void h7_span_prepare_region(H7Span* span, uint16_t class_id) {
   span->bitmap_words = bitmap_words;
   span->slot_offset = slot_offset;
   for (i = 0; i < slot_count; ++i) {
-    uint32_t* next = (uint32_t*)h7_span_slot_ptr(span, i);
-    *next = (i + 1u < slot_count) ? i + 1u : H7_FREE_NONE;
+    h7_span_set_free_slot_next(
+        span, i, (i + 1u < slot_count) ? i + 1u : H7_FREE_NONE);
   }
 }
 
@@ -694,7 +708,7 @@ static void h7_small_free(H7Span* span,
   }
   was_full = span->used_count == span->slot_count;
   h7_bitmap_clear(span, index);
-  h7_span_push_free_slot(span, index, ptr);
+  h7_span_push_free_slot(span, index);
   h7_span_mark_slot_inactive(span);
   if (span->used_count == 0) {
     h7_list_remove(&klass->partial, span);
