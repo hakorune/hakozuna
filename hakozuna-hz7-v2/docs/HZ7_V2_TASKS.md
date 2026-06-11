@@ -218,6 +218,19 @@ RegionHeaderInitHelper-L1:
   [x] require Windows and Linux smoke scripts to pass
 ```
 
+The next source cleanup step is `DirectActiveStatsHelper-L1`. It is not an
+allocation policy change. It makes retained-direct reuse and newly committed
+direct regions share the same active stats transition helper.
+
+```text
+DirectActiveStatsHelper-L1:
+  [x] add tiny helpers for direct ACTIVE and inactive stats transitions
+  [x] use them from retained reuse, direct commit, and direct free
+  [x] keep retained direct route INVALID semantics unchanged
+  [x] keep active_bytes/direct_count accounting unchanged
+  [x] require Windows and Linux smoke scripts to pass
+```
+
 The accepted cleanup step is `RouteValidationModule-L1`. It is not a policy
 change. It keeps the current route lookup behavior, but shares the small/direct
 user-pointer validation logic used by `h7_route()` and `h7_free()`.

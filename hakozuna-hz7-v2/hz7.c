@@ -650,15 +650,24 @@ static size_t h7_big_region_size(size_t size) {
   return h7_region_align_up(user_offset + size);
 }
 
+static void h7_big_mark_active(H7Direct* direct, size_t size) {
+  direct->region.flags = H7_REGION_ACTIVE;
+  direct->requested_size = size;
+  g_h7_stats.active_bytes += size;
+  ++g_h7_stats.direct_count;
+}
+
+static void h7_big_mark_inactive(H7Direct* direct) {
+  g_h7_stats.active_bytes -= direct->requested_size;
+  --g_h7_stats.direct_count;
+}
+
 static void* h7_big_alloc_retained(size_t size) {
   H7Direct* direct = h7_direct_retain_pop(size);
   if (!direct) {
     return 0;
   }
-  direct->region.flags = H7_REGION_ACTIVE;
-  direct->requested_size = size;
-  g_h7_stats.active_bytes += size;
-  ++g_h7_stats.direct_count;
+  h7_big_mark_active(direct, size);
   return h7_big_user_ptr(direct);
 }
 
@@ -681,9 +690,8 @@ static int h7_big_commit_prepared(H7Direct* direct) {
                          H7_REGION_DIRECT)) {
     return 0;
   }
-  g_h7_stats.active_bytes += direct->requested_size;
+  h7_big_mark_active(direct, direct->requested_size);
   g_h7_stats.reserved_bytes += direct->region.region_size;
-  ++g_h7_stats.direct_count;
   return 1;
 }
 
@@ -723,15 +731,13 @@ static void h7_big_free(H7Direct* direct,
     return;
   }
   if (h7_direct_retain_push(direct)) {
-    g_h7_stats.active_bytes -= direct->requested_size;
-    --g_h7_stats.direct_count;
+    h7_big_mark_inactive(direct);
     direct->region.flags = H7_REGION_RETAINED;
     return;
   }
   h7_route_unregister(direct);
-  g_h7_stats.active_bytes -= direct->requested_size;
+  h7_big_mark_inactive(direct);
   g_h7_stats.reserved_bytes -= direct->region.region_size;
-  --g_h7_stats.direct_count;
   direct->region.flags = 0;
   release->ptr = direct;
   release->size = direct->region.region_size;
