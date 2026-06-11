@@ -208,6 +208,7 @@ powershell -ExecutionPolicy Bypass -File .\win\run_win_random_mixed_paper.ps1 -R
 ## Reading Order
 
 ```text
+docs/HZ7_V2_CLOSEOUT_REVIEW.md
 docs/HZ7_V2_TASKS.md
 docs/HZ7_TINYROUTE_V2.md
 docs/HZ7_TINYROUTE_PLAN_V2.md

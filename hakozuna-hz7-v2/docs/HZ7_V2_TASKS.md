@@ -47,6 +47,10 @@ done:
     kept h7_route lookup separate from user-pointer VALID/INVALID interpretation
     did not change MISS / VALID / INVALID semantics
 
+  CloseoutReview-L1
+    added docs/HZ7_V2_CLOSEOUT_REVIEW.md
+    captured current identity, code size, default lane, snapshot, and stop/go criteria
+
 active:
   HZ7 v2 lane closeout
     keep README current measurement on the cap64 default
@@ -54,9 +58,9 @@ active:
     keep Windows/Linux smoke parity visible
 
 next:
-  CloseoutReview-L1
-    decide whether HZ7 v2 should stop here as the cap64 tiny reference
-    use the baseline snapshot as the scoreboard before further tuning
+  StopOrContinueDecision-L1
+    decide whether to stop HZ7 v2 here as the cap64 tiny reference
+    if continuing, use the baseline snapshot as the scoreboard before tuning
 
   OptionalCleanup-L1
     only accept additional tiny source/list cleanup if it preserves readability
