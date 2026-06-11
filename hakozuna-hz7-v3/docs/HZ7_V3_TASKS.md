@@ -72,6 +72,10 @@ done:
     hotpath and batch-focus runners now share the hotpath-row parser helper
     so the runner scripts stay thinner and easier to compare
 
+  BenchmarkRunnerProbeHelper-L1
+    hotpath-style runners now share the build / run / summary probe helper
+    so the benchmark plumbing stays thin and consistent
+
 active:
   SpanPathAudit-L1
     inspect the current 4K..16K span path and direct retained companion rows

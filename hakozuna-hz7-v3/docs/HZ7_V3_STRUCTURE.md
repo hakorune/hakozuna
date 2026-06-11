@@ -38,6 +38,8 @@ win/bench_hz7_v3_rows.inc
 win/bench_hz7_v3_common.ps1
   shared runner helpers for the Windows benchmark scripts
   shared hotpath-row parser keeps the runner scripts thinner
+  shared probe helper now owns build / run / summary plumbing for hotpath-style
+  runners
 
 win/bench_hz7_v3_sequences.inc
   ordered scenario groups and registry-driven execution
