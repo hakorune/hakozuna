@@ -46,6 +46,16 @@ static uint32_t h7_batch_iters_for_size(size_t size, uint32_t requested) {
   return requested < cap ? requested : cap;
 }
 
+static uint32_t h7_rng_next(uint32_t* state) {
+  *state = *state * 1664525u + 1013904223u;
+  return *state;
+}
+
+static size_t h7_size_from_range(uint32_t value, size_t min_size, size_t max_size) {
+  size_t span = max_size - min_size + 1u;
+  return min_size + (size_t)(value % (uint32_t)span);
+}
+
 static void h7_run_malloc_free(const char* label,
                                size_t size,
                                uint32_t iters) {
@@ -249,6 +259,60 @@ static void h7_run_free_retained_loop(const char* label,
          h7_peak_working_set_kb());
 }
 
+static void h7_run_mixed_steady(const char* label,
+                                size_t min_size,
+                                size_t max_size,
+                                uint32_t iters,
+                                uint32_t live_count) {
+  uint32_t i;
+  uint32_t rng = 0xC0FFEE11u;
+  uint32_t ok = 0;
+  void** ptrs = (void**)calloc(live_count, sizeof(void*));
+  size_t* sizes = (size_t*)calloc(live_count, sizeof(size_t));
+  double start;
+  double elapsed;
+  if (!ptrs || !sizes || live_count == 0) {
+    printf("hz7_hotpath: op=mixed_steady label=%s size=0 alloc_failed=1\n",
+           label);
+    free(ptrs);
+    free(sizes);
+    return;
+  }
+  for (i = 0; i < live_count; ++i) {
+    sizes[i] = h7_size_from_range(h7_rng_next(&rng), min_size, max_size);
+    ptrs[i] = h7_malloc(sizes[i]);
+    if (ptrs[i]) {
+      h7_touch(ptrs[i], sizes[i], i);
+    }
+  }
+  start = h7_seconds();
+  for (i = 0; i < iters; ++i) {
+    uint32_t slot = h7_rng_next(&rng) % live_count;
+    size_t size = h7_size_from_range(h7_rng_next(&rng), min_size, max_size);
+    h7_free(ptrs[slot]);
+    ptrs[slot] = h7_malloc(size);
+    sizes[slot] = size;
+    if (ptrs[slot]) {
+      h7_touch(ptrs[slot], size, i);
+      ++ok;
+    }
+  }
+  elapsed = h7_seconds() - start;
+  for (i = 0; i < live_count; ++i) {
+    h7_free(ptrs[i]);
+  }
+  free(ptrs);
+  free(sizes);
+  printf("hz7_hotpath: op=mixed_steady label=%s size=0 iters=%u ok=%u "
+         "time=%.6f ops/s=%.2f peak_kb=%zu\n",
+         label,
+         iters,
+         ok,
+         elapsed,
+         elapsed > 0.0 ? (double)ok / elapsed : 0.0,
+         h7_peak_working_set_kb());
+}
+
 int main(int argc, char** argv) {
   uint32_t iters = 10000000u;
   if (argc > 1) {
@@ -278,6 +342,12 @@ int main(int argc, char** argv) {
   h7_run_free_retained_loop("small64", 64u, iters);
   h7_run_free_retained_loop("span8k", 8192u, iters);
   h7_run_free_retained_loop("direct32k", 32768u, iters);
+
+  h7_run_mixed_steady("small_ws400", 16u, 2048u, iters, 400u);
+  h7_run_mixed_steady("span_medium_ws400", 4096u, 16384u, iters, 400u);
+  h7_run_mixed_steady("direct_medium_ws400", 16385u, 32768u, iters, 400u);
+  h7_run_mixed_steady("medium_ws400", 4096u, 32768u, iters, 400u);
+  h7_run_mixed_steady("mixed_ws400", 16u, 32768u, iters, 400u);
 
   return 0;
 }

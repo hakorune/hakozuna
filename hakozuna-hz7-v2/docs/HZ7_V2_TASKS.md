@@ -1122,3 +1122,72 @@ MixedSizeSteady-L1 diagnostic:
   identify whether medium/mixed weakness is class switching, direct retain
   bucket mismatch, route churn, or benchmark RNG/workload overhead
 ```
+
+### MixedSizeSteady-L1
+
+Added diagnostic-only rows to the hotpath bench:
+
+```text
+mixed_steady small_ws400:
+  16B..2KiB, live set 400
+
+mixed_steady span_medium_ws400:
+  4KiB..16KiB, live set 400
+
+mixed_steady direct_medium_ws400:
+  16KiB+1..32KiB, live set 400
+
+mixed_steady medium_ws400:
+  4KiB..32KiB, live set 400
+
+mixed_steady mixed_ws400:
+  16B..32KiB, live set 400
+```
+
+Windows repeat-3 observation:
+
+```text
+small_ws400          51.191M ops/s
+span_medium_ws400   37.956M ops/s
+direct_medium_ws400 54.547M ops/s
+medium_ws400        24.280M ops/s
+mixed_ws400         23.083M ops/s
+```
+
+Source:
+
+```text
+out_win_hz7_v2_hotpath_mixedsteady_slices_l1/
+20260611_172642_hz7_v2_hotpath_windows.md
+```
+
+Reading:
+
+```text
+Direct-retained medium is not the weak row by itself.
+Small steady and direct-medium steady are both around 50M+ ops/s.
+Span-medium steady is lower but still far above cross-boundary medium/mixed.
+
+The weak signal appears when the workload crosses the 16KiB span/direct
+boundary with a bounded live set. This points at cross-class / cross-source
+churn rather than a simple route lookup or direct retain problem.
+
+The peak_kb column in this diagnostic is cumulative within one process and is
+not used as RSS evidence for these mixed_steady rows.
+```
+
+Next implementation candidates:
+
+```text
+BoundaryChurn-L1 diagnostic:
+  count how often steady workloads cross small/span/direct source families
+  without adding production counters
+
+MediumBoundaryPolicy-L1:
+  test whether changing the 16KiB span/direct boundary improves cross-boundary
+  steady mixed rows without hurting small/direct-only rows
+
+DirectRetainClass-L1:
+  test whether finer direct retain buckets help only after boundary churn is
+  proven to be a direct-retain mismatch rather than source-family switching
+```
