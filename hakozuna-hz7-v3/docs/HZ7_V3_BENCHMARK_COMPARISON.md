@@ -41,13 +41,13 @@ Latest runner snapshots:
 
 ```text
 hotpath:
-  ../out_win_hz7_v3_hotpath/20260612_002922_hz7_v3_hotpath_windows.md
+  ../out_win_hz7_v3_hotpath/20260612_012610_bench_hz7_v3_hotpath_windows.md
 
 size-slices:
-  ../out_win_hz7_v3_size_slices/20260612_002928_hz7_v3_size_slices_windows.md
+  ../out_win_hz7_v3_size_slices/20260612_012609_bench_hz7_v3_size_slices_windows.md
 
 batch-focus:
-  ../out_win_hz7_v3_batch_focus/20260612_003905_hz7_v3_batch_focus_windows.md
+  ../out_win_hz7_v3_batch_focus/20260612_012610_bench_hz7_v3_batch_focus_windows.md
 ```
 
 ## 4K / 8K / 16K Span Audit
