@@ -163,8 +163,8 @@ direct retained 32K / 64K:
 
 free path reserved-slot lookup:
   uses the region header hint before the exact-base fallback
-  latest 3-run smoke kept the bench surface readable and left the span path
-  as the next obvious watch item
+  latest 3-run smoke showed it was a no-go; exact-base lookup stays the
+  simpler reference for now
 ```
 
 ## Current Reading

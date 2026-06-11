@@ -59,6 +59,8 @@ done:
   FreePathReservedSlotLookup-L1
     h7_free now checks the region header's reserved route slot before falling
     back to the exact-base route scan
+    3-run smoke showed the hint is no-go; exact-base free lookup stays the
+    cleaner reference path
 
 active:
   SpanPathAudit-L1
