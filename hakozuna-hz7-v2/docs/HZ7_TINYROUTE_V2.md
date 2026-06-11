@@ -162,11 +162,11 @@ Read:
   archive the knob as hygiene-only
 ```
 
-## Next Implementation: SlowPathOutsideLock-L1
+## Accepted Implementation: SlowPathOutsideLock-L1
 
-The next active HZ7 v2 step is not remote fast path work. Keep remote free as
-safety/evidence, and reduce coarse-lock cost by moving slow OS work outside the
-global lock while preserving route safety.
+The accepted HZ7 v2 step is not remote fast path work. Remote free stays
+safety/evidence, while coarse-lock cost is reduced by moving slow OS work
+outside the global lock when route state is already safe.
 
 ```text
 Goal:
@@ -271,17 +271,22 @@ Recheck after removal:
   pass; the reverted baseline is the one to keep moving forward from
 ```
 
-## Next Step
+## Next Candidate Backlog
 
 ```text
-next tiny-step candidate:
-  choose a new tiny local hot-path change only if it can beat the archived
-  scan baseline on small / medium / mixed together
-
-Current read:
+current read:
   route hot cache and SpanClassLookupTrim-L1 are both archived
   keep v1 frozen and stop layering tiny route/class changes unless a stronger
   paired improvement appears
+
+candidate rule:
+  choose a new tiny local hot-path change only if it can beat the accepted
+  HZ7 v2 path on small / medium / mixed together
+
+possible next areas:
+  route/register cleanup only with a paired throughput win
+  medium/direct retain cleanup only if RSS stays flat
+  same-thread tiny front cache only if remote-free safety remains global-lock
 ```
 
 ## Remote Evidence

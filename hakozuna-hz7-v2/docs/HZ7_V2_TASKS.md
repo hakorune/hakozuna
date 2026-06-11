@@ -17,35 +17,35 @@ readable tiny allocator shape
 
 ## Priority 1: Must-Have
 
-- [ ] Keep local small/medium performance viable
-- [ ] Keep cross-thread free safe under the coarse global lock
-- [ ] Preserve fail-closed route safety
-- [ ] Keep RSS low and predictable
-- [ ] Keep the code readable enough to explain as a tiny reference
+- [x] Keep local small/medium performance viable
+- [x] Keep cross-thread free safe under the coarse global lock
+- [x] Preserve fail-closed route safety
+- [x] Keep RSS low and predictable
+- [x] Keep the code readable enough to explain as a tiny reference
 
 ## Priority 2: Implementation
 
-- [ ] Keep the direct API small and explicit
-- [ ] Keep the small/medium hot path separate from remote safety concerns
+- [x] Keep the direct API small and explicit
+- [x] Keep the small/medium hot path separate from remote safety concerns
 - [x] Implement `SlowPathOutsideLock-L1` before adding remote fast paths
 - [x] Move OS allocation/release work out of the global lock where route safety allows
-- [ ] Keep remote as safety/evidence only, not a throughput claim
-- [ ] Keep route/class changes tiny unless they beat the archived baseline
-- [ ] Fail closed on invalid or foreign-looking input
+- [x] Keep remote as safety/evidence only, not a throughput claim
+- [x] Keep route/class changes tiny unless they beat the archived baseline
+- [x] Fail closed on invalid or foreign-looking input
 
 ## Priority 3: Documentation
 
-- [ ] Keep the v2 goal statement in sync with the code shape
-- [ ] Keep the README short and direct about what v2 is and is not
-- [ ] Keep no-go decisions visible so repeated dead ends stay archived
-- [ ] Keep v1 frozen as the cute tiny baseline
+- [x] Keep the v2 goal statement in sync with the code shape
+- [x] Keep the README short and direct about what v2 is and is not
+- [x] Keep no-go decisions visible so repeated dead ends stay archived
+- [x] Keep v1 frozen as the cute tiny baseline
 
 ## Priority 4: Evaluation
 
-- [ ] Compare small / medium / mixed together before promoting a change
-- [ ] Track RSS alongside throughput
-- [ ] Use remote only as a safety/control check
-- [ ] Preserve the archived no-go baseline when a new idea does not earn a win
+- [x] Compare small / medium / mixed together before promoting a change
+- [x] Track RSS alongside throughput
+- [x] Use remote only as a safety/control check
+- [x] Preserve the archived no-go baseline when a new idea does not earn a win
 
 ## Archived No-Gos
 
@@ -64,9 +64,9 @@ SpanClassLookupTrim-L1:
   archived no-go; improved medium but regressed mixed enough to lose the win
 ```
 
-## Next Tiny-Step Rule
+## Accepted Tiny-Step
 
-The next active tiny step is `SlowPathOutsideLock-L1`, also called
+The accepted tiny step is `SlowPathOutsideLock-L1`, also called
 `LockScopeTrim-L1`. Keep the coarse global lock design, but stop holding that
 lock across OS allocation and OS release when the route/state transition can be
 completed first.
@@ -110,12 +110,31 @@ source:
   20260611_151350_paper_random_mixed_windows.md
 ```
 
-No-go:
+No-go checks:
 
-- [ ] Do not move route unregister outside the lock
-- [ ] Do not free an OS region while its route entry is still active
-- [ ] Do not add owner tokens, inboxes, TLS ownership, remote queues, or production diagnostics
-- [ ] Do not keep the change if the code becomes hard to explain as a tiny reference
+- [x] Do not move route unregister outside the lock
+- [x] Do not free an OS region while its route entry is still active
+- [x] Do not add owner tokens, inboxes, TLS ownership, remote queues, or production diagnostics
+- [x] Do not keep the change if the code becomes hard to explain as a tiny reference
+
+## Next Candidate Backlog
+
+No new default change is selected yet. The next candidate must keep the same
+tiny allocator contract and beat the accepted path on small / medium / mixed
+together, not just on one slice.
+
+```text
+possible next areas:
+  1. route/register cleanup only if it has a paired throughput win
+  2. medium/direct retain cleanup only if RSS stays flat
+  3. same-thread tiny front cache only if remote-free safety remains global-lock
+
+avoid:
+  remote throughput policy
+  owner-aware handoff
+  TLS ownership
+  broad diagnostic counters in production speed builds
+```
 
 ## Remote Evidence
 
