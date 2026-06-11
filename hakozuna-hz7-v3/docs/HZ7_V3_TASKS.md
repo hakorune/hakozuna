@@ -81,6 +81,7 @@ active:
     keep route safety unchanged
     keep RemoteNatural-L1 as a control preset
     keep the route/span/big helper split easy to follow
+    keep the small-span acquire path readable by lifting the partial/empty choice into one helper
 
 next:
   keep the hotpath and size-slice wiring narrow and readable

@@ -153,6 +153,14 @@ static int h7_empty_span_try_push(H7Class* klass, H7Span* span) {
   return 1;
 }
 
+static H7Span* h7_small_span_acquire(H7Class* klass) {
+  H7Span* span = klass->partial;
+  if (span) {
+    return span;
+  }
+  return h7_empty_span_pop(klass);
+}
+
 static int h7_class_for_size(size_t size) {
   size_t count = sizeof(g_h7_classes) / sizeof(g_h7_classes[0]);
   size_t i;
@@ -298,10 +306,7 @@ static void* h7_small_alloc_existing(size_t size) {
     return 0;
   }
   klass = &g_h7_classes[class_id];
-  span = klass->partial;
-  if (!span) {
-    span = h7_empty_span_pop(klass);
-  }
+  span = h7_small_span_acquire(klass);
   if (!span) {
     return 0;
   }
