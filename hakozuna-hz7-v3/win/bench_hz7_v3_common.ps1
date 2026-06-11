@@ -349,3 +349,62 @@ function Invoke-H7BenchmarkProbe {
     Set-Content -Path $RawLogPath -Value $RawLines -Encoding UTF8
     Write-Host "Wrote summary: $SummaryPath"
 }
+
+function Invoke-H7FilteredBenchmarkProbe {
+    param(
+        [string]$RunnerScriptPath,
+        [string[]]$RunnerArguments,
+        [string]$OutputDir,
+        [string]$RunnerTag,
+        [string]$SummaryTitle,
+        [string]$Benchmark,
+        [string]$Allocator,
+        [string]$Note,
+        [int]$Runs,
+        [int]$Iters,
+        [string[]]$OrderedKeys,
+        [int]$DirectRetainCap = 0,
+        [int]$SpanClassMax = 0,
+        [int]$EmptySpanCap = 0
+    )
+
+    New-Item -ItemType Directory -Force $OutputDir | Out-Null
+
+    if (-not (Test-Path $RunnerScriptPath)) {
+        throw "runner script not found: $RunnerScriptPath"
+    }
+
+    $Stamp = Get-Date -Format "yyyyMMdd_HHmmss"
+    $RawDir = Join-Path $OutputDir "raw"
+    New-Item -ItemType Directory -Force $RawDir | Out-Null
+
+    $result = Invoke-H7CapturedProcess -FilePath "powershell" -Arguments @(
+        "-ExecutionPolicy", "Bypass",
+        "-File", $RunnerScriptPath
+    ) + $RunnerArguments
+    if ($result.ExitCode -ne 0) {
+        throw "$RunnerTag runner failed with exit code $($result.ExitCode)"
+    }
+
+    $summaryPath = Find-H7SummaryPathFromLines -Lines $result.Lines
+    if (-not $summaryPath -or -not (Test-Path $summaryPath)) {
+        throw "$RunnerTag summary not found"
+    }
+
+    $rows = Get-H7BenchmarkRowsFromMarkdownPath -Path $summaryPath
+
+    $Summary = New-H7BenchmarkSummaryLines -Title $SummaryTitle `
+        -Benchmark $Benchmark -Allocator $Allocator -Runs $Runs -Iters $Iters `
+        -Note $Note -DirectRetainCap $DirectRetainCap -SpanClassMax $SpanClassMax
+
+    Add-H7BenchmarkSummaryTable -Lines $Summary -Rows $rows -OrderedKeys $OrderedKeys
+
+    $Summary.Add("")
+    $Summary.Add("Artifacts: $OutputDir")
+
+    $summaryOut = Join-Path $OutputDir ($Stamp + "_" + $Benchmark + "_windows.md")
+    $rawOut = Join-Path $OutputDir ($Stamp + "_" + $Benchmark + "_windows.log")
+    Set-Content -Path $summaryOut -Value $Summary -Encoding UTF8
+    Set-Content -Path $rawOut -Value ($result.Lines -join "`r`n") -Encoding UTF8
+    Write-Host "Wrote summary: $summaryOut"
+}

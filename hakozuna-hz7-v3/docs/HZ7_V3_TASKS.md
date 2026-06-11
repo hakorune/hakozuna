@@ -80,6 +80,10 @@ done:
     the span-audit row ordering now lives in one shared helper instead of the
     size-slices runner script
 
+  BenchmarkCompanionProbe-L1
+    the size-slices companion now uses one shared helper for the filtered
+    runner / summary wiring instead of spelling that plumbing in the script
+
 active:
   SpanPathAudit-L1
     inspect the current 4K..16K span path and direct retained companion rows
@@ -96,6 +100,8 @@ next:
   keep the hotpath and size-slice wiring narrow and readable
   use the batch-focus probe to pick the next span/free-list tweak from the
   measured 4K..16K path
+  keep companion probe filtering in the shared runner helper rather than the
+  runner script itself
 ```
 
 Note:
