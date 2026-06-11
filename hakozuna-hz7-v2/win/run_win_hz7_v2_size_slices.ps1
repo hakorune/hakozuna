@@ -2,7 +2,8 @@ param(
     [string]$OutputDir,
     [int]$Runs = 3,
     [int]$Iters = 20000000,
-    [int]$WorkingSet = 400
+    [int]$WorkingSet = 400,
+    [int]$DirectRetainCap = 0
 )
 
 $ErrorActionPreference = "Stop"
@@ -10,7 +11,12 @@ $ErrorActionPreference = "Stop"
 $Hz7V2Root = Split-Path -Parent $PSScriptRoot
 $RepoRoot = Split-Path -Parent $Hz7V2Root
 $BuildScript = Join-Path $RepoRoot "win\build_win_random_mixed_suite.ps1"
-$BenchDir = Join-Path $RepoRoot "out_win_random_mixed"
+$BenchDirName = if ($DirectRetainCap -gt 0) {
+    "out_win_random_mixed_hz7v2_cap$DirectRetainCap"
+} else {
+    "out_win_random_mixed"
+}
+$BenchDir = Join-Path $RepoRoot $BenchDirName
 $BenchExe = Join-Path $BenchDir "bench_random_mixed_hz7_v2.exe"
 
 if (-not $OutputDir) {
@@ -19,8 +25,8 @@ if (-not $OutputDir) {
 
 New-Item -ItemType Directory -Force $OutputDir | Out-Null
 
-if (-not (Test-Path $BenchExe)) {
-    & $BuildScript -OnlyHz7V2 -OutDirName "out_win_random_mixed"
+if ($DirectRetainCap -gt 0 -or -not (Test-Path $BenchExe)) {
+    & $BuildScript -OnlyHz7V2 -OutDirName $BenchDirName -Hz7V2DirectRetainCap $DirectRetainCap
     if ($LASTEXITCODE -ne 0) {
         throw "build_win_random_mixed_suite.ps1 failed with exit code $LASTEXITCODE"
     }
@@ -111,6 +117,7 @@ $Summary.Add('- allocator: `hz7-v2`')
 $Summary.Add("- runs: $Runs")
 $Summary.Add("- iters: $Iters")
 $Summary.Add("- working_set: $WorkingSet")
+$Summary.Add("- direct_retain_cap: $(if ($DirectRetainCap -gt 0) { $DirectRetainCap } else { 'default' })")
 $Summary.Add("- purpose: split medium into span-covered and direct-retained slices")
 $Summary.Add("")
 $Summary.Add("| profile | range | note | median ops/s | median peak_kb | runs |")

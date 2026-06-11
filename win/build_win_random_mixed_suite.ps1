@@ -2,6 +2,7 @@ param(
     [string]$VcpkgRoot,
     [switch]$DiagnosticHz6Probes,
     [switch]$OnlyHz7V2,
+    [int]$Hz7V2DirectRetainCap = 0,
     [string]$OutDirName = "out_win_random_mixed"
 )
 
@@ -76,7 +77,11 @@ if ($OnlyHz7V2) {
     if (Test-Path $Hz7V2Source) {
         Write-Host "Building: bench_random_mixed (hz7-v2 only)"
         $BenchHz7V2Out = Join-Path $OutDir "bench_random_mixed_hz7_v2.exe"
-        Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ7=1", $Hz7V2Source, $BenchSrc, "psapi.lib", "/link", "/out:$BenchHz7V2Out"))
+        $Hz7V2Flags = @("/DHZ_BENCH_USE_HZ7=1")
+        if ($Hz7V2DirectRetainCap -gt 0) {
+            $Hz7V2Flags += "/DH7_DIRECT_RETAIN_CAP=$Hz7V2DirectRetainCap"
+        }
+        Invoke-Checked $Cc ($BaseFlags + $Hz7V2Flags + @($Hz7V2Source, $BenchSrc, "psapi.lib", "/link", "/out:$BenchHz7V2Out"))
         Write-Host "Built HZ7 v2 random_mixed artifact in: $OutDir"
         return
     }
@@ -157,7 +162,11 @@ if (Test-Path $Hz7Source) {
 if (Test-Path $Hz7V2Source) {
     Write-Host "Building: bench_random_mixed (hz7-v2)"
     $BenchHz7V2Out = Join-Path $OutDir "bench_random_mixed_hz7_v2.exe"
-    Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ7=1", $Hz7V2Source, $BenchSrc, "psapi.lib", "/link", "/out:$BenchHz7V2Out"))
+    $Hz7V2Flags = @("/DHZ_BENCH_USE_HZ7=1")
+    if ($Hz7V2DirectRetainCap -gt 0) {
+        $Hz7V2Flags += "/DH7_DIRECT_RETAIN_CAP=$Hz7V2DirectRetainCap"
+    }
+    Invoke-Checked $Cc ($BaseFlags + $Hz7V2Flags + @($Hz7V2Source, $BenchSrc, "psapi.lib", "/link", "/out:$BenchHz7V2Out"))
 } else {
     Write-Warning "HZ7 v2 source not found; skipping HZ7 v2 random_mixed bench."
 }

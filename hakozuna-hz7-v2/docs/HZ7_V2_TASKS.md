@@ -709,3 +709,51 @@ span-covered 4K..16K is slower than small but not the main collapse.
 next performance work should inspect direct retained reuse / route transitions,
 not remote-fast machinery.
 ```
+
+## Direct Retain Cap Promotion
+
+`DirectRetainCap32-L1` is a small policy change. The size-slice diagnostic
+showed that the medium weakness is concentrated in the direct-retained
+`16K+..32K` slice, and increasing the direct retain cap from 16 to 32 removes
+most of that collapse without changing the route contract.
+
+```text
+DirectRetainCap32-L1:
+  [x] promote H7_DIRECT_RETAIN_CAP default from 16 to 32
+  [x] keep only the existing 32K and 64K retained buckets
+  [x] keep retained direct regions route INVALID, not MISS
+  [x] keep remote-free safety unchanged
+  [x] require Windows and Linux smoke scripts to pass
+  [x] require random_mixed repeat-5 after promotion
+```
+
+Cap=32 size-slice probe, runs=3:
+
+```text
+small_16_2k     78.162M ops/s, 5,016 KB peak
+span_4k_16k     28.227M ops/s, 5,168 KB peak
+direct_16k_32k  43.031M ops/s, 4,752 KB peak
+mixed_16_32k    30.127M ops/s, 5,508 KB peak
+```
+
+Source:
+
+```text
+out_win_hz7_v2_size_slices_cap32/
+20260611_165545_hz7_v2_size_slices_windows.md
+```
+
+Default cap=32 random_mixed repeat-5:
+
+```text
+small   77.536M ops/s, 4,576 KB peak
+medium  28.789M ops/s, 5,040 KB peak
+mixed   29.852M ops/s, 5,512 KB peak
+```
+
+Source:
+
+```text
+out_win_random_mixed_hz7v2_cap32_default_repeat5/
+20260611_165655_paper_random_mixed_windows.md
+```
