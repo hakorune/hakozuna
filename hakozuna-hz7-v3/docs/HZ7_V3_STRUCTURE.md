@@ -25,6 +25,9 @@ hz7_big.inc
 win/bench_hz7_v3_hotpath.c
   benchmark driver and top-level orchestration
 
+win/bench_hz7_v3_ops.inc
+  benchmark operation helpers for individual row bodies
+
 win/bench_hz7_v3_rows.inc
   shared row definitions and row wrapper helpers
 

@@ -79,12 +79,15 @@ docs/HZ7_V3_STRUCTURE.md
 win/bench_hz7_v3_rows.inc
   shared span-audit row definitions and row wrapper helpers
 
+win/bench_hz7_v3_ops.inc
+  benchmark operation helpers for individual row bodies
+
 win/bench_hz7_v3_sequences.inc
   ordered benchmark scenario groups used by the hotpath driver
+```
 
 The hotpath driver now walks a tiny scenario registry instead of spelling every
 sequence out in `main`.
-```
 
 ## SpanPathAudit-L1
 

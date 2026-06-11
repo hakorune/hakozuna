@@ -17,11 +17,11 @@ win/run_win_hz7_v3_size_slices.ps1
 win/bench_hz7_v3_rows.inc
   shared size-row labels and row wrapper helpers used by the driver
 
+win/bench_hz7_v3_ops.inc
+  benchmark operation helpers for individual row bodies
+
 win/bench_hz7_v3_sequences.inc
   ordered benchmark scenario groups used by the hotpath driver
-
-The hotpath driver walks the scenario registry instead of spelling every
-sequence out in `main`.
 
 docs/HZ7_V3_BENCHMARK_COMPARISON.md
   one-page comparison of the current Windows probe snapshots
@@ -29,6 +29,9 @@ docs/HZ7_V3_BENCHMARK_COMPARISON.md
 docs/HZ7_V3_STRUCTURE.md
   one-page note for the current allocator and benchmark module boundaries
 ```
+
+The hotpath driver walks the scenario registry instead of spelling every
+sequence out in `main`.
 
 ## Current Artifact Roots
 

@@ -63,15 +63,18 @@ hz7_big.inc
 win/bench_hz7_v3_hotpath.c
   benchmark driver and scenario sequencing
 
+win/bench_hz7_v3_ops.inc
+  operation helpers for the benchmark rows
+
 win/bench_hz7_v3_rows.inc
   shared size-row definitions and row wrapper helpers
 
 win/bench_hz7_v3_sequences.inc
   ordered benchmark scenario groups used by the hotpath driver
+```
 
 The hotpath driver now walks the scenario registry instead of spelling every
 sequence out in `main`.
-```
 
 ## V3 Goal
 
