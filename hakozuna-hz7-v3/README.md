@@ -59,6 +59,12 @@ hz7_span.inc
 
 hz7_big.inc
   direct allocation, malloc/free API wiring, stats and retained direct flow
+
+win/bench_hz7_v3_hotpath.c
+  benchmark driver and scenario sequencing
+
+win/bench_hz7_v3_rows.inc
+  shared size-row definitions and row wrapper helpers
 ```
 
 ## V3 Goal
@@ -95,6 +101,8 @@ docs/benchmarks/windows/hz7_v3_size_slices_probe2/
 
 The hotpath probe now carries the route invariant helper rows, and the size
 slices companion keeps the experiment focused on 4K / 8K / 16K rows.
+The benchmark driver itself now keeps the scenario sequence readable by moving
+shared row helpers into `win/bench_hz7_v3_rows.inc`.
 
 See also:
 

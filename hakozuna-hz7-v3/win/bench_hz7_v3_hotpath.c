@@ -60,10 +60,38 @@ static uint32_t h7_source_family_for_size(size_t size) {
   return size <= 16384u ? 1u : 2u;
 }
 
-typedef struct H7SizeRow {
-  const char* label;
-  size_t size;
-} H7SizeRow;
+static void h7_run_malloc_free(const char* label,
+                               size_t size,
+                               uint32_t iters);
+static void h7_run_route_valid(const char* label,
+                               size_t size,
+                               uint32_t iters);
+static void h7_run_route_invalid(const char* label,
+                                 size_t size,
+                                 uint32_t iters);
+static void h7_run_route_invariant(const char* label,
+                                   size_t size,
+                                   uint32_t iters);
+static void h7_run_malloc_batch_free(const char* label,
+                                     size_t size,
+                                     uint32_t iters);
+static void h7_run_free_batch(const char* label, size_t size, uint32_t iters);
+static void h7_run_free_retained_loop(const char* label,
+                                      size_t size,
+                                      uint32_t iters);
+static void h7_run_mixed_steady(const char* label,
+                                size_t min_size,
+                                size_t max_size,
+                                uint32_t iters,
+                                uint32_t live_count);
+static void h7_run_random_toggle(const char* label,
+                                 size_t min_size,
+                                 size_t max_size,
+                                 uint32_t iters,
+                                 uint32_t live_count,
+                                 uint32_t touch_allocs);
+
+#include "bench_hz7_v3_rows.inc"
 
 static void h7_run_malloc_free(const char* label,
                                size_t size,
@@ -418,76 +446,8 @@ static void h7_run_random_toggle(const char* label,
          h7_peak_working_set_kb());
 }
 
-static void h7_run_size_rows_malloc_free(const H7SizeRow* rows,
-                                         size_t count,
-                                         uint32_t iters) {
-  size_t i;
-  for (i = 0; i < count; ++i) {
-    h7_run_malloc_free(rows[i].label, rows[i].size, iters);
-  }
-}
-
-static void h7_run_size_rows_route_valid(const H7SizeRow* rows,
-                                         size_t count,
-                                         uint32_t iters) {
-  size_t i;
-  for (i = 0; i < count; ++i) {
-    h7_run_route_valid(rows[i].label, rows[i].size, iters);
-  }
-}
-
-static void h7_run_size_rows_route_invalid(const H7SizeRow* rows,
-                                           size_t count,
-                                           uint32_t iters) {
-  size_t i;
-  for (i = 0; i < count; ++i) {
-    h7_run_route_invalid(rows[i].label, rows[i].size, iters);
-  }
-}
-
-static void h7_run_size_rows_route_invariant(const H7SizeRow* rows,
-                                             size_t count,
-                                             uint32_t iters) {
-  size_t i;
-  for (i = 0; i < count; ++i) {
-    h7_run_route_invariant(rows[i].label, rows[i].size, iters);
-  }
-}
-
-static void h7_run_size_rows_malloc_batch_free(const H7SizeRow* rows,
-                                               size_t count,
-                                               uint32_t iters) {
-  size_t i;
-  for (i = 0; i < count; ++i) {
-    h7_run_malloc_batch_free(rows[i].label, rows[i].size, iters);
-  }
-}
-
-static void h7_run_size_rows_free_batch(const H7SizeRow* rows,
-                                        size_t count,
-                                        uint32_t iters) {
-  size_t i;
-  for (i = 0; i < count; ++i) {
-    h7_run_free_batch(rows[i].label, rows[i].size, iters);
-  }
-}
-
-static void h7_run_size_rows_free_retained_loop(const H7SizeRow* rows,
-                                                size_t count,
-                                                uint32_t iters) {
-  size_t i;
-  for (i = 0; i < count; ++i) {
-    h7_run_free_retained_loop(rows[i].label, rows[i].size, iters);
-  }
-}
-
 int main(int argc, char** argv) {
   uint32_t iters = 10000000u;
-  static const H7SizeRow kSpanRows[] = {
-      {"span4k", 4096u},
-      {"span8k", 8192u},
-      {"span16k", 16384u},
-  };
   if (argc > 1) {
     iters = (uint32_t)strtoul(argv[1], 0, 10);
   }

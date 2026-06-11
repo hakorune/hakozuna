@@ -13,6 +13,9 @@ win/run_win_hz7_v3_hotpath.ps1
 
 win/run_win_hz7_v3_size_slices.ps1
   filtered companion probe for 4K / 8K / 16K slices
+
+win/bench_hz7_v3_rows.inc
+  shared size-row labels and row wrapper helpers used by the driver
 ```
 
 ## Current Artifact Roots
