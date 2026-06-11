@@ -16,12 +16,14 @@ New-Item -ItemType Directory -Force $OutDir | Out-Null
 $Compiler = Get-Command $CompilerPath -ErrorAction Stop
 $SmokeSource = Join-Path $Hz7Root "tests\hz7_smoke.c"
 $RemoteSmokeSource = Join-Path $Hz7Root "tests\hz7_remote_smoke.c"
+$RemoteNaturalSmokeSource = Join-Path $Hz7Root "tests\hz7_remote_natural_smoke.c"
 $MtSmokeSource = Join-Path $Hz7Root "tests\hz7_mt_smoke.c"
 $StatsSmokeSource = Join-Path $Hz7Root "tests\hz7_stats_smoke.c"
 $CppSmokeSource = Join-Path $Hz7Root "tests\hz7_cpp_smoke.cpp"
 $Hz7Source = Join-Path $Hz7Root "hz7.c"
 $OutputPath = Join-Path $OutDir "hz7_smoke.exe"
 $RemoteOutputPath = Join-Path $OutDir "hz7_remote_smoke.exe"
+$RemoteNaturalOutputPath = Join-Path $OutDir "hz7_remote_natural_smoke.exe"
 $MtOutputPath = Join-Path $OutDir "hz7_mt_smoke.exe"
 $StatsOutputPath = Join-Path $OutDir "hz7_stats_smoke.exe"
 $CppOutputPath = Join-Path $OutDir "hz7_cpp_smoke.exe"
@@ -34,6 +36,9 @@ if (-not (Test-Path $MtSmokeSource)) {
 }
 if (-not (Test-Path $RemoteSmokeSource)) {
     throw "Remote smoke source not found: $RemoteSmokeSource"
+}
+if (-not (Test-Path $RemoteNaturalSmokeSource)) {
+    throw "Remote natural smoke source not found: $RemoteNaturalSmokeSource"
 }
 if (-not (Test-Path $StatsSmokeSource)) {
     throw "Stats smoke source not found: $StatsSmokeSource"
@@ -49,7 +54,8 @@ function Build-Hz7Smoke {
     param(
         [string]$Name,
         [string]$Source,
-        [string]$Output
+        [string]$Output,
+        [string[]]$ExtraFlags = @()
     )
 
     $BuildArgs = @(
@@ -57,7 +63,8 @@ function Build-Hz7Smoke {
         "/O2",
         "/W4",
         "/WX",
-        "/D_CRT_SECURE_NO_WARNINGS",
+        "/D_CRT_SECURE_NO_WARNINGS"
+    ) + $ExtraFlags + @(
         $Hz7Source,
         $Source,
         "/Fe:$Output"
@@ -86,13 +93,18 @@ function Run-Hz7Smoke {
 $SmokeTargets = @(
     @{ Name = "hz7_smoke.exe"; Source = $SmokeSource; Output = $OutputPath },
     @{ Name = "hz7_remote_smoke.exe"; Source = $RemoteSmokeSource; Output = $RemoteOutputPath },
+    @{ Name = "hz7_remote_natural_smoke.exe"; Source = $RemoteNaturalSmokeSource; Output = $RemoteNaturalOutputPath; ExtraFlags = @("/DH7_REMOTE_NATURAL_PRESET=1") },
     @{ Name = "hz7_mt_smoke.exe"; Source = $MtSmokeSource; Output = $MtOutputPath },
     @{ Name = "hz7_stats_smoke.exe"; Source = $StatsSmokeSource; Output = $StatsOutputPath },
     @{ Name = "hz7_cpp_smoke.exe"; Source = $CppSmokeSource; Output = $CppOutputPath }
 )
 
 foreach ($Target in $SmokeTargets) {
-    Build-Hz7Smoke -Name $Target.Name -Source $Target.Source -Output $Target.Output
+    $ExtraFlags = @()
+    if ($Target.ContainsKey("ExtraFlags")) {
+        $ExtraFlags = $Target.ExtraFlags
+    }
+    Build-Hz7Smoke -Name $Target.Name -Source $Target.Source -Output $Target.Output -ExtraFlags $ExtraFlags
 }
 
 if (-not $SkipRun) {

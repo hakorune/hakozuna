@@ -3,6 +3,7 @@ param(
     [int]$Runs = 10,
     [int]$TimeoutSeconds = 900,
     [switch]$IncludeHz6Legacy,
+    [switch]$SkipHz7TinyRoute,
     [switch]$ContinueOnFailure
 )
 
@@ -24,6 +25,7 @@ $LegacyExecutables = @(
     @{ Name = "hz4"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz4.exe") },
     @{ Name = "hz5-policy"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz5_policy.exe") },
     @{ Name = "hz7-tinyroute"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz7.exe") },
+    @{ Name = "hz7-v2-remote-natural"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz7_v2_remote_natural.exe") },
     @{ Name = "mimalloc"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_mimalloc.exe") },
     @{ Name = "tcmalloc"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_tcmalloc.exe") }
 )
@@ -41,8 +43,14 @@ $Hz6LegacyExecutables = @(
 )
 
 $Executables = $LegacyExecutables
+if ($SkipHz7TinyRoute) {
+    $Executables = @($Executables | Where-Object { $_.Name -ne "hz7-tinyroute" })
+}
 if ($IncludeHz6Legacy) {
     $Executables = $LegacyExecutables + $Hz6LegacyExecutables
+    if ($SkipHz7TinyRoute) {
+        $Executables = @($Executables | Where-Object { $_.Name -ne "hz7-tinyroute" })
+    }
 }
 
 if ($Executables | Where-Object { -not (Test-Path $_.Path) }) {
@@ -196,8 +204,12 @@ $Summary.Add(('- runs: `{0}`' -f $Runs))
 $Summary.Add(('- timeout_seconds: `{0}`' -f $TimeoutSeconds))
 $Summary.Add('- statistic: `median ops/s`')
 $Summary.Add('- hz3 profile: `scale + S97-2 direct-map bucketize + skip_tail_null`')
-$Summary.Add('- note: paper originally reports `hz3 / mimalloc / tcmalloc`; this runner also records `crt`, `hz4`, `hz5-policy`, and `hz7-tinyroute`')
+$Summary.Add('- note: paper originally reports `hz3 / mimalloc / tcmalloc`; this runner also records `crt`, `hz4`, `hz5-policy`, `hz7-tinyroute`, and `hz7-v2-remote-natural`')
 $Summary.Add('- hz7 note: `hz7-tinyroute` is a direct-API coarse-lock safety baseline here, not a lock-free remote allocator.')
+$Summary.Add('- hz7-v2 note: `hz7-v2-remote-natural` enables `H7_REMOTE_NATURAL_PRESET`, widening the route table for bounded cross-thread pressure without owner inboxes or lock-free remote queues.')
+if ($SkipHz7TinyRoute) {
+    $Summary.Add('- hz7 skip note: `hz7-tinyroute` was skipped for this run; use it only as a legacy control row.')
+}
 if (-not $IncludeHz6Legacy) {
     $Summary.Add('- hz6 note: HZ6 rows are skipped by default because this legacy benchmark frees cross-thread pointers through per-thread allocator instances; use `-IncludeHz6Legacy` only for debugging the mismatch, and use the HZ6 standalone remote/reuse runner for HZ6 contract numbers.')
 }

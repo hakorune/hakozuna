@@ -62,9 +62,11 @@ $BenchSrc = Join-Path $RepoRoot "win\bench_random_mixed_mt_remote_compare.c"
 $Hz3Dir = Join-Path $RepoRoot "hakozuna"
 $Hz4Dir = Join-Path $RepoRoot "hakozuna-mt"
 $Hz7Dir = Join-Path $RepoRoot "hakozuna-hz7"
+$Hz7V2Dir = Join-Path $RepoRoot "hakozuna-hz7-v2"
 $Hz3Lib = Join-Path $Hz3Dir "out_win_mt_remote_hz3\hz3_win.lib"
 $Hz4Lib = Join-Path $Hz4Dir "out_win_bench\hz4_win.lib"
 $Hz7Source = Join-Path $Hz7Dir "hz7.c"
+$Hz7V2Source = Join-Path $Hz7V2Dir "hz7.c"
 
 $BaseFlags = @(
     "/nologo",
@@ -146,6 +148,19 @@ if (Test-Path $Hz7Source) {
     Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ7=1", $Hz7Source, $BenchSrc, "/link", "/out:$BenchHz7Out"))
 } else {
     Write-Warning "HZ7 source not found; skipping HZ7 mt_remote bench."
+}
+
+if (Test-Path $Hz7V2Source) {
+    Write-Host "Building: mt_remote (hz7-v2-remote-natural)"
+    $BenchHz7V2RemoteNaturalOut = Join-Path $OutDir "bench_random_mixed_mt_remote_hz7_v2_remote_natural.exe"
+    $Hz7V2RemoteNaturalFlags = @(
+        "/I$Hz7V2Dir",
+        "/DHZ_BENCH_USE_HZ7=1",
+        "/DH7_REMOTE_NATURAL_PRESET=1"
+    )
+    Invoke-Checked $Cc ($Hz7V2RemoteNaturalFlags + $BaseFlags + @($Hz7V2Source, $BenchSrc, "/link", "/out:$BenchHz7V2RemoteNaturalOut"))
+} else {
+    Write-Warning "HZ7 v2 source not found; skipping HZ7 v2 remote-natural mt_remote bench."
 }
 
 Invoke-AppLikeHz6BenchBuilds `

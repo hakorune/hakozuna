@@ -31,6 +31,12 @@ remote-fast. `SlowPathOutsideLock-L1` is the accepted MT direction: keep the
 coarse global lock, but avoid holding it across OS allocation/release when the
 route transition has already been made safe.
 
+`RemoteNatural-L1` is the bounded cross-thread-pressure continuation of that
+contract. It adds an optional `H7_REMOTE_NATURAL_PRESET` build preset that
+widens the route table to 16K entries and wires the preset into the
+remote-natural smoke and Windows MT remote control runner. It still does not add
+owner inboxes, TLS ownership, lock-free remote queues, or remote batching.
+
 The next-design rule is deliberately conservative:
 
 ```text

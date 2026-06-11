@@ -33,19 +33,21 @@ Status:
     local-performance focused
     remote-free safe
     coarse-lock cross-thread free safety
+    RemoteNatural-L1 now provides an optional route-pressure preset:
+      H7_REMOTE_NATURAL_PRESET=1
+      H7_ROUTE_CAPACITY defaults to 16384 under that preset
+      Windows/Linux remote-natural smoke passes
+      Windows mt_remote hz7-v2-remote-natural completes with route_register_fail=0
   Archived no-go:
     medium empty-span cap experiments did not earn a stable win.
     route slot index cleanup alone was hygiene-only and did not earn a stable
     random_mixed win.
     route hot cache did not hold a stable win on repeat-5, and removing it
     restored the cleaner baseline.
-  Next v2 step:
-    implement SlowPathOutsideLock-L1 / LockScopeTrim-L1 before any remote fast
-    path work.
-    Keep the coarse global lock model, but move OS allocation/release outside
-    the lock when route/list state can be made safe first.
-    This is the next highest-ROI v2 step because it can help local and coarse
-    MT behavior without owner tokens, inboxes, TLS ownership, or remote queues.
+  Current v2 step:
+    RemoteNatural-L1 is accepted as bounded remote-pressure evidence.
+    It is not a remote-throughput promotion and still avoids owner tokens,
+    inboxes, TLS ownership, remote queues, and lock-free handoff.
 
 Implemented footing:
   1. TinyRoute-1 route safety:

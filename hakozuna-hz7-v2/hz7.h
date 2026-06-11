@@ -14,6 +14,10 @@ typedef struct H7Stats {
   size_t direct_count;
   size_t route_count;
   size_t route_register_fail;
+  size_t route_capacity;
+  size_t empty_span_cap;
+  size_t direct_retain_cap;
+  size_t remote_natural_preset;
 } H7Stats;
 
 typedef enum H7RouteKind {

@@ -23,6 +23,9 @@
 #define H7_DIRECT_RETAIN_32K (32u * 1024u)
 #define H7_DIRECT_RETAIN_64K (64u * 1024u)
 #define H7_DIRECT_RETAIN_BUCKET_COUNT 2u
+#if defined(H7_REMOTE_NATURAL_PRESET) && !defined(H7_ROUTE_CAPACITY)
+#define H7_ROUTE_CAPACITY 16384u
+#endif
 #ifndef H7_DIRECT_RETAIN_CAP
 #define H7_DIRECT_RETAIN_CAP 64u
 #endif
@@ -1008,7 +1011,16 @@ H7RouteKind h7_route(void* ptr) {
 }
 
 static H7Stats h7_stats_locked(void) {
-  return g_h7_stats;
+  H7Stats stats = g_h7_stats;
+  stats.route_capacity = H7_ROUTE_CAPACITY;
+  stats.empty_span_cap = H7_EMPTY_SPAN_CAP;
+  stats.direct_retain_cap = H7_DIRECT_RETAIN_CAP;
+#ifdef H7_REMOTE_NATURAL_PRESET
+  stats.remote_natural_preset = 1u;
+#else
+  stats.remote_natural_preset = 0u;
+#endif
+  return stats;
 }
 
 H7Stats h7_stats(void) {

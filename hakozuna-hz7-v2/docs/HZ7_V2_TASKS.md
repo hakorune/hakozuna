@@ -1860,3 +1860,76 @@ reading:
   route validation is not the local bottleneck
   span_4k_16k is the main local path to watch if one more narrow experiment is authorized
 ```
+
+### RemoteNatural-L1
+
+`RemoteNatural-L1` is the next HZ7 v2 continuation lane. It does not turn HZ7
+v2 into a remote-throughput allocator. Instead, it makes the existing
+coarse-lock, global-route design more natural under bounded cross-thread
+pressure.
+
+Implementation:
+
+```text
+H7_REMOTE_NATURAL_PRESET:
+  widens H7_ROUTE_CAPACITY to 16384 unless the caller overrides it
+  keeps the same global lock
+  keeps the same MISS / VALID / INVALID contract
+  keeps owner / inbox / TLS / lock-free remote queues out of HZ7 v2
+
+h7_stats:
+  exposes route_capacity
+  exposes empty_span_cap
+  exposes direct_retain_cap
+  exposes remote_natural_preset
+
+smoke:
+  adds hz7_remote_natural_smoke
+  compiles that smoke with H7_REMOTE_NATURAL_PRESET=1
+  checks cross-thread free correctness under the widened route preset
+
+bench plumbing:
+  adds hz7-v2-remote-natural to the Windows mt_remote runner
+  labels it as bounded route-pressure evidence, not a remote-fast claim
+```
+
+Acceptance:
+
+```text
+required:
+  Windows HZ7 smoke suite passes
+  Linux HZ7 smoke suite passes
+  h7_stats reports remote_natural_preset = 1 in the remote-natural smoke
+  h7_stats reports route_capacity >= 16384 in the remote-natural smoke
+  route_register_fail remains 0 in the remote-natural smoke
+
+design:
+  no owner-aware remote free
+  no owner inbox
+  no TLS ownership
+  no lock-free remote queue
+  no remote batching
+```
+
+Measured:
+
+```text
+Windows smoke:
+  pass
+
+Linux smoke:
+  pass
+
+Windows mt_remote, runs=1, HZ7 v2 remote-natural row:
+  ops/s = 4.942M
+  actual remote = 87.48%
+  fallback = 2.80%
+  peak = 520,412 KB
+  ALLOC_FAILURES = 0
+  route_register_fail = 0
+  final active_bytes = 0
+
+reading:
+  success as remote-natural safety/pressure evidence
+  not a remote-throughput promotion
+```
