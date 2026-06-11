@@ -107,6 +107,9 @@ hz7_mt_smoke.exe:
 
 hz7_stats_smoke.exe:
   public stats + retained route invariant smoke
+
+hz7_cpp_smoke.exe:
+  C++ include/link smoke for the public C API
 ```
 
 Linux:
@@ -115,8 +118,8 @@ Linux:
 ./hakozuna-hz7-v2/linux/build_hz7_smoke.sh
 ```
 
-The Linux smoke script runs the same route, remote-free, multithread, and stats
-invariant checks with pthreads for the threaded cases.
+The Linux smoke script runs the same route, remote-free, multithread, stats
+invariant, and C++ include/link checks with pthreads for the threaded cases.
 
 ## Windows Random Mixed Bench
 

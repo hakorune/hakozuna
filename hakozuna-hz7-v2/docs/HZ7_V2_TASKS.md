@@ -149,6 +149,19 @@ CrossPlatformMtSmoke-L1:
   [x] require Windows and Linux smoke scripts to pass
 ```
 
+The next API packaging step is `HeaderCppSmoke-L1`. It is not an allocator
+policy change. It proves the public `hz7.h` header can be included from C++ and
+linked against the C implementation without changing the tiny direct API.
+
+```text
+HeaderCppSmoke-L1:
+  [x] add a C++ smoke that includes hz7.h
+  [x] call h7_malloc / h7_route / h7_free / h7_stats from C++
+  [x] wire the C++ smoke into Windows and Linux smoke scripts
+  [x] keep allocator policy and speed path unchanged
+  [x] require Windows and Linux smoke scripts to pass
+```
+
 The accepted cleanup step is `RouteValidationModule-L1`. It is not a policy
 change. It keeps the current route lookup behavior, but shares the small/direct
 user-pointer validation logic used by `h7_route()` and `h7_free()`.
