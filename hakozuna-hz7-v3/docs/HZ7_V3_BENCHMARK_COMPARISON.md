@@ -41,10 +41,10 @@ Latest runner snapshots:
 
 ```text
 hotpath:
-  ../out_win_hz7_v3_hotpath/20260612_002347_hz7_v3_hotpath_windows.md
+  ../out_win_hz7_v3_hotpath/20260612_002922_hz7_v3_hotpath_windows.md
 
 size-slices:
-  ../out_win_hz7_v3_size_slices/20260612_002353_hz7_v3_size_slices_windows.md
+  ../out_win_hz7_v3_size_slices/20260612_002928_hz7_v3_size_slices_windows.md
 ```
 
 ## 4K / 8K / 16K Span Audit
@@ -163,7 +163,8 @@ direct retained 32K / 64K:
 
 free path reserved-slot lookup:
   uses the region header hint before the exact-base fallback
-  trims a bit more work from h7_free() without weakening validation
+  latest 3-run smoke kept the bench surface readable and left the span path
+  as the next obvious watch item
 ```
 
 ## Current Reading
