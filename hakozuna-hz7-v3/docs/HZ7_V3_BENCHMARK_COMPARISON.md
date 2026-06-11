@@ -41,10 +41,10 @@ Latest runner snapshots:
 
 ```text
 hotpath:
-  ../out_win_hz7_v3_hotpath/20260612_000735_hz7_v3_hotpath_windows.md
+  ../out_win_hz7_v3_hotpath/20260612_002347_hz7_v3_hotpath_windows.md
 
 size-slices:
-  ../out_win_hz7_v3_size_slices/20260612_000740_hz7_v3_size_slices_windows.md
+  ../out_win_hz7_v3_size_slices/20260612_002353_hz7_v3_size_slices_windows.md
 ```
 
 ## 4K / 8K / 16K Span Audit
@@ -160,6 +160,10 @@ free_retained_loop:
 direct retained 32K / 64K:
   now visible in the hotpath companion rows
   the retained direct path stays part of the same benchmark registry
+
+free path reserved-slot lookup:
+  uses the region header hint before the exact-base fallback
+  trims a bit more work from h7_free() without weakening validation
 ```
 
 ## Current Reading

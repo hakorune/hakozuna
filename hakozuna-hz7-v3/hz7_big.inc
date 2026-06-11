@@ -218,7 +218,7 @@ void* h7_calloc(size_t count, size_t size) {
 }
 
 static void h7_free_locked(void* ptr, H7PendingRelease* release) {
-  H7RouteResult route = h7_route_lookup_raw(ptr);
+  H7RouteResult route = h7_route_lookup_free_candidate(ptr);
   if (h7_route_kind_for_user_ptr(route, ptr) != H7_ROUTE_VALID ||
       !route.region) {
     return;

@@ -200,3 +200,21 @@ static H7RouteResult h7_route_lookup_raw(const void* ptr) {
      interior pointers by falling back to a bounded range scan on miss. */
   return h7_route_lookup_range(addr);
 }
+
+static H7RouteResult h7_route_lookup_free_candidate(const void* ptr) {
+  H7RegionHeader* region;
+  uintptr_t region_base;
+  if (!ptr) {
+    return h7_route_miss();
+  }
+  region_base = h7_region_base_from_ptr(ptr);
+  region = (H7RegionHeader*)region_base;
+  if (region && region->magic == H7_MAGIC && region->cookie == H7_COOKIE &&
+      region->reserved < H7_ROUTE_CAPACITY) {
+    size_t slot = (size_t)region->reserved;
+    if (g_h7_routes[slot].active && g_h7_routes[slot].base == region_base) {
+      return h7_route_result_for_entry(&g_h7_routes[slot]);
+    }
+  }
+  return h7_route_lookup_exact_base(region_base);
+}

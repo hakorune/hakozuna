@@ -56,6 +56,10 @@ done:
   DirectRetainedRowRegistry-L1
     hotpath row registry now carries direct retained 32K / 64K companion rows
 
+  FreePathReservedSlotLookup-L1
+    h7_free now checks the region header's reserved route slot before falling
+    back to the exact-base route scan
+
 active:
   SpanPathAudit-L1
     inspect the current 4K..16K span path and direct retained companion rows
