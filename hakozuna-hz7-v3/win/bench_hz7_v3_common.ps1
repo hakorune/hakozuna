@@ -166,6 +166,47 @@ function Add-H7HotpathRowsFromLines {
     }
 }
 
+function Add-H7SummaryRowsFromMarkdown {
+    param(
+        [hashtable]$Rows,
+        [System.Collections.Generic.List[string]]$Lines
+    )
+
+    foreach ($line in $Lines) {
+        if ($line -notmatch '^\|\s*(?<op>[^|]+)\s*\|\s*(?<label>[^|]+)\s*\|\s*(?<size>[^|]+)\s*\|\s*(?<rate>[^|]+)\s*\|\s*(?<unit>[^|]+)\s*\|\s*(?<rss>[^|]+)\s*\|$') {
+            continue
+        }
+        $op = $Matches.op.Trim()
+        $label = $Matches.label.Trim()
+        $size = $Matches.size.Trim()
+        $rate = $Matches.rate.Trim()
+        $unit = $Matches.unit.Trim()
+        $rss = $Matches.rss.Trim()
+        $key = "${op}:${label}"
+        if (-not $Rows.ContainsKey($key)) {
+            $Rows[$key] = @{
+                Op = $op
+                Label = $label
+                Size = $size
+                Unit = $unit
+                Rates = New-Object System.Collections.Generic.List[double]
+                Rss = New-Object System.Collections.Generic.List[double]
+            }
+        }
+        if ($rate -match '([0-9.]+)([MK]?)') {
+            $rateValue = [double]$Matches[1]
+            switch ($Matches[2]) {
+                'M' { $rateValue *= 1000000.0 }
+                'K' { $rateValue *= 1000.0 }
+            }
+            $Rows[$key].Rates.Add($rateValue)
+        }
+        if ($rss -match '([0-9.]+)') {
+            $Rows[$key].Rss.Add([double]$Matches[1])
+        }
+    }
+}
+
 function Invoke-H7BenchmarkProbe {
     param(
         [string]$CompilerPath,

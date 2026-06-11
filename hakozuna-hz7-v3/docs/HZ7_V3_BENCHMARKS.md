@@ -25,6 +25,7 @@ win/bench_hz7_v3_common.ps1
   shared median / formatting / captured-process helpers for the runner scripts
   shared hotpath-row parser used by the hotpath and batch-focus runners
   shared probe helper now owns the repeated build / run / summary plumbing
+  shared summary-row parser also feeds the size-slices companion
 
 win/bench_hz7_v3_rows.inc
   shared span-audit row labels and row wrapper helpers used by the driver
