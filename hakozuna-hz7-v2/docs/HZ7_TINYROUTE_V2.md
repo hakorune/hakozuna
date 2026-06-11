@@ -220,8 +220,15 @@ verified:
   Windows hz7_smoke / hz7_remote_smoke / hz7_mt_smoke
   Linux hz7_smoke / hz7_remote_smoke
 
-pending:
-  random_mixed small/medium/mixed repeat-5 performance/RSS confirmation
+accepted:
+  Windows random_mixed repeat-5:
+    small   76.641M ops/s, 4,572 KB peak
+    medium  17.230M ops/s, 5,040 KB peak
+    mixed   18.738M ops/s, 5,500 KB peak
+
+bench wiring:
+  win/run_win_random_mixed_paper.ps1 has a separate hz7-v2 allocator row
+  win/build_win_random_mixed_suite.ps1 can build hz7-v2 only for quick checks
 ```
 
 ## Archived No-Gos

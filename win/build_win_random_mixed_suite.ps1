@@ -1,6 +1,7 @@
 param(
     [string]$VcpkgRoot,
     [switch]$DiagnosticHz6Probes,
+    [switch]$OnlyHz7V2,
     [string]$OutDirName = "out_win_random_mixed"
 )
 
@@ -40,11 +41,6 @@ if (-not $VcpkgRoot) {
 
 . $ModernBuildCommon
 
-& $SuiteBuild
-if ($LASTEXITCODE -ne 0) {
-    throw "build_win_allocator_suite.ps1 failed with exit code $LASTEXITCODE"
-}
-
 $VcpkgInclude = Join-Path $VcpkgRoot "installed\x64-windows\include"
 $VcpkgLib = Join-Path $VcpkgRoot "installed\x64-windows\lib"
 $VcpkgBin = Join-Path $VcpkgRoot "installed\x64-windows\bin"
@@ -53,9 +49,11 @@ $BenchSrc = Join-Path $RepoRoot "win\bench_random_mixed_compare.c"
 $Hz3Dir = Join-Path $RepoRoot "hakozuna"
 $Hz4Dir = Join-Path $RepoRoot "hakozuna-mt"
 $Hz7Dir = Join-Path $RepoRoot "hakozuna-hz7"
+$Hz7V2Dir = Join-Path $RepoRoot "hakozuna-hz7-v2"
 $Hz3Lib = Join-Path $Hz3Dir "out_win\hz3_win.lib"
 $Hz4Lib = Join-Path $Hz4Dir "out_win_bench\hz4_win.lib"
 $Hz7Source = Join-Path $Hz7Dir "hz7.c"
+$Hz7V2Source = Join-Path $Hz7V2Dir "hz7.c"
 
 $BaseFlags = @(
     "/nologo",
@@ -70,8 +68,25 @@ $BaseFlags = @(
     "/I$Hz4Dir\core",
     "/I$Hz4Dir\include",
     "/I$Hz4Dir\win",
-    "/I$Hz7Dir"
+    "/I$Hz7Dir",
+    "/I$Hz7V2Dir"
 )
+
+if ($OnlyHz7V2) {
+    if (Test-Path $Hz7V2Source) {
+        Write-Host "Building: bench_random_mixed (hz7-v2 only)"
+        $BenchHz7V2Out = Join-Path $OutDir "bench_random_mixed_hz7_v2.exe"
+        Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ7=1", $Hz7V2Source, $BenchSrc, "psapi.lib", "/link", "/out:$BenchHz7V2Out"))
+        Write-Host "Built HZ7 v2 random_mixed artifact in: $OutDir"
+        return
+    }
+    throw "HZ7 v2 source not found: $Hz7V2Source"
+}
+
+& $SuiteBuild
+if ($LASTEXITCODE -ne 0) {
+    throw "build_win_allocator_suite.ps1 failed with exit code $LASTEXITCODE"
+}
 
 Write-Host "Building: bench_random_mixed (CRT baseline)"
 $BenchCrtOut = Join-Path $OutDir "bench_random_mixed_crt.exe"
@@ -137,6 +152,14 @@ if (Test-Path $Hz7Source) {
     Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ7=1", $Hz7Source, $BenchSrc, "psapi.lib", "/link", "/out:$BenchHz7Out"))
 } else {
     Write-Warning "HZ7 source not found; skipping HZ7 random_mixed bench."
+}
+
+if (Test-Path $Hz7V2Source) {
+    Write-Host "Building: bench_random_mixed (hz7-v2)"
+    $BenchHz7V2Out = Join-Path $OutDir "bench_random_mixed_hz7_v2.exe"
+    Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ7=1", $Hz7V2Source, $BenchSrc, "psapi.lib", "/link", "/out:$BenchHz7V2Out"))
+} else {
+    Write-Warning "HZ7 v2 source not found; skipping HZ7 v2 random_mixed bench."
 }
 
 Invoke-AppLikeHz6BenchBuilds `

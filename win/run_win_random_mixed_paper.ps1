@@ -30,6 +30,7 @@ $Executables = @(
     @{ Name = "hz4"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz4.exe") },
     @{ Name = "hz5-policy"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz5_policy.exe") },
     @{ Name = "hz7-tinyroute"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz7.exe") },
+    @{ Name = "hz7-v2"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz7_v2.exe") },
     @{ Name = "hz6-strict"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_strict.exe") },
     @{ Name = "hz6-speed"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_speed.exe") },
     @{ Name = "hz6-rss"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_rss.exe") },
@@ -67,8 +68,9 @@ if ($Allocators -and $Allocators.Count -gt 0) {
     $Executables = $SelectedExecutables
 }
 
+$OnlyHz7V2Selected = (($Executables.Count -eq 1) -and ($Executables[0].Name -eq "hz7-v2"))
 if ($DiagnosticHz6Probes -or ($Executables | Where-Object { -not (Test-Path $_.Path) })) {
-    & $BuildScript -DiagnosticHz6Probes:$DiagnosticHz6Probes -OutDirName $SuiteDirName
+    & $BuildScript -DiagnosticHz6Probes:$DiagnosticHz6Probes -OnlyHz7V2:$OnlyHz7V2Selected -OutDirName $SuiteDirName
     if ($LASTEXITCODE -ne 0) {
         throw "build_win_random_mixed_suite.ps1 failed with exit code $LASTEXITCODE"
     }
@@ -168,6 +170,7 @@ $Summary.Add('- memory note: Windows reports `PeakWorkingSetSize` as `[RSS] peak
 $Summary.Add(('- profiles: `small`, `medium`, `mixed` with `RUNS={0}`, `ITERS=20,000,000`, `WS=400`' -f $Runs))
 $Summary.Add(('- selected allocators: `{0}`' -f (($Executables | ForEach-Object { $_.Name }) -join ', ')))
 $Summary.Add('- `hz7-tinyroute` is a direct-API TinyRoute row: span classes currently cover `<=16KiB`; `>16KiB` uses direct OS regions with bounded 32K/64K direct retain buckets, and it is not an interposer/general allocator row yet.')
+$Summary.Add('- `hz7-v2` is the TinyRoute v2 row: it keeps the direct-API/global-lock safety model while testing the v2 task-track changes such as remote-safe smoke and SlowPathOutsideLock.')
 $Summary.Add('- HZ6 rows now include `broad`, `control`, `route4k`, and `appcap` capacity lanes; `route4k` isolates route-table capacity while keeping the other control capacities.')
 $Summary.Add("")
 

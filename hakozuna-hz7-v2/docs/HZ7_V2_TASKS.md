@@ -71,6 +71,12 @@ The next active tiny step is `SlowPathOutsideLock-L1`, also called
 lock across OS allocation and OS release when the route/state transition can be
 completed first.
 
+Status:
+
+```text
+implemented and accepted as the current HZ7 v2 default path
+```
+
 Implementation order:
 
 - [x] Split malloc into a locked fast check, an outside-lock OS allocation, and a locked commit
@@ -87,9 +93,22 @@ Acceptance:
 - [x] `hz7_mt_smoke` passes
 - [x] `h7_route()` still reports foreign as `MISS`, active exact as `VALID`, and interior/retained/inactive as `INVALID`
 - [x] `route_register_fail = 0`
-- [ ] random_mixed small/medium/mixed repeat-5 does not regress materially
-- [ ] single-thread local performance stays within 1 percent of the current baseline
-- [ ] RSS stays unchanged within noise
+- [x] random_mixed small/medium/mixed repeat-5 does not regress materially
+- [x] single-thread local performance stays within 1 percent of the current baseline
+- [x] RSS stays unchanged within noise
+
+Measured on Windows random_mixed repeat-5 after `SlowPathOutsideLock-L1`:
+
+```text
+hz7-v2:
+  small   76.641M ops/s, 4,572 KB peak
+  medium  17.230M ops/s, 5,040 KB peak
+  mixed   18.738M ops/s, 5,500 KB peak
+
+source:
+  out_win_random_mixed_hz7v2_slowpath_repeat5/
+  20260611_151350_paper_random_mixed_windows.md
+```
 
 No-go:
 
