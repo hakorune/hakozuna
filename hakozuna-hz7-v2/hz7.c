@@ -506,12 +506,11 @@ static void* h7_small_alloc_existing(size_t size) {
   return h7_small_alloc_from_span(span);
 }
 
-static void* h7_small_commit_and_alloc(size_t size, H7Span* prepared) {
-  int class_id = h7_class_for_size(size);
-  if (class_id < 0 || !prepared) {
+static void* h7_small_commit_and_alloc(H7Span* prepared) {
+  if (!prepared || prepared->region.magic != H7_MAGIC ||
+      prepared->region.kind != H7_REGION_SMALL_SPAN) {
     return 0;
   }
-  h7_span_prepare_region(prepared, (uint16_t)class_id);
   if (!h7_span_commit_prepared(prepared)) {
     return 0;
   }
@@ -600,19 +599,25 @@ static int h7_big_prepare_region(H7Direct* direct,
   direct->region.flags = H7_REGION_ACTIVE;
   direct->region.region_size = region_size;
   direct->requested_size = size;
-  if (!h7_route_register(direct, region_size, H7_REGION_DIRECT)) {
+  return 1;
+}
+
+static int h7_big_commit_prepared(H7Direct* direct) {
+  if (!h7_route_register(direct,
+                         direct->region.region_size,
+                         H7_REGION_DIRECT)) {
     return 0;
   }
-  g_h7_stats.active_bytes += size;
-  g_h7_stats.reserved_bytes += region_size;
+  g_h7_stats.active_bytes += direct->requested_size;
+  g_h7_stats.reserved_bytes += direct->region.region_size;
   ++g_h7_stats.direct_count;
   return 1;
 }
 
-static void* h7_big_commit_and_alloc(size_t size,
-                                     H7Direct* direct,
-                                     size_t region_size) {
-  if (!direct || !h7_big_prepare_region(direct, size, region_size)) {
+static void* h7_big_commit_and_alloc(H7Direct* direct) {
+  if (!direct || direct->region.magic != H7_MAGIC ||
+      direct->region.kind != H7_REGION_DIRECT ||
+      !h7_big_commit_prepared(direct)) {
     return 0;
   }
   return h7_big_user_ptr(direct);
@@ -629,6 +634,7 @@ static void* h7_big_alloc_region_outside_lock(size_t size,
   if (!direct) {
     return 0;
   }
+  h7_big_prepare_region(direct, size, region_size);
   release->ptr = direct;
   release->size = region_size;
   return direct;
@@ -673,6 +679,7 @@ static void* h7_malloc_existing_locked(size_t size) {
 void* h7_malloc(size_t size) {
   H7PendingRelease prealloc;
   void* ptr = 0;
+  int class_id = -1;
   if (size == 0) {
     return 0;
   }
@@ -686,8 +693,15 @@ void* h7_malloc(size_t size) {
   }
 
   if (size <= H7_SPAN_CLASS_MAX) {
+    class_id = h7_class_for_size(size);
+    if (class_id < 0) {
+      return 0;
+    }
     prealloc.ptr = h7_os_alloc_region(H7_SPAN_BYTES);
     prealloc.size = H7_SPAN_BYTES;
+    if (prealloc.ptr) {
+      h7_span_prepare_region((H7Span*)prealloc.ptr, (uint16_t)class_id);
+    }
   } else {
     (void)h7_big_alloc_region_outside_lock(size, &prealloc);
   }
@@ -699,11 +713,9 @@ void* h7_malloc(size_t size) {
   ptr = h7_malloc_existing_locked(size);
   if (!ptr) {
     if (size <= H7_SPAN_CLASS_MAX) {
-      ptr = h7_small_commit_and_alloc(size, (H7Span*)prealloc.ptr);
+      ptr = h7_small_commit_and_alloc((H7Span*)prealloc.ptr);
     } else {
-      ptr = h7_big_commit_and_alloc(size,
-                                    (H7Direct*)prealloc.ptr,
-                                    prealloc.size);
+      ptr = h7_big_commit_and_alloc((H7Direct*)prealloc.ptr);
     }
     if (ptr) {
       h7_pending_release_clear(&prealloc);

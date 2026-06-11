@@ -80,6 +80,7 @@ implemented and accepted as the current HZ7 v2 default path
 Implementation order:
 
 - [x] Split malloc into a locked fast check, an outside-lock OS allocation, and a locked commit
+- [x] Prepare span/direct region metadata outside the lock before the locked commit
 - [x] Recheck retained/span availability after the outside-lock allocation before committing the new region
 - [x] Release any unused preallocated region outside the lock
 - [x] Split free so route lookup, state transition, retained decision, and route unregister happen under lock
@@ -101,13 +102,13 @@ Measured on Windows random_mixed repeat-5 after `SlowPathOutsideLock-L1`:
 
 ```text
 hz7-v2:
-  small   76.641M ops/s, 4,572 KB peak
-  medium  17.230M ops/s, 5,040 KB peak
-  mixed   18.738M ops/s, 5,500 KB peak
+  small   77.237M ops/s, 4,576 KB peak
+  medium  17.939M ops/s, 5,040 KB peak
+  mixed   19.419M ops/s, 5,504 KB peak
 
 source:
-  out_win_random_mixed_hz7v2_slowpath_repeat5/
-  20260611_151350_paper_random_mixed_windows.md
+  out_win_random_mixed_hz7v2_prepare_outside_lock_repeat5/
+  20260611_151952_paper_random_mixed_windows.md
 ```
 
 No-go checks:
