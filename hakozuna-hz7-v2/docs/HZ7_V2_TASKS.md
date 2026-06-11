@@ -231,6 +231,19 @@ DirectActiveStatsHelper-L1:
   [x] require Windows and Linux smoke scripts to pass
 ```
 
+The next source cleanup step is `SpanActiveStatsHelper-L1`. It is not an
+allocation policy change. It makes span slot allocation/free share tiny active
+stats transition helpers, mirroring the direct-region stats cleanup.
+
+```text
+SpanActiveStatsHelper-L1:
+  [x] add tiny helpers for span slot ACTIVE and inactive stats transitions
+  [x] use them from span slot allocation and free
+  [x] keep partial/empty span list behavior unchanged
+  [x] keep active_bytes accounting unchanged
+  [x] require Windows and Linux smoke scripts to pass
+```
+
 The accepted cleanup step is `RouteValidationModule-L1`. It is not a policy
 change. It keeps the current route lookup behavior, but shares the small/direct
 user-pointer validation logic used by `h7_route()` and `h7_free()`.
