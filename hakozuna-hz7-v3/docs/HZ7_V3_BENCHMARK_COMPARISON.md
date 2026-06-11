@@ -45,6 +45,9 @@ hotpath:
 
 size-slices:
   ../out_win_hz7_v3_size_slices/20260612_002928_hz7_v3_size_slices_windows.md
+
+batch-focus:
+  ../out_win_hz7_v3_batch_focus/20260612_003905_hz7_v3_batch_focus_windows.md
 ```
 
 ## 4K / 8K / 16K Span Audit
@@ -166,6 +169,35 @@ free path reserved-slot lookup:
   latest 3-run smoke showed it was a no-go; exact-base lookup stays the
   simpler reference for now
 ```
+
+## Batch Focus Probe
+
+The dedicated batch-focus probe isolates the sensitive `malloc_batch` and
+`free_batch` rows plus the adjacent retained rows, so future span/free-list
+experiments can be compared without rerunning the whole hotpath matrix.
+
+| row | batch-focus latest |
+| --- | ---: |
+| malloc_batch span4k | 1.339M ops/s |
+| malloc_batch span8k | 662.691K ops/s |
+| malloc_batch span16k | 597.086K ops/s |
+| free_batch span4k | 5.126M ops/s |
+| free_batch span8k | 2.513M ops/s |
+| free_batch span16k | 1.689M ops/s |
+| malloc_free span4k | 50.000M pairs/s |
+| malloc_free span8k | 49.751M pairs/s |
+| malloc_free span16k | 50.000M pairs/s |
+| free_retained_loop span4k | 50.761M pairs/s |
+| free_retained_loop span8k | 49.505M pairs/s |
+| free_retained_loop span16k | 51.282M pairs/s |
+| malloc_batch direct32k | 537.663K ops/s |
+| malloc_batch direct64k | 595.664K ops/s |
+| free_batch direct32k | 948.587K ops/s |
+| free_batch direct64k | 876.501K ops/s |
+| malloc_free direct32k | 59.524M pairs/s |
+| malloc_free direct64k | 59.172M pairs/s |
+| free_retained_loop direct32k | 59.524M pairs/s |
+| free_retained_loop direct64k | 59.524M pairs/s |
 
 ## Current Reading
 

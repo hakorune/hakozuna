@@ -17,6 +17,10 @@ win/run_win_hz7_v3_size_slices.ps1
   accepts experimental span-cache cap overrides for isolated span/free-list
   trials, but keeps the allocator default unchanged
 
+win/run_win_hz7_v3_batch_focus.ps1
+  focused companion probe for the sensitive batch rows
+  keeps the span/free-list watch surface smaller than the full hotpath probe
+
 win/bench_hz7_v3_common.ps1
   shared median / formatting / captured-process helpers for the runner scripts
 
@@ -51,6 +55,9 @@ docs/benchmarks/windows/hz7_v3_span_audit_probe/
 docs/benchmarks/windows/hz7_v3_size_slices_probe/
 docs/benchmarks/windows/hz7_v3_size_slices_probe2/
   filtered size-slice companion outputs
+
+docs/benchmarks/windows/hz7_v3_batch_focus_probe/
+  focused batch companion outputs
 ```
 
 ## What v3 Is Measuring Right Now
@@ -80,3 +87,5 @@ no remote batching
 The benchmark surface stays narrow until the span path is clearly understood.
 Experimental knobs such as `EmptySpanCap` stay in the runner layer until a
 specific span/free-list change proves itself worth promoting.
+The batch-focus probe exists so the sensitive rows can be refreshed without
+rerunning the whole hotpath matrix every time.

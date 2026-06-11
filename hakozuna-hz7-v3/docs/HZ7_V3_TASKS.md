@@ -62,6 +62,11 @@ done:
     3-run smoke showed the hint is no-go; exact-base free lookup stays the
     cleaner reference path
 
+  BatchFocusProbe-L1
+    a focused batch probe now isolates malloc_batch and free_batch rows plus
+    the adjacent retained rows so sensitive span/free-list experiments can be
+    rerun without the full matrix
+
 active:
   SpanPathAudit-L1
     inspect the current 4K..16K span path and direct retained companion rows
@@ -74,7 +79,8 @@ active:
 
 next:
   keep the hotpath and size-slice wiring narrow and readable
-  pick the next span/free-list tweak from the measured 4K..16K path
+  use the batch-focus probe to pick the next span/free-list tweak from the
+  measured 4K..16K path
 ```
 
 Note:
