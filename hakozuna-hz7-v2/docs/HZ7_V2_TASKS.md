@@ -55,6 +55,10 @@ done:
     added docs/HZ7_V2_STOP_OR_CONTINUE_PROMPT.md
     prepared the external review prompt for closeout vs one-more-experiment
 
+  Handoff-L1
+    added docs/HZ7_V2_HANDOFF.md
+    captured the push/review/decision handoff path
+
 active:
   HZ7 v2 lane closeout
     keep README current measurement on the cap64 default
