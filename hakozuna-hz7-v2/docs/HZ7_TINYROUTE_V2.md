@@ -208,6 +208,22 @@ unused preallocated regions are never route-registered
 no owner token, inbox, TLS ownership, or remote queue is introduced
 ```
 
+Implementation status:
+
+```text
+implemented:
+  malloc locked fast check -> outside-lock OS allocation -> locked commit
+  free locked route/state transition -> outside-lock OS release
+  retained direct and empty-span policies unchanged
+
+verified:
+  Windows hz7_smoke / hz7_remote_smoke / hz7_mt_smoke
+  Linux hz7_smoke / hz7_remote_smoke
+
+pending:
+  random_mixed small/medium/mixed repeat-5 performance/RSS confirmation
+```
+
 ## Archived No-Gos
 
 ```text

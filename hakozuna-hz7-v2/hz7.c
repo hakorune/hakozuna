@@ -93,6 +93,11 @@ typedef struct H7RouteResult {
   H7RegionHeader* region;
 } H7RouteResult;
 
+typedef struct H7PendingRelease {
+  void* ptr;
+  size_t size;
+} H7PendingRelease;
+
 static H7Class g_h7_classes[] = {
     {16u, 0, 0, 0},   {32u, 0, 0, 0},   {64u, 0, 0, 0},
     {128u, 0, 0, 0},  {256u, 0, 0, 0},  {512u, 0, 0, 0},
@@ -339,6 +344,18 @@ static void h7_os_free(void* ptr, size_t size) {
 #endif
 }
 
+static void h7_pending_release_clear(H7PendingRelease* release) {
+  release->ptr = 0;
+  release->size = 0;
+}
+
+static void h7_pending_release_now(H7PendingRelease* release) {
+  if (release->ptr) {
+    h7_os_free(release->ptr, release->size);
+    h7_pending_release_clear(release);
+  }
+}
+
 static void* h7_os_alloc_region(size_t region_size) {
 #ifdef _WIN32
   return h7_os_alloc(region_size);
@@ -394,17 +411,13 @@ static uint32_t h7_span_slot_count(uint32_t slot_size,
   }
 }
 
-static H7Span* h7_span_create(uint16_t class_id) {
+static void h7_span_prepare_region(H7Span* span, uint16_t class_id) {
   H7Class* klass = &g_h7_classes[class_id];
   uint32_t bitmap_words = 0;
   uint32_t slot_offset = 0;
   uint32_t slot_count =
       h7_span_slot_count(klass->slot_size, &bitmap_words, &slot_offset);
-  H7Span* span = (H7Span*)h7_os_alloc_region(H7_SPAN_BYTES);
   uint32_t i;
-  if (!span) {
-    return 0;
-  }
   memset(span, 0, sizeof(H7Span));
   span->region.magic = H7_MAGIC;
   span->region.cookie = H7_COOKIE;
@@ -417,36 +430,59 @@ static H7Span* h7_span_create(uint16_t class_id) {
   span->free_head = 0;
   span->bitmap_words = bitmap_words;
   span->slot_offset = slot_offset;
-  if (!h7_route_register(span, H7_SPAN_BYTES, H7_REGION_SMALL_SPAN)) {
-    h7_os_free(span, H7_SPAN_BYTES);
-    return 0;
-  }
   for (i = 0; i < slot_count; ++i) {
     uint32_t* next =
         (uint32_t*)(h7_span_slots(span) + (size_t)i * span->slot_size);
     *next = (i + 1u < slot_count) ? i + 1u : H7_FREE_NONE;
   }
-  g_h7_stats.reserved_bytes += H7_SPAN_BYTES;
-  ++g_h7_stats.span_count;
-  return span;
 }
 
-static void h7_span_destroy(H7Span* span) {
+static int h7_span_commit_prepared(H7Span* span) {
+  if (!h7_route_register(span, H7_SPAN_BYTES, H7_REGION_SMALL_SPAN)) {
+    return 0;
+  }
+  g_h7_stats.reserved_bytes += H7_SPAN_BYTES;
+  ++g_h7_stats.span_count;
+  return 1;
+}
+
+static void h7_span_detach_for_release(H7Span* span,
+                                       H7PendingRelease* release) {
   if (!span) {
     return;
   }
   h7_route_unregister(span);
   g_h7_stats.reserved_bytes -= span->region.region_size;
   --g_h7_stats.span_count;
-  h7_os_free(span, span->region.region_size);
+  span->region.flags = 0;
+  release->ptr = span;
+  release->size = span->region.region_size;
 }
 
-static void* h7_small_alloc(size_t size) {
+static void* h7_small_alloc_from_span(H7Span* span) {
+  H7Class* klass = &g_h7_classes[span->class_id];
+  uint32_t index = span->free_head;
+  unsigned char* ptr;
+  if (index == H7_FREE_NONE) {
+    return 0;
+  }
+  ptr = h7_span_slots(span) + (size_t)index * span->slot_size;
+  span->free_head = *(uint32_t*)ptr;
+  h7_bitmap_set(span, index);
+  ++span->used_count;
+  g_h7_stats.active_bytes += span->slot_size;
+  if (span->free_head == H7_FREE_NONE) {
+    h7_list_remove(&klass->partial, span);
+  } else if (span->used_count == 1u) {
+    h7_list_push(&klass->partial, span);
+  }
+  return ptr;
+}
+
+static void* h7_small_alloc_existing(size_t size) {
   int class_id = h7_class_for_size(size);
   H7Class* klass;
   H7Span* span;
-  uint32_t index;
-  unsigned char* ptr;
   if (class_id < 0) {
     return 0;
   }
@@ -465,29 +501,26 @@ static void* h7_small_alloc(size_t size) {
     }
   }
   if (!span) {
-    span = h7_span_create((uint16_t)class_id);
-    if (!span) {
-      return 0;
-    }
-  }
-  index = span->free_head;
-  if (index == H7_FREE_NONE) {
     return 0;
   }
-  ptr = h7_span_slots(span) + (size_t)index * span->slot_size;
-  span->free_head = *(uint32_t*)ptr;
-  h7_bitmap_set(span, index);
-  ++span->used_count;
-  g_h7_stats.active_bytes += span->slot_size;
-  if (span->free_head == H7_FREE_NONE) {
-    h7_list_remove(&klass->partial, span);
-  } else if (span->used_count == 1u) {
-    h7_list_push(&klass->partial, span);
-  }
-  return ptr;
+  return h7_small_alloc_from_span(span);
 }
 
-static void h7_small_free(H7Span* span, void* ptr) {
+static void* h7_small_commit_and_alloc(size_t size, H7Span* prepared) {
+  int class_id = h7_class_for_size(size);
+  if (class_id < 0 || !prepared) {
+    return 0;
+  }
+  h7_span_prepare_region(prepared, (uint16_t)class_id);
+  if (!h7_span_commit_prepared(prepared)) {
+    return 0;
+  }
+  return h7_small_alloc_from_span(prepared);
+}
+
+static void h7_small_free(H7Span* span,
+                          void* ptr,
+                          H7PendingRelease* release) {
   H7Class* klass;
   uintptr_t slots;
   uintptr_t addr;
@@ -523,16 +556,24 @@ static void h7_small_free(H7Span* span, void* ptr) {
       h7_list_push(&klass->empty, span);
       ++klass->empty_count;
     } else {
-      h7_span_destroy(span);
+      h7_span_detach_for_release(span, release);
     }
   } else if (was_full) {
     h7_list_push(&klass->partial, span);
   }
 }
 
-static void* h7_big_alloc(size_t size) {
+static void* h7_big_user_ptr(H7Direct* direct) {
   size_t user_offset = h7_align_up(sizeof(H7Direct), 16u);
-  size_t region_size = h7_region_align_up(user_offset + size);
+  return (unsigned char*)direct + user_offset;
+}
+
+static size_t h7_big_region_size(size_t size) {
+  size_t user_offset = h7_align_up(sizeof(H7Direct), 16u);
+  return h7_region_align_up(user_offset + size);
+}
+
+static void* h7_big_alloc_retained(size_t size) {
   H7DirectRetainBucket* retain = h7_direct_retain_bucket_for_size(size);
   H7Direct* direct;
   if (retain && retain->count > 0) {
@@ -543,12 +584,15 @@ static void* h7_big_alloc(size_t size) {
     direct->requested_size = size;
     g_h7_stats.active_bytes += size;
     ++g_h7_stats.direct_count;
-    return (unsigned char*)direct + user_offset;
+    return h7_big_user_ptr(direct);
   }
-  direct = (H7Direct*)h7_os_alloc_region(region_size);
-  if (!direct) {
-    return 0;
-  }
+  return 0;
+}
+
+static int h7_big_prepare_region(H7Direct* direct,
+                                 size_t size,
+                                 size_t region_size) {
+  size_t user_offset = h7_align_up(sizeof(H7Direct), 16u);
   memset(direct, 0, user_offset);
   direct->region.magic = H7_MAGIC;
   direct->region.cookie = H7_COOKIE;
@@ -557,16 +601,42 @@ static void* h7_big_alloc(size_t size) {
   direct->region.region_size = region_size;
   direct->requested_size = size;
   if (!h7_route_register(direct, region_size, H7_REGION_DIRECT)) {
-    h7_os_free(direct, region_size);
     return 0;
   }
   g_h7_stats.active_bytes += size;
   g_h7_stats.reserved_bytes += region_size;
   ++g_h7_stats.direct_count;
-  return (unsigned char*)direct + user_offset;
+  return 1;
 }
 
-static void h7_big_free(H7Direct* direct, void* ptr) {
+static void* h7_big_commit_and_alloc(size_t size,
+                                     H7Direct* direct,
+                                     size_t region_size) {
+  if (!direct || !h7_big_prepare_region(direct, size, region_size)) {
+    return 0;
+  }
+  return h7_big_user_ptr(direct);
+}
+
+static void* h7_big_alloc_locked(size_t size) {
+  return h7_big_alloc_retained(size);
+}
+
+static void* h7_big_alloc_region_outside_lock(size_t size,
+                                              H7PendingRelease* release) {
+  size_t region_size = h7_big_region_size(size);
+  H7Direct* direct = (H7Direct*)h7_os_alloc_region(region_size);
+  if (!direct) {
+    return 0;
+  }
+  release->ptr = direct;
+  release->size = region_size;
+  return direct;
+}
+
+static void h7_big_free(H7Direct* direct,
+                        void* ptr,
+                        H7PendingRelease* release) {
   size_t user_offset = h7_align_up(sizeof(H7Direct), 16u);
   H7DirectRetainBucket* retain = 0;
   if (!direct || direct->region.magic != H7_MAGIC ||
@@ -589,24 +659,59 @@ static void h7_big_free(H7Direct* direct, void* ptr) {
   g_h7_stats.reserved_bytes -= direct->region.region_size;
   --g_h7_stats.direct_count;
   direct->region.flags = 0;
-  h7_os_free(direct, direct->region.region_size);
+  release->ptr = direct;
+  release->size = direct->region.region_size;
 }
 
-static void* h7_malloc_unlocked(size_t size) {
-  if (size == 0) {
-    return 0;
-  }
+static void* h7_malloc_existing_locked(size_t size) {
   if (size <= H7_SPAN_CLASS_MAX) {
-    return h7_small_alloc(size);
+    return h7_small_alloc_existing(size);
   }
-  return h7_big_alloc(size);
+  return h7_big_alloc_locked(size);
 }
 
 void* h7_malloc(size_t size) {
-  void* ptr;
+  H7PendingRelease prealloc;
+  void* ptr = 0;
+  if (size == 0) {
+    return 0;
+  }
+  h7_pending_release_clear(&prealloc);
+
   h7_lock();
-  ptr = h7_malloc_unlocked(size);
+  ptr = h7_malloc_existing_locked(size);
   h7_unlock();
+  if (ptr) {
+    return ptr;
+  }
+
+  if (size <= H7_SPAN_CLASS_MAX) {
+    prealloc.ptr = h7_os_alloc_region(H7_SPAN_BYTES);
+    prealloc.size = H7_SPAN_BYTES;
+  } else {
+    (void)h7_big_alloc_region_outside_lock(size, &prealloc);
+  }
+  if (!prealloc.ptr) {
+    return 0;
+  }
+
+  h7_lock();
+  ptr = h7_malloc_existing_locked(size);
+  if (!ptr) {
+    if (size <= H7_SPAN_CLASS_MAX) {
+      ptr = h7_small_commit_and_alloc(size, (H7Span*)prealloc.ptr);
+    } else {
+      ptr = h7_big_commit_and_alloc(size,
+                                    (H7Direct*)prealloc.ptr,
+                                    prealloc.size);
+    }
+    if (ptr) {
+      h7_pending_release_clear(&prealloc);
+    }
+  }
+  h7_unlock();
+
+  h7_pending_release_now(&prealloc);
   return ptr;
 }
 
@@ -625,10 +730,12 @@ void* h7_calloc(size_t count, size_t size) {
 }
 
 void h7_free(void* ptr) {
+  H7PendingRelease release;
   H7RouteResult route;
   if (!ptr) {
     return;
   }
+  h7_pending_release_clear(&release);
   h7_lock();
   route = h7_route_lookup_raw(ptr);
   if (route.kind != H7_ROUTE_VALID || !route.region) {
@@ -636,11 +743,12 @@ void h7_free(void* ptr) {
     return;
   }
   if (route.region->kind == H7_REGION_SMALL_SPAN) {
-    h7_small_free((H7Span*)route.region, ptr);
+    h7_small_free((H7Span*)route.region, ptr, &release);
   } else if (route.region->kind == H7_REGION_DIRECT) {
-    h7_big_free((H7Direct*)route.region, ptr);
+    h7_big_free((H7Direct*)route.region, ptr, &release);
   }
   h7_unlock();
+  h7_pending_release_now(&release);
 }
 
 static H7RouteKind h7_route_unlocked(void* ptr) {
