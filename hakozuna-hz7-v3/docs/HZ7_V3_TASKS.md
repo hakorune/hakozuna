@@ -73,6 +73,9 @@ docs/HZ7_V3_BENCHMARKS.md
 docs/HZ7_V3_BENCHMARK_COMPARISON.md
   one-page comparison of the current probe snapshots
 
+docs/HZ7_V3_STRUCTURE.md
+  one-page note for the current module boundaries
+
 win/bench_hz7_v3_rows.inc
   shared span-audit row definitions and row wrapper helpers
 
