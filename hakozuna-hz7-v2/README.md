@@ -104,6 +104,9 @@ hz7_remote_smoke.exe:
 
 hz7_mt_smoke.exe:
   coarse-lock multithread safety smoke
+
+hz7_stats_smoke.exe:
+  public stats + retained route invariant smoke
 ```
 
 Linux:

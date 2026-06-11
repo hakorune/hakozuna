@@ -120,6 +120,22 @@ No-go checks:
 
 ## Next Candidate Backlog
 
+The next cleanup step is `StatsInvariantSmoke-L1`. It is not a policy change.
+It keeps the allocator code unchanged and makes the public stats/route contract
+explicit in a focused smoke test before the next performance experiment.
+
+```text
+StatsInvariantSmoke-L1:
+  [x] add a stats-focused smoke test
+  [x] assert active_bytes excludes retained direct regions after free
+  [x] assert direct_count counts active direct regions only
+  [x] assert retained 32K/64K direct routes remain INVALID, not MISS
+  [x] assert retained direct reuse restores VALID routes and direct_count
+  [x] avoid exact route_count == 0 checks because retained spans/direct routes
+      intentionally remain registered
+  [x] keep allocator policy and speed path unchanged
+```
+
 The accepted cleanup step is `RouteValidationModule-L1`. It is not a policy
 change. It keeps the current route lookup behavior, but shares the small/direct
 user-pointer validation logic used by `h7_route()` and `h7_free()`.

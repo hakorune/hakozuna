@@ -10,6 +10,7 @@ mkdir -p "${out_dir}"
 cc="${CC:-cc}"
 out="${out_dir}/hz7_smoke"
 remote_out="${out_dir}/hz7_remote_smoke"
+stats_out="${out_dir}/hz7_stats_smoke"
 
 "${cc}" -std=c11 -O2 -Wall -Wextra -Werror \
   "${hz7_root}/hz7.c" \
@@ -24,3 +25,10 @@ remote_out="${out_dir}/hz7_remote_smoke"
   -o "${remote_out}"
 
 "${remote_out}"
+
+"${cc}" -std=c11 -O2 -Wall -Wextra -Werror \
+  "${hz7_root}/hz7.c" \
+  "${hz7_root}/tests/hz7_stats_smoke.c" \
+  -o "${stats_out}"
+
+"${stats_out}"

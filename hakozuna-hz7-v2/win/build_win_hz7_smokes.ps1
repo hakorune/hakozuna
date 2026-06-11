@@ -17,10 +17,12 @@ $Compiler = Get-Command $CompilerPath -ErrorAction Stop
 $SmokeSource = Join-Path $Hz7Root "tests\hz7_smoke.c"
 $RemoteSmokeSource = Join-Path $Hz7Root "tests\hz7_remote_smoke.c"
 $MtSmokeSource = Join-Path $Hz7Root "tests\hz7_mt_smoke.c"
+$StatsSmokeSource = Join-Path $Hz7Root "tests\hz7_stats_smoke.c"
 $Hz7Source = Join-Path $Hz7Root "hz7.c"
 $OutputPath = Join-Path $OutDir "hz7_smoke.exe"
 $RemoteOutputPath = Join-Path $OutDir "hz7_remote_smoke.exe"
 $MtOutputPath = Join-Path $OutDir "hz7_mt_smoke.exe"
+$StatsOutputPath = Join-Path $OutDir "hz7_stats_smoke.exe"
 
 if (-not (Test-Path $SmokeSource)) {
     throw "Smoke source not found: $SmokeSource"
@@ -30,6 +32,9 @@ if (-not (Test-Path $MtSmokeSource)) {
 }
 if (-not (Test-Path $RemoteSmokeSource)) {
     throw "Remote smoke source not found: $RemoteSmokeSource"
+}
+if (-not (Test-Path $StatsSmokeSource)) {
+    throw "Stats smoke source not found: $StatsSmokeSource"
 }
 if (-not (Test-Path $Hz7Source)) {
     throw "HZ7 source not found: $Hz7Source"
@@ -86,6 +91,23 @@ if ($LASTEXITCODE -ne 0) {
     throw "clang-cl mt smoke failed with exit code $LASTEXITCODE"
 }
 
+$StatsArgs = @(
+    "/nologo",
+    "/O2",
+    "/W4",
+    "/WX",
+    "/D_CRT_SECURE_NO_WARNINGS",
+    $Hz7Source,
+    $StatsSmokeSource,
+    "/Fe:$StatsOutputPath"
+)
+
+Write-Host "[hz7-win] building hz7_stats_smoke.exe"
+& $Compiler.Source @StatsArgs
+if ($LASTEXITCODE -ne 0) {
+    throw "clang-cl stats smoke failed with exit code $LASTEXITCODE"
+}
+
 if (-not $SkipRun) {
     Write-Host "[hz7-win] running hz7_smoke.exe"
     & $OutputPath
@@ -101,6 +123,11 @@ if (-not $SkipRun) {
     & $MtOutputPath
     if ($LASTEXITCODE -ne 0) {
         throw "hz7 mt smoke failed with exit code $LASTEXITCODE"
+    }
+    Write-Host "[hz7-win] running hz7_stats_smoke.exe"
+    & $StatsOutputPath
+    if ($LASTEXITCODE -ne 0) {
+        throw "hz7 stats smoke failed with exit code $LASTEXITCODE"
     }
 }
 
