@@ -3,6 +3,7 @@ param(
     [string]$OutputDir,
     [int]$Runs = 3,
     [int]$Iters = 10000000,
+    [int]$DirectRetainCap = 0,
     [int]$SpanClassMax = 0
 )
 
@@ -29,6 +30,9 @@ if (-not (Test-Path $Hz7Source)) {
 }
 
 $Defines = @("/D_CRT_SECURE_NO_WARNINGS")
+if ($DirectRetainCap -gt 0) {
+    $Defines += "/DH7_DIRECT_RETAIN_CAP=$DirectRetainCap"
+}
 if ($SpanClassMax -gt 0) {
     $Defines += "/DH7_SPAN_CLASS_MAX=$SpanClassMax"
 }
@@ -174,6 +178,9 @@ $Summary.Add('- benchmark: `bench_hz7_v2_hotpath`')
 $Summary.Add('- allocator: `hz7-v2`')
 $Summary.Add("- runs: $Runs")
 $Summary.Add("- iters_per_run: $Iters")
+if ($DirectRetainCap -gt 0) {
+    $Summary.Add("- direct_retain_cap: $DirectRetainCap")
+}
 if ($SpanClassMax -gt 0) {
     $Summary.Add("- span_class_max: $SpanClassMax")
 }

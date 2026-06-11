@@ -4,6 +4,83 @@ HZ7 v2 is the readable tiny allocator reference track. This document turns the
 current goal into a concrete task list so the folder has one obvious place to
 look before adding more code.
 
+## Active Task Board
+
+Latest design review summary:
+
+```text
+Next identity:
+  tiny local allocator reference
+  remote-free safe
+  not remote-throughput optimized
+
+Current accepted default:
+  SlowPathOutsideLock-L1
+  DirectRetainCap-L2 cap 64
+
+Next work:
+  stabilize docs / lanes / baseline snapshots
+  keep local small/medium/mixed plus RSS as the main scoreboard
+  only add cleanup or measurement that preserves tiny readability
+```
+
+Task queue:
+
+```text
+done:
+  SlowPathOutsideLock-L1
+    moved OS allocation/release out of the global lock where route state is safe
+
+  DirectRetainCap-L2
+    promoted H7_DIRECT_RETAIN_CAP from 32 to 64
+    recovered medium/mixed throughput without giving up low RSS
+
+active:
+  HZ7 v2 lane closeout
+    keep README current measurement on the cap64 default
+    keep cap128/cap256 as controls only
+    keep Windows/Linux smoke parity visible
+
+next:
+  BaselineSnapshot-L1
+    refresh or assemble the cross-allocator small/medium/mixed comparison
+    use HZ7 v2 cap64 default as the HZ7 row
+    do not tune while collecting the snapshot
+
+optional:
+  SpanFreeListTrim-L1
+    one tiny cleanup/perf probe only if it stays explainable
+    stop immediately if it needs owner/TLS/remote policy
+
+not now:
+  owner-aware remote free
+  owner inbox
+  TLS ownership
+  lock-free remote queue
+  remote batching
+  HZ6-style profile matrix
+```
+
+Acceptance for the current closeout:
+
+```text
+safety:
+  Windows smoke passes
+  Linux smoke passes
+  route_register_fail = 0
+  retained direct routes remain INVALID while retained
+
+performance:
+  random_mixed small/medium/mixed uses the cap64 default row
+  medium/mixed stay materially above the old cap32 baseline
+  RSS remains in the low-MiB HZ7 v2 shape
+
+documentation:
+  README says remote-safe, not remote-fast
+  task doc labels remote-fast work as non-goal
+  no-go controls stay archived instead of being re-tried silently
+```
+
 ## Core Goal
 
 ```text
@@ -1462,4 +1539,117 @@ Acceptance:
 No-go:
   speed improves only by retaining too much memory
   RSS loses the HZ7 v2 identity
+```
+
+### DirectRetainCap-L2
+
+Tested `H7_DIRECT_RETAIN_CAP` 64 / 128 / 256 using explicit lanes.
+`hakozuna-hz7-v2/win/run_win_hz7_v2_hotpath.ps1` now accepts
+`-DirectRetainCap`.
+
+Hotpath random_toggle notouch observation:
+
+```text
+cap 64:
+  fresh_small_ws400_notouch   85.736M ops/s
+  fresh_medium_ws400_notouch  56.777M ops/s
+  fresh_mixed_ws400_notouch   55.290M ops/s
+
+cap 128:
+  fresh_small_ws400_notouch   84.679M ops/s
+  fresh_medium_ws400_notouch  57.580M ops/s
+  fresh_mixed_ws400_notouch   53.947M ops/s
+
+cap 256:
+  fresh_small_ws400_notouch   85.135M ops/s
+  fresh_medium_ws400_notouch  57.284M ops/s
+  fresh_mixed_ws400_notouch   53.907M ops/s
+```
+
+Windows random_mixed repeat-3 observation:
+
+```text
+cap 64:
+  small   76.577M ops/s, 5,020 KB peak
+  medium  53.224M ops/s, 5,144 KB peak
+  mixed   51.563M ops/s, 5,672 KB peak
+
+cap 128:
+  small   77.146M ops/s, 5,020 KB peak
+  medium  53.264M ops/s, 5,176 KB peak
+  mixed   51.320M ops/s, 5,728 KB peak
+
+cap 256:
+  small   77.510M ops/s, 5,028 KB peak
+  medium  53.208M ops/s, 5,188 KB peak
+  mixed   51.498M ops/s, 5,736 KB peak
+```
+
+Default confirmation after promoting cap 64:
+
+```text
+small   78.281M ops/s, 5,016 KB peak
+medium  53.657M ops/s, 5,144 KB peak
+mixed   51.995M ops/s, 5,672 KB peak
+```
+
+Sources:
+
+```text
+out_win_hz7_v2_hotpath_retain64_l2/
+20260611_174052_hz7_v2_hotpath_windows.md
+
+out_win_hz7_v2_hotpath_retain128_l2/
+20260611_174052_hz7_v2_hotpath_windows.md
+
+out_win_hz7_v2_hotpath_retain256_l2/
+20260611_174052_hz7_v2_hotpath_windows.md
+
+out_win_random_mixed_hz7v2_retain64_l2/
+20260611_174118_paper_random_mixed_windows.md
+
+out_win_random_mixed_hz7v2_retain128_l2/
+20260611_174118_paper_random_mixed_windows.md
+
+out_win_random_mixed_hz7v2_retain256_l2/
+20260611_174118_paper_random_mixed_windows.md
+
+out_win_random_mixed_hz7v2_default_retain64_confirm/
+20260611_174218_paper_random_mixed_windows.md
+```
+
+Safety:
+
+```text
+Default Windows smokes:
+  hz7_smoke ok
+  hz7_remote_smoke ok
+  hz7_mt_smoke ok
+  hz7_stats_smoke ok
+  hz7_cpp_smoke ok
+
+Default Linux smokes:
+  hz7_smoke ok
+  hz7_remote_smoke ok
+  hz7_mt_smoke ok
+  hz7_stats_smoke ok
+  hz7_cpp_smoke ok
+```
+
+Decision:
+
+```text
+H7_DIRECT_RETAIN_CAP default:
+  promote from 32 to 64
+
+Why:
+  cap 64 recovers medium/mixed throughput while preserving HZ7 v2's low-RSS
+  shape. cap 128/256 do not materially improve speed and retain slightly more
+  memory.
+
+Keep as controls:
+  cap 128 / cap 256
+
+Default:
+  cap 64
 ```
