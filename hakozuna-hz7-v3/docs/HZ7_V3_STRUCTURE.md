@@ -32,6 +32,9 @@ win/bench_hz7_v3_ops.inc
 win/bench_hz7_v3_rows.inc
   shared span-audit row definitions and row wrapper helpers
 
+win/bench_hz7_v3_common.ps1
+  shared runner helpers for the Windows benchmark scripts
+
 win/bench_hz7_v3_sequences.inc
   ordered scenario groups and registry-driven execution
 ```

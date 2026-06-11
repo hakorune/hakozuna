@@ -18,12 +18,16 @@ if (-not $OutputDir) {
 New-Item -ItemType Directory -Force $OutputDir | Out-Null
 
 $Compiler = Get-Command $CompilerPath -ErrorAction Stop
+$CommonScript = Join-Path $PSScriptRoot "bench_hz7_v3_common.ps1"
 $BenchSource = Join-Path $PSScriptRoot "bench_hz7_v3_hotpath.c"
 $Hz7Source = Join-Path $Hz7Root "hz7.c"
 $OutputPath = Join-Path $OutputDir "bench_hz7_v3_hotpath.exe"
 
 if (-not (Test-Path $BenchSource)) {
     throw "bench source not found: $BenchSource"
+}
+if (-not (Test-Path $CommonScript)) {
+    throw "common bench helper not found: $CommonScript"
 }
 if (-not (Test-Path $Hz7Source)) {
     throw "HZ7 source not found: $Hz7Source"
@@ -56,68 +60,7 @@ if ($LASTEXITCODE -ne 0) {
     throw "clang-cl hotpath bench failed with exit code $LASTEXITCODE"
 }
 
-function Get-Median {
-    param([double[]]$Values)
-    if ($null -eq $Values -or $Values.Length -eq 0) {
-        return [double]::NaN
-    }
-    $sorted = $Values | Sort-Object
-    $mid = [int]($sorted.Count / 2)
-    if (($sorted.Count % 2) -eq 1) {
-        return [double]$sorted[$mid]
-    }
-    return ([double]$sorted[$mid - 1] + [double]$sorted[$mid]) / 2.0
-}
-
-function Format-Rate {
-    param([double]$Value)
-    if ([double]::IsNaN($Value)) {
-        return "NaN"
-    }
-    if ($Value -ge 1000000.0) {
-        return ("{0:N3}M" -f ($Value / 1000000.0))
-    }
-    if ($Value -ge 1000.0) {
-        return ("{0:N3}K" -f ($Value / 1000.0))
-    }
-    return ("{0:N2}" -f $Value)
-}
-
-function Invoke-CapturedProcess {
-    param(
-        [string]$FilePath,
-        [string[]]$Arguments
-    )
-
-    $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName = $FilePath
-    $psi.UseShellExecute = $false
-    $psi.RedirectStandardOutput = $true
-    $psi.RedirectStandardError = $true
-    $psi.Arguments = ($Arguments | ForEach-Object {
-        if ($_ -match '[\s"]') { '"' + ($_ -replace '"', '\"') + '"' } else { $_ }
-    }) -join ' '
-
-    $proc = New-Object System.Diagnostics.Process
-    $proc.StartInfo = $psi
-    [void]$proc.Start()
-    $stdout = $proc.StandardOutput.ReadToEnd()
-    $stderr = $proc.StandardError.ReadToEnd()
-    $proc.WaitForExit()
-
-    $lines = New-Object System.Collections.Generic.List[string]
-    foreach ($chunk in @($stdout, $stderr)) {
-        if (-not [string]::IsNullOrEmpty($chunk)) {
-            foreach ($line in ($chunk -split "`r?`n")) {
-                if ($line -ne "") {
-                    $lines.Add($line)
-                }
-            }
-        }
-    }
-
-    return @{ ExitCode = $proc.ExitCode; Lines = $lines }
-}
+. $CommonScript
 
 $Stamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $SummaryPath = Join-Path $OutputDir ($Stamp + "_hz7_v3_hotpath_windows.md")
@@ -126,7 +69,7 @@ $RawLines = New-Object System.Collections.Generic.List[string]
 $Rows = @{}
 
 for ($run = 1; $run -le $Runs; ++$run) {
-    $result = Invoke-CapturedProcess -FilePath $OutputPath -Arguments @([string]$Iters)
+    $result = Invoke-H7CapturedProcess -FilePath $OutputPath -Arguments @([string]$Iters)
     $RawLines.Add("=== run $run ===")
     foreach ($line in $result.Lines) {
         $RawLines.Add($line)
@@ -191,9 +134,9 @@ $Summary.Add("| --- | --- | ---: | ---: | --- | ---: |")
 
 foreach ($key in ($Rows.Keys | Sort-Object)) {
     $row = $Rows[$key]
-    $medianRate = Get-Median $row.Rates.ToArray()
-    $medianRss = Get-Median $row.Rss.ToArray()
-    $Summary.Add("| $($row.Op) | $($row.Label) | $($row.Size) | $(Format-Rate $medianRate) | $($row.RateName) | $([int]$medianRss) |")
+    $medianRate = Get-H7Median $row.Rates.ToArray()
+    $medianRss = Get-H7Median $row.Rss.ToArray()
+    $Summary.Add("| $($row.Op) | $($row.Label) | $($row.Size) | $(Format-H7Rate $medianRate) | $($row.RateName) | $([int]$medianRss) |")
 }
 
 $Summary.Add("")

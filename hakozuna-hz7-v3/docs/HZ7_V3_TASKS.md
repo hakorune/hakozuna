@@ -41,6 +41,9 @@ done:
   BenchmarkRowRegistry-L1
     span-audit row registry now has a named row group and explicit row count
 
+  BenchmarkRunnerCommon-L1
+    hotpath and size-slices now share median / formatting / capture helpers
+
 active:
   SpanPathAudit-L1
     inspect 4K..16K span path before adding new policy

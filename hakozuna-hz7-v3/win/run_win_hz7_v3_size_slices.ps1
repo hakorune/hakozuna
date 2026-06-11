@@ -10,6 +10,7 @@ $ErrorActionPreference = "Stop"
 
 $Hz7Root = Split-Path -Parent $PSScriptRoot
 $RepoRoot = Split-Path -Parent $Hz7Root
+$CommonScript = Join-Path $PSScriptRoot "bench_hz7_v3_common.ps1"
 $HotpathScript = Join-Path $PSScriptRoot "run_win_hz7_v3_hotpath.ps1"
 
 if (-not $OutputDir) {
@@ -18,68 +19,7 @@ if (-not $OutputDir) {
 
 New-Item -ItemType Directory -Force $OutputDir | Out-Null
 
-function Get-Median {
-    param([double[]]$Values)
-    if ($null -eq $Values -or $Values.Length -eq 0) {
-        return [double]::NaN
-    }
-    $sorted = $Values | Sort-Object
-    $mid = [int]($sorted.Count / 2)
-    if (($sorted.Count % 2) -eq 1) {
-        return [double]$sorted[$mid]
-    }
-    return ([double]$sorted[$mid - 1] + [double]$sorted[$mid]) / 2.0
-}
-
-function Format-Rate {
-    param([double]$Value)
-    if ([double]::IsNaN($Value)) {
-        return "NaN"
-    }
-    if ($Value -ge 1000000.0) {
-        return ("{0:N3}M" -f ($Value / 1000000.0))
-    }
-    if ($Value -ge 1000.0) {
-        return ("{0:N3}K" -f ($Value / 1000.0))
-    }
-    return ("{0:N2}" -f $Value)
-}
-
-function Invoke-CapturedProcess {
-    param(
-        [string]$FilePath,
-        [string[]]$Arguments
-    )
-
-    $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName = $FilePath
-    $psi.UseShellExecute = $false
-    $psi.RedirectStandardOutput = $true
-    $psi.RedirectStandardError = $true
-    $psi.Arguments = ($Arguments | ForEach-Object {
-        if ($_ -match '[\s"]') { '"' + ($_ -replace '"', '\"') + '"' } else { $_ }
-    }) -join ' '
-
-    $proc = New-Object System.Diagnostics.Process
-    $proc.StartInfo = $psi
-    [void]$proc.Start()
-    $stdout = $proc.StandardOutput.ReadToEnd()
-    $stderr = $proc.StandardError.ReadToEnd()
-    $proc.WaitForExit()
-
-    $lines = New-Object System.Collections.Generic.List[string]
-    foreach ($chunk in @($stdout, $stderr)) {
-        if (-not [string]::IsNullOrEmpty($chunk)) {
-            foreach ($line in ($chunk -split "`r?`n")) {
-                if ($line -ne "") {
-                    $lines.Add($line)
-                }
-            }
-        }
-    }
-
-    return @{ ExitCode = $proc.ExitCode; Lines = $lines }
-}
+. $CommonScript
 
 $Stamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $RawDir = Join-Path $OutputDir "raw"
@@ -97,7 +37,7 @@ if ($SpanClassMax -gt 0) {
     $hotpathArgs += @("-SpanClassMax", [string]$SpanClassMax)
 }
 
-$result = Invoke-CapturedProcess -FilePath "powershell" -Arguments @(
+$result = Invoke-H7CapturedProcess -FilePath "powershell" -Arguments @(
     "-ExecutionPolicy", "Bypass",
     "-File", $HotpathScript
 ) + $hotpathArgs
@@ -200,9 +140,9 @@ foreach ($key in $wanted) {
         continue
     }
     $row = $rows[$key]
-    $medianRate = Get-Median $row.Rates.ToArray()
-    $medianRss = Get-Median $row.Rss.ToArray()
-    $Report.Add("| $($row.Op) | $($row.Label) | $($row.Size) | $(Format-Rate $medianRate) | $($row.Unit) | $([int]$medianRss) |")
+    $medianRate = Get-H7Median $row.Rates.ToArray()
+    $medianRss = Get-H7Median $row.Rss.ToArray()
+    $Report.Add("| $($row.Op) | $($row.Label) | $($row.Size) | $(Format-H7Rate $medianRate) | $($row.Unit) | $([int]$medianRss) |")
 }
 
 $Report.Add("")

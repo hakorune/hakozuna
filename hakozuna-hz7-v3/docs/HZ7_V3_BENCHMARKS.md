@@ -14,6 +14,9 @@ win/run_win_hz7_v3_hotpath.ps1
 win/run_win_hz7_v3_size_slices.ps1
   filtered companion probe for 4K / 8K / 16K slices
 
+win/bench_hz7_v3_common.ps1
+  shared median / formatting / captured-process helpers for the runner scripts
+
 win/bench_hz7_v3_rows.inc
   shared span-audit row labels and row wrapper helpers used by the driver
 
