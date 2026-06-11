@@ -15,6 +15,42 @@ low RSS
 readable tiny allocator shape
 ```
 
+## Current Design Decision
+
+The current HZ7 v2 line is aligned with the latest design review:
+
+```text
+main lane:
+  local small/medium performance
+  low RSS
+  route safety
+  coarse-lock cross-thread free safety
+
+accepted MT direction:
+  SlowPathOutsideLock-L1 / LockScopeTrim-L1
+  keep the global lock contract
+  move OS allocation/release outside the lock only after route state is safe
+
+remote lane:
+  safety/control only
+  not a throughput claim
+```
+
+This means HZ7 v2 should not grow owner-aware remote handoff, inboxes, TLS
+ownership, remote batching, or lock-free queues. Those ideas belong to an
+HZ6-family remote allocator or a future HZ8-style track, not this tiny
+reference allocator.
+
+The recommended active order is:
+
+```text
+1. keep SlowPathOutsideLock-L1 as the accepted default
+2. keep benchmark plumbing and baseline snapshots readable
+3. continue small source/list/stat helper cleanups
+4. keep remote-free smoke as evidence/control
+5. do not pursue remote fast path in HZ7 v2
+```
+
 ## Priority 1: Must-Have
 
 - [x] Keep local small/medium performance viable
@@ -119,6 +155,32 @@ No-go checks:
 - [x] Do not keep the change if the code becomes hard to explain as a tiny reference
 
 ## Next Candidate Backlog
+
+The next source cleanup step is `EmptySpanListHelper-L1`. It is not an
+allocation policy change. It makes retained empty-span pop/push/count
+transitions explicit helpers so future span/free-list work has a single small
+place to inspect.
+
+```text
+EmptySpanListHelper-L1:
+  [x] add a helper for popping one retained empty span
+  [x] add a helper for pushing one empty span when under cap
+  [x] keep partial/empty span list behavior unchanged
+  [x] keep empty_count accounting unchanged
+  [x] require Windows and Linux smoke scripts to pass
+```
+
+The next optional cleanup after that is `SpanCommitStatsHelper-L1`. It should
+only happen if the empty-span helper lands cleanly.
+
+```text
+SpanCommitStatsHelper-L1:
+  [ ] share span_count / reserved_bytes commit transitions
+  [ ] share span release accounting transitions
+  [ ] keep retained empty-span behavior unchanged
+  [ ] keep route safety unchanged
+  [ ] require Windows and Linux smoke scripts to pass
+```
 
 The next cleanup step is `StatsInvariantSmoke-L1`. It is not a policy change.
 It keeps the allocator code unchanged and makes the public stats/route contract

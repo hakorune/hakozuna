@@ -408,6 +408,30 @@ static void h7_list_push(H7Span** head, H7Span* span) {
   *head = span;
 }
 
+static H7Span* h7_empty_span_pop(H7Class* klass) {
+  H7Span* span = klass->empty;
+  if (!span) {
+    return 0;
+  }
+  klass->empty = span->next;
+  if (klass->empty) {
+    klass->empty->prev = 0;
+  }
+  span->next = 0;
+  span->prev = 0;
+  --klass->empty_count;
+  return span;
+}
+
+static int h7_empty_span_try_push(H7Class* klass, H7Span* span) {
+  if (klass->empty_count >= H7_EMPTY_SPAN_CAP) {
+    return 0;
+  }
+  h7_list_push(&klass->empty, span);
+  ++klass->empty_count;
+  return 1;
+}
+
 static void* h7_os_alloc(size_t size) {
 #ifdef _WIN32
   return VirtualAlloc(0, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
@@ -583,16 +607,7 @@ static void* h7_small_alloc_existing(size_t size) {
   klass = &g_h7_classes[class_id];
   span = klass->partial;
   if (!span) {
-    span = klass->empty;
-    if (span) {
-      klass->empty = span->next;
-      if (klass->empty) {
-        klass->empty->prev = 0;
-      }
-      span->next = 0;
-      span->prev = 0;
-      --klass->empty_count;
-    }
+    span = h7_empty_span_pop(klass);
   }
   if (!span) {
     return 0;
@@ -633,10 +648,7 @@ static void h7_small_free(H7Span* span,
   h7_span_mark_slot_inactive(span);
   if (span->used_count == 0) {
     h7_list_remove(&klass->partial, span);
-    if (klass->empty_count < H7_EMPTY_SPAN_CAP) {
-      h7_list_push(&klass->empty, span);
-      ++klass->empty_count;
-    } else {
+    if (!h7_empty_span_try_push(klass, span)) {
       h7_span_detach_for_release(span, release);
     }
   } else if (was_full) {

@@ -26,6 +26,11 @@ HZ7 v2 is not HZ6-next. It is HZ6-minimal: a small, readable, single-lane
 allocator that keeps only the parts of the Hakozuna line that fit a tiny
 implementation.
 
+The current v2 design is intentionally local-focused and remote-safe, not
+remote-fast. `SlowPathOutsideLock-L1` is the accepted MT direction: keep the
+coarse global lock, but avoid holding it across OS allocation/release when the
+route transition has already been made safe.
+
 ## Current Contract
 
 ```text
