@@ -188,17 +188,21 @@ static void h7_pending_release_set(H7PendingRelease* release,
 static int h7_small_slot_index(H7Span* span, void* ptr, uint32_t* out_index);
 static int h7_big_is_user_ptr(H7Direct* direct, void* ptr);
 
-static int h7_route_result_matches_user_ptr(H7RouteResult route, void* ptr) {
+static H7RouteKind h7_route_kind_for_user_ptr(H7RouteResult route, void* ptr) {
   if (route.kind != H7_ROUTE_VALID || !route.region) {
-    return 0;
+    return route.kind;
   }
   if (route.region->kind == H7_REGION_SMALL_SPAN) {
-    return h7_small_slot_index((H7Span*)route.region, ptr, 0);
+    return h7_small_slot_index((H7Span*)route.region, ptr, 0)
+               ? H7_ROUTE_VALID
+               : H7_ROUTE_INVALID;
   }
   if (route.region->kind == H7_REGION_DIRECT) {
-    return h7_big_is_user_ptr((H7Direct*)route.region, ptr);
+    return h7_big_is_user_ptr((H7Direct*)route.region, ptr)
+               ? H7_ROUTE_VALID
+               : H7_ROUTE_INVALID;
   }
-  return 0;
+  return H7_ROUTE_INVALID;
 }
 
 

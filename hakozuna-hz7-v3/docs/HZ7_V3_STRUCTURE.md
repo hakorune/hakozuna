@@ -14,6 +14,7 @@ hz7_route.inc
 
 hz7_span.inc
   span metadata, bitmap/free-list helpers, partial/empty span movement
+  route invariant helper feeds span/user-ptr validation
 
 hz7_big.inc
   direct allocation, free path, retained direct flow, stats
@@ -52,6 +53,7 @@ The allocator itself follows the same pattern:
 ```text
 public API
   -> route helpers
+    -> route invariant helper
   -> span helpers
   -> big helpers
 ```

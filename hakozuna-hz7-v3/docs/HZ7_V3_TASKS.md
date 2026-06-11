@@ -41,6 +41,8 @@ active:
     keep the route/span/big helper split easy to follow
 
 next:
+  make the route invariant helper the single place for VALID / INVALID / MISS checks
+  simplify span/free-list free-path handling around the helper
   extend the v3 hotpath rows to cover 4K, 8K, and 16K span-audit slices
   keep the v3 size-slice wiring as the filtered companion to the hotpath probe
   run HZ7 v3 hotpath and size-slice probes

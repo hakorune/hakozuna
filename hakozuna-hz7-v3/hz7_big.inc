@@ -219,7 +219,8 @@ void* h7_calloc(size_t count, size_t size) {
 
 static void h7_free_locked(void* ptr, H7PendingRelease* release) {
   H7RouteResult route = h7_route_lookup_raw(ptr);
-  if (route.kind != H7_ROUTE_VALID || !route.region) {
+  if (h7_route_kind_for_user_ptr(route, ptr) != H7_ROUTE_VALID ||
+      !route.region) {
     return;
   }
   if (route.region->kind == H7_REGION_SMALL_SPAN) {
@@ -227,14 +228,6 @@ static void h7_free_locked(void* ptr, H7PendingRelease* release) {
   } else if (route.region->kind == H7_REGION_DIRECT) {
     h7_big_free((H7Direct*)route.region, ptr, release);
   }
-}
-
-static H7RouteKind h7_region_user_route_kind(H7RouteResult route, void* ptr) {
-  if (route.kind != H7_ROUTE_VALID || !route.region) {
-    return route.kind;
-  }
-  return h7_route_result_matches_user_ptr(route, ptr) ? H7_ROUTE_VALID
-                                                      : H7_ROUTE_INVALID;
 }
 
 void h7_free(void* ptr) {
@@ -251,7 +244,7 @@ void h7_free(void* ptr) {
 
 static H7RouteKind h7_route_unlocked(void* ptr) {
   H7RouteResult route = h7_route_lookup_raw(ptr);
-  return h7_region_user_route_kind(route, ptr);
+  return h7_route_kind_for_user_ptr(route, ptr);
 }
 
 H7RouteKind h7_route(void* ptr) {
