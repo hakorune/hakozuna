@@ -60,6 +60,11 @@ static uint32_t h7_source_family_for_size(size_t size) {
   return size <= 16384u ? 1u : 2u;
 }
 
+typedef struct H7SizeRow {
+  const char* label;
+  size_t size;
+} H7SizeRow;
+
 static void h7_run_malloc_free(const char* label,
                                size_t size,
                                uint32_t iters) {
@@ -413,32 +418,92 @@ static void h7_run_random_toggle(const char* label,
          h7_peak_working_set_kb());
 }
 
+static void h7_run_size_rows_malloc_free(const H7SizeRow* rows,
+                                         size_t count,
+                                         uint32_t iters) {
+  size_t i;
+  for (i = 0; i < count; ++i) {
+    h7_run_malloc_free(rows[i].label, rows[i].size, iters);
+  }
+}
+
+static void h7_run_size_rows_route_valid(const H7SizeRow* rows,
+                                         size_t count,
+                                         uint32_t iters) {
+  size_t i;
+  for (i = 0; i < count; ++i) {
+    h7_run_route_valid(rows[i].label, rows[i].size, iters);
+  }
+}
+
+static void h7_run_size_rows_route_invalid(const H7SizeRow* rows,
+                                           size_t count,
+                                           uint32_t iters) {
+  size_t i;
+  for (i = 0; i < count; ++i) {
+    h7_run_route_invalid(rows[i].label, rows[i].size, iters);
+  }
+}
+
+static void h7_run_size_rows_route_invariant(const H7SizeRow* rows,
+                                             size_t count,
+                                             uint32_t iters) {
+  size_t i;
+  for (i = 0; i < count; ++i) {
+    h7_run_route_invariant(rows[i].label, rows[i].size, iters);
+  }
+}
+
+static void h7_run_size_rows_malloc_batch_free(const H7SizeRow* rows,
+                                               size_t count,
+                                               uint32_t iters) {
+  size_t i;
+  for (i = 0; i < count; ++i) {
+    h7_run_malloc_batch_free(rows[i].label, rows[i].size, iters);
+  }
+}
+
+static void h7_run_size_rows_free_batch(const H7SizeRow* rows,
+                                        size_t count,
+                                        uint32_t iters) {
+  size_t i;
+  for (i = 0; i < count; ++i) {
+    h7_run_free_batch(rows[i].label, rows[i].size, iters);
+  }
+}
+
+static void h7_run_size_rows_free_retained_loop(const H7SizeRow* rows,
+                                                size_t count,
+                                                uint32_t iters) {
+  size_t i;
+  for (i = 0; i < count; ++i) {
+    h7_run_free_retained_loop(rows[i].label, rows[i].size, iters);
+  }
+}
+
 int main(int argc, char** argv) {
   uint32_t iters = 10000000u;
+  static const H7SizeRow kSpanRows[] = {
+      {"span4k", 4096u},
+      {"span8k", 8192u},
+      {"span16k", 16384u},
+  };
   if (argc > 1) {
     iters = (uint32_t)strtoul(argv[1], 0, 10);
   }
 
   h7_run_malloc_free("small64", 64u, iters);
-  h7_run_malloc_free("span4k", 4096u, iters);
-  h7_run_malloc_free("span8k", 8192u, iters);
-  h7_run_malloc_free("span16k", 16384u, iters);
+  h7_run_size_rows_malloc_free(kSpanRows, sizeof(kSpanRows) / sizeof(kSpanRows[0]), iters);
   h7_run_malloc_free("direct32k", 32768u, iters);
 
-  h7_run_route_invariant("span4k", 4096u, iters);
-  h7_run_route_invariant("span8k", 8192u, iters);
-  h7_run_route_invariant("span16k", 16384u, iters);
+  h7_run_size_rows_route_invariant(kSpanRows, sizeof(kSpanRows) / sizeof(kSpanRows[0]), iters);
+  h7_run_size_rows_route_valid(kSpanRows, sizeof(kSpanRows) / sizeof(kSpanRows[0]), iters);
+  h7_run_size_rows_route_invalid(kSpanRows, sizeof(kSpanRows) / sizeof(kSpanRows[0]), iters);
 
   h7_run_route_valid("small64", 64u, iters);
-  h7_run_route_valid("span4k", 4096u, iters);
-  h7_run_route_valid("span8k", 8192u, iters);
-  h7_run_route_valid("span16k", 16384u, iters);
   h7_run_route_valid("direct32k", 32768u, iters);
 
   h7_run_route_invalid("small64", 64u, iters);
-  h7_run_route_invalid("span4k", 4096u, iters);
-  h7_run_route_invalid("span8k", 8192u, iters);
-  h7_run_route_invalid("span16k", 16384u, iters);
   h7_run_route_invalid("direct32k", 32768u, iters);
 
   h7_run_random_toggle("fresh_small_ws400", 16u, 2048u, iters, 400u, 1u);
@@ -449,21 +514,15 @@ int main(int argc, char** argv) {
   h7_run_random_toggle("fresh_mixed_ws400_notouch", 16u, 32768u, iters, 400u, 0u);
 
   h7_run_malloc_batch_free("small64", 64u, iters);
-  h7_run_malloc_batch_free("span4k", 4096u, iters);
-  h7_run_malloc_batch_free("span8k", 8192u, iters);
-  h7_run_malloc_batch_free("span16k", 16384u, iters);
+  h7_run_size_rows_malloc_batch_free(kSpanRows, sizeof(kSpanRows) / sizeof(kSpanRows[0]), iters);
   h7_run_malloc_batch_free("direct32k", 32768u, iters);
 
   h7_run_free_batch("small64", 64u, iters);
-  h7_run_free_batch("span4k", 4096u, iters);
-  h7_run_free_batch("span8k", 8192u, iters);
-  h7_run_free_batch("span16k", 16384u, iters);
+  h7_run_size_rows_free_batch(kSpanRows, sizeof(kSpanRows) / sizeof(kSpanRows[0]), iters);
   h7_run_free_batch("direct32k", 32768u, iters);
 
   h7_run_free_retained_loop("small64", 64u, iters);
-  h7_run_free_retained_loop("span4k", 4096u, iters);
-  h7_run_free_retained_loop("span8k", 8192u, iters);
-  h7_run_free_retained_loop("span16k", 16384u, iters);
+  h7_run_size_rows_free_retained_loop(kSpanRows, sizeof(kSpanRows) / sizeof(kSpanRows[0]), iters);
   h7_run_free_retained_loop("direct32k", 32768u, iters);
 
   h7_run_mixed_steady("small_ws400", 16u, 2048u, iters, 400u);
