@@ -14,6 +14,7 @@ hotpath:
 size-slices:
   docs/benchmarks/windows/hz7_v3_size_slices_probe/
   docs/benchmarks/windows/hz7_v3_size_slices_probe2/
+```
 
 The hotpath and size-slices runners now share their median, formatting, and
 captured-process helpers, but they keep separate summary names so the companion
@@ -40,17 +41,18 @@ Latest runner snapshots:
 
 ```text
 hotpath:
-  out_win_hz7_v3_hotpath/20260611_235109_hz7_v3_hotpath_windows.md
+  out_win_hz7_v3_hotpath/20260611_235842_hz7_v3_hotpath_windows.md
 
 size-slices:
   out_win_hz7_v3_size_slices/20260611_235108_hz7_v3_size_slices_windows.md
-```
 ```
 
 ## 4K / 8K / 16K Span Audit
 
 The hotpath probe contains the route invariant rows plus the broader bench
-sequence. The size-slices companions isolate the 4K / 8K / 16K rows.
+sequence. The size-slices companions isolate the 4K / 8K / 16K rows. The
+hotpath sequence also carries the direct retained 32K / 64K companion rows so
+their retained-path behavior stays visible in the same registry.
 
 | row | hotpath | size_slices_probe | size_slices_probe2 |
 | --- | ---: | ---: | ---: |
@@ -94,6 +96,10 @@ malloc_batch and free_batch:
 free_retained_loop:
   stays in the same band across all three probe sets
   retained-path behavior remains the steady reference point
+
+direct retained 32K / 64K:
+  now visible in the hotpath companion rows
+  the retained direct path stays part of the same benchmark registry
 ```
 
 ## Current Reading
@@ -127,7 +133,7 @@ The current runner split is intentionally small too:
 
 ```text
 hotpath:
-  full span-audit sequence
+  full span-audit sequence plus direct retained 32K / 64K companions
 
 size-slices:
   filtered 4K / 8K / 16K companion rows

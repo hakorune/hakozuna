@@ -50,6 +50,9 @@ done:
   BenchmarkLatestSnapshot-L1
     comparison note now points at the latest hotpath and size-slices summary snapshots
 
+  DirectRetainedRowRegistry-L1
+    hotpath row registry now carries direct retained 32K / 64K companion rows
+
 active:
   SpanPathAudit-L1
     inspect 4K..16K span path before adding new policy

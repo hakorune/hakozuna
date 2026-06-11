@@ -58,6 +58,7 @@ hotpath:
   route invariant helper
   span audit rows
   local 4K..16K span/free-list behavior
+  direct retained 32K / 64K companion rows
 
 size slices:
   4K / 8K / 16K span-audit companion rows

@@ -15,6 +15,13 @@ static const H7SizeRow kSpanAuditRows[] = {
 
 static const size_t kSpanAuditRowCount = H7_ARRAY_COUNT(kSpanAuditRows);
 
+static const H7SizeRow kDirectRetainRows[] = {
+    {"direct32k", 32768u},
+    {"direct64k", 65536u},
+};
+
+static const size_t kDirectRetainRowCount = H7_ARRAY_COUNT(kDirectRetainRows);
+
 static void h7_run_size_rows_malloc_free(const H7SizeRow* rows,
                                          size_t count,
                                          uint32_t iters) {
