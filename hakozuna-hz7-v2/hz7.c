@@ -546,12 +546,21 @@ static void h7_span_prepare_region(H7Span* span, uint16_t class_id) {
   }
 }
 
+static void h7_span_mark_committed(H7Span* span) {
+  g_h7_stats.reserved_bytes += span->region.region_size;
+  ++g_h7_stats.span_count;
+}
+
+static void h7_span_mark_released(H7Span* span) {
+  g_h7_stats.reserved_bytes -= span->region.region_size;
+  --g_h7_stats.span_count;
+}
+
 static int h7_span_commit_prepared(H7Span* span) {
   if (!h7_route_register(span, H7_SPAN_BYTES, H7_REGION_SMALL_SPAN)) {
     return 0;
   }
-  g_h7_stats.reserved_bytes += H7_SPAN_BYTES;
-  ++g_h7_stats.span_count;
+  h7_span_mark_committed(span);
   return 1;
 }
 
@@ -561,8 +570,7 @@ static void h7_span_detach_for_release(H7Span* span,
     return;
   }
   h7_route_unregister(span);
-  g_h7_stats.reserved_bytes -= span->region.region_size;
-  --g_h7_stats.span_count;
+  h7_span_mark_released(span);
   span->region.flags = 0;
   release->ptr = span;
   release->size = span->region.region_size;

@@ -175,11 +175,11 @@ only happen if the empty-span helper lands cleanly.
 
 ```text
 SpanCommitStatsHelper-L1:
-  [ ] share span_count / reserved_bytes commit transitions
-  [ ] share span release accounting transitions
-  [ ] keep retained empty-span behavior unchanged
-  [ ] keep route safety unchanged
-  [ ] require Windows and Linux smoke scripts to pass
+  [x] share span_count / reserved_bytes commit transitions
+  [x] share span release accounting transitions
+  [x] keep retained empty-span behavior unchanged
+  [x] keep route safety unchanged
+  [x] require Windows and Linux smoke scripts to pass
 ```
 
 The next cleanup step is `StatsInvariantSmoke-L1`. It is not a policy change.
