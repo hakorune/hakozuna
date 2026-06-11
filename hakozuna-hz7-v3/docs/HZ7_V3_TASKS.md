@@ -32,17 +32,20 @@ done:
     excluded generated out/ artifacts
     preserved smoke/tests/scripts as the starting point
 
+  RouteInvariantHelper-L1
+    one helper now owns VALID / INVALID / MISS checks for user pointers
+
+  SpanFreeListCleanup-L1
+    span free-list transitions now use explicit full / empty helpers
+
 active:
   SpanPathAudit-L1
     inspect 4K..16K span path before adding new policy
-    keep the route invariant helper and span/free-list cleanup readable
     keep route safety unchanged
     keep RemoteNatural-L1 as a control preset
     keep the route/span/big helper split easy to follow
 
 next:
-  make the route invariant helper the single place for VALID / INVALID / MISS checks
-  simplify span/free-list free-path handling around the helper
   extend the v3 hotpath rows to cover 4K, 8K, and 16K span-audit slices
   keep the v3 size-slice wiring as the filtered companion to the hotpath probe
   run HZ7 v3 hotpath and size-slice probes
