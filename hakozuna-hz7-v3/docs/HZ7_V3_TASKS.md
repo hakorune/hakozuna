@@ -41,6 +41,7 @@ active:
 
 next:
   extend the v3 hotpath rows to cover 4K, 8K, and 16K span-audit slices
+  keep the v3 size-slice wiring as the filtered companion to the hotpath probe
   run HZ7 v3 hotpath and size-slice probes
 ```
 
@@ -51,8 +52,8 @@ v3 hotpath:
   local script exists
 
 v3 size slices:
-  not wired yet
-  the copied v2 size-slice script was removed to avoid accidentally measuring v2
+  wired as a filtered companion around the v3 hotpath probe
+  keep it focused on the 4K / 8K / 16K span-audit rows
 ```
 
 ## SpanPathAudit-L1

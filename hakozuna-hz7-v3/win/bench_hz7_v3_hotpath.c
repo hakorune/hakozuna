@@ -430,11 +430,13 @@ int main(int argc, char** argv) {
   h7_run_route_invariant("span16k", 16384u, iters);
 
   h7_run_route_valid("small64", 64u, iters);
+  h7_run_route_valid("span4k", 4096u, iters);
   h7_run_route_valid("span8k", 8192u, iters);
   h7_run_route_valid("span16k", 16384u, iters);
   h7_run_route_valid("direct32k", 32768u, iters);
 
   h7_run_route_invalid("small64", 64u, iters);
+  h7_run_route_invalid("span4k", 4096u, iters);
   h7_run_route_invalid("span8k", 8192u, iters);
   h7_run_route_invalid("span16k", 16384u, iters);
   h7_run_route_invalid("direct32k", 32768u, iters);
