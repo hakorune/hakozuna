@@ -69,12 +69,20 @@ win/bench_hz7_v3_ops.inc
 win/bench_hz7_v3_rows.inc
   shared size-row definitions and row wrapper helpers
 
+win/bench_hz7_v3_common.ps1
+  shared runner helpers for hotpath and size-slices summaries
+
 win/bench_hz7_v3_sequences.inc
   ordered benchmark scenario groups used by the hotpath driver
 ```
 
 The hotpath driver now walks the scenario registry instead of spelling every
 sequence out in `main`.
+
+The Windows benchmark scripts share a common helper layer for median
+formatting, captured-process handling, and summary generation. The hotpath
+script and the size-slices companion keep separate summary names so the
+comparison notes stay easy to read.
 
 ## V3 Goal
 
