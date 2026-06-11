@@ -4,7 +4,8 @@ param(
     [int]$Runs = 3,
     [int]$Iters = 10000000,
     [int]$DirectRetainCap = 0,
-    [int]$SpanClassMax = 0
+    [int]$SpanClassMax = 0,
+    [int]$EmptySpanCap = 0
 )
 
 $ErrorActionPreference = "Stop"
@@ -39,6 +40,9 @@ if ($DirectRetainCap -gt 0) {
 }
 if ($SpanClassMax -gt 0) {
     $Defines += "/DH7_SPAN_CLASS_MAX=$SpanClassMax"
+}
+if ($EmptySpanCap -gt 0) {
+    $Defines += "/DH7_EMPTY_SPAN_CAP=$EmptySpanCap"
 }
 
 $BuildArgs = @(

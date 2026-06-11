@@ -14,6 +14,8 @@ win/run_win_hz7_v3_hotpath.ps1
 win/run_win_hz7_v3_size_slices.ps1
   filtered companion probe for 4K / 8K / 16K slices
   emits a companion summary name instead of the hotpath summary name
+  accepts experimental span-cache cap overrides for isolated span/free-list
+  trials, but keeps the allocator default unchanged
 
 win/bench_hz7_v3_common.ps1
   shared median / formatting / captured-process helpers for the runner scripts
@@ -76,3 +78,5 @@ no remote batching
 ```
 
 The benchmark surface stays narrow until the span path is clearly understood.
+Experimental knobs such as `EmptySpanCap` stay in the runner layer until a
+specific span/free-list change proves itself worth promoting.

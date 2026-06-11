@@ -3,7 +3,8 @@ param(
     [int]$Runs = 3,
     [int]$Iters = 2000000,
     [int]$DirectRetainCap = 0,
-    [int]$SpanClassMax = 0
+    [int]$SpanClassMax = 0,
+    [int]$EmptySpanCap = 0
 )
 
 $ErrorActionPreference = "Stop"
@@ -35,6 +36,9 @@ if ($DirectRetainCap -gt 0) {
 }
 if ($SpanClassMax -gt 0) {
     $hotpathArgs += @("-SpanClassMax", [string]$SpanClassMax)
+}
+if ($EmptySpanCap -gt 0) {
+    $hotpathArgs += @("-EmptySpanCap", [string]$EmptySpanCap)
 }
 
 $result = Invoke-H7CapturedProcess -FilePath "powershell" -Arguments @(

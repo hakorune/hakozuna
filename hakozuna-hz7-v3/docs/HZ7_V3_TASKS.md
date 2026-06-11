@@ -60,6 +60,7 @@ active:
   SpanPathAudit-L1
     inspect the current 4K..16K span path and direct retained companion rows
     decide whether the next change should stay in span/free-list cleanup
+    keep experimental span-cache cap knobs in the runner layer until a win is proven
     keep route safety unchanged
     keep RemoteNatural-L1 as a control preset
     keep the route/span/big helper split easy to follow
