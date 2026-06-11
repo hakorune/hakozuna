@@ -35,6 +35,10 @@ done:
     promoted H7_DIRECT_RETAIN_CAP from 32 to 64
     recovered medium/mixed throughput without giving up low RSS
 
+  BaselineSnapshot-L1
+    refreshed the cross-allocator random_mixed small/medium/mixed snapshot
+    confirmed HZ7 v2 cap64 is the lowest-RSS row, not the throughput winner
+
 active:
   HZ7 v2 lane closeout
     keep README current measurement on the cap64 default
@@ -42,10 +46,9 @@ active:
     keep Windows/Linux smoke parity visible
 
 next:
-  BaselineSnapshot-L1
-    refresh or assemble the cross-allocator small/medium/mixed comparison
-    use HZ7 v2 cap64 default as the HZ7 row
-    do not tune while collecting the snapshot
+  OptionalCleanup-L1
+    only accept tiny source/list cleanups that preserve the cap64 baseline
+    use the baseline snapshot as the scoreboard before further tuning
 
 optional:
   SpanFreeListTrim-L1
@@ -79,6 +82,7 @@ documentation:
   README says remote-safe, not remote-fast
   task doc labels remote-fast work as non-goal
   no-go controls stay archived instead of being re-tried silently
+  baseline snapshot exists for the cap64 closeout row
 ```
 
 ## Core Goal
@@ -1652,4 +1656,66 @@ Keep as controls:
 
 Default:
   cap 64
+```
+
+### BaselineSnapshot-L1
+
+After promoting `H7_DIRECT_RETAIN_CAP=64`, refreshed the Windows
+`random_mixed` cross-allocator snapshot using the existing paper-aligned runner.
+
+Command shape:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\win\build_win_random_mixed_suite.ps1 `
+  -OnlyHz7V2 `
+  -OutDirName out_win_random_mixed
+
+powershell -ExecutionPolicy Bypass -File .\win\run_win_random_mixed_paper.ps1 `
+  -Runs 3 `
+  -Profiles small,medium,mixed `
+  -Allocators hz3,hz4,hz7-v2,mimalloc,tcmalloc `
+  -OutputDir .\docs\benchmarks\windows\hz7_v2_baseline_snapshot `
+  -SuiteDirName out_win_random_mixed
+```
+
+Result:
+
+```text
+docs/benchmarks/windows/hz7_v2_baseline_snapshot/
+20260611_174745_paper_random_mixed_windows.md
+```
+
+HZ7 v2 cap64 row:
+
+```text
+small:
+  79.741M ops/s
+  4,576 KB peak
+
+medium:
+  53.353M ops/s
+  5,140 KB peak
+
+mixed:
+  52.911M ops/s
+  5,664 KB peak
+```
+
+Decision:
+
+```text
+keep:
+  HZ7 v2 cap64 default as the current closeout lane
+
+strength:
+  lowest-RSS row in small / medium / mixed among the selected allocators
+  medium/mixed materially improved over the cap32/emptycap4 rows
+
+limit:
+  not a throughput winner against hz3/tcmalloc
+  not a remote-throughput allocator
+
+next:
+  do not retune blindly
+  use this snapshot as the scoreboard before any further OptionalCleanup-L1 work
 ```
