@@ -215,6 +215,7 @@ implemented:
   malloc locked fast check -> outside-lock OS allocation -> locked commit
   span/direct region preparation outside the global lock
   direct retain bucket lookup/pop/push isolated behind small helpers
+  route lookup split into exact-base probe and bounded range fallback helpers
   free locked route/state transition -> outside-lock OS release
   retained direct and empty-span policies unchanged
 
@@ -224,9 +225,9 @@ verified:
 
 accepted:
   Windows random_mixed repeat-5:
-    small   77.504M ops/s, 4,576 KB peak
-    medium  17.938M ops/s, 5,040 KB peak
-    mixed   19.078M ops/s, 5,504 KB peak
+    small   78.153M ops/s, 4,576 KB peak
+    medium  17.876M ops/s, 5,036 KB peak
+    mixed   19.361M ops/s, 5,496 KB peak
 
 bench wiring:
   win/run_win_random_mixed_paper.ps1 has a separate hz7-v2 allocator row

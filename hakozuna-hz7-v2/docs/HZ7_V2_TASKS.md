@@ -120,12 +120,13 @@ No-go checks:
 
 ## Next Candidate Backlog
 
-The accepted cleanup step is `DirectRetainModule-L1`. This is not a policy
-change: it keeps the current 32K/64K direct retain behavior, but makes the
-medium/direct path modular enough to tune later without scattering bucket logic.
+The accepted cleanup step is `RouteLookupModule-L1`. It is not a route-cache
+or speed policy change. It only separates the exact-base probe from the bounded
+range fallback so route safety stays easy to audit.
 
 ```text
-DirectRetainModule-L1:
+accepted:
+  DirectRetainModule-L1
   [x] keep 32K and 64K retain caps unchanged
   [x] move direct retain bucket lookup/pop/push into small helpers
   [x] keep retained direct regions route INVALID, not MISS
@@ -140,6 +141,22 @@ measured:
 source:
   out_win_random_mixed_hz7v2_directretain_module_repeat5/
   20260611_152258_paper_random_mixed_windows.md
+
+RouteLookupModule-L1:
+  [x] keep route hash/probe policy unchanged
+  [x] split exact-base lookup from direct-region range fallback
+  [x] keep foreign pointer MISS
+  [x] keep interior/retained/inactive pointer INVALID
+  [x] pass Windows/Linux smoke before acceptance
+
+measured:
+  small   78.153M ops/s, 4,576 KB peak
+  medium  17.876M ops/s, 5,036 KB peak
+  mixed   19.361M ops/s, 5,496 KB peak
+
+source:
+  out_win_random_mixed_hz7v2_routelookup_module_repeat5/
+  20260611_152559_paper_random_mixed_windows.md
 
 avoid:
   remote throughput policy

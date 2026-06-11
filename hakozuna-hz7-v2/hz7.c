@@ -267,19 +267,16 @@ static H7RouteResult h7_route_result_for_entry(const H7RouteEntry* entry) {
   return result;
 }
 
-static H7RouteResult h7_route_lookup_raw(const void* ptr) {
+static H7RouteResult h7_route_miss(void) {
   H7RouteResult result;
-  uintptr_t region_base;
-  uintptr_t addr = (uintptr_t)ptr;
-  size_t i;
-  size_t start;
   result.kind = H7_ROUTE_MISS;
   result.region = 0;
-  if (!ptr) {
-    return result;
-  }
-  region_base = h7_region_base_from_ptr(ptr);
-  start = h7_route_hash(region_base);
+  return result;
+}
+
+static H7RouteResult h7_route_lookup_exact_base(uintptr_t region_base) {
+  size_t i;
+  size_t start = h7_route_hash(region_base);
   for (i = 0; i < H7_ROUTE_CAPACITY; ++i) {
     size_t slot = (start + i) & (H7_ROUTE_CAPACITY - 1u);
     if (!g_h7_routes[slot].active) {
@@ -289,9 +286,11 @@ static H7RouteResult h7_route_lookup_raw(const void* ptr) {
       return h7_route_result_for_entry(&g_h7_routes[slot]);
     }
   }
+  return h7_route_miss();
+}
 
-  /* Direct regions can span multiple 64KiB chunks; keep INVALID semantics for
-     interior pointers by falling back to a bounded range scan on miss. */
+static H7RouteResult h7_route_lookup_range(uintptr_t addr) {
+  size_t i;
   for (i = 0; i < H7_ROUTE_CAPACITY; ++i) {
     uintptr_t base;
     uintptr_t end;
@@ -304,7 +303,25 @@ static H7RouteResult h7_route_lookup_raw(const void* ptr) {
       return h7_route_result_for_entry(&g_h7_routes[i]);
     }
   }
-  return result;
+  return h7_route_miss();
+}
+
+static H7RouteResult h7_route_lookup_raw(const void* ptr) {
+  H7RouteResult result;
+  uintptr_t region_base;
+  uintptr_t addr = (uintptr_t)ptr;
+  if (!ptr) {
+    return h7_route_miss();
+  }
+  region_base = h7_region_base_from_ptr(ptr);
+  result = h7_route_lookup_exact_base(region_base);
+  if (result.kind != H7_ROUTE_MISS) {
+    return result;
+  }
+
+  /* Direct regions can span multiple 64KiB chunks; keep INVALID semantics for
+     interior pointers by falling back to a bounded range scan on miss. */
+  return h7_route_lookup_range(addr);
 }
 
 static uint64_t* h7_span_bitmap(H7Span* span) {
