@@ -14,6 +14,10 @@ hotpath:
 size-slices:
   docs/benchmarks/windows/hz7_v3_size_slices_probe/
   docs/benchmarks/windows/hz7_v3_size_slices_probe2/
+
+The hotpath and size-slices runners now share their median, formatting, and
+captured-process helpers, but they keep separate summary names so the companion
+probe stays easy to identify.
 ```
 
 ## 4K / 8K / 16K Span Audit

@@ -13,6 +13,7 @@ win/run_win_hz7_v3_hotpath.ps1
 
 win/run_win_hz7_v3_size_slices.ps1
   filtered companion probe for 4K / 8K / 16K slices
+  emits a companion summary name instead of the hotpath summary name
 
 win/bench_hz7_v3_common.ps1
   shared median / formatting / captured-process helpers for the runner scripts

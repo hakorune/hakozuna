@@ -116,7 +116,7 @@ $wanted = @(
 )
 
 $Report = New-H7BenchmarkSummaryLines -Title "HZ7 v3 Windows Size Slices" `
-    -Benchmark "bench_hz7_v3_hotpath" -Allocator "hz7-v3" -Runs $Runs -Iters $Iters `
+    -Benchmark "bench_hz7_v3_size_slices" -Allocator "hz7-v3" -Runs $Runs -Iters $Iters `
     -Note "filtered from the v3 hotpath probe to emphasize 4K/8K/16K span-audit rows" `
     -DirectRetainCap $DirectRetainCap -SpanClassMax $SpanClassMax
 
