@@ -18,6 +18,7 @@
 #define H7_EMPTY_SPAN_CAP 1u
 #define H7_DIRECT_RETAIN_32K (32u * 1024u)
 #define H7_DIRECT_RETAIN_64K (64u * 1024u)
+#define H7_DIRECT_RETAIN_BUCKET_COUNT 2u
 #ifndef H7_DIRECT_RETAIN_CAP
 #define H7_DIRECT_RETAIN_CAP 16u
 #endif
@@ -77,6 +78,7 @@ typedef struct H7Class {
 } H7Class;
 
 typedef struct H7DirectRetainBucket {
+  size_t max_size;
   H7Direct* items[H7_DIRECT_RETAIN_CAP];
   uint32_t count;
 } H7DirectRetainBucket;
@@ -107,8 +109,10 @@ static H7Class g_h7_classes[] = {
 
 static H7Stats g_h7_stats;
 static H7RouteEntry g_h7_routes[H7_ROUTE_CAPACITY];
-static H7DirectRetainBucket g_h7_direct_retain_32k;
-static H7DirectRetainBucket g_h7_direct_retain_64k;
+static H7DirectRetainBucket g_h7_direct_retain[H7_DIRECT_RETAIN_BUCKET_COUNT] = {
+    {H7_DIRECT_RETAIN_32K, {0}, 0},
+    {H7_DIRECT_RETAIN_64K, {0}, 0},
+};
 
 #ifdef _WIN32
 static volatile LONG g_h7_lock;
@@ -153,13 +157,42 @@ static size_t h7_route_hash(uintptr_t base) {
 }
 
 static H7DirectRetainBucket* h7_direct_retain_bucket_for_size(size_t size) {
-  if (size > H7_SPAN_CLASS_MAX && size <= H7_DIRECT_RETAIN_32K) {
-    return &g_h7_direct_retain_32k;
+  size_t i;
+  if (size <= H7_SPAN_CLASS_MAX) {
+    return 0;
   }
-  if (size > H7_DIRECT_RETAIN_32K && size <= H7_DIRECT_RETAIN_64K) {
-    return &g_h7_direct_retain_64k;
+  for (i = 0; i < H7_DIRECT_RETAIN_BUCKET_COUNT; ++i) {
+    if (size <= g_h7_direct_retain[i].max_size) {
+      return &g_h7_direct_retain[i];
+    }
   }
   return 0;
+}
+
+static H7Direct* h7_direct_retain_pop(size_t size) {
+  H7DirectRetainBucket* retain = h7_direct_retain_bucket_for_size(size);
+  H7Direct* direct;
+  if (!retain || retain->count == 0) {
+    return 0;
+  }
+  --retain->count;
+  direct = retain->items[retain->count];
+  retain->items[retain->count] = 0;
+  return direct;
+}
+
+static int h7_direct_retain_push(H7Direct* direct) {
+  H7DirectRetainBucket* retain;
+  if (!direct) {
+    return 0;
+  }
+  retain = h7_direct_retain_bucket_for_size(direct->requested_size);
+  if (!retain || retain->count >= H7_DIRECT_RETAIN_CAP) {
+    return 0;
+  }
+  retain->items[retain->count] = direct;
+  ++retain->count;
+  return 1;
 }
 
 static int h7_route_register(void* base, size_t size, H7RegionKind kind) {
@@ -573,19 +606,15 @@ static size_t h7_big_region_size(size_t size) {
 }
 
 static void* h7_big_alloc_retained(size_t size) {
-  H7DirectRetainBucket* retain = h7_direct_retain_bucket_for_size(size);
-  H7Direct* direct;
-  if (retain && retain->count > 0) {
-    --retain->count;
-    direct = retain->items[retain->count];
-    retain->items[retain->count] = 0;
-    direct->region.flags = H7_REGION_ACTIVE;
-    direct->requested_size = size;
-    g_h7_stats.active_bytes += size;
-    ++g_h7_stats.direct_count;
-    return h7_big_user_ptr(direct);
+  H7Direct* direct = h7_direct_retain_pop(size);
+  if (!direct) {
+    return 0;
   }
-  return 0;
+  direct->region.flags = H7_REGION_ACTIVE;
+  direct->requested_size = size;
+  g_h7_stats.active_bytes += size;
+  ++g_h7_stats.direct_count;
+  return h7_big_user_ptr(direct);
 }
 
 static int h7_big_prepare_region(H7Direct* direct,
@@ -644,20 +673,16 @@ static void h7_big_free(H7Direct* direct,
                         void* ptr,
                         H7PendingRelease* release) {
   size_t user_offset = h7_align_up(sizeof(H7Direct), 16u);
-  H7DirectRetainBucket* retain = 0;
   if (!direct || direct->region.magic != H7_MAGIC ||
       direct->region.kind != H7_REGION_DIRECT ||
       (direct->region.flags & H7_REGION_ACTIVE) == 0 ||
       ptr != (unsigned char*)direct + user_offset) {
     return;
   }
-  retain = h7_direct_retain_bucket_for_size(direct->requested_size);
-  if (retain && retain->count < H7_DIRECT_RETAIN_CAP) {
+  if (h7_direct_retain_push(direct)) {
     g_h7_stats.active_bytes -= direct->requested_size;
     --g_h7_stats.direct_count;
     direct->region.flags = H7_REGION_RETAINED;
-    retain->items[retain->count] = direct;
-    ++retain->count;
     return;
   }
   h7_route_unregister(direct);

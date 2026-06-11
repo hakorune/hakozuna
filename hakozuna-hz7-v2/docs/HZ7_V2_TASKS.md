@@ -120,15 +120,26 @@ No-go checks:
 
 ## Next Candidate Backlog
 
-No new default change is selected yet. The next candidate must keep the same
-tiny allocator contract and beat the accepted path on small / medium / mixed
-together, not just on one slice.
+The accepted cleanup step is `DirectRetainModule-L1`. This is not a policy
+change: it keeps the current 32K/64K direct retain behavior, but makes the
+medium/direct path modular enough to tune later without scattering bucket logic.
 
 ```text
-possible next areas:
-  1. route/register cleanup only if it has a paired throughput win
-  2. medium/direct retain cleanup only if RSS stays flat
-  3. same-thread tiny front cache only if remote-free safety remains global-lock
+DirectRetainModule-L1:
+  [x] keep 32K and 64K retain caps unchanged
+  [x] move direct retain bucket lookup/pop/push into small helpers
+  [x] keep retained direct regions route INVALID, not MISS
+  [x] keep RSS flat
+  [x] require small / medium / mixed repeat check before treating it as accepted
+
+measured:
+  small   77.504M ops/s, 4,576 KB peak
+  medium  17.938M ops/s, 5,040 KB peak
+  mixed   19.078M ops/s, 5,504 KB peak
+
+source:
+  out_win_random_mixed_hz7v2_directretain_module_repeat5/
+  20260611_152258_paper_random_mixed_windows.md
 
 avoid:
   remote throughput policy
