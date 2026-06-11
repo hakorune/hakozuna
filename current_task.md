@@ -57,6 +57,14 @@ Status:
   First V3 target:
     SpanPathAudit-L1 for the 4K..16K span-covered range.
 
+  HZ7 v4 note:
+  hz7/v4/README.md is the remote-free safe research fork.
+  It keeps the coarse global lock, route-first free path, and bounded
+  cross-thread pressure evidence without owner inboxes, TLS ownership, or
+  lock-free remote queues.
+  First V4 target:
+    RemoteSafeSmoke-L1 and RouteCorrectness-L1 for the cross-thread free path.
+
 Implemented footing:
   1. TinyRoute-1 route safety:
        fixed region table

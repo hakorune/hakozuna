@@ -22,12 +22,12 @@ Part of the [hakorune](https://github.com/hakorune) project.
   seed lives under `hakozuna-hz6/`.
 - **HZ7 TinyRoute (design seed)**: tiny-binary, single-shape allocator line
   distilled from HZ6. Its phased family now lives under `hz7/` as `v1`,
-  `v2`, and `v3`.
+  `v2`, `v3`, and `v4`.
 - Profile selection guide: [PROFILE_GUIDE.md](PROFILE_GUIDE.md)
 
 ## Allocator Profile Map
 
-Hakozuna currently contains three allocator lines with deliberately different
+Hakozuna currently contains four allocator lines with deliberately different
 metadata and ownership models:
 
 | Line | Focus | Metadata / routing model | Best read as |
