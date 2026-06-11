@@ -190,6 +190,20 @@ LinuxSmokeScriptModule-L1:
   [x] require Windows and Linux smoke scripts to pass
 ```
 
+The next source cleanup step is `RouteSlotClearHelper-L1`. It is not a route
+policy change. It removes duplicated route-entry clearing logic from
+`h7_route_unregister()` so the reserved-slot fast unregister path and fallback
+scan path share one small helper.
+
+```text
+RouteSlotClearHelper-L1:
+  [x] add a tiny helper for clearing one route table slot
+  [x] keep route_count accounting unchanged
+  [x] keep region->reserved reset behavior unchanged
+  [x] keep foreign pointer MISS and retained/interior INVALID semantics
+  [x] require Windows and Linux smoke scripts to pass
+```
+
 The accepted cleanup step is `RouteValidationModule-L1`. It is not a policy
 change. It keeps the current route lookup behavior, but shares the small/direct
 user-pointer validation logic used by `h7_route()` and `h7_free()`.

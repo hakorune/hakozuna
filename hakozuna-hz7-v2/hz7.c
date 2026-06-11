@@ -218,6 +218,17 @@ static int h7_route_register(void* base, size_t size, H7RegionKind kind) {
   return 0;
 }
 
+static void h7_route_clear_slot(size_t slot, H7RegionHeader* region) {
+  g_h7_routes[slot].active = 0u;
+  g_h7_routes[slot].base = 0u;
+  g_h7_routes[slot].size = 0u;
+  g_h7_routes[slot].kind = 0;
+  if (region) {
+    region->reserved = H7_ROUTE_SLOT_NONE;
+  }
+  --g_h7_stats.route_count;
+}
+
 static void h7_route_unregister(void* base) {
   size_t i;
   uintptr_t key = (uintptr_t)base;
@@ -225,12 +236,7 @@ static void h7_route_unregister(void* base) {
   if (region && region->reserved < H7_ROUTE_CAPACITY) {
     size_t slot = (size_t)region->reserved;
     if (g_h7_routes[slot].active && g_h7_routes[slot].base == key) {
-      g_h7_routes[slot].active = 0u;
-      g_h7_routes[slot].base = 0u;
-      g_h7_routes[slot].size = 0u;
-      g_h7_routes[slot].kind = 0;
-      region->reserved = H7_ROUTE_SLOT_NONE;
-      --g_h7_stats.route_count;
+      h7_route_clear_slot(slot, region);
       return;
     }
   }
@@ -239,14 +245,7 @@ static void h7_route_unregister(void* base) {
     for (i = 0; i < H7_ROUTE_CAPACITY; ++i) {
       size_t slot = (start + i) & (H7_ROUTE_CAPACITY - 1u);
       if (g_h7_routes[slot].active && g_h7_routes[slot].base == key) {
-        g_h7_routes[slot].active = 0u;
-        g_h7_routes[slot].base = 0u;
-        g_h7_routes[slot].size = 0u;
-        g_h7_routes[slot].kind = 0;
-        if (region) {
-          region->reserved = H7_ROUTE_SLOT_NONE;
-        }
-        --g_h7_stats.route_count;
+        h7_route_clear_slot(slot, region);
         return;
       }
     }
