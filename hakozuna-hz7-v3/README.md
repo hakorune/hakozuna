@@ -93,6 +93,12 @@ docs/benchmarks/windows/hz7_v3_size_slices_probe2/
 The hotpath probe now carries the route invariant helper rows, and the size
 slices companion keeps the experiment focused on 4K / 8K / 16K rows.
 
+See also:
+
+```text
+docs/HZ7_V3_BENCHMARKS.md
+```
+
 ## Guardrails
 
 Allowed:

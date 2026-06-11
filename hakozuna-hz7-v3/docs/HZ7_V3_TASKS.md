@@ -66,6 +66,9 @@ docs/benchmarks/windows/hz7_v3_span_audit_probe/
 docs/benchmarks/windows/hz7_v3_size_slices_probe/
 docs/benchmarks/windows/hz7_v3_size_slices_probe2/
   filtered 4K / 8K / 16K size-slice companion runs
+
+docs/HZ7_V3_BENCHMARKS.md
+  single place to read the current v3 benchmark surface
 ```
 
 ## SpanPathAudit-L1
