@@ -22,12 +22,17 @@ win/run_win_hz7_v3_batch_focus.ps1
   keeps the span/free-list watch surface smaller than the full hotpath probe
 
 win/bench_hz7_v3_common.ps1
+  thin loader for the benchmark helper modules
+
+win/bench_hz7_v3_common_base.ps1
   shared median / formatting / captured-process helpers for the runner scripts
   shared hotpath-row parser used by the hotpath and batch-focus runners
-  shared probe helper now owns the repeated build / run / summary plumbing
   shared summary-row parser also feeds the size-slices companion
   shared summary-path reader keeps the size-slices runner thin too
   shared span-audit key list keeps the size-slices ordering in one place
+
+win/bench_hz7_v3_common_probe.ps1
+  shared probe helper now owns the repeated build / run / summary plumbing
   shared filtered-companion helper keeps the size-slices runner itself tiny too
 
 win/bench_hz7_v3_rows.inc

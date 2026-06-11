@@ -84,6 +84,10 @@ done:
     the size-slices companion now uses one shared helper for the filtered
     runner / summary wiring instead of spelling that plumbing in the script
 
+  BenchmarkCommonModuleSplit-L1
+    the Windows benchmark helper now splits into a thin loader plus base and
+    probe helper modules so the shared plumbing stays easier to scan
+
 active:
   SpanPathAudit-L1
     inspect the current 4K..16K span path and direct retained companion rows
@@ -102,6 +106,8 @@ next:
   measured 4K..16K path
   keep companion probe filtering in the shared runner helper rather than the
   runner script itself
+  keep the benchmark helper split into a thin loader, base helpers, and probe
+  helpers instead of a single thick script
 ```
 
 Note:

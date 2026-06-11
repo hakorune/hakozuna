@@ -36,12 +36,17 @@ win/bench_hz7_v3_rows.inc
   shared span-audit row definitions and row wrapper helpers
 
 win/bench_hz7_v3_common.ps1
-  shared runner helpers for the Windows benchmark scripts
-  shared hotpath-row parser keeps the runner scripts thinner
+  thin loader that pulls in the Windows benchmark helper modules
+
+win/bench_hz7_v3_common_base.ps1
+  shared median / formatting / capture helpers
+  shared row parsing / summary helpers
+  shared span-audit key list keeps the size-slices ordering out of the runner
+
+win/bench_hz7_v3_common_probe.ps1
   shared probe helper now owns build / run / summary plumbing for hotpath-style
   runners
   shared filtered-companion helper now owns the size-slices summary wiring too
-  shared span-audit key list keeps the size-slices ordering out of the runner
 
 win/bench_hz7_v3_sequences.inc
   ordered scenario groups and registry-driven execution
