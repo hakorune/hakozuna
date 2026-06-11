@@ -16,41 +16,47 @@ stats_out="${out_dir}/hz7_stats_smoke"
 cpp_obj="${out_dir}/hz7_cpp_hz7.o"
 cpp_out="${out_dir}/hz7_cpp_smoke"
 
-"${cc}" -std=c11 -O2 -Wall -Wextra -Werror \
-  "${hz7_root}/hz7.c" \
-  "${hz7_root}/tests/hz7_smoke.c" \
-  -o "${out}"
+build_c_smoke() {
+  local name="$1"
+  local source="$2"
+  local output="$3"
+  shift 3
 
-"${out}"
+  echo "[hz7-linux] building ${name}"
+  "${cc}" -std=c11 -O2 -Wall -Wextra -Werror "$@" \
+    "${hz7_root}/hz7.c" \
+    "${source}" \
+    -o "${output}"
+}
 
-"${cc}" -std=c11 -O2 -Wall -Wextra -Werror -pthread \
-  "${hz7_root}/hz7.c" \
-  "${hz7_root}/tests/hz7_remote_smoke.c" \
-  -o "${remote_out}"
+run_smoke() {
+  local name="$1"
+  local output="$2"
 
-"${remote_out}"
+  echo "[hz7-linux] running ${name}"
+  "${output}"
+}
 
-"${cc}" -std=c11 -O2 -Wall -Wextra -Werror -pthread \
-  "${hz7_root}/hz7.c" \
-  "${hz7_root}/tests/hz7_mt_smoke.c" \
-  -o "${mt_out}"
+build_cpp_smoke() {
+  echo "[hz7-linux] building hz7_cpp_smoke"
+  "${cc}" -std=c11 -O2 -Wall -Wextra -Werror \
+    -c "${hz7_root}/hz7.c" \
+    -o "${cpp_obj}"
 
-"${mt_out}"
+  "${cxx}" -std=c++11 -O2 -Wall -Wextra -Werror \
+    "${cpp_obj}" \
+    "${hz7_root}/tests/hz7_cpp_smoke.cpp" \
+    -o "${cpp_out}"
+}
 
-"${cc}" -std=c11 -O2 -Wall -Wextra -Werror \
-  "${hz7_root}/hz7.c" \
-  "${hz7_root}/tests/hz7_stats_smoke.c" \
-  -o "${stats_out}"
+build_c_smoke "hz7_smoke" "${hz7_root}/tests/hz7_smoke.c" "${out}"
+build_c_smoke "hz7_remote_smoke" "${hz7_root}/tests/hz7_remote_smoke.c" "${remote_out}" -pthread
+build_c_smoke "hz7_mt_smoke" "${hz7_root}/tests/hz7_mt_smoke.c" "${mt_out}" -pthread
+build_c_smoke "hz7_stats_smoke" "${hz7_root}/tests/hz7_stats_smoke.c" "${stats_out}"
+build_cpp_smoke
 
-"${stats_out}"
-
-"${cc}" -std=c11 -O2 -Wall -Wextra -Werror \
-  -c "${hz7_root}/hz7.c" \
-  -o "${cpp_obj}"
-
-"${cxx}" -std=c++11 -O2 -Wall -Wextra -Werror \
-  "${cpp_obj}" \
-  "${hz7_root}/tests/hz7_cpp_smoke.cpp" \
-  -o "${cpp_out}"
-
-"${cpp_out}"
+run_smoke "hz7_smoke" "${out}"
+run_smoke "hz7_remote_smoke" "${remote_out}"
+run_smoke "hz7_mt_smoke" "${mt_out}"
+run_smoke "hz7_stats_smoke" "${stats_out}"
+run_smoke "hz7_cpp_smoke" "${cpp_out}"

@@ -177,6 +177,19 @@ SmokeScriptModule-L1:
   [x] require Windows and Linux smoke scripts to pass
 ```
 
+The next maintenance step is `LinuxSmokeScriptModule-L1`. It mirrors the
+Windows smoke script cleanup by giving the Linux smoke runner small build/run
+helpers while keeping the same smoke binaries, flags, and execution order.
+
+```text
+LinuxSmokeScriptModule-L1:
+  [x] add small Linux smoke build/run helpers
+  [x] keep all existing smoke binaries and output names unchanged
+  [x] keep the C++ header smoke linked against a C-compiled hz7 object
+  [x] keep allocator policy and speed path unchanged
+  [x] require Windows and Linux smoke scripts to pass
+```
+
 The accepted cleanup step is `RouteValidationModule-L1`. It is not a policy
 change. It keeps the current route lookup behavior, but shares the small/direct
 user-pointer validation logic used by `h7_route()` and `h7_free()`.
