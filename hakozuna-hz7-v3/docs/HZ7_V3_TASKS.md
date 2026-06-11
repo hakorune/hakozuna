@@ -38,6 +38,7 @@ active:
     keep the route invariant helper and span/free-list cleanup readable
     keep route safety unchanged
     keep RemoteNatural-L1 as a control preset
+    keep the route/span helper split easy to follow
 
 next:
   extend the v3 hotpath rows to cover 4K, 8K, and 16K span-audit slices
@@ -54,6 +55,17 @@ v3 hotpath:
 v3 size slices:
   wired as a filtered companion around the v3 hotpath probe
   keep it focused on the 4K / 8K / 16K span-audit rows
+```
+
+Current artifacts:
+
+```text
+docs/benchmarks/windows/hz7_v3_span_audit_probe/
+  hotpath probe output with route invariant helper rows
+
+docs/benchmarks/windows/hz7_v3_size_slices_probe/
+docs/benchmarks/windows/hz7_v3_size_slices_probe2/
+  filtered 4K / 8K / 16K size-slice companion runs
 ```
 
 ## SpanPathAudit-L1

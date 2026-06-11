@@ -42,6 +42,22 @@ Shape:
   larger direct OS regions
 ```
 
+## Current Module Layout
+
+V3 keeps the allocator easy to read by splitting the small route/span logic out
+of the main translation unit:
+
+```text
+hz7.c
+  common helpers, OS allocation, public API wiring
+
+hz7_route.inc
+  route table, retain buckets, route lookup helpers
+
+hz7_span.inc
+  span metadata, bitmap/free-list helpers, partial/empty span movement
+```
+
 ## V3 Goal
 
 V3 is not a replacement for the v2 closeout reference. It is the place where we
@@ -60,6 +76,22 @@ secondary:
   keep RemoteNatural-L1 available as a control
   keep implementation readable enough to remain a teaching allocator
 ```
+
+## Current Benchmark Plumbing
+
+V3 already has the first row set wired for the span-audit experiment:
+
+```text
+win/run_win_hz7_v3_hotpath.ps1
+win/run_win_hz7_v3_size_slices.ps1
+
+docs/benchmarks/windows/hz7_v3_span_audit_probe/
+docs/benchmarks/windows/hz7_v3_size_slices_probe/
+docs/benchmarks/windows/hz7_v3_size_slices_probe2/
+```
+
+The hotpath probe now carries the route invariant helper rows, and the size
+slices companion keeps the experiment focused on 4K / 8K / 16K rows.
 
 ## Guardrails
 
