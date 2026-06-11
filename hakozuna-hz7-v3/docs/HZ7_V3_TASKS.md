@@ -47,6 +47,9 @@ done:
   BenchmarkComparisonNote-L1
     benchmark comparison note now records shared runner helpers and companion naming
 
+  BenchmarkLatestSnapshot-L1
+    comparison note now points at the latest hotpath and size-slices summary snapshots
+
 active:
   SpanPathAudit-L1
     inspect 4K..16K span path before adding new policy

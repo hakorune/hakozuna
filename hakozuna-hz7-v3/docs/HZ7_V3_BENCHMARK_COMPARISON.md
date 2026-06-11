@@ -35,6 +35,16 @@ shared helper:
 The shared helper preserves the per-row rate unit, so the size-slices summary
 still prints `pairs/s` and `ops/s` in the same table shape as the hotpath
 summary.
+
+Latest runner snapshots:
+
+```text
+hotpath:
+  out_win_hz7_v3_hotpath/20260611_235109_hz7_v3_hotpath_windows.md
+
+size-slices:
+  out_win_hz7_v3_size_slices/20260611_235108_hz7_v3_size_slices_windows.md
+```
 ```
 
 ## 4K / 8K / 16K Span Audit
@@ -125,3 +135,5 @@ size-slices:
 shared:
   median / formatting / captured-process / summary helpers
 ```
+
+Those summaries are the current reference points for the companion split.
