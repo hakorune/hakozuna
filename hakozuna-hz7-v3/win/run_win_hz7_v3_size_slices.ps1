@@ -49,19 +49,12 @@ if ($result.ExitCode -ne 0) {
     throw "hotpath runner failed with exit code $($result.ExitCode)"
 }
 
-$summaryPath = $null
-foreach ($line in $result.Lines) {
-    if ($line -match '^Wrote summary:\s+(.*)$') {
-        $summaryPath = $Matches[1].Trim()
-    }
-}
+$summaryPath = Find-H7SummaryPathFromLines -Lines $result.Lines
 if (-not $summaryPath -or -not (Test-Path $summaryPath)) {
     throw "hotpath summary not found"
 }
 
-$summaryLines = Get-Content $summaryPath
-$rows = @{}
-Add-H7SummaryRowsFromMarkdown -Rows $rows -Lines $summaryLines
+$rows = Get-H7BenchmarkRowsFromMarkdownPath -Path $summaryPath
 
 $wanted = @(
     'malloc_free:span4k',

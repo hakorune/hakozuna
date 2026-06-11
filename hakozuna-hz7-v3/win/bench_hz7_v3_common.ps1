@@ -207,6 +207,28 @@ function Add-H7SummaryRowsFromMarkdown {
     }
 }
 
+function Find-H7SummaryPathFromLines {
+    param([System.Collections.Generic.List[string]]$Lines)
+
+    foreach ($line in $Lines) {
+        if ($line -match '^Wrote summary:\s+(.*)$') {
+            return $Matches[1].Trim()
+        }
+    }
+    return $null
+}
+
+function Get-H7BenchmarkRowsFromMarkdownPath {
+    param([string]$Path)
+
+    if (-not (Test-Path $Path)) {
+        throw "summary not found: $Path"
+    }
+    $rows = @{}
+    Add-H7SummaryRowsFromMarkdown -Rows $rows -Lines (Get-Content $Path)
+    return $rows
+}
+
 function Invoke-H7BenchmarkProbe {
     param(
         [string]$CompilerPath,
