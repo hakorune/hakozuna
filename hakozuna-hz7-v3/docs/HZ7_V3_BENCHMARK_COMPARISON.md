@@ -119,6 +119,25 @@ audit rows without changing the companion split.
 | route_valid direct32k | 125.000M ops/s |
 | route_valid direct64k | 125.000M ops/s |
 
+## Empty Span Cap Smoke
+
+The runner-only `EmptySpanCap` knob was tested as an isolated span/free-list
+experiment. The cap=8 smoke kept the registry shape readable, but it did not
+beat the current default on the sensitive batch rows, so the knob stays
+experimental.
+
+| row | default hotpath | cap8 hotpath | default size-slices | cap8 size-slices |
+| --- | ---: | ---: | ---: | ---: |
+| malloc_batch span4k | 1.291M ops/s | 1.016M ops/s | 18.435K ops/s | 17.968K ops/s |
+| malloc_batch span8k | 612.820K ops/s | 725.321K ops/s | 624.943K ops/s | 698.303K ops/s |
+| malloc_batch span16k | 678.933K ops/s | 517.411K ops/s | 638.767K ops/s | 576.784K ops/s |
+| free_batch span4k | 5.086M ops/s | 5.411M ops/s | 2.968M ops/s | 2.744M ops/s |
+| free_batch span8k | 2.491M ops/s | 2.109M ops/s | 2.135M ops/s | 1.913M ops/s |
+| free_batch span16k | 1.605M ops/s | 1.607M ops/s | 1.331M ops/s | 1.163M ops/s |
+| malloc_free span4k | 31.746M pairs/s | 30.581M pairs/s | 48.866M pairs/s | 48.552M pairs/s |
+| malloc_free span8k | 37.313M pairs/s | 36.765M pairs/s | 48.579M pairs/s | 48.433M pairs/s |
+| malloc_free span16k | 41.322M pairs/s | 40.816M pairs/s | 48.483M pairs/s | 48.164M pairs/s |
+
 ## What Stands Out
 
 ```text

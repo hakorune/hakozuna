@@ -61,6 +61,7 @@ active:
     inspect the current 4K..16K span path and direct retained companion rows
     decide whether the next change should stay in span/free-list cleanup
     keep experimental span-cache cap knobs in the runner layer until a win is proven
+    cap=8 smoke stayed experimental; do not promote the runner knob without a clear win
     keep route safety unchanged
     keep RemoteNatural-L1 as a control preset
     keep the route/span/big helper split easy to follow
