@@ -237,6 +237,19 @@ FreeLockedDispatchHelper-L1:
   [x] require Windows and Linux smoke scripts to pass
 ```
 
+The next source cleanup step is `StatsSnapshotHelper-L1`. It is not an
+allocation policy change. It gives the locked stats snapshot a tiny helper so
+the public `h7_stats()` wrapper matches the other API wrappers.
+
+```text
+StatsSnapshotHelper-L1:
+  [x] add a helper for copying stats under the lock
+  [x] keep public H7Stats layout unchanged
+  [x] keep stats accounting unchanged
+  [x] keep allocator policy and speed path unchanged
+  [x] require Windows and Linux smoke scripts to pass
+```
+
 The next cleanup step is `StatsInvariantSmoke-L1`. It is not a policy change.
 It keeps the allocator code unchanged and makes the public stats/route contract
 explicit in a focused smoke test before the next performance experiment.

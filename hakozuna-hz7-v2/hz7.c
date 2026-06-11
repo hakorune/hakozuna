@@ -910,10 +910,14 @@ H7RouteKind h7_route(void* ptr) {
   return kind;
 }
 
+static H7Stats h7_stats_locked(void) {
+  return g_h7_stats;
+}
+
 H7Stats h7_stats(void) {
   H7Stats stats;
   h7_lock();
-  stats = g_h7_stats;
+  stats = h7_stats_locked();
   h7_unlock();
   return stats;
 }
