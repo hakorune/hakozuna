@@ -54,6 +54,10 @@ next:
     keep direct free validation and retain/release dispatch explicit
     do not change direct retain policy or route semantics
 
+  RoutePublicKindHelper-L1
+    keep h7_route lookup separate from user-pointer VALID/INVALID interpretation
+    do not change MISS / VALID / INVALID semantics
+
 optional:
   SpanFreeListTrim-L1
     one tiny cleanup/perf probe only if it stays explainable
@@ -1761,4 +1765,39 @@ required:
 
 expected:
   no material random_mixed change because this is only readability cleanup
+```
+
+### RoutePublicKindHelper-L1
+
+This is an `OptionalCleanup-L1` route readability cleanup, not a route policy
+change. It keeps `h7_route_unlocked()` as a tiny lookup wrapper and moves the
+region-kind-specific user pointer interpretation into one helper.
+
+Implementation:
+
+```text
+h7_region_user_route_kind:
+  returns MISS/INVALID directly for non-VALID route lookup results
+  validates small span slot pointers with h7_small_slot_index
+  validates direct user pointers with h7_big_is_user_ptr
+  returns INVALID for unknown route region kinds
+```
+
+Contract:
+
+```text
+unchanged:
+  foreign pointer -> MISS
+  active exact pointer -> VALID
+  interior/retained/inactive pointer -> INVALID
+  h7_free still performs the locked dispatch path separately
+  no route table policy change
+```
+
+Acceptance:
+
+```text
+required:
+  Windows smoke passes
+  Linux smoke passes
 ```

@@ -966,6 +966,22 @@ static void h7_free_locked(void* ptr, H7PendingRelease* release) {
   }
 }
 
+static H7RouteKind h7_region_user_route_kind(H7RouteResult route, void* ptr) {
+  if (route.kind != H7_ROUTE_VALID || !route.region) {
+    return route.kind;
+  }
+  if (route.region->kind == H7_REGION_SMALL_SPAN) {
+    return h7_small_slot_index((H7Span*)route.region, ptr, 0)
+               ? H7_ROUTE_VALID
+               : H7_ROUTE_INVALID;
+  }
+  if (route.region->kind == H7_REGION_DIRECT) {
+    return h7_big_is_user_ptr((H7Direct*)route.region, ptr) ? H7_ROUTE_VALID
+                                                            : H7_ROUTE_INVALID;
+  }
+  return H7_ROUTE_INVALID;
+}
+
 void h7_free(void* ptr) {
   H7PendingRelease release;
   if (!ptr) {
@@ -980,19 +996,7 @@ void h7_free(void* ptr) {
 
 static H7RouteKind h7_route_unlocked(void* ptr) {
   H7RouteResult route = h7_route_lookup_raw(ptr);
-  if (route.kind != H7_ROUTE_VALID || !route.region) {
-    return route.kind;
-  }
-  if (route.region->kind == H7_REGION_SMALL_SPAN) {
-    return h7_small_slot_index((H7Span*)route.region, ptr, 0)
-               ? H7_ROUTE_VALID
-               : H7_ROUTE_INVALID;
-  }
-  if (route.region->kind == H7_REGION_DIRECT) {
-    return h7_big_is_user_ptr((H7Direct*)route.region, ptr) ? H7_ROUTE_VALID
-                                                            : H7_ROUTE_INVALID;
-  }
-  return H7_ROUTE_INVALID;
+  return h7_region_user_route_kind(route, ptr);
 }
 
 H7RouteKind h7_route(void* ptr) {
