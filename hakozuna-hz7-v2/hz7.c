@@ -747,6 +747,13 @@ static int h7_big_is_user_ptr(H7Direct* direct, void* ptr) {
   return direct && ptr == h7_big_user_ptr(direct);
 }
 
+static int h7_big_is_active_user(H7Direct* direct, void* ptr) {
+  return direct && direct->region.magic == H7_MAGIC &&
+         direct->region.kind == H7_REGION_DIRECT &&
+         (direct->region.flags & H7_REGION_ACTIVE) != 0 &&
+         h7_big_is_user_ptr(direct, ptr);
+}
+
 static size_t h7_big_region_size(size_t size) {
   return h7_region_align_up(h7_big_user_offset() + size);
 }
@@ -846,6 +853,15 @@ static void h7_big_detach_for_release(H7Direct* direct,
   h7_pending_release_set(release, direct, direct->region.region_size);
 }
 
+static void h7_big_retire_locked(H7Direct* direct,
+                                 H7PendingRelease* release) {
+  if (h7_direct_retain_push(direct)) {
+    h7_big_move_to_retained(direct);
+    return;
+  }
+  h7_big_detach_for_release(direct, release);
+}
+
 static int h7_malloc_prepare_region_outside_lock(size_t size,
                                                  H7PendingRelease* prealloc) {
   if (h7_size_is_small(size)) {
@@ -868,17 +884,10 @@ static int h7_malloc_prepare_region_outside_lock(size_t size,
 static void h7_big_free(H7Direct* direct,
                         void* ptr,
                         H7PendingRelease* release) {
-  if (!direct || direct->region.magic != H7_MAGIC ||
-      direct->region.kind != H7_REGION_DIRECT ||
-      (direct->region.flags & H7_REGION_ACTIVE) == 0 ||
-      !h7_big_is_user_ptr(direct, ptr)) {
+  if (!h7_big_is_active_user(direct, ptr)) {
     return;
   }
-  if (h7_direct_retain_push(direct)) {
-    h7_big_move_to_retained(direct);
-    return;
-  }
-  h7_big_detach_for_release(direct, release);
+  h7_big_retire_locked(direct, release);
 }
 
 static void* h7_malloc_existing_locked(size_t size) {

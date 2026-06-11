@@ -50,6 +50,10 @@ next:
     only accept tiny source/list cleanups that preserve the cap64 baseline
     use the baseline snapshot as the scoreboard before further tuning
 
+  DirectRetireHelper-L1
+    keep direct free validation and retain/release dispatch explicit
+    do not change direct retain policy or route semantics
+
 optional:
   SpanFreeListTrim-L1
     one tiny cleanup/perf probe only if it stays explainable
@@ -1718,4 +1722,43 @@ limit:
 next:
   do not retune blindly
   use this snapshot as the scoreboard before any further OptionalCleanup-L1 work
+```
+
+### DirectRetireHelper-L1
+
+This is an `OptionalCleanup-L1` source cleanup, not an allocation policy change.
+It makes direct free easier to audit by splitting validation from the retained
+vs OS-release decision.
+
+Implementation:
+
+```text
+h7_big_is_active_user:
+  validates direct region magic / kind / ACTIVE flag / exact user pointer
+
+h7_big_retire_locked:
+  pushes to the direct retain bucket when possible
+  otherwise unregisters the route and schedules OS release outside the lock
+```
+
+Contract:
+
+```text
+unchanged:
+  H7_DIRECT_RETAIN_CAP default remains 64
+  retained direct regions remain route INVALID
+  route unregister still happens under the lock before OS release
+  final OS release still happens outside the lock
+  no owner / inbox / TLS / remote-fast policy is added
+```
+
+Acceptance:
+
+```text
+required:
+  Windows smoke passes
+  Linux smoke passes
+
+expected:
+  no material random_mixed change because this is only readability cleanup
 ```
