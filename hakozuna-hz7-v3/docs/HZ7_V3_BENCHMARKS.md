@@ -26,6 +26,9 @@ win/bench_hz7_v3_sequences.inc
 docs/HZ7_V3_BENCHMARK_COMPARISON.md
   one-page comparison of the current Windows probe snapshots
 
+docs/HZ7_V3_V2_COMPARISON.md
+  one-page summary of how v3 differs from the v2 closeout reference
+
 docs/HZ7_V3_STRUCTURE.md
   one-page note for the current allocator and benchmark module boundaries
 ```

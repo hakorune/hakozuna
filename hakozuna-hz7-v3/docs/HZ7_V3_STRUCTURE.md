@@ -61,3 +61,9 @@ public API
 The v3 objective is not just to make the allocator faster. It is to keep the
 experiment readable while growing the span path and the benchmark coverage.
 This note acts as the current source-of-truth for the code layout.
+
+See also:
+
+```text
+docs/HZ7_V3_V2_COMPARISON.md
+```
