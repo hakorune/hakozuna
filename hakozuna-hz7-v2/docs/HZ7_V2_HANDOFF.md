@@ -7,10 +7,9 @@ branch:
   main
 
 status:
-  local commits are ahead of origin
+  pushed to origin/main
 
 next intended action:
-  push
   ask external review using docs/HZ7_V2_STOP_OR_CONTINUE_PROMPT.md
   decide whether to accept closeout or authorize one more measured experiment
 ```
@@ -79,4 +78,3 @@ not allowed:
   HZ6-style profile matrix
   production hot-path diagnostics
 ```
-

@@ -59,6 +59,10 @@ done:
     added docs/HZ7_V2_HANDOFF.md
     captured the push/review/decision handoff path
 
+  DecisionLog-L1
+    added docs/HZ7_V2_DECISION_LOG.md
+    prepared a place to record the external stop/continue decision
+
 active:
   HZ7 v2 lane closeout
     keep README current measurement on the cap64 default
@@ -72,6 +76,7 @@ active:
 next:
   ExternalReview-L1
     use docs/HZ7_V2_STOP_OR_CONTINUE_PROMPT.md if another design opinion is wanted
+    record the answer in docs/HZ7_V2_DECISION_LOG.md
     decide whether to accept closeout or authorize one more measured experiment
 
   OptionalCleanup-L1

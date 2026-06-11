@@ -209,6 +209,7 @@ powershell -ExecutionPolicy Bypass -File .\win\run_win_random_mixed_paper.ps1 -R
 
 ```text
 docs/HZ7_V2_HANDOFF.md
+docs/HZ7_V2_DECISION_LOG.md
 docs/HZ7_V2_CLOSEOUT_REVIEW.md
 docs/HZ7_V2_STOP_OR_CONTINUE_PROMPT.md
 docs/HZ7_V2_TASKS.md
