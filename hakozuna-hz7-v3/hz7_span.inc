@@ -2,6 +2,14 @@ static uint64_t* h7_span_bitmap(H7Span* span) {
   return (uint64_t*)((unsigned char*)span + sizeof(H7Span));
 }
 
+static int h7_span_is_full(const H7Span* span) {
+  return span->used_count == span->slot_count;
+}
+
+static int h7_span_is_empty(const H7Span* span) {
+  return span->used_count == 0u;
+}
+
 static unsigned char* h7_span_slots(H7Span* span) {
   return (unsigned char*)span + span->slot_offset;
 }
@@ -226,9 +234,11 @@ static void h7_span_mark_slot_inactive(H7Span* span) {
 }
 
 static void h7_span_update_partial_after_alloc(H7Class* klass, H7Span* span) {
-  if (span->free_head == H7_FREE_NONE) {
+  if (h7_span_is_full(span)) {
     h7_list_remove(&klass->partial, span);
-  } else if (span->used_count == 1u) {
+    return;
+  }
+  if (span->used_count == 1u) {
     h7_list_push(&klass->partial, span);
   }
 }
@@ -237,13 +247,15 @@ static void h7_span_update_partial_after_free(H7Class* klass,
                                               H7Span* span,
                                               int was_full,
                                               H7PendingRelease* release) {
-  if (span->used_count == 0u) {
-    h7_list_remove(&klass->partial, span);
-    if (!h7_empty_span_try_push(klass, span)) {
-      h7_span_detach_for_release(span, release);
+  if (!h7_span_is_empty(span)) {
+    if (was_full) {
+      h7_list_push(&klass->partial, span);
     }
-  } else if (was_full) {
-    h7_list_push(&klass->partial, span);
+    return;
+  }
+  h7_list_remove(&klass->partial, span);
+  if (!h7_empty_span_try_push(klass, span)) {
+    h7_span_detach_for_release(span, release);
   }
 }
 
@@ -304,7 +316,7 @@ static void h7_small_free(H7Span* span,
   if (!h7_small_slot_index(span, ptr, &index)) {
     return;
   }
-  was_full = span->used_count == span->slot_count;
+  was_full = h7_span_is_full(span);
   h7_bitmap_clear(span, index);
   h7_span_push_free_slot(span, index);
   h7_span_mark_slot_inactive(span);
