@@ -1,0 +1,109 @@
+# HZ7 V3 Tasks
+
+HZ7 v3 starts from the HZ7 v2 RemoteNatural-L1 closeout code, but it is a new
+research folder. V2 remains the selected tiny reference. V3 is allowed to grow
+past the v2 line count when the added code directly supports a measured
+performance experiment.
+
+## Current Identity
+
+```text
+HZ7 v1:
+  frozen cute TinyRoute baseline
+
+HZ7 v2:
+  closeout reference
+  low-RSS route-safe allocator
+  coarse-lock remote-free safe
+  RemoteNatural-L1 bounded remote pressure evidence
+
+HZ7 v3:
+  performance-growth fork
+  starts from v2
+  first target is local span path improvement
+```
+
+## Active Board
+
+```text
+done:
+  V3Bootstrap-L1
+    copied hakozuna-hz7-v2 into hakozuna-hz7-v3
+    excluded generated out/ artifacts
+    preserved smoke/tests/scripts as the starting point
+
+active:
+  SpanPathAudit-L1
+    inspect 4K..16K span path before adding new policy
+    keep route safety unchanged
+    keep RemoteNatural-L1 as a control preset
+
+next:
+  add v3 benchmark row wiring only after the smoke baseline passes
+  run HZ7 v3 hotpath and size-slice probes
+```
+
+Note:
+
+```text
+v3 hotpath:
+  local script exists
+
+v3 size slices:
+  not wired yet
+  the copied v2 size-slice script was removed to avoid accidentally measuring v2
+```
+
+## SpanPathAudit-L1
+
+Motivation:
+
+```text
+HZ7 v2 closeout showed:
+  direct 16K..32K retained path is strong
+  route validation is not the local bottleneck
+  4K..16K span-covered range is the main local watch item
+```
+
+Scope:
+
+```text
+allowed:
+  audit h7_small_alloc_from_span
+  audit h7_small_free
+  audit partial/empty span list movement
+  audit bitmap/free-list work for 4K / 8K / 16K classes
+  add diagnostic-only smoke/probe rows if needed
+
+not allowed in L1:
+  TLS cache
+  owner-aware remote free
+  lock-free remote queue
+  remote batching
+  broad profile matrix
+```
+
+Acceptance:
+
+```text
+safety:
+  Windows smoke passes
+  Linux smoke passes
+  route_register_fail = 0 in smoke
+  remote-natural smoke remains clean
+
+performance target:
+  4K..16K size slice improves by at least 5%
+  random_mixed small/medium/mixed does not regress materially
+  RSS remains close to v2 baseline
+
+design:
+  changes stay understandable
+  no v2 closeout docs are rewritten as if v2 were obsolete
+```
+
+## V2 Archive In This Folder
+
+The copied `HZ7_V2_*` docs are seed/reference documents. They are intentionally
+left in place for now so V3 can cite the exact baseline it forked from. New V3
+decisions should go into this file first.

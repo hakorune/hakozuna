@@ -1,0 +1,99 @@
+# Hakozuna HZ7 TinyRoute V3
+
+HZ7 v3 is the performance-growth fork of the HZ7 tiny allocator line.
+
+```text
+hakozuna-hz7/
+  v1 frozen cute TinyRoute baseline
+
+hakozuna-hz7-v2/
+  RemoteNatural-L1 closeout
+  selected tiny route-safe reference
+
+hakozuna-hz7-v3/
+  new research folder
+  starts from v2 code
+  may spend more lines on performance experiments
+```
+
+V3 starts as a copy of v2 so it inherits the useful contract:
+
+```text
+API:
+  h7_malloc(size)
+  h7_calloc(count, size)
+  h7_free(ptr)
+  h7_route(ptr)
+  h7_stats()
+
+Route:
+  MISS     foreign pointer / not owned
+  VALID    currently active exact pointer
+  INVALID  HZ7-owned-looking inactive/interior/retained pointer
+
+Threading:
+  coarse global lock
+  cross-thread free is safe
+  RemoteNatural-L1 preset exists for bounded route pressure
+
+Shape:
+  small/medium spans through 16KiB
+  direct retained buckets for 32KiB and 64KiB
+  larger direct OS regions
+```
+
+## V3 Goal
+
+V3 is not a replacement for the v2 closeout reference. It is the place where we
+can try one or two larger but still readable experiments without blurring v2.
+
+Initial target:
+
+```text
+primary:
+  improve local 4K..16K span path
+  keep low RSS close to v2
+  keep route safety and remote-free safety
+
+secondary:
+  keep RemoteNatural-L1 available as a control
+  keep implementation readable enough to remain a teaching allocator
+```
+
+## Guardrails
+
+Allowed:
+
+```text
+span path trim
+span class accounting cleanup
+small/medium local reuse improvements
+route helper cleanup when it supports the main experiment
+benchmark plumbing for v3 rows
+```
+
+Not for the first V3 pass:
+
+```text
+owner-aware remote handoff
+owner inbox
+TLS ownership
+lock-free remote queue
+remote batching
+HZ6-style profile matrix
+production hot-path diagnostics
+```
+
+If a V3 experiment needs those features, it should become a different allocator
+family instead of silently turning HZ7 into HZ6.
+
+## First Task
+
+Read:
+
+```text
+docs/HZ7_V3_TASKS.md
+```
+
+The first recommended experiment is `SpanPathAudit-L1`: measure and simplify the
+4K..16K span path before adding new remote or TLS machinery.

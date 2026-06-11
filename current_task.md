@@ -49,6 +49,14 @@ Status:
     It is not a remote-throughput promotion and still avoids owner tokens,
     inboxes, TLS ownership, remote queues, and lock-free handoff.
 
+  HZ7 v3 note:
+  hakozuna-hz7-v3/ is the new performance-growth fork.
+  It starts from the HZ7 v2 RemoteNatural-L1 closeout code.
+  V2 remains the selected tiny reference; V3 is where larger measured
+  experiments can continue without blurring V2.
+  First V3 target:
+    SpanPathAudit-L1 for the 4K..16K span-covered range.
+
 Implemented footing:
   1. TinyRoute-1 route safety:
        fixed region table
