@@ -65,6 +65,9 @@ win/bench_hz7_v3_hotpath.c
 
 win/bench_hz7_v3_rows.inc
   shared size-row definitions and row wrapper helpers
+
+win/bench_hz7_v3_sequences.inc
+  ordered benchmark scenario groups used by the hotpath driver
 ```
 
 ## V3 Goal

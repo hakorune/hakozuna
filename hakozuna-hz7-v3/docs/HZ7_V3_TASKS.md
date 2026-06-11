@@ -75,6 +75,9 @@ docs/HZ7_V3_BENCHMARK_COMPARISON.md
 
 win/bench_hz7_v3_rows.inc
   shared span-audit row definitions and row wrapper helpers
+
+win/bench_hz7_v3_sequences.inc
+  ordered benchmark scenario groups used by the hotpath driver
 ```
 
 ## SpanPathAudit-L1
