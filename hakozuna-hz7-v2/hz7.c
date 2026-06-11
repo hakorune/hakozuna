@@ -275,6 +275,18 @@ static int h7_region_is_active(const H7RegionHeader* region) {
   return (region->flags & H7_REGION_ACTIVE) != 0;
 }
 
+static void h7_region_mark_active(H7RegionHeader* region) {
+  region->flags = H7_REGION_ACTIVE;
+}
+
+static void h7_region_mark_retained(H7RegionHeader* region) {
+  region->flags = H7_REGION_RETAINED;
+}
+
+static void h7_region_mark_released(H7RegionHeader* region) {
+  region->flags = 0;
+}
+
 static H7RouteResult h7_route_result_for_entry(const H7RouteEntry* entry) {
   H7RouteResult result;
   H7RegionHeader* region = (H7RegionHeader*)entry->base;
@@ -597,7 +609,7 @@ static void h7_span_detach_for_release(H7Span* span,
   }
   h7_route_unregister(span);
   h7_span_mark_released(span);
-  span->region.flags = 0;
+  h7_region_mark_released(&span->region);
   release->ptr = span;
   release->size = span->region.region_size;
 }
@@ -703,7 +715,7 @@ static size_t h7_big_region_size(size_t size) {
 }
 
 static void h7_big_mark_active(H7Direct* direct, size_t size) {
-  direct->region.flags = H7_REGION_ACTIVE;
+  h7_region_mark_active(&direct->region);
   direct->requested_size = size;
   g_h7_stats.active_bytes += size;
   ++g_h7_stats.direct_count;
@@ -810,13 +822,13 @@ static void h7_big_free(H7Direct* direct,
   }
   if (h7_direct_retain_push(direct)) {
     h7_big_mark_inactive(direct);
-    direct->region.flags = H7_REGION_RETAINED;
+    h7_region_mark_retained(&direct->region);
     return;
   }
   h7_route_unregister(direct);
   h7_big_mark_inactive(direct);
   h7_big_mark_released(direct);
-  direct->region.flags = 0;
+  h7_region_mark_released(&direct->region);
   release->ptr = direct;
   release->size = direct->region.region_size;
 }

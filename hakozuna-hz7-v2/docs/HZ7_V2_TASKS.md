@@ -277,6 +277,20 @@ RegionRouteValidationHelper-L1:
   [x] require Windows and Linux smoke scripts to pass
 ```
 
+The next source cleanup step is `RegionFlagStateHelper-L1`. It is not an
+allocation policy change. It gives ACTIVE / RETAINED / released flag
+transitions tiny helpers so direct and span release paths use the same region
+state vocabulary.
+
+```text
+RegionFlagStateHelper-L1:
+  [x] add helpers for active, retained, and released region flags
+  [x] keep direct retained regions route INVALID
+  [x] keep released regions unregistered before OS release
+  [x] keep stats accounting unchanged
+  [x] require Windows and Linux smoke scripts to pass
+```
+
 The next cleanup step is `StatsInvariantSmoke-L1`. It is not a policy change.
 It keeps the allocator code unchanged and makes the public stats/route contract
 explicit in a focused smoke test before the next performance experiment.
