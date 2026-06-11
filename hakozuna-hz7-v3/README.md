@@ -108,6 +108,7 @@ See also:
 
 ```text
 docs/HZ7_V3_BENCHMARKS.md
+docs/HZ7_V3_BENCHMARK_COMPARISON.md
 ```
 
 ## Guardrails

@@ -70,6 +70,9 @@ docs/benchmarks/windows/hz7_v3_size_slices_probe2/
 docs/HZ7_V3_BENCHMARKS.md
   single place to read the current v3 benchmark surface
 
+docs/HZ7_V3_BENCHMARK_COMPARISON.md
+  one-page comparison of the current probe snapshots
+
 win/bench_hz7_v3_rows.inc
   shared span-audit row definitions and row wrapper helpers
 ```

@@ -16,6 +16,9 @@ win/run_win_hz7_v3_size_slices.ps1
 
 win/bench_hz7_v3_rows.inc
   shared size-row labels and row wrapper helpers used by the driver
+
+docs/HZ7_V3_BENCHMARK_COMPARISON.md
+  one-page comparison of the current Windows probe snapshots
 ```
 
 ## Current Artifact Roots
