@@ -1826,3 +1826,37 @@ required:
   Windows smoke passes
   Linux smoke passes
 ```
+
+### LightFullishBench-L1
+
+This is a closeout snapshot, not a new promotion benchmark. It records one light
+Windows pass across HZ7 smoke, HZ7-specific hotpath probes, HZ7 size slices,
+cross-allocator `random_mixed`, and the existing MT remote control runner.
+
+Artifacts:
+
+```text
+docs/benchmarks/windows/hz7_v2_light_fullish/
+```
+
+Result:
+
+```text
+completed:
+  Windows HZ7 smoke passed
+  hotpath probe recorded route/local reuse behavior
+  size slices recorded small/span/direct split behavior
+  random_mixed small/medium/mixed recorded broad low-RSS snapshot
+  mt_remote runner completed a control table
+
+important:
+  MT remote is a control/evidence row only
+  HZ7 tiny-route failed that high-pressure remote row with route saturation
+  this matches the design label: remote-free safe, not remote-throughput optimized
+
+reading:
+  HZ7 v2 remains coherent as a tiny low-RSS local allocator
+  HZ7 v2 is not a throughput winner against hz3/tcmalloc
+  route validation is not the local bottleneck
+  span_4k_16k is the main local path to watch if one more narrow experiment is authorized
+```
