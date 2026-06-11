@@ -78,6 +78,27 @@ their retained-path behavior stays visible in the same registry.
 | free_retained_loop span8k | 49.505M pairs/s | 47.393M pairs/s | 46.974M pairs/s |
 | free_retained_loop span16k | 49.751M pairs/s | 47.494M pairs/s | 47.845M pairs/s |
 
+## Direct Retained Companion
+
+The hotpath companion rows now surface the direct retained 32K / 64K path
+explicitly. That keeps the retained direct path visible alongside the span
+audit rows without changing the companion split.
+
+| row | hotpath latest |
+| --- | ---: |
+| free_batch direct32k | 945.358K ops/s |
+| free_batch direct64k | 868.885K ops/s |
+| free_retained_loop direct32k | 58.479M pairs/s |
+| free_retained_loop direct64k | 58.823M pairs/s |
+| malloc_batch direct32k | 526.981K ops/s |
+| malloc_batch direct64k | 521.839K ops/s |
+| malloc_free direct32k | 50.000M pairs/s |
+| malloc_free direct64k | 48.781M pairs/s |
+| route_invalid direct32k | 119.048M ops/s |
+| route_invalid direct64k | 119.048M ops/s |
+| route_valid direct32k | 120.482M ops/s |
+| route_valid direct64k | 121.951M ops/s |
+
 ## What Stands Out
 
 ```text
