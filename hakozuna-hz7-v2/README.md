@@ -97,16 +97,16 @@ not production hot-path diagnostics
 Windows `random_mixed` repeat-5, direct-API row `hz7-v2`:
 
 ```text
-small   78.337M ops/s, 4,576 KB peak
-medium  18.199M ops/s, 5,036 KB peak
-mixed   19.491M ops/s, 5,504 KB peak
+small   76.680M ops/s, 4,576 KB peak
+medium  17.505M ops/s, 5,044 KB peak
+mixed   19.040M ops/s, 5,500 KB peak
 ```
 
 Source:
 
 ```text
-out_win_random_mixed_hz7v2_routevalidation_module_repeat5/
-20260611_152945_paper_random_mixed_windows.md
+out_win_random_mixed_hz7v2_cleanup_repeat5/
+20260611_164902_paper_random_mixed_windows.md
 ```
 
 ## Build And Smoke

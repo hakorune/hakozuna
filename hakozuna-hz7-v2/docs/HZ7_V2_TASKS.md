@@ -638,3 +638,33 @@ SizeClassBoundaryHelper-L1:
   [x] keep direct retained bucket behavior unchanged
   [x] require Windows and Linux smoke scripts to pass
 ```
+
+## Cleanup Baseline Snapshot
+
+After the current helper cleanup series, HZ7 v2 remains a low-RSS tiny direct
+API allocator. The cleanup series did not add a new policy knob, so this
+snapshot should be read as the current readable-code baseline rather than a new
+performance promotion.
+
+Windows `random_mixed` repeat-5, direct-API row `hz7-v2`:
+
+```text
+small   76.680M ops/s, 4,576 KB peak
+medium  17.505M ops/s, 5,044 KB peak
+mixed   19.040M ops/s, 5,500 KB peak
+```
+
+Source:
+
+```text
+out_win_random_mixed_hz7v2_cleanup_repeat5/
+20260611_164902_paper_random_mixed_windows.md
+```
+
+Next decision:
+
+```text
+Do not keep splitting helpers unless the boundary remains obvious.
+Next performance work should start from measured small/medium/mixed behavior,
+not from remote-fast features.
+```
