@@ -375,9 +375,6 @@ function Invoke-H7FilteredBenchmarkProbe {
     }
 
     $Stamp = Get-Date -Format "yyyyMMdd_HHmmss"
-    $RawDir = Join-Path $OutputDir "raw"
-    New-Item -ItemType Directory -Force $RawDir | Out-Null
-
     $result = Invoke-H7CapturedProcess -FilePath "powershell" -Arguments @(
         "-ExecutionPolicy", "Bypass",
         "-File", $RunnerScriptPath
