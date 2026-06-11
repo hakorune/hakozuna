@@ -625,3 +625,16 @@ DirectUserOffsetHelper-L1:
   [x] keep retained direct route semantics unchanged
   [x] require Windows and Linux smoke scripts to pass
 ```
+
+The next source cleanup step is `SizeClassBoundaryHelper-L1`. It is not a size
+class policy change. It names the small/span boundary so malloc prepare,
+existing allocation, and prepared-region commit all use the same predicate.
+
+```text
+SizeClassBoundaryHelper-L1:
+  [x] add a helper for the small/span size boundary
+  [x] use it from malloc existing, preallocation, and commit paths
+  [x] keep class table and H7_SPAN_CLASS_MAX unchanged
+  [x] keep direct retained bucket behavior unchanged
+  [x] require Windows and Linux smoke scripts to pass
+```

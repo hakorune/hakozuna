@@ -152,6 +152,10 @@ static uintptr_t h7_region_base_from_ptr(const void* ptr) {
   return (uintptr_t)ptr & ~((uintptr_t)H7_SPAN_BYTES - 1u);
 }
 
+static int h7_size_is_small(size_t size) {
+  return size <= H7_SPAN_CLASS_MAX;
+}
+
 static void h7_region_header_init(H7RegionHeader* region,
                                   H7RegionKind kind,
                                   uint16_t flags,
@@ -170,7 +174,7 @@ static size_t h7_route_hash(uintptr_t base) {
 
 static H7DirectRetainBucket* h7_direct_retain_bucket_for_size(size_t size) {
   size_t i;
-  if (size <= H7_SPAN_CLASS_MAX) {
+  if (h7_size_is_small(size)) {
     return 0;
   }
   for (i = 0; i < H7_DIRECT_RETAIN_BUCKET_COUNT; ++i) {
@@ -837,7 +841,7 @@ static void h7_big_detach_for_release(H7Direct* direct,
 
 static int h7_malloc_prepare_region_outside_lock(size_t size,
                                                  H7PendingRelease* prealloc) {
-  if (size <= H7_SPAN_CLASS_MAX) {
+  if (h7_size_is_small(size)) {
     int class_id = h7_class_for_size(size);
     void* span;
     if (class_id < 0) {
@@ -871,7 +875,7 @@ static void h7_big_free(H7Direct* direct,
 }
 
 static void* h7_malloc_existing_locked(size_t size) {
-  if (size <= H7_SPAN_CLASS_MAX) {
+  if (h7_size_is_small(size)) {
     return h7_small_alloc_existing(size);
   }
   return h7_big_alloc_locked(size);
@@ -881,7 +885,7 @@ static void* h7_malloc_commit_preallocated_locked(size_t size,
                                                   H7PendingRelease* prealloc) {
   void* ptr = h7_malloc_existing_locked(size);
   if (!ptr) {
-    if (size <= H7_SPAN_CLASS_MAX) {
+    if (h7_size_is_small(size)) {
       ptr = h7_small_commit_and_alloc((H7Span*)prealloc->ptr);
     } else {
       ptr = h7_big_commit_and_alloc((H7Direct*)prealloc->ptr);
