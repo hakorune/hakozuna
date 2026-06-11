@@ -26,8 +26,8 @@ Status:
   Windows random_mixed includes hz7-tinyroute as a direct-API row.
 
   HZ7 Tiny v2 note:
-  hakozuna-hz7-v2/docs/HZ7_TINYROUTE_V2.md
-  Keep code in the separate hakozuna-hz7-v2 folder.
+  hz7/README.md
+  Keep the HZ7 family under hz7/ as the phased home for v1/v2/v3.
   Keep v1 frozen as the cute tiny baseline.
   HZ7 v2 read:
     local-performance focused
@@ -50,7 +50,7 @@ Status:
     inboxes, TLS ownership, remote queues, and lock-free handoff.
 
   HZ7 v3 note:
-  hakozuna-hz7-v3/ is the new performance-growth fork.
+  hz7/v3/README.md is the new performance-growth fork.
   It starts from the HZ7 v2 RemoteNatural-L1 closeout code.
   V2 remains the selected tiny reference; V3 is where larger measured
   experiments can continue without blurring V2.

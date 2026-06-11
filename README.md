@@ -21,8 +21,8 @@ Part of the [hakorune](https://github.com/hakorune) project.
   evaluated allocator in this repository yet. The documentation-first design
   seed lives under `hakozuna-hz6/`.
 - **HZ7 TinyRoute (design seed)**: tiny-binary, single-shape allocator line
-  distilled from HZ6. It starts as a direct API design under `hakozuna-hz7/`,
-  not as an evaluated replacement for HZ3/HZ4/HZ5/HZ6.
+  distilled from HZ6. Its phased family now lives under `hz7/` as `v1`,
+  `v2`, and `v3`.
 - Profile selection guide: [PROFILE_GUIDE.md](PROFILE_GUIDE.md)
 
 ## Allocator Profile Map
@@ -35,7 +35,7 @@ metadata and ownership models:
 | HZ3 / ACE-Alloc | local-heavy allocation, compact fast path | lookup-first: PTAG32 / table-oriented pointer-to-bin routing | the main ACE-Alloc line |
 | HZ4 | remote-heavy / message-passing workloads | remote-free-first: page-local metadata, remote queues, pending collect | the remote-free experiment line |
 | HZ5 | page/run-first sidecar allocator prototype | ownership/policy-first: page/run descriptors route owner, profile, and dispatch policy | the low-RSS fail-closed research line |
-| HZ7 TinyRoute | tiny-binary direct API allocator design | span-mask first, optional tiny route table later | the HZ6-minimal design seed |
+| HZ7 TinyRoute | tiny-binary direct API allocator design | span-mask first, optional tiny route table later | the HZ6-minimal design seed, organized under `hz7/` |
 
 In short:
 
