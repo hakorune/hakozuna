@@ -116,6 +116,12 @@ TinyRoute-3.5:
   retained direct routes are INVALID, not MISS
   no adaptive medium pool
 
+TinyRoute-3.6:
+  SlowPathOutsideLock-L1
+  keep coarse global lock semantics
+  move OS allocation/release outside the lock when route state is safe
+  no owner-aware remote path
+
 TinyRoute-4:
   optional per-thread small span/front cache
   remote free remains global-lock fallback
@@ -129,6 +135,10 @@ Remote free is only a fallback/smoke concern here, not a performance track.
 Lock-free remote free, owner inboxes, libc interposition, and profile-family
 policy are not HZ7 v1/v2 goals. If they become necessary, they belong in a
 later HZ8/HZ6-family design rather than TinyRoute.
+
+The next v2 implementation step is `SlowPathOutsideLock-L1`: keep the coarse
+global lock model, but avoid holding it across OS allocation and release once
+route/list state has been made safe.
 
 ## Remote Evidence
 

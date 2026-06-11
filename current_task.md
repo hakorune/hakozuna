@@ -40,9 +40,12 @@ Status:
     route hot cache did not hold a stable win on repeat-5, and removing it
     restored the cleaner baseline.
   Next v2 step:
-    keep v2 local-only and treat remote as evidence/control only; if a next
-    tiny step appears, it must beat the archived scan baseline on small /
-    medium / mixed together.
+    implement SlowPathOutsideLock-L1 / LockScopeTrim-L1 before any remote fast
+    path work.
+    Keep the coarse global lock model, but move OS allocation/release outside
+    the lock when route/list state can be made safe first.
+    This is the next highest-ROI v2 step because it can help local and coarse
+    MT behavior without owner tokens, inboxes, TLS ownership, or remote queues.
 
 Implemented footing:
   1. TinyRoute-1 route safety:

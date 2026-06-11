@@ -162,6 +162,52 @@ Read:
   archive the knob as hygiene-only
 ```
 
+## Next Implementation: SlowPathOutsideLock-L1
+
+The next active HZ7 v2 step is not remote fast path work. Keep remote free as
+safety/evidence, and reduce coarse-lock cost by moving slow OS work outside the
+global lock while preserving route safety.
+
+```text
+Goal:
+  keep the coarse global lock model
+  keep route safety and remote-free safety
+  move OS allocation/release outside the lock when state is already safe
+
+Malloc shape:
+  lock
+  try partial/empty/direct-retain fast sources
+  unlock
+
+  allocate OS region outside lock
+
+  lock
+  recheck retained/span availability
+  commit and route-register only if still needed
+  unlock
+
+  release unused preallocated region outside lock
+
+Free shape:
+  lock
+  route lookup
+  update state/list/stats
+  decide retain versus OS release
+  unregister route before any OS release
+  unlock
+
+  release OS region outside lock
+```
+
+Invariants:
+
+```text
+route unregister stays under lock
+no active route entry may point at a released region
+unused preallocated regions are never route-registered
+no owner token, inbox, TLS ownership, or remote queue is introduced
+```
+
 ## Archived No-Gos
 
 ```text

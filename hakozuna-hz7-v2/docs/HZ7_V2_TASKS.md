@@ -27,6 +27,8 @@ readable tiny allocator shape
 
 - [ ] Keep the direct API small and explicit
 - [ ] Keep the small/medium hot path separate from remote safety concerns
+- [ ] Implement `SlowPathOutsideLock-L1` before adding remote fast paths
+- [ ] Move OS allocation/release work out of the global lock where route safety allows
 - [ ] Keep remote as safety/evidence only, not a throughput claim
 - [ ] Keep route/class changes tiny unless they beat the archived baseline
 - [ ] Fail closed on invalid or foreign-looking input
@@ -64,9 +66,37 @@ SpanClassLookupTrim-L1:
 
 ## Next Tiny-Step Rule
 
-Only add a new tiny local hot-path change if it can beat the archived scan
-baseline on small / medium / mixed together. If it cannot, keep v1 frozen and
-leave the knob archived.
+The next active tiny step is `SlowPathOutsideLock-L1`, also called
+`LockScopeTrim-L1`. Keep the coarse global lock design, but stop holding that
+lock across OS allocation and OS release when the route/state transition can be
+completed first.
+
+Implementation order:
+
+- [ ] Split malloc into a locked fast check, an outside-lock OS allocation, and a locked commit
+- [ ] Recheck retained/span availability after the outside-lock allocation before committing the new region
+- [ ] Release any unused preallocated region outside the lock
+- [ ] Split free so route lookup, state transition, retained decision, and route unregister happen under lock
+- [ ] Run only the final OS release outside the lock
+- [ ] Keep retained direct and empty-span policies unchanged
+
+Acceptance:
+
+- [ ] `hz7_smoke` passes
+- [ ] `hz7_remote_smoke` passes
+- [ ] `hz7_mt_smoke` passes
+- [ ] `h7_route()` still reports foreign as `MISS`, active exact as `VALID`, and interior/retained/inactive as `INVALID`
+- [ ] `route_register_fail = 0`
+- [ ] random_mixed small/medium/mixed repeat-5 does not regress materially
+- [ ] single-thread local performance stays within 1 percent of the current baseline
+- [ ] RSS stays unchanged within noise
+
+No-go:
+
+- [ ] Do not move route unregister outside the lock
+- [ ] Do not free an OS region while its route entry is still active
+- [ ] Do not add owner tokens, inboxes, TLS ownership, remote queues, or production diagnostics
+- [ ] Do not keep the change if the code becomes hard to explain as a tiny reference
 
 ## Remote Evidence
 
