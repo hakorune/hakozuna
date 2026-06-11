@@ -171,6 +171,15 @@ powershell -ExecutionPolicy Bypass -File .\hakozuna-hz7-v2\win\run_win_hz7_v2_si
 This splits the medium range into span-covered `4K..16K` and direct-retained
 `16K+..32K` slices before adding another allocator policy knob.
 
+HZ7 v2 hot-path diagnostic:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\hakozuna-hz7-v2\win\run_win_hz7_v2_hotpath.ps1 -Runs 3
+```
+
+This measures direct-API `malloc/free` pairs and `h7_route()` calls without
+adding production counters to the allocator.
+
 Full random_mixed suite:
 
 ```powershell

@@ -867,3 +867,110 @@ Next likely target:
   same-thread hot path cost, especially global lock + route lookup overhead
   do not chase remote fast path yet
 ```
+
+## Hot Path Microbench
+
+`Hz7V2HotPathMicrobench-L1` is diagnostic-only. It measures direct-API
+`malloc/free` pairs and standalone `h7_route()` calls without adding allocator
+counters or production hot-path instrumentation.
+
+Command:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\hakozuna-hz7-v2\win\run_win_hz7_v2_hotpath.ps1 -Runs 3 -Iters 5000000
+```
+
+Observed Windows run:
+
+```text
+malloc_free:
+  small64    48.310M pairs/s
+  span8k     47.536M pairs/s
+  direct32k  56.162M pairs/s
+
+route_valid:
+  small64   120.945M ops/s
+  span8k    120.671M ops/s
+  direct32k 121.777M ops/s
+
+route_invalid:
+  small64   120.931M ops/s
+  span8k    121.037M ops/s
+  direct32k 118.798M ops/s
+```
+
+Source:
+
+```text
+out_win_hz7_v2_hotpath_check/
+20260611_171114_hz7_v2_hotpath_windows.md
+```
+
+Reading:
+
+```text
+h7_route() alone is around 120M ops/s.
+The direct-API malloc/free pair path is around 47M-56M pairs/s.
+
+This means route lookup is not the only blocker.
+The next HZ7 v2 optimization should inspect lock scope and slow-path work
+inside the coarse global lock before adding remote-fast machinery.
+```
+
+## Next Task: LockScopeTrim / SlowPathOutsideLock
+
+Consultation result:
+
+```text
+Remote fast path is not the next best target.
+The next target is reducing unnecessary work under the global lock while
+preserving HZ7 v2's simple route-safe, remote-free-safe contract.
+```
+
+Task plan:
+
+```text
+1. Keep HZ7 v2 remote-free safe, but not remote-throughput optimized.
+2. Add no production hot-path counters.
+3. Identify work currently performed under the global lock.
+4. Move pure slow-path preparation outside the lock where correctness allows.
+5. Keep route mutation, span free-list mutation, and direct retain mutation
+   inside the lock.
+6. Validate with smoke tests plus the hot-path diagnostic.
+```
+
+Candidate split:
+
+```text
+Inside lock:
+  route table insert/remove/lookup used by allocation/free
+  span free-list mutation
+  direct retain bucket mutation
+  global accounting visible through h7_stats
+
+Outside lock if safe:
+  requested-size classification
+  direct allocation size rounding
+  OS direct allocation before final route publish
+  failed slow-path cleanup after route publish failure
+```
+
+Acceptance:
+
+```text
+safety:
+  Windows and Linux smokes pass
+  remote-free smoke stays clean
+  route invalid / retained route invariants stay clean
+
+performance:
+  hot-path malloc_free improves or stays flat
+  random_mixed small/medium/mixed does not regress
+  RSS remains near current low-RSS baseline
+
+design:
+  no owner inbox
+  no lock-free remote queue
+  no TLS frontcache yet
+  no production counter/atomic in the hot path
+```
