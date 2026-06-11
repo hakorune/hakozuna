@@ -46,6 +46,7 @@ done:
 
   BenchmarkComparisonNote-L1
     benchmark comparison note now records shared runner helpers and companion naming
+    comparison note now also surfaces the direct retained companion rows
 
   BenchmarkLatestSnapshot-L1
     comparison note now points at the latest hotpath and size-slices summary snapshots
@@ -55,15 +56,16 @@ done:
 
 active:
   SpanPathAudit-L1
-    inspect 4K..16K span path before adding new policy
+    inspect the current 4K..16K span path and direct retained companion rows
+    decide whether the next change should stay in span/free-list cleanup
     keep route safety unchanged
     keep RemoteNatural-L1 as a control preset
     keep the route/span/big helper split easy to follow
 
 next:
-  extend the v3 hotpath rows to cover 4K, 8K, and 16K span-audit slices
-  keep the v3 size-slice wiring as the filtered companion to the hotpath probe
-  run HZ7 v3 hotpath and size-slice probes
+  compare the latest hotpath and size-slice snapshots
+  keep the hotpath and size-slice wiring narrow and readable
+  pick the next span/free-list tweak from the measured 4K..16K path
 ```
 
 Note:
