@@ -117,6 +117,16 @@ Read this as the current HZ7 v2 closeout lane: low-RSS local small/medium/mixed
 performance with coarse-lock remote-free safety. It is not a remote-throughput
 claim.
 
+Cross-allocator snapshot:
+
+```text
+docs/benchmarks/windows/hz7_v2_baseline_snapshot/
+20260611_174745_paper_random_mixed_windows.md
+```
+
+In that snapshot, HZ7 v2 is the lowest-RSS row for small / medium / mixed, but
+not the throughput winner against HZ3 or tcmalloc.
+
 ## Build And Smoke
 
 Windows:

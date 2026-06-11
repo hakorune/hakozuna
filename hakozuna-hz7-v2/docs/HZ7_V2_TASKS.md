@@ -39,6 +39,14 @@ done:
     refreshed the cross-allocator random_mixed small/medium/mixed snapshot
     confirmed HZ7 v2 cap64 is the lowest-RSS row, not the throughput winner
 
+  DirectRetireHelper-L1
+    kept direct free validation and retain/release dispatch explicit
+    did not change direct retain policy or route semantics
+
+  RoutePublicKindHelper-L1
+    kept h7_route lookup separate from user-pointer VALID/INVALID interpretation
+    did not change MISS / VALID / INVALID semantics
+
 active:
   HZ7 v2 lane closeout
     keep README current measurement on the cap64 default
@@ -46,17 +54,13 @@ active:
     keep Windows/Linux smoke parity visible
 
 next:
-  OptionalCleanup-L1
-    only accept tiny source/list cleanups that preserve the cap64 baseline
+  CloseoutReview-L1
+    decide whether HZ7 v2 should stop here as the cap64 tiny reference
     use the baseline snapshot as the scoreboard before further tuning
 
-  DirectRetireHelper-L1
-    keep direct free validation and retain/release dispatch explicit
-    do not change direct retain policy or route semantics
-
-  RoutePublicKindHelper-L1
-    keep h7_route lookup separate from user-pointer VALID/INVALID interpretation
-    do not change MISS / VALID / INVALID semantics
+  OptionalCleanup-L1
+    only accept additional tiny source/list cleanup if it preserves readability
+    stop if the cleanup needs new policy, counters, owner state, or remote fast path
 
 optional:
   SpanFreeListTrim-L1
