@@ -270,10 +270,10 @@ static void h7_span_update_partial_after_alloc(H7Class* klass, H7Span* span) {
   }
 }
 
-static void h7_span_update_partial_after_free(H7Class* klass,
-                                              H7Span* span,
-                                              int was_full,
-                                              H7PendingRelease* release) {
+static void h7_span_reclassify_after_free(H7Class* klass,
+                                          H7Span* span,
+                                          int was_full,
+                                          H7PendingRelease* release) {
   if (!h7_span_is_empty(span)) {
     if (was_full) {
       h7_list_push(&klass->partial, span);
@@ -340,5 +340,5 @@ static void h7_small_free(H7Span* span,
   }
   was_full = h7_span_is_full(span);
   h7_span_release_free_slot(span, index);
-  h7_span_update_partial_after_free(klass, span, was_full, release);
+  h7_span_reclassify_after_free(klass, span, was_full, release);
 }
