@@ -136,6 +136,19 @@ StatsInvariantSmoke-L1:
   [x] keep allocator policy and speed path unchanged
 ```
 
+The next smoke parity step is `CrossPlatformMtSmoke-L1`. It is not a policy
+change. It keeps the Windows MT smoke behavior and makes the same coarse-lock
+multithread safety check run on Linux via pthreads.
+
+```text
+CrossPlatformMtSmoke-L1:
+  [x] make hz7_mt_smoke compile on Windows and Linux
+  [x] keep the same 4-thread allocation/free stress shape
+  [x] wire hz7_mt_smoke into the Linux smoke script
+  [x] keep allocator policy and speed path unchanged
+  [x] require Windows and Linux smoke scripts to pass
+```
+
 The accepted cleanup step is `RouteValidationModule-L1`. It is not a policy
 change. It keeps the current route lookup behavior, but shares the small/direct
 user-pointer validation logic used by `h7_route()` and `h7_free()`.

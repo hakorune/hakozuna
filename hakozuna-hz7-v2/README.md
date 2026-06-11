@@ -115,6 +115,9 @@ Linux:
 ./hakozuna-hz7-v2/linux/build_hz7_smoke.sh
 ```
 
+The Linux smoke script runs the same route, remote-free, multithread, and stats
+invariant checks with pthreads for the threaded cases.
+
 ## Windows Random Mixed Bench
 
 HZ7 v2 is wired into the Windows `random_mixed` runner as a direct-API row named
