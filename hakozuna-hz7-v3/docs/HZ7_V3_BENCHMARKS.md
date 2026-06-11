@@ -20,6 +20,9 @@ win/bench_hz7_v3_rows.inc
 win/bench_hz7_v3_sequences.inc
   ordered benchmark scenario groups used by the hotpath driver
 
+The hotpath driver walks the scenario registry instead of spelling every
+sequence out in `main`.
+
 docs/HZ7_V3_BENCHMARK_COMPARISON.md
   one-page comparison of the current Windows probe snapshots
 ```

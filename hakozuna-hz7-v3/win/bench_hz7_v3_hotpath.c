@@ -454,11 +454,7 @@ int main(int argc, char** argv) {
     iters = (uint32_t)strtoul(argv[1], 0, 10);
   }
 
-  h7_run_v3_span_sequence(iters);
-  h7_run_v3_fresh_sequence(iters);
-  h7_run_v3_batch_sequence(iters);
-  h7_run_v3_retained_sequence(iters);
-  h7_run_v3_mixed_sequence(iters);
+  h7_run_v3_scenarios(iters);
 
   return 0;
 }

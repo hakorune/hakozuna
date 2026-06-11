@@ -78,6 +78,9 @@ win/bench_hz7_v3_rows.inc
 
 win/bench_hz7_v3_sequences.inc
   ordered benchmark scenario groups used by the hotpath driver
+
+The hotpath driver now walks a tiny scenario registry instead of spelling every
+sequence out in `main`.
 ```
 
 ## SpanPathAudit-L1

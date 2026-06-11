@@ -50,3 +50,25 @@ static void h7_run_v3_mixed_sequence(uint32_t iters) {
   h7_run_random_toggle("medium_ws400", 4096u, 32768u, iters, 400u, 1u);
   h7_run_random_toggle("mixed_ws400", 16u, 32768u, iters, 400u, 1u);
 }
+
+typedef void (*H7V3ScenarioFn)(uint32_t iters);
+
+typedef struct H7V3Scenario {
+  const char* name;
+  H7V3ScenarioFn run;
+} H7V3Scenario;
+
+static const H7V3Scenario kV3Scenarios[] = {
+    {"span", h7_run_v3_span_sequence},
+    {"fresh", h7_run_v3_fresh_sequence},
+    {"batch", h7_run_v3_batch_sequence},
+    {"retained", h7_run_v3_retained_sequence},
+    {"mixed", h7_run_v3_mixed_sequence},
+};
+
+static void h7_run_v3_scenarios(uint32_t iters) {
+  size_t i;
+  for (i = 0; i < sizeof(kV3Scenarios) / sizeof(kV3Scenarios[0]); ++i) {
+    kV3Scenarios[i].run(iters);
+  }
+}
