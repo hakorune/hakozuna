@@ -18,6 +18,19 @@ size-slices:
 The hotpath and size-slices runners now share their median, formatting, and
 captured-process helpers, but they keep separate summary names so the companion
 probe stays easy to identify.
+
+Current runner shape:
+
+```text
+hotpath summary:
+  bench_hz7_v3_hotpath
+
+size-slices summary:
+  bench_hz7_v3_size_slices
+
+shared helper:
+  win/bench_hz7_v3_common.ps1
+```
 ```
 
 ## 4K / 8K / 16K Span Audit
@@ -95,3 +108,16 @@ win/bench_hz7_v3_rows.inc
 
 The benchmark comparison note is intentionally small: it records what is already
 known, and leaves the next span-audit change to the active task board.
+
+The current runner split is intentionally small too:
+
+```text
+hotpath:
+  full span-audit sequence
+
+size-slices:
+  filtered 4K / 8K / 16K companion rows
+
+shared:
+  median / formatting / captured-process / summary helpers
+```

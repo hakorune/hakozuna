@@ -44,6 +44,9 @@ done:
   BenchmarkRunnerCommon-L1
     hotpath and size-slices now share median / formatting / capture helpers
 
+  BenchmarkComparisonNote-L1
+    benchmark comparison note now records shared runner helpers and companion naming
+
 active:
   SpanPathAudit-L1
     inspect 4K..16K span path before adding new policy
