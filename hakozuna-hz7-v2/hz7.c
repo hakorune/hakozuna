@@ -343,6 +343,10 @@ static unsigned char* h7_span_slots(H7Span* span) {
   return (unsigned char*)span + span->slot_offset;
 }
 
+static unsigned char* h7_span_slot_ptr(H7Span* span, uint32_t index) {
+  return h7_span_slots(span) + (size_t)index * span->slot_size;
+}
+
 static int h7_bitmap_test(H7Span* span, uint32_t index) {
   uint64_t* bitmap = h7_span_bitmap(span);
   return (bitmap[index / 64u] & (UINT64_C(1) << (index % 64u))) != 0;
@@ -381,6 +385,19 @@ static void h7_bitmap_set(H7Span* span, uint32_t index) {
 static void h7_bitmap_clear(H7Span* span, uint32_t index) {
   uint64_t* bitmap = h7_span_bitmap(span);
   bitmap[index / 64u] &= ~(UINT64_C(1) << (index % 64u));
+}
+
+static uint32_t h7_span_pop_free_slot(H7Span* span) {
+  uint32_t index = span->free_head;
+  if (index != H7_FREE_NONE) {
+    span->free_head = *(uint32_t*)h7_span_slot_ptr(span, index);
+  }
+  return index;
+}
+
+static void h7_span_push_free_slot(H7Span* span, uint32_t index, void* ptr) {
+  *(uint32_t*)ptr = span->free_head;
+  span->free_head = index;
 }
 
 static void h7_list_remove(H7Span** head, H7Span* span) {
@@ -540,8 +557,7 @@ static void h7_span_prepare_region(H7Span* span, uint16_t class_id) {
   span->bitmap_words = bitmap_words;
   span->slot_offset = slot_offset;
   for (i = 0; i < slot_count; ++i) {
-    uint32_t* next =
-        (uint32_t*)(h7_span_slots(span) + (size_t)i * span->slot_size);
+    uint32_t* next = (uint32_t*)h7_span_slot_ptr(span, i);
     *next = (i + 1u < slot_count) ? i + 1u : H7_FREE_NONE;
   }
 }
@@ -588,13 +604,12 @@ static void h7_span_mark_slot_inactive(H7Span* span) {
 
 static void* h7_small_alloc_from_span(H7Span* span) {
   H7Class* klass = &g_h7_classes[span->class_id];
-  uint32_t index = span->free_head;
+  uint32_t index = h7_span_pop_free_slot(span);
   unsigned char* ptr;
   if (index == H7_FREE_NONE) {
     return 0;
   }
-  ptr = h7_span_slots(span) + (size_t)index * span->slot_size;
-  span->free_head = *(uint32_t*)ptr;
+  ptr = h7_span_slot_ptr(span, index);
   h7_bitmap_set(span, index);
   h7_span_mark_slot_active(span);
   if (span->free_head == H7_FREE_NONE) {
@@ -651,8 +666,7 @@ static void h7_small_free(H7Span* span,
   }
   was_full = span->used_count == span->slot_count;
   h7_bitmap_clear(span, index);
-  *(uint32_t*)ptr = span->free_head;
-  span->free_head = index;
+  h7_span_push_free_slot(span, index, ptr);
   h7_span_mark_slot_inactive(span);
   if (span->used_count == 0) {
     h7_list_remove(&klass->partial, span);
