@@ -264,6 +264,19 @@ SpanSlotFreeListHelper-L1:
   [x] require Windows and Linux smoke scripts to pass
 ```
 
+The next source cleanup step is `RegionRouteValidationHelper-L1`. It is not a
+route policy change. It gives the magic/cookie/kind/active checks used by route
+lookup tiny helpers so `MISS / VALID / INVALID` meaning remains explicit.
+
+```text
+RegionRouteValidationHelper-L1:
+  [x] add a helper for matching a region header to a route entry
+  [x] add a helper for checking active region state
+  [x] keep retained/inactive regions route INVALID
+  [x] keep foreign pointers route MISS
+  [x] require Windows and Linux smoke scripts to pass
+```
+
 The next cleanup step is `StatsInvariantSmoke-L1`. It is not a policy change.
 It keeps the allocator code unchanged and makes the public stats/route contract
 explicit in a focused smoke test before the next performance experiment.

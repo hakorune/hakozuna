@@ -264,15 +264,25 @@ static void h7_route_unregister(void* base) {
   }
 }
 
+static int h7_region_matches_route_entry(const H7RegionHeader* region,
+                                         const H7RouteEntry* entry) {
+  return region->magic == H7_MAGIC &&
+         region->cookie == H7_COOKIE &&
+         region->kind == entry->kind;
+}
+
+static int h7_region_is_active(const H7RegionHeader* region) {
+  return (region->flags & H7_REGION_ACTIVE) != 0;
+}
+
 static H7RouteResult h7_route_result_for_entry(const H7RouteEntry* entry) {
   H7RouteResult result;
   H7RegionHeader* region = (H7RegionHeader*)entry->base;
   result.kind = H7_ROUTE_VALID;
   result.region = region;
-  if (region->magic != H7_MAGIC || region->cookie != H7_COOKIE ||
-      region->kind != entry->kind) {
+  if (!h7_region_matches_route_entry(region, entry)) {
     result.kind = H7_ROUTE_INVALID;
-  } else if ((region->flags & H7_REGION_ACTIVE) == 0) {
+  } else if (!h7_region_is_active(region)) {
     result.kind = H7_ROUTE_INVALID;
   }
   return result;
