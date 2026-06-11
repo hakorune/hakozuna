@@ -216,6 +216,7 @@ implemented:
   span/direct region preparation outside the global lock
   direct retain bucket lookup/pop/push isolated behind small helpers
   route lookup split into exact-base probe and bounded range fallback helpers
+  small/direct user-pointer validation shared by route and free paths
   free locked route/state transition -> outside-lock OS release
   retained direct and empty-span policies unchanged
 
@@ -225,9 +226,9 @@ verified:
 
 accepted:
   Windows random_mixed repeat-5:
-    small   78.153M ops/s, 4,576 KB peak
-    medium  17.876M ops/s, 5,036 KB peak
-    mixed   19.361M ops/s, 5,496 KB peak
+    small   78.337M ops/s, 4,576 KB peak
+    medium  18.199M ops/s, 5,036 KB peak
+    mixed   19.491M ops/s, 5,504 KB peak
 
 bench wiring:
   win/run_win_random_mixed_paper.ps1 has a separate hz7-v2 allocator row

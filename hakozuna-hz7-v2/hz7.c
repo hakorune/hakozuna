@@ -337,6 +337,31 @@ static int h7_bitmap_test(H7Span* span, uint32_t index) {
   return (bitmap[index / 64u] & (UINT64_C(1) << (index % 64u))) != 0;
 }
 
+static int h7_small_slot_index(H7Span* span, void* ptr, uint32_t* out_index) {
+  uintptr_t slots;
+  uintptr_t addr;
+  uint32_t index;
+  if (!span || !ptr || span->slot_size == 0) {
+    return 0;
+  }
+  slots = (uintptr_t)h7_span_slots(span);
+  addr = (uintptr_t)ptr;
+  if (addr < slots || addr >= (uintptr_t)span + H7_SPAN_BYTES) {
+    return 0;
+  }
+  if (((addr - slots) % span->slot_size) != 0) {
+    return 0;
+  }
+  index = (uint32_t)((addr - slots) / span->slot_size);
+  if (index >= span->slot_count || !h7_bitmap_test(span, index)) {
+    return 0;
+  }
+  if (out_index) {
+    *out_index = index;
+  }
+  return 1;
+}
+
 static void h7_bitmap_set(H7Span* span, uint32_t index) {
   uint64_t* bitmap = h7_span_bitmap(span);
   bitmap[index / 64u] |= (UINT64_C(1) << (index % 64u));
@@ -571,8 +596,6 @@ static void h7_small_free(H7Span* span,
                           void* ptr,
                           H7PendingRelease* release) {
   H7Class* klass;
-  uintptr_t slots;
-  uintptr_t addr;
   uint32_t index;
   int was_full;
   if (!span || span->region.magic != H7_MAGIC ||
@@ -581,16 +604,7 @@ static void h7_small_free(H7Span* span,
     return;
   }
   klass = &g_h7_classes[span->class_id];
-  slots = (uintptr_t)h7_span_slots(span);
-  addr = (uintptr_t)ptr;
-  if (addr < slots || addr >= (uintptr_t)span + H7_SPAN_BYTES) {
-    return;
-  }
-  if (((addr - slots) % span->slot_size) != 0) {
-    return;
-  }
-  index = (uint32_t)((addr - slots) / span->slot_size);
-  if (index >= span->slot_count || !h7_bitmap_test(span, index)) {
+  if (!h7_small_slot_index(span, ptr, &index)) {
     return;
   }
   was_full = span->used_count == span->slot_count;
@@ -615,6 +629,10 @@ static void h7_small_free(H7Span* span,
 static void* h7_big_user_ptr(H7Direct* direct) {
   size_t user_offset = h7_align_up(sizeof(H7Direct), 16u);
   return (unsigned char*)direct + user_offset;
+}
+
+static int h7_big_is_user_ptr(H7Direct* direct, void* ptr) {
+  return direct && ptr == h7_big_user_ptr(direct);
 }
 
 static size_t h7_big_region_size(size_t size) {
@@ -689,11 +707,10 @@ static void* h7_big_alloc_region_outside_lock(size_t size,
 static void h7_big_free(H7Direct* direct,
                         void* ptr,
                         H7PendingRelease* release) {
-  size_t user_offset = h7_align_up(sizeof(H7Direct), 16u);
   if (!direct || direct->region.magic != H7_MAGIC ||
       direct->region.kind != H7_REGION_DIRECT ||
       (direct->region.flags & H7_REGION_ACTIVE) == 0 ||
-      ptr != (unsigned char*)direct + user_offset) {
+      !h7_big_is_user_ptr(direct, ptr)) {
     return;
   }
   if (h7_direct_retain_push(direct)) {
@@ -811,25 +828,13 @@ static H7RouteKind h7_route_unlocked(void* ptr) {
     return route.kind;
   }
   if (route.region->kind == H7_REGION_SMALL_SPAN) {
-    H7Span* span = (H7Span*)route.region;
-    uintptr_t slots = (uintptr_t)h7_span_slots(span);
-    uintptr_t addr = (uintptr_t)ptr;
-    uint32_t index;
-    if (addr < slots || addr >= (uintptr_t)span + H7_SPAN_BYTES ||
-        ((addr - slots) % span->slot_size) != 0) {
-      return H7_ROUTE_INVALID;
-    }
-    index = (uint32_t)((addr - slots) / span->slot_size);
-    if (index >= span->slot_count || !h7_bitmap_test(span, index)) {
-      return H7_ROUTE_INVALID;
-    }
-    return H7_ROUTE_VALID;
+    return h7_small_slot_index((H7Span*)route.region, ptr, 0)
+               ? H7_ROUTE_VALID
+               : H7_ROUTE_INVALID;
   }
   if (route.region->kind == H7_REGION_DIRECT) {
-    H7Direct* direct = (H7Direct*)route.region;
-    size_t user_offset = h7_align_up(sizeof(H7Direct), 16u);
-    return ptr == (unsigned char*)direct + user_offset ? H7_ROUTE_VALID
-                                                       : H7_ROUTE_INVALID;
+    return h7_big_is_user_ptr((H7Direct*)route.region, ptr) ? H7_ROUTE_VALID
+                                                            : H7_ROUTE_INVALID;
   }
   return H7_ROUTE_INVALID;
 }

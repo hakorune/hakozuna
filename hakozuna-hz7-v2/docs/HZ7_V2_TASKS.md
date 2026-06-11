@@ -120,9 +120,9 @@ No-go checks:
 
 ## Next Candidate Backlog
 
-The accepted cleanup step is `RouteLookupModule-L1`. It is not a route-cache
-or speed policy change. It only separates the exact-base probe from the bounded
-range fallback so route safety stays easy to audit.
+The accepted cleanup step is `RouteValidationModule-L1`. It is not a policy
+change. It keeps the current route lookup behavior, but shares the small/direct
+user-pointer validation logic used by `h7_route()` and `h7_free()`.
 
 ```text
 accepted:
@@ -157,6 +157,22 @@ measured:
 source:
   out_win_random_mixed_hz7v2_routelookup_module_repeat5/
   20260611_152559_paper_random_mixed_windows.md
+
+RouteValidationModule-L1:
+  [x] share small span slot validation between route and free
+  [x] share direct user pointer validation between route and free
+  [x] keep foreign pointer MISS
+  [x] keep interior/retained/inactive pointer INVALID
+  [x] avoid adding diagnostics or new route policy
+
+measured:
+  small   78.337M ops/s, 4,576 KB peak
+  medium  18.199M ops/s, 5,036 KB peak
+  mixed   19.491M ops/s, 5,504 KB peak
+
+source:
+  out_win_random_mixed_hz7v2_routevalidation_module_repeat5/
+  20260611_152945_paper_random_mixed_windows.md
 
 avoid:
   remote throughput policy
