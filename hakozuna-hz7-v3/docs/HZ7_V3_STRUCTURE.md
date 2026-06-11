@@ -14,6 +14,7 @@ hz7_route.inc
 
 hz7_span.inc
   span metadata, bitmap/free-list helpers, partial/empty span movement
+  span slot take/release helpers keep the alloc/free path compact
   route invariant helper feeds span/user-ptr validation
 
 hz7_big.inc

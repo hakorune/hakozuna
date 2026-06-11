@@ -37,6 +37,7 @@ done:
 
   SpanFreeListCleanup-L1
     span free-list transitions now use explicit full / empty helpers
+    alloc/free now share small slot take/release helpers so the span path stays compact
 
   BenchmarkRowRegistry-L1
     span-audit row registry now has a named row group and explicit row count

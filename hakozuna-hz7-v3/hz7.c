@@ -181,6 +181,9 @@ static void h7_region_header_init(H7RegionHeader* region,
 static void h7_pending_release_set(H7PendingRelease* release,
                                    void* ptr,
                                    size_t size);
+static H7RouteKind h7_route_kind_for_user_ptr(H7RouteResult route, void* ptr);
+static void h7_span_mark_slot_active(H7Span* span);
+static void h7_span_mark_slot_inactive(H7Span* span);
 
 #include "hz7_route.inc"
 #include "hz7_span.inc"

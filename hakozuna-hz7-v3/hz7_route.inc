@@ -201,11 +201,13 @@ static H7RouteResult h7_route_lookup_raw(const void* ptr) {
   return h7_route_lookup_range(addr);
 }
 
-static H7RouteResult h7_route_lookup_free_candidate(const void* ptr) {
-  uintptr_t region_base;
-  if (!ptr) {
-    return h7_route_miss();
+static H7RouteResult h7_route_lookup_user_ptr(const void* ptr) {
+  H7RouteResult route = h7_route_lookup_raw(ptr);
+  if (route.kind == H7_ROUTE_MISS) {
+    return route;
   }
-  region_base = h7_region_base_from_ptr(ptr);
-  return h7_route_lookup_exact_base(region_base);
+  if (h7_route_kind_for_user_ptr(route, (void*)ptr) != H7_ROUTE_VALID) {
+    route.kind = H7_ROUTE_INVALID;
+  }
+  return route;
 }

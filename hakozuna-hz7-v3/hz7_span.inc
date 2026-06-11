@@ -85,6 +85,25 @@ static void h7_span_push_free_slot(H7Span* span, uint32_t index) {
   span->free_head = index;
 }
 
+static int h7_span_take_free_slot(H7Span* span, uint32_t* out_index) {
+  uint32_t index = h7_span_pop_free_slot(span);
+  if (index == H7_FREE_NONE) {
+    return 0;
+  }
+  h7_bitmap_set(span, index);
+  h7_span_mark_slot_active(span);
+  if (out_index) {
+    *out_index = index;
+  }
+  return 1;
+}
+
+static void h7_span_release_free_slot(H7Span* span, uint32_t index) {
+  h7_bitmap_clear(span, index);
+  h7_span_push_free_slot(span, index);
+  h7_span_mark_slot_inactive(span);
+}
+
 static void h7_list_remove(H7Span** head, H7Span* span) {
   if (!span) {
     return;
@@ -261,14 +280,12 @@ static void h7_span_update_partial_after_free(H7Class* klass,
 
 static void* h7_small_alloc_from_span(H7Span* span) {
   H7Class* klass = &g_h7_classes[span->class_id];
-  uint32_t index = h7_span_pop_free_slot(span);
+  uint32_t index = H7_FREE_NONE;
   unsigned char* ptr;
-  if (index == H7_FREE_NONE) {
+  if (!h7_span_take_free_slot(span, &index)) {
     return 0;
   }
   ptr = h7_span_slot_ptr(span, index);
-  h7_bitmap_set(span, index);
-  h7_span_mark_slot_active(span);
   h7_span_update_partial_after_alloc(klass, span);
   return ptr;
 }
@@ -317,8 +334,6 @@ static void h7_small_free(H7Span* span,
     return;
   }
   was_full = h7_span_is_full(span);
-  h7_bitmap_clear(span, index);
-  h7_span_push_free_slot(span, index);
-  h7_span_mark_slot_inactive(span);
+  h7_span_release_free_slot(span, index);
   h7_span_update_partial_after_free(klass, span, was_full, release);
 }
