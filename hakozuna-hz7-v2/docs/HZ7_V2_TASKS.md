@@ -974,3 +974,72 @@ design:
   no TLS frontcache yet
   no production counter/atomic in the hot path
 ```
+
+### LockScopeTrim-L1 observation
+
+Tried direction:
+
+```text
+AllocPlan/ClassFast-L1:
+  compute small/direct classification outside the lock
+  pass class_id/size plan into malloc locked sections
+  avoid repeated h7_class_for_size / h7_size_is_small checks under lock
+```
+
+Safety result:
+
+```text
+Windows smokes:
+  hz7_smoke ok
+  hz7_remote_smoke ok
+  hz7_mt_smoke ok
+  hz7_stats_smoke ok
+  hz7_cpp_smoke ok
+
+Linux smokes:
+  hz7_smoke ok
+  hz7_remote_smoke ok
+  hz7_mt_smoke ok
+  hz7_stats_smoke ok
+  hz7_cpp_smoke ok
+```
+
+Performance result:
+
+```text
+hotpath:
+  baseline small64 malloc_free    48.310M pairs/s
+  L1 small64 malloc_free          46.523M pairs/s
+
+  baseline span8k malloc_free     47.536M pairs/s
+  L1 span8k malloc_free           46.366M pairs/s
+
+  baseline direct32k malloc_free  56.162M pairs/s
+  L1 direct32k malloc_free        53.953M pairs/s
+
+random_mixed:
+  baseline small   78.968M-79.859M ops/s depending snapshot
+  L1 small         78.080M ops/s
+
+  baseline medium  41.005M-41.186M ops/s
+  L1 medium        40.080M ops/s
+
+  baseline mixed   41.477M-42.376M ops/s
+  L1 mixed         41.933M ops/s
+```
+
+Decision:
+
+```text
+AllocPlan/ClassFast-L1:
+  no-go / do not promote
+
+Reason:
+  safe but not faster.
+  HZ7 v2's remaining same-thread cost is not explained by lock-inside
+  size-class recomputation alone.
+
+Next:
+  keep allocator body at the previous selected implementation
+  look for a different hot-path target before changing remote-free design
+```
