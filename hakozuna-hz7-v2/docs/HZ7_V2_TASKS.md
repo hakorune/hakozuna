@@ -51,6 +51,10 @@ done:
     added docs/HZ7_V2_CLOSEOUT_REVIEW.md
     captured current identity, code size, default lane, snapshot, and stop/go criteria
 
+  StopOrContinuePrompt-L1
+    added docs/HZ7_V2_STOP_OR_CONTINUE_PROMPT.md
+    prepared the external review prompt for closeout vs one-more-experiment
+
 active:
   HZ7 v2 lane closeout
     keep README current measurement on the cap64 default
@@ -60,6 +64,7 @@ active:
 next:
   StopOrContinueDecision-L1
     decide whether to stop HZ7 v2 here as the cap64 tiny reference
+    use docs/HZ7_V2_STOP_OR_CONTINUE_PROMPT.md for external design review
     if continuing, use the baseline snapshot as the scoreboard before tuning
 
   OptionalCleanup-L1
