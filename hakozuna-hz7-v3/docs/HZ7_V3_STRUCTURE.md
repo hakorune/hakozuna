@@ -10,7 +10,7 @@ hz7.c
   common helpers, OS allocation, public API assembly
 
 hz7_route.inc
-  route table, retain buckets, route lookup helpers
+  route table, retain buckets, route lookup and user-ptr validation helpers
 
 hz7_span.inc
   span metadata, bitmap/free-list helpers, partial/empty span movement

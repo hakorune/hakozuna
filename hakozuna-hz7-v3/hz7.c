@@ -181,34 +181,13 @@ static void h7_region_header_init(H7RegionHeader* region,
 static void h7_pending_release_set(H7PendingRelease* release,
                                    void* ptr,
                                    size_t size);
-static H7RouteKind h7_route_kind_for_user_ptr(H7RouteResult route, void* ptr);
+static int h7_small_slot_index(H7Span* span, void* ptr, uint32_t* out_index);
+static int h7_big_is_user_ptr(H7Direct* direct, void* ptr);
 static void h7_span_mark_slot_active(H7Span* span);
 static void h7_span_mark_slot_inactive(H7Span* span);
 
 #include "hz7_route.inc"
 #include "hz7_span.inc"
-
-static int h7_small_slot_index(H7Span* span, void* ptr, uint32_t* out_index);
-static int h7_big_is_user_ptr(H7Direct* direct, void* ptr);
-
-static H7RouteKind h7_route_kind_for_user_ptr(H7RouteResult route, void* ptr) {
-  if (route.kind != H7_ROUTE_VALID || !route.region) {
-    return route.kind;
-  }
-  if (route.region->kind == H7_REGION_SMALL_SPAN) {
-    return h7_small_slot_index((H7Span*)route.region, ptr, 0)
-               ? H7_ROUTE_VALID
-               : H7_ROUTE_INVALID;
-  }
-  if (route.region->kind == H7_REGION_DIRECT) {
-    return h7_big_is_user_ptr((H7Direct*)route.region, ptr)
-               ? H7_ROUTE_VALID
-               : H7_ROUTE_INVALID;
-  }
-  return H7_ROUTE_INVALID;
-}
-
-
 static void* h7_os_alloc(size_t size) {
 #ifdef _WIN32
   return VirtualAlloc(0, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);

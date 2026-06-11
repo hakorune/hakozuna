@@ -201,6 +201,23 @@ static H7RouteResult h7_route_lookup_raw(const void* ptr) {
   return h7_route_lookup_range(addr);
 }
 
+static H7RouteKind h7_route_kind_for_user_ptr(H7RouteResult route, void* ptr) {
+  if (route.kind != H7_ROUTE_VALID || !route.region) {
+    return route.kind;
+  }
+  if (route.region->kind == H7_REGION_SMALL_SPAN) {
+    return h7_small_slot_index((H7Span*)route.region, ptr, 0)
+               ? H7_ROUTE_VALID
+               : H7_ROUTE_INVALID;
+  }
+  if (route.region->kind == H7_REGION_DIRECT) {
+    return h7_big_is_user_ptr((H7Direct*)route.region, ptr)
+               ? H7_ROUTE_VALID
+               : H7_ROUTE_INVALID;
+  }
+  return H7_ROUTE_INVALID;
+}
+
 static H7RouteResult h7_route_lookup_user_ptr(const void* ptr) {
   H7RouteResult route = h7_route_lookup_raw(ptr);
   if (route.kind == H7_ROUTE_MISS) {
