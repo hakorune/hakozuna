@@ -124,3 +124,44 @@ function Add-H7BenchmarkSummaryTable {
         [void]$Lines.Add("| $($row.Op) | $($row.Label) | $($row.Size) | $(Format-H7Rate $medianRate) | $unit | $([int]$medianRss) |")
     }
 }
+
+function Add-H7HotpathRowsFromLines {
+    param(
+        [hashtable]$Rows,
+        [System.Collections.Generic.List[string]]$Lines,
+        [string]$LinePrefix = '^hz7_hotpath:'
+    )
+
+    foreach ($line in $Lines) {
+        if ($line -notmatch $LinePrefix) {
+            continue
+        }
+        $fields = @{}
+        foreach ($part in ($line -split '\s+')) {
+            if ($part -match '^([^=]+)=(.*)$') {
+                $fields[$Matches[1]] = $Matches[2]
+            }
+        }
+        if (-not $fields.ContainsKey("op") -or -not $fields.ContainsKey("label")) {
+            continue
+        }
+        $key = "$($fields["op"]):$($fields["label"])"
+        if (-not $Rows.ContainsKey($key)) {
+            $Rows[$key] = @{
+                Op = $fields["op"]
+                Label = $fields["label"]
+                Size = $fields["size"]
+                RateName = if ($fields.ContainsKey("pairs/s")) { "pairs/s" } else { "ops/s" }
+                Rates = New-Object System.Collections.Generic.List[double]
+                Rss = New-Object System.Collections.Generic.List[double]
+            }
+        }
+        $rateKey = $Rows[$key].RateName
+        if ($fields.ContainsKey($rateKey)) {
+            $Rows[$key].Rates.Add([double]$fields[$rateKey])
+        }
+        if ($fields.ContainsKey("peak_kb")) {
+            $Rows[$key].Rss.Add([double]$fields["peak_kb"])
+        }
+    }
+}

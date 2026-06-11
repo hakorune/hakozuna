@@ -68,6 +68,10 @@ done:
     the adjacent retained rows so sensitive span/free-list experiments can be
     rerun without the full matrix
 
+  BenchmarkRowParseHelper-L1
+    hotpath and batch-focus runners now share the hotpath-row parser helper
+    so the runner scripts stay thinner and easier to compare
+
 active:
   SpanPathAudit-L1
     inspect the current 4K..16K span path and direct retained companion rows
