@@ -498,6 +498,13 @@ static void h7_pending_release_clear(H7PendingRelease* release) {
   release->size = 0;
 }
 
+static void h7_pending_release_set(H7PendingRelease* release,
+                                   void* ptr,
+                                   size_t size) {
+  release->ptr = ptr;
+  release->size = size;
+}
+
 static void h7_pending_release_now(H7PendingRelease* release) {
   if (release->ptr) {
     h7_os_free(release->ptr, release->size);
@@ -610,8 +617,7 @@ static void h7_span_detach_for_release(H7Span* span,
   h7_route_unregister(span);
   h7_span_mark_released(span);
   h7_region_mark_released(&span->region);
-  release->ptr = span;
-  release->size = span->region.region_size;
+  h7_pending_release_set(release, span, span->region.region_size);
 }
 
 static void h7_span_mark_slot_active(H7Span* span) {
@@ -788,8 +794,7 @@ static void* h7_big_alloc_region_outside_lock(size_t size,
     return 0;
   }
   h7_big_prepare_region(direct, size, region_size);
-  release->ptr = direct;
-  release->size = region_size;
+  h7_pending_release_set(release, direct, region_size);
   return direct;
 }
 
@@ -804,21 +809,21 @@ static void h7_big_detach_for_release(H7Direct* direct,
   h7_big_mark_inactive(direct);
   h7_big_mark_released(direct);
   h7_region_mark_released(&direct->region);
-  release->ptr = direct;
-  release->size = direct->region.region_size;
+  h7_pending_release_set(release, direct, direct->region.region_size);
 }
 
 static int h7_malloc_prepare_region_outside_lock(size_t size,
                                                  H7PendingRelease* prealloc) {
   if (size <= H7_SPAN_CLASS_MAX) {
     int class_id = h7_class_for_size(size);
+    void* span;
     if (class_id < 0) {
       return 0;
     }
-    prealloc->ptr = h7_os_alloc_region(H7_SPAN_BYTES);
-    prealloc->size = H7_SPAN_BYTES;
-    if (prealloc->ptr) {
-      h7_span_prepare_region((H7Span*)prealloc->ptr, (uint16_t)class_id);
+    span = h7_os_alloc_region(H7_SPAN_BYTES);
+    if (span) {
+      h7_pending_release_set(prealloc, span, H7_SPAN_BYTES);
+      h7_span_prepare_region((H7Span*)span, (uint16_t)class_id);
     }
   } else {
     (void)h7_big_alloc_region_outside_lock(size, prealloc);
