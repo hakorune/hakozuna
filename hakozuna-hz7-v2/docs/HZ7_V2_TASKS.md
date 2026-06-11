@@ -757,3 +757,57 @@ Source:
 out_win_random_mixed_hz7v2_cap32_default_repeat5/
 20260611_165655_paper_random_mixed_windows.md
 ```
+
+## Empty Span Cap Promotion
+
+`EmptySpanCap4-L1` is a small span-cache policy change. After direct retain
+cap=32, the remaining medium weakness moved to the span-covered `4K..16K`
+slice. Raising the per-class empty span cap from 1 to 4 improves that slice
+while preserving the coarse global lock and route safety contract.
+
+```text
+EmptySpanCap4-L1:
+  [x] promote H7_EMPTY_SPAN_CAP default from 1 to 4
+  [x] keep span class table unchanged
+  [x] keep partial/empty span list semantics unchanged
+  [x] keep retained empty spans route INVALID, not MISS
+  [x] require Windows and Linux smoke scripts to pass
+  [x] require random_mixed repeat-5 after promotion
+```
+
+Empty cap probe, runs=3:
+
+```text
+emptycap2:
+  span_4k_16k  32.967M ops/s, 5,172 KB peak
+  mixed_16_32k 34.273M ops/s, 5,584 KB peak
+
+emptycap4:
+  span_4k_16k  44.202M ops/s, 5,200 KB peak
+  mixed_16_32k 40.606M ops/s, 5,620 KB peak
+```
+
+Source:
+
+```text
+out_win_hz7_v2_size_slices_emptycap2/
+20260611_170015_hz7_v2_size_slices_windows.md
+
+out_win_hz7_v2_size_slices_emptycap4/
+20260611_170015_hz7_v2_size_slices_windows.md
+```
+
+Default emptycap4 random_mixed repeat-5:
+
+```text
+small   78.968M ops/s, 4,572 KB peak
+medium  41.005M ops/s, 5,076 KB peak
+mixed   41.477M ops/s, 5,612 KB peak
+```
+
+Source:
+
+```text
+out_win_random_mixed_hz7v2_emptycap4_default_repeat5/
+20260611_170118_paper_random_mixed_windows.md
+```

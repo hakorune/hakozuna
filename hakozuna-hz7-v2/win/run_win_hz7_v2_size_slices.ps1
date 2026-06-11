@@ -3,7 +3,8 @@ param(
     [int]$Runs = 3,
     [int]$Iters = 20000000,
     [int]$WorkingSet = 400,
-    [int]$DirectRetainCap = 0
+    [int]$DirectRetainCap = 0,
+    [int]$EmptySpanCap = 0
 )
 
 $ErrorActionPreference = "Stop"
@@ -11,8 +12,15 @@ $ErrorActionPreference = "Stop"
 $Hz7V2Root = Split-Path -Parent $PSScriptRoot
 $RepoRoot = Split-Path -Parent $Hz7V2Root
 $BuildScript = Join-Path $RepoRoot "win\build_win_random_mixed_suite.ps1"
-$BenchDirName = if ($DirectRetainCap -gt 0) {
-    "out_win_random_mixed_hz7v2_cap$DirectRetainCap"
+$BenchSuffix = ""
+if ($DirectRetainCap -gt 0) {
+    $BenchSuffix += "_directcap$DirectRetainCap"
+}
+if ($EmptySpanCap -gt 0) {
+    $BenchSuffix += "_emptycap$EmptySpanCap"
+}
+$BenchDirName = if ($BenchSuffix -ne "") {
+    "out_win_random_mixed_hz7v2$BenchSuffix"
 } else {
     "out_win_random_mixed"
 }
@@ -25,8 +33,8 @@ if (-not $OutputDir) {
 
 New-Item -ItemType Directory -Force $OutputDir | Out-Null
 
-if ($DirectRetainCap -gt 0 -or -not (Test-Path $BenchExe)) {
-    & $BuildScript -OnlyHz7V2 -OutDirName $BenchDirName -Hz7V2DirectRetainCap $DirectRetainCap
+if ($BenchSuffix -ne "" -or -not (Test-Path $BenchExe)) {
+    & $BuildScript -OnlyHz7V2 -OutDirName $BenchDirName -Hz7V2DirectRetainCap $DirectRetainCap -Hz7V2EmptySpanCap $EmptySpanCap
     if ($LASTEXITCODE -ne 0) {
         throw "build_win_random_mixed_suite.ps1 failed with exit code $LASTEXITCODE"
     }
@@ -118,6 +126,7 @@ $Summary.Add("- runs: $Runs")
 $Summary.Add("- iters: $Iters")
 $Summary.Add("- working_set: $WorkingSet")
 $Summary.Add("- direct_retain_cap: $(if ($DirectRetainCap -gt 0) { $DirectRetainCap } else { 'default' })")
+$Summary.Add("- empty_span_cap: $(if ($EmptySpanCap -gt 0) { $EmptySpanCap } else { 'default' })")
 $Summary.Add("- purpose: split medium into span-covered and direct-retained slices")
 $Summary.Add("")
 $Summary.Add("| profile | range | note | median ops/s | median peak_kb | runs |")
