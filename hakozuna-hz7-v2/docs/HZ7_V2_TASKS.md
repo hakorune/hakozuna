@@ -1043,3 +1043,82 @@ Next:
   keep allocator body at the previous selected implementation
   look for a different hot-path target before changing remote-free design
 ```
+
+### Component Hot Path Diagnostic
+
+`Hz7V2ComponentHotPath-L1` extends the diagnostic-only hotpath bench. It does
+not add allocator counters or change production code.
+
+Added rows:
+
+```text
+malloc_batch:
+  allocate many objects first, then free them after measurement
+
+free_batch:
+  preallocate many objects, then measure only the free phase
+
+free_retained_loop:
+  seed one retained object, then measure malloc/free steady reuse
+```
+
+Windows repeat-3 observation:
+
+```text
+steady pair path:
+  malloc_free small64       48.938M pairs/s
+  malloc_free span8k        47.915M pairs/s
+  malloc_free direct32k     56.920M pairs/s
+
+route only:
+  route_valid small64      122.091M ops/s
+  route_valid span8k       122.136M ops/s
+  route_valid direct32k    123.175M ops/s
+
+batch allocate:
+  malloc_batch small64      43.462M ops/s
+  malloc_batch span8k        0.708M ops/s
+  malloc_batch direct32k      0.537M ops/s
+
+batch free:
+  free_batch small64        77.011M ops/s
+  free_batch span8k          1.921M ops/s
+  free_batch direct32k        0.840M ops/s
+
+retained steady loop:
+  free_retained_loop small64    49.038M pairs/s
+  free_retained_loop span8k     48.349M pairs/s
+  free_retained_loop direct32k  56.125M pairs/s
+```
+
+Source:
+
+```text
+out_win_hz7_v2_hotpath_component_l1/
+20260611_172336_hz7_v2_hotpath_windows.md
+```
+
+Reading:
+
+```text
+Route lookup is not the main steady-state blocker.
+Steady reuse is reasonably flat across small/span/direct.
+
+The very slow rows are cold/source-pressure batch rows:
+  many live span/direct allocations
+  many route registrations
+  later route unregister/release or retain-limit pressure
+
+This means HZ7 v2 should not chase remote-fast yet, and it should not treat
+random_mixed weakness as a simple route lookup issue.
+```
+
+Next candidate:
+
+```text
+MixedSizeSteady-L1 diagnostic:
+  measure a steady random-size working set with bounded live objects
+  separate same-size retained reuse from cross-size churn
+  identify whether medium/mixed weakness is class switching, direct retain
+  bucket mismatch, route churn, or benchmark RNG/workload overhead
+```

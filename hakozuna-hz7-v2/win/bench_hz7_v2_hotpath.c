@@ -36,6 +36,16 @@ static void h7_touch(void* ptr, size_t size, uint32_t value) {
   }
 }
 
+static uint32_t h7_batch_iters_for_size(size_t size, uint32_t requested) {
+  uint32_t cap = 262144u;
+  if (size >= 32768u) {
+    cap = 4096u;
+  } else if (size >= 8192u) {
+    cap = 8192u;
+  }
+  return requested < cap ? requested : cap;
+}
+
 static void h7_run_malloc_free(const char* label,
                                size_t size,
                                uint32_t iters) {
@@ -125,6 +135,120 @@ static void h7_run_route_invalid(const char* label,
          h7_peak_working_set_kb());
 }
 
+static void h7_run_malloc_batch_free(const char* label,
+                                     size_t size,
+                                     uint32_t iters) {
+  uint32_t batch_iters = h7_batch_iters_for_size(size, iters);
+  uint32_t i;
+  uint32_t ok = 0;
+  void** ptrs = (void**)calloc(batch_iters, sizeof(void*));
+  double start;
+  double elapsed;
+  if (!ptrs) {
+    printf("hz7_hotpath: op=malloc_batch label=%s size=%zu alloc_failed=1\n",
+           label,
+           size);
+    return;
+  }
+  start = h7_seconds();
+  for (i = 0; i < batch_iters; ++i) {
+    ptrs[i] = h7_malloc(size);
+    if (ptrs[i]) {
+      h7_touch(ptrs[i], size, i);
+      ++ok;
+    }
+  }
+  elapsed = h7_seconds() - start;
+  for (i = 0; i < batch_iters; ++i) {
+    h7_free(ptrs[i]);
+  }
+  free(ptrs);
+  printf("hz7_hotpath: op=malloc_batch label=%s size=%zu iters=%u ok=%u "
+         "time=%.6f ops/s=%.2f peak_kb=%zu\n",
+         label,
+         size,
+         batch_iters,
+         ok,
+         elapsed,
+         elapsed > 0.0 ? (double)ok / elapsed : 0.0,
+         h7_peak_working_set_kb());
+}
+
+static void h7_run_free_batch(const char* label, size_t size, uint32_t iters) {
+  uint32_t batch_iters = h7_batch_iters_for_size(size, iters);
+  uint32_t i;
+  uint32_t ok = 0;
+  void** ptrs = (void**)calloc(batch_iters, sizeof(void*));
+  double start;
+  double elapsed;
+  if (!ptrs) {
+    printf("hz7_hotpath: op=free_batch label=%s size=%zu alloc_failed=1\n",
+           label,
+           size);
+    return;
+  }
+  for (i = 0; i < batch_iters; ++i) {
+    ptrs[i] = h7_malloc(size);
+    if (ptrs[i]) {
+      h7_touch(ptrs[i], size, i);
+    }
+  }
+  start = h7_seconds();
+  for (i = 0; i < batch_iters; ++i) {
+    if (ptrs[i]) {
+      h7_free(ptrs[i]);
+      ++ok;
+    }
+  }
+  elapsed = h7_seconds() - start;
+  free(ptrs);
+  printf("hz7_hotpath: op=free_batch label=%s size=%zu iters=%u ok=%u "
+         "time=%.6f ops/s=%.2f peak_kb=%zu\n",
+         label,
+         size,
+         batch_iters,
+         ok,
+         elapsed,
+         elapsed > 0.0 ? (double)ok / elapsed : 0.0,
+         h7_peak_working_set_kb());
+}
+
+static void h7_run_free_retained_loop(const char* label,
+                                      size_t size,
+                                      uint32_t iters) {
+  uint32_t i;
+  uint32_t ok = 0;
+  void* ptr = h7_malloc(size);
+  double start;
+  double elapsed;
+  if (!ptr) {
+    printf("hz7_hotpath: op=free_retained_loop label=%s size=%zu "
+           "alloc_failed=1\n",
+           label,
+           size);
+    return;
+  }
+  h7_free(ptr);
+  start = h7_seconds();
+  for (i = 0; i < iters; ++i) {
+    ptr = h7_malloc(size);
+    if (ptr) {
+      h7_free(ptr);
+      ++ok;
+    }
+  }
+  elapsed = h7_seconds() - start;
+  printf("hz7_hotpath: op=free_retained_loop label=%s size=%zu iters=%u ok=%u "
+         "time=%.6f pairs/s=%.2f peak_kb=%zu\n",
+         label,
+         size,
+         iters,
+         ok,
+         elapsed,
+         elapsed > 0.0 ? (double)ok / elapsed : 0.0,
+         h7_peak_working_set_kb());
+}
+
 int main(int argc, char** argv) {
   uint32_t iters = 10000000u;
   if (argc > 1) {
@@ -142,6 +266,18 @@ int main(int argc, char** argv) {
   h7_run_route_invalid("small64", 64u, iters);
   h7_run_route_invalid("span8k", 8192u, iters);
   h7_run_route_invalid("direct32k", 32768u, iters);
+
+  h7_run_malloc_batch_free("small64", 64u, iters);
+  h7_run_malloc_batch_free("span8k", 8192u, iters);
+  h7_run_malloc_batch_free("direct32k", 32768u, iters);
+
+  h7_run_free_batch("small64", 64u, iters);
+  h7_run_free_batch("span8k", 8192u, iters);
+  h7_run_free_batch("direct32k", 32768u, iters);
+
+  h7_run_free_retained_loop("small64", 64u, iters);
+  h7_run_free_retained_loop("span8k", 8192u, iters);
+  h7_run_free_retained_loop("direct32k", 32768u, iters);
 
   return 0;
 }
