@@ -210,6 +210,19 @@ MallocPreallocPrepareHelper-L1:
   [x] require Windows and Linux smoke scripts to pass
 ```
 
+The next source cleanup step is `MallocLockedCommitHelper-L1`. It is not an
+allocation policy change. It pairs with the prealloc preparation helper by
+giving the locked recheck/commit section one owner.
+
+```text
+MallocLockedCommitHelper-L1:
+  [x] add a helper for locked malloc recheck and prepared-region commit
+  [x] keep retained/span recheck before commit
+  [x] keep successful commit clearing the pending release
+  [x] keep unused preallocated region release outside the lock
+  [x] require Windows and Linux smoke scripts to pass
+```
+
 The next cleanup step is `StatsInvariantSmoke-L1`. It is not a policy change.
 It keeps the allocator code unchanged and makes the public stats/route contract
 explicit in a focused smoke test before the next performance experiment.

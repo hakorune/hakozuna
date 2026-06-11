@@ -804,6 +804,22 @@ static void* h7_malloc_existing_locked(size_t size) {
   return h7_big_alloc_locked(size);
 }
 
+static void* h7_malloc_commit_preallocated_locked(size_t size,
+                                                  H7PendingRelease* prealloc) {
+  void* ptr = h7_malloc_existing_locked(size);
+  if (!ptr) {
+    if (size <= H7_SPAN_CLASS_MAX) {
+      ptr = h7_small_commit_and_alloc((H7Span*)prealloc->ptr);
+    } else {
+      ptr = h7_big_commit_and_alloc((H7Direct*)prealloc->ptr);
+    }
+    if (ptr) {
+      h7_pending_release_clear(prealloc);
+    }
+  }
+  return ptr;
+}
+
 void* h7_malloc(size_t size) {
   H7PendingRelease prealloc;
   void* ptr = 0;
@@ -824,17 +840,7 @@ void* h7_malloc(size_t size) {
   }
 
   h7_lock();
-  ptr = h7_malloc_existing_locked(size);
-  if (!ptr) {
-    if (size <= H7_SPAN_CLASS_MAX) {
-      ptr = h7_small_commit_and_alloc((H7Span*)prealloc.ptr);
-    } else {
-      ptr = h7_big_commit_and_alloc((H7Direct*)prealloc.ptr);
-    }
-    if (ptr) {
-      h7_pending_release_clear(&prealloc);
-    }
-  }
+  ptr = h7_malloc_commit_preallocated_locked(size, &prealloc);
   h7_unlock();
 
   h7_pending_release_now(&prealloc);
