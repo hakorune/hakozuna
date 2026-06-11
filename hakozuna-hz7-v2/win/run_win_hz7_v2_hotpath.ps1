@@ -2,7 +2,8 @@ param(
     [string]$CompilerPath = "clang-cl",
     [string]$OutputDir,
     [int]$Runs = 3,
-    [int]$Iters = 10000000
+    [int]$Iters = 10000000,
+    [int]$SpanClassMax = 0
 )
 
 $ErrorActionPreference = "Stop"
@@ -27,13 +28,18 @@ if (-not (Test-Path $Hz7Source)) {
     throw "HZ7 source not found: $Hz7Source"
 }
 
+$Defines = @("/D_CRT_SECURE_NO_WARNINGS")
+if ($SpanClassMax -gt 0) {
+    $Defines += "/DH7_SPAN_CLASS_MAX=$SpanClassMax"
+}
+
 $BuildArgs = @(
     "/nologo",
     "/O2",
     "/DNDEBUG",
     "/W4",
-    "/WX",
-    "/D_CRT_SECURE_NO_WARNINGS",
+    "/WX"
+) + $Defines + @(
     $Hz7Source,
     $BenchSource,
     "psapi.lib",
@@ -168,6 +174,9 @@ $Summary.Add('- benchmark: `bench_hz7_v2_hotpath`')
 $Summary.Add('- allocator: `hz7-v2`')
 $Summary.Add("- runs: $Runs")
 $Summary.Add("- iters_per_run: $Iters")
+if ($SpanClassMax -gt 0) {
+    $Summary.Add("- span_class_max: $SpanClassMax")
+}
 $Summary.Add("- note: diagnostic-only; no allocator counters or production hot-path instrumentation")
 $Summary.Add("")
 $Summary.Add("| op | label | size | median rate | rate unit | median peak_kb |")

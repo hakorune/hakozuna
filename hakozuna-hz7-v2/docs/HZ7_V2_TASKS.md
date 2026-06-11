@@ -1279,3 +1279,102 @@ No-go:
   small or direct-only rows regress materially
   medium/mixed do not improve
 ```
+
+### MediumBoundaryPolicy-L1
+
+Implemented as an explicit build lane, not a default change:
+
+```text
+H7_SPAN_CLASS_MAX default:
+  16KiB
+
+H7_SPAN_CLASS_MAX=32768:
+  enables an additional 32KiB span class
+  keeps default HZ7 v2 unchanged
+```
+
+Build hooks:
+
+```text
+hakozuna-hz7-v2/win/run_win_hz7_v2_hotpath.ps1:
+  -SpanClassMax 32768
+
+win/build_win_random_mixed_suite.ps1:
+  -Hz7V2SpanClassMax 32768
+
+win/run_win_random_mixed_paper.ps1:
+  -SuiteDirName <custom suite dir>
+```
+
+Safety:
+
+```text
+Default Windows smokes:
+  hz7_smoke ok
+  hz7_remote_smoke ok
+  hz7_mt_smoke ok
+  hz7_stats_smoke ok
+  hz7_cpp_smoke ok
+
+Default Linux smokes:
+  hz7_smoke ok
+  hz7_remote_smoke ok
+  hz7_mt_smoke ok
+  hz7_stats_smoke ok
+  hz7_cpp_smoke ok
+```
+
+Windows span32 observation:
+
+```text
+hotpath, H7_SPAN_CLASS_MAX=32768:
+  small_ws400          49.930M ops/s
+  span_medium_ws400   36.880M ops/s
+  direct_medium_ws400 42.476M ops/s
+  medium_ws400         2.540M ops/s
+  mixed_ws400          2.484M ops/s
+
+random_mixed, H7_SPAN_CLASS_MAX=32768:
+  small   78.488M ops/s, 5,016 KB peak
+  medium   4.928M ops/s, 5,708 KB peak
+  mixed    5.864M ops/s, 6,172 KB peak
+```
+
+Sources:
+
+```text
+out_win_hz7_v2_hotpath_span32_l1/
+20260611_173229_hz7_v2_hotpath_windows.md
+
+out_win_random_mixed_hz7v2_span32_l1/
+20260611_173229_paper_random_mixed_windows.md
+```
+
+Decision:
+
+```text
+MediumBoundaryPolicy-L1:
+  no-go / do not promote
+
+Reason:
+  raising the span/direct boundary to 32KiB makes medium/mixed dramatically
+  worse. Large span slots are too expensive for this tiny allocator design.
+
+Keep:
+  H7_SPAN_CLASS_MAX override support as an evidence/control lane.
+
+Default:
+  keep 16KiB span boundary.
+```
+
+Next:
+
+```text
+Do not solve boundary churn by expanding spans to 32KiB.
+
+Next target should preserve the 16KiB boundary and instead reduce cross-family
+steady churn:
+  direct retain bucket / admission policy
+  medium range split policy
+  or benchmark/lane separation between span-medium and direct-medium profiles
+```

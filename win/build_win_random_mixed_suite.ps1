@@ -4,6 +4,7 @@ param(
     [switch]$OnlyHz7V2,
     [int]$Hz7V2DirectRetainCap = 0,
     [int]$Hz7V2EmptySpanCap = 0,
+    [int]$Hz7V2SpanClassMax = 0,
     [string]$OutDirName = "out_win_random_mixed"
 )
 
@@ -84,6 +85,9 @@ if ($OnlyHz7V2) {
         }
         if ($Hz7V2EmptySpanCap -gt 0) {
             $Hz7V2Flags += "/DH7_EMPTY_SPAN_CAP=$Hz7V2EmptySpanCap"
+        }
+        if ($Hz7V2SpanClassMax -gt 0) {
+            $Hz7V2Flags += "/DH7_SPAN_CLASS_MAX=$Hz7V2SpanClassMax"
         }
         Invoke-Checked $Cc ($BaseFlags + $Hz7V2Flags + @($Hz7V2Source, $BenchSrc, "psapi.lib", "/link", "/out:$BenchHz7V2Out"))
         Write-Host "Built HZ7 v2 random_mixed artifact in: $OutDir"
@@ -172,6 +176,9 @@ if (Test-Path $Hz7V2Source) {
     }
     if ($Hz7V2EmptySpanCap -gt 0) {
         $Hz7V2Flags += "/DH7_EMPTY_SPAN_CAP=$Hz7V2EmptySpanCap"
+    }
+    if ($Hz7V2SpanClassMax -gt 0) {
+        $Hz7V2Flags += "/DH7_SPAN_CLASS_MAX=$Hz7V2SpanClassMax"
     }
     Invoke-Checked $Cc ($BaseFlags + $Hz7V2Flags + @($Hz7V2Source, $BenchSrc, "psapi.lib", "/link", "/out:$BenchHz7V2Out"))
 } else {

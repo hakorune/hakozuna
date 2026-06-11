@@ -4,16 +4,19 @@ param(
     [string[]]$Profiles,
     [string[]]$Allocators,
     [switch]$ContinueOnFailure,
-    [switch]$DiagnosticHz6Probes
+    [switch]$DiagnosticHz6Probes,
+    [string]$SuiteDirName
 )
 
 $ErrorActionPreference = "Stop"
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
-$SuiteDirName = if ($DiagnosticHz6Probes) {
-    "out_win_random_mixed_diag"
-} else {
-    "out_win_random_mixed"
+if (-not $SuiteDirName) {
+    $SuiteDirName = if ($DiagnosticHz6Probes) {
+        "out_win_random_mixed_diag"
+    } else {
+        "out_win_random_mixed"
+    }
 }
 $SuiteDir = Join-Path $RepoRoot $SuiteDirName
 $BuildScript = Join-Path $PSScriptRoot "build_win_random_mixed_suite.ps1"
