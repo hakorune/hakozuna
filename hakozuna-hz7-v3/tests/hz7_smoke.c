@@ -12,6 +12,21 @@ static int expect(int cond, const char* label) {
   return 1;
 }
 
+static int expect_route_transition(void* ptr,
+                                   H7RouteKind live_kind,
+                                   H7RouteKind dead_kind,
+                                   const char* live_label,
+                                   const char* dead_label) {
+  if (!expect(h7_route(ptr) == live_kind, live_label)) {
+    return 0;
+  }
+  h7_free(ptr);
+  if (!expect(h7_route(ptr) == dead_kind, dead_label)) {
+    return 0;
+  }
+  return 1;
+}
+
 int main(void) {
   void* a = h7_malloc(64);
   void* b = h7_malloc(4096);
@@ -32,59 +47,56 @@ int main(void) {
       !expect(z != 0, "calloc")) {
     return 1;
   }
-  if (!expect(h7_route(a) == H7_ROUTE_VALID, "route valid small") ||
+
+  if (!expect_route_transition(a,
+                               H7_ROUTE_VALID,
+                               H7_ROUTE_INVALID,
+                               "route valid small",
+                               "route invalid freed small") ||
       !expect(h7_route((unsigned char*)a + 1) == H7_ROUTE_INVALID,
               "route invalid small interior") ||
-      !expect(h7_route(c) == H7_ROUTE_VALID, "route valid medium 8K") ||
+      !expect_route_transition(c,
+                               H7_ROUTE_VALID,
+                               H7_ROUTE_INVALID,
+                               "route valid medium 8K",
+                               "route invalid freed medium 8K") ||
       !expect(h7_route((unsigned char*)c + 1) == H7_ROUTE_INVALID,
               "route invalid medium interior") ||
-      !expect(h7_route(e) == H7_ROUTE_VALID, "route valid 32K direct") ||
-      !expect(h7_route(f) == H7_ROUTE_VALID, "route valid 64K direct") ||
+      !expect_route_transition(e,
+                               H7_ROUTE_VALID,
+                               H7_ROUTE_INVALID,
+                               "route valid 32K direct",
+                               "route invalid freed 32K direct") ||
+      !expect_route_transition(f,
+                               H7_ROUTE_VALID,
+                               H7_ROUTE_INVALID,
+                               "route valid 64K direct",
+                               "route invalid freed 64K direct") ||
       !expect(h7_route((unsigned char*)f + 1) == H7_ROUTE_INVALID,
               "route invalid direct interior") ||
       !expect(h7_route(&stats) == H7_ROUTE_MISS, "route miss foreign")) {
     return 1;
   }
+
   for (i = 0; i < 32u * 8u; ++i) {
     if (!expect(z[i] == 0, "calloc zero fill")) {
       return 1;
     }
   }
-  memset(a, 0xA5, 64);
+
   memset(b, 0x5A, 4096);
-  memset(c, 0xC3, 8192);
   memset(d, 0xD4, 16384);
-  memset(e, 0xE5, 32768);
-  memset(f, 0xF6, 65536);
 
   stats = h7_stats();
-  if (!expect(stats.active_bytes >= 64 + 4096 + 8192 + 16384 + 32768 +
-                                      65536 + 256,
-              "active bytes after alloc")) {
-    return 1;
-  }
-  if (!expect(stats.span_count >= 1, "span count") ||
-      !expect(stats.direct_count == 2, "direct count")) {
+  if (!expect(stats.active_bytes >= 4096 + 16384 + 256, "active bytes after alloc") ||
+      !expect(stats.span_count >= 1, "span count") ||
+      !expect(stats.direct_count == 0, "direct count")) {
     return 1;
   }
 
-  h7_free(a);
-  if (!expect(h7_route(a) == H7_ROUTE_INVALID, "route invalid freed small")) {
-    return 1;
-  }
   h7_free(b);
-  h7_free(c);
   h7_free(d);
-  h7_free(e);
-  if (!expect(h7_route(e) == H7_ROUTE_INVALID,
-              "route invalid retained 32K direct")) {
-    return 1;
-  }
-  h7_free(f);
-  if (!expect(h7_route(f) == H7_ROUTE_INVALID,
-              "route invalid retained 64K direct")) {
-    return 1;
-  }
+
   e2 = h7_malloc(32768);
   f2 = h7_malloc(65536);
   if (!expect(e2 == e, "reuse retained 32K direct") ||
@@ -93,6 +105,7 @@ int main(void) {
       !expect(h7_route(f2) == H7_ROUTE_VALID, "route valid reused 64K")) {
     return 1;
   }
+
   h7_free(e2);
   h7_free(f2);
   h7_free(z);

@@ -285,6 +285,22 @@ static int h7_region_matches_route_entry(const H7RegionHeader* region,
          region->kind == entry->kind;
 }
 
+static int h7_small_slot_index(H7Span* span, void* ptr, uint32_t* out_index);
+static int h7_big_is_user_ptr(H7Direct* direct, void* ptr);
+
+static int h7_route_result_matches_user_ptr(H7RouteResult route, void* ptr) {
+  if (route.kind != H7_ROUTE_VALID || !route.region) {
+    return 0;
+  }
+  if (route.region->kind == H7_REGION_SMALL_SPAN) {
+    return h7_small_slot_index((H7Span*)route.region, ptr, 0);
+  }
+  if (route.region->kind == H7_REGION_DIRECT) {
+    return h7_big_is_user_ptr((H7Direct*)route.region, ptr);
+  }
+  return 0;
+}
+
 static int h7_region_is_active(const H7RegionHeader* region) {
   return (region->flags & H7_REGION_ACTIVE) != 0;
 }
@@ -663,6 +679,31 @@ static void h7_span_mark_slot_inactive(H7Span* span) {
   g_h7_stats.active_bytes -= span->slot_size;
 }
 
+static void h7_span_detach_for_release(H7Span* span,
+                                       H7PendingRelease* release);
+
+static void h7_span_update_partial_after_alloc(H7Class* klass, H7Span* span) {
+  if (span->free_head == H7_FREE_NONE) {
+    h7_list_remove(&klass->partial, span);
+  } else if (span->used_count == 1u) {
+    h7_list_push(&klass->partial, span);
+  }
+}
+
+static void h7_span_update_partial_after_free(H7Class* klass,
+                                              H7Span* span,
+                                              int was_full,
+                                              H7PendingRelease* release) {
+  if (span->used_count == 0u) {
+    h7_list_remove(&klass->partial, span);
+    if (!h7_empty_span_try_push(klass, span)) {
+      h7_span_detach_for_release(span, release);
+    }
+  } else if (was_full) {
+    h7_list_push(&klass->partial, span);
+  }
+}
+
 static void* h7_small_alloc_from_span(H7Span* span) {
   H7Class* klass = &g_h7_classes[span->class_id];
   uint32_t index = h7_span_pop_free_slot(span);
@@ -673,11 +714,7 @@ static void* h7_small_alloc_from_span(H7Span* span) {
   ptr = h7_span_slot_ptr(span, index);
   h7_bitmap_set(span, index);
   h7_span_mark_slot_active(span);
-  if (span->free_head == H7_FREE_NONE) {
-    h7_list_remove(&klass->partial, span);
-  } else if (span->used_count == 1u) {
-    h7_list_push(&klass->partial, span);
-  }
+  h7_span_update_partial_after_alloc(klass, span);
   return ptr;
 }
 
@@ -728,14 +765,7 @@ static void h7_small_free(H7Span* span,
   h7_bitmap_clear(span, index);
   h7_span_push_free_slot(span, index);
   h7_span_mark_slot_inactive(span);
-  if (span->used_count == 0) {
-    h7_list_remove(&klass->partial, span);
-    if (!h7_empty_span_try_push(klass, span)) {
-      h7_span_detach_for_release(span, release);
-    }
-  } else if (was_full) {
-    h7_list_push(&klass->partial, span);
-  }
+  h7_span_update_partial_after_free(klass, span, was_full, release);
 }
 
 static size_t h7_big_user_offset(void) {
@@ -973,16 +1003,8 @@ static H7RouteKind h7_region_user_route_kind(H7RouteResult route, void* ptr) {
   if (route.kind != H7_ROUTE_VALID || !route.region) {
     return route.kind;
   }
-  if (route.region->kind == H7_REGION_SMALL_SPAN) {
-    return h7_small_slot_index((H7Span*)route.region, ptr, 0)
-               ? H7_ROUTE_VALID
-               : H7_ROUTE_INVALID;
-  }
-  if (route.region->kind == H7_REGION_DIRECT) {
-    return h7_big_is_user_ptr((H7Direct*)route.region, ptr) ? H7_ROUTE_VALID
-                                                            : H7_ROUTE_INVALID;
-  }
-  return H7_ROUTE_INVALID;
+  return h7_route_result_matches_user_ptr(route, ptr) ? H7_ROUTE_VALID
+                                                      : H7_ROUTE_INVALID;
 }
 
 void h7_free(void* ptr) {

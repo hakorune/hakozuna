@@ -54,6 +54,7 @@ primary:
   improve local 4K..16K span path
   keep low RSS close to v2
   keep route safety and remote-free safety
+  keep the route invariant helper and span/free-list cleanup easy to read
 
 secondary:
   keep RemoteNatural-L1 available as a control

@@ -35,11 +35,12 @@ done:
 active:
   SpanPathAudit-L1
     inspect 4K..16K span path before adding new policy
+    keep the route invariant helper and span/free-list cleanup readable
     keep route safety unchanged
     keep RemoteNatural-L1 as a control preset
 
 next:
-  add v3 benchmark row wiring only after the smoke baseline passes
+  extend the v3 hotpath rows to cover 4K, 8K, and 16K span-audit slices
   run HZ7 v3 hotpath and size-slice probes
 ```
 
@@ -71,6 +72,7 @@ Scope:
 allowed:
   audit h7_small_alloc_from_span
   audit h7_small_free
+  add a route invariant helper for alloc/free transition checks
   audit partial/empty span list movement
   audit bitmap/free-list work for 4K / 8K / 16K classes
   add diagnostic-only smoke/probe rows if needed
