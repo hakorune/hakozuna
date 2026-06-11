@@ -115,6 +115,12 @@ function Add-H7BenchmarkSummaryTable {
         $row = $Rows[$key]
         $medianRate = Get-H7Median $row.Rates.ToArray()
         $medianRss = Get-H7Median $row.Rss.ToArray()
-        [void]$Lines.Add("| $($row.Op) | $($row.Label) | $($row.Size) | $(Format-H7Rate $medianRate) | $($row.RateName) | $([int]$medianRss) |")
+        $unit = ""
+        if ($row.ContainsKey("RateName")) {
+            $unit = $row.RateName
+        } elseif ($row.ContainsKey("Unit")) {
+            $unit = $row.Unit
+        }
+        [void]$Lines.Add("| $($row.Op) | $($row.Label) | $($row.Size) | $(Format-H7Rate $medianRate) | $unit | $([int]$medianRss) |")
     }
 }

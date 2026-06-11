@@ -31,6 +31,10 @@ size-slices summary:
 shared helper:
   win/bench_hz7_v3_common.ps1
 ```
+
+The shared helper preserves the per-row rate unit, so the size-slices summary
+still prints `pairs/s` and `ops/s` in the same table shape as the hotpath
+summary.
 ```
 
 ## 4K / 8K / 16K Span Audit
