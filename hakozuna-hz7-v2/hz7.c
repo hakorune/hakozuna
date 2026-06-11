@@ -724,9 +724,12 @@ static void h7_small_free(H7Span* span,
   }
 }
 
+static size_t h7_big_user_offset(void) {
+  return h7_align_up(sizeof(H7Direct), 16u);
+}
+
 static void* h7_big_user_ptr(H7Direct* direct) {
-  size_t user_offset = h7_align_up(sizeof(H7Direct), 16u);
-  return (unsigned char*)direct + user_offset;
+  return (unsigned char*)direct + h7_big_user_offset();
 }
 
 static int h7_big_is_user_ptr(H7Direct* direct, void* ptr) {
@@ -734,8 +737,7 @@ static int h7_big_is_user_ptr(H7Direct* direct, void* ptr) {
 }
 
 static size_t h7_big_region_size(size_t size) {
-  size_t user_offset = h7_align_up(sizeof(H7Direct), 16u);
-  return h7_region_align_up(user_offset + size);
+  return h7_region_align_up(h7_big_user_offset() + size);
 }
 
 static void h7_big_mark_active(H7Direct* direct, size_t size) {
@@ -770,7 +772,7 @@ static void* h7_big_alloc_retained(size_t size) {
 static int h7_big_prepare_region(H7Direct* direct,
                                  size_t size,
                                  size_t region_size) {
-  size_t user_offset = h7_align_up(sizeof(H7Direct), 16u);
+  size_t user_offset = h7_big_user_offset();
   memset(direct, 0, user_offset);
   h7_region_header_init(&direct->region,
                         H7_REGION_DIRECT,

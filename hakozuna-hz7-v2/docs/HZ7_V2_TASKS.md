@@ -612,3 +612,16 @@ PreparedRegionValidationHelper-L1:
   [x] keep route registration and stats transitions unchanged
   [x] require Windows and Linux smoke scripts to pass
 ```
+
+The next source cleanup step is `DirectUserOffsetHelper-L1`. It is not a size
+policy change. It gives the direct-region user pointer offset one helper so
+direct pointer, region-size, and preparation paths use the same layout rule.
+
+```text
+DirectUserOffsetHelper-L1:
+  [x] add a helper for the direct-region user offset
+  [x] use it from direct user pointer, region sizing, and preparation
+  [x] keep 16-byte user alignment unchanged
+  [x] keep retained direct route semantics unchanged
+  [x] require Windows and Linux smoke scripts to pass
+```
