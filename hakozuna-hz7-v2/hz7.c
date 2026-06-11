@@ -793,6 +793,21 @@ static void* h7_big_alloc_region_outside_lock(size_t size,
   return direct;
 }
 
+static void h7_big_move_to_retained(H7Direct* direct) {
+  h7_big_mark_inactive(direct);
+  h7_region_mark_retained(&direct->region);
+}
+
+static void h7_big_detach_for_release(H7Direct* direct,
+                                      H7PendingRelease* release) {
+  h7_route_unregister(direct);
+  h7_big_mark_inactive(direct);
+  h7_big_mark_released(direct);
+  h7_region_mark_released(&direct->region);
+  release->ptr = direct;
+  release->size = direct->region.region_size;
+}
+
 static int h7_malloc_prepare_region_outside_lock(size_t size,
                                                  H7PendingRelease* prealloc) {
   if (size <= H7_SPAN_CLASS_MAX) {
@@ -821,16 +836,10 @@ static void h7_big_free(H7Direct* direct,
     return;
   }
   if (h7_direct_retain_push(direct)) {
-    h7_big_mark_inactive(direct);
-    h7_region_mark_retained(&direct->region);
+    h7_big_move_to_retained(direct);
     return;
   }
-  h7_route_unregister(direct);
-  h7_big_mark_inactive(direct);
-  h7_big_mark_released(direct);
-  h7_region_mark_released(&direct->region);
-  release->ptr = direct;
-  release->size = direct->region.region_size;
+  h7_big_detach_for_release(direct, release);
 }
 
 static void* h7_malloc_existing_locked(size_t size) {

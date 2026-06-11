@@ -291,6 +291,19 @@ RegionFlagStateHelper-L1:
   [x] require Windows and Linux smoke scripts to pass
 ```
 
+The next source cleanup step is `DirectReleaseTransitionHelper-L1`. It is not
+an allocation policy change. It gives direct retained and OS-release transitions
+the same explicit shape as the span release helper.
+
+```text
+DirectReleaseTransitionHelper-L1:
+  [x] add a helper for moving a direct region to retained state
+  [x] add a helper for detaching a direct region for OS release
+  [x] keep route unregister before OS release
+  [x] keep direct active/reserved stats accounting unchanged
+  [x] require Windows and Linux smoke scripts to pass
+```
+
 The next cleanup step is `StatsInvariantSmoke-L1`. It is not a policy change.
 It keeps the allocator code unchanged and makes the public stats/route contract
 explicit in a focused smoke test before the next performance experiment.
