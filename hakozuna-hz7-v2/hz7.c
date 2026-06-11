@@ -152,6 +152,18 @@ static uintptr_t h7_region_base_from_ptr(const void* ptr) {
   return (uintptr_t)ptr & ~((uintptr_t)H7_SPAN_BYTES - 1u);
 }
 
+static void h7_region_header_init(H7RegionHeader* region,
+                                  H7RegionKind kind,
+                                  uint16_t flags,
+                                  size_t region_size) {
+  region->magic = H7_MAGIC;
+  region->cookie = H7_COOKIE;
+  region->kind = kind;
+  region->flags = flags;
+  region->reserved = H7_ROUTE_SLOT_NONE;
+  region->region_size = region_size;
+}
+
 static size_t h7_route_hash(uintptr_t base) {
   return (size_t)((base >> 16u) & (H7_ROUTE_CAPACITY - 1u));
 }
@@ -493,11 +505,10 @@ static void h7_span_prepare_region(H7Span* span, uint16_t class_id) {
       h7_span_slot_count(klass->slot_size, &bitmap_words, &slot_offset);
   uint32_t i;
   memset(span, 0, sizeof(H7Span));
-  span->region.magic = H7_MAGIC;
-  span->region.cookie = H7_COOKIE;
-  span->region.kind = H7_REGION_SMALL_SPAN;
-  span->region.flags = H7_REGION_ACTIVE;
-  span->region.region_size = H7_SPAN_BYTES;
+  h7_region_header_init(&span->region,
+                        H7_REGION_SMALL_SPAN,
+                        H7_REGION_ACTIVE,
+                        H7_SPAN_BYTES);
   span->class_id = class_id;
   span->slot_size = klass->slot_size;
   span->slot_count = slot_count;
@@ -656,11 +667,10 @@ static int h7_big_prepare_region(H7Direct* direct,
                                  size_t region_size) {
   size_t user_offset = h7_align_up(sizeof(H7Direct), 16u);
   memset(direct, 0, user_offset);
-  direct->region.magic = H7_MAGIC;
-  direct->region.cookie = H7_COOKIE;
-  direct->region.kind = H7_REGION_DIRECT;
-  direct->region.flags = H7_REGION_ACTIVE;
-  direct->region.region_size = region_size;
+  h7_region_header_init(&direct->region,
+                        H7_REGION_DIRECT,
+                        H7_REGION_ACTIVE,
+                        region_size);
   direct->requested_size = size;
   return 1;
 }

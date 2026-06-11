@@ -204,6 +204,20 @@ RouteSlotClearHelper-L1:
   [x] require Windows and Linux smoke scripts to pass
 ```
 
+The next source cleanup step is `RegionHeaderInitHelper-L1`. It is not an
+allocation policy change. It makes span and direct region preparation share the
+same tiny header initializer so magic/cookie/kind/flags/size setup has a single
+obvious owner.
+
+```text
+RegionHeaderInitHelper-L1:
+  [x] add a tiny region-header initialization helper
+  [x] use it from span and direct region preparation
+  [x] keep region flags and route semantics unchanged
+  [x] keep allocator policy and speed path unchanged
+  [x] require Windows and Linux smoke scripts to pass
+```
+
 The accepted cleanup step is `RouteValidationModule-L1`. It is not a policy
 change. It keeps the current route lookup behavior, but shares the small/direct
 user-pointer validation logic used by `h7_route()` and `h7_free()`.
