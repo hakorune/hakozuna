@@ -31,6 +31,25 @@ remote-fast. `SlowPathOutsideLock-L1` is the accepted MT direction: keep the
 coarse global lock, but avoid holding it across OS allocation/release when the
 route transition has already been made safe.
 
+The next-design rule is deliberately conservative:
+
+```text
+Do:
+  trim global-lock scope
+  keep OS allocation/release outside the lock where route state is safe
+  keep remote-free correctness as smoke/evidence
+  keep local small/medium and low RSS as the main claim
+
+Do not:
+  add owner-aware remote handoff
+  add inboxes, TLS ownership, or lock-free remote queues
+  turn HZ7 v2 into an HZ6-style profile family
+```
+
+The rough line-count target is a design smell detector, not a hard cap. A
+clean local allocator around 1500-2000 lines still fits HZ7 v2; needing owners,
+remote queues, or a profile matrix means the idea belongs in another family.
+
 ## Current Contract
 
 ```text

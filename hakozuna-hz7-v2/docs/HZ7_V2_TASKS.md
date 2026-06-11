@@ -51,6 +51,71 @@ The recommended active order is:
 5. do not pursue remote fast path in HZ7 v2
 ```
 
+## Latest Design Review Taskization
+
+The current review confirms that HZ7 v2 should grow as a tiny local allocator,
+not as a remote-throughput allocator. The next work should preserve the coarse
+global lock contract while keeping slow OS work outside the lock whenever route
+state has already been made safe.
+
+```text
+Accepted direction:
+  LockScopeTrim-L1 / SlowPathOutsideLock-L1
+  remote-free safe under the coarse global lock
+  route-safe local small/medium direct API allocator
+
+Keep:
+  low RSS
+  readable tiny allocator shape
+  Windows/Linux smoke parity
+  random_mixed small / medium / mixed baseline snapshots
+
+Do not add in HZ7 v2:
+  owner tokens
+  owner inbox
+  TLS ownership
+  lock-free remote queue
+  remote batching
+  HZ6-style profile matrix
+  production hot-path diagnostics
+```
+
+The line-count target is only a smell detector:
+
+```text
+1000-1500 lines:
+  ideal tiny reference shape
+
+1500-2000 lines:
+  healthy HZ7 v2 if the code remains explainable
+
+2000-2300 lines:
+  review before adding more policy
+
+2500+ lines:
+  likely no longer HZ7 v2; consider a separate HZ6/HZ8-family track
+```
+
+Next task boundaries:
+
+```text
+Already accepted:
+  SlowPathOutsideLock-L1 default path
+  route/state transitions under lock
+  final OS allocation/release outside lock
+
+Allowed next:
+  source/list/stat helper cleanup
+  benchmark plumbing cleanup
+  remote-free safety smoke maintenance
+  one optional SpanFreeListTrim-L1 only if it stays tiny and measurable
+
+Not next:
+  remote fast path
+  owner-aware handoff
+  TLS cache with remote semantics
+```
+
 ## Priority 1: Must-Have
 
 - [x] Keep local small/medium performance viable
