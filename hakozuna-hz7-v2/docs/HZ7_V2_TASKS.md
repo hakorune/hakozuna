@@ -599,3 +599,16 @@ SpanFreeListTrim-L1:
   [x] keep active_bytes and used_count accounting unchanged
   [x] require Windows and Linux smoke scripts to pass
 ```
+
+The next source cleanup step is `PreparedRegionValidationHelper-L1`. It is not
+a route policy change. It shares the small/direct prepared-region checks used
+by the locked commit path after outside-lock OS allocation.
+
+```text
+PreparedRegionValidationHelper-L1:
+  [x] add helpers for validating prepared span and direct regions
+  [x] use them from small and direct commit-and-alloc paths
+  [x] keep the existing magic/kind checks unchanged
+  [x] keep route registration and stats transitions unchanged
+  [x] require Windows and Linux smoke scripts to pass
+```

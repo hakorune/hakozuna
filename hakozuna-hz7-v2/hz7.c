@@ -623,6 +623,11 @@ static int h7_span_commit_prepared(H7Span* span) {
   return 1;
 }
 
+static int h7_span_is_prepared_region(H7Span* span) {
+  return span && span->region.magic == H7_MAGIC &&
+         span->region.kind == H7_REGION_SMALL_SPAN;
+}
+
 static void h7_span_detach_for_release(H7Span* span,
                                        H7PendingRelease* release) {
   if (!span) {
@@ -681,8 +686,7 @@ static void* h7_small_alloc_existing(size_t size) {
 }
 
 static void* h7_small_commit_and_alloc(H7Span* prepared) {
-  if (!prepared || prepared->region.magic != H7_MAGIC ||
-      prepared->region.kind != H7_REGION_SMALL_SPAN) {
+  if (!h7_span_is_prepared_region(prepared)) {
     return 0;
   }
   if (!h7_span_commit_prepared(prepared)) {
@@ -787,10 +791,13 @@ static int h7_big_commit_prepared(H7Direct* direct) {
   return 1;
 }
 
+static int h7_big_is_prepared_region(H7Direct* direct) {
+  return direct && direct->region.magic == H7_MAGIC &&
+         direct->region.kind == H7_REGION_DIRECT;
+}
+
 static void* h7_big_commit_and_alloc(H7Direct* direct) {
-  if (!direct || direct->region.magic != H7_MAGIC ||
-      direct->region.kind != H7_REGION_DIRECT ||
-      !h7_big_commit_prepared(direct)) {
+  if (!h7_big_is_prepared_region(direct) || !h7_big_commit_prepared(direct)) {
     return 0;
   }
   return h7_big_user_ptr(direct);
