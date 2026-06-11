@@ -115,35 +115,12 @@ $wanted = @(
     'free_retained_loop:span16k'
 )
 
-$Report = New-Object System.Collections.Generic.List[string]
-$Report.Add("# HZ7 v3 Windows Size Slices")
-$Report.Add("")
-$Report.Add("Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz')")
-$Report.Add("")
-$Report.Add('- benchmark: `bench_hz7_v3_hotpath`')
-$Report.Add('- allocator: `hz7-v3`')
-$Report.Add("- runs: $Runs")
-$Report.Add("- iters_per_run: $Iters")
-if ($DirectRetainCap -gt 0) {
-    $Report.Add("- direct_retain_cap: $DirectRetainCap")
-}
-if ($SpanClassMax -gt 0) {
-    $Report.Add("- span_class_max: $SpanClassMax")
-}
-$Report.Add('- note: filtered from the v3 hotpath probe to emphasize 4K/8K/16K span-audit rows')
-$Report.Add("")
-$Report.Add("| op | label | size | median rate | rate unit | median peak_kb |")
-$Report.Add("| --- | --- | ---: | ---: | --- | ---: |")
+$Report = New-H7BenchmarkSummaryLines -Title "HZ7 v3 Windows Size Slices" `
+    -Benchmark "bench_hz7_v3_hotpath" -Allocator "hz7-v3" -Runs $Runs -Iters $Iters `
+    -Note "filtered from the v3 hotpath probe to emphasize 4K/8K/16K span-audit rows" `
+    -DirectRetainCap $DirectRetainCap -SpanClassMax $SpanClassMax
 
-foreach ($key in $wanted) {
-    if (-not $rows.ContainsKey($key)) {
-        continue
-    }
-    $row = $rows[$key]
-    $medianRate = Get-H7Median $row.Rates.ToArray()
-    $medianRss = Get-H7Median $row.Rss.ToArray()
-    $Report.Add("| $($row.Op) | $($row.Label) | $($row.Size) | $(Format-H7Rate $medianRate) | $($row.Unit) | $([int]$medianRss) |")
-}
+Add-H7BenchmarkSummaryTable -Lines $Report -Rows $rows -OrderedKeys $wanted
 
 $Report.Add("")
 $Report.Add("Artifacts: $OutputDir")

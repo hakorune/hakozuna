@@ -60,3 +60,61 @@ function Invoke-H7CapturedProcess {
 
     return @{ ExitCode = $proc.ExitCode; Lines = $lines }
 }
+
+function New-H7BenchmarkSummaryLines {
+    param(
+        [string]$Title,
+        [string]$Benchmark,
+        [string]$Allocator,
+        [int]$Runs,
+        [int]$Iters,
+        [string]$Note,
+        [int]$DirectRetainCap = 0,
+        [int]$SpanClassMax = 0
+    )
+
+    $lines = New-Object System.Collections.Generic.List[string]
+    [void]$lines.Add("# $Title")
+    [void]$lines.Add("")
+    [void]$lines.Add("Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz')")
+    [void]$lines.Add("")
+    [void]$lines.Add("- benchmark: ``$Benchmark``")
+    [void]$lines.Add("- allocator: ``$Allocator``")
+    [void]$lines.Add("- runs: $Runs")
+    [void]$lines.Add("- iters_per_run: $Iters")
+    if ($DirectRetainCap -gt 0) {
+        [void]$lines.Add("- direct_retain_cap: $DirectRetainCap")
+    }
+    if ($SpanClassMax -gt 0) {
+        [void]$lines.Add("- span_class_max: $SpanClassMax")
+    }
+    [void]$lines.Add("- note: $Note")
+    [void]$lines.Add("")
+    return ,$lines
+}
+
+function Add-H7BenchmarkSummaryTable {
+    param(
+        [System.Collections.Generic.List[string]]$Lines,
+        [hashtable]$Rows,
+        [string[]]$OrderedKeys = $null
+    )
+
+    $keys = $OrderedKeys
+    if ($null -eq $keys) {
+        $keys = @($Rows.Keys | Sort-Object)
+    }
+
+    [void]$Lines.Add("| op | label | size | median rate | rate unit | median peak_kb |")
+    [void]$Lines.Add("| --- | --- | ---: | ---: | --- | ---: |")
+
+    foreach ($key in $keys) {
+        if (-not $Rows.ContainsKey($key)) {
+            continue
+        }
+        $row = $Rows[$key]
+        $medianRate = Get-H7Median $row.Rates.ToArray()
+        $medianRss = Get-H7Median $row.Rss.ToArray()
+        [void]$Lines.Add("| $($row.Op) | $($row.Label) | $($row.Size) | $(Format-H7Rate $medianRate) | $($row.RateName) | $([int]$medianRss) |")
+    }
+}

@@ -113,31 +113,12 @@ for ($run = 1; $run -le $Runs; ++$run) {
 }
 
 $Summary = New-Object System.Collections.Generic.List[string]
-$Summary.Add("# HZ7 v3 Windows Hot Path Microbench")
-$Summary.Add("")
-$Summary.Add("Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz')")
-$Summary.Add("")
-$Summary.Add('- benchmark: `bench_hz7_v3_hotpath`')
-$Summary.Add('- allocator: `hz7-v3`')
-$Summary.Add("- runs: $Runs")
-$Summary.Add("- iters_per_run: $Iters")
-if ($DirectRetainCap -gt 0) {
-    $Summary.Add("- direct_retain_cap: $DirectRetainCap")
-}
-if ($SpanClassMax -gt 0) {
-    $Summary.Add("- span_class_max: $SpanClassMax")
-}
-$Summary.Add("- note: diagnostic-only; no allocator counters or production hot-path instrumentation")
-$Summary.Add("")
-$Summary.Add("| op | label | size | median rate | rate unit | median peak_kb |")
-$Summary.Add("| --- | --- | ---: | ---: | --- | ---: |")
+ $Summary = New-H7BenchmarkSummaryLines -Title "HZ7 v3 Windows Hot Path Microbench" `
+    -Benchmark "bench_hz7_v3_hotpath" -Allocator "hz7-v3" -Runs $Runs -Iters $Iters `
+    -Note "diagnostic-only; no allocator counters or production hot-path instrumentation" `
+    -DirectRetainCap $DirectRetainCap -SpanClassMax $SpanClassMax
 
-foreach ($key in ($Rows.Keys | Sort-Object)) {
-    $row = $Rows[$key]
-    $medianRate = Get-H7Median $row.Rates.ToArray()
-    $medianRss = Get-H7Median $row.Rss.ToArray()
-    $Summary.Add("| $($row.Op) | $($row.Label) | $($row.Size) | $(Format-H7Rate $medianRate) | $($row.RateName) | $([int]$medianRss) |")
-}
+Add-H7BenchmarkSummaryTable -Lines $Summary -Rows $Rows
 
 $Summary.Add("")
 $Summary.Add("Artifacts: $OutputDir")
