@@ -757,6 +757,24 @@ static void* h7_big_alloc_region_outside_lock(size_t size,
   return direct;
 }
 
+static int h7_malloc_prepare_region_outside_lock(size_t size,
+                                                 H7PendingRelease* prealloc) {
+  if (size <= H7_SPAN_CLASS_MAX) {
+    int class_id = h7_class_for_size(size);
+    if (class_id < 0) {
+      return 0;
+    }
+    prealloc->ptr = h7_os_alloc_region(H7_SPAN_BYTES);
+    prealloc->size = H7_SPAN_BYTES;
+    if (prealloc->ptr) {
+      h7_span_prepare_region((H7Span*)prealloc->ptr, (uint16_t)class_id);
+    }
+  } else {
+    (void)h7_big_alloc_region_outside_lock(size, prealloc);
+  }
+  return prealloc->ptr != 0;
+}
+
 static void h7_big_free(H7Direct* direct,
                         void* ptr,
                         H7PendingRelease* release) {
@@ -789,7 +807,6 @@ static void* h7_malloc_existing_locked(size_t size) {
 void* h7_malloc(size_t size) {
   H7PendingRelease prealloc;
   void* ptr = 0;
-  int class_id = -1;
   if (size == 0) {
     return 0;
   }
@@ -802,20 +819,7 @@ void* h7_malloc(size_t size) {
     return ptr;
   }
 
-  if (size <= H7_SPAN_CLASS_MAX) {
-    class_id = h7_class_for_size(size);
-    if (class_id < 0) {
-      return 0;
-    }
-    prealloc.ptr = h7_os_alloc_region(H7_SPAN_BYTES);
-    prealloc.size = H7_SPAN_BYTES;
-    if (prealloc.ptr) {
-      h7_span_prepare_region((H7Span*)prealloc.ptr, (uint16_t)class_id);
-    }
-  } else {
-    (void)h7_big_alloc_region_outside_lock(size, &prealloc);
-  }
-  if (!prealloc.ptr) {
+  if (!h7_malloc_prepare_region_outside_lock(size, &prealloc)) {
     return 0;
   }
 
