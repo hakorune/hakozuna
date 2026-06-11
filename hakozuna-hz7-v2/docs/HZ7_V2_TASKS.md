@@ -1191,3 +1191,91 @@ DirectRetainClass-L1:
   test whether finer direct retain buckets help only after boundary churn is
   proven to be a direct-retain mismatch rather than source-family switching
 ```
+
+### BoundaryChurn-L1
+
+`BoundaryChurn-L1` adds diagnostic-only source-family switch attribution to
+the `mixed_steady` rows. It does not add allocator counters or change HZ7 v2
+production code.
+
+Family definition:
+
+```text
+span family:
+  size <= 16KiB
+
+direct family:
+  size > 16KiB
+```
+
+Windows repeat-3 observation:
+
+```text
+small_ws400:
+  median 50.324M ops/s
+  switch_rate 0.000000
+
+span_medium_ws400:
+  median 37.173M ops/s
+  switch_rate 0.000000
+
+direct_medium_ws400:
+  median 53.592M ops/s
+  switch_rate 0.000000
+
+medium_ws400:
+  median 24.176M ops/s
+  switch_rate 0.489742
+
+mixed_ws400:
+  median 23.206M ops/s
+  switch_rate 0.499983
+```
+
+Source:
+
+```text
+out_win_hz7_v2_hotpath_boundarychurn_l1/
+20260611_172849_hz7_v2_hotpath_windows.md
+```
+
+Reading:
+
+```text
+Boundary churn is now the strongest explanation for the medium/mixed steady
+drop.
+
+Rows with switch_rate 0 remain much faster:
+  small_ws400 around 50M
+  direct_medium_ws400 around 54M
+  span_medium_ws400 around 37M
+
+Rows crossing the 16KiB span/direct boundary about half the time drop to
+around 23M-24M.
+```
+
+Decision:
+
+```text
+Next best target:
+  MediumBoundaryPolicy-L1
+
+Why:
+  The weakness is not direct-retain alone and not route lookup alone.
+  It appears when a steady live set alternates between span and direct source
+  families.
+
+First experiment:
+  raise the span/direct boundary for HZ7 v2 in an explicit lane
+  compare:
+    span/direct-only steady rows
+    medium_ws400
+    mixed_ws400
+    random_mixed small/medium/mixed
+    RSS
+
+No-go:
+  RSS loses HZ7 v2's low-memory identity
+  small or direct-only rows regress materially
+  medium/mixed do not improve
+```

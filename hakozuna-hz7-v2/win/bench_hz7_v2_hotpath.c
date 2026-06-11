@@ -56,6 +56,10 @@ static size_t h7_size_from_range(uint32_t value, size_t min_size, size_t max_siz
   return min_size + (size_t)(value % (uint32_t)span);
 }
 
+static uint32_t h7_source_family_for_size(size_t size) {
+  return size <= 16384u ? 1u : 2u;
+}
+
 static void h7_run_malloc_free(const char* label,
                                size_t size,
                                uint32_t iters) {
@@ -267,6 +271,7 @@ static void h7_run_mixed_steady(const char* label,
   uint32_t i;
   uint32_t rng = 0xC0FFEE11u;
   uint32_t ok = 0;
+  uint32_t switches = 0;
   void** ptrs = (void**)calloc(live_count, sizeof(void*));
   size_t* sizes = (size_t*)calloc(live_count, sizeof(size_t));
   double start;
@@ -289,6 +294,8 @@ static void h7_run_mixed_steady(const char* label,
   for (i = 0; i < iters; ++i) {
     uint32_t slot = h7_rng_next(&rng) % live_count;
     size_t size = h7_size_from_range(h7_rng_next(&rng), min_size, max_size);
+    switches += h7_source_family_for_size(sizes[slot]) !=
+                h7_source_family_for_size(size);
     h7_free(ptrs[slot]);
     ptrs[slot] = h7_malloc(size);
     sizes[slot] = size;
@@ -304,12 +311,14 @@ static void h7_run_mixed_steady(const char* label,
   free(ptrs);
   free(sizes);
   printf("hz7_hotpath: op=mixed_steady label=%s size=0 iters=%u ok=%u "
-         "time=%.6f ops/s=%.2f peak_kb=%zu\n",
+         "time=%.6f ops/s=%.2f switches=%u switch_rate=%.6f peak_kb=%zu\n",
          label,
          iters,
          ok,
          elapsed,
          elapsed > 0.0 ? (double)ok / elapsed : 0.0,
+         switches,
+         iters > 0 ? (double)switches / (double)iters : 0.0,
          h7_peak_working_set_kb());
 }
 
