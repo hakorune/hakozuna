@@ -690,6 +690,14 @@ static void h7_big_mark_inactive(H7Direct* direct) {
   --g_h7_stats.direct_count;
 }
 
+static void h7_big_mark_committed(H7Direct* direct) {
+  g_h7_stats.reserved_bytes += direct->region.region_size;
+}
+
+static void h7_big_mark_released(H7Direct* direct) {
+  g_h7_stats.reserved_bytes -= direct->region.region_size;
+}
+
 static void* h7_big_alloc_retained(size_t size) {
   H7Direct* direct = h7_direct_retain_pop(size);
   if (!direct) {
@@ -719,7 +727,7 @@ static int h7_big_commit_prepared(H7Direct* direct) {
     return 0;
   }
   h7_big_mark_active(direct, direct->requested_size);
-  g_h7_stats.reserved_bytes += direct->region.region_size;
+  h7_big_mark_committed(direct);
   return 1;
 }
 
@@ -765,7 +773,7 @@ static void h7_big_free(H7Direct* direct,
   }
   h7_route_unregister(direct);
   h7_big_mark_inactive(direct);
-  g_h7_stats.reserved_bytes -= direct->region.region_size;
+  h7_big_mark_released(direct);
   direct->region.flags = 0;
   release->ptr = direct;
   release->size = direct->region.region_size;
