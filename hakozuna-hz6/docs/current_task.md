@@ -6663,6 +6663,52 @@ Safety:
   route_register_fail = 0
 ```
 
+Ubuntu HZ6 ToyDirectMapTrusted default closeout:
+
+```text
+Implemented default-on composition:
+  HZ6_TOY_SMALL_ACTIVE_FREE_MAP_L1=1
+  HZ6_TOY_SMALL_ACTIVE_MAP_TRUSTED_OWNER_L1=1
+  HZ6_LOCAL_CACHE_DIRECT_FREE_L1=1
+  HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1=1
+  HZ6_LOCAL_CACHE_DIRECT_REUSE_L1=1
+  HZ6_LOCAL_CACHE_DIRECT_MAX_CLASS=4
+  HZ6_LOCAL_CACHE_TRUSTED_OWNER_L1=1
+
+Transfer-first contract fix:
+  Raw direct-local default failed hz6-r1-transfer-smoke because malloc could
+  consume local frontcache before a same-class transfer object.
+  The selected implementation now lets direct-local malloc try the existing
+  transfer-first reuse path first and return the activated descriptor to the
+  active-map registration path.
+
+Verification:
+  ./linux/build_linux_hz6_benchmark.sh
+  ./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+  both pass on Ubuntu.
+
+Focused repeat-5 versus explicit directmap-off control:
+  local 256B..4K:
+    +77%..+122% depending on profile/size
+  local 8K:
+    +19%..+40%
+  local 16K:
+    +9%..+11%
+  remote 8K:
+    +15%..+17%
+  remote 64K:
+    +6%..+13%
+  remote 128K:
+    mostly +2%..+3%, with speed at -3.27%
+  reuse 8K/64K/128K:
+    +2%..+21%
+
+Decision:
+  Promote ToyDirectMapTrusted max4 + transfer-pop guard to Ubuntu default.
+  Keep explicit macro-off builds as the control lane.
+  This is a Linux/Ubuntu default knob set, not a Windows selected-family lane.
+```
+
 ### 2026-06-06: Post-push design review readout
 
 External design review after pushing `947f870` agreed with the

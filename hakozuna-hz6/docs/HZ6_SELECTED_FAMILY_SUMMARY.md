@@ -17,6 +17,16 @@ reuse 128K by +38%..+41% versus control-off while keeping R1 smoke clean.
 Toy alloc's duplicate request-size classification after `hz6_malloc()` has
 already selected `class_id`; repeat-10 suspicious-row guards are positive on
 512B/1K/2K medians.
+`ToyDirectMapTrusted max4` is now part of the Linux/Ubuntu default too:
+Toy active-free map + trusted active-map owner, direct local free/alloc/reuse,
+trusted local-cache owner, and `HZ6_LOCAL_CACHE_DIRECT_MAX_CLASS=4`.
+The default path preserves transfer-first semantics by trying transfer reuse
+before direct local-cache reuse and returning the activated descriptor to the
+Toy active-map registration path.  Focused repeat-5 versus explicit macro-off
+control improved local 256B..4K by roughly +77%..+122%, local 8K by +19%..+40%,
+local 16K by +9%..+11%, remote 8K/64K by +6%..+17%, and reuse rows by
++2%..+21%; the only observed negative guard row was remote 128K speed at
+-3.27%.  R1 smokes remain clean.
 
 ## Selected Rows
 

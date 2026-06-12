@@ -252,7 +252,7 @@
 #endif
 
 #ifndef HZ6_TOY_SMALL_ACTIVE_FREE_MAP_L1
-#define HZ6_TOY_SMALL_ACTIVE_FREE_MAP_L1 0
+#define HZ6_TOY_SMALL_ACTIVE_FREE_MAP_L1 1
 #endif
 
 #ifndef HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY
@@ -266,7 +266,7 @@
 #ifndef HZ6_TOY_SMALL_ACTIVE_MAP_TRUSTED_OWNER_L1
 /* Candidate-only active-map shortcut.  The map is allocator-local and validates
  * descriptor pointer/generation/state before bypassing the owner comparison. */
-#define HZ6_TOY_SMALL_ACTIVE_MAP_TRUSTED_OWNER_L1 0
+#define HZ6_TOY_SMALL_ACTIVE_MAP_TRUSTED_OWNER_L1 1
 #endif
 
 #ifndef HZ6_TOY_CLASS_ID_FAST_ALLOC_L1
@@ -412,25 +412,25 @@
 #endif
 
 #ifndef HZ6_LOCAL_CACHE_DIRECT_FREE_L1
-#define HZ6_LOCAL_CACHE_DIRECT_FREE_L1 0
+#define HZ6_LOCAL_CACHE_DIRECT_FREE_L1 1
 #endif
 
 #ifndef HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1
-#define HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1 0
+#define HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1 1
 #endif
 
 #ifndef HZ6_LOCAL_CACHE_DIRECT_REUSE_L1
-#define HZ6_LOCAL_CACHE_DIRECT_REUSE_L1 0
+#define HZ6_LOCAL_CACHE_DIRECT_REUSE_L1 1
 #endif
 
 #ifndef HZ6_LOCAL_CACHE_DIRECT_MAX_CLASS
-#define HZ6_LOCAL_CACHE_DIRECT_MAX_CLASS HZ6_FRONT_CACHE_CLASS_COUNT
+#define HZ6_LOCAL_CACHE_DIRECT_MAX_CLASS 4
 #endif
 
 #ifndef HZ6_LOCAL_CACHE_TRUSTED_OWNER_L1
 /* Candidate-only same-allocator local-cache shortcut.  Callers must already be
  * on an allocator-owned frontcache path or have checked local ownership. */
-#define HZ6_LOCAL_CACHE_TRUSTED_OWNER_L1 0
+#define HZ6_LOCAL_CACHE_TRUSTED_OWNER_L1 1
 #endif
 
 #ifndef HZ6_SAME_OWNER_FAST_L1

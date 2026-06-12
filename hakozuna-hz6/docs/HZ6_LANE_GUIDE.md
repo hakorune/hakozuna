@@ -1514,6 +1514,18 @@ directlocalfreereuse-descavail-noboost-route4k:
   as B-design input. It is still not the selected balanced/wide_ws low-RSS
   default because rss + descavail remains stronger there.
 
+ubuntu-toydirectmaptrusted-max4-default:
+  Linux/Ubuntu default composition, not a Windows selected-family lane:
+  Toy active-free map, trusted Toy active-map owner, DirectLocalFree-L1,
+  DirectLocalAlloc-L1, DirectLocalReuse-L1, trusted local-cache owner, and
+  HZ6_LOCAL_CACHE_DIRECT_MAX_CLASS=4. Direct malloc preserves transfer-first
+  profiles by trying transfer reuse before local frontcache reuse and returning
+  the activated descriptor to Toy active-map registration. Ubuntu repeat-5
+  versus explicit macro-off control is broadly positive: local 256B..4K
+  +77%..+122%, local 8K +19%..+40%, local 16K +9%..+11%, remote 8K/64K
+  +6%..+17%, and reuse +2%..+21%. The only negative guard row was remote 128K
+  speed at -3.27%. Keep macro-off as the control lane.
+
 largerlowrss-front8k-sourcerun-desc8k-route8k:
   Larger_sizes-targeted low-RSS lane: descriptor 8K, route 8K, source-block
   512, frontcache 8K, and SourceRunReuse-L1. It keeps allocation failures at

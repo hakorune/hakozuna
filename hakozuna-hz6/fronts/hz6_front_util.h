@@ -12,6 +12,13 @@ void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
                                uint16_t class_id,
                                Hz6AllocPath* path);
 
+void* hz6_front_reuse_transfer_with_descriptor(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id,
+    Hz6AllocPath* path,
+    Hz6ObjectDescriptor** out_descriptor);
+
 void* hz6_front_reuse_cached_or_transfer(Hz6Allocator* allocator,
                                          uint16_t front_id,
                                          uint16_t class_id,

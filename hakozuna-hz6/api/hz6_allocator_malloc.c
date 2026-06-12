@@ -75,6 +75,13 @@ static void* hz6_allocator_direct_local_alloc(Hz6Allocator* allocator,
   if (!hz6_allocator_direct_local_alloc_front_eligible(front_id, class_id)) {
     return NULL;
   }
+  if (hz6_allocator_profile_transfer_first(allocator)) {
+    void* transfer_ptr = hz6_front_reuse_transfer_with_descriptor(
+        allocator, front_id, class_id, NULL, out_descriptor);
+    if (transfer_ptr) {
+      return transfer_ptr;
+    }
+  }
 #if HZ6_LOCAL_CACHE_DIRECT_REUSE_L1
   return hz6_allocator_direct_local_reuse(allocator, class_id,
                                           out_descriptor);

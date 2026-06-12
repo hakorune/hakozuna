@@ -505,10 +505,15 @@ static Hz6ObjectDescriptor* hz6_front_try_elastic_depot_descriptor_rehome(
 }
 #endif
 
-void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
-                               uint16_t front_id,
-                               uint16_t class_id,
-                               Hz6AllocPath* path) {
+void* hz6_front_reuse_transfer_with_descriptor(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id,
+    Hz6AllocPath* path,
+    Hz6ObjectDescriptor** out_descriptor) {
+  if (out_descriptor) {
+    *out_descriptor = NULL;
+  }
   if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT ||
       !hz6_allocator_profile_transfer_first(allocator)) {
     return NULL;
@@ -567,8 +572,19 @@ void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
                                           HZ6_ALLOC_PATH_TRANSFER_REUSE);
     }
     hz6_allocator_note_transfer_pop(allocator);
+    if (out_descriptor) {
+      *out_descriptor = descriptor;
+    }
     return transfer.ptr;
   }
 
   return NULL;
+}
+
+void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
+                               uint16_t front_id,
+                               uint16_t class_id,
+                               Hz6AllocPath* path) {
+  return hz6_front_reuse_transfer_with_descriptor(
+      allocator, front_id, class_id, path, NULL);
 }
