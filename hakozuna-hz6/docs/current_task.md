@@ -247,19 +247,60 @@ Ubuntu LD_PRELOAD lane:
   - First preload tightening pass:
       perf showed the initial lane was dominated by OS `mmap/munmap` churn.
       The preload build now uses larger compare-lane defaults:
-        route table 32768
+        route table 131072
         descriptors 32768
         source blocks 4096
         frontcache bin 1024
         Toy active map 32768
         route xor-fold + linear-wrap + loop-carry
-      Single-run mixed_ws at `4 100000 8192 16 1024` improved HZ6 preload:
+      The first 32768-route default improved HZ6 preload:
         before 0.236M ops/s / 19,588 KB
         after  0.557M ops/s / 59,176 KB
       Result dir:
         private/raw-results/linux/hz6_preload_capacity_route_default_r1
       perf after this pass shows the next pressure point is
       `hz6_route_register_exact`, not OS mmap.
+  - Preload route-cap ladder:
+      Raising only `HZ6_ROUTE_TABLE_CAPACITY` from 32768 to 131072 with the
+      same descriptor/source/frontcache defaults turned the register-pressure
+      symptom into a real LD_PRELOAD speedup:
+        route 32768:  ~0.56M ops/s / ~59 MB peak
+        route 131072:  2.880M ops/s / 74,112 KB peak
+        route 262144:  2.870M ops/s / 94,976 KB peak
+        route 131072 default repeat-3:
+          3.045M / 3.099M / 3.086M ops/s
+          peak 74,368 / 74,228 / 73,336 KB
+      Result dirs:
+        private/raw-results/linux/hz6_preload_routecap131k_r1
+        private/raw-results/linux/hz6_preload_routecap262k_r1
+        private/raw-results/linux/hz6_preload_routecap131k_default_r3
+        private/raw-results/linux/hz6_preload_routecap131k_cross_r1
+      Cross-allocator single-run after selecting 131072:
+        system   26.286M ops/s / 18,668 KB
+        hz3      70.993M ops/s / 25,344 KB
+        hz4      55.925M ops/s / 30,208 KB
+        hz6       3.045M ops/s / 74,112 KB
+        mimalloc 23.607M ops/s / 22,784 KB
+        tcmalloc 65.699M ops/s / 25,344 KB
+      Decision:
+        Select route table 131072 as the LD_PRELOAD compare-lane default.
+        It gives the large speed win while avoiding the 262144 RSS increase.
+        Keep 262144 as an upper-bound/control, not default.
+  - Preload packed-meta probe:
+      Worker read pointed at `hz6_route_register_exact` probe-loop memory
+      footprint as the next plausible route-register target.  Packed route
+      metadata was built as a separate preload candidate with route 131072 and
+      the same hash/probe defaults.
+      Result:
+        packed-meta repeat-3:
+          3.032M / 2.568M / 2.690M ops/s
+          peak 71,804 / 71,148 / 71,552 KB
+      Result dir:
+        private/raw-results/linux/hz6_preload_routecap131k_packedmeta_r3
+      Decision:
+        Keep packed-meta as RSS/control evidence only for LD_PRELOAD.  It cuts
+        a few MiB of RSS, but loses speed and stability versus the selected
+        unpacked 131072-route default.
   - Rejected preload probe:
       SourceBlockRoute exact-skip was tested with range-index, dynamic slot
       descriptor map, late register, behavior, and exact-skip.  It regressed
