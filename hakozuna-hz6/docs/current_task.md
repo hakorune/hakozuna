@@ -171,6 +171,41 @@ Route lookup closeout:
       linux/results/hz6_toy_fast_on_20260613_focus
       linux/results/hz6_toy_fast_off_20260613_suspicious_r10
       linux/results/hz6_toy_fast_on_20260613_suspicious_r10
+  - ToySmallHotPathAudit-L2 was added as diagnostic-only output via
+    `[HZ6_TOY_SMALL]`.  It splits Toy/small malloc/free into:
+      malloc front dispatch
+      frontcache pop
+      descriptor activation
+      free route lookup
+      free owner check
+      free cache push
+      active-map bypass
+    The default 10k diagnostic shows 256B/1K/4K local Toy rows still execute
+    one malloc front dispatch/pop/activation and one free route/owner/cache
+    sequence per iteration after LastHitRouteCache-L1 and ToyClassIdFastAlloc.
+  - ToyDirectMapTrusted was tested by composing:
+      HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1=1
+      HZ6_LOCAL_CACHE_DIRECT_REUSE_L1=1
+      HZ6_LOCAL_CACHE_DIRECT_FREE_L1=1
+      HZ6_LOCAL_CACHE_TRUSTED_OWNER_L1=1
+      HZ6_TOY_SMALL_ACTIVE_FREE_MAP_L1=1
+      HZ6_TOY_SMALL_ACTIVE_MAP_TRUSTED_OWNER_L1=1
+      HZ6_LOCAL_CACHE_DIRECT_MAX_CLASS=4
+    It is a strong Ubuntu candidate-control, not default: focused repeat-5
+    wins 256B..8K massively, but 16K regresses.  Guard repeat-10:
+      4K speed +142.92%, strict +65.38%
+      8K speed +56.62%, strict +21.95%
+      16K speed -4.44%, strict -2.46%
+    Keep this as a selected-small/Toy-low evidence lane until a cleaner
+    boundary avoids the 16K code/layout regression.
+    The max3 boundary was no-go: it loses 4K/8K and still does not protect 16K
+    enough.
+    Result dirs:
+      linux/results/hz6_toy_directmap_trusted_off_20260613_focus
+      linux/results/hz6_toy_directmap_trusted_on_20260613_focus
+      linux/results/hz6_toy_directmap_trusted_off_20260613_guard_r10
+      linux/results/hz6_toy_directmap_trusted_on_20260613_guard_r10
+      linux/results/hz6_toy_directmap_trusted_max3_20260613_guard_r10
 
 ```text
 LargeDirect:

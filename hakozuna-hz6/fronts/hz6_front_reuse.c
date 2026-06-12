@@ -1,5 +1,7 @@
 #include "hz6_front_util.h"
 
+#include "../api/hz6_allocator_toy_small_diag.h"
+
 static void* hz6_front_materialize_descriptorless_entry(
     Hz6Allocator* allocator,
     uint16_t front_id,
@@ -144,6 +146,8 @@ void* hz6_front_reuse_cached_or_transfer(Hz6Allocator* allocator,
 
   Hz6FrontCacheEntry entry;
   while (hz6_allocator_frontcache_pop(allocator, class_id, &entry)) {
+    hz6_toy_small_hotpath_diag_malloc_frontcache_pop(allocator, front_id,
+                                                     class_id);
     if (!entry.descriptor) {
       void* materialized = hz6_front_materialize_descriptorless_entry(
           allocator, front_id, class_id, entry, path);
@@ -163,6 +167,8 @@ void* hz6_front_reuse_cached_or_transfer(Hz6Allocator* allocator,
 #if HZ6_DIAGNOSTIC_PROBES
       ++allocator->stats.frontcache_reuse_hit;
 #endif
+      hz6_toy_small_hotpath_diag_malloc_activate_success(allocator, front_id,
+                                                         class_id);
       if (path) {
         *path = HZ6_ALLOC_PATH_LOCAL_REUSE;
       } else {
@@ -201,6 +207,8 @@ void* hz6_front_reuse_transfer_or_cached(Hz6Allocator* allocator,
 
   Hz6FrontCacheEntry entry;
   while (hz6_allocator_frontcache_pop(allocator, class_id, &entry)) {
+    hz6_toy_small_hotpath_diag_malloc_frontcache_pop(allocator, front_id,
+                                                     class_id);
     if (!entry.descriptor) {
       void* materialized = hz6_front_materialize_descriptorless_entry(
           allocator, front_id, class_id, entry, path);
@@ -220,6 +228,8 @@ void* hz6_front_reuse_transfer_or_cached(Hz6Allocator* allocator,
 #if HZ6_DIAGNOSTIC_PROBES
       ++allocator->stats.frontcache_reuse_hit;
 #endif
+      hz6_toy_small_hotpath_diag_malloc_activate_success(allocator, front_id,
+                                                         class_id);
       if (path) {
         *path = HZ6_ALLOC_PATH_LOCAL_REUSE;
       } else {

@@ -263,6 +263,12 @@
 #define HZ6_TOY_SMALL_ACTIVE_FREE_MAP_PROBE_LIMIT ((size_t)4)
 #endif
 
+#ifndef HZ6_TOY_SMALL_ACTIVE_MAP_TRUSTED_OWNER_L1
+/* Candidate-only active-map shortcut.  The map is allocator-local and validates
+ * descriptor pointer/generation/state before bypassing the owner comparison. */
+#define HZ6_TOY_SMALL_ACTIVE_MAP_TRUSTED_OWNER_L1 0
+#endif
+
 #ifndef HZ6_TOY_CLASS_ID_FAST_ALLOC_L1
 /* Candidate Toy alloc shortcut.  hz6_malloc() already selected class_id, so
  * Toy alloc can validate size against class bytes instead of classifying again. */

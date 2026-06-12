@@ -314,6 +314,10 @@ typedef struct Hz6StatsSnapshot {
   size_t toy_small_free_fast_hit;
   size_t toy_small_free_cache_push;
   size_t toy_small_activate_descriptor;
+  size_t toy_small_malloc_frontcache_pop;
+  size_t toy_small_malloc_activate_success;
+  size_t toy_small_free_cache_attempt;
+  size_t toy_small_free_cache_success;
   size_t toy_small_active_map_register;
   size_t toy_small_active_map_register_collision;
   size_t toy_small_active_map_free_attempt;

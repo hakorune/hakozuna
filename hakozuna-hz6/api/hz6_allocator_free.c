@@ -268,6 +268,8 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
                    (route.front_id == HZ6_FRONT_TOY ||
                     route.front_id == HZ6_FRONT_MIDPAGE ||
                     route.front_id == HZ6_FRONT_LOCAL2P)) {
+          hz6_toy_small_hotpath_diag_free_cache_attempt(
+              allocator, route.front_id, route.class_id);
 #if HZ6_LOCAL_CACHE_TRUSTED_OWNER_L1
           ok = hz6_allocator_cache_active_descriptor_trusted_owner(
               allocator, descriptor, ptr);
@@ -284,6 +286,8 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
                 allocator, route.front_id, route.class_id);
             hz6_toy_small_hotpath_diag_free_cache_push(
                 allocator, route.front_id, route.class_id);
+            hz6_toy_small_hotpath_diag_free_cache_success(
+                allocator, route.front_id, route.class_id);
           }
 #if HZ6_DIAGNOSTIC_PROBES
           if (!ok) {
@@ -294,10 +298,14 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
 #endif
 #endif
         } else if (local_owner) {
+          hz6_toy_small_hotpath_diag_free_cache_attempt(
+              allocator, route.front_id, route.class_id);
           ok = front->free_tagged &&
                front->free_tagged(allocator, ptr, route);
           if (ok) {
             hz6_toy_small_hotpath_diag_free_cache_push(
+                allocator, route.front_id, route.class_id);
+            hz6_toy_small_hotpath_diag_free_cache_success(
                 allocator, route.front_id, route.class_id);
           }
 #if HZ6_DIAGNOSTIC_PROBES

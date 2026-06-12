@@ -126,6 +126,70 @@ static inline void hz6_toy_small_hotpath_diag_free_cache_push(
 #endif
 }
 
+static inline void hz6_toy_small_hotpath_diag_malloc_frontcache_pop(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id) {
+#if HZ6_DIAGNOSTIC_PROBES && HZ6_TOY_SMALL_HOTPATH_DIAG_L1
+  if (allocator && hz6_toy_small_hotpath_diag_is_toy_small(front_id,
+                                                           class_id)) {
+    ++allocator->stats.toy_small_malloc_frontcache_pop;
+  }
+#else
+  (void)allocator;
+  (void)front_id;
+  (void)class_id;
+#endif
+}
+
+static inline void hz6_toy_small_hotpath_diag_malloc_activate_success(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id) {
+#if HZ6_DIAGNOSTIC_PROBES && HZ6_TOY_SMALL_HOTPATH_DIAG_L1
+  if (allocator && hz6_toy_small_hotpath_diag_is_toy_small(front_id,
+                                                           class_id)) {
+    ++allocator->stats.toy_small_malloc_activate_success;
+  }
+#else
+  (void)allocator;
+  (void)front_id;
+  (void)class_id;
+#endif
+}
+
+static inline void hz6_toy_small_hotpath_diag_free_cache_attempt(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id) {
+#if HZ6_DIAGNOSTIC_PROBES && HZ6_TOY_SMALL_HOTPATH_DIAG_L1
+  if (allocator && hz6_toy_small_hotpath_diag_is_toy_small(front_id,
+                                                           class_id)) {
+    ++allocator->stats.toy_small_free_cache_attempt;
+  }
+#else
+  (void)allocator;
+  (void)front_id;
+  (void)class_id;
+#endif
+}
+
+static inline void hz6_toy_small_hotpath_diag_free_cache_success(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id) {
+#if HZ6_DIAGNOSTIC_PROBES && HZ6_TOY_SMALL_HOTPATH_DIAG_L1
+  if (allocator && hz6_toy_small_hotpath_diag_is_toy_small(front_id,
+                                                           class_id)) {
+    ++allocator->stats.toy_small_free_cache_success;
+  }
+#else
+  (void)allocator;
+  (void)front_id;
+  (void)class_id;
+#endif
+}
+
 static inline size_t hz6_toy_small_active_map_index(const void* ptr) {
   uintptr_t key = (uintptr_t)ptr >> 4u;
   key ^= key >> 17u;
@@ -247,15 +311,20 @@ static inline int hz6_toy_small_active_map_try_free(Hz6Allocator* allocator,
   }
 
   Hz6ObjectDescriptor* descriptor = entry->descriptor;
+  int owner_ok = 1;
+#if !HZ6_TOY_SMALL_ACTIVE_MAP_TRUSTED_OWNER_L1
+  owner_ok = descriptor &&
+             hz6_allocator_descriptor_owner_equal_at(
+                 allocator, descriptor, allocator->owner.token,
+                 HZ6_OWNER_EQUAL_SITE_FREE);
+#endif
   if (!descriptor || descriptor->ptr != ptr ||
       descriptor->generation != entry->generation ||
       descriptor->class_id != entry->class_id ||
       descriptor->state != HZ6_STATE_ACTIVE ||
       !hz6_toy_small_hotpath_diag_is_toy_small(entry->front_id,
                                                entry->class_id) ||
-      !hz6_allocator_descriptor_owner_equal_at(
-          allocator, descriptor, allocator->owner.token,
-          HZ6_OWNER_EQUAL_SITE_FREE)) {
+      !owner_ok) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.toy_small_active_map_free_stale;
 #endif
@@ -277,8 +346,10 @@ static inline int hz6_toy_small_active_map_try_free(Hz6Allocator* allocator,
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.toy_small_active_map_free_hit;
   ++allocator->stats.toy_small_active_map_route_bypass;
+#if !HZ6_TOY_SMALL_ACTIVE_MAP_TRUSTED_OWNER_L1
   hz6_toy_small_hotpath_diag_free_owner_equal(
       allocator, HZ6_FRONT_TOY, descriptor->class_id);
+#endif
   hz6_toy_small_hotpath_diag_free_fast_hit(
       allocator, HZ6_FRONT_TOY, descriptor->class_id);
   hz6_toy_small_hotpath_diag_free_cache_push(

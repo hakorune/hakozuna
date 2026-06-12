@@ -364,6 +364,30 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.owner_equal_site_owner_dead,
          stats.owner_equal_site_same_owner_fast,
          stats.owner_equal_site_unknown);
+  printf("[HZ6_TOY_SMALL] "
+         "malloc_fast_attempt=%zu malloc_fast_hit=%zu "
+         "malloc_front_dispatch=%zu malloc_frontcache_pop=%zu "
+         "malloc_activate_success=%zu "
+         "free_route_lookup=%zu free_owner_equal=%zu "
+         "free_fast_hit=%zu free_cache_push=%zu "
+         "free_cache_attempt=%zu free_cache_success=%zu "
+         "active_map_register=%zu active_map_free_attempt=%zu "
+         "active_map_free_hit=%zu active_map_route_bypass=%zu\n",
+         stats.toy_small_malloc_fast_attempt,
+         stats.toy_small_malloc_fast_hit,
+         stats.toy_small_malloc_front_dispatch,
+         stats.toy_small_malloc_frontcache_pop,
+         stats.toy_small_malloc_activate_success,
+         stats.toy_small_free_route_lookup,
+         stats.toy_small_free_owner_equal,
+         stats.toy_small_free_fast_hit,
+         stats.toy_small_free_cache_push,
+         stats.toy_small_free_cache_attempt,
+         stats.toy_small_free_cache_success,
+         stats.toy_small_active_map_register,
+         stats.toy_small_active_map_free_attempt,
+         stats.toy_small_active_map_free_hit,
+         stats.toy_small_active_map_route_bypass);
   printf("[HZ6_SOURCE_BLOCK_ROUTE] attempt=%zu block_hit=%zu slot_hit=%zu "
          "descriptor_hit=%zu miss_no_block=%zu invalid_alignment=%zu "
          "invalid_unused=%zu descriptor_miss=%zu class_mismatch=%zu "
