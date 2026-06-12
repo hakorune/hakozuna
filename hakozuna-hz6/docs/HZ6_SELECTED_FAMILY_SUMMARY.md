@@ -31,6 +31,11 @@ The later solo strength repeat-7 narrows that read: local 256B..4K stays very
 strong at +30%..+68% versus directmap-off, local 8K is +13%..+22%, 16K is
 mostly neutral, and 64K/128K show a small -1%..-6% drag. Treat it as the
 small/local Ubuntu default, not as a universal large-size win.
+`hz6` is also wired as an experimental Linux LD_PRELOAD allocator for the
+generic compare runner.  It is smoke-clean and useful for harness parity, but
+not selected performance evidence yet; current mixed_ws preload rows are
+dominated by preload ownership/route overhead and should not be compared
+against the direct HZ6 API strength rows.
 
 ## Selected Rows
 

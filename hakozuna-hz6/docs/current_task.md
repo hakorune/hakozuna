@@ -208,6 +208,43 @@ Route lookup closeout:
       linux/results/hz6_toy_directmap_trusted_on_20260613_guard_r10
       linux/results/hz6_toy_directmap_trusted_max3_20260613_guard_r10
 
+Ubuntu LD_PRELOAD lane:
+  - Added `hakozuna-hz6/linux/build_hz6_preload.sh`, which builds:
+      hakozuna-hz6/out/linux/hz6_preload/libhakozuna_hz6_preload.so
+  - Added `hakozuna-hz6/preload/hz6_preload.c` with Linux preload symbols
+    for malloc/free/calloc/realloc/posix_memalign/aligned_alloc and
+    malloc_usable_size.
+  - `bench/lib/bench_common.sh` now recognizes allocator name `hz6`, and
+    `linux/run_linux_bench_compare_matrix.sh --allocators ...,hz6,...` builds
+    the HZ6 preload lane before compare runs.
+  - Important preload build constraints:
+      `-ftls-model=initial-exec` is required for LD_PRELOAD startup because
+      dynamic TLS lookup can re-enter allocation hooks.
+      `-fno-builtin` is required because GCC can fold `malloc()+memset()` in
+      the interposed calloc implementation back into `calloc@plt`, causing
+      self-recursion at `-O2`.
+  - Smoke / connection checks:
+      `/bin/true` under LD_PRELOAD passes.
+      `bench_mixed_ws_crt 1 1 1 16 16` under LD_PRELOAD passes.
+      `bench_mixed_ws_crt 1 1000 128 16 1024` under LD_PRELOAD passes.
+      `run_linux_bench_compare.sh --allocators system,hz6` resolves and runs.
+  - Current performance read:
+      This is a functional comparison lane, not a promoted HZ6 performance
+      lane yet.  A single-run mixed_ws check at `4 100000 8192 16 1024`
+      measured:
+        system   25.093M ops/s / 18,668 KB
+        hz3      66.998M ops/s / 25,216 KB
+        hz4      52.206M ops/s / 30,208 KB
+        hz6       0.236M ops/s / 19,588 KB
+        tcmalloc 62.690M ops/s / 24,960 KB
+      Result dir:
+        private/raw-results/linux/hz6_preload_mixed_ws_r1
+    Read:
+      HZ6 direct API remains the strength path today.  The LD_PRELOAD lane
+      proves integration and gives a place to optimize ownership routing, but
+      do not use this row as HZ6 strength evidence until preload free/route
+      overhead is reduced.
+
 ```text
 LargeDirect:
   closed for now.

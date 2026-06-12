@@ -125,6 +125,20 @@ bench_find_hz5_library() {
     "${ROOT_DIR}/hakozuna-hz5/out/linux/hz5-preload-hybrid-smoke/libhakozuna_hz5_preload_hybrid.so"
 }
 
+bench_find_hz6_library() {
+  local arch
+  arch="$(uname -m)"
+  case "${arch}" in
+    amd64) arch="x86_64" ;;
+    arm64) arch="arm64" ;;
+  esac
+
+  bench_find_first_existing \
+    "${HZ6_PRELOAD_SO:-}" \
+    "${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_preload/libhakozuna_hz6_preload.so" \
+    "${ROOT_DIR}/hakozuna-hz6/out/linux/${arch}-hz6-preload/libhakozuna_hz6_preload.so"
+}
+
 bench_find_allocator_library() {
   local allocator="$1"
 
@@ -150,6 +164,9 @@ bench_find_allocator_library() {
       ;;
     hz5)
       bench_find_hz5_library
+      ;;
+    hz6)
+      bench_find_hz6_library
       ;;
     hakorune-mimalloc|hakorune_mimalloc)
       bench_find_hakorune_mimalloc_library
@@ -186,6 +203,9 @@ bench_print_allocator_hints() {
       ;;
     hz5)
       echo "hint: build the HZ5 preload full lane with './linux/build_linux_hz5_preload_full.sh' or set HZ5_PRELOAD_FULL_SO" >&2
+      ;;
+    hz6)
+      echo "hint: build the HZ6 preload lane with './hakozuna-hz6/linux/build_hz6_preload.sh' or set HZ6_PRELOAD_SO" >&2
       ;;
     hz3)
       echo "hint: build hz3 first, for example './linux/build_linux_release_lane.sh' or './mac/build_mac_release_lane.sh'" >&2

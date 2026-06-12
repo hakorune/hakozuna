@@ -15,7 +15,7 @@ Usage:
 Options:
   --arch <arch>             override detected arch (default: auto)
   --allocators LIST         comma-separated allocator list
-  --skip-allocator-builds   reuse existing hz3/hz4/hz5 builds
+  --skip-allocator-builds   reuse existing hz3/hz4/hz5/hz6 builds
   --help                    show this message
 
 All remaining options are forwarded to ./linux/run_linux_bench_compare.sh.
@@ -63,6 +63,9 @@ echo "[linux] allocators: $ALLOCATORS"
 if [[ "$SKIP_ALLOCATOR_BUILDS" -ne 1 ]]; then
   "${ROOT_DIR}/linux/build_linux_release_lane.sh" --arch "$ARCH"
   "${ROOT_DIR}/linux/build_linux_hz5_preload_full.sh" --arch "$ARCH"
+  if [[ ",${ALLOCATORS}," == *",hz6,"* ]]; then
+    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh"
+  fi
 fi
 
 exec "${ROOT_DIR}/linux/run_linux_bench_compare.sh" \
