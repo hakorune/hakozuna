@@ -244,6 +244,28 @@ Ubuntu LD_PRELOAD lane:
       proves integration and gives a place to optimize ownership routing, but
       do not use this row as HZ6 strength evidence until preload free/route
       overhead is reduced.
+  - First preload tightening pass:
+      perf showed the initial lane was dominated by OS `mmap/munmap` churn.
+      The preload build now uses larger compare-lane defaults:
+        route table 32768
+        descriptors 32768
+        source blocks 4096
+        frontcache bin 1024
+        Toy active map 32768
+        route xor-fold + linear-wrap + loop-carry
+      Single-run mixed_ws at `4 100000 8192 16 1024` improved HZ6 preload:
+        before 0.236M ops/s / 19,588 KB
+        after  0.557M ops/s / 59,176 KB
+      Result dir:
+        private/raw-results/linux/hz6_preload_capacity_route_default_r1
+      perf after this pass shows the next pressure point is
+      `hz6_route_register_exact`, not OS mmap.
+  - Rejected preload probe:
+      SourceBlockRoute exact-skip was tested with range-index, dynamic slot
+      descriptor map, late register, behavior, and exact-skip.  It regressed
+      mixed_ws to 0.230M ops/s because source-block route lookup overhead was
+      larger than the exact-register reduction.  Do not promote this preload
+      composition without a different route registration design.
 
 ```text
 LargeDirect:
