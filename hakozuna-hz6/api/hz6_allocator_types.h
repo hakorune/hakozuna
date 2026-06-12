@@ -304,6 +304,16 @@ typedef struct Hz6ToySmallActiveMapEntry {
 } Hz6ToySmallActiveMapEntry;
 #endif
 
+#if HZ6_ROUTE_LAST_HIT_CACHE_L1
+typedef struct Hz6RouteLastHitCache {
+  void* base;
+  void* descriptor;
+  uint32_t generation;
+  uint16_t front_id;
+  uint16_t class_id;
+} Hz6RouteLastHitCache;
+#endif
+
 struct Hz6Allocator {
   Hz6ProfileConfig profile;
   Hz6OwnerRecord owner;
@@ -312,6 +322,9 @@ struct Hz6Allocator {
   Hz6RouteBytesStorage route_bytes[HZ6_ROUTE_TABLE_CAPACITY];
 #endif
   Hz6RouteBackend route_backend;
+#if HZ6_ROUTE_LAST_HIT_CACHE_L1
+  Hz6RouteLastHitCache route_last_hit;
+#endif
   Hz6TransferObject transfer_objects[HZ6_TRANSFER_CACHE_CAPACITY];
   Hz6TransferBackend transfer_backend;
   Hz6LargeSpanPool large_span_pool;

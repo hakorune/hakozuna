@@ -117,6 +117,27 @@ Route lookup closeout:
   - page-seed hashing was also checked against the same 1k diagnostic run.
     `page_exact_page_seed_probe_total` matched the address-seeded hash probe
     counts, so changing the seed alone is not the next win.
+  - LastHitRouteCache-L1 is now selected/default on Ubuntu.  It caches the
+    most recent exact route per allocator, fills on successful exact register
+    or lookup, clears on exact unregister, and validates descriptor pointer,
+    generation, state, and source-block liveness before returning VALID.
+    It keeps `HZ6_ROUTE_LAST_HIT_CACHE_L1=0` as the explicit control-off lane.
+  - Diagnostic 1k check with LastHitRouteCache-L1:
+      remote 131072 speed: last_hit_attempt=1000, last_hit_hit=1000,
+      stale=0, route_lookup_probe_total=0.
+      reuse 131072 speed: last_hit_attempt=2000, last_hit_hit=2000,
+      stale=0, route_lookup_probe_total=0.
+  - Focused repeat-5, default-on versus `HZ6_ROUTE_LAST_HIT_CACHE_L1=0`,
+    median ops/s deltas:
+      local strict 8192 +25.30%, local strict 65536 +30.14%
+      local speed 8192 +19.82%, local speed 65536 +21.84%
+      remote speed 131072 +34.05%, remote rss 131072 +27.69%,
+      remote remote 131072 +37.61%
+      reuse speed 131072 +41.37%, reuse rss 131072 +38.02%,
+      reuse remote 131072 +38.94%
+    Result dirs:
+      linux/results/hz6_last_hit_off_20260613_focus2
+      linux/results/hz6_last_hit_on_20260613_focus2
 
 ```text
 LargeDirect:

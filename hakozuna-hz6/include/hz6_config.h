@@ -219,6 +219,12 @@
 #define HZ6_ROUTE_PACKED_META_L1 0
 #endif
 
+#ifndef HZ6_ROUTE_LAST_HIT_CACHE_L1
+/* Candidate exact-route shortcut.  The cache is invalidated on route mutation
+ * and validates descriptor generation/state before returning VALID. */
+#define HZ6_ROUTE_LAST_HIT_CACHE_L1 1
+#endif
+
 #ifndef HZ6_ROUTE_BYTES16_MINUS1_L2
 #define HZ6_ROUTE_BYTES16_MINUS1_L2 0
 #endif
