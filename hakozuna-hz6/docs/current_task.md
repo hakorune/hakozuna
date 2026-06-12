@@ -138,6 +138,19 @@ Route lookup closeout:
     Result dirs:
       linux/results/hz6_last_hit_off_20260613_focus2
       linux/results/hz6_last_hit_on_20260613_focus2
+  - LargeSpanTrustedLocalFree-L1 was tested as a follow-up to remove the
+    LargeSpan local-free owner_equal recheck after `hz6_free()` had already
+    proven local ownership.  Keep it default-off/control, not selected:
+      focused repeat-5 is mixed after LastHitRouteCache-L1
+      local speed 8192 -2.05%, local speed 65536 -1.92%
+      remote speed 131072 -1.78%, remote rss 131072 +3.53%
+      reuse speed 131072 +0.33%, reuse remote 131072 -2.35%
+    The diagnostic path confirms owner_equal can be removed, but the
+    throughput signal is not broad enough to promote.  Do not chase owner
+    checks here again before fresh attribution shows they dominate.
+    Result dirs:
+      linux/results/hz6_large_trusted_off_20260613_focus
+      linux/results/hz6_large_trusted_on_20260613_focus
 
 ```text
 LargeDirect:

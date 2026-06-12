@@ -37,6 +37,12 @@
   HZ6_LARGE_SPAN_CENTRAL_CLASS_BYTES_CAP
 #endif
 
+#ifndef HZ6_LARGE_SPAN_TRUSTED_LOCAL_FREE_L1
+/* Candidate-only LargeSpan local free shortcut.  hz6_free() has already
+ * routed local frees through the local-owner branch before calling the front. */
+#define HZ6_LARGE_SPAN_TRUSTED_LOCAL_FREE_L1 0
+#endif
+
 #ifndef HZ6_TRANSFER_SHARD_COUNT
 #define HZ6_TRANSFER_SHARD_COUNT ((size_t)4)
 #endif

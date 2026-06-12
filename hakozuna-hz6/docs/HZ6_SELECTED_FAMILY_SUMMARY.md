@@ -7,6 +7,13 @@ experiment ledger.
 For cleanup rules and the next source modularization target, see
 `HZ6_REPO_HYGIENE.md` and `HZ6_SOURCE_MODULARIZATION.md`.
 
+Ubuntu note:
+`HZ6_ROUTE_LAST_HIT_CACHE_L1=1` is now the Linux/Ubuntu default route shortcut.
+It is not a Windows selected-family lane name; it is a default HZ6 knob with an
+explicit `HZ6_ROUTE_LAST_HIT_CACHE_L1=0` control-off lane.  Focused repeat-5 on
+Ubuntu improved local 8K/64K by +16%..+30%, remote 128K by +27%..+38%, and
+reuse 128K by +38%..+41% versus control-off while keeping R1 smoke clean.
+
 ## Selected Rows
 
 | Family | Selected lane | Median ops/s | Peak KB | Status |
