@@ -342,6 +342,19 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.large_span_central_push, stats.large_span_central_pop,
          stats.large_span_source_alloc);
 #if HZ6_DIAGNOSTIC_PROBES
+  printf("[HZ6_OWNER_EQUAL] free=%zu remote_free=%zu local_cache=%zu "
+         "visible_lookup=%zu transfer_locality=%zu large_central=%zu "
+         "remote_pending=%zu owner_dead=%zu same_owner_fast=%zu unknown=%zu\n",
+         stats.owner_equal_site_free,
+         stats.owner_equal_site_remote_free,
+         stats.owner_equal_site_local_cache,
+         stats.owner_equal_site_visible_lookup,
+         stats.owner_equal_site_transfer_locality,
+         stats.owner_equal_site_large_central,
+         stats.owner_equal_site_remote_pending,
+         stats.owner_equal_site_owner_dead,
+         stats.owner_equal_site_same_owner_fast,
+         stats.owner_equal_site_unknown);
   printf("[HZ6_SOURCE_BLOCK_ROUTE] attempt=%zu block_hit=%zu slot_hit=%zu "
          "descriptor_hit=%zu miss_no_block=%zu invalid_alignment=%zu "
          "invalid_unused=%zu descriptor_miss=%zu class_mismatch=%zu "

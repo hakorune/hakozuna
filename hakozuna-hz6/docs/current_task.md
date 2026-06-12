@@ -73,6 +73,30 @@ Rejected follow-up probes:
     adopted.  A full run improved remote rows but hurt reuse/local, and a
     focused remote/reuse run did not confirm a stable win.
 
+Observation pass:
+  - Added a diagnostic-only Linux build path through existing scripts:
+      OUT_DIR=... HZ6_EXTRA_CFLAGS='-DHZ6_DIAGNOSTIC_PROBES=1 ...'
+      HZ6_BENCH_BIN=...
+  - Added [HZ6_OWNER_EQUAL] output to the HZ6 benchmark when diagnostics are
+    enabled.
+  - Remote/reuse diagnostic result:
+      hakozuna-hz6/private/raw-results/linux/hz6_diag_owner_equal_20260612_225536
+  - Remote mode at 131072 bytes:
+      owner_equal counters are all zero.
+      route_lookup_probe_total equals one lookup per remote free.
+      large_span_central_push=iters and large_span_central_pop=iters-1.
+  - Reuse mode at 131072 bytes:
+      owner_equal large_central=iters.
+      large_span_central_push=iters and large_span_central_pop=iters.
+      One descriptor remains in local_free/frontcache at the end.
+  - Read:
+      remote mode is not paying owner_equal; the hot work is exact route
+      lookup plus large span central push/pop.
+      reuse mode pays one large_central owner_equal per iteration on the final
+      local free of the reused large span.  Previous attempt to bypass this
+      broadly was not stable, so the next probe should isolate the final
+      local-free large-central path instead of changing remote rehome.
+
 ```text
 LargeDirect:
   closed for now.

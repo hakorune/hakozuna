@@ -2,9 +2,10 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-OUT_DIR="${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_benchmark"
+OUT_DIR="${OUT_DIR:-${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_benchmark}"
 CC_BIN="${CC:-cc}"
 HZ6_DIR="${ROOT_DIR}/hakozuna-hz6"
+HZ6_EXTRA_CFLAGS="${HZ6_EXTRA_CFLAGS:-}"
 
 mkdir -p "$OUT_DIR"
 
@@ -140,6 +141,12 @@ for include_dir in "${HZ6_INCLUDES[@]}"; do
   HZ6_INCLUDE_FLAGS+=("-I${include_dir}")
 done
 
+HZ6_EXTRA_CFLAGS_ARRAY=()
+if [[ -n "${HZ6_EXTRA_CFLAGS}" ]]; then
+  # shellcheck disable=SC2206
+  HZ6_EXTRA_CFLAGS_ARRAY=(${HZ6_EXTRA_CFLAGS})
+fi
+
 command -v "$CC_BIN" >/dev/null 2>&1 || {
   echo "compiler not found in PATH: $CC_BIN" >&2
   exit 1
@@ -152,6 +159,7 @@ command -v "$CC_BIN" >/dev/null 2>&1 || {
 
 echo "[linux][hz6] building benchmark: ${BENCH_BIN}"
 "$CC_BIN" -std=c11 -Wall -Wextra -Werror -O2 -D_POSIX_C_SOURCE=200809L \
+  "${HZ6_EXTRA_CFLAGS_ARRAY[@]}" \
   "${HZ6_INCLUDE_FLAGS[@]}" \
   "${HZ6_LIB_SOURCES[@]}" \
   "$BENCH_SOURCE" \

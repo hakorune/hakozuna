@@ -76,7 +76,7 @@ if [[ "$SKIP_BUILD" -ne 1 ]]; then
   "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_benchmark.sh" --arch "$ARCH"
 fi
 
-BENCH_BIN="${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_benchmark/hz6_allocator_bench"
+BENCH_BIN="${HZ6_BENCH_BIN:-${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_benchmark/hz6_allocator_bench}"
 if [[ ! -x "$BENCH_BIN" ]]; then
   echo "[ERR] missing benchmark binary: $BENCH_BIN" >&2
   exit 3
