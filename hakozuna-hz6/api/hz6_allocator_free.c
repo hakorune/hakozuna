@@ -4,6 +4,11 @@
 
 #include "../fronts/hz6_front.h"
 
+static void hz6_free_route_dispatch(Hz6Allocator* allocator,
+                                    void* ptr,
+                                    Hz6RouteResult route,
+                                    int visible_hit);
+
 void hz6_free(Hz6Allocator* allocator, void* ptr) {
   if (!allocator || !ptr) {
     return;
@@ -149,6 +154,29 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
     route = hz6_allocator_route_lookup_visible_after_local_miss(allocator, ptr);
     visible_hit = (route.kind != HZ6_ROUTE_MISS);
   }
+
+  hz6_free_route_dispatch(allocator, ptr, route, visible_hit);
+}
+
+void hz6_free_with_route_prechecked(Hz6Allocator* allocator,
+                                    void* ptr,
+                                    Hz6RouteResult route,
+                                    int visible_hit) {
+  if (!allocator || !ptr) {
+    return;
+  }
+
+  if (hz6_toy_small_active_map_try_free(allocator, ptr)) {
+    return;
+  }
+
+  hz6_free_route_dispatch(allocator, ptr, route, visible_hit);
+}
+
+static void hz6_free_route_dispatch(Hz6Allocator* allocator,
+                                    void* ptr,
+                                    Hz6RouteResult route,
+                                    int visible_hit) {
   switch (route.kind) {
     case HZ6_ROUTE_VALID:
       ++allocator->stats.route_valid;

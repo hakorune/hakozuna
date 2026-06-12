@@ -499,6 +499,12 @@
 #define HZ6_SOURCE_BLOCK_ROUTE_TOY_FRONT_L1 1
 #endif
 
+#ifndef HZ6_PRELOAD_FAST_FREE_L1
+/* Candidate-only LD_PRELOAD free shortcut.  Reuses the preload ownership route
+ * in HZ6's internal free dispatch instead of routing again in hz6_free(). */
+#define HZ6_PRELOAD_FAST_FREE_L1 0
+#endif
+
 #ifndef HZ6_SMALL_RUN_ROUTE_DRYRUN_L1
 /* Diagnostic-only probe for a future SmallRunFront/TinyRunRoute design. */
 #define HZ6_SMALL_RUN_ROUTE_DRYRUN_L1 0

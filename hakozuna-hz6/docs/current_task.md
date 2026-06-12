@@ -266,6 +266,36 @@ Ubuntu LD_PRELOAD lane:
       mixed_ws to 0.230M ops/s because source-block route lookup overhead was
       larger than the exact-register reduction.  Do not promote this preload
       composition without a different route registration design.
+  - PreloadFastFree-L1 candidate/control:
+      Do not have preload call `front->free_tagged()` directly; that bypasses
+      `hz6_free()` policy and already regressed.  Instead split `hz6_free()`
+      so the route policy body is shared:
+        hz6_free()
+          active-map fast path
+          route construction
+          route dispatch
+        hz6_free_with_route_prechecked()
+          active-map fast path
+          route dispatch using the caller-provided route
+      The preload `free()` path can then reuse its ownership route lookup and
+      avoid the second route lookup inside `hz6_free()`, while keeping
+      local/remote/rehome/stats policy in HZ6 API code.
+      Implementation:
+        `hz6_free_with_route_prechecked()` is available for explicit
+        `HZ6_PRELOAD_FAST_FREE_L1=1` builds.
+      Result:
+        R1 smokes, `/bin/true`, and small mixed_ws passed.
+        mixed_ws `4 100000 8192 16 1024` did not improve:
+          single-run 0.506M ops/s / 59,444 KB
+          repeat-3  0.515M, 0.417M, 0.502M ops/s
+        perf still showed `hz6_route_register_exact` at about 74%.
+        Default-off repeat-3 returned to the prior tuned-preload level:
+          0.566M, 0.546M, 0.560M ops/s
+          private/raw-results/linux/hz6_preload_fastfree_default_off_r3
+      Read:
+        The second free-side route lookup is not the active preload bottleneck
+        after capacity/probe-shape tuning.  Keep FastFree default-off/control
+        until a route-register fix makes free-side routing visible again.
 
 ```text
 LargeDirect:

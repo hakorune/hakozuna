@@ -83,6 +83,11 @@ typedef enum Hz6RouteUnregisterReason {
 void hz6_allocator_route_unregister_exact(Hz6Allocator* allocator,
                                           void* ptr);
 
+void hz6_free_with_route_prechecked(Hz6Allocator* allocator,
+                                    void* ptr,
+                                    Hz6RouteResult route,
+                                    int visible_hit);
+
 void hz6_allocator_route_unregister_exact_reason(
     Hz6Allocator* allocator,
     void* ptr,

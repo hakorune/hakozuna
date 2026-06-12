@@ -24,6 +24,11 @@ typedef int (*Hz6RealPosixMemalignFn)(void**, size_t, size_t);
 typedef void* (*Hz6RealAlignedAllocFn)(size_t, size_t);
 typedef size_t (*Hz6RealUsableSizeFn)(void*);
 
+typedef struct Hz6PreloadRoute {
+  Hz6RouteResult route;
+  int visible_hit;
+} Hz6PreloadRoute;
+
 static Hz6RealMallocFn g_real_malloc;
 static Hz6RealFreeFn g_real_free;
 static Hz6RealCallocFn g_real_calloc;
@@ -146,28 +151,32 @@ static Hz6Allocator* hz6_preload_allocator(void) {
   return allocator;
 }
 
-static Hz6RouteResult hz6_preload_route(Hz6Allocator* allocator,
-                                        const void* ptr) {
-  Hz6RouteResult route = hz6_route_miss();
+static Hz6PreloadRoute hz6_preload_route(Hz6Allocator* allocator,
+                                         const void* ptr) {
+  Hz6PreloadRoute preload_route = {0};
+  preload_route.route = hz6_route_miss();
   if (!allocator || !ptr) {
-    return route;
+    return preload_route;
   }
-  route = hz6_allocator_route_lookup(allocator, ptr);
-  if (route.kind == HZ6_ROUTE_MISS) {
-    route = hz6_allocator_route_lookup_visible_after_local_miss(allocator,
-                                                                ptr);
+  preload_route.route = hz6_allocator_route_lookup(allocator, ptr);
+  if (preload_route.route.kind == HZ6_ROUTE_MISS) {
+    preload_route.route =
+        hz6_allocator_route_lookup_visible_after_local_miss(allocator, ptr);
+    preload_route.visible_hit =
+        preload_route.route.kind != HZ6_ROUTE_MISS ? 1 : 0;
   }
-  return route;
+  return preload_route;
 }
 
 static size_t hz6_preload_usable_size(Hz6Allocator* allocator,
                                       const void* ptr) {
-  Hz6RouteResult route = hz6_preload_route(allocator, ptr);
-  if (route.kind != HZ6_ROUTE_VALID || !route.descriptor) {
+  Hz6PreloadRoute preload_route = hz6_preload_route(allocator, ptr);
+  if (preload_route.route.kind != HZ6_ROUTE_VALID ||
+      !preload_route.route.descriptor) {
     return 0;
   }
   const Hz6ObjectDescriptor* descriptor =
-      (const Hz6ObjectDescriptor*)route.descriptor;
+      (const Hz6ObjectDescriptor*)preload_route.route.descriptor;
   return descriptor->bytes;
 }
 
@@ -192,9 +201,15 @@ void free(void* ptr) {
   }
   g_hz6_preload_reentry = 1;
   Hz6Allocator* allocator = hz6_preload_allocator();
-  Hz6RouteResult route = hz6_preload_route(allocator, ptr);
-  if (route.kind == HZ6_ROUTE_VALID || route.kind == HZ6_ROUTE_INVALID) {
+  Hz6PreloadRoute preload_route = hz6_preload_route(allocator, ptr);
+  if (preload_route.route.kind == HZ6_ROUTE_VALID ||
+      preload_route.route.kind == HZ6_ROUTE_INVALID) {
+#if HZ6_PRELOAD_FAST_FREE_L1
+    hz6_free_with_route_prechecked(allocator, ptr, preload_route.route,
+                                   preload_route.visible_hit);
+#else
     hz6_free(allocator, ptr);
+#endif
   } else {
     hz6_preload_real_free(ptr);
   }
