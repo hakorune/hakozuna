@@ -47,6 +47,7 @@ int hz6_allocator_descriptor_source_meta(
     void** source_ptr,
     size_t* source_bytes,
     Hz6SourceReleaseFn* source_release) {
+  (void)allocator;
   if (!descriptor || !descriptor->ptr) {
     return 0;
   }

@@ -92,6 +92,7 @@ HZ6_LIB_SOURCES=(
   "${HZ6_DIR}/fronts/large/hz6_large128_front_central.c"
   "${HZ6_DIR}/fronts/large/hz6_large128_front_free.c"
   "${HZ6_DIR}/fronts/large/hz6_large128_front_ops.c"
+  "${HZ6_DIR}/fronts/large/hz6_large_span_class.c"
   "${HZ6_DIR}/fronts/local2p/hz6_local2p_front_alloc.c"
   "${HZ6_DIR}/fronts/local2p/hz6_local2p_front_free.c"
   "${HZ6_DIR}/fronts/local2p/hz6_local2p_front_prefill.c"
