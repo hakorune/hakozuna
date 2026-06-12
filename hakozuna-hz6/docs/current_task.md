@@ -65,6 +65,14 @@ Implemented follow-up:
     Result dir:
       hakozuna-hz6/private/raw-results/linux/hz6_benchmark_20260612_214857
 
+Rejected follow-up probes:
+  - Skipping the large local free owner_equal() when route_allocator matched
+    the current allocator was not adopted.  It did not improve the intended
+    local strict/speed rows in the follow-up run.
+  - Removing owner_equal() from hz6_free_remote() rehome eligibility was not
+    adopted.  A full run improved remote rows but hurt reuse/local, and a
+    focused remote/reuse run did not confirm a stable win.
+
 ```text
 LargeDirect:
   closed for now.
