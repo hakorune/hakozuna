@@ -183,7 +183,7 @@ Route lookup closeout:
     The default 10k diagnostic shows 256B/1K/4K local Toy rows still execute
     one malloc front dispatch/pop/activation and one free route/owner/cache
     sequence per iteration after LastHitRouteCache-L1 and ToyClassIdFastAlloc.
-  - ToyDirectMapTrusted was tested by composing:
+  - ToyDirectMapTrusted initial pre-transfer-guard read tested:
       HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1=1
       HZ6_LOCAL_CACHE_DIRECT_REUSE_L1=1
       HZ6_LOCAL_CACHE_DIRECT_FREE_L1=1
@@ -191,13 +191,14 @@ Route lookup closeout:
       HZ6_TOY_SMALL_ACTIVE_FREE_MAP_L1=1
       HZ6_TOY_SMALL_ACTIVE_MAP_TRUSTED_OWNER_L1=1
       HZ6_LOCAL_CACHE_DIRECT_MAX_CLASS=4
-    It is a strong Ubuntu candidate-control, not default: focused repeat-5
-    wins 256B..8K massively, but 16K regresses.  Guard repeat-10:
+    This first read was strong but not yet defaultable because focused repeat-5
+    won 256B..8K massively while 16K regressed.  Guard repeat-10:
       4K speed +142.92%, strict +65.38%
       8K speed +56.62%, strict +21.95%
       16K speed -4.44%, strict -2.46%
-    Keep this as a selected-small/Toy-low evidence lane until a cleaner
-    boundary avoids the 16K code/layout regression.
+    Superseded by the later Ubuntu default closeout below: transfer-first malloc
+    now tries transfer reuse before local-cache reuse, and the focused repeat-5
+    default guard is broadly positive including 16K.
     The max3 boundary was no-go: it loses 4K/8K and still does not protect 16K
     enough.
     Result dirs:

@@ -489,6 +489,8 @@ int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
                                           Hz6ObjectDescriptor* descriptor,
                                           void* ptr);
 
+/* Trusted-owner variants are for paths that already proved local ownership.
+ * They still validate pointer/generation/state but skip owner equality. */
 int hz6_allocator_cache_active_descriptor_trusted_owner(
     Hz6Allocator* allocator,
     Hz6ObjectDescriptor* descriptor,

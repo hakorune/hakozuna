@@ -12,6 +12,9 @@ void* hz6_front_reuse_transfer(Hz6Allocator* allocator,
                                uint16_t class_id,
                                Hz6AllocPath* path);
 
+/* Transfer-first reuse helper.  Returns NULL unless the allocator profile
+ * allows transfer-first reuse and a matching transfer object activates.  When
+ * non-NULL, out_descriptor receives the activated descriptor after any rehome. */
 void* hz6_front_reuse_transfer_with_descriptor(
     Hz6Allocator* allocator,
     uint16_t front_id,

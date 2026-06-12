@@ -226,7 +226,7 @@
 #endif
 
 #ifndef HZ6_ROUTE_LAST_HIT_CACHE_L1
-/* Candidate exact-route shortcut.  The cache is invalidated on route mutation
+/* Default exact-route shortcut.  The cache is invalidated on route mutation
  * and validates descriptor generation/state before returning VALID. */
 #define HZ6_ROUTE_LAST_HIT_CACHE_L1 1
 #endif
@@ -264,13 +264,13 @@
 #endif
 
 #ifndef HZ6_TOY_SMALL_ACTIVE_MAP_TRUSTED_OWNER_L1
-/* Candidate-only active-map shortcut.  The map is allocator-local and validates
+/* Default active-map shortcut.  The map is allocator-local and validates
  * descriptor pointer/generation/state before bypassing the owner comparison. */
 #define HZ6_TOY_SMALL_ACTIVE_MAP_TRUSTED_OWNER_L1 1
 #endif
 
 #ifndef HZ6_TOY_CLASS_ID_FAST_ALLOC_L1
-/* Candidate Toy alloc shortcut.  hz6_malloc() already selected class_id, so
+/* Default Toy alloc shortcut.  hz6_malloc() already selected class_id, so
  * Toy alloc can validate size against class bytes instead of classifying again. */
 #define HZ6_TOY_CLASS_ID_FAST_ALLOC_L1 1
 #endif
@@ -411,6 +411,9 @@
 #define HZ6_LOCAL_EXACT_FIRST_FREE_L1 0
 #endif
 
+/* ToyDirectMapTrusted max4 Linux/Ubuntu default:
+ * direct local free/alloc/reuse plus trusted local-cache ownership, bounded to
+ * a small inclusive class-id window. */
 #ifndef HZ6_LOCAL_CACHE_DIRECT_FREE_L1
 #define HZ6_LOCAL_CACHE_DIRECT_FREE_L1 1
 #endif
@@ -424,11 +427,12 @@
 #endif
 
 #ifndef HZ6_LOCAL_CACHE_DIRECT_MAX_CLASS
+/* Inclusive class-id gate.  The default max4 covers class IDs 0..4. */
 #define HZ6_LOCAL_CACHE_DIRECT_MAX_CLASS 4
 #endif
 
 #ifndef HZ6_LOCAL_CACHE_TRUSTED_OWNER_L1
-/* Candidate-only same-allocator local-cache shortcut.  Callers must already be
+/* Default same-allocator local-cache shortcut.  Callers must already be
  * on an allocator-owned frontcache path or have checked local ownership. */
 #define HZ6_LOCAL_CACHE_TRUSTED_OWNER_L1 1
 #endif

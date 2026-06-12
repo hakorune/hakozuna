@@ -76,6 +76,7 @@ static void* hz6_allocator_direct_local_alloc(Hz6Allocator* allocator,
     return NULL;
   }
   if (hz6_allocator_profile_transfer_first(allocator)) {
+    /* Preserve transfer-first semantics before bypassing front dispatch. */
     void* transfer_ptr = hz6_front_reuse_transfer_with_descriptor(
         allocator, front_id, class_id, NULL, out_descriptor);
     if (transfer_ptr) {
