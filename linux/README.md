@@ -14,10 +14,15 @@ Use it to keep Linux build and smoke commands in one place without mixing:
 - [build_linux_arm64_release_lane.sh](build_linux_arm64_release_lane.sh): explicit Ubuntu arm64 build wrapper
 - [build_linux_bench_compare.sh](build_linux_bench_compare.sh): build the Linux benchmark compare binary
 - [build_linux_arm64_bench_compare.sh](build_linux_arm64_bench_compare.sh): explicit Ubuntu arm64 benchmark build wrapper
+- [build_linux_hz6_benchmark.sh](build_linux_hz6_benchmark.sh): build the HZ6-only Linux benchmark binary
+- [build_linux_hz5_preload_full.sh](build_linux_hz5_preload_full.sh): build the HZ5 full-preload control lane
 - [build_linux_arm64_order_gate_release_lane.sh](build_linux_arm64_order_gate_release_lane.sh): explicit Ubuntu arm64 order-gate build wrapper for experimental tuning
 - [run_linux_preload_smoke.sh](run_linux_preload_smoke.sh): minimal `LD_PRELOAD` smoke runner for `hz3` and `hz4`
 - [run_linux_bench_compare.sh](run_linux_bench_compare.sh): build, prepare allocators, and run the Linux benchmark compare lane
+- [run_linux_bench_compare_matrix.sh](run_linux_bench_compare_matrix.sh): build the Linux allocator matrix for `hz3`, `hz4`, `hz5`, `mimalloc`, and `tcmalloc`
+- [run_linux_bench_remeasure_matrix.sh](run_linux_bench_remeasure_matrix.sh): run the compare matrix plus the standalone HZ6 Linux matrix
 - [run_linux_arm64_bench_compare.sh](run_linux_arm64_bench_compare.sh): explicit Ubuntu arm64 benchmark compare wrapper
+- [run_linux_hz6_benchmark.sh](run_linux_hz6_benchmark.sh): build and run the HZ6-only Linux benchmark matrix
 - [run_linux_arm64_order_gate_compare.sh](run_linux_arm64_order_gate_compare.sh): explicit Ubuntu arm64 order-gate compare wrapper for experimental tuning
 - [prepare_linux_bench_allocators.sh](prepare_linux_bench_allocators.sh): local `mimalloc` / `tcmalloc` cache prep for benchmark runs
 - [run_bench_compare.sh](run_bench_compare.sh): thin Linux frontend for the shared allocator compare runner
@@ -32,6 +37,9 @@ cd /path/to/hakozuna-win
 ./linux/run_linux_preload_smoke.sh hz3 /bin/true
 ./linux/run_linux_preload_smoke.sh hz4 /bin/true
 ./linux/run_linux_bench_compare.sh
+./linux/run_linux_bench_compare_matrix.sh
+./linux/run_linux_bench_remeasure_matrix.sh
+./linux/run_linux_hz6_benchmark.sh --runs 1
 ```
 
 ## Ubuntu Lane Split

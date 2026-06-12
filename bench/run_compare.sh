@@ -118,7 +118,15 @@ run_case() {
   if [[ "${alloc}" == "system" ]]; then
     "${BENCH_BIN}" "${bench_args[@]}" 2>&1 | tee -a "${log}"
   else
-    bench_run_with_allocator "${alloc}" "${lib_path}" "${BENCH_BIN}" "${bench_args[@]}" 2>&1 | tee -a "${log}"
+    case "${alloc}" in
+      hakorune-mimalloc|hakorune_mimalloc)
+        HAKORUNE_PROVIDER_LDPRELOAD_REPORT="${OUTDIR}/${run_id}_${alloc}.counts" \
+          bench_run_with_allocator "${alloc}" "${lib_path}" "${BENCH_BIN}" "${bench_args[@]}" 2>&1 | tee -a "${log}"
+        ;;
+      *)
+        bench_run_with_allocator "${alloc}" "${lib_path}" "${BENCH_BIN}" "${bench_args[@]}" 2>&1 | tee -a "${log}"
+        ;;
+    esac
   fi
 }
 

@@ -29,6 +29,11 @@ For local preparation and compare runs, use the Linux entrypoints:
 - `linux/prepare_linux_bench_allocators.sh`
 - `linux/build_linux_bench_compare.sh`
 - `linux/run_linux_bench_compare.sh`
+- `linux/build_linux_hz5_preload_full.sh`
+- `linux/run_linux_bench_compare_matrix.sh`
+- `linux/run_linux_bench_remeasure_matrix.sh`
+- `linux/build_linux_hz6_benchmark.sh`
+- `linux/run_linux_hz6_benchmark.sh`
 
 Template:
 

@@ -142,6 +142,15 @@ static unsigned __stdcall bench_thread(void* arg) {
 #else
 #include <pthread.h>
 #include <time.h>
+#include <sys/resource.h>
+
+static size_t peak_working_set_kb(void) {
+    struct rusage usage;
+    if (getrusage(RUSAGE_SELF, &usage) != 0) {
+        return 0;
+    }
+    return (size_t)usage.ru_maxrss;
+}
 
 static uint64_t now_ns(void) {
     struct timespec ts;

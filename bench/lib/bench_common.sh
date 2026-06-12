@@ -93,8 +93,36 @@ bench_find_tcmalloc_library() {
     "${TCMALLOC_SO:-}" \
     "$(bench_find_from_ldconfig 'libtcmalloc_minimal\\.so' || true)" \
     "$(bench_find_from_ldconfig 'libtcmalloc\\.so' || true)" \
+    "$(bench_find_private_linux_library libtcmalloc-minimal4 'libtcmalloc_minimal.so*' || true)" \
     "$(bench_find_private_linux_library libtcmalloc-minimal4t64 'libtcmalloc_minimal.so*' || true)" \
+    "$(bench_find_private_linux_library libgoogle-perftools4 'libtcmalloc.so*' || true)" \
     "$(bench_find_private_linux_library libgoogle-perftools4t64 'libtcmalloc.so*' || true)"
+}
+
+bench_find_hakorune_mimalloc_library() {
+  local provider_dir="${HAKORUNE_MIMALLOC_PROVIDER_DIR:-${ROOT_DIR}/private/bench-assets/linux/allocators/hakorune-mimalloc-provider/hakorune-mimalloc-provider}"
+
+  bench_find_first_existing \
+    "${HAKORUNE_MIMALLOC_LDPRELOAD_SO:-}" \
+    "${provider_dir}/libhakorune_provider_ldpreload.so" \
+    "${ROOT_DIR}/hakorune-mimalloc-provider/libhakorune_provider_ldpreload.so"
+}
+
+bench_find_hz5_library() {
+  local arch
+  arch="$(uname -m)"
+  case "${arch}" in
+    amd64) arch="x86_64" ;;
+    arm64) arch="arm64" ;;
+  esac
+
+  bench_find_first_existing \
+    "${HZ5_PRELOAD_FULL_SO:-}" \
+    "${HZ5_SO:-}" \
+    "${ROOT_DIR}/hakozuna-hz5/out/linux/${arch}-hz5-preload-full/libhakozuna_hz5_preload_full.so" \
+    "${ROOT_DIR}/hakozuna-hz5/out/linux/${arch}-hz5-preload-full/libhakozuna_hz5_preload_hybrid.so" \
+    "${ROOT_DIR}/hakozuna-hz5/out/linux/hz5-preload-full/libhakozuna_hz5_preload_full.so" \
+    "${ROOT_DIR}/hakozuna-hz5/out/linux/hz5-preload-hybrid-smoke/libhakozuna_hz5_preload_hybrid.so"
 }
 
 bench_find_allocator_library() {
@@ -120,6 +148,15 @@ bench_find_allocator_library() {
     tcmalloc)
       bench_find_tcmalloc_library
       ;;
+    hz5)
+      bench_find_hz5_library
+      ;;
+    hakorune-mimalloc|hakorune_mimalloc)
+      bench_find_hakorune_mimalloc_library
+      ;;
+    /*)
+      bench_find_first_existing "${allocator}"
+      ;;
     *)
       echo "unknown allocator: ${allocator}" >&2
       return 1
@@ -144,6 +181,12 @@ bench_print_allocator_hints() {
         echo "hint: install the distro gperftools / tcmalloc package, run './linux/prepare_linux_bench_allocators.sh', or set TCMALLOC_SO" >&2
       fi
       ;;
+    hakorune-mimalloc|hakorune_mimalloc)
+      echo "hint: extract hakorune-mimalloc-provider.zip under private/bench-assets/linux/allocators or set HAKORUNE_MIMALLOC_PROVIDER_DIR" >&2
+      ;;
+    hz5)
+      echo "hint: build the HZ5 preload full lane with './linux/build_linux_hz5_preload_full.sh' or set HZ5_PRELOAD_FULL_SO" >&2
+      ;;
     hz3)
       echo "hint: build hz3 first, for example './linux/build_linux_release_lane.sh' or './mac/build_mac_release_lane.sh'" >&2
       ;;
@@ -166,6 +209,19 @@ bench_run_with_allocator() {
   if bench_is_macos; then
     DYLD_INSERT_LIBRARIES="${lib_path}" "$@"
   else
-    env LD_PRELOAD="${lib_path}" "$@"
+    case "${allocator}" in
+      hakorune-mimalloc|hakorune_mimalloc)
+        local provider_dir
+        provider_dir="$(cd "$(dirname "${lib_path}")" && pwd)"
+        env \
+          HAKORUNE_PROVIDER_LIBRARY="${HAKORUNE_PROVIDER_LIBRARY:-${provider_dir}/libhakorune_provider.so}" \
+          HAKORUNE_PROVIDER_LDPRELOAD_REPORT="${HAKORUNE_PROVIDER_LDPRELOAD_REPORT:-${provider_dir}/ldpreload_counts.out}" \
+          LD_PRELOAD="${lib_path}" \
+          "$@"
+        ;;
+      *)
+        env LD_PRELOAD="${lib_path}" "$@"
+        ;;
+    esac
   fi
 }

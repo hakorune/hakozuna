@@ -71,30 +71,48 @@ download_and_extract() {
 
   mkdir -p "${archive_dir}" "${target_dir}"
   if ! find "${target_dir}" -type f | grep -q .; then
-    echo "[linux] downloading ${pkg}"
-    apt download "${pkg}" >/dev/null
+    echo "[linux] downloading ${pkg}" >&2
+    if ! apt download "${pkg}" >/dev/null 2>&1; then
+      return 1
+    fi
     local deb
     deb="$(ls -1 "${pkg}"_*.deb | tail -n 1)"
-    echo "[linux] extracting ${deb} -> ${target_dir}"
+    echo "[linux] extracting ${deb} -> ${target_dir}" >&2
     dpkg-deb -x "${deb}" "${target_dir}"
     rm -f "${deb}"
   fi
+  return 0
 }
 
 download_and_extract libmimalloc2.0
-download_and_extract libgoogle-perftools4t64
-download_and_extract libtcmalloc-minimal4t64
+
+download_and_extract_first_available() {
+  local pkg
+  for pkg in "$@"; do
+    if download_and_extract "${pkg}"; then
+      printf '%s\n' "${pkg}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+TCMALLOC_PKG="$(download_and_extract_first_available \
+  libtcmalloc-minimal4t64 \
+  libgoogle-perftools4t64 \
+  libtcmalloc-minimal4 \
+  libgoogle-perftools4)"
+if [[ -z "${TCMALLOC_PKG}" ]]; then
+  echo "failed to download a tcmalloc package" >&2
+  exit 1
+fi
 
 MIMALLOC_SO="$(find "${CACHE_DIR}/${ARCH}/libmimalloc2.0" -type f \( -name 'libmimalloc.so*' -o -name 'libmimalloc_minimal.so*' \) | sort | head -n 1)"
-TCMALLOC_SO="$(find "${CACHE_DIR}/${ARCH}/libtcmalloc-minimal4t64" -type f \( -name 'libtcmalloc_minimal.so*' -o -name 'libtcmalloc.so*' \) | sort | head -n 1)"
+TCMALLOC_SO="$(find "${CACHE_DIR}/${ARCH}/${TCMALLOC_PKG}" -type f \( -name 'libtcmalloc_minimal.so*' -o -name 'libtcmalloc.so*' \) | sort | head -n 1)"
 
 if [[ -z "${MIMALLOC_SO}" ]]; then
   echo "failed to locate mimalloc shared library under ${CACHE_DIR}/${ARCH}/libmimalloc2.0" >&2
   exit 1
-fi
-
-if [[ -z "${TCMALLOC_SO}" ]]; then
-  TCMALLOC_SO="$(find "${CACHE_DIR}/${ARCH}/libgoogle-perftools4t64" -type f \( -name 'libtcmalloc_minimal.so*' -o -name 'libtcmalloc.so*' \) | sort | head -n 1)"
 fi
 
 if [[ -z "${TCMALLOC_SO}" ]]; then
