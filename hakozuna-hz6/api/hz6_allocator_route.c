@@ -561,6 +561,7 @@ Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
   size_t lookup_probes = 0;
   size_t page_exact_hash_probes = 0;
   size_t page_exact_range_probes = 0;
+  size_t page_exact_page_seed_probes = 0;
   size_t page_invalid_probes = 0;
   if (allocator->route_backend.kind == HZ6_ROUTE_BACKEND_PAGE_TABLE) {
     ++((Hz6Allocator*)allocator)->stats.route_lookup_page_backend;
@@ -573,6 +574,7 @@ Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
                                         &lookup_probes,
                                         &page_exact_hash_probes,
                                         &page_exact_range_probes,
+                                        &page_exact_page_seed_probes,
                                         &page_invalid_probes);
   ((Hz6Allocator*)allocator)->stats.route_lookup_probe_total += lookup_probes;
   hz6_allocator_note_route_probe_hist(
@@ -616,6 +618,16 @@ Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
       ((Hz6Allocator*)allocator)
           ->stats.route_lookup_page_exact_range_probe_max =
           page_exact_range_probes;
+    }
+    ((Hz6Allocator*)allocator)->stats
+        .route_lookup_page_exact_page_seed_probe_total +=
+        page_exact_page_seed_probes;
+    if (page_exact_page_seed_probes >
+        ((Hz6Allocator*)allocator)
+            ->stats.route_lookup_page_exact_page_seed_probe_max) {
+      ((Hz6Allocator*)allocator)
+          ->stats.route_lookup_page_exact_page_seed_probe_max =
+          page_exact_page_seed_probes;
     }
     ((Hz6Allocator*)allocator)->stats.route_lookup_page_invalid_probe_total +=
         page_invalid_probes;

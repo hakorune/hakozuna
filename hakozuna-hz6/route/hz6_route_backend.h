@@ -93,6 +93,7 @@ Hz6RouteResult hz6_route_backend_lookup_probe_ex(
     size_t* probe_count,
     size_t* exact_hash_probe_count,
     size_t* exact_range_probe_count,
+    size_t* exact_page_seed_probe_count,
     size_t* invalid_probe_count);
 
 Hz6RouteResult hz6_route_backend_lookup_page_table_probe_ex(
@@ -101,6 +102,7 @@ Hz6RouteResult hz6_route_backend_lookup_page_table_probe_ex(
     size_t* probe_count,
     size_t* exact_hash_probe_count,
     size_t* exact_range_probe_count,
+    size_t* exact_page_seed_probe_count,
     size_t* invalid_probe_count);
 
 #ifdef __cplusplus

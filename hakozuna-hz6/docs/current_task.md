@@ -114,6 +114,9 @@ Route lookup closeout:
     diagnostic run shows `page_exact_hash_probe_total` carries the entire page
     lookup cost and `page_exact_range_probe_total=0`; the page-table hot path is
     now clearly the hash probe loop.
+  - page-seed hashing was also checked against the same 1k diagnostic run.
+    `page_exact_page_seed_probe_total` matched the address-seeded hash probe
+    counts, so changing the seed alone is not the next win.
 
 ```text
 LargeDirect:

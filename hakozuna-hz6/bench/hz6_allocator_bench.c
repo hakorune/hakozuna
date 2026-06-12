@@ -414,6 +414,7 @@ static void print_stats(const Hz6Allocator* allocator) {
          "page_exact_probe_total=%zu page_exact_probe_max=%zu "
          "page_exact_hash_probe_total=%zu page_exact_hash_probe_max=%zu "
          "page_exact_range_probe_total=%zu page_exact_range_probe_max=%zu "
+         "page_exact_page_seed_probe_total=%zu page_exact_page_seed_probe_max=%zu "
          "page_invalid_probe_total=%zu page_invalid_probe_max=%zu "
          "page_valid=%zu page_invalid=%zu page_miss=%zu "
          "overflow_lookup=%zu overflow_hit=%zu "
@@ -428,6 +429,8 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.route_lookup_page_exact_hash_probe_max,
          stats.route_lookup_page_exact_range_probe_total,
          stats.route_lookup_page_exact_range_probe_max,
+         stats.route_lookup_page_exact_page_seed_probe_total,
+         stats.route_lookup_page_exact_page_seed_probe_max,
          stats.route_lookup_page_invalid_probe_total,
          stats.route_lookup_page_invalid_probe_max,
          stats.route_lookup_page_valid,

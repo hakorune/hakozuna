@@ -11,6 +11,7 @@ Hz6RouteResult hz6_route_backend_lookup_page_table_probe_ex(
     size_t* probe_count,
     size_t* exact_hash_probe_count,
     size_t* exact_range_probe_count,
+    size_t* exact_page_seed_probe_count,
     size_t* invalid_probe_count);
 
 Hz6RouteResult hz6_route_backend_lookup_probe_ex(
@@ -19,6 +20,7 @@ Hz6RouteResult hz6_route_backend_lookup_probe_ex(
     size_t* probe_count,
     size_t* exact_hash_probe_count,
     size_t* exact_range_probe_count,
+    size_t* exact_page_seed_probe_count,
     size_t* invalid_probe_count);
 
 Hz6RouteResult hz6_route_backend_lookup_exact_probe(
@@ -49,6 +51,7 @@ Hz6RouteResult hz6_route_backend_lookup_probe(const Hz6RouteBackend* backend,
                                            probe_count,
                                            NULL,
                                            NULL,
+                                           NULL,
                                            NULL);
 }
 
@@ -58,6 +61,7 @@ Hz6RouteResult hz6_route_backend_lookup_probe_ex(
     size_t* probe_count,
     size_t* exact_hash_probe_count,
     size_t* exact_range_probe_count,
+    size_t* exact_page_seed_probe_count,
     size_t* invalid_probe_count) {
   if (probe_count) {
     *probe_count = 0;
@@ -67,6 +71,9 @@ Hz6RouteResult hz6_route_backend_lookup_probe_ex(
   }
   if (exact_range_probe_count) {
     *exact_range_probe_count = 0;
+  }
+  if (exact_page_seed_probe_count) {
+    *exact_page_seed_probe_count = 0;
   }
   if (invalid_probe_count) {
     *invalid_probe_count = 0;
@@ -82,6 +89,7 @@ Hz6RouteResult hz6_route_backend_lookup_probe_ex(
                                                         probe_count,
                                                         exact_hash_probe_count,
                                                         exact_range_probe_count,
+                                                        exact_page_seed_probe_count,
                                                         invalid_probe_count);
   }
   Hz6RouteResult route =
