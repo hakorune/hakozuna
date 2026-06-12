@@ -408,6 +408,23 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.source_block_route_behavior_fallback,
          stats.source_block_route_behavior_invalid_front,
          stats.source_block_route_behavior_invalid_descriptor);
+  printf("[HZ6_ROUTE_AUDIT] "
+         "exact_backend=%zu page_backend=%zu "
+         "page_probe_total=%zu page_probe_max=%zu "
+         "page_valid=%zu page_invalid=%zu page_miss=%zu "
+         "overflow_lookup=%zu overflow_hit=%zu "
+         "overflow_range_lookup=%zu overflow_range_hit=%zu\n",
+         stats.route_lookup_exact_backend,
+         stats.route_lookup_page_backend,
+         stats.route_lookup_page_probe_total,
+         stats.route_lookup_page_probe_max,
+         stats.route_lookup_page_valid,
+         stats.route_lookup_page_invalid,
+         stats.route_lookup_page_miss,
+         stats.route_lookup_overflow_lookup,
+         stats.route_lookup_overflow_hit,
+         stats.route_lookup_overflow_range_lookup,
+         stats.route_lookup_overflow_range_hit);
   print_front_prefill_stats(allocator);
   printf("[HZ6_MEMORY_ATTR] "
          "descriptor_table_bytes=%zu "

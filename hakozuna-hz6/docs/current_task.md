@@ -97,6 +97,16 @@ Observation pass:
       broadly was not stable, so the next probe should isolate the final
       local-free large-central path instead of changing remote rehome.
 
+Route lookup closeout:
+  - header-inline route lookup remains no-go.  The repeat-5 regression was
+    broad, so keep route behavior in the backend modules.
+  - route audit counters were added for backend kind, page-table probe cost,
+    and overflow fallback pressure.  Use those counters before changing the
+    lookup algorithm again.
+  - diagnostic 1k run shows the active route path is page-table backed on the
+    local-remote/reuse cases, while overflow lookup stays at zero.  The page
+    table probe count is the next pressure point to target.
+
 ```text
 LargeDirect:
   closed for now.

@@ -559,6 +559,11 @@ Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
   }
 #if HZ6_DIAGNOSTIC_PROBES
   size_t lookup_probes = 0;
+  if (allocator->route_backend.kind == HZ6_ROUTE_BACKEND_PAGE_TABLE) {
+    ++((Hz6Allocator*)allocator)->stats.route_lookup_page_backend;
+  } else {
+    ++((Hz6Allocator*)allocator)->stats.route_lookup_exact_backend;
+  }
   Hz6RouteResult route =
       hz6_route_backend_lookup_probe(&allocator->route_backend,
                                      ptr,
@@ -571,11 +576,23 @@ Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
       ((Hz6Allocator*)allocator)->stats.route_lookup_probe_max) {
     ((Hz6Allocator*)allocator)->stats.route_lookup_probe_max = lookup_probes;
   }
+  if (allocator->route_backend.kind == HZ6_ROUTE_BACKEND_PAGE_TABLE) {
+    ((Hz6Allocator*)allocator)->stats.route_lookup_page_probe_total +=
+        lookup_probes;
+    if (lookup_probes >
+        ((Hz6Allocator*)allocator)->stats.route_lookup_page_probe_max) {
+      ((Hz6Allocator*)allocator)->stats.route_lookup_page_probe_max =
+          lookup_probes;
+    }
+  }
 #else
   Hz6RouteResult route = hz6_route_backend_lookup(&allocator->route_backend, ptr);
 #endif
 #if HZ6_SHARED_ROUTE_DIRECTORY_L1 && HZ6_ELASTIC_ROUTE_OVERFLOW_L1
   if (route.kind != HZ6_ROUTE_VALID) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++((Hz6Allocator*)allocator)->stats.route_lookup_overflow_lookup;
+#endif
     Hz6RouteResult overflow_route =
         hz6_shared_route_directory_lookup_raw(ptr);
 #if HZ6_DIAGNOSTIC_PROBES
@@ -584,13 +601,20 @@ Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
     if (overflow_route.kind == HZ6_ROUTE_VALID) {
 #if HZ6_DIAGNOSTIC_PROBES
       ++((Hz6Allocator*)allocator)->stats.elastic_route_overflow_hit;
+      ++((Hz6Allocator*)allocator)->stats.route_lookup_overflow_hit;
 #endif
       return overflow_route;
     }
     if (route.kind == HZ6_ROUTE_MISS) {
+#if HZ6_DIAGNOSTIC_PROBES
+      ++((Hz6Allocator*)allocator)->stats.route_lookup_overflow_range_lookup;
+#endif
       Hz6RouteResult overflow_range =
           hz6_shared_route_range_lookup_raw(ptr);
       if (overflow_range.kind == HZ6_ROUTE_INVALID) {
+#if HZ6_DIAGNOSTIC_PROBES
+        ++((Hz6Allocator*)allocator)->stats.route_lookup_overflow_range_hit;
+#endif
         return overflow_range;
       }
     }
@@ -599,12 +623,25 @@ Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
   if (route.kind != HZ6_ROUTE_MISS) {
     route.route_allocator = (Hz6Allocator*)allocator;
 #if HZ6_DIAGNOSTIC_PROBES
+    if (allocator->route_backend.kind == HZ6_ROUTE_BACKEND_PAGE_TABLE) {
+      if (route.kind == HZ6_ROUTE_VALID) {
+        ++((Hz6Allocator*)allocator)->stats.route_lookup_page_valid;
+      } else if (route.kind == HZ6_ROUTE_INVALID) {
+        ++((Hz6Allocator*)allocator)->stats.route_lookup_page_invalid;
+      }
+    }
     if (route.descriptor) {
       const Hz6ObjectDescriptor* descriptor =
           (const Hz6ObjectDescriptor*)route.descriptor;
       if (hz6_allocator_descriptor_has_source_release(allocator, descriptor)) {
         ++((Hz6Allocator*)allocator)->stats.source_owned_route_hit_local_owner;
       }
+    }
+#endif
+  } else {
+#if HZ6_DIAGNOSTIC_PROBES
+    if (allocator->route_backend.kind == HZ6_ROUTE_BACKEND_PAGE_TABLE) {
+      ++((Hz6Allocator*)allocator)->stats.route_lookup_page_miss;
     }
 #endif
   }
@@ -649,6 +686,10 @@ Hz6RouteResult hz6_allocator_route_lookup_exact(const Hz6Allocator* allocator,
   if (route.kind != HZ6_ROUTE_MISS) {
     route.route_allocator = (Hz6Allocator*)allocator;
 #if HZ6_DIAGNOSTIC_PROBES
+    if (allocator->route_backend.kind == HZ6_ROUTE_BACKEND_PAGE_TABLE &&
+        route.kind == HZ6_ROUTE_MISS) {
+      ++((Hz6Allocator*)allocator)->stats.route_lookup_page_miss;
+    }
     if (route.descriptor) {
       const Hz6ObjectDescriptor* descriptor =
           (const Hz6ObjectDescriptor*)route.descriptor;
