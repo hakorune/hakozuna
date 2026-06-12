@@ -13,6 +13,10 @@ It is not a Windows selected-family lane name; it is a default HZ6 knob with an
 explicit `HZ6_ROUTE_LAST_HIT_CACHE_L1=0` control-off lane.  Focused repeat-5 on
 Ubuntu improved local 8K/64K by +16%..+30%, remote 128K by +27%..+38%, and
 reuse 128K by +38%..+41% versus control-off while keeping R1 smoke clean.
+`HZ6_TOY_CLASS_ID_FAST_ALLOC_L1=1` is also a Linux/Ubuntu default.  It removes
+Toy alloc's duplicate request-size classification after `hz6_malloc()` has
+already selected `class_id`; repeat-10 suspicious-row guards are positive on
+512B/1K/2K medians.
 
 ## Selected Rows
 

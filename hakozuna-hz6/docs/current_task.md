@@ -151,6 +151,26 @@ Route lookup closeout:
     Result dirs:
       linux/results/hz6_large_trusted_off_20260613_focus
       linux/results/hz6_large_trusted_on_20260613_focus
+  - Broad post-last-hit Ubuntu repeat-5 was refreshed at:
+      linux/results/hz6_last_hit_broad_20260613_r5
+    Read:
+      128K+ local/remote/reuse rows are now about 47M..50M ops/s.
+      256B..4K local rows remain the next pressure area, with strict best at
+      about 35M..37M ops/s.
+  - ToyClassIdFastAlloc-L1 is now selected/default.  `hz6_malloc()` already
+    selects `class_id`, so Toy alloc validates against class-id bytes instead
+    of re-running request-size classification.  Focused repeat-5 was mostly
+    positive but had outliers, so suspicious 512B/1K/2K rows were rerun with
+    repeat-10:
+      512 remote +1.03%, speed +1.78%, strict +0.53%
+      1K remote +1.57%, speed +0.44%, strict +1.50%
+      2K remote +0.03%, speed +3.26%, strict +0.96%
+    Keep `HZ6_TOY_CLASS_ID_FAST_ALLOC_L1=0` as the explicit control-off lane.
+    Result dirs:
+      linux/results/hz6_toy_fast_off_20260613_focus
+      linux/results/hz6_toy_fast_on_20260613_focus
+      linux/results/hz6_toy_fast_off_20260613_suspicious_r10
+      linux/results/hz6_toy_fast_on_20260613_suspicious_r10
 
 ```text
 LargeDirect:

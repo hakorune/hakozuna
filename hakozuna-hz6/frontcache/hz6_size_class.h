@@ -15,6 +15,8 @@ typedef struct Hz6SizeClass {
 
 Hz6SizeClass hz6_size_class_for_request(size_t size);
 
+Hz6SizeClass hz6_size_class_for_id(uint16_t class_id);
+
 int hz6_size_class_valid(Hz6SizeClass size_class);
 
 #ifdef __cplusplus

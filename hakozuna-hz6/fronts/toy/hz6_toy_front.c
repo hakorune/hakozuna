@@ -26,6 +26,13 @@ static int hz6_toy_front_can_allocate(size_t size,
 static void* hz6_toy_front_alloc_with_class(Hz6Allocator* allocator,
                                             uint16_t class_id,
                                             size_t size) {
+#if HZ6_TOY_CLASS_ID_FAST_ALLOC_L1
+  Hz6SizeClass size_class = hz6_size_class_for_id(class_id);
+  if (!allocator || !hz6_size_class_valid(size_class) ||
+      size == 0 || size > size_class.bytes || size > 4096) {
+    return NULL;
+  }
+#else
   Hz6SizeClass size_class = hz6_size_class_for_request(size);
   if (size_class.id != class_id) {
     return NULL;
@@ -33,6 +40,7 @@ static void* hz6_toy_front_alloc_with_class(Hz6Allocator* allocator,
   if (!allocator || !hz6_size_class_valid(size_class)) {
     return NULL;
   }
+#endif
 
   size_t refill_batch = hz6_allocator_control_source_refill_batch(
       allocator, HZ6_FRONT_TOY, size_class.id);

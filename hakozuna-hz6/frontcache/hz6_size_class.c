@@ -29,6 +29,32 @@ Hz6SizeClass hz6_size_class_for_request(size_t size) {
   return result;
 }
 
+Hz6SizeClass hz6_size_class_for_id(uint16_t class_id) {
+  Hz6SizeClass result;
+  result.id = class_id;
+  switch (class_id) {
+    case 0:
+      result.bytes = 16;
+      break;
+    case 1:
+      result.bytes = 64;
+      break;
+    case 2:
+      result.bytes = 256;
+      break;
+    case 3:
+      result.bytes = 1024;
+      break;
+    case 4:
+      result.bytes = 4096;
+      break;
+    default:
+      result.bytes = 0;
+      break;
+  }
+  return result;
+}
+
 int hz6_size_class_valid(Hz6SizeClass size_class) {
   return size_class.id < HZ6_FRONT_CACHE_CLASS_COUNT &&
          size_class.bytes != 0;
