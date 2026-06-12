@@ -87,6 +87,20 @@ Hz6RouteResult hz6_route_backend_lookup_probe(const Hz6RouteBackend* backend,
                                               const void* ptr,
                                               size_t* probe_count);
 
+Hz6RouteResult hz6_route_backend_lookup_probe_ex(
+    const Hz6RouteBackend* backend,
+    const void* ptr,
+    size_t* probe_count,
+    size_t* exact_probe_count,
+    size_t* invalid_probe_count);
+
+Hz6RouteResult hz6_route_backend_lookup_page_table_probe_ex(
+    const Hz6RouteBackend* backend,
+    const void* ptr,
+    size_t* probe_count,
+    size_t* exact_probe_count,
+    size_t* invalid_probe_count);
+
 #ifdef __cplusplus
 }
 #endif

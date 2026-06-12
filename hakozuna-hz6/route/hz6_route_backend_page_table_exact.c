@@ -10,18 +10,28 @@ Hz6RouteResult hz6_route_backend_lookup_page_table_invalid_probe(
     const Hz6RouteBackend* backend,
     uintptr_t addr,
     uintptr_t page_addr,
-    size_t* probe_count);
+    size_t* probe_count,
+    size_t* invalid_probe_count);
 
 Hz6RouteResult hz6_route_backend_lookup_page_table_exact_probe(
     const Hz6RouteBackend* backend,
     uintptr_t addr,
     uintptr_t page_addr,
-    size_t* probe_count) {
+    size_t* probe_count,
+    size_t* exact_probe_count,
+    size_t* invalid_probe_count) {
   size_t probes = 0;
+  size_t exact_probes = 0;
   if (!backend || !backend->exact_table.entries ||
       !hz6_route_backend_valid_granularity(backend->page_granularity)) {
     if (probe_count) {
       *probe_count = probes;
+    }
+    if (exact_probe_count) {
+      *exact_probe_count = exact_probes;
+    }
+    if (invalid_probe_count) {
+      *invalid_probe_count = 0;
     }
     return hz6_route_miss();
   }
@@ -37,6 +47,7 @@ Hz6RouteResult hz6_route_backend_lookup_page_table_exact_probe(
                                          backend->exact_table.capacity, i);
     const Hz6RouteEntry* entry = &backend->exact_table.entries[index];
     ++probes;
+    ++exact_probes;
     if (!hz6_route_entry_active(entry) ||
         !hz6_route_entry_exact_valid(entry)) {
       if (!hz6_route_entry_active(entry) &&
@@ -49,6 +60,12 @@ Hz6RouteResult hz6_route_backend_lookup_page_table_exact_probe(
       if (probe_count) {
         *probe_count = probes;
       }
+      if (exact_probe_count) {
+        *exact_probe_count = exact_probes;
+      }
+      if (invalid_probe_count) {
+        *invalid_probe_count = 0;
+      }
       return hz6_route_valid(hz6_route_entry_front_id(entry),
                              hz6_route_entry_class_id(entry),
                              hz6_route_entry_generation(&backend->exact_table,
@@ -60,6 +77,7 @@ Hz6RouteResult hz6_route_backend_lookup_page_table_exact_probe(
   for (size_t i = 0; i < backend->exact_table.capacity; ++i) {
     const Hz6RouteEntry* entry = &backend->exact_table.entries[i];
     ++probes;
+    ++exact_probes;
     if (!hz6_route_entry_active(entry) ||
         !hz6_route_entry_exact_valid(entry)) {
       continue;
@@ -81,6 +99,12 @@ Hz6RouteResult hz6_route_backend_lookup_page_table_exact_probe(
       if (probe_count) {
         *probe_count = probes;
       }
+      if (exact_probe_count) {
+        *exact_probe_count = exact_probes;
+      }
+      if (invalid_probe_count) {
+        *invalid_probe_count = 0;
+      }
       return hz6_route_valid(hz6_route_entry_front_id(entry),
                              hz6_route_entry_class_id(entry),
                              hz6_route_entry_generation(&backend->exact_table,
@@ -91,6 +115,12 @@ Hz6RouteResult hz6_route_backend_lookup_page_table_exact_probe(
       if (probe_count) {
         *probe_count = probes;
       }
+      if (exact_probe_count) {
+        *exact_probe_count = exact_probes;
+      }
+      if (invalid_probe_count) {
+        *invalid_probe_count = 0;
+      }
       return hz6_route_invalid(hz6_route_entry_front_id(entry),
                                hz6_route_entry_class_id(entry));
     }
@@ -99,10 +129,14 @@ Hz6RouteResult hz6_route_backend_lookup_page_table_exact_probe(
   if (probe_count) {
     *probe_count = probes;
   }
+  if (exact_probe_count) {
+    *exact_probe_count = exact_probes;
+  }
   return hz6_route_backend_lookup_page_table_invalid_probe(backend,
                                                           addr,
                                                           page_addr,
-                                                          probe_count);
+                                                          probe_count,
+                                                          invalid_probe_count);
 }
 
 Hz6RouteResult hz6_route_backend_lookup_page_table_exact(
@@ -112,5 +146,7 @@ Hz6RouteResult hz6_route_backend_lookup_page_table_exact(
   return hz6_route_backend_lookup_page_table_exact_probe(backend,
                                                         addr,
                                                         page_addr,
+                                                        NULL,
+                                                        NULL,
                                                         NULL);
 }

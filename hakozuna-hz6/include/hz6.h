@@ -479,6 +479,10 @@ typedef struct Hz6StatsSnapshot {
   size_t route_lookup_page_backend;
   size_t route_lookup_page_probe_total;
   size_t route_lookup_page_probe_max;
+  size_t route_lookup_page_exact_probe_total;
+  size_t route_lookup_page_exact_probe_max;
+  size_t route_lookup_page_invalid_probe_total;
+  size_t route_lookup_page_invalid_probe_max;
   size_t route_lookup_page_valid;
   size_t route_lookup_page_invalid;
   size_t route_lookup_page_miss;

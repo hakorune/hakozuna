@@ -106,6 +106,10 @@ Route lookup closeout:
   - diagnostic 1k run shows the active route path is page-table backed on the
     local-remote/reuse cases, while overflow lookup stays at zero.  The page
     table probe count is the next pressure point to target.
+  - follow-up page audit adds exact/invalid stage counters.  The 1k diagnostic
+    run shows `page_invalid_probe_total=0` across the current benchmark, so the
+    current pressure is still in the exact page-table stage, not the invalid
+    fallback scan.
 
 ```text
 LargeDirect:

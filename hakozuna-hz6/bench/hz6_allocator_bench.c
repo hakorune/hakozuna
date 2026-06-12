@@ -411,6 +411,8 @@ static void print_stats(const Hz6Allocator* allocator) {
   printf("[HZ6_ROUTE_AUDIT] "
          "exact_backend=%zu page_backend=%zu "
          "page_probe_total=%zu page_probe_max=%zu "
+         "page_exact_probe_total=%zu page_exact_probe_max=%zu "
+         "page_invalid_probe_total=%zu page_invalid_probe_max=%zu "
          "page_valid=%zu page_invalid=%zu page_miss=%zu "
          "overflow_lookup=%zu overflow_hit=%zu "
          "overflow_range_lookup=%zu overflow_range_hit=%zu\n",
@@ -418,6 +420,10 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.route_lookup_page_backend,
          stats.route_lookup_page_probe_total,
          stats.route_lookup_page_probe_max,
+         stats.route_lookup_page_exact_probe_total,
+         stats.route_lookup_page_exact_probe_max,
+         stats.route_lookup_page_invalid_probe_total,
+         stats.route_lookup_page_invalid_probe_max,
          stats.route_lookup_page_valid,
          stats.route_lookup_page_invalid,
          stats.route_lookup_page_miss,
