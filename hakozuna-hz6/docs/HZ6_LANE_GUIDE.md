@@ -220,6 +220,13 @@ HZ6 LargeSpan / LargeDirect:
     control, and 32M remains the upper-bound row. Do not add another
     direct-large recycle/cap lane unless a new >8M workload becomes the target.
 
+  Ubuntu hot-path tuning:
+    Front registry dispatch is now a direct branch path rather than a repeated
+    front-array scan, large-span central push uses the compile-time caps
+    directly, and Large128 local free avoids re-decoding the entry class id
+    just before frontcache push. This is an implementation-speed improvement
+    only; the selected HZ6 lane map above stays unchanged.
+
 HZ6 Larson / ElasticCapacity:
   KEEP:
     selected source10k packed lane as the current minimum-RSS sibling

@@ -257,6 +257,12 @@ HZ6 is now a profile-family allocator:
     owner twice on same-owner free and repeat-5 improves small/medium/mixed
     over the former sameownerfast row without safety/RSS cost.
 
+  Ubuntu hot-path note:
+    The current Linux-only front-dispatch tuning improved the standalone
+    HZ6 benchmark materially, especially remote/reuse 131072, but it does not
+    change the paper-facing selected rows above. Keep it as implementation
+    optimization evidence, not as a new family selection.
+
   larger_sizes:
     selected largerlowrss lane is clean and relatively low-RSS.
     The latest selected-family refresh is slower than the earlier isolated
