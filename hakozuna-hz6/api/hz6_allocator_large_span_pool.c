@@ -63,10 +63,8 @@ int hz6_allocator_large_span_pool_push(Hz6Allocator* allocator,
   }
 
   const size_t span_bytes = (size_t)descriptor->bytes;
-  const size_t class_cap =
-      hz6_allocator_large_span_pool_bytes_capacity(descriptor->class_id);
-  const size_t global_cap =
-      hz6_allocator_large_span_pool_global_bytes_capacity();
+  const size_t class_cap = HZ6_LARGE_SPAN_CENTRAL_CLASS_BYTES_CAP;
+  const size_t global_cap = HZ6_LARGE_SPAN_CENTRAL_GLOBAL_BYTES_CAP;
   if (span_bytes > class_cap || span_bytes > global_cap ||
       bin->bytes_current > class_cap - span_bytes ||
       allocator->large_span_pool.bytes_current > global_cap - span_bytes) {

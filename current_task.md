@@ -16,6 +16,47 @@ decisions should be mirrored into the HZ6 docs above.
 HZ6 is now in active Windows/Linux implementation and benchmarking. HZ5 Linux
 remains profile-stabilized; new HZ5 work should not blur the HZ6 contract.
 
+Latest HZ6 Ubuntu hot-path tuning:
+
+```text
+2026-06-12:
+  Accepted:
+    Front registry dispatch now uses direct size/front-id branches instead of
+    rebuilding and scanning a front array on every malloc/free lookup.
+    This keeps the existing priority:
+      Local2P exact 64K first
+      MidPage 4K..32K
+      LargeSpan/Direct for larger requests
+      Toy for <=4K
+
+    LargeSpan central push also uses compile-time byte caps directly, and
+    Large128 local free pushes the known descriptor class id without decoding
+    the just-filled frontcache entry again.
+
+  Ubuntu HZ6 standalone repeat-5:
+    baseline 20260612_214857:
+      local strict 31.16M, speed 24.32M, rss 27.14M, remote 23.84M
+      remote speed 27.38M, rss 29.09M, remote 27.33M
+      reuse speed 30.37M, rss 31.10M, remote 30.29M
+
+    frontdispatch 20260612_2315:
+      local strict 33.43M, speed 25.88M, rss 29.71M, remote 25.75M
+      remote speed 36.29M, rss 35.12M, remote 36.07M
+      reuse speed 36.07M, rss 36.37M, remote 36.68M
+
+  Validation:
+    ./linux/build_linux_hz6_benchmark.sh
+    ./linux/run_linux_hz6_benchmark.sh --skip-build --runs 1 --local-iters 10 --remote-iters 10 --reuse-iters 10
+    ./linux/run_linux_hz6_benchmark.sh --skip-build --outdir .../hz6_benchmark_frontdispatch_20260612_2315
+    ./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+
+  Rejected:
+    Recent-central descriptor owner trust marker removed owner_equal
+    large_central counters in diagnostics, but normal reuse stayed flat or
+    slightly worse while adding allocator state and branches. Keep it as
+    no-go evidence, not selected code.
+```
+
 HZ7 TinyRoute current track:
 
 ```text

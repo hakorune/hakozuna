@@ -101,8 +101,7 @@ int hz6_large128_free_local_or_central(Hz6Allocator* allocator,
   entry.generation = descriptor->generation;
   hz6_frontcache_entry_set_bytes(&entry, descriptor->bytes);
   hz6_frontcache_entry_set_class_id(&entry, descriptor->class_id);
-  const uint16_t entry_class_id = hz6_frontcache_entry_class_id(&entry);
-  if (hz6_allocator_frontcache_push(allocator, entry_class_id, entry)) {
+  if (hz6_allocator_frontcache_push(allocator, descriptor->class_id, entry)) {
     return 1;
   }
 
