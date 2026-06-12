@@ -110,6 +110,10 @@ Route lookup closeout:
     run shows `page_invalid_probe_total=0` across the current benchmark, so the
     current pressure is still in the exact page-table stage, not the invalid
     fallback scan.
+  - split exact stage further into hash and range probes.  The 2026-06-13 1k
+    diagnostic run shows `page_exact_hash_probe_total` carries the entire page
+    lookup cost and `page_exact_range_probe_total=0`; the page-table hot path is
+    now clearly the hash probe loop.
 
 ```text
 LargeDirect:

@@ -11,7 +11,8 @@ Hz6RouteResult hz6_route_backend_lookup_page_table_exact_probe(
     uintptr_t addr,
     uintptr_t page_addr,
     size_t* probe_count,
-    size_t* exact_probe_count,
+    size_t* exact_hash_probe_count,
+    size_t* exact_range_probe_count,
     size_t* invalid_probe_count);
 
 Hz6RouteResult hz6_route_backend_lookup_page_table_probe(
@@ -22,6 +23,7 @@ Hz6RouteResult hz6_route_backend_lookup_page_table_probe(
                                                       ptr,
                                                       probe_count,
                                                       NULL,
+                                                      NULL,
                                                       NULL);
 }
 
@@ -29,13 +31,17 @@ Hz6RouteResult hz6_route_backend_lookup_page_table_probe_ex(
     const Hz6RouteBackend* backend,
     const void* ptr,
     size_t* probe_count,
-    size_t* exact_probe_count,
+    size_t* exact_hash_probe_count,
+    size_t* exact_range_probe_count,
     size_t* invalid_probe_count) {
   if (probe_count) {
     *probe_count = 0;
   }
-  if (exact_probe_count) {
-    *exact_probe_count = 0;
+  if (exact_hash_probe_count) {
+    *exact_hash_probe_count = 0;
+  }
+  if (exact_range_probe_count) {
+    *exact_range_probe_count = 0;
   }
   if (invalid_probe_count) {
     *invalid_probe_count = 0;
@@ -52,6 +58,7 @@ Hz6RouteResult hz6_route_backend_lookup_page_table_probe_ex(
                                                         addr,
                                                         page_addr,
                                                         probe_count,
-                                                        exact_probe_count,
+                                                        exact_hash_probe_count,
+                                                        exact_range_probe_count,
                                                         invalid_probe_count);
 }
