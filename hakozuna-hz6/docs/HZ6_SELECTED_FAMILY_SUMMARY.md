@@ -27,6 +27,10 @@ control improved local 256B..4K by roughly +77%..+122%, local 8K by +19%..+40%,
 local 16K by +9%..+11%, remote 8K/64K by +6%..+17%, and reuse rows by
 +2%..+21%; the only observed negative guard row was remote 128K speed at
 -3.27%.  R1 smokes remain clean.
+The later solo strength repeat-7 narrows that read: local 256B..4K stays very
+strong at +30%..+68% versus directmap-off, local 8K is +13%..+22%, 16K is
+mostly neutral, and 64K/128K show a small -1%..-6% drag. Treat it as the
+small/local Ubuntu default, not as a universal large-size win.
 
 ## Selected Rows
 

@@ -6710,6 +6710,62 @@ Decision:
   This is a Linux/Ubuntu default knob set, not a Windows selected-family lane.
 ```
 
+Ubuntu HZ6 strength check after default promotion:
+
+```text
+Result dirs:
+  linux/results/hz6_strength_default_r7_solo
+  linux/results/hz6_strength_directmap_off_r7
+  linux/results/hz6_strength_compare_mixed_ws_r5
+
+HZ6 default best profile medians:
+  local 256B:   strict 59.947M
+  local 512B:   strict 60.712M
+  local 1K:     strict 59.199M
+  local 2K:     strict 60.399M
+  local 4K:     strict 58.487M
+  local 8K:     strict 54.480M
+  local 16K:    strict 42.553M
+  local 64K:    strict 39.560M
+  local 128K:   rss    47.998M
+  remote 8K:    rss    37.022M
+  remote 16K:   rss    34.997M
+  remote 64K:   rss    31.434M
+  remote 128K:  remote 46.599M
+  reuse 8K:     rss    38.462M
+  reuse 16K:    rss    35.199M
+  reuse 64K:    rss    31.916M
+  reuse 128K:   rss    46.693M
+
+Default versus directmap-off repeat-7 read:
+  256B..4K local:
+    +30%..+68% across profiles; strict best is about 58M..61M.
+  8K local:
+    +13%..+22% across profiles.
+  16K:
+    mostly neutral: remote/rss/speed local +0%..+1%, strict -3.75%.
+  64K/128K:
+    slight drag: local mostly -0.5%..-4.5%; remote/reuse mostly -1%..-6%.
+
+Read:
+  ToyDirectMapTrusted max4 is a major small/local win and remains the right
+  Ubuntu default for the current HZ6 small hot path.
+  It should not be described as a universal large-size win: 64K/128K still need
+  a separate large/local direct-map gate or a profile/size bypass if those rows
+  become the next target.
+
+Cross-allocator mixed_ws repeat-5 caveat:
+  This compares CRT/LD_PRELOAD allocators, not HZ6 API mode.
+  HZ6 does not yet have an LD_PRELOAD lane in this checkout.
+  mixed_ws median ops/s:
+    hz3      192.029M / 26,880 KB
+    tcmalloc 190.171M / 26,880 KB
+    hz4      156.159M / 32,000 KB
+    system    74.098M / 18,668 KB
+    mimalloc  31.896M / 23,168 KB
+    hz5        0.194M / 187,904 KB
+```
+
 ### 2026-06-06: Post-push design review readout
 
 External design review after pushing `947f870` agreed with the
