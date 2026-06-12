@@ -94,7 +94,8 @@ void hz6_allocator_note_frontcache_borrow_dryrun(
           descriptor->generation != entry.generation) {
         continue;
       }
-      Hz6RouteResult route = hz6_allocator_route_lookup(allocator, entry.ptr);
+      Hz6RouteResult route =
+          hz6_allocator_route_lookup_exact(allocator, entry.ptr);
       if (route.kind != HZ6_ROUTE_VALID || route.front_id != front_id) {
         continue;
       }

@@ -158,10 +158,12 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
         const Hz6FrontOps* front = hz6_front_for_id(route.front_id);
         Hz6ObjectDescriptor* descriptor =
             (Hz6ObjectDescriptor*)route.descriptor;
+        int route_allocator_is_local = route.route_allocator &&
+                                       route.route_allocator == allocator;
 #if HZ6_DIAGNOSTIC_PROBES
+        Hz6Allocator* route_allocator =
+            route.route_allocator ? route.route_allocator : allocator;
         if (descriptor) {
-          Hz6Allocator* route_allocator =
-              route.route_allocator ? route.route_allocator : allocator;
           if (hz6_allocator_descriptor_belongs_to(route_allocator,
                                                   descriptor)) {
             ++allocator->stats.descriptor_source_route_allocator_match;
@@ -205,9 +207,10 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
         }
 #endif
         int local_owner = descriptor &&
-                          hz6_allocator_descriptor_owner_equal_at(
-                              allocator, descriptor, allocator->owner.token,
-                              HZ6_OWNER_EQUAL_SITE_FREE);
+                          (route_allocator_is_local ||
+                           hz6_allocator_descriptor_owner_equal_at(
+                               allocator, descriptor, allocator->owner.token,
+                               HZ6_OWNER_EQUAL_SITE_FREE));
         if (local_owner) {
           hz6_toy_small_hotpath_diag_free_owner_equal(
               allocator, route.front_id, route.class_id);

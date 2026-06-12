@@ -20,6 +20,51 @@ Use these orientation docs before reading this long ledger:
 
 ## Current Read 2026-06-07
 
+## Current Task 2026-06-12 Ubuntu HZ6 Tightening
+
+Ubuntu remeasure showed HZ6 is healthy but still below HZ3/tcmalloc on the
+root Linux matrix.  The active optimization target is not broad policy churn;
+it is hot-path cost in local free/reuse and remote visibility fallback.
+
+Implemented so far:
+  - hz6_free()/hz6_free_remote() skip repeated owner_equal() when the route
+    already proves the descriptor came from the current allocator.
+  - same-owner fast free and toy-small active-map free now call the trusted
+    local-cache transition after they have already proved owner equality.
+  - frontcache borrow candidate validation now uses exact route lookup rather
+    than the wider lookup.
+  - visible route lookup has a visible-allocator count guard, so single
+    allocator Linux runs can skip the cross-allocator scan.
+
+Current implementation focus:
+  1. Keep route visibility bookkeeping exact: update the visible allocator
+     count only after slot registration/removal succeeds.
+  2. Avoid scanning visible allocators when there is no other live allocator
+     to consult.
+  3. Keep descriptor local-cache trusted paths narrow: use trusted variants
+     only where the caller has already proven ownership.
+  4. Rebuild and smoke HZ6 after each step, then run a matrix refresh only
+     after the hot-path changes are stable.
+
+Implemented follow-up:
+  - route visibility register/unregister now changes the visible allocator
+    count only after a slot CAS succeeds.
+  - unregister returns after the successful removal, keeping the count aligned
+    with the one-slot-per-allocator invariant.
+  - full HZ6 Linux bench after this pass:
+      local strict  31.16M
+      local speed   24.32M
+      local rss     27.14M
+      local remote  23.84M
+      remote speed  27.38M
+      remote rss    29.09M
+      remote remote 27.33M
+      reuse speed   30.37M
+      reuse rss     31.10M
+      reuse remote  30.29M
+    Result dir:
+      hakozuna-hz6/private/raw-results/linux/hz6_benchmark_20260612_214857
+
 ```text
 LargeDirect:
   closed for now.
@@ -12873,6 +12918,52 @@ Next:
     3. non-static policy only if it preserves selected safety.
 ```
 # HZ6 current task
+
+## 2026-06-12: Ubuntu Remeasure Matrix
+
+Context:
+
+```text
+Ubuntu x86_64 matrix remeasure completed for:
+  - compare lane: system, hz3, hz4, hz5(full preload control), mimalloc, tcmalloc
+  - standalone HZ6 lane: local / remote / reuse profiles
+
+The compare lane now runs cleanly on Linux after the bench_mixed_ws CRT path
+was fixed for peak working set reporting.
+```
+
+Observed:
+
+```text
+compare matrix median ops/s:
+  system   77.2M
+  hz3     198.3M
+  hz4     154.0M
+  hz5       0.190M (control lane only)
+  mimalloc 31.5M
+  tcmalloc 189.8M
+
+HZ6 matrix avg ops/s:
+  local strict  30.26M
+  local speed   23.74M
+  local rss     25.19M
+  local remote   23.32M
+  remote speed  28.67M
+  remote rss    29.36M
+  remote remote 29.40M
+  reuse speed   29.34M
+  reuse rss     29.75M
+  reuse remote  28.48M
+```
+
+Notes:
+
+```text
+Best current HZ6 lane on Ubuntu is local strict.
+The biggest remaining delta is the gap between strict and the broader
+speed/rss/remote profiles, so the next optimization pass should focus on
+route lookup, descriptor/frontcache overhead, and transfer bookkeeping.
+```
 
 ## 2026-06-06: ToySmallHotPathDiag-L1
 

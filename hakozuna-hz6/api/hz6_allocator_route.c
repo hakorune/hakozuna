@@ -5,6 +5,7 @@
 
 static _Atomic(Hz6Allocator*) g_hz6_visible_allocators
     [HZ6_ALLOCATOR_VISIBILITY_CAPACITY];
+static _Atomic(size_t) g_hz6_visible_allocator_count;
 
 #if HZ6_SHARED_ROUTE_DIRECTORY_L1 || HZ6_OWNER_LOCALITY_INDEX_L1
 static size_t hz6_route_directory_index(uintptr_t base) {
@@ -519,6 +520,8 @@ void hz6_allocator_route_visibility_register(Hz6Allocator* allocator) {
             allocator,
             memory_order_release,
             memory_order_relaxed)) {
+      atomic_fetch_add_explicit(&g_hz6_visible_allocator_count, 1u,
+                                memory_order_acq_rel);
       return;
     }
   }
@@ -537,12 +540,15 @@ void hz6_allocator_route_visibility_unregister(Hz6Allocator* allocator) {
       continue;
     }
     Hz6Allocator* expected = allocator;
-    (void)atomic_compare_exchange_strong_explicit(
-        &g_hz6_visible_allocators[i],
-        &expected,
-        NULL,
-        memory_order_release,
-        memory_order_relaxed);
+    if (atomic_compare_exchange_strong_explicit(&g_hz6_visible_allocators[i],
+                                                &expected,
+                                                NULL,
+                                                memory_order_release,
+                                                memory_order_relaxed)) {
+      atomic_fetch_sub_explicit(&g_hz6_visible_allocator_count, 1u,
+                                memory_order_acq_rel);
+      return;
+    }
   }
 }
 
@@ -745,6 +751,11 @@ Hz6OwnerLocalityKind hz6_allocator_route_owner_locality_hint(
 Hz6RouteResult hz6_allocator_route_lookup_visible_only(Hz6Allocator* allocator,
                                                        const void* ptr) {
   if (!allocator || !ptr) {
+    return hz6_route_miss();
+  }
+
+  if (atomic_load_explicit(&g_hz6_visible_allocator_count,
+                           memory_order_acquire) <= 1u) {
     return hz6_route_miss();
   }
 

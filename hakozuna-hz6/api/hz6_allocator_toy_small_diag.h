@@ -263,7 +263,8 @@ static inline int hz6_toy_small_active_map_try_free(Hz6Allocator* allocator,
     return 0;
   }
 
-  if (!hz6_allocator_cache_active_descriptor(allocator, descriptor, ptr)) {
+  if (!hz6_allocator_cache_active_descriptor_trusted_owner(allocator,
+                                                            descriptor, ptr)) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.toy_small_active_map_free_cache_fail;
 #endif

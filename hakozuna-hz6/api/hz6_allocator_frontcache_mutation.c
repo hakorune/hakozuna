@@ -297,6 +297,7 @@ void* hz6_allocator_borrow_larger_frontcache(Hz6Allocator* allocator,
 #endif
 
 #if !HZ6_FRONTCACHE_BORROW_LARGER_ON_CLASS_MISS
+  (void)front_id;
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.frontcache_borrow_no_candidate;
 #endif
@@ -315,7 +316,8 @@ void* hz6_allocator_borrow_larger_frontcache(Hz6Allocator* allocator,
           descriptor->generation != entry.generation) {
         continue;
       }
-      Hz6RouteResult route = hz6_allocator_route_lookup(allocator, entry.ptr);
+      Hz6RouteResult route =
+          hz6_allocator_route_lookup_exact(allocator, entry.ptr);
       if (route.kind != HZ6_ROUTE_VALID || route.front_id != front_id) {
         continue;
       }

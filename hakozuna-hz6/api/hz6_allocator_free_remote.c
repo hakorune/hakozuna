@@ -100,10 +100,12 @@ int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
   ++allocator->stats.route_valid;
   const Hz6ObjectDescriptor* descriptor =
       (const Hz6ObjectDescriptor*)route.descriptor;
+  int route_allocator_is_local = route.route_allocator &&
+                                 route.route_allocator == allocator;
 #if HZ6_DIAGNOSTIC_PROBES
+  Hz6Allocator* route_allocator =
+      route.route_allocator ? route.route_allocator : allocator;
   if (descriptor) {
-    Hz6Allocator* route_allocator =
-        route.route_allocator ? route.route_allocator : allocator;
     if (hz6_allocator_descriptor_belongs_to(route_allocator, descriptor)) {
       ++allocator->stats.descriptor_source_route_allocator_match;
     } else {
@@ -144,6 +146,7 @@ int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
   }
 #endif
   int needs_rehome = visible_hit && descriptor &&
+                     !route_allocator_is_local &&
                      !hz6_allocator_descriptor_owner_equal_at(
                          allocator, descriptor, allocator->owner.token,
                          HZ6_OWNER_EQUAL_SITE_REMOTE_FREE) &&

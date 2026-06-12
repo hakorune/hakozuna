@@ -9,8 +9,12 @@ static inline int hz6_allocator_same_owner_fast_front_eligible_inline(
 
 static inline int hz6_allocator_same_owner_fast_class_eligible_inline(
     uint16_t class_id) {
+#if HZ6_SAME_OWNER_FAST_MIN_CLASS > 0
   return class_id >= HZ6_SAME_OWNER_FAST_MIN_CLASS &&
          class_id <= HZ6_SAME_OWNER_FAST_MAX_CLASS;
+#else
+  return class_id <= HZ6_SAME_OWNER_FAST_MAX_CLASS;
+#endif
 }
 
 static inline int hz6_allocator_same_owner_fast_eligible_inline(
@@ -73,7 +77,8 @@ static inline int hz6_allocator_same_owner_fast_free_inline(
     return 0;
   }
 
-  return hz6_allocator_cache_active_descriptor(allocator, descriptor, ptr);
+  return hz6_allocator_cache_active_descriptor_trusted_owner(allocator,
+                                                             descriptor, ptr);
 }
 
 static inline int hz6_allocator_same_owner_fast_free_trusted_owner_inline(
