@@ -55,6 +55,24 @@ Latest HZ6 Ubuntu hot-path tuning:
     large_central counters in diagnostics, but normal reuse stayed flat or
     slightly worse while adding allocator state and branches. Keep it as
     no-go evidence, not selected code.
+
+  Follow-up:
+    Route lookup static-inline header fast path was tested after frontdispatch.
+    R1 smoke passed, but standalone repeat-5 regressed broadly:
+      frontdispatch remote speed/rss/remote 36.29M / 35.12M / 36.07M
+      routeinline   remote speed/rss/remote 31.90M / 34.67M / 31.73M
+      frontdispatch reuse  speed/rss/remote 36.07M / 36.37M / 36.68M
+      routeinline   reuse  speed/rss/remote 31.02M / 35.65M / 31.77M
+    Reverted. Do not move route lookup bodies into public headers for this
+    runner without a stronger code-layout reason.
+
+    Standalone benchmark owner-slot switching now uses a local inline helper
+    instead of calling the debug API inside every remote/reuse iteration. This
+    is a measurement-harness cleanup only, not an allocator lane promotion.
+    Repeat-5 benchownerslot 20260612_2330:
+      local strict/speed/rss/remote 33.41M / 25.75M / 28.74M / 26.02M
+      remote speed/rss/remote       37.13M / 38.48M / 35.44M
+      reuse speed/rss/remote        36.44M / 36.13M / 36.42M
 ```
 
 HZ7 TinyRoute current track:

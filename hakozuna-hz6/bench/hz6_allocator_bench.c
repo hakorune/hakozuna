@@ -64,6 +64,15 @@ static const char* profile_name(Hz6ProfileId profile) {
   }
 }
 
+static inline int bench_set_owner_slot(Hz6Allocator* allocator,
+                                       uint32_t slot) {
+  if (!allocator) {
+    return 0;
+  }
+  allocator->owner.token.slot = slot;
+  return 1;
+}
+
 #if HZ6_DIAGNOSTIC_PROBES
 static const char* front_name(size_t index) {
   switch (index) {
@@ -498,7 +507,7 @@ static void print_stats(const Hz6Allocator* allocator) {
 static int run_local(Hz6ProfileId profile, uint64_t iters, size_t size) {
   Hz6Allocator allocator;
   hz6_allocator_init_with_profile(&allocator, profile);
-  if (!hz6_allocator_debug_set_owner_slot(&allocator, 0)) {
+  if (!bench_set_owner_slot(&allocator, 0)) {
     fprintf(stderr, "owner slot setup failed\n");
     hz6_allocator_destroy(&allocator);
     return 4;
@@ -532,7 +541,7 @@ static int run_local(Hz6ProfileId profile, uint64_t iters, size_t size) {
 static int run_remote(Hz6ProfileId profile, uint64_t iters, size_t size) {
   Hz6Allocator allocator;
   hz6_allocator_init_with_profile(&allocator, profile);
-  if (!hz6_allocator_debug_set_owner_slot(&allocator, 0)) {
+  if (!bench_set_owner_slot(&allocator, 0)) {
     fprintf(stderr, "owner slot setup failed\n");
     hz6_allocator_destroy(&allocator);
     return 4;
@@ -549,7 +558,7 @@ static int run_remote(Hz6ProfileId profile, uint64_t iters, size_t size) {
       return 5;
     }
     touch_payload(ptr, size);
-    if (!hz6_allocator_debug_set_owner_slot(&allocator, 1)) {
+    if (!bench_set_owner_slot(&allocator, 1)) {
       fprintf(stderr, "remote owner slot switch failed\n");
       hz6_allocator_destroy(&allocator);
       return 6;
@@ -560,7 +569,7 @@ static int run_remote(Hz6ProfileId profile, uint64_t iters, size_t size) {
       hz6_allocator_destroy(&allocator);
       return 7;
     }
-    if (!hz6_allocator_debug_set_owner_slot(&allocator, 0)) {
+    if (!bench_set_owner_slot(&allocator, 0)) {
       fprintf(stderr, "remote owner restore failed\n");
       hz6_allocator_destroy(&allocator);
       return 8;
@@ -581,7 +590,7 @@ static int run_remote(Hz6ProfileId profile, uint64_t iters, size_t size) {
 static int run_reuse(Hz6ProfileId profile, uint64_t iters, size_t size) {
   Hz6Allocator allocator;
   hz6_allocator_init_with_profile(&allocator, profile);
-  if (!hz6_allocator_debug_set_owner_slot(&allocator, 0)) {
+  if (!bench_set_owner_slot(&allocator, 0)) {
     fprintf(stderr, "owner slot setup failed\n");
     hz6_allocator_destroy(&allocator);
     return 4;
@@ -599,7 +608,7 @@ static int run_reuse(Hz6ProfileId profile, uint64_t iters, size_t size) {
       return 5;
     }
     touch_payload(first, size);
-    if (!hz6_allocator_debug_set_owner_slot(&allocator, 1)) {
+    if (!bench_set_owner_slot(&allocator, 1)) {
       fprintf(stderr, "reuse owner slot switch failed\n");
       hz6_allocator_destroy(&allocator);
       return 6;
@@ -610,7 +619,7 @@ static int run_reuse(Hz6ProfileId profile, uint64_t iters, size_t size) {
       hz6_allocator_destroy(&allocator);
       return 7;
     }
-    if (!hz6_allocator_debug_set_owner_slot(&allocator, 0)) {
+    if (!bench_set_owner_slot(&allocator, 0)) {
       fprintf(stderr, "reuse owner restore failed\n");
       hz6_allocator_destroy(&allocator);
       return 8;
