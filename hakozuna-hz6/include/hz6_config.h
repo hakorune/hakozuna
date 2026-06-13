@@ -102,6 +102,12 @@
 #define HZ6_TOY_SOURCE_BLOCK_BYTES ((size_t)65536)
 #endif
 
+#ifndef HZ6_MIDPAGE_RUN_BYTES
+/* MidPage default keeps the R1 direct API seed conservative.  LD_PRELOAD
+ * performance bundles may raise this to reduce 8K/32K source-run churn. */
+#define HZ6_MIDPAGE_RUN_BYTES ((size_t)65536)
+#endif
+
 #ifndef HZ6_SOURCE_RUN_BITMAP_WORDS
 #define HZ6_SOURCE_RUN_BITMAP_WORDS \
   ((size_t)((HZ6_SOURCE_RUN_MAX_SLOTS + 63u) / 64u))

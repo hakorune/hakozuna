@@ -185,6 +185,48 @@ HZ6 Ubuntu LD_PRELOAD current pass:
     successful but could not avoid the preload-level route lookup. It does not
     address the remaining 4096..16384 tcmalloc gap, which now points at
     MidPage/source path rather than Toy/preload free routing.
+
+  MidPage/source follow-up:
+    Implemented:
+      HZ6_MIDPAGE_RUN_BYTES is now a shared config knob. The direct HZ6/R1
+      default remains 64KiB, while the Ubuntu LD_PRELOAD bundle selects 256KiB.
+
+    raw:
+      private/raw-results/linux/hz6_preload_midrun_ladder_r3_20260613
+      private/raw-results/linux/hz6_preload_midrun_diag_20260613
+      private/raw-results/linux/hz6_preload_midrun_default256_guard_20260613
+
+    Repeat-3, stats off:
+      16..4096:
+        default64K median 33.164M
+        mid128K    median 33.926M
+        mid256K    median 33.122M
+        mid512K    median 30.987M
+
+      4096..16384:
+        default64K median 16.549M
+        mid128K    median 18.050M
+        mid256K    median 19.394M
+        mid512K    median 20.181M
+
+    Diagnostic, stats on:
+      mid256K:
+        midpage_source_alloc = 1583
+        route_lookup_probe_total = 1134224
+      mid512K:
+        midpage_source_alloc = 794
+        route_lookup_probe_total = 1081620
+
+    Decision:
+      Select 256KiB for the Ubuntu LD_PRELOAD default bundle. 512KiB reduces
+      MidPage source churn further and is a useful MidPage-specialized control,
+      but it regresses the 16..4096 mixed guard in the focused ladder. 256KiB
+      gives the large positive 4096..16384 gain with flat RSS and without
+      promoting a narrower MidPage-only default.
+
+    Default bundle guard after promotion:
+      16..4096 median 34.420M, peak median 155648 KB
+      4096..16384 median 19.433M, peak median 197120 KB
 ```
 
 Latest HZ6 Ubuntu hot-path tuning:

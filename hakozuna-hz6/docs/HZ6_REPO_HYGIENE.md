@@ -78,6 +78,7 @@ ElasticCapacity diagnostic-only:
 Ubuntu LD_PRELOAD functional lane:
   hakozuna-hz6/linux/build_hz6_preload.sh default bundle
   route131k-desc32768-source4096-frontcache8192-toyactivemap32768
+  + midpage-run256k
   + mmap retain + 64K retain stack
   + ToyFullBlockPrefill max128
   + RouteTombstoneCompact
@@ -91,8 +92,11 @@ Ubuntu LD_PRELOAD status:
   cross check it beats mimalloc, but remains far below tcmalloc/HZ3/HZ4.
   PreloadToyActiveFastFree is also selected; it removes preload-level route
   lookup before Toy active-map hits and makes the focused 16..256 row edge past
-  mimalloc. Keep LD_PRELOAD conclusions separate from direct HZ6 API strength
-  rows until broader row validation catches up.
+  mimalloc. MidPage run 256K is selected for the preload bundle after moving
+  the 4096..16384 median from about 16.55M to about 19.39M with flat peak RSS;
+  512K remains a MidPage-specialized control because it regressed the 16..4096
+  guard. Keep LD_PRELOAD conclusions separate from direct HZ6 API strength rows
+  until broader row validation catches up.
 ```
 
 The side-owner16 descriptor layout lane is not selected. It is buildable as

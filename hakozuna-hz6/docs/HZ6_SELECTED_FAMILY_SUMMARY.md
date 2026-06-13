@@ -41,6 +41,7 @@ HZ6_OBJECT_DESCRIPTOR_CAPACITY=32768
 HZ6_SOURCE_BLOCK_CAPACITY=4096
 HZ6_FRONT_CACHE_BIN_CAPACITY=8192
 HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY=32768
+HZ6_MIDPAGE_RUN_BYTES=262144
 HZ6_LINUX_MMAP_RETAIN_L1=1
 HZ6_LINUX_MMAP_RETAIN_64K_STACK_L1=1
 HZ6_TOY_FULL_BLOCK_PREFILL_L1=1
@@ -63,9 +64,12 @@ unregister/tombstone churn and lifted the focused repeat-3 median to about
 The broader pass then selected PreloadToyActiveFastFree-L1: preload `free()`
 tries the Toy active-map before route lookup, dropping 16..256 diagnostic route
 probes from about 2.12M to about 37.7K and moving the focused 16..256 cross row
-to `hz6 53.883M` versus `mimalloc 52.656M`.  LD_PRELOAD is now a real Ubuntu
-performance lane, but it is still separate from direct HZ6 API strength rows
-and should be validated on broader rows before paper-facing promotion.
+to `hz6 53.883M` versus `mimalloc 52.656M`.  MidPageSourceRun256K-L1 is also
+selected for the preload bundle: it keeps the direct/R1 64KiB default intact
+but raises the LD_PRELOAD MidPage run to 256KiB, moving the 4096..16384 median
+from `16.549M` to `19.394M` with flat peak RSS.  LD_PRELOAD is now a real
+Ubuntu performance lane, but it is still separate from direct HZ6 API strength
+rows and should be validated on broader rows before paper-facing promotion.
 
 ## Selected Rows
 
