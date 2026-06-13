@@ -581,6 +581,12 @@
 #define HZ6_PRELOAD_FAST_FREE_L1 0
 #endif
 
+#ifndef HZ6_PRELOAD_REALLOC_IN_PLACE_L1
+/* LD_PRELOAD realloc shortcut: if the requested size fits the current HZ6
+ * usable descriptor bytes, return the same pointer instead of malloc/copy/free. */
+#define HZ6_PRELOAD_REALLOC_IN_PLACE_L1 1
+#endif
+
 #ifndef HZ6_SMALL_RUN_ROUTE_DRYRUN_L1
 /* Diagnostic-only probe for a future SmallRunFront/TinyRunRoute design. */
 #define HZ6_SMALL_RUN_ROUTE_DRYRUN_L1 0

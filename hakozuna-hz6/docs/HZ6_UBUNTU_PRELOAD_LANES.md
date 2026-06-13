@@ -30,6 +30,7 @@ HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY=32768
 HZ6_MIDPAGE_RUN_BYTES=262144
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2=1
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_EXTERNAL_L2=1
+HZ6_PRELOAD_REALLOC_IN_PLACE_L1=1
 HZ6_LINUX_MMAP_RETAIN_L1=1
 HZ6_LINUX_MMAP_RETAIN_64K_STACK_L1=1
 HZ6_TOY_FULL_BLOCK_PREFILL_L1=1
@@ -53,6 +54,8 @@ Latest selected shape:
 | `16..4096` focused cross | `hz6 34.559M` vs `mimalloc 6.027M` |
 | `1024..4096` external-map repeat-7 | `32.011M` |
 | `4096..16384` external-map repeat-7 | `19.903M` |
+| `1024..4096` realloc-in-place repeat-5 | `34.678M` |
+| `4096..16384` realloc-in-place repeat-5 | `30.118M` |
 
 Important caveat:
 
@@ -75,6 +78,7 @@ LD_PRELOAD selected/default lane.
 | Toy active fast free | `PreloadToyActiveFastFree-L1` | 16..256 route probes dropped from about `2.12M` to about `37.7K`; focused cross edged past mimalloc. |
 | MidPage run 256K | `HZ6_MIDPAGE_RUN_BYTES=262144` | 4096..16384 repeat-3 moved from `16.549M` to `19.394M` with flat RSS. |
 | External MidPage active map | `HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2=1`, external, cap8192/probe2 | Repeat-7 versus no-map moved 1024..4096 from `30.962M` to `32.011M` and 4096..16384 from `18.983M` to `19.903M`. |
+| Realloc in-place | `HZ6_PRELOAD_REALLOC_IN_PLACE_L1=1` | Repeat-5 versus control-off moved 16..256 `50.810M -> 55.313M`, 16..4096 `33.867M -> 36.556M`, 1024..4096 `31.473M -> 34.678M`, and 4096..16384 `19.971M -> 30.118M`. |
 
 ## Selected Controls
 
@@ -87,6 +91,7 @@ Keep these controls available when changing the preload lane:
 | MidPage run 512K | MidPage-specialized source-churn upper-bound; improves 4096..16384 but regresses 16..4096. |
 | frontcache 16384 | Boundary for frontcache8192; flat enough not to promote. |
 | route table 262144 | Capacity upper-bound; not selected by current evidence. |
+| `HZ6_PRELOAD_REALLOC_IN_PLACE_L1=0` | Direct control for preload realloc in-place. |
 
 ## No-Go / Evidence-Only
 
@@ -139,6 +144,8 @@ private/raw-results/linux/hz6_preload_midmap_route_cap_small_r3_20260613
 private/raw-results/linux/hz6_preload_midmap_selected_guard_20260613
 private/raw-results/linux/hz6_preload_midmap_external_control_r7_20260613
 private/raw-results/linux/hz6_preload_midmap_external_diag_20260613
+private/raw-results/linux/hz6_preload_realloc_audit_20260613
+private/raw-results/linux/hz6_preload_realloc_inplace_ab_r5_20260613
 ```
 
 Storage rule:

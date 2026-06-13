@@ -69,6 +69,7 @@ typedef struct Hz6PreloadPhaseStats {
   _Atomic(size_t) free_prechecked_candidate;
   _Atomic(size_t) realloc_calls;
   _Atomic(size_t) realloc_owned;
+  _Atomic(size_t) realloc_in_place;
   _Atomic(size_t) realloc_real_fallback;
   _Atomic(size_t) realloc_copy_bytes;
   _Atomic(size_t) malloc_usable_size_calls;
@@ -599,8 +600,9 @@ static void hz6_preload_print_stats(void) {
           "free_visible_route_hit=%zu free_toy_active_map_hit=%zu "
           "free_route_invalid=%zu free_route_miss_real=%zu "
           "free_prechecked_candidate=%zu "
-          "realloc_calls=%zu realloc_owned=%zu realloc_real_fallback=%zu "
-          "realloc_copy_bytes=%zu malloc_usable_size_calls=%zu "
+          "realloc_calls=%zu realloc_owned=%zu realloc_in_place=%zu "
+          "realloc_real_fallback=%zu realloc_copy_bytes=%zu "
+          "malloc_usable_size_calls=%zu "
           "malloc_usable_size_owned=%zu "
           "malloc_usable_size_real_fallback=%zu\n",
           hz6_preload_phase_load(&g_hz6_preload_phase_stats.malloc_calls),
@@ -625,6 +627,7 @@ static void hz6_preload_print_stats(void) {
               &g_hz6_preload_phase_stats.free_prechecked_candidate),
           hz6_preload_phase_load(&g_hz6_preload_phase_stats.realloc_calls),
           hz6_preload_phase_load(&g_hz6_preload_phase_stats.realloc_owned),
+          hz6_preload_phase_load(&g_hz6_preload_phase_stats.realloc_in_place),
           hz6_preload_phase_load(
               &g_hz6_preload_phase_stats.realloc_real_fallback),
           hz6_preload_phase_load(&g_hz6_preload_phase_stats.realloc_copy_bytes),
@@ -831,6 +834,12 @@ void* realloc(void* ptr, size_t size) {
     return hz6_preload_real_realloc(ptr, size);
   }
   hz6_preload_phase_count(&g_hz6_preload_phase_stats.realloc_owned);
+#if HZ6_PRELOAD_REALLOC_IN_PLACE_L1
+  if (size <= old_size) {
+    hz6_preload_phase_count(&g_hz6_preload_phase_stats.realloc_in_place);
+    return ptr;
+  }
+#endif
 
   void* next = malloc(size);
   if (!next) {

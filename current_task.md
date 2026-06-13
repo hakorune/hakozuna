@@ -325,6 +325,53 @@ HZ6 Ubuntu LD_PRELOAD current pass:
           stronger on the MidPage-only row but loses the balanced locality
           tradeoff; external keeps a positive MidPage gain while also improving
           the 1024..4096 guard.
+
+    PreloadReallocInPlace-L1:
+      Implemented:
+        LD_PRELOAD realloc now returns the same pointer when the requested size
+        is within the current HZ6 descriptor usable bytes. This avoids the old
+        malloc/copy/free path for same-class or shrink reallocs. The default is
+        controlled by HZ6_PRELOAD_REALLOC_IN_PLACE_L1=1, with an explicit
+        control-off build available.
+
+      raw:
+        private/raw-results/linux/hz6_preload_realloc_audit_20260613
+        private/raw-results/linux/hz6_preload_realloc_inplace_r5_20260613
+        private/raw-results/linux/hz6_preload_realloc_inplace_ab_r5_20260613
+
+      Diagnostic:
+        small:
+          realloc_in_place = 27021 / 31268
+          realloc_copy_bytes = 659744
+        toy_full:
+          realloc_in_place = 30813 / 31268
+          realloc_copy_bytes = 555536
+        toy_high:
+          realloc_in_place = 31098 / 31268
+          realloc_copy_bytes = 671744
+        mid_mixed:
+          realloc_in_place = 15610 / 15636
+          realloc_copy_bytes = 212992
+
+      repeat-5 A/B:
+        16..256:
+          off 50.810M
+          on  55.313M
+        16..4096:
+          off 33.867M
+          on  36.556M
+        1024..4096:
+          off 31.473M
+          on  34.678M
+        4096..16384:
+          off 19.971M
+          on  30.118M
+
+      Decision:
+        Select PreloadReallocInPlace-L1 for Ubuntu LD_PRELOAD. It removes the
+        benchmark's 1/64 realloc malloc/copy/free round trip whenever the
+        existing HZ6 usable size already covers the requested size. This is a
+        wrapper-boundary fix, not a route/backend semantic change.
 ```
 
 Latest HZ6 Ubuntu hot-path tuning:

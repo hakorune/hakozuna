@@ -45,6 +45,7 @@ HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY=32768
 HZ6_MIDPAGE_RUN_BYTES=262144
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2=1
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_EXTERNAL_L2=1
+HZ6_PRELOAD_REALLOC_IN_PLACE_L1=1
 HZ6_LINUX_MMAP_RETAIN_L1=1
 HZ6_LINUX_MMAP_RETAIN_64K_STACK_L1=1
 HZ6_TOY_FULL_BLOCK_PREFILL_L1=1
@@ -77,7 +78,10 @@ ladder from `19.383M` to `20.975M`, with a post-promotion default guard at
 `20.762M`.  The selected map is stored externally in the preload bundle:
 repeat-7 versus no-map control moved 1024..4096 from `30.962M` to `32.011M`
 and 4096..16384 from `18.983M` to `19.903M`; internal map storage is kept as a
-MidPage-only control.  LD_PRELOAD is now a real Ubuntu
+MidPage-only control.  PreloadReallocInPlace-L1 is also selected: repeat-5
+versus control-off moved 16..256 `50.810M -> 55.313M`, 16..4096
+`33.867M -> 36.556M`, 1024..4096 `31.473M -> 34.678M`, and 4096..16384
+`19.971M -> 30.118M`.  LD_PRELOAD is now a real Ubuntu
 performance lane, but it is still separate from direct HZ6 API strength rows
 and should be validated on broader rows before paper-facing promotion.
 
