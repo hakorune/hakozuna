@@ -37,6 +37,25 @@
   HZ6_LARGE_SPAN_CENTRAL_CLASS_BYTES_CAP
 #endif
 
+#ifndef HZ6_LINUX_MMAP_RETAIN_L1
+/* Linux SourceLayer retained-mmap cache.  Intended for LD_PRELOAD speed lanes:
+ * release keeps exact-size mappings in a bounded process-local cache and
+ * reserve reuses them before calling mmap. */
+#define HZ6_LINUX_MMAP_RETAIN_L1 0
+#endif
+
+#ifndef HZ6_LINUX_MMAP_RETAIN_SLOT_COUNT
+#define HZ6_LINUX_MMAP_RETAIN_SLOT_COUNT ((size_t)4096)
+#endif
+
+#ifndef HZ6_LINUX_MMAP_RETAIN_BYTES_CAP
+#define HZ6_LINUX_MMAP_RETAIN_BYTES_CAP ((size_t)256u * 1024u * 1024u)
+#endif
+
+#ifndef HZ6_LINUX_MMAP_RETAIN_PURGE_ON_RELEASE_L1
+#define HZ6_LINUX_MMAP_RETAIN_PURGE_ON_RELEASE_L1 0
+#endif
+
 #ifndef HZ6_LARGE_SPAN_TRUSTED_LOCAL_FREE_L1
 /* Candidate-only LargeSpan local free shortcut.  hz6_free() has already
  * routed local frees through the local-owner branch before calling the front. */

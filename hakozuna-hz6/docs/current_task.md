@@ -301,6 +301,68 @@ Ubuntu LD_PRELOAD lane:
         Keep packed-meta as RSS/control evidence only for LD_PRELOAD.  It cuts
         a few MiB of RSS, but loses speed and stability versus the selected
         unpacked 131072-route default.
+  - Current bottleneck after route 131072:
+      Re-profiled the selected 131072-route preload build because it is still
+      much slower than hz3/hz4/tcmalloc.
+      perf on `4 200000 8192 16 1024`:
+        munmap kernel path: about 28% children
+        mmap kernel path:   about 22% children
+        route/register symbols are no longer the only dominant cost
+      strace syscall summary on `4 50000 8192 16 1024`:
+        HZ6 preload: mmap 5060, munmap 4315
+        system:      mmap 16,   munmap 5
+      Read:
+        Route-cap 131072 removed the worst route-table pressure, but the
+        LD_PRELOAD lane is still behaving like a source mmap/munmap churn
+        allocator.  The next implementation target is a Linux SourceLayer
+        retained-mmap cache for preload, not another route inline/probe tweak.
+      Next lane:
+        PreloadSourceRetain-L1
+          cache exact-size Linux mmap source releases
+          reserve reuses cached mappings before calling mmap
+          cap retained mappings/bytes
+          keep disabled outside preload unless explicitly requested
+        Acceptance:
+          `/bin/true` and small mixed_ws under LD_PRELOAD pass
+          R1 smokes pass with default non-preload config
+          mmap/munmap syscall count drops sharply on mixed_ws
+          speed improves enough to justify the RSS tradeoff
+      Implementation:
+        Added `HZ6_LINUX_MMAP_RETAIN_L1` to the Linux mmap SourceLayer.
+        When enabled, `hz6_linux_mmap_release()` stores exact-size mappings in
+        a bounded process-local cache instead of calling `munmap`, and
+        `hz6_linux_mmap_reserve()` checks that cache before calling `mmap`.
+        The default preload build enables it with:
+          retained slots: 4096
+          retained bytes cap: 256 MiB
+          purge-on-release: off
+        Non-preload/default HZ6 builds keep the flag off.
+      First result:
+        `/bin/true` under LD_PRELOAD passes.
+        small mixed_ws under LD_PRELOAD passes.
+        R1 smokes pass.
+        strace `4 50000 8192 16 1024`:
+          before retain: mmap 5060, munmap 4315
+          after retain:  mmap 2106, munmap 6
+        repeat-3 `4 100000 8192 16 1024`:
+          7.330M / 6.957M / 7.033M ops/s
+          peak 76,544 / 76,544 / 76,160 KB
+        cross-allocator single-run:
+          system   26.998M ops/s / 18,548 KB
+          hz3      68.464M ops/s / 25,344 KB
+          hz4      53.045M ops/s / 30,208 KB
+          hz6       7.225M ops/s / 75,904 KB
+          mimalloc 18.430M ops/s / 22,528 KB
+          tcmalloc 66.979M ops/s / 24,832 KB
+      Result dirs:
+        private/raw-results/linux/hz6_preload_sourceretain_r3
+        private/raw-results/linux/hz6_preload_sourceretain_cross_r1
+      Read:
+        PreloadSourceRetain-L1 is a clear win: about 2.3x over the 131072-route
+        default and about 30x over the first functional preload row.  It nearly
+        removes `munmap`, but `mmap` remains high, so the next bottleneck is
+        retained-cache miss/size mismatch or source-run admission, plus the
+        global retain mutex now visible as futex traffic under strace.
   - Rejected preload probe:
       SourceBlockRoute exact-skip was tested with range-index, dynamic slot
       descriptor map, late register, behavior, and exact-skip.  It regressed
