@@ -27,6 +27,7 @@ HZ6_OBJECT_DESCRIPTOR_CAPACITY=32768
 HZ6_SOURCE_BLOCK_CAPACITY=4096
 HZ6_FRONT_CACHE_BIN_CAPACITY=8192
 HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY=32768
+HZ6_TOY_SOURCE_BLOCK_BYTES=65536
 HZ6_MIDPAGE_RUN_BYTES=262144
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2=1
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_EXTERNAL_L2=1
@@ -41,6 +42,16 @@ HZ6_ROUTE_TOMBSTONE_COMPACT_L1=1
 HZ6_ROUTE_HASH_XOR_FOLD_L1=1
 HZ6_ROUTE_LINEAR_WRAP_L1=1
 HZ6_ROUTE_LOOP_CARRY_L1=1
+```
+
+The preload build script also explicitly keeps these no-go/control lanes off
+unless `HZ6_EXTRA_CFLAGS` overrides them for an A/B run:
+
+```text
+HZ6_LINUX_MMAP_RETAIN_TLS_L1=0
+HZ6_SOURCE_RUN_REUSE_L1=0
+HZ6_ROUTE_PACKED_META_L1=0
+HZ6_PRELOAD_FAST_FREE_L1=0
 ```
 
 ## Current Read
@@ -149,6 +160,9 @@ Keep these controls available when changing the preload lane:
 | Lane | Read |
 | --- | --- |
 | Toy-map widening to MidPage | Reduced route probes but created too many map misses/collisions and slightly regressed focused repeat; do not widen the Toy active map. |
+| Toy active-map capacity 65536/16384 | Both capacity directions regressed Toy high rows in focused repeat; keep the selected 32768 default. |
+| Toy active-map probe8 | Roughly flat on 1024..4096 and weaker on 16..4096; keep probe4. |
+| active-map slot-index/code-shape helper | No selected-row win; changing this header shape can disturb MidPage/Toy preload layout, so keep the existing body. |
 | `HZ6_LINUX_MMAP_RETAIN_TLS_L1=1` | Did not reduce mmap count and regressed repeat-3. |
 | `HZ6_SOURCE_RUN_REUSE_L1=1` | Reduced source allocation count but reusable-run scan/activation cost dominated. |
 | Toy source blocks 128K/256K | Raised RSS and regressed throughput. |
@@ -203,6 +217,10 @@ private/raw-results/linux/hz6_midpage_hz4close_diag_20260613
 private/raw-results/linux/hz6_midpage_unaligned_ab_r5_20260613
 private/raw-results/linux/hz6_midpage_probe4_ab_r5_20260613
 private/raw-results/linux/hz6_midpage_probe4_hz4_guard_r5_20260613
+private/raw-results/linux/hz6_toy_high_alloc_path_diag_20260613
+private/raw-results/linux/hz6_toy_active_map_tune_r5_20260613
+private/raw-results/linux/hz6_toy_active_map_cap16_r5_20260613
+private/raw-results/linux/hz6_clean_rebuild_default_matrix_guard_r5_20260613
 ```
 
 Storage rule:

@@ -117,6 +117,57 @@ HZ6 Ubuntu LD_PRELOAD current pass:
     scoped; 1024..4096 still needs separate work and HZ3/tcmalloc remain much
     faster.
 
+2026-06-13 follow-up:
+  Toy/MidPage active-map capacity, probe, and code-shape tuning was checked
+  after the selected MidPage unaligned/probe4 lane.
+
+  Raw:
+    private/raw-results/linux/hz6_toy_high_alloc_path_diag_20260613
+    private/raw-results/linux/hz6_toy_active_map_tune_r5_20260613
+    private/raw-results/linux/hz6_toy_active_map_cap16_r5_20260613
+    private/raw-results/linux/hz6_active_map_mask_r5_20260613
+    private/raw-results/linux/hz6_toy_map_only_r5_20260613
+    private/raw-results/linux/hz6_clean_rebuild_default_matrix_guard_r5_20260613
+
+  Diagnostic read:
+    Toy high free-side route lookup is already mostly removed:
+      16..4096:
+        toy_small_active_map_free_hit ~= 1.996M
+        free_local_route_valid ~= 5.4K
+      1024..4096:
+        toy_small_active_map_free_hit ~= 1.994M
+        free_local_route_valid ~= 6.9K
+
+    Toy high alloc-side direct reuse is also already dominant:
+      16..4096:
+        toy_small_malloc_fast_hit ~= 1.999M
+        toy_small_malloc_front_dispatch ~= 1.7K
+      1024..4096:
+        toy_small_malloc_fast_hit ~= 1.999M
+        toy_small_malloc_front_dispatch ~= 2.1K
+
+  No-go:
+    HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY=65536:
+      large regression on Toy high rows; do not promote.
+    HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY=16384:
+      large regression on Toy high rows; do not promote.
+    HZ6_TOY_SMALL_ACTIVE_FREE_MAP_PROBE_LIMIT=8:
+      roughly flat on 1024..4096 and weaker on 16..4096; do not promote.
+    active-map slot-index/code-shape helper:
+      no selected-row win; keep active-map body unchanged.
+
+  Guard note:
+    4096..16384 comparisons must use the lane's prior guard shape
+    `bench_mixed_ws_crt 4 500000 4096 4096 16384`. Running
+    `4 1000000 8192 4096 16384` is a different stress row and reports
+    lower throughput/higher RSS, so do not compare it against the HZ4-close
+    guard directly.
+
+  Decision:
+    No code change selected from this pass. The next useful attack is not
+    active-map capacity/probe tuning; look for a different Toy high cost
+    center if targeting the 1024..4096 HZ4 gap.
+
 2026-06-13 update:
   Re-ran the selected LD_PRELOAD default bundle after
   PreloadReallocInPlace-L1 against hz6/mimalloc/tcmalloc/system.

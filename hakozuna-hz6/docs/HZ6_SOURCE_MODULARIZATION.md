@@ -19,6 +19,94 @@ cleanup direction before the next optimization pass.
 
 ## Current Pressure Points
 
+### 2026-06-13 Ubuntu/API Modularization Audit
+
+Worker review confirms the high-level HZ6 layering is still sound:
+
+```text
+include/:
+  public allocator ABI is intentionally narrow
+
+route/:
+  mostly independent route backend/table contract
+  stores descriptors as opaque pointers
+
+source/:
+  OS memory ops and registry are cleanly separated from fronts
+
+fronts/:
+  expected bridge between policy, frontcache, descriptors, route registration,
+  and source blocks
+
+preload/:
+  libc interposition is correctly kept in one translation unit
+```
+
+Current cleanup targets:
+
+```text
+P0 docs/build hygiene:
+  build_hz6_preload.sh selected flags must stay readable and explicit
+  selected/default flags should not rely on subtle config defaults
+  high-risk no-go/control flags should be explicitly default-off in preload
+
+P1 source split:
+  linux/hz6_sources.sh is now the shared source/include manifest for preload,
+  benchmark, and R1 smoke builds. Keep new Linux build scripts on this manifest
+  unless they deliberately need a smaller proof-only source set.
+
+P2 preload facade:
+  hide direct Hz6RouteResult / Hz6ObjectDescriptor use from preload behind
+  allocator-owned helpers:
+    hz6_preload_alloc()
+    hz6_preload_free_if_owned()
+    hz6_preload_usable_size_if_owned()
+    hz6_preload_realloc_owned_or_copy()
+
+P3 internal type split:
+  split api/hz6_allocator_types.h into narrower descriptor/source-block/core
+  internal type headers once the current preload lane is stable
+```
+
+Largest current coupling hubs:
+
+```text
+api/hz6_allocator_types.h:
+  central internal coupling hub for allocator, descriptors, source blocks,
+  route cache, active maps, backend state, and stats-owned internals
+
+api/hz6_allocator_route.c:
+  route cache, visibility registry, shared directory, owner locality, exact
+  register/unregister, tombstone compact, and lookup variants
+
+api/hz6_allocator_source_block_create.c:
+  source-block allocation, source-run bitmap, descriptor map ownership,
+  elastic depot, range index, dry-run stats, and creation flow
+
+fronts/hz6_front_reuse_transfer.c:
+  transfer reuse core plus elastic depot diagnostics, source-run locality,
+  slot-owner metadata, descriptor rehome, and route replacement dry-runs
+
+fronts/hz6_front_source_block.c:
+  source-run reuse, descriptor acquisition, invalid-range registration, exact
+  route registration, source-block lifetime, and prefill orchestration
+
+source/linux_source_mmap_memory.c:
+  Linux mmap backing plus retained mapping cache, 64K retain stack, TLS
+  retained no-go lane, and stats
+```
+
+Header-inline risk rule:
+
+```text
+Keep tiny proven hot accessors inline.
+Do not move broad diagnostic or policy logic into headers by default.
+Header helpers that mutate stats or inspect descriptor/source internals make
+preload and unrelated translation units sensitive to code layout and macro
+drift. The route header-inline and active-map code-shape attempts are no-go
+evidence for this risk.
+```
+
 ### Slot Owner Side Metadata Is Now Split From Front Reuse
 
 `hz6_front_reuse_transfer.c` should stay focused on transfer reuse and front

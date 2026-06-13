@@ -45,6 +45,8 @@ HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY=32768
 HZ6_MIDPAGE_RUN_BYTES=262144
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2=1
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_EXTERNAL_L2=1
+HZ6_MIDPAGE_ACTIVE_FREE_MAP_UNALIGNED_L2=1
+HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT=4
 HZ6_PRELOAD_REALLOC_IN_PLACE_L1=1
 HZ6_LINUX_MMAP_RETAIN_L1=1
 HZ6_LINUX_MMAP_RETAIN_64K_STACK_L1=1
@@ -72,7 +74,8 @@ to `hz6 53.883M` versus `mimalloc 52.656M`.  MidPageSourceRun256K-L1 is also
 selected for the preload bundle: it keeps the direct/R1 64KiB default intact
 but raises the LD_PRELOAD MidPage run to 256KiB, moving the 4096..16384 median
 from `16.549M` to `19.394M` with flat peak RSS. MidPageActiveFreeMap-L2 is then
-selected for preload with capacity 8192/probe2; it keeps a dedicated MidPage
+selected for preload with external capacity 8192 and the later selected
+unaligned/probe4 gate; it keeps a dedicated MidPage
 map instead of widening the Toy map and moved the focused 4096..16384 cap
 ladder from `19.383M` to `20.975M`, with a post-promotion default guard at
 `20.762M`.  The selected map is stored externally in the preload bundle:
@@ -85,6 +88,9 @@ versus control-off moved 16..256 `50.810M -> 55.313M`, 16..4096
 for the preload bundle: the 4096..16384 phase guard moved
 `free_midpage_active_map_hit` from `3,321` to `915,393`, and the HZ4 close guard
 reached `hz6 31.505M / 117,248 KB` versus `hz4 30.916M / 134,400 KB`.
+Follow-up active-map capacity/probe/code-shape tuning selected no further code
+change; Toy capacity 65536/16384, Toy probe8, and active-map slot-index helper
+shapes remain no-go/control evidence.
 The follow-up selected cross repeat-5 puts HZ6 ahead of
 mimalloc on all four preload mixed_ws rows: 16..256 `55.196M` vs `53.028M`,
 16..4096 `36.376M` vs `5.954M`, 1024..4096 `34.296M` vs `4.834M`, and
