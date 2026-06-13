@@ -49,6 +49,9 @@ comparability.
 | `lowpage/hz5_lowpage64_control.inc` | LowPage control-plane list / checkpoint / relbuf helpers | split out from `hz5_lowpage64.c`; keep include-local while the control-plane lanes settle |
 | `lowpage/hz5_lowpage64_state_storage.inc` | LowPage global/TLS control-plane storage | split out from `hz5_lowpage64_control.inc`; keep include-local so state declarations stay near control helpers |
 | `lowpage/hz5_lowpage64_stats_storage.inc` | LowPage diagnostic counter storage | split out from `hz5_lowpage64_control.inc`; keep include-local so counter users do not gain link churn |
+| `lowpage/hz5_lowpage64_stats_print.inc` | LowPage diagnostic print include router | split out from `hz5_lowpage64.c`; keep include-local so the hot file stays below 1000 lines |
+| `lowpage/hz5_lowpage64_stats_snapshot.inc` | LowPage snapshot diagnostic print helpers | split out from `hz5_lowpage64_stats_print.inc`; keep include-local while the diagnostic schema remains active |
+| `lowpage/hz5_lowpage64_stats_once.inc` | LowPage atexit diagnostic print helpers | split out from `hz5_lowpage64_stats_print.inc`; keep include-local while the diagnostic schema remains active |
 | `lowpage/hz5_lowpage64.c` | exact-route P25/P43/P45 historical hot path | do not touch during Linux general malloc work |
 | `lowpage/hz5_lowpage64_p43g.inc` | LowPage P43g prepare/wrapper note helpers | split out from `hz5_lowpage64.c`; include-local to keep the hot file slimmer |
 | `lowpage/hz5_lowpage64_p45dr.inc` | LowPage P45 stage1 drain diagnostics | split out from `hz5_lowpage64.c`; keep the cold diagnostic block include-local |
@@ -140,8 +143,10 @@ P43 segment state/counter storage in `hz5_lowpage64_p43_segment_state.inc`,
 P43P/P44/P45 bridge diagnostics in `hz5_lowpage64_p43p_bridge.inc`, plus P45
 drain diagnostics in `hz5_lowpage64_p45dr.inc`, plus lowpage control helpers in
 `hz5_lowpage64_control.inc`, with global/TLS control-plane storage isolated in
-`hz5_lowpage64_state_storage.inc` and diagnostic counter storage isolated in
-`hz5_lowpage64_stats_storage.inc`. Policy now keeps Local2P
+`hz5_lowpage64_state_storage.inc`, diagnostic counter storage isolated in
+`hz5_lowpage64_stats_storage.inc`, and diagnostic print helpers routed through
+`hz5_lowpage64_stats_print.inc`, `hz5_lowpage64_stats_snapshot.inc`, and
+`hz5_lowpage64_stats_once.inc`. Policy now keeps Local2P
 helpers in `hz5_policy_local2p.inc`. MidFront now also keeps its remote batch
 helpers in `hz5_midfront_remote_batch.inc`. Preload full now also keeps its
 bootstrap/stat/pointer-track support helpers in
