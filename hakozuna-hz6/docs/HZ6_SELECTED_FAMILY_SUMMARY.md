@@ -43,6 +43,7 @@ HZ6_FRONT_CACHE_BIN_CAPACITY=8192
 HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY=32768
 HZ6_MIDPAGE_RUN_BYTES=262144
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2=1
+HZ6_MIDPAGE_ACTIVE_FREE_MAP_EXTERNAL_L2=1
 HZ6_LINUX_MMAP_RETAIN_L1=1
 HZ6_LINUX_MMAP_RETAIN_64K_STACK_L1=1
 HZ6_TOY_FULL_BLOCK_PREFILL_L1=1
@@ -72,7 +73,10 @@ from `16.549M` to `19.394M` with flat peak RSS. MidPageActiveFreeMap-L2 is then
 selected for preload with capacity 8192/probe2; it keeps a dedicated MidPage
 map instead of widening the Toy map and moved the focused 4096..16384 cap
 ladder from `19.383M` to `20.975M`, with a post-promotion default guard at
-`20.762M`.  LD_PRELOAD is now a real Ubuntu
+`20.762M`.  The selected map is stored externally in the preload bundle:
+repeat-7 versus no-map control moved 1024..4096 from `30.962M` to `32.011M`
+and 4096..16384 from `18.983M` to `19.903M`; internal map storage is kept as a
+MidPage-only control.  LD_PRELOAD is now a real Ubuntu
 performance lane, but it is still separate from direct HZ6 API strength rows
 and should be validated on broader rows before paper-facing promotion.
 

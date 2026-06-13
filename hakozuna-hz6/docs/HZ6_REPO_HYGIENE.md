@@ -79,7 +79,7 @@ Ubuntu LD_PRELOAD functional lane:
   hakozuna-hz6/linux/build_hz6_preload.sh default bundle
   route131k-desc32768-source4096-frontcache8192-toyactivemap32768
   + midpage-run256k
-  + midpage-active-map8k-probe2
+  + external-midpage-active-map8k-probe2
   + mmap retain + 64K retain stack
   + ToyFullBlockPrefill max128
   + RouteTombstoneCompact
@@ -96,11 +96,12 @@ Ubuntu LD_PRELOAD status:
   mimalloc. MidPage run 256K is selected for the preload bundle after moving
   the 4096..16384 median from about 16.55M to about 19.39M with flat peak RSS;
   512K remains a MidPage-specialized control because it regressed the 16..4096
-  guard. MidPageActiveFreeMap-L2 capacity 8192/probe2 is also selected after
-  moving the focused 4096..16384 guard to about 20.98M and the post-promotion
-  default guard to about 20.76M; the earlier Toy-map widening is no-go
-  evidence. Keep LD_PRELOAD conclusions separate from direct HZ6 API strength
-  rows until broader row validation catches up.
+  guard. MidPageActiveFreeMap-L2 capacity 8192/probe2 is also selected with
+  external storage after the repeat-7 control improved both 1024..4096 and
+  4096..16384 versus no-map. Internal map storage remains a MidPage-only
+  control; the earlier Toy-map widening is no-go evidence. Keep LD_PRELOAD
+  conclusions separate from direct HZ6 API strength rows until broader row
+  validation catches up.
 ```
 
 The side-owner16 descriptor layout lane is not selected. It is buildable as

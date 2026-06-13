@@ -268,6 +268,7 @@ HZ6 Ubuntu LD_PRELOAD current pass:
 
       Selected for Ubuntu LD_PRELOAD:
         HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2=1
+        HZ6_MIDPAGE_ACTIVE_FREE_MAP_EXTERNAL_L2=1
         HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY=8192
         HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT=2
 
@@ -294,6 +295,35 @@ HZ6 Ubuntu LD_PRELOAD current pass:
         midpage_active_map_free_miss = 159688
         midpage_active_map_free_stale = 0
         midpage_active_map_free_cache_fail = 0
+
+      External storage follow-up:
+        The first selected map stored entries inside Hz6Allocator.  That helped
+        MidPage but made allocator-local footprint larger.  External storage
+        keeps only a pointer/current counter in Hz6Allocator and lazily allocates
+        the map entries.  Init now explicitly clears both Toy and MidPage active
+        maps so stack allocators and macro-on direct builds do not depend on
+        zeroed allocator storage.
+
+        raw:
+          private/raw-results/linux/hz6_preload_midmap_external_r5_20260613
+          private/raw-results/linux/hz6_preload_midmap_external_control_r7_20260613
+          private/raw-results/linux/hz6_preload_midmap_external_diag_20260613
+
+        repeat-7 control:
+          1024..4096:
+            no_midmap median 30.962M
+            external  median 32.011M
+            internal  median 30.984M
+          4096..16384:
+            no_midmap median 18.983M
+            external  median 19.903M
+            internal  median 20.504M
+
+        Decision:
+          Keep external storage as the preload default. Internal map storage is
+          stronger on the MidPage-only row but loses the balanced locality
+          tradeoff; external keeps a positive MidPage gain while also improving
+          the 1024..4096 guard.
 ```
 
 Latest HZ6 Ubuntu hot-path tuning:

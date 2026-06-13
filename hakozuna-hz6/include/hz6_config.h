@@ -320,6 +320,12 @@
 #define HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2 0
 #endif
 
+#ifndef HZ6_MIDPAGE_ACTIVE_FREE_MAP_EXTERNAL_L2
+/* Store the MidPage active map outside Hz6Allocator when enabled.  This keeps
+ * the allocator object smaller for preload thread-local allocators. */
+#define HZ6_MIDPAGE_ACTIVE_FREE_MAP_EXTERNAL_L2 0
+#endif
+
 #ifndef HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY
 #define HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY ((size_t)8192)
 #endif

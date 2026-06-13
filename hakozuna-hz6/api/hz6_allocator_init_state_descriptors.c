@@ -3,6 +3,22 @@
 void hz6_allocator_init_state_descriptors(Hz6Allocator* allocator) {
   allocator->next_descriptor_index = 0;
   allocator->descriptor_available_count = HZ6_OBJECT_DESCRIPTOR_CAPACITY;
+#if HZ6_TOY_SMALL_ACTIVE_FREE_MAP_L1
+  allocator->toy_small_active_map_current = 0;
+  for (size_t i = 0; i < HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY; ++i) {
+    allocator->toy_small_active_map[i] = (Hz6ToySmallActiveMapEntry){0};
+  }
+#endif
+#if HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2
+  allocator->midpage_active_map_current = 0;
+#if HZ6_MIDPAGE_ACTIVE_FREE_MAP_EXTERNAL_L2
+  allocator->midpage_active_map = NULL;
+#else
+  for (size_t i = 0; i < HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY; ++i) {
+    allocator->midpage_active_map[i] = (Hz6MidPageActiveMapEntry){0};
+  }
+#endif
+#endif
 #if HZ6_THIN_DESCRIPTOR_L1
   allocator->next_descriptor_cold_index = 0;
   allocator->descriptor_cold_source_current = 0;

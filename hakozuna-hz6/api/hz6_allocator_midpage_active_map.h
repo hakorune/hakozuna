@@ -6,6 +6,7 @@
 #include "../fronts/midpage/hz6_midpage_front.h"
 
 #include <stdint.h>
+#include <stdlib.h>
 
 static inline int hz6_midpage_active_map_eligible(uint16_t front_id,
                                                   uint16_t class_id) {
@@ -27,6 +28,47 @@ static inline size_t hz6_midpage_active_map_index(const void* ptr) {
 }
 
 #if HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2
+static inline Hz6MidPageActiveMapEntry* hz6_midpage_active_map_entries(
+    Hz6Allocator* allocator) {
+  if (!allocator) {
+    return NULL;
+  }
+#if HZ6_MIDPAGE_ACTIVE_FREE_MAP_EXTERNAL_L2
+  return allocator->midpage_active_map;
+#else
+  return allocator->midpage_active_map;
+#endif
+}
+
+static inline Hz6MidPageActiveMapEntry* hz6_midpage_active_map_ensure(
+    Hz6Allocator* allocator) {
+  if (!allocator) {
+    return NULL;
+  }
+#if HZ6_MIDPAGE_ACTIVE_FREE_MAP_EXTERNAL_L2
+  if (!allocator->midpage_active_map) {
+    allocator->midpage_active_map =
+        (Hz6MidPageActiveMapEntry*)calloc(
+            HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY,
+            sizeof(Hz6MidPageActiveMapEntry));
+  }
+#endif
+  return hz6_midpage_active_map_entries(allocator);
+}
+
+static inline void hz6_midpage_active_map_destroy(Hz6Allocator* allocator) {
+#if HZ6_MIDPAGE_ACTIVE_FREE_MAP_EXTERNAL_L2
+  if (!allocator || !allocator->midpage_active_map) {
+    return;
+  }
+  free(allocator->midpage_active_map);
+  allocator->midpage_active_map = NULL;
+  allocator->midpage_active_map_current = 0;
+#else
+  (void)allocator;
+#endif
+}
+
 static inline void hz6_midpage_active_map_clear(
     Hz6Allocator* allocator,
     Hz6MidPageActiveMapEntry* entry) {
@@ -55,6 +97,11 @@ static inline void hz6_midpage_active_map_register(
       !hz6_midpage_active_map_aligned(ptr)) {
     return;
   }
+  Hz6MidPageActiveMapEntry* entries =
+      hz6_midpage_active_map_ensure(allocator);
+  if (!entries) {
+    return;
+  }
   size_t base_index = hz6_midpage_active_map_index(ptr);
   Hz6MidPageActiveMapEntry* entry = NULL;
   Hz6MidPageActiveMapEntry* first_empty = NULL;
@@ -63,8 +110,7 @@ static inline void hz6_midpage_active_map_register(
        ++probe) {
     size_t index =
         (base_index + probe) % HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY;
-    Hz6MidPageActiveMapEntry* candidate =
-        &allocator->midpage_active_map[index];
+    Hz6MidPageActiveMapEntry* candidate = &entries[index];
     if (candidate->ptr == ptr) {
       entry = candidate;
       break;
@@ -78,8 +124,7 @@ static inline void hz6_midpage_active_map_register(
     saw_collision = 1;
   }
   if (!entry) {
-    entry = first_empty ? first_empty
-                        : &allocator->midpage_active_map[base_index];
+    entry = first_empty ? first_empty : &entries[base_index];
   }
   if (!entry->ptr) {
     ++allocator->midpage_active_map_current;
@@ -139,6 +184,11 @@ static inline int hz6_midpage_active_map_try_free(Hz6Allocator* allocator,
   if (!allocator || !ptr || allocator->midpage_active_map_current == 0) {
     return 0;
   }
+  Hz6MidPageActiveMapEntry* entries =
+      hz6_midpage_active_map_entries(allocator);
+  if (!entries) {
+    return 0;
+  }
   if (!hz6_midpage_active_map_aligned(ptr)) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.midpage_active_map_alignment_skip;
@@ -154,8 +204,7 @@ static inline int hz6_midpage_active_map_try_free(Hz6Allocator* allocator,
        ++probe) {
     size_t index =
         (base_index + probe) % HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY;
-    Hz6MidPageActiveMapEntry* candidate =
-        &allocator->midpage_active_map[index];
+    Hz6MidPageActiveMapEntry* candidate = &entries[index];
     if (candidate->ptr == ptr) {
       entry = candidate;
       break;
@@ -203,5 +252,11 @@ static inline int hz6_midpage_active_map_try_free(Hz6Allocator* allocator,
   return 0;
 #endif
 }
+
+#if !HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2
+static inline void hz6_midpage_active_map_destroy(Hz6Allocator* allocator) {
+  (void)allocator;
+}
+#endif
 
 #endif
