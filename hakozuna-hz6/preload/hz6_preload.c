@@ -348,6 +348,21 @@ static void hz6_preload_print_stats(void) {
   size_t midpage_active_map_free_cache_fail = 0;
   size_t midpage_active_map_alignment_skip = 0;
   size_t midpage_active_map_route_bypass = 0;
+  size_t smallrun_route_attempt = 0;
+  size_t smallrun_range_hit = 0;
+  size_t smallrun_active_slot_hit = 0;
+  size_t smallrun_descriptor_match = 0;
+  size_t smallrun_generation_match = 0;
+  size_t smallrun_would_valid = 0;
+  size_t smallrun_would_invalid = 0;
+  size_t smallrun_exact_fallback_needed = 0;
+  size_t smallrun_false_positive = 0;
+  size_t source_block_route_range_index_lookup = 0;
+  size_t source_block_route_range_index_hit = 0;
+  size_t source_block_route_range_index_miss = 0;
+  size_t source_block_route_range_index_stale = 0;
+  size_t source_block_route_range_index_probe_total = 0;
+  size_t source_block_route_range_index_probe_max = 0;
 
   pthread_mutex_lock(&g_hz6_preload_allocator_registry_mutex);
   allocator_count = g_hz6_preload_allocator_registry_count;
@@ -480,6 +495,30 @@ static void hz6_preload_print_stats(void) {
         stats.midpage_active_map_alignment_skip;
     midpage_active_map_route_bypass +=
         stats.midpage_active_map_route_bypass;
+    smallrun_route_attempt += stats.smallrun_route_attempt;
+    smallrun_range_hit += stats.smallrun_range_hit;
+    smallrun_active_slot_hit += stats.smallrun_active_slot_hit;
+    smallrun_descriptor_match += stats.smallrun_descriptor_match;
+    smallrun_generation_match += stats.smallrun_generation_match;
+    smallrun_would_valid += stats.smallrun_would_valid;
+    smallrun_would_invalid += stats.smallrun_would_invalid;
+    smallrun_exact_fallback_needed += stats.smallrun_exact_fallback_needed;
+    smallrun_false_positive += stats.smallrun_false_positive;
+    source_block_route_range_index_lookup +=
+        stats.source_block_route_range_index_lookup;
+    source_block_route_range_index_hit +=
+        stats.source_block_route_range_index_hit;
+    source_block_route_range_index_miss +=
+        stats.source_block_route_range_index_miss;
+    source_block_route_range_index_stale +=
+        stats.source_block_route_range_index_stale;
+    source_block_route_range_index_probe_total +=
+        stats.source_block_route_range_index_probe_total;
+    if (stats.source_block_route_range_index_probe_max >
+        source_block_route_range_index_probe_max) {
+      source_block_route_range_index_probe_max =
+          stats.source_block_route_range_index_probe_max;
+    }
   }
   pthread_mutex_unlock(&g_hz6_preload_allocator_registry_mutex);
 
@@ -628,6 +667,34 @@ static void hz6_preload_print_stats(void) {
           midpage_active_map_free_cache_fail,
           midpage_active_map_alignment_skip,
           midpage_active_map_route_bypass);
+
+  fprintf(stderr,
+          "[HZ6_PRELOAD_RUNMETA_DETAIL] "
+          "smallrun_route_attempt=%zu "
+          "smallrun_range_hit=%zu "
+          "smallrun_active_slot_hit=%zu "
+          "smallrun_descriptor_match=%zu "
+          "smallrun_generation_match=%zu "
+          "smallrun_would_valid=%zu "
+          "smallrun_would_invalid=%zu "
+          "smallrun_exact_fallback_needed=%zu "
+          "smallrun_false_positive=%zu "
+          "source_block_route_range_index_lookup=%zu "
+          "source_block_route_range_index_hit=%zu "
+          "source_block_route_range_index_miss=%zu "
+          "source_block_route_range_index_stale=%zu "
+          "source_block_route_range_index_probe_total=%zu "
+          "source_block_route_range_index_probe_max=%zu\n",
+          smallrun_route_attempt, smallrun_range_hit,
+          smallrun_active_slot_hit, smallrun_descriptor_match,
+          smallrun_generation_match, smallrun_would_valid,
+          smallrun_would_invalid, smallrun_exact_fallback_needed,
+          smallrun_false_positive, source_block_route_range_index_lookup,
+          source_block_route_range_index_hit,
+          source_block_route_range_index_miss,
+          source_block_route_range_index_stale,
+          source_block_route_range_index_probe_total,
+          source_block_route_range_index_probe_max);
 
   fprintf(stderr,
           "[HZ6_PRELOAD_PHASE_STATS] malloc_calls=%zu "

@@ -213,6 +213,142 @@ HZ6 Ubuntu LD_PRELOAD current pass:
     This is closer to HZ3/HZ4 architecture and more likely to matter than
     additional function-shape tweaks.
 
+  Implemented diagnostic surface:
+    Add `[HZ6_PRELOAD_RUNMETA_DETAIL]` to preload stats output:
+      smallrun_route_attempt
+      smallrun_range_hit
+      smallrun_active_slot_hit
+      smallrun_descriptor_match
+      smallrun_generation_match
+      smallrun_would_valid
+      smallrun_would_invalid
+      smallrun_exact_fallback_needed
+      smallrun_false_positive
+      source_block_route_range_index_* counters
+
+  Diagnostic build flags:
+    HZ6_DIAGNOSTIC_PROBES=1
+    HZ6_SOURCE_RUN_REUSE_L1=1
+    HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_L1=1
+    HZ6_SOURCE_BLOCK_ROUTE_RANGE_INDEX_L1=1
+    HZ6_SOURCE_BLOCK_ROUTE_LATE_REGISTER_L1=1
+    HZ6_SMALL_RUN_ROUTE_DRYRUN_L1=1
+    HZ6_SMALL_RUN_ROUTE_TOY_RANGE_ONLY_L1=1
+    HZ6_SMALL_RUN_ROUTE_ARMED_L1=1
+
+  First diagnostic:
+    raw:
+      private/raw-results/linux/hz6_toy_run_local_meta_diag_20260613
+
+    1024..4096:
+      smallrun_route_attempt = 6,819
+      smallrun_range_hit = 6,815
+      smallrun_descriptor_match = 6,815
+      smallrun_generation_match = 6,815
+      smallrun_would_valid = 6,815
+      smallrun_exact_fallback_needed = 4
+      smallrun_false_positive = 0
+      valid/attempt = 0.9994
+
+    16..4096:
+      smallrun_route_attempt = 7,040
+      smallrun_would_valid = 7,036
+      smallrun_exact_fallback_needed = 4
+      smallrun_false_positive = 0
+      valid/attempt = 0.9994
+
+    4096..16384:
+      smallrun_route_attempt = 23,980
+      smallrun_would_valid = 2
+      smallrun_exact_fallback_needed = 23,978
+      valid/attempt = 0.0001
+
+  Read:
+    For Toy rows, the residual route-lookup path that survives active-map
+    bypass is almost perfectly recoverable from source-run metadata. For
+    MidPage 4096..16384 it is not useful, so behavior must be armed/gated to
+    Toy source-run ranges.
+
+2026-06-13 next:
+  SmallRunRouteBehaviorToy-L1
+
+  Goal:
+    Convert the clean ToyRunLocalMeta dry-run into behavior and measure whether
+    replacing residual exact route lookup with run-local metadata helps.
+
+  Plan:
+    A/B with:
+      HZ6_SOURCE_RUN_REUSE_L1=1
+      HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_L1=1
+      HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_DYNAMIC_L1=1
+      HZ6_SOURCE_BLOCK_ROUTE_RANGE_INDEX_L1=1
+      HZ6_SOURCE_BLOCK_ROUTE_LATE_REGISTER_L1=1
+      HZ6_SMALL_RUN_ROUTE_TOY_RANGE_ONLY_L1=1
+      HZ6_SMALL_RUN_ROUTE_ARMED_L1=1
+    Compare behavior off/on:
+      HZ6_SMALL_RUN_ROUTE_BEHAVIOR_L1=0/1
+
+  Acceptance:
+    Toy rows improve or stay flat
+    4096..16384 does not regress materially
+    stats guard remains clean
+    if source-run metadata support itself costs more than behavior saves,
+    keep as no-go/control
+
+  Result:
+    raw:
+      private/raw-results/linux/hz6_smallrun_route_behavior_toy_r5_20260613
+
+    Source-run metadata support enabled, behavior off/on repeat-5:
+      16..256:
+        off median = 51.952M ops/s
+        on median = 52.256M ops/s
+        ratio = 1.0058x
+      16..4096:
+        off median = 36.964M ops/s
+        on median = 36.917M ops/s
+        ratio = 0.9987x
+      1024..4096:
+        off median = 35.946M ops/s
+        on median = 35.499M ops/s
+        ratio = 0.9875x
+      4096..16384:
+        off median = 28.099M ops/s
+        on median = 28.245M ops/s
+        ratio = 1.0052x
+
+    Stats guard, on / 1024..4096:
+      alloc_fail = 0
+      route_invalid = 0
+      route_miss = 0
+      route_register_fail = 0
+      source_block_exhausted = 0
+      descriptor_exhausted = 0
+
+  Decision:
+    No-go as behavior. The dry-run proof was strong, but enabling source-run
+    reuse + descriptor map + range index costs more than the residual route
+    lookup it replaces. The target 1024..4096 row drops from the selected
+    ~38.8M ops/s band to ~35.9M with support-only and ~35.5M with behavior.
+    Do not promote SmallRunRouteBehaviorToy-L1 without a much cheaper local
+    metadata representation.
+
+2026-06-13 next:
+  ToyRunLocalMetaCloseout-L1
+
+  Goal:
+    Close the current local metadata attempt and avoid re-testing the same
+    source-run route stack.
+
+  Decision:
+    The direction is architecturally right, but the existing source-run route
+    support is too heavy for preload Toy rows. A future attempt must avoid:
+      full source-run reuse enablement
+      per-run descriptor map allocation on the hot preload profile
+      range-index lookup for a tiny residual route population
+    The next viable design would need a narrower active-map-adjacent metadata
+    cache, not the current source-block range-index machinery.
+
 2026-06-13 HZ3/HZ4 architecture comparison:
   Raw:
     private/raw-results/linux/hz6_preload_vs_hz3_hz4_r5_20260613

@@ -90,6 +90,17 @@ selected mixed_ws preload rows, but this is not a universal allocator win.
 Present it as the current Ubuntu HZ6 LD_PRELOAD selected/default lane.
 ```
 
+Current lane decisions:
+
+| Lane | Status | Read |
+| --- | --- | --- |
+| `HZ6_TOY_ACTIVE_MAP_REGISTER_FAST_SLOT_L1` | selected | Large Toy-row win; keep default on. |
+| `HZ6_TOY_TRUSTED_ACTIVATE_SKIP_SOURCE_BLOCK_CHECK_L1` | candidate/default | Small `1024..4096` win; watch `16..1024`. |
+| `HZ6_TOY_PRECLASSIFIED_MALLOC_L1` | no-go | Direct preclassification worsened layout/throughput. |
+| `HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1` | no-go | Wrapper bypass regressed target rows. |
+| `HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1` | no-go | Neutral target, broad Toy wobble. |
+| `SmallRunRouteBehaviorToy-L1` | no-go | Dry-run clean, support machinery too expensive. |
+
 `HZ6_TOY_PRECLASSIFIED_MALLOC_L1` exists as a gated control/no-go candidate,
 not as selected default. It bypasses generic front-registry classification for
 `size <= 4096`, but the focused `1024..4096` preload A/B regressed versus the
@@ -116,6 +127,23 @@ candidate/default. It skips the repeated source-block active/bounds validation
 only after local frontcache state/ptr/generation checks and only for
 Toy-sized descriptors. Repeat-9 showed `1024..4096` improving `1.0065x`; keep
 watching the small `16..1024` wobble (`0.9955x`).
+
+`[HZ6_PRELOAD_RUNMETA_DETAIL]` is the ToyRunLocalMeta diagnostic line. Use it
+only with diagnostic builds that enable source-run reuse, source-block range
+index, slot descriptor map, and `HZ6_SMALL_RUN_ROUTE_DRYRUN_L1`; it estimates
+whether run-local metadata can replace exact route / descriptor source-block
+work on Toy source-run frees.
+
+First runmeta diagnostic: `1024..4096` and `16..4096` had
+`smallrun_would_valid / smallrun_route_attempt = 0.9994` with
+`smallrun_false_positive=0`. `4096..16384` had only `0.0001`, so any behavior
+must stay Toy/source-run gated.
+
+`SmallRunRouteBehaviorToy-L1` is no-go with the current source-run route stack.
+Although dry-run was clean, enabling source-run reuse + descriptor map + range
+index dropped `1024..4096` into the `35M ops/s` band; behavior on was slightly
+worse than support-only. Do not promote this path without a cheaper
+active-map-adjacent metadata design.
 
 HZ3/HZ4 comparison read:
 
@@ -265,6 +293,8 @@ private/raw-results/linux/hz6_preload_selected_cross_fastslot_r5_20260613
 private/raw-results/linux/hz6_toy_trusted_activate_skip_r5_20260613
 private/raw-results/linux/hz6_toy_trusted_activate_skip_focus_r9_20260613
 private/raw-results/linux/hz6_preload_selected_cross_actskip_r5_20260613
+private/raw-results/linux/hz6_toy_run_local_meta_diag_20260613
+private/raw-results/linux/hz6_smallrun_route_behavior_toy_r5_20260613
 ```
 
 Storage rule:
