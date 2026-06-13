@@ -16,6 +16,58 @@ decisions should be mirrored into the HZ6 docs above.
 HZ6 is now in active Windows/Linux implementation and benchmarking. HZ5 Linux
 remains profile-stabilized; new HZ5 work should not blur the HZ6 contract.
 
+HZ6 Ubuntu LD_PRELOAD current pass:
+
+```text
+2026-06-13:
+  RouteRegister/DescriptorFrontCacheAudit-L1 started from the post
+  RouteTombstoneCompact preload lane.
+
+  Implemented:
+    HZ6_PRELOAD_STATS now also emits:
+      [HZ6_PRELOAD_ROUTE_DETAIL]
+      [HZ6_PRELOAD_FRONT_DETAIL]
+    These are diagnostic readouts only. They aggregate existing allocator
+    counters across the registered preload allocators and do not change hot-path
+    behavior.
+
+  Diagnostic 1M mixed_ws with DIAGNOSTIC_PROBES:
+    route_invalid = 0
+    route_miss = 0
+    alloc_fail = 0
+    route_register_fail = 0
+    source_block_exhausted = 0
+    route_register_reason_source_run_slot ~= 1.44M
+    route_unregister_reason_frontcache_overflow ~= 1.43M
+    toy_small_active_map_route_bypass ~= 2.01M
+    frontcache_reuse_hit ~= 2.03M
+
+  Read:
+    Free-side route lookup is mostly bypassed by Toy active-map on this guard.
+    Remaining churn is source-run slot route registration and frontcache
+    overflow unregister/release, not header-inline route lookup.
+
+  Accepted:
+    HZ6_FRONT_CACHE_BIN_CAPACITY=4096 for the LD_PRELOAD default bundle.
+
+  Focused 1M mixed_ws repeat-3, stats off:
+    raw:
+      private/raw-results/linux/hz6_preload_frontcache_cap_r3_20260613
+    default frontcache1024:
+      18.193M / 17.908M / 18.563M ops/s
+    frontcache2048:
+      20.456M / 20.362M / 18.476M ops/s
+    frontcache4096:
+      22.893M / 22.087M / 22.929M ops/s
+
+  Decision:
+    frontcache4096 is selected for Ubuntu LD_PRELOAD. It cut source_alloc on
+    the stats guard from about 21.3K to about 8.7K and did not show a peak-RSS
+    regression in the focused repeat. Keep larger frontcache and further route
+    inline/code-layout changes as controls until a fresh diagnostic points
+    there.
+```
+
 Latest HZ6 Ubuntu hot-path tuning:
 
 ```text

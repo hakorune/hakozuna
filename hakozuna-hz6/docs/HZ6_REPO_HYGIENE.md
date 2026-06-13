@@ -77,7 +77,7 @@ ElasticCapacity diagnostic-only:
 
 Ubuntu LD_PRELOAD functional lane:
   hakozuna-hz6/linux/build_hz6_preload.sh default bundle
-  route131k-desc32768-source4096-frontcache1024-toyactivemap32768
+  route131k-desc32768-source4096-frontcache4096-toyactivemap32768
   + mmap retain + 64K retain stack
   + ToyFullBlockPrefill max128
   + RouteTombstoneCompact
@@ -85,9 +85,11 @@ Ubuntu LD_PRELOAD functional lane:
 
 Ubuntu LD_PRELOAD status:
   functional and smoke-clean; short guard and 1M long-run cliff are fixed.
-  Not a paper-facing selected performance row yet: current 1M cross median is
-  below mimalloc.  Keep LD_PRELOAD conclusions separate from direct HZ6 API
-  strength rows.
+  Route/frontcache audit promoted frontcache4096 for the preload lane, raising
+  the focused 1M mixed_ws guard from about 18.2M to about 22.9M median ops/s.
+  Not a paper-facing selected performance row yet: the latest documented 1M
+  cross median before the frontcache4096 refresh is below mimalloc. Keep
+  LD_PRELOAD conclusions separate from direct HZ6 API strength rows.
 ```
 
 The side-owner16 descriptor layout lane is not selected. It is buildable as

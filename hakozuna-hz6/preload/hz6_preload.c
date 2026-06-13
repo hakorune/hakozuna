@@ -251,6 +251,53 @@ static void hz6_preload_print_stats(void) {
   size_t route_register_probe_max = 0;
   size_t route_unregister_probe_total = 0;
   size_t route_unregister_probe_max = 0;
+  size_t route_register_reason_unknown = 0;
+  size_t route_register_reason_source_run_slot = 0;
+  size_t route_register_reason_direct_source = 0;
+  size_t route_register_reason_materialize = 0;
+  size_t route_register_reason_rehome = 0;
+  size_t route_unregister_reason_unknown = 0;
+  size_t route_unregister_reason_frontcache_overflow = 0;
+  size_t route_unregister_reason_cap_release = 0;
+  size_t route_unregister_reason_descriptorless_detach = 0;
+  size_t route_unregister_reason_source_slot_release = 0;
+  size_t route_unregister_reason_rehome = 0;
+  size_t route_active_current = 0;
+  size_t route_active_max = 0;
+  size_t route_tombstone_current = 0;
+  size_t route_tombstone_max = 0;
+  size_t route_register_used_tombstone = 0;
+  size_t route_register_full_probe_with_tombstone = 0;
+  size_t route_tombstone_compact_attempt = 0;
+  size_t route_tombstone_compact_success = 0;
+  size_t route_tombstone_compact_fail_alloc = 0;
+  size_t route_tombstone_compact_moved = 0;
+  size_t route_tombstone_cond_probe = 0;
+  size_t route_tombstone_cond_would_compact = 0;
+  size_t route_tombstone_cond_ratio25 = 0;
+  size_t route_tombstone_cond_occupancy75 = 0;
+  size_t route_tombstone_cond_cooldown_blocked = 0;
+  size_t route_tombstone_cond_highwater = 0;
+  size_t descriptor_live_max = 0;
+  size_t source_block_active_max = 0;
+  size_t frontcache_total_max = 0;
+  size_t frontcache_reuse_hit = 0;
+  size_t frontcache_reuse_invalid = 0;
+  size_t frontcache_spill_success = 0;
+  size_t frontcache_spill_retry_success = 0;
+  size_t frontcache_borrow_success = 0;
+  size_t toy_small_malloc_frontcache_pop = 0;
+  size_t toy_small_malloc_activate_success = 0;
+  size_t toy_small_free_cache_attempt = 0;
+  size_t toy_small_free_cache_success = 0;
+  size_t toy_small_active_map_register = 0;
+  size_t toy_small_active_map_register_collision = 0;
+  size_t toy_small_active_map_free_attempt = 0;
+  size_t toy_small_active_map_free_hit = 0;
+  size_t toy_small_active_map_free_miss = 0;
+  size_t toy_small_active_map_free_stale = 0;
+  size_t toy_small_active_map_free_cache_fail = 0;
+  size_t toy_small_active_map_route_bypass = 0;
 
   pthread_mutex_lock(&g_hz6_preload_allocator_registry_mutex);
   allocator_count = g_hz6_preload_allocator_registry_count;
@@ -291,6 +338,84 @@ static void hz6_preload_print_stats(void) {
     if (stats.route_unregister_probe_max > route_unregister_probe_max) {
       route_unregister_probe_max = stats.route_unregister_probe_max;
     }
+    route_register_reason_unknown += stats.route_register_reason_unknown;
+    route_register_reason_source_run_slot +=
+        stats.route_register_reason_source_run_slot;
+    route_register_reason_direct_source +=
+        stats.route_register_reason_direct_source;
+    route_register_reason_materialize +=
+        stats.route_register_reason_materialize;
+    route_register_reason_rehome += stats.route_register_reason_rehome;
+    route_unregister_reason_unknown += stats.route_unregister_reason_unknown;
+    route_unregister_reason_frontcache_overflow +=
+        stats.route_unregister_reason_frontcache_overflow;
+    route_unregister_reason_cap_release +=
+        stats.route_unregister_reason_cap_release;
+    route_unregister_reason_descriptorless_detach +=
+        stats.route_unregister_reason_descriptorless_detach;
+    route_unregister_reason_source_slot_release +=
+        stats.route_unregister_reason_source_slot_release;
+    route_unregister_reason_rehome += stats.route_unregister_reason_rehome;
+    route_active_current += stats.route_active_current;
+    if (stats.route_active_max > route_active_max) {
+      route_active_max = stats.route_active_max;
+    }
+    route_tombstone_current += stats.route_tombstone_current;
+    if (stats.route_tombstone_max > route_tombstone_max) {
+      route_tombstone_max = stats.route_tombstone_max;
+    }
+    route_register_used_tombstone += stats.route_register_used_tombstone;
+    route_register_full_probe_with_tombstone +=
+        stats.route_register_full_probe_with_tombstone;
+    route_tombstone_compact_attempt += stats.route_tombstone_compact_attempt;
+    route_tombstone_compact_success += stats.route_tombstone_compact_success;
+    route_tombstone_compact_fail_alloc +=
+        stats.route_tombstone_compact_fail_alloc;
+    route_tombstone_compact_moved += stats.route_tombstone_compact_moved;
+    route_tombstone_cond_probe += stats.route_tombstone_cond_probe;
+    route_tombstone_cond_would_compact +=
+        stats.route_tombstone_cond_would_compact;
+    route_tombstone_cond_ratio25 += stats.route_tombstone_cond_ratio25;
+    route_tombstone_cond_occupancy75 +=
+        stats.route_tombstone_cond_occupancy75;
+    route_tombstone_cond_cooldown_blocked +=
+        stats.route_tombstone_cond_cooldown_blocked;
+    if (stats.route_tombstone_cond_highwater >
+        route_tombstone_cond_highwater) {
+      route_tombstone_cond_highwater =
+          stats.route_tombstone_cond_highwater;
+    }
+    if (stats.descriptor_live_max > descriptor_live_max) {
+      descriptor_live_max = stats.descriptor_live_max;
+    }
+    if (stats.source_block_active_max > source_block_active_max) {
+      source_block_active_max = stats.source_block_active_max;
+    }
+    if (stats.frontcache_total_max > frontcache_total_max) {
+      frontcache_total_max = stats.frontcache_total_max;
+    }
+    frontcache_reuse_hit += stats.frontcache_reuse_hit;
+    frontcache_reuse_invalid += stats.frontcache_reuse_invalid;
+    frontcache_spill_success += stats.frontcache_spill_success;
+    frontcache_spill_retry_success += stats.frontcache_spill_retry_success;
+    frontcache_borrow_success += stats.frontcache_borrow_success;
+    toy_small_malloc_frontcache_pop += stats.toy_small_malloc_frontcache_pop;
+    toy_small_malloc_activate_success +=
+        stats.toy_small_malloc_activate_success;
+    toy_small_free_cache_attempt += stats.toy_small_free_cache_attempt;
+    toy_small_free_cache_success += stats.toy_small_free_cache_success;
+    toy_small_active_map_register += stats.toy_small_active_map_register;
+    toy_small_active_map_register_collision +=
+        stats.toy_small_active_map_register_collision;
+    toy_small_active_map_free_attempt +=
+        stats.toy_small_active_map_free_attempt;
+    toy_small_active_map_free_hit += stats.toy_small_active_map_free_hit;
+    toy_small_active_map_free_miss += stats.toy_small_active_map_free_miss;
+    toy_small_active_map_free_stale += stats.toy_small_active_map_free_stale;
+    toy_small_active_map_free_cache_fail +=
+        stats.toy_small_active_map_free_cache_fail;
+    toy_small_active_map_route_bypass +=
+        stats.toy_small_active_map_route_bypass;
   }
   pthread_mutex_unlock(&g_hz6_preload_allocator_registry_mutex);
 
@@ -339,6 +464,88 @@ static void hz6_preload_print_stats(void) {
           retain_stats.retain_generic_put_hit,
           retain_stats.retain_generic_put_full, retain_stats.munmap_fallback,
           retain_stats.retained_bytes, retain_stats.retained_64k_count);
+
+  fprintf(stderr,
+          "[HZ6_PRELOAD_ROUTE_DETAIL] "
+          "route_register_reason_unknown=%zu "
+          "route_register_reason_source_run_slot=%zu "
+          "route_register_reason_direct_source=%zu "
+          "route_register_reason_materialize=%zu "
+          "route_register_reason_rehome=%zu "
+          "route_unregister_reason_unknown=%zu "
+          "route_unregister_reason_frontcache_overflow=%zu "
+          "route_unregister_reason_cap_release=%zu "
+          "route_unregister_reason_descriptorless_detach=%zu "
+          "route_unregister_reason_source_slot_release=%zu "
+          "route_unregister_reason_rehome=%zu "
+          "route_active_current=%zu route_active_max=%zu "
+          "route_tombstone_current=%zu route_tombstone_max=%zu "
+          "route_register_used_tombstone=%zu "
+          "route_register_full_probe_with_tombstone=%zu "
+          "route_tombstone_compact_attempt=%zu "
+          "route_tombstone_compact_success=%zu "
+          "route_tombstone_compact_fail_alloc=%zu "
+          "route_tombstone_compact_moved=%zu "
+          "route_tombstone_cond_probe=%zu "
+          "route_tombstone_cond_would_compact=%zu "
+          "route_tombstone_cond_ratio25=%zu "
+          "route_tombstone_cond_occupancy75=%zu "
+          "route_tombstone_cond_cooldown_blocked=%zu "
+          "route_tombstone_cond_highwater=%zu\n",
+          route_register_reason_unknown,
+          route_register_reason_source_run_slot,
+          route_register_reason_direct_source,
+          route_register_reason_materialize, route_register_reason_rehome,
+          route_unregister_reason_unknown,
+          route_unregister_reason_frontcache_overflow,
+          route_unregister_reason_cap_release,
+          route_unregister_reason_descriptorless_detach,
+          route_unregister_reason_source_slot_release,
+          route_unregister_reason_rehome, route_active_current,
+          route_active_max, route_tombstone_current, route_tombstone_max,
+          route_register_used_tombstone,
+          route_register_full_probe_with_tombstone,
+          route_tombstone_compact_attempt, route_tombstone_compact_success,
+          route_tombstone_compact_fail_alloc,
+          route_tombstone_compact_moved, route_tombstone_cond_probe,
+          route_tombstone_cond_would_compact,
+          route_tombstone_cond_ratio25, route_tombstone_cond_occupancy75,
+          route_tombstone_cond_cooldown_blocked,
+          route_tombstone_cond_highwater);
+
+  fprintf(stderr,
+          "[HZ6_PRELOAD_FRONT_DETAIL] descriptor_live_max=%zu "
+          "source_block_active_max=%zu frontcache_total_max=%zu "
+          "frontcache_reuse_hit=%zu frontcache_reuse_invalid=%zu "
+          "frontcache_spill_success=%zu "
+          "frontcache_spill_retry_success=%zu "
+          "frontcache_borrow_success=%zu "
+          "toy_small_malloc_frontcache_pop=%zu "
+          "toy_small_malloc_activate_success=%zu "
+          "toy_small_free_cache_attempt=%zu "
+          "toy_small_free_cache_success=%zu "
+          "toy_small_active_map_register=%zu "
+          "toy_small_active_map_register_collision=%zu "
+          "toy_small_active_map_free_attempt=%zu "
+          "toy_small_active_map_free_hit=%zu "
+          "toy_small_active_map_free_miss=%zu "
+          "toy_small_active_map_free_stale=%zu "
+          "toy_small_active_map_free_cache_fail=%zu "
+          "toy_small_active_map_route_bypass=%zu\n",
+          descriptor_live_max, source_block_active_max,
+          frontcache_total_max, frontcache_reuse_hit,
+          frontcache_reuse_invalid, frontcache_spill_success,
+          frontcache_spill_retry_success, frontcache_borrow_success,
+          toy_small_malloc_frontcache_pop,
+          toy_small_malloc_activate_success,
+          toy_small_free_cache_attempt, toy_small_free_cache_success,
+          toy_small_active_map_register,
+          toy_small_active_map_register_collision,
+          toy_small_active_map_free_attempt,
+          toy_small_active_map_free_hit, toy_small_active_map_free_miss,
+          toy_small_active_map_free_stale,
+          toy_small_active_map_free_cache_fail,
+          toy_small_active_map_route_bypass);
 
   fprintf(stderr,
           "[HZ6_PRELOAD_PHASE_STATS] malloc_calls=%zu "

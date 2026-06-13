@@ -39,7 +39,7 @@ composition:
 HZ6_ROUTE_TABLE_CAPACITY=131072
 HZ6_OBJECT_DESCRIPTOR_CAPACITY=32768
 HZ6_SOURCE_BLOCK_CAPACITY=4096
-HZ6_FRONT_CACHE_BIN_CAPACITY=1024
+HZ6_FRONT_CACHE_BIN_CAPACITY=4096
 HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY=32768
 HZ6_LINUX_MMAP_RETAIN_L1=1
 HZ6_LINUX_MMAP_RETAIN_64K_STACK_L1=1
@@ -54,10 +54,13 @@ HZ6_ROUTE_LOOP_CARRY_L1=1
 This lane is still separate from the direct HZ6 API strength rows.  It is no
 longer just a harness-parity smoke lane: the short mixed_ws guard moved to
 about `12M ops/s`, and the 1M long-run cliff was closed to about `18M ops/s`
-with route tombstone compact.  Cross-allocator 1M median remains below
-mimalloc (`hz6 15.735M` vs `mimalloc 26.459M`), so LD_PRELOAD is a functional
-Ubuntu lane with an active optimization backlog, not a paper-facing selected
-performance row.
+with route tombstone compact.  The first route/frontcache audit then promoted
+frontcache bin 4096 for preload: source_alloc fell from about 21.3K to 8.7K on
+the 1M guard, and repeat-3 median rose from about 18.2M to about 22.9M ops/s
+without a peak-RSS regression.  Cross-allocator 1M median before this latest
+frontcache update remained below mimalloc (`hz6 15.735M` vs `mimalloc
+26.459M`), so LD_PRELOAD is a functional Ubuntu lane with an active
+optimization backlog, not a paper-facing selected performance row.
 
 ## Selected Rows
 
