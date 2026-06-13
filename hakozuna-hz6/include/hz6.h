@@ -333,6 +333,8 @@ typedef struct Hz6StatsSnapshot {
   size_t midpage_active_map_register_overwrite;
   size_t midpage_8k_active_map_register_overwrite;
   size_t midpage_32k_active_map_register_overwrite;
+  size_t midpage_active_map_register_overwrite_same_class_alt;
+  size_t midpage_active_map_register_overwrite_stale_alt;
   size_t midpage_active_map_free_attempt;
   size_t midpage_active_map_free_hit;
   size_t midpage_active_map_free_miss;

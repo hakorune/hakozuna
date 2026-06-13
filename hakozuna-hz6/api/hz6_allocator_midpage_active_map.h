@@ -153,6 +153,12 @@ static inline void hz6_midpage_active_map_register(
 #endif
   Hz6MidPageActiveMapEntry* entry = NULL;
   Hz6MidPageActiveMapEntry* first_empty = NULL;
+#if HZ6_DIAGNOSTIC_PROBES || HZ6_MIDPAGE_ACTIVE_MAP_SAME_CLASS_VICTIM_L1
+  Hz6MidPageActiveMapEntry* dryrun_same_class_victim = NULL;
+#endif
+#if HZ6_DIAGNOSTIC_PROBES
+  Hz6MidPageActiveMapEntry* dryrun_stale_victim = NULL;
+#endif
   int saw_collision = 0;
   int register_same_ptr = 0;
 #if HZ6_MIDPAGE_ACTIVE_MAP_REGISTER_FAST_SLOT_L1
@@ -177,6 +183,21 @@ static inline void hz6_midpage_active_map_register(
       }
       continue;
     }
+#if HZ6_DIAGNOSTIC_PROBES || HZ6_MIDPAGE_ACTIVE_MAP_SAME_CLASS_VICTIM_L1
+    if (!dryrun_same_class_victim && candidate->class_id == class_id) {
+      dryrun_same_class_victim = candidate;
+    }
+#endif
+#if HZ6_DIAGNOSTIC_PROBES
+    if (!dryrun_stale_victim &&
+        (!candidate->descriptor ||
+         candidate->descriptor->ptr != candidate->ptr ||
+         candidate->descriptor->generation != candidate->generation ||
+         candidate->descriptor->class_id != candidate->class_id ||
+         candidate->descriptor->state != HZ6_STATE_ACTIVE)) {
+      dryrun_stale_victim = candidate;
+    }
+#endif
     saw_collision = 1;
   }
   if (!entry) {
@@ -193,7 +214,13 @@ static inline void hz6_midpage_active_map_register(
       return;
     }
 #endif
-    entry = first_empty ? first_empty : &entries[base_index];
+    entry = first_empty ? first_empty :
+#if HZ6_MIDPAGE_ACTIVE_MAP_SAME_CLASS_VICTIM_L1
+          (dryrun_same_class_victim ? dryrun_same_class_victim :
+                                      &entries[base_index]);
+#else
+          &entries[base_index];
+#endif
   }
   if (!entry->ptr) {
     ++allocator->midpage_active_map_current;
@@ -214,6 +241,14 @@ static inline void hz6_midpage_active_map_register(
   int register_overwrite = entry && entry->ptr && entry->ptr != ptr;
   if (register_overwrite) {
     overwritten_class_id = entry->class_id;
+  }
+  if (register_overwrite && dryrun_same_class_victim &&
+      dryrun_same_class_victim != entry) {
+    ++allocator->stats.midpage_active_map_register_overwrite_same_class_alt;
+  }
+  if (register_overwrite && dryrun_stale_victim &&
+      dryrun_stale_victim != entry) {
+    ++allocator->stats.midpage_active_map_register_overwrite_stale_alt;
   }
   ++allocator->stats.midpage_active_map_register;
   if (class_id == HZ6_MIDPAGE_8K_CLASS_ID) {

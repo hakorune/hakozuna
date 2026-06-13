@@ -244,6 +244,8 @@ static void hz6_preload_print_stats(void) {
   size_t midpage_active_map_register_overwrite = 0;
   size_t midpage_8k_active_map_register_overwrite = 0;
   size_t midpage_32k_active_map_register_overwrite = 0;
+  size_t midpage_active_map_register_overwrite_same_class_alt = 0;
+  size_t midpage_active_map_register_overwrite_stale_alt = 0;
   size_t midpage_active_map_free_attempt = 0;
   size_t midpage_active_map_free_hit = 0;
   size_t midpage_active_map_free_miss = 0;
@@ -417,6 +419,10 @@ static void hz6_preload_print_stats(void) {
         stats.midpage_8k_active_map_register_overwrite;
     midpage_32k_active_map_register_overwrite +=
         stats.midpage_32k_active_map_register_overwrite;
+    midpage_active_map_register_overwrite_same_class_alt +=
+        stats.midpage_active_map_register_overwrite_same_class_alt;
+    midpage_active_map_register_overwrite_stale_alt +=
+        stats.midpage_active_map_register_overwrite_stale_alt;
     midpage_active_map_free_attempt +=
         stats.midpage_active_map_free_attempt;
     midpage_active_map_free_hit += stats.midpage_active_map_free_hit;
@@ -605,6 +611,8 @@ static void hz6_preload_print_stats(void) {
           "midpage_active_map_register_overwrite=%zu "
           "midpage_8k_active_map_register_overwrite=%zu "
           "midpage_32k_active_map_register_overwrite=%zu "
+          "midpage_active_map_register_overwrite_same_class_alt=%zu "
+          "midpage_active_map_register_overwrite_stale_alt=%zu "
           "midpage_active_map_free_attempt=%zu "
           "midpage_active_map_free_hit=%zu "
           "midpage_active_map_free_miss=%zu "
@@ -639,6 +647,8 @@ static void hz6_preload_print_stats(void) {
           midpage_active_map_register_overwrite,
           midpage_8k_active_map_register_overwrite,
           midpage_32k_active_map_register_overwrite,
+          midpage_active_map_register_overwrite_same_class_alt,
+          midpage_active_map_register_overwrite_stale_alt,
           midpage_active_map_free_attempt,
           midpage_active_map_free_hit,
           midpage_active_map_free_miss,

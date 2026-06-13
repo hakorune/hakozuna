@@ -414,6 +414,12 @@
 #define HZ6_MIDPAGE_ACTIVE_MAP_ADDR_ENVELOPE_L1 0
 #endif
 
+#ifndef HZ6_MIDPAGE_ACTIVE_MAP_SAME_CLASS_VICTIM_L1
+/* Candidate overwrite policy. If the bounded probe window is full, prefer
+ * evicting an existing entry from the same MidPage class before the base slot. */
+#define HZ6_MIDPAGE_ACTIVE_MAP_SAME_CLASS_VICTIM_L1 0
+#endif
+
 #ifndef HZ6_TOY_CLASS_ID_FAST_ALLOC_L1
 /* Default Toy alloc shortcut.  hz6_malloc() already selected class_id, so
  * Toy alloc can validate size against class bytes instead of classifying again. */
