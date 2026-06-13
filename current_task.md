@@ -25,7 +25,8 @@ Audit:
 
 Current focus:
   keep HZ3 source modularization separate from allocator performance tuning.
-  next source candidate is hz3_config_scale_part8_modern.inc.
+  HZ3 implementation/config sources are below the 1000-line audit threshold;
+  remaining large files are Windows benchmark sources/scripts.
 ```
 
 HZ6 is now in active Windows/Linux implementation and benchmarking. HZ5 Linux
