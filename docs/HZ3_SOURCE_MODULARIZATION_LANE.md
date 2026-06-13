@@ -19,6 +19,7 @@ this pass Split HZ3 tcache helpers
 this pass Split HZ3 tcache slowpath helpers
 this pass Split HZ3 arena helpers
 this pass Split HZ3 scale part8 config helpers
+this pass Split Windows benchmark HZ6 stats helpers
 ```
 
 Current HZ3 cleanup result:
@@ -50,6 +51,12 @@ hakozuna/src/hz3_arena.c:
 
 hakozuna/include/config/hz3_config_scale_part8_modern.inc:
   1134 lines -> 7-line router plus focused helper includes
+
+win/bench_allocator_compare.c:
+  1110 lines -> 569-line router plus HZ6 stats accumulation helper
+
+win/bench_larson_compare.c:
+  1757 lines -> 821-line router plus HZ6 stats accumulation helper
 ```
 
 The split is intentionally source-shape only. It should not change lane
@@ -64,17 +71,19 @@ Current next candidates:
 
 ```text
 P0:
-  Windows benchmark sources/scripts if they block active allocator work
+  Windows PowerShell benchmark lane scripts if they block active allocator work
 
 P1:
   linux/HZ3 or HZ5 helper scripts if they block active allocator work
 
 P2:
-  no current HZ3 implementation source over 1000 lines in the audit top list
+  no current HZ3 implementation source or Windows C benchmark harness router
+  over 1000 lines in the audit top list
 ```
 
-Windows benchmark sources are allowed to remain large unless they block Linux
-allocator work or duplicate reusable benchmark helpers.
+Windows PowerShell benchmark lane scripts are allowed to remain large unless
+they block allocator work or duplicate reusable lane helpers. If split, prefer
+dot-sourced helper modules over changing lane names or argument surfaces.
 
 ## Split Rules
 
