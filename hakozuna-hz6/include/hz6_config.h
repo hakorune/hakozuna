@@ -108,6 +108,13 @@
 #define HZ6_MIDPAGE_RUN_BYTES ((size_t)65536)
 #endif
 
+#ifndef HZ6_MIDPAGE_32K_RUN_BYTES
+/* Candidate class-specific MidPage run size.  Default follows
+ * HZ6_MIDPAGE_RUN_BYTES; preload A/B can raise only the 32K class without
+ * changing the 8K guard. */
+#define HZ6_MIDPAGE_32K_RUN_BYTES HZ6_MIDPAGE_RUN_BYTES
+#endif
+
 #ifndef HZ6_SOURCE_RUN_BITMAP_WORDS
 #define HZ6_SOURCE_RUN_BITMAP_WORDS \
   ((size_t)((HZ6_SOURCE_RUN_MAX_SLOTS + 63u) / 64u))
@@ -366,6 +373,19 @@
  * unaligned lane can use 4K-distinct pointers, so keep this as an A/B knob
  * before changing the stable 8K-shift default. */
 #define HZ6_MIDPAGE_ACTIVE_MAP_SHIFT12_INDEX_L1 0
+#endif
+
+#ifndef HZ6_MIDPAGE_ACTIVE_MAP_NO_OVERWRITE_FULL_L1
+/* Candidate collision policy.  If the bounded probe range is full, keep the
+ * existing active-map entries instead of evicting the base slot for the new
+ * pointer. */
+#define HZ6_MIDPAGE_ACTIVE_MAP_NO_OVERWRITE_FULL_L1 0
+#endif
+
+#ifndef HZ6_MIDPAGE_ACTIVE_MAP_REGISTER_FAST_SLOT_L1
+/* Candidate register code shape.  The common MidPage insert/update case can
+ * land on an empty or same-pointer base slot without the bounded probe loop. */
+#define HZ6_MIDPAGE_ACTIVE_MAP_REGISTER_FAST_SLOT_L1 0
 #endif
 
 #ifndef HZ6_TOY_CLASS_ID_FAST_ALLOC_L1

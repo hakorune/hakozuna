@@ -38,6 +38,13 @@ void* hz6_midpage_alloc(Hz6Allocator* allocator,
   if (!allocator || !hz6_midpage_class_bytes(class_id, &bytes)) {
     return NULL;
   }
+#if HZ6_DIAGNOSTIC_PROBES
+  if (class_id == HZ6_MIDPAGE_8K_CLASS_ID) {
+    ++allocator->stats.midpage_8k_alloc_call;
+  } else if (class_id == HZ6_MIDPAGE_32K_CLASS_ID) {
+    ++allocator->stats.midpage_32k_alloc_call;
+  }
+#endif
 
   void* reused = hz6_front_reuse_transfer_or_cached(allocator,
                                                     HZ6_FRONT_MIDPAGE,

@@ -23,13 +23,14 @@ int hz6_midpage_policy_for_size(size_t size,
     return 0;
   }
 
-  policy->run_bytes = HZ6_MIDPAGE_RUN_BYTES;
   if (size <= HZ6_MIDPAGE_8K_BYTES) {
     policy->class_id = HZ6_MIDPAGE_8K_CLASS_ID;
     policy->slot_bytes = HZ6_MIDPAGE_8K_BYTES;
+    policy->run_bytes = HZ6_MIDPAGE_RUN_BYTES;
   } else {
     policy->class_id = HZ6_MIDPAGE_32K_CLASS_ID;
     policy->slot_bytes = HZ6_MIDPAGE_32K_BYTES;
+    policy->run_bytes = HZ6_MIDPAGE_32K_RUN_BYTES;
   }
   policy->slots_per_run = policy->run_bytes / policy->slot_bytes;
   return policy->slots_per_run != 0;

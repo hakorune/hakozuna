@@ -15,8 +15,18 @@ size_t hz6_midpage_prefill_run(Hz6Allocator* allocator, uint16_t class_id) {
     return 0;
   }
 
-  return hz6_front_prefill_source_block_kind(
+  size_t filled = hz6_front_prefill_source_block_kind(
       allocator, HZ6_FRONT_MIDPAGE, class_id, policy.slot_bytes,
       policy.run_bytes, hz6_allocator_profile_source_kind(allocator),
       policy.slots_per_run);
+#if HZ6_DIAGNOSTIC_PROBES
+  if (class_id == HZ6_MIDPAGE_8K_CLASS_ID) {
+    ++allocator->stats.midpage_8k_prefill_run_call;
+    allocator->stats.midpage_8k_prefill_run_filled += filled;
+  } else if (class_id == HZ6_MIDPAGE_32K_CLASS_ID) {
+    ++allocator->stats.midpage_32k_prefill_run_call;
+    allocator->stats.midpage_32k_prefill_run_filled += filled;
+  }
+#endif
+  return filled;
 }
