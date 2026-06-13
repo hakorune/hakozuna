@@ -33,6 +33,8 @@ comparability.
 | `midpagefront/hz5_midpagefront_m4_pagerun.inc` | MidPage M4 remote packet and PageRun helper cluster | split out from `hz5_midpagefront.c`; keep include-local while the pagerun profile settles |
 | `midpagefront/hz5_midpagefront_nodeless.inc` | MidPage nodeless partial / ptrcache / hot-slot helpers | split out from `hz5_midpagefront.c`; keep include-local while the nodeless diagnostic lane settles |
 | `midpagefront/hz5_midpagefront_region.inc` | MidPage class / region / slot lookup helpers | split out from `hz5_midpagefront.c`; keep include-local while the lookup path settles |
+| `midpagefront/hz5_midpagefront_remote_queue.inc` | MidPage local pop, owner publish, and remote batch helpers | split out from `hz5_midpagefront.c`; keep include-local while remote queue policy settles |
+| `midpagefront/hz5_midpagefront_remote_drain.inc` | MidPage owner inbox drain helper | split out from `hz5_midpagefront.c`; keep include-local while drain policy settles |
 | `midpagefront/hz5_midpagefront_remote_experiments.inc` | MidPage M6/M7/M8/M10/M11 remote experiment helpers | split out from `hz5_midpagefront.c`; keep include-local while the remote experiment lanes settle |
 | `midfront/hz5_midfront_remote_batch.inc` | MidFront remote batch helper cluster | split out from `hz5_midfront.c`; keep include-local while the remote-batch profile settles |
 | `preload/hz5_preload_full_support.inc` | Preload full bootstrap / stats / pointer-track support helpers | split out from `hz5_preload_full.c`; keep include-local while the full preload control path settles |
@@ -120,8 +122,10 @@ cluster in `hz5_midpagefront_m4_magazine.inc`, plus the empty-slab release
 cluster in `hz5_midpagefront_empty_release.inc`, plus the M4 remote/PageRun
 cluster in `hz5_midpagefront_m4_pagerun.inc`, plus the nodeless diagnostic lane in
 `hz5_midpagefront_nodeless.inc`, plus the class/region/slot lookup helpers in
-`hz5_midpagefront_region.inc`, plus the M6/M7/M8/M10/M11 remote experiment
-lane in `hz5_midpagefront_remote_experiments.inc`, and LowPage now keeps P43g helpers in
+`hz5_midpagefront_region.inc`, plus remote queue/drain helpers in
+`hz5_midpagefront_remote_queue.inc` and `hz5_midpagefront_remote_drain.inc`,
+plus the M6/M7/M8/M10/M11 remote experiment lane in
+`hz5_midpagefront_remote_experiments.inc`, and LowPage now keeps P43g helpers in
 `hz5_lowpage64_p43g.inc`, P43O diagnostics in `hz5_lowpage64_p43o.inc`, plus
 P43 segment lookup/slot-mask helpers in `hz5_lowpage64_p43_segment_helpers.inc`,
 P43 segment state/counter storage in `hz5_lowpage64_p43_segment_state.inc`,
