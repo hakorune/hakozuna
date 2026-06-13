@@ -363,6 +363,88 @@ Ubuntu LD_PRELOAD lane:
         removes `munmap`, but `mmap` remains high, so the next bottleneck is
         retained-cache miss/size mismatch or source-run admission, plus the
         global retain mutex now visible as futex traffic under strace.
+      Follow-up instrumentation:
+        Added `HZ6_PRELOAD_STATS=1` for the preload lane.  Each thread-local
+        HZ6 allocator is registered in a bounded process-local registry, and
+        process unload prints one aggregate `[HZ6_PRELOAD_STATS]` line.  This
+        is diagnostic-only and default-off.
+        First stats read on `4 100000 8192 16 1024`:
+          allocators=5
+          source_alloc=9410
+          toy_source_alloc=9346
+          local2p_source_alloc=64
+          route_valid=206578
+          route_miss=0
+          alloc_fail=0
+          route_register_fail=0
+          source_block_exhausted=0
+        Read:
+          Remaining source churn is overwhelmingly Toy 64KiB source-block
+          traffic, not large/local2p and not failure recovery.
+      Rejected follow-ups:
+        TLS retain front:
+          `HZ6_LINUX_MMAP_RETAIN_TLS_L1=1` was tested over SourceRetain.
+          It did not reduce mmap count and regressed repeat-3 to:
+            6.596M / 6.616M / 6.952M ops/s
+          Result dir:
+            private/raw-results/linux/hz6_preload_sourceretain_tls_r3
+          Keep as no-go/control, default off.
+        SourceRunReuse:
+          `HZ6_SOURCE_RUN_REUSE_L1=1` reduced source_alloc from 9410 to 2121,
+          but the reusable-run search/activation cost dominated:
+            runreuse repeat-3:
+              1.595M / 2.124M / 1.996M ops/s
+            runreuse + same-class reclaim repeat-3:
+              1.347M / 1.894M / 2.113M ops/s
+          Result dirs:
+            private/raw-results/linux/hz6_preload_sourceretain_runreuse_r3
+            private/raw-results/linux/hz6_preload_sourceretain_runreuse_reclaim_r3
+          Keep as no-go/control for LD_PRELOAD mixed_ws.  It fixes the source
+          count but pays too much scan/reuse cost.
+        SameOwner/FastFree retests:
+          SourceRetain made free-side cost more visible, but these still did
+          not produce a clean repeat-3 win:
+            private/raw-results/linux/hz6_preload_sourceretain_fastfree_r3
+            private/raw-results/linux/hz6_preload_sourceretain_sameowner_r3
+            private/raw-results/linux/hz6_preload_sourceretain_sameowner_fastfree_r3
+          Keep default-off/control.
+      Selected follow-up:
+        PreloadSourceRetain64kStack-L1:
+          Adds an O(1) retained stack for exact 64KiB Linux mmap releases.
+          ToyFront source blocks are 64KiB, so this avoids the generic retained
+          table scan on the dominant preload source size while preserving the
+          generic retained cache for other sizes.
+        Result:
+          smoke:
+            `/bin/true` under LD_PRELOAD passes
+            small mixed_ws under LD_PRELOAD passes
+            R1 smokes pass
+            normal HZ6 benchmark build passes
+          repeat-5 `4 100000 8192 16 1024`:
+            9.681M / 8.176M / 9.515M / 10.022M / 10.327M ops/s
+            peak 75,776 / 75,776 / 76,160 / 76,416 / 76,288 KB
+          strace `4 50000 8192 16 1024`:
+            SourceRetain global: mmap 2106, munmap 6, futex 3129
+            64K stack:           mmap 2093, munmap 6, futex 872
+          cross-allocator single-run:
+            system   22.049M ops/s / 18,500 KB
+            hz3      57.373M ops/s / 25,344 KB
+            hz4      48.289M ops/s / 30,080 KB
+            hz6       8.729M ops/s / 76,544 KB
+            mimalloc 16.704M ops/s / 22,912 KB
+            tcmalloc 55.743M ops/s / 25,088 KB
+        Result dirs:
+          private/raw-results/linux/hz6_preload_sourceretain_64kstack_r3
+          private/raw-results/linux/hz6_preload_sourceretain_64kstack_r5
+          private/raw-results/linux/hz6_preload_sourceretain_64kstack_cross_r1
+        Decision:
+          Select `HZ6_LINUX_MMAP_RETAIN_64K_STACK_L1=1` for the preload
+          default.  It keeps RSS roughly flat against SourceRetain and improves
+          repeat median materially by removing dominant-size retained-cache
+          scanning/lock churn.  HZ6 preload is still slower than system/hz3/hz4
+          on this row; remaining work is now allocator hot-path CPU, route
+          lookup/register/unregister, and Toy/source refill policy rather than
+          raw `munmap` churn.
   - Rejected preload probe:
       SourceBlockRoute exact-skip was tested with range-index, dynamic slot
       descriptor map, late register, behavior, and exact-skip.  It regressed

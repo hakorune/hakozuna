@@ -24,9 +24,66 @@ static Hz6LinuxMmapRetainedEntry
     g_hz6_linux_mmap_retained[HZ6_LINUX_MMAP_RETAIN_SLOT_COUNT];
 static size_t g_hz6_linux_mmap_retained_bytes;
 
+#if HZ6_LINUX_MMAP_RETAIN_64K_STACK_L1
+#define HZ6_LINUX_MMAP_RETAIN_64K_BYTES ((size_t)64u * 1024u)
+
+static void* g_hz6_linux_mmap_retained_64k[HZ6_LINUX_MMAP_RETAIN_SLOT_COUNT];
+static size_t g_hz6_linux_mmap_retained_64k_count;
+#endif
+
+#if HZ6_LINUX_MMAP_RETAIN_TLS_L1
+static __thread Hz6LinuxMmapRetainedEntry
+    g_hz6_linux_mmap_tls_retained[HZ6_LINUX_MMAP_RETAIN_TLS_SLOT_COUNT];
+static __thread size_t g_hz6_linux_mmap_tls_retained_bytes;
+
+static size_t hz6_linux_mmap_retain_tls_index(size_t bytes) {
+  return (bytes >> 12) % HZ6_LINUX_MMAP_RETAIN_TLS_SLOT_COUNT;
+}
+
+static void* hz6_linux_mmap_retain_tls_take(size_t bytes) {
+  if (HZ6_LINUX_MMAP_RETAIN_TLS_SLOT_COUNT == 0) {
+    return NULL;
+  }
+  Hz6LinuxMmapRetainedEntry* entry =
+      &g_hz6_linux_mmap_tls_retained[hz6_linux_mmap_retain_tls_index(bytes)];
+  if (!entry->ptr || entry->bytes != bytes) {
+    return NULL;
+  }
+  void* ptr = entry->ptr;
+  entry->ptr = NULL;
+  entry->bytes = 0;
+  if (g_hz6_linux_mmap_tls_retained_bytes >= bytes) {
+    g_hz6_linux_mmap_tls_retained_bytes -= bytes;
+  } else {
+    g_hz6_linux_mmap_tls_retained_bytes = 0;
+  }
+  return ptr;
+}
+#endif
+
 static void* hz6_linux_mmap_retain_take(size_t bytes) {
+#if HZ6_LINUX_MMAP_RETAIN_TLS_L1
+  void* tls_ptr = hz6_linux_mmap_retain_tls_take(bytes);
+  if (tls_ptr) {
+    return tls_ptr;
+  }
+#endif
   void* ptr = NULL;
   pthread_mutex_lock(&g_hz6_linux_mmap_retain_mutex);
+#if HZ6_LINUX_MMAP_RETAIN_64K_STACK_L1
+  if (bytes == HZ6_LINUX_MMAP_RETAIN_64K_BYTES &&
+      g_hz6_linux_mmap_retained_64k_count != 0) {
+    ptr = g_hz6_linux_mmap_retained_64k
+        [--g_hz6_linux_mmap_retained_64k_count];
+    if (g_hz6_linux_mmap_retained_bytes >= bytes) {
+      g_hz6_linux_mmap_retained_bytes -= bytes;
+    } else {
+      g_hz6_linux_mmap_retained_bytes = 0;
+    }
+    pthread_mutex_unlock(&g_hz6_linux_mmap_retain_mutex);
+    return ptr;
+  }
+#endif
   for (size_t i = HZ6_LINUX_MMAP_RETAIN_SLOT_COUNT; i > 0; --i) {
     Hz6LinuxMmapRetainedEntry* entry = &g_hz6_linux_mmap_retained[i - 1u];
     if (entry->ptr && entry->bytes == bytes) {
@@ -45,7 +102,7 @@ static void* hz6_linux_mmap_retain_take(size_t bytes) {
   return ptr;
 }
 
-static int hz6_linux_mmap_retain_put(void* ptr, size_t bytes) {
+static int hz6_linux_mmap_retain_put_global(void* ptr, size_t bytes) {
   if (!ptr || bytes == 0 || HZ6_LINUX_MMAP_RETAIN_SLOT_COUNT == 0 ||
       bytes > HZ6_LINUX_MMAP_RETAIN_BYTES_CAP) {
     return 0;
@@ -55,6 +112,17 @@ static int hz6_linux_mmap_retain_put(void* ptr, size_t bytes) {
   pthread_mutex_lock(&g_hz6_linux_mmap_retain_mutex);
   if (g_hz6_linux_mmap_retained_bytes <=
       HZ6_LINUX_MMAP_RETAIN_BYTES_CAP - bytes) {
+#if HZ6_LINUX_MMAP_RETAIN_64K_STACK_L1
+    if (bytes == HZ6_LINUX_MMAP_RETAIN_64K_BYTES &&
+        g_hz6_linux_mmap_retained_64k_count <
+            HZ6_LINUX_MMAP_RETAIN_SLOT_COUNT) {
+      g_hz6_linux_mmap_retained_64k
+          [g_hz6_linux_mmap_retained_64k_count++] = ptr;
+      g_hz6_linux_mmap_retained_bytes += bytes;
+      pthread_mutex_unlock(&g_hz6_linux_mmap_retain_mutex);
+      return 1;
+    }
+#endif
     for (size_t i = 0; i < HZ6_LINUX_MMAP_RETAIN_SLOT_COUNT; ++i) {
       Hz6LinuxMmapRetainedEntry* entry = &g_hz6_linux_mmap_retained[i];
       if (!entry->ptr) {
@@ -68,6 +136,31 @@ static int hz6_linux_mmap_retain_put(void* ptr, size_t bytes) {
   }
   pthread_mutex_unlock(&g_hz6_linux_mmap_retain_mutex);
   return retained;
+}
+
+static int hz6_linux_mmap_retain_put(void* ptr, size_t bytes) {
+  if (!ptr || bytes == 0 || HZ6_LINUX_MMAP_RETAIN_SLOT_COUNT == 0 ||
+      bytes > HZ6_LINUX_MMAP_RETAIN_BYTES_CAP) {
+    return 0;
+  }
+
+#if HZ6_LINUX_MMAP_RETAIN_TLS_L1
+  if (HZ6_LINUX_MMAP_RETAIN_TLS_SLOT_COUNT != 0 &&
+      bytes <= HZ6_LINUX_MMAP_RETAIN_TLS_BYTES_CAP &&
+      g_hz6_linux_mmap_tls_retained_bytes <=
+          HZ6_LINUX_MMAP_RETAIN_TLS_BYTES_CAP - bytes) {
+    Hz6LinuxMmapRetainedEntry* entry =
+        &g_hz6_linux_mmap_tls_retained[hz6_linux_mmap_retain_tls_index(bytes)];
+    if (!entry->ptr) {
+      entry->ptr = ptr;
+      entry->bytes = bytes;
+      g_hz6_linux_mmap_tls_retained_bytes += bytes;
+      return 1;
+    }
+  }
+#endif
+
+  return hz6_linux_mmap_retain_put_global(ptr, bytes);
 }
 #endif
 

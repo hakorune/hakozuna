@@ -56,6 +56,22 @@
 #define HZ6_LINUX_MMAP_RETAIN_PURGE_ON_RELEASE_L1 0
 #endif
 
+#ifndef HZ6_LINUX_MMAP_RETAIN_64K_STACK_L1
+#define HZ6_LINUX_MMAP_RETAIN_64K_STACK_L1 0
+#endif
+
+#ifndef HZ6_LINUX_MMAP_RETAIN_TLS_L1
+#define HZ6_LINUX_MMAP_RETAIN_TLS_L1 0
+#endif
+
+#ifndef HZ6_LINUX_MMAP_RETAIN_TLS_SLOT_COUNT
+#define HZ6_LINUX_MMAP_RETAIN_TLS_SLOT_COUNT ((size_t)256)
+#endif
+
+#ifndef HZ6_LINUX_MMAP_RETAIN_TLS_BYTES_CAP
+#define HZ6_LINUX_MMAP_RETAIN_TLS_BYTES_CAP ((size_t)32u * 1024u * 1024u)
+#endif
+
 #ifndef HZ6_LARGE_SPAN_TRUSTED_LOCAL_FREE_L1
 /* Candidate-only LargeSpan local free shortcut.  hz6_free() has already
  * routed local frees through the local-owner branch before calling the front. */

@@ -7,6 +7,7 @@
 #include <malloc.h>
 #include <pthread.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -39,6 +40,14 @@ static Hz6RealUsableSizeFn g_real_malloc_usable_size;
 static pthread_once_t g_real_once = PTHREAD_ONCE_INIT;
 static __thread int g_hz6_preload_reentry;
 static __thread Hz6Allocator* g_hz6_preload_allocator;
+
+#define HZ6_PRELOAD_ALLOCATOR_REGISTRY_CAPACITY 256u
+
+static pthread_mutex_t g_hz6_preload_allocator_registry_mutex =
+    PTHREAD_MUTEX_INITIALIZER;
+static Hz6Allocator*
+    g_hz6_preload_allocator_registry[HZ6_PRELOAD_ALLOCATOR_REGISTRY_CAPACITY];
+static size_t g_hz6_preload_allocator_registry_count;
 
 static void hz6_preload_resolve_real(void) {
   int saved_reentry = g_hz6_preload_reentry;
@@ -136,6 +145,120 @@ static Hz6ProfileId hz6_preload_profile_from_env(void) {
   return HZ6_PROFILE_SPEED;
 }
 
+static void hz6_preload_register_allocator(Hz6Allocator* allocator) {
+  if (!allocator) {
+    return;
+  }
+  pthread_mutex_lock(&g_hz6_preload_allocator_registry_mutex);
+  for (size_t i = 0; i < g_hz6_preload_allocator_registry_count; ++i) {
+    if (g_hz6_preload_allocator_registry[i] == allocator) {
+      pthread_mutex_unlock(&g_hz6_preload_allocator_registry_mutex);
+      return;
+    }
+  }
+  if (g_hz6_preload_allocator_registry_count <
+      HZ6_PRELOAD_ALLOCATOR_REGISTRY_CAPACITY) {
+    g_hz6_preload_allocator_registry[g_hz6_preload_allocator_registry_count++] =
+        allocator;
+  }
+  pthread_mutex_unlock(&g_hz6_preload_allocator_registry_mutex);
+}
+
+static void hz6_preload_print_stats(void) {
+  const char* value = getenv("HZ6_PRELOAD_STATS");
+  if (!value || value[0] == '\0' || strcmp(value, "0") == 0) {
+    return;
+  }
+
+  int saved_reentry = g_hz6_preload_reentry;
+  g_hz6_preload_reentry = 1;
+
+  size_t allocator_count = 0;
+  size_t route_valid = 0;
+  size_t route_invalid = 0;
+  size_t route_miss = 0;
+  size_t transfer_push = 0;
+  size_t transfer_pop = 0;
+  size_t source_alloc = 0;
+  size_t toy_source_alloc = 0;
+  size_t midpage_source_alloc = 0;
+  size_t large_source_alloc = 0;
+  size_t local2p_source_alloc = 0;
+  size_t alloc_fail = 0;
+  size_t descriptor_exhausted = 0;
+  size_t route_register_fail = 0;
+  size_t source_block_exhausted = 0;
+  size_t route_lookup_probe_total = 0;
+  size_t route_lookup_probe_max = 0;
+  size_t route_register_probe_total = 0;
+  size_t route_register_probe_max = 0;
+  size_t route_unregister_probe_total = 0;
+  size_t route_unregister_probe_max = 0;
+
+  pthread_mutex_lock(&g_hz6_preload_allocator_registry_mutex);
+  allocator_count = g_hz6_preload_allocator_registry_count;
+  for (size_t i = 0; i < g_hz6_preload_allocator_registry_count; ++i) {
+    Hz6Allocator* allocator = g_hz6_preload_allocator_registry[i];
+    if (!allocator) {
+      continue;
+    }
+    Hz6StatsSnapshot stats = hz6_stats_snapshot(allocator);
+    route_valid += stats.route_valid;
+    route_invalid += stats.route_invalid;
+    route_miss += stats.route_miss;
+    transfer_push += stats.transfer_push;
+    transfer_pop += stats.transfer_pop;
+    source_alloc += stats.source_alloc;
+    toy_source_alloc += stats.toy_source_alloc;
+    midpage_source_alloc += stats.midpage_source_alloc;
+    large_source_alloc += stats.large_source_alloc;
+    local2p_source_alloc += stats.local2p_source_alloc;
+    alloc_fail += stats.alloc_fail;
+    descriptor_exhausted += stats.descriptor_exhausted;
+    route_register_fail += stats.route_register_fail;
+    source_block_exhausted += stats.source_block_exhausted;
+    route_lookup_probe_total += stats.route_lookup_probe_total;
+    if (stats.route_lookup_probe_max > route_lookup_probe_max) {
+      route_lookup_probe_max = stats.route_lookup_probe_max;
+    }
+    route_register_probe_total += stats.route_register_probe_total;
+    if (stats.route_register_probe_max > route_register_probe_max) {
+      route_register_probe_max = stats.route_register_probe_max;
+    }
+    route_unregister_probe_total += stats.route_unregister_probe_total;
+    if (stats.route_unregister_probe_max > route_unregister_probe_max) {
+      route_unregister_probe_max = stats.route_unregister_probe_max;
+    }
+  }
+  pthread_mutex_unlock(&g_hz6_preload_allocator_registry_mutex);
+
+  fprintf(stderr,
+          "[HZ6_PRELOAD_STATS] allocators=%zu route_valid=%zu "
+          "route_invalid=%zu route_miss=%zu transfer_push=%zu "
+          "transfer_pop=%zu source_alloc=%zu toy_source_alloc=%zu "
+          "midpage_source_alloc=%zu large_source_alloc=%zu "
+          "local2p_source_alloc=%zu alloc_fail=%zu "
+          "descriptor_exhausted=%zu route_register_fail=%zu "
+          "source_block_exhausted=%zu route_lookup_probe_total=%zu "
+          "route_lookup_probe_max=%zu route_register_probe_total=%zu "
+          "route_register_probe_max=%zu route_unregister_probe_total=%zu "
+          "route_unregister_probe_max=%zu\n",
+          allocator_count, route_valid, route_invalid, route_miss,
+          transfer_push, transfer_pop, source_alloc, toy_source_alloc,
+          midpage_source_alloc, large_source_alloc, local2p_source_alloc,
+          alloc_fail, descriptor_exhausted, route_register_fail,
+          source_block_exhausted, route_lookup_probe_total,
+          route_lookup_probe_max, route_register_probe_total,
+          route_register_probe_max, route_unregister_probe_total,
+          route_unregister_probe_max);
+
+  g_hz6_preload_reentry = saved_reentry;
+}
+
+__attribute__((destructor)) static void hz6_preload_on_unload(void) {
+  hz6_preload_print_stats();
+}
+
 static Hz6Allocator* hz6_preload_allocator(void) {
   if (g_hz6_preload_allocator) {
     return g_hz6_preload_allocator;
@@ -148,6 +271,7 @@ static Hz6Allocator* hz6_preload_allocator(void) {
   }
   hz6_allocator_init_with_profile(allocator, hz6_preload_profile_from_env());
   g_hz6_preload_allocator = allocator;
+  hz6_preload_register_allocator(allocator);
   return allocator;
 }
 
