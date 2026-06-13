@@ -10,9 +10,12 @@ benchmark lane or source-level experiment.
 | --- | --- |
 | Short paper-facing selected rows | `HZ6_SELECTED_FAMILY_SUMMARY.md` |
 | Which lane is which | `HZ6_LANE_GUIDE.md` |
+| Capacity lane dictionary | `HZ6_LANE_GUIDE_CAPACITY_REFERENCE.md` |
+| Mechanism/no-go lane dictionary | `HZ6_LANE_GUIDE_MECHANISM_REFERENCE.md` |
 | Ubuntu LD_PRELOAD lane ledger | `HZ6_UBUNTU_PRELOAD_LANES.md` |
 | Cross-allocator comparison table | `HZ6_CROSS_ALLOCATOR_COMPARISON.md` |
 | ElasticCapacity source-depot track | `HZ6_ELASTIC_CAPACITY_PLAN.md` |
+| ElasticCapacity design details | `HZ6_ELASTIC_CAPACITY_DESIGN_REFERENCE.md` |
 | Windows lane registry cleanup | `HZ6_WINDOWS_LANE_REGISTRY.md` |
 | Source/module cleanup plan | `HZ6_SOURCE_MODULARIZATION.md` |
 | Archived experiment ledger | `archive/current_task_2026-06_history.md` |
