@@ -170,6 +170,9 @@ static void hz6_preload_print_stats(void) {
   if (!value || value[0] == '\0' || strcmp(value, "0") == 0) {
     return;
   }
+  int print_per_allocator = strcmp(value, "2") == 0 ||
+                            strcmp(value, "per_allocator") == 0 ||
+                            strcmp(value, "per-allocator") == 0;
 
   int saved_reentry = g_hz6_preload_reentry;
   g_hz6_preload_reentry = 1;
@@ -272,6 +275,33 @@ static void hz6_preload_print_stats(void) {
           retain_stats.retain_generic_put_hit,
           retain_stats.retain_generic_put_full, retain_stats.munmap_fallback,
           retain_stats.retained_bytes, retain_stats.retained_64k_count);
+
+  if (print_per_allocator) {
+    pthread_mutex_lock(&g_hz6_preload_allocator_registry_mutex);
+    for (size_t i = 0; i < g_hz6_preload_allocator_registry_count; ++i) {
+      Hz6Allocator* allocator = g_hz6_preload_allocator_registry[i];
+      if (!allocator) {
+        continue;
+      }
+      Hz6StatsSnapshot stats = hz6_stats_snapshot(allocator);
+      fprintf(stderr,
+              "[HZ6_PRELOAD_ALLOCATOR_STATS] index=%zu allocator=%p "
+              "route_valid=%zu route_invalid=%zu route_miss=%zu "
+              "transfer_push=%zu transfer_pop=%zu source_alloc=%zu "
+              "toy_source_alloc=%zu midpage_source_alloc=%zu "
+              "large_source_alloc=%zu local2p_source_alloc=%zu "
+              "alloc_fail=%zu descriptor_exhausted=%zu "
+              "route_register_fail=%zu source_block_exhausted=%zu\n",
+              i, (void*)allocator, stats.route_valid, stats.route_invalid,
+              stats.route_miss, stats.transfer_push, stats.transfer_pop,
+              stats.source_alloc, stats.toy_source_alloc,
+              stats.midpage_source_alloc, stats.large_source_alloc,
+              stats.local2p_source_alloc, stats.alloc_fail,
+              stats.descriptor_exhausted, stats.route_register_fail,
+              stats.source_block_exhausted);
+    }
+    pthread_mutex_unlock(&g_hz6_preload_allocator_registry_mutex);
+  }
 
   g_hz6_preload_reentry = saved_reentry;
 }

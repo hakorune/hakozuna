@@ -508,6 +508,80 @@ Ubuntu LD_PRELOAD lane:
           lose speed.  The next viable retain-side candidate is not bigger Toy
           blocks; it is reducing first/live 64K demand or improving allocator
           CPU after the 64K retain cache is warm.
+      Next topology audit:
+        PreloadAllocatorTopologyAudit-L1.
+        Motivation:
+          LD_PRELOAD uses thread-local HZ6 allocators.  Current aggregate
+          stats show `allocators=5`, but do not show whether source churn is
+          evenly split across worker allocators or polluted by main/loader
+          allocations.
+        Implementation target:
+          Extend `HZ6_PRELOAD_STATS=per_allocator` (or `=2`) to print one
+          `[HZ6_PRELOAD_ALLOCATOR_STATS]` line per registered allocator.
+          Keep the existing aggregate `[HZ6_PRELOAD_STATS]` line unchanged.
+        Required fields:
+          index, allocator address, source_alloc, toy_source_alloc,
+          local2p_source_alloc, route_valid, route_invalid, route_miss,
+          transfer_push, transfer_pop, alloc_fail, descriptor_exhausted,
+          route_register_fail, source_block_exhausted.
+        Acceptance:
+          preload build passes
+          `/bin/true` and small mixed_ws under LD_PRELOAD pass
+          `HZ6_PRELOAD_STATS=per_allocator` emits aggregate + per-allocator
+          lines
+          R1 smokes remain clean
+        Read target:
+          If source_alloc is evenly spread across four hot workers, continue
+          with route/free/source CPU.  If main/loader allocator is noisy, test
+          a preload init/loader isolation lane before changing allocator
+          behavior.
+      Topology audit result:
+        `HZ6_PRELOAD_STATS=per_allocator` now prints one
+        `[HZ6_PRELOAD_ALLOCATOR_STATS]` line per registered allocator after the
+        aggregate stats line.
+        Observation on `4 100000 8192 16 1024`:
+          aggregate:
+            allocators=5
+            source_alloc=9410
+            toy_source_alloc=9346
+            local2p_source_alloc=64
+            retain_mmap_fallback=2094
+          allocator 0:
+            route_valid=2
+            source_alloc=4
+            toy_source_alloc=4
+          allocator 1:
+            route_valid=51644
+            source_alloc=2352
+            toy_source_alloc=2336
+            local2p_source_alloc=16
+          allocator 2:
+            route_valid=51644
+            source_alloc=2351
+            toy_source_alloc=2335
+            local2p_source_alloc=16
+          allocator 3:
+            route_valid=51644
+            source_alloc=2351
+            toy_source_alloc=2335
+            local2p_source_alloc=16
+          allocator 4:
+            route_valid=51644
+            source_alloc=2352
+            toy_source_alloc=2336
+            local2p_source_alloc=16
+        Overhead guard:
+          normal stats-off repeat-3 after this instrumentation:
+            9.123M / 10.250M / 9.650M ops/s
+          Result dir:
+            private/raw-results/linux/hz6_preload_topology_audit_overhead_r3
+        Read:
+          Main/loader allocation pollution is not the bottleneck.  The main
+          allocator is negligible; four worker allocators split source and
+          route work almost perfectly evenly.  Do not pursue preload
+          init/loader isolation next.  The next optimization should target
+          repeated per-worker Toy source churn, route/free CPU, or a shared
+          warm source/route design that preserves ownership semantics.
   - Rejected preload probe:
       SourceBlockRoute exact-skip was tested with range-index, dynamic slot
       descriptor map, late register, behavior, and exact-skip.  It regressed
