@@ -401,6 +401,13 @@
 #define HZ6_MIDPAGE_PREFILL_DIRECT_REUSE_L1 0
 #endif
 
+#ifndef HZ6_MIDPAGE_ALLOC_DESCRIPTOR_OUT_L1
+/* Candidate malloc path. MidPage alloc returns the activated descriptor to
+ * active-map registration, avoiding a post-alloc exact route lookup without
+ * changing prefill policy. */
+#define HZ6_MIDPAGE_ALLOC_DESCRIPTOR_OUT_L1 0
+#endif
+
 #ifndef HZ6_TOY_CLASS_ID_FAST_ALLOC_L1
 /* Default Toy alloc shortcut.  hz6_malloc() already selected class_id, so
  * Toy alloc can validate size against class bytes instead of classifying again. */

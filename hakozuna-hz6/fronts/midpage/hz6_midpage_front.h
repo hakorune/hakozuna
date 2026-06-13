@@ -41,6 +41,11 @@ void* hz6_midpage_alloc(Hz6Allocator* allocator,
                         uint16_t class_id,
                         size_t size);
 
+void* hz6_midpage_alloc_with_descriptor(Hz6Allocator* allocator,
+                                        uint16_t class_id,
+                                        size_t size,
+                                        Hz6ObjectDescriptor** out_descriptor);
+
 size_t hz6_midpage_prefill(Hz6Allocator* allocator,
                            uint16_t class_id,
                            size_t count);

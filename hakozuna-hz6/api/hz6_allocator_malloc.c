@@ -203,6 +203,25 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
 
   hz6_toy_small_hotpath_diag_malloc_front_dispatch(allocator, front->front_id,
                                                    class_id);
+#if HZ6_MIDPAGE_ALLOC_DESCRIPTOR_OUT_L1
+  if (front->front_id == HZ6_FRONT_MIDPAGE) {
+    Hz6ObjectDescriptor* midpage_descriptor = NULL;
+    void* midpage_ptr = hz6_midpage_alloc_with_descriptor(
+        allocator, class_id, size, &midpage_descriptor);
+    if (!midpage_ptr) {
+      ++allocator->stats.alloc_fail;
+      return NULL;
+    }
+    if (midpage_descriptor) {
+      hz6_midpage_active_map_register(allocator, front->front_id, class_id,
+                                      midpage_ptr, midpage_descriptor);
+    } else {
+      hz6_midpage_active_map_register_route(allocator, front->front_id,
+                                            class_id, midpage_ptr);
+    }
+    return midpage_ptr;
+  }
+#endif
   void* ptr = front->alloc(allocator, class_id, size);
   if (!ptr) {
     ++allocator->stats.alloc_fail;

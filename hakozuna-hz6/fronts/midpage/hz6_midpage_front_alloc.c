@@ -33,7 +33,17 @@ int hz6_midpage_can_allocate(size_t size,
 void* hz6_midpage_alloc(Hz6Allocator* allocator,
                         uint16_t class_id,
                         size_t size) {
+  return hz6_midpage_alloc_with_descriptor(allocator, class_id, size, NULL);
+}
+
+void* hz6_midpage_alloc_with_descriptor(Hz6Allocator* allocator,
+                                        uint16_t class_id,
+                                        size_t size,
+                                        Hz6ObjectDescriptor** out_descriptor) {
   (void)size;
+  if (out_descriptor) {
+    *out_descriptor = NULL;
+  }
   size_t bytes = 0;
   if (!allocator || !hz6_midpage_class_bytes(class_id, &bytes)) {
     return NULL;
@@ -46,19 +56,15 @@ void* hz6_midpage_alloc(Hz6Allocator* allocator,
   }
 #endif
 
-  void* reused = hz6_front_reuse_transfer_or_cached(allocator,
-                                                    HZ6_FRONT_MIDPAGE,
-                                                    class_id,
-                                                    NULL);
+  void* reused = hz6_front_reuse_transfer_or_cached_with_descriptor(
+      allocator, HZ6_FRONT_MIDPAGE, class_id, NULL, out_descriptor);
   if (reused) {
     return reused;
   }
 
   if (hz6_midpage_prefill_run(allocator, class_id) != 0) {
-    reused = hz6_front_reuse_transfer_or_cached(allocator,
-                                                HZ6_FRONT_MIDPAGE,
-                                                class_id,
-                                                NULL);
+    reused = hz6_front_reuse_transfer_or_cached_with_descriptor(
+        allocator, HZ6_FRONT_MIDPAGE, class_id, NULL, out_descriptor);
     if (reused) {
       return reused;
     }
