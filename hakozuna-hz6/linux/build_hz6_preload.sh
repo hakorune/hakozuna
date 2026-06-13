@@ -42,7 +42,10 @@ mkdir -p "$OUT_DIR"
 source "${HZ6_DIR}/linux/hz6_sources.sh"
 HZ6_INCLUDES=("${HZ6_COMMON_INCLUDES[@]}" "${HZ6_DIR}/preload")
 
-PRELOAD_SOURCE="${HZ6_DIR}/preload/hz6_preload.c"
+HZ6_PRELOAD_SOURCES=(
+  "${HZ6_DIR}/preload/hz6_preload.c"
+  "${HZ6_DIR}/preload/hz6_preload_real.c"
+)
 PRELOAD_SO="${OUT_DIR}/libhakozuna_hz6_preload.so"
 
 HZ6_INCLUDE_FLAGS=()
@@ -74,7 +77,7 @@ echo "[linux][hz6] building preload: ${PRELOAD_SO}"
   "${HZ6_EXTRA_CFLAGS_ARRAY[@]}" \
   "${HZ6_INCLUDE_FLAGS[@]}" \
   "${HZ6_LIB_SOURCES[@]}" \
-  "$PRELOAD_SOURCE" \
+  "${HZ6_PRELOAD_SOURCES[@]}" \
   -ldl -pthread \
   -o "$PRELOAD_SO"
 echo "[linux][hz6] preload output: ${PRELOAD_SO}"

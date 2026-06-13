@@ -7389,6 +7389,99 @@ PASS ./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
 PASS git diff --check
 ```
 
+## 2026-06-13 HZ6 route/preload 1000-line cleanup lane
+
+Task:
+
+```text
+Continue source cleanup after source-block range-index split.
+Bring remaining HZ6 1000+ line code files below the line-count threshold
+without changing allocator behavior.
+```
+
+Route split:
+
+```text
+api/hz6_allocator_route.c now keeps:
+  visibility registry
+  local route lookup wrappers
+  exact register/unregister
+  tombstone compaction policy
+  route replacement/rehome
+
+New route modules:
+  api/hz6_allocator_route_hash.h
+  api/hz6_allocator_route_last_hit.c
+  api/hz6_allocator_route_last_hit.h
+  api/hz6_allocator_route_owner_locality.c
+  api/hz6_allocator_route_owner_locality.h
+  api/hz6_allocator_route_shared_directory.c
+  api/hz6_allocator_route_shared_directory.h
+```
+
+Preload split:
+
+```text
+preload/hz6_preload.c now keeps:
+  LD_PRELOAD public interposition functions
+  allocator TLS creation
+  route/free/realloc policy
+  preload stats collection and printing
+
+New preload real-wrapper module:
+  preload/hz6_preload_real.c
+  preload/hz6_preload_real.h
+
+Moved responsibilities:
+  dlsym(RTLD_NEXT) resolution
+  glibc fallback calls
+  preload reentry TLS storage
+  real malloc/calloc/realloc/free/posix_memalign/aligned_alloc/usable_size
+```
+
+Line-count result:
+
+```text
+api/hz6_allocator_route.c      1728 -> 996 lines
+preload/hz6_preload.c          1092 -> 981 lines
+
+Largest HZ6 code files after cleanup:
+  api/hz6_allocator_route.c    996
+  preload/hz6_preload.c        981
+  api/hz6_allocator_source_block_create.c 786
+```
+
+Lane decision:
+
+```text
+SELECTED cleanup:
+  behavior-preserving translation-unit splits
+  shared route directory ownership separated from route core
+  owner-locality side index separated from route core
+  last-hit cache separated from route core
+  preload real libc wrapper separated from LD_PRELOAD policy
+
+KEEP:
+  public API contracts
+  route lookup behavior
+  shared directory / owner locality diagnostics
+  LD_PRELOAD exported symbols
+  preload reentry semantics
+
+NEXT cleanup candidates:
+  docs/current_task archive compaction
+  HZ6 docs split if documentation line count becomes the next target
+```
+
+Verification:
+
+```text
+PASS ./hakozuna-hz6/linux/build_hz6_preload.sh
+PASS ./hakozuna-hz6/linux/build_hz6_benchmark.sh
+PASS ./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+PASS git diff --check
+```
+
 Ubuntu HZ6 ToyDirectMapTrusted default closeout:
 
 ```text

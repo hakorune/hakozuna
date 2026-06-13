@@ -39,7 +39,8 @@ fronts/:
   and source blocks
 
 preload/:
-  libc interposition is correctly kept in one translation unit
+  libc interposition remains isolated from allocator core; real libc symbol
+  resolution lives in a separate preload real-wrapper module
 ```
 
 Current cleanup targets:
@@ -76,8 +77,19 @@ api/hz6_allocator_types.h:
   route cache, active maps, backend state, and stats-owned internals
 
 api/hz6_allocator_route.c:
-  route cache, visibility registry, shared directory, owner locality, exact
-  register/unregister, tombstone compact, and lookup variants
+  visibility registry, exact register/unregister, tombstone compact, and
+  lookup variants
+
+api/hz6_allocator_route_last_hit.c:
+  per-allocator exact-pointer last-hit route cache validation, fill, and clear
+
+api/hz6_allocator_route_owner_locality.c:
+  owner-locality index register/unregister, memory accounting, and locality
+  hint lookup
+
+api/hz6_allocator_route_shared_directory.c:
+  shared exact-route directory, elastic overflow invalid ranges, shared-dir
+  dry-run diagnostics, and shared-dir first lookup helpers
 
 api/hz6_allocator_source_block_create.c:
   source-block allocation, source-run bitmap, descriptor map ownership,

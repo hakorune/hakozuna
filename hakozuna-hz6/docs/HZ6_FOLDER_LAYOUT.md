@@ -65,6 +65,13 @@ hakozuna-hz6/
     hz6_allocator_orphan_adopt.c
     hz6_allocator_remote_pending.c
     hz6_allocator_route.c
+    hz6_allocator_route_hash.h
+    hz6_allocator_route_last_hit.c
+    hz6_allocator_route_last_hit.h
+    hz6_allocator_route_owner_locality.c
+    hz6_allocator_route_owner_locality.h
+    hz6_allocator_route_shared_directory.c
+    hz6_allocator_route_shared_directory.h
     hz6_allocator_scavenge_orphans.c
     hz6_allocator_scavenge_local_free.c
     hz6_allocator_scavenge_profile.c
@@ -185,7 +192,9 @@ hakozuna-hz6/
     hz6_profiles_policy.c
 
   preload/
-    linux_preload.c
+    hz6_preload.c
+    hz6_preload_real.c
+    hz6_preload_real.h
 
   win/
     hz6_win_build_common.ps1
@@ -263,6 +272,13 @@ api/hz6_allocator_orphan_adopt_commit.c
 api/hz6_allocator_orphan_adopt.c
 api/hz6_allocator_remote_pending.c
 api/hz6_allocator_route.c
+api/hz6_allocator_route_hash.h
+api/hz6_allocator_route_last_hit.c
+api/hz6_allocator_route_last_hit.h
+api/hz6_allocator_route_owner_locality.c
+api/hz6_allocator_route_owner_locality.h
+api/hz6_allocator_route_shared_directory.c
+api/hz6_allocator_route_shared_directory.h
 api/hz6_allocator_owns.c
 api/hz6_allocator_stats_snapshot.c
 api/hz6_allocator_scavenge_orphans.c
