@@ -25,7 +25,7 @@ Audit:
 
 Current focus:
   keep HZ3 source modularization separate from allocator performance tuning.
-  next source candidates are hz3_arena.c and hz3_config_scale_part8_modern.inc.
+  next source candidate is hz3_config_scale_part8_modern.inc.
 ```
 
 HZ6 is now in active Windows/Linux implementation and benchmarking. HZ5 Linux

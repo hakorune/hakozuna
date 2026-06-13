@@ -17,6 +17,7 @@ this pass Split HZ3 central helpers
 this pass Split HZ3 inbox helpers
 this pass Split HZ3 tcache helpers
 this pass Split HZ3 tcache slowpath helpers
+this pass Split HZ3 arena helpers
 ```
 
 Current HZ3 cleanup result:
@@ -42,6 +43,9 @@ hakozuna/src/hz3_tcache.c:
 
 hakozuna/src/hz3_tcache_slowpath.inc:
   1178 lines -> 6-line router plus focused helper includes
+
+hakozuna/src/hz3_arena.c:
+  1089 lines -> 36-line router plus focused helper includes
 ```
 
 The split is intentionally source-shape only. It should not change lane
@@ -56,10 +60,10 @@ Current next candidates:
 
 ```text
 P0:
-  hakozuna/src/hz3_arena.c
+  hakozuna/include/config/hz3_config_scale_part8_modern.inc
 
 P1:
-  hakozuna/include/config/hz3_config_scale_part8_modern.inc
+  linux/HZ3 or HZ5 helper scripts if they block active allocator work
 
 P2:
   linux/hz5_build_*.sh helper scripts still above 1000 lines
