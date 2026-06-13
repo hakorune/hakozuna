@@ -36,6 +36,9 @@ Windows selected-family lane status is maintained in HZ6_LANE_GUIDE.md and
 HZ6_SELECTED_FAMILY_SUMMARY.md.
 
 Ubuntu LD_PRELOAD status is maintained in HZ6_UBUNTU_PRELOAD_LANES.md.
+Current Ubuntu selected default includes MidPage descriptor-out. Next MidPage
+work should observe active-map entry lifetime / overwrite source before changing
+behavior; deeper free probing is not indicated by the latest miss attribution.
 
 Long historical benchmark notes and failed experiments live in:
   archive/current_task_2026-06_history.md

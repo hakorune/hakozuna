@@ -61,21 +61,17 @@ HZ6_PRELOAD_FAST_FREE_L1=0
 The preload lane is a real Ubuntu performance lane, but it remains separate
 from the direct HZ6 API and Windows selected-family rows.
 
-Latest selected shape:
+Latest selected-default focused guards, after MidPage descriptor-out:
 
 | Row | Selected read |
 | --- | ---: |
-| `16..256` cap16K cross repeat-3 | `hz6 57.671M` vs `mimalloc 53.099M` |
-| `16..4096` cap16K cross repeat-3 | `hz6 39.382M` vs `mimalloc 5.873M` |
-| `1024..4096` cap16K cross repeat-3 | `hz6 38.497M` vs `mimalloc 4.858M` |
-| `4096..16384` cap16K cross repeat-3 | `hz6 27.752M` vs `mimalloc 1.282M` |
-| `4096..16384` cap16K focused repeat-5 | `27.067M` vs pre-promotion default `25.908M` |
-| `1024..4096` external-map repeat-7 | `32.011M` |
-| `4096..16384` external-map repeat-7 | `19.903M` |
-| `1024..4096` realloc-in-place repeat-5 | `34.678M` |
-| `4096..16384` realloc-in-place repeat-5 | `30.118M` |
+| `16..256` descriptor-out confirm repeat-3 | `57.443M` vs control-off `56.718M` |
+| `16..4096` descriptor-out confirm repeat-3 | `41.578M` vs control-off `41.489M` |
+| `1024..4096` descriptor-out confirm repeat-7 | `40.057M` vs control-off `39.829M` |
+| `4096..16384` descriptor-out confirm repeat-3 | `34.761M` vs control-off `29.769M` |
 
-Latest cross-allocator refresh, repeat-3, `bench_mixed_ws_crt`:
+Latest cross-allocator refresh before descriptor-out, repeat-3,
+`bench_mixed_ws_crt`:
 
 | Row | hz6 | mimalloc | tcmalloc | system | hz6 peak KB |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -89,64 +85,19 @@ Important caveat:
 ```text
 tcmalloc remains much faster on these preload rows, and system malloc is still
 faster on the tiny 16..256 row.  HZ6 is now clearly ahead of mimalloc on the
-selected mixed_ws preload rows, but this is not a universal allocator win.
-Present it as the current Ubuntu HZ6 LD_PRELOAD selected/default lane.
+selected mixed_ws preload rows, but this is not a universal allocator win. The
+cross-allocator table above predates descriptor-out and needs a refresh before
+using it as the latest ranking snapshot.
 ```
 
-Current lane decisions:
+Current follow-up read:
 
 | Lane | Status | Read |
 | --- | --- | --- |
-| `HZ6_TOY_ACTIVE_MAP_REGISTER_FAST_SLOT_L1` | selected | Large Toy-row win; keep default on. |
-| `HZ6_TOY_TRUSTED_ACTIVATE_SKIP_SOURCE_BLOCK_CHECK_L1` | candidate/default | Small `1024..4096` win; watch `16..1024`. |
-| `HZ6_TOY_PRECLASSIFIED_MALLOC_L1` | no-go | Direct preclassification worsened layout/throughput. |
-| `HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1` | no-go | Wrapper bypass regressed target rows. |
-| `HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1` | no-go | Neutral target, broad Toy wobble. |
-| `SmallRunRouteBehaviorToy-L1` | no-go | Dry-run clean, support machinery too expensive. |
-
-`HZ6_TOY_PRECLASSIFIED_MALLOC_L1` exists as a gated control/no-go candidate,
-not as selected default. It bypasses generic front-registry classification for
-`size <= 4096`, but the focused `1024..4096` preload A/B regressed versus the
-registry path. Keep default off unless a broader repeat reverses that result.
-
-`HZ6_TOY_ACTIVE_MAP_REGISTER_FAST_SLOT_L1` is the current Toy high candidate.
-It only short-circuits active-map registration when the hashed base slot is
-empty or already matches the pointer; collision cases keep the prior bounded
-probe path. Focused repeat showed the main `1024..4096` preload row improving
-from `34.566M` to `39.798M ops/s`, with clean stats guards. Keep watching the
-`4096..16384` guard row because it was roughly flat/slightly down in the first
-short repeat.
-
-`HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1` is a no-go control. It bypassed the
-allocator frontcache-pop wrapper only in non-diagnostic direct-reuse builds, but
-repeat-5 regressed `1024..4096` from `39.699M` to `36.341M ops/s`. Keep it off.
-
-`HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1` is a no-go control. It checks the hashed
-base slot before the Toy active-map free probe loop, but repeat-5 was neutral
-on `1024..4096` and regressed `16..4096`; keep it off.
-
-`HZ6_TOY_TRUSTED_ACTIVATE_SKIP_SOURCE_BLOCK_CHECK_L1` is a Toy-high
-candidate/default. It skips the repeated source-block active/bounds validation
-only after local frontcache state/ptr/generation checks and only for
-Toy-sized descriptors. Repeat-9 showed `1024..4096` improving `1.0065x`; keep
-watching the small `16..1024` wobble (`0.9955x`).
-
-`[HZ6_PRELOAD_RUNMETA_DETAIL]` is the ToyRunLocalMeta diagnostic line. Use it
-only with diagnostic builds that enable source-run reuse, source-block range
-index, slot descriptor map, and `HZ6_SMALL_RUN_ROUTE_DRYRUN_L1`; it estimates
-whether run-local metadata can replace exact route / descriptor source-block
-work on Toy source-run frees.
-
-First runmeta diagnostic: `1024..4096` and `16..4096` had
-`smallrun_would_valid / smallrun_route_attempt = 0.9994` with
-`smallrun_false_positive=0`. `4096..16384` had only `0.0001`, so any behavior
-must stay Toy/source-run gated.
-
-`SmallRunRouteBehaviorToy-L1` is no-go with the current source-run route stack.
-Although dry-run was clean, enabling source-run reuse + descriptor map + range
-index dropped `1024..4096` into the `35M ops/s` band; behavior on was slightly
-worse than support-only. Do not promote this path without a cheaper
-active-map-adjacent metadata design.
+| MidPage active-map deeper probe | no-go direction | Miss attribution showed `found_elsewhere=0`; misses are not probe-limit misses. |
+| `HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1=1` | watch/control | Re-tested after descriptor-out: target improves, but `16..256` repeat-7 is still slightly weaker. Keep off. |
+| `HZ6_MIDPAGE_ACTIVE_MAP_ADDR_ENVELOPE_L1=1` | watch/control | Helps Toy/tiny by skipping impossible MidPage probes, but target has `addr_envelope_skip=0`. Keep off. |
+| Next likely lane | diagnostic | Observe MidPage active-map entry lifetime / overwrite source before changing behavior. |
 
 HZ3/HZ4 comparison read:
 
