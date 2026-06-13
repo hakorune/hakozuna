@@ -227,6 +227,19 @@ HZ6 Ubuntu LD_PRELOAD current pass:
     Default bundle guard after promotion:
       16..4096 median 34.420M, peak median 155648 KB
       4096..16384 median 19.433M, peak median 197120 KB
+
+    No-go follow-up:
+      MidPageActiveFreeMap-L1 was tested as a macro-on candidate and then
+      removed. It reduced diagnostic route probes on 4096..16384:
+        route_lookup_probe_total 1132435 -> 783444
+      but added too much active-map pressure:
+        toy_small_active_map_free_miss = 1353588
+        toy_small_active_map_register_collision = 25138
+      Focused repeat-3 moved slightly backward:
+        default256  median 19.188M
+        midactive   median 19.057M
+      Do not widen the Toy active-map to MidPage without a separate MidPage map
+      or lower-miss/collision design.
 ```
 
 Latest HZ6 Ubuntu hot-path tuning:
