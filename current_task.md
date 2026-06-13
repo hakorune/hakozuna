@@ -20,6 +20,41 @@ remains profile-stabilized; new HZ5 work should not blur the HZ6 contract.
 HZ6 Ubuntu LD_PRELOAD current pass:
 
 ```text
+2026-06-13 update:
+  Re-ran the selected LD_PRELOAD default bundle after
+  PreloadReallocInPlace-L1 against hz6/mimalloc/tcmalloc/system.
+
+  Raw:
+    private/raw-results/linux/hz6_preload_realloc_cross_r5_20260613
+
+  bench_mixed_ws_crt repeat-5 medians:
+    16..256:
+      hz6      55.196M
+      mimalloc 53.028M
+      tcmalloc 256.082M
+      system   99.543M
+    16..4096:
+      hz6      36.376M
+      mimalloc 5.954M
+      tcmalloc 89.005M
+      system   8.744M
+    1024..4096:
+      hz6      34.296M
+      mimalloc 4.834M
+      tcmalloc 85.686M
+      system   6.206M
+    4096..16384:
+      hz6      26.852M
+      mimalloc 1.307M
+      tcmalloc 42.479M
+      system   2.969M
+
+  Read:
+    HZ6 preload is now clearly ahead of mimalloc across the selected mixed_ws
+    rows, including the broad MidPage rows.  tcmalloc remains the throughput
+    ceiling on this benchmark, and system malloc still wins the tiny 16..256
+    row, so keep the claim scoped to the selected HZ6 Ubuntu preload lane.
+
 2026-06-13:
   RouteRegister/DescriptorFrontCacheAudit-L1 started from the post
   RouteTombstoneCompact preload lane.

@@ -81,9 +81,13 @@ and 4096..16384 from `18.983M` to `19.903M`; internal map storage is kept as a
 MidPage-only control.  PreloadReallocInPlace-L1 is also selected: repeat-5
 versus control-off moved 16..256 `50.810M -> 55.313M`, 16..4096
 `33.867M -> 36.556M`, 1024..4096 `31.473M -> 34.678M`, and 4096..16384
-`19.971M -> 30.118M`.  LD_PRELOAD is now a real Ubuntu
-performance lane, but it is still separate from direct HZ6 API strength rows
-and should be validated on broader rows before paper-facing promotion.
+`19.971M -> 30.118M`.  The follow-up selected cross repeat-5 puts HZ6 ahead of
+mimalloc on all four preload mixed_ws rows: 16..256 `55.196M` vs `53.028M`,
+16..4096 `36.376M` vs `5.954M`, 1024..4096 `34.296M` vs `4.834M`, and
+4096..16384 `26.852M` vs `1.307M`.  tcmalloc remains higher throughput on the
+same rows, and system malloc still wins the tiny 16..256 row, so LD_PRELOAD is
+now a real Ubuntu performance lane but still separate from direct HZ6 API
+strength rows and not a universal allocator-win claim.
 
 ## Selected Rows
 

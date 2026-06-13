@@ -50,19 +50,31 @@ Latest selected shape:
 
 | Row | Selected read |
 | --- | ---: |
-| `16..256` focused cross | `hz6 53.883M` vs `mimalloc 52.656M` |
-| `16..4096` focused cross | `hz6 34.559M` vs `mimalloc 6.027M` |
+| `16..256` latest cross repeat-5 | `hz6 55.196M` vs `mimalloc 53.028M` |
+| `16..4096` latest cross repeat-5 | `hz6 36.376M` vs `mimalloc 5.954M` |
+| `1024..4096` latest cross repeat-5 | `hz6 34.296M` vs `mimalloc 4.834M` |
+| `4096..16384` latest cross repeat-5 | `hz6 26.852M` vs `mimalloc 1.307M` |
 | `1024..4096` external-map repeat-7 | `32.011M` |
 | `4096..16384` external-map repeat-7 | `19.903M` |
 | `1024..4096` realloc-in-place repeat-5 | `34.678M` |
 | `4096..16384` realloc-in-place repeat-5 | `30.118M` |
 
+Latest cross-allocator refresh, repeat-5, `bench_mixed_ws_crt`:
+
+| Row | hz6 | mimalloc | tcmalloc | system | hz6 peak KB |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `16..256` | `55.196M` | `53.028M` | `256.082M` | `99.543M` | `56,576` |
+| `16..4096` | `36.376M` | `5.954M` | `89.005M` | `8.744M` | `156,544` |
+| `1024..4096` | `34.296M` | `4.834M` | `85.686M` | `6.206M` | `180,736` |
+| `4096..16384` | `26.852M` | `1.307M` | `42.479M` | `2.969M` | `117,120` |
+
 Important caveat:
 
 ```text
-tcmalloc remains much faster on the broad preload rows.  Do not present this
-lane as a universal allocator win; present it as the current Ubuntu HZ6
-LD_PRELOAD selected/default lane.
+tcmalloc remains much faster on these preload rows, and system malloc is still
+faster on the tiny 16..256 row.  HZ6 is now clearly ahead of mimalloc on the
+selected mixed_ws preload rows, but this is not a universal allocator win.
+Present it as the current Ubuntu HZ6 LD_PRELOAD selected/default lane.
 ```
 
 ## Promotion History
@@ -146,6 +158,7 @@ private/raw-results/linux/hz6_preload_midmap_external_control_r7_20260613
 private/raw-results/linux/hz6_preload_midmap_external_diag_20260613
 private/raw-results/linux/hz6_preload_realloc_audit_20260613
 private/raw-results/linux/hz6_preload_realloc_inplace_ab_r5_20260613
+private/raw-results/linux/hz6_preload_realloc_cross_r5_20260613
 ```
 
 Storage rule:
