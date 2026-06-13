@@ -14,6 +14,20 @@ Before adding another HZ6 lane or benchmark row, read:
 Keep this root file as a top-level project ledger. HZ6-specific stable lane
 decisions should be mirrored into the HZ6 docs above.
 
+Source cleanup lane:
+
+```text
+Read:
+  docs/HZ3_SOURCE_MODULARIZATION_LANE.md
+
+Audit:
+  ./linux/audit_large_source_files.sh
+
+Current focus:
+  keep HZ3 source modularization separate from allocator performance tuning.
+  next candidates are hz3_central.c and hz3_tcache_remote_stash.inc.
+```
+
 HZ6 is now in active Windows/Linux implementation and benchmarking. HZ5 Linux
 remains profile-stabilized; new HZ5 work should not blur the HZ6 contract.
 
