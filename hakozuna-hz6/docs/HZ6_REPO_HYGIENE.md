@@ -10,6 +10,7 @@ benchmark lane or source-level experiment.
 | --- | --- |
 | Short paper-facing selected rows | `HZ6_SELECTED_FAMILY_SUMMARY.md` |
 | Which lane is which | `HZ6_LANE_GUIDE.md` |
+| Ubuntu LD_PRELOAD lane ledger | `HZ6_UBUNTU_PRELOAD_LANES.md` |
 | Cross-allocator comparison table | `HZ6_CROSS_ALLOCATOR_COMPARISON.md` |
 | ElasticCapacity source-depot track | `HZ6_ELASTIC_CAPACITY_PLAN.md` |
 | Windows lane registry cleanup | `HZ6_WINDOWS_LANE_REGISTRY.md` |
@@ -147,6 +148,9 @@ HZ6_SELECTED_FAMILY_SUMMARY.md:
 
 HZ6_LANE_GUIDE.md:
   lane dictionary and runner commands
+
+HZ6_UBUNTU_PRELOAD_LANES.md:
+  Ubuntu LD_PRELOAD selected bundle, controls, no-go lanes, and raw evidence
 
 HZ6_ELASTIC_CAPACITY_PLAN.md:
   source-depot / ElasticCapacity working-set decisions

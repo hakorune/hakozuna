@@ -6,6 +6,7 @@ HZ6 orientation note:
 Before adding another HZ6 lane or benchmark row, read:
   hakozuna-hz6/docs/HZ6_SELECTED_FAMILY_SUMMARY.md
   hakozuna-hz6/docs/HZ6_LANE_GUIDE.md
+  hakozuna-hz6/docs/HZ6_UBUNTU_PRELOAD_LANES.md
   hakozuna-hz6/docs/HZ6_REPO_HYGIENE.md
   hakozuna-hz6/docs/HZ6_SOURCE_MODULARIZATION.md
 ```

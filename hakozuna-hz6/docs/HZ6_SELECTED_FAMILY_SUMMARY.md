@@ -6,6 +6,7 @@ experiment ledger.
 
 For cleanup rules and the next source modularization target, see
 `HZ6_REPO_HYGIENE.md` and `HZ6_SOURCE_MODULARIZATION.md`.
+For the Ubuntu LD_PRELOAD lane ledger, see `HZ6_UBUNTU_PRELOAD_LANES.md`.
 
 Ubuntu note:
 `HZ6_ROUTE_LAST_HIT_CACHE_L1=1` is now the Linux/Ubuntu default route shortcut.
