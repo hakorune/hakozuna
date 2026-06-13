@@ -81,7 +81,11 @@ api/hz6_allocator_route.c:
 
 api/hz6_allocator_source_block_create.c:
   source-block allocation, source-run bitmap, descriptor map ownership,
-  elastic depot, range index, dry-run stats, and creation flow
+  elastic depot, dry-run stats, and creation flow
+
+api/hz6_allocator_source_block_range_index.c:
+  source-block page-range side index registration, unregistration, lookup,
+  diagnostics counters, and small-run armed count ownership
 
 fronts/hz6_front_reuse_transfer.c:
   transfer reuse core plus elastic depot diagnostics, source-run locality,

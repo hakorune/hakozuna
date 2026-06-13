@@ -7329,6 +7329,66 @@ Safety:
   route_register_fail = 0
 ```
 
+## 2026-06-13 HZ6 source-block range-index modularization lane
+
+Task:
+
+```text
+Lane cleanup before continuing optimization work.
+Reduce 1000+ line HZ6 code hubs without changing allocator behavior.
+```
+
+Change:
+
+```text
+Split source-block page-range side-index ownership out of:
+  api/hz6_allocator_source_block_create.c
+
+New module:
+  api/hz6_allocator_source_block_range_index.c
+
+Moved responsibilities:
+  range-index page hashing
+  source-block index validation
+  range-index register/unregister/lookup
+  range-index diagnostic counters
+  small-run armed registration count updates
+```
+
+Line-count result:
+
+```text
+api/hz6_allocator_source_block_create.c       1040 -> 786 lines
+api/hz6_allocator_source_block_range_index.c  255 lines
+```
+
+Lane decision:
+
+```text
+SELECTED cleanup:
+  behavior-preserving translation-unit split
+  Linux build manifest updated
+  folder-layout and modularization docs updated
+
+KEEP:
+  existing public prototypes in api/hz6_allocator_api_source.h
+  existing range-index semantics
+  existing diagnostic counter names
+
+NEXT cleanup candidates:
+  api/hz6_allocator_route.c
+  preload/hz6_preload.c
+```
+
+Verification:
+
+```text
+PASS ./hakozuna-hz6/linux/build_hz6_preload.sh
+PASS ./hakozuna-hz6/linux/build_hz6_benchmark.sh
+PASS ./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+PASS git diff --check
+```
+
 Ubuntu HZ6 ToyDirectMapTrusted default closeout:
 
 ```text

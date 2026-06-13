@@ -65,13 +65,13 @@ hakozuna-hz6/
     hz6_allocator_orphan_adopt.c
     hz6_allocator_remote_pending.c
     hz6_allocator_route.c
-    hz6_allocator_owns.c
-    hz6_allocator_stats_snapshot.c
     hz6_allocator_scavenge_orphans.c
     hz6_allocator_scavenge_local_free.c
     hz6_allocator_scavenge_profile.c
     hz6_allocator_source_block_create.c
     hz6_allocator_source_block_lifetime.c
+    hz6_allocator_source_block_range_index.c
+    hz6_allocator_source_block_route.c
     hz6_allocator_transfer_query.c
     hz6_allocator_transfer_dispatch.c
 
@@ -270,6 +270,7 @@ api/hz6_allocator_scavenge_local_free.c
 api/hz6_allocator_scavenge_profile.c
 api/hz6_allocator_source_block_create.c
 api/hz6_allocator_source_block_lifetime.c
+api/hz6_allocator_source_block_range_index.c
 api/hz6_allocator_source_block_route.c
 api/hz6_allocator_transfer_query.c
 api/hz6_allocator_transfer_dispatch.c
