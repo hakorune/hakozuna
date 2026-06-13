@@ -239,6 +239,11 @@ static void hz6_preload_print_stats(void) {
   size_t toy_small_active_map_route_bypass = 0;
   size_t midpage_active_map_register = 0;
   size_t midpage_active_map_register_collision = 0;
+  size_t midpage_active_map_register_empty_slot = 0;
+  size_t midpage_active_map_register_same_ptr = 0;
+  size_t midpage_active_map_register_overwrite = 0;
+  size_t midpage_8k_active_map_register_overwrite = 0;
+  size_t midpage_32k_active_map_register_overwrite = 0;
   size_t midpage_active_map_free_attempt = 0;
   size_t midpage_active_map_free_hit = 0;
   size_t midpage_active_map_free_miss = 0;
@@ -402,6 +407,16 @@ static void hz6_preload_print_stats(void) {
     midpage_active_map_register += stats.midpage_active_map_register;
     midpage_active_map_register_collision +=
         stats.midpage_active_map_register_collision;
+    midpage_active_map_register_empty_slot +=
+        stats.midpage_active_map_register_empty_slot;
+    midpage_active_map_register_same_ptr +=
+        stats.midpage_active_map_register_same_ptr;
+    midpage_active_map_register_overwrite +=
+        stats.midpage_active_map_register_overwrite;
+    midpage_8k_active_map_register_overwrite +=
+        stats.midpage_8k_active_map_register_overwrite;
+    midpage_32k_active_map_register_overwrite +=
+        stats.midpage_32k_active_map_register_overwrite;
     midpage_active_map_free_attempt +=
         stats.midpage_active_map_free_attempt;
     midpage_active_map_free_hit += stats.midpage_active_map_free_hit;
@@ -585,6 +600,11 @@ static void hz6_preload_print_stats(void) {
           "toy_small_active_map_route_bypass=%zu "
           "midpage_active_map_register=%zu "
           "midpage_active_map_register_collision=%zu "
+          "midpage_active_map_register_empty_slot=%zu "
+          "midpage_active_map_register_same_ptr=%zu "
+          "midpage_active_map_register_overwrite=%zu "
+          "midpage_8k_active_map_register_overwrite=%zu "
+          "midpage_32k_active_map_register_overwrite=%zu "
           "midpage_active_map_free_attempt=%zu "
           "midpage_active_map_free_hit=%zu "
           "midpage_active_map_free_miss=%zu "
@@ -614,6 +634,11 @@ static void hz6_preload_print_stats(void) {
           toy_small_active_map_route_bypass,
           midpage_active_map_register,
           midpage_active_map_register_collision,
+          midpage_active_map_register_empty_slot,
+          midpage_active_map_register_same_ptr,
+          midpage_active_map_register_overwrite,
+          midpage_8k_active_map_register_overwrite,
+          midpage_32k_active_map_register_overwrite,
           midpage_active_map_free_attempt,
           midpage_active_map_free_hit,
           midpage_active_map_free_miss,

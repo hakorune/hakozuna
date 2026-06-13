@@ -154,6 +154,7 @@ static inline void hz6_midpage_active_map_register(
   Hz6MidPageActiveMapEntry* entry = NULL;
   Hz6MidPageActiveMapEntry* first_empty = NULL;
   int saw_collision = 0;
+  int register_same_ptr = 0;
 #if HZ6_MIDPAGE_ACTIVE_MAP_REGISTER_FAST_SLOT_L1
   saw_collision = 1;
   for (size_t probe = 1; probe < HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT;
@@ -167,6 +168,7 @@ static inline void hz6_midpage_active_map_register(
     Hz6MidPageActiveMapEntry* candidate = &entries[index];
     if (candidate->ptr == ptr) {
       entry = candidate;
+      register_same_ptr = 1;
       break;
     }
     if (!candidate->ptr) {
@@ -207,6 +209,12 @@ static inline void hz6_midpage_active_map_register(
   }
 #endif
 #if HZ6_DIAGNOSTIC_PROBES
+  int register_empty_slot = entry && !entry->ptr;
+  uint16_t overwritten_class_id = 0;
+  int register_overwrite = entry && entry->ptr && entry->ptr != ptr;
+  if (register_overwrite) {
+    overwritten_class_id = entry->class_id;
+  }
   ++allocator->stats.midpage_active_map_register;
   if (class_id == HZ6_MIDPAGE_8K_CLASS_ID) {
     ++allocator->stats.midpage_8k_active_map_register;
@@ -216,8 +224,23 @@ static inline void hz6_midpage_active_map_register(
   if (saw_collision) {
     ++allocator->stats.midpage_active_map_register_collision;
   }
+  if (register_empty_slot) {
+    ++allocator->stats.midpage_active_map_register_empty_slot;
+  }
+  if (register_same_ptr) {
+    ++allocator->stats.midpage_active_map_register_same_ptr;
+  }
+  if (register_overwrite) {
+    ++allocator->stats.midpage_active_map_register_overwrite;
+    if (overwritten_class_id == HZ6_MIDPAGE_8K_CLASS_ID) {
+      ++allocator->stats.midpage_8k_active_map_register_overwrite;
+    } else if (overwritten_class_id == HZ6_MIDPAGE_32K_CLASS_ID) {
+      ++allocator->stats.midpage_32k_active_map_register_overwrite;
+    }
+  }
 #else
   (void)saw_collision;
+  (void)register_same_ptr;
 #endif
   entry->ptr = ptr;
   entry->descriptor = descriptor;
