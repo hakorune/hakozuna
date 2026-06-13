@@ -42,6 +42,7 @@ HZ6_SOURCE_BLOCK_CAPACITY=4096
 HZ6_FRONT_CACHE_BIN_CAPACITY=8192
 HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY=32768
 HZ6_MIDPAGE_RUN_BYTES=262144
+HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2=1
 HZ6_LINUX_MMAP_RETAIN_L1=1
 HZ6_LINUX_MMAP_RETAIN_64K_STACK_L1=1
 HZ6_TOY_FULL_BLOCK_PREFILL_L1=1
@@ -67,9 +68,13 @@ probes from about 2.12M to about 37.7K and moving the focused 16..256 cross row
 to `hz6 53.883M` versus `mimalloc 52.656M`.  MidPageSourceRun256K-L1 is also
 selected for the preload bundle: it keeps the direct/R1 64KiB default intact
 but raises the LD_PRELOAD MidPage run to 256KiB, moving the 4096..16384 median
-from `16.549M` to `19.394M` with flat peak RSS.  LD_PRELOAD is now a real
-Ubuntu performance lane, but it is still separate from direct HZ6 API strength
-rows and should be validated on broader rows before paper-facing promotion.
+from `16.549M` to `19.394M` with flat peak RSS. MidPageActiveFreeMap-L2 is then
+selected for preload with capacity 8192/probe2; it keeps a dedicated MidPage
+map instead of widening the Toy map and moved the focused 4096..16384 cap
+ladder from `19.383M` to `20.975M`, with a post-promotion default guard at
+`20.762M`.  LD_PRELOAD is now a real Ubuntu
+performance lane, but it is still separate from direct HZ6 API strength rows
+and should be validated on broader rows before paper-facing promotion.
 
 ## Selected Rows
 

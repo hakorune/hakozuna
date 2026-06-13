@@ -1,5 +1,6 @@
 #include "hz6_allocator.h"
 #include "hz6_allocator_api_init.h"
+#include "hz6_allocator_midpage_active_map.h"
 #include "hz6_allocator_toy_small_diag.h"
 #include "linux_source_mmap.h"
 #include "hz6_profiles.h"
@@ -300,6 +301,15 @@ static void hz6_preload_print_stats(void) {
   size_t toy_small_active_map_free_stale = 0;
   size_t toy_small_active_map_free_cache_fail = 0;
   size_t toy_small_active_map_route_bypass = 0;
+  size_t midpage_active_map_register = 0;
+  size_t midpage_active_map_register_collision = 0;
+  size_t midpage_active_map_free_attempt = 0;
+  size_t midpage_active_map_free_hit = 0;
+  size_t midpage_active_map_free_miss = 0;
+  size_t midpage_active_map_free_stale = 0;
+  size_t midpage_active_map_free_cache_fail = 0;
+  size_t midpage_active_map_alignment_skip = 0;
+  size_t midpage_active_map_route_bypass = 0;
 
   pthread_mutex_lock(&g_hz6_preload_allocator_registry_mutex);
   allocator_count = g_hz6_preload_allocator_registry_count;
@@ -418,6 +428,20 @@ static void hz6_preload_print_stats(void) {
         stats.toy_small_active_map_free_cache_fail;
     toy_small_active_map_route_bypass +=
         stats.toy_small_active_map_route_bypass;
+    midpage_active_map_register += stats.midpage_active_map_register;
+    midpage_active_map_register_collision +=
+        stats.midpage_active_map_register_collision;
+    midpage_active_map_free_attempt +=
+        stats.midpage_active_map_free_attempt;
+    midpage_active_map_free_hit += stats.midpage_active_map_free_hit;
+    midpage_active_map_free_miss += stats.midpage_active_map_free_miss;
+    midpage_active_map_free_stale += stats.midpage_active_map_free_stale;
+    midpage_active_map_free_cache_fail +=
+        stats.midpage_active_map_free_cache_fail;
+    midpage_active_map_alignment_skip +=
+        stats.midpage_active_map_alignment_skip;
+    midpage_active_map_route_bypass +=
+        stats.midpage_active_map_route_bypass;
   }
   pthread_mutex_unlock(&g_hz6_preload_allocator_registry_mutex);
 
@@ -533,7 +557,16 @@ static void hz6_preload_print_stats(void) {
           "toy_small_active_map_free_miss=%zu "
           "toy_small_active_map_free_stale=%zu "
           "toy_small_active_map_free_cache_fail=%zu "
-          "toy_small_active_map_route_bypass=%zu\n",
+          "toy_small_active_map_route_bypass=%zu "
+          "midpage_active_map_register=%zu "
+          "midpage_active_map_register_collision=%zu "
+          "midpage_active_map_free_attempt=%zu "
+          "midpage_active_map_free_hit=%zu "
+          "midpage_active_map_free_miss=%zu "
+          "midpage_active_map_free_stale=%zu "
+          "midpage_active_map_free_cache_fail=%zu "
+          "midpage_active_map_alignment_skip=%zu "
+          "midpage_active_map_route_bypass=%zu\n",
           descriptor_live_max, source_block_active_max,
           frontcache_total_max, frontcache_reuse_hit,
           frontcache_reuse_invalid, frontcache_spill_success,
@@ -547,7 +580,16 @@ static void hz6_preload_print_stats(void) {
           toy_small_active_map_free_hit, toy_small_active_map_free_miss,
           toy_small_active_map_free_stale,
           toy_small_active_map_free_cache_fail,
-          toy_small_active_map_route_bypass);
+          toy_small_active_map_route_bypass,
+          midpage_active_map_register,
+          midpage_active_map_register_collision,
+          midpage_active_map_free_attempt,
+          midpage_active_map_free_hit,
+          midpage_active_map_free_miss,
+          midpage_active_map_free_stale,
+          midpage_active_map_free_cache_fail,
+          midpage_active_map_alignment_skip,
+          midpage_active_map_route_bypass);
 
   fprintf(stderr,
           "[HZ6_PRELOAD_PHASE_STATS] malloc_calls=%zu "
@@ -705,6 +747,10 @@ void free(void* ptr) {
   if (hz6_toy_small_active_map_try_free(allocator, ptr)) {
     hz6_preload_phase_count(
         &g_hz6_preload_phase_stats.free_toy_active_map_hit);
+    g_hz6_preload_reentry = 0;
+    return;
+  }
+  if (hz6_midpage_active_map_try_free(allocator, ptr)) {
     g_hz6_preload_reentry = 0;
     return;
   }

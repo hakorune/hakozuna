@@ -240,6 +240,60 @@ HZ6 Ubuntu LD_PRELOAD current pass:
         midactive   median 19.057M
       Do not widen the Toy active-map to MidPage without a separate MidPage map
       or lower-miss/collision design.
+
+    MidPageActiveFreeMap-L2:
+      Implemented a dedicated MidPage active free map instead of widening the
+      Toy map. The L2 map is allocator-local, validates descriptor pointer,
+      generation, class, and ACTIVE state, uses an 8KiB alignment gate before
+      probing, and registers MidPage allocations/reuse through the existing
+      exact route descriptor.
+
+      raw:
+        private/raw-results/linux/hz6_preload_midmap_ladder_r3_20260613
+        private/raw-results/linux/hz6_preload_midmap_diag_20260613
+        private/raw-results/linux/hz6_preload_midmap_route_r5_20260613
+        private/raw-results/linux/hz6_preload_midmap_route_cap_small_r3_20260613
+        private/raw-results/linux/hz6_preload_midmap_selected_guard_20260613
+        private/raw-results/linux/hz6_preload_midmap_selected_diag_20260613
+
+      Read:
+        The first dedicated map cut diagnostic route probes on 4096..16384:
+          route_lookup_probe_total 1134991 -> 792064
+          midpage_active_map_free_hit = 330382
+          stale/cache_fail = 0
+        Adding alloc-success route registration improved MidPage coverage
+        further. Capacity 16K was fastest on some MidPage-only repeats but had
+        more allocator-local footprint. Capacity 8K/probe2 kept most of the
+        MidPage win with lower footprint.
+
+      Selected for Ubuntu LD_PRELOAD:
+        HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2=1
+        HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY=8192
+        HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT=2
+
+      Focused capacity ladder, repeat-3:
+        1024..4096:
+          default 32.442M
+          cap8p2 34.597M
+        4096..16384:
+          default 19.383M
+          cap8p2 20.975M
+
+      Default bundle guard after promotion:
+        16..256 median 53.377M
+        16..4096 median 34.408M
+        1024..4096 median 31.107M
+        4096..16384 median 20.762M, peak median 197888 KB
+
+      Selected diagnostic, stats on:
+        route_lookup_probe_total = 107375
+        free_local_route_valid = 92298
+        midpage_active_map_register = 1003677
+        midpage_active_map_register_collision = 372103
+        midpage_active_map_free_hit = 923833
+        midpage_active_map_free_miss = 159688
+        midpage_active_map_free_stale = 0
+        midpage_active_map_free_cache_fail = 0
 ```
 
 Latest HZ6 Ubuntu hot-path tuning:

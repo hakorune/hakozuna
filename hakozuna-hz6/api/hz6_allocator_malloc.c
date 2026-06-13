@@ -1,4 +1,5 @@
 #include "hz6_allocator.h"
+#include "hz6_allocator_midpage_active_map.h"
 #include "hz6_allocator_same_owner_fast_inline.h"
 #include "hz6_allocator_toy_small_diag.h"
 
@@ -125,6 +126,10 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
   }
 #endif
   if (direct_ptr) {
+    if (front->front_id == HZ6_FRONT_MIDPAGE) {
+      hz6_midpage_active_map_register(
+          allocator, front->front_id, class_id, direct_ptr, direct_descriptor);
+    }
     hz6_toy_small_active_map_register(
         allocator, front->front_id, class_id, direct_ptr, direct_descriptor);
     hz6_toy_small_hotpath_diag_malloc_fast_hit(allocator, front->front_id,
@@ -138,6 +143,9 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
   void* ptr = front->alloc(allocator, class_id, size);
   if (!ptr) {
     ++allocator->stats.alloc_fail;
+  } else if (front->front_id == HZ6_FRONT_MIDPAGE) {
+    hz6_midpage_active_map_register_route(
+        allocator, front->front_id, class_id, ptr);
   }
   return ptr;
 }

@@ -1,4 +1,5 @@
 #include "hz6_allocator.h"
+#include "hz6_allocator_midpage_active_map.h"
 #include "hz6_allocator_same_owner_fast_inline.h"
 #include "hz6_allocator_toy_small_diag.h"
 
@@ -15,6 +16,9 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
   }
 
   if (hz6_toy_small_active_map_try_free(allocator, ptr)) {
+    return;
+  }
+  if (hz6_midpage_active_map_try_free(allocator, ptr)) {
     return;
   }
 
@@ -167,6 +171,9 @@ void hz6_free_with_route_prechecked(Hz6Allocator* allocator,
   }
 
   if (hz6_toy_small_active_map_try_free(allocator, ptr)) {
+    return;
+  }
+  if (hz6_midpage_active_map_try_free(allocator, ptr)) {
     return;
   }
 

@@ -1,0 +1,207 @@
+#ifndef HZ6_ALLOCATOR_MIDPAGE_ACTIVE_MAP_H
+#define HZ6_ALLOCATOR_MIDPAGE_ACTIVE_MAP_H
+
+#include "hz6_allocator.h"
+
+#include "../fronts/midpage/hz6_midpage_front.h"
+
+#include <stdint.h>
+
+static inline int hz6_midpage_active_map_eligible(uint16_t front_id,
+                                                  uint16_t class_id) {
+  return front_id == HZ6_FRONT_MIDPAGE &&
+         (class_id == HZ6_MIDPAGE_8K_CLASS_ID ||
+          class_id == HZ6_MIDPAGE_32K_CLASS_ID);
+}
+
+static inline int hz6_midpage_active_map_aligned(const void* ptr) {
+  return (((uintptr_t)ptr) & (uintptr_t)(HZ6_MIDPAGE_8K_BYTES - 1u)) == 0u;
+}
+
+static inline size_t hz6_midpage_active_map_index(const void* ptr) {
+  uintptr_t key = (uintptr_t)ptr >> 13u;
+  key ^= key >> 16u;
+  key *= (uintptr_t)0x9e3779b1U;
+  key ^= key >> 13u;
+  return (size_t)(key % HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY);
+}
+
+#if HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2
+static inline void hz6_midpage_active_map_clear(
+    Hz6Allocator* allocator,
+    Hz6MidPageActiveMapEntry* entry) {
+  if (!allocator || !entry || !entry->ptr) {
+    return;
+  }
+  entry->ptr = NULL;
+  entry->descriptor = NULL;
+  entry->generation = 0;
+  entry->class_id = 0;
+  if (allocator->midpage_active_map_current > 0) {
+    --allocator->midpage_active_map_current;
+  }
+}
+#endif
+
+static inline void hz6_midpage_active_map_register(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id,
+    void* ptr,
+    Hz6ObjectDescriptor* descriptor) {
+#if HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2
+  if (!allocator || !ptr || !descriptor ||
+      !hz6_midpage_active_map_eligible(front_id, class_id) ||
+      !hz6_midpage_active_map_aligned(ptr)) {
+    return;
+  }
+  size_t base_index = hz6_midpage_active_map_index(ptr);
+  Hz6MidPageActiveMapEntry* entry = NULL;
+  Hz6MidPageActiveMapEntry* first_empty = NULL;
+  int saw_collision = 0;
+  for (size_t probe = 0; probe < HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT;
+       ++probe) {
+    size_t index =
+        (base_index + probe) % HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY;
+    Hz6MidPageActiveMapEntry* candidate =
+        &allocator->midpage_active_map[index];
+    if (candidate->ptr == ptr) {
+      entry = candidate;
+      break;
+    }
+    if (!candidate->ptr) {
+      if (!first_empty) {
+        first_empty = candidate;
+      }
+      continue;
+    }
+    saw_collision = 1;
+  }
+  if (!entry) {
+    entry = first_empty ? first_empty
+                        : &allocator->midpage_active_map[base_index];
+  }
+  if (!entry->ptr) {
+    ++allocator->midpage_active_map_current;
+  }
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.midpage_active_map_register;
+  if (saw_collision) {
+    ++allocator->stats.midpage_active_map_register_collision;
+  }
+#else
+  (void)saw_collision;
+#endif
+  entry->ptr = ptr;
+  entry->descriptor = descriptor;
+  entry->generation = descriptor->generation;
+  entry->class_id = class_id;
+#else
+  (void)allocator;
+  (void)front_id;
+  (void)class_id;
+  (void)ptr;
+  (void)descriptor;
+#endif
+}
+
+static inline void hz6_midpage_active_map_register_route(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id,
+    void* ptr) {
+#if HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2
+  if (!allocator || !ptr ||
+      !hz6_midpage_active_map_eligible(front_id, class_id) ||
+      !hz6_midpage_active_map_aligned(ptr)) {
+    return;
+  }
+  Hz6RouteResult route = hz6_allocator_route_lookup_exact(allocator, ptr);
+  if (route.kind != HZ6_ROUTE_VALID || route.route_allocator != allocator ||
+      route.front_id != front_id || route.class_id != class_id ||
+      !route.descriptor) {
+    return;
+  }
+  hz6_midpage_active_map_register(
+      allocator, front_id, class_id, ptr,
+      (Hz6ObjectDescriptor*)route.descriptor);
+#else
+  (void)allocator;
+  (void)front_id;
+  (void)class_id;
+  (void)ptr;
+#endif
+}
+
+static inline int hz6_midpage_active_map_try_free(Hz6Allocator* allocator,
+                                                  void* ptr) {
+#if HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2
+  if (!allocator || !ptr || allocator->midpage_active_map_current == 0) {
+    return 0;
+  }
+  if (!hz6_midpage_active_map_aligned(ptr)) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.midpage_active_map_alignment_skip;
+#endif
+    return 0;
+  }
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.midpage_active_map_free_attempt;
+#endif
+  size_t base_index = hz6_midpage_active_map_index(ptr);
+  Hz6MidPageActiveMapEntry* entry = NULL;
+  for (size_t probe = 0; probe < HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT;
+       ++probe) {
+    size_t index =
+        (base_index + probe) % HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY;
+    Hz6MidPageActiveMapEntry* candidate =
+        &allocator->midpage_active_map[index];
+    if (candidate->ptr == ptr) {
+      entry = candidate;
+      break;
+    }
+  }
+  if (!entry) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.midpage_active_map_free_miss;
+#endif
+    return 0;
+  }
+
+  Hz6ObjectDescriptor* descriptor = entry->descriptor;
+  if (!descriptor || descriptor->ptr != ptr ||
+      descriptor->generation != entry->generation ||
+      descriptor->class_id != entry->class_id ||
+      descriptor->state != HZ6_STATE_ACTIVE ||
+      !hz6_midpage_active_map_eligible(HZ6_FRONT_MIDPAGE, entry->class_id)) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.midpage_active_map_free_stale;
+#endif
+    hz6_midpage_active_map_clear(allocator, entry);
+    return 0;
+  }
+
+  if (!hz6_allocator_cache_active_descriptor_trusted_owner(allocator,
+                                                            descriptor, ptr)) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.midpage_active_map_free_cache_fail;
+#endif
+    hz6_midpage_active_map_clear(allocator, entry);
+    return 0;
+  }
+
+  hz6_midpage_active_map_clear(allocator, entry);
+  ++allocator->stats.route_valid;
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.midpage_active_map_free_hit;
+  ++allocator->stats.midpage_active_map_route_bypass;
+#endif
+  return 1;
+#else
+  (void)allocator;
+  (void)ptr;
+  return 0;
+#endif
+}
+
+#endif

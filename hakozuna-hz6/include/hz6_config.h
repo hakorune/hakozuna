@@ -314,6 +314,20 @@
 #define HZ6_TOY_SMALL_ACTIVE_MAP_TRUSTED_OWNER_L1 1
 #endif
 
+#ifndef HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2
+/* Candidate-only MidPage free shortcut.  Keep separate from the Toy active map
+ * so MidPage can use an alignment gate and class-specific capacity. */
+#define HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2 0
+#endif
+
+#ifndef HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY
+#define HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY ((size_t)8192)
+#endif
+
+#ifndef HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT
+#define HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT ((size_t)2)
+#endif
+
 #ifndef HZ6_TOY_CLASS_ID_FAST_ALLOC_L1
 /* Default Toy alloc shortcut.  hz6_malloc() already selected class_id, so
  * Toy alloc can validate size against class bytes instead of classifying again. */

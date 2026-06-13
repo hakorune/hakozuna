@@ -326,6 +326,15 @@ typedef struct Hz6StatsSnapshot {
   size_t toy_small_active_map_free_stale;
   size_t toy_small_active_map_free_cache_fail;
   size_t toy_small_active_map_route_bypass;
+  size_t midpage_active_map_register;
+  size_t midpage_active_map_register_collision;
+  size_t midpage_active_map_free_attempt;
+  size_t midpage_active_map_free_hit;
+  size_t midpage_active_map_free_miss;
+  size_t midpage_active_map_free_stale;
+  size_t midpage_active_map_free_cache_fail;
+  size_t midpage_active_map_alignment_skip;
+  size_t midpage_active_map_route_bypass;
   size_t front_alloc_path[HZ6_FRONT_ATTR_COUNT][HZ6_ALLOC_PATH_COUNT];
   size_t alloc_fail;
   size_t descriptor_exhausted;

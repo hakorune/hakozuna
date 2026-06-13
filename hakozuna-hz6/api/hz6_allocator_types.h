@@ -304,6 +304,16 @@ typedef struct Hz6ToySmallActiveMapEntry {
 } Hz6ToySmallActiveMapEntry;
 #endif
 
+#if HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2
+typedef struct Hz6MidPageActiveMapEntry {
+  void* ptr;
+  Hz6ObjectDescriptor* descriptor;
+  uint32_t generation;
+  uint16_t class_id;
+  uint16_t reserved;
+} Hz6MidPageActiveMapEntry;
+#endif
+
 #if HZ6_ROUTE_LAST_HIT_CACHE_L1
 typedef struct Hz6RouteLastHitCache {
   void* base;
@@ -354,6 +364,11 @@ struct Hz6Allocator {
   size_t toy_small_active_map_current;
   Hz6ToySmallActiveMapEntry
       toy_small_active_map[HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY];
+#endif
+#if HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2
+  size_t midpage_active_map_current;
+  Hz6MidPageActiveMapEntry
+      midpage_active_map[HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY];
 #endif
 #if HZ6_DIAGNOSTIC_PROBES
   size_t diagnostic_descriptor_live_current;
