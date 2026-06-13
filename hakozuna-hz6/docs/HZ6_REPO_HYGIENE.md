@@ -45,7 +45,7 @@ mixed balanced/wide:
   rss + mixedclean-front16k-sourcerun-desc17k-source2k-route17k
 
 random_mixed:
-  strict + sameownerfast-descavail-noboost-route4k
+  strict + sameownertrustedfree-descavail-noboost-route4k
 
 larger_sizes:
   speed/rss + largerlowrss-front8k-sourcerun-desc8k-route8k
@@ -74,6 +74,20 @@ ElasticCapacity bounded descriptor rehome candidate-control:
 
 ElasticCapacity diagnostic-only:
   speed + diagnostic + ownerlocalityfast-rsscap-2-elasticdescsource-route-slotownerconsumerdryrun-desc16k-front4k-thindesc-nobackptr-noroutebackptr-dir192k-routepacked-routebytes16-storageowner16-ownersourcel2-frontcachepacked-sourceblockpacked-source64-route16k-run4096
+
+Ubuntu LD_PRELOAD functional lane:
+  hakozuna-hz6/linux/build_hz6_preload.sh default bundle
+  route131k-desc32768-source4096-frontcache1024-toyactivemap32768
+  + mmap retain + 64K retain stack
+  + ToyFullBlockPrefill max128
+  + RouteTombstoneCompact
+  + route xor-fold/linear-wrap/loop-carry
+
+Ubuntu LD_PRELOAD status:
+  functional and smoke-clean; short guard and 1M long-run cliff are fixed.
+  Not a paper-facing selected performance row yet: current 1M cross median is
+  below mimalloc.  Keep LD_PRELOAD conclusions separate from direct HZ6 API
+  strength rows.
 ```
 
 The side-owner16 descriptor layout lane is not selected. It is buildable as

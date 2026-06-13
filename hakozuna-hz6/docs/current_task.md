@@ -228,10 +228,46 @@ Ubuntu LD_PRELOAD lane:
       `bench_mixed_ws_crt 1 1 1 16 16` under LD_PRELOAD passes.
       `bench_mixed_ws_crt 1 1000 128 16 1024` under LD_PRELOAD passes.
       `run_linux_bench_compare.sh --allocators system,hz6` resolves and runs.
-  - Current performance read:
-      This is a functional comparison lane, not a promoted HZ6 performance
-      lane yet.  A single-run mixed_ws check at `4 100000 8192 16 1024`
-      measured:
+  - Current preload selected/default closeout:
+      The canonical Ubuntu LD_PRELOAD build is:
+        route table 131072
+        descriptors 32768
+        source blocks 4096
+        frontcache bin 1024
+        Toy active map 32768
+        Linux mmap retain
+        64K retain stack
+        ToyFullBlockPrefill max128
+        RouteTombstoneCompact normal
+        route xor-fold + linear-wrap + loop-carry
+      Selected/default flags live in:
+        hakozuna-hz6/linux/build_hz6_preload.sh
+      Current straight HZ6-only guards:
+        100K:
+          12.081M / 11.698M / 11.566M ops/s
+          private/raw-results/linux/hz6_preload_toyfull128_tombcompact_100k_r3_seq
+        1M:
+          17.964M / 18.004M / 17.914M ops/s
+          private/raw-results/linux/hz6_preload_toyfull128_tombcompact_1m_r3_seq
+      Current cross-allocator 1M median:
+        hz3:      181.503M
+        tcmalloc: 172.269M
+        hz4:      147.745M
+        system:    65.550M
+        mimalloc:  26.459M
+        hz6:       15.735M
+        private/raw-results/linux/hz6_preload_toyfull128_tombcompact_cross_1m_r3
+      Read:
+        LD_PRELOAD is no longer just a harness smoke lane.  The short guard and
+        long-run cliff are both fixed relative to the original preload row.
+        It is still not a paper-facing selected performance row because the
+        1M cross median remains below mimalloc.  The next lane should target
+        remaining route register/unregister cost, descriptor/frontcache
+        mutation, or a route registration design that avoids tombstone buildup
+        rather than periodically compacting it.
+  - Historical initial performance read:
+      The first functional single-run mixed_ws check at
+      `4 100000 8192 16 1024` measured:
         system   25.093M ops/s / 18,668 KB
         hz3      66.998M ops/s / 25,216 KB
         hz4      52.206M ops/s / 30,208 KB
@@ -240,10 +276,9 @@ Ubuntu LD_PRELOAD lane:
       Result dir:
         private/raw-results/linux/hz6_preload_mixed_ws_r1
     Read:
-      HZ6 direct API remains the strength path today.  The LD_PRELOAD lane
-      proves integration and gives a place to optimize ownership routing, but
-      do not use this row as HZ6 strength evidence until preload free/route
-      overhead is reduced.
+      This row is historical baseline evidence only.  It explains why the
+      preload track started as a functional integration lane and should not be
+      used as the current HZ6 LD_PRELOAD strength read.
   - First preload tightening pass:
       perf showed the initial lane was dominated by OS `mmap/munmap` churn.
       The preload build now uses larger compare-lane defaults:

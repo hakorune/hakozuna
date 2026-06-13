@@ -31,11 +31,33 @@ The later solo strength repeat-7 narrows that read: local 256B..4K stays very
 strong at +30%..+68% versus directmap-off, local 8K is +13%..+22%, 16K is
 mostly neutral, and 64K/128K show a small -1%..-6% drag. Treat it as the
 small/local Ubuntu default, not as a universal large-size win.
-`hz6` is also wired as an experimental Linux LD_PRELOAD allocator for the
-generic compare runner.  It is smoke-clean and useful for harness parity, but
-not selected performance evidence yet; current mixed_ws preload rows are
-dominated by preload ownership/route overhead and should not be compared
-against the direct HZ6 API strength rows.
+`hz6` is also wired as a Linux LD_PRELOAD allocator for the generic compare
+runner.  The preload lane is now smoke-clean and has its own selected/default
+composition:
+
+```text
+HZ6_ROUTE_TABLE_CAPACITY=131072
+HZ6_OBJECT_DESCRIPTOR_CAPACITY=32768
+HZ6_SOURCE_BLOCK_CAPACITY=4096
+HZ6_FRONT_CACHE_BIN_CAPACITY=1024
+HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY=32768
+HZ6_LINUX_MMAP_RETAIN_L1=1
+HZ6_LINUX_MMAP_RETAIN_64K_STACK_L1=1
+HZ6_TOY_FULL_BLOCK_PREFILL_L1=1
+HZ6_TOY_FULL_BLOCK_PREFILL_MAX_SLOTS=128
+HZ6_ROUTE_TOMBSTONE_COMPACT_L1=1
+HZ6_ROUTE_HASH_XOR_FOLD_L1=1
+HZ6_ROUTE_LINEAR_WRAP_L1=1
+HZ6_ROUTE_LOOP_CARRY_L1=1
+```
+
+This lane is still separate from the direct HZ6 API strength rows.  It is no
+longer just a harness-parity smoke lane: the short mixed_ws guard moved to
+about `12M ops/s`, and the 1M long-run cliff was closed to about `18M ops/s`
+with route tombstone compact.  Cross-allocator 1M median remains below
+mimalloc (`hz6 15.735M` vs `mimalloc 26.459M`), so LD_PRELOAD is a functional
+Ubuntu lane with an active optimization backlog, not a paper-facing selected
+performance row.
 
 ## Selected Rows
 
