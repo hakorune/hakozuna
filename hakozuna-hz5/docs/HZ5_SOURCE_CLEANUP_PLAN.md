@@ -16,6 +16,7 @@ comparability.
 | File | Current role | Cleanup status |
 | --- | --- | --- |
 | `largefront/hz5_largefront.c` | active LargeFront 128K tcmalloc-chase surface | hot path remains here; cold diagnostics are being split out first |
+| `largefront/hz5_largefront_config.inc` | LargeFront compile-time lane defaults | split out from `hz5_largefront.c`; include-local to keep benchmark knobs centralized |
 | `largefront/hz5_largefront_source.inc` | LargeFront source refill / region / lookup helpers | split out from `hz5_largefront.c`; keep include-local while the source path settles |
 | `largefront/hz5_largefront_transfer128.inc` | isolated LargeFront L9 transfer128 diagnostic helpers | split out from `hz5_largefront.c`; keep include-local until the diagnostic stabilizes |
 | `largefront/hz5_largefront_policy.inc` | LargeFront L0/L1 observe counters and policy selectors | split out from `hz5_largefront.c`; include-local to avoid link/build churn |
@@ -103,7 +104,7 @@ hz5_midpagefront_magazine.c:
 For this cleanup phase, active C hot paths remain intact. Small diagnostic-only
 helpers may be split into include-local files when that reduces churn in the
 main implementation without changing build/link behavior. The current
-LargeFront splits are `hz5_largefront_source.inc`,
+LargeFront splits are `hz5_largefront_config.inc`, `hz5_largefront_source.inc`,
 `hz5_largefront_transfer128.inc`, and `hz5_largefront_policy.inc`. MidPage now also keeps cold stats in
 `hz5_midpagefront_config.inc`, `hz5_midpagefront_state.inc`,
 `hz5_midpagefront_stats.inc`, plus the M4 slot-state helper cluster in
