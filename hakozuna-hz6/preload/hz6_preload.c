@@ -1,5 +1,6 @@
 #include "hz6_allocator.h"
 #include "hz6_allocator_api_init.h"
+#include "linux_source_mmap.h"
 #include "hz6_profiles.h"
 
 #include <dlfcn.h>
@@ -232,6 +233,9 @@ static void hz6_preload_print_stats(void) {
   }
   pthread_mutex_unlock(&g_hz6_preload_allocator_registry_mutex);
 
+  Hz6LinuxMmapRetainStats retain_stats =
+      hz6_linux_mmap_retain_stats_snapshot();
+
   fprintf(stderr,
           "[HZ6_PRELOAD_STATS] allocators=%zu route_valid=%zu "
           "route_invalid=%zu route_miss=%zu transfer_push=%zu "
@@ -242,7 +246,15 @@ static void hz6_preload_print_stats(void) {
           "source_block_exhausted=%zu route_lookup_probe_total=%zu "
           "route_lookup_probe_max=%zu route_register_probe_total=%zu "
           "route_register_probe_max=%zu route_unregister_probe_total=%zu "
-          "route_unregister_probe_max=%zu\n",
+          "route_unregister_probe_max=%zu "
+          "retain_reserve_calls=%zu retain_reserve_64k_calls=%zu "
+          "retain_64k_take_hit=%zu retain_64k_take_miss=%zu "
+          "retain_generic_take_hit=%zu retain_generic_take_miss=%zu "
+          "retain_mmap_fallback=%zu retain_release_calls=%zu "
+          "retain_release_64k_calls=%zu retain_64k_put_hit=%zu "
+          "retain_64k_put_full=%zu retain_generic_put_hit=%zu "
+          "retain_generic_put_full=%zu retain_munmap_fallback=%zu "
+          "retain_retained_bytes=%zu retain_retained_64k_count=%zu\n",
           allocator_count, route_valid, route_invalid, route_miss,
           transfer_push, transfer_pop, source_alloc, toy_source_alloc,
           midpage_source_alloc, large_source_alloc, local2p_source_alloc,
@@ -250,7 +262,16 @@ static void hz6_preload_print_stats(void) {
           source_block_exhausted, route_lookup_probe_total,
           route_lookup_probe_max, route_register_probe_total,
           route_register_probe_max, route_unregister_probe_total,
-          route_unregister_probe_max);
+          route_unregister_probe_max, retain_stats.reserve_calls,
+          retain_stats.reserve_64k_calls, retain_stats.retain_64k_take_hit,
+          retain_stats.retain_64k_take_miss,
+          retain_stats.retain_generic_take_hit,
+          retain_stats.retain_generic_take_miss, retain_stats.mmap_fallback,
+          retain_stats.release_calls, retain_stats.release_64k_calls,
+          retain_stats.retain_64k_put_hit, retain_stats.retain_64k_put_full,
+          retain_stats.retain_generic_put_hit,
+          retain_stats.retain_generic_put_full, retain_stats.munmap_fallback,
+          retain_stats.retained_bytes, retain_stats.retained_64k_count);
 
   g_hz6_preload_reentry = saved_reentry;
 }

@@ -98,6 +98,10 @@
 #define HZ6_SOURCE_RUN_MAX_SLOTS ((size_t)4096)
 #endif
 
+#ifndef HZ6_TOY_SOURCE_BLOCK_BYTES
+#define HZ6_TOY_SOURCE_BLOCK_BYTES ((size_t)65536)
+#endif
+
 #ifndef HZ6_SOURCE_RUN_BITMAP_WORDS
 #define HZ6_SOURCE_RUN_BITMAP_WORDS \
   ((size_t)((HZ6_SOURCE_RUN_MAX_SLOTS + 63u) / 64u))

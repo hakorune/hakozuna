@@ -5,8 +5,6 @@
 #include "../hz6_front_source_prefill.h"
 #include "../hz6_front_util.h"
 
-#define HZ6_TOY_SOURCE_BLOCK_BYTES ((size_t)65536)
-
 static int hz6_toy_front_can_allocate(size_t size,
                                       size_t align,
                                       uint16_t* class_id) {

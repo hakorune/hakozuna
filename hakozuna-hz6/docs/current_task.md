@@ -445,6 +445,69 @@ Ubuntu LD_PRELOAD lane:
           on this row; remaining work is now allocator hot-path CPU, route
           lookup/register/unregister, and Toy/source refill policy rather than
           raw `munmap` churn.
+      Next instrumentation:
+        Add Linux mmap retain hit/miss counters to `HZ6_PRELOAD_STATS=1`.
+        Needed split:
+          reserve calls / 64K reserve calls
+          64K stack hits and misses
+          generic retained-table hits and misses
+          mmap fallback count
+          release calls / 64K release calls
+          64K stack retained / full
+          generic retained / full
+          munmap fallback count
+        Goal:
+          Explain the remaining ~2093 mmap calls after 64K stack.  If they are
+          mostly non-64K, the next target is source size policy.  If they are
+          64K stack misses/full, the next target is sharded or larger 64K
+          retain.  If generic misses dominate, the retained table shape needs
+          indexing rather than another allocator hot-path tweak.
+      Retain counter result:
+        `HZ6_PRELOAD_STATS=1` now appends Linux mmap retain counters.
+        Default 64K-stack preload on `4 100000 8192 16 1024`:
+          retain_reserve_calls=9410
+          retain_reserve_64k_calls=9410
+          retain_64k_take_hit=7297
+          retain_64k_take_miss=2113
+          retain_generic_take_hit=0
+          retain_generic_take_miss=2113
+          retain_mmap_fallback=2113
+          retain_release_calls=8626
+          retain_release_64k_calls=8626
+          retain_64k_put_hit=8626
+          retain_64k_put_full=0
+          retain_munmap_fallback=0
+          retain_retained_bytes=87097344
+          retain_retained_64k_count=1329
+        Read:
+          The remaining mmap fallback is not stack-capacity full; it is the
+          first/live 64K demand before enough releases exist.  The cache is
+          hitting well once warmed, and no munmap fallback remains.
+      Toy block-size probe:
+        Made `HZ6_TOY_SOURCE_BLOCK_BYTES` configurable and tested larger Toy
+        source blocks with matching `HZ6_SOURCE_RUN_MAX_SLOTS`.
+        128K block / 8192 slots repeat-3:
+          4.375M / 5.432M / 6.229M ops/s
+          peak 85,120 / 85,760 / 86,784 KB
+        256K block / 16384 slots repeat-3:
+          4.111M / 5.614M / 6.253M ops/s
+          peak 104,960 / 105,088 / 104,432 KB
+        256K stats:
+          source_alloc=9410
+          toy_source_alloc=9346
+          retain_reserve_calls=9410
+          retain_mmap_fallback=2048
+          retain_munmap_fallback=258
+          retain_retained_bytes=263716864
+        Result dirs:
+          private/raw-results/linux/hz6_preload_toyblock128k_r3
+          private/raw-results/linux/hz6_preload_toyblock256k_r3
+        Decision:
+          Keep Toy source block at 64K for the preload default.  Larger blocks
+          do not reduce source_alloc in this lane, raise RSS materially, and
+          lose speed.  The next viable retain-side candidate is not bigger Toy
+          blocks; it is reducing first/live 64K demand or improving allocator
+          CPU after the 64K retain cache is warm.
   - Rejected preload probe:
       SourceBlockRoute exact-skip was tested with range-index, dynamic slot
       descriptor map, late register, behavior, and exact-skip.  It regressed
