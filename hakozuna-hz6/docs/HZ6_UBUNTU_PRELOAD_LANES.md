@@ -63,10 +63,10 @@ Latest selected shape:
 
 | Row | Selected read |
 | --- | ---: |
-| `16..256` latest cross repeat-5 | `hz6 55.196M` vs `mimalloc 53.028M` |
-| `16..4096` latest cross repeat-5 | `hz6 36.376M` vs `mimalloc 5.954M` |
-| `1024..4096` latest cross repeat-5 | `hz6 34.296M` vs `mimalloc 4.834M` |
-| `4096..16384` latest cross repeat-5 | `hz6 26.852M` vs `mimalloc 1.307M` |
+| `16..256` latest cross repeat-5 | `hz6 57.457M` vs `mimalloc 52.611M` |
+| `16..4096` latest cross repeat-5 | `hz6 39.975M` vs `mimalloc 5.961M` |
+| `1024..4096` latest cross repeat-5 | `hz6 38.776M` vs `mimalloc 4.840M` |
+| `4096..16384` latest cross repeat-5 | `hz6 30.796M` vs `mimalloc 1.301M` |
 | `1024..4096` external-map repeat-7 | `32.011M` |
 | `4096..16384` external-map repeat-7 | `19.903M` |
 | `1024..4096` realloc-in-place repeat-5 | `34.678M` |
@@ -76,10 +76,10 @@ Latest cross-allocator refresh, repeat-5, `bench_mixed_ws_crt`:
 
 | Row | hz6 | mimalloc | tcmalloc | system | hz6 peak KB |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| `16..256` | `55.196M` | `53.028M` | `256.082M` | `99.543M` | `56,576` |
-| `16..4096` | `36.376M` | `5.954M` | `89.005M` | `8.744M` | `156,544` |
-| `1024..4096` | `34.296M` | `4.834M` | `85.686M` | `6.206M` | `180,736` |
-| `4096..16384` | `26.852M` | `1.307M` | `42.479M` | `2.969M` | `117,120` |
+| `16..256` | `57.457M` | `52.611M` | `247.870M` | `98.181M` | `56,576` |
+| `16..4096` | `39.975M` | `5.961M` | `87.325M` | `8.751M` | `156,672` |
+| `1024..4096` | `38.776M` | `4.840M` | `83.838M` | `6.258M` | `180,864` |
+| `4096..16384` | `30.796M` | `1.301M` | `42.972M` | `2.974M` | `117,248` |
 
 Important caveat:
 
@@ -110,6 +110,12 @@ repeat-5 regressed `1024..4096` from `39.699M` to `36.341M ops/s`. Keep it off.
 `HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1` is a no-go control. It checks the hashed
 base slot before the Toy active-map free probe loop, but repeat-5 was neutral
 on `1024..4096` and regressed `16..4096`; keep it off.
+
+`HZ6_TOY_TRUSTED_ACTIVATE_SKIP_SOURCE_BLOCK_CHECK_L1` is a Toy-high
+candidate/default. It skips the repeated source-block active/bounds validation
+only after local frontcache state/ptr/generation checks and only for
+Toy-sized descriptors. Repeat-9 showed `1024..4096` improving `1.0065x`; keep
+watching the small `16..1024` wobble (`0.9955x`).
 
 HZ3/HZ4 comparison read:
 
@@ -255,6 +261,10 @@ private/raw-results/linux/hz6_toy_active_map_register_fastslot_r5_20260613
 private/raw-results/linux/hz6_toy_active_map_register_fastslot_matrix_r5_20260613
 private/raw-results/linux/hz6_direct_local_reuse_rawpop_r5_20260613
 private/raw-results/linux/hz6_toy_active_map_free_fastslot_r5_20260613
+private/raw-results/linux/hz6_preload_selected_cross_fastslot_r5_20260613
+private/raw-results/linux/hz6_toy_trusted_activate_skip_r5_20260613
+private/raw-results/linux/hz6_toy_trusted_activate_skip_focus_r9_20260613
+private/raw-results/linux/hz6_preload_selected_cross_actskip_r5_20260613
 ```
 
 Storage rule:

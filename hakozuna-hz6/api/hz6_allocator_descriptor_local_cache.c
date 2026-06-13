@@ -241,6 +241,12 @@ int hz6_allocator_activate_local_descriptor_trusted_owner(
       descriptor->ptr != ptr || descriptor->generation != generation) {
     return 0;
   }
+#if HZ6_TOY_TRUSTED_ACTIVATE_SKIP_SOURCE_BLOCK_CHECK_L1
+  if (descriptor->class_id <= 4u && descriptor->bytes <= 4096u) {
+    descriptor->state = HZ6_STATE_ACTIVE;
+    return 1;
+  }
+#endif
   if (descriptor->source_block) {
     const Hz6SourceBlock* block = descriptor->source_block;
     uintptr_t base = (uintptr_t)block->ptr;

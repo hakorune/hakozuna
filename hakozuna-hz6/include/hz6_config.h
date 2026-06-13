@@ -327,6 +327,13 @@
 #define HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1 0
 #endif
 
+#ifndef HZ6_TOY_TRUSTED_ACTIVATE_SKIP_SOURCE_BLOCK_CHECK_L1
+/* Candidate trusted activation shortcut.  A descriptor popped from the local
+ * frontcache already carries state/ptr/generation validation; for Toy-sized
+ * descriptors, skip the repeated source-block bounds check on the hot path. */
+#define HZ6_TOY_TRUSTED_ACTIVATE_SKIP_SOURCE_BLOCK_CHECK_L1 1
+#endif
+
 #ifndef HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2
 /* Candidate-only MidPage free shortcut.  Keep separate from the Toy active map
  * so MidPage can use an alignment gate and class-specific capacity. */

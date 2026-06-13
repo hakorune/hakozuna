@@ -20,6 +20,199 @@ remains profile-stabilized; new HZ5 work should not blur the HZ6 contract.
 HZ6 Ubuntu LD_PRELOAD current pass:
 
 ```text
+2026-06-13 selected cross refresh after ToyActiveMapRegisterFastSlot-L1:
+  Raw:
+    private/raw-results/linux/hz6_preload_selected_cross_fastslot_r5_20260613
+
+  bench_mixed_ws_crt repeat-5 medians:
+    16..256:
+      hz6      57.889M
+      mimalloc 52.288M
+      tcmalloc 249.185M
+      system   98.100M
+      hz3      262.313M
+      hz4      224.767M
+      hz6 peak_kb = 56,576
+    16..4096:
+      hz6      39.946M
+      mimalloc 5.977M
+      tcmalloc 88.052M
+      system   8.766M
+      hz3      99.124M
+      hz4      56.182M
+      hz6 peak_kb = 156,672
+    1024..4096:
+      hz6      38.868M
+      mimalloc 4.853M
+      tcmalloc 84.362M
+      system   6.341M
+      hz3      89.748M
+      hz4      49.460M
+      hz6 peak_kb = 180,864
+    4096..16384:
+      hz6      30.747M
+      mimalloc 1.315M
+      tcmalloc 44.462M
+      system   2.982M
+      hz3      76.158M
+      hz4      31.156M
+      hz6 peak_kb = 117,120
+
+  Read:
+    ToyActiveMapRegisterFastSlot-L1 materially improved the selected HZ6
+    preload rows versus the previous cross refresh:
+      16..4096: 36.376M -> 39.946M
+      1024..4096: 34.296M -> 38.868M
+      4096..16384: 26.852M -> 30.747M
+    HZ6 now beats mimalloc and system on selected mixed_ws rows and is close
+    to HZ4 on 4096..16384, but still trails HZ4 on 1024..4096 and trails
+    HZ3/tcmalloc on throughput.
+
+2026-06-13 next:
+  ToyTrustedActivateSourceBlockSkip-L1
+
+  Goal:
+    Attack the remaining Toy high fixed cost after register fast-slot. Raw-pop,
+    preclassified malloc, and free fast-slot were no-go, so the next plausible
+    center is descriptor activation validation, specifically the source-block
+    active/bounds check inside trusted local frontcache reuse.
+
+  Plan:
+    Add `HZ6_TOY_TRUSTED_ACTIVATE_SKIP_SOURCE_BLOCK_CHECK_L1`.
+    In `hz6_allocator_activate_local_descriptor_trusted_owner`, skip the
+    source-block active/bounds validation only for Toy-sized descriptors:
+      descriptor->class_id <= 4
+      descriptor->bytes <= 4096
+    Keep state, pointer, generation, and descriptor checks intact.
+
+  Acceptance:
+    build_hz6_preload passes
+    build_hz6_benchmark passes
+    build_hz6_r1_smokes passes
+    focused Toy rows improve or stay flat
+    stats guard remains clean
+    if any safety smoke or route stats regress, default off / no-go
+
+  Result:
+    raw:
+      private/raw-results/linux/hz6_toy_trusted_activate_skip_r5_20260613
+      private/raw-results/linux/hz6_toy_trusted_activate_skip_focus_r9_20260613
+
+    Repeat-5:
+      16..256:
+        off median = 57.686M ops/s
+        on median = 58.347M ops/s
+        ratio = 1.0115x
+      16..1024:
+        off median = 53.335M ops/s
+        on median = 52.911M ops/s
+        ratio = 0.9920x
+      16..4096:
+        off median = 39.852M ops/s
+        on median = 39.869M ops/s
+        ratio = 1.0004x
+      1024..4096:
+        off median = 39.688M ops/s
+        on median = 40.111M ops/s
+        ratio = 1.0107x
+      4096..16384:
+        off median = 31.284M ops/s
+        on median = 31.372M ops/s
+        ratio = 1.0028x
+
+    Repeat-9 focus:
+      16..1024:
+        off median = 53.564M ops/s
+        on median = 53.325M ops/s
+        ratio = 0.9955x
+      1024..4096:
+        off median = 39.649M ops/s
+        on median = 39.906M ops/s
+        ratio = 1.0065x
+
+    Stats guard, on / 1024..4096:
+      alloc_fail = 0
+      route_invalid = 0
+      route_miss = 0
+      route_register_fail = 0
+      source_block_exhausted = 0
+      descriptor_exhausted = 0
+
+  Decision:
+    Keep as candidate/default for the Toy high target, but mark the 16..1024
+    wobble as a guard. The shortcut is clean and repeatably helps 1024..4096,
+    while the observed 16..1024 loss is small enough to monitor rather than
+    reject.
+
+2026-06-13 next:
+  PostActivateSkipSelectedRefresh-L1
+
+  Goal:
+    Re-run the selected cross allocator rows after
+    ToyTrustedActivateSourceBlockSkip-L1 and confirm the selected table before
+    moving to larger local-page/run metadata design.
+
+  Result:
+    raw:
+      private/raw-results/linux/hz6_preload_selected_cross_actskip_r5_20260613
+
+    bench_mixed_ws_crt repeat-5 medians:
+      16..256:
+        hz6      57.457M
+        mimalloc 52.611M
+        tcmalloc 247.870M
+        system   98.181M
+        hz3      262.465M
+        hz4      223.457M
+        hz6 peak_kb = 56,576
+      16..4096:
+        hz6      39.975M
+        mimalloc 5.961M
+        tcmalloc 87.325M
+        system   8.751M
+        hz3      98.556M
+        hz4      57.104M
+        hz6 peak_kb = 156,672
+      1024..4096:
+        hz6      38.776M
+        mimalloc 4.840M
+        tcmalloc 83.838M
+        system   6.258M
+        hz3      87.712M
+        hz4      48.606M
+        hz6 peak_kb = 180,864
+      4096..16384:
+        hz6      30.796M
+        mimalloc 1.301M
+        tcmalloc 42.972M
+        system   2.974M
+        hz3      76.339M
+        hz4      31.392M
+        hz6 peak_kb = 117,248
+
+  Decision:
+    Keep the selected/default shape. ToyActiveMapRegisterFastSlot-L1 is the
+    large confirmed win. ToyTrustedActivateSourceBlockSkip-L1 is small and
+    mostly neutral in the cross refresh; keep it as a candidate/default only
+    because stats/smokes are clean and 1024..4096 focused repeats improved.
+    Further HZ4/HZ3 gap work needs a larger local-page/run metadata lane, not
+    another tiny wrapper/layout tweak.
+
+2026-06-13 next:
+  ToyRunLocalMetaDesign-L1
+
+  Goal:
+    Close more of the 1024..4096 gap to HZ4 by avoiding repeated descriptor /
+    source-block work on the common Toy class-4 source-run path.
+
+  Direction:
+    Add a diagnostic dry-run before behavior:
+      map Toy source-run page or 64K block -> slot bytes/class/descriptor base
+      measure whether malloc/free can recover class/descriptor candidate from
+      run-local metadata without route or descriptor source-block validation
+    This is closer to HZ3/HZ4 architecture and more likely to matter than
+    additional function-shape tweaks.
+
 2026-06-13 HZ3/HZ4 architecture comparison:
   Raw:
     private/raw-results/linux/hz6_preload_vs_hz3_hz4_r5_20260613
