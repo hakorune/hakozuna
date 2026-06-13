@@ -20,6 +20,7 @@ this pass Split HZ3 tcache slowpath helpers
 this pass Split HZ3 arena helpers
 this pass Split HZ3 scale part8 config helpers
 this pass Split Windows benchmark HZ6 stats helpers
+this pass Split Windows PowerShell benchmark lane helpers
 ```
 
 Current HZ3 cleanup result:
@@ -57,6 +58,12 @@ win/bench_allocator_compare.c:
 
 win/bench_larson_compare.c:
   1757 lines -> 821-line router plus HZ6 stats accumulation helper
+
+win/bench_app_like_allocator_build_common.ps1:
+  2612 lines -> 8-line router plus focused HZ5/HZ6 flag and build helpers
+
+win/run_win_hz6_capacity_matrix.ps1:
+  1071 lines -> 831-line runner plus matrix helper functions
 ```
 
 The split is intentionally source-shape only. It should not change lane
@@ -71,7 +78,7 @@ Current next candidates:
 
 ```text
 P0:
-  Windows PowerShell benchmark lane scripts if they block active allocator work
+  no current source/script file over 1000 lines in the default audit
 
 P1:
   linux/HZ3 or HZ5 helper scripts if they block active allocator work
@@ -81,9 +88,9 @@ P2:
   over 1000 lines in the audit top list
 ```
 
-Windows PowerShell benchmark lane scripts are allowed to remain large unless
-they block allocator work or duplicate reusable lane helpers. If split, prefer
-dot-sourced helper modules over changing lane names or argument surfaces.
+Default large-source audit is clean. Future Windows PowerShell splits should
+continue to prefer dot-sourced helper modules over changing lane names or
+argument surfaces.
 
 ## Split Rules
 

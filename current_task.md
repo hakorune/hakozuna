@@ -25,9 +25,9 @@ Audit:
 
 Current focus:
   keep HZ3 source modularization separate from allocator performance tuning.
-  HZ3 implementation/config sources and Windows C benchmark harness routers are
-  below the 1000-line audit threshold; remaining large files are Windows
-  PowerShell benchmark lane scripts.
+  HZ3 implementation/config sources, Windows C benchmark harness routers, and
+  Windows PowerShell benchmark lane scripts are below the 1000-line source
+  audit threshold.
 ```
 
 HZ6 is now in active Windows/Linux implementation and benchmarking. HZ5 Linux
