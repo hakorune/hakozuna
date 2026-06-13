@@ -15,12 +15,13 @@ benchmark lane or source-level experiment.
 | ElasticCapacity source-depot track | `HZ6_ELASTIC_CAPACITY_PLAN.md` |
 | Windows lane registry cleanup | `HZ6_WINDOWS_LANE_REGISTRY.md` |
 | Source/module cleanup plan | `HZ6_SOURCE_MODULARIZATION.md` |
-| Long experiment ledger | `current_task.md` |
+| Archived experiment ledger | `archive/current_task_2026-06_history.md` |
 
 Rule:
 
 ```text
-Use current_task.md as a ledger, not as the primary orientation document.
+Use current_task.md as a short orientation entry point, not as the primary
+chronological ledger.
 If a decision is stable, summarize it in the selected summary or lane guide.
 ```
 
@@ -165,6 +166,9 @@ HZ6_ELASTIC_CAPACITY_PLAN.md:
   source-depot / ElasticCapacity working-set decisions
 
 current_task.md:
+  short orientation entry point
+
+archive/current_task_2026-06_history.md:
   historical ledger and detailed experimental notes
 ```
 
