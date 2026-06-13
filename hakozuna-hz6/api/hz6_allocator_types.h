@@ -367,6 +367,10 @@ struct Hz6Allocator {
 #endif
 #if HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2
   size_t midpage_active_map_current;
+#if HZ6_MIDPAGE_ACTIVE_MAP_ADDR_ENVELOPE_L1
+  uintptr_t midpage_active_map_min_addr;
+  uintptr_t midpage_active_map_max_addr;
+#endif
 #if HZ6_MIDPAGE_ACTIVE_FREE_MAP_EXTERNAL_L2
   Hz6MidPageActiveMapEntry* midpage_active_map;
 #else

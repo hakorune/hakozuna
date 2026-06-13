@@ -242,9 +242,15 @@ static void hz6_preload_print_stats(void) {
   size_t midpage_active_map_free_attempt = 0;
   size_t midpage_active_map_free_hit = 0;
   size_t midpage_active_map_free_miss = 0;
+  size_t midpage_active_map_free_miss_probe_empty = 0;
+  size_t midpage_active_map_free_miss_probe_occupied = 0;
+  size_t midpage_active_map_free_miss_found_elsewhere = 0;
+  size_t midpage_8k_active_map_free_miss_found_elsewhere = 0;
+  size_t midpage_32k_active_map_free_miss_found_elsewhere = 0;
   size_t midpage_active_map_free_stale = 0;
   size_t midpage_active_map_free_cache_fail = 0;
   size_t midpage_active_map_alignment_skip = 0;
+  size_t midpage_active_map_addr_envelope_skip = 0;
   size_t midpage_active_map_route_bypass = 0;
   size_t midpage_8k_alloc_call = 0;
   size_t midpage_32k_alloc_call = 0;
@@ -400,11 +406,23 @@ static void hz6_preload_print_stats(void) {
         stats.midpage_active_map_free_attempt;
     midpage_active_map_free_hit += stats.midpage_active_map_free_hit;
     midpage_active_map_free_miss += stats.midpage_active_map_free_miss;
+    midpage_active_map_free_miss_probe_empty +=
+        stats.midpage_active_map_free_miss_probe_empty;
+    midpage_active_map_free_miss_probe_occupied +=
+        stats.midpage_active_map_free_miss_probe_occupied;
+    midpage_active_map_free_miss_found_elsewhere +=
+        stats.midpage_active_map_free_miss_found_elsewhere;
+    midpage_8k_active_map_free_miss_found_elsewhere +=
+        stats.midpage_8k_active_map_free_miss_found_elsewhere;
+    midpage_32k_active_map_free_miss_found_elsewhere +=
+        stats.midpage_32k_active_map_free_miss_found_elsewhere;
     midpage_active_map_free_stale += stats.midpage_active_map_free_stale;
     midpage_active_map_free_cache_fail +=
         stats.midpage_active_map_free_cache_fail;
     midpage_active_map_alignment_skip +=
         stats.midpage_active_map_alignment_skip;
+    midpage_active_map_addr_envelope_skip +=
+        stats.midpage_active_map_addr_envelope_skip;
     midpage_active_map_route_bypass +=
         stats.midpage_active_map_route_bypass;
     midpage_8k_alloc_call += stats.midpage_8k_alloc_call;
@@ -570,9 +588,15 @@ static void hz6_preload_print_stats(void) {
           "midpage_active_map_free_attempt=%zu "
           "midpage_active_map_free_hit=%zu "
           "midpage_active_map_free_miss=%zu "
+          "midpage_active_map_free_miss_probe_empty=%zu "
+          "midpage_active_map_free_miss_probe_occupied=%zu "
+          "midpage_active_map_free_miss_found_elsewhere=%zu "
+          "midpage_8k_active_map_free_miss_found_elsewhere=%zu "
+          "midpage_32k_active_map_free_miss_found_elsewhere=%zu "
           "midpage_active_map_free_stale=%zu "
           "midpage_active_map_free_cache_fail=%zu "
           "midpage_active_map_alignment_skip=%zu "
+          "midpage_active_map_addr_envelope_skip=%zu "
           "midpage_active_map_route_bypass=%zu\n",
           descriptor_live_max, source_block_active_max,
           frontcache_total_max, frontcache_reuse_hit,
@@ -593,9 +617,15 @@ static void hz6_preload_print_stats(void) {
           midpage_active_map_free_attempt,
           midpage_active_map_free_hit,
           midpage_active_map_free_miss,
+          midpage_active_map_free_miss_probe_empty,
+          midpage_active_map_free_miss_probe_occupied,
+          midpage_active_map_free_miss_found_elsewhere,
+          midpage_8k_active_map_free_miss_found_elsewhere,
+          midpage_32k_active_map_free_miss_found_elsewhere,
           midpage_active_map_free_stale,
           midpage_active_map_free_cache_fail,
           midpage_active_map_alignment_skip,
+          midpage_active_map_addr_envelope_skip,
           midpage_active_map_route_bypass);
 
   fprintf(stderr,

@@ -408,6 +408,12 @@
 #define HZ6_MIDPAGE_ALLOC_DESCRIPTOR_OUT_L1 0
 #endif
 
+#ifndef HZ6_MIDPAGE_ACTIVE_MAP_ADDR_ENVELOPE_L1
+/* Candidate negative filter. Track a conservative min/max pointer envelope for
+ * registered MidPage active-map entries and skip hash probes outside it. */
+#define HZ6_MIDPAGE_ACTIVE_MAP_ADDR_ENVELOPE_L1 0
+#endif
+
 #ifndef HZ6_TOY_CLASS_ID_FAST_ALLOC_L1
 /* Default Toy alloc shortcut.  hz6_malloc() already selected class_id, so
  * Toy alloc can validate size against class bytes instead of classifying again. */

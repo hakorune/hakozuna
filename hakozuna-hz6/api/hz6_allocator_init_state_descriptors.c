@@ -11,6 +11,10 @@ void hz6_allocator_init_state_descriptors(Hz6Allocator* allocator) {
 #endif
 #if HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2
   allocator->midpage_active_map_current = 0;
+#if HZ6_MIDPAGE_ACTIVE_MAP_ADDR_ENVELOPE_L1
+  allocator->midpage_active_map_min_addr = 0;
+  allocator->midpage_active_map_max_addr = 0;
+#endif
 #if HZ6_MIDPAGE_ACTIVE_FREE_MAP_EXTERNAL_L2
   allocator->midpage_active_map = NULL;
 #else

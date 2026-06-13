@@ -92,6 +92,10 @@ static inline void hz6_midpage_active_map_destroy(Hz6Allocator* allocator) {
   free(allocator->midpage_active_map);
   allocator->midpage_active_map = NULL;
   allocator->midpage_active_map_current = 0;
+#if HZ6_MIDPAGE_ACTIVE_MAP_ADDR_ENVELOPE_L1
+  allocator->midpage_active_map_min_addr = 0;
+  allocator->midpage_active_map_max_addr = 0;
+#endif
 #else
   (void)allocator;
 #endif
@@ -192,6 +196,16 @@ static inline void hz6_midpage_active_map_register(
   if (!entry->ptr) {
     ++allocator->midpage_active_map_current;
   }
+#if HZ6_MIDPAGE_ACTIVE_MAP_ADDR_ENVELOPE_L1
+  uintptr_t ptr_addr = (uintptr_t)ptr;
+  if (allocator->midpage_active_map_min_addr == 0 ||
+      ptr_addr < allocator->midpage_active_map_min_addr) {
+    allocator->midpage_active_map_min_addr = ptr_addr;
+  }
+  if (ptr_addr > allocator->midpage_active_map_max_addr) {
+    allocator->midpage_active_map_max_addr = ptr_addr;
+  }
+#endif
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.midpage_active_map_register;
   if (class_id == HZ6_MIDPAGE_8K_CLASS_ID) {
@@ -252,6 +266,17 @@ static inline int hz6_midpage_active_map_try_free(Hz6Allocator* allocator,
   if (!allocator || !ptr || allocator->midpage_active_map_current == 0) {
     return 0;
   }
+#if HZ6_MIDPAGE_ACTIVE_MAP_ADDR_ENVELOPE_L1
+  uintptr_t ptr_addr = (uintptr_t)ptr;
+  if (allocator->midpage_active_map_min_addr != 0 &&
+      (ptr_addr < allocator->midpage_active_map_min_addr ||
+       ptr_addr > allocator->midpage_active_map_max_addr)) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.midpage_active_map_addr_envelope_skip;
+#endif
+    return 0;
+  }
+#endif
   Hz6MidPageActiveMapEntry* entries =
       hz6_midpage_active_map_entries(allocator);
   if (!entries) {
@@ -300,6 +325,51 @@ static inline int hz6_midpage_active_map_try_free(Hz6Allocator* allocator,
   if (!entry) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.midpage_active_map_free_miss;
+    int probe_window_empty = 0;
+#if HZ6_MIDPAGE_ACTIVE_MAP_CLASS_INDEX_L1
+    for (size_t class_probe = 0; class_probe < 2 && !probe_window_empty;
+         ++class_probe) {
+      size_t base_index =
+          hz6_midpage_active_map_class_index(ptr, probe_classes[class_probe]);
+      for (size_t probe = 0; probe < HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT;
+           ++probe) {
+        size_t index =
+            (base_index + probe) % HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY;
+        if (!entries[index].ptr) {
+          probe_window_empty = 1;
+          break;
+        }
+      }
+    }
+#else
+    for (size_t probe = 0; probe < HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT;
+         ++probe) {
+      size_t index =
+          (base_index + probe) % HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY;
+      if (!entries[index].ptr) {
+        probe_window_empty = 1;
+        break;
+      }
+    }
+#endif
+    if (probe_window_empty) {
+      ++allocator->stats.midpage_active_map_free_miss_probe_empty;
+    } else {
+      ++allocator->stats.midpage_active_map_free_miss_probe_occupied;
+    }
+    for (size_t index = 0; index < HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY;
+         ++index) {
+      Hz6MidPageActiveMapEntry* candidate = &entries[index];
+      if (candidate->ptr == ptr) {
+        ++allocator->stats.midpage_active_map_free_miss_found_elsewhere;
+        if (candidate->class_id == HZ6_MIDPAGE_8K_CLASS_ID) {
+          ++allocator->stats.midpage_8k_active_map_free_miss_found_elsewhere;
+        } else if (candidate->class_id == HZ6_MIDPAGE_32K_CLASS_ID) {
+          ++allocator->stats.midpage_32k_active_map_free_miss_found_elsewhere;
+        }
+        break;
+      }
+    }
 #endif
     return 0;
   }
