@@ -1933,3 +1933,24 @@ reading:
   success as remote-natural safety/pressure evidence
   not a remote-throughput promotion
 ```
+
+### SourceStateSplit-L1
+
+Cleanup:
+
+```text
+hz7_state.inc:
+  moved compile-time constants, internal types, globals, route table storage,
+  direct-retain storage, and the coarse lock state out of hz7.c
+
+hz7.c:
+  remains the behavior implementation
+  stays below 1000 lines after the split
+```
+
+Verification:
+
+```text
+Linux HZ7 v2 smoke:
+  pass
+```
