@@ -42,6 +42,18 @@ static void* hz6_toy_front_alloc_with_class(Hz6Allocator* allocator,
 
   size_t refill_batch = hz6_allocator_control_source_refill_batch(
       allocator, HZ6_FRONT_TOY, size_class.id);
+#if HZ6_TOY_FULL_BLOCK_PREFILL_L1
+  {
+    size_t slots_per_block = HZ6_TOY_SOURCE_BLOCK_BYTES / size_class.bytes;
+    size_t candidate = slots_per_block;
+    if (candidate > HZ6_TOY_FULL_BLOCK_PREFILL_MAX_SLOTS) {
+      candidate = HZ6_TOY_FULL_BLOCK_PREFILL_MAX_SLOTS;
+    }
+    if (candidate > refill_batch) {
+      refill_batch = candidate;
+    }
+  }
+#endif
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.toy_source_prefill_call;
 #endif

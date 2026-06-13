@@ -314,6 +314,17 @@
 #define HZ6_TOY_CLASS_ID_FAST_ALLOC_L1 1
 #endif
 
+#ifndef HZ6_TOY_FULL_BLOCK_PREFILL_L1
+/* Candidate-only Toy source miss policy.  When enabled, ToyFront asks the
+ * source-block prefill path to consume more slots from the newly-created 64K
+ * block instead of only the profile source_batch. */
+#define HZ6_TOY_FULL_BLOCK_PREFILL_L1 0
+#endif
+
+#ifndef HZ6_TOY_FULL_BLOCK_PREFILL_MAX_SLOTS
+#define HZ6_TOY_FULL_BLOCK_PREFILL_MAX_SLOTS ((size_t)256)
+#endif
+
 #ifndef HZ6_VISIBLE_FIRST_FREE_L1
 #define HZ6_VISIBLE_FIRST_FREE_L1 0
 #endif

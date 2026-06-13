@@ -582,6 +582,127 @@ Ubuntu LD_PRELOAD lane:
           init/loader isolation next.  The next optimization should target
           repeated per-worker Toy source churn, route/free CPU, or a shared
           warm source/route design that preserves ownership semantics.
+      Next phase audit:
+        PreloadPhaseAudit-L1.
+        Motivation:
+          The topology audit ruled out main/loader pollution and showed that
+          each hot worker pays the same source/route pressure.  Before changing
+          allocator behavior again, split the LD_PRELOAD wrapper cost from HZ6
+          core cost and identify whether the remaining pressure is malloc
+          source/refill, free ownership routing, realloc wrapper round-trips, or
+          real-allocator fallback.
+        Implementation target:
+          Extend `HZ6_PRELOAD_STATS=1` and `=per_allocator` with one
+          `[HZ6_PRELOAD_PHASE_STATS]` line.  The counters are preload-global
+          and are only incremented when `HZ6_PRELOAD_STATS` is enabled, keeping
+          normal stats-off speed runs free of atomic counter traffic.
+        Required fields:
+          malloc_calls, malloc_hz6_success, malloc_real_fallback,
+          calloc_calls, free_calls, free_null, free_reentry_real,
+          free_local_route_valid, free_visible_route_hit, free_route_invalid,
+          free_route_miss_real, free_prechecked_candidate, realloc_calls,
+          realloc_owned, realloc_real_fallback, realloc_copy_bytes,
+          malloc_usable_size_calls, malloc_usable_size_owned,
+          malloc_usable_size_real_fallback.
+        Read target:
+          If `free_prechecked_candidate` is close to `free_local_route_valid`
+          and route/free CPU is visible, retest a narrower
+          PreloadOwnedFastLocalFree-L1 rather than the older broad FastFree
+          shape.  If malloc succeeds almost entirely in HZ6 and source churn is
+          still high, move first to ToyFullBlockPrefill-L1.  If realloc counts
+          are high, build a preload-local realloc path that reuses its
+          prechecked route on the old pointer.
+        Result:
+          Added `[HZ6_PRELOAD_PHASE_STATS]` when `HZ6_PRELOAD_STATS` is
+          enabled.  The counters are preload-global and are not incremented
+          when stats are disabled.
+          On `4 100000 8192 16 1024`:
+            malloc_calls=206583
+            malloc_hz6_success=206583
+            malloc_real_fallback=0
+            free_calls=206586
+            free_local_route_valid=206578
+            free_visible_route_hit=0
+            free_route_invalid=0
+            free_route_miss_real=0
+            free_prechecked_candidate=206578
+            realloc_calls=3180
+            realloc_owned=3180
+            realloc_real_fallback=0
+          Overhead guard:
+            stats-off repeat-3 after phase counters:
+              9.942M / 10.115M / 10.027M ops/s
+            Result dir:
+              private/raw-results/linux/hz6_preload_phase_audit_overhead_r3
+          Read:
+            The preload mixed_ws row is pure HZ6-owned/local in this guard:
+            no real malloc/free fallback, no visible/foreign free, and every
+            local route-valid free is a prechecked candidate.  Since the older
+            broad FastFree did not win while source churn remains high, target
+            Toy source refill before another free-side behavior change.
+      Next behavior candidate:
+        ToyFullBlockPrefill-L1.
+        Motivation:
+          The selected preload row still creates about 9.3K Toy source blocks
+          on the mixed_ws guard even after retained 64K mappings are warm.
+          Larger 128K/256K Toy blocks did not reduce that count, and
+          SourceRunReuse reduced source_alloc only by adding too much scan and
+          activation cost.  A Toy-only source-miss prefill that consumes more
+          slots from the newly-created 64K block avoids old-run scans while
+          targeting the remaining per-worker Toy source churn directly.
+        Candidate shape:
+          On Toy source miss, raise the prefill count toward the slots
+          available in the current 64K source block, capped by a preload-only
+          macro such as `HZ6_TOY_FULL_BLOCK_PREFILL_MAX_SLOTS`.  Keep the
+          source block size at 64K and keep exact route/descriptor lifetime
+          unchanged.
+        Acceptance:
+          R1 smokes pass
+          `/bin/true` and small mixed_ws under LD_PRELOAD pass
+          `descriptor_exhausted=0`, `source_block_exhausted=0`,
+          `route_register_fail=0`, `alloc_fail=0`
+          mixed_ws repeat-5 improves enough to justify any RSS increase
+        Risks:
+          More descriptors/frontcache entries can raise RSS and first-miss
+          latency.  Do not default it without fixed-size Toy guards and the
+          mixed_ws cross-allocator row.
+        Result:
+          Implemented as a guarded candidate:
+            `HZ6_TOY_FULL_BLOCK_PREFILL_L1`
+            `HZ6_TOY_FULL_BLOCK_PREFILL_MAX_SLOTS`
+          The preload default now enables max128:
+            `-DHZ6_TOY_FULL_BLOCK_PREFILL_L1=1`
+            `-DHZ6_TOY_FULL_BLOCK_PREFILL_MAX_SLOTS=128`
+          Stats-on source/read guard, max128 on `4 100000 8192 16 1024`:
+            source_alloc=2288
+            toy_source_alloc=2224
+            retain_mmap_fallback=522
+            alloc_fail=0
+            descriptor_exhausted=0
+            route_register_fail=0
+            source_block_exhausted=0
+          Baseline stats-on nearby:
+            source_alloc=9410
+            toy_source_alloc=9346
+            retain_mmap_fallback=2066
+          Straight stats-off repeat-3, same guard:
+            default before ToyFull:
+              10.326M / 10.228M / 9.969M ops/s
+            ToyFull max64:
+              12.268M / 12.331M / 12.196M ops/s
+            ToyFull max128:
+              12.608M / 12.287M / 12.345M ops/s
+            ToyFull max256:
+              12.473M / 12.469M / 10.849M ops/s
+          Defaulted max128 official repeat-3:
+            12.307M / 12.018M / 12.136M ops/s
+            Result dir:
+              private/raw-results/linux/hz6_preload_toyfull128_default_r3
+          Decision:
+            Select max128 for the LD_PRELOAD default.  It preserves the 64K
+            source block size, avoids SourceRunReuse's old-run scan, cuts Toy
+            source churn by about 76%, and gives the cleanest first speed
+            shape among the tested caps.
   - Rejected preload probe:
       SourceBlockRoute exact-skip was tested with range-index, dynamic slot
       descriptor map, late register, behavior, and exact-skip.  It regressed

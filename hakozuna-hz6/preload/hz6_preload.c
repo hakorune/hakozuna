@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdatomic.h>
 #include <string.h>
 
 extern void* __libc_malloc(size_t size);
@@ -49,6 +50,53 @@ static pthread_mutex_t g_hz6_preload_allocator_registry_mutex =
 static Hz6Allocator*
     g_hz6_preload_allocator_registry[HZ6_PRELOAD_ALLOCATOR_REGISTRY_CAPACITY];
 static size_t g_hz6_preload_allocator_registry_count;
+
+typedef struct Hz6PreloadPhaseStats {
+  _Atomic(size_t) malloc_calls;
+  _Atomic(size_t) malloc_hz6_success;
+  _Atomic(size_t) malloc_real_fallback;
+  _Atomic(size_t) calloc_calls;
+  _Atomic(size_t) free_calls;
+  _Atomic(size_t) free_null;
+  _Atomic(size_t) free_reentry_real;
+  _Atomic(size_t) free_local_route_valid;
+  _Atomic(size_t) free_visible_route_hit;
+  _Atomic(size_t) free_route_invalid;
+  _Atomic(size_t) free_route_miss_real;
+  _Atomic(size_t) free_prechecked_candidate;
+  _Atomic(size_t) realloc_calls;
+  _Atomic(size_t) realloc_owned;
+  _Atomic(size_t) realloc_real_fallback;
+  _Atomic(size_t) realloc_copy_bytes;
+  _Atomic(size_t) malloc_usable_size_calls;
+  _Atomic(size_t) malloc_usable_size_owned;
+  _Atomic(size_t) malloc_usable_size_real_fallback;
+} Hz6PreloadPhaseStats;
+
+static Hz6PreloadPhaseStats g_hz6_preload_phase_stats;
+static int g_hz6_preload_phase_stats_enabled;
+
+static void hz6_preload_phase_count(_Atomic(size_t)* counter) {
+  if (g_hz6_preload_phase_stats_enabled) {
+    (void)atomic_fetch_add_explicit(counter, 1u, memory_order_relaxed);
+  }
+}
+
+static void hz6_preload_phase_add(_Atomic(size_t)* counter, size_t value) {
+  if (g_hz6_preload_phase_stats_enabled && value != 0) {
+    (void)atomic_fetch_add_explicit(counter, value, memory_order_relaxed);
+  }
+}
+
+static size_t hz6_preload_phase_load(const _Atomic(size_t)* counter) {
+  return atomic_load_explicit(counter, memory_order_relaxed);
+}
+
+__attribute__((constructor)) static void hz6_preload_on_load(void) {
+  const char* value = getenv("HZ6_PRELOAD_STATS");
+  g_hz6_preload_phase_stats_enabled =
+      value && value[0] != '\0' && strcmp(value, "0") != 0;
+}
 
 static void hz6_preload_resolve_real(void) {
   int saved_reentry = g_hz6_preload_reentry;
@@ -192,6 +240,11 @@ static void hz6_preload_print_stats(void) {
   size_t descriptor_exhausted = 0;
   size_t route_register_fail = 0;
   size_t source_block_exhausted = 0;
+  size_t source_prefill_attempt = 0;
+  size_t source_prefill_filled = 0;
+  size_t source_prefill_fallback = 0;
+  size_t front_source_prefill_alloc = 0;
+  size_t toy_source_prefill_call = 0;
   size_t route_lookup_probe_total = 0;
   size_t route_lookup_probe_max = 0;
   size_t route_register_probe_total = 0;
@@ -221,6 +274,11 @@ static void hz6_preload_print_stats(void) {
     descriptor_exhausted += stats.descriptor_exhausted;
     route_register_fail += stats.route_register_fail;
     source_block_exhausted += stats.source_block_exhausted;
+    source_prefill_attempt += stats.source_prefill_attempt;
+    source_prefill_filled += stats.source_prefill_filled;
+    source_prefill_fallback += stats.source_prefill_fallback;
+    front_source_prefill_alloc += stats.front_source_prefill_alloc;
+    toy_source_prefill_call += stats.toy_source_prefill_call;
     route_lookup_probe_total += stats.route_lookup_probe_total;
     if (stats.route_lookup_probe_max > route_lookup_probe_max) {
       route_lookup_probe_max = stats.route_lookup_probe_max;
@@ -246,7 +304,10 @@ static void hz6_preload_print_stats(void) {
           "midpage_source_alloc=%zu large_source_alloc=%zu "
           "local2p_source_alloc=%zu alloc_fail=%zu "
           "descriptor_exhausted=%zu route_register_fail=%zu "
-          "source_block_exhausted=%zu route_lookup_probe_total=%zu "
+          "source_block_exhausted=%zu source_prefill_attempt=%zu "
+          "source_prefill_filled=%zu source_prefill_fallback=%zu "
+          "front_source_prefill_alloc=%zu toy_source_prefill_call=%zu "
+          "route_lookup_probe_total=%zu "
           "route_lookup_probe_max=%zu route_register_probe_total=%zu "
           "route_register_probe_max=%zu route_unregister_probe_total=%zu "
           "route_unregister_probe_max=%zu "
@@ -262,7 +323,10 @@ static void hz6_preload_print_stats(void) {
           transfer_push, transfer_pop, source_alloc, toy_source_alloc,
           midpage_source_alloc, large_source_alloc, local2p_source_alloc,
           alloc_fail, descriptor_exhausted, route_register_fail,
-          source_block_exhausted, route_lookup_probe_total,
+          source_block_exhausted, source_prefill_attempt,
+          source_prefill_filled, source_prefill_fallback,
+          front_source_prefill_alloc, toy_source_prefill_call,
+          route_lookup_probe_total,
           route_lookup_probe_max, route_register_probe_total,
           route_register_probe_max, route_unregister_probe_total,
           route_unregister_probe_max, retain_stats.reserve_calls,
@@ -275,6 +339,47 @@ static void hz6_preload_print_stats(void) {
           retain_stats.retain_generic_put_hit,
           retain_stats.retain_generic_put_full, retain_stats.munmap_fallback,
           retain_stats.retained_bytes, retain_stats.retained_64k_count);
+
+  fprintf(stderr,
+          "[HZ6_PRELOAD_PHASE_STATS] malloc_calls=%zu "
+          "malloc_hz6_success=%zu malloc_real_fallback=%zu "
+          "calloc_calls=%zu free_calls=%zu free_null=%zu "
+          "free_reentry_real=%zu free_local_route_valid=%zu "
+          "free_visible_route_hit=%zu free_route_invalid=%zu "
+          "free_route_miss_real=%zu free_prechecked_candidate=%zu "
+          "realloc_calls=%zu realloc_owned=%zu realloc_real_fallback=%zu "
+          "realloc_copy_bytes=%zu malloc_usable_size_calls=%zu "
+          "malloc_usable_size_owned=%zu "
+          "malloc_usable_size_real_fallback=%zu\n",
+          hz6_preload_phase_load(&g_hz6_preload_phase_stats.malloc_calls),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.malloc_hz6_success),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.malloc_real_fallback),
+          hz6_preload_phase_load(&g_hz6_preload_phase_stats.calloc_calls),
+          hz6_preload_phase_load(&g_hz6_preload_phase_stats.free_calls),
+          hz6_preload_phase_load(&g_hz6_preload_phase_stats.free_null),
+          hz6_preload_phase_load(&g_hz6_preload_phase_stats.free_reentry_real),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.free_local_route_valid),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.free_visible_route_hit),
+          hz6_preload_phase_load(&g_hz6_preload_phase_stats.free_route_invalid),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.free_route_miss_real),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.free_prechecked_candidate),
+          hz6_preload_phase_load(&g_hz6_preload_phase_stats.realloc_calls),
+          hz6_preload_phase_load(&g_hz6_preload_phase_stats.realloc_owned),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.realloc_real_fallback),
+          hz6_preload_phase_load(&g_hz6_preload_phase_stats.realloc_copy_bytes),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.malloc_usable_size_calls),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.malloc_usable_size_owned),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.malloc_usable_size_real_fallback));
 
   if (print_per_allocator) {
     pthread_mutex_lock(&g_hz6_preload_allocator_registry_mutex);
@@ -359,18 +464,27 @@ void* malloc(size_t size) {
   if (g_hz6_preload_reentry) {
     return hz6_preload_real_malloc(size);
   }
+  hz6_preload_phase_count(&g_hz6_preload_phase_stats.malloc_calls);
   g_hz6_preload_reentry = 1;
   Hz6Allocator* allocator = hz6_preload_allocator();
   void* ptr = allocator ? hz6_malloc(allocator, size) : NULL;
   g_hz6_preload_reentry = 0;
-  return ptr ? ptr : hz6_preload_real_malloc(size);
+  if (ptr) {
+    hz6_preload_phase_count(&g_hz6_preload_phase_stats.malloc_hz6_success);
+    return ptr;
+  }
+  hz6_preload_phase_count(&g_hz6_preload_phase_stats.malloc_real_fallback);
+  return hz6_preload_real_malloc(size);
 }
 
 void free(void* ptr) {
+  hz6_preload_phase_count(&g_hz6_preload_phase_stats.free_calls);
   if (!ptr) {
+    hz6_preload_phase_count(&g_hz6_preload_phase_stats.free_null);
     return;
   }
   if (g_hz6_preload_reentry) {
+    hz6_preload_phase_count(&g_hz6_preload_phase_stats.free_reentry_real);
     hz6_preload_real_free(ptr);
     return;
   }
@@ -379,6 +493,21 @@ void free(void* ptr) {
   Hz6PreloadRoute preload_route = hz6_preload_route(allocator, ptr);
   if (preload_route.route.kind == HZ6_ROUTE_VALID ||
       preload_route.route.kind == HZ6_ROUTE_INVALID) {
+    if (preload_route.route.kind == HZ6_ROUTE_VALID) {
+      if (preload_route.visible_hit) {
+        hz6_preload_phase_count(
+            &g_hz6_preload_phase_stats.free_visible_route_hit);
+      } else {
+        hz6_preload_phase_count(
+            &g_hz6_preload_phase_stats.free_local_route_valid);
+        if (preload_route.route.route_allocator == allocator) {
+          hz6_preload_phase_count(
+              &g_hz6_preload_phase_stats.free_prechecked_candidate);
+        }
+      }
+    } else {
+      hz6_preload_phase_count(&g_hz6_preload_phase_stats.free_route_invalid);
+    }
 #if HZ6_PRELOAD_FAST_FREE_L1
     hz6_free_with_route_prechecked(allocator, ptr, preload_route.route,
                                    preload_route.visible_hit);
@@ -386,12 +515,14 @@ void free(void* ptr) {
     hz6_free(allocator, ptr);
 #endif
   } else {
+    hz6_preload_phase_count(&g_hz6_preload_phase_stats.free_route_miss_real);
     hz6_preload_real_free(ptr);
   }
   g_hz6_preload_reentry = 0;
 }
 
 void* calloc(size_t nmemb, size_t size) {
+  hz6_preload_phase_count(&g_hz6_preload_phase_stats.calloc_calls);
   if (size != 0 && nmemb > ((size_t)-1) / size) {
     errno = ENOMEM;
     return NULL;
@@ -408,6 +539,7 @@ void* calloc(size_t nmemb, size_t size) {
 }
 
 void* realloc(void* ptr, size_t size) {
+  hz6_preload_phase_count(&g_hz6_preload_phase_stats.realloc_calls);
   if (!ptr) {
     return malloc(size);
   }
@@ -421,17 +553,29 @@ void* realloc(void* ptr, size_t size) {
 
   g_hz6_preload_reentry = 1;
   Hz6Allocator* allocator = hz6_preload_allocator();
-  size_t old_size = hz6_preload_usable_size(allocator, ptr);
+  Hz6PreloadRoute preload_route = hz6_preload_route(allocator, ptr);
+  size_t old_size = 0;
+  if (preload_route.route.kind == HZ6_ROUTE_VALID &&
+      preload_route.route.descriptor) {
+    const Hz6ObjectDescriptor* descriptor =
+        (const Hz6ObjectDescriptor*)preload_route.route.descriptor;
+    old_size = descriptor->bytes;
+  }
   g_hz6_preload_reentry = 0;
   if (old_size == 0) {
+    hz6_preload_phase_count(&g_hz6_preload_phase_stats.realloc_real_fallback);
     return hz6_preload_real_realloc(ptr, size);
   }
+  hz6_preload_phase_count(&g_hz6_preload_phase_stats.realloc_owned);
 
   void* next = malloc(size);
   if (!next) {
     return NULL;
   }
-  memcpy(next, ptr, old_size < size ? old_size : size);
+  size_t copy_bytes = old_size < size ? old_size : size;
+  hz6_preload_phase_add(&g_hz6_preload_phase_stats.realloc_copy_bytes,
+                        copy_bytes);
+  memcpy(next, ptr, copy_bytes);
   free(ptr);
   return next;
 }
@@ -471,6 +615,7 @@ void* aligned_alloc(size_t alignment, size_t size) {
 }
 
 size_t malloc_usable_size(void* ptr) {
+  hz6_preload_phase_count(&g_hz6_preload_phase_stats.malloc_usable_size_calls);
   if (!ptr) {
     return 0;
   }
@@ -480,9 +625,13 @@ size_t malloc_usable_size(void* ptr) {
     size_t bytes = hz6_preload_usable_size(allocator, ptr);
     g_hz6_preload_reentry = 0;
     if (bytes != 0) {
+      hz6_preload_phase_count(
+          &g_hz6_preload_phase_stats.malloc_usable_size_owned);
       return bytes;
     }
   }
+  hz6_preload_phase_count(
+      &g_hz6_preload_phase_stats.malloc_usable_size_real_fallback);
   if (g_hz6_preload_reentry && !g_real_malloc_usable_size) {
     return 0;
   }
