@@ -32,6 +32,7 @@ comparability.
 | `midfront/hz5_midfront_remote_batch.inc` | MidFront remote batch helper cluster | split out from `hz5_midfront.c`; keep include-local while the remote-batch profile settles |
 | `preload/hz5_preload_full_support.inc` | Preload full bootstrap / stats / pointer-track support helpers | split out from `hz5_preload_full.c`; keep include-local while the full preload control path settles |
 | `lowpage/hz5_lowpage64_p43o.inc` | LowPage P43O admission/projection diagnostics | split out from `hz5_lowpage64.c`; keep include-local while the admission probes settle |
+| `lowpage/hz5_lowpage64_p43_segment_state.inc` | LowPage P43 segment types, globals, TLS cache, and counters | split out from `hz5_lowpage64_p43_segment.c`; keep include-local while the segment-slot source stabilizes |
 | `lowpage/hz5_lowpage64_p43_segment_helpers.inc` | LowPage P43 segment lookup/slot-mask helper cluster | split out from `hz5_lowpage64_p43_segment.c`; keep include-local while the segment-slot source stabilizes |
 | `lowpage/hz5_lowpage64_p43p_bridge.inc` | LowPage P43P/P44/P45 bridge diagnostics | split out from `hz5_lowpage64.c`; keep include-local while the bridge probes settle |
 | `lowpage/hz5_lowpage64_control.inc` | LowPage control-plane list / checkpoint / relbuf helpers | split out from `hz5_lowpage64.c`; keep include-local while the control-plane lanes settle |
@@ -114,6 +115,7 @@ cluster in `hz5_midpagefront_m4_pagerun.inc`, plus the nodeless diagnostic lane 
 lane in `hz5_midpagefront_remote_experiments.inc`, and LowPage now keeps P43g helpers in
 `hz5_lowpage64_p43g.inc`, P43O diagnostics in `hz5_lowpage64_p43o.inc`, plus
 P43 segment lookup/slot-mask helpers in `hz5_lowpage64_p43_segment_helpers.inc`,
+P43 segment state/counter storage in `hz5_lowpage64_p43_segment_state.inc`,
 P43P/P44/P45 bridge diagnostics in `hz5_lowpage64_p43p_bridge.inc`, plus P45
 drain diagnostics in `hz5_lowpage64_p45dr.inc`, plus lowpage control helpers in
 `hz5_lowpage64_control.inc`, with global/TLS control-plane storage isolated in
