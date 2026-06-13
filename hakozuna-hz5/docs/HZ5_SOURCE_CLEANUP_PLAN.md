@@ -29,6 +29,7 @@ comparability.
 | `midpagefront/hz5_midpagefront_stats.inc` | MidPage nodeless/M4 cold stats helpers | split out from `hz5_midpagefront.c`; keep include-local until the diagnostics stabilize |
 | `midpagefront/hz5_midpagefront_m4_state.inc` | MidPage M4 slot-state/counter helper cluster | split out from `hz5_midpagefront.c`; keep include-local while the M4 magazine lane settles |
 | `midpagefront/hz5_midpagefront_m4_magazine.inc` | MidPage M4 local magazine/overflow helper cluster | split out from `hz5_midpagefront.c`; keep include-local while the M4 magazine lane settles |
+| `midpagefront/hz5_midpagefront_empty_release.inc` | MidPage empty-slab release and source-free helper cluster | split out from `hz5_midpagefront.c`; keep include-local while empty release policy settles |
 | `midpagefront/hz5_midpagefront_m4_pagerun.inc` | MidPage M4 remote packet and PageRun helper cluster | split out from `hz5_midpagefront.c`; keep include-local while the pagerun profile settles |
 | `midpagefront/hz5_midpagefront_nodeless.inc` | MidPage nodeless partial / ptrcache / hot-slot helpers | split out from `hz5_midpagefront.c`; keep include-local while the nodeless diagnostic lane settles |
 | `midpagefront/hz5_midpagefront_region.inc` | MidPage class / region / slot lookup helpers | split out from `hz5_midpagefront.c`; keep include-local while the lookup path settles |
@@ -115,7 +116,8 @@ LargeFront splits are `hz5_largefront_config.inc`, `hz5_largefront_state.inc`,
 `hz5_midpagefront_config.inc`, `hz5_midpagefront_state.inc`,
 `hz5_midpagefront_stats.inc`, plus the M4 slot-state helper cluster in
 `hz5_midpagefront_m4_state.inc`, plus the M4 local magazine/overflow helper
-cluster in `hz5_midpagefront_m4_magazine.inc`, plus the M4 remote/PageRun
+cluster in `hz5_midpagefront_m4_magazine.inc`, plus the empty-slab release
+cluster in `hz5_midpagefront_empty_release.inc`, plus the M4 remote/PageRun
 cluster in `hz5_midpagefront_m4_pagerun.inc`, plus the nodeless diagnostic lane in
 `hz5_midpagefront_nodeless.inc`, plus the class/region/slot lookup helpers in
 `hz5_midpagefront_region.inc`, plus the M6/M7/M8/M10/M11 remote experiment
