@@ -388,6 +388,19 @@
 #define HZ6_MIDPAGE_ACTIVE_MAP_REGISTER_FAST_SLOT_L1 0
 #endif
 
+#ifndef HZ6_MIDPAGE_ACTIVE_MAP_CLASS_INDEX_L1
+/* Candidate collision control. Salt the MidPage active-map hash by 8K/32K
+ * class and probe the dominant 32K class first on free. */
+#define HZ6_MIDPAGE_ACTIVE_MAP_CLASS_INDEX_L1 0
+#endif
+
+#ifndef HZ6_MIDPAGE_PREFILL_DIRECT_REUSE_L1
+/* Candidate malloc path. After a MidPage direct-local miss, prefill the run
+ * and pop with descriptor ownership so active-map registration avoids an exact
+ * route lookup. */
+#define HZ6_MIDPAGE_PREFILL_DIRECT_REUSE_L1 0
+#endif
+
 #ifndef HZ6_TOY_CLASS_ID_FAST_ALLOC_L1
 /* Default Toy alloc shortcut.  hz6_malloc() already selected class_id, so
  * Toy alloc can validate size against class bytes instead of classifying again. */

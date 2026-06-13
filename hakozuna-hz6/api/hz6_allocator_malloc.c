@@ -5,6 +5,7 @@
 
 #include "../fronts/hz6_front.h"
 #include "../fronts/hz6_front_util.h"
+#include "../fronts/midpage/hz6_midpage_front.h"
 #include "../fronts/toy/hz6_toy_front.h"
 
 #if HZ6_TOY_PRECLASSIFIED_MALLOC_L1
@@ -182,6 +183,22 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
                                                class_id);
     return direct_ptr;
   }
+#if HZ6_MIDPAGE_PREFILL_DIRECT_REUSE_L1 && HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1
+  if (front->front_id == HZ6_FRONT_MIDPAGE &&
+      hz6_midpage_prefill_run(allocator, class_id) != 0) {
+    direct_descriptor = NULL;
+    direct_ptr = hz6_allocator_direct_local_alloc(
+        allocator, front->front_id, class_id, &direct_descriptor);
+    if (direct_ptr) {
+      hz6_midpage_active_map_register(
+          allocator, front->front_id, class_id, direct_ptr,
+          direct_descriptor);
+      hz6_toy_small_hotpath_diag_malloc_fast_hit(allocator, front->front_id,
+                                                 class_id);
+      return direct_ptr;
+    }
+  }
+#endif
 #endif
 
   hz6_toy_small_hotpath_diag_malloc_front_dispatch(allocator, front->front_id,

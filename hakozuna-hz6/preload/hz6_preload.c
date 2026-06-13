@@ -258,6 +258,8 @@ static void hz6_preload_print_stats(void) {
   size_t midpage_32k_active_map_free_hit = 0;
   size_t midpage_8k_preload_local_route_valid = 0;
   size_t midpage_32k_preload_local_route_valid = 0;
+  size_t midpage_8k_source_run_slot_route_register = 0;
+  size_t midpage_32k_source_run_slot_route_register = 0;
   size_t smallrun_route_attempt = 0;
   size_t smallrun_range_hit = 0;
   size_t smallrun_active_slot_hit = 0;
@@ -419,6 +421,10 @@ static void hz6_preload_print_stats(void) {
         stats.midpage_8k_preload_local_route_valid;
     midpage_32k_preload_local_route_valid +=
         stats.midpage_32k_preload_local_route_valid;
+    midpage_8k_source_run_slot_route_register +=
+        stats.midpage_8k_source_run_slot_route_register;
+    midpage_32k_source_run_slot_route_register +=
+        stats.midpage_32k_source_run_slot_route_register;
     smallrun_route_attempt += stats.smallrun_route_attempt;
     smallrun_range_hit += stats.smallrun_range_hit;
     smallrun_active_slot_hit += stats.smallrun_active_slot_hit;
@@ -604,14 +610,18 @@ static void hz6_preload_print_stats(void) {
           "midpage_8k_active_map_free_hit=%zu "
           "midpage_32k_active_map_free_hit=%zu "
           "midpage_8k_preload_local_route_valid=%zu "
-          "midpage_32k_preload_local_route_valid=%zu\n",
+          "midpage_32k_preload_local_route_valid=%zu "
+          "midpage_8k_source_run_slot_route_register=%zu "
+          "midpage_32k_source_run_slot_route_register=%zu\n",
           midpage_8k_alloc_call, midpage_32k_alloc_call,
           midpage_8k_prefill_run_call, midpage_32k_prefill_run_call,
           midpage_8k_prefill_run_filled, midpage_32k_prefill_run_filled,
           midpage_8k_active_map_register, midpage_32k_active_map_register,
           midpage_8k_active_map_free_hit, midpage_32k_active_map_free_hit,
           midpage_8k_preload_local_route_valid,
-          midpage_32k_preload_local_route_valid);
+          midpage_32k_preload_local_route_valid,
+          midpage_8k_source_run_slot_route_register,
+          midpage_32k_source_run_slot_route_register);
 
   fprintf(stderr,
           "[HZ6_PRELOAD_RUNMETA_DETAIL] "

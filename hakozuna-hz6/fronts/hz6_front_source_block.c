@@ -1,5 +1,22 @@
 #include "hz6_front_source_block.h"
 #include "hz6_front_util.h"
+#include "midpage/hz6_midpage_front.h"
+
+#if HZ6_DIAGNOSTIC_PROBES
+static void hz6_front_note_midpage_source_run_slot_route_register(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id) {
+  if (!allocator || front_id != HZ6_FRONT_MIDPAGE) {
+    return;
+  }
+  if (class_id == HZ6_MIDPAGE_8K_CLASS_ID) {
+    ++allocator->stats.midpage_8k_source_run_slot_route_register;
+  } else if (class_id == HZ6_MIDPAGE_32K_CLASS_ID) {
+    ++allocator->stats.midpage_32k_source_run_slot_route_register;
+  }
+}
+#endif
 
 #if HZ6_SOURCE_RUN_REUSE_L1
 static void* hz6_front_source_block_reserved_slot(
@@ -93,6 +110,10 @@ static void* hz6_front_source_block_reserved_slot(
     hz6_allocator_release_descriptor_source(allocator, descriptor);
     return NULL;
   }
+#if HZ6_DIAGNOSTIC_PROBES
+  hz6_front_note_midpage_source_run_slot_route_register(allocator, front_id,
+                                                       class_id);
+#endif
 
   hz6_allocator_source_run_set_descriptor(allocator, block, user_ptr,
                                           descriptor);
@@ -233,6 +254,10 @@ void* hz6_front_source_block_slot(Hz6Allocator* allocator,
     hz6_allocator_release_descriptor_source(allocator, descriptor);
     return NULL;
   }
+#if HZ6_DIAGNOSTIC_PROBES
+  hz6_front_note_midpage_source_run_slot_route_register(allocator, front_id,
+                                                       class_id);
+#endif
 
   hz6_allocator_source_run_set_descriptor(allocator, source_block, user_ptr,
                                           descriptor);

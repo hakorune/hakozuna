@@ -347,6 +347,8 @@ typedef struct Hz6StatsSnapshot {
   size_t midpage_32k_active_map_free_hit;
   size_t midpage_8k_preload_local_route_valid;
   size_t midpage_32k_preload_local_route_valid;
+  size_t midpage_8k_source_run_slot_route_register;
+  size_t midpage_32k_source_run_slot_route_register;
   size_t front_alloc_path[HZ6_FRONT_ATTR_COUNT][HZ6_ALLOC_PATH_COUNT];
   size_t alloc_fail;
   size_t descriptor_exhausted;
