@@ -703,6 +703,104 @@ Ubuntu LD_PRELOAD lane:
             source block size, avoids SourceRunReuse's old-run scan, cuts Toy
             source churn by about 76%, and gives the cleanest first speed
             shape among the tested caps.
+      Long-run degradation audit:
+        LongRunDegradeAudit-L1.
+        Observation:
+          Cross-allocator `4 1000000 8192 16 1024` exposed a long-run collapse
+          in the HZ6 LD_PRELOAD lane after ToyFull max128 was selected:
+            hz6 repeat-5:
+              0.065M / 0.064M / 0.064M / 0.063M / 0.064M ops/s
+            Result dir:
+              private/raw-results/linux/hz6_preload_toyfull128_cross_r5
+          The collapse was not caused by ToyFull.  Rebuilding the old
+          ToyFull-off preload composition showed the same cliff:
+            ToyFull-off 100K: 10.504M ops/s
+            ToyFull-off 200K: 12.410M ops/s
+            ToyFull-off 500K: 0.109M ops/s
+            ToyFull-off 1M:   0.055M ops/s
+        Capacity/failure read:
+          Stats-on 1M with ToyFull max128:
+            alloc_fail=0
+            descriptor_exhausted=0
+            route_register_fail=0
+            source_block_exhausted=0
+            malloc_real_fallback=0
+            free_route_miss_real=0
+          So this is not allocator failure or libc fallback.  It is hot-path
+          structure degradation.
+        Diagnostic read:
+          `HZ6_DIAGNOSTIC_PROBES=1` identified route exact register probe
+          explosion:
+            200K:
+              route_register_probe_total=1629023
+              route_register_probe_max=213
+              ops/s=8.855M
+            500K:
+              route_register_probe_total=29393632097
+              route_register_probe_max=131072
+              ops/s=0.128M
+          Cause:
+            Exact route unregister leaves tombstones.  Exact route register
+            remembers the first tombstone but keeps probing until it reaches an
+            empty slot so it can reject duplicate base entries.  Once the table
+            has enough active+tombstone occupancy, register degenerates into
+            table-wide probes while still succeeding.
+        Candidate results:
+          Added `route/hz6_route_backend_compact.c` and
+          `route/hz6_route_table_compact.c` to the preload build source list so
+          existing tombstone compact flags can link in LD_PRELOAD builds.
+          Straight single-run ladder:
+            normal `HZ6_ROUTE_TOMBSTONE_COMPACT_L1=1`:
+              100K: 12.230M
+              500K: 16.338M
+              1M:   17.784M
+            conditional compact:
+              100K: 9.379M
+              500K: 15.417M
+              1M:   17.560M
+            aggressive compact:
+              100K: 5.307M
+              500K: 6.335M
+              1M:   6.526M
+          Normal compact repeat:
+            100K:
+              11.404M / 11.966M / 12.490M ops/s
+            1M:
+              17.104M / 17.949M / 17.756M ops/s
+          Defaulted compact official straight repeats:
+            100K:
+              12.081M / 11.698M / 11.566M ops/s
+              private/raw-results/linux/hz6_preload_toyfull128_tombcompact_100k_r3_seq
+            1M:
+              17.964M / 18.004M / 17.914M ops/s
+              private/raw-results/linux/hz6_preload_toyfull128_tombcompact_1m_r3_seq
+          Diagnostic proof with normal compact at 500K:
+            route_register_probe_total=3444049
+            route_register_probe_max=154
+            route_unregister_probe_total=2821647
+            route_unregister_probe_max=148
+            ops/s=10.839M with diagnostic counters enabled
+          Cross-allocator 1M repeat-3 after compact:
+            Result dir:
+              private/raw-results/linux/hz6_preload_toyfull128_tombcompact_cross_1m_r3
+            median ops/s:
+              hz3:      181.503M
+              tcmalloc: 172.269M
+              hz4:      147.745M
+              system:    65.550M
+              mimalloc:  26.459M
+              hz6:       15.735M
+            Read:
+              The cliff is fixed, but HZ6 is still below mimalloc on this
+              1M LD_PRELOAD mixed_ws shape.  The next optimization target is
+              not source syscall churn or route-table full probes; it should be
+              the remaining route-register/unregister cost, descriptor/front
+              cache mutation cost, or a route registration design that can
+              avoid tombstone accumulation instead of periodically compacting.
+        Decision:
+          Select normal `HZ6_ROUTE_TOMBSTONE_COMPACT_L1=1` for the LD_PRELOAD
+          default.  It removes the 500K/1M cliff and keeps 100K throughput in
+          the ToyFull-selected range.  Keep aggressive compact as no-go/control.
   - Rejected preload probe:
       SourceBlockRoute exact-skip was tested with range-index, dynamic slot
       descriptor map, late register, behavior, and exact-skip.  It regressed
