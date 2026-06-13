@@ -30,9 +30,13 @@ comparability.
 | `midpagefront/hz5_midpagefront_m4_state.inc` | MidPage M4 slot-state/counter helper cluster | split out from `hz5_midpagefront.c`; keep include-local while the M4 magazine lane settles |
 | `midpagefront/hz5_midpagefront_m4_magazine.inc` | MidPage M4 local magazine/overflow helper cluster | split out from `hz5_midpagefront.c`; keep include-local while the M4 magazine lane settles |
 | `midpagefront/hz5_midpagefront_empty_release.inc` | MidPage empty-slab release and source-free helper cluster | split out from `hz5_midpagefront.c`; keep include-local while empty release policy settles |
+| `midpagefront/hz5_midpagefront_source_pages.inc` | MidPage region source refill and new-page initialization helpers | split out from `hz5_midpagefront.c`; keep include-local while source policy settles |
 | `midpagefront/hz5_midpagefront_m4_pagerun.inc` | MidPage M4 remote packet and PageRun helper cluster | split out from `hz5_midpagefront.c`; keep include-local while the pagerun profile settles |
+| `midpagefront/hz5_midpagefront_pagerun_alloc.inc` | MidPage PageRun refill/current allocation helpers | split out from `hz5_midpagefront.c`; keep include-local while the pagerun hot profile settles |
 | `midpagefront/hz5_midpagefront_nodeless.inc` | MidPage nodeless partial / ptrcache / hot-slot helpers | split out from `hz5_midpagefront.c`; keep include-local while the nodeless diagnostic lane settles |
+| `midpagefront/hz5_midpagefront_nodeless_alloc.inc` | MidPage nodeless refill/current allocation helpers | split out from `hz5_midpagefront.c`; keep include-local while the nodeless diagnostic lane settles |
 | `midpagefront/hz5_midpagefront_region.inc` | MidPage class / region / slot lookup helpers | split out from `hz5_midpagefront.c`; keep include-local while the lookup path settles |
+| `midpagefront/hz5_midpagefront_m4_refill.inc` | MidPage M4 magazine refill helper | split out from `hz5_midpagefront.c`; keep include-local while the M4 refill path settles |
 | `midpagefront/hz5_midpagefront_remote_queue.inc` | MidPage local pop, owner publish, and remote batch helpers | split out from `hz5_midpagefront.c`; keep include-local while remote queue policy settles |
 | `midpagefront/hz5_midpagefront_remote_drain.inc` | MidPage owner inbox drain helper | split out from `hz5_midpagefront.c`; keep include-local while drain policy settles |
 | `midpagefront/hz5_midpagefront_remote_experiments.inc` | MidPage M6/M7/M8/M10/M11 remote experiment helpers | split out from `hz5_midpagefront.c`; keep include-local while the remote experiment lanes settle |
@@ -119,10 +123,14 @@ LargeFront splits are `hz5_largefront_config.inc`, `hz5_largefront_state.inc`,
 `hz5_midpagefront_stats.inc`, plus the M4 slot-state helper cluster in
 `hz5_midpagefront_m4_state.inc`, plus the M4 local magazine/overflow helper
 cluster in `hz5_midpagefront_m4_magazine.inc`, plus the empty-slab release
-cluster in `hz5_midpagefront_empty_release.inc`, plus the M4 remote/PageRun
-cluster in `hz5_midpagefront_m4_pagerun.inc`, plus the nodeless diagnostic lane in
-`hz5_midpagefront_nodeless.inc`, plus the class/region/slot lookup helpers in
-`hz5_midpagefront_region.inc`, plus remote queue/drain helpers in
+cluster in `hz5_midpagefront_empty_release.inc`, plus the region source/new-page
+helpers in `hz5_midpagefront_source_pages.inc`, plus the M4 remote/PageRun
+cluster in `hz5_midpagefront_m4_pagerun.inc`, plus PageRun allocation helpers in
+`hz5_midpagefront_pagerun_alloc.inc`, plus the nodeless diagnostic lane in
+`hz5_midpagefront_nodeless.inc`, plus nodeless allocation helpers in
+`hz5_midpagefront_nodeless_alloc.inc`, plus the class/region/slot lookup helpers in
+`hz5_midpagefront_region.inc`, plus the M4 refill helper in
+`hz5_midpagefront_m4_refill.inc`, plus remote queue/drain helpers in
 `hz5_midpagefront_remote_queue.inc` and `hz5_midpagefront_remote_drain.inc`,
 plus the M6/M7/M8/M10/M11 remote experiment lane in
 `hz5_midpagefront_remote_experiments.inc`, and LowPage now keeps P43g helpers in
