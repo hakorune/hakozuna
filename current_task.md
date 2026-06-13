@@ -25,7 +25,7 @@ Audit:
 
 Current focus:
   keep HZ3 source modularization separate from allocator performance tuning.
-  next source candidates are hz3_inbox.c and hz3_tcache.c.
+  next source candidates are hz3_tcache.c and hz3_tcache_slowpath.inc.
 ```
 
 HZ6 is now in active Windows/Linux implementation and benchmarking. HZ5 Linux
