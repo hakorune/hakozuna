@@ -361,6 +361,13 @@
 #define HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT ((size_t)2)
 #endif
 
+#ifndef HZ6_MIDPAGE_ACTIVE_MAP_SHIFT12_INDEX_L1
+/* Candidate index for unaligned MidPage active-map slots.  The selected
+ * unaligned lane can use 4K-distinct pointers, so keep this as an A/B knob
+ * before changing the stable 8K-shift default. */
+#define HZ6_MIDPAGE_ACTIVE_MAP_SHIFT12_INDEX_L1 0
+#endif
+
 #ifndef HZ6_TOY_CLASS_ID_FAST_ALLOC_L1
 /* Default Toy alloc shortcut.  hz6_malloc() already selected class_id, so
  * Toy alloc can validate size against class bytes instead of classifying again. */
@@ -620,6 +627,19 @@
 /* Candidate-only LD_PRELOAD free shortcut.  Reuses the preload ownership route
  * in HZ6's internal free dispatch instead of routing again in hz6_free(). */
 #define HZ6_PRELOAD_FAST_FREE_L1 0
+#endif
+
+#ifndef HZ6_PRELOAD_MIDPAGE_ROUTE_REARM_L1
+/* Candidate preload-boundary shortcut.  When preload already found a local
+ * MidPage exact route, re-arm the MidPage active map so hz6_free() can consume
+ * the descriptor without repeating the full route path. */
+#define HZ6_PRELOAD_MIDPAGE_ROUTE_REARM_L1 0
+#endif
+
+#ifndef HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1
+/* Candidate preload-boundary shortcut.  Unlike HZ6_PRELOAD_FAST_FREE_L1, this
+ * only reuses preload's exact route for local MidPage frees. */
+#define HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1 0
 #endif
 
 #ifndef HZ6_PRELOAD_REALLOC_IN_PLACE_L1

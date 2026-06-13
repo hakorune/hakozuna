@@ -25,7 +25,11 @@ static inline int hz6_midpage_active_map_aligned(const void* ptr) {
 }
 
 static inline size_t hz6_midpage_active_map_index(const void* ptr) {
+#if HZ6_MIDPAGE_ACTIVE_MAP_SHIFT12_INDEX_L1
+  uintptr_t key = (uintptr_t)ptr >> 12u;
+#else
   uintptr_t key = (uintptr_t)ptr >> 13u;
+#endif
   key ^= key >> 16u;
   key *= (uintptr_t)0x9e3779b1U;
   key ^= key >> 13u;
