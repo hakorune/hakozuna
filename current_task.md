@@ -25,7 +25,7 @@ Audit:
 
 Current focus:
   keep HZ3 source modularization separate from allocator performance tuning.
-  next candidates are hz3_central.c and hz3_tcache_remote_stash.inc.
+  next source candidate is hz3_central.c.
 ```
 
 HZ6 is now in active Windows/Linux implementation and benchmarking. HZ5 Linux

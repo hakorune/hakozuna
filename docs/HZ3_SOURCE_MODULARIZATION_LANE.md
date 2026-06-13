@@ -12,6 +12,7 @@ Recent completed splits:
 0a26f0c Split HZ7 v2 v4 state helpers
 53856b1 Split HZ3 large cache policy helpers
 94ec8ec Split HZ3 large allocation paths
+this pass Split HZ3 remote stash helpers
 ```
 
 Current HZ3 cleanup result:
@@ -22,6 +23,9 @@ hakozuna/src/hz3_large_cache_policy.inc:
 
 hakozuna/src/hz3_large.c:
   2622 lines -> 63-line router plus focused helper includes
+
+hakozuna/src/hz3_tcache_remote_stash.inc:
+  1960 lines -> 12-line router plus focused helper includes
 ```
 
 The split is intentionally source-shape only. It should not change lane
@@ -37,7 +41,6 @@ Current next candidates:
 ```text
 P0:
   hakozuna/src/hz3_central.c
-  hakozuna/src/hz3_tcache_remote_stash.inc
 
 P1:
   hakozuna/src/hz3_inbox.c
