@@ -168,6 +168,327 @@ HZ6 Ubuntu LD_PRELOAD current pass:
     active-map capacity/probe tuning; look for a different Toy high cost
     center if targeting the 1024..4096 HZ4 gap.
 
+2026-06-13 next:
+  Preload1024_4096BoundaryAudit-L1
+
+  Goal:
+    Split the remaining 1024..4096 gap before changing behavior. The previous
+    active-map pass proved Toy free route lookup and Toy direct alloc/reuse are
+    already mostly handled, so the next diagnostic should distinguish:
+      malloc request size mix
+      realloc old-size/request-size mix
+      realloc copy pressure
+      source/front/route register pressure from existing preload stats
+
+  Implementation plan:
+    Add stats-only preload size buckets:
+      malloc_size_zero
+      malloc_size_le1024
+      malloc_size_1025_4096
+      malloc_size_4097_16384
+      malloc_size_gt16384
+      realloc_request_* buckets
+      realloc_owned_old_* buckets
+      realloc_copy_calls
+
+  Acceptance:
+    diagnostic-only when HZ6_PRELOAD_STATS is enabled
+    no selected/default behavior change
+    build_hz6_preload, build_hz6_benchmark, and R1 smokes pass
+    first diagnostic run on 1024..4096 captures the new bucket line
+
+  Implemented:
+    HZ6_PRELOAD_SIZE_STATS emits:
+      malloc_size_zero
+      malloc_size_le1024
+      malloc_size_1025_4096
+      malloc_size_4097_16384
+      malloc_size_gt16384
+      realloc_request_* buckets
+      realloc_owned_old_* buckets
+      realloc_copy_calls
+
+  First diagnostic:
+    raw:
+      private/raw-results/linux/hz6_preload_1024_4096_boundary_audit_20260613
+
+    default stats build:
+      malloc_size_le1024 = 648
+      malloc_size_1025_4096 = 2,000,519
+      malloc_size_4097_16384 = 162
+      malloc_size_gt16384 = 4
+      realloc_request_1025_4096 = 31,106
+      realloc_request_4097_16384 = 162
+      realloc_owned_old_1025_4096 = 31,260
+      realloc_copy_calls = 170
+
+    diagnostic-probes build:
+      source_alloc = 2,120
+      toy_source_alloc = 2,056
+      front_source_prefill_alloc = 33,424
+      route_register_probe_total = 38,861
+      route_lookup_probe_total = 40,641
+      frontcache_reuse_hit = 2,001,333
+      toy_small_active_map_free_hit = 1,995,311
+      free_local_route_valid = 5,855
+
+  Read:
+    The 1024..4096 row is almost entirely Toy high / class-4 traffic. Realloc
+    copy pressure is tiny, and source/register pressure exists but is not the
+    dominating cliff seen in earlier preload lanes. Active-map and direct reuse
+    remain highly effective. The next behavior candidate should target the
+    common Toy high frontcache activation/cache-push fixed cost or a local-page
+    metadata lane, not another active-map capacity/probe or realloc-copy tweak.
+
+2026-06-13 next:
+  ToyPreclassifiedMalloc-L1
+
+  Goal:
+    Remove avoidable front-registry/classification overhead from the hot
+    LD_PRELOAD Toy malloc row. For `size <= 4096`, the allocation front is
+    necessarily Toy under the current registry contract, with classes:
+      <=16 -> 0
+      <=64 -> 1
+      <=256 -> 2
+      <=1024 -> 3
+      <=4096 -> 4
+
+  Plan:
+    Add `HZ6_TOY_PRECLASSIFIED_MALLOC_L1`.
+    In `hz6_malloc`, directly assign Toy front + class for `size <= 4096`
+    before the generic `hz6_front_for_allocation()` path.
+    Keep all existing direct reuse, source miss, owner, and route behavior.
+
+  Acceptance:
+    build_hz6_preload passes
+    build_hz6_benchmark passes
+    build_hz6_r1_smokes passes
+    focused 1024..4096 LD_PRELOAD comparison does not regress correctness
+    compare throughput against the pre-change diagnostic baseline only as a
+    rough signal; stats builds are not speed-rankable.
+
+  Result:
+    raw:
+      private/raw-results/linux/hz6_toy_preclassified_malloc_r5_20260613
+
+    1024..4096, bench_mixed_ws_crt 4 1000000 8192 1024 4096, repeat 5:
+      off median = 37.549M ops/s
+      on median = 36.250M ops/s
+
+  Decision:
+    No-go for selected/default. Keep the implementation behind
+    `HZ6_TOY_PRECLASSIFIED_MALLOC_L1=0` as a cheap control knob, but do not
+    promote it. The generic registry branch is not the current Toy high
+    bottleneck; direct preclassification likely worsens branch/code layout more
+    than it saves.
+
+2026-06-13 next:
+  ToyActiveMapRegisterFastSlot-L1
+
+  Goal:
+    Trim the remaining Toy high malloc/free cycle fixed cost where diagnostics
+    show frontcache reuse and Toy active-map free hits dominate. The active-map
+    register path currently always enters the bounded probe loop after hashing.
+
+  Plan:
+    Add `HZ6_TOY_ACTIVE_MAP_REGISTER_FAST_SLOT_L1`.
+    If the base slot is empty or already belongs to the same pointer, register
+    directly and return. If the base slot collides, keep the existing bounded
+    probe path starting at probe 1. This preserves fallback behavior: a missed
+    active-map entry still falls back to route lookup on free.
+
+  Acceptance:
+    build_hz6_preload passes
+    build_hz6_benchmark passes
+    build_hz6_r1_smokes passes
+    focused 1024..4096 LD_PRELOAD repeat does not regress versus default-off
+    control
+    `route_invalid`, `route_miss`, `alloc_fail`, and register failures remain
+    clean in stats diagnostics
+
+  Result:
+    raw:
+      private/raw-results/linux/hz6_toy_active_map_register_fastslot_r5_20260613
+
+    1024..4096, repeat 5:
+      off median = 34.566M ops/s
+      on median = 39.798M ops/s
+
+    Guard rows, repeat 3:
+      16..256:
+        off median = 56.458M ops/s
+        on median = 58.965M ops/s
+      16..4096:
+        off median = 36.738M ops/s
+        on median = 39.980M ops/s
+      4096..16384:
+        off median = 31.402M ops/s
+        on median = 31.257M ops/s
+
+    Stats guard, on / 1024..4096:
+      alloc_fail = 0
+      route_invalid = 0
+      route_miss = 0
+      route_register_fail = 0
+      source_block_exhausted = 0
+      descriptor_exhausted = 0
+
+  Decision:
+    Keep as selected Toy-high candidate/default for now. The win is large on
+    1024..4096 and positive on 16..4096 / 16..256. The 4096..16384 guard is a
+    small non-Toy-adjacent wobble and should be monitored in the next matrix,
+    but it is not enough to reject a Toy-focused fast path.
+
+  Repeat-5 matrix:
+    raw:
+      private/raw-results/linux/hz6_toy_active_map_register_fastslot_matrix_r5_20260613
+
+    16..256:
+      off median = 56.125M ops/s
+      on median = 57.274M ops/s
+      ratio = 1.0205x
+    16..1024:
+      off median = 46.783M ops/s
+      on median = 53.130M ops/s
+      ratio = 1.1357x
+    16..4096:
+      off median = 36.871M ops/s
+      on median = 40.206M ops/s
+      ratio = 1.0905x
+    1024..4096:
+      off median = 34.676M ops/s
+      on median = 39.971M ops/s
+      ratio = 1.1527x
+    4096..16384:
+      off median = 31.638M ops/s
+      on median = 31.188M ops/s
+      ratio = 0.9858x
+
+  Matrix read:
+    The Toy rows are stable enough to keep fast-slot selected. The 4096..16384
+    row has a small repeatable guard wobble, likely from the inclusive 4096
+    boundary and/or code layout. Keep watching it while attacking the Toy
+    malloc reuse fixed cost.
+
+2026-06-13 next:
+  DirectLocalReuseRawPop-L1
+
+  Goal:
+    Trim a wrapper call/check from the direct local reuse hot path. The selected
+    Toy rows are dominated by frontcache reuse, so `hz6_allocator_frontcache_pop`
+    fixed cost is a plausible remaining center.
+
+  Plan:
+    Add `HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1`.
+    In non-diagnostic builds only, direct-pop from `allocator->frontcache_bins`.
+    Diagnostic builds keep `hz6_allocator_frontcache_pop()` to preserve
+    highwater and empty-bin counters.
+
+  Acceptance:
+    build_hz6_preload passes
+    build_hz6_benchmark passes
+    build_hz6_r1_smokes passes
+    focused Toy rows improve or stay flat
+    4096..16384 guard does not materially worsen
+
+  Result:
+    raw:
+      private/raw-results/linux/hz6_direct_local_reuse_rawpop_r5_20260613
+
+    Fast-slot selected, raw-pop off/on repeat 5:
+      16..256:
+        off median = 58.264M ops/s
+        on median = 59.586M ops/s
+        ratio = 1.0227x
+      16..1024:
+        off median = 53.242M ops/s
+        on median = 52.079M ops/s
+        ratio = 0.9782x
+      16..4096:
+        off median = 39.606M ops/s
+        on median = 39.124M ops/s
+        ratio = 0.9878x
+      1024..4096:
+        off median = 39.699M ops/s
+        on median = 36.341M ops/s
+        ratio = 0.9154x
+      4096..16384:
+        off median = 31.374M ops/s
+        on median = 29.865M ops/s
+        ratio = 0.9519x
+
+    Stats guard, on / 1024..4096:
+      alloc_fail = 0
+      route_invalid = 0
+      route_miss = 0
+      route_register_fail = 0
+      source_block_exhausted = 0
+      descriptor_exhausted = 0
+
+  Decision:
+    No-go. Keep `HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1=0`. The direct pop likely
+    changes code layout / wrapper inlining more than it saves, and the target
+    1024..4096 row regresses too much.
+
+2026-06-13 next:
+  ToyActiveMapFreeFastSlot-L1
+
+  Goal:
+    Apply the successful active-map base-slot idea to free lookup. The common
+    Toy free path should find the pointer at the hashed base slot after the
+    register fast-slot path inserted it there.
+
+  Plan:
+    Add `HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1`.
+    Check base slot first. If it matches, skip the bounded probe loop. If not,
+    use the existing bounded probe path starting at probe 1.
+
+  Acceptance:
+    build_hz6_preload passes
+    build_hz6_benchmark passes
+    build_hz6_r1_smokes passes
+    Toy rows improve or stay flat versus free-fast-slot off
+    stats guard remains clean
+
+  Result:
+    raw:
+      private/raw-results/linux/hz6_toy_active_map_free_fastslot_r5_20260613
+
+    Register fast-slot selected, raw-pop off, free-fast-slot off/on repeat 5:
+      16..256:
+        off median = 56.641M ops/s
+        on median = 58.272M ops/s
+        ratio = 1.0288x
+      16..1024:
+        off median = 53.143M ops/s
+        on median = 52.802M ops/s
+        ratio = 0.9936x
+      16..4096:
+        off median = 40.081M ops/s
+        on median = 39.623M ops/s
+        ratio = 0.9886x
+      1024..4096:
+        off median = 39.325M ops/s
+        on median = 39.264M ops/s
+        ratio = 0.9984x
+      4096..16384:
+        off median = 30.791M ops/s
+        on median = 30.849M ops/s
+        ratio = 1.0019x
+
+    Stats guard, on / 1024..4096:
+      alloc_fail = 0
+      route_invalid = 0
+      route_miss = 0
+      route_register_fail = 0
+      source_block_exhausted = 0
+      descriptor_exhausted = 0
+
+  Decision:
+    No-go for selected/default. Keep `HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1=0`.
+    The register-side fast slot is valuable; the free-side base precheck does
+    not pay on the target row and slightly hurts the broad Toy row.
+
 2026-06-13 update:
   Re-ran the selected LD_PRELOAD default bundle after
   PreloadReallocInPlace-L1 against hz6/mimalloc/tcmalloc/system.

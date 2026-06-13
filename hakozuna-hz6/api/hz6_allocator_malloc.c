@@ -5,6 +5,25 @@
 
 #include "../fronts/hz6_front.h"
 #include "../fronts/hz6_front_util.h"
+#include "../fronts/toy/hz6_toy_front.h"
+
+#if HZ6_TOY_PRECLASSIFIED_MALLOC_L1
+static uint16_t hz6_allocator_toy_class_for_small_size(size_t size) {
+  if (size <= 16u) {
+    return 0;
+  }
+  if (size <= 64u) {
+    return 1;
+  }
+  if (size <= 256u) {
+    return 2;
+  }
+  if (size <= 1024u) {
+    return 3;
+  }
+  return 4;
+}
+#endif
 
 #if HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1 || HZ6_LOCAL_CACHE_DIRECT_REUSE_L1
 static int hz6_allocator_direct_local_alloc_front_eligible(
@@ -19,6 +38,24 @@ static int hz6_allocator_direct_local_alloc_front_eligible(
 #endif
 
 #if HZ6_LOCAL_CACHE_DIRECT_REUSE_L1
+static int hz6_allocator_direct_local_reuse_pop(Hz6Allocator* allocator,
+                                                uint16_t class_id,
+                                                Hz6FrontCacheEntry* out) {
+#if HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1 && !HZ6_DIAGNOSTIC_PROBES
+  if (!allocator || !out || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
+    return 0;
+  }
+  Hz6FrontCacheBin* bin = &allocator->frontcache_bins[class_id];
+  if (!bin->entries || bin->count == 0) {
+    return 0;
+  }
+  *out = bin->entries[--bin->count];
+  return 1;
+#else
+  return hz6_allocator_frontcache_pop(allocator, class_id, out);
+#endif
+}
+
 static void* hz6_allocator_direct_local_reuse(Hz6Allocator* allocator,
                                               uint16_t class_id,
                                               Hz6ObjectDescriptor**
@@ -31,7 +68,7 @@ static void* hz6_allocator_direct_local_reuse(Hz6Allocator* allocator,
   }
 
   Hz6FrontCacheEntry entry;
-  while (hz6_allocator_frontcache_pop(allocator, class_id, &entry)) {
+  while (hz6_allocator_direct_local_reuse_pop(allocator, class_id, &entry)) {
     if (!entry.descriptor) {
       (void)hz6_allocator_frontcache_push(allocator, class_id, entry);
       return NULL;
@@ -104,7 +141,16 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
   }
 
   uint16_t class_id = 0;
-  const Hz6FrontOps* front = hz6_front_for_allocation(size, 16, &class_id);
+  const Hz6FrontOps* front = NULL;
+#if HZ6_TOY_PRECLASSIFIED_MALLOC_L1
+  if (size <= 4096u) {
+    class_id = hz6_allocator_toy_class_for_small_size(size);
+    front = hz6_toy_front_ops();
+  } else
+#endif
+  {
+    front = hz6_front_for_allocation(size, 16, &class_id);
+  }
   if (!front || !front->alloc) {
     ++allocator->stats.alloc_fail;
     return NULL;

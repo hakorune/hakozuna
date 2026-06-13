@@ -314,6 +314,19 @@
 #define HZ6_TOY_SMALL_ACTIVE_MAP_TRUSTED_OWNER_L1 1
 #endif
 
+#ifndef HZ6_TOY_ACTIVE_MAP_REGISTER_FAST_SLOT_L1
+/* Candidate Toy active-map register shortcut.  The common insert/update case
+ * lands on an empty or same-pointer base slot; collision cases keep the normal
+ * bounded probe path. */
+#define HZ6_TOY_ACTIVE_MAP_REGISTER_FAST_SLOT_L1 1
+#endif
+
+#ifndef HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1
+/* No-go Toy active-map free shortcut.  Base-slot-first lookup was neutral on
+ * 1024..4096 and regressed 16..4096, so keep the loop shape as default. */
+#define HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1 0
+#endif
+
 #ifndef HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2
 /* Candidate-only MidPage free shortcut.  Keep separate from the Toy active map
  * so MidPage can use an alignment gate and class-specific capacity. */
@@ -345,6 +358,13 @@
 /* Default Toy alloc shortcut.  hz6_malloc() already selected class_id, so
  * Toy alloc can validate size against class bytes instead of classifying again. */
 #define HZ6_TOY_CLASS_ID_FAST_ALLOC_L1 1
+#endif
+
+#ifndef HZ6_TOY_PRECLASSIFIED_MALLOC_L1
+/* Candidate Toy malloc shortcut.  The allocation registry maps every
+ * size <= 4096 and align <= 16 to Toy classes 0..4, but the direct branch
+ * regressed the focused 1024..4096 preload row, so keep it off by default. */
+#define HZ6_TOY_PRECLASSIFIED_MALLOC_L1 0
 #endif
 
 #ifndef HZ6_TOY_FULL_BLOCK_PREFILL_L1
@@ -507,6 +527,13 @@
 
 #ifndef HZ6_LOCAL_CACHE_DIRECT_REUSE_L1
 #define HZ6_LOCAL_CACHE_DIRECT_REUSE_L1 1
+#endif
+
+#ifndef HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1
+/* No-go direct-reuse shortcut.  Direct bin pop looked cheaper in isolation but
+ * regressed focused preload rows, likely through code layout / wrapper inlining
+ * effects. Keep the wrapper path as default. */
+#define HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1 0
 #endif
 
 #ifndef HZ6_LOCAL_CACHE_DIRECT_MAX_CLASS

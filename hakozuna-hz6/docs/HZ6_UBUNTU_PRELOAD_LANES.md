@@ -90,6 +90,27 @@ selected mixed_ws preload rows, but this is not a universal allocator win.
 Present it as the current Ubuntu HZ6 LD_PRELOAD selected/default lane.
 ```
 
+`HZ6_TOY_PRECLASSIFIED_MALLOC_L1` exists as a gated control/no-go candidate,
+not as selected default. It bypasses generic front-registry classification for
+`size <= 4096`, but the focused `1024..4096` preload A/B regressed versus the
+registry path. Keep default off unless a broader repeat reverses that result.
+
+`HZ6_TOY_ACTIVE_MAP_REGISTER_FAST_SLOT_L1` is the current Toy high candidate.
+It only short-circuits active-map registration when the hashed base slot is
+empty or already matches the pointer; collision cases keep the prior bounded
+probe path. Focused repeat showed the main `1024..4096` preload row improving
+from `34.566M` to `39.798M ops/s`, with clean stats guards. Keep watching the
+`4096..16384` guard row because it was roughly flat/slightly down in the first
+short repeat.
+
+`HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1` is a no-go control. It bypassed the
+allocator frontcache-pop wrapper only in non-diagnostic direct-reuse builds, but
+repeat-5 regressed `1024..4096` from `39.699M` to `36.341M ops/s`. Keep it off.
+
+`HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1` is a no-go control. It checks the hashed
+base slot before the Toy active-map free probe loop, but repeat-5 was neutral
+on `1024..4096` and regressed `16..4096`; keep it off.
+
 HZ3/HZ4 comparison read:
 
 | Row | hz6 | hz3 | hz4 | Read |
@@ -187,7 +208,14 @@ Useful lines:
 [HZ6_PRELOAD_ROUTE_DETAIL]
 [HZ6_PRELOAD_FRONT_DETAIL]
 [HZ6_PRELOAD_PHASE_STATS]
+[HZ6_PRELOAD_SIZE_STATS]
 ```
+
+`[HZ6_PRELOAD_SIZE_STATS]` is the 1024..4096 boundary audit line. It is
+diagnostic-only and splits malloc/realloc requests into `<=1024`,
+`1025..4096`, `4097..16384`, and `>16384` buckets, plus owned old-size
+realloc buckets and realloc copy calls. Use it with the existing route/source
+and phase lines before changing Toy/MidPage boundary behavior.
 
 Use diagnostic builds when detailed probe counters are needed:
 
@@ -221,6 +249,12 @@ private/raw-results/linux/hz6_toy_high_alloc_path_diag_20260613
 private/raw-results/linux/hz6_toy_active_map_tune_r5_20260613
 private/raw-results/linux/hz6_toy_active_map_cap16_r5_20260613
 private/raw-results/linux/hz6_clean_rebuild_default_matrix_guard_r5_20260613
+private/raw-results/linux/hz6_preload_1024_4096_boundary_audit_20260613
+private/raw-results/linux/hz6_toy_preclassified_malloc_r5_20260613
+private/raw-results/linux/hz6_toy_active_map_register_fastslot_r5_20260613
+private/raw-results/linux/hz6_toy_active_map_register_fastslot_matrix_r5_20260613
+private/raw-results/linux/hz6_direct_local_reuse_rawpop_r5_20260613
+private/raw-results/linux/hz6_toy_active_map_free_fastslot_r5_20260613
 ```
 
 Storage rule:

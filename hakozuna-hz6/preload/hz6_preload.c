@@ -57,6 +57,11 @@ typedef struct Hz6PreloadPhaseStats {
   _Atomic(size_t) malloc_calls;
   _Atomic(size_t) malloc_hz6_success;
   _Atomic(size_t) malloc_real_fallback;
+  _Atomic(size_t) malloc_size_zero;
+  _Atomic(size_t) malloc_size_le1024;
+  _Atomic(size_t) malloc_size_1025_4096;
+  _Atomic(size_t) malloc_size_4097_16384;
+  _Atomic(size_t) malloc_size_gt16384;
   _Atomic(size_t) calloc_calls;
   _Atomic(size_t) free_calls;
   _Atomic(size_t) free_null;
@@ -72,7 +77,18 @@ typedef struct Hz6PreloadPhaseStats {
   _Atomic(size_t) realloc_owned;
   _Atomic(size_t) realloc_in_place;
   _Atomic(size_t) realloc_real_fallback;
+  _Atomic(size_t) realloc_copy_calls;
   _Atomic(size_t) realloc_copy_bytes;
+  _Atomic(size_t) realloc_request_zero;
+  _Atomic(size_t) realloc_request_le1024;
+  _Atomic(size_t) realloc_request_1025_4096;
+  _Atomic(size_t) realloc_request_4097_16384;
+  _Atomic(size_t) realloc_request_gt16384;
+  _Atomic(size_t) realloc_owned_old_zero;
+  _Atomic(size_t) realloc_owned_old_le1024;
+  _Atomic(size_t) realloc_owned_old_1025_4096;
+  _Atomic(size_t) realloc_owned_old_4097_16384;
+  _Atomic(size_t) realloc_owned_old_gt16384;
   _Atomic(size_t) malloc_usable_size_calls;
   _Atomic(size_t) malloc_usable_size_owned;
   _Atomic(size_t) malloc_usable_size_real_fallback;
@@ -95,6 +111,26 @@ static void hz6_preload_phase_add(_Atomic(size_t)* counter, size_t value) {
 
 static size_t hz6_preload_phase_load(const _Atomic(size_t)* counter) {
   return atomic_load_explicit(counter, memory_order_relaxed);
+}
+
+static void hz6_preload_phase_count_size_bucket(
+    size_t size,
+    _Atomic(size_t)* zero,
+    _Atomic(size_t)* le1024,
+    _Atomic(size_t)* range1025_4096,
+    _Atomic(size_t)* range4097_16384,
+    _Atomic(size_t)* gt16384) {
+  if (size == 0) {
+    hz6_preload_phase_count(zero);
+  } else if (size <= 1024u) {
+    hz6_preload_phase_count(le1024);
+  } else if (size <= 4096u) {
+    hz6_preload_phase_count(range1025_4096);
+  } else if (size <= 16384u) {
+    hz6_preload_phase_count(range4097_16384);
+  } else {
+    hz6_preload_phase_count(gt16384);
+  }
 }
 
 __attribute__((constructor)) static void hz6_preload_on_load(void) {
@@ -642,6 +678,54 @@ static void hz6_preload_print_stats(void) {
           hz6_preload_phase_load(
               &g_hz6_preload_phase_stats.malloc_usable_size_real_fallback));
 
+  fprintf(stderr,
+          "[HZ6_PRELOAD_SIZE_STATS] "
+          "malloc_size_zero=%zu malloc_size_le1024=%zu "
+          "malloc_size_1025_4096=%zu malloc_size_4097_16384=%zu "
+          "malloc_size_gt16384=%zu "
+          "realloc_request_zero=%zu realloc_request_le1024=%zu "
+          "realloc_request_1025_4096=%zu "
+          "realloc_request_4097_16384=%zu "
+          "realloc_request_gt16384=%zu "
+          "realloc_owned_old_zero=%zu "
+          "realloc_owned_old_le1024=%zu "
+          "realloc_owned_old_1025_4096=%zu "
+          "realloc_owned_old_4097_16384=%zu "
+          "realloc_owned_old_gt16384=%zu "
+          "realloc_copy_calls=%zu\n",
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.malloc_size_zero),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.malloc_size_le1024),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.malloc_size_1025_4096),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.malloc_size_4097_16384),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.malloc_size_gt16384),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.realloc_request_zero),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.realloc_request_le1024),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.realloc_request_1025_4096),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.realloc_request_4097_16384),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.realloc_request_gt16384),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.realloc_owned_old_zero),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.realloc_owned_old_le1024),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.realloc_owned_old_1025_4096),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.realloc_owned_old_4097_16384),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.realloc_owned_old_gt16384),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.realloc_copy_calls));
+
   if (print_per_allocator) {
     pthread_mutex_lock(&g_hz6_preload_allocator_registry_mutex);
     for (size_t i = 0; i < g_hz6_preload_allocator_registry_count; ++i) {
@@ -726,6 +810,13 @@ void* malloc(size_t size) {
     return hz6_preload_real_malloc(size);
   }
   hz6_preload_phase_count(&g_hz6_preload_phase_stats.malloc_calls);
+  hz6_preload_phase_count_size_bucket(
+      size,
+      &g_hz6_preload_phase_stats.malloc_size_zero,
+      &g_hz6_preload_phase_stats.malloc_size_le1024,
+      &g_hz6_preload_phase_stats.malloc_size_1025_4096,
+      &g_hz6_preload_phase_stats.malloc_size_4097_16384,
+      &g_hz6_preload_phase_stats.malloc_size_gt16384);
   g_hz6_preload_reentry = 1;
   Hz6Allocator* allocator = hz6_preload_allocator();
   void* ptr = allocator ? hz6_malloc(allocator, size) : NULL;
@@ -813,6 +904,13 @@ void* calloc(size_t nmemb, size_t size) {
 
 void* realloc(void* ptr, size_t size) {
   hz6_preload_phase_count(&g_hz6_preload_phase_stats.realloc_calls);
+  hz6_preload_phase_count_size_bucket(
+      size,
+      &g_hz6_preload_phase_stats.realloc_request_zero,
+      &g_hz6_preload_phase_stats.realloc_request_le1024,
+      &g_hz6_preload_phase_stats.realloc_request_1025_4096,
+      &g_hz6_preload_phase_stats.realloc_request_4097_16384,
+      &g_hz6_preload_phase_stats.realloc_request_gt16384);
   if (!ptr) {
     return malloc(size);
   }
@@ -840,6 +938,13 @@ void* realloc(void* ptr, size_t size) {
     return hz6_preload_real_realloc(ptr, size);
   }
   hz6_preload_phase_count(&g_hz6_preload_phase_stats.realloc_owned);
+  hz6_preload_phase_count_size_bucket(
+      old_size,
+      &g_hz6_preload_phase_stats.realloc_owned_old_zero,
+      &g_hz6_preload_phase_stats.realloc_owned_old_le1024,
+      &g_hz6_preload_phase_stats.realloc_owned_old_1025_4096,
+      &g_hz6_preload_phase_stats.realloc_owned_old_4097_16384,
+      &g_hz6_preload_phase_stats.realloc_owned_old_gt16384);
 #if HZ6_PRELOAD_REALLOC_IN_PLACE_L1
   if (size <= old_size) {
     hz6_preload_phase_count(&g_hz6_preload_phase_stats.realloc_in_place);
@@ -852,6 +957,7 @@ void* realloc(void* ptr, size_t size) {
     return NULL;
   }
   size_t copy_bytes = old_size < size ? old_size : size;
+  hz6_preload_phase_count(&g_hz6_preload_phase_stats.realloc_copy_calls);
   hz6_preload_phase_add(&g_hz6_preload_phase_stats.realloc_copy_bytes,
                         copy_bytes);
   memcpy(next, ptr, copy_bytes);
