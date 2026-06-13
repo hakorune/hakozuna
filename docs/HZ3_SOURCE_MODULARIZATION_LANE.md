@@ -21,6 +21,8 @@ this pass Split HZ3 arena helpers
 this pass Split HZ3 scale part8 config helpers
 this pass Split Windows benchmark HZ6 stats helpers
 this pass Split Windows PowerShell benchmark lane helpers
+this pass Archive long current task ledgers
+this pass Split large documentation references
 ```
 
 Current HZ3 cleanup result:
@@ -64,6 +66,15 @@ win/bench_app_like_allocator_build_common.ps1:
 
 win/run_win_hz6_capacity_matrix.ps1:
   1071 lines -> 831-line runner plus matrix helper functions
+
+current_task.md:
+  6383 lines -> short orientation ledger plus archived history
+
+hakozuna-hz6/docs/current_task.md:
+  15174 lines -> short orientation ledger plus archived history
+
+current large documentation references:
+  split so active, non-archive docs stay below the 1000-line audit threshold
 ```
 
 The split is intentionally source-shape only. It should not change lane
@@ -78,7 +89,7 @@ Current next candidates:
 
 ```text
 P0:
-  no current source/script file over 1000 lines in the default audit
+  no current source/script/doc file over 1000 lines in the active-file audit
 
 P1:
   linux/HZ3 or HZ5 helper scripts if they block active allocator work
@@ -88,9 +99,11 @@ P2:
   over 1000 lines in the audit top list
 ```
 
-Default large-source audit is clean. Future Windows PowerShell splits should
-continue to prefer dot-sourced helper modules over changing lane names or
-argument surfaces.
+Default large-source audit is clean. The active-file audit also excludes
+`*/archive/*`; archived history files may remain over 1000 lines because they
+are preserved evidence, not active orientation or implementation files.
+Future Windows PowerShell splits should continue to prefer dot-sourced helper
+modules over changing lane names or argument surfaces.
 
 ## Split Rules
 
