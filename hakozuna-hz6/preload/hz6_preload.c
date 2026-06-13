@@ -1,5 +1,6 @@
 #include "hz6_allocator.h"
 #include "hz6_allocator_api_init.h"
+#include "hz6_allocator_toy_small_diag.h"
 #include "linux_source_mmap.h"
 #include "hz6_profiles.h"
 
@@ -61,6 +62,7 @@ typedef struct Hz6PreloadPhaseStats {
   _Atomic(size_t) free_reentry_real;
   _Atomic(size_t) free_local_route_valid;
   _Atomic(size_t) free_visible_route_hit;
+  _Atomic(size_t) free_toy_active_map_hit;
   _Atomic(size_t) free_route_invalid;
   _Atomic(size_t) free_route_miss_real;
   _Atomic(size_t) free_prechecked_candidate;
@@ -552,8 +554,9 @@ static void hz6_preload_print_stats(void) {
           "malloc_hz6_success=%zu malloc_real_fallback=%zu "
           "calloc_calls=%zu free_calls=%zu free_null=%zu "
           "free_reentry_real=%zu free_local_route_valid=%zu "
-          "free_visible_route_hit=%zu free_route_invalid=%zu "
-          "free_route_miss_real=%zu free_prechecked_candidate=%zu "
+          "free_visible_route_hit=%zu free_toy_active_map_hit=%zu "
+          "free_route_invalid=%zu free_route_miss_real=%zu "
+          "free_prechecked_candidate=%zu "
           "realloc_calls=%zu realloc_owned=%zu realloc_real_fallback=%zu "
           "realloc_copy_bytes=%zu malloc_usable_size_calls=%zu "
           "malloc_usable_size_owned=%zu "
@@ -571,6 +574,8 @@ static void hz6_preload_print_stats(void) {
               &g_hz6_preload_phase_stats.free_local_route_valid),
           hz6_preload_phase_load(
               &g_hz6_preload_phase_stats.free_visible_route_hit),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.free_toy_active_map_hit),
           hz6_preload_phase_load(&g_hz6_preload_phase_stats.free_route_invalid),
           hz6_preload_phase_load(
               &g_hz6_preload_phase_stats.free_route_miss_real),
@@ -697,6 +702,12 @@ void free(void* ptr) {
   }
   g_hz6_preload_reentry = 1;
   Hz6Allocator* allocator = hz6_preload_allocator();
+  if (hz6_toy_small_active_map_try_free(allocator, ptr)) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_toy_active_map_hit);
+    g_hz6_preload_reentry = 0;
+    return;
+  }
   Hz6PreloadRoute preload_route = hz6_preload_route(allocator, ptr);
   if (preload_route.route.kind == HZ6_ROUTE_VALID ||
       preload_route.route.kind == HZ6_ROUTE_INVALID) {

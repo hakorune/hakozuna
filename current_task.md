@@ -103,6 +103,88 @@ HZ6 Ubuntu LD_PRELOAD current pass:
     overflow unregister/tombstone loop that 4096 still had. 16384 is flat enough
     to keep as a boundary control, not a default. Further route inline/code
     layout changes should wait for broader-row validation under the new default.
+
+  Broader validation after frontcache8192:
+    raw:
+      private/raw-results/linux/hz6_preload_fc8192_broader_20260613
+
+    16..256:
+      hz6 median 40.206M
+      mimalloc median 52.713M
+      tcmalloc median 257.153M
+
+    16..4096:
+      hz6 median 27.227M
+      mimalloc median 6.025M
+      tcmalloc median 88.643M
+
+    1024..4096:
+      hz6 median 21.353M
+      mimalloc median 4.834M
+      tcmalloc median 73.124M
+
+    4096..16384:
+      hz6 median 16.424M
+      mimalloc median 1.317M
+      tcmalloc median 43.045M
+
+  Read:
+    Frontcache8192 makes the Toy/Mid rows broadly functional, but 16..256 still
+    lagged mimalloc because the preload wrapper performed exact route lookup
+    before hz6_free() could use Toy active-map.
+
+  Implemented:
+    PreloadToyActiveFastFree-L1. LD_PRELOAD free now tries the allocator-local
+    Toy active-map before route lookup. The miss path remains unchanged and
+    still falls back to exact/visible route lookup, so foreign pointers remain
+    fail-closed.
+
+  Diagnostic:
+    raw:
+      private/raw-results/linux/hz6_preload_activefast_diag_20260613
+
+    16..256:
+      route_lookup_probe_total:
+        before ~= 2.12M
+        after  ~= 37.7K
+      free_toy_active_map_hit ~= 2.03M
+      free_local_route_valid  ~= 4.9K
+
+    16..4096:
+      route_lookup_probe_total ~= 42.5K
+      free_toy_active_map_hit ~= 2.02M
+
+  Activefast repeat/cross:
+    raw:
+      private/raw-results/linux/hz6_preload_activefast_r3_20260613
+      private/raw-results/linux/hz6_preload_activefast_cross_20260613
+
+    HZ6-only medians:
+      16..256:
+        53.389M
+      16..4096:
+        31.143M
+      1024..4096:
+        27.684M
+      4096..16384:
+        16.215M
+
+    Focused cross medians:
+      16..256:
+        hz6 53.883M
+        mimalloc 52.656M
+        tcmalloc 254.930M
+      16..4096:
+        hz6 34.559M
+        mimalloc 6.027M
+        tcmalloc 87.880M
+
+  Decision:
+    PreloadToyActiveFastFree-L1 is selected for Ubuntu LD_PRELOAD. It fixes the
+    wrapper-boundary issue where the internal Toy active-map was already
+    successful but could not avoid the preload-level route lookup. It does not
+    address the remaining 4096..16384 tcmalloc gap, which now points at
+    MidPage/source path rather than Toy/preload free routing.
 ```
 
 Latest HZ6 Ubuntu hot-path tuning:

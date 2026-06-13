@@ -88,9 +88,11 @@ Ubuntu LD_PRELOAD status:
   Route/frontcache audit promoted frontcache8192 for the preload lane. It
   removes the frontcache-overflow unregister/tombstone churn seen at 4096 and
   raises the focused 1M mixed_ws guard to about 34M..35M. In the focused 1M
-  cross check it beats mimalloc, but remains far below tcmalloc/HZ3/HZ4. Keep
-  LD_PRELOAD conclusions separate from direct HZ6 API strength rows until
-  broader row validation catches up.
+  cross check it beats mimalloc, but remains far below tcmalloc/HZ3/HZ4.
+  PreloadToyActiveFastFree is also selected; it removes preload-level route
+  lookup before Toy active-map hits and makes the focused 16..256 row edge past
+  mimalloc. Keep LD_PRELOAD conclusions separate from direct HZ6 API strength
+  rows until broader row validation catches up.
 ```
 
 The side-owner16 descriptor layout lane is not selected. It is buildable as

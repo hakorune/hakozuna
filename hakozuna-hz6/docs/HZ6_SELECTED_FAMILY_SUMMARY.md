@@ -60,9 +60,12 @@ bin 8192 for preload: frontcache4096 first lifted the 1M guard from about
 unregister/tombstone churn and lifted the focused repeat-3 median to about
 34.2M.  In the focused 1M cross check, frontcache8192 put HZ6 above mimalloc
 (`hz6 35.343M` vs `mimalloc 30.609M`) while still far below tcmalloc/HZ3/HZ4.
-LD_PRELOAD is now a real Ubuntu performance lane, but it is still separate
-from direct HZ6 API strength rows and should be validated on broader rows before
-paper-facing promotion.
+The broader pass then selected PreloadToyActiveFastFree-L1: preload `free()`
+tries the Toy active-map before route lookup, dropping 16..256 diagnostic route
+probes from about 2.12M to about 37.7K and moving the focused 16..256 cross row
+to `hz6 53.883M` versus `mimalloc 52.656M`.  LD_PRELOAD is now a real Ubuntu
+performance lane, but it is still separate from direct HZ6 API strength rows
+and should be validated on broader rows before paper-facing promotion.
 
 ## Selected Rows
 
