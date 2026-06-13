@@ -104,6 +104,9 @@ Ubuntu LD_PRELOAD status:
   control; the earlier Toy-map widening is no-go evidence.
   PreloadReallocInPlace-L1 is selected after a repeat-5 control-off A/B
   improved every focused row and moved the 4096..16384 guard to about 30.12M.
+  MidPageActiveMapUnaligned-L2 plus probe4 is selected after the 4096..16384
+  phase guard moved MidPage active-map hits from 3,321 to 915,393 and the HZ4
+  close guard reached hz6 31.505M / 117,248 KB versus hz4 30.916M / 134,400 KB.
   Keep LD_PRELOAD conclusions separate from direct HZ6 API strength rows until
   broader row validation catches up.
 ```

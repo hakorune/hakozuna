@@ -16,7 +16,12 @@ static inline int hz6_midpage_active_map_eligible(uint16_t front_id,
 }
 
 static inline int hz6_midpage_active_map_aligned(const void* ptr) {
+#if HZ6_MIDPAGE_ACTIVE_FREE_MAP_UNALIGNED_L2
+  (void)ptr;
+  return 1;
+#else
   return (((uintptr_t)ptr) & (uintptr_t)(HZ6_MIDPAGE_8K_BYTES - 1u)) == 0u;
+#endif
 }
 
 static inline size_t hz6_midpage_active_map_index(const void* ptr) {

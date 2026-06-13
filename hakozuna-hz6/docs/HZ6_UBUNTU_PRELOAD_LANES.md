@@ -30,6 +30,8 @@ HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY=32768
 HZ6_MIDPAGE_RUN_BYTES=262144
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2=1
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_EXTERNAL_L2=1
+HZ6_MIDPAGE_ACTIVE_FREE_MAP_UNALIGNED_L2=1
+HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT=4
 HZ6_PRELOAD_REALLOC_IN_PLACE_L1=1
 HZ6_LINUX_MMAP_RETAIN_L1=1
 HZ6_LINUX_MMAP_RETAIN_64K_STACK_L1=1
@@ -77,6 +79,40 @@ selected mixed_ws preload rows, but this is not a universal allocator win.
 Present it as the current Ubuntu HZ6 LD_PRELOAD selected/default lane.
 ```
 
+HZ3/HZ4 comparison read:
+
+| Row | hz6 | hz3 | hz4 | Read |
+| --- | ---: | ---: | ---: | --- |
+| `16..256` | `56.028M` | `265.824M` | `224.971M` | HZ3/HZ4 are still architecture-fast here. |
+| `16..4096` | `36.843M` | `101.277M` | `57.714M` | HZ6 is about `0.64x` HZ4. |
+| `1024..4096` | `35.131M` | `91.406M` | `49.979M` | HZ6 is about `0.70x` HZ4. |
+| `4096..16384` old default | `29.409M` | `74.802M` | `31.089M` | HZ6 was about `0.95x` HZ4 and had the clearest close target. |
+| `4096..16384` MidPage unaligned/probe4 | `31.505M` | n/a | `30.916M` | HZ6 now edges HZ4 while keeping lower RSS. |
+
+Architecture read:
+
+```text
+HZ3/HZ4:
+  page/segment metadata first
+  thin TLS/tcache local path
+  class/owner recovery without HZ6 route descriptors in the common path
+
+HZ6:
+  explicit RouteLayer / descriptor / SourceLayer / FrontCache contracts
+  stronger VALID / INVALID / MISS separation
+  better scoped RSS and safety boundaries, but more hot-path work
+
+Near-term target:
+  close/beat HZ4 on 4096..16384 while keeping HZ6 RSS below HZ4.
+  MidPageActiveMapUnaligned-L2 + probe4 reaches this on the latest guard:
+    hz6 31.505M / 117,248 KB
+    hz4 30.916M / 134,400 KB
+
+Longer-term target:
+  design a local-page/run metadata fast lane if HZ6 must chase HZ3/HZ4 tiny
+  object rows. Do not blur that with the current descriptor-first default lane.
+```
+
 ## Promotion History
 
 | Stage | Decision | Evidence |
@@ -91,6 +127,7 @@ Present it as the current Ubuntu HZ6 LD_PRELOAD selected/default lane.
 | MidPage run 256K | `HZ6_MIDPAGE_RUN_BYTES=262144` | 4096..16384 repeat-3 moved from `16.549M` to `19.394M` with flat RSS. |
 | External MidPage active map | `HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2=1`, external, cap8192/probe2 | Repeat-7 versus no-map moved 1024..4096 from `30.962M` to `32.011M` and 4096..16384 from `18.983M` to `19.903M`. |
 | Realloc in-place | `HZ6_PRELOAD_REALLOC_IN_PLACE_L1=1` | Repeat-5 versus control-off moved 16..256 `50.810M -> 55.313M`, 16..4096 `33.867M -> 36.556M`, 1024..4096 `31.473M -> 34.678M`, and 4096..16384 `19.971M -> 30.118M`. |
+| MidPage unaligned/probe4 | `HZ6_MIDPAGE_ACTIVE_FREE_MAP_UNALIGNED_L2=1`, probe4 | 4096..16384 active-map hits moved from `3,321` to `915,393`; repeat-5 HZ4 guard reached `hz6 31.505M` vs `hz4 30.916M` with lower HZ6 RSS. |
 
 ## Selected Controls
 
@@ -101,6 +138,8 @@ Keep these controls available when changing the preload lane:
 | no MidPage active map | Direct control for `HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2`. |
 | internal MidPage active map | MidPage-only upper-bound; repeat-7 4096..16384 reached `20.504M`, but balanced locality was worse than external storage. |
 | MidPage run 512K | MidPage-specialized source-churn upper-bound; improves 4096..16384 but regresses 16..4096. |
+| `HZ6_MIDPAGE_ACTIVE_FREE_MAP_UNALIGNED_L2=0` | Direct control for MidPage active-map 8K-alignment gating. |
+| `HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT=2` | Balanced control for the selected probe4 MidPage active map. Probe2 is slightly better on 1024..4096 but weaker on the HZ4-close 4096..16384 target. |
 | frontcache 16384 | Boundary for frontcache8192; flat enough not to promote. |
 | route table 262144 | Capacity upper-bound; not selected by current evidence. |
 | `HZ6_PRELOAD_REALLOC_IN_PLACE_L1=0` | Direct control for preload realloc in-place. |
@@ -159,6 +198,11 @@ private/raw-results/linux/hz6_preload_midmap_external_diag_20260613
 private/raw-results/linux/hz6_preload_realloc_audit_20260613
 private/raw-results/linux/hz6_preload_realloc_inplace_ab_r5_20260613
 private/raw-results/linux/hz6_preload_realloc_cross_r5_20260613
+private/raw-results/linux/hz6_preload_vs_hz3_hz4_r5_20260613
+private/raw-results/linux/hz6_midpage_hz4close_diag_20260613
+private/raw-results/linux/hz6_midpage_unaligned_ab_r5_20260613
+private/raw-results/linux/hz6_midpage_probe4_ab_r5_20260613
+private/raw-results/linux/hz6_midpage_probe4_hz4_guard_r5_20260613
 ```
 
 Storage rule:

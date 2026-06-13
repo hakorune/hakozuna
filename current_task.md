@@ -20,6 +20,103 @@ remains profile-stabilized; new HZ5 work should not blur the HZ6 contract.
 HZ6 Ubuntu LD_PRELOAD current pass:
 
 ```text
+2026-06-13 HZ3/HZ4 architecture comparison:
+  Raw:
+    private/raw-results/linux/hz6_preload_vs_hz3_hz4_r5_20260613
+
+  Repeat-5 medians:
+    16..256:
+      hz6 56.028M / hz3 265.824M / hz4 224.971M
+      hz6/hz3 = 0.211, hz6/hz4 = 0.249
+    16..4096:
+      hz6 36.843M / hz3 101.277M / hz4 57.714M
+      hz6/hz3 = 0.364, hz6/hz4 = 0.638
+    1024..4096:
+      hz6 35.131M / hz3 91.406M / hz4 49.979M
+      hz6/hz3 = 0.384, hz6/hz4 = 0.703
+    4096..16384:
+      hz6 29.409M / hz3 74.802M / hz4 31.089M
+      hz6/hz3 = 0.393, hz6/hz4 = 0.946
+
+  Worker read:
+    HZ3 wins mostly through architecture, not a missing single HZ6 knob.
+    HZ3/HZ4 recover class/owner from page/segment metadata and keep the common
+    local-cache path flat. HZ6 intentionally pays route/descriptor/source/front
+    contract costs to keep VALID/INVALID/MISS, owner, transfer, and RSS
+    boundaries explicit.
+
+  Bridgeability:
+    - HZ4 on 4096..16384 is within reach. HZ6 is already near parity while
+      keeping lower RSS than HZ4 in the latest guard.
+    - HZ4 on 1024..4096 is plausible but needs MidPage/Toy-boundary work.
+    - HZ3 on 16..256 requires a new local-page/run metadata fast lane. Tuning
+      the current descriptor-first path is unlikely to close that gap.
+
+  Next implementation target:
+    MidPageHz4Close-L1:
+      first instrument the selected 4096..16384 path around MidPage active-map
+      hit/miss/cache-fail and route fallback pressure, then thin the highest
+      confirmed hot edge. Avoid repeating the old PRELOAD_FAST_FREE attempt
+      unless the new diagnostic proves duplicated route dispatch is back on the
+      hot path.
+
+  Implemented:
+    MidPageActiveMapUnaligned-L2:
+      HZ6_MIDPAGE_ACTIVE_FREE_MAP_UNALIGNED_L2=1 for LD_PRELOAD.
+      The MidPage active map now accepts exact pointers even when the mmap run
+      base is only page-aligned rather than naturally 8K-aligned. Exact pointer
+      match plus descriptor pointer/generation/class/state validation remains
+      required before bypassing route lookup.
+
+    MidPage active-map probe4:
+      HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT=4 for LD_PRELOAD.
+
+  Diagnostic:
+    raw:
+      private/raw-results/linux/hz6_midpage_hz4close_diag_20260613
+
+    4096..16384 phase stats:
+      before unaligned:
+        free_midpage_active_map_hit = 3,321
+        free_local_route_valid      = 997,200
+      after unaligned:
+        free_midpage_active_map_hit = 915,393
+        free_local_route_valid      = 85,128
+
+  A/B:
+    raw:
+      private/raw-results/linux/hz6_midpage_unaligned_ab_r5_20260613
+      private/raw-results/linux/hz6_midpage_probe4_ab_r5_20260613
+
+    unaligned on versus control-off:
+      4096..16384: 27.011M -> 30.373M (+12.45%)
+      1024..4096: 34.833M -> 37.564M (+7.84%)
+
+    probe4 versus probe2:
+      4096..16384: 30.282M -> 31.386M (+3.64%)
+      1024..4096: 37.900M -> 37.398M (-1.32%)
+
+  HZ4 close guard:
+    raw:
+      private/raw-results/linux/hz6_midpage_probe4_hz4_guard_r5_20260613
+
+    4096..16384:
+      hz6 31.505M / 117,248 KB
+      hz4 30.916M / 134,400 KB
+      hz6/hz4 = 1.019
+
+    1024..4096:
+      hz6 34.504M / 180,736 KB
+      hz4 49.265M / 103,296 KB
+      hz6/hz4 = 0.700
+
+  Decision:
+    Select MidPageActiveMapUnaligned-L2 plus probe4 for the Ubuntu LD_PRELOAD
+    default bundle. This achieves the near-term goal on 4096..16384: HZ6 now
+    beats HZ4 on median throughput while keeping lower RSS. Keep the claim
+    scoped; 1024..4096 still needs separate work and HZ3/tcmalloc remain much
+    faster.
+
 2026-06-13 update:
   Re-ran the selected LD_PRELOAD default bundle after
   PreloadReallocInPlace-L1 against hz6/mimalloc/tcmalloc/system.

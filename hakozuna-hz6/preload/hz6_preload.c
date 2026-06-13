@@ -64,6 +64,7 @@ typedef struct Hz6PreloadPhaseStats {
   _Atomic(size_t) free_local_route_valid;
   _Atomic(size_t) free_visible_route_hit;
   _Atomic(size_t) free_toy_active_map_hit;
+  _Atomic(size_t) free_midpage_active_map_hit;
   _Atomic(size_t) free_route_invalid;
   _Atomic(size_t) free_route_miss_real;
   _Atomic(size_t) free_prechecked_candidate;
@@ -598,6 +599,7 @@ static void hz6_preload_print_stats(void) {
           "calloc_calls=%zu free_calls=%zu free_null=%zu "
           "free_reentry_real=%zu free_local_route_valid=%zu "
           "free_visible_route_hit=%zu free_toy_active_map_hit=%zu "
+          "free_midpage_active_map_hit=%zu "
           "free_route_invalid=%zu free_route_miss_real=%zu "
           "free_prechecked_candidate=%zu "
           "realloc_calls=%zu realloc_owned=%zu realloc_in_place=%zu "
@@ -620,6 +622,8 @@ static void hz6_preload_print_stats(void) {
               &g_hz6_preload_phase_stats.free_visible_route_hit),
           hz6_preload_phase_load(
               &g_hz6_preload_phase_stats.free_toy_active_map_hit),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.free_midpage_active_map_hit),
           hz6_preload_phase_load(&g_hz6_preload_phase_stats.free_route_invalid),
           hz6_preload_phase_load(
               &g_hz6_preload_phase_stats.free_route_miss_real),
@@ -754,6 +758,8 @@ void free(void* ptr) {
     return;
   }
   if (hz6_midpage_active_map_try_free(allocator, ptr)) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_midpage_active_map_hit);
     g_hz6_preload_reentry = 0;
     return;
   }

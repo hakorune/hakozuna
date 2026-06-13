@@ -326,6 +326,13 @@
 #define HZ6_MIDPAGE_ACTIVE_FREE_MAP_EXTERNAL_L2 0
 #endif
 
+#ifndef HZ6_MIDPAGE_ACTIVE_FREE_MAP_UNALIGNED_L2
+/* Allow MidPage active-map entries for slots whose mmap run base is not
+ * naturally 8K aligned.  Exact pointer and descriptor generation/state
+ * validation still guard the hit path. */
+#define HZ6_MIDPAGE_ACTIVE_FREE_MAP_UNALIGNED_L2 0
+#endif
+
 #ifndef HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY
 #define HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY ((size_t)8192)
 #endif
