@@ -88,13 +88,16 @@ versus control-off moved 16..256 `50.810M -> 55.313M`, 16..4096
 for the preload bundle: the 4096..16384 phase guard moved
 `free_midpage_active_map_hit` from `3,321` to `915,393`, and the HZ4 close guard
 reached `hz6 31.505M / 117,248 KB` versus `hz4 30.916M / 134,400 KB`.
-Follow-up active-map capacity/probe/code-shape tuning selected no further code
-change; Toy capacity 65536/16384, Toy probe8, and active-map slot-index helper
-shapes remain no-go/control evidence.
-The follow-up selected cross repeat-5 puts HZ6 ahead of
-mimalloc on all four preload mixed_ws rows: 16..256 `55.196M` vs `53.028M`,
-16..4096 `36.376M` vs `5.954M`, 1024..4096 `34.296M` vs `4.834M`, and
-4096..16384 `26.852M` vs `1.307M`.  tcmalloc remains higher throughput on the
+The later resume pass promotes MidPage active-map capacity 16384 with probe4:
+current 4096..16384 focused repeat-5 held `27.067M` versus pre-promotion
+default `25.908M`, and cross repeat-3 held `27.752M` with about `+0.6MB` RSS.
+Cap32K and cap16K probe2/probe8 remain controls/no-go;
+Toy capacity 65536/16384, Toy probe8, and active-map slot-index helper shapes
+remain no-go/control evidence.
+The cap16K selected cross repeat-3 puts HZ6 ahead of mimalloc on all four
+preload mixed_ws rows: 16..256 `57.671M` vs `53.099M`, 16..4096 `39.382M` vs
+`5.873M`, 1024..4096 `38.497M` vs `4.858M`, and 4096..16384 `27.752M` vs
+`1.282M`.  tcmalloc remains higher throughput on the
 same rows, and system malloc still wins the tiny 16..256 row, so LD_PRELOAD is
 now a real Ubuntu performance lane but still separate from direct HZ6 API
 strength rows and not a universal allocator-win claim.

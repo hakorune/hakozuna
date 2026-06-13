@@ -32,6 +32,7 @@ HZ6_MIDPAGE_RUN_BYTES=262144
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2=1
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_EXTERNAL_L2=1
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_UNALIGNED_L2=1
+HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY=16384
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT=4
 HZ6_PRELOAD_REALLOC_IN_PLACE_L1=1
 HZ6_LINUX_MMAP_RETAIN_L1=1
@@ -63,23 +64,24 @@ Latest selected shape:
 
 | Row | Selected read |
 | --- | ---: |
-| `16..256` latest cross repeat-5 | `hz6 57.457M` vs `mimalloc 52.611M` |
-| `16..4096` latest cross repeat-5 | `hz6 39.975M` vs `mimalloc 5.961M` |
-| `1024..4096` latest cross repeat-5 | `hz6 38.776M` vs `mimalloc 4.840M` |
-| `4096..16384` latest cross repeat-5 | `hz6 30.796M` vs `mimalloc 1.301M` |
+| `16..256` cap16K cross repeat-3 | `hz6 57.671M` vs `mimalloc 53.099M` |
+| `16..4096` cap16K cross repeat-3 | `hz6 39.382M` vs `mimalloc 5.873M` |
+| `1024..4096` cap16K cross repeat-3 | `hz6 38.497M` vs `mimalloc 4.858M` |
+| `4096..16384` cap16K cross repeat-3 | `hz6 27.752M` vs `mimalloc 1.282M` |
+| `4096..16384` cap16K focused repeat-5 | `27.067M` vs pre-promotion default `25.908M` |
 | `1024..4096` external-map repeat-7 | `32.011M` |
 | `4096..16384` external-map repeat-7 | `19.903M` |
 | `1024..4096` realloc-in-place repeat-5 | `34.678M` |
 | `4096..16384` realloc-in-place repeat-5 | `30.118M` |
 
-Latest cross-allocator refresh, repeat-5, `bench_mixed_ws_crt`:
+Latest cross-allocator refresh, repeat-3, `bench_mixed_ws_crt`:
 
 | Row | hz6 | mimalloc | tcmalloc | system | hz6 peak KB |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| `16..256` | `57.457M` | `52.611M` | `247.870M` | `98.181M` | `56,576` |
-| `16..4096` | `39.975M` | `5.961M` | `87.325M` | `8.751M` | `156,672` |
-| `1024..4096` | `38.776M` | `4.840M` | `83.838M` | `6.258M` | `180,864` |
-| `4096..16384` | `30.796M` | `1.301M` | `42.972M` | `2.974M` | `117,248` |
+| `16..256` | `57.671M` | `53.099M` | `255.517M` | `98.761M` | `56,576` |
+| `16..4096` | `39.382M` | `5.873M` | `85.177M` | `8.729M` | `156,672` |
+| `1024..4096` | `38.497M` | `4.858M` | `86.491M` | `6.328M` | `181,120` |
+| `4096..16384` | `27.752M` | `1.282M` | `42.086M` | `8.132M` | `185,472` |
 
 Important caveat:
 
@@ -194,6 +196,7 @@ Longer-term target:
 | External MidPage active map | `HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2=1`, external, cap8192/probe2 | Repeat-7 versus no-map moved 1024..4096 from `30.962M` to `32.011M` and 4096..16384 from `18.983M` to `19.903M`. |
 | Realloc in-place | `HZ6_PRELOAD_REALLOC_IN_PLACE_L1=1` | Repeat-5 versus control-off moved 16..256 `50.810M -> 55.313M`, 16..4096 `33.867M -> 36.556M`, 1024..4096 `31.473M -> 34.678M`, and 4096..16384 `19.971M -> 30.118M`. |
 | MidPage unaligned/probe4 | `HZ6_MIDPAGE_ACTIVE_FREE_MAP_UNALIGNED_L2=1`, probe4 | 4096..16384 active-map hits moved from `3,321` to `915,393`; repeat-5 HZ4 guard reached `hz6 31.505M` vs `hz4 30.916M` with lower HZ6 RSS. |
+| MidPage active-map cap16K | `HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY=16384`, probe4 | Resume diagnostic showed MidPage active-map misses on 4096..16384. Focused repeat-5 held `27.067M` versus pre-promotion default `25.908M`; cross repeat-3 held `27.752M` with about `+0.6MB` RSS. Cap32K and cap16K probe2/probe8 were weaker. |
 
 ## Selected Controls
 
@@ -205,6 +208,7 @@ Keep these controls available when changing the preload lane:
 | internal MidPage active map | MidPage-only upper-bound; repeat-7 4096..16384 reached `20.504M`, but balanced locality was worse than external storage. |
 | MidPage run 512K | MidPage-specialized source-churn upper-bound; improves 4096..16384 but regresses 16..4096. |
 | `HZ6_MIDPAGE_ACTIVE_FREE_MAP_UNALIGNED_L2=0` | Direct control for MidPage active-map 8K-alignment gating. |
+| `HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY=8192` | Previous balanced default and direct control for the selected cap16K promotion. |
 | `HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT=2` | Balanced control for the selected probe4 MidPage active map. Probe2 is slightly better on 1024..4096 but weaker on the HZ4-close 4096..16384 target. |
 | frontcache 16384 | Boundary for frontcache8192; flat enough not to promote. |
 | route table 262144 | Capacity upper-bound; not selected by current evidence. |
@@ -217,6 +221,8 @@ Keep these controls available when changing the preload lane:
 | Toy-map widening to MidPage | Reduced route probes but created too many map misses/collisions and slightly regressed focused repeat; do not widen the Toy active map. |
 | Toy active-map capacity 65536/16384 | Both capacity directions regressed Toy high rows in focused repeat; keep the selected 32768 default. |
 | Toy active-map probe8 | Roughly flat on 1024..4096 and weaker on 16..4096; keep probe4. |
+| MidPage active-map cap32K | Regressed both 1024..4096 and 4096..16384 in the resume repeat-3; too large for current locality. |
+| MidPage active-map cap16K probe2/probe8 | Both were weaker than cap16K/probe4 in focused repeat-3. |
 | active-map slot-index/code-shape helper | No selected-row win; changing this header shape can disturb MidPage/Toy preload layout, so keep the existing body. |
 | `HZ6_LINUX_MMAP_RETAIN_TLS_L1=1` | Did not reduce mmap count and regressed repeat-3. |
 | `HZ6_SOURCE_RUN_REUSE_L1=1` | Reduced source allocation count but reusable-run scan/activation cost dominated. |
