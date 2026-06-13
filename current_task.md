@@ -48,7 +48,7 @@ HZ6 Ubuntu LD_PRELOAD current pass:
     overflow unregister/release, not header-inline route lookup.
 
   Accepted:
-    HZ6_FRONT_CACHE_BIN_CAPACITY=4096 for the LD_PRELOAD default bundle.
+    HZ6_FRONT_CACHE_BIN_CAPACITY=8192 for the LD_PRELOAD default bundle.
 
   Focused 1M mixed_ws repeat-3, stats off:
     raw:
@@ -61,11 +61,48 @@ HZ6 Ubuntu LD_PRELOAD current pass:
       22.893M / 22.087M / 22.929M ops/s
 
   Decision:
-    frontcache4096 is selected for Ubuntu LD_PRELOAD. It cut source_alloc on
-    the stats guard from about 21.3K to about 8.7K and did not show a peak-RSS
-    regression in the focused repeat. Keep larger frontcache and further route
-    inline/code-layout changes as controls until a fresh diagnostic points
-    there.
+    frontcache4096 was the first clear win. It cut source_alloc on the stats
+    guard from about 21.3K to about 8.7K and did not show a peak-RSS regression
+    in the focused repeat.
+
+  Follow-up:
+    frontcache4096 still left:
+      route_unregister_reason_frontcache_overflow ~= 529K
+      route_tombstone_current ~= 13K
+      source_alloc ~= 8.7K
+
+    frontcache8192 diagnostic removed the pressure:
+      route_unregister_reason_frontcache_overflow = 0
+      route_tombstone_current = 0
+      route_unregister_probe_total = 0
+      source_alloc = 541
+      route_register_probe_max = 5
+
+    Focused 1M mixed_ws repeat-3, stats off:
+      raw:
+        private/raw-results/linux/hz6_preload_frontcache_ladder_r3_20260613
+      frontcache4096:
+        22.543M / 22.814M / 23.015M ops/s
+      frontcache8192:
+        33.690M / 34.221M / 34.461M ops/s
+      frontcache16384:
+        34.167M / 34.308M / 35.320M ops/s
+
+    Focused cross 1M, frontcache8192:
+      raw:
+        private/raw-results/linux/hz6_preload_fc8192_cross_1m_r3_20260613
+      hz6:
+        median 35.343M
+      mimalloc:
+        median 30.609M
+      tcmalloc:
+        median 189.084M
+
+  Decision:
+    frontcache8192 is selected for Ubuntu LD_PRELOAD. It removes the immediate
+    overflow unregister/tombstone loop that 4096 still had. 16384 is flat enough
+    to keep as a boundary control, not a default. Further route inline/code
+    layout changes should wait for broader-row validation under the new default.
 ```
 
 Latest HZ6 Ubuntu hot-path tuning:
