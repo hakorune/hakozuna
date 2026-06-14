@@ -434,6 +434,14 @@
 #define HZ6_MIDPAGE_ACTIVE_MAP_TRUSTED_CACHE_PUSH_L1 0
 #endif
 
+#ifndef HZ6_MIDPAGE_DIRECT_LOCAL_SKIP_TRANSFER_FIRST_L1
+/* Candidate malloc shortcut. For MidPage direct-local reuse, skip the
+ * transfer-first probe before the local frontcache pop. The preload target rows
+ * are local/free-cache dominated and have no transfer successes, so this tests
+ * whether the empty transfer probe is pure overhead. */
+#define HZ6_MIDPAGE_DIRECT_LOCAL_SKIP_TRANSFER_FIRST_L1 0
+#endif
+
 #ifndef HZ6_TOY_CLASS_ID_FAST_ALLOC_L1
 /* Default Toy alloc shortcut.  hz6_malloc() already selected class_id, so
  * Toy alloc can validate size against class bytes instead of classifying again. */

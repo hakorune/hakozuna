@@ -133,6 +133,20 @@ static void* hz6_allocator_direct_local_alloc(Hz6Allocator* allocator,
 }
 #endif
 
+#if HZ6_MIDPAGE_DIRECT_LOCAL_SKIP_TRANSFER_FIRST_L1 && \
+    HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1 && HZ6_LOCAL_CACHE_DIRECT_REUSE_L1
+static void* hz6_allocator_midpage_direct_local_alloc_skip_transfer(
+    Hz6Allocator* allocator,
+    uint16_t class_id,
+    Hz6ObjectDescriptor** out_descriptor) {
+  if (out_descriptor) {
+    *out_descriptor = NULL;
+  }
+  return hz6_allocator_direct_local_reuse(allocator, class_id,
+                                          out_descriptor);
+}
+#endif
+
 void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
   if (!allocator) {
     return NULL;
@@ -163,6 +177,13 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
                                                  class_id);
   void* direct_ptr = NULL;
 #if HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1
+#if HZ6_MIDPAGE_DIRECT_LOCAL_SKIP_TRANSFER_FIRST_L1 && \
+    HZ6_LOCAL_CACHE_DIRECT_REUSE_L1
+  if (front->front_id == HZ6_FRONT_MIDPAGE) {
+    direct_ptr = hz6_allocator_midpage_direct_local_alloc_skip_transfer(
+        allocator, class_id, &direct_descriptor);
+  } else
+#endif
   direct_ptr = hz6_allocator_direct_local_alloc(
       allocator, front->front_id, class_id, &direct_descriptor);
 #endif
