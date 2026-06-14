@@ -159,6 +159,61 @@ Superseded follow-up: HZ6_MIDPAGE_32K_RUN_BYTES=786432 is now selected for the
 Ubuntu preload bundle; keep 524288 as the direct control.
 ```
 
+## Lane E: MidPageSupplyMapResume-L1
+
+Goal:
+
+```text
+after run768, decide whether the next balanced default should come from 8K
+source-run widening or remaining active-map fallback removal.
+```
+
+Diagnostic read:
+
+```text
+selected diagnostic, 500K:
+
+4096..16384:
+  free_route_lookup_after_maps ~= 2.2K for 1M frees
+  midpage_source_alloc=649
+  midpage_8k_alloc_call=180
+  midpage_32k_alloc_call=469
+  midpage_8k_frontcache_pop_empty=362
+  midpage_32k_frontcache_pop_empty=938
+```
+
+Decision:
+
+```text
+do not promote 8K source-run widening yet.
+
+HZ6_MIDPAGE_RUN_BYTES=524288:
+  reduces 4096..16384 source_alloc 653 -> 565
+  improves 1024..4096 in repeat-7
+  but leaves 4096..16384 speed essentially flat/slightly weak
+
+Keep selected:
+  HZ6_MIDPAGE_RUN_BYTES=262144
+```
+
+Active-map cap/probe read:
+
+```text
+cap32K/probe4 and cap64K/probe4 remove most remaining route-after-map fallback,
+but speed and RSS regress. The remaining fallback count is already too small to
+pay for a larger hot active map.
+
+Keep selected:
+  HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY=16384
+  HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT=4
+```
+
+Runner:
+
+```bash
+./hakozuna-hz6/linux/run_hz6_midpage_supply_map_ab.sh
+```
+
 ## Lane A: TransferProbeAudit-L1
 
 Goal:

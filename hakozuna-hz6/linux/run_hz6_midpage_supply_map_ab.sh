@@ -1,0 +1,231 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+ARCH="${ARCH:-x86_64}"
+RUNS="${RUNS:-5}"
+ITERS="${ITERS:-500000}"
+WS="${WS:-4096}"
+OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_midpage_supply_map_ab_$(date +%Y%m%d_%H%M%S)}"
+SKIP_BENCH_BUILD=0
+
+source "${ROOT_DIR}/hakozuna-hz6/linux/hz6_preload_flags.sh"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  ./hakozuna-hz6/linux/run_hz6_midpage_supply_map_ab.sh [options]
+
+Options:
+  --arch ARCH       target arch (default: x86_64)
+  --runs N          runs per variant/row (default: 5)
+  --iters N         iterations per run (default: 500000)
+  --ws N            working set (default: 4096)
+  --outdir DIR      output directory
+  --skip-bench      reuse existing benchmark binary
+  --help            show this message
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --arch)
+      ARCH="$2"
+      shift 2
+      ;;
+    --runs)
+      RUNS="$2"
+      shift 2
+      ;;
+    --iters)
+      ITERS="$2"
+      shift 2
+      ;;
+    --ws)
+      WS="$2"
+      shift 2
+      ;;
+    --outdir)
+      OUTDIR="$2"
+      shift 2
+      ;;
+    --skip-bench)
+      SKIP_BENCH_BUILD=1
+      shift
+      ;;
+    --help|-h)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "unknown option: $1" >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
+done
+
+variant_flags() {
+  local variant="$1"
+  local flags=()
+  hz6_preload_effective_selected_cflags flags 1
+  case "$variant" in
+    selected)
+      ;;
+    run8_384k)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_RUN_BYTES 393216
+      ;;
+    run8_512k)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_RUN_BYTES 524288
+      ;;
+    run8_768k)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_RUN_BYTES 786432
+      ;;
+    amap32k_p4)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY 32768
+      ;;
+    amap64k_p4)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY 65536
+      ;;
+    amap32k_p8)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY 32768
+      hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT 8
+      ;;
+    amap64k_p8)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY 65536
+      hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT 8
+      ;;
+    *)
+      echo "unknown variant: ${variant}" >&2
+      exit 2
+      ;;
+  esac
+  hz6_preload_join_flags "${flags[@]}"
+}
+
+build_variant() {
+  local variant="$1"
+  local out_dir="${OUTDIR}/build/${variant}"
+  OUT_DIR="$out_dir" \
+  HZ6_PRELOAD_DEFAULT_CFLAGS="$(variant_flags "$variant")" \
+    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
+    > "${OUTDIR}/${variant}_build.log" 2>&1
+}
+
+run_once() {
+  local variant="$1"
+  local row="$2"
+  local min_size="$3"
+  local max_size="$4"
+  local run_id="$5"
+  local so="${OUTDIR}/build/${variant}/libhakozuna_hz6_preload.so"
+  local log="${OUTDIR}/${row}/${run_id}_${variant}.log"
+  mkdir -p "${OUTDIR}/${row}"
+  env HZ6_PRELOAD_STATS=1 LD_PRELOAD="$so" \
+    "$BENCH" 4 "$ITERS" "$WS" "$min_size" "$max_size" \
+    > "$log" 2>&1
+}
+
+if [[ "$SKIP_BENCH_BUILD" -ne 1 ]]; then
+  "${ROOT_DIR}/linux/build_linux_bench_compare.sh" --arch "$ARCH" \
+    --out-dir "${ROOT_DIR}/bench/out/linux/${ARCH}"
+fi
+
+BENCH="${ROOT_DIR}/bench/out/linux/${ARCH}/bench_mixed_ws_crt"
+[[ -x "$BENCH" ]] || { echo "missing benchmark: $BENCH" >&2; exit 2; }
+
+mkdir -p "$OUTDIR"
+{
+  echo "arch=${ARCH}"
+  echo "runs=${RUNS}"
+  echo "iters=${ITERS}"
+  echo "ws=${WS}"
+} > "${OUTDIR}/config.txt"
+
+variants=(
+  selected
+  run8_384k
+  run8_512k
+  run8_768k
+  amap32k_p4
+  amap64k_p4
+  amap32k_p8
+  amap64k_p8
+)
+rows=(
+  "16_4096 16 4096"
+  "1024_4096 1024 4096"
+  "4096_16384 4096 16384"
+)
+
+for variant in "${variants[@]}"; do
+  build_variant "$variant"
+done
+
+for row_entry in "${rows[@]}"; do
+  read -r row min_size max_size <<< "$row_entry"
+  for run_id in $(seq 1 "$RUNS"); do
+    for variant in "${variants[@]}"; do
+      run_once "$variant" "$row" "$min_size" "$max_size" "$run_id"
+    done
+  done
+done
+
+python3 - "$OUTDIR" "${variants[*]}" "${rows[*]}" <<'PY' | tee "${OUTDIR}/summary.md"
+import pathlib
+import re
+import statistics
+import sys
+
+outdir = pathlib.Path(sys.argv[1])
+variants = sys.argv[2].split()
+rows_blob = sys.argv[3].split()
+rows = [rows_blob[i] for i in range(0, len(rows_blob), 3)]
+
+def extract(name, text):
+    match = re.search(r"(?:^|\s)" + re.escape(name) + r"=([0-9]+)", text)
+    return int(match.group(1)) if match else 0
+
+print("| row | variant | median ops/s | median peak MiB | source_alloc | midpage_source_alloc | route_after_maps | mid_hit | mid_miss | fail |")
+print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+for row in rows:
+    for variant in variants:
+        ops = []
+        peak = []
+        source_alloc = []
+        midpage_source_alloc = []
+        route_after_maps = []
+        mid_hit = []
+        mid_miss = []
+        fail = 0
+        for log in sorted((outdir / row).glob(f"*_{variant}.log")):
+            text = log.read_text()
+            ops_match = re.search(r"ops/s=([0-9.]+)", text)
+            peak_match = re.search(r"peak_kb=([0-9]+)", text)
+            if ops_match:
+                ops.append(float(ops_match.group(1)))
+            if peak_match:
+                peak.append(int(peak_match.group(1)) / 1024.0)
+            source_alloc.append(extract("source_alloc", text))
+            midpage_source_alloc.append(extract("midpage_source_alloc", text))
+            route_after_maps.append(extract("free_route_lookup_after_maps", text))
+            mid_hit.append(extract("free_midpage_active_map_hit", text))
+            mid_miss.append(extract("free_midpage_active_map_miss", text))
+            fail += extract("route_miss", text)
+            fail += extract("route_invalid", text)
+            fail += extract("alloc_fail", text)
+            fail += extract("route_register_fail", text)
+        print(
+            f"| {row} | {variant} | "
+            f"{statistics.median(ops) / 1e6:.3f}M | "
+            f"{statistics.median(peak):.2f} | "
+            f"{statistics.median(source_alloc):.0f} | "
+            f"{statistics.median(midpage_source_alloc):.0f} | "
+            f"{statistics.median(route_after_maps):.0f} | "
+            f"{statistics.median(mid_hit):.0f} | "
+            f"{statistics.median(mid_miss):.0f} | "
+            f"{fail} |"
+        )
+PY
+
+echo "[linux][hz6] raw results: ${OUTDIR}"

@@ -98,6 +98,26 @@ MidPage32KRun768-L1 is now selected/default for Ubuntu preload:
   repeat-7 versus 512K improved 4096..16384 and 16..4096, kept 16..256
   positive, and only softened 1024..4096 slightly. Safety spot-check is clean.
   Full evidence: HZ6_UBUNTU_MIDPAGE_32K_RUN_CLOSEOUT.md.
+MidPageSupplyMapResume-L1 is now observed after run768:
+  Diagnostic selected768 shows free route fallback is no longer the main wall:
+    4096..16384 free_route_lookup_after_maps is about 2.2K for 1M frees.
+  Remaining pressure is supply/frontcache shape:
+    4096..16384 midpage_source_alloc=649
+    midpage_8k_alloc_call=180
+    midpage_32k_alloc_call=469
+    midpage_8k_frontcache_pop_empty=362
+    midpage_32k_frontcache_pop_empty=938
+  8K run widening reduces midpage_source_alloc but does not produce a
+  selected-safe speed win:
+    run8_512K repeat-7: 4096..16384 source_alloc 653 -> 565, but speed was
+    essentially flat/slightly weak; 1024..4096 improved.
+  Active-map capacity/probe widening removes most route-after-map fallbacks but
+  regresses speed and RSS because the larger map is hotter than the remaining
+  fallback cost:
+    cap32K/probe4: route_after_maps about 2199 -> 124, but target speed fell
+    and RSS rose.
+  Keep HZ6_MIDPAGE_RUN_BYTES=262144 and MidPage active-map cap16K/probe4 as
+  selected. Use run_hz6_midpage_supply_map_ab.sh for reproducible controls.
 FrontcacheCapacityShapeAudit-L1 is now implemented:
   diagnostic adds class-level frontcache push/pop-empty/bin-max attribution.
   raw: private/raw-results/linux/hz6_frontcache_shape_ab_20260614_215447
