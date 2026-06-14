@@ -154,6 +154,14 @@ default-off control:
     4096..16384  44.222M -> 45.495M
   Keep as control/watch, not selected yet; target win is real, but small-row
   guard cost needs another pass or broader matrix confirmation.
+  Ratio/delta follow-up:
+    bias1x is the balanced control/watch.
+    bias2x is target-stronger but regresses 16..4096 too much.
+    bias4x and delta64 do not improve the balance.
+  Stats-off repeat-9:
+    4096..16384 selected 44.451M, bias1x 44.926M, bias2x 45.966M
+    16..4096 selected 42.242M, bias1x 42.182M, bias2x 40.970M
+  Keep selected default off. Keep bias2x as target upper-bound evidence only.
 FrontcacheCapacityShapeAudit-L1 is now implemented:
   diagnostic adds class-level frontcache push/pop-empty/bin-max attribution.
   raw: private/raw-results/linux/hz6_frontcache_shape_ab_20260614_215447

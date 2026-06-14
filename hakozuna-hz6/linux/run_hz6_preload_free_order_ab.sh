@@ -82,6 +82,18 @@ variant_flags() {
     current_bias)
       hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1 1
       ;;
+    current_bias_2x)
+      hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_NUMERATOR 2
+      ;;
+    current_bias_4x)
+      hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_NUMERATOR 4
+      ;;
+    current_bias_delta64)
+      hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_DELTA 64
+      ;;
     *)
       echo "unknown variant: ${variant}" >&2
       exit 2
@@ -129,7 +141,15 @@ mkdir -p "$OUTDIR"
   echo "ws=${WS}"
 } > "${OUTDIR}/config.txt"
 
-variants=(selected midpage_first aligned_first current_bias)
+variants=(
+  selected
+  midpage_first
+  aligned_first
+  current_bias
+  current_bias_2x
+  current_bias_4x
+  current_bias_delta64
+)
 rows=(
   "16_256 16 256"
   "16_4096 16 4096"

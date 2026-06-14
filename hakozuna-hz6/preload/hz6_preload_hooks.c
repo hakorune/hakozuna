@@ -171,6 +171,25 @@ static Hz6PreloadRoute hz6_preload_route(Hz6Allocator* allocator,
   return preload_route;
 }
 
+#if HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1
+static int hz6_preload_midpage_current_bias_first(
+    const Hz6Allocator* allocator) {
+  if (!allocator) {
+    return 0;
+  }
+  size_t denominator =
+      HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_DENOMINATOR == 0
+          ? (size_t)1
+          : HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_DENOMINATOR;
+  size_t toy_scaled =
+      allocator->toy_small_active_map_current *
+      HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_NUMERATOR;
+  size_t mid_scaled = allocator->midpage_active_map_current * denominator;
+  return mid_scaled >
+         toy_scaled + HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_DELTA;
+}
+#endif
+
 static size_t hz6_preload_usable_size(Hz6Allocator* allocator,
                                       const void* ptr) {
   Hz6PreloadRoute preload_route = hz6_preload_route(allocator, ptr);
@@ -409,9 +428,7 @@ void free(void* ptr) {
   }
 #elif HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1
   if (HZ6_PRELOAD_UNLIKELY(
-          allocator &&
-          allocator->midpage_active_map_current >
-              allocator->toy_small_active_map_current)) {
+          hz6_preload_midpage_current_bias_first(allocator))) {
     hz6_preload_phase_count(
         &g_hz6_preload_phase_stats.free_midpage_active_map_attempt);
     if (hz6_midpage_active_map_try_free(allocator, ptr)) {
