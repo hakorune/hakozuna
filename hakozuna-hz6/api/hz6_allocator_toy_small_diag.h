@@ -199,6 +199,46 @@ static inline size_t hz6_toy_small_active_map_index(const void* ptr) {
 }
 
 #if HZ6_TOY_SMALL_ACTIVE_FREE_MAP_L1
+#if HZ6_TOY_SMALL_ACTIVE_MAP_ADDR_ENVELOPE_L1
+static inline void hz6_toy_small_active_map_note_addr(Hz6Allocator* allocator,
+                                                      const void* ptr) {
+  uintptr_t addr = (uintptr_t)ptr;
+  if (allocator->toy_small_active_map_min_addr == 0 ||
+      addr < allocator->toy_small_active_map_min_addr) {
+    allocator->toy_small_active_map_min_addr = addr;
+  }
+  if (addr > allocator->toy_small_active_map_max_addr) {
+    allocator->toy_small_active_map_max_addr = addr;
+  }
+}
+
+static inline int hz6_toy_small_active_map_addr_maybe(
+    const Hz6Allocator* allocator,
+    const void* ptr) {
+  if (!allocator || !ptr || allocator->toy_small_active_map_current == 0 ||
+      allocator->toy_small_active_map_min_addr == 0) {
+    return 1;
+  }
+  uintptr_t addr = (uintptr_t)ptr;
+  return addr >= allocator->toy_small_active_map_min_addr &&
+         addr <= allocator->toy_small_active_map_max_addr;
+}
+#else
+static inline void hz6_toy_small_active_map_note_addr(Hz6Allocator* allocator,
+                                                      const void* ptr) {
+  (void)allocator;
+  (void)ptr;
+}
+
+static inline int hz6_toy_small_active_map_addr_maybe(
+    const Hz6Allocator* allocator,
+    const void* ptr) {
+  (void)allocator;
+  (void)ptr;
+  return 1;
+}
+#endif
+
 static inline void hz6_toy_small_active_map_clear(
     Hz6Allocator* allocator,
     Hz6ToySmallActiveMapEntry* entry) {
@@ -227,6 +267,7 @@ static inline void hz6_toy_small_active_map_register(
       !hz6_toy_small_hotpath_diag_is_toy_small(front_id, class_id)) {
     return;
   }
+  hz6_toy_small_active_map_note_addr(allocator, ptr);
   size_t base_index = hz6_toy_small_active_map_index(ptr);
 #if HZ6_TOY_ACTIVE_MAP_REGISTER_FAST_SLOT_L1
   Hz6ToySmallActiveMapEntry* base_entry =
@@ -309,6 +350,12 @@ static inline int hz6_toy_small_active_map_try_free(Hz6Allocator* allocator,
     return 0;
   }
   if (allocator->toy_small_active_map_current == 0) {
+    return 0;
+  }
+  if (!hz6_toy_small_active_map_addr_maybe(allocator, ptr)) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.toy_small_active_map_free_miss;
+#endif
     return 0;
   }
 #if HZ6_DIAGNOSTIC_PROBES

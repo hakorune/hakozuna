@@ -329,6 +329,13 @@
 #define HZ6_TOY_SMALL_ACTIVE_MAP_TRUSTED_OWNER_L1 1
 #endif
 
+#ifndef HZ6_TOY_SMALL_ACTIVE_MAP_ADDR_ENVELOPE_L1
+/* Conservative negative filter for preload/core free paths.  The envelope only
+ * widens on Toy active-map registration; stale-wide ranges fall back to the
+ * normal bounded probe, so this cannot skip an owned Toy pointer. */
+#define HZ6_TOY_SMALL_ACTIVE_MAP_ADDR_ENVELOPE_L1 0
+#endif
+
 #ifndef HZ6_TOY_ACTIVE_MAP_REGISTER_FAST_SLOT_L1
 /* Candidate Toy active-map register shortcut.  The common insert/update case
  * lands on an empty or same-pointer base slot; collision cases keep the normal

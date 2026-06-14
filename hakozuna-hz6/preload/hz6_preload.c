@@ -40,6 +40,8 @@ static size_t hz6_preload_phase_load(const _Atomic(size_t)* counter) {
   return atomic_load_explicit(counter, memory_order_relaxed);
 }
 
+#define HZ6_PRELOAD_PHASE_LOAD_FIELD(name) hz6_preload_phase_load(&g_hz6_preload_phase_stats.name)
+
 void hz6_preload_phase_count_size_bucket(
     size_t size,
     _Atomic(size_t)* zero,
@@ -890,6 +892,29 @@ static void hz6_preload_print_stats(void) {
               &g_hz6_preload_phase_stats.malloc_usable_size_owned),
           hz6_preload_phase_load(
               &g_hz6_preload_phase_stats.malloc_usable_size_real_fallback));
+
+  fprintf(stderr,
+          "[HZ6_PRELOAD_HOOK_DETAIL] free_toy_active_map_attempt=%zu free_toy_active_map_hit=%zu "
+          "free_toy_active_map_miss=%zu "
+          "free_midpage_active_map_attempt=%zu "
+          "free_midpage_active_map_hit=%zu "
+          "free_midpage_active_map_miss=%zu "
+          "free_route_lookup_after_maps=%zu "
+          "free_route_valid_owned=%zu "
+          "free_route_valid_foreign_visible=%zu "
+          "free_route_invalid=%zu "
+          "free_route_miss_real=%zu\n",
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_toy_active_map_attempt),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_toy_active_map_hit),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_toy_active_map_miss),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_midpage_active_map_attempt),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_midpage_active_map_hit),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_midpage_active_map_miss),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_lookup_after_maps),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_valid_owned),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_valid_foreign_visible),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_invalid),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_miss_real));
 
   fprintf(stderr,
           "[HZ6_PRELOAD_SIZE_STATS] "

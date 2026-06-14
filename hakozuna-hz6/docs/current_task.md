@@ -125,6 +125,17 @@ source-run-slot route registration, broad malloc code-shape changes, or
 whole-helper free-cache replacement first.
 
 Next recommended optimization lanes:
+  PreloadHookHotPathAudit-L1:
+    implemented. The first short read shows 4096..16384 spends nearly every
+    free() on a Toy active-map miss before the MidPage hit:
+      free_toy_active_map_attempt=406801
+      free_toy_active_map_hit=39
+      free_toy_active_map_miss=406762
+      free_midpage_active_map_hit=405883
+    ToyActiveMapAddrEnvelope-L1 was added as a default-off control, but the
+    first repeat-3 was not promotion-clean: tiny was slightly positive while
+    1024..4096 and 4096..16384 were weak. Keep off for now.
+
   FrontcacheCapacityShapeAudit-L1:
     closed as diagnostic/control for now. Class-specific MidPage cap behavior
     did not pass promotion; keep the class-max attribution for future lazy

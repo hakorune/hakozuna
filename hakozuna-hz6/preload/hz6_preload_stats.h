@@ -25,7 +25,14 @@ typedef struct Hz6PreloadPhaseStats {
   _Atomic(size_t) free_local_route_valid;
   _Atomic(size_t) free_visible_route_hit;
   _Atomic(size_t) free_toy_active_map_hit;
+  _Atomic(size_t) free_toy_active_map_attempt;
+  _Atomic(size_t) free_toy_active_map_miss;
   _Atomic(size_t) free_midpage_active_map_hit;
+  _Atomic(size_t) free_midpage_active_map_attempt;
+  _Atomic(size_t) free_midpage_active_map_miss;
+  _Atomic(size_t) free_route_lookup_after_maps;
+  _Atomic(size_t) free_route_valid_owned;
+  _Atomic(size_t) free_route_valid_foreign_visible;
   _Atomic(size_t) free_route_invalid;
   _Atomic(size_t) free_route_miss_real;
   _Atomic(size_t) free_prechecked_candidate;

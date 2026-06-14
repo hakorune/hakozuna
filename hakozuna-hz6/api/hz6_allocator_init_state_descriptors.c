@@ -5,6 +5,10 @@ void hz6_allocator_init_state_descriptors(Hz6Allocator* allocator) {
   allocator->descriptor_available_count = HZ6_OBJECT_DESCRIPTOR_CAPACITY;
 #if HZ6_TOY_SMALL_ACTIVE_FREE_MAP_L1
   allocator->toy_small_active_map_current = 0;
+#if HZ6_TOY_SMALL_ACTIVE_MAP_ADDR_ENVELOPE_L1
+  allocator->toy_small_active_map_min_addr = 0;
+  allocator->toy_small_active_map_max_addr = 0;
+#endif
   for (size_t i = 0; i < HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY; ++i) {
     allocator->toy_small_active_map[i] = (Hz6ToySmallActiveMapEntry){0};
   }
