@@ -203,8 +203,12 @@ Longer-term target:
 | `HZ6_PRELOAD_FREE_MIDPAGE_PAGE_HINT_FIRST_L1=1` | control/no-go | Behavior A/B for the page-hint gate. Hinted frees use MidPage-first ordering; unhinted frees preserve selected Toy-first ordering. It reduced 4096..16384 Toy active-map attempts, but short repeat-5 regressed every focused row, so the per-free hint probe/table overhead is not selected-safe. |
 | `HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_L1=1` | control/no-go | Base-slot-first MidPage active-map free lookup. It avoids a new free classifier and only changes the existing probe code shape, but short repeat-5 was target-negative (`4096..16384 26.295M -> 25.422M`) and guard-flat/weak. Keep off. |
 
-Closeout details for the selective MidPage-first free hint lane are in
-`HZ6_UBUNTU_PRELOAD_FREE_HINT_CLOSEOUT.md`.
+Closeout details for the selective MidPage-first free lanes are in:
+
+```text
+HZ6_UBUNTU_PRELOAD_FREE_HINT_CLOSEOUT.md
+HZ6_UBUNTU_PRELOAD_FREE_ORDER_CLOSEOUT.md
+```
 
 ## Selected Controls
 
@@ -271,7 +275,7 @@ MidPage 32K run-size closeout details are in
 | `build_hz6_preload_diag.sh` | Diagnostic preload build wrapper with `HZ6_DIAGNOSTIC_PROBES=1`; use for attribution, not selected speed ranking. |
 | `run_hz6_midpage_rss_audit.sh` | Diagnostic RSS attribution runner for `16..4096`, `1024..4096`, and `4096..16384`. |
 | `run_hz6_midpage_supply_map_ab.sh` | Focused A/B runner for 8K run widening and MidPage active-map capacity/probe controls after run768. |
-| `run_hz6_preload_free_order_ab.sh` | Focused A/B runner for preload free-order controls: selected, unconditional MidPage-first, aligned-first, and current-bias. |
+| `run_hz6_preload_free_order_ab.sh` | Focused A/B runner for preload free-order controls: selected, unconditional MidPage-first, aligned-first, current-bias 1x/2x/4x, and delta64. |
 | `run_hz6_static_table_trim_ab.sh` | Builds selected trim and wide-table controls, then compares speed/RSS plus failure counters. |
 | `run_hz6_midpage_payload_trim_ab.sh` | Builds MidPage 32K run-size controls and compares selected speed/RSS plus source/failure counters. |
 | `run_hz6_frontcache_shape_ab.sh` | Builds selected and class-specific MidPage frontcache cap controls, then compares speed/RSS plus class-level frontcache max/empty counters. |

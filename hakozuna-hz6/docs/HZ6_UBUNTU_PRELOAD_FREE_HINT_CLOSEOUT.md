@@ -136,3 +136,6 @@ one of:
 
 The useful lesson is that selective ordering is only worth pursuing if the
 classification cost is effectively free.
+
+Follow-up free-order controls after this page-hint closeout are summarized in
+`HZ6_UBUNTU_PRELOAD_FREE_ORDER_CLOSEOUT.md`.

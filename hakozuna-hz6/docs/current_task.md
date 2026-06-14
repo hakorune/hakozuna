@@ -25,6 +25,9 @@ Ubuntu MidPage next design:
 Ubuntu MidPage 32K run closeout:
   HZ6_UBUNTU_MIDPAGE_32K_RUN_CLOSEOUT.md
 
+Ubuntu preload free-order closeout:
+  HZ6_UBUNTU_PRELOAD_FREE_ORDER_CLOSEOUT.md
+
 Repo cleanup and documentation rules:
   HZ6_REPO_HYGIENE.md
 
@@ -118,50 +121,14 @@ MidPageSupplyMapResume-L1 is now observed after run768:
     and RSS rose.
   Keep HZ6_MIDPAGE_RUN_BYTES=262144 and MidPage active-map cap16K/probe4 as
   selected. Use run_hz6_midpage_supply_map_ab.sh for reproducible controls.
-MidPageLowWaterRefill-L1 is implemented as a default-off control and closed
-as no-go for selected default:
-  Shape: after a MidPage cache-miss refill successfully returns an object, if
-  the class remains under a class-specific low-water mark, prefill one more run.
-  Result: the default low-water setting regressed. The stronger
-  8K=256/32K=128 setting looked plausible with stats enabled, but stats-off
-  repeat-9 did not pass:
-    16..256      58.383M -> 57.162M
-    16..4096     42.123M -> 41.786M
-    1024..4096   40.448M -> 39.934M
-    4096..16384  44.597M -> 44.458M
-  Keep HZ6_MIDPAGE_LOW_WATER_REFILL_L1 off. The issue is not simply that the
-  class needs more eager supply; extra refill work/layout cost cancels it.
-PreloadFreeMidPageAlignedFirst-L1 is implemented as default-off and no-go:
-  Alignment was not a useful classifier. In stats repeat-5, nearly every free
-  pointer passed the MidPage alignment gate, so aligned-first behaved like
-  unconditional MidPage-first on Toy-heavy rows:
-    16..256      34.937M -> 24.037M
-    16..4096     28.555M -> 21.135M
-    1024..4096   27.761M -> 20.580M
-    4096..16384  17.689M -> 19.754M
-  Keep HZ6_PRELOAD_FREE_MIDPAGE_ALIGNED_FIRST_L1 off.
-PreloadFreeMidPageCurrentBiasFirst-L1 is implemented as a target-positive
-default-off control:
-  Shape: try MidPage before Toy only when midpage_active_map_current is greater
-  than toy_small_active_map_current.
-  Stats repeat-5 shows the intended path split:
-    4096..16384 Toy attempts about 1,000,608 -> 1,914
-    MidPage attempts remain about 1,000,608
-  Stats-off repeat-15:
-    16..256      58.636M -> 57.990M
-    16..4096     42.582M -> 42.089M
-    1024..4096   40.920M -> 40.688M
-    4096..16384  44.222M -> 45.495M
-  Keep as control/watch, not selected yet; target win is real, but small-row
-  guard cost needs another pass or broader matrix confirmation.
-  Ratio/delta follow-up:
-    bias1x is the balanced control/watch.
-    bias2x is target-stronger but regresses 16..4096 too much.
-    bias4x and delta64 do not improve the balance.
-  Stats-off repeat-9:
-    4096..16384 selected 44.451M, bias1x 44.926M, bias2x 45.966M
-    16..4096 selected 42.242M, bias1x 42.182M, bias2x 40.970M
-  Keep selected default off. Keep bias2x as target upper-bound evidence only.
+Recent MidPage/free-order lanes are closed for selected default:
+  low-water refill is no-go; extra eager supply/layout cost did not translate.
+  aligned-first is no-go; alignment was not selective enough for Toy-heavy rows.
+  current-bias is target-positive control/watch, not selected:
+    bias1x 4096..16384 repeat-15 improved 44.222M -> 45.495M, but small guards
+    remained slightly weak.
+    bias2x is target-stronger but guard-negative.
+  Full evidence: HZ6_UBUNTU_PRELOAD_FREE_ORDER_CLOSEOUT.md.
 FrontcacheCapacityShapeAudit-L1 is now implemented:
   diagnostic adds class-level frontcache push/pop-empty/bin-max attribution.
   raw: private/raw-results/linux/hz6_frontcache_shape_ab_20260614_215447
@@ -194,96 +161,18 @@ noinline boundary. Do not chase route fallback, deeper free probing,
 source-run-slot route registration, broad malloc code-shape changes, or
 whole-helper free-cache replacement first.
 
-Next recommended optimization lanes:
-  PreloadHookHotPathAudit-L1:
-    implemented. The first short read shows 4096..16384 spends nearly every
-    free() on a Toy active-map miss before the MidPage hit:
-      free_toy_active_map_attempt=406801
-      free_toy_active_map_hit=39
-      free_toy_active_map_miss=406762
-      free_midpage_active_map_hit=405883
-    ToyActiveMapAddrEnvelope-L1 was added as a default-off control, but the
-    first repeat-3 was not promotion-clean: tiny was slightly positive while
-    1024..4096 and 4096..16384 were weak. Keep off for now.
+Next recommended optimization lane:
+  run a selected-balance refresh before another free-path edit. Current-bias
+  has a real 4096..16384 signal, but selected/default should not change until
+  broader guards confirm the speed/RSS balance.
 
-  PreloadFreeMidPageFirst-L1:
-    implemented as a default-off control.
-    Read: it directly recovers part of the 4096..16384 Toy-miss wall, but it
-    badly regresses Toy/tiny guard rows.
-      16..256 median shape fell from about 29M to about 21M ops/s
-      16..4096 fell from about 20M to about 16M ops/s
-      1024..4096 fell from about 19M to about 15.5M ops/s
-      4096..16384 rose from about 14.2M to about 15.4M ops/s
-    Keep HZ6_PRELOAD_FREE_MIDPAGE_FIRST_L1 off in selected default. It remains
-    useful evidence that a class-aware/free-hint gate could be valuable, but
-    unconditional MidPage-first ordering is not selected-safe.
-
-  PreloadFreeMidPageHintGateDryRun-L1:
-    implemented as diagnostic-only recent-envelope dry-run.
-    Result:
-      4096..16384 coverage is high:
-        mh_would=406799, mh_true=405878, mh_false=39
-      16..256 is clean:
-        mh_would=4, mh_true=4, mh_false=0
-      16..4096 and 1024..4096 are not clean:
-        16..4096 mh_would=252022, mh_true=31, mh_false=251906
-        1024..4096 mh_would=260955, mh_true=40, mh_false=260851
-    Decision: do not behaviorize the broad recent envelope. It proves a
-    selective MidPage-first gate needs a tighter range/page table or source-run
-    side hint, not a simple min/max envelope.
-
-  PreloadFreeMidPagePageHintDryRun-L1:
-    implemented as a default-off diagnostic page-hint table for selective
-    MidPage-first free ordering. Capacity32768 was much cleaner than the broad
-    min/max envelope, reducing guard false positives from hundreds of thousands
-    to hundreds while covering most 4096..16384 MidPage frees. Keep as
-    diagnostic evidence only; see HZ6_UBUNTU_PRELOAD_FREE_HINT_CLOSEOUT.md.
-
-  PreloadFreeMidPagePageHintFirst-L1:
-    implemented as a default-off behavior control and closed as no-go. It
-    reduced target Toy active-map attempts, but short repeat-5 regressed every
-    focused row because the all-free hint probe/table overhead outweighed the
-    saved Toy-miss wall. Keep off.
-
-  Next MidPage/free direction:
-    do not add another per-free classification probe. Next work should use
-    decision data already available on the hot free path, or attach a
-    source-run/class/front hint to existing active-map or descriptor flows.
-
-  MidPageActiveMapFreeFastSlot-L1:
-    implemented as a default-off control and closed as no-go for the selected
-    preload shape. It stays inside the existing MidPage active-map try_free path
-    and tests the base hash slot before entering the bounded probe loop. Short
-    repeat-5 was not better:
-      16..256 median 46.777M -> 47.014M
-      16..4096 median 27.289M -> 27.095M
-      1024..4096 median 25.017M -> 24.945M
-      4096..16384 median 26.295M -> 25.422M
-    Decision: keep off. Even without a new classifier, this free-path code
-    shape does not improve the target.
-
-  Next direction:
-    pause MidPage free-order/free-map code-shape attacks. The recent lanes all
-    show that the target can expose Toy/MidPage ordering pressure, but the
-    control overhead beats the saved path. Prefer a malloc/source/frontcache
-    lane or a broader selected-balance rerun before another free-path edit.
-
-  MidPage32KRunUpsizeAudit-L1:
-    implemented and selected at 768K. The selected 512K 32K-run size improved
-    the target without material RSS cost; larger 32K runs were tested against
-    512K. 768K was the best balanced promotion: it improved 4096..16384 and
-    16..4096, kept 16..256 positive, and only slightly softened 1024..4096.
-    1M/1.5M improved target more but were less guard-clean, so keep them as
-    controls.
-
-  FrontcacheCapacityShapeAudit-L1:
-    closed as diagnostic/control for now. Class-specific MidPage cap behavior
-    did not pass promotion; keep the class-max attribution for future lazy
-    storage design.
-
-  MidPagePayloadTrimAudit-L1:
-    closed. Smaller 32K runs are no-go for now; 768K is selected for the
-    current speed/RSS balance, with 512K kept as direct control.
+Closed MidPage controls:
+  free-order/page-hint/current-bias details:
+    HZ6_UBUNTU_PRELOAD_FREE_ORDER_CLOSEOUT.md
+  32K run-size details:
+    HZ6_UBUNTU_MIDPAGE_32K_RUN_CLOSEOUT.md
+  frontcache and supply controls:
+    HZ6_UBUNTU_PRELOAD_LANES.md
 
 Use HZ6_UBUNTU_MIDPAGE_NEXT_DESIGN.md as the implementation order for the next
 MidPage pass. TransferProbeAudit-L1, target DSO, and guard-isolated helper
