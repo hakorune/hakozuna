@@ -8,6 +8,16 @@
 #include "../fronts/midpage/hz6_midpage_front.h"
 #include "../fronts/toy/hz6_toy_front.h"
 
+#if HZ6_MIDPAGE_DIRECT_LOCAL_SKIP_TRANSFER_FIRST_L1
+#if defined(__GNUC__) || defined(__clang__)
+#define HZ6_MIDPAGE_SKIP_TRANSFER_NOINLINE __attribute__((noinline))
+#define HZ6_MIDPAGE_SKIP_TRANSFER_UNLIKELY(expr) __builtin_expect(!!(expr), 0)
+#else
+#define HZ6_MIDPAGE_SKIP_TRANSFER_NOINLINE
+#define HZ6_MIDPAGE_SKIP_TRANSFER_UNLIKELY(expr) (expr)
+#endif
+#endif
+
 #if HZ6_TOY_PRECLASSIFIED_MALLOC_L1
 static uint16_t hz6_allocator_toy_class_for_small_size(size_t size) {
   if (size <= 16u) {
@@ -158,7 +168,8 @@ static void* hz6_allocator_direct_local_alloc(Hz6Allocator* allocator,
 
 #if HZ6_MIDPAGE_DIRECT_LOCAL_SKIP_TRANSFER_FIRST_L1 && \
     HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1 && HZ6_LOCAL_CACHE_DIRECT_REUSE_L1
-static void* hz6_allocator_midpage_direct_local_alloc_skip_transfer(
+static HZ6_MIDPAGE_SKIP_TRANSFER_NOINLINE void*
+hz6_allocator_midpage_direct_local_alloc_skip_transfer(
     Hz6Allocator* allocator,
     uint16_t class_id,
     Hz6ObjectDescriptor** out_descriptor) {
@@ -202,13 +213,16 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
 #if HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1
 #if HZ6_MIDPAGE_DIRECT_LOCAL_SKIP_TRANSFER_FIRST_L1 && \
     HZ6_LOCAL_CACHE_DIRECT_REUSE_L1
-  if (front->front_id == HZ6_FRONT_MIDPAGE) {
+  if (HZ6_MIDPAGE_SKIP_TRANSFER_UNLIKELY(front->front_id ==
+                                         HZ6_FRONT_MIDPAGE)) {
     direct_ptr = hz6_allocator_midpage_direct_local_alloc_skip_transfer(
         allocator, class_id, &direct_descriptor);
   } else
 #endif
-  direct_ptr = hz6_allocator_direct_local_alloc(
-      allocator, front->front_id, class_id, &direct_descriptor);
+  {
+    direct_ptr = hz6_allocator_direct_local_alloc(
+        allocator, front->front_id, class_id, &direct_descriptor);
+  }
 #endif
 #if HZ6_SAME_OWNER_FAST_L1
   if (!direct_ptr) {

@@ -53,18 +53,19 @@ Latest MidPage closeout:
   keep trusted activation skip off
   keep trusted cache push off
   keep MidPage direct-local skip-transfer-first off
+  keep noinline/branch-isolated transfer-skip off
   keep preclassified malloc shape out of source
   keep MidPage target DSO as control only
 
-Next Ubuntu MidPage work should stay near smaller free/register code-shape
-changes with focused A/B guards. Do not chase route fallback, deeper free
-probing, source-run-slot route registration, broad malloc code-shape changes,
-whole-helper free-cache replacement, or guard-sensitive MidPage transfer-skip
-promotion first.
+Next Ubuntu MidPage work should not try more selected-default transfer-skip
+code-shape tweaks unless a separate preload dispatch boundary is designed. Do
+not chase route fallback, deeper free probing, source-run-slot route
+registration, broad malloc code-shape changes, whole-helper free-cache
+replacement, or guard-sensitive MidPage transfer-skip promotion first.
 
 Use HZ6_UBUNTU_MIDPAGE_NEXT_DESIGN.md as the implementation order for the next
-MidPage pass. TransferProbeAudit-L1 and the target DSO are done; next is one
-guard-isolated helper shape.
+MidPage pass. TransferProbeAudit-L1, target DSO, and guard-isolated helper
+attempts are done; selected default remains unchanged.
 
 Long historical benchmark notes and failed experiments live in:
   archive/current_task_2026-06_history.md

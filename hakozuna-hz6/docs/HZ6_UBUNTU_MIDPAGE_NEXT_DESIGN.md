@@ -198,6 +198,31 @@ Disallowed implementation shapes:
 4. static inline expansion of large MidPage helper bodies in hz6_malloc()
 ```
 
+First attempts:
+
+```text
+noinline MidPage-only helper:
+  4096..16384: 34.988M -> 39.397M
+  16..256:     57.677M -> 56.022M
+  16..4096:    42.410M -> 41.727M
+  1024..4096:  40.993M -> 40.479M
+
+noinline + unlikely MidPage branch:
+  4096..16384: 34.698M -> 39.594M
+  16..256:     58.059M -> 55.675M
+  16..4096:    42.542M -> 41.452M
+  1024..4096:  40.878M -> 39.858M
+```
+
+Read:
+
+```text
+Guard isolation by noinline/branch layout is not sufficient. The target win is
+real, but every selected-default candidate so far leaks enough code-shape cost
+into non-target rows to fail promotion. Keep this as target-specialized DSO /
+control unless a separate preload dispatch boundary is designed.
+```
+
 ## Promotion Rules
 
 Promote to selected default only if repeat guards are clean:
