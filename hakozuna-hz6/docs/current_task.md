@@ -16,6 +16,9 @@ Lane names, status, controls, and no-go boundaries:
 Ubuntu LD_PRELOAD selected bundle and controls:
   HZ6_UBUNTU_PRELOAD_LANES.md
 
+Ubuntu MidPage next design:
+  HZ6_UBUNTU_MIDPAGE_NEXT_DESIGN.md
+
 Repo cleanup and documentation rules:
   HZ6_REPO_HYGIENE.md
 
@@ -56,6 +59,9 @@ changes with focused A/B guards. Do not chase route fallback, deeper free
 probing, source-run-slot route registration, broad malloc code-shape changes,
 whole-helper free-cache replacement, or guard-sensitive MidPage transfer-skip
 promotion first.
+
+Use HZ6_UBUNTU_MIDPAGE_NEXT_DESIGN.md as the implementation order for the next
+MidPage pass.
 
 Long historical benchmark notes and failed experiments live in:
   archive/current_task_2026-06_history.md

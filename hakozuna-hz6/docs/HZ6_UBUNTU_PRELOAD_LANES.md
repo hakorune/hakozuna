@@ -97,7 +97,7 @@ Current follow-up read:
 | MidPage active-map deeper probe | no-go direction | Miss attribution showed `found_elsewhere=0`; misses are not probe-limit misses. |
 | `HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1=1` | watch/control | Re-tested after descriptor-out: target improves, but `16..256` repeat-7 is still slightly weaker. Keep off. |
 | `HZ6_MIDPAGE_ACTIVE_MAP_ADDR_ENVELOPE_L1=1` | watch/control | Helps Toy/tiny by skipping impossible MidPage probes, but target has `addr_envelope_skip=0`. Keep off. |
-| Next likely lane | diagnostic/design | Free-side MidPage cache/push path remains interesting, but direct trusted cache-push did not improve selected guards. Next attempt needs a smaller shape than replacing the generic cache helper. |
+| Next likely lane | diagnostic/design | Follow `HZ6_UBUNTU_MIDPAGE_NEXT_DESIGN.md`: first add transfer-probe attribution, then isolate any target-specialized transfer-skip lane from the selected balanced DSO. |
 
 HZ3/HZ4 comparison read:
 
