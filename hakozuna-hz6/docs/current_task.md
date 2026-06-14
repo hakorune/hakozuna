@@ -63,7 +63,8 @@ The confirmation lane now compares selected default against an explicit
 boundary-off control DSO.
 The latest Ubuntu selected balance matrix shows HZ6 is strongest on
 4096..16384: faster and lower-RSS than HZ4, much stronger than mimalloc/system,
-but still behind HZ3 and tcmalloc on the speed/RSS frontier.
+and now slightly ahead of tcmalloc on both speed and RSS. HZ3 remains the
+speed/RSS ceiling on this row.
 MidPageFrontcacheRSSAudit-L1 is now implemented as a diagnostic lane. The first
 200K audit shows a large fixed allocator-local table cost plus expected
 MidPage source payload pressure:
@@ -82,7 +83,7 @@ AllocatorStaticTableTrim-L1 is now selected/default for Ubuntu preload:
     4096..16384  40.863M / 115.25 MiB -> 42.904M / 94.38 MiB
   safety repeat-3: route/descriptor/source/frontcache/fallback failures all 0
   raw: private/raw-results/linux/hz6_static_table_trim_confirm_20260614_165003
-Latest cross-allocator refresh after static table trim:
+Earlier cross-allocator refresh after static table trim:
   raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260614_165226
   16..256     hz6 60.381M / 30.38 MiB
   16..4096    hz6 42.216M / 79.75 MiB
@@ -90,7 +91,16 @@ Latest cross-allocator refresh after static table trim:
   4096..16384 hz6 41.264M / 94.38 MiB
   On 4096..16384, HZ6 still trails tcmalloc speed
   (41.264M vs 44.812M) but now has lower RSS and better ops-per-MiB.
-Latest repeat-3 refresh after free-hint/free-fastslot no-go closeouts:
+Latest cross-allocator refresh after current-bias and 8K run768:
+  raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_050834
+  16..256     hz6 57.545M / 30.50 MiB
+  16..4096    hz6 40.441M / 79.75 MiB
+  1024..4096  hz6 38.812M / 91.00 MiB
+  4096..16384 hz6 45.984M / 94.38 MiB
+  On 4096..16384, HZ6 now beats tcmalloc on speed/RSS:
+    hz6      45.984M / 94.38 MiB
+    tcmalloc 45.310M / 103.25 MiB
+Earlier repeat-3 refresh after free-hint/free-fastslot no-go closeouts:
   raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_004605
   16..256     hz6 58.046M / 30.50 MiB
   16..4096    hz6 40.757M / 79.75 MiB
