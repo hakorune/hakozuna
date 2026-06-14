@@ -742,6 +742,26 @@
 #define HZ6_PRELOAD_FREE_MIDPAGE_HINT_DRYRUN_L1 0
 #endif
 
+#ifndef HZ6_PRELOAD_FREE_MIDPAGE_PAGE_HINT_DRYRUN_L1
+/* Diagnostic-only page-table shape for the selective MidPage-first free hint.
+ * Reuses the preload hook mh_* counters and does not change free ordering. */
+#define HZ6_PRELOAD_FREE_MIDPAGE_PAGE_HINT_DRYRUN_L1 0
+#endif
+
+#ifndef HZ6_PRELOAD_FREE_MIDPAGE_PAGE_HINT_FIRST_L1
+/* Behavior control for selective MidPage-first preload free ordering.  Only
+ * hinted pages try the MidPage active map before the Toy active map. */
+#define HZ6_PRELOAD_FREE_MIDPAGE_PAGE_HINT_FIRST_L1 0
+#endif
+
+#ifndef HZ6_PRELOAD_FREE_MIDPAGE_PAGE_HINT_CAPACITY
+#define HZ6_PRELOAD_FREE_MIDPAGE_PAGE_HINT_CAPACITY 32768
+#endif
+
+#ifndef HZ6_PRELOAD_FREE_MIDPAGE_PAGE_HINT_PROBE_LIMIT
+#define HZ6_PRELOAD_FREE_MIDPAGE_PAGE_HINT_PROBE_LIMIT 4
+#endif
+
 #ifndef HZ6_PRELOAD_MIDPAGE_MALLOC_SKIP_TRANSFER_L1
 /* Candidate preload-boundary MidPage malloc shortcut.  This keeps the selected
  * hz6_malloc() code shape clean while allowing a target DSO to skip the empty

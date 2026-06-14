@@ -162,6 +162,24 @@ Next recommended optimization lanes:
     selective MidPage-first gate needs a tighter range/page table or source-run
     side hint, not a simple min/max envelope.
 
+  PreloadFreeMidPagePageHintDryRun-L1:
+    implemented as a default-off diagnostic page-hint table for selective
+    MidPage-first free ordering. Capacity32768 was much cleaner than the broad
+    min/max envelope, reducing guard false positives from hundreds of thousands
+    to hundreds while covering most 4096..16384 MidPage frees. Keep as
+    diagnostic evidence only; see HZ6_UBUNTU_PRELOAD_FREE_HINT_CLOSEOUT.md.
+
+  PreloadFreeMidPagePageHintFirst-L1:
+    implemented as a default-off behavior control and closed as no-go. It
+    reduced target Toy active-map attempts, but short repeat-5 regressed every
+    focused row because the all-free hint probe/table overhead outweighed the
+    saved Toy-miss wall. Keep off.
+
+  Next MidPage/free direction:
+    do not add another per-free classification probe. Next work should use
+    decision data already available on the hot free path, or attach a
+    source-run/class/front hint to existing active-map or descriptor flows.
+
   FrontcacheCapacityShapeAudit-L1:
     closed as diagnostic/control for now. Class-specific MidPage cap behavior
     did not pass promotion; keep the class-max attribution for future lazy
