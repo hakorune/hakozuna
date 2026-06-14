@@ -9,10 +9,13 @@ page-hint closeout. The target symptom is still real on the MidPage-heavy
 `4096..16384` row: selected `free()` often pays a Toy active-map miss before
 the MidPage active-map hit.
 
-Selected/default remains:
+Selected/default now uses a cheap active-count bias:
 
 ```text
-Toy active-map -> MidPage active-map -> route
+if midpage_active_map_current > toy_small_active_map_current:
+  MidPage active-map -> Toy active-map -> route
+else:
+  Toy active-map -> MidPage active-map -> route
 ```
 
 ## Lanes
@@ -21,7 +24,7 @@ Toy active-map -> MidPage active-map -> route
 | --- | --- | --- |
 | `HZ6_PRELOAD_FREE_MIDPAGE_FIRST_L1=1` | control/no-go | Proves the target Toy-miss wall is removable, but badly regresses Toy/tiny and mixed guards. |
 | `HZ6_PRELOAD_FREE_MIDPAGE_ALIGNED_FIRST_L1=1` | control/no-go | Alignment is not selective enough; Toy-heavy rows also pass the MidPage alignment gate, so it behaves like unconditional MidPage-first. |
-| `HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1=1` | target-positive control/watch | Uses allocator-local active-map current counts. Balanced 1x is target-positive but still slightly weak on small guards. |
+| `HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1=1` | selected/default | Uses allocator-local active-map current counts. Balanced 1x keeps guards essentially flat and improves the MidPage-heavy target. |
 | `HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_NUMERATOR=2` | target upper-bound/no-go | Stronger target win, but `16..4096` regresses too much. |
 
 ## Current-Bias Evidence
@@ -65,29 +68,74 @@ Ratio follow-up, stats-off repeat-9:
   bias2x   40.970M
 ```
 
-## Decision
-
-Keep current-bias off in selected/default for now.
+Selected-balance refresh, stats-off repeat-3:
 
 ```text
-HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1=0
+raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_040821
+
+16..256      HZ6 57.981M / 30.38 MiB
+16..4096     HZ6 41.201M / 79.75 MiB
+1024..4096   HZ6 38.159M / 90.88 MiB
+4096..16384  HZ6 42.496M / 94.50 MiB
+```
+
+Promotion repeat-15, stats-off:
+
+```text
+raw: private/raw-results/linux/hz6_current_bias_repeat15_20260615_041255
+
+16..256      selected 58.235M -> bias1x 57.971M  (-0.45%)
+16..4096     selected 42.330M -> bias1x 42.333M  (+0.01%)
+1024..4096   selected 40.580M -> bias1x 40.643M  (+0.15%)
+4096..16384  selected 44.163M -> bias1x 45.596M  (+3.24%)
+```
+
+Post-promotion selected repeat-5, stats-off:
+
+```text
+raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_041438
+
+16..256      57.367M / 30.50 MiB
+16..4096     42.130M / 79.62 MiB
+1024..4096   39.670M / 91.00 MiB
+4096..16384  46.357M / 94.50 MiB
+```
+
+Safety stats spot-check after rebuilding selected:
+
+```text
+raw: private/raw-results/linux/hz6_current_bias_selected_stats_safety_20260615_041430
+
+16..256, 16..4096, 4096..16384:
+  route_miss=0
+  route_invalid=0
+  alloc_fail=0
+  register_fail=0
+```
+
+## Decision
+
+Promote balanced current-bias to selected/default.
+
+```text
+HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1=1
+HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_NUMERATOR=1
+HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_DENOMINATOR=1
+HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_DELTA=0
 ```
 
 Keep:
 
 ```text
-bias1x:
-  balanced control/watch
-
 bias2x:
   target upper-bound evidence only
 ```
 
-Do not default another free-order gate until either:
+Do not default a stronger free-order gate until:
 
 ```text
-1. bias1x passes a broader selected-balance matrix, or
-2. a cheaper guard isolates small/Toy rows without losing the 4096..16384 win.
+1. the stronger gate keeps 16..256 and 16..4096 flat in repeat-15+, and
+2. the stronger gate preserves the 4096..16384 current-bias win.
 ```
 
 ## Runner

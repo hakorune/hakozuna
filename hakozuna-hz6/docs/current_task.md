@@ -56,6 +56,9 @@ preload default because the target and tiny guard did not improve.
 MidPage preload-boundary malloc skip is now selected with an unlikely size
 guard plus noinline helper; it avoids empty transfer-first probes on the
 MidPage direct-local path without adding a helper call to small rows.
+Balanced current-bias free ordering is now selected/default; it tries MidPage
+before Toy only when allocator-local MidPage active entries exceed Toy active
+entries.
 The confirmation lane now compares selected default against an explicit
 boundary-off control DSO.
 The latest Ubuntu selected balance matrix shows HZ6 is strongest on
@@ -124,9 +127,21 @@ MidPageSupplyMapResume-L1 is now observed after run768:
 Recent MidPage/free-order lanes are closed for selected default:
   low-water refill is no-go; extra eager supply/layout cost did not translate.
   aligned-first is no-go; alignment was not selective enough for Toy-heavy rows.
-  current-bias is target-positive control/watch, not selected:
-    bias1x 4096..16384 repeat-15 improved 44.222M -> 45.495M, but small guards
-    remained slightly weak.
+  balanced current-bias is selected/default:
+    repeat-15 raw: private/raw-results/linux/hz6_current_bias_repeat15_20260615_041255
+    16..256      58.235M -> 57.971M  (-0.45%)
+    16..4096     42.330M -> 42.333M  (+0.01%)
+    1024..4096   40.580M -> 40.643M  (+0.15%)
+    4096..16384  44.163M -> 45.596M  (+3.24%)
+    post-promotion selected repeat-5:
+      raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_041438
+      16..256      57.367M / 30.50 MiB
+      16..4096     42.130M / 79.62 MiB
+      1024..4096   39.670M / 91.00 MiB
+      4096..16384  46.357M / 94.50 MiB
+    safety stats raw: private/raw-results/linux/hz6_current_bias_selected_stats_safety_20260615_041430
+      route_miss=0 route_invalid=0 alloc_fail=0 register_fail=0 on
+      16..256, 16..4096, and 4096..16384.
     bias2x is target-stronger but guard-negative.
   Full evidence: HZ6_UBUNTU_PRELOAD_FREE_ORDER_CLOSEOUT.md.
 FrontcacheCapacityShapeAudit-L1 is now implemented:
@@ -162,9 +177,8 @@ source-run-slot route registration, broad malloc code-shape changes, or
 whole-helper free-cache replacement first.
 
 Next recommended optimization lane:
-  run a selected-balance refresh before another free-path edit. Current-bias
-  has a real 4096..16384 signal, but selected/default should not change until
-  broader guards confirm the speed/RSS balance.
+  current-bias is selected and safety-clean. Resume supply/frontcache shape work
+  rather than adding another free-order classifier immediately.
 
 Closed MidPage controls:
   free-order/page-hint/current-bias details:
