@@ -8,6 +8,7 @@ ITERS="${ITERS:-500000}"
 WS="${WS:-4096}"
 OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_midpage_supply_map_ab_$(date +%Y%m%d_%H%M%S)}"
 SKIP_BENCH_BUILD=0
+ENABLE_STATS="${ENABLE_STATS:-1}"
 
 source "${ROOT_DIR}/hakozuna-hz6/linux/hz6_preload_flags.sh"
 
@@ -23,6 +24,8 @@ Options:
   --ws N            working set (default: 4096)
   --outdir DIR      output directory
   --skip-bench      reuse existing benchmark binary
+  --stats           enable HZ6_PRELOAD_STATS during runs (default)
+  --no-stats        disable HZ6_PRELOAD_STATS for speed/RSS ranking
   --help            show this message
 EOF
 }
@@ -53,6 +56,14 @@ while [[ $# -gt 0 ]]; do
       SKIP_BENCH_BUILD=1
       shift
       ;;
+    --stats)
+      ENABLE_STATS=1
+      shift
+      ;;
+    --no-stats)
+      ENABLE_STATS=0
+      shift
+      ;;
     --help|-h)
       usage
       exit 0
@@ -77,6 +88,9 @@ variant_flags() {
       ;;
     run8_512k)
       hz6_preload_replace_define flags HZ6_MIDPAGE_RUN_BYTES 524288
+      ;;
+    run8_640k)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_RUN_BYTES 655360
       ;;
     run8_768k)
       hz6_preload_replace_define flags HZ6_MIDPAGE_RUN_BYTES 786432
@@ -129,9 +143,15 @@ run_once() {
   local so="${OUTDIR}/build/${variant}/libhakozuna_hz6_preload.so"
   local log="${OUTDIR}/${row}/${run_id}_${variant}.log"
   mkdir -p "${OUTDIR}/${row}"
-  env HZ6_PRELOAD_STATS=1 LD_PRELOAD="$so" \
-    "$BENCH" 4 "$ITERS" "$WS" "$min_size" "$max_size" \
-    > "$log" 2>&1
+  if [[ "$ENABLE_STATS" -ne 0 ]]; then
+    env HZ6_PRELOAD_STATS=1 LD_PRELOAD="$so" \
+      "$BENCH" 4 "$ITERS" "$WS" "$min_size" "$max_size" \
+      > "$log" 2>&1
+  else
+    env LD_PRELOAD="$so" \
+      "$BENCH" 4 "$ITERS" "$WS" "$min_size" "$max_size" \
+      > "$log" 2>&1
+  fi
 }
 
 if [[ "$SKIP_BENCH_BUILD" -ne 1 ]]; then
@@ -148,12 +168,14 @@ mkdir -p "$OUTDIR"
   echo "runs=${RUNS}"
   echo "iters=${ITERS}"
   echo "ws=${WS}"
+  echo "stats=${ENABLE_STATS}"
 } > "${OUTDIR}/config.txt"
 
 variants=(
   selected
   run8_384k
   run8_512k
+  run8_640k
   run8_768k
   lowwater
   lowwater_8k256_32k128
@@ -191,11 +213,15 @@ outdir = pathlib.Path(sys.argv[1])
 variants = sys.argv[2].split()
 rows_blob = sys.argv[3].split()
 rows = [rows_blob[i] for i in range(0, len(rows_blob), 3)]
+config = (outdir / "config.txt").read_text(errors="replace")
 
 def extract(name, text):
     match = re.search(r"(?:^|\s)" + re.escape(name) + r"=([0-9]+)", text)
     return int(match.group(1)) if match else 0
 
+stats_mode = config.split("stats=", 1)[1].splitlines()[0] if "stats=" in config else "unknown"
+print(f"stats: `{stats_mode}`")
+print()
 print("| row | variant | median ops/s | median peak MiB | source_alloc | midpage_source_alloc | route_after_maps | mid_hit | mid_miss | fail |")
 print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 for row in rows:

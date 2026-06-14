@@ -117,6 +117,17 @@ MidPageSupplyMapResume-L1 is now observed after run768:
   selected-safe speed win:
     run8_512K repeat-7: 4096..16384 source_alloc 653 -> 565, but speed was
     essentially flat/slightly weak; 1024..4096 improved.
+    after current-bias, production-shape repeat-7:
+      raw: private/raw-results/linux/hz6_midpage_supply_map_ab_20260615_044047
+      run8_512K improved 4096..16384 45.301M -> 46.000M, but weakened
+      16..4096 42.246M -> 41.862M.
+    focused repeat-15:
+      raw: private/raw-results/linux/hz6_run8_512k_repeat15_20260615_044225
+      16..256      58.373M -> 57.192M  (-2.02%)
+      16..4096     42.070M -> 41.820M  (-0.59%)
+      1024..4096   40.338M -> 40.525M  (+0.46%)
+      4096..16384  45.389M -> 46.014M  (+1.38%)
+    decision: keep 8K run512 as target-positive guard-negative control.
   Active-map capacity/probe widening removes most route-after-map fallbacks but
   regresses speed and RSS because the larger map is hotter than the remaining
   fallback cost:
