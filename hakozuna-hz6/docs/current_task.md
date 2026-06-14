@@ -131,6 +131,29 @@ as no-go for selected default:
     4096..16384  44.597M -> 44.458M
   Keep HZ6_MIDPAGE_LOW_WATER_REFILL_L1 off. The issue is not simply that the
   class needs more eager supply; extra refill work/layout cost cancels it.
+PreloadFreeMidPageAlignedFirst-L1 is implemented as default-off and no-go:
+  Alignment was not a useful classifier. In stats repeat-5, nearly every free
+  pointer passed the MidPage alignment gate, so aligned-first behaved like
+  unconditional MidPage-first on Toy-heavy rows:
+    16..256      34.937M -> 24.037M
+    16..4096     28.555M -> 21.135M
+    1024..4096   27.761M -> 20.580M
+    4096..16384  17.689M -> 19.754M
+  Keep HZ6_PRELOAD_FREE_MIDPAGE_ALIGNED_FIRST_L1 off.
+PreloadFreeMidPageCurrentBiasFirst-L1 is implemented as a target-positive
+default-off control:
+  Shape: try MidPage before Toy only when midpage_active_map_current is greater
+  than toy_small_active_map_current.
+  Stats repeat-5 shows the intended path split:
+    4096..16384 Toy attempts about 1,000,608 -> 1,914
+    MidPage attempts remain about 1,000,608
+  Stats-off repeat-15:
+    16..256      58.636M -> 57.990M
+    16..4096     42.582M -> 42.089M
+    1024..4096   40.920M -> 40.688M
+    4096..16384  44.222M -> 45.495M
+  Keep as control/watch, not selected yet; target win is real, but small-row
+  guard cost needs another pass or broader matrix confirmation.
 FrontcacheCapacityShapeAudit-L1 is now implemented:
   diagnostic adds class-level frontcache push/pop-empty/bin-max attribution.
   raw: private/raw-results/linux/hz6_frontcache_shape_ab_20260614_215447

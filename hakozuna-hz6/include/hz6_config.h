@@ -755,6 +755,19 @@
 #define HZ6_PRELOAD_FREE_MIDPAGE_FIRST_L1 0
 #endif
 
+#ifndef HZ6_PRELOAD_FREE_MIDPAGE_ALIGNED_FIRST_L1
+/* Candidate selective preload free ordering.  Try MidPage before Toy only for
+ * pointers that pass the MidPage active-map alignment gate. */
+#define HZ6_PRELOAD_FREE_MIDPAGE_ALIGNED_FIRST_L1 0
+#endif
+
+#ifndef HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1
+/* Candidate selective preload free ordering.  Try MidPage before Toy only when
+ * the allocator currently has more MidPage active-map entries than Toy
+ * active-map entries. */
+#define HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1 0
+#endif
+
 #ifndef HZ6_PRELOAD_FREE_MIDPAGE_HINT_DRYRUN_L1
 /* Diagnostic-only selective MidPage-first free hint. */
 #define HZ6_PRELOAD_FREE_MIDPAGE_HINT_DRYRUN_L1 0
