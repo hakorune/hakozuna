@@ -260,3 +260,49 @@ the static table RSS win intact and moves 4096..16384 past the earlier tcmalloc
 median from the cross snapshot. Refresh the broad matrix after this promotion
 before making final tcmalloc claims.
 ```
+
+## MidPage 32K Run768 Promotion
+
+Promotion:
+
+```text
+HZ6_MIDPAGE_32K_RUN_BYTES=786432
+```
+
+Read:
+
+```text
+After the free-hint/free-fastslot no-go closeout, the 4096..16384 row still
+trailed tcmalloc speed by about 7% while keeping lower RSS. Increasing the
+32K MidPage run above 512K is a better lever than further free-path code-shape
+work because it reduces source churn without adding per-free classification
+overhead.
+```
+
+Stats-off repeat-7 confirmation versus run512:
+
+| row | run512 ops/s | run512 peak MiB | run768 ops/s | run768 peak MiB |
+| --- | ---: | ---: | ---: | ---: |
+| `16_256` | 57622875.452 | 30.50 | 58278310.110 | 30.38 |
+| `16_4096` | 41850938.091 | 79.75 | 42389468.930 | 79.88 |
+| `1024_4096` | 40600013.800 | 91.00 | 40386578.716 | 91.00 |
+| `4096_16384` | 43110203.756 | 94.50 | 44324019.040 | 94.50 |
+
+Safety spot-check:
+
+```text
+route_invalid=0
+route_miss=0
+alloc_fail=0
+descriptor_exhausted=0
+route_register_fail=0
+source_block_exhausted=0
+```
+
+Decision:
+
+```text
+Run768 is selected for the Ubuntu preload speed/RSS balance.
+Run512 remains the direct control.
+Run1M and run1.5M are target-positive controls but less guard-clean.
+```

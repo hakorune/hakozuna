@@ -81,7 +81,25 @@ Latest cross-allocator refresh after static table trim:
   4096..16384 hz6 41.264M / 94.38 MiB
   On 4096..16384, HZ6 still trails tcmalloc speed
   (41.264M vs 44.812M) but now has lower RSS and better ops-per-MiB.
-MidPage32KRun512-L1 is now selected/default for Ubuntu preload:
+Latest repeat-3 refresh after free-hint/free-fastslot no-go closeouts:
+  raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_004605
+  16..256     hz6 58.046M / 30.50 MiB
+  16..4096    hz6 40.757M / 79.75 MiB
+  1024..4096  hz6 38.917M / 91.00 MiB
+  4096..16384 hz6 41.961M / 94.38 MiB
+  On 4096..16384, HZ6 is below tcmalloc speed
+  (41.961M vs 45.086M) but keeps lower RSS (94.38 vs 100.62 MiB).
+MidPage32KRun768-L1 is now selected/default for Ubuntu preload:
+  HZ6_MIDPAGE_32K_RUN_BYTES 524288 -> 786432
+  512K remains the direct control.
+  confirm repeat-7 without stats:
+    16..256      57.623M / 30.50 MiB -> 58.278M / 30.38 MiB
+    16..4096     41.851M / 79.75 MiB -> 42.389M / 79.88 MiB
+    1024..4096   40.600M / 91.00 MiB -> 40.387M / 91.00 MiB
+    4096..16384  43.110M / 94.50 MiB -> 44.324M / 94.50 MiB
+  safety spot-check: route/source/alloc/fallback failures all 0
+  1M/1.5M controls were target-positive but less guard-clean; keep off.
+MidPage32KRun512-L1 previous selected/default result:
   HZ6_MIDPAGE_32K_RUN_BYTES 262144 -> 524288
   payload trim controls below 256K were no-go: RSS was flat while source_alloc
   increased and 4096..16384 slowed.
@@ -114,7 +132,7 @@ Latest MidPage closeout:
   keep noinline/branch-isolated transfer-skip off
   keep preload-boundary noinline transfer-skip selected
   keep static table trim selected
-  keep MidPage 32K run512 selected
+  keep MidPage 32K run768 selected
   keep preclassified malloc shape out of source
   keep MidPage target DSO as selected/control alias
 
@@ -198,13 +216,22 @@ Next recommended optimization lanes:
     control overhead beats the saved path. Prefer a malloc/source/frontcache
     lane or a broader selected-balance rerun before another free-path edit.
 
+  MidPage32KRunUpsizeAudit-L1:
+    implemented and selected at 768K. The selected 512K 32K-run size improved
+    the target without material RSS cost; larger 32K runs were tested against
+    512K. 768K was the best balanced promotion: it improved 4096..16384 and
+    16..4096, kept 16..256 positive, and only slightly softened 1024..4096.
+    1M/1.5M improved target more but were less guard-clean, so keep them as
+    controls.
+
   FrontcacheCapacityShapeAudit-L1:
     closed as diagnostic/control for now. Class-specific MidPage cap behavior
     did not pass promotion; keep the class-max attribution for future lazy
     storage design.
 
   MidPagePayloadTrimAudit-L1:
-    closed. Smaller 32K runs are no-go for now; 512K is selected for speed.
+    closed. Smaller 32K runs are no-go for now; 768K is selected for the
+    current speed/RSS balance, with 512K kept as direct control.
 
 Use HZ6_UBUNTU_MIDPAGE_NEXT_DESIGN.md as the implementation order for the next
 MidPage pass. TransferProbeAudit-L1, target DSO, and guard-isolated helper

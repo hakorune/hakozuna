@@ -70,7 +70,10 @@ variant_flags() {
   local flags=()
   hz6_preload_effective_selected_cflags flags 1
   case "$variant" in
-    selected_512k)
+    selected)
+      ;;
+    run512k)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 524288
       ;;
     run256k)
       hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 262144
@@ -92,6 +95,15 @@ variant_flags() {
       ;;
     run448k)
       hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 458752
+      ;;
+    run768k)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 786432
+      ;;
+    run1024k)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 1048576
+      ;;
+    run1536k)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 1572864
       ;;
     *)
       echo "unknown variant: ${variant}" >&2
@@ -141,7 +153,7 @@ mkdir -p "$OUTDIR"
   echo "bench=${BENCH}"
 } > "${OUTDIR}/README.log"
 
-variants=(selected_512k run256k run224k run192k run128k run320k run384k run448k)
+variants=(selected run512k run256k run224k run192k run128k run320k run384k run448k run768k run1024k run1536k)
 for variant in "${variants[@]}"; do
   build_variant "$variant"
 done
