@@ -149,7 +149,7 @@ selected 256K -> run512:
   4096..16384:  42.176M / 94.38 MiB -> 45.298M / 94.50 MiB
 ```
 
-Decision:
+Historical decision before current-bias:
 
 ```text
 promote HZ6_MIDPAGE_32K_RUN_BYTES=524288.
@@ -192,8 +192,8 @@ HZ6_MIDPAGE_RUN_BYTES=524288:
   improves 1024..4096 in repeat-7
   but leaves 4096..16384 speed essentially flat/slightly weak
 
-Keep selected:
-  HZ6_MIDPAGE_RUN_BYTES=262144
+Current selected after current-bias:
+  HZ6_MIDPAGE_RUN_BYTES=786432
 ```
 
 Active-map cap/probe read:

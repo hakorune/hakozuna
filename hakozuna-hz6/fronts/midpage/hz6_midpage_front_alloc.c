@@ -85,8 +85,13 @@ void* hz6_midpage_alloc_with_descriptor(Hz6Allocator* allocator,
   }
 
   if (hz6_midpage_prefill_run(allocator, class_id) != 0) {
+#if HZ6_MIDPAGE_PREFILL_CACHE_ONLY_REUSE_L1
+    reused = hz6_front_reuse_cached_with_descriptor(
+        allocator, HZ6_FRONT_MIDPAGE, class_id, NULL, out_descriptor);
+#else
     reused = hz6_front_reuse_transfer_or_cached_with_descriptor(
         allocator, HZ6_FRONT_MIDPAGE, class_id, NULL, out_descriptor);
+#endif
     if (reused) {
 #if HZ6_MIDPAGE_LOW_WATER_REFILL_L1
       hz6_midpage_refill_if_low_water(allocator, class_id);

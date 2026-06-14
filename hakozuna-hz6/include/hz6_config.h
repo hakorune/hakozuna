@@ -469,6 +469,12 @@
 #define HZ6_MIDPAGE_PREFILL_DIRECT_REUSE_L1 0
 #endif
 
+#ifndef HZ6_MIDPAGE_PREFILL_CACHE_ONLY_REUSE_L1
+/* Candidate MidPage front path. After a prefill_run succeeds, retry the local
+ * frontcache without another transfer-first probe. */
+#define HZ6_MIDPAGE_PREFILL_CACHE_ONLY_REUSE_L1 0
+#endif
+
 #ifndef HZ6_MIDPAGE_ALLOC_DESCRIPTOR_OUT_L1
 /* Candidate malloc path. MidPage alloc returns the activated descriptor to
  * active-map registration, avoiding a post-alloc exact route lookup without

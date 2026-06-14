@@ -103,6 +103,9 @@ variant_flags() {
       hz6_preload_replace_define flags HZ6_MIDPAGE_8K_LOW_WATER_REFILL 256
       hz6_preload_replace_define flags HZ6_MIDPAGE_32K_LOW_WATER_REFILL 128
       ;;
+    prefill_cache_only)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_PREFILL_CACHE_ONLY_REUSE_L1 1
+      ;;
     amap32k_p4)
       hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY 32768
       ;;
@@ -179,6 +182,7 @@ variants=(
   run8_768k
   lowwater
   lowwater_8k256_32k128
+  prefill_cache_only
   amap32k_p4
   amap64k_p4
   amap32k_p8

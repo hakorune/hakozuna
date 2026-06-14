@@ -113,8 +113,7 @@ MidPageSupplyMapResume-L1 is now observed after run768:
     midpage_32k_alloc_call=469
     midpage_8k_frontcache_pop_empty=362
     midpage_32k_frontcache_pop_empty=938
-  8K run widening reduces midpage_source_alloc but does not produce a
-  selected-safe speed win:
+  8K run widening is now selected at run768 after current-bias:
     run8_512K repeat-7: 4096..16384 source_alloc 653 -> 565, but speed was
     essentially flat/slightly weak; 1024..4096 improved.
     after current-bias, production-shape repeat-7:
@@ -128,12 +127,33 @@ MidPageSupplyMapResume-L1 is now observed after run768:
       1024..4096   40.338M -> 40.525M  (+0.46%)
       4096..16384  45.389M -> 46.014M  (+1.38%)
     decision: keep 8K run512 as target-positive guard-negative control.
+    run8_768K focused repeat-15:
+      raw: private/raw-results/linux/hz6_prefill_cache_run8_768_repeat15_20260615_050459
+      16..256      57.307M -> 57.679M  (+0.65%)
+      16..4096     41.591M -> 41.638M  (+0.11%)
+      1024..4096   39.628M -> 40.163M  (+1.35%)
+      4096..16384  45.649M -> 45.971M  (+0.71%)
+    post-promotion selected repeat-5:
+      raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_050543
+      16..256      58.484M / 30.38 MiB
+      16..4096     42.150M / 79.75 MiB
+      1024..4096   40.106M / 91.00 MiB
+      4096..16384  46.496M / 94.25 MiB
+    safety stats raw: private/raw-results/linux/hz6_run8_768_selected_stats_safety_20260615_050543
+      route_miss=0 route_invalid=0 alloc_fail=0 register_fail=0
+      source_block_exhausted=0 route_register_fail=0 on 16..256, 16..4096,
+      and 4096..16384.
+    decision: promote HZ6_MIDPAGE_RUN_BYTES=786432 for Ubuntu preload.
+  MidPage prefill-cache-only retry is no-go:
+    flag: HZ6_MIDPAGE_PREFILL_CACHE_ONLY_REUSE_L1=1
+    raw: private/raw-results/linux/hz6_prefill_cache_run8_768_repeat15_20260615_050459
+    16..256 regressed -7.11%; 4096..16384 regressed -2.08%.
   Active-map capacity/probe widening removes most route-after-map fallbacks but
   regresses speed and RSS because the larger map is hotter than the remaining
   fallback cost:
     cap32K/probe4: route_after_maps about 2199 -> 124, but target speed fell
     and RSS rose.
-  Keep HZ6_MIDPAGE_RUN_BYTES=262144 and MidPage active-map cap16K/probe4 as
+  Keep HZ6_MIDPAGE_RUN_BYTES=786432 and MidPage active-map cap16K/probe4 as
   selected. Use run_hz6_midpage_supply_map_ab.sh for reproducible controls.
 Recent MidPage/free-order lanes are closed for selected default:
   low-water refill is no-go; extra eager supply/layout cost did not translate.

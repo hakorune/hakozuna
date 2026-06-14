@@ -318,3 +318,69 @@ void* hz6_front_reuse_transfer_or_cached_with_descriptor(
 
   return NULL;
 }
+
+void* hz6_front_reuse_cached_with_descriptor(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id,
+    Hz6AllocPath* path,
+    Hz6ObjectDescriptor** out_descriptor) {
+  if (out_descriptor) {
+    *out_descriptor = NULL;
+  }
+  if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
+    return NULL;
+  }
+
+  Hz6FrontCacheEntry entry;
+  while (hz6_allocator_frontcache_pop(allocator, class_id, &entry)) {
+    hz6_toy_small_hotpath_diag_malloc_frontcache_pop(allocator, front_id,
+                                                     class_id);
+    if (!entry.descriptor) {
+      void* materialized = hz6_front_materialize_descriptorless_entry(
+          allocator, front_id, class_id, entry, path);
+      if (materialized) {
+        if (out_descriptor) {
+          Hz6RouteResult route =
+              hz6_allocator_route_lookup_exact(allocator, materialized);
+          if (route.kind == HZ6_ROUTE_VALID) {
+            *out_descriptor = (Hz6ObjectDescriptor*)route.descriptor;
+          }
+        }
+        return materialized;
+      }
+      (void)hz6_allocator_frontcache_push(allocator, class_id, entry);
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.frontcache_reuse_invalid;
+#endif
+      return NULL;
+    }
+
+    Hz6ObjectDescriptor* descriptor =
+        (Hz6ObjectDescriptor*)entry.descriptor;
+    if (hz6_allocator_activate_descriptor(
+            allocator, descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr,
+            entry.generation, hz6_allocator_owner_token(allocator))) {
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.frontcache_reuse_hit;
+#endif
+      hz6_toy_small_hotpath_diag_malloc_activate_success(allocator, front_id,
+                                                         class_id);
+      if (path) {
+        *path = HZ6_ALLOC_PATH_LOCAL_REUSE;
+      } else {
+        hz6_allocator_note_front_alloc_path(allocator, front_id,
+                                            HZ6_ALLOC_PATH_LOCAL_REUSE);
+      }
+      if (out_descriptor) {
+        *out_descriptor = descriptor;
+      }
+      return entry.ptr;
+    }
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.frontcache_reuse_invalid;
+#endif
+  }
+
+  return NULL;
+}

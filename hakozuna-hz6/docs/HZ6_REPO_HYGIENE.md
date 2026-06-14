@@ -86,9 +86,10 @@ Ubuntu LD_PRELOAD functional lane:
   hook implementation lives in hakozuna-hz6/preload/hz6_preload_hooks.c
   stats/registry state lives in hakozuna-hz6/preload/hz6_preload.c
   route65k-desc16384-source2048-frontcache4096-toyactivemap32768
-  + midpage-run256k + midpage-32k-run512
+  + midpage-run768k + midpage-32k-run768k
   + external-midpage-active-map16k-unaligned-probe4
   + midpage descriptor-out + preload-boundary malloc skip
+  + current-bias free order
   + realloc-in-place
   + mmap retain + 64K retain stack
   + ToyFullBlockPrefill max128

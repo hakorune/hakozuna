@@ -39,16 +39,22 @@ runner.  The preload lane is now smoke-clean and has its own selected/default
 composition:
 
 ```text
-HZ6_ROUTE_TABLE_CAPACITY=131072
-HZ6_OBJECT_DESCRIPTOR_CAPACITY=32768
-HZ6_SOURCE_BLOCK_CAPACITY=4096
-HZ6_FRONT_CACHE_BIN_CAPACITY=8192
+HZ6_ROUTE_TABLE_CAPACITY=65536
+HZ6_OBJECT_DESCRIPTOR_CAPACITY=16384
+HZ6_SOURCE_BLOCK_CAPACITY=2048
+HZ6_FRONT_CACHE_BIN_CAPACITY=4096
 HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY=32768
-HZ6_MIDPAGE_RUN_BYTES=262144
+HZ6_MIDPAGE_RUN_BYTES=786432
+HZ6_MIDPAGE_32K_RUN_BYTES=786432
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2=1
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_EXTERNAL_L2=1
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_UNALIGNED_L2=1
+HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY=16384
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT=4
+HZ6_MIDPAGE_ALLOC_DESCRIPTOR_OUT_L1=1
+HZ6_PRELOAD_MIDPAGE_MALLOC_SKIP_TRANSFER_L1=1
+HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_NOINLINE_L1=1
+HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1=1
 HZ6_PRELOAD_REALLOC_IN_PLACE_L1=1
 HZ6_LINUX_MMAP_RETAIN_L1=1
 HZ6_LINUX_MMAP_RETAIN_64K_STACK_L1=1
@@ -72,10 +78,11 @@ unregister/tombstone churn and lifted the focused repeat-3 median to about
 The broader pass then selected PreloadToyActiveFastFree-L1: preload `free()`
 tries the Toy active-map before route lookup, dropping 16..256 diagnostic route
 probes from about 2.12M to about 37.7K and moving the focused 16..256 cross row
-to `hz6 53.883M` versus `mimalloc 52.656M`.  MidPageSourceRun256K-L1 is also
-selected for the preload bundle: it keeps the direct/R1 64KiB default intact
-but raises the LD_PRELOAD MidPage run to 256KiB, moving the 4096..16384 median
-from `16.549M` to `19.394M` with flat peak RSS. MidPageActiveFreeMap-L2 is then
+to `hz6 53.883M` versus `mimalloc 52.656M`. MidPage8KRun768-L1 is now
+selected for the preload bundle after current-bias: it keeps the direct/R1
+64KiB default intact but raises the LD_PRELOAD MidPage 8K run to 768KiB.
+Post-promotion selected repeat-5 reached `46.496M / 94.25 MiB` on
+4096..16384. MidPageActiveFreeMap-L2 is then
 selected for preload with external capacity 8192 and the later selected
 unaligned/probe4 gate; it keeps a dedicated MidPage
 map instead of widening the Toy map and moved the focused 4096..16384 cap

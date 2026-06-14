@@ -39,6 +39,13 @@ void* hz6_front_reuse_transfer_or_cached_with_descriptor(
     Hz6AllocPath* path,
     Hz6ObjectDescriptor** out_descriptor);
 
+void* hz6_front_reuse_cached_with_descriptor(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id,
+    Hz6AllocPath* path,
+    Hz6ObjectDescriptor** out_descriptor);
+
 int hz6_front_free_local_to_cache(Hz6Allocator* allocator,
                                   void* ptr,
                                   Hz6RouteResult route,
