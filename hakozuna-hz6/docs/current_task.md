@@ -81,6 +81,17 @@ Latest cross-allocator refresh after static table trim:
   4096..16384 hz6 41.264M / 94.38 MiB
   On 4096..16384, HZ6 still trails tcmalloc speed
   (41.264M vs 44.812M) but now has lower RSS and better ops-per-MiB.
+MidPage32KRun512-L1 is now selected/default for Ubuntu preload:
+  HZ6_MIDPAGE_32K_RUN_BYTES 262144 -> 524288
+  payload trim controls below 256K were no-go: RSS was flat while source_alloc
+  increased and 4096..16384 slowed.
+  confirm repeat-7 without stats:
+    16..256      59.531M / 30.38 MiB -> 60.730M / 30.50 MiB
+    16..4096     41.811M / 79.88 MiB -> 43.235M / 79.88 MiB
+    1024..4096   40.856M / 91.12 MiB -> 41.568M / 91.00 MiB
+    4096..16384  42.176M / 94.38 MiB -> 45.298M / 94.50 MiB
+  safety repeat-3: route/source/alloc/fallback failures all 0
+  raw: private/raw-results/linux/hz6_midpage_run512_confirm_20260614_194437
 
 Latest MidPage closeout:
   keep descriptor-out selected
@@ -93,6 +104,7 @@ Latest MidPage closeout:
   keep noinline/branch-isolated transfer-skip off
   keep preload-boundary noinline transfer-skip selected
   keep static table trim selected
+  keep MidPage 32K run512 selected
   keep preclassified malloc shape out of source
   keep MidPage target DSO as selected/control alias
 
@@ -104,12 +116,12 @@ whole-helper free-cache replacement first.
 
 Next recommended optimization lanes:
   FrontcacheCapacityShapeAudit-L1:
-    after the global frontcache4096 promotion, check class-specific caps or
-    colder-bin lazy storage before touching source payload.
+    next. The global frontcache4096 promotion is selected; the next frontcache
+    step should be class-specific caps or colder-bin lazy storage, not another
+    global-cap guess.
 
   MidPagePayloadTrimAudit-L1:
-    only after table/frontcache fixed cost is understood; 32K source payload
-    is real on 4096..16384, but earlier larger-run attempts regressed locality.
+    closed. Smaller 32K runs are no-go for now; 512K is selected for speed.
 
 Use HZ6_UBUNTU_MIDPAGE_NEXT_DESIGN.md as the implementation order for the next
 MidPage pass. TransferProbeAudit-L1, target DSO, and guard-isolated helper

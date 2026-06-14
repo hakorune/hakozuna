@@ -211,3 +211,45 @@ Read:
 This is a strong speed/RSS balance win and should be kept as the Ubuntu
 selected default. The previous wide capacities remain the wide_l0 control.
 ```
+
+## MidPage 32K Run512 Promotion
+
+Raw runs:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_midpage_payload_trim_ab_20260614_194352
+hakozuna-hz6/private/raw-results/linux/hz6_midpage_run512_confirm_20260614_194437
+```
+
+Promotion:
+
+```text
+HZ6_MIDPAGE_32K_RUN_BYTES=524288
+```
+
+Read:
+
+```text
+The original payload-trim hypothesis did not hold. Smaller 32K runs
+128K/192K/224K did not reduce peak RSS materially, increased source_alloc on
+4096..16384, and slowed the target. Larger 32K runs reduced source churn and
+512K was the best observed control after static table trim.
+```
+
+Stats-off repeat-7 confirmation:
+
+| row | selected 256K ops/s | selected 256K peak MiB | run512 ops/s | run512 peak MiB |
+| --- | ---: | ---: | ---: | ---: |
+| `16_256` | 59530701.620 | 30.38 | 60730135.954 | 30.50 |
+| `16_4096` | 41810730.766 | 79.88 | 43235284.212 | 79.88 |
+| `1024_4096` | 40855743.986 | 91.12 | 41567595.499 | 91.00 |
+| `4096_16384` | 42175742.820 | 94.38 | 45298101.255 | 94.50 |
+
+Read:
+
+```text
+Run512 is selected for speed. It does not materially improve RSS, but it keeps
+the static table RSS win intact and moves 4096..16384 past the earlier tcmalloc
+median from the cross snapshot. Refresh the broad matrix after this promotion
+before making final tcmalloc claims.
+```

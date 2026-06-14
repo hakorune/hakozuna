@@ -29,6 +29,7 @@ HZ6_FRONT_CACHE_BIN_CAPACITY=4096
 HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY=32768
 HZ6_TOY_SOURCE_BLOCK_BYTES=65536
 HZ6_MIDPAGE_RUN_BYTES=262144
+HZ6_MIDPAGE_32K_RUN_BYTES=524288
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2=1
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_EXTERNAL_L2=1
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_UNALIGNED_L2=1
@@ -169,6 +170,7 @@ Longer-term target:
 | MidPage guard-isolated transfer skip | control/no-go | noinline and noinline+unlikely helper shapes kept the 4096..16384 win (`~39.4M`), but still regressed 16..256, 16..4096, and 1024..4096 beyond the promotion gate. Keep as target DSO/control only. |
 | MidPage preload-boundary malloc skip | selected/default | Wrapper-level MidPage malloc boundary keeps selected `hz6_malloc()` shape clean. The first direct boundary shape improved target but regressed guards; the promoted outer-guard noinline shape passed repeat-15. Confirmation against explicit boundary-off control: 4096..16384 `33.735M -> 40.056M`, 16..256 `55.957M -> 56.539M`, 16..4096 `40.969M -> 41.339M`, 1024..4096 `39.059M -> 39.953M`. |
 | Static table trim | selected/default | `HZ6_ROUTE_TABLE_CAPACITY=65536`, `HZ6_OBJECT_DESCRIPTOR_CAPACITY=16384`, `HZ6_SOURCE_BLOCK_CAPACITY=2048`, and `HZ6_FRONT_CACHE_BIN_CAPACITY=4096` reduce allocator-local fixed table RSS. Confirm repeat-5 without stats moved 16..4096 `41.519M / 100.62 MiB -> 43.581M / 79.75 MiB`, 1024..4096 `39.966M / 111.75 MiB -> 41.849M / 91.00 MiB`, and 4096..16384 `40.863M / 115.25 MiB -> 42.904M / 94.38 MiB`; no route/descriptor/source failures in the repeat-3 safety lane. |
+| MidPage 32K run512 | selected/default | `HZ6_MIDPAGE_32K_RUN_BYTES=524288` reduces 32K source-run churn after static table trim. Smaller payload-trim runs were no-go because RSS stayed flat while source allocation rose and 4096..16384 slowed. Confirm repeat-7 without stats moved 4096..16384 `42.176M / 94.38 MiB -> 45.298M / 94.50 MiB`; guards also improved or stayed flat. |
 
 ## Selected Controls
 
@@ -187,6 +189,7 @@ Keep these controls available when changing the preload lane:
 | route table 262144 | Capacity upper-bound; not selected by current evidence. |
 | `HZ6_PRELOAD_REALLOC_IN_PLACE_L1=0` | Direct control for preload realloc in-place. |
 | `wide_l0` static tables | Previous preload table capacities: route 131072, descriptor 32768, source blocks 4096, frontcache bin 8192. Keep as direct RSS/safety control for the selected trim. |
+| `HZ6_MIDPAGE_32K_RUN_BYTES=262144` | Previous selected 32K run size and direct control for run512. |
 
 ## No-Go / Evidence-Only
 
@@ -217,6 +220,7 @@ Keep these controls available when changing the preload lane:
 | `build_hz6_preload_diag.sh` | Diagnostic preload build wrapper with `HZ6_DIAGNOSTIC_PROBES=1`; use for attribution, not selected speed ranking. |
 | `run_hz6_midpage_rss_audit.sh` | Diagnostic RSS attribution runner for `16..4096`, `1024..4096`, and `4096..16384`. |
 | `run_hz6_static_table_trim_ab.sh` | Builds selected trim and wide-table controls, then compares speed/RSS plus failure counters. |
+| `run_hz6_midpage_payload_trim_ab.sh` | Builds MidPage 32K run-size controls and compares selected speed/RSS plus source/failure counters. |
 | MidPage noinline/branch-isolated transfer skip | Still guard-sensitive. Branch/layout isolation did not make it selected-safe, so do not add it to `build_hz6_preload.sh`. |
 | MidPage preclassified malloc shape | Direct 4097..32768 MidPage classification improved target in short repeat, but disturbed `16..256` too much. Avoid broad malloc code-shape changes unless small guards are isolated first. |
 | active-map slot-index/code-shape helper | No selected-row win; changing this header shape can disturb MidPage/Toy preload layout, so keep the existing body. |
@@ -289,6 +293,8 @@ private/raw-results/linux/hz6_midpage_rss_audit_20260614_164214
 private/raw-results/linux/hz6_static_table_trim_ab_20260614_164920
 private/raw-results/linux/hz6_static_table_trim_confirm_20260614_165003
 private/raw-results/linux/hz6_ubuntu_selected_balance_20260614_165226
+private/raw-results/linux/hz6_midpage_payload_trim_ab_20260614_194352
+private/raw-results/linux/hz6_midpage_run512_confirm_20260614_194437
 private/raw-results/linux/hz6_ubuntu_selected_balance_20260614_162527
 private/raw-results/linux/hz6_preload_activefast_cross_20260613
 private/raw-results/linux/hz6_preload_midrun_ladder_r3_20260613

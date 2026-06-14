@@ -73,6 +73,90 @@ alloc_fail=0
 route_register_fail=0
 ```
 
+## Lane D: MidPagePayloadTrimAudit-L1
+
+Goal:
+
+```text
+preserve the new 4096..16384 speed/RSS lead while reducing 32K source payload
+pressure after static table trim.
+```
+
+Rationale:
+
+```text
+Static table trim removed about 20 MiB of fixed RSS from selected Ubuntu
+preload. The remaining 4096..16384 pressure is mostly MidPage 32K source-run
+payload and source-block count. HZ6 now beats tcmalloc on RSS and ops-per-MiB
+on 4096..16384, but still trails tcmalloc on speed:
+
+  hz6      41.264M /  94.38 MiB
+  tcmalloc 44.812M / 103.38 MiB
+```
+
+Audit variants:
+
+```text
+selected:
+  HZ6_MIDPAGE_32K_RUN_BYTES=262144
+
+payload trim controls:
+  HZ6_MIDPAGE_32K_RUN_BYTES=229376  # 7 slots
+  HZ6_MIDPAGE_32K_RUN_BYTES=196608  # 6 slots
+  HZ6_MIDPAGE_32K_RUN_BYTES=131072  # 4 slots, likely source-block stress
+```
+
+Acceptance:
+
+```text
+4096..16384 speed does not regress beyond noise
+4096..16384 RSS improves
+16..4096 and 1024..4096 do not regress materially
+route_register_fail=0
+source_block_exhausted=0
+alloc_fail=0
+malloc_real_fallback=0
+```
+
+Expected no-go signal:
+
+```text
+smaller 32K runs can increase source allocation count and route/source-block
+pressure. If source_block_exhausted or alloc fallback appears, do not tune
+around it with larger source tables first; that gives back the static table RSS
+win.
+```
+
+Result:
+
+```text
+payload-trim controls below selected 256K were no-go:
+  224K / 192K / 128K kept RSS essentially flat, increased source_alloc, and
+  slowed 4096..16384.
+
+upper run ladder showed the useful direction:
+  320K / 384K / 448K / 512K reduce source_alloc.
+  512K was strongest in the repeat-3 ladder.
+```
+
+Stats-off repeat-7 confirmation:
+
+```text
+selected 256K -> run512:
+  16..256:      59.531M / 30.38 MiB -> 60.730M / 30.50 MiB
+  16..4096:     41.811M / 79.88 MiB -> 43.235M / 79.88 MiB
+  1024..4096:   40.856M / 91.12 MiB -> 41.568M / 91.00 MiB
+  4096..16384:  42.176M / 94.38 MiB -> 45.298M / 94.50 MiB
+```
+
+Decision:
+
+```text
+promote HZ6_MIDPAGE_32K_RUN_BYTES=524288.
+Keep 262144 as the direct control.
+Do not promote smaller payload-trim run sizes.
+```
+
 ## Lane A: TransferProbeAudit-L1
 
 Goal:
