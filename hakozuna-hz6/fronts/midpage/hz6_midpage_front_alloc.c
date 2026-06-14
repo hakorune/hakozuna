@@ -19,6 +19,28 @@ size_t hz6_midpage_prefill(Hz6Allocator* allocator,
   return filled;
 }
 
+#if HZ6_MIDPAGE_LOW_WATER_REFILL_L1
+static size_t hz6_midpage_low_water_for_class(uint16_t class_id) {
+  if (class_id == HZ6_MIDPAGE_8K_CLASS_ID) {
+    return HZ6_MIDPAGE_8K_LOW_WATER_REFILL;
+  }
+  if (class_id == HZ6_MIDPAGE_32K_CLASS_ID) {
+    return HZ6_MIDPAGE_32K_LOW_WATER_REFILL;
+  }
+  return 0;
+}
+
+static void hz6_midpage_refill_if_low_water(Hz6Allocator* allocator,
+                                            uint16_t class_id) {
+  size_t low_water = hz6_midpage_low_water_for_class(class_id);
+  if (low_water == 0 || !allocator ||
+      hz6_allocator_frontcache_count(allocator, class_id) > low_water) {
+    return;
+  }
+  (void)hz6_midpage_prefill_run(allocator, class_id);
+}
+#endif
+
 int hz6_midpage_can_allocate(size_t size,
                              size_t align,
                              uint16_t* class_id) {
@@ -66,6 +88,9 @@ void* hz6_midpage_alloc_with_descriptor(Hz6Allocator* allocator,
     reused = hz6_front_reuse_transfer_or_cached_with_descriptor(
         allocator, HZ6_FRONT_MIDPAGE, class_id, NULL, out_descriptor);
     if (reused) {
+#if HZ6_MIDPAGE_LOW_WATER_REFILL_L1
+      hz6_midpage_refill_if_low_water(allocator, class_id);
+#endif
       return reused;
     }
   }

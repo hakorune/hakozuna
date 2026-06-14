@@ -214,6 +214,75 @@ Runner:
 ./hakozuna-hz6/linux/run_hz6_midpage_supply_map_ab.sh
 ```
 
+## Lane F: MidPageLowWaterRefill-L1
+
+Goal:
+
+```text
+reduce MidPage frontcache empty pops without changing the normal reuse-hit
+path or broadening active-map/source-run structures.
+```
+
+Behavior control:
+
+```text
+HZ6_MIDPAGE_LOW_WATER_REFILL_L1=1
+HZ6_MIDPAGE_8K_LOW_WATER_REFILL=128
+HZ6_MIDPAGE_32K_LOW_WATER_REFILL=64
+```
+
+Shape:
+
+```text
+Only after MidPage alloc misses the cache, prefill_run() succeeds, and the
+post-prefill cache pop returns an object:
+  if class frontcache count <= low-water mark:
+    prefill one more run
+
+This keeps the common cache-hit path unchanged. It intentionally spends extra
+source/prefill work at miss boundaries to avoid near-future empty pops.
+```
+
+Acceptance:
+
+```text
+4096..16384 speed improves or remains flat with lower empty-pop pressure
+16..4096 and 1024..4096 do not regress materially
+RSS does not rise materially
+route_invalid=0
+route_miss=0 for owned frees
+alloc_fail=0
+route_register_fail=0
+```
+
+No-go signal:
+
+```text
+If source_alloc/RSS rises or target speed remains flat, close as no-go. The
+previous run-size and active-map controls already showed that simply adding
+more MidPage supply can fail to translate into throughput.
+```
+
+Result:
+
+```text
+implemented as default-off control.
+
+HZ6_MIDPAGE_LOW_WATER_REFILL_L1=1:
+  default thresholds: 8K=128, 32K=64
+  strong thresholds:  8K=256, 32K=128
+
+Stats-on repeat-7 made the strong lane look plausible, but stats-off repeat-9
+closed it as no-go:
+  16..256      selected 58.383M -> strong 57.162M
+  16..4096     selected 42.123M -> strong 41.786M
+  1024..4096   selected 40.448M -> strong 39.934M
+  4096..16384  selected 44.597M -> strong 44.458M
+
+Decision:
+  keep HZ6_MIDPAGE_LOW_WATER_REFILL_L1=0 in selected default.
+```
+
 ## Lane A: TransferProbeAudit-L1
 
 Goal:

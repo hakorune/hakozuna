@@ -118,6 +118,19 @@ MidPageSupplyMapResume-L1 is now observed after run768:
     and RSS rose.
   Keep HZ6_MIDPAGE_RUN_BYTES=262144 and MidPage active-map cap16K/probe4 as
   selected. Use run_hz6_midpage_supply_map_ab.sh for reproducible controls.
+MidPageLowWaterRefill-L1 is implemented as a default-off control and closed
+as no-go for selected default:
+  Shape: after a MidPage cache-miss refill successfully returns an object, if
+  the class remains under a class-specific low-water mark, prefill one more run.
+  Result: the default low-water setting regressed. The stronger
+  8K=256/32K=128 setting looked plausible with stats enabled, but stats-off
+  repeat-9 did not pass:
+    16..256      58.383M -> 57.162M
+    16..4096     42.123M -> 41.786M
+    1024..4096   40.448M -> 39.934M
+    4096..16384  44.597M -> 44.458M
+  Keep HZ6_MIDPAGE_LOW_WATER_REFILL_L1 off. The issue is not simply that the
+  class needs more eager supply; extra refill work/layout cost cancels it.
 FrontcacheCapacityShapeAudit-L1 is now implemented:
   diagnostic adds class-level frontcache push/pop-empty/bin-max attribution.
   raw: private/raw-results/linux/hz6_frontcache_shape_ab_20260614_215447
