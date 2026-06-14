@@ -16,6 +16,9 @@ Lane names, status, controls, and no-go boundaries:
 Ubuntu LD_PRELOAD selected bundle and controls:
   HZ6_UBUNTU_PRELOAD_LANES.md
 
+Ubuntu selected speed/RSS balance:
+  HZ6_UBUNTU_SELECTED_BALANCE.md
+
 Ubuntu MidPage next design:
   HZ6_UBUNTU_MIDPAGE_NEXT_DESIGN.md
 
@@ -49,6 +52,9 @@ guard plus noinline helper; it avoids empty transfer-first probes on the
 MidPage direct-local path without adding a helper call to small rows.
 The confirmation lane now compares selected default against an explicit
 boundary-off control DSO.
+The latest Ubuntu selected balance matrix shows HZ6 is strongest on
+4096..16384: faster and lower-RSS than HZ4, much stronger than mimalloc/system,
+but still behind HZ3 and tcmalloc on the speed/RSS frontier.
 
 Latest MidPage closeout:
   keep descriptor-out selected
@@ -63,11 +69,15 @@ Latest MidPage closeout:
   keep preclassified malloc shape out of source
   keep MidPage target DSO as selected/control alias
 
-Next Ubuntu MidPage work should not try more transfer-skip code-shape tweaks
-until a broader cross-allocator matrix confirms the promoted outer-guard
+Next Ubuntu MidPage work should not try more transfer-skip code-shape tweaks;
+the broader cross-allocator matrix already confirmed the promoted outer-guard
 noinline boundary. Do not chase route fallback, deeper free probing,
 source-run-slot route registration, broad malloc code-shape changes, or
 whole-helper free-cache replacement first.
+
+Next recommended optimization lane:
+  MidPageFrontcacheRSSAudit-L1 on 16..4096, 1024..4096, and 4096..16384.
+  Goal: reduce HZ6 RSS pressure while preserving the new MidPage speed win.
 
 Use HZ6_UBUNTU_MIDPAGE_NEXT_DESIGN.md as the implementation order for the next
 MidPage pass. TransferProbeAudit-L1, target DSO, and guard-isolated helper

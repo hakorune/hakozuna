@@ -7,6 +7,8 @@ experiment ledger.
 For cleanup rules and the next source modularization target, see
 `HZ6_REPO_HYGIENE.md` and `HZ6_SOURCE_MODULARIZATION.md`.
 For the Ubuntu LD_PRELOAD lane ledger, see `HZ6_UBUNTU_PRELOAD_LANES.md`.
+For the post-MidPage-boundary Ubuntu selected speed/RSS balance read, see
+`HZ6_UBUNTU_SELECTED_BALANCE.md`.
 
 Ubuntu note:
 `HZ6_ROUTE_LAST_HIT_CACHE_L1=1` is now the Linux/Ubuntu default route shortcut.
@@ -101,6 +103,10 @@ preload mixed_ws rows: 16..256 `57.671M` vs `53.099M`, 16..4096 `39.382M` vs
 same rows, and system malloc still wins the tiny 16..256 row, so LD_PRELOAD is
 now a real Ubuntu performance lane but still separate from direct HZ6 API
 strength rows and not a universal allocator-win claim.
+After the MidPage preload-boundary malloc skip, the balance row improves again:
+4096..16384 reaches `hz6 40.387M / 115.25 MiB`, beating HZ4 on both throughput
+and RSS and beating mimalloc/system strongly, while still trailing HZ3 and
+tcmalloc on the speed/RSS frontier.
 
 ## Selected Rows
 
