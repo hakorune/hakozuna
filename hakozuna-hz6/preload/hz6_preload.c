@@ -238,6 +238,9 @@ static void hz6_preload_print_stats(void) {
   size_t toy_small_active_map_free_cache_fail = 0;
   size_t toy_small_active_map_route_bypass = 0;
   size_t midpage_active_map_register = 0;
+  size_t midpage_active_map_register_direct = 0;
+  size_t midpage_active_map_register_front_alloc = 0;
+  size_t midpage_active_map_register_route_fallback = 0;
   size_t midpage_active_map_register_collision = 0;
   size_t midpage_active_map_register_empty_slot = 0;
   size_t midpage_active_map_register_same_ptr = 0;
@@ -407,6 +410,12 @@ static void hz6_preload_print_stats(void) {
     toy_small_active_map_route_bypass +=
         stats.toy_small_active_map_route_bypass;
     midpage_active_map_register += stats.midpage_active_map_register;
+    midpage_active_map_register_direct +=
+        stats.midpage_active_map_register_direct;
+    midpage_active_map_register_front_alloc +=
+        stats.midpage_active_map_register_front_alloc;
+    midpage_active_map_register_route_fallback +=
+        stats.midpage_active_map_register_route_fallback;
     midpage_active_map_register_collision +=
         stats.midpage_active_map_register_collision;
     midpage_active_map_register_empty_slot +=
@@ -605,6 +614,9 @@ static void hz6_preload_print_stats(void) {
           "toy_small_active_map_free_cache_fail=%zu "
           "toy_small_active_map_route_bypass=%zu "
           "midpage_active_map_register=%zu "
+          "midpage_active_map_register_direct=%zu "
+          "midpage_active_map_register_front_alloc=%zu "
+          "midpage_active_map_register_route_fallback=%zu "
           "midpage_active_map_register_collision=%zu "
           "midpage_active_map_register_empty_slot=%zu "
           "midpage_active_map_register_same_ptr=%zu "
@@ -641,6 +653,9 @@ static void hz6_preload_print_stats(void) {
           toy_small_active_map_free_cache_fail,
           toy_small_active_map_route_bypass,
           midpage_active_map_register,
+          midpage_active_map_register_direct,
+          midpage_active_map_register_front_alloc,
+          midpage_active_map_register_route_fallback,
           midpage_active_map_register_collision,
           midpage_active_map_register_empty_slot,
           midpage_active_map_register_same_ptr,

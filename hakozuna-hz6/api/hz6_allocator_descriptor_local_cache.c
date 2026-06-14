@@ -1,5 +1,7 @@
 #include "hz6_allocator.h"
 
+#include "../fronts/midpage/hz6_midpage_front.h"
+
 #if HZ6_DESCRIPTORLESS_OVER_CAP_ONLY_L1 || HZ6_DESCRIPTOR_COLD_GOV_L1
 static int hz6_allocator_frontcache_class_over_soft_cap(
     Hz6Allocator* allocator,
@@ -243,6 +245,15 @@ int hz6_allocator_activate_local_descriptor_trusted_owner(
   }
 #if HZ6_TOY_TRUSTED_ACTIVATE_SKIP_SOURCE_BLOCK_CHECK_L1
   if (descriptor->class_id <= 4u && descriptor->bytes <= 4096u) {
+    descriptor->state = HZ6_STATE_ACTIVE;
+    return 1;
+  }
+#endif
+#if HZ6_MIDPAGE_TRUSTED_ACTIVATE_SKIP_SOURCE_BLOCK_CHECK_L1
+  if ((descriptor->class_id == HZ6_MIDPAGE_8K_CLASS_ID &&
+       descriptor->bytes == HZ6_MIDPAGE_8K_BYTES) ||
+      (descriptor->class_id == HZ6_MIDPAGE_32K_CLASS_ID &&
+       descriptor->bytes == HZ6_MIDPAGE_32K_BYTES)) {
     descriptor->state = HZ6_STATE_ACTIVE;
     return 1;
   }

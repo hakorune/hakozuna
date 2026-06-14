@@ -36,9 +36,15 @@ Windows selected-family lane status is maintained in HZ6_LANE_GUIDE.md and
 HZ6_SELECTED_FAMILY_SUMMARY.md.
 
 Ubuntu LD_PRELOAD status is maintained in HZ6_UBUNTU_PRELOAD_LANES.md.
-Current Ubuntu selected default includes MidPage descriptor-out. Next MidPage
-work should observe active-map entry lifetime / overwrite source before changing
-behavior; deeper free probing is not indicated by the latest miss attribution.
+Current Ubuntu selected default includes MidPage descriptor-out. The latest
+MidPage register callsite audit shows route fallback is already eliminated on
+the target row; register pressure is split between direct reuse and front alloc.
+MidPage trusted activation source-block-check skip was tested and is no-go for
+preload default because the target and tiny guard did not improve.
+
+Next Ubuntu MidPage work should stay near active-map register/free code shape
+or preload-boundary shortcuts with focused A/B guards. Do not chase route
+fallback, deeper free probing, or source-run-slot route registration first.
 
 Long historical benchmark notes and failed experiments live in:
   archive/current_task_2026-06_history.md

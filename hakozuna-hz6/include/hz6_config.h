@@ -420,6 +420,13 @@
 #define HZ6_MIDPAGE_ACTIVE_MAP_SAME_CLASS_VICTIM_L1 0
 #endif
 
+#ifndef HZ6_MIDPAGE_TRUSTED_ACTIVATE_SKIP_SOURCE_BLOCK_CHECK_L1
+/* Candidate direct-reuse shortcut. Local-free MidPage descriptors already keep
+ * their source block alive, so trusted-owner activation can skip the repeated
+ * source-block bounds check on the hot reuse path. */
+#define HZ6_MIDPAGE_TRUSTED_ACTIVATE_SKIP_SOURCE_BLOCK_CHECK_L1 0
+#endif
+
 #ifndef HZ6_TOY_CLASS_ID_FAST_ALLOC_L1
 /* Default Toy alloc shortcut.  hz6_malloc() already selected class_id, so
  * Toy alloc can validate size against class bytes instead of classifying again. */

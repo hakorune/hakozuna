@@ -174,6 +174,9 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
 #endif
   if (direct_ptr) {
     if (front->front_id == HZ6_FRONT_MIDPAGE) {
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.midpage_active_map_register_direct;
+#endif
       hz6_midpage_active_map_register(
           allocator, front->front_id, class_id, direct_ptr, direct_descriptor);
     }
@@ -190,6 +193,9 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
     direct_ptr = hz6_allocator_direct_local_alloc(
         allocator, front->front_id, class_id, &direct_descriptor);
     if (direct_ptr) {
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.midpage_active_map_register_direct;
+#endif
       hz6_midpage_active_map_register(
           allocator, front->front_id, class_id, direct_ptr,
           direct_descriptor);
@@ -213,9 +219,15 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
       return NULL;
     }
     if (midpage_descriptor) {
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.midpage_active_map_register_front_alloc;
+#endif
       hz6_midpage_active_map_register(allocator, front->front_id, class_id,
                                       midpage_ptr, midpage_descriptor);
     } else {
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.midpage_active_map_register_route_fallback;
+#endif
       hz6_midpage_active_map_register_route(allocator, front->front_id,
                                             class_id, midpage_ptr);
     }
@@ -226,6 +238,9 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
   if (!ptr) {
     ++allocator->stats.alloc_fail;
   } else if (front->front_id == HZ6_FRONT_MIDPAGE) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.midpage_active_map_register_route_fallback;
+#endif
     hz6_midpage_active_map_register_route(
         allocator, front->front_id, class_id, ptr);
   }
