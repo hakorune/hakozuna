@@ -213,6 +213,8 @@ Keep these controls available when changing the preload lane:
 | `build_hz6_preload_midpage_boundary_control.sh` | Explicit boundary-off control DSO for confirming the selected preload-boundary transfer-skip shape. |
 | `run_hz6_preload_midpage_boundary_ab.sh` | Repeat runner for selected default versus boundary-off control on `4096..16384`, `16..256`, `16..4096`, and `1024..4096`. |
 | `run_hz6_ubuntu_selected_balance_matrix.sh` | Cross-allocator speed/RSS balance matrix for selected HZ6 versus system/HZ3/HZ4/HZ5/mimalloc/tcmalloc. |
+| `build_hz6_preload_diag.sh` | Diagnostic preload build wrapper with `HZ6_DIAGNOSTIC_PROBES=1`; use for attribution, not selected speed ranking. |
+| `run_hz6_midpage_rss_audit.sh` | Diagnostic RSS attribution runner for `16..4096`, `1024..4096`, and `4096..16384`. |
 | MidPage noinline/branch-isolated transfer skip | Still guard-sensitive. Branch/layout isolation did not make it selected-safe, so do not add it to `build_hz6_preload.sh`. |
 | MidPage preclassified malloc shape | Direct 4097..32768 MidPage classification improved target in short repeat, but disturbed `16..256` too much. Avoid broad malloc code-shape changes unless small guards are isolated first. |
 | active-map slot-index/code-shape helper | No selected-row win; changing this header shape can disturb MidPage/Toy preload layout, so keep the existing body. |
@@ -252,9 +254,28 @@ and phase lines before changing Toy/MidPage boundary behavior.
 Use diagnostic builds when detailed probe counters are needed:
 
 ```bash
-OUT_DIR=$PWD/hakozuna-hz6/out/linux/hz6_preload_diag \
-HZ6_EXTRA_CFLAGS='-DHZ6_DIAGNOSTIC_PROBES=1 -DHZ6_TOY_SMALL_HOTPATH_DIAG_L1=1' \
-./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/build_hz6_preload_diag.sh
+```
+
+Use the MidPage RSS audit runner to split selected peak RSS pressure:
+
+```bash
+./hakozuna-hz6/linux/run_hz6_midpage_rss_audit.sh --iters 200000
+```
+
+The diagnostic preload emits one additional attribution line:
+
+```text
+[HZ6_PRELOAD_MEMORY_ATTR]
+```
+
+Important caveat:
+
+```text
+preload_attributed_bytes is an attribution estimate, not exact RSS.
+source_block_payload_bytes is logical source backing capacity and can exceed
+resident pages. Use the line to choose the next lane, not as a replacement for
+peak_kb from the benchmark.
 ```
 
 ## Raw Evidence
@@ -262,6 +283,8 @@ HZ6_EXTRA_CFLAGS='-DHZ6_DIAGNOSTIC_PROBES=1 -DHZ6_TOY_SMALL_HOTPATH_DIAG_L1=1' \
 Recent raw evidence directories:
 
 ```text
+private/raw-results/linux/hz6_midpage_rss_audit_20260614_164214
+private/raw-results/linux/hz6_ubuntu_selected_balance_20260614_162527
 private/raw-results/linux/hz6_preload_activefast_cross_20260613
 private/raw-results/linux/hz6_preload_midrun_ladder_r3_20260613
 private/raw-results/linux/hz6_preload_midrun_default256_guard_20260613

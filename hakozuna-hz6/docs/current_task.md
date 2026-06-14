@@ -55,6 +55,13 @@ boundary-off control DSO.
 The latest Ubuntu selected balance matrix shows HZ6 is strongest on
 4096..16384: faster and lower-RSS than HZ4, much stronger than mimalloc/system,
 but still behind HZ3 and tcmalloc on the speed/RSS frontier.
+MidPageFrontcacheRSSAudit-L1 is now implemented as a diagnostic lane. The first
+200K audit shows a large fixed allocator-local table cost plus expected
+MidPage source payload pressure:
+  16..4096     peak 100.25 MiB, static 61.73 MiB, frontcache 20.00 MiB
+  1024..4096   peak 111.62 MiB, static 61.73 MiB, frontcache 20.00 MiB
+  4096..16384  peak 114.88 MiB, static 61.73 MiB, frontcache 20.00 MiB
+  raw: private/raw-results/linux/hz6_midpage_rss_audit_20260614_164214
 
 Latest MidPage closeout:
   keep descriptor-out selected
@@ -75,9 +82,18 @@ noinline boundary. Do not chase route fallback, deeper free probing,
 source-run-slot route registration, broad malloc code-shape changes, or
 whole-helper free-cache replacement first.
 
-Next recommended optimization lane:
-  MidPageFrontcacheRSSAudit-L1 on 16..4096, 1024..4096, and 4096..16384.
-  Goal: reduce HZ6 RSS pressure while preserving the new MidPage speed win.
+Next recommended optimization lanes:
+  AllocatorStaticTableTrimAudit-L1:
+    check whether preload can avoid multiplying full descriptor/route/source/
+    frontcache tables for helper allocators or cold per-thread allocators.
+
+  FrontcacheCapacityShapeAudit-L1:
+    test narrower frontcache table capacity or class-specific caps against
+    16..4096 / 1024..4096 / 4096..16384 speed and RSS.
+
+  MidPagePayloadTrimAudit-L1:
+    only after table/frontcache fixed cost is understood; 32K source payload
+    is real on 4096..16384, but earlier larger-run attempts regressed locality.
 
 Use HZ6_UBUNTU_MIDPAGE_NEXT_DESIGN.md as the implementation order for the next
 MidPage pass. TransferProbeAudit-L1, target DSO, and guard-isolated helper

@@ -306,6 +306,23 @@ static void hz6_preload_print_stats(void) {
   size_t source_block_route_range_index_stale = 0;
   size_t source_block_route_range_index_probe_total = 0;
   size_t source_block_route_range_index_probe_max = 0;
+#if HZ6_DIAGNOSTIC_PROBES
+  size_t memory_descriptor_table_bytes = 0;
+  size_t memory_route_table_bytes = 0;
+  size_t memory_source_block_table_bytes = 0;
+  size_t memory_frontcache_table_bytes = 0;
+  size_t memory_transfer_table_bytes = 0;
+  size_t memory_ownerlocality_index_bytes = 0;
+  size_t memory_static_table_bytes = 0;
+  size_t memory_static_plus_payload_bytes = 0;
+  size_t memory_source_block_payload_bytes = 0;
+  size_t memory_frontcache_total = 0;
+  size_t memory_frontcache_largest_bin = 0;
+  size_t memory_active_source_blocks = 0;
+  size_t memory_registered_source_blocks = 0;
+  size_t memory_ref_nonzero_source_blocks = 0;
+  size_t memory_ref_zero_source_blocks = 0;
+#endif
 
   pthread_mutex_lock(&g_hz6_preload_allocator_registry_mutex);
   allocator_count = g_hz6_preload_allocator_registry_count;
@@ -534,11 +551,47 @@ static void hz6_preload_print_stats(void) {
       source_block_route_range_index_probe_max =
           stats.source_block_route_range_index_probe_max;
     }
+#if HZ6_DIAGNOSTIC_PROBES
+    memory_descriptor_table_bytes += stats.memory_descriptor_table_bytes;
+    memory_route_table_bytes += stats.memory_route_table_bytes;
+    memory_source_block_table_bytes += stats.memory_source_block_table_bytes;
+    memory_frontcache_table_bytes += stats.memory_frontcache_table_bytes;
+    memory_transfer_table_bytes += stats.memory_transfer_table_bytes;
+    memory_ownerlocality_index_bytes += stats.memory_ownerlocality_index_bytes;
+    memory_static_table_bytes += stats.memory_static_table_bytes;
+    memory_static_plus_payload_bytes += stats.memory_static_plus_payload_bytes;
+    memory_source_block_payload_bytes += stats.memory_source_block_payload_bytes;
+    memory_frontcache_total += stats.memory_frontcache_total;
+    if (stats.memory_frontcache_largest_bin > memory_frontcache_largest_bin) {
+      memory_frontcache_largest_bin = stats.memory_frontcache_largest_bin;
+    }
+    memory_active_source_blocks += stats.memory_active_source_blocks;
+    memory_registered_source_blocks += stats.memory_registered_source_blocks;
+    memory_ref_nonzero_source_blocks += stats.memory_ref_nonzero_source_blocks;
+    memory_ref_zero_source_blocks += stats.memory_ref_zero_source_blocks;
+#endif
   }
   pthread_mutex_unlock(&g_hz6_preload_allocator_registry_mutex);
 
   Hz6LinuxMmapRetainStats retain_stats =
       hz6_linux_mmap_retain_stats_snapshot();
+#if HZ6_DIAGNOSTIC_PROBES
+  size_t toy_active_map_table_bytes = 0;
+#if HZ6_TOY_SMALL_ACTIVE_FREE_MAP_L1
+  toy_active_map_table_bytes =
+      allocator_count * sizeof(Hz6ToySmallActiveMapEntry) *
+      HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY;
+#endif
+  size_t midpage_active_map_table_bytes = 0;
+#if HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2
+  midpage_active_map_table_bytes =
+      allocator_count * sizeof(Hz6MidPageActiveMapEntry) *
+      HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY;
+#endif
+  size_t preload_attributed_bytes =
+      memory_static_plus_payload_bytes + toy_active_map_table_bytes +
+      midpage_active_map_table_bytes + retain_stats.retained_bytes;
+#endif
 
   fprintf(stderr,
           "[HZ6_PRELOAD_STATS] allocators=%zu route_valid=%zu "
@@ -787,6 +840,42 @@ static void hz6_preload_print_stats(void) {
           source_block_route_range_index_stale,
           source_block_route_range_index_probe_total,
           source_block_route_range_index_probe_max);
+
+#if HZ6_DIAGNOSTIC_PROBES
+  fprintf(stderr,
+          "[HZ6_PRELOAD_MEMORY_ATTR] "
+          "allocator_count=%zu "
+          "descriptor_table_bytes=%zu "
+          "route_table_bytes=%zu "
+          "source_block_table_bytes=%zu "
+          "frontcache_table_bytes=%zu "
+          "transfer_table_bytes=%zu "
+          "ownerlocality_index_bytes=%zu "
+          "toy_active_map_table_bytes=%zu "
+          "midpage_active_map_table_bytes=%zu "
+          "static_table_bytes=%zu "
+          "source_block_payload_bytes=%zu "
+          "static_plus_payload_bytes=%zu "
+          "retain_retained_bytes=%zu "
+          "preload_attributed_bytes=%zu "
+          "frontcache_total=%zu "
+          "frontcache_largest_bin=%zu "
+          "active_source_blocks=%zu "
+          "registered_source_blocks=%zu "
+          "ref_nonzero_source_blocks=%zu "
+          "ref_zero_source_blocks=%zu\n",
+          allocator_count, memory_descriptor_table_bytes,
+          memory_route_table_bytes, memory_source_block_table_bytes,
+          memory_frontcache_table_bytes, memory_transfer_table_bytes,
+          memory_ownerlocality_index_bytes, toy_active_map_table_bytes,
+          midpage_active_map_table_bytes, memory_static_table_bytes,
+          memory_source_block_payload_bytes,
+          memory_static_plus_payload_bytes, retain_stats.retained_bytes,
+          preload_attributed_bytes, memory_frontcache_total,
+          memory_frontcache_largest_bin, memory_active_source_blocks,
+          memory_registered_source_blocks, memory_ref_nonzero_source_blocks,
+          memory_ref_zero_source_blocks);
+#endif
 
   fprintf(stderr,
           "[HZ6_PRELOAD_PHASE_STATS] malloc_calls=%zu "

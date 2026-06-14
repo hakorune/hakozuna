@@ -113,3 +113,61 @@ MidPageFrontcacheRSSAudit-L1
   table, source retain, and MidPage source blocks on 16..4096 / 1024..4096 /
   4096..16384.
 ```
+
+## MidPage RSS Audit
+
+Raw run:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_midpage_rss_audit_20260614_164214
+```
+
+Command:
+
+```bash
+./hakozuna-hz6/linux/run_hz6_midpage_rss_audit.sh \
+  --iters 200000 \
+  --skip-build
+```
+
+Diagnostic build:
+
+```bash
+./hakozuna-hz6/linux/build_hz6_preload_diag.sh
+```
+
+The audit is diagnostic-only; throughput from this lane is not a selected
+ranking number because probe counters are enabled.
+
+| row | peak MiB | attributed MiB | static MiB | payload MiB | frontcache MiB | toy map MiB | midpage map MiB | active source blocks |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `16_4096` | 100.25 | 122.10 | 61.73 | 54.75 | 20.00 | 3.75 | 1.88 | 864 |
+| `1024_4096` | 111.62 | 132.85 | 61.73 | 65.50 | 20.00 | 3.75 | 1.88 | 1036 |
+| `4096_16384` | 114.88 | 462.10 | 61.73 | 394.75 | 20.00 | 3.75 | 1.88 | 1582 |
+
+Read:
+
+```text
+The fixed allocator-local table cost is large:
+  static_table_bytes ~= 61.73 MiB with allocator_count=5
+  frontcache_table_bytes ~= 20.00 MiB
+  Toy active map ~= 3.75 MiB
+  MidPage active map ~= 1.88 MiB
+
+The 4096..16384 row additionally has real MidPage source payload pressure.
+The payload attribution is logical backing capacity and can exceed resident RSS,
+so it should guide source/run design but not be treated as exact resident pages.
+```
+
+Next optimization order from this evidence:
+
+```text
+1. AllocatorStaticTableTrimAudit-L1
+   avoid or shrink full table multiplication for helper/cold allocators if safe
+
+2. FrontcacheCapacityShapeAudit-L1
+   test whether all rows need the selected global frontcache 8192 table
+
+3. MidPagePayloadTrimAudit-L1
+   revisit 32K source payload after fixed table costs are understood
+```
