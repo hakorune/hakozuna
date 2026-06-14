@@ -737,6 +737,11 @@
 #define HZ6_PRELOAD_FREE_MIDPAGE_FIRST_L1 0
 #endif
 
+#ifndef HZ6_PRELOAD_FREE_MIDPAGE_HINT_DRYRUN_L1
+/* Diagnostic-only selective MidPage-first free hint. */
+#define HZ6_PRELOAD_FREE_MIDPAGE_HINT_DRYRUN_L1 0
+#endif
+
 #ifndef HZ6_PRELOAD_MIDPAGE_MALLOC_SKIP_TRANSFER_L1
 /* Candidate preload-boundary MidPage malloc shortcut.  This keeps the selected
  * hz6_malloc() code shape clean while allowing a target DSO to skip the empty

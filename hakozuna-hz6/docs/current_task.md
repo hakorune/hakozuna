@@ -148,6 +148,20 @@ Next recommended optimization lanes:
     useful evidence that a class-aware/free-hint gate could be valuable, but
     unconditional MidPage-first ordering is not selected-safe.
 
+  PreloadFreeMidPageHintGateDryRun-L1:
+    implemented as diagnostic-only recent-envelope dry-run.
+    Result:
+      4096..16384 coverage is high:
+        mh_would=406799, mh_true=405878, mh_false=39
+      16..256 is clean:
+        mh_would=4, mh_true=4, mh_false=0
+      16..4096 and 1024..4096 are not clean:
+        16..4096 mh_would=252022, mh_true=31, mh_false=251906
+        1024..4096 mh_would=260955, mh_true=40, mh_false=260851
+    Decision: do not behaviorize the broad recent envelope. It proves a
+    selective MidPage-first gate needs a tighter range/page table or source-run
+    side hint, not a simple min/max envelope.
+
   FrontcacheCapacityShapeAudit-L1:
     closed as diagnostic/control for now. Class-specific MidPage cap behavior
     did not pass promotion; keep the class-max attribution for future lazy

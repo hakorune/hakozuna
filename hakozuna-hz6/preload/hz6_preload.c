@@ -895,15 +895,12 @@ static void hz6_preload_print_stats(void) {
 
   fprintf(stderr,
           "[HZ6_PRELOAD_HOOK_DETAIL] free_toy_active_map_attempt=%zu free_toy_active_map_hit=%zu "
-          "free_toy_active_map_miss=%zu "
-          "free_midpage_active_map_attempt=%zu "
-          "free_midpage_active_map_hit=%zu "
-          "free_midpage_active_map_miss=%zu "
-          "free_route_lookup_after_maps=%zu "
-          "free_route_valid_owned=%zu "
-          "free_route_valid_foreign_visible=%zu "
-          "free_route_invalid=%zu "
-          "free_route_miss_real=%zu\n",
+          "free_toy_active_map_miss=%zu free_midpage_active_map_attempt=%zu "
+          "free_midpage_active_map_hit=%zu free_midpage_active_map_miss=%zu "
+          "free_route_lookup_after_maps=%zu free_route_valid_owned=%zu "
+          "free_route_valid_foreign_visible=%zu free_route_invalid=%zu "
+          "free_route_miss_real=%zu mh_probe=%zu mh_would=%zu "
+          "mh_true=%zu mh_false=%zu mh_miss=%zu\n",
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_toy_active_map_attempt),
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_toy_active_map_hit),
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_toy_active_map_miss),
@@ -914,8 +911,9 @@ static void hz6_preload_print_stats(void) {
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_valid_owned),
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_valid_foreign_visible),
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_invalid),
-          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_miss_real));
-
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_miss_real), HZ6_PRELOAD_PHASE_LOAD_FIELD(free_midpage_hint_probe),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_midpage_hint_would_first), HZ6_PRELOAD_PHASE_LOAD_FIELD(free_midpage_hint_true_midpage),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_midpage_hint_false_positive), HZ6_PRELOAD_PHASE_LOAD_FIELD(free_midpage_hint_missed_midpage));
   fprintf(stderr,
           "[HZ6_PRELOAD_SIZE_STATS] "
           "malloc_size_zero=%zu malloc_size_le1024=%zu "
