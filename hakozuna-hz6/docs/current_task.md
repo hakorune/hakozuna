@@ -136,6 +136,18 @@ Next recommended optimization lanes:
     first repeat-3 was not promotion-clean: tiny was slightly positive while
     1024..4096 and 4096..16384 were weak. Keep off for now.
 
+  PreloadFreeMidPageFirst-L1:
+    implemented as a default-off control.
+    Read: it directly recovers part of the 4096..16384 Toy-miss wall, but it
+    badly regresses Toy/tiny guard rows.
+      16..256 median shape fell from about 29M to about 21M ops/s
+      16..4096 fell from about 20M to about 16M ops/s
+      1024..4096 fell from about 19M to about 15.5M ops/s
+      4096..16384 rose from about 14.2M to about 15.4M ops/s
+    Keep HZ6_PRELOAD_FREE_MIDPAGE_FIRST_L1 off in selected default. It remains
+    useful evidence that a class-aware/free-hint gate could be valuable, but
+    unconditional MidPage-first ordering is not selected-safe.
+
   FrontcacheCapacityShapeAudit-L1:
     closed as diagnostic/control for now. Class-specific MidPage cap behavior
     did not pass promotion; keep the class-max attribution for future lazy

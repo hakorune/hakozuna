@@ -731,6 +731,12 @@
 #define HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1 0
 #endif
 
+#ifndef HZ6_PRELOAD_FREE_MIDPAGE_FIRST_L1
+/* Candidate preload free ordering.  Try the MidPage active map before the Toy
+ * active map to test whether MidPage-heavy rows can avoid the Toy miss wall. */
+#define HZ6_PRELOAD_FREE_MIDPAGE_FIRST_L1 0
+#endif
+
 #ifndef HZ6_PRELOAD_MIDPAGE_MALLOC_SKIP_TRANSFER_L1
 /* Candidate preload-boundary MidPage malloc shortcut.  This keeps the selected
  * hz6_malloc() code shape clean while allowing a target DSO to skip the empty
