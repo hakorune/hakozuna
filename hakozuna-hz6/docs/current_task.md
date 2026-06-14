@@ -136,10 +136,10 @@ Long historical benchmark notes and failed experiments live in:
 ## Cleanup Status
 
 ```text
-The root repository source/script large-file audit points at the current preload
-split target:
+The root repository source/script large-file audit is currently clean for the
+1000-line threshold:
   ../../linux/audit_large_source_files.sh --top 20
-  1356 hakozuna-hz6/preload/hz6_preload.c
+  no output
 
 Ubuntu preload script hygiene:
   selected flags are centralized in linux/hz6_preload_flags.sh
@@ -147,9 +147,14 @@ Ubuntu preload script hygiene:
   array indexes.
 
 Source modularity:
-  core HZ6 modules remain healthy. The main pressure point is preload/
-  hz6_preload.c, where stats printing and MidPage boundary dispatch should be
-  split into focused preload modules in a later cleanup-only pass.
+  core HZ6 modules remain healthy.
+  preload/hz6_preload_hooks.c now owns libc hook control flow and allocator
+  route/free/realloc behavior.
+  preload/hz6_preload.c is below the large-source threshold and owns preload
+  stats aggregation/printing plus allocator registry state.
+  preload/hz6_preload_stats.h is the narrow shared hook/stats boundary.
+  A later cleanup-only pass can split stats printing into
+  preload/hz6_preload_stats.c if the diagnostic body grows again.
 
 Do not append long run logs here. Promote stable conclusions into the focused
 HZ6 docs and move raw chronological evidence to archive docs.

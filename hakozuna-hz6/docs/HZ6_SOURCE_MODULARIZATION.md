@@ -40,7 +40,9 @@ fronts/:
 
 preload/:
   libc interposition remains isolated from allocator core; real libc symbol
-  resolution lives in a separate preload real-wrapper module
+  resolution lives in a separate preload real-wrapper module. The exported
+  malloc/free/realloc hook flow is now split from the preload stats/registry
+  implementation.
 ```
 
 Current cleanup targets:
@@ -67,12 +69,16 @@ P2 preload facade:
     hz6_preload_realloc_owned_or_copy()
 
 P2 preload module split:
-  hz6_preload.c is the largest current preload coupling hub. Split stable
-  non-interposition code only after the current performance lane is closed:
+  preload/hz6_preload_hooks.c now owns the libc hook flow, TLS allocator,
+  route helper, and MidPage malloc-boundary dispatch.
+  preload/hz6_preload_stats.h exposes only phase counters and allocator
+  registration needed by the hook module.
+  hakozuna-hz6/preload/hz6_preload.c is now below the 1000-line audit threshold
+  and owns stats aggregation/printing plus allocator registry state.
+  Next cleanup-only split, if needed:
     preload/hz6_preload_stats.c/.h for stats aggregation/printing
     preload/hz6_preload_midpage.c/.h for MidPage preload-boundary dispatch
-  Keep libc hook control flow in hz6_preload.c and do not mix this cleanup with
-  behavior changes.
+  Do not mix those future splits with behavior changes.
 
 P3 internal type split:
   split api/hz6_allocator_types.h into narrower descriptor/source-block/core
@@ -120,6 +126,14 @@ fronts/hz6_front_source_block.c:
 source/linux_source_mmap_memory.c:
   Linux mmap backing plus retained mapping cache, 64K retain stack, TLS
   retained no-go lane, and stats
+
+preload/hz6_preload.c:
+  preload stats aggregation/printing and allocator registry. This is still a
+  dense diagnostic file, but no longer exceeds the large-source audit threshold.
+
+preload/hz6_preload_hooks.c:
+  libc hook entry points, TLS allocator creation, route ownership checks,
+  realloc/calloc behavior, and MidPage malloc-boundary dispatch.
 ```
 
 Header-inline risk rule:
