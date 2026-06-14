@@ -55,7 +55,7 @@ Latest MidPage closeout:
   keep MidPage direct-local skip-transfer-first off
   keep noinline/branch-isolated transfer-skip off
   keep preclassified malloc shape out of source
-  keep MidPage target DSO as control only
+  keep MidPage preload-boundary target DSO as control only
 
 Next Ubuntu MidPage work should not try more selected-default transfer-skip
 code-shape tweaks unless a separate preload dispatch boundary is designed. Do
@@ -65,7 +65,9 @@ replacement, or guard-sensitive MidPage transfer-skip promotion first.
 
 Use HZ6_UBUNTU_MIDPAGE_NEXT_DESIGN.md as the implementation order for the next
 MidPage pass. TransferProbeAudit-L1, target DSO, and guard-isolated helper
-attempts are done; selected default remains unchanged.
+attempts are done. The preload-boundary target DSO is stronger on
+4096..16384, but selected default remains unchanged because non-target guards
+still regress.
 
 Long historical benchmark notes and failed experiments live in:
   archive/current_task_2026-06_history.md

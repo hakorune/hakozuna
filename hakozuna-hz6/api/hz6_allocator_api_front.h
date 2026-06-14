@@ -72,6 +72,9 @@ size_t hz6_allocator_prefill_front_class(Hz6Allocator* allocator,
                                          uint16_t class_id,
                                          size_t count);
 
+void* hz6_allocator_preload_midpage_malloc_skip_transfer(Hz6Allocator* allocator,
+                                                         size_t size);
+
 void hz6_allocator_note_source_alloc(Hz6Allocator* allocator);
 
 void hz6_allocator_note_source_alloc_for_front(Hz6Allocator* allocator,

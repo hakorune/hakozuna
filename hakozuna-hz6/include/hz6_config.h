@@ -716,6 +716,13 @@
 #define HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1 0
 #endif
 
+#ifndef HZ6_PRELOAD_MIDPAGE_MALLOC_SKIP_TRANSFER_L1
+/* Candidate preload-boundary MidPage malloc shortcut.  This keeps the selected
+ * hz6_malloc() code shape clean while allowing a target DSO to skip the empty
+ * transfer-first probe for MidPage direct local reuse. */
+#define HZ6_PRELOAD_MIDPAGE_MALLOC_SKIP_TRANSFER_L1 0
+#endif
+
 #ifndef HZ6_PRELOAD_REALLOC_IN_PLACE_L1
 /* LD_PRELOAD realloc shortcut: if the requested size fits the current HZ6
  * usable descriptor bytes, return the same pointer instead of malloc/copy/free. */

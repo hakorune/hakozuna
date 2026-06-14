@@ -2,6 +2,7 @@
 #include "hz6_allocator_api_init.h"
 #include "hz6_allocator_midpage_active_map.h"
 #include "hz6_allocator_toy_small_diag.h"
+#include "hz6_midpage_front.h"
 #include "linux_source_mmap.h"
 #include "hz6_profiles.h"
 #include "hz6_preload_real.h"
@@ -960,6 +961,15 @@ static size_t hz6_preload_usable_size(Hz6Allocator* allocator,
   return descriptor->bytes;
 }
 
+static void* hz6_preload_malloc_hz6(Hz6Allocator* allocator, size_t size) {
+#if HZ6_PRELOAD_MIDPAGE_MALLOC_SKIP_TRANSFER_L1
+  if (size > 4096u && size <= HZ6_MIDPAGE_BYTES) {
+    return hz6_allocator_preload_midpage_malloc_skip_transfer(allocator, size);
+  }
+#endif
+  return hz6_malloc(allocator, size);
+}
+
 void* malloc(size_t size) {
   if (g_hz6_preload_reentry) {
     return hz6_preload_real_malloc(size);
@@ -974,7 +984,7 @@ void* malloc(size_t size) {
       &g_hz6_preload_phase_stats.malloc_size_gt16384);
   g_hz6_preload_reentry = 1;
   Hz6Allocator* allocator = hz6_preload_allocator();
-  void* ptr = allocator ? hz6_malloc(allocator, size) : NULL;
+  void* ptr = allocator ? hz6_preload_malloc_hz6(allocator, size) : NULL;
   g_hz6_preload_reentry = 0;
   if (ptr) {
     hz6_preload_phase_count(&g_hz6_preload_phase_stats.malloc_hz6_success);

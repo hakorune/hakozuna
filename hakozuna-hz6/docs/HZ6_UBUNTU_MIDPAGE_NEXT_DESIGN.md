@@ -151,7 +151,7 @@ Build:
 Flags:
 
 ```text
-HZ6_MIDPAGE_DIRECT_LOCAL_SKIP_TRANSFER_FIRST_L1=1
+HZ6_PRELOAD_MIDPAGE_MALLOC_SKIP_TRANSFER_L1=1
 ```
 
 Status:
@@ -167,6 +167,24 @@ Reason:
 The target witness is too large to discard, but guard regressions block
 promotion. Keeping a named DSO lets us compare it intentionally without
 polluting the selected lane.
+```
+
+Boundary repeat-7:
+
+```text
+preload-boundary target DSO:
+  4096..16384: 34.712M -> 40.501M  (+16.68%)
+  16..256:     57.596M -> 55.994M  (-2.78%)
+  16..4096:    42.359M -> 41.369M  (-2.34%)
+  1024..4096:  40.618M -> 39.912M  (-1.74%)
+```
+
+Read:
+
+```text
+The separate preload boundary recovers more target throughput than the
+hz6_malloc() noinline/unlikely helper shapes and keeps RSS flat. It still fails
+selected-default guards, so it remains a target-specialized DSO.
 ```
 
 ## Lane C: Guard-Isolated Behavior Candidate

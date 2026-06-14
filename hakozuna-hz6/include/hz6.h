@@ -659,6 +659,9 @@ void hz6_allocator_destroy(Hz6Allocator* allocator);
 
 void* hz6_malloc(Hz6Allocator* allocator, size_t size);
 
+void* hz6_allocator_preload_midpage_malloc_skip_transfer(Hz6Allocator* allocator,
+                                                         size_t size);
+
 void hz6_free(Hz6Allocator* allocator, void* ptr);
 
 int hz6_free_remote(Hz6Allocator* allocator, void* ptr);
