@@ -82,9 +82,11 @@ ElasticCapacity diagnostic-only:
 
 Ubuntu LD_PRELOAD functional lane:
   hakozuna-hz6/linux/build_hz6_preload.sh default bundle
-  route131k-desc32768-source4096-frontcache8192-toyactivemap32768
-  + midpage-run256k
-  + external-midpage-active-map8k-unaligned-probe4
+  canonical flags live in hakozuna-hz6/linux/hz6_preload_flags.sh
+  route65k-desc16384-source2048-frontcache4096-toyactivemap32768
+  + midpage-run256k + midpage-32k-run512
+  + external-midpage-active-map16k-unaligned-probe4
+  + midpage descriptor-out + preload-boundary malloc skip
   + realloc-in-place
   + mmap retain + 64K retain stack
   + ToyFullBlockPrefill max128
@@ -92,22 +94,15 @@ Ubuntu LD_PRELOAD functional lane:
   + route xor-fold/linear-wrap/loop-carry
 
 Ubuntu LD_PRELOAD status:
-  functional and smoke-clean; short guard and 1M long-run cliff are fixed.
-  Route/frontcache audit promoted frontcache8192 for the preload lane. It
-  removes the frontcache-overflow unregister/tombstone churn seen at 4096 and
-  raises the focused 1M mixed_ws guard to about 34M..35M. In the focused 1M
-  cross check it beats mimalloc, but remains far below tcmalloc/HZ3/HZ4.
-  PreloadToyActiveFastFree is also selected; it removes preload-level route
-  lookup before Toy active-map hits and makes the focused 16..256 row edge past
-  mimalloc. MidPage run 256K is selected for the preload bundle after moving
-  the 4096..16384 median from about 16.55M to about 19.39M with flat peak RSS;
-  512K remains a MidPage-specialized control because it regressed the 16..4096
-  guard. MidPageActiveFreeMap-L2 capacity 8192/probe4 is also selected with
-  external storage after the repeat-7 control improved both 1024..4096 and
-  4096..16384 versus no-map. Internal map storage remains a MidPage-only
-  control; the earlier Toy-map widening is no-go evidence.
-  PreloadReallocInPlace-L1 is selected after a repeat-5 control-off A/B
-  improved every focused row and moved the 4096..16384 guard to about 30.12M.
+  functional and smoke-clean; short guard and long-run route tombstone cliff
+  are fixed. Static table trim is selected, moving the Ubuntu preload lane from
+  the old route131k/desc32768/source4096/frontcache8192 shape to
+  route65k/desc16384/source2048/frontcache4096. MidPage 32K run512 is now
+  selected after the post-trim repeat-7 moved 4096..16384 from about
+  42.18M / 94.38 MiB to about 45.30M / 94.50 MiB while keeping guards flat or
+  positive. The current 4096..16384 story is balanced: HZ6 is much faster and
+  lower-RSS than HZ4/mimalloc/system, and can beat tcmalloc on RSS/efficiency,
+  but HZ3 remains the higher speed/RSS frontier.
   MidPageActiveMapUnaligned-L2 plus probe4 is selected after the 4096..16384
   phase guard moved MidPage active-map hits from 3,321 to 915,393 and the HZ4
   close guard reached hz6 31.505M / 117,248 KB versus hz4 30.916M / 134,400 KB.

@@ -47,8 +47,10 @@ Current cleanup targets:
 
 ```text
 P0 docs/build hygiene:
-  build_hz6_preload.sh selected flags must stay readable and explicit
-  selected/default flags should not rely on subtle config defaults
+  linux/hz6_preload_flags.sh is now the authoritative Ubuntu preload selected
+  flag bundle for build_hz6_preload.sh and A/B runners.
+  A/B scripts should use key-based hz6_preload_replace_define overrides, not
+  positional array indexes.
   high-risk no-go/control flags should be explicitly default-off in preload
 
 P1 source split:
@@ -63,6 +65,14 @@ P2 preload facade:
     hz6_preload_free_if_owned()
     hz6_preload_usable_size_if_owned()
     hz6_preload_realloc_owned_or_copy()
+
+P2 preload module split:
+  hz6_preload.c is the largest current preload coupling hub. Split stable
+  non-interposition code only after the current performance lane is closed:
+    preload/hz6_preload_stats.c/.h for stats aggregation/printing
+    preload/hz6_preload_midpage.c/.h for MidPage preload-boundary dispatch
+  Keep libc hook control flow in hz6_preload.c and do not mix this cleanup with
+  behavior changes.
 
 P3 internal type split:
   split api/hz6_allocator_types.h into narrower descriptor/source-block/core

@@ -9,6 +9,8 @@ WS="${WS:-4096}"
 OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_static_table_trim_ab_$(date +%Y%m%d_%H%M%S)}"
 SKIP_BENCH_BUILD=0
 
+source "${ROOT_DIR}/hakozuna-hz6/linux/hz6_preload_flags.sh"
+
 usage() {
   cat <<'EOF'
 Usage:
@@ -63,76 +65,37 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-BASE_FLAGS=(
-  -DHZ6_ROUTE_TABLE_CAPACITY=65536
-  -DHZ6_OBJECT_DESCRIPTOR_CAPACITY=16384
-  -DHZ6_SOURCE_BLOCK_CAPACITY=2048
-  -DHZ6_FRONT_CACHE_BIN_CAPACITY=4096
-  -DHZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY=32768
-  -DHZ6_TOY_SOURCE_BLOCK_BYTES=65536
-  -DHZ6_MIDPAGE_RUN_BYTES=262144
-  -DHZ6_MIDPAGE_ACTIVE_FREE_MAP_L2=1
-  -DHZ6_MIDPAGE_ACTIVE_FREE_MAP_EXTERNAL_L2=1
-  -DHZ6_MIDPAGE_ACTIVE_FREE_MAP_UNALIGNED_L2=1
-  -DHZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY=16384
-  -DHZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT=4
-  -DHZ6_MIDPAGE_ALLOC_DESCRIPTOR_OUT_L1=1
-  -DHZ6_PRELOAD_MIDPAGE_MALLOC_SKIP_TRANSFER_L1=1
-  -DHZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_NOINLINE_L1=1
-  -DHZ6_PRELOAD_REALLOC_IN_PLACE_L1=1
-  -DHZ6_LINUX_MMAP_RETAIN_L1=1
-  -DHZ6_LINUX_MMAP_RETAIN_64K_STACK_L1=1
-  -DHZ6_TOY_FULL_BLOCK_PREFILL_L1=1
-  -DHZ6_TOY_FULL_BLOCK_PREFILL_MAX_SLOTS=128
-  -DHZ6_ROUTE_TOMBSTONE_COMPACT_L1=1
-  -DHZ6_ROUTE_HASH_XOR_FOLD_L1=1
-  -DHZ6_ROUTE_LINEAR_WRAP_L1=1
-  -DHZ6_ROUTE_LOOP_CARRY_L1=1
-  -DHZ6_LINUX_MMAP_RETAIN_TLS_L1=0
-  -DHZ6_SOURCE_RUN_REUSE_L1=0
-  -DHZ6_ROUTE_PACKED_META_L1=0
-  -DHZ6_PRELOAD_FAST_FREE_L1=0
-)
-
-join_flags() {
-  local out=""
-  local flag
-  for flag in "$@"; do
-    out+="${flag} "
-  done
-  printf '%s' "$out"
-}
-
 variant_flags() {
   local variant="$1"
-  local flags=("${BASE_FLAGS[@]}")
+  local flags=()
+  hz6_preload_effective_selected_cflags flags 1
   case "$variant" in
     selected)
       ;;
     frontcache8192)
-      flags[3]="-DHZ6_FRONT_CACHE_BIN_CAPACITY=8192"
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_BIN_CAPACITY 8192
       ;;
     route131072)
-      flags[0]="-DHZ6_ROUTE_TABLE_CAPACITY=131072"
+      hz6_preload_replace_define flags HZ6_ROUTE_TABLE_CAPACITY 131072
       ;;
     desc32768)
-      flags[1]="-DHZ6_OBJECT_DESCRIPTOR_CAPACITY=32768"
+      hz6_preload_replace_define flags HZ6_OBJECT_DESCRIPTOR_CAPACITY 32768
       ;;
     source4096)
-      flags[2]="-DHZ6_SOURCE_BLOCK_CAPACITY=4096"
+      hz6_preload_replace_define flags HZ6_SOURCE_BLOCK_CAPACITY 4096
       ;;
     wide_l0)
-      flags[0]="-DHZ6_ROUTE_TABLE_CAPACITY=131072"
-      flags[1]="-DHZ6_OBJECT_DESCRIPTOR_CAPACITY=32768"
-      flags[2]="-DHZ6_SOURCE_BLOCK_CAPACITY=4096"
-      flags[3]="-DHZ6_FRONT_CACHE_BIN_CAPACITY=8192"
+      hz6_preload_replace_define flags HZ6_ROUTE_TABLE_CAPACITY 131072
+      hz6_preload_replace_define flags HZ6_OBJECT_DESCRIPTOR_CAPACITY 32768
+      hz6_preload_replace_define flags HZ6_SOURCE_BLOCK_CAPACITY 4096
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_BIN_CAPACITY 8192
       ;;
     *)
       echo "unknown variant: ${variant}" >&2
       exit 2
       ;;
   esac
-  join_flags "${flags[@]}"
+  hz6_preload_join_flags "${flags[@]}"
 }
 
 build_variant() {

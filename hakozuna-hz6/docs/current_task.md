@@ -136,8 +136,20 @@ Long historical benchmark notes and failed experiments live in:
 ## Cleanup Status
 
 ```text
-The root repository source/script large-file audit is clean:
+The root repository source/script large-file audit points at the current preload
+split target:
   ../../linux/audit_large_source_files.sh --top 20
+  1356 hakozuna-hz6/preload/hz6_preload.c
+
+Ubuntu preload script hygiene:
+  selected flags are centralized in linux/hz6_preload_flags.sh
+  A/B runners should use key-based define replacement, not positional flag
+  array indexes.
+
+Source modularity:
+  core HZ6 modules remain healthy. The main pressure point is preload/
+  hz6_preload.c, where stats printing and MidPage boundary dispatch should be
+  split into focused preload modules in a later cleanup-only pass.
 
 Do not append long run logs here. Promote stable conclusions into the focused
 HZ6 docs and move raw chronological evidence to archive docs.
