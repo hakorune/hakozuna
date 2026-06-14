@@ -402,6 +402,23 @@ static inline int hz6_midpage_active_map_try_free(Hz6Allocator* allocator,
   }
 #else
   size_t base_index = hz6_midpage_active_map_index(ptr);
+#if HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_L1
+  Hz6MidPageActiveMapEntry* base_entry = &entries[base_index];
+  if (base_entry->ptr == ptr) {
+    entry = base_entry;
+  } else {
+    for (size_t probe = 1; probe < HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT;
+         ++probe) {
+      size_t index =
+          (base_index + probe) % HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY;
+      Hz6MidPageActiveMapEntry* candidate = &entries[index];
+      if (candidate->ptr == ptr) {
+        entry = candidate;
+        break;
+      }
+    }
+  }
+#else
   for (size_t probe = 0; probe < HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT;
        ++probe) {
     size_t index =
@@ -412,6 +429,7 @@ static inline int hz6_midpage_active_map_try_free(Hz6Allocator* allocator,
       break;
     }
   }
+#endif
 #endif
   if (!entry) {
 #if HZ6_DIAGNOSTIC_PROBES

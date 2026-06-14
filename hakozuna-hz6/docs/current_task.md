@@ -180,6 +180,24 @@ Next recommended optimization lanes:
     decision data already available on the hot free path, or attach a
     source-run/class/front hint to existing active-map or descriptor flows.
 
+  MidPageActiveMapFreeFastSlot-L1:
+    implemented as a default-off control and closed as no-go for the selected
+    preload shape. It stays inside the existing MidPage active-map try_free path
+    and tests the base hash slot before entering the bounded probe loop. Short
+    repeat-5 was not better:
+      16..256 median 46.777M -> 47.014M
+      16..4096 median 27.289M -> 27.095M
+      1024..4096 median 25.017M -> 24.945M
+      4096..16384 median 26.295M -> 25.422M
+    Decision: keep off. Even without a new classifier, this free-path code
+    shape does not improve the target.
+
+  Next direction:
+    pause MidPage free-order/free-map code-shape attacks. The recent lanes all
+    show that the target can expose Toy/MidPage ordering pressure, but the
+    control overhead beats the saved path. Prefer a malloc/source/frontcache
+    lane or a broader selected-balance rerun before another free-path edit.
+
   FrontcacheCapacityShapeAudit-L1:
     closed as diagnostic/control for now. Class-specific MidPage cap behavior
     did not pass promotion; keep the class-max attribution for future lazy

@@ -403,6 +403,12 @@
 #define HZ6_MIDPAGE_ACTIVE_MAP_REGISTER_FAST_SLOT_L1 0
 #endif
 
+#ifndef HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_L1
+/* Candidate free code shape.  Test the base hash slot before entering the
+ * bounded probe loop; collision cases keep the normal probe path. */
+#define HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_L1 0
+#endif
+
 #ifndef HZ6_MIDPAGE_ACTIVE_MAP_CLASS_INDEX_L1
 /* Candidate collision control. Salt the MidPage active-map hash by 8K/32K
  * class and probe the dominant 32K class first on free. */
