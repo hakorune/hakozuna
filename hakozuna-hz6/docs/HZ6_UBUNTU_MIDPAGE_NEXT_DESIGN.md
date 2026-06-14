@@ -187,6 +187,25 @@ hz6_malloc() noinline/unlikely helper shapes and keeps RSS flat. It still fails
 selected-default guards, so it remains a target-specialized DSO.
 ```
 
+Outer-guard noinline repeat-15:
+
+```text
+preload-boundary noinline helper, called only under unlikely MidPage size guard:
+  4096..16384: 33.879M -> 40.271M  (+18.87%)
+  16..256:     55.884M -> 56.125M  (+0.43%)
+  16..4096:    40.930M -> 40.929M  (-0.00%)
+  1024..4096:  39.486M -> 39.731M  (+0.62%)
+```
+
+Read:
+
+```text
+The guard regression was code shape, not semantic MidPage pressure. The
+outer-guard noinline shape avoids the small-path helper call, keeps the MidPage
+body out-of-line, and passes the repeat guard. Promote this shape to the
+selected preload bundle.
+```
+
 ## Lane C: Guard-Isolated Behavior Candidate
 
 Goal:

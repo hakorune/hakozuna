@@ -40,6 +40,9 @@ typedef struct Hz6PreloadPhaseStats {
   _Atomic(size_t) malloc_size_1025_4096;
   _Atomic(size_t) malloc_size_4097_16384;
   _Atomic(size_t) malloc_size_gt16384;
+  _Atomic(size_t) malloc_midpage_boundary_attempt;
+  _Atomic(size_t) malloc_midpage_boundary_hit;
+  _Atomic(size_t) malloc_midpage_boundary_fallback;
   _Atomic(size_t) calloc_calls;
   _Atomic(size_t) free_calls;
   _Atomic(size_t) free_null;
@@ -788,6 +791,9 @@ static void hz6_preload_print_stats(void) {
   fprintf(stderr,
           "[HZ6_PRELOAD_PHASE_STATS] malloc_calls=%zu "
           "malloc_hz6_success=%zu malloc_real_fallback=%zu "
+          "malloc_midpage_boundary_attempt=%zu "
+          "malloc_midpage_boundary_hit=%zu "
+          "malloc_midpage_boundary_fallback=%zu "
           "calloc_calls=%zu free_calls=%zu free_null=%zu "
           "free_reentry_real=%zu free_local_route_valid=%zu "
           "free_visible_route_hit=%zu free_toy_active_map_hit=%zu "
@@ -804,6 +810,12 @@ static void hz6_preload_print_stats(void) {
               &g_hz6_preload_phase_stats.malloc_hz6_success),
           hz6_preload_phase_load(
               &g_hz6_preload_phase_stats.malloc_real_fallback),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.malloc_midpage_boundary_attempt),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.malloc_midpage_boundary_hit),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.malloc_midpage_boundary_fallback),
           hz6_preload_phase_load(&g_hz6_preload_phase_stats.calloc_calls),
           hz6_preload_phase_load(&g_hz6_preload_phase_stats.free_calls),
           hz6_preload_phase_load(&g_hz6_preload_phase_stats.free_null),
@@ -961,11 +973,55 @@ static size_t hz6_preload_usable_size(Hz6Allocator* allocator,
   return descriptor->bytes;
 }
 
+#if HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_NOINLINE_L1
+#if defined(__GNUC__) || defined(__clang__)
+#define HZ6_PRELOAD_MIDPAGE_BOUNDARY_NOINLINE __attribute__((noinline))
+#define HZ6_PRELOAD_MIDPAGE_BOUNDARY_UNLIKELY(expr) __builtin_expect(!!(expr), 0)
+#else
+#define HZ6_PRELOAD_MIDPAGE_BOUNDARY_NOINLINE
+#define HZ6_PRELOAD_MIDPAGE_BOUNDARY_UNLIKELY(expr) (expr)
+#endif
+
+static HZ6_PRELOAD_MIDPAGE_BOUNDARY_NOINLINE void*
+hz6_preload_malloc_midpage_boundary(Hz6Allocator* allocator, size_t size) {
+  hz6_preload_phase_count(
+      &g_hz6_preload_phase_stats.malloc_midpage_boundary_attempt);
+  void* ptr =
+      hz6_allocator_preload_midpage_malloc_skip_transfer(allocator, size);
+  if (ptr) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.malloc_midpage_boundary_hit);
+  } else {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.malloc_midpage_boundary_fallback);
+  }
+  return ptr;
+}
+#endif
+
 static void* hz6_preload_malloc_hz6(Hz6Allocator* allocator, size_t size) {
 #if HZ6_PRELOAD_MIDPAGE_MALLOC_SKIP_TRANSFER_L1
-  if (size > 4096u && size <= HZ6_MIDPAGE_BYTES) {
-    return hz6_allocator_preload_midpage_malloc_skip_transfer(allocator, size);
+#if HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_NOINLINE_L1
+  if (HZ6_PRELOAD_MIDPAGE_BOUNDARY_UNLIKELY(size > 4096u &&
+                                            size <= HZ6_MIDPAGE_BYTES)) {
+    return hz6_preload_malloc_midpage_boundary(allocator, size);
   }
+#else
+  if (size > 4096u && size <= HZ6_MIDPAGE_BYTES) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.malloc_midpage_boundary_attempt);
+    void* ptr =
+        hz6_allocator_preload_midpage_malloc_skip_transfer(allocator, size);
+    if (ptr) {
+      hz6_preload_phase_count(
+          &g_hz6_preload_phase_stats.malloc_midpage_boundary_hit);
+    } else {
+      hz6_preload_phase_count(
+          &g_hz6_preload_phase_stats.malloc_midpage_boundary_fallback);
+    }
+    return ptr;
+  }
+#endif
 #endif
   return hz6_malloc(allocator, size);
 }

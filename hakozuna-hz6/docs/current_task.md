@@ -44,6 +44,9 @@ MidPage register callsite audit shows route fallback is already eliminated on
 the target row; register pressure is split between direct reuse and front alloc.
 MidPage trusted activation source-block-check skip was tested and is no-go for
 preload default because the target and tiny guard did not improve.
+MidPage preload-boundary malloc skip is now selected with an unlikely size
+guard plus noinline helper; it avoids empty transfer-first probes on the
+MidPage direct-local path without adding a helper call to small rows.
 
 Latest MidPage closeout:
   keep descriptor-out selected
@@ -54,20 +57,20 @@ Latest MidPage closeout:
   keep trusted cache push off
   keep MidPage direct-local skip-transfer-first off
   keep noinline/branch-isolated transfer-skip off
+  keep preload-boundary noinline transfer-skip selected
   keep preclassified malloc shape out of source
-  keep MidPage preload-boundary target DSO as control only
+  keep MidPage target DSO as selected/control alias
 
-Next Ubuntu MidPage work should not try more selected-default transfer-skip
-code-shape tweaks unless a separate preload dispatch boundary is designed. Do
-not chase route fallback, deeper free probing, source-run-slot route
-registration, broad malloc code-shape changes, whole-helper free-cache
-replacement, or guard-sensitive MidPage transfer-skip promotion first.
+Next Ubuntu MidPage work should not try more transfer-skip code-shape tweaks
+until a broader selected matrix confirms the promoted outer-guard noinline
+boundary. Do not chase route fallback, deeper free probing, source-run-slot
+route registration, broad malloc code-shape changes, or whole-helper free-cache
+replacement first.
 
 Use HZ6_UBUNTU_MIDPAGE_NEXT_DESIGN.md as the implementation order for the next
 MidPage pass. TransferProbeAudit-L1, target DSO, and guard-isolated helper
-attempts are done. The preload-boundary target DSO is stronger on
-4096..16384, but selected default remains unchanged because non-target guards
-still regress.
+attempts are done. The final outer-guard noinline preload-boundary shape passed
+the focused repeat-15 promotion guard.
 
 Long historical benchmark notes and failed experiments live in:
   archive/current_task_2026-06_history.md

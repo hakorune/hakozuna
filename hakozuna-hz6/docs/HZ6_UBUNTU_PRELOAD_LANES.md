@@ -35,6 +35,8 @@ HZ6_MIDPAGE_ACTIVE_FREE_MAP_UNALIGNED_L2=1
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY=16384
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT=4
 HZ6_MIDPAGE_ALLOC_DESCRIPTOR_OUT_L1=1
+HZ6_PRELOAD_MIDPAGE_MALLOC_SKIP_TRANSFER_L1=1
+HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_NOINLINE_L1=1
 HZ6_PRELOAD_REALLOC_IN_PLACE_L1=1
 HZ6_LINUX_MMAP_RETAIN_L1=1
 HZ6_LINUX_MMAP_RETAIN_64K_STACK_L1=1
@@ -164,9 +166,9 @@ Longer-term target:
 | `HZ6_MIDPAGE_ACTIVE_MAP_TRUSTED_CACHE_PUSH_L1=1` | control/no-go | Direct trusted cache push after active-map validation was flat/negative on the correct repeat-5: 4096..16384 `34.657M -> 34.477M`, 1024..4096 `40.039M -> 40.290M`, 16..256 `56.214M -> 55.622M`. Keep off. |
 | `HZ6_MIDPAGE_DIRECT_LOCAL_SKIP_TRANSFER_FIRST_L1=1` | control/no-go | Skipping empty transfer-first probes for MidPage direct-local reuse is target-positive but guard-sensitive. Helper-shape repeat-7 moved 4096..16384 `34.804M -> 38.944M`, but regressed 16..4096 `41.947M -> 40.394M` and 1024..4096 `40.552M -> 39.062M`; keep off. |
 | TransferProbeAudit-L1 | diagnostic-only | Selected diagnostic 500K showed 4096..16384 has `333720` MidPage direct transfer probes and every probe was empty; 16..4096 had only `63` empty probes. The target witness is real, but selected default still needs guard isolation. |
-| MidPage target DSO | control | `./hakozuna-hz6/linux/build_hz6_preload_midpage_target.sh` builds `out/linux/hz6_preload_midpage_target/libhakozuna_hz6_preload.so` with `HZ6_PRELOAD_MIDPAGE_MALLOC_SKIP_TRANSFER_L1=1`. Use for target/control comparisons only. |
+| MidPage target DSO | control alias | `./hakozuna-hz6/linux/build_hz6_preload_midpage_target.sh` builds `out/linux/hz6_preload_midpage_target/libhakozuna_hz6_preload.so` with the selected outer-guard noinline MidPage malloc boundary. Use when a named MidPage-target DSO is useful. |
 | MidPage guard-isolated transfer skip | control/no-go | noinline and noinline+unlikely helper shapes kept the 4096..16384 win (`~39.4M`), but still regressed 16..256, 16..4096, and 1024..4096 beyond the promotion gate. Keep as target DSO/control only. |
-| MidPage preload-boundary malloc skip | target DSO/control | Wrapper-level MidPage malloc boundary keeps selected `hz6_malloc()` shape clean and improves target repeat-7 `34.712M -> 40.501M` with flat RSS, but guard rows still regress (`-1.7%..-2.8%`). Keep out of selected default. |
+| MidPage preload-boundary malloc skip | selected/default | Wrapper-level MidPage malloc boundary keeps selected `hz6_malloc()` shape clean. The first direct boundary shape improved target but regressed guards; the promoted outer-guard noinline shape passed repeat-15: 4096..16384 `33.879M -> 40.271M`, 16..256 `55.884M -> 56.125M`, 16..4096 flat, 1024..4096 `39.486M -> 39.731M`. |
 
 ## Selected Controls
 
@@ -207,7 +209,7 @@ Keep these controls available when changing the preload lane:
 | `HZ6_MIDPAGE_TRUSTED_ACTIVATE_SKIP_SOURCE_BLOCK_CHECK_L1=1` | Trusted local-free MidPage activation can skip source-block bounds validation safely in principle, but first focused repeat-5 did not improve target or tiny guard. Keep off. |
 | `HZ6_MIDPAGE_ACTIVE_MAP_TRUSTED_CACHE_PUSH_L1=1` | Direct MidPage active-map free success cache path. It removes the generic cache helper call but did not improve the target and regressed tiny guard, so keep off. |
 | `HZ6_MIDPAGE_DIRECT_LOCAL_SKIP_TRANSFER_FIRST_L1=1` | MidPage direct-local reuse skips the transfer-first probe. It is a useful target witness, but the tested helper shape regressed non-MidPage guards enough to block selection. |
-| `build_hz6_preload_midpage_target.sh` | Named target-specialized control DSO for the preload-boundary transfer-skip witness. This is not the selected preload bundle. |
+| `build_hz6_preload_midpage_target.sh` | Named MidPage-target DSO alias for the selected preload-boundary transfer-skip shape. |
 | `run_hz6_preload_midpage_boundary_ab.sh` | Repeat runner for selected versus target DSO on `4096..16384`, `16..256`, `16..4096`, and `1024..4096`. |
 | MidPage noinline/branch-isolated transfer skip | Still guard-sensitive. Branch/layout isolation did not make it selected-safe, so do not add it to `build_hz6_preload.sh`. |
 | MidPage preclassified malloc shape | Direct 4097..32768 MidPage classification improved target in short repeat, but disturbed `16..256` too much. Avoid broad malloc code-shape changes unless small guards are isolated first. |

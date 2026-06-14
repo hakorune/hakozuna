@@ -723,6 +723,11 @@
 #define HZ6_PRELOAD_MIDPAGE_MALLOC_SKIP_TRANSFER_L1 0
 #endif
 
+#ifndef HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_NOINLINE_L1
+/* Candidate code-shape isolation for the MidPage preload malloc boundary. */
+#define HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_NOINLINE_L1 0
+#endif
+
 #ifndef HZ6_PRELOAD_REALLOC_IN_PLACE_L1
 /* LD_PRELOAD realloc shortcut: if the requested size fits the current HZ6
  * usable descriptor bytes, return the same pointer instead of malloc/copy/free. */
