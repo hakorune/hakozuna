@@ -427,6 +427,13 @@
 #define HZ6_MIDPAGE_TRUSTED_ACTIVATE_SKIP_SOURCE_BLOCK_CHECK_L1 0
 #endif
 
+#ifndef HZ6_MIDPAGE_ACTIVE_MAP_TRUSTED_CACHE_PUSH_L1
+/* Candidate free shortcut. After the MidPage active map has validated exact
+ * ptr/generation/class/state, cache the descriptor directly into the matching
+ * frontcache bin instead of routing through the generic cache helper. */
+#define HZ6_MIDPAGE_ACTIVE_MAP_TRUSTED_CACHE_PUSH_L1 0
+#endif
+
 #ifndef HZ6_TOY_CLASS_ID_FAST_ALLOC_L1
 /* Default Toy alloc shortcut.  hz6_malloc() already selected class_id, so
  * Toy alloc can validate size against class bytes instead of classifying again. */

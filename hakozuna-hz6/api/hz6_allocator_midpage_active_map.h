@@ -318,6 +318,39 @@ static inline void hz6_midpage_active_map_register_route(
 #endif
 }
 
+#if HZ6_MIDPAGE_ACTIVE_MAP_TRUSTED_CACHE_PUSH_L1
+static inline int hz6_midpage_active_map_cache_trusted_descriptor(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor,
+    void* ptr) {
+  descriptor->state = HZ6_STATE_LOCAL_FREE;
+  Hz6FrontCacheEntry entry = {0};
+  entry.ptr = ptr;
+  entry.descriptor = descriptor;
+#if HZ6_DESCRIPTORLESS_FRONTCACHE_L1
+  entry.source_block = descriptor->source_block;
+#endif
+  entry.generation = descriptor->generation;
+  hz6_frontcache_entry_set_bytes(&entry, descriptor->bytes);
+  hz6_frontcache_entry_set_class_id(&entry, descriptor->class_id);
+
+  if (hz6_allocator_frontcache_push(allocator, descriptor->class_id, entry)) {
+    return 1;
+  }
+
+  descriptor->state = HZ6_STATE_DEAD;
+  hz6_allocator_route_unregister_exact_reason(
+      allocator, ptr, HZ6_ROUTE_UNREGISTER_REASON_FRONTCACHE_OVERFLOW);
+#if HZ6_DIAGNOSTIC_PROBES
+  if (hz6_allocator_descriptor_has_source_release(allocator, descriptor)) {
+    ++allocator->stats.source_owned_release;
+  }
+#endif
+  hz6_allocator_release_descriptor_source(allocator, descriptor);
+  return 1;
+}
+#endif
+
 static inline int hz6_midpage_active_map_try_free(Hz6Allocator* allocator,
                                                   void* ptr) {
 #if HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2
@@ -445,14 +478,25 @@ static inline int hz6_midpage_active_map_try_free(Hz6Allocator* allocator,
     return 0;
   }
 
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.midpage_active_map_free_cache_attempt;
+#endif
+#if HZ6_MIDPAGE_ACTIVE_MAP_TRUSTED_CACHE_PUSH_L1
+  if (!hz6_midpage_active_map_cache_trusted_descriptor(allocator, descriptor,
+                                                        ptr)) {
+#else
   if (!hz6_allocator_cache_active_descriptor_trusted_owner(allocator,
                                                             descriptor, ptr)) {
+#endif
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.midpage_active_map_free_cache_fail;
 #endif
     hz6_midpage_active_map_clear(allocator, entry);
     return 0;
   }
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.midpage_active_map_free_cache_success;
+#endif
 
   hz6_midpage_active_map_clear(allocator, entry);
   ++allocator->stats.route_valid;

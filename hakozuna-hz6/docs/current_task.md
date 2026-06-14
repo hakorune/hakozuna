@@ -45,13 +45,15 @@ preload default because the target and tiny guard did not improve.
 Latest MidPage closeout:
   keep descriptor-out selected
   keep register callsite counters as diagnostic-only
+  keep free-cache counters as diagnostic-only
   keep trusted activation skip off
+  keep trusted cache push off
   keep preclassified malloc shape out of source
 
-Next Ubuntu MidPage work should stay near free-side cache/push behavior or
-active-map register/free code shape with focused A/B guards. Do not chase route
-fallback, deeper free probing, source-run-slot route registration, or broad
-malloc code-shape changes first.
+Next Ubuntu MidPage work should stay near smaller free/register code-shape
+changes with focused A/B guards. Do not chase route fallback, deeper free
+probing, source-run-slot route registration, broad malloc code-shape changes,
+or whole-helper free-cache replacement first.
 
 Long historical benchmark notes and failed experiments live in:
   archive/current_task_2026-06_history.md

@@ -347,6 +347,8 @@ typedef struct Hz6StatsSnapshot {
   size_t midpage_8k_active_map_free_miss_found_elsewhere;
   size_t midpage_32k_active_map_free_miss_found_elsewhere;
   size_t midpage_active_map_free_stale;
+  size_t midpage_active_map_free_cache_attempt;
+  size_t midpage_active_map_free_cache_success;
   size_t midpage_active_map_free_cache_fail;
   size_t midpage_active_map_alignment_skip;
   size_t midpage_active_map_addr_envelope_skip;

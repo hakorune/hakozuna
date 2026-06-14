@@ -258,6 +258,8 @@ static void hz6_preload_print_stats(void) {
   size_t midpage_8k_active_map_free_miss_found_elsewhere = 0;
   size_t midpage_32k_active_map_free_miss_found_elsewhere = 0;
   size_t midpage_active_map_free_stale = 0;
+  size_t midpage_active_map_free_cache_attempt = 0;
+  size_t midpage_active_map_free_cache_success = 0;
   size_t midpage_active_map_free_cache_fail = 0;
   size_t midpage_active_map_alignment_skip = 0;
   size_t midpage_active_map_addr_envelope_skip = 0;
@@ -272,6 +274,10 @@ static void hz6_preload_print_stats(void) {
   size_t midpage_32k_active_map_register = 0;
   size_t midpage_8k_active_map_free_hit = 0;
   size_t midpage_32k_active_map_free_hit = 0;
+  size_t midpage_8k_frontcache_push = 0;
+  size_t midpage_32k_frontcache_push = 0;
+  size_t midpage_8k_frontcache_pop_empty = 0;
+  size_t midpage_32k_frontcache_pop_empty = 0;
   size_t midpage_8k_preload_local_route_valid = 0;
   size_t midpage_32k_preload_local_route_valid = 0;
   size_t midpage_8k_source_run_slot_route_register = 0;
@@ -447,6 +453,10 @@ static void hz6_preload_print_stats(void) {
     midpage_32k_active_map_free_miss_found_elsewhere +=
         stats.midpage_32k_active_map_free_miss_found_elsewhere;
     midpage_active_map_free_stale += stats.midpage_active_map_free_stale;
+    midpage_active_map_free_cache_attempt +=
+        stats.midpage_active_map_free_cache_attempt;
+    midpage_active_map_free_cache_success +=
+        stats.midpage_active_map_free_cache_success;
     midpage_active_map_free_cache_fail +=
         stats.midpage_active_map_free_cache_fail;
     midpage_active_map_alignment_skip +=
@@ -465,6 +475,14 @@ static void hz6_preload_print_stats(void) {
     midpage_32k_active_map_register += stats.midpage_32k_active_map_register;
     midpage_8k_active_map_free_hit += stats.midpage_8k_active_map_free_hit;
     midpage_32k_active_map_free_hit += stats.midpage_32k_active_map_free_hit;
+    midpage_8k_frontcache_push +=
+        stats.frontcache_push_by_class[HZ6_MIDPAGE_8K_CLASS_ID];
+    midpage_32k_frontcache_push +=
+        stats.frontcache_push_by_class[HZ6_MIDPAGE_32K_CLASS_ID];
+    midpage_8k_frontcache_pop_empty +=
+        stats.frontcache_pop_empty_by_class[HZ6_MIDPAGE_8K_CLASS_ID];
+    midpage_32k_frontcache_pop_empty +=
+        stats.frontcache_pop_empty_by_class[HZ6_MIDPAGE_32K_CLASS_ID];
     midpage_8k_preload_local_route_valid +=
         stats.midpage_8k_preload_local_route_valid;
     midpage_32k_preload_local_route_valid +=
@@ -634,6 +652,8 @@ static void hz6_preload_print_stats(void) {
           "midpage_8k_active_map_free_miss_found_elsewhere=%zu "
           "midpage_32k_active_map_free_miss_found_elsewhere=%zu "
           "midpage_active_map_free_stale=%zu "
+          "midpage_active_map_free_cache_attempt=%zu "
+          "midpage_active_map_free_cache_success=%zu "
           "midpage_active_map_free_cache_fail=%zu "
           "midpage_active_map_alignment_skip=%zu "
           "midpage_active_map_addr_envelope_skip=%zu "
@@ -673,6 +693,8 @@ static void hz6_preload_print_stats(void) {
           midpage_8k_active_map_free_miss_found_elsewhere,
           midpage_32k_active_map_free_miss_found_elsewhere,
           midpage_active_map_free_stale,
+          midpage_active_map_free_cache_attempt,
+          midpage_active_map_free_cache_success,
           midpage_active_map_free_cache_fail,
           midpage_active_map_alignment_skip,
           midpage_active_map_addr_envelope_skip,
@@ -689,6 +711,10 @@ static void hz6_preload_print_stats(void) {
           "midpage_32k_active_map_register=%zu "
           "midpage_8k_active_map_free_hit=%zu "
           "midpage_32k_active_map_free_hit=%zu "
+          "midpage_8k_frontcache_push=%zu "
+          "midpage_32k_frontcache_push=%zu "
+          "midpage_8k_frontcache_pop_empty=%zu "
+          "midpage_32k_frontcache_pop_empty=%zu "
           "midpage_8k_preload_local_route_valid=%zu "
           "midpage_32k_preload_local_route_valid=%zu "
           "midpage_8k_source_run_slot_route_register=%zu "
@@ -698,6 +724,8 @@ static void hz6_preload_print_stats(void) {
           midpage_8k_prefill_run_filled, midpage_32k_prefill_run_filled,
           midpage_8k_active_map_register, midpage_32k_active_map_register,
           midpage_8k_active_map_free_hit, midpage_32k_active_map_free_hit,
+          midpage_8k_frontcache_push, midpage_32k_frontcache_push,
+          midpage_8k_frontcache_pop_empty, midpage_32k_frontcache_pop_empty,
           midpage_8k_preload_local_route_valid,
           midpage_32k_preload_local_route_valid,
           midpage_8k_source_run_slot_route_register,
