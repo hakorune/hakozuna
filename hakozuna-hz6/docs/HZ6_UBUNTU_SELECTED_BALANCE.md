@@ -1,12 +1,12 @@
 # HZ6 Ubuntu Selected Balance
 
 This note tracks the Ubuntu `LD_PRELOAD` selected lane after the MidPage
-preload-boundary malloc skip became default.
+preload-boundary malloc skip and static table trim became default.
 
 Raw run:
 
 ```text
-hakozuna-hz6/private/raw-results/linux/hz6_ubuntu_selected_balance_20260614_162527
+hakozuna-hz6/private/raw-results/linux/hz6_ubuntu_selected_balance_20260614_165226
 ```
 
 Command:
@@ -24,13 +24,13 @@ The current HZ6 Ubuntu selected lane has its clearest speed/RSS balance on
 
 ```text
 HZ6 beats HZ4 on throughput:
-  hz6 40.387M vs hz4 30.943M
+  hz6 41.264M vs hz4 30.932M
 
 HZ6 uses less peak RSS than HZ4:
-  hz6 115.25 MiB vs hz4 130.00 MiB
+  hz6 94.38 MiB vs hz4 130.38 MiB
 
 HZ6 beats mimalloc strongly on both speed and RSS on this row:
-  hz6 40.387M / 115.25 MiB
+  hz6 41.264M / 94.38 MiB
   mimalloc 1.319M / 255.50 MiB
 ```
 
@@ -38,9 +38,9 @@ HZ6 is not the speed ceiling:
 
 ```text
 4096..16384:
-  hz3      76.584M /  73.62 MiB
-  tcmalloc 44.321M / 105.50 MiB
-  hz6      40.387M / 115.25 MiB
+  hz3      75.740M /  73.75 MiB
+  tcmalloc 44.812M / 103.38 MiB
+  hz6      41.264M /  94.38 MiB
 ```
 
 So the honest positioning is:
@@ -49,41 +49,43 @@ So the honest positioning is:
 HZ6 Ubuntu selected is now a strong balanced MidPage lane.
 It is faster and lower-RSS than HZ4 on the MidPage row.
 It is much stronger than mimalloc/system on the larger mixed row.
-It still trails HZ3 and tcmalloc on the speed/RSS frontier.
+It still trails HZ3 on speed and RSS.
+It trails tcmalloc on speed, but now beats tcmalloc on RSS and ops-per-MiB on
+4096..16384.
 ```
 
 ## Matrix
 
 | row | allocator | median ops/s | median peak MiB | ops/s per MiB |
 | --- | --- | ---: | ---: | ---: |
-| `16_256` | `hz3` | 263873547.574 | 6.75 | 39092377.418 |
-| `16_256` | `hz4` | 226302634.740 | 7.00 | 32328947.820 |
-| `16_256` | `hz5` | 193785.872 | 105.00 | 1845.580 |
-| `16_256` | `hz6` | 55655949.613 | 51.25 | 1085969.749 |
-| `16_256` | `mimalloc` | 53668202.883 | 5.62 | 9541013.846 |
-| `16_256` | `system` | 107037753.714 | 4.50 | 23786167.492 |
-| `16_256` | `tcmalloc` | 261853759.650 | 9.25 | 28308514.557 |
-| `16_4096` | `hz3` | 93236585.458 | 53.88 | 1730609.475 |
-| `16_4096` | `hz4` | 55053028.453 | 59.62 | 923321.232 |
-| `16_4096` | `hz5` | 193732.672 | 105.00 | 1845.073 |
-| `16_4096` | `hz6` | 40400379.069 | 100.62 | 401494.450 |
-| `16_4096` | `mimalloc` | 7066513.084 | 42.75 | 165298.552 |
-| `16_4096` | `system` | 16771952.458 | 33.57 | 499548.555 |
-| `16_4096` | `tcmalloc` | 99044836.359 | 41.38 | 2393832.903 |
-| `1024_4096` | `hz3` | 88341567.724 | 63.50 | 1391205.791 |
-| `1024_4096` | `hz4` | 49301614.285 | 53.62 | 919377.423 |
-| `1024_4096` | `hz5` | 194313.668 | 104.75 | 1855.023 |
-| `1024_4096` | `hz6` | 38671310.240 | 111.88 | 345665.343 |
-| `1024_4096` | `mimalloc` | 5585232.019 | 47.88 | 116662.810 |
-| `1024_4096` | `system` | 9716498.091 | 41.50 | 234132.484 |
-| `1024_4096` | `tcmalloc` | 94645972.009 | 50.12 | 1888198.943 |
-| `4096_16384` | `hz3` | 76583581.904 | 73.62 | 1040184.474 |
-| `4096_16384` | `hz4` | 30942971.268 | 130.00 | 238022.856 |
-| `4096_16384` | `hz5` | 201227.163 | 124.43 | 1617.196 |
-| `4096_16384` | `hz6` | 40386709.202 | 115.25 | 350426.978 |
-| `4096_16384` | `mimalloc` | 1318757.833 | 255.50 | 5161.479 |
-| `4096_16384` | `system` | 2958820.566 | 66.38 | 44574.711 |
-| `4096_16384` | `tcmalloc` | 44321353.212 | 105.50 | 420107.613 |
+| `16_256` | `hz3` | 261137719.594 | 6.62 | 39417014.278 |
+| `16_256` | `hz4` | 228704966.134 | 7.00 | 32672138.019 |
+| `16_256` | `hz5` | 198891.000 | 106.25 | 1871.915 |
+| `16_256` | `hz6` | 60381038.772 | 30.38 | 1987853.128 |
+| `16_256` | `mimalloc` | 53002399.074 | 5.62 | 9422648.724 |
+| `16_256` | `system` | 106096945.872 | 4.38 | 24250730.485 |
+| `16_256` | `tcmalloc` | 256744583.941 | 9.38 | 27386088.954 |
+| `16_4096` | `hz3` | 92920593.685 | 53.75 | 1728755.231 |
+| `16_4096` | `hz4` | 55847545.137 | 58.88 | 948578.261 |
+| `16_4096` | `hz5` | 196665.439 | 106.12 | 1853.149 |
+| `16_4096` | `hz6` | 42216406.068 | 79.75 | 529359.324 |
+| `16_4096` | `mimalloc` | 7072408.028 | 42.75 | 165436.445 |
+| `16_4096` | `system` | 16868372.622 | 33.62 | 501661.639 |
+| `16_4096` | `tcmalloc` | 97961302.836 | 41.75 | 2346378.511 |
+| `1024_4096` | `hz3` | 87602299.227 | 63.50 | 1379563.767 |
+| `1024_4096` | `hz4` | 50673307.640 | 54.25 | 934070.187 |
+| `1024_4096` | `hz5` | 194373.336 | 105.00 | 1851.175 |
+| `1024_4096` | `hz6` | 39671501.717 | 91.00 | 435950.568 |
+| `1024_4096` | `mimalloc` | 5577984.601 | 48.00 | 116208.013 |
+| `1024_4096` | `system` | 9747748.258 | 41.25 | 236309.049 |
+| `1024_4096` | `tcmalloc` | 98389491.924 | 49.38 | 1992698.571 |
+| `4096_16384` | `hz3` | 75740310.410 | 73.75 | 1026987.260 |
+| `4096_16384` | `hz4` | 30931888.723 | 130.38 | 237253.221 |
+| `4096_16384` | `hz5` | 201542.521 | 124.70 | 1616.179 |
+| `4096_16384` | `hz6` | 41263985.190 | 94.38 | 437234.280 |
+| `4096_16384` | `mimalloc` | 1318430.246 | 255.50 | 5160.197 |
+| `4096_16384` | `system` | 2999584.040 | 66.25 | 45276.740 |
+| `4096_16384` | `tcmalloc` | 44812285.593 | 103.38 | 433492.485 |
 
 ## Next Optimization Read
 
@@ -94,18 +96,19 @@ likely to disappear with one local tweak.
 The best next targets are:
 
 ```text
-1. 4096..16384 MidPage RSS/speed frontier
-   close the remaining tcmalloc gap while preserving the HZ4/mimalloc RSS win
+1. 4096..16384 MidPage speed frontier
+   close the remaining tcmalloc speed gap while preserving the new RSS lead
 
-2. 16..4096 / 1024..4096 RSS pressure
-   HZ6 throughput is respectable, but peak RSS is too high versus HZ4/tcmalloc
+2. 16..4096 / 1024..4096 speed/RSS balance
+   HZ6 throughput is respectable and RSS is much better after static trim, but
+   HZ4/tcmalloc still have stronger frontiers
 
 3. HZ5 preload-full sanity
    HZ5 is effectively unusable in this matrix shape; keep it as a compatibility
    data point, not an optimization target
 ```
 
-Recommended next diagnostic:
+Completed diagnostic:
 
 ```text
 MidPageFrontcacheRSSAudit-L1
@@ -170,4 +173,41 @@ Next optimization order from this evidence:
 
 3. MidPagePayloadTrimAudit-L1
    revisit 32K source payload after fixed table costs are understood
+```
+
+## Static Table Trim Promotion
+
+Raw runs:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_static_table_trim_ab_20260614_164920
+hakozuna-hz6/private/raw-results/linux/hz6_static_table_trim_confirm_20260614_165003
+```
+
+Promotion:
+
+```text
+HZ6_ROUTE_TABLE_CAPACITY=65536
+HZ6_OBJECT_DESCRIPTOR_CAPACITY=16384
+HZ6_SOURCE_BLOCK_CAPACITY=2048
+HZ6_FRONT_CACHE_BIN_CAPACITY=4096
+```
+
+Safety repeat-3 with stats showed zero route-register failures, descriptor
+exhaustion, source-block exhaustion, frontcache overflow, and real malloc
+fallbacks on all selected rows.
+
+Stats-off repeat-5 confirmation:
+
+| row | old selected ops/s | old peak MiB | trim ops/s | trim peak MiB | read |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `16_4096` | 41519124.134 | 100.62 | 43580843.543 | 79.75 | faster, about `-20.87 MiB` |
+| `1024_4096` | 39965910.677 | 111.75 | 41848751.456 | 91.00 | faster, about `-20.75 MiB` |
+| `4096_16384` | 40863038.822 | 115.25 | 42903601.635 | 94.38 | faster, about `-20.87 MiB` |
+
+Read:
+
+```text
+This is a strong speed/RSS balance win and should be kept as the Ubuntu
+selected default. The previous wide capacities remain the wide_l0 control.
 ```

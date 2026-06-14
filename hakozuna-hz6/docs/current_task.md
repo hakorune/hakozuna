@@ -62,6 +62,25 @@ MidPage source payload pressure:
   1024..4096   peak 111.62 MiB, static 61.73 MiB, frontcache 20.00 MiB
   4096..16384  peak 114.88 MiB, static 61.73 MiB, frontcache 20.00 MiB
   raw: private/raw-results/linux/hz6_midpage_rss_audit_20260614_164214
+AllocatorStaticTableTrim-L1 is now selected/default for Ubuntu preload:
+  route table 131072 -> 65536
+  descriptor table 32768 -> 16384
+  source block table 4096 -> 2048
+  frontcache bin capacity 8192 -> 4096
+  confirm repeat-5 without stats:
+    16..4096     41.519M / 100.62 MiB -> 43.581M / 79.75 MiB
+    1024..4096   39.966M / 111.75 MiB -> 41.849M / 91.00 MiB
+    4096..16384  40.863M / 115.25 MiB -> 42.904M / 94.38 MiB
+  safety repeat-3: route/descriptor/source/frontcache/fallback failures all 0
+  raw: private/raw-results/linux/hz6_static_table_trim_confirm_20260614_165003
+Latest cross-allocator refresh after static table trim:
+  raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260614_165226
+  16..256     hz6 60.381M / 30.38 MiB
+  16..4096    hz6 42.216M / 79.75 MiB
+  1024..4096  hz6 39.672M / 91.00 MiB
+  4096..16384 hz6 41.264M / 94.38 MiB
+  On 4096..16384, HZ6 still trails tcmalloc speed
+  (41.264M vs 44.812M) but now has lower RSS and better ops-per-MiB.
 
 Latest MidPage closeout:
   keep descriptor-out selected
@@ -73,6 +92,7 @@ Latest MidPage closeout:
   keep MidPage direct-local skip-transfer-first off
   keep noinline/branch-isolated transfer-skip off
   keep preload-boundary noinline transfer-skip selected
+  keep static table trim selected
   keep preclassified malloc shape out of source
   keep MidPage target DSO as selected/control alias
 
@@ -83,13 +103,9 @@ source-run-slot route registration, broad malloc code-shape changes, or
 whole-helper free-cache replacement first.
 
 Next recommended optimization lanes:
-  AllocatorStaticTableTrimAudit-L1:
-    check whether preload can avoid multiplying full descriptor/route/source/
-    frontcache tables for helper allocators or cold per-thread allocators.
-
   FrontcacheCapacityShapeAudit-L1:
-    test narrower frontcache table capacity or class-specific caps against
-    16..4096 / 1024..4096 / 4096..16384 speed and RSS.
+    after the global frontcache4096 promotion, check class-specific caps or
+    colder-bin lazy storage before touching source payload.
 
   MidPagePayloadTrimAudit-L1:
     only after table/frontcache fixed cost is understood; 32K source payload

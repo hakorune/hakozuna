@@ -22,10 +22,10 @@ hakozuna-hz6/out/linux/hz6_preload/libhakozuna_hz6_preload.so
 Default flags selected by `build_hz6_preload.sh`:
 
 ```text
-HZ6_ROUTE_TABLE_CAPACITY=131072
-HZ6_OBJECT_DESCRIPTOR_CAPACITY=32768
-HZ6_SOURCE_BLOCK_CAPACITY=4096
-HZ6_FRONT_CACHE_BIN_CAPACITY=8192
+HZ6_ROUTE_TABLE_CAPACITY=65536
+HZ6_OBJECT_DESCRIPTOR_CAPACITY=16384
+HZ6_SOURCE_BLOCK_CAPACITY=2048
+HZ6_FRONT_CACHE_BIN_CAPACITY=4096
 HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY=32768
 HZ6_TOY_SOURCE_BLOCK_BYTES=65536
 HZ6_MIDPAGE_RUN_BYTES=262144
@@ -72,24 +72,23 @@ Latest selected-default focused guards, after MidPage descriptor-out:
 | `1024..4096` descriptor-out confirm repeat-7 | `40.057M` vs control-off `39.829M` |
 | `4096..16384` descriptor-out confirm repeat-3 | `34.761M` vs control-off `29.769M` |
 
-Latest cross-allocator refresh before descriptor-out, repeat-3,
+Latest cross-allocator refresh after static table trim, repeat-3,
 `bench_mixed_ws_crt`:
 
 | Row | hz6 | mimalloc | tcmalloc | system | hz6 peak KB |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| `16..256` | `57.671M` | `53.099M` | `255.517M` | `98.761M` | `56,576` |
-| `16..4096` | `39.382M` | `5.873M` | `85.177M` | `8.729M` | `156,672` |
-| `1024..4096` | `38.497M` | `4.858M` | `86.491M` | `6.328M` | `181,120` |
-| `4096..16384` | `27.752M` | `1.282M` | `42.086M` | `8.132M` | `185,472` |
+| `16..256` | `60.381M` | `53.002M` | `256.745M` | `106.097M` | `31,104` |
+| `16..4096` | `42.216M` | `7.072M` | `97.961M` | `16.868M` | `81,664` |
+| `1024..4096` | `39.672M` | `5.578M` | `98.389M` | `9.748M` | `93,184` |
+| `4096..16384` | `41.264M` | `1.318M` | `44.812M` | `3.000M` | `96,640` |
 
 Important caveat:
 
 ```text
-tcmalloc remains much faster on these preload rows, and system malloc is still
-faster on the tiny 16..256 row.  HZ6 is now clearly ahead of mimalloc on the
-selected mixed_ws preload rows, but this is not a universal allocator win. The
-cross-allocator table above predates descriptor-out and needs a refresh before
-using it as the latest ranking snapshot.
+tcmalloc remains much faster on tiny and mixed small rows. On 4096..16384, HZ6
+still trails tcmalloc on speed but now has lower RSS and better ops-per-MiB.
+HZ6 is clearly ahead of mimalloc on the selected mixed_ws preload rows, but this
+is not a universal allocator win.
 ```
 
 Current follow-up read:
@@ -169,6 +168,7 @@ Longer-term target:
 | MidPage target DSO | control alias | `./hakozuna-hz6/linux/build_hz6_preload_midpage_target.sh` builds `out/linux/hz6_preload_midpage_target/libhakozuna_hz6_preload.so` with the selected outer-guard noinline MidPage malloc boundary. Use when a named MidPage-target DSO is useful. |
 | MidPage guard-isolated transfer skip | control/no-go | noinline and noinline+unlikely helper shapes kept the 4096..16384 win (`~39.4M`), but still regressed 16..256, 16..4096, and 1024..4096 beyond the promotion gate. Keep as target DSO/control only. |
 | MidPage preload-boundary malloc skip | selected/default | Wrapper-level MidPage malloc boundary keeps selected `hz6_malloc()` shape clean. The first direct boundary shape improved target but regressed guards; the promoted outer-guard noinline shape passed repeat-15. Confirmation against explicit boundary-off control: 4096..16384 `33.735M -> 40.056M`, 16..256 `55.957M -> 56.539M`, 16..4096 `40.969M -> 41.339M`, 1024..4096 `39.059M -> 39.953M`. |
+| Static table trim | selected/default | `HZ6_ROUTE_TABLE_CAPACITY=65536`, `HZ6_OBJECT_DESCRIPTOR_CAPACITY=16384`, `HZ6_SOURCE_BLOCK_CAPACITY=2048`, and `HZ6_FRONT_CACHE_BIN_CAPACITY=4096` reduce allocator-local fixed table RSS. Confirm repeat-5 without stats moved 16..4096 `41.519M / 100.62 MiB -> 43.581M / 79.75 MiB`, 1024..4096 `39.966M / 111.75 MiB -> 41.849M / 91.00 MiB`, and 4096..16384 `40.863M / 115.25 MiB -> 42.904M / 94.38 MiB`; no route/descriptor/source failures in the repeat-3 safety lane. |
 
 ## Selected Controls
 
@@ -186,6 +186,7 @@ Keep these controls available when changing the preload lane:
 | frontcache 16384 | Boundary for frontcache8192; flat enough not to promote. |
 | route table 262144 | Capacity upper-bound; not selected by current evidence. |
 | `HZ6_PRELOAD_REALLOC_IN_PLACE_L1=0` | Direct control for preload realloc in-place. |
+| `wide_l0` static tables | Previous preload table capacities: route 131072, descriptor 32768, source blocks 4096, frontcache bin 8192. Keep as direct RSS/safety control for the selected trim. |
 
 ## No-Go / Evidence-Only
 
@@ -215,6 +216,7 @@ Keep these controls available when changing the preload lane:
 | `run_hz6_ubuntu_selected_balance_matrix.sh` | Cross-allocator speed/RSS balance matrix for selected HZ6 versus system/HZ3/HZ4/HZ5/mimalloc/tcmalloc. |
 | `build_hz6_preload_diag.sh` | Diagnostic preload build wrapper with `HZ6_DIAGNOSTIC_PROBES=1`; use for attribution, not selected speed ranking. |
 | `run_hz6_midpage_rss_audit.sh` | Diagnostic RSS attribution runner for `16..4096`, `1024..4096`, and `4096..16384`. |
+| `run_hz6_static_table_trim_ab.sh` | Builds selected trim and wide-table controls, then compares speed/RSS plus failure counters. |
 | MidPage noinline/branch-isolated transfer skip | Still guard-sensitive. Branch/layout isolation did not make it selected-safe, so do not add it to `build_hz6_preload.sh`. |
 | MidPage preclassified malloc shape | Direct 4097..32768 MidPage classification improved target in short repeat, but disturbed `16..256` too much. Avoid broad malloc code-shape changes unless small guards are isolated first. |
 | active-map slot-index/code-shape helper | No selected-row win; changing this header shape can disturb MidPage/Toy preload layout, so keep the existing body. |
@@ -284,6 +286,9 @@ Recent raw evidence directories:
 
 ```text
 private/raw-results/linux/hz6_midpage_rss_audit_20260614_164214
+private/raw-results/linux/hz6_static_table_trim_ab_20260614_164920
+private/raw-results/linux/hz6_static_table_trim_confirm_20260614_165003
+private/raw-results/linux/hz6_ubuntu_selected_balance_20260614_165226
 private/raw-results/linux/hz6_ubuntu_selected_balance_20260614_162527
 private/raw-results/linux/hz6_preload_activefast_cross_20260613
 private/raw-results/linux/hz6_preload_midrun_ladder_r3_20260613
