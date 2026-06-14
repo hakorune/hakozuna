@@ -99,10 +99,11 @@ Ubuntu LD_PRELOAD status:
   functional and smoke-clean; short guard and long-run route tombstone cliff
   are fixed. Static table trim is selected, moving the Ubuntu preload lane from
   the old route131k/desc32768/source4096/frontcache8192 shape to
-  route65k/desc16384/source2048/frontcache4096. MidPage 32K run512 is now
-  selected after the post-trim repeat-7 moved 4096..16384 from about
-  42.18M / 94.38 MiB to about 45.30M / 94.50 MiB while keeping guards flat or
-  positive. The current 4096..16384 story is balanced: HZ6 is much faster and
+  route65k/desc16384/source2048/frontcache4096. MidPage 32K run768 is now
+  selected after the upsize repeat-7 moved 4096..16384 from about
+  43.11M / 94.50 MiB to about 44.32M / 94.50 MiB while keeping 16..256 and
+  16..4096 positive and 1024..4096 nearly flat. The current 4096..16384 story
+  is balanced: HZ6 is much faster and
   lower-RSS than HZ4/mimalloc/system, and can beat tcmalloc on RSS/efficiency,
   but HZ3 remains the higher speed/RSS frontier.
   MidPageActiveMapUnaligned-L2 plus probe4 is selected after the 4096..16384

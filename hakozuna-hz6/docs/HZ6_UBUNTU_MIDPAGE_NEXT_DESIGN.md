@@ -155,6 +155,8 @@ Decision:
 promote HZ6_MIDPAGE_32K_RUN_BYTES=524288.
 Keep 262144 as the direct control.
 Do not promote smaller payload-trim run sizes.
+Superseded follow-up: HZ6_MIDPAGE_32K_RUN_BYTES=786432 is now selected for the
+Ubuntu preload bundle; keep 524288 as the direct control.
 ```
 
 ## Lane A: TransferProbeAudit-L1

@@ -22,6 +22,9 @@ Ubuntu selected speed/RSS balance:
 Ubuntu MidPage next design:
   HZ6_UBUNTU_MIDPAGE_NEXT_DESIGN.md
 
+Ubuntu MidPage 32K run closeout:
+  HZ6_UBUNTU_MIDPAGE_32K_RUN_CLOSEOUT.md
+
 Repo cleanup and documentation rules:
   HZ6_REPO_HYGIENE.md
 
@@ -92,24 +95,9 @@ Latest repeat-3 refresh after free-hint/free-fastslot no-go closeouts:
 MidPage32KRun768-L1 is now selected/default for Ubuntu preload:
   HZ6_MIDPAGE_32K_RUN_BYTES 524288 -> 786432
   512K remains the direct control.
-  confirm repeat-7 without stats:
-    16..256      57.623M / 30.50 MiB -> 58.278M / 30.38 MiB
-    16..4096     41.851M / 79.75 MiB -> 42.389M / 79.88 MiB
-    1024..4096   40.600M / 91.00 MiB -> 40.387M / 91.00 MiB
-    4096..16384  43.110M / 94.50 MiB -> 44.324M / 94.50 MiB
-  safety spot-check: route/source/alloc/fallback failures all 0
-  1M/1.5M controls were target-positive but less guard-clean; keep off.
-MidPage32KRun512-L1 previous selected/default result:
-  HZ6_MIDPAGE_32K_RUN_BYTES 262144 -> 524288
-  payload trim controls below 256K were no-go: RSS was flat while source_alloc
-  increased and 4096..16384 slowed.
-  confirm repeat-7 without stats:
-    16..256      59.531M / 30.38 MiB -> 60.730M / 30.50 MiB
-    16..4096     41.811M / 79.88 MiB -> 43.235M / 79.88 MiB
-    1024..4096   40.856M / 91.12 MiB -> 41.568M / 91.00 MiB
-    4096..16384  42.176M / 94.38 MiB -> 45.298M / 94.50 MiB
-  safety repeat-3: route/source/alloc/fallback failures all 0
-  raw: private/raw-results/linux/hz6_midpage_run512_confirm_20260614_194437
+  repeat-7 versus 512K improved 4096..16384 and 16..4096, kept 16..256
+  positive, and only softened 1024..4096 slightly. Safety spot-check is clean.
+  Full evidence: HZ6_UBUNTU_MIDPAGE_32K_RUN_CLOSEOUT.md.
 FrontcacheCapacityShapeAudit-L1 is now implemented:
   diagnostic adds class-level frontcache push/pop-empty/bin-max attribution.
   raw: private/raw-results/linux/hz6_frontcache_shape_ab_20260614_215447

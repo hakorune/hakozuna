@@ -102,6 +102,14 @@ HZ6 is clearly ahead of mimalloc on the selected mixed_ws preload rows, but this
 is not a universal allocator win.
 ```
 
+Follow-up:
+
+```text
+MidPage 32K run768 is now selected after the table above. The focused repeat-7
+versus run512 moved 4096..16384 from 43.110M / 94.50 MiB to
+44.324M / 94.50 MiB, with 512K kept as direct control.
+```
+
 Current follow-up read:
 
 | Lane | Status | Read |
@@ -211,6 +219,9 @@ Keep these controls available when changing the preload lane:
 | route table 262144 | Capacity upper-bound; not selected by current evidence. |
 | `HZ6_PRELOAD_REALLOC_IN_PLACE_L1=0` | Direct control for preload realloc in-place. |
 | `wide_l0` static tables | Previous preload table capacities: route 131072, descriptor 32768, source blocks 4096, frontcache bin 8192. Keep as direct RSS/safety control for the selected trim. |
+
+MidPage 32K run-size closeout details are in
+`HZ6_UBUNTU_MIDPAGE_32K_RUN_CLOSEOUT.md`.
 
 ## No-Go / Evidence-Only
 
