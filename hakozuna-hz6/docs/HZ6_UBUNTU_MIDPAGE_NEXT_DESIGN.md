@@ -100,6 +100,33 @@ witness. If hits are non-zero in broader rows, skip must stay target-only.
 
 No behavior change in this lane.
 
+First read:
+
+```text
+selected diagnostic, 500K:
+
+4096..16384:
+  midpage_direct_transfer_probe_attempt=333720
+  midpage_direct_transfer_probe_hit=0
+  midpage_direct_transfer_probe_empty=333720
+  midpage_8k_direct_transfer_probe_attempt=333720
+  midpage_32k_direct_transfer_probe_attempt=0
+
+16..4096:
+  midpage_direct_transfer_probe_attempt=63
+  midpage_direct_transfer_probe_hit=0
+  midpage_direct_transfer_probe_empty=63
+```
+
+Read:
+
+```text
+The target row pays a large number of empty transfer probes on 8K direct-local
+reuse. The broad 16..4096 guard barely touches this path, so its earlier
+regression is most likely code-shape/layout sensitivity rather than direct
+semantic pressure.
+```
+
 ## Lane B: MidPage Target DSO Control
 
 Goal:
@@ -113,6 +140,12 @@ Build output:
 
 ```text
 hakozuna-hz6/out/linux/hz6_preload_midpage_target/libhakozuna_hz6_preload.so
+```
+
+Build:
+
+```bash
+./hakozuna-hz6/linux/build_hz6_preload_midpage_target.sh
 ```
 
 Flags:
@@ -198,4 +231,3 @@ do not add to build_hz6_preload.sh selected flags
 4. Try one guard-isolated helper shape.
 5. Repeat-7 selected versus candidate.
 6. Update `HZ6_UBUNTU_PRELOAD_LANES.md` with selected/control/no-go status.
-

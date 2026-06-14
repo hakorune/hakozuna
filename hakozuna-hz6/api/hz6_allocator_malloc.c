@@ -116,8 +116,31 @@ static void* hz6_allocator_direct_local_alloc(Hz6Allocator* allocator,
   }
   if (hz6_allocator_profile_transfer_first(allocator)) {
     /* Preserve transfer-first semantics before bypassing front dispatch. */
+#if HZ6_DIAGNOSTIC_PROBES
+    int midpage_transfer_probe =
+        front_id == HZ6_FRONT_MIDPAGE &&
+        (class_id == HZ6_MIDPAGE_8K_CLASS_ID ||
+         class_id == HZ6_MIDPAGE_32K_CLASS_ID);
+    if (midpage_transfer_probe) {
+      ++allocator->stats.midpage_direct_transfer_probe_attempt;
+      if (class_id == HZ6_MIDPAGE_8K_CLASS_ID) {
+        ++allocator->stats.midpage_8k_direct_transfer_probe_attempt;
+      } else {
+        ++allocator->stats.midpage_32k_direct_transfer_probe_attempt;
+      }
+    }
+#endif
     void* transfer_ptr = hz6_front_reuse_transfer_with_descriptor(
         allocator, front_id, class_id, NULL, out_descriptor);
+#if HZ6_DIAGNOSTIC_PROBES
+    if (midpage_transfer_probe) {
+      if (transfer_ptr) {
+        ++allocator->stats.midpage_direct_transfer_probe_hit;
+      } else {
+        ++allocator->stats.midpage_direct_transfer_probe_empty;
+      }
+    }
+#endif
     if (transfer_ptr) {
       return transfer_ptr;
     }

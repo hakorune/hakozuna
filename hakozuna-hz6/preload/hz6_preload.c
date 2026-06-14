@@ -278,6 +278,11 @@ static void hz6_preload_print_stats(void) {
   size_t midpage_32k_frontcache_push = 0;
   size_t midpage_8k_frontcache_pop_empty = 0;
   size_t midpage_32k_frontcache_pop_empty = 0;
+  size_t midpage_direct_transfer_probe_attempt = 0;
+  size_t midpage_direct_transfer_probe_hit = 0;
+  size_t midpage_direct_transfer_probe_empty = 0;
+  size_t midpage_8k_direct_transfer_probe_attempt = 0;
+  size_t midpage_32k_direct_transfer_probe_attempt = 0;
   size_t midpage_8k_preload_local_route_valid = 0;
   size_t midpage_32k_preload_local_route_valid = 0;
   size_t midpage_8k_source_run_slot_route_register = 0;
@@ -483,6 +488,16 @@ static void hz6_preload_print_stats(void) {
         stats.frontcache_pop_empty_by_class[HZ6_MIDPAGE_8K_CLASS_ID];
     midpage_32k_frontcache_pop_empty +=
         stats.frontcache_pop_empty_by_class[HZ6_MIDPAGE_32K_CLASS_ID];
+    midpage_direct_transfer_probe_attempt +=
+        stats.midpage_direct_transfer_probe_attempt;
+    midpage_direct_transfer_probe_hit +=
+        stats.midpage_direct_transfer_probe_hit;
+    midpage_direct_transfer_probe_empty +=
+        stats.midpage_direct_transfer_probe_empty;
+    midpage_8k_direct_transfer_probe_attempt +=
+        stats.midpage_8k_direct_transfer_probe_attempt;
+    midpage_32k_direct_transfer_probe_attempt +=
+        stats.midpage_32k_direct_transfer_probe_attempt;
     midpage_8k_preload_local_route_valid +=
         stats.midpage_8k_preload_local_route_valid;
     midpage_32k_preload_local_route_valid +=
@@ -715,6 +730,11 @@ static void hz6_preload_print_stats(void) {
           "midpage_32k_frontcache_push=%zu "
           "midpage_8k_frontcache_pop_empty=%zu "
           "midpage_32k_frontcache_pop_empty=%zu "
+          "midpage_direct_transfer_probe_attempt=%zu "
+          "midpage_direct_transfer_probe_hit=%zu "
+          "midpage_direct_transfer_probe_empty=%zu "
+          "midpage_8k_direct_transfer_probe_attempt=%zu "
+          "midpage_32k_direct_transfer_probe_attempt=%zu "
           "midpage_8k_preload_local_route_valid=%zu "
           "midpage_32k_preload_local_route_valid=%zu "
           "midpage_8k_source_run_slot_route_register=%zu "
@@ -726,6 +746,11 @@ static void hz6_preload_print_stats(void) {
           midpage_8k_active_map_free_hit, midpage_32k_active_map_free_hit,
           midpage_8k_frontcache_push, midpage_32k_frontcache_push,
           midpage_8k_frontcache_pop_empty, midpage_32k_frontcache_pop_empty,
+          midpage_direct_transfer_probe_attempt,
+          midpage_direct_transfer_probe_hit,
+          midpage_direct_transfer_probe_empty,
+          midpage_8k_direct_transfer_probe_attempt,
+          midpage_32k_direct_transfer_probe_attempt,
           midpage_8k_preload_local_route_valid,
           midpage_32k_preload_local_route_valid,
           midpage_8k_source_run_slot_route_register,

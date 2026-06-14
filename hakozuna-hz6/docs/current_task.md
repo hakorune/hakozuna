@@ -49,10 +49,12 @@ Latest MidPage closeout:
   keep descriptor-out selected
   keep register callsite counters as diagnostic-only
   keep free-cache counters as diagnostic-only
+  keep transfer-probe counters as diagnostic-only
   keep trusted activation skip off
   keep trusted cache push off
   keep MidPage direct-local skip-transfer-first off
   keep preclassified malloc shape out of source
+  keep MidPage target DSO as control only
 
 Next Ubuntu MidPage work should stay near smaller free/register code-shape
 changes with focused A/B guards. Do not chase route fallback, deeper free
@@ -61,7 +63,8 @@ whole-helper free-cache replacement, or guard-sensitive MidPage transfer-skip
 promotion first.
 
 Use HZ6_UBUNTU_MIDPAGE_NEXT_DESIGN.md as the implementation order for the next
-MidPage pass.
+MidPage pass. TransferProbeAudit-L1 and the target DSO are done; next is one
+guard-isolated helper shape.
 
 Long historical benchmark notes and failed experiments live in:
   archive/current_task_2026-06_history.md

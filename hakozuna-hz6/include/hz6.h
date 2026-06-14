@@ -353,6 +353,11 @@ typedef struct Hz6StatsSnapshot {
   size_t midpage_active_map_alignment_skip;
   size_t midpage_active_map_addr_envelope_skip;
   size_t midpage_active_map_route_bypass;
+  size_t midpage_direct_transfer_probe_attempt;
+  size_t midpage_direct_transfer_probe_hit;
+  size_t midpage_direct_transfer_probe_empty;
+  size_t midpage_8k_direct_transfer_probe_attempt;
+  size_t midpage_32k_direct_transfer_probe_attempt;
   size_t midpage_8k_alloc_call;
   size_t midpage_32k_alloc_call;
   size_t midpage_8k_prefill_run_call;
