@@ -10,7 +10,7 @@ OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_midpage
 
 BENCH="${BENCH:-${ROOT_DIR}/bench/out/linux/${ARCH}/bench_mixed_ws_crt}"
 SELECTED_SO="${SELECTED_SO:-${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_preload/libhakozuna_hz6_preload.so}"
-CANDIDATE_SO="${CANDIDATE_SO:-${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_preload_midpage_target/libhakozuna_hz6_preload.so}"
+CONTROL_SO="${CONTROL_SO:-${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_preload_midpage_boundary_control/libhakozuna_hz6_preload.so}"
 
 usage() {
   cat <<'EOF'
@@ -22,7 +22,7 @@ Options:
   --iters N      iterations per run (default: 500000)
   --ws N         working set (default: 4096)
   --outdir DIR   output directory
-  --skip-build   reuse existing preload DSOs and benchmark binary
+  --skip-build   reuse existing preload/control DSOs and benchmark binary
   --help         show this message
 EOF
 }
@@ -64,20 +64,20 @@ done
 
 if [[ "$SKIP_BUILD" -ne 1 ]]; then
   "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh"
-  "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_midpage_target.sh"
+  "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_midpage_boundary_control.sh"
   "${ROOT_DIR}/linux/build_linux_bench_compare.sh" --arch "$ARCH" \
     --out-dir "${ROOT_DIR}/bench/out/linux/${ARCH}"
 fi
 
 [[ -x "$BENCH" ]] || { echo "missing benchmark: $BENCH" >&2; exit 2; }
 [[ -f "$SELECTED_SO" ]] || { echo "missing selected DSO: $SELECTED_SO" >&2; exit 2; }
-[[ -f "$CANDIDATE_SO" ]] || { echo "missing candidate DSO: $CANDIDATE_SO" >&2; exit 2; }
+[[ -f "$CONTROL_SO" ]] || { echo "missing control DSO: $CONTROL_SO" >&2; exit 2; }
 
 mkdir -p "$OUTDIR"
 {
   echo "bench=${BENCH}"
   echo "selected=${SELECTED_SO}"
-  echo "candidate=${CANDIDATE_SO}"
+  echo "control=${CONTROL_SO}"
   echo "runs=${RUNS}"
   echo "iters=${ITERS}"
   echo "ws=${WS}"
@@ -88,9 +88,9 @@ run_row() {
   local min_size="$2"
   local max_size="$3"
 
-  for lane in selected candidate; do
+  for lane in selected control; do
     local so="$SELECTED_SO"
-    [[ "$lane" == candidate ]] && so="$CANDIDATE_SO"
+    [[ "$lane" == control ]] && so="$CONTROL_SO"
     mkdir -p "${OUTDIR}/${row}/${lane}"
     for run in $(seq 1 "$RUNS"); do
       env LD_PRELOAD="$so" "$BENCH" 4 "$ITERS" "$WS" "$min_size" "$max_size" \
@@ -116,7 +116,7 @@ print(root)
 for row in rows:
     medians = {}
     peaks = {}
-    for lane in ["selected", "candidate"]:
+    for lane in ["selected", "control"]:
         ops = []
         peak = []
         for path in sorted((root / row / lane).glob("*.log")):
@@ -129,10 +129,10 @@ for row in rows:
                 peak.append(int(m_peak.group(1)))
         medians[lane] = statistics.median(ops)
         peaks[lane] = statistics.median(peak)
-    delta = (medians["candidate"] / medians["selected"] - 1.0) * 100.0
+    delta = (medians["selected"] / medians["control"] - 1.0) * 100.0
     print(
         f"{row}: selected={medians['selected']:.3f} "
-        f"candidate={medians['candidate']:.3f} delta={delta:+.2f}% "
-        f"peak_kb={peaks['selected']:.0f}->{peaks['candidate']:.0f}"
+        f"control={medians['control']:.3f} selected_vs_control={delta:+.2f}% "
+        f"peak_kb={peaks['control']:.0f}->{peaks['selected']:.0f}"
     )
 PY

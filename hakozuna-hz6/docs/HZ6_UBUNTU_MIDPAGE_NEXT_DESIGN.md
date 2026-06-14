@@ -206,6 +206,24 @@ body out-of-line, and passes the repeat guard. Promote this shape to the
 selected preload bundle.
 ```
 
+Selected-vs-control confirmation repeat-15:
+
+```text
+selected default vs boundary-off control:
+  4096..16384: 33.735M -> 40.056M  (+18.74%)
+  16..256:     55.957M -> 56.539M  (+1.04%)
+  16..4096:    40.969M -> 41.339M  (+0.90%)
+  1024..4096:  39.059M -> 39.953M  (+2.29%)
+```
+
+Confirmation lane:
+
+```bash
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/build_hz6_preload_midpage_boundary_control.sh
+./hakozuna-hz6/linux/run_hz6_preload_midpage_boundary_ab.sh --runs 15 --skip-build
+```
+
 ## Lane C: Guard-Isolated Behavior Candidate
 
 Goal:

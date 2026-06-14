@@ -47,6 +47,8 @@ preload default because the target and tiny guard did not improve.
 MidPage preload-boundary malloc skip is now selected with an unlikely size
 guard plus noinline helper; it avoids empty transfer-first probes on the
 MidPage direct-local path without adding a helper call to small rows.
+The confirmation lane now compares selected default against an explicit
+boundary-off control DSO.
 
 Latest MidPage closeout:
   keep descriptor-out selected
@@ -62,15 +64,16 @@ Latest MidPage closeout:
   keep MidPage target DSO as selected/control alias
 
 Next Ubuntu MidPage work should not try more transfer-skip code-shape tweaks
-until a broader selected matrix confirms the promoted outer-guard noinline
-boundary. Do not chase route fallback, deeper free probing, source-run-slot
-route registration, broad malloc code-shape changes, or whole-helper free-cache
-replacement first.
+until a broader cross-allocator matrix confirms the promoted outer-guard
+noinline boundary. Do not chase route fallback, deeper free probing,
+source-run-slot route registration, broad malloc code-shape changes, or
+whole-helper free-cache replacement first.
 
 Use HZ6_UBUNTU_MIDPAGE_NEXT_DESIGN.md as the implementation order for the next
 MidPage pass. TransferProbeAudit-L1, target DSO, and guard-isolated helper
 attempts are done. The final outer-guard noinline preload-boundary shape passed
-the focused repeat-15 promotion guard.
+the focused repeat-15 promotion guard and the selected-vs-boundary-off
+confirmation lane.
 
 Long historical benchmark notes and failed experiments live in:
   archive/current_task_2026-06_history.md
