@@ -111,7 +111,17 @@ static void hz6_stats_snapshot_memory_attribution(
       sizeof(Hz6SourceBlock) * HZ6_ELASTIC_SOURCE_BLOCK_DEPOT_CAPACITY;
 #endif
   snapshot->memory_frontcache_table_bytes =
+#if HZ6_FRONT_CACHE_CLASS_STORAGE_TRIM_L1
+      sizeof(allocator->frontcache_entries_c0) +
+      sizeof(allocator->frontcache_entries_c1) +
+      sizeof(allocator->frontcache_entries_c2) +
+      sizeof(allocator->frontcache_entries_c3) +
+      sizeof(allocator->frontcache_entries_c4) +
+      sizeof(allocator->frontcache_entries_c5) +
+      sizeof(allocator->frontcache_entries_cold) +
+#else
       sizeof(allocator->frontcache_entries) +
+#endif
       sizeof(allocator->frontcache_bins);
   snapshot->memory_transfer_table_bytes =
       sizeof(allocator->transfer_objects);
@@ -322,7 +332,19 @@ static void hz6_stats_snapshot_memory_attribution(
       sizeof(Hz6SlimFrontCacheEntryCandidate);
   snapshot->metadata_frontcache_slim_table_bytes =
       sizeof(Hz6SlimFrontCacheEntryCandidate) *
+#if HZ6_FRONT_CACHE_CLASS_STORAGE_TRIM_L1
+      (HZ6_FRONT_CACHE_CLASS0_STORAGE_CAPACITY +
+       HZ6_FRONT_CACHE_CLASS1_STORAGE_CAPACITY +
+       HZ6_FRONT_CACHE_CLASS2_STORAGE_CAPACITY +
+       HZ6_FRONT_CACHE_CLASS3_STORAGE_CAPACITY +
+       HZ6_FRONT_CACHE_CLASS4_STORAGE_CAPACITY +
+       HZ6_FRONT_CACHE_CLASS5_STORAGE_CAPACITY +
+       ((HZ6_FRONT_CACHE_CLASS_COUNT > 6u ? HZ6_FRONT_CACHE_CLASS_COUNT - 6u
+                                          : 1u) *
+        HZ6_FRONT_CACHE_COLD_CLASS_STORAGE_CAPACITY));
+#else
       HZ6_FRONT_CACHE_CLASS_COUNT * HZ6_FRONT_CACHE_BIN_CAPACITY;
+#endif
   snapshot->metadata_frontcache_slim_savings_bytes =
       hz6_sub_saturating_size(snapshot->memory_frontcache_table_bytes,
                               snapshot->metadata_frontcache_slim_table_bytes);

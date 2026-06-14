@@ -154,6 +154,22 @@ FrontcacheCapacityShapeAudit-L1 is now implemented:
     speed/RSS, and cap2560/2048 increased empty pops and slowed the target.
     midpage cap3072 is no-go because it badly regresses 1024..4096.
   keep selected global frontcache4096 for now.
+FrontcacheClassStorageTrim-L1 is now implemented as a default-off control:
+  flag: HZ6_FRONT_CACHE_CLASS_STORAGE_TRIM_L1=1
+  runner: run_hz6_frontcache_shape_ab.sh now supports
+    --no-stats --no-diagnostics for production-shape speed/RSS ranking
+    --stats --diagnostics for class max/empty attribution
+  production-shape repeat-7:
+    raw: private/raw-results/linux/hz6_frontcache_shape_ab_20260615_043630
+    16..256      selected 55.108M / 30.50 MiB -> trim 57.733M / 30.38 MiB
+    16..4096     selected 42.318M / 79.75 MiB -> trim 41.818M / 79.75 MiB
+    1024..4096   selected 40.216M / 91.00 MiB -> trim 40.355M / 91.00 MiB
+    4096..16384  selected 45.239M / 94.38 MiB -> trim 45.567M / 94.50 MiB
+  diagnostic repeat-1:
+    raw: private/raw-results/linux/hz6_frontcache_shape_ab_20260615_043714
+    storage trim kept c4/c5 max behavior but did not show meaningful RSS
+    reduction and was target-weak under diagnostic overhead.
+  decision: keep off; fixed frontcache storage is not the next selected RSS win.
 
 Latest MidPage closeout:
   keep descriptor-out selected
@@ -177,8 +193,9 @@ source-run-slot route registration, broad malloc code-shape changes, or
 whole-helper free-cache replacement first.
 
 Next recommended optimization lane:
-  current-bias is selected and safety-clean. Resume supply/frontcache shape work
-  rather than adding another free-order classifier immediately.
+  current-bias is selected and safety-clean. Frontcache storage trim is not a
+  clear selected RSS win. Resume MidPage source/supply shape work, where the
+  remaining target pressure still shows source_alloc and frontcache empty pops.
 
 Closed MidPage controls:
   free-order/page-hint/current-bias details:

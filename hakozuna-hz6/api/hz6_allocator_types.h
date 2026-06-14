@@ -388,8 +388,27 @@ struct Hz6Allocator {
   size_t diagnostic_frontcache_total_current;
 #endif
   Hz6SourceRegistry source_registry;
+#if HZ6_FRONT_CACHE_CLASS_STORAGE_TRIM_L1
+  Hz6FrontCacheEntry frontcache_entries_c0
+      [HZ6_FRONT_CACHE_CLASS0_STORAGE_CAPACITY];
+  Hz6FrontCacheEntry frontcache_entries_c1
+      [HZ6_FRONT_CACHE_CLASS1_STORAGE_CAPACITY];
+  Hz6FrontCacheEntry frontcache_entries_c2
+      [HZ6_FRONT_CACHE_CLASS2_STORAGE_CAPACITY];
+  Hz6FrontCacheEntry frontcache_entries_c3
+      [HZ6_FRONT_CACHE_CLASS3_STORAGE_CAPACITY];
+  Hz6FrontCacheEntry frontcache_entries_c4
+      [HZ6_FRONT_CACHE_CLASS4_STORAGE_CAPACITY];
+  Hz6FrontCacheEntry frontcache_entries_c5
+      [HZ6_FRONT_CACHE_CLASS5_STORAGE_CAPACITY];
+  Hz6FrontCacheEntry frontcache_entries_cold
+      [HZ6_FRONT_CACHE_CLASS_COUNT > 6u ? HZ6_FRONT_CACHE_CLASS_COUNT - 6u
+                                        : 1u]
+      [HZ6_FRONT_CACHE_COLD_CLASS_STORAGE_CAPACITY];
+#else
   Hz6FrontCacheEntry frontcache_entries[HZ6_FRONT_CACHE_CLASS_COUNT]
                                       [HZ6_FRONT_CACHE_BIN_CAPACITY];
+#endif
   Hz6FrontCacheBin frontcache_bins[HZ6_FRONT_CACHE_CLASS_COUNT];
   Hz6StatsSnapshot stats;
 };

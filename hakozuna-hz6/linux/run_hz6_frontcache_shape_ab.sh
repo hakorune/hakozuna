@@ -8,6 +8,8 @@ ITERS="${ITERS:-200000}"
 WS="${WS:-4096}"
 OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_frontcache_shape_ab_$(date +%Y%m%d_%H%M%S)}"
 SKIP_BENCH_BUILD=0
+ENABLE_STATS="${ENABLE_STATS:-1}"
+ENABLE_DIAGNOSTICS="${ENABLE_DIAGNOSTICS:-1}"
 
 source "${ROOT_DIR}/hakozuna-hz6/linux/hz6_preload_flags.sh"
 
@@ -23,6 +25,10 @@ Options:
   --ws N            working set (default: 4096)
   --outdir DIR      output directory
   --skip-bench      reuse existing benchmark binary
+  --stats           enable HZ6_PRELOAD_STATS during runs (default)
+  --no-stats        disable HZ6_PRELOAD_STATS for speed/RSS ranking
+  --diagnostics     build with HZ6_DIAGNOSTIC_PROBES=1 (default)
+  --no-diagnostics  build without diagnostic probe counters
   --help            show this message
 EOF
 }
@@ -53,6 +59,22 @@ while [[ $# -gt 0 ]]; do
       SKIP_BENCH_BUILD=1
       shift
       ;;
+    --stats)
+      ENABLE_STATS=1
+      shift
+      ;;
+    --no-stats)
+      ENABLE_STATS=0
+      shift
+      ;;
+    --diagnostics)
+      ENABLE_DIAGNOSTICS=1
+      shift
+      ;;
+    --no-diagnostics)
+      ENABLE_DIAGNOSTICS=0
+      shift
+      ;;
     --help|-h)
       usage
       exit 0
@@ -69,7 +91,9 @@ variant_flags() {
   local variant="$1"
   local flags=()
   hz6_preload_effective_selected_cflags flags 1
-  flags+=("-DHZ6_DIAGNOSTIC_PROBES=1")
+  if [[ "$ENABLE_DIAGNOSTICS" -ne 0 ]]; then
+    flags+=("-DHZ6_DIAGNOSTIC_PROBES=1")
+  fi
   case "$variant" in
     selected)
       ;;
@@ -85,6 +109,9 @@ variant_flags() {
     midpage_cap3072)
       flags+=("-DHZ6_FRONT_CACHE_MIDPAGE_8K_BIN_CAPACITY=3072")
       flags+=("-DHZ6_FRONT_CACHE_MIDPAGE_32K_BIN_CAPACITY=3072")
+      ;;
+    storage_trim)
+      flags+=("-DHZ6_FRONT_CACHE_CLASS_STORAGE_TRIM_L1=1")
       ;;
     *)
       echo "unknown variant: ${variant}" >&2
@@ -112,9 +139,15 @@ run_once() {
   local so="${OUTDIR}/build/${variant}/libhakozuna_hz6_preload.so"
   local log="${OUTDIR}/${row}/${run_id}_${variant}.log"
   mkdir -p "${OUTDIR}/${row}"
-  env HZ6_PRELOAD_STATS=1 LD_PRELOAD="$so" \
-    "$BENCH" 4 "$ITERS" "$WS" "$min_size" "$max_size" \
-    > "$log" 2>&1
+  if [[ "$ENABLE_STATS" -ne 0 ]]; then
+    env HZ6_PRELOAD_STATS=1 LD_PRELOAD="$so" \
+      "$BENCH" 4 "$ITERS" "$WS" "$min_size" "$max_size" \
+      > "$log" 2>&1
+  else
+    env LD_PRELOAD="$so" \
+      "$BENCH" 4 "$ITERS" "$WS" "$min_size" "$max_size" \
+      > "$log" 2>&1
+  fi
 }
 
 if [[ "$SKIP_BENCH_BUILD" -ne 1 ]]; then
@@ -132,9 +165,11 @@ mkdir -p "$OUTDIR"
   echo "iters=${ITERS}"
   echo "ws=${WS}"
   echo "bench=${BENCH}"
+  echo "stats=${ENABLE_STATS}"
+  echo "diagnostics=${ENABLE_DIAGNOSTICS}"
 } > "${OUTDIR}/README.log"
 
-variants=(selected mid32k_cap3072 mid32k_cap2560 mid32k_cap2048 midpage_cap3072)
+variants=(selected mid32k_cap3072 mid32k_cap2560 mid32k_cap2048 midpage_cap3072 storage_trim)
 for variant in "${variants[@]}"; do
   build_variant "$variant"
 done
@@ -162,8 +197,9 @@ import statistics
 import sys
 
 root = pathlib.Path(sys.argv[1])
+readme = (root / "README.log").read_text(errors="replace")
 rows = ["16_256", "16_4096", "1024_4096", "4096_16384"]
-variants = ["selected", "mid32k_cap3072", "mid32k_cap2560", "mid32k_cap2048", "midpage_cap3072"]
+variants = ["selected", "mid32k_cap3072", "mid32k_cap2560", "mid32k_cap2048", "midpage_cap3072", "storage_trim"]
 ops_re = re.compile(r"ops/s=([0-9.]+)")
 peak_re = re.compile(r"peak_kb=([0-9]+)")
 kv_re = re.compile(r"([A-Za-z0-9_]+)=([0-9]+)")
@@ -183,6 +219,11 @@ def median(values):
     return statistics.median(values) if values else None
 
 print("# HZ6 Frontcache Shape A/B")
+print()
+stats_mode = readme.split("stats=", 1)[1].splitlines()[0] if "stats=" in readme else "unknown"
+print(f"stats: `{stats_mode}`")
+diagnostics_mode = readme.split("diagnostics=", 1)[1].splitlines()[0] if "diagnostics=" in readme else "unknown"
+print(f"diagnostics: `{diagnostics_mode}`")
 print()
 print("| row | variant | med ops/s | med peak KB | alloc_fail | route_register_fail | source_block_exhausted | malloc_real_fallback | c4_max | c5_max | c4_empty | c5_empty |")
 print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
