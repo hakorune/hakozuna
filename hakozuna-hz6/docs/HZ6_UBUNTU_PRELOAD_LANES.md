@@ -97,7 +97,7 @@ Current follow-up read:
 | MidPage active-map deeper probe | no-go direction | Miss attribution showed `found_elsewhere=0`; misses are not probe-limit misses. |
 | `HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1=1` | watch/control | Re-tested after descriptor-out: target improves, but `16..256` repeat-7 is still slightly weaker. Keep off. |
 | `HZ6_MIDPAGE_ACTIVE_MAP_ADDR_ENVELOPE_L1=1` | watch/control | Helps Toy/tiny by skipping impossible MidPage probes, but target has `addr_envelope_skip=0`. Keep off. |
-| Next likely lane | diagnostic | Observe MidPage active-map entry lifetime / overwrite source before changing behavior. |
+| Next likely lane | diagnostic/design | Free-side MidPage cache/push path. Perf points at `free`, `hz6_allocator_cache_active_descriptor_trusted_owner`, `frontcache_push/pop`, and transfer work more than route fallback. Keep small/tiny guards isolated before changing malloc code shape. |
 
 HZ3/HZ4 comparison read:
 

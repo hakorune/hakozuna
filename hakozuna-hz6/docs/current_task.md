@@ -42,9 +42,16 @@ the target row; register pressure is split between direct reuse and front alloc.
 MidPage trusted activation source-block-check skip was tested and is no-go for
 preload default because the target and tiny guard did not improve.
 
-Next Ubuntu MidPage work should stay near active-map register/free code shape
-or preload-boundary shortcuts with focused A/B guards. Do not chase route
-fallback, deeper free probing, or source-run-slot route registration first.
+Latest MidPage closeout:
+  keep descriptor-out selected
+  keep register callsite counters as diagnostic-only
+  keep trusted activation skip off
+  keep preclassified malloc shape out of source
+
+Next Ubuntu MidPage work should stay near free-side cache/push behavior or
+active-map register/free code shape with focused A/B guards. Do not chase route
+fallback, deeper free probing, source-run-slot route registration, or broad
+malloc code-shape changes first.
 
 Long historical benchmark notes and failed experiments live in:
   archive/current_task_2026-06_history.md
