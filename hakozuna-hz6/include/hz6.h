@@ -280,6 +280,7 @@ typedef struct Hz6StatsSnapshot {
   size_t frontcache_reuse_invalid;
   size_t frontcache_push_by_class[HZ6_STATS_CLASS_COUNT];
   size_t frontcache_pop_empty_by_class[HZ6_STATS_CLASS_COUNT];
+  size_t frontcache_bin_max_by_class[HZ6_STATS_CLASS_COUNT];
   size_t transfer_reuse_hit;
   size_t transfer_reuse_invalid;
   size_t source_refill_starvation;

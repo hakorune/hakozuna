@@ -115,6 +115,12 @@ MidPageFrontcacheRSSAudit-L1
   split HZ6 selected peak RSS by frontcache bins, active-map storage, route
   table, source retain, and MidPage source blocks on 16..4096 / 1024..4096 /
   4096..16384.
+
+FrontcacheCapacityShapeAudit-L1
+  added class-level frontcache push/pop-empty/bin-max attribution and tested
+  MidPage class-specific cap controls. Keep selected cap4096: class4 reaches
+  cap4096 on 1024..4096, class5 cap3072 did not win, and class5 cap2560/2048
+  slowed 4096..16384 by increasing empty pops.
 ```
 
 ## MidPage RSS Audit
@@ -169,7 +175,8 @@ Next optimization order from this evidence:
    avoid or shrink full table multiplication for helper/cold allocators if safe
 
 2. FrontcacheCapacityShapeAudit-L1
-   test whether all rows need the selected global frontcache 8192 table
+   closed for behavior. Keep class-max attribution for future lazy storage;
+   do not shrink selected frontcache4096 by class yet.
 
 3. MidPagePayloadTrimAudit-L1
    revisit 32K source payload after fixed table costs are understood

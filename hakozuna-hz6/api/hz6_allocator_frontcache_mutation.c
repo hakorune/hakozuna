@@ -30,6 +30,10 @@ int hz6_allocator_frontcache_push(Hz6Allocator* allocator,
 #if HZ6_DIAGNOSTIC_PROBES
     if (ok && class_id < HZ6_STATS_CLASS_COUNT) {
       ++allocator->stats.frontcache_push_by_class[class_id];
+      size_t count = allocator->frontcache_bins[class_id].count;
+      if (count > allocator->stats.frontcache_bin_max_by_class[class_id]) {
+        allocator->stats.frontcache_bin_max_by_class[class_id] = count;
+      }
     }
     if (ok) {
       hz6_allocator_note_frontcache_push_highwater(allocator);

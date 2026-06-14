@@ -155,6 +155,9 @@ static void hz6_preload_print_stats(void) {
   size_t frontcache_total_max = 0;
   size_t frontcache_reuse_hit = 0;
   size_t frontcache_reuse_invalid = 0;
+  size_t frontcache_push_by_class[HZ6_STATS_CLASS_COUNT] = {0};
+  size_t frontcache_pop_empty_by_class[HZ6_STATS_CLASS_COUNT] = {0};
+  size_t frontcache_bin_max_by_class[HZ6_STATS_CLASS_COUNT] = {0};
   size_t frontcache_spill_success = 0;
   size_t frontcache_spill_retry_success = 0;
   size_t frontcache_borrow_success = 0;
@@ -350,6 +353,17 @@ static void hz6_preload_print_stats(void) {
     }
     frontcache_reuse_hit += stats.frontcache_reuse_hit;
     frontcache_reuse_invalid += stats.frontcache_reuse_invalid;
+    for (size_t class_id = 0; class_id < HZ6_STATS_CLASS_COUNT; ++class_id) {
+      frontcache_push_by_class[class_id] +=
+          stats.frontcache_push_by_class[class_id];
+      frontcache_pop_empty_by_class[class_id] +=
+          stats.frontcache_pop_empty_by_class[class_id];
+      if (stats.frontcache_bin_max_by_class[class_id] >
+          frontcache_bin_max_by_class[class_id]) {
+        frontcache_bin_max_by_class[class_id] =
+            stats.frontcache_bin_max_by_class[class_id];
+      }
+    }
     frontcache_spill_success += stats.frontcache_spill_success;
     frontcache_spill_retry_success += stats.frontcache_spill_retry_success;
     frontcache_borrow_success += stats.frontcache_borrow_success;
@@ -700,6 +714,19 @@ static void hz6_preload_print_stats(void) {
           midpage_active_map_alignment_skip,
           midpage_active_map_addr_envelope_skip,
           midpage_active_map_route_bypass);
+
+  fprintf(stderr, "[HZ6_PRELOAD_FRONTCACHE_CLASS_DETAIL]");
+  for (size_t class_id = 0; class_id < HZ6_STATS_CLASS_COUNT; ++class_id) {
+    fprintf(stderr,
+            " c%zu_push=%zu c%zu_empty=%zu c%zu_max=%zu",
+            class_id,
+            frontcache_push_by_class[class_id],
+            class_id,
+            frontcache_pop_empty_by_class[class_id],
+            class_id,
+            frontcache_bin_max_by_class[class_id]);
+  }
+  fprintf(stderr, "\n");
 
   fprintf(stderr,
           "[HZ6_PRELOAD_MIDPAGE_CLASS_DETAIL] "

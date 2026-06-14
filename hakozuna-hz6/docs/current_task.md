@@ -92,6 +92,16 @@ MidPage32KRun512-L1 is now selected/default for Ubuntu preload:
     4096..16384  42.176M / 94.38 MiB -> 45.298M / 94.50 MiB
   safety repeat-3: route/source/alloc/fallback failures all 0
   raw: private/raw-results/linux/hz6_midpage_run512_confirm_20260614_194437
+FrontcacheCapacityShapeAudit-L1 is now implemented:
+  diagnostic adds class-level frontcache push/pop-empty/bin-max attribution.
+  raw: private/raw-results/linux/hz6_frontcache_shape_ab_20260614_215447
+  read:
+    1024..4096 uses class4 up to the selected cap4096, so broad cap shrink is
+    unsafe.
+    4096..16384 uses class5 up to about 2832, but mid32k cap3072 did not win
+    speed/RSS, and cap2560/2048 increased empty pops and slowed the target.
+    midpage cap3072 is no-go because it badly regresses 1024..4096.
+  keep selected global frontcache4096 for now.
 
 Latest MidPage closeout:
   keep descriptor-out selected
@@ -116,9 +126,9 @@ whole-helper free-cache replacement first.
 
 Next recommended optimization lanes:
   FrontcacheCapacityShapeAudit-L1:
-    next. The global frontcache4096 promotion is selected; the next frontcache
-    step should be class-specific caps or colder-bin lazy storage, not another
-    global-cap guess.
+    closed as diagnostic/control for now. Class-specific MidPage cap behavior
+    did not pass promotion; keep the class-max attribution for future lazy
+    storage design.
 
   MidPagePayloadTrimAudit-L1:
     closed. Smaller 32K runs are no-go for now; 512K is selected for speed.
