@@ -63,12 +63,16 @@ Next allocator work:
     read: fixed_16k now edges HZ3 speed in this repeat-3 read; fixed_8k is
       strong but below HZ3; fixed_4k remains a Toy/tcmalloc/HZ3 gap.
   Latest HZ6 Ubuntu quiescent RSS read:
-    hakozuna-hz6/private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_222345
+    hakozuna-hz6/private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_012801
     malloc_trim keeps peak RSS flat but lowers current RSS:
-      4096..16384 94.38 MiB -> 28.32 MiB
-      fixed_16k   93.12 MiB -> 28.26 MiB
+      16..4096    79.88 MiB -> 27.27 MiB
+      1024..4096  91.00 MiB -> 27.18 MiB
+      4096..16384 94.25 MiB -> 28.52 MiB
+      fixed_16k   93.38 MiB -> 28.38 MiB
     read: RSS progress is currently strongest as explicit quiescent recovery;
       peak RSS still mostly reflects touched MidPage source payload.
+    cold_retire_max16 retires payload on the target row but does not reduce
+      current/peak RSS enough and remains control/no-go.
   Latest HZ6 Ubuntu follow-up control:
     HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_4K_L1
     HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_8K_L1

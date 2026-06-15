@@ -2815,3 +2815,66 @@ decision:
   Keep HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FAST_L1=0. The fixed_4k/fixed_16k
   nudge is not worth the 1024..4096 and 4096..16384 regressions.
 ```
+
+## Recent Recheck: Raw Frontcache Push Class5 Still Profile-Only
+
+```text
+goal:
+  Recheck the class5-only free raw-push code-shape control after trusted-class
+  became part of selected, because the earlier read had a fixed_16k signal.
+
+A/B:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_012729
+  no-stats repeat-15, focused+fixed+tiny, iters=300000
+
+  16..256:
+    selected 57.384M -> raw_frontcache_push_class5 56.625M
+  16..4096:
+    selected 35.915M -> raw_frontcache_push_class5 35.751M
+  1024..4096:
+    selected 33.334M -> raw_frontcache_push_class5 33.600M
+  4096..16384:
+    selected 45.745M -> raw_frontcache_push_class5 44.429M
+  fixed_4k:
+    selected 32.231M -> raw_frontcache_push_class5 32.165M
+  fixed_8k:
+    selected 42.963M -> raw_frontcache_push_class5 42.760M
+  fixed_16k:
+    selected 45.664M -> raw_frontcache_push_class5 46.034M
+
+decision:
+  Keep HZ6_DIRECT_LOCAL_FREE_RAW_PUSH_L1=0 and keep class5 gating as
+  profile/control only. The fixed_16k win is real enough to preserve the lane,
+  but the 4096..16384 target loss is too large for selected default.
+```
+
+## Recent RSS Recheck: Quiescent Trim Holds, Peak Retire Deferred
+
+```text
+goal:
+  Recheck the current RSS floor and compare it with cold-retire after the
+  trusted-class selected baseline.
+
+A/B:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_012801
+  stats+diagnostics repeat-3, focused+fixed, iters=200000, ws=4096
+
+  selected vs selected_malloc_trim_before_rss current RSS:
+    16..4096:    79.88 MiB -> 27.27 MiB
+    1024..4096:  91.00 MiB -> 27.18 MiB
+    4096..16384: 94.25 MiB -> 28.52 MiB
+    fixed_4k:    92.00 MiB -> 28.37 MiB
+    fixed_8k:    93.38 MiB -> 28.25 MiB
+    fixed_16k:   93.38 MiB -> 28.38 MiB
+
+  cold_retire_max16:
+    4096..16384 payload attribution drops 399.25 -> 271.25 MiB and retires
+    192 blocks / 12288 descriptors / 384.00 MiB, but current RSS remains
+    94.25 MiB and diagnostic throughput drops 17.070M -> 16.759M.
+    Fixed rows do not get a peak/current RSS win.
+
+decision:
+  Keep malloc_trim as the selected quiescent RSS recovery API. Do not promote
+  cold-retire behavior for selected; peak RSS needs a different lane than
+  final all-local-free reclamation.
+```
