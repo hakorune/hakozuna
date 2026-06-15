@@ -6,6 +6,8 @@ ARCH="${ARCH:-x86_64}"
 RUNS="${RUNS:-3}"
 ITERS="${ITERS:-200000}"
 WS="${WS:-4096}"
+ROWS_CSV="${ROWS:-focused}"
+VARIANTS_CSV="${VARIANTS:-selected,frontcache8192,route131072,desc32768,source4096,wide_l0}"
 OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_static_table_trim_ab_$(date +%Y%m%d_%H%M%S)}"
 SKIP_BENCH_BUILD=0
 
@@ -21,9 +23,16 @@ Options:
   --runs N          runs per variant/row (default: 3)
   --iters N         iterations per run (default: 200000)
   --ws N            working set (default: 4096)
+  --rows CSV        row groups: focused,fixed_mid (default: focused)
+  --variants CSV    variants to build/run
   --outdir DIR      output directory
   --skip-bench      reuse existing benchmark binary
   --help            show this message
+
+Variants:
+  selected, route32768, route131072, desc8192, desc12288, desc32768,
+  source1024, source4096, toy_map16384, midpage_map8192,
+  frontcache8192, wide_l0
 EOF
 }
 
@@ -43,6 +52,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --ws)
       WS="$2"
+      shift 2
+      ;;
+    --rows)
+      ROWS_CSV="$2"
+      shift 2
+      ;;
+    --variants)
+      VARIANTS_CSV="$2"
       shift 2
       ;;
     --outdir)
@@ -76,14 +93,32 @@ variant_flags() {
     frontcache8192)
       hz6_preload_replace_define flags HZ6_FRONT_CACHE_BIN_CAPACITY 8192
       ;;
+    route32768)
+      hz6_preload_replace_define flags HZ6_ROUTE_TABLE_CAPACITY 32768
+      ;;
     route131072)
       hz6_preload_replace_define flags HZ6_ROUTE_TABLE_CAPACITY 131072
+      ;;
+    desc8192)
+      hz6_preload_replace_define flags HZ6_OBJECT_DESCRIPTOR_CAPACITY 8192
+      ;;
+    desc12288)
+      hz6_preload_replace_define flags HZ6_OBJECT_DESCRIPTOR_CAPACITY 12288
       ;;
     desc32768)
       hz6_preload_replace_define flags HZ6_OBJECT_DESCRIPTOR_CAPACITY 32768
       ;;
+    source1024)
+      hz6_preload_replace_define flags HZ6_SOURCE_BLOCK_CAPACITY 1024
+      ;;
     source4096)
       hz6_preload_replace_define flags HZ6_SOURCE_BLOCK_CAPACITY 4096
+      ;;
+    toy_map16384)
+      hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY 16384
+      ;;
+    midpage_map8192)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY 8192
       ;;
     wide_l0)
       hz6_preload_replace_define flags HZ6_ROUTE_TABLE_CAPACITY 131072
@@ -136,19 +171,42 @@ mkdir -p "$OUTDIR"
   echo "runs=${RUNS}"
   echo "iters=${ITERS}"
   echo "ws=${WS}"
+  echo "rows=${ROWS_CSV}"
+  echo "variants=${VARIANTS_CSV}"
   echo "bench=${BENCH}"
 } > "${OUTDIR}/README.log"
 
-variants=(selected frontcache8192 route131072 desc32768 source4096 wide_l0)
+IFS=',' read -r -a variants <<< "$VARIANTS_CSV"
 for variant in "${variants[@]}"; do
   build_variant "$variant"
 done
 
-rows=(
-  "16_4096 16 4096"
-  "1024_4096 1024 4096"
-  "4096_16384 4096 16384"
-)
+rows=()
+IFS=',' read -r -a row_groups <<< "$ROWS_CSV"
+for row_group in "${row_groups[@]}"; do
+  case "$row_group" in
+    focused)
+      rows+=(
+        "16_4096 16 4096"
+        "1024_4096 1024 4096"
+        "4096_16384 4096 16384"
+      )
+      ;;
+    fixed_mid)
+      rows+=(
+        "fixed_4k 4096 4096"
+        "fixed_8k 8192 8192"
+        "fixed_16k 16384 16384"
+      )
+      ;;
+    "")
+      ;;
+    *)
+      echo "unknown row group: ${row_group}" >&2
+      exit 2
+      ;;
+  esac
+done
 
 for row_spec in "${rows[@]}"; do
   read -r row min_size max_size <<< "$row_spec"
@@ -159,15 +217,24 @@ for row_spec in "${rows[@]}"; do
   done
 done
 
-python3 - <<'PY' "$OUTDIR" | tee "${OUTDIR}/summary.md"
+python3 - <<'PY' "$OUTDIR" "${ROWS_CSV}" "${VARIANTS_CSV}" | tee "${OUTDIR}/summary.md"
 import pathlib
 import re
 import statistics
 import sys
 
 root = pathlib.Path(sys.argv[1])
-rows = ["16_4096", "1024_4096", "4096_16384"]
-variants = ["selected", "frontcache8192", "route131072", "desc32768", "source4096", "wide_l0"]
+rows_csv = sys.argv[2]
+variants_csv = sys.argv[3]
+rows = []
+for group in [part for part in rows_csv.split(",") if part]:
+    if group == "focused":
+        rows.extend(["16_4096", "1024_4096", "4096_16384"])
+    elif group == "fixed_mid":
+        rows.extend(["fixed_4k", "fixed_8k", "fixed_16k"])
+    else:
+        raise SystemExit(f"unknown row group: {group}")
+variants = [part for part in variants_csv.split(",") if part]
 ops_re = re.compile(r"ops/s=([0-9.]+)")
 peak_re = re.compile(r"peak_kb=([0-9]+)")
 kv_re = re.compile(r"([A-Za-z0-9_]+)=([0-9]+)")
