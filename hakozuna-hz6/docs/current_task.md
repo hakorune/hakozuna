@@ -88,7 +88,7 @@ Calloc direct-HZ6 control:
 Recent fixed/profile repeats:
   private/raw-results/linux/hz6_fixed_boundary_profile_frontier_20260616_063106
   private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_063918
-  private/raw-results/linux/hz6_fixed_quiescent_rss_matrix_20260616_064654
+  private/raw-results/linux/hz6_fixed_quiescent_rss_matrix_20260616_072153
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_{062305,064915,065310,065329}
   private/raw-results/linux/hz6_ubuntu_size_slices_20260616_063423
 
