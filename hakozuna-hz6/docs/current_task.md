@@ -3036,3 +3036,46 @@ decision:
   Profile lane ergonomics are now cleaner. Future cross-allocator reads can
   request named HZ6 profiles directly from the matrix runners.
 ```
+
+## Recent Measurement: HZ6 Profile Position Refresh
+
+```text
+goal:
+  Re-measure the named HZ6 profile DSOs through the selected/fixed matrix
+  runners after profile alias autobuild hooks were added, and pin the current
+  selected/profile split.
+
+focused matrix:
+  raw: private/raw-results/linux/hz6_profile_position_focused_20260616_014250
+  command shape:
+    run_hz6_ubuntu_selected_balance_matrix.sh
+    --allocators hz6,hz6-toy-target,hz6-small-boundary-fast-target,
+      hz6-realloc-boundary-4k-target,hz6-realloc-boundary-8k-target
+    --runs 5 --iters 300000 --ws 4096 --skip-builds --skip-prepare
+
+  selected vs best profile:
+    16..256:     58.182M / 30.38 MiB -> small-boundary-fast 78.220M / 30.50 MiB
+    16..4096:    36.874M / 79.62 MiB -> toy-target 43.649M / 79.50 MiB
+    1024..4096:  34.045M / 90.88 MiB -> small-boundary-fast 39.610M / 91.50 MiB
+    4096..16384: 45.518M / 94.25 MiB -> small-boundary-fast 46.164M / 94.12 MiB
+
+fixed matrix:
+  raw: private/raw-results/linux/hz6_profile_position_fixed_20260616_014402
+  command shape:
+    run_hz6_ubuntu_size_slices_matrix.sh
+    --allocators hz6,hz6-toy-target,hz6-small-boundary-fast-target,
+      hz6-realloc-boundary-4k-target,hz6-realloc-boundary-8k-target
+    --rows fixed_mid --runs 5 --iters 300000 --ws 4096 --skip-builds --skip-prepare
+
+  selected vs best profile:
+    fixed_4k:  32.005M / 91.75 MiB -> small-boundary-fast 48.188M / 92.75 MiB
+    fixed_8k:  43.184M / 93.12 MiB -> realloc-boundary-8k 45.960M / 93.12 MiB
+    fixed_16k: 45.614M / 93.12 MiB -> small-boundary-fast 45.923M / 93.12 MiB
+
+decision:
+  HZ6 has a clear profile DSO story now. selected remains the balanced default;
+  small-boundary-fast is the best general profile for tiny/mid-small/fixed_4k
+  and remains target-safe in this read; realloc-boundary-8k is the exact
+  fixed_8k profile. RSS stays roughly in the selected range, so these profiles
+  mainly buy speed rather than peak-RSS reduction.
+```

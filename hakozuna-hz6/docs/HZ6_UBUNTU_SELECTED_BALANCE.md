@@ -234,6 +234,31 @@ small/fixed-boundary heavy. It is not a selected replacement because it gives
 up the MidPage target balance while still trailing HZ3/HZ4/tcmalloc on broad
 mid-small rows.
 
+Latest HZ6 profile-position refresh, using the named profile aliases from the
+matrix runners:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_profile_position_focused_20260616_014250
+hakozuna-hz6/private/raw-results/linux/hz6_profile_position_fixed_20260616_014402
+```
+
+| row | selected hz6 | best profile in this read | read |
+| --- | ---: | ---: | --- |
+| `16..256` | `58.182M / 30.38 MiB` | `small-boundary-fast 78.220M / 30.50 MiB` | profile win, RSS flat |
+| `16..4096` | `36.874M / 79.62 MiB` | `toy-target 43.649M / 79.50 MiB` | profile win, RSS flat |
+| `1024..4096` | `34.045M / 90.88 MiB` | `small-boundary-fast 39.610M / 91.50 MiB` | profile win, small RSS cost |
+| `4096..16384` | `45.518M / 94.25 MiB` | `small-boundary-fast 46.164M / 94.12 MiB` | near-flat target, profile does not hurt here |
+| `fixed_4k` | `32.005M / 91.75 MiB` | `small-boundary-fast 48.188M / 92.75 MiB` | strong fixed-boundary win |
+| `fixed_8k` | `43.184M / 93.12 MiB` | `realloc-boundary-8k 45.960M / 93.12 MiB` | split profile wins this exact row |
+| `fixed_16k` | `45.614M / 93.12 MiB` | `small-boundary-fast 45.923M / 93.12 MiB` | effectively flat |
+
+This strengthens the profile-lane decision. `hz6-small-boundary-fast-target`
+is the best general HZ6 profile for tiny/mid-small/fixed-boundary workloads,
+while `hz6-realloc-boundary-8k-target` is the exact fixed_8k profile. The
+selected DSO remains the default because profile choice is workload-specific
+and previous cross-allocator guard reads still keep HZ3/tcmalloc ahead on
+some broad small rows.
+
 ## Selected Read
 
 The current HZ6 Ubuntu selected lane has its clearest speed/RSS balance on

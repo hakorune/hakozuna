@@ -80,6 +80,20 @@ Next allocator work:
     workloads. They are not selected/default because focused and target guards
     remain mixed, but they directly attack the current fixed-boundary realloc
     copy pressure.
+  Latest HZ6 Ubuntu profile-position refresh:
+    hakozuna-hz6/private/raw-results/linux/hz6_profile_position_focused_20260616_014250
+    hakozuna-hz6/private/raw-results/linux/hz6_profile_position_fixed_20260616_014402
+    small-boundary-fast is the strongest general profile DSO in this read:
+      16..256      selected 58.182M -> 78.220M
+      1024..4096   selected 34.045M -> 39.610M
+      4096..16384  selected 45.518M -> 46.164M
+      fixed_4k     selected 32.005M -> 48.188M
+      fixed_16k    selected 45.614M -> 45.923M
+    realloc-boundary-8k is the exact fixed_8k profile:
+      fixed_8k selected 43.184M -> 45.960M
+    read: selected remains the balanced default; profile DSOs are now cleanly
+      positioned for known workload shapes. RSS is roughly flat versus selected,
+      so the profile win is mostly throughput.
 ```
 
 ## Recent Cleanup Commits
