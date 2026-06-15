@@ -119,7 +119,9 @@ static void* hz6_allocator_direct_local_reuse(Hz6Allocator* allocator,
   return NULL;
 }
 
-#if HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_L1
+#if HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_L1 && \
+    HZ6_PRELOAD_MIDPAGE_MALLOC_SKIP_TRANSFER_L1 &&      \
+    HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1 && HZ6_LOCAL_CACHE_DIRECT_REUSE_L1
 static int hz6_allocator_midpage_trusted_class_reuse_enabled(
     uint16_t class_id) {
   return class_id >=

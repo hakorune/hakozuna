@@ -26,6 +26,7 @@ HZ6_INCLUDES=("${HZ6_COMMON_INCLUDES[@]}" "${HZ6_DIR}/preload")
 HZ6_PRELOAD_SOURCES=(
   "${HZ6_DIR}/preload/hz6_preload.c"
   "${HZ6_DIR}/preload/hz6_preload_hooks.c"
+  "${HZ6_DIR}/preload/hz6_preload_midpage.c"
   "${HZ6_DIR}/preload/hz6_preload_real.c"
   "${HZ6_DIR}/preload/hz6_preload_stats.c"
 )

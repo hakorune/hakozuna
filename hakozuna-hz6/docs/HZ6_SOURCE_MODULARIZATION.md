@@ -56,6 +56,8 @@ P0 docs/build hygiene:
   build_hz6_preload.sh must honor HZ6_PRELOAD_PRESERVE_PHASE_COUNTERS even
   when a profile builder supplies HZ6_PRELOAD_DEFAULT_CFLAGS, so stats/profile
   DSOs do not silently compile out attribution counters.
+  Boundary-off preload smoke must stay warning-clean; MidPage trusted-class
+  reuse helpers are guarded to their actual skip-transfer use site.
   thin profile builders should use linux/hz6_preload_profile_builder.sh and
   only describe macro deltas from selected/default.
   high-risk no-go/control flags should be explicitly default-off in preload
@@ -78,14 +80,16 @@ P2 preload facade:
 
 P2 preload module split:
   preload/hz6_preload_hooks.c now owns the libc hook flow, TLS allocator,
-  route helper, and MidPage malloc-boundary dispatch.
+  route helper, and the main malloc/free/realloc hook control flow.
+  preload/hz6_preload_midpage.c owns MidPage preload-boundary malloc helper
+  code and matching MidPage hint TLS state. Keep it behavior-neutral: do not
+  move the main free-order ladder or inline-off malloc body here as cleanup.
   preload/hz6_preload_stats.h exposes only phase counters and allocator
   registration needed by the hook module.
   hakozuna-hz6/preload/hz6_preload.c is now a thin translation unit.
   hakozuna-hz6/preload/hz6_preload_stats.c owns stats aggregation/printing
   plus allocator registry state.
   Next cleanup-only split, if needed:
-    preload/hz6_preload_midpage.c/.h for MidPage preload-boundary dispatch
     narrower stats print helpers inside preload/hz6_preload_stats.c
   Do not mix those future splits with behavior changes.
 
