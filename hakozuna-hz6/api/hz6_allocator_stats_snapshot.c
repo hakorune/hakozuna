@@ -127,10 +127,32 @@ static void hz6_stats_snapshot_count_midpage_block_descriptors(
   }
 }
 
+static size_t hz6_stats_snapshot_count_frontcache_entries_for_block(
+    const Hz6Allocator* allocator,
+    const Hz6SourceBlock* block,
+    uint16_t class_id) {
+  if (!allocator || !block || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
+    return 0;
+  }
+  const Hz6FrontCacheBin* bin = &allocator->frontcache_bins[class_id];
+  size_t count = 0;
+  for (size_t i = 0; i < bin->count; ++i) {
+    const Hz6FrontCacheEntry* entry = &bin->entries[i];
+    const Hz6ObjectDescriptor* descriptor =
+        (const Hz6ObjectDescriptor*)entry->descriptor;
+    if (descriptor && descriptor->source_block == block &&
+        descriptor->class_id == class_id) {
+      ++count;
+    }
+  }
+  return count;
+}
+
 static void hz6_stats_snapshot_note_midpage_residency(
     const Hz6SourceBlock* block,
     uint16_t class_id,
     const Hz6MidPageResidencyCounts* counts,
+    size_t frontcache_entries,
     Hz6StatsSnapshot* snapshot) {
   if (!block || !counts || !snapshot) {
     return;
@@ -176,6 +198,22 @@ static void hz6_stats_snapshot_note_midpage_residency(
       class_id == HZ6_MIDPAGE_32K_CLASS_ID
           ? &snapshot->memory_midpage_32k_low_active_1_4_payload_bytes
           : &snapshot->memory_midpage_8k_low_active_1_4_payload_bytes;
+  size_t* retire_candidate_blocks =
+      class_id == HZ6_MIDPAGE_32K_CLASS_ID
+          ? &snapshot->memory_midpage_32k_retire_candidate_blocks
+          : &snapshot->memory_midpage_8k_retire_candidate_blocks;
+  size_t* retire_candidate_payload =
+      class_id == HZ6_MIDPAGE_32K_CLASS_ID
+          ? &snapshot->memory_midpage_32k_retire_candidate_payload_bytes
+          : &snapshot->memory_midpage_8k_retire_candidate_payload_bytes;
+  size_t* retire_candidate_descriptors =
+      class_id == HZ6_MIDPAGE_32K_CLASS_ID
+          ? &snapshot->memory_midpage_32k_retire_candidate_descriptors
+          : &snapshot->memory_midpage_8k_retire_candidate_descriptors;
+  size_t* retire_candidate_frontcache_entries =
+      class_id == HZ6_MIDPAGE_32K_CLASS_ID
+          ? &snapshot->memory_midpage_32k_retire_candidate_frontcache_entries
+          : &snapshot->memory_midpage_8k_retire_candidate_frontcache_entries;
 
   ++*source_blocks;
   *payload_bytes += block->bytes;
@@ -189,6 +227,10 @@ static void hz6_stats_snapshot_note_midpage_residency(
     ++*all_local_free_blocks;
     *all_local_free_payload += block->bytes;
     ++*active_zero_local_free_nonzero_blocks;
+    ++*retire_candidate_blocks;
+    *retire_candidate_payload += block->bytes;
+    *retire_candidate_descriptors += counts->local_free;
+    *retire_candidate_frontcache_entries += frontcache_entries;
   }
   if (counts->active >= 1 && counts->active <= 4) {
     ++*low_active_blocks;
@@ -319,8 +361,11 @@ static void hz6_stats_snapshot_memory_attribution(
             block->run_class_id == class_id)) {
         continue;
       }
+      size_t frontcache_entries =
+          hz6_stats_snapshot_count_frontcache_entries_for_block(
+              allocator, block, class_id);
       hz6_stats_snapshot_note_midpage_residency(
-          block, class_id, &counts, snapshot);
+          block, class_id, &counts, frontcache_entries, snapshot);
     }
   }
   snapshot->memory_active_source_blocks = active_source_blocks;

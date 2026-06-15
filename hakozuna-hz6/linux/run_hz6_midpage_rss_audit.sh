@@ -107,8 +107,8 @@ def parse_line(text, tag):
 
 print("# HZ6 MidPage RSS Audit\n")
 print(f"root: `{root}`\n")
-print("| row | ops/s | peak MiB | attributed MiB | static MiB | payload MiB | mid8 payload MiB | mid32 payload MiB | mid8 blocks | mid32 blocks | mid8 active | mid32 active | mid8 local-free | mid32 local-free | mid8 all-local-free MiB | mid32 all-local-free MiB | mid32 low-active blocks | mid32 low-active MiB | ref mismatch | retain MiB | frontcache MiB | toy map MiB | midpage map MiB | active source blocks | frontcache total |")
-print("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+print("| row | ops/s | peak MiB | attributed MiB | static MiB | payload MiB | mid8 payload MiB | mid32 payload MiB | mid8 blocks | mid32 blocks | mid8 active | mid32 active | mid8 local-free | mid32 local-free | mid8 all-local-free MiB | mid32 all-local-free MiB | mid32 retire MiB | mid32 retire desc | mid32 retire fc entries | mid32 low-active blocks | mid32 low-active MiB | ref mismatch | retain MiB | frontcache MiB | toy map MiB | midpage map MiB | active source blocks | frontcache total |")
+print("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 for row in rows:
     text = (root / f"{row}.log").read_text(errors="replace")
     bench = parse_line(text, "threads=")
@@ -132,6 +132,9 @@ for row in rows:
         f"{int(mem.get('midpage_32k_local_free', 0))} | "
         f"{mib('midpage_8k_all_local_free_payload_bytes'):.2f} | "
         f"{mib('midpage_32k_all_local_free_payload_bytes'):.2f} | "
+        f"{mib('midpage_32k_retire_candidate_payload_bytes'):.2f} | "
+        f"{int(mem.get('midpage_32k_retire_candidate_descriptors', 0))} | "
+        f"{int(mem.get('midpage_32k_retire_candidate_frontcache_entries', 0))} | "
         f"{int(mem.get('midpage_32k_low_active_1_4_blocks', 0))} | "
         f"{mib('midpage_32k_low_active_1_4_payload_bytes'):.2f} | "
         f"{int(mem.get('midpage_ref_mismatch_blocks', 0))} | "

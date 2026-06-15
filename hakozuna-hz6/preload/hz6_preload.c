@@ -285,6 +285,14 @@ static void hz6_preload_print_stats(void) {
   size_t memory_midpage_8k_low_active_1_4_payload_bytes = 0;
   size_t memory_midpage_32k_low_active_1_4_payload_bytes = 0;
   size_t memory_midpage_ref_mismatch_blocks = 0;
+  size_t memory_midpage_8k_retire_candidate_blocks = 0;
+  size_t memory_midpage_32k_retire_candidate_blocks = 0;
+  size_t memory_midpage_8k_retire_candidate_payload_bytes = 0;
+  size_t memory_midpage_32k_retire_candidate_payload_bytes = 0;
+  size_t memory_midpage_8k_retire_candidate_descriptors = 0;
+  size_t memory_midpage_32k_retire_candidate_descriptors = 0;
+  size_t memory_midpage_8k_retire_candidate_frontcache_entries = 0;
+  size_t memory_midpage_32k_retire_candidate_frontcache_entries = 0;
 #endif
 
   pthread_mutex_lock(&g_hz6_preload_allocator_registry_mutex);
@@ -607,6 +615,22 @@ static void hz6_preload_print_stats(void) {
         stats.memory_midpage_32k_low_active_1_4_payload_bytes;
     memory_midpage_ref_mismatch_blocks +=
         stats.memory_midpage_ref_mismatch_blocks;
+    memory_midpage_8k_retire_candidate_blocks +=
+        stats.memory_midpage_8k_retire_candidate_blocks;
+    memory_midpage_32k_retire_candidate_blocks +=
+        stats.memory_midpage_32k_retire_candidate_blocks;
+    memory_midpage_8k_retire_candidate_payload_bytes +=
+        stats.memory_midpage_8k_retire_candidate_payload_bytes;
+    memory_midpage_32k_retire_candidate_payload_bytes +=
+        stats.memory_midpage_32k_retire_candidate_payload_bytes;
+    memory_midpage_8k_retire_candidate_descriptors +=
+        stats.memory_midpage_8k_retire_candidate_descriptors;
+    memory_midpage_32k_retire_candidate_descriptors +=
+        stats.memory_midpage_32k_retire_candidate_descriptors;
+    memory_midpage_8k_retire_candidate_frontcache_entries +=
+        stats.memory_midpage_8k_retire_candidate_frontcache_entries;
+    memory_midpage_32k_retire_candidate_frontcache_entries +=
+        stats.memory_midpage_32k_retire_candidate_frontcache_entries;
 #endif
   }
   pthread_mutex_unlock(&g_hz6_preload_allocator_registry_mutex);
@@ -949,7 +973,15 @@ static void hz6_preload_print_stats(void) {
           "midpage_32k_low_active_1_4_blocks=%zu "
           "midpage_8k_low_active_1_4_payload_bytes=%zu "
           "midpage_32k_low_active_1_4_payload_bytes=%zu "
-          "midpage_ref_mismatch_blocks=%zu\n",
+          "midpage_ref_mismatch_blocks=%zu "
+          "midpage_8k_retire_candidate_blocks=%zu "
+          "midpage_32k_retire_candidate_blocks=%zu "
+          "midpage_8k_retire_candidate_payload_bytes=%zu "
+          "midpage_32k_retire_candidate_payload_bytes=%zu "
+          "midpage_8k_retire_candidate_descriptors=%zu "
+          "midpage_32k_retire_candidate_descriptors=%zu "
+          "midpage_8k_retire_candidate_frontcache_entries=%zu "
+          "midpage_32k_retire_candidate_frontcache_entries=%zu\n",
           allocator_count, memory_descriptor_table_bytes,
           memory_route_table_bytes, memory_source_block_table_bytes,
           memory_frontcache_table_bytes, memory_transfer_table_bytes,
@@ -981,7 +1013,15 @@ static void hz6_preload_print_stats(void) {
           memory_midpage_32k_low_active_1_4_blocks,
           memory_midpage_8k_low_active_1_4_payload_bytes,
           memory_midpage_32k_low_active_1_4_payload_bytes,
-          memory_midpage_ref_mismatch_blocks);
+          memory_midpage_ref_mismatch_blocks,
+          memory_midpage_8k_retire_candidate_blocks,
+          memory_midpage_32k_retire_candidate_blocks,
+          memory_midpage_8k_retire_candidate_payload_bytes,
+          memory_midpage_32k_retire_candidate_payload_bytes,
+          memory_midpage_8k_retire_candidate_descriptors,
+          memory_midpage_32k_retire_candidate_descriptors,
+          memory_midpage_8k_retire_candidate_frontcache_entries,
+          memory_midpage_32k_retire_candidate_frontcache_entries);
 #endif
 
   fprintf(stderr,

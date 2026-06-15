@@ -439,6 +439,42 @@ MidPagePayloadResidencyAudit-L1 result:
     pinned by ACTIVE descriptors; it is retained by LOCAL_FREE/frontcache
     descriptors, so a batch/out-of-line retire design is worth auditing.
 
+MidPageColdSourceBlockRetireDryRun-L1 task:
+  goal:
+    Estimate how much MidPage all-local-free payload could be retired without
+    changing behavior. This is still diagnostic-only; it does not drain
+    frontcache, unregister routes, release source blocks, or madvise memory.
+  implementation:
+    Extend the residency snapshot with retire-candidate blocks, payload bytes,
+    descriptor count, and matching frontcache entries. Candidate blocks require
+    active=0, local_free>0, transfer_free=0, and remote_pending=0.
+  promotion gate:
+    If 4096..16384 shows large 32K retire-candidate payload and frontcache
+    entries match the candidate descriptors, design an out-of-line behavior
+    helper. If frontcache coverage is low or guards show similar pressure,
+    remain diagnostic/control.
+
+MidPageColdSourceBlockRetireDryRun-L1 result:
+  implementation:
+    Residency snapshot now reports retire-candidate blocks, payload,
+    descriptors, and matching frontcache entries. Candidate blocks are
+    all-local-free blocks; this still performs no behavior change.
+  raw:
+    private/raw-results/linux/hz6_midpage_rss_audit_20260615_172905
+  read:
+    4096..16384:
+      MidPage 32K retire candidate payload 354.00 MiB
+      MidPage 32K retire candidate descriptors 11328
+      MidPage 32K retire candidate frontcache entries 11328
+      ref mismatch 0
+    16..4096 and 1024..4096 each have only 8.00 MiB of 32K retire candidate
+    payload; the main opportunity is clearly the MidPage-heavy target row.
+  decision:
+    proceed to a default-off MidPage32K cold-retire behavior control. The
+    helper should be out-of-line and should drain only complete all-local-free
+    32K source blocks. It must not add a scan to every free; use a high-water
+    trigger and max-blocks-per-call guard.
+
 MidPage32KRunFineLadder-L1 task:
   goal:
     Re-check the 32K MidPage run-size ridge after active-map register fast-slot
