@@ -13,6 +13,7 @@ benchmark lane or source-level experiment.
 | Capacity lane dictionary | `HZ6_LANE_GUIDE_CAPACITY_REFERENCE.md` |
 | Mechanism/no-go lane dictionary | `HZ6_LANE_GUIDE_MECHANISM_REFERENCE.md` |
 | Ubuntu LD_PRELOAD lane ledger | `HZ6_UBUNTU_PRELOAD_LANES.md` |
+| Ubuntu profile registry | `HZ6_UBUNTU_PROFILE_REGISTRY.md` |
 | Cross-allocator comparison table | `HZ6_CROSS_ALLOCATOR_COMPARISON.md` |
 | ElasticCapacity source-depot track | `HZ6_ELASTIC_CAPACITY_PLAN.md` |
 | ElasticCapacity design details | `HZ6_ELASTIC_CAPACITY_DESIGN_REFERENCE.md` |
@@ -174,9 +175,19 @@ HZ6_LANE_GUIDE.md:
 HZ6_UBUNTU_PRELOAD_LANES.md:
   Ubuntu LD_PRELOAD selected bundle, controls, no-go lanes, and raw evidence
 
+HZ6_UBUNTU_PROFILE_REGISTRY.md:
+  Ubuntu LD_PRELOAD selected/default alias registry, standard profile-frontier
+  aliases, and explicit controls. Update this when adding or demoting a
+  profile alias so runner defaults and docs do not drift.
+
 linux/hz6_preload_aliases.sh:
   shared profile alias build helper for HZ6 matrix runners and the public
   linux/run_linux_bench_compare_matrix.sh entrypoint
+
+linux/check_hz6_preload_profile_registry.sh:
+  profile registry consistency check. Run it before committing profile-lane
+  changes; it verifies registry/default frontier order, explicit-control
+  exclusion, builder presence, alias wiring, and bench resolver wiring.
 
 linux/hz6_preload_profile_builder.sh:
   shared helper for thin HZ6 profile DSO builders. Keep new profile builders

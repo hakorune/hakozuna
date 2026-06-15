@@ -60,6 +60,9 @@ P0 docs/build hygiene:
   reuse helpers are guarded to their actual skip-transfer use site.
   thin profile builders should use linux/hz6_preload_profile_builder.sh and
   only describe macro deltas from selected/default.
+  profile aliases should be registered in HZ6_UBUNTU_PROFILE_REGISTRY.md and
+  checked with linux/check_hz6_preload_profile_registry.sh before profile-lane
+  commits.
   high-risk no-go/control flags should be explicitly default-off in preload
 
 P1 source split:
