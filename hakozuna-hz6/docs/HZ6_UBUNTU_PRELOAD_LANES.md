@@ -104,14 +104,14 @@ trim, repeat-3, `bench_mixed_ws_crt`, raw
 | `1024..4096` full cross repeat-3 | `41.776M / 78.62 MiB` |
 | `4096..16384` full cross repeat-3 | `47.293M / 81.25 MiB` |
 
-Latest fixed-size cross-allocator refresh, repeat-3, raw
-`private/raw-results/linux/hz6_ubuntu_size_slices_20260616_060255`:
+Latest selected fixed-size cross-allocator refresh, repeat-3, raw
+`private/raw-results/linux/hz6_ubuntu_size_slices_20260616_073231`:
 
 | Row | Selected read |
 | --- | ---: |
-| `fixed_4k` fixed repeat-3 | `39.649M / 78.88 MiB` |
-| `fixed_8k` fixed repeat-3 | `45.145M / 80.12 MiB` |
-| `fixed_16k` fixed repeat-3 | `46.005M / 80.12 MiB` |
+| `fixed_4k` fixed repeat-3 | `27.624M / 79.00 MiB` |
+| `fixed_8k` fixed repeat-3 | `32.220M / 80.12 MiB` |
+| `fixed_16k` fixed repeat-3 | `34.956M / 80.12 MiB` |
 
 Latest profile frontier after route32K/desc8192/source1024 and Toy16K/MidPage8K
 storage trims, repeat-3, raw
@@ -133,19 +133,19 @@ the broad production DSO. Do not default realloc-boundary or adaptive behavior
 unless a future guard also preserves tiny, mixed-small, target, fixed, RSS, and
 stats rows in one run.
 
-Latest fixed-boundary profile cross refresh, repeat-3, raw
-`private/raw-results/linux/hz6_fixed_boundary_profile_frontier_20260616_061328`:
+Latest fixed-boundary profile frontier, repeat-3, raw
+`private/raw-results/linux/hz6_fixed_boundary_profile_frontier_20260616_072931`:
 
 | Row | HZ6 selected | HZ6 best profile | External read |
 | --- | ---: | ---: | --- |
-| `fixed_4k` | `38.415M / 78.88 MiB` | `small-boundary-trusted 49.618M / 79.62 MiB` | HZ3 still faster/RSS-lower; HZ6 profile beats tcmalloc speed |
-| `fixed_8k` | `45.270M / 80.25 MiB` | `small-boundary-trusted 48.283M / 80.12 MiB` | HZ3 still faster/RSS-lower; HZ6 profile beats tcmalloc speed |
-| `fixed_16k` | `47.987M / 80.12 MiB` | `small-boundary-trusted 48.695M / 80.00 MiB` | HZ6 profile beats HZ3/tcmalloc/HZ4/mimalloc/system speed |
+| `fixed_4k` | `28.332M / 79.12 MiB` | `toy-map8192 36.567M / 78.75 MiB` | external has best ops/MiB: `36.143M / 77.62 MiB` |
+| `fixed_8k` | `34.208M / 80.12 MiB` | `toy-map8192-external 35.250M / 78.12 MiB` | external is best speed/RSS balance |
+| `fixed_16k` | `33.749M / 80.00 MiB` | `toy-trusted 35.403M / 80.12 MiB` | toy-map8192/external are lower-RSS balance profiles |
 
-Read: small-boundary-trusted is the practical fixed-boundary shipping profile
-right now. The remaining gap to HZ3 on fixed_4k/8k is mostly RSS/static
-architecture cost plus HZ3's heavily tuned medium path, not an argument for
-defaulting realloc-boundary behavior.
+Read: Toy-map8192/external replaced plain small-boundary-trusted as the current
+fixed-boundary RSS profile family. The external profile is the lower-RSS
+fixed_4k/8k choice; Toy-map8192 and toy-trusted remain useful fixed_16k speed
+witnesses. This is still profile-only because mixed-small focused rows regress.
 
 Latest focused cross-allocator comparison:
 
@@ -156,23 +156,22 @@ Latest focused cross-allocator comparison:
 | `1024..4096` | `61.344M` | `42.099M` | `41.776M` | `5.468M` | `74.863M` | `8.343M` | `80,512` |
 | `4096..16384` | `46.682M` | `25.538M` | `47.293M` | `1.228M` | `33.280M` | `2.758M` | `83,200` |
 
-Latest fixed-size cross-allocator comparison:
+Latest fixed-size cross-allocator comparison, with the current HZ6 fixed RSS
+profiles included:
 
-| Row | hz3 | hz4 | hz6 | mimalloc | tcmalloc | system | hz6 peak KB |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `fixed_4k` | `58.387M` | `14.093M` | `39.649M` | `3.026M` | `41.288M` | `2.935M` | `80,768` |
-| `fixed_8k` | `52.948M` | `13.169M` | `45.145M` | `1.478M` | `28.255M` | `2.872M` | `82,048` |
-| `fixed_16k` | `43.918M` | `10.750M` | `46.005M` | `0.746M` | `12.237M` | `30.565M` | `82,048` |
+| Row | hz3 | hz6 | hz6 external | tcmalloc | external ops/MiB |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `fixed_4k` | `38.858M / 68.38 MiB` | `27.624M / 79.00 MiB` | `35.813M / 77.75 MiB` | `32.286M / 70.25 MiB` | `460.6K` |
+| `fixed_8k` | `35.730M / 69.75 MiB` | `32.220M / 80.12 MiB` | `35.086M / 78.12 MiB` | `22.235M / 73.25 MiB` | `449.1K` |
+| `fixed_16k` | `29.400M / 73.12 MiB` | `34.956M / 80.12 MiB` | `35.209M / 78.25 MiB` | `11.695M / 89.12 MiB` | `450.0K` |
 
 Important caveat:
 
 ```text
 tcmalloc remains much faster on mixed small rows and HZ3/tcmalloc dominate the
-tiny row. On 4096..16384, HZ6 now slightly beats HZ3 throughput in this repeat
-and beats tcmalloc/HZ4/mimalloc/system on speed while staying below tcmalloc
-RSS. On fixed_16k, selected HZ6 also edges HZ3 speed and beats
-tcmalloc/HZ4/mimalloc/system; fixed_8k beats tcmalloc/HZ4/mimalloc/system but
-still trails HZ3; fixed_4k remains below HZ3/tcmalloc.
+tiny row. On fixed rows, the external HZ6 profile now beats tcmalloc balance on
+fixed_4k/8k/16k and beats HZ3 speed on fixed_16k. HZ3 still has the better
+fixed_4k/8k speed/RSS frontier because its medium path has a lower static floor.
 ```
 
 Follow-up:
