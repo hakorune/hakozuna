@@ -163,6 +163,18 @@ Comparison/profile controls:
       fixed_16k    selected 33.460M -> toy-trusted 34.877M
     It does not replace small-boundary-trusted for fixed_4k/fixed_8k, but it
     avoids the realloc-slack fixed_16k regression seen in this repeat.
+    Cross/fixed guard refresh:
+      private/raw-results/linux/hz6_toy_trusted_cross_20260616_025048
+      private/raw-results/linux/hz6_toy_trusted_fixed_20260616_025117
+      toy-trusted is the strongest HZ6 profile in focused cross rows:
+        16..256      toy-trusted 68.398M vs trusted 67.134M
+        16..4096     toy-trusted 33.188M vs trusted 31.558M
+        1024..4096   toy-trusted 29.386M vs trusted 29.169M
+        4096..16384  toy-trusted 35.181M vs trusted 35.112M
+      fixed read:
+        fixed_4k   small-boundary-trusted remains best HZ6
+        fixed_8k   small-boundary-trusted slightly leads
+        fixed_16k  toy-trusted is best HZ6
 
   hz6-realloc-boundary-4k-target
   hz6-realloc-boundary-8k-target

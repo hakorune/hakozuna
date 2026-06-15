@@ -357,6 +357,28 @@ and target/fixed16 checks. It does not replace `hz6-small-boundary-trusted-targe
 for fixed_4k/fixed_8k workloads, and it is not selected/default without a
 cross-allocator/fixed guard refresh.
 
+Toy-trusted cross/fixed guard refresh:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_toy_trusted_cross_20260616_025048
+hakozuna-hz6/private/raw-results/linux/hz6_toy_trusted_fixed_20260616_025117
+```
+
+| row | selected hz6 | toy-trusted | small-boundary trusted | best outside HZ6 | read |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `16..256` | `51.360M / 30.50 MiB` | `68.398M / 30.50 MiB` | `67.134M / 30.50 MiB` | `hz3 218.608M / 6.62 MiB` | toy-trusted is best HZ6 profile; tiny still belongs to HZ3/tcmalloc |
+| `16..4096` | `28.066M / 79.50 MiB` | `33.188M / 79.50 MiB` | `31.558M / 79.75 MiB` | `tcmalloc 65.213M / 42.12 MiB` | toy-trusted is best HZ6 profile |
+| `1024..4096` | `25.242M / 90.88 MiB` | `29.386M / 91.00 MiB` | `29.169M / 91.12 MiB` | `tcmalloc 57.925M / 49.62 MiB` | toy-trusted slightly leads HZ6 profiles |
+| `4096..16384` | `33.858M / 94.00 MiB` | `35.181M / 94.00 MiB` | `35.112M / 94.00 MiB` | `hz3 36.146M / 73.12 MiB` | toy-trusted is closest HZ6 profile and beats tcmalloc speed |
+| `fixed_4k` | `24.598M / 91.88 MiB` | `27.290M / 91.88 MiB` | `34.882M / 92.75 MiB` | `hz3 43.507M / 68.62 MiB` | small-boundary trusted remains fixed_4k profile |
+| `fixed_8k` | `32.781M / 93.25 MiB` | `34.107M / 93.25 MiB` | `34.404M / 93.12 MiB` | `hz3 39.150M / 69.88 MiB` | small-boundary trusted slightly leads |
+| `fixed_16k` | `33.945M / 93.12 MiB` | `35.708M / 93.00 MiB` | `35.055M / 93.25 MiB` | `hz3 32.990M / 73.12 MiB` | toy-trusted is best HZ6 and beats HZ3/tcmalloc speed |
+
+Decision: keep both named profiles. Use `hz6-toy-trusted-target` as the
+lighter focused/fixed16 profile, and `hz6-small-boundary-trusted-target` for
+fixed_4k/fixed_8k or known realloc-boundary workloads. Selected/default remains
+unchanged.
+
 Fixed_4k profile-position follow-up:
 
 | row | hz6 selected | realloc-4k profile | small-boundary target | trusted profile | read |
