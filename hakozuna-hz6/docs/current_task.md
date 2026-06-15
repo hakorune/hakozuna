@@ -85,6 +85,13 @@ evidence:
     broad prechecked free stayed no-go:
       16..256 56.333M -> 56.031M
       4096..16384 43.990M -> 43.603M
+  boundary code-shape retest:
+    raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_202612
+    selected noinline remains the target-balanced shape:
+      boundary_inline 4096..16384 43.812M -> 42.896M
+      boundary_off    4096..16384 43.812M -> 35.205M
+    inline/off can help small guards, but the MidPage target loss blocks
+    default selection.
 
 decision:
   selected/default. This is a small but balanced production code-shape win after

@@ -225,6 +225,13 @@ variant_flags() {
     preload_fast_free)
       hz6_preload_replace_define flags HZ6_PRELOAD_FAST_FREE_L1 1
       ;;
+    boundary_inline)
+      hz6_preload_replace_define flags HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_NOINLINE_L1 0
+      ;;
+    boundary_off)
+      hz6_preload_replace_define flags HZ6_PRELOAD_MIDPAGE_MALLOC_SKIP_TRANSFER_L1 0
+      hz6_preload_replace_define flags HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_NOINLINE_L1 0
+      ;;
     boundary_min8k)
       hz6_preload_replace_define flags HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_MIN_BYTES 8192
       ;;
