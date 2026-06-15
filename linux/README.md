@@ -171,10 +171,11 @@ The aligned-allocation profile DSO is built by:
 
 It enables `HZ6_PRELOAD_REAL_ALIGNED_FREE_SKIP_L1=1`, a control that tracks
 real `posix_memalign` / `aligned_alloc` fallback pointers so `free()` can skip
-the HZ6 route lookup and call real free directly.  It is useful for aligned-heavy
-workloads but is not selected default because mixed/fixed guards reject the
-extra free-side gate.  Use `hz6-aligned-target` in shared compare matrices only
-for that profile.
+the HZ6 route lookup and call real free directly.  Refresh raw
+`hz6_aligned_profile_refresh_20260616_020716` keeps the dedicated aligned win,
+while `hz6_aligned_profile_guard_20260616_020941` and
+`hz6_aligned_profile_fixed_guard_20260616_020953` keep it profile-only.  Use
+`hz6-aligned-target` in shared compare matrices only for aligned-heavy profiles.
 
 The realloc-boundary profile DSO is built by:
 

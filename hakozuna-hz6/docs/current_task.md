@@ -130,7 +130,11 @@ Comparison/profile controls:
     Toy/mid-small profile/control. Keep profile-only.
 
   hz6-aligned-target
-    Aligned-allocation profile/control. Keep profile-only.
+    Real aligned-allocation fallback profile/control. Refresh raw
+    private/raw-results/linux/hz6_aligned_profile_refresh_20260616_020716
+    keeps the dedicated aligned win, but focused/fixed guards
+    hz6_aligned_profile_guard_20260616_020941 and
+    hz6_aligned_profile_fixed_guard_20260616_020953 keep it profile-only.
 
 Profile alias helper:
   linux/hz6_preload_aliases.sh

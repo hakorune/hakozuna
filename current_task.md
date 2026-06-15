@@ -122,6 +122,13 @@ Next allocator work:
     read: trusted supersedes fast as the preferred broad small/fixed HZ6
       profile. Latest repeat keeps trusted positive versus selected on focused
       and fixed-mid rows; selected default remains unchanged.
+  Latest HZ6 Ubuntu aligned profile refresh:
+    hakozuna-hz6/private/raw-results/linux/hz6_aligned_profile_refresh_20260616_020716
+    hakozuna-hz6/private/raw-results/linux/hz6_aligned_profile_guard_20260616_020941
+    hakozuna-hz6/private/raw-results/linux/hz6_aligned_profile_fixed_guard_20260616_020953
+    read: aligned_free_skip recovers dedicated aligned allocation rows from
+      about 14K ops/s to 9.4M..10.4M ops/s, but focused/fixed guards are mixed
+      to negative. Keep hz6-aligned-target profile-only.
 ```
 
 ## Recent Cleanup Commits
