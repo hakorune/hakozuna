@@ -299,6 +299,16 @@ variant_flags() {
     toy_probe8)
       hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_PROBE_LIMIT 8
       ;;
+    toy_mask_index)
+      hz6_preload_replace_define flags HZ6_TOY_ACTIVE_MAP_MASK_INDEX_L1 1
+      ;;
+    toy_shift12_index)
+      hz6_preload_replace_define flags HZ6_TOY_ACTIVE_MAP_SHIFT12_INDEX_L1 1
+      ;;
+    toy_shift12_mask)
+      hz6_preload_replace_define flags HZ6_TOY_ACTIVE_MAP_SHIFT12_INDEX_L1 1
+      hz6_preload_replace_define flags HZ6_TOY_ACTIVE_MAP_MASK_INDEX_L1 1
+      ;;
     toy_prefill64)
       hz6_preload_replace_define flags HZ6_TOY_FULL_BLOCK_PREFILL_MAX_SLOTS 64
       ;;

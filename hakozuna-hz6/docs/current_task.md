@@ -206,6 +206,36 @@ evidence:
         production repeat-15 raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_210005
         toy_probe8 improved 16..4096 and 1024..4096, but tiny, target,
         fixed_4k, and fixed_16k were flat/negative. Keep off.
+      Toy active-map index controls:
+        plan:
+          Add control-only HZ6_TOY_ACTIVE_MAP_MASK_INDEX_L1 and
+          HZ6_TOY_ACTIVE_MAP_SHIFT12_INDEX_L1.
+        intent:
+          mask_index tests code-shape only for power-of-two capacities.
+          shift12_index tests whether low slot bits hurt fixed_4k collision,
+          but is expected to be risky because Toy slots can share pages.
+        accept:
+          promote only if production repeat keeps tiny, 16..4096,
+          1024..4096, target, fixed_4k, fixed_8k, and fixed_16k non-negative
+          enough to beat selected noise.
+        diagnostic raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_210443
+        read:
+          shift12_index and shift12_mask are immediate no-go. 16..256 fell
+          from about 24.5M to about 0.78M in diagnostics, confirming that page
+          granularity loses essential Toy slot entropy.
+        production raw with runtime power-of-two guard:
+          private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_210534
+          mask_index was mixed: fixed_4k improved 30.460M -> 30.857M, but
+          fixed_8k regressed 41.266M -> 40.761M and target stayed flat.
+        production raw with branchless mask:
+          private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_210625
+          mask_index improved tiny/mixed/fixed_4k, but target regressed
+          badly: 4096..16384 43.379M -> 40.302M.
+        decision:
+          Keep HZ6_TOY_ACTIVE_MAP_MASK_INDEX_L1 and
+          HZ6_TOY_ACTIVE_MAP_SHIFT12_INDEX_L1 as controls/no-go. Do not
+          default Toy active-map index changes; code layout around the target
+          row is too sensitive.
 
 decision:
   selected/default. This is a small but balanced production code-shape win after
@@ -219,7 +249,8 @@ next:
   Prefer a new quiescent/snapshot scavenge design, or a different Toy class4
   data-layout idea that does not simply widen active-map probe/capacity. Do not
   default the existing per-free cold-retire behavior, current_bias_2x,
-  frontcache8192, storage-trim c4 variants, toy_map64k, or toy_probe8.
+  frontcache8192, storage-trim c4 variants, toy_map64k, toy_probe8,
+  toy_mask_index, or toy_shift12_index.
 ```
 
 ## Recent Closeout: HZ6 Ubuntu MidPage ActiveMap Collision Layout Audit-L1

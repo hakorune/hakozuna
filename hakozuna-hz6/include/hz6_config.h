@@ -397,6 +397,21 @@
 #define HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1 1
 #endif
 
+#ifndef HZ6_TOY_ACTIVE_MAP_MASK_INDEX_L1
+/* Candidate Toy active-map index code-shape control.  The selected preload
+ * capacity is power-of-two, so this replaces the modulo with a mask without
+ * changing the hash domain.  Enable only with a power-of-two active-map
+ * capacity. */
+#define HZ6_TOY_ACTIVE_MAP_MASK_INDEX_L1 0
+#endif
+
+#ifndef HZ6_TOY_ACTIVE_MAP_SHIFT12_INDEX_L1
+/* Candidate Toy active-map index experiment.  Use page-granularity address
+ * bits before mixing to test whether low slot bits are hurting the 4K-heavy
+ * rows.  This is control-only because small Toy objects can share pages. */
+#define HZ6_TOY_ACTIVE_MAP_SHIFT12_INDEX_L1 0
+#endif
+
 #ifndef HZ6_TOY_TRUSTED_ACTIVATE_SKIP_SOURCE_BLOCK_CHECK_L1
 /* Candidate trusted activation shortcut.  A descriptor popped from the local
  * frontcache already carries state/ptr/generation validation; for Toy-sized

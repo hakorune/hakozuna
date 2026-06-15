@@ -217,10 +217,17 @@ static inline void hz6_toy_small_hotpath_diag_free_cache_success(
 }
 
 static inline size_t hz6_toy_small_active_map_index(const void* ptr) {
+#if HZ6_TOY_ACTIVE_MAP_SHIFT12_INDEX_L1
+  uintptr_t key = (uintptr_t)ptr >> 12u;
+#else
   uintptr_t key = (uintptr_t)ptr >> 4u;
+#endif
   key ^= key >> 17u;
   key *= (uintptr_t)0xed5ad4bbU;
   key ^= key >> 11u;
+#if HZ6_TOY_ACTIVE_MAP_MASK_INDEX_L1
+  return (size_t)(key & (HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY - 1u));
+#endif
   return (size_t)(key % HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY);
 }
 
