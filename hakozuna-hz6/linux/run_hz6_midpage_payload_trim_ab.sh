@@ -9,6 +9,8 @@ WS="${WS:-4096}"
 OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_midpage_payload_trim_ab_$(date +%Y%m%d_%H%M%S)}"
 SKIP_BENCH_BUILD=0
 ENABLE_STATS="${ENABLE_STATS:-1}"
+STATS_VALUE="${STATS_VALUE:-1}"
+ENABLE_DIAGNOSTICS="${ENABLE_DIAGNOSTICS:-0}"
 VARIANTS="${VARIANTS:-}"
 INCLUDE_TINY="${INCLUDE_TINY:-0}"
 
@@ -28,6 +30,9 @@ Options:
   --skip-bench      reuse existing benchmark binary
   --stats           enable HZ6_PRELOAD_STATS during runs (default)
   --no-stats        disable HZ6_PRELOAD_STATS for speed/RSS ranking
+  --stats-value VAL value for HZ6_PRELOAD_STATS when stats are enabled
+  --diagnostics     build with HZ6_DIAGNOSTIC_PROBES=1
+  --no-diagnostics  build without diagnostic probe counters (default)
   --variants LIST   comma-separated variants to run
   --include-tiny    also run the 16..256 tiny guard row
   --help            show this message
@@ -68,6 +73,18 @@ while [[ $# -gt 0 ]]; do
       ENABLE_STATS=0
       shift
       ;;
+    --stats-value)
+      STATS_VALUE="$2"
+      shift 2
+      ;;
+    --diagnostics)
+      ENABLE_DIAGNOSTICS=1
+      shift
+      ;;
+    --no-diagnostics)
+      ENABLE_DIAGNOSTICS=0
+      shift
+      ;;
     --variants)
       VARIANTS="$2"
       shift 2
@@ -92,6 +109,9 @@ variant_flags() {
   local variant="$1"
   local flags=()
   hz6_preload_effective_selected_cflags flags 1
+  if [[ "$ENABLE_DIAGNOSTICS" -ne 0 ]]; then
+    flags+=("-DHZ6_DIAGNOSTIC_PROBES=1")
+  fi
   case "$variant" in
     selected)
       ;;
@@ -131,8 +151,23 @@ variant_flags() {
     run1792k)
       hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 1835008
       ;;
+    run1920k)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 1966080
+      ;;
+    run1984k)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 2031616
+      ;;
     run2048k)
       hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 2097152
+      ;;
+    run2112k)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 2162688
+      ;;
+    run2176k)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 2228224
+      ;;
+    run2240k)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 2293760
       ;;
     run2304k)
       hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 2359296
@@ -173,7 +208,7 @@ run_once() {
   local log="${OUTDIR}/${row}/${run_id}_${variant}.log"
   mkdir -p "${OUTDIR}/${row}"
   if [[ "$ENABLE_STATS" -ne 0 ]]; then
-    env HZ6_PRELOAD_STATS=1 LD_PRELOAD="$so" \
+    env HZ6_PRELOAD_STATS="$STATS_VALUE" LD_PRELOAD="$so" \
       "$BENCH" 4 "$ITERS" "$WS" "$min_size" "$max_size" \
       > "$log" 2>&1
   else
@@ -191,7 +226,7 @@ fi
 BENCH="${ROOT_DIR}/bench/out/linux/${ARCH}/bench_mixed_ws_crt"
 [[ -x "$BENCH" ]] || { echo "missing benchmark: $BENCH" >&2; exit 2; }
 
-default_variants=(selected run512k run256k run224k run192k run128k run320k run384k run448k run768k run1024k run1536k run1792k run2048k run2304k run2560k run3072k run4096k)
+default_variants=(selected run512k run256k run224k run192k run128k run320k run384k run448k run768k run1024k run1536k run1792k run1920k run1984k run2048k run2112k run2176k run2240k run2304k run2560k run3072k run4096k)
 if [[ -n "$VARIANTS" ]]; then
   IFS=',' read -r -a variants <<< "$VARIANTS"
 else
@@ -206,6 +241,8 @@ mkdir -p "$OUTDIR"
   echo "ws=${WS}"
   echo "bench=${BENCH}"
   echo "stats=${ENABLE_STATS}"
+  echo "stats_value=${STATS_VALUE}"
+  echo "diagnostics=${ENABLE_DIAGNOSTICS}"
   echo "variants=${variants[*]}"
   echo "include_tiny=${INCLUDE_TINY}"
 } > "${OUTDIR}/README.log"
@@ -253,6 +290,7 @@ def parse_stats(text):
             line.startswith("[HZ6_PRELOAD_STATS]")
             or line.startswith("[HZ6_PRELOAD_PHASE_STATS]")
             or line.startswith("[HZ6_PRELOAD_MIDPAGE_CLASS_DETAIL]")
+            or line.startswith("[HZ6_PRELOAD_MEMORY_ATTR]")
         ):
             out.update({k: int(v) for k, v in kv_re.findall(line)})
     return out
@@ -262,14 +300,16 @@ print(f"root: `{root}`\n")
 readme = (root / "README.log").read_text(errors="replace")
 stats_mode = readme.split("stats=", 1)[1].splitlines()[0] if "stats=" in readme else "unknown"
 print(f"stats: `{stats_mode}`\n")
-print("| row | variant | median ops/s | median peak MiB | fail | source_alloc | mid32_alloc | mid32_prefill | mid32_filled | mid32_front_push |")
-print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+print("| row | variant | median ops/s | median peak MiB | payload MiB | active source blocks | fail | source_alloc | mid32_alloc | mid32_prefill | mid32_filled | mid32_front_push |")
+print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 for row in rows:
     for variant in variants:
         ops_values = []
         peak_values = []
         fail = 0
         source_alloc = 0
+        payload_mib = 0.0
+        active_source_blocks = 0
         mid32_alloc = 0
         mid32_prefill = 0
         mid32_filled = 0
@@ -288,6 +328,13 @@ for row in rows:
             fail += stats.get("source_block_exhausted", 0)
             fail += stats.get("malloc_real_fallback", 0)
             source_alloc += stats.get("source_alloc", 0)
+            payload_mib = max(
+                payload_mib,
+                stats.get("source_block_payload_bytes", 0) / (1024.0 * 1024.0),
+            )
+            active_source_blocks = max(
+                active_source_blocks, stats.get("active_source_blocks", 0)
+            )
             mid32_alloc += stats.get("midpage_32k_alloc_call", 0)
             mid32_prefill += stats.get("midpage_32k_prefill_run_call", 0)
             mid32_filled += stats.get("midpage_32k_prefill_run_filled", 0)
@@ -296,7 +343,8 @@ for row in rows:
         median_peak = statistics.median(peak_values) if peak_values else 0.0
         print(
             f"| `{row}` | `{variant}` | {median_ops:.3f} | {median_peak:.2f} | "
-            f"{fail} | {source_alloc} | {mid32_alloc} | {mid32_prefill} | "
+            f"{payload_mib:.2f} | {active_source_blocks} | {fail} | "
+            f"{source_alloc} | {mid32_alloc} | {mid32_prefill} | "
             f"{mid32_filled} | {mid32_front_push} |"
         )
 PY

@@ -394,6 +394,44 @@ Next recommended optimization lane:
   payload/RSS pressure or a free-hit shape that does not add a branch to every
   MidPage free attempt.
 
+MidPage32KRunFineLadder-L1 task:
+  goal:
+    Re-check the 32K MidPage run-size ridge after active-map register fast-slot
+    and frontcache storage closeout. The selected 2048 KiB run is strong, but
+    source payload dominates RSS attribution; a narrow ladder may find a better
+    speed/RSS balance without changing behavior.
+  implementation:
+    Extend run_hz6_midpage_payload_trim_ab.sh with 1920/1984/2112/2176/2240
+    KiB variants and payload/active-source attribution in stats summaries.
+  promotion gates:
+    production 4096..16384 must beat selected or keep speed flat with lower
+    peak/payload attribution; 16..4096 and 1024..4096 must stay guard-clean;
+    stats counters must keep fail=0.
+
+MidPage32KRunFineLadder-L1 result:
+  runner updates:
+    run_hz6_midpage_payload_trim_ab.sh now supports 1920/1984/2112/2176/2240
+    KiB variants, optional --diagnostics, --stats-value, and payload/active
+    source attribution in the summary.
+  production repeat-7:
+    raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_163111
+    selected/run2048 remains the 4096..16384 speed peak:
+      selected 50.895M / 94.50 MiB
+      run2112k 48.394M / 94.50 MiB
+      run2176k 48.825M / 94.38 MiB
+  diagnostic repeat-3:
+    raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_163443
+    larger runs reduce 4096..16384 source_alloc but increase payload
+    attribution and lose speed:
+      selected source_alloc=723, payload=399.25 MiB
+      run2112k source_alloc=708, payload=400.00 MiB
+      run2176k source_alloc=696, payload=402.25 MiB
+    fail counters stayed 0.
+  decision:
+    keep HZ6_MIDPAGE_32K_RUN_BYTES=2097152 selected. The next RSS work should
+    not be a wider 32K run; it needs either payload release/reuse behavior or a
+    separate no-branch free-hit path.
+
 FrontcacheStorageLayoutAuditV2-L1 task:
   goal:
     Keep the current 4096..16384 speed/RSS balance while checking whether
