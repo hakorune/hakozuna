@@ -473,6 +473,21 @@ single-boundary experiments, and `hz6-toy-trusted-target` as the lighter
 focused/fixed16 comparison. The profile frontier runner is now the preferred
 entrypoint for refreshing this position.
 
+Stats-on copy attribution follow-up:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_042441
+```
+
+This confirms why the split realloc-boundary profiles are useful but still not
+selected/default. On `fixed_4k`, selected performs `1592` realloc copies, all
+Toy-to-MidPage, while `realloc_boundary_slack_4k` and
+`small_boundary_trusted` reduce copies to `0`. On `fixed_8k`, selected performs
+`1592` Mid8-to-Mid32 copies, while `realloc_boundary_slack_8k` reduces copies
+to `0`. Focused rows have tiny copy counts (`18`, `9`, `2` in this short read),
+so broad default slack mostly changes allocation shape without enough focused
+copy pressure to justify the guard risk.
+
 Hot-path attribution refresh:
 
 ```text

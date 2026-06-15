@@ -107,6 +107,7 @@ Profiles:
   private/raw-results/linux/hz6_calloc_real_size_guard_20260616_035459
   private/raw-results/linux/hz6_calloc_real_late_probe_focused_guard_20260616_041228
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_042128
+  private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_042441
 
 RSS:
   hz6_rss_residency_audit_refresh_20260616_025309 / hz6_quiescent_rss_attribution_refresh_20260616_025320
