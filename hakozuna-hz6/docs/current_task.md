@@ -59,6 +59,8 @@ raw:
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_004350
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_004406
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_004427
+  private/raw-results/linux/hz6_ubuntu_selected_balance_20260616_004725
+  private/raw-results/linux/hz6_ubuntu_size_slices_20260616_004747
 
 read:
   source-run route-after-maps retest:
@@ -81,10 +83,27 @@ read:
     uniformly positive: 16..256 and 16..4096 regress, while 1024..4096 and
     fixed rows improve.
 
+  shared matrix alias:
+    Add build_hz6_preload_midpage_trusted_class_target.sh and aliases:
+      hz6-midpage-trusted-class / hz6_midpage_trusted_class
+
+  selected-balance matrix, repeat-3, 200K:
+    16..256      selected 50.945M, trusted-class 50.946M
+    16..4096     selected 28.853M, trusted-class 29.081M
+    1024..4096   selected 26.517M, trusted-class 26.609M
+    4096..16384  selected 34.451M, trusted-class 35.201M
+    RSS was equal or slightly lower for trusted-class on focused rows.
+
+  size-slices matrix, repeat-3, 200K:
+    fixed_4k   selected 24.398M, trusted-class 24.987M
+    fixed_8k   selected 33.164M, trusted-class 32.558M
+    fixed_16k  selected 34.346M, trusted-class 34.744M
+
 decision:
   Keep default-off for now, but retain as a promising selected-family control.
-  It improves target/fixed production rows without raising RSS, but the
-  16..4096 guard needs broader confirmation before promotion.
+  It improves focused rows without raising RSS, but the fixed_8k matrix guard
+  is not clean.  Keep the profile alias for broader comparison before any
+  selected-default promotion.
 ```
 
 ## Recent Continuation: MidPageBoundaryFused-L1

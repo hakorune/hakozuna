@@ -209,6 +209,20 @@ bench_find_hz6_small_boundary_fast_target_library() {
     "${ROOT_DIR}/hakozuna-hz6/out/linux/${arch}-hz6-preload-small-boundary-fast-target/libhakozuna_hz6_preload.so"
 }
 
+bench_find_hz6_midpage_trusted_class_target_library() {
+  local arch
+  arch="$(uname -m)"
+  case "${arch}" in
+    amd64) arch="x86_64" ;;
+    arm64) arch="arm64" ;;
+  esac
+
+  bench_find_first_existing \
+    "${HZ6_MIDPAGE_TRUSTED_CLASS_TARGET_PRELOAD_SO:-}" \
+    "${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_preload_midpage_trusted_class_target/libhakozuna_hz6_preload.so" \
+    "${ROOT_DIR}/hakozuna-hz6/out/linux/${arch}-hz6-preload-midpage-trusted-class-target/libhakozuna_hz6_preload.so"
+}
+
 bench_find_allocator_library() {
   local allocator="$1"
 
@@ -252,6 +266,9 @@ bench_find_allocator_library() {
       ;;
     hz6-small-boundary-fast-target|hz6_small_boundary_fast_target)
       bench_find_hz6_small_boundary_fast_target_library
+      ;;
+    hz6-midpage-trusted-class|hz6_midpage_trusted_class)
+      bench_find_hz6_midpage_trusted_class_target_library
       ;;
     hakorune-mimalloc|hakorune_mimalloc)
       bench_find_hakorune_mimalloc_library
@@ -306,6 +323,9 @@ bench_print_allocator_hints() {
       ;;
     hz6-small-boundary-fast-target|hz6_small_boundary_fast_target)
       echo "hint: build the HZ6 small-boundary fast target lane with './hakozuna-hz6/linux/build_hz6_preload_small_boundary_fast_target.sh' or set HZ6_SMALL_BOUNDARY_FAST_TARGET_PRELOAD_SO" >&2
+      ;;
+    hz6-midpage-trusted-class|hz6_midpage_trusted_class)
+      echo "hint: build the HZ6 MidPage trusted-class target lane with './hakozuna-hz6/linux/build_hz6_preload_midpage_trusted_class_target.sh' or set HZ6_MIDPAGE_TRUSTED_CLASS_TARGET_PRELOAD_SO" >&2
       ;;
     hz3)
       echo "hint: build hz3 first, for example './linux/build_linux_release_lane.sh' or './mac/build_mac_release_lane.sh'" >&2

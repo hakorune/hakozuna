@@ -37,13 +37,15 @@ HZ6 also has profile/control LD_PRELOAD DSOs for workload-specific lanes:
 - `hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_target.sh`
 - `hakozuna-hz6/linux/build_hz6_preload_small_boundary_target.sh`
 - `hakozuna-hz6/linux/build_hz6_preload_small_boundary_fast_target.sh`
+- `hakozuna-hz6/linux/build_hz6_preload_midpage_trusted_class_target.sh`
 
 These are not the selected default HZ6 allocator. In shared allocator matrices,
 use allocator name `hz6` for selected default. Use `hz6-toy-target` for
 Toy/mid-small workloads, `hz6-aligned-target` for real aligned allocation
 fallbacks, `hz6-realloc-boundary-target` for fixed-boundary realloc growth, and
 `hz6-small-boundary-target` / `hz6-small-boundary-fast-target` for known
-small/fixed-boundary profiles.
+small/fixed-boundary profiles. Use `hz6-midpage-trusted-class` for the
+default-off MidPage trusted-class reuse control.
 
 ## Quick Start
 

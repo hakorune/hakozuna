@@ -91,6 +91,10 @@ if [[ "$SKIP_BUILDS" -ne 1 ]]; then
         ",${ALLOCATORS}," == *",hz6_small_boundary_fast_target,"* ]]; then
     "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_small_boundary_fast_target.sh"
   fi
+  if [[ ",${ALLOCATORS}," == *",hz6-midpage-trusted-class,"* ||
+        ",${ALLOCATORS}," == *",hz6_midpage_trusted_class,"* ]]; then
+    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_midpage_trusted_class_target.sh"
+  fi
   "${ROOT_DIR}/linux/build_linux_bench_compare.sh" --arch "$ARCH" \
     --out-dir "${ROOT_DIR}/bench/out/linux/${ARCH}"
 fi
