@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+source "${ROOT_DIR}/hakozuna-hz6/linux/hz6_preload_aliases.sh"
 ARCH="${ARCH:-x86_64}"
 RUNS="${RUNS:-3}"
 ITERS="${ITERS:-300000}"
@@ -11,6 +12,11 @@ OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_preload
 SKIP_BUILDS=0
 SKIP_PREPARE_ALLOCATORS=0
 ROWS_CSV="${ROWS:-focused,fixed_mid}"
+
+allocator_list_contains() {
+  local needle="$1"
+  [[ ",${ALLOCATORS}," == *",${needle},"* ]]
+}
 
 usage() {
   cat <<'EOF'
@@ -93,6 +99,19 @@ mkdir -p "$OUTDIR"
   echo "rows=${ROWS_CSV}"
 } > "${OUTDIR}/README.log"
 
+if [[ "$SKIP_BUILDS" -ne 1 ]]; then
+  "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh"
+  hz6_preload_build_requested_aliases "$ALLOCATORS" "$ROOT_DIR"
+  "${ROOT_DIR}/linux/build_linux_bench_compare.sh" --arch "$ARCH" \
+    --out-dir "${ROOT_DIR}/bench/out/linux/${ARCH}"
+fi
+
+if [[ "$SKIP_PREPARE_ALLOCATORS" -ne 1 ]]; then
+  if ! allocator_list_contains mimalloc && ! allocator_list_contains tcmalloc; then
+    SKIP_PREPARE_ALLOCATORS=1
+  fi
+fi
+
 run_focused=0
 size_rows=()
 IFS=',' read -r -a row_groups <<< "$ROWS_CSV"
@@ -119,10 +138,8 @@ common_args=(
   --iters "$ITERS"
   --ws "$WS"
   --allocators "$ALLOCATORS"
+  --skip-builds
 )
-if [[ "$SKIP_BUILDS" -eq 1 ]]; then
-  common_args+=(--skip-builds)
-fi
 if [[ "$SKIP_PREPARE_ALLOCATORS" -eq 1 ]]; then
   common_args+=(--skip-prepare)
 fi

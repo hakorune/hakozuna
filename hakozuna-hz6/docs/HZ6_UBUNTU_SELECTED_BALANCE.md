@@ -450,6 +450,29 @@ This closes the immediate fixed_4k-only DSO idea. `hz6-realloc-boundary-4k-targe
 is still a useful narrow control, but the existing trusted small-boundary profile
 is better across fixed_mid and avoids adding another profile lane.
 
+Profile frontier refresh using the consolidated runner:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_preload_profile_frontier_20260616_042128
+```
+
+| row | selected hz6 | best profile in this read | read |
+| --- | ---: | ---: | --- |
+| `16..256` | `67.922M / 30.38 MiB` | selected | tiny remains best on selected/default |
+| `16..4096` | `31.468M / 79.38 MiB` | `hz6-toy-trusted-target 33.019M / 79.50 MiB` | toy-trusted is the broad small profile |
+| `1024..4096` | `29.741M / 90.88 MiB` | selected | profiles were weak on this repeat |
+| `4096..16384` | `34.877M / 94.00 MiB` | `hz6-toy-trusted-target 35.225M / 94.12 MiB` | tiny profile lift only; selected remains balanced |
+| `fixed_4k` | `28.012M / 91.88 MiB` | `hz6-small-boundary-trusted-target 35.748M / 92.50 MiB` | trusted small-boundary remains the fixed_4k profile |
+| `fixed_8k` | `34.237M / 93.12 MiB` | `hz6-realloc-boundary-8k-target 35.678M / 93.12 MiB` | split 8K profile edges trusted here |
+| `fixed_16k` | `34.743M / 92.88 MiB` | `hz6-toy-trusted-target 35.702M / 93.12 MiB` | toy-trusted is the light fixed16 profile |
+
+Decision remains unchanged: do not promote profile flags into selected/default.
+Use `hz6-small-boundary-trusted-target` for broad fixed-boundary workloads,
+`hz6-realloc-boundary-4k-target` or `hz6-realloc-boundary-8k-target` for exact
+single-boundary experiments, and `hz6-toy-trusted-target` as the lighter
+focused/fixed16 comparison. The profile frontier runner is now the preferred
+entrypoint for refreshing this position.
+
 Hot-path attribution refresh:
 
 ```text
