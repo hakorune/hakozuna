@@ -522,6 +522,26 @@ controls. `adaptive-4k` is the strongest current fixed_4k profile and
 The selected/default decision remains unchanged because focused/target rows
 are only near-flat or profile-noisy and selected still wins fixed_16k.
 
+Fixed-boundary cross-allocator quick check:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_preload_profile_frontier_20260616_050037
+```
+
+This was a shorter `--iters 120000` repeat-3, so use it as direction evidence,
+not promotion evidence. It confirms the profile value against external
+allocators:
+
+| row | best HZ6/profile in quick check | closest external read | read |
+| --- | ---: | ---: | --- |
+| `fixed_4k` | `adaptive-4k 23.890M / 92.88 MiB` | `tcmalloc 23.777M / 70.50 MiB`, `hz3 27.404M / 68.50 MiB` | adaptive-4k reaches tcmalloc speed but not HZ3 RSS/speed |
+| `fixed_8k` | `adaptive-8k 23.715M / 93.12 MiB` | `tcmalloc 16.558M / 72.88 MiB`, `hz3 24.959M / 70.00 MiB` | adaptive-8k beats tcmalloc speed and approaches HZ3 speed |
+| `fixed_16k` | `adaptive-8k 23.141M / 93.00 MiB`, selected `23.138M / 93.00 MiB` | `hz3 20.809M / 73.12 MiB`, `tcmalloc 7.489M / 100.88 MiB` | selected/adaptive-8k win speed; HZ3 keeps lower RSS |
+
+Next action from this read is not defaulting adaptive behavior. The useful
+follow-up is a thicker repeat of the fixed-boundary cross set when a paper or
+profile-positioning number is needed.
+
 Hot-path attribution refresh:
 
 ```text

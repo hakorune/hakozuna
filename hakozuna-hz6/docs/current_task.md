@@ -93,6 +93,9 @@ Calloc large-real profile:
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_044958
   private/raw-results/linux/hz6_preload_calloc_cross_20260616_045446
 
+Fixed-boundary cross quick check:
+  private/raw-results/linux/hz6_preload_profile_frontier_20260616_050037
+
 Details:
   archive/current_task_2026-06-16_adaptive_profile_snapshot.md
   archive/current_task_2026-06-16_calloc_profile_snapshot.md
@@ -124,7 +127,10 @@ Default no-go/control-only without substantially different evidence:
    selected/default lane.
 4. Next optimization should target selected-safe code shape or a new narrow
    profile; do not promote broad real-calloc behavior.
-5. Before any selected/default change, update stable docs and archive long logs.
-6. Keep this file below about 150 lines; archive completed evidence snapshots
+5. If strengthening profile-positioning evidence, repeat the fixed-boundary
+   cross quick check with higher iterations before drawing promotion-level
+   conclusions.
+6. Before any selected/default change, update stable docs and archive long logs.
+7. Keep this file below about 150 lines; archive completed evidence snapshots
    instead of appending chronological logs.
 ```
