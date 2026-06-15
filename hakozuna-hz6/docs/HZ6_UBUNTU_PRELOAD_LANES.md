@@ -199,9 +199,9 @@ Descriptor-overflow control, raw
 `private/raw-results/linux/hz6_workload_capacity_gap_diag_20260616_083910`
 and production proxy raw
 `private/raw-results/linux/hz6_workload_proxy_matrix_20260616_{084249,084440}`,
-adds `HZ6_ELASTIC_DESCRIPTOR_OVERFLOW_L1=1` with an 8192 descriptor depot while
-leaving selected static route/descriptor/source tables unchanged. Diagnostic
-rows remove selected descriptor exhaustion and route-probe collapse:
+first evaluated `HZ6_ELASTIC_DESCRIPTOR_OVERFLOW_L1=1` with an 8192 descriptor
+depot while leaving selected static route/descriptor/source tables unchanged.
+Diagnostic rows remove selected descriptor exhaustion and route-probe collapse:
 `small_object_cache` moves `0.566M / 40.38 MiB` selected-diagnostic to
 `4.958M / 40.62 MiB` with `elastic_alloc=1108`, `alloc_fail=0`, and
 `route_probe_total=2638`; `wide_midpage_cache` moves
@@ -214,6 +214,18 @@ than capacity-lite on the collapsed workload rows. Keep
 `hz6-workload-descriptor-overflow-target` as an explicit RSS/balance workload
 control, not selected/default; the next useful step is depot-capacity or hybrid
 static/elastic A/B, not route inline.
+
+Descriptor depot ladder raw
+`private/raw-results/linux/hz6_workload_descriptor_overflow_ladder_20260616_084807`
+selects 2048 as the explicit profile default. 1024 underfills
+`small_object_cache` (`4.436M / 43.02 MiB`) while 2048 reaches
+`10.887M / 42.93 MiB`; larger depots are mostly flat or noisier on speed/RSS.
+2048 is also the best collapsed-row balance on `mixed_small_cache`
+(`6.859M / 119.75 MiB`) and `mixed_object_cache` (`7.123M / 139.25 MiB`).
+16384 slightly wins `wide_midpage_cache` speed/RSS, but the broader ladder
+does not justify its larger static depot for the named workload profile. The
+builder default is therefore 2048, with `HZ6_WORKLOAD_DESCRIPTOR_OVERFLOW_DEPOT_CAPACITY`
+kept as the explicit override for future A/B runs.
 
 Earlier workload-proxy matrix, repeat-3, raw
 `private/raw-results/linux/hz6_workload_proxy_matrix_20260616_075550`;

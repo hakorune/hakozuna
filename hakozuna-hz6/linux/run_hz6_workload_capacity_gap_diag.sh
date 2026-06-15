@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ARCH="${ARCH:-x86_64}"
 ITERS="${ITERS:-20000}"
 ROWS_CSV="${ROWS:-small_object_cache,mixed_small_cache,mixed_object_cache,wide_midpage_cache}"
-ELASTIC_DESCRIPTOR_DEPOT_CAPACITY="${ELASTIC_DESCRIPTOR_DEPOT_CAPACITY:-8192}"
+ELASTIC_DESCRIPTOR_DEPOT_CAPACITY="${ELASTIC_DESCRIPTOR_DEPOT_CAPACITY:-2048}"
 OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_workload_capacity_gap_diag_$(date +%Y%m%d_%H%M%S)}"
 SKIP_BUILDS=0
 
@@ -17,7 +17,7 @@ Usage:
 Options:
   --arch ARCH      target arch (default: x86_64)
   --iters N        iterations per diagnostic row (default: 20000)
-  --elastic-desc N descriptor overflow depot capacity (default: 8192)
+  --elastic-desc N descriptor overflow depot capacity (default: 2048)
   --rows CSV       rows: small_object_cache,mixed_small_cache,mixed_object_cache,
                    wide_midpage_cache,all
   --outdir DIR     output directory
