@@ -889,6 +889,12 @@
 #define HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_NOINLINE_L1 0
 #endif
 
+#ifndef HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_MIN_BYTES
+/* Control for the preload-boundary MidPage shortcut lower bound.  The selected
+ * default keeps both 8K and 32K MidPage classes on the shortcut path. */
+#define HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_MIN_BYTES ((size_t)4096)
+#endif
+
 #ifndef HZ6_MIDPAGE_32K_COLD_RETIRE_L1
 /* Default-off RSS control for cold MidPage 32K source blocks.  When the 32K
  * frontcache reaches a high-water mark, an out-of-line helper can drain one or

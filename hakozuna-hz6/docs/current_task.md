@@ -134,6 +134,95 @@ decision:
   Keep phase_count_on/phase_count_off variants for A/B and attribution sanity.
 ```
 
+## Recent Closeout: HZ6 Ubuntu Preload MidPage Boundary Min Audit-L1
+
+```text
+goal:
+  Check whether the selected preload MidPage malloc boundary shortcut should
+  keep both 8K/32K classes, or whether raising the shortcut lower bound reduces
+  guard-row incidental boundary work without losing target throughput.
+
+design:
+  Add HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_MIN_BYTES as a compile-time control.
+  selected remains 4096 so behavior is unchanged.
+  A/B variants:
+    boundary_min8k  -> shortcut only for sizes >8192
+    boundary_min16k -> shortcut only for sizes >16384
+
+acceptance:
+  Build and R1 smokes pass.
+  Production stats-off A/B shows whether 8K boundary work is worth keeping.
+  Diagnostic run confirms boundary_attempt/hit shape moves as expected.
+
+production read:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_195357
+  selected vs boundary_min8k vs boundary_min16k:
+    16..256:
+      50.471M / 51.654M / 51.625M
+    16..4096:
+      33.646M / 33.929M / 33.640M
+    1024..4096:
+      31.837M / 31.767M / 31.759M
+    4096..16384:
+      42.609M / 39.728M / 35.090M
+
+diagnostic read:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_195415
+  4096..16384 boundary attempts:
+    selected       406760
+    boundary_min8k 270863
+    boundary_min16k     4
+  boundary_min8k reintroduces 135897 empty 8K direct transfer probes.
+  boundary_min16k routes nearly all 32K allocs through generic MidPage alloc
+  (`midpage_32k_alloc_call=270863`).
+
+decision:
+  Keep selected lower bound at 4096.
+  boundary_min8k/boundary_min16k are controls/no-go.
+```
+
+## Recent Closeout: HZ6 Ubuntu Direct Local Raw Frontcache Pop Audit-L1
+
+```text
+goal:
+  Check whether direct-local reuse should bypass the generic frontcache_pop
+  wrapper in production stats-off builds.
+
+design:
+  Reuse existing HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1.
+  Add raw_frontcache_pop A/B runner variants.
+  The control is disabled under HZ6_DIAGNOSTIC_PROBES, so stats-off production
+  repeat is the promotion signal; diagnostic selected remains the attribution
+  source.
+
+acceptance:
+  Production stats-off rows improve or stay flat across tiny, mixed, and
+  MidPage target rows.
+  R1 smokes pass if promoted.
+
+production read:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_195530
+  repeat-15 selected vs raw_frontcache_pop:
+    16..256:
+      50.873M -> 56.845M
+    16..4096:
+      33.516M -> 35.772M
+    1024..4096:
+      31.583M -> 33.437M
+    4096..16384:
+      43.136M -> 43.528M
+
+stats safety read:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_195546
+  fail=0 on all rows.
+  source_alloc unchanged on all rows.
+
+decision:
+  Promote HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1=1 to selected/default production
+  preload flags. It is disabled under HZ6_DIAGNOSTIC_PROBES, so diagnostic
+  attribution keeps the wrapper counters.
+```
+
 ## Recent Closeout: HZ6 Ubuntu Preload Current-Bias Fast Predicate-L1
 
 ```text

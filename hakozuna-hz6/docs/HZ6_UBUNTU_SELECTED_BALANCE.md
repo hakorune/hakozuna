@@ -27,6 +27,20 @@ runs:
 | `1024_4096` | `31.335M` | `31.338M` | selected flat |
 | `4096_16384` | `43.570M` | `40.482M` | selected improves |
 
+Latest HZ6-only check after `HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1=1` became
+selected:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_195530
+```
+
+| row | previous selected ops/s | raw-pop selected ops/s | read |
+| --- | ---: | ---: | --- |
+| `16_256` | `50.873M` | `56.845M` | selected improves |
+| `16_4096` | `33.516M` | `35.772M` | selected improves |
+| `1024_4096` | `31.583M` | `33.437M` | selected improves |
+| `4096_16384` | `43.136M` | `43.528M` | selected improves |
+
 Command:
 
 ```bash

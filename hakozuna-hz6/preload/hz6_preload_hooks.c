@@ -241,12 +241,14 @@ hz6_preload_malloc_midpage_boundary(Hz6Allocator* allocator, size_t size) {
 static void* hz6_preload_malloc_hz6(Hz6Allocator* allocator, size_t size) {
 #if HZ6_PRELOAD_MIDPAGE_MALLOC_SKIP_TRANSFER_L1
 #if HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_NOINLINE_L1
-  if (HZ6_PRELOAD_MIDPAGE_BOUNDARY_UNLIKELY(size > 4096u &&
+  if (HZ6_PRELOAD_MIDPAGE_BOUNDARY_UNLIKELY(
+          size > HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_MIN_BYTES &&
                                             size <= HZ6_MIDPAGE_BYTES)) {
     return hz6_preload_malloc_midpage_boundary(allocator, size);
   }
 #else
-  if (size > 4096u && size <= HZ6_MIDPAGE_BYTES) {
+  if (size > HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_MIN_BYTES &&
+      size <= HZ6_MIDPAGE_BYTES) {
     hz6_preload_phase_count(
         &g_hz6_preload_phase_stats.malloc_midpage_boundary_attempt);
     void* ptr =

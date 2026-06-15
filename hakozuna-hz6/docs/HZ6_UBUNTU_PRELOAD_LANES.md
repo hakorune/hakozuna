@@ -142,6 +142,8 @@ Current follow-up read:
 | Next likely lane | diagnostic/design | Active-map register fast-slot remains selected. Free fast-slot, current-bias variants, cold-retire behavior, and active-map layout are closed as controls/no-go. Next prefer a broader hot-path attribution refresh or a non-active-map preload boundary/code-shape lane. |
 | Hot-path attribution refresh recipe | diagnostic/design | Use `run_hz6_preload_free_order_ab.sh` for phase/hook counters and `run_hz6_midpage_payload_trim_ab.sh --stats --diagnostics --variants selected` for source/payload counters. Required fields include Toy/MidPage free attempts/hits, route-after-map split, real fallback, `mh_*` hint counters, source_alloc, MidPage class split, and cold-retire attempt/scan/block counters. |
 | `HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1=1` | selected/default | Production DSO code-shape control. Compiles preload hook phase counters to no-op macros so stats-off runs do not pay counter function calls or size-bucket branches. Stats/diagnostic runners preserve phase counters unless explicitly testing `phase_count_off`. |
+| `HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_MIN_BYTES=8192/16384` | control/no-go | Raising the preload-boundary shortcut lower bound gave tiny/guard micro-wins but lost the MidPage target badly. Keep selected `4096`. |
+| `HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1=1` | selected/default | Production-only direct-local reuse code-shape control. Bypasses the generic `hz6_allocator_frontcache_pop()` wrapper in stats-off builds; disabled under diagnostics. Repeat-15 improved all focused rows and stats safety stayed clean. |
 
 HZ3/HZ4 comparison read:
 

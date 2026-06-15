@@ -41,6 +41,9 @@ Next allocator work:
   Latest HZ6 Ubuntu production selected addition:
     HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1=1
     Stats/diagnostic runners preserve phase counters for attribution.
+    HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1=1
+    Production direct-local reuse bypasses the generic frontcache pop wrapper;
+    diagnostics keep wrapper counters.
 ```
 
 ## Recent Cleanup Commits

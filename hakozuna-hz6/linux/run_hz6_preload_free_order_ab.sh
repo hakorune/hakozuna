@@ -107,6 +107,15 @@ variant_flags() {
     phase_count_off)
       hz6_preload_replace_define flags HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1 1
       ;;
+    boundary_min8k)
+      hz6_preload_replace_define flags HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_MIN_BYTES 8192
+      ;;
+    boundary_min16k)
+      hz6_preload_replace_define flags HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_MIN_BYTES 16384
+      ;;
+    raw_frontcache_pop)
+      hz6_preload_replace_define flags HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1 1
+      ;;
     *)
       echo "unknown variant: ${variant}" >&2
       exit 2
