@@ -10,8 +10,10 @@
 
 #include <errno.h>
 #include <malloc.h>
+#include <pthread.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdatomic.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -27,6 +29,102 @@ typedef struct Hz6PreloadRoute {
 #endif
 
 static __thread Hz6Allocator* g_hz6_preload_allocator;
+
+#if HZ6_PRELOAD_REAL_ALIGNED_FREE_SKIP_L1
+#define HZ6_PRELOAD_REAL_ALIGNED_TOMBSTONE ((void*)(uintptr_t)1u)
+static pthread_mutex_t g_hz6_preload_real_aligned_mutex =
+    PTHREAD_MUTEX_INITIALIZER;
+static void* g_hz6_preload_real_aligned_ptrs
+    [HZ6_PRELOAD_REAL_ALIGNED_PTR_TABLE_CAPACITY];
+static atomic_size_t g_hz6_preload_real_aligned_count;
+
+static size_t hz6_preload_real_aligned_hash(void* ptr) {
+  uintptr_t value = (uintptr_t)ptr >> 4;
+  value ^= value >> 33;
+  value *= (uintptr_t)0xff51afd7ed558ccdULL;
+  value ^= value >> 33;
+  return (size_t)value;
+}
+
+static int hz6_preload_real_aligned_record(void* ptr) {
+  if (!ptr || HZ6_PRELOAD_REAL_ALIGNED_PTR_TABLE_CAPACITY == 0) {
+    return 0;
+  }
+  size_t base = hz6_preload_real_aligned_hash(ptr) %
+                HZ6_PRELOAD_REAL_ALIGNED_PTR_TABLE_CAPACITY;
+  size_t first_tombstone = HZ6_PRELOAD_REAL_ALIGNED_PTR_TABLE_CAPACITY;
+  int recorded = 0;
+
+  pthread_mutex_lock(&g_hz6_preload_real_aligned_mutex);
+  for (size_t probe = 0; probe < HZ6_PRELOAD_REAL_ALIGNED_PTR_TABLE_CAPACITY;
+       ++probe) {
+    size_t index =
+        (base + probe) % HZ6_PRELOAD_REAL_ALIGNED_PTR_TABLE_CAPACITY;
+    void* entry = g_hz6_preload_real_aligned_ptrs[index];
+    if (entry == ptr) {
+      recorded = 1;
+      break;
+    }
+    if (entry == HZ6_PRELOAD_REAL_ALIGNED_TOMBSTONE) {
+      if (first_tombstone == HZ6_PRELOAD_REAL_ALIGNED_PTR_TABLE_CAPACITY) {
+        first_tombstone = index;
+      }
+      continue;
+    }
+    if (!entry) {
+      size_t target =
+          first_tombstone == HZ6_PRELOAD_REAL_ALIGNED_PTR_TABLE_CAPACITY
+              ? index
+              : first_tombstone;
+      g_hz6_preload_real_aligned_ptrs[target] = ptr;
+      recorded = 1;
+      (void)atomic_fetch_add_explicit(&g_hz6_preload_real_aligned_count, 1u,
+                                      memory_order_relaxed);
+      break;
+    }
+  }
+  pthread_mutex_unlock(&g_hz6_preload_real_aligned_mutex);
+
+  if (recorded) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.real_aligned_record_set);
+  } else {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.real_aligned_record_fail);
+  }
+  return recorded;
+}
+
+static int hz6_preload_real_aligned_forget(void* ptr) {
+  if (!ptr || HZ6_PRELOAD_REAL_ALIGNED_PTR_TABLE_CAPACITY == 0) {
+    return 0;
+  }
+  size_t base = hz6_preload_real_aligned_hash(ptr) %
+                HZ6_PRELOAD_REAL_ALIGNED_PTR_TABLE_CAPACITY;
+  int found = 0;
+
+  pthread_mutex_lock(&g_hz6_preload_real_aligned_mutex);
+  for (size_t probe = 0; probe < HZ6_PRELOAD_REAL_ALIGNED_PTR_TABLE_CAPACITY;
+       ++probe) {
+    size_t index =
+        (base + probe) % HZ6_PRELOAD_REAL_ALIGNED_PTR_TABLE_CAPACITY;
+    void* entry = g_hz6_preload_real_aligned_ptrs[index];
+    if (!entry) {
+      break;
+    }
+    if (entry == ptr) {
+      g_hz6_preload_real_aligned_ptrs[index] =
+          HZ6_PRELOAD_REAL_ALIGNED_TOMBSTONE;
+      (void)atomic_fetch_sub_explicit(&g_hz6_preload_real_aligned_count, 1u,
+                                      memory_order_relaxed);
+      found = 1;
+      break;
+    }
+  }
+  pthread_mutex_unlock(&g_hz6_preload_real_aligned_mutex);
+  return found;
+}
+#endif
 
 #if HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1
 #define hz6_preload_phase_count_alignment_bucket( \
@@ -345,6 +443,19 @@ void free(void* ptr) {
     hz6_preload_real_free(ptr);
     return;
   }
+#if HZ6_PRELOAD_REAL_ALIGNED_FREE_SKIP_L1
+  if (atomic_load_explicit(&g_hz6_preload_real_aligned_count,
+                           memory_order_relaxed) != 0) {
+    if (hz6_preload_real_aligned_forget(ptr)) {
+      hz6_preload_phase_count(
+          &g_hz6_preload_phase_stats.real_aligned_free_skip_hit);
+      hz6_preload_real_free(ptr);
+      return;
+    }
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.real_aligned_free_skip_miss);
+  }
+#endif
   g_hz6_preload_reentry = 1;
   Hz6Allocator* allocator = hz6_preload_allocator();
 #if HZ6_PRELOAD_FREE_MIDPAGE_HINT_ACTIVE_L1
@@ -792,7 +903,13 @@ int posix_memalign(void** memptr, size_t alignment, size_t size) {
   }
   hz6_preload_phase_count(
       &g_hz6_preload_phase_stats.posix_memalign_real_fallback);
-  return hz6_preload_real_posix_memalign(memptr, alignment, size);
+  int rc = hz6_preload_real_posix_memalign(memptr, alignment, size);
+#if HZ6_PRELOAD_REAL_ALIGNED_FREE_SKIP_L1
+  if (rc == 0 && *memptr) {
+    (void)hz6_preload_real_aligned_record(*memptr);
+  }
+#endif
+  return rc;
 }
 
 void* aligned_alloc(size_t alignment, size_t size) {
@@ -826,6 +943,9 @@ void* aligned_alloc(size_t alignment, size_t size) {
   if (hz6_preload_real_posix_memalign(&ptr, alignment, size) != 0) {
     return NULL;
   }
+#if HZ6_PRELOAD_REAL_ALIGNED_FREE_SKIP_L1
+  (void)hz6_preload_real_aligned_record(ptr);
+#endif
   return ptr;
 }
 

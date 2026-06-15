@@ -233,6 +233,9 @@ variant_flags() {
     phase_count_on)
       hz6_preload_replace_define flags HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1 0
       ;;
+    aligned_free_skip)
+      hz6_preload_replace_define flags HZ6_PRELOAD_REAL_ALIGNED_FREE_SKIP_L1 1
+      ;;
     phase_count_off)
       hz6_preload_replace_define flags HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1 1
       ;;

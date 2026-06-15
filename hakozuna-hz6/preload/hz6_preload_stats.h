@@ -97,6 +97,10 @@ typedef struct Hz6PreloadPhaseStats {
   _Atomic(size_t) aligned_alloc_size_1025_4096;
   _Atomic(size_t) aligned_alloc_size_4097_16384;
   _Atomic(size_t) aligned_alloc_size_gt16384;
+  _Atomic(size_t) real_aligned_record_set;
+  _Atomic(size_t) real_aligned_record_fail;
+  _Atomic(size_t) real_aligned_free_skip_hit;
+  _Atomic(size_t) real_aligned_free_skip_miss;
 } Hz6PreloadPhaseStats;
 
 extern Hz6PreloadPhaseStats g_hz6_preload_phase_stats;

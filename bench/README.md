@@ -58,3 +58,7 @@ Typical environment overrides:
 - Keep workload definitions and reporting in the shared core.
 - Keep installation and preload mechanics in the OS-specific wrappers.
 - Keep `bench/bench_mixed_ws.c` as the SSOT for the shared mixed compare lane.
+- `bench/bench_aligned64k.c` is the aligned allocation wrapper workload.  Its
+  final optional argument selects `posix` for `posix_memalign/free` or
+  `aligned` for `aligned_alloc/free`; HZ6's Linux wrapper audit runner builds
+  and drives this source for aligned-fallback attribution.

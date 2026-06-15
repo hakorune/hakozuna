@@ -981,6 +981,18 @@
 #define HZ6_PRELOAD_REALLOC_IN_PLACE_L1 1
 #endif
 
+#ifndef HZ6_PRELOAD_REAL_ALIGNED_FREE_SKIP_L1
+/* Default-off preload control for pointers returned by real aligned allocation
+ * fallbacks.  When enabled, posix_memalign/aligned_alloc real-fallback results
+ * are tracked so free() can skip the HZ6 route lookup and call real free
+ * directly. */
+#define HZ6_PRELOAD_REAL_ALIGNED_FREE_SKIP_L1 0
+#endif
+
+#ifndef HZ6_PRELOAD_REAL_ALIGNED_PTR_TABLE_CAPACITY
+#define HZ6_PRELOAD_REAL_ALIGNED_PTR_TABLE_CAPACITY ((size_t)65536)
+#endif
+
 #ifndef HZ6_SMALL_RUN_ROUTE_DRYRUN_L1
 /* Diagnostic-only probe for a future SmallRunFront/TinyRunRoute design. */
 #define HZ6_SMALL_RUN_ROUTE_DRYRUN_L1 0

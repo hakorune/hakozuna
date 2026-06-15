@@ -38,7 +38,65 @@ Archived chronological ledger:
   archive/current_task_2026-06_history.md
 ```
 
-## Recent Closeout: HZ6 Ubuntu Preload Wrapper Attribution-L1
+## Recent Closeout: HZ6 Ubuntu RealAlignedFreeSkip-L1
+
+```text
+latest continuation:
+  Extend bench/bench_aligned64k.c with a mode argument:
+    posix   -> posix_memalign/free
+    aligned -> aligned_alloc/free
+
+  Add:
+    hakozuna-hz6/linux/run_hz6_preload_aligned_wrapper_audit.sh
+
+  Add default-off behavior control:
+    HZ6_PRELOAD_REAL_ALIGNED_FREE_SKIP_L1=1
+
+design:
+  posix_memalign/aligned_alloc requests with alignment > 16 still use the real
+  allocator.  The control records successful real aligned fallback pointers in
+  a small global hash table.  free() checks the table only while its active
+  atomic count is nonzero; on hit, it removes the pointer and calls real free
+  directly, skipping the HZ6 route lookup.
+
+aligned evidence:
+  raw: private/raw-results/linux/hz6_preload_aligned_wrapper_audit_20260615_224612
+  repeat-3, 2K iters/thread, 4 threads:
+    posix64_2k:
+      selected ~= 14.2K ops/s
+      phase_count_on free_route_miss_real=24000
+      aligned_free_skip ~= 7.24M ops/s
+      skip_hit=24000, free_route_miss_real=0
+    aligned4k_4k:
+      selected ~= 14.1K ops/s
+      phase_count_on free_route_miss_real=24000
+      aligned_free_skip ~= 8.03M ops/s
+      skip_hit=24000, free_route_miss_real=0
+    posix8k_64k:
+      selected ~= 14.3K ops/s
+      phase_count_on free_route_miss_real=24000
+      aligned_free_skip ~= 8.11M ops/s
+      skip_hit=24000, free_route_miss_real=0
+
+selected guard:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_224657
+  selected vs aligned_free_skip, repeat-9, 300K, focused+fixed:
+    16..256       57.285M -> 56.395M
+    16..4096      35.953M -> 36.143M
+    1024..4096    33.480M -> 33.440M
+    4096..16384   44.639M -> 44.002M
+    fixed_4k      31.567M -> 31.979M
+    fixed_8k      42.633M -> 39.876M
+    fixed_16k     43.890M -> 44.561M
+
+decision:
+  Keep RealAlignedFreeSkip as an aligned-heavy profile/control, not selected
+  default.  It removes the catastrophic HZ6 route miss on real aligned fallback
+  pointers, but the extra free-side atomic gate still weakens fixed_8k enough
+  to reject broad default promotion.
+```
+
+## Previous Closeout: HZ6 Ubuntu Preload Wrapper Attribution-L1
 
 ```text
 latest continuation:
