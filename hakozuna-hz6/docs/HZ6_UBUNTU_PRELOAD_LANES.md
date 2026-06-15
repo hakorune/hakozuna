@@ -170,6 +170,18 @@ Keep `hz6-workload-capacity-lite-target` as the default workload-proxy guard
 profile; keep `hz6-workload-capacity-lite-map8192-target` as explicit
 capacity/RSS A/B. Mid/full are larger-live-set controls only.
 
+Short broad guard refresh raw
+`private/raw-results/linux/hz6_broad_guard_20260616_082927` kept the same
+decision. The profile/fixed legs did not justify a broad default promotion:
+fixed RSS profiles still win fixed_4k/8k position, while selected HZ6 remains
+the fixed_16k balance row. The workload leg again shows selected capacity
+collapse on larger live-working-set proxy rows (`small_object_cache 0.409M`,
+`mixed_small_cache 0.325M`, `mixed_object_cache 0.358M`, `wide_midpage_cache
+0.641M`), while `hz6-workload-capacity-lite-target` restores those rows
+(`16.894M`, `8.337M`, `8.875M`, `8.652M`) with `alloc_fail=0`. Next
+optimization should explain or narrow this capacity gap without turning
+fixed-only profiles into selected/default behavior.
+
 Earlier workload-proxy matrix, repeat-3, raw
 `private/raw-results/linux/hz6_workload_proxy_matrix_20260616_075550`;
 diagnostic raws `hz6_workload_proxy_diag_20260616_075255` and

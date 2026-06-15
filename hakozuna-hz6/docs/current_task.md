@@ -69,8 +69,8 @@ Runners:
 
 ```text
 Profile frontier:
-  private/raw-results/linux/hz6_preload_profile_frontier_20260616_060739
-  private/raw-results/linux/hz6_preload_profile_frontier_20260616_081847
+  private/raw-results/linux/hz6_preload_profile_frontier_20260616_{060739,081847}
+  private/raw-results/linux/hz6_broad_guard_20260616_082927
   private/raw-results/linux/hz6_midpage_skip_transfer_alias_smoke_20260616_065421
 
 Realloc/adaptive profile repeats:
@@ -143,8 +143,8 @@ Default no-go/control-only without substantially different evidence:
     16..4096 and 4096..16384 despite 1024..4096/fixed_16k signals.
 13. Toy-map8192 external is now an explicit lower-RSS fixed-boundary profile;
     packed-frontcache/sourceblock combos remain runner-only controls/no-go.
-14. Next broad guard is `run_hz6_broad_guard.sh`: refresh profile, fixed-gap,
-    and workload-proxy rows together; do not add more fixed-only defaults.
-15. Workload proxy refresh found desc8192 capacity collapse on large WS rows;
-    `hz6-workload-capacity-lite-target` is preferred; map8192 is RSS control.
+14. Latest broad guard confirms no broad default promotion: profile/fixed rows
+    are healthy, but workload proxy still needs capacity-lite profile support.
+15. Next optimization lane: explain and shrink the selected-vs-capacity-lite
+    workload proxy gap without turning fixed-only profiles into defaults.
 ```
