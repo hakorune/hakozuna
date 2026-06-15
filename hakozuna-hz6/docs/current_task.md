@@ -2993,3 +2993,46 @@ decision:
   HZ6_SAME_OWNER_TRUSTED_LOCAL_FREE_L1=0 for selected/default. The duplicated
   owner check is not the primary remaining wall.
 ```
+
+## Recent Lane Cleanup: Profile Alias Autobuild Hooks
+
+```text
+goal:
+  Make the named HZ6 profile DSOs usable from the selected/fixed matrix
+  runners without requiring manual pre-builds.
+
+implementation:
+  Added auto-build hooks to:
+    linux/run_hz6_ubuntu_selected_balance_matrix.sh
+    linux/run_hz6_ubuntu_size_slices_matrix.sh
+
+  Newly covered aliases:
+    hz6-toy-target / hz6_toy_target
+    hz6-aligned-target / hz6_aligned_target
+    hz6-small-boundary-target / hz6_small_boundary_target
+
+  Existing profile hooks remain:
+    hz6-small-boundary-fast-target / hz6_small_boundary_fast_target
+    hz6-realloc-boundary-target / hz6_realloc_boundary_target
+    hz6-realloc-boundary-4k-target / hz6_realloc_boundary_4k_target
+    hz6-realloc-boundary-8k-target / hz6_realloc_boundary_8k_target
+    hz6-midpage-trusted-class / hz6_midpage_trusted_class
+
+validation:
+  bash -n passed for both matrix runners.
+  Raw smoke:
+    private/raw-results/linux/hz6_profile_alias_autobuild_smoke_20260616_014024
+  Command used selected-balance matrix with:
+    --allocators hz6-toy-target,hz6-small-boundary-target,hz6-aligned-target
+    --runs 1 --iters 10000 --ws 1024 --skip-prepare
+
+  Smoke confirmed all three DSOs built and resolved through the shared compare
+  runner:
+    hz6-toy-target -> out/linux/hz6_preload_toy_target/...
+    hz6-small-boundary-target -> out/linux/hz6_preload_small_boundary_target/...
+    hz6-aligned-target -> out/linux/hz6_preload_aligned_target/...
+
+decision:
+  Profile lane ergonomics are now cleaner. Future cross-allocator reads can
+  request named HZ6 profiles directly from the matrix runners.
+```

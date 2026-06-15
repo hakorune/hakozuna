@@ -81,6 +81,18 @@ if [[ "$SKIP_BUILDS" -ne 1 ]]; then
   "${ROOT_DIR}/linux/build_linux_release_lane.sh" --arch "$ARCH"
   "${ROOT_DIR}/linux/build_linux_hz5_preload_full.sh" --arch "$ARCH"
   "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh"
+  if [[ ",${ALLOCATORS}," == *",hz6-toy-target,"* ||
+        ",${ALLOCATORS}," == *",hz6_toy_target,"* ]]; then
+    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_toy_target.sh"
+  fi
+  if [[ ",${ALLOCATORS}," == *",hz6-aligned-target,"* ||
+        ",${ALLOCATORS}," == *",hz6_aligned_target,"* ]]; then
+    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_aligned_target.sh"
+  fi
+  if [[ ",${ALLOCATORS}," == *",hz6-small-boundary-target,"* ||
+        ",${ALLOCATORS}," == *",hz6_small_boundary_target,"* ]]; then
+    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_small_boundary_target.sh"
+  fi
   if [[ ",${ALLOCATORS}," == *",hz6-small-boundary-fast-target,"* ||
         ",${ALLOCATORS}," == *",hz6_small_boundary_fast_target,"* ]]; then
     "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_small_boundary_fast_target.sh"
