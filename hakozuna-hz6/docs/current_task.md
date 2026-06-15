@@ -3183,3 +3183,81 @@ decision:
   Trusted-owner-only is slightly better on fixed_4k, so a future exact fixed_4k
   profile can be considered, but selected/default remains unchanged.
 ```
+
+## Recent Profile: Small-Boundary Trusted Target
+
+```text
+goal:
+  Turn the trusted-owner-only small-boundary shape into a named profile DSO and
+  compare it against selected, small-boundary-fast, and fixed_8k profile lanes.
+
+implementation:
+  Added:
+    linux/build_hz6_preload_small_boundary_trusted_target.sh
+
+  Added aliases:
+    hz6-small-boundary-trusted-target
+    hz6_small_boundary_trusted_target
+
+  Alias wiring:
+    linux/hz6_preload_aliases.sh
+    bench/lib/bench_common.sh
+
+build/smoke:
+  build_hz6_preload_small_boundary_trusted_target.sh succeeded.
+  alias smoke:
+    private/raw-results/linux/hz6_small_boundary_trusted_alias_smoke_20260616_015323
+
+focused profile position:
+  raw: private/raw-results/linux/hz6_small_boundary_trusted_focused_20260616_015341
+
+  selected vs trusted vs fast:
+    16..256:
+      selected 58.439M / 30.50 MiB
+      trusted  78.065M / 30.50 MiB
+      fast     77.954M / 30.50 MiB
+
+    16..4096:
+      selected 36.312M / 79.62 MiB
+      trusted  42.438M / 79.88 MiB
+      fast     43.031M / 80.00 MiB
+
+    1024..4096:
+      selected 33.111M / 90.88 MiB
+      trusted  39.308M / 91.50 MiB
+      fast     39.097M / 91.38 MiB
+
+    4096..16384:
+      selected 45.165M / 94.12 MiB
+      trusted  45.215M / 94.25 MiB
+      fast     45.033M / 94.25 MiB
+
+fixed profile position:
+  raw: private/raw-results/linux/hz6_small_boundary_trusted_position_20260616_015331
+
+  selected vs trusted vs fast vs realloc8:
+    fixed_4k:
+      selected 32.529M / 91.88 MiB
+      trusted  47.946M / 92.62 MiB
+      fast     47.619M / 92.50 MiB
+      realloc8 32.310M / 91.75 MiB
+
+    fixed_8k:
+      selected 43.820M / 93.12 MiB
+      trusted  47.314M / 93.12 MiB
+      fast     46.549M / 93.12 MiB
+      realloc8 45.651M / 93.00 MiB
+
+    fixed_16k:
+      selected 45.896M / 93.00 MiB
+      trusted  47.114M / 93.00 MiB
+      fast     45.786M / 93.12 MiB
+      realloc8 45.518M / 93.12 MiB
+
+decision:
+  Prefer hz6-small-boundary-trusted-target as the current broad small/fixed
+  profile. It keeps the target row neutral, beats selected on focused small rows,
+  and beats fast/realloc8 on all fixed_mid rows in this repeat. Keep selected
+  default unchanged because this is still a profile macro bundle, not a
+  selected-family behavior promotion.
+```

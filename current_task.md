@@ -107,6 +107,16 @@ Next allocator work:
     hakozuna-hz6/private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_014717
     read: raw-push alone is weak; the profile win comes from the
       trusted-owner/raw-push combination. Keep it profile-only.
+  Latest HZ6 Ubuntu profile DSO:
+    hakozuna-hz6/linux/build_hz6_preload_small_boundary_trusted_target.sh
+    aliases:
+      hz6-small-boundary-trusted-target / hz6_small_boundary_trusted_target
+    validation raws:
+      hakozuna-hz6/private/raw-results/linux/hz6_small_boundary_trusted_alias_smoke_20260616_015323
+      hakozuna-hz6/private/raw-results/linux/hz6_small_boundary_trusted_focused_20260616_015341
+      hakozuna-hz6/private/raw-results/linux/hz6_small_boundary_trusted_position_20260616_015331
+    read: trusted is now the preferred broad small/fixed HZ6 profile; selected
+      default remains unchanged.
 ```
 
 ## Recent Cleanup Commits

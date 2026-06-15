@@ -259,6 +259,28 @@ selected DSO remains the default because profile choice is workload-specific
 and previous cross-allocator guard reads still keep HZ3/tcmalloc ahead on
 some broad small rows.
 
+Small-boundary trusted follow-up:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_small_boundary_trusted_focused_20260616_015341
+hakozuna-hz6/private/raw-results/linux/hz6_small_boundary_trusted_position_20260616_015331
+```
+
+| row | selected hz6 | small-boundary trusted | small-boundary fast | read |
+| --- | ---: | ---: | ---: | --- |
+| `16..256` | `58.439M / 30.50 MiB` | `78.065M / 30.50 MiB` | `77.954M / 30.50 MiB` | trusted/fast both strong |
+| `16..4096` | `36.312M / 79.62 MiB` | `42.438M / 79.88 MiB` | `43.031M / 80.00 MiB` | fast slightly higher |
+| `1024..4096` | `33.111M / 90.88 MiB` | `39.308M / 91.50 MiB` | `39.097M / 91.38 MiB` | trusted slightly higher |
+| `4096..16384` | `45.165M / 94.12 MiB` | `45.215M / 94.25 MiB` | `45.033M / 94.25 MiB` | trusted is target-neutral |
+| `fixed_4k` | `32.529M / 91.88 MiB` | `47.946M / 92.62 MiB` | `47.619M / 92.50 MiB` | trusted wins |
+| `fixed_8k` | `43.820M / 93.12 MiB` | `47.314M / 93.12 MiB` | `46.549M / 93.12 MiB` | trusted wins |
+| `fixed_16k` | `45.896M / 93.00 MiB` | `47.114M / 93.00 MiB` | `45.786M / 93.12 MiB` | trusted wins |
+
+This promotes the recommendation inside profile space: prefer
+`hz6-small-boundary-trusted-target` for broad small/fixed-boundary HZ6 profile
+use, keep `hz6-small-boundary-fast-target` as a comparison/profile control, and
+keep selected/default unchanged.
+
 ## Selected Read
 
 The current HZ6 Ubuntu selected lane has its clearest speed/RSS balance on
