@@ -564,6 +564,10 @@
 #define HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 0
 #endif
 
+#ifndef HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES
+#define HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES ((size_t)4096)
+#endif
+
 #ifndef HZ6_TOY_FULL_BLOCK_PREFILL_L1
 /* Candidate-only Toy source miss policy.  When enabled, ToyFront asks the
  * source-block prefill path to consume more slots from the newly-created 64K

@@ -1447,6 +1447,26 @@ decision:
   The mid-small gain is real and useful diagnostic evidence, but selected
   default still needs fixed_8k/fixed_16k and target-family guard stability.
 
+worker follow-up:
+  Worker proposed capped Toy direct-class and class4-only frontcache storage
+  ladders as the two safest next checks.
+
+  capped Toy direct-class / class4 storage ladder:
+    raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_214901
+    variants:
+      preload_toy_direct_class_max1024
+      preload_toy_direct_class_max2048
+      preload_toy_direct_class_max3072
+      storage_trim_c4_12288_c5_4096
+      storage_trim_c4_16384_c5_4096
+    read:
+      Toy caps still improve 16..4096 and 1024..4096, but all caps regressed
+      4096..16384 versus selected in this run.
+      Wider class4 storage did not beat the selected c4=8192/c5=4096 balance
+      and weakened target/fixed guards.
+    decision:
+      keep all as controls/no-go for selected default.
+
 next:
   Do not pursue broad Toy preclassification further unless a profile-specific
   DSO/lane is explicitly split. Continue with narrow attribution or a different

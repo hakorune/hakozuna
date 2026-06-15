@@ -286,7 +286,8 @@ hz6_allocator_preload_toy_malloc_direct_class(Hz6Allocator* allocator,
   if (!hz6_owner_is_alive(&allocator->owner, allocator->owner.token)) {
     return NULL;
   }
-  if (size > 4096u) {
+  if (size == 0 || size > HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES ||
+      size > 4096u) {
     return hz6_malloc(allocator, size);
   }
 

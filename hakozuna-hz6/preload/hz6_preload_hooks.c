@@ -248,7 +248,10 @@ hz6_preload_malloc_midpage_boundary(Hz6Allocator* allocator, size_t size) {
 
 static void* hz6_preload_malloc_hz6(Hz6Allocator* allocator, size_t size) {
 #if HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1
-  if (HZ6_PRELOAD_TOY_BOUNDARY_UNLIKELY(size <= 4096u)) {
+  if (HZ6_PRELOAD_TOY_BOUNDARY_UNLIKELY(
+          size != 0 &&
+          size <= HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES &&
+          size <= 4096u)) {
     return hz6_allocator_preload_toy_malloc_direct_class(allocator, size);
   }
 #endif
