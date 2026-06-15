@@ -113,6 +113,16 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+apply_small_boundary_trusted_toy_map8192_flags() {
+  local flags_name="$1"
+  hz6_preload_replace_define "$flags_name" HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 1
+  hz6_preload_replace_define "$flags_name" HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1 1
+  hz6_preload_replace_define "$flags_name" HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES 4096
+  hz6_preload_replace_define "$flags_name" HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_L1 1
+  hz6_preload_replace_define "$flags_name" HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1 1
+  hz6_preload_replace_define "$flags_name" HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY 8192
+}
+
 variant_flags() {
   local variant="$1"
   local flags=()
@@ -131,20 +141,10 @@ variant_flags() {
     selected_malloc_trim_before_rss)
       ;;
     small_boundary_trusted_toy_map8192_scavenge_before_rss)
-      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 1
-      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1 1
-      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES 4096
-      hz6_preload_replace_define flags HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_L1 1
-      hz6_preload_replace_define flags HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1 1
-      hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY 8192
+      apply_small_boundary_trusted_toy_map8192_flags flags
       ;;
     small_boundary_trusted_toy_map8192_malloc_trim_before_rss)
-      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 1
-      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1 1
-      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES 4096
-      hz6_preload_replace_define flags HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_L1 1
-      hz6_preload_replace_define flags HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1 1
-      hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY 8192
+      apply_small_boundary_trusted_toy_map8192_flags flags
       ;;
     run512k)
       hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 524288
@@ -468,20 +468,22 @@ variant_flags() {
       hz6_preload_replace_define flags HZ6_PRELOAD_MIDPAGE_BOUNDARY_FUSED_L1 1
       ;;
     small_boundary_trusted_toy_map8192)
-      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 1
-      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1 1
-      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES 4096
-      hz6_preload_replace_define flags HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_L1 1
-      hz6_preload_replace_define flags HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1 1
-      hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY 8192
+      apply_small_boundary_trusted_toy_map8192_flags flags
+      ;;
+    small_boundary_trusted_toy_map8192_run8_256k)
+      apply_small_boundary_trusted_toy_map8192_flags flags
+      hz6_preload_replace_define flags HZ6_MIDPAGE_RUN_BYTES 262144
+      ;;
+    small_boundary_trusted_toy_map8192_run8_384k)
+      apply_small_boundary_trusted_toy_map8192_flags flags
+      hz6_preload_replace_define flags HZ6_MIDPAGE_RUN_BYTES 393216
+      ;;
+    small_boundary_trusted_toy_map8192_run8_512k)
+      apply_small_boundary_trusted_toy_map8192_flags flags
+      hz6_preload_replace_define flags HZ6_MIDPAGE_RUN_BYTES 524288
       ;;
     small_boundary_trusted_toy_map8192_probe8)
-      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 1
-      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1 1
-      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES 4096
-      hz6_preload_replace_define flags HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_L1 1
-      hz6_preload_replace_define flags HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1 1
-      hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY 8192
+      apply_small_boundary_trusted_toy_map8192_flags flags
       hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_PROBE_LIMIT 8
       ;;
     small_boundary_raw_push_trusted_owner|small_boundary_fast)

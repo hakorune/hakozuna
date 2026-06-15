@@ -95,12 +95,11 @@ Fixed-boundary/fixed-cost profile repeats:
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_061733
   private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_063918
   private/raw-results/linux/hz6_fixed_quiescent_rss_matrix_20260616_064654
+  private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_064915
   private/raw-results/linux/hz6_ubuntu_selected_balance_20260616_060238
 
 Details:
-  archive/current_task_2026-06-16_adaptive_profile_snapshot.md
-  archive/current_task_2026-06-16_calloc_profile_snapshot.md
-  archive/current_task_2026-06-16_fixed_boundary_profile_repeat.md
+  archive/current_task_2026-06-16_{adaptive_profile_snapshot,calloc_profile_snapshot,fixed_boundary_profile_repeat}.md
 ```
 
 ## Do Not Reopen Casually
@@ -145,6 +144,7 @@ Default no-go/control-only without substantially different evidence:
 10. Next lever is not probe widening: fixed-cost audit shows all-local-free
     payload plus static/map/frontcache floor; use FixedQuiescentRssMatrix-L1
     before trim/release defaulting.
-11. Keep this file below about 150 lines; archive completed evidence snapshots instead of
-    appending chronological logs. Large 3000+ line ledgers belong only under archive/.
+11. 8K run shrink under Toy-map8192 RSS profile is no-go/control: peak barely
+    moves and fixed_4k/fixed_16k speed regresses.
+12. Keep this file below about 150 lines; archive completed evidence snapshots.
 ```
