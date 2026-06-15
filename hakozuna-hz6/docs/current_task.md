@@ -123,7 +123,7 @@ Default no-go or control-only unless new evidence is substantially different:
   same-owner trusted free default
   free-path cold-retire/source-block release default
   standalone Toy direct-class default outside ToyTrustedDefault-L1
-  realloc-boundary slack/adaptive default
+  realloc-boundary slack/adaptive or real-calloc fallback default
   source-run reuse/reclaim default
 ```
 

@@ -971,6 +971,7 @@ void* calloc(size_t nmemb, size_t size) {
     return NULL;
   }
   size_t bytes = nmemb * size;
+  (void)bytes;
   hz6_preload_phase_add(&g_hz6_preload_phase_stats.calloc_zero_bytes,
                         bytes);
   hz6_preload_phase_count_size_bucket(
@@ -983,11 +984,15 @@ void* calloc(size_t nmemb, size_t size) {
   if (g_hz6_preload_reentry) {
     return hz6_preload_real_calloc(nmemb, size);
   }
+#if HZ6_PRELOAD_CALLOC_REAL_FALLBACK_L1
+  return hz6_preload_real_calloc(nmemb, size);
+#else
   void* ptr = malloc(bytes);
   if (ptr) {
     memset(ptr, 0, bytes);
   }
   return ptr;
+#endif
 }
 
 void* realloc(void* ptr, size_t size) {

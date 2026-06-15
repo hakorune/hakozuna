@@ -942,6 +942,12 @@
 #define HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1 0
 #endif
 
+#ifndef HZ6_PRELOAD_CALLOC_REAL_FALLBACK_L1
+/* Default-off calloc control.  When enabled, preload calloc delegates to the
+ * next real calloc implementation instead of hz6 malloc plus memset. */
+#define HZ6_PRELOAD_CALLOC_REAL_FALLBACK_L1 0
+#endif
+
 #ifndef HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FAST_L1
 /* Code-shape control for the selected 1:1 current-bias predicate.  Semantics
  * match the default numerator=1, denominator=1, delta=0 configuration. */
