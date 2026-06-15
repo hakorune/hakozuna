@@ -28,6 +28,29 @@ typedef struct Hz6PreloadRoute {
 
 static __thread Hz6Allocator* g_hz6_preload_allocator;
 
+#if HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1
+#define hz6_preload_phase_count_alignment_bucket( \
+    alignment, le16, range17_64, range65_4096, gt4096) \
+  ((void)0)
+#else
+static void hz6_preload_phase_count_alignment_bucket(
+    size_t alignment,
+    _Atomic(size_t)* le16,
+    _Atomic(size_t)* range17_64,
+    _Atomic(size_t)* range65_4096,
+    _Atomic(size_t)* gt4096) {
+  if (alignment <= 16u) {
+    hz6_preload_phase_count(le16);
+  } else if (alignment <= 64u) {
+    hz6_preload_phase_count(range17_64);
+  } else if (alignment <= 4096u) {
+    hz6_preload_phase_count(range65_4096);
+  } else {
+    hz6_preload_phase_count(gt4096);
+  }
+}
+#endif
+
 #if HZ6_PRELOAD_FREE_MIDPAGE_PAGE_HINT_FIRST_L1 ||   \
     HZ6_PRELOAD_FREE_MIDPAGE_PAGE_HINT_DRYRUN_L1 || \
     HZ6_PRELOAD_FREE_MIDPAGE_HINT_DRYRUN_L1
@@ -657,6 +680,15 @@ void* calloc(size_t nmemb, size_t size) {
     return NULL;
   }
   size_t bytes = nmemb * size;
+  hz6_preload_phase_add(&g_hz6_preload_phase_stats.calloc_zero_bytes,
+                        bytes);
+  hz6_preload_phase_count_size_bucket(
+      bytes,
+      &g_hz6_preload_phase_stats.calloc_size_zero,
+      &g_hz6_preload_phase_stats.calloc_size_le1024,
+      &g_hz6_preload_phase_stats.calloc_size_1025_4096,
+      &g_hz6_preload_phase_stats.calloc_size_4097_16384,
+      &g_hz6_preload_phase_stats.calloc_size_gt16384);
   if (g_hz6_preload_reentry) {
     return hz6_preload_real_calloc(nmemb, size);
   }
@@ -731,10 +763,26 @@ void* realloc(void* ptr, size_t size) {
 }
 
 int posix_memalign(void** memptr, size_t alignment, size_t size) {
+  hz6_preload_phase_count(&g_hz6_preload_phase_stats.posix_memalign_calls);
+  hz6_preload_phase_count_alignment_bucket(
+      alignment,
+      &g_hz6_preload_phase_stats.posix_memalign_align_le16,
+      &g_hz6_preload_phase_stats.posix_memalign_align_17_64,
+      &g_hz6_preload_phase_stats.posix_memalign_align_65_4096,
+      &g_hz6_preload_phase_stats.posix_memalign_align_gt4096);
+  hz6_preload_phase_count_size_bucket(
+      size,
+      &g_hz6_preload_phase_stats.posix_memalign_size_zero,
+      &g_hz6_preload_phase_stats.posix_memalign_size_le1024,
+      &g_hz6_preload_phase_stats.posix_memalign_size_1025_4096,
+      &g_hz6_preload_phase_stats.posix_memalign_size_4097_16384,
+      &g_hz6_preload_phase_stats.posix_memalign_size_gt16384);
   if ((alignment & (alignment - 1u)) != 0 || alignment < sizeof(void*)) {
     return EINVAL;
   }
   if (alignment <= 16u) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.posix_memalign_hz6_path);
     void* ptr = malloc(size);
     if (!ptr) {
       return ENOMEM;
@@ -742,17 +790,39 @@ int posix_memalign(void** memptr, size_t alignment, size_t size) {
     *memptr = ptr;
     return 0;
   }
+  hz6_preload_phase_count(
+      &g_hz6_preload_phase_stats.posix_memalign_real_fallback);
   return hz6_preload_real_posix_memalign(memptr, alignment, size);
 }
 
 void* aligned_alloc(size_t alignment, size_t size) {
+  hz6_preload_phase_count(&g_hz6_preload_phase_stats.aligned_alloc_calls);
+  hz6_preload_phase_count_alignment_bucket(
+      alignment,
+      &g_hz6_preload_phase_stats.aligned_alloc_align_le16,
+      &g_hz6_preload_phase_stats.aligned_alloc_align_17_64,
+      &g_hz6_preload_phase_stats.aligned_alloc_align_65_4096,
+      &g_hz6_preload_phase_stats.aligned_alloc_align_gt4096);
+  hz6_preload_phase_count_size_bucket(
+      size,
+      &g_hz6_preload_phase_stats.aligned_alloc_size_zero,
+      &g_hz6_preload_phase_stats.aligned_alloc_size_le1024,
+      &g_hz6_preload_phase_stats.aligned_alloc_size_1025_4096,
+      &g_hz6_preload_phase_stats.aligned_alloc_size_4097_16384,
+      &g_hz6_preload_phase_stats.aligned_alloc_size_gt16384);
   if (alignment <= 16u) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.aligned_alloc_hz6_path);
     return malloc(size);
   }
   if (g_hz6_preload_reentry) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.aligned_alloc_real_fallback);
     return hz6_preload_real_aligned_alloc(alignment, size);
   }
   void* ptr = NULL;
+  hz6_preload_phase_count(
+      &g_hz6_preload_phase_stats.aligned_alloc_real_fallback);
   if (hz6_preload_real_posix_memalign(&ptr, alignment, size) != 0) {
     return NULL;
   }

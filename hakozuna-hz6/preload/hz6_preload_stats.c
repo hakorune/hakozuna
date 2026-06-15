@@ -1200,7 +1200,8 @@ static void hz6_preload_print_stats(void) {
           "malloc_midpage_boundary_attempt=%zu "
           "malloc_midpage_boundary_hit=%zu "
           "malloc_midpage_boundary_fallback=%zu "
-          "calloc_calls=%zu free_calls=%zu free_null=%zu "
+          "calloc_calls=%zu calloc_zero_bytes=%zu "
+          "free_calls=%zu free_null=%zu "
           "free_reentry_real=%zu free_local_route_valid=%zu "
           "free_visible_route_hit=%zu free_toy_active_map_hit=%zu "
           "free_midpage_active_map_hit=%zu "
@@ -1223,6 +1224,8 @@ static void hz6_preload_print_stats(void) {
           hz6_preload_phase_load(
               &g_hz6_preload_phase_stats.malloc_midpage_boundary_fallback),
           hz6_preload_phase_load(&g_hz6_preload_phase_stats.calloc_calls),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.calloc_zero_bytes),
           hz6_preload_phase_load(&g_hz6_preload_phase_stats.free_calls),
           hz6_preload_phase_load(&g_hz6_preload_phase_stats.free_null),
           hz6_preload_phase_load(&g_hz6_preload_phase_stats.free_reentry_real),
@@ -1251,6 +1254,49 @@ static void hz6_preload_print_stats(void) {
               &g_hz6_preload_phase_stats.malloc_usable_size_owned),
           hz6_preload_phase_load(
               &g_hz6_preload_phase_stats.malloc_usable_size_real_fallback));
+
+  fprintf(stderr,
+          "[HZ6_PRELOAD_WRAPPER_DETAIL] "
+          "posix_memalign_calls=%zu posix_memalign_hz6_path=%zu "
+          "posix_memalign_real_fallback=%zu "
+          "posix_memalign_align_le16=%zu "
+          "posix_memalign_align_17_64=%zu "
+          "posix_memalign_align_65_4096=%zu "
+          "posix_memalign_align_gt4096=%zu "
+          "aligned_alloc_calls=%zu aligned_alloc_hz6_path=%zu "
+          "aligned_alloc_real_fallback=%zu "
+          "aligned_alloc_align_le16=%zu "
+          "aligned_alloc_align_17_64=%zu "
+          "aligned_alloc_align_65_4096=%zu "
+          "aligned_alloc_align_gt4096=%zu\n",
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.posix_memalign_calls),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.posix_memalign_hz6_path),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.posix_memalign_real_fallback),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.posix_memalign_align_le16),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.posix_memalign_align_17_64),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.posix_memalign_align_65_4096),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.posix_memalign_align_gt4096),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.aligned_alloc_calls),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.aligned_alloc_hz6_path),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.aligned_alloc_real_fallback),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.aligned_alloc_align_le16),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.aligned_alloc_align_17_64),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.aligned_alloc_align_65_4096),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.aligned_alloc_align_gt4096));
 
   fprintf(stderr,
           "[HZ6_PRELOAD_HOOK_DETAIL] free_toy_active_map_attempt=%zu free_toy_active_map_hit=%zu "
@@ -1292,6 +1338,9 @@ static void hz6_preload_print_stats(void) {
           "malloc_size_zero=%zu malloc_size_le1024=%zu "
           "malloc_size_1025_4096=%zu malloc_size_4097_16384=%zu "
           "malloc_size_gt16384=%zu "
+          "calloc_size_zero=%zu calloc_size_le1024=%zu "
+          "calloc_size_1025_4096=%zu calloc_size_4097_16384=%zu "
+          "calloc_size_gt16384=%zu "
           "realloc_request_zero=%zu realloc_request_le1024=%zu "
           "realloc_request_1025_4096=%zu "
           "realloc_request_4097_16384=%zu "
@@ -1312,6 +1361,16 @@ static void hz6_preload_print_stats(void) {
               &g_hz6_preload_phase_stats.malloc_size_4097_16384),
           hz6_preload_phase_load(
               &g_hz6_preload_phase_stats.malloc_size_gt16384),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.calloc_size_zero),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.calloc_size_le1024),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.calloc_size_1025_4096),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.calloc_size_4097_16384),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.calloc_size_gt16384),
           hz6_preload_phase_load(
               &g_hz6_preload_phase_stats.realloc_request_zero),
           hz6_preload_phase_load(
@@ -1334,6 +1393,39 @@ static void hz6_preload_print_stats(void) {
               &g_hz6_preload_phase_stats.realloc_owned_old_gt16384),
           hz6_preload_phase_load(
               &g_hz6_preload_phase_stats.realloc_copy_calls));
+
+  fprintf(stderr,
+          "[HZ6_PRELOAD_WRAPPER_SIZE_DETAIL] "
+          "posix_memalign_size_zero=%zu "
+          "posix_memalign_size_le1024=%zu "
+          "posix_memalign_size_1025_4096=%zu "
+          "posix_memalign_size_4097_16384=%zu "
+          "posix_memalign_size_gt16384=%zu "
+          "aligned_alloc_size_zero=%zu "
+          "aligned_alloc_size_le1024=%zu "
+          "aligned_alloc_size_1025_4096=%zu "
+          "aligned_alloc_size_4097_16384=%zu "
+          "aligned_alloc_size_gt16384=%zu\n",
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.posix_memalign_size_zero),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.posix_memalign_size_le1024),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.posix_memalign_size_1025_4096),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.posix_memalign_size_4097_16384),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.posix_memalign_size_gt16384),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.aligned_alloc_size_zero),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.aligned_alloc_size_le1024),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.aligned_alloc_size_1025_4096),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.aligned_alloc_size_4097_16384),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.aligned_alloc_size_gt16384));
 
   if (print_per_allocator) {
     pthread_mutex_lock(&g_hz6_preload_allocator_registry_mutex);

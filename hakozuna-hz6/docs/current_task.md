@@ -38,7 +38,57 @@ Archived chronological ledger:
   archive/current_task_2026-06_history.md
 ```
 
-## Recent Closeout: HZ6 Ubuntu `malloc_trim` Retain Flush-L1
+## Recent Closeout: HZ6 Ubuntu Preload Wrapper Attribution-L1
+
+```text
+latest continuation:
+  Add diagnostic-only wrapper attribution for LD_PRELOAD surface calls:
+    calloc_zero_bytes
+    calloc size buckets
+    posix_memalign calls / HZ6 path / real fallback
+    posix_memalign alignment and size buckets
+    aligned_alloc calls / HZ6 path / real fallback
+    aligned_alloc alignment and size buckets
+
+  Output lines:
+    [HZ6_PRELOAD_WRAPPER_DETAIL]
+    [HZ6_PRELOAD_WRAPPER_SIZE_DETAIL]
+
+  Production shape:
+    HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1=1 compiles these counters out.
+    The selected malloc/free hot path remains unchanged.
+
+smoke:
+  temporary aligned-wrapper smoke under the diag DSO:
+    posix_memalign_calls=1
+    posix_memalign_real_fallback=1
+    posix_memalign_align_17_64=1
+    aligned_alloc_calls=1
+    aligned_alloc_real_fallback=1
+    aligned_alloc_align_65_4096=1
+    calloc_calls=1
+    calloc_zero_bytes=4096
+
+mixed_ws phase-count attribution:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_223042
+  phase_count_on, repeat-1, 20K, focused:
+    wrapper aligned calls are zero on the current selected benchmark rows
+    calloc and realloc attribution are visible:
+      16..4096:
+        calloc_calls=11
+        calloc_zero_bytes=410944
+        realloc_calls=640
+        realloc_copy_calls=9
+        realloc_copy_bytes=6144
+
+decision:
+  Keep this as diagnostic-only attribution.
+  Do not behaviorize >16-byte aligned allocation yet; current selected rows do
+  not exercise it.  Revisit only with real-app or aligned-allocation benchmark
+  evidence showing material libc fallback and later free route-miss pressure.
+```
+
+## Previous Closeout: HZ6 Ubuntu `malloc_trim` Retain Flush-L1
 
 ```text
 latest continuation:
