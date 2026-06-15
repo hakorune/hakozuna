@@ -113,6 +113,12 @@ size_t hz6_preload_scavenge_local_free(size_t max_bytes) {
   return released;
 }
 
+int hz6_preload_quiescent_release(size_t max_bytes) {
+  size_t released_objects = hz6_preload_scavenge_local_free(max_bytes);
+  size_t flushed_bytes = hz6_linux_mmap_retain_flush(max_bytes);
+  return released_objects != 0 || flushed_bytes != 0;
+}
+
 static void hz6_preload_print_stats(void) {
   const char* value = getenv("HZ6_PRELOAD_STATS");
   if (!value || value[0] == '\0' || strcmp(value, "0") == 0) {

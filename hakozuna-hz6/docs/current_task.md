@@ -35,7 +35,7 @@ Selected additions to remember:
   HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1=1
   HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1=1
   HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_L1=1
-  malloc_trim(size_t pad) interpose for explicit quiescent RSS release
+  malloc_trim(size_t pad) interpose via hz6_preload_quiescent_release(0)
 
 Default position:
   selected remains the broad balanced Ubuntu preload lane.

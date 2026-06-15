@@ -128,6 +128,7 @@ typedef struct Hz6PreloadPhaseStats {
 extern Hz6PreloadPhaseStats g_hz6_preload_phase_stats;
 
 size_t hz6_preload_scavenge_local_free(size_t max_bytes);
+int hz6_preload_quiescent_release(size_t max_bytes);
 
 #if HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1
 #define hz6_preload_phase_count(counter) ((void)0)

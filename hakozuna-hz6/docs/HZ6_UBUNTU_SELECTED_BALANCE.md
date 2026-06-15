@@ -51,8 +51,9 @@ hakozuna-hz6/private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_1955
 | `1024_4096` | `31.583M` | `33.437M` | selected improves |
 | `4096_16384` | `43.136M` | `43.528M` | selected improves |
 
-Latest HZ6-only quiescent RSS check after LD_PRELOAD `malloc_trim` was wired to
-HZ6 local-free scavenge and Linux mmap retain-cache flush:
+Latest HZ6-only quiescent RSS check after LD_PRELOAD `malloc_trim` was wired
+through `hz6_preload_quiescent_release(0)` for HZ6 local-free scavenge and
+Linux mmap retain-cache flush:
 
 ```text
 hakozuna-hz6/private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_222345
