@@ -56,7 +56,7 @@ Standard frontier:
   aligned / calloc-direct / calloc-real / calloc-large-real
 
 Explicit controls:
-  toy-map8192(+external) / workload-capacity(+map8192) / descriptor-overflow / toy-map-external / midpage-skip-transfer
+  toy-map8192(+external) / workload-capacity(+map8192) / descriptor-overflow/hybrid / toy-map-external / midpage-skip-transfer
 
 Runners:
   broad_guard / fixed_boundary_profile_frontier / preload_profile_frontier
@@ -93,7 +93,7 @@ Recent fixed/profile repeats:
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_{062305,064915,065310,065329,072333,074342,074414}
   private/raw-results/linux/hz6_workload_capacity_gap_diag_20260616_{083459,083910}
   private/raw-results/linux/hz6_workload_descriptor_{overflow_ladder_20260616_084807,hybrid_ladder_20260616_085253}
-  private/raw-results/linux/hz6_workload_{capacity_frontier_20260616_081537,proxy_matrix_20260616_{080227,084249,084440}}
+  private/raw-results/linux/hz6_workload_{capacity_frontier_20260616_081537,proxy_matrix_20260616_{080227,084249,084440,085632}}
   private/raw-results/linux/hz6_ubuntu_size_slices_20260616_073231
 
 ```
@@ -146,5 +146,5 @@ Default no-go/control-only without substantially different evidence:
     packed-frontcache/sourceblock combos remain runner-only controls/no-go.
 14. Capacity-gap diag says selected workload proxy collapse is descriptor-table
     exhaustion/prefill fallback; capacity-lite is faster, while descriptor-overflow 2048 keeps lower RSS with selected static tables.
-15. Hybrid `desc12k/source1536/route48k + depot2048` is a runner-only speed/RSS candidate; profile it only after a broad guard.
+15. Hybrid profile beats capacity-lite speed/RSS on several workload proxy rows; keep explicit until broad guard.
 ```
