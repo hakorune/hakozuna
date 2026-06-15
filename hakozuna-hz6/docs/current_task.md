@@ -91,7 +91,7 @@ Recent fixed/profile repeats:
   private/raw-results/linux/hz6_fixed_gap_matrix_20260616_074100
   private/raw-results/linux/hz6_fixed_quiescent_rss_matrix_20260616_072153
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_{062305,064915,065310,065329,072333,074342,074414}
-  private/raw-results/linux/hz6_workload_{capacity_lite_toy_map8192_probe_20260616_081039,proxy_matrix_20260616_080227}
+  private/raw-results/linux/hz6_workload_{capacity_frontier_20260616_081537,proxy_matrix_20260616_080227}
   private/raw-results/linux/hz6_ubuntu_size_slices_20260616_073231
 
 Details:

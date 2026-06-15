@@ -158,17 +158,17 @@ Mid/full remain controls for larger live sets. None of the capacity profiles is
 selected/default because healthy `redis_proxy` and `midpage_cache` rows regress
 with the larger static tables.
 
-Follow-up capacity-lite Toy-map8192 probe, repeat-3, raw
-`private/raw-results/linux/hz6_workload_capacity_lite_toy_map8192_probe_20260616_081039`,
-shows a useful RSS/balance control but not a replacement for lite yet:
-`redis_proxy` improves `47.747M / 25.50 MiB -> 52.364M / 24.50 MiB`,
-`mixed_small_cache` improves `8.465M / 128.75 MiB -> 8.601M / 127.25 MiB`,
-and `wide_midpage_cache` improves `9.010M / 153.62 MiB -> 9.042M / 152.50 MiB`,
-but `small_object_cache` speed slips slightly (`16.842M -> 16.535M`) and
-`midpage_cache` speed also slips slightly (`18.238M -> 18.074M`). Persist it as
-`hz6-workload-capacity-lite-map8192-target` for explicit capacity/RSS A/B; keep
-plain `hz6-workload-capacity-lite-target` as the default workload-proxy guard
-profile until a thicker repeat shows no healthy-row regression.
+Capacity frontier repeat-3, raw
+`private/raw-results/linux/hz6_workload_capacity_frontier_20260616_081537`,
+confirms the ladder decision. `lite-map8192` is a useful RSS/balance control:
+it beats `lite` on `redis_proxy` (`51.971M / 24.50 MiB` vs
+`51.627M / 25.62 MiB`), `mixed_object_cache` (`9.398M / 141.38 MiB` vs
+`9.146M / 143.25 MiB`), and `midpage_cache` (`18.379M / 89.88 MiB` vs
+`18.004M / 90.62 MiB`). It still does not replace plain `lite`: `lite` is
+faster on `small_object_cache`, `mixed_small_cache`, and `wide_midpage_cache`.
+Keep `hz6-workload-capacity-lite-target` as the default workload-proxy guard
+profile; keep `hz6-workload-capacity-lite-map8192-target` as explicit
+capacity/RSS A/B. Mid/full are larger-live-set controls only.
 
 Earlier workload-proxy matrix, repeat-3, raw
 `private/raw-results/linux/hz6_workload_proxy_matrix_20260616_075550`;
