@@ -102,12 +102,12 @@ Calloc direct-HZ6 code-shape control:
 
 Fixed-boundary/fixed-cost profile repeats:
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_051956
-  private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_053600
-  private/raw-results/linux/hz6_static_table_trim_ab_20260616_054150
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_055101
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_055648
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_055723
   private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_055752
+  private/raw-results/linux/hz6_ubuntu_selected_balance_20260616_060238
+  private/raw-results/linux/hz6_ubuntu_size_slices_20260616_060255
 
 Details:
   archive/current_task_2026-06-16_adaptive_profile_snapshot.md
@@ -142,8 +142,8 @@ Default no-go/control-only without substantially different evidence:
    selected/default lane.
 5. Keep calloc-direct default-off: thick focused+calloc repeat is mixed and
    does not justify selected/default.
-6. Next work should refresh cross-allocator selected balance, then only pursue
-   profile-specific source/frontcache controls if the speed/RSS trade is clear.
+6. Cross-allocator refresh says HZ6 is strong on 4096..16384, fixed_8k, and
+   fixed_16k; next work should be profile-specific, not another broad default.
 7. Keep this file below about 150 lines; archive completed evidence snapshots
    instead of appending chronological logs. Large 3000+ line ledgers belong
    only under archive/.

@@ -31,22 +31,22 @@ hakozuna-hz6/private/raw-results/linux/hz6_toy_trusted_default_on_stats_20260616
 | `fixed_8k` | `30.899M` | `31.224M` | `+1.1%` |
 | `fixed_16k` | `32.469M` | `32.580M` | `+0.3%` |
 
-Current cross/fixed matrix:
+Current cross/fixed matrix after fixed-floor and active-map storage trim:
 
 ```text
-hakozuna-hz6/private/raw-results/linux/hz6_selected_toy_trusted_cross_20260616_031120
-hakozuna-hz6/private/raw-results/linux/hz6_selected_toy_trusted_fixed_20260616_031237
+hakozuna-hz6/private/raw-results/linux/hz6_ubuntu_selected_balance_20260616_060238
+hakozuna-hz6/private/raw-results/linux/hz6_ubuntu_size_slices_20260616_060255
 ```
 
 | row | selected hz6 | current position |
 | --- | ---: | --- |
-| `16..256` | `61.821M / 30.50 MiB` | below HZ3/HZ4/tcmalloc/system, above mimalloc |
-| `16..4096` | `30.638M / 79.62 MiB` | below HZ3/HZ4/tcmalloc, above mimalloc/system/HZ5 |
-| `1024..4096` | `28.197M / 91.00 MiB` | below HZ3/HZ4/tcmalloc, above mimalloc/system/HZ5 |
-| `4096..16384` | `32.830M / 94.00 MiB` | below HZ3, above tcmalloc/HZ4/mimalloc/system |
-| `fixed_4k` | `27.638M / 91.62 MiB` | below HZ3/tcmalloc, above HZ4/mimalloc/system |
-| `fixed_8k` | `33.097M / 93.25 MiB` | below HZ3, above tcmalloc/HZ4/mimalloc/system |
-| `fixed_16k` | `34.039M / 93.12 MiB` | above HZ3/tcmalloc/HZ4/mimalloc/system |
+| `16..256` | `90.747M / 18.12 MiB` | below HZ3/HZ4/tcmalloc/system, above mimalloc |
+| `16..4096` | `41.427M / 67.25 MiB` | below HZ3/tcmalloc, near HZ4, above mimalloc/system |
+| `1024..4096` | `41.776M / 78.62 MiB` | below HZ3/tcmalloc, near HZ4, above mimalloc/system |
+| `4096..16384` | `47.293M / 81.25 MiB` | slightly above HZ3 speed in this repeat; above tcmalloc/HZ4/mimalloc/system |
+| `fixed_4k` | `39.649M / 78.88 MiB` | below HZ3/tcmalloc, above HZ4/mimalloc/system |
+| `fixed_8k` | `45.145M / 80.12 MiB` | below HZ3, above tcmalloc/HZ4/mimalloc/system |
+| `fixed_16k` | `46.005M / 80.12 MiB` | above HZ3/tcmalloc/HZ4/mimalloc/system on speed |
 
 Decision: keep ToyTrustedDefault-L1 selected. Keep realloc-boundary slack,
 small-boundary profiles, raw-push, and aligned-free skip as profile/control
@@ -668,6 +668,36 @@ across focused/fixed rows; `1024_4096` and `fixed_4k` are the watch rows.
 Standard selected DSO smoke raw `hz6_fixed_cost_residency_matrix_20260616_055752`
 confirmed the rebuilt preload path stays runnable and reports fixed-row profile
 peaks around `78.88..80.12 MiB`.
+
+Post-fixed-floor cross-allocator refresh:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_ubuntu_selected_balance_20260616_060238
+hakozuna-hz6/private/raw-results/linux/hz6_ubuntu_size_slices_20260616_060255
+```
+
+Focused repeat-3 shows HZ6 is now a strong MidPage/fixed speed/RSS balance
+allocator rather than just a functional preload lane. On `4096..16384`, HZ6
+is slightly faster than HZ3 in this repeat and clearly ahead of tcmalloc,
+HZ4, mimalloc, and system while using lower peak RSS than tcmalloc/HZ4/mimalloc.
+Tiny and mixed-small rows remain HZ3/tcmalloc territory.
+
+| Row | hz3 | hz6 | tcmalloc | HZ6 read |
+| --- | ---: | ---: | ---: | --- |
+| `16_256` | `237.053M / 6.75 MiB` | `90.747M / 18.12 MiB` | `235.694M / 9.38 MiB` | not the target |
+| `16_4096` | `62.940M / 53.25 MiB` | `41.427M / 67.25 MiB` | `80.509M / 41.38 MiB` | improved but still trails |
+| `1024_4096` | `61.344M / 62.88 MiB` | `41.776M / 78.62 MiB` | `74.863M / 49.00 MiB` | improved but still trails |
+| `4096_16384` | `46.682M / 73.38 MiB` | `47.293M / 81.25 MiB` | `33.280M / 105.50 MiB` | HZ6 wins speed vs peers except RSS-only system |
+
+Fixed repeat-3 keeps the same shape: fixed_4k still trails HZ3/tcmalloc,
+fixed_8k beats tcmalloc/HZ4/mimalloc/system but trails HZ3, and fixed_16k is
+the current strongest HZ6 row.
+
+| Row | hz3 | hz6 | tcmalloc | HZ6 read |
+| --- | ---: | ---: | ---: | --- |
+| `fixed_4k` | `58.387M / 68.25 MiB` | `39.649M / 78.88 MiB` | `41.288M / 70.50 MiB` | close to tcmalloc, not HZ3 |
+| `fixed_8k` | `52.948M / 70.00 MiB` | `45.145M / 80.12 MiB` | `28.255M / 73.00 MiB` | strong speed/RSS balance |
+| `fixed_16k` | `43.918M / 73.00 MiB` | `46.005M / 80.12 MiB` | `12.237M / 98.53 MiB` | HZ6 leads speed |
 
 Hot-path attribution refresh:
 

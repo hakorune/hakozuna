@@ -93,51 +93,52 @@ HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_8K_L1=0
 The preload lane is a real Ubuntu performance lane, but it remains separate
 from the direct HZ6 API and Windows selected-family rows.
 
-Latest selected-default focused guards, after current-bias, 8K run768, 32K
-run2048, MidPage active-map mask-index, MidPage active-map register fast-slot,
-raw direct-local pop, Toy free fast-slot, phase-counter compile-out, preload
-MidPage direct class, Toy direct-class fast reuse, boundary trusted-owner,
-class4/class5 frontcache storage trim, and trusted-class MidPage local reuse:
+Latest selected-default focused guards, after fixed-floor and active-map storage
+trim, repeat-3, `bench_mixed_ws_crt`, raw
+`private/raw-results/linux/hz6_ubuntu_selected_balance_20260616_060238`:
 
 | Row | Selected read |
 | --- | ---: |
-| `16..256` full cross repeat-3 | `61.821M / 30.50 MiB` |
-| `16..4096` full cross repeat-3 | `30.638M / 79.62 MiB` |
-| `1024..4096` full cross repeat-3 | `28.197M / 91.00 MiB` |
-| `4096..16384` full cross repeat-3 | `32.830M / 94.00 MiB` |
-| `fixed_4k` fixed repeat-3 | `27.638M / 91.62 MiB` |
-| `fixed_8k` fixed repeat-3 | `33.097M / 93.25 MiB` |
-| `fixed_16k` fixed repeat-3 | `34.039M / 93.12 MiB` |
+| `16..256` full cross repeat-3 | `90.747M / 18.12 MiB` |
+| `16..4096` full cross repeat-3 | `41.427M / 67.25 MiB` |
+| `1024..4096` full cross repeat-3 | `41.776M / 78.62 MiB` |
+| `4096..16384` full cross repeat-3 | `47.293M / 81.25 MiB` |
 
-Latest focused cross-allocator refresh after ToyTrustedDefault-L1 promotion,
-repeat-3, `bench_mixed_ws_crt`, raw
-`private/raw-results/linux/hz6_selected_toy_trusted_cross_20260616_031120`:
+Latest fixed-size cross-allocator refresh, repeat-3, raw
+`private/raw-results/linux/hz6_ubuntu_size_slices_20260616_060255`:
 
-| Row | hz3 | hz4 | hz6 | mimalloc | tcmalloc | system | hz6 peak KB |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `16..256` | `214.200M` | `183.220M` | `61.821M` | `50.745M` | `214.333M` | `93.119M` | `31,232` |
-| `16..4096` | `49.598M` | `37.812M` | `30.638M` | `6.788M` | `63.433M` | `14.876M` | `81,536` |
-| `1024..4096` | `44.924M` | `36.631M` | `28.197M` | `5.362M` | `60.324M` | `8.271M` | `93,184` |
-| `4096..16384` | `37.144M` | `22.736M` | `32.830M` | `1.263M` | `27.846M` | `2.743M` | `96,256` |
+| Row | Selected read |
+| --- | ---: |
+| `fixed_4k` fixed repeat-3 | `39.649M / 78.88 MiB` |
+| `fixed_8k` fixed repeat-3 | `45.145M / 80.12 MiB` |
+| `fixed_16k` fixed repeat-3 | `46.005M / 80.12 MiB` |
 
-Latest fixed-size cross-allocator refresh after ToyTrustedDefault-L1 promotion,
-repeat-3, `bench_mixed_ws_crt`, raw
-`private/raw-results/linux/hz6_selected_toy_trusted_fixed_20260616_031237`:
+Latest focused cross-allocator comparison:
 
 | Row | hz3 | hz4 | hz6 | mimalloc | tcmalloc | system | hz6 peak KB |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `fixed_4k` | `43.112M` | `11.738M` | `27.638M` | `3.027M` | `33.611M` | `2.884M` | `93,824` |
-| `fixed_8k` | `39.038M` | `11.488M` | `33.097M` | `1.438M` | `21.078M` | `2.928M` | `95,488` |
-| `fixed_16k` | `32.838M` | `9.698M` | `34.039M` | `0.733M` | `10.689M` | `18.634M` | `95,360` |
+| `16..256` | `237.053M` | `200.532M` | `90.747M` | `52.955M` | `235.694M` | `103.249M` | `18,560` |
+| `16..4096` | `62.940M` | `47.233M` | `41.427M` | `6.877M` | `80.509M` | `15.681M` | `68,864` |
+| `1024..4096` | `61.344M` | `42.099M` | `41.776M` | `5.468M` | `74.863M` | `8.343M` | `80,512` |
+| `4096..16384` | `46.682M` | `25.538M` | `47.293M` | `1.228M` | `33.280M` | `2.758M` | `83,200` |
+
+Latest fixed-size cross-allocator comparison:
+
+| Row | hz3 | hz4 | hz6 | mimalloc | tcmalloc | system | hz6 peak KB |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `fixed_4k` | `58.387M` | `14.093M` | `39.649M` | `3.026M` | `41.288M` | `2.935M` | `80,768` |
+| `fixed_8k` | `52.948M` | `13.169M` | `45.145M` | `1.478M` | `28.255M` | `2.872M` | `82,048` |
+| `fixed_16k` | `43.918M` | `10.750M` | `46.005M` | `0.746M` | `12.237M` | `30.565M` | `82,048` |
 
 Important caveat:
 
 ```text
-tcmalloc remains much faster on tiny and mixed small rows. On 4096..16384, HZ6
-is ahead of tcmalloc/HZ4/mimalloc/system on speed while keeping lower RSS than
-tcmalloc, but HZ3 remains the speed/RSS frontier. On fixed_16k, selected HZ6
-edges HZ3 speed in this repeat and beats tcmalloc/HZ4/mimalloc/system; fixed_8k
-is strong but still below HZ3 speed, and fixed_4k remains below HZ3/tcmalloc.
+tcmalloc remains much faster on mixed small rows and HZ3/tcmalloc dominate the
+tiny row. On 4096..16384, HZ6 now slightly beats HZ3 throughput in this repeat
+and beats tcmalloc/HZ4/mimalloc/system on speed while staying below tcmalloc
+RSS. On fixed_16k, selected HZ6 also edges HZ3 speed and beats
+tcmalloc/HZ4/mimalloc/system; fixed_8k beats tcmalloc/HZ4/mimalloc/system but
+still trails HZ3; fixed_4k remains below HZ3/tcmalloc.
 ```
 
 Follow-up:
