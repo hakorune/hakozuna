@@ -48,11 +48,9 @@ Default position:
 ## Active Profile Lanes
 
 ```text
-Preferred broad fixed-boundary profile:
-  hz6-small-boundary-trusted-target
-
-Fixed-boundary RSS profile:
-  hz6-small-boundary-trusted-toy-map8192-target
+Fixed-boundary profiles:
+  broad hz6-small-boundary-trusted-target
+  RSS hz6-small-boundary-trusted-toy-map8192-target
 
 Light small/fixed16 profile:
   hz6-toy-trusted-target
@@ -95,7 +93,7 @@ Fixed-boundary/fixed-cost profile repeats:
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_062305
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_055648
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_061733
-  private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_061459
+  private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_063918
   private/raw-results/linux/hz6_ubuntu_selected_balance_20260616_060238
   private/raw-results/linux/hz6_ubuntu_size_slices_20260616_060255
 
@@ -144,7 +142,8 @@ Default no-go/control-only without substantially different evidence:
    It is still not a broad default because 16..4096/1024..4096 regress.
 9. Do not promote realloc-boundary/adaptive to selected/default without a new
    guard that also preserves tiny, mixed-small, target, fixed, RSS, and stats.
-10. Keep this file below about 150 lines; archive completed evidence snapshots
-   instead of appending chronological logs. Large 3000+ line ledgers belong
-   only under archive/.
+10. Next likely lever is not probe widening: fixed-cost audit still shows all-local-free
+   MidPage payload plus static/map/frontcache floor.
+11. Keep this file below about 150 lines; archive completed evidence snapshots instead of
+   appending chronological logs. Large 3000+ line ledgers belong only under archive/.
 ```
