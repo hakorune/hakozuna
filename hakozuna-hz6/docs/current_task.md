@@ -2878,3 +2878,50 @@ decision:
   cold-retire behavior for selected; peak RSS needs a different lane than
   final all-local-free reclamation.
 ```
+
+## Recent Recheck: PageKind Free Selector Still No-Go
+
+```text
+goal:
+  Recheck the page-kind free-order selector after trusted-class entered
+  selected, because it is one of the few remaining free-order ideas.
+
+A/B:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_013204
+  no-stats repeat-7, focused+fixed+tiny, iters=300000
+
+  16..256:
+    selected 57.687M
+    page_kind_selector_dryrun 56.075M
+    page_kind_selector_first 55.401M
+  16..4096:
+    selected 36.831M
+    page_kind_selector_dryrun 34.582M
+    page_kind_selector_first 34.543M
+  1024..4096:
+    selected 33.827M
+    page_kind_selector_dryrun 32.337M
+    page_kind_selector_first 32.136M
+  4096..16384:
+    selected 45.440M
+    page_kind_selector_dryrun 41.751M
+    page_kind_selector_first 40.060M
+  fixed_4k:
+    selected 31.931M
+    page_kind_selector_dryrun 30.594M
+    page_kind_selector_first 30.370M
+  fixed_8k:
+    selected 43.259M
+    page_kind_selector_dryrun 40.414M
+    page_kind_selector_first 39.541M
+  fixed_16k:
+    selected 45.057M
+    page_kind_selector_dryrun 41.263M
+    page_kind_selector_first 41.761M
+
+decision:
+  Keep HZ6_PAGE_KIND_FREE_SELECTOR_DRYRUN_L1=0 and
+  HZ6_PAGE_KIND_FREE_SELECTOR_FIRST_L1=0. Even dryrun loses everywhere and
+  raises RSS by about 2.5 MiB, so page-kind all-free lookup is closed for
+  selected/default.
+```
