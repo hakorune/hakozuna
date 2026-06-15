@@ -118,6 +118,39 @@ static void* hz6_allocator_direct_local_reuse(Hz6Allocator* allocator,
 
   return NULL;
 }
+
+#if HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_L1
+static void* hz6_allocator_midpage_direct_local_reuse_trusted_class(
+    Hz6Allocator* allocator,
+    uint16_t class_id,
+    Hz6ObjectDescriptor** out_descriptor) {
+  *out_descriptor = NULL;
+  Hz6FrontCacheEntry entry;
+  while (hz6_allocator_direct_local_reuse_pop(allocator, class_id, &entry)) {
+    if (!entry.descriptor) {
+      (void)hz6_allocator_frontcache_push(allocator, class_id, entry);
+      return NULL;
+    }
+
+    Hz6ObjectDescriptor* descriptor =
+        (Hz6ObjectDescriptor*)entry.descriptor;
+    if (descriptor->class_id == class_id &&
+        hz6_allocator_activate_local_descriptor_trusted_owner(
+            allocator, descriptor, entry.ptr, entry.generation)) {
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.frontcache_reuse_hit;
+#endif
+      *out_descriptor = descriptor;
+      return entry.ptr;
+    }
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.frontcache_reuse_invalid;
+#endif
+  }
+
+  return NULL;
+}
+#endif
 #endif
 
 #if HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1
@@ -220,8 +253,13 @@ void* hz6_allocator_preload_midpage_malloc_skip_transfer(Hz6Allocator* allocator
   Hz6ObjectDescriptor* descriptor = NULL;
   hz6_toy_small_hotpath_diag_malloc_fast_attempt(
       allocator, HZ6_FRONT_MIDPAGE, class_id);
+#if HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_L1
+  void* ptr = hz6_allocator_midpage_direct_local_reuse_trusted_class(
+      allocator, class_id, &descriptor);
+#else
   void* ptr = hz6_allocator_direct_local_reuse(allocator, class_id,
                                                &descriptor);
+#endif
   if (ptr) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.midpage_active_map_register_direct;
@@ -300,8 +338,13 @@ void* hz6_allocator_preload_midpage_malloc_class_skip_transfer(
   Hz6ObjectDescriptor* descriptor = NULL;
   hz6_toy_small_hotpath_diag_malloc_fast_attempt(
       allocator, HZ6_FRONT_MIDPAGE, class_id);
+#if HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_L1
+  void* ptr = hz6_allocator_midpage_direct_local_reuse_trusted_class(
+      allocator, class_id, &descriptor);
+#else
   void* ptr = hz6_allocator_direct_local_reuse(allocator, class_id,
                                                &descriptor);
+#endif
   if (ptr) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.midpage_active_map_register_direct;

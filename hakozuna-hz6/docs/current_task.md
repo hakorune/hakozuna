@@ -38,7 +38,56 @@ Archived chronological ledger:
   archive/current_task_2026-06_history.md
 ```
 
-## Current Continuation: MidPageBoundaryFused-L1
+## Current Continuation: MidPageDirectLocalReuseTrustedClass-L1
+
+```text
+latest continuation:
+  Add default-off MidPage preload-boundary local-reuse success-path control:
+    HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_L1=1
+
+design:
+  The selected MidPage preload boundary already knows allocator/class and
+  passes a descriptor out pointer.  The control keeps descriptor class,
+  generation, and trusted-owner activation validation, but skips the generic
+  direct-local-reuse entry checks for this known MidPage path.
+
+acceptance:
+  Must pass focused/fixed speed and RSS guards before any default discussion.
+
+raw:
+  private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_004211
+  private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_004350
+  private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_004406
+  private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_004427
+
+read:
+  source-run route-after-maps retest:
+    Existing runroute controls are not viable on current selected.  Stats raw
+    showed runroute hit=0 and only fallback attempts, while RSS rose by roughly
+    44-55 MiB on focused/fixed rows due to the additional source-block route
+    indexes.  Keep this lane closed for default.
+
+  repeat-15 no-stats:
+    16..256      selected 57.358M, trusted-class 57.454M
+    16..4096     selected 36.187M, trusted-class 35.978M
+    1024..4096   selected 33.424M, trusted-class 33.752M
+    4096..16384  selected 44.338M, trusted-class 45.576M
+    fixed_4k     selected 31.693M, trusted-class 32.163M
+    fixed_8k     selected 41.861M, trusted-class 43.045M
+    fixed_16k    selected 44.036M, trusted-class 45.256M
+
+  stats+diagnostics repeat-3:
+    fail=0 and RSS/payload attribution is stable.  Diagnostics shape is not
+    uniformly positive: 16..256 and 16..4096 regress, while 1024..4096 and
+    fixed rows improve.
+
+decision:
+  Keep default-off for now, but retain as a promising selected-family control.
+  It improves target/fixed production rows without raising RSS, but the
+  16..4096 guard needs broader confirmation before promotion.
+```
+
+## Recent Continuation: MidPageBoundaryFused-L1
 
 ```text
 latest continuation:

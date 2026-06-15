@@ -754,6 +754,14 @@
 #define HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1 0
 #endif
 
+#ifndef HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_L1
+/* Candidate MidPage preload-boundary success-path shape.  The caller has
+ * already selected a valid MidPage class and passes a non-null descriptor out
+ * pointer, so the local-reuse helper can avoid generic entry checks while
+ * preserving descriptor activation validation. */
+#define HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_L1 0
+#endif
+
 #ifndef HZ6_DIRECT_LOCAL_FREE_RAW_PUSH_L1
 /* Candidate production trusted-free shortcut.  Diagnostic and cold-retire
  * builds keep the wrapper path so frontcache counters and retire hooks remain
