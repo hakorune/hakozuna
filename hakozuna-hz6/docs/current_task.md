@@ -91,6 +91,7 @@ Adaptive alias smoke:
 Calloc large-real profile:
   private/raw-results/linux/hz6_preload_calloc_audit_20260616_044759
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_044958
+  private/raw-results/linux/hz6_preload_calloc_cross_20260616_045446
 
 Details:
   archive/current_task_2026-06-16_adaptive_profile_snapshot.md
@@ -120,5 +121,7 @@ Default no-go/control-only without substantially different evidence:
 2. Treat adaptive-4k and adaptive-8k as fixed-boundary profile lanes.
 3. Treat calloc-large-real as a large calloc-heavy RSS/speed profile, not a
    selected/default lane.
-4. Before any selected/default change, update stable docs and archive long logs.
+4. Next optimization should target selected-safe code shape or a new narrow
+   profile; do not promote broad real-calloc behavior.
+5. Before any selected/default change, update stable docs and archive long logs.
 ```

@@ -546,6 +546,7 @@ Calloc large-real profile follow-up:
 ```text
 hakozuna-hz6/private/raw-results/linux/hz6_preload_calloc_audit_20260616_044759
 hakozuna-hz6/private/raw-results/linux/hz6_preload_profile_frontier_20260616_044958
+hakozuna-hz6/private/raw-results/linux/hz6_preload_calloc_cross_20260616_045446
 ```
 
 | row | selected | calloc-large-real | read |
@@ -556,6 +557,14 @@ hakozuna-hz6/private/raw-results/linux/hz6_preload_profile_frontier_20260616_044
 | `16..4096` guard | `42.578M / 79.62 MiB` | `42.583M / 79.62 MiB` | flat |
 | `4096..16384` guard | `45.677M / 94.38 MiB` | `46.087M / 94.25 MiB` | flat/slightly positive |
 | `fixed_16k` guard | `42.858M / 93.00 MiB` | `41.754M / 93.12 MiB` | weak |
+
+Cross-allocator calloc-heavy repeat-3:
+
+| row | hz6 selected | hz6 calloc-large-real | best non-HZ6 speed | read |
+| --- | ---: | ---: | ---: | --- |
+| `calloc64k` | `6.552M / 26.50 MiB` | `6.979M / 6.75 MiB` | `tcmalloc 9.801M / 6.75 MiB` | HZ6 profile improves speed/RSS but trails HZ3/HZ4/tcmalloc speed |
+| `calloc128k` | `4.147M / 26.50 MiB` | `4.618M / 7.25 MiB` | `tcmalloc 5.109M / 7.25 MiB` | HZ6 profile closes much of the speed gap and cuts RSS |
+| `calloc256k` | `2.161M / 27.12 MiB` | `2.428M / 7.50 MiB` | `tcmalloc 2.583M / 7.88 MiB` | HZ6 profile is close to HZ4/tcmalloc speed with lower RSS than tcmalloc |
 
 Decision: keep `hz6-calloc-large-real-target` as a large calloc-heavy profile.
 It is not selected/default because fixed guards still wobble and normal mixed
