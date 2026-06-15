@@ -344,6 +344,22 @@ variant_flags() {
     same_owner_fast)
       hz6_preload_replace_define flags HZ6_SAME_OWNER_FAST_L1 1
       ;;
+    same_owner_trusted)
+      hz6_preload_replace_define flags HZ6_SAME_OWNER_FAST_L1 1
+      hz6_preload_replace_define flags HZ6_SAME_OWNER_TRUSTED_LOCAL_FREE_L1 1
+      ;;
+    same_owner_trusted_class4)
+      hz6_preload_replace_define flags HZ6_SAME_OWNER_FAST_L1 1
+      hz6_preload_replace_define flags HZ6_SAME_OWNER_TRUSTED_LOCAL_FREE_L1 1
+      hz6_preload_replace_define flags HZ6_SAME_OWNER_FAST_MIN_CLASS 4
+      hz6_preload_replace_define flags HZ6_SAME_OWNER_FAST_MAX_CLASS 4
+      ;;
+    same_owner_trusted_class5)
+      hz6_preload_replace_define flags HZ6_SAME_OWNER_FAST_L1 1
+      hz6_preload_replace_define flags HZ6_SAME_OWNER_TRUSTED_LOCAL_FREE_L1 1
+      hz6_preload_replace_define flags HZ6_SAME_OWNER_FAST_MIN_CLASS 5
+      hz6_preload_replace_define flags HZ6_SAME_OWNER_FAST_MAX_CLASS 5
+      ;;
     preload_midpage_fast_free)
       hz6_preload_replace_define flags HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1 1
       ;;

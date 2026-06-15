@@ -2925,3 +2925,71 @@ decision:
   raises RSS by about 2.5 MiB, so page-kind all-free lookup is closed for
   selected/default.
 ```
+
+## Recent Recheck: Toy Direct Fast-Reuse Still Profile-Only
+
+```text
+goal:
+  Recheck Toy direct-class fast-reuse after trusted-class selected baseline,
+  because it has the largest remaining tiny/mid-small upside.
+
+A/B:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_013426
+  no-stats repeat-15, focused+fixed+tiny, iters=300000
+
+  selected vs preload_toy_direct_class_fast_reuse:
+    16..256:     57.499M -> 74.244M
+    16..4096:    35.747M -> 41.596M
+    1024..4096:  28.494M -> 37.729M
+    4096..16384: 45.074M -> 44.378M
+    fixed_4k:    31.685M -> 32.071M
+    fixed_8k:    38.159M -> 37.318M
+    fixed_16k:   44.259M -> 43.777M
+
+  narrower max gates:
+    max256/max512 improve some small/fixed guards but lose the selected
+    target more clearly. They are not balanced default candidates.
+
+decision:
+  Keep Toy direct-class fast-reuse in the Toy/small-boundary profile DSOs,
+  not selected default. The tiny/mid-small win is large, but the target and
+  fixed 8K/16K guards still reject promotion.
+```
+
+## Recent Recheck: Same-Owner Trusted Free Still No-Go
+
+```text
+goal:
+  Test the worker-suggested same-owner fast path with trusted local free. This
+  skips the second owner-equality check only after hz6_free() has already
+  proven local ownership.
+
+implementation:
+  Added runner variants:
+    same_owner_trusted
+    same_owner_trusted_class4
+    same_owner_trusted_class5
+
+A/B:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_013714
+  no-stats repeat-15, focused+fixed+tiny, iters=300000
+
+  selected vs same_owner_trusted:
+    16..256:     57.892M -> 57.066M
+    16..4096:    36.253M -> 35.870M
+    1024..4096:  33.722M -> 33.698M
+    4096..16384: 45.466M -> 44.775M
+    fixed_4k:    32.069M -> 31.992M
+    fixed_8k:    42.769M -> 43.172M
+    fixed_16k:   45.472M -> 45.957M
+
+  class gates:
+    class4 is mostly flat/down.
+    class5 helps 16..4096, 1024..4096, and fixed_8k, but still loses target
+    and fixed_16k.
+
+decision:
+  Keep HZ6_SAME_OWNER_FAST_L1=0 and
+  HZ6_SAME_OWNER_TRUSTED_LOCAL_FREE_L1=0 for selected/default. The duplicated
+  owner check is not the primary remaining wall.
+```
