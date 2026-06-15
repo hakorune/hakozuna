@@ -414,6 +414,16 @@ variant_flags() {
     toy_active_map_external)
       hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_EXTERNAL_L1 1
       ;;
+    frontcache_packed)
+      hz6_preload_replace_define flags HZ6_FRONTCACHE_PACKED_META_L1 1
+      ;;
+    sourceblock_packed)
+      hz6_preload_replace_define flags HZ6_SOURCE_BLOCK_PACKED_FLAGS_L1 1
+      ;;
+    frontcache_sourceblock_packed)
+      hz6_preload_replace_define flags HZ6_FRONTCACHE_PACKED_META_L1 1
+      hz6_preload_replace_define flags HZ6_SOURCE_BLOCK_PACKED_FLAGS_L1 1
+      ;;
     toy_addr_envelope)
       hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_MAP_ADDR_ENVELOPE_L1 1
       ;;
