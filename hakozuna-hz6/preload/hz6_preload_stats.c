@@ -1200,6 +1200,8 @@ static void hz6_preload_print_stats(void) {
           "malloc_midpage_boundary_attempt=%zu "
           "malloc_midpage_boundary_hit=%zu "
           "malloc_midpage_boundary_fallback=%zu "
+          "malloc_realloc_boundary_slack_4k=%zu "
+          "malloc_realloc_boundary_slack_8k=%zu "
           "calloc_calls=%zu calloc_zero_bytes=%zu "
           "free_calls=%zu free_null=%zu "
           "free_reentry_real=%zu free_local_route_valid=%zu "
@@ -1223,6 +1225,10 @@ static void hz6_preload_print_stats(void) {
               &g_hz6_preload_phase_stats.malloc_midpage_boundary_hit),
           hz6_preload_phase_load(
               &g_hz6_preload_phase_stats.malloc_midpage_boundary_fallback),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.malloc_realloc_boundary_slack_4k),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.malloc_realloc_boundary_slack_8k),
           hz6_preload_phase_load(&g_hz6_preload_phase_stats.calloc_calls),
           hz6_preload_phase_load(
               &g_hz6_preload_phase_stats.calloc_zero_bytes),

@@ -217,6 +217,44 @@ decision:
   Remaining realloc copy pressure is boundary-crossing, not missed same-class
   in-place.  Any next behavior would be an allocation-policy/profile lane
   around boundary slack, not a realloc correctness shortcut.
+
+boundary slack profile:
+  Add default-off control:
+    HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_L1=1
+
+  behavior:
+    malloc(4096) -> allocate from MidPage 8K slot
+    malloc(8192) -> allocate from MidPage 32K slot
+
+  Add persistent profile builder:
+    hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_target.sh
+    output:
+      hakozuna-hz6/out/linux/hz6_preload_realloc_boundary_target/libhakozuna_hz6_preload.so
+
+  Add shared allocator aliases:
+    hz6-realloc-boundary-target / hz6_realloc_boundary_target
+
+  production A/B:
+    raw: private/raw-results/linux/hz6_realloc_boundary_slack_ab_20260615_230639
+    selected vs realloc_boundary_slack, no-stats, repeat-7, 300K:
+      fixed_4k:
+        31.931M -> 44.525M
+      fixed_8k:
+        41.961M -> 44.491M
+      4096..16384:
+        44.047M -> 44.540M
+      16..4096:
+        35.910M -> 35.402M
+      1024..4096:
+        33.517M -> 33.132M
+      fixed_16k:
+        44.519M -> 44.212M
+
+decision:
+  Keep realloc-boundary slack as a fixed-boundary profile/control DSO, not
+  selected default.  It is very strong for fixed_4k/fixed_8k realloc-growth
+  rows, but the mixed-small and fixed_16k guards are not clean enough for the
+  balanced default allocator.
 ```
 
 ## Previous Closeout: HZ6 Ubuntu Preload Wrapper Attribution-L1

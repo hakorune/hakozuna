@@ -993,6 +993,13 @@
 #define HZ6_PRELOAD_REAL_ALIGNED_PTR_TABLE_CAPACITY ((size_t)65536)
 #endif
 
+#ifndef HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_L1
+/* Default-off LD_PRELOAD profile/control.  Boundary-sized requests that are
+ * likely to be reallocated by small growth patterns can be placed into the
+ * next MidPage slot class so realloc(size + small_delta) stays in-place. */
+#define HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_L1 0
+#endif
+
 #ifndef HZ6_SMALL_RUN_ROUTE_DRYRUN_L1
 /* Diagnostic-only probe for a future SmallRunFront/TinyRunRoute design. */
 #define HZ6_SMALL_RUN_ROUTE_DRYRUN_L1 0

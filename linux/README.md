@@ -34,11 +34,14 @@ HZ6 also has profile/control LD_PRELOAD DSOs for workload-specific lanes:
 - `hakozuna-hz6/linux/run_hz6_preload_toy_target_ab.sh`
 - `hakozuna-hz6/linux/build_hz6_preload_aligned_target.sh`
 - `hakozuna-hz6/linux/run_hz6_preload_aligned_wrapper_audit.sh`
+- `hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_target.sh`
 
 These are not the selected default HZ6 allocator. In shared allocator matrices,
 use allocator name `hz6` for selected default, `hz6-toy-target` only when you
 explicitly want the Toy/mid-small profile DSO, and `hz6-aligned-target` only
 when the workload is dominated by real aligned allocation fallbacks.
+Use `hz6-realloc-boundary-target` only for fixed-boundary workloads where
+4096-byte or 8192-byte allocations are commonly reallocated by a small growth.
 
 ## Quick Start
 
@@ -54,6 +57,7 @@ cd /path/to/hakozuna-win
 ./linux/run_linux_hz6_benchmark.sh --runs 1
 ./hakozuna-hz6/linux/run_hz6_preload_toy_target_ab.sh --runs 7
 ./hakozuna-hz6/linux/run_hz6_preload_aligned_wrapper_audit.sh --runs 3
+./hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_target.sh
 ```
 
 ## Ubuntu Lane Split
@@ -163,6 +167,19 @@ real `posix_memalign` / `aligned_alloc` fallback pointers so `free()` can skip
 the HZ6 route lookup and call real free directly.  It is useful for aligned-heavy
 workloads but is not selected default because mixed/fixed guards reject the
 extra free-side gate.  Use `hz6-aligned-target` in shared compare matrices only
+for that profile.
+
+The realloc-boundary profile DSO is built by:
+
+```bash
+./hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_target.sh
+```
+
+It enables `HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_L1=1`, a control that maps
+4096-byte allocations to the 8K MidPage slot and 8192-byte allocations to the
+32K MidPage slot.  This can remove copy-heavy fixed-boundary realloc patterns,
+but it is not selected default because broad mixed-small guards do not cleanly
+promote it.  Use `hz6-realloc-boundary-target` in shared compare matrices only
 for that profile.
 
 ## HZ5 Full-Preload Research Lanes
