@@ -98,8 +98,8 @@ Fixed-boundary/fixed-cost profile repeats:
   private/raw-results/linux/hz6_fixed_boundary_profile_frontier_20260616_061328
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_055101
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_055648
-  private/raw-results/linux/hz6_static_table_trim_ab_20260616_055723
-  private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_055752
+  private/raw-results/linux/hz6_static_table_trim_ab_20260616_061733
+  private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_061459
   private/raw-results/linux/hz6_ubuntu_selected_balance_20260616_060238
   private/raw-results/linux/hz6_ubuntu_size_slices_20260616_060255
 

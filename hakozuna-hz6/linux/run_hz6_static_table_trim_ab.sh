@@ -10,6 +10,7 @@ ROWS_CSV="${ROWS:-focused}"
 VARIANTS_CSV="${VARIANTS:-selected,floor_prev,route65536,frontcache8192,route131072,desc32768,source4096,wide_l0}"
 OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_static_table_trim_ab_$(date +%Y%m%d_%H%M%S)}"
 SKIP_BENCH_BUILD=0
+ENABLE_STATS=1
 
 source "${ROOT_DIR}/hakozuna-hz6/linux/hz6_preload_flags.sh"
 
@@ -27,13 +28,16 @@ Options:
   --variants CSV    variants to build/run
   --outdir DIR      output directory
   --skip-bench      reuse existing benchmark binary
+  --no-stats        production-shape run; do not preserve phase counters
+  --stats           stats run with failure/source counters (default)
   --help            show this message
 
 Variants:
   selected, floor_prev, map_prev, route65536, route131072, desc8192_only, desc12288_only,
   desc32768, source1024_only, source4096, desc8192_source1024,
   desc12288_source1024,
-  toy_map16384, toy_map32768, midpage_map8192, midpage_map16384,
+  toy_map8192, toy_map16384, toy_map32768, midpage_map4096, midpage_map8192,
+  midpage_map16384, toy_map8192_midpage_map4096,
   toy_map16384_midpage_map8192,
   frontcache8192, wide_l0
 EOF
@@ -73,6 +77,14 @@ while [[ $# -gt 0 ]]; do
       SKIP_BENCH_BUILD=1
       shift
       ;;
+    --no-stats)
+      ENABLE_STATS=0
+      shift
+      ;;
+    --stats)
+      ENABLE_STATS=1
+      shift
+      ;;
     --help|-h)
       usage
       exit 0
@@ -89,7 +101,9 @@ variant_flags() {
   local variant="$1"
   local flags=()
   hz6_preload_effective_selected_cflags flags 1
-  hz6_preload_preserve_phase_counters flags
+  if [[ "$ENABLE_STATS" -ne 0 ]]; then
+    hz6_preload_preserve_phase_counters flags
+  fi
   case "$variant" in
     selected)
       ;;
@@ -147,17 +161,27 @@ variant_flags() {
       hz6_preload_replace_define flags HZ6_OBJECT_DESCRIPTOR_CAPACITY 12288
       hz6_preload_replace_define flags HZ6_SOURCE_BLOCK_CAPACITY 1024
       ;;
+    toy_map8192)
+      hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY 8192
+      ;;
     toy_map16384)
       hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY 16384
       ;;
     toy_map32768)
       hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY 32768
       ;;
+    midpage_map4096)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY 4096
+      ;;
     midpage_map8192)
       hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY 8192
       ;;
     midpage_map16384)
       hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY 16384
+      ;;
+    toy_map8192_midpage_map4096)
+      hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY 8192
+      hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY 4096
       ;;
     toy_map16384_midpage_map8192)
       hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY 16384
@@ -195,9 +219,15 @@ run_once() {
   local so="${OUTDIR}/build/${variant}/libhakozuna_hz6_preload.so"
   local log="${OUTDIR}/${row}/${run_id}_${variant}.log"
   mkdir -p "${OUTDIR}/${row}"
-  env HZ6_PRELOAD_STATS=1 LD_PRELOAD="$so" \
-    "$BENCH" 4 "$ITERS" "$WS" "$min_size" "$max_size" \
-    > "$log" 2>&1
+  if [[ "$ENABLE_STATS" -ne 0 ]]; then
+    env HZ6_PRELOAD_STATS=1 LD_PRELOAD="$so" \
+      "$BENCH" 4 "$ITERS" "$WS" "$min_size" "$max_size" \
+      > "$log" 2>&1
+  else
+    env LD_PRELOAD="$so" \
+      "$BENCH" 4 "$ITERS" "$WS" "$min_size" "$max_size" \
+      > "$log" 2>&1
+  fi
 }
 
 if [[ "$SKIP_BENCH_BUILD" -ne 1 ]]; then
@@ -216,6 +246,7 @@ mkdir -p "$OUTDIR"
   echo "ws=${WS}"
   echo "rows=${ROWS_CSV}"
   echo "variants=${VARIANTS_CSV}"
+  echo "stats=${ENABLE_STATS}"
   echo "bench=${BENCH}"
 } > "${OUTDIR}/README.log"
 
