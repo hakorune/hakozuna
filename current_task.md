@@ -94,6 +94,19 @@ Next allocator work:
     read: selected remains the balanced default; profile DSOs are now cleanly
       positioned for known workload shapes. RSS is roughly flat versus selected,
       so the profile win is mostly throughput.
+  Latest HZ6 Ubuntu hygiene:
+    hakozuna-hz6/linux/hz6_preload_aliases.sh now centralizes profile alias
+    autobuild hooks for selected-balance and fixed-size matrix runners.
+    run_hz6_midpage_payload_trim_ab.sh accepts small_boundary_fast as the
+    A/B alias for small_boundary_raw_push_trusted_owner.
+    validation raws:
+      hakozuna-hz6/private/raw-results/linux/hz6_small_boundary_fast_alias_smoke_20260616_014954
+      hakozuna-hz6/private/raw-results/linux/hz6_matrix_alias_helper_source_smoke_20260616_015014
+      hakozuna-hz6/private/raw-results/linux/hz6_size_alias_helper_source_smoke_20260616_015021
+  Latest HZ6 Ubuntu profile decomposition:
+    hakozuna-hz6/private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_014717
+    read: raw-push alone is weak; the profile win comes from the
+      trusted-owner/raw-push combination. Keep it profile-only.
 ```
 
 ## Recent Cleanup Commits

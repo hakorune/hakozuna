@@ -3079,3 +3079,107 @@ decision:
   fixed_8k profile. RSS stays roughly in the selected range, so these profiles
   mainly buy speed rather than peak-RSS reduction.
 ```
+
+## Recent Cleanup: HZ6 Profile Alias Helper
+
+```text
+goal:
+  Keep profile DSO lane wiring clean before adding more profile variants. The
+  selected-balance and fixed-size matrix runners had duplicated dash/underscore
+  alias build checks.
+
+implementation:
+  Added:
+    linux/hz6_preload_aliases.sh
+
+  Updated:
+    linux/run_hz6_ubuntu_selected_balance_matrix.sh
+    linux/run_hz6_ubuntu_size_slices_matrix.sh
+    linux/run_hz6_midpage_payload_trim_ab.sh
+
+  The matrix runners now call:
+    hz6_preload_build_requested_aliases "$ALLOCATORS" "$ROOT_DIR"
+
+  The A/B runner now accepts:
+    small_boundary_fast
+  as an alias for:
+    small_boundary_raw_push_trusted_owner
+
+validation:
+  bash -n passed for the helper and all touched runners.
+  git diff --check passed.
+  Alias predicate smoke passed for dash/underscore aliases.
+
+  Matrix source smoke:
+    private/raw-results/linux/hz6_matrix_alias_helper_source_smoke_20260616_015014
+    private/raw-results/linux/hz6_size_alias_helper_source_smoke_20260616_015021
+
+  A/B alias smoke:
+    private/raw-results/linux/hz6_small_boundary_fast_alias_smoke_20260616_014954
+
+decision:
+  This is hygiene only; selected flags and profile macro bundles are unchanged.
+  Future profile DSOs should add one alias entry in hz6_preload_aliases.sh and
+  the bench resolver, instead of duplicating build checks in each matrix runner.
+```
+
+## Recent Measurement: Small-Boundary Fast Component Split
+
+```text
+goal:
+  Decompose the current small-boundary-fast profile to avoid guessing which
+  profile-only controls are carrying the win.
+
+A/B:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_014717
+  no-stats repeat-9, focused+fixed+tiny, iters=300000
+
+  selected vs notable profile components:
+    16..256:
+      selected 58.086M
+      small_boundary_target 75.548M
+      small_boundary_trusted_owner 77.104M
+      small_boundary_fast 76.506M
+
+    16..4096:
+      selected 36.098M
+      small_boundary_target 34.187M
+      small_boundary_trusted_owner 40.278M
+      small_boundary_fast 42.365M
+
+    1024..4096:
+      selected 33.109M
+      small_boundary_target 38.127M
+      small_boundary_trusted_owner 39.060M
+      small_boundary_fast 39.063M
+
+    4096..16384:
+      selected 44.713M
+      small_boundary_target 44.247M
+      small_boundary_trusted_owner 44.227M
+      small_boundary_fast 45.561M
+
+    fixed_4k:
+      selected 31.728M
+      small_boundary_target 46.389M
+      small_boundary_trusted_owner 47.440M
+      small_boundary_fast 47.056M
+
+    fixed_8k:
+      selected 42.697M
+      small_boundary_target 38.789M
+      small_boundary_trusted_owner 42.525M
+      small_boundary_fast 45.727M
+
+    fixed_16k:
+      selected 44.795M
+      small_boundary_target 45.201M
+      small_boundary_trusted_owner 45.438M
+      small_boundary_fast 46.086M
+
+decision:
+  Raw-push alone is not the lever. The useful profile shape is the
+  trusted-owner/raw-push combination: it carries target, fixed_8k, and fixed_16k.
+  Trusted-owner-only is slightly better on fixed_4k, so a future exact fixed_4k
+  profile can be considered, but selected/default remains unchanged.
+```

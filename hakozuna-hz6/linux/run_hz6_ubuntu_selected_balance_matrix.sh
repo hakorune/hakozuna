@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+source "${ROOT_DIR}/hakozuna-hz6/linux/hz6_preload_aliases.sh"
 ARCH="${ARCH:-x86_64}"
 RUNS="${RUNS:-5}"
 ITERS="${ITERS:-500000}"
@@ -81,38 +82,7 @@ if [[ "$SKIP_BUILDS" -ne 1 ]]; then
   "${ROOT_DIR}/linux/build_linux_release_lane.sh" --arch "$ARCH"
   "${ROOT_DIR}/linux/build_linux_hz5_preload_full.sh" --arch "$ARCH"
   "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh"
-  if [[ ",${ALLOCATORS}," == *",hz6-toy-target,"* ||
-        ",${ALLOCATORS}," == *",hz6_toy_target,"* ]]; then
-    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_toy_target.sh"
-  fi
-  if [[ ",${ALLOCATORS}," == *",hz6-aligned-target,"* ||
-        ",${ALLOCATORS}," == *",hz6_aligned_target,"* ]]; then
-    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_aligned_target.sh"
-  fi
-  if [[ ",${ALLOCATORS}," == *",hz6-small-boundary-target,"* ||
-        ",${ALLOCATORS}," == *",hz6_small_boundary_target,"* ]]; then
-    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_small_boundary_target.sh"
-  fi
-  if [[ ",${ALLOCATORS}," == *",hz6-small-boundary-fast-target,"* ||
-        ",${ALLOCATORS}," == *",hz6_small_boundary_fast_target,"* ]]; then
-    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_small_boundary_fast_target.sh"
-  fi
-  if [[ ",${ALLOCATORS}," == *",hz6-midpage-trusted-class,"* ||
-        ",${ALLOCATORS}," == *",hz6_midpage_trusted_class,"* ]]; then
-    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_midpage_trusted_class_target.sh"
-  fi
-  if [[ ",${ALLOCATORS}," == *",hz6-realloc-boundary-target,"* ||
-        ",${ALLOCATORS}," == *",hz6_realloc_boundary_target,"* ]]; then
-    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_target.sh"
-  fi
-  if [[ ",${ALLOCATORS}," == *",hz6-realloc-boundary-4k-target,"* ||
-        ",${ALLOCATORS}," == *",hz6_realloc_boundary_4k_target,"* ]]; then
-    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_4k_target.sh"
-  fi
-  if [[ ",${ALLOCATORS}," == *",hz6-realloc-boundary-8k-target,"* ||
-        ",${ALLOCATORS}," == *",hz6_realloc_boundary_8k_target,"* ]]; then
-    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_8k_target.sh"
-  fi
+  hz6_preload_build_requested_aliases "$ALLOCATORS" "$ROOT_DIR"
   "${ROOT_DIR}/linux/build_linux_bench_compare.sh" --arch "$ARCH" \
     --out-dir "${ROOT_DIR}/bench/out/linux/${ARCH}"
 fi
