@@ -38,6 +38,48 @@ Archived chronological ledger:
   archive/current_task_2026-06_history.md
 ```
 
+## Current Continuation: PageKindFreeSelectorDryRun-L1
+
+```text
+latest continuation:
+  Add diagnostic-only allocator-local page-kind selector:
+    HZ6_PAGE_KIND_FREE_SELECTOR_DRYRUN_L1=1
+
+design:
+  Active-map registration records an advisory page kind:
+    unknown / toy / midpage / mixed
+
+  preload free probes the advisory table once and only compares it with the
+  actual Toy/MidPage active-map hit.  It does not change free ordering, does
+  not return route results, and does not bypass descriptor validation.
+
+raw:
+  private/raw-results/linux/hz6_page_kind_selector_dryrun_20260616_000420
+
+read:
+  repeat-3, stats+diagnostics, focused+fixed:
+    wrong_toy_page_mid_hit=0
+    wrong_midpage_page_toy_hit=0
+
+  representative selector distribution:
+    16..4096:
+      probe=737475 toy=734782 midpage=12 mixed=255
+      toy_hit=734482 midpage_hit=12 wrong=0
+    4096..16384:
+      probe=737319 toy=6 midpage=736514 mixed=600
+      toy_hit=6 midpage_hit=735182 wrong=0
+    fixed_4k:
+      probe=748824 toy=694204 midpage=780 mixed=50673
+      toy_hit=694127 midpage_hit=780 wrong=0
+
+decision:
+  This is promising as a free-order selector classifier, not as selected code.
+  The dry-run lookup/counter path is intentionally expensive and lowered
+  throughput in all rows.  Next work should test a behavior A/B that uses this
+  advisory page-kind only to skip the wrong first active-map probe, with all
+  stale/unknown/mixed cases falling back to the selected current-bias order.
+```
+
 ## Recent Closeout: HZ6 Ubuntu RealAlignedFreeSkip-L1
 
 ```text

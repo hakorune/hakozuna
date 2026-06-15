@@ -1,6 +1,7 @@
 #include "hz6_allocator.h"
 #include "hz6_allocator_api_init.h"
 #include "hz6_allocator_midpage_active_map.h"
+#include "hz6_allocator_page_kind.h"
 #include "hz6_allocator_toy_small_diag.h"
 #include "hz6_midpage_front.h"
 #include "hz6_profiles.h"
@@ -243,6 +244,54 @@ static int hz6_preload_midpage_hint_maybe(const void* ptr) {
   return addr >= g_hz6_preload_midpage_hint_min &&
          addr <= g_hz6_preload_midpage_hint_max;
 }
+#endif
+
+#if HZ6_PAGE_KIND_FREE_SELECTOR_DRYRUN_L1
+static uint16_t hz6_preload_page_kind_selector_probe(Hz6Allocator* allocator,
+                                                     const void* ptr) {
+  uint16_t kind = hz6_allocator_page_kind_lookup(allocator, ptr);
+  hz6_preload_phase_count(
+      &g_hz6_preload_phase_stats.free_page_kind_selector_probe);
+  if (kind == HZ6_PAGE_KIND_TOY) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_page_kind_selector_toy);
+  } else if (kind == HZ6_PAGE_KIND_MIDPAGE) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_page_kind_selector_midpage);
+  } else if (kind == HZ6_PAGE_KIND_MIXED) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_page_kind_selector_mixed);
+  } else {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_page_kind_selector_unknown);
+  }
+  return kind;
+}
+
+static void hz6_preload_page_kind_selector_note_toy_hit(uint16_t kind) {
+  if (kind == HZ6_PAGE_KIND_TOY) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_page_kind_selector_toy_hit);
+  } else if (kind == HZ6_PAGE_KIND_MIDPAGE) {
+    hz6_preload_phase_count(&g_hz6_preload_phase_stats
+                                 .free_page_kind_selector_wrong_midpage_page_toy_hit);
+  }
+}
+
+static void hz6_preload_page_kind_selector_note_midpage_hit(uint16_t kind) {
+  if (kind == HZ6_PAGE_KIND_MIDPAGE) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_page_kind_selector_midpage_hit);
+  } else if (kind == HZ6_PAGE_KIND_TOY) {
+    hz6_preload_phase_count(&g_hz6_preload_phase_stats
+                                 .free_page_kind_selector_wrong_toy_page_mid_hit);
+  }
+}
+#else
+#define hz6_preload_page_kind_selector_probe(allocator, ptr) \
+  (HZ6_PAGE_KIND_UNKNOWN)
+#define hz6_preload_page_kind_selector_note_toy_hit(kind) ((void)(kind))
+#define hz6_preload_page_kind_selector_note_midpage_hit(kind) ((void)(kind))
 #endif
 
 static Hz6ProfileId hz6_preload_profile_from_env(void) {
@@ -557,6 +606,7 @@ void free(void* ptr) {
 #endif
   g_hz6_preload_reentry = 1;
   Hz6Allocator* allocator = hz6_preload_allocator();
+  uint16_t page_kind = hz6_preload_page_kind_selector_probe(allocator, ptr);
 #if HZ6_PRELOAD_FREE_MIDPAGE_HINT_ACTIVE_L1
   int midpage_hint_would_first = hz6_preload_midpage_hint_maybe(ptr);
   hz6_preload_phase_count(&g_hz6_preload_phase_stats.free_midpage_hint_probe);
@@ -572,6 +622,7 @@ void free(void* ptr) {
     if (hz6_midpage_active_map_try_free(allocator, ptr)) {
       hz6_preload_phase_count(
           &g_hz6_preload_phase_stats.free_midpage_active_map_hit);
+      hz6_preload_page_kind_selector_note_midpage_hit(page_kind);
       hz6_preload_phase_count(
           &g_hz6_preload_phase_stats.free_midpage_hint_true_midpage);
       g_hz6_preload_reentry = 0;
@@ -584,6 +635,7 @@ void free(void* ptr) {
     if (hz6_toy_small_active_map_try_free(allocator, ptr)) {
       hz6_preload_phase_count(
           &g_hz6_preload_phase_stats.free_toy_active_map_hit);
+      hz6_preload_page_kind_selector_note_toy_hit(page_kind);
       hz6_preload_phase_count(
           &g_hz6_preload_phase_stats.free_midpage_hint_false_positive);
       g_hz6_preload_reentry = 0;
@@ -597,6 +649,7 @@ void free(void* ptr) {
     if (hz6_toy_small_active_map_try_free(allocator, ptr)) {
       hz6_preload_phase_count(
           &g_hz6_preload_phase_stats.free_toy_active_map_hit);
+      hz6_preload_page_kind_selector_note_toy_hit(page_kind);
       g_hz6_preload_reentry = 0;
       return;
     }
@@ -607,6 +660,7 @@ void free(void* ptr) {
     if (hz6_midpage_active_map_try_free(allocator, ptr)) {
       hz6_preload_phase_count(
           &g_hz6_preload_phase_stats.free_midpage_active_map_hit);
+      hz6_preload_page_kind_selector_note_midpage_hit(page_kind);
       hz6_preload_phase_count(
           &g_hz6_preload_phase_stats.free_midpage_hint_missed_midpage);
       g_hz6_preload_reentry = 0;
@@ -621,6 +675,7 @@ void free(void* ptr) {
   if (hz6_midpage_active_map_try_free(allocator, ptr)) {
     hz6_preload_phase_count(
         &g_hz6_preload_phase_stats.free_midpage_active_map_hit);
+    hz6_preload_page_kind_selector_note_midpage_hit(page_kind);
     g_hz6_preload_reentry = 0;
     return;
   }
@@ -631,6 +686,7 @@ void free(void* ptr) {
   if (hz6_toy_small_active_map_try_free(allocator, ptr)) {
     hz6_preload_phase_count(
         &g_hz6_preload_phase_stats.free_toy_active_map_hit);
+    hz6_preload_page_kind_selector_note_toy_hit(page_kind);
 #if HZ6_PRELOAD_FREE_MIDPAGE_HINT_ACTIVE_L1
     if (midpage_hint_would_first) {
       hz6_preload_phase_count(
@@ -648,6 +704,7 @@ void free(void* ptr) {
     if (hz6_midpage_active_map_try_free(allocator, ptr)) {
       hz6_preload_phase_count(
           &g_hz6_preload_phase_stats.free_midpage_active_map_hit);
+      hz6_preload_page_kind_selector_note_midpage_hit(page_kind);
       g_hz6_preload_reentry = 0;
       return;
     }
@@ -658,6 +715,7 @@ void free(void* ptr) {
     if (hz6_toy_small_active_map_try_free(allocator, ptr)) {
       hz6_preload_phase_count(
           &g_hz6_preload_phase_stats.free_toy_active_map_hit);
+      hz6_preload_page_kind_selector_note_toy_hit(page_kind);
       g_hz6_preload_reentry = 0;
       return;
     }
@@ -669,6 +727,7 @@ void free(void* ptr) {
     if (hz6_toy_small_active_map_try_free(allocator, ptr)) {
       hz6_preload_phase_count(
           &g_hz6_preload_phase_stats.free_toy_active_map_hit);
+      hz6_preload_page_kind_selector_note_toy_hit(page_kind);
       g_hz6_preload_reentry = 0;
       return;
     }
@@ -679,6 +738,7 @@ void free(void* ptr) {
     if (hz6_midpage_active_map_try_free(allocator, ptr)) {
       hz6_preload_phase_count(
           &g_hz6_preload_phase_stats.free_midpage_active_map_hit);
+      hz6_preload_page_kind_selector_note_midpage_hit(page_kind);
       g_hz6_preload_reentry = 0;
       return;
     }
@@ -693,6 +753,7 @@ void free(void* ptr) {
     if (hz6_midpage_active_map_try_free(allocator, ptr)) {
       hz6_preload_phase_count(
           &g_hz6_preload_phase_stats.free_midpage_active_map_hit);
+      hz6_preload_page_kind_selector_note_midpage_hit(page_kind);
       g_hz6_preload_reentry = 0;
       return;
     }
@@ -703,6 +764,7 @@ void free(void* ptr) {
     if (hz6_toy_small_active_map_try_free(allocator, ptr)) {
       hz6_preload_phase_count(
           &g_hz6_preload_phase_stats.free_toy_active_map_hit);
+      hz6_preload_page_kind_selector_note_toy_hit(page_kind);
       g_hz6_preload_reentry = 0;
       return;
     }
@@ -714,6 +776,7 @@ void free(void* ptr) {
     if (hz6_toy_small_active_map_try_free(allocator, ptr)) {
       hz6_preload_phase_count(
           &g_hz6_preload_phase_stats.free_toy_active_map_hit);
+      hz6_preload_page_kind_selector_note_toy_hit(page_kind);
       g_hz6_preload_reentry = 0;
       return;
     }
@@ -724,6 +787,7 @@ void free(void* ptr) {
     if (hz6_midpage_active_map_try_free(allocator, ptr)) {
       hz6_preload_phase_count(
           &g_hz6_preload_phase_stats.free_midpage_active_map_hit);
+      hz6_preload_page_kind_selector_note_midpage_hit(page_kind);
       g_hz6_preload_reentry = 0;
       return;
     }
@@ -736,6 +800,7 @@ void free(void* ptr) {
   if (hz6_toy_small_active_map_try_free(allocator, ptr)) {
     hz6_preload_phase_count(
         &g_hz6_preload_phase_stats.free_toy_active_map_hit);
+    hz6_preload_page_kind_selector_note_toy_hit(page_kind);
 #if HZ6_PRELOAD_FREE_MIDPAGE_HINT_ACTIVE_L1
     if (midpage_hint_would_first) {
       hz6_preload_phase_count(
@@ -751,6 +816,7 @@ void free(void* ptr) {
   if (hz6_midpage_active_map_try_free(allocator, ptr)) {
     hz6_preload_phase_count(
         &g_hz6_preload_phase_stats.free_midpage_active_map_hit);
+    hz6_preload_page_kind_selector_note_midpage_hit(page_kind);
 #if HZ6_PRELOAD_FREE_MIDPAGE_HINT_ACTIVE_L1
     if (midpage_hint_would_first) {
       hz6_preload_phase_count(

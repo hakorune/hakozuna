@@ -64,6 +64,13 @@ typedef struct Hz6SourceBlock {
 #endif
 } Hz6SourceBlock;
 
+#if HZ6_PAGE_KIND_FREE_SELECTOR_DRYRUN_L1
+typedef struct Hz6PageKindEntry {
+  uintptr_t page;
+  uint16_t kind;
+} Hz6PageKindEntry;
+#endif
+
 static inline size_t hz6_source_block_ref_count(
     const Hz6SourceBlock* block) {
   return block ? atomic_load_explicit(&block->ref_count,
@@ -384,6 +391,9 @@ struct Hz6Allocator {
   Hz6MidPageActiveMapEntry
       midpage_active_map[HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY];
 #endif
+#endif
+#if HZ6_PAGE_KIND_FREE_SELECTOR_DRYRUN_L1
+  Hz6PageKindEntry page_kind_selector[HZ6_PAGE_KIND_FREE_SELECTOR_CAPACITY];
 #endif
 #if HZ6_DIAGNOSTIC_PROBES
   size_t diagnostic_descriptor_live_current;

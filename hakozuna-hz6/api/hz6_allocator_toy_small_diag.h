@@ -1,6 +1,8 @@
 #ifndef HZ6_ALLOCATOR_TOY_SMALL_DIAG_H
 #define HZ6_ALLOCATOR_TOY_SMALL_DIAG_H
 
+#include "hz6_allocator_page_kind.h"
+
 #include "hz6_allocator.h"
 
 #include "../fronts/hz6_front.h"
@@ -320,6 +322,7 @@ static inline void hz6_toy_small_active_map_register(
     base_entry->generation = descriptor->generation;
     base_entry->class_id = class_id;
     base_entry->front_id = front_id;
+    hz6_allocator_page_kind_note(allocator, ptr, HZ6_PAGE_KIND_TOY);
     return;
   }
 #endif
@@ -376,6 +379,7 @@ static inline void hz6_toy_small_active_map_register(
   entry->generation = descriptor->generation;
   entry->class_id = class_id;
   entry->front_id = front_id;
+  hz6_allocator_page_kind_note(allocator, ptr, HZ6_PAGE_KIND_TOY);
 #else
   (void)allocator;
   (void)front_id;

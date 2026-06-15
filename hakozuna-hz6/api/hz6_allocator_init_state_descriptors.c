@@ -30,6 +30,11 @@ void hz6_allocator_init_state_descriptors(Hz6Allocator* allocator) {
 #if HZ6_MIDPAGE_32K_COLD_RETIRE_L1
   allocator->midpage_32k_cold_retire_cursor = 0;
 #endif
+#if HZ6_PAGE_KIND_FREE_SELECTOR_DRYRUN_L1
+  for (size_t i = 0; i < HZ6_PAGE_KIND_FREE_SELECTOR_CAPACITY; ++i) {
+    allocator->page_kind_selector[i] = (Hz6PageKindEntry){0};
+  }
+#endif
 #if HZ6_THIN_DESCRIPTOR_L1
   allocator->next_descriptor_cold_index = 0;
   allocator->descriptor_cold_source_current = 0;

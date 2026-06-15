@@ -498,9 +498,13 @@ MidPage payload/cold-retire behavior is closed as control/no-go for default.
 Current-bias predicate variants and active-map capacity/layout follow-ups are
 closed as controls/no-go.
 
-Next work should use HZ6_UBUNTU_PRELOAD_LANES.md as the authoritative ledger
-and start with a broader hot-path attribution refresh or a non-active-map
-preload boundary/code-shape lane.
+PageKindFreeSelectorDryRun-L1 is the current free-order follow-up.  It predicts
+Toy/MidPage pages from active-map registration without changing RouteLayer
+behavior.  Raw `hz6_page_kind_selector_dryrun_20260616_000420` had zero wrong
+Toy/MidPage hit classifications across focused+fixed rows.
+
+Next behavior A/B may skip only the predicted-wrong first active-map probe.
+Unknown/mixed/stale pages must keep selected current-bias order.
 ```
 
 ## Static Table Trim Promotion

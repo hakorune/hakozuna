@@ -927,6 +927,22 @@
 #define HZ6_PRELOAD_FREE_MIDPAGE_PAGE_HINT_PROBE_LIMIT 4
 #endif
 
+#ifndef HZ6_PAGE_KIND_FREE_SELECTOR_DRYRUN_L1
+/* Diagnostic-only allocator-local page-kind selector.  Active-map
+ * registration records whether a page most recently carried Toy, MidPage, or
+ * mixed live entries; preload free only compares the advisory prediction with
+ * the actual active-map hit and never changes ownership or routing behavior. */
+#define HZ6_PAGE_KIND_FREE_SELECTOR_DRYRUN_L1 0
+#endif
+
+#ifndef HZ6_PAGE_KIND_FREE_SELECTOR_CAPACITY
+#define HZ6_PAGE_KIND_FREE_SELECTOR_CAPACITY 32768
+#endif
+
+#ifndef HZ6_PAGE_KIND_FREE_SELECTOR_PROBE_LIMIT
+#define HZ6_PAGE_KIND_FREE_SELECTOR_PROBE_LIMIT 4
+#endif
+
 #ifndef HZ6_PRELOAD_MIDPAGE_MALLOC_SKIP_TRANSFER_L1
 /* Candidate preload-boundary MidPage malloc shortcut.  This keeps the selected
  * hz6_malloc() code shape clean while allowing a target DSO to skip the empty

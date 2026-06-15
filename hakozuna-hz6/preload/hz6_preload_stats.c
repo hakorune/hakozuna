@@ -990,6 +990,29 @@ static void hz6_preload_print_stats(void) {
           midpage_active_map_addr_envelope_skip,
           midpage_active_map_route_bypass);
 
+  fprintf(stderr,
+          "[HZ6_PRELOAD_PAGE_KIND_DETAIL] "
+          "free_page_kind_selector_probe=%zu "
+          "free_page_kind_selector_unknown=%zu "
+          "free_page_kind_selector_toy=%zu "
+          "free_page_kind_selector_midpage=%zu "
+          "free_page_kind_selector_mixed=%zu "
+          "free_page_kind_selector_toy_hit=%zu "
+          "free_page_kind_selector_midpage_hit=%zu "
+          "free_page_kind_selector_wrong_toy_page_mid_hit=%zu "
+          "free_page_kind_selector_wrong_midpage_page_toy_hit=%zu\n",
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_page_kind_selector_probe),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_page_kind_selector_unknown),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_page_kind_selector_toy),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_page_kind_selector_midpage),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_page_kind_selector_mixed),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_page_kind_selector_toy_hit),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_page_kind_selector_midpage_hit),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(
+              free_page_kind_selector_wrong_toy_page_mid_hit),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(
+              free_page_kind_selector_wrong_midpage_page_toy_hit));
+
   fprintf(stderr, "[HZ6_PRELOAD_FRONTCACHE_CLASS_DETAIL]");
   for (size_t class_id = 0; class_id < HZ6_STATS_CLASS_COUNT; ++class_id) {
     fprintf(stderr,

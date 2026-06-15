@@ -230,6 +230,9 @@ variant_flags() {
     current_bias_4x)
       hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_NUMERATOR 4
       ;;
+    page_kind_selector_dryrun)
+      hz6_preload_replace_define flags HZ6_PAGE_KIND_FREE_SELECTOR_DRYRUN_L1 1
+      ;;
     phase_count_on)
       hz6_preload_replace_define flags HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1 0
       ;;
@@ -576,6 +579,7 @@ def parse_stats(text):
             or line.startswith("[HZ6_PRELOAD_HOOK_DETAIL]")
             or line.startswith("[HZ6_PRELOAD_RUNMETA_DETAIL]")
             or line.startswith("[HZ6_PRELOAD_MIDPAGE_CLASS_DETAIL]")
+            or line.startswith("[HZ6_PRELOAD_PAGE_KIND_DETAIL]")
             or line.startswith("[HZ6_PRELOAD_MEMORY_ATTR]")
             or line.startswith("[HZ6_PRELOAD_SIZE_STATS]")
         ):
@@ -587,8 +591,8 @@ print(f"root: `{root}`\n")
 readme = (root / "README.log").read_text(errors="replace")
 stats_mode = readme.split("stats=", 1)[1].splitlines()[0] if "stats=" in readme else "unknown"
 print(f"stats: `{stats_mode}`\n")
-print("| row | variant | median ops/s | median peak MiB | median current MiB | scavenge count/result | payload MiB | active source blocks | fail | source_alloc | realloc copy | realloc same-class | realloc cross-class | realloc toy->mid | realloc mid8->mid32 | toy direct eligible | toy direct eligible 1025..4096 | toy direct enter | toy direct enter 1025..4096 | mid32_alloc | mid32_prefill | mid32_filled | mid32_front_push | toy4 fast | toy4 hit | toy4 front | toy4 pop | toy4 activate | toy4 free attempt | toy4 free success | toy4 map reg | toy4 collision | toy4 free hit | toy4 free base % | toy4 free avg probe | toy4 free max probe | runroute attempt | runroute hit | runroute prechecked | runroute fallback | retire attempt | retire scan | retire candidates | retire blocks | retire desc | retire MiB | retire blocked | retire fail |")
-print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+print("| row | variant | median ops/s | median peak MiB | median current MiB | scavenge count/result | payload MiB | active source blocks | fail | source_alloc | realloc copy | realloc same-class | realloc cross-class | realloc toy->mid | realloc mid8->mid32 | toy direct eligible | toy direct eligible 1025..4096 | toy direct enter | toy direct enter 1025..4096 | mid32_alloc | mid32_prefill | mid32_filled | mid32_front_push | toy4 fast | toy4 hit | toy4 front | toy4 pop | toy4 activate | toy4 free attempt | toy4 free success | toy4 map reg | toy4 collision | toy4 free hit | toy4 free base % | toy4 free avg probe | toy4 free max probe | runroute attempt | runroute hit | runroute prechecked | runroute fallback | retire attempt | retire scan | retire candidates | retire blocks | retire desc | retire MiB | retire blocked | retire fail | pagekind probe | pagekind toy | pagekind mid | pagekind mixed | pagekind toy hit | pagekind mid hit | pagekind wrong toy->mid | pagekind wrong mid->toy |")
+print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 for row in rows:
     for variant in variants:
         ops_values = []
@@ -637,6 +641,14 @@ for row in rows:
         retire_mib = 0.0
         retire_blocked = 0
         retire_fail = 0
+        pagekind_probe = 0
+        pagekind_toy = 0
+        pagekind_mid = 0
+        pagekind_mixed = 0
+        pagekind_toy_hit = 0
+        pagekind_mid_hit = 0
+        pagekind_wrong_toy_mid = 0
+        pagekind_wrong_mid_toy = 0
         for log in sorted((root / row).glob(f"*_{variant}.log")):
             text = log.read_text(errors="replace")
             ops = ops_re.search(text)
@@ -729,6 +741,18 @@ for row in rows:
             retire_fail += stats.get(
                 "midpage_32k_cold_retire_frontcache_remove_fail", 0
             )
+            pagekind_probe += stats.get("free_page_kind_selector_probe", 0)
+            pagekind_toy += stats.get("free_page_kind_selector_toy", 0)
+            pagekind_mid += stats.get("free_page_kind_selector_midpage", 0)
+            pagekind_mixed += stats.get("free_page_kind_selector_mixed", 0)
+            pagekind_toy_hit += stats.get("free_page_kind_selector_toy_hit", 0)
+            pagekind_mid_hit += stats.get("free_page_kind_selector_midpage_hit", 0)
+            pagekind_wrong_toy_mid += stats.get(
+                "free_page_kind_selector_wrong_toy_page_mid_hit", 0
+            )
+            pagekind_wrong_mid_toy += stats.get(
+                "free_page_kind_selector_wrong_midpage_page_toy_hit", 0
+            )
         median_ops = statistics.median(ops_values) if ops_values else 0.0
         median_peak = statistics.median(peak_values) if peak_values else 0.0
         median_current = statistics.median(current_values) if current_values else 0.0
@@ -757,6 +781,9 @@ for row in rows:
             f"{retire_attempt} | "
             f"{retire_scan} | {retire_candidates} | {retire_blocks} | "
             f"{retire_desc} | {retire_mib:.2f} | {retire_blocked} | "
-            f"{retire_fail} |"
+            f"{retire_fail} | {pagekind_probe} | {pagekind_toy} | "
+            f"{pagekind_mid} | {pagekind_mixed} | {pagekind_toy_hit} | "
+            f"{pagekind_mid_hit} | {pagekind_wrong_toy_mid} | "
+            f"{pagekind_wrong_mid_toy} |"
         )
 PY

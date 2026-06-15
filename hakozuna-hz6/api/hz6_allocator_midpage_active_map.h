@@ -1,6 +1,8 @@
 #ifndef HZ6_ALLOCATOR_MIDPAGE_ACTIVE_MAP_H
 #define HZ6_ALLOCATOR_MIDPAGE_ACTIVE_MAP_H
 
+#include "hz6_allocator_page_kind.h"
+
 #include "hz6_allocator.h"
 
 #include "../fronts/midpage/hz6_midpage_front.h"
@@ -161,6 +163,7 @@ static inline void hz6_midpage_active_map_register(
     base_entry->descriptor = descriptor;
     base_entry->generation = descriptor->generation;
     base_entry->class_id = class_id;
+    hz6_allocator_page_kind_note(allocator, ptr, HZ6_PAGE_KIND_MIDPAGE);
     return;
   }
 #endif
@@ -327,6 +330,7 @@ static inline void hz6_midpage_active_map_register(
   entry->descriptor = descriptor;
   entry->generation = descriptor->generation;
   entry->class_id = class_id;
+  hz6_allocator_page_kind_note(allocator, ptr, HZ6_PAGE_KIND_MIDPAGE);
 #else
   (void)allocator;
   (void)front_id;
