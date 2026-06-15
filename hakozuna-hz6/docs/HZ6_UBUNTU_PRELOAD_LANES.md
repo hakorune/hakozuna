@@ -38,14 +38,14 @@ HZ6_FRONT_CACHE_BIN_CAPACITY=4096
 HZ6_FRONT_CACHE_CLASS_STORAGE_TRIM_L1=1
 HZ6_FRONT_CACHE_CLASS4_STORAGE_CAPACITY=8192
 HZ6_FRONT_CACHE_CLASS5_STORAGE_CAPACITY=4096
-HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY=32768
+HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY=16384
 HZ6_TOY_SOURCE_BLOCK_BYTES=65536
 HZ6_MIDPAGE_RUN_BYTES=786432
 HZ6_MIDPAGE_32K_RUN_BYTES=2097152
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2=1
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_EXTERNAL_L2=1
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_UNALIGNED_L2=1
-HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY=16384
+HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY=8192
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT=4
 HZ6_MIDPAGE_ACTIVE_MAP_MASK_INDEX_L1=1
 HZ6_MIDPAGE_ACTIVE_MAP_REGISTER_FAST_SLOT_L1=1
@@ -159,7 +159,7 @@ Current lane state:
 | Area | Selected | Closed controls |
 | --- | --- | --- |
 | MidPage source runs | `8K run768`, `32K run2048` | smaller/larger 32K fine ladder, 8K 512K guard-negative |
-| MidPage active map | external cap16K/probe4, unaligned, mask-index, register fast-slot | cap32K/64K, probe8, class index, no-overwrite, same-class victim |
+| MidPage active map | external cap8K/probe4, unaligned, mask-index, register fast-slot | cap16K `map_prev`, cap32K/64K, probe8, class index, no-overwrite, same-class victim |
 | MidPage free path | current-bias free order | free fast-slot, current-bias free fast-slot, page-hint behavior, unconditional/aligned MidPage-first |
 | MidPage/Toy malloc path | preload-boundary noinline transfer skip, MidPage direct class, Toy direct-class fast reuse max4096, boundary trusted-owner, descriptor-out, trusted-class local reuse | core transfer-skip, broad preclassified malloc, trusted activation skip |
 | RSS/storage | static table trim, class4/class5 frontcache storage trim, explicit quiescent `malloc_trim()` scavenge hook | broad class storage trim, cold-class trims, and free-path cold-retire behavior remain controls |
@@ -276,7 +276,8 @@ Longer-term target:
 | External MidPage active map | `HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2=1`, external, cap8192/probe2 | Repeat-7 versus no-map moved 1024..4096 from `30.962M` to `32.011M` and 4096..16384 from `18.983M` to `19.903M`. |
 | Realloc in-place | `HZ6_PRELOAD_REALLOC_IN_PLACE_L1=1` | Repeat-5 versus control-off moved 16..256 `50.810M -> 55.313M`, 16..4096 `33.867M -> 36.556M`, 1024..4096 `31.473M -> 34.678M`, and 4096..16384 `19.971M -> 30.118M`. |
 | MidPage unaligned/probe4 | `HZ6_MIDPAGE_ACTIVE_FREE_MAP_UNALIGNED_L2=1`, probe4 | 4096..16384 active-map hits moved from `3,321` to `915,393`; repeat-5 HZ4 guard reached `hz6 31.505M` vs `hz4 30.916M` with lower HZ6 RSS. |
-| MidPage active-map cap16K | `HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY=16384`, probe4 | Resume diagnostic showed MidPage active-map misses on 4096..16384. Focused repeat-5 held `27.067M` versus pre-promotion default `25.908M`; cross repeat-3 held `27.752M` with about `+0.6MB` RSS. Cap32K and cap16K probe2/probe8 were weaker. |
+| Active-map storage trim | selected/default | `HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY=16384` and `HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY=8192` lower map storage after fixed-floor trim. Repeat-9 raw `hz6_static_table_trim_ab_20260616_055648` showed Toy16K+MidPage8K versus old Toy32K+MidPage16K cuts `~1.9..2.6 MiB` peak RSS with zero failures and mostly neutral/positive speed; follow-up raw `hz6_static_table_trim_ab_20260616_055723` kept RSS wins across focused/fixed rows. Keep `map_prev` as the direct old-map control and `toy_map32768` / `midpage_map16384` as split controls. |
+| MidPage active-map cap16K | superseded control | Earlier resume diagnostic showed MidPage active-map misses on 4096..16384 and promoted cap16K/probe4. After route/descriptor/source fixed-floor trim, the later active-map storage guard preferred the lower RSS Toy16K+MidPage8K bundle; keep cap16K as `map_prev`/`midpage_map16384` evidence. |
 | MidPage alloc descriptor-out | `HZ6_MIDPAGE_ALLOC_DESCRIPTOR_OUT_L1=1` | MidPage alloc returns the activated descriptor to active-map registration, avoiding the post-alloc exact route lookup without changing prefill policy. Focused repeat-5 moved 4096..16384 median `30.004M -> 34.600M`, 16..4096 `41.126M -> 41.897M`, and 16..256 `55.985M -> 56.595M`; 1024..4096 was essentially flat. |
 | MidPage miss audit after cap16K | `HZ6_PRELOAD_STATS=per_allocator` | Cap16K diagnostic still showed MidPage `free_hit=397136`, `free_miss=19254`, and `free_local_route_valid=9633` on the 200K 4096..16384 guard. The remaining miss path is real, but preload-boundary shortcuts must pass tiny guards. |
 | MidPageSourcePressureAudit-L1 | diagnostic-only/closed baseline | Split MidPage 8K/32K alloc, run prefill, active-map register/free hits, and preload local route fallback before changing source-run or route-register behavior. Follow-up lanes selected run2048 and closed borrow/low-water/cold-retire controls. Active-map internals are closed for now. |
@@ -308,7 +309,7 @@ Longer-term target:
 | MidPage supply/map resume | diagnostic/control | After run768, selected diagnostic shows 4096..16384 has only about `2.2K` free route fallbacks for `1M` frees; free path is no longer the main wall. Remaining pressure is MidPage supply/frontcache shape: `midpage_source_alloc=649`, split as `8K alloc_call=180` and `32K alloc_call=469`. |
 | MidPage 8K run768 | selected/default | `HZ6_MIDPAGE_RUN_BYTES=786432` reduces 8K source-run churn after current-bias. Repeat-15 versus run256K kept guards flat/positive and moved 4096..16384 +0.71%; post-promotion selected repeat-5 reached 46.496M / 94.25 MiB on 4096..16384 with clean safety stats. Keep 256K and 512K as direct controls. |
 | `HZ6_MIDPAGE_PREFILL_CACHE_ONLY_REUSE_L1=1` | control/no-go | MidPage front retries local frontcache only after successful prefill_run, skipping a second transfer-first probe. Repeat-15 was not selected-safe: 16..256 regressed -7.11% and 4096..16384 regressed -2.08%. Keep off. |
-| MidPage active-map cap/probe widening | control/no-go | `cap32K/64K` and `probe8` remove most remaining route-after-map fallbacks, but larger/hotter maps regress target speed and raise RSS. Example focused repeat-5: cap32K/probe4 cut 4096..16384 `route_after_maps ~2199 -> 124`, but target speed fell and RSS rose. Keep cap16K/probe4 selected. |
+| MidPage active-map cap/probe widening | control/no-go | `cap32K/64K` and `probe8` remove most remaining route-after-map fallbacks, but larger/hotter maps regress target speed and raise RSS. Example focused repeat-5: cap32K/probe4 cut 4096..16384 `route_after_maps ~2199 -> 124`, but target speed fell and RSS rose. Keep selected cap8K/probe4 with `map_prev` as the cap16K control. |
 | MidPage low-water refill | control/no-go | Default-off behavior control. After a MidPage cache-miss refill successfully returns an object, optionally prefill one more run if that class remains below a small low-water mark. Stats-off repeat-9 did not pass; strong 8K=256/32K=128 was target-flat and guard-negative. Keep off. |
 | `HZ6_MIDPAGE_8K_BORROW_32K_ON_MISS_L1=1` | control/no-go | Narrowed version of the guard-negative broad `borrow_larger` experiment. It only lets MidPage 8K misses try a 32K local-free entry. Production repeat-7 was guard-safe but target-flat/weak (`4096..16384 50.077M -> 49.896M`), and stats repeat-3 showed `borrow_success=0` on the selected target row. Keep off. |
 | `MidPageActiveMapCollisionLayoutAudit-L1` | diagnostic/control closeout | `run_hz6_midpage_supply_map_ab.sh` now reports active-map register collisions, overwrites, and free miss found-elsewhere alongside avg probe/base-slot ratios. Diagnostic raw `private/raw-results/linux/hz6_midpage_supply_map_ab_20260615_183000` showed selected 4096..16384 has real register collision (`68890`) but `miss_found_elsewhere=0`; widening to 32K/64K cuts route fallbacks (`1465 -> 114 -> 2`) but raises RSS and does not produce a clean speed win. Do not pursue active-map capacity/probe/layout behavior now. |
@@ -354,7 +355,7 @@ Keep these controls available when changing the preload lane:
 | `HZ6_MIDPAGE_RUN_BYTES=524288` | 8K source-run widening control. It lowers source_alloc on 4096..16384 and remains target-positive after current-bias, but did not pass guard gates. |
 | `HZ6_MIDPAGE_LOW_WATER_REFILL_L1=1` | MidPage low-water refill behavior control. Default thresholds 8K=128/32K=64 and strong thresholds 8K=256/32K=128 did not pass selected gates. |
 | `HZ6_MIDPAGE_ACTIVE_FREE_MAP_UNALIGNED_L2=0` | Direct control for MidPage active-map 8K-alignment gating. |
-| `HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY=8192` | Previous balanced default and direct control for the selected cap16K promotion. |
+| `HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY=16384` | Previous selected cap16K and direct `map_prev` control for active-map storage trim. |
 | `HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT=2` | Balanced control for the selected probe4 MidPage active map. Probe2 is slightly better on 1024..4096 but weaker on the HZ4-close 4096..16384 target. |
 | `HZ6_MIDPAGE_ACTIVE_MAP_REGISTER_FAST_SLOT_L1=0` | Direct control for the selected MidPage active-map register fast-slot. |
 | `HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_L1=1` | Free-side active-map fast-slot control. Target-flat and guard-weak after register fast-slot. |
@@ -389,7 +390,7 @@ MidPage 32K run-size closeout details are in
 | `HZ6_MIDPAGE_RUN_BYTES=384K/512K/640K` | 8K run widening controls below selected run768. 512K remained target-positive but guard-negative; 384K/640K are evidence-only. |
 | `HZ6_MIDPAGE_PREFILL_CACHE_ONLY_REUSE_L1=1` | Post-prefill cache-only reuse skipped a second transfer-first probe, but repeat-15 regressed both tiny and target rows. Keep off. |
 | `HZ6_MIDPAGE_LOW_WATER_REFILL_L1=1` | Eagerly prefill one more MidPage run after miss-boundary reuse. It adds source/refill work and did not improve stats-off selected balance. Keep off. |
-| `HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY=32768/65536` and probe8 | Larger maps/probes remove remaining route fallback but lose speed/RSS to map hotness. Keep selected cap16K/probe4. |
+| `HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY=32768/65536` and probe8 | Larger maps/probes remove remaining route fallback but lose speed/RSS to map hotness. Keep selected cap8K/probe4. |
 | `HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_NUMERATOR=2` | Current-bias target upper-bound. 4096..16384 can improve more than 1x, but 16..4096 regresses too much. Keep off. |
 | `HZ6_TOY_SMALL_ACTIVE_MAP_ADDR_ENVELOPE_L1=1` | Toy active-map negative envelope. It is conservative and buildable, but the first repeat-3 did not pass promotion: tiny was slightly positive while 1024..4096 and 4096..16384 were weak. Keep off. |
 | `HZ6_PRELOAD_FREE_MIDPAGE_FIRST_L1=1` | Unconditional preload free order swap. Target-positive but guard-negative; keep off. |
@@ -434,7 +435,7 @@ MidPage 32K run-size closeout details are in
 | `run_hz6_midpage_supply_map_ab.sh` | Focused A/B runner for 8K run widening, supply/frontcache, MidPage 8K->32K borrow, SourceRunReuse controls, and MidPage active-map capacity/probe controls. Supports `--variants`, `--include-tiny`, `--diagnostics`, `--stats`, and `--no-stats`; use diagnostics for class-detail/borrow attribution and `--no-stats --no-diagnostics` for production-shape speed/RSS ranking. |
 | `run_hz6_midpage_payload_trim_ab.sh` | Focused A/B runner for 32K run-size payload/supply controls, including the run2048 fine ladder and phase-count compile-out controls. Supports `--variants`, `--include-tiny`, `--stats`, and `--no-stats`; use `--no-stats` for speed/RSS promotion gates and `--stats` for fail/source attribution. Short variant aliases include `small_boundary_fast` for `small_boundary_raw_push_trusted_owner` and `small_boundary_trusted` for `small_boundary_trusted_owner`; smoke raw `hz6_small_boundary_trusted_runner_alias_smoke_20260616_024030` confirms the trusted alias. |
 | `run_hz6_preload_free_order_ab.sh` | Focused A/B runner for preload free-order controls: selected, unconditional MidPage-first, aligned-first, current-bias 1x/2x/4x, delta64, and phase-count controls. |
-| `run_hz6_static_table_trim_ab.sh` | Builds selected trim, previous-floor controls, wide-table controls, and selected-under fixed-floor controls, then compares speed/RSS plus failure counters. Supports `--rows focused,fixed_mid` and `--variants` so fixed-cost ladder checks can avoid rebuilding unrelated controls. Controls include `floor_prev`, `route65536`, `desc8192_only`, `source1024_only`, `desc8192_source1024`, `toy_map16384`, and `midpage_map8192`; smoke raw `hz6_static_table_trim_ab_20260616_053921` kept fail counters zero, and post-route32K raw `hz6_static_table_trim_ab_20260616_055101` selected the descriptor/source fixed-floor trim. |
+| `run_hz6_static_table_trim_ab.sh` | Builds selected trim, previous-floor controls, wide-table controls, and selected-under fixed-floor controls, then compares speed/RSS plus failure counters. Supports `--rows focused,fixed_mid` and `--variants` so fixed-cost ladder checks can avoid rebuilding unrelated controls. Controls include `floor_prev`, `map_prev`, `route65536`, `desc8192_only`, `source1024_only`, `toy_map32768`, and `midpage_map16384`; smoke raw `hz6_static_table_trim_ab_20260616_053921` kept fail counters zero, post-route32K raw `hz6_static_table_trim_ab_20260616_055101` selected descriptor/source fixed-floor trim, and raw `hz6_static_table_trim_ab_20260616_055723` selected active-map storage trim. |
 | `run_hz6_midpage_payload_trim_ab.sh` | Builds MidPage 32K run-size controls and compares selected speed/RSS plus source/failure counters. |
 | `run_hz6_frontcache_shape_ab.sh` | Builds selected, class-specific MidPage frontcache cap controls, and storage-trim control. Use default `--stats --diagnostics` for attribution; use `--no-stats --no-diagnostics` for production-shape speed/RSS ranking. |
 | MidPage noinline/branch-isolated transfer skip | Still guard-sensitive. Branch/layout isolation did not make it selected-safe, so do not add it to `build_hz6_preload.sh`. |

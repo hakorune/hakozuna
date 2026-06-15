@@ -43,13 +43,13 @@ HZ6_ROUTE_TABLE_CAPACITY=32768
 HZ6_OBJECT_DESCRIPTOR_CAPACITY=8192
 HZ6_SOURCE_BLOCK_CAPACITY=1024
 HZ6_FRONT_CACHE_BIN_CAPACITY=4096
-HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY=32768
+HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY=16384
 HZ6_MIDPAGE_RUN_BYTES=786432
 HZ6_MIDPAGE_32K_RUN_BYTES=2097152
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2=1
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_EXTERNAL_L2=1
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_UNALIGNED_L2=1
-HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY=16384
+HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY=8192
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT=4
 HZ6_MIDPAGE_ALLOC_DESCRIPTOR_OUT_L1=1
 HZ6_PRELOAD_MIDPAGE_MALLOC_SKIP_TRANSFER_L1=1
@@ -104,13 +104,11 @@ versus control-off moved 16..256 `50.810M -> 55.313M`, 16..4096
 for the preload bundle: the 4096..16384 phase guard moved
 `free_midpage_active_map_hit` from `3,321` to `915,393`, and the HZ4 close guard
 reached `hz6 31.505M / 117,248 KB` versus `hz4 30.916M / 134,400 KB`.
-The later resume pass promotes MidPage active-map capacity 16384 with probe4:
-current 4096..16384 focused repeat-5 held `27.067M` versus pre-promotion
-default `25.908M`, and cross repeat-3 held `27.752M` with about `+0.6MB` RSS.
-Cap32K and cap16K probe2/probe8 remain controls/no-go;
-Toy capacity 65536/16384, Toy probe8, and active-map slot-index helper shapes
-remain no-go/control evidence.
-The cap16K selected cross repeat-3 puts HZ6 ahead of mimalloc on all four
+The later fixed-floor pass trims active-map storage to Toy16K and MidPage8K
+with probe4. The old Toy32K/MidPage16K bundle remains `map_prev` control
+evidence; cap32K/64K, probe8, and active-map slot-index helper shapes remain
+no-go/control evidence.
+The historical cap16K selected cross repeat-3 put HZ6 ahead of mimalloc on all four
 preload mixed_ws rows: 16..256 `57.671M` vs `53.099M`, 16..4096 `39.382M` vs
 `5.873M`, 1024..4096 `38.497M` vs `4.858M`, and 4096..16384 `27.752M` vs
 `1.282M`.  At that checkpoint, tcmalloc remained higher throughput on the same

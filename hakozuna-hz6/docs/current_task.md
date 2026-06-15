@@ -103,10 +103,11 @@ Calloc direct-HZ6 code-shape control:
 Fixed-boundary/fixed-cost profile repeats:
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_051956
   private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_053600
-  private/raw-results/linux/hz6_static_table_trim_ab_20260616_054020
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_054150
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_055101
-  private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_055140
+  private/raw-results/linux/hz6_static_table_trim_ab_20260616_055648
+  private/raw-results/linux/hz6_static_table_trim_ab_20260616_055723
+  private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_055752
 
 Details:
   archive/current_task_2026-06-16_adaptive_profile_snapshot.md
@@ -135,15 +136,14 @@ Default no-go/control-only without substantially different evidence:
 
 ```text
 1. Keep selected/default stable.
-2. Fixed-floor selected/default is route32K + desc8192 + source1024 after repeat-7/200k guards; RSS drops about 10 MiB from route65K era
-   while failure counters stay zero.
+2. Fixed-floor selected/default is route32K + desc8192 + source1024 plus Toy16K/MidPage8K maps; fixed-row smoke now sits near 79..80 MiB peak.
 3. Treat adaptive-4k and adaptive-8k as fixed-boundary profile lanes.
 4. Treat calloc-large-real as a large calloc-heavy RSS/speed profile, not a
    selected/default lane.
 5. Keep calloc-direct default-off: thick focused+calloc repeat is mixed and
    does not justify selected/default.
-6. Next fixed-floor probes should start from Toy/MidPage map storage or
-   profile-specific source/frontcache controls, not another blind table cut.
+6. Next work should refresh cross-allocator selected balance, then only pursue
+   profile-specific source/frontcache controls if the speed/RSS trade is clear.
 7. Keep this file below about 150 lines; archive completed evidence snapshots
    instead of appending chronological logs. Large 3000+ line ledgers belong
    only under archive/.

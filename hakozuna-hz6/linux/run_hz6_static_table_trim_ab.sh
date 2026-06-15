@@ -30,10 +30,12 @@ Options:
   --help            show this message
 
 Variants:
-  selected, floor_prev, route65536, route131072, desc8192_only, desc12288_only,
+  selected, floor_prev, map_prev, route65536, route131072, desc8192_only, desc12288_only,
   desc32768, source1024_only, source4096, desc8192_source1024,
   desc12288_source1024,
-  toy_map16384, midpage_map8192, frontcache8192, wide_l0
+  toy_map16384, toy_map32768, midpage_map8192, midpage_map16384,
+  toy_map16384_midpage_map8192,
+  frontcache8192, wide_l0
 EOF
 }
 
@@ -97,6 +99,10 @@ variant_flags() {
       hz6_preload_replace_define flags HZ6_SOURCE_BLOCK_CAPACITY 2048
       hz6_preload_replace_define flags HZ6_FRONT_CACHE_BIN_CAPACITY 4096
       ;;
+    map_prev)
+      hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY 32768
+      hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY 16384
+      ;;
     frontcache8192)
       hz6_preload_replace_define flags HZ6_FRONT_CACHE_BIN_CAPACITY 8192
       ;;
@@ -144,7 +150,17 @@ variant_flags() {
     toy_map16384)
       hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY 16384
       ;;
+    toy_map32768)
+      hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY 32768
+      ;;
     midpage_map8192)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY 8192
+      ;;
+    midpage_map16384)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY 16384
+      ;;
+    toy_map16384_midpage_map8192)
+      hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY 16384
       hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY 8192
       ;;
     wide_l0)

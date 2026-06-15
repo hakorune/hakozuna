@@ -608,7 +608,9 @@ hakozuna-hz6/private/raw-results/linux/hz6_static_table_trim_ab_20260616_054020
 hakozuna-hz6/private/raw-results/linux/hz6_static_table_trim_ab_20260616_054150
 hakozuna-hz6/private/raw-results/linux/hz6_static_table_trim_ab_20260616_054228
 hakozuna-hz6/private/raw-results/linux/hz6_static_table_trim_ab_20260616_055101
-hakozuna-hz6/private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_055140
+hakozuna-hz6/private/raw-results/linux/hz6_static_table_trim_ab_20260616_055648
+hakozuna-hz6/private/raw-results/linux/hz6_static_table_trim_ab_20260616_055723
+hakozuna-hz6/private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_055752
 ```
 
 The static-table runner now supports `--rows` and `--variants` for focused
@@ -647,9 +649,25 @@ but `source1024_only` remains a useful speed-leaning control for
 | `fixed_8k` | `17.814M / 88.25 MiB` | `18.412M / 82.88 MiB` |
 | `fixed_16k` | `18.183M / 88.25 MiB` | `18.520M / 82.75 MiB` |
 
-Standard selected DSO smoke raw `hz6_fixed_cost_residency_matrix_20260616_055140`
+Active-map storage follow-up promoted Toy16K+MidPage8K as the current selected
+map floor. Repeat-9/220k raw `hz6_static_table_trim_ab_20260616_055648` kept
+all fail counters zero and cut `~1.9..2.6 MiB` peak RSS versus `map_prev`
+(Toy32K+MidPage16K), with mostly neutral/positive speed. The selected-only
+follow-up raw `hz6_static_table_trim_ab_20260616_055723` again kept RSS wins
+across focused/fixed rows; `1024_4096` and `fixed_4k` are the watch rows.
+
+| Row | map_prev | selected Toy16K/MidPage8K |
+| --- | ---: | ---: |
+| `16_4096` | `16.399M / 69.12 MiB` | `16.509M / 67.12 MiB` |
+| `1024_4096` | `15.596M / 80.38 MiB` | `15.378M / 78.62 MiB` |
+| `4096_16384` | `18.689M / 83.62 MiB` | `19.014M / 80.88 MiB` |
+| `fixed_4k` | `15.267M / 81.38 MiB` | `14.963M / 79.12 MiB` |
+| `fixed_8k` | `18.001M / 82.75 MiB` | `18.470M / 80.12 MiB` |
+| `fixed_16k` | `18.813M / 82.62 MiB` | `18.850M / 80.00 MiB` |
+
+Standard selected DSO smoke raw `hz6_fixed_cost_residency_matrix_20260616_055752`
 confirmed the rebuilt preload path stays runnable and reports fixed-row profile
-peaks around `80.62..82.88 MiB`.
+peaks around `78.88..80.12 MiB`.
 
 Hot-path attribution refresh:
 
