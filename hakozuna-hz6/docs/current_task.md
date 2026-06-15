@@ -92,6 +92,12 @@ evidence:
       boundary_off    4096..16384 43.812M -> 35.205M
     inline/off can help small guards, but the MidPage target loss blocks
     default selection.
+  build-flag retest:
+    raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_202754
+    keep selected -O2:
+      -O3                         44.118M -> 43.222M
+      -fno-semantic-interposition 44.118M -> 43.909M
+      both                        44.118M -> 43.330M
 
 decision:
   selected/default. This is a small but balanced production code-shape win after

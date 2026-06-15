@@ -232,6 +232,15 @@ variant_flags() {
       hz6_preload_replace_define flags HZ6_PRELOAD_MIDPAGE_MALLOC_SKIP_TRANSFER_L1 0
       hz6_preload_replace_define flags HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_NOINLINE_L1 0
       ;;
+    opt_o3)
+      flags+=("-O3")
+      ;;
+    no_semantic_interposition)
+      flags+=("-fno-semantic-interposition")
+      ;;
+    opt_o3_no_semantic_interposition)
+      flags+=("-O3" "-fno-semantic-interposition")
+      ;;
     boundary_min8k)
       hz6_preload_replace_define flags HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_MIN_BYTES 8192
       ;;
