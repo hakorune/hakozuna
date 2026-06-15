@@ -61,7 +61,7 @@ Explicit controls:
 
 Runners:
   fixed_boundary_profile_frontier / preload_profile_frontier
-  fixed_gap_matrix / fixed_cost_residency_matrix / fixed_quiescent_rss_matrix / workload_proxy_matrix
+  fixed_gap_matrix / fixed_cost_residency_matrix / fixed_quiescent_rss_matrix / workload_proxy_matrix / workload_capacity_frontier
   check_hz6_preload_profile_registry
 ```
 
@@ -91,7 +91,7 @@ Recent fixed/profile repeats:
   private/raw-results/linux/hz6_fixed_gap_matrix_20260616_074100
   private/raw-results/linux/hz6_fixed_quiescent_rss_matrix_20260616_072153
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_{062305,064915,065310,065329,072333,074342,074414}
-  private/raw-results/linux/hz6_workload_proxy_matrix_20260616_{075550,080227}
+  private/raw-results/linux/hz6_workload_{capacity_lite_toy_map8192_probe_20260616_081039,proxy_matrix_20260616_080227}
   private/raw-results/linux/hz6_ubuntu_size_slices_20260616_073231
 
 Details:
