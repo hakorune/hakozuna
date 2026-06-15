@@ -100,13 +100,13 @@ Selected:
 Profiles:
   private/raw-results/linux/hz6_realloc_split_after_toytrusted_prod_20260616_032303
   private/raw-results/linux/hz6_realloc_adaptive_after_toytrusted_prod_20260616_032451
+  private/raw-results/linux/hz6_calloc_real_focused_guard_20260616_035449
+  private/raw-results/linux/hz6_calloc_real_size_guard_20260616_035459
 
 RSS:
-  private/raw-results/linux/hz6_rss_residency_audit_refresh_20260616_025309
-  private/raw-results/linux/hz6_quiescent_rss_attribution_refresh_20260616_025320
+  hz6_rss_residency_audit_refresh_20260616_025309 / hz6_quiescent_rss_attribution_refresh_20260616_025320
 
 More detail:
-  archive/current_task_2026-06-16_profile_quiescent_snapshot.md
   archive/current_task_2026-06-16_post_toytrusted_controls_snapshot.md
 ```
 
