@@ -80,10 +80,10 @@ Next allocator work:
     workloads. They are not selected/default because focused and target guards
     remain mixed, but they directly attack the current fixed-boundary realloc
     copy pressure.
-  Latest HZ6 Ubuntu profile-position refresh:
+  Superseded HZ6 Ubuntu profile-position refresh:
     hakozuna-hz6/private/raw-results/linux/hz6_profile_position_focused_20260616_014250
     hakozuna-hz6/private/raw-results/linux/hz6_profile_position_fixed_20260616_014402
-    small-boundary-fast is the strongest general profile DSO in this read:
+    small-boundary-fast was the strongest general profile DSO in that read:
       16..256      selected 58.182M -> 78.220M
       1024..4096   selected 34.045M -> 39.610M
       4096..16384  selected 45.518M -> 46.164M
@@ -91,9 +91,8 @@ Next allocator work:
       fixed_16k    selected 45.614M -> 45.923M
     realloc-boundary-8k is the exact fixed_8k profile:
       fixed_8k selected 43.184M -> 45.960M
-    read: selected remains the balanced default; profile DSOs are now cleanly
-      positioned for known workload shapes. RSS is roughly flat versus selected,
-      so the profile win is mostly throughput.
+    read: this is retained as historical profile-position evidence; the newer
+      small-boundary-trusted repeat below supersedes the broad recommendation.
   Latest HZ6 Ubuntu hygiene:
     hakozuna-hz6/linux/hz6_preload_aliases.sh now centralizes profile alias
     autobuild hooks for selected-balance and fixed-size matrix runners.
@@ -115,8 +114,8 @@ Next allocator work:
       hakozuna-hz6/private/raw-results/linux/hz6_small_boundary_trusted_alias_smoke_20260616_015323
       hakozuna-hz6/private/raw-results/linux/hz6_small_boundary_trusted_focused_20260616_015341
       hakozuna-hz6/private/raw-results/linux/hz6_small_boundary_trusted_position_20260616_015331
-    read: trusted is now the preferred broad small/fixed HZ6 profile; selected
-      default remains unchanged.
+    read: trusted supersedes fast as the preferred broad small/fixed HZ6
+      profile. selected default remains unchanged.
 ```
 
 ## Recent Cleanup Commits

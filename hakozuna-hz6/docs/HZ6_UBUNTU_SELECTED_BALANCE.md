@@ -252,12 +252,11 @@ hakozuna-hz6/private/raw-results/linux/hz6_profile_position_fixed_20260616_01440
 | `fixed_8k` | `43.184M / 93.12 MiB` | `realloc-boundary-8k 45.960M / 93.12 MiB` | split profile wins this exact row |
 | `fixed_16k` | `45.614M / 93.12 MiB` | `small-boundary-fast 45.923M / 93.12 MiB` | effectively flat |
 
-This strengthens the profile-lane decision. `hz6-small-boundary-fast-target`
-is the best general HZ6 profile for tiny/mid-small/fixed-boundary workloads,
-while `hz6-realloc-boundary-8k-target` is the exact fixed_8k profile. The
-selected DSO remains the default because profile choice is workload-specific
-and previous cross-allocator guard reads still keep HZ3/tcmalloc ahead on
-some broad small rows.
+This strengthened the profile-lane decision at the time, but the trusted
+follow-up below supersedes the broad small-boundary recommendation. Keep this
+block as historical profile-position evidence for the fast/raw-push shape,
+while treating `hz6-realloc-boundary-8k-target` as the exact fixed_8k profile
+control from this read.
 
 Small-boundary trusted follow-up:
 
@@ -561,10 +560,12 @@ selected default:
     cleaned up the control implementation, but still mixed/regressed guards.
 
 As a profile lane, however, combining small-boundary target with trusted-owner
-and raw-push is strong.  Repeat-15 no-stats raw
-`hz6_midpage_payload_trim_ab_20260616_002519` improved every tiny/focused/fixed
-guard row, while stats raw `hz6_midpage_payload_trim_ab_20260616_002549` kept
-`fail=0`.  Keep it as `hz6-small-boundary-fast-target`, not selected default.
+and raw-push was strong in the original repeat-15 no-stats raw
+`hz6_midpage_payload_trim_ab_20260616_002519`, while stats raw
+`hz6_midpage_payload_trim_ab_20260616_002549` kept `fail=0`.  Later trusted-only
+repeat evidence made `hz6-small-boundary-trusted-target` the preferred broad
+small/fixed profile; keep this fast/raw-push lane as comparison/profile
+evidence, not selected default.
 
 Cross-allocator profile position:
   raw:
@@ -573,8 +574,10 @@ Cross-allocator profile position:
 
   The fast profile beats selected HZ6 on most focused/fixed rows and beats
   tcmalloc/HZ4/mimalloc on 4096..16384, fixed_8k, and fixed_16k speed.
-  fixed_4k also beats tcmalloc speed.  It still trails HZ3 on the
-  tiny/small speed/RSS frontier and keeps HZ6-class RSS rather than HZ3/HZ4 RSS.
+  fixed_4k also beats tcmalloc speed.  The later trusted-only profile keeps the
+  same profile space but is now preferred for broad small/fixed use; both
+  profiles still trail HZ3 on the tiny/small speed/RSS frontier and keep
+  HZ6-class RSS rather than HZ3/HZ4 RSS.
 ```
 
 ## Static Table Trim Promotion
