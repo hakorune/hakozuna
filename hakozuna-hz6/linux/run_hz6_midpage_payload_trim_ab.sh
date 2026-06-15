@@ -205,6 +205,12 @@ variant_flags() {
       hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_RETIRE_MAX_BLOCKS_PER_CALL 16
       hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_RETIRE_SCAN_BLOCKS_PER_CALL 256
       ;;
+    current_bias_fast)
+      hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FAST_L1 1
+      ;;
+    current_bias_4x)
+      hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_NUMERATOR 4
+      ;;
     run2304k)
       hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 2359296
       ;;

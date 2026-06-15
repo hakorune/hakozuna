@@ -38,6 +38,52 @@ Archived chronological ledger:
   archive/current_task_2026-06_history.md
 ```
 
+## Active Task: HZ6 Ubuntu Preload Current-Bias Fast Predicate-L1
+
+```text
+goal:
+  Check whether the selected preload free-order current-bias predicate can be
+  simplified without changing semantics.
+
+design:
+  Add HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FAST_L1 as a default-off control.
+  When enabled, the selected 1:1/delta0 predicate uses:
+    midpage_active_map_current > toy_small_active_map_current
+  instead of the generic numerator/denominator/delta expression.
+
+acceptance:
+  R1 smokes pass.
+  free-order diagnostic rows stay safety-clean.
+  4096..16384 improves or stays flat, with Toy/tiny guard rows not regressing
+  materially.
+
+diagnostic read:
+  raw: private/raw-results/linux/hz6_preload_free_order_ab_20260615_174543
+  current_bias_fast is not a winner in diagnostic shape:
+    4096..16384 selected 16.116M, current_bias_fast 16.356M
+    1024..4096 selected 16.145M, current_bias_fast 15.319M
+  current_bias_4x is more interesting:
+    4096..16384 16.941M
+    16..4096 17.274M
+    1024..4096 16.254M
+    16..256 26.062M vs selected 26.822M
+  Next: verify current_bias_4x in production shape before any default decision.
+
+production read:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_174700
+  stats-off repeat-7:
+    4096..16384 selected 31.516M, current_bias_fast 31.781M,
+    current_bias_4x 31.422M
+    16..256 selected 45.567M, current_bias_fast 44.894M,
+    current_bias_4x 44.369M
+    1024..4096 selected 24.334M, current_bias_fast 24.011M,
+    current_bias_4x 23.790M
+  decision:
+    keep current_bias_fast and current_bias_4x as controls/no-go for default.
+    The tiny target win from fast predicate is not broad enough to justify the
+    guard regressions.
+```
+
 ## Current Status
 
 ```text

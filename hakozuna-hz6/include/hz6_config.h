@@ -840,6 +840,12 @@
 #define HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_DELTA ((size_t)0)
 #endif
 
+#ifndef HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FAST_L1
+/* Code-shape control for the selected 1:1 current-bias predicate.  Semantics
+ * match the default numerator=1, denominator=1, delta=0 configuration. */
+#define HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FAST_L1 0
+#endif
+
 #ifndef HZ6_PRELOAD_FREE_MIDPAGE_HINT_DRYRUN_L1
 /* Diagnostic-only selective MidPage-first free hint. */
 #define HZ6_PRELOAD_FREE_MIDPAGE_HINT_DRYRUN_L1 0

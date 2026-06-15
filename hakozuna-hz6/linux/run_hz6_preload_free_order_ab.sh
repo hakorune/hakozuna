@@ -74,13 +74,19 @@ variant_flags() {
     selected)
       ;;
     midpage_first)
+      hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1 0
       hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_FIRST_L1 1
       ;;
     aligned_first)
+      hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1 0
       hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_ALIGNED_FIRST_L1 1
       ;;
     current_bias)
       hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1 1
+      ;;
+    current_bias_fast)
+      hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FAST_L1 1
       ;;
     current_bias_2x)
       hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1 1
@@ -146,6 +152,7 @@ variants=(
   midpage_first
   aligned_first
   current_bias
+  current_bias_fast
   current_bias_2x
   current_bias_4x
   current_bias_delta64

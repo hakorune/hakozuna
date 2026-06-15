@@ -177,6 +177,12 @@ static int hz6_preload_midpage_current_bias_first(
   if (!allocator) {
     return 0;
   }
+#if !HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2 || !HZ6_TOY_SMALL_ACTIVE_FREE_MAP_L1
+  return 0;
+#elif HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FAST_L1
+  return allocator->midpage_active_map_current >
+         allocator->toy_small_active_map_current;
+#else
   size_t denominator =
       HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_DENOMINATOR == 0
           ? (size_t)1
@@ -187,6 +193,7 @@ static int hz6_preload_midpage_current_bias_first(
   size_t mid_scaled = allocator->midpage_active_map_current * denominator;
   return mid_scaled >
          toy_scaled + HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_DELTA;
+#endif
 }
 #endif
 
