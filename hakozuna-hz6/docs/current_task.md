@@ -229,6 +229,28 @@ MidPageActiveMapRegisterFastSlot-L1 is now selected/default for Ubuntu preload:
     4096..16384 tcmalloc 43.192M / 106.62 MiB
   decision: promote HZ6_MIDPAGE_ACTIVE_MAP_REGISTER_FAST_SLOT_L1=1 for Ubuntu
   preload; keep HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_L1=1 as a control.
+MidPageActiveMapFreeFastSlotFollowup-L1 is closed as control/no-go:
+  flags:
+    HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_L1=1
+    HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_CURRENT_BIAS_L1=1
+  reason: after register fast-slot promotion, free fast-slot still does not
+  clear the balanced guard gate. The current-bias gated shape adds branch cost
+  and is weaker than the plain free-fast control.
+  production repeat-7:
+    raw: private/raw-results/linux/hz6_midpage_supply_map_ab_20260615_152942
+    4096..16384 selected 50.566M -> free_fast 50.604M
+    4096..16384 selected 50.566M -> free_fast_bias 50.081M
+    1024..4096 selected 39.486M -> free_fast_bias 39.462M
+    16..256 selected 57.027M -> free_fast_bias 55.097M
+  production repeat-15:
+    raw: private/raw-results/linux/hz6_midpage_supply_map_ab_20260615_153012
+    16..256      57.028M -> free_fast 56.508M  (-0.91%)
+    16..4096     41.478M -> free_fast 41.581M  (+0.25%)
+    1024..4096   39.763M -> free_fast 39.269M  (-1.24%)
+    4096..16384  50.375M -> free_fast 50.408M  (+0.07%)
+  decision: keep both free-fast controls off. Do not promote the current-bias
+  gated shape; it is a useful negative control showing the extra branch is not
+  free.
 Earlier repeat-3 refresh after free-hint/free-fastslot no-go closeouts:
   raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_004605
   16..256     hz6 58.046M / 30.50 MiB
@@ -366,10 +388,10 @@ source-run-slot route registration, broad malloc code-shape changes, or
 whole-helper free-cache replacement first.
 
 Next recommended optimization lane:
-  active-map register fast-slot is selected and safety-clean. Run-size and
-  borrow attempts are closed for now. Free fast-slot remains target-positive
-  but guard-weaker, so do not promote it without a narrower shape. Next, prefer
-  frontcache storage/RSS design or a narrower active-map free-hit shape.
+  active-map register fast-slot is selected and safety-clean. Run-size, borrow,
+  and free fast-slot attempts are closed for now. Next, prefer frontcache
+  storage/RSS design or a different active-map free-hit shape that does not add
+  another branch to every MidPage active-map free attempt.
 
 Closed MidPage controls:
   free-order/page-hint/current-bias details:

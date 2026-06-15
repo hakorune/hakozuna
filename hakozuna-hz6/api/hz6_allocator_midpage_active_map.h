@@ -454,15 +454,45 @@ static inline int hz6_midpage_active_map_try_free(Hz6Allocator* allocator,
   }
 #else
   size_t base_index = hz6_midpage_active_map_index(ptr);
-#if HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_L1
-  Hz6MidPageActiveMapEntry* base_entry = &entries[base_index];
-  if (base_entry->ptr == ptr) {
-    entry = base_entry;
-#if HZ6_DIAGNOSTIC_PROBES
-    free_hit_probe = 1u;
+#if HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_L1 || \
+    HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_CURRENT_BIAS_L1
+  int use_free_fast_slot = 1;
+#if HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_CURRENT_BIAS_L1
+#if HZ6_TOY_SMALL_ACTIVE_FREE_MAP_L1
+  use_free_fast_slot =
+      allocator->midpage_active_map_current >
+      allocator->toy_small_active_map_current;
+#else
+  use_free_fast_slot = 0;
 #endif
-  } else {
-    for (size_t probe = 1; probe < HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT;
+#endif
+  if (use_free_fast_slot) {
+    Hz6MidPageActiveMapEntry* base_entry = &entries[base_index];
+    if (base_entry->ptr == ptr) {
+      entry = base_entry;
+#if HZ6_DIAGNOSTIC_PROBES
+      free_hit_probe = 1u;
+#endif
+    } else {
+      for (size_t probe = 1; probe < HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT;
+           ++probe) {
+        size_t index = hz6_midpage_active_map_wrap(base_index + probe);
+        Hz6MidPageActiveMapEntry* candidate = &entries[index];
+        if (candidate->ptr == ptr) {
+          entry = candidate;
+#if HZ6_DIAGNOSTIC_PROBES
+          free_hit_probe = probe + 1u;
+#endif
+          break;
+        }
+      }
+    }
+  }
+  if (!entry && !use_free_fast_slot) {
+#else
+  {
+#endif
+    for (size_t probe = 0; probe < HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT;
          ++probe) {
       size_t index = hz6_midpage_active_map_wrap(base_index + probe);
       Hz6MidPageActiveMapEntry* candidate = &entries[index];
@@ -475,20 +505,6 @@ static inline int hz6_midpage_active_map_try_free(Hz6Allocator* allocator,
       }
     }
   }
-#else
-  for (size_t probe = 0; probe < HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT;
-       ++probe) {
-    size_t index = hz6_midpage_active_map_wrap(base_index + probe);
-    Hz6MidPageActiveMapEntry* candidate = &entries[index];
-    if (candidate->ptr == ptr) {
-      entry = candidate;
-#if HZ6_DIAGNOSTIC_PROBES
-      free_hit_probe = probe + 1u;
-#endif
-      break;
-    }
-  }
-#endif
 #endif
   if (!entry) {
 #if HZ6_DIAGNOSTIC_PROBES

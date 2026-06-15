@@ -456,6 +456,12 @@
 #define HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_L1 0
 #endif
 
+#ifndef HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_CURRENT_BIAS_L1
+/* Candidate free code shape.  Use the base-slot-first free lookup only while
+ * the allocator-local MidPage active map is larger than the Toy active map. */
+#define HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_CURRENT_BIAS_L1 0
+#endif
+
 #ifndef HZ6_MIDPAGE_ACTIVE_MAP_CLASS_INDEX_L1
 /* Candidate collision control. Salt the MidPage active-map hash by 8K/32K
  * class and probe the dominant 32K class first on free. */

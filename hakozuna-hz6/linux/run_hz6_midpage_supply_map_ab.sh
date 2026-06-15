@@ -158,9 +158,16 @@ variant_flags() {
     amap_free_fast)
       hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_L1 1
       ;;
+    amap_free_fast_bias)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_CURRENT_BIAS_L1 1
+      ;;
     amap_fast_both)
       hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_MAP_REGISTER_FAST_SLOT_L1 1
       hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_L1 1
+      ;;
+    amap_fast_both_bias)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_MAP_REGISTER_FAST_SLOT_L1 1
+      hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_CURRENT_BIAS_L1 1
       ;;
     amap32k_p4)
       hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY 32768
@@ -238,7 +245,9 @@ default_variants=(
   amap_mask
   amap_register_fast
   amap_free_fast
+  amap_free_fast_bias
   amap_fast_both
+  amap_fast_both_bias
   amap32k_p4
   amap64k_p4
   amap32k_p8

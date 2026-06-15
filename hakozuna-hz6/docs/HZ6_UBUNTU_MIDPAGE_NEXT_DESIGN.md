@@ -140,13 +140,14 @@ Current implementation order:
    - register fast-slot removes the bounded loop for empty/same-pointer
      base-slot registrations
 
-3. Do not promote free fast-slot yet:
-   - both register+free fast-slot is target-positive
-   - 1024..4096 guard is weaker than register-only
+3. Keep free fast-slot controls off:
+   - plain free fast-slot is target-flat and guard-weak in repeat-15
+   - current-bias-gated free fast-slot adds branch cost and is weaker
 
 4. Next work should be either:
    - frontcache storage/RSS design
-   - narrower active-map free-hit shape that avoids the guard cost
+   - a different active-map free-hit shape that avoids another per-attempt
+     branch
 ```
 
 Mask-index result:
@@ -198,6 +199,25 @@ decision:
   promote register fast-slot.
   keep free fast-slot as a control because both-fast is target-positive but
   guard-weaker.
+```
+
+Free fast-slot follow-up:
+
+```text
+flags:
+  HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_L1=1
+  HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_CURRENT_BIAS_L1=1
+production repeat-15:
+  raw: private/raw-results/linux/hz6_midpage_supply_map_ab_20260615_153012
+  4096..16384 selected 50.375M -> free_fast 50.408M
+  1024..4096  selected 39.763M -> free_fast 39.269M
+  16..256     selected 57.028M -> free_fast 56.508M
+current-bias gated repeat-7:
+  raw: private/raw-results/linux/hz6_midpage_supply_map_ab_20260615_152942
+  4096..16384 selected 50.566M -> free_fast_bias 50.081M
+  16..256     selected 57.027M -> free_fast_bias 55.097M
+decision:
+  keep free fast-slot controls off.
 ```
 
 Audit variants:
