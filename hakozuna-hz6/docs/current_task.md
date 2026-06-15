@@ -388,10 +388,52 @@ source-run-slot route registration, broad malloc code-shape changes, or
 whole-helper free-cache replacement first.
 
 Next recommended optimization lane:
-  active-map register fast-slot is selected and safety-clean. Run-size, borrow,
-  and free fast-slot attempts are closed for now. Next, prefer frontcache
-  storage/RSS design or a different active-map free-hit shape that does not add
-  another branch to every MidPage active-map free attempt.
+  FrontcacheStorageLayoutAuditV2-L1 is closed as control/no-go for default.
+  active-map register fast-slot is selected and safety-clean; run-size, borrow,
+  and free fast-slot attempts are closed for now. Next work should target source
+  payload/RSS pressure or a free-hit shape that does not add a branch to every
+  MidPage free attempt.
+
+FrontcacheStorageLayoutAuditV2-L1 task:
+  goal:
+    Keep the current 4096..16384 speed/RSS balance while checking whether
+    class-specific frontcache backing storage can recover allocator-local RSS
+    or improve cache locality after run2048 and active-map register fast-slot.
+  implementation:
+    Extend run_hz6_frontcache_shape_ab.sh with focused --variants support and
+    cold/class-specific storage trim variants. Do not change selected preload
+    defaults before measurement.
+  candidate variants:
+    storage_trim
+    storage_trim_cold32
+    storage_trim_cold16
+    storage_trim_c1_512_c3_512_cold32
+    storage_trim_c0_64_c1_512_c3_512_cold32
+  promotion gates:
+    fail counters stay zero, 4096..16384 improves or stays flat, 16..4096 and
+    1024..4096 do not regress materially, and peak RSS or table bytes improve
+    enough to justify making the lane default. Otherwise close as control.
+
+FrontcacheStorageLayoutAuditV2-L1 result:
+  runner updates:
+    run_hz6_frontcache_shape_ab.sh now supports --variants and reports
+    frontcache/static table attribution when stats are enabled.
+  production repeat-5:
+    raw: private/raw-results/linux/hz6_frontcache_shape_ab_20260615_161719
+    selected remains best on the target row:
+      4096..16384 selected 51.332M / 94.38 MiB
+      storage_trim_cold32 50.271M / 94.38 MiB
+    storage_trim_cold32 helped 16..4096 and 1024..4096, but the target loss and
+    unchanged peak RSS do not justify default promotion.
+  diagnostic repeat-3:
+    raw: private/raw-results/linux/hz6_frontcache_shape_ab_20260615_161900
+    storage_trim_cold32 cuts frontcache table attribution from about 10242 KiB
+    to 2152 KiB and static table attribution from about 31609 KiB to 23519 KiB,
+    with fail counters clean. Peak RSS is still flat because source payload is
+    the dominant resident pressure in the measured rows.
+  decision:
+    keep storage trim variants as control/evidence; do not change selected
+    preload defaults.
 
 Closed MidPage controls:
   free-order/page-hint/current-bias details:

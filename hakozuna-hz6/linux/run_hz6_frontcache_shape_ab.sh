@@ -10,6 +10,7 @@ OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_frontca
 SKIP_BENCH_BUILD=0
 ENABLE_STATS="${ENABLE_STATS:-1}"
 ENABLE_DIAGNOSTICS="${ENABLE_DIAGNOSTICS:-1}"
+VARIANTS="${VARIANTS:-}"
 
 source "${ROOT_DIR}/hakozuna-hz6/linux/hz6_preload_flags.sh"
 
@@ -29,6 +30,7 @@ Options:
   --no-stats        disable HZ6_PRELOAD_STATS for speed/RSS ranking
   --diagnostics     build with HZ6_DIAGNOSTIC_PROBES=1 (default)
   --no-diagnostics  build without diagnostic probe counters
+  --variants LIST   comma-separated variants to run
   --help            show this message
 EOF
 }
@@ -75,6 +77,10 @@ while [[ $# -gt 0 ]]; do
       ENABLE_DIAGNOSTICS=0
       shift
       ;;
+    --variants)
+      VARIANTS="$2"
+      shift 2
+      ;;
     --help|-h)
       usage
       exit 0
@@ -98,20 +104,41 @@ variant_flags() {
     selected)
       ;;
     mid32k_cap3072)
-      flags+=("-DHZ6_FRONT_CACHE_MIDPAGE_32K_BIN_CAPACITY=3072")
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_MIDPAGE_32K_BIN_CAPACITY 3072
       ;;
     mid32k_cap2560)
-      flags+=("-DHZ6_FRONT_CACHE_MIDPAGE_32K_BIN_CAPACITY=2560")
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_MIDPAGE_32K_BIN_CAPACITY 2560
       ;;
     mid32k_cap2048)
-      flags+=("-DHZ6_FRONT_CACHE_MIDPAGE_32K_BIN_CAPACITY=2048")
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_MIDPAGE_32K_BIN_CAPACITY 2048
       ;;
     midpage_cap3072)
-      flags+=("-DHZ6_FRONT_CACHE_MIDPAGE_8K_BIN_CAPACITY=3072")
-      flags+=("-DHZ6_FRONT_CACHE_MIDPAGE_32K_BIN_CAPACITY=3072")
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_MIDPAGE_8K_BIN_CAPACITY 3072
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_MIDPAGE_32K_BIN_CAPACITY 3072
       ;;
     storage_trim)
-      flags+=("-DHZ6_FRONT_CACHE_CLASS_STORAGE_TRIM_L1=1")
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS_STORAGE_TRIM_L1 1
+      ;;
+    storage_trim_cold32)
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS_STORAGE_TRIM_L1 1
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_COLD_CLASS_STORAGE_CAPACITY 32
+      ;;
+    storage_trim_cold16)
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS_STORAGE_TRIM_L1 1
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_COLD_CLASS_STORAGE_CAPACITY 16
+      ;;
+    storage_trim_c1_512_c3_512_cold32)
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS_STORAGE_TRIM_L1 1
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS1_STORAGE_CAPACITY 512
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS3_STORAGE_CAPACITY 512
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_COLD_CLASS_STORAGE_CAPACITY 32
+      ;;
+    storage_trim_c0_64_c1_512_c3_512_cold32)
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS_STORAGE_TRIM_L1 1
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS0_STORAGE_CAPACITY 64
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS1_STORAGE_CAPACITY 512
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS3_STORAGE_CAPACITY 512
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_COLD_CLASS_STORAGE_CAPACITY 32
       ;;
     *)
       echo "unknown variant: ${variant}" >&2
@@ -167,9 +194,13 @@ mkdir -p "$OUTDIR"
   echo "bench=${BENCH}"
   echo "stats=${ENABLE_STATS}"
   echo "diagnostics=${ENABLE_DIAGNOSTICS}"
+  echo "variants=${VARIANTS}"
 } > "${OUTDIR}/README.log"
 
 variants=(selected mid32k_cap3072 mid32k_cap2560 mid32k_cap2048 midpage_cap3072 storage_trim)
+if [[ -n "$VARIANTS" ]]; then
+  IFS=',' read -r -a variants <<< "$VARIANTS"
+fi
 for variant in "${variants[@]}"; do
   build_variant "$variant"
 done
@@ -199,7 +230,20 @@ import sys
 root = pathlib.Path(sys.argv[1])
 readme = (root / "README.log").read_text(errors="replace")
 rows = ["16_256", "16_4096", "1024_4096", "4096_16384"]
-variants = ["selected", "mid32k_cap3072", "mid32k_cap2560", "mid32k_cap2048", "midpage_cap3072", "storage_trim"]
+variants_line = ""
+if "variants=" in readme:
+    variants_line = readme.split("variants=", 1)[1].splitlines()[0]
+if variants_line:
+    variants = [v.strip() for v in variants_line.split(",") if v.strip()]
+else:
+    variants = [
+        "selected",
+        "mid32k_cap3072",
+        "mid32k_cap2560",
+        "mid32k_cap2048",
+        "midpage_cap3072",
+        "storage_trim",
+    ]
 ops_re = re.compile(r"ops/s=([0-9.]+)")
 peak_re = re.compile(r"peak_kb=([0-9]+)")
 kv_re = re.compile(r"([A-Za-z0-9_]+)=([0-9]+)")
@@ -213,6 +257,8 @@ def parse_stats(text):
             out.update({k: int(v) for k, v in kv_re.findall(line)})
         elif line.startswith("[HZ6_PRELOAD_PHASE_STATS]"):
             out.update({k: int(v) for k, v in kv_re.findall(line)})
+        elif line.startswith("[HZ6_PRELOAD_MEMORY_ATTR]"):
+            out.update({k: int(v) for k, v in kv_re.findall(line)})
     return out
 
 def median(values):
@@ -225,8 +271,8 @@ print(f"stats: `{stats_mode}`")
 diagnostics_mode = readme.split("diagnostics=", 1)[1].splitlines()[0] if "diagnostics=" in readme else "unknown"
 print(f"diagnostics: `{diagnostics_mode}`")
 print()
-print("| row | variant | med ops/s | med peak KB | alloc_fail | route_register_fail | source_block_exhausted | malloc_real_fallback | c4_max | c5_max | c4_empty | c5_empty |")
-print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+print("| row | variant | med ops/s | med peak KB | frontcache table KB | static table KB | alloc_fail | route_register_fail | source_block_exhausted | malloc_real_fallback | c4_max | c5_max | c4_empty | c5_empty |")
+print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 for row in rows:
     for variant in variants:
         ops = []
@@ -247,6 +293,8 @@ for row in rows:
             "route_register_fail",
             "source_block_exhausted",
             "malloc_real_fallback",
+            "frontcache_table_bytes",
+            "static_table_bytes",
             "c4_max",
             "c5_max",
             "c4_empty",
@@ -259,6 +307,8 @@ for row in rows:
         print(
             f"| {row} | {variant} | "
             f"{med_ops:.3f} | {med_peak:.0f} | "
+            f"{merged['frontcache_table_bytes'] / 1024:.0f} | "
+            f"{merged['static_table_bytes'] / 1024:.0f} | "
             f"{merged['alloc_fail']} | {merged['route_register_fail']} | "
             f"{merged['source_block_exhausted']} | {merged['malloc_real_fallback']} | "
             f"{merged['c4_max']} | {merged['c5_max']} | "
