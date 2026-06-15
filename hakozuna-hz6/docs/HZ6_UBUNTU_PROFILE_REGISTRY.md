@@ -56,3 +56,14 @@ explicit controls:
   useful evidence or workload-specific probes
   do not promote without focused/fixed/stats/RSS/cross-allocator guards
 ```
+
+## Consistency Check
+
+```sh
+./hakozuna-hz6/linux/check_hz6_preload_profile_registry.sh
+```
+
+This verifies that the standard registry aliases match
+`run_hz6_preload_profile_frontier.sh`, explicit controls are excluded from the
+default frontier, builders exist, and aliases resolve through both the HZ6
+autobuild helper and `bench/lib/bench_common.sh`.
