@@ -164,6 +164,66 @@ The best next targets are:
    data point, not an optimization target
 ```
 
+## Fixed-Size Slice Read
+
+The fixed-size comparison runner is:
+
+```bash
+./hakozuna-hz6/linux/run_hz6_ubuntu_size_slices_matrix.sh \
+  --runs 3 \
+  --iters 300000 \
+  --ws 4096 \
+  --rows fixed_mid \
+  --skip-builds
+```
+
+It is a diagnostic/comparison lane, not a selected-flag promotion lane. The
+first fixed_mid refresh is:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_ubuntu_size_slices_20260615_203643
+```
+
+| row | hz6 | hz3 | hz4 | tcmalloc | read |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `fixed_4k` | `31.376M / 91.75 MiB` | `60.642M / 68.50 MiB` | `14.186M / 59.50 MiB` | `44.508M / 70.38 MiB` | HZ6 beats HZ4/mimalloc/system, but trails HZ3/tcmalloc and has higher RSS. |
+| `fixed_8k` | `41.815M / 93.12 MiB` | `53.735M / 69.75 MiB` | `13.638M / 64.75 MiB` | `28.138M / 73.62 MiB` | HZ6 beats HZ4/tcmalloc/mimalloc/system on speed; HZ3 remains faster and lower-RSS. |
+| `fixed_16k` | `44.770M / 93.12 MiB` | `44.663M / 73.12 MiB` | `11.121M / 65.75 MiB` | `13.210M / 94.25 MiB` | HZ6 reaches the HZ3 speed frontier and beats the other measured allocators on speed; RSS remains above HZ3/HZ4/system. |
+
+Large fixed slices use a smaller working set to avoid turning the comparison
+into a memory-capacity test:
+
+```bash
+./hakozuna-hz6/linux/run_hz6_ubuntu_size_slices_matrix.sh \
+  --runs 3 \
+  --iters 120000 \
+  --ws 512 \
+  --rows large_span \
+  --skip-builds
+```
+
+Raw:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_ubuntu_size_slices_20260615_203813
+```
+
+| row | hz6 | hz3 | hz4 | tcmalloc | read |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `fixed_32k` | `47.088M / 36.50 MiB` | `87.501M / 13.50 MiB` | `11.548M / 10.88 MiB` | `15.509M / 33.25 MiB` | HZ6 is below HZ3 but much faster than HZ4/tcmalloc/mimalloc/system. |
+| `fixed_64k` | `18.137M / 35.88 MiB` | `38.326M / 15.25 MiB` | `8.320M / 142.50 MiB` | `7.746M / 90.25 MiB` | HZ6 trails HZ3, but has a strong speed/RSS balance versus HZ4/tcmalloc/mimalloc. |
+| `fixed_128k` | `17.276M / 38.00 MiB` | `0.796M / 32.45 MiB` | `0.318M / 14.96 MiB` | `4.685M / 183.25 MiB` | HZ6 is near system speed and far ahead of HZ3/HZ4/tcmalloc/mimalloc; system keeps much lower RSS. |
+| `fixed_256k` | `13.871M / 41.75 MiB` | `0.577M / 42.02 MiB` | `0.246M / 20.15 MiB` | `2.772M / 360.93 MiB` | HZ6 is the strongest non-system speed row and avoids the huge tcmalloc/mimalloc RSS cost. |
+
+Updated optimization read:
+
+```text
+HZ6 has a real fixed-size strength band from 8K through 256K.
+The next fixed-size work should not be generic active-map widening. It should
+either target fixed_4k speed/RSS specifically or explain the fixed_mid RSS
+premium with source-block/frontcache residency attribution.
+```
+
 Completed diagnostic:
 
 ```text

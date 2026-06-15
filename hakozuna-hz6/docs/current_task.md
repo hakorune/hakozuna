@@ -120,6 +120,22 @@ evidence:
     raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_203339
     sourcerun, sourcerun_sameclass, and sourcerun_reclaim were all
     guard-negative or target-flat/negative. Keep SOURCE_RUN_REUSE off.
+  cross-allocator fixed-size slice refresh:
+    runner: linux/run_hz6_ubuntu_size_slices_matrix.sh
+    fixed_mid raw: private/raw-results/linux/hz6_ubuntu_size_slices_20260615_203643
+      fixed_4k  hz6 31.376M / 91.75 MiB
+      fixed_8k  hz6 41.815M / 93.12 MiB
+      fixed_16k hz6 44.770M / 93.12 MiB
+    large_span raw: private/raw-results/linux/hz6_ubuntu_size_slices_20260615_203813
+      fixed_32k  hz6 47.088M / 36.50 MiB
+      fixed_64k  hz6 18.137M / 35.88 MiB
+      fixed_128k hz6 17.276M / 38.00 MiB
+      fixed_256k hz6 13.871M / 41.75 MiB
+    read:
+      HZ6 is not universally weak on fixed sizes. It trails HZ3/tcmalloc on
+      fixed_4k, approaches HZ3 and beats tcmalloc/HZ4 on fixed_8k, edges HZ3
+      and beats all measured allocators on fixed_16k speed, and is very strong
+      on 32K..256K speed. RSS remains the main fixed_mid tradeoff.
 
 decision:
   selected/default. This is a small but balanced production code-shape win after
@@ -127,8 +143,8 @@ decision:
   and direct_max5 as controls/no-go unless a later baseline changes the shape.
 
 next:
-  Do not widen active-map capacity/probe next. Prefer hot-path attribution
-  refresh or a non-active-map preload boundary/code-shape lane.
+  Do not widen active-map capacity/probe next. Prefer fixed-size RSS/source
+  residency attribution or a 4K-specific speed/RSS lane.
 ```
 
 ## Recent Closeout: HZ6 Ubuntu MidPage ActiveMap Collision Layout Audit-L1
