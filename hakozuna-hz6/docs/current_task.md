@@ -88,14 +88,13 @@ Calloc direct-HZ6 control:
 Recent fixed/profile repeats:
   private/raw-results/linux/hz6_fixed_boundary_profile_frontier_20260616_072931
   private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_063918
-  private/raw-results/linux/hz6_fixed_gap_matrix_20260616_074100
+  private/raw-results/linux/hz6_fixed_gap_matrix_20260616_082042
   private/raw-results/linux/hz6_fixed_quiescent_rss_matrix_20260616_072153
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_{062305,064915,065310,065329,072333,074342,074414}
   private/raw-results/linux/hz6_workload_{capacity_frontier_20260616_081537,proxy_matrix_20260616_080227}
   private/raw-results/linux/hz6_ubuntu_size_slices_20260616_073231
 
-Details:
-  archive/current_task_2026-06-16_{adaptive_profile_snapshot,calloc_profile_snapshot,fixed_boundary_profile_repeat}.md
+Details: archive/current_task_2026-06-16_{adaptive_profile_snapshot,calloc_profile_snapshot,fixed_boundary_profile_repeat}.md
 ```
 
 ## Do Not Reopen Casually
@@ -125,7 +124,8 @@ Default no-go/control-only without substantially different evidence:
 4. Treat calloc-large-real as a large-calloc RSS/speed profile, not selected.
 5. Keep calloc-direct default-off: thick focused+calloc repeat is mixed.
 6. Fixed-gap refresh says HZ6 fixed RSS profiles beat tcmalloc balance on
-   fixed_4k/8k/16k, but HZ3 remains ahead on fixed_4k/8k.
+   fixed_4k/8k/16k; external beats HZ3 speed on fixed_4k/8k, while HZ3 keeps
+   the lower RSS floor.
 7. Current profile frontier:
    latest short broad guard keeps selected/default stable; adaptive/realloc
    remain speed-leaning fixed controls; Toy-map8192/external remain explicit

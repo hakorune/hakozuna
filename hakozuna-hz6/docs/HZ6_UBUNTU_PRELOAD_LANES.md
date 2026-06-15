@@ -105,13 +105,13 @@ trim, repeat-3, `bench_mixed_ws_crt`, raw
 | `4096..16384` full cross repeat-3 | `47.293M / 81.25 MiB` |
 
 Latest selected fixed-size cross-allocator refresh, repeat-3, raw
-`private/raw-results/linux/hz6_fixed_gap_matrix_20260616_074100`:
+`private/raw-results/linux/hz6_fixed_gap_matrix_20260616_082042`:
 
 | Row | Selected read |
 | --- | ---: |
-| `fixed_4k` fixed repeat-3 | `27.809M / 79.00 MiB` |
-| `fixed_8k` fixed repeat-3 | `33.400M / 80.12 MiB` |
-| `fixed_16k` fixed repeat-3 | `35.010M / 80.12 MiB` |
+| `fixed_4k` fixed repeat-3 | `14.517M / 79.12 MiB` |
+| `fixed_8k` fixed repeat-3 | `17.429M / 80.00 MiB` |
+| `fixed_16k` fixed repeat-3 | `18.848M / 80.12 MiB` |
 
 Latest broad short profile-frontier guard after fixed-gap and Toy-map8192
 external profile work, repeat-3, raw
@@ -218,21 +218,23 @@ Latest focused cross-allocator comparison:
 | `4096..16384` | `46.682M` | `25.538M` | `47.293M` | `1.228M` | `33.280M` | `2.758M` | `83,200` |
 
 Latest fixed-size cross-allocator comparison, with the current HZ6 fixed RSS
-profiles included, raw `hz6_fixed_gap_matrix_20260616_074100`:
+profiles included, raw `hz6_fixed_gap_matrix_20260616_082042`:
 
 | Row | hz3 | hz6 | hz6 external | hz6 Toy-map8192 | tcmalloc |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| `fixed_4k` | `39.776M / 68.50 MiB` | `27.809M / 79.00 MiB` | `36.854M / 77.75 MiB` | `36.747M / 78.62 MiB` | `32.699M / 70.50 MiB` |
-| `fixed_8k` | `36.665M / 69.88 MiB` | `33.400M / 80.12 MiB` | `35.968M / 78.25 MiB` | `35.187M / 79.25 MiB` | `20.171M / 72.75 MiB` |
-| `fixed_16k` | `29.402M / 73.00 MiB` | `35.010M / 80.12 MiB` | `34.710M / 78.25 MiB` | `35.463M / 79.25 MiB` | `11.385M / 89.88 MiB` |
+| `fixed_4k` | `19.103M / 68.50 MiB` | `14.517M / 79.12 MiB` | `19.688M / 77.75 MiB` | `19.629M / 78.75 MiB` | `18.476M / 70.50 MiB` |
+| `fixed_8k` | `17.010M / 69.88 MiB` | `17.429M / 80.00 MiB` | `19.003M / 78.25 MiB` | `18.636M / 79.38 MiB` | `12.560M / 72.12 MiB` |
+| `fixed_16k` | `14.740M / 73.25 MiB` | `18.848M / 80.12 MiB` | `18.601M / 78.25 MiB` | `18.083M / 78.88 MiB` | `8.059M / 88.75 MiB` |
 
 Important caveat:
 
 ```text
 tcmalloc remains much faster on mixed small rows and HZ3/tcmalloc dominate the
-tiny row. On fixed rows, the HZ6 fixed RSS profiles beat tcmalloc balance on
-fixed_4k/8k/16k and beat HZ3 speed on fixed_16k. HZ3 still has the better
-fixed_4k/8k speed/RSS frontier because its medium path has a lower static floor.
+tiny row. On fixed rows, the HZ6 fixed RSS profiles beat tcmalloc speed/RSS
+balance on fixed_4k/8k/16k in this refresh. The external profile also beats HZ3
+speed on fixed_4k/8k and selected/external beat HZ3 speed on fixed_16k. HZ3
+still has the lower fixed_4k/8k RSS floor because its medium path has a lower
+static floor.
 ```
 
 Follow-up:
@@ -292,7 +294,7 @@ Current follow-up read:
 | Small-boundary fast target DSO | profile/control, no default | `./hakozuna-hz6/linux/build_hz6_preload_small_boundary_fast_target.sh` combines selected ToyTrustedDefault-L1 with realloc-boundary slack and raw-push. It remains profile-only: raw-push and realloc-boundary slack are not selected/default even though the Toy/trusted subset now is. |
 | Small-boundary trusted target DSO | profile/control, no default | `./hakozuna-hz6/linux/build_hz6_preload_small_boundary_trusted_target.sh` combines selected ToyTrustedDefault-L1 with realloc-boundary slack while leaving raw-push off. Latest fixed-floor refresh raw `hz6_preload_profile_frontier_20260616_060739` keeps it as the strongest simple fixed-boundary profile: `fixed_4k 49.338M / 79.62 MiB`, `fixed_8k 48.253M / 80.00 MiB`; it is target-weaker than selected (`4096..16384 47.545M` vs selected `48.180M`) and weak on `fixed_16k`, so keep it profile-only for known small/fixed-boundary workloads. |
 | Small-boundary trusted Toy-map8192 target DSO | fixed-boundary RSS profile/control, no default | `./hakozuna-hz6/linux/build_hz6_preload_small_boundary_trusted_toy_map8192_target.sh` combines the preferred small-boundary trusted profile with `HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY=8192`. Production repeat-9/no-stats raw `hz6_midpage_payload_trim_ab_20260616_062305` shows the intended tradeoff versus `small_boundary_trusted`: `fixed_4k 44.441M / 79.62 MiB -> 44.792M / 78.75 MiB`, `fixed_8k 43.318M / 80.12 MiB -> 43.797M / 79.12 MiB`, `fixed_16k 43.276M / 80.00 MiB -> 43.362M / 79.25 MiB`, and `4096..16384 42.622M / 81.25 MiB -> 43.002M / 80.25 MiB`. Fixed-frontier repeat-3 raw `hz6_fixed_boundary_profile_frontier_20260616_072931` keeps it as a speed-leaning RSS profile: `fixed_4k 36.567M / 78.75 MiB`, `fixed_8k 34.357M / 79.38 MiB`, `fixed_16k 34.955M / 79.25 MiB`, with better broad focused rows than the external variant. Cross-allocator fixed-mid raw `hz6_ubuntu_size_slices_20260616_073231` keeps HZ3 ahead on fixed_4k/8k, but this profile beats tcmalloc on fixed_8k/16k speed and RSS balance. Stats-on safety raw `hz6_midpage_payload_trim_ab_20260616_063240` keeps `fail=0`. It regresses mixed-small guards versus selected, so keep it out of selected/default. Aliases: `hz6-small-boundary-trusted-toy-map8192-target` / `hz6_small_boundary_trusted_toy_map8192_target`. |
-| Small-boundary trusted Toy-map8192 external target DSO | lower-RSS fixed-boundary profile/control, no default | Added runner variants `small_boundary_trusted_toy_map8192_external`, `small_boundary_trusted_toy_map8192_frontcache_packed`, and `small_boundary_trusted_toy_map8192_external_frontcache_packed` to test whether the fixed-boundary RSS profile should absorb Toy external active-map storage or packed frontcache metadata. Production repeat-5/no-stats raw `hz6_midpage_payload_trim_ab_20260616_071900` showed the RSS direction was real, and repeat-9/no-stats raw `hz6_midpage_payload_trim_ab_20260616_072333` promoted `external` to a persistent explicit profile. Latest fixed-frontier repeat-3 raw `hz6_fixed_boundary_profile_frontier_20260616_072931` makes `external` the lower-RSS/ops-per-MiB choice for `fixed_4k` and `fixed_8k`: `fixed_4k 36.143M / 77.62 MiB / 465.6K ops/MiB`, `fixed_8k 35.250M / 78.12 MiB / 451.2K ops/MiB`; it is also target ops/MiB-positive (`4096..16384 35.736M / 79.00 MiB / 452.4K ops/MiB`). Fixed-gap raw `hz6_fixed_gap_matrix_20260616_074100` confirms the current external position against tcmalloc/HZ3. Mixed-small remains weak (`16..4096` and `1024..4096` regress), so keep out of selected/default and out of standard frontier. Follow-up production raw `hz6_midpage_payload_trim_ab_20260616_074342` and stats raw `hz6_midpage_payload_trim_ab_20260616_074414` reject adding sourceblock/all-packed to this profile: tiny RSS wins are too small and speed is weaker on target/fixed rows despite `fail=0`. Persistent alias: `hz6-small-boundary-trusted-toy-map8192-external-target` / `hz6_small_boundary_trusted_toy_map8192_external_target`. |
+| Small-boundary trusted Toy-map8192 external target DSO | lower-RSS fixed-boundary profile/control, no default | Added runner variants `small_boundary_trusted_toy_map8192_external`, `small_boundary_trusted_toy_map8192_frontcache_packed`, and `small_boundary_trusted_toy_map8192_external_frontcache_packed` to test whether the fixed-boundary RSS profile should absorb Toy external active-map storage or packed frontcache metadata. Production repeat-5/no-stats raw `hz6_midpage_payload_trim_ab_20260616_071900` showed the RSS direction was real, and repeat-9/no-stats raw `hz6_midpage_payload_trim_ab_20260616_072333` promoted `external` to a persistent explicit profile. Latest fixed-frontier repeat-3 raw `hz6_fixed_boundary_profile_frontier_20260616_072931` makes `external` the lower-RSS/ops-per-MiB choice for `fixed_4k` and `fixed_8k`: `fixed_4k 36.143M / 77.62 MiB / 465.6K ops/MiB`, `fixed_8k 35.250M / 78.12 MiB / 451.2K ops/MiB`; it is also target ops/MiB-positive (`4096..16384 35.736M / 79.00 MiB / 452.4K ops/MiB`). Fixed-gap raw `hz6_fixed_gap_matrix_20260616_082042` confirms the current external position against tcmalloc/HZ3: external wins fixed_4k/8k speed and ops/MiB in that matrix, while HZ3 keeps the lower RSS floor. Mixed-small remains weak (`16..4096` and `1024..4096` regress), so keep out of selected/default and out of standard frontier. Follow-up production raw `hz6_midpage_payload_trim_ab_20260616_074342` and stats raw `hz6_midpage_payload_trim_ab_20260616_074414` reject adding sourceblock/all-packed to this profile: tiny RSS wins are too small and speed is weaker on target/fixed rows despite `fail=0`. Persistent alias: `hz6-small-boundary-trusted-toy-map8192-external-target` / `hz6_small_boundary_trusted_toy_map8192_external_target`. |
 | Small-boundary trusted Toy-map8192 probe8 control | control/no-go | `small_boundary_trusted_toy_map8192_probe8` keeps the fixed-boundary RSS profile but widens Toy active-map probe limit to 8. Production repeat-7/no-stats raw `hz6_midpage_payload_trim_ab_20260616_063637` did not recover the mixed-small guard enough and hurt important profile rows: `4096..16384 37.746M -> 37.114M`, `fixed_8k 37.288M -> 35.742M`; `16..4096` only nudged up (`33.728M -> 33.948M`). Keep probe4 for the profile. |
 | Small-boundary trusted Toy-map8192 8K-run controls | control/no-go | Added runner-only controls `small_boundary_trusted_toy_map8192_run8_256k`, `run8_384k`, and `run8_512k` to test whether shrinking `HZ6_MIDPAGE_RUN_BYTES` can lower the fixed-boundary RSS profile floor. Production repeat-5/no-stats raw `hz6_midpage_payload_trim_ab_20260616_064915` rejects profile promotion: peak RSS barely moves (`fixed_4k 78.62 -> 78.25 MiB` at best; fixed_8k/fixed_16k stay about `79.1..79.3 MiB`), while speed regresses on fixed_4k and fixed_16k. `run8_384k` only helps fixed_8k speed (`37.330M -> 38.237M`) without RSS improvement. Keep selected/profile 8K run768. |
 | `HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1=1` | selected/default | Production-only direct-local reuse code-shape control. Bypasses the generic `hz6_allocator_frontcache_pop()` wrapper in stats-off builds; disabled under diagnostics. Repeat-15 improved all focused rows and stats safety stayed clean. |
