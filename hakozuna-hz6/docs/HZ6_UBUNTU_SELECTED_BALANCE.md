@@ -472,6 +472,7 @@ Fixed-size residency follow-up:
 
 ```text
 raw: hakozuna-hz6/private/raw-results/linux/hz6_midpage_rss_audit_20260615_204203
+refresh: hakozuna-hz6/private/raw-results/linux/hz6_fixed_rss_residency_refresh_20260616_021200
 runner: run_hz6_midpage_rss_audit.sh --rows fixed_mid
 
 fixed_4k:
@@ -496,6 +497,13 @@ read:
   does not fire on this final fixed_16k shape, so defaulting that behavior is
   still wrong. A new design would need an explicit quiescent/snapshot/scavenge
   trigger or a class-specific supply cap, not the previous per-free gate.
+
+refresh read:
+  The 2026-06-16 refresh matches the same shape. fixed_16k reports 520.25 MiB
+  logical payload, 520.00 MiB 32K all-local-free payload, 16384 matching retire
+  descriptors/frontcache entries, and ref mismatch 0. Keep free-path cold-retire
+  closed for default; use explicit malloc_trim for quiescent current-RSS recovery
+  and profile lanes for speed.
 ```
 
 Completed diagnostic:

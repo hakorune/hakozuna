@@ -67,6 +67,7 @@ Next allocator work:
       strong but below HZ3; fixed_4k remains a Toy/tcmalloc/HZ3 gap.
   Latest HZ6 Ubuntu quiescent RSS read:
     hakozuna-hz6/private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_012801
+    hakozuna-hz6/private/raw-results/linux/hz6_fixed_rss_residency_refresh_20260616_021200
     malloc_trim keeps peak RSS flat but lowers current RSS:
       16..4096    79.88 MiB -> 27.27 MiB
       1024..4096  91.00 MiB -> 27.18 MiB
@@ -74,6 +75,9 @@ Next allocator work:
       fixed_16k   93.38 MiB -> 28.38 MiB
     read: RSS progress is currently strongest as explicit quiescent recovery;
       peak RSS still mostly reflects touched MidPage source payload.
+      fixed-size residency refresh keeps fixed_16k at 520 MiB logical 32K
+      all-local-free/frontcache-retained payload with ref mismatch 0, so
+      cold-retire/free-path release remains closed for default.
     cold_retire_max16 retires payload on the target row but does not reduce
       current/peak RSS enough and remains control/no-go.
   Latest HZ6 Ubuntu follow-up control:

@@ -76,6 +76,7 @@ Fixed-size selected matrix:
 
 RSS:
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_012801
+  private/raw-results/linux/hz6_fixed_rss_residency_refresh_20260616_021200
 
   malloc_trim keeps peak RSS flat but lowers current RSS:
     16..4096    79.88 MiB -> 27.27 MiB
@@ -86,6 +87,9 @@ RSS:
 Read:
   HZ6's current Ubuntu strength is speed/RSS balance plus explicit quiescent
   RSS recoverability. Peak RSS is still mostly touched MidPage source payload.
+  Fixed-size residency refresh keeps the same diagnosis: fixed_16k reports
+  520 MiB logical 32K payload as all-local-free/frontcache-retained material,
+  with ref mismatch 0. Do not reopen free-path cold-retire default.
 ```
 
 ## Current Profile DSOs
