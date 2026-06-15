@@ -91,7 +91,7 @@ Earlier cross-allocator refresh after static table trim:
   4096..16384 hz6 41.264M / 94.38 MiB
   At that checkpoint on 4096..16384, HZ6 trailed tcmalloc speed
   (41.264M vs 44.812M) but had lower RSS and better ops-per-MiB.
-Latest cross-allocator refresh after current-bias and 8K run768:
+Earlier cross-allocator refresh after current-bias and 8K run768:
   raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_050834
   16..256     hz6 57.545M / 30.50 MiB
   16..4096    hz6 40.441M / 79.75 MiB
@@ -100,6 +100,28 @@ Latest cross-allocator refresh after current-bias and 8K run768:
   On 4096..16384, HZ6 now beats tcmalloc on speed/RSS:
     hz6      45.984M / 94.38 MiB
     tcmalloc 45.310M / 103.25 MiB
+MidPage32KRun1536-L1 is now selected/default for Ubuntu preload:
+  HZ6_MIDPAGE_32K_RUN_BYTES 786432 -> 1572864
+  focused repeat-15 without stats:
+    raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_103231
+    16..256      57.738M -> 57.228M  (-0.88%)
+    16..4096     41.985M -> 41.791M  (-0.46%)
+    1024..4096   40.525M -> 40.302M  (-0.55%)
+    4096..16384  46.078M -> 47.991M  (+4.15%)
+  stats repeat-3:
+    raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_103250
+    fail counters 0; 4096..16384 source_alloc 1599 -> 900.
+  post-promotion HZ6-only repeat-5:
+    raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_103405
+    16..256      57.985M / 30.38 MiB
+    16..4096     41.868M / 79.75 MiB
+    1024..4096   40.253M / 91.12 MiB
+    4096..16384  48.563M / 94.50 MiB
+  full cross repeat-3:
+    raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_103414
+    4096..16384 hz6 45.283M / 94.38 MiB
+    4096..16384 tcmalloc 44.034M / 103.75 MiB
+  decision: promote HZ6_MIDPAGE_32K_RUN_BYTES=1572864 for Ubuntu preload.
 Earlier repeat-3 refresh after free-hint/free-fastslot no-go closeouts:
   raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_004605
   16..256     hz6 58.046M / 30.50 MiB
@@ -223,7 +245,7 @@ Latest MidPage closeout:
   keep noinline/branch-isolated transfer-skip off
   keep preload-boundary noinline transfer-skip selected
   keep static table trim selected
-  keep MidPage 32K run768 selected
+  keep MidPage 32K run1536 selected
   keep preclassified malloc shape out of source
   keep MidPage target DSO as selected/control alias
 

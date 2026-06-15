@@ -155,8 +155,9 @@ Historical decision before current-bias:
 promote HZ6_MIDPAGE_32K_RUN_BYTES=524288.
 Keep 262144 as the direct control.
 Do not promote smaller payload-trim run sizes.
-Superseded follow-up: HZ6_MIDPAGE_32K_RUN_BYTES=786432 is now selected for the
-Ubuntu preload bundle; keep 524288 as the direct control.
+Superseded follow-up: HZ6_MIDPAGE_32K_RUN_BYTES=786432 was selected for the
+Ubuntu preload bundle, then superseded by 1572864 after the run1536 promotion.
+Keep 786432 and 524288 as direct controls.
 ```
 
 ## Lane E: MidPageSupplyMapResume-L1

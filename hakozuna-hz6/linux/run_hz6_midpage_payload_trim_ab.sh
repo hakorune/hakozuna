@@ -8,6 +8,9 @@ ITERS="${ITERS:-200000}"
 WS="${WS:-4096}"
 OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_midpage_payload_trim_ab_$(date +%Y%m%d_%H%M%S)}"
 SKIP_BENCH_BUILD=0
+ENABLE_STATS="${ENABLE_STATS:-1}"
+VARIANTS="${VARIANTS:-}"
+INCLUDE_TINY="${INCLUDE_TINY:-0}"
 
 source "${ROOT_DIR}/hakozuna-hz6/linux/hz6_preload_flags.sh"
 
@@ -23,6 +26,10 @@ Options:
   --ws N            working set (default: 4096)
   --outdir DIR      output directory
   --skip-bench      reuse existing benchmark binary
+  --stats           enable HZ6_PRELOAD_STATS during runs (default)
+  --no-stats        disable HZ6_PRELOAD_STATS for speed/RSS ranking
+  --variants LIST   comma-separated variants to run
+  --include-tiny    also run the 16..256 tiny guard row
   --help            show this message
 EOF
 }
@@ -51,6 +58,22 @@ while [[ $# -gt 0 ]]; do
       ;;
     --skip-bench)
       SKIP_BENCH_BUILD=1
+      shift
+      ;;
+    --stats)
+      ENABLE_STATS=1
+      shift
+      ;;
+    --no-stats)
+      ENABLE_STATS=0
+      shift
+      ;;
+    --variants)
+      VARIANTS="$2"
+      shift 2
+      ;;
+    --include-tiny)
+      INCLUDE_TINY=1
       shift
       ;;
     --help|-h)
@@ -131,9 +154,15 @@ run_once() {
   local so="${OUTDIR}/build/${variant}/libhakozuna_hz6_preload.so"
   local log="${OUTDIR}/${row}/${run_id}_${variant}.log"
   mkdir -p "${OUTDIR}/${row}"
-  env HZ6_PRELOAD_STATS=1 LD_PRELOAD="$so" \
-    "$BENCH" 4 "$ITERS" "$WS" "$min_size" "$max_size" \
-    > "$log" 2>&1
+  if [[ "$ENABLE_STATS" -ne 0 ]]; then
+    env HZ6_PRELOAD_STATS=1 LD_PRELOAD="$so" \
+      "$BENCH" 4 "$ITERS" "$WS" "$min_size" "$max_size" \
+      > "$log" 2>&1
+  else
+    env LD_PRELOAD="$so" \
+      "$BENCH" 4 "$ITERS" "$WS" "$min_size" "$max_size" \
+      > "$log" 2>&1
+  fi
 }
 
 if [[ "$SKIP_BENCH_BUILD" -ne 1 ]]; then
@@ -144,6 +173,13 @@ fi
 BENCH="${ROOT_DIR}/bench/out/linux/${ARCH}/bench_mixed_ws_crt"
 [[ -x "$BENCH" ]] || { echo "missing benchmark: $BENCH" >&2; exit 2; }
 
+default_variants=(selected run512k run256k run224k run192k run128k run320k run384k run448k run768k run1024k run1536k)
+if [[ -n "$VARIANTS" ]]; then
+  IFS=',' read -r -a variants <<< "$VARIANTS"
+else
+  variants=("${default_variants[@]}")
+fi
+
 mkdir -p "$OUTDIR"
 {
   echo "arch=${ARCH}"
@@ -151,9 +187,11 @@ mkdir -p "$OUTDIR"
   echo "iters=${ITERS}"
   echo "ws=${WS}"
   echo "bench=${BENCH}"
+  echo "stats=${ENABLE_STATS}"
+  echo "variants=${variants[*]}"
+  echo "include_tiny=${INCLUDE_TINY}"
 } > "${OUTDIR}/README.log"
 
-variants=(selected run512k run256k run224k run192k run128k run320k run384k run448k run768k run1024k run1536k)
 for variant in "${variants[@]}"; do
   build_variant "$variant"
 done
@@ -163,6 +201,9 @@ rows=(
   "1024_4096 1024 4096"
   "4096_16384 4096 16384"
 )
+if [[ "$INCLUDE_TINY" -ne 0 ]]; then
+  rows=("16_256 16 256" "${rows[@]}")
+fi
 
 for row_spec in "${rows[@]}"; do
   read -r row min_size max_size <<< "$row_spec"
@@ -173,24 +214,16 @@ for row_spec in "${rows[@]}"; do
   done
 done
 
-python3 - <<'PY' "$OUTDIR" | tee "${OUTDIR}/summary.md"
+python3 - <<'PY' "$OUTDIR" "${variants[*]}" "${rows[*]}" | tee "${OUTDIR}/summary.md"
 import pathlib
 import re
 import statistics
 import sys
 
 root = pathlib.Path(sys.argv[1])
-rows = ["16_4096", "1024_4096", "4096_16384"]
-variants = [
-    "selected_512k",
-    "run256k",
-    "run224k",
-    "run192k",
-    "run128k",
-    "run320k",
-    "run384k",
-    "run448k",
-]
+variants = sys.argv[2].split()
+rows_blob = sys.argv[3].split()
+rows = [rows_blob[i] for i in range(0, len(rows_blob), 3)]
 ops_re = re.compile(r"ops/s=([0-9.]+)")
 peak_re = re.compile(r"peak_kb=([0-9]+)")
 kv_re = re.compile(r"([A-Za-z0-9_]+)=([0-9]+)")
@@ -208,6 +241,9 @@ def parse_stats(text):
 
 print("# HZ6 MidPage Payload Trim A/B\n")
 print(f"root: `{root}`\n")
+readme = (root / "README.log").read_text(errors="replace")
+stats_mode = readme.split("stats=", 1)[1].splitlines()[0] if "stats=" in readme else "unknown"
+print(f"stats: `{stats_mode}`\n")
 print("| row | variant | median ops/s | median peak MiB | fail | source_alloc | mid32_alloc | mid32_prefill | mid32_filled | mid32_front_push |")
 print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 for row in rows:
