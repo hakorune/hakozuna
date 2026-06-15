@@ -101,16 +101,16 @@ class4/class5 frontcache storage trim:
 | `fixed_8k` HZ6-only repeat-5 | `43.088M / 93.25 MiB` |
 | `fixed_16k` HZ6-only repeat-5 | `44.971M / 93.12 MiB` |
 
-Latest cross-allocator refresh after preload MidPage direct-class promotion,
+Latest cross-allocator refresh after class4/class5 frontcache storage trim,
 repeat-3, `bench_mixed_ws_crt`, raw
-`private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_212811`:
+`private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_213629`:
 
 | Row | hz6 | mimalloc | tcmalloc | system | hz6 peak KB |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| `16..256` | `53.758M` | `51.910M` | `240.099M` | `90.615M` | `31,232` |
-| `16..4096` | `34.858M` | `6.889M` | `75.857M` | `17.239M` | `81,536` |
-| `1024..4096` | `31.574M` | `5.450M` | `72.726M` | `8.456M` | `93,056` |
-| `4096..16384` | `40.833M` | `1.279M` | `32.849M` | `2.867M` | `96,384` |
+| `16..256` | `55.910M` | `52.002M` | `230.273M` | `98.652M` | `31,104` |
+| `16..4096` | `34.828M` | `6.880M` | `77.056M` | `16.471M` | `81,536` |
+| `1024..4096` | `31.870M` | `5.491M` | `77.413M` | `8.492M` | `93,056` |
+| `4096..16384` | `42.006M` | `1.286M` | `34.873M` | `2.808M` | `96,384` |
 
 Important caveat:
 

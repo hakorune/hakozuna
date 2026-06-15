@@ -1371,6 +1371,30 @@ evidence:
     stats raw: private/raw-results/linux/hz6_frontcache_shape_ab_20260615_213504
     selected DSO keeps the trimmed attribution and fail counters clean.
 
+  post-promotion cross refresh:
+    raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_213629
+    16..256:
+      hz6 55.910M / 30.38 MiB
+      tcmalloc 230.273M / 9.25 MiB
+      read: HZ6 beats mimalloc but tiny remains out of scope for this lane.
+    16..4096:
+      hz6 34.828M / 79.62 MiB
+      hz4 47.064M / 59.50 MiB
+      tcmalloc 77.056M / 41.50 MiB
+      read: mid-small speed/RSS gap remains.
+    1024..4096:
+      hz6 31.870M / 90.88 MiB
+      hz4 42.076M / 52.62 MiB
+      tcmalloc 77.413M / 48.75 MiB
+      read: this is still the weakest selected-family comparison row.
+    4096..16384:
+      hz6 42.006M / 94.12 MiB
+      hz3 52.193M / 73.38 MiB
+      hz4 26.034M / 111.88 MiB
+      tcmalloc 34.873M / 100.25 MiB
+      read: target lane remains strong; HZ6 beats HZ4/tcmalloc/mimalloc on
+        speed and RSS, while HZ3 remains the ceiling.
+
 read:
   This is a small but broad selected/default win. It does not materially lower
   peak RSS because source payload and active pages still dominate peak reads,
@@ -1378,7 +1402,6 @@ read:
   mid-small rows that were weakest after the direct_class closeout.
 
 next:
-  Re-run the selected-vs-allocator matrix after storage trim, then decide
-  whether mid-small still deserves attribution work or whether to return to
-  narrow preload boundary/code-shape lanes.
+  Mid-small still deserves attribution work if continuing performance polish.
+  Do not chase tiny first. Target row is already a strong HZ6 balance lane.
 ```
