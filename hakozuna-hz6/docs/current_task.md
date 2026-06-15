@@ -134,6 +134,48 @@ Toy target DSO:
         run_linux_bench_compare_matrix.sh forwarded hz6-toy-target through the
         shared compare runner and resolved the profile DSO correctly.
 
+PreloadMidPageRunRouteAfterMaps-L1:
+  Add default-off controls:
+    HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_DRYRUN_L1
+    HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_L1
+    runner variants:
+      runroute_dryrun_after_maps
+      runroute_after_maps
+
+  intent:
+    After Toy/MidPage active maps miss, try descriptor-validated source-run
+    metadata before full RouteLayer lookup. Keep RouteLayer fallback on any
+    miss/mismatch. Exclude Toy and accept only MidPage route results.
+
+  diagnostic read:
+    raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_221341
+    selected vs dryrun, stats+diagnostics, 200K:
+      16..4096:
+        runroute_attempt=938
+        runroute_hit=0
+        runroute_fallback=938
+        RSS 79.62 MiB -> 132.12 MiB
+      1024..4096:
+        runroute_attempt=1138
+        runroute_hit=0
+        runroute_fallback=1138
+        RSS 90.88 MiB -> 145.50 MiB
+      4096..16384:
+        runroute_attempt=602
+        runroute_hit=0
+        runroute_fallback=602
+        RSS 94.00 MiB -> 139.38 MiB
+        runmeta detail:
+          range_index_hit=602
+          source_block_route_behavior_valid=0
+          source_block_route_behavior_invalid_front=602
+
+  decision:
+    No-go for default and no need to run behavior promotion.
+    The range index can find source blocks, but the source-run metadata is not
+    valid as a preload free route after active-map miss. The lane adds large
+    static/RSS cost and produces zero route hits.
+
 goal:
   Re-test low-risk Toy/small controls after the selected raw frontcache pop
   changed the production hot-path code shape.

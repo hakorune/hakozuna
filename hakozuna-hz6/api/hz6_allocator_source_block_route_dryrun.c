@@ -2,6 +2,8 @@
 
 #if (HZ6_SOURCE_BLOCK_ROUTE_DRYRUN_L1 && HZ6_DIAGNOSTIC_PROBES) || \
     HZ6_SOURCE_BLOCK_ROUTE_BEHAVIOR_L1 ||                         \
+    HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_L1 ||                  \
+    HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_DRYRUN_L1 ||           \
     (HZ6_SMALL_RUN_ROUTE_DRYRUN_L1 && HZ6_DIAGNOSTIC_PROBES) ||    \
     HZ6_SMALL_RUN_ROUTE_BEHAVIOR_L1
 static int hz6_source_block_route_bit_get(const Hz6SourceBlock* block,
@@ -16,6 +18,8 @@ static int hz6_source_block_route_bit_get(const Hz6SourceBlock* block,
 #endif
 
 #if HZ6_SOURCE_BLOCK_ROUTE_BEHAVIOR_L1 ||                         \
+    HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_L1 ||                  \
+    HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_DRYRUN_L1 ||           \
     (HZ6_SMALL_RUN_ROUTE_DRYRUN_L1 && HZ6_DIAGNOSTIC_PROBES) ||    \
     HZ6_SMALL_RUN_ROUTE_BEHAVIOR_L1
 static int hz6_source_block_route_slot_index(const Hz6SourceBlock* block,
@@ -211,7 +215,9 @@ Hz6RouteResult hz6_allocator_small_run_route_lookup(Hz6Allocator* allocator,
 
 Hz6RouteResult hz6_allocator_source_block_route_lookup(Hz6Allocator* allocator,
                                                        const void* ptr) {
-#if HZ6_SOURCE_BLOCK_ROUTE_BEHAVIOR_L1 && \
+#if (HZ6_SOURCE_BLOCK_ROUTE_BEHAVIOR_L1 || \
+     HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_L1 || \
+     HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_DRYRUN_L1) && \
     HZ6_SOURCE_BLOCK_ROUTE_RANGE_INDEX_L1 && \
     HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_L1
   if (!allocator || !ptr) {

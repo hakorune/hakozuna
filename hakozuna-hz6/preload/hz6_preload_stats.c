@@ -296,6 +296,11 @@ static void hz6_preload_print_stats(void) {
   size_t source_block_route_range_index_stale = 0;
   size_t source_block_route_range_index_probe_total = 0;
   size_t source_block_route_range_index_probe_max = 0;
+  size_t source_block_route_behavior_attempt = 0;
+  size_t source_block_route_behavior_valid = 0;
+  size_t source_block_route_behavior_fallback = 0;
+  size_t source_block_route_behavior_invalid_front = 0;
+  size_t source_block_route_behavior_invalid_descriptor = 0;
 #if HZ6_DIAGNOSTIC_PROBES
   size_t memory_descriptor_table_bytes = 0;
   size_t memory_route_table_bytes = 0;
@@ -649,6 +654,15 @@ static void hz6_preload_print_stats(void) {
       source_block_route_range_index_probe_max =
           stats.source_block_route_range_index_probe_max;
     }
+    source_block_route_behavior_attempt +=
+        stats.source_block_route_behavior_attempt;
+    source_block_route_behavior_valid += stats.source_block_route_behavior_valid;
+    source_block_route_behavior_fallback +=
+        stats.source_block_route_behavior_fallback;
+    source_block_route_behavior_invalid_front +=
+        stats.source_block_route_behavior_invalid_front;
+    source_block_route_behavior_invalid_descriptor +=
+        stats.source_block_route_behavior_invalid_descriptor;
 #if HZ6_DIAGNOSTIC_PROBES
     memory_descriptor_table_bytes += stats.memory_descriptor_table_bytes;
     memory_route_table_bytes += stats.memory_route_table_bytes;
@@ -1062,7 +1076,12 @@ static void hz6_preload_print_stats(void) {
           "source_block_route_range_index_miss=%zu "
           "source_block_route_range_index_stale=%zu "
           "source_block_route_range_index_probe_total=%zu "
-          "source_block_route_range_index_probe_max=%zu\n",
+          "source_block_route_range_index_probe_max=%zu "
+          "source_block_route_behavior_attempt=%zu "
+          "source_block_route_behavior_valid=%zu "
+          "source_block_route_behavior_fallback=%zu "
+          "source_block_route_behavior_invalid_front=%zu "
+          "source_block_route_behavior_invalid_descriptor=%zu\n",
           smallrun_route_attempt, smallrun_range_hit,
           smallrun_active_slot_hit, smallrun_descriptor_match,
           smallrun_generation_match, smallrun_would_valid,
@@ -1072,7 +1091,12 @@ static void hz6_preload_print_stats(void) {
           source_block_route_range_index_miss,
           source_block_route_range_index_stale,
           source_block_route_range_index_probe_total,
-          source_block_route_range_index_probe_max);
+          source_block_route_range_index_probe_max,
+          source_block_route_behavior_attempt,
+          source_block_route_behavior_valid,
+          source_block_route_behavior_fallback,
+          source_block_route_behavior_invalid_front,
+          source_block_route_behavior_invalid_descriptor);
 
 #if HZ6_DIAGNOSTIC_PROBES
   fprintf(stderr,
@@ -1232,6 +1256,13 @@ static void hz6_preload_print_stats(void) {
           "[HZ6_PRELOAD_HOOK_DETAIL] free_toy_active_map_attempt=%zu free_toy_active_map_hit=%zu "
           "free_toy_active_map_miss=%zu free_midpage_active_map_attempt=%zu "
           "free_midpage_active_map_hit=%zu free_midpage_active_map_miss=%zu "
+          "free_source_run_route_attempt=%zu "
+          "free_source_run_route_hit=%zu "
+          "free_source_run_route_midpage8_hit=%zu "
+          "free_source_run_route_midpage32_hit=%zu "
+          "free_source_run_route_invalid=%zu "
+          "free_source_run_route_fallback=%zu "
+          "free_source_run_route_prechecked=%zu "
           "free_route_lookup_after_maps=%zu free_route_valid_owned=%zu "
           "free_route_valid_foreign_visible=%zu free_route_invalid=%zu "
           "free_route_miss_real=%zu mh_probe=%zu mh_would=%zu "
@@ -1242,6 +1273,13 @@ static void hz6_preload_print_stats(void) {
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_midpage_active_map_attempt),
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_midpage_active_map_hit),
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_midpage_active_map_miss),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_source_run_route_attempt),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_source_run_route_hit),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_source_run_route_midpage8_hit),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_source_run_route_midpage32_hit),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_source_run_route_invalid),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_source_run_route_fallback),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_source_run_route_prechecked),
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_lookup_after_maps),
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_valid_owned),
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_valid_foreign_visible),

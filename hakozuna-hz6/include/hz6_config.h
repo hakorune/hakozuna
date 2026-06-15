@@ -829,6 +829,20 @@
 #define HZ6_PRELOAD_MIDPAGE_ROUTE_REARM_L1 0
 #endif
 
+#ifndef HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_DRYRUN_L1
+/* Diagnostic-only LD_PRELOAD probe.  After Toy/MidPage active maps miss, try
+ * descriptor-validated source-run metadata and then keep the normal RouteLayer
+ * lookup. */
+#define HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_DRYRUN_L1 0
+#endif
+
+#ifndef HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_L1
+/* Candidate LD_PRELOAD free shortcut.  After active maps miss, use existing
+ * source-run metadata only for validated MidPage routes, with RouteLayer
+ * fallback preserved on any miss/mismatch. */
+#define HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_L1 0
+#endif
+
 #ifndef HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1
 /* Candidate preload-boundary shortcut.  Unlike HZ6_PRELOAD_FAST_FREE_L1, this
  * only reuses preload's exact route for local MidPage frees. */

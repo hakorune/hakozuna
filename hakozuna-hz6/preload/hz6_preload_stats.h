@@ -30,6 +30,13 @@ typedef struct Hz6PreloadPhaseStats {
   _Atomic(size_t) free_midpage_active_map_hit;
   _Atomic(size_t) free_midpage_active_map_attempt;
   _Atomic(size_t) free_midpage_active_map_miss;
+  _Atomic(size_t) free_source_run_route_attempt;
+  _Atomic(size_t) free_source_run_route_hit;
+  _Atomic(size_t) free_source_run_route_midpage8_hit;
+  _Atomic(size_t) free_source_run_route_midpage32_hit;
+  _Atomic(size_t) free_source_run_route_invalid;
+  _Atomic(size_t) free_source_run_route_fallback;
+  _Atomic(size_t) free_source_run_route_prechecked;
   _Atomic(size_t) free_route_lookup_after_maps;
   _Atomic(size_t) free_route_valid_owned;
   _Atomic(size_t) free_route_valid_foreign_visible;

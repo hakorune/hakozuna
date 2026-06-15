@@ -532,9 +532,50 @@ void free(void* ptr) {
   hz6_preload_phase_count(
       &g_hz6_preload_phase_stats.free_midpage_active_map_miss);
 #endif
+#if HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_L1 || \
+    HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_DRYRUN_L1
+  int source_run_route_prechecked = 0;
+  Hz6PreloadRoute source_run_preload_route = {0};
+  source_run_preload_route.route = hz6_route_miss();
+  hz6_preload_phase_count(
+      &g_hz6_preload_phase_stats.free_source_run_route_attempt);
+  source_run_preload_route.route =
+      hz6_allocator_source_block_route_lookup(allocator, ptr);
+  if (source_run_preload_route.route.kind == HZ6_ROUTE_VALID &&
+      source_run_preload_route.route.route_allocator == allocator &&
+      source_run_preload_route.route.front_id == HZ6_FRONT_MIDPAGE &&
+      (source_run_preload_route.route.class_id == HZ6_MIDPAGE_8K_CLASS_ID ||
+       source_run_preload_route.route.class_id == HZ6_MIDPAGE_32K_CLASS_ID)) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_source_run_route_hit);
+    if (source_run_preload_route.route.class_id == HZ6_MIDPAGE_8K_CLASS_ID) {
+      hz6_preload_phase_count(
+          &g_hz6_preload_phase_stats.free_source_run_route_midpage8_hit);
+    } else {
+      hz6_preload_phase_count(
+          &g_hz6_preload_phase_stats.free_source_run_route_midpage32_hit);
+    }
+#if HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_L1
+    source_run_route_prechecked = 1;
+#endif
+  } else if (source_run_preload_route.route.kind == HZ6_ROUTE_INVALID) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_source_run_route_invalid);
+  } else {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_source_run_route_fallback);
+  }
+#endif
   hz6_preload_phase_count(
       &g_hz6_preload_phase_stats.free_route_lookup_after_maps);
+#if HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_L1 || \
+    HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_DRYRUN_L1
+  Hz6PreloadRoute preload_route =
+      source_run_route_prechecked ? source_run_preload_route
+                                  : hz6_preload_route(allocator, ptr);
+#else
   Hz6PreloadRoute preload_route = hz6_preload_route(allocator, ptr);
+#endif
   if (preload_route.route.kind == HZ6_ROUTE_VALID ||
       preload_route.route.kind == HZ6_ROUTE_INVALID) {
 #if HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1
@@ -582,6 +623,15 @@ void free(void* ptr) {
 #if HZ6_PRELOAD_FAST_FREE_L1
     hz6_free_with_route_prechecked(allocator, ptr, preload_route.route,
                                    preload_route.visible_hit);
+#elif HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_L1 || \
+    HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_DRYRUN_L1
+    if (source_run_route_prechecked) {
+      hz6_preload_phase_count(
+          &g_hz6_preload_phase_stats.free_source_run_route_prechecked);
+      hz6_free_with_route_prechecked(allocator, ptr, preload_route.route, 0);
+    } else {
+      hz6_free(allocator, ptr);
+    }
 #elif HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1
     if (midpage_fast_free) {
       hz6_free_with_route_prechecked(allocator, ptr, preload_route.route,
