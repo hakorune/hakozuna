@@ -70,8 +70,9 @@ Other controls:
   hz6-calloc-real-target
   hz6-calloc-large-real-target
 
-Profile runner:
+Runners:
   linux/run_hz6_preload_profile_frontier.sh
+  linux/run_hz6_fixed_cost_residency_matrix.sh
 ```
 
 ## Latest Evidence
