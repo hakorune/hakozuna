@@ -95,6 +95,7 @@ Calloc large-real profile:
 
 Details:
   archive/current_task_2026-06-16_adaptive_profile_snapshot.md
+  archive/current_task_2026-06-16_calloc_profile_snapshot.md
 ```
 
 ## Do Not Reopen Casually
@@ -124,4 +125,6 @@ Default no-go/control-only without substantially different evidence:
 4. Next optimization should target selected-safe code shape or a new narrow
    profile; do not promote broad real-calloc behavior.
 5. Before any selected/default change, update stable docs and archive long logs.
+6. Keep this file below about 150 lines; archive completed evidence snapshots
+   instead of appending chronological logs.
 ```

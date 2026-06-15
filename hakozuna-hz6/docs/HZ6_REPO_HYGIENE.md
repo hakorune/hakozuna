@@ -21,6 +21,7 @@ benchmark lane or source-level experiment.
 | Archive index | `archive/README.md` |
 | Archived experiment ledger | `archive/current_task_2026-06_history.md` |
 | Archived 2026-06-16 pre-compaction ledger | `archive/current_task_2026-06-16_pre_compaction.md` |
+| Archived profile/calloc snapshots | `archive/current_task_2026-06-16_*_snapshot.md` |
 
 Rule:
 
@@ -31,6 +32,8 @@ If a decision is stable, summarize it in the selected summary or lane guide.
 If a current_task-style file grows past a few hundred lines, archive a dated
 snapshot under docs/archive/ and replace the active file with links plus the
 next concrete work items.
+Keep benchmark evidence snapshots decision-shaped: raw path, key rows, read,
+and selected/default decision. Do not paste full raw logs into active docs.
 ```
 
 ## Lane Status Vocabulary
