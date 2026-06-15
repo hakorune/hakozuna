@@ -518,6 +518,16 @@ and raw-push is strong.  Repeat-15 no-stats raw
 `hz6_midpage_payload_trim_ab_20260616_002519` improved every tiny/focused/fixed
 guard row, while stats raw `hz6_midpage_payload_trim_ab_20260616_002549` kept
 `fail=0`.  Keep it as `hz6-small-boundary-fast-target`, not selected default.
+
+Cross-allocator profile position:
+  raw:
+    hz6_ubuntu_selected_balance_20260616_003133
+    hz6_ubuntu_size_slices_20260616_003055
+
+  The fast profile beats selected HZ6 on most focused/fixed rows and beats
+  tcmalloc/HZ4/mimalloc on 4096..16384, fixed_8k, and fixed_16k speed.
+  fixed_4k also beats tcmalloc speed.  It still trails HZ3 on the
+  tiny/small speed/RSS frontier and keeps HZ6-class RSS rather than HZ3/HZ4 RSS.
 ```
 
 ## Static Table Trim Promotion

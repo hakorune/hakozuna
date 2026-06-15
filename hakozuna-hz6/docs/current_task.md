@@ -132,6 +132,57 @@ latest follow-up:
       Keep selected default unchanged.  Promote this only as a named
       profile/control DSO for small/fixed-boundary workloads.
 
+    cross-allocator position:
+      raw:
+        private/raw-results/linux/hz6_ubuntu_size_slices_20260616_003055
+        private/raw-results/linux/hz6_ubuntu_selected_balance_20260616_003133
+
+      focused repeat-5, no-stats:
+        16..256:
+          hz6 selected 57.385M / 30.50 MiB
+          fast profile 76.473M / 30.50 MiB
+          tcmalloc 224.336M / 9.38 MiB
+          hz3 236.598M / 6.75 MiB
+
+        16..4096:
+          hz6 selected 35.245M / 79.50 MiB
+          fast profile 40.055M / 80.00 MiB
+          hz4 46.915M / 59.12 MiB
+          tcmalloc 80.710M / 41.25 MiB
+
+        1024..4096:
+          hz6 selected 31.777M / 91.00 MiB
+          fast profile 38.417M / 91.50 MiB
+          hz4 42.886M / 52.88 MiB
+          tcmalloc 75.718M / 49.50 MiB
+
+        4096..16384:
+          hz6 selected 42.746M / 94.25 MiB
+          fast profile 45.235M / 94.25 MiB
+          hz3 50.581M / 73.38 MiB
+          tcmalloc 34.500M / 94.25 MiB
+
+      fixed repeat-5:
+        fixed_4k:
+          fast profile 45.722M / 92.75 MiB
+          tcmalloc 43.398M / 69.50 MiB
+          hz3 59.154M / 68.38 MiB
+        fixed_8k:
+          fast profile 43.383M / 93.00 MiB
+          tcmalloc 28.091M / 71.38 MiB
+          hz3 53.661M / 69.88 MiB
+        fixed_16k:
+          hz6 selected 44.584M / 93.12 MiB
+          fast profile 43.969M / 93.12 MiB
+          hz3 43.317M / 73.12 MiB
+
+      read:
+        Fast profile is now a strong named HZ6 lane for small/fixed-boundary
+        workloads. It beats selected HZ6 on most target rows and beats
+        tcmalloc/HZ4/mimalloc on 4096..16384 and fixed_8k/fixed_16k speed.
+        fixed_4k also beats tcmalloc speed, but HZ3 remains the best
+        speed/RSS frontier for tiny/small and most fixed rows.
+
 latest continuation:
   Add default-off controls:
     HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1=1
