@@ -78,6 +78,8 @@ latest continuation:
 
 Toy target DSO:
   Add linux/build_hz6_preload_toy_target.sh.
+  Add linux/run_hz6_preload_toy_target_ab.sh for direct selected-vs-profile
+  DSO comparison.
   This builds selected preload plus:
     HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1=1
     HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES=4096
@@ -96,6 +98,21 @@ Toy target DSO:
   decision:
     Good profile DSO for Toy/mid-small workloads.
     Still not selected default because MidPage/fixed guards lose.
+
+  direct DSO runner:
+    raw: private/raw-results/linux/hz6_toy_target_preload_ab_20260615_220312
+    production repeat-7, 300K, focused+fixed:
+      16..256       +8.49%
+      16..4096      +5.19%
+      1024..4096    +4.10%
+      fixed_4k      +4.68%
+      fixed_8k      +0.15%
+      4096..16384   -1.42%
+      fixed_16k     -1.80%
+
+  final read:
+    The profile DSO is real and useful, but selected default remains the
+    balanced DSO. Do not promote Toy direct-class into hz6_preload_flags.sh.
 
 goal:
   Re-test low-risk Toy/small controls after the selected raw frontcache pop
