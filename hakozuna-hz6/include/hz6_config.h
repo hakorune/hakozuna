@@ -910,6 +910,13 @@
 #define HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_MIN_BYTES ((size_t)4096)
 #endif
 
+#ifndef HZ6_PRELOAD_MIDPAGE_DIRECT_CLASS_L1
+/* Candidate preload-boundary code-shape control.  The LD_PRELOAD boundary
+ * already limits this helper to 4097..32768-byte requests, so classify directly
+ * into MidPage 8K/32K instead of building a policy struct. */
+#define HZ6_PRELOAD_MIDPAGE_DIRECT_CLASS_L1 0
+#endif
+
 #ifndef HZ6_FRONT_PREFILL_DESCRIPTOR_OUT_L1
 /* Candidate front prefill code shape.  Source-block prefill already prepared
  * the descriptor before registering the exact route; return that descriptor to

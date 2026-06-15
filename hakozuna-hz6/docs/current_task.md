@@ -1235,3 +1235,72 @@ production shape:
     selected. Free-path source-block release does not improve maxRSS enough
     and release cost is visible even when source churn is avoided.
 ```
+
+## Recent Closeout: HZ6 Preload MidPage Direct Class-L1
+
+```text
+goal:
+  Keep attacking the selected Ubuntu LD_PRELOAD lane, but avoid reopening broad
+  malloc-path preclassification. Test only the already-isolated MidPage preload
+  boundary helper.
+
+design:
+  Add HZ6_PRELOAD_MIDPAGE_DIRECT_CLASS_L1.
+  In hz6_allocator_preload_midpage_malloc_skip_transfer(), classify directly:
+    4097..8192   -> HZ6_MIDPAGE_8K_CLASS_ID
+    8193..32768  -> HZ6_MIDPAGE_32K_CLASS_ID
+  Fall back to hz6_malloc outside the boundary.
+  Keep the generic hz6_midpage_policy_for_size() path when the flag is off.
+
+important distinction:
+  This is not the older broad preclassified malloc no-go lane.
+  The preload hook has already checked the MidPage boundary before calling this
+  helper, so the selected change removes policy-struct work only from the
+  narrow LD_PRELOAD MidPage path.
+
+evidence:
+  A/B stats-on safety:
+    raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_212243
+    safety counters clean; diagnostic throughput was mixed and is not the
+    promotion gate.
+
+  A/B production repeat-9:
+    raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_212258
+    all focused/fixed rows improved.
+
+  A/B production repeat-15:
+    raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_212317
+    16..256      selected 56.549M -> direct_class 56.946M
+    16..4096     selected 35.463M -> direct_class 35.874M
+    1024..4096   selected 32.908M -> direct_class 32.926M
+    4096..16384  selected 43.285M -> direct_class 44.309M
+    fixed_4k     selected 31.174M -> direct_class 31.903M
+    fixed_8k     selected 41.374M -> direct_class 42.503M
+    fixed_16k    selected 43.362M -> direct_class 44.061M
+
+promotion:
+  HZ6_PRELOAD_MIDPAGE_DIRECT_CLASS_L1=1 is selected/default in
+  linux/hz6_preload_flags.sh.
+
+post-promotion selected-only checks:
+  production repeat-5:
+    raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_212533
+    16..256      58.141M / 30.62 MiB
+    16..4096     35.805M / 79.62 MiB
+    1024..4096   33.437M / 91.00 MiB
+    4096..16384  44.720M / 94.25 MiB
+    fixed_4k     32.257M / 91.75 MiB
+    fixed_8k     41.978M / 93.12 MiB
+    fixed_16k    44.608M / 93.12 MiB
+
+  stats-on safety:
+    raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_212542
+    fail=0 on all focused/fixed rows.
+
+next:
+  With active-map capacity/probe/layout, cold-retire behavior, source-run reuse,
+  and broad malloc/free shortcuts mostly closed, prefer one of:
+    1. refreshed selected-vs-allocator matrix after direct_class promotion
+    2. source/payload residency shape for fixed 8K/16K RSS polish
+    3. narrow preload boundary/code-shape audit outside active-map/free-path
+```

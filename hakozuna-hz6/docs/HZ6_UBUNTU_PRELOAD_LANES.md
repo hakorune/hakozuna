@@ -50,16 +50,20 @@ HZ6_MIDPAGE_ACTIVE_MAP_REGISTER_FAST_SLOT_L1=1
 HZ6_MIDPAGE_ALLOC_DESCRIPTOR_OUT_L1=1
 HZ6_PRELOAD_MIDPAGE_MALLOC_SKIP_TRANSFER_L1=1
 HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_NOINLINE_L1=1
+HZ6_PRELOAD_MIDPAGE_DIRECT_CLASS_L1=1
 HZ6_PRELOAD_REALLOC_IN_PLACE_L1=1
 HZ6_LINUX_MMAP_RETAIN_L1=1
 HZ6_LINUX_MMAP_RETAIN_64K_STACK_L1=1
 HZ6_TOY_FULL_BLOCK_PREFILL_L1=1
 HZ6_TOY_FULL_BLOCK_PREFILL_MAX_SLOTS=128
+HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1=1
 HZ6_ROUTE_TOMBSTONE_COMPACT_L1=1
 HZ6_ROUTE_HASH_XOR_FOLD_L1=1
 HZ6_ROUTE_LINEAR_WRAP_L1=1
 HZ6_ROUTE_LOOP_CARRY_L1=1
 HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1=1
+HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1=1
+HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1=1
 ```
 
 The preload build script also explicitly keeps these no-go/control lanes off
@@ -80,15 +84,18 @@ The preload lane is a real Ubuntu performance lane, but it remains separate
 from the direct HZ6 API and Windows selected-family rows.
 
 Latest selected-default focused guards, after current-bias, 8K run768, 32K
-run2048, MidPage active-map mask-index, and MidPage active-map register
-fast-slot:
+run2048, MidPage active-map mask-index, MidPage active-map register fast-slot,
+raw direct-local pop, Toy free fast-slot, and preload MidPage direct class:
 
 | Row | Selected read |
 | --- | ---: |
-| `16..256` HZ6-only repeat-5 | `56.227M / 30.38 MiB` |
-| `16..4096` HZ6-only repeat-5 | `40.939M / 79.88 MiB` |
-| `1024..4096` HZ6-only repeat-5 | `40.079M / 91.00 MiB` |
-| `4096..16384` HZ6-only repeat-5 | `50.574M / 94.38 MiB` |
+| `16..256` HZ6-only repeat-5 | `58.141M / 30.62 MiB` |
+| `16..4096` HZ6-only repeat-5 | `35.805M / 79.62 MiB` |
+| `1024..4096` HZ6-only repeat-5 | `33.437M / 91.00 MiB` |
+| `4096..16384` HZ6-only repeat-5 | `44.720M / 94.25 MiB` |
+| `fixed_4k` HZ6-only repeat-5 | `32.257M / 91.75 MiB` |
+| `fixed_8k` HZ6-only repeat-5 | `41.978M / 93.12 MiB` |
+| `fixed_16k` HZ6-only repeat-5 | `44.608M / 93.12 MiB` |
 
 Latest cross-allocator refresh after active-map register fast-slot promotion,
 repeat-3, `bench_mixed_ws_crt`, raw
@@ -113,11 +120,13 @@ remains the higher speed/RSS frontier.
 Follow-up:
 
 ```text
-MidPage 8K run768, 32K run2048, active-map mask-index, and active-map register
-fast-slot are now selected. The current selected lane keeps the static-table
-RSS cut and reaches 50.574M / 94.38 MiB on the HZ6-only 4096..16384 repeat-5,
-with full-cross repeat-3 still clearly ahead of tcmalloc. Keep 32K run1536,
-run768, and run512 as direct controls.
+MidPage 8K run768, 32K run2048, active-map mask-index, active-map register
+fast-slot, raw direct-local pop, Toy free fast-slot, phase-counter compile-out,
+and preload MidPage direct class are now selected. The current selected-only
+post-promotion read reaches 44.720M / 94.25 MiB on the HZ6-only
+4096..16384 repeat-5. The latest full cross refresh predates direct-class
+promotion but still shows the selected family ahead of tcmalloc on the
+MidPage target row. Keep 32K run1536, run768, and run512 as direct controls.
 ```
 
 Current lane state:
@@ -127,7 +136,7 @@ Current lane state:
 | MidPage source runs | `8K run768`, `32K run2048` | smaller/larger 32K fine ladder, 8K 512K guard-negative |
 | MidPage active map | external cap16K/probe4, unaligned, mask-index, register fast-slot | cap32K/64K, probe8, class index, no-overwrite, same-class victim |
 | MidPage free path | current-bias free order | free fast-slot, current-bias free fast-slot, page-hint behavior, unconditional/aligned MidPage-first |
-| MidPage malloc path | preload-boundary noinline transfer skip, descriptor-out | core transfer-skip, preclassified malloc, trusted activation skip |
+| MidPage malloc path | preload-boundary noinline transfer skip, direct class, descriptor-out | core transfer-skip, broad preclassified malloc, trusted activation skip |
 | RSS/storage | static table trim | class storage trim is a watch/control, not selected |
 | Next lane | diagnostic/design | Cold source-block retire, current-bias predicate variants, and active-map collision/layout are closed as controls/no-go. Next work should look outside active-map capacity/probe and free-path source release. |
 
@@ -144,6 +153,7 @@ Current follow-up read:
 | `HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1=1` | selected/default | Production DSO code-shape control. Compiles preload hook phase counters to no-op macros so stats-off runs do not pay counter function calls or size-bucket branches. Stats/diagnostic runners preserve phase counters unless explicitly testing `phase_count_off`. |
 | `HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_MIN_BYTES=8192/16384` | control/no-go | Raising the preload-boundary shortcut lower bound gave tiny/guard micro-wins but lost the MidPage target badly. Keep selected `4096`. |
 | `HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_NOINLINE_L1=0` / boundary off after Toy free fast-slot | control/no-go | Re-tested the boundary code shape after the latest selected free-path changes. Production repeat-9 raw `hz6_midpage_payload_trim_ab_20260615_202612` showed inline improved tiny/16..4096 but regressed target (`4096..16384 43.812M -> 42.896M`); boundary-off still broke target (`43.812M -> 35.205M`). Keep selected noinline boundary. |
+| `HZ6_PRELOAD_MIDPAGE_DIRECT_CLASS_L1=1` | selected/default | Narrow LD_PRELOAD boundary code-shape control. It classifies requests already inside the 4097..32768-byte MidPage helper directly into class4/class5, avoiding the policy struct path. This is not the older broad `toy_preclassified_malloc` no-go. A/B repeat-15 raw `hz6_midpage_payload_trim_ab_20260615_212317` was non-negative on all focused/fixed rows and target-positive (`4096..16384 43.285M -> 44.309M`). Post-promotion selected-only raw `hz6_midpage_payload_trim_ab_20260615_212533` reads `44.720M` on `4096..16384`; stats-on safety raw `hz6_midpage_payload_trim_ab_20260615_212542` kept `fail=0`. |
 | `-O3` / `-fno-semantic-interposition` preload build flags | control/no-go | Build-flag A/B raw `hz6_midpage_payload_trim_ab_20260615_202754` did not beat selected `-O2`: `-O3` regressed all focused rows and `-fno-semantic-interposition` was mixed but target-negative (`4096..16384 44.118M -> 43.909M`). Keep selected build flags unchanged. |
 | `HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1=1` | selected/default | Production-only direct-local reuse code-shape control. Bypasses the generic `hz6_allocator_frontcache_pop()` wrapper in stats-off builds; disabled under diagnostics. Repeat-15 improved all focused rows and stats safety stayed clean. |
 | `HZ6_FRONT_PREFILL_DESCRIPTOR_OUT_L1=1` | control/no-go | Source-block prefill descriptor-out reduced route lookup probes but regressed production stats-off target speed. Keep default off. |

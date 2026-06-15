@@ -67,6 +67,36 @@ API after the timed work is complete:
 | `4096..16384` | `94.38 MiB` | `70.78 MiB` | peak remains flat |
 | `fixed_16k` | `93.25 MiB` | `60.03 MiB` | peak remains flat |
 
+Latest HZ6-only production-shape check after
+`HZ6_PRELOAD_MIDPAGE_DIRECT_CLASS_L1=1` became selected:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_212533
+```
+
+This is a narrow LD_PRELOAD boundary code-shape promotion, not the older broad
+preclassified-malloc no-go lane. It only applies after the preload boundary has
+already accepted a 4097..32768-byte MidPage request:
+
+| row | selected ops/s | peak RSS |
+| --- | ---: | ---: |
+| `16_256` | `58.141M` | `30.62 MiB` |
+| `16_4096` | `35.805M` | `79.62 MiB` |
+| `1024_4096` | `33.437M` | `91.00 MiB` |
+| `4096_16384` | `44.720M` | `94.25 MiB` |
+| `fixed_4k` | `32.257M` | `91.75 MiB` |
+| `fixed_8k` | `41.978M` | `93.12 MiB` |
+| `fixed_16k` | `44.608M` | `93.12 MiB` |
+
+Stats-on safety read:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_212542
+```
+
+`fail=0` on all focused/fixed rows; source allocation and payload attribution
+stay in the expected selected shape.
+
 Command:
 
 ```bash

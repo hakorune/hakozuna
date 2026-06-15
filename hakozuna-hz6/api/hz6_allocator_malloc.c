@@ -192,31 +192,41 @@ void* hz6_allocator_preload_midpage_malloc_skip_transfer(Hz6Allocator* allocator
     return NULL;
   }
 
+  uint16_t class_id = 0;
+#if HZ6_PRELOAD_MIDPAGE_DIRECT_CLASS_L1
+  if (size <= 4096 || size > HZ6_MIDPAGE_BYTES) {
+    return hz6_malloc(allocator, size);
+  }
+  class_id = size <= HZ6_MIDPAGE_8K_BYTES ? HZ6_MIDPAGE_8K_CLASS_ID
+                                          : HZ6_MIDPAGE_32K_CLASS_ID;
+#else
   Hz6MidPageRunPolicy policy;
   if (!hz6_midpage_policy_for_size(size, 16, &policy)) {
     return hz6_malloc(allocator, size);
   }
+  class_id = policy.class_id;
+#endif
 
   Hz6ObjectDescriptor* descriptor = NULL;
   hz6_toy_small_hotpath_diag_malloc_fast_attempt(
-      allocator, HZ6_FRONT_MIDPAGE, policy.class_id);
-  void* ptr =
-      hz6_allocator_direct_local_reuse(allocator, policy.class_id, &descriptor);
+      allocator, HZ6_FRONT_MIDPAGE, class_id);
+  void* ptr = hz6_allocator_direct_local_reuse(allocator, class_id,
+                                               &descriptor);
   if (ptr) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.midpage_active_map_register_direct;
 #endif
     hz6_midpage_active_map_register(allocator, HZ6_FRONT_MIDPAGE,
-                                    policy.class_id, ptr, descriptor);
+                                    class_id, ptr, descriptor);
     hz6_toy_small_hotpath_diag_malloc_fast_hit(
-        allocator, HZ6_FRONT_MIDPAGE, policy.class_id);
+        allocator, HZ6_FRONT_MIDPAGE, class_id);
     return ptr;
   }
 
   hz6_toy_small_hotpath_diag_malloc_front_dispatch(
-      allocator, HZ6_FRONT_MIDPAGE, policy.class_id);
+      allocator, HZ6_FRONT_MIDPAGE, class_id);
 #if HZ6_MIDPAGE_ALLOC_DESCRIPTOR_OUT_L1
-  ptr = hz6_midpage_alloc_with_descriptor(allocator, policy.class_id, size,
+  ptr = hz6_midpage_alloc_with_descriptor(allocator, class_id, size,
                                           &descriptor);
   if (!ptr) {
     ++allocator->stats.alloc_fail;
@@ -227,17 +237,17 @@ void* hz6_allocator_preload_midpage_malloc_skip_transfer(Hz6Allocator* allocator
     ++allocator->stats.midpage_active_map_register_front_alloc;
 #endif
     hz6_midpage_active_map_register(allocator, HZ6_FRONT_MIDPAGE,
-                                    policy.class_id, ptr, descriptor);
+                                    class_id, ptr, descriptor);
   } else {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.midpage_active_map_register_route_fallback;
 #endif
     hz6_midpage_active_map_register_route(allocator, HZ6_FRONT_MIDPAGE,
-                                          policy.class_id, ptr);
+                                          class_id, ptr);
   }
   return ptr;
 #else
-  ptr = hz6_midpage_alloc(allocator, policy.class_id, size);
+  ptr = hz6_midpage_alloc(allocator, class_id, size);
   if (!ptr) {
     ++allocator->stats.alloc_fail;
     return NULL;
@@ -245,8 +255,8 @@ void* hz6_allocator_preload_midpage_malloc_skip_transfer(Hz6Allocator* allocator
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.midpage_active_map_register_route_fallback;
 #endif
-  hz6_midpage_active_map_register_route(allocator, HZ6_FRONT_MIDPAGE,
-                                        policy.class_id, ptr);
+  hz6_midpage_active_map_register_route(allocator, HZ6_FRONT_MIDPAGE, class_id,
+                                        ptr);
   return ptr;
 #endif
 }

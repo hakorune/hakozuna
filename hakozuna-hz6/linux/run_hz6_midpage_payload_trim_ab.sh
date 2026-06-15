@@ -273,6 +273,9 @@ variant_flags() {
     boundary_min16k)
       hz6_preload_replace_define flags HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_MIN_BYTES 16384
       ;;
+    midpage_direct_class)
+      hz6_preload_replace_define flags HZ6_PRELOAD_MIDPAGE_DIRECT_CLASS_L1 1
+      ;;
     raw_frontcache_pop)
       hz6_preload_replace_define flags HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1 1
       ;;
