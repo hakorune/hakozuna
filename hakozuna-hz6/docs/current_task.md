@@ -90,7 +90,7 @@ Recent fixed/profile repeats:
   private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_063918
   private/raw-results/linux/hz6_fixed_gap_matrix_20260616_074100
   private/raw-results/linux/hz6_fixed_quiescent_rss_matrix_20260616_072153
-  private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_{062305,064915,065310,065329,072333}
+  private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_{062305,064915,065310,065329,072333,074342,074414}
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_072637
   private/raw-results/linux/hz6_ubuntu_size_slices_20260616_073231
 
@@ -141,6 +141,6 @@ Default no-go/control-only without substantially different evidence:
 12. MidPage skip-transfer is control/watch only: latest profile frontier loses
     16..4096 and 4096..16384 despite 1024..4096/fixed_16k signals.
 13. Toy-map8192 external is now an explicit lower-RSS fixed-boundary profile;
-    packed-frontcache combos remain runner-only controls because speed is mixed.
+    packed-frontcache/sourceblock combos remain runner-only controls/no-go.
 14. Keep this file below about 150 lines; archive completed evidence snapshots.
 ```

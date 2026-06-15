@@ -494,10 +494,25 @@ variant_flags() {
       apply_small_boundary_trusted_toy_map8192_flags flags
       hz6_preload_replace_define flags HZ6_FRONTCACHE_PACKED_META_L1 1
       ;;
+    small_boundary_trusted_toy_map8192_sourceblock_packed)
+      apply_small_boundary_trusted_toy_map8192_flags flags
+      hz6_preload_replace_define flags HZ6_SOURCE_BLOCK_PACKED_FLAGS_L1 1
+      ;;
     small_boundary_trusted_toy_map8192_external_frontcache_packed)
       apply_small_boundary_trusted_toy_map8192_flags flags
       hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_EXTERNAL_L1 1
       hz6_preload_replace_define flags HZ6_FRONTCACHE_PACKED_META_L1 1
+      ;;
+    small_boundary_trusted_toy_map8192_external_sourceblock_packed)
+      apply_small_boundary_trusted_toy_map8192_flags flags
+      hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_EXTERNAL_L1 1
+      hz6_preload_replace_define flags HZ6_SOURCE_BLOCK_PACKED_FLAGS_L1 1
+      ;;
+    small_boundary_trusted_toy_map8192_external_all_packed)
+      apply_small_boundary_trusted_toy_map8192_flags flags
+      hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_EXTERNAL_L1 1
+      hz6_preload_replace_define flags HZ6_FRONTCACHE_PACKED_META_L1 1
+      hz6_preload_replace_define flags HZ6_SOURCE_BLOCK_PACKED_FLAGS_L1 1
       ;;
     small_boundary_trusted_toy_map8192_run8_256k)
       apply_small_boundary_trusted_toy_map8192_flags flags
