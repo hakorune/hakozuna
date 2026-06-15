@@ -142,6 +142,9 @@ Next allocator work:
       includes api/hz6_allocator_slot_owner_sparse.c so elastic sparse
       diagnostic lanes link through the shared Linux manifest. bench_common.sh
       now shares HZ6 profile DSO arch/path fallback resolution.
+      linux/hz6_preload_profile_builder.sh now centralizes thin profile DSO
+      builder boilerplate; all named profile builders passed helper-smoke
+      builds, including the class5-only MidPage split.
   Latest HZ6 Ubuntu aligned profile refresh:
     hakozuna-hz6/private/raw-results/linux/hz6_aligned_profile_refresh_20260616_020716
     hakozuna-hz6/private/raw-results/linux/hz6_aligned_profile_guard_20260616_020941

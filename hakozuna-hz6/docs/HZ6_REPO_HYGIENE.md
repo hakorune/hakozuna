@@ -169,6 +169,11 @@ linux/hz6_preload_aliases.sh:
   shared profile alias build helper for HZ6 matrix runners and the public
   linux/run_linux_bench_compare_matrix.sh entrypoint
 
+linux/hz6_preload_profile_builder.sh:
+  shared helper for thin HZ6 profile DSO builders. Keep new profile builders
+  on this helper so selected/default flags, OUT_DIR behavior, and
+  HZ6_PRELOAD_DEFAULT_CFLAGS construction do not drift.
+
 bench/lib/bench_common.sh:
   shared HZ6 profile DSO resolver helper. Keep new HZ6 profile aliases on the
   common resolver path instead of adding another copy of arch/path fallback

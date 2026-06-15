@@ -56,6 +56,8 @@ P0 docs/build hygiene:
   build_hz6_preload.sh must honor HZ6_PRELOAD_PRESERVE_PHASE_COUNTERS even
   when a profile builder supplies HZ6_PRELOAD_DEFAULT_CFLAGS, so stats/profile
   DSOs do not silently compile out attribution counters.
+  thin profile builders should use linux/hz6_preload_profile_builder.sh and
+  only describe macro deltas from selected/default.
   high-risk no-go/control flags should be explicitly default-off in preload
 
 P1 source split:

@@ -162,6 +162,11 @@ Profile alias helper:
   bench/lib/bench_common.sh resolves HZ6 profile DSOs through the shared
   bench_find_hz6_preload_output helper so new profile lanes do not duplicate
   arch/path fallback logic.
+
+Profile builder helper:
+  linux/hz6_preload_profile_builder.sh
+  Keep thin profile builders on this helper so profile scripts only describe
+  macro deltas from selected/default.
 ```
 
 ## Latest Hygiene Fixes
@@ -172,6 +177,11 @@ Profile resolver:
   confirms hz6 and hz6-small-boundary-trusted-target still resolve and run
   through the selected-balance matrix after bench_common.sh resolver
   deduplication.
+
+Profile builders:
+  All named profile builders passed helper-smoke builds under
+  out/linux/profile_builder_helper_smoke/, including the
+  HZ6_MIDPAGE_TRUSTED_CLASS_CLASS5_ONLY split.
 
 Build/profile stats:
   build_hz6_preload.sh now applies HZ6_PRELOAD_PRESERVE_PHASE_COUNTERS even
