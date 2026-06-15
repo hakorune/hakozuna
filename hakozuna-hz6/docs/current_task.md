@@ -318,6 +318,21 @@ boundary slack profile:
       fixed_4k selected copy 19068 -> 0 under 4k-only
       fixed_8k selected copy 19068 -> 0 under 8k-only
 
+  8k shape ladder:
+    raw: private/raw-results/linux/hz6_realloc_boundary_8k_midpath_ab_20260615_233000
+    raw: private/raw-results/linux/hz6_realloc_boundary_8k_shape_ladder_20260615_233700
+    raw: private/raw-results/linux/hz6_realloc_boundary_8k_shape_guard_20260615_234100
+    temporary controls tested branch-only, unlikely, likely, after-toy, and
+    inside-MidPage-boundary placement.  Branch-only removed the fixed_8k win,
+    confirming the win is allocation-policy/copy-wall removal rather than
+    branch layout.  The shape variants did not pass guards:
+      unlikely hurt 16..4096/fixed_4k in repeat-15
+      after-toy hurt 4096..16384 and fixed_16k in repeat-15
+      inside-MidPage-boundary hurt fixed_16k
+      likely hurt target/fixed guards in repeat-7
+    These temporary controls were not kept in source; keep only the clean
+    split 4K/8K flags.
+
 decision:
   Keep realloc-boundary slack as a fixed-boundary profile/control DSO, not
   selected default.  It is very strong for fixed_4k/fixed_8k realloc-growth
