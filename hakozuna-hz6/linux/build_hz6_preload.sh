@@ -43,6 +43,9 @@ if [[ -n "${HZ6_PRELOAD_DEFAULT_CFLAGS}" ]]; then
 else
   HZ6_EXTRA_CFLAGS_ARRAY=("${HZ6_PRELOAD_SELECTED_CFLAGS[@]}")
 fi
+if [[ "$HZ6_PRELOAD_PRESERVE_PHASE_COUNTERS" -ne 0 ]]; then
+  hz6_preload_preserve_phase_counters HZ6_EXTRA_CFLAGS_ARRAY
+fi
 if [[ -n "${HZ6_EXTRA_CFLAGS}" ]]; then
   # shellcheck disable=SC2206
   HZ6_EXTRA_CFLAGS_ARRAY+=(${HZ6_EXTRA_CFLAGS})

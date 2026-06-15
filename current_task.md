@@ -134,6 +134,12 @@ Next allocator work:
     read: route/runroute/pagekind pressure is low; Toy4 free probe remains
       near base-slot optimal. The remaining fixed_4k/8k pressure is cross-class
       realloc copy, best covered by existing trusted small-boundary profile.
+  Latest HZ6 Ubuntu hygiene:
+    hakozuna-hz6/private/raw-results/linux/hz6_aligned_runner_preserve_smoke_20260616_022438
+    build_hz6_preload.sh now preserves phase counters even when profile
+      builders pass HZ6_PRELOAD_DEFAULT_CFLAGS. linux/hz6_sources.sh now
+      includes api/hz6_allocator_slot_owner_sparse.c so elastic sparse
+      diagnostic lanes link through the shared Linux manifest.
   Latest HZ6 Ubuntu aligned profile refresh:
     hakozuna-hz6/private/raw-results/linux/hz6_aligned_profile_refresh_20260616_020716
     hakozuna-hz6/private/raw-results/linux/hz6_aligned_profile_guard_20260616_020941

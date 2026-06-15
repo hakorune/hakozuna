@@ -53,12 +53,18 @@ P0 docs/build hygiene:
   flag bundle for build_hz6_preload.sh and A/B runners.
   A/B scripts should use key-based hz6_preload_replace_define overrides, not
   positional array indexes.
+  build_hz6_preload.sh must honor HZ6_PRELOAD_PRESERVE_PHASE_COUNTERS even
+  when a profile builder supplies HZ6_PRELOAD_DEFAULT_CFLAGS, so stats/profile
+  DSOs do not silently compile out attribution counters.
   high-risk no-go/control flags should be explicitly default-off in preload
 
 P1 source split:
   linux/hz6_sources.sh is now the shared source/include manifest for preload,
   benchmark, and R1 smoke builds. Keep new Linux build scripts on this manifest
   unless they deliberately need a smaller proof-only source set.
+  Slot-owner sparse metadata is included in this manifest even though selected
+  default compiles it mostly inert; elastic/diagnostic lanes must not fail only
+  because the split module was omitted from Linux builds.
 
 P2 preload facade:
   hide direct Hz6RouteResult / Hz6ObjectDescriptor use from preload behind

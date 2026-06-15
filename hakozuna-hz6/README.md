@@ -134,8 +134,16 @@ docs/HZ6_R1_BENCHMARK_20260528.md
 docs/HZ6_R1_BROAD_TRENDS_20260528.md
 ```
 
-The next benchmark pass should compare HZ6 against HZ3 / HZ4 / HZ5 on the same
-machine.
+Current Ubuntu selected/profile comparison raws are tracked in:
+
+```text
+docs/current_task.md
+docs/HZ6_UBUNTU_PRELOAD_LANES.md
+docs/HZ6_UBUNTU_SELECTED_BALANCE.md
+```
+
+Use those docs for the latest HZ3 / HZ4 / HZ5 / mimalloc / tcmalloc comparison
+state. Do not infer selected/default promotion from a single profile DSO row.
 
 Current R1 trend:
 

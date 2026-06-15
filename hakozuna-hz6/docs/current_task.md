@@ -149,10 +149,30 @@ Comparison/profile controls:
     keeps the dedicated aligned win, but focused/fixed guards
     hz6_aligned_profile_guard_20260616_020941 and
     hz6_aligned_profile_fixed_guard_20260616_020953 keep it profile-only.
+    Follow-up smoke
+    private/raw-results/linux/hz6_aligned_runner_preserve_smoke_20260616_022438
+    confirms aligned attribution is still preserved after the profile-build
+    CFLAGS hygiene fix. A small-boundary-trusted + aligned-free-skip combo was
+    tried locally and rejected because aligned_free_skip alone stayed faster on
+    aligned rows.
 
 Profile alias helper:
   linux/hz6_preload_aliases.sh
   Keep matrix alias build hooks centralized here.
+```
+
+## Latest Hygiene Fixes
+
+```text
+Build/profile stats:
+  build_hz6_preload.sh now applies HZ6_PRELOAD_PRESERVE_PHASE_COUNTERS even
+  when profile builders pass HZ6_PRELOAD_DEFAULT_CFLAGS.
+
+Linux manifest:
+  linux/hz6_sources.sh now includes api/hz6_allocator_slot_owner_sparse.c.
+  Default selected builds remain clean, and elastic sparse diagnostic builds
+  with HZ6_ELASTIC_SLOT_OWNER_SPARSE_META_L1 now link through the shared
+  manifest.
 ```
 
 ## Closed / Do Not Reopen Casually

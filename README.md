@@ -1,4 +1,4 @@
-# hakozuna (hz3) / hakozuna-mt (hz4) / hakozuna-hz5
+# hakozuna (hz3) / hakozuna-mt (hz4) / hakozuna-hz5 / hakozuna-hz6
 
 [![hz3/hz4 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20411402.svg)](https://doi.org/10.5281/zenodo.20411402)
 [![HZ5 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20411598.svg)](https://doi.org/10.5281/zenodo.20411598)
@@ -17,9 +17,9 @@ Part of the [hakorune](https://github.com/hakorune) project.
 - **hz4 (hakozuna-mt)**: Message-passing, remote-heavy scaling (best at high thread counts).
 - **HZ5 (hakozuna-hz5)**: Linux research sidecar for low-RSS, fail-closed,
   descriptor-owned profile families. It is not the default general allocator.
-- **HZ6 (future work)**: possible transfer-first successor line; not an
-  evaluated allocator in this repository yet. The documentation-first design
-  seed lives under `hakozuna-hz6/`.
+- **HZ6 (hakozuna-hz6)**: active Windows/Linux allocator family with explicit
+  route/source/frontcache contracts, Ubuntu `LD_PRELOAD` selected/profile
+  lanes, and ongoing speed/RSS balance work.
 - **HZ7 TinyRoute (design seed)**: tiny-binary, single-shape allocator line
   distilled from HZ6. Its phased family now lives under `hz7/` as `v1`,
   `v2`, `v3`, and `v4`.
@@ -35,6 +35,7 @@ metadata and ownership models:
 | HZ3 / ACE-Alloc | local-heavy allocation, compact fast path | lookup-first: PTAG32 / table-oriented pointer-to-bin routing | the main ACE-Alloc line |
 | HZ4 | remote-heavy / message-passing workloads | remote-free-first: page-local metadata, remote queues, pending collect | the remote-free experiment line |
 | HZ5 | page/run-first sidecar allocator prototype | ownership/policy-first: page/run descriptors route owner, profile, and dispatch policy | the low-RSS fail-closed research line |
+| HZ6 | balanced speed/RSS with explicit safety contracts | RouteLayer + descriptor + SourceLayer + FrontCache | the active Windows/Linux successor line |
 | HZ7 TinyRoute | tiny-binary direct API allocator design | span-mask first, optional tiny route table later | the HZ6-minimal design seed, organized under `hz7/` |
 
 In short:
@@ -42,6 +43,7 @@ In short:
 - **HZ3 is lookup-first.**
 - **HZ4 is remote-free-first.**
 - **HZ5 is ownership/policy-first.**
+- **HZ6 is contract-first with selected/default and profile-only lanes.**
 
 The API is still `malloc` / `free`, but allocator behavior changes sharply
 depending on how `free(ptr)` recovers pointer identity and where ownership is
@@ -207,9 +209,12 @@ Current interpretation:
   still profile-sensitive.
 - Keep the older exact `64K/a8192` Local2P rows as appendix evidence for
   explicit route specialization.
-- Treat HZ6 only as future work: a possible transfer-first line with
-  consumer-visible class transfer caches and an RSS governor, without hot-path
-  learning counters. Current design notes are in `hakozuna-hz6/`.
+- Treat HZ6 as the active successor line. Use
+  `hakozuna-hz6/docs/current_task.md`,
+  `hakozuna-hz6/docs/HZ6_UBUNTU_PRELOAD_LANES.md`, and
+  `hakozuna-hz6/docs/HZ6_UBUNTU_SELECTED_BALANCE.md` before interpreting new
+  HZ6 numbers. Selected/default and profile-only DSOs are deliberately
+  separate.
 
 ## Documentation
 
