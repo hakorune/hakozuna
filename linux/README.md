@@ -28,14 +28,17 @@ Use it to keep Linux build and smoke commands in one place without mixing:
 - [run_bench_compare.sh](run_bench_compare.sh): thin Linux frontend for the shared allocator compare runner
 - [run_linux_hz5_local2p_focus.sh](run_linux_hz5_local2p_focus.sh): HZ5 exact `64K/a8192` appendix-profile runner
 
-HZ6 also has a profile/control LD_PRELOAD DSO for Toy/mid-small workloads:
+HZ6 also has profile/control LD_PRELOAD DSOs for workload-specific lanes:
 
 - `hakozuna-hz6/linux/build_hz6_preload_toy_target.sh`
 - `hakozuna-hz6/linux/run_hz6_preload_toy_target_ab.sh`
+- `hakozuna-hz6/linux/build_hz6_preload_aligned_target.sh`
+- `hakozuna-hz6/linux/run_hz6_preload_aligned_wrapper_audit.sh`
 
-This is not the selected default HZ6 allocator. In shared allocator matrices,
-use allocator name `hz6` for selected default and `hz6-toy-target` only when
-you explicitly want the Toy/mid-small profile DSO.
+These are not the selected default HZ6 allocator. In shared allocator matrices,
+use allocator name `hz6` for selected default, `hz6-toy-target` only when you
+explicitly want the Toy/mid-small profile DSO, and `hz6-aligned-target` only
+when the workload is dominated by real aligned allocation fallbacks.
 
 ## Quick Start
 
@@ -50,6 +53,7 @@ cd /path/to/hakozuna-win
 ./linux/run_linux_bench_remeasure_matrix.sh
 ./linux/run_linux_hz6_benchmark.sh --runs 1
 ./hakozuna-hz6/linux/run_hz6_preload_toy_target_ab.sh --runs 7
+./hakozuna-hz6/linux/run_hz6_preload_aligned_wrapper_audit.sh --runs 3
 ```
 
 ## Ubuntu Lane Split
@@ -147,6 +151,19 @@ It can also be named in shared compare matrices as `hz6-toy-target` after it is
 built, or through `run_linux_bench_compare_matrix.sh`, which builds it when the
 allocator list includes that name. Keep `hz6-toy-target` separate from `hz6`;
 it is a profile/control DSO, not the selected default.
+
+The aligned-allocation profile DSO is built by:
+
+```bash
+./hakozuna-hz6/linux/build_hz6_preload_aligned_target.sh
+```
+
+It enables `HZ6_PRELOAD_REAL_ALIGNED_FREE_SKIP_L1=1`, a control that tracks
+real `posix_memalign` / `aligned_alloc` fallback pointers so `free()` can skip
+the HZ6 route lookup and call real free directly.  It is useful for aligned-heavy
+workloads but is not selected default because mixed/fixed guards reject the
+extra free-side gate.  Use `hz6-aligned-target` in shared compare matrices only
+for that profile.
 
 ## HZ5 Full-Preload Research Lanes
 

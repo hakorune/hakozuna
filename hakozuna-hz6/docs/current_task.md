@@ -94,6 +94,26 @@ decision:
   default.  It removes the catastrophic HZ6 route miss on real aligned fallback
   pointers, but the extra free-side atomic gate still weakens fixed_8k enough
   to reject broad default promotion.
+
+lane plumbing:
+  Add persistent profile builder:
+    hakozuna-hz6/linux/build_hz6_preload_aligned_target.sh
+    output:
+      hakozuna-hz6/out/linux/hz6_preload_aligned_target/libhakozuna_hz6_preload.so
+  Add shared allocator aliases:
+    hz6-aligned-target / hz6_aligned_target
+  run_linux_bench_compare_matrix.sh now builds the profile DSO when the
+  allocator list includes either alias.
+  alias smoke:
+    raw: private/raw-results/linux/hz6_aligned_target_alias_smoke_20260615_225209
+    result:
+      bench_common.sh resolves hz6-aligned-target to
+      out/linux/hz6_preload_aligned_target/libhakozuna_hz6_preload.so.
+  matrix alias smoke:
+    raw: private/raw-results/linux/hz6_aligned_target_matrix_alias_smoke_20260615_225209
+    result:
+      run_linux_bench_compare_matrix.sh built the aligned target DSO and
+      forwarded hz6-aligned-target through the shared compare runner.
 ```
 
 ## Previous Closeout: HZ6 Ubuntu Preload Wrapper Attribution-L1
