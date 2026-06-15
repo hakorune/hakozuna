@@ -56,6 +56,7 @@ HZ6 local-free scavenge and Linux mmap retain-cache flush:
 
 ```text
 hakozuna-hz6/private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_222345
+hakozuna-hz6/private/raw-results/linux/hz6_quiescent_rss_attribution_refresh_20260616_025320
 ```
 
 This is not a throughput promotion or peak-RSS improvement. It proves that HZ6
@@ -68,6 +69,14 @@ standard `malloc_trim(0)` API after the timed work is complete:
 | `1024..4096` | `91.00 MiB` | `27.10 MiB` | peak remains flat |
 | `4096..16384` | `94.38 MiB` | `28.32 MiB` | peak remains flat |
 | `fixed_16k` | `93.12 MiB` | `28.26 MiB` | peak remains flat |
+
+Latest refresh keeps the same result and separates scavenge-only from
+`malloc_trim(0)`: scavenge-only can reduce current RSS on some rows
+(`4096..16384 94.38 -> 70.75 MiB`, `fixed_16k 93.25 -> 60.05 MiB`), but it is
+incomplete and row-dependent. `malloc_trim(0)` consistently returns current RSS
+to the `27..28 MiB` floor on focused/fixed rows. Keep the explicit trim API as
+the selected quiescent RSS release path; do not move this work into the free
+hot path.
 
 Latest HZ6-only production-shape check after
 `HZ6_PRELOAD_MIDPAGE_DIRECT_CLASS_L1=1` became selected:
@@ -580,6 +589,7 @@ Fixed-size residency follow-up:
 ```text
 raw: hakozuna-hz6/private/raw-results/linux/hz6_midpage_rss_audit_20260615_204203
 refresh: hakozuna-hz6/private/raw-results/linux/hz6_fixed_rss_residency_refresh_20260616_021200
+latest refresh: hakozuna-hz6/private/raw-results/linux/hz6_rss_residency_audit_refresh_20260616_025309
 runner: run_hz6_midpage_rss_audit.sh --rows fixed_mid
 
 fixed_4k:
@@ -611,6 +621,13 @@ refresh read:
   descriptors/frontcache entries, and ref mismatch 0. Keep free-path cold-retire
   closed for default; use explicit malloc_trim for quiescent current-RSS recovery
   and profile lanes for speed.
+
+latest refresh read:
+  The later focused+fixed residency audit still matches this shape. fixed_16k
+  reports 520.00 MiB logical 32K payload, 520.00 MiB retire-candidate payload,
+  16384 matching retire descriptors/frontcache entries, and ref mismatch 0.
+  This is still a quiescent/snapshot release problem, not evidence for a free
+  hot-path retire behavior.
 ```
 
 Completed diagnostic:

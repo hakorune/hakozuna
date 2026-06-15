@@ -78,6 +78,8 @@ Fixed-size selected matrix:
 RSS:
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_012801
   private/raw-results/linux/hz6_fixed_rss_residency_refresh_20260616_021200
+  private/raw-results/linux/hz6_rss_residency_audit_refresh_20260616_025309
+  private/raw-results/linux/hz6_quiescent_rss_attribution_refresh_20260616_025320
 
   malloc_trim keeps peak RSS flat but lowers current RSS:
     16..4096    79.88 MiB -> 27.27 MiB
@@ -91,6 +93,16 @@ Read:
   Fixed-size residency refresh keeps the same diagnosis: fixed_16k reports
   520 MiB logical 32K payload as all-local-free/frontcache-retained material,
   with ref mismatch 0. Do not reopen free-path cold-retire default.
+  Latest residency audit keeps the same shape:
+    fixed_16k logical 32K payload 520.00 MiB
+    fixed_16k retire-candidate payload 520.00 MiB
+    ref mismatch 0
+  Latest quiescent refresh:
+    malloc_trim lowers current RSS to roughly 27..28 MiB on all focused/fixed
+    rows, while scavenge-only is partial and row-dependent.
+  Read:
+    Keep explicit malloc_trim/quiescent recovery as the RSS lane. Do not add
+    free hot-path retire or automatic purge behavior from this evidence.
 ```
 
 ## Current Profile DSOs
