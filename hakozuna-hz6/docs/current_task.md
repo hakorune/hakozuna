@@ -13,6 +13,7 @@ Selected/default:
 Lane decisions:
   HZ6_LANE_GUIDE.md
   HZ6_UBUNTU_PRELOAD_LANES.md
+  HZ6_UBUNTU_PROFILE_REGISTRY.md
 
 Ubuntu MidPage closeouts:
   HZ6_UBUNTU_MIDPAGE_NEXT_DESIGN.md
@@ -48,22 +49,15 @@ Default position:
 ## Active Profile Lanes
 
 ```text
-Fixed-boundary profiles:
-  broad hz6-small-boundary-trusted-target
-  RSS hz6-small-boundary-trusted-toy-map8192-target
+Profile registry:
+  HZ6_UBUNTU_PROFILE_REGISTRY.md
 
-Light small/fixed16 profile:
-  hz6-toy-trusted-target
+Standard frontier:
+  toy-trusted / small-boundary-trusted / realloc-boundary split+adaptive
+  aligned / calloc-direct / calloc-real / calloc-large-real
 
-Exact realloc-boundary profiles:
-  hz6-realloc-boundary-4k-target / hz6-realloc-boundary-8k-target
-
-Adaptive realloc-boundary profiles:
-  adaptive-4k / adaptive-8k / adaptive combined
-
-Other controls:
-  hz6-midpage-skip-transfer-target
-  hz6-aligned-target / calloc-direct / calloc-real / calloc-large-real
+Explicit controls:
+  small-boundary-trusted-toy-map8192 / midpage-skip-transfer
 
 Runners:
   fixed_boundary_profile_frontier / preload_profile_frontier
