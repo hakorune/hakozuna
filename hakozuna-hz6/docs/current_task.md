@@ -136,6 +136,16 @@ evidence:
       fixed_4k, approaches HZ3 and beats tcmalloc/HZ4 on fixed_8k, edges HZ3
       and beats all measured allocators on fixed_16k speed, and is very strong
       on 32K..256K speed. RSS remains the main fixed_mid tradeoff.
+  fixed-size residency audit:
+    runner: linux/run_hz6_midpage_rss_audit.sh --rows fixed_mid
+    raw: private/raw-results/linux/hz6_midpage_rss_audit_20260615_204203
+    fixed_16k has 520.00 MiB of 32K all-local-free payload, 16384 matching
+    frontcache entries, and ref mismatch 0.
+    cold-retire fixed-row retest:
+      production raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_204233
+      diagnostic raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_204253
+      existing free-time cold-retire gate does not fire on the fixed_16k final
+      all-local-free shape; do not default it.
 
 decision:
   selected/default. This is a small but balanced production code-shape win after
@@ -143,8 +153,9 @@ decision:
   and direct_max5 as controls/no-go unless a later baseline changes the shape.
 
 next:
-  Do not widen active-map capacity/probe next. Prefer fixed-size RSS/source
-  residency attribution or a 4K-specific speed/RSS lane.
+  Do not widen active-map capacity/probe next. Fixed-size RSS attribution is
+  now clear; prefer a new quiescent/snapshot scavenge design or a 4K-specific
+  speed/RSS lane. Do not default the existing per-free cold-retire behavior.
 ```
 
 ## Recent Closeout: HZ6 Ubuntu MidPage ActiveMap Collision Layout Audit-L1

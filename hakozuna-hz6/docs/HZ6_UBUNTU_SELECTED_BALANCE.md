@@ -224,6 +224,36 @@ either target fixed_4k speed/RSS specifically or explain the fixed_mid RSS
 premium with source-block/frontcache residency attribution.
 ```
 
+Fixed-size residency follow-up:
+
+```text
+raw: hakozuna-hz6/private/raw-results/linux/hz6_midpage_rss_audit_20260615_204203
+runner: run_hz6_midpage_rss_audit.sh --rows fixed_mid
+
+fixed_4k:
+  72.25 MiB logical source payload
+  64.00 MiB 8K all-local-free payload
+   8.00 MiB 32K all-local-free payload
+
+fixed_8k:
+  142.25 MiB logical source payload
+  126.00 MiB 8K all-local-free payload
+   16.00 MiB 32K all-local-free payload
+
+fixed_16k:
+  520.25 MiB logical source payload
+  520.00 MiB 32K all-local-free payload
+  16384 matching 32K frontcache entries
+  ref mismatch = 0
+
+read:
+  The fixed_mid RSS premium is mostly frontcache-retained source-run payload,
+  not ACTIVE descriptors. However the existing free-time 32K cold-retire gate
+  does not fire on this final fixed_16k shape, so defaulting that behavior is
+  still wrong. A new design would need an explicit quiescent/snapshot/scavenge
+  trigger or a class-specific supply cap, not the previous per-free gate.
+```
+
 Completed diagnostic:
 
 ```text

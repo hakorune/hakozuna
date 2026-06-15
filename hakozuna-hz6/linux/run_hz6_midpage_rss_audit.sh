@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ARCH="${ARCH:-x86_64}"
 ITERS="${ITERS:-200000}"
 WS="${WS:-4096}"
+ROWS_CSV="${ROWS:-focused}"
 OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_midpage_rss_audit_$(date +%Y%m%d_%H%M%S)}"
 SKIP_BUILD=0
 
@@ -17,6 +18,7 @@ Options:
   --arch ARCH     target arch (default: x86_64)
   --iters N       iterations per row (default: 200000)
   --ws N          working set (default: 4096)
+  --rows CSV      row groups: focused,fixed_mid,large_span (default: focused)
   --outdir DIR    output directory
   --skip-build    reuse existing diagnostic preload and benchmark
   --help          show this message
@@ -35,6 +37,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --ws)
       WS="$2"
+      shift 2
+      ;;
+    --rows)
+      ROWS_CSV="$2"
       shift 2
       ;;
     --outdir)
@@ -75,6 +81,7 @@ mkdir -p "$OUTDIR"
   echo "preload=${PRELOAD_SO}"
   echo "iters=${ITERS}"
   echo "ws=${WS}"
+  echo "rows=${ROWS_CSV}"
 } > "${OUTDIR}/README.log"
 
 run_row() {
@@ -86,17 +93,52 @@ run_row() {
     > "${OUTDIR}/${row}.log" 2>&1
 }
 
-run_row 16_4096 16 4096
-run_row 1024_4096 1024 4096
-run_row 4096_16384 4096 16384
+rows=()
+IFS=',' read -r -a row_groups <<< "$ROWS_CSV"
+for row_group in "${row_groups[@]}"; do
+  case "$row_group" in
+    focused)
+      rows+=(
+        "16_4096 16 4096"
+        "1024_4096 1024 4096"
+        "4096_16384 4096 16384"
+      )
+      ;;
+    fixed_mid)
+      rows+=(
+        "fixed_4k 4096 4096"
+        "fixed_8k 8192 8192"
+        "fixed_16k 16384 16384"
+      )
+      ;;
+    large_span)
+      rows+=(
+        "fixed_32k 32768 32768"
+        "fixed_64k 65536 65536"
+        "fixed_128k 131072 131072"
+        "fixed_256k 262144 262144"
+      )
+      ;;
+    *)
+      echo "unknown row group: ${row_group}" >&2
+      exit 2
+      ;;
+  esac
+done
 
-python3 - <<'PY' "$OUTDIR" | tee "${OUTDIR}/summary.md"
+for row_spec in "${rows[@]}"; do
+  read -r row min_size max_size <<< "$row_spec"
+  run_row "$row" "$min_size" "$max_size"
+done
+
+python3 - <<'PY' "$OUTDIR" "${rows[@]}" | tee "${OUTDIR}/summary.md"
 import pathlib
 import re
 import sys
 
 root = pathlib.Path(sys.argv[1])
-rows = ["16_4096", "1024_4096", "4096_16384"]
+row_specs = sys.argv[2:]
+rows = [spec.split()[0] for spec in row_specs]
 kv_re = re.compile(r"([A-Za-z0-9_/]+)=([0-9]+(?:\\.[0-9]+)?)")
 
 def parse_line(text, tag):
