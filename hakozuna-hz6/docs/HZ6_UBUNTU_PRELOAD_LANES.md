@@ -70,6 +70,8 @@ HZ6_LINUX_MMAP_RETAIN_TLS_L1=0
 HZ6_SOURCE_RUN_REUSE_L1=0
 HZ6_ROUTE_PACKED_META_L1=0
 HZ6_PRELOAD_FAST_FREE_L1=0
+HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_L1=0
+HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_CURRENT_BIAS_L1=0
 ```
 
 ## Current Read
@@ -117,6 +119,17 @@ RSS cut and reaches 50.574M / 94.38 MiB on the HZ6-only 4096..16384 repeat-5,
 with full-cross repeat-3 still clearly ahead of tcmalloc. Keep 32K run1536,
 run768, and run512 as direct controls.
 ```
+
+Current lane state:
+
+| Area | Selected | Closed controls |
+| --- | --- | --- |
+| MidPage source runs | `8K run768`, `32K run2048` | smaller/larger 32K fine ladder, 8K 512K guard-negative |
+| MidPage active map | external cap16K/probe4, unaligned, mask-index, register fast-slot | cap32K/64K, probe8, class index, no-overwrite, same-class victim |
+| MidPage free path | current-bias free order | free fast-slot, current-bias free fast-slot, page-hint behavior, unconditional/aligned MidPage-first |
+| MidPage malloc path | preload-boundary noinline transfer skip, descriptor-out | core transfer-skip, preclassified malloc, trusted activation skip |
+| RSS/storage | static table trim | class storage trim is a watch/control, not selected |
+| Next lane | design/diagnostic | frontcache storage/RSS or a different free-hit shape without a per-attempt branch |
 
 Current follow-up read:
 

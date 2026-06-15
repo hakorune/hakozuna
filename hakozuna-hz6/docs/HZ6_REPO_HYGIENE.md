@@ -110,9 +110,10 @@ Ubuntu LD_PRELOAD status:
   MidPageActiveMapUnaligned-L2 plus probe4 is selected after the 4096..16384
   phase guard moved MidPage active-map hits from 3,321 to 915,393 and the HZ4
   close guard reached hz6 31.505M / 117,248 KB versus hz4 30.916M / 134,400 KB.
-  Follow-up Toy/MidPage active-map capacity/probe/code-shape tuning selected
-  no code change: Toy active-map 65536/16384, Toy probe8, and active-map
-  slot-index helper shapes remain no-go/control evidence.
+  Follow-up MidPage active-map code-shape work selected mask-index and register
+  fast-slot. Free fast-slot and current-bias-gated free fast-slot are closed as
+  no-go/control evidence; Toy active-map 65536/16384, Toy probe8, and
+  non-selected active-map helper shapes remain no-go/control evidence.
   Keep LD_PRELOAD conclusions separate from direct HZ6 API strength rows until
   broader row validation catches up.
 ```
