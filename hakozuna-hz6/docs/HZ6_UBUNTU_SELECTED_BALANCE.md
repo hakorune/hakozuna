@@ -512,6 +512,12 @@ selected default:
     fixed-row signal, but repeat-15 target guard regressed.
   Toy active-map full mask-wrap:
     cleaned up the control implementation, but still mixed/regressed guards.
+
+As a profile lane, however, combining small-boundary target with trusted-owner
+and raw-push is strong.  Repeat-15 no-stats raw
+`hz6_midpage_payload_trim_ab_20260616_002519` improved every tiny/focused/fixed
+guard row, while stats raw `hz6_midpage_payload_trim_ab_20260616_002549` kept
+`fail=0`.  Keep it as `hz6-small-boundary-fast-target`, not selected default.
 ```
 
 ## Static Table Trim Promotion

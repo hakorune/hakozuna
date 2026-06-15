@@ -36,14 +36,22 @@ For local preparation and compare runs, use the Linux entrypoints:
 - `linux/run_linux_hz6_benchmark.sh`
 - `hakozuna-hz6/linux/build_hz6_preload_toy_target.sh`
 - `hakozuna-hz6/linux/run_hz6_preload_toy_target_ab.sh`
+- `hakozuna-hz6/linux/build_hz6_preload_aligned_target.sh`
+- `hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_target.sh`
+- `hakozuna-hz6/linux/build_hz6_preload_small_boundary_target.sh`
+- `hakozuna-hz6/linux/build_hz6_preload_small_boundary_fast_target.sh`
 
 HZ6 allocator names in shared compare matrices:
 
 - `hz6`: selected/default LD_PRELOAD DSO
 - `hz6-toy-target`: Toy/mid-small profile/control DSO
+- `hz6-aligned-target`: real aligned-allocation fallback profile/control DSO
+- `hz6-realloc-boundary-target`: fixed-boundary realloc-growth profile/control DSO
+- `hz6-small-boundary-target`: small/fixed-boundary profile/control DSO
+- `hz6-small-boundary-fast-target`: faster small/fixed-boundary profile/control DSO
 
-Keep `hz6-toy-target` results separate from selected-default HZ6 results. It is
-useful for Toy-heavy workloads, but it is not the default HZ6 lane.
+Keep profile/control DSO results separate from selected-default HZ6 results.
+They are useful for targeted workloads, but they are not the default HZ6 lane.
 
 Template:
 

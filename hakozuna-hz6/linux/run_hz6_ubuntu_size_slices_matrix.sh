@@ -87,6 +87,10 @@ if [[ "$SKIP_BUILDS" -ne 1 ]]; then
   "${ROOT_DIR}/linux/build_linux_release_lane.sh" --arch "$ARCH"
   "${ROOT_DIR}/linux/build_linux_hz5_preload_full.sh" --arch "$ARCH"
   "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh"
+  if [[ ",${ALLOCATORS}," == *",hz6-small-boundary-fast-target,"* ||
+        ",${ALLOCATORS}," == *",hz6_small_boundary_fast_target,"* ]]; then
+    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_small_boundary_fast_target.sh"
+  fi
   "${ROOT_DIR}/linux/build_linux_bench_compare.sh" --arch "$ARCH" \
     --out-dir "${ROOT_DIR}/bench/out/linux/${ARCH}"
 fi

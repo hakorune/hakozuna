@@ -102,6 +102,36 @@ decision:
 ## Current Continuation: Narrow Preload Code-Shape Controls
 
 ```text
+latest follow-up:
+  SmallBoundaryFastTarget-L1:
+    Add a profile DSO candidate that combines the existing small-boundary
+    profile with:
+      HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1=1
+      HZ6_DIRECT_LOCAL_FREE_RAW_PUSH_L1=1
+
+    raw:
+      private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_002421
+      private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_002519
+      private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_002549
+
+    repeat-15, no-stats, include-tiny:
+      16..256      selected 55.491M -> fast profile 76.683M
+      16..4096     selected 34.920M -> fast profile 41.712M
+      1024..4096   selected 32.236M -> fast profile 38.243M
+      4096..16384  selected 43.406M -> fast profile 44.843M
+      fixed_4k     selected 30.347M -> fast profile 45.505M
+      fixed_8k     selected 41.474M -> fast profile 44.449M
+      fixed_16k    selected 43.544M -> fast profile 44.233M
+
+    stats safety:
+      fail=0 on selected and fast profile across tiny/focused/fixed rows.
+      Diagnostics are not used for speed ranking because raw-push intentionally
+      falls back to the wrapper path when stats/diagnostics are active.
+
+    decision:
+      Keep selected default unchanged.  Promote this only as a named
+      profile/control DSO for small/fixed-boundary workloads.
+
 latest continuation:
   Add default-off controls:
     HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1=1

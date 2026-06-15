@@ -35,13 +35,15 @@ HZ6 also has profile/control LD_PRELOAD DSOs for workload-specific lanes:
 - `hakozuna-hz6/linux/build_hz6_preload_aligned_target.sh`
 - `hakozuna-hz6/linux/run_hz6_preload_aligned_wrapper_audit.sh`
 - `hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_target.sh`
+- `hakozuna-hz6/linux/build_hz6_preload_small_boundary_target.sh`
+- `hakozuna-hz6/linux/build_hz6_preload_small_boundary_fast_target.sh`
 
 These are not the selected default HZ6 allocator. In shared allocator matrices,
-use allocator name `hz6` for selected default, `hz6-toy-target` only when you
-explicitly want the Toy/mid-small profile DSO, and `hz6-aligned-target` only
-when the workload is dominated by real aligned allocation fallbacks.
-Use `hz6-realloc-boundary-target` only for fixed-boundary workloads where
-4096-byte or 8192-byte allocations are commonly reallocated by a small growth.
+use allocator name `hz6` for selected default. Use `hz6-toy-target` for
+Toy/mid-small workloads, `hz6-aligned-target` for real aligned allocation
+fallbacks, `hz6-realloc-boundary-target` for fixed-boundary realloc growth, and
+`hz6-small-boundary-target` / `hz6-small-boundary-fast-target` for known
+small/fixed-boundary profiles.
 
 ## Quick Start
 
@@ -181,6 +183,19 @@ It enables `HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_L1=1`, a control that maps
 but it is not selected default because broad mixed-small guards do not cleanly
 promote it.  Use `hz6-realloc-boundary-target` in shared compare matrices only
 for that profile.
+
+The small-boundary profile DSOs are built by:
+
+```bash
+./hakozuna-hz6/linux/build_hz6_preload_small_boundary_target.sh
+./hakozuna-hz6/linux/build_hz6_preload_small_boundary_fast_target.sh
+```
+
+The first combines Toy direct fast reuse with realloc-boundary slack.  The
+`fast` sibling also enables trusted-owner preload boundary and raw frontcache
+push code-shape controls.  Use `hz6-small-boundary-target` or
+`hz6-small-boundary-fast-target` only when the workload is known to favor
+small/fixed-boundary behavior; neither is the selected default `hz6` lane.
 
 ## HZ5 Full-Preload Research Lanes
 

@@ -356,6 +356,34 @@ variant_flags() {
       hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1 1
       hz6_preload_replace_define flags HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1 1
       ;;
+    small_boundary_target)
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES 4096
+      hz6_preload_replace_define flags HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_L1 1
+      ;;
+    small_boundary_raw_push)
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES 4096
+      hz6_preload_replace_define flags HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_L1 1
+      hz6_preload_replace_define flags HZ6_DIRECT_LOCAL_FREE_RAW_PUSH_L1 1
+      ;;
+    small_boundary_trusted_owner)
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES 4096
+      hz6_preload_replace_define flags HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1 1
+      ;;
+    small_boundary_raw_push_trusted_owner)
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES 4096
+      hz6_preload_replace_define flags HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_L1 1
+      hz6_preload_replace_define flags HZ6_DIRECT_LOCAL_FREE_RAW_PUSH_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1 1
+      ;;
     preload_toy_direct_class_max1024)
       hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 1
       hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES 1024
