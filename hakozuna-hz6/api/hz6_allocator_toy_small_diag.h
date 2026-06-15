@@ -405,14 +405,27 @@ static inline int hz6_toy_small_active_map_try_free(Hz6Allocator* allocator,
 #endif
   size_t base_index = hz6_toy_small_active_map_index(ptr);
   Hz6ToySmallActiveMapEntry* entry = NULL;
+#if HZ6_DIAGNOSTIC_PROBES
+  size_t hit_probe_count = 0;
+  int hit_base_slot = 0;
+#endif
 #if HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1
   Hz6ToySmallActiveMapEntry* base_entry =
       &allocator->toy_small_active_map[base_index];
+#if HZ6_DIAGNOSTIC_PROBES
+  hit_probe_count = 1;
+#endif
   if (base_entry->ptr == ptr) {
     entry = base_entry;
+#if HZ6_DIAGNOSTIC_PROBES
+    hit_base_slot = 1;
+#endif
   } else {
     for (size_t probe = 1; probe < HZ6_TOY_SMALL_ACTIVE_FREE_MAP_PROBE_LIMIT;
          ++probe) {
+#if HZ6_DIAGNOSTIC_PROBES
+      ++hit_probe_count;
+#endif
       size_t index =
           (base_index + probe) % HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY;
       Hz6ToySmallActiveMapEntry* candidate =
@@ -426,12 +439,18 @@ static inline int hz6_toy_small_active_map_try_free(Hz6Allocator* allocator,
 #else
   for (size_t probe = 0; probe < HZ6_TOY_SMALL_ACTIVE_FREE_MAP_PROBE_LIMIT;
        ++probe) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++hit_probe_count;
+#endif
     size_t index =
         (base_index + probe) % HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY;
     Hz6ToySmallActiveMapEntry* candidate =
         &allocator->toy_small_active_map[index];
     if (candidate->ptr == ptr) {
       entry = candidate;
+#if HZ6_DIAGNOSTIC_PROBES
+      hit_base_slot = (probe == 0);
+#endif
       break;
     }
   }
@@ -478,6 +497,29 @@ static inline int hz6_toy_small_active_map_try_free(Hz6Allocator* allocator,
   ++allocator->stats.route_valid;
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.toy_small_active_map_free_hit;
+  allocator->stats.toy_small_active_map_free_hit_probe_total +=
+      hit_probe_count;
+  if (hit_probe_count >
+      allocator->stats.toy_small_active_map_free_hit_probe_max) {
+    allocator->stats.toy_small_active_map_free_hit_probe_max = hit_probe_count;
+  }
+  if (hit_base_slot) {
+    ++allocator->stats.toy_small_active_map_free_hit_base_slot;
+  }
+  if (hz6_toy_small_hotpath_diag_is_class4(HZ6_FRONT_TOY,
+                                           descriptor->class_id)) {
+    ++allocator->stats.toy_class4_active_map_free_hit;
+    allocator->stats.toy_class4_active_map_free_hit_probe_total +=
+        hit_probe_count;
+    if (hit_probe_count >
+        allocator->stats.toy_class4_active_map_free_hit_probe_max) {
+      allocator->stats.toy_class4_active_map_free_hit_probe_max =
+          hit_probe_count;
+    }
+    if (hit_base_slot) {
+      ++allocator->stats.toy_class4_active_map_free_hit_base_slot;
+    }
+  }
   ++allocator->stats.toy_small_active_map_route_bypass;
 #if !HZ6_TOY_SMALL_ACTIVE_MAP_TRUSTED_OWNER_L1
   hz6_toy_small_hotpath_diag_free_owner_equal(

@@ -206,10 +206,17 @@ static void hz6_preload_print_stats(void) {
   size_t toy_class4_active_map_register_collision = 0;
   size_t toy_small_active_map_free_attempt = 0;
   size_t toy_small_active_map_free_hit = 0;
+  size_t toy_small_active_map_free_hit_base_slot = 0;
+  size_t toy_small_active_map_free_hit_probe_total = 0;
+  size_t toy_small_active_map_free_hit_probe_max = 0;
   size_t toy_small_active_map_free_miss = 0;
   size_t toy_small_active_map_free_stale = 0;
   size_t toy_small_active_map_free_cache_fail = 0;
   size_t toy_small_active_map_route_bypass = 0;
+  size_t toy_class4_active_map_free_hit = 0;
+  size_t toy_class4_active_map_free_hit_base_slot = 0;
+  size_t toy_class4_active_map_free_hit_probe_total = 0;
+  size_t toy_class4_active_map_free_hit_probe_max = 0;
   size_t midpage_active_map_register = 0;
   size_t midpage_active_map_register_direct = 0;
   size_t midpage_active_map_register_front_alloc = 0;
@@ -473,12 +480,31 @@ static void hz6_preload_print_stats(void) {
     toy_small_active_map_free_attempt +=
         stats.toy_small_active_map_free_attempt;
     toy_small_active_map_free_hit += stats.toy_small_active_map_free_hit;
+    toy_small_active_map_free_hit_base_slot +=
+        stats.toy_small_active_map_free_hit_base_slot;
+    toy_small_active_map_free_hit_probe_total +=
+        stats.toy_small_active_map_free_hit_probe_total;
+    if (stats.toy_small_active_map_free_hit_probe_max >
+        toy_small_active_map_free_hit_probe_max) {
+      toy_small_active_map_free_hit_probe_max =
+          stats.toy_small_active_map_free_hit_probe_max;
+    }
     toy_small_active_map_free_miss += stats.toy_small_active_map_free_miss;
     toy_small_active_map_free_stale += stats.toy_small_active_map_free_stale;
     toy_small_active_map_free_cache_fail +=
         stats.toy_small_active_map_free_cache_fail;
     toy_small_active_map_route_bypass +=
         stats.toy_small_active_map_route_bypass;
+    toy_class4_active_map_free_hit += stats.toy_class4_active_map_free_hit;
+    toy_class4_active_map_free_hit_base_slot +=
+        stats.toy_class4_active_map_free_hit_base_slot;
+    toy_class4_active_map_free_hit_probe_total +=
+        stats.toy_class4_active_map_free_hit_probe_total;
+    if (stats.toy_class4_active_map_free_hit_probe_max >
+        toy_class4_active_map_free_hit_probe_max) {
+      toy_class4_active_map_free_hit_probe_max =
+          stats.toy_class4_active_map_free_hit_probe_max;
+    }
     midpage_active_map_register += stats.midpage_active_map_register;
     midpage_active_map_register_direct +=
         stats.midpage_active_map_register_direct;
@@ -842,10 +868,17 @@ static void hz6_preload_print_stats(void) {
           "toy_class4_active_map_register_collision=%zu "
           "toy_small_active_map_free_attempt=%zu "
           "toy_small_active_map_free_hit=%zu "
+          "toy_small_active_map_free_hit_base_slot=%zu "
+          "toy_small_active_map_free_hit_probe_total=%zu "
+          "toy_small_active_map_free_hit_probe_max=%zu "
           "toy_small_active_map_free_miss=%zu "
           "toy_small_active_map_free_stale=%zu "
           "toy_small_active_map_free_cache_fail=%zu "
           "toy_small_active_map_route_bypass=%zu "
+          "toy_class4_active_map_free_hit=%zu "
+          "toy_class4_active_map_free_hit_base_slot=%zu "
+          "toy_class4_active_map_free_hit_probe_total=%zu "
+          "toy_class4_active_map_free_hit_probe_max=%zu "
           "midpage_active_map_register=%zu "
           "midpage_active_map_register_direct=%zu "
           "midpage_active_map_register_front_alloc=%zu "
@@ -897,10 +930,18 @@ static void hz6_preload_print_stats(void) {
           toy_class4_active_map_register,
           toy_class4_active_map_register_collision,
           toy_small_active_map_free_attempt,
-          toy_small_active_map_free_hit, toy_small_active_map_free_miss,
+          toy_small_active_map_free_hit,
+          toy_small_active_map_free_hit_base_slot,
+          toy_small_active_map_free_hit_probe_total,
+          toy_small_active_map_free_hit_probe_max,
+          toy_small_active_map_free_miss,
           toy_small_active_map_free_stale,
           toy_small_active_map_free_cache_fail,
           toy_small_active_map_route_bypass,
+          toy_class4_active_map_free_hit,
+          toy_class4_active_map_free_hit_base_slot,
+          toy_class4_active_map_free_hit_probe_total,
+          toy_class4_active_map_free_hit_probe_max,
           midpage_active_map_register,
           midpage_active_map_register_direct,
           midpage_active_map_register_front_alloc,

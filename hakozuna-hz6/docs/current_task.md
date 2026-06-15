@@ -41,6 +41,41 @@ Archived chronological ledger:
 ## Recent Closeout: HZ6 Ubuntu Toy ActiveMap Free FastSlot After RawPop-L1
 
 ```text
+latest continuation:
+  Add ToyActiveMapFreeProbeAudit-L1 as diagnostic-only.
+  This does not change behavior; it only reports Toy/class4 active-map free
+  hit base-slot ratio and hit probe length.
+
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_215547
+  selected stats+diagnostic, repeat-3, 200K, focused+fixed:
+    16..4096:
+      toy4_free_hit=916261
+      toy4_free_base=94.3%
+      toy4_free_avg_probe=1.06
+      toy4_free_max_probe=4
+    1024..4096:
+      toy4_free_hit=1216713
+      toy4_free_base=94.6%
+      toy4_free_avg_probe=1.06
+      toy4_free_max_probe=4
+    fixed_4k:
+      toy4_free_hit=1217140
+      toy4_free_base=94.1%
+      toy4_free_avg_probe=1.07
+      toy4_free_max_probe=4
+
+  read:
+    Mid-small rows are already Toy class4 fast-hit dominated.
+    Source/front refill is small, and Toy active-map free lookup is already
+    near base-slot optimal. Register collision remains visible, but the free
+    side is not paying a large probe wall.
+
+  decision:
+    Keep Toy map64k/probe8/mask/shift12 as controls/no-go.
+    Do not default broad Toy preclassification; it remains a profile lane.
+    Next speed work should avoid active-map capacity/probe tweaks and look for
+    a new local-page/run metadata path or a deliberately separate profile DSO.
+
 goal:
   Re-test low-risk Toy/small controls after the selected raw frontcache pop
   changed the production hot-path code shape.

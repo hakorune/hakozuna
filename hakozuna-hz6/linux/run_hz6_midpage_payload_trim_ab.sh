@@ -527,8 +527,8 @@ print(f"root: `{root}`\n")
 readme = (root / "README.log").read_text(errors="replace")
 stats_mode = readme.split("stats=", 1)[1].splitlines()[0] if "stats=" in readme else "unknown"
 print(f"stats: `{stats_mode}`\n")
-print("| row | variant | median ops/s | median peak MiB | median current MiB | scavenge count/result | payload MiB | active source blocks | fail | source_alloc | mid32_alloc | mid32_prefill | mid32_filled | mid32_front_push | toy4 fast | toy4 hit | toy4 front | toy4 pop | toy4 activate | toy4 free attempt | toy4 free success | toy4 map reg | toy4 collision | retire attempt | retire scan | retire candidates | retire blocks | retire desc | retire MiB | retire blocked | retire fail |")
-print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+print("| row | variant | median ops/s | median peak MiB | median current MiB | scavenge count/result | payload MiB | active source blocks | fail | source_alloc | mid32_alloc | mid32_prefill | mid32_filled | mid32_front_push | toy4 fast | toy4 hit | toy4 front | toy4 pop | toy4 activate | toy4 free attempt | toy4 free success | toy4 map reg | toy4 collision | toy4 free hit | toy4 free base % | toy4 free avg probe | toy4 free max probe | retire attempt | retire scan | retire candidates | retire blocks | retire desc | retire MiB | retire blocked | retire fail |")
+print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 for row in rows:
     for variant in variants:
         ops_values = []
@@ -552,6 +552,10 @@ for row in rows:
         toy4_free_success = 0
         toy4_map_reg = 0
         toy4_collision = 0
+        toy4_free_hit = 0
+        toy4_free_base = 0
+        toy4_free_probe_total = 0
+        toy4_free_probe_max = 0
         retire_attempt = 0
         retire_scan = 0
         retire_candidates = 0
@@ -602,6 +606,17 @@ for row in rows:
             toy4_collision += stats.get(
                 "toy_class4_active_map_register_collision", 0
             )
+            toy4_free_hit += stats.get("toy_class4_active_map_free_hit", 0)
+            toy4_free_base += stats.get(
+                "toy_class4_active_map_free_hit_base_slot", 0
+            )
+            toy4_free_probe_total += stats.get(
+                "toy_class4_active_map_free_hit_probe_total", 0
+            )
+            toy4_free_probe_max = max(
+                toy4_free_probe_max,
+                stats.get("toy_class4_active_map_free_hit_probe_max", 0),
+            )
             retire_attempt += stats.get("midpage_32k_cold_retire_attempt", 0)
             retire_scan += stats.get("midpage_32k_cold_retire_scan_blocks", 0)
             retire_candidates += stats.get(
@@ -621,6 +636,12 @@ for row in rows:
         median_ops = statistics.median(ops_values) if ops_values else 0.0
         median_peak = statistics.median(peak_values) if peak_values else 0.0
         median_current = statistics.median(current_values) if current_values else 0.0
+        toy4_free_base_pct = (
+            (100.0 * toy4_free_base / toy4_free_hit) if toy4_free_hit else 0.0
+        )
+        toy4_free_avg_probe = (
+            (toy4_free_probe_total / toy4_free_hit) if toy4_free_hit else 0.0
+        )
         print(
             f"| `{row}` | `{variant}` | {median_ops:.3f} | {median_peak:.2f} | "
             f"{median_current:.2f} | {scavenge_released} | "
@@ -629,7 +650,9 @@ for row in rows:
             f"{mid32_filled} | {mid32_front_push} | {toy4_fast} | "
             f"{toy4_hit} | {toy4_front} | {toy4_pop} | {toy4_activate} | "
             f"{toy4_free_attempt} | {toy4_free_success} | {toy4_map_reg} | "
-            f"{toy4_collision} | {retire_attempt} | "
+            f"{toy4_collision} | {toy4_free_hit} | {toy4_free_base_pct:.1f} | "
+            f"{toy4_free_avg_probe:.2f} | {toy4_free_probe_max} | "
+            f"{retire_attempt} | "
             f"{retire_scan} | {retire_candidates} | {retire_blocks} | "
             f"{retire_desc} | {retire_mib:.2f} | {retire_blocked} | "
             f"{retire_fail} |"

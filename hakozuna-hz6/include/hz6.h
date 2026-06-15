@@ -332,10 +332,17 @@ typedef struct Hz6StatsSnapshot {
   size_t toy_class4_active_map_register_collision;
   size_t toy_small_active_map_free_attempt;
   size_t toy_small_active_map_free_hit;
+  size_t toy_small_active_map_free_hit_base_slot;
+  size_t toy_small_active_map_free_hit_probe_total;
+  size_t toy_small_active_map_free_hit_probe_max;
   size_t toy_small_active_map_free_miss;
   size_t toy_small_active_map_free_stale;
   size_t toy_small_active_map_free_cache_fail;
   size_t toy_small_active_map_route_bypass;
+  size_t toy_class4_active_map_free_hit;
+  size_t toy_class4_active_map_free_hit_base_slot;
+  size_t toy_class4_active_map_free_hit_probe_total;
+  size_t toy_class4_active_map_free_hit_probe_max;
   size_t midpage_active_map_register;
   size_t midpage_active_map_register_direct;
   size_t midpage_active_map_register_front_alloc;
