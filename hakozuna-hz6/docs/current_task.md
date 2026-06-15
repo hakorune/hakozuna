@@ -57,7 +57,7 @@ Standard frontier:
   aligned / calloc-direct / calloc-real / calloc-large-real
 
 Explicit controls:
-  small-boundary-trusted-toy-map8192(+external) / workload-capacity / toy-map-external / midpage-skip-transfer
+  small-boundary-trusted-toy-map8192(+external) / workload-capacity(+map8192) / toy-map-external / midpage-skip-transfer
 
 Runners:
   fixed_boundary_profile_frontier / preload_profile_frontier
@@ -146,5 +146,5 @@ Default no-go/control-only without substantially different evidence:
 14. Next broad guard: refresh selected/profile frontier and real-workload rows
     periodically, not more fixed-only default behavior.
 15. Workload proxy refresh found desc8192 capacity collapse on large WS rows;
-    `hz6-workload-capacity-lite-target` is the preferred explicit profile.
+    `hz6-workload-capacity-lite-target` is preferred; map8192 is RSS control.
 ```

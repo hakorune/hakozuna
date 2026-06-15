@@ -158,6 +158,18 @@ Mid/full remain controls for larger live sets. None of the capacity profiles is
 selected/default because healthy `redis_proxy` and `midpage_cache` rows regress
 with the larger static tables.
 
+Follow-up capacity-lite Toy-map8192 probe, repeat-3, raw
+`private/raw-results/linux/hz6_workload_capacity_lite_toy_map8192_probe_20260616_081039`,
+shows a useful RSS/balance control but not a replacement for lite yet:
+`redis_proxy` improves `47.747M / 25.50 MiB -> 52.364M / 24.50 MiB`,
+`mixed_small_cache` improves `8.465M / 128.75 MiB -> 8.601M / 127.25 MiB`,
+and `wide_midpage_cache` improves `9.010M / 153.62 MiB -> 9.042M / 152.50 MiB`,
+but `small_object_cache` speed slips slightly (`16.842M -> 16.535M`) and
+`midpage_cache` speed also slips slightly (`18.238M -> 18.074M`). Persist it as
+`hz6-workload-capacity-lite-map8192-target` for explicit capacity/RSS A/B; keep
+plain `hz6-workload-capacity-lite-target` as the default workload-proxy guard
+profile until a thicker repeat shows no healthy-row regression.
+
 Earlier workload-proxy matrix, repeat-3, raw
 `private/raw-results/linux/hz6_workload_proxy_matrix_20260616_075550`;
 diagnostic raws `hz6_workload_proxy_diag_20260616_075255` and
@@ -518,7 +530,7 @@ MidPage 32K run-size closeout details are in
 | `build_hz6_preload_calloc_large_real_target.sh` | Named large-calloc RSS/speed profile DSO. It enables real calloc fallback plus free-skip only for calloc payloads at or above 64 KiB via `HZ6_PRELOAD_CALLOC_REAL_MIN_BYTES=65536`. Shared compare aliases: `hz6-calloc-large-real-target` / `hz6_calloc_large_real_target`. |
 | `build_hz6_preload_midpage_trusted_class_target.sh` | Historical/comparison alias for the trusted-class selected shape. It now matches the selected Ubuntu preload behavior unless `HZ6_MIDPAGE_TRUSTED_CLASS_CLASS5_ONLY=1` is set for the class5-only control. Shared compare aliases: `hz6-midpage-trusted-class` / `hz6_midpage_trusted_class`. |
 | `build_hz6_preload_midpage_skip_transfer_target.sh` | Named MidPage skip-transfer control DSO. It enables `HZ6_MIDPAGE_DIRECT_LOCAL_SKIP_TRANSFER_FIRST_L1=1` over selected flags for explicit A/B checks. Shared compare aliases: `hz6-midpage-skip-transfer-target` / `hz6_midpage_skip_transfer_target`; alias smoke raw `hz6_midpage_skip_transfer_alias_smoke_20260616_065421` confirms autobuild and resolver wiring. |
-| `build_hz6_preload_workload_capacity_target.sh` | Explicit workload-capacity profile builder. `HZ6_WORKLOAD_CAPACITY_LEVEL=lite` builds `route65536/desc16384/source2048`, `mid` builds `route98304/desc24576/source3072`, and `full` builds `route131072/desc32768/source4096`. Thin wrapper scripts expose `build_hz6_preload_workload_capacity_lite_target.sh`, `build_hz6_preload_workload_capacity_mid_target.sh`, and the existing full target. Shared compare aliases: `hz6-workload-capacity-lite-target` / `hz6_workload_capacity_lite_target`, `hz6-workload-capacity-mid-target` / `hz6_workload_capacity_mid_target`, and `hz6-workload-capacity-target` / `hz6_workload_capacity_target`. Workload-proxy raw `hz6_workload_proxy_matrix_20260616_080227` makes lite the preferred profile; mid/full remain larger controls. |
+| `build_hz6_preload_workload_capacity_target.sh` | Explicit workload-capacity profile builder. `HZ6_WORKLOAD_CAPACITY_LEVEL=lite` builds `route65536/desc16384/source2048`, `lite_map8192` adds Toy active-map 8192, `mid` builds `route98304/desc24576/source3072`, and `full` builds `route131072/desc32768/source4096`. Thin wrapper scripts expose `build_hz6_preload_workload_capacity_lite_target.sh`, `build_hz6_preload_workload_capacity_lite_map8192_target.sh`, `build_hz6_preload_workload_capacity_mid_target.sh`, and the existing full target. Shared compare aliases: `hz6-workload-capacity-lite-target` / `hz6_workload_capacity_lite_target`, `hz6-workload-capacity-lite-map8192-target` / `hz6_workload_capacity_lite_map8192_target`, `hz6-workload-capacity-mid-target` / `hz6_workload_capacity_mid_target`, and `hz6-workload-capacity-target` / `hz6_workload_capacity_target`. Workload-proxy raw `hz6_workload_proxy_matrix_20260616_080227` makes lite the preferred profile; `lite_map8192`, mid, and full remain controls. |
 | `build_hz6_preload_midpage_boundary_control.sh` | Explicit boundary-off control DSO for confirming the selected preload-boundary transfer-skip shape. |
 | `hz6_preload_aliases.sh` | Shared HZ6 profile alias build helper for Ubuntu selected-balance and fixed-size matrix runners. It keeps dash/underscore profile aliases in one place so adding profile DSOs does not drift between runners. |
 | `run_hz6_preload_midpage_boundary_ab.sh` | Repeat runner for selected default versus boundary-off control on `4096..16384`, `16..256`, `16..4096`, and `1024..4096`. |
