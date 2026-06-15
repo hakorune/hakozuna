@@ -133,6 +133,20 @@ the broad production DSO. Do not default realloc-boundary or adaptive behavior
 unless a future guard also preserves tiny, mixed-small, target, fixed, RSS, and
 stats rows in one run.
 
+Latest fixed-boundary profile cross refresh, repeat-3, raw
+`private/raw-results/linux/hz6_fixed_boundary_profile_frontier_20260616_061328`:
+
+| Row | HZ6 selected | HZ6 best profile | External read |
+| --- | ---: | ---: | --- |
+| `fixed_4k` | `38.415M / 78.88 MiB` | `small-boundary-trusted 49.618M / 79.62 MiB` | HZ3 still faster/RSS-lower; HZ6 profile beats tcmalloc speed |
+| `fixed_8k` | `45.270M / 80.25 MiB` | `small-boundary-trusted 48.283M / 80.12 MiB` | HZ3 still faster/RSS-lower; HZ6 profile beats tcmalloc speed |
+| `fixed_16k` | `47.987M / 80.12 MiB` | `small-boundary-trusted 48.695M / 80.00 MiB` | HZ6 profile beats HZ3/tcmalloc/HZ4/mimalloc/system speed |
+
+Read: small-boundary-trusted is the practical fixed-boundary shipping profile
+right now. The remaining gap to HZ3 on fixed_4k/8k is mostly RSS/static
+architecture cost plus HZ3's heavily tuned medium path, not an argument for
+defaulting realloc-boundary behavior.
+
 Latest focused cross-allocator comparison:
 
 | Row | hz3 | hz4 | hz6 | mimalloc | tcmalloc | system | hz6 peak KB |

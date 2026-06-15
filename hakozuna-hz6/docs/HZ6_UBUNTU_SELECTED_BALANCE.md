@@ -76,6 +76,22 @@ Decision: keep selected/default unchanged. Treat small-boundary-trusted and the
 adaptive realloc-boundary DSOs as workload profiles for known fixed-boundary
 growth, not as default behavior.
 
+Fixed-boundary profile cross refresh:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_fixed_boundary_profile_frontier_20260616_061328
+```
+
+| row | selected HZ6 | best HZ6 profile | cross-position read |
+| --- | ---: | ---: | --- |
+| `fixed_4k` | `38.415M / 78.88 MiB` | `small-boundary-trusted 49.618M / 79.62 MiB` | profile beats tcmalloc speed; HZ3 still leads speed/RSS |
+| `fixed_8k` | `45.270M / 80.25 MiB` | `small-boundary-trusted 48.283M / 80.12 MiB` | profile beats tcmalloc speed; HZ3 still leads speed/RSS |
+| `fixed_16k` | `47.987M / 80.12 MiB` | `small-boundary-trusted 48.695M / 80.00 MiB` | HZ6 profile beats HZ3/tcmalloc/HZ4/mimalloc/system speed |
+
+Decision: for fixed-boundary workloads, prefer the small-boundary-trusted
+profile unless a narrower adaptive profile is explicitly desired. Keep the
+selected broad DSO unchanged.
+
 Latest full matrix raw run:
 
 ```text
