@@ -140,8 +140,8 @@ Default no-go/control-only without substantially different evidence:
 11. 8K run shrink under Toy-map8192 RSS profile is no-go/control.
 12. MidPage skip-transfer is control/watch only: latest profile frontier loses
     16..4096 and 4096..16384 despite 1024..4096/fixed_16k signals.
-13. Toy active-map external storage is a new RSS profile/control: it cuts
-    about 0.25..2.0 MiB peak RSS in focused/fixed production repeat, but keep
-    default-off until a broader profile-frontier guard is clean.
+13. Toy external-map and packed-frontcache combos remain runner-only RSS
+    controls: they cut fixed RSS further but speed is mixed, so keep the
+    existing Toy-map8192 DSO as the fixed-boundary RSS profile.
 14. Keep this file below about 150 lines; archive completed evidence snapshots.
 ```
