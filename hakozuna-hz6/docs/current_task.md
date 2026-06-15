@@ -98,6 +98,28 @@ evidence:
       -O3                         44.118M -> 43.222M
       -fno-semantic-interposition 44.118M -> 43.909M
       both                        44.118M -> 43.330M
+  fixed-row runner/audit:
+    run_hz6_midpage_payload_trim_ab.sh now supports:
+      --rows focused
+      --rows fixed
+      --rows focused,fixed
+    fixed rows:
+      fixed_4k, fixed_8k, fixed_16k
+    raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_203102
+    isolated controls were not promotion-clean:
+      toy_preclassified_malloc won fixed_4k only
+      same_owner_fast won some fixed rows but remained target-negative later
+    raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_203155
+      same_owner_fast 4096..16384 43.781M -> 43.188M
+  Toy prefill batch ladder:
+    raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_203243
+    tested HZ6_TOY_FULL_BLOCK_PREFILL_MAX_SLOTS=64/96/192/256
+    keep selected max128; fixed-row gains were split and 1024..4096/tiny were
+    guard-negative.
+  Source-run reuse/reclaim fixed-row retest:
+    raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_203339
+    sourcerun, sourcerun_sameclass, and sourcerun_reclaim were all
+    guard-negative or target-flat/negative. Keep SOURCE_RUN_REUSE off.
 
 decision:
   selected/default. This is a small but balanced production code-shape win after

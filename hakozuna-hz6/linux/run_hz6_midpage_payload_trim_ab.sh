@@ -13,6 +13,7 @@ STATS_VALUE="${STATS_VALUE:-1}"
 ENABLE_DIAGNOSTICS="${ENABLE_DIAGNOSTICS:-0}"
 VARIANTS="${VARIANTS:-}"
 INCLUDE_TINY="${INCLUDE_TINY:-0}"
+ROWS_CSV="${ROWS:-focused}"
 
 source "${ROOT_DIR}/hakozuna-hz6/linux/hz6_preload_flags.sh"
 
@@ -34,6 +35,7 @@ Options:
   --diagnostics     build with HZ6_DIAGNOSTIC_PROBES=1
   --no-diagnostics  build without diagnostic probe counters (default)
   --variants LIST   comma-separated variants to run
+  --rows LIST       row groups to run: focused,fixed (default: focused)
   --include-tiny    also run the 16..256 tiny guard row
   --help            show this message
 EOF
@@ -87,6 +89,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --variants)
       VARIANTS="$2"
+      shift 2
+      ;;
+    --rows)
+      ROWS_CSV="$2"
       shift 2
       ;;
     --include-tiny)
@@ -271,6 +277,29 @@ variant_flags() {
     toy_preclassified_malloc)
       hz6_preload_replace_define flags HZ6_TOY_PRECLASSIFIED_MALLOC_L1 1
       ;;
+    toy_prefill64)
+      hz6_preload_replace_define flags HZ6_TOY_FULL_BLOCK_PREFILL_MAX_SLOTS 64
+      ;;
+    toy_prefill96)
+      hz6_preload_replace_define flags HZ6_TOY_FULL_BLOCK_PREFILL_MAX_SLOTS 96
+      ;;
+    toy_prefill192)
+      hz6_preload_replace_define flags HZ6_TOY_FULL_BLOCK_PREFILL_MAX_SLOTS 192
+      ;;
+    toy_prefill256)
+      hz6_preload_replace_define flags HZ6_TOY_FULL_BLOCK_PREFILL_MAX_SLOTS 256
+      ;;
+    sourcerun)
+      hz6_preload_replace_define flags HZ6_SOURCE_RUN_REUSE_L1 1
+      ;;
+    sourcerun_sameclass)
+      hz6_preload_replace_define flags HZ6_SOURCE_RUN_REUSE_L1 1
+      hz6_preload_replace_define flags HZ6_SOURCE_RUN_RECLAIM_SAME_CLASS_L1 1
+      ;;
+    sourcerun_reclaim)
+      hz6_preload_replace_define flags HZ6_SOURCE_RUN_REUSE_L1 1
+      hz6_preload_replace_define flags HZ6_SOURCE_RUN_RECLAIM_DESCRIPTOR_L1 1
+      ;;
     run2304k)
       hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 2359296
       ;;
@@ -346,6 +375,7 @@ mkdir -p "$OUTDIR"
   echo "stats_value=${STATS_VALUE}"
   echo "diagnostics=${ENABLE_DIAGNOSTICS}"
   echo "variants=${variants[*]}"
+  echo "rows=${ROWS_CSV}"
   echo "include_tiny=${INCLUDE_TINY}"
 } > "${OUTDIR}/README.log"
 
@@ -353,14 +383,33 @@ for variant in "${variants[@]}"; do
   build_variant "$variant"
 done
 
-rows=(
-  "16_4096 16 4096"
-  "1024_4096 1024 4096"
-  "4096_16384 4096 16384"
-)
+rows=()
 if [[ "$INCLUDE_TINY" -ne 0 ]]; then
-  rows=("16_256 16 256" "${rows[@]}")
+  rows+=("16_256 16 256")
 fi
+IFS=',' read -r -a row_groups <<< "$ROWS_CSV"
+for row_group in "${row_groups[@]}"; do
+  case "$row_group" in
+    focused)
+      rows+=(
+        "16_4096 16 4096"
+        "1024_4096 1024 4096"
+        "4096_16384 4096 16384"
+      )
+      ;;
+    fixed)
+      rows+=(
+        "fixed_4k 4096 4096"
+        "fixed_8k 8192 8192"
+        "fixed_16k 16384 16384"
+      )
+      ;;
+    *)
+      echo "unknown row group: ${row_group}" >&2
+      exit 2
+      ;;
+  esac
+done
 
 for row_spec in "${rows[@]}"; do
   read -r row min_size max_size <<< "$row_spec"
