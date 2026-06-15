@@ -70,15 +70,15 @@ Other controls:
   hz6-calloc-large-real-target
 
 Runners:
-  linux/run_hz6_preload_profile_frontier.sh
-  linux/run_hz6_fixed_cost_residency_matrix.sh
+  linux/run_hz6_fixed_boundary_profile_frontier.sh  # fixed profile shortcut
+  linux/run_hz6_preload_profile_frontier.sh / run_hz6_fixed_cost_residency_matrix.sh
 ```
 
 ## Latest Evidence
 
 ```text
 Profile frontier:
-  private/raw-results/linux/hz6_preload_profile_frontier_20260616_043329
+  private/raw-results/linux/hz6_preload_profile_frontier_20260616_060739
 
 Realloc copy attribution:
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_042441
@@ -86,17 +86,11 @@ Realloc copy attribution:
 Adaptive realloc-boundary profile repeat:
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_042628
 
-Adaptive alias smoke:
-  private/raw-results/linux/hz6_preload_profile_frontier_20260616_042846
-
 Calloc large-real profile:
-  private/raw-results/linux/hz6_preload_calloc_audit_20260616_044759
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_044958
   private/raw-results/linux/hz6_preload_calloc_cross_20260616_045446
 
 Calloc direct-HZ6 code-shape control:
-  private/raw-results/linux/hz6_preload_calloc_audit_20260616_051111
-  private/raw-results/linux/hz6_preload_profile_frontier_20260616_051156
   private/raw-results/linux/hz6_preload_calloc_audit_20260616_051752
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_051752
 
@@ -136,15 +130,21 @@ Default no-go/control-only without substantially different evidence:
 
 ```text
 1. Keep selected/default stable.
-2. Fixed-floor selected/default is route32K + desc8192 + source1024 plus Toy16K/MidPage8K maps; fixed-row smoke now sits near 79..80 MiB peak.
+2. Fixed-floor selected/default is route32K + desc8192 + source1024 plus
+   Toy16K/MidPage8K maps; fixed-row smoke sits near 79..80 MiB peak.
 3. Treat adaptive-4k and adaptive-8k as fixed-boundary profile lanes.
-4. Treat calloc-large-real as a large calloc-heavy RSS/speed profile, not a
-   selected/default lane.
-5. Keep calloc-direct default-off: thick focused+calloc repeat is mixed and
-   does not justify selected/default.
+4. Treat calloc-large-real as a large-calloc RSS/speed profile, not selected.
+5. Keep calloc-direct default-off: thick focused+calloc repeat is mixed.
 6. Cross-allocator refresh says HZ6 is strong on 4096..16384, fixed_8k, and
-   fixed_16k; next work should be profile-specific, not another broad default.
-7. Keep this file below about 150 lines; archive completed evidence snapshots
+   fixed_16k; profile frontier refresh says fixed-boundary profile DSOs are
+   still useful after the fixed-floor trims.
+7. Current profile frontier:
+   selected for broad focused/4096..16384; small-boundary-trusted/adaptive-4k
+   for fixed_4k; small-boundary-trusted/adaptive-8k for fixed_8k; adaptive
+   combined only for fixed_16k-heavy profile runs.
+8. Do not promote realloc-boundary/adaptive to selected/default without a new
+   guard that also preserves tiny, mixed-small, target, fixed, RSS, and stats.
+9. Keep this file below about 150 lines; archive completed evidence snapshots
    instead of appending chronological logs. Large 3000+ line ledgers belong
    only under archive/.
 ```

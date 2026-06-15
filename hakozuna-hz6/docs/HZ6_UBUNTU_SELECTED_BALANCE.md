@@ -52,6 +52,30 @@ Decision: keep ToyTrustedDefault-L1 selected. Keep realloc-boundary slack,
 small-boundary profiles, raw-push, and aligned-free skip as profile/control
 lanes.
 
+Fresh profile frontier after fixed-floor and active-map storage trims:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_preload_profile_frontier_20260616_060739
+```
+
+This refresh rebuilds the selected DSO and profile DSOs from the current
+route32K/desc8192/source1024/Toy16K/MidPage8K selected flags. It keeps the
+default/profile split:
+
+| row | selected hz6 | best useful profile | read |
+| --- | ---: | ---: | --- |
+| `16..256` | `88.073M / 18.12 MiB` | selected | selected remains the broad tiny guard |
+| `16..4096` | `44.469M / 67.38 MiB` | `toy-trusted 44.826M / 67.25 MiB` | selected-equivalent/no profile reason |
+| `1024..4096` | `39.425M / 78.38 MiB` | `realloc-boundary-8k 41.462M / 78.62 MiB` | profile-only; not target-safe |
+| `4096..16384` | `48.180M / 81.25 MiB` | selected | selected remains the target guard |
+| `fixed_4k` | `38.228M / 78.88 MiB` | `small-boundary-trusted 49.338M / 79.62 MiB` | profile is materially faster |
+| `fixed_8k` | `45.492M / 80.00 MiB` | `small-boundary-trusted 48.253M / 80.00 MiB` | profile is faster |
+| `fixed_16k` | `44.821M / 80.12 MiB` | `adaptive-4k 47.407M / 80.00 MiB` | adaptive profile is faster in this repeat |
+
+Decision: keep selected/default unchanged. Treat small-boundary-trusted and the
+adaptive realloc-boundary DSOs as workload profiles for known fixed-boundary
+growth, not as default behavior.
+
 Latest full matrix raw run:
 
 ```text
