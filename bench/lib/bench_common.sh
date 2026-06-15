@@ -126,6 +126,17 @@ bench_find_hz5_library() {
 }
 
 bench_find_hz6_library() {
+  bench_find_hz6_preload_output \
+    HZ6_PRELOAD_SO \
+    hz6_preload \
+    hz6-preload
+}
+
+bench_find_hz6_preload_output() {
+  local env_var="$1"
+  local out_dir="$2"
+  local arch_suffix="$3"
+  local override="${!env_var-}"
   local arch
   arch="$(uname -m)"
   case "${arch}" in
@@ -134,135 +145,72 @@ bench_find_hz6_library() {
   esac
 
   bench_find_first_existing \
-    "${HZ6_PRELOAD_SO:-}" \
-    "${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_preload/libhakozuna_hz6_preload.so" \
-    "${ROOT_DIR}/hakozuna-hz6/out/linux/${arch}-hz6-preload/libhakozuna_hz6_preload.so"
+    "${override}" \
+    "${ROOT_DIR}/hakozuna-hz6/out/linux/${out_dir}/libhakozuna_hz6_preload.so" \
+    "${ROOT_DIR}/hakozuna-hz6/out/linux/${arch}-${arch_suffix}/libhakozuna_hz6_preload.so"
 }
 
 bench_find_hz6_toy_target_library() {
-  local arch
-  arch="$(uname -m)"
-  case "${arch}" in
-    amd64) arch="x86_64" ;;
-    arm64) arch="arm64" ;;
-  esac
-
-  bench_find_first_existing \
-    "${HZ6_TOY_TARGET_PRELOAD_SO:-}" \
-    "${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_preload_toy_target/libhakozuna_hz6_preload.so" \
-    "${ROOT_DIR}/hakozuna-hz6/out/linux/${arch}-hz6-preload-toy-target/libhakozuna_hz6_preload.so"
+  bench_find_hz6_preload_output \
+    HZ6_TOY_TARGET_PRELOAD_SO \
+    hz6_preload_toy_target \
+    hz6-preload-toy-target
 }
 
 bench_find_hz6_aligned_target_library() {
-  local arch
-  arch="$(uname -m)"
-  case "${arch}" in
-    amd64) arch="x86_64" ;;
-    arm64) arch="arm64" ;;
-  esac
-
-  bench_find_first_existing \
-    "${HZ6_ALIGNED_TARGET_PRELOAD_SO:-}" \
-    "${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_preload_aligned_target/libhakozuna_hz6_preload.so" \
-    "${ROOT_DIR}/hakozuna-hz6/out/linux/${arch}-hz6-preload-aligned-target/libhakozuna_hz6_preload.so"
+  bench_find_hz6_preload_output \
+    HZ6_ALIGNED_TARGET_PRELOAD_SO \
+    hz6_preload_aligned_target \
+    hz6-preload-aligned-target
 }
 
 bench_find_hz6_realloc_boundary_target_library() {
-  local arch
-  arch="$(uname -m)"
-  case "${arch}" in
-    amd64) arch="x86_64" ;;
-    arm64) arch="arm64" ;;
-  esac
-
-  bench_find_first_existing \
-    "${HZ6_REALLOC_BOUNDARY_TARGET_PRELOAD_SO:-}" \
-    "${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_preload_realloc_boundary_target/libhakozuna_hz6_preload.so" \
-    "${ROOT_DIR}/hakozuna-hz6/out/linux/${arch}-hz6-preload-realloc-boundary-target/libhakozuna_hz6_preload.so"
+  bench_find_hz6_preload_output \
+    HZ6_REALLOC_BOUNDARY_TARGET_PRELOAD_SO \
+    hz6_preload_realloc_boundary_target \
+    hz6-preload-realloc-boundary-target
 }
 
 bench_find_hz6_realloc_boundary_4k_target_library() {
-  local arch
-  arch="$(uname -m)"
-  case "${arch}" in
-    amd64) arch="x86_64" ;;
-    arm64) arch="arm64" ;;
-  esac
-
-  bench_find_first_existing \
-    "${HZ6_REALLOC_BOUNDARY_4K_TARGET_PRELOAD_SO:-}" \
-    "${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_preload_realloc_boundary_4k_target/libhakozuna_hz6_preload.so" \
-    "${ROOT_DIR}/hakozuna-hz6/out/linux/${arch}-hz6-preload-realloc-boundary-4k-target/libhakozuna_hz6_preload.so"
+  bench_find_hz6_preload_output \
+    HZ6_REALLOC_BOUNDARY_4K_TARGET_PRELOAD_SO \
+    hz6_preload_realloc_boundary_4k_target \
+    hz6-preload-realloc-boundary-4k-target
 }
 
 bench_find_hz6_realloc_boundary_8k_target_library() {
-  local arch
-  arch="$(uname -m)"
-  case "${arch}" in
-    amd64) arch="x86_64" ;;
-    arm64) arch="arm64" ;;
-  esac
-
-  bench_find_first_existing \
-    "${HZ6_REALLOC_BOUNDARY_8K_TARGET_PRELOAD_SO:-}" \
-    "${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_preload_realloc_boundary_8k_target/libhakozuna_hz6_preload.so" \
-    "${ROOT_DIR}/hakozuna-hz6/out/linux/${arch}-hz6-preload-realloc-boundary-8k-target/libhakozuna_hz6_preload.so"
+  bench_find_hz6_preload_output \
+    HZ6_REALLOC_BOUNDARY_8K_TARGET_PRELOAD_SO \
+    hz6_preload_realloc_boundary_8k_target \
+    hz6-preload-realloc-boundary-8k-target
 }
 
 bench_find_hz6_small_boundary_target_library() {
-  local arch
-  arch="$(uname -m)"
-  case "${arch}" in
-    amd64) arch="x86_64" ;;
-    arm64) arch="arm64" ;;
-  esac
-
-  bench_find_first_existing \
-    "${HZ6_SMALL_BOUNDARY_TARGET_PRELOAD_SO:-}" \
-    "${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_preload_small_boundary_target/libhakozuna_hz6_preload.so" \
-    "${ROOT_DIR}/hakozuna-hz6/out/linux/${arch}-hz6-preload-small-boundary-target/libhakozuna_hz6_preload.so"
+  bench_find_hz6_preload_output \
+    HZ6_SMALL_BOUNDARY_TARGET_PRELOAD_SO \
+    hz6_preload_small_boundary_target \
+    hz6-preload-small-boundary-target
 }
 
 bench_find_hz6_small_boundary_fast_target_library() {
-  local arch
-  arch="$(uname -m)"
-  case "${arch}" in
-    amd64) arch="x86_64" ;;
-    arm64) arch="arm64" ;;
-  esac
-
-  bench_find_first_existing \
-    "${HZ6_SMALL_BOUNDARY_FAST_TARGET_PRELOAD_SO:-}" \
-    "${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_preload_small_boundary_fast_target/libhakozuna_hz6_preload.so" \
-    "${ROOT_DIR}/hakozuna-hz6/out/linux/${arch}-hz6-preload-small-boundary-fast-target/libhakozuna_hz6_preload.so"
+  bench_find_hz6_preload_output \
+    HZ6_SMALL_BOUNDARY_FAST_TARGET_PRELOAD_SO \
+    hz6_preload_small_boundary_fast_target \
+    hz6-preload-small-boundary-fast-target
 }
 
 bench_find_hz6_small_boundary_trusted_target_library() {
-  local arch
-  arch="$(uname -m)"
-  case "${arch}" in
-    amd64) arch="x86_64" ;;
-    arm64) arch="arm64" ;;
-  esac
-
-  bench_find_first_existing \
-    "${HZ6_SMALL_BOUNDARY_TRUSTED_TARGET_PRELOAD_SO:-}" \
-    "${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_preload_small_boundary_trusted_target/libhakozuna_hz6_preload.so" \
-    "${ROOT_DIR}/hakozuna-hz6/out/linux/${arch}-hz6-preload-small-boundary-trusted-target/libhakozuna_hz6_preload.so"
+  bench_find_hz6_preload_output \
+    HZ6_SMALL_BOUNDARY_TRUSTED_TARGET_PRELOAD_SO \
+    hz6_preload_small_boundary_trusted_target \
+    hz6-preload-small-boundary-trusted-target
 }
 
 bench_find_hz6_midpage_trusted_class_target_library() {
-  local arch
-  arch="$(uname -m)"
-  case "${arch}" in
-    amd64) arch="x86_64" ;;
-    arm64) arch="arm64" ;;
-  esac
-
-  bench_find_first_existing \
-    "${HZ6_MIDPAGE_TRUSTED_CLASS_TARGET_PRELOAD_SO:-}" \
-    "${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_preload_midpage_trusted_class_target/libhakozuna_hz6_preload.so" \
-    "${ROOT_DIR}/hakozuna-hz6/out/linux/${arch}-hz6-preload-midpage-trusted-class-target/libhakozuna_hz6_preload.so"
+  bench_find_hz6_preload_output \
+    HZ6_MIDPAGE_TRUSTED_CLASS_TARGET_PRELOAD_SO \
+    hz6_preload_midpage_trusted_class_target \
+    hz6-preload-midpage-trusted-class-target
 }
 
 bench_find_allocator_library() {

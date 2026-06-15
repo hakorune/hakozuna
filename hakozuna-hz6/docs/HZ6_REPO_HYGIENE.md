@@ -169,6 +169,11 @@ linux/hz6_preload_aliases.sh:
   shared profile alias build helper for HZ6 matrix runners and the public
   linux/run_linux_bench_compare_matrix.sh entrypoint
 
+bench/lib/bench_common.sh:
+  shared HZ6 profile DSO resolver helper. Keep new HZ6 profile aliases on the
+  common resolver path instead of adding another copy of arch/path fallback
+  logic.
+
 HZ6_ELASTIC_CAPACITY_PLAN.md:
   source-depot / ElasticCapacity working-set decisions
 

@@ -159,11 +159,20 @@ Comparison/profile controls:
 Profile alias helper:
   linux/hz6_preload_aliases.sh
   Keep matrix alias build hooks centralized here.
+  bench/lib/bench_common.sh resolves HZ6 profile DSOs through the shared
+  bench_find_hz6_preload_output helper so new profile lanes do not duplicate
+  arch/path fallback logic.
 ```
 
 ## Latest Hygiene Fixes
 
 ```text
+Profile resolver:
+  private/raw-results/linux/hz6_resolver_common_smoke_20260616_022926
+  confirms hz6 and hz6-small-boundary-trusted-target still resolve and run
+  through the selected-balance matrix after bench_common.sh resolver
+  deduplication.
+
 Build/profile stats:
   build_hz6_preload.sh now applies HZ6_PRELOAD_PRESERVE_PHASE_COUNTERS even
   when profile builders pass HZ6_PRELOAD_DEFAULT_CFLAGS.
