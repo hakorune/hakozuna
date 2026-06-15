@@ -595,11 +595,15 @@ Calloc direct-HZ6 code-shape control:
 ```text
 hakozuna-hz6/private/raw-results/linux/hz6_preload_calloc_audit_20260616_051111
 hakozuna-hz6/private/raw-results/linux/hz6_preload_profile_frontier_20260616_051156
+hakozuna-hz6/private/raw-results/linux/hz6_preload_calloc_audit_20260616_051752
+hakozuna-hz6/private/raw-results/linux/hz6_preload_profile_frontier_20260616_051752
 ```
 
 `HZ6_PRELOAD_CALLOC_DIRECT_HZ6_L1=1` avoids calling the public `malloc()`
 wrapper from preload `calloc()`, while preserving the same HZ6/real-malloc
 fallback behavior and the same phase counters in stats builds.
+
+Early quick check:
 
 | row | selected | calloc-direct | read |
 | --- | ---: | ---: | --- |
@@ -609,9 +613,23 @@ fallback behavior and the same phase counters in stats builds.
 | `1024_4096` guard | `19.347M / 90.88 MiB` | `19.078M / 90.88 MiB` | weak |
 | `4096_16384` guard | `23.257M / 93.38 MiB` | `23.491M / 93.50 MiB` | slightly positive |
 
+Thicker focused+calloc repeat:
+
+| row | selected | calloc-direct | read |
+| --- | ---: | ---: | --- |
+| `16_256` | `61.344M / 30.50 MiB` | `61.743M / 30.50 MiB` | tiny positive |
+| `16_4096` | `29.041M / 79.50 MiB` | `28.997M / 79.50 MiB` | near-flat/weak |
+| `1024_4096` | `26.100M / 90.88 MiB` | `26.583M / 91.00 MiB` | positive with tiny RSS cost |
+| `4096_16384` | `32.105M / 94.00 MiB` | `31.868M / 94.00 MiB` | weak |
+| `calloc4k` | `19.098M / 26.12 MiB` | `18.258M / 26.00 MiB` | selected wins |
+| `calloc8k` | `17.400M / 26.12 MiB` | `17.138M / 26.12 MiB` | selected wins |
+| `calloc32k` | `11.257M / 26.62 MiB` | `11.233M / 26.50 MiB` | near-flat/weak |
+| `calloc64k` | `6.272M / 26.50 MiB` | `6.416M / 26.62 MiB` | direct wins narrowly |
+
 Decision: keep `hz6-calloc-direct-target` as a default-off code-shape control.
-It is promising enough to keep in the profile frontier, but not strong enough
-for selected/default without a thicker focused+calloc repeat.
+The thicker repeat is mixed and does not justify selected/default. The audit
+runner still keeps `--variants` because it is useful for narrow wrapper checks
+without rebuilding/running expensive real-calloc controls.
 
 ## Selected Read
 

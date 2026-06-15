@@ -100,68 +100,135 @@ build_bench() {
     -o "$BENCH"
 }
 
+variants=()
+IFS=',' read -r -a variant_names <<< "$VARIANTS_CSV"
+for variant in "${variant_names[@]}"; do
+  case "$variant" in
+    system|selected|phase_count_on|calloc_direct|calloc_direct_stats|\
+real_calloc_fallback|real_calloc_fallback_stats|\
+real_calloc_fallback_free_skip|real_calloc_fallback_free_skip_stats|\
+real_calloc_large_free_skip|real_calloc_large_free_skip_stats)
+      variants+=("$variant")
+      ;;
+    "")
+      ;;
+    *)
+      echo "unknown variant: $variant" >&2
+      exit 2
+      ;;
+  esac
+done
+
+variant_requested() {
+  local needle="$1"
+  local variant
+  for variant in "${variants[@]}"; do
+    if [[ "$variant" == "$needle" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
 build_preloads() {
-  OUT_DIR="${OUTDIR}/build/selected" \
-    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
-    > "${OUTDIR}/selected_build.log" 2>&1
-  OUT_DIR="${OUTDIR}/build/phase_count_on" \
-    HZ6_PRELOAD_PRESERVE_PHASE_COUNTERS=1 \
-    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
-    > "${OUTDIR}/phase_count_on_build.log" 2>&1
-  local calloc_direct_prod_flags=()
-  hz6_preload_effective_selected_cflags calloc_direct_prod_flags 1
-  hz6_preload_replace_define calloc_direct_prod_flags \
-    HZ6_PRELOAD_CALLOC_DIRECT_HZ6_L1 1
-  OUT_DIR="${OUTDIR}/build/calloc_direct" \
-    HZ6_PRELOAD_DEFAULT_CFLAGS="$(hz6_preload_join_flags "${calloc_direct_prod_flags[@]}")" \
-    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
-    > "${OUTDIR}/calloc_direct_build.log" 2>&1
-  local calloc_direct_stats_flags=("${calloc_direct_prod_flags[@]}")
-  hz6_preload_preserve_phase_counters calloc_direct_stats_flags
-  OUT_DIR="${OUTDIR}/build/calloc_direct_stats" \
-    HZ6_PRELOAD_DEFAULT_CFLAGS="$(hz6_preload_join_flags "${calloc_direct_stats_flags[@]}")" \
-    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
-    > "${OUTDIR}/calloc_direct_stats_build.log" 2>&1
-  local real_calloc_prod_flags=()
-  hz6_preload_effective_selected_cflags real_calloc_prod_flags 1
-  hz6_preload_replace_define real_calloc_prod_flags \
-    HZ6_PRELOAD_CALLOC_REAL_FALLBACK_L1 1
-  OUT_DIR="${OUTDIR}/build/real_calloc_fallback" \
-    HZ6_PRELOAD_DEFAULT_CFLAGS="$(hz6_preload_join_flags "${real_calloc_prod_flags[@]}")" \
-    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
-    > "${OUTDIR}/real_calloc_fallback_build.log" 2>&1
-  local real_calloc_stats_flags=("${real_calloc_prod_flags[@]}")
-  hz6_preload_preserve_phase_counters real_calloc_stats_flags
-  OUT_DIR="${OUTDIR}/build/real_calloc_fallback_stats" \
-    HZ6_PRELOAD_DEFAULT_CFLAGS="$(hz6_preload_join_flags "${real_calloc_stats_flags[@]}")" \
-    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
-    > "${OUTDIR}/real_calloc_fallback_stats_build.log" 2>&1
-  local real_calloc_free_skip_prod_flags=("${real_calloc_prod_flags[@]}")
-  hz6_preload_replace_define real_calloc_free_skip_prod_flags \
-    HZ6_PRELOAD_CALLOC_REAL_FREE_SKIP_L1 1
-  OUT_DIR="${OUTDIR}/build/real_calloc_fallback_free_skip" \
-    HZ6_PRELOAD_DEFAULT_CFLAGS="$(hz6_preload_join_flags "${real_calloc_free_skip_prod_flags[@]}")" \
-    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
-    > "${OUTDIR}/real_calloc_fallback_free_skip_build.log" 2>&1
-  local real_calloc_free_skip_stats_flags=("${real_calloc_free_skip_prod_flags[@]}")
-  hz6_preload_preserve_phase_counters real_calloc_free_skip_stats_flags
-  OUT_DIR="${OUTDIR}/build/real_calloc_fallback_free_skip_stats" \
-    HZ6_PRELOAD_DEFAULT_CFLAGS="$(hz6_preload_join_flags "${real_calloc_free_skip_stats_flags[@]}")" \
-    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
-    > "${OUTDIR}/real_calloc_fallback_free_skip_stats_build.log" 2>&1
-  local real_calloc_large_free_skip_prod_flags=("${real_calloc_free_skip_prod_flags[@]}")
-  hz6_preload_replace_define real_calloc_large_free_skip_prod_flags \
-    HZ6_PRELOAD_CALLOC_REAL_MIN_BYTES 65536
-  OUT_DIR="${OUTDIR}/build/real_calloc_large_free_skip" \
-    HZ6_PRELOAD_DEFAULT_CFLAGS="$(hz6_preload_join_flags "${real_calloc_large_free_skip_prod_flags[@]}")" \
-    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
-    > "${OUTDIR}/real_calloc_large_free_skip_build.log" 2>&1
-  local real_calloc_large_free_skip_stats_flags=("${real_calloc_large_free_skip_prod_flags[@]}")
-  hz6_preload_preserve_phase_counters real_calloc_large_free_skip_stats_flags
-  OUT_DIR="${OUTDIR}/build/real_calloc_large_free_skip_stats" \
-    HZ6_PRELOAD_DEFAULT_CFLAGS="$(hz6_preload_join_flags "${real_calloc_large_free_skip_stats_flags[@]}")" \
-    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
-    > "${OUTDIR}/real_calloc_large_free_skip_stats_build.log" 2>&1
+  if variant_requested selected; then
+    OUT_DIR="${OUTDIR}/build/selected" \
+      "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
+      > "${OUTDIR}/selected_build.log" 2>&1
+  fi
+  if variant_requested phase_count_on; then
+    OUT_DIR="${OUTDIR}/build/phase_count_on" \
+      HZ6_PRELOAD_PRESERVE_PHASE_COUNTERS=1 \
+      "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
+      > "${OUTDIR}/phase_count_on_build.log" 2>&1
+  fi
+  if variant_requested calloc_direct || variant_requested calloc_direct_stats; then
+    local calloc_direct_prod_flags=()
+    hz6_preload_effective_selected_cflags calloc_direct_prod_flags 1
+    hz6_preload_replace_define calloc_direct_prod_flags \
+      HZ6_PRELOAD_CALLOC_DIRECT_HZ6_L1 1
+    if variant_requested calloc_direct; then
+      OUT_DIR="${OUTDIR}/build/calloc_direct" \
+        HZ6_PRELOAD_DEFAULT_CFLAGS="$(hz6_preload_join_flags "${calloc_direct_prod_flags[@]}")" \
+        "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
+        > "${OUTDIR}/calloc_direct_build.log" 2>&1
+    fi
+    if variant_requested calloc_direct_stats; then
+      local calloc_direct_stats_flags=("${calloc_direct_prod_flags[@]}")
+      hz6_preload_preserve_phase_counters calloc_direct_stats_flags
+      OUT_DIR="${OUTDIR}/build/calloc_direct_stats" \
+        HZ6_PRELOAD_DEFAULT_CFLAGS="$(hz6_preload_join_flags "${calloc_direct_stats_flags[@]}")" \
+        "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
+        > "${OUTDIR}/calloc_direct_stats_build.log" 2>&1
+    fi
+  fi
+  if variant_requested real_calloc_fallback || \
+      variant_requested real_calloc_fallback_stats || \
+      variant_requested real_calloc_fallback_free_skip || \
+      variant_requested real_calloc_fallback_free_skip_stats || \
+      variant_requested real_calloc_large_free_skip || \
+      variant_requested real_calloc_large_free_skip_stats; then
+    local real_calloc_prod_flags=()
+    hz6_preload_effective_selected_cflags real_calloc_prod_flags 1
+    hz6_preload_replace_define real_calloc_prod_flags \
+      HZ6_PRELOAD_CALLOC_REAL_FALLBACK_L1 1
+    if variant_requested real_calloc_fallback; then
+      OUT_DIR="${OUTDIR}/build/real_calloc_fallback" \
+        HZ6_PRELOAD_DEFAULT_CFLAGS="$(hz6_preload_join_flags "${real_calloc_prod_flags[@]}")" \
+        "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
+        > "${OUTDIR}/real_calloc_fallback_build.log" 2>&1
+    fi
+    if variant_requested real_calloc_fallback_stats; then
+      local real_calloc_stats_flags=("${real_calloc_prod_flags[@]}")
+      hz6_preload_preserve_phase_counters real_calloc_stats_flags
+      OUT_DIR="${OUTDIR}/build/real_calloc_fallback_stats" \
+        HZ6_PRELOAD_DEFAULT_CFLAGS="$(hz6_preload_join_flags "${real_calloc_stats_flags[@]}")" \
+        "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
+        > "${OUTDIR}/real_calloc_fallback_stats_build.log" 2>&1
+    fi
+    if variant_requested real_calloc_fallback_free_skip || \
+        variant_requested real_calloc_fallback_free_skip_stats || \
+        variant_requested real_calloc_large_free_skip || \
+        variant_requested real_calloc_large_free_skip_stats; then
+      local real_calloc_free_skip_prod_flags=("${real_calloc_prod_flags[@]}")
+      hz6_preload_replace_define real_calloc_free_skip_prod_flags \
+        HZ6_PRELOAD_CALLOC_REAL_FREE_SKIP_L1 1
+      if variant_requested real_calloc_fallback_free_skip; then
+        OUT_DIR="${OUTDIR}/build/real_calloc_fallback_free_skip" \
+          HZ6_PRELOAD_DEFAULT_CFLAGS="$(hz6_preload_join_flags "${real_calloc_free_skip_prod_flags[@]}")" \
+          "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
+          > "${OUTDIR}/real_calloc_fallback_free_skip_build.log" 2>&1
+      fi
+      if variant_requested real_calloc_fallback_free_skip_stats; then
+        local real_calloc_free_skip_stats_flags=("${real_calloc_free_skip_prod_flags[@]}")
+        hz6_preload_preserve_phase_counters real_calloc_free_skip_stats_flags
+        OUT_DIR="${OUTDIR}/build/real_calloc_fallback_free_skip_stats" \
+          HZ6_PRELOAD_DEFAULT_CFLAGS="$(hz6_preload_join_flags "${real_calloc_free_skip_stats_flags[@]}")" \
+          "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
+          > "${OUTDIR}/real_calloc_fallback_free_skip_stats_build.log" 2>&1
+      fi
+      if variant_requested real_calloc_large_free_skip || \
+          variant_requested real_calloc_large_free_skip_stats; then
+        local real_calloc_large_free_skip_prod_flags=("${real_calloc_free_skip_prod_flags[@]}")
+        hz6_preload_replace_define real_calloc_large_free_skip_prod_flags \
+          HZ6_PRELOAD_CALLOC_REAL_MIN_BYTES 65536
+        if variant_requested real_calloc_large_free_skip; then
+          OUT_DIR="${OUTDIR}/build/real_calloc_large_free_skip" \
+            HZ6_PRELOAD_DEFAULT_CFLAGS="$(hz6_preload_join_flags "${real_calloc_large_free_skip_prod_flags[@]}")" \
+            "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
+            > "${OUTDIR}/real_calloc_large_free_skip_build.log" 2>&1
+        fi
+        if variant_requested real_calloc_large_free_skip_stats; then
+          local real_calloc_large_free_skip_stats_flags=("${real_calloc_large_free_skip_prod_flags[@]}")
+          hz6_preload_preserve_phase_counters real_calloc_large_free_skip_stats_flags
+          OUT_DIR="${OUTDIR}/build/real_calloc_large_free_skip_stats" \
+            HZ6_PRELOAD_DEFAULT_CFLAGS="$(hz6_preload_join_flags "${real_calloc_large_free_skip_stats_flags[@]}")" \
+            "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
+            > "${OUTDIR}/real_calloc_large_free_skip_stats_build.log" 2>&1
+        fi
+      fi
+    fi
+  fi
 }
 
 if [[ "$SKIP_BUILD" -ne 1 ]]; then
@@ -170,16 +237,36 @@ if [[ "$SKIP_BUILD" -ne 1 ]]; then
 fi
 
 [[ -x "$BENCH" ]] || { echo "missing benchmark: $BENCH" >&2; exit 2; }
-[[ -f "$SELECTED_SO" ]] || { echo "missing selected DSO: $SELECTED_SO" >&2; exit 2; }
-[[ -f "$PHASE_SO" ]] || { echo "missing phase-count DSO: $PHASE_SO" >&2; exit 2; }
-[[ -f "$CALLOC_DIRECT_SO" ]] || { echo "missing calloc-direct DSO: $CALLOC_DIRECT_SO" >&2; exit 2; }
-[[ -f "$CALLOC_DIRECT_STATS_SO" ]] || { echo "missing calloc-direct stats DSO: $CALLOC_DIRECT_STATS_SO" >&2; exit 2; }
-[[ -f "$REAL_CALLOC_SO" ]] || { echo "missing real-calloc DSO: $REAL_CALLOC_SO" >&2; exit 2; }
-[[ -f "$REAL_CALLOC_STATS_SO" ]] || { echo "missing real-calloc stats DSO: $REAL_CALLOC_STATS_SO" >&2; exit 2; }
-[[ -f "$REAL_CALLOC_FREE_SKIP_SO" ]] || { echo "missing real-calloc free-skip DSO: $REAL_CALLOC_FREE_SKIP_SO" >&2; exit 2; }
-[[ -f "$REAL_CALLOC_FREE_SKIP_STATS_SO" ]] || { echo "missing real-calloc free-skip stats DSO: $REAL_CALLOC_FREE_SKIP_STATS_SO" >&2; exit 2; }
-[[ -f "$REAL_CALLOC_LARGE_FREE_SKIP_SO" ]] || { echo "missing real-calloc large free-skip DSO: $REAL_CALLOC_LARGE_FREE_SKIP_SO" >&2; exit 2; }
-[[ -f "$REAL_CALLOC_LARGE_FREE_SKIP_STATS_SO" ]] || { echo "missing real-calloc large free-skip stats DSO: $REAL_CALLOC_LARGE_FREE_SKIP_STATS_SO" >&2; exit 2; }
+if variant_requested selected; then
+  [[ -f "$SELECTED_SO" ]] || { echo "missing selected DSO: $SELECTED_SO" >&2; exit 2; }
+fi
+if variant_requested phase_count_on; then
+  [[ -f "$PHASE_SO" ]] || { echo "missing phase-count DSO: $PHASE_SO" >&2; exit 2; }
+fi
+if variant_requested calloc_direct; then
+  [[ -f "$CALLOC_DIRECT_SO" ]] || { echo "missing calloc-direct DSO: $CALLOC_DIRECT_SO" >&2; exit 2; }
+fi
+if variant_requested calloc_direct_stats; then
+  [[ -f "$CALLOC_DIRECT_STATS_SO" ]] || { echo "missing calloc-direct stats DSO: $CALLOC_DIRECT_STATS_SO" >&2; exit 2; }
+fi
+if variant_requested real_calloc_fallback; then
+  [[ -f "$REAL_CALLOC_SO" ]] || { echo "missing real-calloc DSO: $REAL_CALLOC_SO" >&2; exit 2; }
+fi
+if variant_requested real_calloc_fallback_stats; then
+  [[ -f "$REAL_CALLOC_STATS_SO" ]] || { echo "missing real-calloc stats DSO: $REAL_CALLOC_STATS_SO" >&2; exit 2; }
+fi
+if variant_requested real_calloc_fallback_free_skip; then
+  [[ -f "$REAL_CALLOC_FREE_SKIP_SO" ]] || { echo "missing real-calloc free-skip DSO: $REAL_CALLOC_FREE_SKIP_SO" >&2; exit 2; }
+fi
+if variant_requested real_calloc_fallback_free_skip_stats; then
+  [[ -f "$REAL_CALLOC_FREE_SKIP_STATS_SO" ]] || { echo "missing real-calloc free-skip stats DSO: $REAL_CALLOC_FREE_SKIP_STATS_SO" >&2; exit 2; }
+fi
+if variant_requested real_calloc_large_free_skip; then
+  [[ -f "$REAL_CALLOC_LARGE_FREE_SKIP_SO" ]] || { echo "missing real-calloc large free-skip DSO: $REAL_CALLOC_LARGE_FREE_SKIP_SO" >&2; exit 2; }
+fi
+if variant_requested real_calloc_large_free_skip_stats; then
+  [[ -f "$REAL_CALLOC_LARGE_FREE_SKIP_STATS_SO" ]] || { echo "missing real-calloc large free-skip stats DSO: $REAL_CALLOC_LARGE_FREE_SKIP_STATS_SO" >&2; exit 2; }
+fi
 
 rows=()
 IFS=',' read -r -a row_names <<< "$ROWS_CSV"
@@ -205,25 +292,6 @@ for row in "${row_names[@]}"; do
       ;;
     *)
       echo "unknown row: $row" >&2
-      exit 2
-      ;;
-  esac
-done
-
-variants=()
-IFS=',' read -r -a variant_names <<< "$VARIANTS_CSV"
-for variant in "${variant_names[@]}"; do
-  case "$variant" in
-    system|selected|phase_count_on|calloc_direct|calloc_direct_stats|\
-real_calloc_fallback|real_calloc_fallback_stats|\
-real_calloc_fallback_free_skip|real_calloc_fallback_free_skip_stats|\
-real_calloc_large_free_skip|real_calloc_large_free_skip_stats)
-      variants+=("$variant")
-      ;;
-    "")
-      ;;
-    *)
-      echo "unknown variant: $variant" >&2
       exit 2
       ;;
   esac

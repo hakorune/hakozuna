@@ -97,6 +97,8 @@ Calloc large-real profile:
 Calloc direct-HZ6 code-shape control:
   private/raw-results/linux/hz6_preload_calloc_audit_20260616_051111
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_051156
+  private/raw-results/linux/hz6_preload_calloc_audit_20260616_051752
+  private/raw-results/linux/hz6_preload_profile_frontier_20260616_051752
 
 Fixed-boundary cross quick check:
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_050037
@@ -130,8 +132,8 @@ Default no-go/control-only without substantially different evidence:
 2. Treat adaptive-4k and adaptive-8k as fixed-boundary profile lanes.
 3. Treat calloc-large-real as a large calloc-heavy RSS/speed profile, not a
    selected/default lane.
-4. Treat calloc-direct as a default-off code-shape control until a thicker
-   focused+calloc repeat proves it is selected-safe.
+4. Keep calloc-direct default-off: thick focused+calloc repeat is mixed and
+   does not justify selected/default.
 5. Next optimization should target selected-safe code shape or a new narrow
    profile; do not promote broad real-calloc behavior.
 6. If strengthening profile-positioning evidence, repeat the fixed-boundary

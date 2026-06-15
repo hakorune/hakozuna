@@ -200,7 +200,8 @@ The calloc code-shape/RSS profile DSOs are built by:
 
 `hz6-calloc-direct-target` keeps selected HZ6 calloc semantics but avoids
 public malloc-wrapper re-entry before `memset`.  It is a control/profile until
-focused+calloc repeats are clean.  `hz6-calloc-real-target` and
+focused+calloc repeats are clean; the current repeat is mixed, so it is not
+selected/default.  `hz6-calloc-real-target` and
 `hz6-calloc-large-real-target` delegate calloc to the real allocator with the
 paired real-pointer free-skip table; keep them profile-only.
 
