@@ -51,6 +51,22 @@ hakozuna-hz6/private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_1955
 | `1024_4096` | `31.583M` | `33.437M` | selected improves |
 | `4096_16384` | `43.136M` | `43.528M` | selected improves |
 
+Latest HZ6-only quiescent RSS check after LD_PRELOAD `malloc_trim` was wired to
+HZ6 local-free scavenge:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_211713
+```
+
+This is not a throughput promotion or peak-RSS improvement. It proves that HZ6
+can return final all-local-free payload through the standard `malloc_trim(0)`
+API after the timed work is complete:
+
+| row | selected current RSS | after malloc_trim current RSS | peak RSS read |
+| --- | ---: | ---: | --- |
+| `4096..16384` | `94.38 MiB` | `70.78 MiB` | peak remains flat |
+| `fixed_16k` | `93.25 MiB` | `60.03 MiB` | peak remains flat |
+
 Command:
 
 ```bash

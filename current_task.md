@@ -44,10 +44,18 @@ Next allocator work:
     HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1=1
     Production direct-local reuse bypasses the generic frontcache pop wrapper;
     diagnostics keep wrapper counters.
+    malloc_trim(size_t pad) is interposed by the HZ6 preload DSO as an
+    explicit quiescent RSS release API; it scavenges HZ6 local-free payload
+    before forwarding to libc malloc_trim.
   Latest HZ6 Ubuntu balance matrix:
     hakozuna-hz6/private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_200259
     4096..16384 hz6 54.836M / 94.50 MiB
     4096..16384 tcmalloc 46.507M / 99.00 MiB
+  Latest HZ6 Ubuntu quiescent RSS read:
+    hakozuna-hz6/private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_211713
+    malloc_trim keeps peak RSS flat but lowers current RSS:
+      4096..16384 94.38 MiB -> 70.78 MiB
+      fixed_16k   93.25 MiB -> 60.03 MiB
 ```
 
 ## Recent Cleanup Commits
