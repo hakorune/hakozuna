@@ -11,6 +11,7 @@ SKIP_BENCH_BUILD=0
 ENABLE_STATS="${ENABLE_STATS:-1}"
 ENABLE_DIAGNOSTICS="${ENABLE_DIAGNOSTICS:-1}"
 VARIANTS="${VARIANTS:-}"
+ROWS_CSV="${ROWS:-focused}"
 
 source "${ROOT_DIR}/hakozuna-hz6/linux/hz6_preload_flags.sh"
 
@@ -31,6 +32,7 @@ Options:
   --diagnostics     build with HZ6_DIAGNOSTIC_PROBES=1 (default)
   --no-diagnostics  build without diagnostic probe counters
   --variants LIST   comma-separated variants to run
+  --rows LIST       row groups: focused,fixed (default: focused)
   --help            show this message
 EOF
 }
@@ -79,6 +81,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --variants)
       VARIANTS="$2"
+      shift 2
+      ;;
+    --rows)
+      ROWS_CSV="$2"
       shift 2
       ;;
     --help|-h)
@@ -142,6 +148,15 @@ variant_flags() {
       hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS3_STORAGE_CAPACITY 512
       hz6_preload_replace_define flags HZ6_FRONT_CACHE_COLD_CLASS_STORAGE_CAPACITY 32
       ;;
+    storage_trim_c4_8192)
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS_STORAGE_TRIM_L1 1
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS4_STORAGE_CAPACITY 8192
+      ;;
+    storage_trim_c4_8192_c5_4096)
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS_STORAGE_TRIM_L1 1
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS4_STORAGE_CAPACITY 8192
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS5_STORAGE_CAPACITY 4096
+      ;;
     *)
       echo "unknown variant: ${variant}" >&2
       exit 2
@@ -197,6 +212,7 @@ mkdir -p "$OUTDIR"
   echo "stats=${ENABLE_STATS}"
   echo "diagnostics=${ENABLE_DIAGNOSTICS}"
   echo "variants=${VARIANTS}"
+  echo "rows=${ROWS_CSV}"
 } > "${OUTDIR}/README.log"
 
 variants=(selected mid32k_cap3072 mid32k_cap2560 mid32k_cap2048 midpage_cap3072 storage_trim)
@@ -207,12 +223,31 @@ for variant in "${variants[@]}"; do
   build_variant "$variant"
 done
 
-rows=(
-  "16_256 16 256"
-  "16_4096 16 4096"
-  "1024_4096 1024 4096"
-  "4096_16384 4096 16384"
-)
+rows=()
+IFS=',' read -r -a row_groups <<< "$ROWS_CSV"
+for row_group in "${row_groups[@]}"; do
+  case "$row_group" in
+    focused)
+      rows+=(
+        "16_256 16 256"
+        "16_4096 16 4096"
+        "1024_4096 1024 4096"
+        "4096_16384 4096 16384"
+      )
+      ;;
+    fixed)
+      rows+=(
+        "fixed_4k 4096 4096"
+        "fixed_8k 8192 8192"
+        "fixed_16k 16384 16384"
+      )
+      ;;
+    *)
+      echo "unknown row group: ${row_group}" >&2
+      exit 2
+      ;;
+  esac
+done
 
 for row_spec in "${rows[@]}"; do
   read -r row min_size max_size <<< "$row_spec"
@@ -223,15 +258,16 @@ for row_spec in "${rows[@]}"; do
   done
 done
 
-python3 - <<'PY' "$OUTDIR" | tee "${OUTDIR}/summary.md"
+python3 - <<'PY' "$OUTDIR" "${rows[@]}" | tee "${OUTDIR}/summary.md"
 import pathlib
 import re
 import statistics
 import sys
 
 root = pathlib.Path(sys.argv[1])
+row_specs = sys.argv[2:]
 readme = (root / "README.log").read_text(errors="replace")
-rows = ["16_256", "16_4096", "1024_4096", "4096_16384"]
+rows = [spec.split()[0] for spec in row_specs]
 variants_line = ""
 if "variants=" in readme:
     variants_line = readme.split("variants=", 1)[1].splitlines()[0]

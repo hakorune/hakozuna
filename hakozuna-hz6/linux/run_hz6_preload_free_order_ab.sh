@@ -9,6 +9,7 @@ WS="${WS:-4096}"
 OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_preload_free_order_ab_$(date +%Y%m%d_%H%M%S)}"
 SKIP_BENCH_BUILD=0
 VARIANTS_CSV="${VARIANTS:-}"
+ROWS_CSV="${ROWS:-focused}"
 
 source "${ROOT_DIR}/hakozuna-hz6/linux/hz6_preload_flags.sh"
 
@@ -24,6 +25,7 @@ Options:
   --ws N            working set (default: 4096)
   --outdir DIR      output directory
   --variants CSV    variants to run (default: full free-order matrix)
+  --rows CSV        row groups: focused,fixed (default: focused)
   --skip-bench      reuse existing benchmark binary
   --help            show this message
 EOF
@@ -53,6 +55,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --variants)
       VARIANTS_CSV="$2"
+      shift 2
+      ;;
+    --rows)
+      ROWS_CSV="$2"
       shift 2
       ;;
     --skip-bench)
@@ -90,6 +96,9 @@ variant_flags() {
       ;;
     current_bias)
       hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1 1
+      ;;
+    current_bias_off)
+      hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1 0
       ;;
     current_bias_fast)
       hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1 1
@@ -167,6 +176,7 @@ mkdir -p "$OUTDIR"
   echo "runs=${RUNS}"
   echo "iters=${ITERS}"
   echo "ws=${WS}"
+  echo "rows=${ROWS_CSV}"
 } > "${OUTDIR}/config.txt"
 
 variants=(
@@ -183,12 +193,31 @@ variants=(
 if [[ -n "${VARIANTS_CSV}" ]]; then
   IFS=',' read -r -a variants <<< "${VARIANTS_CSV}"
 fi
-rows=(
-  "16_256 16 256"
-  "16_4096 16 4096"
-  "1024_4096 1024 4096"
-  "4096_16384 4096 16384"
-)
+rows=()
+IFS=',' read -r -a row_groups <<< "$ROWS_CSV"
+for row_group in "${row_groups[@]}"; do
+  case "$row_group" in
+    focused)
+      rows+=(
+        "16_256 16 256"
+        "16_4096 16 4096"
+        "1024_4096 1024 4096"
+        "4096_16384 4096 16384"
+      )
+      ;;
+    fixed)
+      rows+=(
+        "fixed_4k 4096 4096"
+        "fixed_8k 8192 8192"
+        "fixed_16k 16384 16384"
+      )
+      ;;
+    *)
+      echo "unknown row group: ${row_group}" >&2
+      exit 2
+      ;;
+  esac
+done
 
 for variant in "${variants[@]}"; do
   build_variant "$variant"

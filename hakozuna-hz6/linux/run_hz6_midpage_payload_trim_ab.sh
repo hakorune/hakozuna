@@ -219,6 +219,9 @@ variant_flags() {
     current_bias_off)
       hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1 0
       ;;
+    current_bias_2x)
+      hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_NUMERATOR 2
+      ;;
     current_bias_4x)
       hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_NUMERATOR 4
       ;;
@@ -230,6 +233,18 @@ variant_flags() {
       ;;
     preload_fast_free)
       hz6_preload_replace_define flags HZ6_PRELOAD_FAST_FREE_L1 1
+      ;;
+    frontcache8192)
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_BIN_CAPACITY 8192
+      ;;
+    storage_trim_c4_8192)
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS_STORAGE_TRIM_L1 1
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS4_STORAGE_CAPACITY 8192
+      ;;
+    storage_trim_c4_8192_c5_4096)
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS_STORAGE_TRIM_L1 1
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS4_STORAGE_CAPACITY 8192
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS5_STORAGE_CAPACITY 4096
       ;;
     boundary_inline)
       hz6_preload_replace_define flags HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_NOINLINE_L1 0

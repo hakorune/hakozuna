@@ -152,6 +152,37 @@ evidence:
       same_owner_fast fixed_16k 39.192M -> 39.437M, but 4096..16384 regressed.
       current_bias_off helps some small/fixed rows, but target regresses.
       No fixed-row control is default-clean.
+    fixed_4k attribution/control follow-up:
+      free-order runner now supports --rows fixed and current_bias_off.
+      frontcache-shape runner now supports --rows fixed.
+      raw: private/raw-results/linux/hz6_preload_free_order_ab_20260615_204722
+      fixed_4k selected has:
+        toy_attempt ~= 413K
+        toy_hit ~= 406K
+        mid_attempt ~= 7.5K
+        mid_hit ~= 6.4K
+        route_after_maps ~= 1.1K
+      raw: private/raw-results/linux/hz6_preload_free_order_ab_20260615_204830
+      current_bias_2x helped fixed rows in stats-on attribution, but
+      production repeat rejected it later.
+      production raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_205053
+      current_bias_2x:
+        fixed_4k 31.743M -> 31.908M
+        4096..16384 43.784M -> 44.288M
+        but 16..4096, 1024..4096, fixed_8k, and fixed_16k regressed.
+      frontcache shape raw: private/raw-results/linux/hz6_frontcache_shape_ab_20260615_205146
+      fixed_4k class4 reaches cap4096 and has c4_empty ~= 2050, matching
+      1024..4096 shape.
+      frontcache controls:
+        raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_205229
+        frontcache8192 improved target/fixed_8k/fixed_16k slightly but regressed
+        tiny and 16..4096.
+        raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_205330
+        storage_trim_c4_8192 kept static table smaller but destroyed fixed_16k
+        because class5 storage trims to 3072.
+        raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_205408
+        storage_trim_c4_8192_c5_4096 recovered class5 but still regressed target
+        and fixed_8k/16k.
 
 decision:
   selected/default. This is a small but balanced production code-shape win after
@@ -160,8 +191,11 @@ decision:
 
 next:
   Do not widen active-map capacity/probe next. Fixed-size RSS attribution is
-  now clear; prefer a new quiescent/snapshot scavenge design or a 4K-specific
-  speed/RSS lane. Do not default the existing per-free cold-retire behavior.
+  now clear, and the first fixed_4k free-order/frontcache controls are closed.
+  Prefer either a new quiescent/snapshot scavenge design or a deeper Toy class4
+  malloc-path diagnostic counter. Do not default the existing per-free
+  cold-retire behavior, current_bias_2x, frontcache8192, or storage-trim c4
+  variants.
 ```
 
 ## Recent Closeout: HZ6 Ubuntu MidPage ActiveMap Collision Layout Audit-L1
