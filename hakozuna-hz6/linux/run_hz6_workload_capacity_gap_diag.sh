@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ARCH="${ARCH:-x86_64}"
 ITERS="${ITERS:-20000}"
 ROWS_CSV="${ROWS:-small_object_cache,mixed_small_cache,mixed_object_cache,wide_midpage_cache}"
+ELASTIC_DESCRIPTOR_DEPOT_CAPACITY="${ELASTIC_DESCRIPTOR_DEPOT_CAPACITY:-8192}"
 OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_workload_capacity_gap_diag_$(date +%Y%m%d_%H%M%S)}"
 SKIP_BUILDS=0
 
@@ -16,15 +17,17 @@ Usage:
 Options:
   --arch ARCH      target arch (default: x86_64)
   --iters N        iterations per diagnostic row (default: 20000)
+  --elastic-desc N descriptor overflow depot capacity (default: 8192)
   --rows CSV       rows: small_object_cache,mixed_small_cache,mixed_object_cache,
                    wide_midpage_cache,all
   --outdir DIR     output directory
   --skip-builds    reuse diagnostic preload builds and benchmark
   --help           show this message
 
-This diagnostic compares selected HZ6 with workload-capacity-lite using
-HZ6_PRELOAD_STATS=1 and HZ6_DIAGNOSTIC_PROBES=1. It is for attributing the
-selected-vs-capacity-lite workload proxy gap, not for throughput ranking.
+This diagnostic compares selected HZ6, selected plus elastic descriptor
+overflow, and workload-capacity-lite using HZ6_PRELOAD_STATS=1 and
+HZ6_DIAGNOSTIC_PROBES=1. It is for attributing the selected-vs-capacity-lite
+workload proxy gap, not for throughput ranking.
 EOF
 }
 
@@ -36,6 +39,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --iters)
       ITERS="$2"
+      shift 2
+      ;;
+    --elastic-desc)
+      ELASTIC_DESCRIPTOR_DEPOT_CAPACITY="$2"
       shift 2
       ;;
     --rows)
@@ -65,11 +72,17 @@ done
 mkdir -p "$OUTDIR/build"
 
 SELECTED_DIAG_SO="${OUTDIR}/build/selected_diag/libhakozuna_hz6_preload.so"
+DESCRIPTOR_OVERFLOW_DIAG_SO="${OUTDIR}/build/descriptor_overflow_diag/libhakozuna_hz6_preload.so"
 LITE_DIAG_SO="${OUTDIR}/build/capacity_lite_diag/libhakozuna_hz6_preload.so"
 
 if [[ "$SKIP_BUILDS" -ne 1 ]]; then
   OUT_DIR="${OUTDIR}/build/selected_diag" \
     "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_diag.sh"
+
+  OUT_DIR="${OUTDIR}/build/descriptor_overflow_diag" \
+    HZ6_PRELOAD_PRESERVE_PHASE_COUNTERS=1 \
+    HZ6_EXTRA_CFLAGS="-DHZ6_DIAGNOSTIC_PROBES=1 -DHZ6_TOY_SMALL_HOTPATH_DIAG_L1=1 -DHZ6_ELASTIC_DESCRIPTOR_OVERFLOW_L1=1 -DHZ6_ELASTIC_DESCRIPTOR_DEPOT_CAPACITY=${ELASTIC_DESCRIPTOR_DEPOT_CAPACITY}" \
+    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh"
 
   OUT_DIR="${OUTDIR}/build/capacity_lite_diag" \
     HZ6_WORKLOAD_CAPACITY_LEVEL=lite \
@@ -84,6 +97,7 @@ fi
 BENCH_BIN="${ROOT_DIR}/bench/out/linux/${ARCH}/bench_mixed_ws_crt"
 [[ -x "$BENCH_BIN" ]] || { echo "missing benchmark: $BENCH_BIN" >&2; exit 2; }
 [[ -f "$SELECTED_DIAG_SO" ]] || { echo "missing selected diag DSO: $SELECTED_DIAG_SO" >&2; exit 2; }
+[[ -f "$DESCRIPTOR_OVERFLOW_DIAG_SO" ]] || { echo "missing descriptor-overflow diag DSO: $DESCRIPTOR_OVERFLOW_DIAG_SO" >&2; exit 2; }
 [[ -f "$LITE_DIAG_SO" ]] || { echo "missing capacity-lite diag DSO: $LITE_DIAG_SO" >&2; exit 2; }
 
 rows=()
@@ -122,9 +136,11 @@ done
 {
   echo "arch=${ARCH}"
   echo "iters=${ITERS}"
+  echo "elastic_descriptor_depot_capacity=${ELASTIC_DESCRIPTOR_DEPOT_CAPACITY}"
   echo "rows=${ROWS_CSV}"
   echo "bench=${BENCH_BIN}"
   echo "selected_diag_so=${SELECTED_DIAG_SO}"
+  echo "descriptor_overflow_diag_so=${DESCRIPTOR_OVERFLOW_DIAG_SO}"
   echo "capacity_lite_diag_so=${LITE_DIAG_SO}"
   for row_spec in "${rows[@]}"; do
     echo "row=${row_spec}"
@@ -149,6 +165,7 @@ run_case() {
 for row_spec in "${rows[@]}"; do
   read -r row threads iters ws min_size max_size <<< "$row_spec"
   run_case "$row" selected "$SELECTED_DIAG_SO" "$threads" "$iters" "$ws" "$min_size" "$max_size"
+  run_case "$row" descriptor_overflow "$DESCRIPTOR_OVERFLOW_DIAG_SO" "$threads" "$iters" "$ws" "$min_size" "$max_size"
   run_case "$row" capacity_lite "$LITE_DIAG_SO" "$threads" "$iters" "$ws" "$min_size" "$max_size"
 done
 
@@ -168,6 +185,9 @@ kv_re = re.compile(r"\b([A-Za-z0-9_]+)=([0-9]+)")
 keys = [
     "alloc_fail",
     "descriptor_exhausted",
+    "elastic_descriptor_overflow_alloc",
+    "elastic_descriptor_overflow_reset",
+    "elastic_descriptor_overflow_exhausted",
     "source_block_exhausted",
     "source_prefill_fallback",
     "malloc_real_fallback",
@@ -200,10 +220,10 @@ def parse_log(path):
 
 print("# HZ6 Workload Capacity Gap Diagnostic\n")
 print(f"root: `{root}`\n")
-print("| row | variant | ops/s | peak MiB | alloc_fail | desc_exh | source_exh | prefill_fb | real_fb | route_after_maps | route_probe_total | route_probe_max | desc_live_max | source_active_max | static MiB | payload MiB | attributed MiB |")
-print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+print("| row | variant | ops/s | peak MiB | alloc_fail | desc_exh | elastic_alloc | elastic_reset | elastic_exh | source_exh | prefill_fb | real_fb | route_after_maps | route_probe_total | route_probe_max | desc_live_max | source_active_max | static MiB | payload MiB | attributed MiB |")
+print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 for row in rows:
-    for variant in ("selected", "capacity_lite"):
+    for variant in ("selected", "descriptor_overflow", "capacity_lite"):
         data = parse_log(root / f"{row}_{variant}.log")
         def get(key):
             return data.get(key, 0)
@@ -212,6 +232,9 @@ for row in rows:
         print(
             f"| `{row}` | `{variant}` | {data['ops']:.3f} | {data['peak_mib']:.2f} | "
             f"{get('alloc_fail')} | {get('descriptor_exhausted')} | "
+            f"{get('elastic_descriptor_overflow_alloc')} | "
+            f"{get('elastic_descriptor_overflow_reset')} | "
+            f"{get('elastic_descriptor_overflow_exhausted')} | "
             f"{get('source_block_exhausted')} | {get('source_prefill_fallback')} | "
             f"{get('malloc_real_fallback')} | {get('free_route_lookup_after_maps')} | "
             f"{get('route_lookup_probe_total')} | {get('route_lookup_probe_max')} | "

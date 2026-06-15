@@ -144,6 +144,9 @@ static void hz6_preload_print_stats(void) {
   size_t local2p_source_alloc = 0;
   size_t alloc_fail = 0;
   size_t descriptor_exhausted = 0;
+  size_t elastic_descriptor_overflow_alloc = 0;
+  size_t elastic_descriptor_overflow_reset = 0;
+  size_t elastic_descriptor_overflow_exhausted = 0;
   size_t route_register_fail = 0;
   size_t source_block_exhausted = 0;
   size_t source_prefill_attempt = 0;
@@ -376,6 +379,12 @@ static void hz6_preload_print_stats(void) {
     local2p_source_alloc += stats.local2p_source_alloc;
     alloc_fail += stats.alloc_fail;
     descriptor_exhausted += stats.descriptor_exhausted;
+    elastic_descriptor_overflow_alloc +=
+        stats.elastic_descriptor_overflow_alloc;
+    elastic_descriptor_overflow_reset +=
+        stats.elastic_descriptor_overflow_reset;
+    elastic_descriptor_overflow_exhausted +=
+        stats.elastic_descriptor_overflow_exhausted;
     route_register_fail += stats.route_register_fail;
     source_block_exhausted += stats.source_block_exhausted;
     source_prefill_attempt += stats.source_prefill_attempt;
@@ -779,7 +788,11 @@ static void hz6_preload_print_stats(void) {
           "transfer_pop=%zu source_alloc=%zu toy_source_alloc=%zu "
           "midpage_source_alloc=%zu large_source_alloc=%zu "
           "local2p_source_alloc=%zu alloc_fail=%zu "
-          "descriptor_exhausted=%zu route_register_fail=%zu "
+          "descriptor_exhausted=%zu "
+          "elastic_descriptor_overflow_alloc=%zu "
+          "elastic_descriptor_overflow_reset=%zu "
+          "elastic_descriptor_overflow_exhausted=%zu "
+          "route_register_fail=%zu "
           "source_block_exhausted=%zu source_prefill_attempt=%zu "
           "source_prefill_filled=%zu source_prefill_fallback=%zu "
           "front_source_prefill_alloc=%zu toy_source_prefill_call=%zu "
@@ -798,7 +811,11 @@ static void hz6_preload_print_stats(void) {
           allocator_count, route_valid, route_invalid, route_miss,
           transfer_push, transfer_pop, source_alloc, toy_source_alloc,
           midpage_source_alloc, large_source_alloc, local2p_source_alloc,
-          alloc_fail, descriptor_exhausted, route_register_fail,
+          alloc_fail, descriptor_exhausted,
+          elastic_descriptor_overflow_alloc,
+          elastic_descriptor_overflow_reset,
+          elastic_descriptor_overflow_exhausted,
+          route_register_fail,
           source_block_exhausted, source_prefill_attempt,
           source_prefill_filled, source_prefill_fallback,
           front_source_prefill_alloc, toy_source_prefill_call,

@@ -4,7 +4,6 @@ HZ6 is the active Windows/Linux allocator family. This file is the short
 orientation ledger, not the chronological experiment log.
 
 ## Read First
-
 ```text
 Selected/default:
   HZ6_SELECTED_FAMILY_SUMMARY.md
@@ -61,7 +60,8 @@ Explicit controls:
 
 Runners:
   broad_guard / fixed_boundary_profile_frontier / preload_profile_frontier
-  fixed_gap_matrix / fixed_cost_residency_matrix / fixed_quiescent_rss_matrix / workload_proxy_matrix / workload_capacity_frontier / workload_capacity_gap_diag
+  fixed_gap_matrix / fixed_cost_residency_matrix / fixed_quiescent_rss_matrix
+  workload_proxy_matrix / workload_capacity_frontier / workload_capacity_gap_diag
   check_hz6_preload_profile_registry
 ```
 
@@ -91,11 +91,11 @@ Recent fixed/profile repeats:
   private/raw-results/linux/hz6_fixed_gap_matrix_20260616_082042
   private/raw-results/linux/hz6_fixed_quiescent_rss_matrix_20260616_072153
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_{062305,064915,065310,065329,072333,074342,074414}
-  private/raw-results/linux/hz6_workload_capacity_gap_diag_20260616_083459
-  private/raw-results/linux/hz6_workload_{capacity_frontier_20260616_081537,proxy_matrix_20260616_080227}
+  private/raw-results/linux/hz6_workload_capacity_gap_diag_20260616_{083459,083910}
+  private/raw-results/linux/hz6_workload_{capacity_frontier_20260616_081537,proxy_matrix_20260616_{080227,084249,084440}}
   private/raw-results/linux/hz6_ubuntu_size_slices_20260616_073231
 
-Details: archive/current_task_2026-06-16_{adaptive_profile_snapshot,calloc_profile_snapshot,fixed_boundary_profile_repeat}.md
+Details: archive/current_task_2026-06-16_*.md
 ```
 
 ## Do Not Reopen Casually
@@ -145,6 +145,6 @@ Default no-go/control-only without substantially different evidence:
 13. Toy-map8192 external is now an explicit lower-RSS fixed-boundary profile;
     packed-frontcache/sourceblock combos remain runner-only controls/no-go.
 14. Capacity-gap diag says selected workload proxy collapse is descriptor-table
-    exhaustion/prefill fallback; capacity-lite removes it and lowers payload.
-15. Next lane: shrink descriptor pressure without defaulting fixed-only profiles.
+    exhaustion/prefill fallback; capacity-lite removes it and lowers payload,
+    while descriptor-overflow recovers rows with selected static tables and lower RSS than capacity-lite but lower collapsed-row speed.
 ```

@@ -195,6 +195,26 @@ same rows and cuts attributed payload sharply despite a larger static table
 `1468.18 -> 842.61 MiB`). Next behavior should target descriptor/source-run
 pressure or elastic descriptor capacity, not route inline or fixed-row profiles.
 
+Descriptor-overflow control, raw
+`private/raw-results/linux/hz6_workload_capacity_gap_diag_20260616_083910`
+and production proxy raw
+`private/raw-results/linux/hz6_workload_proxy_matrix_20260616_{084249,084440}`,
+adds `HZ6_ELASTIC_DESCRIPTOR_OVERFLOW_L1=1` with an 8192 descriptor depot while
+leaving selected static route/descriptor/source tables unchanged. Diagnostic
+rows remove selected descriptor exhaustion and route-probe collapse:
+`small_object_cache` moves `0.566M / 40.38 MiB` selected-diagnostic to
+`4.958M / 40.62 MiB` with `elastic_alloc=1108`, `alloc_fail=0`, and
+`route_probe_total=2638`; `wide_midpage_cache` moves
+`0.825M / 143.38 MiB` to `2.014M / 143.50 MiB` with `elastic_alloc=472`.
+Production repeat-3 confirms the tradeoff: descriptor-overflow is lower RSS
+than capacity-lite on all gap rows (`43.47` vs `50.25 MiB` on
+`small_object_cache`, `145.38` vs `153.75 MiB` on `wide_midpage_cache`) and
+keeps healthy `redis_proxy`/`midpage_cache` near selected, but it is slower
+than capacity-lite on the collapsed workload rows. Keep
+`hz6-workload-descriptor-overflow-target` as an explicit RSS/balance workload
+control, not selected/default; the next useful step is depot-capacity or hybrid
+static/elastic A/B, not route inline.
+
 Earlier workload-proxy matrix, repeat-3, raw
 `private/raw-results/linux/hz6_workload_proxy_matrix_20260616_075550`;
 diagnostic raws `hz6_workload_proxy_diag_20260616_075255` and
