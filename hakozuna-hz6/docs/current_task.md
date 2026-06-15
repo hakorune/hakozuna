@@ -230,6 +230,13 @@ follow-up:
     current_bias_fast    43.546M
     current_bias_2x      43.598M
     current_bias_4x      43.268M
+
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_201029
+  Existing fast-path controls were rechecked after raw-pop selected:
+    selected 4096..16384                  44.492M
+    HZ6_SAME_OWNER_FAST_L1=1              44.339M
+    HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1=1    43.482M
+  Keep both controls off.
 ```
 
 ## Recent Closeout: HZ6 Ubuntu Front Prefill Descriptor-Out Audit-L1

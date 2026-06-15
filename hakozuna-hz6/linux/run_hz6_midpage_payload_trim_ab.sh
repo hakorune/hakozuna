@@ -231,6 +231,12 @@ variant_flags() {
     prefill_descriptor_out)
       hz6_preload_replace_define flags HZ6_FRONT_PREFILL_DESCRIPTOR_OUT_L1 1
       ;;
+    same_owner_fast)
+      hz6_preload_replace_define flags HZ6_SAME_OWNER_FAST_L1 1
+      ;;
+    preload_midpage_fast_free)
+      hz6_preload_replace_define flags HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1 1
+      ;;
     run2304k)
       hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 2359296
       ;;

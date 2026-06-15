@@ -146,6 +146,8 @@ Current follow-up read:
 | `HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1=1` | selected/default | Production-only direct-local reuse code-shape control. Bypasses the generic `hz6_allocator_frontcache_pop()` wrapper in stats-off builds; disabled under diagnostics. Repeat-15 improved all focused rows and stats safety stayed clean. |
 | `HZ6_FRONT_PREFILL_DESCRIPTOR_OUT_L1=1` | control/no-go | Source-block prefill descriptor-out reduced route lookup probes but regressed production stats-off target speed. Keep default off. |
 | current-bias retest after raw-pop | control/no-go | Production repeat-7 still rejects current-bias variants: `current_bias_2x` and `4x` gave small guard gains but regressed 4096..16384 (`44.164M -> 43.598M/43.268M`). Keep selected 1x generic predicate. |
+| `HZ6_SAME_OWNER_FAST_L1=1` after raw-pop | control/no-go | Production repeat-7 gave small guard wins but did not beat the target (`4096..16384 44.492M -> 44.339M`). Keep off. |
+| `HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1=1` after raw-pop | control/no-go | Production repeat-7 improved some guard rows but regressed the target (`4096..16384 44.492M -> 43.482M`). Keep off. |
 
 HZ3/HZ4 comparison read:
 
