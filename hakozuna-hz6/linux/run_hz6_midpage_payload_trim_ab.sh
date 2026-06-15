@@ -128,6 +128,12 @@ variant_flags() {
     run1536k)
       hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 1572864
       ;;
+    run2048k)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 2097152
+      ;;
+    run3072k)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 3145728
+      ;;
     *)
       echo "unknown variant: ${variant}" >&2
       exit 2
@@ -173,7 +179,7 @@ fi
 BENCH="${ROOT_DIR}/bench/out/linux/${ARCH}/bench_mixed_ws_crt"
 [[ -x "$BENCH" ]] || { echo "missing benchmark: $BENCH" >&2; exit 2; }
 
-default_variants=(selected run512k run256k run224k run192k run128k run320k run384k run448k run768k run1024k run1536k)
+default_variants=(selected run512k run256k run224k run192k run128k run320k run384k run448k run768k run1024k run1536k run2048k run3072k)
 if [[ -n "$VARIANTS" ]]; then
   IFS=',' read -r -a variants <<< "$VARIANTS"
 else

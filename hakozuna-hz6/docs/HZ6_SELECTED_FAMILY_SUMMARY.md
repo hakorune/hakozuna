@@ -45,7 +45,7 @@ HZ6_SOURCE_BLOCK_CAPACITY=2048
 HZ6_FRONT_CACHE_BIN_CAPACITY=4096
 HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY=32768
 HZ6_MIDPAGE_RUN_BYTES=786432
-HZ6_MIDPAGE_32K_RUN_BYTES=1572864
+HZ6_MIDPAGE_32K_RUN_BYTES=2097152
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2=1
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_EXTERNAL_L2=1
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_UNALIGNED_L2=1
@@ -110,8 +110,8 @@ preload mixed_ws rows: 16..256 `57.671M` vs `53.099M`, 16..4096 `39.382M` vs
 `5.873M`, 1024..4096 `38.497M` vs `4.858M`, and 4096..16384 `27.752M` vs
 `1.282M`.  At that checkpoint, tcmalloc remained higher throughput on the same
 rows and system malloc still won the tiny 16..256 row. Later run768/current-bias
-and run1536 32K sizing moved 4096..16384 ahead of tcmalloc while keeping the
-caveat that
+and run1536/run2048 32K sizing moved 4096..16384 ahead of tcmalloc while
+keeping the caveat that
 LD_PRELOAD is separate from direct HZ6 API strength rows and not a universal
 allocator-win claim.
 After the MidPage preload-boundary malloc skip, the balance row improves again:

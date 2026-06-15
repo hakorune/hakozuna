@@ -9,6 +9,9 @@ WS="${WS:-4096}"
 OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_midpage_supply_map_ab_$(date +%Y%m%d_%H%M%S)}"
 SKIP_BENCH_BUILD=0
 ENABLE_STATS="${ENABLE_STATS:-1}"
+ENABLE_DIAGNOSTICS="${ENABLE_DIAGNOSTICS:-1}"
+VARIANTS="${VARIANTS:-}"
+INCLUDE_TINY="${INCLUDE_TINY:-0}"
 
 source "${ROOT_DIR}/hakozuna-hz6/linux/hz6_preload_flags.sh"
 
@@ -26,6 +29,10 @@ Options:
   --skip-bench      reuse existing benchmark binary
   --stats           enable HZ6_PRELOAD_STATS during runs (default)
   --no-stats        disable HZ6_PRELOAD_STATS for speed/RSS ranking
+  --diagnostics     build with HZ6_DIAGNOSTIC_PROBES=1 (default)
+  --no-diagnostics  build without diagnostic probe counters
+  --variants LIST   comma-separated variants to run
+  --include-tiny    also run the 16..256 tiny guard row
   --help            show this message
 EOF
 }
@@ -64,6 +71,22 @@ while [[ $# -gt 0 ]]; do
       ENABLE_STATS=0
       shift
       ;;
+    --diagnostics)
+      ENABLE_DIAGNOSTICS=1
+      shift
+      ;;
+    --no-diagnostics)
+      ENABLE_DIAGNOSTICS=0
+      shift
+      ;;
+    --variants)
+      VARIANTS="$2"
+      shift 2
+      ;;
+    --include-tiny)
+      INCLUDE_TINY=1
+      shift
+      ;;
     --help|-h)
       usage
       exit 0
@@ -80,6 +103,9 @@ variant_flags() {
   local variant="$1"
   local flags=()
   hz6_preload_effective_selected_cflags flags 1
+  if [[ "$ENABLE_DIAGNOSTICS" -ne 0 ]]; then
+    flags+=("-DHZ6_DIAGNOSTIC_PROBES=1")
+  fi
   case "$variant" in
     selected)
       ;;
@@ -165,16 +191,7 @@ fi
 BENCH="${ROOT_DIR}/bench/out/linux/${ARCH}/bench_mixed_ws_crt"
 [[ -x "$BENCH" ]] || { echo "missing benchmark: $BENCH" >&2; exit 2; }
 
-mkdir -p "$OUTDIR"
-{
-  echo "arch=${ARCH}"
-  echo "runs=${RUNS}"
-  echo "iters=${ITERS}"
-  echo "ws=${WS}"
-  echo "stats=${ENABLE_STATS}"
-} > "${OUTDIR}/config.txt"
-
-variants=(
+default_variants=(
   selected
   run8_384k
   run8_512k
@@ -188,11 +205,32 @@ variants=(
   amap32k_p8
   amap64k_p8
 )
+if [[ -n "$VARIANTS" ]]; then
+  IFS=',' read -r -a variants <<< "$VARIANTS"
+else
+  variants=("${default_variants[@]}")
+fi
+
+mkdir -p "$OUTDIR"
+{
+  echo "arch=${ARCH}"
+  echo "runs=${RUNS}"
+  echo "iters=${ITERS}"
+  echo "ws=${WS}"
+  echo "stats=${ENABLE_STATS}"
+  echo "diagnostics=${ENABLE_DIAGNOSTICS}"
+  echo "variants=${variants[*]}"
+  echo "include_tiny=${INCLUDE_TINY}"
+} > "${OUTDIR}/config.txt"
+
 rows=(
   "16_4096 16 4096"
   "1024_4096 1024 4096"
   "4096_16384 4096 16384"
 )
+if [[ "$INCLUDE_TINY" -ne 0 ]]; then
+  rows=("16_256 16 256" "${rows[@]}")
+fi
 
 for variant in "${variants[@]}"; do
   build_variant "$variant"
@@ -224,10 +262,12 @@ def extract(name, text):
     return int(match.group(1)) if match else 0
 
 stats_mode = config.split("stats=", 1)[1].splitlines()[0] if "stats=" in config else "unknown"
+diag_mode = config.split("diagnostics=", 1)[1].splitlines()[0] if "diagnostics=" in config else "unknown"
 print(f"stats: `{stats_mode}`")
+print(f"diagnostics: `{diag_mode}`")
 print()
-print("| row | variant | median ops/s | median peak MiB | source_alloc | midpage_source_alloc | route_after_maps | mid_hit | mid_miss | fail |")
-print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+print("| row | variant | median ops/s | median peak MiB | source_alloc | midpage_source_alloc | route_after_maps | mid_hit | mid_miss | mid8_alloc | mid32_alloc | mid8_empty | mid32_empty | fail |")
+print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 for row in rows:
     for variant in variants:
         ops = []
@@ -237,6 +277,10 @@ for row in rows:
         route_after_maps = []
         mid_hit = []
         mid_miss = []
+        mid8_alloc = []
+        mid32_alloc = []
+        mid8_empty = []
+        mid32_empty = []
         fail = 0
         for log in sorted((outdir / row).glob(f"*_{variant}.log")):
             text = log.read_text()
@@ -251,6 +295,10 @@ for row in rows:
             route_after_maps.append(extract("free_route_lookup_after_maps", text))
             mid_hit.append(extract("free_midpage_active_map_hit", text))
             mid_miss.append(extract("free_midpage_active_map_miss", text))
+            mid8_alloc.append(extract("midpage_8k_alloc_call", text))
+            mid32_alloc.append(extract("midpage_32k_alloc_call", text))
+            mid8_empty.append(extract("midpage_8k_frontcache_pop_empty", text))
+            mid32_empty.append(extract("midpage_32k_frontcache_pop_empty", text))
             fail += extract("route_miss", text)
             fail += extract("route_invalid", text)
             fail += extract("alloc_fail", text)
@@ -264,6 +312,10 @@ for row in rows:
             f"{statistics.median(route_after_maps):.0f} | "
             f"{statistics.median(mid_hit):.0f} | "
             f"{statistics.median(mid_miss):.0f} | "
+            f"{statistics.median(mid8_alloc):.0f} | "
+            f"{statistics.median(mid32_alloc):.0f} | "
+            f"{statistics.median(mid8_empty):.0f} | "
+            f"{statistics.median(mid32_empty):.0f} | "
             f"{fail} |"
         )
 PY

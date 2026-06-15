@@ -8,7 +8,7 @@ This note closes the Ubuntu LD_PRELOAD MidPage 32K source-run sizing lane.
 The current selected value is:
 
 ```text
-HZ6_MIDPAGE_32K_RUN_BYTES=1572864
+HZ6_MIDPAGE_32K_RUN_BYTES=2097152
 ```
 
 ## Selected Ladder
@@ -20,7 +20,9 @@ HZ6_MIDPAGE_32K_RUN_BYTES=1572864
 | 512K | control | Previous selected default; target-positive with flat RSS. |
 | 768K | control | Previous selected default and direct control for run1536. |
 | 1M | control | Target-positive control below run1536. |
-| 1.5M | selected/default | Best current target win with guard costs under 1%. |
+| 1.5M | control | Previous selected default and direct control for run2048. |
+| 2M | selected/default | Best current target win with guard costs under 1%. |
+| 3M | control | Target-positive but weaker than 2M on 4096..16384. |
 
 ## Run512 Promotion Evidence
 
@@ -119,10 +121,55 @@ Full cross repeat-3:
   4096..16384 tcmalloc 44.034M / 103.75 MiB
 ```
 
+## Run2048 Promotion Evidence
+
+Run2048 is selected after the run1536 closeout and run1536 supply/frontcache
+re-audit.
+
+```text
+HZ6_MIDPAGE_32K_RUN_BYTES=2097152
+```
+
+Stats-off repeat-15 versus run1536:
+
+| row | run1536 ops/s | run2048 ops/s | read |
+| --- | ---: | ---: | --- |
+| `16..256` | 57146872.119 | 57264201.622 | +0.21%, guard positive |
+| `16..4096` | 41828529.132 | 41559593.569 | -0.64%, guard cost under 1% |
+| `1024..4096` | 39666909.031 | 40016992.015 | +0.88%, guard positive |
+| `4096..16384` | 48277181.701 | 49789004.158 | +3.13%, target win |
+
+Raw:
+
+```text
+private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_112005
+```
+
+Stats repeat-3:
+
+```text
+private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_112031
+fail counters: 0
+4096..16384 source_alloc: 900 -> 723
+```
+
+Post-promotion selected reads:
+
+```text
+HZ6-only repeat-5:
+  raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_112129
+  4096..16384 49.480M / 94.38 MiB
+
+Full cross repeat-3:
+  raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_112139
+  4096..16384 hz6      48.327M /  94.25 MiB
+  4096..16384 tcmalloc 44.795M / 102.38 MiB
+```
+
 ## Decision
 
 ```text
-Keep 1536K selected for Ubuntu LD_PRELOAD.
-Keep 768K and 512K as direct controls.
+Keep 2048K selected for Ubuntu LD_PRELOAD.
+Keep 1536K, 768K, and 512K as direct controls.
 Do not reopen smaller-than-256K payload-trim unless RSS goals change.
 ```

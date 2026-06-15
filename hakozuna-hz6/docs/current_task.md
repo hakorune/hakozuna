@@ -122,6 +122,28 @@ MidPage32KRun1536-L1 is now selected/default for Ubuntu preload:
     4096..16384 hz6 45.283M / 94.38 MiB
     4096..16384 tcmalloc 44.034M / 103.75 MiB
   decision: promote HZ6_MIDPAGE_32K_RUN_BYTES=1572864 for Ubuntu preload.
+MidPage32KRun2048-L1 is now selected/default for Ubuntu preload:
+  HZ6_MIDPAGE_32K_RUN_BYTES 1572864 -> 2097152
+  focused repeat-15 without stats:
+    raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_112005
+    16..256      57.147M -> 57.264M  (+0.21%)
+    16..4096     41.829M -> 41.560M  (-0.64%)
+    1024..4096   39.667M -> 40.017M  (+0.88%)
+    4096..16384  48.278M -> 49.789M  (+3.13%)
+  stats repeat-3:
+    raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_112031
+    fail counters 0; 4096..16384 source_alloc 900 -> 723.
+  post-promotion HZ6-only repeat-5:
+    raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_112129
+    16..256      57.306M / 30.50 MiB
+    16..4096     41.608M / 79.75 MiB
+    1024..4096   39.868M / 91.00 MiB
+    4096..16384  49.480M / 94.38 MiB
+  full cross repeat-3:
+    raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_112139
+    4096..16384 hz6 48.327M / 94.25 MiB
+    4096..16384 tcmalloc 44.795M / 102.38 MiB
+  decision: promote HZ6_MIDPAGE_32K_RUN_BYTES=2097152 for Ubuntu preload.
 Earlier repeat-3 refresh after free-hint/free-fastslot no-go closeouts:
   raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_004605
   16..256     hz6 58.046M / 30.50 MiB
@@ -246,7 +268,7 @@ Latest MidPage closeout:
   keep noinline/branch-isolated transfer-skip off
   keep preload-boundary noinline transfer-skip selected
   keep static table trim selected
-  keep MidPage 32K run1536 selected
+  keep MidPage 32K run2048 selected
   keep preclassified malloc shape out of source
   keep MidPage target DSO as selected/control alias
 

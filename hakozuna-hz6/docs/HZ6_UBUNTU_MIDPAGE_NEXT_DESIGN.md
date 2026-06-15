@@ -97,10 +97,10 @@ and ops-per-MiB on 4096..16384, but still trailed tcmalloc on speed:
 Current follow-up:
 
 ```text
-HZ6_MIDPAGE_32K_RUN_BYTES=1572864 is now selected. It keeps the 4096..16384
+HZ6_MIDPAGE_32K_RUN_BYTES=2097152 is now selected. It keeps the 4096..16384
 tcmalloc lead in the full cross refresh and cuts source_alloc in the stats
 confirmation. The next design pass should re-audit remaining MidPage supply /
-frontcache pressure after run1536 rather than reopening transfer-skip shape.
+frontcache pressure after run2048 rather than reopening transfer-skip shape.
 ```
 
 Audit variants:
