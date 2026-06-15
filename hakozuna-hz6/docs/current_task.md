@@ -232,6 +232,49 @@ decision:
   code-layout isolation.
 ```
 
+## Current Continuation: Narrow Toy Direct-Class Gates
+
+```text
+latest:
+  Add reusable runner controls:
+    preload_toy_direct_class_max256
+    preload_toy_direct_class_max512
+    preload_toy_direct_class_fast_reuse_max256
+    preload_toy_direct_class_fast_reuse_max512
+
+raw:
+  private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_003343
+  private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_003438
+
+read:
+  selected diagnostic attribution:
+    Toy direct-class eligible is still large, but selected does not enter it:
+      16..4096    eligible 1220604, enter 0
+      1024..4096  eligible 1220382, enter 0
+      fixed_4k    eligible 1220379, enter 0
+
+  repeat-9 no-stats:
+    max256:
+      16..256      57.121M -> 61.495M
+      16..4096     34.888M -> 31.062M
+      1024..4096   33.414M -> 32.733M
+      4096..16384  44.524M -> 43.852M
+
+    fast_reuse_max512:
+      16..256      57.121M -> 75.462M
+      16..4096     34.888M -> 36.270M
+      1024..4096   33.414M -> 33.964M
+      fixed_8k     41.565M -> 42.454M
+      fixed_16k    43.454M -> 44.720M
+      but 4096..16384 44.524M -> 38.024M
+
+decision:
+  Keep selected default unchanged.  Narrow Toy direct-class gates are useful
+  evidence for profile lanes, but the selected-family target guard still
+  rejects them.  The small-boundary-fast DSO remains the right place for the
+  Toy direct fast-reuse family.
+```
+
 ## Recent Closeout: HZ6 Ubuntu RealAlignedFreeSkip-L1
 
 ```text
