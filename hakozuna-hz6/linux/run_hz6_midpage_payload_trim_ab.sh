@@ -325,6 +325,16 @@ variant_flags() {
     raw_frontcache_push)
       hz6_preload_replace_define flags HZ6_DIRECT_LOCAL_FREE_RAW_PUSH_L1 1
       ;;
+    raw_frontcache_push_class4)
+      hz6_preload_replace_define flags HZ6_DIRECT_LOCAL_FREE_RAW_PUSH_L1 1
+      hz6_preload_replace_define flags HZ6_DIRECT_LOCAL_FREE_RAW_PUSH_MIN_CLASS 4
+      hz6_preload_replace_define flags HZ6_DIRECT_LOCAL_FREE_RAW_PUSH_MAX_CLASS 4
+      ;;
+    raw_frontcache_push_class5)
+      hz6_preload_replace_define flags HZ6_DIRECT_LOCAL_FREE_RAW_PUSH_L1 1
+      hz6_preload_replace_define flags HZ6_DIRECT_LOCAL_FREE_RAW_PUSH_MIN_CLASS 5
+      hz6_preload_replace_define flags HZ6_DIRECT_LOCAL_FREE_RAW_PUSH_MAX_CLASS 5
+      ;;
     direct_max5)
       hz6_preload_replace_define flags HZ6_LOCAL_CACHE_DIRECT_MAX_CLASS 5
       ;;

@@ -52,10 +52,14 @@ Next allocator work:
     4096..16384 hz6 54.836M / 94.50 MiB
     4096..16384 tcmalloc 46.507M / 99.00 MiB
   Latest HZ6 Ubuntu quiescent RSS read:
-    hakozuna-hz6/private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_211713
+    hakozuna-hz6/private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_222345
     malloc_trim keeps peak RSS flat but lowers current RSS:
-      4096..16384 94.38 MiB -> 70.78 MiB
-      fixed_16k   93.25 MiB -> 60.03 MiB
+      4096..16384 94.38 MiB -> 28.32 MiB
+      fixed_16k   93.12 MiB -> 28.26 MiB
+  Latest HZ6 Ubuntu follow-up control:
+    HZ6_DIRECT_LOCAL_FREE_RAW_PUSH_MIN_CLASS/MAX_CLASS
+    class-gated raw local-free push is available for profile A/B only.
+    It is not selected/default because target/focused guards remain mixed.
 ```
 
 ## Recent Cleanup Commits

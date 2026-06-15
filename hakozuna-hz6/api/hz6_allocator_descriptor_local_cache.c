@@ -430,10 +430,21 @@ int hz6_allocator_cache_active_descriptor_trusted_owner(
     !HZ6_MIDPAGE_32K_COLD_RETIRE_L1
   {
     Hz6FrontCacheBin* bin = &allocator->frontcache_bins[entry_class_id];
-    if (bin->entries && entry.ptr &&
+    int raw_push_class_allowed =
+        entry_class_id <= HZ6_DIRECT_LOCAL_FREE_RAW_PUSH_MAX_CLASS;
+#if HZ6_DIRECT_LOCAL_FREE_RAW_PUSH_MIN_CLASS > 0
+    raw_push_class_allowed =
+        raw_push_class_allowed &&
+        entry_class_id >= HZ6_DIRECT_LOCAL_FREE_RAW_PUSH_MIN_CLASS;
+#endif
+    if (raw_push_class_allowed && bin->entries && entry.ptr &&
         !hz6_frontcache_entry_bytes_overflow(&entry) &&
         bin->count < bin->capacity) {
       bin->entries[bin->count++] = entry;
+      return 1;
+    }
+    if (!raw_push_class_allowed &&
+        hz6_allocator_frontcache_push(allocator, entry_class_id, entry)) {
       return 1;
     }
   }
