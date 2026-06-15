@@ -394,11 +394,48 @@ small boundary combo profile:
       run_linux_bench_compare_matrix.sh resolved hz6-small-boundary-target to
       out/linux/hz6_preload_small_boundary_target/libhakozuna_hz6_preload.so.
 
+  cross-allocator profile read:
+    raw: private/raw-results/linux/hz6_small_boundary_cross_20260616_000000
+    hz6 vs hz6-small-boundary-target vs hz3/hz4/tcmalloc,
+    no-stats, repeat-5, 300K:
+      16..4096:
+        hz6 36.250M / 79.62 MiB
+        hz6-small-boundary-target 37.602M / 80.00 MiB
+        hz3 67.134M / 53.38 MiB
+        hz4 48.035M / 59.75 MiB
+        tcmalloc 82.472M / 41.12 MiB
+      1024..4096:
+        hz6 33.775M / 91.00 MiB
+        hz6-small-boundary-target 34.671M / 91.38 MiB
+        hz3 62.465M / 63.00 MiB
+        hz4 43.574M / 53.00 MiB
+        tcmalloc 78.786M / 49.38 MiB
+      fixed_4k:
+        hz6 31.918M / 91.75 MiB
+        hz6-small-boundary-target 45.696M / 92.75 MiB
+        hz3 59.773M / 68.50 MiB
+        hz4 14.184M / 61.25 MiB
+        tcmalloc 42.226M / 70.50 MiB
+      fixed_8k:
+        hz6 42.747M / 93.25 MiB
+        hz6-small-boundary-target 44.947M / 93.12 MiB
+        hz3 55.236M / 70.00 MiB
+        hz4 13.734M / 64.38 MiB
+        tcmalloc 28.272M / 74.12 MiB
+      4096..16384:
+        hz6 43.767M / 94.25 MiB
+        hz6-small-boundary-target 43.467M / 94.12 MiB
+        hz3 51.808M / 73.50 MiB
+        hz4 26.535M / 113.25 MiB
+        tcmalloc 34.878M / 99.12 MiB
+
 decision:
   Keep as profile/control, not selected default.  It is the strongest named
   profile so far for fixed_4k/fixed_8k while retaining Toy target's 16..4096
   and 1024..4096 gains, but it gives up too much on 4096..16384 to become the
-  balanced default.
+  balanced default.  Cross-allocator comparison confirms the fixed_4k/fixed_8k
+  profile is strong enough to beat tcmalloc on speed, but HZ3 still owns the
+  speed/RSS frontier and tcmalloc/HZ4 remain ahead on mixed mid-small rows.
 ```
 
 ## Previous Closeout: HZ6 Ubuntu Preload Wrapper Attribution-L1

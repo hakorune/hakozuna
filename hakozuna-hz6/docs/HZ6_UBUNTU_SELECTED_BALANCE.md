@@ -172,6 +172,32 @@ Use the Toy target DSO only as a profile/control lane. Do not add
 `HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1=1` to the selected flag bundle unless a
 future code shape also preserves `4096..16384` and `fixed_16k`.
 
+The stronger fixed-boundary profile combines Toy direct-class with realloc
+boundary slack:
+
+```bash
+./hakozuna-hz6/linux/build_hz6_preload_small_boundary_target.sh
+```
+
+Cross-allocator raw:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_small_boundary_cross_20260616_000000
+```
+
+| row | hz6 | small-boundary | hz3 | hz4 | tcmalloc | read |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| `16..4096` | `36.250M` | `37.602M` | `67.134M` | `48.035M` | `82.472M` | profile improves HZ6, still behind HZ3/HZ4/tcmalloc |
+| `1024..4096` | `33.775M` | `34.671M` | `62.465M` | `43.574M` | `78.786M` | profile improves HZ6, still behind HZ3/HZ4/tcmalloc |
+| `fixed_4k` | `31.918M` | `45.696M` | `59.773M` | `14.184M` | `42.226M` | profile beats tcmalloc/HZ4, trails HZ3 |
+| `fixed_8k` | `42.747M` | `44.947M` | `55.236M` | `13.734M` | `28.272M` | profile beats tcmalloc/HZ4, trails HZ3 |
+| `4096..16384` | `43.767M` | `43.467M` | `51.808M` | `26.535M` | `34.878M` | selected remains the better balanced HZ6 default |
+
+Use `hz6-small-boundary-target` only when the workload is known to be
+small/fixed-boundary heavy. It is not a selected replacement because it gives
+up the MidPage target balance while still trailing HZ3/HZ4/tcmalloc on broad
+mid-small rows.
+
 ## Selected Read
 
 The current HZ6 Ubuntu selected lane has its clearest speed/RSS balance on
