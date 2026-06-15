@@ -278,6 +278,36 @@ next:
       Keep as diagnostic/control. This is strong evidence that HZ6 has good
       quiescent RSS recoverability, but it is not a default runtime behavior
       because it runs after timed work and does not improve peak RSS.
+    follow-up:
+      HZ6_PreloadedMallocTrim-L1:
+        Implement malloc_trim(size_t pad) in the LD_PRELOAD shim. It first
+        scavenges HZ6 local-free descriptors through
+        hz6_preload_scavenge_local_free(0), then forwards to the real libc
+        malloc_trim when available.
+        This makes the quiescent RSS recovery available through a standard
+        application-facing API without adding per-malloc/free hot-path work.
+      validation:
+        symbol export:
+          malloc_trim and hz6_preload_scavenge_local_free are exported by the
+          preload DSO.
+        stats-on raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_211643
+          malloc_trim path matches direct scavenge on current RSS:
+            4096..16384 current RSS: 94.12 MiB -> 70.93 MiB
+            fixed_16k current RSS:   93.25 MiB -> 59.80 MiB
+          payload attribution after trim drops to about 0.25 MiB / 4 active
+          source blocks.
+          Runner scavenge count/result is 3 for malloc_trim because the hook
+          returns a boolean success once per run, unlike direct scavenge which
+          reports released object count.
+        no-stats raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_211713
+          4096..16384 current RSS: 94.38 MiB -> 70.78 MiB
+          fixed_16k current RSS:   93.25 MiB -> 60.03 MiB
+          peak RSS remains flat, so this is explicit quiescent trimming, not a
+          peak-RSS optimization.
+      decision:
+        Keep malloc_trim hook as the standard quiescent release API for
+        LD_PRELOAD. It is not automatic/default behavior; applications or
+        diagnostic runners must call malloc_trim.
   Do not default the existing per-free cold-retire behavior, current_bias_2x,
   frontcache8192, storage-trim c4 variants, toy_map64k, toy_probe8,
   toy_mask_index, or toy_shift12_index.

@@ -17,6 +17,7 @@ typedef void* (*Hz6RealReallocFn)(void*, size_t);
 typedef int (*Hz6RealPosixMemalignFn)(void**, size_t, size_t);
 typedef void* (*Hz6RealAlignedAllocFn)(size_t, size_t);
 typedef size_t (*Hz6RealUsableSizeFn)(void*);
+typedef int (*Hz6RealMallocTrimFn)(size_t);
 
 static Hz6RealMallocFn g_real_malloc;
 static Hz6RealFreeFn g_real_free;
@@ -25,6 +26,7 @@ static Hz6RealReallocFn g_real_realloc;
 static Hz6RealPosixMemalignFn g_real_posix_memalign;
 static Hz6RealAlignedAllocFn g_real_aligned_alloc;
 static Hz6RealUsableSizeFn g_real_malloc_usable_size;
+static Hz6RealMallocTrimFn g_real_malloc_trim;
 static pthread_once_t g_real_once = PTHREAD_ONCE_INIT;
 __thread int g_hz6_preload_reentry;
 
@@ -41,6 +43,7 @@ static void hz6_preload_resolve_real(void) {
       (Hz6RealAlignedAllocFn)dlsym(RTLD_NEXT, "aligned_alloc");
   g_real_malloc_usable_size =
       (Hz6RealUsableSizeFn)dlsym(RTLD_NEXT, "malloc_usable_size");
+  g_real_malloc_trim = (Hz6RealMallocTrimFn)dlsym(RTLD_NEXT, "malloc_trim");
   g_hz6_preload_reentry = saved_reentry;
 }
 
@@ -127,4 +130,12 @@ size_t hz6_preload_real_malloc_usable_size(void* ptr) {
   }
   hz6_preload_ensure_real();
   return g_real_malloc_usable_size ? g_real_malloc_usable_size(ptr) : 0;
+}
+
+int hz6_preload_real_malloc_trim(size_t pad) {
+  if (g_hz6_preload_reentry && !g_real_malloc_trim) {
+    return 0;
+  }
+  hz6_preload_ensure_real();
+  return g_real_malloc_trim ? g_real_malloc_trim(pad) : 0;
 }

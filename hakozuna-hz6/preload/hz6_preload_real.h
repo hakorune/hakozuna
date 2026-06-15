@@ -14,5 +14,6 @@ int hz6_preload_real_posix_memalign(void** memptr,
                                     size_t size);
 void* hz6_preload_real_aligned_alloc(size_t alignment, size_t size);
 size_t hz6_preload_real_malloc_usable_size(void* ptr);
+int hz6_preload_real_malloc_trim(size_t pad);
 
 #endif

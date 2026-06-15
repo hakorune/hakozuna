@@ -145,6 +145,7 @@ static unsigned __stdcall bench_thread(void* arg) {
 }
 #else
 #include <dlfcn.h>
+#include <malloc.h>
 #include <pthread.h>
 #include <time.h>
 #include <sys/resource.h>
@@ -176,6 +177,9 @@ static size_t maybe_scavenge_before_rss(void) {
     const char* value = getenv("HZ_BENCH_SCAVENGE_BEFORE_RSS");
     if (!value || value[0] == '\0' || strcmp(value, "0") == 0) {
         return 0;
+    }
+    if (strcmp(value, "malloc_trim") == 0 || strcmp(value, "trim") == 0) {
+        return malloc_trim(0) ? 1u : 0u;
     }
     char* end = NULL;
     unsigned long long max_bytes = strtoull(value, &end, 10);

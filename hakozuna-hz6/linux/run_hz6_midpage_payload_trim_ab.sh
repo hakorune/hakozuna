@@ -126,6 +126,8 @@ variant_flags() {
       ;;
     selected_scavenge_before_rss)
       ;;
+    selected_malloc_trim_before_rss)
+      ;;
     run512k)
       hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 524288
       ;;
@@ -376,6 +378,9 @@ run_once() {
     selected_scavenge_before_rss)
       extra_env+=(HZ_BENCH_SCAVENGE_BEFORE_RSS=all)
       ;;
+    selected_malloc_trim_before_rss)
+      extra_env+=(HZ_BENCH_SCAVENGE_BEFORE_RSS=malloc_trim)
+      ;;
   esac
   mkdir -p "${OUTDIR}/${row}"
   if [[ "$ENABLE_STATS" -ne 0 ]]; then
@@ -494,7 +499,7 @@ print(f"root: `{root}`\n")
 readme = (root / "README.log").read_text(errors="replace")
 stats_mode = readme.split("stats=", 1)[1].splitlines()[0] if "stats=" in readme else "unknown"
 print(f"stats: `{stats_mode}`\n")
-print("| row | variant | median ops/s | median peak MiB | median current MiB | scavenge released | payload MiB | active source blocks | fail | source_alloc | mid32_alloc | mid32_prefill | mid32_filled | mid32_front_push | toy4 fast | toy4 hit | toy4 front | toy4 pop | toy4 activate | toy4 free attempt | toy4 free success | toy4 map reg | toy4 collision | retire attempt | retire scan | retire candidates | retire blocks | retire desc | retire MiB | retire blocked | retire fail |")
+print("| row | variant | median ops/s | median peak MiB | median current MiB | scavenge count/result | payload MiB | active source blocks | fail | source_alloc | mid32_alloc | mid32_prefill | mid32_filled | mid32_front_push | toy4 fast | toy4 hit | toy4 front | toy4 pop | toy4 activate | toy4 free attempt | toy4 free success | toy4 map reg | toy4 collision | retire attempt | retire scan | retire candidates | retire blocks | retire desc | retire MiB | retire blocked | retire fail |")
 print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 for row in rows:
     for variant in variants:

@@ -712,3 +712,16 @@ size_t malloc_usable_size(void* ptr) {
       &g_hz6_preload_phase_stats.malloc_usable_size_real_fallback);
   return hz6_preload_real_malloc_usable_size(ptr);
 }
+
+int malloc_trim(size_t pad) {
+  if (g_hz6_preload_reentry) {
+    return hz6_preload_real_malloc_trim(pad);
+  }
+
+  size_t hz6_released = hz6_preload_scavenge_local_free(0);
+  int saved_reentry = g_hz6_preload_reentry;
+  g_hz6_preload_reentry = 1;
+  int real_released = hz6_preload_real_malloc_trim(pad);
+  g_hz6_preload_reentry = saved_reentry;
+  return hz6_released != 0 || real_released != 0;
+}
