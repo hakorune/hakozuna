@@ -11,6 +11,7 @@ start from `../current_task.md`, then follow the stable lane docs linked there.
 | `current_task_2026-06-16_pre_compaction.md` | Detailed Ubuntu HZ6 optimization ledger immediately before `../current_task.md` was compacted. Large by design. |
 | `current_task_2026-06-16_profile_quiescent_snapshot.md` | Snapshot of the profile/alias/quiescent RSS ledger before the active HZ6 current task was shortened again. |
 | `current_task_2026-06-16_toy_trusted_default_snapshot.md` | Evidence snapshot for promoting Toy direct-class fast reuse plus boundary trusted-owner into Ubuntu selected/default. |
+| `current_task_2026-06-16_post_toytrusted_controls_snapshot.md` | Post-promotion retest snapshot for realloc-boundary adaptive, codegen/boundary, class5 controls, and worker follow-up candidates. |
 
 ## Reading Order
 

@@ -107,7 +107,7 @@ RSS:
 
 More detail:
   archive/current_task_2026-06-16_profile_quiescent_snapshot.md
-  archive/current_task_2026-06-16_toy_trusted_default_snapshot.md
+  archive/current_task_2026-06-16_post_toytrusted_controls_snapshot.md
 ```
 
 ## Closed / Do Not Reopen Casually

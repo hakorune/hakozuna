@@ -55,6 +55,7 @@ Detailed historical ledgers:
   hakozuna-hz6/docs/archive/current_task_2026-06_history.md
   hakozuna-hz6/docs/archive/current_task_2026-06-16_pre_compaction.md
   hakozuna-hz6/docs/archive/current_task_2026-06-16_profile_quiescent_snapshot.md
+  hakozuna-hz6/docs/archive/current_task_2026-06-16_post_toytrusted_controls_snapshot.md
 ```
 
 ## Rules
