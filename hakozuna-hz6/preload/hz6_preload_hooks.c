@@ -431,8 +431,17 @@ static HZ6_PRELOAD_MIDPAGE_BOUNDARY_NOINLINE void*
 hz6_preload_malloc_midpage_boundary(Hz6Allocator* allocator, size_t size) {
   hz6_preload_phase_count(
       &g_hz6_preload_phase_stats.malloc_midpage_boundary_attempt);
+#if HZ6_PRELOAD_MIDPAGE_BOUNDARY_FUSED_L1 && \
+    HZ6_PRELOAD_MIDPAGE_DIRECT_CLASS_L1
+  uint16_t class_id = size <= HZ6_MIDPAGE_8K_BYTES
+                          ? HZ6_MIDPAGE_8K_CLASS_ID
+                          : HZ6_MIDPAGE_32K_CLASS_ID;
+  void* ptr = hz6_allocator_preload_midpage_malloc_class_skip_transfer(
+      allocator, class_id, size);
+#else
   void* ptr =
       hz6_allocator_preload_midpage_malloc_skip_transfer(allocator, size);
+#endif
   if (ptr) {
     hz6_preload_phase_count(
         &g_hz6_preload_phase_stats.malloc_midpage_boundary_hit);
@@ -538,8 +547,17 @@ static void* hz6_preload_malloc_hz6(Hz6Allocator* allocator, size_t size) {
       size <= HZ6_MIDPAGE_BYTES) {
     hz6_preload_phase_count(
         &g_hz6_preload_phase_stats.malloc_midpage_boundary_attempt);
+#if HZ6_PRELOAD_MIDPAGE_BOUNDARY_FUSED_L1 && \
+    HZ6_PRELOAD_MIDPAGE_DIRECT_CLASS_L1
+    uint16_t class_id = size <= HZ6_MIDPAGE_8K_BYTES
+                            ? HZ6_MIDPAGE_8K_CLASS_ID
+                            : HZ6_MIDPAGE_32K_CLASS_ID;
+    void* ptr = hz6_allocator_preload_midpage_malloc_class_skip_transfer(
+        allocator, class_id, size);
+#else
     void* ptr =
         hz6_allocator_preload_midpage_malloc_skip_transfer(allocator, size);
+#endif
     if (ptr) {
       hz6_preload_phase_count(
           &g_hz6_preload_phase_stats.malloc_midpage_boundary_hit);

@@ -309,6 +309,9 @@ variant_flags() {
     midpage_direct_class)
       hz6_preload_replace_define flags HZ6_PRELOAD_MIDPAGE_DIRECT_CLASS_L1 1
       ;;
+    midpage_boundary_fused)
+      hz6_preload_replace_define flags HZ6_PRELOAD_MIDPAGE_BOUNDARY_FUSED_L1 1
+      ;;
     raw_frontcache_pop)
       hz6_preload_replace_define flags HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1 1
       ;;

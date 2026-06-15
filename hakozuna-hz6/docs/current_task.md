@@ -38,7 +38,50 @@ Archived chronological ledger:
   archive/current_task_2026-06_history.md
 ```
 
-## Current Continuation: PageKindFreeSelectorDryRun-L1
+## Current Continuation: MidPageBoundaryFused-L1
+
+```text
+latest continuation:
+  Add default-off selected-boundary code-shape control:
+    HZ6_PRELOAD_MIDPAGE_BOUNDARY_FUSED_L1=1
+
+design:
+  Keep the selected outer MidPage preload boundary and noinline isolation.
+  For A/B only, resolve 8K/32K class in the preload boundary and call a narrow
+  MidPage class helper.  This avoids rechecking the generic size policy inside
+  the allocator helper, without changing transfer-skip semantics, route safety,
+  active-map behavior, source retention, or selected default.
+
+acceptance:
+  Must pass selected-family tiny/mixed/target/fixed guards and RSS before any
+  default discussion.  A target-only win is profile/control evidence, not a
+  selected promotion.
+
+raw:
+  private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_004012
+  private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_004031
+
+read:
+  repeat-7 no-stats:
+    16..256      selected 57.206M, fused 56.395M
+    16..4096     selected 36.094M, fused 36.211M
+    1024..4096   selected 33.138M, fused 33.614M
+    4096..16384  selected 45.013M, fused 44.177M
+    fixed_4k     selected 31.858M, fused 32.360M
+    fixed_8k     selected 42.513M, fused 42.161M
+    fixed_16k    selected 44.566M, fused 45.303M
+
+  repeat-3 stats+diagnostics:
+    fail=0 and RSS/payload attribution unchanged, but fused is weaker under
+    diagnostics on 1024..4096 and fixed rows.
+
+decision:
+  Keep as control/no-go for selected default.  The selected noinline boundary
+  shape is already near the local optimum; class-fused helper shape changes
+  code layout enough to lose target/fixed guard stability.
+```
+
+## Recent Continuation: PageKindFreeSelectorDryRun-L1
 
 ```text
 latest continuation:

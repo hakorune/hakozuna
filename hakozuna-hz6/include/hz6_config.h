@@ -997,6 +997,13 @@
 #define HZ6_PRELOAD_MIDPAGE_DIRECT_CLASS_L1 0
 #endif
 
+#ifndef HZ6_PRELOAD_MIDPAGE_BOUNDARY_FUSED_L1
+/* Candidate selected-boundary code-shape control.  The preload hook has already
+ * checked the MidPage size envelope, so pass the resolved class into a narrow
+ * MidPage helper instead of rechecking the generic size policy. */
+#define HZ6_PRELOAD_MIDPAGE_BOUNDARY_FUSED_L1 0
+#endif
+
 #ifndef HZ6_FRONT_PREFILL_DESCRIPTOR_OUT_L1
 /* Candidate front prefill code shape.  Source-block prefill already prepared
  * the descriptor before registering the exact route; return that descriptor to
