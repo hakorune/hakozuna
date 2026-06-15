@@ -61,7 +61,7 @@ Explicit controls:
 
 Runners:
   fixed_boundary_profile_frontier / preload_profile_frontier
-  fixed_cost_residency_matrix / fixed_quiescent_rss_matrix
+  fixed_gap_matrix / fixed_cost_residency_matrix / fixed_quiescent_rss_matrix
   check_hz6_preload_profile_registry
 ```
 
