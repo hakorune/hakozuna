@@ -76,6 +76,27 @@ latest continuation:
     Next speed work should avoid active-map capacity/probe tweaks and look for
     a new local-page/run metadata path or a deliberately separate profile DSO.
 
+Toy target DSO:
+  Add linux/build_hz6_preload_toy_target.sh.
+  This builds selected preload plus:
+    HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1=1
+    HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES=4096
+
+  validation:
+    raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_220021
+    production repeat-7, 300K, focused+fixed:
+      16..256       56.457M -> 60.441M
+      16..4096      35.364M -> 37.573M
+      1024..4096    33.455M -> 34.507M
+      fixed_4k      31.632M -> 33.147M
+      4096..16384   44.997M -> 44.665M
+      fixed_8k      42.309M -> 41.478M
+      fixed_16k     44.739M -> 44.164M
+
+  decision:
+    Good profile DSO for Toy/mid-small workloads.
+    Still not selected default because MidPage/fixed guards lose.
+
 goal:
   Re-test low-risk Toy/small controls after the selected raw frontcache pop
   changed the production hot-path code shape.
