@@ -67,6 +67,7 @@ Adaptive realloc-boundary profiles:
 Other controls:
   hz6-aligned-target
   hz6-calloc-real-target
+  hz6-calloc-large-real-target
 
 Profile runner:
   linux/run_hz6_preload_profile_frontier.sh
@@ -86,6 +87,10 @@ Adaptive realloc-boundary profile repeat:
 
 Adaptive alias smoke:
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_042846
+
+Calloc large-real profile:
+  private/raw-results/linux/hz6_preload_calloc_audit_20260616_044759
+  private/raw-results/linux/hz6_preload_profile_frontier_20260616_044958
 
 Details:
   archive/current_task_2026-06-16_adaptive_profile_snapshot.md
@@ -113,7 +118,7 @@ Default no-go/control-only without substantially different evidence:
 ```text
 1. Keep selected/default stable.
 2. Treat adaptive-4k and adaptive-8k as fixed-boundary profile lanes.
-3. Next optimization should target a new narrow lane with evidence from the
-   profile frontier, not selected/default promotion.
+3. Treat calloc-large-real as a large calloc-heavy RSS/speed profile, not a
+   selected/default lane.
 4. Before any selected/default change, update stable docs and archive long logs.
 ```

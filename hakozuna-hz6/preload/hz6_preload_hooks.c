@@ -1010,6 +1010,15 @@ void* calloc(size_t nmemb, size_t size) {
     return hz6_preload_real_calloc(nmemb, size);
   }
 #if HZ6_PRELOAD_CALLOC_REAL_FALLBACK_L1
+#if HZ6_PRELOAD_CALLOC_REAL_MIN_BYTES > 0
+  if (bytes < (size_t)HZ6_PRELOAD_CALLOC_REAL_MIN_BYTES) {
+    void* ptr = malloc(bytes);
+    if (ptr) {
+      memset(ptr, 0, bytes);
+    }
+    return ptr;
+  }
+#endif
   void* ptr = hz6_preload_real_calloc(nmemb, size);
 #if HZ6_PRELOAD_CALLOC_REAL_FREE_SKIP_L1
   (void)hz6_preload_real_pointer_record(ptr, HZ6_PRELOAD_REAL_PTR_KIND_CALLOC);

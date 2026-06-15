@@ -541,6 +541,26 @@ Do not reopen page-kind/free-order/runroute/default route work from this read.
 The measurable fixed-boundary issue is already covered by the trusted
 small-boundary profile lane, which remains profile-only.
 
+Calloc large-real profile follow-up:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_preload_calloc_audit_20260616_044759
+hakozuna-hz6/private/raw-results/linux/hz6_preload_profile_frontier_20260616_044958
+```
+
+| row | selected | calloc-large-real | read |
+| --- | ---: | ---: | --- |
+| `calloc64k` | `6.214M / 26.50 MiB` | `7.117M / 6.75 MiB` | profile win |
+| `calloc128k` | `3.731M / 26.62 MiB` | `4.520M / 7.12 MiB` | profile win |
+| `calloc256k` | `2.230M / 27.00 MiB` | `2.292M / 7.50 MiB` | small profile win |
+| `16..4096` guard | `42.578M / 79.62 MiB` | `42.583M / 79.62 MiB` | flat |
+| `4096..16384` guard | `45.677M / 94.38 MiB` | `46.087M / 94.25 MiB` | flat/slightly positive |
+| `fixed_16k` guard | `42.858M / 93.00 MiB` | `41.754M / 93.12 MiB` | weak |
+
+Decision: keep `hz6-calloc-large-real-target` as a large calloc-heavy profile.
+It is not selected/default because fixed guards still wobble and normal mixed
+rows do not need the real-calloc pointer table.
+
 ## Selected Read
 
 The current HZ6 Ubuntu selected lane has its clearest speed/RSS balance on

@@ -23,7 +23,7 @@ Options:
   --threads N     worker threads (default: 4)
   --iters N       iterations per thread (default: 100000)
   --runs N        repeat count (default: 5)
-  --rows CSV      rows: calloc4k,calloc8k,calloc32k,calloc64k
+  --rows CSV      rows: calloc4k,calloc8k,calloc32k,calloc64k,calloc128k,calloc256k
   --outdir DIR    output directory
   --skip-build    reuse existing benchmark and preload DSOs
   --help          show this message
@@ -79,6 +79,8 @@ REAL_CALLOC_SO="${OUTDIR}/build/real_calloc_fallback/libhakozuna_hz6_preload.so"
 REAL_CALLOC_STATS_SO="${OUTDIR}/build/real_calloc_fallback_stats/libhakozuna_hz6_preload.so"
 REAL_CALLOC_FREE_SKIP_SO="${OUTDIR}/build/real_calloc_fallback_free_skip/libhakozuna_hz6_preload.so"
 REAL_CALLOC_FREE_SKIP_STATS_SO="${OUTDIR}/build/real_calloc_fallback_free_skip_stats/libhakozuna_hz6_preload.so"
+REAL_CALLOC_LARGE_FREE_SKIP_SO="${OUTDIR}/build/real_calloc_large_free_skip/libhakozuna_hz6_preload.so"
+REAL_CALLOC_LARGE_FREE_SKIP_STATS_SO="${OUTDIR}/build/real_calloc_large_free_skip_stats/libhakozuna_hz6_preload.so"
 
 mkdir -p "$OUTDIR"
 
@@ -125,6 +127,19 @@ build_preloads() {
     HZ6_PRELOAD_DEFAULT_CFLAGS="$(hz6_preload_join_flags "${real_calloc_free_skip_stats_flags[@]}")" \
     "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
     > "${OUTDIR}/real_calloc_fallback_free_skip_stats_build.log" 2>&1
+  local real_calloc_large_free_skip_prod_flags=("${real_calloc_free_skip_prod_flags[@]}")
+  hz6_preload_replace_define real_calloc_large_free_skip_prod_flags \
+    HZ6_PRELOAD_CALLOC_REAL_MIN_BYTES 65536
+  OUT_DIR="${OUTDIR}/build/real_calloc_large_free_skip" \
+    HZ6_PRELOAD_DEFAULT_CFLAGS="$(hz6_preload_join_flags "${real_calloc_large_free_skip_prod_flags[@]}")" \
+    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
+    > "${OUTDIR}/real_calloc_large_free_skip_build.log" 2>&1
+  local real_calloc_large_free_skip_stats_flags=("${real_calloc_large_free_skip_prod_flags[@]}")
+  hz6_preload_preserve_phase_counters real_calloc_large_free_skip_stats_flags
+  OUT_DIR="${OUTDIR}/build/real_calloc_large_free_skip_stats" \
+    HZ6_PRELOAD_DEFAULT_CFLAGS="$(hz6_preload_join_flags "${real_calloc_large_free_skip_stats_flags[@]}")" \
+    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
+    > "${OUTDIR}/real_calloc_large_free_skip_stats_build.log" 2>&1
 }
 
 if [[ "$SKIP_BUILD" -ne 1 ]]; then
@@ -139,6 +154,8 @@ fi
 [[ -f "$REAL_CALLOC_STATS_SO" ]] || { echo "missing real-calloc stats DSO: $REAL_CALLOC_STATS_SO" >&2; exit 2; }
 [[ -f "$REAL_CALLOC_FREE_SKIP_SO" ]] || { echo "missing real-calloc free-skip DSO: $REAL_CALLOC_FREE_SKIP_SO" >&2; exit 2; }
 [[ -f "$REAL_CALLOC_FREE_SKIP_STATS_SO" ]] || { echo "missing real-calloc free-skip stats DSO: $REAL_CALLOC_FREE_SKIP_STATS_SO" >&2; exit 2; }
+[[ -f "$REAL_CALLOC_LARGE_FREE_SKIP_SO" ]] || { echo "missing real-calloc large free-skip DSO: $REAL_CALLOC_LARGE_FREE_SKIP_SO" >&2; exit 2; }
+[[ -f "$REAL_CALLOC_LARGE_FREE_SKIP_STATS_SO" ]] || { echo "missing real-calloc large free-skip stats DSO: $REAL_CALLOC_LARGE_FREE_SKIP_STATS_SO" >&2; exit 2; }
 
 rows=()
 IFS=',' read -r -a row_names <<< "$ROWS_CSV"
@@ -155,6 +172,12 @@ for row in "${row_names[@]}"; do
       ;;
     calloc64k)
       rows+=("calloc64k 1 65536")
+      ;;
+    calloc128k)
+      rows+=("calloc128k 1 131072")
+      ;;
+    calloc256k)
+      rows+=("calloc256k 1 262144")
       ;;
     *)
       echo "unknown row: $row" >&2
@@ -176,6 +199,8 @@ done
   echo "real_calloc_stats_so=${REAL_CALLOC_STATS_SO}"
   echo "real_calloc_free_skip_so=${REAL_CALLOC_FREE_SKIP_SO}"
   echo "real_calloc_free_skip_stats_so=${REAL_CALLOC_FREE_SKIP_STATS_SO}"
+  echo "real_calloc_large_free_skip_so=${REAL_CALLOC_LARGE_FREE_SKIP_SO}"
+  echo "real_calloc_large_free_skip_stats_so=${REAL_CALLOC_LARGE_FREE_SKIP_STATS_SO}"
 } > "${OUTDIR}/README.log"
 
 run_one() {
@@ -222,6 +247,16 @@ run_one() {
         "$BENCH" "$THREADS" "$ITERS" "$nmemb" "$elem_size" 1 \
         > "$log" 2>&1
       ;;
+    real_calloc_large_free_skip)
+      env LD_PRELOAD="$REAL_CALLOC_LARGE_FREE_SKIP_SO" \
+        "$BENCH" "$THREADS" "$ITERS" "$nmemb" "$elem_size" 1 \
+        > "$log" 2>&1
+      ;;
+    real_calloc_large_free_skip_stats)
+      env HZ6_PRELOAD_STATS=1 LD_PRELOAD="$REAL_CALLOC_LARGE_FREE_SKIP_STATS_SO" \
+        "$BENCH" "$THREADS" "$ITERS" "$nmemb" "$elem_size" 1 \
+        > "$log" 2>&1
+      ;;
     *)
       echo "unknown variant: $variant" >&2
       exit 2
@@ -232,7 +267,7 @@ run_one() {
 for run_id in $(seq 1 "$RUNS"); do
   for row_spec in "${rows[@]}"; do
     read -r row nmemb elem_size <<< "$row_spec"
-    for variant in system selected phase_count_on real_calloc_fallback real_calloc_fallback_stats real_calloc_fallback_free_skip real_calloc_fallback_free_skip_stats; do
+    for variant in system selected phase_count_on real_calloc_fallback real_calloc_fallback_stats real_calloc_fallback_free_skip real_calloc_fallback_free_skip_stats real_calloc_large_free_skip real_calloc_large_free_skip_stats; do
       run_one "$row" "$nmemb" "$elem_size" "$variant" "$run_id"
     done
   done
@@ -254,6 +289,8 @@ variants = [
     "real_calloc_fallback_stats",
     "real_calloc_fallback_free_skip",
     "real_calloc_fallback_free_skip_stats",
+    "real_calloc_large_free_skip",
+    "real_calloc_large_free_skip_stats",
 ]
 ops_re = re.compile(r"ops/s=([0-9]+(?:\.[0-9]+)?)")
 current_re = re.compile(r"current_kb=([0-9]+)")
