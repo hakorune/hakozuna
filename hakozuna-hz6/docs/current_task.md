@@ -57,7 +57,7 @@ Standard frontier:
   aligned / calloc-direct / calloc-real / calloc-large-real
 
 Explicit controls:
-  small-boundary-trusted-toy-map8192 / toy-map-external / midpage-skip-transfer
+  small-boundary-trusted-toy-map8192(+external) / toy-map-external / midpage-skip-transfer
 
 Runners:
   fixed_boundary_profile_frontier / preload_profile_frontier
@@ -89,7 +89,8 @@ Recent fixed/profile repeats:
   private/raw-results/linux/hz6_fixed_boundary_profile_frontier_20260616_063106
   private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_063918
   private/raw-results/linux/hz6_fixed_quiescent_rss_matrix_20260616_072153
-  private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_{062305,064915,065310,065329}
+  private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_{062305,064915,065310,065329,072333}
+  private/raw-results/linux/hz6_preload_profile_frontier_20260616_072637
   private/raw-results/linux/hz6_ubuntu_size_slices_20260616_063423
 
 Details:
@@ -140,8 +141,7 @@ Default no-go/control-only without substantially different evidence:
 11. 8K run shrink under Toy-map8192 RSS profile is no-go/control.
 12. MidPage skip-transfer is control/watch only: latest profile frontier loses
     16..4096 and 4096..16384 despite 1024..4096/fixed_16k signals.
-13. Toy external-map and packed-frontcache combos remain runner-only RSS
-    controls: they cut fixed RSS further but speed is mixed, so keep the
-    existing Toy-map8192 DSO as the fixed-boundary RSS profile.
+13. Toy-map8192 external is now an explicit lower-RSS fixed-boundary profile;
+    packed-frontcache combos remain runner-only controls because speed is mixed.
 14. Keep this file below about 150 lines; archive completed evidence snapshots.
 ```

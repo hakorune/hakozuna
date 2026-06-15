@@ -7,7 +7,7 @@ RUNS="${RUNS:-3}"
 ITERS="${ITERS:-300000}"
 WS="${WS:-4096}"
 ROWS_CSV="${ROWS:-focused,fixed_mid}"
-ALLOCATORS="${ALLOCATORS:-hz6,hz6-small-boundary-trusted-target,hz6-small-boundary-trusted-toy-map8192-target,hz6-realloc-boundary-4k-target,hz6-realloc-boundary-8k-target,hz6-realloc-boundary-adaptive-4k-target,hz6-realloc-boundary-adaptive-8k-target,hz6-realloc-boundary-adaptive-target,hz6-toy-trusted-target}"
+ALLOCATORS="${ALLOCATORS:-hz6,hz6-small-boundary-trusted-target,hz6-small-boundary-trusted-toy-map8192-target,hz6-small-boundary-trusted-toy-map8192-external-target,hz6-realloc-boundary-4k-target,hz6-realloc-boundary-8k-target,hz6-realloc-boundary-adaptive-4k-target,hz6-realloc-boundary-adaptive-8k-target,hz6-realloc-boundary-adaptive-target,hz6-toy-trusted-target}"
 OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_fixed_boundary_profile_frontier_$(date +%Y%m%d_%H%M%S)}"
 SKIP_BUILDS=0
 SKIP_PREPARE_ALLOCATORS=0
@@ -32,7 +32,7 @@ Options:
   --help            show this message
 
 This is the fixed-boundary profile lane runner. It compares selected HZ6
-against small-boundary trusted, the Toy-map8192 RSS variant, split
+against small-boundary trusted, the Toy-map8192 RSS variants, split
 realloc-boundary, and adaptive realloc-boundary profile DSOs without changing
 selected/default flags.
 EOF
