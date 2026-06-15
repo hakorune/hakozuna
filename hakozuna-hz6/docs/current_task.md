@@ -61,7 +61,7 @@ Explicit controls:
 
 Runners:
   broad_guard / fixed_boundary_profile_frontier / preload_profile_frontier
-  fixed_gap_matrix / fixed_cost_residency_matrix / fixed_quiescent_rss_matrix / workload_proxy_matrix / workload_capacity_frontier
+  fixed_gap_matrix / fixed_cost_residency_matrix / fixed_quiescent_rss_matrix / workload_proxy_matrix / workload_capacity_frontier / workload_capacity_gap_diag
   check_hz6_preload_profile_registry
 ```
 
@@ -91,6 +91,7 @@ Recent fixed/profile repeats:
   private/raw-results/linux/hz6_fixed_gap_matrix_20260616_082042
   private/raw-results/linux/hz6_fixed_quiescent_rss_matrix_20260616_072153
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_{062305,064915,065310,065329,072333,074342,074414}
+  private/raw-results/linux/hz6_workload_capacity_gap_diag_20260616_083459
   private/raw-results/linux/hz6_workload_{capacity_frontier_20260616_081537,proxy_matrix_20260616_080227}
   private/raw-results/linux/hz6_ubuntu_size_slices_20260616_073231
 
@@ -143,8 +144,7 @@ Default no-go/control-only without substantially different evidence:
     16..4096 and 4096..16384 despite 1024..4096/fixed_16k signals.
 13. Toy-map8192 external is now an explicit lower-RSS fixed-boundary profile;
     packed-frontcache/sourceblock combos remain runner-only controls/no-go.
-14. Latest broad guard confirms no broad default promotion: profile/fixed rows
-    are healthy, but workload proxy still needs capacity-lite profile support.
-15. Next optimization lane: explain and shrink the selected-vs-capacity-lite
-    workload proxy gap without turning fixed-only profiles into defaults.
+14. Capacity-gap diag says selected workload proxy collapse is descriptor-table
+    exhaustion/prefill fallback; capacity-lite removes it and lowers payload.
+15. Next lane: shrink descriptor pressure without defaulting fixed-only profiles.
 ```
