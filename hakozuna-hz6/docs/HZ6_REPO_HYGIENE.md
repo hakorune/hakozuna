@@ -34,6 +34,8 @@ snapshot under docs/archive/ and replace the active file with links plus the
 next concrete work items.
 Keep benchmark evidence snapshots decision-shaped: raw path, key rows, read,
 and selected/default decision. Do not paste full raw logs into active docs.
+Archived current_task ledgers may be thousands of lines. Treat that size as
+historical storage, not as the active working surface.
 ```
 
 ## Lane Status Vocabulary
@@ -191,6 +193,8 @@ HZ6_ELASTIC_CAPACITY_PLAN.md:
 
 current_task.md:
   short orientation entry point
+  hard budget: root current_task below 80 lines, HZ6 current_task around 150
+  lines or less
 
 archive/README.md:
   index for long HZ6 historical ledgers

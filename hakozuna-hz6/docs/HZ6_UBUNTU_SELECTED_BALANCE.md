@@ -538,9 +538,22 @@ allocators:
 | `fixed_8k` | `adaptive-8k 23.715M / 93.12 MiB` | `tcmalloc 16.558M / 72.88 MiB`, `hz3 24.959M / 70.00 MiB` | adaptive-8k beats tcmalloc speed and approaches HZ3 speed |
 | `fixed_16k` | `adaptive-8k 23.141M / 93.00 MiB`, selected `23.138M / 93.00 MiB` | `hz3 20.809M / 73.12 MiB`, `tcmalloc 7.489M / 100.88 MiB` | selected/adaptive-8k win speed; HZ3 keeps lower RSS |
 
-Next action from this read is not defaulting adaptive behavior. The useful
-follow-up is a thicker repeat of the fixed-boundary cross set when a paper or
-profile-positioning number is needed.
+Thicker fixed-boundary repeat:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_preload_profile_frontier_20260616_051956
+```
+
+| row | selected hz6 | best HZ6 profile | external read | read |
+| --- | ---: | ---: | ---: | --- |
+| `fixed_4k` | `31.129M / 91.88 MiB` | `small-boundary-trusted 41.384M / 92.62 MiB` | `hz3 48.941M / 68.50 MiB`, `tcmalloc 36.508M / 70.25 MiB` | trusted profile is best HZ6 here |
+| `fixed_8k` | `37.756M / 93.00 MiB` | `small-boundary-trusted 40.212M / 92.88 MiB` | `hz3 44.654M / 69.88 MiB`, `tcmalloc 24.746M / 74.62 MiB` | trusted edges adaptive-8k |
+| `fixed_16k` | `39.347M / 93.12 MiB` | `small-boundary-trusted 39.834M / 93.00 MiB` | `hz3 36.359M / 73.12 MiB`, `tcmalloc 11.223M / 100.88 MiB` | HZ6 wins speed; HZ3 keeps lower RSS |
+
+Decision remains unchanged: do not default adaptive behavior. The thicker read
+makes `hz6-small-boundary-trusted-target` the preferred broad fixed-boundary
+profile, with adaptive-4k/8k retained as exact-row controls. Snapshot:
+`archive/current_task_2026-06-16_fixed_boundary_profile_repeat.md`.
 
 Hot-path attribution refresh:
 

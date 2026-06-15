@@ -14,6 +14,23 @@ start from `../current_task.md`, then follow the stable lane docs linked there.
 | `current_task_2026-06-16_post_toytrusted_controls_snapshot.md` | Post-promotion retest snapshot for realloc-boundary adaptive, codegen/boundary, class5 controls, and worker follow-up candidates. |
 | `current_task_2026-06-16_adaptive_profile_snapshot.md` | Profile-frontier, realloc copy attribution, and named adaptive realloc-boundary profile snapshot before active task compaction. |
 | `current_task_2026-06-16_calloc_profile_snapshot.md` | Large-calloc real-fallback profile, calloc cross-allocator matrix, and adaptive profile decision snapshot. |
+| `current_task_2026-06-16_fixed_boundary_profile_repeat.md` | Repeat-5 fixed-boundary cross snapshot showing small-boundary-trusted as the preferred broad fixed profile and keeping selected/default unchanged. |
+
+## Large Ledgers
+
+These files are intentionally large and should stay archived:
+
+```text
+current_task_2026-06_history.md:
+  full historical HZ6 chronology
+
+current_task_2026-06-16_pre_compaction.md:
+  detailed Ubuntu HZ6 optimization ledger before active current_task compaction
+```
+
+If one of these is needed for a new decision, copy only the relevant decision
+summary into `../current_task.md` or a stable lane doc. Do not resume appending
+to the archived ledger.
 
 ## Reading Order
 

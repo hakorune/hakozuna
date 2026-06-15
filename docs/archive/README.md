@@ -16,4 +16,6 @@ there.
 Do not continue active work directly in archived current_task ledgers.
 Summarize stable decisions in the family-specific docs, then reference the raw
 archive path only when the chronology matters.
+Large archived ledgers may exceed 3000 lines. Active current_task files should
+remain short orientation ledgers and link here instead.
 ```

@@ -66,6 +66,8 @@ Detailed historical ledgers:
 Keep this file below 80 lines.
 Put HZ6 decisions in hakozuna-hz6/docs/current_task.md or stable HZ6 docs.
 Move long benchmark logs and chronological notes to archive/.
+Large archived ledgers may exceed 3000 lines; active current_task files should
+not.
 Do not promote profile-only lanes into selected/default without focused,
 fixed, stats/diagnostic, RSS, and cross-allocator guard evidence.
 ```

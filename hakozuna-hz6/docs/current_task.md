@@ -103,9 +103,13 @@ Calloc direct-HZ6 code-shape control:
 Fixed-boundary cross quick check:
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_050037
 
+Fixed-boundary profile repeat:
+  private/raw-results/linux/hz6_preload_profile_frontier_20260616_051956
+
 Details:
   archive/current_task_2026-06-16_adaptive_profile_snapshot.md
   archive/current_task_2026-06-16_calloc_profile_snapshot.md
+  archive/current_task_2026-06-16_fixed_boundary_profile_repeat.md
 ```
 
 ## Do Not Reopen Casually
@@ -141,5 +145,6 @@ Default no-go/control-only without substantially different evidence:
    conclusions.
 7. Before any selected/default change, update stable docs and archive long logs.
 8. Keep this file below about 150 lines; archive completed evidence snapshots
-   instead of appending chronological logs.
+   instead of appending chronological logs. Large 3000+ line ledgers belong
+   only under archive/.
 ```
