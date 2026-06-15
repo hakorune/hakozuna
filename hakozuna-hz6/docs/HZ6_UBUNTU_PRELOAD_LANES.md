@@ -227,6 +227,19 @@ does not justify its larger static depot for the named workload profile. The
 builder default is therefore 2048, with `HZ6_WORKLOAD_DESCRIPTOR_OVERFLOW_DEPOT_CAPACITY`
 kept as the explicit override for future A/B runs.
 
+Hybrid descriptor/static ladder raw
+`private/raw-results/linux/hz6_workload_descriptor_hybrid_ladder_20260616_085253`
+shows the next speed/RSS tradeoff. `desc12k_source1536_route48k` plus the 2048
+elastic descriptor depot is the clean runner-only candidate: it keeps
+`redis_proxy` lighter/faster than capacity-lite (`56.168M / 20.12 MiB` vs
+`52.020M / 25.50 MiB`), matches or beats capacity-lite on collapsed rows
+(`small_object_cache 16.510M / 45.59 MiB`,
+`mixed_object_cache 9.257M / 138.12 MiB`), and keeps lower RSS on
+`wide_midpage_cache` (`148.50` vs `153.62 MiB`) with near-capacity-lite speed.
+It costs healthy `midpage_cache` versus selected/descriptor-overflow, so keep
+it as runner-only evidence until it is promoted to an explicit profile and
+passes a broad guard.
+
 Earlier workload-proxy matrix, repeat-3, raw
 `private/raw-results/linux/hz6_workload_proxy_matrix_20260616_075550`;
 diagnostic raws `hz6_workload_proxy_diag_20260616_075255` and

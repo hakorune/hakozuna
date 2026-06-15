@@ -61,7 +61,7 @@ Explicit controls:
 Runners:
   broad_guard / fixed_boundary_profile_frontier / preload_profile_frontier
   fixed_gap_matrix / fixed_cost_residency_matrix / fixed_quiescent_rss_matrix
-  workload_proxy_matrix / workload_capacity_frontier / workload_capacity_gap_diag / workload_descriptor_overflow_ladder
+  workload_proxy_matrix / workload_capacity_frontier / workload_capacity_gap_diag / workload_descriptor_{overflow,hybrid}_ladder
   check_hz6_preload_profile_registry
 ```
 
@@ -92,11 +92,10 @@ Recent fixed/profile repeats:
   private/raw-results/linux/hz6_fixed_quiescent_rss_matrix_20260616_072153
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_{062305,064915,065310,065329,072333,074342,074414}
   private/raw-results/linux/hz6_workload_capacity_gap_diag_20260616_{083459,083910}
-  private/raw-results/linux/hz6_workload_descriptor_overflow_ladder_20260616_084807
+  private/raw-results/linux/hz6_workload_descriptor_{overflow_ladder_20260616_084807,hybrid_ladder_20260616_085253}
   private/raw-results/linux/hz6_workload_{capacity_frontier_20260616_081537,proxy_matrix_20260616_{080227,084249,084440}}
   private/raw-results/linux/hz6_ubuntu_size_slices_20260616_073231
 
-Details: archive/current_task_2026-06-16_*.md
 ```
 
 ## Do Not Reopen Casually
@@ -147,4 +146,5 @@ Default no-go/control-only without substantially different evidence:
     packed-frontcache/sourceblock combos remain runner-only controls/no-go.
 14. Capacity-gap diag says selected workload proxy collapse is descriptor-table
     exhaustion/prefill fallback; capacity-lite is faster, while descriptor-overflow 2048 keeps lower RSS with selected static tables.
+15. Hybrid `desc12k/source1536/route48k + depot2048` is a runner-only speed/RSS candidate; profile it only after a broad guard.
 ```
