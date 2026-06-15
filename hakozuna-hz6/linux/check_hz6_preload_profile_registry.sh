@@ -11,11 +11,13 @@ import sys
 root = pathlib.Path(sys.argv[1])
 registry_path = root / "hakozuna-hz6/docs/HZ6_UBUNTU_PROFILE_REGISTRY.md"
 frontier_path = root / "hakozuna-hz6/linux/run_hz6_preload_profile_frontier.sh"
+broad_guard_path = root / "hakozuna-hz6/linux/run_hz6_broad_guard.sh"
 aliases_path = root / "hakozuna-hz6/linux/hz6_preload_aliases.sh"
 bench_common_path = root / "bench/lib/bench_common.sh"
 
 registry = registry_path.read_text()
 frontier = frontier_path.read_text()
+broad_guard = broad_guard_path.read_text()
 aliases = aliases_path.read_text()
 bench_common = bench_common_path.read_text()
 
@@ -53,6 +55,22 @@ if frontier_standard != list(standard):
         f"  frontier={frontier_standard}"
     )
 
+broad_profile_match = re.search(
+    r'PROFILE_ALLOCATORS="\$\{PROFILE_ALLOCATORS:-(?P<allocators>[^"}]+)\}"',
+    broad_guard,
+)
+if not broad_profile_match:
+    errors.append("could not find PROFILE_ALLOCATORS in run_hz6_broad_guard.sh")
+else:
+    broad_profile_aliases = broad_profile_match.group("allocators").split(",")
+    broad_profile_standard = [alias for alias in broad_profile_aliases if alias != "hz6"]
+    if broad_profile_standard != list(standard):
+        errors.append(
+            "standard registry aliases do not match broad guard profile order:\n"
+            f"  registry={list(standard)}\n"
+            f"  broad_guard={broad_profile_standard}"
+        )
+
 for alias in explicit:
     if alias in frontier_aliases:
         errors.append(f"explicit control alias appears in default frontier: {alias}")
@@ -60,6 +78,21 @@ for alias in explicit:
 all_aliases = {}
 all_aliases.update(standard)
 all_aliases.update(explicit)
+
+external_or_legacy_aliases = {"system", "hz3", "hz4", "hz5", "hz6", "mimalloc", "tcmalloc"}
+for variable in ("FIXED_ALLOCATORS", "WORKLOAD_ALLOCATORS"):
+    match = re.search(
+        rf'{variable}="\$\{{{variable}:-(?P<allocators>[^"}}]+)\}}"',
+        broad_guard,
+    )
+    if not match:
+        errors.append(f"could not find {variable} in run_hz6_broad_guard.sh")
+        continue
+    for alias in match.group("allocators").split(","):
+        if alias in external_or_legacy_aliases:
+            continue
+        if alias not in all_aliases:
+            errors.append(f"{variable} uses unregistered HZ6 alias: {alias}")
 
 for alias, builder in all_aliases.items():
     builder_path = root / "hakozuna-hz6/linux" / builder

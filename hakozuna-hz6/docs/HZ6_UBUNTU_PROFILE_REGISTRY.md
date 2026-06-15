@@ -63,6 +63,16 @@ explicit controls:
   do not promote without focused/fixed/stats/RSS/cross-allocator guards
 ```
 
+## Broad Guard
+
+```sh
+./hakozuna-hz6/linux/run_hz6_broad_guard.sh
+```
+
+This orchestration runner composes the standard profile frontier, fixed-gap
+matrix, and workload-proxy matrix into one raw-result root. Use it before
+promoting a profile/default change; it does not add new benchmark semantics.
+
 ## Consistency Check
 
 ```sh
@@ -70,6 +80,7 @@ explicit controls:
 ```
 
 This verifies that the standard registry aliases match
-`run_hz6_preload_profile_frontier.sh`, explicit controls are excluded from the
-default frontier, builders exist, and aliases resolve through both the HZ6
-autobuild helper and `bench/lib/bench_common.sh`.
+`run_hz6_preload_profile_frontier.sh` and the broad guard profile leg, explicit
+controls are excluded from the default frontier, broad guard fixed/workload HZ6
+aliases are registered, builders exist, and aliases resolve through both the
+HZ6 autobuild helper and `bench/lib/bench_common.sh`.

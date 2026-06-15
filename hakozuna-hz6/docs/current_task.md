@@ -60,7 +60,7 @@ Explicit controls:
   small-boundary-trusted-toy-map8192(+external) / workload-capacity(+map8192) / toy-map-external / midpage-skip-transfer
 
 Runners:
-  fixed_boundary_profile_frontier / preload_profile_frontier
+  broad_guard / fixed_boundary_profile_frontier / preload_profile_frontier
   fixed_gap_matrix / fixed_cost_residency_matrix / fixed_quiescent_rss_matrix / workload_proxy_matrix / workload_capacity_frontier
   check_hz6_preload_profile_registry
 ```
@@ -143,8 +143,8 @@ Default no-go/control-only without substantially different evidence:
     16..4096 and 4096..16384 despite 1024..4096/fixed_16k signals.
 13. Toy-map8192 external is now an explicit lower-RSS fixed-boundary profile;
     packed-frontcache/sourceblock combos remain runner-only controls/no-go.
-14. Next broad guard: refresh selected/profile frontier and real-workload rows
-    periodically, not more fixed-only default behavior.
+14. Next broad guard is `run_hz6_broad_guard.sh`: refresh profile, fixed-gap,
+    and workload-proxy rows together; do not add more fixed-only defaults.
 15. Workload proxy refresh found desc8192 capacity collapse on large WS rows;
     `hz6-workload-capacity-lite-target` is preferred; map8192 is RSS control.
 ```
