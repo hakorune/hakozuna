@@ -146,6 +146,12 @@ evidence:
       diagnostic raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_204253
       existing free-time cold-retire gate does not fire on the fixed_16k final
       all-local-free shape; do not default it.
+    fixed-row control refresh:
+      raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_204454
+      direct_max5 fixed_4k 28.506M -> 28.965M, but 16..4096 regressed.
+      same_owner_fast fixed_16k 39.192M -> 39.437M, but 4096..16384 regressed.
+      current_bias_off helps some small/fixed rows, but target regresses.
+      No fixed-row control is default-clean.
 
 decision:
   selected/default. This is a small but balanced production code-shape win after
