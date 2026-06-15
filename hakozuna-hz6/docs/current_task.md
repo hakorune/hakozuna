@@ -140,7 +140,7 @@ Default no-go/control-only without substantially different evidence:
    combined only for fixed_16k-heavy profile runs.
 8. `hz6-small-boundary-trusted-toy-map8192-target` is the current fixed-boundary RSS profile:
    best HZ6 ops/MiB on fixed_4k/8k/16k; cross-allocator repeat keeps HZ3
-   best on fixed_4k, while HZ6 profile leads fixed_8k/16k speed.
+   best on fixed_4k/8k, while HZ6 profile leads fixed_16k speed.
    It is still not a broad default because 16..4096/1024..4096 regress.
 9. Do not promote realloc-boundary/adaptive to selected/default without a new
    guard that also preserves tiny, mixed-small, target, fixed, RSS, and stats.
