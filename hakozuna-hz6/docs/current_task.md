@@ -101,11 +101,9 @@ Calloc direct-HZ6 code-shape control:
   private/raw-results/linux/hz6_preload_calloc_audit_20260616_051752
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_051752
 
-Fixed-boundary cross quick check:
-  private/raw-results/linux/hz6_preload_profile_frontier_20260616_050037
-
-Fixed-boundary profile repeat:
+Fixed-boundary/fixed-cost profile repeats:
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_051956
+  private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_053600
 
 Details:
   archive/current_task_2026-06-16_adaptive_profile_snapshot.md
@@ -135,9 +133,8 @@ Default no-go/control-only without substantially different evidence:
 ```text
 1. Keep selected/default stable.
 2. Start the next lane from fixed-cost/RSS attribution, not a default behavior
-   change. Compare touched MidPage payload, frontcache/static tables,
-   active-map storage, and profile/source-run residency against HZ3/HZ4/tcmalloc
-   rows before changing selected flags.
+   change. The fixed-cost matrix shows profile wins improve speed but not RSS;
+   next inspect fixed storage floor candidates before changing selected flags.
 3. Treat adaptive-4k and adaptive-8k as fixed-boundary profile lanes.
 4. Treat calloc-large-real as a large calloc-heavy RSS/speed profile, not a
    selected/default lane.

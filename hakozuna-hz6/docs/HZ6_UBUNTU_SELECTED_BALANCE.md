@@ -579,6 +579,28 @@ Do not default cold-retire, active-map widening, page-kind/free-order tables, or
 realloc-boundary behavior from this read. First produce attribution that shows
 which fixed cost is actually actionable without losing the speed/RSS balance.
 
+FixedCostResidencyMatrix-L1 first repeat:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_053600
+```
+
+| row | selected hz6 | small-boundary trusted | closest external read | HZ6 attribution read |
+| --- | ---: | ---: | ---: | --- |
+| `fixed_4k` | `32.535M / 91.88 MiB` | `41.512M / 92.62 MiB` | `tcmalloc 38.999M / 70.50 MiB`, `hz3 50.286M / 68.50 MiB` | `static 23.80 MiB`, `payload 72.25 MiB`, `mid8 all-local-free 64.00 MiB` |
+| `fixed_8k` | `38.002M / 93.12 MiB` | `40.278M / 93.12 MiB` | `tcmalloc 25.534M / 73.38 MiB`, `hz3 45.858M / 70.00 MiB` | `static 23.80 MiB`, `payload 142.25 MiB`, `mid8 all-local-free 126.00 MiB` |
+| `fixed_16k` | `39.516M / 93.25 MiB` | `40.062M / 93.00 MiB` | `hz3 37.504M / 73.12 MiB`, `tcmalloc 12.450M / 92.88 MiB` | `static 23.80 MiB`, `payload 520.25 MiB`, `mid32 all-local-free 520.00 MiB` |
+
+Read: `small-boundary-trusted` is still the broad fixed-boundary speed profile,
+but it does not reduce HZ6 peak RSS. The HZ6-vs-HZ3 RSS gap on these rows is
+about `20..23 MiB`, while HZ6 diagnostic attribution reports a stable fixed
+storage floor (`static 23.80 MiB`, `frontcache 2.93 MiB`, Toy map `3.75 MiB`,
+MidPage map `1.88 MiB`) plus large logical all-local-free MidPage payload. That
+means the next safe optimization target is fixed storage floor/layout or a
+profile-specific RSS view, not cold-retire default behavior. Payload retire is
+still control/no-go because prior behavior removed neither peak RSS nor speed
+risk.
+
 Hot-path attribution refresh:
 
 ```text
