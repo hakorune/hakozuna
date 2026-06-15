@@ -242,6 +242,14 @@ variant_flags() {
     realloc_boundary_slack)
       hz6_preload_replace_define flags HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_L1 1
       ;;
+    realloc_boundary_slack_4k)
+      hz6_preload_replace_define flags \
+        HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_4K_L1 1
+      ;;
+    realloc_boundary_slack_8k)
+      hz6_preload_replace_define flags \
+        HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_8K_L1 1
+      ;;
     phase_count_off)
       hz6_preload_replace_define flags HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1 1
       ;;

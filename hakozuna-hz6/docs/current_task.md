@@ -221,10 +221,14 @@ decision:
 boundary slack profile:
   Add default-off control:
     HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_L1=1
+    HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_4K_L1=1
+    HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_8K_L1=1
 
   behavior:
     malloc(4096) -> allocate from MidPage 8K slot
     malloc(8192) -> allocate from MidPage 32K slot
+    The combined flag keeps both enabled for the existing profile DSO; the
+    split flags allow 4K-only and 8K-only A/B without changing selected.
 
   Add persistent profile builder:
     hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_target.sh
@@ -273,6 +277,47 @@ boundary slack profile:
         hz4 11.185M / 63.88 MiB
         tcmalloc 12.966M / 99.09 MiB
 
+  split-lane A/B:
+    raw: private/raw-results/linux/hz6_realloc_boundary_split_ab_20260615_232000
+    selected vs 4k-only vs 8k-only vs combined, no-stats, repeat-7, 300K:
+      fixed_4k:
+        selected 32.132M
+        4k-only 46.185M
+        8k-only 32.374M
+        combined 46.052M
+      fixed_8k:
+        selected 42.637M
+        4k-only 42.605M
+        8k-only 44.396M
+        combined 44.535M
+      1024..4096:
+        selected 33.404M
+        4k-only 31.806M
+        8k-only 33.898M
+        combined 33.348M
+
+  8k-only promotion guard:
+    raw: private/raw-results/linux/hz6_realloc_boundary_8k_promotion_guard_20260615_232300
+    selected vs 8k-only, no-stats, repeat-15, 300K:
+      16..4096:
+        36.212M -> 36.255M
+      1024..4096:
+        33.613M -> 34.008M
+      4096..16384:
+        44.533M -> 44.510M
+      fixed_4k:
+        32.247M -> 32.080M
+      fixed_8k:
+        43.004M -> 44.615M
+      fixed_16k:
+        44.348M -> 44.181M
+
+  stats safety:
+    raw: private/raw-results/linux/hz6_realloc_boundary_split_stats_20260615_232100
+    stats-on repeat-3 confirms the split targets the intended copy wall:
+      fixed_4k selected copy 19068 -> 0 under 4k-only
+      fixed_8k selected copy 19068 -> 0 under 8k-only
+
 decision:
   Keep realloc-boundary slack as a fixed-boundary profile/control DSO, not
   selected default.  It is very strong for fixed_4k/fixed_8k realloc-growth
@@ -280,6 +325,11 @@ decision:
   balanced default allocator.  As a profile, it beats tcmalloc on fixed_4k and
   fixed_8k speed, and leaves fixed_16k essentially unchanged; HZ3 still keeps
   the better speed/RSS frontier on fixed_4k/fixed_8k.
+
+  The split read says 4K slack is the fixed_4k profile win but pollutes
+  1024..4096.  8K slack is cleaner and improves fixed_8k, but repeat-15 still
+  has small fixed_4k/fixed_16k/target negatives.  Keep both split flags as
+  controls and do not default either yet.
 ```
 
 ## Previous Closeout: HZ6 Ubuntu Preload Wrapper Attribution-L1
