@@ -40,6 +40,7 @@ For local preparation and compare runs, use the Linux entrypoints:
 - `hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_target.sh`
 - `hakozuna-hz6/linux/build_hz6_preload_small_boundary_target.sh`
 - `hakozuna-hz6/linux/build_hz6_preload_small_boundary_fast_target.sh`
+- `hakozuna-hz6/linux/build_hz6_preload_small_boundary_trusted_target.sh`
 
 HZ6 allocator names in shared compare matrices:
 
@@ -48,7 +49,8 @@ HZ6 allocator names in shared compare matrices:
 - `hz6-aligned-target`: real aligned-allocation fallback profile/control DSO
 - `hz6-realloc-boundary-target`: fixed-boundary realloc-growth profile/control DSO
 - `hz6-small-boundary-target`: small/fixed-boundary profile/control DSO
-- `hz6-small-boundary-fast-target`: faster small/fixed-boundary profile/control DSO
+- `hz6-small-boundary-trusted-target`: preferred broad small/fixed-boundary profile/control DSO
+- `hz6-small-boundary-fast-target`: raw-push comparison small/fixed-boundary profile/control DSO
 
 Keep profile/control DSO results separate from selected-default HZ6 results.
 They are useful for targeted workloads, but they are not the default HZ6 lane.

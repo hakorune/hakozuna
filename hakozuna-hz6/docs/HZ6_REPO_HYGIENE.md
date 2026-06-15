@@ -165,6 +165,10 @@ HZ6_LANE_GUIDE.md:
 HZ6_UBUNTU_PRELOAD_LANES.md:
   Ubuntu LD_PRELOAD selected bundle, controls, no-go lanes, and raw evidence
 
+linux/hz6_preload_aliases.sh:
+  shared profile alias build helper for HZ6 matrix runners and the public
+  linux/run_linux_bench_compare_matrix.sh entrypoint
+
 HZ6_ELASTIC_CAPACITY_PLAN.md:
   source-depot / ElasticCapacity working-set decisions
 

@@ -21,6 +21,9 @@ Active HZ6 source cleanup lane:
 
 Full archived root history:
   docs/archive/current_task_2026-06-hz6_linux_history.md
+
+Detailed archived HZ6 pre-compaction ledger:
+  hakozuna-hz6/docs/archive/current_task_2026-06-16_pre_compaction.md
 ```
 
 ## Current Focus
@@ -114,8 +117,11 @@ Next allocator work:
       hakozuna-hz6/private/raw-results/linux/hz6_small_boundary_trusted_alias_smoke_20260616_015323
       hakozuna-hz6/private/raw-results/linux/hz6_small_boundary_trusted_focused_20260616_015341
       hakozuna-hz6/private/raw-results/linux/hz6_small_boundary_trusted_position_20260616_015331
+      hakozuna-hz6/private/raw-results/linux/hz6_trusted_profile_cross_20260616_020157
+      hakozuna-hz6/private/raw-results/linux/hz6_trusted_profile_fixed_20260616_020211
     read: trusted supersedes fast as the preferred broad small/fixed HZ6
-      profile. selected default remains unchanged.
+      profile. Latest repeat keeps trusted positive versus selected on focused
+      and fixed-mid rows; selected default remains unchanged.
 ```
 
 ## Recent Cleanup Commits
@@ -136,4 +142,6 @@ Do not add long chronological benchmark logs to this root file.
 Use current_task.md for orientation only.
 Use family-specific docs for selected/default/no-go lane decisions.
 Use docs/archive/current_task_2026-06-hz6_linux_history.md for old root notes.
+Use hakozuna-hz6/docs/archive/current_task_2026-06-16_pre_compaction.md for
+the detailed pre-compaction HZ6 ledger.
 ```

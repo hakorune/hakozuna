@@ -37,15 +37,18 @@ HZ6 also has profile/control LD_PRELOAD DSOs for workload-specific lanes:
 - `hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_target.sh`
 - `hakozuna-hz6/linux/build_hz6_preload_small_boundary_target.sh`
 - `hakozuna-hz6/linux/build_hz6_preload_small_boundary_fast_target.sh`
+- `hakozuna-hz6/linux/build_hz6_preload_small_boundary_trusted_target.sh`
 - `hakozuna-hz6/linux/build_hz6_preload_midpage_trusted_class_target.sh`
 
 These are not the selected default HZ6 allocator. In shared allocator matrices,
 use allocator name `hz6` for selected default. Use `hz6-toy-target` for
 Toy/mid-small workloads, `hz6-aligned-target` for real aligned allocation
 fallbacks, `hz6-realloc-boundary-target` for fixed-boundary realloc growth, and
-`hz6-small-boundary-target` / `hz6-small-boundary-fast-target` for known
-small/fixed-boundary profiles. Use `hz6-midpage-trusted-class` for the
-default-off MidPage trusted-class reuse control.
+`hz6-small-boundary-trusted-target` for the preferred broad small/fixed-boundary
+profile. Keep `hz6-small-boundary-fast-target` as a raw-push comparison/control
+and `hz6-small-boundary-target` as the older combined profile. Use
+`hz6-midpage-trusted-class` for the default-off MidPage trusted-class reuse
+control.
 
 ## Quick Start
 
@@ -191,13 +194,14 @@ The small-boundary profile DSOs are built by:
 ```bash
 ./hakozuna-hz6/linux/build_hz6_preload_small_boundary_target.sh
 ./hakozuna-hz6/linux/build_hz6_preload_small_boundary_fast_target.sh
+./hakozuna-hz6/linux/build_hz6_preload_small_boundary_trusted_target.sh
 ```
 
 The first combines Toy direct fast reuse with realloc-boundary slack.  The
 `fast` sibling also enables trusted-owner preload boundary and raw frontcache
-push code-shape controls.  Use `hz6-small-boundary-target` or
-`hz6-small-boundary-fast-target` only when the workload is known to favor
-small/fixed-boundary behavior; neither is the selected default `hz6` lane.
+push code-shape controls.  The `trusted` sibling keeps trusted-owner but leaves
+raw-push off; current HZ6 docs prefer it for broad small/fixed-boundary profile
+use.  None of these profile DSOs is the selected default `hz6` lane.
 
 ## HZ5 Full-Preload Research Lanes
 

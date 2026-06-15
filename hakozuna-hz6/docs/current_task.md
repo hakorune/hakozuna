@@ -101,15 +101,22 @@ Preferred broad small/fixed profile:
     private/raw-results/linux/hz6_small_boundary_trusted_alias_smoke_20260616_015323
     private/raw-results/linux/hz6_small_boundary_trusted_focused_20260616_015341
     private/raw-results/linux/hz6_small_boundary_trusted_position_20260616_015331
+    private/raw-results/linux/hz6_trusted_profile_cross_20260616_020157
+    private/raw-results/linux/hz6_trusted_profile_fixed_20260616_020211
 
   read:
-    16..256      selected 58.439M -> trusted 78.065M
-    16..4096     selected 36.312M -> trusted 42.438M
-    1024..4096   selected 33.111M -> trusted 39.308M
-    4096..16384  selected 45.165M -> trusted 45.215M
-    fixed_4k     selected 32.529M -> trusted 47.946M
-    fixed_8k     selected 43.820M -> trusted 47.314M
-    fixed_16k    selected 45.896M -> trusted 47.114M
+    16..256      selected 57.497M -> trusted 78.031M
+    16..4096     selected 34.912M -> trusted 42.391M
+    1024..4096   selected 33.926M -> trusted 39.045M
+    4096..16384  selected 41.774M -> trusted 45.363M
+    fixed_4k     selected 31.654M -> trusted 46.761M
+    fixed_8k     selected 40.717M -> trusted 45.079M
+    fixed_16k    selected 42.377M -> trusted 46.385M
+
+  comparison:
+    trusted beats tcmalloc/HZ4 on 4096..16384, fixed_8k, and fixed_16k speed.
+    trusted beats tcmalloc on fixed_4k speed in this read, but HZ3 remains the
+    speed/RSS frontier for tiny and most fixed-mid rows.
 
 Comparison/profile controls:
   hz6-small-boundary-fast-target

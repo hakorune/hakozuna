@@ -280,6 +280,29 @@ This promotes the recommendation inside profile space: prefer
 use, keep `hz6-small-boundary-fast-target` as a comparison/profile control, and
 keep selected/default unchanged.
 
+Trusted profile cross/fixed refresh:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_trusted_profile_cross_20260616_020157
+hakozuna-hz6/private/raw-results/linux/hz6_trusted_profile_fixed_20260616_020211
+```
+
+| row | selected hz6 | small-boundary trusted | best outside HZ6 in this read | read |
+| --- | ---: | ---: | ---: | --- |
+| `16..256` | `57.497M / 30.50 MiB` | `78.031M / 30.25 MiB` | `hz3 245.362M / 6.75 MiB` | trusted is a large HZ6 profile win, HZ3/tcmalloc/HZ4 still lead tiny |
+| `16..4096` | `34.912M / 79.62 MiB` | `42.391M / 80.12 MiB` | `tcmalloc 80.070M / 41.75 MiB` | trusted improves HZ6, but tcmalloc/HZ3/HZ4 lead speed/RSS |
+| `1024..4096` | `33.926M / 91.00 MiB` | `39.045M / 91.38 MiB` | `tcmalloc 77.067M / 49.75 MiB` | trusted improves HZ6, but tcmalloc/HZ3/HZ4 lead |
+| `4096..16384` | `41.774M / 94.25 MiB` | `45.363M / 94.25 MiB` | `hz3 52.572M / 73.38 MiB` | trusted beats tcmalloc/HZ4/mimalloc and improves selected with flat RSS |
+| `fixed_4k` | `31.654M / 91.88 MiB` | `46.761M / 92.50 MiB` | `hz3 58.861M / 68.50 MiB` | trusted beats tcmalloc/HZ4/mimalloc speed, HZ3 remains frontier |
+| `fixed_8k` | `40.717M / 93.25 MiB` | `45.079M / 93.12 MiB` | `hz3 53.583M / 69.88 MiB` | trusted beats tcmalloc/HZ4/mimalloc speed, HZ3 remains frontier |
+| `fixed_16k` | `42.377M / 93.12 MiB` | `46.385M / 93.00 MiB` | `hz3 43.583M / 73.00 MiB` | trusted beats all non-HZ3/HZ6 rows and edges HZ3 speed, with higher RSS |
+
+This reinforces the current position: `hz6-small-boundary-trusted-target` is
+the preferred broad HZ6 profile when small/fixed-boundary speed matters.
+Selected/default remains the balanced lane because the profile is workload
+specific and still carries HZ6-class RSS on rows where HZ3/tcmalloc have lower
+resident cost.
+
 ## Selected Read
 
 The current HZ6 Ubuntu selected lane has its clearest speed/RSS balance on
