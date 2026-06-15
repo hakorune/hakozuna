@@ -366,6 +366,13 @@
 #define HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY ((size_t)8192)
 #endif
 
+#ifndef HZ6_TOY_SMALL_ACTIVE_FREE_MAP_EXTERNAL_L1
+/* Control/profile RSS shape.  Keep the default inline table for the selected
+ * preload lane; externalize only in explicit profiles to remove the Toy map
+ * from the allocator's fixed static footprint. */
+#define HZ6_TOY_SMALL_ACTIVE_FREE_MAP_EXTERNAL_L1 0
+#endif
+
 #ifndef HZ6_TOY_SMALL_ACTIVE_FREE_MAP_PROBE_LIMIT
 #define HZ6_TOY_SMALL_ACTIVE_FREE_MAP_PROBE_LIMIT ((size_t)4)
 #endif

@@ -376,8 +376,12 @@ struct Hz6Allocator {
   uintptr_t toy_small_active_map_min_addr;
   uintptr_t toy_small_active_map_max_addr;
 #endif
+#if HZ6_TOY_SMALL_ACTIVE_FREE_MAP_EXTERNAL_L1
+  Hz6ToySmallActiveMapEntry* toy_small_active_map;
+#else
   Hz6ToySmallActiveMapEntry
       toy_small_active_map[HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY];
+#endif
 #endif
 #if HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2
   size_t midpage_active_map_current;

@@ -411,6 +411,9 @@ variant_flags() {
     toy_free_fast)
       hz6_preload_replace_define flags HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1 1
       ;;
+    toy_active_map_external)
+      hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_EXTERNAL_L1 1
+      ;;
     toy_addr_envelope)
       hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_MAP_ADDR_ENVELOPE_L1 1
       ;;

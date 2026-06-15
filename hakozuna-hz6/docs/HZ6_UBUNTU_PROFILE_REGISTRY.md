@@ -37,6 +37,7 @@ Use them by passing `--allocators`.
 | Alias | Builder | Reason |
 | --- | --- | --- |
 | `hz6-small-boundary-trusted-toy-map8192-target` | `build_hz6_preload_small_boundary_trusted_toy_map8192_target.sh` | Best fixed-boundary RSS profile, but mixed-small rows regress. |
+| `hz6-toy-map-external-target` | `build_hz6_preload_toy_map_external_target.sh` | RSS profile/control; cuts Toy active-map fixed storage but speed is mixed. |
 | `hz6-midpage-skip-transfer-target` | `build_hz6_preload_midpage_skip_transfer_target.sh` | Watch/control only; latest frontier regressed `16..4096` and `4096..16384`. |
 | `hz6-small-boundary-target` | `build_hz6_preload_small_boundary_target.sh` | Superseded by trusted profile for broad use. |
 | `hz6-small-boundary-fast-target` | `build_hz6_preload_small_boundary_fast_target.sh` | Raw-push component remains default-off. |

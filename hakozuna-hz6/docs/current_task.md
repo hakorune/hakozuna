@@ -57,7 +57,7 @@ Standard frontier:
   aligned / calloc-direct / calloc-real / calloc-large-real
 
 Explicit controls:
-  small-boundary-trusted-toy-map8192 / midpage-skip-transfer
+  small-boundary-trusted-toy-map8192 / toy-map-external / midpage-skip-transfer
 
 Runners:
   fixed_boundary_profile_frontier / preload_profile_frontier
@@ -140,5 +140,8 @@ Default no-go/control-only without substantially different evidence:
 11. 8K run shrink under Toy-map8192 RSS profile is no-go/control.
 12. MidPage skip-transfer is control/watch only: latest profile frontier loses
     16..4096 and 4096..16384 despite 1024..4096/fixed_16k signals.
-13. Keep this file below about 150 lines; archive completed evidence snapshots.
+13. Toy active-map external storage is a new RSS profile/control: it cuts
+    about 0.25..2.0 MiB peak RSS in focused/fixed production repeat, but keep
+    default-off until a broader profile-frontier guard is clean.
+14. Keep this file below about 150 lines; archive completed evidence snapshots.
 ```

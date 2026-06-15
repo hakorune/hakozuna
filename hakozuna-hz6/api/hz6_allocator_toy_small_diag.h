@@ -8,6 +8,7 @@
 #include "../fronts/hz6_front.h"
 
 #include <stdint.h>
+#include <stdlib.h>
 
 static inline int hz6_toy_small_hotpath_diag_is_toy_small(uint16_t front_id,
                                                           uint16_t class_id) {
@@ -282,6 +283,47 @@ static inline int hz6_toy_small_active_map_addr_maybe(
 }
 #endif
 
+static inline Hz6ToySmallActiveMapEntry* hz6_toy_small_active_map_entries(
+    Hz6Allocator* allocator) {
+  if (!allocator) {
+    return NULL;
+  }
+  return allocator->toy_small_active_map;
+}
+
+static inline Hz6ToySmallActiveMapEntry* hz6_toy_small_active_map_ensure(
+    Hz6Allocator* allocator) {
+  if (!allocator) {
+    return NULL;
+  }
+#if HZ6_TOY_SMALL_ACTIVE_FREE_MAP_EXTERNAL_L1
+  if (!allocator->toy_small_active_map) {
+    allocator->toy_small_active_map =
+        (Hz6ToySmallActiveMapEntry*)calloc(
+            HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY,
+            sizeof(Hz6ToySmallActiveMapEntry));
+  }
+#endif
+  return hz6_toy_small_active_map_entries(allocator);
+}
+
+static inline void hz6_toy_small_active_map_destroy(Hz6Allocator* allocator) {
+#if HZ6_TOY_SMALL_ACTIVE_FREE_MAP_EXTERNAL_L1
+  if (!allocator || !allocator->toy_small_active_map) {
+    return;
+  }
+  free(allocator->toy_small_active_map);
+  allocator->toy_small_active_map = NULL;
+  allocator->toy_small_active_map_current = 0;
+#if HZ6_TOY_SMALL_ACTIVE_MAP_ADDR_ENVELOPE_L1
+  allocator->toy_small_active_map_min_addr = 0;
+  allocator->toy_small_active_map_max_addr = 0;
+#endif
+#else
+  (void)allocator;
+#endif
+}
+
 static inline void hz6_toy_small_active_map_clear(
     Hz6Allocator* allocator,
     Hz6ToySmallActiveMapEntry* entry) {
@@ -310,11 +352,16 @@ static inline void hz6_toy_small_active_map_register(
       !hz6_toy_small_hotpath_diag_is_toy_small(front_id, class_id)) {
     return;
   }
+  Hz6ToySmallActiveMapEntry* entries =
+      hz6_toy_small_active_map_ensure(allocator);
+  if (!entries) {
+    return;
+  }
   hz6_toy_small_active_map_note_addr(allocator, ptr);
   size_t base_index = hz6_toy_small_active_map_index(ptr);
 #if HZ6_TOY_ACTIVE_MAP_REGISTER_FAST_SLOT_L1
   Hz6ToySmallActiveMapEntry* base_entry =
-      &allocator->toy_small_active_map[base_index];
+      &entries[base_index];
   if (!base_entry->ptr || base_entry->ptr == ptr) {
     if (!base_entry->ptr) {
       ++allocator->toy_small_active_map_current;
@@ -347,7 +394,7 @@ static inline void hz6_toy_small_active_map_register(
 #endif
     size_t index = hz6_toy_small_active_map_wrap(base_index + probe);
     Hz6ToySmallActiveMapEntry* candidate =
-        &allocator->toy_small_active_map[index];
+        &entries[index];
     if (candidate->ptr == ptr) {
       entry = candidate;
       break;
@@ -361,8 +408,7 @@ static inline void hz6_toy_small_active_map_register(
     saw_collision = 1;
   }
   if (!entry) {
-    entry = first_empty ? first_empty
-                        : &allocator->toy_small_active_map[base_index];
+    entry = first_empty ? first_empty : &entries[base_index];
   }
   if (!entry->ptr) {
     ++allocator->toy_small_active_map_current;
@@ -405,6 +451,11 @@ static inline int hz6_toy_small_active_map_try_free(Hz6Allocator* allocator,
   if (allocator->toy_small_active_map_current == 0) {
     return 0;
   }
+  Hz6ToySmallActiveMapEntry* entries =
+      hz6_toy_small_active_map_entries(allocator);
+  if (!entries) {
+    return 0;
+  }
   if (!hz6_toy_small_active_map_addr_maybe(allocator, ptr)) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.toy_small_active_map_free_miss;
@@ -422,7 +473,7 @@ static inline int hz6_toy_small_active_map_try_free(Hz6Allocator* allocator,
 #endif
 #if HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1
   Hz6ToySmallActiveMapEntry* base_entry =
-      &allocator->toy_small_active_map[base_index];
+      &entries[base_index];
 #if HZ6_DIAGNOSTIC_PROBES
   hit_probe_count = 1;
 #endif
@@ -439,7 +490,7 @@ static inline int hz6_toy_small_active_map_try_free(Hz6Allocator* allocator,
 #endif
       size_t index = hz6_toy_small_active_map_wrap(base_index + probe);
       Hz6ToySmallActiveMapEntry* candidate =
-          &allocator->toy_small_active_map[index];
+          &entries[index];
       if (candidate->ptr == ptr) {
         entry = candidate;
         break;
@@ -454,7 +505,7 @@ static inline int hz6_toy_small_active_map_try_free(Hz6Allocator* allocator,
 #endif
     size_t index = hz6_toy_small_active_map_wrap(base_index + probe);
     Hz6ToySmallActiveMapEntry* candidate =
-        &allocator->toy_small_active_map[index];
+        &entries[index];
     if (candidate->ptr == ptr) {
       entry = candidate;
 #if HZ6_DIAGNOSTIC_PROBES
