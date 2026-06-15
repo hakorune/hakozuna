@@ -342,6 +342,18 @@ variant_flags() {
       hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 1
       hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES 3072
       ;;
+    preload_toy_direct_class_min1025)
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MIN_BYTES 1025
+      ;;
+    preload_toy_direct_class_min2049)
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MIN_BYTES 2049
+      ;;
+    preload_toy_direct_class_min3073)
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MIN_BYTES 3073
+      ;;
     runroute_dryrun_after_maps)
       hz6_preload_replace_define flags HZ6_SOURCE_BLOCK_ROUTE_RANGE_INDEX_L1 1
       hz6_preload_replace_define flags HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_L1 1

@@ -625,6 +625,59 @@ Toy target DSO:
     The profile DSO is real and useful, but selected default remains the
     balanced DSO. Do not promote Toy direct-class into hz6_preload_flags.sh.
 
+  lower-bound gate follow-up:
+    Add HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MIN_BYTES as a default-off control
+    and runner variants:
+      preload_toy_direct_class_min1025
+      preload_toy_direct_class_min2049
+      preload_toy_direct_class_min3073
+
+    raw: private/raw-results/linux/hz6_toy_direct_class_min_gate_ab_20260616_001000
+    production repeat-9, 300K, focused+fixed:
+      16..4096:
+        selected     36.234M
+        direct       37.394M
+        min1025      36.362M
+        min2049      35.464M
+        min3073      35.696M
+      1024..4096:
+        selected     33.577M
+        direct       34.535M
+        min1025      34.208M
+        min2049      33.563M
+        min3073      33.427M
+      4096..16384:
+        selected     44.811M
+        direct       44.289M
+        min1025      43.204M
+        min2049      45.079M
+        min3073      44.698M
+      fixed_4k:
+        selected     31.949M
+        direct       33.156M
+        min1025      33.117M
+        min2049      33.530M
+        min3073      33.582M
+      fixed_8k:
+        selected     42.417M
+        direct       42.101M
+        min1025      42.659M
+        min2049      42.553M
+        min3073      42.782M
+      fixed_16k:
+        selected     44.475M
+        direct       44.385M
+        min1025      44.560M
+        min2049      44.624M
+        min3073      44.683M
+
+    read:
+      The min gate does not create a selected-default path. min1025 keeps only a
+      weak part of the mid-small win and is target-negative in this run.
+      min2049/min3073 recover target/fixed guards better but give up the
+      broad mid-small win. Keep the gate as a reusable control for profile
+      shaping; do not promote it into selected.
+
   runner integration:
     Add shared allocator alias:
       hz6-toy-target / hz6_toy_target

@@ -172,6 +172,24 @@ Use the Toy target DSO only as a profile/control lane. Do not add
 `HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1=1` to the selected flag bundle unless a
 future code shape also preserves `4096..16384` and `fixed_16k`.
 
+Lower-bound Toy direct-class gates were also tested as controls:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_toy_direct_class_min_gate_ab_20260616_001000
+```
+
+| row | selected | direct | min1025 | min2049 | min3073 | read |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| `16..4096` | `36.234M` | `37.394M` | `36.362M` | `35.464M` | `35.696M` | lower bounds mostly give up the profile win |
+| `1024..4096` | `33.577M` | `34.535M` | `34.208M` | `33.563M` | `33.427M` | `min1025` is useful only as a weak profile/control |
+| `4096..16384` | `44.811M` | `44.289M` | `43.204M` | `45.079M` | `44.698M` | guard recovery comes from excluding too much of the mid-small win |
+| `fixed_4k` | `31.949M` | `33.156M` | `33.117M` | `33.530M` | `33.582M` | fixed-boundary profile remains useful |
+| `fixed_8k` | `42.417M` | `42.101M` | `42.659M` | `42.553M` | `42.782M` | small positive control signal |
+| `fixed_16k` | `44.475M` | `44.385M` | `44.560M` | `44.624M` | `44.683M` | guard-safe but not enough for selected promotion |
+
+The lower-bound gate is not a selected-default escape hatch. Keep it available
+for runner A/B and profile shaping, but keep the selected DSO balanced.
+
 The stronger fixed-boundary profile combines Toy direct-class with realloc
 boundary slack:
 
