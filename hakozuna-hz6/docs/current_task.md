@@ -151,6 +151,19 @@ Comparison/profile controls:
   hz6-small-boundary-fast-target
     Useful comparison lane; latest trusted profile is more stable overall.
 
+  hz6-toy-trusted-target
+    Toy/mid-small trusted-owner profile without realloc-boundary slack.
+    Decomposition raw
+    private/raw-results/linux/hz6_trusted_profile_decomp_refresh_20260616_024517
+    shows this is the lighter broad profile candidate in the latest repeat:
+      16..256      selected 49.844M -> toy-trusted 64.721M
+      16..4096     selected 27.042M -> toy-trusted 32.528M
+      1024..4096   selected 25.191M -> toy-trusted 28.525M
+      4096..16384  selected 33.572M -> toy-trusted 34.607M
+      fixed_16k    selected 33.460M -> toy-trusted 34.877M
+    It does not replace small-boundary-trusted for fixed_4k/fixed_8k, but it
+    avoids the realloc-slack fixed_16k regression seen in this repeat.
+
   hz6-realloc-boundary-4k-target
   hz6-realloc-boundary-8k-target
     Exact fixed-boundary controls. Keep profile-only.
@@ -177,6 +190,8 @@ Profile alias helper:
   bench/lib/bench_common.sh resolves HZ6 profile DSOs through the shared
   bench_find_hz6_preload_output helper so new profile lanes do not duplicate
   arch/path fallback logic.
+  New alias smoke:
+    private/raw-results/linux/hz6_toy_trusted_alias_smoke_20260616_024753
 
 Profile builder helper:
   linux/hz6_preload_profile_builder.sh

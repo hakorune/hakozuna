@@ -157,6 +157,13 @@ bench_find_hz6_toy_target_library() {
     hz6-preload-toy-target
 }
 
+bench_find_hz6_toy_trusted_target_library() {
+  bench_find_hz6_preload_output \
+    HZ6_TOY_TRUSTED_TARGET_PRELOAD_SO \
+    hz6_preload_toy_trusted_target \
+    hz6-preload-toy-trusted-target
+}
+
 bench_find_hz6_aligned_target_library() {
   bench_find_hz6_preload_output \
     HZ6_ALIGNED_TARGET_PRELOAD_SO \
@@ -245,6 +252,9 @@ bench_find_allocator_library() {
     hz6-toy-target|hz6_toy_target)
       bench_find_hz6_toy_target_library
       ;;
+    hz6-toy-trusted-target|hz6_toy_trusted_target)
+      bench_find_hz6_toy_trusted_target_library
+      ;;
     hz6-aligned-target|hz6_aligned_target)
       bench_find_hz6_aligned_target_library
       ;;
@@ -310,6 +320,9 @@ bench_print_allocator_hints() {
       ;;
     hz6-toy-target|hz6_toy_target)
       echo "hint: build the HZ6 Toy target lane with './hakozuna-hz6/linux/build_hz6_preload_toy_target.sh' or set HZ6_TOY_TARGET_PRELOAD_SO" >&2
+      ;;
+    hz6-toy-trusted-target|hz6_toy_trusted_target)
+      echo "hint: build the HZ6 Toy trusted target lane with './hakozuna-hz6/linux/build_hz6_preload_toy_trusted_target.sh' or set HZ6_TOY_TRUSTED_TARGET_PRELOAD_SO" >&2
       ;;
     hz6-aligned-target|hz6_aligned_target)
       echo "hint: build the HZ6 aligned target lane with './hakozuna-hz6/linux/build_hz6_preload_aligned_target.sh' or set HZ6_ALIGNED_TARGET_PRELOAD_SO" >&2

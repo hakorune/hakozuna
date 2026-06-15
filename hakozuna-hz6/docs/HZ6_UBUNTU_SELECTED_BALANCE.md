@@ -336,6 +336,27 @@ focused and fixed rows. Diagnostic-speed shape is mixed, so use it only as
 safety/attribution evidence; keep the no-stats refresh above as the speed
 ranking read.
 
+Trusted-profile decomposition refresh:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_trusted_profile_decomp_refresh_20260616_024517
+```
+
+| row | selected hz6 | toy-trusted | small-boundary trusted | read |
+| --- | ---: | ---: | ---: | --- |
+| `16..256` | `49.844M / 30.50 MiB` | `64.721M / 30.50 MiB` | `65.406M / 30.50 MiB` | both profile shapes strong |
+| `16..4096` | `27.042M / 79.50 MiB` | `32.528M / 79.38 MiB` | `31.410M / 79.75 MiB` | toy-trusted wins and is lighter |
+| `1024..4096` | `25.191M / 91.00 MiB` | `28.525M / 90.88 MiB` | `28.849M / 91.38 MiB` | both strong; trusted slightly faster, toy-trusted lighter |
+| `4096..16384` | `33.572M / 94.12 MiB` | `34.607M / 93.88 MiB` | `34.690M / 94.00 MiB` | both improve target |
+| `fixed_4k` | `23.815M / 91.75 MiB` | `28.139M / 91.75 MiB` | `35.746M / 92.62 MiB` | small-boundary trusted remains the fixed_4k profile |
+| `fixed_8k` | `32.016M / 93.00 MiB` | `32.643M / 93.25 MiB` | `34.566M / 93.12 MiB` | small-boundary trusted remains the fixed_8k profile |
+| `fixed_16k` | `33.460M / 93.12 MiB` | `34.877M / 93.00 MiB` | `29.858M / 93.12 MiB` | toy-trusted avoids the realloc-slack regression in this repeat |
+
+This adds `hz6-toy-trusted-target` as a lighter named profile for mixed-small
+and target/fixed16 checks. It does not replace `hz6-small-boundary-trusted-target`
+for fixed_4k/fixed_8k workloads, and it is not selected/default without a
+cross-allocator/fixed guard refresh.
+
 Fixed_4k profile-position follow-up:
 
 | row | hz6 selected | realloc-4k profile | small-boundary target | trusted profile | read |
