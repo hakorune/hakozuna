@@ -877,6 +877,31 @@
 #define HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_NOINLINE_L1 0
 #endif
 
+#ifndef HZ6_MIDPAGE_32K_COLD_RETIRE_L1
+/* Default-off RSS control for cold MidPage 32K source blocks.  When the 32K
+ * frontcache reaches a high-water mark, an out-of-line helper can drain one or
+ * more all-local-free source blocks and release their backing. */
+#define HZ6_MIDPAGE_32K_COLD_RETIRE_L1 0
+#endif
+
+#ifndef HZ6_MIDPAGE_32K_COLD_RETIRE_HIGH_WATER
+#define HZ6_MIDPAGE_32K_COLD_RETIRE_HIGH_WATER ((size_t)2048)
+#endif
+
+#ifndef HZ6_MIDPAGE_32K_COLD_RETIRE_MAX_BLOCKS_PER_CALL
+#define HZ6_MIDPAGE_32K_COLD_RETIRE_MAX_BLOCKS_PER_CALL ((size_t)1)
+#endif
+
+#ifndef HZ6_MIDPAGE_32K_COLD_RETIRE_SCAN_BLOCKS_PER_CALL
+#define HZ6_MIDPAGE_32K_COLD_RETIRE_SCAN_BLOCKS_PER_CALL ((size_t)32)
+#endif
+
+#ifndef HZ6_MIDPAGE_32K_COLD_RETIRE_ACTIVE_LOW_WATER
+/* Retire only near quiescence by default.  Eager release reduced retained
+ * payload but caused immediate source churn on active MidPage workloads. */
+#define HZ6_MIDPAGE_32K_COLD_RETIRE_ACTIVE_LOW_WATER ((size_t)1)
+#endif
+
 #ifndef HZ6_PRELOAD_REALLOC_IN_PLACE_L1
 /* LD_PRELOAD realloc shortcut: if the requested size fits the current HZ6
  * usable descriptor bytes, return the same pointer instead of malloc/copy/free. */

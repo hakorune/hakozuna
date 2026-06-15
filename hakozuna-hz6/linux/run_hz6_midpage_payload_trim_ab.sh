@@ -169,6 +169,42 @@ variant_flags() {
     run2240k)
       hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 2293760
       ;;
+    cold_retire)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_RETIRE_L1 1
+      ;;
+    cold_retire_lw1)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_RETIRE_L1 1
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_RETIRE_ACTIVE_LOW_WATER 1
+      ;;
+    cold_retire_lw256)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_RETIRE_L1 1
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_RETIRE_ACTIVE_LOW_WATER 256
+      ;;
+    cold_retire_eager)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_RETIRE_L1 1
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_RETIRE_ACTIVE_LOW_WATER 65536
+      ;;
+    cold_retire_hw1024)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_RETIRE_L1 1
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_RETIRE_HIGH_WATER 1024
+      ;;
+    cold_retire_hw3072)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_RETIRE_L1 1
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_RETIRE_HIGH_WATER 3072
+      ;;
+    cold_retire_scan64)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_RETIRE_L1 1
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_RETIRE_SCAN_BLOCKS_PER_CALL 64
+      ;;
+    cold_retire_max2)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_RETIRE_L1 1
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_RETIRE_MAX_BLOCKS_PER_CALL 2
+      ;;
+    cold_retire_max16)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_RETIRE_L1 1
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_RETIRE_MAX_BLOCKS_PER_CALL 16
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_RETIRE_SCAN_BLOCKS_PER_CALL 256
+      ;;
     run2304k)
       hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 2359296
       ;;
@@ -300,8 +336,8 @@ print(f"root: `{root}`\n")
 readme = (root / "README.log").read_text(errors="replace")
 stats_mode = readme.split("stats=", 1)[1].splitlines()[0] if "stats=" in readme else "unknown"
 print(f"stats: `{stats_mode}`\n")
-print("| row | variant | median ops/s | median peak MiB | payload MiB | active source blocks | fail | source_alloc | mid32_alloc | mid32_prefill | mid32_filled | mid32_front_push |")
-print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+print("| row | variant | median ops/s | median peak MiB | payload MiB | active source blocks | fail | source_alloc | mid32_alloc | mid32_prefill | mid32_filled | mid32_front_push | retire blocks | retire MiB | retire fail |")
+print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 for row in rows:
     for variant in variants:
         ops_values = []
@@ -314,6 +350,9 @@ for row in rows:
         mid32_prefill = 0
         mid32_filled = 0
         mid32_front_push = 0
+        retire_blocks = 0
+        retire_mib = 0.0
+        retire_fail = 0
         for log in sorted((root / row).glob(f"*_{variant}.log")):
             text = log.read_text(errors="replace")
             ops = ops_re.search(text)
@@ -339,12 +378,20 @@ for row in rows:
             mid32_prefill += stats.get("midpage_32k_prefill_run_call", 0)
             mid32_filled += stats.get("midpage_32k_prefill_run_filled", 0)
             mid32_front_push += stats.get("midpage_32k_frontcache_push", 0)
+            retire_blocks += stats.get("midpage_32k_cold_retire_retired_blocks", 0)
+            retire_mib += stats.get("midpage_32k_cold_retire_retired_bytes", 0) / (
+                1024.0 * 1024.0
+            )
+            retire_fail += stats.get(
+                "midpage_32k_cold_retire_frontcache_remove_fail", 0
+            )
         median_ops = statistics.median(ops_values) if ops_values else 0.0
         median_peak = statistics.median(peak_values) if peak_values else 0.0
         print(
             f"| `{row}` | `{variant}` | {median_ops:.3f} | {median_peak:.2f} | "
             f"{payload_mib:.2f} | {active_source_blocks} | {fail} | "
             f"{source_alloc} | {mid32_alloc} | {mid32_prefill} | "
-            f"{mid32_filled} | {mid32_front_push} |"
+            f"{mid32_filled} | {mid32_front_push} | {retire_blocks} | "
+            f"{retire_mib:.2f} | {retire_fail} |"
         )
 PY

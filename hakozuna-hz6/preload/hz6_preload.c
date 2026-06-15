@@ -231,6 +231,14 @@ static void hz6_preload_print_stats(void) {
   size_t midpage_32k_preload_local_route_valid = 0;
   size_t midpage_8k_source_run_slot_route_register = 0;
   size_t midpage_32k_source_run_slot_route_register = 0;
+  size_t midpage_32k_cold_retire_attempt = 0;
+  size_t midpage_32k_cold_retire_scan_blocks = 0;
+  size_t midpage_32k_cold_retire_candidate_blocks = 0;
+  size_t midpage_32k_cold_retire_retired_blocks = 0;
+  size_t midpage_32k_cold_retire_retired_descriptors = 0;
+  size_t midpage_32k_cold_retire_retired_bytes = 0;
+  size_t midpage_32k_cold_retire_frontcache_remove_fail = 0;
+  size_t midpage_32k_cold_retire_blocked = 0;
   size_t smallrun_route_attempt = 0;
   size_t smallrun_range_hit = 0;
   size_t smallrun_active_slot_hit = 0;
@@ -527,6 +535,22 @@ static void hz6_preload_print_stats(void) {
         stats.midpage_8k_source_run_slot_route_register;
     midpage_32k_source_run_slot_route_register +=
         stats.midpage_32k_source_run_slot_route_register;
+    midpage_32k_cold_retire_attempt +=
+        stats.midpage_32k_cold_retire_attempt;
+    midpage_32k_cold_retire_scan_blocks +=
+        stats.midpage_32k_cold_retire_scan_blocks;
+    midpage_32k_cold_retire_candidate_blocks +=
+        stats.midpage_32k_cold_retire_candidate_blocks;
+    midpage_32k_cold_retire_retired_blocks +=
+        stats.midpage_32k_cold_retire_retired_blocks;
+    midpage_32k_cold_retire_retired_descriptors +=
+        stats.midpage_32k_cold_retire_retired_descriptors;
+    midpage_32k_cold_retire_retired_bytes +=
+        stats.midpage_32k_cold_retire_retired_bytes;
+    midpage_32k_cold_retire_frontcache_remove_fail +=
+        stats.midpage_32k_cold_retire_frontcache_remove_fail;
+    midpage_32k_cold_retire_blocked +=
+        stats.midpage_32k_cold_retire_blocked;
     smallrun_route_attempt += stats.smallrun_route_attempt;
     smallrun_range_hit += stats.smallrun_range_hit;
     smallrun_active_slot_hit += stats.smallrun_active_slot_hit;
@@ -882,7 +906,15 @@ static void hz6_preload_print_stats(void) {
           "midpage_8k_preload_local_route_valid=%zu "
           "midpage_32k_preload_local_route_valid=%zu "
           "midpage_8k_source_run_slot_route_register=%zu "
-          "midpage_32k_source_run_slot_route_register=%zu\n",
+          "midpage_32k_source_run_slot_route_register=%zu "
+          "midpage_32k_cold_retire_attempt=%zu "
+          "midpage_32k_cold_retire_scan_blocks=%zu "
+          "midpage_32k_cold_retire_candidate_blocks=%zu "
+          "midpage_32k_cold_retire_retired_blocks=%zu "
+          "midpage_32k_cold_retire_retired_descriptors=%zu "
+          "midpage_32k_cold_retire_retired_bytes=%zu "
+          "midpage_32k_cold_retire_frontcache_remove_fail=%zu "
+          "midpage_32k_cold_retire_blocked=%zu\n",
           midpage_8k_alloc_call, midpage_32k_alloc_call,
           midpage_8k_prefill_run_call, midpage_32k_prefill_run_call,
           midpage_8k_prefill_run_filled, midpage_32k_prefill_run_filled,
@@ -898,7 +930,15 @@ static void hz6_preload_print_stats(void) {
           midpage_8k_preload_local_route_valid,
           midpage_32k_preload_local_route_valid,
           midpage_8k_source_run_slot_route_register,
-          midpage_32k_source_run_slot_route_register);
+          midpage_32k_source_run_slot_route_register,
+          midpage_32k_cold_retire_attempt,
+          midpage_32k_cold_retire_scan_blocks,
+          midpage_32k_cold_retire_candidate_blocks,
+          midpage_32k_cold_retire_retired_blocks,
+          midpage_32k_cold_retire_retired_descriptors,
+          midpage_32k_cold_retire_retired_bytes,
+          midpage_32k_cold_retire_frontcache_remove_fail,
+          midpage_32k_cold_retire_blocked);
 
   fprintf(stderr,
           "[HZ6_PRELOAD_RUNMETA_DETAIL] "

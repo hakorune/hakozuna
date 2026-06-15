@@ -2,6 +2,214 @@
 
 #include "../fronts/midpage/hz6_midpage_front.h"
 
+#if HZ6_MIDPAGE_32K_COLD_RETIRE_L1
+#if defined(__GNUC__) || defined(__clang__)
+#define HZ6_MIDPAGE_32K_COLD_RETIRE_NOINLINE __attribute__((noinline))
+#else
+#define HZ6_MIDPAGE_32K_COLD_RETIRE_NOINLINE
+#endif
+
+typedef struct Hz6MidPage32KColdRetireCounts {
+  size_t active;
+  size_t local_free;
+  size_t transfer_free;
+  size_t remote_pending;
+  size_t descriptor_refs;
+  size_t frontcache_entries;
+} Hz6MidPage32KColdRetireCounts;
+
+static void hz6_allocator_midpage_32k_cold_retire_count_block(
+    Hz6Allocator* allocator,
+    Hz6SourceBlock* block,
+    Hz6MidPage32KColdRetireCounts* counts) {
+  if (!allocator || !block || !counts) {
+    return;
+  }
+
+  for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
+    Hz6ObjectDescriptor* descriptor = &allocator->descriptors[i];
+    if (descriptor->source_block != block ||
+        descriptor->class_id != HZ6_MIDPAGE_32K_CLASS_ID) {
+      continue;
+    }
+    switch (descriptor->state) {
+      case HZ6_STATE_ACTIVE:
+        ++counts->active;
+        ++counts->descriptor_refs;
+        break;
+      case HZ6_STATE_LOCAL_FREE:
+        ++counts->local_free;
+        ++counts->descriptor_refs;
+        break;
+      case HZ6_STATE_TRANSFER_FREE:
+        ++counts->transfer_free;
+        ++counts->descriptor_refs;
+        break;
+      case HZ6_STATE_REMOTE_PENDING:
+        ++counts->remote_pending;
+        ++counts->descriptor_refs;
+        break;
+      default:
+        break;
+    }
+  }
+
+  Hz6FrontCacheBin* bin =
+      &allocator->frontcache_bins[HZ6_MIDPAGE_32K_CLASS_ID];
+  for (size_t i = 0; bin->entries && i < bin->count; ++i) {
+    Hz6FrontCacheEntry* entry = &bin->entries[i];
+    Hz6ObjectDescriptor* descriptor =
+        (Hz6ObjectDescriptor*)entry->descriptor;
+    if (descriptor && descriptor->source_block == block &&
+        descriptor->class_id == HZ6_MIDPAGE_32K_CLASS_ID &&
+        descriptor->state == HZ6_STATE_LOCAL_FREE &&
+        descriptor->ptr == entry->ptr &&
+        descriptor->generation == entry->generation) {
+      ++counts->frontcache_entries;
+    }
+  }
+}
+
+static int hz6_allocator_midpage_32k_cold_retire_candidate(
+    Hz6SourceBlock* block,
+    const Hz6MidPage32KColdRetireCounts* counts) {
+  if (!block || !counts || !hz6_source_block_active(block) || !block->ptr ||
+      counts->active != 0 || counts->transfer_free != 0 ||
+      counts->remote_pending != 0 || counts->local_free == 0 ||
+      counts->descriptor_refs != counts->local_free ||
+      counts->frontcache_entries != counts->local_free ||
+      hz6_source_block_ref_count(block) != counts->local_free) {
+    return 0;
+  }
+  return 1;
+}
+
+static size_t hz6_allocator_midpage_32k_cold_retire_block(
+    Hz6Allocator* allocator,
+    Hz6SourceBlock* block,
+    size_t expected_entries,
+    size_t* retired_bytes) {
+  if (retired_bytes) {
+    *retired_bytes = 0;
+  }
+  if (!allocator || !block || expected_entries == 0) {
+    return 0;
+  }
+
+  size_t payload_bytes = block->bytes;
+  size_t retired = 0;
+  while (retired < expected_entries) {
+    Hz6FrontCacheBin* bin =
+        &allocator->frontcache_bins[HZ6_MIDPAGE_32K_CLASS_ID];
+    size_t found = bin->count;
+    for (size_t i = 0; bin->entries && i < bin->count; ++i) {
+      Hz6FrontCacheEntry* entry = &bin->entries[i];
+      Hz6ObjectDescriptor* descriptor =
+          (Hz6ObjectDescriptor*)entry->descriptor;
+      if (descriptor && descriptor->source_block == block &&
+          descriptor->class_id == HZ6_MIDPAGE_32K_CLASS_ID &&
+          descriptor->state == HZ6_STATE_LOCAL_FREE &&
+          descriptor->ptr == entry->ptr &&
+          descriptor->generation == entry->generation) {
+        found = i;
+        break;
+      }
+    }
+
+    if (found >= bin->count) {
+      ++allocator->stats.midpage_32k_cold_retire_frontcache_remove_fail;
+      return retired;
+    }
+
+    Hz6FrontCacheEntry entry = bin->entries[found];
+    Hz6ObjectDescriptor* descriptor =
+        (Hz6ObjectDescriptor*)entry.descriptor;
+    Hz6FrontCacheEntry removed = {0};
+    if (!hz6_allocator_frontcache_remove(
+            allocator, HZ6_MIDPAGE_32K_CLASS_ID, entry.ptr, descriptor,
+            entry.generation, &removed)) {
+      ++allocator->stats.midpage_32k_cold_retire_frontcache_remove_fail;
+      return retired;
+    }
+
+    descriptor->state = HZ6_STATE_DEAD;
+    hz6_allocator_route_unregister_exact_reason(
+        allocator, entry.ptr, HZ6_ROUTE_UNREGISTER_REASON_SOURCE_SLOT_RELEASE);
+#if HZ6_DIAGNOSTIC_PROBES
+    if (hz6_allocator_descriptor_has_source_release(allocator, descriptor)) {
+      ++allocator->stats.source_owned_release;
+    }
+#endif
+    hz6_allocator_release_descriptor_source(allocator, descriptor);
+    ++retired;
+  }
+
+  if (retired_bytes) {
+    *retired_bytes = payload_bytes;
+  }
+  return retired;
+}
+
+static HZ6_MIDPAGE_32K_COLD_RETIRE_NOINLINE void
+hz6_allocator_midpage_32k_cold_retire_maybe(Hz6Allocator* allocator) {
+  if (!allocator ||
+      hz6_allocator_frontcache_count(allocator, HZ6_MIDPAGE_32K_CLASS_ID) <
+          HZ6_MIDPAGE_32K_COLD_RETIRE_HIGH_WATER) {
+    return;
+  }
+#if HZ6_MIDPAGE_ACTIVE_FREE_MAP_L2
+  if (allocator->midpage_active_map_current >
+      HZ6_MIDPAGE_32K_COLD_RETIRE_ACTIVE_LOW_WATER) {
+    return;
+  }
+#endif
+
+  ++allocator->stats.midpage_32k_cold_retire_attempt;
+  size_t retired_blocks = 0;
+  size_t scanned = 0;
+  size_t cursor = allocator->midpage_32k_cold_retire_cursor;
+  while (scanned < HZ6_MIDPAGE_32K_COLD_RETIRE_SCAN_BLOCKS_PER_CALL &&
+         retired_blocks < HZ6_MIDPAGE_32K_COLD_RETIRE_MAX_BLOCKS_PER_CALL) {
+    size_t index = cursor % HZ6_SOURCE_BLOCK_CAPACITY;
+    Hz6SourceBlock* block = &allocator->source_blocks[index];
+    ++scanned;
+    ++cursor;
+    ++allocator->stats.midpage_32k_cold_retire_scan_blocks;
+
+    if (!hz6_source_block_active(block) || !block->ptr) {
+      continue;
+    }
+
+    Hz6MidPage32KColdRetireCounts counts = {0};
+    hz6_allocator_midpage_32k_cold_retire_count_block(allocator, block,
+                                                      &counts);
+    if (!hz6_allocator_midpage_32k_cold_retire_candidate(block, &counts)) {
+      ++allocator->stats.midpage_32k_cold_retire_blocked;
+      continue;
+    }
+
+    ++allocator->stats.midpage_32k_cold_retire_candidate_blocks;
+    size_t retired_bytes = 0;
+    size_t retired_descriptors =
+        hz6_allocator_midpage_32k_cold_retire_block(
+            allocator, block, counts.frontcache_entries, &retired_bytes);
+    if (retired_descriptors != counts.frontcache_entries) {
+      ++allocator->stats.midpage_32k_cold_retire_blocked;
+      break;
+    }
+
+    ++retired_blocks;
+    ++allocator->stats.midpage_32k_cold_retire_retired_blocks;
+    allocator->stats.midpage_32k_cold_retire_retired_descriptors +=
+        retired_descriptors;
+    allocator->stats.midpage_32k_cold_retire_retired_bytes += retired_bytes;
+  }
+
+  allocator->midpage_32k_cold_retire_cursor =
+      cursor % HZ6_SOURCE_BLOCK_CAPACITY;
+}
+#endif
+
 #if HZ6_DESCRIPTORLESS_OVER_CAP_ONLY_L1 || HZ6_DESCRIPTOR_COLD_GOV_L1
 static int hz6_allocator_frontcache_class_over_soft_cap(
     Hz6Allocator* allocator,
@@ -157,6 +365,11 @@ int hz6_allocator_cache_active_descriptor(Hz6Allocator* allocator,
 #endif
 
   if (hz6_allocator_frontcache_push(allocator, entry_class_id, entry)) {
+#if HZ6_MIDPAGE_32K_COLD_RETIRE_L1
+    if (entry_class_id == HZ6_MIDPAGE_32K_CLASS_ID) {
+      hz6_allocator_midpage_32k_cold_retire_maybe(allocator);
+    }
+#endif
     return 1;
   }
 
@@ -214,6 +427,11 @@ int hz6_allocator_cache_active_descriptor_trusted_owner(
   const uint16_t entry_class_id = hz6_frontcache_entry_class_id(&entry);
 
   if (hz6_allocator_frontcache_push(allocator, entry_class_id, entry)) {
+#if HZ6_MIDPAGE_32K_COLD_RETIRE_L1
+    if (entry_class_id == HZ6_MIDPAGE_32K_CLASS_ID) {
+      hz6_allocator_midpage_32k_cold_retire_maybe(allocator);
+    }
+#endif
     return 1;
   }
 

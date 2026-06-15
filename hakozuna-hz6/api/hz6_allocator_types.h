@@ -360,6 +360,9 @@ struct Hz6Allocator {
 #endif
   size_t descgov_detached_budget_used;
   size_t depot_descriptor_rehome_budget_used;
+#if HZ6_MIDPAGE_32K_COLD_RETIRE_L1
+  size_t midpage_32k_cold_retire_cursor;
+#endif
 #if HZ6_TOY_SMALL_ACTIVE_FREE_MAP_L1
   size_t toy_small_active_map_current;
 #if HZ6_TOY_SMALL_ACTIVE_MAP_ADDR_ENVELOPE_L1

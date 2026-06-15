@@ -589,12 +589,73 @@ Source modularity:
   core HZ6 modules remain healthy.
   preload/hz6_preload_hooks.c now owns libc hook control flow and allocator
   route/free/realloc behavior.
-  preload/hz6_preload.c is below the large-source threshold and owns preload
-  stats aggregation/printing plus allocator registry state.
+  preload/hz6_preload.c owns preload stats aggregation/printing plus allocator
+  registry state and is above the old 1000-line cleanup note after the recent
+  diagnostic additions.
   preload/hz6_preload_stats.h is the narrow shared hook/stats boundary.
-  A later cleanup-only pass can split stats printing into
-  preload/hz6_preload_stats.c if the diagnostic body grows again.
+  A later cleanup-only pass should split stats printing into
+  preload/hz6_preload_stats.c.
 
 Do not append long run logs here. Promote stable conclusions into the focused
 HZ6 docs and move raw chronological evidence to archive docs.
+```
+
+## Active Task: HZ6 Ubuntu MidPage 32K Cold Retire Behavior-L1
+
+```text
+goal:
+  Convert the proven MidPageColdSourceBlockRetireDryRun-L1 evidence into a
+  default-off behavior control and measure the speed/RSS tradeoff.
+
+evidence:
+  raw: private/raw-results/linux/hz6_midpage_rss_audit_20260615_172905
+  4096..16384 has 354.00 MiB of MidPage 32K retire-candidate payload,
+  11328 candidate descriptors, 11328 matching frontcache entries, and
+  ref mismatch=0.
+
+design:
+  Keep selected/default unchanged.
+  Add HZ6_MIDPAGE_32K_COLD_RETIRE_L1 as a behavior control.
+  Trigger only when class5 frontcache reaches a high-water mark and the
+  MidPage active-map is near quiescence.
+  Use a noinline helper with bounded source-block scan and max blocks per call.
+  Candidate must be all local-free, no active/transfer/remote descriptors,
+  ref_count must match local-free descriptors, and every descriptor must have a
+  matching class5 frontcache entry before release begins.
+
+acceptance:
+  R1 smokes pass.
+  fail counters stay zero.
+  4096..16384 RSS drops materially.
+  Guard rows do not regress enough to justify keeping the lane control-only.
+
+first read:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_173814
+  Eager high-water retire is too aggressive. It retired 3267 blocks / 6534 MiB
+  cumulatively on 4096..16384, but peak RSS only moved 94.00 -> 93.38 MiB while
+  source_alloc jumped 723 -> 3831 and speed fell sharply. Keep eager as a
+  negative control; behavior needs quiescent or low-active gating.
+
+second read:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_173940
+  Quiescent/active_low_water=1 stopped source churn but retired only 12 blocks
+  cumulatively on 4096..16384 because max blocks per call was 1.
+  active_low_water=256 behaved like eager and is not viable.
+
+third read:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_174116
+  max16 quiescent retired 192 blocks / 384 MiB cumulatively without increasing
+  source_alloc, but still paid release cost in the timed path.
+
+production shape:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_174140
+  stats-off repeat-5:
+    4096..16384 selected 32.246M / 93.88 MiB
+    cold_retire 30.679M / 94.00 MiB
+    cold_retire_max16 27.628M / 93.88 MiB
+    cold_retire_eager 9.979M / 93.12 MiB
+  decision:
+    keep HZ6_MIDPAGE_32K_COLD_RETIRE_L1 as a default-off control/no-go for
+    selected. Free-path source-block release does not improve maxRSS enough
+    and release cost is visible even when source churn is avoided.
 ```
