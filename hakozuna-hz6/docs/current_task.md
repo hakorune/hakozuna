@@ -86,6 +86,9 @@ Alias/helper ownership:
   linux/hz6_preload_aliases.sh
   linux/hz6_preload_profile_builder.sh
   bench/lib/bench_common.sh
+
+Profile frontier runner:
+  linux/run_hz6_preload_profile_frontier.sh
 ```
 
 ## Key Raw Results
