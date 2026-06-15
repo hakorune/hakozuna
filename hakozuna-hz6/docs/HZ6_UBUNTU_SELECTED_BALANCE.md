@@ -601,6 +601,21 @@ profile-specific RSS view, not cold-retire default behavior. Payload retire is
 still control/no-go because prior behavior removed neither peak RSS nor speed
 risk.
 
+Selected-under fixed-floor ladder smoke:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_static_table_trim_ab_20260616_054020
+```
+
+The static-table runner now supports `--rows` and `--variants` for focused
+fixed-floor checks. Repeat-3/80k kept `route_fail=0`, `descriptor_exhausted=0`,
+`source_block_exhausted=0`, and `malloc_real_fallback=0` for selected-under
+controls. `route32768` is the first candidate: it cut about `5 MiB` peak RSS
+across focused/fixed rows and was speed-positive on `16..4096`,
+`4096..16384`, `fixed_4k`, and `fixed_8k`; it was slightly weak on
+`1024..4096` and `fixed_16k`. Treat it as a candidate/control only until a
+thicker focused+fixed repeat confirms the guard shape.
+
 Hot-path attribution refresh:
 
 ```text
