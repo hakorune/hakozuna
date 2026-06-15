@@ -8,6 +8,8 @@
 #include "hz6_preload_stats.h"
 #include "linux_source_mmap.h"
 
+#include "../fronts/hz6_front.h"
+
 #include <errno.h>
 #include <malloc.h>
 #include <pthread.h>
@@ -330,6 +332,41 @@ static size_t hz6_preload_usable_size(Hz6Allocator* allocator,
       (const Hz6ObjectDescriptor*)preload_route.route.descriptor;
   return descriptor->bytes;
 }
+
+#if !HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1
+static void hz6_preload_note_realloc_copy_class(Hz6PreloadRoute route,
+                                                size_t new_size) {
+  uint16_t new_class_id = 0;
+  const Hz6FrontOps* new_front =
+      hz6_front_for_allocation(new_size, 16, &new_class_id);
+  if (new_front && new_front->front_id == route.route.front_id &&
+      new_class_id == route.route.class_id) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.realloc_copy_same_class);
+    return;
+  }
+
+  hz6_preload_phase_count(
+      &g_hz6_preload_phase_stats.realloc_copy_cross_class);
+  if (route.route.front_id == HZ6_FRONT_TOY &&
+      new_front && new_front->front_id == HZ6_FRONT_MIDPAGE) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.realloc_copy_boundary_toy_to_midpage);
+  } else if (route.route.front_id == HZ6_FRONT_MIDPAGE &&
+             route.route.class_id == HZ6_MIDPAGE_8K_CLASS_ID &&
+             new_front && new_front->front_id == HZ6_FRONT_MIDPAGE &&
+             new_class_id == HZ6_MIDPAGE_32K_CLASS_ID) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.realloc_copy_boundary_mid8_to_mid32);
+  } else if (route.route.front_id == HZ6_FRONT_MIDPAGE &&
+             new_front && new_front->front_id == HZ6_FRONT_LARGE) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.realloc_copy_boundary_midpage_to_large);
+  }
+}
+#else
+#define hz6_preload_note_realloc_copy_class(route, new_size) ((void)0)
+#endif
 
 #if HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_NOINLINE_L1
 #if defined(__GNUC__) || defined(__clang__)
@@ -868,6 +905,7 @@ void* realloc(void* ptr, size_t size) {
   hz6_preload_phase_count(&g_hz6_preload_phase_stats.realloc_copy_calls);
   hz6_preload_phase_add(&g_hz6_preload_phase_stats.realloc_copy_bytes,
                         copy_bytes);
+  hz6_preload_note_realloc_copy_class(preload_route, size);
   memcpy(next, ptr, copy_bytes);
   free(ptr);
   return next;

@@ -60,6 +60,11 @@ typedef struct Hz6PreloadPhaseStats {
   _Atomic(size_t) realloc_real_fallback;
   _Atomic(size_t) realloc_copy_calls;
   _Atomic(size_t) realloc_copy_bytes;
+  _Atomic(size_t) realloc_copy_same_class;
+  _Atomic(size_t) realloc_copy_cross_class;
+  _Atomic(size_t) realloc_copy_boundary_toy_to_midpage;
+  _Atomic(size_t) realloc_copy_boundary_mid8_to_mid32;
+  _Atomic(size_t) realloc_copy_boundary_midpage_to_large;
   _Atomic(size_t) realloc_request_zero;
   _Atomic(size_t) realloc_request_le1024;
   _Atomic(size_t) realloc_request_1025_4096;

@@ -1362,7 +1362,12 @@ static void hz6_preload_print_stats(void) {
           "realloc_owned_old_1025_4096=%zu "
           "realloc_owned_old_4097_16384=%zu "
           "realloc_owned_old_gt16384=%zu "
-          "realloc_copy_calls=%zu\n",
+          "realloc_copy_calls=%zu "
+          "realloc_copy_same_class=%zu "
+          "realloc_copy_cross_class=%zu "
+          "realloc_copy_boundary_toy_to_midpage=%zu "
+          "realloc_copy_boundary_mid8_to_mid32=%zu "
+          "realloc_copy_boundary_midpage_to_large=%zu\n",
           hz6_preload_phase_load(
               &g_hz6_preload_phase_stats.malloc_size_zero),
           hz6_preload_phase_load(
@@ -1404,7 +1409,19 @@ static void hz6_preload_print_stats(void) {
           hz6_preload_phase_load(
               &g_hz6_preload_phase_stats.realloc_owned_old_gt16384),
           hz6_preload_phase_load(
-              &g_hz6_preload_phase_stats.realloc_copy_calls));
+              &g_hz6_preload_phase_stats.realloc_copy_calls),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.realloc_copy_same_class),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.realloc_copy_cross_class),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats
+                   .realloc_copy_boundary_toy_to_midpage),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.realloc_copy_boundary_mid8_to_mid32),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats
+                   .realloc_copy_boundary_midpage_to_large));
 
   fprintf(stderr,
           "[HZ6_PRELOAD_WRAPPER_SIZE_DETAIL] "

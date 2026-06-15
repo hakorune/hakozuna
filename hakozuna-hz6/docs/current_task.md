@@ -179,6 +179,44 @@ decision:
   Do not add a new realloc capacity-growth behavior: the safe capacity check is
   already represented by descriptor->bytes.  Boundary-growth copies require a
   different allocation policy, not a realloc hotfix.
+
+follow-up diagnostic:
+  Add realloc copy class attribution:
+    realloc_copy_same_class
+    realloc_copy_cross_class
+    realloc_copy_boundary_toy_to_midpage
+    realloc_copy_boundary_mid8_to_mid32
+    realloc_copy_boundary_midpage_to_large
+
+  Production selected keeps HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1=1, so the
+  classification is compiled out unless stats/diagnostic runners preserve phase
+  counters.
+
+  raw: private/raw-results/linux/hz6_realloc_copy_class_audit_20260615_230209
+  selected, stats-on, repeat-3, 200K:
+    16..4096:
+      copy_calls median 102
+      same_class 0
+      cross_class 102
+      toy_to_midpage 27
+    4096..16384:
+      copy_calls median 11
+      same_class 0
+      cross_class 11
+      mid8_to_mid32 11
+    fixed_4k:
+      copy_calls median 6356
+      toy_to_midpage 6356
+    fixed_8k:
+      copy_calls median 6356
+      mid8_to_mid32 6356
+    fixed_16k:
+      copy_calls median 0
+
+decision:
+  Remaining realloc copy pressure is boundary-crossing, not missed same-class
+  in-place.  Any next behavior would be an allocation-policy/profile lane
+  around boundary slack, not a realloc correctness shortcut.
 ```
 
 ## Previous Closeout: HZ6 Ubuntu Preload Wrapper Attribution-L1

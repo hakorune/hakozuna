@@ -540,6 +540,7 @@ def parse_stats(text):
             or line.startswith("[HZ6_PRELOAD_RUNMETA_DETAIL]")
             or line.startswith("[HZ6_PRELOAD_MIDPAGE_CLASS_DETAIL]")
             or line.startswith("[HZ6_PRELOAD_MEMORY_ATTR]")
+            or line.startswith("[HZ6_PRELOAD_SIZE_STATS]")
         ):
             out.update({k: int(v) for k, v in kv_re.findall(line)})
     return out
@@ -549,8 +550,8 @@ print(f"root: `{root}`\n")
 readme = (root / "README.log").read_text(errors="replace")
 stats_mode = readme.split("stats=", 1)[1].splitlines()[0] if "stats=" in readme else "unknown"
 print(f"stats: `{stats_mode}`\n")
-print("| row | variant | median ops/s | median peak MiB | median current MiB | scavenge count/result | payload MiB | active source blocks | fail | source_alloc | mid32_alloc | mid32_prefill | mid32_filled | mid32_front_push | toy4 fast | toy4 hit | toy4 front | toy4 pop | toy4 activate | toy4 free attempt | toy4 free success | toy4 map reg | toy4 collision | toy4 free hit | toy4 free base % | toy4 free avg probe | toy4 free max probe | runroute attempt | runroute hit | runroute prechecked | runroute fallback | retire attempt | retire scan | retire candidates | retire blocks | retire desc | retire MiB | retire blocked | retire fail |")
-print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+print("| row | variant | median ops/s | median peak MiB | median current MiB | scavenge count/result | payload MiB | active source blocks | fail | source_alloc | realloc copy | realloc same-class | realloc cross-class | realloc toy->mid | realloc mid8->mid32 | mid32_alloc | mid32_prefill | mid32_filled | mid32_front_push | toy4 fast | toy4 hit | toy4 front | toy4 pop | toy4 activate | toy4 free attempt | toy4 free success | toy4 map reg | toy4 collision | toy4 free hit | toy4 free base % | toy4 free avg probe | toy4 free max probe | runroute attempt | runroute hit | runroute prechecked | runroute fallback | retire attempt | retire scan | retire candidates | retire blocks | retire desc | retire MiB | retire blocked | retire fail |")
+print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 for row in rows:
     for variant in variants:
         ops_values = []
@@ -559,6 +560,11 @@ for row in rows:
         scavenge_released = 0
         fail = 0
         source_alloc = 0
+        realloc_copy = 0
+        realloc_same_class = 0
+        realloc_cross_class = 0
+        realloc_toy_to_mid = 0
+        realloc_mid8_to_mid32 = 0
         payload_mib = 0.0
         active_source_blocks = 0
         mid32_alloc = 0
@@ -610,6 +616,15 @@ for row in rows:
             fail += stats.get("source_block_exhausted", 0)
             fail += stats.get("malloc_real_fallback", 0)
             source_alloc += stats.get("source_alloc", 0)
+            realloc_copy += stats.get("realloc_copy_calls", 0)
+            realloc_same_class += stats.get("realloc_copy_same_class", 0)
+            realloc_cross_class += stats.get("realloc_copy_cross_class", 0)
+            realloc_toy_to_mid += stats.get(
+                "realloc_copy_boundary_toy_to_midpage", 0
+            )
+            realloc_mid8_to_mid32 += stats.get(
+                "realloc_copy_boundary_mid8_to_mid32", 0
+            )
             payload_mib = max(
                 payload_mib,
                 stats.get("source_block_payload_bytes", 0) / (1024.0 * 1024.0),
@@ -678,7 +693,9 @@ for row in rows:
             f"| `{row}` | `{variant}` | {median_ops:.3f} | {median_peak:.2f} | "
             f"{median_current:.2f} | {scavenge_released} | "
             f"{payload_mib:.2f} | {active_source_blocks} | {fail} | "
-            f"{source_alloc} | {mid32_alloc} | {mid32_prefill} | "
+            f"{source_alloc} | {realloc_copy} | {realloc_same_class} | "
+            f"{realloc_cross_class} | {realloc_toy_to_mid} | "
+            f"{realloc_mid8_to_mid32} | {mid32_alloc} | {mid32_prefill} | "
             f"{mid32_filled} | {mid32_front_push} | {toy4_fast} | "
             f"{toy4_hit} | {toy4_front} | {toy4_pop} | {toy4_activate} | "
             f"{toy4_free_attempt} | {toy4_free_success} | {toy4_map_reg} | "
