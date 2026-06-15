@@ -19,6 +19,7 @@ benchmark lane or source-level experiment.
 | Windows lane registry cleanup | `HZ6_WINDOWS_LANE_REGISTRY.md` |
 | Source/module cleanup plan | `HZ6_SOURCE_MODULARIZATION.md` |
 | Archived experiment ledger | `archive/current_task_2026-06_history.md` |
+| Archived 2026-06-16 pre-compaction ledger | `archive/current_task_2026-06-16_pre_compaction.md` |
 
 Rule:
 
@@ -171,7 +172,10 @@ current_task.md:
   short orientation entry point
 
 archive/current_task_2026-06_history.md:
-  historical ledger and detailed experimental notes
+  older historical ledger and detailed experimental notes
+
+archive/current_task_2026-06-16_pre_compaction.md:
+  detailed Ubuntu HZ6 optimization ledger before current_task.md was compacted
 ```
 
 Benchmark result storage policy:

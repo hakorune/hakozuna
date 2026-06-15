@@ -537,5 +537,8 @@ HZ6_UBUNTU_PRELOAD_LANES.md:
   selected/default/control/no-go summary only
 
 current_task.md:
-  detailed chronological experiment ledger
+  short active orientation only
+
+archive/current_task_2026-06-16_pre_compaction.md:
+  detailed chronological experiment ledger before compaction
 ```
