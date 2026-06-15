@@ -77,6 +77,8 @@ SELECTED_SO="${OUTDIR}/build/selected/libhakozuna_hz6_preload.so"
 PHASE_SO="${OUTDIR}/build/phase_count_on/libhakozuna_hz6_preload.so"
 REAL_CALLOC_SO="${OUTDIR}/build/real_calloc_fallback/libhakozuna_hz6_preload.so"
 REAL_CALLOC_STATS_SO="${OUTDIR}/build/real_calloc_fallback_stats/libhakozuna_hz6_preload.so"
+REAL_CALLOC_FREE_SKIP_SO="${OUTDIR}/build/real_calloc_fallback_free_skip/libhakozuna_hz6_preload.so"
+REAL_CALLOC_FREE_SKIP_STATS_SO="${OUTDIR}/build/real_calloc_fallback_free_skip_stats/libhakozuna_hz6_preload.so"
 
 mkdir -p "$OUTDIR"
 
@@ -110,6 +112,19 @@ build_preloads() {
     HZ6_PRELOAD_DEFAULT_CFLAGS="$(hz6_preload_join_flags "${real_calloc_stats_flags[@]}")" \
     "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
     > "${OUTDIR}/real_calloc_fallback_stats_build.log" 2>&1
+  local real_calloc_free_skip_prod_flags=("${real_calloc_prod_flags[@]}")
+  hz6_preload_replace_define real_calloc_free_skip_prod_flags \
+    HZ6_PRELOAD_CALLOC_REAL_FREE_SKIP_L1 1
+  OUT_DIR="${OUTDIR}/build/real_calloc_fallback_free_skip" \
+    HZ6_PRELOAD_DEFAULT_CFLAGS="$(hz6_preload_join_flags "${real_calloc_free_skip_prod_flags[@]}")" \
+    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
+    > "${OUTDIR}/real_calloc_fallback_free_skip_build.log" 2>&1
+  local real_calloc_free_skip_stats_flags=("${real_calloc_free_skip_prod_flags[@]}")
+  hz6_preload_preserve_phase_counters real_calloc_free_skip_stats_flags
+  OUT_DIR="${OUTDIR}/build/real_calloc_fallback_free_skip_stats" \
+    HZ6_PRELOAD_DEFAULT_CFLAGS="$(hz6_preload_join_flags "${real_calloc_free_skip_stats_flags[@]}")" \
+    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
+    > "${OUTDIR}/real_calloc_fallback_free_skip_stats_build.log" 2>&1
 }
 
 if [[ "$SKIP_BUILD" -ne 1 ]]; then
@@ -122,6 +137,8 @@ fi
 [[ -f "$PHASE_SO" ]] || { echo "missing phase-count DSO: $PHASE_SO" >&2; exit 2; }
 [[ -f "$REAL_CALLOC_SO" ]] || { echo "missing real-calloc DSO: $REAL_CALLOC_SO" >&2; exit 2; }
 [[ -f "$REAL_CALLOC_STATS_SO" ]] || { echo "missing real-calloc stats DSO: $REAL_CALLOC_STATS_SO" >&2; exit 2; }
+[[ -f "$REAL_CALLOC_FREE_SKIP_SO" ]] || { echo "missing real-calloc free-skip DSO: $REAL_CALLOC_FREE_SKIP_SO" >&2; exit 2; }
+[[ -f "$REAL_CALLOC_FREE_SKIP_STATS_SO" ]] || { echo "missing real-calloc free-skip stats DSO: $REAL_CALLOC_FREE_SKIP_STATS_SO" >&2; exit 2; }
 
 rows=()
 IFS=',' read -r -a row_names <<< "$ROWS_CSV"
@@ -157,6 +174,8 @@ done
   echo "phase_so=${PHASE_SO}"
   echo "real_calloc_so=${REAL_CALLOC_SO}"
   echo "real_calloc_stats_so=${REAL_CALLOC_STATS_SO}"
+  echo "real_calloc_free_skip_so=${REAL_CALLOC_FREE_SKIP_SO}"
+  echo "real_calloc_free_skip_stats_so=${REAL_CALLOC_FREE_SKIP_STATS_SO}"
 } > "${OUTDIR}/README.log"
 
 run_one() {
@@ -193,6 +212,16 @@ run_one() {
         "$BENCH" "$THREADS" "$ITERS" "$nmemb" "$elem_size" 1 \
         > "$log" 2>&1
       ;;
+    real_calloc_fallback_free_skip)
+      env LD_PRELOAD="$REAL_CALLOC_FREE_SKIP_SO" \
+        "$BENCH" "$THREADS" "$ITERS" "$nmemb" "$elem_size" 1 \
+        > "$log" 2>&1
+      ;;
+    real_calloc_fallback_free_skip_stats)
+      env HZ6_PRELOAD_STATS=1 LD_PRELOAD="$REAL_CALLOC_FREE_SKIP_STATS_SO" \
+        "$BENCH" "$THREADS" "$ITERS" "$nmemb" "$elem_size" 1 \
+        > "$log" 2>&1
+      ;;
     *)
       echo "unknown variant: $variant" >&2
       exit 2
@@ -203,7 +232,7 @@ run_one() {
 for run_id in $(seq 1 "$RUNS"); do
   for row_spec in "${rows[@]}"; do
     read -r row nmemb elem_size <<< "$row_spec"
-    for variant in system selected phase_count_on real_calloc_fallback real_calloc_fallback_stats; do
+    for variant in system selected phase_count_on real_calloc_fallback real_calloc_fallback_stats real_calloc_fallback_free_skip real_calloc_fallback_free_skip_stats; do
       run_one "$row" "$nmemb" "$elem_size" "$variant" "$run_id"
     done
   done
@@ -223,6 +252,8 @@ variants = [
     "phase_count_on",
     "real_calloc_fallback",
     "real_calloc_fallback_stats",
+    "real_calloc_fallback_free_skip",
+    "real_calloc_fallback_free_skip_stats",
 ]
 ops_re = re.compile(r"ops/s=([0-9]+(?:\.[0-9]+)?)")
 current_re = re.compile(r"current_kb=([0-9]+)")
@@ -239,8 +270,8 @@ def median(values):
 
 print("# HZ6 Preload Calloc Audit\n")
 print(f"root: `{root}`\n")
-print("| row | variant | median ops/s | median current MiB | calloc calls | calloc zero MiB | malloc boundary mid | free real | route miss real |")
-print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+print("| row | variant | median ops/s | median current MiB | calloc calls | calloc zero MiB | malloc boundary mid | free real | route miss real | calloc record | calloc skip hit | calloc skip miss |")
+print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 for spec in row_specs:
     row, _nmemb, _elem_size = spec.split()
     for variant in variants:
@@ -251,6 +282,9 @@ for spec in row_specs:
         malloc_mid = 0
         free_real = 0
         route_miss_real = 0
+        calloc_record = 0
+        calloc_skip_hit = 0
+        calloc_skip_miss = 0
         for log in sorted((root / row).glob(f"*_{variant}.log")):
             text = log.read_text(errors="replace")
             m = ops_re.search(text)
@@ -265,10 +299,15 @@ for spec in row_specs:
             malloc_mid += int(phase.get("malloc_midpage_boundary", 0))
             free_real += int(phase.get("free_real", 0))
             route_miss_real += int(phase.get("free_route_miss_real", 0))
+            wrapper = parse_line(text, "[HZ6_PRELOAD_WRAPPER_DETAIL]")
+            calloc_record += int(wrapper.get("calloc_real_record_set", 0))
+            calloc_skip_hit += int(wrapper.get("calloc_real_free_skip_hit", 0))
+            calloc_skip_miss += int(wrapper.get("calloc_real_free_skip_miss", 0))
         print(
             f"| `{row}` | `{variant}` | {median(ops):.3f} | "
             f"{median(current):.2f} | {calloc_calls} | "
             f"{calloc_zero / (1024.0 * 1024.0):.2f} | {malloc_mid} | "
-            f"{free_real} | {route_miss_real} |"
+            f"{free_real} | {route_miss_real} | {calloc_record} | "
+            f"{calloc_skip_hit} | {calloc_skip_miss} |"
         )
 PY

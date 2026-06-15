@@ -41,11 +41,16 @@ static __thread unsigned char g_hz6_preload_realloc_boundary_adapt_4k;
 static __thread unsigned char g_hz6_preload_realloc_boundary_adapt_8k;
 #endif
 
-#if HZ6_PRELOAD_REAL_ALIGNED_FREE_SKIP_L1
+#if HZ6_PRELOAD_REAL_ALIGNED_FREE_SKIP_L1 || \
+    HZ6_PRELOAD_CALLOC_REAL_FREE_SKIP_L1
 #define HZ6_PRELOAD_REAL_ALIGNED_TOMBSTONE ((void*)(uintptr_t)1u)
+#define HZ6_PRELOAD_REAL_PTR_KIND_ALIGNED 1u
+#define HZ6_PRELOAD_REAL_PTR_KIND_CALLOC 2u
 static pthread_mutex_t g_hz6_preload_real_aligned_mutex =
     PTHREAD_MUTEX_INITIALIZER;
 static void* g_hz6_preload_real_aligned_ptrs
+    [HZ6_PRELOAD_REAL_ALIGNED_PTR_TABLE_CAPACITY];
+static unsigned char g_hz6_preload_real_aligned_kinds
     [HZ6_PRELOAD_REAL_ALIGNED_PTR_TABLE_CAPACITY];
 static atomic_size_t g_hz6_preload_real_aligned_count;
 
@@ -57,7 +62,7 @@ static size_t hz6_preload_real_aligned_hash(void* ptr) {
   return (size_t)value;
 }
 
-static int hz6_preload_real_aligned_record(void* ptr) {
+static int hz6_preload_real_pointer_record(void* ptr, unsigned char kind) {
   if (!ptr || HZ6_PRELOAD_REAL_ALIGNED_PTR_TABLE_CAPACITY == 0) {
     return 0;
   }
@@ -73,6 +78,7 @@ static int hz6_preload_real_aligned_record(void* ptr) {
         (base + probe) % HZ6_PRELOAD_REAL_ALIGNED_PTR_TABLE_CAPACITY;
     void* entry = g_hz6_preload_real_aligned_ptrs[index];
     if (entry == ptr) {
+      g_hz6_preload_real_aligned_kinds[index] = kind;
       recorded = 1;
       break;
     }
@@ -88,6 +94,7 @@ static int hz6_preload_real_aligned_record(void* ptr) {
               ? index
               : first_tombstone;
       g_hz6_preload_real_aligned_ptrs[target] = ptr;
+      g_hz6_preload_real_aligned_kinds[target] = kind;
       recorded = 1;
       (void)atomic_fetch_add_explicit(&g_hz6_preload_real_aligned_count, 1u,
                                       memory_order_relaxed);
@@ -96,7 +103,11 @@ static int hz6_preload_real_aligned_record(void* ptr) {
   }
   pthread_mutex_unlock(&g_hz6_preload_real_aligned_mutex);
 
-  if (recorded) {
+  if (kind == HZ6_PRELOAD_REAL_PTR_KIND_CALLOC) {
+    hz6_preload_phase_count(
+        recorded ? &g_hz6_preload_phase_stats.calloc_real_record_set
+                 : &g_hz6_preload_phase_stats.calloc_real_record_fail);
+  } else if (recorded) {
     hz6_preload_phase_count(
         &g_hz6_preload_phase_stats.real_aligned_record_set);
   } else {
@@ -106,13 +117,13 @@ static int hz6_preload_real_aligned_record(void* ptr) {
   return recorded;
 }
 
-static int hz6_preload_real_aligned_forget(void* ptr) {
+static unsigned char hz6_preload_real_pointer_forget(void* ptr) {
   if (!ptr || HZ6_PRELOAD_REAL_ALIGNED_PTR_TABLE_CAPACITY == 0) {
     return 0;
   }
   size_t base = hz6_preload_real_aligned_hash(ptr) %
                 HZ6_PRELOAD_REAL_ALIGNED_PTR_TABLE_CAPACITY;
-  int found = 0;
+  unsigned char kind = 0;
 
   pthread_mutex_lock(&g_hz6_preload_real_aligned_mutex);
   for (size_t probe = 0; probe < HZ6_PRELOAD_REAL_ALIGNED_PTR_TABLE_CAPACITY;
@@ -124,16 +135,17 @@ static int hz6_preload_real_aligned_forget(void* ptr) {
       break;
     }
     if (entry == ptr) {
+      kind = g_hz6_preload_real_aligned_kinds[index];
       g_hz6_preload_real_aligned_ptrs[index] =
           HZ6_PRELOAD_REAL_ALIGNED_TOMBSTONE;
+      g_hz6_preload_real_aligned_kinds[index] = 0;
       (void)atomic_fetch_sub_explicit(&g_hz6_preload_real_aligned_count, 1u,
                                       memory_order_relaxed);
-      found = 1;
       break;
     }
   }
   pthread_mutex_unlock(&g_hz6_preload_real_aligned_mutex);
-  return found;
+  return kind;
 }
 #endif
 
@@ -500,17 +512,30 @@ void free(void* ptr) {
     hz6_preload_real_free(ptr);
     return;
   }
-#if HZ6_PRELOAD_REAL_ALIGNED_FREE_SKIP_L1
+#if HZ6_PRELOAD_REAL_ALIGNED_FREE_SKIP_L1 || \
+    HZ6_PRELOAD_CALLOC_REAL_FREE_SKIP_L1
   if (atomic_load_explicit(&g_hz6_preload_real_aligned_count,
                            memory_order_relaxed) != 0) {
-    if (hz6_preload_real_aligned_forget(ptr)) {
-      hz6_preload_phase_count(
-          &g_hz6_preload_phase_stats.real_aligned_free_skip_hit);
+    unsigned char real_ptr_kind = hz6_preload_real_pointer_forget(ptr);
+    if (real_ptr_kind != 0) {
+      if (real_ptr_kind == HZ6_PRELOAD_REAL_PTR_KIND_CALLOC) {
+        hz6_preload_phase_count(
+            &g_hz6_preload_phase_stats.calloc_real_free_skip_hit);
+      } else {
+        hz6_preload_phase_count(
+            &g_hz6_preload_phase_stats.real_aligned_free_skip_hit);
+      }
       hz6_preload_real_free(ptr);
       return;
     }
+#if HZ6_PRELOAD_REAL_ALIGNED_FREE_SKIP_L1
     hz6_preload_phase_count(
         &g_hz6_preload_phase_stats.real_aligned_free_skip_miss);
+#endif
+#if HZ6_PRELOAD_CALLOC_REAL_FREE_SKIP_L1
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.calloc_real_free_skip_miss);
+#endif
   }
 #endif
   g_hz6_preload_reentry = 1;
@@ -985,7 +1010,11 @@ void* calloc(size_t nmemb, size_t size) {
     return hz6_preload_real_calloc(nmemb, size);
   }
 #if HZ6_PRELOAD_CALLOC_REAL_FALLBACK_L1
-  return hz6_preload_real_calloc(nmemb, size);
+  void* ptr = hz6_preload_real_calloc(nmemb, size);
+#if HZ6_PRELOAD_CALLOC_REAL_FREE_SKIP_L1
+  (void)hz6_preload_real_pointer_record(ptr, HZ6_PRELOAD_REAL_PTR_KIND_CALLOC);
+#endif
+  return ptr;
 #else
   void* ptr = malloc(bytes);
   if (ptr) {
@@ -1103,7 +1132,8 @@ int posix_memalign(void** memptr, size_t alignment, size_t size) {
   int rc = hz6_preload_real_posix_memalign(memptr, alignment, size);
 #if HZ6_PRELOAD_REAL_ALIGNED_FREE_SKIP_L1
   if (rc == 0 && *memptr) {
-    (void)hz6_preload_real_aligned_record(*memptr);
+    (void)hz6_preload_real_pointer_record(
+        *memptr, HZ6_PRELOAD_REAL_PTR_KIND_ALIGNED);
   }
 #endif
   return rc;
@@ -1141,7 +1171,8 @@ void* aligned_alloc(size_t alignment, size_t size) {
     return NULL;
   }
 #if HZ6_PRELOAD_REAL_ALIGNED_FREE_SKIP_L1
-  (void)hz6_preload_real_aligned_record(ptr);
+  (void)hz6_preload_real_pointer_record(
+      ptr, HZ6_PRELOAD_REAL_PTR_KIND_ALIGNED);
 #endif
   return ptr;
 }

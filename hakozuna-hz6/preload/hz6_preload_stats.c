@@ -1307,7 +1307,11 @@ static void hz6_preload_print_stats(void) {
           "real_aligned_record_set=%zu "
           "real_aligned_record_fail=%zu "
           "real_aligned_free_skip_hit=%zu "
-          "real_aligned_free_skip_miss=%zu\n",
+          "real_aligned_free_skip_miss=%zu "
+          "calloc_real_record_set=%zu "
+          "calloc_real_record_fail=%zu "
+          "calloc_real_free_skip_hit=%zu "
+          "calloc_real_free_skip_miss=%zu\n",
           hz6_preload_phase_load(
               &g_hz6_preload_phase_stats.posix_memalign_calls),
           hz6_preload_phase_load(
@@ -1343,7 +1347,15 @@ static void hz6_preload_print_stats(void) {
           hz6_preload_phase_load(
               &g_hz6_preload_phase_stats.real_aligned_free_skip_hit),
           hz6_preload_phase_load(
-              &g_hz6_preload_phase_stats.real_aligned_free_skip_miss));
+              &g_hz6_preload_phase_stats.real_aligned_free_skip_miss),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.calloc_real_record_set),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.calloc_real_record_fail),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.calloc_real_free_skip_hit),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.calloc_real_free_skip_miss));
 
   fprintf(stderr,
           "[HZ6_PRELOAD_HOOK_DETAIL] free_toy_active_map_attempt=%zu free_toy_active_map_hit=%zu "

@@ -123,6 +123,10 @@ typedef struct Hz6PreloadPhaseStats {
   _Atomic(size_t) real_aligned_record_fail;
   _Atomic(size_t) real_aligned_free_skip_hit;
   _Atomic(size_t) real_aligned_free_skip_miss;
+  _Atomic(size_t) calloc_real_record_set;
+  _Atomic(size_t) calloc_real_record_fail;
+  _Atomic(size_t) calloc_real_free_skip_hit;
+  _Atomic(size_t) calloc_real_free_skip_miss;
 } Hz6PreloadPhaseStats;
 
 extern Hz6PreloadPhaseStats g_hz6_preload_phase_stats;

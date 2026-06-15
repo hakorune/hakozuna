@@ -948,6 +948,12 @@
 #define HZ6_PRELOAD_CALLOC_REAL_FALLBACK_L1 0
 #endif
 
+#ifndef HZ6_PRELOAD_CALLOC_REAL_FREE_SKIP_L1
+/* Companion control for real-calloc fallback.  Records real calloc pointers so
+ * preload free can skip HZ6 route lookup and call real free directly. */
+#define HZ6_PRELOAD_CALLOC_REAL_FREE_SKIP_L1 0
+#endif
+
 #ifndef HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FAST_L1
 /* Code-shape control for the selected 1:1 current-bias predicate.  Semantics
  * match the default numerator=1, denominator=1, delta=0 configuration. */
