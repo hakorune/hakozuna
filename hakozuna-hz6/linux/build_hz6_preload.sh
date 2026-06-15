@@ -23,6 +23,7 @@ HZ6_PRELOAD_SOURCES=(
   "${HZ6_DIR}/preload/hz6_preload.c"
   "${HZ6_DIR}/preload/hz6_preload_hooks.c"
   "${HZ6_DIR}/preload/hz6_preload_real.c"
+  "${HZ6_DIR}/preload/hz6_preload_stats.c"
 )
 PRELOAD_SO="${OUT_DIR}/libhakozuna_hz6_preload.so"
 

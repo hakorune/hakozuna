@@ -84,7 +84,7 @@ Ubuntu LD_PRELOAD functional lane:
   hakozuna-hz6/linux/build_hz6_preload.sh default bundle
   canonical flags live in hakozuna-hz6/linux/hz6_preload_flags.sh
   hook implementation lives in hakozuna-hz6/preload/hz6_preload_hooks.c
-  stats/registry state lives in hakozuna-hz6/preload/hz6_preload.c
+  stats/registry state lives in hakozuna-hz6/preload/hz6_preload_stats.c
   route65k-desc16384-source2048-frontcache4096-toyactivemap32768
   + midpage-run768k + midpage-32k-run2048k
   + external-midpage-active-map16k-unaligned-probe4-maskindex-registerfast

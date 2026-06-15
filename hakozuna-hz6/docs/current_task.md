@@ -635,12 +635,12 @@ Source modularity:
   core HZ6 modules remain healthy.
   preload/hz6_preload_hooks.c now owns libc hook control flow and allocator
   route/free/realloc behavior.
-  preload/hz6_preload.c owns preload stats aggregation/printing plus allocator
-  registry state and is above the old 1000-line cleanup note after the recent
-  diagnostic additions.
+  preload/hz6_preload.c is a thin translation unit.
+  preload/hz6_preload_stats.c owns preload stats aggregation/printing plus
+  allocator registry state.
   preload/hz6_preload_stats.h is the narrow shared hook/stats boundary.
-  A later cleanup-only pass should split stats printing into
-  preload/hz6_preload_stats.c.
+  A later cleanup-only pass can split narrower print helpers inside
+  preload/hz6_preload_stats.c if the diagnostic body grows further.
 
 Do not append long run logs here. Promote stable conclusions into the focused
 HZ6 docs and move raw chronological evidence to archive docs.

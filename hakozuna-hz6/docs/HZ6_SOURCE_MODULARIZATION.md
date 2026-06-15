@@ -73,11 +73,12 @@ P2 preload module split:
   route helper, and MidPage malloc-boundary dispatch.
   preload/hz6_preload_stats.h exposes only phase counters and allocator
   registration needed by the hook module.
-  hakozuna-hz6/preload/hz6_preload.c is now below the 1000-line audit threshold
-  and owns stats aggregation/printing plus allocator registry state.
+  hakozuna-hz6/preload/hz6_preload.c is now a thin translation unit.
+  hakozuna-hz6/preload/hz6_preload_stats.c owns stats aggregation/printing
+  plus allocator registry state.
   Next cleanup-only split, if needed:
-    preload/hz6_preload_stats.c/.h for stats aggregation/printing
     preload/hz6_preload_midpage.c/.h for MidPage preload-boundary dispatch
+    narrower stats print helpers inside preload/hz6_preload_stats.c
   Do not mix those future splits with behavior changes.
 
 P3 internal type split:
@@ -128,8 +129,11 @@ source/linux_source_mmap_memory.c:
   retained no-go lane, and stats
 
 preload/hz6_preload.c:
+  thin preload translation unit.
+
+preload/hz6_preload_stats.c:
   preload stats aggregation/printing and allocator registry. This is still a
-  dense diagnostic file, but no longer exceeds the large-source audit threshold.
+  dense diagnostic file, intentionally isolated from hook control flow.
 
 preload/hz6_preload_hooks.c:
   libc hook entry points, TLS allocator creation, route ownership checks,
