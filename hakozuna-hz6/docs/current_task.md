@@ -91,6 +91,7 @@ Calloc direct-HZ6 control:
 
 Fixed-boundary/fixed-cost profile repeats:
   private/raw-results/linux/hz6_fixed_boundary_profile_frontier_20260616_063106
+  private/raw-results/linux/hz6_ubuntu_size_slices_20260616_063423
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_062305
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_055648
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_061733
@@ -137,10 +138,10 @@ Default no-go/control-only without substantially different evidence:
    selected for broad focused/4096..16384; small-boundary-trusted/adaptive-4k
    for fixed_4k; small-boundary-trusted/adaptive-8k for fixed_8k; adaptive
    combined only for fixed_16k-heavy profile runs.
-8. `hz6-small-boundary-trusted-toy-map8192-target` is the current fixed-boundary
-   RSS profile: repeat-5 fixed frontier makes it best ops/MiB on fixed_4k,
-   fixed_8k, and fixed_16k. It is still not a broad default because 16..4096
-   and 1024..4096 regress in the focused guard.
+8. `hz6-small-boundary-trusted-toy-map8192-target` is the current fixed-boundary RSS profile:
+   best HZ6 ops/MiB on fixed_4k/8k/16k; cross-allocator repeat keeps HZ3
+   best on fixed_4k, while HZ6 profile leads fixed_8k/16k speed.
+   It is still not a broad default because 16..4096/1024..4096 regress.
 9. Do not promote realloc-boundary/adaptive to selected/default without a new
    guard that also preserves tiny, mixed-small, target, fixed, RSS, and stats.
 10. Keep this file below about 150 lines; archive completed evidence snapshots
