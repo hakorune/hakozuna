@@ -87,7 +87,7 @@ Ubuntu LD_PRELOAD functional lane:
   stats/registry state lives in hakozuna-hz6/preload/hz6_preload.c
   route65k-desc16384-source2048-frontcache4096-toyactivemap32768
   + midpage-run768k + midpage-32k-run2048k
-  + external-midpage-active-map16k-unaligned-probe4
+  + external-midpage-active-map16k-unaligned-probe4-maskindex
   + midpage descriptor-out + preload-boundary malloc skip
   + current-bias free order
   + realloc-in-place
@@ -100,10 +100,10 @@ Ubuntu LD_PRELOAD status:
   functional and smoke-clean; short guard and long-run route tombstone cliff
   are fixed. Static table trim is selected, moving the Ubuntu preload lane from
   the old route131k/desc32768/source4096/frontcache8192 shape to
-  route65k/desc16384/source2048/frontcache4096. MidPage 8K run768 and 32K
-  run2048 are now selected after the current-bias pass. The latest selected
-  balance reaches 48.327M / 94.25 MiB on 4096..16384 in the full cross matrix,
-  edging tcmalloc on speed/RSS and beating
+  route65k/desc16384/source2048/frontcache4096. MidPage 8K run768, 32K
+  run2048, and active-map mask-index are now selected after the current-bias
+  pass. The latest selected balance reaches 48.459M / 94.50 MiB on
+  4096..16384 in the full cross matrix, beating tcmalloc on speed/RSS and
   HZ4/mimalloc/system strongly there, but HZ3 remains the higher speed/RSS
   frontier.
   MidPageActiveMapUnaligned-L2 plus probe4 is selected after the 4096..16384

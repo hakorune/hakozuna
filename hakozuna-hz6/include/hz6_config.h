@@ -462,6 +462,12 @@
 #define HZ6_MIDPAGE_ACTIVE_MAP_CLASS_INDEX_L1 0
 #endif
 
+#ifndef HZ6_MIDPAGE_ACTIVE_MAP_MASK_INDEX_L1
+/* Candidate code shape.  The selected MidPage active map capacity is a power
+ * of two, so hash and probe wrapping can use a mask instead of modulo. */
+#define HZ6_MIDPAGE_ACTIVE_MAP_MASK_INDEX_L1 0
+#endif
+
 #ifndef HZ6_MIDPAGE_PREFILL_DIRECT_REUSE_L1
 /* Candidate malloc path. After a MidPage direct-local miss, prefill the run
  * and pop with descriptor ownership so active-map registration avoids an exact

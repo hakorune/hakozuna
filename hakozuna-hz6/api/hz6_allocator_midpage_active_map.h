@@ -24,6 +24,14 @@ static inline int hz6_midpage_active_map_aligned(const void* ptr) {
 #endif
 }
 
+static inline size_t hz6_midpage_active_map_wrap(size_t index) {
+#if HZ6_MIDPAGE_ACTIVE_MAP_MASK_INDEX_L1
+  return index & (HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY - 1u);
+#else
+  return index % HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY;
+#endif
+}
+
 static inline size_t hz6_midpage_active_map_index(const void* ptr) {
 #if HZ6_MIDPAGE_ACTIVE_MAP_SHIFT12_INDEX_L1
   uintptr_t key = (uintptr_t)ptr >> 12u;
@@ -33,7 +41,7 @@ static inline size_t hz6_midpage_active_map_index(const void* ptr) {
   key ^= key >> 16u;
   key *= (uintptr_t)0x9e3779b1U;
   key ^= key >> 13u;
-  return (size_t)(key % HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY);
+  return hz6_midpage_active_map_wrap((size_t)key);
 }
 
 static inline size_t hz6_midpage_active_map_class_index(const void* ptr,
@@ -48,7 +56,7 @@ static inline size_t hz6_midpage_active_map_class_index(const void* ptr,
   key ^= key >> 16u;
   key *= (uintptr_t)0x9e3779b1U;
   key ^= key >> 13u;
-  return (size_t)(key % HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY);
+  return hz6_midpage_active_map_wrap((size_t)key);
 #else
   (void)class_id;
   return hz6_midpage_active_map_index(ptr);
@@ -169,8 +177,7 @@ static inline void hz6_midpage_active_map_register(
   for (size_t probe = 0; probe < HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT;
        ++probe) {
 #endif
-    size_t index =
-        (base_index + probe) % HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY;
+    size_t index = hz6_midpage_active_map_wrap(base_index + probe);
     Hz6MidPageActiveMapEntry* candidate = &entries[index];
     if (candidate->ptr == ptr) {
       entry = candidate;
@@ -391,8 +398,7 @@ static inline int hz6_midpage_active_map_try_free(Hz6Allocator* allocator,
         hz6_midpage_active_map_class_index(ptr, probe_classes[class_probe]);
     for (size_t probe = 0; probe < HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT;
          ++probe) {
-      size_t index =
-          (base_index + probe) % HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY;
+      size_t index = hz6_midpage_active_map_wrap(base_index + probe);
       Hz6MidPageActiveMapEntry* candidate = &entries[index];
       if (candidate->ptr == ptr) {
         entry = candidate;
@@ -409,8 +415,7 @@ static inline int hz6_midpage_active_map_try_free(Hz6Allocator* allocator,
   } else {
     for (size_t probe = 1; probe < HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT;
          ++probe) {
-      size_t index =
-          (base_index + probe) % HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY;
+      size_t index = hz6_midpage_active_map_wrap(base_index + probe);
       Hz6MidPageActiveMapEntry* candidate = &entries[index];
       if (candidate->ptr == ptr) {
         entry = candidate;
@@ -421,8 +426,7 @@ static inline int hz6_midpage_active_map_try_free(Hz6Allocator* allocator,
 #else
   for (size_t probe = 0; probe < HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT;
        ++probe) {
-    size_t index =
-        (base_index + probe) % HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY;
+    size_t index = hz6_midpage_active_map_wrap(base_index + probe);
     Hz6MidPageActiveMapEntry* candidate = &entries[index];
     if (candidate->ptr == ptr) {
       entry = candidate;
@@ -442,8 +446,7 @@ static inline int hz6_midpage_active_map_try_free(Hz6Allocator* allocator,
           hz6_midpage_active_map_class_index(ptr, probe_classes[class_probe]);
       for (size_t probe = 0; probe < HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT;
            ++probe) {
-        size_t index =
-            (base_index + probe) % HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY;
+        size_t index = hz6_midpage_active_map_wrap(base_index + probe);
         if (!entries[index].ptr) {
           probe_window_empty = 1;
           break;
@@ -453,8 +456,7 @@ static inline int hz6_midpage_active_map_try_free(Hz6Allocator* allocator,
 #else
     for (size_t probe = 0; probe < HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT;
          ++probe) {
-      size_t index =
-          (base_index + probe) % HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY;
+      size_t index = hz6_midpage_active_map_wrap(base_index + probe);
       if (!entries[index].ptr) {
         probe_window_empty = 1;
         break;

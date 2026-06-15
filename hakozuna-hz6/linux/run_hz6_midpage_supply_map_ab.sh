@@ -149,6 +149,9 @@ variant_flags() {
     mid8_borrow32)
       hz6_preload_replace_define flags HZ6_MIDPAGE_8K_BORROW_32K_ON_MISS_L1 1
       ;;
+    amap_mask)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_MAP_MASK_INDEX_L1 1
+      ;;
     amap32k_p4)
       hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY 32768
       ;;
@@ -222,6 +225,7 @@ default_variants=(
   sourcerun_reclaim
   borrow_larger
   mid8_borrow32
+  amap_mask
   amap32k_p4
   amap64k_p4
   amap32k_p8

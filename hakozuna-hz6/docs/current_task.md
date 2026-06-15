@@ -168,6 +168,30 @@ MidPage8KBorrow32-L1 is implemented as a default-off control:
     fail counters 0; 4096..16384 mid8_borrow32 had borrow_success=0.
   read: broad borrow_larger is guard-negative; narrow MidPage 8K->32K borrow
   does not find real candidates on the selected target row, so keep off.
+MidPageActiveMapMaskIndex-L1 is now selected/default for Ubuntu preload:
+  flag: HZ6_MIDPAGE_ACTIVE_MAP_MASK_INDEX_L1=1
+  reason: selected MidPage active-map capacity is 16384, so index/probe wrap can
+  use a power-of-two mask instead of modulo without changing behavior.
+  production repeat-15:
+    raw: private/raw-results/linux/hz6_midpage_supply_map_ab_20260615_131659
+    16..256      57.755M -> 57.523M  (-0.40%)
+    16..4096     41.770M -> 41.752M  (-0.04%)
+    1024..4096   40.007M -> 40.019M  (+0.03%)
+    4096..16384  49.443M -> 50.231M  (+1.59%)
+  stats repeat-3:
+    raw: private/raw-results/linux/hz6_midpage_supply_map_ab_20260615_131717
+    fail counters 0.
+  post-promotion HZ6-only repeat-5:
+    raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_131844
+    16..256      57.443M / 30.50 MiB
+    16..4096     41.409M / 79.75 MiB
+    1024..4096   40.162M / 90.88 MiB
+    4096..16384  49.639M / 94.38 MiB
+  full cross repeat-3:
+    raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_131852
+    4096..16384 hz6 48.459M / 94.50 MiB
+    4096..16384 tcmalloc 43.632M / 103.88 MiB
+  decision: promote HZ6_MIDPAGE_ACTIVE_MAP_MASK_INDEX_L1=1 for Ubuntu preload.
 Earlier repeat-3 refresh after free-hint/free-fastslot no-go closeouts:
   raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_004605
   16..256     hz6 58.046M / 30.50 MiB
@@ -293,6 +317,7 @@ Latest MidPage closeout:
   keep preload-boundary noinline transfer-skip selected
   keep static table trim selected
   keep MidPage 32K run2048 selected
+  keep MidPage active-map mask-index selected
   keep preclassified malloc shape out of source
   keep MidPage target DSO as selected/control alias
 
@@ -303,9 +328,9 @@ source-run-slot route registration, broad malloc code-shape changes, or
 whole-helper free-cache replacement first.
 
 Next recommended optimization lane:
-  current-bias is selected and safety-clean. Frontcache storage trim is not a
-  clear selected RSS win. Resume MidPage source/supply shape work, where the
-  remaining target pressure still shows source_alloc and frontcache empty pops.
+  active-map mask-index is selected and safety-clean. Run-size and borrow
+  attempts are closed for now. Next, prefer frontcache storage/RSS design or a
+  fresh active-map success-path audit before changing active-map semantics.
 
 Closed MidPage controls:
   free-order/page-hint/current-bias details:

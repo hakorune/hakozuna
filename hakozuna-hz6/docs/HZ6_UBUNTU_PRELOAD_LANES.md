@@ -45,6 +45,7 @@ HZ6_MIDPAGE_ACTIVE_FREE_MAP_EXTERNAL_L2=1
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_UNALIGNED_L2=1
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY=16384
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT=4
+HZ6_MIDPAGE_ACTIVE_MAP_MASK_INDEX_L1=1
 HZ6_MIDPAGE_ALLOC_DESCRIPTOR_OUT_L1=1
 HZ6_PRELOAD_MIDPAGE_MALLOC_SKIP_TRANSFER_L1=1
 HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_NOINLINE_L1=1
@@ -75,25 +76,26 @@ HZ6_PRELOAD_FAST_FREE_L1=0
 The preload lane is a real Ubuntu performance lane, but it remains separate
 from the direct HZ6 API and Windows selected-family rows.
 
-Latest selected-default focused guards, after current-bias, 8K run768, and
-32K run2048:
+Latest selected-default focused guards, after current-bias, 8K run768, 32K
+run2048, and MidPage active-map mask-index:
 
 | Row | Selected read |
 | --- | ---: |
-| `16..256` HZ6-only repeat-5 | `57.306M / 30.50 MiB` |
-| `16..4096` HZ6-only repeat-5 | `41.608M / 79.75 MiB` |
-| `1024..4096` HZ6-only repeat-5 | `39.868M / 91.00 MiB` |
-| `4096..16384` HZ6-only repeat-5 | `49.480M / 94.38 MiB` |
+| `16..256` HZ6-only repeat-5 | `57.443M / 30.50 MiB` |
+| `16..4096` HZ6-only repeat-5 | `41.409M / 79.75 MiB` |
+| `1024..4096` HZ6-only repeat-5 | `40.162M / 90.88 MiB` |
+| `4096..16384` HZ6-only repeat-5 | `49.639M / 94.38 MiB` |
 
-Latest cross-allocator refresh after 32K run2048 promotion, repeat-3,
-`bench_mixed_ws_crt`:
+Latest cross-allocator refresh after active-map mask-index promotion, repeat-3,
+`bench_mixed_ws_crt`, raw
+`private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_131852`:
 
 | Row | hz6 | mimalloc | tcmalloc | system | hz6 peak KB |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| `16..256` | `56.533M` | `53.413M` | `260.451M` | `104.712M` | `31,104` |
-| `16..4096` | `40.912M` | `7.107M` | `98.447M` | `16.658M` | `81,664` |
-| `1024..4096` | `38.618M` | `5.538M` | `98.138M` | `9.547M` | `93,184` |
-| `4096..16384` | `48.327M` | `1.321M` | `44.795M` | `2.933M` | `96,512` |
+| `16..256` | `56.896M` | `52.760M` | `257.036M` | `103.877M` | `30,976` |
+| `16..4096` | `40.452M` | `7.116M` | `97.892M` | `16.361M` | `81,536` |
+| `1024..4096` | `38.500M` | `5.609M` | `95.626M` | `9.663M` | `93,312` |
+| `4096..16384` | `48.459M` | `1.316M` | `43.632M` | `2.920M` | `96,768` |
 
 Important caveat:
 
@@ -107,10 +109,11 @@ remains the higher speed/RSS frontier.
 Follow-up:
 
 ```text
-MidPage 8K run768 and 32K run2048 are now selected. The current selected lane
-keeps the static-table RSS cut and reaches 49.480M / 94.38 MiB on the HZ6-only
-4096..16384 repeat-5, with full-cross repeat-3 clearly ahead of tcmalloc. Keep
-32K run1536, run768, and run512 as direct controls.
+MidPage 8K run768, 32K run2048, and active-map mask-index are now selected.
+The current selected lane keeps the static-table RSS cut and reaches 49.639M /
+94.38 MiB on the HZ6-only 4096..16384 repeat-5, with full-cross repeat-3
+clearly ahead of tcmalloc. Keep 32K run1536, run768, and run512 as direct
+controls.
 ```
 
 Current follow-up read:
@@ -120,7 +123,7 @@ Current follow-up read:
 | MidPage active-map deeper probe | no-go direction | Miss attribution showed `found_elsewhere=0`; misses are not probe-limit misses. |
 | `HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1=1` | watch/control | Re-tested after descriptor-out: target improves, but `16..256` repeat-7 is still slightly weaker. Keep off. |
 | `HZ6_MIDPAGE_ACTIVE_MAP_ADDR_ENVELOPE_L1=1` | watch/control | Helps Toy/tiny by skipping impossible MidPage probes, but target has `addr_envelope_skip=0`. Keep off. |
-| Next likely lane | diagnostic/design | Re-audit MidPage supply/frontcache pressure after run1536. Transfer-probe and target DSO work are closed; do not reopen route fallback or transfer-skip shape first. |
+| Next likely lane | diagnostic/design | Active-map mask-index is selected. Run-size and borrow lanes are closed for now; next prefer frontcache storage/RSS design or a fresh active-map success-path audit before changing semantics. |
 
 HZ3/HZ4 comparison read:
 
@@ -131,7 +134,7 @@ HZ3/HZ4 comparison read:
 | `1024..4096` | `35.131M` | `91.406M` | `49.979M` | HZ6 is about `0.70x` HZ4. |
 | `4096..16384` old default | `29.409M` | `74.802M` | `31.089M` | HZ6 was about `0.95x` HZ4 and had the clearest close target. |
 | `4096..16384` MidPage unaligned/probe4 | `31.505M` | n/a | `30.916M` | HZ6 now edges HZ4 while keeping lower RSS. |
-| `4096..16384` run2048 selected | `48.327M` | `75.258M` | `30.738M` | HZ6 now strongly beats HZ4 and tcmalloc on the balanced MidPage row, but HZ3 remains the frontier. |
+| `4096..16384` mask-index selected | `48.459M` | `74.374M` | `31.147M` | HZ6 strongly beats HZ4 and tcmalloc on the balanced MidPage row, but HZ3 remains the frontier. |
 
 Architecture read:
 
@@ -148,11 +151,11 @@ HZ6:
 
 Near-term target:
   hold the 4096..16384 tcmalloc/HZ4 lead while closing the HZ3 gap.
-  Current run2048 selected cross repeat-3:
-    hz6 48.327M / 94.25 MiB
-    hz4 30.738M / 129.50 MiB
-    tcmalloc 44.795M / 102.38 MiB
-    hz3 75.258M / 73.75 MiB
+  Current mask-index selected cross repeat-3:
+    hz6 48.459M / 94.50 MiB
+    hz4 31.147M / 129.12 MiB
+    tcmalloc 43.632M / 103.88 MiB
+    hz3 74.374M / 73.62 MiB
 
 Longer-term target:
   design a local-page/run metadata fast lane if HZ6 must chase HZ3/HZ4 tiny
@@ -195,6 +198,7 @@ Longer-term target:
 | MidPage preload-boundary malloc skip | selected/default | Wrapper-level MidPage malloc boundary keeps selected `hz6_malloc()` shape clean. The first direct boundary shape improved target but regressed guards; the promoted outer-guard noinline shape passed repeat-15. Confirmation against explicit boundary-off control: 4096..16384 `33.735M -> 40.056M`, 16..256 `55.957M -> 56.539M`, 16..4096 `40.969M -> 41.339M`, 1024..4096 `39.059M -> 39.953M`. |
 | Static table trim | selected/default | `HZ6_ROUTE_TABLE_CAPACITY=65536`, `HZ6_OBJECT_DESCRIPTOR_CAPACITY=16384`, `HZ6_SOURCE_BLOCK_CAPACITY=2048`, and `HZ6_FRONT_CACHE_BIN_CAPACITY=4096` reduce allocator-local fixed table RSS. Confirm repeat-5 without stats moved 16..4096 `41.519M / 100.62 MiB -> 43.581M / 79.75 MiB`, 1024..4096 `39.966M / 111.75 MiB -> 41.849M / 91.00 MiB`, and 4096..16384 `40.863M / 115.25 MiB -> 42.904M / 94.38 MiB`; no route/descriptor/source failures in the repeat-3 safety lane. |
 | MidPage 32K run2048 | selected/default | `HZ6_MIDPAGE_32K_RUN_BYTES=2097152` further reduces 32K source churn after run1536. Focused repeat-15 moved 4096..16384 `48.278M -> 49.789M`; stats repeat-3 kept fail counters 0 and cut 4096..16384 source_alloc `900 -> 723`. Keep run1536, run768, and run512 as direct controls. |
+| MidPage active-map mask-index | selected/default | `HZ6_MIDPAGE_ACTIVE_MAP_MASK_INDEX_L1=1` replaces modulo wrapping with mask wrapping for the selected power-of-two active-map capacity. Production repeat-15 moved 4096..16384 `49.443M -> 50.231M`, kept 16..4096 flat, and 1024..4096 slightly positive. Stats repeat-3 kept fail counters 0; R1 smokes pass. |
 | MidPage 32K fine ladder | control/no-go | Post-run2048 repeat-7 kept 2M as the local peak: 4096..16384 selected `49.494M`, run2048 rebuild `49.675M`, run2304 `48.864M`, run2560 `48.411M`, run3072 `44.866M`, and run4096 `46.384M`. Keep 1792K/2304K/2560K/3072K/4096K as controls, not selected. |
 | MidPage 32K run1536 | control | Previous selected `HZ6_MIDPAGE_32K_RUN_BYTES=1572864`; keep as direct control for run2048. |
 | MidPage 32K run768 | control | Earlier selected `HZ6_MIDPAGE_32K_RUN_BYTES=786432`; keep as direct control for run1536/run2048. |

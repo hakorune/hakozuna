@@ -101,6 +101,7 @@ HZ6_MIDPAGE_32K_RUN_BYTES=2097152 is now selected. It keeps the 4096..16384
 tcmalloc lead in the full cross refresh and cuts source_alloc in the stats
 confirmation. The next design pass should re-audit remaining MidPage supply /
 frontcache pressure after run2048 rather than reopening transfer-skip shape.
+```
 
 Post-run2048 follow-up:
 
@@ -124,6 +125,48 @@ Decision:
   next work should not chase broader frontcache borrow without a candidate
   dry-run that shows real target hits and low guard false positives.
 ```
+
+Current implementation order:
+
+```text
+1. Stop run-size/borrow promotion attempts:
+   - run2048 remains selected
+   - broad borrow_larger is guard-negative
+   - mid8_borrow32 is default-off control/no-go evidence
+
+2. Try an active-map success-path code-shape control that does not change
+   behavior:
+   - selected capacity is 16384, a power of two
+   - active-map register/free currently wraps probe indexes with modulo
+   - test a mask-based index/wrap control before touching semantics
+
+3. Measure selected versus candidate on:
+   - 16..256
+   - 16..4096
+   - 1024..4096
+   - 4096..16384
+
+4. Promote only if target improves and guards stay within noise.
+```
+
+Mask-index result:
+
+```text
+flag: HZ6_MIDPAGE_ACTIVE_MAP_MASK_INDEX_L1=1
+production repeat-15:
+  raw: private/raw-results/linux/hz6_midpage_supply_map_ab_20260615_131659
+  4096..16384 49.443M -> 50.231M
+  16..4096    41.770M -> 41.752M
+  1024..4096  40.007M -> 40.019M
+  16..256     57.755M -> 57.523M
+stats repeat-3:
+  raw: private/raw-results/linux/hz6_midpage_supply_map_ab_20260615_131717
+  fail counters 0
+post-promotion selected:
+  raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_131844
+  4096..16384 49.639M / 94.38 MiB
+decision:
+  promote mask-index for Ubuntu preload.
 ```
 
 Audit variants:
@@ -547,10 +590,9 @@ do not add to build_hz6_preload.sh selected flags
 
 ## Next Implementation Order
 
-1. Add `TransferProbeAudit-L1` counters.
-2. Build and measure selected diagnostic on 4096..16384 and 16..4096.
-3. Add `build_hz6_preload_midpage_target.sh` or equivalent documented build
-   lane for the target DSO.
-4. Try one guard-isolated helper shape.
-5. Repeat-7 selected versus candidate.
-6. Update `HZ6_UBUNTU_PRELOAD_LANES.md` with selected/control/no-go status.
+1. Mask-index is selected/default; do not reopen modulo-vs-mask unless
+   active-map capacity stops being a power of two.
+2. Do not broaden frontcache borrow without a dry-run that shows real target
+   candidates and low guard false positives.
+3. Prefer frontcache storage/RSS design or a fresh active-map success-path
+   audit before changing active-map semantics.
