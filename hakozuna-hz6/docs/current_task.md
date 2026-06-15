@@ -116,6 +116,71 @@ lane plumbing:
       forwarded hz6-aligned-target through the shared compare runner.
 ```
 
+## Recent Closeout: HZ6 Ubuntu Codegen/Realloc Recheck-L1
+
+```text
+latest continuation:
+  Add runner variant:
+    realloc_in_place_off
+
+  Recheck preload codegen controls:
+    boundary_inline
+    no_semantic_interposition
+    opt_o3_no_semantic_interposition
+
+worker read:
+  The best default-looking follow-up was realloc capacity-in-place.  Source
+  review shows HZ6 descriptors already store slot capacity in descriptor->bytes
+  for source-run/Toy/MidPage allocations, not the original requested bytes.
+  Therefore the current HZ6_PRELOAD_REALLOC_IN_PLACE_L1=1 already performs the
+  safe capacity in-place rule; remaining copies are class/slot-boundary growth
+  such as 4K->4112, 8K->8208, or foreign/real fallback cases.
+
+codegen A/B:
+  raw: private/raw-results/linux/hz6_codegen_boundary_ab_20260615_225540
+  selected vs codegen controls, no-stats, repeat-7, 300K:
+    4096..16384:
+      selected 42.982M
+      boundary_inline 43.946M
+      no_semantic_interposition 44.369M
+      opt_o3_no_semantic_interposition 44.443M
+    fixed_16k:
+      selected 44.050M
+      boundary_inline 39.555M
+      no_semantic_interposition 38.723M
+      opt_o3_no_semantic_interposition 39.224M
+
+decision:
+  Do not default -fno-semantic-interposition or O3.  The target lift is real in
+  this run, but the fixed_16k guard regression is too large.
+  Keep selected -O2 and noinline MidPage boundary.
+
+realloc guard:
+  raw: private/raw-results/linux/hz6_realloc_in_place_guard_20260615_225828
+  selected vs realloc_in_place_off, stats-on, repeat-5, 200K:
+    16..4096:
+      20.949M vs 19.668M
+      realloc_in_place median 6254 vs 0
+      copy_calls median 102 vs 6356
+      copy_bytes median 0.13 MiB vs 12.45 MiB
+    4096..16384:
+      18.096M / 93.88 MiB vs 15.420M / 136.50 MiB
+      realloc_in_place median 6345 vs 0
+      copy_calls median 11 vs 6356
+      copy_bytes median 0.09 MiB vs 62.72 MiB
+    fixed_16k:
+      17.988M / 93.12 MiB vs 16.001M / 109.12 MiB
+      realloc_in_place median 6356 vs 0
+      copy_calls median 0 vs 6356
+      copy_bytes median 0.00 MiB vs 99.41 MiB
+
+decision:
+  Keep HZ6_PRELOAD_REALLOC_IN_PLACE_L1=1 selected/default.
+  Do not add a new realloc capacity-growth behavior: the safe capacity check is
+  already represented by descriptor->bytes.  Boundary-growth copies require a
+  different allocation policy, not a realloc hotfix.
+```
+
 ## Previous Closeout: HZ6 Ubuntu Preload Wrapper Attribution-L1
 
 ```text
