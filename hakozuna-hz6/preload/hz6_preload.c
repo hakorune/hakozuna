@@ -182,6 +182,9 @@ static void hz6_preload_print_stats(void) {
   size_t midpage_active_map_register_collision = 0;
   size_t midpage_active_map_register_empty_slot = 0;
   size_t midpage_active_map_register_same_ptr = 0;
+  size_t midpage_active_map_register_base_slot = 0;
+  size_t midpage_active_map_register_probe_total = 0;
+  size_t midpage_active_map_register_probe_max = 0;
   size_t midpage_active_map_register_overwrite = 0;
   size_t midpage_8k_active_map_register_overwrite = 0;
   size_t midpage_32k_active_map_register_overwrite = 0;
@@ -189,6 +192,9 @@ static void hz6_preload_print_stats(void) {
   size_t midpage_active_map_register_overwrite_stale_alt = 0;
   size_t midpage_active_map_free_attempt = 0;
   size_t midpage_active_map_free_hit = 0;
+  size_t midpage_active_map_free_hit_base_slot = 0;
+  size_t midpage_active_map_free_hit_probe_total = 0;
+  size_t midpage_active_map_free_hit_probe_max = 0;
   size_t midpage_active_map_free_miss = 0;
   size_t midpage_active_map_free_miss_probe_empty = 0;
   size_t midpage_active_map_free_miss_probe_occupied = 0;
@@ -399,6 +405,15 @@ static void hz6_preload_print_stats(void) {
         stats.midpage_active_map_register_empty_slot;
     midpage_active_map_register_same_ptr +=
         stats.midpage_active_map_register_same_ptr;
+    midpage_active_map_register_base_slot +=
+        stats.midpage_active_map_register_base_slot;
+    midpage_active_map_register_probe_total +=
+        stats.midpage_active_map_register_probe_total;
+    if (stats.midpage_active_map_register_probe_max >
+        midpage_active_map_register_probe_max) {
+      midpage_active_map_register_probe_max =
+          stats.midpage_active_map_register_probe_max;
+    }
     midpage_active_map_register_overwrite +=
         stats.midpage_active_map_register_overwrite;
     midpage_8k_active_map_register_overwrite +=
@@ -412,6 +427,15 @@ static void hz6_preload_print_stats(void) {
     midpage_active_map_free_attempt +=
         stats.midpage_active_map_free_attempt;
     midpage_active_map_free_hit += stats.midpage_active_map_free_hit;
+    midpage_active_map_free_hit_base_slot +=
+        stats.midpage_active_map_free_hit_base_slot;
+    midpage_active_map_free_hit_probe_total +=
+        stats.midpage_active_map_free_hit_probe_total;
+    if (stats.midpage_active_map_free_hit_probe_max >
+        midpage_active_map_free_hit_probe_max) {
+      midpage_active_map_free_hit_probe_max =
+          stats.midpage_active_map_free_hit_probe_max;
+    }
     midpage_active_map_free_miss += stats.midpage_active_map_free_miss;
     midpage_active_map_free_miss_probe_empty +=
         stats.midpage_active_map_free_miss_probe_empty;
@@ -655,6 +679,9 @@ static void hz6_preload_print_stats(void) {
           "midpage_active_map_register_collision=%zu "
           "midpage_active_map_register_empty_slot=%zu "
           "midpage_active_map_register_same_ptr=%zu "
+          "midpage_active_map_register_base_slot=%zu "
+          "midpage_active_map_register_probe_total=%zu "
+          "midpage_active_map_register_probe_max=%zu "
           "midpage_active_map_register_overwrite=%zu "
           "midpage_8k_active_map_register_overwrite=%zu "
           "midpage_32k_active_map_register_overwrite=%zu "
@@ -662,6 +689,9 @@ static void hz6_preload_print_stats(void) {
           "midpage_active_map_register_overwrite_stale_alt=%zu "
           "midpage_active_map_free_attempt=%zu "
           "midpage_active_map_free_hit=%zu "
+          "midpage_active_map_free_hit_base_slot=%zu "
+          "midpage_active_map_free_hit_probe_total=%zu "
+          "midpage_active_map_free_hit_probe_max=%zu "
           "midpage_active_map_free_miss=%zu "
           "midpage_active_map_free_miss_probe_empty=%zu "
           "midpage_active_map_free_miss_probe_occupied=%zu "
@@ -696,6 +726,9 @@ static void hz6_preload_print_stats(void) {
           midpage_active_map_register_collision,
           midpage_active_map_register_empty_slot,
           midpage_active_map_register_same_ptr,
+          midpage_active_map_register_base_slot,
+          midpage_active_map_register_probe_total,
+          midpage_active_map_register_probe_max,
           midpage_active_map_register_overwrite,
           midpage_8k_active_map_register_overwrite,
           midpage_32k_active_map_register_overwrite,
@@ -703,6 +736,9 @@ static void hz6_preload_print_stats(void) {
           midpage_active_map_register_overwrite_stale_alt,
           midpage_active_map_free_attempt,
           midpage_active_map_free_hit,
+          midpage_active_map_free_hit_base_slot,
+          midpage_active_map_free_hit_probe_total,
+          midpage_active_map_free_hit_probe_max,
           midpage_active_map_free_miss,
           midpage_active_map_free_miss_probe_empty,
           midpage_active_map_free_miss_probe_occupied,

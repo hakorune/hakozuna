@@ -151,6 +151,11 @@ static inline void hz6_midpage_active_map_register(
     }
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.midpage_active_map_register;
+    ++allocator->stats.midpage_active_map_register_base_slot;
+    allocator->stats.midpage_active_map_register_probe_total += 1u;
+    if (allocator->stats.midpage_active_map_register_probe_max < 1u) {
+      allocator->stats.midpage_active_map_register_probe_max = 1u;
+    }
 #endif
     base_entry->ptr = ptr;
     base_entry->descriptor = descriptor;
@@ -169,6 +174,10 @@ static inline void hz6_midpage_active_map_register(
 #endif
   int saw_collision = 0;
   int register_same_ptr = 0;
+#if HZ6_DIAGNOSTIC_PROBES
+  size_t register_selected_probe = 1u;
+  size_t register_first_empty_probe = 0u;
+#endif
 #if HZ6_MIDPAGE_ACTIVE_MAP_REGISTER_FAST_SLOT_L1
   saw_collision = 1;
   for (size_t probe = 1; probe < HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT;
@@ -182,11 +191,17 @@ static inline void hz6_midpage_active_map_register(
     if (candidate->ptr == ptr) {
       entry = candidate;
       register_same_ptr = 1;
+#if HZ6_DIAGNOSTIC_PROBES
+      register_selected_probe = probe + 1u;
+#endif
       break;
     }
     if (!candidate->ptr) {
       if (!first_empty) {
         first_empty = candidate;
+#if HZ6_DIAGNOSTIC_PROBES
+        register_first_empty_probe = probe + 1u;
+#endif
       }
       continue;
     }
@@ -212,6 +227,13 @@ static inline void hz6_midpage_active_map_register(
     if (!first_empty) {
 #if HZ6_DIAGNOSTIC_PROBES
       ++allocator->stats.midpage_active_map_register;
+      allocator->stats.midpage_active_map_register_probe_total +=
+          HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT;
+      if (HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT >
+          allocator->stats.midpage_active_map_register_probe_max) {
+        allocator->stats.midpage_active_map_register_probe_max =
+            HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT;
+      }
       if (saw_collision) {
         ++allocator->stats.midpage_active_map_register_collision;
       }
@@ -227,6 +249,13 @@ static inline void hz6_midpage_active_map_register(
                                       &entries[base_index]);
 #else
           &entries[base_index];
+#endif
+#if HZ6_DIAGNOSTIC_PROBES
+    if (first_empty && register_first_empty_probe != 0u) {
+      register_selected_probe = register_first_empty_probe;
+    } else {
+      register_selected_probe = 1u;
+    }
 #endif
   }
   if (!entry->ptr) {
@@ -258,6 +287,16 @@ static inline void hz6_midpage_active_map_register(
     ++allocator->stats.midpage_active_map_register_overwrite_stale_alt;
   }
   ++allocator->stats.midpage_active_map_register;
+  if (register_selected_probe == 1u) {
+    ++allocator->stats.midpage_active_map_register_base_slot;
+  }
+  allocator->stats.midpage_active_map_register_probe_total +=
+      register_selected_probe;
+  if (register_selected_probe >
+      allocator->stats.midpage_active_map_register_probe_max) {
+    allocator->stats.midpage_active_map_register_probe_max =
+        register_selected_probe;
+  }
   if (class_id == HZ6_MIDPAGE_8K_CLASS_ID) {
     ++allocator->stats.midpage_8k_active_map_register;
   } else if (class_id == HZ6_MIDPAGE_32K_CLASS_ID) {
@@ -390,6 +429,9 @@ static inline int hz6_midpage_active_map_try_free(Hz6Allocator* allocator,
   ++allocator->stats.midpage_active_map_free_attempt;
 #endif
   Hz6MidPageActiveMapEntry* entry = NULL;
+#if HZ6_DIAGNOSTIC_PROBES
+  size_t free_hit_probe = 0u;
+#endif
 #if HZ6_MIDPAGE_ACTIVE_MAP_CLASS_INDEX_L1
   uint16_t probe_classes[2] = {HZ6_MIDPAGE_32K_CLASS_ID,
                                HZ6_MIDPAGE_8K_CLASS_ID};
@@ -402,6 +444,10 @@ static inline int hz6_midpage_active_map_try_free(Hz6Allocator* allocator,
       Hz6MidPageActiveMapEntry* candidate = &entries[index];
       if (candidate->ptr == ptr) {
         entry = candidate;
+#if HZ6_DIAGNOSTIC_PROBES
+        free_hit_probe =
+            class_probe * HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT + probe + 1u;
+#endif
         break;
       }
     }
@@ -412,6 +458,9 @@ static inline int hz6_midpage_active_map_try_free(Hz6Allocator* allocator,
   Hz6MidPageActiveMapEntry* base_entry = &entries[base_index];
   if (base_entry->ptr == ptr) {
     entry = base_entry;
+#if HZ6_DIAGNOSTIC_PROBES
+    free_hit_probe = 1u;
+#endif
   } else {
     for (size_t probe = 1; probe < HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT;
          ++probe) {
@@ -419,6 +468,9 @@ static inline int hz6_midpage_active_map_try_free(Hz6Allocator* allocator,
       Hz6MidPageActiveMapEntry* candidate = &entries[index];
       if (candidate->ptr == ptr) {
         entry = candidate;
+#if HZ6_DIAGNOSTIC_PROBES
+        free_hit_probe = probe + 1u;
+#endif
         break;
       }
     }
@@ -430,6 +482,9 @@ static inline int hz6_midpage_active_map_try_free(Hz6Allocator* allocator,
     Hz6MidPageActiveMapEntry* candidate = &entries[index];
     if (candidate->ptr == ptr) {
       entry = candidate;
+#if HZ6_DIAGNOSTIC_PROBES
+      free_hit_probe = probe + 1u;
+#endif
       break;
     }
   }
@@ -522,6 +577,13 @@ static inline int hz6_midpage_active_map_try_free(Hz6Allocator* allocator,
   ++allocator->stats.route_valid;
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.midpage_active_map_free_hit;
+  if (free_hit_probe == 1u) {
+    ++allocator->stats.midpage_active_map_free_hit_base_slot;
+  }
+  allocator->stats.midpage_active_map_free_hit_probe_total += free_hit_probe;
+  if (free_hit_probe > allocator->stats.midpage_active_map_free_hit_probe_max) {
+    allocator->stats.midpage_active_map_free_hit_probe_max = free_hit_probe;
+  }
   if (descriptor->class_id == HZ6_MIDPAGE_8K_CLASS_ID) {
     ++allocator->stats.midpage_8k_active_map_free_hit;
   } else if (descriptor->class_id == HZ6_MIDPAGE_32K_CLASS_ID) {

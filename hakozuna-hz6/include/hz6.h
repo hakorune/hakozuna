@@ -334,6 +334,9 @@ typedef struct Hz6StatsSnapshot {
   size_t midpage_active_map_register_collision;
   size_t midpage_active_map_register_empty_slot;
   size_t midpage_active_map_register_same_ptr;
+  size_t midpage_active_map_register_base_slot;
+  size_t midpage_active_map_register_probe_total;
+  size_t midpage_active_map_register_probe_max;
   size_t midpage_active_map_register_overwrite;
   size_t midpage_8k_active_map_register_overwrite;
   size_t midpage_32k_active_map_register_overwrite;
@@ -341,6 +344,9 @@ typedef struct Hz6StatsSnapshot {
   size_t midpage_active_map_register_overwrite_stale_alt;
   size_t midpage_active_map_free_attempt;
   size_t midpage_active_map_free_hit;
+  size_t midpage_active_map_free_hit_base_slot;
+  size_t midpage_active_map_free_hit_probe_total;
+  size_t midpage_active_map_free_hit_probe_max;
   size_t midpage_active_map_free_miss;
   size_t midpage_active_map_free_miss_probe_empty;
   size_t midpage_active_map_free_miss_probe_occupied;

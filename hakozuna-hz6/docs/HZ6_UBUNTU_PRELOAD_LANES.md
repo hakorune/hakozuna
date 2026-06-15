@@ -46,6 +46,7 @@ HZ6_MIDPAGE_ACTIVE_FREE_MAP_UNALIGNED_L2=1
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY=16384
 HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT=4
 HZ6_MIDPAGE_ACTIVE_MAP_MASK_INDEX_L1=1
+HZ6_MIDPAGE_ACTIVE_MAP_REGISTER_FAST_SLOT_L1=1
 HZ6_MIDPAGE_ALLOC_DESCRIPTOR_OUT_L1=1
 HZ6_PRELOAD_MIDPAGE_MALLOC_SKIP_TRANSFER_L1=1
 HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_NOINLINE_L1=1
@@ -77,25 +78,26 @@ The preload lane is a real Ubuntu performance lane, but it remains separate
 from the direct HZ6 API and Windows selected-family rows.
 
 Latest selected-default focused guards, after current-bias, 8K run768, 32K
-run2048, and MidPage active-map mask-index:
+run2048, MidPage active-map mask-index, and MidPage active-map register
+fast-slot:
 
 | Row | Selected read |
 | --- | ---: |
-| `16..256` HZ6-only repeat-5 | `57.443M / 30.50 MiB` |
-| `16..4096` HZ6-only repeat-5 | `41.409M / 79.75 MiB` |
-| `1024..4096` HZ6-only repeat-5 | `40.162M / 90.88 MiB` |
-| `4096..16384` HZ6-only repeat-5 | `49.639M / 94.38 MiB` |
+| `16..256` HZ6-only repeat-5 | `56.227M / 30.38 MiB` |
+| `16..4096` HZ6-only repeat-5 | `40.939M / 79.88 MiB` |
+| `1024..4096` HZ6-only repeat-5 | `40.079M / 91.00 MiB` |
+| `4096..16384` HZ6-only repeat-5 | `50.574M / 94.38 MiB` |
 
-Latest cross-allocator refresh after active-map mask-index promotion, repeat-3,
-`bench_mixed_ws_crt`, raw
-`private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_131852`:
+Latest cross-allocator refresh after active-map register fast-slot promotion,
+repeat-3, `bench_mixed_ws_crt`, raw
+`private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_145328`:
 
 | Row | hz6 | mimalloc | tcmalloc | system | hz6 peak KB |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| `16..256` | `56.896M` | `52.760M` | `257.036M` | `103.877M` | `30,976` |
-| `16..4096` | `40.452M` | `7.116M` | `97.892M` | `16.361M` | `81,536` |
-| `1024..4096` | `38.500M` | `5.609M` | `95.626M` | `9.663M` | `93,312` |
-| `4096..16384` | `48.459M` | `1.316M` | `43.632M` | `2.920M` | `96,768` |
+| `16..256` | `56.665M` | `53.541M` | `248.368M` | `105.732M` | `31,232` |
+| `16..4096` | `39.743M` | `7.038M` | `97.666M` | `16.935M` | `81,664` |
+| `1024..4096` | `37.948M` | `5.578M` | `96.292M` | `9.935M` | `93,056` |
+| `4096..16384` | `48.961M` | `1.307M` | `43.192M` | `2.961M` | `96,768` |
 
 Important caveat:
 
@@ -109,11 +111,11 @@ remains the higher speed/RSS frontier.
 Follow-up:
 
 ```text
-MidPage 8K run768, 32K run2048, and active-map mask-index are now selected.
-The current selected lane keeps the static-table RSS cut and reaches 49.639M /
-94.38 MiB on the HZ6-only 4096..16384 repeat-5, with full-cross repeat-3
-clearly ahead of tcmalloc. Keep 32K run1536, run768, and run512 as direct
-controls.
+MidPage 8K run768, 32K run2048, active-map mask-index, and active-map register
+fast-slot are now selected. The current selected lane keeps the static-table
+RSS cut and reaches 50.574M / 94.38 MiB on the HZ6-only 4096..16384 repeat-5,
+with full-cross repeat-3 still clearly ahead of tcmalloc. Keep 32K run1536,
+run768, and run512 as direct controls.
 ```
 
 Current follow-up read:
@@ -121,9 +123,10 @@ Current follow-up read:
 | Lane | Status | Read |
 | --- | --- | --- |
 | MidPage active-map deeper probe | no-go direction | Miss attribution showed `found_elsewhere=0`; misses are not probe-limit misses. |
+| MidPage active-map register fast-slot | selected/default | Probe audit showed 4096..16384 register/free hits average about `1.15` probes with `88.3%` base-slot hits. Register fast-slot improves target with better guard balance than enabling free fast-slot too. |
 | `HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1=1` | watch/control | Re-tested after descriptor-out: target improves, but `16..256` repeat-7 is still slightly weaker. Keep off. |
 | `HZ6_MIDPAGE_ACTIVE_MAP_ADDR_ENVELOPE_L1=1` | watch/control | Helps Toy/tiny by skipping impossible MidPage probes, but target has `addr_envelope_skip=0`. Keep off. |
-| Next likely lane | diagnostic/design | Active-map mask-index is selected. Run-size and borrow lanes are closed for now; next prefer frontcache storage/RSS design or a fresh active-map success-path audit before changing semantics. |
+| Next likely lane | diagnostic/design | Active-map register fast-slot is selected. Keep free fast-slot as a control because `both` is target-positive but guard-weaker. Next prefer frontcache storage/RSS design or a narrower active-map free-hit shape. |
 
 HZ3/HZ4 comparison read:
 
@@ -134,7 +137,7 @@ HZ3/HZ4 comparison read:
 | `1024..4096` | `35.131M` | `91.406M` | `49.979M` | HZ6 is about `0.70x` HZ4. |
 | `4096..16384` old default | `29.409M` | `74.802M` | `31.089M` | HZ6 was about `0.95x` HZ4 and had the clearest close target. |
 | `4096..16384` MidPage unaligned/probe4 | `31.505M` | n/a | `30.916M` | HZ6 now edges HZ4 while keeping lower RSS. |
-| `4096..16384` mask-index selected | `48.459M` | `74.374M` | `31.147M` | HZ6 strongly beats HZ4 and tcmalloc on the balanced MidPage row, but HZ3 remains the frontier. |
+| `4096..16384` register-fast selected | `48.961M` | `74.340M` | `31.018M` | HZ6 strongly beats HZ4 and tcmalloc on the balanced MidPage row, but HZ3 remains the frontier. |
 
 Architecture read:
 
@@ -151,11 +154,11 @@ HZ6:
 
 Near-term target:
   hold the 4096..16384 tcmalloc/HZ4 lead while closing the HZ3 gap.
-  Current mask-index selected cross repeat-3:
-    hz6 48.459M / 94.50 MiB
-    hz4 31.147M / 129.12 MiB
-    tcmalloc 43.632M / 103.88 MiB
-    hz3 74.374M / 73.62 MiB
+  Current register-fast selected cross repeat-3:
+    hz6 48.961M / 94.50 MiB
+    hz4 31.018M / 131.38 MiB
+    tcmalloc 43.192M / 106.62 MiB
+    hz3 74.340M / 73.62 MiB
 
 Longer-term target:
   design a local-page/run metadata fast lane if HZ6 must chase HZ3/HZ4 tiny
@@ -199,6 +202,7 @@ Longer-term target:
 | Static table trim | selected/default | `HZ6_ROUTE_TABLE_CAPACITY=65536`, `HZ6_OBJECT_DESCRIPTOR_CAPACITY=16384`, `HZ6_SOURCE_BLOCK_CAPACITY=2048`, and `HZ6_FRONT_CACHE_BIN_CAPACITY=4096` reduce allocator-local fixed table RSS. Confirm repeat-5 without stats moved 16..4096 `41.519M / 100.62 MiB -> 43.581M / 79.75 MiB`, 1024..4096 `39.966M / 111.75 MiB -> 41.849M / 91.00 MiB`, and 4096..16384 `40.863M / 115.25 MiB -> 42.904M / 94.38 MiB`; no route/descriptor/source failures in the repeat-3 safety lane. |
 | MidPage 32K run2048 | selected/default | `HZ6_MIDPAGE_32K_RUN_BYTES=2097152` further reduces 32K source churn after run1536. Focused repeat-15 moved 4096..16384 `48.278M -> 49.789M`; stats repeat-3 kept fail counters 0 and cut 4096..16384 source_alloc `900 -> 723`. Keep run1536, run768, and run512 as direct controls. |
 | MidPage active-map mask-index | selected/default | `HZ6_MIDPAGE_ACTIVE_MAP_MASK_INDEX_L1=1` replaces modulo wrapping with mask wrapping for the selected power-of-two active-map capacity. Production repeat-15 moved 4096..16384 `49.443M -> 50.231M`, kept 16..4096 flat, and 1024..4096 slightly positive. Stats repeat-3 kept fail counters 0; R1 smokes pass. |
+| MidPage active-map register fast-slot | selected/default | `HZ6_MIDPAGE_ACTIVE_MAP_REGISTER_FAST_SLOT_L1=1` handles empty/same-pointer base-slot register without entering the bounded probe loop. Probe audit showed 4096..16384 register/free hits average `1.15` probes with `88.3%` base-slot hits. Production repeat-15 moved 4096..16384 `48.584M -> 50.160M`; stats repeat-3 kept fail counters 0; R1 smokes pass. |
 | MidPage 32K fine ladder | control/no-go | Post-run2048 repeat-7 kept 2M as the local peak: 4096..16384 selected `49.494M`, run2048 rebuild `49.675M`, run2304 `48.864M`, run2560 `48.411M`, run3072 `44.866M`, and run4096 `46.384M`. Keep 1792K/2304K/2560K/3072K/4096K as controls, not selected. |
 | MidPage 32K run1536 | control | Previous selected `HZ6_MIDPAGE_32K_RUN_BYTES=1572864`; keep as direct control for run2048. |
 | MidPage 32K run768 | control | Earlier selected `HZ6_MIDPAGE_32K_RUN_BYTES=786432`; keep as direct control for run1536/run2048. |
@@ -217,7 +221,7 @@ Longer-term target:
 | `HZ6_PRELOAD_FREE_MIDPAGE_HINT_DRYRUN_L1=1` | diagnostic-only/no-go direction | Dry-run for selective MidPage-first free ordering. The recent min/max envelope covered 4096..16384 well, but false positives were huge on 16..4096 and 1024..4096. Behavior remains Toy-first; future work needs a tighter range/page hint table. |
 | `HZ6_PRELOAD_FREE_MIDPAGE_PAGE_HINT_DRYRUN_L1=1` | diagnostic-only | Tighter selective MidPage-first free dry-run. Preload MidPage malloc boundary hits register base/last 4K pages in a small TLS hint table; free() probes the table and reports through the existing `mh_*` hook-detail counters. Capacity32768 was much cleaner than the broad envelope, but the behavior A/B showed the per-free probe cost is too high. Keep as evidence only. |
 | `HZ6_PRELOAD_FREE_MIDPAGE_PAGE_HINT_FIRST_L1=1` | control/no-go | Behavior A/B for the page-hint gate. Hinted frees use MidPage-first ordering; unhinted frees preserve selected Toy-first ordering. It reduced 4096..16384 Toy active-map attempts, but short repeat-5 regressed every focused row, so the per-free hint probe/table overhead is not selected-safe. |
-| `HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_L1=1` | control/no-go | Base-slot-first MidPage active-map free lookup. It avoids a new free classifier and only changes the existing probe code shape, but short repeat-5 was target-negative (`4096..16384 26.295M -> 25.422M`) and guard-flat/weak. Keep off. |
+| `HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_L1=1` | control/watch | Re-tested after mask-index and register fast-slot. Free-fast alone is target-positive, and register+free fast-slot reached `50.253M` on 4096..16384, but the combined shape was weaker on the 1024..4096 guard than register-only. Keep off until a narrower free-hit shape exists. |
 
 Closeout details for the selective MidPage-first free lanes are in:
 
@@ -244,6 +248,8 @@ Keep these controls available when changing the preload lane:
 | `HZ6_MIDPAGE_ACTIVE_FREE_MAP_UNALIGNED_L2=0` | Direct control for MidPage active-map 8K-alignment gating. |
 | `HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY=8192` | Previous balanced default and direct control for the selected cap16K promotion. |
 | `HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT=2` | Balanced control for the selected probe4 MidPage active map. Probe2 is slightly better on 1024..4096 but weaker on the HZ4-close 4096..16384 target. |
+| `HZ6_MIDPAGE_ACTIVE_MAP_REGISTER_FAST_SLOT_L1=0` | Direct control for the selected MidPage active-map register fast-slot. |
+| `HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_L1=1` | Free-side active-map fast-slot control. Target-positive after register fast-slot, but guard-weaker than register-only. |
 | `HZ6_MIDPAGE_ALLOC_DESCRIPTOR_OUT_L1=0` | Direct control for the selected MidPage descriptor-out malloc path. |
 | frontcache 8192/16384 | Wide frontcache controls after static table trim. 8192 is the previous selected capacity; 16384 was flat enough not to promote. |
 | `HZ6_FRONT_CACHE_MIDPAGE_32K_BIN_CAPACITY=3072` | Class-specific cap control. Safe in the first FrontcacheShapeAudit repeat-3 but did not improve speed/RSS enough to promote. |

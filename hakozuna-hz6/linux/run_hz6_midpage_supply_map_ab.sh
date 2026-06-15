@@ -152,6 +152,16 @@ variant_flags() {
     amap_mask)
       hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_MAP_MASK_INDEX_L1 1
       ;;
+    amap_register_fast)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_MAP_REGISTER_FAST_SLOT_L1 1
+      ;;
+    amap_free_fast)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_L1 1
+      ;;
+    amap_fast_both)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_MAP_REGISTER_FAST_SLOT_L1 1
+      hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_L1 1
+      ;;
     amap32k_p4)
       hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY 32768
       ;;
@@ -226,6 +236,9 @@ default_variants=(
   borrow_larger
   mid8_borrow32
   amap_mask
+  amap_register_fast
+  amap_free_fast
+  amap_fast_both
   amap32k_p4
   amap64k_p4
   amap32k_p8
@@ -292,8 +305,8 @@ diag_mode = config.split("diagnostics=", 1)[1].splitlines()[0] if "diagnostics="
 print(f"stats: `{stats_mode}`")
 print(f"diagnostics: `{diag_mode}`")
 print()
-print("| row | variant | median ops/s | median peak MiB | source_alloc | midpage_source_alloc | route_after_maps | mid_hit | mid_miss | mid8_alloc | mid32_alloc | mid8_empty | mid32_empty | borrow_success | fail |")
-print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+print("| row | variant | median ops/s | median peak MiB | source_alloc | midpage_source_alloc | route_after_maps | mid_hit | mid_miss | mid_reg_avg_probe | mid_reg_base_pct | mid_free_avg_probe | mid_free_base_pct | mid8_alloc | mid32_alloc | mid8_empty | mid32_empty | borrow_success | fail |")
+print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 for row in rows:
     for variant in variants:
         ops = []
@@ -303,6 +316,10 @@ for row in rows:
         route_after_maps = []
         mid_hit = []
         mid_miss = []
+        mid_reg_avg_probe = []
+        mid_reg_base_pct = []
+        mid_free_avg_probe = []
+        mid_free_base_pct = []
         mid8_alloc = []
         mid32_alloc = []
         mid8_empty = []
@@ -322,6 +339,16 @@ for row in rows:
             route_after_maps.append(extract("free_route_lookup_after_maps", text))
             mid_hit.append(extract("free_midpage_active_map_hit", text))
             mid_miss.append(extract("free_midpage_active_map_miss", text))
+            reg_count = extract("midpage_active_map_register", text)
+            reg_probe_total = extract("midpage_active_map_register_probe_total", text)
+            reg_base = extract("midpage_active_map_register_base_slot", text)
+            free_hit = extract("midpage_active_map_free_hit", text)
+            free_probe_total = extract("midpage_active_map_free_hit_probe_total", text)
+            free_base = extract("midpage_active_map_free_hit_base_slot", text)
+            mid_reg_avg_probe.append(reg_probe_total / reg_count if reg_count else 0.0)
+            mid_reg_base_pct.append(100.0 * reg_base / reg_count if reg_count else 0.0)
+            mid_free_avg_probe.append(free_probe_total / free_hit if free_hit else 0.0)
+            mid_free_base_pct.append(100.0 * free_base / free_hit if free_hit else 0.0)
             mid8_alloc.append(extract("midpage_8k_alloc_call", text))
             mid32_alloc.append(extract("midpage_32k_alloc_call", text))
             mid8_empty.append(extract("midpage_8k_frontcache_pop_empty", text))
@@ -340,6 +367,10 @@ for row in rows:
             f"{statistics.median(route_after_maps):.0f} | "
             f"{statistics.median(mid_hit):.0f} | "
             f"{statistics.median(mid_miss):.0f} | "
+            f"{statistics.median(mid_reg_avg_probe):.2f} | "
+            f"{statistics.median(mid_reg_base_pct):.1f}% | "
+            f"{statistics.median(mid_free_avg_probe):.2f} | "
+            f"{statistics.median(mid_free_base_pct):.1f}% | "
             f"{statistics.median(mid8_alloc):.0f} | "
             f"{statistics.median(mid32_alloc):.0f} | "
             f"{statistics.median(mid8_empty):.0f} | "

@@ -192,6 +192,43 @@ MidPageActiveMapMaskIndex-L1 is now selected/default for Ubuntu preload:
     4096..16384 hz6 48.459M / 94.50 MiB
     4096..16384 tcmalloc 43.632M / 103.88 MiB
   decision: promote HZ6_MIDPAGE_ACTIVE_MAP_MASK_INDEX_L1=1 for Ubuntu preload.
+MidPageActiveMapRegisterFastSlot-L1 is now selected/default for Ubuntu preload:
+  flag: HZ6_MIDPAGE_ACTIVE_MAP_REGISTER_FAST_SLOT_L1=1
+  reason: after mask-index, diagnostic probe attribution showed the selected
+  4096..16384 row has active-map register/free hits at about 1.15 average
+  probes with 88.3% base-slot hits. Register fast-slot avoids entering the
+  bounded probe loop for empty/same-pointer base-slot registrations without
+  changing free behavior.
+  diagnostic probe audit:
+    raw: private/raw-results/linux/hz6_midpage_supply_map_ab_20260615_145056
+    4096..16384 selected:
+      register avg_probe=1.15, base_slot=88.3%
+      free hit avg_probe=1.15, base_slot=88.3%
+      fail counters 0
+  production repeat-15:
+    raw: private/raw-results/linux/hz6_midpage_supply_map_ab_20260615_145147
+    16..256      56.980M -> 56.787M  (-0.34%)
+    16..4096     41.344M -> 41.409M  (+0.16%)
+    1024..4096   39.847M -> 39.646M  (-0.50%)
+    4096..16384  48.584M -> 50.160M  (+3.24%)
+  comparison:
+    amap_fast_both reached 50.253M on 4096..16384, but 1024..4096 was
+    weaker (-0.99%), so keep free fast-slot as a control for now.
+  stats repeat-3:
+    raw: private/raw-results/linux/hz6_midpage_supply_map_ab_20260615_145220
+    fail counters 0.
+  post-promotion HZ6-only repeat-5:
+    raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_145322
+    16..256      56.227M / 30.38 MiB
+    16..4096     40.939M / 79.88 MiB
+    1024..4096   40.079M / 91.00 MiB
+    4096..16384  50.574M / 94.38 MiB
+  full cross repeat-3:
+    raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_145328
+    4096..16384 hz6 48.961M / 94.50 MiB
+    4096..16384 tcmalloc 43.192M / 106.62 MiB
+  decision: promote HZ6_MIDPAGE_ACTIVE_MAP_REGISTER_FAST_SLOT_L1=1 for Ubuntu
+  preload; keep HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_L1=1 as a control.
 Earlier repeat-3 refresh after free-hint/free-fastslot no-go closeouts:
   raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_004605
   16..256     hz6 58.046M / 30.50 MiB
@@ -318,6 +355,7 @@ Latest MidPage closeout:
   keep static table trim selected
   keep MidPage 32K run2048 selected
   keep MidPage active-map mask-index selected
+  keep MidPage active-map register fast-slot selected
   keep preclassified malloc shape out of source
   keep MidPage target DSO as selected/control alias
 
@@ -328,9 +366,10 @@ source-run-slot route registration, broad malloc code-shape changes, or
 whole-helper free-cache replacement first.
 
 Next recommended optimization lane:
-  active-map mask-index is selected and safety-clean. Run-size and borrow
-  attempts are closed for now. Next, prefer frontcache storage/RSS design or a
-  fresh active-map success-path audit before changing active-map semantics.
+  active-map register fast-slot is selected and safety-clean. Run-size and
+  borrow attempts are closed for now. Free fast-slot remains target-positive
+  but guard-weaker, so do not promote it without a narrower shape. Next, prefer
+  frontcache storage/RSS design or a narrower active-map free-hit shape.
 
 Closed MidPage controls:
   free-order/page-hint/current-bias details:

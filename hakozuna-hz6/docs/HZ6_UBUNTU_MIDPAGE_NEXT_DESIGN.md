@@ -134,19 +134,19 @@ Current implementation order:
    - broad borrow_larger is guard-negative
    - mid8_borrow32 is default-off control/no-go evidence
 
-2. Try an active-map success-path code-shape control that does not change
-   behavior:
+2. Keep mask-index and register fast-slot selected:
    - selected capacity is 16384, a power of two
-   - active-map register/free currently wraps probe indexes with modulo
-   - test a mask-based index/wrap control before touching semantics
+   - mask-index removes modulo wrapping
+   - register fast-slot removes the bounded loop for empty/same-pointer
+     base-slot registrations
 
-3. Measure selected versus candidate on:
-   - 16..256
-   - 16..4096
-   - 1024..4096
-   - 4096..16384
+3. Do not promote free fast-slot yet:
+   - both register+free fast-slot is target-positive
+   - 1024..4096 guard is weaker than register-only
 
-4. Promote only if target improves and guards stay within noise.
+4. Next work should be either:
+   - frontcache storage/RSS design
+   - narrower active-map free-hit shape that avoids the guard cost
 ```
 
 Mask-index result:
@@ -167,6 +167,37 @@ post-promotion selected:
   4096..16384 49.639M / 94.38 MiB
 decision:
   promote mask-index for Ubuntu preload.
+```
+
+Register fast-slot result:
+
+```text
+flag: HZ6_MIDPAGE_ACTIVE_MAP_REGISTER_FAST_SLOT_L1=1
+diagnostic probe audit:
+  raw: private/raw-results/linux/hz6_midpage_supply_map_ab_20260615_145056
+  4096..16384 selected:
+    register avg_probe=1.15, base_slot=88.3%
+    free hit avg_probe=1.15, base_slot=88.3%
+production repeat-15:
+  raw: private/raw-results/linux/hz6_midpage_supply_map_ab_20260615_145147
+  4096..16384 selected 48.584M -> register_fast 50.160M
+  16..4096    selected 41.344M -> register_fast 41.409M
+  1024..4096  selected 39.847M -> register_fast 39.646M
+  16..256     selected 56.980M -> register_fast 56.787M
+stats repeat-3:
+  raw: private/raw-results/linux/hz6_midpage_supply_map_ab_20260615_145220
+  fail counters 0
+post-promotion selected:
+  raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_145322
+  4096..16384 50.574M / 94.38 MiB
+full cross:
+  raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_145328
+  4096..16384 hz6 48.961M / 94.50 MiB
+  4096..16384 tcmalloc 43.192M / 106.62 MiB
+decision:
+  promote register fast-slot.
+  keep free fast-slot as a control because both-fast is target-positive but
+  guard-weaker.
 ```
 
 Audit variants:
