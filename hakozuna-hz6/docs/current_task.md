@@ -96,7 +96,7 @@ Calloc direct-HZ6 code-shape control:
 
 Fixed-boundary/fixed-cost profile repeats:
   private/raw-results/linux/hz6_fixed_boundary_profile_frontier_20260616_061328
-  private/raw-results/linux/hz6_static_table_trim_ab_20260616_055101
+  private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_062124
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_055648
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_061733
   private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_061459
