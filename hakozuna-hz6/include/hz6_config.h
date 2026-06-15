@@ -578,6 +578,14 @@
 #define HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1 0
 #endif
 
+#ifndef HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1
+/* Candidate preload-boundary code shape.  The LD_PRELOAD TLS allocator is
+ * initialized once and not destroyed during normal process lifetime, so profile
+ * boundary helpers can skip their duplicate owner liveness check and rely on
+ * the generic hz6_malloc() fallback for non-boundary paths. */
+#define HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1 0
+#endif
+
 #ifndef HZ6_TOY_FULL_BLOCK_PREFILL_L1
 /* Candidate-only Toy source miss policy.  When enabled, ToyFront asks the
  * source-block prefill path to consume more slots from the newly-created 64K
@@ -744,6 +752,13 @@
 /* Selected production direct-reuse shortcut.  Diagnostic builds still use the
  * wrapper path so frontcache attribution counters remain available. */
 #define HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1 0
+#endif
+
+#ifndef HZ6_DIRECT_LOCAL_FREE_RAW_PUSH_L1
+/* Candidate production trusted-free shortcut.  Diagnostic and cold-retire
+ * builds keep the wrapper path so frontcache counters and retire hooks remain
+ * available. */
+#define HZ6_DIRECT_LOCAL_FREE_RAW_PUSH_L1 0
 #endif
 
 #ifndef HZ6_LOCAL_CACHE_DIRECT_MAX_CLASS

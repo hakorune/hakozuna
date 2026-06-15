@@ -196,9 +196,11 @@ void* hz6_allocator_preload_midpage_malloc_skip_transfer(Hz6Allocator* allocator
   if (!allocator) {
     return NULL;
   }
+#if !HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1
   if (!hz6_owner_is_alive(&allocator->owner, allocator->owner.token)) {
     return NULL;
   }
+#endif
 
   uint16_t class_id = 0;
 #if HZ6_PRELOAD_MIDPAGE_DIRECT_CLASS_L1
@@ -283,9 +285,11 @@ hz6_allocator_preload_toy_malloc_direct_class(Hz6Allocator* allocator,
   if (!allocator) {
     return NULL;
   }
+#if !HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1
   if (!hz6_owner_is_alive(&allocator->owner, allocator->owner.token)) {
     return NULL;
   }
+#endif
   if (size == 0 || size > HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES ||
       size > 4096u) {
     return hz6_malloc(allocator, size);

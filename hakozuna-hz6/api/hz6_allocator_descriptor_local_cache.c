@@ -426,6 +426,18 @@ int hz6_allocator_cache_active_descriptor_trusted_owner(
   hz6_frontcache_entry_set_class_id(&entry, descriptor->class_id);
   const uint16_t entry_class_id = hz6_frontcache_entry_class_id(&entry);
 
+#if HZ6_DIRECT_LOCAL_FREE_RAW_PUSH_L1 && !HZ6_DIAGNOSTIC_PROBES && \
+    !HZ6_MIDPAGE_32K_COLD_RETIRE_L1
+  {
+    Hz6FrontCacheBin* bin = &allocator->frontcache_bins[entry_class_id];
+    if (bin->entries && entry.ptr &&
+        !hz6_frontcache_entry_bytes_overflow(&entry) &&
+        bin->count < bin->capacity) {
+      bin->entries[bin->count++] = entry;
+      return 1;
+    }
+  }
+#else
   if (hz6_allocator_frontcache_push(allocator, entry_class_id, entry)) {
 #if HZ6_MIDPAGE_32K_COLD_RETIRE_L1
     if (entry_class_id == HZ6_MIDPAGE_32K_CLASS_ID) {
@@ -434,6 +446,7 @@ int hz6_allocator_cache_active_descriptor_trusted_owner(
 #endif
     return 1;
   }
+#endif
 
   descriptor->state = HZ6_STATE_DEAD;
   hz6_allocator_route_unregister_exact_reason(

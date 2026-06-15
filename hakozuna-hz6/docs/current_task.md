@@ -99,6 +99,58 @@ decision:
   active-map probe.  Keep dry-run counters as evidence only.
 ```
 
+## Current Continuation: Narrow Preload Code-Shape Controls
+
+```text
+latest continuation:
+  Add default-off controls:
+    HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1=1
+    HZ6_DIRECT_LOCAL_FREE_RAW_PUSH_L1=1
+
+  Extend existing Toy active-map mask-index control so probe wrap also uses the
+  mask helper instead of only masking the base index.
+
+raw:
+  private/raw-results/linux/hz6_preload_boundary_trusted_owner_20260616_001246
+  private/raw-results/linux/hz6_preload_boundary_trusted_owner_safety_20260616_001306
+  private/raw-results/linux/hz6_preload_boundary_trusted_owner_guard_20260616_001324
+  private/raw-results/linux/hz6_preload_boundary_trusted_owner_tiny_20260616_001347
+  private/raw-results/linux/hz6_preload_boundary_trusted_owner_tiny_repeat_20260616_001406
+  private/raw-results/linux/hz6_toy_mask_wrap_ab_20260616_001459
+  private/raw-results/linux/hz6_raw_frontcache_push_ab_20260616_001644
+  private/raw-results/linux/hz6_raw_frontcache_push_safety_20260616_001706
+  private/raw-results/linux/hz6_raw_frontcache_push_guard_20260616_001724
+
+read:
+  preload boundary trusted-owner:
+    repeat-15 focused/fixed looked useful on target/fixed:
+      4096..16384 41.446M -> 43.300M
+      fixed_4k     30.819M -> 31.406M
+      fixed_8k     40.770M -> 41.547M
+      fixed_16k    43.473M -> 43.726M
+    but tiny repeat-15 failed:
+      16..256      56.457M -> 54.229M
+
+  Toy mask-wrap:
+    repeat-9 mixed:
+      16..256      56.876M -> 56.988M
+      16..4096     35.688M -> 35.867M
+      1024..4096   33.537M -> 33.113M
+      4096..16384  44.598M -> 44.185M
+    The full mask shape still loses the mid-small/target guards.
+
+  raw frontcache push:
+    repeat-9 was all-positive, but repeat-15 failed the target:
+      4096..16384  44.689M -> 42.174M
+    safety stats kept fail=0.
+
+decision:
+  Keep all three as controls/no-go for selected default.  The useful signal is
+  that trusted-owner and raw-push can move fixed rows, but each still has a
+  selected-family guard failure.  Do not promote without a narrower profile or
+  code-layout isolation.
+```
+
 ## Recent Closeout: HZ6 Ubuntu RealAlignedFreeSkip-L1
 
 ```text

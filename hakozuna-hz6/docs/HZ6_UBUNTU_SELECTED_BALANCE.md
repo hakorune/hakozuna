@@ -503,6 +503,15 @@ behavior A/B did not pass.  Raw `hz6_page_kind_selector_first_prod_20260616_0009
 regressed every focused/fixed row, including `4096..16384 44.447M -> 39.926M`.
 Keep all-free page-kind lookup behavior off; the saved wrong first active-map
 probe is not worth the extra lookup/table cost.
+
+The narrow preload code-shape follow-ups are also closed as controls/no-go for
+selected default:
+  HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1=1:
+    useful target/fixed signal, but tiny guard regressed.
+  HZ6_DIRECT_LOCAL_FREE_RAW_PUSH_L1=1:
+    fixed-row signal, but repeat-15 target guard regressed.
+  Toy active-map full mask-wrap:
+    cleaned up the control implementation, but still mixed/regressed guards.
 ```
 
 ## Static Table Trim Promotion

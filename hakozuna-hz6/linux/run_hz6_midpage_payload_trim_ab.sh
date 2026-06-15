@@ -312,6 +312,9 @@ variant_flags() {
     raw_frontcache_pop)
       hz6_preload_replace_define flags HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1 1
       ;;
+    raw_frontcache_push)
+      hz6_preload_replace_define flags HZ6_DIRECT_LOCAL_FREE_RAW_PUSH_L1 1
+      ;;
     direct_max5)
       hz6_preload_replace_define flags HZ6_LOCAL_CACHE_DIRECT_MAX_CLASS 5
       ;;
@@ -344,6 +347,14 @@ variant_flags() {
     preload_toy_direct_class_fast_reuse)
       hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 1
       hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1 1
+      ;;
+    preload_boundary_trusted_owner)
+      hz6_preload_replace_define flags HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1 1
+      ;;
+    preload_toy_fast_reuse_trusted_owner)
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1 1
       ;;
     preload_toy_direct_class_max1024)
       hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 1
