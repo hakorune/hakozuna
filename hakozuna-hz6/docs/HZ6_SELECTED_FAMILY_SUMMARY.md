@@ -39,7 +39,7 @@ runner.  The preload lane is now smoke-clean and has its own selected/default
 composition:
 
 ```text
-HZ6_ROUTE_TABLE_CAPACITY=65536
+HZ6_ROUTE_TABLE_CAPACITY=32768
 HZ6_OBJECT_DESCRIPTOR_CAPACITY=16384
 HZ6_SOURCE_BLOCK_CAPACITY=2048
 HZ6_FRONT_CACHE_BIN_CAPACITY=4096

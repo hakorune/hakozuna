@@ -605,16 +605,27 @@ Selected-under fixed-floor ladder smoke:
 
 ```text
 hakozuna-hz6/private/raw-results/linux/hz6_static_table_trim_ab_20260616_054020
+hakozuna-hz6/private/raw-results/linux/hz6_static_table_trim_ab_20260616_054150
+hakozuna-hz6/private/raw-results/linux/hz6_static_table_trim_ab_20260616_054228
 ```
 
 The static-table runner now supports `--rows` and `--variants` for focused
 fixed-floor checks. Repeat-3/80k kept `route_fail=0`, `descriptor_exhausted=0`,
 `source_block_exhausted=0`, and `malloc_real_fallback=0` for selected-under
-controls. `route32768` is the first candidate: it cut about `5 MiB` peak RSS
-across focused/fixed rows and was speed-positive on `16..4096`,
-`4096..16384`, `fixed_4k`, and `fixed_8k`; it was slightly weak on
-`1024..4096` and `fixed_16k`. Treat it as a candidate/control only until a
-thicker focused+fixed repeat confirms the guard shape.
+controls. The thicker repeat-7/200k guard promoted `route32768` to
+selected/default: it cut about `5 MiB` peak RSS and improved speed on every
+measured focused/fixed row versus the previous selected route65K shape, with
+all fail counters still zero. The selected-only post-promotion guard stayed
+clean, so the Ubuntu preload selected route table capacity is now 32768.
+
+| Row | previous selected | route32768 |
+| --- | ---: | ---: |
+| `16_4096` | `16.002M / 79.50 MiB` | `16.222M / 74.62 MiB` |
+| `1024_4096` | `15.019M / 90.88 MiB` | `15.215M / 85.88 MiB` |
+| `4096_16384` | `18.739M / 93.88 MiB` | `19.300M / 88.88 MiB` |
+| `fixed_4k` | `14.802M / 92.00 MiB` | `15.005M / 86.88 MiB` |
+| `fixed_8k` | `17.835M / 93.25 MiB` | `18.098M / 88.25 MiB` |
+| `fixed_16k` | `17.827M / 93.12 MiB` | `18.601M / 88.12 MiB` |
 
 Hot-path attribution refresh:
 
@@ -1030,7 +1041,8 @@ hakozuna-hz6/private/raw-results/linux/hz6_static_table_trim_ab_20260614_164920
 hakozuna-hz6/private/raw-results/linux/hz6_static_table_trim_confirm_20260614_165003
 ```
 
-Promotion:
+Previous static trim promotion. Route capacity was later superseded by
+FixedFloorRoute32K-L1; descriptor/source/frontcache capacities remain selected:
 
 ```text
 HZ6_ROUTE_TABLE_CAPACITY=65536

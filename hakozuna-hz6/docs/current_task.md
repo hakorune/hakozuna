@@ -41,9 +41,8 @@ Selected read:
 
 Default position:
   Keep selected/default stable.
-  Treat realloc-boundary/adaptive/calloc/aligned lanes as profile/control
-  until they pass focused, fixed, stats/diagnostic, RSS, and cross-allocator
-  guard evidence.
+  Treat realloc/adaptive/calloc/aligned lanes as profile/control until they
+  pass focused, fixed, stats/diagnostic, RSS, and cross-allocator guards.
 ```
 
 ## Active Profile Lanes
@@ -104,8 +103,9 @@ Calloc direct-HZ6 code-shape control:
 Fixed-boundary/fixed-cost profile repeats:
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_051956
   private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_053600
-  private/raw-results/linux/hz6_static_table_trim_ab_20260616_053921
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_054020
+  private/raw-results/linux/hz6_static_table_trim_ab_20260616_054150
+  private/raw-results/linux/hz6_static_table_trim_ab_20260616_054228
 
 Details:
   archive/current_task_2026-06-16_adaptive_profile_snapshot.md
@@ -134,15 +134,16 @@ Default no-go/control-only without substantially different evidence:
 
 ```text
 1. Keep selected/default stable.
-2. Start the next lane from fixed-cost/RSS attribution, not a default behavior
-   change. The fixed-cost matrix shows profile wins improve speed but not RSS;
-   route32768 is the first fixed-floor candidate and needs thicker guard repeat.
+2. Route32K selected/default after repeat-7/200k focused+fixed guard:
+   route32768 beat previous selected on speed and peak RSS for every
+   measured focused/fixed row with zero fail counters.
 3. Treat adaptive-4k and adaptive-8k as fixed-boundary profile lanes.
 4. Treat calloc-large-real as a large calloc-heavy RSS/speed profile, not a
    selected/default lane.
 5. Keep calloc-direct default-off: thick focused+calloc repeat is mixed and
    does not justify selected/default.
-6. Before any selected/default change, update stable docs and archive long logs.
+6. Next fixed-floor probes should start from descriptor/source/map capacities
+   only after route32K settles under a broader cross-allocator refresh.
 7. Keep this file below about 150 lines; archive completed evidence snapshots
    instead of appending chronological logs. Large 3000+ line ledgers belong
    only under archive/.
