@@ -1020,8 +1020,19 @@ void free(void* ptr) {
           }
 #endif
 #if HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1
-          midpage_fast_free = hz6_midpage_active_map_eligible(
-              preload_route.route.front_id, preload_route.route.class_id);
+          int midpage_fast_free_class_allowed =
+              preload_route.route.class_id <=
+              HZ6_PRELOAD_MIDPAGE_FAST_FREE_MAX_CLASS;
+#if HZ6_PRELOAD_MIDPAGE_FAST_FREE_MIN_CLASS > 0
+          midpage_fast_free_class_allowed =
+              midpage_fast_free_class_allowed &&
+              preload_route.route.class_id >=
+                  HZ6_PRELOAD_MIDPAGE_FAST_FREE_MIN_CLASS;
+#endif
+          midpage_fast_free =
+              midpage_fast_free_class_allowed &&
+              hz6_midpage_active_map_eligible(preload_route.route.front_id,
+                                              preload_route.route.class_id);
 #endif
 #if HZ6_PRELOAD_MIDPAGE_ROUTE_REARM_L1
           hz6_midpage_active_map_register(

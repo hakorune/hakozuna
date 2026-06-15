@@ -897,6 +897,14 @@
 #define HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1 0
 #endif
 
+#ifndef HZ6_PRELOAD_MIDPAGE_FAST_FREE_MIN_CLASS
+#define HZ6_PRELOAD_MIDPAGE_FAST_FREE_MIN_CLASS 0
+#endif
+
+#ifndef HZ6_PRELOAD_MIDPAGE_FAST_FREE_MAX_CLASS
+#define HZ6_PRELOAD_MIDPAGE_FAST_FREE_MAX_CLASS 15u
+#endif
+
 #ifndef HZ6_PRELOAD_FREE_MIDPAGE_FIRST_L1
 /* Candidate preload free ordering.  Try the MidPage active map before the Toy
  * active map to test whether MidPage-heavy rows can avoid the Toy miss wall. */

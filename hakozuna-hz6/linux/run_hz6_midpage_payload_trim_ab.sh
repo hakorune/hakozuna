@@ -347,6 +347,16 @@ variant_flags() {
     preload_midpage_fast_free)
       hz6_preload_replace_define flags HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1 1
       ;;
+    preload_midpage_fast_free_class4)
+      hz6_preload_replace_define flags HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_MIDPAGE_FAST_FREE_MIN_CLASS 4
+      hz6_preload_replace_define flags HZ6_PRELOAD_MIDPAGE_FAST_FREE_MAX_CLASS 4
+      ;;
+    preload_midpage_fast_free_class5)
+      hz6_preload_replace_define flags HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_MIDPAGE_FAST_FREE_MIN_CLASS 5
+      hz6_preload_replace_define flags HZ6_PRELOAD_MIDPAGE_FAST_FREE_MAX_CLASS 5
+      ;;
     toy_free_fast)
       hz6_preload_replace_define flags HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1 1
       ;;
