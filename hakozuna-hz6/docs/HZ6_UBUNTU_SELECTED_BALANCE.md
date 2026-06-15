@@ -172,6 +172,24 @@ Use the Toy target DSO only as a profile/control lane. Do not add
 `HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1=1` to the selected flag bundle unless a
 future code shape also preserves `4096..16384` and `fixed_16k`.
 
+The Toy target DSO now includes the Toy direct-class fast-reuse profile shape:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_toy_target_fast_reuse_preload_ab_20260616_004700
+```
+
+| row | selected | toy-target fast-reuse | delta | read |
+| --- | ---: | ---: | ---: | --- |
+| `16..256` | `57.689M` | `75.220M` | `+30.39%` | strong profile win |
+| `16..4096` | `36.163M` | `41.684M` | `+15.27%` | strong profile win |
+| `1024..4096` | `33.491M` | `38.482M` | `+14.90%` | strong profile win |
+| `4096..16384` | `44.667M` | `44.216M` | `-1.01%` | selected guard still blocks promotion |
+| `fixed_4k` | `31.958M` | `36.041M` | `+12.77%` | strong profile win |
+| `fixed_8k` | `42.905M` | `42.559M` | `-0.80%` | selected guard still blocks promotion |
+| `fixed_16k` | `44.398M` | `44.821M` | `+0.95%` | acceptable but not enough to override fixed_8k/target |
+
+Keep this as `hz6-toy-target`, not selected default.
+
 Lower-bound Toy direct-class gates were also tested as controls:
 
 ```text

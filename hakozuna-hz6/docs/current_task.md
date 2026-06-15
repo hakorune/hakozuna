@@ -712,6 +712,52 @@ Toy target DSO:
       Future speed work should not repeat max/min gating as a default path;
       it needs a thinner local-run/page metadata route or a profile DSO.
 
+  direct-class fast-reuse profile:
+    Add HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1 as a default-off
+    control. When Toy direct-class is already enabled, it skips the generic
+    direct-local alloc front/transfer gates and calls direct local reuse.
+
+    production guard:
+      raw: private/raw-results/linux/hz6_toy_direct_fast_reuse_guard_20260616_003500
+      repeat-15, 300K, focused+fixed:
+        16..4096      selected 35.946M -> fast 41.896M
+        1024..4096    selected 33.332M -> fast 38.238M
+        4096..16384   selected 44.208M -> fast 44.544M
+        fixed_4k      selected 31.937M -> fast 36.024M
+        fixed_8k      selected 41.038M -> fast 41.647M
+        fixed_16k     selected 44.010M -> fast 44.189M
+
+    promotion guard:
+      raw: private/raw-results/linux/hz6_toy_direct_fast_reuse_key_guard_20260616_004400
+      repeat-21, 300K, focused+fixed, selected temporarily set to fast:
+        16..4096      old 35.900M -> fast 41.983M
+        1024..4096    old 33.161M -> fast 37.760M
+        4096..16384   old 43.713M -> fast 44.297M
+        fixed_4k      old 31.955M -> fast 35.630M
+        fixed_8k      old 42.450M -> fast 42.081M
+        fixed_16k     old 44.423M -> fast 44.387M
+
+    safety:
+      raw: private/raw-results/linux/hz6_toy_direct_fast_reuse_safety_20260616_003800
+      stats+diagnostic repeat-3 kept fail=0 on focused+fixed.
+
+    decision:
+      Do not select by default because fixed_8k/fixed_16k guards are not clean
+      on the stronger repeat-21. Adopt it in profile DSOs:
+        build_hz6_preload_toy_target.sh
+        build_hz6_preload_small_boundary_target.sh
+
+    DSO validation:
+      raw: private/raw-results/linux/hz6_toy_target_fast_reuse_preload_ab_20260616_004700
+      repeat-9, selected DSO vs toy-target DSO:
+        16..256       +30.39%
+        16..4096      +15.27%
+        1024..4096    +14.90%
+        4096..16384   -1.01%
+        fixed_4k      +12.77%
+        fixed_8k      -0.80%
+        fixed_16k     +0.95%
+
   runner integration:
     Add shared allocator alias:
       hz6-toy-target / hz6_toy_target

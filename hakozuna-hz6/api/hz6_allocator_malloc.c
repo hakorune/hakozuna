@@ -295,8 +295,13 @@ hz6_allocator_preload_toy_malloc_direct_class(Hz6Allocator* allocator,
   Hz6ObjectDescriptor* descriptor = NULL;
   hz6_toy_small_hotpath_diag_malloc_fast_attempt(
       allocator, HZ6_FRONT_TOY, class_id);
+#if HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1
+  void* ptr = hz6_allocator_direct_local_reuse(allocator, class_id,
+                                               &descriptor);
+#else
   void* ptr = hz6_allocator_direct_local_alloc(
       allocator, HZ6_FRONT_TOY, class_id, &descriptor);
+#endif
   if (ptr) {
     hz6_toy_small_active_map_register(allocator, HZ6_FRONT_TOY, class_id, ptr,
                                       descriptor);

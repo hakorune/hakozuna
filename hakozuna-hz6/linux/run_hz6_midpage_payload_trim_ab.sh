@@ -327,8 +327,17 @@ variant_flags() {
     toy_preclassified_malloc)
       hz6_preload_replace_define flags HZ6_TOY_PRECLASSIFIED_MALLOC_L1 1
       ;;
+    toy_direct_fast_reuse_off)
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 0
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1 0
+      ;;
     preload_toy_direct_class)
       hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1 0
+      ;;
+    preload_toy_direct_class_fast_reuse)
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1 1
       ;;
     preload_toy_direct_class_max1024)
       hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 1
@@ -344,6 +353,11 @@ variant_flags() {
       ;;
     preload_toy_direct_class_min1025)
       hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MIN_BYTES 1025
+      ;;
+    preload_toy_direct_class_fast_reuse_min1025)
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1 1
       hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MIN_BYTES 1025
       ;;
     preload_toy_direct_class_min2049)
