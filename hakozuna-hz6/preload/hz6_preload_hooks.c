@@ -33,6 +33,14 @@ typedef struct Hz6PreloadRoute {
 
 static __thread Hz6Allocator* g_hz6_preload_allocator;
 
+#if HZ6_PRELOAD_REALLOC_BOUNDARY_ADAPTIVE_4K_L1
+static __thread unsigned char g_hz6_preload_realloc_boundary_adapt_4k;
+#endif
+
+#if HZ6_PRELOAD_REALLOC_BOUNDARY_ADAPTIVE_8K_L1
+static __thread unsigned char g_hz6_preload_realloc_boundary_adapt_8k;
+#endif
+
 #if HZ6_PRELOAD_REAL_ALIGNED_FREE_SKIP_L1
 #define HZ6_PRELOAD_REAL_ALIGNED_TOMBSTONE ((void*)(uintptr_t)1u)
 static pthread_mutex_t g_hz6_preload_real_aligned_mutex =
@@ -352,10 +360,18 @@ static void hz6_preload_count_toy_direct_class_bucket(
 
 static void* hz6_preload_malloc_hz6(Hz6Allocator* allocator, size_t size) {
 #if (HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_4K_L1 || \
-     HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_8K_L1) && \
+     HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_8K_L1 || \
+     HZ6_PRELOAD_REALLOC_BOUNDARY_ADAPTIVE_4K_L1 || \
+     HZ6_PRELOAD_REALLOC_BOUNDARY_ADAPTIVE_8K_L1) && \
     HZ6_PRELOAD_MIDPAGE_MALLOC_SKIP_TRANSFER_L1
-#if HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_4K_L1
-  if (size == 4096u) {
+#if HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_4K_L1 || \
+    HZ6_PRELOAD_REALLOC_BOUNDARY_ADAPTIVE_4K_L1
+  if (size == 4096u
+#if HZ6_PRELOAD_REALLOC_BOUNDARY_ADAPTIVE_4K_L1 && \
+    !HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_4K_L1
+      && g_hz6_preload_realloc_boundary_adapt_4k
+#endif
+  ) {
     hz6_preload_phase_count(
         &g_hz6_preload_phase_stats.malloc_realloc_boundary_slack_4k);
 #if HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_NOINLINE_L1
@@ -365,8 +381,14 @@ static void* hz6_preload_malloc_hz6(Hz6Allocator* allocator, size_t size) {
 #endif
   }
 #endif
-#if HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_8K_L1
-  if (size == HZ6_MIDPAGE_8K_BYTES) {
+#if HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_8K_L1 || \
+    HZ6_PRELOAD_REALLOC_BOUNDARY_ADAPTIVE_8K_L1
+  if (size == HZ6_MIDPAGE_8K_BYTES
+#if HZ6_PRELOAD_REALLOC_BOUNDARY_ADAPTIVE_8K_L1 && \
+    !HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_8K_L1
+      && g_hz6_preload_realloc_boundary_adapt_8k
+#endif
+  ) {
     hz6_preload_phase_count(
         &g_hz6_preload_phase_stats.malloc_realloc_boundary_slack_8k);
 #if HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_NOINLINE_L1
@@ -1011,6 +1033,17 @@ void* realloc(void* ptr, size_t size) {
       &g_hz6_preload_phase_stats.realloc_owned_old_1025_4096,
       &g_hz6_preload_phase_stats.realloc_owned_old_4097_16384,
       &g_hz6_preload_phase_stats.realloc_owned_old_gt16384);
+#if HZ6_PRELOAD_REALLOC_BOUNDARY_ADAPTIVE_4K_L1
+  if (old_size == 4096u && size > 4096u && size <= HZ6_MIDPAGE_8K_BYTES) {
+    g_hz6_preload_realloc_boundary_adapt_4k = 1u;
+  }
+#endif
+#if HZ6_PRELOAD_REALLOC_BOUNDARY_ADAPTIVE_8K_L1
+  if (old_size == HZ6_MIDPAGE_8K_BYTES &&
+      size > HZ6_MIDPAGE_8K_BYTES && size <= HZ6_MIDPAGE_32K_BYTES) {
+    g_hz6_preload_realloc_boundary_adapt_8k = 1u;
+  }
+#endif
 #if HZ6_PRELOAD_REALLOC_IN_PLACE_L1
   if (size <= old_size) {
     hz6_preload_phase_count(&g_hz6_preload_phase_stats.realloc_in_place);

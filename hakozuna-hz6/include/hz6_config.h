@@ -1103,6 +1103,19 @@
   HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_L1
 #endif
 
+#ifndef HZ6_PRELOAD_REALLOC_BOUNDARY_ADAPTIVE_4K_L1
+/* Default-off LD_PRELOAD control.  After a Toy 4K -> MidPage realloc copy is
+ * observed on this thread, future exact 4K mallocs use the 8K MidPage slot so
+ * similar growth can stay in-place without taxing workloads that never realloc
+ * across the boundary. */
+#define HZ6_PRELOAD_REALLOC_BOUNDARY_ADAPTIVE_4K_L1 0
+#endif
+
+#ifndef HZ6_PRELOAD_REALLOC_BOUNDARY_ADAPTIVE_8K_L1
+/* Default-off sibling for MidPage 8K -> 32K realloc growth. */
+#define HZ6_PRELOAD_REALLOC_BOUNDARY_ADAPTIVE_8K_L1 0
+#endif
+
 #ifndef HZ6_SMALL_RUN_ROUTE_DRYRUN_L1
 /* Diagnostic-only probe for a future SmallRunFront/TinyRunRoute design. */
 #define HZ6_SMALL_RUN_ROUTE_DRYRUN_L1 0

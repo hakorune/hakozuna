@@ -258,6 +258,20 @@ variant_flags() {
       hz6_preload_replace_define flags \
         HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_8K_L1 1
       ;;
+    realloc_boundary_adaptive_4k)
+      hz6_preload_replace_define flags \
+        HZ6_PRELOAD_REALLOC_BOUNDARY_ADAPTIVE_4K_L1 1
+      ;;
+    realloc_boundary_adaptive_8k)
+      hz6_preload_replace_define flags \
+        HZ6_PRELOAD_REALLOC_BOUNDARY_ADAPTIVE_8K_L1 1
+      ;;
+    realloc_boundary_adaptive)
+      hz6_preload_replace_define flags \
+        HZ6_PRELOAD_REALLOC_BOUNDARY_ADAPTIVE_4K_L1 1
+      hz6_preload_replace_define flags \
+        HZ6_PRELOAD_REALLOC_BOUNDARY_ADAPTIVE_8K_L1 1
+      ;;
     phase_count_off)
       hz6_preload_replace_define flags HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1 1
       ;;

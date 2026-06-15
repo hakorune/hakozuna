@@ -98,8 +98,8 @@ Selected:
   private/raw-results/linux/hz6_selected_toy_trusted_fixed_20260616_031237
 
 Profiles:
-  private/raw-results/linux/hz6_selected_vs_trusted_refresh_fixed_alias_20260616_024159
-  private/raw-results/linux/hz6_trusted_profile_decomp_refresh_20260616_024517
+  private/raw-results/linux/hz6_realloc_split_after_toytrusted_prod_20260616_032303
+  private/raw-results/linux/hz6_realloc_adaptive_after_toytrusted_prod_20260616_032451
 
 RSS:
   private/raw-results/linux/hz6_rss_residency_audit_refresh_20260616_025309
@@ -123,7 +123,7 @@ Default no-go or control-only unless new evidence is substantially different:
   same-owner trusted free default
   free-path cold-retire/source-block release default
   standalone Toy direct-class default outside ToyTrustedDefault-L1
-  realloc-boundary slack default
+  realloc-boundary slack/adaptive default
   source-run reuse/reclaim default
 ```
 
