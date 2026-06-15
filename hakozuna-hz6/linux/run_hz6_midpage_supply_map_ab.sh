@@ -132,6 +132,23 @@ variant_flags() {
     prefill_cache_only)
       hz6_preload_replace_define flags HZ6_MIDPAGE_PREFILL_CACHE_ONLY_REUSE_L1 1
       ;;
+    sourcerun)
+      hz6_preload_replace_define flags HZ6_SOURCE_RUN_REUSE_L1 1
+      ;;
+    sourcerun_sameclass)
+      hz6_preload_replace_define flags HZ6_SOURCE_RUN_REUSE_L1 1
+      hz6_preload_replace_define flags HZ6_SOURCE_RUN_RECLAIM_SAME_CLASS_L1 1
+      ;;
+    sourcerun_reclaim)
+      hz6_preload_replace_define flags HZ6_SOURCE_RUN_REUSE_L1 1
+      hz6_preload_replace_define flags HZ6_SOURCE_RUN_RECLAIM_DESCRIPTOR_L1 1
+      ;;
+    borrow_larger)
+      hz6_preload_replace_define flags HZ6_FRONTCACHE_BORROW_LARGER_ON_CLASS_MISS 1
+      ;;
+    mid8_borrow32)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_8K_BORROW_32K_ON_MISS_L1 1
+      ;;
     amap32k_p4)
       hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY 32768
       ;;
@@ -200,6 +217,11 @@ default_variants=(
   lowwater
   lowwater_8k256_32k128
   prefill_cache_only
+  sourcerun
+  sourcerun_sameclass
+  sourcerun_reclaim
+  borrow_larger
+  mid8_borrow32
   amap32k_p4
   amap64k_p4
   amap32k_p8
@@ -266,8 +288,8 @@ diag_mode = config.split("diagnostics=", 1)[1].splitlines()[0] if "diagnostics="
 print(f"stats: `{stats_mode}`")
 print(f"diagnostics: `{diag_mode}`")
 print()
-print("| row | variant | median ops/s | median peak MiB | source_alloc | midpage_source_alloc | route_after_maps | mid_hit | mid_miss | mid8_alloc | mid32_alloc | mid8_empty | mid32_empty | fail |")
-print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+print("| row | variant | median ops/s | median peak MiB | source_alloc | midpage_source_alloc | route_after_maps | mid_hit | mid_miss | mid8_alloc | mid32_alloc | mid8_empty | mid32_empty | borrow_success | fail |")
+print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 for row in rows:
     for variant in variants:
         ops = []
@@ -281,6 +303,7 @@ for row in rows:
         mid32_alloc = []
         mid8_empty = []
         mid32_empty = []
+        borrow_success = []
         fail = 0
         for log in sorted((outdir / row).glob(f"*_{variant}.log")):
             text = log.read_text()
@@ -299,6 +322,7 @@ for row in rows:
             mid32_alloc.append(extract("midpage_32k_alloc_call", text))
             mid8_empty.append(extract("midpage_8k_frontcache_pop_empty", text))
             mid32_empty.append(extract("midpage_32k_frontcache_pop_empty", text))
+            borrow_success.append(extract("frontcache_borrow_success", text))
             fail += extract("route_miss", text)
             fail += extract("route_invalid", text)
             fail += extract("alloc_fail", text)
@@ -316,6 +340,7 @@ for row in rows:
             f"{statistics.median(mid32_alloc):.0f} | "
             f"{statistics.median(mid8_empty):.0f} | "
             f"{statistics.median(mid32_empty):.0f} | "
+            f"{statistics.median(borrow_success):.0f} | "
             f"{fail} |"
         )
 PY

@@ -736,6 +736,13 @@
 #define HZ6_FRONTCACHE_BORROW_LARGER_ON_CLASS_MISS 0
 #endif
 
+#ifndef HZ6_MIDPAGE_8K_BORROW_32K_ON_MISS_L1
+/* Candidate MidPage-only borrow path.  When the 8K MidPage bin misses, try a
+ * 32K local-free entry before allocating new source.  This keeps the broad
+ * larger-bin borrow off for Toy/small rows. */
+#define HZ6_MIDPAGE_8K_BORROW_32K_ON_MISS_L1 0
+#endif
+
 #ifndef HZ6_FRONTCACHE_CAP_ON_FREE
 #define HZ6_FRONTCACHE_CAP_ON_FREE 0
 #endif

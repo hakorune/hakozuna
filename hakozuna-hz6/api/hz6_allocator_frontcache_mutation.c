@@ -1,4 +1,5 @@
 #include "hz6_allocator.h"
+#include "../fronts/midpage/hz6_midpage_front.h"
 
 #if HZ6_DIAGNOSTIC_PROBES
 static void hz6_allocator_note_frontcache_push_highwater(
@@ -300,15 +301,29 @@ void* hz6_allocator_borrow_larger_frontcache(Hz6Allocator* allocator,
   ++allocator->stats.frontcache_borrow_attempt;
 #endif
 
-#if !HZ6_FRONTCACHE_BORROW_LARGER_ON_CLASS_MISS
+#if !HZ6_FRONTCACHE_BORROW_LARGER_ON_CLASS_MISS && \
+    !HZ6_MIDPAGE_8K_BORROW_32K_ON_MISS_L1
   (void)front_id;
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.frontcache_borrow_no_candidate;
 #endif
   return NULL;
 #else
-  for (size_t i = requested_class_id + 1; i < HZ6_FRONT_CACHE_CLASS_COUNT;
-       ++i) {
+#if !HZ6_FRONTCACHE_BORROW_LARGER_ON_CLASS_MISS
+  if (front_id != HZ6_FRONT_MIDPAGE ||
+      requested_class_id != HZ6_MIDPAGE_8K_CLASS_ID) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.frontcache_borrow_no_candidate;
+#endif
+    return NULL;
+  }
+#endif
+  size_t first_class = requested_class_id + 1;
+  size_t end_class = HZ6_FRONT_CACHE_CLASS_COUNT;
+#if !HZ6_FRONTCACHE_BORROW_LARGER_ON_CLASS_MISS
+  end_class = HZ6_MIDPAGE_32K_CLASS_ID + 1u;
+#endif
+  for (size_t i = first_class; i < end_class; ++i) {
     Hz6FrontCacheBin* bin = &allocator->frontcache_bins[i];
     for (size_t j = bin->count; j > 0; --j) {
       size_t index = j - 1;

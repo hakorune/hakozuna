@@ -144,6 +144,30 @@ MidPage32KRun2048-L1 is now selected/default for Ubuntu preload:
     4096..16384 hz6 48.327M / 94.25 MiB
     4096..16384 tcmalloc 44.795M / 102.38 MiB
   decision: promote HZ6_MIDPAGE_32K_RUN_BYTES=2097152 for Ubuntu preload.
+MidPage32KRunFineLadder-L1 keeps run2048 selected:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_113052
+  repeat-7 without stats:
+    4096..16384 selected 49.494M / 94.50 MiB
+    4096..16384 run2048  49.675M / 94.50 MiB
+    4096..16384 run2304  48.864M / 94.50 MiB
+    4096..16384 run2560  48.411M / 94.50 MiB
+    4096..16384 run3072  44.866M / 94.38 MiB
+    4096..16384 run4096  46.384M / 94.38 MiB
+  decision: keep run2048 selected; 2M is the local peak and larger runs are
+  controls/no-go for the balanced preload lane.
+MidPage8KBorrow32-L1 is implemented as a default-off control:
+  flag: HZ6_MIDPAGE_8K_BORROW_32K_ON_MISS_L1=1
+  production repeat-7:
+    raw: private/raw-results/linux/hz6_midpage_supply_map_ab_20260615_113433
+    16..256      selected 57.947M -> mid8_borrow32 57.372M
+    16..4096     selected 42.100M -> mid8_borrow32 42.460M
+    1024..4096   selected 40.156M -> mid8_borrow32 40.290M
+    4096..16384  selected 50.077M -> mid8_borrow32 49.896M
+  stats repeat-3:
+    raw: private/raw-results/linux/hz6_midpage_supply_map_ab_20260615_113452
+    fail counters 0; 4096..16384 mid8_borrow32 had borrow_success=0.
+  read: broad borrow_larger is guard-negative; narrow MidPage 8K->32K borrow
+  does not find real candidates on the selected target row, so keep off.
 Earlier repeat-3 refresh after free-hint/free-fastslot no-go closeouts:
   raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_004605
   16..256     hz6 58.046M / 30.50 MiB

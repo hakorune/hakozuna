@@ -101,6 +101,29 @@ HZ6_MIDPAGE_32K_RUN_BYTES=2097152 is now selected. It keeps the 4096..16384
 tcmalloc lead in the full cross refresh and cuts source_alloc in the stats
 confirmation. The next design pass should re-audit remaining MidPage supply /
 frontcache pressure after run2048 rather than reopening transfer-skip shape.
+
+Post-run2048 follow-up:
+
+```text
+32K fine ladder:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_113052
+  2M remains the local peak. 2304K/2560K are weaker, and 3072K/4096K are
+  clear no-go controls for the balanced preload target.
+
+MidPage 8K->32K borrow:
+  flag: HZ6_MIDPAGE_8K_BORROW_32K_ON_MISS_L1=1
+  production raw: private/raw-results/linux/hz6_midpage_supply_map_ab_20260615_113433
+  stats raw: private/raw-results/linux/hz6_midpage_supply_map_ab_20260615_113452
+  broad borrow_larger is guard-negative.
+  narrow mid8_borrow32 is guard-safe but target-flat/weak and shows
+  borrow_success=0 on the selected 4096..16384 stats row.
+
+Decision:
+  keep run2048 selected.
+  keep mid8_borrow32 as default-off control/no-go evidence.
+  next work should not chase broader frontcache borrow without a candidate
+  dry-run that shows real target hits and low guard false positives.
+```
 ```
 
 Audit variants:
