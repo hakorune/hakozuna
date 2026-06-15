@@ -3,6 +3,55 @@
 This note tracks the Ubuntu `LD_PRELOAD` selected lane after the MidPage
 preload-boundary malloc skip and static table trim became default.
 
+## Current Selected Read
+
+ToyTrustedDefault-L1 is now part of selected/default:
+
+```text
+HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1=1
+HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1=1
+HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES=4096
+HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1=1
+```
+
+Promotion A/B:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_toy_trusted_default_on_ab_20260616_031042
+hakozuna-hz6/private/raw-results/linux/hz6_toy_trusted_default_on_stats_20260616_031100
+```
+
+| row | old selected-equivalent | new selected | read |
+| --- | ---: | ---: | --- |
+| `16..256` | `50.044M` | `63.128M` | `+26.1%` |
+| `16..4096` | `27.302M` | `30.688M` | `+12.4%` |
+| `1024..4096` | `24.621M` | `27.789M` | `+12.9%` |
+| `4096..16384` | `32.747M` | `32.742M` | flat |
+| `fixed_4k` | `23.594M` | `25.570M` | `+8.4%` |
+| `fixed_8k` | `30.899M` | `31.224M` | `+1.1%` |
+| `fixed_16k` | `32.469M` | `32.580M` | `+0.3%` |
+
+Current cross/fixed matrix:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_selected_toy_trusted_cross_20260616_031120
+hakozuna-hz6/private/raw-results/linux/hz6_selected_toy_trusted_fixed_20260616_031237
+```
+
+| row | selected hz6 | current position |
+| --- | ---: | --- |
+| `16..256` | `61.821M / 30.50 MiB` | below HZ3/HZ4/tcmalloc/system, above mimalloc |
+| `16..4096` | `30.638M / 79.62 MiB` | below HZ3/HZ4/tcmalloc, above mimalloc/system/HZ5 |
+| `1024..4096` | `28.197M / 91.00 MiB` | below HZ3/HZ4/tcmalloc, above mimalloc/system/HZ5 |
+| `4096..16384` | `32.830M / 94.00 MiB` | below HZ3, above tcmalloc/HZ4/mimalloc/system |
+| `fixed_4k` | `27.638M / 91.62 MiB` | below HZ3/tcmalloc, above HZ4/mimalloc/system |
+| `fixed_8k` | `33.097M / 93.25 MiB` | below HZ3, above tcmalloc/HZ4/mimalloc/system |
+| `fixed_16k` | `34.039M / 93.12 MiB` | above HZ3/tcmalloc/HZ4/mimalloc/system |
+
+Decision: keep ToyTrustedDefault-L1 selected. Keep realloc-boundary slack,
+small-boundary profiles, raw-push, and aligned-free skip as profile/control
+lanes.
+
 Latest full matrix raw run:
 
 ```text

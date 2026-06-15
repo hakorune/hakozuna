@@ -11,7 +11,8 @@ Primary family:
 
 Current Ubuntu direction:
   Keep selected/default stable.
-  Continue measured profile or narrow code-shape optimization from HZ6 docs.
+  ToyTrustedDefault-L1 is now selected/default; continue measured profile or
+  narrow code-shape optimization from HZ6 docs.
   Current preferred profile lane:
     hz6-small-boundary-trusted-target
 

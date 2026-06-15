@@ -35,12 +35,16 @@ Selected additions to remember:
   HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1=1
   HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1=1
   HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_L1=1
+  HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1=1
+  HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1=1
+  HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES=4096
+  HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1=1
   malloc_trim(size_t pad) interpose via hz6_preload_quiescent_release(0)
 
 Default position:
   selected remains the broad balanced Ubuntu preload lane.
-  Do not promote profile-only macro bundles into selected/default without
-  focused, fixed, stats/diagnostic, RSS, and cross-allocator guard evidence.
+  Toy trusted default is now selected after focused/fixed, stats/diagnostic,
+  RSS, and cross-allocator guard evidence.
 ```
 
 ## Latest Read
@@ -48,18 +52,19 @@ Default position:
 ```text
 Speed:
   HZ6 selected is now a speed/RSS balance allocator.
-  Profile DSOs can be much faster than selected on focused/fixed rows.
+  Toy trusted default raised tiny/mid-small/fixed_4k materially while keeping
+  the MidPage target flat in same-run A/B.
+  Small-boundary profile DSOs remain faster for fixed-boundary workloads.
 
 RSS:
   Explicit malloc_trim/quiescent release is the selected RSS recovery path.
-  Latest quiescent refresh lowered current RSS to roughly 27..28 MiB on
-  focused/fixed rows.
+  Latest quiescent refresh lowered current RSS to roughly 27..28 MiB.
   Peak RSS is still mostly touched MidPage source-run payload residency.
 
 Residency diagnosis:
   fixed_16k still reports roughly 520 MiB logical 32K payload as
   all-local-free/frontcache-retained material with ref mismatch 0.
-  Do not reopen free-path cold-retire or automatic purge default from this.
+  Do not reopen cold-retire or automatic purge default from this.
 ```
 
 ## Current Profile DSOs
@@ -69,11 +74,8 @@ Broad small/fixed:
   hz6-small-boundary-trusted-target
   builder: linux/build_hz6_preload_small_boundary_trusted_target.sh
 
-Lighter focused:
-  hz6-toy-trusted-target
-  builder: linux/build_hz6_preload_toy_trusted_target.sh
-
 Profile controls:
+  hz6-toy-trusted-target (historical/selected-equivalent after default)
   hz6-small-boundary-fast-target
   hz6-realloc-boundary-4k-target
   hz6-realloc-boundary-8k-target
@@ -90,15 +92,14 @@ Alias/helper ownership:
 
 ```text
 Selected:
-  private/raw-results/linux/hz6_ubuntu_selected_balance_20260616_011316
-  private/raw-results/linux/hz6_ubuntu_size_slices_20260616_011443
+  private/raw-results/linux/hz6_toy_trusted_default_on_ab_20260616_031042
+  private/raw-results/linux/hz6_toy_trusted_default_on_stats_20260616_031100
+  private/raw-results/linux/hz6_selected_toy_trusted_cross_20260616_031120
+  private/raw-results/linux/hz6_selected_toy_trusted_fixed_20260616_031237
 
 Profiles:
   private/raw-results/linux/hz6_selected_vs_trusted_refresh_fixed_alias_20260616_024159
-  private/raw-results/linux/hz6_selected_vs_trusted_stats_diag_fixed_alias_20260616_024313
   private/raw-results/linux/hz6_trusted_profile_decomp_refresh_20260616_024517
-  private/raw-results/linux/hz6_toy_trusted_cross_20260616_025048
-  private/raw-results/linux/hz6_toy_trusted_fixed_20260616_025117
 
 RSS:
   private/raw-results/linux/hz6_rss_residency_audit_refresh_20260616_025309
@@ -106,6 +107,7 @@ RSS:
 
 More detail:
   archive/current_task_2026-06-16_profile_quiescent_snapshot.md
+  archive/current_task_2026-06-16_toy_trusted_default_snapshot.md
 ```
 
 ## Closed / Do Not Reopen Casually
@@ -120,7 +122,7 @@ Default no-go or control-only unless new evidence is substantially different:
   broad raw frontcache push
   same-owner trusted free default
   free-path cold-retire/source-block release default
-  broad Toy direct-class default
+  standalone Toy direct-class default outside ToyTrustedDefault-L1
   realloc-boundary slack default
   source-run reuse/reclaim default
 ```
@@ -143,7 +145,5 @@ Default no-go or control-only unless new evidence is substantially different:
 
 4. If touching selected/default:
    require production no-stats, stats/diagnostics safety, focused/fixed matrix,
-   RSS read, and docs update before commit.
-
-5. Keep this file below 150 lines; archive long logs.
+   RSS read, docs update, and archive long logs before commit.
 ```

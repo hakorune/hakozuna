@@ -54,6 +54,10 @@ HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT=4
 HZ6_MIDPAGE_ALLOC_DESCRIPTOR_OUT_L1=1
 HZ6_PRELOAD_MIDPAGE_MALLOC_SKIP_TRANSFER_L1=1
 HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_NOINLINE_L1=1
+HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1=1
+HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1=1
+HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES=4096
+HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1=1
 HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1=1
 HZ6_PRELOAD_REALLOC_IN_PLACE_L1=1
 HZ6_LINUX_MMAP_RETAIN_L1=1
@@ -115,6 +119,10 @@ and run1536/run2048 32K sizing moved 4096..16384 ahead of tcmalloc while
 keeping the caveat that
 LD_PRELOAD is separate from direct HZ6 API strength rows and not a universal
 allocator-win claim.
+ToyTrustedDefault-L1 is now selected for Ubuntu preload too: Toy direct-class
+fast reuse max4096 plus boundary trusted-owner is the default bundle after
+same-run A/B improved tiny/mid-small/fixed_4k while keeping 4096..16384 flat.
+Current cross/fixed numbers are tracked in `HZ6_UBUNTU_SELECTED_BALANCE.md`.
 After the MidPage preload-boundary malloc skip, the balance row improves again:
 4096..16384 reaches `hz6 40.387M / 115.25 MiB`, beating HZ4 on both throughput
 and RSS and beating mimalloc/system strongly. At that checkpoint it still

@@ -66,6 +66,10 @@ HZ6_ROUTE_LINEAR_WRAP_L1=1
 HZ6_ROUTE_LOOP_CARRY_L1=1
 HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1=1
 HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1=1
+HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1=1
+HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1=1
+HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES=4096
+HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1=1
 HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1=1
 HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_L1=1
 ```
@@ -93,49 +97,48 @@ from the direct HZ6 API and Windows selected-family rows.
 Latest selected-default focused guards, after current-bias, 8K run768, 32K
 run2048, MidPage active-map mask-index, MidPage active-map register fast-slot,
 raw direct-local pop, Toy free fast-slot, phase-counter compile-out, preload
-MidPage direct class, class4/class5 frontcache storage trim, and trusted-class
-MidPage local reuse:
+MidPage direct class, Toy direct-class fast reuse, boundary trusted-owner,
+class4/class5 frontcache storage trim, and trusted-class MidPage local reuse:
 
 | Row | Selected read |
 | --- | ---: |
-| `16..256` full cross repeat-3 | `58.047M / 30.25 MiB` |
-| `16..4096` full cross repeat-3 | `36.461M / 79.62 MiB` |
-| `1024..4096` full cross repeat-3 | `34.193M / 90.75 MiB` |
-| `4096..16384` full cross repeat-3 | `45.315M / 94.25 MiB` |
-| `fixed_4k` full cross repeat-3 | `31.542M / 91.88 MiB` |
-| `fixed_8k` full cross repeat-3 | `43.506M / 93.25 MiB` |
-| `fixed_16k` full cross repeat-3 | `45.586M / 93.25 MiB` |
+| `16..256` full cross repeat-3 | `61.821M / 30.50 MiB` |
+| `16..4096` full cross repeat-3 | `30.638M / 79.62 MiB` |
+| `1024..4096` full cross repeat-3 | `28.197M / 91.00 MiB` |
+| `4096..16384` full cross repeat-3 | `32.830M / 94.00 MiB` |
+| `fixed_4k` fixed repeat-3 | `27.638M / 91.62 MiB` |
+| `fixed_8k` fixed repeat-3 | `33.097M / 93.25 MiB` |
+| `fixed_16k` fixed repeat-3 | `34.039M / 93.12 MiB` |
 
-Latest focused cross-allocator refresh after trusted-class promotion,
+Latest focused cross-allocator refresh after ToyTrustedDefault-L1 promotion,
 repeat-3, `bench_mixed_ws_crt`, raw
-`private/raw-results/linux/hz6_ubuntu_selected_balance_20260616_011316`:
+`private/raw-results/linux/hz6_selected_toy_trusted_cross_20260616_031120`:
 
 | Row | hz3 | hz4 | hz6 | mimalloc | tcmalloc | system | hz6 peak KB |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `16..256` | `235.546M` | `208.599M` | `58.047M` | `53.172M` | `243.995M` | `101.117M` | `30,976` |
-| `16..4096` | `67.823M` | `48.249M` | `36.461M` | `6.915M` | `82.383M` | `16.657M` | `81,536` |
-| `1024..4096` | `61.867M` | `43.086M` | `34.193M` | `5.493M` | `76.482M` | `8.605M` | `92,928` |
-| `4096..16384` | `51.230M` | `26.683M` | `45.315M` | `1.284M` | `34.618M` | `2.902M` | `96,512` |
+| `16..256` | `214.200M` | `183.220M` | `61.821M` | `50.745M` | `214.333M` | `93.119M` | `31,232` |
+| `16..4096` | `49.598M` | `37.812M` | `30.638M` | `6.788M` | `63.433M` | `14.876M` | `81,536` |
+| `1024..4096` | `44.924M` | `36.631M` | `28.197M` | `5.362M` | `60.324M` | `8.271M` | `93,184` |
+| `4096..16384` | `37.144M` | `22.736M` | `32.830M` | `1.263M` | `27.846M` | `2.743M` | `96,256` |
 
-Latest fixed-size cross-allocator refresh after trusted-class promotion,
+Latest fixed-size cross-allocator refresh after ToyTrustedDefault-L1 promotion,
 repeat-3, `bench_mixed_ws_crt`, raw
-`private/raw-results/linux/hz6_ubuntu_size_slices_20260616_011443`:
+`private/raw-results/linux/hz6_selected_toy_trusted_fixed_20260616_031237`:
 
 | Row | hz3 | hz4 | hz6 | mimalloc | tcmalloc | system | hz6 peak KB |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `fixed_4k` | `60.786M` | `14.194M` | `31.542M` | `3.108M` | `41.821M` | `3.032M` | `94,080` |
-| `fixed_8k` | `54.549M` | `13.366M` | `43.506M` | `1.504M` | `27.702M` | `2.969M` | `95,488` |
-| `fixed_16k` | `43.766M` | `10.652M` | `45.586M` | `0.747M` | `12.375M` | `29.572M` | `95,488` |
+| `fixed_4k` | `43.112M` | `11.738M` | `27.638M` | `3.027M` | `33.611M` | `2.884M` | `93,824` |
+| `fixed_8k` | `39.038M` | `11.488M` | `33.097M` | `1.438M` | `21.078M` | `2.928M` | `95,488` |
+| `fixed_16k` | `32.838M` | `9.698M` | `34.039M` | `0.733M` | `10.689M` | `18.634M` | `95,360` |
 
 Important caveat:
 
 ```text
 tcmalloc remains much faster on tiny and mixed small rows. On 4096..16384, HZ6
-is ahead of tcmalloc/HZ4/mimalloc on speed while keeping lower RSS than
+is ahead of tcmalloc/HZ4/mimalloc/system on speed while keeping lower RSS than
 tcmalloc, but HZ3 remains the speed/RSS frontier. On fixed_16k, selected HZ6
-now edges HZ3 speed and beats tcmalloc/HZ4/mimalloc by a wide margin; fixed_8k
-is strong but still below HZ3 speed, and fixed_4k remains a Toy/tcmalloc/HZ3
-gap.
+edges HZ3 speed in this repeat and beats tcmalloc/HZ4/mimalloc/system; fixed_8k
+is strong but still below HZ3 speed, and fixed_4k remains below HZ3/tcmalloc.
 ```
 
 Follow-up:
@@ -143,11 +146,13 @@ Follow-up:
 ```text
 MidPage 8K run768, 32K run2048, active-map mask-index, active-map register
 fast-slot, raw direct-local pop, Toy free fast-slot, phase-counter compile-out,
-preload MidPage direct class, class4/class5 storage trim, and trusted-class
-MidPage local reuse are now selected. The latest full cross refresh shows the
-selected family ahead of tcmalloc on speed and RSS on the MidPage target row,
-and fixed_16k now edges HZ3 on speed in this repeat-3 read. Keep 32K run1536,
-run768, and run512 as direct controls.
+preload MidPage direct class, Toy direct-class fast reuse with boundary
+trusted-owner, class4/class5 storage trim, and trusted-class MidPage local
+reuse are now selected. The latest same-run default-on A/B raw
+`hz6_toy_trusted_default_on_ab_20260616_031042` shows the promotion is large
+positive on tiny/mid-small/fixed_4k, flat on the MidPage target, and
+stats/diagnostic-safe in `hz6_toy_trusted_default_on_stats_20260616_031100`.
+Keep 32K run1536, run768, and run512 as direct controls.
 ```
 
 Current lane state:
@@ -157,7 +162,7 @@ Current lane state:
 | MidPage source runs | `8K run768`, `32K run2048` | smaller/larger 32K fine ladder, 8K 512K guard-negative |
 | MidPage active map | external cap16K/probe4, unaligned, mask-index, register fast-slot | cap32K/64K, probe8, class index, no-overwrite, same-class victim |
 | MidPage free path | current-bias free order | free fast-slot, current-bias free fast-slot, page-hint behavior, unconditional/aligned MidPage-first |
-| MidPage malloc path | preload-boundary noinline transfer skip, direct class, descriptor-out, trusted-class local reuse | core transfer-skip, broad preclassified malloc, trusted activation skip |
+| MidPage/Toy malloc path | preload-boundary noinline transfer skip, MidPage direct class, Toy direct-class fast reuse max4096, boundary trusted-owner, descriptor-out, trusted-class local reuse | core transfer-skip, broad preclassified malloc, trusted activation skip |
 | RSS/storage | static table trim, class4/class5 frontcache storage trim, explicit quiescent `malloc_trim()` scavenge hook | broad class storage trim, cold-class trims, and free-path cold-retire behavior remain controls |
 | Next lane | diagnostic/design | Cold source-block retire, current-bias predicate variants, active-map collision/layout, and PageKind free-order behavior are closed as controls/no-go. Next work should avoid all-free lookup tables and focus on a narrower boundary/profile hook or non-free-order code-shape lane. |
 
@@ -176,20 +181,21 @@ Current follow-up read:
 | `HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_NOINLINE_L1=0` / boundary off after Toy free fast-slot | control/no-go | Re-tested the boundary code shape after the latest selected free-path changes. Production repeat-9 raw `hz6_midpage_payload_trim_ab_20260615_202612` showed inline improved tiny/16..4096 but regressed target (`4096..16384 43.812M -> 42.896M`); boundary-off still broke target (`43.812M -> 35.205M`). Keep selected noinline boundary. |
 | `HZ6_PRELOAD_MIDPAGE_DIRECT_CLASS_L1=1` | selected/default | Narrow LD_PRELOAD boundary code-shape control. It classifies requests already inside the 4097..32768-byte MidPage helper directly into class4/class5, avoiding the policy struct path. This is not the older broad `toy_preclassified_malloc` no-go. A/B repeat-15 raw `hz6_midpage_payload_trim_ab_20260615_212317` was non-negative on all focused/fixed rows and target-positive (`4096..16384 43.285M -> 44.309M`). Post-promotion selected-only raw `hz6_midpage_payload_trim_ab_20260615_212533` reads `44.720M` on `4096..16384`; stats-on safety raw `hz6_midpage_payload_trim_ab_20260615_212542` kept `fail=0`. |
 | `HZ6_FRONT_CACHE_CLASS_STORAGE_TRIM_L1=1` with c4=8192/c5=4096 | selected/default | Reopened after direct-class because the earlier frontcache trim no-go was pre-current-shape. Production repeat-15 raw `hz6_frontcache_shape_ab_20260615_213336` improved every focused/fixed row: `16..4096 33.998M -> 35.676M`, `1024..4096 33.232M -> 33.731M`, `4096..16384 44.144M -> 44.174M`, `fixed_16k 43.952M -> 44.358M`. Stats-on raw `hz6_frontcache_shape_ab_20260615_213400` kept fail counters zero and cut frontcache/static attribution from `10242/31609 KiB` to `3002/24369 KiB`. Post-promotion selected-only raw `hz6_frontcache_shape_ab_20260615_213453` confirmed the selected DSO shape. |
-| `HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1=1` | control/no-go for default | Narrow LD_PRELOAD Toy-boundary helper. It classifies `size <= 4096` directly into Toy classes without changing broad `hz6_malloc()` classification. The lane is a useful mid-small diagnostic but not selected: raw `hz6_midpage_payload_trim_ab_20260615_214226` improved `16..4096 35.690M -> 37.665M` and `1024..4096 32.640M -> 34.986M`, but regressed target/fixed guards (`4096..16384 44.877M -> 44.658M`, `fixed_16k 44.699M -> 44.226M`). Noinline+unlikely retest raw `hz6_midpage_payload_trim_ab_20260615_214404` kept the mid-small win and recovered target in that run, but still regressed `fixed_8k` and `fixed_16k`. Keep as a named control, not selected. |
-| Toy target DSO | profile/control | `./hakozuna-hz6/linux/build_hz6_preload_toy_target.sh` builds `out/linux/hz6_preload_toy_target/libhakozuna_hz6_preload.so` with the selected bundle plus `HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1=1`, `HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1=1`, and max4096. Use this when the workload is known to be Toy/mid-small heavy. It is intentionally separate from selected default because target/fixed guards still reject default promotion. Fast-reuse DSO raw `hz6_toy_target_fast_reuse_preload_ab_20260616_004700` confirms the stronger split: `16..256 +30.39%`, `16..4096 +15.27%`, `1024..4096 +14.90%`, and `fixed_4k +12.77%`, while `4096..16384 -1.01%` and `fixed_8k -0.80%`. Shared allocator aliases `hz6-toy-target` and `hz6_toy_target` resolve this DSO for matrix runners. |
-| Toy trusted target DSO | profile/control | `./hakozuna-hz6/linux/build_hz6_preload_toy_trusted_target.sh` builds `out/linux/hz6_preload_toy_trusted_target/libhakozuna_hz6_preload.so` with the Toy target plus `HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1=1`, but without realloc-boundary slack. Decomposition raw `hz6_trusted_profile_decomp_refresh_20260616_024517` makes it the lighter broad profile candidate in that repeat: `16..256 49.844M -> 64.721M`, `16..4096 27.042M -> 32.528M`, `1024..4096 25.191M -> 28.525M`, `4096..16384 33.572M -> 34.607M`, and `fixed_16k 33.460M -> 34.877M`, with RSS flat/down on most rows. Cross/fixed refresh raws `hz6_toy_trusted_cross_20260616_025048` and `hz6_toy_trusted_fixed_20260616_025117` make it the strongest HZ6 profile on focused rows and fixed_16k; keep `hz6-small-boundary-trusted-target` for fixed_4k/fixed_8k. Keep both profile-only; selected/default remains unchanged. Shared allocator aliases `hz6-toy-trusted-target` and `hz6_toy_trusted_target` resolve this DSO; alias smoke raw `hz6_toy_trusted_alias_smoke_20260616_024753` confirms matrix resolution. |
+| ToyTrustedDefault-L1 | selected/default | The selected preload bundle now includes Toy direct-class max4096, direct-class fast reuse, and boundary trusted-owner, without realloc-boundary slack or raw-push. Same-run A/B raw `hz6_toy_trusted_default_on_ab_20260616_031042` compares selected against `toy_trusted_default_off`: `16..256 +26.1%`, `16..4096 +12.4%`, `1024..4096 +12.9%`, `4096..16384` flat, `fixed_4k +8.4%`, `fixed_8k +1.1%`, and `fixed_16k +0.3%`; stats/diagnostic raw `hz6_toy_trusted_default_on_stats_20260616_031100` kept `fail=0`. |
+| `HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1=1` standalone | historical/control | The original standalone Toy-boundary helper was not selected-clean by itself. It is now selected only as part of ToyTrustedDefault-L1 with fast reuse and boundary trusted-owner; keep `toy_trusted_default_off` as the direct old-selected control. |
+| Toy target DSO | historical/profile alias | `./hakozuna-hz6/linux/build_hz6_preload_toy_target.sh` now starts from selected flags, so it is normally selected-equivalent for Toy direct/fast-reuse behavior except for any explicit future overrides. Keep the builder and aliases for historical comparison and runner compatibility. |
+| Toy trusted target DSO | historical/selected-equivalent alias | `./hakozuna-hz6/linux/build_hz6_preload_toy_trusted_target.sh` now resolves the Toy trusted subset already present in selected/default. Keep `hz6-toy-trusted-target` aliases for compatibility with archived matrices; use `toy_trusted_default_off` when a true old-selected control is needed. |
 | `HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES=1024/2048/3072` | control/no-go for default | Capped Toy-boundary follow-up from the worker review. Raw `hz6_midpage_payload_trim_ab_20260615_214901` kept mid-small gains, but every cap regressed the target row versus selected (`4096..16384 40.170M`; max1024 `39.422M`, max2048 `39.879M`, max3072 `39.389M`). Class4 storage ladders `c4=12288/16384,c5=4096` also failed target/fixed guards. Keep as controls only; do not split selected default for Toy preclassification without a dedicated profile lane. |
 | `HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES=256/512` | control/no-go for default | Narrow Toy-boundary gates tested after small-boundary-fast profile work. Raw `hz6_midpage_payload_trim_ab_20260616_003438` showed the narrow non-fast controls are still not selected-clean: `max256` improved `16..256` (`57.121M -> 61.495M`) but regressed `16..4096` (`34.888M -> 31.062M`), `1024..4096`, and `4096..16384`. Fast-reuse narrow gates are profile evidence only: `fast_reuse_max512` improved tiny/mixed/fixed rows but collapsed the target (`4096..16384 44.524M -> 38.024M`). Keep selected default unchanged. |
 | `HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MIN_BYTES=1025/2049/3073` | control/no-go for default | Lower-bound Toy-boundary gate, added to test whether tiny-request exclusion can preserve selected guards while keeping broad mid-small wins. Production repeat-9 raw `hz6_toy_direct_class_min_gate_ab_20260616_001000` says no: `min1025` only slightly improves `16..4096` (`36.234M -> 36.362M`) and `1024..4096` (`33.577M -> 34.208M`) while hurting the target (`44.811M -> 43.204M`); `min2049/3073` recover target/fixed guards better but give up mid-small speed. Keep the min gate as a reusable runner control, not selected. |
-| `HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1=1` | profile/control, no default | Toy direct-class malloc skips the generic direct-local alloc front/transfer gates and goes straight to local reuse. This is strong for Toy/mid-small profile DSOs, but not selected default: promotion guard raw `hz6_toy_direct_fast_reuse_key_guard_20260616_004400` improved `16..4096` (`35.900M -> 41.983M`), `1024..4096` (`33.161M -> 37.760M`), `4096..16384` (`43.713M -> 44.297M`), and `fixed_4k` (`31.955M -> 35.630M`), but slightly regressed `fixed_8k` (`42.450M -> 42.081M`) and `fixed_16k` (`44.423M -> 44.387M`). Trusted-class-baseline repeat-15 raw `hz6_midpage_payload_trim_ab_20260616_013426` keeps the same profile read: broad fast-reuse is very strong on tiny/mid-small (`16..256 57.499M -> 74.244M`, `16..4096 35.747M -> 41.596M`, `1024..4096 28.494M -> 37.729M`) but regresses the selected target and fixed 8K/16K guards (`4096..16384 45.074M -> 44.378M`, `fixed_8k 38.159M -> 37.318M`, `fixed_16k 44.259M -> 43.777M`). Keep selected balanced; use the fast-reuse path in the Toy/small-boundary profile DSOs. |
-| `HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1=1` | control/no-go for default | Narrow preload boundary code-shape control that skips duplicate owner-liveness checks after the boundary helper already has a trusted owner allocator. Raw `hz6_preload_boundary_trusted_owner_guard_20260616_001324` improved target/fixed rows (`4096..16384 41.446M -> 43.300M`, `fixed_8k 40.770M -> 41.547M`), but tiny repeat raw `hz6_preload_boundary_trusted_owner_tiny_repeat_20260616_001406` regressed `16..256 56.457M -> 54.229M`. Keep off for selected default. |
+| `HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1=1` standalone | selected inside ToyTrustedDefault-L1 | Fast reuse alone had mixed guard evidence in earlier repeats, but the combined ToyTrustedDefault-L1 bundle passed. Keep old raws as component history; use `toy_trusted_default_off` for current bundle-level control. |
+| `HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1=1` standalone | selected inside ToyTrustedDefault-L1 | Boundary trusted-owner alone was mixed in early guards, but the combined ToyTrustedDefault-L1 bundle passed the selected promotion gate. Do not evaluate this flag in isolation as a default decision anymore; use bundle A/B controls. |
 | `-O3` / `-fno-semantic-interposition` preload build flags | control/no-go | Build-flag A/B raw `hz6_midpage_payload_trim_ab_20260615_202754` did not beat selected `-O2`: `-O3` regressed all focused rows and `-fno-semantic-interposition` was mixed but target-negative (`4096..16384 44.118M -> 43.909M`). Later codegen raw `hz6_codegen_boundary_ab_20260615_225540` showed a target lift (`4096..16384 selected 42.982M`, `no_semantic_interposition 44.369M`, `O3+no_semantic 44.443M`) but broke the fixed_16k guard (`44.050M -> 38.723M/39.224M`). Keep selected `-O2` and no semantic-interposition flags unchanged. |
 | `realloc_in_place_off` / realloc copy class audit | selected guard/control | `HZ6_PRELOAD_REALLOC_IN_PLACE_L1=1` is already the safe slot-capacity rule because descriptor `bytes` stores slot bytes for Toy/MidPage/source-run allocations. Guard raw `hz6_realloc_in_place_guard_20260615_225828` reconfirmed default selection: `16..4096` selected `20.949M` vs off `19.668M`, copy calls `102` vs `6356`; `4096..16384` selected `18.096M / 93.88 MiB` vs off `15.420M / 136.50 MiB`, copy bytes `0.09 MiB` vs `62.72 MiB`; `fixed_16k` selected has zero copy bytes while off copies about `99.41 MiB`. Follow-up raw `hz6_realloc_copy_class_audit_20260615_230209` shows remaining selected copy pressure is class-boundary only: `fixed_4k` is `Toy->MidPage`, `fixed_8k` is `Mid8->Mid32`, and same-class copies are zero. Do not add a separate realloc capacity-growth behavior unless allocation policy changes. |
 | Realloc-boundary target DSO | profile/control, no default | `HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_L1=1` maps 4096-byte allocations to the 8K MidPage slot and 8192-byte allocations to the 32K MidPage slot so small realloc growth stays in-place. Production raw `hz6_realloc_boundary_slack_ab_20260615_230639` is strong on fixed-boundary rows (`fixed_4k 31.931M -> 44.525M`, `fixed_8k 41.961M -> 44.491M`) and flat/up on target (`4096..16384 44.047M -> 44.540M`), but mixed-small guards are not clean (`16..4096 35.910M -> 35.402M`, `1024..4096 33.517M -> 33.132M`) and `fixed_16k` slightly weakens. Cross-allocator fixed-row raw `hz6_realloc_boundary_cross_20260615_231203` shows this profile beats tcmalloc speed on `fixed_4k` (`46.037M` vs `43.006M`) and `fixed_8k` (`44.357M` vs `27.568M`), while HZ3 keeps better speed/RSS on boundary rows. Split controls `HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_4K_L1=1` and `_8K_L1=1` are now available as separate profile DSOs because current selected stats still show fixed_4k/fixed_8k realloc-copy pressure. Trusted-class-baseline repeat-9 raw `hz6_midpage_payload_trim_ab_20260616_011939` confirms the split: 4K-only improves `fixed_4k 31.968M -> 46.758M` but hurts `16..4096`, while 8K-only improves `fixed_8k 43.156M -> 45.203M` but hurts the target. Fixed profile-position raw `hz6_fixed4k_profile_position_20260616_021401` keeps the split profiles below `hz6-small-boundary-trusted-target` across fixed_4k/8k/16k, so do not add another fixed4k-only DSO yet. Keep all realloc-boundary slack variants out of selected default. Build combined via `linux/build_hz6_preload_realloc_boundary_target.sh` and split profiles via `linux/build_hz6_preload_realloc_boundary_4k_target.sh` / `linux/build_hz6_preload_realloc_boundary_8k_target.sh`; aliases: `hz6-realloc-boundary-target`, `hz6-realloc-boundary-4k-target`, `hz6-realloc-boundary-8k-target` and underscore forms. |
 | Small-boundary target DSO | profile/control, no default | `./hakozuna-hz6/linux/build_hz6_preload_small_boundary_target.sh` combines the Toy target and realloc-boundary target controls. Raw `hz6_toy_realloc_boundary_combo_20260615_235000` shows the combined profile keeps mid-small gains (`16..4096 36.272M -> 37.151M`, `1024..4096 33.772M -> 34.439M`) and is strongest on fixed-boundary rows (`fixed_4k 31.930M -> 45.585M`, `fixed_8k 42.479M -> 44.754M`), but it regresses the MidPage target (`4096..16384 45.040M -> 44.053M`). Cross raw `hz6_small_boundary_cross_20260616_000000` shows the profile beats tcmalloc/HZ4 on `fixed_4k` and `fixed_8k`, while HZ3 remains the speed/RSS frontier and tcmalloc/HZ4 still lead broad mid-small rows. Use only for known small/fixed-boundary workloads; aliases: `hz6-small-boundary-target` / `hz6_small_boundary_target`. |
-| Small-boundary fast target DSO | profile/control, no default | `./hakozuna-hz6/linux/build_hz6_preload_small_boundary_fast_target.sh` combines the small-boundary profile with `HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1=1` and `HZ6_DIRECT_LOCAL_FREE_RAW_PUSH_L1=1`. Repeat-15 no-stats raw `hz6_midpage_payload_trim_ab_20260616_002519` was positive across tiny/focused/fixed rows: `16..256 55.491M -> 76.683M`, `16..4096 34.920M -> 41.712M`, `1024..4096 32.236M -> 38.243M`, `4096..16384 43.406M -> 44.843M`, `fixed_4k 30.347M -> 45.505M`, `fixed_8k 41.474M -> 44.449M`, `fixed_16k 43.544M -> 44.233M`. Stats raw `hz6_midpage_payload_trim_ab_20260616_002549` kept `fail=0`. Cross raw `hz6_ubuntu_selected_balance_20260616_003133` and `hz6_ubuntu_size_slices_20260616_003055` show it beats selected HZ6 on most target rows and beats tcmalloc/HZ4/mimalloc on `4096..16384`, `fixed_8k`, and `fixed_16k`; `fixed_4k` also beats tcmalloc speed. Latest profile-position raw `hz6_profile_position_focused_20260616_014250` / `hz6_profile_position_fixed_20260616_014402` keeps the same read: `16..256 58.182M -> 78.220M`, `16..4096 36.874M -> 42.952M`, `1024..4096 34.045M -> 39.610M`, `4096..16384 45.518M -> 46.164M`, `fixed_4k 32.005M -> 48.188M`, and `fixed_16k 45.614M -> 45.923M`, with peak RSS roughly flat. Decomposition raw `hz6_midpage_payload_trim_ab_20260616_014717` shows raw-push alone is not the win; the profile needs the trusted-owner/raw-push combination for target/fixed8/fixed16 in that A/B, while trusted-owner-only is best on fixed_4k. Follow-up profile raw `hz6_small_boundary_trusted_focused_20260616_015341` / `hz6_small_boundary_trusted_position_20260616_015331` shows the trusted-only DSO is stronger overall in the latest repeat: `16..256 78.065M`, `1024..4096 39.308M`, `4096..16384 45.215M`, `fixed_4k 47.946M`, `fixed_8k 47.314M`, `fixed_16k 47.114M`. Keep selected default unchanged; use fast/trusted as profile lanes only. A/B runners also accept `small_boundary_fast` as the variant alias for `small_boundary_raw_push_trusted_owner`. |
-| Small-boundary trusted target DSO | profile/control, no default | `./hakozuna-hz6/linux/build_hz6_preload_small_boundary_trusted_target.sh` combines the small-boundary profile with `HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1=1` but leaves raw-push off. This is currently the best small-boundary profile in the latest focused/fixed repeat: raw `hz6_small_boundary_trusted_focused_20260616_015341` shows `16..256 58.439M -> 78.065M`, `16..4096 36.312M -> 42.438M`, `1024..4096 33.111M -> 39.308M`, and `4096..16384 45.165M -> 45.215M`; raw `hz6_small_boundary_trusted_position_20260616_015331` shows `fixed_4k 32.529M -> 47.946M`, `fixed_8k 43.820M -> 47.314M`, and `fixed_16k 45.896M -> 47.114M`. Cross/fixed refresh raws `hz6_trusted_profile_cross_20260616_020157` and `hz6_trusted_profile_fixed_20260616_020211` keep trusted positive versus selected on focused and fixed-mid rows, beating tcmalloc/HZ4 on `4096..16384`, `fixed_8k`, and `fixed_16k` speed. Peak RSS is roughly selected-class plus about `0..1 MiB`. Keep it profile-only because the macro bundle includes controls that remain rejected for selected/default in isolation. Aliases: `hz6-small-boundary-trusted-target` / `hz6_small_boundary_trusted_target`. |
+| Small-boundary fast target DSO | profile/control, no default | `./hakozuna-hz6/linux/build_hz6_preload_small_boundary_fast_target.sh` combines selected ToyTrustedDefault-L1 with realloc-boundary slack and raw-push. It remains profile-only: raw-push and realloc-boundary slack are not selected/default even though the Toy/trusted subset now is. |
+| Small-boundary trusted target DSO | profile/control, no default | `./hakozuna-hz6/linux/build_hz6_preload_small_boundary_trusted_target.sh` combines selected ToyTrustedDefault-L1 with realloc-boundary slack while leaving raw-push off. Keep it as the preferred small/fixed-boundary profile for fixed_4k/fixed_8k or known realloc-growth workloads; realloc-boundary slack remains off in selected/default. |
 | `HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1=1` | selected/default | Production-only direct-local reuse code-shape control. Bypasses the generic `hz6_allocator_frontcache_pop()` wrapper in stats-off builds; disabled under diagnostics. Repeat-15 improved all focused rows and stats safety stayed clean. |
 | `HZ6_FRONT_PREFILL_DESCRIPTOR_OUT_L1=1` | control/no-go | Source-block prefill descriptor-out reduced route lookup probes but regressed production stats-off target speed. Keep default off. |
 | current-bias retest after raw-pop | control/no-go | Production repeat-7 still rejects current-bias variants: `current_bias_2x` and `4x` gave small guard gains but regressed 4096..16384 (`44.164M -> 43.598M/43.268M`). Keep selected 1x generic predicate. |
@@ -398,8 +404,8 @@ MidPage 32K run-size closeout details are in
 | `HZ6_MIDPAGE_ACTIVE_MAP_TRUSTED_CACHE_PUSH_L1=1` | Direct MidPage active-map free success cache path. It removes the generic cache helper call but did not improve the target and regressed tiny guard, so keep off. |
 | `HZ6_MIDPAGE_DIRECT_LOCAL_SKIP_TRANSFER_FIRST_L1=1` | MidPage direct-local reuse skips the transfer-first probe. It is a useful target witness, but the tested helper shape regressed non-MidPage guards enough to block selection. |
 | `build_hz6_preload_midpage_target.sh` | Named MidPage-target DSO alias for the selected preload-boundary transfer-skip shape. |
-| `build_hz6_preload_toy_target.sh` | Named Toy/mid-small target DSO. It keeps selected default intact and adds only the Toy direct-class boundary helper for workloads where the mid-small win is more important than MidPage/fixed guard balance. |
-| `build_hz6_preload_toy_trusted_target.sh` | Named Toy/mid-small trusted-owner target DSO. It adds Toy direct-class fast reuse and boundary trusted-owner while leaving realloc-boundary slack off. Shared compare aliases: `hz6-toy-trusted-target` / `hz6_toy_trusted_target`. |
+| `build_hz6_preload_toy_target.sh` | Historical Toy/mid-small target DSO builder. After ToyTrustedDefault-L1, this normally matches selected Toy direct/fast behavior unless future overrides are added. |
+| `build_hz6_preload_toy_trusted_target.sh` | Historical Toy/mid-small trusted-owner DSO builder. After ToyTrustedDefault-L1, this normally matches selected behavior; aliases remain for archived matrices and compatibility. |
 | `build_hz6_preload_realloc_boundary_target.sh` | Named fixed-boundary realloc-growth profile DSO. It keeps selected default intact and maps 4K/8K exact allocations to the next MidPage slot capacity so small realloc growth stays in-place. Shared compare aliases: `hz6-realloc-boundary-target` / `hz6_realloc_boundary_target`. |
 | `build_hz6_preload_realloc_boundary_4k_target.sh` | Named fixed_4k realloc-growth profile DSO. It enables only `HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_4K_L1=1` for workloads dominated by exact 4K allocations with realloc growth. Shared compare aliases: `hz6-realloc-boundary-4k-target` / `hz6_realloc_boundary_4k_target`. |
 | `build_hz6_preload_realloc_boundary_8k_target.sh` | Named fixed_8k realloc-growth profile DSO. It enables only `HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_8K_L1=1` for workloads dominated by exact 8K allocations with realloc growth. Shared compare aliases: `hz6-realloc-boundary-8k-target` / `hz6_realloc_boundary_8k_target`. |
