@@ -18,6 +18,7 @@ benchmark lane or source-level experiment.
 | ElasticCapacity design details | `HZ6_ELASTIC_CAPACITY_DESIGN_REFERENCE.md` |
 | Windows lane registry cleanup | `HZ6_WINDOWS_LANE_REGISTRY.md` |
 | Source/module cleanup plan | `HZ6_SOURCE_MODULARIZATION.md` |
+| Archive index | `archive/README.md` |
 | Archived experiment ledger | `archive/current_task_2026-06_history.md` |
 | Archived 2026-06-16 pre-compaction ledger | `archive/current_task_2026-06-16_pre_compaction.md` |
 
@@ -184,6 +185,9 @@ HZ6_ELASTIC_CAPACITY_PLAN.md:
 
 current_task.md:
   short orientation entry point
+
+archive/README.md:
+  index for long HZ6 historical ledgers
 
 archive/current_task_2026-06_history.md:
   older historical ledger and detailed experimental notes

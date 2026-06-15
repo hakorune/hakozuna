@@ -28,6 +28,7 @@ Repo hygiene and source/module cleanup:
   HZ6_SOURCE_MODULARIZATION.md
 
 Archived chronological ledgers:
+  archive/README.md
   archive/current_task_2026-06_history.md
   archive/current_task_2026-06-16_pre_compaction.md
 ```
@@ -167,6 +168,11 @@ Profile builder helper:
   linux/hz6_preload_profile_builder.sh
   Keep thin profile builders on this helper so profile scripts only describe
   macro deltas from selected/default.
+
+A/B runner alias smoke:
+  private/raw-results/linux/hz6_small_boundary_trusted_runner_alias_smoke_20260616_024030
+  confirms run_hz6_midpage_payload_trim_ab.sh accepts small_boundary_trusted
+  as the short alias for small_boundary_trusted_owner.
 ```
 
 ## Latest Hygiene Fixes
@@ -236,4 +242,5 @@ Default no-go or control-only unless new evidence is substantially different:
 
 5. Keep this file short.
    Move long experiment logs to archive/ and keep only current orientation here.
+   Archive files above 3000 lines are reference material, not active task files.
 ```
