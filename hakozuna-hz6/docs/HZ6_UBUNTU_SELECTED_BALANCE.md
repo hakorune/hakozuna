@@ -325,6 +325,17 @@ This resolves the provisional alias-warning refresh. The profile remains a
 strong named profile, not selected/default, because its bundle is workload
 specific and selected still represents the broad balanced contract.
 
+Stats/diagnostics safety refresh:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_selected_vs_trusted_stats_diag_fixed_alias_20260616_024313
+```
+
+This repeat kept `fail=0` for selected and `small_boundary_trusted` across
+focused and fixed rows. Diagnostic-speed shape is mixed, so use it only as
+safety/attribution evidence; keep the no-stats refresh above as the speed
+ranking read.
+
 Fixed_4k profile-position follow-up:
 
 | row | hz6 selected | realloc-4k profile | small-boundary target | trusted profile | read |

@@ -110,6 +110,7 @@ Preferred broad small/fixed profile:
     private/raw-results/linux/hz6_trusted_profile_fixed_20260616_020211
     private/raw-results/linux/hz6_fixed4k_profile_position_20260616_021401
     private/raw-results/linux/hz6_selected_vs_trusted_refresh_fixed_alias_20260616_024159
+    private/raw-results/linux/hz6_selected_vs_trusted_stats_diag_fixed_alias_20260616_024313
 
   read:
     16..256      selected 57.497M -> trusted 78.031M
@@ -135,6 +136,9 @@ Preferred broad small/fixed profile:
       fixed_4k     selected 24.705M -> trusted 36.289M
       fixed_8k     selected 33.242M -> trusted 35.019M
       fixed_16k    selected 34.001M -> trusted 34.445M
+    Fixed-alias stats+diagnostics repeat keeps fail=0 across focused/fixed
+    rows. Diagnostic-speed shape is mixed, so keep production no-stats reads
+    as the speed-ranking evidence.
 
   hot-path attribution:
     private/raw-results/linux/hz6_hotpath_attribution_refresh_20260616_021555
