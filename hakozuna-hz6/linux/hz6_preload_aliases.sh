@@ -56,4 +56,19 @@ hz6_preload_build_requested_aliases() {
       "hz6-realloc-boundary-8k-target" "hz6_realloc_boundary_8k_target"; then
     "${root_dir}/hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_8k_target.sh"
   fi
+  if hz6_preload_allocator_requested "$allocators_csv" \
+      "hz6-realloc-boundary-adaptive-target" \
+      "hz6_realloc_boundary_adaptive_target"; then
+    "${root_dir}/hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_adaptive_target.sh"
+  fi
+  if hz6_preload_allocator_requested "$allocators_csv" \
+      "hz6-realloc-boundary-adaptive-4k-target" \
+      "hz6_realloc_boundary_adaptive_4k_target"; then
+    "${root_dir}/hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_adaptive_4k_target.sh"
+  fi
+  if hz6_preload_allocator_requested "$allocators_csv" \
+      "hz6-realloc-boundary-adaptive-8k-target" \
+      "hz6_realloc_boundary_adaptive_8k_target"; then
+    "${root_dir}/hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_adaptive_8k_target.sh"
+  fi
 }

@@ -488,6 +488,27 @@ to `0`. Focused rows have tiny copy counts (`18`, `9`, `2` in this short read),
 so broad default slack mostly changes allocation shape without enough focused
 copy pressure to justify the guard risk.
 
+Adaptive realloc-boundary profile follow-up:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_042628
+hakozuna-hz6/private/raw-results/linux/hz6_preload_profile_frontier_20260616_042846
+```
+
+| row | selected | adaptive 4K | adaptive 8K | adaptive combined | read |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `fixed_4k` | `18.358M` | `24.005M` | n/a | `24.150M` | strong fixed-boundary profile evidence |
+| `fixed_8k` | `22.454M` | n/a | `23.364M` | `23.516M` | useful fixed-boundary profile evidence |
+| `16..4096` | `21.939M` | `22.290M` | `21.647M` | `21.591M` | mixed |
+| `1024..4096` | `19.621M` | `19.735M` | `19.699M` | `19.525M` | near-flat/mixed |
+| `4096..16384` | `23.996M` | `23.935M` | `24.304M` | `23.889M` | near-flat/mixed |
+
+The adaptive profile aliases are now first-class profile controls, but the
+selected/default decision remains unchanged. They recover much of the exact
+fixed-boundary copy loss without always-on slack, yet the mixed rows still
+wobble. Require a full profile-frontier repeat and normal stats/RSS guards
+before considering any promotion.
+
 Hot-path attribution refresh:
 
 ```text

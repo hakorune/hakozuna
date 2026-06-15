@@ -199,6 +199,27 @@ bench_find_hz6_realloc_boundary_8k_target_library() {
     hz6-preload-realloc-boundary-8k-target
 }
 
+bench_find_hz6_realloc_boundary_adaptive_target_library() {
+  bench_find_hz6_preload_output \
+    HZ6_REALLOC_BOUNDARY_ADAPTIVE_TARGET_PRELOAD_SO \
+    hz6_preload_realloc_boundary_adaptive_target \
+    hz6-preload-realloc-boundary-adaptive-target
+}
+
+bench_find_hz6_realloc_boundary_adaptive_4k_target_library() {
+  bench_find_hz6_preload_output \
+    HZ6_REALLOC_BOUNDARY_ADAPTIVE_4K_TARGET_PRELOAD_SO \
+    hz6_preload_realloc_boundary_adaptive_4k_target \
+    hz6-preload-realloc-boundary-adaptive-4k-target
+}
+
+bench_find_hz6_realloc_boundary_adaptive_8k_target_library() {
+  bench_find_hz6_preload_output \
+    HZ6_REALLOC_BOUNDARY_ADAPTIVE_8K_TARGET_PRELOAD_SO \
+    hz6_preload_realloc_boundary_adaptive_8k_target \
+    hz6-preload-realloc-boundary-adaptive-8k-target
+}
+
 bench_find_hz6_small_boundary_target_library() {
   bench_find_hz6_preload_output \
     HZ6_SMALL_BOUNDARY_TARGET_PRELOAD_SO \
@@ -277,6 +298,15 @@ bench_find_allocator_library() {
     hz6-realloc-boundary-8k-target|hz6_realloc_boundary_8k_target)
       bench_find_hz6_realloc_boundary_8k_target_library
       ;;
+    hz6-realloc-boundary-adaptive-target|hz6_realloc_boundary_adaptive_target)
+      bench_find_hz6_realloc_boundary_adaptive_target_library
+      ;;
+    hz6-realloc-boundary-adaptive-4k-target|hz6_realloc_boundary_adaptive_4k_target)
+      bench_find_hz6_realloc_boundary_adaptive_4k_target_library
+      ;;
+    hz6-realloc-boundary-adaptive-8k-target|hz6_realloc_boundary_adaptive_8k_target)
+      bench_find_hz6_realloc_boundary_adaptive_8k_target_library
+      ;;
     hz6-small-boundary-target|hz6_small_boundary_target)
       bench_find_hz6_small_boundary_target_library
       ;;
@@ -348,6 +378,15 @@ bench_print_allocator_hints() {
       ;;
     hz6-realloc-boundary-8k-target|hz6_realloc_boundary_8k_target)
       echo "hint: build the HZ6 realloc-boundary 8K target lane with './hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_8k_target.sh' or set HZ6_REALLOC_BOUNDARY_8K_TARGET_PRELOAD_SO" >&2
+      ;;
+    hz6-realloc-boundary-adaptive-target|hz6_realloc_boundary_adaptive_target)
+      echo "hint: build the HZ6 realloc-boundary adaptive target lane with './hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_adaptive_target.sh' or set HZ6_REALLOC_BOUNDARY_ADAPTIVE_TARGET_PRELOAD_SO" >&2
+      ;;
+    hz6-realloc-boundary-adaptive-4k-target|hz6_realloc_boundary_adaptive_4k_target)
+      echo "hint: build the HZ6 realloc-boundary adaptive 4K target lane with './hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_adaptive_4k_target.sh' or set HZ6_REALLOC_BOUNDARY_ADAPTIVE_4K_TARGET_PRELOAD_SO" >&2
+      ;;
+    hz6-realloc-boundary-adaptive-8k-target|hz6_realloc_boundary_adaptive_8k_target)
+      echo "hint: build the HZ6 realloc-boundary adaptive 8K target lane with './hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_adaptive_8k_target.sh' or set HZ6_REALLOC_BOUNDARY_ADAPTIVE_8K_TARGET_PRELOAD_SO" >&2
       ;;
     hz6-small-boundary-target|hz6_small_boundary_target)
       echo "hint: build the HZ6 small-boundary target lane with './hakozuna-hz6/linux/build_hz6_preload_small_boundary_target.sh' or set HZ6_SMALL_BOUNDARY_TARGET_PRELOAD_SO" >&2
