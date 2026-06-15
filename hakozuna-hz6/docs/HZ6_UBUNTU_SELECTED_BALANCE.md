@@ -555,6 +555,30 @@ makes `hz6-small-boundary-trusted-target` the preferred broad fixed-boundary
 profile, with adaptive-4k/8k retained as exact-row controls. Snapshot:
 `archive/current_task_2026-06-16_fixed_boundary_profile_repeat.md`.
 
+Next lane from the cross read:
+
+```text
+FixedCostResidencyMatrix-L1
+```
+
+HZ6's fixed rows are now speed-credible, especially through the
+`hz6-small-boundary-trusted-target` profile. The remaining visible gap to HZ3 is
+mostly RSS/fixed-cost shape, not a missing free-order or route lookup trick.
+The next pass should compare selected/profile rows against HZ3/HZ4/tcmalloc
+while splitting HZ6 resident pressure into:
+
+```text
+MidPage touched payload and all-local-free payload
+frontcache/static table backing
+active-map storage
+source-run blocks by class
+quiescent current RSS after malloc_trim
+```
+
+Do not default cold-retire, active-map widening, page-kind/free-order tables, or
+realloc-boundary behavior from this read. First produce attribution that shows
+which fixed cost is actually actionable without losing the speed/RSS balance.
+
 Hot-path attribution refresh:
 
 ```text

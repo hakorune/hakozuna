@@ -133,18 +133,17 @@ Default no-go/control-only without substantially different evidence:
 
 ```text
 1. Keep selected/default stable.
-2. Treat adaptive-4k and adaptive-8k as fixed-boundary profile lanes.
-3. Treat calloc-large-real as a large calloc-heavy RSS/speed profile, not a
+2. Start the next lane from fixed-cost/RSS attribution, not a default behavior
+   change. Compare touched MidPage payload, frontcache/static tables,
+   active-map storage, and profile/source-run residency against HZ3/HZ4/tcmalloc
+   rows before changing selected flags.
+3. Treat adaptive-4k and adaptive-8k as fixed-boundary profile lanes.
+4. Treat calloc-large-real as a large calloc-heavy RSS/speed profile, not a
    selected/default lane.
-4. Keep calloc-direct default-off: thick focused+calloc repeat is mixed and
+5. Keep calloc-direct default-off: thick focused+calloc repeat is mixed and
    does not justify selected/default.
-5. Next optimization should target selected-safe code shape or a new narrow
-   profile; do not promote broad real-calloc behavior.
-6. If strengthening profile-positioning evidence, repeat the fixed-boundary
-   cross quick check with higher iterations before drawing promotion-level
-   conclusions.
-7. Before any selected/default change, update stable docs and archive long logs.
-8. Keep this file below about 150 lines; archive completed evidence snapshots
+6. Before any selected/default change, update stable docs and archive long logs.
+7. Keep this file below about 150 lines; archive completed evidence snapshots
    instead of appending chronological logs. Large 3000+ line ledgers belong
    only under archive/.
 ```
