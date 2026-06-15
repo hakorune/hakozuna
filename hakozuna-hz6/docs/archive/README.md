@@ -9,6 +9,7 @@ start from `../current_task.md`, then follow the stable lane docs linked there.
 | --- | --- |
 | `current_task_2026-06_history.md` | Older HZ6 implementation and optimization chronology. Large by design. |
 | `current_task_2026-06-16_pre_compaction.md` | Detailed Ubuntu HZ6 optimization ledger immediately before `../current_task.md` was compacted. Large by design. |
+| `current_task_2026-06-16_profile_quiescent_snapshot.md` | Snapshot of the profile/alias/quiescent RSS ledger before the active HZ6 current task was shortened again. |
 
 ## Reading Order
 
