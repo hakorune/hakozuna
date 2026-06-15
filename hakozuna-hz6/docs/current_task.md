@@ -1297,10 +1297,36 @@ post-promotion selected-only checks:
     raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_212542
     fail=0 on all focused/fixed rows.
 
+post-promotion cross refresh:
+  raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_212811
+  16..256:
+    hz6 53.758M / 30.50 MiB
+    hz3 236.104M / 6.75 MiB
+    hz4 208.664M / 7.00 MiB
+    tcmalloc 240.099M / 9.38 MiB
+    read: HZ6 beats mimalloc, but tiny remains an architecture mismatch.
+  16..4096:
+    hz6 34.858M / 79.62 MiB
+    hz4 46.646M / 59.12 MiB
+    tcmalloc 75.857M / 41.25 MiB
+    read: HZ6 is stable but not the speed/RSS frontier here.
+  1024..4096:
+    hz6 31.574M / 90.88 MiB
+    hz4 42.840M / 53.25 MiB
+    tcmalloc 72.726M / 49.25 MiB
+    read: mid-small remains the biggest gap.
+  4096..16384:
+    hz6 40.833M / 94.12 MiB
+    hz3 51.152M / 73.50 MiB
+    hz4 26.301M / 114.12 MiB
+    tcmalloc 32.849M / 107.50 MiB
+    read: HZ6 is a strong balanced target lane; it beats HZ4/tcmalloc/mimalloc
+      on the MidPage target row, but HZ3 remains the speed/RSS ceiling.
+
 next:
   With active-map capacity/probe/layout, cold-retire behavior, source-run reuse,
   and broad malloc/free shortcuts mostly closed, prefer one of:
-    1. refreshed selected-vs-allocator matrix after direct_class promotion
-    2. source/payload residency shape for fixed 8K/16K RSS polish
+    1. source/payload residency shape for fixed 8K/16K RSS polish
+    2. mid-small 16..4096 / 1024..4096 attribution refresh
     3. narrow preload boundary/code-shape audit outside active-map/free-path
 ```

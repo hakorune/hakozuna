@@ -97,16 +97,16 @@ raw direct-local pop, Toy free fast-slot, and preload MidPage direct class:
 | `fixed_8k` HZ6-only repeat-5 | `41.978M / 93.12 MiB` |
 | `fixed_16k` HZ6-only repeat-5 | `44.608M / 93.12 MiB` |
 
-Latest cross-allocator refresh after active-map register fast-slot promotion,
+Latest cross-allocator refresh after preload MidPage direct-class promotion,
 repeat-3, `bench_mixed_ws_crt`, raw
-`private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_145328`:
+`private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_212811`:
 
 | Row | hz6 | mimalloc | tcmalloc | system | hz6 peak KB |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| `16..256` | `56.665M` | `53.541M` | `248.368M` | `105.732M` | `31,232` |
-| `16..4096` | `39.743M` | `7.038M` | `97.666M` | `16.935M` | `81,664` |
-| `1024..4096` | `37.948M` | `5.578M` | `96.292M` | `9.935M` | `93,056` |
-| `4096..16384` | `54.836M` | `1.303M` | `46.507M` | `2.982M` | `96,768` |
+| `16..256` | `53.758M` | `51.910M` | `240.099M` | `90.615M` | `31,232` |
+| `16..4096` | `34.858M` | `6.889M` | `75.857M` | `17.239M` | `81,536` |
+| `1024..4096` | `31.574M` | `5.450M` | `72.726M` | `8.456M` | `93,056` |
+| `4096..16384` | `40.833M` | `1.279M` | `32.849M` | `2.867M` | `96,384` |
 
 Important caveat:
 
@@ -124,9 +124,9 @@ MidPage 8K run768, 32K run2048, active-map mask-index, active-map register
 fast-slot, raw direct-local pop, Toy free fast-slot, phase-counter compile-out,
 and preload MidPage direct class are now selected. The current selected-only
 post-promotion read reaches 44.720M / 94.25 MiB on the HZ6-only
-4096..16384 repeat-5. The latest full cross refresh predates direct-class
-promotion but still shows the selected family ahead of tcmalloc on the
-MidPage target row. Keep 32K run1536, run768, and run512 as direct controls.
+4096..16384 repeat-5. The latest full cross refresh shows the selected family
+ahead of tcmalloc on speed and RSS on the MidPage target row. Keep 32K run1536,
+run768, and run512 as direct controls.
 ```
 
 Current lane state:
