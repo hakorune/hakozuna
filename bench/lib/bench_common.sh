@@ -255,6 +255,13 @@ bench_find_hz6_small_boundary_trusted_target_library() {
     hz6-preload-small-boundary-trusted-target
 }
 
+bench_find_hz6_small_boundary_trusted_toy_map8192_target_library() {
+  bench_find_hz6_preload_output \
+    HZ6_SMALL_BOUNDARY_TRUSTED_TOY_MAP8192_TARGET_PRELOAD_SO \
+    hz6_preload_small_boundary_trusted_toy_map8192_target \
+    hz6-preload-small-boundary-trusted-toy-map8192-target
+}
+
 bench_find_hz6_midpage_trusted_class_target_library() {
   bench_find_hz6_preload_output \
     HZ6_MIDPAGE_TRUSTED_CLASS_TARGET_PRELOAD_SO \
@@ -335,6 +342,9 @@ bench_find_allocator_library() {
       ;;
     hz6-small-boundary-trusted-target|hz6_small_boundary_trusted_target)
       bench_find_hz6_small_boundary_trusted_target_library
+      ;;
+    hz6-small-boundary-trusted-toy-map8192-target|hz6_small_boundary_trusted_toy_map8192_target)
+      bench_find_hz6_small_boundary_trusted_toy_map8192_target_library
       ;;
     hz6-midpage-trusted-class|hz6_midpage_trusted_class)
       bench_find_hz6_midpage_trusted_class_target_library
@@ -422,6 +432,9 @@ bench_print_allocator_hints() {
       ;;
     hz6-small-boundary-trusted-target|hz6_small_boundary_trusted_target)
       echo "hint: build the HZ6 small-boundary trusted target lane with './hakozuna-hz6/linux/build_hz6_preload_small_boundary_trusted_target.sh' or set HZ6_SMALL_BOUNDARY_TRUSTED_TARGET_PRELOAD_SO" >&2
+      ;;
+    hz6-small-boundary-trusted-toy-map8192-target|hz6_small_boundary_trusted_toy_map8192_target)
+      echo "hint: build the HZ6 small-boundary trusted Toy-map8192 target lane with './hakozuna-hz6/linux/build_hz6_preload_small_boundary_trusted_toy_map8192_target.sh' or set HZ6_SMALL_BOUNDARY_TRUSTED_TOY_MAP8192_TARGET_PRELOAD_SO" >&2
       ;;
     hz6-midpage-trusted-class|hz6_midpage_trusted_class)
       echo "hint: build the HZ6 MidPage trusted-class target lane with './hakozuna-hz6/linux/build_hz6_preload_midpage_trusted_class_target.sh' or set HZ6_MIDPAGE_TRUSTED_CLASS_TARGET_PRELOAD_SO" >&2

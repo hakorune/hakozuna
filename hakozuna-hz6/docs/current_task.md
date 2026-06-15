@@ -51,23 +51,20 @@ Default position:
 Preferred broad fixed-boundary profile:
   hz6-small-boundary-trusted-target
 
+Fixed-boundary RSS profile:
+  hz6-small-boundary-trusted-toy-map8192-target
+
 Light small/fixed16 profile:
   hz6-toy-trusted-target
 
 Exact realloc-boundary profiles:
-  hz6-realloc-boundary-4k-target
-  hz6-realloc-boundary-8k-target
+  hz6-realloc-boundary-4k-target / hz6-realloc-boundary-8k-target
 
 Adaptive realloc-boundary profiles:
-  hz6-realloc-boundary-adaptive-4k-target
-  hz6-realloc-boundary-adaptive-8k-target
-  hz6-realloc-boundary-adaptive-target
+  adaptive-4k / adaptive-8k / adaptive combined
 
 Other controls:
-  hz6-aligned-target
-  hz6-calloc-direct-target
-  hz6-calloc-real-target
-  hz6-calloc-large-real-target
+  hz6-aligned-target / calloc-direct / calloc-real / calloc-large-real
 
 Runners:
   linux/run_hz6_fixed_boundary_profile_frontier.sh  # fixed profile shortcut
@@ -80,23 +77,21 @@ Runners:
 Profile frontier:
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_060739
 
-Realloc copy attribution:
+Realloc/adaptive profile repeats:
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_042441
-
-Adaptive realloc-boundary profile repeat:
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_042628
 
 Calloc large-real profile:
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_044958
   private/raw-results/linux/hz6_preload_calloc_cross_20260616_045446
 
-Calloc direct-HZ6 code-shape control:
+Calloc direct-HZ6 control:
   private/raw-results/linux/hz6_preload_calloc_audit_20260616_051752
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_051752
 
 Fixed-boundary/fixed-cost profile repeats:
   private/raw-results/linux/hz6_fixed_boundary_profile_frontier_20260616_061328
-  private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_062124
+  private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_062305
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_055648
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_061733
   private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_061459
@@ -142,9 +137,12 @@ Default no-go/control-only without substantially different evidence:
    selected for broad focused/4096..16384; small-boundary-trusted/adaptive-4k
    for fixed_4k; small-boundary-trusted/adaptive-8k for fixed_8k; adaptive
    combined only for fixed_16k-heavy profile runs.
-8. Do not promote realloc-boundary/adaptive to selected/default without a new
+8. `hz6-small-boundary-trusted-toy-map8192-target` is a fixed-boundary RSS
+   profile: useful on fixed_4k/8k/16k and 4096..16384 in the latest repeat,
+   but not a broad default because 16..4096 and 1024..4096 regress.
+9. Do not promote realloc-boundary/adaptive to selected/default without a new
    guard that also preserves tiny, mixed-small, target, fixed, RSS, and stats.
-9. Keep this file below about 150 lines; archive completed evidence snapshots
+10. Keep this file below about 150 lines; archive completed evidence snapshots
    instead of appending chronological logs. Large 3000+ line ledgers belong
    only under archive/.
 ```
