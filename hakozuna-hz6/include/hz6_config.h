@@ -840,6 +840,12 @@
 #define HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_DELTA ((size_t)0)
 #endif
 
+#ifndef HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1
+/* Production DSO code-shape control.  When enabled, preload hook phase
+ * counters are compiled out instead of runtime-gated by HZ6_PRELOAD_STATS. */
+#define HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1 0
+#endif
+
 #ifndef HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FAST_L1
 /* Code-shape control for the selected 1:1 current-bias predicate.  Semantics
  * match the default numerator=1, denominator=1, delta=0 configuration. */

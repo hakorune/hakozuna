@@ -1,5 +1,16 @@
 # HZ6 Ubuntu MidPage Next Design
 
+Status note:
+
+```text
+This file is historical design context. The current selected/default/control
+ledger lives in HZ6_UBUNTU_PRELOAD_LANES.md. Use that file, not this historical
+note, for the next implementation order.
+
+Current selected 32K run size is HZ6_MIDPAGE_32K_RUN_BYTES=2097152.
+Older 256K/512K/768K notes below are retained as control history.
+```
+
 This note defines the next Ubuntu `LD_PRELOAD` MidPage work after descriptor-out,
 free-cache audit, and transfer-first skip experiments.
 
@@ -224,9 +235,10 @@ Audit variants:
 
 ```text
 selected:
-  HZ6_MIDPAGE_32K_RUN_BYTES=262144
+  HZ6_MIDPAGE_32K_RUN_BYTES=2097152
 
 payload trim controls:
+  HZ6_MIDPAGE_32K_RUN_BYTES=262144  # older selected/control
   HZ6_MIDPAGE_32K_RUN_BYTES=229376  # 7 slots
   HZ6_MIDPAGE_32K_RUN_BYTES=196608  # 6 slots
   HZ6_MIDPAGE_32K_RUN_BYTES=131072  # 4 slots, likely source-block stress

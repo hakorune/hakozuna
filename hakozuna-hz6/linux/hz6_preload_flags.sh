@@ -27,6 +27,7 @@ HZ6_PRELOAD_SELECTED_BASE_CFLAGS=(
   -DHZ6_ROUTE_LINEAR_WRAP_L1=1
   -DHZ6_ROUTE_LOOP_CARRY_L1=1
   -DHZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1=1
+  -DHZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1=1
 
   # Explicit no-go/control defaults. Override with runner variants for A/B.
   -DHZ6_LINUX_MMAP_RETAIN_TLS_L1=0
@@ -48,6 +49,20 @@ hz6_preload_effective_selected_cflags() {
   out_ref=("${HZ6_PRELOAD_SELECTED_BASE_CFLAGS[@]}")
   if [[ "$enable_midpage_boundary" -ne 0 ]]; then
     out_ref+=("${HZ6_PRELOAD_MIDPAGE_BOUNDARY_CFLAGS[@]}")
+  fi
+}
+
+hz6_preload_preserve_phase_counters() {
+  local -n phase_flags_ref="$1"
+  hz6_preload_replace_define phase_flags_ref HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1 0
+}
+
+hz6_preload_preserve_phase_counters_when_observing() {
+  local -n phase_observe_flags_ref="$1"
+  local enable_stats="${2:-0}"
+  local enable_diagnostics="${3:-0}"
+  if [[ "$enable_stats" -ne 0 || "$enable_diagnostics" -ne 0 ]]; then
+    hz6_preload_preserve_phase_counters phase_observe_flags_ref
   fi
 }
 

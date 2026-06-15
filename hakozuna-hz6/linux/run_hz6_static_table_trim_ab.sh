@@ -69,6 +69,7 @@ variant_flags() {
   local variant="$1"
   local flags=()
   hz6_preload_effective_selected_cflags flags 1
+  hz6_preload_preserve_phase_counters flags
   case "$variant" in
     selected)
       ;;

@@ -9,6 +9,24 @@ Raw run:
 hakozuna-hz6/private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_145328
 ```
 
+Latest production-shape HZ6-only check after
+`HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1=1` became selected:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_194710
+```
+
+This is not a full cross-allocator matrix refresh, but it confirms the selected
+HZ6 preload DSO no longer pays phase-counter calls in stats-off production
+runs:
+
+| row | selected ops/s | old phase-count-on ops/s | read |
+| --- | ---: | ---: | --- |
+| `16_256` | `51.875M` | `50.587M` | selected improves |
+| `16_4096` | `33.809M` | `32.999M` | selected improves |
+| `1024_4096` | `31.335M` | `31.338M` | selected flat |
+| `4096_16384` | `43.570M` | `40.482M` | selected improves |
+
 Command:
 
 ```bash
@@ -179,18 +197,18 @@ The payload attribution is logical backing capacity and can exceed resident RSS,
 so it should guide source/run design but not be treated as exact resident pages.
 ```
 
-Next optimization order from this evidence:
+Current optimization read:
 
 ```text
-1. AllocatorStaticTableTrimAudit-L1
-   avoid or shrink full table multiplication for helper/cold allocators if safe
+Static table trim is selected.
+Frontcache storage/shape is closed as control/no-go for default.
+MidPage payload/cold-retire behavior is closed as control/no-go for default.
+Current-bias predicate variants and active-map capacity/layout follow-ups are
+closed as controls/no-go.
 
-2. FrontcacheCapacityShapeAudit-L1
-   closed for behavior. Keep class-max attribution for future lazy storage;
-   do not shrink selected frontcache4096 by class yet.
-
-3. MidPagePayloadTrimAudit-L1
-   revisit 32K source payload after fixed table costs are understood
+Next work should use HZ6_UBUNTU_PRELOAD_LANES.md as the authoritative ledger
+and start with a broader hot-path attribution refresh or a non-active-map
+preload boundary/code-shape lane.
 ```
 
 ## Static Table Trim Promotion

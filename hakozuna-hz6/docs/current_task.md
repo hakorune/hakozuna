@@ -38,7 +38,7 @@ Archived chronological ledger:
   archive/current_task_2026-06_history.md
 ```
 
-## Active Task: HZ6 Ubuntu MidPage ActiveMap Collision Layout Audit-L1
+## Recent Closeout: HZ6 Ubuntu MidPage ActiveMap Collision Layout Audit-L1
 
 ```text
 goal:
@@ -85,7 +85,56 @@ result:
     not pursue another active-map capacity/probe/layout behavior now.
 ```
 
-## Active Task: HZ6 Ubuntu Preload Current-Bias Fast Predicate-L1
+## Recent Closeout: HZ6 Ubuntu Preload Phase Counter Compile-Out-L1
+
+```text
+goal:
+  Remove preload hook phase-counter call/branch overhead from production
+  stats-off DSOs without changing diagnostic builds.
+
+design:
+  Add HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1 and promote it to the selected
+  production preload flags.
+  When enabled, hz6_preload_phase_count(), phase_add(), and
+  phase_count_size_bucket() become no-op macros in the preload stats header.
+  The stats registry and allocator stats remain buildable.
+  Stats/diagnostic runners force the flag back to 0 unless explicitly testing
+  the phase_count_off variant, so normal attribution still has phase/hook
+  counters.
+
+acceptance:
+  selected and diagnostic preload builds pass.
+  stats-off focused rows improve or stay flat, especially 16..256 and
+  4096..16384.
+  stats-on diagnostic builds keep current counter behavior with the flag off.
+
+production read:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_194710
+  command:
+    RUNS=5 ITERS=300000 \
+      run_hz6_midpage_payload_trim_ab.sh --skip-bench --no-stats \
+      --include-tiny --variants selected,phase_count_on
+
+  16..256:
+    selected 51.875M vs old phase_count_on 50.587M
+  16..4096:
+    selected 33.809M vs old phase_count_on 32.999M
+  1024..4096:
+    selected 31.335M vs old phase_count_on 31.338M
+  4096..16384:
+    selected 43.570M vs old phase_count_on 40.482M
+
+diagnostic read:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_194723
+  selected keeps nonzero HZ6_PRELOAD_PHASE_STATS under --stats --diagnostics.
+  phase_count_off intentionally reports zero phase/hook counters.
+
+decision:
+  selected/default for production preload builds.
+  Keep phase_count_on/phase_count_off variants for A/B and attribution sanity.
+```
+
+## Recent Closeout: HZ6 Ubuntu Preload Current-Bias Fast Predicate-L1
 
 ```text
 goal:
@@ -483,9 +532,11 @@ whole-helper free-cache replacement first.
 Next recommended optimization lane:
   FrontcacheStorageLayoutAuditV2-L1 is closed as control/no-go for default.
   active-map register fast-slot is selected and safety-clean; run-size, borrow,
-  and free fast-slot attempts are closed for now. Next work should target source
-  payload/RSS pressure or a free-hit shape that does not add a branch to every
-  MidPage free attempt.
+  free fast-slot, cold-retire behavior, current-bias variants, and active-map
+  layout attempts are closed for now. Next work should start with a broader
+  hot-path attribution refresh or a non-active-map preload boundary/code-shape
+  lane. Do not reopen active-map capacity/probe or free-path source release
+  without new evidence.
 
 MidPagePayloadResidencyAudit-L1 task:
   goal:
@@ -655,11 +706,11 @@ Closed MidPage controls:
   frontcache and supply controls:
     HZ6_UBUNTU_PRELOAD_LANES.md
 
-Use HZ6_UBUNTU_MIDPAGE_NEXT_DESIGN.md as the implementation order for the next
-MidPage pass. TransferProbeAudit-L1, target DSO, and guard-isolated helper
-attempts are done. The final outer-guard noinline preload-boundary shape passed
-the focused repeat-15 promotion guard and the selected-vs-boundary-off
-confirmation lane.
+Use HZ6_UBUNTU_PRELOAD_LANES.md as the current implementation ledger. The older
+HZ6_UBUNTU_MIDPAGE_NEXT_DESIGN.md file is historical context; TransferProbeAudit,
+target DSO, and guard-isolated helper attempts are done. The final outer-guard
+noinline preload-boundary shape passed the focused repeat-15 promotion guard
+and the selected-vs-boundary-off confirmation lane.
 
 Long historical benchmark notes and failed experiments live in:
   archive/current_task_2026-06_history.md
@@ -693,7 +744,7 @@ Do not append long run logs here. Promote stable conclusions into the focused
 HZ6 docs and move raw chronological evidence to archive docs.
 ```
 
-## Active Task: HZ6 Ubuntu MidPage 32K Cold Retire Behavior-L1
+## Recent Closeout: HZ6 Ubuntu MidPage 32K Cold Retire Behavior-L1
 
 ```text
 goal:

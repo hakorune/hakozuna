@@ -64,6 +64,13 @@ typedef struct Hz6PreloadPhaseStats {
 
 extern Hz6PreloadPhaseStats g_hz6_preload_phase_stats;
 
+#if HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1
+#define hz6_preload_phase_count(counter) ((void)0)
+#define hz6_preload_phase_add(counter, value) ((void)0)
+#define hz6_preload_phase_count_size_bucket(size, zero, le1024, range1025_4096, \
+                                            range4097_16384, gt16384)          \
+  ((void)0)
+#else
 void hz6_preload_phase_count(_Atomic(size_t)* counter);
 void hz6_preload_phase_add(_Atomic(size_t)* counter, size_t value);
 void hz6_preload_phase_count_size_bucket(
@@ -73,6 +80,7 @@ void hz6_preload_phase_count_size_bucket(
     _Atomic(size_t)* range1025_4096,
     _Atomic(size_t)* range4097_16384,
     _Atomic(size_t)* gt16384);
+#endif
 
 void hz6_preload_register_allocator(Hz6Allocator* allocator);
 

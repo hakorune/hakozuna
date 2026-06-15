@@ -97,6 +97,8 @@ variant_flags() {
   local variant="$1"
   local flags=()
   hz6_preload_effective_selected_cflags flags 1
+  hz6_preload_preserve_phase_counters_when_observing flags \
+    "$ENABLE_STATS" "$ENABLE_DIAGNOSTICS"
   if [[ "$ENABLE_DIAGNOSTICS" -ne 0 ]]; then
     flags+=("-DHZ6_DIAGNOSTIC_PROBES=1")
   fi

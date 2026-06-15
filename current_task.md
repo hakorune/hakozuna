@@ -13,8 +13,11 @@ HZ6 stable lane docs:
   hakozuna-hz6/docs/HZ6_REPO_HYGIENE.md
   hakozuna-hz6/docs/HZ6_SOURCE_MODULARIZATION.md
 
-Source cleanup lane:
+Legacy/source cleanup lane:
   docs/HZ3_SOURCE_MODULARIZATION_LANE.md
+
+Active HZ6 source cleanup lane:
+  hakozuna-hz6/docs/HZ6_SOURCE_MODULARIZATION.md
 
 Full archived root history:
   docs/archive/current_task_2026-06-hz6_linux_history.md
@@ -35,6 +38,9 @@ Source cleanup status:
 Next allocator work:
   continue from the HZ6 selected lane docs, not from this archived root ledger.
   Keep new benchmark rows mirrored into the HZ6 stable docs when promoted.
+  Latest HZ6 Ubuntu production selected addition:
+    HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1=1
+    Stats/diagnostic runners preserve phase counters for attribution.
 ```
 
 ## Recent Cleanup Commits

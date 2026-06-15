@@ -25,6 +25,13 @@ static size_t g_hz6_preload_allocator_registry_count;
 Hz6PreloadPhaseStats g_hz6_preload_phase_stats;
 static int g_hz6_preload_phase_stats_enabled;
 
+static size_t hz6_preload_phase_load(const _Atomic(size_t)* counter) {
+  return atomic_load_explicit(counter, memory_order_relaxed);
+}
+
+#define HZ6_PRELOAD_PHASE_LOAD_FIELD(name) hz6_preload_phase_load(&g_hz6_preload_phase_stats.name)
+
+#if !HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1
 void hz6_preload_phase_count(_Atomic(size_t)* counter) {
   if (g_hz6_preload_phase_stats_enabled) {
     (void)atomic_fetch_add_explicit(counter, 1u, memory_order_relaxed);
@@ -36,12 +43,6 @@ void hz6_preload_phase_add(_Atomic(size_t)* counter, size_t value) {
     (void)atomic_fetch_add_explicit(counter, value, memory_order_relaxed);
   }
 }
-
-static size_t hz6_preload_phase_load(const _Atomic(size_t)* counter) {
-  return atomic_load_explicit(counter, memory_order_relaxed);
-}
-
-#define HZ6_PRELOAD_PHASE_LOAD_FIELD(name) hz6_preload_phase_load(&g_hz6_preload_phase_stats.name)
 
 void hz6_preload_phase_count_size_bucket(
     size_t size,
@@ -62,6 +63,7 @@ void hz6_preload_phase_count_size_bucket(
     hz6_preload_phase_count(gt16384);
   }
 }
+#endif
 
 __attribute__((constructor)) static void hz6_preload_on_load(void) {
   const char* value = getenv("HZ6_PRELOAD_STATS");

@@ -69,6 +69,7 @@ variant_flags() {
   local variant="$1"
   local flags=()
   hz6_preload_effective_selected_cflags flags 1
+  hz6_preload_preserve_phase_counters flags
   flags+=("-DHZ6_DIAGNOSTIC_PROBES=1")
   case "$variant" in
     selected)
@@ -99,6 +100,12 @@ variant_flags() {
     current_bias_delta64)
       hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1 1
       hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_DELTA 64
+      ;;
+    phase_count_on)
+      hz6_preload_replace_define flags HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1 0
+      ;;
+    phase_count_off)
+      hz6_preload_replace_define flags HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1 1
       ;;
     *)
       echo "unknown variant: ${variant}" >&2
@@ -156,6 +163,7 @@ variants=(
   current_bias_2x
   current_bias_4x
   current_bias_delta64
+  phase_count_off
 )
 rows=(
   "16_256 16 256"
@@ -192,8 +200,8 @@ def extract(name, text):
     match = re.search(r"(?:^|\s)" + re.escape(name) + r"=([0-9]+)", text)
     return int(match.group(1)) if match else 0
 
-print("| row | variant | median ops/s | median peak MiB | toy_attempt | toy_hit | mid_attempt | mid_hit | route_after_maps | fail |")
-print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+print("| row | variant | median ops/s | median peak MiB | toy_attempt | toy_hit | mid_attempt | mid_hit | route_after_maps | route_valid_owned | route_visible | real_fallback | mh_probe | mh_true | mh_false | mh_miss | fail |")
+print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 for row in rows:
     for variant in variants:
         ops = []
@@ -203,6 +211,13 @@ for row in rows:
         mid_attempt = []
         mid_hit = []
         route_after_maps = []
+        route_valid_owned = []
+        route_visible = []
+        real_fallback = []
+        mh_probe = []
+        mh_true = []
+        mh_false = []
+        mh_miss = []
         fail = 0
         for log in sorted((outdir / row).glob(f"*_{variant}.log")):
             text = log.read_text()
@@ -217,6 +232,13 @@ for row in rows:
             mid_attempt.append(extract("free_midpage_active_map_attempt", text))
             mid_hit.append(extract("free_midpage_active_map_hit", text))
             route_after_maps.append(extract("free_route_lookup_after_maps", text))
+            route_valid_owned.append(extract("free_route_valid_owned", text))
+            route_visible.append(extract("free_route_valid_foreign_visible", text))
+            real_fallback.append(extract("free_route_miss_real", text))
+            mh_probe.append(extract("mh_probe", text))
+            mh_true.append(extract("mh_true", text))
+            mh_false.append(extract("mh_false", text))
+            mh_miss.append(extract("mh_miss", text))
             fail += extract("route_miss", text)
             fail += extract("route_invalid", text)
             fail += extract("alloc_fail", text)
@@ -230,6 +252,13 @@ for row in rows:
             f"{statistics.median(mid_attempt):.0f} | "
             f"{statistics.median(mid_hit):.0f} | "
             f"{statistics.median(route_after_maps):.0f} | "
+            f"{statistics.median(route_valid_owned):.0f} | "
+            f"{statistics.median(route_visible):.0f} | "
+            f"{statistics.median(real_fallback):.0f} | "
+            f"{statistics.median(mh_probe):.0f} | "
+            f"{statistics.median(mh_true):.0f} | "
+            f"{statistics.median(mh_false):.0f} | "
+            f"{statistics.median(mh_miss):.0f} | "
             f"{fail} |"
         )
 PY

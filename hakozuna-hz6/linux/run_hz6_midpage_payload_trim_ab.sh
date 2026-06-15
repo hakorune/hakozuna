@@ -109,6 +109,8 @@ variant_flags() {
   local variant="$1"
   local flags=()
   hz6_preload_effective_selected_cflags flags 1
+  hz6_preload_preserve_phase_counters_when_observing flags \
+    "$ENABLE_STATS" "$ENABLE_DIAGNOSTICS"
   if [[ "$ENABLE_DIAGNOSTICS" -ne 0 ]]; then
     flags+=("-DHZ6_DIAGNOSTIC_PROBES=1")
   fi
@@ -210,6 +212,12 @@ variant_flags() {
       ;;
     current_bias_4x)
       hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_NUMERATOR 4
+      ;;
+    phase_count_on)
+      hz6_preload_replace_define flags HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1 0
+      ;;
+    phase_count_off)
+      hz6_preload_replace_define flags HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1 1
       ;;
     run2304k)
       hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 2359296
@@ -342,8 +350,8 @@ print(f"root: `{root}`\n")
 readme = (root / "README.log").read_text(errors="replace")
 stats_mode = readme.split("stats=", 1)[1].splitlines()[0] if "stats=" in readme else "unknown"
 print(f"stats: `{stats_mode}`\n")
-print("| row | variant | median ops/s | median peak MiB | payload MiB | active source blocks | fail | source_alloc | mid32_alloc | mid32_prefill | mid32_filled | mid32_front_push | retire blocks | retire MiB | retire fail |")
-print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+print("| row | variant | median ops/s | median peak MiB | payload MiB | active source blocks | fail | source_alloc | mid32_alloc | mid32_prefill | mid32_filled | mid32_front_push | retire attempt | retire scan | retire candidates | retire blocks | retire desc | retire MiB | retire blocked | retire fail |")
+print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 for row in rows:
     for variant in variants:
         ops_values = []
@@ -356,8 +364,13 @@ for row in rows:
         mid32_prefill = 0
         mid32_filled = 0
         mid32_front_push = 0
+        retire_attempt = 0
+        retire_scan = 0
+        retire_candidates = 0
         retire_blocks = 0
+        retire_desc = 0
         retire_mib = 0.0
+        retire_blocked = 0
         retire_fail = 0
         for log in sorted((root / row).glob(f"*_{variant}.log")):
             text = log.read_text(errors="replace")
@@ -384,10 +397,19 @@ for row in rows:
             mid32_prefill += stats.get("midpage_32k_prefill_run_call", 0)
             mid32_filled += stats.get("midpage_32k_prefill_run_filled", 0)
             mid32_front_push += stats.get("midpage_32k_frontcache_push", 0)
+            retire_attempt += stats.get("midpage_32k_cold_retire_attempt", 0)
+            retire_scan += stats.get("midpage_32k_cold_retire_scan_blocks", 0)
+            retire_candidates += stats.get(
+                "midpage_32k_cold_retire_candidate_blocks", 0
+            )
             retire_blocks += stats.get("midpage_32k_cold_retire_retired_blocks", 0)
+            retire_desc += stats.get(
+                "midpage_32k_cold_retire_retired_descriptors", 0
+            )
             retire_mib += stats.get("midpage_32k_cold_retire_retired_bytes", 0) / (
                 1024.0 * 1024.0
             )
+            retire_blocked += stats.get("midpage_32k_cold_retire_blocked", 0)
             retire_fail += stats.get(
                 "midpage_32k_cold_retire_frontcache_remove_fail", 0
             )
@@ -397,7 +419,9 @@ for row in rows:
             f"| `{row}` | `{variant}` | {median_ops:.3f} | {median_peak:.2f} | "
             f"{payload_mib:.2f} | {active_source_blocks} | {fail} | "
             f"{source_alloc} | {mid32_alloc} | {mid32_prefill} | "
-            f"{mid32_filled} | {mid32_front_push} | {retire_blocks} | "
-            f"{retire_mib:.2f} | {retire_fail} |"
+            f"{mid32_filled} | {mid32_front_push} | {retire_attempt} | "
+            f"{retire_scan} | {retire_candidates} | {retire_blocks} | "
+            f"{retire_desc} | {retire_mib:.2f} | {retire_blocked} | "
+            f"{retire_fail} |"
         )
 PY
