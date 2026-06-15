@@ -124,6 +124,8 @@ variant_flags() {
   case "$variant" in
     selected)
       ;;
+    selected_scavenge_before_rss)
+      ;;
     run512k)
       hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 524288
       ;;
@@ -369,13 +371,19 @@ run_once() {
   local run_id="$5"
   local so="${OUTDIR}/build/${variant}/libhakozuna_hz6_preload.so"
   local log="${OUTDIR}/${row}/${run_id}_${variant}.log"
+  local -a extra_env=()
+  case "$variant" in
+    selected_scavenge_before_rss)
+      extra_env+=(HZ_BENCH_SCAVENGE_BEFORE_RSS=all)
+      ;;
+  esac
   mkdir -p "${OUTDIR}/${row}"
   if [[ "$ENABLE_STATS" -ne 0 ]]; then
-    env HZ6_PRELOAD_STATS="$STATS_VALUE" LD_PRELOAD="$so" \
+    env "${extra_env[@]}" HZ6_PRELOAD_STATS="$STATS_VALUE" LD_PRELOAD="$so" \
       "$BENCH" 4 "$ITERS" "$WS" "$min_size" "$max_size" \
       > "$log" 2>&1
   else
-    env LD_PRELOAD="$so" \
+    env "${extra_env[@]}" LD_PRELOAD="$so" \
       "$BENCH" 4 "$ITERS" "$WS" "$min_size" "$max_size" \
       > "$log" 2>&1
   fi
@@ -464,6 +472,8 @@ rows_blob = sys.argv[3].split()
 rows = [rows_blob[i] for i in range(0, len(rows_blob), 3)]
 ops_re = re.compile(r"ops/s=([0-9.]+)")
 peak_re = re.compile(r"peak_kb=([0-9]+)")
+current_re = re.compile(r"current_kb=([0-9]+)")
+scavenge_re = re.compile(r"scavenge_released=([0-9]+)")
 kv_re = re.compile(r"([A-Za-z0-9_]+)=([0-9]+)")
 
 def parse_stats(text):
@@ -484,12 +494,14 @@ print(f"root: `{root}`\n")
 readme = (root / "README.log").read_text(errors="replace")
 stats_mode = readme.split("stats=", 1)[1].splitlines()[0] if "stats=" in readme else "unknown"
 print(f"stats: `{stats_mode}`\n")
-print("| row | variant | median ops/s | median peak MiB | payload MiB | active source blocks | fail | source_alloc | mid32_alloc | mid32_prefill | mid32_filled | mid32_front_push | toy4 fast | toy4 hit | toy4 front | toy4 pop | toy4 activate | toy4 free attempt | toy4 free success | toy4 map reg | toy4 collision | retire attempt | retire scan | retire candidates | retire blocks | retire desc | retire MiB | retire blocked | retire fail |")
-print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+print("| row | variant | median ops/s | median peak MiB | median current MiB | scavenge released | payload MiB | active source blocks | fail | source_alloc | mid32_alloc | mid32_prefill | mid32_filled | mid32_front_push | toy4 fast | toy4 hit | toy4 front | toy4 pop | toy4 activate | toy4 free attempt | toy4 free success | toy4 map reg | toy4 collision | retire attempt | retire scan | retire candidates | retire blocks | retire desc | retire MiB | retire blocked | retire fail |")
+print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 for row in rows:
     for variant in variants:
         ops_values = []
         peak_values = []
+        current_values = []
+        scavenge_released = 0
         fail = 0
         source_alloc = 0
         payload_mib = 0.0
@@ -523,6 +535,12 @@ for row in rows:
                 ops_values.append(float(ops.group(1)))
             if peak:
                 peak_values.append(int(peak.group(1)) / 1024.0)
+            current = current_re.search(text)
+            if current:
+                current_values.append(int(current.group(1)) / 1024.0)
+            scavenge = scavenge_re.search(text)
+            if scavenge:
+                scavenge_released += int(scavenge.group(1))
             stats = parse_stats(text)
             fail += stats.get("alloc_fail", 0)
             fail += stats.get("route_register_fail", 0)
@@ -569,8 +587,10 @@ for row in rows:
             )
         median_ops = statistics.median(ops_values) if ops_values else 0.0
         median_peak = statistics.median(peak_values) if peak_values else 0.0
+        median_current = statistics.median(current_values) if current_values else 0.0
         print(
             f"| `{row}` | `{variant}` | {median_ops:.3f} | {median_peak:.2f} | "
+            f"{median_current:.2f} | {scavenge_released} | "
             f"{payload_mib:.2f} | {active_source_blocks} | {fail} | "
             f"{source_alloc} | {mid32_alloc} | {mid32_prefill} | "
             f"{mid32_filled} | {mid32_front_push} | {toy4_fast} | "

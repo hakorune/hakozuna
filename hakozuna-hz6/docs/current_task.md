@@ -246,9 +246,39 @@ next:
   Do not widen active-map capacity/probe next. Fixed-size RSS attribution is
   now clear, fixed_4k free-order/frontcache controls are closed, and Toy class4
   malloc-path attribution shows the fast reuse path is already dominant.
-  Prefer a new quiescent/snapshot scavenge design, or a different Toy class4
-  data-layout idea that does not simply widen active-map probe/capacity. Do not
-  default the existing per-free cold-retire behavior, current_bias_2x,
+  Prefer a new quiescent/snapshot scavenge design next. The specific probe is
+  HZ6_BenchQuiescentScavengeProbe-L1:
+    Add a diagnostic-only benchmark hook that can call an exported preload
+    scavenge function after worker threads join and before RSS reporting.
+    This must not affect default benchmark runs unless explicitly enabled by an
+    environment variable.
+    Expect ru_maxrss/peak_kb to stay high; use final/current RSS and released
+    object count to decide whether quiescent scavenge is useful outside the
+    existing peak-RSS metric.
+    implementation:
+      Added exported preload function:
+        hz6_preload_scavenge_local_free(size_t max_bytes)
+      Added bench opt-in:
+        HZ_BENCH_SCAVENGE_BEFORE_RSS=all
+      Added runner variant:
+        selected_scavenge_before_rss
+      The hook runs after worker joins and after timed ops/s end, before RSS
+      reporting. Default runs do not set the environment variable.
+    evidence:
+      stats-on raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_211346
+        4096..16384 current RSS: 94.25 MiB -> 70.67 MiB
+        fixed_16k current RSS:   93.25 MiB -> 59.94 MiB
+        payload attribution after scavenge drops to about 0.25 MiB / 4 active
+        source blocks, proving the final all-local-free payload is recoverable.
+      no-stats raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_211402
+        4096..16384 current RSS: 94.38 MiB -> 70.86 MiB
+        fixed_16k current RSS:   93.25 MiB -> 59.95 MiB
+        peak_kb stays essentially flat, as expected from ru_maxrss semantics.
+    decision:
+      Keep as diagnostic/control. This is strong evidence that HZ6 has good
+      quiescent RSS recoverability, but it is not a default runtime behavior
+      because it runs after timed work and does not improve peak RSS.
+  Do not default the existing per-free cold-retire behavior, current_bias_2x,
   frontcache8192, storage-trim c4 variants, toy_map64k, toy_probe8,
   toy_mask_index, or toy_shift12_index.
 ```

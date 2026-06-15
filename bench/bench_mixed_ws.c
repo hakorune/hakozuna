@@ -1,6 +1,10 @@
 // Mixed working-set bench (Windows-friendly)
 // Usage: bench_mixed_ws [threads] [iters_per_thread] [working_set] [min_size] [max_size]
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include "hz3.h"
 
 #include <stdint.h>
@@ -140,9 +144,52 @@ static unsigned __stdcall bench_thread(void* arg) {
     return 0;
 }
 #else
+#include <dlfcn.h>
 #include <pthread.h>
 #include <time.h>
 #include <sys/resource.h>
+#include <unistd.h>
+
+typedef size_t (*BenchScavengeLocalFreeFn)(size_t max_bytes);
+
+static size_t current_resident_set_kb(void) {
+    long page_size = sysconf(_SC_PAGESIZE);
+    if (page_size <= 0) {
+        return 0;
+    }
+    FILE* file = fopen("/proc/self/statm", "r");
+    if (!file) {
+        return 0;
+    }
+    unsigned long total_pages = 0;
+    unsigned long resident_pages = 0;
+    int scanned = fscanf(file, "%lu %lu", &total_pages, &resident_pages);
+    fclose(file);
+    if (scanned != 2) {
+        return 0;
+    }
+    (void)total_pages;
+    return (size_t)((resident_pages * (unsigned long)page_size) / 1024ul);
+}
+
+static size_t maybe_scavenge_before_rss(void) {
+    const char* value = getenv("HZ_BENCH_SCAVENGE_BEFORE_RSS");
+    if (!value || value[0] == '\0' || strcmp(value, "0") == 0) {
+        return 0;
+    }
+    char* end = NULL;
+    unsigned long long max_bytes = strtoull(value, &end, 10);
+    if (end == value) {
+        max_bytes = 0;
+    }
+    BenchScavengeLocalFreeFn scavenge =
+        (BenchScavengeLocalFreeFn)dlsym(RTLD_DEFAULT,
+                                        "hz6_preload_scavenge_local_free");
+    if (!scavenge) {
+        return 0;
+    }
+    return scavenge((size_t)max_bytes);
+}
 
 static size_t peak_working_set_kb(void) {
     struct rusage usage;
@@ -271,13 +318,22 @@ int main(int argc, char** argv) {
 #endif
 
     uint64_t end = now_ns();
+    size_t scavenged = 0;
+#if !defined(_WIN32)
+    scavenged = maybe_scavenge_before_rss();
+#endif
     double sec = (double)(end - start) / 1000000000.0;
     double total_ops = (double)threads * (double)iters;
     double ops_sec = sec > 0.0 ? (total_ops / sec) : 0.0;
     size_t peak_kb = peak_working_set_kb();
+    size_t current_kb = 0;
+#if !defined(_WIN32)
+    current_kb = current_resident_set_kb();
+#endif
 
-    printf("threads=%zu iters=%zu ws=%zu size=%zu..%zu time=%.3f ops/s=%.3f peak_kb=%zu\n",
-           threads, iters, ws, min_size, max_size, sec, ops_sec, peak_kb);
+    printf("threads=%zu iters=%zu ws=%zu size=%zu..%zu time=%.3f ops/s=%.3f peak_kb=%zu current_kb=%zu scavenge_released=%zu\n",
+           threads, iters, ws, min_size, max_size, sec, ops_sec, peak_kb,
+           current_kb, scavenged);
 
     free(args);
     return 0;

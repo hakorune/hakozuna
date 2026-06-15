@@ -72,5 +72,5 @@ gcc -O3 -Wall -Wextra -Werror -std=c11 -D_POSIX_C_SOURCE=200809L \
   -I"$ROOT_DIR/hakozuna/include" \
   -I"$ROOT_DIR/bench" \
   -pthread \
-  "$SRC" -o "$BIN"
+  "$SRC" -ldl -o "$BIN"
 echo "[linux] bench output: $BIN"

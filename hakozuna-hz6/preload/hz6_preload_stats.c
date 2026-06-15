@@ -1,6 +1,7 @@
 /* LD_PRELOAD stats registry, aggregation, and diagnostic printing. */
 #include "hz6_allocator.h"
 #include "hz6_allocator_api_init.h"
+#include "hz6_allocator_api_scavenge.h"
 #include "hz6_allocator_midpage_active_map.h"
 #include "hz6_allocator_toy_small_diag.h"
 #include "hz6_midpage_front.h"
@@ -88,6 +89,28 @@ void hz6_preload_register_allocator(Hz6Allocator* allocator) {
         allocator;
   }
   pthread_mutex_unlock(&g_hz6_preload_allocator_registry_mutex);
+}
+
+size_t hz6_preload_scavenge_local_free(size_t max_bytes) {
+  if (max_bytes == 0) {
+    max_bytes = (size_t)-1;
+  }
+
+  int saved_reentry = g_hz6_preload_reentry;
+  g_hz6_preload_reentry = 1;
+
+  size_t released = 0;
+  pthread_mutex_lock(&g_hz6_preload_allocator_registry_mutex);
+  for (size_t i = 0; i < g_hz6_preload_allocator_registry_count; ++i) {
+    Hz6Allocator* allocator = g_hz6_preload_allocator_registry[i];
+    if (allocator) {
+      released += hz6_allocator_scavenge_local_free(allocator, max_bytes);
+    }
+  }
+  pthread_mutex_unlock(&g_hz6_preload_allocator_registry_mutex);
+
+  g_hz6_preload_reentry = saved_reentry;
+  return released;
 }
 
 static void hz6_preload_print_stats(void) {
