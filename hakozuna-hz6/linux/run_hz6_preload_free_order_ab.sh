@@ -8,6 +8,7 @@ ITERS="${ITERS:-500000}"
 WS="${WS:-4096}"
 OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_preload_free_order_ab_$(date +%Y%m%d_%H%M%S)}"
 SKIP_BENCH_BUILD=0
+VARIANTS_CSV="${VARIANTS:-}"
 
 source "${ROOT_DIR}/hakozuna-hz6/linux/hz6_preload_flags.sh"
 
@@ -22,6 +23,7 @@ Options:
   --iters N         iterations per run (default: 500000)
   --ws N            working set (default: 4096)
   --outdir DIR      output directory
+  --variants CSV    variants to run (default: full free-order matrix)
   --skip-bench      reuse existing benchmark binary
   --help            show this message
 EOF
@@ -47,6 +49,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --outdir)
       OUTDIR="$2"
+      shift 2
+      ;;
+    --variants)
+      VARIANTS_CSV="$2"
       shift 2
       ;;
     --skip-bench)
@@ -174,6 +180,9 @@ variants=(
   current_bias_delta64
   phase_count_off
 )
+if [[ -n "${VARIANTS_CSV}" ]]; then
+  IFS=',' read -r -a variants <<< "${VARIANTS_CSV}"
+fi
 rows=(
   "16_256 16 256"
   "16_4096 16 4096"

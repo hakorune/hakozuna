@@ -76,6 +76,15 @@ evidence:
     4096..16384 hz6 41.718M / 94.25 MiB
     4096..16384 tcmalloc 35.058M / 97.88 MiB
     4096..16384 hz4 25.852M / 112.88 MiB
+  selected-only free-order attribution:
+    raw: private/raw-results/linux/hz6_preload_free_order_ab_20260615_202306
+    route_after_maps is now only about 200..1100 per focused row
+    all sampled route fallbacks are owned-valid; real_fallback=0
+  preload_fast_free retest:
+    raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_202343
+    broad prechecked free stayed no-go:
+      16..256 56.333M -> 56.031M
+      4096..16384 43.990M -> 43.603M
 
 decision:
   selected/default. This is a small but balanced production code-shape win after
