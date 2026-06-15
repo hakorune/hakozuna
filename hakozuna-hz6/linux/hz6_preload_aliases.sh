@@ -69,6 +69,16 @@ hz6_preload_build_requested_aliases() {
     "${root_dir}/hakozuna-hz6/linux/build_hz6_preload_workload_capacity_target.sh"
   fi
   if hz6_preload_allocator_requested "$allocators_csv" \
+      "hz6-workload-capacity-lite-target" \
+      "hz6_workload_capacity_lite_target"; then
+    "${root_dir}/hakozuna-hz6/linux/build_hz6_preload_workload_capacity_lite_target.sh"
+  fi
+  if hz6_preload_allocator_requested "$allocators_csv" \
+      "hz6-workload-capacity-mid-target" \
+      "hz6_workload_capacity_mid_target"; then
+    "${root_dir}/hakozuna-hz6/linux/build_hz6_preload_workload_capacity_mid_target.sh"
+  fi
+  if hz6_preload_allocator_requested "$allocators_csv" \
       "hz6-midpage-trusted-class" "hz6_midpage_trusted_class"; then
     "${root_dir}/hakozuna-hz6/linux/build_hz6_preload_midpage_trusted_class_target.sh"
   fi

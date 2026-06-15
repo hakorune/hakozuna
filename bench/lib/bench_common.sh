@@ -283,6 +283,20 @@ bench_find_hz6_workload_capacity_target_library() {
     hz6-preload-workload-capacity-target
 }
 
+bench_find_hz6_workload_capacity_lite_target_library() {
+  bench_find_hz6_preload_output \
+    HZ6_WORKLOAD_CAPACITY_LITE_TARGET_PRELOAD_SO \
+    hz6_preload_workload_capacity_lite_target \
+    hz6-preload-workload-capacity-lite-target
+}
+
+bench_find_hz6_workload_capacity_mid_target_library() {
+  bench_find_hz6_preload_output \
+    HZ6_WORKLOAD_CAPACITY_MID_TARGET_PRELOAD_SO \
+    hz6_preload_workload_capacity_mid_target \
+    hz6-preload-workload-capacity-mid-target
+}
+
 bench_find_hz6_midpage_trusted_class_target_library() {
   bench_find_hz6_preload_output \
     HZ6_MIDPAGE_TRUSTED_CLASS_TARGET_PRELOAD_SO \
@@ -382,6 +396,12 @@ bench_find_allocator_library() {
       ;;
     hz6-workload-capacity-target|hz6_workload_capacity_target)
       bench_find_hz6_workload_capacity_target_library
+      ;;
+    hz6-workload-capacity-lite-target|hz6_workload_capacity_lite_target)
+      bench_find_hz6_workload_capacity_lite_target_library
+      ;;
+    hz6-workload-capacity-mid-target|hz6_workload_capacity_mid_target)
+      bench_find_hz6_workload_capacity_mid_target_library
       ;;
     hz6-midpage-trusted-class|hz6_midpage_trusted_class)
       bench_find_hz6_midpage_trusted_class_target_library
@@ -484,6 +504,12 @@ bench_print_allocator_hints() {
       ;;
     hz6-workload-capacity-target|hz6_workload_capacity_target)
       echo "hint: build the HZ6 workload-capacity target lane with './hakozuna-hz6/linux/build_hz6_preload_workload_capacity_target.sh' or set HZ6_WORKLOAD_CAPACITY_TARGET_PRELOAD_SO" >&2
+      ;;
+    hz6-workload-capacity-lite-target|hz6_workload_capacity_lite_target)
+      echo "hint: build the HZ6 workload-capacity lite target lane with './hakozuna-hz6/linux/build_hz6_preload_workload_capacity_lite_target.sh' or set HZ6_WORKLOAD_CAPACITY_LITE_TARGET_PRELOAD_SO" >&2
+      ;;
+    hz6-workload-capacity-mid-target|hz6_workload_capacity_mid_target)
+      echo "hint: build the HZ6 workload-capacity mid target lane with './hakozuna-hz6/linux/build_hz6_preload_workload_capacity_mid_target.sh' or set HZ6_WORKLOAD_CAPACITY_MID_TARGET_PRELOAD_SO" >&2
       ;;
     hz6-midpage-trusted-class|hz6_midpage_trusted_class)
       echo "hint: build the HZ6 MidPage trusted-class target lane with './hakozuna-hz6/linux/build_hz6_preload_midpage_trusted_class_target.sh' or set HZ6_MIDPAGE_TRUSTED_CLASS_TARGET_PRELOAD_SO" >&2

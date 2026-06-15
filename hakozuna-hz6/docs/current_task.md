@@ -91,7 +91,7 @@ Recent fixed/profile repeats:
   private/raw-results/linux/hz6_fixed_gap_matrix_20260616_074100
   private/raw-results/linux/hz6_fixed_quiescent_rss_matrix_20260616_072153
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_{062305,064915,065310,065329,072333,074342,074414}
-  private/raw-results/linux/hz6_workload_proxy_matrix_20260616_{075255,075550}
+  private/raw-results/linux/hz6_workload_proxy_matrix_20260616_{075550,080227}
   private/raw-results/linux/hz6_ubuntu_size_slices_20260616_073231
 
 Details:
@@ -146,5 +146,5 @@ Default no-go/control-only without substantially different evidence:
 14. Next broad guard: refresh selected/profile frontier and real-workload rows
     periodically, not more fixed-only default behavior.
 15. Workload proxy refresh found desc8192 capacity collapse on large WS rows;
-    `hz6-workload-capacity-target` fixes it as a profile, not selected/default.
+    `hz6-workload-capacity-lite-target` is the preferred explicit profile.
 ```
