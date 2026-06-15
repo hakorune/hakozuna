@@ -66,6 +66,10 @@ if [[ "$SKIP_ALLOCATOR_BUILDS" -ne 1 ]]; then
   if [[ ",${ALLOCATORS}," == *",hz6,"* ]]; then
     "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh"
   fi
+  if [[ ",${ALLOCATORS}," == *",hz6-toy-target,"* ||
+        ",${ALLOCATORS}," == *",hz6_toy_target,"* ]]; then
+    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_toy_target.sh"
+  fi
 fi
 
 exec "${ROOT_DIR}/linux/run_linux_bench_compare.sh" \

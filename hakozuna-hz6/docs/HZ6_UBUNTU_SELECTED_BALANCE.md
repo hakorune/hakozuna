@@ -135,6 +135,41 @@ Command:
   --skip-builds
 ```
 
+## Profile DSO Note
+
+The selected DSO remains the balanced default. A separate Toy/mid-small profile
+DSO is available for workloads dominated by small/Toy requests:
+
+```bash
+./hakozuna-hz6/linux/build_hz6_preload_toy_target.sh
+./hakozuna-hz6/linux/run_hz6_preload_toy_target_ab.sh \
+  --runs 7 \
+  --iters 300000 \
+  --ws 4096 \
+  --rows focused,fixed \
+  --skip-build
+```
+
+Direct DSO raw:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_toy_target_preload_ab_20260615_220312
+```
+
+| row | toy_target vs selected | read |
+| --- | ---: | --- |
+| `16_256` | `+8.49%` | profile win |
+| `16_4096` | `+5.19%` | profile win |
+| `1024_4096` | `+4.10%` | profile win |
+| `fixed_4k` | `+4.68%` | profile win |
+| `fixed_8k` | `+0.15%` | effectively flat/slightly positive |
+| `4096_16384` | `-1.42%` | default guard blocks promotion |
+| `fixed_16k` | `-1.80%` | default guard blocks promotion |
+
+Use the Toy target DSO only as a profile/control lane. Do not add
+`HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1=1` to the selected flag bundle unless a
+future code shape also preserves `4096..16384` and `fixed_16k`.
+
 ## Selected Read
 
 The current HZ6 Ubuntu selected lane has its clearest speed/RSS balance on

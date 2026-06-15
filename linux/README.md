@@ -28,6 +28,15 @@ Use it to keep Linux build and smoke commands in one place without mixing:
 - [run_bench_compare.sh](run_bench_compare.sh): thin Linux frontend for the shared allocator compare runner
 - [run_linux_hz5_local2p_focus.sh](run_linux_hz5_local2p_focus.sh): HZ5 exact `64K/a8192` appendix-profile runner
 
+HZ6 also has a profile/control LD_PRELOAD DSO for Toy/mid-small workloads:
+
+- `hakozuna-hz6/linux/build_hz6_preload_toy_target.sh`
+- `hakozuna-hz6/linux/run_hz6_preload_toy_target_ab.sh`
+
+This is not the selected default HZ6 allocator. In shared allocator matrices,
+use allocator name `hz6` for selected default and `hz6-toy-target` only when
+you explicitly want the Toy/mid-small profile DSO.
+
 ## Quick Start
 
 ```bash
@@ -40,6 +49,7 @@ cd /path/to/hakozuna-win
 ./linux/run_linux_bench_compare_matrix.sh
 ./linux/run_linux_bench_remeasure_matrix.sh
 ./linux/run_linux_hz6_benchmark.sh --runs 1
+./hakozuna-hz6/linux/run_hz6_preload_toy_target_ab.sh --runs 7
 ```
 
 ## Ubuntu Lane Split
@@ -112,6 +122,31 @@ Run the focus matrix with:
 Keep HZ5 results separate from the default hz3/hz4 public allocator comparison.
 HZ5 is a research sidecar, and unsupported exact-only routes must not be counted
 as HZ5 wins.
+
+## HZ6 Profile/Control DSO
+
+The default HZ6 Linux `LD_PRELOAD` lane is allocator name `hz6` and is built by:
+
+```bash
+./hakozuna-hz6/linux/build_hz6_preload.sh
+```
+
+The Toy/mid-small profile DSO is built by:
+
+```bash
+./hakozuna-hz6/linux/build_hz6_preload_toy_target.sh
+```
+
+It can be compared directly against selected default:
+
+```bash
+./hakozuna-hz6/linux/run_hz6_preload_toy_target_ab.sh --runs 7
+```
+
+It can also be named in shared compare matrices as `hz6-toy-target` after it is
+built, or through `run_linux_bench_compare_matrix.sh`, which builds it when the
+allocator list includes that name. Keep `hz6-toy-target` separate from `hz6`;
+it is a profile/control DSO, not the selected default.
 
 ## HZ5 Full-Preload Research Lanes
 

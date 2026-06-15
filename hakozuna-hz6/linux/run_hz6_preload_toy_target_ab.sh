@@ -30,25 +30,39 @@ EOF
 }
 
 SKIP_BUILD=0
+require_value() {
+  local option="$1"
+  if [[ $# -lt 2 || -z "${2:-}" ]]; then
+    echo "missing value for ${option}" >&2
+    usage >&2
+    exit 1
+  fi
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --runs)
+      require_value "$1" "${2:-}"
       RUNS="$2"
       shift 2
       ;;
     --iters)
+      require_value "$1" "${2:-}"
       ITERS="$2"
       shift 2
       ;;
     --ws)
+      require_value "$1" "${2:-}"
       WS="$2"
       shift 2
       ;;
     --rows)
+      require_value "$1" "${2:-}"
       ROWS_CSV="$2"
       shift 2
       ;;
     --outdir)
+      require_value "$1" "${2:-}"
       OUTDIR="$2"
       shift 2
       ;;
@@ -106,14 +120,23 @@ for row_group in "${row_groups[@]}"; do
 done
 
 mkdir -p "$OUTDIR"
+git_sha="$(git -C "$ROOT_DIR" rev-parse --short HEAD 2>/dev/null || true)"
+selected_sha256="$(sha256sum "$SELECTED_SO" 2>/dev/null | awk '{print $1}' || true)"
+toy_target_sha256="$(sha256sum "$TOY_TARGET_SO" 2>/dev/null | awk '{print $1}' || true)"
 {
+  echo "arch=${ARCH}"
+  echo "git=${git_sha:-unknown}"
   echo "bench=${BENCH}"
   echo "selected=${SELECTED_SO}"
+  echo "selected_sha256=${selected_sha256:-unknown}"
   echo "toy_target=${TOY_TARGET_SO}"
+  echo "toy_target_sha256=${toy_target_sha256:-unknown}"
   echo "runs=${RUNS}"
   echo "iters=${ITERS}"
   echo "ws=${WS}"
   echo "rows=${ROWS_CSV}"
+  echo "selected_builder=hakozuna-hz6/linux/build_hz6_preload.sh"
+  echo "toy_target_builder=hakozuna-hz6/linux/build_hz6_preload_toy_target.sh"
 } > "${OUTDIR}/README.log"
 
 run_row() {

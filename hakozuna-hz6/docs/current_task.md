@@ -114,6 +114,26 @@ Toy target DSO:
     The profile DSO is real and useful, but selected default remains the
     balanced DSO. Do not promote Toy direct-class into hz6_preload_flags.sh.
 
+  runner integration:
+    Add shared allocator alias:
+      hz6-toy-target / hz6_toy_target
+    Add matrix build support when allocator list includes the profile alias.
+    Harden run_hz6_preload_toy_target_ab.sh option parsing and README metadata
+    with arch, git sha, and DSO sha256.
+    alias smoke:
+      raw: private/raw-results/linux/hz6_toy_target_alias_smoke_20260615_220800
+      command:
+        ./linux/run_linux_bench_compare.sh --allocators hz6-toy-target \
+          --runs 1 --bench-args "1 1000 64 16 256" \
+          --skip-build --skip-prepare-allocators
+      result:
+        hz6-toy-target resolved to out/linux/hz6_preload_toy_target and ran.
+    matrix alias smoke:
+      raw: private/raw-results/linux/hz6_toy_target_matrix_alias_smoke_20260615_220832
+      result:
+        run_linux_bench_compare_matrix.sh forwarded hz6-toy-target through the
+        shared compare runner and resolved the profile DSO correctly.
+
 goal:
   Re-test low-risk Toy/small controls after the selected raw frontcache pop
   changed the production hot-path code shape.

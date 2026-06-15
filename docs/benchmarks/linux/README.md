@@ -34,6 +34,16 @@ For local preparation and compare runs, use the Linux entrypoints:
 - `linux/run_linux_bench_remeasure_matrix.sh`
 - `linux/build_linux_hz6_benchmark.sh`
 - `linux/run_linux_hz6_benchmark.sh`
+- `hakozuna-hz6/linux/build_hz6_preload_toy_target.sh`
+- `hakozuna-hz6/linux/run_hz6_preload_toy_target_ab.sh`
+
+HZ6 allocator names in shared compare matrices:
+
+- `hz6`: selected/default LD_PRELOAD DSO
+- `hz6-toy-target`: Toy/mid-small profile/control DSO
+
+Keep `hz6-toy-target` results separate from selected-default HZ6 results. It is
+useful for Toy-heavy workloads, but it is not the default HZ6 lane.
 
 Template:
 
