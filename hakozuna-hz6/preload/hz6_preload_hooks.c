@@ -238,7 +238,20 @@ hz6_preload_malloc_midpage_boundary(Hz6Allocator* allocator, size_t size) {
 }
 #endif
 
+#if HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1
+#if defined(__GNUC__) || defined(__clang__)
+#define HZ6_PRELOAD_TOY_BOUNDARY_UNLIKELY(expr) __builtin_expect(!!(expr), 0)
+#else
+#define HZ6_PRELOAD_TOY_BOUNDARY_UNLIKELY(expr) (expr)
+#endif
+#endif
+
 static void* hz6_preload_malloc_hz6(Hz6Allocator* allocator, size_t size) {
+#if HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1
+  if (HZ6_PRELOAD_TOY_BOUNDARY_UNLIKELY(size <= 4096u)) {
+    return hz6_allocator_preload_toy_malloc_direct_class(allocator, size);
+  }
+#endif
 #if HZ6_PRELOAD_MIDPAGE_MALLOC_SKIP_TRANSFER_L1
 #if HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_NOINLINE_L1
   if (HZ6_PRELOAD_MIDPAGE_BOUNDARY_UNLIKELY(

@@ -1405,3 +1405,50 @@ next:
   Mid-small still deserves attribution work if continuing performance polish.
   Do not chase tiny first. Target row is already a strong HZ6 balance lane.
 ```
+
+## Recent Closeout: HZ6 Preload Toy Direct Class-L1
+
+```text
+goal:
+  Attack the weak mid-small rows without reopening broad hz6_malloc()
+  preclassification. The prior toy_preclassified_malloc control helped some
+  Toy rows but polluted target/fixed code shape.
+
+implementation:
+  Add HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 as default-off control.
+  Add hz6_allocator_preload_toy_malloc_direct_class() and call it only from
+  the LD_PRELOAD malloc boundary when size <= 4096.
+  Keep helper noinline and use an unlikely hook branch so larger selected rows
+  keep their preferred layout.
+
+evidence:
+  first production repeat-9:
+    raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_214226
+    16..256      selected 57.027M -> preload_toy 60.376M
+    16..4096     selected 35.690M -> preload_toy 37.665M
+    1024..4096   selected 32.640M -> preload_toy 34.986M
+    4096..16384  selected 44.877M -> preload_toy 44.658M
+    fixed_4k     selected 30.999M -> preload_toy 33.568M
+    fixed_8k     selected 42.615M -> preload_toy 42.501M
+    fixed_16k    selected 44.699M -> preload_toy 44.226M
+
+  noinline+unlikely repeat-9:
+    raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_214404
+    16..256      selected 55.940M -> preload_toy 60.712M
+    16..4096     selected 35.841M -> preload_toy 37.122M
+    1024..4096   selected 33.368M -> preload_toy 35.093M
+    4096..16384  selected 44.073M -> preload_toy 44.273M
+    fixed_4k     selected 31.393M -> preload_toy 33.208M
+    fixed_8k     selected 42.381M -> preload_toy 41.864M
+    fixed_16k    selected 44.738M -> preload_toy 43.917M
+
+decision:
+  Keep as control/no-go for selected default.
+  The mid-small gain is real and useful diagnostic evidence, but selected
+  default still needs fixed_8k/fixed_16k and target-family guard stability.
+
+next:
+  Do not pursue broad Toy preclassification further unless a profile-specific
+  DSO/lane is explicitly split. Continue with narrow attribution or a different
+  mid-small mechanism that does not tax fixed 8K/16K.
+```

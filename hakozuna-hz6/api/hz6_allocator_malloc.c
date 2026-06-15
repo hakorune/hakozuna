@@ -18,7 +18,15 @@
 #endif
 #endif
 
-#if HZ6_TOY_PRECLASSIFIED_MALLOC_L1
+#if HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1
+#if defined(__GNUC__) || defined(__clang__)
+#define HZ6_PRELOAD_TOY_DIRECT_CLASS_NOINLINE __attribute__((noinline))
+#else
+#define HZ6_PRELOAD_TOY_DIRECT_CLASS_NOINLINE
+#endif
+#endif
+
+#if HZ6_TOY_PRECLASSIFIED_MALLOC_L1 || HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1
 static uint16_t hz6_allocator_toy_class_for_small_size(size_t size) {
   if (size <= 16u) {
     return 0;
@@ -263,6 +271,50 @@ void* hz6_allocator_preload_midpage_malloc_skip_transfer(Hz6Allocator* allocator
 #else
 void* hz6_allocator_preload_midpage_malloc_skip_transfer(Hz6Allocator* allocator,
                                                          size_t size) {
+  return hz6_malloc(allocator, size);
+}
+#endif
+
+#if HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 && \
+    HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1 && HZ6_LOCAL_CACHE_DIRECT_REUSE_L1
+HZ6_PRELOAD_TOY_DIRECT_CLASS_NOINLINE void*
+hz6_allocator_preload_toy_malloc_direct_class(Hz6Allocator* allocator,
+                                              size_t size) {
+  if (!allocator) {
+    return NULL;
+  }
+  if (!hz6_owner_is_alive(&allocator->owner, allocator->owner.token)) {
+    return NULL;
+  }
+  if (size > 4096u) {
+    return hz6_malloc(allocator, size);
+  }
+
+  uint16_t class_id = hz6_allocator_toy_class_for_small_size(size);
+  Hz6ObjectDescriptor* descriptor = NULL;
+  hz6_toy_small_hotpath_diag_malloc_fast_attempt(
+      allocator, HZ6_FRONT_TOY, class_id);
+  void* ptr = hz6_allocator_direct_local_alloc(
+      allocator, HZ6_FRONT_TOY, class_id, &descriptor);
+  if (ptr) {
+    hz6_toy_small_active_map_register(allocator, HZ6_FRONT_TOY, class_id, ptr,
+                                      descriptor);
+    hz6_toy_small_hotpath_diag_malloc_fast_hit(
+        allocator, HZ6_FRONT_TOY, class_id);
+    return ptr;
+  }
+
+  hz6_toy_small_hotpath_diag_malloc_front_dispatch(
+      allocator, HZ6_FRONT_TOY, class_id);
+  ptr = hz6_toy_front_ops()->alloc(allocator, class_id, size);
+  if (!ptr) {
+    ++allocator->stats.alloc_fail;
+  }
+  return ptr;
+}
+#else
+void* hz6_allocator_preload_toy_malloc_direct_class(Hz6Allocator* allocator,
+                                                    size_t size) {
   return hz6_malloc(allocator, size);
 }
 #endif

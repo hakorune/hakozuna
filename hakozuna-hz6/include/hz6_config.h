@@ -557,6 +557,13 @@
 #define HZ6_TOY_PRECLASSIFIED_MALLOC_L1 0
 #endif
 
+#ifndef HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1
+/* Candidate preload-boundary Toy malloc shortcut.  Keep the broad hz6_malloc()
+ * code shape unchanged and classify only LD_PRELOAD size <= 4096 requests
+ * directly into Toy classes. */
+#define HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 0
+#endif
+
 #ifndef HZ6_TOY_FULL_BLOCK_PREFILL_L1
 /* Candidate-only Toy source miss policy.  When enabled, ToyFront asks the
  * source-block prefill path to consume more slots from the newly-created 64K
