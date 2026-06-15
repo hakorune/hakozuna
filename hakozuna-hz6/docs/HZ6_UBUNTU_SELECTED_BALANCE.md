@@ -304,6 +304,27 @@ Selected/default remains the balanced lane because the profile is workload
 specific and still carries HZ6-class RSS on rows where HZ3/tcmalloc have lower
 resident cost.
 
+Trusted profile fixed-alias repeat after the A/B runner accepted
+`small_boundary_trusted` directly:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_selected_vs_trusted_refresh_fixed_alias_20260616_024159
+```
+
+| row | selected hz6 | small-boundary trusted | read |
+| --- | ---: | ---: | --- |
+| `16..256` | `51.187M / 30.50 MiB` | `66.655M / 30.50 MiB` | trusted +30.2%, RSS flat |
+| `16..4096` | `28.237M / 79.38 MiB` | `32.909M / 79.88 MiB` | trusted +16.5%, small RSS cost |
+| `1024..4096` | `26.247M / 90.88 MiB` | `28.712M / 91.38 MiB` | trusted +9.4%, small RSS cost |
+| `4096..16384` | `35.390M / 94.12 MiB` | `35.823M / 94.00 MiB` | trusted +1.2%, RSS flat/down |
+| `fixed_4k` | `24.705M / 91.75 MiB` | `36.289M / 92.62 MiB` | trusted +46.9%, about +0.9 MiB RSS |
+| `fixed_8k` | `33.242M / 93.25 MiB` | `35.019M / 93.00 MiB` | trusted +5.3%, RSS flat/down |
+| `fixed_16k` | `34.001M / 92.88 MiB` | `34.445M / 93.12 MiB` | trusted +1.3%, RSS near-flat |
+
+This resolves the provisional alias-warning refresh. The profile remains a
+strong named profile, not selected/default, because its bundle is workload
+specific and selected still represents the broad balanced contract.
+
 Fixed_4k profile-position follow-up:
 
 | row | hz6 selected | realloc-4k profile | small-boundary target | trusted profile | read |

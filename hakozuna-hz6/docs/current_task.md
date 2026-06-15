@@ -109,6 +109,7 @@ Preferred broad small/fixed profile:
     private/raw-results/linux/hz6_trusted_profile_cross_20260616_020157
     private/raw-results/linux/hz6_trusted_profile_fixed_20260616_020211
     private/raw-results/linux/hz6_fixed4k_profile_position_20260616_021401
+    private/raw-results/linux/hz6_selected_vs_trusted_refresh_fixed_alias_20260616_024159
 
   read:
     16..256      selected 57.497M -> trusted 78.031M
@@ -125,6 +126,15 @@ Preferred broad small/fixed profile:
     speed/RSS frontier for tiny and most fixed-mid rows.
     fixed4k profile-position repeat keeps trusted as the best HZ6 fixed_mid
     profile overall; do not add a separate fixed4k-only DSO yet.
+    Fixed-alias no-stats repeat keeps the trusted profile positive after the
+    A/B runner alias fix:
+      16..256      selected 51.187M -> trusted 66.655M
+      16..4096     selected 28.237M -> trusted 32.909M
+      1024..4096   selected 26.247M -> trusted 28.712M
+      4096..16384  selected 35.390M -> trusted 35.823M
+      fixed_4k     selected 24.705M -> trusted 36.289M
+      fixed_8k     selected 33.242M -> trusted 35.019M
+      fixed_16k    selected 34.001M -> trusted 34.445M
 
   hot-path attribution:
     private/raw-results/linux/hz6_hotpath_attribution_refresh_20260616_021555
