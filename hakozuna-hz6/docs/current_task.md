@@ -75,12 +75,12 @@ Broad small/fixed:
   builder: linux/build_hz6_preload_small_boundary_trusted_target.sh
 
 Profile controls:
-  hz6-toy-trusted-target (historical/selected-equivalent after default)
-  hz6-small-boundary-fast-target
+  hz6-toy-trusted-target / hz6-small-boundary-fast-target (historical)
   hz6-realloc-boundary-4k-target
   hz6-realloc-boundary-8k-target
   hz6-toy-target
   hz6-aligned-target
+  hz6-calloc-real-target
 
 Alias/helper ownership:
   linux/hz6_preload_aliases.sh

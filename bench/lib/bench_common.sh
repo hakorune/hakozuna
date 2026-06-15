@@ -171,6 +171,13 @@ bench_find_hz6_aligned_target_library() {
     hz6-preload-aligned-target
 }
 
+bench_find_hz6_calloc_real_target_library() {
+  bench_find_hz6_preload_output \
+    HZ6_CALLOC_REAL_TARGET_PRELOAD_SO \
+    hz6_preload_calloc_real_target \
+    hz6-preload-calloc-real-target
+}
+
 bench_find_hz6_realloc_boundary_target_library() {
   bench_find_hz6_preload_output \
     HZ6_REALLOC_BOUNDARY_TARGET_PRELOAD_SO \
@@ -258,6 +265,9 @@ bench_find_allocator_library() {
     hz6-aligned-target|hz6_aligned_target)
       bench_find_hz6_aligned_target_library
       ;;
+    hz6-calloc-real-target|hz6_calloc_real_target)
+      bench_find_hz6_calloc_real_target_library
+      ;;
     hz6-realloc-boundary-target|hz6_realloc_boundary_target)
       bench_find_hz6_realloc_boundary_target_library
       ;;
@@ -326,6 +336,9 @@ bench_print_allocator_hints() {
       ;;
     hz6-aligned-target|hz6_aligned_target)
       echo "hint: build the HZ6 aligned target lane with './hakozuna-hz6/linux/build_hz6_preload_aligned_target.sh' or set HZ6_ALIGNED_TARGET_PRELOAD_SO" >&2
+      ;;
+    hz6-calloc-real-target|hz6_calloc_real_target)
+      echo "hint: build the HZ6 calloc real target lane with './hakozuna-hz6/linux/build_hz6_preload_calloc_real_target.sh' or set HZ6_CALLOC_REAL_TARGET_PRELOAD_SO" >&2
       ;;
     hz6-realloc-boundary-target|hz6_realloc_boundary_target)
       echo "hint: build the HZ6 realloc-boundary target lane with './hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_target.sh' or set HZ6_REALLOC_BOUNDARY_TARGET_PRELOAD_SO" >&2
