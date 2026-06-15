@@ -250,11 +250,36 @@ boundary slack profile:
       fixed_16k:
         44.519M -> 44.212M
 
+  cross-allocator fixed-row profile read:
+    raw: private/raw-results/linux/hz6_realloc_boundary_cross_20260615_231203
+    hz6 vs hz6-realloc-boundary-target vs hz3/hz4/tcmalloc,
+    no-stats, repeat-5, 300K:
+      fixed_4k:
+        hz6 32.588M / 91.88 MiB
+        hz6-realloc-boundary-target 46.037M / 92.62 MiB
+        hz3 60.702M / 68.38 MiB
+        hz4 14.322M / 63.25 MiB
+        tcmalloc 43.006M / 70.50 MiB
+      fixed_8k:
+        hz6 41.908M / 93.12 MiB
+        hz6-realloc-boundary-target 44.357M / 93.12 MiB
+        hz3 54.584M / 70.00 MiB
+        hz4 13.542M / 64.00 MiB
+        tcmalloc 27.568M / 73.50 MiB
+      fixed_16k:
+        hz6 44.610M / 93.12 MiB
+        hz6-realloc-boundary-target 44.553M / 93.12 MiB
+        hz3 44.836M / 73.12 MiB
+        hz4 11.185M / 63.88 MiB
+        tcmalloc 12.966M / 99.09 MiB
+
 decision:
   Keep realloc-boundary slack as a fixed-boundary profile/control DSO, not
   selected default.  It is very strong for fixed_4k/fixed_8k realloc-growth
   rows, but the mixed-small and fixed_16k guards are not clean enough for the
-  balanced default allocator.
+  balanced default allocator.  As a profile, it beats tcmalloc on fixed_4k and
+  fixed_8k speed, and leaves fixed_16k essentially unchanged; HZ3 still keeps
+  the better speed/RSS frontier on fixed_4k/fixed_8k.
 ```
 
 ## Previous Closeout: HZ6 Ubuntu Preload Wrapper Attribution-L1
