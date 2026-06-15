@@ -25,7 +25,11 @@ static void* hz6_front_source_block_reserved_slot(
     uint16_t class_id,
     size_t slot_bytes,
     Hz6SourceBlock* block,
-    size_t* slot_index) {
+    size_t* slot_index,
+    Hz6ObjectDescriptor** out_descriptor) {
+  if (out_descriptor) {
+    *out_descriptor = NULL;
+  }
   if (!slot_index) {
     return NULL;
   }
@@ -118,6 +122,9 @@ static void* hz6_front_source_block_reserved_slot(
   hz6_allocator_source_run_set_descriptor(allocator, block, user_ptr,
                                           descriptor);
   hz6_allocator_source_run_commit_slot(block, *slot_index);
+  if (out_descriptor) {
+    *out_descriptor = descriptor;
+  }
   return user_ptr;
 }
 #endif
@@ -141,21 +148,31 @@ static size_t hz6_front_prefill_from_source_run(Hz6Allocator* allocator,
     }
 
     size_t slot_index = 0;
+    Hz6ObjectDescriptor* descriptor = NULL;
     void* ptr = hz6_front_source_block_reserved_slot(
-        allocator, front_id, class_id, slot_bytes, block, &slot_index);
+        allocator, front_id, class_id, slot_bytes, block, &slot_index,
+        &descriptor);
     if (!ptr) {
       break;
     }
 
+#if !HZ6_FRONT_PREFILL_DESCRIPTOR_OUT_L1
     Hz6RouteResult route = hz6_allocator_route_lookup(allocator, ptr);
-    Hz6ObjectDescriptor* descriptor =
-        (Hz6ObjectDescriptor*)route.descriptor;
+    descriptor = (Hz6ObjectDescriptor*)route.descriptor;
     if (route.kind != HZ6_ROUTE_VALID || !descriptor) {
 #if HZ6_DIAGNOSTIC_PROBES
       ++allocator->stats.source_run_reuse_rollback;
 #endif
       break;
     }
+#else
+    if (!descriptor) {
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.source_run_reuse_rollback;
+#endif
+      break;
+    }
+#endif
 
     if (!hz6_allocator_cache_active_descriptor(allocator, descriptor, ptr)) {
 #if HZ6_DIAGNOSTIC_PROBES
@@ -182,12 +199,17 @@ static size_t hz6_front_prefill_from_source_run(Hz6Allocator* allocator,
 #endif
 }
 
-void* hz6_front_source_block_slot(Hz6Allocator* allocator,
-                                  uint16_t front_id,
-                                  uint16_t class_id,
-                                  size_t user_bytes,
-                                  size_t source_offset,
-                                  Hz6SourceBlock* source_block) {
+static void* hz6_front_source_block_slot_with_descriptor(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id,
+    size_t user_bytes,
+    size_t source_offset,
+    Hz6SourceBlock* source_block,
+    Hz6ObjectDescriptor** out_descriptor) {
+  if (out_descriptor) {
+    *out_descriptor = NULL;
+  }
   if (!allocator || !source_block || !hz6_source_block_active(source_block) ||
       !source_block->ptr || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT ||
       user_bytes == 0 || source_offset > source_block->bytes ||
@@ -263,7 +285,21 @@ void* hz6_front_source_block_slot(Hz6Allocator* allocator,
                                           descriptor);
   hz6_allocator_elastic_depot_source_run_mark_slot(
       allocator, source_block, user_ptr, class_id, user_bytes);
+  if (out_descriptor) {
+    *out_descriptor = descriptor;
+  }
   return user_ptr;
+}
+
+void* hz6_front_source_block_slot(Hz6Allocator* allocator,
+                                  uint16_t front_id,
+                                  uint16_t class_id,
+                                  size_t user_bytes,
+                                  size_t source_offset,
+                                  Hz6SourceBlock* source_block) {
+  return hz6_front_source_block_slot_with_descriptor(
+      allocator, front_id, class_id, user_bytes, source_offset, source_block,
+      NULL);
 }
 
 size_t hz6_front_prefill_source_block_kind(Hz6Allocator* allocator,
@@ -365,22 +401,32 @@ size_t hz6_front_prefill_source_block_kind(Hz6Allocator* allocator,
 #if HZ6_SOURCE_RUN_REUSE_L1
     size_t slot_index = 0;
     void* ptr = hz6_front_source_block_reserved_slot(
-        allocator, front_id, class_id, slot_bytes, block, &slot_index);
+        allocator, front_id, class_id, slot_bytes, block, &slot_index,
+        NULL);
 #else
     size_t offset = filled * slot_bytes;
-    void* ptr = hz6_front_source_block_slot(
-        allocator, front_id, class_id, slot_bytes, offset, block);
+    Hz6ObjectDescriptor* slot_descriptor = NULL;
+    void* ptr = hz6_front_source_block_slot_with_descriptor(
+        allocator, front_id, class_id, slot_bytes, offset, block,
+        &slot_descriptor);
 #endif
     if (!ptr) {
       break;
     }
 
+#if HZ6_FRONT_PREFILL_DESCRIPTOR_OUT_L1 && !HZ6_SOURCE_RUN_REUSE_L1
+    Hz6ObjectDescriptor* descriptor = slot_descriptor;
+    if (!descriptor) {
+      break;
+    }
+#else
     Hz6RouteResult route = hz6_allocator_route_lookup(allocator, ptr);
     Hz6ObjectDescriptor* descriptor =
         (Hz6ObjectDescriptor*)route.descriptor;
     if (route.kind != HZ6_ROUTE_VALID || !descriptor) {
       break;
     }
+#endif
 
     if (!hz6_allocator_cache_active_descriptor(allocator, descriptor, ptr)) {
       break;

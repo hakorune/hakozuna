@@ -704,9 +704,8 @@
 #endif
 
 #ifndef HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1
-/* No-go direct-reuse shortcut.  Direct bin pop looked cheaper in isolation but
- * regressed focused preload rows, likely through code layout / wrapper inlining
- * effects. Keep the wrapper path as default. */
+/* Selected production direct-reuse shortcut.  Diagnostic builds still use the
+ * wrapper path so frontcache attribution counters remain available. */
 #define HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1 0
 #endif
 
@@ -893,6 +892,14 @@
 /* Control for the preload-boundary MidPage shortcut lower bound.  The selected
  * default keeps both 8K and 32K MidPage classes on the shortcut path. */
 #define HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_MIN_BYTES ((size_t)4096)
+#endif
+
+#ifndef HZ6_FRONT_PREFILL_DESCRIPTOR_OUT_L1
+/* Candidate front prefill code shape.  Source-block prefill already prepared
+ * the descriptor before registering the exact route; return that descriptor to
+ * the cache step instead of doing a self route lookup on the freshly-created
+ * slot. */
+#define HZ6_FRONT_PREFILL_DESCRIPTOR_OUT_L1 0
 #endif
 
 #ifndef HZ6_MIDPAGE_32K_COLD_RETIRE_L1

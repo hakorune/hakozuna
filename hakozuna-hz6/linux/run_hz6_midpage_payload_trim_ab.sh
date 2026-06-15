@@ -228,6 +228,9 @@ variant_flags() {
     raw_frontcache_pop)
       hz6_preload_replace_define flags HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1 1
       ;;
+    prefill_descriptor_out)
+      hz6_preload_replace_define flags HZ6_FRONT_PREFILL_DESCRIPTOR_OUT_L1 1
+      ;;
     run2304k)
       hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 2359296
       ;;

@@ -223,6 +223,54 @@ decision:
   attribution keeps the wrapper counters.
 ```
 
+## Recent Closeout: HZ6 Ubuntu Front Prefill Descriptor-Out Audit-L1
+
+```text
+goal:
+  Remove the self route lookup immediately after a source-block prefill slot is
+  created, without changing route registration or source-block ownership.
+
+design:
+  Add HZ6_FRONT_PREFILL_DESCRIPTOR_OUT_L1 as a default-off control.
+  The source-block slot helper already has the descriptor before registering
+  the exact route. The control returns that descriptor to
+  hz6_front_prefill_source_block_kind() and caches it directly instead of
+  looking up the same ptr through RouteLayer.
+
+acceptance:
+  Build and R1 smokes pass.
+  Production stats-off selected vs prefill_descriptor_out improves or stays
+  flat on guards and the 4096..16384 target.
+  Diagnostic run shows lower route_lookup_probe_total on source-prefill-heavy
+  rows, with route_register_fail/alloc_fail/source failures at zero.
+
+production read:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_200006
+  repeat-7 selected vs prefill_descriptor_out:
+    16..256:
+      52.964M -> 51.391M
+    16..4096:
+      31.973M -> 32.660M
+    1024..4096:
+      30.547M -> 30.102M
+    4096..16384:
+      40.655M -> 37.893M
+
+diagnostic read:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_200043
+  4096..16384 route_lookup_probe_total:
+    selected               7767
+    prefill_descriptor_out 7341
+  safety counters stayed clean:
+    alloc_fail=0
+    route_register_fail=0
+    source_prefill_fallback=0
+
+decision:
+  Keep as default-off control/no-go.
+  The attribution premise is valid, but the code shape loses production speed.
+```
+
 ## Recent Closeout: HZ6 Ubuntu Preload Current-Bias Fast Predicate-L1
 
 ```text

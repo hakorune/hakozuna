@@ -185,6 +185,9 @@ variant_flags() {
       hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY 65536
       hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_PROBE_LIMIT 8
       ;;
+    prefill_descriptor_out)
+      hz6_preload_replace_define flags HZ6_FRONT_PREFILL_DESCRIPTOR_OUT_L1 1
+      ;;
     *)
       echo "unknown variant: ${variant}" >&2
       exit 2
@@ -254,6 +257,7 @@ default_variants=(
   amap64k_p4
   amap32k_p8
   amap64k_p8
+  prefill_descriptor_out
 )
 if [[ -n "$VARIANTS" ]]; then
   IFS=',' read -r -a variants <<< "$VARIANTS"
