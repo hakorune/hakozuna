@@ -115,25 +115,25 @@ Latest selected fixed-size cross-allocator refresh, repeat-3, raw
 
 Latest broad short profile-frontier guard after fixed-gap and Toy-map8192
 external profile work, repeat-3, raw
-`private/raw-results/linux/hz6_preload_profile_frontier_20260616_074740`:
+`private/raw-results/linux/hz6_preload_profile_frontier_20260616_081847`:
 
 | Row | Selected | Best current profile read |
 | --- | ---: | --- |
-| `16..256` | `63.239M / 18.12 MiB` | `small-boundary-trusted` `63.834M / 18.12 MiB`; effectively selected-equivalent |
-| `16..4096` | `23.649M / 66.88 MiB` | `adaptive-target` `24.213M / 67.00 MiB`; short-run profile-only |
-| `1024..4096` | `20.424M / 78.62 MiB` | `realloc-boundary-4k` `21.262M / 78.75 MiB`; profile-only |
-| `4096..16384` | `25.784M / 80.38 MiB` | `toy-map8192` `27.026M / 79.50 MiB`; external is lower RSS at `26.581M / 78.50 MiB` |
-| `fixed_4k` | `20.310M / 79.12 MiB` | external has best ops/MiB: `27.180M / 77.62 MiB`; toy-map8192 is speed-tied |
-| `fixed_8k` | `25.489M / 80.12 MiB` | external has best ops/MiB: `26.209M / 78.25 MiB` |
-| `fixed_16k` | `24.938M / 80.00 MiB` | `toy-map8192` has best speed/balance: `26.453M / 79.38 MiB` |
+| `16..256` | `50.190M / 18.12 MiB` | `realloc-boundary-8k` `51.292M / 18.12 MiB`; noisy/tiny-only, not broad |
+| `16..4096` | `17.277M / 66.88 MiB` | `adaptive-8k` `17.600M / 66.88 MiB`; short-run profile-only |
+| `1024..4096` | `14.108M / 78.38 MiB` | `realloc-boundary-8k` `15.260M / 78.62 MiB`; profile-only |
+| `4096..16384` | `19.020M / 80.50 MiB` | `small-boundary-trusted` `19.712M / 80.50 MiB`; fixed/profile evidence |
+| `fixed_4k` | `14.456M / 79.00 MiB` | `small-boundary-trusted` `18.995M / 79.62 MiB`; fixed-only profile |
+| `fixed_8k` | `17.684M / 80.12 MiB` | `small-boundary-trusted` `18.403M / 80.12 MiB`; fixed-only profile |
+| `fixed_16k` | `18.055M / 80.12 MiB` | `toy-trusted` `18.743M / 80.12 MiB`; fixed-only profile |
 
 Read: the latest short guard does not create a new selected/default lever.
-Toy-map8192/external remain valuable explicit fixed/RSS profiles, external is
-the fixed_4k/fixed_8k ops-per-MiB choice, and Toy-map8192 is the fixed_16k
-speed/balance choice. Realloc/adaptive lanes still have useful short-run speed
-signals, but their historical focused/target guards are mixed; keep them
-profile/control-only unless a future thick guard preserves tiny, mixed-small,
-target, fixed, RSS, and stats rows in one run.
+Standard profile lanes still show useful row-specific speed, especially
+realloc/adaptive on mixed-small rows and small-boundary trusted on fixed rows,
+but no profile preserves tiny, mixed-small, target, fixed, RSS, and historical
+guard evidence well enough to replace selected/default. Keep the Toy-map8192
+family as explicit fixed/RSS profiles, keep realloc/adaptive as fixed-boundary
+profile lanes, and keep selected/default stable.
 
 Workload-proxy capacity ladder, repeat-3, raw
 `private/raw-results/linux/hz6_workload_proxy_matrix_20260616_080227`:
