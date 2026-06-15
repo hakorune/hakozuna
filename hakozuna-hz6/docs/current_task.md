@@ -57,11 +57,11 @@ Standard frontier:
   aligned / calloc-direct / calloc-real / calloc-large-real
 
 Explicit controls:
-  small-boundary-trusted-toy-map8192(+external) / toy-map-external / midpage-skip-transfer
+  small-boundary-trusted-toy-map8192(+external) / workload-capacity / toy-map-external / midpage-skip-transfer
 
 Runners:
   fixed_boundary_profile_frontier / preload_profile_frontier
-  fixed_gap_matrix / fixed_cost_residency_matrix / fixed_quiescent_rss_matrix
+  fixed_gap_matrix / fixed_cost_residency_matrix / fixed_quiescent_rss_matrix / workload_proxy_matrix
   check_hz6_preload_profile_registry
 ```
 
@@ -91,7 +91,7 @@ Recent fixed/profile repeats:
   private/raw-results/linux/hz6_fixed_gap_matrix_20260616_074100
   private/raw-results/linux/hz6_fixed_quiescent_rss_matrix_20260616_072153
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_{062305,064915,065310,065329,072333,074342,074414}
-  private/raw-results/linux/hz6_preload_profile_frontier_20260616_072637
+  private/raw-results/linux/hz6_workload_proxy_matrix_20260616_{075255,075550}
   private/raw-results/linux/hz6_ubuntu_size_slices_20260616_073231
 
 Details:
@@ -145,5 +145,6 @@ Default no-go/control-only without substantially different evidence:
     packed-frontcache/sourceblock combos remain runner-only controls/no-go.
 14. Next broad guard: refresh selected/profile frontier and real-workload rows
     periodically, not more fixed-only default behavior.
-15. Keep this file below about 150 lines; archive completed evidence snapshots.
+15. Workload proxy refresh found desc8192 capacity collapse on large WS rows;
+    `hz6-workload-capacity-target` fixes it as a profile, not selected/default.
 ```

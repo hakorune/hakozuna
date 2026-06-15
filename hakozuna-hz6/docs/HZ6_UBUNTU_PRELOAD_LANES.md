@@ -135,6 +135,31 @@ signals, but their historical focused/target guards are mixed; keep them
 profile/control-only unless a future thick guard preserves tiny, mixed-small,
 target, fixed, RSS, and stats rows in one run.
 
+Latest workload-proxy matrix, repeat-3, raw
+`private/raw-results/linux/hz6_workload_proxy_matrix_20260616_075550`;
+diagnostic raws `hz6_workload_proxy_diag_20260616_075255` and
+`hz6_workload_capacity_diag_20260616_075550`:
+
+| Row | HZ6 selected | HZ6 workload-capacity | HZ3 | tcmalloc |
+| --- | ---: | ---: | ---: | ---: |
+| `redis_proxy` | `60.323M / 15.12 MiB` | `36.991M / 46.38 MiB` | `134.039M / 5.00 MiB` | `166.275M / 7.50 MiB` |
+| `small_object_cache` | `0.405M / 53.67 MiB` | `14.581M / 71.12 MiB` | `56.232M / 24.38 MiB` | `56.325M / 23.62 MiB` |
+| `mixed_small_cache` | `0.339M / 133.37 MiB` | `8.096M / 149.38 MiB` | `14.778M / 93.50 MiB` | `19.531M / 75.75 MiB` |
+| `mixed_object_cache` | `0.344M / 176.15 MiB` | `8.456M / 163.38 MiB` | `11.550M / 117.12 MiB` | `12.397M / 123.62 MiB` |
+| `midpage_cache` | `18.991M / 80.38 MiB` | `15.751M / 111.62 MiB` | `15.384M / 74.88 MiB` | `10.286M / 122.00 MiB` |
+| `wide_midpage_cache` | `0.640M / 178.43 MiB` | `8.312M / 174.38 MiB` | `8.474M / 142.38 MiB` | `4.924M / 266.11 MiB` |
+
+Read: workload-proxy rows are not app benchmarks, but they expose a real HZ6
+profile gap. Selected `desc8192` collapses on larger live working sets:
+`small_object_cache` diag showed `descriptor_live_max=8192`,
+`descriptor_exhausted=2407`, `malloc_real_fallback=801`, and very large route
+probe totals. The new explicit `hz6-workload-capacity-target`
+(`route131072/desc32768/source4096`) removes that failure in the same proxy
+shape (`alloc_fail=0`, `descriptor_exhausted=0`) and restores throughput by
+about `13x..36x` on the collapsed rows. It is still not selected/default:
+`redis_proxy` and the already-healthy `midpage_cache` regress because the
+larger static tables raise RSS and code/data footprint.
+
 Latest fixed-boundary profile frontier, repeat-3, raw
 `private/raw-results/linux/hz6_fixed_boundary_profile_frontier_20260616_072931`:
 
@@ -199,7 +224,7 @@ Current lane state:
 | MidPage free path | current-bias free order | free fast-slot, current-bias free fast-slot, page-hint behavior, unconditional/aligned MidPage-first |
 | MidPage/Toy malloc path | preload-boundary noinline transfer skip, MidPage direct class, Toy direct-class fast reuse max4096, boundary trusted-owner, descriptor-out, trusted-class local reuse | core transfer-skip, broad preclassified malloc, trusted activation skip |
 | RSS/storage | static table trim, class4/class5 frontcache storage trim, explicit quiescent `malloc_trim()` scavenge hook | broad class storage trim, cold-class trims, and free-path cold-retire behavior remain controls |
-| Next lane | guard/refresh | FixedCostResidencyMatrix-L1, fixed_gap_matrix, and short broad profile-frontier guard are current. The remaining fixed_4k/8k HZ3 gap is mostly profile/static-floor tradeoff, while Toy-map8192 external already beats tcmalloc balance. Next prefer broad selected/profile frontier refreshes and real-workload guards over more fixed-only default behavior. Do not reopen cold-retire behavior, active-map widening, PageKind/free-order tables, packed metadata, or default realloc-boundary behavior without new diagnostic evidence. |
+| Next lane | workload/profile guard | FixedCostResidencyMatrix-L1, fixed_gap_matrix, short broad profile-frontier guard, and workload_proxy_matrix are current. The remaining fixed_4k/8k HZ3 gap is mostly profile/static-floor tradeoff, while Toy-map8192 external already beats tcmalloc balance. Workload proxy rows show selected desc8192 collapses on larger live WS; use `hz6-workload-capacity-target` as an explicit profile and keep selected/default stable. Do not reopen cold-retire behavior, active-map widening, PageKind/free-order tables, packed metadata, or default realloc-boundary behavior without new diagnostic evidence. |
 
 Current follow-up read:
 
@@ -471,6 +496,7 @@ MidPage 32K run-size closeout details are in
 | `build_hz6_preload_calloc_large_real_target.sh` | Named large-calloc RSS/speed profile DSO. It enables real calloc fallback plus free-skip only for calloc payloads at or above 64 KiB via `HZ6_PRELOAD_CALLOC_REAL_MIN_BYTES=65536`. Shared compare aliases: `hz6-calloc-large-real-target` / `hz6_calloc_large_real_target`. |
 | `build_hz6_preload_midpage_trusted_class_target.sh` | Historical/comparison alias for the trusted-class selected shape. It now matches the selected Ubuntu preload behavior unless `HZ6_MIDPAGE_TRUSTED_CLASS_CLASS5_ONLY=1` is set for the class5-only control. Shared compare aliases: `hz6-midpage-trusted-class` / `hz6_midpage_trusted_class`. |
 | `build_hz6_preload_midpage_skip_transfer_target.sh` | Named MidPage skip-transfer control DSO. It enables `HZ6_MIDPAGE_DIRECT_LOCAL_SKIP_TRANSFER_FIRST_L1=1` over selected flags for explicit A/B checks. Shared compare aliases: `hz6-midpage-skip-transfer-target` / `hz6_midpage_skip_transfer_target`; alias smoke raw `hz6_midpage_skip_transfer_alias_smoke_20260616_065421` confirms autobuild and resolver wiring. |
+| `build_hz6_preload_workload_capacity_target.sh` | Explicit workload-capacity profile DSO. It keeps selected behavior but widens `HZ6_ROUTE_TABLE_CAPACITY=131072`, `HZ6_OBJECT_DESCRIPTOR_CAPACITY=32768`, and `HZ6_SOURCE_BLOCK_CAPACITY=4096` for larger live working sets. Shared compare aliases: `hz6-workload-capacity-target` / `hz6_workload_capacity_target`; workload-proxy raw `hz6_workload_proxy_matrix_20260616_075550` confirms it restores the selected desc8192 collapse rows. |
 | `build_hz6_preload_midpage_boundary_control.sh` | Explicit boundary-off control DSO for confirming the selected preload-boundary transfer-skip shape. |
 | `hz6_preload_aliases.sh` | Shared HZ6 profile alias build helper for Ubuntu selected-balance and fixed-size matrix runners. It keeps dash/underscore profile aliases in one place so adding profile DSOs does not drift between runners. |
 | `run_hz6_preload_midpage_boundary_ab.sh` | Repeat runner for selected default versus boundary-off control on `4096..16384`, `16..256`, `16..4096`, and `1024..4096`. |
@@ -481,6 +507,7 @@ MidPage 32K run-size closeout details are in
 | `HZ6_UBUNTU_PROFILE_REGISTRY.md` | profile registry | Short profile/alias registry. Use it to distinguish selected, standard profile-frontier entries, and explicit controls without scanning this full lane ledger. |
 | `run_hz6_fixed_boundary_profile_frontier.sh` | Thin fixed-boundary profile lane runner. It wraps `run_hz6_preload_profile_frontier.sh` with the current fixed-boundary profile set: selected, small-boundary-trusted, small-boundary-trusted-toy-map8192, small-boundary-trusted-toy-map8192-external, split realloc-boundary, adaptive realloc-boundary, and toy-trusted. Use it when the question is which profile DSO to ship for fixed_4k/fixed_8k/fixed_16k workloads; it does not change selected/default flags. Smoke raw `hz6_fixed_boundary_profile_frontier_20260616_061222` confirms wrapper argument forwarding and summary generation; alias smoke raw `hz6_fixed_boundary_profile_frontier_20260616_062920` confirms the Toy-map8192 profile builds and resolves through `LD_PRELOAD`. |
 | `run_hz6_fixed_gap_matrix.sh` | Focused fixed-size gap runner. It wraps `run_hz6_ubuntu_size_slices_matrix.sh` with selected HZ6, the current Toy-map8192 RSS profiles, HZ3/HZ4, mimalloc, tcmalloc, and system in one matrix. Use it to refresh fixed_4k/fixed_8k/fixed_16k gaps without changing selected/default flags. Smoke raw `hz6_fixed_gap_matrix_20260616_073947` confirms wrapper and alias resolution. |
+| `run_hz6_workload_proxy_matrix.sh` | Workload-proxy guard runner over `bench_mixed_ws_crt`. It compares selected HZ6, workload-capacity, fixed/RSS profiles, HZ3/HZ4, mimalloc, tcmalloc, and system on `redis_proxy`, small-object cache, mixed-object cache, and MidPage cache proxy rows. Use it to catch live-working-set capacity cliffs before changing selected/default; these rows are proxy evidence, not app benchmarks. Raw `hz6_workload_proxy_matrix_20260616_075255` found selected desc8192 collapse, and raw `hz6_workload_proxy_matrix_20260616_075550` confirms the workload-capacity profile restores the collapsed rows. |
 | `run_hz6_fixed_cost_residency_matrix.sh` | FixedCostResidencyMatrix-L1 orchestration runner. It runs the profile frontier for external speed/RSS position, runs the MidPage RSS audit for HZ6 residency attribution, and emits a combined summary. Use it before changing selected flags when the question is whether HZ6 fixed RSS cost comes from touched MidPage payload, frontcache/static tables, active-map storage, or source-run residency. Smoke raw `hz6_fixed_cost_residency_matrix_20260616_053336` confirms combined summary generation. |
 | `run_hz6_ubuntu_selected_balance_matrix.sh` | Cross-allocator speed/RSS balance matrix for selected HZ6 versus system/HZ3/HZ4/HZ5/mimalloc/tcmalloc. It auto-builds named HZ6 profile DSOs when requested through allocator aliases, including `hz6-toy-target`, `hz6-toy-trusted-target`, `hz6-midpage-skip-transfer-target`, `hz6-aligned-target`, `hz6-calloc-direct-target`, `hz6-calloc-real-target`, `hz6-calloc-large-real-target`, `hz6-realloc-boundary-target`, split realloc-boundary profiles, `hz6-small-boundary-target`, `hz6-small-boundary-fast-target`, `hz6-small-boundary-trusted-target`, `hz6-small-boundary-trusted-toy-map8192-target`, `hz6-small-boundary-trusted-toy-map8192-external-target`, and `hz6-midpage-trusted-class`. Profile alias autobuild smoke raw `hz6_profile_alias_autobuild_smoke_20260616_014024` confirmed `hz6-toy-target`, `hz6-small-boundary-target`, and `hz6-aligned-target`; trusted alias smoke raw `hz6_small_boundary_trusted_alias_smoke_20260616_015323` confirmed the preferred profile alias, toy-trusted alias smoke raw `hz6_toy_trusted_alias_smoke_20260616_024753` confirms the lighter Toy trusted profile alias, calloc-real alias smoke raw `hz6_calloc_real_alias_smoke_20260616_035226` confirms calloc profile alias resolution, calloc-direct alias smoke raw `hz6_preload_profile_frontier_20260616_050556` confirms direct-calloc profile alias resolution, and midpage skip-transfer alias smoke raw `hz6_midpage_skip_transfer_alias_smoke_20260616_065421` confirms target-profile alias resolution. The root `linux/run_linux_bench_compare_matrix.sh` now sources the same `hz6_preload_aliases.sh` helper; smoke raw `hz6_root_compare_trusted_alias_smoke_20260616_020506` confirms trusted alias resolution through the public Linux entrypoint. |
 | `build_hz6_preload_diag.sh` | Diagnostic preload build wrapper with `HZ6_DIAGNOSTIC_PROBES=1`; also preserves preload phase counters despite production selected compile-out. Use for attribution, not selected speed ranking. |
