@@ -1330,3 +1330,55 @@ next:
     2. mid-small 16..4096 / 1024..4096 attribution refresh
     3. narrow preload boundary/code-shape audit outside active-map/free-path
 ```
+
+## Recent Closeout: HZ6 Frontcache Class4/Class5 Storage Trim-L1
+
+```text
+goal:
+  Re-test frontcache storage trim after direct_class changed the selected
+  preload code shape. Earlier broad trim attempts were control/no-go, but the
+  current selected row has lower hot-path overhead and different guard balance.
+
+selected change:
+  HZ6_FRONT_CACHE_CLASS_STORAGE_TRIM_L1=1
+  HZ6_FRONT_CACHE_CLASS4_STORAGE_CAPACITY=8192
+  HZ6_FRONT_CACHE_CLASS5_STORAGE_CAPACITY=4096
+
+evidence:
+  broad production sweep:
+    raw: private/raw-results/linux/hz6_frontcache_shape_ab_20260615_213251
+    mid32k_cap3072 helped target slightly but destroyed fixed_16k.
+    storage_trim_c4_8192_c5_4096 was the only balanced candidate.
+
+  production repeat-15:
+    raw: private/raw-results/linux/hz6_frontcache_shape_ab_20260615_213336
+    16..256      selected 57.097M -> trim 57.137M
+    16..4096     selected 33.998M -> trim 35.676M
+    1024..4096   selected 33.232M -> trim 33.731M
+    4096..16384  selected 44.144M -> trim 44.174M
+    fixed_4k     selected 31.220M -> trim 31.306M
+    fixed_8k     selected 41.790M -> trim 41.925M
+    fixed_16k    selected 43.952M -> trim 44.358M
+
+  stats-on safety/attribution:
+    raw: private/raw-results/linux/hz6_frontcache_shape_ab_20260615_213400
+    fail counters 0.
+    frontcache table attribution 10242 KiB -> 3002 KiB.
+    static table attribution 31609 KiB -> 24369 KiB.
+
+  post-promotion selected-only:
+    production raw: private/raw-results/linux/hz6_frontcache_shape_ab_20260615_213453
+    stats raw: private/raw-results/linux/hz6_frontcache_shape_ab_20260615_213504
+    selected DSO keeps the trimmed attribution and fail counters clean.
+
+read:
+  This is a small but broad selected/default win. It does not materially lower
+  peak RSS because source payload and active pages still dominate peak reads,
+  but it removes about 7 MiB of frontcache/static attribution and improves the
+  mid-small rows that were weakest after the direct_class closeout.
+
+next:
+  Re-run the selected-vs-allocator matrix after storage trim, then decide
+  whether mid-small still deserves attribution work or whether to return to
+  narrow preload boundary/code-shape lanes.
+```

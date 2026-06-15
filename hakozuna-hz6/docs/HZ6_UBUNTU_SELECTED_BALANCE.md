@@ -97,6 +97,36 @@ hakozuna-hz6/private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_2125
 `fail=0` on all focused/fixed rows; source allocation and payload attribution
 stay in the expected selected shape.
 
+Latest HZ6-only production-shape check after class4/class5 frontcache storage
+trim became selected:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_frontcache_shape_ab_20260615_213453
+```
+
+This selects `HZ6_FRONT_CACHE_CLASS_STORAGE_TRIM_L1=1` with class4 storage
+capacity `8192` and class5 storage capacity `4096`:
+
+| row | selected ops/s | peak RSS |
+| --- | ---: | ---: |
+| `16_256` | `57.642M` | `30.50 MiB` |
+| `16_4096` | `35.393M` | `79.62 MiB` |
+| `1024_4096` | `33.692M` | `90.88 MiB` |
+| `4096_16384` | `44.773M` | `94.12 MiB` |
+| `fixed_4k` | `32.050M` | `91.88 MiB` |
+| `fixed_8k` | `43.088M` | `93.25 MiB` |
+| `fixed_16k` | `44.971M` | `93.12 MiB` |
+
+Stats-on safety and attribution:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_frontcache_shape_ab_20260615_213504
+```
+
+`alloc_fail=0`, `route_register_fail=0`, `source_block_exhausted=0`, and
+`malloc_real_fallback=0` on all focused/fixed rows. Frontcache/static
+attribution is now `3002 KiB / 24369 KiB`.
+
 Command:
 
 ```bash
