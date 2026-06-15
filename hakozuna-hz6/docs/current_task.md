@@ -107,6 +107,7 @@ Preferred broad small/fixed profile:
     private/raw-results/linux/hz6_small_boundary_trusted_position_20260616_015331
     private/raw-results/linux/hz6_trusted_profile_cross_20260616_020157
     private/raw-results/linux/hz6_trusted_profile_fixed_20260616_020211
+    private/raw-results/linux/hz6_fixed4k_profile_position_20260616_021401
 
   read:
     16..256      selected 57.497M -> trusted 78.031M
@@ -121,6 +122,8 @@ Preferred broad small/fixed profile:
     trusted beats tcmalloc/HZ4 on 4096..16384, fixed_8k, and fixed_16k speed.
     trusted beats tcmalloc on fixed_4k speed in this read, but HZ3 remains the
     speed/RSS frontier for tiny and most fixed-mid rows.
+    fixed4k profile-position repeat keeps trusted as the best HZ6 fixed_mid
+    profile overall; do not add a separate fixed4k-only DSO yet.
 
 Comparison/profile controls:
   hz6-small-boundary-fast-target

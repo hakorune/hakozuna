@@ -285,6 +285,7 @@ Trusted profile cross/fixed refresh:
 ```text
 hakozuna-hz6/private/raw-results/linux/hz6_trusted_profile_cross_20260616_020157
 hakozuna-hz6/private/raw-results/linux/hz6_trusted_profile_fixed_20260616_020211
+hakozuna-hz6/private/raw-results/linux/hz6_fixed4k_profile_position_20260616_021401
 ```
 
 | row | selected hz6 | small-boundary trusted | best outside HZ6 in this read | read |
@@ -302,6 +303,18 @@ the preferred broad HZ6 profile when small/fixed-boundary speed matters.
 Selected/default remains the balanced lane because the profile is workload
 specific and still carries HZ6-class RSS on rows where HZ3/tcmalloc have lower
 resident cost.
+
+Fixed_4k profile-position follow-up:
+
+| row | hz6 selected | realloc-4k profile | small-boundary target | trusted profile | read |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `fixed_4k` | `32.247M / 91.88 MiB` | `45.913M / 92.62 MiB` | `46.333M / 92.62 MiB` | `46.640M / 92.75 MiB` | trusted is the best HZ6 fixed_4k profile in this read |
+| `fixed_8k` | `43.570M / 93.12 MiB` | `43.225M / 93.12 MiB` | `45.520M / 93.25 MiB` | `46.677M / 93.12 MiB` | trusted remains best HZ6 profile |
+| `fixed_16k` | `44.566M / 93.12 MiB` | `45.345M / 93.12 MiB` | `45.506M / 93.12 MiB` | `46.968M / 93.12 MiB` | trusted remains best HZ6 profile |
+
+This closes the immediate fixed_4k-only DSO idea. `hz6-realloc-boundary-4k-target`
+is still a useful narrow control, but the existing trusted small-boundary profile
+is better across fixed_mid and avoids adding another profile lane.
 
 ## Selected Read
 

@@ -123,9 +123,11 @@ Next allocator work:
       hakozuna-hz6/private/raw-results/linux/hz6_small_boundary_trusted_position_20260616_015331
       hakozuna-hz6/private/raw-results/linux/hz6_trusted_profile_cross_20260616_020157
       hakozuna-hz6/private/raw-results/linux/hz6_trusted_profile_fixed_20260616_020211
+      hakozuna-hz6/private/raw-results/linux/hz6_fixed4k_profile_position_20260616_021401
     read: trusted supersedes fast as the preferred broad small/fixed HZ6
       profile. Latest repeat keeps trusted positive versus selected on focused
-      and fixed-mid rows; selected default remains unchanged.
+      and fixed-mid rows. fixed4k profile-position repeat keeps trusted as the
+      best HZ6 fixed_mid profile overall; selected default remains unchanged.
   Latest HZ6 Ubuntu aligned profile refresh:
     hakozuna-hz6/private/raw-results/linux/hz6_aligned_profile_refresh_20260616_020716
     hakozuna-hz6/private/raw-results/linux/hz6_aligned_profile_guard_20260616_020941
