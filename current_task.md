@@ -128,6 +128,12 @@ Next allocator work:
       profile. Latest repeat keeps trusted positive versus selected on focused
       and fixed-mid rows. fixed4k profile-position repeat keeps trusted as the
       best HZ6 fixed_mid profile overall; selected default remains unchanged.
+  Latest HZ6 Ubuntu hot-path attribution refresh:
+    hakozuna-hz6/private/raw-results/linux/hz6_hotpath_attribution_refresh_20260616_021555
+    hakozuna-hz6/private/raw-results/linux/hz6_free_order_attribution_refresh_20260616_021613
+    read: route/runroute/pagekind pressure is low; Toy4 free probe remains
+      near base-slot optimal. The remaining fixed_4k/8k pressure is cross-class
+      realloc copy, best covered by existing trusted small-boundary profile.
   Latest HZ6 Ubuntu aligned profile refresh:
     hakozuna-hz6/private/raw-results/linux/hz6_aligned_profile_refresh_20260616_020716
     hakozuna-hz6/private/raw-results/linux/hz6_aligned_profile_guard_20260616_020941

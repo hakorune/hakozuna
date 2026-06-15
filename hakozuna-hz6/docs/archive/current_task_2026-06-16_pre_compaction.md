@@ -1,8 +1,8 @@
-# HZ6 Current Task
+# HZ6 Current Task Archive
 
-HZ6 is the active Windows/Linux implementation and benchmarking family. Keep
-this file short; it is an orientation entry point, not the chronological
-experiment ledger.
+Archived pre-compaction snapshot from 2026-06-16. This file intentionally keeps
+the long chronological experiment ledger for source/reference lookup. Continue
+active work from `../current_task.md` and the lane docs listed there.
 
 ## Read First
 

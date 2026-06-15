@@ -316,6 +316,25 @@ This closes the immediate fixed_4k-only DSO idea. `hz6-realloc-boundary-4k-targe
 is still a useful narrow control, but the existing trusted small-boundary profile
 is better across fixed_mid and avoids adding another profile lane.
 
+Hot-path attribution refresh:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_hotpath_attribution_refresh_20260616_021555
+hakozuna-hz6/private/raw-results/linux/hz6_free_order_attribution_refresh_20260616_021613
+```
+
+| row | route-after-maps | real fallback | Toy4 free base | Toy4 avg probe | realloc cross-class | read |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| `16..4096` | `954` | `0` | `94.3%` | `1.06` | `306` | route/free-order is not the wall |
+| `1024..4096` | `1104` | `0` | `94.1%` | `1.07` | `111` | route/free-order is not the wall |
+| `4096..16384` | `786` | `0` | `100.0%` | `1.00` | `33` | remaining target pressure is supply/frontcache shape, not route |
+| `fixed_4k` | `1098` | `0` | `94.1%` | `1.07` | `19068` | fixed-boundary realloc copy is the main profile signal |
+| `fixed_8k` | `944` | `0` | `0.0%` | `0.00` | `19068` | fixed-boundary realloc copy is the main profile signal |
+
+Do not reopen page-kind/free-order/runroute/default route work from this read.
+The measurable fixed-boundary issue is already covered by the trusted
+small-boundary profile lane, which remains profile-only.
+
 ## Selected Read
 
 The current HZ6 Ubuntu selected lane has its clearest speed/RSS balance on

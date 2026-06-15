@@ -125,6 +125,13 @@ Preferred broad small/fixed profile:
     fixed4k profile-position repeat keeps trusted as the best HZ6 fixed_mid
     profile overall; do not add a separate fixed4k-only DSO yet.
 
+  hot-path attribution:
+    private/raw-results/linux/hz6_hotpath_attribution_refresh_20260616_021555
+    private/raw-results/linux/hz6_free_order_attribution_refresh_20260616_021613
+    route/runroute/pagekind pressure is not the next lever. Toy4 free probes
+    remain near base-slot optimal; fixed_4k/8k pressure is cross-class realloc
+    copy, already handled best by the trusted small-boundary profile.
+
 Comparison/profile controls:
   hz6-small-boundary-fast-target
     Useful comparison lane; latest trusted profile is more stable overall.
@@ -156,6 +163,7 @@ Default no-go or control-only unless new evidence is substantially different:
   route lookup body inline/macro expansion
   page-kind all-free selector
   page-hint/free-order hint table
+  runroute-after-maps behavior
   MidPage active-map cap/probe widening
   MidPage free fast-slot
   broad raw frontcache push
