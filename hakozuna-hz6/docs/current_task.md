@@ -89,8 +89,8 @@ Earlier cross-allocator refresh after static table trim:
   16..4096    hz6 42.216M / 79.75 MiB
   1024..4096  hz6 39.672M / 91.00 MiB
   4096..16384 hz6 41.264M / 94.38 MiB
-  On 4096..16384, HZ6 still trails tcmalloc speed
-  (41.264M vs 44.812M) but now has lower RSS and better ops-per-MiB.
+  At that checkpoint on 4096..16384, HZ6 trailed tcmalloc speed
+  (41.264M vs 44.812M) but had lower RSS and better ops-per-MiB.
 Latest cross-allocator refresh after current-bias and 8K run768:
   raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_050834
   16..256     hz6 57.545M / 30.50 MiB

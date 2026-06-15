@@ -74,40 +74,40 @@ HZ6_PRELOAD_FAST_FREE_L1=0
 The preload lane is a real Ubuntu performance lane, but it remains separate
 from the direct HZ6 API and Windows selected-family rows.
 
-Latest selected-default focused guards, after MidPage descriptor-out:
+Latest selected-default focused guards, after current-bias and 8K/32K run768:
 
 | Row | Selected read |
 | --- | ---: |
-| `16..256` descriptor-out confirm repeat-3 | `57.443M` vs control-off `56.718M` |
-| `16..4096` descriptor-out confirm repeat-3 | `41.578M` vs control-off `41.489M` |
-| `1024..4096` descriptor-out confirm repeat-7 | `40.057M` vs control-off `39.829M` |
-| `4096..16384` descriptor-out confirm repeat-3 | `34.761M` vs control-off `29.769M` |
+| `16..256` selected repeat-3 | `57.545M / 30.50 MiB` |
+| `16..4096` selected repeat-3 | `40.441M / 79.75 MiB` |
+| `1024..4096` selected repeat-3 | `38.812M / 91.00 MiB` |
+| `4096..16384` selected repeat-3 | `45.984M / 94.38 MiB` |
 
-Latest cross-allocator refresh after static table trim, repeat-3,
+Latest cross-allocator refresh after current-bias and 8K run768, repeat-3,
 `bench_mixed_ws_crt`:
 
 | Row | hz6 | mimalloc | tcmalloc | system | hz6 peak KB |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| `16..256` | `60.381M` | `53.002M` | `256.745M` | `106.097M` | `31,104` |
-| `16..4096` | `42.216M` | `7.072M` | `97.961M` | `16.868M` | `81,664` |
-| `1024..4096` | `39.672M` | `5.578M` | `98.389M` | `9.748M` | `93,184` |
-| `4096..16384` | `41.264M` | `1.318M` | `44.812M` | `3.000M` | `96,640` |
+| `16..256` | `57.545M` | `53.532M` | `251.490M` | `103.854M` | `31,232` |
+| `16..4096` | `40.441M` | `7.041M` | `97.766M` | `16.492M` | `81,664` |
+| `1024..4096` | `38.812M` | `5.488M` | `96.532M` | `9.401M` | `93,184` |
+| `4096..16384` | `45.984M` | `1.303M` | `45.310M` | `2.935M` | `96,640` |
 
 Important caveat:
 
 ```text
 tcmalloc remains much faster on tiny and mixed small rows. On 4096..16384, HZ6
-still trails tcmalloc on speed but now has lower RSS and better ops-per-MiB.
-HZ6 is clearly ahead of mimalloc on the selected mixed_ws preload rows, but this
-is not a universal allocator win.
+now edges tcmalloc on speed while keeping lower RSS and better ops-per-MiB.
+HZ6 is clearly ahead of mimalloc on the selected mixed_ws preload rows, but HZ3
+remains the higher speed/RSS frontier.
 ```
 
 Follow-up:
 
 ```text
-MidPage 32K run768 is now selected after the table above. The focused repeat-7
-versus run512 moved 4096..16384 from 43.110M / 94.50 MiB to
-44.324M / 94.50 MiB, with 512K kept as direct control.
+MidPage 32K run768 and 8K run768 are now selected. The current selected lane
+keeps the static-table RSS cut and moves 4096..16384 to 45.984M / 94.38 MiB.
+Keep 512K/256K as direct run-size controls.
 ```
 
 Current follow-up read:

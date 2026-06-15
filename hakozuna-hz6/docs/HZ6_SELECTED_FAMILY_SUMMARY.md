@@ -74,7 +74,8 @@ bin 8192 for preload: frontcache4096 first lifted the 1M guard from about
 18.2M to about 22.9M, and frontcache8192 removed the remaining overflow
 unregister/tombstone churn and lifted the focused repeat-3 median to about
 34.2M.  In the focused 1M cross check, frontcache8192 put HZ6 above mimalloc
-(`hz6 35.343M` vs `mimalloc 30.609M`) while still far below tcmalloc/HZ3/HZ4.
+(`hz6 35.343M` vs `mimalloc 30.609M`) while still behind tcmalloc/HZ3/HZ4 at
+that older checkpoint.
 The broader pass then selected PreloadToyActiveFastFree-L1: preload `free()`
 tries the Toy active-map before route lookup, dropping 16..256 diagnostic route
 probes from about 2.12M to about 37.7K and moving the focused 16..256 cross row
@@ -82,7 +83,8 @@ to `hz6 53.883M` versus `mimalloc 52.656M`. MidPage8KRun768-L1 is now
 selected for the preload bundle after current-bias: it keeps the direct/R1
 64KiB default intact but raises the LD_PRELOAD MidPage 8K run to 768KiB.
 Post-promotion selected repeat-5 reached `46.496M / 94.25 MiB` on
-4096..16384. MidPageActiveFreeMap-L2 is then
+4096..16384, and the latest cross-allocator refresh is tracked in
+`HZ6_UBUNTU_SELECTED_BALANCE.md`. MidPageActiveFreeMap-L2 is then
 selected for preload with external capacity 8192 and the later selected
 unaligned/probe4 gate; it keeps a dedicated MidPage
 map instead of widening the Toy map and moved the focused 4096..16384 cap
@@ -106,14 +108,15 @@ remain no-go/control evidence.
 The cap16K selected cross repeat-3 puts HZ6 ahead of mimalloc on all four
 preload mixed_ws rows: 16..256 `57.671M` vs `53.099M`, 16..4096 `39.382M` vs
 `5.873M`, 1024..4096 `38.497M` vs `4.858M`, and 4096..16384 `27.752M` vs
-`1.282M`.  tcmalloc remains higher throughput on the
-same rows, and system malloc still wins the tiny 16..256 row, so LD_PRELOAD is
-now a real Ubuntu performance lane but still separate from direct HZ6 API
-strength rows and not a universal allocator-win claim.
+`1.282M`.  At that checkpoint, tcmalloc remained higher throughput on the same
+rows and system malloc still won the tiny 16..256 row. Later run768/current-bias
+work moved 4096..16384 ahead of tcmalloc while keeping the caveat that
+LD_PRELOAD is separate from direct HZ6 API strength rows and not a universal
+allocator-win claim.
 After the MidPage preload-boundary malloc skip, the balance row improves again:
 4096..16384 reaches `hz6 40.387M / 115.25 MiB`, beating HZ4 on both throughput
-and RSS and beating mimalloc/system strongly, while still trailing HZ3 and
-tcmalloc on the speed/RSS frontier.
+and RSS and beating mimalloc/system strongly. At that checkpoint it still
+trailed HZ3 and tcmalloc on the speed/RSS frontier.
 
 ## Selected Rows
 
