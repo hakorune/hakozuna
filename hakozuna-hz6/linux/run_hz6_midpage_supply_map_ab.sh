@@ -314,8 +314,8 @@ diag_mode = config.split("diagnostics=", 1)[1].splitlines()[0] if "diagnostics="
 print(f"stats: `{stats_mode}`")
 print(f"diagnostics: `{diag_mode}`")
 print()
-print("| row | variant | median ops/s | median peak MiB | source_alloc | midpage_source_alloc | route_after_maps | mid_hit | mid_miss | mid_reg_avg_probe | mid_reg_base_pct | mid_free_avg_probe | mid_free_base_pct | mid8_alloc | mid32_alloc | mid8_empty | mid32_empty | borrow_success | fail |")
-print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+print("| row | variant | median ops/s | median peak MiB | source_alloc | midpage_source_alloc | route_after_maps | mid_hit | mid_miss | mid_reg_avg_probe | mid_reg_base_pct | reg_collision | reg_overwrite | free_avg_probe | free_base_pct | miss_found_elsewhere | mid8_alloc | mid32_alloc | mid8_empty | mid32_empty | borrow_success | fail |")
+print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 for row in rows:
     for variant in variants:
         ops = []
@@ -327,8 +327,11 @@ for row in rows:
         mid_miss = []
         mid_reg_avg_probe = []
         mid_reg_base_pct = []
+        mid_reg_collision = []
+        mid_reg_overwrite = []
         mid_free_avg_probe = []
         mid_free_base_pct = []
+        mid_miss_found_elsewhere = []
         mid8_alloc = []
         mid32_alloc = []
         mid8_empty = []
@@ -351,9 +354,18 @@ for row in rows:
             reg_count = extract("midpage_active_map_register", text)
             reg_probe_total = extract("midpage_active_map_register_probe_total", text)
             reg_base = extract("midpage_active_map_register_base_slot", text)
+            mid_reg_collision.append(
+                extract("midpage_active_map_register_collision", text)
+            )
+            mid_reg_overwrite.append(
+                extract("midpage_active_map_register_overwrite", text)
+            )
             free_hit = extract("midpage_active_map_free_hit", text)
             free_probe_total = extract("midpage_active_map_free_hit_probe_total", text)
             free_base = extract("midpage_active_map_free_hit_base_slot", text)
+            mid_miss_found_elsewhere.append(
+                extract("midpage_active_map_free_miss_found_elsewhere", text)
+            )
             mid_reg_avg_probe.append(reg_probe_total / reg_count if reg_count else 0.0)
             mid_reg_base_pct.append(100.0 * reg_base / reg_count if reg_count else 0.0)
             mid_free_avg_probe.append(free_probe_total / free_hit if free_hit else 0.0)
@@ -378,8 +390,11 @@ for row in rows:
             f"{statistics.median(mid_miss):.0f} | "
             f"{statistics.median(mid_reg_avg_probe):.2f} | "
             f"{statistics.median(mid_reg_base_pct):.1f}% | "
+            f"{statistics.median(mid_reg_collision):.0f} | "
+            f"{statistics.median(mid_reg_overwrite):.0f} | "
             f"{statistics.median(mid_free_avg_probe):.2f} | "
             f"{statistics.median(mid_free_base_pct):.1f}% | "
+            f"{statistics.median(mid_miss_found_elsewhere):.0f} | "
             f"{statistics.median(mid8_alloc):.0f} | "
             f"{statistics.median(mid32_alloc):.0f} | "
             f"{statistics.median(mid8_empty):.0f} | "

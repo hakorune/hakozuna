@@ -38,6 +38,53 @@ Archived chronological ledger:
   archive/current_task_2026-06_history.md
 ```
 
+## Active Task: HZ6 Ubuntu MidPage ActiveMap Collision Layout Audit-L1
+
+```text
+goal:
+  Decide whether the remaining MidPage active-map path has data-layout or
+  collision-policy headroom before changing active-map behavior again.
+
+implementation:
+  Extend run_hz6_midpage_supply_map_ab.sh summary with:
+    midpage_active_map_register_collision
+    midpage_active_map_register_overwrite
+    midpage_active_map_free_miss_found_elsewhere
+  Keep behavior unchanged; use selected/cap/probe/free-fast controls as
+  measurement references.
+
+acceptance:
+  Build and R1 smokes pass.
+  A focused diagnostic run identifies whether collision/found-elsewhere is
+  material enough to justify a behavior lane.
+  If found_elsewhere and overwrite are low, close active-map layout as not the
+  next target.
+
+result:
+  raw: private/raw-results/linux/hz6_midpage_supply_map_ab_20260615_183000
+  4096..16384 selected:
+    reg_collision=68890
+    reg_overwrite=1463
+    miss_found_elsewhere=0
+    reg/free avg probe=1.14
+    base slot=88.9%
+    route_after_maps=1465
+  4096..16384 amap32k_p4:
+    route_after_maps 1465 -> 114
+    avg probe 1.14 -> 1.06
+    peak RSS 94.00 -> 95.62 MiB
+    speed essentially flat
+  4096..16384 amap64k_p4:
+    route_after_maps 1465 -> 2
+    avg probe 1.14 -> 1.03
+    peak RSS 94.00 -> 98.62 MiB
+    speed regressed slightly
+  decision:
+    close as diagnostic/control. Collision count is real, but found-elsewhere
+    is zero and wider maps mostly buy fewer route fallbacks at RSS cost. Do
+    not pursue another active-map capacity/probe/layout behavior now.
+```
+
 ## Active Task: HZ6 Ubuntu Preload Current-Bias Fast Predicate-L1
 
 ```text
