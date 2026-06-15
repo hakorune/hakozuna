@@ -44,6 +44,9 @@ Next allocator work:
     HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1=1
     Production direct-local reuse bypasses the generic frontcache pop wrapper;
     diagnostics keep wrapper counters.
+    HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_L1=1
+    Ubuntu preload selected now uses the trusted MidPage class local-reuse
+    success path after focused/fixed and shared-matrix guards passed.
     malloc_trim(size_t pad) is interposed by the HZ6 preload DSO as an
     explicit quiescent RSS release API; it scavenges HZ6 local-free payload
     before forwarding to libc malloc_trim.

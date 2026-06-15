@@ -42,7 +42,8 @@ Archived chronological ledger:
 
 ```text
 latest continuation:
-  Add default-off MidPage preload-boundary local-reuse success-path control:
+  Promote MidPage preload-boundary local-reuse success-path control to Ubuntu
+  selected:
     HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_L1=1
 
 design:
@@ -52,7 +53,8 @@ design:
   direct-local-reuse entry checks for this known MidPage path.
 
 acceptance:
-  Must pass focused/fixed speed and RSS guards before any default discussion.
+  Passed focused/fixed speed and RSS guards in production and shared matrix
+  shape.  Config default remains off; Ubuntu preload selected flags enable it.
 
 raw:
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_004211
@@ -63,6 +65,10 @@ raw:
   private/raw-results/linux/hz6_ubuntu_size_slices_20260616_004747
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_005109
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_005135
+  private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_010900
+  private/raw-results/linux/hz6_ubuntu_selected_balance_20260616_010928
+  private/raw-results/linux/hz6_ubuntu_size_slices_20260616_010948
+  private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_010959
 
 read:
   source-run route-after-maps retest:
@@ -85,7 +91,27 @@ read:
     uniformly positive: 16..256 and 16..4096 regress, while 1024..4096 and
     fixed rows improve.
 
-  shared matrix alias:
+  selected-promotion repeat-15:
+    16..256      selected 57.566M, trusted-class 57.894M
+    16..4096     selected 36.221M, trusted-class 36.411M
+    1024..4096   selected 33.566M, trusted-class 34.014M
+    4096..16384  selected 44.515M, trusted-class 44.810M
+    fixed_4k     selected 31.617M, trusted-class 32.206M
+    fixed_8k     selected 42.358M, trusted-class 43.055M
+    fixed_16k    selected 43.973M, trusted-class 44.947M
+
+  selected-promotion shared matrices:
+    focused matrix improved all rows:
+      4096..16384 selected 44.497M, trusted-class 45.404M
+    fixed matrix recovered the prior fixed_8k concern:
+      fixed_8k selected 41.937M, trusted-class 43.368M
+      fixed_16k selected 43.468M, trusted-class 44.926M
+
+  final decision:
+    Promote HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_L1=1 into the
+    Ubuntu preload selected flags.
+    Keep HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_MIN_CLASS=5 as a
+    class5-only profile/control, not selected.
     Add build_hz6_preload_midpage_trusted_class_target.sh and aliases:
       hz6-midpage-trusted-class / hz6_midpage_trusted_class
 
