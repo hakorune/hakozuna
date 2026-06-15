@@ -88,6 +88,7 @@ Calloc direct-HZ6 control:
 Recent fixed/profile repeats:
   private/raw-results/linux/hz6_fixed_boundary_profile_frontier_20260616_072931
   private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_063918
+  private/raw-results/linux/hz6_fixed_gap_matrix_20260616_074100
   private/raw-results/linux/hz6_fixed_quiescent_rss_matrix_20260616_072153
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_{062305,064915,065310,065329,072333}
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_072637
@@ -123,14 +124,14 @@ Default no-go/control-only without substantially different evidence:
 3. Treat adaptive-4k and adaptive-8k as fixed-boundary profile lanes.
 4. Treat calloc-large-real as a large-calloc RSS/speed profile, not selected.
 5. Keep calloc-direct default-off: thick focused+calloc repeat is mixed.
-6. Cross-allocator refresh says HZ6 external RSS profile beats tcmalloc
-   balance on fixed_4k/8k/16k, but HZ3 remains ahead on fixed_4k/8k.
+6. Fixed-gap refresh says HZ6 fixed RSS profiles beat tcmalloc balance on
+   fixed_4k/8k/16k, but HZ3 remains ahead on fixed_4k/8k.
 7. Current profile frontier:
    selected for broad focused; small-boundary/adaptive lanes for speed-leaning
    fixed rows; Toy-map8192 external for lower-RSS fixed_4k/8k profile runs.
 8. `hz6-small-boundary-trusted-toy-map8192-external-target` is the current
    lower-RSS fixed-boundary profile: best ops/MiB on fixed_4k/8k in the latest
-   frontier, while Toy-map8192/toy-trusted remain stronger on fixed_16k speed.
+   gap matrix, while Toy-map8192 is stronger on fixed_16k speed/ops-per-MiB.
    It is still not a broad default because focused mixed-small rows regress.
 9. Do not promote realloc-boundary/adaptive to selected/default without a new
    guard that also preserves tiny, mixed-small, target, fixed, RSS, and stats.
