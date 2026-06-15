@@ -70,7 +70,7 @@ Runners:
 ```text
 Profile frontier:
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_060739
-  private/raw-results/linux/hz6_preload_profile_frontier_20260616_065739
+  private/raw-results/linux/hz6_preload_profile_frontier_20260616_074740
   private/raw-results/linux/hz6_midpage_skip_transfer_alias_smoke_20260616_065421
 
 Realloc/adaptive profile repeats:
@@ -127,8 +127,9 @@ Default no-go/control-only without substantially different evidence:
 6. Fixed-gap refresh says HZ6 fixed RSS profiles beat tcmalloc balance on
    fixed_4k/8k/16k, but HZ3 remains ahead on fixed_4k/8k.
 7. Current profile frontier:
-   selected for broad focused; small-boundary/adaptive lanes for speed-leaning
-   fixed rows; Toy-map8192 external for lower-RSS fixed_4k/8k profile runs.
+   latest short broad guard keeps selected/default stable; adaptive/realloc
+   remain speed-leaning fixed controls; Toy-map8192/external remain explicit
+   fixed RSS profiles, not broad defaults.
 8. `hz6-small-boundary-trusted-toy-map8192-external-target` is the current
    lower-RSS fixed-boundary profile: best ops/MiB on fixed_4k/8k in the latest
    gap matrix, while Toy-map8192 is stronger on fixed_16k speed/ops-per-MiB.
@@ -142,7 +143,7 @@ Default no-go/control-only without substantially different evidence:
     16..4096 and 4096..16384 despite 1024..4096/fixed_16k signals.
 13. Toy-map8192 external is now an explicit lower-RSS fixed-boundary profile;
     packed-frontcache/sourceblock combos remain runner-only controls/no-go.
-14. Next broad guard: refresh selected/profile frontier periodically, not more
-    fixed-only default behavior.
+14. Next broad guard: refresh selected/profile frontier and real-workload rows
+    periodically, not more fixed-only default behavior.
 15. Keep this file below about 150 lines; archive completed evidence snapshots.
 ```

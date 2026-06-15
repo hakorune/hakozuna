@@ -113,25 +113,27 @@ Latest selected fixed-size cross-allocator refresh, repeat-3, raw
 | `fixed_8k` fixed repeat-3 | `33.400M / 80.12 MiB` |
 | `fixed_16k` fixed repeat-3 | `35.010M / 80.12 MiB` |
 
-Latest profile frontier after route32K/desc8192/source1024 and Toy16K/MidPage8K
-storage trims, repeat-3, raw
-`private/raw-results/linux/hz6_preload_profile_frontier_20260616_060739`:
+Latest broad short profile-frontier guard after fixed-gap and Toy-map8192
+external profile work, repeat-3, raw
+`private/raw-results/linux/hz6_preload_profile_frontier_20260616_074740`:
 
 | Row | Selected | Best current profile read |
 | --- | ---: | --- |
-| `16..256` | `88.073M / 18.12 MiB` | selected remains best |
-| `16..4096` | `44.469M / 67.38 MiB` | `hz6-toy-trusted-target` `44.826M / 67.25 MiB`, essentially selected-equivalent |
-| `1024..4096` | `39.425M / 78.38 MiB` | `hz6-realloc-boundary-8k-target` `41.462M / 78.62 MiB`, profile-only and target-weaker |
-| `4096..16384` | `48.180M / 81.25 MiB` | selected remains best |
-| `fixed_4k` | `38.228M / 78.88 MiB` | `hz6-small-boundary-trusted-target` `49.338M / 79.62 MiB`; adaptive-4k is effectively tied |
-| `fixed_8k` | `45.492M / 80.00 MiB` | `hz6-small-boundary-trusted-target` `48.253M / 80.00 MiB`; adaptive-8k is effectively tied |
-| `fixed_16k` | `44.821M / 80.12 MiB` | adaptive profiles `46.805M..47.407M / ~80 MiB` |
+| `16..256` | `63.239M / 18.12 MiB` | `small-boundary-trusted` `63.834M / 18.12 MiB`; effectively selected-equivalent |
+| `16..4096` | `23.649M / 66.88 MiB` | `adaptive-target` `24.213M / 67.00 MiB`; short-run profile-only |
+| `1024..4096` | `20.424M / 78.62 MiB` | `realloc-boundary-4k` `21.262M / 78.75 MiB`; profile-only |
+| `4096..16384` | `25.784M / 80.38 MiB` | `toy-map8192` `27.026M / 79.50 MiB`; external is lower RSS at `26.581M / 78.50 MiB` |
+| `fixed_4k` | `20.310M / 79.12 MiB` | external has best ops/MiB: `27.180M / 77.62 MiB`; toy-map8192 is speed-tied |
+| `fixed_8k` | `25.489M / 80.12 MiB` | external has best ops/MiB: `26.209M / 78.25 MiB` |
+| `fixed_16k` | `24.938M / 80.00 MiB` | `toy-map8192` has best speed/balance: `26.453M / 79.38 MiB` |
 
-Read: profile DSOs still matter for known fixed-boundary workloads, especially
-fixed_4k and fixed_8k, but the focused/target guard keeps selected/default as
-the broad production DSO. Do not default realloc-boundary or adaptive behavior
-unless a future guard also preserves tiny, mixed-small, target, fixed, RSS, and
-stats rows in one run.
+Read: the latest short guard does not create a new selected/default lever.
+Toy-map8192/external remain valuable explicit fixed/RSS profiles, external is
+the fixed_4k/fixed_8k ops-per-MiB choice, and Toy-map8192 is the fixed_16k
+speed/balance choice. Realloc/adaptive lanes still have useful short-run speed
+signals, but their historical focused/target guards are mixed; keep them
+profile/control-only unless a future thick guard preserves tiny, mixed-small,
+target, fixed, RSS, and stats rows in one run.
 
 Latest fixed-boundary profile frontier, repeat-3, raw
 `private/raw-results/linux/hz6_fixed_boundary_profile_frontier_20260616_072931`:
@@ -197,7 +199,7 @@ Current lane state:
 | MidPage free path | current-bias free order | free fast-slot, current-bias free fast-slot, page-hint behavior, unconditional/aligned MidPage-first |
 | MidPage/Toy malloc path | preload-boundary noinline transfer skip, MidPage direct class, Toy direct-class fast reuse max4096, boundary trusted-owner, descriptor-out, trusted-class local reuse | core transfer-skip, broad preclassified malloc, trusted activation skip |
 | RSS/storage | static table trim, class4/class5 frontcache storage trim, explicit quiescent `malloc_trim()` scavenge hook | broad class storage trim, cold-class trims, and free-path cold-retire behavior remain controls |
-| Next lane | guard/refresh | FixedCostResidencyMatrix-L1 and fixed_gap_matrix are current. The remaining fixed_4k/8k HZ3 gap is mostly profile/static-floor tradeoff, while Toy-map8192 external already beats tcmalloc balance. Next prefer broad selected/profile frontier refreshes and real-workload guards over more fixed-only default behavior. Do not reopen cold-retire behavior, active-map widening, PageKind/free-order tables, packed metadata, or default realloc-boundary behavior without new diagnostic evidence. |
+| Next lane | guard/refresh | FixedCostResidencyMatrix-L1, fixed_gap_matrix, and short broad profile-frontier guard are current. The remaining fixed_4k/8k HZ3 gap is mostly profile/static-floor tradeoff, while Toy-map8192 external already beats tcmalloc balance. Next prefer broad selected/profile frontier refreshes and real-workload guards over more fixed-only default behavior. Do not reopen cold-retire behavior, active-map widening, PageKind/free-order tables, packed metadata, or default realloc-boundary behavior without new diagnostic evidence. |
 
 Current follow-up read:
 
