@@ -506,6 +506,10 @@ MidPageActiveMapRegisterFastSlot-L1 is now selected/default for Ubuntu preload:
     raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_145328
     4096..16384 hz6 48.961M / 94.50 MiB
     4096..16384 tcmalloc 43.192M / 106.62 MiB
+  latest raw-pop selected cross repeat-3:
+    raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_200259
+    4096..16384 hz6 54.836M / 94.50 MiB
+    4096..16384 tcmalloc 46.507M / 99.00 MiB
   decision: promote HZ6_MIDPAGE_ACTIVE_MAP_REGISTER_FAST_SLOT_L1=1 for Ubuntu
   preload; keep HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_L1=1 as a control.
 MidPageActiveMapFreeFastSlotFollowup-L1 is closed as control/no-go:

@@ -44,6 +44,10 @@ Next allocator work:
     HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1=1
     Production direct-local reuse bypasses the generic frontcache pop wrapper;
     diagnostics keep wrapper counters.
+  Latest HZ6 Ubuntu balance matrix:
+    hakozuna-hz6/private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_200259
+    4096..16384 hz6 54.836M / 94.50 MiB
+    4096..16384 tcmalloc 46.507M / 99.00 MiB
 ```
 
 ## Recent Cleanup Commits

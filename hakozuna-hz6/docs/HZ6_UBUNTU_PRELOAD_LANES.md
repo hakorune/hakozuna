@@ -99,7 +99,7 @@ repeat-3, `bench_mixed_ws_crt`, raw
 | `16..256` | `56.665M` | `53.541M` | `248.368M` | `105.732M` | `31,232` |
 | `16..4096` | `39.743M` | `7.038M` | `97.666M` | `16.935M` | `81,664` |
 | `1024..4096` | `37.948M` | `5.578M` | `96.292M` | `9.935M` | `93,056` |
-| `4096..16384` | `48.961M` | `1.307M` | `43.192M` | `2.961M` | `96,768` |
+| `4096..16384` | `54.836M` | `1.303M` | `46.507M` | `2.982M` | `96,768` |
 
 Important caveat:
 
@@ -150,12 +150,12 @@ HZ3/HZ4 comparison read:
 
 | Row | hz6 | hz3 | hz4 | Read |
 | --- | ---: | ---: | ---: | --- |
-| `16..256` | `56.028M` | `265.824M` | `224.971M` | HZ3/HZ4 are still architecture-fast here. |
-| `16..4096` | `36.843M` | `101.277M` | `57.714M` | HZ6 is about `0.64x` HZ4. |
-| `1024..4096` | `35.131M` | `91.406M` | `49.979M` | HZ6 is about `0.70x` HZ4. |
+| `16..256` | `61.520M` | `266.362M` | `227.580M` | HZ6 now beats mimalloc here, but HZ3/HZ4/tcmalloc/system are still architecture-fast. |
+| `16..4096` | `42.774M` | `93.861M` | `55.391M` | HZ6 is about `0.77x` HZ4 after raw-pop, and beats system/mimalloc. |
+| `1024..4096` | `39.940M` | `87.488M` | `50.984M` | HZ6 is about `0.78x` HZ4 after raw-pop, and beats system/mimalloc. |
 | `4096..16384` old default | `29.409M` | `74.802M` | `31.089M` | HZ6 was about `0.95x` HZ4 and had the clearest close target. |
 | `4096..16384` MidPage unaligned/probe4 | `31.505M` | n/a | `30.916M` | HZ6 now edges HZ4 while keeping lower RSS. |
-| `4096..16384` register-fast selected | `48.961M` | `74.340M` | `31.018M` | HZ6 strongly beats HZ4 and tcmalloc on the balanced MidPage row, but HZ3 remains the frontier. |
+| `4096..16384` raw-pop selected | `54.836M` | `76.033M` | `31.186M` | HZ6 strongly beats HZ4 and tcmalloc on the balanced MidPage row, but HZ3 remains the frontier. |
 
 Architecture read:
 
@@ -172,11 +172,11 @@ HZ6:
 
 Near-term target:
   hold the 4096..16384 tcmalloc/HZ4 lead while closing the HZ3 gap.
-  Current register-fast selected cross repeat-3:
-    hz6 48.961M / 94.50 MiB
-    hz4 31.018M / 131.38 MiB
-    tcmalloc 43.192M / 106.62 MiB
-    hz3 74.340M / 73.62 MiB
+  Current raw-pop selected cross repeat-3:
+    hz6 54.836M / 94.50 MiB
+    hz4 31.186M / 130.25 MiB
+    tcmalloc 46.507M / 99.00 MiB
+    hz3 76.033M / 73.75 MiB
 
 Longer-term target:
   design a local-page/run metadata fast lane if HZ6 must chase HZ3/HZ4 tiny

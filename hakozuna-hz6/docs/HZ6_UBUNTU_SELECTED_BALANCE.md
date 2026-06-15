@@ -3,10 +3,10 @@
 This note tracks the Ubuntu `LD_PRELOAD` selected lane after the MidPage
 preload-boundary malloc skip and static table trim became default.
 
-Raw run:
+Latest full matrix raw run:
 
 ```text
-hakozuna-hz6/private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_145328
+hakozuna-hz6/private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_200259
 ```
 
 Latest production-shape HZ6-only check after
@@ -56,24 +56,24 @@ The current HZ6 Ubuntu selected lane has its clearest speed/RSS balance on
 
 ```text
 HZ6 beats HZ4 on throughput:
-  hz6 48.961M vs hz4 31.018M
+  hz6 54.836M vs hz4 31.186M
 
 HZ6 uses less peak RSS than HZ4:
-  hz6 94.50 MiB vs hz4 131.38 MiB
+  hz6 94.50 MiB vs hz4 130.25 MiB
 
 HZ6 beats mimalloc strongly on both speed and RSS on this row:
-  hz6 48.961M / 94.50 MiB
-  mimalloc 1.307M / 255.25 MiB
+  hz6 54.836M / 94.50 MiB
+  mimalloc 1.303M / 255.38 MiB
 ```
 
 HZ6 is still not the absolute speed ceiling because HZ3 remains far ahead, but
-the latest selected lane now beats tcmalloc on the MidPage target row:
+the latest selected lane beats tcmalloc on the MidPage target row:
 
 ```text
 4096..16384:
-  hz3      74.340M /  73.62 MiB
-  hz6      48.961M /  94.50 MiB
-  tcmalloc 43.192M / 106.62 MiB
+  hz3      76.033M /  73.75 MiB
+  hz6      54.836M /  94.50 MiB
+  tcmalloc 46.507M /  99.00 MiB
 ```
 
 So the honest positioning is:
@@ -83,41 +83,44 @@ HZ6 Ubuntu selected is now a strong balanced MidPage lane.
 It is faster and lower-RSS than HZ4 on the MidPage row.
 It is much stronger than mimalloc/system on the larger mixed row.
 It still trails HZ3 on speed and RSS.
-It now beats tcmalloc on speed, RSS, and ops-per-MiB on 4096..16384.
+It beats tcmalloc on speed, RSS, and ops-per-MiB on 4096..16384.
+It beats mimalloc on throughput across the focused rows, but not on small-row
+RSS.
+It still trails HZ3/HZ4/tcmalloc on tiny and mixed small-object speed.
 ```
 
 ## Matrix
 
 | row | allocator | median ops/s | median peak MiB | ops/s per MiB |
 | --- | --- | ---: | ---: | ---: |
-| `16_256` | `hz3` | 264643099.669 | 6.75 | 39206385.136 |
-| `16_256` | `hz4` | 223588546.990 | 7.12 | 31380848.700 |
-| `16_256` | `hz5` | 197522.114 | 106.00 | 1863.416 |
-| `16_256` | `hz6` | 56664596.615 | 30.50 | 1857855.627 |
-| `16_256` | `mimalloc` | 53540757.366 | 5.62 | 9518356.865 |
-| `16_256` | `system` | 105732280.895 | 4.25 | 24878183.740 |
-| `16_256` | `tcmalloc` | 248368189.946 | 9.25 | 26850615.129 |
-| `16_4096` | `hz3` | 92470386.128 | 53.75 | 1720379.277 |
-| `16_4096` | `hz4` | 54934096.800 | 59.38 | 925205.841 |
-| `16_4096` | `hz5` | 195798.762 | 106.38 | 1840.646 |
-| `16_4096` | `hz6` | 39743001.878 | 79.75 | 498344.851 |
-| `16_4096` | `mimalloc` | 7037858.081 | 42.62 | 165111.040 |
-| `16_4096` | `system` | 16935000.623 | 33.62 | 503643.141 |
-| `16_4096` | `tcmalloc` | 97666388.610 | 41.75 | 2339314.697 |
-| `1024_4096` | `hz3` | 86544925.363 | 63.50 | 1362912.210 |
-| `1024_4096` | `hz4` | 49303087.303 | 53.25 | 925879.574 |
-| `1024_4096` | `hz5` | 191379.509 | 105.62 | 1811.877 |
-| `1024_4096` | `hz6` | 37947634.806 | 90.88 | 417580.576 |
-| `1024_4096` | `mimalloc` | 5577653.755 | 47.88 | 116504.517 |
-| `1024_4096` | `system` | 9934773.937 | 41.50 | 239392.143 |
-| `1024_4096` | `tcmalloc` | 96291765.590 | 49.75 | 1935512.876 |
-| `4096_16384` | `hz3` | 74339850.051 | 73.62 | 1009709.339 |
-| `4096_16384` | `hz4` | 31017805.554 | 131.38 | 236101.279 |
-| `4096_16384` | `hz5` | 197561.134 | 125.02 | 1580.242 |
-| `4096_16384` | `hz6` | 48960544.386 | 94.50 | 518100.999 |
-| `4096_16384` | `mimalloc` | 1306935.435 | 255.25 | 5120.217 |
-| `4096_16384` | `system` | 2960750.966 | 66.12 | 44775.062 |
-| `4096_16384` | `tcmalloc` | 43191699.903 | 106.62 | 405080.421 |
+| `16_256` | `hz3` | 266361558.380 | 6.75 | 39460971.612 |
+| `16_256` | `hz4` | 227579727.152 | 7.12 | 31941014.337 |
+| `16_256` | `hz5` | 196904.504 | 105.75 | 1861.981 |
+| `16_256` | `hz6` | 61519570.298 | 30.50 | 2017035.092 |
+| `16_256` | `mimalloc` | 53048128.206 | 5.62 | 9430778.348 |
+| `16_256` | `system` | 105418028.075 | 4.38 | 24095549.274 |
+| `16_256` | `tcmalloc` | 230663294.216 | 9.25 | 24936572.348 |
+| `16_4096` | `hz3` | 93861086.062 | 53.88 | 1742201.133 |
+| `16_4096` | `hz4` | 55391265.063 | 59.00 | 938835.001 |
+| `16_4096` | `hz5` | 195153.965 | 105.25 | 1854.194 |
+| `16_4096` | `hz6` | 42773731.026 | 79.75 | 536347.724 |
+| `16_4096` | `mimalloc` | 7091341.510 | 42.88 | 165395.720 |
+| `16_4096` | `system` | 17037459.572 | 33.62 | 506690.247 |
+| `16_4096` | `tcmalloc` | 99883241.485 | 41.75 | 2392412.970 |
+| `1024_4096` | `hz3` | 87488198.936 | 63.50 | 1377766.912 |
+| `1024_4096` | `hz4` | 50984265.262 | 53.25 | 957450.991 |
+| `1024_4096` | `hz5` | 198065.661 | 104.88 | 1888.588 |
+| `1024_4096` | `hz6` | 39940337.922 | 91.12 | 438302.748 |
+| `1024_4096` | `mimalloc` | 5539515.872 | 48.12 | 115106.823 |
+| `1024_4096` | `system` | 9970855.091 | 41.38 | 240987.434 |
+| `1024_4096` | `tcmalloc` | 99868842.249 | 49.62 | 2012470.373 |
+| `4096_16384` | `hz3` | 76032620.884 | 73.75 | 1030950.792 |
+| `4096_16384` | `hz4` | 31186247.027 | 130.25 | 239433.758 |
+| `4096_16384` | `hz5` | 200032.715 | 122.71 | 1630.165 |
+| `4096_16384` | `hz6` | 54836373.471 | 94.50 | 580279.084 |
+| `4096_16384` | `mimalloc` | 1303440.932 | 255.38 | 5104.027 |
+| `4096_16384` | `system` | 2982212.131 | 66.25 | 45014.523 |
+| `4096_16384` | `tcmalloc` | 46507324.357 | 99.00 | 469770.953 |
 
 HZ6-only repeat-5 after `HZ6_MIDPAGE_ACTIVE_MAP_REGISTER_FAST_SLOT_L1=1`
 promotion:
