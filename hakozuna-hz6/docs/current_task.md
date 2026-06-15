@@ -61,6 +61,8 @@ raw:
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_004427
   private/raw-results/linux/hz6_ubuntu_selected_balance_20260616_004725
   private/raw-results/linux/hz6_ubuntu_size_slices_20260616_004747
+  private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_005109
+  private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_005135
 
 read:
   source-run route-after-maps retest:
@@ -99,11 +101,29 @@ read:
     fixed_8k   selected 33.164M, trusted-class 32.558M
     fixed_16k  selected 34.346M, trusted-class 34.744M
 
+  class5-only split:
+    Add min-class gate:
+      HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_MIN_CLASS
+
+    repeat-9 no-stats:
+      16..256      selected 56.512M, class5-only 56.171M
+      16..4096     selected 35.791M, class5-only 35.613M
+      1024..4096   selected 33.719M, class5-only 33.174M
+      4096..16384  selected 45.109M, class5-only 45.042M
+      fixed_4k     selected 31.813M, class5-only 31.529M
+      fixed_8k     selected 42.745M, class5-only 42.638M
+      fixed_16k    selected 43.643M, class5-only 45.378M
+
+    stats+diagnostics repeat-3:
+      fail=0 and RSS/payload stable, but class5-only is not guard-clean under
+      diagnostics and regresses target/fixed rows in that shape.
+
 decision:
   Keep default-off for now, but retain as a promising selected-family control.
   It improves focused rows without raising RSS, but the fixed_8k matrix guard
   is not clean.  Keep the profile alias for broader comparison before any
-  selected-default promotion.
+  selected-default promotion.  The class5-only split is useful evidence for
+  fixed_16k/profile work, but it is not a default candidate.
 ```
 
 ## Recent Continuation: MidPageBoundaryFused-L1

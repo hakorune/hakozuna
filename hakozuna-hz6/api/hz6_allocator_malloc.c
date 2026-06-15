@@ -120,6 +120,12 @@ static void* hz6_allocator_direct_local_reuse(Hz6Allocator* allocator,
 }
 
 #if HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_L1
+static int hz6_allocator_midpage_trusted_class_reuse_enabled(
+    uint16_t class_id) {
+  return class_id >=
+         HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_MIN_CLASS;
+}
+
 static void* hz6_allocator_midpage_direct_local_reuse_trusted_class(
     Hz6Allocator* allocator,
     uint16_t class_id,
@@ -254,8 +260,11 @@ void* hz6_allocator_preload_midpage_malloc_skip_transfer(Hz6Allocator* allocator
   hz6_toy_small_hotpath_diag_malloc_fast_attempt(
       allocator, HZ6_FRONT_MIDPAGE, class_id);
 #if HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_L1
-  void* ptr = hz6_allocator_midpage_direct_local_reuse_trusted_class(
-      allocator, class_id, &descriptor);
+  void* ptr = hz6_allocator_midpage_trusted_class_reuse_enabled(class_id)
+                  ? hz6_allocator_midpage_direct_local_reuse_trusted_class(
+                        allocator, class_id, &descriptor)
+                  : hz6_allocator_direct_local_reuse(allocator, class_id,
+                                                     &descriptor);
 #else
   void* ptr = hz6_allocator_direct_local_reuse(allocator, class_id,
                                                &descriptor);
@@ -339,8 +348,11 @@ void* hz6_allocator_preload_midpage_malloc_class_skip_transfer(
   hz6_toy_small_hotpath_diag_malloc_fast_attempt(
       allocator, HZ6_FRONT_MIDPAGE, class_id);
 #if HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_L1
-  void* ptr = hz6_allocator_midpage_direct_local_reuse_trusted_class(
-      allocator, class_id, &descriptor);
+  void* ptr = hz6_allocator_midpage_trusted_class_reuse_enabled(class_id)
+                  ? hz6_allocator_midpage_direct_local_reuse_trusted_class(
+                        allocator, class_id, &descriptor)
+                  : hz6_allocator_direct_local_reuse(allocator, class_id,
+                                                     &descriptor);
 #else
   void* ptr = hz6_allocator_direct_local_reuse(allocator, class_id,
                                                &descriptor);

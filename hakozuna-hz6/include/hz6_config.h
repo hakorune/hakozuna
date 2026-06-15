@@ -762,6 +762,13 @@
 #define HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_L1 0
 #endif
 
+#ifndef HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_MIN_CLASS
+/* Inclusive class gate for trusted-class reuse experiments.  The default covers
+ * both MidPage 8K/32K classes; class5-only controls can isolate the 32K path. */
+#define HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_MIN_CLASS \
+  HZ6_MIDPAGE_8K_CLASS_ID
+#endif
+
 #ifndef HZ6_DIRECT_LOCAL_FREE_RAW_PUSH_L1
 /* Candidate production trusted-free shortcut.  Diagnostic and cold-retire
  * builds keep the wrapper path so frontcache counters and retire hooks remain

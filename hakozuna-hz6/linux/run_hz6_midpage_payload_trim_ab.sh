@@ -318,6 +318,10 @@ variant_flags() {
     midpage_reuse_trusted_class)
       hz6_preload_replace_define flags HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_L1 1
       ;;
+    midpage_reuse_trusted_class5)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_L1 1
+      hz6_preload_replace_define flags HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_MIN_CLASS 5
+      ;;
     raw_frontcache_push)
       hz6_preload_replace_define flags HZ6_DIRECT_LOCAL_FREE_RAW_PUSH_L1 1
       ;;
