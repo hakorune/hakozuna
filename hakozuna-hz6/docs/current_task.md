@@ -65,8 +65,8 @@ Other controls:
   hz6-aligned-target / calloc-direct / calloc-real / calloc-large-real
 
 Runners:
-  linux/run_hz6_fixed_boundary_profile_frontier.sh  # fixed profile shortcut
-  linux/run_hz6_preload_profile_frontier.sh / run_hz6_fixed_cost_residency_matrix.sh
+  fixed_boundary_profile_frontier / preload_profile_frontier
+  fixed_cost_residency_matrix / fixed_quiescent_rss_matrix
 ```
 
 ## Latest Evidence
@@ -94,8 +94,8 @@ Fixed-boundary/fixed-cost profile repeats:
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_055648
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_061733
   private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_063918
+  private/raw-results/linux/hz6_fixed_quiescent_rss_matrix_20260616_064654
   private/raw-results/linux/hz6_ubuntu_selected_balance_20260616_060238
-  private/raw-results/linux/hz6_ubuntu_size_slices_20260616_060255
 
 Details:
   archive/current_task_2026-06-16_adaptive_profile_snapshot.md
@@ -142,8 +142,9 @@ Default no-go/control-only without substantially different evidence:
    It is still not a broad default because 16..4096/1024..4096 regress.
 9. Do not promote realloc-boundary/adaptive to selected/default without a new
    guard that also preserves tiny, mixed-small, target, fixed, RSS, and stats.
-10. Next likely lever is not probe widening: fixed-cost audit still shows all-local-free
-   MidPage payload plus static/map/frontcache floor.
+10. Next lever is not probe widening: fixed-cost audit shows all-local-free
+    payload plus static/map/frontcache floor; use FixedQuiescentRssMatrix-L1
+    before trim/release defaulting.
 11. Keep this file below about 150 lines; archive completed evidence snapshots instead of
-   appending chronological logs. Large 3000+ line ledgers belong only under archive/.
+    appending chronological logs. Large 3000+ line ledgers belong only under archive/.
 ```

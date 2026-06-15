@@ -130,6 +130,22 @@ variant_flags() {
       ;;
     selected_malloc_trim_before_rss)
       ;;
+    small_boundary_trusted_toy_map8192_scavenge_before_rss)
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES 4096
+      hz6_preload_replace_define flags HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1 1
+      hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY 8192
+      ;;
+    small_boundary_trusted_toy_map8192_malloc_trim_before_rss)
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES 4096
+      hz6_preload_replace_define flags HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1 1
+      hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY 8192
+      ;;
     run512k)
       hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 524288
       ;;
@@ -619,6 +635,12 @@ run_once() {
       extra_env+=(HZ_BENCH_SCAVENGE_BEFORE_RSS=all)
       ;;
     selected_malloc_trim_before_rss)
+      extra_env+=(HZ_BENCH_SCAVENGE_BEFORE_RSS=malloc_trim)
+      ;;
+    small_boundary_trusted_toy_map8192_scavenge_before_rss)
+      extra_env+=(HZ_BENCH_SCAVENGE_BEFORE_RSS=all)
+      ;;
+    small_boundary_trusted_toy_map8192_malloc_trim_before_rss)
       extra_env+=(HZ_BENCH_SCAVENGE_BEFORE_RSS=malloc_trim)
       ;;
   esac
