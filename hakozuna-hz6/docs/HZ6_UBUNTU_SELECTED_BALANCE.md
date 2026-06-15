@@ -607,6 +607,8 @@ Selected-under fixed-floor ladder smoke:
 hakozuna-hz6/private/raw-results/linux/hz6_static_table_trim_ab_20260616_054020
 hakozuna-hz6/private/raw-results/linux/hz6_static_table_trim_ab_20260616_054150
 hakozuna-hz6/private/raw-results/linux/hz6_static_table_trim_ab_20260616_054228
+hakozuna-hz6/private/raw-results/linux/hz6_static_table_trim_ab_20260616_055101
+hakozuna-hz6/private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_055140
 ```
 
 The static-table runner now supports `--rows` and `--variants` for focused
@@ -626,6 +628,28 @@ clean, so the Ubuntu preload selected route table capacity is now 32768.
 | `fixed_4k` | `14.802M / 92.00 MiB` | `15.005M / 86.88 MiB` |
 | `fixed_8k` | `17.835M / 93.25 MiB` | `18.098M / 88.25 MiB` |
 | `fixed_16k` | `17.827M / 93.12 MiB` | `18.601M / 88.12 MiB` |
+
+Descriptor/source fixed-floor follow-up promoted `desc8192+source1024` as the
+current selected RSS-balance floor. Repeat-7/200k kept `route_fail=0`,
+`descriptor_exhausted=0`, `source_block_exhausted=0`, and
+`malloc_real_fallback=0` across the focused/fixed guard. Compared with
+`floor_prev` (route32K, desc16384, source2048), the new selected cuts about
+`5.3..5.6 MiB` additional peak RSS. It wins or stays close on most speed rows,
+but `source1024_only` remains a useful speed-leaning control for
+`4096..16384`.
+
+| Row | floor_prev | selected desc8192/source1024 |
+| --- | ---: | ---: |
+| `16_4096` | `15.870M / 74.38 MiB` | `16.067M / 69.12 MiB` |
+| `1024_4096` | `15.091M / 86.00 MiB` | `15.378M / 80.50 MiB` |
+| `4096_16384` | `18.713M / 89.00 MiB` | `18.668M / 83.62 MiB` |
+| `fixed_4k` | `14.864M / 86.88 MiB` | `14.981M / 81.25 MiB` |
+| `fixed_8k` | `17.814M / 88.25 MiB` | `18.412M / 82.88 MiB` |
+| `fixed_16k` | `18.183M / 88.25 MiB` | `18.520M / 82.75 MiB` |
+
+Standard selected DSO smoke raw `hz6_fixed_cost_residency_matrix_20260616_055140`
+confirmed the rebuilt preload path stays runnable and reports fixed-row profile
+peaks around `80.62..82.88 MiB`.
 
 Hot-path attribution refresh:
 
@@ -1042,7 +1066,8 @@ hakozuna-hz6/private/raw-results/linux/hz6_static_table_trim_confirm_20260614_16
 ```
 
 Previous static trim promotion. Route capacity was later superseded by
-FixedFloorRoute32K-L1; descriptor/source/frontcache capacities remain selected:
+FixedFloorRoute32K-L1, and descriptor/source capacities were later superseded
+by the desc8192/source1024 fixed-floor trim. Frontcache4096 remains selected:
 
 ```text
 HZ6_ROUTE_TABLE_CAPACITY=65536

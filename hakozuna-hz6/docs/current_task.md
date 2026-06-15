@@ -105,7 +105,8 @@ Fixed-boundary/fixed-cost profile repeats:
   private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_053600
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_054020
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_054150
-  private/raw-results/linux/hz6_static_table_trim_ab_20260616_054228
+  private/raw-results/linux/hz6_static_table_trim_ab_20260616_055101
+  private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_055140
 
 Details:
   archive/current_task_2026-06-16_adaptive_profile_snapshot.md
@@ -134,16 +135,15 @@ Default no-go/control-only without substantially different evidence:
 
 ```text
 1. Keep selected/default stable.
-2. Route32K selected/default after repeat-7/200k focused+fixed guard:
-   route32768 beat previous selected on speed and peak RSS for every
-   measured focused/fixed row with zero fail counters.
+2. Fixed-floor selected/default is route32K + desc8192 + source1024 after repeat-7/200k guards; RSS drops about 10 MiB from route65K era
+   while failure counters stay zero.
 3. Treat adaptive-4k and adaptive-8k as fixed-boundary profile lanes.
 4. Treat calloc-large-real as a large calloc-heavy RSS/speed profile, not a
    selected/default lane.
 5. Keep calloc-direct default-off: thick focused+calloc repeat is mixed and
    does not justify selected/default.
-6. Next fixed-floor probes should start from descriptor/source/map capacities
-   only after route32K settles under a broader cross-allocator refresh.
+6. Next fixed-floor probes should start from Toy/MidPage map storage or
+   profile-specific source/frontcache controls, not another blind table cut.
 7. Keep this file below about 150 lines; archive completed evidence snapshots
    instead of appending chronological logs. Large 3000+ line ledgers belong
    only under archive/.

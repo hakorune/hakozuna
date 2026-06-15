@@ -7,7 +7,7 @@ RUNS="${RUNS:-3}"
 ITERS="${ITERS:-200000}"
 WS="${WS:-4096}"
 ROWS_CSV="${ROWS:-focused}"
-VARIANTS_CSV="${VARIANTS:-selected,frontcache8192,route131072,desc32768,source4096,wide_l0}"
+VARIANTS_CSV="${VARIANTS:-selected,floor_prev,route65536,frontcache8192,route131072,desc32768,source4096,wide_l0}"
 OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_static_table_trim_ab_$(date +%Y%m%d_%H%M%S)}"
 SKIP_BENCH_BUILD=0
 
@@ -30,9 +30,10 @@ Options:
   --help            show this message
 
 Variants:
-  selected, route32768, route131072, desc8192, desc12288, desc32768,
-  source1024, source4096, toy_map16384, midpage_map8192,
-  frontcache8192, wide_l0
+  selected, floor_prev, route65536, route131072, desc8192_only, desc12288_only,
+  desc32768, source1024_only, source4096, desc8192_source1024,
+  desc12288_source1024,
+  toy_map16384, midpage_map8192, frontcache8192, wide_l0
 EOF
 }
 
@@ -90,11 +91,17 @@ variant_flags() {
   case "$variant" in
     selected)
       ;;
+    floor_prev)
+      hz6_preload_replace_define flags HZ6_ROUTE_TABLE_CAPACITY 32768
+      hz6_preload_replace_define flags HZ6_OBJECT_DESCRIPTOR_CAPACITY 16384
+      hz6_preload_replace_define flags HZ6_SOURCE_BLOCK_CAPACITY 2048
+      hz6_preload_replace_define flags HZ6_FRONT_CACHE_BIN_CAPACITY 4096
+      ;;
     frontcache8192)
       hz6_preload_replace_define flags HZ6_FRONT_CACHE_BIN_CAPACITY 8192
       ;;
-    route32768)
-      hz6_preload_replace_define flags HZ6_ROUTE_TABLE_CAPACITY 32768
+    route65536)
+      hz6_preload_replace_define flags HZ6_ROUTE_TABLE_CAPACITY 65536
       ;;
     route131072)
       hz6_preload_replace_define flags HZ6_ROUTE_TABLE_CAPACITY 131072
@@ -102,8 +109,16 @@ variant_flags() {
     desc8192)
       hz6_preload_replace_define flags HZ6_OBJECT_DESCRIPTOR_CAPACITY 8192
       ;;
+    desc8192_only)
+      hz6_preload_replace_define flags HZ6_OBJECT_DESCRIPTOR_CAPACITY 8192
+      hz6_preload_replace_define flags HZ6_SOURCE_BLOCK_CAPACITY 2048
+      ;;
     desc12288)
       hz6_preload_replace_define flags HZ6_OBJECT_DESCRIPTOR_CAPACITY 12288
+      ;;
+    desc12288_only)
+      hz6_preload_replace_define flags HZ6_OBJECT_DESCRIPTOR_CAPACITY 12288
+      hz6_preload_replace_define flags HZ6_SOURCE_BLOCK_CAPACITY 2048
       ;;
     desc32768)
       hz6_preload_replace_define flags HZ6_OBJECT_DESCRIPTOR_CAPACITY 32768
@@ -111,8 +126,20 @@ variant_flags() {
     source1024)
       hz6_preload_replace_define flags HZ6_SOURCE_BLOCK_CAPACITY 1024
       ;;
+    source1024_only)
+      hz6_preload_replace_define flags HZ6_OBJECT_DESCRIPTOR_CAPACITY 16384
+      hz6_preload_replace_define flags HZ6_SOURCE_BLOCK_CAPACITY 1024
+      ;;
     source4096)
       hz6_preload_replace_define flags HZ6_SOURCE_BLOCK_CAPACITY 4096
+      ;;
+    desc8192_source1024)
+      hz6_preload_replace_define flags HZ6_OBJECT_DESCRIPTOR_CAPACITY 8192
+      hz6_preload_replace_define flags HZ6_SOURCE_BLOCK_CAPACITY 1024
+      ;;
+    desc12288_source1024)
+      hz6_preload_replace_define flags HZ6_OBJECT_DESCRIPTOR_CAPACITY 12288
+      hz6_preload_replace_define flags HZ6_SOURCE_BLOCK_CAPACITY 1024
       ;;
     toy_map16384)
       hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY 16384
