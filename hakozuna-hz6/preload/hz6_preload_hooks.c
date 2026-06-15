@@ -246,7 +246,7 @@ static int hz6_preload_midpage_hint_maybe(const void* ptr) {
 }
 #endif
 
-#if HZ6_PAGE_KIND_FREE_SELECTOR_DRYRUN_L1
+#if HZ6_PAGE_KIND_FREE_SELECTOR_ACTIVE_L1
 static uint16_t hz6_preload_page_kind_selector_probe(Hz6Allocator* allocator,
                                                      const void* ptr) {
   uint16_t kind = hz6_allocator_page_kind_lookup(allocator, ptr);
@@ -344,7 +344,8 @@ static Hz6PreloadRoute hz6_preload_route(Hz6Allocator* allocator,
   return preload_route;
 }
 
-#if HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1
+#if HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1 || \
+    HZ6_PAGE_KIND_FREE_SELECTOR_FIRST_L1
 static int hz6_preload_midpage_current_bias_first(
     const Hz6Allocator* allocator) {
   if (!allocator) {
@@ -615,7 +616,102 @@ void free(void* ptr) {
         &g_hz6_preload_phase_stats.free_midpage_hint_would_first);
   }
 #endif
-#if HZ6_PRELOAD_FREE_MIDPAGE_PAGE_HINT_FIRST_L1
+#if HZ6_PAGE_KIND_FREE_SELECTOR_FIRST_L1
+  if (page_kind == HZ6_PAGE_KIND_MIDPAGE) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_midpage_active_map_attempt);
+    if (hz6_midpage_active_map_try_free(allocator, ptr)) {
+      hz6_preload_phase_count(
+          &g_hz6_preload_phase_stats.free_midpage_active_map_hit);
+      hz6_preload_page_kind_selector_note_midpage_hit(page_kind);
+      g_hz6_preload_reentry = 0;
+      return;
+    }
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_midpage_active_map_miss);
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_toy_active_map_attempt);
+    if (hz6_toy_small_active_map_try_free(allocator, ptr)) {
+      hz6_preload_phase_count(
+          &g_hz6_preload_phase_stats.free_toy_active_map_hit);
+      hz6_preload_page_kind_selector_note_toy_hit(page_kind);
+      g_hz6_preload_reentry = 0;
+      return;
+    }
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_toy_active_map_miss);
+  } else if (page_kind == HZ6_PAGE_KIND_TOY) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_toy_active_map_attempt);
+    if (hz6_toy_small_active_map_try_free(allocator, ptr)) {
+      hz6_preload_phase_count(
+          &g_hz6_preload_phase_stats.free_toy_active_map_hit);
+      hz6_preload_page_kind_selector_note_toy_hit(page_kind);
+      g_hz6_preload_reentry = 0;
+      return;
+    }
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_toy_active_map_miss);
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_midpage_active_map_attempt);
+    if (hz6_midpage_active_map_try_free(allocator, ptr)) {
+      hz6_preload_phase_count(
+          &g_hz6_preload_phase_stats.free_midpage_active_map_hit);
+      hz6_preload_page_kind_selector_note_midpage_hit(page_kind);
+      g_hz6_preload_reentry = 0;
+      return;
+    }
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_midpage_active_map_miss);
+  } else if (HZ6_PRELOAD_UNLIKELY(
+                 hz6_preload_midpage_current_bias_first(allocator))) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_midpage_active_map_attempt);
+    if (hz6_midpage_active_map_try_free(allocator, ptr)) {
+      hz6_preload_phase_count(
+          &g_hz6_preload_phase_stats.free_midpage_active_map_hit);
+      hz6_preload_page_kind_selector_note_midpage_hit(page_kind);
+      g_hz6_preload_reentry = 0;
+      return;
+    }
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_midpage_active_map_miss);
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_toy_active_map_attempt);
+    if (hz6_toy_small_active_map_try_free(allocator, ptr)) {
+      hz6_preload_phase_count(
+          &g_hz6_preload_phase_stats.free_toy_active_map_hit);
+      hz6_preload_page_kind_selector_note_toy_hit(page_kind);
+      g_hz6_preload_reentry = 0;
+      return;
+    }
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_toy_active_map_miss);
+  } else {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_toy_active_map_attempt);
+    if (hz6_toy_small_active_map_try_free(allocator, ptr)) {
+      hz6_preload_phase_count(
+          &g_hz6_preload_phase_stats.free_toy_active_map_hit);
+      hz6_preload_page_kind_selector_note_toy_hit(page_kind);
+      g_hz6_preload_reentry = 0;
+      return;
+    }
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_toy_active_map_miss);
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_midpage_active_map_attempt);
+    if (hz6_midpage_active_map_try_free(allocator, ptr)) {
+      hz6_preload_phase_count(
+          &g_hz6_preload_phase_stats.free_midpage_active_map_hit);
+      hz6_preload_page_kind_selector_note_midpage_hit(page_kind);
+      g_hz6_preload_reentry = 0;
+      return;
+    }
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_midpage_active_map_miss);
+  }
+#elif HZ6_PRELOAD_FREE_MIDPAGE_PAGE_HINT_FIRST_L1
   if (midpage_hint_would_first) {
     hz6_preload_phase_count(
         &g_hz6_preload_phase_stats.free_midpage_active_map_attempt);

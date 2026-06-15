@@ -5,7 +5,7 @@
 
 #include <stdint.h>
 
-#if HZ6_PAGE_KIND_FREE_SELECTOR_DRYRUN_L1
+#if HZ6_PAGE_KIND_FREE_SELECTOR_ACTIVE_L1
 
 #define HZ6_PAGE_KIND_UNKNOWN ((uint16_t)0u)
 #define HZ6_PAGE_KIND_TOY ((uint16_t)1u)

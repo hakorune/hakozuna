@@ -233,6 +233,9 @@ variant_flags() {
     page_kind_selector_dryrun)
       hz6_preload_replace_define flags HZ6_PAGE_KIND_FREE_SELECTOR_DRYRUN_L1 1
       ;;
+    page_kind_selector_first)
+      hz6_preload_replace_define flags HZ6_PAGE_KIND_FREE_SELECTOR_FIRST_L1 1
+      ;;
     phase_count_on)
       hz6_preload_replace_define flags HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1 0
       ;;

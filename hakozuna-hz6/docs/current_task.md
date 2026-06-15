@@ -45,6 +45,9 @@ latest continuation:
   Add diagnostic-only allocator-local page-kind selector:
     HZ6_PAGE_KIND_FREE_SELECTOR_DRYRUN_L1=1
 
+  Add behavior control:
+    HZ6_PAGE_KIND_FREE_SELECTOR_FIRST_L1=1
+
 design:
   Active-map registration records an advisory page kind:
     unknown / toy / midpage / mixed
@@ -55,6 +58,8 @@ design:
 
 raw:
   private/raw-results/linux/hz6_page_kind_selector_dryrun_20260616_000420
+  private/raw-results/linux/hz6_page_kind_selector_first_stats_20260616_000844
+  private/raw-results/linux/hz6_page_kind_selector_first_prod_20260616_000902
 
 read:
   repeat-3, stats+diagnostics, focused+fixed:
@@ -72,12 +77,26 @@ read:
       probe=748824 toy=694204 midpage=780 mixed=50673
       toy_hit=694127 midpage_hit=780 wrong=0
 
+behavior result:
+  Production repeat-9, no-stats/no-diagnostics:
+    16..4096:
+      selected 36.128M -> page_kind_first 33.663M
+    1024..4096:
+      selected 33.392M -> page_kind_first 31.086M
+    4096..16384:
+      selected 44.447M -> page_kind_first 39.926M
+    fixed_4k:
+      selected 31.259M -> page_kind_first 29.784M
+    fixed_8k:
+      selected 42.058M -> page_kind_first 39.514M
+    fixed_16k:
+      selected 43.797M -> page_kind_first 41.221M
+
 decision:
-  This is promising as a free-order selector classifier, not as selected code.
-  The dry-run lookup/counter path is intentionally expensive and lowered
-  throughput in all rows.  Next work should test a behavior A/B that uses this
-  advisory page-kind only to skip the wrong first active-map probe, with all
-  stale/unknown/mixed cases falling back to the selected current-bias order.
+  Close PageKind selector behavior as control/no-go for default.  The
+  classifier is accurate, but a page-kind lookup on every free plus the extra
+  allocator-local table is more expensive than the saved wrong first
+  active-map probe.  Keep dry-run counters as evidence only.
 ```
 
 ## Recent Closeout: HZ6 Ubuntu RealAlignedFreeSkip-L1

@@ -498,13 +498,11 @@ MidPage payload/cold-retire behavior is closed as control/no-go for default.
 Current-bias predicate variants and active-map capacity/layout follow-ups are
 closed as controls/no-go.
 
-PageKindFreeSelectorDryRun-L1 is the current free-order follow-up.  It predicts
-Toy/MidPage pages from active-map registration without changing RouteLayer
-behavior.  Raw `hz6_page_kind_selector_dryrun_20260616_000420` had zero wrong
-Toy/MidPage hit classifications across focused+fixed rows.
-
-Next behavior A/B may skip only the predicted-wrong first active-map probe.
-Unknown/mixed/stale pages must keep selected current-bias order.
+PageKindFreeSelectorDryRun-L1 predicted Toy/MidPage pages accurately, but the
+behavior A/B did not pass.  Raw `hz6_page_kind_selector_first_prod_20260616_000902`
+regressed every focused/fixed row, including `4096..16384 44.447M -> 39.926M`.
+Keep all-free page-kind lookup behavior off; the saved wrong first active-map
+probe is not worth the extra lookup/table cost.
 ```
 
 ## Static Table Trim Promotion

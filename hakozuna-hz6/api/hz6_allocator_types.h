@@ -64,7 +64,7 @@ typedef struct Hz6SourceBlock {
 #endif
 } Hz6SourceBlock;
 
-#if HZ6_PAGE_KIND_FREE_SELECTOR_DRYRUN_L1
+#if HZ6_PAGE_KIND_FREE_SELECTOR_ACTIVE_L1
 typedef struct Hz6PageKindEntry {
   uintptr_t page;
   uint16_t kind;
@@ -392,7 +392,7 @@ struct Hz6Allocator {
       midpage_active_map[HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY];
 #endif
 #endif
-#if HZ6_PAGE_KIND_FREE_SELECTOR_DRYRUN_L1
+#if HZ6_PAGE_KIND_FREE_SELECTOR_ACTIVE_L1
   Hz6PageKindEntry page_kind_selector[HZ6_PAGE_KIND_FREE_SELECTOR_CAPACITY];
 #endif
 #if HZ6_DIAGNOSTIC_PROBES

@@ -935,6 +935,20 @@
 #define HZ6_PAGE_KIND_FREE_SELECTOR_DRYRUN_L1 0
 #endif
 
+#ifndef HZ6_PAGE_KIND_FREE_SELECTOR_FIRST_L1
+/* Behavior control for the advisory page-kind selector.  Toy/MidPage page
+ * predictions only choose the first active-map probe; unknown/mixed pages keep
+ * the selected current-bias order and all misses fall through to RouteLayer. */
+#define HZ6_PAGE_KIND_FREE_SELECTOR_FIRST_L1 0
+#endif
+
+#if HZ6_PAGE_KIND_FREE_SELECTOR_DRYRUN_L1 || \
+    HZ6_PAGE_KIND_FREE_SELECTOR_FIRST_L1
+#define HZ6_PAGE_KIND_FREE_SELECTOR_ACTIVE_L1 1
+#else
+#define HZ6_PAGE_KIND_FREE_SELECTOR_ACTIVE_L1 0
+#endif
+
 #ifndef HZ6_PAGE_KIND_FREE_SELECTOR_CAPACITY
 #define HZ6_PAGE_KIND_FREE_SELECTOR_CAPACITY 32768
 #endif
