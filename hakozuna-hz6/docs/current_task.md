@@ -76,7 +76,7 @@ Profile runner:
 
 ```text
 Profile frontier:
-  private/raw-results/linux/hz6_preload_profile_frontier_20260616_042128
+  private/raw-results/linux/hz6_preload_profile_frontier_20260616_043329
 
 Realloc copy attribution:
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_042441
@@ -112,7 +112,8 @@ Default no-go/control-only without substantially different evidence:
 
 ```text
 1. Keep selected/default stable.
-2. Finish and verify named adaptive realloc-boundary profile aliases.
-3. Refresh full profile frontier if adaptive lanes remain interesting.
+2. Treat adaptive-4k and adaptive-8k as fixed-boundary profile lanes.
+3. Next optimization should target a new narrow lane with evidence from the
+   profile frontier, not selected/default promotion.
 4. Before any selected/default change, update stable docs and archive long logs.
 ```

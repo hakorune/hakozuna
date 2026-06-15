@@ -493,6 +493,7 @@ Adaptive realloc-boundary profile follow-up:
 ```text
 hakozuna-hz6/private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_042628
 hakozuna-hz6/private/raw-results/linux/hz6_preload_profile_frontier_20260616_042846
+hakozuna-hz6/private/raw-results/linux/hz6_preload_profile_frontier_20260616_043329
 ```
 
 | row | selected | adaptive 4K | adaptive 8K | adaptive combined | read |
@@ -503,11 +504,23 @@ hakozuna-hz6/private/raw-results/linux/hz6_preload_profile_frontier_20260616_042
 | `1024..4096` | `19.621M` | `19.735M` | `19.699M` | `19.525M` | near-flat/mixed |
 | `4096..16384` | `23.996M` | `23.935M` | `24.304M` | `23.889M` | near-flat/mixed |
 
-The adaptive profile aliases are now first-class profile controls, but the
-selected/default decision remains unchanged. They recover much of the exact
-fixed-boundary copy loss without always-on slack, yet the mixed rows still
-wobble. Require a full profile-frontier repeat and normal stats/RSS guards
-before considering any promotion.
+Full profile-frontier repeat-3 confirms the profile shape:
+
+| row | selected hz6 | best adaptive profile | best overall profile in this read | read |
+| --- | ---: | ---: | ---: | --- |
+| `16..256` | `74.317M / 30.38 MiB` | `adaptive-8k 78.536M / 30.50 MiB` | `adaptive-8k` | tiny result is noisy/profile-only |
+| `16..4096` | `42.244M / 79.62 MiB` | `adaptive-4k 42.114M / 79.75 MiB` | `toy-trusted 42.491M / 79.62 MiB` | selected/toy-trusted remain the broad guard |
+| `1024..4096` | `38.726M / 90.88 MiB` | `adaptive-8k 39.293M / 90.88 MiB` | `realloc-8k 39.469M / 91.00 MiB` | small positive profile signal |
+| `4096..16384` | `45.221M / 94.12 MiB` | `adaptive-4k 45.484M / 94.12 MiB` | `aligned-target 45.694M / 94.25 MiB` | near-flat/profile-only |
+| `fixed_4k` | `36.968M / 91.75 MiB` | `adaptive-4k 46.852M / 92.88 MiB` | `adaptive-4k` | best fixed_4k profile in this read |
+| `fixed_8k` | `42.823M / 93.00 MiB` | `adaptive-8k 46.383M / 93.12 MiB` | `adaptive-8k` | best fixed_8k profile in this read |
+| `fixed_16k` | `46.558M / 93.12 MiB` | `adaptive-4k 45.968M / 93.00 MiB` | selected | adaptive not a fixed16 profile |
+
+The adaptive profile aliases are now first-class fixed-boundary profile
+controls. `adaptive-4k` is the strongest current fixed_4k profile and
+`adaptive-8k` is the strongest current fixed_8k profile in the repeat above.
+The selected/default decision remains unchanged because focused/target rows
+are only near-flat or profile-noisy and selected still wins fixed_16k.
 
 Hot-path attribution refresh:
 
