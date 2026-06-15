@@ -86,12 +86,21 @@ Rationale:
 
 ```text
 Static table trim removed about 20 MiB of fixed RSS from selected Ubuntu
-preload. The remaining 4096..16384 pressure is mostly MidPage 32K source-run
-payload and source-block count. HZ6 now beats tcmalloc on RSS and ops-per-MiB
-on 4096..16384, but still trails tcmalloc on speed:
+preload. At this checkpoint, the remaining 4096..16384 pressure was mostly
+MidPage 32K source-run payload and source-block count. HZ6 beat tcmalloc on RSS
+and ops-per-MiB on 4096..16384, but still trailed tcmalloc on speed:
 
   hz6      41.264M /  94.38 MiB
   tcmalloc 44.812M / 103.38 MiB
+```
+
+Current follow-up:
+
+```text
+HZ6_MIDPAGE_32K_RUN_BYTES=1572864 is now selected. It keeps the 4096..16384
+tcmalloc lead in the full cross refresh and cuts source_alloc in the stats
+confirmation. The next design pass should re-audit remaining MidPage supply /
+frontcache pressure after run1536 rather than reopening transfer-skip shape.
 ```
 
 Audit variants:

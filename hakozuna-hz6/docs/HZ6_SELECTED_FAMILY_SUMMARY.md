@@ -110,7 +110,8 @@ preload mixed_ws rows: 16..256 `57.671M` vs `53.099M`, 16..4096 `39.382M` vs
 `5.873M`, 1024..4096 `38.497M` vs `4.858M`, and 4096..16384 `27.752M` vs
 `1.282M`.  At that checkpoint, tcmalloc remained higher throughput on the same
 rows and system malloc still won the tiny 16..256 row. Later run768/current-bias
-work moved 4096..16384 ahead of tcmalloc while keeping the caveat that
+and run1536 32K sizing moved 4096..16384 ahead of tcmalloc while keeping the
+caveat that
 LD_PRELOAD is separate from direct HZ6 API strength rows and not a universal
 allocator-win claim.
 After the MidPage preload-boundary malloc skip, the balance row improves again:

@@ -265,10 +265,11 @@ Stats-off repeat-7 confirmation:
 Read:
 
 ```text
-Run512 is selected for speed. It does not materially improve RSS, but it keeps
-the static table RSS win intact and moves 4096..16384 past the earlier tcmalloc
-median from the cross snapshot. Refresh the broad matrix after this promotion
-before making final tcmalloc claims.
+At this historical checkpoint, run512 was selected for speed. It did not
+materially improve RSS, but it kept the static table RSS win intact and moved
+4096..16384 past the earlier tcmalloc median from the cross snapshot. Later
+run768 and run1536 promotions refreshed the broad matrix and superseded this
+intermediate tcmalloc read.
 ```
 
 ## MidPage 32K Run768 Promotion
@@ -282,8 +283,9 @@ HZ6_MIDPAGE_32K_RUN_BYTES=786432
 Read:
 
 ```text
-After the free-hint/free-fastslot no-go closeout, the 4096..16384 row still
-trailed tcmalloc speed by about 7% while keeping lower RSS. Increasing the
+At this historical checkpoint after the free-hint/free-fastslot no-go closeout,
+the 4096..16384 row still trailed tcmalloc speed by about 7% while keeping
+lower RSS. Increasing the
 32K MidPage run above 512K is a better lever than further free-path code-shape
 work because it reduces source churn without adding per-free classification
 overhead.

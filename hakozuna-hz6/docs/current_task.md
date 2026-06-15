@@ -128,14 +128,15 @@ Earlier repeat-3 refresh after free-hint/free-fastslot no-go closeouts:
   16..4096    hz6 40.757M / 79.75 MiB
   1024..4096  hz6 38.917M / 91.00 MiB
   4096..16384 hz6 41.961M / 94.38 MiB
-  On 4096..16384, HZ6 is below tcmalloc speed
-  (41.961M vs 45.086M) but keeps lower RSS (94.38 vs 100.62 MiB).
-MidPage32KRun768-L1 is now selected/default for Ubuntu preload:
+  At that checkpoint on 4096..16384, HZ6 was below tcmalloc speed
+  (41.961M vs 45.086M) but kept lower RSS (94.38 vs 100.62 MiB).
+Earlier MidPage32KRun768-L1 promotion:
   HZ6_MIDPAGE_32K_RUN_BYTES 524288 -> 786432
   512K remains the direct control.
   repeat-7 versus 512K improved 4096..16384 and 16..4096, kept 16..256
   positive, and only softened 1024..4096 slightly. Safety spot-check is clean.
-  Full evidence: HZ6_UBUNTU_MIDPAGE_32K_RUN_CLOSEOUT.md.
+  Superseded by MidPage32KRun1536-L1; full evidence:
+    HZ6_UBUNTU_MIDPAGE_32K_RUN_CLOSEOUT.md.
 MidPageSupplyMapResume-L1 is now observed after run768:
   Diagnostic selected768 shows free route fallback is no longer the main wall:
     4096..16384 free_route_lookup_after_maps is about 2.2K for 1M frees.

@@ -57,6 +57,7 @@ HZ6_ROUTE_TOMBSTONE_COMPACT_L1=1
 HZ6_ROUTE_HASH_XOR_FOLD_L1=1
 HZ6_ROUTE_LINEAR_WRAP_L1=1
 HZ6_ROUTE_LOOP_CARRY_L1=1
+HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1=1
 ```
 
 The preload build script also explicitly keeps these no-go/control lanes off
@@ -119,7 +120,7 @@ Current follow-up read:
 | MidPage active-map deeper probe | no-go direction | Miss attribution showed `found_elsewhere=0`; misses are not probe-limit misses. |
 | `HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1=1` | watch/control | Re-tested after descriptor-out: target improves, but `16..256` repeat-7 is still slightly weaker. Keep off. |
 | `HZ6_MIDPAGE_ACTIVE_MAP_ADDR_ENVELOPE_L1=1` | watch/control | Helps Toy/tiny by skipping impossible MidPage probes, but target has `addr_envelope_skip=0`. Keep off. |
-| Next likely lane | diagnostic/design | Follow `HZ6_UBUNTU_MIDPAGE_NEXT_DESIGN.md`: first add transfer-probe attribution, then isolate any target-specialized transfer-skip lane from the selected balanced DSO. |
+| Next likely lane | diagnostic/design | Re-audit MidPage supply/frontcache pressure after run1536. Transfer-probe and target DSO work are closed; do not reopen route fallback or transfer-skip shape first. |
 
 HZ3/HZ4 comparison read:
 
@@ -130,6 +131,7 @@ HZ3/HZ4 comparison read:
 | `1024..4096` | `35.131M` | `91.406M` | `49.979M` | HZ6 is about `0.70x` HZ4. |
 | `4096..16384` old default | `29.409M` | `74.802M` | `31.089M` | HZ6 was about `0.95x` HZ4 and had the clearest close target. |
 | `4096..16384` MidPage unaligned/probe4 | `31.505M` | n/a | `30.916M` | HZ6 now edges HZ4 while keeping lower RSS. |
+| `4096..16384` run1536 selected | `45.283M` | `75.143M` | `30.938M` | HZ6 now strongly beats HZ4 and tcmalloc on the balanced MidPage row, but HZ3 remains the frontier. |
 
 Architecture read:
 
@@ -145,10 +147,12 @@ HZ6:
   better scoped RSS and safety boundaries, but more hot-path work
 
 Near-term target:
-  close/beat HZ4 on 4096..16384 while keeping HZ6 RSS below HZ4.
-  MidPageActiveMapUnaligned-L2 + probe4 reaches this on the latest guard:
-    hz6 31.505M / 117,248 KB
-    hz4 30.916M / 134,400 KB
+  hold the 4096..16384 tcmalloc/HZ4 lead while closing the HZ3 gap.
+  Current run1536 selected cross repeat-3:
+    hz6 45.283M / 94.38 MiB
+    hz4 30.938M / 130.62 MiB
+    tcmalloc 44.034M / 103.75 MiB
+    hz3 75.143M / 73.75 MiB
 
 Longer-term target:
   design a local-page/run metadata fast lane if HZ6 must chase HZ3/HZ4 tiny
