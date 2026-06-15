@@ -948,6 +948,13 @@
 #define HZ6_PRELOAD_CALLOC_REAL_FALLBACK_L1 0
 #endif
 
+#ifndef HZ6_PRELOAD_CALLOC_DIRECT_HZ6_L1
+/* Default-off calloc code-shape control.  The normal calloc path historically
+ * called the public malloc wrapper and then memset.  This profile keeps the
+ * same HZ6/real-malloc fallback semantics while avoiding wrapper re-entry. */
+#define HZ6_PRELOAD_CALLOC_DIRECT_HZ6_L1 0
+#endif
+
 #ifndef HZ6_PRELOAD_CALLOC_REAL_FREE_SKIP_L1
 /* Companion control for real-calloc fallback.  Records real calloc pointers so
  * preload free can skip HZ6 route lookup and call real free directly. */

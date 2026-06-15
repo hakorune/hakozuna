@@ -501,6 +501,31 @@ void* malloc(size_t size) {
   return hz6_preload_real_malloc(size);
 }
 
+#if HZ6_PRELOAD_CALLOC_DIRECT_HZ6_L1
+static void* hz6_preload_calloc_malloc_bytes(size_t bytes) {
+  hz6_preload_phase_count(&g_hz6_preload_phase_stats.malloc_calls);
+  hz6_preload_phase_count_size_bucket(
+      bytes,
+      &g_hz6_preload_phase_stats.malloc_size_zero,
+      &g_hz6_preload_phase_stats.malloc_size_le1024,
+      &g_hz6_preload_phase_stats.malloc_size_1025_4096,
+      &g_hz6_preload_phase_stats.malloc_size_4097_16384,
+      &g_hz6_preload_phase_stats.malloc_size_gt16384);
+  g_hz6_preload_reentry = 1;
+  Hz6Allocator* allocator = hz6_preload_allocator();
+  void* ptr = allocator ? hz6_preload_malloc_hz6(allocator, bytes) : NULL;
+  g_hz6_preload_reentry = 0;
+  if (ptr) {
+    hz6_preload_phase_count(&g_hz6_preload_phase_stats.malloc_hz6_success);
+    return ptr;
+  }
+  hz6_preload_phase_count(&g_hz6_preload_phase_stats.malloc_real_fallback);
+  return hz6_preload_real_malloc(bytes);
+}
+#else
+#define hz6_preload_calloc_malloc_bytes(bytes) malloc(bytes)
+#endif
+
 void free(void* ptr) {
   hz6_preload_phase_count(&g_hz6_preload_phase_stats.free_calls);
   if (!ptr) {
@@ -1012,7 +1037,7 @@ void* calloc(size_t nmemb, size_t size) {
 #if HZ6_PRELOAD_CALLOC_REAL_FALLBACK_L1
 #if HZ6_PRELOAD_CALLOC_REAL_MIN_BYTES > 0
   if (bytes < (size_t)HZ6_PRELOAD_CALLOC_REAL_MIN_BYTES) {
-    void* ptr = malloc(bytes);
+    void* ptr = hz6_preload_calloc_malloc_bytes(bytes);
     if (ptr) {
       memset(ptr, 0, bytes);
     }
@@ -1025,7 +1050,7 @@ void* calloc(size_t nmemb, size_t size) {
 #endif
   return ptr;
 #else
-  void* ptr = malloc(bytes);
+  void* ptr = hz6_preload_calloc_malloc_bytes(bytes);
   if (ptr) {
     memset(ptr, 0, bytes);
   }

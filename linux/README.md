@@ -190,6 +190,20 @@ but it is not selected default because broad mixed-small guards do not cleanly
 promote it.  Use `hz6-realloc-boundary-target` in shared compare matrices only
 for that profile.
 
+The calloc code-shape/RSS profile DSOs are built by:
+
+```bash
+./hakozuna-hz6/linux/build_hz6_preload_calloc_direct_target.sh
+./hakozuna-hz6/linux/build_hz6_preload_calloc_real_target.sh
+./hakozuna-hz6/linux/build_hz6_preload_calloc_large_real_target.sh
+```
+
+`hz6-calloc-direct-target` keeps selected HZ6 calloc semantics but avoids
+public malloc-wrapper re-entry before `memset`.  It is a control/profile until
+focused+calloc repeats are clean.  `hz6-calloc-real-target` and
+`hz6-calloc-large-real-target` delegate calloc to the real allocator with the
+paired real-pointer free-skip table; keep them profile-only.
+
 The small-boundary profile DSOs are built by:
 
 ```bash

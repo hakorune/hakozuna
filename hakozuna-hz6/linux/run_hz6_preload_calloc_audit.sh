@@ -8,6 +8,7 @@ THREADS="${THREADS:-4}"
 ITERS="${ITERS:-100000}"
 RUNS="${RUNS:-5}"
 ROWS_CSV="${ROWS:-calloc4k,calloc8k,calloc32k,calloc64k}"
+VARIANTS_CSV="${VARIANTS:-system,selected,phase_count_on,calloc_direct,calloc_direct_stats,real_calloc_fallback,real_calloc_fallback_stats,real_calloc_fallback_free_skip,real_calloc_fallback_free_skip_stats,real_calloc_large_free_skip,real_calloc_large_free_skip_stats}"
 OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_preload_calloc_audit_$(date +%Y%m%d_%H%M%S)}"
 SKIP_BUILD=0
 
@@ -24,6 +25,7 @@ Options:
   --iters N       iterations per thread (default: 100000)
   --runs N        repeat count (default: 5)
   --rows CSV      rows: calloc4k,calloc8k,calloc32k,calloc64k,calloc128k,calloc256k
+  --variants CSV  variants to run (default: all)
   --outdir DIR    output directory
   --skip-build    reuse existing benchmark and preload DSOs
   --help          show this message
@@ -52,6 +54,10 @@ while [[ $# -gt 0 ]]; do
       ROWS_CSV="$2"
       shift 2
       ;;
+    --variants)
+      VARIANTS_CSV="$2"
+      shift 2
+      ;;
     --outdir)
       OUTDIR="$2"
       shift 2
@@ -75,6 +81,8 @@ done
 BENCH="${ROOT_DIR}/bench/out/linux/${ARCH}/bench_calloc_ws"
 SELECTED_SO="${OUTDIR}/build/selected/libhakozuna_hz6_preload.so"
 PHASE_SO="${OUTDIR}/build/phase_count_on/libhakozuna_hz6_preload.so"
+CALLOC_DIRECT_SO="${OUTDIR}/build/calloc_direct/libhakozuna_hz6_preload.so"
+CALLOC_DIRECT_STATS_SO="${OUTDIR}/build/calloc_direct_stats/libhakozuna_hz6_preload.so"
 REAL_CALLOC_SO="${OUTDIR}/build/real_calloc_fallback/libhakozuna_hz6_preload.so"
 REAL_CALLOC_STATS_SO="${OUTDIR}/build/real_calloc_fallback_stats/libhakozuna_hz6_preload.so"
 REAL_CALLOC_FREE_SKIP_SO="${OUTDIR}/build/real_calloc_fallback_free_skip/libhakozuna_hz6_preload.so"
@@ -100,6 +108,20 @@ build_preloads() {
     HZ6_PRELOAD_PRESERVE_PHASE_COUNTERS=1 \
     "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
     > "${OUTDIR}/phase_count_on_build.log" 2>&1
+  local calloc_direct_prod_flags=()
+  hz6_preload_effective_selected_cflags calloc_direct_prod_flags 1
+  hz6_preload_replace_define calloc_direct_prod_flags \
+    HZ6_PRELOAD_CALLOC_DIRECT_HZ6_L1 1
+  OUT_DIR="${OUTDIR}/build/calloc_direct" \
+    HZ6_PRELOAD_DEFAULT_CFLAGS="$(hz6_preload_join_flags "${calloc_direct_prod_flags[@]}")" \
+    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
+    > "${OUTDIR}/calloc_direct_build.log" 2>&1
+  local calloc_direct_stats_flags=("${calloc_direct_prod_flags[@]}")
+  hz6_preload_preserve_phase_counters calloc_direct_stats_flags
+  OUT_DIR="${OUTDIR}/build/calloc_direct_stats" \
+    HZ6_PRELOAD_DEFAULT_CFLAGS="$(hz6_preload_join_flags "${calloc_direct_stats_flags[@]}")" \
+    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh" \
+    > "${OUTDIR}/calloc_direct_stats_build.log" 2>&1
   local real_calloc_prod_flags=()
   hz6_preload_effective_selected_cflags real_calloc_prod_flags 1
   hz6_preload_replace_define real_calloc_prod_flags \
@@ -150,6 +172,8 @@ fi
 [[ -x "$BENCH" ]] || { echo "missing benchmark: $BENCH" >&2; exit 2; }
 [[ -f "$SELECTED_SO" ]] || { echo "missing selected DSO: $SELECTED_SO" >&2; exit 2; }
 [[ -f "$PHASE_SO" ]] || { echo "missing phase-count DSO: $PHASE_SO" >&2; exit 2; }
+[[ -f "$CALLOC_DIRECT_SO" ]] || { echo "missing calloc-direct DSO: $CALLOC_DIRECT_SO" >&2; exit 2; }
+[[ -f "$CALLOC_DIRECT_STATS_SO" ]] || { echo "missing calloc-direct stats DSO: $CALLOC_DIRECT_STATS_SO" >&2; exit 2; }
 [[ -f "$REAL_CALLOC_SO" ]] || { echo "missing real-calloc DSO: $REAL_CALLOC_SO" >&2; exit 2; }
 [[ -f "$REAL_CALLOC_STATS_SO" ]] || { echo "missing real-calloc stats DSO: $REAL_CALLOC_STATS_SO" >&2; exit 2; }
 [[ -f "$REAL_CALLOC_FREE_SKIP_SO" ]] || { echo "missing real-calloc free-skip DSO: $REAL_CALLOC_FREE_SKIP_SO" >&2; exit 2; }
@@ -186,15 +210,37 @@ for row in "${row_names[@]}"; do
   esac
 done
 
+variants=()
+IFS=',' read -r -a variant_names <<< "$VARIANTS_CSV"
+for variant in "${variant_names[@]}"; do
+  case "$variant" in
+    system|selected|phase_count_on|calloc_direct|calloc_direct_stats|\
+real_calloc_fallback|real_calloc_fallback_stats|\
+real_calloc_fallback_free_skip|real_calloc_fallback_free_skip_stats|\
+real_calloc_large_free_skip|real_calloc_large_free_skip_stats)
+      variants+=("$variant")
+      ;;
+    "")
+      ;;
+    *)
+      echo "unknown variant: $variant" >&2
+      exit 2
+      ;;
+  esac
+done
+
 {
   echo "arch=${ARCH}"
   echo "threads=${THREADS}"
   echo "iters=${ITERS}"
   echo "runs=${RUNS}"
   echo "rows=${ROWS_CSV}"
+  echo "variants=${VARIANTS_CSV}"
   echo "bench=${BENCH}"
   echo "selected_so=${SELECTED_SO}"
   echo "phase_so=${PHASE_SO}"
+  echo "calloc_direct_so=${CALLOC_DIRECT_SO}"
+  echo "calloc_direct_stats_so=${CALLOC_DIRECT_STATS_SO}"
   echo "real_calloc_so=${REAL_CALLOC_SO}"
   echo "real_calloc_stats_so=${REAL_CALLOC_STATS_SO}"
   echo "real_calloc_free_skip_so=${REAL_CALLOC_FREE_SKIP_SO}"
@@ -224,6 +270,16 @@ run_one() {
       ;;
     phase_count_on)
       env HZ6_PRELOAD_STATS=1 LD_PRELOAD="$PHASE_SO" \
+        "$BENCH" "$THREADS" "$ITERS" "$nmemb" "$elem_size" 1 \
+        > "$log" 2>&1
+      ;;
+    calloc_direct)
+      env LD_PRELOAD="$CALLOC_DIRECT_SO" \
+        "$BENCH" "$THREADS" "$ITERS" "$nmemb" "$elem_size" 1 \
+        > "$log" 2>&1
+      ;;
+    calloc_direct_stats)
+      env HZ6_PRELOAD_STATS=1 LD_PRELOAD="$CALLOC_DIRECT_STATS_SO" \
         "$BENCH" "$THREADS" "$ITERS" "$nmemb" "$elem_size" 1 \
         > "$log" 2>&1
       ;;
@@ -267,31 +323,21 @@ run_one() {
 for run_id in $(seq 1 "$RUNS"); do
   for row_spec in "${rows[@]}"; do
     read -r row nmemb elem_size <<< "$row_spec"
-    for variant in system selected phase_count_on real_calloc_fallback real_calloc_fallback_stats real_calloc_fallback_free_skip real_calloc_fallback_free_skip_stats real_calloc_large_free_skip real_calloc_large_free_skip_stats; do
+    for variant in "${variants[@]}"; do
       run_one "$row" "$nmemb" "$elem_size" "$variant" "$run_id"
     done
   done
 done
 
-python3 - <<'PY' "$OUTDIR" "${rows[@]}" | tee "${OUTDIR}/summary.md"
+python3 - <<'PY' "$OUTDIR" "$VARIANTS_CSV" "${rows[@]}" | tee "${OUTDIR}/summary.md"
 import pathlib
 import re
 import statistics
 import sys
 
 root = pathlib.Path(sys.argv[1])
-row_specs = sys.argv[2:]
-variants = [
-    "system",
-    "selected",
-    "phase_count_on",
-    "real_calloc_fallback",
-    "real_calloc_fallback_stats",
-    "real_calloc_fallback_free_skip",
-    "real_calloc_fallback_free_skip_stats",
-    "real_calloc_large_free_skip",
-    "real_calloc_large_free_skip_stats",
-]
+variants = [v for v in sys.argv[2].split(",") if v]
+row_specs = sys.argv[3:]
 ops_re = re.compile(r"ops/s=([0-9]+(?:\.[0-9]+)?)")
 current_re = re.compile(r"current_kb=([0-9]+)")
 kv_re = re.compile(r"([A-Za-z0-9_/]+)=([0-9]+(?:\.[0-9]+)?)")

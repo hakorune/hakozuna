@@ -66,6 +66,7 @@ Adaptive realloc-boundary profiles:
 
 Other controls:
   hz6-aligned-target
+  hz6-calloc-direct-target
   hz6-calloc-real-target
   hz6-calloc-large-real-target
 
@@ -92,6 +93,10 @@ Calloc large-real profile:
   private/raw-results/linux/hz6_preload_calloc_audit_20260616_044759
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_044958
   private/raw-results/linux/hz6_preload_calloc_cross_20260616_045446
+
+Calloc direct-HZ6 code-shape control:
+  private/raw-results/linux/hz6_preload_calloc_audit_20260616_051111
+  private/raw-results/linux/hz6_preload_profile_frontier_20260616_051156
 
 Fixed-boundary cross quick check:
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_050037
@@ -125,12 +130,14 @@ Default no-go/control-only without substantially different evidence:
 2. Treat adaptive-4k and adaptive-8k as fixed-boundary profile lanes.
 3. Treat calloc-large-real as a large calloc-heavy RSS/speed profile, not a
    selected/default lane.
-4. Next optimization should target selected-safe code shape or a new narrow
+4. Treat calloc-direct as a default-off code-shape control until a thicker
+   focused+calloc repeat proves it is selected-safe.
+5. Next optimization should target selected-safe code shape or a new narrow
    profile; do not promote broad real-calloc behavior.
-5. If strengthening profile-positioning evidence, repeat the fixed-boundary
+6. If strengthening profile-positioning evidence, repeat the fixed-boundary
    cross quick check with higher iterations before drawing promotion-level
    conclusions.
-6. Before any selected/default change, update stable docs and archive long logs.
-7. Keep this file below about 150 lines; archive completed evidence snapshots
+7. Before any selected/default change, update stable docs and archive long logs.
+8. Keep this file below about 150 lines; archive completed evidence snapshots
    instead of appending chronological logs.
 ```

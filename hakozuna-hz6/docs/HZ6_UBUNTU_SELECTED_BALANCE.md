@@ -590,6 +590,29 @@ Decision: keep `hz6-calloc-large-real-target` as a large calloc-heavy profile.
 It is not selected/default because fixed guards still wobble and normal mixed
 rows do not need the real-calloc pointer table.
 
+Calloc direct-HZ6 code-shape control:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_preload_calloc_audit_20260616_051111
+hakozuna-hz6/private/raw-results/linux/hz6_preload_profile_frontier_20260616_051156
+```
+
+`HZ6_PRELOAD_CALLOC_DIRECT_HZ6_L1=1` avoids calling the public `malloc()`
+wrapper from preload `calloc()`, while preserving the same HZ6/real-malloc
+fallback behavior and the same phase counters in stats builds.
+
+| row | selected | calloc-direct | read |
+| --- | ---: | ---: | --- |
+| `calloc64k` smoke | `3.123M / 26.50 MiB` | `3.151M / 26.38 MiB` | small positive code-shape signal |
+| `16_256` guard | `49.884M / 30.50 MiB` | `50.838M / 30.50 MiB` | slightly positive |
+| `16_4096` guard | `21.283M / 79.12 MiB` | `21.583M / 79.25 MiB` | slightly positive |
+| `1024_4096` guard | `19.347M / 90.88 MiB` | `19.078M / 90.88 MiB` | weak |
+| `4096_16384` guard | `23.257M / 93.38 MiB` | `23.491M / 93.50 MiB` | slightly positive |
+
+Decision: keep `hz6-calloc-direct-target` as a default-off code-shape control.
+It is promising enough to keep in the profile frontier, but not strong enough
+for selected/default without a thicker focused+calloc repeat.
+
 ## Selected Read
 
 The current HZ6 Ubuntu selected lane has its clearest speed/RSS balance on
