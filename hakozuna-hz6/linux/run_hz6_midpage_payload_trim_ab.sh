@@ -486,6 +486,19 @@ variant_flags() {
     small_boundary_trusted_toy_map8192)
       apply_small_boundary_trusted_toy_map8192_flags flags
       ;;
+    small_boundary_trusted_toy_map8192_external)
+      apply_small_boundary_trusted_toy_map8192_flags flags
+      hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_EXTERNAL_L1 1
+      ;;
+    small_boundary_trusted_toy_map8192_frontcache_packed)
+      apply_small_boundary_trusted_toy_map8192_flags flags
+      hz6_preload_replace_define flags HZ6_FRONTCACHE_PACKED_META_L1 1
+      ;;
+    small_boundary_trusted_toy_map8192_external_frontcache_packed)
+      apply_small_boundary_trusted_toy_map8192_flags flags
+      hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_EXTERNAL_L1 1
+      hz6_preload_replace_define flags HZ6_FRONTCACHE_PACKED_META_L1 1
+      ;;
     small_boundary_trusted_toy_map8192_run8_256k)
       apply_small_boundary_trusted_toy_map8192_flags flags
       hz6_preload_replace_define flags HZ6_MIDPAGE_RUN_BYTES 262144
