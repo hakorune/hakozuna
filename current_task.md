@@ -51,18 +51,31 @@ Next allocator work:
     explicit quiescent RSS release API; it scavenges HZ6 local-free payload
     before forwarding to libc malloc_trim.
   Latest HZ6 Ubuntu balance matrix:
-    hakozuna-hz6/private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_200259
-    4096..16384 hz6 54.836M / 94.50 MiB
-    4096..16384 tcmalloc 46.507M / 99.00 MiB
+    hakozuna-hz6/private/raw-results/linux/hz6_ubuntu_selected_balance_20260616_011316
+    4096..16384 hz6 45.315M / 94.25 MiB
+    4096..16384 hz3 51.230M / 73.38 MiB
+    4096..16384 tcmalloc 34.618M / 100.25 MiB
+  Latest HZ6 Ubuntu fixed-size matrix:
+    hakozuna-hz6/private/raw-results/linux/hz6_ubuntu_size_slices_20260616_011443
+    fixed_4k  hz6 31.542M / 91.88 MiB
+    fixed_8k  hz6 43.506M / 93.25 MiB
+    fixed_16k hz6 45.586M / 93.25 MiB
+    read: fixed_16k now edges HZ3 speed in this repeat-3 read; fixed_8k is
+      strong but below HZ3; fixed_4k remains a Toy/tcmalloc/HZ3 gap.
   Latest HZ6 Ubuntu quiescent RSS read:
     hakozuna-hz6/private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_222345
     malloc_trim keeps peak RSS flat but lowers current RSS:
       4096..16384 94.38 MiB -> 28.32 MiB
       fixed_16k   93.12 MiB -> 28.26 MiB
+    read: RSS progress is currently strongest as explicit quiescent recovery;
+      peak RSS still mostly reflects touched MidPage source payload.
   Latest HZ6 Ubuntu follow-up control:
-    HZ6_DIRECT_LOCAL_FREE_RAW_PUSH_MIN_CLASS/MAX_CLASS
-    class-gated raw local-free push is available for profile A/B only.
-    It is not selected/default because target/focused guards remain mixed.
+    HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_4K_L1
+    HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_8K_L1
+    Split realloc-boundary profile DSOs are available for fixed_4k/fixed_8k
+    workloads. They are not selected/default because focused and target guards
+    remain mixed, but they directly attack the current fixed-boundary realloc
+    copy pressure.
 ```
 
 ## Recent Cleanup Commits

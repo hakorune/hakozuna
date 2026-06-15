@@ -2645,3 +2645,173 @@ next:
   DSO/lane is explicitly split. Continue with narrow attribution or a different
   mid-small mechanism that does not tax fixed 8K/16K.
 ```
+
+## Recent Closeout: HZ6 Trusted-Class Selected Baseline Refresh
+
+```text
+goal:
+  Fix the selected/default baseline after promoting
+  HZ6_MIDPAGE_DIRECT_LOCAL_REUSE_TRUSTED_CLASS_L1=1 and keep the speed/RSS
+  read separate from profile DSOs.
+
+focused cross refresh:
+  raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260616_011316
+  repeat-3, bench_mixed_ws_crt, ws=4096, iters=300000
+
+  16..256:
+    hz6 58.047M / 30.25 MiB
+    hz3 235.546M / 6.75 MiB
+    tcmalloc 243.995M / 9.25 MiB
+
+  16..4096:
+    hz6 36.461M / 79.62 MiB
+    hz3 67.823M / 53.25 MiB
+    tcmalloc 82.383M / 40.50 MiB
+
+  1024..4096:
+    hz6 34.193M / 90.75 MiB
+    hz3 61.867M / 63.00 MiB
+    tcmalloc 76.482M / 49.12 MiB
+
+  4096..16384:
+    hz6 45.315M / 94.25 MiB
+    hz3 51.230M / 73.38 MiB
+    hz4 26.683M / 112.75 MiB
+    tcmalloc 34.618M / 100.25 MiB
+
+fixed-size cross refresh:
+  raw: private/raw-results/linux/hz6_ubuntu_size_slices_20260616_011443
+  repeat-3, bench_mixed_ws_crt, ws=4096, iters=300000
+
+  fixed_4k:
+    hz6 31.542M / 91.88 MiB
+    hz3 60.786M / 68.50 MiB
+    tcmalloc 41.821M / 69.62 MiB
+
+  fixed_8k:
+    hz6 43.506M / 93.25 MiB
+    hz3 54.549M / 69.88 MiB
+    tcmalloc 27.702M / 72.75 MiB
+
+  fixed_16k:
+    hz6 45.586M / 93.25 MiB
+    hz3 43.766M / 73.12 MiB
+    tcmalloc 12.375M / 99.84 MiB
+
+read:
+  HZ6 selected is now a strong balanced MidPage lane. It beats tcmalloc/HZ4 on
+  4096..16384 speed while keeping lower RSS than tcmalloc, and fixed_16k now
+  edges HZ3 on speed in this repeat-3 read. HZ3 remains the better speed/RSS
+  frontier on tiny, fixed_4k, fixed_8k, and broad small/mid rows.
+
+RSS read:
+  The major RSS win is currently quiescent recoverability through the HZ6
+  malloc_trim interpose/scavenge path:
+    4096..16384 current RSS: 94.38 MiB -> 28.32 MiB
+    fixed_16k current RSS:   93.12 MiB -> 28.26 MiB
+  Peak RSS is not yet materially lower because touched MidPage source payload
+  still dominates peak reads.
+
+next:
+  Continue from selected docs. Good next checks are refreshed attribution for
+  mid-small/Toy gaps and a cautious retest of boundary/profile controls against
+  the trusted-class selected baseline. Do not default cold-retire/free-path
+  release behavior just because quiescent trim works; it is a different RSS
+  mechanism and can tax hot frees.
+```
+
+## Recent Continuation: Realloc-Boundary Split Profile DSOs
+
+```text
+goal:
+  Use the latest selected stats to decide whether fixed-boundary realloc-copy
+  pressure is still worth a lane, without polluting selected/default.
+
+diagnostic read:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_011918
+  stats+diagnostics selected, repeat-3, iters=200000
+
+  fixed_4k:
+    realloc_copy=19068, realloc_toy_to_mid=19068
+  fixed_8k:
+    realloc_copy=19068, realloc_mid8_to_mid32=19068
+  fixed_16k:
+    realloc_copy=0
+
+A/B:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_011939
+  no-stats repeat-9, focused+fixed, iters=300000
+
+  fixed_4k:
+    selected 31.968M / 91.88 MiB
+    realloc_boundary_slack_4k 46.758M / 92.75 MiB
+    realloc_boundary_slack_8k 32.333M / 92.00 MiB
+    combined 46.282M / 92.62 MiB
+
+  fixed_8k:
+    selected 43.156M / 93.12 MiB
+    realloc_boundary_slack_4k 43.343M / 93.12 MiB
+    realloc_boundary_slack_8k 45.203M / 93.12 MiB
+    combined 44.348M / 93.00 MiB
+
+  guards:
+    16..4096 regressed for all slack variants.
+    4096..16384 regressed for all slack variants, especially 8K/combined.
+
+decision:
+  Keep realloc-boundary slack out of selected/default. It remains a strong
+  fixed-boundary profile lane, especially exact fixed_4k and fixed_8k rows.
+
+implementation:
+  Added split profile build wrappers:
+    linux/build_hz6_preload_realloc_boundary_4k_target.sh
+    linux/build_hz6_preload_realloc_boundary_8k_target.sh
+  Added bench aliases:
+    hz6-realloc-boundary-4k-target / hz6_realloc_boundary_4k_target
+    hz6-realloc-boundary-8k-target / hz6_realloc_boundary_8k_target
+  Added matrix auto-build hooks for the split profile DSOs.
+
+validation:
+  bash -n for build wrappers, matrix wrappers, and bench_common passed.
+  git diff --check passed.
+  Both profile DSOs built successfully.
+  Alias smoke raw:
+    private/raw-results/linux/hz6_ubuntu_size_slices_20260616_012248
+
+next:
+  Continue speed work from selected. Boundary trusted-owner and MidPage fused
+  boundary were retested after trusted-class selection and remain no-go for
+  selected because mixed/focused guards regress. The next default-safe work
+  should avoid top-level boundary branches and all-free lookup tables.
+```
+
+## Recent Recheck: Current-Bias Fast Shape Still No-Go
+
+```text
+goal:
+  Recheck a small selected-free-order code-shape control against the current
+  trusted-class selected baseline before moving to larger work.
+
+A/B:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_012437
+  no-stats repeat-7, focused+fixed, iters=300000
+
+  16..256:
+    selected 57.713M -> current_bias_fast 57.544M
+  16..4096:
+    selected 36.709M -> current_bias_fast 36.706M
+  1024..4096:
+    selected 33.785M -> current_bias_fast 33.462M
+  4096..16384:
+    selected 45.581M -> current_bias_fast 45.175M
+  fixed_4k:
+    selected 31.983M -> current_bias_fast 32.366M
+  fixed_8k:
+    selected 42.785M -> current_bias_fast 42.525M
+  fixed_16k:
+    selected 45.283M -> current_bias_fast 45.337M
+
+decision:
+  Keep HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FAST_L1=0. The fixed_4k/fixed_16k
+  nudge is not worth the 1024..4096 and 4096..16384 regressions.
+```

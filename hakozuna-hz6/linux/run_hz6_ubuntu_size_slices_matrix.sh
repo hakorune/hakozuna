@@ -95,6 +95,18 @@ if [[ "$SKIP_BUILDS" -ne 1 ]]; then
         ",${ALLOCATORS}," == *",hz6_midpage_trusted_class,"* ]]; then
     "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_midpage_trusted_class_target.sh"
   fi
+  if [[ ",${ALLOCATORS}," == *",hz6-realloc-boundary-target,"* ||
+        ",${ALLOCATORS}," == *",hz6_realloc_boundary_target,"* ]]; then
+    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_target.sh"
+  fi
+  if [[ ",${ALLOCATORS}," == *",hz6-realloc-boundary-4k-target,"* ||
+        ",${ALLOCATORS}," == *",hz6_realloc_boundary_4k_target,"* ]]; then
+    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_4k_target.sh"
+  fi
+  if [[ ",${ALLOCATORS}," == *",hz6-realloc-boundary-8k-target,"* ||
+        ",${ALLOCATORS}," == *",hz6_realloc_boundary_8k_target,"* ]]; then
+    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_8k_target.sh"
+  fi
   "${ROOT_DIR}/linux/build_linux_bench_compare.sh" --arch "$ARCH" \
     --out-dir "${ROOT_DIR}/bench/out/linux/${ARCH}"
 fi
