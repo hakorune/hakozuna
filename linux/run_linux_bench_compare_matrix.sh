@@ -78,6 +78,10 @@ if [[ "$SKIP_ALLOCATOR_BUILDS" -ne 1 ]]; then
         ",${ALLOCATORS}," == *",hz6_realloc_boundary_target,"* ]]; then
     "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_target.sh"
   fi
+  if [[ ",${ALLOCATORS}," == *",hz6-small-boundary-target,"* ||
+        ",${ALLOCATORS}," == *",hz6_small_boundary_target,"* ]]; then
+    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_small_boundary_target.sh"
+  fi
 fi
 
 exec "${ROOT_DIR}/linux/run_linux_bench_compare.sh" \

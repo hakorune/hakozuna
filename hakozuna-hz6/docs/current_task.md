@@ -345,6 +345,60 @@ decision:
   1024..4096.  8K slack is cleaner and improves fixed_8k, but repeat-15 still
   has small fixed_4k/fixed_16k/target negatives.  Keep both split flags as
   controls and do not default either yet.
+
+small boundary combo profile:
+  raw: private/raw-results/linux/hz6_toy_realloc_boundary_combo_20260615_235000
+  selected vs toy_target vs realloc_boundary_target vs combo, no-stats,
+  repeat-7, 300K:
+    16..4096:
+      selected 36.272M
+      toy_target 37.704M
+      realloc_boundary_target 36.114M
+      combo 37.151M
+    1024..4096:
+      selected 33.772M
+      toy_target 34.436M
+      realloc_boundary_target 33.394M
+      combo 34.439M
+    4096..16384:
+      selected 45.040M
+      toy_target 44.884M
+      realloc_boundary_target 44.954M
+      combo 44.053M
+    fixed_4k:
+      selected 31.930M
+      toy_target 33.237M
+      realloc_boundary_target 43.929M
+      combo 45.585M
+    fixed_8k:
+      selected 42.479M
+      toy_target 42.259M
+      realloc_boundary_target 44.632M
+      combo 44.754M
+    fixed_16k:
+      selected 44.644M
+      toy_target 45.167M
+      realloc_boundary_target 44.126M
+      combo 44.532M
+
+  Add persistent profile builder:
+    hakozuna-hz6/linux/build_hz6_preload_small_boundary_target.sh
+    output:
+      hakozuna-hz6/out/linux/hz6_preload_small_boundary_target/libhakozuna_hz6_preload.so
+
+  Add shared allocator aliases:
+    hz6-small-boundary-target / hz6_small_boundary_target
+  matrix alias smoke:
+    raw: private/raw-results/linux/hz6_small_boundary_target_matrix_alias_smoke_20260615_235500
+    result:
+      run_linux_bench_compare_matrix.sh resolved hz6-small-boundary-target to
+      out/linux/hz6_preload_small_boundary_target/libhakozuna_hz6_preload.so.
+
+decision:
+  Keep as profile/control, not selected default.  It is the strongest named
+  profile so far for fixed_4k/fixed_8k while retaining Toy target's 16..4096
+  and 1024..4096 gains, but it gives up too much on 4096..16384 to become the
+  balanced default.
 ```
 
 ## Previous Closeout: HZ6 Ubuntu Preload Wrapper Attribution-L1
