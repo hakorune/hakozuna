@@ -1356,6 +1356,12 @@ static void hz6_preload_print_stats(void) {
           "malloc_size_zero=%zu malloc_size_le1024=%zu "
           "malloc_size_1025_4096=%zu malloc_size_4097_16384=%zu "
           "malloc_size_gt16384=%zu "
+          "malloc_toy_direct_class_eligible=%zu "
+          "malloc_toy_direct_class_eligible_le1024=%zu "
+          "malloc_toy_direct_class_eligible_1025_4096=%zu "
+          "malloc_toy_direct_class_enter=%zu "
+          "malloc_toy_direct_class_enter_le1024=%zu "
+          "malloc_toy_direct_class_enter_1025_4096=%zu "
           "calloc_size_zero=%zu calloc_size_le1024=%zu "
           "calloc_size_1025_4096=%zu calloc_size_4097_16384=%zu "
           "calloc_size_gt16384=%zu "
@@ -1384,6 +1390,22 @@ static void hz6_preload_print_stats(void) {
               &g_hz6_preload_phase_stats.malloc_size_4097_16384),
           hz6_preload_phase_load(
               &g_hz6_preload_phase_stats.malloc_size_gt16384),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.malloc_toy_direct_class_eligible),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats
+                   .malloc_toy_direct_class_eligible_le1024),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats
+                   .malloc_toy_direct_class_eligible_1025_4096),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats.malloc_toy_direct_class_enter),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats
+                   .malloc_toy_direct_class_enter_le1024),
+          hz6_preload_phase_load(
+              &g_hz6_preload_phase_stats
+                   .malloc_toy_direct_class_enter_1025_4096),
           hz6_preload_phase_load(
               &g_hz6_preload_phase_stats.calloc_size_zero),
           hz6_preload_phase_load(

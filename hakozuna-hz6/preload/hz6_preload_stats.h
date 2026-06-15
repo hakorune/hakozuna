@@ -20,6 +20,12 @@ typedef struct Hz6PreloadPhaseStats {
   _Atomic(size_t) malloc_midpage_boundary_fallback;
   _Atomic(size_t) malloc_realloc_boundary_slack_4k;
   _Atomic(size_t) malloc_realloc_boundary_slack_8k;
+  _Atomic(size_t) malloc_toy_direct_class_eligible;
+  _Atomic(size_t) malloc_toy_direct_class_eligible_le1024;
+  _Atomic(size_t) malloc_toy_direct_class_eligible_1025_4096;
+  _Atomic(size_t) malloc_toy_direct_class_enter;
+  _Atomic(size_t) malloc_toy_direct_class_enter_le1024;
+  _Atomic(size_t) malloc_toy_direct_class_enter_1025_4096;
   _Atomic(size_t) calloc_calls;
   _Atomic(size_t) calloc_zero_bytes;
   _Atomic(size_t) calloc_size_zero;

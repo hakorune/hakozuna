@@ -397,6 +397,24 @@ hz6_preload_malloc_midpage_boundary(Hz6Allocator* allocator, size_t size) {
 }
 #endif
 
+#if !HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1
+static void hz6_preload_count_toy_direct_class_bucket(
+    _Atomic(size_t)* total,
+    _Atomic(size_t)* le1024,
+    _Atomic(size_t)* range1025_4096,
+    size_t size) {
+  if (size == 0 || size > 4096u) {
+    return;
+  }
+  hz6_preload_phase_count(total);
+  if (size <= 1024u) {
+    hz6_preload_phase_count(le1024);
+  } else {
+    hz6_preload_phase_count(range1025_4096);
+  }
+}
+#endif
+
 #if HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1
 #if defined(__GNUC__) || defined(__clang__)
 #define HZ6_PRELOAD_TOY_BOUNDARY_UNLIKELY(expr) __builtin_expect(!!(expr), 0)
@@ -433,12 +451,28 @@ static void* hz6_preload_malloc_hz6(Hz6Allocator* allocator, size_t size) {
   }
 #endif
 #endif
+#if !HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1
+  hz6_preload_count_toy_direct_class_bucket(
+      &g_hz6_preload_phase_stats.malloc_toy_direct_class_eligible,
+      &g_hz6_preload_phase_stats.malloc_toy_direct_class_eligible_le1024,
+      &g_hz6_preload_phase_stats
+           .malloc_toy_direct_class_eligible_1025_4096,
+      size);
+#endif
 #if HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1
   if (HZ6_PRELOAD_TOY_BOUNDARY_UNLIKELY(
           size != 0 &&
           size >= HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MIN_BYTES &&
           size <= HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES &&
           size <= 4096u)) {
+#if !HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1
+    hz6_preload_count_toy_direct_class_bucket(
+        &g_hz6_preload_phase_stats.malloc_toy_direct_class_enter,
+        &g_hz6_preload_phase_stats.malloc_toy_direct_class_enter_le1024,
+        &g_hz6_preload_phase_stats
+             .malloc_toy_direct_class_enter_1025_4096,
+        size);
+#endif
     return hz6_allocator_preload_toy_malloc_direct_class(allocator, size);
   }
 #endif

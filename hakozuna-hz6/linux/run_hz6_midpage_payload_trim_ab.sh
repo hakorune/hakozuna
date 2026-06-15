@@ -573,8 +573,8 @@ print(f"root: `{root}`\n")
 readme = (root / "README.log").read_text(errors="replace")
 stats_mode = readme.split("stats=", 1)[1].splitlines()[0] if "stats=" in readme else "unknown"
 print(f"stats: `{stats_mode}`\n")
-print("| row | variant | median ops/s | median peak MiB | median current MiB | scavenge count/result | payload MiB | active source blocks | fail | source_alloc | realloc copy | realloc same-class | realloc cross-class | realloc toy->mid | realloc mid8->mid32 | mid32_alloc | mid32_prefill | mid32_filled | mid32_front_push | toy4 fast | toy4 hit | toy4 front | toy4 pop | toy4 activate | toy4 free attempt | toy4 free success | toy4 map reg | toy4 collision | toy4 free hit | toy4 free base % | toy4 free avg probe | toy4 free max probe | runroute attempt | runroute hit | runroute prechecked | runroute fallback | retire attempt | retire scan | retire candidates | retire blocks | retire desc | retire MiB | retire blocked | retire fail |")
-print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+print("| row | variant | median ops/s | median peak MiB | median current MiB | scavenge count/result | payload MiB | active source blocks | fail | source_alloc | realloc copy | realloc same-class | realloc cross-class | realloc toy->mid | realloc mid8->mid32 | toy direct eligible | toy direct eligible 1025..4096 | toy direct enter | toy direct enter 1025..4096 | mid32_alloc | mid32_prefill | mid32_filled | mid32_front_push | toy4 fast | toy4 hit | toy4 front | toy4 pop | toy4 activate | toy4 free attempt | toy4 free success | toy4 map reg | toy4 collision | toy4 free hit | toy4 free base % | toy4 free avg probe | toy4 free max probe | runroute attempt | runroute hit | runroute prechecked | runroute fallback | retire attempt | retire scan | retire candidates | retire blocks | retire desc | retire MiB | retire blocked | retire fail |")
+print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 for row in rows:
     for variant in variants:
         ops_values = []
@@ -590,6 +590,10 @@ for row in rows:
         realloc_mid8_to_mid32 = 0
         payload_mib = 0.0
         active_source_blocks = 0
+        toy_direct_eligible = 0
+        toy_direct_eligible_mid = 0
+        toy_direct_enter = 0
+        toy_direct_enter_mid = 0
         mid32_alloc = 0
         mid32_prefill = 0
         mid32_filled = 0
@@ -655,6 +659,14 @@ for row in rows:
             active_source_blocks = max(
                 active_source_blocks, stats.get("active_source_blocks", 0)
             )
+            toy_direct_eligible += stats.get("malloc_toy_direct_class_eligible", 0)
+            toy_direct_eligible_mid += stats.get(
+                "malloc_toy_direct_class_eligible_1025_4096", 0
+            )
+            toy_direct_enter += stats.get("malloc_toy_direct_class_enter", 0)
+            toy_direct_enter_mid += stats.get(
+                "malloc_toy_direct_class_enter_1025_4096", 0
+            )
             mid32_alloc += stats.get("midpage_32k_alloc_call", 0)
             mid32_prefill += stats.get("midpage_32k_prefill_run_call", 0)
             mid32_filled += stats.get("midpage_32k_prefill_run_filled", 0)
@@ -718,7 +730,9 @@ for row in rows:
             f"{payload_mib:.2f} | {active_source_blocks} | {fail} | "
             f"{source_alloc} | {realloc_copy} | {realloc_same_class} | "
             f"{realloc_cross_class} | {realloc_toy_to_mid} | "
-            f"{realloc_mid8_to_mid32} | {mid32_alloc} | {mid32_prefill} | "
+            f"{realloc_mid8_to_mid32} | {toy_direct_eligible} | "
+            f"{toy_direct_eligible_mid} | {toy_direct_enter} | "
+            f"{toy_direct_enter_mid} | {mid32_alloc} | {mid32_prefill} | "
             f"{mid32_filled} | {mid32_front_push} | {toy4_fast} | "
             f"{toy4_hit} | {toy4_front} | {toy4_pop} | {toy4_activate} | "
             f"{toy4_free_attempt} | {toy4_free_success} | {toy4_map_reg} | "

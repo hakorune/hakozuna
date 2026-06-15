@@ -678,6 +678,40 @@ Toy target DSO:
       broad mid-small win. Keep the gate as a reusable control for profile
       shaping; do not promote it into selected.
 
+  direct-class phase attribution:
+    Add stats-only preload phase counters:
+      malloc_toy_direct_class_eligible
+      malloc_toy_direct_class_eligible_le1024
+      malloc_toy_direct_class_eligible_1025_4096
+      malloc_toy_direct_class_enter
+      malloc_toy_direct_class_enter_le1024
+      malloc_toy_direct_class_enter_1025_4096
+
+    raw: private/raw-results/linux/hz6_toy_direct_phase_stats_20260616_002200
+    stats+diagnostic repeat-3, 200K, focused+fixed:
+      16..4096 selected:
+        eligible_total=1220604
+        eligible_1025_4096=918756
+        toy4_fast_attempt=918756
+        toy4_fast_hit=916392
+      1024..4096 selected:
+        eligible_total=1220382
+        eligible_1025_4096=1219968
+        toy4_fast_attempt=1219968
+        toy4_fast_hit=1216893
+      fixed_4k selected:
+        eligible_total=1220379
+        eligible_1025_4096=1220355
+        realloc_toy_to_mid=19068
+
+    read:
+      The broad mid-small rows are almost entirely Toy class4 eligible after
+      the preload boundary split. min1025 is structurally plausible for
+      1024..4096 because it enters nearly all useful direct-class candidates,
+      but production A/B still shows the selected guard balance is not clean.
+      Future speed work should not repeat max/min gating as a default path;
+      it needs a thinner local-run/page metadata route or a profile DSO.
+
   runner integration:
     Add shared allocator alias:
       hz6-toy-target / hz6_toy_target
