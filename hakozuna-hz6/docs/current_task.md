@@ -61,6 +61,9 @@ Exact realloc-boundary profiles:
 Adaptive realloc-boundary profiles:
   adaptive-4k / adaptive-8k / adaptive combined
 
+MidPage target-heavy profile:
+  hz6-midpage-skip-transfer-target
+
 Other controls:
   hz6-aligned-target / calloc-direct / calloc-real / calloc-large-real
 
@@ -74,6 +77,7 @@ Runners:
 ```text
 Profile frontier:
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_060739
+  private/raw-results/linux/hz6_midpage_skip_transfer_alias_smoke_20260616_065421
 
 Realloc/adaptive profile repeats:
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_042441
@@ -87,16 +91,12 @@ Calloc direct-HZ6 control:
   private/raw-results/linux/hz6_preload_calloc_audit_20260616_051752
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_051752
 
-Fixed-boundary/fixed-cost profile repeats:
+Recent fixed/profile repeats:
   private/raw-results/linux/hz6_fixed_boundary_profile_frontier_20260616_063106
-  private/raw-results/linux/hz6_ubuntu_size_slices_20260616_063423
-  private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_062305
-  private/raw-results/linux/hz6_static_table_trim_ab_20260616_055648
-  private/raw-results/linux/hz6_static_table_trim_ab_20260616_061733
   private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_063918
   private/raw-results/linux/hz6_fixed_quiescent_rss_matrix_20260616_064654
-  private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_064915
-  private/raw-results/linux/hz6_ubuntu_selected_balance_20260616_060238
+  private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_{062305,064915,065310,065329}
+  private/raw-results/linux/hz6_ubuntu_size_slices_20260616_063423
 
 Details:
   archive/current_task_2026-06-16_{adaptive_profile_snapshot,calloc_profile_snapshot,fixed_boundary_profile_repeat}.md
@@ -141,10 +141,9 @@ Default no-go/control-only without substantially different evidence:
    It is still not a broad default because 16..4096/1024..4096 regress.
 9. Do not promote realloc-boundary/adaptive to selected/default without a new
    guard that also preserves tiny, mixed-small, target, fixed, RSS, and stats.
-10. Next lever is not probe widening: fixed-cost audit shows all-local-free
-    payload plus static/map/frontcache floor; use FixedQuiescentRssMatrix-L1
-    before trim/release defaulting.
-11. 8K run shrink under Toy-map8192 RSS profile is no-go/control: peak barely
-    moves and fixed_4k/fixed_16k speed regresses.
-12. Keep this file below about 150 lines; archive completed evidence snapshots.
+10. Fixed-cost audit points to all-local-free payload plus static/map/frontcache
+    floor; use FixedQuiescentRssMatrix-L1 before trim/release defaulting.
+11. 8K run shrink under Toy-map8192 RSS profile is no-go/control.
+12. MidPage skip-transfer is target-heavy profile only.
+13. Keep this file below about 150 lines; archive completed evidence snapshots.
 ```

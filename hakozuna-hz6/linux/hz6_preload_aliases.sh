@@ -58,6 +58,11 @@ hz6_preload_build_requested_aliases() {
     "${root_dir}/hakozuna-hz6/linux/build_hz6_preload_midpage_trusted_class_target.sh"
   fi
   if hz6_preload_allocator_requested "$allocators_csv" \
+      "hz6-midpage-skip-transfer-target" \
+      "hz6_midpage_skip_transfer_target"; then
+    "${root_dir}/hakozuna-hz6/linux/build_hz6_preload_midpage_skip_transfer_target.sh"
+  fi
+  if hz6_preload_allocator_requested "$allocators_csv" \
       "hz6-realloc-boundary-target" "hz6_realloc_boundary_target"; then
     "${root_dir}/hakozuna-hz6/linux/build_hz6_preload_realloc_boundary_target.sh"
   fi
