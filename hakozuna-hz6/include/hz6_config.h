@@ -391,9 +391,10 @@
 #endif
 
 #ifndef HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1
-/* No-go Toy active-map free shortcut.  Base-slot-first lookup was neutral on
- * 1024..4096 and regressed 16..4096, so keep the loop shape as default. */
-#define HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1 0
+/* Selected Toy active-map free shortcut.  After the raw frontcache pop
+ * selected shape, base-slot-first lookup improves tiny/mixed and reduces
+ * target route fallbacks without changing route safety counters. */
+#define HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1 1
 #endif
 
 #ifndef HZ6_TOY_TRUSTED_ACTIVATE_SKIP_SOURCE_BLOCK_CHECK_L1

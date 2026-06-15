@@ -210,6 +210,9 @@ variant_flags() {
     current_bias_fast)
       hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FAST_L1 1
       ;;
+    current_bias_off)
+      hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1 0
+      ;;
     current_bias_4x)
       hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_NUMERATOR 4
       ;;
@@ -228,6 +231,9 @@ variant_flags() {
     raw_frontcache_pop)
       hz6_preload_replace_define flags HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1 1
       ;;
+    direct_max5)
+      hz6_preload_replace_define flags HZ6_LOCAL_CACHE_DIRECT_MAX_CLASS 5
+      ;;
     prefill_descriptor_out)
       hz6_preload_replace_define flags HZ6_FRONT_PREFILL_DESCRIPTOR_OUT_L1 1
       ;;
@@ -236,6 +242,15 @@ variant_flags() {
       ;;
     preload_midpage_fast_free)
       hz6_preload_replace_define flags HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1 1
+      ;;
+    toy_free_fast)
+      hz6_preload_replace_define flags HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1 1
+      ;;
+    toy_addr_envelope)
+      hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_MAP_ADDR_ENVELOPE_L1 1
+      ;;
+    toy_preclassified_malloc)
+      hz6_preload_replace_define flags HZ6_TOY_PRECLASSIFIED_MALLOC_L1 1
       ;;
     run2304k)
       hz6_preload_replace_define flags HZ6_MIDPAGE_32K_RUN_BYTES 2359296

@@ -38,6 +38,55 @@ Archived chronological ledger:
   archive/current_task_2026-06_history.md
 ```
 
+## Recent Closeout: HZ6 Ubuntu Toy ActiveMap Free FastSlot After RawPop-L1
+
+```text
+goal:
+  Re-test low-risk Toy/small controls after the selected raw frontcache pop
+  changed the production hot-path code shape.
+
+implementation:
+  Add runner controls:
+    toy_free_fast
+    toy_addr_envelope
+    toy_preclassified_malloc
+    current_bias_off
+    direct_max5
+  Select HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1=1.
+
+evidence:
+  production repeat-15:
+    raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_201517
+    16..256       selected 55.832M -> toy_free_fast 56.483M
+    16..4096      selected 35.258M -> toy_free_fast 35.726M
+    1024..4096    selected 33.027M -> toy_free_fast 32.865M
+    4096..16384   selected 43.657M -> toy_free_fast 44.074M
+  diagnostic repeat-3:
+    raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_201548
+    route_invalid=0
+    route_miss=0
+    route_register_fail=0
+    alloc_fail=0
+    4096..16384 route_after_maps sample: 1396 -> 1171
+  selected baseline after default:
+    raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_201731
+    4096..16384 selected 43.799M / 94.12 MiB
+  selected balance refresh:
+    raw: private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_201844
+    4096..16384 hz6 41.718M / 94.25 MiB
+    4096..16384 tcmalloc 35.058M / 97.88 MiB
+    4096..16384 hz4 25.852M / 112.88 MiB
+
+decision:
+  selected/default. This is a small but balanced production code-shape win after
+  raw-pop. Keep toy_addr_envelope, toy_preclassified_malloc, current_bias_off,
+  and direct_max5 as controls/no-go unless a later baseline changes the shape.
+
+next:
+  Do not widen active-map capacity/probe next. Prefer hot-path attribution
+  refresh or a non-active-map preload boundary/code-shape lane.
+```
+
 ## Recent Closeout: HZ6 Ubuntu MidPage ActiveMap Collision Layout Audit-L1
 
 ```text

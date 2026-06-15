@@ -6,7 +6,17 @@ preload-boundary malloc skip and static table trim became default.
 Latest full matrix raw run:
 
 ```text
-hakozuna-hz6/private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_200259
+hakozuna-hz6/private/raw-results/linux/hz6_ubuntu_selected_balance_20260615_201844
+```
+
+This latest refresh was run after
+`HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1=1` became selected/default:
+
+```bash
+./hakozuna-hz6/linux/run_hz6_ubuntu_selected_balance_matrix.sh \
+  --runs 3 \
+  --iters 300000 \
+  --skip-builds
 ```
 
 Latest production-shape HZ6-only check after
@@ -56,14 +66,14 @@ The current HZ6 Ubuntu selected lane has its clearest speed/RSS balance on
 
 ```text
 HZ6 beats HZ4 on throughput:
-  hz6 54.836M vs hz4 31.186M
+  hz6 41.718M vs hz4 25.852M
 
 HZ6 uses less peak RSS than HZ4:
-  hz6 94.50 MiB vs hz4 130.25 MiB
+  hz6 94.25 MiB vs hz4 112.88 MiB
 
 HZ6 beats mimalloc strongly on both speed and RSS on this row:
-  hz6 54.836M / 94.50 MiB
-  mimalloc 1.303M / 255.38 MiB
+  hz6 41.718M / 94.25 MiB
+  mimalloc 1.294M / 255.62 MiB
 ```
 
 HZ6 is still not the absolute speed ceiling because HZ3 remains far ahead, but
@@ -71,9 +81,9 @@ the latest selected lane beats tcmalloc on the MidPage target row:
 
 ```text
 4096..16384:
-  hz3      76.033M /  73.75 MiB
-  hz6      54.836M /  94.50 MiB
-  tcmalloc 46.507M /  99.00 MiB
+  hz3      51.570M /  73.62 MiB
+  hz6      41.718M /  94.25 MiB
+  tcmalloc 35.058M /  97.88 MiB
 ```
 
 So the honest positioning is:
