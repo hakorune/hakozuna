@@ -135,12 +135,14 @@ Default no-go/control-only without substantially different evidence:
    It is still not a broad default because focused mixed-small rows regress.
 9. Do not promote realloc-boundary/adaptive to selected/default without a new
    guard that also preserves tiny, mixed-small, target, fixed, RSS, and stats.
-10. Fixed-cost audit points to all-local-free payload plus static/map/frontcache
-    floor; use FixedQuiescentRssMatrix-L1 before trim/release defaulting.
+10. Fixed-cost/quiescent audits point to peak-RSS payload/static floor, while
+    `malloc_trim(0)` recovers current RSS; do not default free-time release.
 11. 8K run shrink under Toy-map8192 RSS profile is no-go/control.
 12. MidPage skip-transfer is control/watch only: latest profile frontier loses
     16..4096 and 4096..16384 despite 1024..4096/fixed_16k signals.
 13. Toy-map8192 external is now an explicit lower-RSS fixed-boundary profile;
     packed-frontcache/sourceblock combos remain runner-only controls/no-go.
-14. Keep this file below about 150 lines; archive completed evidence snapshots.
+14. Next broad guard: refresh selected/profile frontier periodically, not more
+    fixed-only default behavior.
+15. Keep this file below about 150 lines; archive completed evidence snapshots.
 ```
