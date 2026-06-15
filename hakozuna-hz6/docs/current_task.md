@@ -61,10 +61,8 @@ Exact realloc-boundary profiles:
 Adaptive realloc-boundary profiles:
   adaptive-4k / adaptive-8k / adaptive combined
 
-MidPage target-heavy profile:
-  hz6-midpage-skip-transfer-target
-
 Other controls:
+  hz6-midpage-skip-transfer-target
   hz6-aligned-target / calloc-direct / calloc-real / calloc-large-real
 
 Runners:
@@ -77,6 +75,7 @@ Runners:
 ```text
 Profile frontier:
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_060739
+  private/raw-results/linux/hz6_preload_profile_frontier_20260616_065739
   private/raw-results/linux/hz6_midpage_skip_transfer_alias_smoke_20260616_065421
 
 Realloc/adaptive profile repeats:
@@ -144,6 +143,7 @@ Default no-go/control-only without substantially different evidence:
 10. Fixed-cost audit points to all-local-free payload plus static/map/frontcache
     floor; use FixedQuiescentRssMatrix-L1 before trim/release defaulting.
 11. 8K run shrink under Toy-map8192 RSS profile is no-go/control.
-12. MidPage skip-transfer is target-heavy profile only.
+12. MidPage skip-transfer is control/watch only: latest profile frontier loses
+    16..4096 and 4096..16384 despite 1024..4096/fixed_16k signals.
 13. Keep this file below about 150 lines; archive completed evidence snapshots.
 ```
