@@ -102,6 +102,7 @@ Profiles:
   private/raw-results/linux/hz6_realloc_adaptive_after_toytrusted_prod_20260616_032451
   private/raw-results/linux/hz6_calloc_real_focused_guard_20260616_035449
   private/raw-results/linux/hz6_calloc_real_size_guard_20260616_035459
+  private/raw-results/linux/hz6_calloc_real_late_probe_focused_guard_20260616_041228
 
 RSS:
   hz6_rss_residency_audit_refresh_20260616_025309 / hz6_quiescent_rss_attribution_refresh_20260616_025320
@@ -123,7 +124,7 @@ Default no-go or control-only unless new evidence is substantially different:
   same-owner trusted free default
   free-path cold-retire/source-block release default
   standalone Toy direct-class default outside ToyTrustedDefault-L1
-  realloc-boundary slack/adaptive or calloc real-fallback default
+  realloc-boundary slack/adaptive or calloc real-fallback/late-probe default
   source-run reuse/reclaim default
 ```
 

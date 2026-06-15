@@ -31,4 +31,9 @@ For historical investigation:
 Do not append new benchmark logs here unless archiving a completed compaction
 snapshot. Keep active decisions in the stable HZ6 docs and keep current_task.md
 short.
+
+Large files in this directory are intentional historical ledgers. If a
+current_task-style file grows past a few hundred lines outside docs/archive/,
+archive a dated snapshot here and replace the active file with a short
+orientation ledger plus links.
 ```

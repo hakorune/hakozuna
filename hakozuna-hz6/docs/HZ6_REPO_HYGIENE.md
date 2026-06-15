@@ -28,6 +28,9 @@ Rule:
 Use current_task.md as a short orientation entry point, not as the primary
 chronological ledger.
 If a decision is stable, summarize it in the selected summary or lane guide.
+If a current_task-style file grows past a few hundred lines, archive a dated
+snapshot under docs/archive/ and replace the active file with links plus the
+next concrete work items.
 ```
 
 ## Lane Status Vocabulary
