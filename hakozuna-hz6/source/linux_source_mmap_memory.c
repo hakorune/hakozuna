@@ -251,6 +251,74 @@ Hz6LinuxMmapRetainStats hz6_linux_mmap_retain_stats_snapshot(void) {
   return stats;
 }
 
+size_t hz6_linux_mmap_retain_flush(size_t max_bytes) {
+#if HZ6_LINUX_MMAP_RETAIN_L1
+  if (max_bytes == 0) {
+    max_bytes = (size_t)-1;
+  }
+
+  Hz6LinuxMmapRetainedEntry pending
+      [HZ6_LINUX_MMAP_RETAIN_SLOT_COUNT * 2u];
+  size_t pending_count = 0;
+  size_t flushed_bytes = 0;
+
+  pthread_mutex_lock(&g_hz6_linux_mmap_retain_mutex);
+#if HZ6_LINUX_MMAP_RETAIN_64K_STACK_L1
+  while (g_hz6_linux_mmap_retained_64k_count != 0 &&
+         pending_count < HZ6_LINUX_MMAP_RETAIN_SLOT_COUNT * 2u) {
+    size_t remaining = max_bytes - flushed_bytes;
+    if (remaining < HZ6_LINUX_MMAP_RETAIN_64K_BYTES) {
+      break;
+    }
+    void* ptr = g_hz6_linux_mmap_retained_64k
+        [--g_hz6_linux_mmap_retained_64k_count];
+    pending[pending_count++] =
+        (Hz6LinuxMmapRetainedEntry){ptr, HZ6_LINUX_MMAP_RETAIN_64K_BYTES};
+    flushed_bytes += HZ6_LINUX_MMAP_RETAIN_64K_BYTES;
+    if (g_hz6_linux_mmap_retained_bytes >=
+        HZ6_LINUX_MMAP_RETAIN_64K_BYTES) {
+      g_hz6_linux_mmap_retained_bytes -= HZ6_LINUX_MMAP_RETAIN_64K_BYTES;
+    } else {
+      g_hz6_linux_mmap_retained_bytes = 0;
+    }
+  }
+#endif
+  for (size_t i = 0; i < HZ6_LINUX_MMAP_RETAIN_SLOT_COUNT &&
+                     pending_count < HZ6_LINUX_MMAP_RETAIN_SLOT_COUNT * 2u;
+       ++i) {
+    Hz6LinuxMmapRetainedEntry* entry = &g_hz6_linux_mmap_retained[i];
+    if (!entry->ptr || entry->bytes == 0) {
+      continue;
+    }
+    size_t remaining = max_bytes - flushed_bytes;
+    if (remaining < entry->bytes) {
+      continue;
+    }
+    pending[pending_count++] = *entry;
+    flushed_bytes += entry->bytes;
+    if (g_hz6_linux_mmap_retained_bytes >= entry->bytes) {
+      g_hz6_linux_mmap_retained_bytes -= entry->bytes;
+    } else {
+      g_hz6_linux_mmap_retained_bytes = 0;
+    }
+    entry->ptr = NULL;
+    entry->bytes = 0;
+  }
+  pthread_mutex_unlock(&g_hz6_linux_mmap_retain_mutex);
+
+  for (size_t i = 0; i < pending_count; ++i) {
+    if (pending[i].ptr && pending[i].bytes != 0) {
+      (void)munmap(pending[i].ptr, pending[i].bytes);
+    }
+  }
+
+  return flushed_bytes;
+#else
+  (void)max_bytes;
+  return 0;
+#endif
+}
+
 size_t hz6_linux_page_size(void) {
   long value = sysconf(_SC_PAGESIZE);
   return value > 0 ? (size_t)value : (size_t)4096;

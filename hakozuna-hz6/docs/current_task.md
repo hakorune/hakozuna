@@ -38,7 +38,68 @@ Archived chronological ledger:
   archive/current_task_2026-06_history.md
 ```
 
-## Recent Closeout: HZ6 Ubuntu Toy ActiveMap Free FastSlot After RawPop-L1
+## Recent Closeout: HZ6 Ubuntu `malloc_trim` Retain Flush-L1
+
+```text
+latest continuation:
+  Add hz6_linux_mmap_retain_flush(size_t max_bytes).
+  Wire LD_PRELOAD malloc_trim(size_t pad) to:
+    1. scavenge HZ6 local-free descriptors
+    2. flush Linux mmap retained mappings
+    3. forward to real libc malloc_trim when present
+
+  This is explicit trim API behavior only.  It adds no malloc/free hot-path
+  branch and does not change peak RSS during the timed workload.
+
+worker read:
+  The next low-risk RSS lane is explicit trim/retain-cache flush, not another
+  active-map or route shortcut.  The already-closed source-run route-after-maps
+  lane produced zero hits and large RSS cost.
+
+residency audit:
+  raw: private/raw-results/linux/hz6_midpage_rss_audit_20260615_221838
+  selected diagnostic, 200K:
+    4096..16384:
+      mid32 all-local-free payload = 354.00 MiB
+      retire candidate payload = 354.00 MiB
+      retain retained bytes = 0.00 MiB at snapshot
+    fixed_16k:
+      mid32 all-local-free payload = 520.00 MiB
+      retire candidate payload = 520.00 MiB
+    fixed_64k:
+      retain retained bytes = 255.94 MiB
+
+  read:
+    Final all-local-free MidPage payload is highly recoverable at quiescence.
+    Runtime cold-retire remains a control because it can create source churn
+    during active rows; explicit trim is the safer default API boundary.
+
+validation:
+  stats+diagnostic raw:
+    private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_222328
+    selected vs selected_malloc_trim_before_rss, repeat-3, 200K:
+      16..4096 current RSS:    79.62 -> 27.32 MiB
+      1024..4096 current RSS:  90.75 -> 27.08 MiB
+      4096..16384 current RSS: 94.12 -> 28.49 MiB
+      fixed_16k current RSS:   93.38 -> 28.29 MiB
+      payload attribution after trim stays about 0.25 MiB
+      fail counters remain 0
+
+  production-shape raw:
+    private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_222345
+    selected vs selected_malloc_trim_before_rss, repeat-3, 300K:
+      16..4096 current RSS:    79.75 -> 27.14 MiB
+      1024..4096 current RSS:  91.00 -> 27.10 MiB
+      4096..16384 current RSS: 94.38 -> 28.32 MiB
+      fixed_16k current RSS:   93.12 -> 28.26 MiB
+
+decision:
+  Keep malloc_trim as the standard quiescent RSS return API.
+  The selected LD_PRELOAD allocator now returns both HZ6-local cached payload
+  and Linux mmap retain-cache mappings on explicit trim.
+```
+
+## Previous Closeout: HZ6 Ubuntu Toy ActiveMap Free FastSlot After RawPop-L1
 
 ```text
 latest continuation:

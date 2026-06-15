@@ -6,6 +6,7 @@
 #include "hz6_profiles.h"
 #include "hz6_preload_real.h"
 #include "hz6_preload_stats.h"
+#include "linux_source_mmap.h"
 
 #include <errno.h>
 #include <malloc.h>
@@ -785,9 +786,10 @@ int malloc_trim(size_t pad) {
   }
 
   size_t hz6_released = hz6_preload_scavenge_local_free(0);
+  size_t hz6_retained_flushed = hz6_linux_mmap_retain_flush(0);
   int saved_reentry = g_hz6_preload_reentry;
   g_hz6_preload_reentry = 1;
   int real_released = hz6_preload_real_malloc_trim(pad);
   g_hz6_preload_reentry = saved_reentry;
-  return hz6_released != 0 || real_released != 0;
+  return hz6_released != 0 || hz6_retained_flushed != 0 || real_released != 0;
 }
