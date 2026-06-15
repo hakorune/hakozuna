@@ -107,8 +107,8 @@ def parse_line(text, tag):
 
 print("# HZ6 MidPage RSS Audit\n")
 print(f"root: `{root}`\n")
-print("| row | ops/s | peak MiB | attributed MiB | static MiB | payload MiB | retain MiB | frontcache MiB | toy map MiB | midpage map MiB | active source blocks | frontcache total |")
-print("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+print("| row | ops/s | peak MiB | attributed MiB | static MiB | payload MiB | mid8 payload MiB | mid32 payload MiB | mid8 blocks | mid32 blocks | mid8 active | mid32 active | mid8 local-free | mid32 local-free | mid8 all-local-free MiB | mid32 all-local-free MiB | mid32 low-active blocks | mid32 low-active MiB | ref mismatch | retain MiB | frontcache MiB | toy map MiB | midpage map MiB | active source blocks | frontcache total |")
+print("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 for row in rows:
     text = (root / f"{row}.log").read_text(errors="replace")
     bench = parse_line(text, "threads=")
@@ -122,6 +122,19 @@ for row in rows:
         f"{mib('preload_attributed_bytes'):.2f} | "
         f"{mib('static_table_bytes'):.2f} | "
         f"{mib('source_block_payload_bytes'):.2f} | "
+        f"{mib('midpage_8k_payload_bytes'):.2f} | "
+        f"{mib('midpage_32k_payload_bytes'):.2f} | "
+        f"{int(mem.get('midpage_8k_source_blocks', 0))} | "
+        f"{int(mem.get('midpage_32k_source_blocks', 0))} | "
+        f"{int(mem.get('midpage_8k_active', 0))} | "
+        f"{int(mem.get('midpage_32k_active', 0))} | "
+        f"{int(mem.get('midpage_8k_local_free', 0))} | "
+        f"{int(mem.get('midpage_32k_local_free', 0))} | "
+        f"{mib('midpage_8k_all_local_free_payload_bytes'):.2f} | "
+        f"{mib('midpage_32k_all_local_free_payload_bytes'):.2f} | "
+        f"{int(mem.get('midpage_32k_low_active_1_4_blocks', 0))} | "
+        f"{mib('midpage_32k_low_active_1_4_payload_bytes'):.2f} | "
+        f"{int(mem.get('midpage_ref_mismatch_blocks', 0))} | "
         f"{mib('retain_retained_bytes'):.2f} | "
         f"{mib('frontcache_table_bytes'):.2f} | "
         f"{mib('toy_active_map_table_bytes'):.2f} | "

@@ -1,4 +1,5 @@
 #include "hz6_allocator.h"
+#include "../fronts/midpage/hz6_midpage_front.h"
 
 #if HZ6_DIAGNOSTIC_PROBES
 typedef struct Hz6ThinDescriptorHotCandidate {
@@ -80,6 +81,122 @@ typedef struct Hz6SlimFrontCacheEntryCandidate {
 
 static size_t hz6_sub_saturating_size(size_t a, size_t b) {
   return a > b ? a - b : 0;
+}
+
+typedef struct Hz6MidPageResidencyCounts {
+  size_t active;
+  size_t local_free;
+  size_t transfer_free;
+  size_t remote_pending;
+  size_t descriptor_refs;
+} Hz6MidPageResidencyCounts;
+
+static void hz6_stats_snapshot_count_midpage_block_descriptors(
+    const Hz6Allocator* allocator,
+    const Hz6SourceBlock* block,
+    uint16_t class_id,
+    Hz6MidPageResidencyCounts* counts) {
+  if (!allocator || !block || !counts) {
+    return;
+  }
+  for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
+    const Hz6ObjectDescriptor* descriptor = &allocator->descriptors[i];
+    if (descriptor->source_block != block || descriptor->class_id != class_id) {
+      continue;
+    }
+    switch (descriptor->state) {
+      case HZ6_STATE_ACTIVE:
+        ++counts->active;
+        ++counts->descriptor_refs;
+        break;
+      case HZ6_STATE_LOCAL_FREE:
+        ++counts->local_free;
+        ++counts->descriptor_refs;
+        break;
+      case HZ6_STATE_TRANSFER_FREE:
+        ++counts->transfer_free;
+        ++counts->descriptor_refs;
+        break;
+      case HZ6_STATE_REMOTE_PENDING:
+        ++counts->remote_pending;
+        ++counts->descriptor_refs;
+        break;
+      default:
+        break;
+    }
+  }
+}
+
+static void hz6_stats_snapshot_note_midpage_residency(
+    const Hz6SourceBlock* block,
+    uint16_t class_id,
+    const Hz6MidPageResidencyCounts* counts,
+    Hz6StatsSnapshot* snapshot) {
+  if (!block || !counts || !snapshot) {
+    return;
+  }
+  size_t* source_blocks = class_id == HZ6_MIDPAGE_32K_CLASS_ID
+                              ? &snapshot->memory_midpage_32k_source_blocks
+                              : &snapshot->memory_midpage_8k_source_blocks;
+  size_t* payload_bytes = class_id == HZ6_MIDPAGE_32K_CLASS_ID
+                              ? &snapshot->memory_midpage_32k_payload_bytes
+                              : &snapshot->memory_midpage_8k_payload_bytes;
+  size_t* active = class_id == HZ6_MIDPAGE_32K_CLASS_ID
+                       ? &snapshot->memory_midpage_32k_active_descriptors
+                       : &snapshot->memory_midpage_8k_active_descriptors;
+  size_t* local_free =
+      class_id == HZ6_MIDPAGE_32K_CLASS_ID
+          ? &snapshot->memory_midpage_32k_local_free_descriptors
+          : &snapshot->memory_midpage_8k_local_free_descriptors;
+  size_t* transfer_free =
+      class_id == HZ6_MIDPAGE_32K_CLASS_ID
+          ? &snapshot->memory_midpage_32k_transfer_free_descriptors
+          : &snapshot->memory_midpage_8k_transfer_free_descriptors;
+  size_t* remote_pending =
+      class_id == HZ6_MIDPAGE_32K_CLASS_ID
+          ? &snapshot->memory_midpage_32k_remote_pending_descriptors
+          : &snapshot->memory_midpage_8k_remote_pending_descriptors;
+  size_t* all_local_free_blocks =
+      class_id == HZ6_MIDPAGE_32K_CLASS_ID
+          ? &snapshot->memory_midpage_32k_all_local_free_blocks
+          : &snapshot->memory_midpage_8k_all_local_free_blocks;
+  size_t* all_local_free_payload =
+      class_id == HZ6_MIDPAGE_32K_CLASS_ID
+          ? &snapshot->memory_midpage_32k_all_local_free_payload_bytes
+          : &snapshot->memory_midpage_8k_all_local_free_payload_bytes;
+  size_t* active_zero_local_free_nonzero_blocks =
+      class_id == HZ6_MIDPAGE_32K_CLASS_ID
+          ? &snapshot->memory_midpage_32k_active_zero_local_free_nonzero_blocks
+          : &snapshot->memory_midpage_8k_active_zero_local_free_nonzero_blocks;
+  size_t* low_active_blocks =
+      class_id == HZ6_MIDPAGE_32K_CLASS_ID
+          ? &snapshot->memory_midpage_32k_low_active_1_4_blocks
+          : &snapshot->memory_midpage_8k_low_active_1_4_blocks;
+  size_t* low_active_payload =
+      class_id == HZ6_MIDPAGE_32K_CLASS_ID
+          ? &snapshot->memory_midpage_32k_low_active_1_4_payload_bytes
+          : &snapshot->memory_midpage_8k_low_active_1_4_payload_bytes;
+
+  ++*source_blocks;
+  *payload_bytes += block->bytes;
+  *active += counts->active;
+  *local_free += counts->local_free;
+  *transfer_free += counts->transfer_free;
+  *remote_pending += counts->remote_pending;
+
+  if (counts->active == 0 && counts->local_free != 0 &&
+      counts->transfer_free == 0 && counts->remote_pending == 0) {
+    ++*all_local_free_blocks;
+    *all_local_free_payload += block->bytes;
+    ++*active_zero_local_free_nonzero_blocks;
+  }
+  if (counts->active >= 1 && counts->active <= 4) {
+    ++*low_active_blocks;
+    *low_active_payload += block->bytes;
+  }
+  if (hz6_source_block_ref_count(block) != counts->descriptor_refs) {
+    ++snapshot->memory_midpage_ref_mismatch_blocks;
+  }
 }
 
 static void hz6_stats_snapshot_memory_attribution(
@@ -187,6 +304,23 @@ static void hz6_stats_snapshot_memory_attribution(
       ++ref_nonzero_source_blocks;
     } else {
       ++ref_zero_source_blocks;
+    }
+    const uint16_t midpage_classes[] = {
+        HZ6_MIDPAGE_8K_CLASS_ID,
+        HZ6_MIDPAGE_32K_CLASS_ID,
+    };
+    for (size_t class_index = 0; class_index < 2u; ++class_index) {
+      uint16_t class_id = midpage_classes[class_index];
+      Hz6MidPageResidencyCounts counts = {0};
+      hz6_stats_snapshot_count_midpage_block_descriptors(
+          allocator, block, class_id, &counts);
+      if (counts.descriptor_refs == 0 &&
+          !(block->run_front_id == HZ6_FRONT_MIDPAGE &&
+            block->run_class_id == class_id)) {
+        continue;
+      }
+      hz6_stats_snapshot_note_midpage_residency(
+          block, class_id, &counts, snapshot);
     }
   }
   snapshot->memory_active_source_blocks = active_source_blocks;

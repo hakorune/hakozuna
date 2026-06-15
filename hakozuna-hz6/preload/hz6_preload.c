@@ -262,6 +262,29 @@ static void hz6_preload_print_stats(void) {
   size_t memory_registered_source_blocks = 0;
   size_t memory_ref_nonzero_source_blocks = 0;
   size_t memory_ref_zero_source_blocks = 0;
+  size_t memory_midpage_8k_source_blocks = 0;
+  size_t memory_midpage_32k_source_blocks = 0;
+  size_t memory_midpage_8k_payload_bytes = 0;
+  size_t memory_midpage_32k_payload_bytes = 0;
+  size_t memory_midpage_8k_active_descriptors = 0;
+  size_t memory_midpage_32k_active_descriptors = 0;
+  size_t memory_midpage_8k_local_free_descriptors = 0;
+  size_t memory_midpage_32k_local_free_descriptors = 0;
+  size_t memory_midpage_8k_transfer_free_descriptors = 0;
+  size_t memory_midpage_32k_transfer_free_descriptors = 0;
+  size_t memory_midpage_8k_remote_pending_descriptors = 0;
+  size_t memory_midpage_32k_remote_pending_descriptors = 0;
+  size_t memory_midpage_8k_all_local_free_blocks = 0;
+  size_t memory_midpage_32k_all_local_free_blocks = 0;
+  size_t memory_midpage_8k_all_local_free_payload_bytes = 0;
+  size_t memory_midpage_32k_all_local_free_payload_bytes = 0;
+  size_t memory_midpage_8k_active_zero_local_free_nonzero_blocks = 0;
+  size_t memory_midpage_32k_active_zero_local_free_nonzero_blocks = 0;
+  size_t memory_midpage_8k_low_active_1_4_blocks = 0;
+  size_t memory_midpage_32k_low_active_1_4_blocks = 0;
+  size_t memory_midpage_8k_low_active_1_4_payload_bytes = 0;
+  size_t memory_midpage_32k_low_active_1_4_payload_bytes = 0;
+  size_t memory_midpage_ref_mismatch_blocks = 0;
 #endif
 
   pthread_mutex_lock(&g_hz6_preload_allocator_registry_mutex);
@@ -538,6 +561,52 @@ static void hz6_preload_print_stats(void) {
     memory_registered_source_blocks += stats.memory_registered_source_blocks;
     memory_ref_nonzero_source_blocks += stats.memory_ref_nonzero_source_blocks;
     memory_ref_zero_source_blocks += stats.memory_ref_zero_source_blocks;
+    memory_midpage_8k_source_blocks +=
+        stats.memory_midpage_8k_source_blocks;
+    memory_midpage_32k_source_blocks +=
+        stats.memory_midpage_32k_source_blocks;
+    memory_midpage_8k_payload_bytes +=
+        stats.memory_midpage_8k_payload_bytes;
+    memory_midpage_32k_payload_bytes +=
+        stats.memory_midpage_32k_payload_bytes;
+    memory_midpage_8k_active_descriptors +=
+        stats.memory_midpage_8k_active_descriptors;
+    memory_midpage_32k_active_descriptors +=
+        stats.memory_midpage_32k_active_descriptors;
+    memory_midpage_8k_local_free_descriptors +=
+        stats.memory_midpage_8k_local_free_descriptors;
+    memory_midpage_32k_local_free_descriptors +=
+        stats.memory_midpage_32k_local_free_descriptors;
+    memory_midpage_8k_transfer_free_descriptors +=
+        stats.memory_midpage_8k_transfer_free_descriptors;
+    memory_midpage_32k_transfer_free_descriptors +=
+        stats.memory_midpage_32k_transfer_free_descriptors;
+    memory_midpage_8k_remote_pending_descriptors +=
+        stats.memory_midpage_8k_remote_pending_descriptors;
+    memory_midpage_32k_remote_pending_descriptors +=
+        stats.memory_midpage_32k_remote_pending_descriptors;
+    memory_midpage_8k_all_local_free_blocks +=
+        stats.memory_midpage_8k_all_local_free_blocks;
+    memory_midpage_32k_all_local_free_blocks +=
+        stats.memory_midpage_32k_all_local_free_blocks;
+    memory_midpage_8k_all_local_free_payload_bytes +=
+        stats.memory_midpage_8k_all_local_free_payload_bytes;
+    memory_midpage_32k_all_local_free_payload_bytes +=
+        stats.memory_midpage_32k_all_local_free_payload_bytes;
+    memory_midpage_8k_active_zero_local_free_nonzero_blocks +=
+        stats.memory_midpage_8k_active_zero_local_free_nonzero_blocks;
+    memory_midpage_32k_active_zero_local_free_nonzero_blocks +=
+        stats.memory_midpage_32k_active_zero_local_free_nonzero_blocks;
+    memory_midpage_8k_low_active_1_4_blocks +=
+        stats.memory_midpage_8k_low_active_1_4_blocks;
+    memory_midpage_32k_low_active_1_4_blocks +=
+        stats.memory_midpage_32k_low_active_1_4_blocks;
+    memory_midpage_8k_low_active_1_4_payload_bytes +=
+        stats.memory_midpage_8k_low_active_1_4_payload_bytes;
+    memory_midpage_32k_low_active_1_4_payload_bytes +=
+        stats.memory_midpage_32k_low_active_1_4_payload_bytes;
+    memory_midpage_ref_mismatch_blocks +=
+        stats.memory_midpage_ref_mismatch_blocks;
 #endif
   }
   pthread_mutex_unlock(&g_hz6_preload_allocator_registry_mutex);
@@ -857,7 +926,30 @@ static void hz6_preload_print_stats(void) {
           "active_source_blocks=%zu "
           "registered_source_blocks=%zu "
           "ref_nonzero_source_blocks=%zu "
-          "ref_zero_source_blocks=%zu\n",
+          "ref_zero_source_blocks=%zu "
+          "midpage_8k_source_blocks=%zu "
+          "midpage_32k_source_blocks=%zu "
+          "midpage_8k_payload_bytes=%zu "
+          "midpage_32k_payload_bytes=%zu "
+          "midpage_8k_active=%zu "
+          "midpage_32k_active=%zu "
+          "midpage_8k_local_free=%zu "
+          "midpage_32k_local_free=%zu "
+          "midpage_8k_transfer_free=%zu "
+          "midpage_32k_transfer_free=%zu "
+          "midpage_8k_remote_pending=%zu "
+          "midpage_32k_remote_pending=%zu "
+          "midpage_8k_all_local_free_blocks=%zu "
+          "midpage_32k_all_local_free_blocks=%zu "
+          "midpage_8k_all_local_free_payload_bytes=%zu "
+          "midpage_32k_all_local_free_payload_bytes=%zu "
+          "midpage_8k_active_zero_local_free_nonzero_blocks=%zu "
+          "midpage_32k_active_zero_local_free_nonzero_blocks=%zu "
+          "midpage_8k_low_active_1_4_blocks=%zu "
+          "midpage_32k_low_active_1_4_blocks=%zu "
+          "midpage_8k_low_active_1_4_payload_bytes=%zu "
+          "midpage_32k_low_active_1_4_payload_bytes=%zu "
+          "midpage_ref_mismatch_blocks=%zu\n",
           allocator_count, memory_descriptor_table_bytes,
           memory_route_table_bytes, memory_source_block_table_bytes,
           memory_frontcache_table_bytes, memory_transfer_table_bytes,
@@ -868,7 +960,28 @@ static void hz6_preload_print_stats(void) {
           preload_attributed_bytes, memory_frontcache_total,
           memory_frontcache_largest_bin, memory_active_source_blocks,
           memory_registered_source_blocks, memory_ref_nonzero_source_blocks,
-          memory_ref_zero_source_blocks);
+          memory_ref_zero_source_blocks, memory_midpage_8k_source_blocks,
+          memory_midpage_32k_source_blocks, memory_midpage_8k_payload_bytes,
+          memory_midpage_32k_payload_bytes,
+          memory_midpage_8k_active_descriptors,
+          memory_midpage_32k_active_descriptors,
+          memory_midpage_8k_local_free_descriptors,
+          memory_midpage_32k_local_free_descriptors,
+          memory_midpage_8k_transfer_free_descriptors,
+          memory_midpage_32k_transfer_free_descriptors,
+          memory_midpage_8k_remote_pending_descriptors,
+          memory_midpage_32k_remote_pending_descriptors,
+          memory_midpage_8k_all_local_free_blocks,
+          memory_midpage_32k_all_local_free_blocks,
+          memory_midpage_8k_all_local_free_payload_bytes,
+          memory_midpage_32k_all_local_free_payload_bytes,
+          memory_midpage_8k_active_zero_local_free_nonzero_blocks,
+          memory_midpage_32k_active_zero_local_free_nonzero_blocks,
+          memory_midpage_8k_low_active_1_4_blocks,
+          memory_midpage_32k_low_active_1_4_blocks,
+          memory_midpage_8k_low_active_1_4_payload_bytes,
+          memory_midpage_32k_low_active_1_4_payload_bytes,
+          memory_midpage_ref_mismatch_blocks);
 #endif
 
   fprintf(stderr,

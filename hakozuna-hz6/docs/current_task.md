@@ -394,6 +394,51 @@ Next recommended optimization lane:
   payload/RSS pressure or a free-hit shape that does not add a branch to every
   MidPage free attempt.
 
+MidPagePayloadResidencyAudit-L1 task:
+  goal:
+    Split MidPage source payload residency by source block and descriptor state
+    before adding any release/decommit behavior. The key question is whether
+    2MiB 32K runs are pinned by ACTIVE descriptors or by LOCAL_FREE/frontcache
+    descriptors.
+  implementation:
+    Add diagnostic-only snapshot counters in Hz6StatsSnapshot and
+    HZ6_PRELOAD_MEMORY_ATTR. The audit scans descriptor/source-block state from
+    hz6_stats_snapshot(); no production hot-path branch or behavior changes.
+  required read:
+    midpage_8k/32k source blocks and payload bytes
+    ACTIVE / LOCAL_FREE / TRANSFER_FREE / REMOTE_PENDING descriptor counts
+    all-local-free payload bytes
+    low-active 1..4 blocks and payload bytes
+    ref mismatch blocks
+  next gate:
+    If all-local-free or low-active 32K payload is material, implement a dry-run
+    cold source-block retire candidate counter. If most payload is ACTIVE, stop
+    RSS release work and return to speed/free-hit lanes.
+
+MidPagePayloadResidencyAudit-L1 result:
+  implementation:
+    Hz6StatsSnapshot and HZ6_PRELOAD_MEMORY_ATTR now split MidPage source
+    payload by 8K/32K source block and descriptor residency. The RSS audit
+    runner prints the new residency columns.
+  raw:
+    private/raw-results/linux/hz6_midpage_rss_audit_20260615_171658
+  read:
+    4096..16384:
+      total payload 399.25 MiB
+      MidPage 8K payload 45.06 MiB
+      MidPage 32K payload 354.00 MiB
+      MidPage 32K source blocks 177
+      MidPage 32K active descriptors 0
+      MidPage 32K local-free descriptors 11328
+      MidPage 32K all-local-free payload 354.00 MiB
+      ref mismatch 0
+    16..4096 and 1024..4096 also show MidPage all-local-free payload, but the
+    target row is the clear RSS opportunity.
+  decision:
+    proceed to MidPageColdSourceBlockRetireDryRun-L1. The target payload is not
+    pinned by ACTIVE descriptors; it is retained by LOCAL_FREE/frontcache
+    descriptors, so a batch/out-of-line retire design is worth auditing.
+
 MidPage32KRunFineLadder-L1 task:
   goal:
     Re-check the 32K MidPage run-size ridge after active-map register fast-slot
