@@ -13,6 +13,11 @@ static inline int hz6_toy_small_hotpath_diag_is_toy_small(uint16_t front_id,
          class_id < HZ6_FRONT_CACHE_CLASS_COUNT;
 }
 
+static inline int hz6_toy_small_hotpath_diag_is_class4(uint16_t front_id,
+                                                       uint16_t class_id) {
+  return front_id == HZ6_FRONT_TOY && class_id == 4u;
+}
+
 static inline void hz6_toy_small_hotpath_diag_malloc_fast_attempt(
     Hz6Allocator* allocator,
     uint16_t front_id,
@@ -21,6 +26,9 @@ static inline void hz6_toy_small_hotpath_diag_malloc_fast_attempt(
   if (allocator && hz6_toy_small_hotpath_diag_is_toy_small(front_id,
                                                            class_id)) {
     ++allocator->stats.toy_small_malloc_fast_attempt;
+    if (hz6_toy_small_hotpath_diag_is_class4(front_id, class_id)) {
+      ++allocator->stats.toy_class4_malloc_fast_attempt;
+    }
   }
 #else
   (void)allocator;
@@ -38,6 +46,9 @@ static inline void hz6_toy_small_hotpath_diag_malloc_fast_hit(
                                                            class_id)) {
     ++allocator->stats.toy_small_malloc_fast_hit;
     ++allocator->stats.toy_small_activate_descriptor;
+    if (hz6_toy_small_hotpath_diag_is_class4(front_id, class_id)) {
+      ++allocator->stats.toy_class4_malloc_fast_hit;
+    }
   }
 #else
   (void)allocator;
@@ -54,6 +65,9 @@ static inline void hz6_toy_small_hotpath_diag_malloc_front_dispatch(
   if (allocator && hz6_toy_small_hotpath_diag_is_toy_small(front_id,
                                                            class_id)) {
     ++allocator->stats.toy_small_malloc_front_dispatch;
+    if (hz6_toy_small_hotpath_diag_is_class4(front_id, class_id)) {
+      ++allocator->stats.toy_class4_malloc_front_dispatch;
+    }
   }
 #else
   (void)allocator;
@@ -134,6 +148,9 @@ static inline void hz6_toy_small_hotpath_diag_malloc_frontcache_pop(
   if (allocator && hz6_toy_small_hotpath_diag_is_toy_small(front_id,
                                                            class_id)) {
     ++allocator->stats.toy_small_malloc_frontcache_pop;
+    if (hz6_toy_small_hotpath_diag_is_class4(front_id, class_id)) {
+      ++allocator->stats.toy_class4_malloc_frontcache_pop;
+    }
   }
 #else
   (void)allocator;
@@ -150,6 +167,9 @@ static inline void hz6_toy_small_hotpath_diag_malloc_activate_success(
   if (allocator && hz6_toy_small_hotpath_diag_is_toy_small(front_id,
                                                            class_id)) {
     ++allocator->stats.toy_small_malloc_activate_success;
+    if (hz6_toy_small_hotpath_diag_is_class4(front_id, class_id)) {
+      ++allocator->stats.toy_class4_malloc_activate_success;
+    }
   }
 #else
   (void)allocator;
@@ -166,6 +186,9 @@ static inline void hz6_toy_small_hotpath_diag_free_cache_attempt(
   if (allocator && hz6_toy_small_hotpath_diag_is_toy_small(front_id,
                                                            class_id)) {
     ++allocator->stats.toy_small_free_cache_attempt;
+    if (hz6_toy_small_hotpath_diag_is_class4(front_id, class_id)) {
+      ++allocator->stats.toy_class4_free_cache_attempt;
+    }
   }
 #else
   (void)allocator;
@@ -182,6 +205,9 @@ static inline void hz6_toy_small_hotpath_diag_free_cache_success(
   if (allocator && hz6_toy_small_hotpath_diag_is_toy_small(front_id,
                                                            class_id)) {
     ++allocator->stats.toy_small_free_cache_success;
+    if (hz6_toy_small_hotpath_diag_is_class4(front_id, class_id)) {
+      ++allocator->stats.toy_class4_free_cache_success;
+    }
   }
 #else
   (void)allocator;
@@ -278,6 +304,9 @@ static inline void hz6_toy_small_active_map_register(
     }
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.toy_small_active_map_register;
+    if (hz6_toy_small_hotpath_diag_is_class4(front_id, class_id)) {
+      ++allocator->stats.toy_class4_active_map_register;
+    }
 #endif
     base_entry->ptr = ptr;
     base_entry->descriptor = descriptor;
@@ -323,8 +352,14 @@ static inline void hz6_toy_small_active_map_register(
   }
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.toy_small_active_map_register;
+  if (hz6_toy_small_hotpath_diag_is_class4(front_id, class_id)) {
+    ++allocator->stats.toy_class4_active_map_register;
+  }
   if (saw_collision) {
     ++allocator->stats.toy_small_active_map_register_collision;
+    if (hz6_toy_small_hotpath_diag_is_class4(front_id, class_id)) {
+      ++allocator->stats.toy_class4_active_map_register_collision;
+    }
   }
 #else
   (void)saw_collision;

@@ -119,6 +119,7 @@ variant_flags() {
     "$ENABLE_STATS" "$ENABLE_DIAGNOSTICS"
   if [[ "$ENABLE_DIAGNOSTICS" -ne 0 ]]; then
     flags+=("-DHZ6_DIAGNOSTIC_PROBES=1")
+    flags+=("-DHZ6_TOY_SMALL_HOTPATH_DIAG_L1=1")
   fi
   case "$variant" in
     selected)
@@ -292,6 +293,12 @@ variant_flags() {
     toy_preclassified_malloc)
       hz6_preload_replace_define flags HZ6_TOY_PRECLASSIFIED_MALLOC_L1 1
       ;;
+    toy_map64k)
+      hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY 65536
+      ;;
+    toy_probe8)
+      hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_PROBE_LIMIT 8
+      ;;
     toy_prefill64)
       hz6_preload_replace_define flags HZ6_TOY_FULL_BLOCK_PREFILL_MAX_SLOTS 64
       ;;
@@ -454,6 +461,7 @@ def parse_stats(text):
     for line in text.splitlines():
         if (
             line.startswith("[HZ6_PRELOAD_STATS]")
+            or line.startswith("[HZ6_PRELOAD_FRONT_DETAIL]")
             or line.startswith("[HZ6_PRELOAD_PHASE_STATS]")
             or line.startswith("[HZ6_PRELOAD_MIDPAGE_CLASS_DETAIL]")
             or line.startswith("[HZ6_PRELOAD_MEMORY_ATTR]")
@@ -466,8 +474,8 @@ print(f"root: `{root}`\n")
 readme = (root / "README.log").read_text(errors="replace")
 stats_mode = readme.split("stats=", 1)[1].splitlines()[0] if "stats=" in readme else "unknown"
 print(f"stats: `{stats_mode}`\n")
-print("| row | variant | median ops/s | median peak MiB | payload MiB | active source blocks | fail | source_alloc | mid32_alloc | mid32_prefill | mid32_filled | mid32_front_push | retire attempt | retire scan | retire candidates | retire blocks | retire desc | retire MiB | retire blocked | retire fail |")
-print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+print("| row | variant | median ops/s | median peak MiB | payload MiB | active source blocks | fail | source_alloc | mid32_alloc | mid32_prefill | mid32_filled | mid32_front_push | toy4 fast | toy4 hit | toy4 front | toy4 pop | toy4 activate | toy4 free attempt | toy4 free success | toy4 map reg | toy4 collision | retire attempt | retire scan | retire candidates | retire blocks | retire desc | retire MiB | retire blocked | retire fail |")
+print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 for row in rows:
     for variant in variants:
         ops_values = []
@@ -480,6 +488,15 @@ for row in rows:
         mid32_prefill = 0
         mid32_filled = 0
         mid32_front_push = 0
+        toy4_fast = 0
+        toy4_hit = 0
+        toy4_front = 0
+        toy4_pop = 0
+        toy4_activate = 0
+        toy4_free_attempt = 0
+        toy4_free_success = 0
+        toy4_map_reg = 0
+        toy4_collision = 0
         retire_attempt = 0
         retire_scan = 0
         retire_candidates = 0
@@ -513,6 +530,17 @@ for row in rows:
             mid32_prefill += stats.get("midpage_32k_prefill_run_call", 0)
             mid32_filled += stats.get("midpage_32k_prefill_run_filled", 0)
             mid32_front_push += stats.get("midpage_32k_frontcache_push", 0)
+            toy4_fast += stats.get("toy_class4_malloc_fast_attempt", 0)
+            toy4_hit += stats.get("toy_class4_malloc_fast_hit", 0)
+            toy4_front += stats.get("toy_class4_malloc_front_dispatch", 0)
+            toy4_pop += stats.get("toy_class4_malloc_frontcache_pop", 0)
+            toy4_activate += stats.get("toy_class4_malloc_activate_success", 0)
+            toy4_free_attempt += stats.get("toy_class4_free_cache_attempt", 0)
+            toy4_free_success += stats.get("toy_class4_free_cache_success", 0)
+            toy4_map_reg += stats.get("toy_class4_active_map_register", 0)
+            toy4_collision += stats.get(
+                "toy_class4_active_map_register_collision", 0
+            )
             retire_attempt += stats.get("midpage_32k_cold_retire_attempt", 0)
             retire_scan += stats.get("midpage_32k_cold_retire_scan_blocks", 0)
             retire_candidates += stats.get(
@@ -535,7 +563,10 @@ for row in rows:
             f"| `{row}` | `{variant}` | {median_ops:.3f} | {median_peak:.2f} | "
             f"{payload_mib:.2f} | {active_source_blocks} | {fail} | "
             f"{source_alloc} | {mid32_alloc} | {mid32_prefill} | "
-            f"{mid32_filled} | {mid32_front_push} | {retire_attempt} | "
+            f"{mid32_filled} | {mid32_front_push} | {toy4_fast} | "
+            f"{toy4_hit} | {toy4_front} | {toy4_pop} | {toy4_activate} | "
+            f"{toy4_free_attempt} | {toy4_free_success} | {toy4_map_reg} | "
+            f"{toy4_collision} | {retire_attempt} | "
             f"{retire_scan} | {retire_candidates} | {retire_blocks} | "
             f"{retire_desc} | {retire_mib:.2f} | {retire_blocked} | "
             f"{retire_fail} |"

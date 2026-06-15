@@ -168,10 +168,19 @@ static void hz6_preload_print_stats(void) {
   size_t frontcache_borrow_success = 0;
   size_t toy_small_malloc_frontcache_pop = 0;
   size_t toy_small_malloc_activate_success = 0;
+  size_t toy_class4_malloc_fast_attempt = 0;
+  size_t toy_class4_malloc_fast_hit = 0;
+  size_t toy_class4_malloc_front_dispatch = 0;
+  size_t toy_class4_malloc_frontcache_pop = 0;
+  size_t toy_class4_malloc_activate_success = 0;
   size_t toy_small_free_cache_attempt = 0;
   size_t toy_small_free_cache_success = 0;
+  size_t toy_class4_free_cache_attempt = 0;
+  size_t toy_class4_free_cache_success = 0;
   size_t toy_small_active_map_register = 0;
   size_t toy_small_active_map_register_collision = 0;
+  size_t toy_class4_active_map_register = 0;
+  size_t toy_class4_active_map_register_collision = 0;
   size_t toy_small_active_map_free_attempt = 0;
   size_t toy_small_active_map_free_hit = 0;
   size_t toy_small_active_map_free_miss = 0;
@@ -420,11 +429,24 @@ static void hz6_preload_print_stats(void) {
     toy_small_malloc_frontcache_pop += stats.toy_small_malloc_frontcache_pop;
     toy_small_malloc_activate_success +=
         stats.toy_small_malloc_activate_success;
+    toy_class4_malloc_fast_attempt += stats.toy_class4_malloc_fast_attempt;
+    toy_class4_malloc_fast_hit += stats.toy_class4_malloc_fast_hit;
+    toy_class4_malloc_front_dispatch +=
+        stats.toy_class4_malloc_front_dispatch;
+    toy_class4_malloc_frontcache_pop +=
+        stats.toy_class4_malloc_frontcache_pop;
+    toy_class4_malloc_activate_success +=
+        stats.toy_class4_malloc_activate_success;
     toy_small_free_cache_attempt += stats.toy_small_free_cache_attempt;
     toy_small_free_cache_success += stats.toy_small_free_cache_success;
+    toy_class4_free_cache_attempt += stats.toy_class4_free_cache_attempt;
+    toy_class4_free_cache_success += stats.toy_class4_free_cache_success;
     toy_small_active_map_register += stats.toy_small_active_map_register;
     toy_small_active_map_register_collision +=
         stats.toy_small_active_map_register_collision;
+    toy_class4_active_map_register += stats.toy_class4_active_map_register;
+    toy_class4_active_map_register_collision +=
+        stats.toy_class4_active_map_register_collision;
     toy_small_active_map_free_attempt +=
         stats.toy_small_active_map_free_attempt;
     toy_small_active_map_free_hit += stats.toy_small_active_map_free_hit;
@@ -782,10 +804,19 @@ static void hz6_preload_print_stats(void) {
           "frontcache_borrow_success=%zu "
           "toy_small_malloc_frontcache_pop=%zu "
           "toy_small_malloc_activate_success=%zu "
+          "toy_class4_malloc_fast_attempt=%zu "
+          "toy_class4_malloc_fast_hit=%zu "
+          "toy_class4_malloc_front_dispatch=%zu "
+          "toy_class4_malloc_frontcache_pop=%zu "
+          "toy_class4_malloc_activate_success=%zu "
           "toy_small_free_cache_attempt=%zu "
           "toy_small_free_cache_success=%zu "
+          "toy_class4_free_cache_attempt=%zu "
+          "toy_class4_free_cache_success=%zu "
           "toy_small_active_map_register=%zu "
           "toy_small_active_map_register_collision=%zu "
+          "toy_class4_active_map_register=%zu "
+          "toy_class4_active_map_register_collision=%zu "
           "toy_small_active_map_free_attempt=%zu "
           "toy_small_active_map_free_hit=%zu "
           "toy_small_active_map_free_miss=%zu "
@@ -831,9 +862,17 @@ static void hz6_preload_print_stats(void) {
           frontcache_spill_retry_success, frontcache_borrow_success,
           toy_small_malloc_frontcache_pop,
           toy_small_malloc_activate_success,
+          toy_class4_malloc_fast_attempt,
+          toy_class4_malloc_fast_hit,
+          toy_class4_malloc_front_dispatch,
+          toy_class4_malloc_frontcache_pop,
+          toy_class4_malloc_activate_success,
           toy_small_free_cache_attempt, toy_small_free_cache_success,
+          toy_class4_free_cache_attempt, toy_class4_free_cache_success,
           toy_small_active_map_register,
           toy_small_active_map_register_collision,
+          toy_class4_active_map_register,
+          toy_class4_active_map_register_collision,
           toy_small_active_map_free_attempt,
           toy_small_active_map_free_hit, toy_small_active_map_free_miss,
           toy_small_active_map_free_stale,

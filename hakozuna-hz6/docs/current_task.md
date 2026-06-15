@@ -183,6 +183,29 @@ evidence:
         raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_205408
         storage_trim_c4_8192_c5_4096 recovered class5 but still regressed target
         and fixed_8k/16k.
+    Toy class4 malloc-path diagnostic:
+      Added diagnostic-only toy_class4_* counters under
+      HZ6_DIAGNOSTIC_PROBES && HZ6_TOY_SMALL_HOTPATH_DIAG_L1.
+      raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_205845
+      fixed_4k selected:
+        toy4_fast 1220355
+        toy4_hit 1217280
+        toy4_front 3075
+        toy4_pop/activate 3075
+        toy4_map_reg 1217280
+        toy4_collision 65160
+      read:
+        fixed_4k is already almost entirely direct Toy class4 reuse. The
+        remaining wall is not front dispatch/source refill; Toy active-map
+        collision is visible but not automatically a behavior win.
+      Toy active-map controls:
+        raw diagnostic: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_205922
+        toy_map64k roughly halves class4 collision but raises RSS and regresses
+        important rows.
+        toy_probe8 helped fixed_4k in diagnostic only.
+        production repeat-15 raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_210005
+        toy_probe8 improved 16..4096 and 1024..4096, but tiny, target,
+        fixed_4k, and fixed_16k were flat/negative. Keep off.
 
 decision:
   selected/default. This is a small but balanced production code-shape win after
@@ -191,11 +214,12 @@ decision:
 
 next:
   Do not widen active-map capacity/probe next. Fixed-size RSS attribution is
-  now clear, and the first fixed_4k free-order/frontcache controls are closed.
-  Prefer either a new quiescent/snapshot scavenge design or a deeper Toy class4
-  malloc-path diagnostic counter. Do not default the existing per-free
-  cold-retire behavior, current_bias_2x, frontcache8192, or storage-trim c4
-  variants.
+  now clear, fixed_4k free-order/frontcache controls are closed, and Toy class4
+  malloc-path attribution shows the fast reuse path is already dominant.
+  Prefer a new quiescent/snapshot scavenge design, or a different Toy class4
+  data-layout idea that does not simply widen active-map probe/capacity. Do not
+  default the existing per-free cold-retire behavior, current_bias_2x,
+  frontcache8192, storage-trim c4 variants, toy_map64k, or toy_probe8.
 ```
 
 ## Recent Closeout: HZ6 Ubuntu MidPage ActiveMap Collision Layout Audit-L1
