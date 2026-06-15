@@ -221,6 +221,15 @@ decision:
   Promote HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1=1 to selected/default production
   preload flags. It is disabled under HZ6_DIAGNOSTIC_PROBES, so diagnostic
   attribution keeps the wrapper counters.
+
+follow-up:
+  raw: private/raw-results/linux/hz6_midpage_payload_trim_ab_20260615_200858
+  Current-bias variants were rechecked after raw-pop selected. They still do
+  not pass production target balance:
+    selected 4096..16384 44.164M
+    current_bias_fast    43.546M
+    current_bias_2x      43.598M
+    current_bias_4x      43.268M
 ```
 
 ## Recent Closeout: HZ6 Ubuntu Front Prefill Descriptor-Out Audit-L1

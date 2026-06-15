@@ -145,6 +145,7 @@ Current follow-up read:
 | `HZ6_PRELOAD_MIDPAGE_MALLOC_BOUNDARY_MIN_BYTES=8192/16384` | control/no-go | Raising the preload-boundary shortcut lower bound gave tiny/guard micro-wins but lost the MidPage target badly. Keep selected `4096`. |
 | `HZ6_DIRECT_LOCAL_REUSE_RAW_POP_L1=1` | selected/default | Production-only direct-local reuse code-shape control. Bypasses the generic `hz6_allocator_frontcache_pop()` wrapper in stats-off builds; disabled under diagnostics. Repeat-15 improved all focused rows and stats safety stayed clean. |
 | `HZ6_FRONT_PREFILL_DESCRIPTOR_OUT_L1=1` | control/no-go | Source-block prefill descriptor-out reduced route lookup probes but regressed production stats-off target speed. Keep default off. |
+| current-bias retest after raw-pop | control/no-go | Production repeat-7 still rejects current-bias variants: `current_bias_2x` and `4x` gave small guard gains but regressed 4096..16384 (`44.164M -> 43.598M/43.268M`). Keep selected 1x generic predicate. |
 
 HZ3/HZ4 comparison read:
 
