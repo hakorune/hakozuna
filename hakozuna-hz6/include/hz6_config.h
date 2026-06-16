@@ -98,6 +98,10 @@
 #define HZ6_SOURCE_RUN_MAX_SLOTS ((size_t)4096)
 #endif
 
+#ifndef HZ6_SOURCE_RUN_INLINE_META_L1
+#define HZ6_SOURCE_RUN_INLINE_META_L1 1
+#endif
+
 #ifndef HZ6_TOY_SOURCE_BLOCK_BYTES
 #define HZ6_TOY_SOURCE_BLOCK_BYTES ((size_t)65536)
 #endif
@@ -1196,6 +1200,28 @@
 /* Store source-run slot descriptor maps only for active runs instead of
  * embedding HZ6_SOURCE_RUN_MAX_SLOTS entries in every source block. */
 #define HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_DYNAMIC_L1 0
+#endif
+
+#if !HZ6_SOURCE_RUN_INLINE_META_L1 &&                         \
+    (HZ6_SOURCE_RUN_REUSE_L1 ||                               \
+     HZ6_SOURCE_BLOCK_ROUTE_DRYRUN_L1 ||                      \
+     HZ6_SOURCE_BLOCK_ROUTE_BEHAVIOR_L1 ||                    \
+     HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_L1 ||         \
+     HZ6_SOURCE_BLOCK_ROUTE_RANGE_INDEX_L1 ||                 \
+     HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_DRYRUN_L1 ||     \
+     HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_L1 ||            \
+     HZ6_SMALL_RUN_ROUTE_DRYRUN_L1 ||                         \
+     HZ6_SMALL_RUN_ROUTE_BEHAVIOR_L1 ||                       \
+     HZ6_SMALL_RUN_ROUTE_TOY_RANGE_ONLY_L1 ||                 \
+     HZ6_SMALL_RUN_ROUTE_ARMED_L1 ||                          \
+     HZ6_SOURCE_BLOCK_ROUTE_LATE_REGISTER_L1 ||               \
+     HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_DYNAMIC_L1 || \
+     HZ6_DESCRIPTORLESS_FRONTCACHE_L1 ||                      \
+     HZ6_ELASTIC_DEPOT_SOURCE_RUN_META_L1 ||                  \
+     HZ6_ELASTIC_SOURCE_RUN_LOCALITY_DRYRUN_L1 ||             \
+     HZ6_ELASTIC_SLOT_OWNER_LOCALITY_DRYRUN_L1 ||             \
+     HZ6_ELASTIC_SLOT_OWNER_SPARSE_META_L1)
+#error "HZ6_SOURCE_RUN_INLINE_META_L1=0 requires source-run metadata features off"
 #endif
 
 #ifndef HZ6_FRONTCACHE_PACKED_META_L1

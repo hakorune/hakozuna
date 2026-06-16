@@ -487,6 +487,13 @@ static void print_stats(const Hz6Allocator* allocator) {
          "active_source_blocks=%zu "
          "registered_source_blocks=%zu "
          "ref_nonzero_source_blocks=%zu "
+         "source_run_active_blocks=%zu "
+         "toy_source_run_blocks=%zu "
+         "midpage_source_run_blocks=%zu "
+         "source_run_slot_count_max=%zu "
+         "toy_source_run_slot_count_max=%zu "
+         "midpage_8k_source_run_slot_count_max=%zu "
+         "midpage_32k_source_run_slot_count_max=%zu "
          "source_block_payload_bytes=%zu "
          "source_block_committed_estimate=%zu "
          "route_active_current=%zu "
@@ -508,6 +515,13 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.memory_active_source_blocks,
          stats.memory_registered_source_blocks,
          stats.memory_ref_nonzero_source_blocks,
+         stats.memory_source_run_active_blocks,
+         stats.memory_toy_source_run_blocks,
+         stats.memory_midpage_source_run_blocks,
+         stats.memory_source_run_slot_count_max,
+         stats.memory_toy_source_run_slot_count_max,
+         stats.memory_midpage_8k_source_run_slot_count_max,
+         stats.memory_midpage_32k_source_run_slot_count_max,
          stats.memory_source_block_payload_bytes,
          stats.memory_source_block_committed_estimate,
          stats.route_active_current,

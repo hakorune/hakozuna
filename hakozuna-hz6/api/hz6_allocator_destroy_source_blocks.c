@@ -38,6 +38,7 @@ void hz6_allocator_destroy_source_blocks(Hz6Allocator* allocator) {
     block->route_backend = NULL;
 #endif
     atomic_store_explicit(&block->ref_count, 0u, memory_order_release);
+#if HZ6_SOURCE_RUN_INLINE_META_L1
     block->run_slot_bytes = 0;
     block->run_front_id = HZ6_FRONT_NONE;
     block->run_class_id = 0;
@@ -51,6 +52,7 @@ void hz6_allocator_destroy_source_blocks(Hz6Allocator* allocator) {
     HZ6_SOURCE_BLOCK_ROUTE_SLOT_DESCRIPTOR_MAP_DYNAMIC_L1
     free(block->run_descriptor_indices);
     block->run_descriptor_indices = NULL;
+#endif
 #endif
     hz6_source_block_set_active(block, 0);
     hz6_source_block_set_route_registered(block, 0);

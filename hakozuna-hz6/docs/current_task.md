@@ -58,6 +58,7 @@ Standard frontier:
 
 Explicit controls:
   toy-map8192(+external) / workload-capacity(+narrow/map8192) / descriptor-overflow/hybrid / toy-map-external / midpage-skip-transfer
+  source-run-meta-off
 
 Runners:
   broad_guard / fixed_boundary_profile_frontier / preload_profile_frontier
@@ -97,6 +98,9 @@ Recent fixed/profile repeats:
   private/raw-results/linux/hz6_broad_guard_20260616_094818
   private/raw-results/linux/hz6_workload_{capacity_frontier_20260616_081537,proxy_matrix_20260616_{080227,084249,084440,085632}}
   private/raw-results/linux/hz6_ubuntu_size_slices_20260616_073231
+  private/raw-results/linux/hz6_preload_profile_frontier_20260616_100113
+  private/raw-results/linux/hz6_broad_guard_20260616_100224
+  private/raw-results/linux/hz6_broad_guard_20260616_100509
 ```
 
 ## Do Not Reopen Casually
@@ -124,7 +128,10 @@ Default no-go/control-only without substantially different evidence:
 3. Broad selected/profile guard refreshed in hz6_broad_guard_20260616_094818:
    selected/profile is stable; workload proxy still needs capacity controls.
 4. Next attack SourceBlockMetaSlim-L1: static SourceBlock/run metadata RSS
-   without malloc/free hot-path branches.
+   without malloc/free hot-path branches. Current profile alias:
+   `hz6-source-run-meta-off-target`. Initial focused/fixed A/B cuts about
+   2.5 MiB peak RSS; short broad guard confirms RSS, but fixed_4k speed gap
+   remains separate and workload proxy still needs capacity controls.
 5. Keep capacity-narrow + descriptor-hybrid as paired workload controls; proxy
    rows alone are not enough to change selected/default.
 6. Keep Toy-map8192 external as explicit fixed-boundary RSS profile.

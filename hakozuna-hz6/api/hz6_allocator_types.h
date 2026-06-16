@@ -39,6 +39,7 @@ typedef struct Hz6SourceBlock {
   Hz6RouteBackend* route_backend;
 #endif
   _Atomic size_t ref_count;
+#if HZ6_SOURCE_RUN_INLINE_META_L1
   size_t run_slot_bytes;
   uint16_t run_front_id;
   uint16_t run_class_id;
@@ -51,6 +52,7 @@ typedef struct Hz6SourceBlock {
   uint32_t* run_descriptor_indices;
 #else
   uint32_t run_descriptor_indices[HZ6_SOURCE_RUN_MAX_SLOTS];
+#endif
 #endif
 #endif
 #if HZ6_OWNER_SOURCE_SIDE_META_L2

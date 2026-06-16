@@ -37,11 +37,23 @@ Do not collapse them into a single broad default without new real workload data.
    Goal:
      reduce static SourceBlock metadata RSS without touching preload hot paths.
    First target:
-     source-run metadata split or lazy run metadata
+     `HZ6_SOURCE_RUN_INLINE_META_L1=0` profile/control DSO
    Acceptance:
      source lifetime/route semantics unchanged
      selected smoke clean
      static RSS win visible before any behavior promotion
+   Current implementation:
+     selected keeps inline metadata enabled
+     `hz6-source-run-meta-off-target` compiles it out for A/B measurement
+   Initial evidence:
+     raw `hz6_preload_profile_frontier_20260616_100113` shows about 2.5 MiB
+     lower peak RSS on focused/fixed rows, with fixed_4k slightly weaker and
+     other rows flat/positive
+     stats-on smoke shows `static_table_bytes 14017920 -> 11273600`
+     short broad guard `hz6_broad_guard_20260616_100224` confirms the RSS win;
+     cross fixed-gap still leaves fixed_4k behind HZ3/tcmalloc
+     workload-only guard `hz6_broad_guard_20260616_100509` keeps alloc_fail=0
+     but confirms meta-off does not solve selected workload-capacity cliffs
 
 3. Real workload profile evidence
    Goal:
@@ -74,6 +86,7 @@ SourceBlockMetaSlim-L1:
   create a Linux-visible experiment flag for source-run metadata storage shape
   keep allocator behavior identical
   measure static table/RSS and selected smoke before touching free/malloc paths
+  keep the meta-off profile explicit until focused/fixed/broad guards are clean
 
 Why this first:
   HZ6 speed is now competitive on selected rows.

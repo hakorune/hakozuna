@@ -326,6 +326,13 @@ static void hz6_preload_print_stats(void) {
   size_t memory_registered_source_blocks = 0;
   size_t memory_ref_nonzero_source_blocks = 0;
   size_t memory_ref_zero_source_blocks = 0;
+  size_t memory_source_run_active_blocks = 0;
+  size_t memory_toy_source_run_blocks = 0;
+  size_t memory_midpage_source_run_blocks = 0;
+  size_t memory_source_run_slot_count_max = 0;
+  size_t memory_toy_source_run_slot_count_max = 0;
+  size_t memory_midpage_8k_source_run_slot_count_max = 0;
+  size_t memory_midpage_32k_source_run_slot_count_max = 0;
   size_t memory_midpage_8k_source_blocks = 0;
   size_t memory_midpage_32k_source_blocks = 0;
   size_t memory_midpage_8k_payload_bytes = 0;
@@ -696,6 +703,30 @@ static void hz6_preload_print_stats(void) {
     memory_registered_source_blocks += stats.memory_registered_source_blocks;
     memory_ref_nonzero_source_blocks += stats.memory_ref_nonzero_source_blocks;
     memory_ref_zero_source_blocks += stats.memory_ref_zero_source_blocks;
+    memory_source_run_active_blocks +=
+        stats.memory_source_run_active_blocks;
+    memory_toy_source_run_blocks += stats.memory_toy_source_run_blocks;
+    memory_midpage_source_run_blocks += stats.memory_midpage_source_run_blocks;
+    if (stats.memory_source_run_slot_count_max >
+        memory_source_run_slot_count_max) {
+      memory_source_run_slot_count_max =
+          stats.memory_source_run_slot_count_max;
+    }
+    if (stats.memory_toy_source_run_slot_count_max >
+        memory_toy_source_run_slot_count_max) {
+      memory_toy_source_run_slot_count_max =
+          stats.memory_toy_source_run_slot_count_max;
+    }
+    if (stats.memory_midpage_8k_source_run_slot_count_max >
+        memory_midpage_8k_source_run_slot_count_max) {
+      memory_midpage_8k_source_run_slot_count_max =
+          stats.memory_midpage_8k_source_run_slot_count_max;
+    }
+    if (stats.memory_midpage_32k_source_run_slot_count_max >
+        memory_midpage_32k_source_run_slot_count_max) {
+      memory_midpage_32k_source_run_slot_count_max =
+          stats.memory_midpage_32k_source_run_slot_count_max;
+    }
     memory_midpage_8k_source_blocks +=
         stats.memory_midpage_8k_source_blocks;
     memory_midpage_32k_source_blocks +=
@@ -1167,6 +1198,13 @@ static void hz6_preload_print_stats(void) {
           "registered_source_blocks=%zu "
           "ref_nonzero_source_blocks=%zu "
           "ref_zero_source_blocks=%zu "
+          "source_run_active_blocks=%zu "
+          "toy_source_run_blocks=%zu "
+          "midpage_source_run_blocks=%zu "
+          "source_run_slot_count_max=%zu "
+          "toy_source_run_slot_count_max=%zu "
+          "midpage_8k_source_run_slot_count_max=%zu "
+          "midpage_32k_source_run_slot_count_max=%zu "
           "midpage_8k_source_blocks=%zu "
           "midpage_32k_source_blocks=%zu "
           "midpage_8k_payload_bytes=%zu "
@@ -1208,7 +1246,13 @@ static void hz6_preload_print_stats(void) {
           preload_attributed_bytes, memory_frontcache_total,
           memory_frontcache_largest_bin, memory_active_source_blocks,
           memory_registered_source_blocks, memory_ref_nonzero_source_blocks,
-          memory_ref_zero_source_blocks, memory_midpage_8k_source_blocks,
+          memory_ref_zero_source_blocks, memory_source_run_active_blocks,
+          memory_toy_source_run_blocks, memory_midpage_source_run_blocks,
+          memory_source_run_slot_count_max,
+          memory_toy_source_run_slot_count_max,
+          memory_midpage_8k_source_run_slot_count_max,
+          memory_midpage_32k_source_run_slot_count_max,
+          memory_midpage_8k_source_blocks,
           memory_midpage_32k_source_blocks, memory_midpage_8k_payload_bytes,
           memory_midpage_32k_payload_bytes,
           memory_midpage_8k_active_descriptors,

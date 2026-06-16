@@ -347,6 +347,37 @@ static void hz6_stats_snapshot_memory_attribution(
     } else {
       ++ref_zero_source_blocks;
     }
+    if (hz6_source_block_run_active(block)) {
+#if HZ6_SOURCE_RUN_INLINE_META_L1
+      ++snapshot->memory_source_run_active_blocks;
+      if (block->run_slot_count >
+          snapshot->memory_source_run_slot_count_max) {
+        snapshot->memory_source_run_slot_count_max = block->run_slot_count;
+      }
+      if (block->run_front_id == HZ6_FRONT_TOY) {
+        ++snapshot->memory_toy_source_run_blocks;
+        if (block->run_slot_count >
+            snapshot->memory_toy_source_run_slot_count_max) {
+          snapshot->memory_toy_source_run_slot_count_max =
+              block->run_slot_count;
+        }
+      } else if (block->run_front_id == HZ6_FRONT_MIDPAGE) {
+        ++snapshot->memory_midpage_source_run_blocks;
+        if (block->run_class_id == HZ6_MIDPAGE_8K_CLASS_ID &&
+            block->run_slot_count >
+                snapshot->memory_midpage_8k_source_run_slot_count_max) {
+          snapshot->memory_midpage_8k_source_run_slot_count_max =
+              block->run_slot_count;
+        } else if (
+            block->run_class_id == HZ6_MIDPAGE_32K_CLASS_ID &&
+            block->run_slot_count >
+                snapshot->memory_midpage_32k_source_run_slot_count_max) {
+          snapshot->memory_midpage_32k_source_run_slot_count_max =
+              block->run_slot_count;
+        }
+      }
+#endif
+    }
     const uint16_t midpage_classes[] = {
         HZ6_MIDPAGE_8K_CLASS_ID,
         HZ6_MIDPAGE_32K_CLASS_ID,
@@ -356,9 +387,12 @@ static void hz6_stats_snapshot_memory_attribution(
       Hz6MidPageResidencyCounts counts = {0};
       hz6_stats_snapshot_count_midpage_block_descriptors(
           allocator, block, class_id, &counts);
-      if (counts.descriptor_refs == 0 &&
-          !(block->run_front_id == HZ6_FRONT_MIDPAGE &&
-            block->run_class_id == class_id)) {
+      if (counts.descriptor_refs == 0
+#if HZ6_SOURCE_RUN_INLINE_META_L1
+          && !(block->run_front_id == HZ6_FRONT_MIDPAGE &&
+               block->run_class_id == class_id)
+#endif
+      ) {
         continue;
       }
       size_t frontcache_entries =

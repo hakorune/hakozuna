@@ -44,6 +44,7 @@ Use them by passing `--allocators`.
 | `hz6-workload-capacity-lite-map8192-target` | `build_hz6_preload_workload_capacity_lite_map8192_target.sh` | Workload-capacity RSS/balance control; lite capacity plus Toy active-map 8192. |
 | `hz6-workload-descriptor-overflow-target` | `build_hz6_preload_workload_descriptor_overflow_target.sh` | Workload descriptor-pressure control; selected static tables plus 2048-slot elastic descriptor depot. |
 | `hz6-workload-descriptor-hybrid-target` | `build_hz6_preload_workload_descriptor_hybrid_target.sh` | Workload speed/RSS hybrid control; route40K/descriptors10K/source1280 plus 1024-slot elastic descriptor depot. |
+| `hz6-source-run-meta-off-target` | `build_hz6_preload_source_run_meta_off_target.sh` | SourceBlockMetaSlim control; selected flags with inline source-run metadata compiled out. |
 | `hz6-workload-capacity-mid-target` | `build_hz6_preload_workload_capacity_mid_target.sh` | Workload-proxy capacity ladder; route96K/descriptors24K/source3K. |
 | `hz6-workload-capacity-target` | `build_hz6_preload_workload_capacity_target.sh` | Workload-proxy capacity profile; widens route/descriptors/source blocks for larger working sets. |
 | `hz6-midpage-skip-transfer-target` | `build_hz6_preload_midpage_skip_transfer_target.sh` | Watch/control only; latest frontier regressed `16..4096` and `4096..16384`. |

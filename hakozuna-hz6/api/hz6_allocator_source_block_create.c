@@ -61,6 +61,7 @@ int hz6_allocator_source_block_is_elastic_depot(
 }
 #endif
 
+#if HZ6_SOURCE_RUN_INLINE_META_L1
 static void hz6_source_run_reset(Hz6SourceBlock* block) {
   if (!block) {
     return;
@@ -490,6 +491,100 @@ Hz6ObjectDescriptor* hz6_allocator_source_run_descriptor_at(
 #endif
 }
 
+#else
+
+int hz6_allocator_source_run_init(Hz6SourceBlock* block,
+                                  uint16_t front_id,
+                                  uint16_t class_id,
+                                  size_t slot_bytes) {
+  (void)block;
+  (void)front_id;
+  (void)class_id;
+  (void)slot_bytes;
+  return 0;
+}
+
+Hz6SourceBlock* hz6_allocator_source_run_find_reusable(
+    Hz6Allocator* allocator,
+    Hz6SourceKind source_kind,
+    size_t block_bytes,
+    uint16_t class_id,
+    size_t slot_bytes) {
+  (void)allocator;
+  (void)source_kind;
+  (void)block_bytes;
+  (void)class_id;
+  (void)slot_bytes;
+  return NULL;
+}
+
+int hz6_allocator_source_run_reserve_slot(Hz6SourceBlock* block,
+                                          size_t* slot_index) {
+  (void)block;
+  (void)slot_index;
+  return 0;
+}
+
+void hz6_allocator_source_run_commit_slot(Hz6SourceBlock* block,
+                                          size_t slot_index) {
+  (void)block;
+  (void)slot_index;
+}
+
+void hz6_allocator_source_run_rollback_slot(Hz6SourceBlock* block,
+                                            size_t slot_index) {
+  (void)block;
+  (void)slot_index;
+}
+
+void hz6_allocator_source_run_release_slot(Hz6SourceBlock* block,
+                                           void* ptr) {
+  (void)block;
+  (void)ptr;
+}
+
+int hz6_allocator_source_run_contains_slot(const Hz6SourceBlock* block,
+                                           const void* ptr,
+                                           uint16_t class_id,
+                                           size_t slot_bytes) {
+  (void)block;
+  (void)ptr;
+  (void)class_id;
+  (void)slot_bytes;
+  return 0;
+}
+
+void hz6_allocator_source_run_set_descriptor(
+    Hz6Allocator* allocator,
+    Hz6SourceBlock* block,
+    const void* ptr,
+    const Hz6ObjectDescriptor* descriptor) {
+  (void)allocator;
+  (void)block;
+  (void)ptr;
+  (void)descriptor;
+}
+
+void hz6_allocator_source_run_clear_descriptor(Hz6Allocator* allocator,
+                                               Hz6SourceBlock* block,
+                                               const void* ptr) {
+  (void)allocator;
+  (void)block;
+  (void)ptr;
+}
+
+Hz6ObjectDescriptor* hz6_allocator_source_run_descriptor_at(
+    Hz6Allocator* allocator,
+    const Hz6SourceBlock* block,
+    const void* ptr) {
+  (void)allocator;
+  (void)block;
+  (void)ptr;
+  return NULL;
+}
+
+#endif
+
 int hz6_allocator_elastic_depot_source_run_mark_slot(
     Hz6Allocator* allocator,
     Hz6SourceBlock* block,
@@ -764,7 +859,11 @@ Hz6SourceBlock* hz6_allocator_create_source_block(
   block->route_backend = NULL;
 #endif
   atomic_store_explicit(&block->ref_count, 0u, memory_order_release);
+#if HZ6_SOURCE_RUN_INLINE_META_L1
   hz6_source_run_reset(block);
+#else
+  hz6_source_block_set_run_active(block, 0);
+#endif
 #if HZ6_OWNER_SOURCE_SIDE_META_L2
   block->owner_source_storage_allocator = allocator;
 #endif

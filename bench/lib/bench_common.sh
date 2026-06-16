@@ -276,6 +276,13 @@ bench_find_hz6_toy_map_external_target_library() {
     hz6-preload-toy-map-external-target
 }
 
+bench_find_hz6_source_run_meta_off_target_library() {
+  bench_find_hz6_preload_output \
+    HZ6_SOURCE_RUN_META_OFF_TARGET_PRELOAD_SO \
+    hz6_preload_source_run_meta_off_target \
+    hz6-preload-source-run-meta-off-target
+}
+
 bench_find_hz6_workload_capacity_target_library() {
   bench_find_hz6_preload_output \
     HZ6_WORKLOAD_CAPACITY_TARGET_PRELOAD_SO \
@@ -422,6 +429,9 @@ bench_find_allocator_library() {
     hz6-toy-map-external-target|hz6_toy_map_external_target)
       bench_find_hz6_toy_map_external_target_library
       ;;
+    hz6-source-run-meta-off-target|hz6_source_run_meta_off_target)
+      bench_find_hz6_source_run_meta_off_target_library
+      ;;
     hz6-workload-capacity-target|hz6_workload_capacity_target)
       bench_find_hz6_workload_capacity_target_library
       ;;
@@ -541,6 +551,9 @@ bench_print_allocator_hints() {
       ;;
     hz6-toy-map-external-target|hz6_toy_map_external_target)
       echo "hint: build the HZ6 Toy map external target lane with './hakozuna-hz6/linux/build_hz6_preload_toy_map_external_target.sh' or set HZ6_TOY_MAP_EXTERNAL_TARGET_PRELOAD_SO" >&2
+      ;;
+    hz6-source-run-meta-off-target|hz6_source_run_meta_off_target)
+      echo "hint: build the HZ6 source-run meta-off target lane with './hakozuna-hz6/linux/build_hz6_preload_source_run_meta_off_target.sh' or set HZ6_SOURCE_RUN_META_OFF_TARGET_PRELOAD_SO" >&2
       ;;
     hz6-workload-capacity-target|hz6_workload_capacity_target)
       echo "hint: build the HZ6 workload-capacity target lane with './hakozuna-hz6/linux/build_hz6_preload_workload_capacity_target.sh' or set HZ6_WORKLOAD_CAPACITY_TARGET_PRELOAD_SO" >&2

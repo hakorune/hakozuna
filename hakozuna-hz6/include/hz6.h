@@ -641,6 +641,13 @@ typedef struct Hz6StatsSnapshot {
   size_t memory_source_block_committed_estimate;
   size_t memory_midpage_8k_source_blocks;
   size_t memory_midpage_32k_source_blocks;
+  size_t memory_source_run_active_blocks;
+  size_t memory_toy_source_run_blocks;
+  size_t memory_midpage_source_run_blocks;
+  size_t memory_source_run_slot_count_max;
+  size_t memory_toy_source_run_slot_count_max;
+  size_t memory_midpage_8k_source_run_slot_count_max;
+  size_t memory_midpage_32k_source_run_slot_count_max;
   size_t memory_midpage_8k_payload_bytes;
   size_t memory_midpage_32k_payload_bytes;
   size_t memory_midpage_8k_active_descriptors;
