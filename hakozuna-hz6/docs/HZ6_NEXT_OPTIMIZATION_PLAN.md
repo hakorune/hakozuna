@@ -167,6 +167,11 @@ Do not collapse them into a single broad default without new real workload data.
      and about `2.0B` route lookup probes on WS16384 small/object rows. The
      next diagnostic should test a bigger WS16384 capacity profile rather than
      tune the narrow/hybrid pair.
+     Cliff frontier raw `hz6_workload_capacity_cliff_frontier_20260616_114506`
+     confirms the existing `hz6-workload-capacity-mid-target`
+     (`route96K/desc24K/source3K`) is the current WS16384 balance point: it
+     restores small/object/mixed/midpage rows by orders of magnitude and wins
+     ops-per-MiB, while full capacity mostly adds RSS without a clear speed win.
 
 5. Wrapper profile audit only if needed
    Goal:
@@ -203,6 +208,7 @@ WorkloadCapacityHybridUnificationDesign-L1:
     linux/run_hz6_workload_capacity_pair_focus.sh
     linux/run_hz6_workload_capacity_shape_sweep.sh
     linux/run_hz6_workload_capacity_cliff_diag.sh
+    linux/run_hz6_workload_capacity_cliff_frontier.sh
     linux/run_hz6_workload_capacity_profile_gap_diag.sh
     linux/run_hz6_workload_capacity_hybrid_depot_ladder.sh
 
@@ -214,8 +220,9 @@ Why this first:
   Capacity-narrow and capacity-hybrid are both strong, close in RSS, and row
   dependent; pair-focus raw `112040` confirms the split is too small and
   row-specific for a proxy-only default change. Shape-sweeps `112816`/`113139`
-  map working-set/size-band boundaries, and cliff diag `113833` attributes
-  WS16384 to descriptor/source exhaustion and route-probe blowup. The fine
+  map working-set/size-band boundaries, cliff diag `113833` attributes WS16384
+  to descriptor/source exhaustion and route-probe blowup, and cliff frontier
+  `114506` points to capacity-mid as the current WS16384 profile. The fine
   depot ladder is also row-dependent, so the
   next useful work is real workload evidence or a new diagnostic dimension, not
   selected/default promotion or another proxy-only depot default.

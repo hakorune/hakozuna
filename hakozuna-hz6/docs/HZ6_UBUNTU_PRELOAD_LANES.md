@@ -471,6 +471,17 @@ its 1024 elastic descriptor depot also exhausts. Next behavior/profile work
 should test a larger WS16384 capacity shape; do not read this as a default
 reason for the narrow/hybrid pair.
 
+WS16384 cliff frontier raw
+`private/raw-results/linux/hz6_workload_capacity_cliff_frontier_20260616_114506`
+compares narrow, capacity-hybrid, lite, mid, and full capacity on the same
+WS16384 rows. `hz6-workload-capacity-mid-target`
+(`route96K/desc24K/source3K`) is the best current balance: it restores
+`small_ws16384` to `8.56M ops/s`, `object_ws16384` to `5.16M`,
+`mixed_ws16384` to `2.21M`, and `midpage_ws16384` to `1.86M`, winning
+ops-per-MiB on every WS16384 row. Full capacity mostly adds RSS and only ties
+or slightly wins object speed. Keep capacity-mid as the explicit WS16384
+profile candidate, not selected/default.
+
 Short broad guard refresh raw
 `private/raw-results/linux/hz6_broad_guard_20260616_094818` was run after the
 workload runner cleanup with `--runs 3`, shorter profile/fixed/workload iters,
@@ -865,6 +876,7 @@ MidPage 32K run-size closeout details are in
 | `run_hz6_workload_capacity_pair_focus.sh` | Focused pair guard for `hz6-workload-capacity-narrow-target` versus `hz6-workload-capacity-hybrid-target` only. It reuses `run_hz6_workload_proxy_matrix.sh` with a smaller allocator set and higher default repeat count so row-level profile recommendations can be refreshed without rerunning external allocators or selected/route16K controls. Raw `hz6_workload_capacity_pair_focus_20260616_112040` keeps the pair split small and row-specific; smoke raw `112121` confirms pair-only runs no longer rebuild HZ3/HZ4/HZ5. |
 | `run_hz6_workload_capacity_shape_sweep.sh` | Diagnostic shape-sweep runner for workload-capacity profiles. It varies working-set slots and size bands around the current proxy rows, compares capacity-narrow/capacity-hybrid by default, and summarizes speed/RSS/ops-per-MiB winners plus pair deltas when both profiles are present. Use it to find row-shape boundaries before changing workload recommendations; it is proxy evidence only and not selected/default promotion evidence. Smoke raw `hz6_workload_capacity_shape_sweep_20260616_112802` confirms wiring; short repeat raw `112816` shows shape-dependent wins; smoke raw `113023` confirms pair-delta summary output. Stats-free production summaries now show missing failure counters as `NA`. |
 | `run_hz6_workload_capacity_cliff_diag.sh` | WS16384 capacity/lookup cliff diagnostic wrapper. It delegates to the current-name profile gap diagnostic with `ROWS=cliff16384`, capacity-hybrid labeling, stats/probes on, and default `ITERS=20000`. Raw `hz6_workload_capacity_cliff_diag_20260616_113833` attributes the cliff to descriptor/source exhaustion and route-probe blowup, so the next lane is a larger WS16384 capacity profile check. |
+| `run_hz6_workload_capacity_cliff_frontier.sh` | Production WS16384 profile frontier runner. It compares narrow, capacity-hybrid, lite, mid, and full capacity profiles on `cliff16384` rows and summarizes speed/RSS/ops-per-MiB. Smoke raw `hz6_workload_capacity_cliff_frontier_20260616_114454` confirms wiring; raw `114506` selects capacity-mid as the explicit WS16384 balance profile. |
 | `run_hz6_workload_capacity_hybrid_depot_ladder.sh` | Current-name wrapper for the historical descriptor-hybrid depot ladder. It delegates to `run_hz6_workload_descriptor_hybrid_depot_ladder.sh` but writes a capacity-hybrid raw root and defaults to `256,512,1024,1536` for fine depot checks. Smoke raw `hz6_workload_capacity_hybrid_depot_ladder_20260616_110401` confirms delegation and current-name summary generation. Use it for future depot A/B without reopening the selected/default lane. |
 | `run_hz6_workload_capacity_profile_gap_diag.sh` | Current-name diagnostic wrapper for selected, workload-capacity-narrow, and workload-capacity-hybrid attribution. It reuses `run_hz6_workload_profile_gap_diag.sh` with the hybrid variant labeled as `capacity-hybrid`, writes a `hz6_workload_capacity_profile_gap_diag_*` raw root, and keeps the old descriptor-hybrid entry compatible for archived reads. Smoke raw `hz6_workload_capacity_profile_gap_diag_20260616_110830` confirms `capacity_hybrid_diag` build/output wiring; standard raw `111503` keeps capacity-narrow/capacity-hybrid counter-identical with `elastic_alloc=0`. |
 | `run_hz6_fixed_rss_gap_attribution.sh` | Diagnostic fixed RSS attribution runner. It builds/runs selected diagnostic and external-meta-off diagnostic preload DSOs through `run_hz6_midpage_rss_audit.sh`, then emits a combined static/frontcache/map/payload read. Use it to explain residual fixed_4k/8k RSS gaps; do not use it as a production speed ranking. |
