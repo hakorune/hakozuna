@@ -63,6 +63,7 @@ Explicit controls:
 Runners:
   broad_guard / fixed_boundary_profile_frontier / preload_profile_frontier
   fixed_gap_matrix / fixed_cost_residency_matrix / fixed_quiescent_rss_matrix
+  route16k_capacity_guard
   workload_proxy_matrix / workload_capacity_{frontier,gap_diag,narrow_ladder,narrow_map_ladder} / workload_profile_gap_diag / workload_descriptor_{overflow,hybrid,hybrid_narrow,hybrid_depot}_ladder
   check_hz6_preload_profile_registry
 ```
@@ -98,6 +99,7 @@ Recent fixed/workload/profile repeats:
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_{102718,102750}
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_102939
   private/raw-results/linux/hz6_{workload_proxy_matrix,fixed_gap_matrix}_20260616_103109
+  private/raw-results/linux/hz6_route16k_capacity_guard_20260616_103616
 ```
 
 ## Do Not Reopen Casually

@@ -93,6 +93,10 @@ Do not collapse them into a single broad default without new real workload data.
      workload proxy raw `hz6_workload_proxy_matrix_20260616_103109` keeps
      route16K out of workload/default promotion: capacity-narrow and
      descriptor-hybrid are still orders faster on large live-set cache proxies.
+     runner `run_hz6_route16k_capacity_guard.sh` now bundles the follow-up
+     static stats, focused/fixed production, and workload proxy guard legs.
+     Smoke raw `hz6_route16k_capacity_guard_20260616_103616` confirms the
+     runner wiring and preserves the same read.
 
 4. Real workload profile evidence
    Goal:
@@ -129,6 +133,8 @@ Fixed4K8KResidualRssGapAudit-L1:
     route table capacity safety by fixed/profile/workload shape
     frontcache table shape
     Toy/MidPage active-map storage
+  runner:
+    linux/run_hz6_route16k_capacity_guard.sh
 
 Why this first:
   SourceBlockMetaSlim-L1 and route16K are implemented and clean on fixed/focused
