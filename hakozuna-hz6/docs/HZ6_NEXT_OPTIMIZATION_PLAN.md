@@ -101,6 +101,9 @@ Do not collapse them into a single broad default without new real workload data.
      the fixed-profile call: static stats stay failure-free, fixed_4k/8k/16k
      RSS remains about `2.5 MiB` lower than external-meta-off, and workload
      large-live-set proxies still require capacity-narrow or descriptor-hybrid.
+     Follow-up static trim raws `hz6_static_table_trim_ab_20260616_{104235,104302}`
+     reject stacking route16K with map/source/frontcache trims for promotion:
+     the extra RSS movement is tiny and map trims are speed-negative.
 
 4. Real workload profile evidence
    Goal:
@@ -134,9 +137,9 @@ Fixed4K8KResidualRssGapAudit-L1:
   explain only the remaining fixed-profile RSS/static-capacity tradeoff after
   external-meta-off-route16K; do not promote to selected/default
   continue from diagnostics/profile controls, not selected behavior:
-    route table capacity safety by fixed/profile/workload shape
-    frontcache table shape
-    Toy/MidPage active-map storage
+    real workload evidence for capacity-narrow vs descriptor-hybrid
+    fixed-profile cross allocator refresh when needed
+    only reopen frontcache/map/source trims with new evidence
   runner:
     linux/run_hz6_route16k_capacity_guard.sh
 

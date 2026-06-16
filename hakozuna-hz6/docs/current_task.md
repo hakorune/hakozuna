@@ -99,8 +99,8 @@ Recent fixed/workload/profile repeats:
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_{102718,102750}
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_102939
   private/raw-results/linux/hz6_{workload_proxy_matrix,fixed_gap_matrix}_20260616_103109
-  private/raw-results/linux/hz6_route16k_capacity_guard_20260616_103616
-  private/raw-results/linux/hz6_route16k_capacity_guard_20260616_103858
+  private/raw-results/linux/hz6_route16k_capacity_guard_20260616_{103616,103858}
+  private/raw-results/linux/hz6_static_table_trim_ab_20260616_{104235,104302}
 ```
 
 ## Do Not Reopen Casually
@@ -143,6 +143,8 @@ Default no-go/control-only without substantially different evidence:
 6. Keep Toy-map8192 external as explicit fixed-boundary RSS profile.
 7. Next likely attack: route/static capacity floor guard for fixed profiles,
    then frontcache/map shape only if fixed RSS still matters after route16K.
+   Route16K+map/source/frontcache trims are control-only after raw `104302`:
+   residual RSS wins are too small or speed-negative versus route16K alone.
 8. Do not reopen cold-retire, active-map widening, page-kind/free-order tables,
    packed metadata, or route inline work without new diagnostics.
 ```

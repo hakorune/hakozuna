@@ -43,6 +43,11 @@ Variants:
   external_meta_off_toy_map4096, external_meta_off_midpage_map4096,
   external_meta_off_maps4096, external_meta_off_source512,
   external_meta_off_frontcache_c4_4096,
+  external_meta_off_route16384_toy_map4096,
+  external_meta_off_route16384_midpage_map4096,
+  external_meta_off_route16384_maps4096,
+  external_meta_off_route16384_source512,
+  external_meta_off_route16384_frontcache_c4_4096,
   frontcache8192, wide_l0
 EOF
 }
@@ -194,7 +199,12 @@ variant_flags() {
     external_meta_off|external_meta_off_route16384|external_meta_off_route24576|\
     external_meta_off_toy_map4096|external_meta_off_midpage_map4096|\
     external_meta_off_maps4096|external_meta_off_source512|\
-    external_meta_off_frontcache_c4_4096)
+    external_meta_off_frontcache_c4_4096|\
+    external_meta_off_route16384_toy_map4096|\
+    external_meta_off_route16384_midpage_map4096|\
+    external_meta_off_route16384_maps4096|\
+    external_meta_off_route16384_source512|\
+    external_meta_off_route16384_frontcache_c4_4096)
       hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 1
       hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1 1
       hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES 4096
@@ -204,7 +214,7 @@ variant_flags() {
       hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_EXTERNAL_L1 1
       hz6_preload_replace_define flags HZ6_SOURCE_RUN_INLINE_META_L1 0
       case "$variant" in
-        external_meta_off_route16384)
+        external_meta_off_route16384|external_meta_off_route16384_*)
           hz6_preload_replace_define flags HZ6_ROUTE_TABLE_CAPACITY 16384
           ;;
         external_meta_off_route24576)
@@ -224,6 +234,26 @@ variant_flags() {
           hz6_preload_replace_define flags HZ6_SOURCE_BLOCK_CAPACITY 512
           ;;
         external_meta_off_frontcache_c4_4096)
+          hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS_STORAGE_TRIM_L1 1
+          hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS4_STORAGE_CAPACITY 4096
+          hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS5_STORAGE_CAPACITY 4096
+          ;;
+      esac
+      case "$variant" in
+        external_meta_off_route16384_toy_map4096)
+          hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY 4096
+          ;;
+        external_meta_off_route16384_midpage_map4096)
+          hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY 4096
+          ;;
+        external_meta_off_route16384_maps4096)
+          hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY 4096
+          hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY 4096
+          ;;
+        external_meta_off_route16384_source512)
+          hz6_preload_replace_define flags HZ6_SOURCE_BLOCK_CAPACITY 512
+          ;;
+        external_meta_off_route16384_frontcache_c4_4096)
           hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS_STORAGE_TRIM_L1 1
           hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS4_STORAGE_CAPACITY 4096
           hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS5_STORAGE_CAPACITY 4096
