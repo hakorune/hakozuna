@@ -153,6 +153,10 @@ Do not collapse them into a single broad default without new real workload data.
      keeps that decision: capacity-hybrid wins 4/6 rows by small margins,
      capacity-narrow wins `small_object_cache` and `mixed_object_cache`, and
      RSS remains effectively tied.
+     Shape-sweep raw `hz6_workload_capacity_shape_sweep_20260616_112816`
+     confirms the split is shape-boundary behavior, not one obviously superior
+     profile: hybrid wins low-WS small/mixed and high-WS small/midpage, while
+     narrow wins low-WS midpage and high-WS mixed in this short repeat.
 
 5. Wrapper profile audit only if needed
    Goal:
@@ -187,6 +191,7 @@ WorkloadCapacityHybridUnificationDesign-L1:
   runner:
     linux/run_hz6_workload_profile_guard.sh
     linux/run_hz6_workload_capacity_pair_focus.sh
+    linux/run_hz6_workload_capacity_shape_sweep.sh
     linux/run_hz6_workload_capacity_profile_gap_diag.sh
     linux/run_hz6_workload_capacity_hybrid_depot_ladder.sh
 
@@ -197,9 +202,10 @@ Why this first:
   cache rows.
   Capacity-narrow and capacity-hybrid are both strong, close in RSS, and row
   dependent; pair-focus raw `112040` confirms the split is too small and
-  row-specific for a proxy-only default change. The fine depot ladder is also
-  row-dependent, so the next useful work is real workload evidence or a new
-  diagnostic dimension, not
+  row-specific for a proxy-only default change. Shape-sweep raw `112816` starts
+  mapping the working-set/size-band boundaries before real app traces exist.
+  The fine depot ladder is also row-dependent, so the
+  next useful work is real workload evidence or a new diagnostic dimension, not
   selected/default promotion or another proxy-only depot default.
   Cross fixed-gap now shows the HZ6 route16K profile beats tcmalloc and is
   competitive with HZ3 on fixed_4k/8k ops-per-MiB while beating HZ3 on
