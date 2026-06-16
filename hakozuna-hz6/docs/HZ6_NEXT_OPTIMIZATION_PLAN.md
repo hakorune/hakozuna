@@ -135,6 +135,12 @@ Do not collapse them into a single broad default without new real workload data.
      split by row: 256/512 help some small/mixed rows, 1024 helps midpage, and
      1536 helps wide_midpage. Keep depot1024 as the broad default; do not tune
      depot capacity from proxy evidence alone.
+     Current-name diagnostic raw `hz6_workload_capacity_profile_gap_diag_20260616_111503`
+     keeps the same attribution read: selected hits descriptor exhaustion and
+     real fallback on collapsed rows, while capacity-narrow and capacity-hybrid
+     remove those failures with nearly identical capacity counters and
+     `elastic_alloc=0`. The observed speed split is therefore not explained by
+     descriptor/source exhaustion in this diagnostic.
 
 5. Wrapper profile audit only if needed
    Goal:
@@ -178,8 +184,8 @@ Why this first:
   cache rows.
   Capacity-narrow and capacity-hybrid are both strong, close in RSS, and row
   dependent. The fine depot ladder is also row-dependent, so the next useful
-  work is real workload evidence or diagnostics, not selected/default promotion
-  or another proxy-only depot default.
+  work is real workload evidence or a new diagnostic dimension, not
+  selected/default promotion or another proxy-only depot default.
   Cross fixed-gap now shows the HZ6 route16K profile beats tcmalloc and is
   competitive with HZ3 on fixed_4k/8k ops-per-MiB while beating HZ3 on
   fixed_16k, so the remaining question is real workload fit, not fixed-row

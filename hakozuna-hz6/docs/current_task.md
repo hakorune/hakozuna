@@ -99,7 +99,7 @@ Recent fixed/workload/profile repeats:
   private/raw-results/linux/hz6_{workload_proxy_matrix,fixed_gap_matrix}_20260616_103109
   private/raw-results/linux/hz6_route16k_capacity_guard_20260616_{103616,103858}
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_{104235,104302}
-  private/raw-results/linux/hz6_workload_profile_guard_20260616_{105102,105644}, hz6_workload_descriptor_hybrid_depot_ladder_20260616_105953, hz6_workload_capacity_profile_gap_diag_20260616_110830, hz6_workload_capacity_narrow_ladder_20260616_111216, and hz6_workload_capacity_narrow_map_ladder_20260616_111243
+  private/raw-results/linux/hz6_workload_profile_guard_20260616_{105102,105644}, hz6_workload_descriptor_hybrid_depot_ladder_20260616_105953, hz6_workload_capacity_profile_gap_diag_20260616_{110830,111503}, hz6_workload_capacity_narrow_ladder_20260616_111216, and hz6_workload_capacity_narrow_map_ladder_20260616_111243
 ```
 
 ## Do Not Reopen Casually
