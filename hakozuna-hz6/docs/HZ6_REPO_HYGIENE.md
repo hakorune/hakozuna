@@ -14,6 +14,7 @@ benchmark lane or source-level experiment.
 | Mechanism/no-go lane dictionary | `HZ6_LANE_GUIDE_MECHANISM_REFERENCE.md` |
 | Ubuntu LD_PRELOAD lane ledger | `HZ6_UBUNTU_PRELOAD_LANES.md` |
 | Ubuntu profile registry | `HZ6_UBUNTU_PROFILE_REGISTRY.md` |
+| Next optimization plan | `HZ6_NEXT_OPTIMIZATION_PLAN.md` |
 | Cross-allocator comparison table | `HZ6_CROSS_ALLOCATOR_COMPARISON.md` |
 | ElasticCapacity source-depot track | `HZ6_ELASTIC_CAPACITY_PLAN.md` |
 | ElasticCapacity design details | `HZ6_ELASTIC_CAPACITY_DESIGN_REFERENCE.md` |

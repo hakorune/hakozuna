@@ -13,6 +13,7 @@ Lane decisions:
   HZ6_LANE_GUIDE.md
   HZ6_UBUNTU_PRELOAD_LANES.md
   HZ6_UBUNTU_PROFILE_REGISTRY.md
+  HZ6_NEXT_OPTIMIZATION_PLAN.md
 
 Ubuntu MidPage closeouts:
   HZ6_UBUNTU_MIDPAGE_NEXT_DESIGN.md
@@ -118,33 +119,14 @@ Default no-go/control-only without substantially different evidence:
 
 ```text
 1. Keep selected/default stable.
-2. Fixed-floor selected/default is route32K + desc8192 + source1024 plus
-   Toy16K/MidPage8K maps; fixed-row smoke sits near 79..80 MiB peak.
-3. Treat adaptive-4k and adaptive-8k as fixed-boundary profile lanes.
-4. Treat calloc-large-real as a large-calloc RSS/speed profile, not selected.
-5. Keep calloc-direct default-off: thick focused+calloc repeat is mixed.
-6. Fixed-gap refresh says HZ6 fixed RSS profiles beat tcmalloc balance on
-   fixed_4k/8k/16k; external beats HZ3 speed on fixed_4k/8k, while HZ3 keeps
-   the lower RSS floor.
-7. Current profile frontier:
-   latest short broad guard keeps selected/default stable; adaptive/realloc
-   remain speed-leaning fixed controls; Toy-map8192/external remain explicit
-   fixed RSS profiles, not broad defaults.
-8. `hz6-small-boundary-trusted-toy-map8192-external-target` is the current
-   lower-RSS fixed-boundary profile: best ops/MiB on fixed_4k/8k in the latest
-   gap matrix, while Toy-map8192 is stronger on fixed_16k speed/ops-per-MiB.
-   It is still not a broad default because focused mixed-small rows regress.
-9. Do not promote realloc-boundary/adaptive to selected/default without a new
-   guard that also preserves tiny, mixed-small, target, fixed, RSS, and stats.
-10. Fixed-cost/quiescent audits point to peak-RSS payload/static floor, while
-    `malloc_trim(0)` recovers current RSS; do not default free-time release.
-11. 8K run shrink under Toy-map8192 RSS profile is no-go/control.
-12. MidPage skip-transfer is control/watch only: latest profile frontier loses
-    16..4096 and 4096..16384 despite 1024..4096/fixed_16k signals.
-13. Toy-map8192 external is now an explicit lower-RSS fixed-boundary profile;
-    packed-frontcache/sourceblock combos remain runner-only controls/no-go.
-14. Capacity-gap diag says selected workload proxy collapse is descriptor-table
-    exhaustion/prefill fallback; capacity-lite is faster, while descriptor-overflow 2048 keeps lower RSS with selected static tables.
-15. Narrow hybrid moves explicit hybrid to desc10k/source1280/route40k plus depot1024: lower RSS than old hybrid, with only small mixed-small cost.
-16. Broad workload guard now defaults to capacity-narrow + descriptor-hybrid as current explicit workload controls.
+2. Use HZ6_NEXT_OPTIMIZATION_PLAN.md as the forward plan.
+3. First refresh broad selected/profile guard after script cleanup.
+4. Then attack SourceBlockMetaSlim-L1: static SourceBlock/run metadata RSS
+   without malloc/free hot-path branches.
+5. Keep capacity-narrow + descriptor-hybrid as paired workload controls; proxy
+   rows alone are not enough to change selected/default.
+6. Keep Toy-map8192 external as explicit fixed-boundary RSS profile.
+7. Keep realloc/adaptive/calloc/aligned as profile/control lanes.
+8. Do not reopen cold-retire, active-map widening, page-kind/free-order tables,
+   packed metadata, or route inline work without new diagnostics.
 ```
