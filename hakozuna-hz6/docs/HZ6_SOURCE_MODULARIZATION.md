@@ -96,11 +96,21 @@ P2 preload module split:
   preload/hz6_preload_stats.h exposes only phase counters and allocator
   registration needed by the hook module.
   hakozuna-hz6/preload/hz6_preload.c is now a thin translation unit.
-  hakozuna-hz6/preload/hz6_preload_stats.c owns stats aggregation/printing
-  plus allocator registry state.
-  Next cleanup-only split, if needed:
-    narrower stats print helpers inside preload/hz6_preload_stats.c
-  Do not mix those future splits with behavior changes.
+  hakozuna-hz6/preload/hz6_preload_stats.c owns stats aggregation, allocator
+  registry state, and the top-level unload hook. The diagnostic print body is
+  now split into preload/hz6_preload_stats_print_head.inc,
+  preload/hz6_preload_stats_print_mid.inc, and
+  preload/hz6_preload_stats_print_tail.inc so the dense report stays isolated
+  from hook control flow.
+  Do not mix future stats/report splits with behavior changes.
+
+P2 linux runner split:
+  linux/run_hz6_midpage_payload_trim_ab.sh now keeps only the orchestration,
+  argument parsing, and run loop. The large variant matrix lives in
+  linux/run_hz6_midpage_payload_trim_ab_variant_flags.inc through the helper
+  apply_midpage_payload_trim_variant_flags(). Keep future runner variants in
+  that helper rather than growing the top-level script back above the cleanup
+  threshold.
 
 P2 route split:
   api/hz6_allocator_route_lookup.c now owns visibility registration,
@@ -187,12 +197,30 @@ preload/hz6_preload.c:
   thin preload translation unit.
 
 preload/hz6_preload_stats.c:
-  preload stats aggregation/printing and allocator registry. This is still a
-  dense diagnostic file, intentionally isolated from hook control flow.
+  preload stats aggregation/printing and allocator registry. The unload report
+  body is split into head/mid/tail inc fragments and intentionally isolated
+  from hook control flow.
+
+preload/hz6_preload_stats_print_head.inc:
+  first half of the unload report body, including registry aggregation setup
+  and the main summary counters.
+
+preload/hz6_preload_stats_print_mid.inc:
+  middle of the unload report body, including runmeta detail output.
+
+preload/hz6_preload_stats_print_tail.inc:
+  diagnostic memory-attribute block plus phase/wrapper detail output.
 
 preload/hz6_preload_hooks.c:
   libc hook entry points, TLS allocator creation, route ownership checks,
   realloc/calloc behavior, and MidPage malloc-boundary dispatch.
+
+linux/run_hz6_midpage_payload_trim_ab.sh:
+  workload runner orchestration and run loops for the midpage payload trim A/B
+  lane.
+
+linux/run_hz6_midpage_payload_trim_ab_variant_flags.inc:
+  variant-to-flag matrix for the midpage payload trim A/B lane.
 ```
 
 Header-inline risk rule:
