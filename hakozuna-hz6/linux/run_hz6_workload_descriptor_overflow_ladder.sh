@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+source "${ROOT_DIR}/hakozuna-hz6/linux/hz6_workload_profile_ladder_common.sh"
 ARCH="${ARCH:-x86_64}"
 RUNS="${RUNS:-3}"
 ITERS="${ITERS:-80000}"
@@ -105,41 +106,7 @@ for capacity in "${capacities[@]}"; do
 done
 
 rows=()
-IFS=',' read -r -a row_groups <<< "$ROWS_CSV"
-for row_group in "${row_groups[@]}"; do
-  case "$row_group" in
-    small_proxy)
-      rows+=(
-        "redis_proxy 4 ${ITERS} 2000 16 256"
-        "small_object_cache 4 ${ITERS} 8192 16 1024"
-        "mixed_small_cache 4 ${ITERS} 8192 16 4096"
-      )
-      ;;
-    cache_proxy)
-      rows+=(
-        "mixed_object_cache 4 ${ITERS} 8192 64 8192"
-        "midpage_cache 4 ${ITERS} 4096 4096 32768"
-        "wide_midpage_cache 4 ${ITERS} 8192 4096 32768"
-      )
-      ;;
-    all)
-      rows+=(
-        "redis_proxy 4 ${ITERS} 2000 16 256"
-        "small_object_cache 4 ${ITERS} 8192 16 1024"
-        "mixed_small_cache 4 ${ITERS} 8192 16 4096"
-        "mixed_object_cache 4 ${ITERS} 8192 64 8192"
-        "midpage_cache 4 ${ITERS} 4096 4096 32768"
-        "wide_midpage_cache 4 ${ITERS} 8192 4096 32768"
-      )
-      ;;
-    "")
-      ;;
-    *)
-      echo "unknown row group: ${row_group}" >&2
-      exit 2
-      ;;
-  esac
-done
+hz6_workload_append_proxy_rows rows "$ITERS" "$ROWS_CSV"
 
 {
   echo "arch=${ARCH}"

@@ -13,6 +13,7 @@ OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_workloa
 SKIP_BUILDS=0
 
 source "${HZ6_DIR}/linux/hz6_preload_profile_builder.sh"
+source "${HZ6_DIR}/linux/hz6_workload_profile_ladder_common.sh"
 
 usage() {
   cat <<'EOF'
@@ -82,37 +83,10 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-parse_k_capacity() {
-  local raw="$1"
-  case "$raw" in
-    *k)
-      echo "$(( ${raw%k} * 1024 ))"
-      ;;
-    *)
-      echo "$raw"
-      ;;
-  esac
-}
-
-parse_profile() {
-  local profile="$1"
-  local -n desc_out="$2"
-  local -n source_out="$3"
-  local -n route_out="$4"
-  if [[ "$profile" =~ ^desc([0-9]+k?)_source([0-9]+k?)_route([0-9]+k?)$ ]]; then
-    desc_out="$(parse_k_capacity "${BASH_REMATCH[1]}")"
-    source_out="$(parse_k_capacity "${BASH_REMATCH[2]}")"
-    route_out="$(parse_k_capacity "${BASH_REMATCH[3]}")"
-  else
-    echo "invalid profile: ${profile}" >&2
-    return 2
-  fi
-}
-
 build_hybrid_profile() {
   local profile="$1"
   local desc_capacity source_capacity route_capacity
-  parse_profile "$profile" desc_capacity source_capacity route_capacity
+  hz6_workload_parse_static_profile "$profile" desc_capacity source_capacity route_capacity
 
   local flags=()
   hz6_preload_profile_selected_cflags flags 1
@@ -155,41 +129,7 @@ for profile in "${profiles[@]}"; do
 done
 
 rows=()
-IFS=',' read -r -a row_groups <<< "$ROWS_CSV"
-for row_group in "${row_groups[@]}"; do
-  case "$row_group" in
-    small_proxy)
-      rows+=(
-        "redis_proxy 4 ${ITERS} 2000 16 256"
-        "small_object_cache 4 ${ITERS} 8192 16 1024"
-        "mixed_small_cache 4 ${ITERS} 8192 16 4096"
-      )
-      ;;
-    cache_proxy)
-      rows+=(
-        "mixed_object_cache 4 ${ITERS} 8192 64 8192"
-        "midpage_cache 4 ${ITERS} 4096 4096 32768"
-        "wide_midpage_cache 4 ${ITERS} 8192 4096 32768"
-      )
-      ;;
-    all)
-      rows+=(
-        "redis_proxy 4 ${ITERS} 2000 16 256"
-        "small_object_cache 4 ${ITERS} 8192 16 1024"
-        "mixed_small_cache 4 ${ITERS} 8192 16 4096"
-        "mixed_object_cache 4 ${ITERS} 8192 64 8192"
-        "midpage_cache 4 ${ITERS} 4096 4096 32768"
-        "wide_midpage_cache 4 ${ITERS} 8192 4096 32768"
-      )
-      ;;
-    "")
-      ;;
-    *)
-      echo "unknown row group: ${row_group}" >&2
-      exit 2
-      ;;
-  esac
-done
+hz6_workload_append_proxy_rows rows "$ITERS" "$ROWS_CSV"
 
 {
   echo "arch=${ARCH}"

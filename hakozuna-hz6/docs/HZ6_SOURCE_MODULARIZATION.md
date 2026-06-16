@@ -60,6 +60,9 @@ P0 docs/build hygiene:
   reuse helpers are guarded to their actual skip-transfer use site.
   thin profile builders should use linux/hz6_preload_profile_builder.sh and
   only describe macro deltas from selected/default.
+  workload capacity/hybrid/proxy scripts should use
+  linux/hz6_workload_profile_ladder_common.sh for desc/source/route profile
+  parsing and shared proxy row expansion instead of carrying local copies.
   profile aliases should be registered in HZ6_UBUNTU_PROFILE_REGISTRY.md and
   checked with linux/check_hz6_preload_profile_registry.sh before profile-lane
   commits.
