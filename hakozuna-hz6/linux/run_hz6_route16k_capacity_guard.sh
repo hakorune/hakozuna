@@ -15,7 +15,7 @@ SKIP_PREPARE_ALLOCATORS=0
 
 BASE_ALIAS="hz6-small-boundary-trusted-toy-map8192-external-meta-off-target"
 ROUTE16K_ALIAS="hz6-small-boundary-trusted-toy-map8192-external-meta-off-route16k-target"
-WORKLOAD_ALLOCATORS="hz6,hz6-workload-capacity-narrow-target,hz6-workload-descriptor-hybrid-target,${BASE_ALIAS},${ROUTE16K_ALIAS}"
+WORKLOAD_ALLOCATORS="hz6,hz6-workload-capacity-narrow-target,hz6-workload-capacity-hybrid-target,${BASE_ALIAS},${ROUTE16K_ALIAS}"
 
 usage() {
   cat <<'EOF'
@@ -170,5 +170,5 @@ fi
   echo "Promote only as an explicit fixed-boundary profile when static stats stay"
   echo "failure-free and focused/fixed production rows keep the RSS win. Do not"
   echo "promote to selected/default while workload-proxy large live-set rows still"
-  echo "require capacity-narrow or descriptor-hybrid."
+  echo "require capacity-narrow or capacity-hybrid."
 } | tee "${OUTDIR}/summary.md"

@@ -316,6 +316,17 @@ and `midpage_cache 19.011M / 82.88 MiB`. 2048 only slightly wins
 Default the explicit hybrid builder to a 1024-slot depot; keep
 `HZ6_WORKLOAD_DESCRIPTOR_HYBRID_DEPOT_CAPACITY` as the override for A/B.
 
+Capacity-hybrid naming refresh raw
+`private/raw-results/linux/hz6_workload_descriptor_hybrid_depot_ladder_20260616_105953`
+rechecks the same narrow static shape with smaller depots `256/512/1024/1536`.
+The result is row-split rather than a promotion signal: 256 is strongest on
+`redis_proxy`, `small_object_cache`, and `mixed_object_cache`; 512 is strongest
+on `mixed_small_cache`; 1024 is strongest on `midpage_cache`; 1536 is strongest
+on `wide_midpage_cache`. Keep the `hz6-workload-capacity-hybrid-target` default
+at depot1024 because it is the broad middle and preserves the previous
+closeout. Use `run_hz6_workload_capacity_hybrid_depot_ladder.sh` for future
+depot A/B; do not change the depot default from proxy evidence alone.
+
 Alias rebuild broad guard raw
 `private/raw-results/linux/hz6_broad_guard_20260616_091214` confirms the
 depot1024 default through `hz6-workload-descriptor-hybrid-target`. It beats
@@ -795,6 +806,7 @@ MidPage 32K run-size closeout details are in
 | `run_hz6_fixed_external_meta_off_matrix.sh` | Narrow fixed-boundary RSS/meta-off A/B runner. It compares `hz6-small-boundary-trusted-toy-map8192-external-target` with `hz6-small-boundary-trusted-toy-map8192-external-meta-off-target` through distinct aliases, so scratch env overrides cannot collide in one raw root. Use it before promoting any fixed-boundary meta-off composition. |
 | `run_hz6_route16k_capacity_guard.sh` | Route16K fixed-boundary profile guard runner. It bundles static stats (`external_meta_off`, route16K, route24576), focused/fixed production profile frontier, and workload-proxy guard legs under one raw root. Use it to refresh route16K capacity safety without changing selected/default flags. Smoke raw `hz6_route16k_capacity_guard_20260616_103616` confirms runner wiring and the expected read; thick raw `hz6_route16k_capacity_guard_20260616_103858` is the current guard evidence for profile-only use. |
 | `run_hz6_workload_profile_guard.sh` | Narrow workload-profile decision guard. It wraps `run_hz6_workload_proxy_matrix.sh` with selected/default, workload-capacity-narrow, workload-capacity-hybrid, the route16K fixed profile, and external allocators. Use it to refresh application-profile recommendations without changing selected/default. Thin raw `hz6_workload_profile_guard_20260616_105102` kept the old descriptor-hybrid spelling paired; raw `hz6_workload_profile_guard_20260616_105644` switches the default recommendation name to capacity-hybrid. capacity-hybrid and capacity-narrow both recover large live-set small/mixed/wide cache proxy rows by orders of magnitude, capacity-hybrid beats tcmalloc on `wide_midpage_cache`, and route16K remains a fixed/redis/midpage-leaning profile rather than the workload-capacity answer. |
+| `run_hz6_workload_capacity_hybrid_depot_ladder.sh` | Current-name wrapper for the historical descriptor-hybrid depot ladder. It delegates to `run_hz6_workload_descriptor_hybrid_depot_ladder.sh` but writes a capacity-hybrid raw root and defaults to `256,512,1024,1536` for fine depot checks. Smoke raw `hz6_workload_capacity_hybrid_depot_ladder_20260616_110401` confirms delegation and current-name summary generation. Use it for future depot A/B without reopening the selected/default lane. |
 | `run_hz6_fixed_rss_gap_attribution.sh` | Diagnostic fixed RSS attribution runner. It builds/runs selected diagnostic and external-meta-off diagnostic preload DSOs through `run_hz6_midpage_rss_audit.sh`, then emits a combined static/frontcache/map/payload read. Use it to explain residual fixed_4k/8k RSS gaps; do not use it as a production speed ranking. |
 | `run_hz6_workload_capacity_frontier.sh` | Thin workload-capacity profile frontier runner. It wraps `run_hz6_workload_proxy_matrix.sh` with selected HZ6 plus `hz6-workload-capacity-lite-target`, `hz6-workload-capacity-lite-map8192-target`, `hz6-workload-capacity-mid-target`, and full `hz6-workload-capacity-target`. Use it to refresh the capacity ladder separately from the broad cross-allocator workload-proxy guard. |
 | `run_hz6_workload_capacity_narrow_map_ladder.sh` | Runner-only A/B for workload-capacity-narrow plus Toy active-map 8192 and Toy active-map external storage. It keeps route40K/descriptors10K/source1280 and compares selected, descriptor-hybrid, plain capacity-narrow, map8192, and map8192-external. Raw `hz6_workload_capacity_narrow_map_ladder_20260616_093456` keeps map variants as controls/no-go for broad default. |

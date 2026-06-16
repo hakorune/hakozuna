@@ -127,6 +127,11 @@ Do not collapse them into a single broad default without new real workload data.
      beats selected/route16K by orders of magnitude on large live-set cache
      proxies, and beats tcmalloc on `wide_midpage_cache`. capacity-narrow
      remains paired because it is slightly stronger on some rows.
+     raw `hz6_workload_descriptor_hybrid_depot_ladder_20260616_105953`
+     rechecks smaller depots through the capacity-hybrid shape. The result is
+     split by row: 256/512 help some small/mixed rows, 1024 helps midpage, and
+     1536 helps wide_midpage. Keep depot1024 as the broad default; do not tune
+     depot capacity from proxy evidence alone.
 
 5. Wrapper profile audit only if needed
    Goal:
@@ -160,6 +165,7 @@ WorkloadCapacityHybridUnificationDesign-L1:
     says otherwise
   runner:
     linux/run_hz6_workload_profile_guard.sh
+    linux/run_hz6_workload_capacity_hybrid_depot_ladder.sh
 
 Why this first:
   SourceBlockMetaSlim-L1 and route16K are implemented and clean on fixed/focused
@@ -167,8 +173,9 @@ Why this first:
   Workload proxy still rejects route16K/default promotion for large live-set
   cache rows.
   Capacity-narrow and capacity-hybrid are both strong, close in RSS, and row
-  dependent; the next useful work is real workload evidence or finer hybrid
-  tuning, not selected/default promotion.
+  dependent. The fine depot ladder is also row-dependent, so the next useful
+  work is real workload evidence or diagnostics, not selected/default promotion
+  or another proxy-only depot default.
   Cross fixed-gap now shows the HZ6 route16K profile beats tcmalloc and is
   competitive with HZ3 on fixed_4k/8k ops-per-MiB while beating HZ3 on
   fixed_16k, so the remaining question is real workload fit, not fixed-row
