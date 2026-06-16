@@ -60,6 +60,7 @@ comparability.
 | `lowpage/hz5_lowpage64_p43g.inc` | LowPage P43g prepare/wrapper note helpers | split out from `hz5_lowpage64.c`; include-local to keep the hot file slimmer |
 | `lowpage/hz5_lowpage64_p45dr.inc` | LowPage P45 stage1 drain diagnostics | split out from `hz5_lowpage64.c`; keep the cold diagnostic block include-local |
 | `policy/hz5_policy.c` | exact-route wrapper/policy control | Local2P helpers moved to `hz5_policy_local2p.inc`; keep the main policy file slimmer |
+| `policy/hz5_policy_tail.inc` | HZ5 policy public API tail helpers | split out from `hz5_policy.c`; keep include-local while the public surface remains stable |
 | `policy/hz5_policy_local2p.inc` | Local2P helper cluster | split out from `hz5_policy.c`; include-local to keep policy control readable |
 | `linux/build_linux_hz5_standalone.sh` | HZ5 Linux build/profile router | helperized repeated flag groups; keep alias names human-readable |
 
