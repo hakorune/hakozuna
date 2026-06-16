@@ -97,6 +97,10 @@ Do not collapse them into a single broad default without new real workload data.
      static stats, focused/fixed production, and workload proxy guard legs.
      Smoke raw `hz6_route16k_capacity_guard_20260616_103616` confirms the
      runner wiring and preserves the same read.
+     Thick guard raw `hz6_route16k_capacity_guard_20260616_103858` strengthens
+     the fixed-profile call: static stats stay failure-free, fixed_4k/8k/16k
+     RSS remains about `2.5 MiB` lower than external-meta-off, and workload
+     large-live-set proxies still require capacity-narrow or descriptor-hybrid.
 
 4. Real workload profile evidence
    Goal:
@@ -126,9 +130,9 @@ tables, packed metadata, or route inline work without new diagnostics.
 
 ```text
 Fixed4K8KResidualRssGapAudit-L1:
-  status: route16K profile/control implemented
-  explain the remaining fixed-profile RSS/static-capacity tradeoff after
-  external-meta-off-route16K
+  status: route16K profile/control implemented and guarded
+  explain only the remaining fixed-profile RSS/static-capacity tradeoff after
+  external-meta-off-route16K; do not promote to selected/default
   continue from diagnostics/profile controls, not selected behavior:
     route table capacity safety by fixed/profile/workload shape
     frontcache table shape

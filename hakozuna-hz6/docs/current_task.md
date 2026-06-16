@@ -100,6 +100,7 @@ Recent fixed/workload/profile repeats:
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_102939
   private/raw-results/linux/hz6_{workload_proxy_matrix,fixed_gap_matrix}_20260616_103109
   private/raw-results/linux/hz6_route16k_capacity_guard_20260616_103616
+  private/raw-results/linux/hz6_route16k_capacity_guard_20260616_103858
 ```
 
 ## Do Not Reopen Casually
@@ -133,7 +134,8 @@ Default no-go/control-only without substantially different evidence:
    `hz6-small-boundary-trusted-toy-map8192-external-meta-off-route16k-target`.
    Route16K cuts another about 2.5 MiB on fixed/focused rows and now makes HZ6
    fixed_4k/8k ops-per-MiB competitive with or ahead of HZ3/tcmalloc in the
-   latest fixed-gap matrix.
+   latest fixed-gap matrix. Thick route16K guard `103858` keeps stats
+   failure-free and preserves the fixed/focused RSS win.
 5. Keep capacity-narrow + descriptor-hybrid as paired workload controls; proxy
    rows alone are not enough to change selected/default. Route16K improves
    selected-like workload rows but still loses large live-set cache proxies by
