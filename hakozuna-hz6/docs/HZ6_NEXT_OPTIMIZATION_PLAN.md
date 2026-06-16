@@ -54,15 +54,42 @@ Do not collapse them into a single broad default without new real workload data.
      cross fixed-gap still leaves fixed_4k behind HZ3/tcmalloc
      workload-only guard `hz6_broad_guard_20260616_100509` keeps alloc_fail=0
      but confirms meta-off does not solve selected workload-capacity cliffs
+     workload-control meta-off probe `hz6_workload_proxy_matrix_20260616_100846`
+     lowers RSS but is speed-weak, so keep workload aliases unchanged
 
-3. Real workload profile evidence
+3. Fixed_4k speed-gap audit
+   Goal:
+     explain the remaining HZ3/tcmalloc gap without weakening selected RSS.
+   First target:
+     compare selected, meta-off, and existing fixed-boundary profiles with
+     diagnostics focused on Toy class4 allocation/free shape.
+   Rule:
+     do not reopen active-map widening or raw frontcache push without new
+     counter evidence.
+   Added lane:
+     `hz6-small-boundary-trusted-toy-map8192-external-meta-off-target` plus
+     `run_hz6_fixed_external_meta_off_matrix.sh` for clean fixed-boundary
+     external-vs-meta-off A/B without env-override label collisions.
+   Current read:
+     raw `hz6_fixed_external_meta_off_matrix_20260616_101836` keeps the
+     focused/fixed RSS win, but workload proxy raw
+     `hz6_workload_proxy_matrix_20260616_101836` rejects workload/default
+     promotion; keep it as an explicit fixed-boundary RSS control.
+     cross raw `hz6_fixed_gap_matrix_20260616_102020` shows the control is now
+     the preferred fixed-boundary HZ6 RSS profile versus tcmalloc, while HZ3
+     still keeps the lower fixed_4k/8k RSS floor.
+     attribution raw `hz6_fixed_rss_gap_attribution_20260616_102348` shows
+     logical MidPage payload is not the right next lever: external-meta-off can
+     lower peak RSS while increasing logical all-local-free payload.
+
+4. Real workload profile evidence
    Goal:
      decide whether capacity-narrow, descriptor-hybrid, or a future profile is
      worth documenting as an application-specific recommendation.
    Rule:
      proxy rows alone are not enough to change selected/default.
 
-4. Wrapper profile audit only if needed
+5. Wrapper profile audit only if needed
    Goal:
      keep calloc/realloc/aligned controls available, but do not promote them
      without a focused + broad + cross-allocator guard.
@@ -82,15 +109,19 @@ tables, packed metadata, or route inline work without new diagnostics.
 ## Immediate Implementation Candidate
 
 ```text
-SourceBlockMetaSlim-L1:
-  create a Linux-visible experiment flag for source-run metadata storage shape
-  keep allocator behavior identical
-  measure static table/RSS and selected smoke before touching free/malloc paths
-  keep the meta-off profile explicit until focused/fixed/broad guards are clean
+Fixed4K8KResidualRssGapAudit-L1:
+  explain the remaining HZ3 fixed_4k/8k RSS floor advantage after
+  external-meta-off
+  continue from diagnostics, not behavior:
+    static table split
+    Toy/MidPage active-map storage
+    frontcache table shape
 
 Why this first:
-  HZ6 speed is now competitive on selected rows.
-  The remaining fixed-floor gap versus HZ3 is mostly static/payload floor.
-  Hot-path free/malloc no-go evidence is already dense.
-  Metadata layout can improve RSS without adding per-operation branches.
+  SourceBlockMetaSlim-L1 is implemented and clean on fixed/focused rows.
+  Workload proxy rejects default/workload promotion.
+  Cross fixed-gap now shows the HZ6 profile beats tcmalloc and is close to HZ3
+  on speed, so the remaining gap is RSS attribution.
+  Payload release/cold-retire is not the next fixed RSS lever from current
+  evidence.
 ```

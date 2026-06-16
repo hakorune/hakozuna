@@ -58,7 +58,7 @@ Standard frontier:
 
 Explicit controls:
   toy-map8192(+external) / workload-capacity(+narrow/map8192) / descriptor-overflow/hybrid / toy-map-external / midpage-skip-transfer
-  source-run-meta-off
+  source-run-meta-off / external-meta-off fixed-boundary control
 
 Runners:
   broad_guard / fixed_boundary_profile_frontier / preload_profile_frontier
@@ -70,22 +70,11 @@ Runners:
 ## Latest Evidence
 
 ```text
-Profile frontier:
-  private/raw-results/linux/hz6_preload_profile_frontier_20260616_{060739,081847}
-  private/raw-results/linux/hz6_broad_guard_20260616_{082927,085900,090638,091214,091829,092222}
-  private/raw-results/linux/hz6_midpage_skip_transfer_alias_smoke_20260616_065421
+Archived profile/control repeats:
+  profile_frontier/broad_guard/realloc/calloc raws before 20260616_060000 are
+  summarized in HZ6_UBUNTU_PRELOAD_LANES.md and archive snapshots.
 
-Realloc/adaptive profile repeats:
-  private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_042441
-  private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_042628
-
-Calloc large-real profile:
-  private/raw-results/linux/hz6_preload_profile_frontier_20260616_044958
-  private/raw-results/linux/hz6_preload_calloc_cross_20260616_045446
-
-Calloc direct-HZ6 control: private/raw-results/linux/hz6_preload_calloc_audit_20260616_051752 and hz6_preload_profile_frontier_20260616_051752
-
-Recent fixed/profile repeats:
+Recent fixed/workload/profile repeats:
   private/raw-results/linux/hz6_fixed_boundary_profile_frontier_20260616_072931
   private/raw-results/linux/hz6_fixed_cost_residency_matrix_20260616_063918
   private/raw-results/linux/hz6_fixed_gap_matrix_20260616_082042
@@ -101,6 +90,11 @@ Recent fixed/profile repeats:
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_100113
   private/raw-results/linux/hz6_broad_guard_20260616_100224
   private/raw-results/linux/hz6_broad_guard_20260616_100509
+  private/raw-results/linux/hz6_workload_proxy_matrix_20260616_100846
+  private/raw-results/linux/hz6_fixed_external_meta_off_matrix_20260616_{101654,101836}
+  private/raw-results/linux/hz6_workload_proxy_matrix_20260616_101836
+  private/raw-results/linux/hz6_fixed_gap_matrix_20260616_102020
+  private/raw-results/linux/hz6_fixed_rss_gap_attribution_20260616_102348
 ```
 
 ## Do Not Reopen Casually
@@ -127,15 +121,20 @@ Default no-go/control-only without substantially different evidence:
 2. Use HZ6_NEXT_OPTIMIZATION_PLAN.md as the forward plan.
 3. Broad selected/profile guard refreshed in hz6_broad_guard_20260616_094818:
    selected/profile is stable; workload proxy still needs capacity controls.
-4. Next attack SourceBlockMetaSlim-L1: static SourceBlock/run metadata RSS
-   without malloc/free hot-path branches. Current profile alias:
-   `hz6-source-run-meta-off-target`. Initial focused/fixed A/B cuts about
-   2.5 MiB peak RSS; short broad guard confirms RSS, but fixed_4k speed gap
-   remains separate and workload proxy still needs capacity controls.
+4. SourceBlockMetaSlim-L1: static SourceBlock/run metadata RSS without
+   malloc/free hot-path branches. Current aliases: `hz6-source-run-meta-off-target`
+   and `hz6-small-boundary-trusted-toy-map8192-external-meta-off-target`.
+   Initial focused/fixed A/B cuts about 2.5 MiB peak RSS; workload meta-off is
+   speed-weak. External-meta-off cuts about 2.5..2.8 MiB on fixed/focused
+   rows and beats tcmalloc on fixed rows, but workload proxy rejects
+   default/workload promotion.
 5. Keep capacity-narrow + descriptor-hybrid as paired workload controls; proxy
-   rows alone are not enough to change selected/default.
+   rows alone are not enough to change selected/default. Workload meta-off
+   lowers RSS but is speed-weak, so do not add aliases yet.
 6. Keep Toy-map8192 external as explicit fixed-boundary RSS profile.
-7. Keep realloc/adaptive/calloc/aligned as profile/control lanes.
+7. Next likely attack: fixed_4k/8k residual RSS attribution versus HZ3,
+   focused on static/frontcache/map shape; payload release is not next from
+   current attribution.
 8. Do not reopen cold-retire, active-map widening, page-kind/free-order tables,
    packed metadata, or route inline work without new diagnostics.
 ```

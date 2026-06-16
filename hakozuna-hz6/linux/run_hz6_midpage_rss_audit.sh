@@ -8,6 +8,8 @@ WS="${WS:-4096}"
 ROWS_CSV="${ROWS:-focused}"
 OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_midpage_rss_audit_$(date +%Y%m%d_%H%M%S)}"
 SKIP_BUILD=0
+PRELOAD_SO_OVERRIDE="${PRELOAD_SO:-}"
+LABEL="${LABEL:-selected_diag}"
 
 usage() {
   cat <<'EOF'
@@ -20,6 +22,8 @@ Options:
   --ws N          working set (default: 4096)
   --rows CSV      row groups: focused,fixed_mid,large_span (default: focused)
   --outdir DIR    output directory
+  --preload-so SO use an existing preload DSO instead of the selected diag DSO
+  --label LABEL   label stored in README.log (default: selected_diag)
   --skip-build    reuse existing diagnostic preload and benchmark
   --help          show this message
 EOF
@@ -47,6 +51,14 @@ while [[ $# -gt 0 ]]; do
       OUTDIR="$2"
       shift 2
       ;;
+    --preload-so)
+      PRELOAD_SO_OVERRIDE="$2"
+      shift 2
+      ;;
+    --label)
+      LABEL="$2"
+      shift 2
+      ;;
     --skip-build)
       SKIP_BUILD=1
       shift
@@ -64,10 +76,13 @@ while [[ $# -gt 0 ]]; do
 done
 
 BENCH="${ROOT_DIR}/bench/out/linux/${ARCH}/bench_mixed_ws_crt"
-PRELOAD_SO="${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_preload_diag/libhakozuna_hz6_preload.so"
+PRELOAD_SO="${PRELOAD_SO_OVERRIDE:-${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_preload_diag/libhakozuna_hz6_preload.so}"
 
-if [[ "$SKIP_BUILD" -ne 1 ]]; then
+if [[ "$SKIP_BUILD" -ne 1 && -z "$PRELOAD_SO_OVERRIDE" ]]; then
   "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_diag.sh"
+  "${ROOT_DIR}/linux/build_linux_bench_compare.sh" --arch "$ARCH" \
+    --out-dir "${ROOT_DIR}/bench/out/linux/${ARCH}"
+elif [[ "$SKIP_BUILD" -ne 1 ]]; then
   "${ROOT_DIR}/linux/build_linux_bench_compare.sh" --arch "$ARCH" \
     --out-dir "${ROOT_DIR}/bench/out/linux/${ARCH}"
 fi
@@ -79,6 +94,7 @@ mkdir -p "$OUTDIR"
 {
   echo "bench=${BENCH}"
   echo "preload=${PRELOAD_SO}"
+  echo "label=${LABEL}"
   echo "iters=${ITERS}"
   echo "ws=${WS}"
   echo "rows=${ROWS_CSV}"
