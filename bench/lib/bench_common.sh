@@ -318,6 +318,13 @@ bench_find_hz6_workload_capacity_narrow_target_library() {
     hz6-preload-workload-capacity-narrow-target
 }
 
+bench_find_hz6_workload_capacity_hybrid_target_library() {
+  bench_find_hz6_preload_output \
+    HZ6_WORKLOAD_CAPACITY_HYBRID_TARGET_PRELOAD_SO \
+    hz6_preload_workload_capacity_hybrid_target \
+    hz6-preload-workload-capacity-hybrid-target
+}
+
 bench_find_hz6_workload_capacity_lite_map8192_target_library() {
   bench_find_hz6_preload_output \
     HZ6_WORKLOAD_CAPACITY_LITE_MAP8192_TARGET_PRELOAD_SO \
@@ -461,6 +468,9 @@ bench_find_allocator_library() {
     hz6-workload-capacity-narrow-target|hz6_workload_capacity_narrow_target)
       bench_find_hz6_workload_capacity_narrow_target_library
       ;;
+    hz6-workload-capacity-hybrid-target|hz6_workload_capacity_hybrid_target)
+      bench_find_hz6_workload_capacity_hybrid_target_library
+      ;;
     hz6-workload-capacity-lite-map8192-target|hz6_workload_capacity_lite_map8192_target)
       bench_find_hz6_workload_capacity_lite_map8192_target_library
       ;;
@@ -589,6 +599,9 @@ bench_print_allocator_hints() {
       ;;
     hz6-workload-capacity-narrow-target|hz6_workload_capacity_narrow_target)
       echo "hint: build the HZ6 workload-capacity narrow target lane with './hakozuna-hz6/linux/build_hz6_preload_workload_capacity_narrow_target.sh' or set HZ6_WORKLOAD_CAPACITY_NARROW_TARGET_PRELOAD_SO" >&2
+      ;;
+    hz6-workload-capacity-hybrid-target|hz6_workload_capacity_hybrid_target)
+      echo "hint: build the HZ6 workload-capacity hybrid target lane with './hakozuna-hz6/linux/build_hz6_preload_workload_capacity_hybrid_target.sh' or set HZ6_WORKLOAD_CAPACITY_HYBRID_TARGET_PRELOAD_SO" >&2
       ;;
     hz6-workload-capacity-lite-map8192-target|hz6_workload_capacity_lite_map8192_target)
       echo "hint: build the HZ6 workload-capacity lite-map8192 target lane with './hakozuna-hz6/linux/build_hz6_preload_workload_capacity_lite_map8192_target.sh' or set HZ6_WORKLOAD_CAPACITY_LITE_MAP8192_TARGET_PRELOAD_SO" >&2

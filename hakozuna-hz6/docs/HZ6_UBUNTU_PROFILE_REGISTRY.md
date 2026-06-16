@@ -43,9 +43,10 @@ Use them by passing `--allocators`.
 | `hz6-toy-map-external-target` | `build_hz6_preload_toy_map_external_target.sh` | RSS profile/control; cuts Toy active-map fixed storage but speed is mixed. |
 | `hz6-workload-capacity-lite-target` | `build_hz6_preload_workload_capacity_lite_target.sh` | Workload-proxy capacity ladder; route64K/descriptors16K/source2K. |
 | `hz6-workload-capacity-narrow-target` | `build_hz6_preload_workload_capacity_narrow_target.sh` | Workload-capacity narrow control; route40K/descriptors10K/source1280 without elastic descriptor overflow. |
+| `hz6-workload-capacity-hybrid-target` | `build_hz6_preload_workload_capacity_hybrid_target.sh` | Preferred workload-capacity hybrid recommendation; route40K/descriptors10K/source1280 plus 1024-slot elastic descriptor depot. |
 | `hz6-workload-capacity-lite-map8192-target` | `build_hz6_preload_workload_capacity_lite_map8192_target.sh` | Workload-capacity RSS/balance control; lite capacity plus Toy active-map 8192. |
 | `hz6-workload-descriptor-overflow-target` | `build_hz6_preload_workload_descriptor_overflow_target.sh` | Workload descriptor-pressure control; selected static tables plus 2048-slot elastic descriptor depot. |
-| `hz6-workload-descriptor-hybrid-target` | `build_hz6_preload_workload_descriptor_hybrid_target.sh` | Workload speed/RSS hybrid control; route40K/descriptors10K/source1280 plus 1024-slot elastic descriptor depot. |
+| `hz6-workload-descriptor-hybrid-target` | `build_hz6_preload_workload_descriptor_hybrid_target.sh` | Legacy spelling of the workload-capacity hybrid shape; kept for archived matrices and direct A/B compatibility. |
 | `hz6-source-run-meta-off-target` | `build_hz6_preload_source_run_meta_off_target.sh` | SourceBlockMetaSlim control; selected flags with inline source-run metadata compiled out. |
 | `hz6-workload-capacity-mid-target` | `build_hz6_preload_workload_capacity_mid_target.sh` | Workload-proxy capacity ladder; route96K/descriptors24K/source3K. |
 | `hz6-workload-capacity-target` | `build_hz6_preload_workload_capacity_target.sh` | Workload-proxy capacity profile; widens route/descriptors/source blocks for larger working sets. |
@@ -78,7 +79,7 @@ explicit controls:
 This orchestration runner composes the standard profile frontier, fixed-gap
 matrix, and workload-proxy matrix into one raw-result root. The workload leg
 uses the current explicit workload controls (`capacity-narrow` and
-`descriptor-hybrid`) rather than older capacity-lite by default. Use it before
+`capacity-hybrid`) rather than older capacity-lite by default. Use it before
 promoting a profile/default change; it does not add new benchmark semantics.
 
 ## Consistency Check

@@ -6,7 +6,7 @@ ARCH="${ARCH:-x86_64}"
 RUNS="${RUNS:-3}"
 ITERS="${ITERS:-200000}"
 ROWS="${ROWS:-small_proxy,cache_proxy}"
-ALLOCATORS="${ALLOCATORS:-system,hz3,hz4,hz6,hz6-workload-capacity-narrow-target,hz6-workload-descriptor-hybrid-target,hz6-small-boundary-trusted-toy-map8192-external-meta-off-route16k-target,mimalloc,tcmalloc}"
+ALLOCATORS="${ALLOCATORS:-system,hz3,hz4,hz6,hz6-workload-capacity-narrow-target,hz6-workload-capacity-hybrid-target,hz6-small-boundary-trusted-toy-map8192-external-meta-off-route16k-target,mimalloc,tcmalloc}"
 OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_workload_profile_guard_$(date +%Y%m%d_%H%M%S)}"
 SKIP_BUILDS=0
 SKIP_PREPARE=0
@@ -33,7 +33,7 @@ run_hz6_workload_proxy_matrix.sh and keeps selected/default separate from the
 explicit workload profiles:
   - hz6 selected/default
   - hz6-workload-capacity-narrow-target
-  - hz6-workload-descriptor-hybrid-target
+  - hz6-workload-capacity-hybrid-target
   - hz6-small-boundary-trusted-toy-map8192-external-meta-off-route16k-target
   - external allocators for scale comparison
 EOF

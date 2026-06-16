@@ -57,7 +57,7 @@ Standard frontier:
   aligned / calloc-direct / calloc-real / calloc-large-real
 
 Explicit controls:
-  toy-map8192(+external) / workload-capacity(+narrow/map8192) / descriptor-overflow/hybrid / toy-map-external / midpage-skip-transfer
+  toy-map8192(+external) / workload-capacity(+narrow/hybrid/map8192) / descriptor-overflow/hybrid / toy-map-external / midpage-skip-transfer
   source-run-meta-off / external-meta-off fixed-boundary control / external-meta-off-route16k fixed-boundary control
 
 Runners:
@@ -99,7 +99,7 @@ Recent fixed/workload/profile repeats:
   private/raw-results/linux/hz6_{workload_proxy_matrix,fixed_gap_matrix}_20260616_103109
   private/raw-results/linux/hz6_route16k_capacity_guard_20260616_{103616,103858}
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_{104235,104302}
-  private/raw-results/linux/hz6_workload_profile_guard_20260616_105102
+  private/raw-results/linux/hz6_workload_profile_guard_20260616_{105102,105644}
 ```
 
 ## Do Not Reopen Casually
@@ -137,14 +137,12 @@ Default no-go/control-only without substantially different evidence:
    failure-free and fixed-gap `104546` keeps the cross-allocator position:
    tcmalloc beaten on fixed rows, HZ3 matched/near on 4K/8K and beaten on 16K
    ops-per-MiB.
-5. Keep capacity-narrow + descriptor-hybrid as paired workload controls; raw
-   `105102` adds a dedicated guard and shows they recover large live-set proxy
-   rows, while route16K stays fixed/redis/midpage-leaning rather than workload
-   default material.
+5. Prefer `capacity-hybrid` as the workload-capacity recommendation name while
+   keeping capacity-narrow paired; raw `105644` shows both recover large
+   live-set proxy rows and route16K stays fixed/redis/midpage-leaning.
 6. Keep Toy-map8192 external as explicit fixed-boundary RSS profile.
-7. Next likely attack: real workload traces or a capacity/hybrid unification
-   design; route16K+map/source/frontcache trims are control-only after raw
-   `104302` because residual RSS wins are too small or speed-negative.
+7. Next likely attack: real workload traces or deeper capacity/hybrid tuning;
+   route16K+map/source/frontcache trims are control-only after raw `104302`.
 8. Do not reopen cold-retire, active-map widening, page-kind/free-order tables,
    packed metadata, or route inline work without new diagnostics.
 ```
