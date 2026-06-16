@@ -960,8 +960,8 @@ hz7_state.inc:
   direct-retain storage, and the coarse lock state out of hz7.c
 
 hz7.c:
-  remains the behavior implementation
-  stays below 1000 lines after the split
+  remains the behavior implementation as a thin wrapper
+  shared body lives in hz7/common/*.inc and each fragment stays below 800 lines
 ```
 
 Verification:

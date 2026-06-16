@@ -22,12 +22,17 @@ vocabulary.
 ## Current Code Size
 
 ```text
-hz7.c:
-  907 lines
+hz7/v2/hz7.c:
+  24 lines
+shared body:
+  hz7/common/hz7_route.inc
+  hz7/common/hz7_span.inc
+  hz7/common/hz7_big.inc
+  hz7/common/hz7_tail.inc
 ```
 
-This is still well below the soft 1500-2000 line smell detector range described
-in the task board.
+Each fragment stays comfortably below the soft 1500-2000 line smell detector
+range described in the task board.
 
 ## Current Default Lane
 

@@ -24,7 +24,8 @@
 
 - keep compile-time constants, internal types, globals, route table storage,
   direct-retain storage, and coarse lock state in `hz7_state.inc`
-- keep `hz7.c` focused on behavior and below 1000 lines
+- keep `hz7.c` as a thin wrapper over `hz7/common/*.inc`
+- keep each shared fragment below 800 lines
 - Linux HZ7 v4 smoke passes after the split
 
 ### BenchmarkPlumbing-L1

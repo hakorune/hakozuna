@@ -17,7 +17,12 @@ Identity:
   not remote-throughput optimized
 
 Code size:
-  hz7/v2/hz7.c = 907 lines
+  hz7/v2/hz7.c = 24 lines
+  shared body:
+    hz7/common/hz7_route.inc
+    hz7/common/hz7_span.inc
+    hz7/common/hz7_big.inc
+    hz7/common/hz7_tail.inc
 
 Current default lane:
   SlowPathOutsideLock-L1
@@ -103,7 +108,7 @@ Non-goals:
 
    D. HZ7 v2 を止めて、remote/performance 系は HZ6/HZ8 family に分ける。
 
-3. HZ7 v2 の 907 lines というサイズは、tiny reference として十分に美しいか？
+3. HZ7 v2 の wrapper 化されたサイズは、tiny reference として十分に美しいか？
    それとも 1500-2000 lines まで使って、もう少し allocator textbook 的に育てる価値があるか？
 
 4. もし 1500-2000 lines まで増やしてよい場合、何を足すのが一番教育的か？
@@ -122,4 +127,3 @@ Non-goals:
     RSS の強みを失う
     速度だけのためにコードが説明しにくくなる
 ```
-
