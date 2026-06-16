@@ -303,6 +303,28 @@ shape. The narrow hybrid beats capacity-lite on speed and RSS for
 `midpage_cache` still prefers selected/descriptor-overflow. Keep explicit,
 not selected/default.
 
+Hybrid depot ladder raw
+`private/raw-results/linux/hz6_workload_descriptor_hybrid_depot_ladder_20260616_090934`
+selects 1024 as the explicit hybrid depot default for the narrow
+`desc10k/source1280/route40k` shape. 1024 is the best broad balance:
+`redis_proxy 60.200M / 17.62 MiB`, `small_object_cache 17.455M / 42.12 MiB`,
+`mixed_small_cache 8.671M / 121.00 MiB`, `mixed_object_cache 9.444M / 133.12 MiB`,
+and `midpage_cache 19.011M / 82.88 MiB`. 2048 only slightly wins
+`wide_midpage_cache` (`9.048M` vs `8.964M`) and is weaker on the other rows.
+Default the explicit hybrid builder to a 1024-slot depot; keep
+`HZ6_WORKLOAD_DESCRIPTOR_HYBRID_DEPOT_CAPACITY` as the override for A/B.
+
+Alias rebuild broad guard raw
+`private/raw-results/linux/hz6_broad_guard_20260616_091214` confirms the
+depot1024 default through `hz6-workload-descriptor-hybrid-target`. It beats
+capacity-lite on speed/RSS for the collapsed workload proxies:
+`small_object_cache 17.920M / 43.00 MiB`, `mixed_small_cache 8.650M / 121.00 MiB`,
+`mixed_object_cache 9.634M / 135.25 MiB`, and
+`wide_midpage_cache 9.367M / 145.62 MiB`. Healthy rows remain profile-shaped:
+`redis_proxy` still prefers selected/descriptor-overflow, while
+`midpage_cache` is now close to selected/overflow (`19.017M / 82.88 MiB`).
+Keep as explicit workload profile, not selected/default.
+
 Earlier workload-proxy matrix, repeat-3, raw
 `private/raw-results/linux/hz6_workload_proxy_matrix_20260616_075550`;
 diagnostic raws `hz6_workload_proxy_diag_20260616_075255` and
