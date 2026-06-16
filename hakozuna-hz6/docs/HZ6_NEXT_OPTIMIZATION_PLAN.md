@@ -116,6 +116,17 @@ Do not collapse them into a single broad default without new real workload data.
      worth documenting as an application-specific recommendation.
    Rule:
      proxy rows alone are not enough to change selected/default.
+   Current implementation:
+     `linux/run_hz6_workload_profile_guard.sh` composes the existing workload
+     proxy matrix with selected/default, workload-capacity-narrow,
+     workload-descriptor-hybrid, route16K fixed profile, and external allocators.
+   Current read:
+     raw `hz6_workload_profile_guard_20260616_105102` keeps capacity-narrow
+     and descriptor-hybrid paired: both recover small/mixed/wide live-set cache
+     proxy rows by orders of magnitude over selected/route16K, and both beat
+     tcmalloc on wide_midpage_cache speed/ops-per-MiB in this repeat. route16K
+     remains strong on redis_proxy and midpage_cache RSS/balance, but it is not
+     the large live-set workload profile.
 
 5. Wrapper profile audit only if needed
    Goal:
@@ -137,21 +148,26 @@ tables, packed metadata, or route inline work without new diagnostics.
 ## Immediate Implementation Candidate
 
 ```text
-Fixed4K8KResidualRssGapAudit-L1:
-  status: route16K profile/control implemented and guarded
-  explain only the remaining fixed-profile RSS/static-capacity tradeoff after
-  external-meta-off-route16K; do not promote to selected/default
-  continue from diagnostics/profile controls, not selected behavior:
-    real workload evidence for capacity-narrow vs descriptor-hybrid
-    fixed-profile cross allocator refresh when needed
-    only reopen frontcache/map/source trims with new evidence
+WorkloadCapacityHybridUnificationDesign-L1:
+  status: workload profile guard implemented and smoke/thin guard measured
+  explain whether capacity-narrow and descriptor-hybrid can share one profile
+  shape, or whether they should stay paired recommendations
+  continue from profile controls, not selected/default behavior:
+    inspect workload-capacity and descriptor-hybrid builder deltas
+    identify whether descriptor elastic depot can sit on the narrow static shape
+    keep route16K fixed-boundary profile separate unless real workload evidence
+    says otherwise
   runner:
-    linux/run_hz6_route16k_capacity_guard.sh
+    linux/run_hz6_workload_profile_guard.sh
 
 Why this first:
   SourceBlockMetaSlim-L1 and route16K are implemented and clean on fixed/focused
   rows.
-  Workload proxy rejects default/workload promotion.
+  Workload proxy still rejects route16K/default promotion for large live-set
+  cache rows.
+  Capacity-narrow and descriptor-hybrid are both strong, close in RSS, and row
+  dependent; the next useful work is to understand whether the best parts can
+  be combined without increasing the selected fixed floor.
   Cross fixed-gap now shows the HZ6 route16K profile beats tcmalloc and is
   competitive with HZ3 on fixed_4k/8k ops-per-MiB while beating HZ3 on
   fixed_16k, so the remaining question is real workload fit, not fixed-row

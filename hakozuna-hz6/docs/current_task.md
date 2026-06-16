@@ -64,7 +64,7 @@ Runners:
   broad_guard / fixed_boundary_profile_frontier / preload_profile_frontier
   fixed_gap_matrix / fixed_cost_residency_matrix / fixed_quiescent_rss_matrix
   route16k_capacity_guard
-  workload_proxy_matrix / workload_capacity_{frontier,gap_diag,narrow_ladder,narrow_map_ladder} / workload_profile_gap_diag / workload_descriptor_{overflow,hybrid,hybrid_narrow,hybrid_depot}_ladder
+  workload_proxy_matrix / workload_profile_guard / workload_capacity_{frontier,gap_diag,narrow_ladder,narrow_map_ladder} / workload_descriptor_{overflow,hybrid,hybrid_narrow,hybrid_depot}_ladder
   check_hz6_preload_profile_registry
 ```
 
@@ -99,6 +99,7 @@ Recent fixed/workload/profile repeats:
   private/raw-results/linux/hz6_{workload_proxy_matrix,fixed_gap_matrix}_20260616_103109
   private/raw-results/linux/hz6_route16k_capacity_guard_20260616_{103616,103858}
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_{104235,104302}
+  private/raw-results/linux/hz6_workload_profile_guard_20260616_105102
 ```
 
 ## Do Not Reopen Casually
@@ -136,15 +137,14 @@ Default no-go/control-only without substantially different evidence:
    failure-free and fixed-gap `104546` keeps the cross-allocator position:
    tcmalloc beaten on fixed rows, HZ3 matched/near on 4K/8K and beaten on 16K
    ops-per-MiB.
-5. Keep capacity-narrow + descriptor-hybrid as paired workload controls; proxy
-   rows alone are not enough to change selected/default. Route16K improves
-   selected-like workload rows but still loses large live-set cache proxies by
-   orders of magnitude versus capacity-narrow/descriptor-hybrid.
+5. Keep capacity-narrow + descriptor-hybrid as paired workload controls; raw
+   `105102` adds a dedicated guard and shows they recover large live-set proxy
+   rows, while route16K stays fixed/redis/midpage-leaning rather than workload
+   default material.
 6. Keep Toy-map8192 external as explicit fixed-boundary RSS profile.
-7. Next likely attack: route/static capacity floor guard for fixed profiles,
-   then frontcache/map shape only if fixed RSS still matters after route16K.
-   Route16K+map/source/frontcache trims are control-only after raw `104302`:
-   residual RSS wins are too small or speed-negative versus route16K alone.
+7. Next likely attack: real workload traces or a capacity/hybrid unification
+   design; route16K+map/source/frontcache trims are control-only after raw
+   `104302` because residual RSS wins are too small or speed-negative.
 8. Do not reopen cold-retire, active-map widening, page-kind/free-order tables,
    packed metadata, or route inline work without new diagnostics.
 ```
