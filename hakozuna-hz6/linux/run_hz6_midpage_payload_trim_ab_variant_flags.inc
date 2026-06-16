@@ -104,6 +104,22 @@ apply_midpage_payload_trim_variant_flags() {
       hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_RETIRE_MAX_BLOCKS_PER_CALL 16
       hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_RETIRE_SCAN_BLOCKS_PER_CALL 256
       ;;
+    cold_purge)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_PURGE_L1 1
+      ;;
+    cold_purge_hw1024)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_PURGE_L1 1
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_PURGE_HIGH_WATER 1024
+      ;;
+    cold_purge_max16)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_PURGE_L1 1
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_PURGE_MAX_BLOCKS_PER_CALL 16
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_PURGE_SCAN_BLOCKS_PER_CALL 256
+      ;;
+    cold_purge_eager)
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_PURGE_L1 1
+      hz6_preload_replace_define flags HZ6_MIDPAGE_32K_COLD_PURGE_ACTIVE_LOW_WATER 65536
+      ;;
     current_bias_fast)
       hz6_preload_replace_define flags HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FAST_L1 1
       ;;

@@ -87,6 +87,7 @@ int hz6_allocator_release_source_block(Hz6Allocator* allocator,
   }
   block->bytes = 0;
   hz6_source_block_set_source_kind(block, HZ6_SOURCE_NONE);
+  hz6_source_block_set_decommitted(block, 0);
   block->source_release = NULL;
 #if !HZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1
   block->route_backend = NULL;

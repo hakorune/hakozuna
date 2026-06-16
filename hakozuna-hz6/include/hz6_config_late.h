@@ -483,6 +483,29 @@
 #define HZ6_MIDPAGE_32K_COLD_RETIRE_ACTIVE_LOW_WATER ((size_t)1)
 #endif
 
+#ifndef HZ6_MIDPAGE_32K_COLD_PURGE_L1
+/* Default-off RSS control for all-local-free MidPage 32K source blocks.  Unlike
+ * cold-retire, this keeps routes/descriptors/frontcache entries and only asks
+ * the source layer to drop resident backing pages. */
+#define HZ6_MIDPAGE_32K_COLD_PURGE_L1 0
+#endif
+
+#ifndef HZ6_MIDPAGE_32K_COLD_PURGE_HIGH_WATER
+#define HZ6_MIDPAGE_32K_COLD_PURGE_HIGH_WATER ((size_t)2048)
+#endif
+
+#ifndef HZ6_MIDPAGE_32K_COLD_PURGE_MAX_BLOCKS_PER_CALL
+#define HZ6_MIDPAGE_32K_COLD_PURGE_MAX_BLOCKS_PER_CALL ((size_t)1)
+#endif
+
+#ifndef HZ6_MIDPAGE_32K_COLD_PURGE_SCAN_BLOCKS_PER_CALL
+#define HZ6_MIDPAGE_32K_COLD_PURGE_SCAN_BLOCKS_PER_CALL ((size_t)32)
+#endif
+
+#ifndef HZ6_MIDPAGE_32K_COLD_PURGE_ACTIVE_LOW_WATER
+#define HZ6_MIDPAGE_32K_COLD_PURGE_ACTIVE_LOW_WATER ((size_t)1)
+#endif
+
 #ifndef HZ6_PRELOAD_REALLOC_IN_PLACE_L1
 /* LD_PRELOAD realloc shortcut: if the requested size fits the current HZ6
  * usable descriptor bytes, return the same pointer instead of malloc/copy/free. */
@@ -605,4 +628,3 @@
 #ifndef HZ6_FRONTCACHE_PACKED_META_L1
 #define HZ6_FRONTCACHE_PACKED_META_L1 0
 #endif
-

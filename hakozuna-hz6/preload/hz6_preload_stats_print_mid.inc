@@ -296,7 +296,16 @@
           "midpage_32k_cold_retire_retired_descriptors=%zu "
           "midpage_32k_cold_retire_retired_bytes=%zu "
           "midpage_32k_cold_retire_frontcache_remove_fail=%zu "
-          "midpage_32k_cold_retire_blocked=%zu\n",
+          "midpage_32k_cold_retire_blocked=%zu "
+          "midpage_32k_cold_purge_attempt=%zu "
+          "midpage_32k_cold_purge_scan_blocks=%zu "
+          "midpage_32k_cold_purge_candidate_blocks=%zu "
+          "midpage_32k_cold_purge_purged_blocks=%zu "
+          "midpage_32k_cold_purge_purged_bytes=%zu "
+          "midpage_32k_cold_purge_fail=%zu "
+          "midpage_32k_cold_purge_blocked=%zu "
+          "midpage_32k_cold_purge_recommit=%zu "
+          "midpage_32k_cold_purge_recommit_fail=%zu\n",
           midpage_8k_alloc_call, midpage_32k_alloc_call,
           midpage_8k_prefill_run_call, midpage_32k_prefill_run_call,
           midpage_8k_prefill_run_filled, midpage_32k_prefill_run_filled,
@@ -320,7 +329,16 @@
           midpage_32k_cold_retire_retired_descriptors,
           midpage_32k_cold_retire_retired_bytes,
           midpage_32k_cold_retire_frontcache_remove_fail,
-          midpage_32k_cold_retire_blocked);
+          midpage_32k_cold_retire_blocked,
+          midpage_32k_cold_purge_attempt,
+          midpage_32k_cold_purge_scan_blocks,
+          midpage_32k_cold_purge_candidate_blocks,
+          midpage_32k_cold_purge_purged_blocks,
+          midpage_32k_cold_purge_purged_bytes,
+          midpage_32k_cold_purge_fail,
+          midpage_32k_cold_purge_blocked,
+          midpage_32k_cold_purge_recommit,
+          midpage_32k_cold_purge_recommit_fail);
 
   fprintf(stderr,
           "[HZ6_PRELOAD_RUNMETA_DETAIL] "

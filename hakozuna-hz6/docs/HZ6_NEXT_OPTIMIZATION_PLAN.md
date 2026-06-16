@@ -252,8 +252,9 @@ Why this first:
   competitive with HZ3 on fixed_4k/8k ops-per-MiB while beating HZ3 on
   fixed_16k, so the remaining question is real workload fit, not fixed-row
   hot-path behavior.
-  Payload release/cold-retire is not the next fixed RSS lever from current
-  evidence.
+  Payload release/cold-retire/cold-purge is not the next fixed RSS lever from
+  current evidence. Cold-purge can lower current RSS, but peak RSS stays near
+  the selected high-water unless the eager lane destroys throughput.
   Capacity-plus and capacity-lean are both explicit high-live-set profiles,
   with lean as the bridge point. The next decision needs real app traces or a
   smaller bridge point, not selected/default promotion.

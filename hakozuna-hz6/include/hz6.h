@@ -685,6 +685,15 @@ typedef struct Hz6StatsSnapshot {
   size_t midpage_32k_cold_retire_retired_bytes;
   size_t midpage_32k_cold_retire_frontcache_remove_fail;
   size_t midpage_32k_cold_retire_blocked;
+  size_t midpage_32k_cold_purge_attempt;
+  size_t midpage_32k_cold_purge_scan_blocks;
+  size_t midpage_32k_cold_purge_candidate_blocks;
+  size_t midpage_32k_cold_purge_purged_blocks;
+  size_t midpage_32k_cold_purge_purged_bytes;
+  size_t midpage_32k_cold_purge_fail;
+  size_t midpage_32k_cold_purge_blocked;
+  size_t midpage_32k_cold_purge_recommit;
+  size_t midpage_32k_cold_purge_recommit_fail;
   size_t memory_frontcache_total;
   size_t memory_frontcache_largest_bin;
   size_t metadata_descriptor_entry_bytes;

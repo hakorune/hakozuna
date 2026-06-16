@@ -168,6 +168,15 @@
   size_t midpage_32k_cold_retire_retired_bytes = 0;
   size_t midpage_32k_cold_retire_frontcache_remove_fail = 0;
   size_t midpage_32k_cold_retire_blocked = 0;
+  size_t midpage_32k_cold_purge_attempt = 0;
+  size_t midpage_32k_cold_purge_scan_blocks = 0;
+  size_t midpage_32k_cold_purge_candidate_blocks = 0;
+  size_t midpage_32k_cold_purge_purged_blocks = 0;
+  size_t midpage_32k_cold_purge_purged_bytes = 0;
+  size_t midpage_32k_cold_purge_fail = 0;
+  size_t midpage_32k_cold_purge_blocked = 0;
+  size_t midpage_32k_cold_purge_recommit = 0;
+  size_t midpage_32k_cold_purge_recommit_fail = 0;
   size_t smallrun_route_attempt = 0;
   size_t smallrun_range_hit = 0;
   size_t smallrun_active_slot_hit = 0;
@@ -530,6 +539,23 @@
         stats.midpage_32k_cold_retire_frontcache_remove_fail;
     midpage_32k_cold_retire_blocked +=
         stats.midpage_32k_cold_retire_blocked;
+    midpage_32k_cold_purge_attempt +=
+        stats.midpage_32k_cold_purge_attempt;
+    midpage_32k_cold_purge_scan_blocks +=
+        stats.midpage_32k_cold_purge_scan_blocks;
+    midpage_32k_cold_purge_candidate_blocks +=
+        stats.midpage_32k_cold_purge_candidate_blocks;
+    midpage_32k_cold_purge_purged_blocks +=
+        stats.midpage_32k_cold_purge_purged_blocks;
+    midpage_32k_cold_purge_purged_bytes +=
+        stats.midpage_32k_cold_purge_purged_bytes;
+    midpage_32k_cold_purge_fail += stats.midpage_32k_cold_purge_fail;
+    midpage_32k_cold_purge_blocked +=
+        stats.midpage_32k_cold_purge_blocked;
+    midpage_32k_cold_purge_recommit +=
+        stats.midpage_32k_cold_purge_recommit;
+    midpage_32k_cold_purge_recommit_fail +=
+        stats.midpage_32k_cold_purge_recommit_fail;
     smallrun_route_attempt += stats.smallrun_route_attempt;
     smallrun_range_hit += stats.smallrun_range_hit;
     smallrun_active_slot_hit += stats.smallrun_active_slot_hit;
@@ -690,4 +716,3 @@
       memory_static_plus_payload_bytes + toy_active_map_table_bytes +
       midpage_active_map_table_bytes + retain_stats.retained_bytes;
 #endif
-

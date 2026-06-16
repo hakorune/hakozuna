@@ -291,8 +291,8 @@ print(f"root: `{root}`\n")
 readme = (root / "README.log").read_text(errors="replace")
 stats_mode = readme.split("stats=", 1)[1].splitlines()[0] if "stats=" in readme else "unknown"
 print(f"stats: `{stats_mode}`\n")
-print("| row | variant | median ops/s | median peak MiB | median current MiB | scavenge count/result | payload MiB | active source blocks | fail | source_alloc | realloc copy | realloc same-class | realloc cross-class | realloc toy->mid | realloc mid8->mid32 | toy direct eligible | toy direct eligible 1025..4096 | toy direct enter | toy direct enter 1025..4096 | mid32_alloc | mid32_prefill | mid32_filled | mid32_front_push | toy4 fast | toy4 hit | toy4 front | toy4 pop | toy4 activate | toy4 free attempt | toy4 free success | toy4 map reg | toy4 collision | toy4 free hit | toy4 free base % | toy4 free avg probe | toy4 free max probe | runroute attempt | runroute hit | runroute prechecked | runroute fallback | retire attempt | retire scan | retire candidates | retire blocks | retire desc | retire MiB | retire blocked | retire fail | pagekind probe | pagekind toy | pagekind mid | pagekind mixed | pagekind toy hit | pagekind mid hit | pagekind wrong toy->mid | pagekind wrong mid->toy |")
-print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+print("| row | variant | median ops/s | median peak MiB | median current MiB | scavenge count/result | payload MiB | active source blocks | fail | source_alloc | realloc copy | realloc same-class | realloc cross-class | realloc toy->mid | realloc mid8->mid32 | toy direct eligible | toy direct eligible 1025..4096 | toy direct enter | toy direct enter 1025..4096 | mid32_alloc | mid32_prefill | mid32_filled | mid32_front_push | toy4 fast | toy4 hit | toy4 front | toy4 pop | toy4 activate | toy4 free attempt | toy4 free success | toy4 map reg | toy4 collision | toy4 free hit | toy4 free base % | toy4 free avg probe | toy4 free max probe | runroute attempt | runroute hit | runroute prechecked | runroute fallback | retire attempt | retire scan | retire candidates | retire blocks | retire desc | retire MiB | retire blocked | retire fail | purge attempt | purge scan | purge candidates | purge blocks | purge MiB | purge blocked | purge fail | purge recommit | purge recommit fail | pagekind probe | pagekind toy | pagekind mid | pagekind mixed | pagekind toy hit | pagekind mid hit | pagekind wrong toy->mid | pagekind wrong mid->toy |")
+print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 for row in rows:
     for variant in variants:
         ops_values = []
@@ -341,6 +341,15 @@ for row in rows:
         retire_mib = 0.0
         retire_blocked = 0
         retire_fail = 0
+        purge_attempt = 0
+        purge_scan = 0
+        purge_candidates = 0
+        purge_blocks = 0
+        purge_mib = 0.0
+        purge_blocked = 0
+        purge_fail = 0
+        purge_recommit = 0
+        purge_recommit_fail = 0
         pagekind_probe = 0
         pagekind_toy = 0
         pagekind_mid = 0
@@ -441,6 +450,21 @@ for row in rows:
             retire_fail += stats.get(
                 "midpage_32k_cold_retire_frontcache_remove_fail", 0
             )
+            purge_attempt += stats.get("midpage_32k_cold_purge_attempt", 0)
+            purge_scan += stats.get("midpage_32k_cold_purge_scan_blocks", 0)
+            purge_candidates += stats.get(
+                "midpage_32k_cold_purge_candidate_blocks", 0
+            )
+            purge_blocks += stats.get("midpage_32k_cold_purge_purged_blocks", 0)
+            purge_mib += stats.get("midpage_32k_cold_purge_purged_bytes", 0) / (
+                1024.0 * 1024.0
+            )
+            purge_blocked += stats.get("midpage_32k_cold_purge_blocked", 0)
+            purge_fail += stats.get("midpage_32k_cold_purge_fail", 0)
+            purge_recommit += stats.get("midpage_32k_cold_purge_recommit", 0)
+            purge_recommit_fail += stats.get(
+                "midpage_32k_cold_purge_recommit_fail", 0
+            )
             pagekind_probe += stats.get("free_page_kind_selector_probe", 0)
             pagekind_toy += stats.get("free_page_kind_selector_toy", 0)
             pagekind_mid += stats.get("free_page_kind_selector_midpage", 0)
@@ -481,7 +505,10 @@ for row in rows:
             f"{retire_attempt} | "
             f"{retire_scan} | {retire_candidates} | {retire_blocks} | "
             f"{retire_desc} | {retire_mib:.2f} | {retire_blocked} | "
-            f"{retire_fail} | {pagekind_probe} | {pagekind_toy} | "
+            f"{retire_fail} | {purge_attempt} | {purge_scan} | "
+            f"{purge_candidates} | {purge_blocks} | {purge_mib:.2f} | "
+            f"{purge_blocked} | {purge_fail} | {purge_recommit} | "
+            f"{purge_recommit_fail} | {pagekind_probe} | {pagekind_toy} | "
             f"{pagekind_mid} | {pagekind_mixed} | {pagekind_toy_hit} | "
             f"{pagekind_mid_hit} | {pagekind_wrong_toy_mid} | "
             f"{pagekind_wrong_mid_toy} |"

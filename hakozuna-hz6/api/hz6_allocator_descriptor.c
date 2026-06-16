@@ -355,6 +355,25 @@ int hz6_allocator_descgov_descriptor_available(
 #endif
 }
 
+int hz6_allocator_recommit_source_block_if_needed(Hz6Allocator* allocator,
+                                                  Hz6SourceBlock* block) {
+  if (!block || !hz6_source_block_decommitted(block)) {
+    return 1;
+  }
+  if (!allocator || !block->ptr || block->bytes == 0) {
+    return 0;
+  }
+  const Hz6OsMemoryOps* ops = hz6_allocator_source_ops(
+      allocator, hz6_source_block_source_kind(block));
+  if (!ops || !ops->commit || !ops->commit(block->ptr, block->bytes)) {
+    ++allocator->stats.midpage_32k_cold_purge_recommit_fail;
+    return 0;
+  }
+  hz6_source_block_set_decommitted(block, 0);
+  ++allocator->stats.midpage_32k_cold_purge_recommit;
+  return 1;
+}
+
 int hz6_allocator_activate_descriptor(Hz6Allocator* allocator,
                                       Hz6ObjectDescriptor* descriptor,
                                       Hz6ObjectState expected,
@@ -375,6 +394,10 @@ int hz6_allocator_activate_descriptor(Hz6Allocator* allocator,
         descriptor->bytes == 0 || addr < base ||
         descriptor->bytes > block->bytes ||
         addr - base > block->bytes - descriptor->bytes) {
+      return 0;
+    }
+    if (!hz6_allocator_recommit_source_block_if_needed(
+            allocator, descriptor->source_block)) {
       return 0;
     }
 #if HZ6_SOURCE_BLOCK_ACTIVATION_ROUTE_REPAIR_L1

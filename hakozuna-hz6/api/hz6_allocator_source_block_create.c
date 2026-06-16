@@ -152,6 +152,7 @@ Hz6SourceBlock* hz6_allocator_create_source_block(
       hz6_source_block_set_route_registered(block, 0);
       hz6_source_block_set_route_shared(block, 0);
       hz6_source_block_set_source_kind(block, HZ6_SOURCE_NONE);
+      hz6_source_block_set_decommitted(block, 0);
       atomic_store_explicit(&block->ref_count, 0u, memory_order_release);
     }
 #endif
@@ -161,6 +162,7 @@ Hz6SourceBlock* hz6_allocator_create_source_block(
   block->ptr = ptr;
   block->bytes = bytes;
   hz6_source_block_set_source_kind(block, source_kind);
+  hz6_source_block_set_decommitted(block, 0);
   block->source_release = source_ops->release;
 #if !HZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1
   block->route_backend = NULL;

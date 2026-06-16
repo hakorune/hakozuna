@@ -63,6 +63,7 @@ typedef struct Hz6SourceBlock {
   int route_registered;
   int route_shared;
   int run_active;
+  int decommitted;
 #endif
 } Hz6SourceBlock;
 
@@ -85,6 +86,7 @@ static inline size_t hz6_source_block_ref_count(
 #define HZ6_SOURCE_BLOCK_FLAG_ROUTE_REGISTERED ((uint16_t)0x0200u)
 #define HZ6_SOURCE_BLOCK_FLAG_RUN_ACTIVE ((uint16_t)0x0400u)
 #define HZ6_SOURCE_BLOCK_FLAG_ROUTE_SHARED ((uint16_t)0x0800u)
+#define HZ6_SOURCE_BLOCK_FLAG_DECOMMITTED ((uint16_t)0x1000u)
 #define HZ6_SOURCE_BLOCK_SOURCE_KIND_MASK ((uint16_t)0x00ffu)
 
 static inline Hz6SourceKind hz6_source_block_source_kind(
@@ -181,6 +183,24 @@ static inline void hz6_source_block_set_run_active(Hz6SourceBlock* block,
         (uint16_t)~HZ6_SOURCE_BLOCK_FLAG_RUN_ACTIVE;
   }
 }
+
+static inline int hz6_source_block_decommitted(const Hz6SourceBlock* block) {
+  return block &&
+         (block->source_state_flags & HZ6_SOURCE_BLOCK_FLAG_DECOMMITTED) != 0;
+}
+
+static inline void hz6_source_block_set_decommitted(Hz6SourceBlock* block,
+                                                    int decommitted) {
+  if (!block) {
+    return;
+  }
+  if (decommitted) {
+    block->source_state_flags |= HZ6_SOURCE_BLOCK_FLAG_DECOMMITTED;
+  } else {
+    block->source_state_flags &=
+        (uint16_t)~HZ6_SOURCE_BLOCK_FLAG_DECOMMITTED;
+  }
+}
 #else
 static inline Hz6SourceKind hz6_source_block_source_kind(
     const Hz6SourceBlock* block) {
@@ -239,6 +259,17 @@ static inline void hz6_source_block_set_run_active(Hz6SourceBlock* block,
                                                    int active) {
   if (block) {
     block->run_active = active ? 1 : 0;
+  }
+}
+
+static inline int hz6_source_block_decommitted(const Hz6SourceBlock* block) {
+  return block && block->decommitted;
+}
+
+static inline void hz6_source_block_set_decommitted(Hz6SourceBlock* block,
+                                                    int decommitted) {
+  if (block) {
+    block->decommitted = decommitted ? 1 : 0;
   }
 }
 #endif
@@ -371,6 +402,9 @@ struct Hz6Allocator {
   size_t depot_descriptor_rehome_budget_used;
 #if HZ6_MIDPAGE_32K_COLD_RETIRE_L1
   size_t midpage_32k_cold_retire_cursor;
+#endif
+#if HZ6_MIDPAGE_32K_COLD_PURGE_L1
+  size_t midpage_32k_cold_purge_cursor;
 #endif
 #if HZ6_TOY_SMALL_ACTIVE_FREE_MAP_L1
   size_t toy_small_active_map_current;

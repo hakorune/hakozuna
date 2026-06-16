@@ -38,6 +38,7 @@ void hz6_allocator_init_state_source_blocks(Hz6Allocator* allocator) {
     hz6_source_block_set_route_registered(&allocator->source_blocks[i], 0);
     hz6_source_block_set_route_shared(&allocator->source_blocks[i], 0);
     hz6_source_block_set_run_active(&allocator->source_blocks[i], 0);
+    hz6_source_block_set_decommitted(&allocator->source_blocks[i], 0);
   }
 #if HZ6_SOURCE_BLOCK_ROUTE_RANGE_INDEX_L1
   for (size_t i = 0; i < HZ6_SOURCE_BLOCK_ROUTE_RANGE_INDEX_CAPACITY; ++i) {

@@ -113,7 +113,7 @@ Default no-go/control-only without substantially different evidence:
   MidPage active-map cap/probe widening or free fast-slot
   broad raw frontcache push
   same-owner trusted free default
-  free-path cold-retire/source-block release default
+  free-path cold-retire/source-block release/cold-purge default
   realloc-boundary slack/adaptive default
   calloc real-fallback/late-probe default
   source-run reuse/reclaim default
@@ -146,5 +146,5 @@ Default no-go/control-only without substantially different evidence:
 7. Capacity-lean bridges lite to plus; WS16384 repeat-3 raw `120345` wins
    `mixed_ws16384` and `midpage_ws16384`, while normal guard `120345` keeps it
    out of broad default. Plus remains stronger on `small_ws16384`.
-8. Do not reopen cold-retire, active-map widening, page-kind/free-order tables, packed metadata, or route inline work without new diagnostics.
+8. Do not reopen cold-retire/cold-purge, active-map widening, page-kind/free-order tables, packed metadata, or route inline work without new diagnostics.
 ```

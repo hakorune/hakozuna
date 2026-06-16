@@ -472,6 +472,9 @@ int hz6_allocator_activate_descriptor(Hz6Allocator* allocator,
                                       uint32_t generation,
                                       Hz6OwnerToken owner);
 
+int hz6_allocator_recommit_source_block_if_needed(Hz6Allocator* allocator,
+                                                  Hz6SourceBlock* block);
+
 int hz6_allocator_prepare_descriptor(
     Hz6Allocator* allocator,
     Hz6ObjectDescriptor* descriptor,
