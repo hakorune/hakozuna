@@ -6,6 +6,10 @@
 #include <stdatomic.h>
 #include <stdint.h>
 
+#if HZ6_DIAGNOSTIC_PROBES
+static void hz6_allocator_note_route_probe_hist(size_t* hist, size_t probes);
+#endif
+
 Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
                                           const void* ptr) {
   if (!allocator || !ptr) {
