@@ -141,6 +141,12 @@ Do not collapse them into a single broad default without new real workload data.
      remove those failures with nearly identical capacity counters and
      `elastic_alloc=0`. The observed speed split is therefore not explained by
      descriptor/source exhaustion in this diagnostic.
+     Workload guard refresh raw `hz6_workload_profile_guard_20260616_111620`
+     keeps the paired-profile decision. capacity-hybrid wins the refreshed
+     small/mixed/wide cache proxy rows, capacity-narrow wins `redis_proxy` and
+     `midpage_cache`, and both remain far ahead of selected/route16K on the
+     large live-set collapse rows. Do not choose one broad workload profile
+     from this proxy evidence alone.
 
 5. Wrapper profile audit only if needed
    Goal:

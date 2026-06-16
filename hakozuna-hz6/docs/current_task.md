@@ -99,7 +99,7 @@ Recent fixed/workload/profile repeats:
   private/raw-results/linux/hz6_{workload_proxy_matrix,fixed_gap_matrix}_20260616_103109
   private/raw-results/linux/hz6_route16k_capacity_guard_20260616_{103616,103858}
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_{104235,104302}
-  private/raw-results/linux/hz6_workload_profile_guard_20260616_{105102,105644}, hz6_workload_descriptor_hybrid_depot_ladder_20260616_105953, hz6_workload_capacity_profile_gap_diag_20260616_{110830,111503}, hz6_workload_capacity_narrow_ladder_20260616_111216, and hz6_workload_capacity_narrow_map_ladder_20260616_111243
+  private/raw-results/linux/hz6_workload_profile_guard_20260616_{105102,105644,111620}, hz6_workload_descriptor_hybrid_depot_ladder_20260616_105953, hz6_workload_capacity_profile_gap_diag_20260616_{110830,111503}, hz6_workload_capacity_narrow_ladder_20260616_111216, and hz6_workload_capacity_narrow_map_ladder_20260616_111243
 ```
 
 ## Do Not Reopen Casually
@@ -138,7 +138,7 @@ Default no-go/control-only without substantially different evidence:
    tcmalloc beaten on fixed rows, HZ3 matched/near on 4K/8K and beaten on 16K
    ops-per-MiB.
 5. Prefer `capacity-hybrid` as the workload-capacity recommendation name while
-   keeping capacity-narrow paired; raw `105644` shows both recover large
+   keeping capacity-narrow paired; raw `111620` shows both recover large
    live-set proxy rows and route16K stays fixed/redis/midpage-leaning. Depot
    raw `105953` is mixed, so keep hybrid depot1024; current diagnostic wrapper
    is `run_hz6_workload_capacity_profile_gap_diag.sh`.

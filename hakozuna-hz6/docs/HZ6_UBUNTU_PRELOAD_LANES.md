@@ -418,6 +418,19 @@ capacity-narrow is slightly faster on the other three rows. Read: keep both
 paired workload profiles; do not tune elastic depot or selected/default from
 these counters.
 
+Current-name workload profile guard raw
+`private/raw-results/linux/hz6_workload_profile_guard_20260616_111620`
+refreshes the full proxy matrix after the capacity-hybrid cleanup. The selected
+HZ6 and route16K fixed profile still collapse on the large live-set cache proxy
+rows, while capacity-narrow and capacity-hybrid recover them with `alloc_fail=0`.
+In this repeat capacity-hybrid wins the workload pair on `small_object_cache`
+(`25.515M / 43.91 MiB`), `mixed_small_cache` (`16.747M / 121.88 MiB`),
+`mixed_object_cache` (`17.124M / 136.20 MiB`), and `wide_midpage_cache`
+(`17.013M / 145.12 MiB`, ahead of tcmalloc speed with much lower RSS).
+Capacity-narrow wins `redis_proxy` (`84.334M / 17.62 MiB`) and `midpage_cache`
+(`37.475M / 83.12 MiB`). Keep both workload profiles paired and keep route16K
+as a fixed-boundary profile, not a workload-capacity replacement.
+
 Focused workload profile production repeat-7 raw
 `private/raw-results/linux/hz6_workload_proxy_matrix_20260616_094129` compares
 only `hz6-workload-capacity-narrow-target` and
@@ -820,7 +833,7 @@ MidPage 32K run-size closeout details are in
 | `run_hz6_fixed_gap_matrix.sh` | Focused fixed-size gap runner. It wraps `run_hz6_ubuntu_size_slices_matrix.sh` with selected HZ6, the current Toy-map8192 RSS profiles, HZ3/HZ4, mimalloc, tcmalloc, and system in one matrix. Use it to refresh fixed_4k/fixed_8k/fixed_16k gaps without changing selected/default flags. Smoke raw `hz6_fixed_gap_matrix_20260616_073947` confirms wrapper and alias resolution. |
 | `run_hz6_fixed_external_meta_off_matrix.sh` | Narrow fixed-boundary RSS/meta-off A/B runner. It compares `hz6-small-boundary-trusted-toy-map8192-external-target` with `hz6-small-boundary-trusted-toy-map8192-external-meta-off-target` through distinct aliases, so scratch env overrides cannot collide in one raw root. Use it before promoting any fixed-boundary meta-off composition. |
 | `run_hz6_route16k_capacity_guard.sh` | Route16K fixed-boundary profile guard runner. It bundles static stats (`external_meta_off`, route16K, route24576), focused/fixed production profile frontier, and workload-proxy guard legs under one raw root. Use it to refresh route16K capacity safety without changing selected/default flags. Smoke raw `hz6_route16k_capacity_guard_20260616_103616` confirms runner wiring and the expected read; thick raw `hz6_route16k_capacity_guard_20260616_103858` is the current guard evidence for profile-only use. |
-| `run_hz6_workload_profile_guard.sh` | Narrow workload-profile decision guard. It wraps `run_hz6_workload_proxy_matrix.sh` with selected/default, workload-capacity-narrow, workload-capacity-hybrid, the route16K fixed profile, and external allocators. Use it to refresh application-profile recommendations without changing selected/default. Thin raw `hz6_workload_profile_guard_20260616_105102` kept the old descriptor-hybrid spelling paired; raw `hz6_workload_profile_guard_20260616_105644` switches the default recommendation name to capacity-hybrid. capacity-hybrid and capacity-narrow both recover large live-set small/mixed/wide cache proxy rows by orders of magnitude, capacity-hybrid beats tcmalloc on `wide_midpage_cache`, and route16K remains a fixed/redis/midpage-leaning profile rather than the workload-capacity answer. |
+| `run_hz6_workload_profile_guard.sh` | Narrow workload-profile decision guard. It wraps `run_hz6_workload_proxy_matrix.sh` with selected/default, workload-capacity-narrow, workload-capacity-hybrid, the route16K fixed profile, and external allocators. Use it to refresh application-profile recommendations without changing selected/default. Thin raw `hz6_workload_profile_guard_20260616_105102` kept the old descriptor-hybrid spelling paired; raw `105644` switches the default recommendation name to capacity-hybrid. Raw `111620` keeps capacity-hybrid and capacity-narrow paired: hybrid wins most large live-set cache proxy rows, narrow wins `redis_proxy` and `midpage_cache`, and route16K remains a fixed/redis/midpage-leaning profile rather than the workload-capacity answer. |
 | `run_hz6_workload_capacity_hybrid_depot_ladder.sh` | Current-name wrapper for the historical descriptor-hybrid depot ladder. It delegates to `run_hz6_workload_descriptor_hybrid_depot_ladder.sh` but writes a capacity-hybrid raw root and defaults to `256,512,1024,1536` for fine depot checks. Smoke raw `hz6_workload_capacity_hybrid_depot_ladder_20260616_110401` confirms delegation and current-name summary generation. Use it for future depot A/B without reopening the selected/default lane. |
 | `run_hz6_workload_capacity_profile_gap_diag.sh` | Current-name diagnostic wrapper for selected, workload-capacity-narrow, and workload-capacity-hybrid attribution. It reuses `run_hz6_workload_profile_gap_diag.sh` with the hybrid variant labeled as `capacity-hybrid`, writes a `hz6_workload_capacity_profile_gap_diag_*` raw root, and keeps the old descriptor-hybrid entry compatible for archived reads. Smoke raw `hz6_workload_capacity_profile_gap_diag_20260616_110830` confirms `capacity_hybrid_diag` build/output wiring; standard raw `111503` keeps capacity-narrow/capacity-hybrid counter-identical with `elastic_alloc=0`. |
 | `run_hz6_fixed_rss_gap_attribution.sh` | Diagnostic fixed RSS attribution runner. It builds/runs selected diagnostic and external-meta-off diagnostic preload DSOs through `run_hz6_midpage_rss_audit.sh`, then emits a combined static/frontcache/map/payload read. Use it to explain residual fixed_4k/8k RSS gaps; do not use it as a production speed ranking. |
