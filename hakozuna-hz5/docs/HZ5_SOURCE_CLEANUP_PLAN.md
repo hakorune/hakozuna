@@ -25,7 +25,7 @@ comparability.
 | `largefront/hz5_largefront_alloc_free.inc` | LargeFront public alloc/free and tail helpers | split out from `hz5_largefront.c`; keep include-local while the public surface remains stable |
 | `largefront/hz5_largefront_transfer128.inc` | isolated LargeFront L9 transfer128 diagnostic helpers | split out from `hz5_largefront.c`; keep include-local until the diagnostic stabilizes |
 | `largefront/hz5_largefront_policy.inc` | LargeFront L0/L1 observe counters and policy selectors | split out from `hz5_largefront.c`; include-local to avoid link/build churn |
-| `midpagefront/hz5_midpagefront.c` | active PageRun64/MidPage history and saved profile implementation | defer behavior split; candidate for later archival of dead diagnostics |
+| `midpagefront/hz5_midpagefront.c` | active PageRun64/MidPage history and saved profile implementation | defer behavior split; `hz5_midpagefront_tail.inc` now holds the public API tail while the saved profile remains active |
 | `midpagefront/hz5_midpagefront_config.inc` | MidPageFront compile-time lane defaults and compatibility checks | split out from `hz5_midpagefront.c`; include-local to avoid preprocessor/link churn |
 | `midpagefront/hz5_midpagefront_state.inc` | MidPageFront internal types, global maps, and TLS state | split out from `hz5_midpagefront.c`; include-local while active lanes remain open |
 | `midpagefront/hz5_midpagefront_stats.inc` | MidPage nodeless/M4 cold stats helpers | split out from `hz5_midpagefront.c`; keep include-local until the diagnostics stabilize |
