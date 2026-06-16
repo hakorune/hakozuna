@@ -2,7 +2,8 @@
 
 Status:
 - scheduled as next execution (`CURRENT_TASK` lock, 2026-02-15).
-- implemented at boundary (`hakozuna/hz3/src/hz3_large_map_ops.inc`) on 2026-02-15.
+- implemented at boundary (`hakozuna/hz3/src/hz3_large_map_ops.inc` plus
+  `hakozuna/hz3/src/hz3_large_map_ops_tail.inc`) on 2026-02-15.
 - screen A/B (RUNS=3, interleaved) passed:
   - artifact: `/tmp/hz3_s238_ab3_20260215_115335/summary.tsv`
   - `guard_r0`: `-0.70%`
@@ -145,8 +146,10 @@ Status:
 1. `hz3_large_take()` に `#if HZ3_S238_LARGE_DIRECT_LOOKUP` ブロックを追加。
 2. direct candidate 検証関数（`static inline`）を同ファイル内に追加。
 3. stats（opt-in）を追加し one-shot dump を実装。
-4. A/B（screen）を実施して GO/NO-GO 判定。
-5. GO のみ replay gate へ進む。
+4. `hz3_large_map_ops_tail.inc` に tail helpers を分離して `hz3_large_map_ops.inc`
+   を 800 行未満に維持する。
+5. A/B（screen）を実施して GO/NO-GO 判定。
+6. GO のみ replay gate へ進む。
 
 ---
 
