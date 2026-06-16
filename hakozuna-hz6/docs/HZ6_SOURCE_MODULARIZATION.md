@@ -106,6 +106,10 @@ P2 preload module split:
   early capacity helpers, and the dense mixed-clean tail lives in
   win/bench_app_like_allocator_build_hz6_capacity_flags_core_tail.ps1 via a
   dot-sourced split so the core stays below the cleanup threshold.
+  win/run_win_hz6_capacity_matrix.ps1 now keeps parameter parsing and
+  execution prep, while the family/case/report loop lives in
+  win/run_win_hz6_capacity_matrix_tail.ps1 so the launcher stays small enough
+  to keep scanning manageable.
   Do not mix future stats/report splits with behavior changes.
 
 P2 linux runner split:
