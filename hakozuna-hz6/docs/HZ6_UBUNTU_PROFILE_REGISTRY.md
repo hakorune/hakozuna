@@ -73,7 +73,9 @@ explicit controls:
 ```
 
 This orchestration runner composes the standard profile frontier, fixed-gap
-matrix, and workload-proxy matrix into one raw-result root. Use it before
+matrix, and workload-proxy matrix into one raw-result root. The workload leg
+uses the current explicit workload controls (`capacity-narrow` and
+`descriptor-hybrid`) rather than older capacity-lite by default. Use it before
 promoting a profile/default change; it does not add new benchmark semantics.
 
 ## Consistency Check

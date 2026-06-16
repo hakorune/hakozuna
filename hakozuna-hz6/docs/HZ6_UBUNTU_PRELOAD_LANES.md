@@ -346,6 +346,10 @@ workload-proxy row with much lower RSS: `small_object_cache 17.074M / 43.33 MiB`
 Against descriptor-hybrid it is row-specific: stronger on `mixed_object_cache`
 and `midpage_cache`, weaker on `small_object_cache`, `mixed_small_cache`, and
 `wide_midpage_cache`. Keep both explicit controls; neither is selected/default.
+The broad workload guard default now uses `hz6-workload-capacity-narrow-target`
+and `hz6-workload-descriptor-hybrid-target` as the current workload controls.
+Keep `capacity-lite` in the capacity frontier for historical comparison, but
+do not use it as the default workload guard representative.
 
 Earlier workload-proxy matrix, repeat-3, raw
 `private/raw-results/linux/hz6_workload_proxy_matrix_20260616_075550`;

@@ -6,7 +6,7 @@ source "${ROOT_DIR}/hakozuna-hz6/linux/hz6_preload_aliases.sh"
 ARCH="${ARCH:-x86_64}"
 RUNS="${RUNS:-3}"
 ITERS="${ITERS:-200000}"
-ALLOCATORS="${ALLOCATORS:-system,hz3,hz4,hz6,hz6-workload-capacity-lite-target,hz6-small-boundary-trusted-toy-map8192-target,hz6-small-boundary-trusted-toy-map8192-external-target,mimalloc,tcmalloc}"
+ALLOCATORS="${ALLOCATORS:-system,hz3,hz4,hz6,hz6-workload-capacity-narrow-target,hz6-workload-descriptor-hybrid-target,hz6-small-boundary-trusted-toy-map8192-target,hz6-small-boundary-trusted-toy-map8192-external-target,mimalloc,tcmalloc}"
 ROWS_CSV="${ROWS:-small_proxy,cache_proxy}"
 OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_workload_proxy_matrix_$(date +%Y%m%d_%H%M%S)}"
 SKIP_BUILDS=0

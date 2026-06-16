@@ -146,5 +146,5 @@ Default no-go/control-only without substantially different evidence:
 14. Capacity-gap diag says selected workload proxy collapse is descriptor-table
     exhaustion/prefill fallback; capacity-lite is faster, while descriptor-overflow 2048 keeps lower RSS with selected static tables.
 15. Narrow hybrid moves explicit hybrid to desc10k/source1280/route40k plus depot1024: lower RSS than old hybrid, with only small mixed-small cost.
-16. Capacity-narrow explicit control: pure static route40K/desc10K/source1280, useful beside descriptor-hybrid.
+16. Broad workload guard now defaults to capacity-narrow + descriptor-hybrid as current explicit workload controls.
 ```

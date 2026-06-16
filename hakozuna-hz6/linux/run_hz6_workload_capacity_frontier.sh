@@ -6,7 +6,7 @@ ARCH="${ARCH:-x86_64}"
 RUNS="${RUNS:-3}"
 ITERS="${ITERS:-200000}"
 ROWS_CSV="${ROWS:-all}"
-ALLOCATORS="${ALLOCATORS:-hz6,hz6-workload-capacity-lite-target,hz6-workload-capacity-lite-map8192-target,hz6-workload-capacity-mid-target,hz6-workload-capacity-target}"
+ALLOCATORS="${ALLOCATORS:-hz6,hz6-workload-capacity-narrow-target,hz6-workload-capacity-lite-target,hz6-workload-capacity-lite-map8192-target,hz6-workload-capacity-mid-target,hz6-workload-capacity-target}"
 OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_workload_capacity_frontier_$(date +%Y%m%d_%H%M%S)}"
 SKIP_BUILDS=0
 SKIP_PREPARE=0
@@ -30,7 +30,8 @@ Options:
 
 This runner keeps the workload-capacity profile ladder separate from the broad
 cross-allocator workload-proxy guard.  It compares selected HZ6 against
-capacity-lite, capacity-lite-map8192, capacity-mid, and capacity-full profiles.
+capacity-narrow, capacity-lite, capacity-lite-map8192, capacity-mid, and
+capacity-full profiles.
 EOF
 }
 
