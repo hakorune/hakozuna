@@ -392,6 +392,18 @@ explained by descriptor/source exhaustion in this diagnostic; treat it as
 profile code-shape/repeat evidence unless a longer stats run shows elastic
 depot activity. Do not tune descriptor depot from this diagnostic alone.
 
+Focused workload profile production repeat-7 raw
+`private/raw-results/linux/hz6_workload_proxy_matrix_20260616_094129` compares
+only `hz6-workload-capacity-narrow-target` and
+`hz6-workload-descriptor-hybrid-target` on the current workload proxy rows.
+The split is small and row-specific: capacity-narrow wins `redis_proxy`
+(`82.763M` vs `82.231M`), `mixed_small_cache` (`16.912M` vs `16.397M`), and
+`midpage_cache` (`37.166M` vs `36.292M`); descriptor-hybrid wins
+`small_object_cache` (`25.663M` vs `25.345M`), `mixed_object_cache`
+(`17.823M` vs `17.588M`), and `wide_midpage_cache` (`16.864M` vs `16.774M`).
+RSS is effectively tied. Read: keep them as paired workload controls; do not
+split defaults or promote one over the other from this evidence.
+
 Earlier workload-proxy matrix, repeat-3, raw
 `private/raw-results/linux/hz6_workload_proxy_matrix_20260616_075550`;
 diagnostic raws `hz6_workload_proxy_diag_20260616_075255` and
