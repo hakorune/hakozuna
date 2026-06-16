@@ -157,6 +157,11 @@ Do not collapse them into a single broad default without new real workload data.
      confirms the split is shape-boundary behavior, not one obviously superior
      profile: hybrid wins low-WS small/mixed and high-WS small/midpage, while
      narrow wins low-WS midpage and high-WS mixed in this short repeat.
+     Wider shape-sweep raw `hz6_workload_capacity_shape_sweep_20260616_113139`
+     changes the pair read toward capacity-narrow on WS2000..8192, but exposes
+     a more important WS16384 cliff: both profiles fall to about 31K..37K
+     ops/s with `alloc_fail=0`, so the next diagnostic should explain the
+     extreme live-set cliff rather than tune the narrow/hybrid pair.
 
 5. Wrapper profile audit only if needed
    Goal:
@@ -202,9 +207,10 @@ Why this first:
   cache rows.
   Capacity-narrow and capacity-hybrid are both strong, close in RSS, and row
   dependent; pair-focus raw `112040` confirms the split is too small and
-  row-specific for a proxy-only default change. Shape-sweep raw `112816` starts
-  mapping the working-set/size-band boundaries before real app traces exist.
-  The fine depot ladder is also row-dependent, so the
+  row-specific for a proxy-only default change. Shape-sweeps `112816`/`113139`
+  map working-set/size-band boundaries and point at a WS16384 cliff that is
+  larger than the narrow/hybrid delta. The fine depot ladder is also
+  row-dependent, so the
   next useful work is real workload evidence or a new diagnostic dimension, not
   selected/default promotion or another proxy-only depot default.
   Cross fixed-gap now shows the HZ6 route16K profile beats tcmalloc and is

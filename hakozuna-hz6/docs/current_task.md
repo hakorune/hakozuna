@@ -99,7 +99,7 @@ Recent fixed/workload/profile repeats:
   private/raw-results/linux/hz6_{workload_proxy_matrix,fixed_gap_matrix}_20260616_103109
   private/raw-results/linux/hz6_route16k_capacity_guard_20260616_{103616,103858}
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_{104235,104302}
-  private/raw-results/linux/hz6_workload_profile_guard_20260616_{105102,105644,111620}, hz6_workload_capacity_{pair_focus_20260616_112040,shape_sweep_20260616_112816}, hz6_workload_descriptor_hybrid_depot_ladder_20260616_105953, hz6_workload_capacity_profile_gap_diag_20260616_{110830,111503}, hz6_workload_capacity_narrow_ladder_20260616_111216, and hz6_workload_capacity_narrow_map_ladder_20260616_111243
+  private/raw-results/linux/hz6_workload_profile_guard_20260616_{105102,105644,111620}, hz6_workload_capacity_{pair_focus_20260616_112040,shape_sweep_20260616_{112816,113139}}, hz6_workload_descriptor_hybrid_depot_ladder_20260616_105953, hz6_workload_capacity_profile_gap_diag_20260616_{110830,111503}, hz6_workload_capacity_narrow_ladder_20260616_111216, and hz6_workload_capacity_narrow_map_ladder_20260616_111243
 ```
 
 ## Do Not Reopen Casually
@@ -139,11 +139,11 @@ Default no-go/control-only without substantially different evidence:
    ops-per-MiB.
 5. Prefer `capacity-hybrid` as the workload-capacity recommendation name while
    keeping capacity-narrow paired; raws `111620`, pair-focus `112040`, and
-   shape-sweep `112816` show row/shape-specific splits, while route16K stays
-   fixed/redis/midpage-leaning. Depot raw `105953` is mixed, so keep hybrid
-   depot1024; pair wrapper is `run_hz6_workload_capacity_pair_focus.sh`.
+   shape-sweeps `112816`/`113139` show row/shape-specific splits and a
+   WS16384 cliff. Depot raw `105953` is mixed, so keep hybrid depot1024; pair
+   wrapper is `run_hz6_workload_capacity_pair_focus.sh`.
 6. Keep Toy-map8192 external as explicit fixed-boundary RSS profile.
-7. Next likely attack: real workload traces or capacity shape sweeps; route16K
+7. Next likely attack: WS16384 capacity/lookup cliff diagnostic; route16K
    +map/source/frontcache trims are control-only after raw `104302`.
 8. Do not reopen cold-retire, active-map widening, page-kind/free-order tables,
    packed metadata, or route inline work without new diagnostics.

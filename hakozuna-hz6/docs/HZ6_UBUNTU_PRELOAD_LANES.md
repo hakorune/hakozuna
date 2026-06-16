@@ -453,6 +453,14 @@ this short repeat. `alloc_fail=0` throughout, so this is not a capacity failure
 split. Keep the runner as the next proxy diagnostic surface before real app
 traces exist.
 
+Wider shape-sweep raw
+`private/raw-results/linux/hz6_workload_capacity_shape_sweep_20260616_113139`
+varies WS `2000/4096/8192/16384` across small/object/mixed/midpage bands. In
+this repeat capacity-narrow owns most WS2000..8192 speed/efficiency rows, while
+WS16384 becomes the dominant signal: both profiles collapse to roughly
+`31K..37K ops/s` with `alloc_fail=0`. Treat this as an extreme live-set
+capacity/lookup cliff diagnostic target, not a narrow-vs-hybrid default reason.
+
 Short broad guard refresh raw
 `private/raw-results/linux/hz6_broad_guard_20260616_094818` was run after the
 workload runner cleanup with `--runs 3`, shorter profile/fixed/workload iters,
