@@ -120,6 +120,9 @@ Do not collapse them into a single broad default without new real workload data.
      `linux/run_hz6_workload_profile_guard.sh` composes the existing workload
      proxy matrix with selected/default, workload-capacity-narrow,
      workload-capacity-hybrid, route16K fixed profile, and external allocators.
+     `linux/run_hz6_workload_capacity_profile_gap_diag.sh` is the current-name
+     diagnostic entry for selected/capacity-narrow/capacity-hybrid attribution;
+     the older `workload_profile_gap_diag` entry remains legacy-compatible.
    Current read:
      raw `hz6_workload_profile_guard_20260616_105644` makes
      `hz6-workload-capacity-hybrid-target` the preferred recommendation name:
@@ -165,6 +168,7 @@ WorkloadCapacityHybridUnificationDesign-L1:
     says otherwise
   runner:
     linux/run_hz6_workload_profile_guard.sh
+    linux/run_hz6_workload_capacity_profile_gap_diag.sh
     linux/run_hz6_workload_capacity_hybrid_depot_ladder.sh
 
 Why this first:

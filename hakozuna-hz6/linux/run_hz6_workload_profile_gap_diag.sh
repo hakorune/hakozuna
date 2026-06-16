@@ -8,6 +8,9 @@ ITERS="${ITERS:-20000}"
 ROWS_CSV="${ROWS:-small_object_cache,mixed_small_cache,mixed_object_cache,wide_midpage_cache}"
 OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_workload_profile_gap_diag_$(date +%Y%m%d_%H%M%S)}"
 SKIP_BUILDS=0
+HYBRID_VARIANT_LABEL="${HZ6_WORKLOAD_PROFILE_GAP_HYBRID_LABEL:-descriptor_hybrid}"
+HYBRID_DISPLAY_NAME="${HZ6_WORKLOAD_PROFILE_GAP_HYBRID_DISPLAY_NAME:-descriptor-hybrid}"
+HYBRID_BUILD_DIR="${HZ6_WORKLOAD_PROFILE_GAP_HYBRID_BUILD_DIR:-descriptor_hybrid_diag}"
 
 source "${HZ6_DIR}/linux/hz6_preload_profile_builder.sh"
 source "${HZ6_DIR}/linux/hz6_workload_profile_ladder_common.sh"
@@ -26,8 +29,9 @@ Options:
   --skip-builds    reuse diagnostic preload builds and benchmark
   --help           show this message
 
-This diagnostic compares selected HZ6, workload-capacity-narrow, and
-descriptor-hybrid with HZ6_PRELOAD_STATS=1 and HZ6_DIAGNOSTIC_PROBES=1.
+This diagnostic compares selected HZ6, workload-capacity-narrow, and the
+configured hybrid workload profile with HZ6_PRELOAD_STATS=1 and
+HZ6_DIAGNOSTIC_PROBES=1.
 It is for attribution, not throughput ranking.
 EOF
 }
@@ -70,7 +74,7 @@ mkdir -p "$OUTDIR/build"
 
 SELECTED_DIAG_SO="${OUTDIR}/build/selected_diag/libhakozuna_hz6_preload.so"
 CAPACITY_NARROW_DIAG_SO="${OUTDIR}/build/capacity_narrow_diag/libhakozuna_hz6_preload.so"
-DESCRIPTOR_HYBRID_DIAG_SO="${OUTDIR}/build/descriptor_hybrid_diag/libhakozuna_hz6_preload.so"
+HYBRID_DIAG_SO="${OUTDIR}/build/${HYBRID_BUILD_DIR}/libhakozuna_hz6_preload.so"
 DIAG_CFLAGS="-DHZ6_DIAGNOSTIC_PROBES=1 -DHZ6_TOY_SMALL_HOTPATH_DIAG_L1=1"
 
 apply_capacity_narrow_flags() {
@@ -89,7 +93,7 @@ build_capacity_narrow_diag() {
     hz6_preload_profile_build flags "${OUTDIR}/build/capacity_narrow_diag"
 }
 
-build_descriptor_hybrid_diag() {
+build_hybrid_diag() {
   local flags=()
   apply_capacity_narrow_flags flags
   hz6_preload_replace_define flags HZ6_ELASTIC_DESCRIPTOR_OVERFLOW_L1 1
@@ -97,14 +101,14 @@ build_descriptor_hybrid_diag() {
     "${HZ6_WORKLOAD_DESCRIPTOR_HYBRID_DEPOT_CAPACITY:-1024}"
   HZ6_PRELOAD_PRESERVE_PHASE_COUNTERS=1 \
   HZ6_EXTRA_CFLAGS="$DIAG_CFLAGS" \
-    hz6_preload_profile_build flags "${OUTDIR}/build/descriptor_hybrid_diag"
+    hz6_preload_profile_build flags "${OUTDIR}/build/${HYBRID_BUILD_DIR}"
 }
 
 if [[ "$SKIP_BUILDS" -ne 1 ]]; then
   OUT_DIR="${OUTDIR}/build/selected_diag" \
     "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_diag.sh"
   build_capacity_narrow_diag
-  build_descriptor_hybrid_diag
+  build_hybrid_diag
   "${ROOT_DIR}/linux/build_linux_bench_compare.sh" --arch "$ARCH" \
     --out-dir "${ROOT_DIR}/bench/out/linux/${ARCH}"
 fi
@@ -113,7 +117,7 @@ BENCH_BIN="${ROOT_DIR}/bench/out/linux/${ARCH}/bench_mixed_ws_crt"
 [[ -x "$BENCH_BIN" ]] || { echo "missing benchmark: $BENCH_BIN" >&2; exit 2; }
 [[ -f "$SELECTED_DIAG_SO" ]] || { echo "missing selected diag DSO: $SELECTED_DIAG_SO" >&2; exit 2; }
 [[ -f "$CAPACITY_NARROW_DIAG_SO" ]] || { echo "missing capacity-narrow diag DSO: $CAPACITY_NARROW_DIAG_SO" >&2; exit 2; }
-[[ -f "$DESCRIPTOR_HYBRID_DIAG_SO" ]] || { echo "missing descriptor-hybrid diag DSO: $DESCRIPTOR_HYBRID_DIAG_SO" >&2; exit 2; }
+[[ -f "$HYBRID_DIAG_SO" ]] || { echo "missing ${HYBRID_DISPLAY_NAME} diag DSO: $HYBRID_DIAG_SO" >&2; exit 2; }
 
 rows=()
 hz6_workload_append_gap_diag_rows rows "$ITERS" "$ROWS_CSV"
@@ -125,7 +129,9 @@ hz6_workload_append_gap_diag_rows rows "$ITERS" "$ROWS_CSV"
   echo "bench=${BENCH_BIN}"
   echo "selected_diag_so=${SELECTED_DIAG_SO}"
   echo "capacity_narrow_diag_so=${CAPACITY_NARROW_DIAG_SO}"
-  echo "descriptor_hybrid_diag_so=${DESCRIPTOR_HYBRID_DIAG_SO}"
+  echo "hybrid_variant=${HYBRID_VARIANT_LABEL}"
+  echo "hybrid_display=${HYBRID_DISPLAY_NAME}"
+  echo "hybrid_diag_so=${HYBRID_DIAG_SO}"
   for row_spec in "${rows[@]}"; do
     echo "row=${row_spec}"
   done
@@ -150,16 +156,18 @@ for row_spec in "${rows[@]}"; do
   read -r row threads iters ws min_size max_size <<< "$row_spec"
   run_case "$row" selected "$SELECTED_DIAG_SO" "$threads" "$iters" "$ws" "$min_size" "$max_size"
   run_case "$row" capacity_narrow "$CAPACITY_NARROW_DIAG_SO" "$threads" "$iters" "$ws" "$min_size" "$max_size"
-  run_case "$row" descriptor_hybrid "$DESCRIPTOR_HYBRID_DIAG_SO" "$threads" "$iters" "$ws" "$min_size" "$max_size"
+  run_case "$row" "$HYBRID_VARIANT_LABEL" "$HYBRID_DIAG_SO" "$threads" "$iters" "$ws" "$min_size" "$max_size"
 done
 
-python3 - <<'PY' "$OUTDIR" "${rows[@]}" | tee "${OUTDIR}/summary.md"
+python3 - <<'PY' "$OUTDIR" "$HYBRID_VARIANT_LABEL" "$HYBRID_DISPLAY_NAME" "${rows[@]}" | tee "${OUTDIR}/summary.md"
 import pathlib
 import re
 import sys
 
 root = pathlib.Path(sys.argv[1])
-row_specs = sys.argv[2:]
+hybrid_variant = sys.argv[2]
+hybrid_display = sys.argv[3]
+row_specs = sys.argv[4:]
 rows = [spec.split()[0] for spec in row_specs]
 
 ops_re = re.compile(r"ops/s=([0-9.]+)")
@@ -185,14 +193,15 @@ print(f"root: `{root}`\n")
 print("| row | variant | ops/s | peak MiB | alloc_fail | desc_exh | elastic_alloc | elastic_reset | elastic_exh | source_exh | prefill_fb | real_fb | route_after_maps | route_probe_total | route_probe_max | desc_live_max | source_active_max | frontcache_max | active_source_blocks | static MiB | payload MiB | attributed MiB |")
 print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 for row in rows:
-    for variant in ("selected", "capacity_narrow", "descriptor_hybrid"):
+    for variant in ("selected", "capacity_narrow", hybrid_variant):
         data = parse_log(root / f"{row}_{variant}.log")
+        display_variant = hybrid_display if variant == hybrid_variant else variant
         def get(key):
             return data.get(key, 0)
         def mib(key):
             return get(key) / (1024.0 * 1024.0)
         print(
-            f"| `{row}` | `{variant}` | {data['ops']:.3f} | {data['peak_mib']:.2f} | "
+            f"| `{row}` | `{display_variant}` | {data['ops']:.3f} | {data['peak_mib']:.2f} | "
             f"{get('alloc_fail')} | {get('descriptor_exhausted')} | "
             f"{get('elastic_descriptor_overflow_alloc')} | "
             f"{get('elastic_descriptor_overflow_reset')} | "

@@ -112,11 +112,11 @@ variants=(
 )
 
 SELECTED_SO="${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_preload/libhakozuna_hz6_preload.so"
-HYBRID_SO="${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_preload_workload_descriptor_hybrid_target/libhakozuna_hz6_preload.so"
+HYBRID_SO="${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_preload_workload_capacity_hybrid_target/libhakozuna_hz6_preload.so"
 
 if [[ "$SKIP_BUILDS" -ne 1 ]]; then
   "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh"
-  "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_workload_descriptor_hybrid_target.sh"
+  "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_workload_capacity_hybrid_target.sh"
   for variant in "${variants[@]}"; do
     build_variant "$variant"
   done
@@ -143,7 +143,7 @@ hz6_workload_append_proxy_rows rows "$ITERS" "$ROWS_CSV"
   echo "rows=${ROWS_CSV}"
   echo "bench=${BENCH_BIN}"
   echo "selected_so=${SELECTED_SO}"
-  echo "descriptor_hybrid_so=${HYBRID_SO}"
+  echo "capacity_hybrid_so=${HYBRID_SO}"
   for variant in "${variants[@]}"; do
     echo "${variant}_so=${OUTDIR}/build/${variant}/libhakozuna_hz6_preload.so"
   done
@@ -171,7 +171,7 @@ for row_spec in "${rows[@]}"; do
   read -r row threads iters ws min_size max_size <<< "$row_spec"
   for run in $(seq 1 "$RUNS"); do
     run_one "$row" selected "$SELECTED_SO" "$run" "$threads" "$iters" "$ws" "$min_size" "$max_size"
-    run_one "$row" descriptor_hybrid "$HYBRID_SO" "$run" "$threads" "$iters" "$ws" "$min_size" "$max_size"
+    run_one "$row" capacity_hybrid "$HYBRID_SO" "$run" "$threads" "$iters" "$ws" "$min_size" "$max_size"
     for variant in "${variants[@]}"; do
       so="${OUTDIR}/build/${variant}/libhakozuna_hz6_preload.so"
       run_one "$row" "$variant" "$so" "$run" "$threads" "$iters" "$ws" "$min_size" "$max_size"
@@ -188,7 +188,7 @@ import sys
 root = pathlib.Path(sys.argv[1])
 row_specs = sys.argv[2:]
 rows = [spec.split()[0] for spec in row_specs]
-log_re = re.compile(r"^(.+)_(selected|descriptor_hybrid|capacity_narrow(?:_toy_map8192(?:_external)?)?)_([0-9]+)\.log$")
+log_re = re.compile(r"^(.+)_(selected|capacity_hybrid|capacity_narrow(?:_toy_map8192(?:_external)?)?)_([0-9]+)\.log$")
 ops_re = re.compile(r"ops/s=([0-9.]+)")
 peak_re = re.compile(r"peak_kb=([0-9]+)")
 fail_re = re.compile(r"\balloc_fail=([0-9]+)")
@@ -215,7 +215,7 @@ for log in sorted((root / "logs").glob("*.log")):
 def variant_key(name):
     order = {
         "selected": 0,
-        "descriptor_hybrid": 1,
+        "capacity_hybrid": 1,
         "capacity_narrow": 2,
         "capacity_narrow_toy_map8192": 3,
         "capacity_narrow_toy_map8192_external": 4,

@@ -64,7 +64,7 @@ Runners:
   broad_guard / fixed_boundary_profile_frontier / preload_profile_frontier
   fixed_gap_matrix / fixed_cost_residency_matrix / fixed_quiescent_rss_matrix
   route16k_capacity_guard
-  workload_proxy_matrix / workload_profile_guard / workload_capacity_{frontier,gap_diag,narrow_ladder,narrow_map_ladder,hybrid_depot_ladder} / workload_descriptor_{overflow,hybrid,hybrid_narrow,hybrid_depot}_ladder
+  workload_proxy_matrix / workload_profile_guard / workload_capacity_{frontier,gap_diag,profile_gap_diag,narrow_ladder,narrow_map_ladder,hybrid_depot_ladder} / workload_descriptor_{overflow,hybrid,hybrid_narrow,hybrid_depot}_ladder
   check_hz6_preload_profile_registry
 ```
 
@@ -99,8 +99,7 @@ Recent fixed/workload/profile repeats:
   private/raw-results/linux/hz6_{workload_proxy_matrix,fixed_gap_matrix}_20260616_103109
   private/raw-results/linux/hz6_route16k_capacity_guard_20260616_{103616,103858}
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_{104235,104302}
-  private/raw-results/linux/hz6_workload_profile_guard_20260616_{105102,105644}
-  private/raw-results/linux/hz6_workload_descriptor_hybrid_depot_ladder_20260616_105953
+  private/raw-results/linux/hz6_workload_profile_guard_20260616_{105102,105644}, hz6_workload_descriptor_hybrid_depot_ladder_20260616_105953, hz6_workload_capacity_profile_gap_diag_20260616_110830, hz6_workload_capacity_narrow_ladder_20260616_111216, and hz6_workload_capacity_narrow_map_ladder_20260616_111243
 ```
 
 ## Do Not Reopen Casually
@@ -141,7 +140,8 @@ Default no-go/control-only without substantially different evidence:
 5. Prefer `capacity-hybrid` as the workload-capacity recommendation name while
    keeping capacity-narrow paired; raw `105644` shows both recover large
    live-set proxy rows and route16K stays fixed/redis/midpage-leaning. Depot
-   raw `105953` is mixed, so keep hybrid depot1024.
+   raw `105953` is mixed, so keep hybrid depot1024; current diagnostic wrapper
+   is `run_hz6_workload_capacity_profile_gap_diag.sh`.
 6. Keep Toy-map8192 external as explicit fixed-boundary RSS profile.
 7. Next likely attack: real workload traces or deeper capacity/hybrid tuning;
    route16K+map/source/frontcache trims are control-only after raw `104302`.

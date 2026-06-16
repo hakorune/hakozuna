@@ -98,12 +98,12 @@ IFS=',' read -r -a profiles <<< "$PROFILES_CSV"
 
 SELECTED_SO="${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_preload/libhakozuna_hz6_preload.so"
 LITE_SO="${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_preload_workload_capacity_lite_target/libhakozuna_hz6_preload.so"
-HYBRID_SO="${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_preload_workload_descriptor_hybrid_target/libhakozuna_hz6_preload.so"
+HYBRID_SO="${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_preload_workload_capacity_hybrid_target/libhakozuna_hz6_preload.so"
 
 if [[ "$SKIP_BUILDS" -ne 1 ]]; then
   "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh"
   "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_workload_capacity_lite_target.sh"
-  "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_workload_descriptor_hybrid_target.sh"
+  "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload_workload_capacity_hybrid_target.sh"
   for profile in "${profiles[@]}"; do
     build_capacity_profile "$profile"
   done
@@ -133,7 +133,7 @@ hz6_workload_append_proxy_rows rows "$ITERS" "$ROWS_CSV"
   echo "bench=${BENCH_BIN}"
   echo "selected_so=${SELECTED_SO}"
   echo "capacity_lite_so=${LITE_SO}"
-  echo "descriptor_hybrid_so=${HYBRID_SO}"
+  echo "capacity_hybrid_so=${HYBRID_SO}"
   for profile in "${profiles[@]}"; do
     echo "capacity_${profile}_so=${OUTDIR}/build/${profile}/libhakozuna_hz6_preload.so"
   done
@@ -162,7 +162,7 @@ for row_spec in "${rows[@]}"; do
   for run in $(seq 1 "$RUNS"); do
     run_one "$row" selected "$SELECTED_SO" "$run" "$threads" "$iters" "$ws" "$min_size" "$max_size"
     run_one "$row" capacity_lite "$LITE_SO" "$run" "$threads" "$iters" "$ws" "$min_size" "$max_size"
-    run_one "$row" descriptor_hybrid "$HYBRID_SO" "$run" "$threads" "$iters" "$ws" "$min_size" "$max_size"
+    run_one "$row" capacity_hybrid "$HYBRID_SO" "$run" "$threads" "$iters" "$ws" "$min_size" "$max_size"
     for profile in "${profiles[@]}"; do
       so="${OUTDIR}/build/${profile}/libhakozuna_hz6_preload.so"
       run_one "$row" "capacity_${profile}" "$so" "$run" "$threads" "$iters" "$ws" "$min_size" "$max_size"
@@ -179,7 +179,7 @@ import sys
 root = pathlib.Path(sys.argv[1])
 row_specs = sys.argv[2:]
 rows = [spec.split()[0] for spec in row_specs]
-log_re = re.compile(r"^(.+)_(selected|capacity_lite|descriptor_hybrid|capacity_.+)_([0-9]+)\.log$")
+log_re = re.compile(r"^(.+)_(selected|capacity_lite|capacity_hybrid|capacity_.+)_([0-9]+)\.log$")
 ops_re = re.compile(r"ops/s=([0-9.]+)")
 peak_re = re.compile(r"peak_kb=([0-9]+)")
 fail_re = re.compile(r"\balloc_fail=([0-9]+)")
@@ -207,7 +207,7 @@ def variant_key(name):
     order = {
         "selected": 0,
         "capacity_lite": 1,
-        "descriptor_hybrid": 2,
+        "capacity_hybrid": 2,
     }
     return (order.get(name, 3), name)
 
