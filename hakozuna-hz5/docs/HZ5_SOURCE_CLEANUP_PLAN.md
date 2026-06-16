@@ -43,6 +43,7 @@ comparability.
 | `midpagefront/hz5_midpagefront_remote_drain.inc` | MidPage owner inbox drain helper | split out from `hz5_midpagefront.c`; keep include-local while drain policy settles |
 | `midpagefront/hz5_midpagefront_remote_experiments.inc` | MidPage M6/M7/M8/M10/M11 remote experiment helpers | split out from `hz5_midpagefront.c`; keep include-local while the remote experiment lanes settle |
 | `midfront/hz5_midfront_remote_batch.inc` | MidFront remote batch helper cluster | split out from `hz5_midfront.c`; keep include-local while the remote-batch profile settles |
+| `midfront/hz5_midfront_tail.inc` | MidFront public API tail helpers | split out from `hz5_midfront.c`; keep include-local while the public surface remains stable |
 | `preload/hz5_preload_full_support.inc` | Preload full bootstrap / stats / pointer-track support helpers | split out from `hz5_preload_full.c`; keep include-local while the full preload control path settles |
 | `lowpage/hz5_lowpage64_p43o.inc` | LowPage P43O admission/projection diagnostics | split out from `hz5_lowpage64.c`; keep include-local while the admission probes settle |
 | `lowpage/hz5_lowpage64_p43_segment_state.inc` | LowPage P43 segment types, globals, TLS cache, and counters | split out from `hz5_lowpage64_p43_segment.c`; keep include-local while the segment-slot source stabilizes |
