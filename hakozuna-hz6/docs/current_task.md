@@ -94,6 +94,7 @@ Recent fixed/profile repeats:
   private/raw-results/linux/hz6_workload_descriptor_{overflow_ladder_20260616_084807,hybrid_ladder_20260616_085253}
   private/raw-results/linux/hz6_workload_descriptor_hybrid_narrow_ladder_20260616_090407
   private/raw-results/linux/hz6_workload_descriptor_hybrid_depot_ladder_20260616_090934, hz6_workload_capacity_narrow_ladder_20260616_091541, hz6_workload_capacity_narrow_map_ladder_20260616_093456, hz6_workload_profile_gap_diag_20260616_093918, and hz6_workload_proxy_matrix_20260616_094129
+  private/raw-results/linux/hz6_broad_guard_20260616_094818
   private/raw-results/linux/hz6_workload_{capacity_frontier_20260616_081537,proxy_matrix_20260616_{080227,084249,084440,085632}}
   private/raw-results/linux/hz6_ubuntu_size_slices_20260616_073231
 ```
@@ -120,8 +121,9 @@ Default no-go/control-only without substantially different evidence:
 ```text
 1. Keep selected/default stable.
 2. Use HZ6_NEXT_OPTIMIZATION_PLAN.md as the forward plan.
-3. First refresh broad selected/profile guard after script cleanup.
-4. Then attack SourceBlockMetaSlim-L1: static SourceBlock/run metadata RSS
+3. Broad selected/profile guard refreshed in hz6_broad_guard_20260616_094818:
+   selected/profile is stable; workload proxy still needs capacity controls.
+4. Next attack SourceBlockMetaSlim-L1: static SourceBlock/run metadata RSS
    without malloc/free hot-path branches.
 5. Keep capacity-narrow + descriptor-hybrid as paired workload controls; proxy
    rows alone are not enough to change selected/default.

@@ -404,6 +404,16 @@ The split is small and row-specific: capacity-narrow wins `redis_proxy`
 RSS is effectively tied. Read: keep them as paired workload controls; do not
 split defaults or promote one over the other from this evidence.
 
+Short broad guard refresh raw
+`private/raw-results/linux/hz6_broad_guard_20260616_094818` was run after the
+workload runner cleanup with `--runs 3`, shorter profile/fixed/workload iters,
+and `--skip-builds --skip-prepare`. It confirms the same decision shape:
+selected/default remains stable on focused/fixed rows; selected still collapses
+on large workload-proxy live sets; capacity-narrow and descriptor-hybrid both
+recover the collapsed rows with `alloc_fail=0`. Keep the paired workload
+controls and move the next implementation target to metadata/RSS work rather
+than another workload-capacity default attempt.
+
 Earlier workload-proxy matrix, repeat-3, raw
 `private/raw-results/linux/hz6_workload_proxy_matrix_20260616_075550`;
 diagnostic raws `hz6_workload_proxy_diag_20260616_075255` and

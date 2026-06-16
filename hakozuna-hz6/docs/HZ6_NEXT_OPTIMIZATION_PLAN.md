@@ -21,14 +21,17 @@ Do not collapse them into a single broad default without new real workload data.
 
 ```text
 1. Broad selected/profile refresh
+   Status:
+     done in `private/raw-results/linux/hz6_broad_guard_20260616_094818`
    Goal:
      confirm selected/default and profile controls after the script cleanup.
    Runner:
      linux/run_hz6_broad_guard.sh
-   Acceptance:
-     selected/default stays stable
-     capacity-narrow + descriptor-hybrid remain workload controls
-     no new fail/route/source regression
+   Read:
+     selected/default remains stable on focused/fixed rows
+     selected still has the known workload-proxy capacity cliff
+     capacity-narrow + descriptor-hybrid both recover collapsed workload rows
+     no alloc_fail regression was observed in the workload proxy summary
 
 2. SourceBlockMetaSlim-L1 design refresh
    Goal:
