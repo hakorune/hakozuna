@@ -48,7 +48,7 @@ comparability.
 | `lowpage/hz5_lowpage64_p43_segment_state.inc` | LowPage P43 segment types, globals, TLS cache, and counters | split out from `hz5_lowpage64_p43_segment.c`; keep include-local while the segment-slot source stabilizes |
 | `lowpage/hz5_lowpage64_p43_segment_helpers.inc` | LowPage P43 segment lookup/slot-mask helper cluster | split out from `hz5_lowpage64_p43_segment.c`; keep include-local while the segment-slot source stabilizes |
 | `lowpage/hz5_lowpage64_p43p_bridge.inc` | LowPage P43P/P44/P45 bridge diagnostics | split out from `hz5_lowpage64.c`; keep include-local while the bridge probes settle |
-| `lowpage/hz5_lowpage64_control.inc` | LowPage control-plane list / checkpoint / relbuf helpers | split out from `hz5_lowpage64.c`; keep include-local while the control-plane lanes settle |
+| `lowpage/hz5_lowpage64_control.inc` | LowPage control-plane list / checkpoint / relbuf helpers | split out from `hz5_lowpage64.c`; `hz5_lowpage64_control_tail.inc` now holds the p37/p39/stash helper tail while the control-plane lanes settle |
 | `lowpage/hz5_lowpage64_state_storage.inc` | LowPage global/TLS control-plane storage | split out from `hz5_lowpage64_control.inc`; keep include-local so state declarations stay near control helpers |
 | `lowpage/hz5_lowpage64_stats_storage.inc` | LowPage diagnostic counter storage | split out from `hz5_lowpage64_control.inc`; keep include-local so counter users do not gain link churn |
 | `lowpage/hz5_lowpage64_stats_print.inc` | LowPage diagnostic print include router | split out from `hz5_lowpage64.c`; keep include-local so the hot file stays below 1000 lines |
