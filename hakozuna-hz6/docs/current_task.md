@@ -61,7 +61,7 @@ Explicit controls:
 Runners:
   broad_guard / fixed_boundary_profile_frontier / preload_profile_frontier
   fixed_gap_matrix / fixed_cost_residency_matrix / fixed_quiescent_rss_matrix
-  workload_proxy_matrix / workload_capacity_frontier / workload_capacity_gap_diag / workload_descriptor_{overflow,hybrid}_ladder
+  workload_proxy_matrix / workload_capacity_frontier / workload_capacity_gap_diag / workload_descriptor_{overflow,hybrid,hybrid_narrow}_ladder
   check_hz6_preload_profile_registry
 ```
 
@@ -70,7 +70,7 @@ Runners:
 ```text
 Profile frontier:
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_{060739,081847}
-  private/raw-results/linux/hz6_broad_guard_20260616_{082927,085900}
+  private/raw-results/linux/hz6_broad_guard_20260616_{082927,085900,090638}
   private/raw-results/linux/hz6_midpage_skip_transfer_alias_smoke_20260616_065421
 
 Realloc/adaptive profile repeats:
@@ -81,9 +81,7 @@ Calloc large-real profile:
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_044958
   private/raw-results/linux/hz6_preload_calloc_cross_20260616_045446
 
-Calloc direct-HZ6 control:
-  private/raw-results/linux/hz6_preload_calloc_audit_20260616_051752
-  private/raw-results/linux/hz6_preload_profile_frontier_20260616_051752
+Calloc direct-HZ6 control: private/raw-results/linux/hz6_preload_calloc_audit_20260616_051752 and hz6_preload_profile_frontier_20260616_051752
 
 Recent fixed/profile repeats:
   private/raw-results/linux/hz6_fixed_boundary_profile_frontier_20260616_072931
@@ -93,9 +91,9 @@ Recent fixed/profile repeats:
   private/raw-results/linux/hz6_midpage_payload_trim_ab_20260616_{062305,064915,065310,065329,072333,074342,074414}
   private/raw-results/linux/hz6_workload_capacity_gap_diag_20260616_{083459,083910}
   private/raw-results/linux/hz6_workload_descriptor_{overflow_ladder_20260616_084807,hybrid_ladder_20260616_085253}
+  private/raw-results/linux/hz6_workload_descriptor_hybrid_narrow_ladder_20260616_090407
   private/raw-results/linux/hz6_workload_{capacity_frontier_20260616_081537,proxy_matrix_20260616_{080227,084249,084440,085632}}
   private/raw-results/linux/hz6_ubuntu_size_slices_20260616_073231
-
 ```
 
 ## Do Not Reopen Casually
@@ -146,5 +144,6 @@ Default no-go/control-only without substantially different evidence:
     packed-frontcache/sourceblock combos remain runner-only controls/no-go.
 14. Capacity-gap diag says selected workload proxy collapse is descriptor-table
     exhaustion/prefill fallback; capacity-lite is faster, while descriptor-overflow 2048 keeps lower RSS with selected static tables.
-15. Workload broad guard keeps hybrid profile explicit/control: better speed/RSS than capacity-lite on small/mixed proxies, but not default.
+15. Narrow hybrid moves explicit hybrid to desc10k/source1280/route40k: lower RSS than old hybrid, with only small mixed-small cost.
+16. Hybrid remains explicit/control after broad guard; next work should seek a new lever, not default promotion.
 ```

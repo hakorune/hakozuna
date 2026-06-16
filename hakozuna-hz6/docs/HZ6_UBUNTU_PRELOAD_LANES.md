@@ -255,6 +255,54 @@ decision: hybrid beats capacity-lite on `small_object_cache`
 not select by default because `redis_proxy` and `midpage_cache` still prefer
 selected or descriptor-overflow.
 
+Hybrid narrow static-capacity ladder runner:
+
+```bash
+./hakozuna-hz6/linux/run_hz6_workload_descriptor_hybrid_narrow_ladder.sh
+```
+
+This is the next runner-only search lane after `desc12k/source1536/route48k`.
+It reuses the generic hybrid ladder but defaults to smaller static-table
+profiles:
+
+```text
+desc10k_source1280_route40k
+desc10k_source1536_route40k
+desc12k_source1280_route40k
+desc12k_source1536_route40k
+desc12k_source1536_route48k
+```
+
+Read rule: look for a candidate that keeps the hybrid collapsed-row win while
+reducing the healthy-row cost on `redis_proxy` and `midpage_cache`. Keep the
+result runner-only unless it beats the current explicit hybrid target on
+workload rows and survives a broad guard.
+
+Narrow hybrid ladder raw
+`private/raw-results/linux/hz6_workload_descriptor_hybrid_narrow_ladder_20260616_090407`
+promotes `desc10k_source1280_route40k` as the explicit hybrid target shape.
+Compared with the previous `desc12k_source1536_route48k` witness in the same
+run, it lowers RSS on every workload-proxy row and improves the healthy-row
+costs: `redis_proxy 55.062M / 20.12 MiB -> 56.427M / 17.50 MiB`,
+`midpage_cache 17.925M / 85.38 MiB -> 18.720M / 82.88 MiB`, and
+`wide_midpage_cache 8.729M / 148.50 MiB -> 9.210M / 145.88 MiB`. Collapsed
+rows remain restored and competitive: `small_object_cache 17.192M / 42.34 MiB`,
+`mixed_object_cache 9.194M / 135.25 MiB`; `mixed_small_cache` is the only
+small tradeoff versus the old hybrid (`8.556M` vs `8.646M`). Keep
+`hz6-workload-descriptor-hybrid-target` explicit/control, now backed by
+route40K/descriptors10K/source1280 plus the 2048 elastic descriptor depot.
+
+Post-promotion workload-only broad guard raw
+`private/raw-results/linux/hz6_broad_guard_20260616_090638` confirms the alias
+shape. The narrow hybrid beats capacity-lite on speed and RSS for
+`small_object_cache` (`17.428M / 42.71 MiB` vs `16.692M / 49.62 MiB`),
+`mixed_small_cache` (`8.842M / 121.00 MiB` vs `8.442M / 129.00 MiB`),
+`mixed_object_cache` (`9.103M / 135.50 MiB` vs `8.991M / 142.88 MiB`), and
+`wide_midpage_cache` (`9.297M / 145.50 MiB` vs `8.976M / 153.66 MiB`).
+`redis_proxy` stays near selected/overflow (`61.147M / 17.62 MiB`), while
+`midpage_cache` still prefers selected/descriptor-overflow. Keep explicit,
+not selected/default.
+
 Earlier workload-proxy matrix, repeat-3, raw
 `private/raw-results/linux/hz6_workload_proxy_matrix_20260616_075550`;
 diagnostic raws `hz6_workload_proxy_diag_20260616_075255` and
