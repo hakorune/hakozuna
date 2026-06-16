@@ -70,3 +70,43 @@ hz6_workload_append_proxy_rows() {
     esac
   done
 }
+
+hz6_workload_append_gap_diag_rows() {
+  local -n rows_out="$1"
+  local iters="$2"
+  local rows_csv="$3"
+  local row_group
+  local row_groups=()
+
+  IFS=',' read -r -a row_groups <<< "$rows_csv"
+  for row_group in "${row_groups[@]}"; do
+    case "$row_group" in
+      small_object_cache)
+        rows_out+=("small_object_cache 4 ${iters} 8192 16 1024")
+        ;;
+      mixed_small_cache)
+        rows_out+=("mixed_small_cache 4 ${iters} 8192 16 4096")
+        ;;
+      mixed_object_cache)
+        rows_out+=("mixed_object_cache 4 ${iters} 8192 64 8192")
+        ;;
+      wide_midpage_cache)
+        rows_out+=("wide_midpage_cache 4 ${iters} 8192 4096 32768")
+        ;;
+      all)
+        rows_out+=(
+          "small_object_cache 4 ${iters} 8192 16 1024"
+          "mixed_small_cache 4 ${iters} 8192 16 4096"
+          "mixed_object_cache 4 ${iters} 8192 64 8192"
+          "wide_midpage_cache 4 ${iters} 8192 4096 32768"
+        )
+        ;;
+      "")
+        ;;
+      *)
+        echo "unknown row: ${row_group}" >&2
+        return 2
+        ;;
+    esac
+  done
+}

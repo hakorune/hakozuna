@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+source "${ROOT_DIR}/hakozuna-hz6/linux/hz6_workload_profile_ladder_common.sh"
 ARCH="${ARCH:-x86_64}"
 ITERS="${ITERS:-20000}"
 ROWS_CSV="${ROWS:-small_object_cache,mixed_small_cache,mixed_object_cache,wide_midpage_cache}"
@@ -101,37 +102,7 @@ BENCH_BIN="${ROOT_DIR}/bench/out/linux/${ARCH}/bench_mixed_ws_crt"
 [[ -f "$LITE_DIAG_SO" ]] || { echo "missing capacity-lite diag DSO: $LITE_DIAG_SO" >&2; exit 2; }
 
 rows=()
-IFS=',' read -r -a row_groups <<< "$ROWS_CSV"
-for row_group in "${row_groups[@]}"; do
-  case "$row_group" in
-    small_object_cache)
-      rows+=("small_object_cache 4 ${ITERS} 8192 16 1024")
-      ;;
-    mixed_small_cache)
-      rows+=("mixed_small_cache 4 ${ITERS} 8192 16 4096")
-      ;;
-    mixed_object_cache)
-      rows+=("mixed_object_cache 4 ${ITERS} 8192 64 8192")
-      ;;
-    wide_midpage_cache)
-      rows+=("wide_midpage_cache 4 ${ITERS} 8192 4096 32768")
-      ;;
-    all)
-      rows+=(
-        "small_object_cache 4 ${ITERS} 8192 16 1024"
-        "mixed_small_cache 4 ${ITERS} 8192 16 4096"
-        "mixed_object_cache 4 ${ITERS} 8192 64 8192"
-        "wide_midpage_cache 4 ${ITERS} 8192 4096 32768"
-      )
-      ;;
-    "")
-      ;;
-    *)
-      echo "unknown row: ${row_group}" >&2
-      exit 2
-      ;;
-  esac
-done
+hz6_workload_append_gap_diag_rows rows "$ITERS" "$ROWS_CSV"
 
 {
   echo "arch=${ARCH}"

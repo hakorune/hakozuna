@@ -197,8 +197,9 @@ linux/hz6_preload_profile_builder.sh:
 linux/hz6_workload_profile_ladder_common.sh:
   shared parser for workload ladder profile names such as
   desc10k_source1280_route40k, plus shared small_proxy/cache_proxy row
-  expansion. Keep workload capacity/hybrid/proxy scripts on this helper
-  instead of copying desc/source/route or proxy row logic.
+  expansion and workload gap-diagnostic row expansion. Keep workload
+  capacity/hybrid/proxy/diagnostic scripts on this helper instead of copying
+  desc/source/route or row selection logic.
 
 bench/lib/bench_common.sh:
   shared HZ6 profile DSO resolver helper. Keep new HZ6 profile aliases on the
