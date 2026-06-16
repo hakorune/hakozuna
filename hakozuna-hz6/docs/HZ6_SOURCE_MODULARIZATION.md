@@ -102,6 +102,10 @@ P2 preload module split:
   preload/hz6_preload_stats_print_mid.inc, and
   preload/hz6_preload_stats_print_tail.inc so the dense report stays isolated
   from hook control flow.
+  win/bench_app_like_allocator_build_hz6_capacity_flags_core.ps1 now keeps the
+  early capacity helpers, and the dense mixed-clean tail lives in
+  win/bench_app_like_allocator_build_hz6_capacity_flags_core_tail.ps1 via a
+  dot-sourced split so the core stays below the cleanup threshold.
   Do not mix future stats/report splits with behavior changes.
 
 P2 linux runner split:
