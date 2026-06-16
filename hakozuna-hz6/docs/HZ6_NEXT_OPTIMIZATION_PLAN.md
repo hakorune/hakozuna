@@ -159,9 +159,14 @@ Do not collapse them into a single broad default without new real workload data.
      narrow wins low-WS midpage and high-WS mixed in this short repeat.
      Wider shape-sweep raw `hz6_workload_capacity_shape_sweep_20260616_113139`
      changes the pair read toward capacity-narrow on WS2000..8192, but exposes
-     a more important WS16384 cliff: both profiles fall to about 31K..37K
-     ops/s with `alloc_fail=0`, so the next diagnostic should explain the
-     extreme live-set cliff rather than tune the narrow/hybrid pair.
+     a more important WS16384 cliff. Production shape summaries do not carry
+     stats counters; cliff diagnostic raw
+     `hz6_workload_capacity_cliff_diag_20260616_113833` shows the cliff is real
+     capacity pressure: capacity-narrow still has about `25K` alloc failures,
+     `55K` descriptor exhausted events, `20K` source-block exhausted events,
+     and about `2.0B` route lookup probes on WS16384 small/object rows. The
+     next diagnostic should test a bigger WS16384 capacity profile rather than
+     tune the narrow/hybrid pair.
 
 5. Wrapper profile audit only if needed
    Goal:
@@ -197,6 +202,7 @@ WorkloadCapacityHybridUnificationDesign-L1:
     linux/run_hz6_workload_profile_guard.sh
     linux/run_hz6_workload_capacity_pair_focus.sh
     linux/run_hz6_workload_capacity_shape_sweep.sh
+    linux/run_hz6_workload_capacity_cliff_diag.sh
     linux/run_hz6_workload_capacity_profile_gap_diag.sh
     linux/run_hz6_workload_capacity_hybrid_depot_ladder.sh
 
@@ -208,9 +214,9 @@ Why this first:
   Capacity-narrow and capacity-hybrid are both strong, close in RSS, and row
   dependent; pair-focus raw `112040` confirms the split is too small and
   row-specific for a proxy-only default change. Shape-sweeps `112816`/`113139`
-  map working-set/size-band boundaries and point at a WS16384 cliff that is
-  larger than the narrow/hybrid delta. The fine depot ladder is also
-  row-dependent, so the
+  map working-set/size-band boundaries, and cliff diag `113833` attributes
+  WS16384 to descriptor/source exhaustion and route-probe blowup. The fine
+  depot ladder is also row-dependent, so the
   next useful work is real workload evidence or a new diagnostic dimension, not
   selected/default promotion or another proxy-only depot default.
   Cross fixed-gap now shows the HZ6 route16K profile beats tcmalloc and is

@@ -24,7 +24,8 @@ Options:
   --arch ARCH      target arch (default: x86_64)
   --iters N        iterations per diagnostic row (default: 20000)
   --rows CSV       rows: small_object_cache,mixed_small_cache,mixed_object_cache,
-                   wide_midpage_cache,all
+                   wide_midpage_cache,small_ws16384,object_ws16384,
+                   mixed_ws16384,midpage_ws16384,cliff16384,all
   --outdir DIR     output directory
   --skip-builds    reuse diagnostic preload builds and benchmark
   --help           show this message
@@ -190,8 +191,8 @@ def parse_log(path):
 
 print("# HZ6 Workload Profile Gap Diagnostic\n")
 print(f"root: `{root}`\n")
-print("| row | variant | ops/s | peak MiB | alloc_fail | desc_exh | elastic_alloc | elastic_reset | elastic_exh | source_exh | prefill_fb | real_fb | route_after_maps | route_probe_total | route_probe_max | desc_live_max | source_active_max | frontcache_max | active_source_blocks | static MiB | payload MiB | attributed MiB |")
-print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+print("| row | variant | ops/s | peak MiB | alloc_fail | desc_exh | elastic_alloc | elastic_reset | elastic_exh | source_exh | prefill_fb | real_fb | route_after_maps | route_probe_total | route_probe_max | toy_hit_pct | mid_hit_pct | desc_live_max | source_active_max | frontcache_max | active_source_blocks | static MiB | payload MiB | attributed MiB |")
+print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 for row in rows:
     for variant in ("selected", "capacity_narrow", hybrid_variant):
         data = parse_log(root / f"{row}_{variant}.log")
@@ -200,6 +201,10 @@ for row in rows:
             return data.get(key, 0)
         def mib(key):
             return get(key) / (1024.0 * 1024.0)
+        def hit_pct(prefix):
+            attempts = get(f"{prefix}_attempt")
+            hits = get(f"{prefix}_hit")
+            return (100.0 * hits / attempts) if attempts else 0.0
         print(
             f"| `{row}` | `{display_variant}` | {data['ops']:.3f} | {data['peak_mib']:.2f} | "
             f"{get('alloc_fail')} | {get('descriptor_exhausted')} | "
@@ -209,6 +214,8 @@ for row in rows:
             f"{get('source_block_exhausted')} | {get('source_prefill_fallback')} | "
             f"{get('malloc_real_fallback')} | {get('free_route_lookup_after_maps')} | "
             f"{get('route_lookup_probe_total')} | {get('route_lookup_probe_max')} | "
+            f"{hit_pct('free_toy_active_map'):.2f} | "
+            f"{hit_pct('free_midpage_active_map'):.2f} | "
             f"{get('descriptor_live_max')} | {get('source_block_active_max')} | "
             f"{get('frontcache_total_max')} | {get('active_source_blocks')} | "
             f"{mib('static_table_bytes'):.2f} | {mib('source_block_payload_bytes'):.2f} | "

@@ -190,15 +190,18 @@ for row in rows:
         peak_match = peak_re.search(text)
         if not ops_match or not peak_match:
             continue
-        fail_match = fail_re.search(text)
         by_alloc.setdefault(alloc, {"ops": [], "peak": [], "fail": []})
         by_alloc[alloc]["ops"].append(float(ops_match.group(1)))
         by_alloc[alloc]["peak"].append(float(peak_match.group(1)) / 1024.0)
-        by_alloc[alloc]["fail"].append(float(fail_match.group(1)) if fail_match else 0.0)
+        fail_match = fail_re.search(text)
+        if fail_match:
+            by_alloc[alloc]["fail"].append(float(fail_match.group(1)))
     for alloc in sorted(by_alloc):
         ops = statistics.median(by_alloc[alloc]["ops"])
         peak = statistics.median(by_alloc[alloc]["peak"])
-        fail = statistics.median(by_alloc[alloc]["fail"])
+        fail_values = by_alloc[alloc]["fail"]
+        fail = statistics.median(fail_values) if fail_values else None
         efficiency = ops / peak if peak else 0.0
-        print(f"| `{row}` | `{alloc}` | {ops:.3f} | {peak:.2f} | {efficiency:.3f} | {fail:.0f} |")
+        fail_text = f"{fail:.0f}" if fail is not None else "NA"
+        print(f"| `{row}` | `{alloc}` | {ops:.3f} | {peak:.2f} | {efficiency:.3f} | {fail_text} |")
 PY

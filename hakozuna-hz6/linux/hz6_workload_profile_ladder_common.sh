@@ -93,6 +93,26 @@ hz6_workload_append_gap_diag_rows() {
       wide_midpage_cache)
         rows_out+=("wide_midpage_cache 4 ${iters} 8192 4096 32768")
         ;;
+      small_ws16384)
+        rows_out+=("small_ws16384 4 ${iters} 16384 16 256")
+        ;;
+      object_ws16384)
+        rows_out+=("object_ws16384 4 ${iters} 16384 16 1024")
+        ;;
+      mixed_ws16384)
+        rows_out+=("mixed_ws16384 4 ${iters} 16384 64 8192")
+        ;;
+      midpage_ws16384)
+        rows_out+=("midpage_ws16384 4 ${iters} 16384 4096 32768")
+        ;;
+      cliff16384)
+        rows_out+=(
+          "small_ws16384 4 ${iters} 16384 16 256"
+          "object_ws16384 4 ${iters} 16384 16 1024"
+          "mixed_ws16384 4 ${iters} 16384 64 8192"
+          "midpage_ws16384 4 ${iters} 16384 4096 32768"
+        )
+        ;;
       all)
         rows_out+=(
           "small_object_cache 4 ${iters} 8192 16 1024"
