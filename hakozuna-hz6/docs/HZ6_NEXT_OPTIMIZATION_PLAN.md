@@ -180,11 +180,13 @@ Do not collapse them into a single broad default without new real workload data.
      `18 MiB` more RSS than the best narrow/hybrid row. Keep it as an explicit
      WS16384/high-live-set profile.
      `hz6-workload-capacity-plus-target` (`route80K/desc20K/source2560`) is the
-     new middle high-live-set probe. Cliff raw `hz6_workload_capacity_cliff_frontier_20260616_115558`
-     makes plus the speed/efficiency winner on all WS16384 rows, beating mid
-     while using about `5-6 MiB` less RSS. Normal proxy raw
-     `hz6_workload_capacity_mid_guard_20260616_115646` keeps plus out of broad
-     workload default because it is still slower and heavier than hybrid.
+     new middle high-live-set probe. Cliff repeat-3 raw
+     `hz6_workload_capacity_cliff_frontier_20260616_115826` makes plus the
+     efficiency winner on all WS16384 rows and speed winner on 3/4 rows,
+     beating or matching mid while using about `5-6 MiB` less RSS. Normal proxy
+     repeat-3 raw `hz6_workload_capacity_mid_guard_20260616_115934` keeps plus
+     out of broad workload default because it is slower and heavier than hybrid
+     on every normal proxy row.
 
 5. Wrapper profile audit only if needed
    Goal:
@@ -247,6 +249,6 @@ Why this first:
   Payload release/cold-retire is not the next fixed RSS lever from current
   evidence.
   Capacity-plus is the current high-live-set profile candidate, not a broad
-  workload default. The next decision needs repeat evidence or real app traces,
-  not selected/default promotion.
+  workload default. The next decision needs real app traces or a smaller
+  high-live-set point, not selected/default promotion.
 ```
