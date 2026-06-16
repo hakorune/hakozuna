@@ -108,6 +108,13 @@ P2 route split:
   helpers, and rehome logic. Keep api/hz6_allocator_route.c focused on exact
   route lookup/register/unregister and tombstone management.
 
+P2 source run split:
+  api/hz6_allocator_source_run.c now owns source-run inline meta, reusable
+  run selection, slot bookkeeping, elastic depot run metadata, and dry-run
+  accounting. Keep api/hz6_allocator_source_block_create.c focused on source
+  block creation and failure-state diagnostics. The shared declarations live
+  in api/hz6_allocator_source_run.h.
+
 P3 internal type split:
   split api/hz6_allocator_types.h into narrower descriptor/source-block/core
   internal type headers once the current preload lane is stable
@@ -126,6 +133,13 @@ api/hz6_allocator_route.c:
 api/hz6_allocator_route_lookup.c:
   visibility registry, visible lookup, descriptor-storage owner lookup,
   negative-filter helpers, and rehome logic
+
+api/hz6_allocator_source_run.c:
+  source-run inline meta, reusable run selection, slot bookkeeping, elastic
+  depot run metadata, and dry-run accounting
+
+api/hz6_allocator_source_run.h:
+  internal declarations shared between source_run and source_block_create
 
 preload/hz6_preload_hooks_tail.inc:
   free/realloc/alignment/usable-size tail for the preload hooks TU

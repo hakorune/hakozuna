@@ -63,6 +63,7 @@ HZ6_LIB_SOURCES=(
   "${HZ6_DIR}/api/hz6_allocator_scavenge_orphans.c"
   "${HZ6_DIR}/api/hz6_allocator_scavenge_local_free.c"
   "${HZ6_DIR}/api/hz6_allocator_scavenge_profile.c"
+  "${HZ6_DIR}/api/hz6_allocator_source_run.c"
   "${HZ6_DIR}/api/hz6_allocator_source_block_create.c"
   "${HZ6_DIR}/api/hz6_allocator_source_block_lifetime.c"
   "${HZ6_DIR}/api/hz6_allocator_source_block_range_index.c"
