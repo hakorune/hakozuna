@@ -15,12 +15,14 @@ comparability.
 
 | File | Current role | Cleanup status |
 | --- | --- | --- |
-| `largefront/hz5_largefront.c` | active LargeFront 128K tcmalloc-chase surface | hot path remains here; cold diagnostics are being split out first |
+| `largefront/hz5_largefront.c` | active LargeFront 128K tcmalloc-chase surface | now a thin wrapper over include-local LargeFront fragments |
 | `largefront/hz5_largefront_config.inc` | LargeFront compile-time lane defaults | split out from `hz5_largefront.c`; include-local to keep benchmark knobs centralized |
 | `largefront/hz5_largefront_state.inc` | LargeFront types, global storage, TLS, and forward declarations | split out from `hz5_largefront.c`; include-local while active lanes remain open |
 | `largefront/hz5_largefront_lists.inc` | LargeFront local/global free-list and remote-hold helpers | split out from `hz5_largefront.c`; include-local while list policy settles |
 | `largefront/hz5_largefront_remote_publish.inc` | LargeFront owner inbox publish and remote batch helpers | split out from `hz5_largefront.c`; include-local while remote inbox policy settles |
 | `largefront/hz5_largefront_source.inc` | LargeFront source refill / region / lookup helpers | split out from `hz5_largefront.c`; keep include-local while the source path settles |
+| `largefront/hz5_largefront_remote_drain.inc` | LargeFront owner inbox drain and ownerhub drain helpers | split out from `hz5_largefront.c`; include-local while the remote drain policy settles |
+| `largefront/hz5_largefront_alloc_free.inc` | LargeFront public alloc/free and tail helpers | split out from `hz5_largefront.c`; keep include-local while the public surface remains stable |
 | `largefront/hz5_largefront_transfer128.inc` | isolated LargeFront L9 transfer128 diagnostic helpers | split out from `hz5_largefront.c`; keep include-local until the diagnostic stabilizes |
 | `largefront/hz5_largefront_policy.inc` | LargeFront L0/L1 observe counters and policy selectors | split out from `hz5_largefront.c`; include-local to avoid link/build churn |
 | `midpagefront/hz5_midpagefront.c` | active PageRun64/MidPage history and saved profile implementation | defer behavior split; candidate for later archival of dead diagnostics |
@@ -119,7 +121,8 @@ helpers may be split into include-local files when that reduces churn in the
 main implementation without changing build/link behavior. The current
 LargeFront splits are `hz5_largefront_config.inc`, `hz5_largefront_state.inc`,
 `hz5_largefront_lists.inc`, `hz5_largefront_remote_publish.inc`,
-`hz5_largefront_source.inc`,
+`hz5_largefront_source.inc`, `hz5_largefront_remote_drain.inc`,
+`hz5_largefront_alloc_free.inc`,
 `hz5_largefront_transfer128.inc`, and
 `hz5_largefront_policy.inc`. MidPage now also keeps cold stats in
 `hz5_midpagefront_config.inc`, `hz5_midpagefront_state.inc`,
