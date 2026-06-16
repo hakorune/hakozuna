@@ -57,7 +57,7 @@ Standard frontier:
   aligned / calloc-direct / calloc-real / calloc-large-real
 
 Explicit controls:
-  toy-map8192(+external) / workload-capacity(+narrow/hybrid/map8192) / descriptor-overflow/hybrid / toy-map-external / midpage-skip-transfer
+  toy-map8192(+external) / workload-capacity(+narrow/hybrid/plus/map8192) / descriptor-overflow/hybrid / toy-map-external / midpage-skip-transfer
   source-run-meta-off / external-meta-off fixed-boundary control / external-meta-off-route16k fixed-boundary control
 
 Runners:
@@ -99,7 +99,7 @@ Recent fixed/workload/profile repeats:
   private/raw-results/linux/hz6_{workload_proxy_matrix,fixed_gap_matrix}_20260616_103109
   private/raw-results/linux/hz6_route16k_capacity_guard_20260616_{103616,103858}
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_{104235,104302}
-  private/raw-results/linux/hz6_workload_profile_guard_20260616_{105102,105644,111620}, hz6_workload_capacity_{pair_focus_20260616_112040,shape_sweep_20260616_{112816,113139},cliff_diag_20260616_113833,cliff_frontier_20260616_114506,mid_guard_20260616_{115019,115150,115231}}, hz6_workload_descriptor_hybrid_depot_ladder_20260616_105953, hz6_workload_capacity_profile_gap_diag_20260616_{110830,111503}, hz6_workload_capacity_narrow_ladder_20260616_111216, and hz6_workload_capacity_narrow_map_ladder_20260616_111243
+  private/raw-results/linux/hz6_workload_profile_guard_20260616_{105102,105644,111620}, hz6_workload_capacity_{pair_focus_20260616_112040,shape_sweep_20260616_{112816,113139},cliff_diag_20260616_113833,cliff_frontier_20260616_{114506,115548,115558},mid_guard_20260616_{115019,115150,115231,115548,115646}}, hz6_workload_descriptor_hybrid_depot_ladder_20260616_105953, hz6_workload_capacity_profile_gap_diag_20260616_{110830,111503}, hz6_workload_capacity_narrow_ladder_20260616_111216, and hz6_workload_capacity_narrow_map_ladder_20260616_111243
 ```
 
 ## Do Not Reopen Casually
@@ -143,8 +143,8 @@ Default no-go/control-only without substantially different evidence:
    `113833` shows WS16384 is descriptor/source exhaustion plus huge route
    probes. Keep hybrid depot1024; pair wrapper is `run_hz6_workload_capacity_pair_focus.sh`.
 6. Keep Toy-map8192 external as explicit fixed-boundary RSS profile.
-7. Capacity-mid is WS16384/high-live-set explicit only after normal guard `115150`;
-   next attack should be a smaller high-live-set profile or real workload evidence.
+7. Capacity-plus is the current WS16384/high-live-set explicit candidate after
+   cliff raw `115558`; normal guard keeps it out of broad workload default.
 8. Do not reopen cold-retire, active-map widening, page-kind/free-order tables,
    packed metadata, or route inline work without new diagnostics.
 ```

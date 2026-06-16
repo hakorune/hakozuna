@@ -332,6 +332,13 @@ bench_find_hz6_workload_capacity_lite_map8192_target_library() {
     hz6-preload-workload-capacity-lite-map8192-target
 }
 
+bench_find_hz6_workload_capacity_plus_target_library() {
+  bench_find_hz6_preload_output \
+    HZ6_WORKLOAD_CAPACITY_PLUS_TARGET_PRELOAD_SO \
+    hz6_preload_workload_capacity_plus_target \
+    hz6-preload-workload-capacity-plus-target
+}
+
 bench_find_hz6_workload_descriptor_overflow_target_library() {
   bench_find_hz6_preload_output \
     HZ6_WORKLOAD_DESCRIPTOR_OVERFLOW_TARGET_PRELOAD_SO \
@@ -474,6 +481,9 @@ bench_find_allocator_library() {
     hz6-workload-capacity-lite-map8192-target|hz6_workload_capacity_lite_map8192_target)
       bench_find_hz6_workload_capacity_lite_map8192_target_library
       ;;
+    hz6-workload-capacity-plus-target|hz6_workload_capacity_plus_target)
+      bench_find_hz6_workload_capacity_plus_target_library
+      ;;
     hz6-workload-descriptor-overflow-target|hz6_workload_descriptor_overflow_target)
       bench_find_hz6_workload_descriptor_overflow_target_library
       ;;
@@ -605,6 +615,9 @@ bench_print_allocator_hints() {
       ;;
     hz6-workload-capacity-lite-map8192-target|hz6_workload_capacity_lite_map8192_target)
       echo "hint: build the HZ6 workload-capacity lite-map8192 target lane with './hakozuna-hz6/linux/build_hz6_preload_workload_capacity_lite_map8192_target.sh' or set HZ6_WORKLOAD_CAPACITY_LITE_MAP8192_TARGET_PRELOAD_SO" >&2
+      ;;
+    hz6-workload-capacity-plus-target|hz6_workload_capacity_plus_target)
+      echo "hint: build the HZ6 workload-capacity plus target lane with './hakozuna-hz6/linux/build_hz6_preload_workload_capacity_plus_target.sh' or set HZ6_WORKLOAD_CAPACITY_PLUS_TARGET_PRELOAD_SO" >&2
       ;;
     hz6-workload-descriptor-overflow-target|hz6_workload_descriptor_overflow_target)
       echo "hint: build the HZ6 workload descriptor-overflow target lane with './hakozuna-hz6/linux/build_hz6_preload_workload_descriptor_overflow_target.sh' or set HZ6_WORKLOAD_DESCRIPTOR_OVERFLOW_TARGET_PRELOAD_SO" >&2

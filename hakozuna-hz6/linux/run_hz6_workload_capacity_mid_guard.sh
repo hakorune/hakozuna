@@ -6,7 +6,7 @@ ARCH="${ARCH:-x86_64}"
 RUNS="${RUNS:-5}"
 ITERS="${ITERS:-200000}"
 ROWS="${ROWS:-small_proxy,cache_proxy}"
-ALLOCATORS="${ALLOCATORS:-hz6-workload-capacity-narrow-target,hz6-workload-capacity-hybrid-target,hz6-workload-capacity-mid-target}"
+ALLOCATORS="${ALLOCATORS:-hz6-workload-capacity-narrow-target,hz6-workload-capacity-hybrid-target,hz6-workload-capacity-plus-target,hz6-workload-capacity-mid-target}"
 OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_workload_capacity_mid_guard_$(date +%Y%m%d_%H%M%S)}"
 SKIP_BUILDS=0
 SKIP_PREPARE=0
@@ -29,13 +29,15 @@ Options:
   --help             show this message
 
 This guard compares the normal workload-capacity recommendation pair against
-capacity-mid:
+capacity-plus and capacity-mid:
   - hz6-workload-capacity-narrow-target
   - hz6-workload-capacity-hybrid-target
+  - hz6-workload-capacity-plus-target
   - hz6-workload-capacity-mid-target
 
 Use it after WS16384 cliff-frontier runs to decide whether capacity-mid should
-remain an explicit high-live-set profile or deserves broader workload evidence.
+remain an explicit high-live-set profile, and whether capacity-plus is a better
+middle capacity point.
 It is proxy evidence only; it does not promote selected/default by itself.
 EOF
 }
@@ -94,7 +96,7 @@ mkdir -p "$OUTDIR"
   echo "iters=${ITERS}"
   echo "rows=${ROWS}"
   echo "allocators=${ALLOCATORS}"
-  echo "note=capacity-narrow/capacity-hybrid/capacity-mid workload proxy guard"
+  echo "note=capacity-narrow/capacity-hybrid/capacity-plus/capacity-mid workload proxy guard"
   echo "decision=profile recommendation stability only; no selected/default promotion"
 } > "${OUTDIR}/README.log"
 
@@ -122,9 +124,9 @@ fi
   echo
   echo "root: \`${OUTDIR}\`"
   echo
-  echo "This guard compares capacity-narrow, capacity-hybrid, and capacity-mid."
-  echo "Use it to check whether the WS16384 capacity-mid profile pays too much"
-  echo "RSS or speed cost on normal workload proxy rows."
+  echo "This guard compares capacity-narrow, capacity-hybrid, capacity-plus, and capacity-mid."
+  echo "Use it to check whether high-live-set profiles pay too much RSS or"
+  echo "speed cost on normal workload proxy rows."
   echo
   if [[ -f "${OUTDIR}/workload_proxy/summary.md" ]]; then
     cat "${OUTDIR}/workload_proxy/summary.md"
@@ -145,7 +147,10 @@ pair_allocs = {
     "hz6-workload-capacity-narrow-target",
     "hz6-workload-capacity-hybrid-target",
 }
-mid_alloc = "hz6-workload-capacity-mid-target"
+high_live_allocs = (
+    "hz6-workload-capacity-plus-target",
+    "hz6-workload-capacity-mid-target",
+)
 
 rows = []
 for row_dir in sorted(p for p in root.iterdir() if p.is_dir()):
@@ -163,8 +168,6 @@ for row_dir in sorted(p for p in root.iterdir() if p.is_dir()):
         by_alloc.setdefault(alloc, {"ops": [], "peak": []})
         by_alloc[alloc]["ops"].append(float(ops_match.group(1)))
         by_alloc[alloc]["peak"].append(float(peak_match.group(1)) / 1024.0)
-    if mid_alloc not in by_alloc:
-        continue
     pair_stats = []
     for alloc in sorted(pair_allocs & by_alloc.keys()):
         ops = statistics.median(by_alloc[alloc]["ops"])
@@ -174,27 +177,30 @@ for row_dir in sorted(p for p in root.iterdir() if p.is_dir()):
     if not pair_stats:
         continue
     _, pair_ops, pair_peak, pair_alloc = max(pair_stats)
-    mid_ops = statistics.median(by_alloc[mid_alloc]["ops"])
-    mid_peak = statistics.median(by_alloc[mid_alloc]["peak"])
-    mid_eff = mid_ops / mid_peak if mid_peak else 0.0
     pair_eff = pair_ops / pair_peak if pair_peak else 0.0
-    speed_delta = ((mid_ops / pair_ops) - 1.0) * 100.0 if pair_ops else 0.0
-    peak_delta = mid_peak - pair_peak
-    eff_delta = ((mid_eff / pair_eff) - 1.0) * 100.0 if pair_eff else 0.0
-    rows.append((row_dir.name, pair_alloc, speed_delta, peak_delta, eff_delta))
+    for high_live_alloc in high_live_allocs:
+        if high_live_alloc not in by_alloc:
+            continue
+        high_ops = statistics.median(by_alloc[high_live_alloc]["ops"])
+        high_peak = statistics.median(by_alloc[high_live_alloc]["peak"])
+        high_eff = high_ops / high_peak if high_peak else 0.0
+        speed_delta = ((high_ops / pair_ops) - 1.0) * 100.0 if pair_ops else 0.0
+        peak_delta = high_peak - pair_peak
+        eff_delta = ((high_eff / pair_eff) - 1.0) * 100.0 if pair_eff else 0.0
+        rows.append((row_dir.name, high_live_alloc, pair_alloc, speed_delta, peak_delta, eff_delta))
 
 if rows:
     print()
-    print("## Capacity Mid Delta")
+    print("## Capacity High-Live Delta")
     print()
-    print("Positive speed/efficiency means capacity-mid beats the best normal pair row.")
+    print("Positive speed/efficiency means the high-live-set profile beats the best normal pair row.")
     print()
-    print("| row | best normal pair | mid speed delta | mid peak MiB delta | mid efficiency delta | read |")
-    print("| --- | --- | ---: | ---: | ---: | --- |")
-    for row, pair_alloc, speed_delta, peak_delta, eff_delta in rows:
-        read = "mid-candidate" if speed_delta >= 0.0 and eff_delta >= 0.0 else "keep-explicit-high-live-set"
+    print("| row | high-live profile | best normal pair | speed delta | peak MiB delta | efficiency delta | read |")
+    print("| --- | --- | --- | ---: | ---: | ---: | --- |")
+    for row, high_live_alloc, pair_alloc, speed_delta, peak_delta, eff_delta in rows:
+        read = "candidate" if speed_delta >= 0.0 and eff_delta >= 0.0 else "keep-explicit-high-live-set"
         print(
-            f"| `{row}` | `{pair_alloc}` | {speed_delta:+.2f}% | "
+            f"| `{row}` | `{high_live_alloc}` | `{pair_alloc}` | {speed_delta:+.2f}% | "
             f"{peak_delta:+.2f} | {eff_delta:+.2f}% | `{read}` |"
         )
 PY
