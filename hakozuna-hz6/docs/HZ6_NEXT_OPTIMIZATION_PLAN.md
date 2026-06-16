@@ -104,6 +104,11 @@ Do not collapse them into a single broad default without new real workload data.
      Follow-up static trim raws `hz6_static_table_trim_ab_20260616_{104235,104302}`
      reject stacking route16K with map/source/frontcache trims for promotion:
      the extra RSS movement is tiny and map trims are speed-negative.
+     Fixed cross-allocator refresh `hz6_fixed_gap_matrix_20260616_104546`
+     keeps route16K as the current HZ6 fixed-boundary balance profile:
+     it beats tcmalloc speed/ops-per-MiB on fixed_4k/8k/16k, is effectively
+     tied with HZ3 on fixed_4k ops-per-MiB, near HZ3 on fixed_8k, and ahead on
+     fixed_16k.
 
 4. Real workload profile evidence
    Goal:
@@ -148,8 +153,9 @@ Why this first:
   rows.
   Workload proxy rejects default/workload promotion.
   Cross fixed-gap now shows the HZ6 route16K profile beats tcmalloc and is
-  competitive with HZ3 on fixed_4k/8k ops-per-MiB, so the remaining question is
-  fixed-profile safety/capacity, not hot-path behavior.
+  competitive with HZ3 on fixed_4k/8k ops-per-MiB while beating HZ3 on
+  fixed_16k, so the remaining question is real workload fit, not fixed-row
+  hot-path behavior.
   Payload release/cold-retire is not the next fixed RSS lever from current
   evidence.
 ```

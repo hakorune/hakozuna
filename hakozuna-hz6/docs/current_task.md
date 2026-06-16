@@ -85,16 +85,14 @@ Recent fixed/workload/profile repeats:
   private/raw-results/linux/hz6_workload_descriptor_{overflow_ladder_20260616_084807,hybrid_ladder_20260616_085253}
   private/raw-results/linux/hz6_workload_descriptor_hybrid_narrow_ladder_20260616_090407
   private/raw-results/linux/hz6_workload_descriptor_hybrid_depot_ladder_20260616_090934, hz6_workload_capacity_narrow_ladder_20260616_091541, hz6_workload_capacity_narrow_map_ladder_20260616_093456, hz6_workload_profile_gap_diag_20260616_093918, and hz6_workload_proxy_matrix_20260616_094129
-  private/raw-results/linux/hz6_broad_guard_20260616_094818
+  private/raw-results/linux/hz6_broad_guard_20260616_{094818,100224,100509}
   private/raw-results/linux/hz6_workload_{capacity_frontier_20260616_081537,proxy_matrix_20260616_{080227,084249,084440,085632}}
   private/raw-results/linux/hz6_ubuntu_size_slices_20260616_073231
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_100113
-  private/raw-results/linux/hz6_broad_guard_20260616_100224
-  private/raw-results/linux/hz6_broad_guard_20260616_100509
   private/raw-results/linux/hz6_workload_proxy_matrix_20260616_100846
   private/raw-results/linux/hz6_fixed_external_meta_off_matrix_20260616_{101654,101836}
   private/raw-results/linux/hz6_workload_proxy_matrix_20260616_101836
-  private/raw-results/linux/hz6_fixed_gap_matrix_20260616_102020
+  private/raw-results/linux/hz6_fixed_gap_matrix_20260616_{102020,104546}
   private/raw-results/linux/hz6_fixed_rss_gap_attribution_20260616_102348
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_{102718,102750}
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_102939
@@ -135,7 +133,9 @@ Default no-go/control-only without substantially different evidence:
    Route16K cuts another about 2.5 MiB on fixed/focused rows and now makes HZ6
    fixed_4k/8k ops-per-MiB competitive with or ahead of HZ3/tcmalloc in the
    latest fixed-gap matrix. Thick route16K guard `103858` keeps stats
-   failure-free and preserves the fixed/focused RSS win.
+   failure-free and fixed-gap `104546` keeps the cross-allocator position:
+   tcmalloc beaten on fixed rows, HZ3 matched/near on 4K/8K and beaten on 16K
+   ops-per-MiB.
 5. Keep capacity-narrow + descriptor-hybrid as paired workload controls; proxy
    rows alone are not enough to change selected/default. Route16K improves
    selected-like workload rows but still loses large live-set cache proxies by
