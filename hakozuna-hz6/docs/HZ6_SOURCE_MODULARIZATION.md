@@ -87,7 +87,9 @@ P2 preload facade:
 
 P2 preload module split:
   preload/hz6_preload_hooks.c now owns the libc hook flow, TLS allocator,
-  route helper, and the main malloc/free/realloc hook control flow.
+  route helper, and the malloc/calloc entry path. The free/realloc/alignment
+  tail now lives in preload/hz6_preload_hooks_tail.inc so the top-level file
+  stays below the 800-line cleanup threshold without changing hook behavior.
   preload/hz6_preload_midpage.c owns MidPage preload-boundary malloc helper
   code and matching MidPage hint TLS state. Keep it behavior-neutral: do not
   move the main free-order ladder or inline-off malloc body here as cleanup.
@@ -124,6 +126,9 @@ api/hz6_allocator_route.c:
 api/hz6_allocator_route_lookup.c:
   visibility registry, visible lookup, descriptor-storage owner lookup,
   negative-filter helpers, and rehome logic
+
+preload/hz6_preload_hooks_tail.inc:
+  free/realloc/alignment/usable-size tail for the preload hooks TU
 
 api/hz6_allocator_route_last_hit.c:
   per-allocator exact-pointer last-hit route cache validation, fill, and clear
