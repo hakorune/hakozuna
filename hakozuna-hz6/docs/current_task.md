@@ -61,7 +61,7 @@ Explicit controls:
 Runners:
   broad_guard / fixed_boundary_profile_frontier / preload_profile_frontier
   fixed_gap_matrix / fixed_cost_residency_matrix / fixed_quiescent_rss_matrix
-  workload_proxy_matrix / workload_capacity_{frontier,gap_diag,narrow_ladder} / workload_descriptor_{overflow,hybrid,hybrid_narrow,hybrid_depot}_ladder
+  workload_proxy_matrix / workload_capacity_{frontier,gap_diag,narrow_ladder,narrow_map_ladder} / workload_descriptor_{overflow,hybrid,hybrid_narrow,hybrid_depot}_ladder
   check_hz6_preload_profile_registry
 ```
 
@@ -92,7 +92,7 @@ Recent fixed/profile repeats:
   private/raw-results/linux/hz6_workload_capacity_gap_diag_20260616_{083459,083910}
   private/raw-results/linux/hz6_workload_descriptor_{overflow_ladder_20260616_084807,hybrid_ladder_20260616_085253}
   private/raw-results/linux/hz6_workload_descriptor_hybrid_narrow_ladder_20260616_090407
-  private/raw-results/linux/hz6_workload_descriptor_hybrid_depot_ladder_20260616_090934 and hz6_workload_capacity_narrow_ladder_20260616_091541
+  private/raw-results/linux/hz6_workload_descriptor_hybrid_depot_ladder_20260616_090934, hz6_workload_capacity_narrow_ladder_20260616_091541, and hz6_workload_capacity_narrow_map_ladder_20260616_093456
   private/raw-results/linux/hz6_workload_{capacity_frontier_20260616_081537,proxy_matrix_20260616_{080227,084249,084440,085632}}
   private/raw-results/linux/hz6_ubuntu_size_slices_20260616_073231
 ```

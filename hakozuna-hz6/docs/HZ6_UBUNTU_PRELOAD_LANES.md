@@ -366,6 +366,18 @@ descriptor-hybrid is better on `mixed_object_cache`
 small-object speed rows, so this is workload-profile evidence, not a selected
 default promotion.
 
+Capacity-narrow Toy-map storage ladder raw
+`private/raw-results/linux/hz6_workload_capacity_narrow_map_ladder_20260616_093456`
+tests whether the fixed-boundary Toy active-map RSS controls also help the
+workload-capacity narrow profile. They do not become broad workload defaults.
+`capacity_narrow_toy_map8192_external` improves the RSS/efficiency side on
+some mixed/MidPage rows (`mixed_object_cache 9.566M / 133.75 MiB`,
+`wide_midpage_cache 9.095M / 143.75 MiB`, and `midpage_cache 18.786M /
+81.00 MiB`), but it regresses `redis_proxy` and `small_object_cache` versus
+plain capacity-narrow and descriptor-hybrid. Plain `toy_map8192` also loses
+the broad speed balance. Keep both map variants as runner-only controls; do
+not add profile aliases or broad guard defaults.
+
 Earlier workload-proxy matrix, repeat-3, raw
 `private/raw-results/linux/hz6_workload_proxy_matrix_20260616_075550`;
 diagnostic raws `hz6_workload_proxy_diag_20260616_075255` and
@@ -741,6 +753,7 @@ MidPage 32K run-size closeout details are in
 | `run_hz6_fixed_boundary_profile_frontier.sh` | Thin fixed-boundary profile lane runner. It wraps `run_hz6_preload_profile_frontier.sh` with the current fixed-boundary profile set: selected, small-boundary-trusted, small-boundary-trusted-toy-map8192, small-boundary-trusted-toy-map8192-external, split realloc-boundary, adaptive realloc-boundary, and toy-trusted. Use it when the question is which profile DSO to ship for fixed_4k/fixed_8k/fixed_16k workloads; it does not change selected/default flags. Smoke raw `hz6_fixed_boundary_profile_frontier_20260616_061222` confirms wrapper argument forwarding and summary generation; alias smoke raw `hz6_fixed_boundary_profile_frontier_20260616_062920` confirms the Toy-map8192 profile builds and resolves through `LD_PRELOAD`. |
 | `run_hz6_fixed_gap_matrix.sh` | Focused fixed-size gap runner. It wraps `run_hz6_ubuntu_size_slices_matrix.sh` with selected HZ6, the current Toy-map8192 RSS profiles, HZ3/HZ4, mimalloc, tcmalloc, and system in one matrix. Use it to refresh fixed_4k/fixed_8k/fixed_16k gaps without changing selected/default flags. Smoke raw `hz6_fixed_gap_matrix_20260616_073947` confirms wrapper and alias resolution. |
 | `run_hz6_workload_capacity_frontier.sh` | Thin workload-capacity profile frontier runner. It wraps `run_hz6_workload_proxy_matrix.sh` with selected HZ6 plus `hz6-workload-capacity-lite-target`, `hz6-workload-capacity-lite-map8192-target`, `hz6-workload-capacity-mid-target`, and full `hz6-workload-capacity-target`. Use it to refresh the capacity ladder separately from the broad cross-allocator workload-proxy guard. |
+| `run_hz6_workload_capacity_narrow_map_ladder.sh` | Runner-only A/B for workload-capacity-narrow plus Toy active-map 8192 and Toy active-map external storage. It keeps route40K/descriptors10K/source1280 and compares selected, descriptor-hybrid, plain capacity-narrow, map8192, and map8192-external. Raw `hz6_workload_capacity_narrow_map_ladder_20260616_093456` keeps map variants as controls/no-go for broad default. |
 | `run_hz6_workload_capacity_gap_diag.sh` | Diagnostic selected-vs-capacity-lite runner for workload proxy collapse rows. It builds selected and capacity-lite DSOs with `HZ6_DIAGNOSTIC_PROBES=1`, runs `HZ6_PRELOAD_STATS=1`, and summarizes descriptor exhaustion, prefill fallback, route probe, source block, static table, and payload attribution counters. Use it before changing selected descriptor/source capacity policy. |
 | `run_hz6_workload_proxy_matrix.sh` | Workload-proxy guard runner over `bench_mixed_ws_crt`. It compares selected HZ6, current workload controls (`hz6-workload-capacity-narrow-target` and `hz6-workload-descriptor-hybrid-target`), fixed/RSS profiles, HZ3/HZ4, mimalloc, tcmalloc, and system on `redis_proxy`, small-object cache, mixed-object cache, and MidPage cache proxy rows. Use it to catch live-working-set capacity cliffs before changing selected/default; these rows are proxy evidence, not app benchmarks. Raw `075255` found selected desc8192 collapse, `075550` confirmed full-capacity recovery, `080227` selected lite as the first clean capacity profile, and raws `091541`/`091829`/`092222` moved the default workload representatives to capacity-narrow plus descriptor-hybrid. Use `hz6-workload-capacity-lite-target`, `hz6-workload-capacity-mid-target`, or `hz6-workload-capacity-target` explicitly when testing larger historical controls. |
 | `run_hz6_fixed_cost_residency_matrix.sh` | FixedCostResidencyMatrix-L1 orchestration runner. It runs the profile frontier for external speed/RSS position, runs the MidPage RSS audit for HZ6 residency attribution, and emits a combined summary. Use it before changing selected flags when the question is whether HZ6 fixed RSS cost comes from touched MidPage payload, frontcache/static tables, active-map storage, or source-run residency. Smoke raw `hz6_fixed_cost_residency_matrix_20260616_053336` confirms combined summary generation. |
