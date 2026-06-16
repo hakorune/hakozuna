@@ -70,7 +70,7 @@ Runners:
 ```text
 Profile frontier:
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_{060739,081847}
-  private/raw-results/linux/hz6_broad_guard_20260616_082927
+  private/raw-results/linux/hz6_broad_guard_20260616_{082927,085900}
   private/raw-results/linux/hz6_midpage_skip_transfer_alias_smoke_20260616_065421
 
 Realloc/adaptive profile repeats:
@@ -146,5 +146,5 @@ Default no-go/control-only without substantially different evidence:
     packed-frontcache/sourceblock combos remain runner-only controls/no-go.
 14. Capacity-gap diag says selected workload proxy collapse is descriptor-table
     exhaustion/prefill fallback; capacity-lite is faster, while descriptor-overflow 2048 keeps lower RSS with selected static tables.
-15. Hybrid profile beats capacity-lite speed/RSS on several workload proxy rows; keep explicit until broad guard.
+15. Workload broad guard keeps hybrid profile explicit/control: better speed/RSS than capacity-lite on small/mixed proxies, but not default.
 ```

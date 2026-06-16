@@ -244,6 +244,16 @@ confirms the alias wiring and the same read: hybrid beats capacity-lite on
 `wide_midpage_cache` (`8.999M / 148.38 MiB` vs `8.711M / 153.72 MiB`). It
 costs healthy `midpage_cache` versus selected/descriptor-overflow, so keep
 `hz6-workload-descriptor-hybrid-target` explicit/control until broad guard.
+Workload-only broad guard raw
+`private/raw-results/linux/hz6_broad_guard_20260616_085900` keeps the same
+decision: hybrid beats capacity-lite on `small_object_cache`
+(`16.917M / 45.45 MiB` vs `16.544M / 50.25 MiB`), `mixed_small_cache`
+(`8.706M / 123.62 MiB` vs `8.543M / 128.62 MiB`), and `mixed_object_cache`
+(`9.352M / 137.88 MiB` vs `9.100M / 143.00 MiB`). On
+`wide_midpage_cache` it is slightly slower but more efficient
+(`8.911M / 148.50 MiB` vs `9.056M / 153.75 MiB`). Keep explicit/control; do
+not select by default because `redis_proxy` and `midpage_cache` still prefer
+selected or descriptor-overflow.
 
 Earlier workload-proxy matrix, repeat-3, raw
 `private/raw-results/linux/hz6_workload_proxy_matrix_20260616_075550`;
