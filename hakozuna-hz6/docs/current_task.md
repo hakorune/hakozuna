@@ -70,7 +70,7 @@ Runners:
 ```text
 Profile frontier:
   private/raw-results/linux/hz6_preload_profile_frontier_20260616_{060739,081847}
-  private/raw-results/linux/hz6_broad_guard_20260616_{082927,085900,090638,091214,091829}
+  private/raw-results/linux/hz6_broad_guard_20260616_{082927,085900,090638,091214,091829,092222}
   private/raw-results/linux/hz6_midpage_skip_transfer_alias_smoke_20260616_065421
 
 Realloc/adaptive profile repeats:

@@ -351,6 +351,19 @@ and `hz6-workload-descriptor-hybrid-target` as the current workload controls.
 Keep `capacity-lite` in the capacity frontier for historical comparison, but
 do not use it as the default workload guard representative.
 
+Updated-default workload-only broad guard raw
+`private/raw-results/linux/hz6_broad_guard_20260616_092222` confirms the
+default workload leg with external allocators. `capacity-narrow` and
+`descriptor-hybrid` both restore selected HZ6 collapse rows while keeping much
+lower RSS than the old capacity-lite profile. In this refresh, capacity-narrow
+is the better current witness on `small_object_cache`
+(`17.970M / 42.62 MiB`) and `mixed_small_cache` (`8.783M / 121.12 MiB`);
+descriptor-hybrid is better on `mixed_object_cache`
+(`9.572M / 134.62 MiB`), `midpage_cache` (`18.785M / 82.88 MiB`), and
+`wide_midpage_cache` (`9.356M / 145.75 MiB`). HZ3/tcmalloc still dominate many
+small-object speed rows, so this is workload-profile evidence, not a selected
+default promotion.
+
 Earlier workload-proxy matrix, repeat-3, raw
 `private/raw-results/linux/hz6_workload_proxy_matrix_20260616_075550`;
 diagnostic raws `hz6_workload_proxy_diag_20260616_075255` and
