@@ -115,6 +115,11 @@ P2 source run split:
   block creation and failure-state diagnostics. The shared declarations live
   in api/hz6_allocator_source_run.h.
 
+P2 config split:
+  include/hz6_config.h is now a thin aggregate over hz6_config_core.h and
+  hz6_config_late.h so the large macro table stays module-sized without
+  changing the config surface.
+
 P3 internal type split:
   split api/hz6_allocator_types.h into narrower descriptor/source-block/core
   internal type headers once the current preload lane is stable
@@ -140,6 +145,9 @@ api/hz6_allocator_source_run.c:
 
 api/hz6_allocator_source_run.h:
   internal declarations shared between source_run and source_block_create
+
+include/hz6_config.h:
+  thin aggregate over hz6_config_core.h and hz6_config_late.h
 
 preload/hz6_preload_hooks_tail.inc:
   free/realloc/alignment/usable-size tail for the preload hooks TU
