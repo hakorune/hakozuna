@@ -6,7 +6,7 @@ ARCH="${ARCH:-x86_64}"
 RUNS="${RUNS:-5}"
 ITERS="${ITERS:-200000}"
 ROWS="${ROWS:-small_proxy,cache_proxy}"
-ALLOCATORS="${ALLOCATORS:-hz6-workload-capacity-narrow-target,hz6-workload-capacity-hybrid-target,hz6-workload-capacity-plus-target,hz6-workload-capacity-mid-target}"
+ALLOCATORS="${ALLOCATORS:-hz6-workload-capacity-narrow-target,hz6-workload-capacity-hybrid-target,hz6-workload-capacity-lean-target,hz6-workload-capacity-plus-target,hz6-workload-capacity-mid-target}"
 OUTDIR="${OUTDIR:-${ROOT_DIR}/hakozuna-hz6/private/raw-results/linux/hz6_workload_capacity_mid_guard_$(date +%Y%m%d_%H%M%S)}"
 SKIP_BUILDS=0
 SKIP_PREPARE=0
@@ -29,15 +29,17 @@ Options:
   --help             show this message
 
 This guard compares the normal workload-capacity recommendation pair against
-capacity-plus and capacity-mid:
+capacity-lean, capacity-plus, and capacity-mid:
   - hz6-workload-capacity-narrow-target
   - hz6-workload-capacity-hybrid-target
+  - hz6-workload-capacity-lean-target
   - hz6-workload-capacity-plus-target
   - hz6-workload-capacity-mid-target
 
 Use it after WS16384 cliff-frontier runs to decide whether capacity-mid should
 remain an explicit high-live-set profile, and whether capacity-plus is a better
-middle capacity point.
+middle capacity point. `capacity-lean` is the bridge point from lite toward
+plus.
 It is proxy evidence only; it does not promote selected/default by itself.
 EOF
 }
@@ -96,7 +98,7 @@ mkdir -p "$OUTDIR"
   echo "iters=${ITERS}"
   echo "rows=${ROWS}"
   echo "allocators=${ALLOCATORS}"
-  echo "note=capacity-narrow/capacity-hybrid/capacity-plus/capacity-mid workload proxy guard"
+  echo "note=capacity-narrow/capacity-hybrid/capacity-lean/capacity-plus/capacity-mid workload proxy guard"
   echo "decision=profile recommendation stability only; no selected/default promotion"
 } > "${OUTDIR}/README.log"
 
@@ -124,7 +126,7 @@ fi
   echo
   echo "root: \`${OUTDIR}\`"
   echo
-  echo "This guard compares capacity-narrow, capacity-hybrid, capacity-plus, and capacity-mid."
+  echo "This guard compares capacity-narrow, capacity-hybrid, capacity-lean, capacity-plus, and capacity-mid."
   echo "Use it to check whether high-live-set profiles pay too much RSS or"
   echo "speed cost on normal workload proxy rows."
   echo
@@ -148,6 +150,7 @@ pair_allocs = {
     "hz6-workload-capacity-hybrid-target",
 }
 high_live_allocs = (
+    "hz6-workload-capacity-lean-target",
     "hz6-workload-capacity-plus-target",
     "hz6-workload-capacity-mid-target",
 )

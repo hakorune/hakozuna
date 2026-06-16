@@ -45,6 +45,7 @@ Use them by passing `--allocators`.
 | `hz6-workload-capacity-narrow-target` | `build_hz6_preload_workload_capacity_narrow_target.sh` | Workload-capacity narrow control; route40K/descriptors10K/source1280 without elastic descriptor overflow. |
 | `hz6-workload-capacity-hybrid-target` | `build_hz6_preload_workload_capacity_hybrid_target.sh` | Preferred workload-capacity hybrid recommendation; route40K/descriptors10K/source1280 plus 1024-slot elastic descriptor depot. |
 | `hz6-workload-capacity-lite-map8192-target` | `build_hz6_preload_workload_capacity_lite_map8192_target.sh` | Workload-capacity RSS/balance control; lite capacity plus Toy active-map 8192. |
+| `hz6-workload-capacity-lean-target` | `build_hz6_preload_workload_capacity_lean_target.sh` | Workload-capacity bridge profile between lite and plus; route73728/descriptors18432/source2304. |
 | `hz6-workload-capacity-plus-target` | `build_hz6_preload_workload_capacity_plus_target.sh` | Workload-capacity high-live-set probe between lite and mid; route80K/descriptors20K/source2560. |
 | `hz6-workload-descriptor-overflow-target` | `build_hz6_preload_workload_descriptor_overflow_target.sh` | Workload descriptor-pressure control; selected static tables plus 2048-slot elastic descriptor depot. |
 | `hz6-workload-descriptor-hybrid-target` | `build_hz6_preload_workload_descriptor_hybrid_target.sh` | Legacy spelling of the workload-capacity hybrid shape; kept for archived matrices and direct A/B compatibility. |

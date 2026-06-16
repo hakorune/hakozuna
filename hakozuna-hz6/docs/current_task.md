@@ -99,7 +99,7 @@ Recent fixed/workload/profile repeats:
   private/raw-results/linux/hz6_{workload_proxy_matrix,fixed_gap_matrix}_20260616_103109
   private/raw-results/linux/hz6_route16k_capacity_guard_20260616_{103616,103858}
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_{104235,104302}
-  private/raw-results/linux/hz6_workload_profile_guard_20260616_{105102,105644,111620}, hz6_workload_capacity_{pair_focus_20260616_112040,shape_sweep_20260616_{112816,113139},cliff_diag_20260616_113833,cliff_frontier_20260616_{114506,115558,115826},mid_guard_20260616_{115150,115646,115934}}, hz6_workload_descriptor_hybrid_depot_ladder_20260616_105953, hz6_workload_capacity_profile_gap_diag_20260616_{110830,111503}, hz6_workload_capacity_narrow_ladder_20260616_111216, and hz6_workload_capacity_narrow_map_ladder_20260616_111243
+  private/raw-results/linux/hz6_workload_profile_guard_20260616_{105102,105644,111620}, hz6_workload_capacity_{pair_focus_20260616_112040,shape_sweep_20260616_{112816,113139},cliff_diag_20260616_113833,cliff_frontier_20260616_{114506,115558,115826,120345},mid_guard_20260616_{115019,115150,115231,115548,115646,115934,120345}}, hz6_workload_descriptor_hybrid_depot_ladder_20260616_105953, hz6_workload_capacity_profile_gap_diag_20260616_{110830,111503}, hz6_workload_capacity_narrow_ladder_20260616_111216, and hz6_workload_capacity_narrow_map_ladder_20260616_111243
 ```
 
 ## Do Not Reopen Casually
@@ -143,8 +143,8 @@ Default no-go/control-only without substantially different evidence:
    `113833` shows WS16384 is descriptor/source exhaustion plus huge route
    probes. Keep hybrid depot1024; pair wrapper is `run_hz6_workload_capacity_pair_focus.sh`.
 6. Keep Toy-map8192 external as explicit fixed-boundary RSS profile.
-7. Capacity-plus is the current WS16384/high-live-set explicit candidate after
-   cliff raw `115826`; normal guard `115934` keeps it out of broad default.
-8. Do not reopen cold-retire, active-map widening, page-kind/free-order tables,
-   packed metadata, or route inline work without new diagnostics.
+7. Capacity-lean bridges lite to plus; WS16384 repeat-3 raw `120345` wins
+   `mixed_ws16384` and `midpage_ws16384`, while normal guard `120345` keeps it
+   out of broad default. Plus remains stronger on `small_ws16384`.
+8. Do not reopen cold-retire, active-map widening, page-kind/free-order tables, packed metadata, or route inline work without new diagnostics.
 ```

@@ -34,6 +34,10 @@ case "${HZ6_WORKLOAD_CAPACITY_LEVEL:-full}" in
     hz6_preload_replace_define HZ6_WORKLOAD_CAPACITY_TARGET_CFLAGS \
       HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY 8192
     ;;
+  lean)
+    HZ6_WORKLOAD_CAPACITY_OUT_DIR="${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_preload_workload_capacity_lean_target"
+    hz6_workload_capacity_set_tables 73728 18432 2304
+    ;;
   plus)
     HZ6_WORKLOAD_CAPACITY_OUT_DIR="${ROOT_DIR}/hakozuna-hz6/out/linux/hz6_preload_workload_capacity_plus_target"
     hz6_workload_capacity_set_tables 81920 20480 2560

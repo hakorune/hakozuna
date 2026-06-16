@@ -187,6 +187,12 @@ Do not collapse them into a single broad default without new real workload data.
      repeat-3 raw `hz6_workload_capacity_mid_guard_20260616_115934` keeps plus
      out of broad workload default because it is slower and heavier than hybrid
      on every normal proxy row.
+     `hz6-workload-capacity-lean-target` (`route73728/desc18432/source2304`)
+     is the bridge point between lite and plus. Repeat-3 raw
+     `hz6_workload_capacity_cliff_frontier_20260616_120345` makes lean the
+     speed/efficiency winner on `mixed_ws16384` and `midpage_ws16384`, while
+     normal guard raw `120345` keeps it explicit because hybrid still wins the
+     normal proxy rows.
 
 5. Wrapper profile audit only if needed
    Goal:
@@ -248,7 +254,7 @@ Why this first:
   hot-path behavior.
   Payload release/cold-retire is not the next fixed RSS lever from current
   evidence.
-  Capacity-plus is the current high-live-set profile candidate, not a broad
-  workload default. The next decision needs real app traces or a smaller
-  high-live-set point, not selected/default promotion.
+  Capacity-plus and capacity-lean are both explicit high-live-set profiles,
+  with lean as the bridge point. The next decision needs real app traces or a
+  smaller bridge point, not selected/default promotion.
 ```
