@@ -64,6 +64,11 @@ hz6_preload_build_requested_aliases() {
     "${root_dir}/hakozuna-hz6/linux/build_hz6_preload_small_boundary_trusted_toy_map8192_external_meta_off_target.sh"
   fi
   if hz6_preload_allocator_requested "$allocators_csv" \
+      "hz6-small-boundary-trusted-toy-map8192-external-meta-off-route16k-target" \
+      "hz6_small_boundary_trusted_toy_map8192_external_meta_off_route16k_target"; then
+    "${root_dir}/hakozuna-hz6/linux/build_hz6_preload_small_boundary_trusted_toy_map8192_external_meta_off_route16k_target.sh"
+  fi
+  if hz6_preload_allocator_requested "$allocators_csv" \
       "hz6-toy-map-external-target" \
       "hz6_toy_map_external_target"; then
     "${root_dir}/hakozuna-hz6/linux/build_hz6_preload_toy_map_external_target.sh"

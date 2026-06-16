@@ -58,7 +58,7 @@ Standard frontier:
 
 Explicit controls:
   toy-map8192(+external) / workload-capacity(+narrow/map8192) / descriptor-overflow/hybrid / toy-map-external / midpage-skip-transfer
-  source-run-meta-off / external-meta-off fixed-boundary control
+  source-run-meta-off / external-meta-off fixed-boundary control / external-meta-off-route16k fixed-boundary control
 
 Runners:
   broad_guard / fixed_boundary_profile_frontier / preload_profile_frontier
@@ -95,6 +95,9 @@ Recent fixed/workload/profile repeats:
   private/raw-results/linux/hz6_workload_proxy_matrix_20260616_101836
   private/raw-results/linux/hz6_fixed_gap_matrix_20260616_102020
   private/raw-results/linux/hz6_fixed_rss_gap_attribution_20260616_102348
+  private/raw-results/linux/hz6_static_table_trim_ab_20260616_{102718,102750}
+  private/raw-results/linux/hz6_preload_profile_frontier_20260616_102939
+  private/raw-results/linux/hz6_{workload_proxy_matrix,fixed_gap_matrix}_20260616_103109
 ```
 
 ## Do Not Reopen Casually
@@ -121,20 +124,21 @@ Default no-go/control-only without substantially different evidence:
 2. Use HZ6_NEXT_OPTIMIZATION_PLAN.md as the forward plan.
 3. Broad selected/profile guard refreshed in hz6_broad_guard_20260616_094818:
    selected/profile is stable; workload proxy still needs capacity controls.
-4. SourceBlockMetaSlim-L1: static SourceBlock/run metadata RSS without
-   malloc/free hot-path branches. Current aliases: `hz6-source-run-meta-off-target`
-   and `hz6-small-boundary-trusted-toy-map8192-external-meta-off-target`.
-   Initial focused/fixed A/B cuts about 2.5 MiB peak RSS; workload meta-off is
-   speed-weak. External-meta-off cuts about 2.5..2.8 MiB on fixed/focused
-   rows and beats tcmalloc on fixed rows, but workload proxy rejects
-   default/workload promotion.
+4. SourceBlockMetaSlim-L1 + route16K fixed RSS control: static metadata/table
+   RSS without malloc/free hot-path branches. Current aliases:
+   `hz6-source-run-meta-off-target`,
+   `hz6-small-boundary-trusted-toy-map8192-external-meta-off-target`, and
+   `hz6-small-boundary-trusted-toy-map8192-external-meta-off-route16k-target`.
+   Route16K cuts another about 2.5 MiB on fixed/focused rows and now makes HZ6
+   fixed_4k/8k ops-per-MiB competitive with or ahead of HZ3/tcmalloc in the
+   latest fixed-gap matrix.
 5. Keep capacity-narrow + descriptor-hybrid as paired workload controls; proxy
-   rows alone are not enough to change selected/default. Workload meta-off
-   lowers RSS but is speed-weak, so do not add aliases yet.
+   rows alone are not enough to change selected/default. Route16K improves
+   selected-like workload rows but still loses large live-set cache proxies by
+   orders of magnitude versus capacity-narrow/descriptor-hybrid.
 6. Keep Toy-map8192 external as explicit fixed-boundary RSS profile.
-7. Next likely attack: fixed_4k/8k residual RSS attribution versus HZ3,
-   focused on static/frontcache/map shape; payload release is not next from
-   current attribution.
+7. Next likely attack: route/static capacity floor guard for fixed profiles,
+   then frontcache/map shape only if fixed RSS still matters after route16K.
 8. Do not reopen cold-retire, active-map widening, page-kind/free-order tables,
    packed metadata, or route inline work without new diagnostics.
 ```

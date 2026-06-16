@@ -81,6 +81,18 @@ Do not collapse them into a single broad default without new real workload data.
      attribution raw `hz6_fixed_rss_gap_attribution_20260616_102348` shows
      logical MidPage payload is not the right next lever: external-meta-off can
      lower peak RSS while increasing logical all-local-free payload.
+     static-table trim raw `hz6_static_table_trim_ab_20260616_102750` selects
+     route16K as the next fixed-profile control: fixed_4k/8k/16k RSS drops
+     about another 2.5 MiB with no failure counters in the stats guard.
+     profile-frontier raw `hz6_preload_profile_frontier_20260616_102939`
+     keeps the route16K RSS win on focused/fixed rows.
+     cross raw `hz6_fixed_gap_matrix_20260616_103109` shows route16K now
+     beats tcmalloc on fixed_4k/8k/16k speed and ops-per-MiB and reaches HZ3
+     fixed_4k/fixed_8k balance territory, though HZ3/HZ4 still keep lower
+     absolute RSS on some rows.
+     workload proxy raw `hz6_workload_proxy_matrix_20260616_103109` keeps
+     route16K out of workload/default promotion: capacity-narrow and
+     descriptor-hybrid are still orders faster on large live-set cache proxies.
 
 4. Real workload profile evidence
    Goal:
@@ -110,18 +122,21 @@ tables, packed metadata, or route inline work without new diagnostics.
 
 ```text
 Fixed4K8KResidualRssGapAudit-L1:
-  explain the remaining HZ3 fixed_4k/8k RSS floor advantage after
-  external-meta-off
-  continue from diagnostics, not behavior:
-    static table split
-    Toy/MidPage active-map storage
+  status: route16K profile/control implemented
+  explain the remaining fixed-profile RSS/static-capacity tradeoff after
+  external-meta-off-route16K
+  continue from diagnostics/profile controls, not selected behavior:
+    route table capacity safety by fixed/profile/workload shape
     frontcache table shape
+    Toy/MidPage active-map storage
 
 Why this first:
-  SourceBlockMetaSlim-L1 is implemented and clean on fixed/focused rows.
+  SourceBlockMetaSlim-L1 and route16K are implemented and clean on fixed/focused
+  rows.
   Workload proxy rejects default/workload promotion.
-  Cross fixed-gap now shows the HZ6 profile beats tcmalloc and is close to HZ3
-  on speed, so the remaining gap is RSS attribution.
+  Cross fixed-gap now shows the HZ6 route16K profile beats tcmalloc and is
+  competitive with HZ3 on fixed_4k/8k ops-per-MiB, so the remaining question is
+  fixed-profile safety/capacity, not hot-path behavior.
   Payload release/cold-retire is not the next fixed RSS lever from current
   evidence.
 ```

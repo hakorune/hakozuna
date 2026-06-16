@@ -39,6 +39,10 @@ Variants:
   toy_map8192, toy_map16384, toy_map32768, midpage_map4096, midpage_map8192,
   midpage_map16384, toy_map8192_midpage_map4096,
   toy_map16384_midpage_map8192,
+  external_meta_off, external_meta_off_route16384, external_meta_off_route24576,
+  external_meta_off_toy_map4096, external_meta_off_midpage_map4096,
+  external_meta_off_maps4096, external_meta_off_source512,
+  external_meta_off_frontcache_c4_4096,
   frontcache8192, wide_l0
 EOF
 }
@@ -186,6 +190,45 @@ variant_flags() {
     toy_map16384_midpage_map8192)
       hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY 16384
       hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY 8192
+      ;;
+    external_meta_off|external_meta_off_route16384|external_meta_off_route24576|\
+    external_meta_off_toy_map4096|external_meta_off_midpage_map4096|\
+    external_meta_off_maps4096|external_meta_off_source512|\
+    external_meta_off_frontcache_c4_4096)
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_FAST_REUSE_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_MAX_BYTES 4096
+      hz6_preload_replace_define flags HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_BOUNDARY_TRUSTED_OWNER_L1 1
+      hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY 8192
+      hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_EXTERNAL_L1 1
+      hz6_preload_replace_define flags HZ6_SOURCE_RUN_INLINE_META_L1 0
+      case "$variant" in
+        external_meta_off_route16384)
+          hz6_preload_replace_define flags HZ6_ROUTE_TABLE_CAPACITY 16384
+          ;;
+        external_meta_off_route24576)
+          hz6_preload_replace_define flags HZ6_ROUTE_TABLE_CAPACITY 24576
+          ;;
+        external_meta_off_toy_map4096)
+          hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY 4096
+          ;;
+        external_meta_off_midpage_map4096)
+          hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY 4096
+          ;;
+        external_meta_off_maps4096)
+          hz6_preload_replace_define flags HZ6_TOY_SMALL_ACTIVE_FREE_MAP_CAPACITY 4096
+          hz6_preload_replace_define flags HZ6_MIDPAGE_ACTIVE_FREE_MAP_CAPACITY 4096
+          ;;
+        external_meta_off_source512)
+          hz6_preload_replace_define flags HZ6_SOURCE_BLOCK_CAPACITY 512
+          ;;
+        external_meta_off_frontcache_c4_4096)
+          hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS_STORAGE_TRIM_L1 1
+          hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS4_STORAGE_CAPACITY 4096
+          hz6_preload_replace_define flags HZ6_FRONT_CACHE_CLASS5_STORAGE_CAPACITY 4096
+          ;;
+      esac
       ;;
     wide_l0)
       hz6_preload_replace_define flags HZ6_ROUTE_TABLE_CAPACITY 131072
