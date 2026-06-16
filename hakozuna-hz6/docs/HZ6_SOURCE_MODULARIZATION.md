@@ -100,6 +100,12 @@ P2 preload module split:
     narrower stats print helpers inside preload/hz6_preload_stats.c
   Do not mix those future splits with behavior changes.
 
+P2 route split:
+  api/hz6_allocator_route_lookup.c now owns visibility registration,
+  visible route lookup, descriptor-storage owner lookup, negative-filter
+  helpers, and rehome logic. Keep api/hz6_allocator_route.c focused on exact
+  route lookup/register/unregister and tombstone management.
+
 P3 internal type split:
   split api/hz6_allocator_types.h into narrower descriptor/source-block/core
   internal type headers once the current preload lane is stable
@@ -113,8 +119,11 @@ api/hz6_allocator_types.h:
   route cache, active maps, backend state, and stats-owned internals
 
 api/hz6_allocator_route.c:
-  visibility registry, exact register/unregister, tombstone compact, and
-  lookup variants
+  exact route lookup/register/unregister and tombstone compact
+
+api/hz6_allocator_route_lookup.c:
+  visibility registry, visible lookup, descriptor-storage owner lookup,
+  negative-filter helpers, and rehome logic
 
 api/hz6_allocator_route_last_hit.c:
   per-allocator exact-pointer last-hit route cache validation, fill, and clear
