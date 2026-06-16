@@ -172,6 +172,13 @@ Do not collapse them into a single broad default without new real workload data.
      (`route96K/desc24K/source3K`) is the current WS16384 balance point: it
      restores small/object/mixed/midpage rows by orders of magnitude and wins
      ops-per-MiB, while full capacity mostly adds RSS without a clear speed win.
+     Follow-up runner `linux/run_hz6_workload_capacity_mid_guard.sh` compares
+     narrow/hybrid/mid on normal workload proxy rows before any broader
+     capacity-mid recommendation. Smoke raw `hz6_workload_capacity_mid_guard_20260616_115019`
+     confirms the runner and repeat-3 raw `115150` rejects broader promotion:
+     capacity-mid is slower on all normal proxy rows and costs about
+     `18 MiB` more RSS than the best narrow/hybrid row. Keep it as an explicit
+     WS16384/high-live-set profile.
 
 5. Wrapper profile audit only if needed
    Goal:
@@ -206,6 +213,7 @@ WorkloadCapacityHybridUnificationDesign-L1:
   runner:
     linux/run_hz6_workload_profile_guard.sh
     linux/run_hz6_workload_capacity_pair_focus.sh
+    linux/run_hz6_workload_capacity_mid_guard.sh
     linux/run_hz6_workload_capacity_shape_sweep.sh
     linux/run_hz6_workload_capacity_cliff_diag.sh
     linux/run_hz6_workload_capacity_cliff_frontier.sh
@@ -232,4 +240,7 @@ Why this first:
   hot-path behavior.
   Payload release/cold-retire is not the next fixed RSS lever from current
   evidence.
+  Capacity-mid is not the next broad workload default from normal proxy
+  evidence; if the WS16384 gap remains important, the next design should be a
+  smaller high-live-set profile between hybrid and mid or real app traces.
 ```

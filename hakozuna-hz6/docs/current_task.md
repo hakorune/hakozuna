@@ -64,7 +64,7 @@ Runners:
   broad_guard / fixed_boundary_profile_frontier / preload_profile_frontier
   fixed_gap_matrix / fixed_cost_residency_matrix / fixed_quiescent_rss_matrix
   route16k_capacity_guard
-  workload_proxy_matrix / workload_profile_guard / workload_capacity_{frontier,gap_diag,profile_gap_diag,cliff_diag,cliff_frontier,pair_focus,shape_sweep,narrow_ladder,narrow_map_ladder,hybrid_depot_ladder} / workload_descriptor_{overflow,hybrid,hybrid_narrow,hybrid_depot}_ladder
+  workload_proxy_matrix / workload_profile_guard / workload_capacity_{frontier,gap_diag,profile_gap_diag,cliff_diag,cliff_frontier,pair_focus,mid_guard,shape_sweep,narrow_ladder,narrow_map_ladder,hybrid_depot_ladder} / workload_descriptor_{overflow,hybrid,hybrid_narrow,hybrid_depot}_ladder
   check_hz6_preload_profile_registry
 ```
 
@@ -99,7 +99,7 @@ Recent fixed/workload/profile repeats:
   private/raw-results/linux/hz6_{workload_proxy_matrix,fixed_gap_matrix}_20260616_103109
   private/raw-results/linux/hz6_route16k_capacity_guard_20260616_{103616,103858}
   private/raw-results/linux/hz6_static_table_trim_ab_20260616_{104235,104302}
-  private/raw-results/linux/hz6_workload_profile_guard_20260616_{105102,105644,111620}, hz6_workload_capacity_{pair_focus_20260616_112040,shape_sweep_20260616_{112816,113139},cliff_diag_20260616_113833,cliff_frontier_20260616_114506}, hz6_workload_descriptor_hybrid_depot_ladder_20260616_105953, hz6_workload_capacity_profile_gap_diag_20260616_{110830,111503}, hz6_workload_capacity_narrow_ladder_20260616_111216, and hz6_workload_capacity_narrow_map_ladder_20260616_111243
+  private/raw-results/linux/hz6_workload_profile_guard_20260616_{105102,105644,111620}, hz6_workload_capacity_{pair_focus_20260616_112040,shape_sweep_20260616_{112816,113139},cliff_diag_20260616_113833,cliff_frontier_20260616_114506,mid_guard_20260616_{115019,115150,115231}}, hz6_workload_descriptor_hybrid_depot_ladder_20260616_105953, hz6_workload_capacity_profile_gap_diag_20260616_{110830,111503}, hz6_workload_capacity_narrow_ladder_20260616_111216, and hz6_workload_capacity_narrow_map_ladder_20260616_111243
 ```
 
 ## Do Not Reopen Casually
@@ -143,8 +143,8 @@ Default no-go/control-only without substantially different evidence:
    `113833` shows WS16384 is descriptor/source exhaustion plus huge route
    probes. Keep hybrid depot1024; pair wrapper is `run_hz6_workload_capacity_pair_focus.sh`.
 6. Keep Toy-map8192 external as explicit fixed-boundary RSS profile.
-7. Next likely attack: WS16384 capacity-mid guard/profile recommendation; route16K
-   +map/source/frontcache trims are control-only after raw `104302`.
+7. Capacity-mid is WS16384/high-live-set explicit only after normal guard `115150`;
+   next attack should be a smaller high-live-set profile or real workload evidence.
 8. Do not reopen cold-retire, active-map widening, page-kind/free-order tables,
    packed metadata, or route inline work without new diagnostics.
 ```
