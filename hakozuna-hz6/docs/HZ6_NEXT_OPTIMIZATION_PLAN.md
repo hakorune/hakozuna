@@ -14,6 +14,8 @@ The latest workload repeat keeps capacity-narrow and capacity-hybrid paired:
   capacity-narrow wins some proxy rows
   capacity-hybrid wins others
   RSS is effectively tied
+  focused pair repeat `hz6_workload_capacity_pair_focus_20260616_112040`
+    keeps the split tiny and row-specific
 Do not collapse them into a single broad default without new real workload data.
 ```
 
@@ -147,6 +149,10 @@ Do not collapse them into a single broad default without new real workload data.
      `midpage_cache`, and both remain far ahead of selected/route16K on the
      large live-set collapse rows. Do not choose one broad workload profile
      from this proxy evidence alone.
+     Focused pair repeat raw `hz6_workload_capacity_pair_focus_20260616_112040`
+     keeps that decision: capacity-hybrid wins 4/6 rows by small margins,
+     capacity-narrow wins `small_object_cache` and `mixed_object_cache`, and
+     RSS remains effectively tied.
 
 5. Wrapper profile audit only if needed
    Goal:
@@ -180,6 +186,7 @@ WorkloadCapacityHybridUnificationDesign-L1:
     says otherwise
   runner:
     linux/run_hz6_workload_profile_guard.sh
+    linux/run_hz6_workload_capacity_pair_focus.sh
     linux/run_hz6_workload_capacity_profile_gap_diag.sh
     linux/run_hz6_workload_capacity_hybrid_depot_ladder.sh
 
@@ -189,8 +196,10 @@ Why this first:
   Workload proxy still rejects route16K/default promotion for large live-set
   cache rows.
   Capacity-narrow and capacity-hybrid are both strong, close in RSS, and row
-  dependent. The fine depot ladder is also row-dependent, so the next useful
-  work is real workload evidence or a new diagnostic dimension, not
+  dependent; pair-focus raw `112040` confirms the split is too small and
+  row-specific for a proxy-only default change. The fine depot ladder is also
+  row-dependent, so the next useful work is real workload evidence or a new
+  diagnostic dimension, not
   selected/default promotion or another proxy-only depot default.
   Cross fixed-gap now shows the HZ6 route16K profile beats tcmalloc and is
   competitive with HZ3 on fixed_4k/8k ops-per-MiB while beating HZ3 on

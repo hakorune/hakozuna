@@ -31,7 +31,7 @@ Options:
   --rows CSV         row groups: small_proxy,cache_proxy,all
                      (default: small_proxy,cache_proxy)
   --outdir DIR       output directory
-  --skip-builds      reuse existing HZ3/HZ4/HZ5/HZ6/profile/bench builds
+  --skip-builds      reuse existing allocator/profile/bench builds
   --skip-prepare     reuse existing mimalloc/tcmalloc environment variables
   --help             show this message
 
@@ -91,9 +91,15 @@ done
 mkdir -p "$OUTDIR"
 
 if [[ "$SKIP_BUILDS" -ne 1 ]]; then
-  "${ROOT_DIR}/linux/build_linux_release_lane.sh" --arch "$ARCH"
-  "${ROOT_DIR}/linux/build_linux_hz5_preload_full.sh" --arch "$ARCH"
-  "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh"
+  if allocator_list_contains hz3 || allocator_list_contains hz4; then
+    "${ROOT_DIR}/linux/build_linux_release_lane.sh" --arch "$ARCH"
+  fi
+  if allocator_list_contains hz5; then
+    "${ROOT_DIR}/linux/build_linux_hz5_preload_full.sh" --arch "$ARCH"
+  fi
+  if allocator_list_contains hz6; then
+    "${ROOT_DIR}/hakozuna-hz6/linux/build_hz6_preload.sh"
+  fi
   hz6_preload_build_requested_aliases "$ALLOCATORS" "$ROOT_DIR"
   "${ROOT_DIR}/linux/build_linux_bench_compare.sh" --arch "$ARCH" \
     --out-dir "${ROOT_DIR}/bench/out/linux/${ARCH}"
