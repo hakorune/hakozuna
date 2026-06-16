@@ -272,4 +272,41 @@ for row in rows:
     rss = min(data, key=lambda alloc: data[alloc]["peak"])
     efficiency = max(data, key=lambda alloc: data[alloc]["efficiency"])
     print(f"| `{row}` | `{speed}` | `{rss}` | `{efficiency}` |")
+
+narrow_name = "hz6-workload-capacity-narrow-target"
+hybrid_name = "hz6-workload-capacity-hybrid-target"
+pair_rows = [
+    row for row in rows
+    if narrow_name in row_data.get(row, {}) and hybrid_name in row_data.get(row, {})
+]
+if pair_rows:
+    print("\n## Capacity Pair Delta\n")
+    print("Positive speed/efficiency delta favors capacity-hybrid; negative peak delta means capacity-hybrid uses less RSS.\n")
+    print("| row | hybrid speed delta | hybrid peak delta MiB | hybrid efficiency delta | read |")
+    print("| --- | ---: | ---: | ---: | --- |")
+    for row in pair_rows:
+        narrow = row_data[row][narrow_name]
+        hybrid = row_data[row][hybrid_name]
+        speed_delta = ((hybrid["ops"] / narrow["ops"]) - 1.0) * 100.0 if narrow["ops"] else 0.0
+        peak_delta = hybrid["peak"] - narrow["peak"]
+        efficiency_delta = (
+            ((hybrid["efficiency"] / narrow["efficiency"]) - 1.0) * 100.0
+            if narrow["efficiency"] else 0.0
+        )
+        if abs(speed_delta) < 1.0 and abs(peak_delta) < 0.5:
+            read = "tie"
+        elif speed_delta >= 1.0 and peak_delta <= 0.5:
+            read = "hybrid"
+        elif speed_delta <= -1.0 and peak_delta >= -0.5:
+            read = "narrow"
+        elif efficiency_delta >= 1.0:
+            read = "hybrid-eff"
+        elif efficiency_delta <= -1.0:
+            read = "narrow-eff"
+        else:
+            read = "mixed"
+        print(
+            f"| `{row}` | {speed_delta:+.2f}% | {peak_delta:+.2f} | "
+            f"{efficiency_delta:+.2f}% | `{read}` |"
+        )
 PY
