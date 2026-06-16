@@ -325,6 +325,28 @@ capacity-lite on speed/RSS for the collapsed workload proxies:
 `midpage_cache` is now close to selected/overflow (`19.017M / 82.88 MiB`).
 Keep as explicit workload profile, not selected/default.
 
+Capacity narrow static ladder raw
+`private/raw-results/linux/hz6_workload_capacity_narrow_ladder_20260616_091541`
+shows that the narrow static capacity shape is useful even without elastic
+descriptor overflow. `desc10k_source1280_route40k` beats capacity-lite on every
+workload proxy and usually matches or beats the descriptor-hybrid profile on
+collapsed rows: `small_object_cache 17.410M / 42.25 MiB`,
+`mixed_small_cache 8.773M / 120.75 MiB`, `mixed_object_cache 9.283M / 135.38 MiB`,
+and `wide_midpage_cache 9.044M / 144.88 MiB`. It is weaker than descriptor
+hybrid on `midpage_cache` (`18.381M / 82.88 MiB` vs `18.930M / 82.75 MiB`),
+so keep it as a separate explicit capacity-narrow control, not a replacement
+for descriptor-hybrid.
+
+Capacity-narrow alias broad guard raw
+`private/raw-results/linux/hz6_broad_guard_20260616_091829` confirms the named
+`hz6-workload-capacity-narrow-target` profile. It beats capacity-lite on every
+workload-proxy row with much lower RSS: `small_object_cache 17.074M / 43.33 MiB`,
+`mixed_small_cache 8.664M / 120.88 MiB`, `mixed_object_cache 9.442M / 134.38 MiB`,
+`midpage_cache 19.083M / 82.88 MiB`, and `wide_midpage_cache 9.024M / 145.88 MiB`.
+Against descriptor-hybrid it is row-specific: stronger on `mixed_object_cache`
+and `midpage_cache`, weaker on `small_object_cache`, `mixed_small_cache`, and
+`wide_midpage_cache`. Keep both explicit controls; neither is selected/default.
+
 Earlier workload-proxy matrix, repeat-3, raw
 `private/raw-results/linux/hz6_workload_proxy_matrix_20260616_075550`;
 diagnostic raws `hz6_workload_proxy_diag_20260616_075255` and
