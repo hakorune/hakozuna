@@ -1,7 +1,8 @@
 # hakozuna (hz3) / hakozuna-mt (hz4) / hakozuna-hz5 / hakozuna-hz6
 
-[![hz3/hz4 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20411402.svg)](https://doi.org/10.5281/zenodo.20411402)
-[![HZ5 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20411598.svg)](https://doi.org/10.5281/zenodo.20411598)
+[![hz3/hz4 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20753903.svg)](https://doi.org/10.5281/zenodo.20753903)
+[![HZ5 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20753950.svg)](https://doi.org/10.5281/zenodo.20753950)
+[![HZ6 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20753968.svg)](https://doi.org/10.5281/zenodo.20753968)
 
 **High-performance memory allocators competitive with mimalloc and tcmalloc**
 
@@ -111,23 +112,30 @@ This repository already includes public Windows-native allocator comparisons and
 - ACE-Alloc Paper (Japanese): `docs/paper/main_ja.pdf`
 - Local paper workspace: `private/paper/`
 - Latest hz3/hz4 archived Zenodo record (v3.4):
-  https://zenodo.org/records/20411402
+  https://zenodo.org/records/20753903
 - DOI for hz3/hz4 v3.4:
-  https://doi.org/10.5281/zenodo.20411402
+  https://doi.org/10.5281/zenodo.20753903
 - All-version DOI for the hz3/hz4 ACE-Alloc artifact series:
   https://doi.org/10.5281/zenodo.18305952
 - HZ5 archived Zenodo record (3.5-hz5):
-  https://zenodo.org/records/20411598
+  https://zenodo.org/records/20753950
 - DOI for HZ5 3.5-hz5:
-  https://doi.org/10.5281/zenodo.20411598
+  https://doi.org/10.5281/zenodo.20753950
 - All-version DOI for the HZ5 sidecar allocator series:
   https://doi.org/10.5281/zenodo.20411597
+- HZ6 archived Zenodo record:
+  https://zenodo.org/records/20753968
+- DOI for HZ6:
+  https://doi.org/10.5281/zenodo.20753968
+- All-version DOI for the HZ6 selected-family allocator series:
+  https://doi.org/10.5281/zenodo.20753967
 - GitHub Releases: https://github.com/hakorune/hakozuna/releases
 - Citation metadata: `CITATION.cff`
 - Changelog: `CHANGELOG.md` (BREAKING changes are explicitly listed per release)
 - Distribution policy: `docs/DISTRIBUTION.md`
 - Latest published GitHub Release body template: `docs/releases/GITHUB_RELEASE_v3.3.md`
 - Next source/artifact release draft: `docs/releases/GITHUB_RELEASE_v3.4.md`
+- HZ6 source/artifact release draft: `docs/releases/GITHUB_RELEASE_hz6.md`
 
 ## Benchmark Snapshot (Ubuntu native)
 

@@ -2,32 +2,31 @@ Hakozuna 公開リポジトリ案内 (日本語)
 ====================================
 
 この公開リポジトリには、安定運用向けの2つのアロケータ実装と、
-研究用 sidecar が含まれています。
+研究用 allocator family が含まれています。
 
 - hakozuna/     : hz3 (local-heavy 向け)
 - hakozuna-mt/  : hz4 (remote-heavy / 高スレッド向け)
 - hakozuna-hz5/ : HZ5 (低 RSS / fail-closed / descriptor-owned profile family 向け研究 sidecar)
-
-HZ6 は現時点では future work の名前です。より広い tcmalloc-like な
-class-transfer throughput を追う場合の transfer-first 後継線として扱います。
-ドキュメントファーストの設計メモは hakozuna-hz6/ に置いています。
+- hakozuna-hz6/: HZ6 (route safety / 明示的 ownership state / speed-RSS profile lane を持つ selected-family prototype)
 
 allocator profile map
 ---------------------
 
-Hakozuna には、metadata と ownership の流し方が違う3つの allocator line があります。
+Hakozuna には、metadata と ownership の流し方が違う4つの allocator line があります。
 
 | Line | Focus | Metadata / routing model | 読み方 |
 |------|-------|--------------------------|--------|
 | HZ3 / ACE-Alloc | local-heavy allocation / compact fast path | lookup-first: PTAG32 / table-oriented pointer-to-bin routing | ACE-Alloc の本線 |
 | HZ4 | remote-heavy / message-passing workload | remote-free-first: page-local metadata / remote queue / pending collect | remote-free 実験線 |
 | HZ5 | page/run-first sidecar allocator prototype | ownership/policy-first: page/run descriptor が owner / profile / dispatch policy を決める | 低 RSS / fail-closed 研究線 |
+| HZ6 | speed/RSS balance と明示的 safety contract | RouteLayer + descriptor + SourceLayer + FrontCache | selected-family 後継線 |
 
 短く言うと:
 
 - HZ3 は lookup-first。
 - HZ4 は remote-free-first。
 - HZ5 は ownership/policy-first。
+- HZ6 は contract-first で、selected/default lane と profile-only lane を分ける。
 
 同じ malloc/free API でも、free(ptr) のときに pointer の正体をどう復元するか、
 そして ownership をどこへ流すかで allocator の性格は大きく変わります。
@@ -61,17 +60,23 @@ Hakozuna には、metadata と ownership の流し方が違う3つの allocator 
 - 公開PDF（日本語）: docs/paper/main_ja.pdf
 - ローカル論文ワークスペース: private/paper/
 - 最新の hz3/hz4 Zenodo アーカイブ（v3.4）:
-  https://zenodo.org/records/20411402
+  https://zenodo.org/records/20753903
 - hz3/hz4 v3.4 の DOI:
-  https://doi.org/10.5281/zenodo.20411402
+  https://doi.org/10.5281/zenodo.20753903
 - hz3/hz4 ACE-Alloc artifact series 全体の DOI:
   https://doi.org/10.5281/zenodo.18305952
 - HZ5 Zenodo アーカイブ（3.5-hz5）:
-  https://zenodo.org/records/20411598
+  https://zenodo.org/records/20753950
 - HZ5 3.5-hz5 の DOI:
-  https://doi.org/10.5281/zenodo.20411598
+  https://doi.org/10.5281/zenodo.20753950
 - HZ5 sidecar allocator series 全体の DOI:
   https://doi.org/10.5281/zenodo.20411597
+- HZ6 Zenodo アーカイブ:
+  https://zenodo.org/records/20753968
+- HZ6 の DOI:
+  https://doi.org/10.5281/zenodo.20753968
+- HZ6 selected-family allocator series 全体の DOI:
+  https://doi.org/10.5281/zenodo.20753967
 
 代表 MT snapshot
 ----------------
@@ -109,15 +114,15 @@ HZ5 は profile family として扱います。mid/main/cross の remote-pressur
 tcmalloc より大幅に低い RSS で強い行がありますが、hz3/hz4 や tcmalloc を単一 profile で
 広く置き換えるという主張にはしません。
 
-HZ6 future branch
------------------
+HZ6 selected-family branch
+--------------------------
 
-HZ6 は future work としての transfer-first 設計案です。
+HZ6 は selected-family allocator prototype です。
 
-- class transfer cache を owner inbox 上の診断 lane ではなく、最初から主要な箱として扱う
-- RSS governor を control plane の一部にする
-- 学習 / policy layer は malloc/free hot path に入れない
-- strict-safety profile と speed profile の契約分離が必要かを検証する
+- route safety / descriptor ownership / SourceLayer / FrontCache contract を主要設計として扱う
+- selected/default lane と profile-only lane は意図的に分離する
+- RSS governance と speed/RSS balance profile を評価対象にする
+- ベンチ結果は workload / platform 固有の evidence であり、普遍的な allocator ranking ではない
 - 現在の設計メモは hakozuna-hz6/ に置く
 
 最小実行例

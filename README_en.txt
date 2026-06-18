@@ -1,22 +1,20 @@
 Hakozuna Public Repository Guide (English)
 ==========================================
 
-This public repository contains two stable allocator implementations and one
-research sidecar:
+This public repository contains two stable allocator implementations and two
+research allocator families:
 
 - hakozuna/     : hz3 (optimized for local-heavy workloads)
 - hakozuna-mt/  : hz4 (optimized for remote-heavy, high-thread workloads)
 - hakozuna-hz5/: HZ5 Linux research sidecar for low-RSS, fail-closed,
                  descriptor-owned profile families
-
-HZ6 is a future-work name only. It would be a transfer-first successor line if
-we decide to pursue broader tcmalloc-like class-transfer throughput. The
-documentation-first design seed lives under hakozuna-hz6/.
+- hakozuna-hz6/: HZ6 selected-family allocator prototype with route safety,
+                 explicit ownership states, and speed/RSS profile lanes
 
 Allocator profile map
 ---------------------
 
-Hakozuna contains three allocator lines with deliberately different metadata
+Hakozuna contains four allocator lines with deliberately different metadata
 and ownership models.
 
 | Line | Focus | Metadata / routing model | Best read as |
@@ -24,12 +22,14 @@ and ownership models.
 | HZ3 / ACE-Alloc | local-heavy allocation, compact fast path | lookup-first: PTAG32 / table-oriented pointer-to-bin routing | main ACE-Alloc line |
 | HZ4 | remote-heavy / message-passing workloads | remote-free-first: page-local metadata, remote queues, pending collect | remote-free experiment line |
 | HZ5 | page/run-first sidecar allocator prototype | ownership/policy-first: page/run descriptors route owner, profile, and dispatch policy | low-RSS fail-closed research line |
+| HZ6 | balanced speed/RSS with explicit safety contracts | RouteLayer + descriptor + SourceLayer + FrontCache | selected-family successor line |
 
 In short:
 
 - HZ3 is lookup-first.
 - HZ4 is remote-free-first.
 - HZ5 is ownership/policy-first.
+- HZ6 is contract-first with selected/default and profile-only lanes.
 
 The API is still malloc/free, but allocator behavior changes sharply depending
 on how free(ptr) recovers pointer identity and where ownership is sent next.
@@ -60,17 +60,23 @@ Latest benchmark and paper
 - Public paper PDF (Japanese): docs/paper/main_ja.pdf
 - Local paper workspace: private/paper/
 - Latest hz3/hz4 archived Zenodo record (v3.4):
-  https://zenodo.org/records/20411402
+  https://zenodo.org/records/20753903
 - DOI for hz3/hz4 v3.4:
-  https://doi.org/10.5281/zenodo.20411402
+  https://doi.org/10.5281/zenodo.20753903
 - All-version DOI for the hz3/hz4 ACE-Alloc artifact series:
   https://doi.org/10.5281/zenodo.18305952
 - HZ5 archived Zenodo record (3.5-hz5):
-  https://zenodo.org/records/20411598
+  https://zenodo.org/records/20753950
 - DOI for HZ5 3.5-hz5:
-  https://doi.org/10.5281/zenodo.20411598
+  https://doi.org/10.5281/zenodo.20753950
 - All-version DOI for the HZ5 sidecar allocator series:
   https://doi.org/10.5281/zenodo.20411597
+- HZ6 archived Zenodo record:
+  https://zenodo.org/records/20753968
+- DOI for HZ6:
+  https://doi.org/10.5281/zenodo.20753968
+- All-version DOI for the HZ6 selected-family allocator series:
+  https://doi.org/10.5281/zenodo.20753967
 
 Representative MT snapshot
 --------------------------
@@ -109,16 +115,17 @@ HZ5 should be described as a profile family. It is strong on several
 mid/main/cross remote-pressure rows with much lower RSS than tcmalloc, but it is
 not a single universal replacement for hz3/hz4 or tcmalloc.
 
-HZ6 future branch
------------------
+HZ6 selected-family branch
+--------------------------
 
-HZ6 is a possible future transfer-first design:
+HZ6 is an experimental selected-family allocator prototype:
 
-- class transfer caches are first-class boxes, not diagnostics layered on owner
-  inboxes
-- RSS governance is part of the control plane
-- any learning/policy layer must stay off the malloc/free hot path
-- strict-safety and speed-profile contracts may need to be separated explicitly
+- route safety, descriptor ownership, SourceLayer, and FrontCache contracts are
+  first-class parts of the design
+- selected/default and profile-only lanes are intentionally separated
+- RSS governance and balanced speed/RSS profiles are part of the evaluation
+- benchmark results are workload- and platform-specific evidence, not a
+  universal allocator ranking
 - current design notes live under hakozuna-hz6/
 
 Minimal usage examples
