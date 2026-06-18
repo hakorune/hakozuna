@@ -115,6 +115,24 @@ HZ5 should be described as a profile family. It is strong on several
 mid/main/cross remote-pressure rows with much lower RSS than tcmalloc, but it is
 not a single universal replacement for hz3/hz4 or tcmalloc.
 
+HZ6 Windows selected-family snapshot
+------------------------------------
+
+HZ6 is reported separately from the Ubuntu MT table because it uses
+Windows-native selected-family runners and profile-specific lanes.
+
+| Lane | Selected HZ6 row | ops/s | Peak RSS |
+|------|------------------|------:|---------:|
+| random_mixed small | sameownerfast-descavail-noboost-route4k | 45.755M | 4,968 KB |
+| random_mixed medium | sameownerfast-descavail-noboost-route4k | 42.408M | 4,964 KB |
+| random_mixed mixed | sameownerfast-descavail-noboost-route4k | 41.306M | 4,964 KB |
+| mixed_ws balanced | mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap-loopcarry | 66.922M | 111,244 KB |
+| mixed_ws wide_ws | mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap-loopcarry | 21.853M | 140,708 KB |
+
+Selected-small decision evidence promotes SourceBlockRoute dynmap on selected
+rows such as balanced (+8.46%) and large_slice_16k (+16.48%), while preserving
+the explicit selected-family/profile-only separation.
+
 HZ6 selected-family branch
 --------------------------
 

@@ -209,6 +209,35 @@ Representative paper-facing rows from the RUNS=5 sweep:
 | `t=8 cross128 r90` | `hz5-large128-transfer128` | 17.16M | 57MB | 11.72M | 183MB |
 | `t=8 large128 r90` | `hz5-large128-source16` | 13.16M | 145MB | 12.12M | 182MB |
 
+## HZ6 Windows Selected-Family Snapshot (2026-06, Windows native)
+
+HZ6 is reported separately from the Ubuntu HZ3/HZ4/HZ5 MT table because it uses
+Windows-native selected-family runners and profile-specific lanes. The rows
+below are representative paper-facing snapshots, not a universal allocator
+ranking.
+
+| Lane | HZ6 selected row | ops/s | Peak RSS |
+|------|------------------|------:|---------:|
+| `random_mixed small` | `sameownerfast-descavail-noboost-route4k` | 45.755M | 4,968 KB |
+| `random_mixed medium` | `sameownerfast-descavail-noboost-route4k` | 42.408M | 4,964 KB |
+| `random_mixed mixed` | `sameownerfast-descavail-noboost-route4k` | 41.306M | 4,964 KB |
+| `mixed_ws balanced` | `mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap-loopcarry` | 66.922M | 111,244 KB |
+| `mixed_ws wide_ws` | `mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap-loopcarry` | 21.853M | 140,708 KB |
+
+Selected-small decision evidence:
+
+| Profile | Previous selected-small | SourceBlockRoute dynmap | Speed delta | RSS delta |
+|---------|------------------------:|------------------------:|------------:|----------:|
+| `balanced` | 76.471M / 96,776 KB | 82.939M / 98,288 KB | +8.46% | +1,512 KB |
+| `larger_sizes` | 35.407M / 70,952 KB | 37.857M / 71,684 KB | +6.92% | +732 KB |
+| `large_slice_16k` | 46.308M / 17,096 KB | 53.940M / 17,664 KB | +16.48% | +568 KB |
+
+Sources:
+
+- `docs/benchmarks/windows/paper/hz6_selected_family/selected-family-desc17-refresh/selected-random-sameowner/20260603_204102_hz6_capacity_matrix_windows.md`
+- `docs/benchmarks/windows/paper/hz6_selected_family/selected-mixed-lowrss/20260617_105037_hz6_capacity_matrix_windows.md`
+- `docs/benchmarks/windows/paper/hz6_selected_family/sourceblockroute-dynmap-selected-small-20260606/README.md`
+
 Current interpretation:
 
 - Keep `hz3` as the default public profile and `hz4` as the remote-heavy profile.

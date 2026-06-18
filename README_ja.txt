@@ -114,6 +114,23 @@ HZ5 は profile family として扱います。mid/main/cross の remote-pressur
 tcmalloc より大幅に低い RSS で強い行がありますが、hz3/hz4 や tcmalloc を単一 profile で
 広く置き換えるという主張にはしません。
 
+HZ6 Windows selected-family snapshot
+------------------------------------
+
+HZ6 は Windows-native selected-family runner と profile-specific lane で測っているため、
+Ubuntu MT 表とは分けて示します。
+
+| Lane | Selected HZ6 row | ops/s | Peak RSS |
+|------|------------------|------:|---------:|
+| random_mixed small | sameownerfast-descavail-noboost-route4k | 45.755M | 4,968 KB |
+| random_mixed medium | sameownerfast-descavail-noboost-route4k | 42.408M | 4,964 KB |
+| random_mixed mixed | sameownerfast-descavail-noboost-route4k | 41.306M | 4,964 KB |
+| mixed_ws balanced | mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap-loopcarry | 66.922M | 111,244 KB |
+| mixed_ws wide_ws | mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap-loopcarry | 21.853M | 140,708 KB |
+
+selected-small では SourceBlockRoute dynmap が balanced (+8.46%) や
+large_slice_16k (+16.48%) で改善し、selected-family / profile-only の分離は維持します。
+
 HZ6 selected-family branch
 --------------------------
 
