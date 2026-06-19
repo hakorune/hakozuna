@@ -60,6 +60,7 @@
   size_t remote_pending_maintenance_external_success = 0;
   size_t remote_pending_maintenance_external_only_call = 0;
   size_t remote_pending_maintenance_inline_deferred = 0;
+  size_t remote_pending_maintenance_inline_policy_skip = 0;
   size_t remote_pending_maintenance_inline_pop_attempt = 0;
   size_t remote_pending_maintenance_inline_pop_success = 0;
   size_t remote_pending_maintenance_route_validate_inline = 0;

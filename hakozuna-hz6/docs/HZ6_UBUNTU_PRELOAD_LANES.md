@@ -2906,6 +2906,70 @@ MidPage class5/class4, with Toy external work still visible.  The next behavior
 should not throttle all inline pending; target MidPage class5/class4 inline
 work specifically and preserve external class4/class5 consumption.
 
+## 2026-06-20 OwnerInboxMidpageInlineSkip-L1
+
+`OwnerInboxMidpageInlineSkip-L1` tests whether the MidPage class5/class4 inline
+maintenance identified above can be removed while preserving the external-ticket
+sink.
+
+The box adds a default-off threshold:
+
+```text
+HZ6_REMOTE_PENDING_INLINE_MIDPAGE_MIN_CLASS=HZ6_STATS_CLASS_COUNT
+```
+
+When set to `5`, inline MidPage maintenance for class5 and above is skipped.
+When set to `4`, class4 and class5 are skipped.  External-ticket consumption
+still runs first.
+
+Runner variants:
+
+```text
+p1_external_inline_skip_mid5
+p1_external_inline_skip_mid4
+```
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/build_hz6_preload_owner_inbox_external_target.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+```
+
+Production RUNS=3:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 3 \
+  --rows remote50,remote90 \
+  --variants p1_external,p1_external_inline_skip_mid5,p1_external_inline_skip_mid4
+```
+
+Observed medians:
+
+```text
+variant                       remote50         remote90
+p1_external                   14.23M/74.88MiB  10.65M/77.70MiB
+p1_external_inline_skip_mid5  13.76M/74.88MiB   3.78M/85.13MiB
+p1_external_inline_skip_mid4  14.28M/74.75MiB   3.24M/86.18MiB
+```
+
+Diagnostic RUNS=1 confirmed the policy was active:
+
+```text
+variant                       inline_policy_skip  inline_pop_success
+p1_external_inline_skip_mid5  1142                620
+p1_external_inline_skip_mid4  1165                 86
+```
+
+Decision: `GO(research)/NO-GO(profile)`.  Skipping MidPage class5/class4 inline
+maintenance does not improve remote50 reliably and collapses remote90.  The
+next idea should make inline consumption cheaper or more direct rather than
+removing it.
+
 ## 2026-06-20 OwnerInboxSplitMaintenancePolicy-L1
 
 `OwnerInboxSplitMaintenancePolicy-L1` tests the narrow policy suggested by the

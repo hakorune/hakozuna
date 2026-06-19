@@ -127,6 +127,7 @@
           "remote_pending_maintenance_external_success=%zu "
           "remote_pending_maintenance_external_only_call=%zu "
           "remote_pending_maintenance_inline_deferred=%zu "
+          "remote_pending_maintenance_inline_policy_skip=%zu "
           "remote_pending_maintenance_inline_pop_attempt=%zu "
           "remote_pending_maintenance_inline_pop_success=%zu "
           "remote_pending_maintenance_route_validate_inline=%zu "
@@ -344,6 +345,7 @@
           remote_pending_maintenance_external_success,
           remote_pending_maintenance_external_only_call,
           remote_pending_maintenance_inline_deferred,
+          remote_pending_maintenance_inline_policy_skip,
           remote_pending_maintenance_inline_pop_attempt,
           remote_pending_maintenance_inline_pop_success,
           remote_pending_maintenance_route_validate_inline,

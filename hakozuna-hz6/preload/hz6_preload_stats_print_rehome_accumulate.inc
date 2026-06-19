@@ -117,6 +117,8 @@
         stats.remote_pending_maintenance_external_only_call;
     remote_pending_maintenance_inline_deferred +=
         stats.remote_pending_maintenance_inline_deferred;
+    remote_pending_maintenance_inline_policy_skip +=
+        stats.remote_pending_maintenance_inline_policy_skip;
     remote_pending_maintenance_inline_pop_attempt +=
         stats.remote_pending_maintenance_inline_pop_attempt;
     remote_pending_maintenance_inline_pop_success +=

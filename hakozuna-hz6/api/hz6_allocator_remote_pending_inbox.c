@@ -173,6 +173,15 @@ static void hz6_remote_pending_note_maintenance_drain_shape(
 }
 #endif
 
+static int hz6_remote_pending_inline_maintenance_allowed(uint16_t front_id,
+                                                         uint16_t class_id) {
+  if (front_id == HZ6_FRONT_MIDPAGE &&
+      class_id >= HZ6_REMOTE_PENDING_INLINE_MIDPAGE_MIN_CLASS) {
+    return 0;
+  }
+  return 1;
+}
+
 typedef struct Hz6RemotePendingInboxEntry {
   void* ptr;
   Hz6ObjectDescriptor* descriptor;
@@ -1431,6 +1440,11 @@ size_t hz6_allocator_remote_pending_maintenance_class(
       HZ6_REMOTE_PENDING_STAT_INC(allocator,
                                   remote_pending_maintenance_external_miss);
       external_nonempty = 0;
+    }
+    if (!hz6_remote_pending_inline_maintenance_allowed(front_id, class_id)) {
+      HZ6_REMOTE_PENDING_STAT_INC(
+          allocator, remote_pending_maintenance_inline_policy_skip);
+      break;
     }
     Hz6RemotePendingInboxEntry entry = {0};
     HZ6_REMOTE_PENDING_STAT_INC(

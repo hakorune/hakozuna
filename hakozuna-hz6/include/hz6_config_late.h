@@ -451,6 +451,13 @@
 #define HZ6_REMOTE_PENDING_ROUTE_PIN_TRUST_L1 0
 #endif
 
+#ifndef HZ6_REMOTE_PENDING_INLINE_MIDPAGE_MIN_CLASS
+/* Skip inline owner-inbox maintenance for MidPage classes >= this value while
+ * still preserving external-ticket consumption.  The default value disables
+ * the policy because HZ6_STATS_CLASS_COUNT is the exclusive upper bound. */
+#define HZ6_REMOTE_PENDING_INLINE_MIDPAGE_MIN_CLASS HZ6_STATS_CLASS_COUNT
+#endif
+
 #ifndef HZ6_REMOTE_PENDING_FRONT_COUNT
 #define HZ6_REMOTE_PENDING_FRONT_COUNT 4
 #endif
