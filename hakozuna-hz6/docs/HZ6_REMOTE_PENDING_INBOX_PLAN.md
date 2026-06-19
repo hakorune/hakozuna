@@ -985,3 +985,32 @@ to distinguish external-ticket backlog from empty consume probes, and the empty
 probe is removed.  Default selection is still held because external-ticket
 backlog remains and the quick performance sample did not beat the earlier
 external-ticket publish sample.
+
+## 2026-06-20 Maintenance Gate Shape No-Go
+
+`RemotePendingMaintenanceGateShape-L1` tried to collapse the owner-local
+maintenance entry gate so inline and external exact-key nonempty probes were
+computed once and reused.  The code change was reverted after measurement.
+
+Smoke stayed clean:
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+remote_pending_external_ticket_consume_empty=0
+remote_pending_external_ticket_route_mismatch=0
+remote_pending_external_ticket_owner_mismatch=0
+remote_pending_external_ticket_state_mismatch=0
+remote_pending_external_ticket_storage_mismatch=0
+```
+
+Quick RUNS=3:
+
+```text
+remote50=13782431.99
+remote90=8765282.02
+```
+
+Decision: `NO-GO`.  The shape cleanup was safe but did not improve the quick
+sample versus the prior consume-gate result.  Do not stack more maintenance
+entry-probe tweaks without stronger attribution.

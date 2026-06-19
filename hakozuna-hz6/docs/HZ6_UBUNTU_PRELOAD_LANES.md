@@ -378,6 +378,10 @@ from `3750` to `0`, and showed `remote_pending_external_ticket_current=1970`
 with `high_water=269`.  Quick RUNS=3 was `remote50=14.14M`,
 `remote90=8.80M`, so default promotion remains held while owner-inbox backlog
 and remote50 cost are still open.
+`RemotePendingMaintenanceGateShape-L1` tried collapsing the maintenance entry
+nonempty probes into a single inline/external exact-key snapshot.  The smoke
+stayed clean, but quick RUNS=3 was weaker (`remote50=13.78M`,
+`remote90=8.77M`), so the code was reverted and the box is `NO-GO`.
 `RemoteFreeBackpressureOriginDrain-L1` tried that full path directly as an
 opt-in no-go.  It drains one same-class transfer object from the origin transfer
 cache into the origin frontcache and retries origin commit once.  Safety smoke
