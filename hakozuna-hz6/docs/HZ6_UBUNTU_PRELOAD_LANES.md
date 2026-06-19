@@ -113,6 +113,7 @@ HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_4K_L1=0
 HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_8K_L1=0
 HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1=0
 HZ6_REMOTE_FREE_OVERFLOW_L1=0
+HZ6_REMOTE_FREE_CONSUMER_REHOME_L1=0
 ```
 
 ## Current Read
@@ -181,6 +182,12 @@ and `256`, but quick RUNS=3 showed weak performance: cap64 gave
 uncommitted remote frees by committing `remote_free_overflow_reserve_success=3038`,
 but route rehome also rose to `6668`, so the overflow cache has the same
 route-movement problem as eager drain.
+`RemoteFreeConsumerRehome-L1` is another opt-in no-go for the selected
+performance lane.  It skips free-side rehome for transfer-based fronts and
+tries to rehome on transfer reuse instead.  Safety smoke passed and shifted
+route movement to reuse (`transfer_reuse_rehome_success=2183`), but quick
+RUNS=3 regressed to `remote50=12638884.18` and `remote90=269255.48`.  The
+consumer lookup/rehome work is too expensive on the high-remote row.
 Short remote rows can now be made to complete, but long 300K rows still show a
 page-table lookup cliff.  The active design is `RemoteFreeRouteResolve-L1`,
 not a preload-only owner hint: Ubuntu preload must call the shared core

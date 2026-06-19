@@ -387,6 +387,13 @@
 #define HZ6_REMOTE_FREE_OVERFLOW_CAPACITY ((size_t)64)
 #endif
 
+#ifndef HZ6_REMOTE_FREE_CONSUMER_REHOME_L1
+/* Opt-in lazy remote-free route transfer.  Free pushes the object into the
+ * destination transfer cache without moving the route; the consumer rehomes the
+ * route only when it actually reuses the transferred object. */
+#define HZ6_REMOTE_FREE_CONSUMER_REHOME_L1 0
+#endif
+
 #ifndef HZ6_PRELOAD_MIDPAGE_ROUTE_REARM_L1
 /* Candidate preload-boundary shortcut.  When preload already found a local
  * MidPage exact route, re-arm the MidPage active map so hz6_free() can consume

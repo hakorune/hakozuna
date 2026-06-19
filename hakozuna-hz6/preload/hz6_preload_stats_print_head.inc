@@ -76,6 +76,9 @@
   size_t remote_free_overflow_reserve_success = 0;
   size_t remote_free_overflow_reserve_full = 0;
   size_t remote_free_overflow_pop = 0;
+  size_t transfer_reuse_rehome_attempt = 0;
+  size_t transfer_reuse_rehome_success = 0;
+  size_t transfer_reuse_rehome_fail = 0;
   size_t route_active_current = 0;
   size_t route_active_max = 0;
   size_t route_tombstone_current = 0;
@@ -310,8 +313,7 @@
     descriptor_exhausted += stats.descriptor_exhausted;
     elastic_descriptor_overflow_alloc += stats.elastic_descriptor_overflow_alloc;
     elastic_descriptor_overflow_reset += stats.elastic_descriptor_overflow_reset;
-    elastic_descriptor_overflow_exhausted +=
-        stats.elastic_descriptor_overflow_exhausted;
+    elastic_descriptor_overflow_exhausted += stats.elastic_descriptor_overflow_exhausted;
     route_register_fail += stats.route_register_fail;
     source_block_exhausted += stats.source_block_exhausted;
     source_prefill_attempt += stats.source_prefill_attempt;
@@ -337,8 +339,7 @@
     route_register_reason_materialize += stats.route_register_reason_materialize;
     route_register_reason_rehome += stats.route_register_reason_rehome;
     route_unregister_reason_unknown += stats.route_unregister_reason_unknown;
-    route_unregister_reason_frontcache_overflow +=
-        stats.route_unregister_reason_frontcache_overflow;
+    route_unregister_reason_frontcache_overflow += stats.route_unregister_reason_frontcache_overflow;
     route_unregister_reason_cap_release +=
         stats.route_unregister_reason_cap_release;
     route_unregister_reason_descriptorless_detach +=
@@ -351,8 +352,7 @@
     route_rehome_fail += stats.route_rehome_fail;
     route_rehome_expected_owner_mismatch +=
         stats.route_rehome_expected_owner_mismatch;
-    route_rehome_destination_route_fail +=
-        stats.route_rehome_destination_route_fail;
+    route_rehome_destination_route_fail += stats.route_rehome_destination_route_fail;
     route_rehome_directory_transfer_fail +=
         stats.route_rehome_directory_transfer_fail;
     route_rehome_rollback_success += stats.route_rehome_rollback_success;
@@ -382,6 +382,9 @@
     remote_free_overflow_reserve_success += stats.remote_free_overflow_reserve_success;
     remote_free_overflow_reserve_full += stats.remote_free_overflow_reserve_full;
     remote_free_overflow_pop += stats.remote_free_overflow_pop;
+    transfer_reuse_rehome_attempt += stats.transfer_reuse_rehome_attempt;
+    transfer_reuse_rehome_success += stats.transfer_reuse_rehome_success;
+    transfer_reuse_rehome_fail += stats.transfer_reuse_rehome_fail;
     route_active_current += stats.route_active_current;
     if (stats.route_active_max > route_active_max) {
       route_active_max = stats.route_active_max;

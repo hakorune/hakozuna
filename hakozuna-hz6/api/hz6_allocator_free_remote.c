@@ -15,6 +15,14 @@ static int hz6_free_remote_rehome_before_transfer(
     return front->remote_free_tagged(allocator, ptr, route);
   }
 
+#if HZ6_REMOTE_FREE_CONSUMER_REHOME_L1
+  if (route.front_id == HZ6_FRONT_TOY ||
+      route.front_id == HZ6_FRONT_MIDPAGE ||
+      route.front_id == HZ6_FRONT_LOCAL2P) {
+    return front->remote_free_tagged(allocator, ptr, route);
+  }
+#endif
+
   Hz6Allocator* origin = route.route_allocator;
   if (!origin || origin == allocator) {
     return front->remote_free_tagged(allocator, ptr, route);

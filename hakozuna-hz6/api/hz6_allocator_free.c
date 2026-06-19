@@ -10,6 +10,14 @@ static void hz6_free_route_dispatch(Hz6Allocator* allocator,
                                     Hz6RouteResult route,
                                     int visible_hit);
 
+#if HZ6_REMOTE_FREE_CONSUMER_REHOME_L1
+static int hz6_free_route_consumer_rehome_eligible(Hz6RouteResult route) {
+  return route.front_id == HZ6_FRONT_TOY ||
+         route.front_id == HZ6_FRONT_MIDPAGE ||
+         route.front_id == HZ6_FRONT_LOCAL2P;
+}
+#endif
+
 void hz6_free(Hz6Allocator* allocator, void* ptr) {
   if (!allocator || !ptr) {
     return;
@@ -382,6 +390,10 @@ static void hz6_free_route_dispatch(Hz6Allocator* allocator,
 #endif
         }
         if (ok && needs_rehome) {
+#if HZ6_REMOTE_FREE_CONSUMER_REHOME_L1
+          if (!hz6_free_route_consumer_rehome_eligible(route))
+#endif
+          {
 #if HZ6_DIAGNOSTIC_PROBES
 #if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1
           ++allocator->stats.route_rehome_commit_enter;
@@ -398,6 +410,7 @@ static void hz6_free_route_dispatch(Hz6Allocator* allocator,
 #else
           (void)hz6_allocator_route_rehome_exact(allocator, &route);
 #endif
+          }
         }
 #if HZ6_DIAGNOSTIC_PROBES
         if (!local_owner) {

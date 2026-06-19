@@ -34,6 +34,9 @@
   size_t remote_free_overflow_reserve_success;
   size_t remote_free_overflow_reserve_full;
   size_t remote_free_overflow_pop;
+  size_t transfer_reuse_rehome_attempt;
+  size_t transfer_reuse_rehome_success;
+  size_t transfer_reuse_rehome_fail;
   size_t route_rehome_attempt;
   size_t route_rehome_success;
   size_t route_rehome_fail;

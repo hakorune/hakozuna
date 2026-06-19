@@ -89,6 +89,9 @@
           "remote_free_overflow_reserve_success=%zu "
           "remote_free_overflow_reserve_full=%zu "
           "remote_free_overflow_pop=%zu "
+          "transfer_reuse_rehome_attempt=%zu "
+          "transfer_reuse_rehome_success=%zu "
+          "transfer_reuse_rehome_fail=%zu "
           "route_active_current=%zu route_active_max=%zu "
           "route_tombstone_current=%zu route_tombstone_max=%zu "
           "route_register_used_tombstone=%zu "
@@ -145,6 +148,9 @@
           remote_free_overflow_reserve_success,
           remote_free_overflow_reserve_full,
           remote_free_overflow_pop,
+          transfer_reuse_rehome_attempt,
+          transfer_reuse_rehome_success,
+          transfer_reuse_rehome_fail,
           route_active_current,
           route_active_max, route_tombstone_current, route_tombstone_max,
           route_register_used_tombstone,
