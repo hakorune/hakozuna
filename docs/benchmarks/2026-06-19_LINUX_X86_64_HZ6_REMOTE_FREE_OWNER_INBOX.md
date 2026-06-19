@@ -601,3 +601,65 @@ Decision: `GO(phase-specialist)/NO-GO(default)`.  Source-demand placement is
 correct for phase-shift reuse, but random remote still needs a small cleanup
 consumer or a hybrid gate; disabling owner-local maintenance entirely is too
 expensive for default selection.
+
+## Source-Gate Hybrid Cleanup Follow-Up
+
+The hybrid follow-up keeps source-boundary DirectReuse first, then restores a
+budget-1 exact-key owner maintenance fallback only when the source-boundary
+claim misses:
+
+```text
+HZ6_REMOTE_PENDING_SOURCE_GATE_MAINTENANCE_L1=1
+```
+
+This avoids the earlier source-gate failure mode where pre-source maintenance
+was completely disabled.
+
+Phase smoke still uses direct source-boundary claims, not the cleanup fallback:
+
+```text
+source_gate_stats, threads=4 count=2048 size=128
+reuse_hits=1024
+source_boundary_claim_success=1024
+source_alloc_avoided=1024
+claim_before_existing_reuse=0
+claim_while_frontcache_nonempty=0
+claim_while_transfer_nonempty=0
+remote_pending_batch_items=0
+pending_maintenance_immediate_reuse_success=0
+```
+
+Random remote RUNS=3:
+
+```text
+p1_inbox remote50=14377075.43 remote90=1390977.63
+p3_claim remote50=13950364.16 remote90=10732489.42
+p4_source_gate_hybrid remote50=14509429.88 remote90=10792508.23
+```
+
+Diagnostic smoke:
+
+```text
+source_boundary_claim_success=4007
+source_alloc_avoided=4007
+claim_before_existing_reuse=0
+claim_while_frontcache_nonempty=0
+claim_while_transfer_nonempty=0
+remote_pending_batch_items=18
+pending_maintenance_immediate_reuse_success=18
+pending_maintenance_batch_surplus=0
+remote_pending_direct_integrity_failure=0
+remote_free_returned_uncommitted=0
+```
+
+RUNS=10 default check:
+
+```text
+p0_selected remote50=15020678.43 remote90=10211462.26
+p4_source_gate_hybrid remote50=13850043.88 remote90=9989418.62
+```
+
+Decision: `GO(phase-specialist)/NO-GO(default)`.  The hybrid fixes the quick
+RUNS=3 source-gate regression and preserves the phase target, but RUNS=10 still
+regresses remote50 materially and does not beat selected remote90.  Keep the
+box as a phase/research lane only.

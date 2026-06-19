@@ -292,6 +292,13 @@ RUNS=3 regressed (`p4_source_gate remote50=13.75M`, `remote90=1.08M`) because
 the lane disables pre-source owner maintenance and leaves a large pending
 inventory.  Keep it as a phase specialist only; default work needs a hybrid
 cleanup consumer.
+`HZ6_REMOTE_PENDING_SOURCE_GATE_MAINTENANCE_L1=1` adds that hybrid cleanup:
+source-boundary DirectReuse still gets first chance, and a budget-1 exact-key
+maintenance fallback runs only when the claim misses.  Phase smoke preserved
+`reuse_hits=1024` with no batch work; quick random remote RUNS=3 measured
+`p4_source_gate_hybrid remote50=14.51M`, `remote90=10.79M`, but RUNS=10
+regressed against selected (`13.85M/9.99M` vs `15.02M/10.21M`).  Keep it as a
+phase/research lane, not default.
 `RemoteFreeBackpressureOriginTransferReasonObserve-L1` splits the remaining
 origin-transfer misses without changing behavior.  The selected smoke showed
 `remote_free_backpressure_origin_transfer_stride_skip=16295`,

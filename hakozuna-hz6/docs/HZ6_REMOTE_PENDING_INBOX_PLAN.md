@@ -485,6 +485,45 @@ a standalone default.  The random remote lane needs either a small owner-local
 cleanup consumer or a hybrid policy; disabling pre-source maintenance entirely
 leaves too much pending inventory.
 
+## 2026-06-20 Source-Gate Hybrid Cleanup
+
+The hybrid follow-up keeps source-boundary claim first and restores exact-key
+owner maintenance only when the claim misses:
+
+```text
+HZ6_REMOTE_PENDING_SOURCE_GATE_MAINTENANCE_L1=1
+```
+
+Phase smoke:
+
+```text
+source_boundary_claim_success=1024
+source_alloc_avoided=1024
+claim_before_existing_reuse=0
+remote_pending_batch_items=0
+pending_maintenance_immediate_reuse_success=0
+reuse_hits=1024
+```
+
+Random remote RUNS=3:
+
+```text
+p1_inbox remote50=14377075.43 remote90=1390977.63
+p3_claim remote50=13950364.16 remote90=10732489.42
+p4_source_gate_hybrid remote50=14509429.88 remote90=10792508.23
+```
+
+RUNS=10:
+
+```text
+p0_selected remote50=15020678.43 remote90=10211462.26
+p4_source_gate_hybrid remote50=13850043.88 remote90=9989418.62
+```
+
+Decision: `GO(phase-specialist)/NO-GO(default)`.  The shape is useful evidence,
+but not a selected-lane replacement.  The next default line should not keep
+source-gate claim active for random remote rows.
+
 ## 2026-06-20 Phase-Reuse Bench Harness
 
 `RemotePendingPhaseReuseBench-L1` adds a behavior-neutral benchmark mode:
