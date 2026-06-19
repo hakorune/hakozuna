@@ -375,6 +375,14 @@
 #define HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_TRANSFER_STRIDE 1
 #endif
 
+#ifndef HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_DRAIN_L1
+/* Opt-in follow-up for origin-transfer relief.  If the destination transfer
+ * cache is full and the origin transfer cache is also full, drain one
+ * same-class object from the origin transfer cache into the origin frontcache
+ * and retry the origin commit once. */
+#define HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_DRAIN_L1 0
+#endif
+
 #ifndef HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1
 /* Bounded relief lane for remote-free transfer backpressure.  On reserve
  * failure, drain one already-committed same-class transfer object into the

@@ -111,6 +111,7 @@ HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_CURRENT_BIAS_L1=0
 HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_L1=0
 HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_4K_L1=0
 HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_8K_L1=0
+HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_DRAIN_L1=0
 HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1=0
 HZ6_REMOTE_FREE_OVERFLOW_L1=0
 HZ6_REMOTE_FREE_CONSUMER_REHOME_L1=0
@@ -189,6 +190,14 @@ origin-transfer misses without changing behavior.  The selected smoke showed
 `remote50=14823669.53` but dropped `remote90=1689959.38`.  The next high-remote
 box should therefore target transfer-cache saturation or stride/capacity policy,
 not ownership validation.
+`RemoteFreeBackpressureOriginDrain-L1` tried that full path directly as an
+opt-in no-go.  It drains one same-class transfer object from the origin transfer
+cache into the origin frontcache and retries origin commit once.  Safety smoke
+passed and converted most origin full events
+(`remote_free_backpressure_origin_drain_retry_success=12160`,
+`remote_free_backpressure_origin_transfer_full=32`), but quick RUNS=3 regressed
+to `remote50=13935320.47` and `remote90=1287581.08`.  Keep it off; the remote
+path cannot afford direct origin frontcache drain work.
 The follow-up `HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_STRIDE` and
 `HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_MAX_FRONTCACHE_COUNT` controls are also
 opt-in only.  `STRIDE=2` did not hold in RUNS=10 (`remote90=6434072.00`), while

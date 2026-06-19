@@ -36,6 +36,9 @@
   size_t remote_free_backpressure_origin_transfer_stride_skip = 0;
   size_t remote_free_backpressure_origin_transfer_validation_fail = 0;
   size_t remote_free_backpressure_origin_transfer_full = 0;
+  size_t remote_free_backpressure_origin_drain_attempt = 0;
+  size_t remote_free_backpressure_origin_drain_success = 0;
+  size_t remote_free_backpressure_origin_drain_retry_success = 0;
   size_t remote_free_backpressure_drain_attempt = 0;
   size_t remote_free_backpressure_drain_success = 0;
   size_t remote_free_backpressure_retry_success = 0;

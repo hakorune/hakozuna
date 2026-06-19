@@ -127,6 +127,27 @@ static inline int hz6_remote_free_status_try_origin_transfer(
       hz6_allocator_remote_free_active_descriptor_status(origin,
                                                         descriptor,
                                                         ptr);
+#if HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_DRAIN_L1
+  if (origin_status == HZ6_REMOTE_FREE_COMMIT_STATUS_BACKPRESSURE) {
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.remote_free_backpressure_origin_drain_attempt;
+#endif
+    if (hz6_allocator_remote_free_drain_transfer_one(origin,
+                                                     route.class_id)) {
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.remote_free_backpressure_origin_drain_success;
+#endif
+      origin_status = hz6_allocator_remote_free_active_descriptor_status(
+          origin, descriptor, ptr);
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+      if (origin_status == HZ6_REMOTE_FREE_COMMIT_STATUS_COMMITTED) {
+        ++allocator->stats
+              .remote_free_backpressure_origin_drain_retry_success;
+      }
+#endif
+    }
+  }
+#endif
   if (origin_status != HZ6_REMOTE_FREE_COMMIT_STATUS_COMMITTED) {
 #if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.remote_free_backpressure_origin_transfer_fail;

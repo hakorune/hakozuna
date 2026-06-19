@@ -1,6 +1,7 @@
 #include "hz6_allocator.h"
 
-#if HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1
+#if HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1 || \
+    HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_DRAIN_L1
 static void hz6_allocator_remote_free_requeue_transfer(
     Hz6Allocator* allocator,
     Hz6TransferObject object) {
@@ -13,9 +14,13 @@ static void hz6_allocator_remote_free_requeue_transfer(
   hz6_allocator_note_transfer_push(allocator);
 }
 
-static int hz6_allocator_remote_free_drain_transfer_one(
+static int hz6_allocator_remote_free_drain_transfer_one_with_stats(
     Hz6Allocator* allocator,
-    uint16_t class_id) {
+    uint16_t class_id,
+    int note_generic_drain) {
+#if !(HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES)
+  (void)note_generic_drain;
+#endif
   if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
     return 0;
   }
@@ -29,7 +34,9 @@ static int hz6_allocator_remote_free_drain_transfer_one(
   }
 
 #if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
-  ++allocator->stats.remote_free_backpressure_drain_attempt;
+  if (note_generic_drain) {
+    ++allocator->stats.remote_free_backpressure_drain_attempt;
+  }
 #endif
 
   Hz6TransferObject transfer = {0};
@@ -79,11 +86,30 @@ static int hz6_allocator_remote_free_drain_transfer_one(
   }
 
 #if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
-  ++allocator->stats.remote_free_backpressure_drain_success;
+  if (note_generic_drain) {
+    ++allocator->stats.remote_free_backpressure_drain_success;
+  }
 #endif
   return 1;
 }
 
+int hz6_allocator_remote_free_drain_transfer_one(
+    Hz6Allocator* allocator,
+    uint16_t class_id) {
+  return hz6_allocator_remote_free_drain_transfer_one_with_stats(
+      allocator, class_id, 0);
+}
+#else
+int hz6_allocator_remote_free_drain_transfer_one(
+    Hz6Allocator* allocator,
+    uint16_t class_id) {
+  (void)allocator;
+  (void)class_id;
+  return 0;
+}
+#endif
+
+#if HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1
 static int hz6_allocator_remote_free_should_try_backpressure_drain(
     const Hz6Allocator* allocator) {
   if (!allocator) {
@@ -215,8 +241,8 @@ Hz6RemoteFreeCommitStatus hz6_allocator_remote_free_active_descriptor_status(
 #if HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1
   if (!reserve_ok &&
       hz6_allocator_remote_free_should_try_backpressure_drain(allocator) &&
-      hz6_allocator_remote_free_drain_transfer_one(allocator,
-                                                  object.class_id)) {
+      hz6_allocator_remote_free_drain_transfer_one_with_stats(
+          allocator, object.class_id, 1)) {
     reserve_ok = hz6_allocator_transfer_reserve(allocator, object.class_id,
                                                 &reservation);
 #if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
