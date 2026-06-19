@@ -126,6 +126,29 @@ The Phase 1B selected flags improve publication correctness, not speed.  The
 visible throughput drop is expected until Phase 2/3 removes legacy route scans
 and reduces synchronization cost.
 
+2026-06-19 Phase 1B transaction-lite box is implemented and selected:
+
+- `HZ6_REMOTE_FREE_REHOME_BEFORE_TRANSFER_L1=1` changes remote frees that need
+  rehome from `transfer push -> route rehome` to
+  `route rehome -> transfer push`.
+- If the transfer push fails after route rehome, the route is rolled back to
+  the origin.  This removes the concrete split-brain where the object is in the
+  destination transfer cache while the exact route still points at the origin.
+- This is not the final transaction.  It does not yet acquire ordered
+  origin/destination route-domain locks across descriptor state and transfer
+  commit, and it does not replace the old rehome primitive with
+  compare-and-transfer-owner.
+
+Smoke evidence after transaction-lite selected:
+
+```text
+bench_random_mixed_mt_remote 16 10000 100 16 32768 50 65536
+  ops/s=117711.13 fail=0 timeout=no
+
+bench_random_mixed_mt_remote 16 120000 100 16 131072 90 65536
+  ops/s=80413.30 fail=0 timeout=no
+```
+
 ## Ownership Model
 
 Keep these roles explicit:

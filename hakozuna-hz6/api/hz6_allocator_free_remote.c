@@ -2,6 +2,48 @@
 
 #include "../fronts/hz6_front.h"
 
+static int hz6_free_remote_rehome_before_transfer(
+    Hz6Allocator* allocator,
+    void* ptr,
+    Hz6RouteResult route,
+    const Hz6FrontOps* front,
+    int needs_rehome) {
+  if (!allocator || !ptr || !front || !front->remote_free_tagged) {
+    return 0;
+  }
+  if (!needs_rehome) {
+    return front->remote_free_tagged(allocator, ptr, route);
+  }
+
+  Hz6Allocator* origin = route.route_allocator;
+  if (!origin || origin == allocator) {
+    return front->remote_free_tagged(allocator, ptr, route);
+  }
+
+#if HZ6_DIAGNOSTIC_PROBES
+  int rehome_ok = hz6_allocator_route_rehome_exact(allocator, &route);
+  if (rehome_ok) {
+    ++allocator->stats.route_rehome_success;
+  } else {
+    ++allocator->stats.route_rehome_fail;
+  }
+#else
+  int rehome_ok = hz6_allocator_route_rehome_exact(allocator, &route);
+#endif
+  if (!rehome_ok) {
+    return 0;
+  }
+
+  if (front->remote_free_tagged(allocator, ptr, route)) {
+    return 1;
+  }
+
+  Hz6RouteResult rollback_route = route;
+  rollback_route.route_allocator = allocator;
+  (void)hz6_allocator_route_rehome_exact(origin, &rollback_route);
+  return 0;
+}
+
 int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
   if (!allocator || !ptr) {
     return 0;
@@ -160,6 +202,14 @@ int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
     ++allocator->stats.route_rehome_attempt;
 #endif
   }
+#if HZ6_REMOTE_FREE_REHOME_BEFORE_TRANSFER_L1
+  if (!hz6_free_remote_rehome_before_transfer(allocator, ptr, route, front,
+                                              needs_rehome)) {
+    ++allocator->stats.route_invalid;
+    return 0;
+  }
+  return 1;
+#else
   if (!front || !front->remote_free_tagged ||
       !front->remote_free_tagged(allocator, ptr, route)) {
     ++allocator->stats.route_invalid;
@@ -179,4 +229,5 @@ int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
   }
 
   return 1;
+#endif
 }

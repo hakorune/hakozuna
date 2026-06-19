@@ -67,6 +67,7 @@ HZ6_ROUTE_VISIBLE_EXACT_ONLY_L1=1
 HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1=1
 HZ6_SHARED_ROUTE_DIRECTORY_MANDATORY_L1=1
 HZ6_ROUTE_REHOME_REGISTER_BEFORE_UNREGISTER_L1=0
+HZ6_REMOTE_FREE_REHOME_BEFORE_TRANSFER_L1=1
 HZ6_ROUTE_HASH_XOR_FOLD_L1=1
 HZ6_ROUTE_LINEAR_WRAP_L1=1
 HZ6_ROUTE_LOOP_CARRY_L1=1
@@ -130,6 +131,14 @@ fails.  `HZ6_ROUTE_REHOME_REGISTER_BEFORE_UNREGISTER_L1=1` remains an
 off-by-default control: it removed the shared-directory empty window in shape,
 but the `16 x 120000 x remote90 x 16..131072` smoke timed out at 60s, so it is
 not selected.
+
+Phase 1B transaction-lite status, 2026-06-19: selected preload now enables
+`HZ6_REMOTE_FREE_REHOME_BEFORE_TRANSFER_L1=1`.  Remote frees that need route
+rehome move the route before pushing the descriptor into the destination
+transfer cache, and roll the route back if the transfer push fails.  This
+removes the old split-brain case where transfer ownership could commit while
+the route still pointed at the origin.  It is still a bounded bridge, not the
+final ordered dual-lock transaction.
 
 Latest selected-default focused guards, after fixed-floor and active-map storage
 trim, repeat-3, `bench_mixed_ws_crt`, raw
