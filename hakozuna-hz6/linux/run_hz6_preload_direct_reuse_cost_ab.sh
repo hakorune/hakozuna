@@ -18,15 +18,17 @@ Usage:
 
 Options:
   --runs N       repeat count per row and variant (default: 3)
-  --variants CSV p0_selected,p1_inbox,p2_gate,p3_claim,p4_source_gate (default: all)
+  --variants CSV p0_selected,p1_inbox,p1_inbox_external,p2_gate,p3_claim,p3_claim_external,p4_source_gate (default: all)
   --outdir DIR   output directory
   --help         show this message
 
 Variants:
   p0_selected  selected/off
   p1_inbox     owner inbox + owner-local exact maintenance, DirectReuse off
+  p1_inbox_external p1 + external descriptor owner-inbox tickets
   p2_gate      p1 + DirectReuse compiled, exact-key gate only, no claim
   p3_claim     p1 + DirectReuse claim/route/activation behavior
+  p3_claim_external p3 + external descriptor owner-inbox tickets
   p4_source_gate p1 + DirectReuse claim only at source-demand boundary
 EOF
 }
@@ -52,7 +54,7 @@ variants=()
 IFS=',' read -r -a raw_variants <<< "$VARIANTS_CSV"
 for variant in "${raw_variants[@]}"; do
   case "$variant" in
-    p0_selected|p1_inbox|p2_gate|p3_claim|p4_source_gate) variants+=("$variant") ;;
+    p0_selected|p1_inbox|p1_inbox_external|p2_gate|p3_claim|p3_claim_external|p4_source_gate) variants+=("$variant") ;;
     "") ;;
     *) echo "unknown variant: $variant" >&2; exit 2 ;;
   esac
@@ -71,6 +73,13 @@ build_variant() {
       hz6_preload_replace_define flags HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1 1
       hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 0
       ;;
+    p1_inbox_external)
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_INBOX_CORE_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 0
+      ;;
     p2_gate)
       hz6_preload_replace_define flags HZ6_REMOTE_PENDING_INBOX_CORE_L1 1
       hz6_preload_replace_define flags HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1 1
@@ -83,6 +92,15 @@ build_variant() {
       hz6_preload_replace_define flags HZ6_REMOTE_PENDING_INBOX_CORE_L1 1
       hz6_preload_replace_define flags HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1 1
       hz6_preload_replace_define flags HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1 0
+      ;;
+    p3_claim_external)
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_INBOX_CORE_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1 1
       hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 1
       hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1 1
       hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1 0

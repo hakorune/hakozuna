@@ -1812,3 +1812,31 @@ Decision: `HOLD`.  This A/B does not justify a new ordering gate.  It confirms
 that DirectReuse's tradeoff is still phase-sensitive and should be rechecked
 with RUNS=10 or a more specific MidPage/class 5 hypothesis before behavior
 changes.
+
+## 2026-06-20 Owner-Inbox External Candidate Recheck
+
+The preload direct-reuse cost runner now includes external-ticket variants so
+the correctness-complete owner-inbox lane can be measured directly.
+
+RUNS=10:
+
+```text
+p0_selected          remote50=14554879.54 remote90=3675431.50
+p1_inbox_external   remote50=14305115.84 remote90=10887492.69
+p3_claim_external   remote50=13362196.87 remote90=10747207.04
+```
+
+`p1_inbox_external` diagnostic smoke stayed clean:
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+remote_pending_external_ticket_success=1927
+remote_pending_external_ticket_full=0
+remote_pending_external_ticket_duplicate=0
+remote_pending_external_ticket_route_mismatch=0
+```
+
+Decision: `GO(candidate)/HOLD(default)`.  The next selected-candidate box should
+enable owner inbox, owner-local maintenance, and external tickets while keeping
+DirectReuse off.  Do not promote `p3_claim_external` from this evidence.

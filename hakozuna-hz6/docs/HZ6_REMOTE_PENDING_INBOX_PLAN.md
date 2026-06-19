@@ -1474,3 +1474,46 @@ opposite tradeoff versus owner-inbox+external.  Do not add another skip/order
 gate from this R3.  The next decision point is either a RUNS=10 recheck with
 the overlap counters available, or a narrower design that specifically explains
 the MidPage class 5 overlap.
+
+## 2026-06-20 Owner-Inbox External Candidate Recheck
+
+The direct-reuse cost runner now has external-ticket variants:
+
+```text
+p1_inbox_external:
+  owner inbox + owner-local exact maintenance + external tickets
+  DirectReuse off
+
+p3_claim_external:
+  p1_inbox_external + DirectReuse claim/route/activation
+```
+
+RUNS=10:
+
+```text
+p0_selected          remote50=14554879.54 remote90=3675431.50
+p1_inbox_external   remote50=14305115.84 remote90=10887492.69
+p3_claim_external   remote50=13362196.87 remote90=10747207.04
+```
+
+Candidate smoke for `p1_inbox_external`:
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+remote_free_returned_stale=0
+remote_free_returned_integrity_failure=0
+remote_pending_external_ticket_success=1927
+remote_pending_external_ticket_full=0
+remote_pending_external_ticket_duplicate=0
+remote_pending_external_ticket_route_mismatch=0
+remote_pending_external_ticket_owner_mismatch=0
+remote_pending_external_ticket_state_mismatch=0
+```
+
+Decision: `GO(candidate)/HOLD(default)`.  The current promotion candidate is
+owner inbox + external tickets with DirectReuse off.  DirectReuse remains
+useful as a phase-specialist, but adding it to the external-ticket candidate
+regressed both random remote rows in this R10.  The next behavior box should be
+an explicit selected-flag candidate for `p1_inbox_external`, followed by a final
+selected-vs-candidate run.
