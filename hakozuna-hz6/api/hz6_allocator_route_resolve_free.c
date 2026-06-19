@@ -18,7 +18,8 @@ static Hz6FreeRouteResolveKind hz6_free_route_kind_for_route(
     Hz6RouteResult route,
     int visible_hit) {
   if (route.kind == HZ6_ROUTE_VALID) {
-    if (visible_hit || (route.route_allocator && route.route_allocator != allocator)) {
+    if (visible_hit ||
+        (route.route_allocator && route.route_allocator != allocator)) {
       return HZ6_FREE_ROUTE_FOREIGN_VALID;
     }
     return HZ6_FREE_ROUTE_LOCAL_VALID;
@@ -27,6 +28,15 @@ static Hz6FreeRouteResolveKind hz6_free_route_kind_for_route(
     return HZ6_FREE_ROUTE_OWNED_INVALID;
   }
   return HZ6_FREE_ROUTE_PROVEN_EXTERNAL;
+}
+
+static Hz6RouteResult hz6_free_route_local_lookup(Hz6Allocator* allocator,
+                                                  const void* ptr) {
+#if HZ6_REMOTE_FREE_RESOLVE_LOCAL_EXACT_ONLY_L1
+  return hz6_allocator_route_lookup_exact(allocator, ptr);
+#else
+  return hz6_allocator_route_lookup(allocator, ptr);
+#endif
 }
 
 Hz6FreeRouteResolveResult hz6_allocator_route_resolve_free(
@@ -71,11 +81,12 @@ Hz6FreeRouteResolveResult hz6_allocator_route_resolve_free(
       }
     }
     if (route.kind == HZ6_ROUTE_MISS) {
-      route = hz6_allocator_route_lookup(allocator, ptr);
+      route = hz6_free_route_local_lookup(allocator, ptr);
     }
   }
 #else
-#if HZ6_LOCAL_EXACT_FIRST_FREE_L1
+#if HZ6_LOCAL_EXACT_FIRST_FREE_L1 || \
+    HZ6_REMOTE_FREE_RESOLVE_LOCAL_EXACT_ONLY_L1
   if (route.kind == HZ6_ROUTE_MISS) {
     route = hz6_allocator_route_lookup_exact(allocator, ptr);
   }
@@ -90,8 +101,9 @@ Hz6FreeRouteResolveResult hz6_allocator_route_resolve_free(
     }
   }
 #endif
-  if (route.kind == HZ6_ROUTE_MISS) {
-    route = hz6_allocator_route_lookup(allocator, ptr);
+  if (route.kind == HZ6_ROUTE_MISS &&
+      !HZ6_REMOTE_FREE_RESOLVE_LOCAL_EXACT_ONLY_L1) {
+    route = hz6_free_route_local_lookup(allocator, ptr);
   }
 #endif
 

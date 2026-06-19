@@ -61,6 +61,7 @@ HZ6_TOY_FULL_BLOCK_PREFILL_MAX_SLOTS=128
 HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1=1
 HZ6_ROUTE_TOMBSTONE_COMPACT_L1=1
 HZ6_ROUTE_DOMAIN_SYNC_L1=1
+HZ6_ROUTE_DOMAIN_SPIN_PAUSE_L1=0
 HZ6_ROUTE_COMPACT_DEFER_REMOTE_L1=1
 HZ6_ROUTE_VISIBLE_AFTER_LOCAL_MISS_L1=1
 HZ6_ROUTE_VISIBLE_EXACT_ONLY_L1=1
@@ -72,6 +73,7 @@ HZ6_ROUTE_REHOME_REGISTER_BEFORE_UNREGISTER_L1=0
 HZ6_REMOTE_FREE_REHOME_BEFORE_TRANSFER_L1=1
 HZ6_REMOTE_FREE_ROUTE_RESOLVE_L1=1
 HZ6_REMOTE_FREE_RESOLVE_SHARED_FIRST_L1=0
+HZ6_REMOTE_FREE_RESOLVE_LOCAL_EXACT_ONLY_L1=0
 HZ6_ROUTE_HASH_XOR_FOLD_L1=1
 HZ6_ROUTE_LINEAR_WRAP_L1=1
 HZ6_ROUTE_LOOP_CARRY_L1=1
@@ -161,6 +163,15 @@ lock timed out the `remote90 16..131072` smoke.
 `HZ6_REMOTE_FREE_RESOLVE_SHARED_FIRST_L1=1` is kept off: shared-first completed
 but regressed the same r90 smoke, so the resolver keeps the existing
 local-first order while shared publication remains mandatory.
+
+Phase 3 control closeout, 2026-06-19: two narrow lock/lookup controls are kept
+off.  `HZ6_REMOTE_FREE_RESOLVE_LOCAL_EXACT_ONLY_L1=1` completed but regressed
+the `remote90 16..131072` smoke (`81209.19 ops/s`), so resolver local fallback
+stays full route lookup for now.  `HZ6_ROUTE_DOMAIN_SPIN_PAUSE_L1=1` also
+completed but regressed the same smoke (`67217.46 ops/s`), so the selected
+route-domain spin stays the previous tight spin.  Raising
+`HZ6_SHARED_ROUTE_DIRECTORY_LOCK_SHARDS` from 256 to 1024 completed but
+regressed r90 (`63935.77 ops/s`), so selected keeps 256 shards.
 
 Latest selected-default focused guards, after fixed-floor and active-map storage
 trim, repeat-3, `bench_mixed_ws_crt`, raw

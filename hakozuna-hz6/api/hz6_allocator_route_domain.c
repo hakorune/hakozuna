@@ -2,6 +2,13 @@
 
 #include <stdatomic.h>
 
+static void hz6_allocator_route_domain_spin_pause(void) {
+#if HZ6_ROUTE_DOMAIN_SPIN_PAUSE_L1 && \
+    (defined(__x86_64__) || defined(__i386__))
+  __asm__ __volatile__("pause");
+#endif
+}
+
 void hz6_allocator_route_domain_init(Hz6Allocator* allocator) {
 #if HZ6_ROUTE_DOMAIN_SYNC_L1
   if (!allocator) {
@@ -24,6 +31,7 @@ void hz6_allocator_route_domain_lock(const Hz6Allocator* allocator) {
   }
   atomic_flag* lock = &((Hz6Allocator*)allocator)->route_domain_lock;
   while (atomic_flag_test_and_set_explicit(lock, memory_order_acquire)) {
+    hz6_allocator_route_domain_spin_pause();
   }
 #else
   (void)allocator;

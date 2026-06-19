@@ -193,6 +193,26 @@ bench_random_mixed_mt_remote 16 120000 100 16 131072 90 65536
   ops/s=92346.57 fail=0 timeout=no
 ```
 
+Phase 3 controls closed on 2026-06-19:
+
+```text
+HZ6_REMOTE_FREE_RESOLVE_SHARED_FIRST_L1=1
+  completed but regressed remote90 to 69630.32 ops/s
+
+HZ6_REMOTE_FREE_RESOLVE_LOCAL_EXACT_ONLY_L1=1
+  completed but regressed remote90 to 81209.19 ops/s
+
+HZ6_ROUTE_DOMAIN_SPIN_PAUSE_L1=1
+  completed but regressed remote90 to 67217.46 ops/s
+
+HZ6_SHARED_ROUTE_DIRECTORY_LOCK_SHARDS=1024
+  completed but regressed remote90 to 63935.77 ops/s
+```
+
+Keep the selected Phase 3 shape at shared directory enabled, 256 writer-lock
+shards, resolver local-first order, full local route fallback, and tight
+route-domain spin.
+
 ## Ownership Model
 
 Keep these roles explicit:
