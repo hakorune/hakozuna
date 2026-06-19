@@ -108,6 +108,33 @@
           shared_dir_maintenance_cleared);
 
   fprintf(stderr,
+          "[HZ6_PRELOAD_RESOLVE_DETAIL] "
+          "free_resolve_attempt=%zu "
+          "free_resolve_shared_probe=%zu "
+          "free_resolve_shared_valid=%zu "
+          "free_resolve_shared_miss=%zu "
+          "free_resolve_shared_retry=%zu "
+          "free_resolve_shared_stale=%zu "
+          "free_resolve_local_lookup=%zu "
+          "free_resolve_visible_shadow=%zu "
+          "free_resolve_visible_hit=%zu "
+          "free_resolve_result_local_valid=%zu "
+          "free_resolve_result_foreign_valid=%zu "
+          "free_resolve_result_owned_invalid=%zu "
+          "free_resolve_result_proven_external=%zu "
+          "free_resolve_result_retry=%zu "
+          "free_resolve_result_unresolved_integrity=%zu\n",
+          free_resolve_attempt, free_resolve_shared_probe,
+          free_resolve_shared_valid, free_resolve_shared_miss,
+          free_resolve_shared_retry, free_resolve_shared_stale,
+          free_resolve_local_lookup, free_resolve_visible_shadow,
+          free_resolve_visible_hit, free_resolve_result_local_valid,
+          free_resolve_result_foreign_valid,
+          free_resolve_result_owned_invalid,
+          free_resolve_result_proven_external, free_resolve_result_retry,
+          free_resolve_result_unresolved_integrity);
+
+  fprintf(stderr,
           "[HZ6_PRELOAD_FRONT_DETAIL] descriptor_live_max=%zu "
           "source_block_active_max=%zu frontcache_total_max=%zu "
           "frontcache_reuse_hit=%zu frontcache_reuse_invalid=%zu "

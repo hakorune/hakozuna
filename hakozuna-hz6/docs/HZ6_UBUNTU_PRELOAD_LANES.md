@@ -214,6 +214,14 @@ exited 0, `remote50 16..32768` reached `180665.35 ops/s`, and `remote90
 16..131072` reached `130647.25 ops/s`.  The extra shared snapshot on local
 miss is a correctness boundary; performance recovery belongs to Phase 3.
 
+Phase 3 observation status, 2026-06-19: selected preload stats now include
+`HZ6_PRELOAD_RESOLVE_DETAIL`.  The counters split resolver attempts, shared
+snapshot probes and statuses, local lookup attempts, visible-shadow attempts,
+visible hits, and final resolver result kinds.  Focused smokes completed:
+`HZ6_PRELOAD_STATS=1 /bin/true` printed the new line, `remote50 16..32768`
+reached `162177.18 ops/s`, and `remote90 16..131072` reached
+`129113.97 ops/s`.
+
 Phase 3 control closeout, 2026-06-19: two narrow lock/lookup controls are kept
 off.  `HZ6_REMOTE_FREE_RESOLVE_LOCAL_EXACT_ONLY_L1=1` completed but regressed
 the `remote90 16..131072` smoke (`81209.19 ops/s`), so resolver local fallback

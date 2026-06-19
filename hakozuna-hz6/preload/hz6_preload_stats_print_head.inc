@@ -66,6 +66,7 @@
   size_t route_tombstone_cond_cooldown_blocked = 0;
   size_t route_tombstone_cond_highwater = 0;
 #include "hz6_preload_stats_print_shared_route_vars.inc"
+#include "hz6_preload_stats_print_resolve_vars.inc"
   size_t descriptor_live_max = 0;
   size_t source_block_active_max = 0;
   size_t frontcache_total_max = 0;
@@ -347,6 +348,7 @@
           stats.route_tombstone_cond_highwater;
     }
 #include "hz6_preload_stats_print_shared_route_accumulate.inc"
+#include "hz6_preload_stats_print_resolve_accumulate.inc"
     if (stats.descriptor_live_max > descriptor_live_max) {
       descriptor_live_max = stats.descriptor_live_max;
     }

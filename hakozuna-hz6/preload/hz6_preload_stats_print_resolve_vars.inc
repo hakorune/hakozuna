@@ -1,0 +1,15 @@
+  size_t free_resolve_attempt = 0;
+  size_t free_resolve_shared_probe = 0;
+  size_t free_resolve_shared_valid = 0;
+  size_t free_resolve_shared_miss = 0;
+  size_t free_resolve_shared_retry = 0;
+  size_t free_resolve_shared_stale = 0;
+  size_t free_resolve_local_lookup = 0;
+  size_t free_resolve_visible_shadow = 0;
+  size_t free_resolve_visible_hit = 0;
+  size_t free_resolve_result_local_valid = 0;
+  size_t free_resolve_result_foreign_valid = 0;
+  size_t free_resolve_result_owned_invalid = 0;
+  size_t free_resolve_result_proven_external = 0;
+  size_t free_resolve_result_retry = 0;
+  size_t free_resolve_result_unresolved_integrity = 0;
