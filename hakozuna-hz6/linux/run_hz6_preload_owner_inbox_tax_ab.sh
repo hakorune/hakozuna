@@ -216,6 +216,12 @@ counter_keys=(
   remote_free_returned_backpressure
   remote_free_returned_uncommitted
   remote_free_origin_pending_commit
+  transfer_pop
+  source_alloc
+  frontcache_reuse_hit
+  midpage_source_alloc
+  toy_source_alloc
+  large_source_alloc
   route_unregister_while_pending
   route_replace_while_pending
   route_rehome_while_pending
@@ -259,7 +265,12 @@ counter_keys=(
   remote_pending_direct_integrity_failure
   remote_pending_direct_claim_success_toy
   remote_pending_direct_claim_success_midpage
+  remote_pending_direct_claim_while_transfer_nonempty
+  remote_pending_direct_claim_while_frontcache_nonempty
+  remote_pending_direct_claim_before_existing_reuse
   remote_pending_direct_claim_success_transfer_nonempty
+  remote_pending_direct_claim_success_transfer_toy
+  remote_pending_direct_claim_success_transfer_midpage
   remote_pending_direct_source_boundary_attempt
   remote_pending_direct_source_boundary_gate_hit
   remote_pending_direct_source_boundary_claim_success

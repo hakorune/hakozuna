@@ -3317,6 +3317,55 @@ easy to run through the shared profile frontier while preserving immediate
 rollback: selected/default and `hz6-high-remote-owner-inbox-target` remain
 DirectReuse-off.
 
+## 2026-06-20 DirectReuseTransferOutcomeAudit-L1
+
+Extended `run_hz6_preload_owner_inbox_tax_ab.sh` to extract existing outcome
+counters alongside DirectReuse overlap counters:
+
+```text
+transfer_pop
+source_alloc
+frontcache_reuse_hit
+midpage_source_alloc / toy_source_alloc / large_source_alloc
+remote_pending_direct_claim_while_transfer_nonempty
+remote_pending_direct_claim_while_frontcache_nonempty
+remote_pending_direct_claim_before_existing_reuse
+remote_pending_direct_claim_success_transfer_nonempty
+remote_pending_direct_claim_success_transfer_toy
+remote_pending_direct_claim_success_transfer_midpage
+```
+
+Diagnostic RUNS=3:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 3 \
+  --rows remote50 \
+  --variants p1_external_direct_reuse_observe
+
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 3 \
+  --rows remote90_short \
+  --variants p1_external_direct_reuse_observe
+```
+
+Observed medians:
+
+```text
+row             direct_claim  transfer-overlap  source_alloc  transfer_pop
+remote50        3461             6                 711          2546
+remote90_short   591           591               28628         51559
+```
+
+`remote90_short` is still diagnostic-shape only because it reports
+`remote_free_returned_uncommitted` under counter-heavy builds.  It is not a
+zero gate.  The useful signal is the split: remote50 DirectReuse mostly does
+not overlap same-class transfer inventory, while high-remote DirectReuse does.
+If the next behavior box exists, it should be transfer-aware only for the
+high-remote/direct-reuse profile shape, not a blanket DirectReuse skip.
+
 ## 2026-06-20 Profile Frontier Alias Smoke
 
 The new profile aliases were exercised through the existing focused profile
