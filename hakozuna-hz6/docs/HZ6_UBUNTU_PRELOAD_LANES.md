@@ -32,6 +32,9 @@ Default flags selected by `build_hz6_preload.sh`:
 
 ```text
 HZ6_ROUTE_TABLE_CAPACITY=32768
+HZ6_TRANSFER_CACHE_CAPACITY=256
+HZ6_PROFILE_SPEED_TRANSFER_CAPACITY=256
+HZ6_PROFILE_REMOTE_TRANSFER_CAPACITY=256
 HZ6_OBJECT_DESCRIPTOR_CAPACITY=8192
 HZ6_SOURCE_BLOCK_CAPACITY=1024
 HZ6_FRONT_CACHE_BIN_CAPACITY=4096
@@ -135,6 +138,11 @@ state/owner mutation and the integrity smoke gates
 `transfer_reserve_full_after_state_mutation=0`.  This is a correctness step,
 not a perf closeout: quick RUNS=3 held `remote50` near `13.97M` ops/s but
 `remote90` was `257756.17` ops/s, below the prior selected RUNS=10 median.
+`RemoteFreeBackpressure-L1` raises the selected transfer compile/profile
+capacity to 256.  RUNS=10 held `remote50` at `14363938.00` ops/s and lifted
+`remote90` to `6610576.93` ops/s.  The smoke still showed
+`transfer_reserve_full=31316`, so capacity is a selected relief box, not the
+final backpressure contract.
 Short remote rows can now be made to complete, but long 300K rows still show a
 page-table lookup cliff.  The active design is `RemoteFreeRouteResolve-L1`,
 not a preload-only owner hint: Ubuntu preload must call the shared core
