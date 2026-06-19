@@ -70,6 +70,10 @@
   size_t remote_pending_external_ticket_full;
   size_t remote_pending_external_ticket_duplicate;
   size_t remote_pending_external_ticket_consume;
+  size_t remote_pending_external_ticket_current;
+  size_t remote_pending_external_ticket_high_water;
+  size_t remote_pending_external_ticket_consume_empty;
+  size_t remote_pending_external_ticket_frontcache_full;
   size_t remote_pending_external_ticket_route_mismatch;
   size_t remote_pending_external_ticket_owner_mismatch;
   size_t remote_pending_external_ticket_state_mismatch;

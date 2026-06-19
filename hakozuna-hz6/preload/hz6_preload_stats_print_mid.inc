@@ -133,6 +133,10 @@
           "remote_pending_external_ticket_full=%zu "
           "remote_pending_external_ticket_duplicate=%zu "
           "remote_pending_external_ticket_consume=%zu "
+          "remote_pending_external_ticket_current=%zu "
+          "remote_pending_external_ticket_high_water=%zu "
+          "remote_pending_external_ticket_consume_empty=%zu "
+          "remote_pending_external_ticket_frontcache_full=%zu "
           "remote_pending_external_ticket_route_mismatch=%zu "
           "remote_pending_external_ticket_owner_mismatch=%zu "
           "remote_pending_external_ticket_state_mismatch=%zu "
@@ -289,6 +293,10 @@
           remote_pending_external_ticket_full,
           remote_pending_external_ticket_duplicate,
           remote_pending_external_ticket_consume,
+          remote_pending_external_ticket_current,
+          remote_pending_external_ticket_high_water,
+          remote_pending_external_ticket_consume_empty,
+          remote_pending_external_ticket_frontcache_full,
           remote_pending_external_ticket_route_mismatch,
           remote_pending_external_ticket_owner_mismatch,
           remote_pending_external_ticket_state_mismatch,

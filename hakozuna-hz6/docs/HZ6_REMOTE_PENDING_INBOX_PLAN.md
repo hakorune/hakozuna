@@ -896,3 +896,92 @@ remote_free_returned_uncommitted=0
 Decision: `GO(consumer)/HOLD(producer)`.  Owner-local maintenance can now drain
 external tickets once producer publish is connected.  The next box may connect
 only the storage-ineligible owner-inbox branch to ticket publish.
+
+## 2026-06-20 External Ticket Publish Connection
+
+`ExternalDescriptorOwnerInboxTicketPublish-L1` connects only the
+storage-ineligible owner-inbox branch to external ticket publish.  Inline
+descriptors continue to use the existing descriptor-index inbox.  On successful
+ticket publish, remote free is treated as committed and route rehome is skipped.
+
+Owner-inbox + external-ticket smoke:
+
+```text
+remote_free_origin_pending_commit=36870
+remote_free_pending_no_rehome=36870
+remote_pending_enqueue_success=34656
+remote_pending_external_ticket_attempt=2214
+remote_pending_external_ticket_success=2214
+remote_pending_external_ticket_full=0
+remote_pending_external_ticket_duplicate=0
+remote_pending_external_ticket_consume=203
+remote_pending_external_ticket_route_mismatch=0
+remote_pending_external_ticket_owner_mismatch=0
+remote_pending_external_ticket_state_mismatch=0
+remote_pending_external_ticket_storage_mismatch=0
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+```
+
+Quick RUNS=3:
+
+```text
+selected        remote50=14477592.47 remote90=8620515.03
+external_ticket remote50=13617427.48 remote90=10453423.99
+```
+
+Decision: `GO(correctness)/HOLD(default)`.  The ticket path closes the
+backpressure tail without integrity failures, but it still costs remote50.
+Keep it as a high-remote candidate while the owner-inbox remote50 cost remains
+open.
+
+## 2026-06-20 External Ticket Observe And Consume Gate
+
+`ExternalTicketObserveAndConsumeGate-L1` adds external-ticket backlog counters
+and avoids an empty external-ticket consume probe before inline pending pop
+when the exact key has no external tickets.
+
+Before the gate, smoke showed useful coverage but noisy empty probes:
+
+```text
+remote_pending_external_ticket_attempt=1936
+remote_pending_external_ticket_success=1936
+remote_pending_external_ticket_consume=128
+remote_pending_external_ticket_current=1808
+remote_pending_external_ticket_high_water=316
+remote_pending_external_ticket_consume_empty=3750
+remote_pending_external_ticket_frontcache_full=0
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+```
+
+After the gate:
+
+```text
+remote_pending_external_ticket_attempt=2161
+remote_pending_external_ticket_success=2161
+remote_pending_external_ticket_consume=191
+remote_pending_external_ticket_current=1970
+remote_pending_external_ticket_high_water=269
+remote_pending_external_ticket_consume_empty=0
+remote_pending_external_ticket_frontcache_full=0
+remote_pending_external_ticket_route_mismatch=0
+remote_pending_external_ticket_owner_mismatch=0
+remote_pending_external_ticket_state_mismatch=0
+remote_pending_external_ticket_storage_mismatch=0
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+```
+
+Quick RUNS=3 after the gate:
+
+```text
+external_ticket_consume_gate remote50=14140243.08
+external_ticket_consume_gate remote90=8797166.63
+```
+
+Decision: `GO(tooling+shape)/HOLD(default)`.  The counter set is now sufficient
+to distinguish external-ticket backlog from empty consume probes, and the empty
+probe is removed.  Default selection is still held because external-ticket
+backlog remains and the quick performance sample did not beat the earlier
+external-ticket publish sample.

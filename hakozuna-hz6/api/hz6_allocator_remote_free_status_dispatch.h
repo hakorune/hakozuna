@@ -102,6 +102,15 @@ static inline int hz6_remote_free_status_try_owner_inbox(
       (Hz6ObjectDescriptor*)route.descriptor;
   if (descriptor < origin->descriptors ||
       descriptor >= origin->descriptors + HZ6_OBJECT_DESCRIPTOR_CAPACITY) {
+    if (hz6_allocator_remote_pending_external_ticket_publish(
+            origin, descriptor, ptr, route.generation, route.front_id,
+            route.class_id)) {
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.remote_free_origin_pending_commit;
+      ++allocator->stats.remote_free_pending_no_rehome;
+#endif
+      return 1;
+    }
 #if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.remote_pending_owner_inbox_storage_ineligible;
 #endif

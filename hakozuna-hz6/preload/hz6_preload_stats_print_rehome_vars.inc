@@ -69,6 +69,10 @@
   size_t remote_pending_external_ticket_full = 0;
   size_t remote_pending_external_ticket_duplicate = 0;
   size_t remote_pending_external_ticket_consume = 0;
+  size_t remote_pending_external_ticket_current = 0;
+  size_t remote_pending_external_ticket_high_water = 0;
+  size_t remote_pending_external_ticket_consume_empty = 0;
+  size_t remote_pending_external_ticket_frontcache_full = 0;
   size_t remote_pending_external_ticket_route_mismatch = 0;
   size_t remote_pending_external_ticket_owner_mismatch = 0;
   size_t remote_pending_external_ticket_state_mismatch = 0;

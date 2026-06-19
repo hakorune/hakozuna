@@ -363,6 +363,21 @@ owner-local pending maintenance.  Maintenance now arms on either inline pending
 or an external ticket exact-key head, and tries external-ticket consume before
 the inline descriptor-index pop.  The producer is still disconnected, so smoke
 keeps ticket counters at zero.
+`ExternalDescriptorOwnerInboxTicketPublish-L1` connects only the
+storage-ineligible owner-inbox branch to ticket publish.  The opt-in smoke
+closed the previous tail with `remote_free_returned_backpressure=0`,
+`remote_free_returned_uncommitted=0`, `remote_pending_external_ticket_success=2214`,
+and zero full/duplicate/route/owner/state/storage mismatch gates.  Quick RUNS=3
+measured selected `remote50=14.48M`, `remote90=8.63M` versus external-ticket
+`remote50=13.62M`, `remote90=10.45M`, so this is `GO(correctness)/HOLD(default)`.
+`ExternalTicketObserveAndConsumeGate-L1` adds current/high-water/empty/full
+counters for external tickets and avoids calling external consume when the
+exact-key external list is empty.  Follow-up smoke kept backpressure and
+uncommitted returns at zero, moved `remote_pending_external_ticket_consume_empty`
+from `3750` to `0`, and showed `remote_pending_external_ticket_current=1970`
+with `high_water=269`.  Quick RUNS=3 was `remote50=14.14M`,
+`remote90=8.80M`, so default promotion remains held while owner-inbox backlog
+and remote50 cost are still open.
 `RemoteFreeBackpressureOriginDrain-L1` tried that full path directly as an
 opt-in no-go.  It drains one same-class transfer object from the origin transfer
 cache into the origin frontcache and retries origin commit once.  Safety smoke
