@@ -2572,5 +2572,16 @@ class_shard  16.37M   13.85M    10.94M
 ```
 
 Diagnostic paired RUNS=1 populated `counters.tsv`; class-shard did not clearly
-reduce returned backpressure or transfer full events in that sample.  Promotion
-remains HOLD until a RUNS=10 paired result is positive.
+reduce returned backpressure or transfer full events in that sample.
+
+RUNS=10 paired result:
+
+```text
+variant      local0           remote50         remote90
+selected     16.59M/67.38MiB  14.86M/69.50MiB 10.88M/72.21MiB
+class_shard  16.19M/67.44MiB  15.02M/69.50MiB 10.83M/72.15MiB
+```
+
+Final decision for this box: `GO(tooling)/NO-GO(default)`.  Class sharding is
+not a selected/default win.  It slightly helps remote50 in this batch but costs
+local0 and does not improve remote90.
