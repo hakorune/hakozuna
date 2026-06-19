@@ -1,4 +1,5 @@
 #include "hz6_allocator_remote_pending_external_dup_index.h"
+#include "hz6_allocator_remote_pending_storage_access.h"
 
 #include <stdint.h>
 
@@ -30,7 +31,7 @@ static size_t hz6_remote_pending_external_dup_hash(
 
 void hz6_remote_pending_external_dup_index_init(Hz6Allocator* allocator) {
   for (size_t i = 0; i < HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_CAPACITY; ++i) {
-    allocator->remote_pending_external_dup_index[i] =
+    HZ6_RP_EXTERNAL_DUP_INDEX(allocator)[i] =
         HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_NONE;
   }
 }
@@ -47,7 +48,7 @@ int hz6_remote_pending_external_dup_index_find(
        ++offset) {
     size_t slot = (start + offset) %
                   HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_CAPACITY;
-    uint32_t ticket_index = allocator->remote_pending_external_dup_index[slot];
+    uint32_t ticket_index = HZ6_RP_EXTERNAL_DUP_INDEX(allocator)[slot];
     ++probes;
     if (ticket_index == HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_NONE) {
       if (out_probes) {
@@ -60,15 +61,15 @@ int hz6_remote_pending_external_dup_index_find(
     }
     if (ticket_index >= HZ6_REMOTE_PENDING_EXTERNAL_TICKET_CAPACITY) {
       hz6_remote_pending_external_dup_index_note_stale(allocator);
-      allocator->remote_pending_external_dup_index[slot] =
+      HZ6_RP_EXTERNAL_DUP_INDEX(allocator)[slot] =
           HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_TOMBSTONE;
       continue;
     }
     Hz6RemotePendingExternalTicket* ticket =
-        &allocator->remote_pending_external_tickets[ticket_index];
+        &HZ6_RP_EXTERNAL_TICKETS(allocator)[ticket_index];
     if (ticket->state == HZ6_REMOTE_PENDING_SLOT_NONE) {
       hz6_remote_pending_external_dup_index_note_stale(allocator);
-      allocator->remote_pending_external_dup_index[slot] =
+      HZ6_RP_EXTERNAL_DUP_INDEX(allocator)[slot] =
           HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_TOMBSTONE;
       continue;
     }
@@ -94,7 +95,7 @@ int hz6_remote_pending_external_dup_index_insert(Hz6Allocator* allocator,
     return 0;
   }
   Hz6RemotePendingExternalTicket* ticket =
-      &allocator->remote_pending_external_tickets[ticket_index];
+      &HZ6_RP_EXTERNAL_TICKETS(allocator)[ticket_index];
   size_t start =
       hz6_remote_pending_external_dup_hash(ticket->descriptor,
                                            ticket->generation);
@@ -103,14 +104,14 @@ int hz6_remote_pending_external_dup_index_insert(Hz6Allocator* allocator,
        ++offset) {
     size_t slot = (start + offset) %
                   HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_CAPACITY;
-    uint32_t value = allocator->remote_pending_external_dup_index[slot];
+    uint32_t value = HZ6_RP_EXTERNAL_DUP_INDEX(allocator)[slot];
     if (value == HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_TOMBSTONE &&
         first_tombstone == HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_NONE) {
       first_tombstone = (uint32_t)slot;
       continue;
     }
     if (value == HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_NONE) {
-      allocator->remote_pending_external_dup_index
+      HZ6_RP_EXTERNAL_DUP_INDEX(allocator)
           [first_tombstone == HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_NONE
                ? slot
                : first_tombstone] = ticket_index;
@@ -118,7 +119,7 @@ int hz6_remote_pending_external_dup_index_insert(Hz6Allocator* allocator,
     }
   }
   if (first_tombstone != HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_NONE) {
-    allocator->remote_pending_external_dup_index[first_tombstone] =
+    HZ6_RP_EXTERNAL_DUP_INDEX(allocator)[first_tombstone] =
         ticket_index;
     return 1;
   }
@@ -135,12 +136,12 @@ int hz6_remote_pending_external_dup_index_remove(
        ++offset) {
     size_t slot = (start + offset) %
                   HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_CAPACITY;
-    uint32_t value = allocator->remote_pending_external_dup_index[slot];
+    uint32_t value = HZ6_RP_EXTERNAL_DUP_INDEX(allocator)[slot];
     if (value == HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_NONE) {
       return 0;
     }
     if (value == ticket_index) {
-      allocator->remote_pending_external_dup_index[slot] =
+      HZ6_RP_EXTERNAL_DUP_INDEX(allocator)[slot] =
           HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_TOMBSTONE;
       return 1;
     }

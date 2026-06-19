@@ -11,6 +11,16 @@ int main(void) {
 #endif
   size_t inline_slot_bytes =
 #if HZ6_REMOTE_PENDING_INBOX_CORE_L1
+#if HZ6_REMOTE_PENDING_LAZY_STORAGE_L1
+      sizeof(((Hz6RemotePendingStorage*)0)->remote_pending_next) +
+      sizeof(((Hz6RemotePendingStorage*)0)->remote_pending_slot_state) +
+      sizeof(((Hz6RemotePendingStorage*)0)->remote_pending_published_ptr) +
+      sizeof(((Hz6RemotePendingStorage*)0)->remote_pending_published_generation) +
+      sizeof(((Hz6RemotePendingStorage*)0)->remote_pending_published_bytes) +
+      sizeof(((Hz6RemotePendingStorage*)0)->remote_pending_published_front_id) +
+      sizeof(((Hz6RemotePendingStorage*)0)->remote_pending_published_class_id) +
+      sizeof(((Hz6RemotePendingStorage*)0)->remote_pending_owner_token);
+#else
       sizeof(((Hz6Allocator*)0)->remote_pending_next) +
       sizeof(((Hz6Allocator*)0)->remote_pending_slot_state) +
       sizeof(((Hz6Allocator*)0)->remote_pending_published_ptr) +
@@ -19,20 +29,30 @@ int main(void) {
       sizeof(((Hz6Allocator*)0)->remote_pending_published_front_id) +
       sizeof(((Hz6Allocator*)0)->remote_pending_published_class_id) +
       sizeof(((Hz6Allocator*)0)->remote_pending_owner_token);
+#endif
 #else
       0u;
 #endif
   size_t external_ticket_bytes =
 #if HZ6_REMOTE_PENDING_INBOX_CORE_L1 && HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1
+#if HZ6_REMOTE_PENDING_LAZY_STORAGE_L1
+      sizeof(((Hz6RemotePendingStorage*)0)->remote_pending_external_tickets) +
+      sizeof(((Hz6RemotePendingStorage*)0)->remote_pending_external_head);
+#else
       sizeof(((Hz6Allocator*)0)->remote_pending_external_tickets) +
       sizeof(((Hz6Allocator*)0)->remote_pending_external_head);
+#endif
 #else
       0u;
 #endif
   size_t external_dup_index_bytes =
 #if HZ6_REMOTE_PENDING_INBOX_CORE_L1 && HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1 && \
     HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_L1
+#if HZ6_REMOTE_PENDING_LAZY_STORAGE_L1
+      sizeof(((Hz6RemotePendingStorage*)0)->remote_pending_external_dup_index);
+#else
       sizeof(((Hz6Allocator*)0)->remote_pending_external_dup_index);
+#endif
 #else
       0u;
 #endif

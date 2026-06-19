@@ -84,6 +84,7 @@ HZ6_PRELOAD_SELECTED_BASE_CFLAGS=(
   -DHZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1=1
   -DHZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1=1
   -DHZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_L1=1
+  -DHZ6_REMOTE_PENDING_LAZY_STORAGE_L1=1
   -DHZ6_REMOTE_PENDING_DIRECT_REUSE_L1=0
   -DHZ6_REMOTE_PENDING_DIRECT_CLAIM_L1=0
 )
@@ -109,6 +110,7 @@ hz6_preload_apply_owner_inbox_external_profile() {
   hz6_preload_replace_define profile_flags_ref HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1 1
   hz6_preload_replace_define profile_flags_ref HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1 1
   hz6_preload_replace_define profile_flags_ref HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_L1 1
+  hz6_preload_replace_define profile_flags_ref HZ6_REMOTE_PENDING_LAZY_STORAGE_L1 1
   hz6_preload_replace_define profile_flags_ref HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 0
   hz6_preload_replace_define profile_flags_ref HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1 0
 }
@@ -120,6 +122,7 @@ hz6_preload_apply_owner_inbox_off_profile() {
   hz6_preload_replace_define profile_flags_ref HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1 0
   hz6_preload_replace_define profile_flags_ref HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1 0
   hz6_preload_replace_define profile_flags_ref HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_L1 0
+  hz6_preload_replace_define profile_flags_ref HZ6_REMOTE_PENDING_LAZY_STORAGE_L1 0
   hz6_preload_replace_define profile_flags_ref HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 0
   hz6_preload_replace_define profile_flags_ref HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1 0
 }

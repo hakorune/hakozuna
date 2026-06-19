@@ -19,5 +19,6 @@ void hz6_allocator_destroy(Hz6Allocator* allocator) {
 #endif
   hz6_midpage_active_map_destroy(allocator);
   hz6_allocator_remote_pending_note_after_destroy(allocator);
+  hz6_allocator_remote_pending_storage_release(allocator);
   allocator->owner.state = HZ6_OWNER_DEAD;
 }

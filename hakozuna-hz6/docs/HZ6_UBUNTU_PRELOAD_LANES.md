@@ -2263,3 +2263,93 @@ Decision: `GO(tooling)/DESIGN checkpoint`.  The local0 RSS tax is primarily the
 fixed owner-inbox storage block.  A useful lazy-storage box must move the
 inline slot/proof arrays too; making only external tickets lazy is too small to
 be the main local0 fix.
+
+## 2026-06-20 OwnerInboxStorageProvider-L1
+
+Added the behavior-off storage provider for the next lazy owner-inbox box:
+
+```text
+hakozuna-hz6/api/hz6_allocator_owner_inbox_storage_provider.c
+hakozuna-hz6/api/hz6_allocator_owner_inbox_storage_provider.h
+```
+
+The provider uses OS-backed allocation directly instead of `malloc()`:
+
+```text
+Linux mmap / munmap
+Windows VirtualAlloc / VirtualFree
+```
+
+It page-rounds the allocation, zero-fills the returned block, and stores the
+rounded size for release.  This is the recursion-safe boundary needed before
+moving owner-inbox arrays out of `Hz6Allocator`.
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+./hakozuna-hz6/linux/run_hz6_owner_inbox_storage_footprint.sh
+```
+
+Latest storage footprint remained unchanged, as expected for a boundary-only
+box:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_storage_footprint_20260620_052205
+
+p1_external owner_inbox_bytes=336896
+```
+
+Decision: `GO(boundary)/HOLD(lazy migration)`.  Next work should migrate the
+inline pending slot/proof arrays plus external-ticket storage behind this
+provider; do not use ordinary `calloc()` for that migration.
+
+## 2026-06-20 OwnerInboxLazyStorage-L1
+
+The owner-inbox external selected candidate now stores pending inbox metadata in
+a lazy OS-backed block instead of fixed arrays inside `Hz6Allocator`.  This
+covers both inline pending slot/proof storage and external ticket/index storage.
+The storage provider uses direct `mmap` on Linux and `VirtualAlloc` on Windows,
+so preload initialization does not recurse through interposed `calloc()`.
+
+The storage pointer is protected by an allocator-local init lock and is
+release-published only after reset.  This matters: publishing before reset
+created a production-only remote50 race where external-ticket consume could
+observe partially initialized lazy storage and hit the integrity abort.
+
+Verification passed:
+
+```text
+build_hz6_r1_smokes.sh
+build_hz6_preload.sh
+build_hz6_preload_owner_inbox_external_target.sh
+run_hz6_preload_integrity_smoke.sh
+run_hz6_owner_inbox_storage_footprint.sh
+run_hz6_preload_owner_inbox_tax_ab.sh --production --runs 3 --rows local0,remote50,remote90 --variants p0_off,p1_external
+```
+
+Footprint moved as intended:
+
+```text
+p0_off       sizeof_Hz6Allocator=3251928
+p1_external sizeof_Hz6Allocator=3251960
+p1 logical owner_inbox_bytes=336896
+```
+
+Production RUNS=3 after lazy storage:
+
+```text
+p0_off      local0   16.13M ops/s  67.38 MiB
+p1_external local0   16.36M ops/s  67.12 MiB
+p0_off      remote50 14.56M ops/s  69.75 MiB
+p1_external remote50 13.76M ops/s  74.88 MiB
+p0_off      remote90  3.22M ops/s  79.66 MiB
+p1_external remote90 10.79M ops/s  77.34 MiB
+```
+
+Decision: keep p1 owner-inbox external as `GO(candidate)/HOLD(default)`.  The
+local-only fixed RSS tax is closed; default promotion still waits on reducing
+the remote50 runtime tax or making the owner-inbox lane an explicit high-remote
+profile.

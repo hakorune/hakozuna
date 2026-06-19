@@ -17,6 +17,7 @@
 #include "../source/hz6_source_registry.h"
 #include "../transfer/hz6_transfer.h"
 #include "../transfer/hz6_transfer_backend.h"
+#include "hz6_allocator_owner_inbox_storage_provider.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -393,6 +394,37 @@ typedef struct Hz6RemotePendingExternalTicket {
   uint8_t reserved;
 } Hz6RemotePendingExternalTicket;
 #endif
+
+typedef struct Hz6RemotePendingStorage {
+  Hz6RemotePendingClassInbox
+      remote_pending_inbox[HZ6_FRONT_CACHE_CLASS_COUNT];
+  uint32_t remote_pending_next[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
+  uint8_t remote_pending_slot_state[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
+  void* remote_pending_published_ptr[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
+  uint32_t remote_pending_published_generation[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
+  uint32_t remote_pending_published_bytes[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
+  uint16_t remote_pending_published_front_id[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
+  uint16_t remote_pending_published_class_id[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
+  Hz6OwnerToken remote_pending_owner_token[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
+#if HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1
+  Hz6RemotePendingExternalTicket
+      remote_pending_external_tickets
+          [HZ6_REMOTE_PENDING_EXTERNAL_TICKET_CAPACITY];
+  atomic_flag remote_pending_external_lock;
+  uint32_t remote_pending_external_free_head;
+  uint32_t remote_pending_external_head
+      [HZ6_REMOTE_PENDING_FRONT_COUNT][HZ6_FRONT_CACHE_CLASS_COUNT];
+#if HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_L1
+  uint32_t remote_pending_external_dup_index
+      [HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_CAPACITY];
+#endif
+#endif
+  _Atomic size_t remote_pending_current;
+  _Atomic size_t remote_pending_queued_current;
+  _Atomic size_t remote_pending_claimed_current;
+  _Atomic size_t remote_pending_total_current;
+  _Atomic uint64_t remote_pending_nonempty_mask;
+} Hz6RemotePendingStorage;
 #endif
 
 struct Hz6Allocator {
@@ -435,6 +467,11 @@ struct Hz6Allocator {
   size_t descriptor_available_count;
   Hz6ObjectDescriptor descriptors[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
 #if HZ6_REMOTE_PENDING_INBOX_CORE_L1
+#if HZ6_REMOTE_PENDING_LAZY_STORAGE_L1
+  atomic_flag remote_pending_storage_lock;
+  Hz6OwnerInboxStorageBlock remote_pending_storage_block;
+  _Atomic(Hz6RemotePendingStorage*) remote_pending_storage;
+#else
   Hz6RemotePendingClassInbox
       remote_pending_inbox[HZ6_FRONT_CACHE_CLASS_COUNT];
   uint32_t remote_pending_next[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
@@ -463,6 +500,7 @@ struct Hz6Allocator {
   _Atomic size_t remote_pending_claimed_current;
   _Atomic size_t remote_pending_total_current;
   _Atomic uint64_t remote_pending_nonempty_mask;
+#endif
 #endif
 #if HZ6_DESCRIPTOR_SIDE_OWNER16_L1 || HZ6_DESCRIPTOR_STORAGE_OWNER16_L1
   uint32_t descriptor_side_owner16[HZ6_OBJECT_DESCRIPTOR_CAPACITY];

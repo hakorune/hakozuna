@@ -1,5 +1,6 @@
 #include "hz6_allocator.h"
 #include "hz6_allocator_api_route_transfer.h"
+#include "hz6_allocator_remote_pending_storage_access.h"
 
 #if HZ6_REMOTE_PENDING_INBOX_CORE_L1
 #define HZ6_REMOTE_PENDING_LIFETIME_INDEX_NONE UINT32_MAX
@@ -8,7 +9,7 @@ static void hz6_remote_pending_lifetime_reset_inline(Hz6Allocator* allocator) {
   for (size_t class_id = 0; class_id < HZ6_FRONT_CACHE_CLASS_COUNT;
        ++class_id) {
     Hz6RemotePendingClassInbox* inbox =
-        &allocator->remote_pending_inbox[class_id];
+        &HZ6_RP_INBOX(allocator)[class_id];
     for (size_t front_index = 0; front_index < HZ6_REMOTE_PENDING_FRONT_COUNT;
          ++front_index) {
       inbox->head_index[front_index] = HZ6_REMOTE_PENDING_LIFETIME_INDEX_NONE;
@@ -17,30 +18,30 @@ static void hz6_remote_pending_lifetime_reset_inline(Hz6Allocator* allocator) {
     inbox->total_count = 0;
   }
   for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
-    if (allocator->remote_pending_slot_state[i] !=
+    if (HZ6_RP_SLOT_STATE(allocator)[i] !=
         HZ6_REMOTE_PENDING_SLOT_NONE) {
 #if HZ6_DIAGNOSTIC_PROBES
       ++allocator->stats.remote_pending_destroy_inline_closeout;
 #endif
     }
-    allocator->remote_pending_next[i] = HZ6_REMOTE_PENDING_LIFETIME_INDEX_NONE;
-    allocator->remote_pending_slot_state[i] = HZ6_REMOTE_PENDING_SLOT_NONE;
-    allocator->remote_pending_published_ptr[i] = NULL;
-    allocator->remote_pending_published_generation[i] = 0;
-    allocator->remote_pending_published_bytes[i] = 0;
-    allocator->remote_pending_published_front_id[i] = 0;
-    allocator->remote_pending_published_class_id[i] = 0;
-    allocator->remote_pending_owner_token[i] = (Hz6OwnerToken){0};
+    HZ6_RP_NEXT(allocator)[i] = HZ6_REMOTE_PENDING_LIFETIME_INDEX_NONE;
+    HZ6_RP_SLOT_STATE(allocator)[i] = HZ6_REMOTE_PENDING_SLOT_NONE;
+    HZ6_RP_PUBLISHED_PTR(allocator)[i] = NULL;
+    HZ6_RP_PUBLISHED_GENERATION(allocator)[i] = 0;
+    HZ6_RP_PUBLISHED_BYTES(allocator)[i] = 0;
+    HZ6_RP_PUBLISHED_FRONT_ID(allocator)[i] = 0;
+    HZ6_RP_PUBLISHED_CLASS_ID(allocator)[i] = 0;
+    HZ6_RP_OWNER_TOKEN(allocator)[i] = (Hz6OwnerToken){0};
   }
-  atomic_store_explicit(&allocator->remote_pending_current, 0u,
+  atomic_store_explicit(&HZ6_RP_CURRENT(allocator), 0u,
                         memory_order_relaxed);
-  atomic_store_explicit(&allocator->remote_pending_queued_current, 0u,
+  atomic_store_explicit(&HZ6_RP_QUEUED_CURRENT(allocator), 0u,
                         memory_order_relaxed);
-  atomic_store_explicit(&allocator->remote_pending_claimed_current, 0u,
+  atomic_store_explicit(&HZ6_RP_CLAIMED_CURRENT(allocator), 0u,
                         memory_order_relaxed);
-  atomic_store_explicit(&allocator->remote_pending_total_current, 0u,
+  atomic_store_explicit(&HZ6_RP_TOTAL_CURRENT(allocator), 0u,
                         memory_order_relaxed);
-  atomic_store_explicit(&allocator->remote_pending_nonempty_mask, 0u,
+  atomic_store_explicit(&HZ6_RP_NONEMPTY_MASK(allocator), 0u,
                         memory_order_relaxed);
 }
 
@@ -108,7 +109,7 @@ static void hz6_remote_pending_lifetime_close_external(
     Hz6Allocator* allocator) {
   for (size_t i = 0; i < HZ6_REMOTE_PENDING_EXTERNAL_TICKET_CAPACITY; ++i) {
     Hz6RemotePendingExternalTicket* ticket =
-        &allocator->remote_pending_external_tickets[i];
+        &HZ6_RP_EXTERNAL_TICKETS(allocator)[i];
     if (ticket->state == HZ6_REMOTE_PENDING_SLOT_NONE) {
       continue;
     }
@@ -126,17 +127,17 @@ static void hz6_remote_pending_lifetime_close_external(
        ++front_index) {
     for (size_t class_id = 0; class_id < HZ6_FRONT_CACHE_CLASS_COUNT;
          ++class_id) {
-      allocator->remote_pending_external_head[front_index][class_id] =
+      HZ6_RP_EXTERNAL_HEAD(allocator)[front_index][class_id] =
           HZ6_REMOTE_PENDING_LIFETIME_INDEX_NONE;
     }
   }
-  allocator->remote_pending_external_free_head =
+  HZ6_RP_EXTERNAL_FREE_HEAD(allocator) =
       HZ6_REMOTE_PENDING_EXTERNAL_TICKET_CAPACITY == 0
           ? HZ6_REMOTE_PENDING_LIFETIME_INDEX_NONE
           : 0u;
   for (size_t i = 0; i < HZ6_REMOTE_PENDING_EXTERNAL_TICKET_CAPACITY; ++i) {
     Hz6RemotePendingExternalTicket* ticket =
-        &allocator->remote_pending_external_tickets[i];
+        &HZ6_RP_EXTERNAL_TICKETS(allocator)[i];
     *ticket = (Hz6RemotePendingExternalTicket){0};
     ticket->next =
         i + 1u < HZ6_REMOTE_PENDING_EXTERNAL_TICKET_CAPACITY
@@ -145,7 +146,7 @@ static void hz6_remote_pending_lifetime_close_external(
   }
 #if HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_L1
   for (size_t i = 0; i < HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_CAPACITY; ++i) {
-    allocator->remote_pending_external_dup_index[i] =
+    HZ6_RP_EXTERNAL_DUP_INDEX(allocator)[i] =
         HZ6_REMOTE_PENDING_LIFETIME_INDEX_NONE;
   }
 #endif
@@ -160,6 +161,12 @@ void hz6_allocator_remote_pending_closeout_for_destroy(
   if (!allocator) {
     return;
   }
+#if HZ6_REMOTE_PENDING_LAZY_STORAGE_L1
+  if (!atomic_load_explicit(&allocator->remote_pending_storage,
+                            memory_order_acquire)) {
+    return;
+  }
+#endif
 #if HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1
   hz6_remote_pending_lifetime_close_external(allocator);
 #endif
@@ -171,10 +178,16 @@ void hz6_allocator_remote_pending_note_after_destroy(
   if (!allocator) {
     return;
   }
+#if HZ6_REMOTE_PENDING_LAZY_STORAGE_L1
+  if (!atomic_load_explicit(&allocator->remote_pending_storage,
+                            memory_order_acquire)) {
+    return;
+  }
+#endif
 #if HZ6_DIAGNOSTIC_PROBES
   for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
     if (allocator->descriptors[i].state == HZ6_STATE_REMOTE_PENDING ||
-        allocator->remote_pending_slot_state[i] !=
+        HZ6_RP_SLOT_STATE(allocator)[i] !=
             HZ6_REMOTE_PENDING_SLOT_NONE) {
       ++allocator->stats.remote_pending_after_allocator_destroy;
       return;
@@ -182,13 +195,26 @@ void hz6_allocator_remote_pending_note_after_destroy(
   }
 #if HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1
   for (size_t i = 0; i < HZ6_REMOTE_PENDING_EXTERNAL_TICKET_CAPACITY; ++i) {
-    if (allocator->remote_pending_external_tickets[i].state !=
+    if (HZ6_RP_EXTERNAL_TICKETS(allocator)[i].state !=
         HZ6_REMOTE_PENDING_SLOT_NONE) {
       ++allocator->stats.remote_pending_after_allocator_destroy;
       return;
     }
   }
 #endif
+#endif
+}
+
+void hz6_allocator_remote_pending_storage_release(Hz6Allocator* allocator) {
+#if HZ6_REMOTE_PENDING_LAZY_STORAGE_L1
+  if (!allocator) {
+    return;
+  }
+  atomic_store_explicit(&allocator->remote_pending_storage, NULL,
+                        memory_order_release);
+  hz6_owner_inbox_storage_free(&allocator->remote_pending_storage_block);
+#else
+  (void)allocator;
 #endif
 }
 #else
@@ -199,6 +225,10 @@ void hz6_allocator_remote_pending_closeout_for_destroy(
 
 void hz6_allocator_remote_pending_note_after_destroy(
     Hz6Allocator* allocator) {
+  (void)allocator;
+}
+
+void hz6_allocator_remote_pending_storage_release(Hz6Allocator* allocator) {
   (void)allocator;
 }
 #endif

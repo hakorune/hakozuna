@@ -22,6 +22,7 @@ HZ6_SMOKES=(
   "tests/hz6_r1_transfer_smoke.c:hz6_r1_transfer_smoke"
   "tests/hz6_r1_reclaim_smoke.c:hz6_r1_reclaim_smoke"
   "tests/hz6_r1_safety_smoke.c:hz6_r1_safety_smoke"
+  "tests/hz6_owner_inbox_storage_provider_smoke.c:hz6_owner_inbox_storage_provider_smoke"
 )
 
 HZ6_INCLUDE_FLAGS=()

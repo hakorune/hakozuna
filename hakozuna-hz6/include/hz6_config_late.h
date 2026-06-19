@@ -439,6 +439,12 @@
 #define HZ6_REMOTE_PENDING_EXTERNAL_LOCKED_REVALIDATE_L1 0
 #endif
 
+#ifndef HZ6_REMOTE_PENDING_LAZY_STORAGE_L1
+/* Move owner-inbox slot/proof/ticket arrays behind an OS-backed storage
+ * provider. */
+#define HZ6_REMOTE_PENDING_LAZY_STORAGE_L1 0
+#endif
+
 #ifndef HZ6_REMOTE_PENDING_FRONT_COUNT
 #define HZ6_REMOTE_PENDING_FRONT_COUNT 4
 #endif

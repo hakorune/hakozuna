@@ -2197,3 +2197,111 @@ move the whole owner-inbox storage block behind one optional storage boundary,
 not just external tickets.  The storage allocation mechanism needs a separate
 design choice because plain `calloc()` inside the preload allocator can recurse
 through the interposed allocator path.
+
+## 2026-06-20 OwnerInboxStorageProvider-L1
+
+Added the recursion-safe storage boundary for the future lazy owner-inbox
+storage migration:
+
+```text
+hakozuna-hz6/api/hz6_allocator_owner_inbox_storage_provider.c
+hakozuna-hz6/api/hz6_allocator_owner_inbox_storage_provider.h
+hakozuna-hz6/tests/hz6_owner_inbox_storage_provider_smoke.c
+```
+
+The provider deliberately avoids `malloc()` / `calloc()`:
+
+```text
+Linux:   hz6_linux_mmap_reserve / hz6_linux_mmap_release
+Windows: hz6_win_virtualalloc_reserve / hz6_win_virtualalloc_release
+```
+
+It rounds requests to the platform page size, stores the rounded size in the
+returned block, zero-fills the block after allocation, and clears the block on
+free.  This keeps the next storage migration independent of preload real
+allocator injection and avoids recursive interposition through the HZ6 malloc
+hook.
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+./hakozuna-hz6/linux/run_hz6_owner_inbox_storage_footprint.sh
+```
+
+Latest footprint output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_storage_footprint_20260620_052205
+
+p0_off       sizeof(Hz6Allocator)=3251928  owner_inbox_bytes=0
+p1_external sizeof(Hz6Allocator)=3588872  owner_inbox_bytes=336896
+```
+
+Decision: `GO(boundary)/HOLD(lazy migration)`.  This box changes only the
+allocation boundary; it does not move owner-inbox arrays yet.  The next box is
+`OwnerInboxLazyStorage-L1`, which should migrate inline slot/proof storage and
+external ticket storage behind this provider in one init/destroy/accounting
+change.
+
+## 2026-06-20 OwnerInboxLazyStorage-L1
+
+Moved the owner-inbox storage block out of `Hz6Allocator` behind the OS-backed
+storage provider:
+
+```text
+inline pending class heads / next / slot state / immutable proof
+external pending tickets
+external duplicate index
+pending accounting atomics / nonempty mask
+```
+
+The storage is allocated lazily on first owner-inbox publish.  Local-only
+allocators now keep only the storage lock, provider block record, and atomic
+storage pointer in `Hz6Allocator`.
+
+Important correctness detail: lazy initialization must publish the storage
+pointer only after the storage block has been reset.  An intermediate production
+remote50 run aborted because the first implementation stored the pointer before
+reset and another producer/consumer could observe partially initialized ticket
+state.  The final shape uses an allocator-local init lock and release-publishes
+the pointer after reset.
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/build_hz6_preload_owner_inbox_external_target.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+./hakozuna-hz6/linux/run_hz6_owner_inbox_storage_footprint.sh
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh --production --runs 3 --rows local0,remote50,remote90 --variants p0_off,p1_external
+```
+
+Footprint:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_storage_footprint_20260620_054626
+
+p0_off       sizeof_Hz6Allocator=3251928  owner_inbox_bytes=0
+p1_external sizeof_Hz6Allocator=3251960  owner_inbox_bytes=336896
+```
+
+Production RUNS=3:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_054443
+
+p0_off      local0   16.13M ops/s  67.38 MiB
+p1_external local0   16.36M ops/s  67.12 MiB
+p0_off      remote50 14.56M ops/s  69.75 MiB
+p1_external remote50 13.76M ops/s  74.88 MiB
+p0_off      remote90  3.22M ops/s  79.66 MiB
+p1_external remote90 10.79M ops/s  77.34 MiB
+```
+
+Decision: `GO(candidate)/HOLD(default promotion)`.  Lazy storage closes the
+fixed local-only owner-inbox RSS tax.  The remaining default blocker is runtime
+remote50 cost, not fixed metadata footprint.
