@@ -2173,3 +2173,56 @@ Decision: `GO(tooling)`.  The tax now has two concrete targets: fixed
 owner-inbox metadata/RSS for local0, and external-ticket duplicate scanning for
 remote50.  Next prefer a design box before behavior: either
 `ExternalTicketDuplicateIndex-L1` or `OwnerInboxLazyStorage-L1`.
+
+## 2026-06-20 ExternalTicketDuplicateIndex-L1
+
+Added a boxed duplicate index for external owner-inbox tickets:
+
+```text
+hakozuna-hz6/api/hz6_allocator_remote_pending_external_dup_index.c
+hakozuna-hz6/api/hz6_allocator_remote_pending_external_dup_index.h
+```
+
+The profile flag is:
+
+```text
+HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_L1=1
+```
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh --runs 1 --rows remote50 --variants p1_external
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh --production --runs 1 --rows remote50 --variants p0_off,p1_external
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+```
+
+Integrity smoke closed:
+
+```text
+external_ticket_success=2036
+duplicate_probe_total=2217
+duplicate_probe_max=2
+duplicate_index_stale=0
+returned_backpressure=0
+```
+
+Focused tax run:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_051158
+
+p1_external remote50:
+  external_ticket_success=2320
+  duplicate_probe_total=2627
+  duplicate_probe_max=3
+  duplicate_index_stale=0
+```
+
+Decision: `GO(correctness+cost-shape)/HOLD(default promotion)`.  The external
+duplicate full scan is no longer the main remote50 suspect.  The one-shot
+production smoke still leaves p1 remote50 below p0, so the next design target
+is fixed owner-inbox metadata/RSS or maintenance work rather than another
+duplicate-scan change.

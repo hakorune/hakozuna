@@ -1,6 +1,8 @@
 #include "hz6_allocator.h"
 #include "hz6_allocator_api_descriptor.h"
+#include "hz6_allocator_remote_pending_external_dup_index.h"
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -171,6 +173,7 @@ static void hz6_remote_pending_external_note_duplicate_probes(
 #endif
 }
 #endif
+
 #else
 static int hz6_remote_pending_external_key_nonempty(
     Hz6Allocator* allocator,
@@ -635,6 +638,9 @@ void hz6_allocator_remote_pending_inbox_init(Hz6Allocator* allocator) {
             ? (uint32_t)(i + 1u)
             : HZ6_REMOTE_PENDING_INDEX_NONE;
   }
+#if HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_L1
+  hz6_remote_pending_external_dup_index_init(allocator);
+#endif
 #endif
   atomic_store_explicit(&allocator->remote_pending_current, 0u,
                         memory_order_relaxed);
@@ -812,6 +818,23 @@ int hz6_allocator_remote_pending_external_ticket_publish(
   }
   HZ6_REMOTE_PENDING_STAT_INC(
       allocator, remote_pending_external_ticket_duplicate_scan_skip);
+#elif HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_L1
+  size_t duplicate_probes = 0;
+  uint32_t duplicate_ticket = 0;
+  if (hz6_remote_pending_external_dup_index_find(allocator, descriptor,
+                                                 generation,
+                                                 &duplicate_ticket,
+                                                 &duplicate_probes)) {
+    (void)duplicate_ticket;
+    hz6_remote_pending_external_note_duplicate_probes(allocator,
+                                                      duplicate_probes);
+    HZ6_REMOTE_PENDING_STAT_INC(
+        allocator, remote_pending_external_ticket_duplicate);
+    hz6_remote_pending_external_unlock(allocator);
+    return 0;
+  }
+  hz6_remote_pending_external_note_duplicate_probes(allocator,
+                                                    duplicate_probes);
 #else
   size_t duplicate_probes = 0;
   for (size_t i = 0; i < HZ6_REMOTE_PENDING_EXTERNAL_TICKET_CAPACITY; ++i) {
@@ -855,6 +878,19 @@ int hz6_allocator_remote_pending_external_ticket_publish(
   ticket->next = allocator->remote_pending_external_head[front_index][class_id];
   allocator->remote_pending_external_head[front_index][class_id] =
       ticket_index;
+#if HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_L1
+  if (!hz6_remote_pending_external_dup_index_insert(allocator, ticket_index)) {
+    allocator->remote_pending_external_head[front_index][class_id] =
+        ticket->next;
+    memset(ticket, 0, sizeof(*ticket));
+    ticket->next = allocator->remote_pending_external_free_head;
+    allocator->remote_pending_external_free_head = ticket_index;
+    HZ6_REMOTE_PENDING_STAT_INC(
+        allocator, remote_pending_external_ticket_duplicate_index_stale);
+    hz6_remote_pending_external_unlock(allocator);
+    return 0;
+  }
+#endif
   descriptor->state = HZ6_STATE_REMOTE_PENDING;
   HZ6_REMOTE_PENDING_STAT_INC(allocator,
                               remote_pending_external_ticket_success);
@@ -993,6 +1029,13 @@ int hz6_allocator_remote_pending_external_ticket_consume_one(
     return 0;
   }
   descriptor->state = HZ6_STATE_LOCAL_FREE;
+#if HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_L1
+  if (!hz6_remote_pending_external_dup_index_remove(
+          allocator, ticket_index, proof.descriptor, proof.generation)) {
+    HZ6_REMOTE_PENDING_STAT_INC(
+        allocator, remote_pending_external_ticket_duplicate_index_stale);
+  }
+#endif
   memset(ticket, 0, sizeof(*ticket));
   ticket->next = allocator->remote_pending_external_free_head;
   allocator->remote_pending_external_free_head = ticket_index;

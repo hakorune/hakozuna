@@ -147,6 +147,8 @@
       remote_pending_external_ticket_duplicate_probe_max =
           stats.remote_pending_external_ticket_duplicate_probe_max;
     }
+    remote_pending_external_ticket_duplicate_index_stale +=
+        stats.remote_pending_external_ticket_duplicate_index_stale;
     remote_pending_external_ticket_duplicate_scan_skip +=
         stats.remote_pending_external_ticket_duplicate_scan_skip;
     remote_pending_external_ticket_locked_revalidate_fail +=

@@ -453,6 +453,10 @@ struct Hz6Allocator {
   uint32_t remote_pending_external_free_head;
   uint32_t remote_pending_external_head
       [HZ6_REMOTE_PENDING_FRONT_COUNT][HZ6_FRONT_CACHE_CLASS_COUNT];
+#if HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_L1
+  uint32_t remote_pending_external_dup_index
+      [HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_CAPACITY];
+#endif
 #endif
   _Atomic size_t remote_pending_current;
   _Atomic size_t remote_pending_queued_current;

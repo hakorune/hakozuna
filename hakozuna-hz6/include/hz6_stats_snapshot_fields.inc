@@ -76,6 +76,7 @@
   size_t remote_pending_external_ticket_duplicate;
   size_t remote_pending_external_ticket_duplicate_probe_total;
   size_t remote_pending_external_ticket_duplicate_probe_max;
+  size_t remote_pending_external_ticket_duplicate_index_stale;
   size_t remote_pending_external_ticket_duplicate_scan_skip;
   size_t remote_pending_external_ticket_locked_revalidate_fail;
   size_t remote_pending_external_ticket_consume;

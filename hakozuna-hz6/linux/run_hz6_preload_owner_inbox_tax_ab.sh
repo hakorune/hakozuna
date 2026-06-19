@@ -159,6 +159,8 @@ counter_keys=(
   remote_pending_current
   remote_pending_external_ticket_current
   remote_pending_external_ticket_duplicate_probe_total
+  remote_pending_external_ticket_duplicate_probe_max
+  remote_pending_external_ticket_duplicate_index_stale
   transfer_reserve_full
 )
 

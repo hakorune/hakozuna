@@ -139,6 +139,7 @@
           "remote_pending_external_ticket_duplicate=%zu "
           "remote_pending_external_ticket_duplicate_probe_total=%zu "
           "remote_pending_external_ticket_duplicate_probe_max=%zu "
+          "remote_pending_external_ticket_duplicate_index_stale=%zu "
           "remote_pending_external_ticket_duplicate_scan_skip=%zu "
           "remote_pending_external_ticket_locked_revalidate_fail=%zu "
           "remote_pending_external_ticket_consume=%zu "
@@ -334,6 +335,7 @@
           remote_pending_external_ticket_duplicate,
           remote_pending_external_ticket_duplicate_probe_total,
           remote_pending_external_ticket_duplicate_probe_max,
+          remote_pending_external_ticket_duplicate_index_stale,
           remote_pending_external_ticket_duplicate_scan_skip,
           remote_pending_external_ticket_locked_revalidate_fail,
           remote_pending_external_ticket_consume,

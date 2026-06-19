@@ -143,6 +143,12 @@ static void hz6_remote_pending_lifetime_close_external(
             ? (uint32_t)(i + 1u)
             : HZ6_REMOTE_PENDING_LIFETIME_INDEX_NONE;
   }
+#if HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_L1
+  for (size_t i = 0; i < HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_CAPACITY; ++i) {
+    allocator->remote_pending_external_dup_index[i] =
+        HZ6_REMOTE_PENDING_LIFETIME_INDEX_NONE;
+  }
+#endif
 #if HZ6_DIAGNOSTIC_PROBES
   allocator->stats.remote_pending_external_ticket_current = 0;
 #endif

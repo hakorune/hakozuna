@@ -2044,3 +2044,104 @@ OwnerInboxLazyStorage-L1
 
 Do not change owner-inbox consumption policy from this data alone; the runner is
 diagnostic attribution, not promotion evidence.
+
+## 2026-06-20 ExternalTicketDuplicateIndex-L1
+
+Added a small external-ticket duplicate index module:
+
+```text
+hakozuna-hz6/api/hz6_allocator_remote_pending_external_dup_index.c
+hakozuna-hz6/api/hz6_allocator_remote_pending_external_dup_index.h
+```
+
+The module is 190 lines and keeps the duplicate-index logic out of the already
+large owner-inbox module.  It is controlled by:
+
+```text
+HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_L1
+HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_CAPACITY
+```
+
+The owner-inbox external profile enables the index.  The p0/off helper disables
+it with the rest of the owner-inbox family.
+
+Behavior:
+
+```text
+publish:
+  descriptor + generation lookup in duplicate index
+  insert ticket index after ticket proof is populated
+
+consume success:
+  remove ticket index before returning ticket to free-list
+
+destroy closeout:
+  reset duplicate index with ticket storage
+```
+
+Diagnostic zero gate:
+
+```text
+remote_pending_external_ticket_duplicate_index_stale = 0
+```
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh --runs 1 --rows remote50 --variants p1_external
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh --production --runs 1 --rows remote50 --variants p0_off,p1_external
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+```
+
+Integrity smoke:
+
+```text
+remote_pending_external_ticket_success=2036
+remote_pending_external_ticket_duplicate_probe_total=2217
+remote_pending_external_ticket_duplicate_probe_max=2
+remote_pending_external_ticket_duplicate_index_stale=0
+remote_free_returned_backpressure=0
+```
+
+Focused diagnostic tax run:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_051158
+
+p1_external remote50:
+  external_ticket_success=2320
+  duplicate_probe_total=2627
+  duplicate_probe_max=3
+  duplicate_index_stale=0
+```
+
+This replaces the prior full scan signal:
+
+```text
+before:
+  external_ticket_success=2682
+  duplicate_probe_total=2746368
+
+after:
+  external_ticket_success=2320
+  duplicate_probe_total=2627
+```
+
+Production RUNS=1 smoke:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_051208
+
+p0_off remote50      15.38M ops/s, 69.38 MiB
+p1_external remote50 10.66M ops/s, 75.25 MiB
+```
+
+The production one-shot is shape evidence only; it shows the index does not
+finish the p1 remote50 tax by itself.
+
+Decision: `GO(correctness+cost-shape)/HOLD(default promotion)`.  The duplicate
+scan cost is closed as a primary suspect.  The next design point shifts back to
+fixed owner-inbox metadata/RSS and maintenance/consumer work, with
+`OwnerInboxLazyStorage-L1` as the cleaner next target.
