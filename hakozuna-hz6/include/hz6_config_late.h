@@ -468,6 +468,12 @@
 #define HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1 HZ6_DIAGNOSTIC_PROBES
 #endif
 
+#ifndef HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1
+/* Cost-attribution control: compile DirectReuse and run the exact-key gate,
+ * but optionally stop before claim/route validation. */
+#define HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1 HZ6_REMOTE_PENDING_DIRECT_REUSE_L1
+#endif
+
 #ifndef HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1
 /* Bounded relief lane for remote-free transfer backpressure.  On reserve
  * failure, drain one already-committed same-class transfer object into the

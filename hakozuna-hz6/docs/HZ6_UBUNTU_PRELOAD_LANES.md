@@ -278,6 +278,12 @@ direct-stats emitted `remote_pending_direct_claim_success=1024`,
 `remote_pending_direct_integrity_failure=0`, and
 `remote_pending_batch_items=0`.  This is `GO(shape)/HOLD(default)`; the next
 behavior box should be source-demand gated, not a pressure/high-water gate.
+`DirectReuseCostAttribution-L1` adds a P0-P3 remote runner and the
+measurement-only `HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1=0` gate.  RUNS=3 showed
+P1 owner-inbox at `remote50=14.23M`, P2 gate-only at `14.37M`, and P3
+claim/route/activate at `11.66M`; the gate itself is not the main cost.  Keep
+DirectReuse claim out of the frontcache-miss hot path and place it at the
+source-demand boundary in the next behavior box.
 `RemoteFreeBackpressureOriginTransferReasonObserve-L1` splits the remaining
 origin-transfer misses without changing behavior.  The selected smoke showed
 `remote_free_backpressure_origin_transfer_stride_skip=16295`,

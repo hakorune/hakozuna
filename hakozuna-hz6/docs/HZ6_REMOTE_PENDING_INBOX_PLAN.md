@@ -398,6 +398,52 @@ Decision: `GO(shape)/HOLD(default)`.  This box is a prerequisite for
 `DirectReuseCostAttribution-L1` and `DirectReuseSourceDemandGate-L1`; it is not
 a default promotion.
 
+## 2026-06-20 DirectReuse Cost Attribution
+
+`DirectReuseCostAttribution-L1` adds a preload remote P0-P3 runner:
+
+```text
+hakozuna-hz6/linux/run_hz6_preload_direct_reuse_cost_ab.sh
+```
+
+Variant boundary:
+
+```text
+P0 p0_selected:
+  selected/off
+
+P1 p1_inbox:
+  owner inbox + owner-local exact maintenance, DirectReuse off
+
+P2 p2_gate:
+  P1 + DirectReuse compiled, exact-key gate only
+
+P3 p3_claim:
+  P1 + DirectReuse claim/route/activation
+```
+
+P2 uses `HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1=0`, a measurement-only switch that
+keeps the mask/code-shape path but stops before claim.
+
+RUNS=3:
+
+```text
+p0_selected remote50=14895207.09 remote90=1284822.27
+p1_inbox    remote50=14233651.00 remote90=10362746.94
+p2_gate     remote50=14372099.49 remote90=9788974.89
+p3_claim    remote50=11662348.34 remote90=9455308.31
+```
+
+Interpretation: P2 is close to P1, but P3 is much weaker on remote50.  The next
+box should not add more pressure or high-water policy.  Move the claim itself
+behind the source-demand boundary:
+
+```text
+existing selected reuse exhausted
+  -> exact-key pending direct claim
+  -> source prefill/source allocation
+```
+
 ## 2026-06-20 Phase-Reuse Bench Harness
 
 `RemotePendingPhaseReuseBench-L1` adds a behavior-neutral benchmark mode:

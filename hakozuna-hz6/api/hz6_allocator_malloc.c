@@ -59,6 +59,10 @@ hz6_allocator_try_pending_direct_reuse(Hz6Allocator* allocator,
   ++allocator->stats.remote_pending_direct_gate_hit;
   ++allocator->stats.remote_pending_direct_claim_attempt;
 #endif
+#if !HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1
+  (void)out_descriptor;
+  return NULL;
+#else
   void* pending_ptr = NULL;
   Hz6ObjectDescriptor* pending_descriptor = NULL;
   Hz6RemotePendingReuseStatus status =
@@ -89,6 +93,7 @@ hz6_allocator_try_pending_direct_reuse(Hz6Allocator* allocator,
     abort();
   }
   return NULL;
+#endif
 }
 #endif
 

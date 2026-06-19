@@ -464,3 +464,69 @@ remote_free_returned_uncommitted=0
 Integrity smoke passed for selected and for the opt-in DirectReuse flag bundle.
 This is `GO(shape)/HOLD(default)`: it removes measurement noise from the
 DirectReuse A/B path, but does not change the promotion status.
+
+## DirectReuse Cost Attribution Follow-Up
+
+`DirectReuseCostAttribution-L1` adds a focused P0-P3 runner:
+
+```text
+hakozuna-hz6/linux/run_hz6_preload_direct_reuse_cost_ab.sh
+```
+
+It builds each preload DSO from the same selected flag bundle, then runs the
+standard remote median rows:
+
+```text
+P0 p0_selected:
+  selected/off
+
+P1 p1_inbox:
+  owner inbox + owner-local exact maintenance, DirectReuse off
+
+P2 p2_gate:
+  P1 + DirectReuse compiled, exact-key gate only, no claim
+
+P3 p3_claim:
+  P1 + DirectReuse claim/route/activation behavior
+```
+
+The P2 lane uses `HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1=0` so it can measure the
+compiled mask/code-shape cost without consuming pending entries.
+
+RUNS=3, raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_direct_reuse_cost_ab_20260620_r3
+```
+
+Summary:
+
+```text
+variant      remote50 median ops/s   remote90 median ops/s
+p0_selected  14895207.09             1284822.27
+p1_inbox     14233651.00             10362746.94
+p2_gate      14372099.49             9788974.89
+p3_claim     11662348.34             9455308.31
+```
+
+Interpretation:
+
+```text
+P0 -> P1:
+  owner-inbox publication/maintenance costs remote50 about 4.4% in this run,
+  while remote90 is much stronger than this selected sample.
+
+P1 -> P2:
+  gate-only DirectReuse code shape is roughly neutral on remote50 here
+  (+1.0%) and slightly lower on remote90 (-5.5%).
+
+P2 -> P3:
+  claim + exact route validation + activation/reuse ordering is the expensive
+  part in this run: remote50 falls about 18.9% from P2.
+```
+
+Treat this as cost attribution, not promotion evidence.  The selected remote90
+row had high variance and landed much lower than prior selected samples, but
+the P2/P3 split is still useful: the next behavior box should move claim behind
+a source-demand boundary so random remote50 does not pay eager claim/route
+validation on ordinary frontcache misses.
