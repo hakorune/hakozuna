@@ -3532,6 +3532,75 @@ selected origin-transfer backpressure path now included in p0 selected-off.
 Owner-inbox p1 should remain on hold, and the next baseline for high-remote
 work is the current origin-transfer selected path.
 
+## 2026-06-20 OriginTransferOutcomeCounters-L1
+
+Extended the owner-inbox tax runner to print the selected origin-transfer
+outcome counters:
+
+```text
+remote_free_backpressure_origin_transfer_success
+remote_free_backpressure_origin_transfer_fail
+remote_free_backpressure_origin_transfer_stride_skip
+remote_free_backpressure_origin_transfer_validation_fail
+remote_free_backpressure_origin_transfer_full
+remote_free_backpressure_origin_full_transfer_count_total
+remote_free_backpressure_origin_full_class_count_total
+remote_free_backpressure_origin_full_class_count_max
+remote_free_backpressure_origin_drain_attempt
+remote_free_backpressure_origin_drain_success
+remote_free_backpressure_origin_drain_retry_success
+```
+
+Production-shaped sanity run:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 3 \
+  --rows remote50,remote90 \
+  --variants p0_off
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_075126
+```
+
+Diagnostic shape attribution:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 1 \
+  --rows remote50,remote90_short \
+  --variants p0_off
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_075138
+```
+
+Observed diagnostic counters:
+
+```text
+row             origin_success  origin_full  avg_full_transfer  max_same_class
+remote50        7635            28645        256                198
+remote90_short  7184              137        256                127
+```
+
+The diagnostic rows are counter-shape attribution only; they are not promotion
+zero gates.  In particular `remote90_short` reports diagnostic-shape
+`remote_free_returned_uncommitted`, while the production-shaped p0 remote90 row
+stays at normal throughput.
+
+Decision: `GO(tooling)/DESIGN checkpoint`.  Origin-transfer is the current
+selected high-remote baseline, but remote50 still has a large origin-full tail
+under diagnostic attribution.  Do not add owner-inbox back yet; the next
+behavior idea needs to target this tail without the owner-inbox runtime/RSS tax.
+
 ## 2026-06-20 Profile Frontier Alias Smoke
 
 The new profile aliases were exercised through the existing focused profile
