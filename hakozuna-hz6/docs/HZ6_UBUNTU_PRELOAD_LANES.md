@@ -3015,6 +3015,22 @@ p1_external            15.20M    13.17M     3.94M    83.24 MiB
 p1_external_route_pin  16.61M    14.00M     2.71M    99.88 MiB
 ```
 
+Focused remote90 RUNS=10 recheck:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 10 \
+  --rows remote90 \
+  --variants p1_external,p1_external_route_pin
+```
+
+```text
+variant                remote90  remote90 RSS
+p1_external             3.97M    82.42 MiB
+p1_external_route_pin   3.60M    87.64 MiB
+```
+
 Decision: `GO(research)/NO-GO(default)`.  The route-pin trust switch improves
 the lower-remote rows in this short run, but it damages the high-remote sink and
 raises remote90 RSS.  Keep the switch as a research control only.  Do not add it
