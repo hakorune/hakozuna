@@ -1406,3 +1406,28 @@ remote90=3696648.67
 Decision: `NO-GO`.  In these preload skip-transfer paths, avoiding DirectReuse
 does not reliably consume transfer inventory and badly hurts remote90.  The
 implementation was reverted.
+
+## 2026-06-20 DirectReuse Front/Class Observe
+
+`DirectReuseFrontClassObserve-L1` added front and class attribution for
+successful DirectReuse claims.  The smoke output now includes the aggregate
+front split in `[HZ6_PRELOAD_ROUTE_DETAIL]` and a class-detail line in the
+integrity smoke output.
+
+DirectReuse + maintenance + external smoke:
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+remote_pending_direct_claim_success=2479
+remote_pending_direct_integrity_failure=0
+remote_pending_direct_claim_success_toy=57
+remote_pending_direct_claim_success_midpage=2422
+[HZ6_PRELOAD_DIRECT_PENDING_CLASS_DETAIL] c3_claim=10 c4_claim=458 c5_claim=2011
+```
+
+Decision: `GO(tooling)`.  The current DirectReuse candidate is not a Toy-heavy
+path.  Most successful claims are MidPage and class 5, with a secondary class 4
+component.  The next remote50-tax investigation should preserve this split and
+avoid broad Toy or all-class policy changes unless a new counter shows demand
+there.

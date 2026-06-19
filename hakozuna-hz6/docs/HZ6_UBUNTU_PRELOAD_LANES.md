@@ -1763,3 +1763,23 @@ remote90=3696648.67
 
 Decision: `NO-GO`; code reverted.  The preload skip-transfer shape means this
 gate does not safely hand work to transfer reuse.
+
+## 2026-06-20 DirectReuse Front/Class Observe
+
+Added DirectReuse claim attribution by front and class.  The integrity smoke
+runner now keeps `[HZ6_PRELOAD_DIRECT_PENDING_CLASS_DETAIL]` in its filtered
+output so this split survives in raw logs.
+
+Smoke with DirectReuse + owner-local maintenance + external tickets:
+
+```text
+remote_pending_direct_claim_success=2479
+remote_pending_direct_claim_success_toy=57
+remote_pending_direct_claim_success_midpage=2422
+remote_pending_direct_integrity_failure=0
+[HZ6_PRELOAD_DIRECT_PENDING_CLASS_DETAIL] c3_claim=10 c4_claim=458 c5_claim=2011
+```
+
+Decision: `GO(tooling)`.  The useful DirectReuse work is concentrated in
+MidPage, especially class 5.  Use this split for the next A/B rather than
+treating DirectReuse as a uniform all-front/all-class path.

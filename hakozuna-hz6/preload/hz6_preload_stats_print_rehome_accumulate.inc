@@ -243,6 +243,14 @@
         stats.remote_pending_direct_claim_while_frontcache_nonempty;
     remote_pending_direct_claim_while_transfer_nonempty +=
         stats.remote_pending_direct_claim_while_transfer_nonempty;
+    remote_pending_direct_claim_success_toy +=
+        stats.remote_pending_direct_claim_success_toy;
+    remote_pending_direct_claim_success_midpage +=
+        stats.remote_pending_direct_claim_success_midpage;
+    for (size_t class_id = 0; class_id < HZ6_STATS_CLASS_COUNT; ++class_id) {
+      remote_pending_direct_claim_success_by_class[class_id] +=
+          stats.remote_pending_direct_claim_success_by_class[class_id];
+    }
     remote_free_backpressure_origin_transfer_success +=
         stats.remote_free_backpressure_origin_transfer_success;
     remote_free_backpressure_origin_transfer_fail +=

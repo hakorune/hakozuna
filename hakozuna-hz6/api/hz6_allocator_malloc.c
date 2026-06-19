@@ -92,6 +92,14 @@ hz6_allocator_try_pending_direct_reuse(Hz6Allocator* allocator,
 #if HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1
     ++allocator->stats.remote_pending_direct_claim_success;
     ++allocator->stats.remote_pending_direct_activate_success;
+    if (front_id == HZ6_FRONT_TOY) {
+      ++allocator->stats.remote_pending_direct_claim_success_toy;
+    } else if (front_id == HZ6_FRONT_MIDPAGE) {
+      ++allocator->stats.remote_pending_direct_claim_success_midpage;
+    }
+    if (class_id < HZ6_STATS_CLASS_COUNT) {
+      ++allocator->stats.remote_pending_direct_claim_success_by_class[class_id];
+    }
     if (source_boundary) {
       ++allocator->stats.remote_pending_direct_source_boundary_claim_success;
       ++allocator->stats.remote_pending_direct_source_alloc_avoided;

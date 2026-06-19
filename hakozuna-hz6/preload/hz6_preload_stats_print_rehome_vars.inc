@@ -121,6 +121,10 @@
   size_t remote_pending_direct_claim_before_existing_reuse = 0;
   size_t remote_pending_direct_claim_while_frontcache_nonempty = 0;
   size_t remote_pending_direct_claim_while_transfer_nonempty = 0;
+  size_t remote_pending_direct_claim_success_toy = 0;
+  size_t remote_pending_direct_claim_success_midpage = 0;
+  size_t remote_pending_direct_claim_success_by_class[HZ6_STATS_CLASS_COUNT] =
+      {0};
   size_t remote_free_backpressure_origin_transfer_success = 0;
   size_t remote_free_backpressure_origin_transfer_fail = 0;
   size_t remote_free_backpressure_origin_transfer_stride_skip = 0;
