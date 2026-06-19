@@ -2455,3 +2455,52 @@ comparison tool.
 
 Decision: `GO(profile)/HOLD(default)`.  Do not add another owner-inbox consumer
 policy to selected/default until a separate audit shows a no-regression path.
+
+## 2026-06-20 TransferCapacitySweep-L1
+
+`TransferCapacitySweep-L1` adds a selected/default observation runner:
+
+```text
+hakozuna-hz6/linux/run_hz6_preload_transfer_capacity_sweep.sh
+```
+
+It keeps selected/default behavior and changes only:
+
+```text
+HZ6_TRANSFER_CACHE_CAPACITY
+HZ6_PROFILE_SPEED_TRANSFER_CAPACITY
+HZ6_PROFILE_REMOTE_TRANSFER_CAPACITY
+```
+
+The runner records ops/s and `/usr/bin/time` peak RSS for:
+
+```text
+local0
+remote50
+remote90
+```
+
+It also supports `--diagnostic`, which builds with
+`HZ6_DIAGNOSTIC_PROBES=1` and passes `HZ6_PRELOAD_STATS=1` so the existing
+backpressure counters can be read from the logs.  Diagnostic results are for
+counter attribution, not performance selection.
+
+Production RUNS=3 for cap256 vs cap512:
+
+```text
+capacity  row       median ops/s  median peak MiB
+256       local0    16.18M        67.25
+256       remote50  14.66M        69.50
+256       remote90  10.73M        72.12
+512       local0    14.90M        67.62
+512       remote50  14.28M        70.00
+512       remote90  10.63M        72.00
+```
+
+Diagnostic cap256/cap512 counters showed both variants still saturate transfer
+capacity under remote rows; cap512 reduces some returned backpressure in single
+samples but does not remove the bounded-cache saturation condition.
+
+Decision: `GO(tooling)/NO-GO(cap512 default)`.  Capacity sweep is useful as an
+observation surface, but simply increasing transfer capacity to 512 is not the
+next selected/default optimization.
