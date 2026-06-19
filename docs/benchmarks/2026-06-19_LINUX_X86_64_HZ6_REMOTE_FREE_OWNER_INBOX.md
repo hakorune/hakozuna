@@ -363,3 +363,45 @@ This is a useful boundary result: the phase-shift workload proves same-key
 owner-inbox demand and owner-local maintenance consumption, but it does not
 exercise preload DirectReuse because the allocator benchmark calls generic
 `hz6_malloc()`.
+
+## Preload Phase-Reuse Target Follow-Up
+
+`bench_phase_reuse` is the LD_PRELOAD version of the same phase-shift shape.
+The main thread allocates and reallocates, while foreign worker threads free the
+Phase A objects through the preload `free()` hook.  This exercises preload-only
+DirectReuse.
+
+RUNS=3, `threads=4 count=2048 size=128`:
+
+```text
+selected:
+  median ops/s=664078.071
+  reuse_hits=256
+
+direct:
+  median ops/s=694969.009
+  reuse_hits=1024
+
+direct_stats:
+  median ops/s=702891.806
+  reuse_hits=1024
+```
+
+Representative direct-stats counters:
+
+```text
+remote_free_foreign_candidate=2048
+transfer_reserve_success=1024
+transfer_reserve_full=1024
+remote_free_origin_pending_commit=1024
+remote_pending_enqueue_success=1024
+remote_pending_direct_claim_success=1024
+remote_pending_direct_activate_success=1024
+remote_pending_direct_integrity_failure=0
+remote_pending_batch_items=0
+remote_free_returned_uncommitted=0
+```
+
+Decision: `GO(tooling/evidence)`.  DirectReuse is correct and useful for the
+targeted preload phase-shift workload.  Keep default promotion separate from
+this result because random remote RUNS=10 still favored selected on remote50.

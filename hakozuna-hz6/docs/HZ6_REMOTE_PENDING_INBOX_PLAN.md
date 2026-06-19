@@ -410,3 +410,47 @@ owner-inbox demand: 256 backpressured foreign frees publish to the origin, and
 the origin immediately consumes all 256 through owner-local maintenance.
 Extending direct pending reuse into generic `hz6_malloc()` is a behavior
 decision, not a tooling fix.
+
+## 2026-06-20 Preload Phase-Reuse Target
+
+`bench/bench_phase_reuse.c` is the LD_PRELOAD version of the phase-shift
+harness.  The main thread allocates Phase A and Phase C, while foreign worker
+threads free Phase A pointers through the preload `free()` hook:
+
+```text
+bench_phase_reuse [foreign_threads] [count] [size]
+```
+
+`run_hz6_preload_phase_reuse.sh` builds the target plus selected/direct preload
+variants.  This exercises preload-only DirectReuse, unlike
+`hz6_allocator_bench phase-reuse`.
+
+RUNS=3, `threads=4 count=2048 size=128`:
+
+```text
+selected median ops/s=664078.071 reuse_hits=256
+direct median ops/s=694969.009 reuse_hits=1024
+direct_stats median ops/s=702891.806 reuse_hits=1024
+```
+
+Direct stats representative counters:
+
+```text
+remote_free_foreign_candidate=2048
+transfer_reserve_success=1024
+transfer_reserve_full=1024
+remote_free_origin_pending_commit=1024
+remote_pending_enqueue_success=1024
+remote_pending_direct_gate_hit=1024
+remote_pending_direct_claim_success=1024
+remote_pending_direct_activate_success=1024
+remote_pending_direct_integrity_failure=0
+remote_pending_batch_items=0
+remote_free_returned_uncommitted=0
+```
+
+Decision: `GO(tooling/evidence)`.  The preload target proves DirectReuse works
+for the intended phase-shift shape and converts the owner-inbox half of the
+workload into direct owner reuse.  It does not by itself justify selecting
+DirectReuse for random remote rows, where RUNS=10 still showed a remote50
+regression.
