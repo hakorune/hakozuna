@@ -609,16 +609,26 @@ int hz6_allocator_route_register_exact_reason(
     hz6_allocator_route_maybe_compact_tombstones(allocator);
   }
 #if HZ6_SHARED_ROUTE_DIRECTORY_L1
+  int mandatory_publish_failed = 0;
   if (ok) {
-    (void)hz6_shared_route_directory_register(allocator,
-                                              base,
-                                              front_id,
-                                              class_id,
-                                              generation,
-                                              descriptor);
+    int shared_ok = hz6_shared_route_directory_register(allocator,
+                                                        base,
+                                                        front_id,
+                                                        class_id,
+                                                        generation,
+                                                        descriptor);
+    if (HZ6_SHARED_ROUTE_DIRECTORY_MANDATORY_L1 && !shared_ok) {
+      hz6_route_backend_unregister_exact(&allocator->route_backend, base,
+                                         NULL);
+#if HZ6_ROUTE_LAST_HIT_CACHE_L1
+      hz6_allocator_route_last_hit_clear(allocator);
+#endif
+      ok = 0;
+      mandatory_publish_failed = 1;
+    }
   }
 #if HZ6_ELASTIC_ROUTE_OVERFLOW_L1
-  if (!ok) {
+  if (!ok && !mandatory_publish_failed) {
     ok = hz6_shared_route_directory_register(allocator,
                                              base,
                                              front_id,
@@ -716,12 +726,22 @@ int hz6_allocator_route_replace_exact_descriptor(
                                                new_descriptor);
     }
   } else {
-    (void)hz6_shared_route_directory_register(allocator,
-                                              base,
-                                              front_id,
-                                              class_id,
-                                              new_generation,
-                                              new_descriptor);
+    int shared_ok = hz6_shared_route_directory_register(allocator,
+                                                        base,
+                                                        front_id,
+                                                        class_id,
+                                                        new_generation,
+                                                        new_descriptor);
+    if (HZ6_SHARED_ROUTE_DIRECTORY_MANDATORY_L1 && !shared_ok) {
+      (void)hz6_route_backend_replace_exact_descriptor(
+          &allocator->route_backend, base, bytes, front_id, class_id,
+          new_generation, new_descriptor, old_generation, old_descriptor,
+          NULL);
+#if HZ6_ROUTE_LAST_HIT_CACHE_L1
+      hz6_allocator_route_last_hit_clear(allocator);
+#endif
+      ok = 0;
+    }
   }
 #endif
 #if HZ6_OWNER_LOCALITY_INDEX_L1

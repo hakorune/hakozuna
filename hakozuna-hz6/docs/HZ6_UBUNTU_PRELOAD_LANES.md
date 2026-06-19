@@ -64,6 +64,9 @@ HZ6_ROUTE_DOMAIN_SYNC_L1=1
 HZ6_ROUTE_COMPACT_DEFER_REMOTE_L1=1
 HZ6_ROUTE_VISIBLE_AFTER_LOCAL_MISS_L1=1
 HZ6_ROUTE_VISIBLE_EXACT_ONLY_L1=1
+HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1=1
+HZ6_SHARED_ROUTE_DIRECTORY_MANDATORY_L1=1
+HZ6_ROUTE_REHOME_REGISTER_BEFORE_UNREGISTER_L1=0
 HZ6_ROUTE_HASH_XOR_FOLD_L1=1
 HZ6_ROUTE_LINEAR_WRAP_L1=1
 HZ6_ROUTE_LOOP_CARRY_L1=1
@@ -117,6 +120,16 @@ available but selected preload uses `HZ6_ROUTE_VISIBLE_EXACT_ONLY_L1=1` so a
 local miss searches foreign exact routes without falling into foreign
 invalid-range full-table scans for external pointers.  This is a stopgap until
 `RemoteFreeRouteResolve-L1`; it is not the final ownership authority.
+
+Phase 1B implementation status, 2026-06-19: selected preload now enables
+`HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1=1` and
+`HZ6_SHARED_ROUTE_DIRECTORY_MANDATORY_L1=1`.  Shared-directory exact records
+use a sequence snapshot so readers see a complete stable record or retry, and
+local exact route registration rolls back if mandatory shared publication
+fails.  `HZ6_ROUTE_REHOME_REGISTER_BEFORE_UNREGISTER_L1=1` remains an
+off-by-default control: it removed the shared-directory empty window in shape,
+but the `16 x 120000 x remote90 x 16..131072` smoke timed out at 60s, so it is
+not selected.
 
 Latest selected-default focused guards, after fixed-floor and active-map storage
 trim, repeat-3, `bench_mixed_ws_crt`, raw

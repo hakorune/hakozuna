@@ -273,6 +273,17 @@ int hz6_allocator_route_rehome_exact(Hz6Allocator* allocator,
   Hz6Allocator* origin = route->route_allocator;
   void* ptr = descriptor->ptr;
   size_t bytes = descriptor->bytes;
+#if HZ6_ROUTE_REHOME_REGISTER_BEFORE_UNREGISTER_L1
+  if (!hz6_allocator_route_register_exact_reason(
+          allocator, ptr, bytes, route->front_id, route->class_id,
+          route->generation, (void*)descriptor,
+          HZ6_ROUTE_REGISTER_REASON_REHOME)) {
+    return 0;
+  }
+  hz6_allocator_route_unregister_exact_reason(
+      origin, ptr, HZ6_ROUTE_UNREGISTER_REASON_REHOME);
+  return 1;
+#else
   hz6_allocator_route_unregister_exact_reason(
       origin, ptr, HZ6_ROUTE_UNREGISTER_REASON_REHOME);
   if (!hz6_allocator_route_register_exact_reason(
@@ -287,4 +298,5 @@ int hz6_allocator_route_rehome_exact(Hz6Allocator* allocator,
   }
 
   return 1;
+#endif
 }

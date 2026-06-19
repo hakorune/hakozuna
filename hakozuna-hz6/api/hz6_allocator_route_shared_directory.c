@@ -7,6 +7,7 @@
 
 #if HZ6_SHARED_ROUTE_DIRECTORY_L1
 typedef struct Hz6SharedRouteDirectoryEntry {
+  _Atomic(unsigned int) sequence;
   _Atomic(uintptr_t) base;
   _Atomic(Hz6Allocator*) allocator;
   _Atomic(uintptr_t) descriptor;
@@ -17,6 +18,8 @@ typedef struct Hz6SharedRouteDirectoryEntry {
 
 static Hz6SharedRouteDirectoryEntry g_hz6_shared_route_directory
     [HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY];
+static atomic_flag g_hz6_shared_route_directory_writer_lock =
+    ATOMIC_FLAG_INIT;
 
 #define HZ6_SHARED_ROUTE_DIRECTORY_TOMBSTONE ((uintptr_t)UINTPTR_MAX)
 
@@ -36,6 +39,82 @@ static size_t hz6_shared_route_directory_index(uintptr_t base) {
   return hz6_route_directory_index(base, HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY);
 }
 
+static void hz6_shared_route_directory_writer_lock(void) {
+#if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
+  while (atomic_flag_test_and_set_explicit(
+      &g_hz6_shared_route_directory_writer_lock, memory_order_acquire)) {
+  }
+#endif
+}
+
+static void hz6_shared_route_directory_writer_unlock(void) {
+#if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
+  atomic_flag_clear_explicit(&g_hz6_shared_route_directory_writer_lock,
+                             memory_order_release);
+#endif
+}
+
+static void hz6_shared_route_directory_entry_begin_update(
+    Hz6SharedRouteDirectoryEntry* entry) {
+#if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
+  unsigned int sequence =
+      atomic_load_explicit(&entry->sequence, memory_order_relaxed);
+  if ((sequence & 1u) == 0u) {
+    ++sequence;
+  } else {
+    sequence += 2u;
+  }
+  atomic_store_explicit(&entry->sequence, sequence, memory_order_release);
+#else
+  (void)entry;
+#endif
+}
+
+static void hz6_shared_route_directory_entry_end_update(
+    Hz6SharedRouteDirectoryEntry* entry) {
+#if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
+  unsigned int sequence =
+      atomic_load_explicit(&entry->sequence, memory_order_relaxed);
+  if ((sequence & 1u) != 0u) {
+    ++sequence;
+  } else {
+    sequence += 2u;
+  }
+  atomic_store_explicit(&entry->sequence, sequence, memory_order_release);
+#else
+  (void)entry;
+#endif
+}
+
+static void hz6_shared_route_directory_entry_publish(
+    Hz6SharedRouteDirectoryEntry* entry,
+    Hz6Allocator* allocator,
+    void* base,
+    uint16_t front_id,
+    uint16_t class_id,
+    uint32_t generation,
+    void* descriptor) {
+  hz6_shared_route_directory_entry_begin_update(entry);
+#if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
+  atomic_store_explicit(&entry->allocator, allocator, memory_order_release);
+  atomic_store_explicit(&entry->descriptor, (uintptr_t)descriptor,
+                        memory_order_release);
+  atomic_store_explicit(&entry->front_id, front_id, memory_order_release);
+  atomic_store_explicit(&entry->class_id, class_id, memory_order_release);
+  atomic_store_explicit(&entry->generation, generation, memory_order_release);
+  atomic_store_explicit(&entry->base, (uintptr_t)base, memory_order_release);
+#else
+  atomic_store_explicit(&entry->base, (uintptr_t)base, memory_order_release);
+  atomic_store_explicit(&entry->descriptor, (uintptr_t)descriptor,
+                        memory_order_release);
+  atomic_store_explicit(&entry->front_id, front_id, memory_order_release);
+  atomic_store_explicit(&entry->class_id, class_id, memory_order_release);
+  atomic_store_explicit(&entry->generation, generation, memory_order_release);
+  atomic_store_explicit(&entry->allocator, allocator, memory_order_release);
+#endif
+  hz6_shared_route_directory_entry_end_update(entry);
+}
+
 size_t hz6_allocator_shared_route_directory_bytes(void) {
   size_t bytes = sizeof(g_hz6_shared_route_directory);
 #if HZ6_ELASTIC_ROUTE_OVERFLOW_L1
@@ -53,6 +132,51 @@ int hz6_shared_route_directory_register(Hz6Allocator* allocator,
   if (!allocator || !base || !descriptor) {
     return 0;
   }
+#if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
+  hz6_shared_route_directory_writer_lock();
+  size_t start = hz6_shared_route_directory_index((uintptr_t)base);
+  size_t tombstone_index = (size_t)-1;
+  for (size_t probe = 0; probe < HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY; ++probe) {
+    size_t index = (start + probe) % HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY;
+    Hz6SharedRouteDirectoryEntry* entry =
+        &g_hz6_shared_route_directory[index];
+    uintptr_t current =
+        atomic_load_explicit(&entry->base, memory_order_acquire);
+    if (current == HZ6_SHARED_ROUTE_DIRECTORY_TOMBSTONE) {
+      if (tombstone_index == (size_t)-1) {
+        tombstone_index = index;
+      }
+      continue;
+    }
+    if (current == 0 || current == (uintptr_t)base) {
+      if (current == 0 && tombstone_index != (size_t)-1) {
+        entry = &g_hz6_shared_route_directory[tombstone_index];
+      }
+      hz6_shared_route_directory_entry_publish(entry, allocator, base,
+                                               front_id, class_id, generation,
+                                               descriptor);
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.shared_dir_register;
+#endif
+      hz6_shared_route_directory_writer_unlock();
+      return 1;
+    }
+  }
+  if (tombstone_index != (size_t)-1) {
+    Hz6SharedRouteDirectoryEntry* entry =
+        &g_hz6_shared_route_directory[tombstone_index];
+    hz6_shared_route_directory_entry_publish(entry, allocator, base,
+                                             front_id, class_id, generation,
+                                             descriptor);
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.shared_dir_register;
+#endif
+    hz6_shared_route_directory_writer_unlock();
+    return 1;
+  }
+  hz6_shared_route_directory_writer_unlock();
+  return 0;
+#else
   size_t start = hz6_shared_route_directory_index((uintptr_t)base);
   size_t tombstone_index = (size_t)-1;
   for (size_t probe = 0; probe < HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY; ++probe) {
@@ -133,6 +257,7 @@ int hz6_shared_route_directory_register(Hz6Allocator* allocator,
     }
   }
   return 0;
+#endif
 }
 
 Hz6RouteResult hz6_shared_route_directory_lookup_raw(const void* ptr) {
@@ -146,11 +271,30 @@ Hz6RouteResult hz6_shared_route_directory_lookup_raw(const void* ptr) {
     size_t index = (start + probes) % HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY;
     Hz6SharedRouteDirectoryEntry* entry =
         &g_hz6_shared_route_directory[index];
+#if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
+    unsigned int sequence_before =
+        atomic_load_explicit(&entry->sequence, memory_order_acquire);
+    if ((sequence_before & 1u) != 0u) {
+      continue;
+    }
+#endif
     uintptr_t current =
         atomic_load_explicit(&entry->base, memory_order_acquire);
+#if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
+    if (current == 0) {
+      unsigned int sequence_after =
+          atomic_load_explicit(&entry->sequence, memory_order_acquire);
+      if (sequence_before == sequence_after &&
+          (sequence_after & 1u) == 0u) {
+        return hz6_route_miss();
+      }
+      continue;
+    }
+#else
     if (current == 0) {
       return hz6_route_miss();
     }
+#endif
     if (current == HZ6_SHARED_ROUTE_DIRECTORY_TOMBSTONE) {
       continue;
     }
@@ -170,6 +314,13 @@ Hz6RouteResult hz6_shared_route_directory_lookup_raw(const void* ptr) {
         atomic_load_explicit(&entry->class_id, memory_order_acquire);
     unsigned int generation =
         atomic_load_explicit(&entry->generation, memory_order_acquire);
+#if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
+    unsigned int sequence_after =
+        atomic_load_explicit(&entry->sequence, memory_order_acquire);
+    if (sequence_before != sequence_after || (sequence_after & 1u) != 0u) {
+      continue;
+    }
+#endif
     const Hz6ObjectDescriptor* descriptor =
         (const Hz6ObjectDescriptor*)descriptor_value;
     if (!descriptor || descriptor->ptr != ptr ||
@@ -312,6 +463,9 @@ void hz6_shared_route_directory_unregister(Hz6Allocator* allocator,
   if (!allocator || !base) {
     return;
   }
+#if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
+  hz6_shared_route_directory_writer_lock();
+#endif
   size_t start = hz6_shared_route_directory_index((uintptr_t)base);
   for (size_t probe = 0; probe < HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY; ++probe) {
     size_t index = (start + probe) % HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY;
@@ -320,6 +474,9 @@ void hz6_shared_route_directory_unregister(Hz6Allocator* allocator,
     uintptr_t current =
         atomic_load_explicit(&entry->base, memory_order_acquire);
     if (current == 0) {
+#if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
+      hz6_shared_route_directory_writer_unlock();
+#endif
       return;
     }
     if (current == HZ6_SHARED_ROUTE_DIRECTORY_TOMBSTONE) {
@@ -331,8 +488,14 @@ void hz6_shared_route_directory_unregister(Hz6Allocator* allocator,
     Hz6Allocator* owner =
         atomic_load_explicit(&entry->allocator, memory_order_acquire);
     if (owner != allocator) {
+#if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
+      hz6_shared_route_directory_writer_unlock();
+#endif
       return;
     }
+#if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
+    hz6_shared_route_directory_entry_begin_update(entry);
+#endif
     atomic_store_explicit(&entry->allocator, NULL, memory_order_release);
     atomic_store_explicit(&entry->descriptor, 0, memory_order_release);
     atomic_store_explicit(&entry->front_id, 0, memory_order_release);
@@ -340,11 +503,20 @@ void hz6_shared_route_directory_unregister(Hz6Allocator* allocator,
     atomic_store_explicit(&entry->generation, 0, memory_order_release);
     atomic_store_explicit(&entry->base, HZ6_SHARED_ROUTE_DIRECTORY_TOMBSTONE,
                           memory_order_release);
+#if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
+    hz6_shared_route_directory_entry_end_update(entry);
+#endif
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.shared_dir_unregister;
 #endif
+#if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
+    hz6_shared_route_directory_writer_unlock();
+#endif
     return;
   }
+#if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
+  hz6_shared_route_directory_writer_unlock();
+#endif
 }
 
 void hz6_allocator_route_shared_directory_dryrun(Hz6Allocator* allocator,

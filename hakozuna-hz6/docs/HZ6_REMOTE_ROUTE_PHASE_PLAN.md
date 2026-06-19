@@ -95,6 +95,37 @@ bench_random_mixed_mt_remote 16 120000 100 16 131072 90 65536
 These are completion/safety smokes only.  They are not paper numbers and they
 confirm that the synchronized lane is still far from Phase 3 performance.
 
+2026-06-19 Phase 1B first box is implemented for the Ubuntu selected preload
+build:
+
+- `HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1=1` adds per-entry sequence
+  snapshots and a serialized writer boundary to the shared exact directory.
+  Readers accept only a stable even sequence and no longer translate
+  base-without-payload publication races into authoritative MISS.
+- `HZ6_SHARED_ROUTE_DIRECTORY_MANDATORY_L1=1` makes shared exact publication
+  mandatory for local exact route registration.  If local route registration
+  succeeds but shared publication fails, the local route is rolled back and the
+  allocation path sees failure.
+- `HZ6_ROUTE_REHOME_REGISTER_BEFORE_UNREGISTER_L1=1` exists as a control for
+  removing the old shared-directory empty window, but it is not selected.  The
+  2026-06-19 smoke completed `remote50` but timed out `remote90` at 60s, so the
+  next rehome step must be a real transfer transaction rather than just
+  reversing unregister/register order.
+
+Smoke evidence after selected Phase 1B flags:
+
+```text
+bench_random_mixed_mt_remote 16 10000 100 16 32768 50 65536
+  ops/s=109663.84 fail=0 timeout=no
+
+bench_random_mixed_mt_remote 16 120000 100 16 131072 90 65536
+  ops/s=64951.77 fail=0 timeout=no
+```
+
+The Phase 1B selected flags improve publication correctness, not speed.  The
+visible throughput drop is expected until Phase 2/3 removes legacy route scans
+and reduces synchronization cost.
+
 ## Ownership Model
 
 Keep these roles explicit:
