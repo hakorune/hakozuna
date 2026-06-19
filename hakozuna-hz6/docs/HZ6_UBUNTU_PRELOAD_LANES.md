@@ -398,6 +398,12 @@ external tickets as same-key pending too.  Smoke showed
 `remote_pending_external_ticket_current=1920`.  This says backlog is not purely
 cold exit inventory; the next design point is a source-block/pre-source
 consumer boundary.
+`PreSourcePendingMaintenance-L1` tested that boundary by draining one pending
+item after source-run reuse missed and before source-block creation.  The smoke
+was clean and found `pre_source_success=48`, but
+`source_block_commit_with_matching_pending` still reached `120`; quick RUNS=3
+regressed to `remote50=13.80M`, `remote90=1.71M`.  The code was reverted and
+the box is `NO-GO`.
 `RemoteFreeBackpressureOriginDrain-L1` tried that full path directly as an
 opt-in no-go.  It drains one same-class transfer object from the origin transfer
 cache into the origin frontcache and retries origin commit once.  Safety smoke

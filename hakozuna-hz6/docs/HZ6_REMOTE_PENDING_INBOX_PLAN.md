@@ -1094,3 +1094,36 @@ Decision: `GO(tooling)`.  The backlog is not purely cold exit inventory:
 same-key pending still overlaps source-block commit.  The useful next design
 box is a source-block/pre-source consumer boundary, not another direct-source
 fallback hook.
+
+## 2026-06-20 Pre-Source Pending Maintenance No-Go
+
+`PreSourcePendingMaintenance-L1` tried one owner-local pending maintenance pass
+after source-run reuse missed and before creating a new source block.  The code
+was reverted after measurement.
+
+Smoke:
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+remote_pending_pre_source_maintenance_attempt=729
+remote_pending_pre_source_maintenance_success=48
+remote_pending_frontcache_full=0
+remote_pending_external_ticket_consume_empty=0
+remote_pending_external_ticket_route_mismatch=0
+remote_pending_external_ticket_owner_mismatch=0
+remote_pending_external_ticket_state_mismatch=0
+remote_pending_external_ticket_storage_mismatch=0
+source_block_commit_with_matching_pending=120
+```
+
+Quick RUNS=3:
+
+```text
+remote50=13797670.02
+remote90=1713375.90
+```
+
+Decision: `NO-GO`.  The hook was safe but too late and too broad: it found a
+few pending entries, yet did not prevent source-block same-key overlap and
+severely hurt remote90.
