@@ -62,6 +62,14 @@
           "route_unregister_reason_descriptorless_detach=%zu "
           "route_unregister_reason_source_slot_release=%zu "
           "route_unregister_reason_rehome=%zu "
+          "route_rehome_attempt=%zu "
+          "route_rehome_success=%zu "
+          "route_rehome_fail=%zu "
+          "route_rehome_expected_owner_mismatch=%zu "
+          "route_rehome_destination_route_fail=%zu "
+          "route_rehome_directory_transfer_fail=%zu "
+          "route_rehome_rollback_success=%zu "
+          "route_rehome_rollback_fail=%zu "
           "route_active_current=%zu route_active_max=%zu "
           "route_tombstone_current=%zu route_tombstone_max=%zu "
           "route_register_used_tombstone=%zu "
@@ -97,7 +105,13 @@
           route_unregister_reason_cap_release,
           route_unregister_reason_descriptorless_detach,
           route_unregister_reason_source_slot_release,
-          route_unregister_reason_rehome, route_active_current,
+          route_unregister_reason_rehome, route_rehome_attempt,
+          route_rehome_success, route_rehome_fail,
+          route_rehome_expected_owner_mismatch,
+          route_rehome_destination_route_fail,
+          route_rehome_directory_transfer_fail,
+          route_rehome_rollback_success, route_rehome_rollback_fail,
+          route_active_current,
           route_active_max, route_tombstone_current, route_tombstone_max,
           route_register_used_tombstone,
           route_register_full_probe_with_tombstone,

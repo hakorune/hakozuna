@@ -49,6 +49,14 @@
   size_t route_unregister_reason_descriptorless_detach = 0;
   size_t route_unregister_reason_source_slot_release = 0;
   size_t route_unregister_reason_rehome = 0;
+  size_t route_rehome_attempt = 0;
+  size_t route_rehome_success = 0;
+  size_t route_rehome_fail = 0;
+  size_t route_rehome_expected_owner_mismatch = 0;
+  size_t route_rehome_destination_route_fail = 0;
+  size_t route_rehome_directory_transfer_fail = 0;
+  size_t route_rehome_rollback_success = 0;
+  size_t route_rehome_rollback_fail = 0;
   size_t route_active_current = 0;
   size_t route_active_max = 0;
   size_t route_tombstone_current = 0;
@@ -324,6 +332,17 @@
     route_unregister_reason_source_slot_release +=
         stats.route_unregister_reason_source_slot_release;
     route_unregister_reason_rehome += stats.route_unregister_reason_rehome;
+    route_rehome_attempt += stats.route_rehome_attempt;
+    route_rehome_success += stats.route_rehome_success;
+    route_rehome_fail += stats.route_rehome_fail;
+    route_rehome_expected_owner_mismatch +=
+        stats.route_rehome_expected_owner_mismatch;
+    route_rehome_destination_route_fail +=
+        stats.route_rehome_destination_route_fail;
+    route_rehome_directory_transfer_fail +=
+        stats.route_rehome_directory_transfer_fail;
+    route_rehome_rollback_success += stats.route_rehome_rollback_success;
+    route_rehome_rollback_fail += stats.route_rehome_rollback_fail;
     route_active_current += stats.route_active_current;
     if (stats.route_active_max > route_active_max) {
       route_active_max = stats.route_active_max;

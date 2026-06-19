@@ -40,7 +40,15 @@ static int hz6_free_remote_rehome_before_transfer(
 
   Hz6RouteResult rollback_route = route;
   rollback_route.route_allocator = allocator;
+#if HZ6_DIAGNOSTIC_PROBES
+  if (hz6_allocator_route_rehome_exact(origin, &rollback_route)) {
+    ++allocator->stats.route_rehome_rollback_success;
+  } else {
+    ++allocator->stats.route_rehome_rollback_fail;
+  }
+#else
   (void)hz6_allocator_route_rehome_exact(origin, &rollback_route);
+#endif
   return 0;
 }
 

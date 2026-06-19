@@ -18,6 +18,11 @@
   size_t route_rehome_attempt;
   size_t route_rehome_success;
   size_t route_rehome_fail;
+  size_t route_rehome_expected_owner_mismatch;
+  size_t route_rehome_destination_route_fail;
+  size_t route_rehome_directory_transfer_fail;
+  size_t route_rehome_rollback_success;
+  size_t route_rehome_rollback_fail;
   size_t descriptor_source_route_allocator_match;
   size_t descriptor_source_route_allocator_mismatch;
   size_t descriptor_source_current_allocator_match;

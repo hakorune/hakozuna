@@ -264,6 +264,16 @@ with `free_route_real_free_unproven=0`,
 `free_resolve_result_unresolved_integrity=0`, and
 `route_compact_remote_path_attempt=0`.
 
+Phase 3 rehome diagnostic status, 2026-06-19: route detail stats now split
+rehome failures into expected-owner mismatch, destination-route failure,
+directory-transfer failure, rollback success, and rollback failure.  The
+integrity smoke gate now requires all rehome failure counters and rollback
+failure to stay zero.  Focused smoke showed `route_rehome_fail=0`,
+`route_rehome_expected_owner_mismatch=0`,
+`route_rehome_destination_route_fail=0`,
+`route_rehome_directory_transfer_fail=0`, and
+`route_rehome_rollback_fail=0`.
+
 Phase 3 remote median runner, 2026-06-19:
 `linux/run_hz6_preload_remote_median.sh` builds the selected preload and runs
 remote MT rows with `RUNS=10` by default, reporting median `ops/s` as a TSV.

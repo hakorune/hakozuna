@@ -312,6 +312,9 @@ int hz6_allocator_route_rehome_exact(Hz6Allocator* allocator,
       origin_route.generation != route->generation ||
       origin_route.front_id != route->front_id ||
       origin_route.class_id != route->class_id) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.route_rehome_expected_owner_mismatch;
+#endif
     hz6_allocator_route_rehome_unlock_pair(origin, allocator);
     return 0;
   }
@@ -323,6 +326,9 @@ int hz6_allocator_route_rehome_exact(Hz6Allocator* allocator,
                                         route->generation,
                                         (void*)descriptor,
                                         NULL)) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.route_rehome_destination_route_fail;
+#endif
     hz6_allocator_route_rehome_unlock_pair(origin, allocator);
     return 0;
   }
@@ -332,6 +338,9 @@ int hz6_allocator_route_rehome_exact(Hz6Allocator* allocator,
                                                  ptr,
                                                  route->generation,
                                                  (void*)descriptor)) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.route_rehome_directory_transfer_fail;
+#endif
     hz6_route_backend_unregister_exact(&allocator->route_backend, ptr, NULL);
     hz6_allocator_route_rehome_unlock_pair(origin, allocator);
     return 0;
