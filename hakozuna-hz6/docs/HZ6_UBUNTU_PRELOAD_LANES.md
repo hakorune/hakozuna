@@ -247,6 +247,12 @@ snapshot `RETRY` is re-read inside the resolver before surfacing
 the shared lookup helper, so resolver callers still see the same six-result
 contract.
 
+Phase 3 route-domain observation status, 2026-06-19: diagnostic stats now
+include `route_lock_read_contended`, `route_lock_write_contended`, and
+`route_lock_max_wait`.  These counters are scoped to `HZ6_DIAGNOSTIC_PROBES`
+and measure spin waits at the route-domain boundary without adding selected
+lane overhead.
+
 Phase 3 control closeout, 2026-06-19: two narrow lock/lookup controls are kept
 off.  `HZ6_REMOTE_FREE_RESOLVE_LOCAL_EXACT_ONLY_L1=1` completed but regressed
 the `remote90 16..131072` smoke (`81209.19 ops/s`), so resolver local fallback

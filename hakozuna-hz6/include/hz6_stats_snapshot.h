@@ -622,6 +622,9 @@ typedef struct Hz6StatsSnapshot {
   size_t route_compact_deferred;
   size_t route_compact_owner_maintenance;
   size_t route_compact_remote_path_attempt;
+  size_t route_lock_read_contended;
+  size_t route_lock_write_contended;
+  size_t route_lock_max_wait;
   size_t route_tombstone_cond_probe;
   size_t route_tombstone_cond_would_compact;
   size_t route_tombstone_cond_ratio25;

@@ -62,6 +62,9 @@
   size_t route_compact_deferred = 0;
   size_t route_compact_owner_maintenance = 0;
   size_t route_compact_remote_path_attempt = 0;
+  size_t route_lock_read_contended = 0;
+  size_t route_lock_write_contended = 0;
+  size_t route_lock_max_wait = 0;
   size_t route_tombstone_cond_probe = 0;
   size_t route_tombstone_cond_would_compact = 0;
   size_t route_tombstone_cond_ratio25 = 0;
@@ -342,6 +345,11 @@
         stats.route_compact_owner_maintenance;
     route_compact_remote_path_attempt +=
         stats.route_compact_remote_path_attempt;
+    route_lock_read_contended += stats.route_lock_read_contended;
+    route_lock_write_contended += stats.route_lock_write_contended;
+    if (stats.route_lock_max_wait > route_lock_max_wait) {
+      route_lock_max_wait = stats.route_lock_max_wait;
+    }
     route_tombstone_cond_probe += stats.route_tombstone_cond_probe;
     route_tombstone_cond_would_compact +=
         stats.route_tombstone_cond_would_compact;

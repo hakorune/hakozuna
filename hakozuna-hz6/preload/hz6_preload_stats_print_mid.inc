@@ -73,6 +73,9 @@
           "route_compact_deferred=%zu "
           "route_compact_owner_maintenance=%zu "
           "route_compact_remote_path_attempt=%zu "
+          "route_lock_read_contended=%zu "
+          "route_lock_write_contended=%zu "
+          "route_lock_max_wait=%zu "
           "route_tombstone_cond_probe=%zu "
           "route_tombstone_cond_would_compact=%zu "
           "route_tombstone_cond_ratio25=%zu "
@@ -102,6 +105,8 @@
           route_tombstone_compact_fail_alloc,
           route_tombstone_compact_moved, route_compact_deferred,
           route_compact_owner_maintenance, route_compact_remote_path_attempt,
+          route_lock_read_contended, route_lock_write_contended,
+          route_lock_max_wait,
           route_tombstone_cond_probe,
           route_tombstone_cond_would_compact,
           route_tombstone_cond_ratio25, route_tombstone_cond_occupancy75,
