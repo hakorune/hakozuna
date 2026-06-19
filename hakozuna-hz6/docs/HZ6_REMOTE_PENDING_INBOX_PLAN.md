@@ -1358,3 +1358,23 @@ remote50 versus the owner-inbox+external baseline.  It still needs selected/off
 comparison and cross-platform checks before default promotion, but the next
 optimization line should be this direct-pool candidate, not additional
 frontcache staging.
+
+## 2026-06-20 DirectReuse Selected Comparison
+
+Selected/off RUNS=10:
+
+```text
+selected/off:
+  remote50=15024772.13
+  remote90=10925614.98
+
+direct reuse + maintenance + external:
+  remote50=14101262.47
+  remote90=11136207.62
+```
+
+Decision: `GO(high-remote candidate)/NO-GO(default)`.  Direct pending-pool
+reuse slightly improves remote90 over selected, but remote50 remains about 6%
+behind.  Do not promote as the default selected lane.  Keep it as the current
+high-remote/specialist candidate and focus further work on reducing its remote50
+tax.

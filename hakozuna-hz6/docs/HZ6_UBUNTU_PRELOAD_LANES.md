@@ -1728,3 +1728,17 @@ Decision: `GO(candidate)/HOLD(default)`.  Direct pending-pool reuse is back as
 the main candidate because it improves remote90 without meaningful remote50
 loss against the owner-inbox+external baseline.  Default promotion still waits
 on selected/off comparison and cross-platform evidence.
+
+## 2026-06-20 DirectReuse Selected Comparison
+
+Selected/off RUNS=10:
+
+```text
+selected/off:                          remote50=15024772.13 remote90=10925614.98
+direct reuse + maintenance + external: remote50=14101262.47 remote90=11136207.62
+```
+
+Decision: `GO(high-remote candidate)/NO-GO(default)`.  The candidate is useful
+for remote90, but it still pays a remote50 tax versus selected/off.  Do not
+promote as the default lane; keep optimizing the direct-pool shape if the target
+is high-remote recovery.
