@@ -75,6 +75,14 @@
   size_t source_block_commit_with_matching_pending;
   size_t direct_source_attempt_with_matching_pending;
   size_t direct_source_commit_with_matching_pending;
+  size_t remote_pending_direct_gate_load;
+  size_t remote_pending_direct_gate_hit;
+  size_t remote_pending_direct_claim_attempt;
+  size_t remote_pending_direct_claim_success;
+  size_t remote_pending_direct_claim_busy;
+  size_t remote_pending_direct_claim_empty_after_hint;
+  size_t remote_pending_direct_activate_success;
+  size_t remote_pending_direct_integrity_failure;
   size_t remote_free_backpressure_origin_transfer_success;
   size_t remote_free_backpressure_origin_transfer_fail;
   size_t remote_free_backpressure_origin_transfer_stride_skip;

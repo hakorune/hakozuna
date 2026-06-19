@@ -142,6 +142,21 @@
         stats.direct_source_attempt_with_matching_pending;
     direct_source_commit_with_matching_pending +=
         stats.direct_source_commit_with_matching_pending;
+    remote_pending_direct_gate_load +=
+        stats.remote_pending_direct_gate_load;
+    remote_pending_direct_gate_hit += stats.remote_pending_direct_gate_hit;
+    remote_pending_direct_claim_attempt +=
+        stats.remote_pending_direct_claim_attempt;
+    remote_pending_direct_claim_success +=
+        stats.remote_pending_direct_claim_success;
+    remote_pending_direct_claim_busy +=
+        stats.remote_pending_direct_claim_busy;
+    remote_pending_direct_claim_empty_after_hint +=
+        stats.remote_pending_direct_claim_empty_after_hint;
+    remote_pending_direct_activate_success +=
+        stats.remote_pending_direct_activate_success;
+    remote_pending_direct_integrity_failure +=
+        stats.remote_pending_direct_integrity_failure;
     remote_free_backpressure_origin_transfer_success +=
         stats.remote_free_backpressure_origin_transfer_success;
     remote_free_backpressure_origin_transfer_fail +=

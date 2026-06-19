@@ -450,6 +450,12 @@
 #define HZ6_REMOTE_PENDING_REUSE_DEMAND_AUDIT_V2_L1 0
 #endif
 
+#ifndef HZ6_REMOTE_PENDING_DIRECT_REUSE_L1
+/* Default-off behavior box.  On owner-local frontcache miss, try one exact-key
+ * pending claim and activate it directly instead of batch frontcache drain. */
+#define HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 0
+#endif
+
 #ifndef HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1
 /* Bounded relief lane for remote-free transfer backpressure.  On reserve
  * failure, drain one already-committed same-class transfer object into the

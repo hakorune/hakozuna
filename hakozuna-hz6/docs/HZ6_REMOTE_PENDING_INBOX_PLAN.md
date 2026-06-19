@@ -250,3 +250,46 @@ Interpretation: direct-source fallback still has no same-key overlap, but the
 old owner-local maintenance path is already consuming same-key pending entries
 and creating surplus frontcache work.  The next box can wire
 `RemotePendingDirectReuse-L1` as a default-off replacement for that path.
+
+## 2026-06-20 Direct Reuse
+
+`RemotePendingDirectReuse-L1` connects the exact-key claim API after
+frontcache miss for Toy/MidPage preload direct paths.  Active-map registration
+stays with the caller.
+
+Direct-only smoke:
+
+```text
+remote_pending_direct_claim_success=1453
+remote_pending_direct_activate_success=1453
+remote_pending_direct_integrity_failure=0
+remote_pending_batch_items=0
+remote_pending_frontcache_push=0
+```
+
+Direct-only RUNS=3:
+
+```text
+remote50=14219657.91
+remote90=1423660.43
+```
+
+Direct + owner-local maintenance smoke:
+
+```text
+remote_pending_direct_claim_success=3065
+remote_pending_direct_claim_busy=15
+remote_pending_direct_integrity_failure=0
+remote_pending_batch_items=480
+remote_pending_frontcache_push=480
+```
+
+Direct + owner-local maintenance RUNS=3:
+
+```text
+remote50=14162158.67
+remote90=11188549.20
+```
+
+Decision: Direct-only is not viable for remote90.  Direct reuse should remain
+an opt-in short-circuit before owner-local maintenance.

@@ -193,3 +193,52 @@ not cover the main opportunity: existing maintenance is already consuming
 same-key pending work before the old audit point.  DirectReuse should now be
 evaluated as a replacement for the pending-pop/frontcache-push/frontcache-pop
 sequence.
+
+## Direct Reuse Follow-Up
+
+`RemotePendingDirectReuse-L1` wires one exact-key pending claim after
+frontcache miss.  It is limited to Toy/MidPage preload direct paths and keeps
+route validation in production.
+
+DirectReuse-only, with owner-local maintenance disabled:
+
+```text
+remote_pending_direct_gate_load=5164
+remote_pending_direct_gate_hit=1453
+remote_pending_direct_claim_attempt=1453
+remote_pending_direct_claim_success=1453
+remote_pending_direct_activate_success=1453
+remote_pending_direct_integrity_failure=0
+remote_pending_batch_items=0
+remote_pending_frontcache_push=0
+```
+
+RUNS=3:
+
+```text
+remote50=14219657.91
+remote90=1423660.43
+```
+
+DirectReuse plus the old owner-local maintenance fallback:
+
+```text
+remote_pending_direct_gate_load=5999
+remote_pending_direct_gate_hit=3080
+remote_pending_direct_claim_success=3065
+remote_pending_direct_claim_busy=15
+remote_pending_direct_activate_success=3065
+remote_pending_direct_integrity_failure=0
+remote_pending_batch_items=480
+remote_pending_frontcache_push=480
+```
+
+RUNS=3:
+
+```text
+remote50=14162158.67
+remote90=11188549.20
+```
+
+Decision: direct-only is `NO-GO(default)` because it starves remote90.  Direct
+reuse as a short-circuit before maintenance is `GO(experimental)/HOLD(default)`.

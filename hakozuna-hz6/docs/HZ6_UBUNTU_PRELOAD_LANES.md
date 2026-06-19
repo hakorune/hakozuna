@@ -239,6 +239,13 @@ pending maintenance and covers source prefill.  Opt-in smoke found
 `remote50=13570506.65`, `remote90=10002012.48`.  DirectReuse is now justified
 as a default-off replacement for pending->frontcache->pop, not as a source
 allocation avoidance feature yet.
+`RemotePendingDirectReuse-L1` wires one exact-key pending claim after
+frontcache miss for Toy/MidPage preload direct paths.  Direct-only is
+`NO-GO(default)`: it claimed `1453` entries but quick RUNS=3 collapsed
+`remote90=1423660.43`.  Direct plus owner-local maintenance is the useful
+shape: smoke claimed `3065` entries, kept batch work to `480`, and RUNS=3
+measured `remote50=14162158.67`, `remote90=11188549.20`.  Keep it opt-in until
+the fallback maintenance policy is tuned.
 `RemoteFreeBackpressureOriginTransferReasonObserve-L1` splits the remaining
 origin-transfer misses without changing behavior.  The selected smoke showed
 `remote_free_backpressure_origin_transfer_stride_skip=16295`,
