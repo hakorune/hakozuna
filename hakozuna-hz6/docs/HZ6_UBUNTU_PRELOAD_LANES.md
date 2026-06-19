@@ -3455,6 +3455,43 @@ Decision: `GO(tooling)`.  Use these richer summaries for the next RUNS=10
 paired batches so variance and RSS spread are visible without reprocessing raw
 logs.
 
+## 2026-06-20 PairedGateR10Recheck-L1
+
+Ran the distribution-enabled paired gate for a full production RUNS=10 batch:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_paired_gate.sh \
+  --runs 10 \
+  --variants p0_selected_off,p1_owner_inbox
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_paired_gate_20260620_074553
+```
+
+Summary:
+
+```text
+variant          row           runs  ops_min    ops_p25    ops_median  ops_p75    ops_max    RSS_median
+p0_selected_off  local0        10    15.75M     16.52M     16.74M      16.98M     17.27M      67.25MiB
+p1_owner_inbox   local0        10    13.62M     15.33M     16.25M      16.66M     17.11M      67.38MiB
+p0_selected_off  remote50      10    12.31M     14.34M     14.85M      15.40M     15.71M      69.50MiB
+p1_owner_inbox   remote50      10    11.94M     12.50M     13.88M      14.29M     14.63M      74.81MiB
+p0_selected_off  remote90      10    10.72M     10.86M     11.00M      11.19M     11.30M      72.21MiB
+p1_owner_inbox   remote90      10     9.69M     10.50M     10.67M      10.80M     10.86M      77.36MiB
+p0_selected_off  cross128_r90  10     0.63M      3.84M      8.11M      17.53M     39.21M      68.81MiB
+p1_owner_inbox   cross128_r90  10     1.70M      3.35M      5.25M       7.82M     31.91M      74.56MiB
+```
+
+Decision: `HOLD(profile/default)/DESIGN checkpoint`.  In this batch the
+owner-inbox p1 shape loses every median row and has higher RSS in the remote
+rows.  That removes the current performance case for p1 default promotion and
+also weakens the high-remote profile case.  Do not stack another owner-inbox
+consumer policy yet; first reconcile why the current p0 selected-off shape no
+longer shows the earlier high-remote cliff.
+
 ## 2026-06-20 Profile Frontier Alias Smoke
 
 The new profile aliases were exercised through the existing focused profile
