@@ -68,6 +68,7 @@ HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1=1
 HZ6_SHARED_ROUTE_DIRECTORY_MANDATORY_L1=1
 HZ6_ROUTE_REHOME_REGISTER_BEFORE_UNREGISTER_L1=0
 HZ6_REMOTE_FREE_REHOME_BEFORE_TRANSFER_L1=1
+HZ6_REMOTE_FREE_ROUTE_RESOLVE_L1=1
 HZ6_ROUTE_HASH_XOR_FOLD_L1=1
 HZ6_ROUTE_LINEAR_WRAP_L1=1
 HZ6_ROUTE_LOOP_CARRY_L1=1
@@ -139,6 +140,14 @@ transfer cache, and roll the route back if the transfer push fails.  This
 removes the old split-brain case where transfer ownership could commit while
 the route still pointed at the origin.  It is still a bounded bridge, not the
 final ordered dual-lock transaction.
+
+Phase 2 initial resolver status, 2026-06-19: selected preload now enables
+`HZ6_REMOTE_FREE_ROUTE_RESOLVE_L1=1` for the remote-free path.  The resolver
+lives in `api/hz6_allocator_route_resolve_free.[ch]` and returns
+`LOCAL_VALID`, `FOREIGN_VALID`, `OWNED_INVALID`, `PROVEN_EXTERNAL`, `RETRY`,
+or `UNRESOLVED_INTEGRITY`.  This first selected use is intentionally scoped to
+core remote free; preload external-pointer `real_free` selection still uses the
+existing wrapper boundary until the HZ6 address-domain proof exists.
 
 Latest selected-default focused guards, after fixed-floor and active-map storage
 trim, repeat-3, `bench_mixed_ws_crt`, raw

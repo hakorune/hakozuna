@@ -2,6 +2,7 @@
 #define HZ6_ALLOCATOR_API_ROUTE_TRANSFER_H
 
 #include "hz6_allocator_types.h"
+#include "hz6_allocator_route_resolve_free.h"
 
 #ifdef __cplusplus
 extern "C" {

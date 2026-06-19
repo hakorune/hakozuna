@@ -58,6 +58,7 @@ HZ6_LIB_SOURCES=(
   "${HZ6_DIR}/api/hz6_allocator_route.c"
   "${HZ6_DIR}/api/hz6_allocator_route_domain.c"
   "${HZ6_DIR}/api/hz6_allocator_route_lookup.c"
+  "${HZ6_DIR}/api/hz6_allocator_route_resolve_free.c"
   "${HZ6_DIR}/api/hz6_allocator_route_last_hit.c"
   "${HZ6_DIR}/api/hz6_allocator_route_owner_locality.c"
   "${HZ6_DIR}/api/hz6_allocator_route_shared_directory.c"

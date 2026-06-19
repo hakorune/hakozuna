@@ -149,6 +149,27 @@ bench_random_mixed_mt_remote 16 120000 100 16 131072 90 65536
   ops/s=80413.30 fail=0 timeout=no
 ```
 
+2026-06-19 Phase 2 initial resolver box is implemented and selected for core
+remote free:
+
+- `api/hz6_allocator_route_resolve_free.[ch]` owns the
+  `RemoteFreeRouteResolve-L1` result boundary.
+- The resolver returns `LOCAL_VALID`, `FOREIGN_VALID`, `OWNED_INVALID`,
+  `PROVEN_EXTERNAL`, `RETRY`, or `UNRESOLVED_INTEGRITY`.
+- `HZ6_REMOTE_FREE_ROUTE_RESOLVE_L1=1` routes `hz6_free_remote()` through this
+  resolver.  Linux preload still keeps platform `real_free` selection outside
+  this resolver until the HZ6 address-domain proof is implemented.
+
+Smoke evidence after resolver selected:
+
+```text
+bench_random_mixed_mt_remote 16 10000 100 16 32768 50 65536
+  ops/s=83646.91 fail=0 timeout=no
+
+bench_random_mixed_mt_remote 16 120000 100 16 131072 90 65536
+  ops/s=113182.85 fail=0 timeout=no
+```
+
 ## Ownership Model
 
 Keep these roles explicit:

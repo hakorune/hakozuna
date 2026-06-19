@@ -49,9 +49,20 @@ int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
     return 0;
   }
 
+  Hz6RouteResult route = hz6_route_miss();
+#if HZ6_REMOTE_FREE_ROUTE_RESOLVE_L1
+  Hz6FreeRouteResolveResult resolved =
+      hz6_allocator_route_resolve_free(allocator, ptr);
+  route = resolved.route;
+  int visible_hit = resolved.visible_hit;
+  if (resolved.kind == HZ6_FREE_ROUTE_UNRESOLVED_INTEGRITY ||
+      resolved.kind == HZ6_FREE_ROUTE_RETRY) {
+    ++allocator->stats.route_invalid;
+    return 0;
+  }
+#else
   int visible_hit = 0;
   int visible_lookup_done = 0;
-  Hz6RouteResult route = hz6_route_miss();
 #if HZ6_OWNER_LOCALITY_INDEX_L1
   route = hz6_allocator_route_lookup_exact(allocator, ptr);
   if (route.kind == HZ6_ROUTE_MISS) {
@@ -129,6 +140,7 @@ int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
     route = hz6_allocator_route_lookup_visible_after_local_miss(allocator, ptr);
     visible_hit = (route.kind != HZ6_ROUTE_MISS);
   }
+#endif
   if (route.kind == HZ6_ROUTE_MISS) {
     ++allocator->stats.route_miss;
     return 0;
