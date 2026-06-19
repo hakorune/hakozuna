@@ -239,6 +239,22 @@
           "remote_free_backpressure_origin_full_transfer_count_total=%zu "
           "remote_free_backpressure_origin_full_class_count_total=%zu "
           "remote_free_backpressure_origin_full_class_count_max=%zu "
+          "origin_transfer_source_commit_with_same_class_transfer=%zu "
+          "origin_transfer_source_commit_with_any_transfer=%zu "
+          "origin_transfer_source_commit_same_class_count_total=%zu "
+          "origin_transfer_source_commit_same_class_count_max=%zu "
+          "origin_transfer_source_commit_transfer_count_total=%zu "
+          "origin_transfer_source_commit_transfer_count_max=%zu "
+          "origin_transfer_prefill_commit_with_same_class_transfer=%zu "
+          "origin_transfer_prefill_commit_with_any_transfer=%zu "
+          "origin_transfer_prefill_commit_same_class_count_total=%zu "
+          "origin_transfer_prefill_commit_same_class_count_max=%zu "
+          "origin_transfer_prefill_commit_transfer_count_total=%zu "
+          "origin_transfer_prefill_commit_transfer_count_max=%zu "
+          "origin_transfer_pop_loop_attempt=%zu "
+          "origin_transfer_pop_loop_empty=%zu "
+          "origin_transfer_pop_loop_invalid=%zu "
+          "origin_transfer_pop_loop_hit=%zu "
           "remote_free_backpressure_origin_drain_attempt=%zu "
           "remote_free_backpressure_origin_drain_success=%zu "
           "remote_free_backpressure_origin_drain_retry_success=%zu "
@@ -457,6 +473,22 @@
           remote_free_backpressure_origin_full_transfer_count_total,
           remote_free_backpressure_origin_full_class_count_total,
           remote_free_backpressure_origin_full_class_count_max,
+          origin_transfer_source_commit_with_same_class_transfer,
+          origin_transfer_source_commit_with_any_transfer,
+          origin_transfer_source_commit_same_class_count_total,
+          origin_transfer_source_commit_same_class_count_max,
+          origin_transfer_source_commit_transfer_count_total,
+          origin_transfer_source_commit_transfer_count_max,
+          origin_transfer_prefill_commit_with_same_class_transfer,
+          origin_transfer_prefill_commit_with_any_transfer,
+          origin_transfer_prefill_commit_same_class_count_total,
+          origin_transfer_prefill_commit_same_class_count_max,
+          origin_transfer_prefill_commit_transfer_count_total,
+          origin_transfer_prefill_commit_transfer_count_max,
+          origin_transfer_pop_loop_attempt,
+          origin_transfer_pop_loop_empty,
+          origin_transfer_pop_loop_invalid,
+          origin_transfer_pop_loop_hit,
           remote_free_backpressure_origin_drain_attempt,
           remote_free_backpressure_origin_drain_success,
           remote_free_backpressure_origin_drain_retry_success,

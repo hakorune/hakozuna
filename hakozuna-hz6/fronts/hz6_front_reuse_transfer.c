@@ -576,7 +576,10 @@ void* hz6_front_reuse_transfer_with_descriptor(
   }
 
   Hz6TransferObject transfer;
+  hz6_allocator_origin_transfer_audit_note_pop_attempt(allocator);
+  int saw_transfer_object = 0;
   while (hz6_allocator_transfer_pop(allocator, class_id, &transfer)) {
+    saw_transfer_object = 1;
     Hz6ObjectDescriptor* descriptor =
         (Hz6ObjectDescriptor*)transfer.descriptor;
 #if HZ6_REMOTE_FREE_CONSUMER_REHOME_L1
@@ -588,6 +591,7 @@ void* hz6_front_reuse_transfer_with_descriptor(
 #endif
     if (!hz6_allocator_activate_descriptor(allocator, descriptor, HZ6_STATE_TRANSFER_FREE, transfer.ptr,
             transfer.generation, hz6_allocator_owner_token(allocator))) {
+      hz6_allocator_origin_transfer_audit_note_pop_invalid(allocator);
 #if HZ6_DIAGNOSTIC_PROBES
       ++allocator->stats.transfer_reuse_invalid;
 #endif
@@ -638,7 +642,11 @@ void* hz6_front_reuse_transfer_with_descriptor(
     if (out_descriptor) {
       *out_descriptor = descriptor;
     }
+    hz6_allocator_origin_transfer_audit_note_pop_hit(allocator);
     return transfer.ptr;
+  }
+  if (!saw_transfer_object) {
+    hz6_allocator_origin_transfer_audit_note_pop_empty(allocator);
   }
 
 #if HZ6_REMOTE_FREE_OVERFLOW_L1

@@ -370,6 +370,48 @@
       remote_free_backpressure_origin_full_class_count_max =
           origin_full_class_max;
     }
+    origin_transfer_source_commit_with_same_class_transfer +=
+        stats.origin_transfer_source_commit_with_same_class_transfer;
+    origin_transfer_source_commit_with_any_transfer +=
+        stats.origin_transfer_source_commit_with_any_transfer;
+    origin_transfer_source_commit_same_class_count_total +=
+        stats.origin_transfer_source_commit_same_class_count_total;
+    if (stats.origin_transfer_source_commit_same_class_count_max >
+        origin_transfer_source_commit_same_class_count_max) {
+      origin_transfer_source_commit_same_class_count_max =
+          stats.origin_transfer_source_commit_same_class_count_max;
+    }
+    origin_transfer_source_commit_transfer_count_total +=
+        stats.origin_transfer_source_commit_transfer_count_total;
+    if (stats.origin_transfer_source_commit_transfer_count_max >
+        origin_transfer_source_commit_transfer_count_max) {
+      origin_transfer_source_commit_transfer_count_max =
+          stats.origin_transfer_source_commit_transfer_count_max;
+    }
+    origin_transfer_prefill_commit_with_same_class_transfer +=
+        stats.origin_transfer_prefill_commit_with_same_class_transfer;
+    origin_transfer_prefill_commit_with_any_transfer +=
+        stats.origin_transfer_prefill_commit_with_any_transfer;
+    origin_transfer_prefill_commit_same_class_count_total +=
+        stats.origin_transfer_prefill_commit_same_class_count_total;
+    if (stats.origin_transfer_prefill_commit_same_class_count_max >
+        origin_transfer_prefill_commit_same_class_count_max) {
+      origin_transfer_prefill_commit_same_class_count_max =
+          stats.origin_transfer_prefill_commit_same_class_count_max;
+    }
+    origin_transfer_prefill_commit_transfer_count_total +=
+        stats.origin_transfer_prefill_commit_transfer_count_total;
+    if (stats.origin_transfer_prefill_commit_transfer_count_max >
+        origin_transfer_prefill_commit_transfer_count_max) {
+      origin_transfer_prefill_commit_transfer_count_max =
+          stats.origin_transfer_prefill_commit_transfer_count_max;
+    }
+    origin_transfer_pop_loop_attempt +=
+        stats.origin_transfer_pop_loop_attempt;
+    origin_transfer_pop_loop_empty += stats.origin_transfer_pop_loop_empty;
+    origin_transfer_pop_loop_invalid +=
+        stats.origin_transfer_pop_loop_invalid;
+    origin_transfer_pop_loop_hit += stats.origin_transfer_pop_loop_hit;
     remote_free_backpressure_origin_drain_attempt +=
         stats.remote_free_backpressure_origin_drain_attempt;
     remote_free_backpressure_origin_drain_success +=

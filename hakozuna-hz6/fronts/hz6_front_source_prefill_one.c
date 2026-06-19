@@ -129,6 +129,8 @@ int hz6_front_prefill_one(Hz6Allocator* allocator,
   }
 #endif
   hz6_allocator_note_source_alloc_for_front(allocator, front_id);
+  hz6_allocator_origin_transfer_audit_note_prefill_commit(allocator,
+                                                          class_id);
   hz6_allocator_remote_pending_note_prefill_commit(allocator, front_id,
                                                   class_id);
   hz6_allocator_note_front_alloc_path(allocator, front_id,

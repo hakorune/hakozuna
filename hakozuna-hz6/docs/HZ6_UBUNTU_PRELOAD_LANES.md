@@ -3683,6 +3683,63 @@ Decision: `GO(design)/HOLD(behavior)`.  Do not add another sink yet.  The next
 implementation should be a small diagnostic box around existing source/prefill
 and transfer-pop boundaries, not a new owner-inbox or remote-thread drain path.
 
+## 2026-06-20 OriginTransferFullTailDemandAudit-L1
+
+Added diagnostic-only origin-transfer demand counters around the owner-local
+source/prefill commit boundary and transfer-pop loop:
+
+```text
+origin_transfer_source_commit_with_same_class_transfer
+origin_transfer_source_commit_with_any_transfer
+origin_transfer_source_commit_same_class_count_total/max
+origin_transfer_source_commit_transfer_count_total/max
+origin_transfer_prefill_commit_with_same_class_transfer
+origin_transfer_prefill_commit_with_any_transfer
+origin_transfer_prefill_commit_same_class_count_total/max
+origin_transfer_prefill_commit_transfer_count_total/max
+origin_transfer_pop_loop_attempt
+origin_transfer_pop_loop_empty
+origin_transfer_pop_loop_invalid
+origin_transfer_pop_loop_hit
+```
+
+Diagnostic smoke:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 1 \
+  --rows remote50,remote90_short \
+  --variants p0_off
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_075921
+```
+
+Observed diagnostic counters:
+
+```text
+row             source_same  prefill_same  pop_attempt  pop_empty  pop_invalid  pop_hit
+remote50                  0             0         5349       1160            2     4189
+remote90_short            0             0        95891      43324            1    52567
+```
+
+The new counters are diagnostic-only and now print numerically in the tax
+runner instead of `NA`.  In this smoke, owner-local source and prefill commits
+did not occur while same-class transfer inventory was visible, so the remaining
+origin-transfer full tail is not explained by a simple missing same-class
+transfer check at the source boundary.  The transfer-pop loop still shows many
+empty attempts under `remote90_short`, which points more toward producer/consumer
+phase timing or global bounded-cache pressure than source-boundary same-class
+starvation.
+
+Decision: `GO(tooling)/DESIGN checkpoint`.  Keep this audit as evidence before
+adding behavior.  Do not reintroduce owner-inbox, remote-thread drain, overflow,
+or larger transfer capacity from this result alone.
+
 ## 2026-06-20 Profile Frontier Alias Smoke
 
 The new profile aliases were exercised through the existing focused profile

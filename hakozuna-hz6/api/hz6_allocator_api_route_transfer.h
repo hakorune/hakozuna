@@ -345,6 +345,26 @@ void hz6_allocator_remote_pending_note_direct_source_commit(
     uint16_t front_id,
     uint16_t class_id);
 
+void hz6_allocator_origin_transfer_audit_note_source_commit(
+    Hz6Allocator* allocator,
+    uint16_t class_id);
+
+void hz6_allocator_origin_transfer_audit_note_prefill_commit(
+    Hz6Allocator* allocator,
+    uint16_t class_id);
+
+void hz6_allocator_origin_transfer_audit_note_pop_attempt(
+    Hz6Allocator* allocator);
+
+void hz6_allocator_origin_transfer_audit_note_pop_empty(
+    Hz6Allocator* allocator);
+
+void hz6_allocator_origin_transfer_audit_note_pop_invalid(
+    Hz6Allocator* allocator);
+
+void hz6_allocator_origin_transfer_audit_note_pop_hit(
+    Hz6Allocator* allocator);
+
 void hz6_allocator_note_transfer_push(Hz6Allocator* allocator);
 
 void hz6_allocator_note_transfer_pop(Hz6Allocator* allocator);
