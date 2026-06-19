@@ -2655,11 +2655,25 @@ class_shard        16.35M   15.01M    10.84M
 small_class_shard  15.95M   15.29M    10.87M
 ```
 
+Diagnostic RUNS=3 counters:
+
+```text
+variant            row       returned_bp  transfer_success  transfer_full
+selected           remote50  28706        11009             64605
+class_shard        remote50  28428        11285             64835
+small_class_shard  remote50  28927        10788             65794
+selected           remote90  2469         113323            152493
+class_shard        remote90  2629         121501            152756
+small_class_shard  remote90  2529         121387            151911
+```
+
 Decision: `GO(remote50 target)/NO-GO(default)`.  The narrow lane preserves the
 small-row signal and avoids part of the class 4/5 regression from broad
 class-sharding, but the RUNS=10 recheck only improves remote50 and slightly
 regresses local0/remote90.  Keep it as an explicit target/profile; do not
-promote it to selected/default from this data.
+promote it to selected/default from this data.  The diagnostic counters do not
+show fewer transfer-full or returned-backpressure events, so stop this policy
+line for design before stacking another transfer-shard tweak.
 
 Diagnostic paired RUNS=1 populated `counters.tsv`; class-shard did not clearly
 reduce returned backpressure or transfer full events in that sample.

@@ -74,6 +74,31 @@ hakozuna-hz6/private/raw-results/linux/hz6_transfer_shard_policy_ab_20260620_063
 | class-shard | 16.35M | 15.01M | 10.84M | 67.38-72.13 |
 | small-class-shard | 15.95M | 15.29M | 10.87M | 67.31-72.16 |
 
+## Diagnostic RUNS=3 Counters
+
+Raw root:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_transfer_shard_policy_ab_20260620_063301
+```
+
+Selected counters:
+
+| variant | row | returned backpressure | transfer success | transfer full | origin-transfer full | rehome commit |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| selected | remote50 | 28706 | 11009 | 64605 | 28706 | 3812 |
+| class-shard | remote50 | 28428 | 11285 | 64835 | 28428 | 3304 |
+| small-class-shard | remote50 | 28927 | 10788 | 65794 | 28927 | 2848 |
+| selected | remote90 | 2469 | 113323 | 152493 | 2468 | 456837 |
+| class-shard | remote90 | 2629 | 121501 | 152756 | 2629 | 458955 |
+| small-class-shard | remote90 | 2529 | 121387 | 151911 | 2529 | 468927 |
+
+The remote50 production win is not explained by fewer transfer-full or
+returned-backpressure events.  In the diagnostic run, small-class had more
+returned backpressure than selected in remote50 and only a small difference in
+remote90.  Treat the production remote50 gain as a profile signal, not a proven
+backpressure fix.
+
 ## Decision
 
 `GO(remote50 target)/NO-GO(default)`.
@@ -85,3 +110,6 @@ RUNS=3 sample across local0, remote50, and remote90.
 The RUNS=10 recheck did not justify selected/default promotion: remote50
 improved, but local0 and remote90 were below selected.  Keep the boxed target
 for remote50/profile exploration; do not promote it to default from this data.
+Do not stack another transfer-shard policy tweak without a stronger design
+signal, because the diagnostic counters did not show the expected backpressure
+reduction mechanism.
