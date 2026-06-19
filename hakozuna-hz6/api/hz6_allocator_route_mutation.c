@@ -161,6 +161,23 @@ static void hz6_allocator_route_maybe_compact_tombstones(
 #endif
 }
 
+void hz6_allocator_route_maintain_tombstones(Hz6Allocator* allocator) {
+#if HZ6_ROUTE_DOMAIN_SYNC_L1 && HZ6_ROUTE_COMPACT_DEFER_REMOTE_L1
+  if (!allocator ||
+      !hz6_allocator_route_domain_consume_compact_debt(allocator)) {
+    return;
+  }
+  hz6_allocator_route_domain_lock(allocator);
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.route_compact_owner_maintenance;
+#endif
+  hz6_allocator_route_maybe_compact_tombstones(allocator);
+  hz6_allocator_route_domain_unlock(allocator);
+#else
+  (void)allocator;
+#endif
+}
+
 static void hz6_allocator_note_route_register_reason(
     Hz6Allocator* allocator,
     Hz6RouteRegisterReason reason) {
@@ -252,6 +269,11 @@ void hz6_allocator_route_unregister_exact_reason(
       reason == HZ6_ROUTE_UNREGISTER_REASON_REHOME) {
     hz6_allocator_route_domain_note_compact_debt(allocator);
   } else {
+#if HZ6_DIAGNOSTIC_PROBES
+    if (reason == HZ6_ROUTE_UNREGISTER_REASON_REHOME) {
+      ++allocator->stats.route_compact_remote_path_attempt;
+    }
+#endif
     hz6_allocator_route_maybe_compact_tombstones(allocator);
   }
   allocator->stats.route_unregister_probe_total += probes;

@@ -112,6 +112,8 @@ int hz6_allocator_route_register_exact_reason(
     void* descriptor,
     Hz6RouteRegisterReason reason);
 
+void hz6_allocator_route_maintain_tombstones(Hz6Allocator* allocator);
+
 int hz6_allocator_route_replace_exact_descriptor(
     Hz6Allocator* allocator,
     void* base,

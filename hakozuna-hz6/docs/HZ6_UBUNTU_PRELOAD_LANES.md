@@ -204,6 +204,15 @@ smokes completed: `/bin/true` with `LD_PRELOAD` exited 0, `remote50
 16..32768` reached `246441.92 ops/s`, and `remote90 16..131072` reached
 `135253.20 ops/s`.
 
+Phase 4 local route maintenance status, 2026-06-19: route rehome still leaves
+origin exact-route tombstones on the remote path, but the remote path now only
+records compact debt.  `hz6_allocator_route_maintain_tombstones()` is the
+owner-local maintenance boundary; `hz6_malloc()` consumes pending debt before
+allocation and runs the existing thresholded route compaction under the route
+domain lock.  Diagnostic stats now expose `route_compact_deferred`,
+`route_compact_owner_maintenance`, and `route_compact_remote_path_attempt`.
+The selected lane should keep `route_compact_remote_path_attempt=0`.
+
 Phase 2 integrity status, 2026-06-19: shared exact lookup now has a snapshot
 status boundary: `VALID`, `MISS`, `RETRY`, or `STALE`.  The raw route lookup
 wrapper still returns a route or MISS for legacy callers, but

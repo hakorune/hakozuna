@@ -70,6 +70,9 @@
           "route_tombstone_compact_success=%zu "
           "route_tombstone_compact_fail_alloc=%zu "
           "route_tombstone_compact_moved=%zu "
+          "route_compact_deferred=%zu "
+          "route_compact_owner_maintenance=%zu "
+          "route_compact_remote_path_attempt=%zu "
           "route_tombstone_cond_probe=%zu "
           "route_tombstone_cond_would_compact=%zu "
           "route_tombstone_cond_ratio25=%zu "
@@ -97,7 +100,9 @@
           route_register_full_probe_with_tombstone,
           route_tombstone_compact_attempt, route_tombstone_compact_success,
           route_tombstone_compact_fail_alloc,
-          route_tombstone_compact_moved, route_tombstone_cond_probe,
+          route_tombstone_compact_moved, route_compact_deferred,
+          route_compact_owner_maintenance, route_compact_remote_path_attempt,
+          route_tombstone_cond_probe,
           route_tombstone_cond_would_compact,
           route_tombstone_cond_ratio25, route_tombstone_cond_occupancy75,
           route_tombstone_cond_cooldown_blocked,

@@ -59,6 +59,9 @@
   size_t route_tombstone_compact_success = 0;
   size_t route_tombstone_compact_fail_alloc = 0;
   size_t route_tombstone_compact_moved = 0;
+  size_t route_compact_deferred = 0;
+  size_t route_compact_owner_maintenance = 0;
+  size_t route_compact_remote_path_attempt = 0;
   size_t route_tombstone_cond_probe = 0;
   size_t route_tombstone_cond_would_compact = 0;
   size_t route_tombstone_cond_ratio25 = 0;
@@ -334,6 +337,11 @@
     route_tombstone_compact_fail_alloc +=
         stats.route_tombstone_compact_fail_alloc;
     route_tombstone_compact_moved += stats.route_tombstone_compact_moved;
+    route_compact_deferred += stats.route_compact_deferred;
+    route_compact_owner_maintenance +=
+        stats.route_compact_owner_maintenance;
+    route_compact_remote_path_attempt +=
+        stats.route_compact_remote_path_attempt;
     route_tombstone_cond_probe += stats.route_tombstone_cond_probe;
     route_tombstone_cond_would_compact +=
         stats.route_tombstone_cond_would_compact;

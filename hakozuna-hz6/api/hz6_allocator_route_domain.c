@@ -124,6 +124,9 @@ void hz6_allocator_route_domain_note_compact_debt(Hz6Allocator* allocator) {
   if (!allocator) {
     return;
   }
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.route_compact_deferred;
+#endif
   atomic_store_explicit(&allocator->route_compact_requested,
                         1u,
                         memory_order_release);

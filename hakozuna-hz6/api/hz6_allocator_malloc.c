@@ -481,6 +481,9 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
     HZ6_SHARED_ROUTE_DIRECTORY_TOMBSTONE_MAINTENANCE_L1
   hz6_shared_route_directory_maintain_tombstones();
 #endif
+#if HZ6_ROUTE_DOMAIN_SYNC_L1 && HZ6_ROUTE_COMPACT_DEFER_REMOTE_L1
+  hz6_allocator_route_maintain_tombstones(allocator);
+#endif
 
   uint16_t class_id = 0;
   const Hz6FrontOps* front = NULL;
