@@ -118,6 +118,13 @@ HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_8K_L1=0
 HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_DRAIN_L1=0
 HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1=0
 HZ6_REMOTE_PENDING_INBOX_CORE_L1=0
+HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1=0
+HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1=0
+HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1=0
+HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_L1=0
+HZ6_REMOTE_PENDING_LAZY_STORAGE_L1=0
+HZ6_REMOTE_PENDING_DIRECT_REUSE_L1=0
+HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1=0
 HZ6_REMOTE_FREE_OVERFLOW_L1=0
 HZ6_REMOTE_FREE_CONSUMER_REHOME_L1=0
 ```
@@ -2416,3 +2423,35 @@ Decision: `GO(shape)/HOLD(default)`.  The empty external-head lock path is
 boxed, but default promotion remains blocked by runtime cost and inconsistent
 remote90 comparison.  Stop for design before adding another owner-inbox consumer
 policy.
+
+## 2026-06-20 OwnerInboxHighRemoteProfile-L1
+
+Owner-inbox external is no longer part of selected/default.  It remains an
+explicit high-remote profile with DirectReuse off.
+
+Selected/default keeps the owner-inbox family off:
+
+```text
+HZ6_REMOTE_PENDING_INBOX_CORE_L1=0
+HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1=0
+HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1=0
+HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1=0
+HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_L1=0
+HZ6_REMOTE_PENDING_LAZY_STORAGE_L1=0
+HZ6_REMOTE_PENDING_DIRECT_REUSE_L1=0
+HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1=0
+```
+
+High-remote profile builds:
+
+```text
+hakozuna-hz6/linux/build_hz6_preload_high_remote_owner_inbox_target.sh
+hakozuna-hz6/linux/build_hz6_preload_owner_inbox_external_target.sh
+```
+
+`run_hz6_preload_owner_inbox_guard.sh` now builds the high-remote target name.
+`run_hz6_preload_owner_inbox_paired_gate.sh` remains the default-vs-profile
+comparison tool.
+
+Decision: `GO(profile)/HOLD(default)`.  Do not add another owner-inbox consumer
+policy to selected/default until a separate audit shows a no-regression path.

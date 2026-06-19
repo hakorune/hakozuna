@@ -24,8 +24,8 @@ Rows:
   remote90 16 threads, remote_pct=90, 16..131072
 
 This builds the explicit owner-inbox external high-remote profile DSO.  The
-profile currently matches the branch-selected candidate, but remains a separate
-target so selected/default promotion can be judged independently.
+profile is intentionally separate from selected/default so promotion can be
+judged independently.
 EOF
 }
 
@@ -48,9 +48,9 @@ if [[ ! -x /usr/bin/time ]]; then
 fi
 
 mkdir -p "$OUTDIR"
-"${HZ6_DIR}/linux/build_hz6_preload_owner_inbox_external_target.sh" \
+"${HZ6_DIR}/linux/build_hz6_preload_high_remote_owner_inbox_target.sh" \
   > "${OUTDIR}/build.log" 2>&1
-DSO="${HZ6_DIR}/out/linux/hz6_preload_owner_inbox_external_target/libhakozuna_hz6_preload.so"
+DSO="${HZ6_DIR}/out/linux/hz6_preload_high_remote_owner_inbox/libhakozuna_hz6_preload.so"
 
 rows=(
   "local0 16 10000 100 16 32768 0 65536"

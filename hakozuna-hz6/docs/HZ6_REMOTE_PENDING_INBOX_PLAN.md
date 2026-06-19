@@ -2399,3 +2399,45 @@ Decision: `GO(shape)/HOLD(default)`.  The mask removes the empty external-head
 lock path and keeps correctness gates clean, but this RUNS=10 does not justify
 default promotion.  p1 remains a correctness/high-remote candidate, and the
 next step is a design checkpoint before adding another consumer policy.
+
+## 2026-06-20 OwnerInboxHighRemoteProfile-L1
+
+After `ExternalTicketNonemptyMask-L1`, the owner-inbox external lane remains
+correct but did not win the paired RUNS=10 default gate.  The profile boundary
+is now explicit:
+
+```text
+selected/default:
+  owner-inbox family off
+
+high-remote profile:
+  owner-inbox external profile on
+  DirectReuse off
+```
+
+Selected/default now keeps these controls off in `hz6_preload_flags.sh`:
+
+```text
+HZ6_REMOTE_PENDING_INBOX_CORE_L1=0
+HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1=0
+HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1=0
+HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1=0
+HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_L1=0
+HZ6_REMOTE_PENDING_LAZY_STORAGE_L1=0
+HZ6_REMOTE_PENDING_DIRECT_REUSE_L1=0
+HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1=0
+```
+
+The high-remote profile remains available through both names:
+
+```text
+hakozuna-hz6/linux/build_hz6_preload_owner_inbox_external_target.sh
+hakozuna-hz6/linux/build_hz6_preload_high_remote_owner_inbox_target.sh
+```
+
+The owner-inbox guard now uses the high-remote target name so local/default
+runs do not accidentally inherit the p1 profile.
+
+Decision: `GO(profile)/HOLD(default)`.  This is a profile boundary box, not a
+new performance behavior.  Further p1 work should happen behind the high-remote
+profile or a dedicated audit box, not in selected/default.
