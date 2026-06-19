@@ -268,7 +268,9 @@ Phase 3 remote median runner, 2026-06-19:
 `linux/run_hz6_preload_remote_median.sh` builds the selected preload and runs
 remote MT rows with `RUNS=10` by default, reporting median `ops/s` as a TSV.
 It fails on fallback or overflow.  `RUNS=1` smoke completed for `remote50
-16..32768`; use the default repeat count for publishable A/B evidence.
+16..32768`; use the default repeat count for publishable A/B evidence.  First
+selected baseline, RUNS=10: `remote50 16..32768` median `763130.83 ops/s`,
+`remote90 16..131072` median `148892.40 ops/s`.
 
 Phase 3 route-domain observation status, 2026-06-19: diagnostic stats now
 include `route_lock_read_contended`, `route_lock_write_contended`, and
