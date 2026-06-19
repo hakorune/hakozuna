@@ -64,6 +64,14 @@
     remote_free_returned_stale += stats.remote_free_returned_stale;
     remote_free_returned_integrity_failure +=
         stats.remote_free_returned_integrity_failure;
+    preload_malloc_transfer_retry_eligible +=
+        stats.preload_malloc_transfer_retry_eligible;
+    preload_malloc_transfer_retry_stride_skip +=
+        stats.preload_malloc_transfer_retry_stride_skip;
+    preload_malloc_transfer_retry_attempt +=
+        stats.preload_malloc_transfer_retry_attempt;
+    preload_malloc_transfer_retry_hit +=
+        stats.preload_malloc_transfer_retry_hit;
     remote_free_backpressure_origin_transfer_success +=
         stats.remote_free_backpressure_origin_transfer_success;
     remote_free_backpressure_origin_transfer_fail +=

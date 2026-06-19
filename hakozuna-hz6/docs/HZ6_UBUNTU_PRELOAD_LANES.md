@@ -106,6 +106,7 @@ HZ6_LINUX_MMAP_RETAIN_TLS_L1=0
 HZ6_SOURCE_RUN_REUSE_L1=0
 HZ6_ROUTE_PACKED_META_L1=0
 HZ6_PRELOAD_FAST_FREE_L1=0
+HZ6_PRELOAD_MALLOC_TRANSFER_RETRY_L1=0
 HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_L1=0
 HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_CURRENT_BIAS_L1=0
 HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_L1=0
@@ -198,6 +199,13 @@ passed and converted most origin full events
 `remote_free_backpressure_origin_transfer_full=32`), but quick RUNS=3 regressed
 to `remote50=13935320.47` and `remote90=1287581.08`.  Keep it off; the remote
 path cannot afford direct origin frontcache drain work.
+`PreloadMallocTransferRetry-L1` is also opt-in only.  It tries transfer reuse
+from the owner-local preload malloc fast paths after local frontcache reuse
+misses.  Smoke showed the path works (`preload_malloc_transfer_retry_hit=2690`
+of `3040` attempts) and reduced backpressure without integrity failures, but
+quick RUNS=3 was weak (`remote50=14613277.36`, `remote90=1077952.16`).  Keep it
+off; high-remote rows need a cheaper transfer consumption model than repeated
+malloc-side activation.
 The follow-up `HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_STRIDE` and
 `HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_MAX_FRONTCACHE_COUNT` controls are also
 opt-in only.  `STRIDE=2` did not hold in RUNS=10 (`remote90=6434072.00`), while

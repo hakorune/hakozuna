@@ -342,6 +342,23 @@
 #define HZ6_PRELOAD_FOREIGN_RESOLVED_DISPATCH_L1 0
 #endif
 
+#ifndef HZ6_PRELOAD_MALLOC_TRANSFER_RETRY_L1
+/* Opt-in owner-local transfer relief for preload malloc fast paths that
+ * normally skip transfer-first probing.  After local frontcache reuse misses,
+ * try one transfer reuse only when transfer backlog is present. */
+#define HZ6_PRELOAD_MALLOC_TRANSFER_RETRY_L1 0
+#endif
+
+#ifndef HZ6_PRELOAD_MALLOC_TRANSFER_RETRY_STRIDE
+/* Try preload malloc transfer retry for at most one out of N eligible local
+ * reuse misses. */
+#define HZ6_PRELOAD_MALLOC_TRANSFER_RETRY_STRIDE 1
+#endif
+
+#ifndef HZ6_PRELOAD_MALLOC_TRANSFER_RETRY_MIN_TRANSFER_COUNT
+#define HZ6_PRELOAD_MALLOC_TRANSFER_RETRY_MIN_TRANSFER_COUNT ((size_t)1)
+#endif
+
 #ifndef HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1
 /* Diagnostic-only observation for the current remote-free commit path.  It
  * splits foreign candidates, transfer push attrition, and actual rehome commit

@@ -32,6 +32,10 @@
   size_t remote_free_returned_backpressure;
   size_t remote_free_returned_stale;
   size_t remote_free_returned_integrity_failure;
+  size_t preload_malloc_transfer_retry_eligible;
+  size_t preload_malloc_transfer_retry_stride_skip;
+  size_t preload_malloc_transfer_retry_attempt;
+  size_t preload_malloc_transfer_retry_hit;
   size_t remote_free_backpressure_origin_transfer_success;
   size_t remote_free_backpressure_origin_transfer_fail;
   size_t remote_free_backpressure_origin_transfer_stride_skip;

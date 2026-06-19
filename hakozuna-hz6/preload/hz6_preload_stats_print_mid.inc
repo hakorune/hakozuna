@@ -95,6 +95,10 @@
           "remote_free_returned_backpressure=%zu "
           "remote_free_returned_stale=%zu "
           "remote_free_returned_integrity_failure=%zu "
+          "preload_malloc_transfer_retry_eligible=%zu "
+          "preload_malloc_transfer_retry_stride_skip=%zu "
+          "preload_malloc_transfer_retry_attempt=%zu "
+          "preload_malloc_transfer_retry_hit=%zu "
           "remote_free_backpressure_origin_transfer_success=%zu "
           "remote_free_backpressure_origin_transfer_fail=%zu "
           "remote_free_backpressure_origin_transfer_stride_skip=%zu "
@@ -175,6 +179,10 @@
           remote_free_backpressure, remote_free_returned_uncommitted,
           remote_free_returned_backpressure, remote_free_returned_stale,
           remote_free_returned_integrity_failure,
+          preload_malloc_transfer_retry_eligible,
+          preload_malloc_transfer_retry_stride_skip,
+          preload_malloc_transfer_retry_attempt,
+          preload_malloc_transfer_retry_hit,
           remote_free_backpressure_origin_transfer_success,
           remote_free_backpressure_origin_transfer_fail,
           remote_free_backpressure_origin_transfer_stride_skip,

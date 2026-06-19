@@ -162,6 +162,42 @@ static void* hz6_allocator_midpage_direct_local_reuse_trusted_class(
 #endif
 #endif
 
+#if HZ6_PRELOAD_MALLOC_TRANSFER_RETRY_L1
+static void* hz6_allocator_preload_malloc_transfer_retry(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id,
+    Hz6ObjectDescriptor** out_descriptor) {
+  if (!allocator ||
+      allocator->stats.transfer_current <
+          HZ6_PRELOAD_MALLOC_TRANSFER_RETRY_MIN_TRANSFER_COUNT) {
+    return NULL;
+  }
+  ++allocator->stats.preload_malloc_transfer_retry_eligible;
+#if HZ6_PRELOAD_MALLOC_TRANSFER_RETRY_STRIDE > 1
+  if (allocator->stats.preload_malloc_transfer_retry_eligible %
+          HZ6_PRELOAD_MALLOC_TRANSFER_RETRY_STRIDE !=
+      0) {
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.preload_malloc_transfer_retry_stride_skip;
+#endif
+    return NULL;
+  }
+#endif
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.preload_malloc_transfer_retry_attempt;
+#endif
+  void* ptr = hz6_front_reuse_transfer_with_descriptor(
+      allocator, front_id, class_id, NULL, out_descriptor);
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+  if (ptr) {
+    ++allocator->stats.preload_malloc_transfer_retry_hit;
+  }
+#endif
+  return ptr;
+}
+#endif
+
 #if HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1
 static void* hz6_allocator_direct_local_alloc(Hz6Allocator* allocator,
                                               uint16_t front_id,
@@ -282,6 +318,20 @@ void* hz6_allocator_preload_midpage_malloc_skip_transfer(Hz6Allocator* allocator
         allocator, HZ6_FRONT_MIDPAGE, class_id);
     return ptr;
   }
+#if HZ6_PRELOAD_MALLOC_TRANSFER_RETRY_L1
+  ptr = hz6_allocator_preload_malloc_transfer_retry(
+      allocator, HZ6_FRONT_MIDPAGE, class_id, &descriptor);
+  if (ptr) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.midpage_active_map_register_direct;
+#endif
+    hz6_midpage_active_map_register(allocator, HZ6_FRONT_MIDPAGE,
+                                    class_id, ptr, descriptor);
+    hz6_toy_small_hotpath_diag_malloc_fast_hit(
+        allocator, HZ6_FRONT_MIDPAGE, class_id);
+    return ptr;
+  }
+#endif
 
   hz6_toy_small_hotpath_diag_malloc_front_dispatch(
       allocator, HZ6_FRONT_MIDPAGE, class_id);
@@ -370,6 +420,20 @@ void* hz6_allocator_preload_midpage_malloc_class_skip_transfer(
         allocator, HZ6_FRONT_MIDPAGE, class_id);
     return ptr;
   }
+#if HZ6_PRELOAD_MALLOC_TRANSFER_RETRY_L1
+  ptr = hz6_allocator_preload_malloc_transfer_retry(
+      allocator, HZ6_FRONT_MIDPAGE, class_id, &descriptor);
+  if (ptr) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.midpage_active_map_register_direct;
+#endif
+    hz6_midpage_active_map_register(allocator, HZ6_FRONT_MIDPAGE,
+                                    class_id, ptr, descriptor);
+    hz6_toy_small_hotpath_diag_malloc_fast_hit(
+        allocator, HZ6_FRONT_MIDPAGE, class_id);
+    return ptr;
+  }
+#endif
 
   hz6_toy_small_hotpath_diag_malloc_front_dispatch(
       allocator, HZ6_FRONT_MIDPAGE, class_id);
@@ -454,6 +518,17 @@ hz6_allocator_preload_toy_malloc_direct_class(Hz6Allocator* allocator,
         allocator, HZ6_FRONT_TOY, class_id);
     return ptr;
   }
+#if HZ6_PRELOAD_MALLOC_TRANSFER_RETRY_L1
+  ptr = hz6_allocator_preload_malloc_transfer_retry(
+      allocator, HZ6_FRONT_TOY, class_id, &descriptor);
+  if (ptr) {
+    hz6_toy_small_active_map_register(allocator, HZ6_FRONT_TOY, class_id, ptr,
+                                      descriptor);
+    hz6_toy_small_hotpath_diag_malloc_fast_hit(
+        allocator, HZ6_FRONT_TOY, class_id);
+    return ptr;
+  }
+#endif
 
   hz6_toy_small_hotpath_diag_malloc_front_dispatch(
       allocator, HZ6_FRONT_TOY, class_id);

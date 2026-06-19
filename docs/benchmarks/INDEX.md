@@ -12,6 +12,7 @@ This page is the public pointer list for dated benchmark summaries.
 - [Linux x86_64 HZ6 remote free backpressure policy, 2026-06-19](./2026-06-19_LINUX_X86_64_HZ6_REMOTE_FREE_BACKPRESSURE_POLICY.md)
 - [Linux x86_64 HZ6 remote free commit status, 2026-06-19](./2026-06-19_LINUX_X86_64_HZ6_REMOTE_FREE_COMMIT_STATUS.md)
 - [Linux x86_64 HZ6 remote free status dispatch, 2026-06-19](./2026-06-19_LINUX_X86_64_HZ6_REMOTE_FREE_STATUS_DISPATCH.md)
+- [Linux x86_64 HZ6 preload malloc transfer retry, 2026-06-19](./2026-06-19_LINUX_X86_64_HZ6_PRELOAD_MALLOC_TRANSFER_RETRY.md)
 - [Linux x86_64 HZ6 route rehome probes, 2026-06-19](./2026-06-19_LINUX_X86_64_HZ6_ROUTE_REHOME_PROBES.md)
 - [Linux x86_64 HZ6 remote free overflow, 2026-06-19](./2026-06-19_LINUX_X86_64_HZ6_REMOTE_FREE_OVERFLOW.md)
 - [Linux x86_64 HZ6 remote free consumer rehome, 2026-06-19](./2026-06-19_LINUX_X86_64_HZ6_REMOTE_FREE_CONSUMER_REHOME.md)
