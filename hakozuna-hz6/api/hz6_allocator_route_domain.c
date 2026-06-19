@@ -43,6 +43,9 @@ void hz6_allocator_route_domain_init(Hz6Allocator* allocator) {
 #if HZ6_ROUTE_DOMAIN_RWLOCK_L1
   atomic_flag_clear_explicit(&allocator->route_domain_writer,
                              memory_order_release);
+  atomic_store_explicit(&allocator->route_domain_writer_pending,
+                        0u,
+                        memory_order_release);
   atomic_store_explicit(&allocator->route_domain_readers,
                         0u,
                         memory_order_release);
@@ -63,6 +66,11 @@ void hz6_allocator_route_domain_lock(const Hz6Allocator* allocator) {
 #if HZ6_ROUTE_DOMAIN_RWLOCK_L1
   atomic_flag* writer = &((Hz6Allocator*)allocator)->route_domain_writer;
   size_t spins = 0;
+#if HZ6_ROUTE_DOMAIN_RWLOCK_READER_GATE_L1
+  atomic_fetch_add_explicit(
+      &((Hz6Allocator*)allocator)->route_domain_writer_pending, 1u,
+      memory_order_acquire);
+#endif
   while (atomic_flag_test_and_set_explicit(writer, memory_order_acquire)) {
     ++spins;
     hz6_allocator_route_domain_spin_pause();
@@ -96,6 +104,11 @@ void hz6_allocator_route_domain_unlock(const Hz6Allocator* allocator) {
 #if HZ6_ROUTE_DOMAIN_RWLOCK_L1
   atomic_flag_clear_explicit(&((Hz6Allocator*)allocator)->route_domain_writer,
                              memory_order_release);
+#if HZ6_ROUTE_DOMAIN_RWLOCK_READER_GATE_L1
+  atomic_fetch_sub_explicit(
+      &((Hz6Allocator*)allocator)->route_domain_writer_pending, 1u,
+      memory_order_release);
+#endif
 #else
   atomic_flag_clear_explicit(&((Hz6Allocator*)allocator)->route_domain_lock,
                              memory_order_release);
@@ -111,6 +124,31 @@ void hz6_allocator_route_domain_read_lock(const Hz6Allocator* allocator) {
     return;
   }
 #if HZ6_ROUTE_DOMAIN_RWLOCK_L1
+#if HZ6_ROUTE_DOMAIN_RWLOCK_READER_GATE_L1
+  for (;;) {
+    size_t spins = 0;
+    while (atomic_load_explicit(
+               &((Hz6Allocator*)allocator)->route_domain_writer_pending,
+               memory_order_acquire) != 0u) {
+      ++spins;
+      hz6_allocator_route_domain_spin_pause();
+    }
+    atomic_fetch_add_explicit(
+        &((Hz6Allocator*)allocator)->route_domain_readers, 1u,
+        memory_order_acquire);
+    if (atomic_load_explicit(
+            &((Hz6Allocator*)allocator)->route_domain_writer_pending,
+            memory_order_acquire) == 0u) {
+      hz6_allocator_route_domain_note_wait(allocator, 1, spins);
+      return;
+    }
+    atomic_fetch_sub_explicit(
+        &((Hz6Allocator*)allocator)->route_domain_readers, 1u,
+        memory_order_release);
+    ++spins;
+    hz6_allocator_route_domain_spin_pause();
+  }
+#else
   for (;;) {
     size_t spins = 0;
     while (atomic_flag_test_and_set_explicit(
@@ -128,6 +166,7 @@ void hz6_allocator_route_domain_read_lock(const Hz6Allocator* allocator) {
     hz6_allocator_route_domain_note_wait(allocator, 1, spins);
     return;
   }
+#endif
 #else
   hz6_allocator_route_domain_lock(allocator);
 #endif

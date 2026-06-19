@@ -376,6 +376,7 @@ struct Hz6Allocator {
   atomic_flag route_domain_lock;
 #if HZ6_ROUTE_DOMAIN_RWLOCK_L1
   atomic_flag route_domain_writer;
+  _Atomic unsigned int route_domain_writer_pending;
   _Atomic unsigned int route_domain_readers;
 #endif
   _Atomic unsigned int route_compact_requested;

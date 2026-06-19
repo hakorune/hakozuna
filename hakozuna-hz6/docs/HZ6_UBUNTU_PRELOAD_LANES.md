@@ -62,6 +62,7 @@ HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1=1
 HZ6_ROUTE_TOMBSTONE_COMPACT_L1=1
 HZ6_ROUTE_DOMAIN_SYNC_L1=1
 HZ6_ROUTE_DOMAIN_RWLOCK_L1=1
+HZ6_ROUTE_DOMAIN_RWLOCK_READER_GATE_L1=0
 HZ6_ROUTE_DOMAIN_SPIN_PAUSE_L1=0
 HZ6_ROUTE_COMPACT_DEFER_REMOTE_L1=1
 HZ6_ROUTE_VISIBLE_AFTER_LOCAL_MISS_L1=1
@@ -252,6 +253,13 @@ include `route_lock_read_contended`, `route_lock_write_contended`, and
 `route_lock_max_wait`.  These counters are scoped to `HZ6_DIAGNOSTIC_PROBES`
 and measure spin waits at the route-domain boundary without adding selected
 lane overhead.
+
+Phase 3 route-domain reader-gate control, 2026-06-19: the opt-in
+`HZ6_ROUTE_DOMAIN_RWLOCK_READER_GATE_L1=1` reader gate compiles and completes
+focused smokes, but it is kept off.  The control reached `remote50 16..32768`
+at `251122.91 ops/s` and `remote90 16..131072` at `205763.99 ops/s`, while the
+same refresh with the gate off reached `469022.81 ops/s` and `233418.25 ops/s`.
+The current selected RW lock keeps the older writer-flag reader entry.
 
 Phase 3 control closeout, 2026-06-19: two narrow lock/lookup controls are kept
 off.  `HZ6_REMOTE_FREE_RESOLVE_LOCAL_EXACT_ONLY_L1=1` completed but regressed
