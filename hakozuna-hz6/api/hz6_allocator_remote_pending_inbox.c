@@ -133,6 +133,20 @@ static void hz6_remote_pending_external_note_remove(
     --allocator->stats.remote_pending_external_ticket_current;
   }
 }
+
+#if !HZ6_REMOTE_PENDING_EXTERNAL_LOCKED_REVALIDATE_L1
+static void hz6_remote_pending_external_note_duplicate_probes(
+    Hz6Allocator* allocator,
+    size_t probes) {
+  allocator->stats.remote_pending_external_ticket_duplicate_probe_total +=
+      probes;
+  if (probes >
+      allocator->stats.remote_pending_external_ticket_duplicate_probe_max) {
+    allocator->stats.remote_pending_external_ticket_duplicate_probe_max =
+        probes;
+  }
+}
+#endif
 #else
 static int hz6_remote_pending_external_key_nonempty(
     Hz6Allocator* allocator,
@@ -738,17 +752,37 @@ int hz6_allocator_remote_pending_external_ticket_publish(
   }
 
   hz6_remote_pending_external_lock(allocator);
+#if HZ6_REMOTE_PENDING_EXTERNAL_LOCKED_REVALIDATE_L1
+  if (descriptor->ptr != ptr || descriptor->generation != generation ||
+      descriptor->class_id != class_id ||
+      descriptor->state != HZ6_STATE_ACTIVE ||
+      !hz6_allocator_descriptor_owner_equal_at(
+          allocator, descriptor, allocator->owner.token,
+          HZ6_OWNER_EQUAL_SITE_REMOTE_PENDING)) {
+    ++allocator->stats.remote_pending_external_ticket_locked_revalidate_fail;
+    hz6_remote_pending_external_unlock(allocator);
+    return 0;
+  }
+  ++allocator->stats.remote_pending_external_ticket_duplicate_scan_skip;
+#else
+  size_t duplicate_probes = 0;
   for (size_t i = 0; i < HZ6_REMOTE_PENDING_EXTERNAL_TICKET_CAPACITY; ++i) {
+    ++duplicate_probes;
     Hz6RemotePendingExternalTicket* ticket =
         &allocator->remote_pending_external_tickets[i];
     if (ticket->state != HZ6_REMOTE_PENDING_SLOT_NONE &&
         ticket->descriptor == descriptor &&
         ticket->generation == generation) {
+      hz6_remote_pending_external_note_duplicate_probes(allocator,
+                                                        duplicate_probes);
       ++allocator->stats.remote_pending_external_ticket_duplicate;
       hz6_remote_pending_external_unlock(allocator);
       return 0;
     }
   }
+  hz6_remote_pending_external_note_duplicate_probes(allocator,
+                                                    duplicate_probes);
+#endif
   uint32_t ticket_index = allocator->remote_pending_external_free_head;
   if (ticket_index == HZ6_REMOTE_PENDING_INDEX_NONE ||
       ticket_index >= HZ6_REMOTE_PENDING_EXTERNAL_TICKET_CAPACITY) {

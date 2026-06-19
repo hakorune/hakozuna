@@ -68,6 +68,10 @@
   size_t remote_pending_external_ticket_success = 0;
   size_t remote_pending_external_ticket_full = 0;
   size_t remote_pending_external_ticket_duplicate = 0;
+  size_t remote_pending_external_ticket_duplicate_probe_total = 0;
+  size_t remote_pending_external_ticket_duplicate_probe_max = 0;
+  size_t remote_pending_external_ticket_duplicate_scan_skip = 0;
+  size_t remote_pending_external_ticket_locked_revalidate_fail = 0;
   size_t remote_pending_external_ticket_consume = 0;
   size_t remote_pending_external_ticket_current = 0;
   size_t remote_pending_external_ticket_high_water = 0;

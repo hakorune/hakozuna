@@ -130,6 +130,17 @@
         stats.remote_pending_external_ticket_full;
     remote_pending_external_ticket_duplicate +=
         stats.remote_pending_external_ticket_duplicate;
+    remote_pending_external_ticket_duplicate_probe_total +=
+        stats.remote_pending_external_ticket_duplicate_probe_total;
+    if (stats.remote_pending_external_ticket_duplicate_probe_max >
+        remote_pending_external_ticket_duplicate_probe_max) {
+      remote_pending_external_ticket_duplicate_probe_max =
+          stats.remote_pending_external_ticket_duplicate_probe_max;
+    }
+    remote_pending_external_ticket_duplicate_scan_skip +=
+        stats.remote_pending_external_ticket_duplicate_scan_skip;
+    remote_pending_external_ticket_locked_revalidate_fail +=
+        stats.remote_pending_external_ticket_locked_revalidate_fail;
     remote_pending_external_ticket_consume +=
         stats.remote_pending_external_ticket_consume;
     remote_pending_external_ticket_current +=

@@ -422,6 +422,13 @@
 #define HZ6_REMOTE_PENDING_EXTERNAL_TICKET_CAPACITY 1024u
 #endif
 
+#ifndef HZ6_REMOTE_PENDING_EXTERNAL_LOCKED_REVALIDATE_L1
+/* Recheck descriptor proof under the external-ticket lock and skip the
+ * duplicate scan.  Default-off until the no-scan path is cross-platform
+ * measured and promoted. */
+#define HZ6_REMOTE_PENDING_EXTERNAL_LOCKED_REVALIDATE_L1 0
+#endif
+
 #ifndef HZ6_REMOTE_PENDING_FRONT_COUNT
 #define HZ6_REMOTE_PENDING_FRONT_COUNT 4
 #endif

@@ -1585,3 +1585,41 @@ current_task.md:
 archive/current_task_2026-06-16_pre_compaction.md:
   detailed chronological experiment ledger before compaction
 ```
+
+## 2026-06-20 External Ticket Locked Revalidate
+
+`ExternalTicketDuplicateScanObserve-L1` showed the external-ticket duplicate
+scan is real overhead in the owner-inbox + external-ticket lane:
+
+```text
+remote_pending_external_ticket_attempt=2321
+remote_pending_external_ticket_success=2321
+remote_pending_external_ticket_duplicate=0
+remote_pending_external_ticket_duplicate_probe_total=2376704
+remote_pending_external_ticket_duplicate_probe_max=1024
+```
+
+`HZ6_REMOTE_PENDING_EXTERNAL_LOCKED_REVALIDATE_L1=1` is a default-off shape
+that revalidates descriptor proof under the external-ticket lock and skips the
+full duplicate scan.
+
+Smoke:
+
+```text
+remote_pending_external_ticket_duplicate_probe_total=0
+remote_pending_external_ticket_duplicate_scan_skip=2886
+remote_pending_external_ticket_locked_revalidate_fail=0
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+```
+
+Quick same-code RUNS=3:
+
+```text
+baseline external ticket: remote50=13397113.55 remote90=10121661.63
+locked revalidate:        remote50=13167908.91 remote90=10147241.78
+```
+
+Decision: `GO(opt-in)/HOLD(default)`.  The correctness shape is clean, but
+performance is neutral, so default promotion waits for longer median and
+cross-platform evidence.

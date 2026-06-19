@@ -1127,3 +1127,60 @@ remote90=1713375.90
 Decision: `NO-GO`.  The hook was safe but too late and too broad: it found a
 few pending entries, yet did not prevent source-block same-key overlap and
 severely hurt remote90.
+
+## 2026-06-20 External Ticket Duplicate Scan Observe
+
+`ExternalTicketDuplicateScanObserve-L1` adds:
+
+```text
+remote_pending_external_ticket_duplicate_probe_total
+remote_pending_external_ticket_duplicate_probe_max
+```
+
+Owner-inbox + external-ticket smoke showed:
+
+```text
+remote_pending_external_ticket_attempt=2321
+remote_pending_external_ticket_success=2321
+remote_pending_external_ticket_duplicate=0
+remote_pending_external_ticket_duplicate_probe_total=2376704
+remote_pending_external_ticket_duplicate_probe_max=1024
+```
+
+The duplicate scan walked the full 1024-ticket storage on every successful
+external publish in this workload.
+
+`ExternalTicketLockedRevalidate-L1` is a default-off follow-up:
+`HZ6_REMOTE_PENDING_EXTERNAL_LOCKED_REVALIDATE_L1=1` revalidates the
+descriptor proof under the external-ticket lock and skips the duplicate scan.
+
+Smoke stayed clean:
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+remote_pending_external_ticket_success=2886
+remote_pending_external_ticket_duplicate_probe_total=0
+remote_pending_external_ticket_duplicate_scan_skip=2886
+remote_pending_external_ticket_locked_revalidate_fail=0
+remote_pending_external_ticket_route_mismatch=0
+remote_pending_external_ticket_owner_mismatch=0
+remote_pending_external_ticket_state_mismatch=0
+remote_pending_external_ticket_storage_mismatch=0
+```
+
+Quick same-code RUNS=3:
+
+```text
+external-ticket baseline:
+  remote50=13397113.55
+  remote90=10121661.63
+
+locked revalidate:
+  remote50=13167908.91
+  remote90=10147241.78
+```
+
+Decision: `GO(opt-in correctness shape)/HOLD(default)`.  The scan is proven
+real cost, and locked revalidation keeps correctness gates clean, but quick
+performance is neutral rather than clearly better.
