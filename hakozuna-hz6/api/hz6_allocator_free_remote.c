@@ -279,7 +279,7 @@ int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
   if (remote_status != HZ6_REMOTE_FREE_COMMIT_STATUS_COMMITTED) {
 #if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
     if (needs_rehome) {
-      ++allocator->stats.remote_free_returned_uncommitted;
+      hz6_remote_free_status_note_return(allocator, remote_status);
     }
 #endif
     ++allocator->stats.route_invalid;

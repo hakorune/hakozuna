@@ -169,6 +169,12 @@ free callers.  It keeps Large on bool fallback, but the selected transfer-based
 path now receives the status boundary directly
 (`remote_free_status_dispatch_transfer=34757` on the smoke), so the next box
 can handle `BACKPRESSURE` without inferring it from a generic false return.
+`RemoteFreeBackpressurePolicy-L1` now separates explicit backpressure returns
+from stale or integrity failures.  The selected smoke showed
+`remote_free_returned_backpressure=36383` while
+`remote_free_returned_uncommitted=0`, `remote_free_returned_stale=0`, and
+`remote_free_returned_integrity_failure=0`; the integrity smoke now gates those
+non-backpressure outcomes at zero.
 The follow-up `HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_STRIDE` and
 `HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_MAX_FRONTCACHE_COUNT` controls are also
 opt-in only.  `STRIDE=2` did not hold in RUNS=10 (`remote90=6434072.00`), while

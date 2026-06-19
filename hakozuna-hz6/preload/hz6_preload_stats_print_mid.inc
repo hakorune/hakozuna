@@ -92,6 +92,9 @@
           "route_rehome_commit_success=%zu "
           "remote_free_backpressure=%zu "
           "remote_free_returned_uncommitted=%zu "
+          "remote_free_returned_backpressure=%zu "
+          "remote_free_returned_stale=%zu "
+          "remote_free_returned_integrity_failure=%zu "
           "remote_free_backpressure_drain_attempt=%zu "
           "remote_free_backpressure_drain_success=%zu "
           "remote_free_backpressure_retry_success=%zu "
@@ -162,6 +165,8 @@
           transfer_reserve_full_after_state_mutation,
           route_rehome_commit_enter, route_rehome_commit_success,
           remote_free_backpressure, remote_free_returned_uncommitted,
+          remote_free_returned_backpressure, remote_free_returned_stale,
+          remote_free_returned_integrity_failure,
           remote_free_backpressure_drain_attempt,
           remote_free_backpressure_drain_success,
           remote_free_backpressure_retry_success,

@@ -59,6 +59,11 @@
     remote_free_backpressure += stats.remote_free_backpressure;
     remote_free_returned_uncommitted +=
         stats.remote_free_returned_uncommitted;
+    remote_free_returned_backpressure +=
+        stats.remote_free_returned_backpressure;
+    remote_free_returned_stale += stats.remote_free_returned_stale;
+    remote_free_returned_integrity_failure +=
+        stats.remote_free_returned_integrity_failure;
     remote_free_backpressure_drain_attempt +=
         stats.remote_free_backpressure_drain_attempt;
     remote_free_backpressure_drain_success +=

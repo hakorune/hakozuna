@@ -54,4 +54,33 @@ hz6_remote_free_status_dispatch_transfer(Hz6Allocator* allocator,
 #endif
 }
 
+static inline void hz6_remote_free_status_note_return(
+    Hz6Allocator* allocator,
+    Hz6RemoteFreeCommitStatus status) {
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+  if (!allocator) {
+    return;
+  }
+  switch (status) {
+    case HZ6_REMOTE_FREE_COMMIT_STATUS_BACKPRESSURE:
+      ++allocator->stats.remote_free_returned_backpressure;
+      break;
+    case HZ6_REMOTE_FREE_COMMIT_STATUS_INTEGRITY_FAILURE:
+      ++allocator->stats.remote_free_returned_integrity_failure;
+      ++allocator->stats.remote_free_returned_uncommitted;
+      break;
+    case HZ6_REMOTE_FREE_COMMIT_STATUS_STALE:
+      ++allocator->stats.remote_free_returned_stale;
+      ++allocator->stats.remote_free_returned_uncommitted;
+      break;
+    case HZ6_REMOTE_FREE_COMMIT_STATUS_COMMITTED:
+    default:
+      break;
+  }
+#else
+  (void)allocator;
+  (void)status;
+#endif
+}
+
 #endif

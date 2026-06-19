@@ -28,6 +28,9 @@
   size_t route_rehome_commit_success = 0;
   size_t remote_free_backpressure = 0;
   size_t remote_free_returned_uncommitted = 0;
+  size_t remote_free_returned_backpressure = 0;
+  size_t remote_free_returned_stale = 0;
+  size_t remote_free_returned_integrity_failure = 0;
   size_t remote_free_backpressure_drain_attempt = 0;
   size_t remote_free_backpressure_drain_success = 0;
   size_t remote_free_backpressure_retry_success = 0;

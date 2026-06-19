@@ -29,6 +29,9 @@
   size_t route_rehome_commit_success;
   size_t remote_free_backpressure;
   size_t remote_free_returned_uncommitted;
+  size_t remote_free_returned_backpressure;
+  size_t remote_free_returned_stale;
+  size_t remote_free_returned_integrity_failure;
   size_t remote_free_backpressure_drain_attempt;
   size_t remote_free_backpressure_drain_success;
   size_t remote_free_backpressure_retry_success;

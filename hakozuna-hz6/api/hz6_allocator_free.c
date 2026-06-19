@@ -391,10 +391,18 @@ static void hz6_free_route_dispatch(Hz6Allocator* allocator,
           }
 #if HZ6_DIAGNOSTIC_PROBES
           if (!ok) {
-            ++allocator->stats.free_invalid_remote_tagged;
+            if (!status_handled ||
+                remote_status != HZ6_REMOTE_FREE_COMMIT_STATUS_BACKPRESSURE) {
+              ++allocator->stats.free_invalid_remote_tagged;
+            }
 #if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1
             if (needs_rehome) {
-              ++allocator->stats.remote_free_returned_uncommitted;
+              if (status_handled) {
+                hz6_remote_free_status_note_return(allocator,
+                                                   remote_status);
+              } else {
+                ++allocator->stats.remote_free_returned_uncommitted;
+              }
             }
 #endif
           }
