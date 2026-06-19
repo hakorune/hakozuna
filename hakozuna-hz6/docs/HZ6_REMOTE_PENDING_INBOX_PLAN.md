@@ -627,3 +627,115 @@ for the intended phase-shift shape and converts the owner-inbox half of the
 workload into direct owner reuse.  It does not by itself justify selecting
 DirectReuse for random remote rows, where RUNS=10 still showed a remote50
 regression.
+
+## 2026-06-20 External Descriptor Ticket Plan
+
+`OwnerInboxRejectReasonObserve-L1` shows the remaining owner-inbox tail is
+storage coverage, not ownership validation:
+
+```text
+remote_pending_owner_inbox_storage_ineligible=2897
+remote_pending_owner_inbox_descriptor_mismatch=0
+remote_pending_owner_inbox_owner_dead=0
+remote_pending_owner_inbox_owner_mismatch=0
+remote_pending_owner_inbox_enqueue_fail=0
+remote_free_backpressure_origin_transfer_full=45
+remote_free_returned_backpressure=45
+```
+
+The current inbox intentionally uses `descriptor_index` as the slot id:
+
+```text
+remote_pending_next[index]
+remote_pending_slot_state[index]
+remote_pending_published_*[index]
+```
+
+That is correct for inline descriptors, but it cannot represent descriptors
+stored outside `origin->descriptors[]`.  Do not overload the descriptor-index
+queue with pointer-derived pseudo indices.
+
+Next box:
+
+```text
+ExternalDescriptorOwnerInboxTicket-L1
+```
+
+Responsibility boundary:
+
+```text
+remote producer:
+  validate route proof and descriptor owner
+  if inline descriptor -> existing index inbox
+  if external descriptor -> publish one owner-owned ticket
+
+owner-local consumer:
+  consume external ticket only from owner thread
+  validate immutable proof and exact route
+  move REMOTE_PENDING -> LOCAL_FREE or direct ACTIVE through existing helpers
+
+route/logical owner:
+  stay origin
+```
+
+Minimal ticket fields:
+
+```text
+ptr
+descriptor pointer
+generation
+published_bytes
+front_id
+class_id
+owner_token
+descriptor_storage_owner_token
+```
+
+Keep this as separate storage:
+
+```text
+remote_pending_external_ticket[capacity]
+remote_pending_external_next[capacity]
+remote_pending_external_free_head
+remote_pending_external_by_key_head[front][class]
+remote_pending_external_slot_state
+```
+
+The first implementation should use a small opt-in capacity and exact-key
+heads.  It should not add a broad scan or share the inline descriptor-index
+slot-state arrays.
+
+Required counters:
+
+```text
+remote_pending_external_ticket_attempt
+remote_pending_external_ticket_success
+remote_pending_external_ticket_full
+remote_pending_external_ticket_duplicate
+remote_pending_external_ticket_consume
+remote_pending_external_ticket_route_mismatch
+remote_pending_external_ticket_owner_mismatch
+remote_pending_external_ticket_state_mismatch
+remote_pending_external_ticket_storage_mismatch
+```
+
+Zero gates:
+
+```text
+remote_pending_external_ticket_full = 0
+remote_pending_external_ticket_duplicate = 0
+remote_pending_external_ticket_route_mismatch = 0
+remote_pending_external_ticket_owner_mismatch = 0
+remote_pending_external_ticket_state_mismatch = 0
+remote_pending_external_ticket_storage_mismatch = 0
+remote_free_returned_uncommitted = 0
+```
+
+Promotion gate:
+
+```text
+remote_free_returned_backpressure = 0
+```
+
+Performance gate stays separate.  Even if external tickets close the tail, the
+owner-inbox lane remains `HOLD(default)` until the remote50 cost is addressed.

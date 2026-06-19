@@ -333,6 +333,13 @@ owner, and enqueue reject counters were zero.  The remaining fallback was
 coverage: the current inbox requires an origin inline descriptor index.  The
 next correctness box should therefore be an external-descriptor owner-inbox
 ticket path, not another remote-thread origin-transfer drain.
+`ExternalDescriptorOwnerInboxTicket-L1` is now specified in
+[`HZ6_REMOTE_PENDING_INBOX_PLAN.md`](HZ6_REMOTE_PENDING_INBOX_PLAN.md).  The
+design keeps the inline descriptor-index inbox unchanged and adds separate
+owner-owned ticket storage for external descriptors with immutable
+ptr/descriptor/generation/front/class/owner/storage proof.  Promotion requires
+closing `remote_free_returned_backpressure` to zero; default selection still
+also requires solving the owner-inbox remote50 cost.
 `RemoteFreeBackpressureOriginDrain-L1` tried that full path directly as an
 opt-in no-go.  It drains one same-class transfer object from the origin transfer
 cache into the origin frontcache and retries origin commit once.  Safety smoke
