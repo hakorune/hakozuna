@@ -355,6 +355,13 @@
 #define HZ6_REMOTE_FREE_COMMIT_L1 0
 #endif
 
+#ifndef HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1
+/* Bounded relief lane for remote-free transfer backpressure.  On reserve
+ * failure, drain one already-committed same-class transfer object into the
+ * destination allocator's local frontcache, then retry reserve once. */
+#define HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1 0
+#endif
+
 #ifndef HZ6_PRELOAD_MIDPAGE_ROUTE_REARM_L1
 /* Candidate preload-boundary shortcut.  When preload already found a local
  * MidPage exact route, re-arm the MidPage active map so hz6_free() can consume

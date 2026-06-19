@@ -111,6 +111,7 @@ HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_CURRENT_BIAS_L1=0
 HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_L1=0
 HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_4K_L1=0
 HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_8K_L1=0
+HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1=0
 ```
 
 ## Current Read
@@ -148,6 +149,13 @@ more transfer reserve successes.  512 quick RUNS=3 put `remote90` at
 `382901.85` ops/s; 1024 put it at `1949951.84` ops/s.  Both increased committed
 rehome/tombstone pressure, so the next box should reduce backpressure without
 raising committed rehome debt above the 256-cap lane.
+`RemoteFreeBackpressureDrain-L1` is implemented as an opt-in remote90
+specialist, not selected by default.  With
+`HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1=1`, reserve failure drains one validated
+same-class transfer object into the destination frontcache and retries reserve
+once.  RUNS=10 moved `remote90` from `6610576.93` to `6969804.00` ops/s, but
+`remote50` fell from `14363938.00` to `13321713.54` ops/s, so keep it as
+`HOLD(default)` until the drain can be gated more narrowly.
 Short remote rows can now be made to complete, but long 300K rows still show a
 page-table lookup cliff.  The active design is `RemoteFreeRouteResolve-L1`,
 not a preload-only owner hint: Ubuntu preload must call the shared core

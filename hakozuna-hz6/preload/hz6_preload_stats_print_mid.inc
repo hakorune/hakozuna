@@ -79,6 +79,10 @@
           "route_rehome_commit_success=%zu "
           "remote_free_backpressure=%zu "
           "remote_free_returned_uncommitted=%zu "
+          "remote_free_backpressure_drain_attempt=%zu "
+          "remote_free_backpressure_drain_success=%zu "
+          "remote_free_backpressure_retry_success=%zu "
+          "remote_free_backpressure_requeue_fail=%zu "
           "route_active_current=%zu route_active_max=%zu "
           "route_tombstone_current=%zu route_tombstone_max=%zu "
           "route_register_used_tombstone=%zu "
@@ -125,6 +129,10 @@
           transfer_reserve_full_after_state_mutation,
           route_rehome_commit_enter, route_rehome_commit_success,
           remote_free_backpressure, remote_free_returned_uncommitted,
+          remote_free_backpressure_drain_attempt,
+          remote_free_backpressure_drain_success,
+          remote_free_backpressure_retry_success,
+          remote_free_backpressure_requeue_fail,
           route_active_current,
           route_active_max, route_tombstone_current, route_tombstone_max,
           route_register_used_tombstone,

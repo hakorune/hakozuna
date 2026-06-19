@@ -66,6 +66,10 @@
   size_t route_rehome_commit_success = 0;
   size_t remote_free_backpressure = 0;
   size_t remote_free_returned_uncommitted = 0;
+  size_t remote_free_backpressure_drain_attempt = 0;
+  size_t remote_free_backpressure_drain_success = 0;
+  size_t remote_free_backpressure_retry_success = 0;
+  size_t remote_free_backpressure_requeue_fail = 0;
   size_t route_active_current = 0;
   size_t route_active_max = 0;
   size_t route_tombstone_current = 0;
@@ -363,6 +367,14 @@
     remote_free_backpressure += stats.remote_free_backpressure;
     remote_free_returned_uncommitted +=
         stats.remote_free_returned_uncommitted;
+    remote_free_backpressure_drain_attempt +=
+        stats.remote_free_backpressure_drain_attempt;
+    remote_free_backpressure_drain_success +=
+        stats.remote_free_backpressure_drain_success;
+    remote_free_backpressure_retry_success +=
+        stats.remote_free_backpressure_retry_success;
+    remote_free_backpressure_requeue_fail +=
+        stats.remote_free_backpressure_requeue_fail;
     route_active_current += stats.route_active_current;
     if (stats.route_active_max > route_active_max) {
       route_active_max = stats.route_active_max;
