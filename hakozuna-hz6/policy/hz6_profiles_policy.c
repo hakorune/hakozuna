@@ -12,6 +12,11 @@ static size_t hz6_profile_transfer_owner_shard(
       return ((size_t)class_id) % (size_t)config->transfer_shards;
     case HZ6_TRANSFER_SHARD_OWNER_SLOT:
     default:
+#if HZ6_PROFILE_TRANSFER_SHARD_CLASS_MAX_ID > 0
+      if (class_id <= (uint16_t)HZ6_PROFILE_TRANSFER_SHARD_CLASS_MAX_ID) {
+        return ((size_t)class_id) % (size_t)config->transfer_shards;
+      }
+#endif
       return ((size_t)owner_slot) % (size_t)config->transfer_shards;
   }
 }

@@ -2588,6 +2588,68 @@ selected     16.46M   15.00M    10.84M
 class_shard  16.37M   13.85M    10.94M
 ```
 
+## 2026-06-20 SmallClassTransferShard-L1
+
+`SmallClassTransferShard-L1` keeps broad class-id transfer sharding as an
+explicit research lane and adds a narrower default-off knob:
+
+```text
+HZ6_PROFILE_TRANSFER_SHARD_CLASS_MAX_ID=3
+```
+
+With this set, class ids `0..3` use class-id transfer sharding and class ids
+`4+` keep the selected owner-slot policy.  This avoids applying the class-id
+policy to Toy 4096 and MidPage 8K/32K classes.
+
+Build target:
+
+```text
+hakozuna-hz6/linux/build_hz6_preload_transfer_small_class_shard_target.sh
+```
+
+Profile frontier alias:
+
+```text
+hz6-transfer-small-class-shard-target
+```
+
+The transfer shard policy runner now includes `small_class_shard` beside
+`selected` and `class_shard`.
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/build_hz6_preload_transfer_small_class_shard_target.sh
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+HZ6_EXTRA_CFLAGS='-DHZ6_PROFILE_TRANSFER_SHARD_CLASS_MAX_ID=3' \
+  ./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+```
+
+Focused RUNS=3:
+
+```text
+row          selected  class_shard  small_class_shard
+16_256       58.52M    60.19M       59.27M
+16_4096      56.51M    57.31M       57.23M
+1024_4096    73.01M    67.52M       70.49M
+4096_16384   62.68M    61.75M       63.93M
+```
+
+Remote MT RUNS=3:
+
+```text
+variant            local0   remote50  remote90
+selected           15.93M   13.97M    10.83M
+class_shard        16.20M   14.42M    10.67M
+small_class_shard  16.31M   14.79M    11.13M
+```
+
+Decision: `GO(target/profile)/HOLD(default)`.  The narrow lane preserves the
+small-row signal and avoids part of the class 4/5 regression from broad
+class-sharding.  Recheck with RUNS=10 before any selected/default promotion.
+
 Diagnostic paired RUNS=1 populated `counters.tsv`; class-shard did not clearly
 reduce returned backpressure or transfer full events in that sample.
 

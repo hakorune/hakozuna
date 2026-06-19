@@ -25,8 +25,9 @@ Options:
   --help         show this message
 
 Variants:
-  selected     default owner-slot transfer shard policy
-  class_shard  HZ6_PROFILE_TRANSFER_SHARD_CLASS_L1=1
+  selected           default owner-slot transfer shard policy
+  class_shard        HZ6_PROFILE_TRANSFER_SHARD_CLASS_L1=1
+  small_class_shard  HZ6_PROFILE_TRANSFER_SHARD_CLASS_MAX_ID=3
 EOF
 }
 
@@ -66,6 +67,8 @@ build_variant() {
   hz6_preload_profile_selected_cflags flags 1
   if [[ "$variant" == "class_shard" ]]; then
     hz6_preload_replace_define flags HZ6_PROFILE_TRANSFER_SHARD_CLASS_L1 1
+  elif [[ "$variant" == "small_class_shard" ]]; then
+    hz6_preload_replace_define flags HZ6_PROFILE_TRANSFER_SHARD_CLASS_MAX_ID 3
   fi
   local extra_cflags=""
   local preserve_phase=0
@@ -86,7 +89,7 @@ rows=(
   "remote50 16 10000 100 16 32768 50 65536"
   "remote90 16 120000 100 16 131072 90 65536"
 )
-variants=(selected class_shard)
+variants=(selected class_shard small_class_shard)
 
 printf 'variant\trow\trun\tstatus\tops_s\tpeak_kb\tlog\n' > "${OUTDIR}/runs.tsv"
 
