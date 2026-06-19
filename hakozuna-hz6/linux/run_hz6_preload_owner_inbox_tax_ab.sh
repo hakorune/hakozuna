@@ -20,7 +20,7 @@ Usage:
 
 Options:
   --runs N        repeat count per row and variant (default: 3)
-  --variants CSV p0_off,p1_metadata,p1_inline_no_maintenance,p1_inline,p1_external_no_maintenance,p1_external,p1_external_inline_skip_mid5,p1_external_inline_skip_mid4,p1_external_route_pin,p1_external_split_maintenance,p1_external_small_class
+  --variants CSV p0_off,p1_metadata,p1_inline_no_maintenance,p1_inline,p1_external_no_maintenance,p1_external,p1_external_direct_reuse,p1_external_direct_reuse_observe,p1_external_inline_skip_mid5,p1_external_inline_skip_mid4,p1_external_route_pin,p1_external_split_maintenance,p1_external_small_class
   --rows CSV     local0,remote50,remote90 (default: local0,remote50)
   --outdir DIR    output directory
   --diagnostic    build with HZ6_DIAGNOSTIC_PROBES=1 for counter attribution (default)
@@ -34,6 +34,9 @@ Variants:
   p1_inline                  inline producer and owner-local maintenance on
   p1_external_no_maintenance inline+external producer on, consumer off
   p1_external                branch-selected owner-inbox external candidate
+  p1_external_direct_reuse   p1_external plus frontcache-miss DirectReuse
+  p1_external_direct_reuse_observe
+                              p1_external_direct_reuse with DirectReuse counters on
   p1_external_inline_skip_mid5
                               skip inline MidPage class >=5, preserve external sink
   p1_external_inline_skip_mid4
@@ -80,7 +83,7 @@ variants=()
 IFS=',' read -r -a raw_variants <<< "$VARIANTS_CSV"
 for variant in "${raw_variants[@]}"; do
   case "$variant" in
-    p0_off|p1_metadata|p1_inline_no_maintenance|p1_inline|p1_external_no_maintenance|p1_external|p1_external_inline_skip_mid5|p1_external_inline_skip_mid4|p1_external_route_pin|p1_external_split_maintenance|p1_external_small_class)
+    p0_off|p1_metadata|p1_inline_no_maintenance|p1_inline|p1_external_no_maintenance|p1_external|p1_external_direct_reuse|p1_external_direct_reuse_observe|p1_external_inline_skip_mid5|p1_external_inline_skip_mid4|p1_external_route_pin|p1_external_split_maintenance|p1_external_small_class)
       variants+=("$variant")
       ;;
     "") ;;
@@ -134,6 +137,18 @@ build_variant() {
       ;;
     p1_external)
       hz6_preload_effective_owner_inbox_external_cflags flags 1
+      ;;
+    p1_external_direct_reuse)
+      hz6_preload_effective_owner_inbox_external_cflags flags 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1 0
+      ;;
+    p1_external_direct_reuse_observe)
+      hz6_preload_effective_owner_inbox_external_cflags flags 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1 1
       ;;
     p1_external_inline_skip_mid5)
       hz6_preload_effective_owner_inbox_external_cflags flags 1
@@ -214,6 +229,21 @@ counter_keys=(
   remote_pending_external_ticket_duplicate_probe_max
   remote_pending_external_ticket_duplicate_index_stale
   transfer_reserve_full
+  remote_pending_direct_gate_load
+  remote_pending_direct_gate_hit
+  remote_pending_direct_claim_attempt
+  remote_pending_direct_claim_success
+  remote_pending_direct_claim_busy
+  remote_pending_direct_claim_empty_after_hint
+  remote_pending_direct_activate_success
+  remote_pending_direct_integrity_failure
+  remote_pending_direct_claim_success_toy
+  remote_pending_direct_claim_success_midpage
+  remote_pending_direct_claim_success_while_transfer_nonempty
+  remote_pending_direct_source_boundary_attempt
+  remote_pending_direct_source_boundary_gate_hit
+  remote_pending_direct_source_boundary_claim_success
+  remote_pending_direct_source_alloc_avoided
 )
 
 write_meta

@@ -3147,6 +3147,67 @@ the lower-remote rows in this short run, but it damages the high-remote sink and
 raises remote90 RSS.  Keep the switch as a research control only.  Do not add it
 to `p1_external` or selected flags.
 
+## 2026-06-20 OwnerInboxDirectReuseProfileRecheck-L1
+
+Rechecked DirectReuse after the owner-inbox storage and maintenance-shape boxes.
+The attribution runner now has two variants:
+
+```text
+p1_external_direct_reuse
+  p1_external plus DirectReuse/claim on, production DirectReuse counters off
+
+p1_external_direct_reuse_observe
+  same behavior, DirectReuse counters on for diagnostic attribution
+```
+
+Production RUNS=10:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 10 \
+  --rows remote50,remote90 \
+  --variants p1_external,p1_external_direct_reuse
+```
+
+```text
+variant                   remote50          RSS       remote90          RSS
+p1_external               14.05086950M      74.69MiB  10.73298177M     77.56MiB
+p1_external_direct_reuse  14.38359632M      74.81MiB  10.65646400M     77.45MiB
+```
+
+Diagnostic observe smoke:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 1 \
+  --rows remote50 \
+  --variants p1_external_direct_reuse_observe
+```
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+route_unregister_while_pending=0
+route_replace_while_pending=0
+route_rehome_while_pending=0
+remote_pending_direct_gate_load=6782
+remote_pending_direct_gate_hit=3795
+remote_pending_direct_claim_attempt=3795
+remote_pending_direct_claim_success=3767
+remote_pending_direct_claim_busy=28
+remote_pending_direct_integrity_failure=0
+remote_pending_direct_claim_success_toy=77
+remote_pending_direct_claim_success_midpage=3690
+```
+
+Decision: `GO(profile candidate)/HOLD(default)`.  The current p1 shape makes
+DirectReuse useful again for remote50, but the same RUNS=10 shows a small
+remote90 loss.  Keep `p1_external_direct_reuse` as an attribution/profile
+candidate and keep the high-remote profile/default DirectReuse-off until a
+narrow source-boundary or MidPage-shaped policy beats both rows.
+
 ## 2026-06-20 Profile Frontier Alias Smoke
 
 The new profile aliases were exercised through the existing focused profile
