@@ -60,11 +60,28 @@ hakozuna-hz6/private/raw-results/linux/hz6_transfer_shard_policy_ab_20260620_062
 | class-shard | 16.20M | 14.42M | 10.67M | 67.25-72.10 |
 | small-class-shard | 16.31M | 14.79M | 11.13M | 67.38-71.97 |
 
+## Remote MT RUNS=10
+
+Raw root:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_transfer_shard_policy_ab_20260620_063108
+```
+
+| variant | local0 | remote50 | remote90 | median peak MiB |
+| --- | ---: | ---: | ---: | ---: |
+| selected | 16.17M | 15.00M | 10.93M | 67.25-72.08 |
+| class-shard | 16.35M | 15.01M | 10.84M | 67.38-72.13 |
+| small-class-shard | 15.95M | 15.29M | 10.87M | 67.31-72.16 |
+
 ## Decision
 
-`GO(target/profile)/HOLD(default)`.
+`GO(remote50 target)/NO-GO(default)`.
 
 Small-class sharding keeps the useful small-row signal from broad class sharding
 while avoiding part of the class 4/5 damage.  It also won the quick remote MT
-RUNS=3 sample across local0, remote50, and remote90.  Keep it boxed as an
-explicit target/profile until a RUNS=10 recheck confirms the direction.
+RUNS=3 sample across local0, remote50, and remote90.
+
+The RUNS=10 recheck did not justify selected/default promotion: remote50
+improved, but local0 and remote90 were below selected.  Keep the boxed target
+for remote50/profile exploration; do not promote it to default from this data.

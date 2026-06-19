@@ -2646,9 +2646,20 @@ class_shard        16.20M   14.42M    10.67M
 small_class_shard  16.31M   14.79M    11.13M
 ```
 
-Decision: `GO(target/profile)/HOLD(default)`.  The narrow lane preserves the
+Remote MT RUNS=10:
+
+```text
+variant            local0   remote50  remote90
+selected           16.17M   15.00M    10.93M
+class_shard        16.35M   15.01M    10.84M
+small_class_shard  15.95M   15.29M    10.87M
+```
+
+Decision: `GO(remote50 target)/NO-GO(default)`.  The narrow lane preserves the
 small-row signal and avoids part of the class 4/5 regression from broad
-class-sharding.  Recheck with RUNS=10 before any selected/default promotion.
+class-sharding, but the RUNS=10 recheck only improves remote50 and slightly
+regresses local0/remote90.  Keep it as an explicit target/profile; do not
+promote it to selected/default from this data.
 
 Diagnostic paired RUNS=1 populated `counters.tsv`; class-shard did not clearly
 reduce returned backpressure or transfer full events in that sample.
