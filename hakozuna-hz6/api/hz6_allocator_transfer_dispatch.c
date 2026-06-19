@@ -12,6 +12,28 @@ int hz6_allocator_transfer_push(Hz6Allocator* allocator,
                                             producer_shard);
 }
 
+int hz6_allocator_transfer_reserve(Hz6Allocator* allocator,
+                                   uint16_t class_id,
+                                   Hz6TransferReservation* out) {
+  if (!allocator || !out) {
+    return 0;
+  }
+  size_t producer_shard = hz6_profile_transfer_producer_shard(
+      &allocator->profile, allocator->owner.token.slot, class_id);
+  return hz6_transfer_backend_reserve_to_shard(&allocator->transfer_backend,
+                                               producer_shard,
+                                               out);
+}
+
+void hz6_allocator_transfer_cancel(Hz6TransferReservation* reservation) {
+  hz6_transfer_backend_cancel(reservation);
+}
+
+void hz6_allocator_transfer_commit(Hz6TransferReservation* reservation,
+                                   Hz6TransferObject object) {
+  hz6_transfer_backend_commit(reservation, object);
+}
+
 int hz6_allocator_transfer_pop(Hz6Allocator* allocator,
                                uint16_t class_id,
                                Hz6TransferObject* out) {

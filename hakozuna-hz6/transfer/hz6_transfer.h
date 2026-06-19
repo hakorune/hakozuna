@@ -20,11 +20,25 @@ typedef struct Hz6TransferCache {
   size_t count;
 } Hz6TransferCache;
 
+typedef struct Hz6TransferReservation {
+  Hz6TransferCache* cache;
+  size_t index;
+  int reserved;
+} Hz6TransferReservation;
+
 void hz6_transfer_init(Hz6TransferCache* cache,
                        Hz6TransferObject* objects,
                        size_t capacity);
 
 int hz6_transfer_push(Hz6TransferCache* cache, Hz6TransferObject object);
+
+int hz6_transfer_reserve(Hz6TransferCache* cache,
+                         Hz6TransferReservation* out);
+
+void hz6_transfer_cancel(Hz6TransferReservation* reservation);
+
+void hz6_transfer_commit(Hz6TransferReservation* reservation,
+                         Hz6TransferObject object);
 
 int hz6_transfer_pop(Hz6TransferCache* cache,
                      uint16_t class_id,

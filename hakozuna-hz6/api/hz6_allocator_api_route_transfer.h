@@ -184,6 +184,15 @@ size_t hz6_allocator_owner_locality_index_bytes(void);
 int hz6_allocator_transfer_push(Hz6Allocator* allocator,
                                 Hz6TransferObject object);
 
+int hz6_allocator_transfer_reserve(Hz6Allocator* allocator,
+                                   uint16_t class_id,
+                                   Hz6TransferReservation* out);
+
+void hz6_allocator_transfer_cancel(Hz6TransferReservation* reservation);
+
+void hz6_allocator_transfer_commit(Hz6TransferReservation* reservation,
+                                   Hz6TransferObject object);
+
 int hz6_allocator_transfer_pop(Hz6Allocator* allocator,
                                uint16_t class_id,
                                Hz6TransferObject* out);

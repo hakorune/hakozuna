@@ -349,6 +349,12 @@
 #define HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 0
 #endif
 
+#ifndef HZ6_REMOTE_FREE_COMMIT_L1
+/* Correctness lane for remote free commit ordering.  Start by reserving
+ * transfer capacity before descriptor ownership/state mutation. */
+#define HZ6_REMOTE_FREE_COMMIT_L1 0
+#endif
+
 #ifndef HZ6_PRELOAD_MIDPAGE_ROUTE_REARM_L1
 /* Candidate preload-boundary shortcut.  When preload already found a local
  * MidPage exact route, re-arm the MidPage active map so hz6_free() can consume

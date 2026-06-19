@@ -61,6 +61,7 @@
   size_t transfer_reserve_attempt = 0;
   size_t transfer_reserve_success = 0;
   size_t transfer_reserve_full = 0;
+  size_t transfer_reserve_full_after_state_mutation = 0;
   size_t route_rehome_commit_enter = 0;
   size_t route_rehome_commit_success = 0;
   size_t remote_free_backpressure = 0;
@@ -355,6 +356,8 @@
     transfer_reserve_attempt += stats.transfer_reserve_attempt;
     transfer_reserve_success += stats.transfer_reserve_success;
     transfer_reserve_full += stats.transfer_reserve_full;
+    transfer_reserve_full_after_state_mutation +=
+        stats.transfer_reserve_full_after_state_mutation;
     route_rehome_commit_enter += stats.route_rehome_commit_enter;
     route_rehome_commit_success += stats.route_rehome_commit_success;
     remote_free_backpressure += stats.remote_free_backpressure;

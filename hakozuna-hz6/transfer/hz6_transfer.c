@@ -20,6 +20,49 @@ int hz6_transfer_push(Hz6TransferCache* cache, Hz6TransferObject object) {
   return 1;
 }
 
+int hz6_transfer_reserve(Hz6TransferCache* cache,
+                         Hz6TransferReservation* out) {
+  if (!cache || !cache->objects || !out ||
+      cache->count >= cache->capacity) {
+    return 0;
+  }
+
+  Hz6TransferObject placeholder = {0};
+  placeholder.class_id = UINT16_MAX;
+  out->cache = cache;
+  out->index = cache->count;
+  out->reserved = 1;
+  cache->objects[cache->count++] = placeholder;
+  return 1;
+}
+
+void hz6_transfer_cancel(Hz6TransferReservation* reservation) {
+  if (!reservation || !reservation->reserved || !reservation->cache) {
+    return;
+  }
+  Hz6TransferCache* cache = reservation->cache;
+  if (reservation->index < cache->count) {
+    cache->objects[reservation->index] = cache->objects[--cache->count];
+  }
+  reservation->cache = NULL;
+  reservation->index = 0;
+  reservation->reserved = 0;
+}
+
+void hz6_transfer_commit(Hz6TransferReservation* reservation,
+                         Hz6TransferObject object) {
+  if (!reservation || !reservation->reserved || !reservation->cache) {
+    return;
+  }
+  Hz6TransferCache* cache = reservation->cache;
+  if (reservation->index < cache->count) {
+    cache->objects[reservation->index] = object;
+  }
+  reservation->cache = NULL;
+  reservation->index = 0;
+  reservation->reserved = 0;
+}
+
 int hz6_transfer_pop(Hz6TransferCache* cache,
                      uint16_t class_id,
                      Hz6TransferObject* out) {

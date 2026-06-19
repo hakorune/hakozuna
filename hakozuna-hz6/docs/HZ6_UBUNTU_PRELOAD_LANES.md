@@ -81,6 +81,7 @@ HZ6_REMOTE_FREE_RESOLVE_SHARED_RETRY_LIMIT=3
 HZ6_REMOTE_FREE_RESOLVE_LOCAL_EXACT_ONLY_L1=0
 HZ6_PRELOAD_FOREIGN_RESOLVED_DISPATCH_L1=1
 HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1=1
+HZ6_REMOTE_FREE_COMMIT_L1=1
 HZ6_ROUTE_HASH_XOR_FOLD_L1=1
 HZ6_ROUTE_LINEAR_WRAP_L1=1
 HZ6_ROUTE_LOOP_CARRY_L1=1
@@ -129,6 +130,11 @@ transaction/backpressure, not broad preload fast free.
 `transfer_reserve_full=38822`, `route_rehome_commit_success=893`, and
 `remote_free_returned_uncommitted=38822`.  Treat `route_rehome_attempt` as a
 candidate counter until the transaction box separates reserve from commit.
+`RemoteFreeCommit-L1` now reserves transfer capacity before descriptor
+state/owner mutation and the integrity smoke gates
+`transfer_reserve_full_after_state_mutation=0`.  This is a correctness step,
+not a perf closeout: quick RUNS=3 held `remote50` near `13.97M` ops/s but
+`remote90` was `257756.17` ops/s, below the prior selected RUNS=10 median.
 Short remote rows can now be made to complete, but long 300K rows still show a
 page-table lookup cliff.  The active design is `RemoteFreeRouteResolve-L1`,
 not a preload-only owner hint: Ubuntu preload must call the shared core

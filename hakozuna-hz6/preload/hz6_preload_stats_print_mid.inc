@@ -74,6 +74,7 @@
           "transfer_reserve_attempt=%zu "
           "transfer_reserve_success=%zu "
           "transfer_reserve_full=%zu "
+          "transfer_reserve_full_after_state_mutation=%zu "
           "route_rehome_commit_enter=%zu "
           "route_rehome_commit_success=%zu "
           "remote_free_backpressure=%zu "
@@ -121,6 +122,7 @@
           route_rehome_rollback_success, route_rehome_rollback_fail,
           remote_free_foreign_candidate, transfer_reserve_attempt,
           transfer_reserve_success, transfer_reserve_full,
+          transfer_reserve_full_after_state_mutation,
           route_rehome_commit_enter, route_rehome_commit_success,
           remote_free_backpressure, remote_free_returned_uncommitted,
           route_active_current,

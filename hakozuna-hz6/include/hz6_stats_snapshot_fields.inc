@@ -19,6 +19,7 @@
   size_t transfer_reserve_attempt;
   size_t transfer_reserve_success;
   size_t transfer_reserve_full;
+  size_t transfer_reserve_full_after_state_mutation;
   size_t route_rehome_commit_enter;
   size_t route_rehome_commit_success;
   size_t remote_free_backpressure;

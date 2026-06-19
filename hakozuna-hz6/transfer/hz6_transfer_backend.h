@@ -37,6 +37,16 @@ int hz6_transfer_backend_push_to_shard(Hz6TransferBackend* backend,
                                        Hz6TransferObject object,
                                        size_t producer_shard);
 
+int hz6_transfer_backend_reserve_to_shard(
+    Hz6TransferBackend* backend,
+    size_t producer_shard,
+    Hz6TransferReservation* out);
+
+void hz6_transfer_backend_cancel(Hz6TransferReservation* reservation);
+
+void hz6_transfer_backend_commit(Hz6TransferReservation* reservation,
+                                 Hz6TransferObject object);
+
 int hz6_transfer_backend_pop(Hz6TransferBackend* backend,
                              uint16_t class_id,
                              Hz6TransferObject* out);
