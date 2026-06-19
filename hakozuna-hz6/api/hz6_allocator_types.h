@@ -377,6 +377,22 @@ typedef enum Hz6RemotePendingSlotState {
   HZ6_REMOTE_PENDING_SLOT_QUEUED = 1,
   HZ6_REMOTE_PENDING_SLOT_CLAIMED = 2
 } Hz6RemotePendingSlotState;
+
+#if HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1
+typedef struct Hz6RemotePendingExternalTicket {
+  void* ptr;
+  Hz6ObjectDescriptor* descriptor;
+  uint32_t generation;
+  uint32_t bytes;
+  Hz6OwnerToken owner_token;
+  Hz6OwnerToken descriptor_storage_owner_token;
+  uint32_t next;
+  uint16_t front_id;
+  uint16_t class_id;
+  uint8_t state;
+  uint8_t reserved;
+} Hz6RemotePendingExternalTicket;
+#endif
 #endif
 
 struct Hz6Allocator {
@@ -429,6 +445,14 @@ struct Hz6Allocator {
   uint16_t remote_pending_published_front_id[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
   uint16_t remote_pending_published_class_id[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
   Hz6OwnerToken remote_pending_owner_token[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
+#if HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1
+  Hz6RemotePendingExternalTicket
+      remote_pending_external_tickets
+          [HZ6_REMOTE_PENDING_EXTERNAL_TICKET_CAPACITY];
+  uint32_t remote_pending_external_free_head;
+  uint32_t remote_pending_external_head
+      [HZ6_REMOTE_PENDING_FRONT_COUNT][HZ6_FRONT_CACHE_CLASS_COUNT];
+#endif
   _Atomic size_t remote_pending_current;
   _Atomic size_t remote_pending_queued_current;
   _Atomic size_t remote_pending_claimed_current;

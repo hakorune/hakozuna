@@ -411,6 +411,17 @@
 #define HZ6_REMOTE_PENDING_INBOX_CLASS_CAPACITY HZ6_OBJECT_DESCRIPTOR_CAPACITY
 #endif
 
+#ifndef HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1
+/* External descriptor owner-inbox ticket storage.  This stays separate from
+ * descriptor-index pending slots because external descriptors have no stable
+ * index in origin->descriptors[]. */
+#define HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1 0
+#endif
+
+#ifndef HZ6_REMOTE_PENDING_EXTERNAL_TICKET_CAPACITY
+#define HZ6_REMOTE_PENDING_EXTERNAL_TICKET_CAPACITY 1024u
+#endif
+
 #ifndef HZ6_REMOTE_PENDING_FRONT_COUNT
 #define HZ6_REMOTE_PENDING_FRONT_COUNT 4
 #endif

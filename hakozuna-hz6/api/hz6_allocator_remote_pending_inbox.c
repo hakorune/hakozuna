@@ -504,6 +504,29 @@ void hz6_allocator_remote_pending_inbox_init(Hz6Allocator* allocator) {
     allocator->remote_pending_published_class_id[i] = 0;
     allocator->remote_pending_owner_token[i] = (Hz6OwnerToken){0};
   }
+#if HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1
+  for (size_t front_index = 0; front_index < HZ6_REMOTE_PENDING_FRONT_COUNT;
+       ++front_index) {
+    for (size_t class_id = 0; class_id < HZ6_FRONT_CACHE_CLASS_COUNT;
+         ++class_id) {
+      allocator->remote_pending_external_head[front_index][class_id] =
+          HZ6_REMOTE_PENDING_INDEX_NONE;
+    }
+  }
+  allocator->remote_pending_external_free_head =
+      HZ6_REMOTE_PENDING_EXTERNAL_TICKET_CAPACITY == 0
+          ? HZ6_REMOTE_PENDING_INDEX_NONE
+          : 0u;
+  for (size_t i = 0; i < HZ6_REMOTE_PENDING_EXTERNAL_TICKET_CAPACITY; ++i) {
+    Hz6RemotePendingExternalTicket* ticket =
+        &allocator->remote_pending_external_tickets[i];
+    memset(ticket, 0, sizeof(*ticket));
+    ticket->next =
+        i + 1u < HZ6_REMOTE_PENDING_EXTERNAL_TICKET_CAPACITY
+            ? (uint32_t)(i + 1u)
+            : HZ6_REMOTE_PENDING_INDEX_NONE;
+  }
+#endif
   atomic_store_explicit(&allocator->remote_pending_current, 0u,
                         memory_order_relaxed);
   atomic_store_explicit(&allocator->remote_pending_queued_current, 0u,

@@ -739,3 +739,42 @@ remote_free_returned_backpressure = 0
 
 Performance gate stays separate.  Even if external tickets close the tail, the
 owner-inbox lane remains `HOLD(default)` until the remote50 cost is addressed.
+
+## 2026-06-20 External Ticket Core
+
+`ExternalDescriptorOwnerInboxTicketCore-L1` adds the behavior-off storage
+surface:
+
+```text
+HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1=0
+HZ6_REMOTE_PENDING_EXTERNAL_TICKET_CAPACITY=1024
+```
+
+The core adds separate ticket storage and per-key heads under the existing
+remote pending inbox compile boundary.  It does not publish or consume tickets
+yet:
+
+```text
+remote_pending_external_tickets[capacity]
+remote_pending_external_free_head
+remote_pending_external_head[front][class]
+```
+
+Build/smoke checks:
+
+```text
+selected preload build: ok
+external-ticket-core preload build: ok
+selected-shape benchmark build: ok
+external-ticket-core smoke: integrity ok
+remote_pending_external_ticket_attempt=0
+remote_pending_external_ticket_success=0
+remote_pending_external_ticket_full=0
+remote_pending_external_ticket_duplicate=0
+remote_pending_external_ticket_consume=0
+route/owner/state/storage mismatch counters=0
+```
+
+Decision: `GO(core)/HOLD(behavior)`.  The next implementation box can add the
+producer publish path for storage-ineligible owner-inbox candidates without
+touching the inline descriptor-index queue.

@@ -122,6 +122,24 @@
         stats.remote_pending_owner_inbox_owner_mismatch;
     remote_pending_owner_inbox_enqueue_fail +=
         stats.remote_pending_owner_inbox_enqueue_fail;
+    remote_pending_external_ticket_attempt +=
+        stats.remote_pending_external_ticket_attempt;
+    remote_pending_external_ticket_success +=
+        stats.remote_pending_external_ticket_success;
+    remote_pending_external_ticket_full +=
+        stats.remote_pending_external_ticket_full;
+    remote_pending_external_ticket_duplicate +=
+        stats.remote_pending_external_ticket_duplicate;
+    remote_pending_external_ticket_consume +=
+        stats.remote_pending_external_ticket_consume;
+    remote_pending_external_ticket_route_mismatch +=
+        stats.remote_pending_external_ticket_route_mismatch;
+    remote_pending_external_ticket_owner_mismatch +=
+        stats.remote_pending_external_ticket_owner_mismatch;
+    remote_pending_external_ticket_state_mismatch +=
+        stats.remote_pending_external_ticket_state_mismatch;
+    remote_pending_external_ticket_storage_mismatch +=
+        stats.remote_pending_external_ticket_storage_mismatch;
     remote_pending_key_nonempty_load +=
         stats.remote_pending_key_nonempty_load;
     remote_pending_key_nonempty_hit +=

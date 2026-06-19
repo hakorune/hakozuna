@@ -340,6 +340,12 @@ owner-owned ticket storage for external descriptors with immutable
 ptr/descriptor/generation/front/class/owner/storage proof.  Promotion requires
 closing `remote_free_returned_backpressure` to zero; default selection still
 also requires solving the owner-inbox remote50 cost.
+`ExternalDescriptorOwnerInboxTicketCore-L1` implements the default-off storage
+surface and counters only.  It adds `remote_pending_external_tickets`, a
+free-list head, and per-key heads under
+`HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1=1`; selected/off builds and the
+external-ticket-core smoke pass, with all ticket counters still zero because
+no producer path is connected yet.
 `RemoteFreeBackpressureOriginDrain-L1` tried that full path directly as an
 opt-in no-go.  It drains one same-class transfer object from the origin transfer
 cache into the origin frontcache and retries origin commit once.  Safety smoke

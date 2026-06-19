@@ -473,6 +473,19 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.remote_pending_owner_inbox_owner_dead,
          stats.remote_pending_owner_inbox_owner_mismatch,
          stats.remote_pending_owner_inbox_enqueue_fail);
+  printf("[HZ6_REMOTE_EXTERNAL_TICKET] "
+         "attempt=%zu success=%zu full=%zu duplicate=%zu consume=%zu "
+         "route_mismatch=%zu owner_mismatch=%zu state_mismatch=%zu "
+         "storage_mismatch=%zu\n",
+         stats.remote_pending_external_ticket_attempt,
+         stats.remote_pending_external_ticket_success,
+         stats.remote_pending_external_ticket_full,
+         stats.remote_pending_external_ticket_duplicate,
+         stats.remote_pending_external_ticket_consume,
+         stats.remote_pending_external_ticket_route_mismatch,
+         stats.remote_pending_external_ticket_owner_mismatch,
+         stats.remote_pending_external_ticket_state_mismatch,
+         stats.remote_pending_external_ticket_storage_mismatch);
   printf("[HZ6_REMOTE_BACKPRESSURE] "
          "origin_transfer_full=%zu origin_full_transfer_total=%zu "
          "origin_full_class_total=%zu origin_full_class_max=%zu "

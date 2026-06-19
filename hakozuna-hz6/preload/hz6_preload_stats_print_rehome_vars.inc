@@ -64,6 +64,15 @@
   size_t remote_pending_owner_inbox_owner_dead = 0;
   size_t remote_pending_owner_inbox_owner_mismatch = 0;
   size_t remote_pending_owner_inbox_enqueue_fail = 0;
+  size_t remote_pending_external_ticket_attempt = 0;
+  size_t remote_pending_external_ticket_success = 0;
+  size_t remote_pending_external_ticket_full = 0;
+  size_t remote_pending_external_ticket_duplicate = 0;
+  size_t remote_pending_external_ticket_consume = 0;
+  size_t remote_pending_external_ticket_route_mismatch = 0;
+  size_t remote_pending_external_ticket_owner_mismatch = 0;
+  size_t remote_pending_external_ticket_state_mismatch = 0;
+  size_t remote_pending_external_ticket_storage_mismatch = 0;
   size_t remote_pending_key_nonempty_load = 0;
   size_t remote_pending_key_nonempty_hit = 0;
   size_t pending_same_key_on_frontcache_miss = 0;

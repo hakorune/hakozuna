@@ -128,6 +128,15 @@
           "remote_pending_owner_inbox_owner_dead=%zu "
           "remote_pending_owner_inbox_owner_mismatch=%zu "
           "remote_pending_owner_inbox_enqueue_fail=%zu "
+          "remote_pending_external_ticket_attempt=%zu "
+          "remote_pending_external_ticket_success=%zu "
+          "remote_pending_external_ticket_full=%zu "
+          "remote_pending_external_ticket_duplicate=%zu "
+          "remote_pending_external_ticket_consume=%zu "
+          "remote_pending_external_ticket_route_mismatch=%zu "
+          "remote_pending_external_ticket_owner_mismatch=%zu "
+          "remote_pending_external_ticket_state_mismatch=%zu "
+          "remote_pending_external_ticket_storage_mismatch=%zu "
           "remote_pending_key_nonempty_load=%zu "
           "remote_pending_key_nonempty_hit=%zu "
           "pending_same_key_on_frontcache_miss=%zu "
@@ -275,6 +284,15 @@
           remote_pending_owner_inbox_owner_dead,
           remote_pending_owner_inbox_owner_mismatch,
           remote_pending_owner_inbox_enqueue_fail,
+          remote_pending_external_ticket_attempt,
+          remote_pending_external_ticket_success,
+          remote_pending_external_ticket_full,
+          remote_pending_external_ticket_duplicate,
+          remote_pending_external_ticket_consume,
+          remote_pending_external_ticket_route_mismatch,
+          remote_pending_external_ticket_owner_mismatch,
+          remote_pending_external_ticket_state_mismatch,
+          remote_pending_external_ticket_storage_mismatch,
           remote_pending_key_nonempty_load,
           remote_pending_key_nonempty_hit,
           pending_same_key_on_frontcache_miss,
