@@ -276,3 +276,36 @@ remote90=10071818.95
 
 Decision: `GO(correctness)/HOLD(perf)`.  It removes class-only fallback
 ambiguity; performance selection still needs a broader run.
+
+## Direct Fallback Budget Follow-Up
+
+With exact-key maintenance, DirectReuse should not stage surplus fallback
+objects.  `HZ6_REMOTE_PENDING_DIRECT_FALLBACK_DRAIN_BUDGET=1` applies only
+when DirectReuse is enabled; the standalone owner-local maintenance budget
+remains unchanged.
+
+Opt-in DirectReuse + exact-key fallback smoke:
+
+```text
+remote_pending_direct_claim_success=3189
+remote_pending_direct_integrity_failure=0
+remote_pending_batch_items=18
+remote_pending_frontcache_push=18
+pending_maintenance_batch_surplus=0
+```
+
+RUNS=10:
+
+```text
+selected/off:
+remote50=15033261.62
+remote90=10196391.35
+
+direct+exact fallback budget1:
+remote50=14436403.64
+remote90=10810219.46
+```
+
+Decision: `GO(opt-in)/HOLD(default)`.  The budget-1 fallback removes surplus
+and improves remote90 versus current selected in this run, but remote50 still
+regresses, so do not promote by default yet.

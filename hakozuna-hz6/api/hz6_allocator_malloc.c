@@ -160,8 +160,13 @@ static void* hz6_allocator_direct_local_reuse(Hz6Allocator* allocator,
     HZ6_REMOTE_PENDING_INBOX_CORE_L1
   hz6_allocator_remote_pending_note_before_maintenance(allocator, front_id,
                                                        class_id);
+#if HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 && HZ6_REMOTE_PENDING_INBOX_CORE_L1
+  size_t pending_budget = HZ6_REMOTE_PENDING_DIRECT_FALLBACK_DRAIN_BUDGET;
+#else
+  size_t pending_budget = HZ6_REMOTE_PENDING_DRAIN_BUDGET;
+#endif
   size_t pending_drained = hz6_allocator_remote_pending_maintenance_class(
-      allocator, front_id, class_id, HZ6_REMOTE_PENDING_DRAIN_BUDGET);
+      allocator, front_id, class_id, pending_budget);
   hz6_allocator_remote_pending_note_after_maintenance(allocator, front_id,
                                                       class_id);
   if (pending_drained != 0) {
@@ -280,8 +285,13 @@ static void* hz6_allocator_midpage_direct_local_reuse_trusted_class(
     HZ6_REMOTE_PENDING_INBOX_CORE_L1
   hz6_allocator_remote_pending_note_before_maintenance(allocator, front_id,
                                                        class_id);
+#if HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 && HZ6_REMOTE_PENDING_INBOX_CORE_L1
+  size_t pending_budget = HZ6_REMOTE_PENDING_DIRECT_FALLBACK_DRAIN_BUDGET;
+#else
+  size_t pending_budget = HZ6_REMOTE_PENDING_DRAIN_BUDGET;
+#endif
   size_t pending_drained = hz6_allocator_remote_pending_maintenance_class(
-      allocator, front_id, class_id, HZ6_REMOTE_PENDING_DRAIN_BUDGET);
+      allocator, front_id, class_id, pending_budget);
   hz6_allocator_remote_pending_note_after_maintenance(allocator, front_id,
                                                       class_id);
   if (pending_drained != 0) {

@@ -426,6 +426,12 @@
 #define HZ6_REMOTE_PENDING_DRAIN_BUDGET ((size_t)4)
 #endif
 
+#ifndef HZ6_REMOTE_PENDING_DIRECT_FALLBACK_DRAIN_BUDGET
+/* DirectReuse already consumes the demanded object.  Its maintenance fallback
+ * should avoid surplus frontcache staging. */
+#define HZ6_REMOTE_PENDING_DIRECT_FALLBACK_DRAIN_BUDGET ((size_t)1)
+#endif
+
 #ifndef HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1
 /* Opt-in behavior box.  On remote-free transfer backpressure, publish the
  * object into the origin owner's pending inbox without route rehome. */

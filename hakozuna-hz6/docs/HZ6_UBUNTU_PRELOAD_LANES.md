@@ -253,6 +253,11 @@ DirectReuse healthy (`remote_pending_direct_claim_success=3392`,
 `remote_pending_batch_items=71`; RUNS=3 measured `remote50=14252255.99`,
 `remote90=10071818.95`.  Keep this correctness boundary for future DirectReuse
 promotion.
+`HZ6_REMOTE_PENDING_DIRECT_FALLBACK_DRAIN_BUDGET=1` is the current DirectReuse
+opt-in fallback setting.  It removes surplus staging
+(`pending_maintenance_batch_surplus=0`) and RUNS=10 improved remote90 versus
+selected in this sample (`10.81M` vs `10.20M`), but selected remote50 was still
+stronger (`15.03M` vs `14.44M`).  Keep DirectReuse opt-in for now.
 `RemoteFreeBackpressureOriginTransferReasonObserve-L1` splits the remaining
 origin-transfer misses without changing behavior.  The selected smoke showed
 `remote_free_backpressure_origin_transfer_stride_skip=16295`,

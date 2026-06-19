@@ -322,3 +322,31 @@ remote90=10071818.95
 ```
 
 Decision: `GO(correctness)/HOLD(perf)`.
+
+## 2026-06-20 Direct Fallback Budget
+
+`HZ6_REMOTE_PENDING_DIRECT_FALLBACK_DRAIN_BUDGET=1` applies only when
+DirectReuse is enabled.  It keeps the exact-key maintenance fallback from
+staging extra objects after direct reuse already consumed the demanded object.
+
+Smoke:
+
+```text
+remote_pending_direct_claim_success=3189
+remote_pending_direct_integrity_failure=0
+remote_pending_batch_items=18
+remote_pending_frontcache_push=18
+pending_maintenance_batch_surplus=0
+```
+
+RUNS=10 comparison:
+
+```text
+selected/off remote50=15033261.62
+selected/off remote90=10196391.35
+direct+budget1 remote50=14436403.64
+direct+budget1 remote90=10810219.46
+```
+
+Decision: DirectReuse budget1 remains opt-in.  It is cleaner and helps
+remote90, but selected remote50 is still stronger.
