@@ -352,6 +352,12 @@ API records immutable proof and moves a descriptor to `REMOTE_PENDING` only
 after external-storage, owner, state, duplicate, and capacity validation.  It
 also requires descriptor-storage-owner proof; selected-shape builds that cannot
 provide that proof fail the API with storage mismatch by design.
+`ExternalDescriptorOwnerInboxTicketConsumeAPI-L1` adds the matching owner-local
+consume primitive, also disconnected.  It claims one exact-key external ticket,
+validates immutable proof, owner, storage owner, and exact route, then moves the
+object to owner-local frontcache as `LOCAL_FREE`.  The smoke still has all
+ticket counters at zero because producer and consumer are not wired into
+malloc/free yet.
 `RemoteFreeBackpressureOriginDrain-L1` tried that full path directly as an
 opt-in no-go.  It drains one same-class transfer object from the origin transfer
 cache into the origin frontcache and retries origin commit once.  Safety smoke

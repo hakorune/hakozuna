@@ -833,3 +833,40 @@ Decision: `GO(API)/HOLD(behavior)`.  The next box should connect only the
 storage-ineligible owner-inbox branch to this API and keep `free()` returning
 backpressure unless ticket publish and later owner-local consumption are both
 proven safe.
+
+## 2026-06-20 External Ticket Consume API
+
+`ExternalDescriptorOwnerInboxTicketConsumeAPI-L1` adds the owner-local consume
+primitive, still disconnected from malloc/free:
+
+```c
+int hz6_allocator_remote_pending_external_ticket_consume_one(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id);
+```
+
+The API claims one exact-key external ticket, validates immutable proof,
+validates descriptor owner and descriptor-storage owner, checks the exact route,
+then moves the object to owner-local frontcache as `LOCAL_FREE`.  Frontcache
+full leaves the ticket queued.
+
+Build/smoke checks:
+
+```text
+selected preload build: ok
+external-ticket consume API preload build: ok
+selected-shape benchmark build with external ticket flag: ok
+external-ticket smoke: integrity ok
+remote_pending_external_ticket_attempt=0
+remote_pending_external_ticket_success=0
+remote_pending_external_ticket_consume=0
+route/owner/state/storage mismatch counters=0
+remote_free_returned_uncommitted=0
+```
+
+Decision: `GO(API)/HOLD(behavior)`.  Producer and consumer primitives now both
+exist, but the runtime is still intentionally disconnected.  The next behavior
+box can connect the storage-ineligible owner-inbox branch, then arm owner-local
+maintenance to call `consume_one()` before treating ticket publish as a
+committed free.

@@ -741,6 +741,131 @@ int hz6_allocator_remote_pending_external_ticket_publish(
 #endif
 }
 
+int hz6_allocator_remote_pending_external_ticket_consume_one(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id) {
+#if HZ6_REMOTE_PENDING_INBOX_CORE_L1 && \
+    HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1
+  if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT ||
+      hz6_allocator_frontcache_count(allocator, class_id) >=
+          hz6_allocator_frontcache_capacity(allocator, class_id)) {
+    return 0;
+  }
+  uint16_t front_index = 0;
+  if (!hz6_remote_pending_front_ordinal(front_id, &front_index)) {
+    return 0;
+  }
+
+  hz6_remote_pending_external_lock(allocator);
+  uint32_t ticket_index =
+      allocator->remote_pending_external_head[front_index][class_id];
+  if (ticket_index == HZ6_REMOTE_PENDING_INDEX_NONE ||
+      ticket_index >= HZ6_REMOTE_PENDING_EXTERNAL_TICKET_CAPACITY) {
+    hz6_remote_pending_external_unlock(allocator);
+    return 0;
+  }
+  Hz6RemotePendingExternalTicket* ticket =
+      &allocator->remote_pending_external_tickets[ticket_index];
+  Hz6RemotePendingExternalTicket proof = *ticket;
+  allocator->remote_pending_external_head[front_index][class_id] =
+      ticket->next;
+  ticket->state = HZ6_REMOTE_PENDING_SLOT_CLAIMED;
+  hz6_remote_pending_external_unlock(allocator);
+
+  Hz6ObjectDescriptor* descriptor = proof.descriptor;
+  int valid = descriptor && proof.ptr &&
+              proof.front_id == front_id && proof.class_id == class_id &&
+              descriptor->ptr == proof.ptr &&
+              descriptor->generation == proof.generation &&
+              descriptor->bytes == proof.bytes &&
+              descriptor->class_id == class_id &&
+              descriptor->state == HZ6_STATE_REMOTE_PENDING;
+  if (!valid) {
+    ++allocator->stats.remote_pending_external_ticket_state_mismatch;
+  }
+  if (valid && !hz6_owner_is_alive(&allocator->owner, proof.owner_token)) {
+    ++allocator->stats.remote_pending_external_ticket_owner_mismatch;
+    valid = 0;
+  }
+  if (valid && !hz6_allocator_descriptor_owner_equal_at(
+                   allocator, descriptor, proof.owner_token,
+                   HZ6_OWNER_EQUAL_SITE_REMOTE_PENDING)) {
+    ++allocator->stats.remote_pending_external_ticket_owner_mismatch;
+    valid = 0;
+  }
+#if HZ6_DESCRIPTOR_STORAGE_OWNER16_L1 || HZ6_DIAGNOSTIC_PROBES || \
+    HZ6_OWNER_SOURCE_SIDE_META_DRYRUN || HZ6_OWNER_SOURCE_SIDE_META_L2
+  if (valid) {
+    Hz6Allocator* storage =
+        hz6_allocator_descriptor_storage_owner(allocator, descriptor, NULL);
+    if (!storage ||
+        !hz6_owner_equal(storage->owner.token,
+                         proof.descriptor_storage_owner_token)) {
+      ++allocator->stats.remote_pending_external_ticket_storage_mismatch;
+      valid = 0;
+    }
+  }
+#else
+  if (valid) {
+    ++allocator->stats.remote_pending_external_ticket_storage_mismatch;
+    valid = 0;
+  }
+#endif
+  if (valid) {
+    Hz6RouteResult route =
+        hz6_allocator_route_lookup_exact(allocator, proof.ptr);
+    if (route.kind != HZ6_ROUTE_VALID || route.descriptor != descriptor ||
+        route.generation != proof.generation || route.front_id != front_id ||
+        route.class_id != class_id || route.route_allocator != allocator) {
+      ++allocator->stats.remote_pending_external_ticket_route_mismatch;
+      valid = 0;
+    }
+  }
+
+  hz6_remote_pending_external_lock(allocator);
+  ticket = &allocator->remote_pending_external_tickets[ticket_index];
+  if (!valid) {
+    memset(ticket, 0, sizeof(*ticket));
+    ticket->next = allocator->remote_pending_external_free_head;
+    allocator->remote_pending_external_free_head = ticket_index;
+    hz6_remote_pending_external_unlock(allocator);
+    return 0;
+  }
+
+  Hz6FrontCacheEntry front_entry = {0};
+  front_entry.ptr = proof.ptr;
+  front_entry.descriptor = descriptor;
+#if HZ6_DESCRIPTORLESS_FRONTCACHE_L1
+  front_entry.source_block = descriptor->source_block;
+#endif
+  front_entry.generation = proof.generation;
+  hz6_frontcache_entry_set_bytes(&front_entry, descriptor->bytes);
+  hz6_frontcache_entry_set_class_id(&front_entry, class_id);
+  if (!hz6_allocator_frontcache_push(allocator, class_id, front_entry)) {
+    ticket->state = HZ6_REMOTE_PENDING_SLOT_QUEUED;
+    ticket->next =
+        allocator->remote_pending_external_head[front_index][class_id];
+    allocator->remote_pending_external_head[front_index][class_id] =
+        ticket_index;
+    hz6_remote_pending_external_unlock(allocator);
+    return 0;
+  }
+  descriptor->state = HZ6_STATE_LOCAL_FREE;
+  memset(ticket, 0, sizeof(*ticket));
+  ticket->next = allocator->remote_pending_external_free_head;
+  allocator->remote_pending_external_free_head = ticket_index;
+  ++allocator->stats.remote_pending_external_ticket_consume;
+  hz6_remote_pending_external_unlock(allocator);
+  return 1;
+#else
+  (void)allocator;
+  (void)front_id;
+  (void)class_id;
+  return 0;
+#endif
+}
+
 size_t hz6_allocator_remote_pending_maintenance_class(
     Hz6Allocator* allocator,
     uint16_t front_id,

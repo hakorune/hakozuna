@@ -236,6 +236,11 @@ int hz6_allocator_remote_pending_external_ticket_publish(
     uint16_t front_id,
     uint16_t class_id);
 
+int hz6_allocator_remote_pending_external_ticket_consume_one(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id);
+
 size_t hz6_allocator_remote_pending_maintenance_class(
     Hz6Allocator* allocator,
     uint16_t front_id,
