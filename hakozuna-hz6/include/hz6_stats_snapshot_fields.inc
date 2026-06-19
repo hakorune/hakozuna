@@ -208,8 +208,17 @@
   size_t origin_transfer_prefill_commit_transfer_count_max;
   size_t origin_transfer_pop_loop_attempt;
   size_t origin_transfer_pop_loop_empty;
+  size_t origin_transfer_pop_empty_with_any_transfer;
+  size_t origin_transfer_pop_empty_transfer_count_total;
+  size_t origin_transfer_pop_empty_transfer_count_max;
   size_t origin_transfer_pop_loop_invalid;
   size_t origin_transfer_pop_loop_hit;
+  size_t origin_transfer_full_transfer_count_max;
+  size_t origin_transfer_full_same_class_zero;
+  size_t origin_transfer_full_same_class_lt_quarter;
+  size_t origin_transfer_full_same_class_lt_half;
+  size_t origin_transfer_full_same_class_lt_3quarter;
+  size_t origin_transfer_full_same_class_ge_3quarter;
   size_t transfer_reuse_rehome_attempt;
   size_t transfer_reuse_rehome_success;
   size_t transfer_reuse_rehome_fail;

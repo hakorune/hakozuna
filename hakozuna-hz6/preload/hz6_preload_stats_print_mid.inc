@@ -253,8 +253,17 @@
           "origin_transfer_prefill_commit_transfer_count_max=%zu "
           "origin_transfer_pop_loop_attempt=%zu "
           "origin_transfer_pop_loop_empty=%zu "
+          "origin_transfer_pop_empty_with_any_transfer=%zu "
+          "origin_transfer_pop_empty_transfer_count_total=%zu "
+          "origin_transfer_pop_empty_transfer_count_max=%zu "
           "origin_transfer_pop_loop_invalid=%zu "
           "origin_transfer_pop_loop_hit=%zu "
+          "origin_transfer_full_transfer_count_max=%zu "
+          "origin_transfer_full_same_class_zero=%zu "
+          "origin_transfer_full_same_class_lt_quarter=%zu "
+          "origin_transfer_full_same_class_lt_half=%zu "
+          "origin_transfer_full_same_class_lt_3quarter=%zu "
+          "origin_transfer_full_same_class_ge_3quarter=%zu "
           "remote_free_backpressure_origin_drain_attempt=%zu "
           "remote_free_backpressure_origin_drain_success=%zu "
           "remote_free_backpressure_origin_drain_retry_success=%zu "
@@ -487,8 +496,17 @@
           origin_transfer_prefill_commit_transfer_count_max,
           origin_transfer_pop_loop_attempt,
           origin_transfer_pop_loop_empty,
+          origin_transfer_pop_empty_with_any_transfer,
+          origin_transfer_pop_empty_transfer_count_total,
+          origin_transfer_pop_empty_transfer_count_max,
           origin_transfer_pop_loop_invalid,
           origin_transfer_pop_loop_hit,
+          origin_transfer_full_transfer_count_max,
+          origin_transfer_full_same_class_zero,
+          origin_transfer_full_same_class_lt_quarter,
+          origin_transfer_full_same_class_lt_half,
+          origin_transfer_full_same_class_lt_3quarter,
+          origin_transfer_full_same_class_ge_3quarter,
           remote_free_backpressure_origin_drain_attempt,
           remote_free_backpressure_origin_drain_success,
           remote_free_backpressure_origin_drain_retry_success,

@@ -198,8 +198,17 @@
   size_t origin_transfer_prefill_commit_transfer_count_max = 0;
   size_t origin_transfer_pop_loop_attempt = 0;
   size_t origin_transfer_pop_loop_empty = 0;
+  size_t origin_transfer_pop_empty_with_any_transfer = 0;
+  size_t origin_transfer_pop_empty_transfer_count_total = 0;
+  size_t origin_transfer_pop_empty_transfer_count_max = 0;
   size_t origin_transfer_pop_loop_invalid = 0;
   size_t origin_transfer_pop_loop_hit = 0;
+  size_t origin_transfer_full_transfer_count_max = 0;
+  size_t origin_transfer_full_same_class_zero = 0;
+  size_t origin_transfer_full_same_class_lt_quarter = 0;
+  size_t origin_transfer_full_same_class_lt_half = 0;
+  size_t origin_transfer_full_same_class_lt_3quarter = 0;
+  size_t origin_transfer_full_same_class_ge_3quarter = 0;
   size_t remote_free_backpressure_origin_drain_attempt = 0;
   size_t remote_free_backpressure_origin_drain_success = 0;
   size_t remote_free_backpressure_origin_drain_retry_success = 0;

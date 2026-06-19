@@ -3740,6 +3740,60 @@ Decision: `GO(tooling)/DESIGN checkpoint`.  Keep this audit as evidence before
 adding behavior.  Do not reintroduce owner-inbox, remote-thread drain, overflow,
 or larger transfer capacity from this result alone.
 
+## 2026-06-20 OriginTransferFullTailAttributionV2-L1
+
+Extended the previous audit with two more diagnostic-only views:
+
+```text
+origin_transfer_pop_empty_with_any_transfer
+origin_transfer_pop_empty_transfer_count_total/max
+origin_transfer_full_transfer_count_max
+origin_transfer_full_same_class_zero
+origin_transfer_full_same_class_lt_quarter
+origin_transfer_full_same_class_lt_half
+origin_transfer_full_same_class_lt_3quarter
+origin_transfer_full_same_class_ge_3quarter
+```
+
+Diagnostic smoke:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 1 \
+  --rows remote50,remote90_short \
+  --variants p0_off
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_080252
+```
+
+Observed diagnostic counters:
+
+```text
+row             pop_empty  empty_with_any  empty_any_total  empty_any_max
+remote50             1070             894            13662            199
+remote90_short      28670           28309          4133897            255
+
+row             full_max  same_zero  same_lt_25  same_lt_50  same_lt_75  same_ge_75
+remote50             256         63        6041        1064       15793        6208
+remote90_short       256          0           9           7           0           0
+```
+
+The `remote90_short` empty-pop shape is mostly cross-class inventory: transfer
+reuse for the requested class misses while the owner allocator still has many
+transfer objects in other classes.  The `remote50` origin-full shape is not a
+single same-class saturation case; full events are spread across zero, low,
+mid, and high same-class occupancy.
+
+Decision: `GO(tooling)/DESIGN checkpoint`.  The next behavior should model
+class mismatch and producer/consumer phase timing explicitly.  This result does
+not justify broad capacity increase, remote-thread drain, owner-inbox
+reintroduction, or generic overflow.
+
 ## 2026-06-20 Profile Frontier Alias Smoke
 
 The new profile aliases were exercised through the existing focused profile

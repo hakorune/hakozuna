@@ -284,8 +284,17 @@ counter_keys=(
   origin_transfer_prefill_commit_transfer_count_max
   origin_transfer_pop_loop_attempt
   origin_transfer_pop_loop_empty
+  origin_transfer_pop_empty_with_any_transfer
+  origin_transfer_pop_empty_transfer_count_total
+  origin_transfer_pop_empty_transfer_count_max
   origin_transfer_pop_loop_invalid
   origin_transfer_pop_loop_hit
+  origin_transfer_full_transfer_count_max
+  origin_transfer_full_same_class_zero
+  origin_transfer_full_same_class_lt_quarter
+  origin_transfer_full_same_class_lt_half
+  origin_transfer_full_same_class_lt_3quarter
+  origin_transfer_full_same_class_ge_3quarter
   remote_pending_direct_gate_load
   remote_pending_direct_gate_hit
   remote_pending_direct_claim_attempt

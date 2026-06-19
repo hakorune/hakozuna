@@ -409,9 +409,33 @@
     origin_transfer_pop_loop_attempt +=
         stats.origin_transfer_pop_loop_attempt;
     origin_transfer_pop_loop_empty += stats.origin_transfer_pop_loop_empty;
+    origin_transfer_pop_empty_with_any_transfer +=
+        stats.origin_transfer_pop_empty_with_any_transfer;
+    origin_transfer_pop_empty_transfer_count_total +=
+        stats.origin_transfer_pop_empty_transfer_count_total;
+    if (stats.origin_transfer_pop_empty_transfer_count_max >
+        origin_transfer_pop_empty_transfer_count_max) {
+      origin_transfer_pop_empty_transfer_count_max =
+          stats.origin_transfer_pop_empty_transfer_count_max;
+    }
     origin_transfer_pop_loop_invalid +=
         stats.origin_transfer_pop_loop_invalid;
     origin_transfer_pop_loop_hit += stats.origin_transfer_pop_loop_hit;
+    if (stats.origin_transfer_full_transfer_count_max >
+        origin_transfer_full_transfer_count_max) {
+      origin_transfer_full_transfer_count_max =
+          stats.origin_transfer_full_transfer_count_max;
+    }
+    origin_transfer_full_same_class_zero +=
+        stats.origin_transfer_full_same_class_zero;
+    origin_transfer_full_same_class_lt_quarter +=
+        stats.origin_transfer_full_same_class_lt_quarter;
+    origin_transfer_full_same_class_lt_half +=
+        stats.origin_transfer_full_same_class_lt_half;
+    origin_transfer_full_same_class_lt_3quarter +=
+        stats.origin_transfer_full_same_class_lt_3quarter;
+    origin_transfer_full_same_class_ge_3quarter +=
+        stats.origin_transfer_full_same_class_ge_3quarter;
     remote_free_backpressure_origin_drain_attempt +=
         stats.remote_free_backpressure_origin_drain_attempt;
     remote_free_backpressure_origin_drain_success +=

@@ -359,6 +359,11 @@ void hz6_allocator_origin_transfer_audit_note_pop_attempt(
 void hz6_allocator_origin_transfer_audit_note_pop_empty(
     Hz6Allocator* allocator);
 
+void hz6_allocator_origin_transfer_audit_note_origin_full(
+    Hz6Allocator* allocator,
+    const Hz6Allocator* origin,
+    uint16_t class_id);
+
 void hz6_allocator_origin_transfer_audit_note_pop_invalid(
     Hz6Allocator* allocator);
 
