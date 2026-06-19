@@ -264,6 +264,12 @@ with `free_route_real_free_unproven=0`,
 `free_resolve_result_unresolved_integrity=0`, and
 `route_compact_remote_path_attempt=0`.
 
+Phase 3 remote median runner, 2026-06-19:
+`linux/run_hz6_preload_remote_median.sh` builds the selected preload and runs
+remote MT rows with `RUNS=10` by default, reporting median `ops/s` as a TSV.
+It fails on fallback or overflow.  `RUNS=1` smoke completed for `remote50
+16..32768`; use the default repeat count for publishable A/B evidence.
+
 Phase 3 route-domain observation status, 2026-06-19: diagnostic stats now
 include `route_lock_read_contended`, `route_lock_write_contended`, and
 `route_lock_max_wait`.  These counters are scoped to `HZ6_DIAGNOSTIC_PROBES`
