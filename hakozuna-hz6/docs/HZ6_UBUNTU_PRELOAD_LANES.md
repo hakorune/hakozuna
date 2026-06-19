@@ -258,6 +258,15 @@ opt-in fallback setting.  It removes surplus staging
 (`pending_maintenance_batch_surplus=0`) and RUNS=10 improved remote90 versus
 selected in this sample (`10.81M` vs `10.20M`), but selected remote50 was still
 stronger (`15.03M` vs `14.44M`).  Keep DirectReuse opt-in for now.
+`PreloadPhaseReuseTarget-L1` adds a dedicated LD_PRELOAD phase-shift harness
+where the main thread allocates/reallocates and foreign worker threads free.
+RUNS=3 at `threads=4 count=2048 size=128` showed the intended DirectReuse
+shape works: selected median was `664078 ops/s` with `reuse_hits=256`, while
+DirectReuse reached `694969 ops/s` with `reuse_hits=1024`; stats confirmed
+`remote_pending_direct_claim_success=1024`,
+`remote_pending_direct_integrity_failure=0`, and
+`remote_pending_batch_items=0`.  This is `GO(tooling/evidence)`, not a default
+promotion, because random remote RUNS=10 still favored selected on remote50.
 `RemoteFreeBackpressureOriginTransferReasonObserve-L1` splits the remaining
 origin-transfer misses without changing behavior.  The selected smoke showed
 `remote_free_backpressure_origin_transfer_stride_skip=16295`,
