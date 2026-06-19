@@ -2483,7 +2483,9 @@ remote90
 It also supports `--diagnostic`, which builds with
 `HZ6_DIAGNOSTIC_PROBES=1` and passes `HZ6_PRELOAD_STATS=1` so the existing
 backpressure counters can be read from the logs.  Diagnostic results are for
-counter attribution, not performance selection.
+counter attribution, not performance selection.  The runner writes both
+`summary.tsv` and a focused `counters.tsv` for the remote-free backpressure
+and origin-transfer saturation counters.
 
 Production RUNS=3 for cap256 vs cap512:
 

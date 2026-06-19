@@ -171,4 +171,52 @@ for key in sorted(rows):
     print(f"{key[0]}\t{key[1]}\t{statistics.median(ops):.2f}\t{statistics.median(peak) / 1024.0:.2f}\t{len(ops)}")
 PY
 
+python3 - "$OUTDIR/runs.tsv" <<'PY' > "${OUTDIR}/counters.tsv"
+import csv
+import re
+import sys
+
+counters = [
+    "remote_free_foreign_candidate",
+    "remote_free_status_backpressure",
+    "remote_free_returned_backpressure",
+    "transfer_reserve_attempt",
+    "transfer_reserve_success",
+    "transfer_reserve_full",
+    "transfer_reserve_full_transfer_count_total",
+    "transfer_reserve_full_class_count_total",
+    "transfer_reserve_full_class_count_max",
+    "remote_free_backpressure_origin_transfer_success",
+    "remote_free_backpressure_origin_transfer_full",
+    "remote_free_backpressure_origin_full_transfer_count_total",
+    "remote_free_backpressure_origin_full_class_count_total",
+    "remote_free_backpressure_origin_full_class_count_max",
+    "route_rehome_commit_success",
+]
+patterns = {
+    name: re.compile(rf"(?:^| ){re.escape(name)}=([0-9]+)(?: |$)")
+    for name in counters
+}
+
+print("\t".join(["capacity", "row", "run"] + counters))
+with open(sys.argv[1], newline="") as f:
+    reader = csv.DictReader(f, delimiter="\t")
+    for row in reader:
+        values = {name: "NA" for name in counters}
+        try:
+            text = open(row["log"], encoding="utf-8", errors="replace").read()
+        except OSError:
+            text = ""
+        for name, pattern in patterns.items():
+            matches = pattern.findall(text)
+            if matches:
+                values[name] = matches[-1]
+        print("\t".join([
+            row["capacity"],
+            row["row"],
+            row["run"],
+            *[values[name] for name in counters],
+        ]))
+PY
+
 echo "[DONE] ${OUTDIR}"
