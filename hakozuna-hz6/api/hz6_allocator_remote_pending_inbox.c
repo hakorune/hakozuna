@@ -98,6 +98,35 @@ static void hz6_remote_pending_external_unlock(Hz6Allocator* allocator) {
   atomic_flag_clear_explicit(&allocator->remote_pending_external_lock,
                              memory_order_release);
 }
+
+static int hz6_remote_pending_external_key_nonempty(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id) {
+  if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
+    return 0;
+  }
+  uint16_t front_index = 0;
+  if (!hz6_remote_pending_front_ordinal(front_id, &front_index)) {
+    return 0;
+  }
+  hz6_remote_pending_external_lock(allocator);
+  uint32_t head =
+      allocator->remote_pending_external_head[front_index][class_id];
+  hz6_remote_pending_external_unlock(allocator);
+  return head != HZ6_REMOTE_PENDING_INDEX_NONE &&
+         head < HZ6_REMOTE_PENDING_EXTERNAL_TICKET_CAPACITY;
+}
+#else
+static int hz6_remote_pending_external_key_nonempty(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id) {
+  (void)allocator;
+  (void)front_id;
+  (void)class_id;
+  return 0;
+}
 #endif
 
 static int hz6_remote_pending_descriptor_index(
@@ -873,13 +902,17 @@ size_t hz6_allocator_remote_pending_maintenance_class(
     size_t budget) {
 #if HZ6_REMOTE_PENDING_INBOX_CORE_L1
   if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT || budget == 0 ||
-      !hz6_allocator_remote_pending_key_maybe_nonempty_raw(
-          allocator, front_id, class_id)) {
+      (!hz6_allocator_remote_pending_key_maybe_nonempty_raw(
+           allocator, front_id, class_id) &&
+       !hz6_remote_pending_external_key_nonempty(allocator, front_id,
+                                                 class_id))) {
     return 0;
   }
   ++allocator->stats.remote_pending_maintenance_check;
   if (atomic_load_explicit(&allocator->remote_pending_current,
-                           memory_order_relaxed) == 0) {
+                           memory_order_relaxed) == 0 &&
+      !hz6_remote_pending_external_key_nonempty(allocator, front_id,
+                                                class_id)) {
     return 0;
   }
   ++allocator->stats.remote_pending_maintenance_armed;
@@ -890,6 +923,11 @@ size_t hz6_allocator_remote_pending_maintenance_class(
         hz6_allocator_frontcache_capacity(allocator, class_id)) {
       ++allocator->stats.remote_pending_frontcache_full;
       break;
+    }
+    if (hz6_allocator_remote_pending_external_ticket_consume_one(
+            allocator, front_id, class_id)) {
+      ++drained;
+      continue;
     }
     Hz6RemotePendingInboxEntry entry = {0};
     if (!hz6_remote_pending_pop_key(allocator, front_id, class_id, &entry)) {

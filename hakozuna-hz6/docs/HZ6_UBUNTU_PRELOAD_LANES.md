@@ -358,6 +358,11 @@ validates immutable proof, owner, storage owner, and exact route, then moves the
 object to owner-local frontcache as `LOCAL_FREE`.  The smoke still has all
 ticket counters at zero because producer and consumer are not wired into
 malloc/free yet.
+`ExternalDescriptorOwnerInboxTicketMaintenance-L1` wires that consumer into
+owner-local pending maintenance.  Maintenance now arms on either inline pending
+or an external ticket exact-key head, and tries external-ticket consume before
+the inline descriptor-index pop.  The producer is still disconnected, so smoke
+keeps ticket counters at zero.
 `RemoteFreeBackpressureOriginDrain-L1` tried that full path directly as an
 opt-in no-go.  It drains one same-class transfer object from the origin transfer
 cache into the origin frontcache and retries origin commit once.  Safety smoke

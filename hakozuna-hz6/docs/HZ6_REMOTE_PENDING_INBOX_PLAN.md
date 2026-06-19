@@ -870,3 +870,29 @@ exist, but the runtime is still intentionally disconnected.  The next behavior
 box can connect the storage-ineligible owner-inbox branch, then arm owner-local
 maintenance to call `consume_one()` before treating ticket publish as a
 committed free.
+
+## 2026-06-20 External Ticket Maintenance Hook
+
+`ExternalDescriptorOwnerInboxTicketMaintenance-L1` wires the external-ticket
+consumer into owner-local pending maintenance, but still leaves the producer
+disconnected.  `hz6_allocator_remote_pending_maintenance_class()` now arms when
+either the inline descriptor-index inbox or the external ticket exact-key head
+is nonempty, and it tries one external-ticket consume before the inline pop.
+
+Build/smoke checks:
+
+```text
+selected preload build: ok
+external-ticket maintenance preload build: ok
+selected-shape benchmark build with external ticket flag: ok
+external-ticket maintenance smoke: integrity ok
+remote_pending_external_ticket_attempt=0
+remote_pending_external_ticket_success=0
+remote_pending_external_ticket_consume=0
+route/owner/state/storage mismatch counters=0
+remote_free_returned_uncommitted=0
+```
+
+Decision: `GO(consumer)/HOLD(producer)`.  Owner-local maintenance can now drain
+external tickets once producer publish is connected.  The next box may connect
+only the storage-ineligible owner-inbox branch to ticket publish.
