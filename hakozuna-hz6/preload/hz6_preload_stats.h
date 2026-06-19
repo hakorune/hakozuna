@@ -56,6 +56,9 @@ typedef struct Hz6PreloadPhaseStats {
   _Atomic(size_t) free_route_valid_foreign_visible;
   _Atomic(size_t) free_route_invalid;
   _Atomic(size_t) free_route_miss_real;
+  _Atomic(size_t) free_route_retry_abort;
+  _Atomic(size_t) free_route_integrity_abort;
+  _Atomic(size_t) free_route_real_free_unproven;
   _Atomic(size_t) free_prechecked_candidate;
   _Atomic(size_t) free_midpage_hint_probe;
   _Atomic(size_t) free_midpage_hint_would_first;

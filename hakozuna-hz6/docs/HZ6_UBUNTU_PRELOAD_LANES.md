@@ -248,6 +248,13 @@ snapshot `RETRY` is re-read inside the resolver before surfacing
 the shared lookup helper, so resolver callers still see the same six-result
 contract.
 
+Phase 3 platform boundary status, 2026-06-19: preload hook stats now expose
+`free_route_retry_abort`, `free_route_integrity_abort`, and
+`free_route_real_free_unproven`.  These counters verify that `RETRY` and
+`UNRESOLVED_INTEGRITY` fail fast instead of reaching real `free()`, and that
+real-free fallback remains limited to `PROVEN_EXTERNAL`.  Focused stats smoke
+kept all three at zero.
+
 Phase 3 route-domain observation status, 2026-06-19: diagnostic stats now
 include `route_lock_read_contended`, `route_lock_write_contended`, and
 `route_lock_max_wait`.  These counters are scoped to `HZ6_DIAGNOSTIC_PROBES`

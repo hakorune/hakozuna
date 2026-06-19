@@ -293,8 +293,14 @@ static int hz6_preload_route_real_fallback_allowed(Hz6PreloadRoute route) {
 }
 
 static void hz6_preload_route_fail_fast_if_integrity(Hz6PreloadRoute route) {
-  if (route.resolve_kind == HZ6_FREE_ROUTE_UNRESOLVED_INTEGRITY ||
-      route.resolve_kind == HZ6_FREE_ROUTE_RETRY) {
+  if (route.resolve_kind == HZ6_FREE_ROUTE_RETRY) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_route_retry_abort);
+    abort();
+  }
+  if (route.resolve_kind == HZ6_FREE_ROUTE_UNRESOLVED_INTEGRITY) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_route_integrity_abort);
     abort();
   }
 }

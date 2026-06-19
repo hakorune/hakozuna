@@ -482,6 +482,8 @@ void free(void* ptr) {
   } else {
     hz6_preload_route_fail_fast_if_integrity(preload_route);
     if (!hz6_preload_route_real_fallback_allowed(preload_route)) {
+      hz6_preload_phase_count(
+          &g_hz6_preload_phase_stats.free_route_real_free_unproven);
       g_hz6_preload_reentry = 0;
       return;
     }
