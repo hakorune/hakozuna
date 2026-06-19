@@ -1315,3 +1315,46 @@ remote90=3502421.04
 Decision: `NO-GO`.  The extra drain reduces backlog signals but badly hurts
 remote90.  The implementation was reverted.  Do not solve the inline pending
 backlog by staging more frontcache work after a successful allocation.
+
+## 2026-06-20 DirectReuse + Maintenance + External Recheck
+
+After external tickets, budget1 maintenance, and the staging no-go boxes,
+`RemotePendingDirectReuse-L1` was rechecked in its safer form: direct exact-key
+claim before owner-local maintenance, with maintenance still enabled as
+fallback and external tickets enabled.
+
+Same-code RUNS=10:
+
+```text
+owner-inbox + external baseline:
+  remote50=14088862.64
+  remote90=10786968.07
+
+direct reuse + maintenance + external:
+  remote50=14101262.47
+  remote90=11136207.62
+```
+
+Diagnostic smoke:
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+remote_pending_direct_claim_success=4789
+remote_pending_direct_claim_busy=18
+remote_pending_direct_integrity_failure=0
+remote_pending_maintenance_check=376
+remote_pending_batch_items=376
+remote_pending_frontcache_push=14
+source_block_commit_with_matching_pending=120
+source_block_commit_with_inline_pending=112
+source_block_commit_with_external_pending=23
+remote_pending_external_ticket_current=2566
+```
+
+Decision: `GO(candidate)/HOLD(default)`.  This is the first current R10 sample
+where the direct pending pool shape improves high-remote without hurting
+remote50 versus the owner-inbox+external baseline.  It still needs selected/off
+comparison and cross-platform checks before default promotion, but the next
+optimization line should be this direct-pool candidate, not additional
+frontcache staging.

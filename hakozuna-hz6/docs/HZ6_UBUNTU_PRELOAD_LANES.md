@@ -1699,3 +1699,32 @@ remote90=3502421.04
 
 Decision: `NO-GO`; code reverted.  More frontcache staging after a hit is too
 expensive for high-remote rows.
+
+## 2026-06-20 DirectReuse + Maintenance + External Recheck
+
+Rechecked the existing `RemotePendingDirectReuse-L1` shape with owner-local
+maintenance and external tickets still enabled.
+
+RUNS=10:
+
+```text
+owner-inbox + external baseline:        remote50=14088862.64 remote90=10786968.07
+direct reuse + maintenance + external:  remote50=14101262.47 remote90=11136207.62
+```
+
+Smoke gates stayed clean:
+
+```text
+remote_pending_direct_claim_success=4789
+remote_pending_direct_claim_busy=18
+remote_pending_direct_integrity_failure=0
+remote_pending_batch_items=376
+remote_pending_frontcache_push=14
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+```
+
+Decision: `GO(candidate)/HOLD(default)`.  Direct pending-pool reuse is back as
+the main candidate because it improves remote90 without meaningful remote50
+loss against the owner-inbox+external baseline.  Default promotion still waits
+on selected/off comparison and cross-platform evidence.
