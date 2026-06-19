@@ -366,6 +366,11 @@ phase-reuse:
 The mode is available through `hz6_allocator_bench phase-reuse ...` and the
 Linux runner exposes `--phase-reuse-iters`, `--phase-reuse-sizes`, and
 `--phase-reuse-profiles`.
+`build_hz6_benchmark.sh` can also opt into the preload selected compile shape
+with `HZ6_BENCHMARK_USE_SELECTED_FLAGS=1`; `HZ6_EXTRA_CFLAGS` remains additive
+for owner-inbox and diagnostic variants.  Use that selected-shape build for
+targeted phase-reuse runs.  The older `remote` and `reuse` benchmark modes are
+not promotion gates under the selected preload flag bundle.
 
 Default smoke:
 
@@ -381,3 +386,27 @@ no owner pending publish occurs.  The harness is intended for owner-inbox flag
 bundles and capacity/stress settings where transfer backpressure is forced.
 It lets DirectReuse promotion be checked against the exact phase-shift shape
 instead of inferring demand from random remote rows.
+
+Selected + owner-inbox diagnostic run:
+
+```text
+HZ6_BENCHMARK_USE_SELECTED_FLAGS=1
+HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1=1
+HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1=1
+HZ6_REMOTE_PENDING_DIRECT_REUSE_L1=1
+phase-reuse speed iters=512 size=128
+reuse_hits=256
+foreign origin_pending_commit=256
+origin enqueue_success=256
+origin maintenance_check=256
+origin batch_items=256
+origin direct_gate_load=0
+origin direct_claim_success=0
+```
+
+Interpretation: this harness currently exercises the generic allocator path,
+so preload-only DirectReuse is not reached.  It still proves the phase-shift
+owner-inbox demand: 256 backpressured foreign frees publish to the origin, and
+the origin immediately consumes all 256 through owner-local maintenance.
+Extending direct pending reuse into generic `hz6_malloc()` is a behavior
+decision, not a tooling fix.

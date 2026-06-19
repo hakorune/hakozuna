@@ -399,6 +399,59 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.owner_equal_site_owner_dead,
          stats.owner_equal_site_same_owner_fast,
          stats.owner_equal_site_unknown);
+  printf("[HZ6_REMOTE_PENDING] "
+         "returned_backpressure=%zu returned_uncommitted=%zu "
+         "foreign_candidate=%zu origin_pending_commit=%zu "
+         "pending_no_rehome=%zu pending_publish_fail=%zu "
+         "enqueue_attempt=%zu enqueue_success=%zu enqueue_full=%zu "
+         "duplicate_claim=%zu owner_dead=%zu current=%zu queued=%zu "
+         "claimed=%zu total=%zu high_water=%zu "
+         "maintenance_check=%zu maintenance_armed=%zu batch_call=%zu "
+         "batch_items=%zu frontcache_push=%zu frontcache_full=%zu "
+         "key_load=%zu key_hit=%zu direct_gate_load=%zu "
+         "direct_gate_hit=%zu direct_claim_attempt=%zu "
+         "direct_claim_success=%zu direct_claim_busy=%zu "
+         "direct_empty_after_hint=%zu direct_activate_success=%zu "
+         "direct_integrity_failure=%zu same_key_before=%zu "
+         "same_key_after=%zu maintenance_immediate_reuse=%zu "
+         "maintenance_batch_surplus=%zu source_block_commit_match=%zu\n",
+         stats.remote_free_returned_backpressure,
+         stats.remote_free_returned_uncommitted,
+         stats.remote_free_foreign_candidate,
+         stats.remote_free_origin_pending_commit,
+         stats.remote_free_pending_no_rehome,
+         stats.remote_free_pending_publish_fail,
+         stats.remote_pending_enqueue_attempt,
+         stats.remote_pending_enqueue_success,
+         stats.remote_pending_enqueue_full,
+         stats.remote_pending_duplicate_claim,
+         stats.remote_pending_owner_dead,
+         stats.remote_pending_current,
+         stats.remote_pending_queued_current,
+         stats.remote_pending_claimed_current,
+         stats.remote_pending_total_current,
+         stats.remote_pending_high_water,
+         stats.remote_pending_maintenance_check,
+         stats.remote_pending_maintenance_armed,
+         stats.remote_pending_batch_call,
+         stats.remote_pending_batch_items,
+         stats.remote_pending_frontcache_push,
+         stats.remote_pending_frontcache_full,
+         stats.remote_pending_key_nonempty_load,
+         stats.remote_pending_key_nonempty_hit,
+         stats.remote_pending_direct_gate_load,
+         stats.remote_pending_direct_gate_hit,
+         stats.remote_pending_direct_claim_attempt,
+         stats.remote_pending_direct_claim_success,
+         stats.remote_pending_direct_claim_busy,
+         stats.remote_pending_direct_claim_empty_after_hint,
+         stats.remote_pending_direct_activate_success,
+         stats.remote_pending_direct_integrity_failure,
+         stats.pending_same_key_before_maintenance,
+         stats.pending_same_key_after_maintenance,
+         stats.pending_maintenance_immediate_reuse_success,
+         stats.pending_maintenance_batch_surplus,
+         stats.source_block_commit_with_matching_pending);
   printf("[HZ6_TOY_SMALL] "
          "malloc_fast_attempt=%zu malloc_fast_hit=%zu "
          "malloc_front_dispatch=%zu malloc_frontcache_pop=%zu "

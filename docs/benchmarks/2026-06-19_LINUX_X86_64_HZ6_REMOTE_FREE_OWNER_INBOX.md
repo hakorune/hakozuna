@@ -339,3 +339,27 @@ Decision: `GO(tooling)`.  The small smoke intentionally stays below transfer
 capacity, so it records the baseline transfer-cache outcome rather than a
 pending hit.  Use this mode with the owner-inbox flag bundle and pressure
 settings when evaluating DirectReuse or any replacement consumer policy.
+
+Selected-shape diagnostic run:
+
+```text
+HZ6_BENCHMARK_USE_SELECTED_FLAGS=1
+HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1=1
+HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1=1
+HZ6_REMOTE_PENDING_DIRECT_REUSE_L1=1
+phase-reuse speed 512 128
+
+reuse_hits=256
+foreign remote_free_foreign_candidate=512
+foreign remote_free_origin_pending_commit=256
+origin remote_pending_enqueue_success=256
+origin remote_pending_maintenance_check=256
+origin remote_pending_batch_items=256
+origin pending_maintenance_immediate_reuse_success=256
+origin remote_pending_direct_gate_load=0
+```
+
+This is a useful boundary result: the phase-shift workload proves same-key
+owner-inbox demand and owner-local maintenance consumption, but it does not
+exercise preload DirectReuse because the allocator benchmark calls generic
+`hz6_malloc()`.
