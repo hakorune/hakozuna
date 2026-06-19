@@ -42,6 +42,9 @@
   size_t remote_pending_owner_dead = 0;
   size_t remote_pending_publish_fail = 0;
   size_t remote_pending_current = 0;
+  size_t remote_pending_queued_current = 0;
+  size_t remote_pending_claimed_current = 0;
+  size_t remote_pending_total_current = 0;
   size_t remote_pending_high_water = 0;
   size_t remote_pending_maintenance_check = 0;
   size_t remote_pending_maintenance_armed = 0;

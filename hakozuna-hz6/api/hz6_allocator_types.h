@@ -367,9 +367,16 @@ typedef struct Hz6RouteLastHitCache {
 #if HZ6_REMOTE_PENDING_INBOX_CORE_L1
 typedef struct Hz6RemotePendingClassInbox {
   atomic_flag lock;
-  uint32_t head_index;
-  size_t count;
+  uint32_t head_index[HZ6_REMOTE_PENDING_FRONT_COUNT];
+  uint32_t key_count[HZ6_REMOTE_PENDING_FRONT_COUNT];
+  size_t total_count;
 } Hz6RemotePendingClassInbox;
+
+typedef enum Hz6RemotePendingSlotState {
+  HZ6_REMOTE_PENDING_SLOT_NONE = 0,
+  HZ6_REMOTE_PENDING_SLOT_QUEUED = 1,
+  HZ6_REMOTE_PENDING_SLOT_CLAIMED = 2
+} Hz6RemotePendingSlotState;
 #endif
 
 struct Hz6Allocator {
@@ -415,14 +422,17 @@ struct Hz6Allocator {
   Hz6RemotePendingClassInbox
       remote_pending_inbox[HZ6_FRONT_CACHE_CLASS_COUNT];
   uint32_t remote_pending_next[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
-  uint8_t remote_pending_enqueued[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
+  uint8_t remote_pending_slot_state[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
   void* remote_pending_published_ptr[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
   uint32_t remote_pending_published_generation[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
+  uint32_t remote_pending_published_bytes[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
   uint16_t remote_pending_published_front_id[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
   uint16_t remote_pending_published_class_id[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
   Hz6OwnerToken remote_pending_owner_token[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
-  uint32_t remote_pending_key_count[64];
   _Atomic size_t remote_pending_current;
+  _Atomic size_t remote_pending_queued_current;
+  _Atomic size_t remote_pending_claimed_current;
+  _Atomic size_t remote_pending_total_current;
   _Atomic uint64_t remote_pending_nonempty_mask;
 #endif
 #if HZ6_DESCRIPTOR_SIDE_OWNER16_L1 || HZ6_DESCRIPTOR_STORAGE_OWNER16_L1

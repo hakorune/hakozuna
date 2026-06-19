@@ -106,6 +106,9 @@
           "remote_pending_owner_dead=%zu "
           "remote_pending_publish_fail=%zu "
           "remote_pending_current=%zu "
+          "remote_pending_queued_current=%zu "
+          "remote_pending_claimed_current=%zu "
+          "remote_pending_total_current=%zu "
           "remote_pending_high_water=%zu "
           "remote_pending_maintenance_check=%zu "
           "remote_pending_maintenance_armed=%zu "
@@ -217,6 +220,9 @@
           remote_pending_owner_dead,
           remote_pending_publish_fail,
           remote_pending_current,
+          remote_pending_queued_current,
+          remote_pending_claimed_current,
+          remote_pending_total_current,
           remote_pending_high_water,
           remote_pending_maintenance_check,
           remote_pending_maintenance_armed,

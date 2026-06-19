@@ -82,6 +82,9 @@
     remote_pending_owner_dead += stats.remote_pending_owner_dead;
     remote_pending_publish_fail += stats.remote_pending_publish_fail;
     remote_pending_current += stats.remote_pending_current;
+    remote_pending_queued_current += stats.remote_pending_queued_current;
+    remote_pending_claimed_current += stats.remote_pending_claimed_current;
+    remote_pending_total_current += stats.remote_pending_total_current;
     size_t pending_high_water = stats.remote_pending_high_water;
     if (pending_high_water > remote_pending_high_water) {
       remote_pending_high_water = pending_high_water;

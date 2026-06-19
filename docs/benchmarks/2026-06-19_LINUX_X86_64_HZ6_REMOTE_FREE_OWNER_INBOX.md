@@ -116,3 +116,43 @@ remote90=10727161.65
 This says the large pending balance in this smoke is mostly exit inventory, not
 obvious same-key demand falling through to source allocation on the measured
 path.
+
+## Exact-Key Claim Core Follow-Up
+
+`RemotePendingExactKeyClaimCore-L1` keeps behavior disconnected, but prepares
+the direct-reuse boundary:
+
+- per-class lock remains unchanged
+- each class inbox now has per-front heads and counts
+- key mask/count updates happen under the class lock
+- slot state is now `NONE/QUEUED/CLAIMED`
+- immutable proof includes `bytes`
+- `hz6_allocator_remote_pending_try_reuse()` exists but is not called by any
+  allocation path yet
+
+Opt-in owner inbox + demand audit smoke:
+
+```text
+remote_pending_enqueue_success=32881
+remote_pending_current=29115
+remote_pending_queued_current=29115
+remote_pending_claimed_current=0
+remote_pending_total_current=29115
+remote_pending_frontcache_push=3766
+remote_pending_generation_mismatch=0
+remote_pending_owner_mismatch=0
+remote_pending_route_mismatch=0
+remote_pending_state_mismatch=0
+remote_free_pending_publish_fail=0
+remote_free_returned_uncommitted=0
+```
+
+Quick RUNS=3 on the same opt-in lane:
+
+```text
+remote50=12536762.73
+remote90=9837030.86
+```
+
+Decision: `GO(core)/HOLD(perf)`.  The exact-key structure is the right
+prerequisite for direct reuse, but this is not a selected performance box.

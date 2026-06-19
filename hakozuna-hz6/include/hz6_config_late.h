@@ -411,6 +411,17 @@
 #define HZ6_REMOTE_PENDING_INBOX_CLASS_CAPACITY HZ6_OBJECT_DESCRIPTOR_CAPACITY
 #endif
 
+#ifndef HZ6_REMOTE_PENDING_FRONT_COUNT
+#define HZ6_REMOTE_PENDING_FRONT_COUNT 4
+#endif
+
+#ifndef HZ6_REMOTE_PENDING_EXACT_KEY_CLAIM_CORE_L1
+/* Prerequisite core for direct reuse.  Keep one class lock, but split each
+ * class inbox by front so exact (front,class) claim can be O(1). */
+#define HZ6_REMOTE_PENDING_EXACT_KEY_CLAIM_CORE_L1 \
+  HZ6_REMOTE_PENDING_INBOX_CORE_L1
+#endif
+
 #ifndef HZ6_REMOTE_PENDING_DRAIN_BUDGET
 #define HZ6_REMOTE_PENDING_DRAIN_BUDGET ((size_t)4)
 #endif

@@ -176,3 +176,47 @@ the current demand points did not observe same-key demand falling through to
 source allocation.  Direct reuse should therefore use the nonempty mask as a
 cheap gate and should be judged by `source_alloc_with_matching_pending`, not by
 forcing `remote_pending_current` to zero.
+
+## 2026-06-20 Exact-Key Claim Core
+
+`RemotePendingExactKeyClaimCore-L1` is a prerequisite-only box.  It does not
+wire direct reuse into malloc yet.
+
+Changes:
+
+```text
+class lock count: unchanged
+class inbox heads: split by front
+slot state: NONE / QUEUED / CLAIMED
+key count/mask updates: class-lock protected
+published proof: ptr/generation/bytes/front/class/owner token
+raw mask helper: no stats writes
+public boundary: hz6_allocator_remote_pending_try_reuse()
+```
+
+The existing batch maintenance still drains by class, but now pops from the
+per-front sub-heads.  The new direct-reuse API validates immutable proof,
+owner token, exact route, requested size, and activates from
+`REMOTE_PENDING`; no caller is connected yet, so behavior remains unchanged.
+
+Opt-in smoke:
+
+```text
+remote_pending_current=29115
+remote_pending_queued_current=29115
+remote_pending_claimed_current=0
+remote_pending_total_current=29115
+remote_pending_frontcache_push=3766
+remote_pending_*_mismatch=0
+remote_free_pending_publish_fail=0
+```
+
+RUNS=3:
+
+```text
+remote50=12536762.73
+remote90=9837030.86
+```
+
+Decision: keep as `GO(core)/HOLD(perf)`.  The next box is
+`RemotePendingReuseDemandAuditV2-L1`, not direct-reuse selection.

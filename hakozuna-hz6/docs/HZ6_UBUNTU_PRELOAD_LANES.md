@@ -221,6 +221,15 @@ smoke showed `remote_pending_key_nonempty_load=6478`,
 `source_alloc_with_matching_pending=0`; RUNS=3 stayed strong at
 `remote50=14637714.57`, `remote90=10727161.65`.  Treat pending balance as
 inventory unless same-key demand counters prove missed reuse.
+`RemotePendingExactKeyClaimCore-L1` is the 2026-06-20 prerequisite for direct
+reuse.  It keeps one class lock, splits each pending class inbox by front,
+moves key count/mask updates under that lock, adds `NONE/QUEUED/CLAIMED` slot
+state plus `bytes` proof, and exposes an unconnected
+`hz6_allocator_remote_pending_try_reuse()` boundary.  Opt-in smoke kept
+`remote_pending_claimed_current=0` and all pending mismatch gates at zero;
+quick RUNS=3 measured `remote50=12536762.73`, `remote90=9837030.86`.  This is
+`GO(core)/HOLD(perf)`, and the next selected work should be AuditV2 before
+caller wiring.
 `RemoteFreeBackpressureOriginTransferReasonObserve-L1` splits the remaining
 origin-transfer misses without changing behavior.  The selected smoke showed
 `remote_free_backpressure_origin_transfer_stride_skip=16295`,

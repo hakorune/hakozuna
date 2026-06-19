@@ -43,6 +43,9 @@
   size_t remote_pending_owner_dead;
   size_t remote_pending_publish_fail;
   size_t remote_pending_current;
+  size_t remote_pending_queued_current;
+  size_t remote_pending_claimed_current;
+  size_t remote_pending_total_current;
   size_t remote_pending_high_water;
   size_t remote_pending_maintenance_check;
   size_t remote_pending_maintenance_armed;
