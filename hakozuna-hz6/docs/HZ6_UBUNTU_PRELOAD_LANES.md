@@ -2772,6 +2772,35 @@ Final decision for this box: `GO(tooling)/NO-GO(default)`.  Class sharding is
 not a selected/default win.  It slightly helps remote50 in this batch but costs
 local0 and does not improve remote90.
 
+## 2026-06-20 OwnerInboxMaintenanceSinkAudit-L1
+
+`OwnerInboxMaintenanceSinkAudit-L1` uses the existing owner-inbox tax variants
+to split producer-only cost from producer-plus-consumer behavior:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 10 \
+  --rows remote50,remote90 \
+  --variants p0_off,p1_external_no_maintenance,p1_external
+```
+
+Production RUNS=10:
+
+```text
+variant                     remote50         remote90
+p0_off                      14.65M/69.31MiB  10.91M/72.22MiB
+p1_external_no_maintenance  14.04M/74.75MiB   3.09M/95.19MiB
+p1_external                 13.72M/74.75MiB  10.64M/77.43MiB
+```
+
+Decision: `GO(evidence)/NO-GO(maintenance-off)`.  Disabling owner-local
+maintenance slightly improves p1 remote50 versus p1 with maintenance, but it
+collapses remote90 and increases peak RSS.  Owner-local maintenance is the
+high-remote sink that keeps pending buildup from becoming another remote90
+cliff, so the next p1 work should reduce per-item consumer cost or improve
+demand targeting without broadly skipping maintenance.
+
 ## 2026-06-20 Profile Frontier Alias Smoke
 
 The new profile aliases were exercised through the existing focused profile
