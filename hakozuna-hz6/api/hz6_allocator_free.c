@@ -386,6 +386,14 @@ static void hz6_free_route_dispatch(Hz6Allocator* allocator,
           if (status_handled) {
             ok = remote_status == HZ6_REMOTE_FREE_COMMIT_STATUS_COMMITTED;
             if (!ok &&
+                hz6_remote_free_status_try_owner_inbox(allocator,
+                                                       ptr,
+                                                       route,
+                                                       remote_status)) {
+              ok = 1;
+              needs_rehome = 0;
+            }
+            if (!ok &&
                 hz6_remote_free_status_try_origin_transfer(allocator,
                                                            ptr,
                                                            route,

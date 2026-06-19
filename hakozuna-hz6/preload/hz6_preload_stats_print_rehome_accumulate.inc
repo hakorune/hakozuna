@@ -104,6 +104,11 @@
         stats.remote_pending_route_mismatch;
     remote_pending_state_mismatch +=
         stats.remote_pending_state_mismatch;
+    remote_free_origin_pending_commit +=
+        stats.remote_free_origin_pending_commit;
+    remote_free_pending_no_rehome += stats.remote_free_pending_no_rehome;
+    remote_free_pending_publish_fail +=
+        stats.remote_free_pending_publish_fail;
     remote_free_backpressure_origin_transfer_success +=
         stats.remote_free_backpressure_origin_transfer_success;
     remote_free_backpressure_origin_transfer_fail +=

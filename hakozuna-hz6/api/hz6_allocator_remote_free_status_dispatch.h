@@ -84,6 +84,60 @@ static inline void hz6_remote_free_status_note_return(
 #endif
 }
 
+static inline int hz6_remote_free_status_try_owner_inbox(
+    Hz6Allocator* allocator,
+    void* ptr,
+    Hz6RouteResult route,
+    Hz6RemoteFreeCommitStatus status) {
+#if HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1 && \
+    HZ6_REMOTE_PENDING_INBOX_CORE_L1
+  if (!allocator || !ptr ||
+      status != HZ6_REMOTE_FREE_COMMIT_STATUS_BACKPRESSURE ||
+      route.kind != HZ6_ROUTE_VALID || !route.descriptor ||
+      !route.route_allocator || route.route_allocator == allocator) {
+    return 0;
+  }
+  Hz6Allocator* origin = route.route_allocator;
+  Hz6ObjectDescriptor* descriptor =
+      (Hz6ObjectDescriptor*)route.descriptor;
+  if (descriptor < origin->descriptors ||
+      descriptor >= origin->descriptors + HZ6_OBJECT_DESCRIPTOR_CAPACITY) {
+    return 0;
+  }
+  if (descriptor->ptr != ptr || descriptor->state != HZ6_STATE_ACTIVE ||
+      descriptor->generation != route.generation ||
+      descriptor->class_id != route.class_id ||
+      !hz6_owner_is_alive(&origin->owner, origin->owner.token) ||
+      !hz6_allocator_descriptor_owner_equal_at(
+          origin, descriptor, origin->owner.token,
+          HZ6_OWNER_EQUAL_SITE_REMOTE_PENDING)) {
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.remote_free_pending_publish_fail;
+#endif
+    return 0;
+  }
+  if (!hz6_allocator_remote_pending_enqueue(origin, descriptor, ptr,
+                                            route.generation,
+                                            route.class_id)) {
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.remote_free_pending_publish_fail;
+#endif
+    return 0;
+  }
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.remote_free_origin_pending_commit;
+  ++allocator->stats.remote_free_pending_no_rehome;
+#endif
+  return 1;
+#else
+  (void)allocator;
+  (void)ptr;
+  (void)route;
+  (void)status;
+  return 0;
+#endif
+}
+
 static inline int hz6_remote_free_status_try_origin_transfer(
     Hz6Allocator* allocator,
     void* ptr,

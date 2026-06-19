@@ -117,6 +117,43 @@ static void* hz6_allocator_direct_local_reuse(Hz6Allocator* allocator,
 #endif
   }
 
+#if HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1 && \
+    HZ6_REMOTE_PENDING_INBOX_CORE_L1
+  if (hz6_allocator_remote_pending_maintenance_class(
+          allocator, class_id, HZ6_REMOTE_PENDING_DRAIN_BUDGET) != 0) {
+    while (hz6_allocator_direct_local_reuse_pop(allocator, class_id,
+                                                &entry)) {
+      if (!entry.descriptor) {
+        (void)hz6_allocator_frontcache_push(allocator, class_id, entry);
+        return NULL;
+      }
+
+      Hz6ObjectDescriptor* descriptor =
+          (Hz6ObjectDescriptor*)entry.descriptor;
+      if (descriptor->class_id == class_id &&
+#if HZ6_LOCAL_CACHE_TRUSTED_OWNER_L1
+          hz6_allocator_activate_local_descriptor_trusted_owner(
+              allocator, descriptor, entry.ptr, entry.generation)) {
+#else
+          hz6_allocator_activate_descriptor(
+              allocator, descriptor, HZ6_STATE_LOCAL_FREE, entry.ptr,
+              entry.generation, hz6_allocator_owner_token(allocator))) {
+#endif
+#if HZ6_DIAGNOSTIC_PROBES
+        ++allocator->stats.frontcache_reuse_hit;
+#endif
+        if (out_descriptor) {
+          *out_descriptor = descriptor;
+        }
+        return entry.ptr;
+      }
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.frontcache_reuse_invalid;
+#endif
+    }
+  }
+#endif
+
   return NULL;
 }
 
@@ -156,6 +193,35 @@ static void* hz6_allocator_midpage_direct_local_reuse_trusted_class(
     ++allocator->stats.frontcache_reuse_invalid;
 #endif
   }
+
+#if HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1 && \
+    HZ6_REMOTE_PENDING_INBOX_CORE_L1
+  if (hz6_allocator_remote_pending_maintenance_class(
+          allocator, class_id, HZ6_REMOTE_PENDING_DRAIN_BUDGET) != 0) {
+    while (hz6_allocator_direct_local_reuse_pop(allocator, class_id,
+                                                &entry)) {
+      if (!entry.descriptor) {
+        (void)hz6_allocator_frontcache_push(allocator, class_id, entry);
+        return NULL;
+      }
+
+      Hz6ObjectDescriptor* descriptor =
+          (Hz6ObjectDescriptor*)entry.descriptor;
+      if (descriptor->class_id == class_id &&
+          hz6_allocator_activate_local_descriptor_trusted_owner(
+              allocator, descriptor, entry.ptr, entry.generation)) {
+#if HZ6_DIAGNOSTIC_PROBES
+        ++allocator->stats.frontcache_reuse_hit;
+#endif
+        *out_descriptor = descriptor;
+        return entry.ptr;
+      }
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.frontcache_reuse_invalid;
+#endif
+    }
+  }
+#endif
 
   return NULL;
 }

@@ -54,6 +54,9 @@
   size_t remote_pending_owner_mismatch;
   size_t remote_pending_route_mismatch;
   size_t remote_pending_state_mismatch;
+  size_t remote_free_origin_pending_commit;
+  size_t remote_free_pending_no_rehome;
+  size_t remote_free_pending_publish_fail;
   size_t remote_free_backpressure_origin_transfer_success;
   size_t remote_free_backpressure_origin_transfer_fail;
   size_t remote_free_backpressure_origin_transfer_stride_skip;

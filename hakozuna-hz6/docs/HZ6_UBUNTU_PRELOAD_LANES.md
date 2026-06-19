@@ -202,6 +202,18 @@ both kept all `remote_pending_*` counters at zero because no remote-free path is
 connected yet.  The next behavior box is
 `RemoteFreeBackpressureOwnerInbox-L1`: on destination transfer full, publish to
 the origin owner inbox while keeping route/logical/descriptor owner stable.
+The boundary checklist lives in
+[`HZ6_REMOTE_PENDING_INBOX_PLAN.md`](HZ6_REMOTE_PENDING_INBOX_PLAN.md).
+`RemoteFreeBackpressureOwnerInbox-L1` is implemented as an opt-in behavior
+candidate, not selected.  It routes destination transfer backpressure to the
+origin owner's pending inbox when the descriptor is stored by the origin
+allocator, then lets owner-local class maintenance move `REMOTE_PENDING` to
+`LOCAL_FREE`.  Opt-in smoke published
+`remote_free_origin_pending_commit=33196` with
+`remote_free_pending_publish_fail=0` and zero pending mismatch gates; RUNS=3
+measured `remote50=14988073.96` and `remote90=10816334.11`.  Keep it off until
+owner-local consumption reduces the remaining pending backlog and
+`remote_free_returned_backpressure` reaches zero.
 `RemoteFreeBackpressureOriginTransferReasonObserve-L1` splits the remaining
 origin-transfer misses without changing behavior.  The selected smoke showed
 `remote_free_backpressure_origin_transfer_stride_skip=16295`,

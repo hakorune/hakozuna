@@ -415,6 +415,19 @@
 #define HZ6_REMOTE_PENDING_DRAIN_BUDGET ((size_t)4)
 #endif
 
+#ifndef HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1
+/* Opt-in behavior box.  On remote-free transfer backpressure, publish the
+ * object into the origin owner's pending inbox without route rehome. */
+#define HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1 0
+#endif
+
+#ifndef HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1
+/* Owner-local class maintenance for the pending inbox.  This is separate from
+ * the producer hook so the consumer policy can be A/B tested. */
+#define HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1 \
+  HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1
+#endif
+
 #ifndef HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1
 /* Bounded relief lane for remote-free transfer backpressure.  On reserve
  * failure, drain one already-committed same-class transfer object into the

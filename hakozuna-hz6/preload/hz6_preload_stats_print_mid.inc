@@ -117,6 +117,9 @@
           "remote_pending_owner_mismatch=%zu "
           "remote_pending_route_mismatch=%zu "
           "remote_pending_state_mismatch=%zu "
+          "remote_free_origin_pending_commit=%zu "
+          "remote_free_pending_no_rehome=%zu "
+          "remote_free_pending_publish_fail=%zu "
           "remote_free_backpressure_origin_transfer_success=%zu "
           "remote_free_backpressure_origin_transfer_fail=%zu "
           "remote_free_backpressure_origin_transfer_stride_skip=%zu "
@@ -219,6 +222,9 @@
           remote_pending_owner_mismatch,
           remote_pending_route_mismatch,
           remote_pending_state_mismatch,
+          remote_free_origin_pending_commit,
+          remote_free_pending_no_rehome,
+          remote_free_pending_publish_fail,
           remote_free_backpressure_origin_transfer_success,
           remote_free_backpressure_origin_transfer_fail,
           remote_free_backpressure_origin_transfer_stride_skip,

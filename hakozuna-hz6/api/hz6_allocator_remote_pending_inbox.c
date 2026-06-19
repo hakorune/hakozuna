@@ -93,7 +93,7 @@ static int hz6_remote_pending_pop_class(
   out->generation = descriptor->generation;
   out->class_id = descriptor->class_id;
   out->reserved = 0;
-  out->owner_token = allocator->owner.token;
+  out->owner_token = allocator->remote_pending_owner_token[index];
   return 1;
 }
 
@@ -133,6 +133,7 @@ void hz6_allocator_remote_pending_inbox_init(Hz6Allocator* allocator) {
   for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
     allocator->remote_pending_next[i] = HZ6_REMOTE_PENDING_INDEX_NONE;
     allocator->remote_pending_enqueued[i] = 0;
+    allocator->remote_pending_owner_token[i] = (Hz6OwnerToken){0};
   }
   atomic_store_explicit(&allocator->remote_pending_current, 0u,
                         memory_order_relaxed);
@@ -185,6 +186,7 @@ int hz6_allocator_remote_pending_enqueue(Hz6Allocator* allocator,
     return 0;
   }
   descriptor->state = HZ6_STATE_REMOTE_PENDING;
+  allocator->remote_pending_owner_token[index] = allocator->owner.token;
   hz6_remote_pending_requeue_locked(allocator, class_id, index);
   ++allocator->stats.remote_pending_enqueue_success;
   hz6_remote_pending_unlock(inbox);

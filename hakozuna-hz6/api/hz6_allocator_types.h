@@ -416,6 +416,7 @@ struct Hz6Allocator {
       remote_pending_inbox[HZ6_FRONT_CACHE_CLASS_COUNT];
   uint32_t remote_pending_next[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
   uint8_t remote_pending_enqueued[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
+  Hz6OwnerToken remote_pending_owner_token[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
   _Atomic size_t remote_pending_current;
 #endif
 #if HZ6_DESCRIPTOR_SIDE_OWNER16_L1 || HZ6_DESCRIPTOR_STORAGE_OWNER16_L1
