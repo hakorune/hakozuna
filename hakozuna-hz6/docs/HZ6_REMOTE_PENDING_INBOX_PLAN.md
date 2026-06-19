@@ -1283,3 +1283,35 @@ Decision: `GO(tooling)`.  The source-boundary overlap is dominated by inline
 owner-inbox pending, not external tickets.  The next consumer design should
 target inline exact-key pending left after budget1 maintenance; external ticket
 policy is not the primary source-block overlap problem.
+
+## 2026-06-20 Post-Hit Extra Drain No-Go
+
+`PostHitExtraDrain-L1` was tested as a reverted behavior experiment.  After
+owner-local pending maintenance produced the object returned to the allocation,
+it drained one additional exact-key item when inline pending for the same key
+was still present.
+
+Smoke was correct and showed the box did real work:
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+remote_pending_post_hit_extra_attempt=2622
+remote_pending_post_hit_extra_skip_empty=180
+remote_pending_post_hit_extra_items=2442
+remote_pending_batch_items=5064
+pending_same_key_after_maintenance=2531
+source_block_commit_with_matching_pending=116
+source_block_commit_with_inline_pending=107
+```
+
+Quick RUNS=3:
+
+```text
+remote50=13944893.51
+remote90=3502421.04
+```
+
+Decision: `NO-GO`.  The extra drain reduces backlog signals but badly hurts
+remote90.  The implementation was reverted.  Do not solve the inline pending
+backlog by staging more frontcache work after a successful allocation.

@@ -1676,3 +1676,26 @@ source_block_commit_with_external_pending=14
 Smoke gates stayed clean.  The overlap is primarily inline owner-inbox pending,
 not external tickets.  The next optimization line should focus on inline
 exact-key pending left after budget1 maintenance.
+
+## 2026-06-20 Post-Hit Extra Drain No-Go
+
+`PostHitExtraDrain-L1` tried a demand-shaped extra drain: only after pending
+maintenance returned the current allocation, drain one more exact-key inline
+pending item.  Smoke was clean and active:
+
+```text
+remote_pending_post_hit_extra_attempt=2622
+remote_pending_post_hit_extra_items=2442
+pending_same_key_after_maintenance=2531
+source_block_commit_with_matching_pending=116
+```
+
+But quick RUNS=3 regressed remote90:
+
+```text
+remote50=13944893.51
+remote90=3502421.04
+```
+
+Decision: `NO-GO`; code reverted.  More frontcache staging after a hit is too
+expensive for high-remote rows.
