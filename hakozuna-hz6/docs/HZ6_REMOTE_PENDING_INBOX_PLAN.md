@@ -444,6 +444,47 @@ existing selected reuse exhausted
   -> source prefill/source allocation
 ```
 
+## 2026-06-20 DirectReuse Source-Demand Gate
+
+`DirectReuseSourceDemandGate-L1` adds the source-boundary counters and an
+opt-in behavior switch:
+
+```text
+HZ6_REMOTE_PENDING_DIRECT_SOURCE_DEMAND_GATE_L1=1
+```
+
+When enabled, preload DirectReuse skips the frontcache-miss claim and tries the
+claim only before front dispatch/source allocation.  The lane also disables the
+earlier owner-local pending maintenance so pending entries can reach that
+source boundary.
+
+Phase-shift target:
+
+```text
+source_gate RUNS=3 median=717837.454 ops/s reuse_hits=1024
+direct RUNS=3 median=714605.857 ops/s reuse_hits=1024
+source_gate_stats:
+  source_boundary_claim_success=1024
+  source_alloc_avoided=1024
+  claim_before_existing_reuse=0
+  claim_while_frontcache_nonempty=0
+  claim_while_transfer_nonempty=0
+  remote_pending_batch_items=0
+```
+
+Random remote RUNS=3:
+
+```text
+p1_inbox remote50=14558001.87 remote90=1760318.42
+p3_claim remote50=14230391.13 remote90=9299716.41
+p4_source_gate remote50=13750168.37 remote90=1082704.96
+```
+
+Decision: source-demand placement is correct for phase-shift reuse, but not as
+a standalone default.  The random remote lane needs either a small owner-local
+cleanup consumer or a hybrid policy; disabling pre-source maintenance entirely
+leaves too much pending inventory.
+
 ## 2026-06-20 Phase-Reuse Bench Harness
 
 `RemotePendingPhaseReuseBench-L1` adds a behavior-neutral benchmark mode:

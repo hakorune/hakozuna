@@ -43,13 +43,20 @@ hz6_allocator_try_pending_direct_reuse(Hz6Allocator* allocator,
                                        uint16_t front_id,
                                        uint16_t class_id,
                                        size_t requested_bytes,
-                                       Hz6ObjectDescriptor** out_descriptor) {
+                                       Hz6ObjectDescriptor** out_descriptor,
+                                       int source_boundary) {
   if (!allocator || requested_bytes == 0 ||
       (front_id != HZ6_FRONT_TOY && front_id != HZ6_FRONT_MIDPAGE)) {
     return NULL;
   }
+#if !HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1
+  (void)source_boundary;
+#endif
 #if HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1
   ++allocator->stats.remote_pending_direct_gate_load;
+  if (source_boundary) {
+    ++allocator->stats.remote_pending_direct_source_boundary_attempt;
+  }
 #endif
   if (!hz6_allocator_remote_pending_key_maybe_nonempty_raw(
           allocator, front_id, class_id)) {
@@ -58,6 +65,17 @@ hz6_allocator_try_pending_direct_reuse(Hz6Allocator* allocator,
 #if HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1
   ++allocator->stats.remote_pending_direct_gate_hit;
   ++allocator->stats.remote_pending_direct_claim_attempt;
+  if (source_boundary) {
+    ++allocator->stats.remote_pending_direct_source_boundary_gate_hit;
+  } else {
+    ++allocator->stats.remote_pending_direct_claim_before_existing_reuse;
+    if (hz6_allocator_frontcache_count(allocator, class_id) != 0) {
+      ++allocator->stats.remote_pending_direct_claim_while_frontcache_nonempty;
+    }
+    if (hz6_allocator_transfer_count_class(allocator, class_id) != 0) {
+      ++allocator->stats.remote_pending_direct_claim_while_transfer_nonempty;
+    }
+  }
 #endif
 #if !HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1
   (void)out_descriptor;
@@ -74,6 +92,10 @@ hz6_allocator_try_pending_direct_reuse(Hz6Allocator* allocator,
 #if HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1
     ++allocator->stats.remote_pending_direct_claim_success;
     ++allocator->stats.remote_pending_direct_activate_success;
+    if (source_boundary) {
+      ++allocator->stats.remote_pending_direct_source_boundary_claim_success;
+      ++allocator->stats.remote_pending_direct_source_alloc_avoided;
+    }
 #endif
     if (out_descriptor) {
       *out_descriptor = pending_descriptor;
@@ -189,9 +211,10 @@ static void* hz6_allocator_direct_local_reuse(Hz6Allocator* allocator,
 #endif
   }
 
-#if HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 && HZ6_REMOTE_PENDING_INBOX_CORE_L1
+#if HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 && HZ6_REMOTE_PENDING_INBOX_CORE_L1 && \
+    !HZ6_REMOTE_PENDING_DIRECT_SOURCE_DEMAND_GATE_L1
   void* pending_direct = hz6_allocator_try_pending_direct_reuse(
-      allocator, front_id, class_id, requested_bytes, out_descriptor);
+      allocator, front_id, class_id, requested_bytes, out_descriptor, 0);
   if (pending_direct) {
     return pending_direct;
   }
@@ -201,7 +224,8 @@ static void* hz6_allocator_direct_local_reuse(Hz6Allocator* allocator,
 #endif
 
 #if HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1 && \
-    HZ6_REMOTE_PENDING_INBOX_CORE_L1
+    HZ6_REMOTE_PENDING_INBOX_CORE_L1 &&               \
+    !HZ6_REMOTE_PENDING_DIRECT_SOURCE_DEMAND_GATE_L1
   hz6_allocator_remote_pending_note_before_maintenance(allocator, front_id,
                                                        class_id);
 #if HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 && HZ6_REMOTE_PENDING_INBOX_CORE_L1
@@ -292,10 +316,11 @@ static void* hz6_allocator_midpage_direct_local_reuse_trusted_class(
 #endif
   }
 
-#if HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 && HZ6_REMOTE_PENDING_INBOX_CORE_L1
+#if HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 && HZ6_REMOTE_PENDING_INBOX_CORE_L1 && \
+    !HZ6_REMOTE_PENDING_DIRECT_SOURCE_DEMAND_GATE_L1
   void* pending_direct = hz6_allocator_try_pending_direct_reuse(
       allocator, HZ6_FRONT_MIDPAGE, class_id, requested_bytes,
-      out_descriptor);
+      out_descriptor, 0);
   if (pending_direct) {
     return pending_direct;
   }
@@ -304,7 +329,8 @@ static void* hz6_allocator_midpage_direct_local_reuse_trusted_class(
 #endif
 
 #if HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1 && \
-    HZ6_REMOTE_PENDING_INBOX_CORE_L1
+    HZ6_REMOTE_PENDING_INBOX_CORE_L1 &&               \
+    !HZ6_REMOTE_PENDING_DIRECT_SOURCE_DEMAND_GATE_L1
   hz6_allocator_remote_pending_note_before_maintenance(allocator, front_id,
                                                        class_id);
 #if HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 && HZ6_REMOTE_PENDING_INBOX_CORE_L1
@@ -526,6 +552,22 @@ void* hz6_allocator_preload_midpage_malloc_skip_transfer(Hz6Allocator* allocator
   }
 #endif
 
+#if HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 && HZ6_REMOTE_PENDING_INBOX_CORE_L1 && \
+    HZ6_REMOTE_PENDING_DIRECT_SOURCE_DEMAND_GATE_L1
+  ptr = hz6_allocator_try_pending_direct_reuse(
+      allocator, HZ6_FRONT_MIDPAGE, class_id, size, &descriptor, 1);
+  if (ptr) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.midpage_active_map_register_direct;
+#endif
+    hz6_midpage_active_map_register(allocator, HZ6_FRONT_MIDPAGE,
+                                    class_id, ptr, descriptor);
+    hz6_toy_small_hotpath_diag_malloc_fast_hit(
+        allocator, HZ6_FRONT_MIDPAGE, class_id);
+    return ptr;
+  }
+#endif
+
   hz6_toy_small_hotpath_diag_malloc_front_dispatch(
       allocator, HZ6_FRONT_MIDPAGE, class_id);
   hz6_allocator_remote_pending_note_front_dispatch(
@@ -636,6 +678,22 @@ void* hz6_allocator_preload_midpage_malloc_class_skip_transfer(
   }
 #endif
 
+#if HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 && HZ6_REMOTE_PENDING_INBOX_CORE_L1 && \
+    HZ6_REMOTE_PENDING_DIRECT_SOURCE_DEMAND_GATE_L1
+  ptr = hz6_allocator_try_pending_direct_reuse(
+      allocator, HZ6_FRONT_MIDPAGE, class_id, size, &descriptor, 1);
+  if (ptr) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.midpage_active_map_register_direct;
+#endif
+    hz6_midpage_active_map_register(allocator, HZ6_FRONT_MIDPAGE,
+                                    class_id, ptr, descriptor);
+    hz6_toy_small_hotpath_diag_malloc_fast_hit(
+        allocator, HZ6_FRONT_MIDPAGE, class_id);
+    return ptr;
+  }
+#endif
+
   hz6_toy_small_hotpath_diag_malloc_front_dispatch(
       allocator, HZ6_FRONT_MIDPAGE, class_id);
   hz6_allocator_remote_pending_note_front_dispatch(
@@ -727,6 +785,19 @@ hz6_allocator_preload_toy_malloc_direct_class(Hz6Allocator* allocator,
 #if HZ6_PRELOAD_MALLOC_TRANSFER_RETRY_L1
   ptr = hz6_allocator_preload_malloc_transfer_retry(
       allocator, HZ6_FRONT_TOY, class_id, &descriptor);
+  if (ptr) {
+    hz6_toy_small_active_map_register(allocator, HZ6_FRONT_TOY, class_id, ptr,
+                                      descriptor);
+    hz6_toy_small_hotpath_diag_malloc_fast_hit(
+        allocator, HZ6_FRONT_TOY, class_id);
+    return ptr;
+  }
+#endif
+
+#if HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 && HZ6_REMOTE_PENDING_INBOX_CORE_L1 && \
+    HZ6_REMOTE_PENDING_DIRECT_SOURCE_DEMAND_GATE_L1
+  ptr = hz6_allocator_try_pending_direct_reuse(
+      allocator, HZ6_FRONT_TOY, class_id, size, &descriptor, 1);
   if (ptr) {
     hz6_toy_small_active_map_register(allocator, HZ6_FRONT_TOY, class_id, ptr,
                                       descriptor);

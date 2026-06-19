@@ -530,3 +530,74 @@ row had high variance and landed much lower than prior selected samples, but
 the P2/P3 split is still useful: the next behavior box should move claim behind
 a source-demand boundary so random remote50 does not pay eager claim/route
 validation on ordinary frontcache misses.
+
+## DirectReuse Source-Demand Gate Follow-Up
+
+`DirectReuseSourceDemandGate-L1` adds the source-boundary counters first, then
+moves preload DirectReuse claim from frontcache miss to the front dispatch/source
+boundary:
+
+```text
+HZ6_REMOTE_PENDING_DIRECT_SOURCE_DEMAND_GATE_L1=1
+```
+
+New source-boundary counters:
+
+```text
+remote_pending_direct_source_boundary_attempt
+remote_pending_direct_source_boundary_gate_hit
+remote_pending_direct_source_boundary_claim_success
+remote_pending_direct_prefill_avoided
+remote_pending_direct_source_alloc_avoided
+remote_pending_direct_claim_before_existing_reuse
+remote_pending_direct_claim_while_frontcache_nonempty
+remote_pending_direct_claim_while_transfer_nonempty
+```
+
+Phase target smoke showed the intended shape:
+
+```text
+source_gate_stats, threads=4 count=2048 size=128
+reuse_hits=1024
+source_boundary_claim_success=1024
+source_alloc_avoided=1024
+claim_before_existing_reuse=0
+claim_while_frontcache_nonempty=0
+claim_while_transfer_nonempty=0
+remote_pending_batch_items=0
+```
+
+RUNS=3 phase target:
+
+```text
+direct median ops/s=714605.857 reuse_hits=1024
+source_gate median ops/s=717837.454 reuse_hits=1024
+source_gate_stats median ops/s=714288.937 reuse_hits=1024
+```
+
+Random remote RUNS=3 did not promote:
+
+```text
+p1_inbox remote50=14558001.87 remote90=1760318.42
+p3_claim remote50=14230391.13 remote90=9299716.41
+p4_source_gate remote50=13750168.37 remote90=1082704.96
+```
+
+Diagnostic smoke explains the regression: the zero gates were clean, but source
+gate disables the earlier owner-local maintenance and leaves a large pending
+inventory at exit:
+
+```text
+remote_pending_current=26328
+remote_pending_batch_items=0
+source_boundary_claim_success=2303
+claim_before_existing_reuse=0
+claim_while_frontcache_nonempty=0
+claim_while_transfer_nonempty=0
+remote_pending_direct_integrity_failure=0
+```
+
+Decision: `GO(phase-specialist)/NO-GO(default)`.  Source-demand placement is
+correct for phase-shift reuse, but random remote still needs a small cleanup
+consumer or a hybrid gate; disabling owner-local maintenance entirely is too
+expensive for default selection.

@@ -146,6 +146,14 @@
           "remote_pending_direct_claim_empty_after_hint=%zu "
           "remote_pending_direct_activate_success=%zu "
           "remote_pending_direct_integrity_failure=%zu "
+          "remote_pending_direct_source_boundary_attempt=%zu "
+          "remote_pending_direct_source_boundary_gate_hit=%zu "
+          "remote_pending_direct_source_boundary_claim_success=%zu "
+          "remote_pending_direct_prefill_avoided=%zu "
+          "remote_pending_direct_source_alloc_avoided=%zu "
+          "remote_pending_direct_claim_before_existing_reuse=%zu "
+          "remote_pending_direct_claim_while_frontcache_nonempty=%zu "
+          "remote_pending_direct_claim_while_transfer_nonempty=%zu "
           "remote_free_backpressure_origin_transfer_success=%zu "
           "remote_free_backpressure_origin_transfer_fail=%zu "
           "remote_free_backpressure_origin_transfer_stride_skip=%zu "
@@ -277,6 +285,14 @@
           remote_pending_direct_claim_empty_after_hint,
           remote_pending_direct_activate_success,
           remote_pending_direct_integrity_failure,
+          remote_pending_direct_source_boundary_attempt,
+          remote_pending_direct_source_boundary_gate_hit,
+          remote_pending_direct_source_boundary_claim_success,
+          remote_pending_direct_prefill_avoided,
+          remote_pending_direct_source_alloc_avoided,
+          remote_pending_direct_claim_before_existing_reuse,
+          remote_pending_direct_claim_while_frontcache_nonempty,
+          remote_pending_direct_claim_while_transfer_nonempty,
           remote_free_backpressure_origin_transfer_success,
           remote_free_backpressure_origin_transfer_fail,
           remote_free_backpressure_origin_transfer_stride_skip,

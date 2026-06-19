@@ -24,7 +24,7 @@ Options:
   --count N        phase object count (default: 4096)
   --size N         allocation size (default: 128)
   --runs N         repeat count (default: 3)
-  --variants CSV   selected,direct,direct_stats (default: all)
+  --variants CSV   selected,direct,direct_stats,source_gate,source_gate_stats
   --outdir DIR     output directory
   --skip-build     reuse existing target and preload DSOs
   --help           show this message
@@ -52,7 +52,7 @@ variants=()
 IFS=',' read -r -a raw_variants <<< "$VARIANTS_CSV"
 for variant in "${raw_variants[@]}"; do
   case "$variant" in
-    selected|direct|direct_stats) variants+=("$variant") ;;
+    selected|direct|direct_stats|source_gate|source_gate_stats) variants+=("$variant") ;;
     "") ;;
     *) echo "unknown variant: $variant" >&2; exit 2 ;;
   esac
@@ -93,6 +93,14 @@ if [[ "$SKIP_BUILD" -ne 1 ]]; then
       HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1 1 \
       HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 1
   fi
+  if variant_requested source_gate || variant_requested source_gate_stats; then
+    build_preload_variant source_gate \
+      HZ6_REMOTE_PENDING_INBOX_CORE_L1 1 \
+      HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1 1 \
+      HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1 1 \
+      HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 1 \
+      HZ6_REMOTE_PENDING_DIRECT_SOURCE_DEMAND_GATE_L1 1
+  fi
   if variant_requested direct_stats; then
     build_preload_variant direct_stats \
       HZ6_DIAGNOSTIC_PROBES 1 \
@@ -102,6 +110,17 @@ if [[ "$SKIP_BUILD" -ne 1 ]]; then
       HZ6_REMOTE_PENDING_REUSE_DEMAND_AUDIT_L1 1 \
       HZ6_REMOTE_PENDING_REUSE_DEMAND_AUDIT_V2_L1 1 \
       HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 1
+  fi
+  if variant_requested source_gate_stats; then
+    build_preload_variant source_gate_stats \
+      HZ6_DIAGNOSTIC_PROBES 1 \
+      HZ6_REMOTE_PENDING_INBOX_CORE_L1 1 \
+      HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1 1 \
+      HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1 1 \
+      HZ6_REMOTE_PENDING_REUSE_DEMAND_AUDIT_L1 1 \
+      HZ6_REMOTE_PENDING_REUSE_DEMAND_AUDIT_V2_L1 1 \
+      HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 1 \
+      HZ6_REMOTE_PENDING_DIRECT_SOURCE_DEMAND_GATE_L1 1
   fi
 fi
 

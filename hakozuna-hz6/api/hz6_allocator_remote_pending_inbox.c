@@ -919,8 +919,12 @@ void hz6_allocator_remote_pending_note_prefill_attempt(
     uint16_t class_id) {
 #if HZ6_REMOTE_PENDING_REUSE_DEMAND_AUDIT_V2_L1 && \
     HZ6_REMOTE_PENDING_INBOX_CORE_L1
-  if (hz6_allocator_remote_pending_key_nonempty(allocator, front_id,
-                                                class_id)) {
+  int nonempty =
+      hz6_allocator_remote_pending_key_nonempty(allocator, front_id,
+                                                class_id);
+  ++allocator->stats.remote_pending_direct_source_boundary_attempt;
+  if (nonempty) {
+    ++allocator->stats.remote_pending_direct_source_boundary_gate_hit;
     ++allocator->stats.pending_same_key_on_prefill_attempt;
   }
 #else
@@ -970,8 +974,12 @@ void hz6_allocator_remote_pending_note_direct_source_attempt(
     uint16_t class_id) {
 #if HZ6_REMOTE_PENDING_REUSE_DEMAND_AUDIT_V2_L1 && \
     HZ6_REMOTE_PENDING_INBOX_CORE_L1
-  if (hz6_allocator_remote_pending_key_nonempty(allocator, front_id,
-                                                class_id)) {
+  int nonempty =
+      hz6_allocator_remote_pending_key_nonempty(allocator, front_id,
+                                                class_id);
+  ++allocator->stats.remote_pending_direct_source_boundary_attempt;
+  if (nonempty) {
+    ++allocator->stats.remote_pending_direct_source_boundary_gate_hit;
     ++allocator->stats.direct_source_attempt_with_matching_pending;
   }
 #else

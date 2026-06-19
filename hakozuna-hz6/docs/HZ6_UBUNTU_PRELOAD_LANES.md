@@ -284,6 +284,14 @@ P1 owner-inbox at `remote50=14.23M`, P2 gate-only at `14.37M`, and P3
 claim/route/activate at `11.66M`; the gate itself is not the main cost.  Keep
 DirectReuse claim out of the frontcache-miss hot path and place it at the
 source-demand boundary in the next behavior box.
+`DirectReuseSourceDemandGate-L1` adds
+`HZ6_REMOTE_PENDING_DIRECT_SOURCE_DEMAND_GATE_L1=1`.  The phase target remains
+healthy (`source_gate median=717837 ops/s`, `reuse_hits=1024`, source-boundary
+claim success 1024, and all early-claim zero gates clean), but random remote
+RUNS=3 regressed (`p4_source_gate remote50=13.75M`, `remote90=1.08M`) because
+the lane disables pre-source owner maintenance and leaves a large pending
+inventory.  Keep it as a phase specialist only; default work needs a hybrid
+cleanup consumer.
 `RemoteFreeBackpressureOriginTransferReasonObserve-L1` splits the remaining
 origin-transfer misses without changing behavior.  The selected smoke showed
 `remote_free_backpressure_origin_transfer_stride_skip=16295`,

@@ -157,6 +157,22 @@
         stats.remote_pending_direct_activate_success;
     remote_pending_direct_integrity_failure +=
         stats.remote_pending_direct_integrity_failure;
+    remote_pending_direct_source_boundary_attempt +=
+        stats.remote_pending_direct_source_boundary_attempt;
+    remote_pending_direct_source_boundary_gate_hit +=
+        stats.remote_pending_direct_source_boundary_gate_hit;
+    remote_pending_direct_source_boundary_claim_success +=
+        stats.remote_pending_direct_source_boundary_claim_success;
+    remote_pending_direct_prefill_avoided +=
+        stats.remote_pending_direct_prefill_avoided;
+    remote_pending_direct_source_alloc_avoided +=
+        stats.remote_pending_direct_source_alloc_avoided;
+    remote_pending_direct_claim_before_existing_reuse +=
+        stats.remote_pending_direct_claim_before_existing_reuse;
+    remote_pending_direct_claim_while_frontcache_nonempty +=
+        stats.remote_pending_direct_claim_while_frontcache_nonempty;
+    remote_pending_direct_claim_while_transfer_nonempty +=
+        stats.remote_pending_direct_claim_while_transfer_nonempty;
     remote_free_backpressure_origin_transfer_success +=
         stats.remote_free_backpressure_origin_transfer_success;
     remote_free_backpressure_origin_transfer_fail +=

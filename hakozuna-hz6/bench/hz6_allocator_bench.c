@@ -412,7 +412,12 @@ static void print_stats(const Hz6Allocator* allocator) {
          "direct_gate_hit=%zu direct_claim_attempt=%zu "
          "direct_claim_success=%zu direct_claim_busy=%zu "
          "direct_empty_after_hint=%zu direct_activate_success=%zu "
-         "direct_integrity_failure=%zu same_key_before=%zu "
+         "direct_integrity_failure=%zu source_boundary_attempt=%zu "
+         "source_boundary_gate_hit=%zu source_boundary_claim_success=%zu "
+         "direct_prefill_avoided=%zu direct_source_alloc_avoided=%zu "
+         "claim_before_existing_reuse=%zu "
+         "claim_while_frontcache_nonempty=%zu "
+         "claim_while_transfer_nonempty=%zu same_key_before=%zu "
          "same_key_after=%zu maintenance_immediate_reuse=%zu "
          "maintenance_batch_surplus=%zu source_block_commit_match=%zu\n",
          stats.remote_free_returned_backpressure,
@@ -447,6 +452,14 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.remote_pending_direct_claim_empty_after_hint,
          stats.remote_pending_direct_activate_success,
          stats.remote_pending_direct_integrity_failure,
+         stats.remote_pending_direct_source_boundary_attempt,
+         stats.remote_pending_direct_source_boundary_gate_hit,
+         stats.remote_pending_direct_source_boundary_claim_success,
+         stats.remote_pending_direct_prefill_avoided,
+         stats.remote_pending_direct_source_alloc_avoided,
+         stats.remote_pending_direct_claim_before_existing_reuse,
+         stats.remote_pending_direct_claim_while_frontcache_nonempty,
+         stats.remote_pending_direct_claim_while_transfer_nonempty,
          stats.pending_same_key_before_maintenance,
          stats.pending_same_key_after_maintenance,
          stats.pending_maintenance_immediate_reuse_success,

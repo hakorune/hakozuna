@@ -474,6 +474,11 @@
 #define HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1 HZ6_REMOTE_PENDING_DIRECT_REUSE_L1
 #endif
 
+#ifndef HZ6_REMOTE_PENDING_DIRECT_SOURCE_DEMAND_GATE_L1
+/* Move DirectReuse claim from frontcache miss to the source-demand boundary. */
+#define HZ6_REMOTE_PENDING_DIRECT_SOURCE_DEMAND_GATE_L1 0
+#endif
+
 #ifndef HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1
 /* Bounded relief lane for remote-free transfer backpressure.  On reserve
  * failure, drain one already-committed same-class transfer object into the

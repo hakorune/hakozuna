@@ -82,6 +82,14 @@
   size_t remote_pending_direct_claim_empty_after_hint = 0;
   size_t remote_pending_direct_activate_success = 0;
   size_t remote_pending_direct_integrity_failure = 0;
+  size_t remote_pending_direct_source_boundary_attempt = 0;
+  size_t remote_pending_direct_source_boundary_gate_hit = 0;
+  size_t remote_pending_direct_source_boundary_claim_success = 0;
+  size_t remote_pending_direct_prefill_avoided = 0;
+  size_t remote_pending_direct_source_alloc_avoided = 0;
+  size_t remote_pending_direct_claim_before_existing_reuse = 0;
+  size_t remote_pending_direct_claim_while_frontcache_nonempty = 0;
+  size_t remote_pending_direct_claim_while_transfer_nonempty = 0;
   size_t remote_free_backpressure_origin_transfer_success = 0;
   size_t remote_free_backpressure_origin_transfer_fail = 0;
   size_t remote_free_backpressure_origin_transfer_stride_skip = 0;
