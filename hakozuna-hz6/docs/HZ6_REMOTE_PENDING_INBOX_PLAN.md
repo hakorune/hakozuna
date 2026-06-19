@@ -2145,3 +2145,55 @@ Decision: `GO(correctness+cost-shape)/HOLD(default promotion)`.  The duplicate
 scan cost is closed as a primary suspect.  The next design point shifts back to
 fixed owner-inbox metadata/RSS and maintenance/consumer work, with
 `OwnerInboxLazyStorage-L1` as the cleaner next target.
+
+## 2026-06-20 OwnerInboxStorageFootprintAudit-L1
+
+Added a compile-time storage audit:
+
+```text
+hakozuna-hz6/tests/hz6_owner_inbox_storage_footprint.c
+hakozuna-hz6/linux/run_hz6_owner_inbox_storage_footprint.sh
+```
+
+It builds p0/off and p1/external with the same flag helpers used by the preload
+runners and reports `sizeof(Hz6Allocator)` plus owner-inbox component sizes.
+
+Output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_storage_footprint_20260620_051602
+```
+
+Summary:
+
+```text
+variant      sizeof_Hz6Allocator  owner_inbox_bytes
+p0_off       3251928              0
+p1_external 3588872              336896
+
+p1 component bytes:
+  class inbox        768
+  inline slot data   270336
+  external tickets    57600
+  external dup index   8192
+```
+
+Read:
+
+```text
+fixed p1 storage delta:
+  336896 bytes / allocator
+
+16-thread preload:
+  about 5.1 MiB of fixed owner-inbox storage before allocator-side overhead
+```
+
+This matches the observed local0 RSS direction.  Lazy external-ticket storage
+alone would only remove about 65 KiB per allocator; the main target is the
+inline pending slot/proof storage.
+
+Decision: `GO(tooling)/DESIGN checkpoint`.  `OwnerInboxLazyStorage-L1` should
+move the whole owner-inbox storage block behind one optional storage boundary,
+not just external tickets.  The storage allocation mechanism needs a separate
+design choice because plain `calloc()` inside the preload allocator can recurse
+through the interposed allocator path.

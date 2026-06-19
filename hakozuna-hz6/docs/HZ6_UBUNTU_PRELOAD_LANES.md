@@ -2226,3 +2226,40 @@ duplicate full scan is no longer the main remote50 suspect.  The one-shot
 production smoke still leaves p1 remote50 below p0, so the next design target
 is fixed owner-inbox metadata/RSS or maintenance work rather than another
 duplicate-scan change.
+
+## 2026-06-20 OwnerInboxStorageFootprintAudit-L1
+
+Added:
+
+```text
+hakozuna-hz6/tests/hz6_owner_inbox_storage_footprint.c
+hakozuna-hz6/linux/run_hz6_owner_inbox_storage_footprint.sh
+```
+
+Run:
+
+```text
+./hakozuna-hz6/linux/run_hz6_owner_inbox_storage_footprint.sh
+```
+
+Output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_storage_footprint_20260620_051602
+```
+
+Result:
+
+```text
+p0_off sizeof(Hz6Allocator)       = 3251928
+p1_external sizeof(Hz6Allocator)  = 3588872
+p1 owner_inbox_bytes              = 336896
+p1 inline_slot_bytes              = 270336
+p1 external_ticket_bytes           = 57600
+p1 external_dup_index_bytes         = 8192
+```
+
+Decision: `GO(tooling)/DESIGN checkpoint`.  The local0 RSS tax is primarily the
+fixed owner-inbox storage block.  A useful lazy-storage box must move the
+inline slot/proof arrays too; making only external tickets lazy is too small to
+be the main local0 fix.
