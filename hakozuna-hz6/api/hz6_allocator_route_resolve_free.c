@@ -40,6 +40,36 @@ static Hz6RouteResult hz6_free_route_local_lookup(Hz6Allocator* allocator,
 #endif
 }
 
+#if HZ6_SHARED_ROUTE_DIRECTORY_L1
+static int hz6_free_route_apply_shared_lookup(
+    const Hz6Allocator* allocator,
+    Hz6SharedRouteLookup lookup,
+    Hz6RouteResult* route,
+    int* visible_lookup_done,
+    int* visible_hit,
+    Hz6FreeRouteResolveResult* out) {
+  if (!route || !visible_lookup_done || !visible_hit || !out) {
+    return 0;
+  }
+  if (lookup.status == HZ6_SHARED_ROUTE_LOOKUP_VALID) {
+    *route = lookup.route;
+    *visible_lookup_done = 1;
+    *visible_hit = lookup.route.route_allocator != allocator;
+    return 0;
+  }
+  if (lookup.status == HZ6_SHARED_ROUTE_LOOKUP_RETRY) {
+    *out = hz6_free_route_resolved(HZ6_FREE_ROUTE_RETRY, *route, 0);
+    return 1;
+  }
+  if (lookup.status == HZ6_SHARED_ROUTE_LOOKUP_STALE) {
+    *out = hz6_free_route_resolved(
+        HZ6_FREE_ROUTE_UNRESOLVED_INTEGRITY, *route, 0);
+    return 1;
+  }
+  return 0;
+}
+#endif
+
 Hz6FreeRouteResolveResult hz6_allocator_route_resolve_free(
     Hz6Allocator* allocator,
     const void* ptr) {
@@ -51,6 +81,8 @@ Hz6FreeRouteResolveResult hz6_allocator_route_resolve_free(
   int visible_hit = 0;
   int visible_lookup_done = 0;
   Hz6RouteResult route = hz6_route_miss();
+  Hz6FreeRouteResolveResult early_result =
+      hz6_free_route_resolved(HZ6_FREE_ROUTE_PROVEN_EXTERNAL, route, 0);
 #if HZ6_SHARED_ROUTE_DIRECTORY_L1
   Hz6SharedRouteLookup shared_lookup;
   shared_lookup.status = HZ6_SHARED_ROUTE_LOOKUP_MISS;
@@ -62,15 +94,13 @@ Hz6FreeRouteResolveResult hz6_allocator_route_resolve_free(
   if (!hz6_allocator_profile_strict_owner_remote(allocator)) {
     shared_lookup = hz6_shared_route_directory_lookup_snapshot(ptr);
     shared_lookup_done = 1;
-    if (shared_lookup.status == HZ6_SHARED_ROUTE_LOOKUP_VALID) {
-      route = shared_lookup.route;
-      visible_lookup_done = 1;
-      visible_hit = (route.route_allocator != allocator);
-    } else if (shared_lookup.status == HZ6_SHARED_ROUTE_LOOKUP_RETRY) {
-      return hz6_free_route_resolved(HZ6_FREE_ROUTE_RETRY, route, 0);
-    } else if (shared_lookup.status == HZ6_SHARED_ROUTE_LOOKUP_STALE) {
-      return hz6_free_route_resolved(
-          HZ6_FREE_ROUTE_UNRESOLVED_INTEGRITY, route, 0);
+    if (hz6_free_route_apply_shared_lookup(allocator,
+                                           shared_lookup,
+                                           &route,
+                                           &visible_lookup_done,
+                                           &visible_hit,
+                                           &early_result)) {
+      return early_result;
     }
   }
 #endif
@@ -85,12 +115,16 @@ Hz6FreeRouteResolveResult hz6_allocator_route_resolve_free(
     if (locality == HZ6_OWNER_LOCALITY_DEFINITELY_FOREIGN) {
       shared_lookup = hz6_shared_route_directory_lookup_snapshot(ptr);
       shared_lookup_done = 1;
-      if (shared_lookup.status == HZ6_SHARED_ROUTE_LOOKUP_VALID) {
-        route = shared_lookup.route;
-      } else if (shared_lookup.status == HZ6_SHARED_ROUTE_LOOKUP_RETRY) {
-        return hz6_free_route_resolved(HZ6_FREE_ROUTE_RETRY, route, 0);
-      } else if (shared_lookup.status == HZ6_SHARED_ROUTE_LOOKUP_STALE ||
-                 HZ6_SHARED_ROUTE_DIRECTORY_MANDATORY_L1) {
+      if (hz6_free_route_apply_shared_lookup(allocator,
+                                             shared_lookup,
+                                             &route,
+                                             &visible_lookup_done,
+                                             &visible_hit,
+                                             &early_result)) {
+        return early_result;
+      }
+      if (shared_lookup.status == HZ6_SHARED_ROUTE_LOOKUP_MISS &&
+          HZ6_SHARED_ROUTE_DIRECTORY_MANDATORY_L1) {
         return hz6_free_route_resolved(
             HZ6_FREE_ROUTE_UNRESOLVED_INTEGRITY, route, 0);
       }
@@ -133,15 +167,13 @@ Hz6FreeRouteResolveResult hz6_allocator_route_resolve_free(
       shared_lookup = hz6_shared_route_directory_lookup_snapshot(ptr);
       shared_lookup_done = 1;
     }
-    if (shared_lookup.status == HZ6_SHARED_ROUTE_LOOKUP_VALID) {
-      route = shared_lookup.route;
-      visible_lookup_done = 1;
-      visible_hit = (route.route_allocator != allocator);
-    } else if (shared_lookup.status == HZ6_SHARED_ROUTE_LOOKUP_RETRY) {
-      return hz6_free_route_resolved(HZ6_FREE_ROUTE_RETRY, route, 0);
-    } else if (shared_lookup.status == HZ6_SHARED_ROUTE_LOOKUP_STALE) {
-      return hz6_free_route_resolved(
-          HZ6_FREE_ROUTE_UNRESOLVED_INTEGRITY, route, 0);
+    if (hz6_free_route_apply_shared_lookup(allocator,
+                                           shared_lookup,
+                                           &route,
+                                           &visible_lookup_done,
+                                           &visible_hit,
+                                           &early_result)) {
+      return early_result;
     }
 #endif
   }
