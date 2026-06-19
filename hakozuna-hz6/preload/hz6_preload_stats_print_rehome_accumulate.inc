@@ -112,6 +112,16 @@
     remote_free_pending_no_rehome += stats.remote_free_pending_no_rehome;
     remote_free_pending_publish_fail +=
         stats.remote_free_pending_publish_fail;
+    remote_pending_owner_inbox_storage_ineligible +=
+        stats.remote_pending_owner_inbox_storage_ineligible;
+    remote_pending_owner_inbox_descriptor_mismatch +=
+        stats.remote_pending_owner_inbox_descriptor_mismatch;
+    remote_pending_owner_inbox_owner_dead +=
+        stats.remote_pending_owner_inbox_owner_dead;
+    remote_pending_owner_inbox_owner_mismatch +=
+        stats.remote_pending_owner_inbox_owner_mismatch;
+    remote_pending_owner_inbox_enqueue_fail +=
+        stats.remote_pending_owner_inbox_enqueue_fail;
     remote_pending_key_nonempty_load +=
         stats.remote_pending_key_nonempty_load;
     remote_pending_key_nonempty_hit +=

@@ -756,3 +756,35 @@ cleanest high-remote recovery path observed so far: it restores remote90 by
 avoiding most route rehome/transfer-cache churn and keeps integrity gates clean.
 It is not ready as the selected default because remote50 regresses by about 5%
 and a small origin-transfer-full tail still returns backpressure.
+
+## Owner Inbox Reject Reason Follow-Up
+
+`OwnerInboxRejectReasonObserve-L1` splits the owner-inbox publish reject path
+without changing behavior.  The goal is to identify the remaining
+`remote_free_returned_backpressure` tail after owner-inbox handles the normal
+inline-descriptor case.
+
+Owner-inbox smoke:
+
+```text
+remote_free_origin_pending_commit=33307
+remote_free_pending_no_rehome=33307
+remote_free_pending_publish_fail=0
+remote_pending_owner_inbox_storage_ineligible=2897
+remote_pending_owner_inbox_descriptor_mismatch=0
+remote_pending_owner_inbox_owner_dead=0
+remote_pending_owner_inbox_owner_mismatch=0
+remote_pending_owner_inbox_enqueue_fail=0
+
+remote_free_backpressure_origin_transfer_success=2852
+remote_free_backpressure_origin_transfer_full=45
+remote_free_returned_backpressure=45
+remote_free_returned_uncommitted=0
+```
+
+Decision: `GO(tooling)`.  The remaining owner-inbox misses are not descriptor
+state, owner-token, or queue failures.  They are storage-coverage misses:
+the descriptor is outside the origin allocator's inline descriptor array, so
+the current inbox cannot derive a descriptor index.  The next correctness box
+should be a bounded external-descriptor ticket path for owner-inbox, not more
+origin-transfer retry/drain work.

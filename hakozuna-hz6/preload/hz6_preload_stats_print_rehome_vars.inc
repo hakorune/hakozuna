@@ -59,6 +59,11 @@
   size_t remote_free_origin_pending_commit = 0;
   size_t remote_free_pending_no_rehome = 0;
   size_t remote_free_pending_publish_fail = 0;
+  size_t remote_pending_owner_inbox_storage_ineligible = 0;
+  size_t remote_pending_owner_inbox_descriptor_mismatch = 0;
+  size_t remote_pending_owner_inbox_owner_dead = 0;
+  size_t remote_pending_owner_inbox_owner_mismatch = 0;
+  size_t remote_pending_owner_inbox_enqueue_fail = 0;
   size_t remote_pending_key_nonempty_load = 0;
   size_t remote_pending_key_nonempty_hit = 0;
   size_t pending_same_key_on_frontcache_miss = 0;

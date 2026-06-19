@@ -123,6 +123,11 @@
           "remote_free_origin_pending_commit=%zu "
           "remote_free_pending_no_rehome=%zu "
           "remote_free_pending_publish_fail=%zu "
+          "remote_pending_owner_inbox_storage_ineligible=%zu "
+          "remote_pending_owner_inbox_descriptor_mismatch=%zu "
+          "remote_pending_owner_inbox_owner_dead=%zu "
+          "remote_pending_owner_inbox_owner_mismatch=%zu "
+          "remote_pending_owner_inbox_enqueue_fail=%zu "
           "remote_pending_key_nonempty_load=%zu "
           "remote_pending_key_nonempty_hit=%zu "
           "pending_same_key_on_frontcache_miss=%zu "
@@ -265,6 +270,11 @@
           remote_free_origin_pending_commit,
           remote_free_pending_no_rehome,
           remote_free_pending_publish_fail,
+          remote_pending_owner_inbox_storage_ineligible,
+          remote_pending_owner_inbox_descriptor_mismatch,
+          remote_pending_owner_inbox_owner_dead,
+          remote_pending_owner_inbox_owner_mismatch,
+          remote_pending_owner_inbox_enqueue_fail,
           remote_pending_key_nonempty_load,
           remote_pending_key_nonempty_hit,
           pending_same_key_on_frontcache_miss,

@@ -325,6 +325,14 @@ selected measured `remote50=14.76M`, `remote90=1.22M`; owner-inbox measured
 zero, but still left `remote_free_returned_backpressure=11`.  Keep owner-inbox
 as the current high-remote specialist and default candidate, but do not select
 it until the remote50 cost and small origin-transfer-full tail are closed.
+`OwnerInboxRejectReasonObserve-L1` splits that tail.  The owner-inbox smoke
+showed `remote_pending_owner_inbox_storage_ineligible=2897` while descriptor,
+owner, and enqueue reject counters were zero.  The remaining fallback was
+`remote_free_backpressure_origin_transfer_full=45` and
+`remote_free_returned_backpressure=45`.  This points at external descriptor
+coverage: the current inbox requires an origin inline descriptor index.  The
+next correctness box should therefore be an external-descriptor owner-inbox
+ticket path, not another remote-thread origin-transfer drain.
 `RemoteFreeBackpressureOriginDrain-L1` tried that full path directly as an
 opt-in no-go.  It drains one same-class transfer object from the origin transfer
 cache into the origin frontcache and retries origin commit once.  Safety smoke

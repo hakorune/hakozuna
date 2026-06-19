@@ -465,6 +465,14 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.pending_maintenance_immediate_reuse_success,
          stats.pending_maintenance_batch_surplus,
          stats.source_block_commit_with_matching_pending);
+  printf("[HZ6_REMOTE_INBOX_REJECT] "
+         "storage_ineligible=%zu descriptor_mismatch=%zu owner_dead=%zu "
+         "owner_mismatch=%zu enqueue_fail=%zu\n",
+         stats.remote_pending_owner_inbox_storage_ineligible,
+         stats.remote_pending_owner_inbox_descriptor_mismatch,
+         stats.remote_pending_owner_inbox_owner_dead,
+         stats.remote_pending_owner_inbox_owner_mismatch,
+         stats.remote_pending_owner_inbox_enqueue_fail);
   printf("[HZ6_REMOTE_BACKPRESSURE] "
          "origin_transfer_full=%zu origin_full_transfer_total=%zu "
          "origin_full_class_total=%zu origin_full_class_max=%zu "

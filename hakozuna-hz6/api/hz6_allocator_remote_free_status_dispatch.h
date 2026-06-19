@@ -102,17 +102,33 @@ static inline int hz6_remote_free_status_try_owner_inbox(
       (Hz6ObjectDescriptor*)route.descriptor;
   if (descriptor < origin->descriptors ||
       descriptor >= origin->descriptors + HZ6_OBJECT_DESCRIPTOR_CAPACITY) {
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.remote_pending_owner_inbox_storage_ineligible;
+#endif
     return 0;
   }
   if (descriptor->ptr != ptr || descriptor->state != HZ6_STATE_ACTIVE ||
       descriptor->generation != route.generation ||
-      descriptor->class_id != route.class_id ||
-      !hz6_owner_is_alive(&origin->owner, origin->owner.token) ||
-      !hz6_allocator_descriptor_owner_equal_at(
+      descriptor->class_id != route.class_id) {
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.remote_free_pending_publish_fail;
+    ++allocator->stats.remote_pending_owner_inbox_descriptor_mismatch;
+#endif
+    return 0;
+  }
+  if (!hz6_owner_is_alive(&origin->owner, origin->owner.token)) {
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.remote_free_pending_publish_fail;
+    ++allocator->stats.remote_pending_owner_inbox_owner_dead;
+#endif
+    return 0;
+  }
+  if (!hz6_allocator_descriptor_owner_equal_at(
           origin, descriptor, origin->owner.token,
           HZ6_OWNER_EQUAL_SITE_REMOTE_PENDING)) {
 #if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.remote_free_pending_publish_fail;
+    ++allocator->stats.remote_pending_owner_inbox_owner_mismatch;
 #endif
     return 0;
   }
@@ -122,6 +138,7 @@ static inline int hz6_remote_free_status_try_owner_inbox(
                                             route.class_id)) {
 #if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.remote_free_pending_publish_fail;
+    ++allocator->stats.remote_pending_owner_inbox_enqueue_fail;
 #endif
     return 0;
   }
