@@ -180,6 +180,17 @@ void hz6_free_with_route_prechecked(Hz6Allocator* allocator,
   hz6_free_route_dispatch(allocator, ptr, route, visible_hit);
 }
 
+void hz6_free_with_resolved_route_after_maps(Hz6Allocator* allocator,
+                                             void* ptr,
+                                             Hz6RouteResult route,
+                                             int visible_hit) {
+  if (!allocator || !ptr) {
+    return;
+  }
+
+  hz6_free_route_dispatch(allocator, ptr, route, visible_hit);
+}
+
 static void hz6_free_route_dispatch(Hz6Allocator* allocator,
                                     void* ptr,
                                     Hz6RouteResult route,

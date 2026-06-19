@@ -79,6 +79,7 @@ HZ6_REMOTE_FREE_ROUTE_RESOLVE_L1=1
 HZ6_REMOTE_FREE_RESOLVE_SHARED_FIRST_L1=1
 HZ6_REMOTE_FREE_RESOLVE_SHARED_RETRY_LIMIT=3
 HZ6_REMOTE_FREE_RESOLVE_LOCAL_EXACT_ONLY_L1=0
+HZ6_PRELOAD_FOREIGN_RESOLVED_DISPATCH_L1=1
 HZ6_ROUTE_HASH_XOR_FOLD_L1=1
 HZ6_ROUTE_LINEAR_WRAP_L1=1
 HZ6_ROUTE_LOOP_CARRY_L1=1
@@ -115,9 +116,13 @@ from the direct HZ6 API and Windows selected-family rows.
 MT remote-route status, 2026-06-19:
 
 The HZ6 MT remote rows are under an active repair phase and are not ready for
-paper RUNS=10 collection.  The first debug pass found two separate issues:
-remote-positive frees could fall into visible allocator route scans, and
-route-tombstone compaction could race remote rehome unregister/register work.
+paper RUNS=10 collection.  `PreloadForeignResolvedDispatch-L1` is now selected
+for Ubuntu after preload active maps miss and the shared-first free resolver
+returns `FOREIGN_VALID`.  RUNS=10 moved `remote50` from `763130.83` to
+`14351051.48` ops/s and `remote90` from `148892.40` to `422566.06` ops/s while
+the integrity smoke kept unresolved, unproven real-free, and remote compaction
+gates at zero.  The remaining repair focus is remote transfer commit
+transaction/backpressure, not broad preload fast free.
 Short remote rows can now be made to complete, but long 300K rows still show a
 page-table lookup cliff.  The active design is `RemoteFreeRouteResolve-L1`,
 not a preload-only owner hint: Ubuntu preload must call the shared core

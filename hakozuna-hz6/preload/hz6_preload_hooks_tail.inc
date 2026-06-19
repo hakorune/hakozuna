@@ -457,28 +457,46 @@ void free(void* ptr) {
     } else {
       hz6_preload_phase_count(&g_hz6_preload_phase_stats.free_route_invalid);
     }
-#if HZ6_PRELOAD_FAST_FREE_L1
-    hz6_free_with_route_prechecked(allocator, ptr, preload_route.route,
-                                   preload_route.visible_hit);
-#elif HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_L1 || \
-    HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_DRYRUN_L1
-    if (source_run_route_prechecked) {
+    int preload_route_dispatched = 0;
+#if HZ6_PRELOAD_FOREIGN_RESOLVED_DISPATCH_L1
+    if (preload_route.resolve_kind == HZ6_FREE_ROUTE_FOREIGN_VALID &&
+        preload_route.route.kind == HZ6_ROUTE_VALID &&
+        preload_route.visible_hit) {
       hz6_preload_phase_count(
-          &g_hz6_preload_phase_stats.free_source_run_route_prechecked);
-      hz6_free_with_route_prechecked(allocator, ptr, preload_route.route, 0);
-    } else {
-      hz6_free(allocator, ptr);
+          &g_hz6_preload_phase_stats.free_resolved_foreign_direct_dispatch);
+      hz6_preload_phase_count(
+          &g_hz6_preload_phase_stats
+               .free_resolved_duplicate_route_lookup_avoided);
+      hz6_free_with_resolved_route_after_maps(allocator, ptr,
+                                              preload_route.route,
+                                              preload_route.visible_hit);
+      preload_route_dispatched = 1;
     }
-#elif HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1
-    if (midpage_fast_free) {
+#endif
+    if (!preload_route_dispatched) {
+#if HZ6_PRELOAD_FAST_FREE_L1
       hz6_free_with_route_prechecked(allocator, ptr, preload_route.route,
                                      preload_route.visible_hit);
-    } else {
-      hz6_free(allocator, ptr);
-    }
+#elif HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_L1 || \
+    HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_DRYRUN_L1
+      if (source_run_route_prechecked) {
+        hz6_preload_phase_count(
+            &g_hz6_preload_phase_stats.free_source_run_route_prechecked);
+        hz6_free_with_route_prechecked(allocator, ptr, preload_route.route, 0);
+      } else {
+        hz6_free(allocator, ptr);
+      }
+#elif HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1
+      if (midpage_fast_free) {
+        hz6_free_with_route_prechecked(allocator, ptr, preload_route.route,
+                                       preload_route.visible_hit);
+      } else {
+        hz6_free(allocator, ptr);
+      }
 #else
-    hz6_free(allocator, ptr);
+      hz6_free(allocator, ptr);
 #endif
+    }
   } else {
     hz6_preload_route_fail_fast_if_integrity(preload_route);
     if (!hz6_preload_route_real_fallback_allowed(preload_route)) {

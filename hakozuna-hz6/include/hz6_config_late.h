@@ -335,6 +335,13 @@
 #define HZ6_PRELOAD_FAST_FREE_L1 0
 #endif
 
+#ifndef HZ6_PRELOAD_FOREIGN_RESOLVED_DISPATCH_L1
+/* Narrow LD_PRELOAD remote shortcut.  After active maps miss and the shared
+ * free resolver proves a foreign route, dispatch that route directly instead
+ * of asking hz6_free() to repeat active-map and route lookup work. */
+#define HZ6_PRELOAD_FOREIGN_RESOLVED_DISPATCH_L1 0
+#endif
+
 #ifndef HZ6_PRELOAD_MIDPAGE_ROUTE_REARM_L1
 /* Candidate preload-boundary shortcut.  When preload already found a local
  * MidPage exact route, re-arm the MidPage active map so hz6_free() can consume

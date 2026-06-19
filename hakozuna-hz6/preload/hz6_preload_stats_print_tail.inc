@@ -257,6 +257,8 @@
           "free_route_miss_real=%zu free_route_retry_abort=%zu "
           "free_route_integrity_abort=%zu "
           "free_route_real_free_unproven=%zu "
+          "free_resolved_foreign_direct_dispatch=%zu "
+          "free_resolved_duplicate_route_lookup_avoided=%zu "
           "mh_probe=%zu mh_would=%zu "
           "mh_true=%zu mh_false=%zu mh_miss=%zu\n",
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_toy_active_map_attempt),
@@ -280,6 +282,9 @@
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_retry_abort),
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_integrity_abort),
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_real_free_unproven),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_resolved_foreign_direct_dispatch),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(
+              free_resolved_duplicate_route_lookup_avoided),
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_midpage_hint_probe),
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_midpage_hint_would_first), HZ6_PRELOAD_PHASE_LOAD_FIELD(free_midpage_hint_true_midpage),
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_midpage_hint_false_positive), HZ6_PRELOAD_PHASE_LOAD_FIELD(free_midpage_hint_missed_midpage));

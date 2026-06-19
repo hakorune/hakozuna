@@ -41,6 +41,7 @@ Legend:
 | `hz4` guarded free-batch consume box | `GO(tooling)` | `HZ4_MID_FREE_BATCH_CONSUME_SC_MAX` is now implemented in shared core and defaults to all mid classes | Use it for narrow A/B on Mac / Linux / Windows without forking allocator logic |
 | `hz4` `MIN=2` + `SC_MAX=127` specialist tuple | `NO-GO` | The first Mac specialist check regressed `main_r50` materially even though `cross64_r90` held up | Keep the guard mechanism, but do not reuse this exact cutoff tuple |
 | Direct `mimalloc` Mac profiling | `GO(tooling)` | A canonical Larson pass was captured on Mac and now gives stack-level evidence instead of benchmark-only inference | Use it when comparing `hz3/hz4` against Mac-friendly allocator behavior |
+| HZ6 Ubuntu `PreloadForeignResolvedDispatch-L1` | `GO/default` | RUNS=10 selected remote median improved `remote50` from `763130.83` to `14351051.48` ops/s and `remote90` from `148892.40` to `422566.06` ops/s; integrity smoke showed `free_resolved_foreign_direct_dispatch=39715`, duplicate route lookup avoided at the same count, and zero unresolved/real-free/remote-compaction gates | Keep `HZ6_PRELOAD_FOREIGN_RESOLVED_DISPATCH_L1=1` in the Ubuntu selected preload lane; it is foreign-only after preload active maps miss, so local/mixed rows stay on the existing selected path |
 
 ## Mac Notes
 
