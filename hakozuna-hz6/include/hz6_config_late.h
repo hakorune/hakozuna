@@ -434,7 +434,9 @@
 #endif
 
 #ifndef HZ6_REMOTE_PENDING_DRAIN_BUDGET
-#define HZ6_REMOTE_PENDING_DRAIN_BUDGET ((size_t)4)
+/* Owner-inbox maintenance runs on allocation demand.  Drain one item by
+ * default so random remote rows do not stage surplus frontcache work. */
+#define HZ6_REMOTE_PENDING_DRAIN_BUDGET ((size_t)1)
 #endif
 
 #ifndef HZ6_REMOTE_PENDING_DIRECT_FALLBACK_DRAIN_BUDGET

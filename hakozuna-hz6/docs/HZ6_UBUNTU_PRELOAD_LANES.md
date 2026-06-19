@@ -382,6 +382,13 @@ and remote50 cost are still open.
 nonempty probes into a single inline/external exact-key snapshot.  The smoke
 stayed clean, but quick RUNS=3 was weaker (`remote50=13.78M`,
 `remote90=8.77M`), so the code was reverted and the box is `NO-GO`.
+`OwnerInboxDrainBudget1-L1` lowers the owner-local pending maintenance default
+drain budget from 4 to 1.  The committed opt-in shape kept
+`remote_free_returned_backpressure=0`, `remote_pending_external_ticket_consume_empty=0`,
+and zero mismatch gates; quick RUNS=3 measured `remote50=14.41M` and
+`remote90=9.47M`.  Keep this as the owner-inbox opt-in shape to avoid surplus
+frontcache staging, while default promotion still waits on owner-inbox
+cost/backlog evidence.
 `RemoteFreeBackpressureOriginDrain-L1` tried that full path directly as an
 opt-in no-go.  It drains one same-class transfer object from the origin transfer
 cache into the origin frontcache and retries origin commit once.  Safety smoke

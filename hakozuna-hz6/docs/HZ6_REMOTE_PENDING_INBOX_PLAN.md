@@ -1014,3 +1014,48 @@ remote90=8765282.02
 Decision: `NO-GO`.  The shape cleanup was safe but did not improve the quick
 sample versus the prior consume-gate result.  Do not stack more maintenance
 entry-probe tweaks without stronger attribution.
+
+## 2026-06-20 Owner Inbox Drain Budget 1
+
+`OwnerInboxDrainBudget1-L1` lowers the owner-local pending maintenance default
+drain budget from 4 to 1.  This keeps maintenance demand-shaped: one local
+allocation miss stages at most one pending object into frontcache unless another
+caller asks again.
+
+Override A/B with the existing flag:
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+remote_pending_batch_items=2369
+remote_pending_frontcache_push=2255
+remote_pending_external_ticket_consume=114
+remote_pending_external_ticket_current=2326
+remote_pending_external_ticket_consume_empty=0
+remote_pending_external_ticket_frontcache_full=0
+remote_pending_external_ticket_route_mismatch=0
+remote_pending_external_ticket_owner_mismatch=0
+remote_pending_external_ticket_state_mismatch=0
+remote_pending_external_ticket_storage_mismatch=0
+remote50=14351408.89
+remote90=10475486.13
+```
+
+Committed default smoke/RUNS=3:
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+remote_pending_batch_items=3222
+remote_pending_frontcache_push=3008
+remote_pending_external_ticket_consume=214
+remote_pending_external_ticket_current=2022
+remote_pending_external_ticket_consume_empty=0
+remote50=14409055.13
+remote90=9466307.16
+```
+
+Decision: `GO(opt-in shape)/HOLD(default)`.  Budget1 is now the owner-inbox
+maintenance default because the owner-inbox lane itself is still opt-in and the
+smoke gates remain clean.  Default promotion of owner-inbox still requires
+broader cost/backlog evidence.
