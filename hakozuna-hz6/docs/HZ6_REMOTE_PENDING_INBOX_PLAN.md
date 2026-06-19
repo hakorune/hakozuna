@@ -1722,3 +1722,101 @@ ticket to point at a descriptor that is still `REMOTE_PENDING`.
 Decision: `GO(tooling)`.  This closes the accounting part of the selected
 candidate prerequisites.  Default release remains `HOLD` on allocator lifetime
 closeout and paired selected-vs-baseline RSS/local guards.
+
+## 2026-06-20 AllocatorLifetimeCloseout-L1
+
+Added destroy-only pending closeout in a separate module:
+
+```text
+api/hz6_allocator_remote_pending_lifetime.c
+```
+
+The module is deliberately outside `hz6_allocator_remote_pending_inbox.c` so
+the large inbox implementation does not keep accumulating ownership lifetime
+logic.
+
+Closeout policy:
+
+```text
+hz6_allocator_destroy():
+  owner.state = DYING
+  remote pending closeout
+  route visibility unregister
+  descriptor/source destroy
+  active-map destroy
+  after-destroy pending check
+  owner.state = DEAD
+```
+
+Inline pending:
+
+```text
+clear exact-key heads
+clear key_count / total_count
+clear queued/claimed slot state and proof arrays
+reset queued/claimed/current atomics
+leave descriptor/source release to existing destroy_descriptors()
+```
+
+External tickets:
+
+```text
+validate ticket proof
+find descriptor storage owner
+verify storage owner token and alive state
+validate origin route still points at ticket descriptor
+unregister origin exact route
+release descriptor/source through storage owner
+clear ticket queues and rebuild ticket free-list
+```
+
+New lifetime counters and zero gates:
+
+```text
+remote_pending_destroy_external_release_fail=0
+remote_pending_enqueue_after_owner_dying=0
+remote_pending_ticket_to_dead_owner=0
+remote_pending_ticket_to_dead_storage_owner=0
+remote_pending_route_removed_while_pending=0
+remote_pending_after_allocator_destroy=0
+```
+
+Selected integrity smoke passed with those gates at zero:
+
+```text
+remote_pending_destroy_inline_closeout=0
+remote_pending_destroy_external_closeout=0
+remote_pending_destroy_external_release_fail=0
+remote_pending_enqueue_after_owner_dying=0
+remote_pending_ticket_to_dead_owner=0
+remote_pending_ticket_to_dead_storage_owner=0
+remote_pending_route_removed_while_pending=0
+remote_pending_after_allocator_destroy=0
+```
+
+The preload integrity smoke uses process-lifetime allocators, so it does not
+normally exercise closeout counts.  A selected+diagnostic transfer smoke was
+also built manually and run with an enlarged stack because the selected
+allocator struct is large:
+
+```text
+ulimit -s unlimited
+hakozuna-hz6/out/linux/hz6_r1_transfer_smoke_selected_diag
+```
+
+That smoke includes flag-gated synthetic inline and external pending destroy
+cases and passed:
+
+```text
+hz6-r1-transfer-smoke ok
+```
+
+Default R1 smokes also passed:
+
+```text
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+```
+
+Decision: `GO(correctness)`.  This closes the allocator lifetime prerequisite
+for the branch-selected owner-inbox candidate.  Default release remains `HOLD`
+on paired selected-vs-baseline RSS/local/perf evidence.

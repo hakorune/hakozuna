@@ -96,6 +96,14 @@
   size_t remote_pending_external_ticket_multiple_list_membership;
   size_t remote_pending_claimed_current_at_quiescence;
   size_t remote_pending_external_claimed_at_quiescence;
+  size_t remote_pending_destroy_inline_closeout;
+  size_t remote_pending_destroy_external_closeout;
+  size_t remote_pending_destroy_external_release_fail;
+  size_t remote_pending_enqueue_after_owner_dying;
+  size_t remote_pending_ticket_to_dead_owner;
+  size_t remote_pending_ticket_to_dead_storage_owner;
+  size_t remote_pending_route_removed_while_pending;
+  size_t remote_pending_after_allocator_destroy;
   size_t remote_pending_key_nonempty_load;
   size_t remote_pending_key_nonempty_hit;
   size_t pending_same_key_on_frontcache_miss;

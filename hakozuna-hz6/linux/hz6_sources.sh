@@ -57,6 +57,7 @@ HZ6_LIB_SOURCES=(
   "${HZ6_DIR}/api/hz6_allocator_remote_pending.c"
   "${HZ6_DIR}/api/hz6_allocator_remote_pending_accounting.c"
   "${HZ6_DIR}/api/hz6_allocator_remote_pending_inbox.c"
+  "${HZ6_DIR}/api/hz6_allocator_remote_pending_lifetime.c"
   "${HZ6_DIR}/api/hz6_allocator_route.c"
   "${HZ6_DIR}/api/hz6_allocator_route_mutation.c"
   "${HZ6_DIR}/api/hz6_allocator_route_domain.c"

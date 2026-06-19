@@ -272,6 +272,12 @@ void hz6_allocator_remote_pending_note_accounting_snapshot(
     const Hz6Allocator* allocator,
     Hz6StatsSnapshot* snapshot);
 
+void hz6_allocator_remote_pending_closeout_for_destroy(
+    Hz6Allocator* allocator);
+
+void hz6_allocator_remote_pending_note_after_destroy(
+    Hz6Allocator* allocator);
+
 int hz6_allocator_remote_pending_key_maybe_nonempty_raw(
     Hz6Allocator* allocator,
     uint16_t front_id,

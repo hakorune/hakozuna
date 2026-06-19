@@ -667,11 +667,13 @@ int hz6_allocator_remote_pending_enqueue(Hz6Allocator* allocator,
   }
   (void)key_index;
   (void)bit;
-  HZ6_REMOTE_PENDING_STAT_INC(allocator, remote_pending_enqueue_attempt);
-  if (!hz6_owner_is_alive(&allocator->owner, allocator->owner.token)) {
-    HZ6_REMOTE_PENDING_STAT_INC(allocator, remote_pending_owner_dead);
-    return 0;
-  }
+	  HZ6_REMOTE_PENDING_STAT_INC(allocator, remote_pending_enqueue_attempt);
+	  if (!hz6_owner_is_alive(&allocator->owner, allocator->owner.token)) {
+	    HZ6_REMOTE_PENDING_STAT_INC(allocator,
+	                                remote_pending_enqueue_after_owner_dying);
+	    HZ6_REMOTE_PENDING_STAT_INC(allocator, remote_pending_owner_dead);
+	    return 0;
+	  }
   uint32_t index = 0;
   if (!hz6_remote_pending_descriptor_index(allocator, descriptor, &index) ||
       descriptor->ptr != ptr || descriptor->generation != generation ||
@@ -742,18 +744,20 @@ int hz6_allocator_remote_pending_external_ticket_publish(
   }
   (void)key_index;
   (void)bit;
-  HZ6_REMOTE_PENDING_STAT_INC(allocator,
-                              remote_pending_external_ticket_attempt);
-  uint32_t inline_index = 0;
+	  HZ6_REMOTE_PENDING_STAT_INC(allocator,
+	                              remote_pending_external_ticket_attempt);
+	  if (!hz6_owner_is_alive(&allocator->owner, allocator->owner.token)) {
+	    HZ6_REMOTE_PENDING_STAT_INC(
+	        allocator, remote_pending_enqueue_after_owner_dying);
+	    HZ6_REMOTE_PENDING_STAT_INC(
+	        allocator, remote_pending_external_ticket_owner_mismatch);
+	    return 0;
+	  }
+	  uint32_t inline_index = 0;
   if (hz6_remote_pending_descriptor_index(allocator, descriptor,
                                           &inline_index)) {
     HZ6_REMOTE_PENDING_STAT_INC(
         allocator, remote_pending_external_ticket_storage_mismatch);
-    return 0;
-  }
-  if (!hz6_owner_is_alive(&allocator->owner, allocator->owner.token)) {
-    HZ6_REMOTE_PENDING_STAT_INC(
-        allocator, remote_pending_external_ticket_owner_mismatch);
     return 0;
   }
   if (descriptor->ptr != ptr || descriptor->generation != generation ||

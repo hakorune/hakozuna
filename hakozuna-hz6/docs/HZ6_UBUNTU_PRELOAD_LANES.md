@@ -1983,3 +1983,45 @@ remote90 median_ops_s=10792436.45 median_peak_mib=77.18
 Decision: `GO(tooling)`.  Pending backlog is not a blocker when accounting is
 explainable.  Default-release promotion still needs allocator lifetime closeout
 and paired RSS/local guard evidence.
+
+## 2026-06-20 AllocatorLifetimeCloseout-L1
+
+`AllocatorLifetimeCloseout-L1` closes pending inbox state during allocator
+destroy before route visibility and descriptor/source teardown.  The behavior
+lives in:
+
+```text
+api/hz6_allocator_remote_pending_lifetime.c
+```
+
+Inline pending slots are cleared and then existing descriptor destroy releases
+their backing storage.  External tickets are different: the descriptor storage
+owner may be another allocator, so destroy validates the ticket proof, verifies
+the storage owner token, unregisters the origin route, and releases the
+descriptor/source through the storage owner.
+
+New selected integrity zero gates:
+
+```text
+remote_pending_destroy_external_release_fail=0
+remote_pending_enqueue_after_owner_dying=0
+remote_pending_ticket_to_dead_owner=0
+remote_pending_ticket_to_dead_storage_owner=0
+remote_pending_route_removed_while_pending=0
+remote_pending_after_allocator_destroy=0
+```
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+```
+
+The selected+diagnostic transfer smoke was also manually built and run with
+`ulimit -s unlimited`; the flag-gated inline/external pending destroy cases
+passed.
+
+Decision: `GO(correctness)`.  This removes the lifetime blocker for the
+owner-inbox selected candidate.  The remaining default-release gate is paired
+selected-vs-baseline RSS/local/perf evidence.

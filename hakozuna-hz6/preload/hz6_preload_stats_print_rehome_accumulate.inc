@@ -192,6 +192,22 @@
         stats.remote_pending_claimed_current_at_quiescence;
     remote_pending_external_claimed_at_quiescence +=
         stats.remote_pending_external_claimed_at_quiescence;
+    remote_pending_destroy_inline_closeout +=
+        stats.remote_pending_destroy_inline_closeout;
+    remote_pending_destroy_external_closeout +=
+        stats.remote_pending_destroy_external_closeout;
+    remote_pending_destroy_external_release_fail +=
+        stats.remote_pending_destroy_external_release_fail;
+    remote_pending_enqueue_after_owner_dying +=
+        stats.remote_pending_enqueue_after_owner_dying;
+    remote_pending_ticket_to_dead_owner +=
+        stats.remote_pending_ticket_to_dead_owner;
+    remote_pending_ticket_to_dead_storage_owner +=
+        stats.remote_pending_ticket_to_dead_storage_owner;
+    remote_pending_route_removed_while_pending +=
+        stats.remote_pending_route_removed_while_pending;
+    remote_pending_after_allocator_destroy +=
+        stats.remote_pending_after_allocator_destroy;
     remote_pending_key_nonempty_load +=
         stats.remote_pending_key_nonempty_load;
     remote_pending_key_nonempty_hit +=

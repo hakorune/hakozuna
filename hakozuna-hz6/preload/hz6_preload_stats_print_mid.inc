@@ -159,6 +159,14 @@
           "remote_pending_external_ticket_multiple_list_membership=%zu "
           "remote_pending_claimed_current_at_quiescence=%zu "
           "remote_pending_external_claimed_at_quiescence=%zu "
+          "remote_pending_destroy_inline_closeout=%zu "
+          "remote_pending_destroy_external_closeout=%zu "
+          "remote_pending_destroy_external_release_fail=%zu "
+          "remote_pending_enqueue_after_owner_dying=%zu "
+          "remote_pending_ticket_to_dead_owner=%zu "
+          "remote_pending_ticket_to_dead_storage_owner=%zu "
+          "remote_pending_route_removed_while_pending=%zu "
+          "remote_pending_after_allocator_destroy=%zu "
           "remote_pending_key_nonempty_load=%zu "
           "remote_pending_key_nonempty_hit=%zu "
           "pending_same_key_on_frontcache_miss=%zu "
@@ -346,6 +354,14 @@
           remote_pending_external_ticket_multiple_list_membership,
           remote_pending_claimed_current_at_quiescence,
           remote_pending_external_claimed_at_quiescence,
+          remote_pending_destroy_inline_closeout,
+          remote_pending_destroy_external_closeout,
+          remote_pending_destroy_external_release_fail,
+          remote_pending_enqueue_after_owner_dying,
+          remote_pending_ticket_to_dead_owner,
+          remote_pending_ticket_to_dead_storage_owner,
+          remote_pending_route_removed_while_pending,
+          remote_pending_after_allocator_destroy,
           remote_pending_key_nonempty_load,
           remote_pending_key_nonempty_hit,
           pending_same_key_on_frontcache_miss,
