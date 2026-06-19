@@ -1,4 +1,5 @@
 #include "hz6_allocator.h"
+#include "hz6_allocator_route_shared_directory.h"
 #include "../fronts/midpage/hz6_midpage_front.h"
 
 #if HZ6_DIAGNOSTIC_PROBES

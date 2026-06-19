@@ -75,7 +75,7 @@ HZ6_ROUTE_REHOME_REGISTER_BEFORE_UNREGISTER_L1=0
 HZ6_ROUTE_REHOME_TRANSFER_OWNER_L1=1
 HZ6_REMOTE_FREE_REHOME_BEFORE_TRANSFER_L1=1
 HZ6_REMOTE_FREE_ROUTE_RESOLVE_L1=1
-HZ6_REMOTE_FREE_RESOLVE_SHARED_FIRST_L1=0
+HZ6_REMOTE_FREE_RESOLVE_SHARED_FIRST_L1=1
 HZ6_REMOTE_FREE_RESOLVE_LOCAL_EXACT_ONLY_L1=0
 HZ6_ROUTE_HASH_XOR_FOLD_L1=1
 HZ6_ROUTE_LINEAR_WRAP_L1=1
@@ -184,9 +184,10 @@ present but the base directory flag was missing from the selected list.  The
 directory writer lock is sharded with
 `HZ6_SHARED_ROUTE_DIRECTORY_LOCK_SHARDS=256`, because the single global writer
 lock timed out the `remote90 16..131072` smoke.
-`HZ6_REMOTE_FREE_RESOLVE_SHARED_FIRST_L1=1` is kept off: shared-first completed
-but regressed the same r90 smoke, so the resolver keeps the existing
-local-first order while shared publication remains mandatory.
+`HZ6_REMOTE_FREE_RESOLVE_SHARED_FIRST_L1=1` is selected after resolver
+integrity classification and rehome transfer landed.  The old shared-first
+control had regressed before those boxes; the 2026-06-19 refresh now improves
+the focused remote lane while shared publication remains mandatory.
 
 Phase 4 first maintenance status, 2026-06-19: selected preload now enables
 `HZ6_SHARED_ROUTE_DIRECTORY_TOMBSTONE_MAINTENANCE_L1=1`.  Shared exact
@@ -221,6 +222,13 @@ visible hits, and final resolver result kinds.  Focused smokes completed:
 `HZ6_PRELOAD_STATS=1 /bin/true` printed the new line, `remote50 16..32768`
 reached `162177.18 ops/s`, and `remote90 16..131072` reached
 `129113.97 ops/s`.
+
+Phase 3 shared-first refresh, 2026-06-19: selected preload now enables
+`HZ6_REMOTE_FREE_RESOLVE_SHARED_FIRST_L1=1`.  Diagnostic r50 showed almost all
+route-after-map work resolving through shared exact records
+(`shared_valid=39716`, `visible_shadow=0`), and the refreshed production
+control improved both focused smoke rows: `remote50 16..32768` reached
+`699944.49 ops/s`, and `remote90 16..131072` reached `239981.88 ops/s`.
 
 Phase 3 control closeout, 2026-06-19: two narrow lock/lookup controls are kept
 off.  `HZ6_REMOTE_FREE_RESOLVE_LOCAL_EXACT_ONLY_L1=1` completed but regressed
