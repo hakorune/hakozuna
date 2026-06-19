@@ -120,6 +120,18 @@
           "remote_pending_maintenance_entry_gate_miss=%zu "
           "remote_pending_maintenance_inline_gate_hit=%zu "
           "remote_pending_maintenance_external_gate_hit=%zu "
+          "remote_pending_maintenance_external_attempt=%zu "
+          "remote_pending_maintenance_external_success=%zu "
+          "remote_pending_maintenance_inline_pop_attempt=%zu "
+          "remote_pending_maintenance_inline_pop_success=%zu "
+          "remote_pending_maintenance_route_validate_inline=%zu "
+          "remote_pending_maintenance_route_validate_external=%zu "
+          "remote_pending_maintenance_frontcache_push_attempt_inline=%zu "
+          "remote_pending_maintenance_frontcache_push_attempt_external=%zu "
+          "remote_pending_maintenance_frontcache_push_success_inline=%zu "
+          "remote_pending_maintenance_frontcache_push_success_external=%zu "
+          "remote_pending_maintenance_drained_inline=%zu "
+          "remote_pending_maintenance_drained_external=%zu "
           "remote_pending_external_key_probe=%zu "
           "remote_pending_external_key_hit=%zu "
           "remote_pending_batch_call=%zu "
@@ -321,6 +333,18 @@
           remote_pending_maintenance_entry_gate_miss,
           remote_pending_maintenance_inline_gate_hit,
           remote_pending_maintenance_external_gate_hit,
+          remote_pending_maintenance_external_attempt,
+          remote_pending_maintenance_external_success,
+          remote_pending_maintenance_inline_pop_attempt,
+          remote_pending_maintenance_inline_pop_success,
+          remote_pending_maintenance_route_validate_inline,
+          remote_pending_maintenance_route_validate_external,
+          remote_pending_maintenance_frontcache_push_attempt_inline,
+          remote_pending_maintenance_frontcache_push_attempt_external,
+          remote_pending_maintenance_frontcache_push_success_inline,
+          remote_pending_maintenance_frontcache_push_success_external,
+          remote_pending_maintenance_drained_inline,
+          remote_pending_maintenance_drained_external,
           remote_pending_external_key_probe,
           remote_pending_external_key_hit,
           remote_pending_batch_call,

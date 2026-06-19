@@ -2801,6 +2801,64 @@ high-remote sink that keeps pending buildup from becoming another remote90
 cliff, so the next p1 work should reduce per-item consumer cost or improve
 demand targeting without broadly skipping maintenance.
 
+## 2026-06-20 OwnerInboxMaintenanceCostAttribution-L1
+
+`OwnerInboxMaintenanceCostAttribution-L1` adds diagnostic-only counters for the
+owner-inbox maintenance loop:
+
+```text
+remote_pending_maintenance_external_attempt/success
+remote_pending_maintenance_inline_pop_attempt/success
+remote_pending_maintenance_route_validate_inline/external
+remote_pending_maintenance_frontcache_push_attempt_inline/external
+remote_pending_maintenance_frontcache_push_success_inline/external
+remote_pending_maintenance_drained_inline/external
+```
+
+The counters are reported through the preload detail dump and the owner-inbox
+tax runner, and they compile out in production through the existing
+`HZ6_REMOTE_PENDING_STAT_*` macros.
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_preload_owner_inbox_external_target.sh
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+```
+
+Diagnostic RUNS=3:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --runs 3 \
+  --rows remote50,remote90 \
+  --variants p1_external
+```
+
+Observed medians:
+
+```text
+row       ops/s   inline drained  external drained  inline route  external route
+remote50  5.17M   4149            400               4149          400
+remote90  3.02M   1691            20611             1691          20611
+```
+
+Other relevant medians:
+
+```text
+row       maintenance_check  entry_gate_miss  inline_gate  external_gate
+remote50  4488               4216             4430         400
+remote90  22302              31656            2608         20611
+```
+
+Decision: `GO(tooling)/DESIGN checkpoint`.  Remote50 tax is mostly inline
+maintenance, while remote90 survival is mostly external-ticket consumption.
+The next behavior box should not use one broad maintenance throttle.  Prefer a
+split policy or targeted inline-cost reduction that preserves the external sink
+needed by high-remote rows.
+
 ## 2026-06-20 Profile Frontier Alias Smoke
 
 The new profile aliases were exercised through the existing focused profile

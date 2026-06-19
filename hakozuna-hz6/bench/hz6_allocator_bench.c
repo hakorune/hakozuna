@@ -409,6 +409,12 @@ static void print_stats(const Hz6Allocator* allocator) {
          "maintenance_check=%zu maintenance_armed=%zu batch_call=%zu "
          "batch_items=%zu maintenance_noop=%zu key_race=%zu "
          "external_miss=%zu inline_empty=%zu frontcache_full_stop=%zu "
+         "external_attempt=%zu external_success=%zu "
+         "inline_pop_attempt=%zu inline_pop_success=%zu "
+         "route_validate_inline=%zu route_validate_external=%zu "
+         "push_attempt_inline=%zu push_attempt_external=%zu "
+         "push_success_inline=%zu push_success_external=%zu "
+         "drained_inline=%zu drained_external=%zu "
          "frontcache_push=%zu frontcache_full=%zu "
          "key_load=%zu key_hit=%zu direct_gate_load=%zu "
          "direct_gate_hit=%zu direct_claim_attempt=%zu "
@@ -451,6 +457,18 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.remote_pending_maintenance_external_miss,
          stats.remote_pending_maintenance_inline_empty,
          stats.remote_pending_maintenance_frontcache_full_stop,
+         stats.remote_pending_maintenance_external_attempt,
+         stats.remote_pending_maintenance_external_success,
+         stats.remote_pending_maintenance_inline_pop_attempt,
+         stats.remote_pending_maintenance_inline_pop_success,
+         stats.remote_pending_maintenance_route_validate_inline,
+         stats.remote_pending_maintenance_route_validate_external,
+         stats.remote_pending_maintenance_frontcache_push_attempt_inline,
+         stats.remote_pending_maintenance_frontcache_push_attempt_external,
+         stats.remote_pending_maintenance_frontcache_push_success_inline,
+         stats.remote_pending_maintenance_frontcache_push_success_external,
+         stats.remote_pending_maintenance_drained_inline,
+         stats.remote_pending_maintenance_drained_external,
          stats.remote_pending_frontcache_push,
          stats.remote_pending_frontcache_full,
          stats.remote_pending_key_nonempty_load,

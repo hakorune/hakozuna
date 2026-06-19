@@ -1105,7 +1105,8 @@ int hz6_allocator_remote_pending_external_ticket_consume_one(
       hz6_allocator_frontcache_count(allocator, class_id) >=
           hz6_allocator_frontcache_capacity(allocator, class_id)) {
     if (allocator && class_id < HZ6_FRONT_CACHE_CLASS_COUNT) {
-      ++allocator->stats.remote_pending_external_ticket_frontcache_full;
+      HZ6_REMOTE_PENDING_STAT_INC(
+          allocator, remote_pending_external_ticket_frontcache_full);
     }
     return 0;
   }
@@ -1119,7 +1120,8 @@ int hz6_allocator_remote_pending_external_ticket_consume_one(
       HZ6_RP_EXTERNAL_HEAD(allocator)[front_index][class_id];
   if (ticket_index == HZ6_REMOTE_PENDING_INDEX_NONE ||
       ticket_index >= HZ6_REMOTE_PENDING_EXTERNAL_TICKET_CAPACITY) {
-    ++allocator->stats.remote_pending_external_ticket_consume_empty;
+    HZ6_REMOTE_PENDING_STAT_INC(
+        allocator, remote_pending_external_ticket_consume_empty);
     hz6_remote_pending_external_unlock(allocator);
     return 0;
   }
@@ -1183,6 +1185,8 @@ int hz6_allocator_remote_pending_external_ticket_consume_one(
   }
 #endif
   if (valid) {
+    HZ6_REMOTE_PENDING_STAT_INC(
+        allocator, remote_pending_maintenance_route_validate_external);
     Hz6RouteResult route =
         hz6_allocator_route_lookup_exact(allocator, proof.ptr);
     if (route.kind != HZ6_ROUTE_VALID || route.descriptor != descriptor ||
@@ -1211,6 +1215,8 @@ int hz6_allocator_remote_pending_external_ticket_consume_one(
   front_entry.generation = proof.generation;
   hz6_frontcache_entry_set_bytes(&front_entry, descriptor->bytes);
   hz6_frontcache_entry_set_class_id(&front_entry, class_id);
+  HZ6_REMOTE_PENDING_STAT_INC(
+      allocator, remote_pending_maintenance_frontcache_push_attempt_external);
   if (!hz6_allocator_frontcache_push(allocator, class_id, front_entry)) {
     HZ6_REMOTE_PENDING_STAT_INC(
         allocator, remote_pending_external_ticket_frontcache_full);
@@ -1227,6 +1233,8 @@ int hz6_allocator_remote_pending_external_ticket_consume_one(
     return 0;
   }
   descriptor->state = HZ6_STATE_LOCAL_FREE;
+  HZ6_REMOTE_PENDING_STAT_INC(
+      allocator, remote_pending_maintenance_frontcache_push_success_external);
 #if HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_L1
   if (!hz6_remote_pending_external_dup_index_remove(
           allocator, ticket_index, proof.descriptor, proof.generation)) {
@@ -1239,6 +1247,8 @@ int hz6_allocator_remote_pending_external_ticket_consume_one(
   HZ6_RP_EXTERNAL_FREE_HEAD(allocator) = ticket_index;
   HZ6_REMOTE_PENDING_STAT_INC(allocator,
                               remote_pending_external_ticket_consume);
+  HZ6_REMOTE_PENDING_STAT_INC(
+      allocator, remote_pending_maintenance_drained_external);
   hz6_remote_pending_external_note_remove(allocator);
   hz6_remote_pending_external_unlock(allocator);
   return 1;
@@ -1297,9 +1307,13 @@ size_t hz6_allocator_remote_pending_maintenance_class(
       break;
     }
     if (external_nonempty) {
+      HZ6_REMOTE_PENDING_STAT_INC(
+          allocator, remote_pending_maintenance_external_attempt);
       if (hz6_allocator_remote_pending_external_ticket_consume_one(
           allocator, front_id, class_id)) {
         ++drained;
+        HZ6_REMOTE_PENDING_STAT_INC(
+            allocator, remote_pending_maintenance_external_success);
         external_nonempty = hz6_remote_pending_external_key_nonempty(
             allocator, front_id, class_id);
         continue;
@@ -1309,11 +1323,15 @@ size_t hz6_allocator_remote_pending_maintenance_class(
       external_nonempty = 0;
     }
     Hz6RemotePendingInboxEntry entry = {0};
+    HZ6_REMOTE_PENDING_STAT_INC(
+        allocator, remote_pending_maintenance_inline_pop_attempt);
     if (!hz6_remote_pending_pop_key(allocator, front_id, class_id, &entry)) {
       HZ6_REMOTE_PENDING_STAT_INC(allocator,
                                   remote_pending_maintenance_inline_empty);
       break;
     }
+    HZ6_REMOTE_PENDING_STAT_INC(
+        allocator, remote_pending_maintenance_inline_pop_success);
     Hz6ObjectDescriptor* descriptor = entry.descriptor;
     int valid = descriptor && descriptor->ptr == entry.ptr &&
                 descriptor->generation == entry.generation &&
@@ -1332,6 +1350,8 @@ size_t hz6_allocator_remote_pending_maintenance_class(
       valid = 0;
     }
     if (valid) {
+      HZ6_REMOTE_PENDING_STAT_INC(
+          allocator, remote_pending_maintenance_route_validate_inline);
       Hz6RouteResult route =
           hz6_allocator_route_lookup_exact(allocator, entry.ptr);
       if (route.kind != HZ6_ROUTE_VALID || route.descriptor != descriptor ||
@@ -1359,6 +1379,8 @@ size_t hz6_allocator_remote_pending_maintenance_class(
     front_entry.generation = entry.generation;
     hz6_frontcache_entry_set_bytes(&front_entry, descriptor->bytes);
     hz6_frontcache_entry_set_class_id(&front_entry, class_id);
+    HZ6_REMOTE_PENDING_STAT_INC(
+        allocator, remote_pending_maintenance_frontcache_push_attempt_inline);
     if (!hz6_allocator_frontcache_push(allocator, class_id, front_entry)) {
       hz6_remote_pending_requeue_entry(allocator, &entry);
       HZ6_REMOTE_PENDING_STAT_INC(allocator, remote_pending_frontcache_full);
@@ -1366,6 +1388,10 @@ size_t hz6_allocator_remote_pending_maintenance_class(
     }
     descriptor->state = HZ6_STATE_LOCAL_FREE;
     HZ6_REMOTE_PENDING_STAT_INC(allocator, remote_pending_frontcache_push);
+    HZ6_REMOTE_PENDING_STAT_INC(
+        allocator, remote_pending_maintenance_frontcache_push_success_inline);
+    HZ6_REMOTE_PENDING_STAT_INC(
+        allocator, remote_pending_maintenance_drained_inline);
     ++drained;
   }
   if (drained == 0) {

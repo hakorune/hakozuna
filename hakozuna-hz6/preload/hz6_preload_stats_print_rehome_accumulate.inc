@@ -109,6 +109,30 @@
         stats.remote_pending_maintenance_inline_gate_hit;
     remote_pending_maintenance_external_gate_hit +=
         stats.remote_pending_maintenance_external_gate_hit;
+    remote_pending_maintenance_external_attempt +=
+        stats.remote_pending_maintenance_external_attempt;
+    remote_pending_maintenance_external_success +=
+        stats.remote_pending_maintenance_external_success;
+    remote_pending_maintenance_inline_pop_attempt +=
+        stats.remote_pending_maintenance_inline_pop_attempt;
+    remote_pending_maintenance_inline_pop_success +=
+        stats.remote_pending_maintenance_inline_pop_success;
+    remote_pending_maintenance_route_validate_inline +=
+        stats.remote_pending_maintenance_route_validate_inline;
+    remote_pending_maintenance_route_validate_external +=
+        stats.remote_pending_maintenance_route_validate_external;
+    remote_pending_maintenance_frontcache_push_attempt_inline +=
+        stats.remote_pending_maintenance_frontcache_push_attempt_inline;
+    remote_pending_maintenance_frontcache_push_attempt_external +=
+        stats.remote_pending_maintenance_frontcache_push_attempt_external;
+    remote_pending_maintenance_frontcache_push_success_inline +=
+        stats.remote_pending_maintenance_frontcache_push_success_inline;
+    remote_pending_maintenance_frontcache_push_success_external +=
+        stats.remote_pending_maintenance_frontcache_push_success_external;
+    remote_pending_maintenance_drained_inline +=
+        stats.remote_pending_maintenance_drained_inline;
+    remote_pending_maintenance_drained_external +=
+        stats.remote_pending_maintenance_drained_external;
     remote_pending_external_key_probe +=
         stats.remote_pending_external_key_probe;
     remote_pending_external_key_hit +=
