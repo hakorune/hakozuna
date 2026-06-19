@@ -367,6 +367,20 @@ bench_find_hz6_workload_capacity_mid_target_library() {
     hz6-preload-workload-capacity-mid-target
 }
 
+bench_find_hz6_high_remote_owner_inbox_target_library() {
+  bench_find_hz6_preload_output \
+    HZ6_HIGH_REMOTE_OWNER_INBOX_TARGET_PRELOAD_SO \
+    hz6_preload_high_remote_owner_inbox \
+    hz6-preload-high-remote-owner-inbox-target
+}
+
+bench_find_hz6_transfer_class_shard_target_library() {
+  bench_find_hz6_preload_output \
+    HZ6_TRANSFER_CLASS_SHARD_TARGET_PRELOAD_SO \
+    hz6_preload_transfer_class_shard \
+    hz6-preload-transfer-class-shard-target
+}
+
 bench_find_hz6_midpage_trusted_class_target_library() {
   bench_find_hz6_preload_output \
     HZ6_MIDPAGE_TRUSTED_CLASS_TARGET_PRELOAD_SO \
@@ -502,6 +516,12 @@ bench_find_allocator_library() {
       ;;
     hz6-workload-capacity-mid-target|hz6_workload_capacity_mid_target)
       bench_find_hz6_workload_capacity_mid_target_library
+      ;;
+    hz6-high-remote-owner-inbox-target|hz6_high_remote_owner_inbox_target)
+      bench_find_hz6_high_remote_owner_inbox_target_library
+      ;;
+    hz6-transfer-class-shard-target|hz6_transfer_class_shard_target)
+      bench_find_hz6_transfer_class_shard_target_library
       ;;
     hz6-midpage-trusted-class|hz6_midpage_trusted_class)
       bench_find_hz6_midpage_trusted_class_target_library
@@ -640,6 +660,12 @@ bench_print_allocator_hints() {
       ;;
     hz6-workload-capacity-mid-target|hz6_workload_capacity_mid_target)
       echo "hint: build the HZ6 workload-capacity mid target lane with './hakozuna-hz6/linux/build_hz6_preload_workload_capacity_mid_target.sh' or set HZ6_WORKLOAD_CAPACITY_MID_TARGET_PRELOAD_SO" >&2
+      ;;
+    hz6-high-remote-owner-inbox-target|hz6_high_remote_owner_inbox_target)
+      echo "hint: build the HZ6 high-remote owner-inbox target lane with './hakozuna-hz6/linux/build_hz6_preload_high_remote_owner_inbox_target.sh' or set HZ6_HIGH_REMOTE_OWNER_INBOX_TARGET_PRELOAD_SO" >&2
+      ;;
+    hz6-transfer-class-shard-target|hz6_transfer_class_shard_target)
+      echo "hint: build the HZ6 transfer class-shard target lane with './hakozuna-hz6/linux/build_hz6_preload_transfer_class_shard_target.sh' or set HZ6_TRANSFER_CLASS_SHARD_TARGET_PRELOAD_SO" >&2
       ;;
     hz6-midpage-trusted-class|hz6_midpage_trusted_class)
       echo "hint: build the HZ6 MidPage trusted-class target lane with './hakozuna-hz6/linux/build_hz6_preload_midpage_trusted_class_target.sh' or set HZ6_MIDPAGE_TRUSTED_CLASS_TARGET_PRELOAD_SO" >&2

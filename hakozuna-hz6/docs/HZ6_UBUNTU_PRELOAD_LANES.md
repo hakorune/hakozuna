@@ -2456,6 +2456,17 @@ comparison tool.
 Decision: `GO(profile)/HOLD(default)`.  Do not add another owner-inbox consumer
 policy to selected/default until a separate audit shows a no-regression path.
 
+Profile frontier alias:
+
+```text
+hz6-high-remote-owner-inbox-target
+```
+
+This alias builds through
+`build_hz6_preload_high_remote_owner_inbox_target.sh` and resolves through
+`bench/lib/bench_common.sh`, so existing profile frontier and selected-balance
+runners can compare it without custom LD_PRELOAD plumbing.
+
 ## 2026-06-20 TransferCapacitySweep-L1
 
 `TransferCapacitySweep-L1` adds a selected/default observation runner:
@@ -2528,6 +2539,12 @@ Build target:
 
 ```text
 hakozuna-hz6/linux/build_hz6_preload_transfer_class_shard_target.sh
+```
+
+Profile frontier alias:
+
+```text
+hz6-transfer-class-shard-target
 ```
 
 Paired runner:
