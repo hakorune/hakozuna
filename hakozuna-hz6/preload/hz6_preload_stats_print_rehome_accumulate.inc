@@ -137,6 +137,14 @@
         stats.remote_pending_maintenance_drained_inline;
     remote_pending_maintenance_drained_external +=
         stats.remote_pending_maintenance_drained_external;
+    remote_pending_maintenance_drained_inline_toy +=
+        stats.remote_pending_maintenance_drained_inline_toy;
+    remote_pending_maintenance_drained_inline_midpage +=
+        stats.remote_pending_maintenance_drained_inline_midpage;
+    remote_pending_maintenance_drained_external_toy +=
+        stats.remote_pending_maintenance_drained_external_toy;
+    remote_pending_maintenance_drained_external_midpage +=
+        stats.remote_pending_maintenance_drained_external_midpage;
     remote_pending_external_key_probe +=
         stats.remote_pending_external_key_probe;
     remote_pending_external_key_hit +=
@@ -324,6 +332,10 @@
     for (size_t class_id = 0; class_id < HZ6_STATS_CLASS_COUNT; ++class_id) {
       remote_pending_direct_claim_success_by_class[class_id] +=
           stats.remote_pending_direct_claim_success_by_class[class_id];
+      remote_pending_maintenance_drained_inline_by_class[class_id] +=
+          stats.remote_pending_maintenance_drained_inline_by_class[class_id];
+      remote_pending_maintenance_drained_external_by_class[class_id] +=
+          stats.remote_pending_maintenance_drained_external_by_class[class_id];
     }
     remote_pending_direct_claim_success_while_transfer_nonempty +=
         stats.remote_pending_direct_claim_success_while_transfer_nonempty;

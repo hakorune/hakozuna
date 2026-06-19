@@ -139,6 +139,40 @@ static int hz6_remote_pending_storage_ready(Hz6Allocator* allocator) {
   ((void)(allocator), (void)(value))
 #endif
 
+#if HZ6_DIAGNOSTIC_PROBES
+static void hz6_remote_pending_note_maintenance_drain_shape(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id,
+    int external) {
+  if (!allocator) {
+    return;
+  }
+  if (class_id < HZ6_STATS_CLASS_COUNT) {
+    if (external) {
+      ++allocator->stats
+            .remote_pending_maintenance_drained_external_by_class[class_id];
+    } else {
+      ++allocator->stats
+            .remote_pending_maintenance_drained_inline_by_class[class_id];
+    }
+  }
+  if (front_id == HZ6_FRONT_TOY) {
+    if (external) {
+      ++allocator->stats.remote_pending_maintenance_drained_external_toy;
+    } else {
+      ++allocator->stats.remote_pending_maintenance_drained_inline_toy;
+    }
+  } else if (front_id == HZ6_FRONT_MIDPAGE) {
+    if (external) {
+      ++allocator->stats.remote_pending_maintenance_drained_external_midpage;
+    } else {
+      ++allocator->stats.remote_pending_maintenance_drained_inline_midpage;
+    }
+  }
+}
+#endif
+
 typedef struct Hz6RemotePendingInboxEntry {
   void* ptr;
   Hz6ObjectDescriptor* descriptor;
@@ -1249,6 +1283,10 @@ int hz6_allocator_remote_pending_external_ticket_consume_one(
                               remote_pending_external_ticket_consume);
   HZ6_REMOTE_PENDING_STAT_INC(
       allocator, remote_pending_maintenance_drained_external);
+#if HZ6_DIAGNOSTIC_PROBES
+  hz6_remote_pending_note_maintenance_drain_shape(
+      allocator, front_id, class_id, 1);
+#endif
   hz6_remote_pending_external_note_remove(allocator);
   hz6_remote_pending_external_unlock(allocator);
   return 1;
@@ -1466,6 +1504,10 @@ size_t hz6_allocator_remote_pending_maintenance_class(
         allocator, remote_pending_maintenance_frontcache_push_success_inline);
     HZ6_REMOTE_PENDING_STAT_INC(
         allocator, remote_pending_maintenance_drained_inline);
+#if HZ6_DIAGNOSTIC_PROBES
+    hz6_remote_pending_note_maintenance_drain_shape(
+        allocator, front_id, class_id, 0);
+#endif
     ++drained;
   }
   if (drained == 0) {

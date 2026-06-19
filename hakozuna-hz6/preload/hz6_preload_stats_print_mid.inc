@@ -686,14 +686,26 @@
   }
   fprintf(stderr, "\n");
 
-  fprintf(stderr, "[HZ6_PRELOAD_DIRECT_PENDING_CLASS_DETAIL]");
+  fprintf(stderr,
+          "[HZ6_PRELOAD_DIRECT_PENDING_CLASS_DETAIL] "
+          "inline_toy=%zu inline_midpage=%zu "
+          "external_toy=%zu external_midpage=%zu",
+          remote_pending_maintenance_drained_inline_toy,
+          remote_pending_maintenance_drained_inline_midpage,
+          remote_pending_maintenance_drained_external_toy,
+          remote_pending_maintenance_drained_external_midpage);
   for (size_t class_id = 0; class_id < HZ6_STATS_CLASS_COUNT; ++class_id) {
     fprintf(stderr,
-            " c%zu_claim=%zu c%zu_transfer=%zu",
+            " c%zu_claim=%zu c%zu_transfer=%zu"
+            " c%zu_inline=%zu c%zu_external=%zu",
             class_id,
             remote_pending_direct_claim_success_by_class[class_id],
             class_id,
-            remote_pending_direct_claim_success_transfer_by_class[class_id]);
+            remote_pending_direct_claim_success_transfer_by_class[class_id],
+            class_id,
+            remote_pending_maintenance_drained_inline_by_class[class_id],
+            class_id,
+            remote_pending_maintenance_drained_external_by_class[class_id]);
   }
   fprintf(stderr, "\n");
 

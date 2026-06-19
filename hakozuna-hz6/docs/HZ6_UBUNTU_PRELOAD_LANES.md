@@ -2859,6 +2859,53 @@ The next behavior box should not use one broad maintenance throttle.  Prefer a
 split policy or targeted inline-cost reduction that preserves the external sink
 needed by high-remote rows.
 
+## 2026-06-20 OwnerInboxMaintenanceShapeObserve-L1
+
+`OwnerInboxMaintenanceShapeObserve-L1` adds diagnostic-only front/class split
+for owner-inbox maintenance drain work:
+
+```text
+inline_toy / inline_midpage
+external_toy / external_midpage
+cN_inline / cN_external
+```
+
+The counters are emitted on the existing
+`[HZ6_PRELOAD_DIRECT_PENDING_CLASS_DETAIL]` line to keep the log surface small.
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_preload_owner_inbox_external_target.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+```
+
+Diagnostic RUNS=3:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 3 \
+  --rows remote50,remote90 \
+  --variants p1_external
+```
+
+Representative median-run shape:
+
+```text
+row       inline toy/midpage  external toy/midpage  c4 inline/external  c5 inline/external
+remote50  317 / 5813          7 / 24                922 / 29            5204 / 2
+remote90  437 / 1061          4285 / 21011          215 / 10393         874 / 12493
+```
+
+Decision: `GO(tooling)/DESIGN checkpoint`.  Remote50 inline maintenance is
+mostly MidPage class5, then class4.  Remote90 survival is mostly external
+MidPage class5/class4, with Toy external work still visible.  The next behavior
+should not throttle all inline pending; target MidPage class5/class4 inline
+work specifically and preserve external class4/class5 consumption.
+
 ## 2026-06-20 OwnerInboxSplitMaintenancePolicy-L1
 
 `OwnerInboxSplitMaintenancePolicy-L1` tests the narrow policy suggested by the

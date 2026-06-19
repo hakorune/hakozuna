@@ -70,6 +70,10 @@
   size_t remote_pending_maintenance_frontcache_push_success_external = 0;
   size_t remote_pending_maintenance_drained_inline = 0;
   size_t remote_pending_maintenance_drained_external = 0;
+  size_t remote_pending_maintenance_drained_inline_toy = 0;
+  size_t remote_pending_maintenance_drained_inline_midpage = 0;
+  size_t remote_pending_maintenance_drained_external_toy = 0;
+  size_t remote_pending_maintenance_drained_external_midpage = 0;
   size_t remote_pending_external_key_probe = 0;
   size_t remote_pending_external_key_hit = 0;
   size_t remote_pending_batch_call = 0;
@@ -161,6 +165,10 @@
   size_t remote_pending_direct_claim_success_toy = 0;
   size_t remote_pending_direct_claim_success_midpage = 0;
   size_t remote_pending_direct_claim_success_by_class[HZ6_STATS_CLASS_COUNT] =
+      {0};
+  size_t remote_pending_maintenance_drained_inline_by_class[HZ6_STATS_CLASS_COUNT] =
+      {0};
+  size_t remote_pending_maintenance_drained_external_by_class[HZ6_STATS_CLASS_COUNT] =
       {0};
   size_t remote_pending_direct_claim_success_while_transfer_nonempty = 0;
   size_t remote_pending_direct_claim_success_transfer_toy = 0;

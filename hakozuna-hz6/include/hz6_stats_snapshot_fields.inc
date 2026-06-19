@@ -71,6 +71,12 @@
   size_t remote_pending_maintenance_frontcache_push_success_external;
   size_t remote_pending_maintenance_drained_inline;
   size_t remote_pending_maintenance_drained_external;
+  size_t remote_pending_maintenance_drained_inline_toy;
+  size_t remote_pending_maintenance_drained_inline_midpage;
+  size_t remote_pending_maintenance_drained_inline_by_class[HZ6_STATS_CLASS_COUNT];
+  size_t remote_pending_maintenance_drained_external_toy;
+  size_t remote_pending_maintenance_drained_external_midpage;
+  size_t remote_pending_maintenance_drained_external_by_class[HZ6_STATS_CLASS_COUNT];
   size_t remote_pending_external_key_probe;
   size_t remote_pending_external_key_hit;
   size_t remote_pending_batch_call;
