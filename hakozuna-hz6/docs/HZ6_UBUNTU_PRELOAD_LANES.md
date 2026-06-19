@@ -3366,6 +3366,56 @@ not overlap same-class transfer inventory, while high-remote DirectReuse does.
 If the next behavior box exists, it should be transfer-aware only for the
 high-remote/direct-reuse profile shape, not a blanket DirectReuse skip.
 
+## 2026-06-20 DirectReuseProfileReproBatch2-L1
+
+Re-ran the production owner-inbox external profile against the DirectReuse
+profile alias after the transfer-outcome audit.  This batch was intentionally
+the same production shape as the earlier profile recheck: DirectReuse behavior
+on, but DirectReuse attribution counters compiled out.
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 10 \
+  --rows remote50,remote90 \
+  --variants p1_external,p1_external_direct_reuse
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_073847
+```
+
+Production RUNS=10 medians:
+
+```text
+variant                   remote50          RSS       remote90          RSS
+p1_external               14.18163794M      74.75MiB  10.67473729M     77.36MiB
+p1_external_direct_reuse  14.05390252M      74.88MiB  10.48207211M     77.48MiB
+```
+
+Outcome counters also stayed clean for the correctness gates:
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+route_unregister_while_pending=0
+route_replace_while_pending=0
+route_rehome_while_pending=0
+```
+
+Production DirectReuse diagnostic counters remained zero because
+`HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1=0`, which is the intended production
+shape for this profile.
+
+Decision: `HOLD(profile promotion)/NO-GO(next behavior)`.  The earlier RUNS=10
+remote50 win did not reproduce; this batch has DirectReuse down on both
+remote50 and remote90.  Keep
+`hz6-high-remote-owner-inbox-direct-reuse-target` as a profile/control and do
+not add a transfer-aware skip or selected promotion until a stronger paired
+batch shows stable upside.
+
 ## 2026-06-20 Profile Frontier Alias Smoke
 
 The new profile aliases were exercised through the existing focused profile
