@@ -1783,3 +1783,20 @@ remote_pending_direct_integrity_failure=0
 Decision: `GO(tooling)`.  The useful DirectReuse work is concentrated in
 MidPage, especially class 5.  Use this split for the next A/B rather than
 treating DirectReuse as a uniform all-front/all-class path.
+
+## 2026-06-20 DirectReuse Transfer Overlap Observe
+
+Added success-side counters for DirectReuse claims that occur while same-class
+transfer inventory is visible.  The smoke output now reports both aggregate
+front split and class split:
+
+```text
+remote_pending_direct_claim_success_transfer_nonempty=1384
+remote_pending_direct_claim_success_transfer_toy=118
+remote_pending_direct_claim_success_transfer_midpage=1266
+[HZ6_PRELOAD_DIRECT_PENDING_CLASS_DETAIL] c4_transfer=308 c5_transfer=1074
+```
+
+Decision: `GO(tooling)`.  This is observation only.  The overlap varies across
+smoke runs, so the next behavior box should first run a small A/B with these
+fields captured instead of adding another skip gate from one sample.

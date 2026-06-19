@@ -1431,3 +1431,32 @@ path.  Most successful claims are MidPage and class 5, with a secondary class 4
 component.  The next remote50-tax investigation should preserve this split and
 avoid broad Toy or all-class policy changes unless a new counter shows demand
 there.
+
+## 2026-06-20 DirectReuse Transfer Overlap Observe
+
+`DirectReuseTransferOverlapObserve-L1` adds a success-side split for
+DirectReuse claims that saw same-class transfer inventory before claiming a
+pending entry.  This is separate from
+`remote_pending_direct_claim_while_transfer_nonempty`, which is an attempt-side
+counter.
+
+Two clean smokes showed the signal is phase-sensitive:
+
+```text
+smoke r1:
+  remote_pending_direct_claim_success=1990
+  remote_pending_direct_claim_success_transfer_nonempty=4
+  transfer split: toy=4 midpage=0
+  class split: c3_transfer=4
+
+smoke r2:
+  remote_pending_direct_claim_success=2866
+  remote_pending_direct_claim_success_transfer_nonempty=1384
+  transfer split: toy=118 midpage=1266
+  class split: c4_transfer=308 c5_transfer=1074
+```
+
+Decision: `GO(tooling)`.  The counters are enough to observe DirectReuse's
+possible overlap with transfer inventory, but the phase variance means a
+behavior gate should not be selected from a single smoke.  Include these fields
+in the next RUNS A/B before trying another ordering change.

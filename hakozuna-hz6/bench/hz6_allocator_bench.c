@@ -420,7 +420,9 @@ static void print_stats(const Hz6Allocator* allocator) {
          "claim_before_existing_reuse=%zu "
          "claim_while_frontcache_nonempty=%zu "
          "claim_while_transfer_nonempty=%zu direct_toy=%zu "
-         "direct_midpage=%zu same_key_before=%zu "
+         "direct_midpage=%zu direct_transfer_success=%zu "
+         "direct_transfer_toy=%zu direct_transfer_midpage=%zu "
+         "same_key_before=%zu "
          "same_key_after=%zu maintenance_immediate_reuse=%zu "
          "maintenance_batch_surplus=%zu source_block_commit_match=%zu "
          "source_block_inline_match=%zu source_block_external_match=%zu\n",
@@ -471,6 +473,9 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.remote_pending_direct_claim_while_transfer_nonempty,
          stats.remote_pending_direct_claim_success_toy,
          stats.remote_pending_direct_claim_success_midpage,
+         stats.remote_pending_direct_claim_success_while_transfer_nonempty,
+         stats.remote_pending_direct_claim_success_transfer_toy,
+         stats.remote_pending_direct_claim_success_transfer_midpage,
          stats.pending_same_key_before_maintenance,
          stats.pending_same_key_after_maintenance,
          stats.pending_maintenance_immediate_reuse_success,

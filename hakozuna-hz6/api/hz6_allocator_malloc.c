@@ -53,6 +53,7 @@ hz6_allocator_try_pending_direct_reuse(Hz6Allocator* allocator,
   (void)source_boundary;
 #endif
 #if HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1
+  int transfer_nonempty = 0;
   ++allocator->stats.remote_pending_direct_gate_load;
   if (source_boundary) {
     ++allocator->stats.remote_pending_direct_source_boundary_attempt;
@@ -73,6 +74,7 @@ hz6_allocator_try_pending_direct_reuse(Hz6Allocator* allocator,
       ++allocator->stats.remote_pending_direct_claim_while_frontcache_nonempty;
     }
     if (hz6_allocator_transfer_count_class(allocator, class_id) != 0) {
+      transfer_nonempty = 1;
       ++allocator->stats.remote_pending_direct_claim_while_transfer_nonempty;
     }
   }
@@ -99,6 +101,18 @@ hz6_allocator_try_pending_direct_reuse(Hz6Allocator* allocator,
     }
     if (class_id < HZ6_STATS_CLASS_COUNT) {
       ++allocator->stats.remote_pending_direct_claim_success_by_class[class_id];
+    }
+    if (transfer_nonempty) {
+      ++allocator->stats.remote_pending_direct_claim_success_while_transfer_nonempty;
+      if (front_id == HZ6_FRONT_TOY) {
+        ++allocator->stats.remote_pending_direct_claim_success_transfer_toy;
+      } else if (front_id == HZ6_FRONT_MIDPAGE) {
+        ++allocator->stats.remote_pending_direct_claim_success_transfer_midpage;
+      }
+      if (class_id < HZ6_STATS_CLASS_COUNT) {
+        ++allocator->stats
+              .remote_pending_direct_claim_success_transfer_by_class[class_id];
+      }
     }
     if (source_boundary) {
       ++allocator->stats.remote_pending_direct_source_boundary_claim_success;

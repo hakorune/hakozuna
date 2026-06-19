@@ -125,6 +125,10 @@
   size_t remote_pending_direct_claim_success_toy;
   size_t remote_pending_direct_claim_success_midpage;
   size_t remote_pending_direct_claim_success_by_class[HZ6_STATS_CLASS_COUNT];
+  size_t remote_pending_direct_claim_success_while_transfer_nonempty;
+  size_t remote_pending_direct_claim_success_transfer_toy;
+  size_t remote_pending_direct_claim_success_transfer_midpage;
+  size_t remote_pending_direct_claim_success_transfer_by_class[HZ6_STATS_CLASS_COUNT];
   size_t remote_free_backpressure_origin_transfer_success;
   size_t remote_free_backpressure_origin_transfer_fail;
   size_t remote_free_backpressure_origin_transfer_stride_skip;

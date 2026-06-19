@@ -187,6 +187,9 @@
           "remote_pending_direct_claim_while_transfer_nonempty=%zu "
           "remote_pending_direct_claim_success_toy=%zu "
           "remote_pending_direct_claim_success_midpage=%zu "
+          "remote_pending_direct_claim_success_transfer_nonempty=%zu "
+          "remote_pending_direct_claim_success_transfer_toy=%zu "
+          "remote_pending_direct_claim_success_transfer_midpage=%zu "
           "remote_free_backpressure_origin_transfer_success=%zu "
           "remote_free_backpressure_origin_transfer_fail=%zu "
           "remote_free_backpressure_origin_transfer_stride_skip=%zu "
@@ -362,6 +365,9 @@
           remote_pending_direct_claim_while_transfer_nonempty,
           remote_pending_direct_claim_success_toy,
           remote_pending_direct_claim_success_midpage,
+          remote_pending_direct_claim_success_while_transfer_nonempty,
+          remote_pending_direct_claim_success_transfer_toy,
+          remote_pending_direct_claim_success_transfer_midpage,
           remote_free_backpressure_origin_transfer_success,
           remote_free_backpressure_origin_transfer_fail,
           remote_free_backpressure_origin_transfer_stride_skip,
@@ -604,9 +610,11 @@
   fprintf(stderr, "[HZ6_PRELOAD_DIRECT_PENDING_CLASS_DETAIL]");
   for (size_t class_id = 0; class_id < HZ6_STATS_CLASS_COUNT; ++class_id) {
     fprintf(stderr,
-            " c%zu_claim=%zu",
+            " c%zu_claim=%zu c%zu_transfer=%zu",
             class_id,
-            remote_pending_direct_claim_success_by_class[class_id]);
+            remote_pending_direct_claim_success_by_class[class_id],
+            class_id,
+            remote_pending_direct_claim_success_transfer_by_class[class_id]);
   }
   fprintf(stderr, "\n");
 
