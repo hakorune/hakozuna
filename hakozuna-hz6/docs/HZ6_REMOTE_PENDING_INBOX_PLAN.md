@@ -293,3 +293,32 @@ remote90=11188549.20
 
 Decision: Direct-only is not viable for remote90.  Direct reuse should remain
 an opt-in short-circuit before owner-local maintenance.
+
+## 2026-06-20 Exact-Key Maintenance
+
+The maintenance fallback now drains only the caller's exact
+`(front_id,class_id)` key.  This preserves the owner-local fallback while
+removing the class-only ambiguity that could mix Toy and MidPage entries with
+the same class id.
+
+Opt-in smoke:
+
+```text
+remote_pending_direct_claim_success=3392
+remote_pending_direct_claim_busy=18
+remote_pending_direct_integrity_failure=0
+remote_pending_batch_items=71
+remote_pending_frontcache_push=71
+pending_same_key_before_maintenance=18
+pending_maintenance_immediate_reuse_success=18
+pending_maintenance_batch_surplus=53
+```
+
+RUNS=3:
+
+```text
+remote50=14252255.99
+remote90=10071818.95
+```
+
+Decision: `GO(correctness)/HOLD(perf)`.

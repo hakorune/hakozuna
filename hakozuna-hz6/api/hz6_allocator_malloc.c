@@ -161,7 +161,7 @@ static void* hz6_allocator_direct_local_reuse(Hz6Allocator* allocator,
   hz6_allocator_remote_pending_note_before_maintenance(allocator, front_id,
                                                        class_id);
   size_t pending_drained = hz6_allocator_remote_pending_maintenance_class(
-      allocator, class_id, HZ6_REMOTE_PENDING_DRAIN_BUDGET);
+      allocator, front_id, class_id, HZ6_REMOTE_PENDING_DRAIN_BUDGET);
   hz6_allocator_remote_pending_note_after_maintenance(allocator, front_id,
                                                       class_id);
   if (pending_drained != 0) {
@@ -281,7 +281,7 @@ static void* hz6_allocator_midpage_direct_local_reuse_trusted_class(
   hz6_allocator_remote_pending_note_before_maintenance(allocator, front_id,
                                                        class_id);
   size_t pending_drained = hz6_allocator_remote_pending_maintenance_class(
-      allocator, class_id, HZ6_REMOTE_PENDING_DRAIN_BUDGET);
+      allocator, front_id, class_id, HZ6_REMOTE_PENDING_DRAIN_BUDGET);
   hz6_allocator_remote_pending_note_after_maintenance(allocator, front_id,
                                                       class_id);
   if (pending_drained != 0) {

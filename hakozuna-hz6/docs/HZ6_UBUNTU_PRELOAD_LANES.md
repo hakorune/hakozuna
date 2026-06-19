@@ -246,6 +246,13 @@ frontcache miss for Toy/MidPage preload direct paths.  Direct-only is
 shape: smoke claimed `3065` entries, kept batch work to `480`, and RUNS=3
 measured `remote50=14162158.67`, `remote90=11188549.20`.  Keep it opt-in until
 the fallback maintenance policy is tuned.
+`RemotePendingExactKeyMaintenance` makes the fallback drain exact
+`(front_id,class_id)` keys instead of class-only heads.  Opt-in smoke kept
+DirectReuse healthy (`remote_pending_direct_claim_success=3392`,
+`remote_pending_direct_integrity_failure=0`) and reduced batch fallback to
+`remote_pending_batch_items=71`; RUNS=3 measured `remote50=14252255.99`,
+`remote90=10071818.95`.  Keep this correctness boundary for future DirectReuse
+promotion.
 `RemoteFreeBackpressureOriginTransferReasonObserve-L1` splits the remaining
 origin-transfer misses without changing behavior.  The selected smoke showed
 `remote_free_backpressure_origin_transfer_stride_skip=16295`,

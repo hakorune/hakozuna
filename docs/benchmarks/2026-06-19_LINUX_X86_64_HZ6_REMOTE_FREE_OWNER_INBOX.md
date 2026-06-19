@@ -242,3 +242,37 @@ remote90=11188549.20
 
 Decision: direct-only is `NO-GO(default)` because it starves remote90.  Direct
 reuse as a short-circuit before maintenance is `GO(experimental)/HOLD(default)`.
+
+## Exact-Key Maintenance Follow-Up
+
+The previous owner-local maintenance fallback still drained by `class_id`.
+After exact-key pending heads, that could move a different front with the same
+class id into the current frontcache path.  `RemotePendingExactKeyMaintenance`
+changes maintenance to drain only the caller's `(front_id, class_id)` key.
+
+Opt-in DirectReuse + exact-key maintenance smoke:
+
+```text
+remote_pending_direct_claim_success=3392
+remote_pending_direct_claim_busy=18
+remote_pending_direct_integrity_failure=0
+remote_pending_batch_items=71
+remote_pending_frontcache_push=71
+pending_same_key_before_maintenance=18
+pending_maintenance_immediate_reuse_success=18
+pending_maintenance_batch_surplus=53
+remote_pending_generation_mismatch=0
+remote_pending_owner_mismatch=0
+remote_pending_route_mismatch=0
+remote_pending_state_mismatch=0
+```
+
+RUNS=3:
+
+```text
+remote50=14252255.99
+remote90=10071818.95
+```
+
+Decision: `GO(correctness)/HOLD(perf)`.  It removes class-only fallback
+ambiguity; performance selection still needs a broader run.
