@@ -202,6 +202,29 @@ bench_random_mixed_mt_remote 16 120000 100 16 131072 90 65536
   ops/s=113182.85 fail=0 timeout=no
 ```
 
+2026-06-19 Phase 2 preload wrapper boundary is implemented:
+
+- Linux preload `free`, `realloc`, and `malloc_usable_size` now use the shared
+  `RemoteFreeRouteResolve-L1` helper through `hz6_preload_route()`.
+- Platform real allocator fallback is allowed only for `PROVEN_EXTERNAL`.
+- `UNRESOLVED_INTEGRITY` and `RETRY` fail fast instead of silently returning or
+  calling the real allocator.
+- `OWNED_INVALID` no longer falls through to platform `real_free`,
+  `real_realloc`, or `real_malloc_usable_size`.
+
+Smoke evidence after preload wrapper resolver boundary:
+
+```text
+env LD_PRELOAD=... /bin/true
+  exit=0
+
+bench_random_mixed_mt_remote 16 10000 100 16 32768 50 65536
+  ops/s=276329.96 fail=0 timeout=no
+
+bench_random_mixed_mt_remote 16 120000 100 16 131072 90 65536
+  ops/s=124362.20 fail=0 timeout=no
+```
+
 2026-06-19 Phase 3 first tuning box is implemented and selected:
 
 - The selected preload lane now actually enables `HZ6_SHARED_ROUTE_DIRECTORY_L1=1`.

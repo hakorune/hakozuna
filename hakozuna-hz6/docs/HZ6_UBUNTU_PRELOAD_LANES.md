@@ -169,6 +169,14 @@ or `UNRESOLVED_INTEGRITY`.  This first selected use is intentionally scoped to
 core remote free; preload external-pointer `real_free` selection still uses the
 existing wrapper boundary until the HZ6 address-domain proof exists.
 
+Phase 2 preload wrapper boundary, 2026-06-19: selected preload now routes
+`free`, `realloc`, and `malloc_usable_size` through the shared resolver helper.
+The platform real allocator fallback is allowed only for `PROVEN_EXTERNAL`;
+`OWNED_INVALID` stays inside HZ6 policy and `UNRESOLVED_INTEGRITY` / `RETRY`
+fail fast.  Focused smokes completed: `/bin/true` with `LD_PRELOAD` exited 0,
+`remote50 16..32768` reached `276329.96 ops/s`, and `remote90 16..131072`
+reached `124362.20 ops/s`.
+
 Phase 3 first tuning status, 2026-06-19: selected preload now actually enables
 `HZ6_SHARED_ROUTE_DIRECTORY_L1=1`; the earlier coherent-publication flags were
 present but the base directory flag was missing from the selected list.  The
