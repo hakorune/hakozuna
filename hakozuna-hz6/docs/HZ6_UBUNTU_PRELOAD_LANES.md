@@ -346,6 +346,12 @@ free-list head, and per-key heads under
 `HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1=1`; selected/off builds and the
 external-ticket-core smoke pass, with all ticket counters still zero because
 no producer path is connected yet.
+`ExternalDescriptorOwnerInboxTicketPublishAPI-L1` adds the producer-facing API
+and a dedicated ticket lock, but still leaves the free path disconnected.  The
+API records immutable proof and moves a descriptor to `REMOTE_PENDING` only
+after external-storage, owner, state, duplicate, and capacity validation.  It
+also requires descriptor-storage-owner proof; selected-shape builds that cannot
+provide that proof fail the API with storage mismatch by design.
 `RemoteFreeBackpressureOriginDrain-L1` tried that full path directly as an
 opt-in no-go.  It drains one same-class transfer object from the origin transfer
 cache into the origin frontcache and retries origin commit once.  Safety smoke

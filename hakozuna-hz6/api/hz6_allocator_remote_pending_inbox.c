@@ -1,4 +1,5 @@
 #include "hz6_allocator.h"
+#include "hz6_allocator_api_descriptor.h"
 
 #include <string.h>
 
@@ -85,6 +86,19 @@ static int hz6_remote_pending_try_lock(Hz6RemotePendingClassInbox* inbox) {
   return !atomic_flag_test_and_set_explicit(&inbox->lock,
                                             memory_order_acquire);
 }
+
+#if HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1
+static void hz6_remote_pending_external_lock(Hz6Allocator* allocator) {
+  while (atomic_flag_test_and_set_explicit(
+      &allocator->remote_pending_external_lock, memory_order_acquire)) {
+  }
+}
+
+static void hz6_remote_pending_external_unlock(Hz6Allocator* allocator) {
+  atomic_flag_clear_explicit(&allocator->remote_pending_external_lock,
+                             memory_order_release);
+}
+#endif
 
 static int hz6_remote_pending_descriptor_index(
     Hz6Allocator* allocator,
@@ -505,6 +519,8 @@ void hz6_allocator_remote_pending_inbox_init(Hz6Allocator* allocator) {
     allocator->remote_pending_owner_token[i] = (Hz6OwnerToken){0};
   }
 #if HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1
+  atomic_flag_clear_explicit(&allocator->remote_pending_external_lock,
+                             memory_order_relaxed);
   for (size_t front_index = 0; front_index < HZ6_REMOTE_PENDING_FRONT_COUNT;
        ++front_index) {
     for (size_t class_id = 0; class_id < HZ6_FRONT_CACHE_CLASS_COUNT;
@@ -603,6 +619,116 @@ int hz6_allocator_remote_pending_enqueue(Hz6Allocator* allocator,
   hz6_remote_pending_requeue_locked(allocator, class_id, index);
   ++allocator->stats.remote_pending_enqueue_success;
   hz6_remote_pending_unlock(inbox);
+  return 1;
+#else
+  (void)allocator;
+  (void)descriptor;
+  (void)ptr;
+  (void)generation;
+  (void)front_id;
+  (void)class_id;
+  return 0;
+#endif
+}
+
+int hz6_allocator_remote_pending_external_ticket_publish(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor,
+    void* ptr,
+    uint32_t generation,
+    uint16_t front_id,
+    uint16_t class_id) {
+#if HZ6_REMOTE_PENDING_INBOX_CORE_L1 && \
+    HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1
+  uint64_t bit = 0;
+  uint16_t key_index = 0;
+  if (!allocator || !descriptor || !ptr ||
+      class_id >= HZ6_FRONT_CACHE_CLASS_COUNT ||
+      !hz6_remote_pending_key_bit(front_id, class_id, &key_index, &bit)) {
+    return 0;
+  }
+  (void)key_index;
+  (void)bit;
+  ++allocator->stats.remote_pending_external_ticket_attempt;
+  uint32_t inline_index = 0;
+  if (hz6_remote_pending_descriptor_index(allocator, descriptor,
+                                          &inline_index)) {
+    ++allocator->stats.remote_pending_external_ticket_storage_mismatch;
+    return 0;
+  }
+  if (!hz6_owner_is_alive(&allocator->owner, allocator->owner.token)) {
+    ++allocator->stats.remote_pending_external_ticket_owner_mismatch;
+    return 0;
+  }
+  if (descriptor->ptr != ptr || descriptor->generation != generation ||
+      descriptor->class_id != class_id ||
+      descriptor->state != HZ6_STATE_ACTIVE) {
+    ++allocator->stats.remote_pending_external_ticket_state_mismatch;
+    return 0;
+  }
+  if (!hz6_allocator_descriptor_owner_equal_at(
+          allocator, descriptor, allocator->owner.token,
+          HZ6_OWNER_EQUAL_SITE_REMOTE_PENDING)) {
+    ++allocator->stats.remote_pending_external_ticket_owner_mismatch;
+    return 0;
+  }
+  Hz6OwnerToken storage_owner_token = {0};
+#if HZ6_DESCRIPTOR_STORAGE_OWNER16_L1 || HZ6_DIAGNOSTIC_PROBES || \
+    HZ6_OWNER_SOURCE_SIDE_META_DRYRUN || HZ6_OWNER_SOURCE_SIDE_META_L2
+  Hz6Allocator* storage =
+      hz6_allocator_descriptor_storage_owner(allocator, descriptor, NULL);
+  if (!storage) {
+    ++allocator->stats.remote_pending_external_ticket_storage_mismatch;
+    return 0;
+  }
+  storage_owner_token = storage->owner.token;
+#else
+  ++allocator->stats.remote_pending_external_ticket_storage_mismatch;
+  return 0;
+#endif
+  uint16_t front_index = 0;
+  if (!hz6_remote_pending_front_ordinal(front_id, &front_index)) {
+    ++allocator->stats.remote_pending_external_ticket_state_mismatch;
+    return 0;
+  }
+
+  hz6_remote_pending_external_lock(allocator);
+  for (size_t i = 0; i < HZ6_REMOTE_PENDING_EXTERNAL_TICKET_CAPACITY; ++i) {
+    Hz6RemotePendingExternalTicket* ticket =
+        &allocator->remote_pending_external_tickets[i];
+    if (ticket->state != HZ6_REMOTE_PENDING_SLOT_NONE &&
+        ticket->descriptor == descriptor &&
+        ticket->generation == generation) {
+      ++allocator->stats.remote_pending_external_ticket_duplicate;
+      hz6_remote_pending_external_unlock(allocator);
+      return 0;
+    }
+  }
+  uint32_t ticket_index = allocator->remote_pending_external_free_head;
+  if (ticket_index == HZ6_REMOTE_PENDING_INDEX_NONE ||
+      ticket_index >= HZ6_REMOTE_PENDING_EXTERNAL_TICKET_CAPACITY) {
+    ++allocator->stats.remote_pending_external_ticket_full;
+    hz6_remote_pending_external_unlock(allocator);
+    return 0;
+  }
+  Hz6RemotePendingExternalTicket* ticket =
+      &allocator->remote_pending_external_tickets[ticket_index];
+  allocator->remote_pending_external_free_head = ticket->next;
+  ticket->ptr = ptr;
+  ticket->descriptor = descriptor;
+  ticket->generation = generation;
+  ticket->bytes = descriptor->bytes;
+  ticket->owner_token = allocator->owner.token;
+  ticket->descriptor_storage_owner_token = storage_owner_token;
+  ticket->front_id = front_id;
+  ticket->class_id = class_id;
+  ticket->state = HZ6_REMOTE_PENDING_SLOT_QUEUED;
+  ticket->next = allocator->remote_pending_external_head[front_index][class_id];
+  allocator->remote_pending_external_head[front_index][class_id] =
+      ticket_index;
+  descriptor->state = HZ6_STATE_REMOTE_PENDING;
+  ++allocator->stats.remote_pending_external_ticket_success;
+  hz6_remote_pending_external_unlock(allocator);
   return 1;
 #else
   (void)allocator;

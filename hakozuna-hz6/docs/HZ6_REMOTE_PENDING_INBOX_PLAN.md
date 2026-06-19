@@ -778,3 +778,58 @@ route/owner/state/storage mismatch counters=0
 Decision: `GO(core)/HOLD(behavior)`.  The next implementation box can add the
 producer publish path for storage-ineligible owner-inbox candidates without
 touching the inline descriptor-index queue.
+
+## 2026-06-20 External Ticket Publish API
+
+`ExternalDescriptorOwnerInboxTicketPublishAPI-L1` adds the producer-facing API
+but still leaves the free path disconnected:
+
+```c
+int hz6_allocator_remote_pending_external_ticket_publish(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor,
+    void* ptr,
+    uint32_t generation,
+    uint16_t front_id,
+    uint16_t class_id);
+```
+
+The API validates:
+
+```text
+external descriptor, not origin->descriptors[]
+owner alive
+ptr / generation / class / ACTIVE state
+descriptor owner == origin owner token
+descriptor storage owner proof is available
+duplicate ticket absent
+free ticket slot available
+```
+
+On success it stores immutable proof into an external ticket and moves the
+descriptor to `REMOTE_PENDING`.  It does not yet make `free()` return committed,
+because owner-local consume/destroy handling is not connected in this box.
+
+Selected-shape builds that do not compile descriptor-storage-owner lookup make
+the API fail with `remote_pending_external_ticket_storage_mismatch` if called.
+This is intentional: external tickets require a storage-owner proof.
+
+Build/smoke checks:
+
+```text
+selected preload build: ok
+external-ticket publish API preload build: ok
+selected-shape benchmark build with external ticket flag: ok
+external-ticket smoke: integrity ok
+remote_pending_external_ticket_attempt=0
+remote_pending_external_ticket_success=0
+remote_pending_external_ticket_full=0
+remote_pending_external_ticket_duplicate=0
+remote_pending_external_ticket_consume=0
+route/owner/state/storage mismatch counters=0
+```
+
+Decision: `GO(API)/HOLD(behavior)`.  The next box should connect only the
+storage-ineligible owner-inbox branch to this API and keep `free()` returning
+backpressure unless ticket publish and later owner-local consumption are both
+proven safe.

@@ -449,6 +449,7 @@ struct Hz6Allocator {
   Hz6RemotePendingExternalTicket
       remote_pending_external_tickets
           [HZ6_REMOTE_PENDING_EXTERNAL_TICKET_CAPACITY];
+  atomic_flag remote_pending_external_lock;
   uint32_t remote_pending_external_free_head;
   uint32_t remote_pending_external_head
       [HZ6_REMOTE_PENDING_FRONT_COUNT][HZ6_FRONT_CACHE_CLASS_COUNT];
