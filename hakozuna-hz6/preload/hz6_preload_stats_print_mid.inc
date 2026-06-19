@@ -151,6 +151,14 @@
           "remote_pending_external_ticket_state_mismatch=%zu "
           "remote_pending_external_ticket_storage_mismatch=%zu "
           "remote_pending_external_ticket_integrity_abort=%zu "
+          "remote_pending_inline_accounting_mismatch=%zu "
+          "remote_pending_external_accounting_mismatch=%zu "
+          "remote_pending_total_state_count_mismatch=%zu "
+          "remote_pending_external_free_list_corruption=%zu "
+          "remote_pending_external_list_cycle=%zu "
+          "remote_pending_external_ticket_multiple_list_membership=%zu "
+          "remote_pending_claimed_current_at_quiescence=%zu "
+          "remote_pending_external_claimed_at_quiescence=%zu "
           "remote_pending_key_nonempty_load=%zu "
           "remote_pending_key_nonempty_hit=%zu "
           "pending_same_key_on_frontcache_miss=%zu "
@@ -330,6 +338,14 @@
           remote_pending_external_ticket_state_mismatch,
           remote_pending_external_ticket_storage_mismatch,
           remote_pending_external_ticket_integrity_abort,
+          remote_pending_inline_accounting_mismatch,
+          remote_pending_external_accounting_mismatch,
+          remote_pending_total_state_count_mismatch,
+          remote_pending_external_free_list_corruption,
+          remote_pending_external_list_cycle,
+          remote_pending_external_ticket_multiple_list_membership,
+          remote_pending_claimed_current_at_quiescence,
+          remote_pending_external_claimed_at_quiescence,
           remote_pending_key_nonempty_load,
           remote_pending_key_nonempty_hit,
           pending_same_key_on_frontcache_miss,

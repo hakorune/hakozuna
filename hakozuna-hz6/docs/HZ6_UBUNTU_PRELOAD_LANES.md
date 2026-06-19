@@ -1935,3 +1935,51 @@ remote90 ops/s=11098596.12 peak=77.50 MiB
 
 Decision: `GO(tooling)`.  Keep using this runner as the local/RSS guard while
 the branch selected lane remains under promotion review.
+
+## 2026-06-20 OwnerInboxAccountingGuard-L1
+
+`OwnerInboxAccountingGuard-L1` adds diagnostic snapshot accounting for the
+owner-inbox selected branch without changing allocation/free behavior.  The
+checker lives outside the already-large inbox implementation:
+
+```text
+api/hz6_allocator_remote_pending_accounting.c
+```
+
+It verifies inline pending lists, exact-key counts, slot states, external
+ticket head/free lists, list cycles, multiple membership,
+claimed-at-quiescence, and that every slot/ticket still points at a
+`REMOTE_PENDING` descriptor.
+
+Selected integrity smoke now zero-gates:
+
+```text
+remote_pending_inline_accounting_mismatch=0
+remote_pending_external_accounting_mismatch=0
+remote_pending_total_state_count_mismatch=0
+remote_pending_external_free_list_corruption=0
+remote_pending_external_list_cycle=0
+remote_pending_external_ticket_multiple_list_membership=0
+remote_pending_claimed_current_at_quiescence=0
+remote_pending_external_claimed_at_quiescence=0
+```
+
+The selected smoke passed with all new counters at zero while retaining
+expected pending inventory:
+
+```text
+remote_pending_current=33282
+remote_pending_external_ticket_current=1860
+```
+
+Post-accounting quick selected guard RUNS=1:
+
+```text
+local0   median_ops_s=15458799.79 median_peak_mib=72.75
+remote50 median_ops_s=14074062.72 median_peak_mib=75.00
+remote90 median_ops_s=10792436.45 median_peak_mib=77.18
+```
+
+Decision: `GO(tooling)`.  Pending backlog is not a blocker when accounting is
+explainable.  Default-release promotion still needs allocator lifetime closeout
+and paired RSS/local guard evidence.

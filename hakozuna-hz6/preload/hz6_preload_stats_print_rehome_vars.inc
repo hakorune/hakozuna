@@ -87,6 +87,14 @@
   size_t remote_pending_external_ticket_state_mismatch = 0;
   size_t remote_pending_external_ticket_storage_mismatch = 0;
   size_t remote_pending_external_ticket_integrity_abort = 0;
+  size_t remote_pending_inline_accounting_mismatch = 0;
+  size_t remote_pending_external_accounting_mismatch = 0;
+  size_t remote_pending_total_state_count_mismatch = 0;
+  size_t remote_pending_external_free_list_corruption = 0;
+  size_t remote_pending_external_list_cycle = 0;
+  size_t remote_pending_external_ticket_multiple_list_membership = 0;
+  size_t remote_pending_claimed_current_at_quiescence = 0;
+  size_t remote_pending_external_claimed_at_quiescence = 0;
   size_t remote_pending_key_nonempty_load = 0;
   size_t remote_pending_key_nonempty_hit = 0;
   size_t pending_same_key_on_frontcache_miss = 0;

@@ -88,6 +88,14 @@
   size_t remote_pending_external_ticket_state_mismatch;
   size_t remote_pending_external_ticket_storage_mismatch;
   size_t remote_pending_external_ticket_integrity_abort;
+  size_t remote_pending_inline_accounting_mismatch;
+  size_t remote_pending_external_accounting_mismatch;
+  size_t remote_pending_total_state_count_mismatch;
+  size_t remote_pending_external_free_list_corruption;
+  size_t remote_pending_external_list_cycle;
+  size_t remote_pending_external_ticket_multiple_list_membership;
+  size_t remote_pending_claimed_current_at_quiescence;
+  size_t remote_pending_external_claimed_at_quiescence;
   size_t remote_pending_key_nonempty_load;
   size_t remote_pending_key_nonempty_hit;
   size_t pending_same_key_on_frontcache_miss;

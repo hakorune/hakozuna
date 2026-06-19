@@ -176,6 +176,22 @@
         stats.remote_pending_external_ticket_storage_mismatch;
     remote_pending_external_ticket_integrity_abort +=
         stats.remote_pending_external_ticket_integrity_abort;
+    remote_pending_inline_accounting_mismatch +=
+        stats.remote_pending_inline_accounting_mismatch;
+    remote_pending_external_accounting_mismatch +=
+        stats.remote_pending_external_accounting_mismatch;
+    remote_pending_total_state_count_mismatch +=
+        stats.remote_pending_total_state_count_mismatch;
+    remote_pending_external_free_list_corruption +=
+        stats.remote_pending_external_free_list_corruption;
+    remote_pending_external_list_cycle +=
+        stats.remote_pending_external_list_cycle;
+    remote_pending_external_ticket_multiple_list_membership +=
+        stats.remote_pending_external_ticket_multiple_list_membership;
+    remote_pending_claimed_current_at_quiescence +=
+        stats.remote_pending_claimed_current_at_quiescence;
+    remote_pending_external_claimed_at_quiescence +=
+        stats.remote_pending_external_claimed_at_quiescence;
     remote_pending_key_nonempty_load +=
         stats.remote_pending_key_nonempty_load;
     remote_pending_key_nonempty_hit +=

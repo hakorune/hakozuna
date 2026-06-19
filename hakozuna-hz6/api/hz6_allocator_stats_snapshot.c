@@ -1,4 +1,5 @@
 #include "hz6_allocator.h"
+#include "hz6_allocator_api_route_transfer.h"
 #include "hz6_allocator_route_shared_directory.h"
 #include "../fronts/midpage/hz6_midpage_front.h"
 
@@ -573,6 +574,7 @@ Hz6StatsSnapshot hz6_stats_snapshot(const Hz6Allocator* allocator) {
   }
   Hz6StatsSnapshot snapshot = allocator->stats;
 #if HZ6_DIAGNOSTIC_PROBES
+  hz6_allocator_remote_pending_note_accounting_snapshot(allocator, &snapshot);
   hz6_stats_snapshot_memory_attribution(allocator, &snapshot);
 #endif
   return snapshot;

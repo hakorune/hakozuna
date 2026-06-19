@@ -1641,3 +1641,84 @@ Decision: `GO(tooling)`.  This gives the owner-inbox selected branch a
 repeatable local/RSS guard.  It is not a default-release closeout by itself:
 paired RSS comparison, allocator lifetime, and pending accounting guards remain
 open.
+
+## 2026-06-20 OwnerInboxAccountingGuard-L1
+
+Added a diagnostic-only pending accounting checker in a separate API module:
+
+```text
+api/hz6_allocator_remote_pending_accounting.c
+```
+
+The checker runs during `hz6_stats_snapshot()` under
+`HZ6_DIAGNOSTIC_PROBES` and verifies:
+
+```text
+inline pending:
+  per-front exact-key head lists
+  key_count
+  class total_count
+  slot state QUEUED/CLAIMED/NONE
+  queued/claimed atomics
+  slot descriptor state == REMOTE_PENDING
+
+external tickets:
+  per-key ticket head lists
+  free-list membership
+  no list cycles
+  no multiple membership
+  ticket state QUEUED/CLAIMED/NONE
+  ticket descriptor state == REMOTE_PENDING
+```
+
+New zero gates:
+
+```text
+remote_pending_inline_accounting_mismatch=0
+remote_pending_external_accounting_mismatch=0
+remote_pending_total_state_count_mismatch=0
+remote_pending_external_free_list_corruption=0
+remote_pending_external_list_cycle=0
+remote_pending_external_ticket_multiple_list_membership=0
+remote_pending_claimed_current_at_quiescence=0
+remote_pending_external_claimed_at_quiescence=0
+```
+
+Selected integrity smoke passed:
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+remote_free_returned_stale=0
+remote_free_returned_integrity_failure=0
+remote_pending_current=33282
+remote_pending_external_ticket_current=1860
+remote_pending_inline_accounting_mismatch=0
+remote_pending_external_accounting_mismatch=0
+remote_pending_total_state_count_mismatch=0
+remote_pending_external_free_list_corruption=0
+remote_pending_external_list_cycle=0
+remote_pending_external_ticket_multiple_list_membership=0
+remote_pending_claimed_current_at_quiescence=0
+remote_pending_external_claimed_at_quiescence=0
+```
+
+Post-accounting quick selected guard RUNS=1:
+
+```text
+local0   median_ops_s=15458799.79 median_peak_mib=72.75
+remote50 median_ops_s=14074062.72 median_peak_mib=75.00
+remote90 median_ops_s=10792436.45 median_peak_mib=77.18
+```
+
+Important interpretation: this is not a `pending_current == 0` gate.  Pending
+objects are owner-local reusable inventory when the queue/list/slot accounting
+is explainable.  The accounting checker deliberately does not require every
+`REMOTE_PENDING` descriptor in a storage allocator to have an inline slot in
+that same allocator, because external tickets split descriptor storage owner
+from logical route owner.  It only requires every inline slot and external
+ticket to point at a descriptor that is still `REMOTE_PENDING`.
+
+Decision: `GO(tooling)`.  This closes the accounting part of the selected
+candidate prerequisites.  Default release remains `HOLD` on allocator lifetime
+closeout and paired selected-vs-baseline RSS/local guards.

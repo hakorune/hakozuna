@@ -268,6 +268,10 @@ int hz6_allocator_remote_pending_key_nonempty(Hz6Allocator* allocator,
                                               uint16_t front_id,
                                               uint16_t class_id);
 
+void hz6_allocator_remote_pending_note_accounting_snapshot(
+    const Hz6Allocator* allocator,
+    Hz6StatsSnapshot* snapshot);
+
 int hz6_allocator_remote_pending_key_maybe_nonempty_raw(
     Hz6Allocator* allocator,
     uint16_t front_id,
