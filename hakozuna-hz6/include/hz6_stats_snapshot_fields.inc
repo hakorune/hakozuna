@@ -19,6 +19,7 @@
   size_t remote_free_status_backpressure;
   size_t remote_free_status_stale;
   size_t remote_free_status_integrity_failure;
+  size_t remote_free_status_dispatch_transfer;
   size_t remote_free_foreign_candidate;
   size_t transfer_reserve_attempt;
   size_t transfer_reserve_success;

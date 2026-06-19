@@ -19,6 +19,7 @@
   size_t remote_free_status_backpressure = 0;
   size_t remote_free_status_stale = 0;
   size_t remote_free_status_integrity_failure = 0;
+  size_t remote_free_status_dispatch_transfer = 0;
   size_t transfer_reserve_attempt = 0;
   size_t transfer_reserve_success = 0;
   size_t transfer_reserve_full = 0;

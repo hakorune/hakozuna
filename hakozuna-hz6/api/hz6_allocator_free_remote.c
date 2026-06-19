@@ -1,31 +1,54 @@
 #include "hz6_allocator.h"
+#include "hz6_allocator_remote_free_status_dispatch.h"
 
 #include "../fronts/hz6_front.h"
 
-static int hz6_free_remote_rehome_before_transfer(
+static Hz6RemoteFreeCommitStatus hz6_free_remote_status_bool_fallback(
+    Hz6Allocator* allocator,
+    void* ptr,
+    Hz6RouteResult route,
+    const Hz6FrontOps* front) {
+  if (!allocator || !ptr || !front || !front->remote_free_tagged) {
+    return HZ6_REMOTE_FREE_COMMIT_STATUS_STALE;
+  }
+  return front->remote_free_tagged(allocator, ptr, route)
+             ? HZ6_REMOTE_FREE_COMMIT_STATUS_COMMITTED
+             : HZ6_REMOTE_FREE_COMMIT_STATUS_STALE;
+}
+
+static Hz6RemoteFreeCommitStatus hz6_free_remote_rehome_before_transfer(
     Hz6Allocator* allocator,
     void* ptr,
     Hz6RouteResult route,
     const Hz6FrontOps* front,
     int needs_rehome) {
   if (!allocator || !ptr || !front || !front->remote_free_tagged) {
-    return 0;
+    return HZ6_REMOTE_FREE_COMMIT_STATUS_STALE;
   }
   if (!needs_rehome) {
-    return front->remote_free_tagged(allocator, ptr, route);
+    int status_handled = 0;
+    Hz6RemoteFreeCommitStatus status =
+        hz6_remote_free_status_dispatch_transfer(allocator,
+                                                 ptr,
+                                                 route,
+                                                 &status_handled);
+    if (status_handled) {
+      return status;
+    }
+    return hz6_free_remote_status_bool_fallback(allocator, ptr, route, front);
   }
 
 #if HZ6_REMOTE_FREE_CONSUMER_REHOME_L1
   if (route.front_id == HZ6_FRONT_TOY ||
       route.front_id == HZ6_FRONT_MIDPAGE ||
       route.front_id == HZ6_FRONT_LOCAL2P) {
-    return front->remote_free_tagged(allocator, ptr, route);
+    return hz6_free_remote_status_bool_fallback(allocator, ptr, route, front);
   }
 #endif
 
   Hz6Allocator* origin = route.route_allocator;
   if (!origin || origin == allocator) {
-    return front->remote_free_tagged(allocator, ptr, route);
+    return hz6_free_remote_status_bool_fallback(allocator, ptr, route, front);
   }
 
 #if HZ6_DIAGNOSTIC_PROBES
@@ -45,11 +68,21 @@ static int hz6_free_remote_rehome_before_transfer(
   int rehome_ok = hz6_allocator_route_rehome_exact(allocator, &route);
 #endif
   if (!rehome_ok) {
-    return 0;
+    return HZ6_REMOTE_FREE_COMMIT_STATUS_STALE;
   }
 
-  if (front->remote_free_tagged(allocator, ptr, route)) {
-    return 1;
+  int status_handled = 0;
+  Hz6RemoteFreeCommitStatus status =
+      hz6_remote_free_status_dispatch_transfer(allocator,
+                                               ptr,
+                                               route,
+                                               &status_handled);
+  if (!status_handled) {
+    status = hz6_free_remote_status_bool_fallback(allocator, ptr, route,
+                                                  front);
+  }
+  if (status == HZ6_REMOTE_FREE_COMMIT_STATUS_COMMITTED) {
+    return status;
   }
 
   Hz6RouteResult rollback_route = route;
@@ -63,7 +96,7 @@ static int hz6_free_remote_rehome_before_transfer(
 #else
   (void)hz6_allocator_route_rehome_exact(origin, &rollback_route);
 #endif
-  return 0;
+  return status;
 }
 
 int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
@@ -240,8 +273,10 @@ int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
 #endif
   }
 #if HZ6_REMOTE_FREE_REHOME_BEFORE_TRANSFER_L1
-  if (!hz6_free_remote_rehome_before_transfer(allocator, ptr, route, front,
-                                              needs_rehome)) {
+  Hz6RemoteFreeCommitStatus remote_status =
+      hz6_free_remote_rehome_before_transfer(allocator, ptr, route, front,
+                                             needs_rehome);
+  if (remote_status != HZ6_REMOTE_FREE_COMMIT_STATUS_COMMITTED) {
 #if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
     if (needs_rehome) {
       ++allocator->stats.remote_free_returned_uncommitted;

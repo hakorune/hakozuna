@@ -164,6 +164,11 @@ The selected smoke classified the current uncommitted remote-free returns as
 backpressure (`remote_free_status_backpressure=36311`) with stale and
 integrity-failure statuses at zero.  This is tooling for the next policy box,
 not a selected performance claim.
+`RemoteFreeStatusDispatch-L1` is now selected for Toy/MidPage/Local2P remote
+free callers.  It keeps Large on bool fallback, but the selected transfer-based
+path now receives the status boundary directly
+(`remote_free_status_dispatch_transfer=34757` on the smoke), so the next box
+can handle `BACKPRESSURE` without inferring it from a generic false return.
 The follow-up `HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_STRIDE` and
 `HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_MAX_FRONTCACHE_COUNT` controls are also
 opt-in only.  `STRIDE=2` did not hold in RUNS=10 (`remote90=6434072.00`), while

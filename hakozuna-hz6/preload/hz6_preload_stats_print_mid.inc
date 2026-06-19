@@ -83,6 +83,7 @@
           "remote_free_status_backpressure=%zu "
           "remote_free_status_stale=%zu "
           "remote_free_status_integrity_failure=%zu "
+          "remote_free_status_dispatch_transfer=%zu "
           "transfer_reserve_attempt=%zu "
           "transfer_reserve_success=%zu "
           "transfer_reserve_full=%zu "
@@ -155,7 +156,8 @@
           route_rehome_rollback_success, route_rehome_rollback_fail,
           remote_free_foreign_candidate, remote_free_status_committed,
           remote_free_status_backpressure, remote_free_status_stale,
-          remote_free_status_integrity_failure, transfer_reserve_attempt,
+          remote_free_status_integrity_failure,
+          remote_free_status_dispatch_transfer, transfer_reserve_attempt,
           transfer_reserve_success, transfer_reserve_full,
           transfer_reserve_full_after_state_mutation,
           route_rehome_commit_enter, route_rehome_commit_success,

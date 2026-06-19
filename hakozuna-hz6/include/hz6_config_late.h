@@ -355,6 +355,13 @@
 #define HZ6_REMOTE_FREE_COMMIT_L1 0
 #endif
 
+#ifndef HZ6_REMOTE_FREE_STATUS_DISPATCH_L1
+/* Dispatch transfer-based remote frees through the status-returning commit
+ * boundary instead of collapsing COMMITTED/BACKPRESSURE/STALE into bool before
+ * the caller can apply policy. */
+#define HZ6_REMOTE_FREE_STATUS_DISPATCH_L1 0
+#endif
+
 #ifndef HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1
 /* Bounded relief lane for remote-free transfer backpressure.  On reserve
  * failure, drain one already-committed same-class transfer object into the

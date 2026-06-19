@@ -1,5 +1,6 @@
 #include "hz6_allocator.h"
 #include "hz6_allocator_midpage_active_map.h"
+#include "hz6_allocator_remote_free_status_dispatch.h"
 #include "hz6_allocator_same_owner_fast_inline.h"
 #include "hz6_allocator_toy_small_diag.h"
 
@@ -376,8 +377,18 @@ static void hz6_free_route_dispatch(Hz6Allocator* allocator,
             ++allocator->stats.route_rehome_attempt;
 #endif
           }
-          ok = front->remote_free_tagged &&
-               front->remote_free_tagged(allocator, ptr, route);
+          int status_handled = 0;
+          Hz6RemoteFreeCommitStatus remote_status =
+              hz6_remote_free_status_dispatch_transfer(allocator,
+                                                       ptr,
+                                                       route,
+                                                       &status_handled);
+          if (status_handled) {
+            ok = remote_status == HZ6_REMOTE_FREE_COMMIT_STATUS_COMMITTED;
+          } else {
+            ok = front->remote_free_tagged &&
+                 front->remote_free_tagged(allocator, ptr, route);
+          }
 #if HZ6_DIAGNOSTIC_PROBES
           if (!ok) {
             ++allocator->stats.free_invalid_remote_tagged;
