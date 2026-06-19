@@ -93,6 +93,17 @@ HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_8K_L1=0
 The preload lane is a real Ubuntu performance lane, but it remains separate
 from the direct HZ6 API and Windows selected-family rows.
 
+MT remote-route status, 2026-06-19:
+
+The HZ6 MT remote rows are under an active repair phase and are not ready for
+paper RUNS=10 collection.  The first debug pass found two separate issues:
+remote-positive frees could fall into visible allocator route scans, and
+route-tombstone compaction could race remote rehome unregister/register work.
+Short remote rows can now be made to complete, but long 300K rows still show a
+page-table lookup cliff.  Track the design in
+[`HZ6_REMOTE_ROUTE_PHASE_PLAN.md`](HZ6_REMOTE_ROUTE_PHASE_PLAN.md) and do not
+promote any MT remote numbers from this debug state.
+
 Latest selected-default focused guards, after fixed-floor and active-map storage
 trim, repeat-3, `bench_mixed_ws_crt`, raw
 `private/raw-results/linux/hz6_ubuntu_selected_balance_20260616_060238`:

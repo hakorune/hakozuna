@@ -69,6 +69,13 @@ Before implementation, make these items explicit:
 - For the segment-registry follow-up, compare `HZ4_FREE_ROUTE_SEGMENT_REGISTRY_SLOTS=32768`
   against `65536` before promoting anything; keep `ring_slots=262144` fixed
   while you read the slot sensitivity
+- For HZ6 remote-route repair, keep the Ubuntu and Windows work in the same
+  box: `main_r50`, `main_r90`, and `cross128_r90` must not enter local or
+  visible page-table route scans for definitely-foreign frees.  The promotion
+  gate is RUNS=10, `T=16`, `ws=100`, `ring_slots=65536`, with no abort,
+  timeout, or real-free fallback for HZ6-owned pointers on Ubuntu x86_64 and
+  Windows x64.  Use
+  `hakozuna-hz6/docs/HZ6_REMOTE_ROUTE_PHASE_PLAN.md` as the work order.
 
 ### Redis-like
 
