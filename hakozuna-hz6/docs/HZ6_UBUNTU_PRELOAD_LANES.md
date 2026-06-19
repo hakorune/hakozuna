@@ -1742,3 +1742,24 @@ Decision: `GO(high-remote candidate)/NO-GO(default)`.  The candidate is useful
 for remote90, but it still pays a remote50 tax versus selected/off.  Do not
 promote as the default lane; keep optimizing the direct-pool shape if the target
 is high-remote recovery.
+
+## 2026-06-20 DirectReuse Transfer-Nonempty Skip No-Go
+
+Tried skipping frontcache-miss DirectReuse when same-class transfer inventory
+was present.  Smoke was clean and showed the intended skip fired:
+
+```text
+remote_pending_direct_skip_transfer_nonempty=2146
+remote_pending_direct_claim_success=2878
+remote_pending_direct_integrity_failure=0
+```
+
+But quick RUNS=3 regressed high-remote badly:
+
+```text
+remote50=14194282.72
+remote90=3696648.67
+```
+
+Decision: `NO-GO`; code reverted.  The preload skip-transfer shape means this
+gate does not safely hand work to transfer reuse.

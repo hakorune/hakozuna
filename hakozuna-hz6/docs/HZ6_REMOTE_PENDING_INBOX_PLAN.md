@@ -1378,3 +1378,31 @@ reuse slightly improves remote90 over selected, but remote50 remains about 6%
 behind.  Do not promote as the default selected lane.  Keep it as the current
 high-remote/specialist candidate and focus further work on reducing its remote50
 tax.
+
+## 2026-06-20 DirectReuse Transfer-Nonempty Skip No-Go
+
+`DirectReuseTransferNonemptySkip-L1` was tested as a reverted behavior
+experiment.  The idea was to reduce DirectReuse's remote50 tax by skipping
+frontcache-miss DirectReuse when same-class transfer inventory was present.
+
+Smoke was correct and the gate fired:
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+remote_pending_direct_gate_hit=5040
+remote_pending_direct_skip_transfer_nonempty=2146
+remote_pending_direct_claim_success=2878
+remote_pending_direct_integrity_failure=0
+```
+
+Quick RUNS=3:
+
+```text
+remote50=14194282.72
+remote90=3696648.67
+```
+
+Decision: `NO-GO`.  In these preload skip-transfer paths, avoiding DirectReuse
+does not reliably consume transfer inventory and badly hurts remote90.  The
+implementation was reverted.
