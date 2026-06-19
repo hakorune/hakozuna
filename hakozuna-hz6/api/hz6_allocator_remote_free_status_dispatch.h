@@ -2,6 +2,7 @@
 #define HZ6_ALLOCATOR_REMOTE_FREE_STATUS_DISPATCH_H
 
 #include "hz6_allocator.h"
+#include "hz6_allocator_backpressure_policy_clock.h"
 
 static inline int hz6_remote_free_status_dispatch_transfer_eligible(
     Hz6RouteResult route) {
@@ -96,9 +97,8 @@ static inline int hz6_remote_free_status_try_origin_transfer(
     return 0;
   }
 #if HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_TRANSFER_STRIDE > 1
-  if (allocator->stats.transfer_reserve_attempt %
-          HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_TRANSFER_STRIDE !=
-      0) {
+  if (!hz6_allocator_backpressure_policy_stride_hit(
+          allocator, HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_TRANSFER_STRIDE)) {
 #if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats
           .remote_free_backpressure_origin_transfer_stride_skip;

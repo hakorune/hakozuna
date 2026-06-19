@@ -477,6 +477,7 @@ struct Hz6Allocator {
                                       [HZ6_FRONT_CACHE_BIN_CAPACITY];
 #endif
   Hz6FrontCacheBin frontcache_bins[HZ6_FRONT_CACHE_CLASS_COUNT];
+  _Atomic uint32_t remote_backpressure_policy_epoch;
   Hz6StatsSnapshot stats;
 };
 

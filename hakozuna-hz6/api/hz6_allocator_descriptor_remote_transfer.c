@@ -1,4 +1,5 @@
 #include "hz6_allocator.h"
+#include "hz6_allocator_backpressure_policy_clock.h"
 
 #if HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1 || \
     HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_DRAIN_L1
@@ -118,9 +119,8 @@ static int hz6_allocator_remote_free_should_try_backpressure_drain(
 #if HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_STRIDE <= 1
   return 1;
 #else
-  return allocator->stats.transfer_reserve_attempt %
-             HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_STRIDE ==
-         0;
+  return hz6_allocator_backpressure_policy_stride_hit(
+      (Hz6Allocator*)allocator, HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_STRIDE);
 #endif
 }
 #endif

@@ -85,6 +85,9 @@ HZ6_REMOTE_FREE_RESOLVE_LOCAL_EXACT_ONLY_L1=0
 HZ6_PRELOAD_FOREIGN_RESOLVED_DISPATCH_L1=1
 HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1=1
 HZ6_REMOTE_FREE_COMMIT_L1=1
+HZ6_REMOTE_FREE_STATUS_DISPATCH_L1=1
+HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_TRANSFER_L1=1
+HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_TRANSFER_STRIDE=1
 HZ6_ROUTE_HASH_XOR_FOLD_L1=1
 HZ6_ROUTE_LINEAR_WRAP_L1=1
 HZ6_ROUTE_LOOP_CARRY_L1=1
@@ -177,12 +180,19 @@ from stale or integrity failures.  The selected smoke showed
 `remote_free_returned_uncommitted=0`, `remote_free_returned_stale=0`, and
 `remote_free_returned_integrity_failure=0`; the integrity smoke now gates those
 non-backpressure outcomes at zero.
-`RemoteFreeBackpressureOriginTransfer-L1` is now selected with stride 2.  On
+`RemoteFreeBackpressureOriginTransfer-L1` is selected.  On
 destination transfer full, it tries the origin allocator's transfer cache
-without route rehome.  The stride-2 RUNS=10 result was
+without route rehome.  The earlier stride-2 candidate RUNS=10 result was
 `remote50=14934275.07` and `remote90=9902231.78`; the selected smoke showed
 `remote_free_backpressure_origin_transfer_success=5674` and kept uncommitted,
 stale, and integrity-failure returns at zero.
+`BackpressurePolicyClock-L1` corrected the cadence bug where origin-transfer
+stride used diagnostic-only `transfer_reserve_attempt`.  True `STRIDE=2`
+measured `remote50=14090990.96`, `remote90=2134217.85` in RUNS=10, while true
+`STRIDE=1` quick RUNS=3 measured `remote50=15149047.54`,
+`remote90=8788405.81`.  The current selected lane therefore uses
+`HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_TRANSFER_STRIDE=1` so production and
+diagnostic builds share the same policy.
 `RemoteFreeBackpressureOriginTransferReasonObserve-L1` splits the remaining
 origin-transfer misses without changing behavior.  The selected smoke showed
 `remote_free_backpressure_origin_transfer_stride_skip=16295`,

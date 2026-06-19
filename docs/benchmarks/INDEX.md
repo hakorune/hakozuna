@@ -5,6 +5,7 @@ This page is the public pointer list for dated benchmark summaries.
 ## Current Summaries
 
 - [Linux x86_64 HZ6 remote backpressure capacity, 2026-06-19](./2026-06-19_LINUX_X86_64_HZ6_REMOTE_BACKPRESSURE_CAPACITY.md)
+- [Linux x86_64 HZ6 backpressure policy clock, 2026-06-19](./2026-06-19_LINUX_X86_64_HZ6_BACKPRESSURE_POLICY_CLOCK.md)
 - [Linux x86_64 HZ6 remote backpressure drain, 2026-06-19](./2026-06-19_LINUX_X86_64_HZ6_REMOTE_BACKPRESSURE_DRAIN.md)
 - [Linux x86_64 HZ6 remote backpressure origin drain, 2026-06-19](./2026-06-19_LINUX_X86_64_HZ6_REMOTE_BACKPRESSURE_ORIGIN_DRAIN.md)
 - [Linux x86_64 HZ6 remote backpressure origin transfer, 2026-06-19](./2026-06-19_LINUX_X86_64_HZ6_REMOTE_BACKPRESSURE_ORIGIN_TRANSFER.md)
